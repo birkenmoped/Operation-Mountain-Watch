@@ -1,0 +1,26 @@
+﻿# DCS logs and crash data
+*.log
+*.crash
+*.dmp
+
+# Runtime campaign state
+runtime/
+persistent-state/
+test-results/*.log
+
+# Temporary and backup files
+*.tmp
+*.bak
+*.old
+*~
+Thumbs.db
+.DS_Store
+
+# Editor settings
+.vscode/
+.idea/
+
+# Local configuration and secrets
+.env
+*.local.lua
+secrets/
