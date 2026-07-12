@@ -1,4 +1,4 @@
-﻿# DCS logs and crash data
+# DCS logs and crash data
 *.log
 *.crash
 *.dmp

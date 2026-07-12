@@ -1,6 +1,14 @@
-﻿# Operation Mountain Watch
+# Operation Mountain Watch
 
 Dynamic persistent COIN multiplayer campaign for DCS World on the Afghanistan map.
+
+## Project goals
+
+- Replayable multiplayer COIN operations inspired by Operation Enduring Freedom
+- Persistent blue airbases and forward operating bases with logistics and rebuild mechanics
+- Dynamic red insurgent cells, camps, attacks, withdrawal, and regeneration
+- Virtualized remote formations to reduce server load
+- Player-driven logistics, CSAR, reconnaissance, convoy escort, and strike missions
 
 ## Planned technology
 
@@ -8,10 +16,12 @@ Dynamic persistent COIN multiplayer campaign for DCS World on the Afghanistan ma
 - MOOSE
 - MOOSE CTLD
 - MOOSE CSAR
-- Custom campaign state and persistence
-- Dynamic red-force director
-- Unit virtualization for remote ground forces and convoys
+- Custom campaign state, persistence, red-force director, and virtualization modules
 
 ## Status
 
-Early design and prototyping.
+Early design and prototyping. No gameplay release exists yet.
+
+## Documentation
+
+Project design documents are stored in [`docs/`](docs/).
