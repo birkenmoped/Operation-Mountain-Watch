@@ -150,17 +150,50 @@ Für die erste Kampagnenplanung sind folgende Module oder Rollen vorgesehen:
 - F/A-18C: externe Trägerunterstützung
 - AH-64D: Attack Aviation
 - OH-58D: Aufklärung und Zielzuweisung
-- UH-60: KI- oder Skriptplattform für Transport, MEDEVAC und Verbindung
-- CH-47F: schwerer taktischer Transport
-- C-130J: regionaler Lufttransport und Luftabwurf
+- CH-47F: primärer schwerer taktischer Transport; interne Fracht, Truppen und Außenlasten
+- UH-1H: leichter Transport, Truppenbewegung, kleinere Fracht und Verbindung
+- UH-60: AI- oder Skriptplattform für Transport, MEDEVAC und Verbindung
+- UH-60L Community Mod: optionale spielbare Transportplattform, keine Pflichtabhängigkeit
+- C-130J: regionaler Lufttransport mit zwei getrennten Logistikrollen: gelandete Lieferung und Luftabwurf
 
 Die Liste beschreibt Kampagnenfunktionen, nicht automatisch eine dauerhafte Stationierung jedes Typs an jeder Basis.
+
+## Transportfähigkeitsprofil
+
+Für jede Transportplattform werden zusätzlich dokumentiert:
+
+- `transport_mode`: `GROUND`, `ROTARY_WING` oder `FIXED_WING`
+- `internal_cargo`: ja oder nein
+- `sling_load`: ja oder nein
+- `troop_capacity`
+- `cargo_weight_limit`
+- `cargo_volume_limit`
+- `requires_runway`: ja oder nein
+- `requires_landing_zone`: ja oder nein
+- `supports_airdrop`: ja oder nein
+- `supports_landed_delivery`: ja oder nein
+- `requires_mod`: ja oder nein
+- `historical_status`: verbindlich, plausibel, optional oder ahistorische Gameplay-Alternative
+
+## Mod-Politik
+
+Der Kern der Kampagne soll ohne verpflichtende Community-Mods funktionieren. Ein optionaler UH-60L-Mod kann zusätzliche Spielerslots und Transportoptionen bieten, darf aber nicht dazu führen, dass Spieler ohne Mod den Server oder die Mission nicht nutzen können.
+
+Für jede Mod-Abhängigkeit müssen dokumentiert werden:
+
+- Download- und Versionsquelle
+- Multiplayer-Kompatibilität
+- Update- und Wartungsaufwand
+- Verhalten bei fehlendem Mod
+- Auswirkungen auf Missionsdatei und Serverstart
+- Ersatz durch Core-, AI- oder Skriptplattformen
 
 ## Noch zu entscheiden
 
 - konkrete DCS-Typen je Rolle
 - Länderzuordnung für afghanische Einheiten und verfügbare Assets
-- benötigte Community-Mods oder ausschließlich Core-/Modul-Assets
+- endgültige Mod-Politik für den UH-60L
 - Skill-Stufen und Gruppengrößen
 - Bedrohungs- und Ressourcenkosten
 - genaue Luftfahrzeug-Slots und historische Verfügbarkeit
+- gemessene Frachtkapazitäten und unterstützte DCS-/CTLD-Pfade je Plattform

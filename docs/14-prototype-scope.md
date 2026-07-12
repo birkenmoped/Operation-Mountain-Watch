@@ -22,7 +22,9 @@ Bagram und Kabul existieren zunächst als strategischer Hintergrund und als Quel
 - ein afghanischer Kontrollpunkt
 - ein regionales Ressourcenlager
 - ein Konvoi-Startbereich
-- eine Hubschrauber-Landezone am FOB
+- eine C-130J-Entlade- und Lagerübergabezone an Jalalabad/Fenty
+- mindestens eine Hubschrauber-Landezone an Jalalabad/Fenty und FOB Connolly
+- eine Außenlast- oder CTLD-Absetzzone am FOB
 - eine C-130J-Test-Drop-Zone im Raum Jalalabad
 
 ## Rote Infrastruktur
@@ -36,15 +38,40 @@ Bagram und Kabul existieren zunächst als strategischer Hintergrund und als Quel
 
 ## Logistik
 
-Der Prototyp enthält:
+Der Prototyp bildet mehrere voneinander unabhängige Lieferverfahren ab:
 
-- einen leichten Straßenkonvoi
+### Straße
+
+- ein leichter Straßenkonvoi
 - eine primäre Route
 - nach Möglichkeit eine alternative Route
-- Versorgung per Transporthubschrauber
-- einen C-130J-Testabwurf
 - Ressourcenübergabe an FOB Connolly
-- automatische Notversorgung nur als begrenzte Rückfallebene
+
+### Hubschrauber
+
+- mindestens ein spielbarer Transporthubschrauber
+- CH-47F als primäre schwere Transportplattform
+- UH-1H als leichte Transportoption
+- optionaler UH-60L Community Mod ohne Pflichtabhängigkeit
+- eine interne Fracht- oder Truppenlieferung
+- eine Außenlast- oder CTLD-Lieferung
+- Rücktransport von Personal oder Verwundeten
+
+### C-130J mit Landung
+
+- Transport von einer strategischen oder simulierten Quelle nach Jalalabad/Fenty
+- Landung, Rollen und Erreichen einer definierten Entladezone
+- Entladung oder Warehouse-Übergabe
+- einmalige Gutschrift des Manifests an das regionale Lager
+
+### C-130J-Luftabwurf
+
+- ein Testabwurf in eine definierte Drop Zone
+- Prüfung der stabilen Endposition
+- einmalige Gutschrift gültiger Pakete
+- Behandlung verlorener oder außerhalb der Drop Zone gelandeter Fracht
+
+Automatische Notversorgung bleibt nur eine begrenzte Rückfallebene und ersetzt keine Spielerlogistik.
 
 ## Missionsarten
 
@@ -53,6 +80,9 @@ Mindestens folgende Missionsabläufe werden abgebildet:
 - Konvoieskorte
 - Hinterhalt auf einen Konvoi
 - QRF für einen angegriffenen Konvoi oder FOB
+- Hubschrauber-Nachversorgung
+- gelandete C-130J-Anlieferung nach Jalalabad/Fenty
+- C-130J-Luftabwurf
 - Aufklärung eines vermuteten Camps
 - Angriff auf ein bestätigtes Camp
 - FOB-Nachversorgung
@@ -84,8 +114,13 @@ Mindestens folgende Missionsabläufe werden abgebildet:
 
 ### Logistik
 
-- Gutschrift einer erfolgreichen Lieferung
-- Umgang mit verlorener Fracht
+- gemeinsames Manifestmodell für Straße, Hubschrauber, gelandeten Lufttransport und Luftabwurf
+- Gutschrift einer erfolgreichen Lieferung unabhängig vom Transportweg
+- Umgang mit verlorener, zerstörter oder doppelt gemeldeter Fracht
+- CH-47F-interne Fracht und Außenlast getrennt testen
+- UH-1H- oder alternative leichte Hubschrauberlieferung testen
+- optionalen UH-60L-Mod nur als Zusatzpfad behandeln
+- C-130J-Landung, Entladezone und Lagerübergabe prüfen
 - C-130J-Paket nur einmal gutschreiben
 - Endposition innerhalb der Drop Zone auswerten
 
@@ -107,8 +142,10 @@ Vor der Implementierung werden benötigt:
 - FOB-Fenty- und FOB-Connolly-Infrastruktur
 - Einheiten-Templates für alle benötigten Rollen
 - Spieler-Slots und AI-Startplätze
+- C-130J-Park-, Roll- und Entladezone an Jalalabad/Fenty
 - C-130J-Drop-Zone
 - Hubschrauber-Landezonen
+- interne Fracht-, Außenlast- und CTLD-Absetzzonen
 
 ## Abnahmekriterien
 
@@ -116,12 +153,17 @@ Der Prototyp gilt als erfolgreich, wenn:
 
 1. Ein Konvoi virtuell starten und ohne sichtbaren Übergang physisch werden kann.
 2. Spieler den Konvoi eskortieren oder auf einen Angriff reagieren können.
-3. Verluste und Fracht korrekt in den Kampagnenzustand übernommen werden.
-4. Eine rote Zelle angreifen, sich zurückziehen und später nachvollziehbar regenerieren kann.
-5. FOB Connolly auf erfolgreiche oder ausgefallene Versorgung reagiert.
-6. Ein CSAR-Fall sowohl von Blau als auch von Rot beeinflusst werden kann.
-7. Speichern und Laden den strategischen Zustand reproduzierbar wiederherstellt.
-8. Die Serverleistung während mehrerer paralleler Aktivitäten stabil bleibt.
+3. Mindestens ein Hubschrauber Personal oder Fracht korrekt von Jalalabad/Fenty nach FOB Connolly liefern kann.
+4. Mindestens eine Außenlast- oder CTLD-Lieferung korrekt verbucht wird.
+5. Eine C-130J nach Landung in Jalalabad/Fenty ein Manifest genau einmal an das regionale Lager übergeben kann.
+6. Ein C-130J-Luftabwurf gültige Pakete erkennt und verlorene Pakete nicht gutschreibt.
+7. Alle Lieferwege dasselbe Ressourcen- und Manifestmodell verwenden.
+8. Verluste und Fracht korrekt in den Kampagnenzustand übernommen werden.
+9. Eine rote Zelle angreifen, sich zurückziehen und später nachvollziehbar regenerieren kann.
+10. FOB Connolly auf erfolgreiche oder ausgefallene Versorgung reagiert.
+11. Ein CSAR-Fall sowohl von Blau als auch von Rot beeinflusst werden kann.
+12. Speichern und Laden den strategischen Zustand reproduzierbar wiederherstellt.
+13. Die Serverleistung während mehrerer paralleler Aktivitäten stabil bleibt.
 
 ## Nicht Bestandteil des ersten Prototyps
 
@@ -130,5 +172,6 @@ Der Prototyp gilt als erfolgreich, wenn:
 - komplette multinationale RC-East-Struktur
 - vollständige historische Order of Battle
 - alle DCS-Einheiten und Luftfahrzeuge
+- verpflichtende Community-Mods
 - komplexe zivile Simulation
 - strategischer HVT-Endzustand
