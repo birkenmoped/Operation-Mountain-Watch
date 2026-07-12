@@ -24,7 +24,8 @@ Bagram und Kabul existieren zunächst als strategischer Hintergrund und als Quel
 - ein Konvoi-Startbereich
 - eine C-130J-Entlade- und Lagerübergabezone an Jalalabad/Fenty
 - mindestens eine Hubschrauber-Landezone an Jalalabad/Fenty und FOB Connolly
-- eine Außenlast- oder CTLD-Absetzzone am FOB
+- eine interne Fracht-Ladezone und eine interne Fracht-Entladezone
+- eine getrennte Außenlast-Aufnahmezone und Außenlast-Absetzzone
 - eine C-130J-Test-Drop-Zone im Raum Jalalabad
 
 ## Rote Infrastruktur
@@ -38,7 +39,7 @@ Bagram und Kabul existieren zunächst als strategischer Hintergrund und als Quel
 
 ## Logistik
 
-Der Prototyp bildet mehrere voneinander unabhängige Lieferverfahren ab:
+Der Prototyp bildet mehrere voneinander unabhängige Lieferverfahren ab.
 
 ### Straße
 
@@ -47,15 +48,27 @@ Der Prototyp bildet mehrere voneinander unabhängige Lieferverfahren ab:
 - nach Möglichkeit eine alternative Route
 - Ressourcenübergabe an FOB Connolly
 
-### Hubschrauber
+### Hubschrauber mit interner Fracht
 
-- mindestens ein spielbarer Transporthubschrauber
-- CH-47F als primäre schwere Transportplattform
-- UH-1H als leichte Transportoption
+- CH-47F mit internen Kisten, Paletten oder Personal
+- UH-1H mit internen Kisten, kleiner Fracht oder Personal
 - optionaler UH-60L Community Mod ohne Pflichtabhängigkeit
-- eine interne Fracht- oder Truppenlieferung
-- eine Außenlast- oder CTLD-Lieferung
-- Rücktransport von Personal oder Verwundeten
+- Aufnahme an einer definierten Ladezone
+- Zuordnung der Cargo-ID zum Luftfahrzeug
+- Entladung an einer definierten Übergabezone
+- genau einmalige Gutschrift des Manifests
+
+### Hubschrauber mit Außenlast
+
+- CH-47F mit physischer Außenlast
+- UH-1H mit physischer Außenlast
+- optionaler UH-60L Community Mod
+- Aufnahme an einer Außenlastzone
+- Erkennung von Hook-, Abwurf- und Verlustzustand
+- Ablage innerhalb einer gültigen Absetzzone
+- stabile Endposition vor der Ressourcengutschrift
+
+Interne Fracht und Außenlast sind zwei getrennte technische Pfade. Dieselbe Cargo-ID darf nicht gleichzeitig intern und extern geführt werden.
 
 ### C-130J mit Landung
 
@@ -80,7 +93,10 @@ Mindestens folgende Missionsabläufe werden abgebildet:
 - Konvoieskorte
 - Hinterhalt auf einen Konvoi
 - QRF für einen angegriffenen Konvoi oder FOB
-- Hubschrauber-Nachversorgung
+- Hubschrauber-Nachversorgung mit interner Fracht
+- Hubschrauber-Nachversorgung mit Außenlast
+- Truppen- oder Ingenieurtransport
+- Rücktransport von Personal oder Verwundeten
 - gelandete C-130J-Anlieferung nach Jalalabad/Fenty
 - C-130J-Luftabwurf
 - Aufklärung eines vermuteten Camps
@@ -114,11 +130,14 @@ Mindestens folgende Missionsabläufe werden abgebildet:
 
 ### Logistik
 
-- gemeinsames Manifestmodell für Straße, Hubschrauber, gelandeten Lufttransport und Luftabwurf
+- gemeinsames Manifestmodell für alle Transportwege
 - Gutschrift einer erfolgreichen Lieferung unabhängig vom Transportweg
 - Umgang mit verlorener, zerstörter oder doppelt gemeldeter Fracht
-- CH-47F-interne Fracht und Außenlast getrennt testen
-- UH-1H- oder alternative leichte Hubschrauberlieferung testen
+- CH-47F-interne Fracht separat testen
+- CH-47F-Außenlast separat testen
+- UH-1H-interne Fracht separat testen
+- UH-1H-Außenlast separat testen
+- Umschlag zwischen Lager, interner Fracht und Außenlast prüfen
 - optionalen UH-60L-Mod nur als Zusatzpfad behandeln
 - C-130J-Landung, Entladezone und Lagerübergabe prüfen
 - C-130J-Paket nur einmal gutschreiben
@@ -145,7 +164,8 @@ Vor der Implementierung werden benötigt:
 - C-130J-Park-, Roll- und Entladezone an Jalalabad/Fenty
 - C-130J-Drop-Zone
 - Hubschrauber-Landezonen
-- interne Fracht-, Außenlast- und CTLD-Absetzzonen
+- interne Fracht-Lade- und Entladezonen
+- Außenlast-Aufnahme- und Absetzzonen
 
 ## Abnahmekriterien
 
@@ -153,17 +173,21 @@ Der Prototyp gilt als erfolgreich, wenn:
 
 1. Ein Konvoi virtuell starten und ohne sichtbaren Übergang physisch werden kann.
 2. Spieler den Konvoi eskortieren oder auf einen Angriff reagieren können.
-3. Mindestens ein Hubschrauber Personal oder Fracht korrekt von Jalalabad/Fenty nach FOB Connolly liefern kann.
-4. Mindestens eine Außenlast- oder CTLD-Lieferung korrekt verbucht wird.
-5. Eine C-130J nach Landung in Jalalabad/Fenty ein Manifest genau einmal an das regionale Lager übergeben kann.
-6. Ein C-130J-Luftabwurf gültige Pakete erkennt und verlorene Pakete nicht gutschreibt.
-7. Alle Lieferwege dasselbe Ressourcen- und Manifestmodell verwenden.
-8. Verluste und Fracht korrekt in den Kampagnenzustand übernommen werden.
-9. Eine rote Zelle angreifen, sich zurückziehen und später nachvollziehbar regenerieren kann.
-10. FOB Connolly auf erfolgreiche oder ausgefallene Versorgung reagiert.
-11. Ein CSAR-Fall sowohl von Blau als auch von Rot beeinflusst werden kann.
-12. Speichern und Laden den strategischen Zustand reproduzierbar wiederherstellt.
-13. Die Serverleistung während mehrerer paralleler Aktivitäten stabil bleibt.
+3. Eine CH-47F interne Fracht von Jalalabad/Fenty nach FOB Connolly liefern kann.
+4. Eine CH-47F eine Außenlast aufnehmen, transportieren und gültig absetzen kann.
+5. Eine UH-1H interne Fracht oder Personal korrekt liefern kann.
+6. Eine UH-1H eine Außenlast aufnehmen, transportieren und gültig absetzen kann.
+7. Für jede der vier Hubschrauberkombinationen Laden, Verlustfall und genau einmalige Gutschrift geprüft wurden oder eine reproduzierbare DCS-/MOOSE-Einschränkung dokumentiert ist.
+8. Dieselbe Cargo-ID niemals gleichzeitig intern und als Außenlast verbucht wird.
+9. Eine C-130J nach Landung in Jalalabad/Fenty ein Manifest genau einmal an das regionale Lager übergeben kann.
+10. Ein C-130J-Luftabwurf gültige Pakete erkennt und verlorene Pakete nicht gutschreibt.
+11. Alle Lieferwege dasselbe Ressourcen- und Manifestmodell verwenden.
+12. Verluste und Fracht korrekt in den Kampagnenzustand übernommen werden.
+13. Eine rote Zelle angreifen, sich zurückziehen und später nachvollziehbar regenerieren kann.
+14. FOB Connolly auf erfolgreiche oder ausgefallene Versorgung reagiert.
+15. Ein CSAR-Fall sowohl von Blau als auch von Rot beeinflusst werden kann.
+16. Speichern und Laden den strategischen Zustand reproduzierbar wiederherstellt.
+17. Die Serverleistung während mehrerer paralleler Aktivitäten stabil bleibt.
 
 ## Nicht Bestandteil des ersten Prototyps
 

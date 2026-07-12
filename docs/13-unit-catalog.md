@@ -150,30 +150,69 @@ Für die erste Kampagnenplanung sind folgende Module oder Rollen vorgesehen:
 - F/A-18C: externe Trägerunterstützung
 - AH-64D: Attack Aviation
 - OH-58D: Aufklärung und Zielzuweisung
-- CH-47F: primärer schwerer taktischer Transport; interne Fracht, Truppen und Außenlasten
-- UH-1H: leichter Transport, Truppenbewegung, kleinere Fracht und Verbindung
+- CH-47F: primärer schwerer taktischer Transport mit interner Fracht und Außenlast
+- UH-1H: leichter taktischer Transport mit interner Fracht und Außenlast
 - UH-60: AI- oder Skriptplattform für Transport, MEDEVAC und Verbindung
-- UH-60L Community Mod: optionale spielbare Transportplattform, keine Pflichtabhängigkeit
-- C-130J: regionaler Lufttransport mit zwei getrennten Logistikrollen: gelandete Lieferung und Luftabwurf
+- UH-60L Community Mod: optionale spielbare Transportplattform mit versionsabhängigen internen und externen Frachtpfaden
+- C-130J: regionaler Lufttransport mit gelandeter Lieferung und Luftabwurf
 
 Die Liste beschreibt Kampagnenfunktionen, nicht automatisch eine dauerhafte Stationierung jedes Typs an jeder Basis.
 
 ## Transportfähigkeitsprofil
 
-Für jede Transportplattform werden zusätzlich dokumentiert:
+Jede Transportplattform erhält ein explizites Fähigkeitsprofil. Interne Fracht und Außenlast sind getrennte Fähigkeiten und dürfen nicht in einem allgemeinen Feld `cargo=true` zusammengefasst werden.
+
+Zu dokumentierende Felder:
 
 - `transport_mode`: `GROUND`, `ROTARY_WING` oder `FIXED_WING`
 - `internal_cargo`: ja oder nein
+- `internal_cargo_interface`: `NATIVE`, `CTLD`, `ADAPTER` oder `NONE`
+- `internal_cargo_types`: zum Beispiel Kisten, Paletten, Personal oder Verwundete
+- `internal_weight_limit`
+- `internal_volume_limit`
 - `sling_load`: ja oder nein
+- `sling_load_interface`: `NATIVE`, `CTLD`, `ADAPTER` oder `NONE`
+- `sling_hook_count`
+- `sling_weight_limit`
 - `troop_capacity`
-- `cargo_weight_limit`
-- `cargo_volume_limit`
 - `requires_runway`: ja oder nein
 - `requires_landing_zone`: ja oder nein
 - `supports_airdrop`: ja oder nein
 - `supports_landed_delivery`: ja oder nein
 - `requires_mod`: ja oder nein
 - `historical_status`: verbindlich, plausibel, optional oder ahistorische Gameplay-Alternative
+
+Beispiel:
+
+```yaml
+platform: CH-47F
+transport_mode: ROTARY_WING
+internal_cargo: true
+internal_cargo_interface: NATIVE
+internal_cargo_types:
+  - CRATE
+  - PALLET
+  - PERSONNEL
+sling_load: true
+sling_load_interface: NATIVE
+sling_hook_count: 1
+requires_landing_zone: true
+requires_mod: false
+```
+
+Die UH-1H erhält dasselbe zweigeteilte Profil. Die exakten Schnittstellen, Gewichtsgrenzen und unterstützten Frachtobjekte werden aus der installierten DCS- und MOOSE-Version ermittelt und im Testprotokoll festgehalten.
+
+## Transport-Testmatrix
+
+Mindestens folgende Kombinationen werden separat geprüft:
+
+| Plattform | Interne Fracht | Außenlast |
+|---|---:|---:|
+| CH-47F | erforderlich | erforderlich |
+| UH-1H | erforderlich | erforderlich |
+| UH-60L Community Mod | optional | optional |
+
+Jeder Test erfasst Laden, Flug, Entladen beziehungsweise Absetzen, Verlustfall und genau einmalige Ressourcengutschrift.
 
 ## Mod-Politik
 
@@ -196,4 +235,5 @@ Für jede Mod-Abhängigkeit müssen dokumentiert werden:
 - Skill-Stufen und Gruppengrößen
 - Bedrohungs- und Ressourcenkosten
 - genaue Luftfahrzeug-Slots und historische Verfügbarkeit
-- gemessene Frachtkapazitäten und unterstützte DCS-/CTLD-Pfade je Plattform
+- gemessene interne Fracht- und Außenlastkapazitäten je Plattform
+- unterstützte DCS-, MOOSE-CTLD- und Adapterpfade je Plattform
