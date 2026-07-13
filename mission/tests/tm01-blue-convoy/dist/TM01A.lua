@@ -11,7 +11,7 @@ local OMWBuild = {
   expectedMooseIncludeFamily = "Moose_Include_Static",
   expectedMooseCompression = "none",
   mooseVerificationMode = "BUILD_HASH_PLUS_RUNTIME_API_CHECK",
-  buildTimestamp = "2026-07-13T16:49:30Z",
+  buildTimestamp = "2026-07-13T17:01:30Z",
 }
 
 local TM01Config = (function()
