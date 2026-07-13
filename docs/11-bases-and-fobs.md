@@ -41,7 +41,9 @@ Kampagnenfunktion:
 - Vorbereitung von Aufklärungs-, HVT- und CSAR-Einsätzen
 - Verstärkung und Wiederaufbau vorgeschobener Außenposten
 
-Jalalabad ist die native DCS-Airbase. FOB Fenty wird als missionsspezifische Infrastruktur am oder neben dem Flugplatz aufgebaut und logisch mit Jalalabad verbunden.
+Jalalabad ist die native DCS-Airbase. FOB Fenty bezeichnet für Operation Mountain Watch den militärisch-operativen Bereich des vorhandenen Flugplatzkomplexes und wird nicht als separate Airbase oder als eigenständiger, vollständig neu aufzubauender FOB modelliert.
+
+Der vorhandene Jalalabad-Kartenpunkt, die 3D-Airbase und ihr natives Warehouse bilden die physische Grundlage. Missionsspezifisch ergänzt werden nur Zonen, logische Marker und bei Bedarf einzelne funktionale Static Objects für Bereitstellung, Lagerübergabe, Hubschrauberlogistik, QRF und C-130J-Abfertigung. Ein separates vollständiges Static-Template für FOB Fenty ist nicht erforderlich.
 
 Jalalabad/Fenty ist im taktischen Kernraum ein besonderer Logistikknoten, weil dort Straßenkonvois, Hubschrauber, gelandete C-130J-Transporte und Luftabwürfe zusammengeführt werden können.
 
@@ -51,7 +53,8 @@ Für den Prototyp gilt:
 - CampaignState-Warehouse-ID: `WH_BLUE_JALALABAD_FENTY`;
 - native Bestände und strategische Bestände werden über den WarehouseAdapter synchronisiert;
 - C-130J-Entladung, interne Fracht, Außenlast und Fahrzeuge besitzen getrennte Übergabezonen;
-- Spielerzugriff und sichtbare Bestände werden in einer Multiplayer-Testmission geprüft.
+- Spielerzugriff und sichtbare Bestände werden in einer Multiplayer-Testmission geprüft;
+- es wird kein eigenes vollständiges FOB-Fenty-Static-Template benötigt.
 
 ## Vorgeschobene Standorte
 
@@ -78,6 +81,8 @@ FOB Connolly erhält im Prototyp:
 - begrenzte Kapazitäten;
 - einen kontrollierten Fallback auf abstrakten Lagerbetrieb, falls die native Anbindung in der verwendeten DCS-Version nicht zuverlässig funktioniert.
 
+Für die physische Darstellung wird zunächst das verfügbare Community-Static-Template für FOB Connolly geprüft und anschließend an Zeitraum, Objektzahl, native Kartengebäude und Projektlogik angepasst.
+
 ### FOB Mehtar Lam
 
 Vorgesehene spätere Rolle:
@@ -87,6 +92,8 @@ Vorgesehene spätere Rolle:
 - regionale Versorgung und Verbindung zwischen Jalalabad und nördlicheren Sektoren
 
 Ob Mehtar Lam ein natives Warehouse erhält, hängt von dauerhafter Spielerinteraktion, Logistikvolumen und technischer Eignung des Depotknotens ab.
+
+Für Mehtar Lam ist in den bisher erfassten Community-Paketen keine bestätigte Vorlage vorhanden. Bei Aufnahme in den Kampagnenumfang wird eine eigene oder neu verfügbare Vorlage benötigt.
 
 ### FOB Blessing
 
@@ -98,6 +105,8 @@ Vorgesehene spätere Rolle:
 - Ausgangspunkt für Operationen im Kunar River Valley und Pech Valley
 
 FOB Blessing ist ein Kandidat für ein begrenztes natives FOB-Warehouse, falls der Standort dauerhaft spielerrelevant ist. Die Entscheidung erfolgt nach den Erfahrungen mit FOB Connolly.
+
+FOB Blessing ist in der veröffentlichten Inhaltsliste des erfassten Kunar-/Nuristan-Community-Pakets nicht bestätigt. Bis zur Prüfung einer tatsächlich veröffentlichten Ergänzung gilt der Standort als nicht durch ein Static-Template abgedeckt.
 
 ### Afghanische Kontrollpunkte, COPs und OPs
 
@@ -136,7 +145,7 @@ Jede Base oder jeder FOB erhält:
 - stabile ID
 - Anzeigename und historische Rolle
 - Basenklasse
-- Missionseditor-Zonen und physische Vorlagen
+- Missionseditor-Zonen und physische Vorlagen, sofern eine eigene physische Vorlage erforderlich ist
 - Ressourcenbestände und Kapazitäten
 - Garnison und Verteidigungsfähigkeit
 - Straßen- und Luftanbindung
@@ -158,7 +167,7 @@ Zusätzlich werden die zulässigen Lieferverfahren explizit erfasst:
 - `FIXED_WING_LANDED`
 - `FIXED_WING_AIRDROP`
 
-FOBs werden aus statischen Objekten, FARP-Komponenten, Helipads, Lagerobjekten, Verteidigungsstellungen und Ressourcenpunkten aufgebaut. Sie müssen keine nativen DCS-Airbases sein.
+FOBs können aus statischen Objekten, FARP-Komponenten, Helipads, Lagerobjekten, Verteidigungsstellungen und Ressourcenpunkten aufgebaut werden. Sie müssen keine nativen DCS-Airbases sein. Bereits ausreichend dargestellte native Airbases werden jedoch nicht ohne funktionalen Grund vollständig durch zusätzliche Static-Templates überbaut.
 
 ## Warehouse- und Übergabezonen
 
@@ -171,6 +180,8 @@ ZONE_FENTY_SLING_DROP
 ZONE_FENTY_C130_UNLOAD
 ZONE_FENTY_VEHICLE_DELIVERY
 ```
+
+Der Präfix `FENTY` ist eine logische Bezeichnung für den militärisch-operativen Teil von Jalalabad Airfield. Er bezeichnet keinen getrennten Kartenstützpunkt und keine separate Airbase.
 
 FOB Connolly:
 
@@ -240,6 +251,8 @@ Diese Zuordnung ist eine funktionale Kampagnenplanung, keine vollständige histo
 
 - Parkpositionen und Größenklassen an Bagram, Kabul und Jalalabad
 - Jalalabad-Warehouse finden, lesen und kontrolliert initialisieren
+- funktionale Fenty-Zonen auf der vorhandenen Jalalabad-Airbase platzieren, ohne ein separates Volltemplate zu erzeugen
+- FOB-Connolly-Community-Template importieren und auf Zeitraum, Abhängigkeiten, Objektzahl und Kartenüberschneidungen prüfen
 - FOB-Connolly-Depot als natives Warehouse anbinden
 - Spieleranzeige und Zugriffsverhalten je Warehouse-Typ
 - Flugzeugbewaffnung und Betankung gegen Bestände
@@ -249,6 +262,6 @@ Diese Zuordnung ist eine funktionale Kampagnenplanung, keine vollständige histo
 - Multiplayer-Folgen eines optionalen UH-60L Community Mods
 - Spieler-Slots und Konflikte mit statischer Infrastruktur
 - Konvoi-Ausfahrten aus Jalalabad/Fenty
-- geeignete Flächen für FOB-Vorlagen und Wiederaufbaustufen
+- geeignete Flächen für Connolly und spätere FOB-Vorlagen sowie Wiederaufbaustufen
 - Verhalten bei zerstörtem Depot und abstraktem Fallback
 - Reconciliation nach Neustart und Spielerbeitritt
