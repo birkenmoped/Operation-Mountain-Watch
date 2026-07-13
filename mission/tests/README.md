@@ -24,6 +24,38 @@ Stufe B
 - geplante Materialisierung und Dematerialisierung
 ```
 
+## Verbindliche MOOSE-Baseline
+
+Alle Testmissionen verwenden denselben gepinnten Frameworkstand:
+
+```text
+MOOSE-Version: 2.9.18
+Bezugsart: Release
+Upstream-Tag: 2.9.18
+Upstream-Stable-Branch: master-ng
+Include-Familie: Moose_Include_Static
+Runtime-Datei: vendor/moose/Moose.lua
+Komprimierung: keine
+```
+
+Maßgeblich sind:
+
+- `docs/24-moose-version-and-build-policy.md`;
+- `docs/adr/0010-pin-moose-release-and-readable-static-build.md`;
+- `vendor/moose/VERSION.md`.
+
+Für Testmissionen gilt:
+
+- kein automatischer Download von MOOSE;
+- kein direkter Bezug auf den aktuellen Stand von `master-ng` oder `develop`;
+- keine Dynamic Includes;
+- keine gleichzeitige Einbindung von `Moose.lua` und `Moose_.lua`;
+- keine lokale Änderung der vendorten MOOSE-Datei;
+- eindeutiger Abbruch, wenn MOOSE nicht geladen werden kann;
+- Ausgabe der MOOSE-Version und Test-ID beim Szenariostart.
+
+`Moose_.lua` darf erst nach einer getrennten Entscheidung und vollständiger Regression als alternative Distributionsfassung desselben Releases verwendet werden.
+
 ## Aktuelle Testreihen
 
 ```text
@@ -129,7 +161,7 @@ Leere Verzeichnisse werden nicht über `.gitkeep` angelegt. Sie entstehen, sobal
 ## Ladefolge
 
 ```text
-1. vendor/moose/MOOSE.lua
+1. vendor/moose/Moose.lua
 2. Projekt-Bootstrap
 3. gemeinsame Testunterstützung
 4. Konfiguration des Tests
@@ -137,7 +169,27 @@ Leere Verzeichnisse werden nicht über `.gitkeep` angelegt. Sie entstehen, sobal
 6. Start des Szenarios
 ```
 
-Ein fehlendes MOOSE-Skript, eine fehlende Templategruppe oder eine fehlende Pflichtzone führt zu einem eindeutigen Testabbruch.
+Die Groß- und Kleinschreibung des Upstream-Dateinamens `Moose.lua` wird im Repository beibehalten.
+
+Kein Projektskript darf MOOSE-Klassen verwenden, bevor Schritt 1 erfolgreich abgeschlossen wurde.
+
+Ein fehlendes MOOSE-Skript, eine falsche Version, eine fehlende Templategruppe oder eine fehlende Pflichtzone führt zu einem eindeutigen Testabbruch.
+
+## Startprotokoll
+
+Jede Testmission protokolliert beim Start mindestens:
+
+```text
+Test-ID
+Teststufe
+DCS-Version, soweit verfügbar
+MOOSE-Version
+MOOSE-Buildvariante
+Konfigurationsversion
+Startzeit
+```
+
+Stimmt die geladene Frameworkversion nicht mit der Testbaseline überein, lautet das Ergebnis `FAIL_CONFIGURATION`.
 
 ## Gemeinsame Testfunktionen
 
@@ -147,6 +199,7 @@ Späterer gemeinsamer Testcode soll mindestens bereitstellen:
 - strukturierte Logausgabe mit Test-ID;
 - Zustandsanzeige und Fortschrittsmeldungen;
 - Gruppen-, Zonen- und Templatevalidierung;
+- MOOSE-Versions- und Ladeprüfung;
 - Watchdog für Stillstand und fehlende Gruppen;
 - Abschlussbericht für Abnahmekriterien;
 - Erkennung doppelter physischer Instanzen.
@@ -158,8 +211,10 @@ Späterer gemeinsamer Testcode soll mindestens bereitstellen:
 - `.miz`-Dateien werden ausschließlich im DCS Mission Editor bearbeitet.
 - Vendor-MOOSE wird für Testzwecke nicht verändert.
 - Externe Lua-Dateien bleiben die bevorzugte Implementierungsform.
-- Jede verwendete MOOSE-API wird gegen die versionierte Fassung geprüft.
+- Jede verwendete MOOSE-API wird gegen Release 2.9.18 beziehungsweise die vendorte Datei geprüft.
+- Die `develop`-Dokumentation wird nicht als alleiniger Nachweis für eine Release-API verwendet.
 - Eine bekannte DCS-Einschränkung wird dokumentiert und nicht durch stilles Teleportieren verborgen.
+- Nach jedem MOOSE-Update werden alle vorhandenen MOOSE-Testmissionen erneut ausgeführt.
 
 ## Ergebnisstatus
 
