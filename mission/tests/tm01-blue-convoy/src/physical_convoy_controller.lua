@@ -101,7 +101,7 @@ function PhysicalConvoyController.new(options)
     convoy.currentUnitCount = inspection.unitCount
     convoy.startZoneMembership = inspection.startZoneMembership
 
-    if not inspection.alive
+    if inspection.unitCount < 1
       and (convoy.state == STATE_SPAWNED or convoy.state == STATE_SPAWN_FAILED) then
       convoy.state = STATE_DESTROYED
     end
@@ -259,6 +259,24 @@ function PhysicalConvoyController.new(options)
         .. "\nExpected units: " .. config.template.expectedVehicleCount
         .. "\nCurrent units: " .. displayValue(self.currentUnitCount)
     )
+  end
+
+  function convoy:getRouteHandoff()
+    local inspectionOk, inspectionError = refreshRuntimeStatus()
+    return {
+      inspectionOk = inspectionOk,
+      inspectionError = inspectionError,
+      state = self.state,
+      runtimeGroup = self.runtimeGroup,
+      runtimeGroupName = self.runtimeGroupName,
+      currentUnitCount = self.currentUnitCount,
+    }
+  end
+
+  function convoy:markDestroyed()
+    if self.runtimeGroup then
+      self.state = STATE_DESTROYED
+    end
   end
 
   return convoy

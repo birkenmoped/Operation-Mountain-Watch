@@ -135,7 +135,7 @@ function TM01A.start(dependencies)
   end
 
   logger:info("moose_api_validation_passed", {
-    mooseApiCount = 10,
+    mooseApiCount = 13,
   })
 
   local convoyController = dependencies.physicalConvoyController.new({
@@ -145,6 +145,16 @@ function TM01A.start(dependencies)
       return state.outcome
     end,
     logger = logger,
+  })
+
+  local routeController = dependencies.convoyRouteController.new({
+    announce = announce,
+    config = config,
+    getBootstrapOutcome = function()
+      return state.outcome
+    end,
+    logger = logger,
+    physicalConvoyController = convoyController,
   })
 
   local menuOk, menuOrError = pcall(dependencies.testMenu.create, {
@@ -160,6 +170,12 @@ function TM01A.start(dependencies)
     onShowConvoyStatus = protectMenuCallback("Show convoy status", function()
       convoyController:showStatus()
     end),
+    onStartConvoyRoute = protectMenuCallback("Start convoy route", function()
+      routeController:start()
+    end),
+    onShowRouteStatus = protectMenuCallback("Show route status", function()
+      routeController:showStatus()
+    end),
   })
 
   if not menuOk then
@@ -170,6 +186,7 @@ function TM01A.start(dependencies)
 
   state.menu = menuOrError
   state.convoyController = convoyController
+  state.routeController = routeController
   logger:info("menu_ready", { path = "OMW Tests / " .. build.stageId })
   validateConfiguration()
 

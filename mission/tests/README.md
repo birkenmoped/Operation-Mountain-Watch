@@ -85,7 +85,7 @@ Prüft die Verteilung roter Personengruppen von einem zentralen Hauptquartier ü
 
 ## TM01A-Testbündel
 
-Der TM01A-Bootstrap prüft beim Build den Hash der gepinnten MOOSE-Datei und validiert zur Laufzeit die benötigte API-Oberfläche sowie die Pflichtobjekte aus dem Mission Editor. Der nächste Meilenstein ergänzt ausschließlich das manuell ausgelöste, einmalige Erzeugen des physischen Testkonvois in der Bagram-Startzone. Er weist keine Route, Aufgabe oder Bewegung an. Das reproduzierbare Projekt-Skriptbündel wird mit
+Der TM01A-Bootstrap prüft beim Build den Hash der gepinnten MOOSE-Datei und validiert zur Laufzeit die benötigte API-Oberfläche sowie die Pflichtobjekte aus dem Mission Editor. Der zweite Meilenstein ergänzt das manuell ausgelöste, einmalige Erzeugen des physischen Testkonvois in der Bagram-Startzone. Der dritte Meilenstein weist diesem vorhandenen Konvoi ausschließlich nach einem weiteren F10-Befehl einmalig die deklarierte Straßenroute zu. Das reproduzierbare Projekt-Skriptbündel wird mit
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File tools\build-test-bundle.ps1
@@ -93,7 +93,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File tools\build-test-bundle.ps1
 
 als `mission/tests/tm01-blue-convoy/dist/TM01A.lua` erzeugt. In der Mission wird zuerst `vendor/moose/Moose.lua` und danach genau dieses Bündel geladen.
 
-TM01A kann die exakte Provenienz der tatsächlich von DCS geladenen MOOSE-Datei unter dieser Zwei-Dateien-Ladearchitektur nicht programmgesteuert bestimmen. Der Modus `BUILD_HASH_PLUS_RUNTIME_API_CHECK` bedeutet: Der Build bricht bei abweichendem Vendor-Hash ab, und die Laufzeit prüft die zehn verwendeten MOOSE-APIs. Commit und Zeitstempel der geladenen Datei werden manuell anhand des MOOSE-eigenen DCS-Log-Banners bestätigt.
+TM01A kann die exakte Provenienz der tatsächlich von DCS geladenen MOOSE-Datei unter dieser Zwei-Dateien-Ladearchitektur nicht programmgesteuert bestimmen. Der Modus `BUILD_HASH_PLUS_RUNTIME_API_CHECK` bedeutet: Der Build bricht bei abweichendem Vendor-Hash ab, und die Laufzeit prüft die dreizehn verwendeten MOOSE-APIs. Commit und Zeitstempel der geladenen Datei werden manuell anhand des MOOSE-eigenen DCS-Log-Banners bestätigt.
 
 ## Benennung
 

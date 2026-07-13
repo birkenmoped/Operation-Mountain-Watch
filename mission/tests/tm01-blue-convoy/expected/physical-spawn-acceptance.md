@@ -19,7 +19,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File tools\build-test-bundle.ps1
 
 1. Die Mission als Multiplayer-Server starten und einen Beobachter- oder Spielerslot betreten.
 2. Vor jeder F10-Aktion in Karte und Außenansicht prüfen, dass kein sichtbarer Testkonvoi vorhanden ist.
-3. Im Log prüfen, dass der Bootstrap zehn MOOSE-APIs und zehn Mission-Editor-Objekte erfolgreich validiert und `outcome=READY` meldet.
+3. Im Log prüfen, dass der Bootstrap dreizehn MOOSE-APIs und zehn Mission-Editor-Objekte erfolgreich validiert und `outcome=READY` meldet.
 4. Im MOOSE-eigenen Log-Banner weiterhin die erwartete Buildkennung prüfen:
 
 ```text
@@ -36,7 +36,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File tools\build-test-bundle.ps1
 12. `Spawn convoy` ein zweites Mal auswählen.
 13. Prüfen, dass die Anforderung sichtbar abgelehnt wird, der vorhandene Laufzeitname und Zustand gemeldet werden und weiterhin genau eine lebende Laufzeitgruppe existiert.
 14. Position und Ausrichtung aller sechs Fahrzeuge dokumentieren, zwei Minuten warten und erneut vergleichen.
-15. Prüfen, dass die Gruppe während dieser zwei Minuten stationär bleibt und keine Route, Wegpunkte, Aufgabe, Geschwindigkeit, Controller-Anweisung oder sonstige Bewegungsanweisung durch TM01A erhält.
+15. `Start convoy route` in diesem Spawn-Abnahmelauf nicht auswählen. Prüfen, dass die Gruppe während dieser zwei Minuten stationär bleibt und ohne diesen Befehl keine Route, Wegpunkte, Aufgabe, Geschwindigkeit, Controller-Anweisung oder sonstige Bewegungsanweisung durch TM01A erhält.
 16. DCS-Log und sichtbares Verhalten prüfen: Es wird keine Cargo-, Warehouse-, Persistenz-, Virtualisierungs-, Feindkräfte- oder automatische Unstuck-Logik ausgeführt.
 
 ## Erwartete strukturierte Ereignisse

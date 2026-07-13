@@ -11,6 +11,8 @@ local REQUIRED_NATIVE_APIS = {
 -- MENU_MISSION_COMMAND:New support the bootstrap. SPAWN:NewWithAlias,
 -- SPAWN:SpawnInZone, IDENTIFIABLE:GetName, GROUP:IsAlive,
 -- GROUP:CountAliveUnits, and GROUP:IsCompletelyInZone support physical spawn.
+-- ZONE_BASE:GetCoordinate, COORDINATE:WaypointGround, and
+-- CONTROLLABLE:Route support deterministic road routing.
 local REQUIRED_MOOSE_APIS = {
   { path = "GROUP.FindByName", value = function() return GROUP and GROUP.FindByName end },
   { path = "ZONE.FindByName", value = function() return ZONE and ZONE.FindByName end },
@@ -22,6 +24,9 @@ local REQUIRED_MOOSE_APIS = {
   { path = "GROUP.IsAlive", value = function() return GROUP and GROUP.IsAlive end },
   { path = "GROUP.CountAliveUnits", value = function() return GROUP and GROUP.CountAliveUnits end },
   { path = "GROUP.IsCompletelyInZone", value = function() return GROUP and GROUP.IsCompletelyInZone end },
+  { path = "ZONE_BASE.GetCoordinate", value = function() return ZONE_BASE and ZONE_BASE.GetCoordinate end },
+  { path = "COORDINATE.WaypointGround", value = function() return COORDINATE and COORDINATE.WaypointGround end },
+  { path = "CONTROLLABLE.Route", value = function() return CONTROLLABLE and CONTROLLABLE.Route end },
 }
 
 local function validate(requiredApis)
