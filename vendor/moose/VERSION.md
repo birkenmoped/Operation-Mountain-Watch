@@ -12,10 +12,11 @@ Include repository: FlightControl-Master/MOOSE_INCLUDE
 Include family: Moose_Include_Static
 Selected runtime file: Moose.lua
 Compression: none
-Retrieved: PENDING_IMPORT
-SHA-256 Moose.lua: PENDING_IMPORT
-License file: PENDING_IMPORT
-Vendor status: NOT_YET_IMPORTED
+Retrieved: 2026-07-13
+SHA-256 Moose.lua: <vollständiger Hash von Moose.lua>
+SHA-256 LICENSE: <vollständiger Hash von LICENSE>
+License file: LICENSE (GPL-3.0, MOOSE tag 2.9.18)
+Vendor status: IMPORTED
 ```
 
 ## Sources
