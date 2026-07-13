@@ -109,6 +109,7 @@ Add-Module -Builder $builder -VariableName "StructuredLogger" -RelativePath "mis
 Add-Module -Builder $builder -VariableName "RuntimeGuard" -RelativePath "mission/tests/common/src/runtime_guard.lua"
 Add-Module -Builder $builder -VariableName "ConfigurationValidator" -RelativePath "mission/tests/common/src/configuration_validator.lua"
 Add-Module -Builder $builder -VariableName "TestMenu" -RelativePath "mission/tests/common/src/test_menu.lua"
+Add-Module -Builder $builder -VariableName "PhysicalConvoyController" -RelativePath "mission/tests/tm01-blue-convoy/src/physical_convoy_controller.lua"
 Add-Module -Builder $builder -VariableName "TM01A" -RelativePath "mission/tests/tm01-blue-convoy/src/tm01a.lua"
 
 [void]$builder.AppendLine("local entryOk, entryResult = pcall(function()")
@@ -120,6 +121,7 @@ Add-Module -Builder $builder -VariableName "TM01A" -RelativePath "mission/tests/
 [void]$builder.AppendLine("    runtimeGuard = RuntimeGuard,")
 [void]$builder.AppendLine("    configurationValidator = ConfigurationValidator,")
 [void]$builder.AppendLine("    testMenu = TestMenu,")
+[void]$builder.AppendLine("    physicalConvoyController = PhysicalConvoyController,")
 [void]$builder.AppendLine("  })")
 [void]$builder.AppendLine("end)")
 [void]$builder.AppendLine()

@@ -1,5 +1,5 @@
 local config = {
-  configurationVersion = "TM01A-bootstrap-1",
+  configurationVersion = "TM01A-physical-spawn-1",
   testId = "TM01",
   scenarioId = "TEST.TM01.CONVOY.001",
   routeId = "ROUTE_TM01_BAGRAM_JALALABAD",
@@ -11,6 +11,7 @@ local config = {
 
   template = {
     groupName = "TPL_TEST_BLUE_CONVOY_STANDARD_01",
+    runtimeAlias = "TM01A_BLUE_CONVOY_001",
     expectedVehicleCount = 6,
     expectedSlots = {
       "LEAD_SECURITY",

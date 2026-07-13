@@ -95,6 +95,20 @@ function TM01A.start(dependencies)
     showStatus()
   end
 
+  local function protectMenuCallback(commandName, callback)
+    return function()
+      local ok, callbackError = pcall(callback)
+      if not ok then
+        logger:error("menu_callback_failed", {
+          command = commandName,
+          error = callbackError,
+          outcome = OUTCOME_FAIL_SCRIPT,
+        })
+        announce("Menu command failed: " .. commandName)
+      end
+    end
+  end
+
   logger:info("startup", {
     buildTimestamp = build.buildTimestamp,
     configurationVersion = build.configurationVersion,
@@ -121,13 +135,31 @@ function TM01A.start(dependencies)
   end
 
   logger:info("moose_api_validation_passed", {
-    mooseApiCount = 4,
+    mooseApiCount = 10,
+  })
+
+  local convoyController = dependencies.physicalConvoyController.new({
+    announce = announce,
+    config = config,
+    getBootstrapOutcome = function()
+      return state.outcome
+    end,
+    logger = logger,
   })
 
   local menuOk, menuOrError = pcall(dependencies.testMenu.create, {
     stageId = build.stageId,
-    onShowStatus = showStatus,
-    onValidateConfiguration = validateFromMenu,
+    onShowStatus = protectMenuCallback("Show status", showStatus),
+    onValidateConfiguration = protectMenuCallback(
+      "Validate configuration",
+      validateFromMenu
+    ),
+    onSpawnConvoy = protectMenuCallback("Spawn convoy", function()
+      convoyController:requestSpawn()
+    end),
+    onShowConvoyStatus = protectMenuCallback("Show convoy status", function()
+      convoyController:showStatus()
+    end),
   })
 
   if not menuOk then
@@ -137,6 +169,7 @@ function TM01A.start(dependencies)
   end
 
   state.menu = menuOrError
+  state.convoyController = convoyController
   logger:info("menu_ready", { path = "OMW Tests / " .. build.stageId })
   validateConfiguration()
 

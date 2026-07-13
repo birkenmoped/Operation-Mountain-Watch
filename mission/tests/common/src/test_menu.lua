@@ -6,6 +6,8 @@ function TestMenu.create(options)
 
   MENU_MISSION_COMMAND:New("Show status", testMenu, options.onShowStatus)
   MENU_MISSION_COMMAND:New("Validate configuration", testMenu, options.onValidateConfiguration)
+  MENU_MISSION_COMMAND:New("Spawn convoy", testMenu, options.onSpawnConvoy)
+  MENU_MISSION_COMMAND:New("Show convoy status", testMenu, options.onShowConvoyStatus)
 
   return {
     root = rootMenu,

@@ -55,7 +55,7 @@ TM01A-MOOSE-Blue-Convoy-Physical.miz
 
 ### Erster Meilenstein: TM01A-Bootstrap
 
-Der aktuell implementierte erste Meilenstein umfasst ausschließlich den Bootstrap vor der physischen Baseline. Er:
+Der erste Meilenstein umfasst den weiterhin verwendeten Bootstrap vor der physischen Baseline. Er:
 
 - prüft beim Build die SHA-256-Prüfsumme von `vendor/moose/Moose.lua` gegen `vendor/moose/VERSION.md`;
 - erzeugt `dist/TM01A.lua` als einzelnes Projekt-Skriptbündel;
@@ -78,16 +78,37 @@ Ladefolge im Mission Editor:
 2. DO SCRIPT FILE: mission/tests/tm01-blue-convoy/dist/TM01A.lua
 ```
 
-Dieser Meilenstein erzeugt keine Gruppe und weist keine Route zu. Die nachfolgend beschriebene Bewegung, Überwachung und Reset-Logik bleibt spätere Arbeit innerhalb von Stufe A.
+Der Bootstrap selbst erzeugt keine Gruppe. Die nachfolgend beschriebene Bewegung, Überwachung und Reset-Logik bleibt spätere Arbeit innerhalb von Stufe A.
 
 ### MOOSE-Provenienz und Fehlerstatus
 
 `mooseVerificationMode=BUILD_HASH_PLUS_RUNTIME_API_CHECK` bezeichnet zwei getrennte Prüfungen:
 
 - Weicht der lokale Hash von `vendor/moose/Moose.lua` von `vendor/moose/VERSION.md` ab, bricht der Build ohne Bündelaktualisierung ab.
-- Fehlt zur Laufzeit eine der vier verwendeten MOOSE-APIs, meldet der Bootstrap `FAIL_SCRIPT`.
+- Fehlt zur Laufzeit eine der zehn verwendeten MOOSE-APIs, meldet der Bootstrap `FAIL_SCRIPT`.
 - Fehlt eines der zehn TM01A-Pflichtobjekte im Mission Editor, meldet der Bootstrap `FAIL_CONFIGURATION`.
 - Die exakte Provenienz der von DCS geladenen MOOSE-Datei wird in diesem Meilenstein manuell über das MOOSE-eigene Log-Banner bestätigt. Das Bündel behauptet keinen programmgesteuerten Vergleich der geladenen Version oder Datei-Prüfsumme.
+
+### Zweiter Meilenstein: kontrollierter physischer Spawn
+
+Der zweite Meilenstein ergänzt unter `F10 Other > OMW Tests > TM01A`:
+
+- `Spawn convoy`;
+- `Show convoy status`.
+
+`Spawn convoy` ist nur bei Bootstrap-Ergebnis `READY` zulässig und verwendet `SPAWN:NewWithAlias` mit diesen getrennten Identitäten:
+
+```text
+Logische Entity-ID: TEST.TM01.CONVOY.001
+Mission-Editor-Template: TPL_TEST_BLUE_CONVOY_STANDARD_01
+Angeforderter Alias: TM01A_BLUE_CONVOY_001
+Tatsächlicher Laufzeitname: vom zurückgegebenen GROUP-Wrapper gelesen
+Spawnzone: ZONE_TM01_START_BAGRAM
+```
+
+Der Controller führt höchstens einen Spawnversuch aus, der DCS eine Gruppe erzeugen kann. Ein weiterer F10-Aufruf erzeugt keine zweite Gruppe. Nach erfolgreichem Spawn prüft er Laufzeitname, Lebendstatus, sechs lebende Units, vollständige Mitgliedschaft in der Startzone und dass das Late-Activation-Template inaktiv geblieben ist.
+
+Der Controller weist keine Route, Wegpunkte, Aufgabe, Geschwindigkeit oder Bewegung an. Das Template muss daher ohne eigenständige Bewegungsroute vorbereitet sein; der Stillstand wird für mindestens zwei Minuten in DCS abgenommen.
 
 ### Funktionsumfang
 
