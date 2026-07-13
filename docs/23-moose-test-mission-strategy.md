@@ -33,6 +33,34 @@ Stufe A ist keine skriptfreie Vanilla-Mission. Sie reduziert lediglich den Funkt
 - Zonen, Scheduler, Events, Logging und Debugmenüs werden über MOOSE verwaltet;
 - CampaignState-Persistenz, Warehouses, Cargo Units, CTLD, CSAR und produktive Director-Logik bleiben deaktiviert.
 
+## Gepinnte Framework-Baseline
+
+Alle Testmissionen verwenden zunächst exakt dieselbe Frameworkbasis:
+
+```text
+MOOSE-Version: 2.9.18
+Bezugsart: offizieller Release
+Upstream-Tag: 2.9.18
+Stable-Branch-Familie: master-ng
+Include-Familie: Moose_Include_Static
+Runtime-Datei: vendor/moose/Moose.lua
+Build-Variante: lesbar und nicht komprimiert
+```
+
+Die Auswahl ist in `docs/24-moose-version-and-build-policy.md` und ADR 0010 dokumentiert.
+
+Für diese Baseline gilt:
+
+- kein automatischer Upstream-Download;
+- kein direkter Laufzeitbezug auf `master-ng` oder `develop`;
+- keine Dynamic Includes;
+- keine gleichzeitige Einbindung von `Moose.lua` und `Moose_.lua`;
+- keine lokale Bearbeitung der Vendor-Datei;
+- Versions- und Buildprüfung beim Missionsstart;
+- vollständige Regression aller Testmissionen nach einem MOOSE-Update.
+
+Die komprimierte `Moose_.lua` ist kein anderer Funktionszweig. Sie darf später nur als alternative Distributionsfassung desselben Releases nach erneuter Testausführung eingeführt werden.
+
 ## Warum MOOSE ab Stufe A
 
 - das Team lernt die später produktiv verwendeten Wrapper und Kontrollmuster;
@@ -57,6 +85,8 @@ Abhängig vom Test werden insbesondere folgende MOOSE-Bereiche verwendet:
 - `MESSAGE` sowie Projektlogging für sichtbare Zustandsmeldungen.
 
 Die exakte API wird gegen die im Repository versionierte MOOSE-Fassung geprüft. Testcode verwendet keine aus Erinnerungen abgeleiteten oder ungeprüften Methodennamen.
+
+Die vendorte `Moose.lua` ist die genaue Implementierungsreferenz. Die offizielle stabile Dokumentation ergänzt diese Referenz. Dokumentation des Entwicklungszweigs darf nicht ohne Quellprüfung für den gepinnten Release verwendet werden.
 
 ## Testreihen
 
@@ -120,7 +150,7 @@ Später können je Test ergänzt werden:
 Jede Testmission verwendet eine deterministische Ladefolge:
 
 ```text
-1. vendor/moose/MOOSE.lua
+1. vendor/moose/Moose.lua
 2. gemeinsames Projekt-Bootstrap
 3. Testunterstützung
 4. Testkonfiguration
@@ -128,7 +158,22 @@ Jede Testmission verwendet eine deterministische Ladefolge:
 6. Start des TestMissionController
 ```
 
-Fehlt MOOSE oder eine benötigte Templategruppe, muss die Mission mit einer eindeutigen Fehlermeldung abbrechen, statt stillschweigend auf andere Logik auszuweichen.
+Die Groß- und Kleinschreibung von `Moose.lua` wird beibehalten.
+
+Fehlt MOOSE, stimmt die Frameworkversion nicht oder fehlt eine benötigte Templategruppe, muss die Mission mit einer eindeutigen Fehlermeldung abbrechen, statt stillschweigend auf andere Logik auszuweichen.
+
+## Start- und Versionsprüfung
+
+Beim Start protokolliert jede Testmission mindestens:
+
+- Test-ID;
+- Teststufe;
+- geladene MOOSE-Version;
+- geladene MOOSE-Buildvariante;
+- Konfigurationsversion;
+- verfügbare Pflichttemplates und Pflichtzonen.
+
+Eine falsche oder nicht bestimmbare MOOSE-Version führt zu `FAIL_CONFIGURATION`.
 
 ## Debuganforderungen
 
@@ -162,3 +207,5 @@ Diese Systeme werden erst nach stabiler physischer und virtueller Bewegungslogik
 ## Qualitätsregel
 
 Stufe B darf keine zweite unabhängige Bewegungsimplementierung enthalten. Jede materialisierte Gruppe wird durch denselben physischen Controller geführt, der in Stufe A validiert wurde.
+
+Ein Frameworkupdate gilt nicht als abgeschlossen, bevor die vorhandenen physischen und virtualisierten Teststufen mit dem neuen MOOSE-Stand erneut ausgeführt und dokumentiert wurden.
