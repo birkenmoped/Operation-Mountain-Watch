@@ -62,7 +62,7 @@ ZONE_TM01_ROUTE_07
 ```text
 testId=TM01
 stageId=TM01A
-configurationVersion=TM01A-bootstrap-1
+configurationVersion=TM01A-physical-spawn-1
 expectedMooseVersion=2.9.18
 expectedMooseFileSha256=e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
 expectedMooseBuildCommit=73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
@@ -75,7 +75,7 @@ mooseVerificationMode=BUILD_HASH_PLUS_RUNTIME_API_CHECK
 6. Prüfen, dass `buildTimestamp` separat als Erzeugungszeit des Bündels protokolliert wird.
 7. Prüfen, dass `missionTimeSeconds` als numerischer Wert protokolliert wird.
 8. Prüfen, dass `event=native_api_validation_passed nativeApiCount=3` protokolliert wird.
-9. Prüfen, dass `event=moose_api_validation_passed mooseApiCount=4` protokolliert wird.
+9. Prüfen, dass `event=moose_api_validation_passed mooseApiCount=10` protokolliert wird.
 10. Prüfen, dass `event=configuration_valid checkedObjectCount=10 revealZonesRequired=false` protokolliert wird.
 11. Prüfen, dass der letzte Bootstrap-Status `event=bootstrap_outcome ... outcome=READY` lautet.
 12. `F10 Other > OMW Tests > TM01A > Show status` auswählen.
