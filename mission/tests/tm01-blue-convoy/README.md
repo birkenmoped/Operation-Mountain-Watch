@@ -53,6 +53,42 @@ Missionsdatei:
 TM01A-MOOSE-Blue-Convoy-Physical.miz
 ```
 
+### Erster Meilenstein: TM01A-Bootstrap
+
+Der aktuell implementierte erste Meilenstein umfasst ausschließlich den Bootstrap vor der physischen Baseline. Er:
+
+- prüft beim Build die SHA-256-Prüfsumme von `vendor/moose/Moose.lua` gegen `vendor/moose/VERSION.md`;
+- erzeugt `dist/TM01A.lua` als einzelnes Projekt-Skriptbündel;
+- meldet die beim Build erwartete MOOSE-Version, Dateiprüfsumme, Build-Commit und Build-Zeitstempel, ohne diese Werte als Laufzeitmessung auszugeben;
+- prüft zur Laufzeit die benötigten nativen DCS- und MOOSE-APIs, das Konvoi-Template sowie Start-, Ziel- und sieben Routenzonen;
+- benötigt keine TM01B-Reveal-Zonen;
+- meldet `READY`, `FAIL_CONFIGURATION` oder `FAIL_SCRIPT`;
+- stellt unter `F10 Other > OMW Tests > TM01A` die Befehle `Show status` und `Validate configuration` bereit.
+
+Das Bündel wird reproduzierbar mit folgendem Befehl erzeugt:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File tools\build-test-bundle.ps1
+```
+
+Ladefolge im Mission Editor:
+
+```text
+1. DO SCRIPT FILE: vendor/moose/Moose.lua
+2. DO SCRIPT FILE: mission/tests/tm01-blue-convoy/dist/TM01A.lua
+```
+
+Dieser Meilenstein erzeugt keine Gruppe und weist keine Route zu. Die nachfolgend beschriebene Bewegung, Überwachung und Reset-Logik bleibt spätere Arbeit innerhalb von Stufe A.
+
+### MOOSE-Provenienz und Fehlerstatus
+
+`mooseVerificationMode=BUILD_HASH_PLUS_RUNTIME_API_CHECK` bezeichnet zwei getrennte Prüfungen:
+
+- Weicht der lokale Hash von `vendor/moose/Moose.lua` von `vendor/moose/VERSION.md` ab, bricht der Build ohne Bündelaktualisierung ab.
+- Fehlt zur Laufzeit eine der vier verwendeten MOOSE-APIs, meldet der Bootstrap `FAIL_SCRIPT`.
+- Fehlt eines der zehn TM01A-Pflichtobjekte im Mission Editor, meldet der Bootstrap `FAIL_CONFIGURATION`.
+- Die exakte Provenienz der von DCS geladenen MOOSE-Datei wird in diesem Meilenstein manuell über das MOOSE-eigene Log-Banner bestätigt. Das Bündel behauptet keinen programmgesteuerten Vergleich der geladenen Version oder Datei-Prüfsumme.
+
 ### Funktionsumfang
 
 - MOOSE wird zuerst geladen;

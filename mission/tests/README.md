@@ -52,7 +52,7 @@ Für Testmissionen gilt:
 - keine gleichzeitige Einbindung von `Moose.lua` und `Moose_.lua`;
 - keine lokale Änderung der vendorten MOOSE-Datei;
 - eindeutiger Abbruch, wenn MOOSE nicht geladen werden kann;
-- Ausgabe der MOOSE-Version und Test-ID beim Szenariostart.
+- Ausgabe der erwarteten MOOSE-Provenienz, des Prüfmodus und der Test-ID beim Szenariostart.
 
 `Moose_.lua` darf erst nach einer getrennten Entscheidung und vollständiger Regression als alternative Distributionsfassung desselben Releases verwendet werden.
 
@@ -82,6 +82,18 @@ Prüft die Verteilung roter Personengruppen von einem zentralen Hauptquartier ü
 
 - Stufe A: vollständig physische Marschgruppen;
 - Stufe B: virtueller Marsch mit einer Zwischenmaterialisierung und Materialisierung im Zielraum.
+
+## TM01A-Bootstrap-Bündel
+
+Der erste Implementierungsmeilenstein `TM01A bootstrap` prüft beim Build den Hash der gepinnten MOOSE-Datei und validiert zur Laufzeit ausschließlich die benötigte API-Oberfläche sowie die Pflichtobjekte aus dem Mission Editor. Er erzeugt und bewegt noch keinen Konvoi. Das reproduzierbare Projekt-Skriptbündel wird mit
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File tools\build-test-bundle.ps1
+```
+
+als `mission/tests/tm01-blue-convoy/dist/TM01A.lua` erzeugt. In der Mission wird zuerst `vendor/moose/Moose.lua` und danach genau dieses Bündel geladen.
+
+Der TM01A-Bootstrap kann die exakte Provenienz der tatsächlich von DCS geladenen MOOSE-Datei unter dieser Zwei-Dateien-Ladearchitektur nicht programmgesteuert bestimmen. Der Modus `BUILD_HASH_PLUS_RUNTIME_API_CHECK` bedeutet: Der Build bricht bei abweichendem Vendor-Hash ab, und die Laufzeit prüft die vier verwendeten MOOSE-APIs. Commit und Zeitstempel der geladenen Datei werden für diesen Meilenstein manuell anhand des MOOSE-eigenen DCS-Log-Banners bestätigt.
 
 ## Benennung
 
@@ -173,7 +185,7 @@ Die Groß- und Kleinschreibung des Upstream-Dateinamens `Moose.lua` wird im Repo
 
 Kein Projektskript darf MOOSE-Klassen verwenden, bevor Schritt 1 erfolgreich abgeschlossen wurde.
 
-Ein fehlendes MOOSE-Skript, eine falsche Version, eine fehlende Templategruppe oder eine fehlende Pflichtzone führt zu einem eindeutigen Testabbruch.
+Fehlende MOOSE-Laufzeit-APIs führen zu `FAIL_SCRIPT`. Eine fehlende Templategruppe oder Pflichtzone führt zu `FAIL_CONFIGURATION`. Eine exakte geladene MOOSE-Version oder Dateiprüfsumme wird in TM01A nicht automatisch verglichen.
 
 ## Startprotokoll
 
@@ -183,13 +195,14 @@ Jede Testmission protokolliert beim Start mindestens:
 Test-ID
 Teststufe
 DCS-Version, soweit verfügbar
-MOOSE-Version
-MOOSE-Buildvariante
+Erwartete MOOSE-Version, Build-Commit und Build-Zeitstempel
+Erwartete MOOSE-Include-Familie und Komprimierung
+MOOSE-Prüfmodus
 Konfigurationsversion
 Startzeit
 ```
 
-Stimmt die geladene Frameworkversion nicht mit der Testbaseline überein, lautet das Ergebnis `FAIL_CONFIGURATION`.
+Ein abweichender lokaler `Moose.lua`-Hash verhindert bereits den Bundle-Build. Fehlende benötigte MOOSE-APIs ergeben zur Laufzeit `FAIL_SCRIPT`. Die exakte Provenienz der geladenen Datei wird in diesem Meilenstein manuell über das MOOSE-Log-Banner bestätigt.
 
 ## Gemeinsame Testfunktionen
 
