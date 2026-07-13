@@ -1,0 +1,16 @@
+* text=auto
+
+*.lua text eol=lf
+*.md text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.json text eol=lf
+
+*.ps1 text eol=crlf
+
+vendor/moose/LICENSE text eol=lf
+
+*.miz binary
+*.stm binary
+*.zip binary
+*.tar.gz binary

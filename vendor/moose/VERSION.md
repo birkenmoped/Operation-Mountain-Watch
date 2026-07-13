@@ -2,22 +2,24 @@
 
 ## Selected framework
 
-```text
 Framework: MOOSE
 Version: 2.9.18
 Upstream tag: 2.9.18
 Upstream stable branch: master-ng
-Upstream release commit: 23112c9
+Upstream release tag commit: 23112c99545d8b052f850fe0680d77272d24433b
+Embedded build commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+Embedded build timestamp: 2026-06-14T16:11:05+02:00
 Include repository: FlightControl-Master/MOOSE_INCLUDE
 Include family: Moose_Include_Static
 Selected runtime file: Moose.lua
 Compression: none
 Retrieved: 2026-07-13
-SHA-256 Moose.lua: <vollständiger Hash von Moose.lua>
-SHA-256 LICENSE: <vollständiger Hash von LICENSE>
-License file: LICENSE (GPL-3.0, MOOSE tag 2.9.18)
+File size Moose.lua: 9773155 bytes
+SHA-256 Moose.lua: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
+SHA-256 LICENSE: 6323e4f7949aece19b6ae14e62f0e42a1de8d66e6ace79133e1dfa06ccf9994f
+License file: LICENSE
+License identifier: GPL-3.0
 Vendor status: IMPORTED
-```
 
 ## Sources
 
