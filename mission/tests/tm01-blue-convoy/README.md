@@ -85,7 +85,7 @@ Der Bootstrap selbst erzeugt keine Gruppe. Die nachfolgend beschriebene Bewegung
 `mooseVerificationMode=BUILD_HASH_PLUS_RUNTIME_API_CHECK` bezeichnet zwei getrennte Prüfungen:
 
 - Weicht der lokale Hash von `vendor/moose/Moose.lua` von `vendor/moose/VERSION.md` ab, bricht der Build ohne Bündelaktualisierung ab.
-- Fehlt zur Laufzeit eine der zehn verwendeten MOOSE-APIs, meldet der Bootstrap `FAIL_SCRIPT`.
+- Fehlt zur Laufzeit eine der dreizehn verwendeten MOOSE-APIs, meldet der Bootstrap `FAIL_SCRIPT`.
 - Fehlt eines der zehn TM01A-Pflichtobjekte im Mission Editor, meldet der Bootstrap `FAIL_CONFIGURATION`.
 - Die exakte Provenienz der von DCS geladenen MOOSE-Datei wird in diesem Meilenstein manuell über das MOOSE-eigene Log-Banner bestätigt. Das Bündel behauptet keinen programmgesteuerten Vergleich der geladenen Version oder Datei-Prüfsumme.
 
@@ -109,6 +109,23 @@ Spawnzone: ZONE_TM01_START_BAGRAM
 Der Controller führt höchstens einen Spawnversuch aus, der DCS eine Gruppe erzeugen kann. Ein weiterer F10-Aufruf erzeugt keine zweite Gruppe. Nach erfolgreichem Spawn prüft er Laufzeitname, Lebendstatus, sechs lebende Units, vollständige Mitgliedschaft in der Startzone und dass das Late-Activation-Template inaktiv geblieben ist.
 
 Der Controller weist keine Route, Wegpunkte, Aufgabe, Geschwindigkeit oder Bewegung an. Das Template muss daher ohne eigenständige Bewegungsroute vorbereitet sein; der Stillstand wird für mindestens zwei Minuten in DCS abgenommen.
+
+### Dritter Meilenstein: kontrolliertes Straßenrouting
+
+Der dritte Meilenstein ergänzt:
+
+- `Start convoy route`;
+- `Show route status`.
+
+Die Route wird erst nach erfolgreichem manuellem Spawn und nur bei lebender, eindeutig zugeordneter Laufzeitgruppe freigegeben. Der Route-Controller kopiert die sieben konfigurierten Ankernamen in ihrer Reihenfolge, ergänzt `ZONE_TM01_TARGET_JALALABAD` als achten und letzten Punkt und erzeugt alle Wegpunkte vollständig, bevor er die Route genau einmal zuweist. Es gibt keine Hintergrundprüfung; Ankunft wird bei `Show route status` erkannt.
+
+Verwendete neue MOOSE-APIs aus der vendorten Version 2.9.18:
+
+- `ZONE_BASE:GetCoordinate(Height)` in `vendor/moose/Moose.lua:17961`: optionaler Höhenaufschlag; liefert die `COORDINATE` des Zonenzentrums.
+- `COORDINATE:WaypointGround(Speed, Formation, DCSTasks)` in `vendor/moose/Moose.lua:35077`: Geschwindigkeit in km/h, Formation als DCS-Aktionsstring, optionale Tasks; liefert einen DCS-Routenpunkt und rechnet km/h intern durch `3.6` in m/s um.
+- `CONTROLLABLE:Route(Route, DelaySeconds)` in `vendor/moose/Moose.lua:53638`: vollständige Routenpunkttabelle zuerst, optionale Verzögerung danach; erzeugt eine RouteTask, setzt sie über `SetTask` und ersetzt damit die vorhandene Aufgabe. Liefert den `CONTROLLABLE`-Wrapper oder `nil`, wenn kein DCS-Objekt verfügbar ist. TM01A übergibt Verzögerung `0`.
+
+Die konfigurierte Formation `ON_ROAD` wird auf den in MOOSE 2.9.18 definierten DCS-Text `On Road` abgebildet (`ENUMS.Formation.Vehicle.OnRoad` in `vendor/moose/Moose.lua:398`). `WaypointGround` erwartet bereits km/h, daher wird der konfigurierte Wert `30` unverändert übergeben. Es werden keine Zufallskoordinaten, Routenneuberechnung, Scheduler oder automatischen Eingriffe verwendet.
 
 ### Funktionsumfang
 

@@ -110,6 +110,7 @@ Add-Module -Builder $builder -VariableName "RuntimeGuard" -RelativePath "mission
 Add-Module -Builder $builder -VariableName "ConfigurationValidator" -RelativePath "mission/tests/common/src/configuration_validator.lua"
 Add-Module -Builder $builder -VariableName "TestMenu" -RelativePath "mission/tests/common/src/test_menu.lua"
 Add-Module -Builder $builder -VariableName "PhysicalConvoyController" -RelativePath "mission/tests/tm01-blue-convoy/src/physical_convoy_controller.lua"
+Add-Module -Builder $builder -VariableName "ConvoyRouteController" -RelativePath "mission/tests/tm01-blue-convoy/src/convoy_route_controller.lua"
 Add-Module -Builder $builder -VariableName "TM01A" -RelativePath "mission/tests/tm01-blue-convoy/src/tm01a.lua"
 
 [void]$builder.AppendLine("local entryOk, entryResult = pcall(function()")
@@ -122,6 +123,7 @@ Add-Module -Builder $builder -VariableName "TM01A" -RelativePath "mission/tests/
 [void]$builder.AppendLine("    configurationValidator = ConfigurationValidator,")
 [void]$builder.AppendLine("    testMenu = TestMenu,")
 [void]$builder.AppendLine("    physicalConvoyController = PhysicalConvoyController,")
+[void]$builder.AppendLine("    convoyRouteController = ConvoyRouteController,")
 [void]$builder.AppendLine("  })")
 [void]$builder.AppendLine("end)")
 [void]$builder.AppendLine()

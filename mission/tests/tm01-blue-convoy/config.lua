@@ -1,5 +1,5 @@
 local config = {
-  configurationVersion = "TM01A-physical-spawn-1",
+  configurationVersion = "TM01A-road-routing-1",
   testId = "TM01",
   scenarioId = "TEST.TM01.CONVOY.001",
   routeId = "ROUTE_TM01_BAGRAM_JALALABAD",
