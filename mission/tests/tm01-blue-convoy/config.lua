@@ -1,4 +1,5 @@
 local config = {
+  configurationVersion = "TM01A-bootstrap-1",
   testId = "TM01",
   scenarioId = "TEST.TM01.CONVOY.001",
   routeId = "ROUTE_TM01_BAGRAM_JALALABAD",
