@@ -25,3 +25,5 @@ Early design and prototyping. No gameplay release exists yet.
 ## Documentation
 
 Project design documents are stored in [`docs/`](docs/).
+
+The current consolidation of TM01A test results, DCS routing findings, virtualization design, persistence rules, and the revised logistics hierarchy is documented in [`docs/25-tm01a-findings-virtualization-persistence-and-logistics.md`](docs/25-tm01a-findings-virtualization-persistence-and-logistics.md).
