@@ -1,5 +1,5 @@
 local config = {
-  configurationVersion = "TM01B-controlled-caching-1",
+  configurationVersion = "TM01B-controlled-caching-2",
   testId = "TM01",
   stageId = "TM01B",
   scenarioId = "TEST.TM01.CONVOY.001",
@@ -13,6 +13,19 @@ local config = {
 
   zones = {
     target = "ZONE_TM01_TARGET_JALALABAD",
+
+    -- The route anchors define one global route corridor. Reveal entry and exit
+    -- zones are visibility windows only and are never inserted as waypoints.
+    routeAnchors = {
+      "ZONE_TM01_ROUTE_01",
+      "ZONE_TM01_ROUTE_02",
+      "ZONE_TM01_ROUTE_03",
+      "ZONE_TM01_ROUTE_04",
+      "ZONE_TM01_ROUTE_05",
+      "ZONE_TM01_ROUTE_06",
+      "ZONE_TM01_ROUTE_07",
+    },
+
     revealSections = {
       {
         id = "REVEAL_01",
@@ -20,11 +33,6 @@ local config = {
         exit = "ZONE_TM01_REVEAL_01_EXIT",
         entrySegmentIndex = 0,
         exitSegmentIndex = 2,
-        physicalRouteZones = {
-          "ZONE_TM01_ROUTE_01",
-          "ZONE_TM01_ROUTE_02",
-          "ZONE_TM01_REVEAL_01_EXIT",
-        },
       },
       {
         id = "REVEAL_02",
@@ -32,12 +40,6 @@ local config = {
         exit = "ZONE_TM01_REVEAL_02_EXIT",
         entrySegmentIndex = 5,
         exitSegmentIndex = 7,
-        physicalRouteZones = {
-          "ZONE_TM01_ROUTE_06",
-          "ZONE_TM01_ROUTE_07",
-          "ZONE_TM01_REVEAL_02_EXIT",
-          "ZONE_TM01_TARGET_JALALABAD",
-        },
       },
     },
   },
@@ -59,6 +61,8 @@ local config = {
     automaticAdvance = false,
     automaticMaterialization = false,
     automaticDematerialization = false,
+    destroyConfirmationPollSeconds = 0.5,
+    destroyConfirmationTimeoutSeconds = 10,
   },
 
   debug = {
