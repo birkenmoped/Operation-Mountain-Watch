@@ -89,6 +89,7 @@ function ConvoyCacheController.new(options)
     runtimeGroup = nil,
     routeAssignedGeneration = nil,
     retiredRuntimeGroupNames = {},
+    pendingDematerialization = nil,
     arrivalLogged = false,
     lastError = nil,
   }
@@ -105,8 +106,23 @@ function ConvoyCacheController.new(options)
     return config.zones.revealSections[controller.entity.currentSectionIndex]
   end
 
+  local function routePointCount()
+    return #config.zones.routeAnchors + 1
+  end
+
+  local function routeZoneNameAt(index)
+    if index >= 1 and index <= #config.zones.routeAnchors then
+      return config.zones.routeAnchors[index]
+    end
+    if index == routePointCount() then
+      return config.zones.target
+    end
+    return nil
+  end
+
   local function commonFields()
     local section = currentSection()
+    local pending = controller.pendingDematerialization
     return {
       entityId = controller.entity.entityId,
       routeId = controller.entity.routeId,
@@ -121,6 +137,8 @@ function ConvoyCacheController.new(options)
       revision = controller.entity.revision,
       runtimeGroupName = controller.entity.runtimeGroupName or "none",
       survivingVehicleSlots = joinNumbers(controller.entity.survivingVehicleSlots),
+      pendingDematerialization = pending and true or false,
+      pendingDestroyAttempts = pending and pending.attempts or 0,
     }
   end
 
@@ -152,6 +170,21 @@ function ConvoyCacheController.new(options)
     return false
   end
 
+  local function logRecoverableDematerializationFailure(reason)
+    controller.pendingDematerialization = nil
+    controller.lastError = tostring(reason)
+    updateEntity({
+      movementState = MOVEMENT_PHYSICAL_MOVING,
+      transitionState = TRANSITION_IDLE,
+    })
+    local fields = commonFields()
+    fields.reason = controller.lastError
+    fields.missionTimeSeconds = timer.getTime()
+    logger:error("convoy_dematerialization_failed", fields)
+    announce("Dematerialization failed: " .. controller.lastError)
+    return false
+  end
+
   local function ensureBootstrapReady(action)
     if options.getBootstrapOutcome() ~= "READY" then
       return reject(action, "bootstrap outcome is not READY")
@@ -180,8 +213,21 @@ function ConvoyCacheController.new(options)
     return ok and alive == true
   end
 
+  local function nativeGroupExists(runtimeName)
+    return pcall(function()
+      local nativeGroup = Group.getByName(runtimeName)
+      if not nativeGroup then
+        return false
+      end
+      return nativeGroup:isExist() == true
+    end)
+  end
+
   local function validateRepresentationInvariant()
     if controller.entity.representationState == REPRESENTATION_VIRTUAL then
+      if controller.entity.runtimeGroupName ~= nil then
+        return false, "virtual entity still has an authoritative runtime group name"
+      end
       if controller.runtimeGroup and groupIsAlive(controller.runtimeGroup) then
         return false, "virtual entity still has a live physical group"
       end
@@ -189,6 +235,17 @@ function ConvoyCacheController.new(options)
     end
 
     if controller.entity.representationState == REPRESENTATION_PHYSICAL then
+      if controller.entity.transitionState == TRANSITION_DEMATERIALIZING then
+        local pending = controller.pendingDematerialization
+        if not pending then
+          return false, "dematerializing entity has no pending transition record"
+        end
+        if pending.runtimeGroupName ~= controller.entity.runtimeGroupName then
+          return false, "pending dematerialization runtime name does not match CampaignState"
+        end
+        return true
+      end
+
       if not controller.runtimeGroup then
         return false, "physical entity has no runtime group wrapper"
       end
@@ -203,14 +260,12 @@ function ConvoyCacheController.new(options)
 
   local function ensureRetiredGroupsAreNotAlive()
     for _, runtimeName in ipairs(controller.retiredRuntimeGroupNames) do
-      local lookupOk, group = pcall(function()
-        return GROUP:FindByName(runtimeName)
-      end)
+      local lookupOk, exists = nativeGroupExists(runtimeName)
       if not lookupOk then
-        return false, group
+        return false, exists
       end
-      if group and groupIsAlive(group) then
-        return false, "retired runtime group is still alive: " .. runtimeName
+      if exists then
+        return false, "retired runtime group still exists: " .. runtimeName
       end
     end
     return true
@@ -291,47 +346,54 @@ function ConvoyCacheController.new(options)
         end
       end
 
-      local livingUnitCount = group:CountAliveUnits()
-      if livingUnitCount ~= #survivingSlots then
-        error(
-          "spawned group count does not match surviving slots: count="
-            .. tostring(livingUnitCount) .. " slots=" .. tostring(#survivingSlots)
-        )
-      end
-
-      return livingUnitCount
+      return #survivingSlots
     end)
   end
 
-  local function buildSectionRoute(section)
+  local function buildRemainingRoute(startRoutePointIndex)
     return pcall(function()
       local formation = MOOSE_FORMATIONS[config.routing.formation]
       if config.routing.roadOnly ~= true or not formation then
         error("road-only ON_ROAD routing configuration is required")
       end
 
+      local totalRoutePoints = routePointCount()
+      if type(startRoutePointIndex) ~= "number"
+        or startRoutePointIndex < 1
+        or startRoutePointIndex > totalRoutePoints then
+        error("route slice start is outside the configured route")
+      end
+
       local waypoints = {}
-      for index, zoneName in ipairs(section.physicalRouteZones) do
+      local routeZoneNames = {}
+      for routePointIndex = startRoutePointIndex, totalRoutePoints do
+        local zoneName = routeZoneNameAt(routePointIndex)
         local zone = ZONE:FindByName(zoneName)
         if not zone then
-          error("physical route zone is unavailable: " .. zoneName)
+          error("global route zone is unavailable: " .. tostring(zoneName))
         end
         local coordinate = zone:GetCoordinate()
         if not coordinate then
-          error("physical route coordinate is unavailable: " .. zoneName)
+          error("global route coordinate is unavailable: " .. tostring(zoneName))
         end
         local waypoint = coordinate:WaypointGround(config.routing.speedKph, formation)
         if type(waypoint) ~= "table" then
-          error("ground waypoint construction failed: " .. zoneName)
+          error("ground waypoint construction failed: " .. tostring(zoneName))
         end
-        waypoints[index] = waypoint
+        waypoints[#waypoints + 1] = waypoint
+        routeZoneNames[#routeZoneNames + 1] = zoneName
       end
 
       if #waypoints < 1 then
-        error("physical route contains no waypoints")
+        error("remaining physical route contains no waypoints")
       end
 
-      return waypoints
+      return {
+        waypoints = waypoints,
+        routeZoneNames = routeZoneNames,
+        startRoutePointIndex = startRoutePointIndex,
+        endRoutePointIndex = totalRoutePoints,
+      }
     end)
   end
 
@@ -339,6 +401,89 @@ function ConvoyCacheController.new(options)
     return pcall(function()
       group:Destroy(false)
     end)
+  end
+
+  local function finalizeDematerialization(pending)
+    if controller.pendingDematerialization ~= pending then
+      return false
+    end
+
+    controller.retiredRuntimeGroupNames[#controller.retiredRuntimeGroupNames + 1] = pending.runtimeGroupName
+    controller.pendingDematerialization = nil
+    controller.runtimeGroup = nil
+    controller.spawner = nil
+    controller.routeAssignedGeneration = nil
+    controller.lastError = nil
+
+    updateEntity({
+      clearFields = { "runtimeGroupName" },
+      representationState = REPRESENTATION_VIRTUAL,
+      transitionState = TRANSITION_IDLE,
+      movementState = MOVEMENT_VIRTUAL_MOVING,
+    })
+
+    local invariantOk, invariantError = validateRepresentationInvariant()
+    local fields = commonFields()
+    fields.exitZoneName = pending.exitZoneName
+    fields.retiredRuntimeGroupName = pending.runtimeGroupName
+    fields.destroyConfirmationAttempts = pending.attempts
+    fields.destroyConfirmationSeconds = timer.getTime() - pending.startedAt
+    fields.missionTimeSeconds = timer.getTime()
+    fields.invariantOk = invariantOk
+    if not invariantOk then
+      fields.invariantError = invariantError
+      logger:error("convoy_dematerialization_post_invariant_failed", fields)
+      announce("Dematerialization completed with invariant failure: " .. tostring(invariantError))
+      return false
+    end
+
+    logger:info("convoy_dematerialized", fields)
+    announce(
+      "Convoy dematerialized"
+        .. "\nSection: " .. pending.sectionId
+        .. "\nRetired group: " .. pending.runtimeGroupName
+        .. "\nVehicle slots: " .. joinNumbers(controller.entity.survivingVehicleSlots)
+    )
+    return true
+  end
+
+  local function pollPendingDematerialization(_, scheduledTime)
+    local pending = controller.pendingDematerialization
+    if not pending then
+      return nil
+    end
+
+    pending.attempts = pending.attempts + 1
+    local lookupOk, existsOrError = nativeGroupExists(pending.runtimeGroupName)
+    if lookupOk and existsOrError == false then
+      finalizeDematerialization(pending)
+      return nil
+    end
+
+    local elapsed = timer.getTime() - pending.startedAt
+    if elapsed >= config.virtualization.destroyConfirmationTimeoutSeconds then
+      local reason
+      if lookupOk then
+        reason = "native runtime group still exists after destruction timeout"
+      else
+        reason = "native destruction confirmation failed: " .. tostring(existsOrError)
+      end
+      logRecoverableDematerializationFailure(reason)
+      return nil
+    end
+
+    local fields = commonFields()
+    fields.elapsedSeconds = elapsed
+    fields.runtimeGroupName = pending.runtimeGroupName
+    fields.missionTimeSeconds = timer.getTime()
+    if lookupOk then
+      logger:info("convoy_dematerialization_confirmation_pending", fields)
+    else
+      fields.reason = existsOrError
+      logger:error("convoy_dematerialization_confirmation_check_failed", fields)
+    end
+
+    return scheduledTime + config.virtualization.destroyConfirmationPollSeconds
   end
 
   function controller:materialize()
@@ -451,14 +596,6 @@ function ConvoyCacheController.new(options)
         "spawned runtime group is not alive"
       )
     end
-    if inspection.livingUnitCount ~= livingUnitCount then
-      destroyGroupSilently(runtimeGroup)
-      return logFailure(
-        "convoy_materialization_failed",
-        MOVEMENT_MATERIALIZATION_FAILED,
-        "runtime inspection count changed during materialization"
-      )
-    end
 
     local membershipOk, insideEntry = pcall(function()
       return runtimeGroup:IsCompletelyInZone(entryZone) == true
@@ -493,7 +630,7 @@ function ConvoyCacheController.new(options)
       self.runtimeGroup = nil
       self.spawner = nil
       updateEntity({
-        runtimeGroupName = nil,
+        clearFields = { "runtimeGroupName" },
         representationState = REPRESENTATION_VIRTUAL,
       })
       return logFailure(
@@ -506,6 +643,7 @@ function ConvoyCacheController.new(options)
     local fields = commonFields()
     fields.entryZoneName = section.entry
     fields.livingUnitCount = livingUnitCount
+    fields.nextRoutePointIndex = section.entrySegmentIndex + 1
     fields.missionTimeSeconds = timer.getTime()
     logger:info("convoy_materialized", fields)
     announce(
@@ -546,14 +684,14 @@ function ConvoyCacheController.new(options)
       return logFailure("convoy_cached_route_failed", MOVEMENT_ROUTE_FAILED, invariantError)
     end
 
-    local section = currentSection()
-    local routeOk, waypoints = buildSectionRoute(section)
+    local startRoutePointIndex = self.entity.segmentIndex + 1
+    local routeOk, routeOrError = buildRemainingRoute(startRoutePointIndex)
     if not routeOk then
-      return logFailure("convoy_cached_route_failed", MOVEMENT_ROUTE_FAILED, waypoints)
+      return logFailure("convoy_cached_route_failed", MOVEMENT_ROUTE_FAILED, routeOrError)
     end
 
     local assignmentOk, assignmentResult = pcall(function()
-      return self.runtimeGroup:Route(waypoints, 0)
+      return self.runtimeGroup:Route(routeOrError.waypoints, 0)
     end)
     if not assignmentOk or not assignmentResult then
       return logFailure(
@@ -570,15 +708,22 @@ function ConvoyCacheController.new(options)
     })
     self.lastError = nil
 
+    local section = currentSection()
     local successFields = commonFields()
-    successFields.totalWaypointCount = #waypoints
+    successFields.totalWaypointCount = #routeOrError.waypoints
+    successFields.routeSliceStartIndex = routeOrError.startRoutePointIndex
+    successFields.routeSliceEndIndex = routeOrError.endRoutePointIndex
+    successFields.firstRouteZoneName = routeOrError.routeZoneNames[1]
+    successFields.lastRouteZoneName = routeOrError.routeZoneNames[#routeOrError.routeZoneNames]
     successFields.missionTimeSeconds = timer.getTime()
     logger:info("convoy_cached_route_started", successFields)
     announce(
       "Physical route started"
         .. "\nSection: " .. section.id
         .. "\nGeneration: " .. self.entity.physicalGeneration
-        .. "\nWaypoints: " .. #waypoints
+        .. "\nWaypoints: " .. #routeOrError.waypoints
+        .. "\nFirst: " .. routeOrError.routeZoneNames[1]
+        .. "\nLast: " .. routeOrError.routeZoneNames[#routeOrError.routeZoneNames]
     )
     return true
   end
@@ -600,7 +745,7 @@ function ConvoyCacheController.new(options)
       return reject(action, "entity is not physical")
     end
     if self.entity.movementState ~= MOVEMENT_PHYSICAL_MOVING then
-      return reject(action, "physical convoy is not moving on its assigned section")
+      return reject(action, "physical convoy is not moving on its assigned route")
     end
 
     local invariantOk, invariantError = validateRepresentationInvariant()
@@ -647,6 +792,15 @@ function ConvoyCacheController.new(options)
       )
     end
 
+    local pending = {
+      runtimeGroupName = self.entity.runtimeGroupName,
+      sectionId = section.id,
+      exitZoneName = section.exit,
+      startedAt = timer.getTime(),
+      attempts = 0,
+    }
+    self.pendingDematerialization = pending
+
     updateEntity({
       transitionState = TRANSITION_DEMATERIALIZING,
       survivingVehicleSlots = copyArray(survivingSlots),
@@ -655,54 +809,35 @@ function ConvoyCacheController.new(options)
       lastMovementUpdateCampaignTime = timer.getTime(),
     })
 
-    local retiredName = self.entity.runtimeGroupName
+    local scheduleOk, scheduleResult = pcall(function()
+      return timer.scheduleFunction(
+        pollPendingDematerialization,
+        nil,
+        timer.getTime() + config.virtualization.destroyConfirmationPollSeconds
+      )
+    end)
+    if not scheduleOk or scheduleResult == nil then
+      return logRecoverableDematerializationFailure(
+        scheduleOk and "destruction confirmation scheduler returned nil" or scheduleResult
+      )
+    end
+
     local destructionOk, destructionError = destroyGroupSilently(self.runtimeGroup)
     if not destructionOk then
-      return logFailure(
-        "convoy_dematerialization_failed",
-        MOVEMENT_DEMATERIALIZATION_FAILED,
-        destructionError
-      )
-    end
-    if groupIsAlive(self.runtimeGroup) then
-      return logFailure(
-        "convoy_dematerialization_failed",
-        MOVEMENT_DEMATERIALIZATION_FAILED,
-        "runtime group is still alive after silent destruction"
-      )
-    end
-
-    self.retiredRuntimeGroupNames[#self.retiredRuntimeGroupNames + 1] = retiredName
-    self.runtimeGroup = nil
-    self.spawner = nil
-    updateEntity({
-      runtimeGroupName = nil,
-      representationState = REPRESENTATION_VIRTUAL,
-      transitionState = TRANSITION_IDLE,
-      movementState = MOVEMENT_VIRTUAL_MOVING,
-    })
-    self.routeAssignedGeneration = nil
-    self.lastError = nil
-
-    local postInvariantOk, postInvariantError = validateRepresentationInvariant()
-    if not postInvariantOk then
-      return logFailure(
-        "convoy_dematerialization_failed",
-        MOVEMENT_DEMATERIALIZATION_FAILED,
-        postInvariantError
-      )
+      return logRecoverableDematerializationFailure(destructionError)
     end
 
     local successFields = commonFields()
     successFields.exitZoneName = section.exit
-    successFields.retiredRuntimeGroupName = retiredName
+    successFields.destroyConfirmationScheduleId = scheduleResult
+    successFields.destroyConfirmationPollSeconds = config.virtualization.destroyConfirmationPollSeconds
+    successFields.destroyConfirmationTimeoutSeconds = config.virtualization.destroyConfirmationTimeoutSeconds
     successFields.missionTimeSeconds = timer.getTime()
-    logger:info("convoy_dematerialized", successFields)
+    logger:info("convoy_dematerialization_confirmation_scheduled", successFields)
     announce(
-      "Convoy dematerialized"
+      "Dematerialization started"
         .. "\nSection: " .. section.id
-        .. "\nRetired group: " .. retiredName
-        .. "\nVehicle slots: " .. joinNumbers(self.entity.survivingVehicleSlots)
+        .. "\nAwaiting native destruction confirmation"
     )
     return true
   end
@@ -751,12 +886,14 @@ function ConvoyCacheController.new(options)
 
     local successFields = commonFields()
     successFields.entryZoneName = section.entry
+    successFields.nextRoutePointIndex = section.entrySegmentIndex + 1
     successFields.missionTimeSeconds = timer.getTime()
     logger:info("convoy_virtual_advanced", successFields)
     announce(
       "Virtual convoy advanced"
         .. "\nNext section: " .. section.id
         .. "\nEntry anchor: " .. section.entry
+        .. "\nNext route point: " .. displayValue(routeZoneNameAt(section.entrySegmentIndex + 1))
     )
     return true
   end
@@ -774,14 +911,17 @@ function ConvoyCacheController.new(options)
           updateEntity({ runtimeGroupName = inspection.name })
         end
         livingUnitCount = inspection.livingUnitCount
-        if livingUnitCount < 1 then
+        if livingUnitCount < 1
+          and self.entity.transitionState ~= TRANSITION_DEMATERIALIZING then
           updateEntity({ movementState = MOVEMENT_DESTROYED })
         end
       else
         inspectionError = inspection
       end
 
-      if self.entity.currentSectionIndex == config.virtualization.finalSectionIndex then
+      if self.entity.currentSectionIndex == config.virtualization.finalSectionIndex
+        and self.entity.transitionState == TRANSITION_IDLE
+        and self.entity.movementState == MOVEMENT_PHYSICAL_MOVING then
         local targetLookupOk, targetZone = pcall(function()
           return ZONE:FindByName(config.zones.target)
         end)
@@ -796,7 +936,7 @@ function ConvoyCacheController.new(options)
               and self.entity.movementState ~= MOVEMENT_DESTROYED then
               updateEntity({
                 movementState = MOVEMENT_ARRIVED,
-                segmentIndex = section.exitSegmentIndex,
+                segmentIndex = routePointCount(),
                 segmentProgress = 1,
                 lastMovementUpdateCampaignTime = timer.getTime(),
               })
@@ -828,6 +968,11 @@ function ConvoyCacheController.new(options)
       and "unavailable" or targetZoneMembership
     fields.invariantOk = invariantOk
     fields.missionTimeSeconds = timer.getTime()
+    if self.pendingDematerialization then
+      fields.pendingDestroyElapsedSeconds = timer.getTime()
+        - self.pendingDematerialization.startedAt
+      fields.pendingDestroyRuntimeGroupName = self.pendingDematerialization.runtimeGroupName
+    end
     if not invariantOk then
       fields.invariantError = invariantError
     end
@@ -845,9 +990,11 @@ function ConvoyCacheController.new(options)
         .. "\nTransition: " .. self.entity.transitionState
         .. "\nMovement: " .. self.entity.movementState
         .. "\nSection: " .. displayValue(section and section.id)
+        .. "\nSegment: " .. tostring(self.entity.segmentIndex)
         .. "\nGeneration: " .. self.entity.physicalGeneration
         .. "\nRuntime group: " .. displayValue(self.entity.runtimeGroupName)
         .. "\nVehicle slots: " .. joinNumbers(self.entity.survivingVehicleSlots)
+        .. "\nPending destroy: " .. tostring(self.pendingDematerialization ~= nil)
         .. "\nInvariant: " .. tostring(invariantOk)
     )
   end
