@@ -22,6 +22,9 @@ function InMemoryCampaignState.new(config)
   if type(firstSection) ~= "table" then
     error("initial reveal section is unavailable")
   end
+  if firstSection.entrySegmentIndex ~= 0 then
+    error("initial reveal section must begin at global route start segment 0")
+  end
 
   local entity = {
     entityId = config.scenarioId,
@@ -30,6 +33,8 @@ function InMemoryCampaignState.new(config)
     movementState = MOVEMENT_NOT_STARTED,
     routeId = config.routeId,
     currentSectionIndex = config.virtualization.initialSectionIndex,
+    -- segmentIndex identifies the authoritative current position on the global
+    -- route: 0=start, 1..7=route anchors, 8=target.
     segmentIndex = firstSection.entrySegmentIndex,
     segmentProgress = 0,
     routeDistanceMeters = 0,
