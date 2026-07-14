@@ -46,13 +46,17 @@ Konkrete DCS-Gruppennamen sind Laufzeitdaten. Eine nach der Materialisierung neu
 ```text
 NOT_STARTED
 → MATERIALIZING
+→ PHYSICAL_READY
 → PHYSICAL_MOVING
 → DEMATERIALIZING
 → VIRTUAL_MOVING
 → MATERIALIZING
+→ PHYSICAL_READY
 → PHYSICAL_MOVING
 → ARRIVED
 ```
+
+`PHYSICAL_READY` ist der kontrollierte Zwischenzustand nach erfolgreicher Materialisierung und vor dem getrennten manuellen Routenstart.
 
 Fehlerzustände:
 
@@ -71,9 +75,11 @@ DESTROYED
 {
   entityId = "TEST.TM01.CONVOY.001",
   representationState = "VIRTUAL",
-  movementState = "VIRTUAL_MOVING",
+  transitionState = "IDLE",
+  movementState = "NOT_STARTED",
   routeId = "ROUTE_TM01_BAGRAM_JALALABAD",
-  segmentIndex = 1,
+  currentSectionIndex = 1,
+  segmentIndex = 0,
   segmentProgress = 0,
   routeDistanceMeters = 0,
   configuredSpeedKph = 30,
@@ -100,26 +106,27 @@ ZONE_TM01_REVEAL_02_ENTRY
 ZONE_TM01_REVEAL_02_EXIT
 ```
 
-Die Zonen müssen auf praktisch befahrbaren Straßenabschnitten liegen. Entry-Zonen dienen als validierte Materialisierungsanker, Exit-Zonen als kontrollierte Dematerialisierungsbereiche.
-
-Für den ersten Cache-Zyklus müssen mindestens `ZONE_TM01_REVEAL_01_EXIT` und `ZONE_TM01_REVEAL_02_ENTRY` funktionsfähig platziert sein.
+Alle vier Zonen sind Pflichtobjekte und werden beim Bootstrap geprüft. Sie müssen auf praktisch befahrbaren Straßenabschnitten liegen. Entry-Zonen dienen als validierte Materialisierungsanker, Exit-Zonen als kontrollierte Dematerialisierungsbereiche.
 
 ## Kontrollierte Bedienfolge
 
-Die erste Implementierung verwendet ausschließlich manuelle F10-Befehle:
+Die erste Implementierung verwendet ausschließlich diese manuellen F10-Befehle:
 
 ```text
 Show status
 Validate configuration
-Materialize at reveal 1
+Materialize convoy
 Start physical route
-Dematerialize at reveal 1 exit
-Show virtual state
-Advance to reveal 2 entry
-Materialize at reveal 2
-Start remaining physical route
-Show physical state
+Dematerialize convoy
+Show status
+Advance virtual convoy
+Show status
+Materialize convoy
+Start physical route
+Show status
 ```
+
+Der aktuell im `CampaignState` ausgewählte Reveal-Abschnitt bestimmt, welche Entry-Zone, Exit-Zone und Teilroute verwendet werden. Es gibt keine getrennten Materialisierungsbefehle je Reveal-Abschnitt.
 
 Die Befehle dürfen nur in zulässigen Zuständen ausgeführt werden. Wiederholte oder widersprüchliche Befehle müssen ohne zweite physische Instanz abgewiesen und protokolliert werden.
 
@@ -131,6 +138,7 @@ Dematerialisierung ist in TM01B.1 nur zulässig, wenn:
 - die Gruppe lebt;
 - mindestens ein Fahrzeug lebt;
 - die Gruppe vollständig in der konfigurierten Exit-Zone steht;
+- der physische Teilroutenbefehl bereits zugewiesen wurde;
 - kein anderer Übergang läuft;
 - Fahrzeugslots, Verluste, Route und logischer Fortschritt erfolgreich in den In-Memory-Zustand übernommen wurden.
 
@@ -174,8 +182,10 @@ Nach der Materialisierung muss bestätigt werden:
 - Entity-ID und Route sind unverändert;
 - nur erhaltene Fahrzeugslots sind vorhanden;
 - `representationState = "PHYSICAL"`;
-- der physische Generationszähler wurde genau einmal erhöht;
-- die Reststrecke wird genau einmal zugewiesen.
+- `movementState = "PHYSICAL_READY"`;
+- der physische Generationszähler wurde genau einmal erhöht.
+
+Die Teilroute wird erst durch den getrennten Befehl `Start physical route` genau einmal der aktuellen physischen Generation zugewiesen.
 
 ## Abnahmekriterien
 
@@ -183,19 +193,20 @@ TM01B.1 ist bestanden, wenn ein dokumentierter DCS-Lauf Folgendes nachweist:
 
 1. Die Konfiguration einschließlich der vier Reveal-Zonen wird erfolgreich validiert.
 2. Die Entity-ID `TEST.TM01.CONVOY.001` bleibt über alle Übergänge erhalten.
-3. Die erste Materialisierung erzeugt genau eine physische Gruppe.
-4. Die Gruppe fährt physisch bis in die erste Exit-Zone.
-5. Dematerialisierung übernimmt Fahrzeugslots, Verluste und logischen Routenfortschritt vor dem Entfernen der Gruppe.
-6. Nach der Dematerialisierung verbleibt keine physische Restgruppe.
-7. Während `VIRTUAL_MOVING` existiert keine unsichtbar weiterfahrende DCS-Gruppe.
-8. Der manuelle virtuelle Übergang erreicht den zweiten Entry-Anker in korrekter Reihenfolge.
-9. Die zweite Materialisierung erzeugt genau eine neue physische Gruppe mit neuem Runtime-Namen.
-10. Ein vor der ersten Dematerialisierung absichtlich verlorener Fahrzeugslot bleibt bei der zweiten Materialisierung verloren.
-11. Die Reststrecke wird der zweiten physischen Generation genau einmal zugewiesen.
-12. Wiederholte Materialisierungs-, Dematerialisierungs- oder Routenbefehle erzeugen keine Duplikate.
-13. Kein protokollierter Zustand ist gleichzeitig `VIRTUAL` und `PHYSICAL`.
-14. Der Konvoi erreicht nach mindestens einem Cache-Zyklus die konfigurierte Zielzone.
-15. `convoy_route_arrived` wird auch nach dem Cache-Zyklus höchstens einmal protokolliert.
+3. Die erste Materialisierung erzeugt genau eine physische Gruppe im Zustand `PHYSICAL_READY`.
+4. Der erste Routenbefehl wird dieser physischen Generation genau einmal zugewiesen.
+5. Die Gruppe fährt physisch bis in die erste Exit-Zone.
+6. Dematerialisierung übernimmt Fahrzeugslots, Verluste und logischen Routenfortschritt vor dem Entfernen der Gruppe.
+7. Nach der Dematerialisierung verbleibt keine physische Restgruppe.
+8. Während `VIRTUAL_MOVING` existiert keine unsichtbar weiterfahrende DCS-Gruppe.
+9. Der manuelle virtuelle Übergang erreicht den zweiten Entry-Anker in korrekter Reihenfolge.
+10. Die zweite Materialisierung erzeugt genau eine neue physische Gruppe mit neuem Runtime-Namen und Zustand `PHYSICAL_READY`.
+11. Ein vor der ersten Dematerialisierung absichtlich verlorener Fahrzeugslot bleibt bei der zweiten Materialisierung verloren.
+12. Die Reststrecke wird der zweiten physischen Generation genau einmal zugewiesen.
+13. Wiederholte Materialisierungs-, Dematerialisierungs- oder Routenbefehle erzeugen keine Duplikate.
+14. Kein protokollierter Zustand ist gleichzeitig `VIRTUAL` und `PHYSICAL`.
+15. Der Konvoi erreicht nach mindestens einem Cache-Zyklus die konfigurierte Zielzone.
+16. `convoy_route_arrived` wird auch nach dem Cache-Zyklus höchstens einmal protokolliert.
 
 ## Erforderliche Nachweise
 
