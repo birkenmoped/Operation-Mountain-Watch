@@ -28,6 +28,8 @@ function InMemoryCampaignState.new(config)
     currentSectionIndex = config.virtualization.initialSectionIndex,
     segmentIndex = 0,
     segmentProgress = 0,
+    -- Authoritative distance of the virtual entity along the compiled global
+    -- road path. During a physical window this is updated at transition points.
     routeDistanceMeters = 0,
     configuredSpeedKph = config.virtualization.configuredSpeedKph,
     effectiveSpeedKph = config.virtualization.effectiveSpeedKph,
