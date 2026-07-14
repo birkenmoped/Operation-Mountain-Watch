@@ -1,5 +1,5 @@
 local config = {
-  configurationVersion = "TM01B-controlled-caching-4",
+  configurationVersion = "TM01B-controlled-caching-5",
   testId = "TM01",
   stageId = "TM01B",
   scenarioId = "TEST.TM01.CONVOY.001",
@@ -25,24 +25,17 @@ local config = {
       "ZONE_TM01_ROUTE_07",
     },
 
-    -- Entry and exit zones are automatic visibility boundaries.
-    -- entrySegmentIndex/exitSegmentIndex identify which existing route anchors
-    -- lie inside the visible physical section. The entry-zone coordinate is the
-    -- physical spawn point and the exit-zone coordinate terminates that section.
-    revealSections = {
+    -- Each circular Mission Editor trigger zone is the complete visibility
+    -- window: inside = physical, outside = virtual. Entry and exit are derived
+    -- automatically from the ordered road path through the circle.
+    revealWindows = {
       {
         id = "REVEAL_01",
-        entry = "ZONE_TM01_REVEAL_01_ENTRY",
-        exit = "ZONE_TM01_REVEAL_01_EXIT",
-        entrySegmentIndex = 0,
-        exitSegmentIndex = 2,
+        zone = "ZONE_TM01_REVEAL_01",
       },
       {
         id = "REVEAL_02",
-        entry = "ZONE_TM01_REVEAL_02_ENTRY",
-        exit = "ZONE_TM01_REVEAL_02_EXIT",
-        entrySegmentIndex = 5,
-        exitSegmentIndex = 7,
+        zone = "ZONE_TM01_REVEAL_02",
       },
     },
   },
@@ -51,6 +44,17 @@ local config = {
     roadOnly = true,
     speedKph = 30,
     formation = "ON_ROAD",
+
+    -- Global road geometry and physical route resolution.
+    routeSampleMeters = 20,
+    physicalWaypointSpacingMeters = 250,
+    maximumRoadSnapMeters = 1500,
+    roadPositionToleranceMeters = 3,
+
+    -- Six template slots are placed individually on the road centerline.
+    vehicleSpacingMeters = 18,
+    spawnInteriorMarginMeters = 12,
+    physicalClearanceMeters = 40,
   },
 
   virtualization = {
@@ -62,16 +66,17 @@ local config = {
     preserveLosses = true,
     allowDuplicatePhysicalGroup = false,
 
-    -- One manual start command arms the full automatic lifecycle.
     automaticAdvance = true,
     automaticMaterialization = true,
     automaticDematerialization = true,
+    visibilityMode = "CIRCULAR_WINDOW_ANY_UNIT_INSIDE",
     automationPollSeconds = 1,
     minimumVirtualLegSeconds = 1,
 
-    -- Exit is a passage gate: every currently surviving slot only has to enter
-    -- the zone once. The full convoy never has to be inside simultaneously.
-    exitPassageMode = "EACH_SURVIVING_SLOT_EVER_INSIDE",
+    -- The virtual convoy position is shown to BLUE and updated periodically.
+    showVirtualMarker = true,
+    virtualMarkerUpdateSeconds = 5,
+    showRevealWindowMarkers = true,
 
     destroyConfirmationPollSeconds = 0.5,
     destroyConfirmationTimeoutSeconds = 10,
