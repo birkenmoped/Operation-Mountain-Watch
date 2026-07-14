@@ -58,27 +58,7 @@ Template:            TPL_TEST_BLUE_CONVOY_STANDARD_01
 
 DCS-Runtime-Namen sind flüchtige Repräsentationsdaten und nicht die Identität der strategischen Entität.
 
-## Gemeinsame Komponenten
-
-```text
-TM01 bootstrap
-├── RuntimeGuard
-├── ConfigurationValidator
-├── StructuredLogger
-└── TestMenu
-
-physische Repräsentation
-├── PhysicalConvoyController
-└── ConvoyRouteController
-
-TM01B zusätzlich
-├── InMemoryCampaignState
-└── ConvoyCacheController
-```
-
-`InMemoryCampaignState` ist in TM01B die einzige autoritative Quelle für die strategische Entität. Der Cache-Controller hält ausschließlich die zugeordnete physische Laufzeitrepräsentation und führt kontrollierte Zustandsübergänge aus.
-
-Ein Watchdog, automatisches Unstuck, Reset, Stop oder automatische Routenneuberechnung ist im akzeptierten TM01A-Stand nicht implementiert.
+`InMemoryCampaignState` ist in TM01B die einzige autoritative Quelle für die strategische Entität. DCS-Gruppen und MOOSE-Wrapper sind ausschließlich Laufzeitrepräsentationen.
 
 # TM01A – physische Baseline
 
@@ -107,140 +87,50 @@ Ladefolge im Mission Editor:
 2. DO SCRIPT FILE: mission/tests/tm01-blue-convoy/dist/TM01A.lua
 ```
 
-## TM01A-Bootstrap – akzeptiert
+## Akzeptierter Stand
 
-Der Bootstrap:
+Der TM01A-Bootstrap, der kontrollierte physische Spawn und das vollständige Straßenrouting sind bestanden.
 
-- prüft beim Build die SHA-256-Prüfsumme von `vendor/moose/Moose.lua` gegen `vendor/moose/VERSION.md`;
-- meldet erwartete MOOSE-Provenienz und Konfigurationsversion;
-- prüft die benötigten nativen DCS- und MOOSE-APIs;
-- prüft Template, Startzone, Zielzone und sieben Routenanker;
-- benötigt keine TM01B-Reveal-Zonen;
-- meldet `READY`, `FAIL_CONFIGURATION` oder `FAIL_SCRIPT`;
-- stellt `Show status` und `Validate configuration` bereit.
-
-`mooseVerificationMode=BUILD_HASH_PLUS_RUNTIME_API_CHECK` bezeichnet getrennte Prüfungen:
-
-- abweichender lokaler Vendor-Hash verhindert den Bundle-Build;
-- fehlende Laufzeit-APIs ergeben `FAIL_SCRIPT`;
-- fehlende Pflichtobjekte ergeben `FAIL_CONFIGURATION`;
-- die tatsächlich geladene MOOSE-Provenienz wird zusätzlich manuell über das MOOSE-Log-Banner bestätigt.
-
-Ergebnis:
+Verwendete Route:
 
 ```text
-PASS
-```
-
-## Kontrollierter physischer Spawn – akzeptiert
-
-F10-Befehle:
-
-```text
-Spawn convoy
-Show convoy status
-```
-
-Verwendete Identitäten:
-
-```text
-Logische Entity-ID:      TEST.TM01.CONVOY.001
-Mission-Editor-Template: TPL_TEST_BLUE_CONVOY_STANDARD_01
-Angeforderter Alias:     TM01A_BLUE_CONVOY_001
-Spawnzone:               ZONE_TM01_START_BAGRAM
-```
-
-Nachgewiesen wurde:
-
-- Bootstrap `READY`;
-- genau ein ausgeführter Spawn;
-- sechs erwartete und sechs tatsächliche Fahrzeuge;
-- tatsächlicher Runtime-Name `TM01A_BLUE_CONVOY_001#001`;
-- vollständige Mitgliedschaft in der Startzone;
-- das Late-Activation-Template blieb inaktiv;
-- ein zweiter Spawnbefehl erzeugte keine zweite Gruppe;
-- die Gruppe blieb vor der Routenzuweisung stationär.
-
-Ergebnis:
-
-```text
-PASS
-```
-
-Nachweis:
-
-```text
-results/2026-07-13-tm01a-physical-spawn.md
-```
-
-## Kontrolliertes Straßenrouting – akzeptiert
-
-F10-Befehle:
-
-```text
-Start convoy route
-Show route status
+ZONE_TM01_START_BAGRAM
+→ ZONE_TM01_ROUTE_01
+→ ZONE_TM01_ROUTE_02
+→ ZONE_TM01_ROUTE_03
+→ ZONE_TM01_ROUTE_04
+→ ZONE_TM01_ROUTE_05
+→ ZONE_TM01_ROUTE_06
+→ ZONE_TM01_ROUTE_07
+→ ZONE_TM01_TARGET_JALALABAD
 ```
 
 Konfiguration:
 
 ```text
-Start:                    ZONE_TM01_START_BAGRAM
-Routenanker:              ZONE_TM01_ROUTE_01 bis _07
-Ziel:                     ZONE_TM01_TARGET_JALALABAD
-Gesamtzahl Wegpunkte:     8
-Geschwindigkeit:          30 km/h
-Formation:                ON_ROAD → DCS "On Road"
+Geschwindigkeit: 30 km/h
+Formation:       ON_ROAD → DCS "On Road"
 ```
-
-Der Controller erzeugt alle Wegpunkte vollständig und weist die Route genau einmal zu. Es gibt keinen Scheduler, keine automatische Statusabfrage, keine Routenneuberechnung und keinen Skripteingriff in die DCS-Wegfindung.
-
-Verifizierte MOOSE-APIs aus Release 2.9.18:
-
-- `ZONE_BASE:GetCoordinate`;
-- `COORDINATE:WaypointGround`;
-- `CONTROLLABLE:Route`.
-
-`WaypointGround` erwartet km/h und konvertiert intern nach m/s. `CONTROLLABLE:Route(route, 0)` setzt die Aufgabe unmittelbar.
 
 Nachgewiesen wurde:
 
-- Route startete nur nach dem F10-Befehl;
-- Status während der Fahrt `EN_ROUTE`;
-- `routeAssigned=true`;
-- alle sechs Fahrzeuge blieben erhalten;
-- vollständige Ankunft in der Jalalabad-Zielzone;
+- Bootstrap `READY`;
+- genau ein physischer Spawn mit sechs Fahrzeugen;
+- Start in `ZONE_TM01_START_BAGRAM`;
+- genau eine Routenzuweisung;
+- vollständige Ankunft in `ZONE_TM01_TARGET_JALALABAD`;
 - Endstatus `ARRIVED`;
 - `convoy_route_arrived` exakt einmal;
-- wiederholte Statusabfragen erzeugten kein zweites Arrival-Ereignis;
-- Duplikatschutz des Routenbefehls wurde durch Operatorbeobachtung bestätigt.
+- keine automatische Routenneuberechnung oder Recovery.
 
-Gemessene simulierte Fahrzeit ab Routenzuweisung:
-
-```text
-25756.685 Sekunden
-≈ 7 Stunden 9 Minuten
-```
-
-Ergebnis:
+Ergebnisdateien:
 
 ```text
-PASS
-```
-
-Nachweis:
-
-```text
+results/2026-07-13-tm01a-physical-spawn.md
 results/2026-07-13-tm01a-road-routing.md
 ```
 
-## DCS-Routenlimit
-
-Der vollständige physische Gesamtlauf ist abgeschlossen. Die bestehenden sieben Anker und die Zielzone reichen nachweislich aus, damit DCS den Konvoi bis Jalalabad führt.
-
-DCS wählte zwischen den Ankern jedoch erhebliche Umwege gegenüber der optisch direkten Strecke. Das ist kein offener Controllerfehler und kein fehlender Gesamtroutentest. Es ist eine dokumentierte Grenze des Terrain-Straßengraphen beziehungsweise der vorhandenen groben Routendaten.
-
-Die Bagram–Jalalabad-Anker dürfen für spätere Regressionen verfeinert werden. Diese Verfeinerung ist keine Voraussetzung für den ersten kontrollierten Cache-Zyklus.
+Die gemessene simulierte Fahrzeit betrug ungefähr 7 Stunden 9 Minuten. DCS wählte zwischen den Ankern erhebliche Umwege. Das ist eine dokumentierte Terrain- und Pathfinding-Einschränkung.
 
 # TM01B – kontrolliertes Caching
 
@@ -262,14 +152,12 @@ Build:
 powershell -NoProfile -ExecutionPolicy Bypass -File tools\build-tm01b-bundle.ps1
 ```
 
-Vorgesehene Ladefolge im Mission Editor:
+Ladefolge im Mission Editor:
 
 ```text
 1. DO SCRIPT FILE: vendor/moose/Moose.lua
 2. DO SCRIPT FILE: mission/tests/tm01-blue-convoy/dist/TM01B.lua
 ```
-
-Der Builder prüft denselben gepinnten MOOSE-Hash wie TM01A und bündelt Konfiguration, gemeinsame Laufzeitprüfungen, `InMemoryCampaignState`, Cache-Controller und TM01B-Bootstrap. Das generierte Bundle wird erst nach lokal erfolgreichem Build aktualisiert.
 
 Verbindlicher Testvertrag:
 
@@ -277,9 +165,101 @@ Verbindlicher Testvertrag:
 expected/caching-acceptance.md
 ```
 
-## Ziel der ersten Stufe
+## Verbindliches Routenmodell
 
-TM01B.1 prüft einen kontrollierten Cache-Zyklus innerhalb derselben laufenden Mission:
+Die globale Route bleibt identisch zur akzeptierten TM01A-Route:
+
+```text
+ZONE_TM01_START_BAGRAM
+→ ZONE_TM01_ROUTE_01
+→ ZONE_TM01_ROUTE_02
+→ ZONE_TM01_ROUTE_03
+→ ZONE_TM01_ROUTE_04
+→ ZONE_TM01_ROUTE_05
+→ ZONE_TM01_ROUTE_06
+→ ZONE_TM01_ROUTE_07
+→ ZONE_TM01_TARGET_JALALABAD
+```
+
+`ZONE_TM01_START_BAGRAM` ist der autoritative Startpunkt. `ZONE_TM01_TARGET_JALALABAD` ist der autoritative Zielpunkt.
+
+Die Reveal-Zonen sind ausschließlich Sichtfenstergrenzen:
+
+```text
+ZONE_TM01_REVEAL_01_ENTRY
+ZONE_TM01_REVEAL_01_EXIT
+ZONE_TM01_REVEAL_02_ENTRY
+ZONE_TM01_REVEAL_02_EXIT
+```
+
+Reveal-Zonen:
+
+- sind keine Routenwegpunkte;
+- ersetzen weder Start- noch Zielpunkt;
+- bestimmen keine Spawnkoordinate;
+- werden niemals an DCS als Wegpunkte übergeben.
+
+## Segmentindex und Materialisierung
+
+Der `segmentIndex` beschreibt die autoritative Position auf der globalen Route:
+
+```text
+0 = ZONE_TM01_START_BAGRAM
+1 = ZONE_TM01_ROUTE_01
+2 = ZONE_TM01_ROUTE_02
+3 = ZONE_TM01_ROUTE_03
+4 = ZONE_TM01_ROUTE_04
+5 = ZONE_TM01_ROUTE_05
+6 = ZONE_TM01_ROUTE_06
+7 = ZONE_TM01_ROUTE_07
+8 = ZONE_TM01_TARGET_JALALABAD
+```
+
+Fensterzuordnung:
+
+```text
+REVEAL_01: Entry 0, Exit 2
+REVEAL_02: Entry 5, Exit 7
+```
+
+Die erste Materialisierung erfolgt bei `ZONE_TM01_START_BAGRAM`. Nach dem kontrollierten virtuellen Fortschritt erfolgt die zweite Materialisierung bei `ZONE_TM01_ROUTE_05`.
+
+Der Controller verwendet dafür:
+
+```text
+SPAWN:NewWithAlias(...)
+→ InitPositionCoordinate(globalRouteCoordinate)
+→ Spawn()
+```
+
+`SpawnInZone(revealEntry, ...)` ist für TM01B unzulässig.
+
+## Reststrecken
+
+Jede physische Generation erhält die noch ausstehende Strecke derselben globalen Route.
+
+Erste Generation:
+
+```text
+ZONE_TM01_ROUTE_01
+→ ZONE_TM01_ROUTE_02
+→ ZONE_TM01_ROUTE_03
+→ ZONE_TM01_ROUTE_04
+→ ZONE_TM01_ROUTE_05
+→ ZONE_TM01_ROUTE_06
+→ ZONE_TM01_ROUTE_07
+→ ZONE_TM01_TARGET_JALALABAD
+```
+
+Zweite Generation:
+
+```text
+ZONE_TM01_ROUTE_06
+→ ZONE_TM01_ROUTE_07
+→ ZONE_TM01_TARGET_JALALABAD
+```
+
+## Zustandsmodell
 
 ```text
 NOT_STARTED
@@ -294,11 +274,7 @@ NOT_STARTED
 → ARRIVED
 ```
 
-`PHYSICAL_READY` trennt wie in TM01A das erfolgreiche Erzeugen der physischen Gruppe vom anschließenden manuellen Routenstart.
-
-Der strategische Zustand bleibt ausschließlich im Arbeitsspeicher. Ein Missions- oder Serverneustart darf den Testzustand verlieren.
-
-Caching bedeutet ausdrücklich nicht, dass eine unsichtbare DCS-Gruppe weiterfährt. Während `VIRTUAL_MOVING` existiert keine physische Gruppe.
+Während `VIRTUAL_MOVING` existiert keine DCS-Gruppe. Caching bedeutet nicht, dass eine unsichtbare physische Gruppe weiterfährt.
 
 ## Manuelle F10-Befehle
 
@@ -311,79 +287,48 @@ Dematerialize convoy
 Advance virtual convoy
 ```
 
-Der aktuelle Reveal-Abschnitt im `CampaignState` bestimmt Entry-Zone, Exit-Zone und physische Teilroute. Wiederholte oder im aktuellen Zustand unzulässige Befehle werden protokolliert und dürfen keine zweite physische Gruppe erzeugen.
+Wiederholte oder im aktuellen Zustand unzulässige Befehle werden abgewiesen und protokolliert. Sie dürfen keine zweite physische Gruppe erzeugen.
 
-## Reveal- und Übergangszonen
+## Zweiphasige Dematerialisierung
 
-Zusätzliche Pflichtzonen:
+Der Controller übernimmt vor dem Destroy-Aufruf Fahrzeugslots und logischen Fortschritt. Danach bleibt die Entity vorläufig `PHYSICAL / DEMATERIALIZING`, bis die native DCS-Gruppe in einem späteren Simulationsschritt nicht mehr existiert.
 
 ```text
+1. Fahrzeugslots und Exit-Segment übernehmen
+2. Bestätigungsprüfung planen
+3. Destroy(false) anfordern
+4. Group.getByName(runtimeName):isExist() zeitversetzt prüfen
+5. erst nach bestätigter Entfernung auf VIRTUAL_MOVING wechseln
+```
+
+Ein stale MOOSE-Wrapper im Destroy-Tick darf keinen permanenten Lock erzeugen. Bei einem Timeout kehrt der Controller in den erneut bedienbaren Zustand `PHYSICAL / IDLE / PHYSICAL_MOVING` zurück.
+
+## Verlust- und Slot-Erhaltung
+
+Vor der Dematerialisierung werden nur lebende Fahrzeugslots in den `CampaignState` übernommen. Bei der nächsten Materialisierung wird das vollständige Template erzeugt; bereits verlorene Slots werden anschließend ohne künstliches Verlustereignis entfernt.
+
+Diese DCS-Laufzeitannahme bleibt bis zum dokumentierten Verlust- und Rekonstruktionstest unbestätigt.
+
+## Mission-Editor-Pflichtobjekte
+
+```text
+TPL_TEST_BLUE_CONVOY_STANDARD_01
+ZONE_TM01_START_BAGRAM
+ZONE_TM01_ROUTE_01
+ZONE_TM01_ROUTE_02
+ZONE_TM01_ROUTE_03
+ZONE_TM01_ROUTE_04
+ZONE_TM01_ROUTE_05
+ZONE_TM01_ROUTE_06
+ZONE_TM01_ROUTE_07
+ZONE_TM01_TARGET_JALALABAD
 ZONE_TM01_REVEAL_01_ENTRY
 ZONE_TM01_REVEAL_01_EXIT
 ZONE_TM01_REVEAL_02_ENTRY
 ZONE_TM01_REVEAL_02_EXIT
 ```
 
-Entry-Zonen dienen als validierte Materialisierungsanker. Exit-Zonen dienen als kontrollierte Dematerialisierungsbereiche.
-
-Die erste Stufe darf den virtuellen Übergang zwischen den Reveal-Abschnitten manuell über F10 auslösen. Automatische zeitbasierte Bewegung, Spielererkennung, Sichtlinie und Sensorlogik folgen erst nach einem bestandenen kontrollierten Cache-Zyklus.
-
-## Autoritativer In-Memory-Zustand
-
-Initialzustand:
-
-```lua
-{
-  entityId = "TEST.TM01.CONVOY.001",
-  representationState = "VIRTUAL",
-  transitionState = "IDLE",
-  movementState = "NOT_STARTED",
-  routeId = "ROUTE_TM01_BAGRAM_JALALABAD",
-  currentSectionIndex = 1,
-  segmentIndex = 0,
-  segmentProgress = 0,
-  routeDistanceMeters = 0,
-  configuredSpeedKph = 30,
-  effectiveSpeedKph = 23,
-  lastMovementUpdateCampaignTime = 0,
-  survivingVehicleSlots = { 1, 2, 3, 4, 5, 6 },
-  physicalGeneration = 0,
-  runtimeGroupName = nil,
-}
-```
-
-`runtimeGroupName` bleibt eine flüchtige Laufzeitzuordnung. Eine Entität darf nie gleichzeitig `VIRTUAL` und `PHYSICAL` sein.
-
-## Verlust- und Slot-Erhaltung
-
-TM01B ordnet Fahrzeugslots anhand der numerischen Unit-Suffixe der erzeugten MOOSE-Gruppe zu. Vor der Dematerialisierung werden ausschließlich lebende Slots in den `CampaignState` übernommen.
-
-Bei der nächsten Materialisierung wird zunächst das vollständige Template erzeugt. Nicht mehr vorhandene Slots werden anschließend ohne künstliches Verlustereignis aus der neuen Repräsentation entfernt. Diese DCS-Laufzeitannahme ist ein expliziter Testgegenstand und noch nicht als bestanden bewertet.
-
-## Teilrouten
-
-`config-tm01b.lua` enthält vorläufige Teilrouten für zwei Reveal-Abschnitte. Die konkrete Zuordnung der vorhandenen TM01A-Anker zu Entry- und Exit-Zonen ist erst nach Platzierung der vier neuen Zonen im Mission Editor verbindlich.
-
-Die Teilrouten dürfen angepasst werden, ohne die autoritative Entity-ID, das Zustandsmodell oder den Ausschluss automatischer Recovery zu verändern.
-
-## Offene Mission-Editor-Arbeit
-
-Noch offen sind ausschließlich TM01B-spezifische Arbeiten:
-
-- vier Reveal-Zonen auf geeigneten Straßenabschnitten platzieren;
-- Entry-Zonen als sichere Materialisierungsanker prüfen;
-- Exit-Zonen so platzieren, dass die vollständige Gruppe dort zuverlässig erkannt werden kann;
-- die vorläufigen Teilrouten gegen die tatsächlichen Zonenpositionen prüfen und anpassen;
-- Beobachter- oder Debugslots für beide Abschnitte anlegen;
-- eine Kopie der akzeptierten TM01A-Mission als TM01B-Mission vorbereiten;
-- das TM01B-Bundle lokal bauen und in die TM01B-Mission einbinden.
-
-Nicht mehr offen sind:
-
-- die physische Gesamtstrecke Bagram–Jalalabad abzufahren;
-- den grundlegenden physischen Spawn nachzuweisen;
-- die vorhandenen sieben Stressroutenanker grundsätzlich funktionsfähig zu machen;
-- die vollständige Ankunft in Jalalabad nachzuweisen.
+Die Namen sind exakte Lookup-Schlüssel. Abkürzungen oder alternative Beschriftungen sind nicht zulässig.
 
 ## Nicht Bestandteil von TM01B.1
 
@@ -405,6 +350,7 @@ Ein PASS erfordert:
 - die getestete `.miz`-Datei;
 - DCS-Lognachweise;
 - beide Runtime-Gruppennamen;
+- protokollierte Materialisierungsanker und Route-Slices;
 - Nachweis der erhaltenen Fahrzeugslots;
 - Nachweis, dass zwischen zwei physischen Generationen keine Restgruppe existierte;
 - eine Ergebnisdatei unter `results/`.
