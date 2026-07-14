@@ -18,24 +18,15 @@ function InMemoryCampaignState.new(config)
     initialSlots[#initialSlots + 1] = slot
   end
 
-  local firstSection = config.zones.revealSections[config.virtualization.initialSectionIndex]
-  if type(firstSection) ~= "table" then
-    error("initial reveal section is unavailable")
-  end
-  if firstSection.entrySegmentIndex ~= 0 then
-    error("initial reveal section must begin at global route start segment 0")
-  end
-
   local entity = {
     entityId = config.scenarioId,
     representationState = REPRESENTATION_VIRTUAL,
     transitionState = TRANSITION_IDLE,
     movementState = MOVEMENT_NOT_STARTED,
     routeId = config.routeId,
+    automationStarted = false,
     currentSectionIndex = config.virtualization.initialSectionIndex,
-    -- segmentIndex identifies the authoritative current position on the global
-    -- route: 0=start, 1..7=route anchors, 8=target.
-    segmentIndex = firstSection.entrySegmentIndex,
+    segmentIndex = 0,
     segmentProgress = 0,
     routeDistanceMeters = 0,
     configuredSpeedKph = config.virtualization.configuredSpeedKph,
