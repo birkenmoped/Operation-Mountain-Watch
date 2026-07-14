@@ -1,5 +1,5 @@
 local config = {
-  configurationVersion = "TM01B-controlled-caching-2",
+  configurationVersion = "TM01B-controlled-caching-3",
   testId = "TM01",
   stageId = "TM01B",
   scenarioId = "TEST.TM01.CONVOY.001",
@@ -12,10 +12,11 @@ local config = {
   },
 
   zones = {
+    -- Authoritative endpoints of the global route.
+    start = "ZONE_TM01_START_BAGRAM",
     target = "ZONE_TM01_TARGET_JALALABAD",
 
-    -- The route anchors define one global route corridor. Reveal entry and exit
-    -- zones are visibility windows only and are never inserted as waypoints.
+    -- These seven anchors constrain the DCS road corridor between start and target.
     routeAnchors = {
       "ZONE_TM01_ROUTE_01",
       "ZONE_TM01_ROUTE_02",
@@ -26,6 +27,13 @@ local config = {
       "ZONE_TM01_ROUTE_07",
     },
 
+    -- Reveal zones are visibility-window boundaries only. They are never route
+    -- points and never determine the physical spawn coordinate.
+    --
+    -- segmentIndex semantics:
+    --   0 = ZONE_TM01_START_BAGRAM
+    --   1..7 = ZONE_TM01_ROUTE_01..07
+    --   8 = ZONE_TM01_TARGET_JALALABAD
     revealSections = {
       {
         id = "REVEAL_01",
