@@ -107,6 +107,7 @@ Add-Module -Builder $builder -VariableName "TM01BConfig" -RelativePath "mission/
 Add-Module -Builder $builder -VariableName "SafeReporter" -RelativePath "mission/tests/common/src/safe_reporter.lua"
 Add-Module -Builder $builder -VariableName "StructuredLogger" -RelativePath "mission/tests/common/src/structured_logger.lua"
 Add-Module -Builder $builder -VariableName "RuntimeGuard" -RelativePath "mission/tests/common/src/runtime_guard.lua"
+Add-Module -Builder $builder -VariableName "InMemoryCampaignState" -RelativePath "mission/tests/tm01-blue-convoy/src/in_memory_campaign_state.lua"
 Add-Module -Builder $builder -VariableName "ConvoyCacheController" -RelativePath "mission/tests/tm01-blue-convoy/src/convoy_cache_controller.lua"
 Add-Module -Builder $builder -VariableName "TM01B" -RelativePath "mission/tests/tm01-blue-convoy/src/tm01b.lua"
 
@@ -117,6 +118,7 @@ Add-Module -Builder $builder -VariableName "TM01B" -RelativePath "mission/tests/
 [void]$builder.AppendLine("    safeReporter = SafeReporter,")
 [void]$builder.AppendLine("    structuredLogger = StructuredLogger,")
 [void]$builder.AppendLine("    runtimeGuard = RuntimeGuard,")
+[void]$builder.AppendLine("    inMemoryCampaignState = InMemoryCampaignState,")
 [void]$builder.AppendLine("    convoyCacheController = ConvoyCacheController,")
 [void]$builder.AppendLine("  })")
 [void]$builder.AppendLine("end)")
