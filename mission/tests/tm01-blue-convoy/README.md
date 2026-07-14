@@ -76,6 +76,8 @@ TM01B zusätzlich
 └── ConvoyCacheController
 ```
 
+`InMemoryCampaignState` ist in TM01B die einzige autoritative Quelle für die strategische Entität. Der Cache-Controller hält ausschließlich die zugeordnete physische Laufzeitrepräsentation und führt kontrollierte Zustandsübergänge aus.
+
 Ein Watchdog, automatisches Unstuck, Reset, Stop oder automatische Routenneuberechnung ist im akzeptierten TM01A-Stand nicht implementiert.
 
 # TM01A – physische Baseline
@@ -248,6 +250,27 @@ Missionsdatei:
 TM01B-MOOSE-Blue-Convoy-Virtualized.miz
 ```
 
+Bundle:
+
+```text
+mission/tests/tm01-blue-convoy/dist/TM01B.lua
+```
+
+Build:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File tools\build-tm01b-bundle.ps1
+```
+
+Vorgesehene Ladefolge im Mission Editor:
+
+```text
+1. DO SCRIPT FILE: vendor/moose/Moose.lua
+2. DO SCRIPT FILE: mission/tests/tm01-blue-convoy/dist/TM01B.lua
+```
+
+Der Builder prüft denselben gepinnten MOOSE-Hash wie TM01A und bündelt Konfiguration, gemeinsame Laufzeitprüfungen, `InMemoryCampaignState`, Cache-Controller und TM01B-Bootstrap. Das generierte Bundle wird erst nach lokal erfolgreichem Build aktualisiert.
+
 Verbindlicher Testvertrag:
 
 ```text
@@ -259,18 +282,36 @@ expected/caching-acceptance.md
 TM01B.1 prüft einen kontrollierten Cache-Zyklus innerhalb derselben laufenden Mission:
 
 ```text
-MATERIALIZING
+NOT_STARTED
+→ MATERIALIZING
+→ PHYSICAL_READY
 → PHYSICAL_MOVING
 → DEMATERIALIZING
 → VIRTUAL_MOVING
 → MATERIALIZING
+→ PHYSICAL_READY
 → PHYSICAL_MOVING
 → ARRIVED
 ```
 
+`PHYSICAL_READY` trennt wie in TM01A das erfolgreiche Erzeugen der physischen Gruppe vom anschließenden manuellen Routenstart.
+
 Der strategische Zustand bleibt ausschließlich im Arbeitsspeicher. Ein Missions- oder Serverneustart darf den Testzustand verlieren.
 
 Caching bedeutet ausdrücklich nicht, dass eine unsichtbare DCS-Gruppe weiterfährt. Während `VIRTUAL_MOVING` existiert keine physische Gruppe.
+
+## Manuelle F10-Befehle
+
+```text
+Show status
+Validate configuration
+Materialize convoy
+Start physical route
+Dematerialize convoy
+Advance virtual convoy
+```
+
+Der aktuelle Reveal-Abschnitt im `CampaignState` bestimmt Entry-Zone, Exit-Zone und physische Teilroute. Wiederholte oder im aktuellen Zustand unzulässige Befehle werden protokolliert und dürfen keine zweite physische Gruppe erzeugen.
 
 ## Reveal- und Übergangszonen
 
@@ -289,15 +330,17 @@ Die erste Stufe darf den virtuellen Übergang zwischen den Reveal-Abschnitten ma
 
 ## Autoritativer In-Memory-Zustand
 
-Mindestens erforderlich:
+Initialzustand:
 
 ```lua
 {
   entityId = "TEST.TM01.CONVOY.001",
   representationState = "VIRTUAL",
-  movementState = "VIRTUAL_MOVING",
+  transitionState = "IDLE",
+  movementState = "NOT_STARTED",
   routeId = "ROUTE_TM01_BAGRAM_JALALABAD",
-  segmentIndex = 1,
+  currentSectionIndex = 1,
+  segmentIndex = 0,
   segmentProgress = 0,
   routeDistanceMeters = 0,
   configuredSpeedKph = 30,
@@ -305,10 +348,23 @@ Mindestens erforderlich:
   lastMovementUpdateCampaignTime = 0,
   survivingVehicleSlots = { 1, 2, 3, 4, 5, 6 },
   physicalGeneration = 0,
+  runtimeGroupName = nil,
 }
 ```
 
-Eine Entität darf nie gleichzeitig `VIRTUAL` und `PHYSICAL` sein.
+`runtimeGroupName` bleibt eine flüchtige Laufzeitzuordnung. Eine Entität darf nie gleichzeitig `VIRTUAL` und `PHYSICAL` sein.
+
+## Verlust- und Slot-Erhaltung
+
+TM01B ordnet Fahrzeugslots anhand der numerischen Unit-Suffixe der erzeugten MOOSE-Gruppe zu. Vor der Dematerialisierung werden ausschließlich lebende Slots in den `CampaignState` übernommen.
+
+Bei der nächsten Materialisierung wird zunächst das vollständige Template erzeugt. Nicht mehr vorhandene Slots werden anschließend ohne künstliches Verlustereignis aus der neuen Repräsentation entfernt. Diese DCS-Laufzeitannahme ist ein expliziter Testgegenstand und noch nicht als bestanden bewertet.
+
+## Teilrouten
+
+`config-tm01b.lua` enthält vorläufige Teilrouten für zwei Reveal-Abschnitte. Die konkrete Zuordnung der vorhandenen TM01A-Anker zu Entry- und Exit-Zonen ist erst nach Platzierung der vier neuen Zonen im Mission Editor verbindlich.
+
+Die Teilrouten dürfen angepasst werden, ohne die autoritative Entity-ID, das Zustandsmodell oder den Ausschluss automatischer Recovery zu verändern.
 
 ## Offene Mission-Editor-Arbeit
 
@@ -317,9 +373,10 @@ Noch offen sind ausschließlich TM01B-spezifische Arbeiten:
 - vier Reveal-Zonen auf geeigneten Straßenabschnitten platzieren;
 - Entry-Zonen als sichere Materialisierungsanker prüfen;
 - Exit-Zonen so platzieren, dass die vollständige Gruppe dort zuverlässig erkannt werden kann;
+- die vorläufigen Teilrouten gegen die tatsächlichen Zonenpositionen prüfen und anpassen;
 - Beobachter- oder Debugslots für beide Abschnitte anlegen;
 - eine Kopie der akzeptierten TM01A-Mission als TM01B-Mission vorbereiten;
-- das TM01B-Bundle nach der Implementierung als zweite Skriptdatei einbinden.
+- das TM01B-Bundle lokal bauen und in die TM01B-Mission einbinden.
 
 Nicht mehr offen sind:
 
