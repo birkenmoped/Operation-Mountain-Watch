@@ -18,6 +18,19 @@ local function validateFunction(path, getter, missing)
   end
 end
 
+local function validateTm01bNativeApis()
+  local missing = {}
+
+  validateFunction("timer.scheduleFunction", function()
+    return timer and timer.scheduleFunction
+  end, missing)
+  validateFunction("Group.getByName", function()
+    return Group and Group.getByName
+  end, missing)
+
+  return #missing == 0, missing
+end
+
 local function validateTm01bMooseApis()
   local missing = {}
 
@@ -29,6 +42,10 @@ local function validateTm01bMooseApis()
   end, missing)
 
   return #missing == 0, missing
+end
+
+local function isInteger(value)
+  return type(value) == "number" and value >= 0 and value == math.floor(value)
 end
 
 local function validateConfiguration(config)
@@ -71,6 +88,23 @@ local function validateConfiguration(config)
   checkGroup(config.template.groupName)
   checkZone(config.zones.target)
 
+  if type(config.zones.routeAnchors) ~= "table"
+    or #config.zones.routeAnchors ~= 7 then
+    errors[#errors + 1] = "TM01B.1 requires exactly seven global route anchors"
+  else
+    for _, zoneName in ipairs(config.zones.routeAnchors) do
+      if type(zoneName) ~= "string" or zoneName == "" then
+        errors[#errors + 1] = "global route anchor name is missing"
+      else
+        checkZone(zoneName)
+      end
+    end
+  end
+
+  local routeAnchorCount = type(config.zones.routeAnchors) == "table"
+    and #config.zones.routeAnchors or 0
+  local previousExitSegmentIndex = nil
+
   if type(config.zones.revealSections) ~= "table"
     or #config.zones.revealSections < 2 then
     errors[#errors + 1] = "at least two reveal sections are required"
@@ -89,22 +123,39 @@ local function validateConfiguration(config)
       else
         checkZone(section.exit)
       end
-      if type(section.physicalRouteZones) ~= "table"
-        or #section.physicalRouteZones < 1 then
-        errors[#errors + 1] = "reveal section physical route is empty: "
+
+      if not isInteger(section.entrySegmentIndex) then
+        errors[#errors + 1] = "entry segment index is invalid: "
           .. tostring(section.id)
-      else
-        for _, zoneName in ipairs(section.physicalRouteZones) do
-          checkZone(zoneName)
-        end
-      end
-      if type(section.entrySegmentIndex) ~= "number" then
-        errors[#errors + 1] = "entry segment index is missing: "
+      elseif section.entrySegmentIndex > routeAnchorCount then
+        errors[#errors + 1] = "entry segment index exceeds the global route: "
           .. tostring(section.id)
       end
-      if type(section.exitSegmentIndex) ~= "number" then
-        errors[#errors + 1] = "exit segment index is missing: "
+
+      if not isInteger(section.exitSegmentIndex) then
+        errors[#errors + 1] = "exit segment index is invalid: "
           .. tostring(section.id)
+      elseif section.exitSegmentIndex > routeAnchorCount then
+        errors[#errors + 1] = "exit segment index exceeds the global route: "
+          .. tostring(section.id)
+      end
+
+      if isInteger(section.entrySegmentIndex)
+        and isInteger(section.exitSegmentIndex)
+        and section.exitSegmentIndex < section.entrySegmentIndex then
+        errors[#errors + 1] = "reveal exit precedes reveal entry on the global route: "
+          .. tostring(section.id)
+      end
+
+      if previousExitSegmentIndex ~= nil
+        and isInteger(section.entrySegmentIndex)
+        and section.entrySegmentIndex < previousExitSegmentIndex then
+        errors[#errors + 1] = "reveal sections are not ordered on the global route: "
+          .. tostring(section.id)
+      end
+
+      if isInteger(section.exitSegmentIndex) then
+        previousExitSegmentIndex = section.exitSegmentIndex
       end
     end
   end
@@ -123,6 +174,15 @@ local function validateConfiguration(config)
     or config.virtualization.automaticMaterialization ~= false
     or config.virtualization.automaticDematerialization ~= false then
     errors[#errors + 1] = "TM01B.1 automatic transitions must remain disabled"
+  end
+  if type(config.virtualization.destroyConfirmationPollSeconds) ~= "number"
+    or config.virtualization.destroyConfirmationPollSeconds <= 0 then
+    errors[#errors + 1] = "destroy confirmation poll interval must be positive"
+  end
+  if type(config.virtualization.destroyConfirmationTimeoutSeconds) ~= "number"
+    or config.virtualization.destroyConfirmationTimeoutSeconds
+      <= config.virtualization.destroyConfirmationPollSeconds then
+    errors[#errors + 1] = "destroy confirmation timeout must exceed the poll interval"
   end
 
   local checkedObjectCount = 0
@@ -202,10 +262,12 @@ function TM01B.start(dependencies)
 
     logger:info("configuration_valid", {
       checkedObjectCount = result.checkedObjectCount,
+      globalRouteAnchorCount = #config.zones.routeAnchors,
+      globalRoutePointCount = #config.zones.routeAnchors + 1,
       revealSectionCount = #config.zones.revealSections,
-      revealZonesRequired = true,
+      revealZonesAreWaypoints = false,
     })
-    setOutcome(OUTCOME_READY, "TM01B controlled caching configuration completed")
+    setOutcome(OUTCOME_READY, "TM01B global-route caching configuration completed")
     return true
   end
 
@@ -239,7 +301,19 @@ function TM01B.start(dependencies)
     testId = build.testId,
   })
 
-  logger:info("native_api_validation_passed", { nativeApiCount = 3 })
+  local tm01bNativeValid, missingTm01bNativeApis = validateTm01bNativeApis()
+  if not tm01bNativeValid then
+    setOutcome(OUTCOME_FAIL_SCRIPT, "required TM01B native APIs are unavailable")
+    logger:error("tm01b_native_api_validation_failed", {
+      missing = join(missingTm01bNativeApis),
+    })
+    return state
+  end
+
+  logger:info("native_api_validation_passed", {
+    baselineNativeApiCount = 3,
+    tm01bAdditionalNativeApiCount = 2,
+  })
 
   local baseMooseValid, missingBaseMooseApis = dependencies.runtimeGuard.validateMoose()
   if not baseMooseValid then
