@@ -3,7 +3,7 @@
 local OMWBuild = {
   testId = "TM01",
   stageId = "TM01B",
-  configurationVersion = "TM01B-controlled-caching-4",
+  configurationVersion = "TM01B-controlled-caching-5",
   expectedMooseVersion = "2.9.18",
   expectedMooseFileSha256 = "e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915",
   expectedMooseBuildCommit = "73d3ed119cd9e7e3f2cfcabbaa34513d30529b54",
@@ -11,12 +11,12 @@ local OMWBuild = {
   expectedMooseIncludeFamily = "Moose_Include_Static",
   expectedMooseCompression = "none",
   mooseVerificationMode = "BUILD_HASH_PLUS_RUNTIME_API_CHECK",
-  buildTimestamp = "2026-07-14T20:02:56Z",
+  buildTimestamp = "2026-07-14T21:06:20Z",
 }
 
 local TM01BConfig = (function()
 local config = {
-  configurationVersion = "TM01B-controlled-caching-4",
+  configurationVersion = "TM01B-controlled-caching-5",
   testId = "TM01",
   stageId = "TM01B",
   scenarioId = "TEST.TM01.CONVOY.001",
@@ -42,24 +42,17 @@ local config = {
       "ZONE_TM01_ROUTE_07",
     },
 
-    -- Entry and exit zones are automatic visibility boundaries.
-    -- entrySegmentIndex/exitSegmentIndex identify which existing route anchors
-    -- lie inside the visible physical section. The entry-zone coordinate is the
-    -- physical spawn point and the exit-zone coordinate terminates that section.
-    revealSections = {
+    -- Each circular Mission Editor trigger zone is the complete visibility
+    -- window: inside = physical, outside = virtual. Entry and exit are derived
+    -- automatically from the ordered road path through the circle.
+    revealWindows = {
       {
         id = "REVEAL_01",
-        entry = "ZONE_TM01_REVEAL_01_ENTRY",
-        exit = "ZONE_TM01_REVEAL_01_EXIT",
-        entrySegmentIndex = 0,
-        exitSegmentIndex = 2,
+        zone = "ZONE_TM01_REVEAL_01",
       },
       {
         id = "REVEAL_02",
-        entry = "ZONE_TM01_REVEAL_02_ENTRY",
-        exit = "ZONE_TM01_REVEAL_02_EXIT",
-        entrySegmentIndex = 5,
-        exitSegmentIndex = 7,
+        zone = "ZONE_TM01_REVEAL_02",
       },
     },
   },
@@ -68,6 +61,17 @@ local config = {
     roadOnly = true,
     speedKph = 30,
     formation = "ON_ROAD",
+
+    -- Global road geometry and physical route resolution.
+    routeSampleMeters = 20,
+    physicalWaypointSpacingMeters = 250,
+    maximumRoadSnapMeters = 1500,
+    roadPositionToleranceMeters = 3,
+
+    -- Six template slots are placed individually on the road centerline.
+    vehicleSpacingMeters = 18,
+    spawnInteriorMarginMeters = 12,
+    physicalClearanceMeters = 40,
   },
 
   virtualization = {
@@ -79,16 +83,17 @@ local config = {
     preserveLosses = true,
     allowDuplicatePhysicalGroup = false,
 
-    -- One manual start command arms the full automatic lifecycle.
     automaticAdvance = true,
     automaticMaterialization = true,
     automaticDematerialization = true,
+    visibilityMode = "CIRCULAR_WINDOW_ANY_UNIT_INSIDE",
     automationPollSeconds = 1,
     minimumVirtualLegSeconds = 1,
 
-    -- Exit is a passage gate: every currently surviving slot only has to enter
-    -- the zone once. The full convoy never has to be inside simultaneously.
-    exitPassageMode = "EACH_SURVIVING_SLOT_EVER_INSIDE",
+    -- The virtual convoy position is shown to BLUE and updated periodically.
+    showVirtualMarker = true,
+    virtualMarkerUpdateSeconds = 5,
+    showRevealWindowMarkers = true,
 
     destroyConfirmationPollSeconds = 0.5,
     destroyConfirmationTimeoutSeconds = 10,
@@ -286,6 +291,8 @@ function InMemoryCampaignState.new(config)
     currentSectionIndex = config.virtualization.initialSectionIndex,
     segmentIndex = 0,
     segmentProgress = 0,
+    -- Authoritative distance of the virtual entity along the compiled global
+    -- road path. During a physical window this is updated at transition points.
     routeDistanceMeters = 0,
     configuredSpeedKph = config.virtualization.configuredSpeedKph,
     effectiveSpeedKph = config.virtualization.effectiveSpeedKph,
@@ -387,6 +394,10 @@ local function copyArray(values)
   return copy
 end
 
+local function copyVec2(vec2)
+  return { x = vec2.x, y = vec2.y }
+end
+
 local function joinNumbers(values)
   local text = {}
   for index, value in ipairs(values or {}) do
@@ -415,18 +426,6 @@ local function arraysEqual(left, right)
   return true
 end
 
-local function isInteger(value)
-  return type(value) == "number" and value >= 0 and value == math.floor(value)
-end
-
-local function parseSpawnSlot(unitName)
-  if type(unitName) ~= "string" then
-    return nil
-  end
-  local suffix = string.match(unitName, "%-(%d+)$")
-  return suffix and tonumber(suffix) or nil
-end
-
 local function clamp(value, minimum, maximum)
   if value < minimum then
     return minimum
@@ -435,6 +434,73 @@ local function clamp(value, minimum, maximum)
     return maximum
   end
   return value
+end
+
+local function distance2d(left, right)
+  local dx = right.x - left.x
+  local dy = right.y - left.y
+  return math.sqrt(dx * dx + dy * dy)
+end
+
+local function interpolateVec2(left, right, fraction)
+  return {
+    x = left.x + (right.x - left.x) * fraction,
+    y = left.y + (right.y - left.y) * fraction,
+  }
+end
+
+local function atan2(y, x)
+  if type(math.atan2) == "function" then
+    return math.atan2(y, x)
+  end
+  if x > 0 then
+    return math.atan(y / x)
+  end
+  if x < 0 and y >= 0 then
+    return math.atan(y / x) + math.pi
+  end
+  if x < 0 and y < 0 then
+    return math.atan(y / x) - math.pi
+  end
+  if x == 0 and y > 0 then
+    return math.pi / 2
+  end
+  if x == 0 and y < 0 then
+    return -math.pi / 2
+  end
+  return 0
+end
+
+local function headingDegrees(fromVec2, toVec2)
+  local dx = toVec2.x - fromVec2.x
+  local dy = toVec2.y - fromVec2.y
+  local degrees = math.deg(atan2(dx, dy))
+  while degrees < 0 do
+    degrees = degrees + 360
+  end
+  while degrees >= 360 do
+    degrees = degrees - 360
+  end
+  return degrees
+end
+
+local function formatDuration(seconds)
+  local rounded = math.max(0, math.floor(seconds + 0.5))
+  local hours = math.floor(rounded / 3600)
+  local minutes = math.floor((rounded % 3600) / 60)
+  local remainingSeconds = rounded % 60
+  if hours > 0 then
+    return string.format("%02d:%02d:%02d", hours, minutes, remainingSeconds)
+  end
+  return string.format("%02d:%02d", minutes, remainingSeconds)
+end
+
+local function parseSpawnSlot(unitName)
+  if type(unitName) ~= "string" then
+    return nil
+  end
+  local suffix = string.match(unitName, "%-(%d+)$")
+  return suffix and tonumber(suffix) or nil
 end
 
 function ConvoyCacheController.new(options)
@@ -462,18 +528,24 @@ function ConvoyCacheController.new(options)
     routeAssignedGeneration = nil,
     retiredRuntimeGroupNames = {},
     pendingDematerialization = nil,
+    routePlan = nil,
     virtualLeg = nil,
-    exitSeenSlots = {},
     schedulerId = nil,
     halted = false,
     arrivalLogged = false,
     lastError = nil,
+    completedWindows = {},
+    activeWindowIndex = nil,
+    activeWindowWasOccupied = false,
+    virtualMarker = nil,
+    virtualMarkerLastUpdate = nil,
+    windowMarkers = {},
   }
 
   local automationTick
   local pollPendingDematerialization
   local beginVirtualLeg
-  local materializeCurrentSection
+  local materializeWindow
   local beginDematerialization
   local finalizeDematerialization
 
@@ -482,41 +554,18 @@ function ConvoyCacheController.new(options)
     return controller.entity
   end
 
-  local function currentSection()
-    return config.zones.revealSections[controller.entity.currentSectionIndex]
+  local function currentWindow()
+    local index = controller.activeWindowIndex or controller.entity.currentSectionIndex
+    return controller.routePlan and controller.routePlan.windows[index] or nil
   end
 
-  local function finalSegmentIndex()
-    return #config.zones.routeAnchors + 1
-  end
-
-  local function routeZoneNameAt(segmentIndex)
-    if segmentIndex == 0 then
-      return config.zones.start
-    end
-    if segmentIndex >= 1 and segmentIndex <= #config.zones.routeAnchors then
-      return config.zones.routeAnchors[segmentIndex]
-    end
-    if segmentIndex == finalSegmentIndex() then
-      return config.zones.target
-    end
-    return nil
-  end
-
-  local function countSeenLiveSlots(liveSlots)
-    local count = 0
-    for _, slot in ipairs(liveSlots or {}) do
-      if controller.exitSeenSlots[slot] then
-        count = count + 1
-      end
-    end
-    return count
+  local function announce(text)
+    options.announce(text)
   end
 
   local function commonFields()
-    local section = currentSection()
+    local window = currentWindow()
     local leg = controller.virtualLeg
-    local liveSlots = controller.entity.survivingVehicleSlots or {}
     return {
       entityId = controller.entity.entityId,
       routeId = controller.entity.routeId,
@@ -525,25 +574,18 @@ function ConvoyCacheController.new(options)
       representationState = controller.entity.representationState,
       transitionState = controller.entity.transitionState,
       movementState = controller.entity.movementState,
-      currentSectionIndex = controller.entity.currentSectionIndex,
-      currentSectionId = section and section.id or "none",
-      segmentIndex = controller.entity.segmentIndex,
-      segmentProgress = controller.entity.segmentProgress,
+      currentWindowIndex = controller.entity.currentSectionIndex,
+      currentWindowId = window and window.id or "none",
+      routeDistanceMeters = controller.entity.routeDistanceMeters,
+      routeProgress = controller.routePlan and controller.entity.routeDistanceMeters / controller.routePlan.totalDistance or 0,
       physicalGeneration = controller.entity.physicalGeneration,
       runtimeGroupName = controller.entity.runtimeGroupName or "none",
-      survivingVehicleSlots = joinNumbers(liveSlots),
-      exitSeenSlotCount = countSeenLiveSlots(liveSlots),
-      exitRequiredSlotCount = #liveSlots,
+      survivingVehicleSlots = joinNumbers(controller.entity.survivingVehicleSlots),
       pendingDematerialization = controller.pendingDematerialization ~= nil,
-      virtualLegFrom = leg and leg.fromZoneName or "none",
-      virtualLegTo = leg and leg.toZoneName or "none",
-      virtualLegArrivalKind = leg and leg.arrivalKind or "none",
+      virtualLegTargetKind = leg and leg.targetKind or "none",
+      virtualLegWindowIndex = leg and leg.windowIndex or "none",
       revision = controller.entity.revision,
     }
-  end
-
-  local function announce(text)
-    options.announce(text)
   end
 
   local function logInfo(event, extra)
@@ -555,18 +597,20 @@ function ConvoyCacheController.new(options)
     logger:info(event, fields)
   end
 
-  local function reject(action, reason)
-    logInfo("convoy_automation_command_rejected", {
-      action = action,
-      reason = reason,
-    })
-    announce(action .. " rejected: " .. reason)
-    return false
+  local function removeVirtualMarker()
+    if controller.virtualMarker then
+      pcall(function()
+        controller.virtualMarker:Remove()
+      end)
+      controller.virtualMarker = nil
+      controller.virtualMarkerLastUpdate = nil
+    end
   end
 
   local function haltAutomation(event, reason, movementState)
     controller.halted = true
     controller.lastError = tostring(reason)
+    removeVirtualMarker()
     updateEntity({
       movementState = movementState or MOVEMENT_AUTOMATION_FAILED,
       transitionState = TRANSITION_IDLE,
@@ -576,6 +620,15 @@ function ConvoyCacheController.new(options)
     fields.missionTimeSeconds = timer.getTime()
     logger:error(event, fields)
     announce("Convoy automation halted: " .. controller.lastError)
+    return false
+  end
+
+  local function reject(action, reason)
+    logInfo("convoy_automation_command_rejected", {
+      action = action,
+      reason = reason,
+    })
+    announce(action .. " rejected: " .. reason)
     return false
   end
 
@@ -659,25 +712,386 @@ function ConvoyCacheController.new(options)
     return zoneOrError, nil
   end
 
-  local function distanceBetweenZones(fromZoneName, toZoneName)
-    local fromZone, fromError = zoneByName(fromZoneName)
-    if not fromZone then
-      return nil, fromError
+  local function coordinateFromVec2(vec2)
+    return COORDINATE:NewFromVec2(copyVec2(vec2))
+  end
+
+  local function pointAtDistance(routePlan, requestedDistance)
+    local distance = clamp(requestedDistance, 0, routePlan.totalDistance)
+    local points = routePlan.points
+    if distance <= 0 then
+      return copyVec2(points[1].vec2), 1
     end
-    local toZone, toError = zoneByName(toZoneName)
-    if not toZone then
-      return nil, toError
+    if distance >= routePlan.totalDistance then
+      return copyVec2(points[#points].vec2), #points - 1
     end
 
-    local fromVec2 = fromZone:GetVec2()
-    local toVec2 = toZone:GetVec2()
-    if type(fromVec2) ~= "table" or type(toVec2) ~= "table" then
-      return nil, "virtual leg zone coordinates are unavailable"
+    local low = 1
+    local high = #points
+    while low + 1 < high do
+      local middle = math.floor((low + high) / 2)
+      if points[middle].distance <= distance then
+        low = middle
+      else
+        high = middle
+      end
     end
 
-    local dx = toVec2.x - fromVec2.x
-    local dy = toVec2.y - fromVec2.y
-    return math.sqrt(dx * dx + dy * dy), nil
+    local left = points[low]
+    local right = points[high]
+    local span = right.distance - left.distance
+    local fraction = span > 0 and (distance - left.distance) / span or 0
+    return interpolateVec2(left.vec2, right.vec2, fraction), low
+  end
+
+  local function headingAtDistance(routePlan, distance)
+    local offset = math.max(5, config.routing.routeSampleMeters / 2)
+    local fromDistance = clamp(distance - offset, 0, routePlan.totalDistance)
+    local toDistance = clamp(distance + offset, 0, routePlan.totalDistance)
+    if toDistance <= fromDistance then
+      return 0
+    end
+    local fromVec2 = pointAtDistance(routePlan, fromDistance)
+    local toVec2 = pointAtDistance(routePlan, toDistance)
+    return headingDegrees(fromVec2, toVec2)
+  end
+
+  local function appendUniqueVec2(values, vec2)
+    local last = values[#values]
+    if not last or distance2d(last, vec2) > 0.25 then
+      values[#values + 1] = copyVec2(vec2)
+    end
+  end
+
+  local function snapZoneToRoad(zoneName)
+    local zone, zoneError = zoneByName(zoneName)
+    if not zone then
+      return nil, zoneError
+    end
+    local center = zone:GetCoordinate()
+    local road = center:GetClosestPointToRoad(false)
+    if not road then
+      return nil, "no road point found near zone: " .. zoneName
+    end
+    local snapDistance = center:Get2DDistance(road)
+    if snapDistance > config.routing.maximumRoadSnapMeters then
+      return nil, "nearest road exceeds maximum snap distance for " .. zoneName
+    end
+    return road, snapDistance
+  end
+
+  local function buildGlobalRoutePlan()
+    return pcall(function()
+      local routeZoneNames = { config.zones.start }
+      for _, zoneName in ipairs(config.zones.routeAnchors) do
+        routeZoneNames[#routeZoneNames + 1] = zoneName
+      end
+      routeZoneNames[#routeZoneNames + 1] = config.zones.target
+
+      local snappedCoordinates = {}
+      local snapDistances = {}
+      for index, zoneName in ipairs(routeZoneNames) do
+        local coordinate, snapDistanceOrError = snapZoneToRoad(zoneName)
+        if not coordinate then
+          error(snapDistanceOrError)
+        end
+        snappedCoordinates[index] = coordinate
+        snapDistances[index] = snapDistanceOrError
+      end
+
+      local rawVec2 = {}
+      for index = 1, #snappedCoordinates - 1 do
+        local fromCoordinate = snappedCoordinates[index]
+        local toCoordinate = snappedCoordinates[index + 1]
+        local path, _, gotPath = fromCoordinate:GetPathOnRoad(
+          toCoordinate,
+          true,
+          false,
+          false,
+          false
+        )
+        if gotPath ~= true or type(path) ~= "table" or #path < 2 then
+          error(
+            "no valid road path between "
+              .. routeZoneNames[index]
+              .. " and "
+              .. routeZoneNames[index + 1]
+          )
+        end
+        for _, coordinate in ipairs(path) do
+          local vec2 = coordinate:GetVec2()
+          if type(vec2) ~= "table" then
+            error("road path coordinate is unavailable")
+          end
+          appendUniqueVec2(rawVec2, vec2)
+        end
+      end
+
+      if #rawVec2 < 2 then
+        error("compiled road path has fewer than two points")
+      end
+
+      local points = {
+        { vec2 = copyVec2(rawVec2[1]), distance = 0 },
+      }
+      local totalDistance = 0
+      for index = 1, #rawVec2 - 1 do
+        local left = rawVec2[index]
+        local right = rawVec2[index + 1]
+        local segmentLength = distance2d(left, right)
+        if segmentLength > 0.1 then
+          local steps = math.max(1, math.ceil(segmentLength / config.routing.routeSampleMeters))
+          local previous = points[#points].vec2
+          for step = 1, steps do
+            local vec2 = interpolateVec2(left, right, step / steps)
+            totalDistance = totalDistance + distance2d(previous, vec2)
+            points[#points + 1] = {
+              vec2 = vec2,
+              distance = totalDistance,
+            }
+            previous = vec2
+          end
+        end
+      end
+
+      return {
+        routeZoneNames = routeZoneNames,
+        snapDistances = snapDistances,
+        points = points,
+        totalDistance = totalDistance,
+        windows = {},
+      }
+    end)
+  end
+
+  local function boundaryDistance(zone, leftPoint, rightPoint, entering)
+    local low = 0
+    local high = 1
+    for _ = 1, 18 do
+      local middle = (low + high) / 2
+      local vec2 = interpolateVec2(leftPoint.vec2, rightPoint.vec2, middle)
+      local inside = zone:IsVec2InZone(vec2) == true
+      if entering then
+        if inside then
+          high = middle
+        else
+          low = middle
+        end
+      else
+        if inside then
+          low = middle
+        else
+          high = middle
+        end
+      end
+    end
+    local fraction = entering and high or low
+    return leftPoint.distance + (rightPoint.distance - leftPoint.distance) * fraction
+  end
+
+  local function findWindowInterval(routePlan, windowConfig, windowIndex)
+    local zone, zoneError = zoneByName(windowConfig.zone)
+    if not zone then
+      return nil, zoneError
+    end
+
+    local radius = zone:GetRadius()
+    if type(radius) ~= "number" or radius <= 0 then
+      return nil, "reveal window is not a valid circular zone: " .. windowConfig.zone
+    end
+
+    local intervals = {}
+    local points = routePlan.points
+    local previousInside = zone:IsVec2InZone(points[1].vec2) == true
+    local currentStart = previousInside and 0 or nil
+
+    for index = 2, #points do
+      local inside = zone:IsVec2InZone(points[index].vec2) == true
+      if not previousInside and inside then
+        currentStart = boundaryDistance(zone, points[index - 1], points[index], true)
+      elseif previousInside and not inside then
+        local currentEnd = boundaryDistance(zone, points[index - 1], points[index], false)
+        intervals[#intervals + 1] = {
+          entryDistance = currentStart,
+          exitDistance = currentEnd,
+        }
+        currentStart = nil
+      end
+      previousInside = inside
+    end
+
+    if previousInside then
+      intervals[#intervals + 1] = {
+        entryDistance = currentStart,
+        exitDistance = routePlan.totalDistance,
+      }
+    end
+
+    if #intervals ~= 1 then
+      return nil,
+        "road path must cross reveal window exactly once: "
+          .. windowConfig.zone
+          .. " intervals="
+          .. tostring(#intervals)
+    end
+
+    local interval = intervals[1]
+    local formationLength = (config.template.expectedVehicleCount - 1)
+      * config.routing.vehicleSpacingMeters
+    local spawnLeadDistance = interval.entryDistance
+      + config.routing.spawnInteriorMarginMeters
+      + formationLength
+    local virtualResumeDistance = interval.exitDistance
+      + formationLength
+      + config.routing.spawnInteriorMarginMeters
+    local physicalRouteEndDistance = virtualResumeDistance
+      + config.routing.physicalClearanceMeters
+
+    if spawnLeadDistance >= interval.exitDistance - config.routing.spawnInteriorMarginMeters then
+      return nil,
+        "reveal window is too short for the complete road-aligned convoy: "
+          .. windowConfig.zone
+    end
+    if physicalRouteEndDistance > routePlan.totalDistance then
+      return nil, "reveal window exit is too close to route target: " .. windowConfig.zone
+    end
+
+    for slot = 1, config.template.expectedVehicleCount do
+      local positionDistance = spawnLeadDistance
+        - (slot - 1) * config.routing.vehicleSpacingMeters
+      local vec2 = pointAtDistance(routePlan, positionDistance)
+      if zone:IsVec2InZone(vec2) ~= true then
+        return nil,
+          "not all template vehicle positions fit inside reveal window: "
+            .. windowConfig.zone
+      end
+      local coordinate = coordinateFromVec2(vec2)
+      local nearestRoad = coordinate:GetClosestPointToRoad(false)
+      if not nearestRoad then
+        return nil, "road validation failed inside reveal window: " .. windowConfig.zone
+      end
+      if coordinate:Get2DDistance(nearestRoad) > config.routing.roadPositionToleranceMeters then
+        return nil, "planned vehicle position is not on road: " .. windowConfig.zone
+      end
+    end
+
+    return {
+      id = windowConfig.id,
+      zoneName = windowConfig.zone,
+      zone = zone,
+      radiusMeters = radius,
+      diameterMeters = radius * 2,
+      index = windowIndex,
+      entryDistance = interval.entryDistance,
+      exitDistance = interval.exitDistance,
+      spawnLeadDistance = spawnLeadDistance,
+      virtualResumeDistance = virtualResumeDistance,
+      physicalRouteEndDistance = physicalRouteEndDistance,
+      formationLengthMeters = formationLength,
+    }, nil
+  end
+
+  local function compileRouteAndWindows()
+    local routeOk, routePlanOrError = buildGlobalRoutePlan()
+    if not routeOk then
+      return false, routePlanOrError
+    end
+    local routePlan = routePlanOrError
+
+    for index, windowConfig in ipairs(config.zones.revealWindows) do
+      local window, windowError = findWindowInterval(routePlan, windowConfig, index)
+      if not window then
+        return false, windowError
+      end
+      routePlan.windows[index] = window
+    end
+
+    for index, window in ipairs(routePlan.windows) do
+      if index > 1 then
+        local previous = routePlan.windows[index - 1]
+        if window.entryDistance <= previous.exitDistance then
+          return false, "reveal windows overlap or are out of route order"
+        end
+        if window.spawnLeadDistance <= previous.virtualResumeDistance then
+          return false, "insufficient virtual road distance between reveal windows"
+        end
+      end
+    end
+
+    controller.routePlan = routePlan
+    logInfo("convoy_road_route_compiled", {
+      totalDistanceMeters = routePlan.totalDistance,
+      sampledPointCount = #routePlan.points,
+      revealWindowCount = #routePlan.windows,
+    })
+    return true, routePlan
+  end
+
+  local function markerTextForVirtualLeg(leg, distance, remainingSeconds)
+    local progress = 0
+    if leg.endDistance > leg.startDistance then
+      progress = (distance - leg.startDistance) / (leg.endDistance - leg.startDistance)
+    end
+    local destination
+    if leg.targetKind == "WINDOW" then
+      destination = controller.routePlan.windows[leg.windowIndex].id
+    else
+      destination = "JALALABAD"
+    end
+    return "TM01B - virtueller Konvoi"
+      .. "\nNaechstes Ziel: " .. destination
+      .. "\nETA: " .. formatDuration(remainingSeconds)
+      .. "\nEtappe: " .. tostring(math.floor(clamp(progress, 0, 1) * 100 + 0.5)) .. "%"
+  end
+
+  local function updateVirtualMarker(distance, remainingSeconds, force)
+    if config.virtualization.showVirtualMarker ~= true then
+      return true
+    end
+    local now = timer.getTime()
+    if not force
+      and controller.virtualMarkerLastUpdate
+      and now - controller.virtualMarkerLastUpdate < config.virtualization.virtualMarkerUpdateSeconds then
+      return true
+    end
+
+    local vec2 = pointAtDistance(controller.routePlan, distance)
+    local coordinate = coordinateFromVec2(vec2)
+    local text = markerTextForVirtualLeg(controller.virtualLeg, distance, remainingSeconds)
+    local ok, markerOrError = pcall(function()
+      if not controller.virtualMarker then
+        controller.virtualMarker = MARKER:New(coordinate, text):ReadOnly():ToBlue()
+      else
+        controller.virtualMarker:UpdateCoordinate(coordinate)
+        controller.virtualMarker:UpdateText(text)
+      end
+      return controller.virtualMarker
+    end)
+    if not ok or not markerOrError then
+      return haltAutomation("convoy_virtual_marker_failed", markerOrError)
+    end
+    controller.virtualMarkerLastUpdate = now
+    return true
+  end
+
+  local function createWindowMarkers()
+    if config.virtualization.showRevealWindowMarkers ~= true then
+      return true
+    end
+    for index, window in ipairs(controller.routePlan.windows) do
+      local ok, markerOrError = pcall(function()
+        local text = window.id
+          .. " - Sichtfenster"
+          .. "\nDurchmesser: " .. tostring(math.floor(window.diameterMeters + 0.5)) .. " m"
+          .. "\nInnen physisch / aussen virtuell"
+        return MARKER:New(window.zone:GetCoordinate(), text):ReadOnly():ToBlue()
+      end)
+      if not ok or not markerOrError then
+        return haltAutomation("convoy_window_marker_failed", markerOrError)
+      end
+      controller.windowMarkers[index] = markerOrError
+    end
+    return true
   end
 
   local function captureLiveUnits(group)
@@ -769,7 +1183,31 @@ function ConvoyCacheController.new(options)
     end)
   end
 
-  local function buildPhysicalWindowRoute(section)
+  local function buildAbsoluteVehiclePositions(window)
+    local positions = {}
+    for slot = 1, config.template.expectedVehicleCount do
+      local distance = window.spawnLeadDistance
+        - (slot - 1) * config.routing.vehicleSpacingMeters
+      local vec2 = pointAtDistance(controller.routePlan, distance)
+      if window.zone:IsVec2InZone(vec2) ~= true then
+        return nil, "vehicle position falls outside reveal window"
+      end
+      local coordinate = coordinateFromVec2(vec2)
+      local nearestRoad = coordinate:GetClosestPointToRoad(false)
+      if not nearestRoad
+        or coordinate:Get2DDistance(nearestRoad) > config.routing.roadPositionToleranceMeters then
+        return nil, "vehicle position is not on the road centerline"
+      end
+      positions[slot] = {
+        x = vec2.x,
+        y = vec2.y,
+        heading = headingAtDistance(controller.routePlan, distance),
+      }
+    end
+    return positions, nil
+  end
+
+  local function buildPhysicalRoute(window)
     return pcall(function()
       local formation = MOOSE_FORMATIONS[config.routing.formation]
       if config.routing.roadOnly ~= true or not formation then
@@ -777,39 +1215,29 @@ function ConvoyCacheController.new(options)
       end
 
       local waypoints = {}
-      local routeZoneNames = {}
+      local waypointDistances = {}
+      local startDistance = window.spawnLeadDistance
+      local endDistance = window.physicalRouteEndDistance
+      local distance = startDistance + config.routing.physicalWaypointSpacingMeters
 
-      for segmentIndex = section.entrySegmentIndex + 1, section.exitSegmentIndex do
-        local zoneName = routeZoneNameAt(segmentIndex)
-        if not zoneName or zoneName == config.zones.target then
-          error("invalid physical-window route segment: " .. tostring(segmentIndex))
-        end
-        local zone, zoneError = zoneByName(zoneName)
-        if not zone then
-          error(zoneError)
-        end
-        local waypoint = zone:GetCoordinate():WaypointGround(config.routing.speedKph, formation)
-        if type(waypoint) ~= "table" then
-          error("ground waypoint construction failed: " .. zoneName)
-        end
-        waypoints[#waypoints + 1] = waypoint
-        routeZoneNames[#routeZoneNames + 1] = zoneName
+      while distance < endDistance do
+        local coordinate = coordinateFromVec2(pointAtDistance(controller.routePlan, distance))
+        waypoints[#waypoints + 1] = coordinate:WaypointGround(config.routing.speedKph, formation)
+        waypointDistances[#waypointDistances + 1] = distance
+        distance = distance + config.routing.physicalWaypointSpacingMeters
       end
 
-      local exitZone, exitError = zoneByName(section.exit)
-      if not exitZone then
-        error(exitError)
+      local endCoordinate = coordinateFromVec2(pointAtDistance(controller.routePlan, endDistance))
+      waypoints[#waypoints + 1] = endCoordinate:WaypointGround(config.routing.speedKph, formation)
+      waypointDistances[#waypointDistances + 1] = endDistance
+
+      if #waypoints < 1 then
+        error("physical reveal-window route contains no waypoints")
       end
-      local exitWaypoint = exitZone:GetCoordinate():WaypointGround(config.routing.speedKph, formation)
-      if type(exitWaypoint) ~= "table" then
-        error("exit-zone waypoint construction failed: " .. section.exit)
-      end
-      waypoints[#waypoints + 1] = exitWaypoint
-      routeZoneNames[#routeZoneNames + 1] = section.exit
 
       return {
         waypoints = waypoints,
-        routeZoneNames = routeZoneNames,
+        waypointDistances = waypointDistances,
       }
     end)
   end
@@ -820,25 +1248,22 @@ function ConvoyCacheController.new(options)
     end)
   end
 
-  beginVirtualLeg = function(fromZoneName, toZoneName, arrivalKind, sectionIndex)
-    local distanceMeters, distanceError = distanceBetweenZones(fromZoneName, toZoneName)
-    if not distanceMeters then
-      return haltAutomation("convoy_virtual_leg_failed", distanceError)
+  beginVirtualLeg = function(startDistance, endDistance, targetKind, windowIndex)
+    if endDistance <= startDistance then
+      return haltAutomation("convoy_virtual_leg_failed", "virtual leg has no positive road distance")
     end
-
     local speedMetersPerSecond = config.virtualization.effectiveSpeedKph / 3.6
     local durationSeconds = math.max(
       config.virtualization.minimumVirtualLegSeconds,
-      distanceMeters / speedMetersPerSecond
+      (endDistance - startDistance) / speedMetersPerSecond
     )
     local now = timer.getTime()
 
     controller.virtualLeg = {
-      fromZoneName = fromZoneName,
-      toZoneName = toZoneName,
-      arrivalKind = arrivalKind,
-      sectionIndex = sectionIndex,
-      distanceMeters = distanceMeters,
+      startDistance = startDistance,
+      endDistance = endDistance,
+      targetKind = targetKind,
+      windowIndex = windowIndex,
       durationSeconds = durationSeconds,
       startedAt = now,
     }
@@ -848,17 +1273,24 @@ function ConvoyCacheController.new(options)
       representationState = REPRESENTATION_VIRTUAL,
       transitionState = TRANSITION_IDLE,
       movementState = MOVEMENT_VIRTUAL_MOVING,
+      routeDistanceMeters = startDistance,
       segmentProgress = 0,
       lastMovementUpdateCampaignTime = now,
     })
 
+    local markerOk = updateVirtualMarker(startDistance, durationSeconds, true)
+    if markerOk == false then
+      return false
+    end
+
     logInfo("convoy_virtual_leg_started", {
-      fromZoneName = fromZoneName,
-      toZoneName = toZoneName,
-      arrivalKind = arrivalKind,
-      distanceMeters = distanceMeters,
+      startDistanceMeters = startDistance,
+      endDistanceMeters = endDistance,
+      roadDistanceMeters = endDistance - startDistance,
       durationSeconds = durationSeconds,
       effectiveSpeedKph = config.virtualization.effectiveSpeedKph,
+      targetKind = targetKind,
+      targetWindowIndex = windowIndex or "none",
     })
     return true
   end
@@ -871,10 +1303,18 @@ function ConvoyCacheController.new(options)
 
     local now = timer.getTime()
     local progress = clamp((now - leg.startedAt) / leg.durationSeconds, 0, 1)
+    local distance = leg.startDistance + (leg.endDistance - leg.startDistance) * progress
+    local remainingSeconds = math.max(0, leg.durationSeconds - (now - leg.startedAt))
+
     updateEntity({
+      routeDistanceMeters = distance,
       segmentProgress = progress,
       lastMovementUpdateCampaignTime = now,
     })
+
+    if updateVirtualMarker(distance, remainingSeconds, false) == false then
+      return false
+    end
 
     if progress < 1 then
       return true
@@ -882,31 +1322,32 @@ function ConvoyCacheController.new(options)
 
     controller.virtualLeg = nil
     updateEntity({
-      routeDistanceMeters = controller.entity.routeDistanceMeters + leg.distanceMeters,
+      routeDistanceMeters = leg.endDistance,
       segmentProgress = 1,
       lastMovementUpdateCampaignTime = now,
     })
 
-    if leg.arrivalKind == "ENTRY" then
-      local section = config.zones.revealSections[leg.sectionIndex]
-      if not section then
-        return haltAutomation("convoy_virtual_arrival_failed", "reveal section is unavailable")
+    if leg.targetKind == "WINDOW" then
+      local window = controller.routePlan.windows[leg.windowIndex]
+      if not window then
+        return haltAutomation("convoy_virtual_arrival_failed", "reveal window is unavailable")
       end
       updateEntity({
-        currentSectionIndex = leg.sectionIndex,
-        segmentIndex = section.entrySegmentIndex,
+        currentSectionIndex = leg.windowIndex,
         segmentProgress = 0,
       })
-      logInfo("convoy_reveal_entry_reached", {
-        entryZoneName = section.entry,
-        sectionId = section.id,
+      logInfo("convoy_reveal_window_reached", {
+        revealWindowId = window.id,
+        revealZoneName = window.zoneName,
+        triggerDistanceMeters = window.spawnLeadDistance,
       })
-      return materializeCurrentSection()
+      return materializeWindow(window)
     end
 
-    if leg.arrivalKind == "TARGET" then
+    if leg.targetKind == "TARGET" then
+      removeVirtualMarker()
       updateEntity({
-        segmentIndex = finalSegmentIndex(),
+        routeDistanceMeters = controller.routePlan.totalDistance,
         segmentProgress = 1,
         movementState = MOVEMENT_ARRIVED,
       })
@@ -920,38 +1361,42 @@ function ConvoyCacheController.new(options)
       return true
     end
 
-    return haltAutomation("convoy_virtual_arrival_failed", "unknown virtual arrival kind")
+    return haltAutomation("convoy_virtual_arrival_failed", "unknown virtual target kind")
   end
 
-  materializeCurrentSection = function()
-    local section = currentSection()
-    if not section then
-      return haltAutomation("convoy_materialization_failed", "current reveal section is unavailable")
-    end
-
+  materializeWindow = function(window)
     local retiredOk, retiredError = ensureRetiredGroupsAreAbsent()
     if not retiredOk then
       return haltAutomation("convoy_materialization_failed", retiredError)
     end
-
-    local entryZone, entryError = zoneByName(section.entry)
-    if not entryZone then
-      return haltAutomation("convoy_materialization_failed", entryError)
+    if controller.completedWindows[window.index] then
+      return haltAutomation("convoy_materialization_failed", "reveal window has already completed")
     end
 
+    local positions, positionsError = buildAbsoluteVehiclePositions(window)
+    if not positions then
+      return haltAutomation("convoy_spawn_site_unavailable", positionsError)
+    end
+    local routeOk, routeOrError = buildPhysicalRoute(window)
+    if not routeOk then
+      return haltAutomation("convoy_physical_route_failed", routeOrError)
+    end
+
+    removeVirtualMarker()
     updateEntity({ transitionState = TRANSITION_MATERIALIZING })
+
     local nextGeneration = controller.entity.physicalGeneration + 1
     local alias = config.template.runtimeAliasPrefix
       .. "_G" .. string.format("%02d", nextGeneration)
 
     local constructionOk, spawnerOrError = pcall(function()
-      local spawner = SPAWN:NewWithAlias(config.template.groupName, alias)
-      return spawner:InitPositionCoordinate(entryZone:GetCoordinate())
+      return SPAWN:NewWithAlias(config.template.groupName, alias)
+        :InitSetUnitAbsolutePositions(positions)
     end)
     if not constructionOk or type(spawnerOrError) ~= "table" then
       return haltAutomation(
         "convoy_materialization_failed",
-        constructionOk and "SPAWN position initialization returned no spawner" or spawnerOrError
+        constructionOk and "SPAWN absolute-position initialization returned no spawner" or spawnerOrError
       )
     end
 
@@ -973,12 +1418,6 @@ function ConvoyCacheController.new(options)
     if not pruneOk then
       destroyGroupSilently(runtimeGroup)
       return haltAutomation("convoy_materialization_failed", livingCountOrError)
-    end
-
-    local routeOk, routeOrError = buildPhysicalWindowRoute(section)
-    if not routeOk then
-      destroyGroupSilently(runtimeGroup)
-      return haltAutomation("convoy_physical_route_failed", routeOrError)
     end
 
     local assignmentOk, assignmentResult = pcall(function()
@@ -1003,7 +1442,8 @@ function ConvoyCacheController.new(options)
     controller.spawner = spawnerOrError
     controller.runtimeGroup = runtimeGroup
     controller.routeAssignedGeneration = nextGeneration
-    controller.exitSeenSlots = {}
+    controller.activeWindowIndex = window.index
+    controller.activeWindowWasOccupied = true
     controller.lastError = nil
 
     updateEntity({
@@ -1012,6 +1452,7 @@ function ConvoyCacheController.new(options)
       representationState = REPRESENTATION_PHYSICAL,
       transitionState = TRANSITION_IDLE,
       movementState = MOVEMENT_PHYSICAL_MOVING,
+      routeDistanceMeters = window.spawnLeadDistance,
       segmentProgress = 0,
       lastMovementUpdateCampaignTime = timer.getTime(),
     })
@@ -1025,18 +1466,20 @@ function ConvoyCacheController.new(options)
     end
 
     logInfo("convoy_automatically_materialized", {
-      sectionId = section.id,
-      entryZoneName = section.entry,
-      exitZoneName = section.exit,
+      revealWindowId = window.id,
+      revealZoneName = window.zoneName,
+      revealWindowDiameterMeters = window.diameterMeters,
       runtimeGroupName = runtimeNameOrError,
       livingUnitCount = livingCountOrError,
+      vehicleSpacingMeters = config.routing.vehicleSpacingMeters,
+      allTemplateSlotsPlacedOnRoad = true,
+      allTemplateSlotsInsideWindow = true,
       physicalWaypointCount = #routeOrError.waypoints,
-      physicalRouteZones = table.concat(routeOrError.routeZoneNames, ","),
     })
     announce(
-      "Convoy visible in " .. section.id
-        .. "\nEntry: " .. section.entry
-        .. "\nExit: " .. section.exit
+      "Convoy visible in " .. window.id
+        .. "\nZone: " .. window.zoneName
+        .. "\nAll vehicles spawned on road"
     )
     return true
   end
@@ -1050,18 +1493,14 @@ function ConvoyCacheController.new(options)
       return false
     end
 
-    local section = currentSection()
-    if not section then
-      return haltAutomation("convoy_exit_monitor_failed", "current reveal section is unavailable")
-    end
-    local exitZone, exitError = zoneByName(section.exit)
-    if not exitZone then
-      return haltAutomation("convoy_exit_monitor_failed", exitError)
+    local window = currentWindow()
+    if not window then
+      return haltAutomation("convoy_window_monitor_failed", "active reveal window is unavailable")
     end
 
     local liveOk, liveUnitsOrError = captureLiveUnits(controller.runtimeGroup)
     if not liveOk then
-      return haltAutomation("convoy_exit_monitor_failed", liveUnitsOrError)
+      return haltAutomation("convoy_window_monitor_failed", liveUnitsOrError)
     end
     local liveSlots = slotsFromLiveUnits(liveUnitsOrError)
     if #liveSlots < 1 then
@@ -1079,42 +1518,37 @@ function ConvoyCacheController.new(options)
       })
     end
 
-    local newlySeen = {}
+    local insideCount = 0
     for _, item in ipairs(liveUnitsOrError) do
-      if not controller.exitSeenSlots[item.slot] then
-        local vec2Ok, vec2OrError = pcall(function()
-          return item.unit:GetVec2()
-        end)
-        if not vec2Ok then
-          return haltAutomation("convoy_exit_monitor_failed", vec2OrError)
-        end
-        if exitZone:IsVec2InZone(vec2OrError) == true then
-          controller.exitSeenSlots[item.slot] = true
-          newlySeen[#newlySeen + 1] = item.slot
-        end
+      local vec2Ok, vec2OrError = pcall(function()
+        return item.unit:GetVec2()
+      end)
+      if not vec2Ok then
+        return haltAutomation("convoy_window_monitor_failed", vec2OrError)
+      end
+      if window.zone:IsVec2InZone(vec2OrError) == true then
+        insideCount = insideCount + 1
       end
     end
 
-    if #newlySeen > 0 then
-      table.sort(newlySeen)
-      logInfo("convoy_exit_gate_progress", {
-        exitZoneName = section.exit,
-        newlySeenSlots = joinNumbers(newlySeen),
-        seenSlotCount = countSeenLiveSlots(liveSlots),
-        requiredSlotCount = #liveSlots,
+    if insideCount > 0 then
+      controller.activeWindowWasOccupied = true
+      return true
+    end
+
+    if controller.activeWindowWasOccupied then
+      logInfo("convoy_reveal_window_cleared", {
+        revealWindowId = window.id,
+        revealZoneName = window.zoneName,
+        survivingVehicleCount = #liveSlots,
       })
+      return beginDematerialization(window)
     end
 
-    for _, slot in ipairs(liveSlots) do
-      if not controller.exitSeenSlots[slot] then
-        return true
-      end
-    end
-
-    return beginDematerialization(section)
+    return true
   end
 
-  beginDematerialization = function(section)
+  beginDematerialization = function(window)
     if controller.pendingDematerialization then
       return true
     end
@@ -1126,9 +1560,10 @@ function ConvoyCacheController.new(options)
 
     local pending = {
       runtimeGroupName = controller.entity.runtimeGroupName,
-      sectionId = section.id,
-      sectionIndex = controller.entity.currentSectionIndex,
-      exitZoneName = section.exit,
+      windowId = window.id,
+      windowIndex = window.index,
+      zoneName = window.zoneName,
+      resumeDistance = window.virtualResumeDistance,
       startedAt = timer.getTime(),
       attempts = 0,
     }
@@ -1137,7 +1572,7 @@ function ConvoyCacheController.new(options)
     updateEntity({
       transitionState = TRANSITION_DEMATERIALIZING,
       survivingVehicleSlots = copyArray(survivingSlotsOrError),
-      segmentIndex = section.exitSegmentIndex,
+      routeDistanceMeters = window.virtualResumeDistance,
       segmentProgress = 1,
       lastMovementUpdateCampaignTime = timer.getTime(),
     })
@@ -1162,8 +1597,8 @@ function ConvoyCacheController.new(options)
     end
 
     logInfo("convoy_automatic_dematerialization_started", {
-      sectionId = section.id,
-      exitZoneName = section.exit,
+      revealWindowId = window.id,
+      revealZoneName = window.zoneName,
       survivingVehicleSlots = joinNumbers(survivingSlotsOrError),
     })
     return true
@@ -1175,42 +1610,46 @@ function ConvoyCacheController.new(options)
     end
 
     controller.retiredRuntimeGroupNames[#controller.retiredRuntimeGroupNames + 1] = pending.runtimeGroupName
+    controller.completedWindows[pending.windowIndex] = true
     controller.pendingDematerialization = nil
     controller.runtimeGroup = nil
     controller.spawner = nil
     controller.routeAssignedGeneration = nil
-    controller.exitSeenSlots = {}
+    controller.activeWindowIndex = nil
+    controller.activeWindowWasOccupied = false
 
     updateEntity({
       clearFields = { "runtimeGroupName" },
       representationState = REPRESENTATION_VIRTUAL,
       transitionState = TRANSITION_IDLE,
       movementState = MOVEMENT_VIRTUAL_MOVING,
+      routeDistanceMeters = pending.resumeDistance,
       segmentProgress = 0,
     })
 
     logInfo("convoy_automatically_dematerialized", {
-      sectionId = pending.sectionId,
-      exitZoneName = pending.exitZoneName,
+      revealWindowId = pending.windowId,
+      revealZoneName = pending.zoneName,
       retiredRuntimeGroupName = pending.runtimeGroupName,
       destroyConfirmationAttempts = pending.attempts,
+      virtualResumeDistanceMeters = pending.resumeDistance,
     })
-    announce("Convoy virtual after " .. pending.sectionId)
+    announce("Convoy virtual after " .. pending.windowId)
 
-    local nextSectionIndex = pending.sectionIndex + 1
-    local nextSection = config.zones.revealSections[nextSectionIndex]
-    if nextSection then
+    local nextWindowIndex = pending.windowIndex + 1
+    local nextWindow = controller.routePlan.windows[nextWindowIndex]
+    if nextWindow then
       return beginVirtualLeg(
-        pending.exitZoneName,
-        nextSection.entry,
-        "ENTRY",
-        nextSectionIndex
+        pending.resumeDistance,
+        nextWindow.spawnLeadDistance,
+        "WINDOW",
+        nextWindowIndex
       )
     end
 
     return beginVirtualLeg(
-      pending.exitZoneName,
-      config.zones.target,
+      pending.resumeDistance,
+      controller.routePlan.totalDistance,
       "TARGET",
       nil
     )
@@ -1292,16 +1731,24 @@ function ConvoyCacheController.new(options)
       return reject(action, "convoy is not in NOT_STARTED state")
     end
 
-    local firstSection = config.zones.revealSections[config.virtualization.initialSectionIndex]
-    if not firstSection then
-      return haltAutomation("convoy_automation_start_failed", "initial reveal section is unavailable")
+    local compileOk, compileResultOrError = compileRouteAndWindows()
+    if not compileOk then
+      return haltAutomation("convoy_route_plan_failed", compileResultOrError)
+    end
+    if createWindowMarkers() == false then
+      return false
+    end
+
+    local firstWindow = controller.routePlan.windows[config.virtualization.initialSectionIndex]
+    if not firstWindow then
+      return haltAutomation("convoy_automation_start_failed", "initial reveal window is unavailable")
     end
 
     updateEntity({ automationStarted = true })
     local legOk = beginVirtualLeg(
-      config.zones.start,
-      firstSection.entry,
-      "ENTRY",
+      0,
+      firstWindow.spawnLeadDistance,
+      "WINDOW",
       config.virtualization.initialSectionIndex
     )
     if not legOk then
@@ -1326,12 +1773,14 @@ function ConvoyCacheController.new(options)
     logInfo("convoy_automation_started", {
       schedulerId = scheduleResult,
       startZoneName = config.zones.start,
-      firstRevealEntryZoneName = firstSection.entry,
+      firstRevealWindowId = firstWindow.id,
+      firstRevealZoneName = firstWindow.zoneName,
+      globalRoadDistanceMeters = controller.routePlan.totalDistance,
     })
     announce(
       "Convoy automation started"
-        .. "\nVirtual from: " .. config.zones.start
-        .. "\nFirst reveal: " .. firstSection.entry
+        .. "\nVirtual marker active"
+        .. "\nFirst reveal: " .. firstWindow.id
     )
     return true
   end
@@ -1348,18 +1797,21 @@ function ConvoyCacheController.new(options)
     logger:info("convoy_cache_status", fields)
 
     local leg = controller.virtualLeg
+    local eta = "none"
+    if leg then
+      eta = formatDuration(math.max(0, leg.durationSeconds - (timer.getTime() - leg.startedAt)))
+    end
     announce(
       "Entity: " .. controller.entity.entityId
         .. "\nStarted: " .. tostring(controller.entity.automationStarted == true)
         .. "\nRepresentation: " .. controller.entity.representationState
         .. "\nMovement: " .. controller.entity.movementState
         .. "\nTransition: " .. controller.entity.transitionState
-        .. "\nSection: " .. tostring(currentSection() and currentSection().id or "none")
+        .. "\nWindow: " .. tostring(currentWindow() and currentWindow().id or "none")
         .. "\nRuntime group: " .. tostring(controller.entity.runtimeGroupName or "none")
         .. "\nVehicle slots: " .. joinNumbers(controller.entity.survivingVehicleSlots)
-        .. "\nExit gate: " .. tostring(countSeenLiveSlots(controller.entity.survivingVehicleSlots))
-        .. "/" .. tostring(#controller.entity.survivingVehicleSlots)
-        .. "\nVirtual leg: " .. tostring(leg and (leg.fromZoneName .. " -> " .. leg.toZoneName) or "none")
+        .. "\nRoute distance: " .. tostring(math.floor(controller.entity.routeDistanceMeters + 0.5)) .. " m"
+        .. "\nVirtual ETA: " .. eta
         .. "\nInvariant: " .. tostring(invariantOk)
         .. "\nError: " .. tostring(controller.lastError or "none")
     )
@@ -1418,8 +1870,8 @@ local function validateTm01bMooseApis()
   validateFunction("POSITIONABLE.GetVec2", function()
     return POSITIONABLE and POSITIONABLE.GetVec2
   end, missing)
-  validateFunction("SPAWN.InitPositionCoordinate", function()
-    return SPAWN and SPAWN.InitPositionCoordinate
+  validateFunction("SPAWN.InitSetUnitAbsolutePositions", function()
+    return SPAWN and SPAWN.InitSetUnitAbsolutePositions
   end, missing)
   validateFunction("SPAWN.Spawn", function()
     return SPAWN and SPAWN.Spawn
@@ -1430,14 +1882,53 @@ local function validateTm01bMooseApis()
   validateFunction("ZONE_BASE.GetVec2", function()
     return ZONE_BASE and ZONE_BASE.GetVec2
   end, missing)
+  validateFunction("ZONE_BASE.GetCoordinate", function()
+    return ZONE_BASE and ZONE_BASE.GetCoordinate
+  end, missing)
   validateFunction("ZONE_BASE.IsVec2InZone", function()
     return ZONE_BASE and ZONE_BASE.IsVec2InZone
+  end, missing)
+  validateFunction("ZONE_RADIUS.GetRadius", function()
+    return ZONE_RADIUS and ZONE_RADIUS.GetRadius
+  end, missing)
+  validateFunction("COORDINATE.NewFromVec2", function()
+    return COORDINATE and COORDINATE.NewFromVec2
+  end, missing)
+  validateFunction("COORDINATE.GetClosestPointToRoad", function()
+    return COORDINATE and COORDINATE.GetClosestPointToRoad
+  end, missing)
+  validateFunction("COORDINATE.GetPathOnRoad", function()
+    return COORDINATE and COORDINATE.GetPathOnRoad
+  end, missing)
+  validateFunction("COORDINATE.Get2DDistance", function()
+    return COORDINATE and COORDINATE.Get2DDistance
+  end, missing)
+  validateFunction("COORDINATE.WaypointGround", function()
+    return COORDINATE and COORDINATE.WaypointGround
+  end, missing)
+  validateFunction("MARKER.New", function()
+    return MARKER and MARKER.New
+  end, missing)
+  validateFunction("MARKER.ReadOnly", function()
+    return MARKER and MARKER.ReadOnly
+  end, missing)
+  validateFunction("MARKER.ToBlue", function()
+    return MARKER and MARKER.ToBlue
+  end, missing)
+  validateFunction("MARKER.UpdateCoordinate", function()
+    return MARKER and MARKER.UpdateCoordinate
+  end, missing)
+  validateFunction("MARKER.UpdateText", function()
+    return MARKER and MARKER.UpdateText
+  end, missing)
+  validateFunction("MARKER.Remove", function()
+    return MARKER and MARKER.Remove
   end, missing)
   return #missing == 0, missing
 end
 
-local function isInteger(value)
-  return type(value) == "number" and value >= 0 and value == math.floor(value)
+local function positiveNumber(value)
+  return type(value) == "number" and value > 0
 end
 
 local function validateConfiguration(config)
@@ -1497,44 +1988,26 @@ local function validateConfiguration(config)
     end
   end
 
-  local routeAnchorCount = type(config.zones.routeAnchors) == "table"
-    and #config.zones.routeAnchors or 0
-  local previousExitSegmentIndex = nil
-
-  if type(config.zones.revealSections) ~= "table"
-    or #config.zones.revealSections < 1 then
-    errors[#errors + 1] = "at least one reveal section is required"
+  if type(config.zones.revealWindows) ~= "table"
+    or #config.zones.revealWindows < 1 then
+    errors[#errors + 1] = "at least one circular reveal window is required"
   else
-    for sectionIndex, section in ipairs(config.zones.revealSections) do
-      if type(section.id) ~= "string" or section.id == "" then
-        errors[#errors + 1] = "reveal section id is missing"
-      end
-      requireZoneName(section.entry, "reveal entry " .. tostring(sectionIndex))
-      requireZoneName(section.exit, "reveal exit " .. tostring(sectionIndex))
-      if section.entry == section.exit then
-        errors[#errors + 1] = "reveal entry and exit names must differ: " .. tostring(section.id)
+    local ids = {}
+    local zoneNames = {}
+    for index, window in ipairs(config.zones.revealWindows) do
+      if type(window.id) ~= "string" or window.id == "" then
+        errors[#errors + 1] = "reveal window id is missing: " .. tostring(index)
+      elseif ids[window.id] then
+        errors[#errors + 1] = "duplicate reveal window id: " .. window.id
+      else
+        ids[window.id] = true
       end
 
-      if not isInteger(section.entrySegmentIndex)
-        or section.entrySegmentIndex > routeAnchorCount then
-        errors[#errors + 1] = "invalid reveal entry segment index: " .. tostring(section.id)
-      end
-      if not isInteger(section.exitSegmentIndex)
-        or section.exitSegmentIndex > routeAnchorCount then
-        errors[#errors + 1] = "invalid reveal exit segment index: " .. tostring(section.id)
-      end
-      if isInteger(section.entrySegmentIndex)
-        and isInteger(section.exitSegmentIndex)
-        and section.exitSegmentIndex < section.entrySegmentIndex then
-        errors[#errors + 1] = "reveal exit precedes entry: " .. tostring(section.id)
-      end
-      if previousExitSegmentIndex ~= nil
-        and isInteger(section.entrySegmentIndex)
-        and section.entrySegmentIndex < previousExitSegmentIndex then
-        errors[#errors + 1] = "reveal sections overlap or are out of order: " .. tostring(section.id)
-      end
-      if isInteger(section.exitSegmentIndex) then
-        previousExitSegmentIndex = section.exitSegmentIndex
+      if requireZoneName(window.zone, "reveal window " .. tostring(index)) then
+        if zoneNames[window.zone] then
+          errors[#errors + 1] = "duplicate reveal window zone: " .. window.zone
+        end
+        zoneNames[window.zone] = true
       end
     end
   end
@@ -1542,9 +2015,9 @@ local function validateConfiguration(config)
   if config.virtualization.initialSectionIndex ~= 1 then
     errors[#errors + 1] = "initialSectionIndex must be 1"
   end
-  if type(config.zones.revealSections) == "table"
-    and config.virtualization.finalSectionIndex ~= #config.zones.revealSections then
-    errors[#errors + 1] = "finalSectionIndex must reference the last reveal section"
+  if type(config.zones.revealWindows) == "table"
+    and config.virtualization.finalSectionIndex ~= #config.zones.revealWindows then
+    errors[#errors + 1] = "finalSectionIndex must reference the last reveal window"
   end
   if config.template.expectedVehicleCount ~= 6 then
     errors[#errors + 1] = "TM01B expects exactly six configured vehicle slots"
@@ -1552,29 +2025,36 @@ local function validateConfiguration(config)
   if config.virtualization.automaticAdvance ~= true
     or config.virtualization.automaticMaterialization ~= true
     or config.virtualization.automaticDematerialization ~= true then
-    errors[#errors + 1] = "TM01B version 4 requires all automatic transitions"
+    errors[#errors + 1] = "TM01B version 5 requires all automatic transitions"
   end
-  if config.virtualization.exitPassageMode ~= "EACH_SURVIVING_SLOT_EVER_INSIDE" then
-    errors[#errors + 1] = "unsupported exit passage mode"
+  if config.virtualization.visibilityMode ~= "CIRCULAR_WINDOW_ANY_UNIT_INSIDE" then
+    errors[#errors + 1] = "unsupported reveal-window visibility mode"
   end
-  if type(config.virtualization.effectiveSpeedKph) ~= "number"
-    or config.virtualization.effectiveSpeedKph <= 0 then
-    errors[#errors + 1] = "effective virtual speed must be positive"
+
+  local positiveSettings = {
+    { config.virtualization.effectiveSpeedKph, "effective virtual speed" },
+    { config.virtualization.automationPollSeconds, "automation poll interval" },
+    { config.virtualization.minimumVirtualLegSeconds, "minimum virtual leg duration" },
+    { config.virtualization.virtualMarkerUpdateSeconds, "virtual marker update interval" },
+    { config.virtualization.destroyConfirmationPollSeconds, "destroy confirmation poll interval" },
+    { config.virtualization.destroyConfirmationTimeoutSeconds, "destroy confirmation timeout" },
+    { config.routing.routeSampleMeters, "road route sample spacing" },
+    { config.routing.physicalWaypointSpacingMeters, "physical waypoint spacing" },
+    { config.routing.maximumRoadSnapMeters, "maximum road snap distance" },
+    { config.routing.roadPositionToleranceMeters, "road position tolerance" },
+    { config.routing.vehicleSpacingMeters, "vehicle spacing" },
+    { config.routing.spawnInteriorMarginMeters, "spawn interior margin" },
+    { config.routing.physicalClearanceMeters, "physical clearance" },
+  }
+  for _, setting in ipairs(positiveSettings) do
+    if not positiveNumber(setting[1]) then
+      errors[#errors + 1] = setting[2] .. " must be positive"
+    end
   end
-  if type(config.virtualization.automationPollSeconds) ~= "number"
-    or config.virtualization.automationPollSeconds <= 0 then
-    errors[#errors + 1] = "automation poll interval must be positive"
-  end
-  if type(config.virtualization.minimumVirtualLegSeconds) ~= "number"
-    or config.virtualization.minimumVirtualLegSeconds <= 0 then
-    errors[#errors + 1] = "minimum virtual leg duration must be positive"
-  end
-  if type(config.virtualization.destroyConfirmationPollSeconds) ~= "number"
-    or config.virtualization.destroyConfirmationPollSeconds <= 0 then
-    errors[#errors + 1] = "destroy confirmation poll interval must be positive"
-  end
-  if type(config.virtualization.destroyConfirmationTimeoutSeconds) ~= "number"
-    or config.virtualization.destroyConfirmationTimeoutSeconds
+
+  if positiveNumber(config.virtualization.destroyConfirmationPollSeconds)
+    and positiveNumber(config.virtualization.destroyConfirmationTimeoutSeconds)
+    and config.virtualization.destroyConfirmationTimeoutSeconds
       <= config.virtualization.destroyConfirmationPollSeconds then
     errors[#errors + 1] = "destroy confirmation timeout must exceed poll interval"
   end
@@ -1661,16 +2141,14 @@ function TM01B.start(dependencies)
       globalRouteStart = config.zones.start,
       globalRouteAnchorCount = #config.zones.routeAnchors,
       globalRouteTarget = config.zones.target,
-      revealSectionCount = #config.zones.revealSections,
+      revealWindowCount = #config.zones.revealWindows,
+      oneCircularZonePerWindow = true,
+      visibilityMode = config.virtualization.visibilityMode,
+      virtualMarkerEnabled = config.virtualization.showVirtualMarker,
+      roadAlignedAbsoluteVehicleSpawn = true,
       oneManualStartCommand = true,
-      automaticAdvance = true,
-      automaticMaterialization = true,
-      automaticDematerialization = true,
-      exitPassageMode = config.virtualization.exitPassageMode,
-      revealEntryZonesDetermineSpawn = true,
-      revealExitZonesTerminatePhysicalRoutes = true,
     })
-    setOutcome(OUTCOME_READY, "TM01B automatic reveal-window caching is ready")
+    setOutcome(OUTCOME_READY, "TM01B circular reveal-window caching is ready")
     return true
   end
 
@@ -1733,7 +2211,7 @@ function TM01B.start(dependencies)
 
   logger:info("runtime_api_validation_passed", {
     additionalNativeApiCount = 2,
-    additionalMooseApiCount = 8,
+    additionalMooseApiCount = 21,
   })
 
   if not runConfigurationValidation() then
