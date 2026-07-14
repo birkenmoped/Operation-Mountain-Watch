@@ -20,25 +20,25 @@ end
 
 local function validateTm01bNativeApis()
   local missing = {}
-
   validateFunction("timer.scheduleFunction", function()
     return timer and timer.scheduleFunction
   end, missing)
   validateFunction("Group.getByName", function()
     return Group and Group.getByName
   end, missing)
-
   return #missing == 0, missing
 end
 
 local function validateTm01bMooseApis()
   local missing = {}
-
   validateFunction("GROUP.GetUnits", function()
     return GROUP and GROUP.GetUnits
   end, missing)
   validateFunction("POSITIONABLE.Destroy", function()
     return POSITIONABLE and POSITIONABLE.Destroy
+  end, missing)
+  validateFunction("POSITIONABLE.GetVec2", function()
+    return POSITIONABLE and POSITIONABLE.GetVec2
   end, missing)
   validateFunction("SPAWN.InitPositionCoordinate", function()
     return SPAWN and SPAWN.InitPositionCoordinate
@@ -46,7 +46,15 @@ local function validateTm01bMooseApis()
   validateFunction("SPAWN.Spawn", function()
     return SPAWN and SPAWN.Spawn
   end, missing)
-
+  validateFunction("CONTROLLABLE.Route", function()
+    return CONTROLLABLE and CONTROLLABLE.Route
+  end, missing)
+  validateFunction("ZONE_BASE.GetVec2", function()
+    return ZONE_BASE and ZONE_BASE.GetVec2
+  end, missing)
+  validateFunction("ZONE_BASE.IsVec2InZone", function()
+    return ZONE_BASE and ZONE_BASE.IsVec2InZone
+  end, missing)
   return #missing == 0, missing
 end
 
@@ -60,33 +68,31 @@ local function validateConfiguration(config)
   local checked = {}
 
   local function checkGroup(name)
-    if checked["group:" .. name] then
+    if checked["group:" .. tostring(name)] then
       return
     end
-    checked["group:" .. name] = true
-
-    local ok, group = pcall(function()
+    checked["group:" .. tostring(name)] = true
+    local ok, groupOrError = pcall(function()
       return GROUP:FindByName(name)
     end)
     if not ok then
-      errors[#errors + 1] = name .. ": " .. tostring(group)
-    elseif not group then
+      errors[#errors + 1] = tostring(name) .. ": " .. tostring(groupOrError)
+    elseif not groupOrError then
       missing[#missing + 1] = name
     end
   end
 
   local function checkZone(name)
-    if checked["zone:" .. name] then
+    if checked["zone:" .. tostring(name)] then
       return
     end
-    checked["zone:" .. name] = true
-
-    local ok, zone = pcall(function()
+    checked["zone:" .. tostring(name)] = true
+    local ok, zoneOrError = pcall(function()
       return ZONE:FindByName(name)
     end)
     if not ok then
-      errors[#errors + 1] = name .. ": " .. tostring(zone)
-    elseif not zone then
+      errors[#errors + 1] = tostring(name) .. ": " .. tostring(zoneOrError)
+    elseif not zoneOrError then
       missing[#missing + 1] = name
     end
   end
@@ -101,107 +107,54 @@ local function validateConfiguration(config)
   end
 
   checkGroup(config.template.groupName)
-
-  local routeZoneNames = {}
-  if requireZoneName(config.zones.start, "global route start") then
-    routeZoneNames[config.zones.start] = true
-  end
-  if requireZoneName(config.zones.target, "global route target") then
-    if routeZoneNames[config.zones.target] then
-      errors[#errors + 1] = "global route start and target names must differ"
-    end
-    routeZoneNames[config.zones.target] = true
-  end
+  requireZoneName(config.zones.start, "global route start")
+  requireZoneName(config.zones.target, "global route target")
 
   if type(config.zones.routeAnchors) ~= "table"
     or #config.zones.routeAnchors ~= 7 then
-    errors[#errors + 1] = "TM01B.1 requires exactly seven intermediate global route anchors"
+    errors[#errors + 1] = "TM01B requires exactly seven intermediate route anchors"
   else
-    for _, zoneName in ipairs(config.zones.routeAnchors) do
-      if type(zoneName) ~= "string" or zoneName == "" then
-        errors[#errors + 1] = "global route anchor name is missing"
-      else
-        if routeZoneNames[zoneName] then
-          errors[#errors + 1] = "global route zone name is duplicated: " .. zoneName
-        end
-        routeZoneNames[zoneName] = true
-        checkZone(zoneName)
-      end
+    for index, zoneName in ipairs(config.zones.routeAnchors) do
+      requireZoneName(zoneName, "global route anchor " .. tostring(index))
     end
   end
 
   local routeAnchorCount = type(config.zones.routeAnchors) == "table"
     and #config.zones.routeAnchors or 0
-  local finalSegmentIndex = routeAnchorCount + 1
   local previousExitSegmentIndex = nil
 
   if type(config.zones.revealSections) ~= "table"
-    or #config.zones.revealSections < 2 then
-    errors[#errors + 1] = "at least two reveal sections are required"
+    or #config.zones.revealSections < 1 then
+    errors[#errors + 1] = "at least one reveal section is required"
   else
     for sectionIndex, section in ipairs(config.zones.revealSections) do
       if type(section.id) ~= "string" or section.id == "" then
         errors[#errors + 1] = "reveal section id is missing"
       end
-
-      if type(section.entry) ~= "string" or section.entry == "" then
-        errors[#errors + 1] = "reveal section entry zone is missing"
-      else
-        if routeZoneNames[section.entry] then
-          errors[#errors + 1] = "reveal entry must not reuse a global route zone name: "
-            .. section.entry
-        end
-        checkZone(section.entry)
+      requireZoneName(section.entry, "reveal entry " .. tostring(sectionIndex))
+      requireZoneName(section.exit, "reveal exit " .. tostring(sectionIndex))
+      if section.entry == section.exit then
+        errors[#errors + 1] = "reveal entry and exit names must differ: " .. tostring(section.id)
       end
 
-      if type(section.exit) ~= "string" or section.exit == "" then
-        errors[#errors + 1] = "reveal section exit zone is missing"
-      else
-        if routeZoneNames[section.exit] then
-          errors[#errors + 1] = "reveal exit must not reuse a global route zone name: "
-            .. section.exit
-        end
-        if section.exit == section.entry then
-          errors[#errors + 1] = "reveal entry and exit zone names must differ: "
-            .. tostring(section.id)
-        end
-        checkZone(section.exit)
+      if not isInteger(section.entrySegmentIndex)
+        or section.entrySegmentIndex > routeAnchorCount then
+        errors[#errors + 1] = "invalid reveal entry segment index: " .. tostring(section.id)
       end
-
-      if not isInteger(section.entrySegmentIndex) then
-        errors[#errors + 1] = "entry segment index is invalid: "
-          .. tostring(section.id)
-      elseif section.entrySegmentIndex > finalSegmentIndex then
-        errors[#errors + 1] = "entry segment index exceeds the global route: "
-          .. tostring(section.id)
+      if not isInteger(section.exitSegmentIndex)
+        or section.exitSegmentIndex > routeAnchorCount then
+        errors[#errors + 1] = "invalid reveal exit segment index: " .. tostring(section.id)
       end
-
-      if not isInteger(section.exitSegmentIndex) then
-        errors[#errors + 1] = "exit segment index is invalid: "
-          .. tostring(section.id)
-      elseif section.exitSegmentIndex > finalSegmentIndex then
-        errors[#errors + 1] = "exit segment index exceeds the global route: "
-          .. tostring(section.id)
-      end
-
       if isInteger(section.entrySegmentIndex)
         and isInteger(section.exitSegmentIndex)
         and section.exitSegmentIndex < section.entrySegmentIndex then
-        errors[#errors + 1] = "reveal exit precedes reveal entry on the global route: "
-          .. tostring(section.id)
+        errors[#errors + 1] = "reveal exit precedes entry: " .. tostring(section.id)
       end
-
       if previousExitSegmentIndex ~= nil
         and isInteger(section.entrySegmentIndex)
         and section.entrySegmentIndex < previousExitSegmentIndex then
-        errors[#errors + 1] = "reveal sections are not ordered on the global route: "
-          .. tostring(section.id)
+        errors[#errors + 1] = "reveal sections overlap or are out of order: " .. tostring(section.id)
       end
-
-      if sectionIndex == 1 and section.entrySegmentIndex ~= 0 then
-        errors[#errors + 1] = "the first reveal section must materialize at segment 0, ZONE_TM01_START_BAGRAM"
-      end
-
       if isInteger(section.exitSegmentIndex) then
         previousExitSegmentIndex = section.exitSegmentIndex
       end
@@ -209,19 +162,34 @@ local function validateConfiguration(config)
   end
 
   if config.virtualization.initialSectionIndex ~= 1 then
-    errors[#errors + 1] = "initialSectionIndex must be 1 for TM01B.1"
+    errors[#errors + 1] = "initialSectionIndex must be 1"
   end
   if type(config.zones.revealSections) == "table"
     and config.virtualization.finalSectionIndex ~= #config.zones.revealSections then
     errors[#errors + 1] = "finalSectionIndex must reference the last reveal section"
   end
   if config.template.expectedVehicleCount ~= 6 then
-    errors[#errors + 1] = "TM01B.1 expects exactly six configured vehicle slots"
+    errors[#errors + 1] = "TM01B expects exactly six configured vehicle slots"
   end
-  if config.virtualization.automaticAdvance ~= false
-    or config.virtualization.automaticMaterialization ~= false
-    or config.virtualization.automaticDematerialization ~= false then
-    errors[#errors + 1] = "TM01B.1 automatic transitions must remain disabled"
+  if config.virtualization.automaticAdvance ~= true
+    or config.virtualization.automaticMaterialization ~= true
+    or config.virtualization.automaticDematerialization ~= true then
+    errors[#errors + 1] = "TM01B version 4 requires all automatic transitions"
+  end
+  if config.virtualization.exitPassageMode ~= "EACH_SURVIVING_SLOT_EVER_INSIDE" then
+    errors[#errors + 1] = "unsupported exit passage mode"
+  end
+  if type(config.virtualization.effectiveSpeedKph) ~= "number"
+    or config.virtualization.effectiveSpeedKph <= 0 then
+    errors[#errors + 1] = "effective virtual speed must be positive"
+  end
+  if type(config.virtualization.automationPollSeconds) ~= "number"
+    or config.virtualization.automationPollSeconds <= 0 then
+    errors[#errors + 1] = "automation poll interval must be positive"
+  end
+  if type(config.virtualization.minimumVirtualLegSeconds) ~= "number"
+    or config.virtualization.minimumVirtualLegSeconds <= 0 then
+    errors[#errors + 1] = "minimum virtual leg duration must be positive"
   end
   if type(config.virtualization.destroyConfirmationPollSeconds) ~= "number"
     or config.virtualization.destroyConfirmationPollSeconds <= 0 then
@@ -230,7 +198,7 @@ local function validateConfiguration(config)
   if type(config.virtualization.destroyConfirmationTimeoutSeconds) ~= "number"
     or config.virtualization.destroyConfirmationTimeoutSeconds
       <= config.virtualization.destroyConfirmationPollSeconds then
-    errors[#errors + 1] = "destroy confirmation timeout must exceed the poll interval"
+    errors[#errors + 1] = "destroy confirmation timeout must exceed poll interval"
   end
 
   local checkedObjectCount = 0
@@ -283,13 +251,14 @@ function TM01B.start(dependencies)
   end
 
   local function runConfigurationValidation()
-    local ok, result = pcall(validateConfiguration, config)
+    local ok, resultOrError = pcall(validateConfiguration, config)
     if not ok then
       setOutcome(OUTCOME_FAIL_SCRIPT, "configuration validation raised an error")
-      logger:error("configuration_validation_error", { error = result })
+      logger:error("configuration_validation_error", { error = resultOrError })
       return false
     end
 
+    local result = resultOrError
     state.checkedObjectCount = result.checkedObjectCount
     if #result.errors > 0 then
       setOutcome(OUTCOME_FAIL_SCRIPT, "configuration validation failed")
@@ -310,15 +279,20 @@ function TM01B.start(dependencies)
 
     logger:info("configuration_valid", {
       checkedObjectCount = result.checkedObjectCount,
+      configurationVersion = config.configurationVersion,
       globalRouteStart = config.zones.start,
       globalRouteAnchorCount = #config.zones.routeAnchors,
-      globalRoutePointCount = #config.zones.routeAnchors + 2,
       globalRouteTarget = config.zones.target,
       revealSectionCount = #config.zones.revealSections,
-      revealZonesAreWaypoints = false,
-      revealZonesDetermineSpawn = false,
+      oneManualStartCommand = true,
+      automaticAdvance = true,
+      automaticMaterialization = true,
+      automaticDematerialization = true,
+      exitPassageMode = config.virtualization.exitPassageMode,
+      revealEntryZonesDetermineSpawn = true,
+      revealExitZonesTerminatePhysicalRoutes = true,
     })
-    setOutcome(OUTCOME_READY, "TM01B global-route and reveal-window configuration completed")
+    setOutcome(OUTCOME_READY, "TM01B automatic reveal-window caching is ready")
     return true
   end
 
@@ -361,11 +335,6 @@ function TM01B.start(dependencies)
     return state
   end
 
-  logger:info("native_api_validation_passed", {
-    baselineNativeApiCount = 3,
-    tm01bAdditionalNativeApiCount = 2,
-  })
-
   local baseMooseValid, missingBaseMooseApis = dependencies.runtimeGuard.validateMoose()
   if not baseMooseValid then
     setOutcome(OUTCOME_FAIL_SCRIPT, "required baseline MOOSE APIs are unavailable")
@@ -384,9 +353,9 @@ function TM01B.start(dependencies)
     return state
   end
 
-  logger:info("moose_api_validation_passed", {
-    baselineMooseApiCount = 13,
-    tm01bAdditionalApiCount = 4,
+  logger:info("runtime_api_validation_passed", {
+    additionalNativeApiCount = 2,
+    additionalMooseApiCount = 8,
   })
 
   if not runConfigurationValidation() then
@@ -407,7 +376,7 @@ function TM01B.start(dependencies)
   end
 
   local campaignState = campaignStateOrError
-  local cacheControllerOk, cacheControllerOrError = pcall(function()
+  local controllerOk, controllerOrError = pcall(function()
     return dependencies.convoyCacheController.new({
       announce = announce,
       campaignState = campaignState,
@@ -418,17 +387,17 @@ function TM01B.start(dependencies)
       logger = logger,
     })
   end)
-  if not cacheControllerOk or type(cacheControllerOrError) ~= "table" then
+  if not controllerOk or type(controllerOrError) ~= "table" then
     setOutcome(OUTCOME_FAIL_SCRIPT, "cache controller initialization failed")
     logger:error("cache_controller_initialization_failed", {
-      error = cacheControllerOk
+      error = controllerOk
         and "ConvoyCacheController.new returned no table"
-        or cacheControllerOrError,
+        or controllerOrError,
     })
     return state
   end
 
-  local cacheController = cacheControllerOrError
+  local cacheController = controllerOrError
 
   local function showStatus()
     logger:info("status_requested", {
@@ -450,6 +419,13 @@ function TM01B.start(dependencies)
     local testMenu = MENU_MISSION:New(build.stageId, rootMenu)
 
     MENU_MISSION_COMMAND:New(
+      "Start convoy",
+      testMenu,
+      protectMenuCallback("Start convoy", function()
+        cacheController:start()
+      end)
+    )
+    MENU_MISSION_COMMAND:New(
       "Show status",
       testMenu,
       protectMenuCallback("Show status", showStatus)
@@ -458,34 +434,6 @@ function TM01B.start(dependencies)
       "Validate configuration",
       testMenu,
       protectMenuCallback("Validate configuration", validateFromMenu)
-    )
-    MENU_MISSION_COMMAND:New(
-      "Materialize convoy",
-      testMenu,
-      protectMenuCallback("Materialize convoy", function()
-        cacheController:materialize()
-      end)
-    )
-    MENU_MISSION_COMMAND:New(
-      "Start physical route",
-      testMenu,
-      protectMenuCallback("Start physical route", function()
-        cacheController:startPhysicalRoute()
-      end)
-    )
-    MENU_MISSION_COMMAND:New(
-      "Dematerialize convoy",
-      testMenu,
-      protectMenuCallback("Dematerialize convoy", function()
-        cacheController:dematerialize()
-      end)
-    )
-    MENU_MISSION_COMMAND:New(
-      "Advance virtual convoy",
-      testMenu,
-      protectMenuCallback("Advance virtual convoy", function()
-        cacheController:advanceVirtual()
-      end)
     )
 
     return {
@@ -508,7 +456,10 @@ function TM01B.start(dependencies)
     initialRoutePosition = config.zones.start,
     persistenceEnabled = false,
   })
-  logger:info("menu_ready", { path = "OMW Tests / " .. build.stageId })
+  logger:info("menu_ready", {
+    path = "OMW Tests / " .. build.stageId,
+    primaryCommand = "Start convoy",
+  })
 
   return state
 end
