@@ -68,29 +68,23 @@ end
 function ConvoyCacheController.new(options)
   local config = options.config
   local logger = options.logger
-  local initialSlots = {}
-  for slot = 1, config.template.expectedVehicleCount do
-    initialSlots[#initialSlots + 1] = slot
+  local campaignState = options.campaignState
+
+  if type(campaignState) ~= "table"
+    or type(campaignState.getEntity) ~= "function"
+    or type(campaignState.updateEntity) ~= "function"
+    or type(campaignState.getEntitySnapshot) ~= "function" then
+    error("a valid InMemoryCampaignState is required")
+  end
+
+  local entity = campaignState:getEntity(config.scenarioId)
+  if type(entity) ~= "table" then
+    error("CampaignState entity is unavailable: " .. tostring(config.scenarioId))
   end
 
   local controller = {
-    entity = {
-      entityId = config.scenarioId,
-      representationState = REPRESENTATION_VIRTUAL,
-      transitionState = TRANSITION_IDLE,
-      movementState = MOVEMENT_NOT_STARTED,
-      routeId = config.routeId,
-      currentSectionIndex = config.virtualization.initialSectionIndex,
-      segmentIndex = 0,
-      segmentProgress = 0,
-      routeDistanceMeters = 0,
-      configuredSpeedKph = config.virtualization.configuredSpeedKph,
-      effectiveSpeedKph = config.virtualization.effectiveSpeedKph,
-      lastMovementUpdateCampaignTime = timer.getTime(),
-      survivingVehicleSlots = initialSlots,
-      physicalGeneration = 0,
-      runtimeGroupName = nil,
-    },
+    campaignState = campaignState,
+    entity = entity,
     spawner = nil,
     runtimeGroup = nil,
     routeAssignedGeneration = nil,
@@ -98,6 +92,14 @@ function ConvoyCacheController.new(options)
     arrivalLogged = false,
     lastError = nil,
   }
+
+  local function updateEntity(changes)
+    controller.entity = controller.campaignState:updateEntity(
+      config.scenarioId,
+      changes
+    )
+    return controller.entity
+  end
 
   local function currentSection()
     return config.zones.revealSections[controller.entity.currentSectionIndex]
@@ -116,6 +118,7 @@ function ConvoyCacheController.new(options)
       segmentIndex = controller.entity.segmentIndex,
       segmentProgress = controller.entity.segmentProgress,
       physicalGeneration = controller.entity.physicalGeneration,
+      revision = controller.entity.revision,
       runtimeGroupName = controller.entity.runtimeGroupName or "none",
       survivingVehicleSlots = joinNumbers(controller.entity.survivingVehicleSlots),
     }
@@ -137,8 +140,10 @@ function ConvoyCacheController.new(options)
 
   local function logFailure(event, movementState, reason)
     controller.lastError = tostring(reason)
-    controller.entity.movementState = movementState
-    controller.entity.transitionState = TRANSITION_IDLE
+    updateEntity({
+      movementState = movementState,
+      transitionState = TRANSITION_IDLE,
+    })
     local fields = commonFields()
     fields.reason = controller.lastError
     fields.missionTimeSeconds = timer.getTime()
@@ -388,7 +393,7 @@ function ConvoyCacheController.new(options)
       )
     end
 
-    self.entity.transitionState = TRANSITION_MATERIALIZING
+    updateEntity({ transitionState = TRANSITION_MATERIALIZING })
     local nextGeneration = self.entity.physicalGeneration + 1
     local alias = config.template.runtimeAliasPrefix
       .. "_G" .. string.format("%02d", nextGeneration)
@@ -469,14 +474,16 @@ function ConvoyCacheController.new(options)
 
     self.spawner = spawnerOrError
     self.runtimeGroup = runtimeGroup
-    self.entity.physicalGeneration = nextGeneration
-    self.entity.runtimeGroupName = inspection.name
-    self.entity.representationState = REPRESENTATION_PHYSICAL
-    self.entity.transitionState = TRANSITION_IDLE
-    self.entity.movementState = MOVEMENT_PHYSICAL_READY
-    self.entity.segmentIndex = section.entrySegmentIndex
-    self.entity.segmentProgress = 0
-    self.entity.lastMovementUpdateCampaignTime = timer.getTime()
+    updateEntity({
+      physicalGeneration = nextGeneration,
+      runtimeGroupName = inspection.name,
+      representationState = REPRESENTATION_PHYSICAL,
+      transitionState = TRANSITION_IDLE,
+      movementState = MOVEMENT_PHYSICAL_READY,
+      segmentIndex = section.entrySegmentIndex,
+      segmentProgress = 0,
+      lastMovementUpdateCampaignTime = timer.getTime(),
+    })
     self.routeAssignedGeneration = nil
     self.lastError = nil
 
@@ -485,8 +492,10 @@ function ConvoyCacheController.new(options)
       destroyGroupSilently(runtimeGroup)
       self.runtimeGroup = nil
       self.spawner = nil
-      self.entity.runtimeGroupName = nil
-      self.entity.representationState = REPRESENTATION_VIRTUAL
+      updateEntity({
+        runtimeGroupName = nil,
+        representationState = REPRESENTATION_VIRTUAL,
+      })
       return logFailure(
         "convoy_materialization_failed",
         MOVEMENT_MATERIALIZATION_FAILED,
@@ -555,8 +564,10 @@ function ConvoyCacheController.new(options)
     end
 
     self.routeAssignedGeneration = self.entity.physicalGeneration
-    self.entity.movementState = MOVEMENT_PHYSICAL_MOVING
-    self.entity.lastMovementUpdateCampaignTime = timer.getTime()
+    updateEntity({
+      movementState = MOVEMENT_PHYSICAL_MOVING,
+      lastMovementUpdateCampaignTime = timer.getTime(),
+    })
     self.lastError = nil
 
     local successFields = commonFields()
@@ -636,11 +647,13 @@ function ConvoyCacheController.new(options)
       )
     end
 
-    self.entity.transitionState = TRANSITION_DEMATERIALIZING
-    self.entity.survivingVehicleSlots = copyArray(survivingSlots)
-    self.entity.segmentIndex = section.exitSegmentIndex
-    self.entity.segmentProgress = 1
-    self.entity.lastMovementUpdateCampaignTime = timer.getTime()
+    updateEntity({
+      transitionState = TRANSITION_DEMATERIALIZING,
+      survivingVehicleSlots = copyArray(survivingSlots),
+      segmentIndex = section.exitSegmentIndex,
+      segmentProgress = 1,
+      lastMovementUpdateCampaignTime = timer.getTime(),
+    })
 
     local retiredName = self.entity.runtimeGroupName
     local destructionOk, destructionError = destroyGroupSilently(self.runtimeGroup)
@@ -662,10 +675,12 @@ function ConvoyCacheController.new(options)
     self.retiredRuntimeGroupNames[#self.retiredRuntimeGroupNames + 1] = retiredName
     self.runtimeGroup = nil
     self.spawner = nil
-    self.entity.runtimeGroupName = nil
-    self.entity.representationState = REPRESENTATION_VIRTUAL
-    self.entity.transitionState = TRANSITION_IDLE
-    self.entity.movementState = MOVEMENT_VIRTUAL_MOVING
+    updateEntity({
+      runtimeGroupName = nil,
+      representationState = REPRESENTATION_VIRTUAL,
+      transitionState = TRANSITION_IDLE,
+      movementState = MOVEMENT_VIRTUAL_MOVING,
+    })
     self.routeAssignedGeneration = nil
     self.lastError = nil
 
@@ -724,11 +739,14 @@ function ConvoyCacheController.new(options)
       )
     end
 
-    self.entity.currentSectionIndex = self.entity.currentSectionIndex + 1
-    local section = currentSection()
-    self.entity.segmentIndex = section.entrySegmentIndex
-    self.entity.segmentProgress = 0
-    self.entity.lastMovementUpdateCampaignTime = timer.getTime()
+    local nextSectionIndex = self.entity.currentSectionIndex + 1
+    local section = config.zones.revealSections[nextSectionIndex]
+    updateEntity({
+      currentSectionIndex = nextSectionIndex,
+      segmentIndex = section.entrySegmentIndex,
+      segmentProgress = 0,
+      lastMovementUpdateCampaignTime = timer.getTime(),
+    })
     self.lastError = nil
 
     local successFields = commonFields()
@@ -752,10 +770,12 @@ function ConvoyCacheController.new(options)
     if self.entity.representationState == REPRESENTATION_PHYSICAL and self.runtimeGroup then
       local inspectionOk, inspection = inspectGroup(self.runtimeGroup)
       if inspectionOk then
-        self.entity.runtimeGroupName = inspection.name or self.entity.runtimeGroupName
+        if inspection.name ~= self.entity.runtimeGroupName then
+          updateEntity({ runtimeGroupName = inspection.name })
+        end
         livingUnitCount = inspection.livingUnitCount
         if livingUnitCount < 1 then
-          self.entity.movementState = MOVEMENT_DESTROYED
+          updateEntity({ movementState = MOVEMENT_DESTROYED })
         end
       else
         inspectionError = inspection
@@ -774,10 +794,12 @@ function ConvoyCacheController.new(options)
             if membership
               and self.routeAssignedGeneration == self.entity.physicalGeneration
               and self.entity.movementState ~= MOVEMENT_DESTROYED then
-              self.entity.movementState = MOVEMENT_ARRIVED
-              self.entity.segmentIndex = section.exitSegmentIndex
-              self.entity.segmentProgress = 1
-              self.entity.lastMovementUpdateCampaignTime = timer.getTime()
+              updateEntity({
+                movementState = MOVEMENT_ARRIVED,
+                segmentIndex = section.exitSegmentIndex,
+                segmentProgress = 1,
+                lastMovementUpdateCampaignTime = timer.getTime(),
+              })
               if not self.arrivalLogged then
                 self.arrivalLogged = true
                 local arrivalFields = commonFields()
@@ -831,7 +853,7 @@ function ConvoyCacheController.new(options)
   end
 
   function controller:getState()
-    return self.entity
+    return self.campaignState:getEntitySnapshot(config.scenarioId)
   end
 
   return controller
