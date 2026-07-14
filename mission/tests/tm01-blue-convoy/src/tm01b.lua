@@ -40,6 +40,12 @@ local function validateTm01bMooseApis()
   validateFunction("POSITIONABLE.Destroy", function()
     return POSITIONABLE and POSITIONABLE.Destroy
   end, missing)
+  validateFunction("SPAWN.InitPositionCoordinate", function()
+    return SPAWN and SPAWN.InitPositionCoordinate
+  end, missing)
+  validateFunction("SPAWN.Spawn", function()
+    return SPAWN and SPAWN.Spawn
+  end, missing)
 
   return #missing == 0, missing
 end
@@ -85,17 +91,40 @@ local function validateConfiguration(config)
     end
   end
 
+  local function requireZoneName(name, description)
+    if type(name) ~= "string" or name == "" then
+      errors[#errors + 1] = description .. " zone name is missing"
+      return false
+    end
+    checkZone(name)
+    return true
+  end
+
   checkGroup(config.template.groupName)
-  checkZone(config.zones.target)
+
+  local routeZoneNames = {}
+  if requireZoneName(config.zones.start, "global route start") then
+    routeZoneNames[config.zones.start] = true
+  end
+  if requireZoneName(config.zones.target, "global route target") then
+    if routeZoneNames[config.zones.target] then
+      errors[#errors + 1] = "global route start and target names must differ"
+    end
+    routeZoneNames[config.zones.target] = true
+  end
 
   if type(config.zones.routeAnchors) ~= "table"
     or #config.zones.routeAnchors ~= 7 then
-    errors[#errors + 1] = "TM01B.1 requires exactly seven global route anchors"
+    errors[#errors + 1] = "TM01B.1 requires exactly seven intermediate global route anchors"
   else
     for _, zoneName in ipairs(config.zones.routeAnchors) do
       if type(zoneName) ~= "string" or zoneName == "" then
         errors[#errors + 1] = "global route anchor name is missing"
       else
+        if routeZoneNames[zoneName] then
+          errors[#errors + 1] = "global route zone name is duplicated: " .. zoneName
+        end
+        routeZoneNames[zoneName] = true
         checkZone(zoneName)
       end
     end
@@ -103,31 +132,46 @@ local function validateConfiguration(config)
 
   local routeAnchorCount = type(config.zones.routeAnchors) == "table"
     and #config.zones.routeAnchors or 0
+  local finalSegmentIndex = routeAnchorCount + 1
   local previousExitSegmentIndex = nil
 
   if type(config.zones.revealSections) ~= "table"
     or #config.zones.revealSections < 2 then
     errors[#errors + 1] = "at least two reveal sections are required"
   else
-    for _, section in ipairs(config.zones.revealSections) do
+    for sectionIndex, section in ipairs(config.zones.revealSections) do
       if type(section.id) ~= "string" or section.id == "" then
         errors[#errors + 1] = "reveal section id is missing"
       end
+
       if type(section.entry) ~= "string" or section.entry == "" then
         errors[#errors + 1] = "reveal section entry zone is missing"
       else
+        if routeZoneNames[section.entry] then
+          errors[#errors + 1] = "reveal entry must not reuse a global route zone name: "
+            .. section.entry
+        end
         checkZone(section.entry)
       end
+
       if type(section.exit) ~= "string" or section.exit == "" then
         errors[#errors + 1] = "reveal section exit zone is missing"
       else
+        if routeZoneNames[section.exit] then
+          errors[#errors + 1] = "reveal exit must not reuse a global route zone name: "
+            .. section.exit
+        end
+        if section.exit == section.entry then
+          errors[#errors + 1] = "reveal entry and exit zone names must differ: "
+            .. tostring(section.id)
+        end
         checkZone(section.exit)
       end
 
       if not isInteger(section.entrySegmentIndex) then
         errors[#errors + 1] = "entry segment index is invalid: "
           .. tostring(section.id)
-      elseif section.entrySegmentIndex > routeAnchorCount then
+      elseif section.entrySegmentIndex > finalSegmentIndex then
         errors[#errors + 1] = "entry segment index exceeds the global route: "
           .. tostring(section.id)
       end
@@ -135,7 +179,7 @@ local function validateConfiguration(config)
       if not isInteger(section.exitSegmentIndex) then
         errors[#errors + 1] = "exit segment index is invalid: "
           .. tostring(section.id)
-      elseif section.exitSegmentIndex > routeAnchorCount then
+      elseif section.exitSegmentIndex > finalSegmentIndex then
         errors[#errors + 1] = "exit segment index exceeds the global route: "
           .. tostring(section.id)
       end
@@ -152,6 +196,10 @@ local function validateConfiguration(config)
         and section.entrySegmentIndex < previousExitSegmentIndex then
         errors[#errors + 1] = "reveal sections are not ordered on the global route: "
           .. tostring(section.id)
+      end
+
+      if sectionIndex == 1 and section.entrySegmentIndex ~= 0 then
+        errors[#errors + 1] = "the first reveal section must materialize at segment 0, ZONE_TM01_START_BAGRAM"
       end
 
       if isInteger(section.exitSegmentIndex) then
@@ -262,12 +310,15 @@ function TM01B.start(dependencies)
 
     logger:info("configuration_valid", {
       checkedObjectCount = result.checkedObjectCount,
+      globalRouteStart = config.zones.start,
       globalRouteAnchorCount = #config.zones.routeAnchors,
-      globalRoutePointCount = #config.zones.routeAnchors + 1,
+      globalRoutePointCount = #config.zones.routeAnchors + 2,
+      globalRouteTarget = config.zones.target,
       revealSectionCount = #config.zones.revealSections,
       revealZonesAreWaypoints = false,
+      revealZonesDetermineSpawn = false,
     })
-    setOutcome(OUTCOME_READY, "TM01B global-route caching configuration completed")
+    setOutcome(OUTCOME_READY, "TM01B global-route and reveal-window configuration completed")
     return true
   end
 
@@ -335,7 +386,7 @@ function TM01B.start(dependencies)
 
   logger:info("moose_api_validation_passed", {
     baselineMooseApiCount = 13,
-    tm01bAdditionalApiCount = 2,
+    tm01bAdditionalApiCount = 4,
   })
 
   if not runConfigurationValidation() then
@@ -454,6 +505,7 @@ function TM01B.start(dependencies)
   state.cacheController = cacheController
   logger:info("campaign_state_ready", {
     entityId = config.scenarioId,
+    initialRoutePosition = config.zones.start,
     persistenceEnabled = false,
   })
   logger:info("menu_ready", { path = "OMW Tests / " .. build.stageId })
