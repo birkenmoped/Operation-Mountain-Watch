@@ -3,7 +3,7 @@
 local OMWBuild = {
   testId = "TM01",
   stageId = "TM01B",
-  configurationVersion = "TM01B-controlled-caching-2",
+  configurationVersion = "TM01B-controlled-caching-3",
   expectedMooseVersion = "2.9.18",
   expectedMooseFileSha256 = "e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915",
   expectedMooseBuildCommit = "73d3ed119cd9e7e3f2cfcabbaa34513d30529b54",
@@ -11,12 +11,12 @@ local OMWBuild = {
   expectedMooseIncludeFamily = "Moose_Include_Static",
   expectedMooseCompression = "none",
   mooseVerificationMode = "BUILD_HASH_PLUS_RUNTIME_API_CHECK",
-  buildTimestamp = "2026-07-14T18:12:13Z",
+  buildTimestamp = "2026-07-14T19:07:11Z",
 }
 
 local TM01BConfig = (function()
 local config = {
-  configurationVersion = "TM01B-controlled-caching-2",
+  configurationVersion = "TM01B-controlled-caching-3",
   testId = "TM01",
   stageId = "TM01B",
   scenarioId = "TEST.TM01.CONVOY.001",
@@ -29,10 +29,11 @@ local config = {
   },
 
   zones = {
+    -- Authoritative endpoints of the global route.
+    start = "ZONE_TM01_START_BAGRAM",
     target = "ZONE_TM01_TARGET_JALALABAD",
 
-    -- The route anchors define one global route corridor. Reveal entry and exit
-    -- zones are visibility windows only and are never inserted as waypoints.
+    -- These seven anchors constrain the DCS road corridor between start and target.
     routeAnchors = {
       "ZONE_TM01_ROUTE_01",
       "ZONE_TM01_ROUTE_02",
@@ -43,6 +44,13 @@ local config = {
       "ZONE_TM01_ROUTE_07",
     },
 
+    -- Reveal zones are visibility-window boundaries only. They are never route
+    -- points and never determine the physical spawn coordinate.
+    --
+    -- segmentIndex semantics:
+    --   0 = ZONE_TM01_START_BAGRAM
+    --   1..7 = ZONE_TM01_ROUTE_01..07
+    --   8 = ZONE_TM01_TARGET_JALALABAD
     revealSections = {
       {
         id = "REVEAL_01",
@@ -268,6 +276,9 @@ function InMemoryCampaignState.new(config)
   if type(firstSection) ~= "table" then
     error("initial reveal section is unavailable")
   end
+  if firstSection.entrySegmentIndex ~= 0 then
+    error("initial reveal section must begin at global route start segment 0")
+  end
 
   local entity = {
     entityId = config.scenarioId,
@@ -276,6 +287,8 @@ function InMemoryCampaignState.new(config)
     movementState = MOVEMENT_NOT_STARTED,
     routeId = config.routeId,
     currentSectionIndex = config.virtualization.initialSectionIndex,
+    -- segmentIndex identifies the authoritative current position on the global
+    -- route: 0=start, 1..7=route anchors, 8=target.
     segmentIndex = firstSection.entrySegmentIndex,
     segmentProgress = 0,
     routeDistanceMeters = 0,
@@ -405,6 +418,10 @@ local function makeSet(values)
   return result
 end
 
+local function isInteger(value)
+  return type(value) == "number" and value >= 0 and value == math.floor(value)
+end
+
 local function parseSpawnSlot(unitName)
   if type(unitName) ~= "string" then
     return nil
@@ -459,15 +476,20 @@ function ConvoyCacheController.new(options)
     return config.zones.revealSections[controller.entity.currentSectionIndex]
   end
 
-  local function routePointCount()
+  -- segmentIndex semantics are authoritative and stable:
+  -- 0=start, 1..N=route anchors, N+1=target.
+  local function finalSegmentIndex()
     return #config.zones.routeAnchors + 1
   end
 
-  local function routeZoneNameAt(index)
-    if index >= 1 and index <= #config.zones.routeAnchors then
-      return config.zones.routeAnchors[index]
+  local function routePositionZoneNameAt(segmentIndex)
+    if segmentIndex == 0 then
+      return config.zones.start
     end
-    if index == routePointCount() then
+    if segmentIndex >= 1 and segmentIndex <= #config.zones.routeAnchors then
+      return config.zones.routeAnchors[segmentIndex]
+    end
+    if segmentIndex == finalSegmentIndex() then
       return config.zones.target
     end
     return nil
@@ -486,6 +508,7 @@ function ConvoyCacheController.new(options)
       currentSectionId = section and section.id or "none",
       segmentIndex = controller.entity.segmentIndex,
       segmentProgress = controller.entity.segmentProgress,
+      routePositionZoneName = routePositionZoneNameAt(controller.entity.segmentIndex) or "none",
       physicalGeneration = controller.entity.physicalGeneration,
       revision = controller.entity.revision,
       runtimeGroupName = controller.entity.runtimeGroupName or "none",
@@ -703,24 +726,54 @@ function ConvoyCacheController.new(options)
     end)
   end
 
-  local function buildRemainingRoute(startRoutePointIndex)
+  local function resolveRoutePosition(segmentIndex)
+    return pcall(function()
+      if not isInteger(segmentIndex) or segmentIndex > finalSegmentIndex() then
+        error("route position segment index is outside the configured route")
+      end
+
+      local zoneName = routePositionZoneNameAt(segmentIndex)
+      if not zoneName then
+        error("route position zone name is unavailable for segment " .. tostring(segmentIndex))
+      end
+
+      local zone = ZONE:FindByName(zoneName)
+      if not zone then
+        error("route position zone is unavailable: " .. tostring(zoneName))
+      end
+
+      local coordinate = zone:GetCoordinate()
+      if not coordinate then
+        error("route position coordinate is unavailable: " .. tostring(zoneName))
+      end
+
+      return {
+        coordinate = coordinate,
+        segmentIndex = segmentIndex,
+        zone = zone,
+        zoneName = zoneName,
+      }
+    end)
+  end
+
+  local function buildRemainingRoute(startSegmentIndex)
     return pcall(function()
       local formation = MOOSE_FORMATIONS[config.routing.formation]
       if config.routing.roadOnly ~= true or not formation then
         error("road-only ON_ROAD routing configuration is required")
       end
 
-      local totalRoutePoints = routePointCount()
-      if type(startRoutePointIndex) ~= "number"
-        or startRoutePointIndex < 1
-        or startRoutePointIndex > totalRoutePoints then
+      local finalIndex = finalSegmentIndex()
+      if not isInteger(startSegmentIndex)
+        or startSegmentIndex < 1
+        or startSegmentIndex > finalIndex then
         error("route slice start is outside the configured route")
       end
 
       local waypoints = {}
       local routeZoneNames = {}
-      for routePointIndex = startRoutePointIndex, totalRoutePoints do
-        local zoneName = routeZoneNameAt(routePointIndex)
+      for segmentIndex = startSegmentIndex, finalIndex do
+        local zoneName = routePositionZoneNameAt(segmentIndex)
         local zone = ZONE:FindByName(zoneName)
         if not zone then
           error("global route zone is unavailable: " .. tostring(zoneName))
@@ -744,8 +797,8 @@ function ConvoyCacheController.new(options)
       return {
         waypoints = waypoints,
         routeZoneNames = routeZoneNames,
-        startRoutePointIndex = startRoutePointIndex,
-        endRoutePointIndex = totalRoutePoints,
+        startSegmentIndex = startSegmentIndex,
+        endSegmentIndex = finalIndex,
       }
     end)
   end
@@ -879,15 +932,19 @@ function ConvoyCacheController.new(options)
         "current reveal section is unavailable"
       )
     end
+    if self.entity.segmentIndex ~= section.entrySegmentIndex then
+      return reject(
+        action,
+        "CampaignState route position does not match the current reveal-window entry"
+      )
+    end
 
-    local lookupOk, entryZone = pcall(function()
-      return ZONE:FindByName(section.entry)
-    end)
-    if not lookupOk or not entryZone then
+    local positionOk, positionOrError = resolveRoutePosition(self.entity.segmentIndex)
+    if not positionOk then
       return logFailure(
         "convoy_materialization_failed",
         MOVEMENT_MATERIALIZATION_FAILED,
-        lookupOk and "entry zone is unavailable: " .. section.entry or entryZone
+        positionOrError
       )
     end
 
@@ -897,24 +954,25 @@ function ConvoyCacheController.new(options)
       .. "_G" .. string.format("%02d", nextGeneration)
 
     local constructionOk, spawnerOrError = pcall(function()
-      return SPAWN:NewWithAlias(config.template.groupName, alias)
+      local spawner = SPAWN:NewWithAlias(config.template.groupName, alias)
+      return spawner:InitPositionCoordinate(positionOrError.coordinate)
     end)
-    if not constructionOk or not spawnerOrError then
+    if not constructionOk or type(spawnerOrError) ~= "table" then
       return logFailure(
         "convoy_materialization_failed",
         MOVEMENT_MATERIALIZATION_FAILED,
-        constructionOk and "SPAWN construction returned nil" or spawnerOrError
+        constructionOk and "SPAWN position initialization returned no spawner" or spawnerOrError
       )
     end
 
     local spawnOk, groupOrError = pcall(function()
-      return spawnerOrError:SpawnInZone(entryZone, false)
+      return spawnerOrError:Spawn()
     end)
     if not spawnOk or type(groupOrError) ~= "table" then
       return logFailure(
         "convoy_materialization_failed",
         MOVEMENT_MATERIALIZATION_FAILED,
-        spawnOk and "SpawnInZone did not return a GROUP wrapper" or groupOrError
+        spawnOk and "SPAWN:Spawn did not return a GROUP wrapper" or groupOrError
       )
     end
 
@@ -950,18 +1008,6 @@ function ConvoyCacheController.new(options)
       )
     end
 
-    local membershipOk, insideEntry = pcall(function()
-      return runtimeGroup:IsCompletelyInZone(entryZone) == true
-    end)
-    if not membershipOk or not insideEntry then
-      destroyGroupSilently(runtimeGroup)
-      return logFailure(
-        "convoy_materialization_failed",
-        MOVEMENT_MATERIALIZATION_FAILED,
-        membershipOk and "spawned group is not completely inside entry zone" or insideEntry
-      )
-    end
-
     self.spawner = spawnerOrError
     self.runtimeGroup = runtimeGroup
     updateEntity({
@@ -970,7 +1016,6 @@ function ConvoyCacheController.new(options)
       representationState = REPRESENTATION_PHYSICAL,
       transitionState = TRANSITION_IDLE,
       movementState = MOVEMENT_PHYSICAL_READY,
-      segmentIndex = section.entrySegmentIndex,
       segmentProgress = 0,
       lastMovementUpdateCampaignTime = timer.getTime(),
     })
@@ -994,14 +1039,18 @@ function ConvoyCacheController.new(options)
     end
 
     local fields = commonFields()
-    fields.entryZoneName = section.entry
+    fields.materializationAnchorName = positionOrError.zoneName
+    fields.revealEntryZoneName = section.entry
     fields.livingUnitCount = livingUnitCount
-    fields.nextRoutePointIndex = section.entrySegmentIndex + 1
+    fields.nextRouteSegmentIndex = self.entity.segmentIndex + 1
+    fields.nextRouteZoneName = routePositionZoneNameAt(self.entity.segmentIndex + 1)
     fields.missionTimeSeconds = timer.getTime()
     logger:info("convoy_materialized", fields)
     announce(
       "Convoy materialized"
         .. "\nSection: " .. section.id
+        .. "\nRoute anchor: " .. positionOrError.zoneName
+        .. "\nReveal entry: " .. section.entry
         .. "\nRuntime group: " .. inspection.name
         .. "\nGeneration: " .. nextGeneration
         .. "\nVehicle slots: " .. joinNumbers(self.entity.survivingVehicleSlots)
@@ -1037,8 +1086,8 @@ function ConvoyCacheController.new(options)
       return logFailure("convoy_cached_route_failed", MOVEMENT_ROUTE_FAILED, invariantError)
     end
 
-    local startRoutePointIndex = self.entity.segmentIndex + 1
-    local routeOk, routeOrError = buildRemainingRoute(startRoutePointIndex)
+    local startSegmentIndex = self.entity.segmentIndex + 1
+    local routeOk, routeOrError = buildRemainingRoute(startSegmentIndex)
     if not routeOk then
       return logFailure("convoy_cached_route_failed", MOVEMENT_ROUTE_FAILED, routeOrError)
     end
@@ -1064,8 +1113,8 @@ function ConvoyCacheController.new(options)
     local section = currentSection()
     local successFields = commonFields()
     successFields.totalWaypointCount = #routeOrError.waypoints
-    successFields.routeSliceStartIndex = routeOrError.startRoutePointIndex
-    successFields.routeSliceEndIndex = routeOrError.endRoutePointIndex
+    successFields.routeSliceStartSegmentIndex = routeOrError.startSegmentIndex
+    successFields.routeSliceEndSegmentIndex = routeOrError.endSegmentIndex
     successFields.firstRouteZoneName = routeOrError.routeZoneNames[1]
     successFields.lastRouteZoneName = routeOrError.routeZoneNames[#routeOrError.routeZoneNames]
     successFields.missionTimeSeconds = timer.getTime()
@@ -1229,6 +1278,15 @@ function ConvoyCacheController.new(options)
 
     local nextSectionIndex = self.entity.currentSectionIndex + 1
     local section = config.zones.revealSections[nextSectionIndex]
+    local positionZoneName = routePositionZoneNameAt(section.entrySegmentIndex)
+    if not positionZoneName then
+      return logFailure(
+        "convoy_virtual_advance_failed",
+        MOVEMENT_ROUTE_FAILED,
+        "next reveal-window route position is unavailable"
+      )
+    end
+
     updateEntity({
       currentSectionIndex = nextSectionIndex,
       segmentIndex = section.entrySegmentIndex,
@@ -1238,15 +1296,18 @@ function ConvoyCacheController.new(options)
     self.lastError = nil
 
     local successFields = commonFields()
-    successFields.entryZoneName = section.entry
-    successFields.nextRoutePointIndex = section.entrySegmentIndex + 1
+    successFields.revealEntryZoneName = section.entry
+    successFields.materializationAnchorName = positionZoneName
+    successFields.nextRouteSegmentIndex = section.entrySegmentIndex + 1
+    successFields.nextRouteZoneName = routePositionZoneNameAt(section.entrySegmentIndex + 1)
     successFields.missionTimeSeconds = timer.getTime()
     logger:info("convoy_virtual_advanced", successFields)
     announce(
       "Virtual convoy advanced"
         .. "\nNext section: " .. section.id
-        .. "\nEntry anchor: " .. section.entry
-        .. "\nNext route point: " .. displayValue(routeZoneNameAt(section.entrySegmentIndex + 1))
+        .. "\nReveal entry: " .. section.entry
+        .. "\nRoute anchor: " .. positionZoneName
+        .. "\nNext route point: " .. displayValue(routePositionZoneNameAt(section.entrySegmentIndex + 1))
     )
     return true
   end
@@ -1289,7 +1350,7 @@ function ConvoyCacheController.new(options)
               and self.entity.movementState ~= MOVEMENT_DESTROYED then
               updateEntity({
                 movementState = MOVEMENT_ARRIVED,
-                segmentIndex = routePointCount(),
+                segmentIndex = finalSegmentIndex(),
                 segmentProgress = 1,
                 lastMovementUpdateCampaignTime = timer.getTime(),
               })
@@ -1344,6 +1405,7 @@ function ConvoyCacheController.new(options)
         .. "\nMovement: " .. self.entity.movementState
         .. "\nSection: " .. displayValue(section and section.id)
         .. "\nSegment: " .. tostring(self.entity.segmentIndex)
+        .. "\nRoute position: " .. displayValue(routePositionZoneNameAt(self.entity.segmentIndex))
         .. "\nGeneration: " .. self.entity.physicalGeneration
         .. "\nRuntime group: " .. displayValue(self.entity.runtimeGroupName)
         .. "\nVehicle slots: " .. joinNumbers(self.entity.survivingVehicleSlots)
@@ -1405,6 +1467,12 @@ local function validateTm01bMooseApis()
   validateFunction("POSITIONABLE.Destroy", function()
     return POSITIONABLE and POSITIONABLE.Destroy
   end, missing)
+  validateFunction("SPAWN.InitPositionCoordinate", function()
+    return SPAWN and SPAWN.InitPositionCoordinate
+  end, missing)
+  validateFunction("SPAWN.Spawn", function()
+    return SPAWN and SPAWN.Spawn
+  end, missing)
 
   return #missing == 0, missing
 end
@@ -1450,17 +1518,40 @@ local function validateConfiguration(config)
     end
   end
 
+  local function requireZoneName(name, description)
+    if type(name) ~= "string" or name == "" then
+      errors[#errors + 1] = description .. " zone name is missing"
+      return false
+    end
+    checkZone(name)
+    return true
+  end
+
   checkGroup(config.template.groupName)
-  checkZone(config.zones.target)
+
+  local routeZoneNames = {}
+  if requireZoneName(config.zones.start, "global route start") then
+    routeZoneNames[config.zones.start] = true
+  end
+  if requireZoneName(config.zones.target, "global route target") then
+    if routeZoneNames[config.zones.target] then
+      errors[#errors + 1] = "global route start and target names must differ"
+    end
+    routeZoneNames[config.zones.target] = true
+  end
 
   if type(config.zones.routeAnchors) ~= "table"
     or #config.zones.routeAnchors ~= 7 then
-    errors[#errors + 1] = "TM01B.1 requires exactly seven global route anchors"
+    errors[#errors + 1] = "TM01B.1 requires exactly seven intermediate global route anchors"
   else
     for _, zoneName in ipairs(config.zones.routeAnchors) do
       if type(zoneName) ~= "string" or zoneName == "" then
         errors[#errors + 1] = "global route anchor name is missing"
       else
+        if routeZoneNames[zoneName] then
+          errors[#errors + 1] = "global route zone name is duplicated: " .. zoneName
+        end
+        routeZoneNames[zoneName] = true
         checkZone(zoneName)
       end
     end
@@ -1468,31 +1559,46 @@ local function validateConfiguration(config)
 
   local routeAnchorCount = type(config.zones.routeAnchors) == "table"
     and #config.zones.routeAnchors or 0
+  local finalSegmentIndex = routeAnchorCount + 1
   local previousExitSegmentIndex = nil
 
   if type(config.zones.revealSections) ~= "table"
     or #config.zones.revealSections < 2 then
     errors[#errors + 1] = "at least two reveal sections are required"
   else
-    for _, section in ipairs(config.zones.revealSections) do
+    for sectionIndex, section in ipairs(config.zones.revealSections) do
       if type(section.id) ~= "string" or section.id == "" then
         errors[#errors + 1] = "reveal section id is missing"
       end
+
       if type(section.entry) ~= "string" or section.entry == "" then
         errors[#errors + 1] = "reveal section entry zone is missing"
       else
+        if routeZoneNames[section.entry] then
+          errors[#errors + 1] = "reveal entry must not reuse a global route zone name: "
+            .. section.entry
+        end
         checkZone(section.entry)
       end
+
       if type(section.exit) ~= "string" or section.exit == "" then
         errors[#errors + 1] = "reveal section exit zone is missing"
       else
+        if routeZoneNames[section.exit] then
+          errors[#errors + 1] = "reveal exit must not reuse a global route zone name: "
+            .. section.exit
+        end
+        if section.exit == section.entry then
+          errors[#errors + 1] = "reveal entry and exit zone names must differ: "
+            .. tostring(section.id)
+        end
         checkZone(section.exit)
       end
 
       if not isInteger(section.entrySegmentIndex) then
         errors[#errors + 1] = "entry segment index is invalid: "
           .. tostring(section.id)
-      elseif section.entrySegmentIndex > routeAnchorCount then
+      elseif section.entrySegmentIndex > finalSegmentIndex then
         errors[#errors + 1] = "entry segment index exceeds the global route: "
           .. tostring(section.id)
       end
@@ -1500,7 +1606,7 @@ local function validateConfiguration(config)
       if not isInteger(section.exitSegmentIndex) then
         errors[#errors + 1] = "exit segment index is invalid: "
           .. tostring(section.id)
-      elseif section.exitSegmentIndex > routeAnchorCount then
+      elseif section.exitSegmentIndex > finalSegmentIndex then
         errors[#errors + 1] = "exit segment index exceeds the global route: "
           .. tostring(section.id)
       end
@@ -1517,6 +1623,10 @@ local function validateConfiguration(config)
         and section.entrySegmentIndex < previousExitSegmentIndex then
         errors[#errors + 1] = "reveal sections are not ordered on the global route: "
           .. tostring(section.id)
+      end
+
+      if sectionIndex == 1 and section.entrySegmentIndex ~= 0 then
+        errors[#errors + 1] = "the first reveal section must materialize at segment 0, ZONE_TM01_START_BAGRAM"
       end
 
       if isInteger(section.exitSegmentIndex) then
@@ -1627,12 +1737,15 @@ function TM01B.start(dependencies)
 
     logger:info("configuration_valid", {
       checkedObjectCount = result.checkedObjectCount,
+      globalRouteStart = config.zones.start,
       globalRouteAnchorCount = #config.zones.routeAnchors,
-      globalRoutePointCount = #config.zones.routeAnchors + 1,
+      globalRoutePointCount = #config.zones.routeAnchors + 2,
+      globalRouteTarget = config.zones.target,
       revealSectionCount = #config.zones.revealSections,
       revealZonesAreWaypoints = false,
+      revealZonesDetermineSpawn = false,
     })
-    setOutcome(OUTCOME_READY, "TM01B global-route caching configuration completed")
+    setOutcome(OUTCOME_READY, "TM01B global-route and reveal-window configuration completed")
     return true
   end
 
@@ -1700,7 +1813,7 @@ function TM01B.start(dependencies)
 
   logger:info("moose_api_validation_passed", {
     baselineMooseApiCount = 13,
-    tm01bAdditionalApiCount = 2,
+    tm01bAdditionalApiCount = 4,
   })
 
   if not runConfigurationValidation() then
@@ -1819,6 +1932,7 @@ function TM01B.start(dependencies)
   state.cacheController = cacheController
   logger:info("campaign_state_ready", {
     entityId = config.scenarioId,
+    initialRoutePosition = config.zones.start,
     persistenceEnabled = false,
   })
   logger:info("menu_ready", { path = "OMW Tests / " .. build.stageId })
