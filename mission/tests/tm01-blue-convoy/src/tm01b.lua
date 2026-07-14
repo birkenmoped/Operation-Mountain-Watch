@@ -40,8 +40,8 @@ local function validateTm01bMooseApis()
   validateFunction("POSITIONABLE.GetVec2", function()
     return POSITIONABLE and POSITIONABLE.GetVec2
   end, missing)
-  validateFunction("SPAWN.InitPositionCoordinate", function()
-    return SPAWN and SPAWN.InitPositionCoordinate
+  validateFunction("SPAWN.InitSetUnitAbsolutePositions", function()
+    return SPAWN and SPAWN.InitSetUnitAbsolutePositions
   end, missing)
   validateFunction("SPAWN.Spawn", function()
     return SPAWN and SPAWN.Spawn
@@ -52,14 +52,53 @@ local function validateTm01bMooseApis()
   validateFunction("ZONE_BASE.GetVec2", function()
     return ZONE_BASE and ZONE_BASE.GetVec2
   end, missing)
+  validateFunction("ZONE_BASE.GetCoordinate", function()
+    return ZONE_BASE and ZONE_BASE.GetCoordinate
+  end, missing)
   validateFunction("ZONE_BASE.IsVec2InZone", function()
     return ZONE_BASE and ZONE_BASE.IsVec2InZone
+  end, missing)
+  validateFunction("ZONE_RADIUS.GetRadius", function()
+    return ZONE_RADIUS and ZONE_RADIUS.GetRadius
+  end, missing)
+  validateFunction("COORDINATE.NewFromVec2", function()
+    return COORDINATE and COORDINATE.NewFromVec2
+  end, missing)
+  validateFunction("COORDINATE.GetClosestPointToRoad", function()
+    return COORDINATE and COORDINATE.GetClosestPointToRoad
+  end, missing)
+  validateFunction("COORDINATE.GetPathOnRoad", function()
+    return COORDINATE and COORDINATE.GetPathOnRoad
+  end, missing)
+  validateFunction("COORDINATE.Get2DDistance", function()
+    return COORDINATE and COORDINATE.Get2DDistance
+  end, missing)
+  validateFunction("COORDINATE.WaypointGround", function()
+    return COORDINATE and COORDINATE.WaypointGround
+  end, missing)
+  validateFunction("MARKER.New", function()
+    return MARKER and MARKER.New
+  end, missing)
+  validateFunction("MARKER.ReadOnly", function()
+    return MARKER and MARKER.ReadOnly
+  end, missing)
+  validateFunction("MARKER.ToBlue", function()
+    return MARKER and MARKER.ToBlue
+  end, missing)
+  validateFunction("MARKER.UpdateCoordinate", function()
+    return MARKER and MARKER.UpdateCoordinate
+  end, missing)
+  validateFunction("MARKER.UpdateText", function()
+    return MARKER and MARKER.UpdateText
+  end, missing)
+  validateFunction("MARKER.Remove", function()
+    return MARKER and MARKER.Remove
   end, missing)
   return #missing == 0, missing
 end
 
-local function isInteger(value)
-  return type(value) == "number" and value >= 0 and value == math.floor(value)
+local function positiveNumber(value)
+  return type(value) == "number" and value > 0
 end
 
 local function validateConfiguration(config)
@@ -119,44 +158,26 @@ local function validateConfiguration(config)
     end
   end
 
-  local routeAnchorCount = type(config.zones.routeAnchors) == "table"
-    and #config.zones.routeAnchors or 0
-  local previousExitSegmentIndex = nil
-
-  if type(config.zones.revealSections) ~= "table"
-    or #config.zones.revealSections < 1 then
-    errors[#errors + 1] = "at least one reveal section is required"
+  if type(config.zones.revealWindows) ~= "table"
+    or #config.zones.revealWindows < 1 then
+    errors[#errors + 1] = "at least one circular reveal window is required"
   else
-    for sectionIndex, section in ipairs(config.zones.revealSections) do
-      if type(section.id) ~= "string" or section.id == "" then
-        errors[#errors + 1] = "reveal section id is missing"
-      end
-      requireZoneName(section.entry, "reveal entry " .. tostring(sectionIndex))
-      requireZoneName(section.exit, "reveal exit " .. tostring(sectionIndex))
-      if section.entry == section.exit then
-        errors[#errors + 1] = "reveal entry and exit names must differ: " .. tostring(section.id)
+    local ids = {}
+    local zoneNames = {}
+    for index, window in ipairs(config.zones.revealWindows) do
+      if type(window.id) ~= "string" or window.id == "" then
+        errors[#errors + 1] = "reveal window id is missing: " .. tostring(index)
+      elseif ids[window.id] then
+        errors[#errors + 1] = "duplicate reveal window id: " .. window.id
+      else
+        ids[window.id] = true
       end
 
-      if not isInteger(section.entrySegmentIndex)
-        or section.entrySegmentIndex > routeAnchorCount then
-        errors[#errors + 1] = "invalid reveal entry segment index: " .. tostring(section.id)
-      end
-      if not isInteger(section.exitSegmentIndex)
-        or section.exitSegmentIndex > routeAnchorCount then
-        errors[#errors + 1] = "invalid reveal exit segment index: " .. tostring(section.id)
-      end
-      if isInteger(section.entrySegmentIndex)
-        and isInteger(section.exitSegmentIndex)
-        and section.exitSegmentIndex < section.entrySegmentIndex then
-        errors[#errors + 1] = "reveal exit precedes entry: " .. tostring(section.id)
-      end
-      if previousExitSegmentIndex ~= nil
-        and isInteger(section.entrySegmentIndex)
-        and section.entrySegmentIndex < previousExitSegmentIndex then
-        errors[#errors + 1] = "reveal sections overlap or are out of order: " .. tostring(section.id)
-      end
-      if isInteger(section.exitSegmentIndex) then
-        previousExitSegmentIndex = section.exitSegmentIndex
+      if requireZoneName(window.zone, "reveal window " .. tostring(index)) then
+        if zoneNames[window.zone] then
+          errors[#errors + 1] = "duplicate reveal window zone: " .. window.zone
+        end
+        zoneNames[window.zone] = true
       end
     end
   end
@@ -164,9 +185,9 @@ local function validateConfiguration(config)
   if config.virtualization.initialSectionIndex ~= 1 then
     errors[#errors + 1] = "initialSectionIndex must be 1"
   end
-  if type(config.zones.revealSections) == "table"
-    and config.virtualization.finalSectionIndex ~= #config.zones.revealSections then
-    errors[#errors + 1] = "finalSectionIndex must reference the last reveal section"
+  if type(config.zones.revealWindows) == "table"
+    and config.virtualization.finalSectionIndex ~= #config.zones.revealWindows then
+    errors[#errors + 1] = "finalSectionIndex must reference the last reveal window"
   end
   if config.template.expectedVehicleCount ~= 6 then
     errors[#errors + 1] = "TM01B expects exactly six configured vehicle slots"
@@ -174,29 +195,36 @@ local function validateConfiguration(config)
   if config.virtualization.automaticAdvance ~= true
     or config.virtualization.automaticMaterialization ~= true
     or config.virtualization.automaticDematerialization ~= true then
-    errors[#errors + 1] = "TM01B version 4 requires all automatic transitions"
+    errors[#errors + 1] = "TM01B version 5 requires all automatic transitions"
   end
-  if config.virtualization.exitPassageMode ~= "EACH_SURVIVING_SLOT_EVER_INSIDE" then
-    errors[#errors + 1] = "unsupported exit passage mode"
+  if config.virtualization.visibilityMode ~= "CIRCULAR_WINDOW_ANY_UNIT_INSIDE" then
+    errors[#errors + 1] = "unsupported reveal-window visibility mode"
   end
-  if type(config.virtualization.effectiveSpeedKph) ~= "number"
-    or config.virtualization.effectiveSpeedKph <= 0 then
-    errors[#errors + 1] = "effective virtual speed must be positive"
+
+  local positiveSettings = {
+    { config.virtualization.effectiveSpeedKph, "effective virtual speed" },
+    { config.virtualization.automationPollSeconds, "automation poll interval" },
+    { config.virtualization.minimumVirtualLegSeconds, "minimum virtual leg duration" },
+    { config.virtualization.virtualMarkerUpdateSeconds, "virtual marker update interval" },
+    { config.virtualization.destroyConfirmationPollSeconds, "destroy confirmation poll interval" },
+    { config.virtualization.destroyConfirmationTimeoutSeconds, "destroy confirmation timeout" },
+    { config.routing.routeSampleMeters, "road route sample spacing" },
+    { config.routing.physicalWaypointSpacingMeters, "physical waypoint spacing" },
+    { config.routing.maximumRoadSnapMeters, "maximum road snap distance" },
+    { config.routing.roadPositionToleranceMeters, "road position tolerance" },
+    { config.routing.vehicleSpacingMeters, "vehicle spacing" },
+    { config.routing.spawnInteriorMarginMeters, "spawn interior margin" },
+    { config.routing.physicalClearanceMeters, "physical clearance" },
+  }
+  for _, setting in ipairs(positiveSettings) do
+    if not positiveNumber(setting[1]) then
+      errors[#errors + 1] = setting[2] .. " must be positive"
+    end
   end
-  if type(config.virtualization.automationPollSeconds) ~= "number"
-    or config.virtualization.automationPollSeconds <= 0 then
-    errors[#errors + 1] = "automation poll interval must be positive"
-  end
-  if type(config.virtualization.minimumVirtualLegSeconds) ~= "number"
-    or config.virtualization.minimumVirtualLegSeconds <= 0 then
-    errors[#errors + 1] = "minimum virtual leg duration must be positive"
-  end
-  if type(config.virtualization.destroyConfirmationPollSeconds) ~= "number"
-    or config.virtualization.destroyConfirmationPollSeconds <= 0 then
-    errors[#errors + 1] = "destroy confirmation poll interval must be positive"
-  end
-  if type(config.virtualization.destroyConfirmationTimeoutSeconds) ~= "number"
-    or config.virtualization.destroyConfirmationTimeoutSeconds
+
+  if positiveNumber(config.virtualization.destroyConfirmationPollSeconds)
+    and positiveNumber(config.virtualization.destroyConfirmationTimeoutSeconds)
+    and config.virtualization.destroyConfirmationTimeoutSeconds
       <= config.virtualization.destroyConfirmationPollSeconds then
     errors[#errors + 1] = "destroy confirmation timeout must exceed poll interval"
   end
@@ -283,16 +311,14 @@ function TM01B.start(dependencies)
       globalRouteStart = config.zones.start,
       globalRouteAnchorCount = #config.zones.routeAnchors,
       globalRouteTarget = config.zones.target,
-      revealSectionCount = #config.zones.revealSections,
+      revealWindowCount = #config.zones.revealWindows,
+      oneCircularZonePerWindow = true,
+      visibilityMode = config.virtualization.visibilityMode,
+      virtualMarkerEnabled = config.virtualization.showVirtualMarker,
+      roadAlignedAbsoluteVehicleSpawn = true,
       oneManualStartCommand = true,
-      automaticAdvance = true,
-      automaticMaterialization = true,
-      automaticDematerialization = true,
-      exitPassageMode = config.virtualization.exitPassageMode,
-      revealEntryZonesDetermineSpawn = true,
-      revealExitZonesTerminatePhysicalRoutes = true,
     })
-    setOutcome(OUTCOME_READY, "TM01B automatic reveal-window caching is ready")
+    setOutcome(OUTCOME_READY, "TM01B circular reveal-window caching is ready")
     return true
   end
 
@@ -355,7 +381,7 @@ function TM01B.start(dependencies)
 
   logger:info("runtime_api_validation_passed", {
     additionalNativeApiCount = 2,
-    additionalMooseApiCount = 8,
+    additionalMooseApiCount = 21,
   })
 
   if not runConfigurationValidation() then
