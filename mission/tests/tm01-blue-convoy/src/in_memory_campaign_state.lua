@@ -18,6 +18,11 @@ function InMemoryCampaignState.new(config)
     initialSlots[#initialSlots + 1] = slot
   end
 
+  local firstSection = config.zones.revealSections[config.virtualization.initialSectionIndex]
+  if type(firstSection) ~= "table" then
+    error("initial reveal section is unavailable")
+  end
+
   local entity = {
     entityId = config.scenarioId,
     representationState = REPRESENTATION_VIRTUAL,
@@ -25,7 +30,7 @@ function InMemoryCampaignState.new(config)
     movementState = MOVEMENT_NOT_STARTED,
     routeId = config.routeId,
     currentSectionIndex = config.virtualization.initialSectionIndex,
-    segmentIndex = 0,
+    segmentIndex = firstSection.entrySegmentIndex,
     segmentProgress = 0,
     routeDistanceMeters = 0,
     configuredSpeedKph = config.virtualization.configuredSpeedKph,
@@ -58,11 +63,17 @@ function InMemoryCampaignState.new(config)
     end
 
     for key, value in pairs(changes) do
-      if key == "survivingVehicleSlots" then
-        current[key] = copyArray(value)
-      else
-        current[key] = value
+      if key ~= "clearFields" then
+        if key == "survivingVehicleSlots" then
+          current[key] = copyArray(value)
+        else
+          current[key] = value
+        end
       end
+    end
+
+    for _, key in ipairs(changes.clearFields or {}) do
+      current[key] = nil
     end
 
     current.revision = current.revision + 1
