@@ -3,7 +3,7 @@
 local OMWBuild = {
   testId = "TM01",
   stageId = "TM01B",
-  configurationVersion = "TM01B-controlled-caching-5",
+  configurationVersion = "TM01B-controlled-caching-5.1",
   expectedMooseVersion = "2.9.18",
   expectedMooseFileSha256 = "e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915",
   expectedMooseBuildCommit = "73d3ed119cd9e7e3f2cfcabbaa34513d30529b54",
@@ -11,12 +11,12 @@ local OMWBuild = {
   expectedMooseIncludeFamily = "Moose_Include_Static",
   expectedMooseCompression = "none",
   mooseVerificationMode = "BUILD_HASH_PLUS_RUNTIME_API_CHECK",
-  buildTimestamp = "2026-07-14T21:06:20Z",
+  buildTimestamp = "2026-07-14T21:28:02Z",
 }
 
 local TM01BConfig = (function()
 local config = {
-  configurationVersion = "TM01B-controlled-caching-5",
+  configurationVersion = "TM01B-controlled-caching-5.1",
   testId = "TM01",
   stageId = "TM01B",
   scenarioId = "TEST.TM01.CONVOY.001",
@@ -62,16 +62,23 @@ local config = {
     speedKph = 30,
     formation = "ON_ROAD",
 
-    -- Global road geometry and physical route resolution.
-    routeSampleMeters = 20,
-    physicalWaypointSpacingMeters = 250,
+    -- Use a fine-grained road polyline. The previous 20 m sampling could cut
+    -- across tight bends and then fail the secondary road-distance check.
+    routeSampleMeters = 5,
+    physicalWaypointSpacingMeters = 100,
     maximumRoadSnapMeters = 1500,
-    roadPositionToleranceMeters = 3,
 
-    -- Six template slots are placed individually on the road centerline.
-    vehicleSpacingMeters = 18,
-    spawnInteriorMarginMeters = 12,
-    physicalClearanceMeters = 40,
+    -- This is now only a gross sanity limit. Planned points already originate
+    -- from GetPathOnRoad(); a 3 m limit was too strict for the Afghanistan road
+    -- graph and rejected valid curved-road positions before the mission began.
+    roadPositionToleranceMeters = 25,
+
+    -- Keep the complete six-vehicle formation compact and move it farther into
+    -- the reveal circle before spawning. Every slot is still assigned its own
+    -- absolute position and heading along the compiled road path.
+    vehicleSpacingMeters = 15,
+    spawnInteriorMarginMeters = 25,
+    physicalClearanceMeters = 75,
   },
 
   virtualization = {
