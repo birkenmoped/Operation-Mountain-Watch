@@ -7,7 +7,7 @@ TM01B.1 weist nach, dass dieselbe strategische Konvoientität innerhalb einer la
 Der Test baut auf dem akzeptierten TM01A-Stand auf:
 
 - kontrollierter physischer Spawn: bestanden;
-- globale Straßenroute Bagram–Jalalabad mit sieben Routenankern und Zielzone: bestanden;
+- globale Straßenroute Bagram–Jalalabad mit Start, sieben Routenankern und Ziel: bestanden;
 - vollständige Ankunft in Jalalabad: bestanden;
 - erhebliche DCS-Umwege zwischen den Ankern: dokumentierte Terrain- und Pathfinding-Einschränkung.
 
@@ -29,14 +29,15 @@ Nicht Bestandteil dieser Stufe sind:
 - Teleport-, Recovery- oder Unstuck-Logik;
 - mehrere gleichzeitige Konvois.
 
-## Route und Reveal-Fenster
+## Verbindliches Routenmodell
 
-Route und Sichtbarkeitsfenster sind getrennte Konzepte.
+Route, Routenposition und Reveal-Fenster sind getrennte Konzepte.
 
-Die globale Route besteht ausschließlich aus:
+Die autoritative globale Route lautet:
 
 ```text
-ZONE_TM01_ROUTE_01
+ZONE_TM01_START_BAGRAM
+→ ZONE_TM01_ROUTE_01
 → ZONE_TM01_ROUTE_02
 → ZONE_TM01_ROUTE_03
 → ZONE_TM01_ROUTE_04
@@ -46,7 +47,9 @@ ZONE_TM01_ROUTE_01
 → ZONE_TM01_TARGET_JALALABAD
 ```
 
-Die Reveal-Zonen sind reine Fenstergrenzen:
+`ZONE_TM01_START_BAGRAM` bleibt der unveränderte Startpunkt. `ZONE_TM01_TARGET_JALALABAD` bleibt der unveränderte Zielpunkt.
+
+Die Reveal-Zonen sind ausschließlich Sichtfenstergrenzen:
 
 ```text
 ZONE_TM01_REVEAL_01_ENTRY
@@ -55,9 +58,91 @@ ZONE_TM01_REVEAL_02_ENTRY
 ZONE_TM01_REVEAL_02_EXIT
 ```
 
-Reveal-Zonen dürfen niemals als physische Routenwegpunkte an DCS übergeben werden. Der aktuelle `segmentIndex` bestimmt den ersten noch ausstehenden Punkt der globalen Route. Nach der zweiten Materialisierung muss deshalb nur die verbleibende Route ab `ZONE_TM01_ROUTE_06` zugewiesen werden.
+Reveal-Zonen:
+
+- sind keine Routenwegpunkte;
+- ersetzen weder Start- noch Zielpunkt;
+- werden niemals an DCS als Wegpunkte übergeben;
+- bestimmen keine Spawnkoordinate;
+- dürfen räumlich über der Route liegen, müssen aber eigene eindeutige Namen behalten.
 
 Die exakte Straßenführung zwischen zwei globalen Routenankern bleibt DCS-Pathfinding. Reveal-Fenster müssen auf dem praktisch beobachteten und validierten DCS-Fahrkorridor liegen.
+
+## Segmentindex
+
+Der `segmentIndex` beschreibt die autoritative Position auf der globalen Route:
+
+```text
+0 = ZONE_TM01_START_BAGRAM
+1 = ZONE_TM01_ROUTE_01
+2 = ZONE_TM01_ROUTE_02
+3 = ZONE_TM01_ROUTE_03
+4 = ZONE_TM01_ROUTE_04
+5 = ZONE_TM01_ROUTE_05
+6 = ZONE_TM01_ROUTE_06
+7 = ZONE_TM01_ROUTE_07
+8 = ZONE_TM01_TARGET_JALALABAD
+```
+
+Die Reveal-Fenster sind auf diese Route abgebildet:
+
+```text
+REVEAL_01: Entry segmentIndex 0, Exit segmentIndex 2
+REVEAL_02: Entry segmentIndex 5, Exit segmentIndex 7
+```
+
+Diese Indizes ordnen ein Sichtfenster einer Routenposition zu. Sie machen die Reveal-Zonen nicht zu Routenpunkten.
+
+## Materialisierung
+
+Die Spawnkoordinate wird ausschließlich aus dem aktuellen `segmentIndex` und der globalen Route abgeleitet.
+
+Erste Materialisierung:
+
+```text
+segmentIndex = 0
+Spawnkoordinate = ZONE_TM01_START_BAGRAM
+```
+
+Zweite Materialisierung nach dem kontrollierten virtuellen Fortschritt:
+
+```text
+segmentIndex = 5
+Spawnkoordinate = ZONE_TM01_ROUTE_05
+```
+
+Die zugehörigen Reveal-Entry-Zonen werden nur als Sichtfenstergrenzen und zur Konfigurationsprüfung geführt. `SpawnInZone(revealEntry, ...)` ist für TM01B unzulässig.
+
+Die physische Gruppe wird über den gepinnten MOOSE-2.9.18-Ablauf positioniert:
+
+```text
+SPAWN:NewWithAlias(...)
+→ InitPositionCoordinate(globalRouteCoordinate)
+→ Spawn()
+```
+
+## Globale Routenzuweisung
+
+Bei jeder physischen Generation wird die Reststrecke aus derselben globalen Route geschnitten:
+
+```text
+firstPendingSegmentIndex = segmentIndex + 1
+```
+
+Erste Generation bei `segmentIndex = 0`:
+
+```text
+ROUTE_01 → ROUTE_02 → ROUTE_03 → ROUTE_04
+→ ROUTE_05 → ROUTE_06 → ROUTE_07 → TARGET
+```
+
+Zweite Generation bei `segmentIndex = 5`:
+
+```text
+ROUTE_06 → ROUTE_07 → TARGET
+```
+
+Der Logeintrag `convoy_cached_route_started` muss Startindex, Endindex, ersten Zonennamen, letzten Zonennamen und Wegpunktanzahl ausweisen.
 
 ## Stabile Identität
 
@@ -115,7 +200,7 @@ Minimale Domänendaten:
 }
 ```
 
-`runtimeGroupName` ist nur während einer physischen Repräsentation autoritativ. Das Leeren dieses Feldes muss als explizite Zustandsänderung erfolgen; ein Lua-Tabelleneintrag mit `nil` allein ist kein übertragbarer Änderungswert.
+`runtimeGroupName` ist nur während einer physischen Repräsentation autoritativ. Das Leeren dieses Feldes muss als explizite Zustandsänderung erfolgen.
 
 ## Kontrollierte Bedienfolge
 
@@ -134,29 +219,6 @@ Show status
 ```
 
 Alle Übergänge bleiben manuell. Wiederholte oder widersprüchliche Befehle müssen abgewiesen und protokolliert werden, ohne eine zweite physische Gruppe zu erzeugen.
-
-## Globale Routenzuweisung
-
-Bei jeder physischen Generation wird die Reststrecke aus der einen globalen Route geschnitten:
-
-```text
-firstRoutePointIndex = segmentIndex + 1
-```
-
-Erste Generation bei `segmentIndex = 0`:
-
-```text
-ROUTE_01 → ROUTE_02 → ROUTE_03 → ROUTE_04
-→ ROUTE_05 → ROUTE_06 → ROUTE_07 → TARGET
-```
-
-Zweite Generation bei `segmentIndex = 5`:
-
-```text
-ROUTE_06 → ROUTE_07 → TARGET
-```
-
-Der Logeintrag `convoy_cached_route_started` muss Startindex, Endindex, ersten Zonennamen, letzten Zonennamen und Wegpunktanzahl ausweisen.
 
 ## Zweiphasige Dematerialisierung
 
@@ -180,7 +242,7 @@ Ablauf:
 6. erst nach bestätigtem Entfernen auf VIRTUAL_MOVING wechseln
 ```
 
-Der Controller verwendet eine Polling-Frist. Bleibt die native Gruppe bis zum Timeout existent, muss der Zustand auf einen erneut bedienbaren physischen Zustand zurückkehren:
+Bleibt die native Gruppe bis zum Timeout existent, muss der Zustand auf einen erneut bedienbaren physischen Zustand zurückkehren:
 
 ```text
 representationState = PHYSICAL
@@ -188,43 +250,32 @@ transitionState = IDLE
 movementState = PHYSICAL_MOVING
 ```
 
-Damit darf weder ein verschwundener Convoy dauerhaft als physisch gesperrt bleiben noch ein noch existierender Convoy irrtümlich virtuell werden.
-
-## Virtueller Übergang
-
-Nach bestätigter Dematerialisierung gilt:
-
-```text
-REVEAL_01_EXIT
-→ manueller virtueller Routenfortschritt
-→ REVEAL_02_ENTRY
-```
-
-Während `VIRTUAL_MOVING` darf keine DCS-Gruppe existieren. Der Übergang setzt den logischen Routenfortschritt auf den Entry-Segmentindex des nächsten Fensters.
-
 ## Abnahmekriterien
 
 TM01B.1 ist bestanden, wenn ein dokumentierter DCS-Lauf Folgendes nachweist:
 
-1. Konfigurationsversion `TM01B-controlled-caching-2` wird geladen.
-2. Template, Zielzone, sieben globale Routenanker und vier Reveal-Fenstergrenzen werden validiert.
-3. Reveal-Zonen erscheinen in keiner an DCS übergebenen Wegpunktliste.
-4. Die erste physische Generation erhält die globale Reststrecke ab `segmentIndex + 1` genau einmal.
-5. Die Entity-ID bleibt über alle Übergänge erhalten.
-6. Die Gruppe fährt physisch in das erste Exit-Fenster.
-7. Dematerialisierung übernimmt Fahrzeugslots, Verluste und Exit-Fortschritt vor dem Destroy-Aufruf.
-8. Der Zustand bleibt während der Bestätigungsphase `PHYSICAL / DEMATERIALIZING`.
-9. Ein stale MOOSE-Wrapper im Destroy-Tick erzeugt keinen `DEMATERIALIZATION_FAILED`-Lock.
-10. Nach nativer Bestätigung verbleibt keine physische Restgruppe und `runtimeGroupName` ist nicht mehr autoritativ.
-11. Während `VIRTUAL_MOVING` existiert keine unsichtbar weiterfahrende DCS-Gruppe.
-12. Der manuelle virtuelle Übergang erreicht den zweiten Entry-Anker in korrekter Reihenfolge.
-13. Die zweite Materialisierung erzeugt genau eine neue physische Gruppe mit neuem Runtime-Namen.
-14. Die zweite Generation erhält ausschließlich `ROUTE_06`, `ROUTE_07` und die Zielzone.
-15. Ein absichtlich verlorener Fahrzeugslot bleibt bei der zweiten Materialisierung verloren.
-16. Wiederholte Befehle erzeugen keine Duplikate.
-17. Der Konvoi erreicht die Zielzone nach mindestens einem Cache-Zyklus.
-18. `convoy_route_arrived` wird höchstens einmal protokolliert.
-19. Kein protokollierter Zustand ist gleichzeitig autoritativ `VIRTUAL` und `PHYSICAL`.
+1. Konfigurationsversion `TM01B-controlled-caching-3` wird geladen.
+2. Template, Startzone, Zielzone, sieben Zwischenanker und vier Reveal-Fenstergrenzen werden validiert.
+3. Die erste Materialisierung erfolgt bei `ZONE_TM01_START_BAGRAM`.
+4. Die zweite Materialisierung erfolgt aus dem autoritativen Routenfortschritt bei `ZONE_TM01_ROUTE_05`.
+5. Reveal-Zonen erscheinen in keiner an DCS übergebenen Wegpunktliste.
+6. Reveal-Zonen bestimmen keine Spawnkoordinate.
+7. Die erste physische Generation erhält genau `ROUTE_01` bis `ROUTE_07` plus Ziel.
+8. Die Entity-ID bleibt über alle Übergänge erhalten.
+9. Die Gruppe fährt physisch in das erste Exit-Fenster.
+10. Dematerialisierung übernimmt Fahrzeugslots, Verluste und Exit-Fortschritt vor dem Destroy-Aufruf.
+11. Der Zustand bleibt während der Bestätigungsphase `PHYSICAL / DEMATERIALIZING`.
+12. Ein stale MOOSE-Wrapper im Destroy-Tick erzeugt keinen `DEMATERIALIZATION_FAILED`-Lock.
+13. Nach nativer Bestätigung verbleibt keine physische Restgruppe und `runtimeGroupName` ist geleert.
+14. Während `VIRTUAL_MOVING` existiert keine unsichtbar weiterfahrende DCS-Gruppe.
+15. Der manuelle virtuelle Übergang setzt `segmentIndex = 5`.
+16. Die zweite Materialisierung erzeugt genau eine neue physische Gruppe mit neuem Runtime-Namen.
+17. Die zweite Generation erhält ausschließlich `ROUTE_06`, `ROUTE_07` und die Zielzone.
+18. Ein absichtlich verlorener Fahrzeugslot bleibt bei der zweiten Materialisierung verloren.
+19. Wiederholte Befehle erzeugen keine Duplikate.
+20. Der Konvoi erreicht die Zielzone nach mindestens einem Cache-Zyklus.
+21. `convoy_route_arrived` wird höchstens einmal protokolliert.
+22. Kein protokollierter Zustand ist gleichzeitig autoritativ `VIRTUAL` und `PHYSICAL`.
 
 ## Erforderliche Nachweise
 
@@ -234,6 +285,7 @@ TM01B.1 ist bestanden, wenn ein dokumentierter DCS-Lauf Folgendes nachweist:
 - Ergebnisdatei unter `results/`;
 - DCS-Version, MOOSE-Pin, Konfigurationsversion und Build-Zeitpunkt;
 - Runtime-Namen beider physischen Generationen;
+- protokollierte Materialisierungsanker beider Generationen;
 - protokollierte Route-Slices beider Generationen;
 - protokollierte Fahrzeugslots vor und nach dem Cache-Zyklus;
 - Bestätigung der nativen Gruppenentfernung;
