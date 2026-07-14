@@ -1,5 +1,5 @@
 local config = {
-  configurationVersion = "TM01B-controlled-caching-3",
+  configurationVersion = "TM01B-controlled-caching-4",
   testId = "TM01",
   stageId = "TM01B",
   scenarioId = "TEST.TM01.CONVOY.001",
@@ -12,11 +12,9 @@ local config = {
   },
 
   zones = {
-    -- Authoritative endpoints of the global route.
     start = "ZONE_TM01_START_BAGRAM",
     target = "ZONE_TM01_TARGET_JALALABAD",
 
-    -- These seven anchors constrain the DCS road corridor between start and target.
     routeAnchors = {
       "ZONE_TM01_ROUTE_01",
       "ZONE_TM01_ROUTE_02",
@@ -27,13 +25,10 @@ local config = {
       "ZONE_TM01_ROUTE_07",
     },
 
-    -- Reveal zones are visibility-window boundaries only. They are never route
-    -- points and never determine the physical spawn coordinate.
-    --
-    -- segmentIndex semantics:
-    --   0 = ZONE_TM01_START_BAGRAM
-    --   1..7 = ZONE_TM01_ROUTE_01..07
-    --   8 = ZONE_TM01_TARGET_JALALABAD
+    -- Entry and exit zones are automatic visibility boundaries.
+    -- entrySegmentIndex/exitSegmentIndex identify which existing route anchors
+    -- lie inside the visible physical section. The entry-zone coordinate is the
+    -- physical spawn point and the exit-zone coordinate terminates that section.
     revealSections = {
       {
         id = "REVEAL_01",
@@ -66,9 +61,18 @@ local config = {
     preserveVehicleSlots = true,
     preserveLosses = true,
     allowDuplicatePhysicalGroup = false,
-    automaticAdvance = false,
-    automaticMaterialization = false,
-    automaticDematerialization = false,
+
+    -- One manual start command arms the full automatic lifecycle.
+    automaticAdvance = true,
+    automaticMaterialization = true,
+    automaticDematerialization = true,
+    automationPollSeconds = 1,
+    minimumVirtualLegSeconds = 1,
+
+    -- Exit is a passage gate: every currently surviving slot only has to enter
+    -- the zone once. The full convoy never has to be inside simultaneously.
+    exitPassageMode = "EACH_SURVIVING_SLOT_EVER_INSIDE",
+
     destroyConfirmationPollSeconds = 0.5,
     destroyConfirmationTimeoutSeconds = 10,
   },
@@ -85,7 +89,7 @@ local config = {
     warehouses = true,
     persistence = true,
     hostileForces = true,
-    automaticVisibilityDetection = true,
+    automaticPlayerInterestDetection = true,
     automaticUnstuck = true,
     automaticRouteRecalculation = true,
   },
