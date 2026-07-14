@@ -112,7 +112,8 @@ local function validateConfiguration(config)
   if config.virtualization.initialSectionIndex ~= 1 then
     errors[#errors + 1] = "initialSectionIndex must be 1 for TM01B.1"
   end
-  if config.virtualization.finalSectionIndex ~= #config.zones.revealSections then
+  if type(config.zones.revealSections) == "table"
+    and config.virtualization.finalSectionIndex ~= #config.zones.revealSections then
     errors[#errors + 1] = "finalSectionIndex must reference the last reveal section"
   end
   if config.template.expectedVehicleCount ~= 6 then
@@ -267,14 +268,42 @@ function TM01B.start(dependencies)
     return state
   end
 
-  local cacheController = dependencies.convoyCacheController.new({
-    announce = announce,
-    config = config,
-    getBootstrapOutcome = function()
-      return state.outcome
-    end,
-    logger = logger,
-  })
+  local campaignStateOk, campaignStateOrError = pcall(function()
+    return dependencies.inMemoryCampaignState.new(config)
+  end)
+  if not campaignStateOk or type(campaignStateOrError) ~= "table" then
+    setOutcome(OUTCOME_FAIL_SCRIPT, "CampaignState initialization failed")
+    logger:error("campaign_state_initialization_failed", {
+      error = campaignStateOk
+        and "InMemoryCampaignState.new returned no table"
+        or campaignStateOrError,
+    })
+    return state
+  end
+
+  local campaignState = campaignStateOrError
+  local cacheControllerOk, cacheControllerOrError = pcall(function()
+    return dependencies.convoyCacheController.new({
+      announce = announce,
+      campaignState = campaignState,
+      config = config,
+      getBootstrapOutcome = function()
+        return state.outcome
+      end,
+      logger = logger,
+    })
+  end)
+  if not cacheControllerOk or type(cacheControllerOrError) ~= "table" then
+    setOutcome(OUTCOME_FAIL_SCRIPT, "cache controller initialization failed")
+    logger:error("cache_controller_initialization_failed", {
+      error = cacheControllerOk
+        and "ConvoyCacheController.new returned no table"
+        or cacheControllerOrError,
+    })
+    return state
+  end
+
+  local cacheController = cacheControllerOrError
 
   local function showStatus()
     logger:info("status_requested", {
@@ -347,7 +376,12 @@ function TM01B.start(dependencies)
   end
 
   state.menu = menuOrError
+  state.campaignState = campaignState
   state.cacheController = cacheController
+  logger:info("campaign_state_ready", {
+    entityId = config.scenarioId,
+    persistenceEnabled = false,
+  })
   logger:info("menu_ready", { path = "OMW Tests / " .. build.stageId })
 
   return state
