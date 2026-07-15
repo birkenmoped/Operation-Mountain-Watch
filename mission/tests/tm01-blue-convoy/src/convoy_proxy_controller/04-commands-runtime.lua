@@ -104,54 +104,139 @@
       return halt("convoy_pack_route_failed", routeOrError)
     end
 
+    local pending = {
+      startedAt = timer.getTime(),
+      attempts = 0,
+      leadRuntimeIndex = leadItem.runtimeIndex,
+      leadStableSlot = leadItem.stableSlot,
+      routeProgressMeters = projection.routeDistance,
+      routeOffsetMeters = projection.offsetMeters,
+      waypointCount = #routeOrError.waypoints,
+      storedVehicleCount = #self.entity.survivingVehicleSlotsRearToFront - 1,
+      lastObservedCount = #liveItemsOrError,
+      lastInspectionError = nil,
+    }
+    self.pendingPack = pending
     updateEntity({ transitionState = TRANSITION_PACKING })
+
     for _, item in ipairs(liveItemsOrError) do
       if item.stableSlot ~= self.entity.currentLeadSlot then
         local destroyOk, destroyError = pcall(function()
           item.unit:Destroy(false)
         end)
         if not destroyOk then
+          self.pendingPack = nil
           return halt("convoy_pack_failed", destroyError)
         end
       end
     end
 
-    local countOk, countOrError = pcall(function()
-      return self.runtimeGroup:CountAliveUnits()
+    local function completePack(active)
+      local leadRuntimeMapping = {
+        [active.leadRuntimeIndex] = active.leadStableSlot,
+      }
+      updateEntity({
+        representationState = REPRESENTATION_COLLAPSED,
+        transitionState = TRANSITION_IDLE,
+        movementState = MOVEMENT_EN_ROUTE,
+        routeProgressMeters = active.routeProgressMeters,
+        runtimeIndexToStableSlot = leadRuntimeMapping,
+      })
+      self.pendingPack = nil
+      self.lastError = nil
+
+      logInfo("convoy_packed", {
+        proxyRuntimeIndex = active.leadRuntimeIndex,
+        proxyRouteOffsetMeters = active.routeOffsetMeters,
+        storedVehicleCount = active.storedVehicleCount,
+        waypointCount = active.waypointCount,
+        confirmationAttempts = active.attempts,
+      })
+      announce(
+        "Convoy packed"
+          .. "\nProxy slot: "
+          .. tostring(self.entity.currentLeadSlot)
+          .. "\nStored vehicles: "
+          .. tostring(active.storedVehicleCount)
+      )
+      if updateMarker(true) == false then
+        return halt("convoy_marker_failed", "marker update failed after pack")
+      end
+      return true
+    end
+
+    local function pollPackDestroy(_, scheduledTime)
+      local active = self.pendingPack
+      if not active then
+        return nil
+      end
+
+      active.attempts = active.attempts + 1
+      local inspectionOk, liveItemsOrErrorNow = captureLiveUnits()
+      if inspectionOk then
+        active.lastObservedCount = #liveItemsOrErrorNow
+        active.lastInspectionError = nil
+
+        if #liveItemsOrErrorNow == 1 then
+          local proxyItem = liveItemsOrErrorNow[1]
+          if proxyItem.runtimeIndex ~= active.leadRuntimeIndex
+            or proxyItem.stableSlot ~= active.leadStableSlot then
+            self.pendingPack = nil
+            halt(
+              "convoy_pack_failed",
+              "confirmed proxy is not the selected lead unit"
+            )
+            return nil
+          end
+          completePack(active)
+          return nil
+        end
+
+        if #liveItemsOrErrorNow == 0 then
+          self.pendingPack = nil
+          halt("convoy_pack_failed", "selected lead unit was removed during pack")
+          return nil
+        end
+      else
+        active.lastInspectionError = tostring(liveItemsOrErrorNow)
+      end
+
+      local elapsed = timer.getTime() - active.startedAt
+      if elapsed >= config.transitions.destroyConfirmationTimeoutSeconds then
+        self.pendingPack = nil
+        local reason = "pack removal confirmation timed out"
+          .. "; liveCount=" .. tostring(active.lastObservedCount)
+        if active.lastInspectionError then
+          reason = reason .. "; inspection=" .. active.lastInspectionError
+        end
+        halt("convoy_pack_destroy_confirmation_timeout", reason)
+        return nil
+      end
+
+      return scheduledTime + config.transitions.destroyConfirmationPollSeconds
+    end
+
+    local scheduleOk, scheduleResult = pcall(function()
+      return timer.scheduleFunction(
+        pollPackDestroy,
+        nil,
+        timer.getTime() + config.transitions.destroyConfirmationPollSeconds
+      )
     end)
-    if not countOk or countOrError ~= 1 then
+    if not scheduleOk or scheduleResult == nil then
+      self.pendingPack = nil
       return halt(
-        "convoy_pack_failed",
-        countOk and "packed runtime group does not contain exactly one unit" or countOrError
+        "convoy_pack_scheduler_failed",
+        scheduleOk and "pack scheduler returned nil" or scheduleResult
       )
     end
 
-    local leadRuntimeMapping = {
-      [leadItem.runtimeIndex] = leadItem.stableSlot,
-    }
-    updateEntity({
-      representationState = REPRESENTATION_COLLAPSED,
-      transitionState = TRANSITION_IDLE,
-      movementState = MOVEMENT_EN_ROUTE,
-      routeProgressMeters = projection.routeDistance,
-      runtimeIndexToStableSlot = leadRuntimeMapping,
-    })
-    self.lastError = nil
-
-    logInfo("convoy_packed", {
+    logInfo("convoy_pack_started", {
       proxyRuntimeIndex = leadItem.runtimeIndex,
-      proxyRouteOffsetMeters = projection.offsetMeters,
-      storedVehicleCount = #self.entity.survivingVehicleSlotsRearToFront - 1,
-      waypointCount = #routeOrError.waypoints,
+      storedVehicleCount = pending.storedVehicleCount,
+      initialLiveRuntimeUnitCount = #liveItemsOrError,
     })
-    announce(
-      "Convoy packed"
-        .. "\nProxy slot: "
-        .. tostring(self.entity.currentLeadSlot)
-        .. "\nStored vehicles: "
-        .. tostring(#self.entity.survivingVehicleSlotsRearToFront - 1)
-    )
-    updateMarker(true)
+    announce("Pack transition started")
     return true
   end
 
@@ -362,6 +447,7 @@
       halted = self.halted,
       lastError = self.lastError or "none",
       liveRuntimeUnitCount = liveCount,
+      pendingPack = self.pendingPack ~= nil,
       pendingUnpack = self.pendingUnpack ~= nil,
     })
     announce(
