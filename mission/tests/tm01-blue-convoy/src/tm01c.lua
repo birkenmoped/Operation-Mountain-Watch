@@ -56,8 +56,8 @@ local function validateMooseApis()
   validateFunction("POSITIONABLE.GetVec2", function()
     return POSITIONABLE and POSITIONABLE.GetVec2
   end, missing)
-  validateFunction("POSITIONABLE.GetTypeName", function()
-    return POSITIONABLE and POSITIONABLE.GetTypeName
+  validateFunction("IDENTIFIABLE.GetTypeName", function()
+    return IDENTIFIABLE and IDENTIFIABLE.GetTypeName
   end, missing)
   validateFunction("SPAWN.NewWithAlias", function()
     return SPAWN and SPAWN.NewWithAlias
