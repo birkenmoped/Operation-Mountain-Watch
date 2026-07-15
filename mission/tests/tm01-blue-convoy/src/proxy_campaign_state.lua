@@ -23,6 +23,10 @@ end
 function ProxyCampaignState.new(config)
   local survivors = copyArray(config.template.slotOrderRearToFront)
   local leadSlot = survivors[#survivors]
+  local lifePercentByStableSlot = {}
+  for _, stableSlot in ipairs(survivors) do
+    lifePercentByStableSlot[stableSlot] = 100
+  end
 
   local entity = {
     entityId = config.scenarioId,
@@ -31,6 +35,7 @@ function ProxyCampaignState.new(config)
     transitionState = "IDLE",
     movementState = "NOT_STARTED",
     survivingVehicleSlotsRearToFront = survivors,
+    vehicleLifePercentByStableSlot = lifePercentByStableSlot,
     currentLeadSlot = leadSlot,
     currentLeadUnitType = nil,
     routeProgressMeters = 0,
