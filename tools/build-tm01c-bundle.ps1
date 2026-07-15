@@ -126,7 +126,9 @@ Add-Module -Builder $builder -VariableName "ProxyCampaignState" -RelativePath "m
 Add-CompositeModule -Builder $builder -VariableName "ConvoyProxyController" -RelativePaths @(
   "mission/tests/tm01-blue-convoy/src/convoy_proxy_controller/01-core.lua",
   "mission/tests/tm01-blue-convoy/src/convoy_proxy_controller/02-road-spawn.lua",
+  "mission/tests/tm01-blue-convoy/src/convoy_proxy_controller/02b-reduced-template-spawn.lua",
   "mission/tests/tm01-blue-convoy/src/convoy_proxy_controller/03-state-transitions.lua",
+  "mission/tests/tm01-blue-convoy/src/convoy_proxy_controller/03b-rollback-cleanup.lua",
   "mission/tests/tm01-blue-convoy/src/convoy_proxy_controller/04-commands-runtime.lua"
 )
 Add-Module -Builder $builder -VariableName "TM01C" -RelativePath "mission/tests/tm01-blue-convoy/src/tm01c.lua"
