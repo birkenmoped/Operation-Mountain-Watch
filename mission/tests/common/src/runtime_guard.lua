@@ -9,16 +9,23 @@ local REQUIRED_NATIVE_APIS = {
 -- Verified against vendor/moose/Moose.lua from pinned release 2.9.18:
 -- GROUP:FindByName, ZONE:FindByName, MENU_MISSION:New, and
 -- MENU_MISSION_COMMAND:New support the bootstrap. SPAWN:NewWithAlias,
--- SPAWN:SpawnInZone, IDENTIFIABLE:GetName, GROUP:IsAlive,
--- GROUP:CountAliveUnits, and GROUP:IsCompletelyInZone support physical spawn.
--- ZONE_BASE:GetCoordinate, COORDINATE:WaypointGround, and
--- CONTROLLABLE:Route support deterministic road routing.
+-- SPAWN:NewFromTemplate, SPAWN:SpawnInZone, the spawn initialization methods,
+-- IDENTIFIABLE:GetName, GROUP:IsAlive, GROUP:CountAliveUnits, and
+-- GROUP:IsCompletelyInZone support physical and reduced-survivor spawn.
+-- ZONE_BASE:GetCoordinate, COORDINATE:WaypointGround, and CONTROLLABLE:Route
+-- support deterministic road routing.
 local REQUIRED_MOOSE_APIS = {
   { path = "GROUP.FindByName", value = function() return GROUP and GROUP.FindByName end },
   { path = "ZONE.FindByName", value = function() return ZONE and ZONE.FindByName end },
   { path = "MENU_MISSION.New", value = function() return MENU_MISSION and MENU_MISSION.New end },
   { path = "MENU_MISSION_COMMAND.New", value = function() return MENU_MISSION_COMMAND and MENU_MISSION_COMMAND.New end },
   { path = "SPAWN.NewWithAlias", value = function() return SPAWN and SPAWN.NewWithAlias end },
+  { path = "SPAWN.NewFromTemplate", value = function() return SPAWN and SPAWN.NewFromTemplate end },
+  { path = "SPAWN.InitCategory", value = function() return SPAWN and SPAWN.InitCategory end },
+  { path = "SPAWN.InitCountry", value = function() return SPAWN and SPAWN.InitCountry end },
+  { path = "SPAWN.InitCoalition", value = function() return SPAWN and SPAWN.InitCoalition end },
+  { path = "SPAWN.InitSetUnitAbsolutePositions", value = function() return SPAWN and SPAWN.InitSetUnitAbsolutePositions end },
+  { path = "SPAWN.Spawn", value = function() return SPAWN and SPAWN.Spawn end },
   { path = "SPAWN.SpawnInZone", value = function() return SPAWN and SPAWN.SpawnInZone end },
   { path = "IDENTIFIABLE.GetName", value = function() return IDENTIFIABLE and IDENTIFIABLE.GetName end },
   { path = "GROUP.IsAlive", value = function() return GROUP and GROUP.IsAlive end },
