@@ -1,5 +1,5 @@
 local config = {
-  configurationVersion = "TM01C-manual-proxy-pack-unpack-1",
+  configurationVersion = "TM01C-manual-proxy-pack-unpack-2",
   testId = "TM01",
   stageId = "TM01C",
   scenarioId = "TEST.TM01.CONVOY.001",
@@ -50,6 +50,23 @@ local config = {
     destroyConfirmationPollSeconds = 0.5,
     destroyConfirmationTimeoutSeconds = 10,
     automaticUnpackAtTarget = true,
+
+    -- A newly spawned DCS group is not treated as en route until its controller
+    -- has accepted the route and measurable forward movement has been observed.
+    -- Reissue is bounded to this activation phase and is never used as an
+    -- automatic unstuck mechanism after activation succeeds.
+    routeActivationInitialDelaySeconds = 1,
+    routeActivationPollSeconds = 1,
+    routeActivationReissueSeconds = 5,
+    routeActivationTimeoutSeconds = 30,
+    routeActivationMovementThresholdMeters = 2,
+
+    -- Damage is domain state keyed by stable vehicle slot. It is sampled while
+    -- physical and explicitly restored and verified after a representation spawn.
+    damageCaptureTolerancePercent = 0.05,
+    damageRestoreTolerancePercent = 1,
+    damageRestoreRetrySeconds = 1,
+    damageRestoreMaxAttempts = 5,
   },
 
   debug = {
