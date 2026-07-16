@@ -88,6 +88,21 @@
     return true
   end
 
+  local function synchronizeActivationRuntime(active)
+    local liveOk, liveItemsOrError = captureLiveUnits()
+    if not liveOk then
+      return false, liveItemsOrError
+    end
+
+    local syncOk, leadOrError = synchronizeExpandedSurvivors(liveItemsOrError)
+    if not syncOk then
+      return false, leadOrError
+    end
+
+    active.lastObservedLiveCount = #liveItemsOrError
+    return true, leadOrError
+  end
+
   local originalAssignRoute = assignRoute
   assignRoute = function(group, fromDistance)
     local runtimeName, runtimeNameError = safeGroupName(group)
@@ -133,6 +148,9 @@
       fromDistance = fromDistance,
       baselineVec2 = copyVec2(baselineVecOrError),
       baselineRouteDistance = baselineProjection.routeDistance,
+      monitoredLeadStableSlot = nil,
+      maximumDisplacementMeters = 0,
+      lastObservedLiveCount = nil,
       startedAt = timer.getTime(),
       routeAssignmentAttempts = 0,
       nextRouteAssignmentAt = timer.getTime() + routeActivationInitialDelaySeconds,
@@ -169,6 +187,38 @@
         )
       end
 
+      local syncOk, leadOrError = synchronizeActivationRuntime(active)
+      if not syncOk then
+        return failActivation("convoy_route_activation_failed", leadOrError)
+      end
+      local currentLead = leadOrError.unit
+
+      local vecOk, vecOrError = pcall(function()
+        return currentLead:GetVec2()
+      end)
+      if not vecOk or type(vecOrError) ~= "table" then
+        return failActivation(
+          "convoy_route_activation_failed",
+          vecOk and "runtime lead position is unavailable" or vecOrError
+        )
+      end
+      local projection, currentProjectionError = projectToRoute(vecOrError)
+      if not projection then
+        return failActivation("convoy_route_activation_failed", currentProjectionError)
+      end
+
+      if active.monitoredLeadStableSlot ~= leadOrError.stableSlot then
+        active.monitoredLeadStableSlot = leadOrError.stableSlot
+        active.baselineVec2 = copyVec2(vecOrError)
+        active.baselineRouteDistance = projection.routeDistance
+        active.maximumDisplacementMeters = 0
+        logInfo("convoy_route_activation_lead_baseline_set", {
+          context = active.context,
+          monitoredLeadStableSlot = active.monitoredLeadStableSlot,
+          liveRuntimeUnitCount = active.lastObservedLiveCount,
+        })
+      end
+
       local now = timer.getTime()
       local damageOk, damageError = serviceDamageRestore(active, now)
       if not damageOk then
@@ -192,32 +242,18 @@
           routeAssignmentAttempts = active.routeAssignmentAttempts,
           waypointCount = #active.route.waypoints,
           movementRequired = active.movementRequired,
+          liveRuntimeUnitCount = active.lastObservedLiveCount,
         })
-      end
-
-      local currentLead, currentLeadError = firstRuntimeUnit(active.group)
-      if not currentLead then
-        return failActivation("convoy_route_activation_failed", currentLeadError)
-      end
-      local vecOk, vecOrError = pcall(function()
-        return currentLead:GetVec2()
-      end)
-      if not vecOk or type(vecOrError) ~= "table" then
-        return failActivation(
-          "convoy_route_activation_failed",
-          vecOk and "runtime lead position is unavailable" or vecOrError
-        )
-      end
-      local projection, currentProjectionError = projectToRoute(vecOrError)
-      if not projection then
-        return failActivation("convoy_route_activation_failed", currentProjectionError)
       end
 
       local forwardMeters = projection.routeDistance - active.baselineRouteDistance
       local displacementMeters = distance2d(active.baselineVec2, vecOrError)
+      active.maximumDisplacementMeters = math.max(
+        active.maximumDisplacementMeters,
+        displacementMeters
+      )
       local movementConfirmed = not active.movementRequired
-        or (forwardMeters >= routeActivationMovementThresholdMeters
-          and displacementMeters >= routeActivationMovementThresholdMeters)
+        or active.maximumDisplacementMeters >= routeActivationMovementThresholdMeters
       if active.routeAssignmentAttempts > 0
         and active.damageVerified
         and movementConfirmed then
@@ -232,18 +268,22 @@
           routeAssignmentAttempts = active.routeAssignmentAttempts,
           forwardMeters = forwardMeters,
           displacementMeters = displacementMeters,
+          maximumDisplacementMeters = active.maximumDisplacementMeters,
           waypointCount = #active.route.waypoints,
           movementRequired = active.movementRequired,
+          liveRuntimeUnitCount = active.lastObservedLiveCount,
         })
         announce("Convoy route active and movement confirmed")
         return nil
       end
 
       if now - active.startedAt >= routeActivationTimeoutSeconds then
-        local reason = "spawned convoy did not begin forward movement"
+        local reason = "spawned convoy did not produce measurable movement"
           .. "; attempts=" .. tostring(active.routeAssignmentAttempts)
           .. "; forwardMeters=" .. tostring(forwardMeters)
           .. "; displacementMeters=" .. tostring(displacementMeters)
+          .. "; maximumDisplacementMeters=" .. tostring(active.maximumDisplacementMeters)
+          .. "; liveCount=" .. tostring(active.lastObservedLiveCount)
         if active.lastDamageVerificationError then
           reason = reason
             .. "; lastDamageVerification="
