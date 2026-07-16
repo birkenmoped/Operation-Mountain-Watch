@@ -121,7 +121,8 @@ local function atan2(y, x)
 end
 
 local function headingDegrees(fromVec2, toVec2)
-  local degrees = math.deg(atan2(toVec2.x - fromVec2.x, toVec2.y - fromVec2.y))
+  -- DCS Vec2 uses x=north and y=east. Heading is atan2(east, north).
+  local degrees = math.deg(atan2(toVec2.y - fromVec2.y, toVec2.x - fromVec2.x))
   while degrees < 0 do
     degrees = degrees + 360
   end
@@ -258,4 +259,3 @@ function ConvoyProxyController.new(options)
     end)
     return ok, result
   end
-
