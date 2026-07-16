@@ -123,6 +123,7 @@ Add-Module -Builder $builder -VariableName "SafeReporter" -RelativePath "mission
 Add-Module -Builder $builder -VariableName "StructuredLogger" -RelativePath "mission/tests/common/src/structured_logger.lua"
 Add-Module -Builder $builder -VariableName "RuntimeGuard" -RelativePath "mission/tests/common/src/runtime_guard.lua"
 Add-Module -Builder $builder -VariableName "ProxyCampaignState" -RelativePath "mission/tests/tm01-blue-convoy/src/proxy_campaign_state.lua"
+Add-Module -Builder $builder -VariableName "PlayerInterestMonitor" -RelativePath "mission/tests/tm01-blue-convoy/src/player_interest_monitor.lua"
 Add-CompositeModule -Builder $builder -VariableName "ConvoyProxyController" -RelativePaths @(
   "mission/tests/tm01-blue-convoy/src/convoy_proxy_controller/01-core.lua",
   "mission/tests/tm01-blue-convoy/src/convoy_proxy_controller/02-road-spawn.lua",
@@ -136,7 +137,7 @@ Add-CompositeModule -Builder $builder -VariableName "ConvoyProxyController" -Rel
 Add-Module -Builder $builder -VariableName "TM01C" -RelativePath "mission/tests/tm01-blue-convoy/src/tm01c.lua"
 
 [void]$builder.AppendLine("local entryOk, entryResult = pcall(function()")
-[void]$builder.AppendLine("  return TM01C.start({")
+[void]$builder.AppendLine("  local state = TM01C.start({")
 [void]$builder.AppendLine("    build = OMWBuild,")
 [void]$builder.AppendLine("    config = TM01CConfig,")
 [void]$builder.AppendLine("    safeReporter = SafeReporter,")
@@ -145,6 +146,31 @@ Add-Module -Builder $builder -VariableName "TM01C" -RelativePath "mission/tests/
 [void]$builder.AppendLine("    proxyCampaignState = ProxyCampaignState,")
 [void]$builder.AppendLine("    convoyProxyController = ConvoyProxyController,")
 [void]$builder.AppendLine("  })")
+[void]$builder.AppendLine('  if type(state) == "table" and state.outcome == "READY" and type(state.proxyController) == "table" then')
+[void]$builder.AppendLine("    local monitorOk, monitorOrError = pcall(function()")
+[void]$builder.AppendLine("      return PlayerInterestMonitor.attach({")
+[void]$builder.AppendLine("        controller = state.proxyController,")
+[void]$builder.AppendLine("        config = TM01CConfig,")
+[void]$builder.AppendLine('        logger = StructuredLogger.new("[OMW][TM01C]"),')
+[void]$builder.AppendLine("        announce = function(text)")
+[void]$builder.AppendLine('          trigger.action.outText("[OMW][TM01C] " .. text, 15, false)')
+[void]$builder.AppendLine("        end,")
+[void]$builder.AppendLine("      })")
+[void]$builder.AppendLine("    end)")
+[void]$builder.AppendLine('    if not monitorOk or type(monitorOrError) ~= "table" then')
+[void]$builder.AppendLine('      state.outcome = "FAIL_SCRIPT"')
+[void]$builder.AppendLine('      state.detail = "player interest monitor initialization failed"')
+[void]$builder.AppendLine("      SafeReporter.report(")
+[void]$builder.AppendLine('        "player_interest_monitor_initialization_failed",')
+[void]$builder.AppendLine('        "FAIL_SCRIPT",')
+[void]$builder.AppendLine('        monitorOk and "monitor factory returned no table" or monitorOrError,')
+[void]$builder.AppendLine('        "[OMW][TM01C]"')
+[void]$builder.AppendLine("      )")
+[void]$builder.AppendLine("    else")
+[void]$builder.AppendLine("      state.playerInterestMonitor = monitorOrError")
+[void]$builder.AppendLine("    end")
+[void]$builder.AppendLine("  end")
+[void]$builder.AppendLine("  return state")
 [void]$builder.AppendLine("end)")
 [void]$builder.AppendLine()
 [void]$builder.AppendLine("local TM01CState = entryResult")
