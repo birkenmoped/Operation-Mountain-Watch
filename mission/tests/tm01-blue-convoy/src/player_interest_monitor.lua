@@ -400,7 +400,10 @@ function PlayerInterestMonitor.attach(options)
         updateEntity({ automaticPackTimerStartedAt = now })
         logInfo("automatic_pack_request_failed", fields)
       end
-      return requested or not controller.halted
+      if requested or not controller.halted then
+        return true
+      end
+      return false, "automatic pack request halted the convoy controller"
     end
 
     clearPackTimer("convoy is not expanded", observation, false)
@@ -420,7 +423,10 @@ function PlayerInterestMonitor.attach(options)
       elseif not requested then
         logInfo("automatic_unpack_request_failed", fields)
       end
-      return requested or not controller.halted
+      if requested or not controller.halted then
+        return true
+      end
+      return false, "automatic unpack request halted the convoy controller"
     end
 
     return true
@@ -432,13 +438,13 @@ function PlayerInterestMonitor.attach(options)
     if originalResult == false or self.halted then
       return originalResult
     end
-    local ok, resultOrError = pcall(service)
-    if not ok then
-      markFailed(resultOrError)
+    local callOk, serviceOk, serviceError = pcall(service)
+    if not callOk then
+      markFailed(serviceOk)
       return originalResult
     end
-    if resultOrError == false then
-      markFailed("player relevance service returned false")
+    if serviceOk == false then
+      markFailed(serviceError or "player relevance service returned false")
     end
     return originalResult
   end
