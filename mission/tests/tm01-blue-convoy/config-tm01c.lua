@@ -1,5 +1,5 @@
 local config = {
-  configurationVersion = "TM01C-manual-proxy-pack-unpack-3",
+  configurationVersion = "TM01C-manual-proxy-pack-unpack-4",
   testId = "TM01",
   stageId = "TM01C",
   scenarioId = "TEST.TM01.CONVOY.001",
