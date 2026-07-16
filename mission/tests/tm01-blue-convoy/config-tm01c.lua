@@ -1,5 +1,5 @@
 local config = {
-  configurationVersion = "TM01C-manual-proxy-pack-unpack-4",
+  configurationVersion = "TM01C-automatic-player-interest-5",
   testId = "TM01",
   stageId = "TM01C",
   scenarioId = "TEST.TM01.CONVOY.001",
@@ -39,9 +39,19 @@ local config = {
     vehicleSpacingMeters = 15,
     minimumVehicleSeparationMeters = 8,
 
-    -- Manual unpack first tries the exact proxy progress and then small forward
-    -- offsets. The selected offset is always logged; there is no silent teleport.
+    -- Unpack first tries the exact proxy progress and then small forward offsets.
+    -- The selected offset is always logged; there is no silent teleport.
     unpackLeadOffsetCandidatesMeters = { 0, 15, 30, 45, 60 },
+  },
+
+  playerInterest = {
+    -- Visual proof-of-concept only. This is horizontal proximity, not line of sight,
+    -- sensor detection, threat relevance, or a production relevance radius.
+    enabled = true,
+    unpackRadiusMeters = 500,
+    packRadiusMeters = 750,
+    packDelaySeconds = 30,
+    retrySeconds = 5,
   },
 
   transitions = {
@@ -79,7 +89,7 @@ local config = {
 
   excludedSystems = {
     revealWindows = true,
-    automaticPlayerInterestDetection = true,
+    automaticPlayerInterestDetection = false,
     automaticEnemyInterestDetection = true,
     persistenceAcrossMissionRestart = true,
     cargoUnits = true,
