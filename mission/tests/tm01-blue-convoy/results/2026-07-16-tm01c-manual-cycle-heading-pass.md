@@ -128,12 +128,48 @@ Für den ersten Automatiktest gelten folgende Schutzregeln:
 - jede Timer- und Zustandsentscheidung wird strukturiert geloggt;
 - keine automatische Feindrelevanz in diesem ersten Schritt.
 
-Empfohlen wird eine Distanzhysterese statt nur eines einzelnen Grenzwerts:
+Empfohlen wird eine Distanzhysterese statt nur eines einzelnen Grenzwerts.
+
+## Festgelegte Testparameter für den ersten visuellen Automatiklauf
+
+Dieser erste Lauf dient ausdrücklich der direkten Sichtbeobachtung aus einem Spielerhubschrauber. Er bildet noch keine operative Sichtbarkeit, Sensorreichweite oder taktische Relevanz ab.
+
+Verbindliche Testwerte:
 
 ```text
-Unpack-Radius: kleinerer Innenradius
-Pack-Bereich:  größerer Außenradius
-Pack-Verzögerung außerhalb des Außenradius: 30 Sekunden
+Automatisches Unpack:  horizontale Distanz ≤ 500 m
+Pack-Timer starten:   horizontale Distanz > 750 m
+Pack-Verzögerung:     30 s kontinuierlich außerhalb 750 m
+Hysteresezone:        500 m bis 750 m
+Höhe:                 wird für die Relevanzdistanz ignoriert
+Geometrie:             vertikaler Zylinder um die aktuelle Lead-/Proxyposition
 ```
 
-Damit führen kurze Grenzübertritte, Kurvenflug oder Positionsjitter nicht zu wiederholtem Ein- und Auspacken.
+Einordnung der vom Tester genannten Größenordnung:
+
+```text
+1000 ft ≈ 305 m
+1500 ft ≈ 457 m
+500 m   ≈ 1640 ft
+750 m   ≈ 2460 ft
+```
+
+Begründung:
+
+- 500 m liegt nahe an der gewünschten Größenordnung von 1000–1500 ft und erlaubt eine klar beobachtbare Annäherung;
+- bei 750 m bleibt der Konvoi aus einem Hubschrauber weiterhin sichtbar;
+- die 250-m-Hysterese verhindert Flattern an einer einzigen Distanzgrenze;
+- 30 Sekunden außerhalb des Außenradius machen Timerstart, Timerabbruch und Packen sichtbar und reproduzierbar;
+- die Verwendung einer horizontalen 2D-Distanz verhindert, dass Flughöhe den Test verfälscht.
+
+Nicht Bestandteil dieses ersten Automatiklaufs:
+
+- Sichtlinie;
+- Geländeabschattung;
+- Sensor- oder Waffenreichweiten;
+- Feinderkennung;
+- Sichtweitenmodell;
+- Flughöhenabhängigkeit;
+- taktische Bedrohungsbewertung.
+
+Nach erfolgreichem Test werden diese kleinen Werte nicht als Produktionsparameter übernommen. Der spätere operative Relevanzbereich wird separat entworfen und abgenommen.
