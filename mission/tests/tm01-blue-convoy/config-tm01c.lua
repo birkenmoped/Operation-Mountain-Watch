@@ -1,5 +1,5 @@
 local config = {
-  configurationVersion = "TM01C-manual-proxy-pack-unpack-2",
+  configurationVersion = "TM01C-manual-proxy-pack-unpack-3",
   testId = "TM01",
   stageId = "TM01C",
   scenarioId = "TEST.TM01.CONVOY.001",
@@ -52,7 +52,9 @@ local config = {
     automaticUnpackAtTarget = true,
 
     -- A newly spawned DCS group is not treated as en route until its controller
-    -- has accepted the route and measurable forward movement has been observed.
+    -- has accepted the route and measurable physical movement has been observed.
+    -- Signed progress along the compiled road is diagnostic only because mixed
+    -- vehicle groups can briefly reverse or reposition while forming on the road.
     -- Reissue is bounded to this activation phase and is never used as an
     -- automatic unstuck mechanism after activation succeeds.
     routeActivationInitialDelaySeconds = 1,
