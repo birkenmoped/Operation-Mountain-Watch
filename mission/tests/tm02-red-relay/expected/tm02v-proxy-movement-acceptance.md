@@ -1,67 +1,43 @@
-# TM02V RED proxy movement acceptance
+# TM02V RED leader-proxy movement acceptance
 
 ## Purpose
 
-TM02V validates one virtual six-person RED movement whose current world position is carried by one physical proxy unit. The full group is not present while packed. The proxy follows the real DCS route and provides the authoritative coordinate required for later BLUE-distance and line-of-sight checks.
+TM02V validates a RED movement whose authoritative strength remains in metadata while one real infantryman carries the current DCS world position. The proxy is not a separate Mission Editor template. It is derived dynamically from unit slot 1 of the normal group template that already represents the movement strength.
 
-The representation cycle under test is:
+For this acceptance:
+
+```text
+Logical packet: 6 personnel
+Source template: TPL_TEST_RED_PACKET_06_01
+Proxy: unit slot 1 from that template
+Route: RED_HQ -> RED_SHELTER_A -> RED_SHELTER_AA
+```
+
+A ten-person movement would analogously derive its proxy from unit slot 1 of `TPL_TEST_RED_PACKET_10_01`.
+
+## Representation doctrine
 
 ```text
 NONE
--> PROXY
+-> LEADER_PROXY
 -> PHYSICAL
--> PROXY
+-> LEADER_PROXY
 -> PHYSICAL_GARRISON
 ```
 
-The logical personnel packet remains authoritative throughout. The one-unit proxy is a position carrier only and is never counted as personnel.
+The one physical leader is only the positional representation of the complete logical packet. It is never counted as an additional person.
 
-## Scenario
-
-```text
-RED_HQ (40)
-  |
-  v
-RED_SHELTER_A (10 / 10)
-  |
-  v
-RED_SHELTER_AA (4 / 10)
-```
-
-The packet strength is six. The initial authoritative total remains 100:
+The authoritative accounting invariant remains:
 
 ```text
-HQ:                 40
-all shelters:       54
-recorded losses:     6
-in transit:           0
-accounted:          100
-```
-
-After dispatch:
-
-```text
-HQ:                 34
-all shelters:       54
-virtual in transit:  6
-recorded losses:     6
-accounted:          100
-```
-
-Expected final state without transit losses:
-
-```text
-HQ:                 34
-all shelters:       60
-AA:              10 / 10
-in transit:           0
-recorded losses:     6
-accounted:          100
+HQ + shelter garrisons + logical personnel in transit + recorded losses = 100
 ```
 
 ## Required Mission Editor objects
 
-Reuse the ten RED Late Activation strength templates from TM02R:
+No dedicated proxy group is required.
+
+Use the existing Late Activation infantry templates:
 
 ```text
 TPL_TEST_RED_PACKET_01_01
@@ -76,15 +52,9 @@ TPL_TEST_RED_PACKET_09_01
 TPL_TEST_RED_PACKET_10_01
 ```
 
-Add one dedicated RED Late Activation proxy group:
+Each template must contain exactly the strength encoded in its name. Unit slot 1 must be the intended group leader because that slot is retained when the dynamic one-unit proxy template is built.
 
-```text
-TPL_TEST_RED_PROXY_01
-```
-
-The proxy template must contain exactly one ground infantry unit. It is a technical position carrier and must not be counted in any inventory.
-
-Reuse all seven TM02N zones:
+Reuse the existing zones:
 
 ```text
 ZONE_TM02N_HQ
@@ -96,15 +66,18 @@ ZONE_TM02N_BA
 ZONE_TM02N_BB
 ```
 
-The active route is:
+## Dynamic leader-proxy construction
 
-```text
-ZONE_TM02N_HQ
--> ZONE_TM02N_A
--> ZONE_TM02N_AA
-```
+At runtime TM02V:
 
-Use open traversable ground. The HQ, A, and AA zones must fully contain the corresponding one-unit proxy or six-unit physical group.
+1. selects the standard template matching the movement strength;
+2. copies its MOOSE spawn template;
+3. retains only `units[1]`;
+4. preserves category, country and coalition metadata;
+5. creates a one-unit runtime spawner with `SPAWN:NewFromTemplate`;
+6. spawns that derived leader at the required coordinate or in the source zone.
+
+For the six-person acceptance, both initial proxy spawn and later repacking use the leader definition from `TPL_TEST_RED_PACKET_06_01`. No `TPL_TEST_RED_PROXY_01` object may be required.
 
 ## F10 commands
 
@@ -119,147 +92,105 @@ OMW Tests
     └── Toggle proxy marker
 ```
 
-`Show movement status` and `Toggle proxy marker` do not alter personnel accounting or movement ownership.
+## Test sequence
 
-## Start behavior
+1. Start the mission and confirm successful validation.
+2. Select `Start proxy movement`.
+3. Confirm that exactly one infantryman appears in `ZONE_TM02N_HQ`.
+4. Confirm that status still reports logical strength 6.
+5. Observe the moving debug marker and proxy along HQ -> A.
+6. Select `Force unpack` before A.
+7. Confirm that exactly six physical infantrymen replace the proxy at its current position.
+8. Select `Force pack`.
+9. Confirm that the six-man group is replaced by one leader proxy and that logical strength remains 6.
+10. Let the proxy pass A and continue toward AA.
+11. Let it enter `ZONE_TM02N_AA`.
+12. Confirm automatic materialization of six visible infantrymen in AA.
+13. Confirm the final group remains visible and the proxy no longer exists.
 
-Select `Start proxy movement` once.
+## Required logs
 
-Expected effects:
-
-1. six logical personnel are removed from HQ;
-2. one physical proxy unit spawns in `ZONE_TM02N_HQ`;
-3. the packet enters `movementState=EN_ROUTE`;
-4. the packet enters `representationState=PROXY`;
-5. the proxy receives the route HQ -> A;
-6. the automatic monitor starts;
-7. the debug marker follows the current proxy coordinate.
-
-The proxy is not an additional soldier. The in-transit count remains six, not seven.
-
-## Debug marker
-
-When enabled, one map marker follows the active representation and reports:
+Successful bootstrap must include:
 
 ```text
-packet identity
-representation state
-movement state
-logical survivor strength
-current route leg
-straight-line distance to the next node
+configurationVersion=TM02V-red-proxy-movement-2
+event=red_proxy_leader_adapter_installed
+sourcePolicy=LEADER_FROM_MOVEMENT_TEMPLATE
+sourceTemplate=TPL_TEST_RED_PACKET_06_01
+sourceUnitIndex=1
 ```
 
-The marker is test instrumentation. It must not be used as player-facing intelligence in the final mission.
+Each proxy creation must include:
 
-## Manual unpack test
+```text
+event=red_proxy_leader_template_derived
+sourceTemplate=TPL_TEST_RED_PACKET_06_01
+sourceUnitIndex=1
+```
 
-While the packet is represented by the moving proxy, select `Force unpack`.
+Validation must report:
 
-Expected atomic transition:
+```text
+event=red_proxy_validation
+configurationValid=true
+missionObjectsValid=true
+missingObjects=none
+```
 
-1. read the proxy coordinate;
-2. spawn the six-unit physical template at that coordinate;
-3. validate the full group and assign the remaining current leg;
-4. only after successful validation, destroy the proxy;
-5. set `representationState=PHYSICAL`.
+The log must not contain `TPL_TEST_RED_PROXY_01` as a required or missing object.
 
-The full group must appear where the proxy was located. The personnel count remains six.
+## Expected accounting
 
-## Manual pack test
+Initial:
 
-While the full group is physically moving, select `Force pack`.
+```text
+HQ: 40
+shelters: 54
+recorded losses: 6
+accounted: 100
+```
 
-Expected atomic transition:
+En route:
 
-1. count physical survivors;
-2. record any decrease as transit losses;
-3. read the physical group coordinate;
-4. spawn and route one proxy at that coordinate;
-5. only after successful validation, destroy the full group;
-6. set `representationState=PROXY`.
+```text
+HQ: 34
+shelters: 54
+logical in transit: 6
+recorded losses: 6
+accounted: 100
+physical proxy count: 1, not added to personnel
+```
 
-If the physical group has fewer than six survivors, the packet keeps the reduced survivor count. A later unpack must use the matching 1..10 template and must not resurrect losses.
+Final without transit losses:
 
-## Relay behavior
+```text
+HQ: 34
+AA: 10 / 10
+all shelters: 60
+in transit: 0
+recorded losses: 6
+accounted: 100
+```
 
-At A, the active representation remains unchanged. The controller only advances the packet from leg 1 to leg 2 and assigns route A -> AA.
-
-No personnel are credited to A, and A remains at 10 / 10.
-
-## Automatic destination materialization
-
-When a packed proxy reaches AA:
-
-1. capture the proxy coordinate;
-2. spawn the physical group matching the current survivor count at that coordinate;
-3. validate it;
-4. destroy the proxy;
-5. set `representationState=PHYSICAL_GARRISON`;
-6. credit survivors to AA exactly once;
-7. set `movementState=ARRIVED`;
-8. leave the physical group visible in the destination zone.
-
-When an already unpacked physical group reaches AA, no second spawn occurs. That group becomes the visible destination garrison representation and is credited exactly once.
-
-## Acceptance sequence
-
-Recommended operator sequence:
-
-1. `Validate test`;
-2. `Start proxy movement`;
-3. observe the moving marker and one-unit proxy;
-4. use `Force unpack` during leg HQ -> A;
-5. verify six visible units appear at the former proxy position;
-6. use `Force pack`;
-7. verify the six-unit group disappears and one proxy remains;
-8. allow the proxy to cross A;
-9. optionally repeat unpack/pack on leg A -> AA;
-10. allow the proxy to reach AA;
-11. verify automatic visible six-unit materialization inside AA;
-12. use `Show movement status` and preserve the log.
-
-## PASS criteria
+## Acceptance criteria
 
 PASS requires all of the following:
 
-1. Ten strength templates, one proxy template, and seven zones validate.
-2. Initial accounting is exactly 100.
-3. Dispatch reduces HQ from 40 to 34 and places six logical personnel in transit.
-4. Only one proxy unit physically represents the packed packet.
-5. The proxy position changes along the real DCS route.
-6. The debug marker follows the active representation.
-7. Manual unpack occurs at the proxy coordinate.
-8. Manual unpack creates exactly six physical units before any losses.
-9. Manual pack preserves the current survivor count.
-10. Manual pack returns to exactly one proxy representation.
-11. No stable state contains both a living proxy and a living full group.
-12. Crossing A advances the leg without changing A's garrison.
-13. Reaching AA automatically materializes the matching physical group.
-14. The final physical group remains visible in the AA target zone.
+1. No dedicated proxy template exists or is required.
+2. The standard six-person template validates.
+3. Unit slot 1 of the six-person template is used to derive the proxy.
+4. The packed representation contains exactly one living runtime unit.
+5. Logical packet strength remains six while packed.
+6. The debug marker follows the proxy coordinate.
+7. Manual unpack creates exactly six physical units at the proxy position.
+8. The old proxy is removed only after the full group has spawned and accepted its route.
+9. Manual pack creates exactly one derived leader proxy at the physical group position.
+10. The old physical group is removed only after the proxy has spawned and accepted its route.
+11. Transit losses, when present, reduce logical survivor count and increase recorded losses exactly once.
+12. The proxy is never counted as additional personnel.
+13. A is crossed as a relay without changing its garrison.
+14. Arrival at AA automatically materializes the physical survivor group.
 15. Arrival credit occurs exactly once.
-16. AA finishes at 10 / 10 without transit losses.
-17. HQ finishes at 34 without transit losses.
-18. `HQ + shelters + in transit + losses` remains exactly 100.
-19. The proxy is never counted as personnel.
-20. No survivor count increase is accepted.
-21. No `[OMW][TM02V] level=ERROR` event exists.
-
-## Required log events
-
-Preserve the log from startup through final arrival, including:
-
-```text
-red_proxy_validation
-startup
-red_proxy_movement_started
-red_proxy_monitor_started
-red_proxy_leg_started
-red_proxy_unpacked
-red_proxy_packed
-red_proxy_leg_arrived
-red_proxy_arrived
-red_proxy_movement_status
-```
-
-Record the proxy infantry type, strength-template infantry type, zone radii, observed marker movement, unpack coordinate, pack coordinate, final AA group count, and final inventory.
+16. AA reaches 10 / 10 without transit losses.
+17. Final accounting remains exactly 100.
+18. No `[OMW][TM02V] level=ERROR` event exists.
