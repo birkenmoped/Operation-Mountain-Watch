@@ -22,31 +22,25 @@ local function startsWith(value, prefix)
     and value:sub(1, #prefix) == prefix
 end
 
-local function movementByAlias(rule, alias)
-  for _, movement in ipairs(rule.movements or {}) do
-    local expectedPrefix = rule.runtimeAliasPrefix
-      .. tostring(movement.runtimeAliasSuffix)
-      .. "_G"
-    if startsWith(alias, expectedPrefix) then
-      return movement
-    end
+local function launchSlotIndexFromAlias(alias)
+  if type(alias) ~= "string" then
+    return nil
   end
-  return nil
+  local value = alias:match("_SLOT(%d+)_G")
+  return value and tonumber(value) or nil
 end
 
 local function installSeparatedSpawn(spawner, rule, alias)
-  local movement = movementByAlias(rule, alias)
-  if not movement then
-    error("leader proxy alias does not resolve to a configured movement: " .. tostring(alias))
+  local slotIndex = launchSlotIndexFromAlias(alias)
+  if not slotIndex then
+    return
   end
-
-  local offset = movement.launchOffsetMeters
+  local offset = rule.launchSlots[slotIndex]
   if type(offset) ~= "table"
     or type(offset.x) ~= "number"
     or type(offset.y) ~= "number" then
-    error("leader proxy launchOffsetMeters is unavailable for " .. tostring(movement.packetId))
+    error("leader proxy launch slot is unavailable for " .. tostring(alias))
   end
-
   if type(spawner.Spawn) ~= "function"
     or type(spawner.InitSetUnitAbsolutePositions) ~= "function" then
     error("MOOSE absolute-position spawn API is unavailable")
@@ -61,37 +55,30 @@ local function installSeparatedSpawn(spawner, rule, alias)
       or type(zone.IsVec2InZone) ~= "function" then
       error("TM02V source zone does not expose required vector APIs")
     end
-
     local center = zone:GetVec2()
     if type(center) ~= "table"
       or type(center.x) ~= "number"
       or type(center.y) ~= "number" then
       error("TM02V source zone center is unavailable")
     end
-
     local launchVec2 = {
       x = center.x + offset.x,
       y = center.y + offset.y,
     }
     if zone:IsVec2InZone(launchVec2) ~= true then
-      error(
-        "TM02V launch position is outside source zone for "
-          .. tostring(movement.packetId)
-      )
+      error("TM02V launch position is outside source zone for " .. tostring(alias))
     end
-
     self:InitSetUnitAbsolutePositions({
       {
         x = launchVec2.x,
         y = launchVec2.y,
-        heading = movement.launchHeadingDegrees or 0,
+        heading = 0,
       },
     })
-
     env.info(
       "[OMW][TM02V] level=INFO event=red_proxy_launch_slot_applied"
-        .. " packetId=" .. tostring(movement.packetId)
         .. " alias=" .. tostring(alias)
+        .. " slotIndex=" .. tostring(slotIndex)
         .. " offsetX=" .. tostring(offset.x)
         .. " offsetY=" .. tostring(offset.y)
         .. " launchX=" .. tostring(launchVec2.x)
@@ -172,30 +159,15 @@ function TM02VLeaderProxyAdapter.install(config)
     or config.proxy.runtimeAliasPrefix == "" then
     error("proxy runtimeAliasPrefix is required")
   end
-  if type(config.movements) ~= "table" or #config.movements < 2 then
-    error("TM02V separated proxy launch requires multiple configured movements")
-  end
-
-  local seenOffsets = {}
-  for _, movement in ipairs(config.movements) do
-    local offset = movement.launchOffsetMeters
-    if type(offset) ~= "table"
-      or type(offset.x) ~= "number"
-      or type(offset.y) ~= "number" then
-      error("movement launchOffsetMeters must contain numeric x and y")
-    end
-    local offsetKey = string.format("%.3f:%.3f", offset.x, offset.y)
-    if seenOffsets[offsetKey] then
-      error("duplicate TM02V proxy launch offset: " .. offsetKey)
-    end
-    seenOffsets[offsetKey] = true
+  if type(config.proxy.launchSlots) ~= "table" or #config.proxy.launchSlots < 1 then
+    error("proxy launchSlots are required")
   end
 
   SPAWN.__OMWLeaderProxyRules = SPAWN.__OMWLeaderProxyRules or {}
   SPAWN.__OMWLeaderProxyRules[config.proxy.runtimeAliasPrefix] = {
     runtimeAliasPrefix = config.proxy.runtimeAliasPrefix,
     sourceUnitIndex = sourceUnitIndex,
-    movements = config.movements,
+    launchSlots = deepCopy(config.proxy.launchSlots),
   }
 
   if SPAWN.__OMWLeaderProxyPatched ~= true then
@@ -216,7 +188,7 @@ function TM02VLeaderProxyAdapter.install(config)
       .. " sourcePolicy=LEADER_FROM_PACKET_TEMPLATE"
       .. " sourceUnitIndex=" .. tostring(sourceUnitIndex)
       .. " runtimeAliasPrefix=" .. tostring(config.proxy.runtimeAliasPrefix)
-      .. " separatedLaunchSlots=" .. tostring(#config.movements)
+      .. " launchSlotCount=" .. tostring(#config.proxy.launchSlots)
   )
   return true
 end
