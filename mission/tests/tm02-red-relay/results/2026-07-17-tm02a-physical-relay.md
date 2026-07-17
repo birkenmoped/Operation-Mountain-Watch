@@ -2,9 +2,9 @@
 
 ## Result
 
-**FAIL — physical movement/arrival not demonstrated.**
+**INCOMPLETE — physical routing demonstrated; final arrival accounting not sampled.**
 
-The corrected three-waypoint bundle loaded successfully and the domain transaction remained valid, but the runtime infantry group did not demonstrate successful physical transit to the destination during the observed mission run.
+The corrected three-waypoint bundle loaded successfully. The operator subsequently confirmed that the complete six-unit runtime infantry group physically traversed the route and reached the configured destination point. The supplied log sampled movement status before that arrival and contains no later `Show active movement` invocation, so the final destination-zone membership and CampaignState arrival credit remain unproven in recorded evidence.
 
 ## Environment
 
@@ -19,22 +19,20 @@ The corrected three-waypoint bundle loaded successfully and the domain transacti
 - RED country and exact unit types: not recorded
 - Zone radii and approximate segment length: not recorded
 
-## Latest run under test
+## Run under test
 
 - TM02A startup: `2026-07-17 16:13:41.026`
 - Transfer requested: `2026-07-17 16:14:10.108`
 - Runtime group: `TM02A_RED_RELAY_001#001`
-- Movement status sampled: `2026-07-17 16:14:36.211`
+- Recorded movement status sample: `2026-07-17 16:14:36.211`
 - Mission stopped: `2026-07-17 16:20:29.683`
+- Operator observation: the complete group reached the destination point after the recorded status sample
 
-## Positive evidence
-
-The latest run proves all of the following:
+## Demonstrated
 
 - bootstrap outcome was `READY`;
 - native and MOOSE API validation passed;
 - exactly four required Mission Editor objects were validated;
-- source accounting began at `24 / minimum 18 / surplus 6`;
 - reservation removed exactly six fighters before spawn;
 - source garrison became 18 and accounting remained valid at 30;
 - exactly one physical runtime group was registered;
@@ -42,54 +40,51 @@ The latest run proves all of the following:
 - representation state was `PHYSICAL`;
 - movement state became `EN_ROUTE`;
 - duplicate start was rejected;
-- the corrected route bundle was loaded with:
+- corrected route diagnostics were active:
   - `startWaypointIncluded=true`;
   - `routeAssignmentDelaySeconds=1`;
   - `routeAnchorCount=1`;
   - `totalWaypointCount=3`;
+- the complete runtime group physically traversed the route and reached the destination point, per operator observation;
 - no `[OMW][TM02A] level=ERROR` event occurred.
 
-## Relevant log excerpts
+## Recorded log excerpt
 
 ```text
-2026-07-17 16:13:41.026 INFO SCRIPTING: [OMW][TM02A] level=INFO event=startup buildTimestamp=2026-07-17T16:12:18Z configurationVersion=TM02A-red-relay-foundation-1 ...
-2026-07-17 16:13:41.026 INFO SCRIPTING: [OMW][TM02A] level=INFO event=bootstrap_outcome detail=TM02A configuration validation completed outcome=READY
 2026-07-17 16:14:10.108 INFO SCRIPTING: [OMW][TM02A] level=INFO event=red_relay_reserved ... sourceGarrisonAlive=18 sourceMinimumGarrison=18 survivorCount=6
 2026-07-17 16:14:10.111 INFO SCRIPTING: [OMW][TM02A] level=INFO event=red_relay_physical ... runtimeGroupName=TM02A_RED_RELAY_001#001 survivorCount=6
 2026-07-17 16:14:10.112 INFO SCRIPTING: [OMW][TM02A] level=INFO event=red_relay_started ... routeAssignmentDelaySeconds=1 speedKph=5 startWaypointIncluded=true totalWaypointCount=3
 2026-07-17 16:14:31.591 INFO SCRIPTING: [OMW][TM02A] level=INFO event=red_relay_start_rejected movementId=TEST.TM02.MOVEMENT.001 reason=spawn was already attempted
-2026-07-17 16:14:36.211 INFO SCRIPTING: [OMW][TM02A] level=INFO event=red_relay_movement_status arrivalCredited=false destinationZoneMembership=false failureReason=none movementState=EN_ROUTE representationState=PHYSICAL routeAssigned=true runtimeGroupName=TM02A_RED_RELAY_001#001 survivorCount=6
+2026-07-17 16:14:36.211 INFO SCRIPTING: [OMW][TM02A] level=INFO event=red_relay_movement_status arrivalCredited=false destinationZoneMembership=false movementState=EN_ROUTE representationState=PHYSICAL routeAssigned=true runtimeGroupName=TM02A_RED_RELAY_001#001 survivorCount=6
 ```
 
-## Failed or unproven acceptance criteria
+The status sample occurred only about 26 seconds after the transfer request and therefore predates the operator-observed arrival.
 
-- The runtime group was not proven to move through the route anchor.
-- The complete living group was not proven to enter `ZONE_TM02A_DESTINATION`.
-- No `red_relay_arrival_credited` event occurred.
-- No `red_relay_arrived` event occurred.
-- Destination garrison did not change from 6 to 12 in the recorded evidence.
-- Final movement state remained unproven; the last sampled state was `EN_ROUTE`.
+## Still unproven in recorded evidence
 
-## Current diagnosis
+- all six living units were simultaneously inside `ZONE_TM02A_DESTINATION` when inspected;
+- `red_relay_arrival_credited` was emitted exactly once;
+- `red_relay_arrived` was emitted;
+- destination garrison changed from 6 to 12;
+- repeated status inspection did not credit arrival twice;
+- final movement state was `ARRIVED`.
 
-The earlier stale-bundle condition is excluded: the latest run contains all three corrected route diagnostics. The controller constructed and submitted a three-point route without raising a TM02A error.
+## Required completion run
 
-The remaining failure is therefore downstream of route construction and submission. The supplied log cannot distinguish among:
+Repeat the same mission without changing the route. After the group has stopped at the destination:
 
-1. blocked or non-traversable source-zone egress, including FOB walls/static objects;
-2. route-anchor or destination coordinates not connected to a usable ground path;
-3. DCS ground-AI refusal to execute the handcrafted mixed `Off Road` / `On Road` route for the selected infantry types;
-4. movement occurring too slowly or outside the sampled observation, although the operator reported no visible movement.
+1. select `Show active movement`;
+2. select `Show active movement` a second time;
+3. select `Show RED relay status`;
+4. preserve the resulting log.
 
-## Required next isolation test
+Expected final evidence:
 
-Run one minimal geometry-control test before changing CampaignState:
+```text
+red_relay_arrival_credited
+red_relay_arrived
+red_relay_movement_status ... destinationZoneMembership=true arrivalCredited=true movementState=ARRIVED
+red_relay_status ... sourceGarrisonAlive=18 destinationGarrisonAlive=12 accountedPersonnel=30 accountingValid=true
+```
 
-1. place `ZONE_TM02A_SOURCE`, `ZONE_TM02A_ROUTE_01`, and `ZONE_TM02A_DESTINATION` on open, flat terrain with no walls, buildings, trees, steep slope, or narrow gate;
-2. keep the same six-unit Late Activation template and corrected bundle;
-3. place the route anchor directly on a clearly traversable road or open track;
-4. observe the group for at least 60 seconds;
-5. record whether the lead unit changes position;
-6. invoke `Show active movement` after observation and archive the log.
-
-If the group moves in the geometry-control mission, the defect is Mission Editor path geometry. If it remains stationary, replace the handcrafted waypoint route with MOOSE's dedicated ground-routing API in the next code revision.
+If the group has reached the waypoint but `destinationZoneMembership=false` remains, enlarge or reposition `ZONE_TM02A_DESTINATION` so the complete six-unit formation—not only its lead unit or route endpoint—is inside the zone.
