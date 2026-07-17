@@ -1,14 +1,10 @@
 # TM02V bootstrap diagnostics note
 
-TM02V now installs a reduced fallback F10 menu when configuration or Mission Editor validation fails during bootstrap.
+The first DCS startup reached TM02V and MOOSE successfully but failed validation because the initial design required a dedicated `TPL_TEST_RED_PROXY_01` group. The early-return path also prevented the normal F10 test menu from being created.
 
-```text
-OMW Tests
-└── TM02V Proxy Movement
-    ├── Validate test
-    └── Show bootstrap status
-```
+Two corrections followed:
 
-The fallback menu is diagnostic only. It does not permit movement start after a failed bootstrap. Mission Editor object corrections require saving the mission and restarting it.
+1. bootstrap diagnostics remain available when Mission Editor validation fails;
+2. the dedicated proxy template requirement was removed entirely.
 
-A successful bootstrap still installs the full TM02V menu with start, status, pack, unpack, and marker commands.
+TM02V version 2 now derives the proxy dynamically from unit slot 1 of the standard strength template. For the current six-person test this is `TPL_TEST_RED_PACKET_06_01`. The previous missing-proxy failure is therefore superseded and must not recur.
