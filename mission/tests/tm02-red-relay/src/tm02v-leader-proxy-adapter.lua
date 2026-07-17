@@ -76,11 +76,6 @@ function TM02VLeaderProxyAdapter.install(config)
   if type(config) ~= "table" or type(config.proxy) ~= "table" then
     error("TM02V proxy configuration is unavailable")
   end
-  if type(config.templatesByStrength) ~= "table"
-    or type(config.movement) ~= "table"
-    or type(config.movement.strength) ~= "number" then
-    error("TM02V movement template configuration is unavailable")
-  end
   if type(SPAWN) ~= "table"
     or type(SPAWN.NewWithAlias) ~= "function"
     or type(SPAWN.NewFromTemplate) ~= "function" then
@@ -93,14 +88,10 @@ function TM02VLeaderProxyAdapter.install(config)
     or sourceUnitIndex < 1 then
     error("proxy sourceUnitIndex must be a positive integer")
   end
-  local movementTemplateName = config.templatesByStrength[config.movement.strength]
-  if type(movementTemplateName) ~= "string" or movementTemplateName == "" then
-    error("movement-strength template is unavailable for the leader proxy")
+  if type(config.proxy.runtimeAliasPrefix) ~= "string"
+    or config.proxy.runtimeAliasPrefix == "" then
+    error("proxy runtimeAliasPrefix is required")
   end
-
-  config.proxy.templateGroupName = movementTemplateName
-  config.proxy.sourcePolicy = "LEADER_FROM_MOVEMENT_TEMPLATE"
-  config.proxy.sourceUnitIndex = sourceUnitIndex
 
   SPAWN.__OMWLeaderProxyRules = SPAWN.__OMWLeaderProxyRules or {}
   SPAWN.__OMWLeaderProxyRules[config.proxy.runtimeAliasPrefix] = {
@@ -123,8 +114,7 @@ function TM02VLeaderProxyAdapter.install(config)
 
   env.info(
     "[OMW][TM02V] level=INFO event=red_proxy_leader_adapter_installed"
-      .. " sourcePolicy=LEADER_FROM_MOVEMENT_TEMPLATE"
-      .. " sourceTemplate=" .. tostring(movementTemplateName)
+      .. " sourcePolicy=LEADER_FROM_PACKET_TEMPLATE"
       .. " sourceUnitIndex=" .. tostring(sourceUnitIndex)
       .. " runtimeAliasPrefix=" .. tostring(config.proxy.runtimeAliasPrefix)
   )
