@@ -12,13 +12,15 @@ Der neue Arbeitsstrang soll die bereits entworfene rote Kampagnenarchitektur sch
 
 ## 2. Ausgangsstand
 
-Der aktuelle TM01C-Stand befindet sich auf:
+Der vor dem Handoff bestätigte TM01C-Code- und Dokumentationsstand war:
 
 ```text
-Branch: feature/tm01b-convoy-caching
-Commit: b716f5caf494d7b0b938017dac6ce6d36e2e38ea
-PR:     #8, Draft, offen, ungemergt
+Branch:        feature/tm01b-convoy-caching
+Code-Baseline: b716f5caf494d7b0b938017dac6ce6d36e2e38ea
+PR:            #8, Draft, offen, ungemergt
 ```
+
+Das Handoff-Dokument selbst liegt in nachfolgenden Dokumentationscommits auf demselben Branch. Für den neuen RED-Branch ist deshalb nicht der ältere Code-SHA, sondern der bei Arbeitsbeginn aktuelle Head des Branch-Refs `feature/tm01b-convoy-caching` maßgeblich.
 
 TM01C hat für die rote Seite nur einen begrenzten technischen Nachweis geliefert:
 
@@ -125,8 +127,8 @@ Fehler führen zu einem sichtbaren, strukturiert geloggten Zustand.
 ### 4.5 Gepinnte technische Basis
 
 ```text
-MOOSE:          2.9.18
-Runtime-Datei:  vendor/moose/Moose.lua
+MOOSE:           2.9.18
+Runtime-Datei:   vendor/moose/Moose.lua
 Ladereihenfolge: MOOSE vor OMW-Projektcode
 ```
 
@@ -139,17 +141,23 @@ Die RED-Entwicklung wird nicht weiter direkt in PR #8 geschrieben.
 Im neuen Chat ist zuerst ein gestapelter Entwicklungsbranch anzulegen:
 
 ```text
-Ausgangscommit: b716f5caf494d7b0b938017dac6ce6d36e2e38ea
-Neuer Branch:   feature/tm02-red-side-foundation
-PR-Base:        feature/tm01b-convoy-caching
-PR-Status:      Draft
+Ausgangsref:  feature/tm01b-convoy-caching
+Neuer Branch: feature/tm02-red-side-foundation
+PR-Base:      feature/tm01b-convoy-caching
+PR-Status:    Draft
+```
+
+Vor dem Abzweigen muss der neue Chat den aktuellen Remote-Head von `feature/tm01b-convoy-caching` verifizieren und sicherstellen, dass diese Datei vorhanden ist:
+
+```text
+docs/handoffs/2026-07-17-red-side-development-handoff.md
 ```
 
 Begründung:
 
-- der neue Arbeitsbereich erhält den vollständigen aktuellen Architektur- und Teststand;
+- der neue Arbeitsbereich erhält den vollständigen aktuellen Architektur-, Test- und Handoff-Stand;
 - RED-Änderungen bleiben von der bereits großen TM01C-Änderungsmenge getrennt;
-- PR #8 bleibt unverändert Draft und ungemergt;
+- PR #8 bleibt Draft und ungemergt;
 - der RED-PR kann später nach Bereinigung der Branch-Kette neu basiert oder umgezielt werden.
 
 Keine Merge-Aktion ohne ausdrückliche Freigabe.
@@ -317,8 +325,9 @@ Lies zuerst vollständig:
 - den aktuellen Status von PR #8
 
 Verbindlicher Ausgangsstand:
-- feature/tm01b-convoy-caching
-- b716f5caf494d7b0b938017dac6ce6d36e2e38ea
+- Ausgangsref ist feature/tm01b-convoy-caching
+- ermittle und dokumentiere dessen aktuellen Remote-Head
+- verifiziere, dass das Handoff-Dokument in diesem Head vorhanden ist
 - PR #8 bleibt Draft, offen und ungemergt
 
 Arbeite für die RED-Seite auf einem neuen Branch:
@@ -344,5 +353,5 @@ Handoff vorbereitet: JA
 RED-Code in diesem Chat begonnen: NEIN
 Neuer RED-Branch erstellt: NEIN – Aufgabe des neuen Chats
 Neuer RED-Draft-PR erstellt: NEIN – nach Bestandsaufnahme im neuen Chat
-PR #8 verändert oder gemergt: NEIN
+PR #8 gemergt: NEIN
 ```
