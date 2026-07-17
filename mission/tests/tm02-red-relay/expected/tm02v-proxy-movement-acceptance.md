@@ -1,18 +1,20 @@
-# TM02V RED dynamic proxy-fill acceptance
+# TM02V RED dynamic proxy-fill acceptance — maximum packet strength 6
 
 ## Purpose
 
-TM02V validates the proxy representation for the original RED network objective: fill every configured shelter to its target strength from an authoritative HQ personnel pool.
+TM02V validates that the dynamic dispatcher can fill every configured shelter to ten personnel even when no single movement group may contain more than six personnel.
 
-No movement list, packet count, packet strength, or destination assignment is hard-coded. Packets are generated from current deficits at runtime.
+No packet list, packet count, packet strength or destination assignment is configured in advance. Every packet is generated from the live deficit.
 
 ```text
-current deficit -> exact packet strength -> own leader proxy -> own route -> visible destination group
+shelter target 10
+packet maximum 6
+expected composition per empty shelter: 6 + 4
 ```
 
-Every logical packet owns its own physical leader proxy, route, coordinate, marker, representation state, launch slot and runtime identity. A proxy is never shared.
+Every generated packet owns its own leader proxy, route, coordinate, marker, launch slot, runtime group identity and pack/unpack lifecycle.
 
-## Initial state for this acceptance
+## Initial state
 
 ```text
 HQ: 100
@@ -26,60 +28,136 @@ Recorded losses: 0
 Total: 100
 ```
 
-## Dynamic generation doctrine
+## Runtime generation rule
 
-The controller calculates for every shelter:
+For every shelter:
 
 ```text
 deficit = targetStrength - currentGarrison - inboundPersonnel
+packet strength = min(packetMaxStrength, deficit, available HQ personnel)
 ```
 
-When a dispatch slot is free, it generates a packet with:
+For this acceptance:
 
 ```text
-strength = min(packetMaxStrength, deficit, available HQ personnel)
+packetMaxStrength = 6
+maxActivePackets = 6
+launchSlotCount = 6
 ```
 
-For this acceptance all deficits are 10, so six ten-person packets are expected. This is an outcome of the configured state, not a fixed movement plan.
+An empty ten-person shelter therefore requires two independently tracked packets:
 
-The same controller must also accept partial deficits from 1 through 10 and select the corresponding existing template automatically.
+```text
+first packet:  6
+second packet: 4
+combined inbound or arrived strength: 10
+```
 
-## Top-down fill barrier
+No generated packet may have strength 7, 8, 9 or 10.
+
+## Top-down barrier
 
 Depth 1 must be completed first:
 
 ```text
-HQ -> A
-HQ -> B
+HQ -> A: 6 + 4
+HQ -> B: 6 + 4
 ```
 
-Only after A and B both reach 10 may depth 2 dispatch:
+Expected first dispatch wave:
 
 ```text
-HQ -> A -> AA
-HQ -> A -> AB
-HQ -> B -> BA
-HQ -> B -> BB
+Packet 001: strength 6 -> A
+Packet 002: strength 4 -> A
+Packet 003: strength 6 -> B
+Packet 004: strength 4 -> B
 ```
 
-Intermediate nodes are transit nodes for leaf-bound packets and are not debited or credited during pass-through.
-
-## Concurrency and proxies
+Immediately after initial dispatch:
 
 ```text
-maxActivePackets = 3
-launchSlotCount = 3
+Generated packets: 4
+Active packets:    4
+HQ:               80
+In transit:       20
+A inbound:        10
+B inbound:        10
 ```
 
-Each active packet has exactly one independent leader proxy derived from unit slot 1 of its own strength template.
+The two unused launch slots must remain free. No leaf-bound packet may exist before A and B both physically reach ten personnel and their inbound counts return to zero.
 
-For a ten-person packet:
+Only then may the controller log:
 
 ```text
-TPL_TEST_RED_PACKET_10_01 -> unit slot 1 -> one-man proxy
+event=red_proxy_fill_level_advanced
+previousDepth=1
+currentDispatchDepth=2
 ```
 
-The three launch slots are spatially separated inside the HQ zone. The proxies may later converge physically because of DCS routing, but they must remain different runtime groups and different packet identities.
+## Depth-2 dispatch
+
+The four leaf shelters also require `6 + 4` each:
+
+```text
+AA: 6 + 4
+AB: 6 + 4
+BA: 6 + 4
+BB: 6 + 4
+```
+
+The dispatcher iterates the configured shelter order. With six active slots, the expected first depth-2 wave is:
+
+```text
+Packet 005: strength 6 -> AA
+Packet 006: strength 4 -> AA
+Packet 007: strength 6 -> AB
+Packet 008: strength 4 -> AB
+Packet 009: strength 6 -> BA
+Packet 010: strength 4 -> BA
+```
+
+Packets for BB must be generated automatically as launch slots become free:
+
+```text
+Packet 011: strength 6 -> BB
+Packet 012: strength 4 -> BB
+```
+
+A second F10 start command is prohibited and unnecessary.
+
+## Concurrency and launch slots
+
+Six deterministic launch positions exist inside the HQ zone:
+
+```text
+Slot 1: x=-10, y=-6
+Slot 2: x=  0, y=-6
+Slot 3: x= 10, y=-6
+Slot 4: x=-10, y= 6
+Slot 5: x=  0, y= 6
+Slot 6: x= 10, y= 6
+```
+
+Every simultaneously active packet must have:
+
+- a unique packet ID;
+- a unique runtime proxy group;
+- a unique launch slot;
+- a unique marker ID;
+- its own route and representation state.
+
+The active count must never exceed six. Releasing a slot at arrival or destruction must allow the dispatcher to create the next required packet automatically.
+
+## Proxy derivation
+
+The leader proxy is derived from unit slot 1 of the packet's own strength template.
+
+```text
+strength 6 -> TPL_TEST_RED_PACKET_06_01 -> unit slot 1
+strength 4 -> TPL_TEST_RED_PACKET_04_01 -> unit slot 1
+```
+
+No dedicated proxy template is used.
 
 ## Representation cycle
 
@@ -93,11 +171,27 @@ NONE
 -> PHYSICAL_GARRISON
 ```
 
-At the final destination a packed packet automatically materializes as the complete survivor group. The physical group remains visible in the destination zone.
+Manual pack or unpack commands affect only the selected packet. A packed packet automatically materializes at its final destination with its exact survivor strength.
 
-Manual pack and unpack commands apply only to the selected packet.
+## Expected physical destination state
 
-## Dynamic F10 menu
+Because the maximum group size is six, each completed shelter contains two physical garrison groups:
+
+```text
+one six-person group
+one four-person group
+combined shelter strength: 10
+```
+
+Expected final physical group count:
+
+```text
+2 groups per shelter x 6 shelters = 12 destination groups
+```
+
+The controller may not merge them into a ten-person group because that would violate the configured group-size maximum.
+
+## F10 menu
 
 ```text
 OMW Tests
@@ -112,30 +206,41 @@ OMW Tests
         └── Force pack
 ```
 
-Packet submenus are created when the runtime dispatcher generates the packets. There are no configured packet menus before the fill starts.
+Packet submenus are created dynamically for all twelve packets as they are generated.
 
-## Expected no-loss sequence
-
-Immediately after start:
+## Mandatory startup evidence
 
 ```text
-Generated packets: 2
-Active packets: 2
-HQ: 80
-Targets: A and B
+event=red_proxy_leader_adapter_installed launchSlotCount=6
+event=red_proxy_validation configurationValid=true missionObjectsValid=true dynamicPacketGeneration=true initialDeficit=60 maxActivePackets=6 launchSlotCount=6
+event=startup configurationVersion=TM02V-red-proxy-dynamic-fill-6 configuredMovementCount=0 initialHqPersonnel=100 initialShelterDeficit=60 maxActivePackets=6 launchSlotCount=6
 ```
 
-No AA, AB, BA or BB packet may exist before A and B are full.
+## Mandatory dispatch evidence
 
-After A and B arrive:
+Depth 1 must generate exactly four packets with strengths:
 
 ```text
-event=red_proxy_fill_level_advanced previousDepth=1 currentDispatchDepth=2
+A: 6, 4
+B: 6, 4
 ```
 
-The controller then generates leaf packets as slots permit. With three active slots, three leaf packets start first and the fourth starts automatically when a slot becomes free.
+Depth 2 must generate exactly eight packets with strengths:
 
-No second F10 start command is permitted or required.
+```text
+AA: 6, 4
+AB: 6, 4
+BA: 6, 4
+BB: 6, 4
+```
+
+Across the complete run:
+
+```text
+generatedPacketCount = 12
+all generated strengths are 4 or 6
+maximum observed activePacketCount <= 6
+```
 
 ## Final state
 
@@ -153,44 +258,12 @@ Total deficit: 0
 Accounted: 100 / 100
 ```
 
-Six visible physical garrison groups must remain in the six shelter zones.
-
-## Mandatory startup evidence
-
-```text
-event=red_proxy_leader_adapter_installed launchSlotCount=3
-event=red_proxy_validation configurationValid=true missionObjectsValid=true dynamicPacketGeneration=true initialDeficit=60
-event=startup configurationVersion=TM02V-red-proxy-dynamic-fill-5 configuredMovementCount=0 initialHqPersonnel=100 initialShelterDeficit=60
-```
-
-`configuredMovementCount=0` is intentional. Packets must be generated from live deficits.
-
-## Mandatory dispatch evidence
-
-Depth 1:
-
-```text
-event=red_proxy_packet_generated destinationNodeId=RED_SHELTER_A strength=10 targetDepth=1
-event=red_proxy_packet_generated destinationNodeId=RED_SHELTER_B strength=10 targetDepth=1
-```
-
-Depth 2, only after the fill-level transition:
-
-```text
-event=red_proxy_packet_generated destinationNodeId=RED_SHELTER_AA strength=10 targetDepth=2
-event=red_proxy_packet_generated destinationNodeId=RED_SHELTER_AB strength=10 targetDepth=2
-event=red_proxy_packet_generated destinationNodeId=RED_SHELTER_BA strength=10 targetDepth=2
-event=red_proxy_packet_generated destinationNodeId=RED_SHELTER_BB strength=10 targetDepth=2
-```
-
-Every generated packet must have its own `packetId`, proxy runtime group name and marker ID.
-
-## Mandatory completion evidence
+Mandatory completion event:
 
 ```text
 event=red_proxy_network_completed
-generatedPacketCount=6
-arrivedPacketCount=6
+generatedPacketCount=12
+arrivedPacketCount=12
 destroyedPacketCount=0
 hqPersonnel=40
 shelterPersonnel=60
@@ -203,34 +276,18 @@ allSheltersAtTarget=true
 networkComplete=true
 ```
 
-## Variable-deficit regression
-
-Outside DCS, the same controller is also tested with:
-
-```text
-A deficit 1
-B deficit 2
-AA deficit 3
-AB deficit 4
-BA deficit 5
-BB deficit 6
-```
-
-It must dynamically generate strengths `1, 2, 3, 4, 5, 6`, respect the same top-down barrier and finish every shelter at 10.
-
 ## PASS criteria
 
 TM02V passes only when:
 
-- all six shelters finish at target strength;
-- packets are generated from deficits rather than a fixed movement list;
+- all six shelters finish at exactly ten personnel;
+- every empty shelter is filled by multiple packets because the packet cap is six;
+- no packet exceeds six personnel;
 - A and B are completed before any leaf packet dispatch;
-- every simultaneously active packet has its own proxy and launch slot;
-- each packet follows its own route and marker;
-- automatic dispatch continues when earlier packets arrive;
-- manual pack or unpack affects only the selected packet;
-- destination materialization uses the exact survivor strength;
-- all six destination groups remain physically visible;
+- up to six independent proxies can exist simultaneously;
+- no proxy, launch slot, marker or runtime group is shared by active packets;
+- the dispatcher continues after earlier arrivals until all twelve packets have arrived;
+- every destination retains a six-person and a four-person physical group;
 - accounting remains exactly 100;
 - no `[OMW][TM02V] level=ERROR` event occurs.
 
@@ -238,11 +295,13 @@ TM02V passes only when:
 
 The test fails if:
 
-- only selected shelters are serviced;
-- the controller stops after a fixed number of packets while deficits remain;
-- packets or destinations are hard-coded in `config.movements`;
+- any generated packet has strength greater than six;
+- any shelter stops at six, four or another value below ten;
+- a ten-person packet is generated or materialized;
+- the controller assumes one packet per shelter;
 - a leaf packet starts before A and B are full;
-- two logical packets share one proxy;
+- active packet count exceeds six;
+- two active packets share one proxy or launch slot;
+- BB dispatch requires another manual start command;
 - a destination is overfilled;
-- personnel are duplicated or disappear from accounting;
-- an arrival or subsequent dispatch requires a diagnostic F10 command.
+- personnel are duplicated or disappear from accounting.
