@@ -1,4 +1,4 @@
-# TM02N RED tree-fill acceptance
+# TM02N RED top-down tree-fill acceptance
 
 ## Purpose
 
@@ -13,6 +13,8 @@ TM02N validates automatic distribution of one authoritative 100-person RED pool 
 ```
 
 Every shelter has one fixed `targetStrength` of 10. That value is simultaneously its required minimum and permitted maximum. No shelter reserve is allowed.
+
+Configuration version `TM02N-red-tree-fill-2` changes dispatch to a strict top-down fill. Level-two packets may not dispatch until both A and B have reached 10.
 
 ## Required Mission Editor objects
 
@@ -40,18 +42,23 @@ Use open, traversable ground. Each zone must fully contain a ten-unit infantry g
 
 ## Automatic packet plan
 
+Level 1:
+
 ```text
-001: HQ -> A -> AA
-002: HQ -> B -> BA
-003: HQ -> A -> AB
-004: HQ -> B -> BB
-005: HQ -> A
-006: HQ -> B
+001: HQ -> A
+002: HQ -> B
 ```
 
-Each packet has stable metadata, strength 10, one final destination, and a direct parent-child route. A and B are pass-through nodes for leaf packets; passing packets are not credited to their garrisons.
+Only after both level-one shelters are at 10:
 
-At most two packets may be physically active at once.
+```text
+003: HQ -> A -> AA
+004: HQ -> B -> BA
+005: HQ -> A -> AB
+006: HQ -> B -> BB
+```
+
+All packets originate at HQ. A and B are pass-through waypoints for leaf packets; transit does not remove personnel from their established garrisons. At most two packets may be physically active at once.
 
 ## F10 commands
 
@@ -80,6 +87,23 @@ in transit: 0
 accounted: 100
 ```
 
+## Mandatory top-down transition
+
+Before any packet with `targetDepth=2` dispatches, both events below must already have occurred:
+
+```text
+red_packet_arrived ... destinationNodeId=RED_SHELTER_A targetDepth=1 destinationGarrison=10
+red_packet_arrived ... destinationNodeId=RED_SHELTER_B targetDepth=1 destinationGarrison=10
+```
+
+The controller must then emit:
+
+```text
+red_network_fill_level_advanced previousDepth=1 currentDispatchDepth=2
+```
+
+Only after that event may a packet for AA, AB, BA, or BB dispatch.
+
 ## Expected final inventory
 
 ```text
@@ -94,6 +118,7 @@ in transit: 0
 losses: 0
 accounted: 100
 all shelters at target: true
+network complete: true
 ```
 
 ## Acceptance criteria
@@ -105,18 +130,21 @@ PASS requires all of the following:
 3. Every packet strength is exactly 10.
 4. No more than two packets are active simultaneously.
 5. HQ stock is reduced only when a packet physically dispatches.
-6. Every route uses direct parent-child edges only.
-7. A and B may relay leaf packets without counting them as local garrison.
-8. Each final arrival credits survivors exactly once.
-9. No shelter ever exceeds target strength 10.
-10. All six shelters finish at exactly 10.
-11. HQ finishes at exactly 40.
-12. No packet remains queued or moving.
-13. `HQ + shelters + in transit + losses` remains exactly 100.
-14. No packet survivor count increases.
-15. No duplicate physical or logical packet exists.
-16. No teleport, virtual representation, automatic unstuck, or hidden BLUE data is used.
-17. No `[OMW][TM02N] level=ERROR` event exists.
+6. A and B are both filled to 10 before any level-two packet dispatches.
+7. `red_network_fill_level_advanced` is emitted exactly once for depth 1 to depth 2.
+8. Every route uses direct parent-child edges only.
+9. Leaf packets start at HQ and may pass A or B without changing those local garrisons.
+10. Each final arrival credits survivors exactly once.
+11. No shelter ever exceeds target strength 10.
+12. All six shelters finish at exactly 10.
+13. HQ finishes at exactly 40.
+14. No packet remains queued or moving.
+15. `HQ + shelters + in transit + losses` remains exactly 100.
+16. No packet survivor count increases.
+17. No duplicate physical or logical packet exists.
+18. `red_network_completed` reports `networkComplete=true`.
+19. No teleport, virtual representation, automatic unstuck, or hidden BLUE data is used.
+20. No `[OMW][TM02N] level=ERROR` event exists.
 
 ## Required evidence
 
@@ -129,6 +157,7 @@ red_packet_dispatched
 red_packet_leg_started
 red_packet_leg_arrived
 red_packet_arrived
+red_network_fill_level_advanced
 red_network_inventory
 red_network_completed
 ```
