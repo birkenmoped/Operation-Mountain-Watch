@@ -1,6 +1,32 @@
 # TM01C – Abnahme automatische RED-Gegnerrelevanz
 
-Status: DCS-Wiederholung mit Version 8 erforderlich
+Status: **Enemy-Proximity-Regression Version 8 bestanden; kombinierter Player-/Enemy-Monitor nur teilweise abgenommen**
+
+## DCS-Ergebnis vom 17. Juli 2026
+
+Ergebnisbericht:
+
+```text
+../results/2026-07-17-tm01c-enemy-proximity-regression-pass.md
+```
+
+Nachgewiesen:
+
+```text
+7 gegnerausgelöste automatische Unpacks
+7 enemy-spezifische Aktivierungspolicy-Anpassungen
+8 bestätigte Routenaktivierungen einschließlich Initialspawn
+8 erfolgreiche Packvorgänge
+1 durch Enemy-Hysterese ausgelöster Pack-Timer-Abbruch
+0 TM01C-ERROR-Ereignisse im Version-8-Segment
+0 convoy_route_activation_timeout
+0 halted=true
+0 movementState=FAILED
+```
+
+Der BLUE-Spieler blieb bei allen gegnerausgelösten Unpacks außerhalb der Player-Pack-Grenze. Alle sieben Anforderungen enthielten `triggeredByEnemy=true` und `triggeredByPlayer=false`.
+
+Damit sind die Tests A bis H für den isolierten Enemy-Proximity-Pfad erfüllt. Test I wurde für einzelne zerstörte beziehungsweise nicht mehr relevante Posten praktisch bestätigt; die vollständige Auslöschung aller zehn Posten war kein eigenes Abnahmekriterium dieses Laufs. Test J, der kombinierte Player-/Enemy-Prioritätstest, bleibt offen.
 
 ## Voraussetzungen
 
@@ -232,6 +258,20 @@ Wracks dürfen den Konvoi nicht dauerhaft expandiert halten.
 | HYSTERESIS | OUTSIDE | halten | halten |
 | OUTSIDE | HYSTERESIS | halten | halten |
 | OUTSIDE | OUTSIDE | halten | Pack-Timer starten |
+
+## Noch offene kombinierte Regressionen
+
+```text
+Player-only unpack <= 500 m mit Version 8
+Player-only pack nach > 750 m für 30 s
+Player-Hysterese 500–750 m
+Timerabbruch durch Rückkehr des Spielers
+Player relevant, Enemy fällt weg
+Enemy relevant, Player fällt weg
+Player und Enemy gleichzeitig relevant
+Höhenfall bei kleinem horizontalem Abstand
+mehrere gleichzeitige BLUE-Spieler
+```
 
 ## Fehlerkriterien
 
