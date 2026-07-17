@@ -1,5 +1,5 @@
 local config = {
-  configurationVersion = "TM02A-red-relay-foundation-1",
+  configurationVersion = "TM02A-red-relay-foundation-2",
   testId = "TM02",
   stageId = "TM02A",
   networkId = "TEST.TM02.RELAY.001",
@@ -14,6 +14,11 @@ local config = {
     movementId = "TEST.TM02.MOVEMENT.001",
     fighterCount = 6,
     maxActiveMovements = 1,
+  },
+
+  arrivalMonitoring = {
+    initialDelaySeconds = 5,
+    intervalSeconds = 5,
   },
 
   nodes = {
