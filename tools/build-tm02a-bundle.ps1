@@ -139,7 +139,19 @@ Add-Module -Builder $builder -VariableName "TM02A" -RelativePath "mission/tests/
 $outputDirectory = Split-Path -Parent $outputPath
 [void](New-Item -ItemType Directory -Path $outputDirectory -Force)
 $utf8WithoutBom = New-Object System.Text.UTF8Encoding($false)
-[System.IO.File]::WriteAllText($outputPath, $builder.ToString().Replace("`r`n", "`n"), $utf8WithoutBom)
+$normalizedBundle = $builder.ToString().Replace("`r`n", "`n").Replace("`r", "`n")
+$compactLines = foreach ($line in ($normalizedBundle -split "`n")) {
+  if ($line -match "^\s*--") {
+    continue
+  }
+
+  $trimmedLine = $line.Trim()
+  if ($trimmedLine -ne "") {
+    $trimmedLine
+  }
+}
+$bundleContent = ($compactLines -join "`n") + "`n"
+[System.IO.File]::WriteAllText($outputPath, $bundleContent, $utf8WithoutBom)
 
 Write-Output "Verified Moose.lua SHA-256: $actualHash"
 Write-Output "Built TM02A bundle: $outputPath"
