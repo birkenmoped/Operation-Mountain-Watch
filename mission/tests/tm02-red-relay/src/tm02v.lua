@@ -59,18 +59,31 @@ function TM02V.start(config, build)
     started = false,
     completed = false,
     failed = false,
+    blocked = false,
     monitorActive = false,
     monitorGeneration = 0,
     markersEnabled = config.debug.markersEnabledOnStart == true,
     activePacketCount = 0,
-    totalLosses = config.recordedLosses,
+    currentDispatchDepth = 1,
+    maximumDispatchDepth = 0,
+    totalLosses = config.recordedLosses or 0,
     initialPersonnel = 0,
+    nextPacketSequence = 1,
     nodeById = {},
     packets = {},
     packetById = {},
+    launchSlotInUse = {},
+    menu = nil,
   }
 
+  local installPacketMenu
+  local dispatchAvailablePackets
+  local evaluateCompletion
+
   local function fail(reason, event, packet)
+    if state.failed then
+      return
+    end
     state.failed = true
     state.completed = false
     state.monitorActive = false
@@ -100,25 +113,29 @@ function TM02V.start(config, build)
       nodeId = config.headquarters.nodeId,
       label = "HQ",
       parentNodeId = nil,
+      childNodeIds = {},
       zoneName = config.headquarters.zoneName,
       targetStrength = nil,
       currentGarrison = config.headquarters.initialPersonnel,
+      initialGarrison = config.headquarters.initialPersonnel,
       depth = 0,
     }
     state.nodeById[hq.nodeId] = hq
     state.initialPersonnel = hq.currentGarrison + state.totalLosses
 
-    for _, definition in ipairs(config.shelters) do
+    for _, definition in ipairs(config.shelters or {}) do
       if state.nodeById[definition.nodeId] then
-        error("duplicate nodeId: " .. definition.nodeId)
+        error("duplicate nodeId: " .. tostring(definition.nodeId))
       end
       state.nodeById[definition.nodeId] = {
         nodeId = definition.nodeId,
         label = definition.label,
         parentNodeId = definition.parentNodeId,
+        childNodeIds = {},
         zoneName = definition.zoneName,
         targetStrength = definition.targetStrength,
         currentGarrison = definition.initialGarrison,
+        initialGarrison = definition.initialGarrison,
         depth = nil,
       }
       state.initialPersonnel = state.initialPersonnel + definition.initialGarrison
@@ -135,8 +152,12 @@ function TM02V.start(config, build)
           local parent = state.nodeById[definition.parentNodeId]
           if parent and parent.depth ~= nil then
             node.depth = parent.depth + 1
+            parent.childNodeIds[#parent.childNodeIds + 1] = node.nodeId
             unresolved = unresolved - 1
             progress = true
+            if node.depth > state.maximumDispatchDepth then
+              state.maximumDispatchDepth = node.depth
+            end
           end
         end
       end
@@ -149,34 +170,13 @@ function TM02V.start(config, build)
     end
   end
 
-  local function buildPacketRegistry()
-    for index, definition in ipairs(config.movements or {}) do
-      if state.packetById[definition.packetId] then
-        error("duplicate packetId: " .. tostring(definition.packetId))
-      end
-      local packet = {
-        packetId = definition.packetId,
-        runtimeAliasSuffix = definition.runtimeAliasSuffix or string.format("%03d", index),
-        strength = definition.strength,
-        survivorCount = definition.strength,
-        routeNodeIds = definition.routeNodeIds,
-        currentLegIndex = 1,
-        finalDestinationNodeId = definition.finalDestinationNodeId,
-        markerId = definition.markerId,
-        movementState = "IDLE",
-        representationState = "NONE",
-        proxyGroup = nil,
-        proxyGroupName = nil,
-        physicalGroup = nil,
-        physicalGroupName = nil,
-        arrivalCredited = false,
-        currentCoordinate = nil,
-        lastUpdateMissionTime = nil,
-        runtimeGeneration = 0,
-      }
-      state.packets[#state.packets + 1] = packet
-      state.packetById[packet.packetId] = packet
+  local function totalInitialDeficit()
+    local total = 0
+    for _, definition in ipairs(config.shelters or {}) do
+      local node = state.nodeById[definition.nodeId]
+      total = total + math.max(0, node.targetStrength - node.currentGarrison)
     end
+    return total
   end
 
   local function validateConfiguration()
@@ -187,75 +187,68 @@ function TM02V.start(config, build)
     if #config.shelters ~= 6 then
       errors[#errors + 1] = "TM02V requires the six-shelter TM02 tree"
     end
-    if #state.packets < 2 then
-      errors[#errors + 1] = "TM02V multi-proxy acceptance requires at least two packets"
+    if config.movement.originPolicy ~= "HQ_TO_FINAL" then
+      errors[#errors + 1] = "TM02V requires originPolicy=HQ_TO_FINAL"
     end
-    if config.movement.maxActivePackets < #state.packets then
-      errors[#errors + 1] = "maxActivePackets must permit all configured packets"
+    if config.movement.fillOrder ~= "TOP_DOWN" then
+      errors[#errors + 1] = "TM02V requires fillOrder=TOP_DOWN"
+    end
+    if type(config.movement.packetMaxStrength) ~= "number"
+      or config.movement.packetMaxStrength % 1 ~= 0
+      or config.movement.packetMaxStrength < 1
+      or config.movement.packetMaxStrength > 10 then
+      errors[#errors + 1] = "packetMaxStrength must be an integer from 1 to 10"
+    end
+    if type(config.movement.maxActivePackets) ~= "number"
+      or config.movement.maxActivePackets % 1 ~= 0
+      or config.movement.maxActivePackets < 1 then
+      errors[#errors + 1] = "maxActivePackets must be a positive integer"
+    end
+    if type(config.proxy.launchSlots) ~= "table"
+      or #config.proxy.launchSlots < config.movement.maxActivePackets then
+      errors[#errors + 1] = "launchSlots must cover every active packet slot"
+    end
+
+    local launchOffsets = {}
+    for index, offset in ipairs(config.proxy.launchSlots or {}) do
+      if type(offset) ~= "table"
+        or type(offset.x) ~= "number"
+        or type(offset.y) ~= "number" then
+        errors[#errors + 1] = "launch slot " .. tostring(index) .. " requires numeric x/y offsets"
+      else
+        local key = tostring(offset.x) .. ":" .. tostring(offset.y)
+        if launchOffsets[key] then
+          errors[#errors + 1] = "duplicate launch slot offset " .. key
+        end
+        launchOffsets[key] = true
+      end
     end
 
     for strength = 1, 10 do
       if type(config.templatesByStrength[strength]) ~= "string"
         or config.templatesByStrength[strength] == "" then
-        errors[#errors + 1] = "missing physical template for strength " .. strength
+        errors[#errors + 1] = "missing group template for strength " .. tostring(strength)
       end
     end
 
-    local totalMovementPersonnel = 0
-    local inboundByDestination = {}
-    local markerIds = {}
-    local suffixes = {}
-    for _, packet in ipairs(state.packets) do
-      if type(packet.strength) ~= "number"
-        or packet.strength % 1 ~= 0
-        or packet.strength < 1
-        or packet.strength > 10 then
-        errors[#errors + 1] = packet.packetId .. " strength must be an integer from 1 to 10"
-      else
-        totalMovementPersonnel = totalMovementPersonnel + packet.strength
+    for _, definition in ipairs(config.shelters or {}) do
+      local node = state.nodeById[definition.nodeId]
+      if type(node.targetStrength) ~= "number"
+        or node.targetStrength % 1 ~= 0
+        or node.targetStrength < 1 then
+        errors[#errors + 1] = node.nodeId .. " targetStrength must be a positive integer"
       end
-      if type(packet.routeNodeIds) ~= "table" or #packet.routeNodeIds < 2 then
-        errors[#errors + 1] = packet.packetId .. " route requires at least two nodes"
-      elseif packet.routeNodeIds[1] ~= config.headquarters.nodeId then
-        errors[#errors + 1] = packet.packetId .. " route must originate at HQ"
-      elseif packet.routeNodeIds[#packet.routeNodeIds] ~= packet.finalDestinationNodeId then
-        errors[#errors + 1] = packet.packetId .. " final destination must equal final route node"
-      end
-      for routeIndex = 2, #(packet.routeNodeIds or {}) do
-        local child = state.nodeById[packet.routeNodeIds[routeIndex]]
-        if not child then
-          errors[#errors + 1] = packet.packetId .. " route references missing node " .. tostring(packet.routeNodeIds[routeIndex])
-        elseif child.parentNodeId ~= packet.routeNodeIds[routeIndex - 1] then
-          errors[#errors + 1] = packet.packetId .. " route skips parent-child edge at " .. child.nodeId
-        end
-      end
-      local destination = state.nodeById[packet.finalDestinationNodeId]
-      if not destination or not destination.targetStrength then
-        errors[#errors + 1] = packet.packetId .. " final destination must be a shelter"
-      else
-        inboundByDestination[destination.nodeId] = (inboundByDestination[destination.nodeId] or 0) + packet.strength
-      end
-      if type(packet.markerId) ~= "number" or markerIds[packet.markerId] then
-        errors[#errors + 1] = packet.packetId .. " markerId must be unique"
-      else
-        markerIds[packet.markerId] = true
-      end
-      if type(packet.runtimeAliasSuffix) ~= "string" or suffixes[packet.runtimeAliasSuffix] then
-        errors[#errors + 1] = packet.packetId .. " runtimeAliasSuffix must be unique"
-      else
-        suffixes[packet.runtimeAliasSuffix] = true
+      if type(node.currentGarrison) ~= "number"
+        or node.currentGarrison % 1 ~= 0
+        or node.currentGarrison < 0
+        or node.currentGarrison > node.targetStrength then
+        errors[#errors + 1] = node.nodeId .. " initialGarrison must be between 0 and targetStrength"
       end
     end
 
-    for nodeId, inbound in pairs(inboundByDestination) do
-      local node = state.nodeById[nodeId]
-      local deficit = node.targetStrength - node.currentGarrison
-      if inbound ~= deficit then
-        errors[#errors + 1] = nodeId .. " configured inbound " .. inbound .. " must equal deficit " .. deficit
-      end
-    end
-    if state.nodeById[config.headquarters.nodeId].currentGarrison < totalMovementPersonnel then
-      errors[#errors + 1] = "HQ lacks configured movement personnel"
+    local hq = state.nodeById[config.headquarters.nodeId]
+    if totalInitialDeficit() > hq.currentGarrison then
+      errors[#errors + 1] = "HQ stock is insufficient to fill all configured shelter deficits"
     end
     return #errors == 0, errors
   end
@@ -276,11 +269,42 @@ function TM02V.start(config, build)
     return #missing == 0, missing
   end
 
+  local function buildRouteToNode(nodeId)
+    local reversed = {}
+    local current = state.nodeById[nodeId]
+    while current do
+      reversed[#reversed + 1] = current.nodeId
+      if current.parentNodeId == nil then
+        break
+      end
+      current = state.nodeById[current.parentNodeId]
+    end
+    if reversed[#reversed] ~= config.headquarters.nodeId then
+      error("node is not connected to HQ: " .. tostring(nodeId))
+    end
+    local route = {}
+    for index = #reversed, 1, -1 do
+      route[#route + 1] = reversed[index]
+    end
+    return route
+  end
+
   local function packetPersonnelInTransit(packet)
     if packet.movementState == "SPAWNING" or packet.movementState == "EN_ROUTE" then
       return packet.survivorCount
     end
     return 0
+  end
+
+  local function inboundForNode(nodeId)
+    local total = 0
+    for _, packet in ipairs(state.packets) do
+      if packet.finalDestinationNodeId == nodeId
+        and (packet.movementState == "SPAWNING" or packet.movementState == "EN_ROUTE") then
+        total = total + packet.survivorCount
+      end
+    end
+    return total
   end
 
   local function inventorySnapshot()
@@ -319,11 +343,15 @@ function TM02V.start(config, build)
       initialPersonnel = state.initialPersonnel,
       accountingValid = accountedPersonnel == state.initialPersonnel,
       activePacketCount = state.activePacketCount,
+      generatedPacketCount = #state.packets,
       arrivedPacketCount = arrivedPacketCount,
       destroyedPacketCount = destroyedPacketCount,
       failedPacketCount = failedPacketCount,
       allSheltersAtTarget = totalDeficit == 0,
+      currentDispatchDepth = state.currentDispatchDepth,
+      maximumDispatchDepth = state.maximumDispatchDepth,
       networkComplete = state.completed,
+      blocked = state.blocked,
     }
   end
 
@@ -368,6 +396,7 @@ function TM02V.start(config, build)
       "TM02V " .. packet.packetId,
       packet.representationState .. " / " .. packet.movementState,
       "Strength: " .. packet.survivorCount .. " / " .. packet.strength,
+      "Target: " .. packet.finalDestinationNodeId,
       "Leg: " .. tostring(currentNodeId) .. " -> " .. tostring(nextNodeId or packet.finalDestinationNodeId),
       "Next node distance: " .. (remaining and string.format("%.0f m", remaining) or "n/a"),
     }, "\n")
@@ -398,6 +427,8 @@ function TM02V.start(config, build)
       representationState = packet.representationState,
       strength = packet.strength,
       survivorCount = packet.survivorCount,
+      targetDepth = packet.targetDepth,
+      launchSlotIndex = packet.launchSlotIndex or "none",
       currentLegIndex = packet.currentLegIndex,
       currentNodeId = currentNodeId,
       nextNodeId = nextNodeId or "none",
@@ -415,7 +446,7 @@ function TM02V.start(config, build)
     local packet = state.packetById[packetId]
     if not packet then
       announce("TM02V packet not found: " .. tostring(packetId))
-      return
+      return false
     end
     updateCurrentCoordinate(packet)
     updateMarker(packet)
@@ -425,33 +456,41 @@ function TM02V.start(config, build)
       "Movement: " .. packet.movementState,
       "Representation: " .. packet.representationState,
       "Strength: " .. packet.survivorCount .. " / " .. packet.strength,
+      "Target: " .. packet.finalDestinationNodeId,
       "Leg: " .. packet.currentLegIndex .. " / " .. (#packet.routeNodeIds - 1),
       "Route: " .. join(packet.routeNodeIds, " > "),
       "Proxy: " .. tostring(packet.proxyGroupName or "none"),
       "Physical: " .. tostring(packet.physicalGroupName or "none"),
     }, "\n"))
+    return true
   end
 
   local function showAllStatus()
     updateAllMarkers()
     local snapshot = inventorySnapshot()
-    local lines = { "TM02V MULTI-PROXY STATUS" }
-    for _, packet in ipairs(state.packets) do
-      lines[#lines + 1] = packet.runtimeAliasSuffix
-        .. " | " .. packet.movementState
-        .. " | " .. packet.representationState
-        .. " | " .. packet.survivorCount .. "/" .. packet.strength
-        .. " | " .. join(packet.routeNodeIds, ">")
-      logPacketStatus(packet, "all-status")
+    local lines = { "TM02V DYNAMIC PROXY FILL" }
+    for _, definition in ipairs(config.shelters) do
+      local node = state.nodeById[definition.nodeId]
+      lines[#lines + 1] = node.label .. ": " .. node.currentGarrison .. " / " .. node.targetStrength
+        .. " (inbound " .. inboundForNode(node.nodeId) .. ")"
     end
+    lines[#lines + 1] = "Generated packets: " .. snapshot.generatedPacketCount
     lines[#lines + 1] = "Active packets: " .. snapshot.activePacketCount
+    lines[#lines + 1] = "Dispatch depth: " .. snapshot.currentDispatchDepth
     lines[#lines + 1] = "HQ: " .. snapshot.hqPersonnel
     lines[#lines + 1] = "Shelters: " .. snapshot.shelterPersonnel
     lines[#lines + 1] = "In transit: " .. snapshot.inTransitPersonnel
     lines[#lines + 1] = "Losses: " .. snapshot.totalLosses
+    lines[#lines + 1] = "Deficit: " .. snapshot.totalDeficit
     lines[#lines + 1] = "Accounted: " .. snapshot.accountedPersonnel .. " / " .. snapshot.initialPersonnel
     lines[#lines + 1] = "Accounting valid: " .. tostring(snapshot.accountingValid)
+    lines[#lines + 1] = "All shelters full: " .. tostring(snapshot.allSheltersAtTarget)
     announce(table.concat(lines, "\n"))
+    log("INFO", "red_proxy_network_status", snapshot)
+    for _, packet in ipairs(state.packets) do
+      logPacketStatus(packet, "all-status")
+    end
+    return snapshot
   end
 
   local function buildLegWaypoints(packet, group)
@@ -494,12 +533,13 @@ function TM02V.start(config, build)
     })
   end
 
-  local function nextAlias(packet, prefixValue)
+  local function nextAlias(packet, prefixValue, includeLaunchSlot)
     packet.runtimeGeneration = packet.runtimeGeneration + 1
-    return prefixValue
-      .. packet.runtimeAliasSuffix
-      .. "_G"
-      .. string.format("%03d", packet.runtimeGeneration)
+    local alias = prefixValue .. packet.runtimeAliasSuffix
+    if includeLaunchSlot then
+      alias = alias .. "_SLOT" .. tostring(packet.launchSlotIndex)
+    end
+    return alias .. "_G" .. string.format("%03d", packet.runtimeGeneration)
   end
 
   local function spawnProxyAtCoordinate(packet, coordinate, continueMovement)
@@ -507,7 +547,7 @@ function TM02V.start(config, build)
     if not templateName then
       error("no proxy source template for survivor count " .. tostring(packet.survivorCount))
     end
-    local alias = nextAlias(packet, config.proxy.runtimeAliasPrefix)
+    local alias = nextAlias(packet, config.proxy.runtimeAliasPrefix, false)
     local group = SPAWN:NewWithAlias(templateName, alias):SpawnFromCoordinate(coordinate)
     if not group then
       error("proxy spawn returned nil for " .. packet.packetId)
@@ -532,7 +572,7 @@ function TM02V.start(config, build)
     if not templateName then
       error("no physical template for survivor count " .. tostring(packet.survivorCount))
     end
-    local alias = nextAlias(packet, config.physical.runtimeAliasPrefix)
+    local alias = nextAlias(packet, config.physical.runtimeAliasPrefix, false)
     local group = SPAWN:NewWithAlias(templateName, alias):SpawnFromCoordinate(coordinate)
     if not group then
       error("physical spawn returned nil for " .. packet.packetId)
@@ -635,6 +675,7 @@ function TM02V.start(config, build)
       packet.physicalGroup = nil
       packet.physicalGroupName = nil
       state.activePacketCount = math.max(0, state.activePacketCount - 1)
+      state.launchSlotInUse[packet.launchSlotIndex] = nil
       return false, "physical group has no survivors"
     end
     local coordinate = packet.physicalGroup:GetCoordinate()
@@ -661,8 +702,6 @@ function TM02V.start(config, build)
       reason = reason,
       survivorCount = packet.survivorCount,
       proxyGroupName = packet.proxyGroupName,
-      movementState = packet.movementState,
-      representationState = packet.representationState,
     })
     return true
   end
@@ -683,19 +722,29 @@ function TM02V.start(config, build)
     return true
   end
 
+  local function releaseLaunchSlot(packet)
+    if packet.launchSlotIndex then
+      state.launchSlotInUse[packet.launchSlotIndex] = nil
+    end
+  end
+
   local function creditArrival(packet)
     if packet.arrivalCredited then
       error("duplicate arrival credit for " .. packet.packetId)
     end
     local destination = state.nodeById[packet.finalDestinationNodeId]
+    if not destination then
+      error("arrival destination unavailable for " .. packet.packetId)
+    end
     if destination.currentGarrison + packet.survivorCount > destination.targetStrength then
-      error("arrival would overfill destination for " .. packet.packetId)
+      error("arrival would overfill " .. destination.nodeId)
     end
     destination.currentGarrison = destination.currentGarrison + packet.survivorCount
     packet.arrivalCredited = true
     packet.movementState = "ARRIVED"
     packet.representationState = "PHYSICAL_GARRISON"
     state.activePacketCount = math.max(0, state.activePacketCount - 1)
+    releaseLaunchSlot(packet)
     updateCurrentCoordinate(packet)
     updateMarker(packet)
     log("INFO", "red_proxy_arrived", {
@@ -766,6 +815,7 @@ function TM02V.start(config, build)
       packet.movementState = "DESTROYED"
       packet.representationState = "NONE"
       state.activePacketCount = math.max(0, state.activePacketCount - 1)
+      releaseLaunchSlot(packet)
       removeMarker(packet)
       log("INFO", "red_proxy_packet_destroyed", {
         packetId = packet.packetId,
@@ -780,6 +830,7 @@ function TM02V.start(config, build)
         packet.movementState = "DESTROYED"
         packet.representationState = "NONE"
         state.activePacketCount = math.max(0, state.activePacketCount - 1)
+        releaseLaunchSlot(packet)
         removeMarker(packet)
         return
       end
@@ -798,35 +849,232 @@ function TM02V.start(config, build)
     end
   end
 
-  local function evaluateCompletion()
+  local function activeAtDepth(depth)
+    for _, packet in ipairs(state.packets) do
+      if packet.targetDepth == depth
+        and (packet.movementState == "SPAWNING" or packet.movementState == "EN_ROUTE") then
+        return true
+      end
+    end
+    return false
+  end
+
+  local function depthAtTarget(depth)
+    for _, definition in ipairs(config.shelters) do
+      local node = state.nodeById[definition.nodeId]
+      if node.depth == depth then
+        if node.currentGarrison ~= node.targetStrength or inboundForNode(node.nodeId) > 0 then
+          return false
+        end
+      end
+    end
+    return true
+  end
+
+  local function advanceDispatchDepth()
+    while state.currentDispatchDepth <= state.maximumDispatchDepth
+      and depthAtTarget(state.currentDispatchDepth)
+      and not activeAtDepth(state.currentDispatchDepth) do
+      local previous = state.currentDispatchDepth
+      state.currentDispatchDepth = state.currentDispatchDepth + 1
+      log("INFO", "red_proxy_fill_level_advanced", {
+        previousDepth = previous,
+        currentDispatchDepth = state.currentDispatchDepth,
+      })
+    end
+  end
+
+  local function nextDeficitNode()
+    for _, definition in ipairs(config.shelters) do
+      local node = state.nodeById[definition.nodeId]
+      if node.depth == state.currentDispatchDepth then
+        local deficit = node.targetStrength - node.currentGarrison - inboundForNode(node.nodeId)
+        if deficit > 0 then
+          return node, deficit
+        end
+      end
+    end
+    return nil, 0
+  end
+
+  local function acquireLaunchSlot()
+    for index = 1, config.movement.maxActivePackets do
+      if not state.launchSlotInUse[index] then
+        state.launchSlotInUse[index] = true
+        return index
+      end
+    end
+    return nil
+  end
+
+  local function createPacket(destination, strength, launchSlotIndex)
+    local sequence = state.nextPacketSequence
+    state.nextPacketSequence = sequence + 1
+    local suffix = string.format("%03d", sequence)
+    local packet = {
+      packetId = "TEST.TM02.VIRTUAL.PACKET." .. suffix,
+      runtimeAliasSuffix = suffix,
+      strength = strength,
+      survivorCount = strength,
+      routeNodeIds = buildRouteToNode(destination.nodeId),
+      currentLegIndex = 1,
+      finalDestinationNodeId = destination.nodeId,
+      targetDepth = destination.depth,
+      markerId = config.debug.markerIdBase + sequence,
+      launchSlotIndex = launchSlotIndex,
+      movementState = "IDLE",
+      representationState = "NONE",
+      proxyGroup = nil,
+      proxyGroupName = nil,
+      physicalGroup = nil,
+      physicalGroupName = nil,
+      arrivalCredited = false,
+      currentCoordinate = nil,
+      lastUpdateMissionTime = nil,
+      runtimeGeneration = 0,
+    }
+    state.packets[#state.packets + 1] = packet
+    state.packetById[packet.packetId] = packet
+    log("INFO", "red_proxy_packet_generated", {
+      packetId = packet.packetId,
+      strength = packet.strength,
+      destinationNodeId = packet.finalDestinationNodeId,
+      targetDepth = packet.targetDepth,
+      routeNodeIds = join(packet.routeNodeIds, ">"),
+      launchSlotIndex = packet.launchSlotIndex,
+    })
+    if installPacketMenu then
+      installPacketMenu(packet)
+    end
+    return packet
+  end
+
+  local function dispatchPacket(packet)
+    local hq = state.nodeById[config.headquarters.nodeId]
+    local sourceZone = ZONE:FindByName(config.headquarters.zoneName)
+    if not sourceZone then
+      error("HQ source zone unavailable")
+    end
+    if hq.currentGarrison < packet.strength then
+      error("HQ lacks personnel for " .. packet.packetId)
+    end
+
+    hq.currentGarrison = hq.currentGarrison - packet.strength
+    packet.movementState = "SPAWNING"
+    packet.representationState = "SPAWNING_PROXY"
+    local templateName = config.templatesByStrength[packet.strength]
+    local alias = nextAlias(packet, config.proxy.runtimeAliasPrefix, true)
+    local spawnOk, proxyOrError = pcall(function()
+      local group = SPAWN:NewWithAlias(templateName, alias):SpawnInZone(sourceZone, false)
+      if not group then
+        error("initial proxy spawn returned nil")
+      end
+      if group:CountAliveUnits() ~= config.proxy.expectedUnitCount then
+        safeDestroy(group)
+        error("initial proxy did not contain exactly one unit")
+      end
+      assignCurrentLeg(packet, group, "LEADER_PROXY")
+      return group
+    end)
+    if not spawnOk then
+      hq.currentGarrison = hq.currentGarrison + packet.strength
+      packet.movementState = "FAILED"
+      packet.representationState = "NONE"
+      releaseLaunchSlot(packet)
+      error(proxyOrError)
+    end
+
+    packet.proxyGroup = proxyOrError
+    packet.proxyGroupName = proxyOrError:GetName()
+    packet.movementState = "EN_ROUTE"
+    packet.representationState = "LEADER_PROXY"
+    state.activePacketCount = state.activePacketCount + 1
+    updateCurrentCoordinate(packet)
+    updateMarker(packet)
+    log("INFO", "red_proxy_packet_started", {
+      packetId = packet.packetId,
+      strength = packet.strength,
+      routeNodeIds = join(packet.routeNodeIds, ">"),
+      finalDestinationNodeId = packet.finalDestinationNodeId,
+      proxyGroupName = packet.proxyGroupName,
+      launchSlotIndex = packet.launchSlotIndex,
+      hqPersonnel = hq.currentGarrison,
+      representationState = packet.representationState,
+      movementState = packet.movementState,
+      activePacketCount = state.activePacketCount,
+    })
+  end
+
+  dispatchAvailablePackets = function()
+    if state.failed or not state.started then
+      return
+    end
+    advanceDispatchDepth()
+    while state.activePacketCount < config.movement.maxActivePackets
+      and state.currentDispatchDepth <= state.maximumDispatchDepth do
+      local destination, deficit = nextDeficitNode()
+      if not destination then
+        break
+      end
+      local hq = state.nodeById[config.headquarters.nodeId]
+      local strength = math.min(config.movement.packetMaxStrength, deficit, hq.currentGarrison)
+      if strength < 1 then
+        if not state.blocked then
+          state.blocked = true
+          log("INFO", "red_proxy_fill_blocked", {
+            reason = "insufficient HQ stock",
+            hqPersonnel = hq.currentGarrison,
+            remainingDeficit = inventorySnapshot().totalDeficit,
+          })
+          announce("TM02V fill blocked: insufficient HQ personnel")
+        end
+        break
+      end
+      local slot = acquireLaunchSlot()
+      if not slot then
+        break
+      end
+      local packet = createPacket(destination, strength, slot)
+      local ok, dispatchError = pcall(dispatchPacket, packet)
+      if not ok then
+        fail(dispatchError, "red_proxy_dispatch_failed", packet)
+        return
+      end
+      state.blocked = false
+      advanceDispatchDepth()
+    end
+  end
+
+  evaluateCompletion = function()
     if state.failed then
       return false
     end
-    for _, packet in ipairs(state.packets) do
-      if packet.movementState ~= "ARRIVED" then
-        return false
-      end
-    end
     local snapshot = inventorySnapshot()
-    state.completed = snapshot.accountingValid and snapshot.allSheltersAtTarget
-    if state.completed then
+    if snapshot.allSheltersAtTarget
+      and snapshot.activePacketCount == 0
+      and snapshot.accountingValid then
+      state.completed = true
       state.monitorActive = false
       state.monitorGeneration = state.monitorGeneration + 1
+      snapshot.networkComplete = true
       log("INFO", "red_proxy_network_completed", {
-        packetCount = #state.packets,
+        generatedPacketCount = snapshot.generatedPacketCount,
         arrivedPacketCount = snapshot.arrivedPacketCount,
+        destroyedPacketCount = snapshot.destroyedPacketCount,
         hqPersonnel = snapshot.hqPersonnel,
         shelterPersonnel = snapshot.shelterPersonnel,
         inTransitPersonnel = snapshot.inTransitPersonnel,
         totalLosses = snapshot.totalLosses,
+        totalDeficit = snapshot.totalDeficit,
         accountedPersonnel = snapshot.accountedPersonnel,
         accountingValid = snapshot.accountingValid,
         allSheltersAtTarget = snapshot.allSheltersAtTarget,
         networkComplete = true,
       })
-      announce("TM02V complete: all three packets materialized at their own destinations")
+      announce("TM02V complete: all six shelters are physically occupied at target strength")
+      return true
     end
-    return state.completed
+    return false
   end
 
   local function monitorTick()
@@ -840,6 +1088,7 @@ function TM02V.start(config, build)
         return false
       end
     end
+    dispatchAvailablePackets()
     evaluateCompletion()
     return state.monitorActive == true
   end
@@ -849,7 +1098,7 @@ function TM02V.start(config, build)
     local generation = state.monitorGeneration
     state.monitorActive = true
     log("INFO", "red_proxy_monitor_started", {
-      packetCount = #state.packets,
+      maxActivePackets = config.movement.maxActivePackets,
       initialDelaySeconds = config.movement.monitorInitialDelaySeconds,
       intervalSeconds = config.movement.monitorIntervalSeconds,
     })
@@ -869,21 +1118,7 @@ function TM02V.start(config, build)
     end, nil, timer.getTime() + config.movement.monitorInitialDelaySeconds)
   end
 
-  local function rollbackStart(reservedPackets)
-    local hq = state.nodeById[config.headquarters.nodeId]
-    for _, packet in ipairs(reservedPackets) do
-      safeDestroy(packet.proxyGroup)
-      packet.proxyGroup = nil
-      packet.proxyGroupName = nil
-      packet.movementState = "IDLE"
-      packet.representationState = "NONE"
-      packet.currentCoordinate = nil
-      hq.currentGarrison = hq.currentGarrison + packet.strength
-    end
-    state.activePacketCount = 0
-  end
-
-  local function startAllMovements()
+  local function startAutomaticFill()
     if state.started then
       announce("TM02V start rejected: already started")
       return false
@@ -892,82 +1127,23 @@ function TM02V.start(config, build)
       announce("TM02V start rejected: bootstrap failed")
       return false
     end
-
-    local hq = state.nodeById[config.headquarters.nodeId]
-    local sourceZone = ZONE:FindByName(config.headquarters.zoneName)
-    if not sourceZone then
-      fail("HQ source zone unavailable", "red_proxy_start_failed")
-      return false
-    end
-
-    local totalRequired = 0
-    for _, packet in ipairs(state.packets) do
-      totalRequired = totalRequired + packet.strength
-    end
-    if hq.currentGarrison < totalRequired then
-      fail("HQ lacks movement personnel", "red_proxy_start_failed")
-      return false
-    end
-
-    local reservedPackets = {}
-    for _, packet in ipairs(state.packets) do
-      hq.currentGarrison = hq.currentGarrison - packet.strength
-      reservedPackets[#reservedPackets + 1] = packet
-      packet.movementState = "SPAWNING"
-      packet.representationState = "SPAWNING_PROXY"
-
-      local templateName = config.templatesByStrength[packet.strength]
-      local alias = nextAlias(packet, config.proxy.runtimeAliasPrefix)
-      local spawnOk, proxyOrError = pcall(function()
-        local group = SPAWN:NewWithAlias(templateName, alias):SpawnInZone(sourceZone, false)
-        if not group then
-          error("initial proxy spawn returned nil")
-        end
-        if group:CountAliveUnits() ~= 1 then
-          safeDestroy(group)
-          error("initial proxy did not contain exactly one unit")
-        end
-        assignCurrentLeg(packet, group, "LEADER_PROXY")
-        return group
-      end)
-      if not spawnOk then
-        rollbackStart(reservedPackets)
-        fail(proxyOrError, "red_proxy_start_failed", packet)
-        return false
-      end
-
-      packet.proxyGroup = proxyOrError
-      packet.proxyGroupName = proxyOrError:GetName()
-      packet.movementState = "EN_ROUTE"
-      packet.representationState = "LEADER_PROXY"
-      state.activePacketCount = state.activePacketCount + 1
-      updateCurrentCoordinate(packet)
-      updateMarker(packet)
-      log("INFO", "red_proxy_packet_started", {
-        packetId = packet.packetId,
-        strength = packet.strength,
-        routeNodeIds = join(packet.routeNodeIds, ">"),
-        proxyGroupName = packet.proxyGroupName,
-        hqPersonnel = hq.currentGarrison,
-        representationState = packet.representationState,
-        movementState = packet.movementState,
-        activePacketCount = state.activePacketCount,
-      })
-    end
-
     state.started = true
     startMonitor()
+    dispatchAvailablePackets()
     local snapshot = inventorySnapshot()
-    log("INFO", "red_proxy_movements_started", {
-      packetCount = #state.packets,
-      activePacketCount = state.activePacketCount,
+    log("INFO", "red_proxy_automatic_fill_started", {
+      generatedPacketCount = snapshot.generatedPacketCount,
+      activePacketCount = snapshot.activePacketCount,
+      currentDispatchDepth = snapshot.currentDispatchDepth,
       hqPersonnel = snapshot.hqPersonnel,
+      shelterPersonnel = snapshot.shelterPersonnel,
       inTransitPersonnel = snapshot.inTransitPersonnel,
+      totalDeficit = snapshot.totalDeficit,
       accountedPersonnel = snapshot.accountedPersonnel,
       accountingValid = snapshot.accountingValid,
     })
-    announce("TM02V started: three independent packets, three independent leader proxies")
-    return true
+    announce("TM02V automatic fill started: dynamic packets will continue until all six shelters are full")
+    return not state.failed
   end
 
   local function toggleMarkers()
@@ -993,23 +1169,24 @@ function TM02V.start(config, build)
       configurationErrors = #configErrors == 0 and "none" or join(configErrors, " | "),
       missingObjects = #missingObjects == 0 and "none" or join(missingObjects, ","),
       checkedStrengthTemplateCount = 10,
-      checkedPacketCount = #state.packets,
       checkedNodeCount = 1 + #config.shelters,
+      dynamicPacketGeneration = true,
+      maxActivePackets = config.movement.maxActivePackets,
+      launchSlotCount = #config.proxy.launchSlots,
+      initialDeficit = totalInitialDeficit(),
     })
     announce(table.concat({
       "TM02V validation",
       "Configuration: " .. tostring(configValid),
       "Mission objects: " .. tostring(objectsValid),
-      "Packets: " .. tostring(#state.packets),
+      "Dynamic packet generation: true",
+      "Initial shelter deficit: " .. tostring(totalInitialDeficit()),
       "Missing: " .. (#missingObjects == 0 and "none" or join(missingObjects, ", ")),
     }, "\n"))
     return configValid and objectsValid
   end
 
-  local registryOk, registryError = pcall(function()
-    buildNodeRegistry()
-    buildPacketRegistry()
-  end)
+  local registryOk, registryError = pcall(buildNodeRegistry)
   if not registryOk then
     fail(registryError, "red_proxy_registry_failed")
     return state
@@ -1023,17 +1200,23 @@ function TM02V.start(config, build)
 
   if config.debug.enableF10Menu == true then
     local root = MENU_MISSION:New("OMW Tests")
-    local menu = MENU_MISSION:New("TM02V Multi-Proxy Movement", root)
+    local menu = MENU_MISSION:New("TM02V Dynamic Proxy Fill", root)
+    state.menu = { root = root, menu = menu, packetMenus = {} }
     MENU_MISSION_COMMAND:New("Validate test", menu, validateAndReport)
-    MENU_MISSION_COMMAND:New("Start all proxy movements", menu, startAllMovements)
-    MENU_MISSION_COMMAND:New("Show all packet status", menu, showAllStatus)
+    MENU_MISSION_COMMAND:New("Start automatic proxy fill", menu, startAutomaticFill)
+    MENU_MISSION_COMMAND:New("Show network and packet status", menu, showAllStatus)
     MENU_MISSION_COMMAND:New("Toggle packet markers", menu, toggleMarkers)
-    for _, packet in ipairs(state.packets) do
+
+    installPacketMenu = function(packet)
+      if state.menu.packetMenus[packet.packetId] then
+        return
+      end
       local packetId = packet.packetId
       local packetMenu = MENU_MISSION:New(
         "Packet " .. packet.runtimeAliasSuffix .. " -> " .. packet.finalDestinationNodeId,
         menu
       )
+      state.menu.packetMenus[packet.packetId] = packetMenu
       MENU_MISSION_COMMAND:New("Show status", packetMenu, function()
         return showPacketStatus(packetId)
       end)
@@ -1046,21 +1229,21 @@ function TM02V.start(config, build)
     end
   end
 
-  local packetIds = {}
-  for _, packet in ipairs(state.packets) do
-    packetIds[#packetIds + 1] = packet.packetId
-  end
   log("INFO", "startup", {
     buildTimestamp = build and build.buildTimestamp or "source",
     configurationVersion = config.configurationVersion,
-    packetCount = #state.packets,
-    packetIds = join(packetIds, ","),
+    dynamicPacketGeneration = true,
+    configuredMovementCount = 0,
     initialPersonnel = state.initialPersonnel,
-    initialRecordedLosses = state.totalLosses,
+    initialHqPersonnel = state.nodeById[config.headquarters.nodeId].currentGarrison,
+    initialShelterDeficit = totalInitialDeficit(),
+    maximumDispatchDepth = state.maximumDispatchDepth,
+    maxActivePackets = config.movement.maxActivePackets,
+    launchSlotCount = #config.proxy.launchSlots,
   })
-  announce("TM02V READY: three independent packet proxies")
+  announce("TM02V READY: dynamic top-down proxy fill for all six shelters")
 
-  state.startAllMovements = startAllMovements
+  state.startAutomaticFill = startAutomaticFill
   state.forceUnpack = forceUnpack
   state.forcePack = forcePack
   state.showPacketStatus = showPacketStatus
@@ -1069,6 +1252,7 @@ function TM02V.start(config, build)
   state.validateAndReport = validateAndReport
   state.inventorySnapshot = inventorySnapshot
   state.monitorTick = monitorTick
+  state.dispatchAvailablePackets = dispatchAvailablePackets
   return state
 end
 
