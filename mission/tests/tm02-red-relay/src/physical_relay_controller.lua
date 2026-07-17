@@ -1,8 +1,11 @@
 local PhysicalRelayController = {}
 
 local MOOSE_FORMATIONS = {
+  OFF_ROAD = "Off Road",
   ON_ROAD = "On Road",
 }
+
+local ROUTE_ASSIGNMENT_DELAY_SECONDS = 1
 
 local function display(value)
   if value == nil then
@@ -73,21 +76,32 @@ function PhysicalRelayController.new(options)
     end)
   end
 
-  local function buildRoute()
+  local function buildRoute(group)
     return pcall(function()
-      local formation = MOOSE_FORMATIONS[config.routing.formation]
-      if config.routing.roadOnly ~= true or not formation then
+      local onRoadFormation = MOOSE_FORMATIONS[config.routing.formation]
+      if config.routing.roadOnly ~= true or not onRoadFormation then
         error("road-only ON_ROAD routing is required")
       end
-
-      local zoneNames = {}
-      for index, zoneName in ipairs(config.zones.routeAnchors) do
-        zoneNames[index] = zoneName
+      if not group then
+        error("runtime group is unavailable for route construction")
       end
-      zoneNames[#zoneNames + 1] = config.zones.target
+
+      local startCoordinate = group:GetCoordinate()
+      if not startCoordinate then
+        error("runtime-group coordinate is unavailable")
+      end
 
       local waypoints = {}
-      for index, zoneName in ipairs(zoneNames) do
+      local startWaypoint = startCoordinate:WaypointGround(
+        config.routing.speedKph,
+        MOOSE_FORMATIONS.OFF_ROAD
+      )
+      if type(startWaypoint) ~= "table" then
+        error("runtime start waypoint construction failed")
+      end
+      waypoints[#waypoints + 1] = startWaypoint
+
+      for _, zoneName in ipairs(config.zones.routeAnchors) do
         local zone = ZONE:FindByName(zoneName)
         if not zone then
           error("route zone is unavailable: " .. zoneName)
@@ -98,15 +112,36 @@ function PhysicalRelayController.new(options)
         end
         local waypoint = coordinate:WaypointGround(
           config.routing.speedKph,
-          formation
+          onRoadFormation
         )
         if type(waypoint) ~= "table" then
           error("ground waypoint construction failed: " .. zoneName)
         end
-        waypoints[index] = waypoint
+        waypoints[#waypoints + 1] = waypoint
       end
 
-      return waypoints
+      local destinationZone = ZONE:FindByName(config.zones.target)
+      if not destinationZone then
+        error("route zone is unavailable: " .. config.zones.target)
+      end
+      local destinationCoordinate = destinationZone:GetCoordinate()
+      if not destinationCoordinate then
+        error("route-zone coordinate is unavailable: " .. config.zones.target)
+      end
+      local destinationWaypoint = destinationCoordinate:WaypointGround(
+        config.routing.speedKph,
+        MOOSE_FORMATIONS.OFF_ROAD
+      )
+      if type(destinationWaypoint) ~= "table" then
+        error("ground waypoint construction failed: " .. config.zones.target)
+      end
+      waypoints[#waypoints + 1] = destinationWaypoint
+
+      return {
+        assignmentDelaySeconds = ROUTE_ASSIGNMENT_DELAY_SECONDS,
+        startWaypointIncluded = true,
+        waypoints = waypoints,
+      }
     end)
   end
 
@@ -240,15 +275,18 @@ function PhysicalRelayController.new(options)
       return
     end
 
-    local routeOk, waypointsOrError = buildRoute()
+    local routeOk, routeOrError = buildRoute(self.runtimeGroup)
     if not routeOk then
-      fail(waypointsOrError, "red_relay_route_build_failed")
+      fail(routeOrError, "red_relay_route_build_failed")
       return
     end
 
     self.routeAssignmentAttempted = true
     local assignmentOk, assignmentResult = pcall(function()
-      return self.runtimeGroup:Route(waypointsOrError, 0)
+      return self.runtimeGroup:Route(
+        routeOrError.waypoints,
+        routeOrError.assignmentDelaySeconds
+      )
     end)
     if not assignmentOk or not assignmentResult then
       fail(
@@ -267,7 +305,9 @@ function PhysicalRelayController.new(options)
     local fields = commonFields()
     fields.missionTimeSeconds = timer.getTime()
     fields.routeAnchorCount = #config.zones.routeAnchors
-    fields.totalWaypointCount = #waypointsOrError
+    fields.routeAssignmentDelaySeconds = routeOrError.assignmentDelaySeconds
+    fields.startWaypointIncluded = routeOrError.startWaypointIncluded
+    fields.totalWaypointCount = #routeOrError.waypoints
     fields.speedKph = config.routing.speedKph
     logger:info("red_relay_started", fields)
     announce(
