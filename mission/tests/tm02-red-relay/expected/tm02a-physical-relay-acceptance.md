@@ -14,7 +14,7 @@ selection, teleport, unstuck, automatic reroute, or recovery.
 ```text
 MOOSE: vendor/moose/Moose.lua, release 2.9.18
 project bundle: mission/tests/tm02-red-relay/dist/TM02A.lua
-configuration: TM02A-red-relay-foundation-1
+configuration: TM02A-red-relay-foundation-2
 ```
 
 The mission must load `vendor/moose/Moose.lua` before `dist/TM02A.lua`.
@@ -56,6 +56,9 @@ OMW Tests
     └── Show active movement
 ```
 
+`Show active movement` is diagnostic only. It must not synchronize survivors,
+credit arrival, destroy the movement, or otherwise mutate CampaignState.
+
 ## Initial expected domain state
 
 ```text
@@ -81,12 +84,16 @@ initial personnel total:    30
 7. Confirm that the second request is rejected and no second group appears.
 8. Confirm that `red_relay_started` reports `startWaypointIncluded=true`,
    `routeAssignmentDelaySeconds=1`, and `totalWaypointCount=3`.
-9. Observe the runtime group moving from its actual spawn coordinate through the
-   configured route anchor toward the direct destination node.
-10. After the full living group is inside `ZONE_TM02A_DESTINATION`, select
-    `Show active movement`.
-11. Select `Show active movement` a second time.
-12. Select `Show RED relay status` and save the final log segment.
+9. Confirm that `red_relay_arrival_monitor_started` reports a five-second first
+   check delay and five-second polling interval.
+10. Observe the runtime group moving from its actual spawn coordinate through the
+    configured route anchor toward the direct destination node.
+11. Do not invoke any F10 command to complete the transfer.
+12. After the complete living group enters `ZONE_TM02A_DESTINATION`, confirm that
+    the script automatically emits `red_relay_arrival_credited`,
+    `red_relay_arrived`, and `red_relay_arrival_monitor_stopped reason=ARRIVED`.
+13. Select `Show active movement` twice after arrival.
+14. Select `Show RED relay status` and save the final log segment.
 
 ## Mandatory log sequence
 
@@ -98,9 +105,11 @@ red_relay_reserved
 red_relay_physical
 red_relay_en_route
 red_relay_started
+red_relay_arrival_monitor_started
 red_relay_start_rejected
 red_relay_arrival_credited
 red_relay_arrived
+red_relay_arrival_monitor_stopped
 red_relay_movement_status
 red_relay_status
 ```
@@ -126,14 +135,17 @@ PASS requires all of the following:
 12. The configured destination is the source node's direct successor.
 13. The repeated start command is rejected and creates no duplicate group or movement.
 14. No teleport, automatic unstuck, automatic reroute, respawn, or recovery occurs.
-15. The complete living group reaches `ZONE_TM02A_DESTINATION`.
-16. Arrival credits exactly six survivors once.
-17. Destination garrison changes from 6 to 12.
-18. Repeated movement status does not credit arrival again.
-19. Final movement state is `ARRIVED` and representation remains `PHYSICAL`.
-20. Final source plus destination personnel equals the initial total of 30.
-21. No `[OMW][TM02A] level=ERROR` event exists.
-22. PR #8 remains open, draft, and unmerged; no TM02 code is added to its head branch.
+15. Arrival monitoring starts automatically after route assignment.
+16. The monitor checks the physical group every five seconds without operator input.
+17. The complete living group reaches `ZONE_TM02A_DESTINATION`.
+18. Arrival credits exactly six survivors once and automatically.
+19. Destination garrison changes from 6 to 12.
+20. The arrival monitor stops after `ARRIVED`.
+21. Repeated `Show active movement` calls are read-only and do not credit arrival again.
+22. Final movement state is `ARRIVED` and representation remains `PHYSICAL`.
+23. Final source plus destination personnel equals the initial total of 30.
+24. No `[OMW][TM02A] level=ERROR` event exists.
+25. PR #8 remains open, draft, and unmerged; no TM02 code is added to its head branch.
 
 ## Immediate failure conditions
 
@@ -145,7 +157,10 @@ FAIL if any of these occurs:
 - the destination is not the direct successor;
 - the template activates instead of producing a separate runtime group;
 - survivor count increases after a previous observation;
+- arrival requires an F10 status command;
+- `Show active movement` mutates CampaignState;
 - arrival is credited more than once;
+- the arrival monitor continues running after a terminal movement state;
 - a destroyed or failed movement is respawned;
 - any automatic teleport, unstuck, reroute, or silent state correction occurs;
 - hidden BLUE warehouse, trigger-zone, or mission data affects the decision;
@@ -168,7 +183,7 @@ Record:
 - RED country and exact six unit types;
 - zone radii and approximate segment length;
 - runtime group name;
-- start, arrival, and final status log excerpts;
+- start, automatic arrival, and final status log excerpts;
 - observed group count at spawn and arrival;
 - explicit PASS or FAIL for every criterion above.
 
