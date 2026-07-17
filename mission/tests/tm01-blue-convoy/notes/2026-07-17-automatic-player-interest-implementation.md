@@ -1,11 +1,18 @@
 # TM01C – automatische BLUE-Spielerrelevanz für Pack/Unpack
 
 Datum: 17. Juli 2026  
-Status: Implementierungs- und Teststand; DCS-Abnahme ausstehend
+Status: **Implementierung in DCS für den visuellen Einzelspieler-Nahbereichstest bestanden; erweiterte Mehrspieler-/Höhentests offen**
+
+Ergebnisnachweis:
+
+```text
+mission/tests/tm01-blue-convoy/results/
+2026-07-17-tm01c-automatic-player-interest-pass.md
+```
 
 ## 1. Ziel
 
-Der bewährte manuelle Proxy-Pack-/Unpack-Kern wird um einen isolierten visuellen Nahbereichstest ergänzt:
+Der bewährte manuelle Proxy-Pack-/Unpack-Kern wurde um einen isolierten visuellen Nahbereichstest ergänzt:
 
 ```text
 BLUE-Spieler nähert sich dem Proxy auf höchstens 500 m horizontal
@@ -162,7 +169,42 @@ Validate configuration
 
 Manuelle Befehle deaktivieren die Automatik nicht dauerhaft. Ein manuell erzeugter Zustand kann daher beim nächsten gültigen Relevanzentscheid wieder automatisch korrigiert werden.
 
-## 9. Nicht Bestandteil
+## 9. DCS-Abnahme vom 17. Juli 2026
+
+Der Lauf bestätigte:
+
+```text
+automatic_pack_timer_started:       6
+automatic_pack_timer_cancelled:     1
+automatic_pack_requested:           5
+convoy_pack_started:                5
+convoy_packed:                      5
+
+automatic_unpack_requested:         3
+convoy_unpack_started:              4
+convoy_unpacked:                    4
+convoy_route_activation_confirmed:  5
+```
+
+Die vierte Unpack-Sequenz war ein zusätzlicher manueller Diagnose-Unpack. Die Automatik erzeugte keine doppelte Anforderung.
+
+Zusätzlich bestätigt:
+
+- Auto-Pack jeweils nach exakt 30 Sekunden außerhalb 750 m;
+- Auto-Unpack bei 486,53 m, 485,89 m und 491,63 m;
+- Timerabbruch nach 27 Sekunden bei 743,67 m;
+- stabiles Verhalten in der Hysteresezone;
+- kein Pack-/Unpack-Flattern;
+- keine parallelen Transitionen im beobachteten Lauf;
+- drei Fahrzeugverluste erkannt und auf Survivor-Liste `5,2,1` reduziert;
+- zerstörte Slots blieben zerstört;
+- partielle Schäden wurden gespeichert, wiederhergestellt und verifiziert;
+- keine TM01C-ERROR-Ereignisse;
+- kein `halted=true` und kein `movementState=FAILED`.
+
+Die visuelle Nutzerbeobachtung bestätigte korrekt ausgerichtete Fahrzeuge und störungsfreies Weiterfahren nach jedem automatischen Unpack.
+
+## 10. Nicht Bestandteil
 
 - Sichtlinie und Geländeabschattung;
 - optische Erkennbarkeit;
@@ -174,11 +216,15 @@ Manuelle Befehle deaktivieren die Automatik nicht dauerhaft. Ein manuell erzeugt
 - Persistenz über Missionsneustart;
 - Recovery, Unstuck oder Teleport.
 
-## 10. Abnahmestatus
+## 11. Restliche Abnahmen
 
 ```text
-Quellcode/Syntax:    vor Commit lokal geprüft
-Bundle-Build:        durch Nutzer lokal auszuführen
-DCS-Laufzeitabnahme: ausstehend
-Merge-Freigabe:      nicht erteilt
+Visueller Einzelspieler-Nahbereichstest: PASS
+Mehrspieler-Nähe mit zwei BLUE-Spielern: OFFEN
+Expliziter Höhentest:                    OFFEN
+Gezielte Grenzüberquerung in jeder
+Transitionphase:                         OFFEN / optionaler Stresstest
+Operative Produktionsradien:             NICHT FESTGELEGT
 ```
+
+Die automatische Pack-/Unpack-Grundfunktion ist damit in DCS nachgewiesen.
