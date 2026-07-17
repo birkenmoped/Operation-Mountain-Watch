@@ -1,5 +1,5 @@
 local config = {
-  configurationVersion = "TM02V-red-proxy-dynamic-fill-5",
+  configurationVersion = "TM02V-red-proxy-dynamic-fill-6",
   testId = "TM02",
   stageId = "TM02V",
 
@@ -22,9 +22,12 @@ local config = {
     runtimeAliasPrefix = "TM02V_RED_PROXY_",
     expectedUnitCount = 1,
     launchSlots = {
-      { x = -12, y = 0 },
-      { x = 0, y = 0 },
-      { x = 12, y = 0 },
+      { x = -10, y = -6 },
+      { x = 0, y = -6 },
+      { x = 10, y = -6 },
+      { x = -10, y = 6 },
+      { x = 0, y = 6 },
+      { x = 10, y = 6 },
     },
   },
 
@@ -52,8 +55,8 @@ local config = {
   movement = {
     originPolicy = "HQ_TO_FINAL",
     fillOrder = "TOP_DOWN",
-    packetMaxStrength = 10,
-    maxActivePackets = 3,
+    packetMaxStrength = 6,
+    maxActivePackets = 6,
     monitorInitialDelaySeconds = 2,
     monitorIntervalSeconds = 2,
   },
