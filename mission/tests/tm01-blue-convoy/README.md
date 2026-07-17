@@ -35,6 +35,12 @@ TM01C automatische RED-Gegnernähe Version 8: PASS für isolierten Enemy-Proximi
 TM01C kombinierter Player-/Enemy-Monitor Version 8: PARTIAL PASS
 ```
 
+Aktuelle Statusnotiz:
+
+```text
+notes/2026-07-17-current-relevance-test-status.md
+```
+
 Aktuelle Konfiguration:
 
 ```text
@@ -300,6 +306,7 @@ notes/2026-07-16-convoy-doctrine-settings-capabilities-and-decisions.md
 notes/2026-07-17-automatic-player-interest-implementation.md
 notes/2026-07-17-automatic-enemy-interest-implementation.md
 notes/2026-07-17-ten-red-picket-layout.md
+notes/2026-07-17-current-relevance-test-status.md
 expected/proxy-pack-unpack-acceptance.md
 expected/automatic-player-interest-acceptance.md
 expected/automatic-enemy-interest-acceptance.md
