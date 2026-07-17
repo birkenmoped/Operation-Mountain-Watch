@@ -48,7 +48,7 @@ $builder = New-Object System.Text.StringBuilder
 [void]$builder.AppendLine("end)")
 [void]$builder.AppendLine("if not ok then")
 [void]$builder.AppendLine('  env.info("[OMW][TM02V] level=ERROR event=bootstrap_uncaught_error reason=" .. tostring(result))')
-[void]$builder.AppendLine("elseif type(result) == \"table\" and result.failed == true then")
+[void]$builder.AppendLine('elseif type(result) == "table" and result.failed == true then')
 [void]$builder.AppendLine("  local diagnosticsOk, diagnosticsError = pcall(function()")
 [void]$builder.AppendLine("    result.diagnosticMenu = TM02VDiagnostics.install(TM02VConfig, result)")
 [void]$builder.AppendLine("  end)")
