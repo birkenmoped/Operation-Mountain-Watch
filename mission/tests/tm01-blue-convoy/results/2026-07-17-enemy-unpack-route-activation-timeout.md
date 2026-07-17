@@ -3,7 +3,8 @@
 Datum: 17. Juli 2026  
 DCS: 2.9.27.25340 Open Beta MT  
 Getestete Konfiguration: `TM01C-automatic-player-and-enemy-interest-7`  
-Ergebnis: FAIL – Ursache identifiziert und korrigiert; Wiederholung mit Version 8 erforderlich
+Ergebnis: FAIL – Ursache identifiziert und in Version 8 korrigiert  
+Regression: **PASS**, siehe `2026-07-17-tm01c-enemy-proximity-regression-pass.md`
 
 ## 1. Beobachtung
 
@@ -59,7 +60,7 @@ enemyInterestBand=INSIDE_UNPACK
 nearestEnemyDistanceMeters=746.0239
 ```
 
-Diese Werte waren kein neuer Scan. Sie waren der letzte gespeicherte Beobachtungsstand vor dem Controller-Halt. Da der gewrappte Controller-Tick bei `halted=true` nicht mehr in den Relevanzservice gelangt, blieb die Anzeige eingefroren.
+Diese Werte waren kein neuer Scan. Sie waren der letzte gespeicherte Beobachtungsstand vor dem Controller-Halt. Da der gewrappte Controller-Tick bei `halted=true` nicht mehr in den Relevanzservice gelangte, blieb die Anzeige eingefroren.
 
 Die primäre Ursache war deshalb nicht eine fehlerhafte Totenerkennung, sondern der vorherige Routenaktivierungs-Halt.
 
@@ -128,18 +129,49 @@ halted=false
 movementState=EN_ROUTE
 ```
 
-## 6. Wiederholungskriterien
+## 6. Regressionsergebnis Version 8
 
-Der nächste DCS-Lauf muss beweisen:
+Der Wiederholungslauf bestätigte:
 
-1. Enemy-Proximity löst das Entpacken aus.
-2. Ein im Feuerkampf stehender Konvoi erzeugt keinen `convoy_route_activation_timeout`.
-3. Nach Tod oder Verlassen des letzten relevanten Gegners wechselt `enemyInterestBand` auf `OUTSIDE`.
-4. Bei ebenfalls außerhalb liegendem Spieler startet der gemeinsame 30-s-Pack-Timer.
-5. Der Konvoi wird anschließend erfolgreich gepackt.
-6. Spätere Infanterieposten können weitere Pack-/Unpack-Zyklen auslösen.
+```text
+7 gegnerausgelöste automatische Unpacks
+7 enemy-spezifische Aktivierungspolicy-Anpassungen
+8 bestätigte Routenaktivierungen einschließlich Initialspawn
+8 erfolgreiche Packvorgänge
+1 Enemy-Hysterese-Timerabbruch
+0 TM01C-ERROR-Ereignisse im Version-8-Segment
+0 convoy_route_activation_timeout
+0 halted=true
+0 movementState=FAILED
+```
 
-## 7. Nicht geändert
+Die sieben Enemy-Unpacks enthielten jeweils:
+
+```text
+triggeredByEnemy=true
+triggeredByPlayer=false
+```
+
+Der BLUE-Spieler befand sich dabei ungefähr 3,08–15,79 km vom Konvoi entfernt. Damit wurde der korrigierte Pfad isoliert nachgewiesen.
+
+Vollständiger Bericht:
+
+```text
+mission/tests/tm01-blue-convoy/results/
+2026-07-17-tm01c-enemy-proximity-regression-pass.md
+```
+
+## 7. Weiter offen
+
+Die Korrektur ist für den Enemy-Proximity-Pfad bestanden. Noch offen bleiben:
+
+1. Player-only-Unpack und Player-only-Pack innerhalb Version 8.
+2. Player-Hysterese und Spieler-Timerabbruch innerhalb Version 8.
+3. Kombinierte Prioritätsfälle mit gleichzeitig relevantem Spieler und Gegner.
+4. Mehrspieler- und Höhentests.
+5. Produktionsradien sowie LOS-/Sensor-/Hostile-Intent-Semantik.
+
+## 8. Nicht geändert
 
 - Gegner-Unpack-Radius: 750 m
 - Gegner-Pack-Grenze: 1000 m
