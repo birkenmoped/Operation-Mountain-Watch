@@ -37,10 +37,6 @@ function TM02VDiagnostics.install(config, state)
         missing[#missing + 1] = tostring(templateName)
       end
     end
-    if type(config.proxy.templateGroupName) ~= "string"
-      or not GROUP:FindByName(config.proxy.templateGroupName) then
-      missing[#missing + 1] = tostring(config.proxy.templateGroupName)
-    end
     local zoneNames = { config.headquarters.zoneName }
     for _, definition in ipairs(config.shelters or {}) do
       zoneNames[#zoneNames + 1] = definition.zoneName
@@ -70,28 +66,27 @@ function TM02VDiagnostics.install(config, state)
   end
 
   local function showBootstrapStatus()
-    local packet = state and state.packet or {}
     log("INFO", "red_proxy_bootstrap_status", {
       failed = state and state.failed == true,
       started = state and state.started == true,
-      movementState = packet.movementState or "unknown",
-      representationState = packet.representationState or "unknown",
+      configuredPacketCount = config.movements and #config.movements or 0,
+      activePacketCount = state and state.activePacketCount or 0,
     })
     announce(table.concat({
       "TM02V bootstrap status",
       "Failed: " .. tostring(state and state.failed == true),
       "Started: " .. tostring(state and state.started == true),
-      "Movement: " .. tostring(packet.movementState or "unknown"),
-      "Representation: " .. tostring(packet.representationState or "unknown"),
+      "Configured packets: " .. tostring(config.movements and #config.movements or 0),
+      "Active packets: " .. tostring(state and state.activePacketCount or 0),
     }, "\n"))
   end
 
   local root = MENU_MISSION:New("OMW Tests")
-  local menu = MENU_MISSION:New("TM02V Proxy Movement", root)
+  local menu = MENU_MISSION:New("TM02V Multi-Proxy Movement", root)
   MENU_MISSION_COMMAND:New("Validate test", menu, validateFromMenu)
   MENU_MISSION_COMMAND:New("Show bootstrap status", menu, showBootstrapStatus)
   log("INFO", "red_proxy_diagnostic_menu_ready", {
-    path = "OMW Tests/TM02V Proxy Movement",
+    path = "OMW Tests/TM02V Multi-Proxy Movement",
     commands = "Validate test,Show bootstrap status",
   })
   return { root = root, menu = menu }
