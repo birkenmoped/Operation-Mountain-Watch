@@ -10,32 +10,75 @@ TM01A
 - kontrollierte vollständige Straßenroute
 
 TM01B
-- flüchtiger CampaignState im Arbeitsspeicher
-- virtuelle Bewegung ohne DCS-Gruppe
-- beweglicher virtueller BLUE-Kartenmarker
-- automatische Materialisierung in kreisförmigen Reveal-Fenstern
-- straßenkonforme Einzelpositionierung aller Fahrzeuge
-- automatische Dematerialisierung nach vollständigem Verlassen des Kreises
+- historisches Reveal-Window-/Caching-Experiment
+- nicht bestanden und nicht abnahmefähig
+
+TM01C
+- ein physischer strategischer Konvoi mit zwei Repräsentationen
+- EXPANDED: alle überlebenden Fahrzeuge physisch
+- COLLAPSED_PROXY: nur das aktuelle Führungsfahrzeug physisch
+- Stable Slots, Survivor- und Schadenszustand im CampaignState
+- manuelles und automatisches Pack/Unpack
 ```
 
-Cargo, Warehouses, Feindkräfte und Persistenz über einen Missions- oder Serverneustart sind nicht Bestandteil von TM01A oder TM01B.
+Cargo, Warehouses, Feindkräfte und Persistenz über einen Missions- oder Serverneustart sind noch nicht Bestandteil von TM01C.
 
 ## Aktueller Status
 
 ```text
 TM01A: akzeptierte physische Baseline
 TM01B: NICHT BESTANDEN / NICHT ABNAHMEFÄHIG
+TM01C manueller Kern: PASS
+TM01C automatische BLUE-Spielerrelevanz: PASS für visuellen Einzelspieler-Nahbereichstest
 ```
 
-Der aktuelle Stand `TM01B-controlled-caching-5.1` ist ein fehlerhafter Zwischenstand. Version 4 bewies wesentliche Teile der Zustandsmaschine, scheiterte aber an der physischen Spawnrobustheit. Version 5 und 5.1 stoppten bereits während der Routenplanung und erreichten keinen vollständigen DCS-Lauf.
-
-Die vollständige Chronologie, alle Diskussionsergebnisse, verworfenen Annahmen, Vereinbarungen und die priorisierte Fortsetzung stehen in:
+Aktuelle Konfiguration:
 
 ```text
-notes/2026-07-14-tm01b-handoff.md
+TM01C-automatic-player-interest-5
 ```
 
-Kein Teil dieses README darf als Nachweis eines erfolgreichen Version-5-DCS-Laufs verstanden werden.
+Aktuelle Automatik:
+
+```text
+BLUE-Spieler <= 500 m horizontal
+→ automatisch entpacken
+
+alle gültigen BLUE-Spieler > 750 m horizontal
+→ 30 Sekunden kontinuierliche Abwesenheit
+→ automatisch einpacken
+
+500–750 m
+→ Hysterese; bestehende Repräsentation beibehalten
+```
+
+DCS-Abnahme vom 17. Juli 2026:
+
+```text
+5/5 automatische Pack-Anforderungen bestätigt
+3/3 automatische Unpack-Anforderungen bestätigt
+1/1 Pack-Timer korrekt abgebrochen
+5/5 Routenaktivierungen bestätigt
+0 TM01C-ERROR-Ereignisse
+0 halted=true
+0 movementState=FAILED
+```
+
+Ergebnisbericht:
+
+```text
+results/2026-07-17-tm01c-automatic-player-interest-pass.md
+```
+
+Noch offen:
+
+```text
+- Mehrspieler-Nähe mit mindestens zwei BLUE-Spielern
+- expliziter Höhentest
+- operative Produktionsradien
+- Sichtlinie, Sensor- und Gegnerrelevanz
+- verbleibende Gesamtregressionen vor Merge-Freigabe
+```
 
 ## Testobjekt
 
@@ -48,9 +91,7 @@ Fahrzeuge: 6
 
 DCS-Gruppennamen sind flüchtige Laufzeitdaten. `CampaignState` bleibt die autoritative Quelle für die strategische Entität.
 
-# TM01A – akzeptierte physische Baseline
-
-Die akzeptierte Route lautet:
+## Route
 
 ```text
 ZONE_TM01_START_BAGRAM
@@ -64,239 +105,144 @@ ZONE_TM01_START_BAGRAM
 → ZONE_TM01_TARGET_JALALABAD
 ```
 
-TM01A hat den kontrollierten Spawn, die einmalige Routenzuweisung und die vollständige Ankunft in Jalalabad nachgewiesen. Die lange DCS-Fahrzeit und teilweise großen Umwege bleiben dokumentierte Terrain- und Pathfinding-Einschränkungen.
+Die Route wird einmal aus Start, sieben Ankern und Ziel als geordneter Straßenpfad kompiliert. Dieser Pfad ist Grundlage für:
 
-# TM01B – kreisförmiges Reveal-Window-Caching
+- Straßenfortschritt;
+- Restwegpunkte;
+- Fahrzeugpositionen beim Spawn und Unpack;
+- lokale Fahrzeug-Headings;
+- Proxy- und Lead-Projektion;
+- Zielüberwachung.
 
-## Konfiguration
-
-Aktueller, nicht akzeptierter Zwischenstand:
-
-```text
-TM01B-controlled-caching-5.1
-```
-
-Bundle:
+## Aktive Marschparameter
 
 ```text
-mission/tests/tm01-blue-convoy/dist/TM01B.lua
+roadOnly:                       true
+speedKph:                       30
+formation:                      ON_ROAD
+routeSampleMeters:              10
+maximumRoadSnapMeters:          1500
+roadPositionToleranceMeters:    30
+vehicleSpacingMeters:           15
+minimumVehicleSeparationMeters: 8
 ```
 
-Build:
+`vehicleSpacingMeters` beschreibt den Spawn-/Unpack-Abstand. Die spätere DCS-Option `Formation Interval` ist ein getrennter Mechanismus und noch nicht Teil dieses Tests.
+
+## Repräsentationsmodell
+
+### EXPANDED
+
+- alle überlebenden Stable Slots besitzen physische Fahrzeuge;
+- Verluste und Teilschäden werden laufend in den CampaignState übernommen;
+- das vorderste überlebende Fahrzeug ist die aktuelle Lead-Rolle.
+
+### COLLAPSED_PROXY
+
+- genau das aktuelle Führungsfahrzeug bleibt physisch;
+- alle anderen Survivor bleiben als Domainzustand gespeichert;
+- der Proxy fährt weiterhin dieselbe Reststrecke;
+- das Proxyfahrzeug ist keine andere strategische Entität.
+
+## Pack
+
+```text
+EXPANDED
+→ lebende Stable Slots erfassen
+→ aktuelles Lead bestimmen
+→ reale Leadposition auf Route projizieren
+→ Restweg erneut zuweisen
+→ alle anderen physischen Survivor entfernen
+→ Entfernung nativ bestätigen
+→ COLLAPSED_PROXY
+```
+
+## Unpack
+
+```text
+COLLAPSED_PROXY
+→ reale Proxyposition auf globale Route projizieren
+→ sichere vollständige Aufstellung hinter dem Lead suchen
+→ für jeden Survivor eigene Straßenposition und eigenes Heading berechnen
+→ Wasser und unzulässige Abstände ausschließen
+→ alte Proxygruppe entfernen und Entfernung bestätigen
+→ Survivor-Gruppe neu erzeugen
+→ gespeicherte Schäden wiederherstellen und verifizieren
+→ physische Bewegung bestätigen
+→ EXPANDED / EN_ROUTE
+```
+
+Zerstörte Stable Slots werden nicht wiederhergestellt.
+
+## Spielerrelevanz
+
+Quelle:
+
+```lua
+coalition.getPlayers(coalition.side.BLUE)
+```
+
+Gültig sind nur lebende, tatsächlich besetzte BLUE-Spielerunits mit gültiger Position. Zuschauer, normale AI und unbesetzte Client-Slots zählen nicht. Bei mehreren Spielern zählt die kleinste horizontale Distanz.
+
+Der Player-Interest-Monitor umschließt den bestehenden Konvoi-Tick. Es gibt keinen zusätzlichen Hochfrequenz-Scheduler.
+
+Keine neue automatische Aktion während:
+
+```text
+PACKING
+UNPACKING
+ACTIVATING_ROUTE
+```
+
+## F10-Menü
+
+```text
+OMW Tests
+└── TM01C
+    ├── Start convoy
+    ├── Pack convoy
+    ├── Unpack convoy
+    ├── Show status
+    └── Validate configuration
+```
+
+Die manuellen Befehle bleiben Diagnosewerkzeuge. Sie deaktivieren die Automatik nicht dauerhaft.
+
+## Build
 
 ```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File tools\build-tm01b-bundle.ps1
+powershell -NoProfile -ExecutionPolicy Bypass -File tools\build-tm01c-bundle.ps1
 ```
 
-Ladefolge im Mission Editor:
+Mission-Editor-Ladereihenfolge:
 
 ```text
 1. DO SCRIPT FILE: vendor/moose/Moose.lua
-2. DO SCRIPT FILE: mission/tests/tm01-blue-convoy/dist/TM01B.lua
+2. DO SCRIPT FILE: mission/tests/tm01-blue-convoy/dist/TM01C.lua
 ```
 
-## Bedienmodell
-
-Der reguläre Test besitzt genau einen Startbefehl:
+## Verbindliche Dokumente
 
 ```text
-F10
-└── OMW Tests
-    └── TM01B
-        ├── Start convoy
-        ├── Show status
-        └── Validate configuration
+notes/2026-07-16-tm01c-dcs-findings.md
+notes/2026-07-16-convoy-doctrine-settings-capabilities-and-decisions.md
+notes/2026-07-17-automatic-player-interest-implementation.md
+expected/proxy-pack-unpack-acceptance.md
+expected/automatic-player-interest-acceptance.md
+results/2026-07-16-tm01c-manual-cycle-heading-pass.md
+results/2026-07-17-tm01c-automatic-player-interest-pass.md
 ```
 
-`Start convoy` soll den gesamten automatischen Ablauf starten. Es gibt keine regulären F10-Befehle zum Materialisieren, Dematerialisieren oder Starten einer physischen Teilroute.
+## Scope-Schutz
 
-## Verbindliches Zielverhalten
+Nicht automatisch ergänzen:
 
-```text
-ZONE_TM01_START_BAGRAM
-→ virtuelle Straßenbewegung mit Kartenmarker
-→ ZONE_TM01_REVEAL_01
-→ automatische straßenkonforme Materialisierung
-→ sichtbare Fahrt durch Reveal-Fenster 1
-→ alle überlebenden Fahrzeuge außerhalb des Kreises
-→ automatische Dematerialisierung
-→ virtuelle Straßenbewegung mit Kartenmarker
-→ ZONE_TM01_REVEAL_02
-→ automatische straßenkonforme Materialisierung
-→ sichtbare Fahrt durch Reveal-Fenster 2
-→ alle überlebenden Fahrzeuge außerhalb des Kreises
-→ automatische Dematerialisierung oder unmittelbare Terminal-Ankunft
-→ ZONE_TM01_TARGET_JALALABAD
-```
+- Recovery oder Unstuck;
+- Teleport;
+- permanentes Re-Routing;
+- automatische Straßensuche pro Fahrzeug und Tick;
+- RED-/Feindrelevanz ohne eigenen Test;
+- Sichtlinie oder Sensorik ohne eigenen Entwurf;
+- Persistenz über Missionsneustart ohne Persistenzvertrag.
 
-Während einer virtuellen Phase existiert keine physische DCS-Gruppe.
-
-## Reveal-Fenster im Mission Editor
-
-Das vereinbarte Zielmodell verwendet genau eine kreisförmige Triggerzone pro Fenster:
-
-```text
-ZONE_TM01_REVEAL_01
-ZONE_TM01_REVEAL_02
-```
-
-Der Mittelpunkt und der Radius der jeweiligen Mission-Editor-Zone definieren das vollständige Sichtfenster:
-
-```text
-innerhalb des Kreises  = physisch sichtbar
-außerhalb des Kreises  = virtuell
-```
-
-Separate Entry- und Exit-Zonen werden nicht mehr verwendet. Der Controller soll die Eintritts- und Austrittspunkte automatisch aus dem Schnitt des geordneten Straßenpfades mit dem Kreis bestimmen. Die Fahrtrichtung ist für die Sichtbarkeitsentscheidung irrelevant.
-
-Jeder Kreis soll den globalen Straßenpfad genau einmal in einem zusammenhängenden Abschnitt schneiden. Kein Schnitt oder mehrere getrennte Schnittabschnitte sollen den Test mit `convoy_route_plan_failed` stoppen.
-
-## Globaler Straßenpfad
-
-Start, sieben Routenanker und Ziel werden auf die nächstgelegene Straße projiziert. Zwischen den projizierten Punkten berechnet MOOSE den DCS-Straßenpfad. Dieser Pfad ist die gemeinsame Grundlage für:
-
-- virtuelle Position;
-- virtuelle ETA;
-- Moving Marker;
-- Reveal-Kreis-Schnittpunkte;
-- Fahrzeugpositionen beim Spawn;
-- lokale Fahrzeug-Headings;
-- physische Teilroute.
-
-Aktueller Zwischenstand 5.1:
-
-```text
-routeSampleMeters                  = 5
-physicalWaypointSpacingMeters      = 100
-maximumRoadSnapMeters              = 1500
-roadPositionToleranceMeters        = 25
-```
-
-Die 25-Meter-Toleranz ist kein Nachweis dafür, dass ein Fahrzeug tatsächlich auf der Straße steht. Die aktuelle Implementierung prüft die nächstgelegene Straße, verwendet aber noch nicht zuverlässig deren finale Koordinate als Spawnposition.
-
-## Virtueller Moving Marker
-
-Während `VIRTUAL_MOVING` soll BLUE einen beweglichen Kartenmarker an der berechneten Position auf dem Straßenpfad sehen. Der Marker enthält:
-
-```text
-naechstes Reveal-Fenster oder Ziel
-ETA
-Fortschritt der aktuellen virtuellen Etappe
-```
-
-Aktualisierung:
-
-```text
-virtualMarkerUpdateSeconds = 5
-```
-
-Während der physischen Darstellung wird der virtuelle Marker entfernt.
-
-Der aktuelle Code setzt zusätzlich nur einen Textmarker am Mittelpunkt jedes Reveal-Fensters. Dieser Textmarker zeigt keine echte Kreisgrenze. Eine echte F10-Kreisvisualisierung ist noch offen.
-
-## Straßenkonformer Spawn
-
-Der Zielentwurf verwendet nicht nur ein starr verschobenes Template. Für jeden Template-Slot sollen berechnet werden:
-
-- finale, tatsächlich auf die Straße projizierte Position;
-- definierter Abstand zum vorausfahrenden Fahrzeug;
-- individuelles Heading aus dem lokalen Straßenverlauf;
-- Oberflächen- und Wasserprüfung;
-- Belegungs- und Kollisionsprüfung soweit zuverlässig verfügbar.
-
-Aktueller Zwischenstand 5.1:
-
-```text
-vehicleSpacingMeters      = 15
-spawnInteriorMarginMeters = 25
-```
-
-Die aktuelle Version erfüllt dieses Ziel noch nicht vollständig:
-
-- `nearestRoad` wird geprüft, aber nicht zuverlässig als finale Spawnposition verwendet;
-- Wasser wird nicht explizit ausgeschlossen;
-- es gibt keine Kandidatensuche innerhalb des Fensters;
-- es gibt keinen Bewegungs-Watchdog;
-- ein erfolgreicher DCS-Straßenspawn wurde nicht nachgewiesen.
-
-Kann keine vollständige sichere Aufstellung ermittelt werden, darf kein unsicherer Notspawn erfolgen.
-
-## MOOSE-Fähigkeiten und Laufzeitstrategie
-
-MOOSE stellt die benötigten Bausteine bereit:
-
-```text
-GetClosestPointToRoad()
-GetPathOnRoad()
-InitSetUnitAbsolutePositions()
-WaypointGround(..., "On Road")
-```
-
-MOOSE garantiert jedoch nicht mit einem einzelnen Aufruf eine vollständig kollisionsfreie Straßengruppe.
-
-Vereinbarte Laufzeitstrategie:
-
-- bekannte Reveal-Fenster einmal beim Missionsstart planen und cachen;
-- dynamische unbekannte Spawns nur beim Aktivierungsereignis planen;
-- eine lokale Pfadberechnung pro Kandidat, nicht pro Fahrzeug;
-- harte Obergrenze der Kandidaten;
-- keine fortlaufende Spawnplatzsuche pro Simulationstick;
-- bei mehreren gleichzeitigen Anforderungen Planung über Scheduler-Zyklen verteilen.
-
-## Dematerialisierung
-
-Nach der Materialisierung soll der Konvoi physisch bleiben, solange mindestens ein überlebendes Fahrzeug innerhalb des Reveal-Kreises liegt. Sobald der Kreis zuvor belegt war und kein überlebendes Fahrzeug mehr darin liegt, beginnt die automatische Dematerialisierung.
-
-Vor dem Destroy-Aufruf werden die aktuell lebenden Fahrzeugslots in den `CampaignState` übernommen. Erst wenn `Group.getByName(runtimeName):isExist()` die Abwesenheit der Laufzeitgruppe bestätigt, wechselt die Entity wieder auf `VIRTUAL_MOVING` oder bei einem terminalen letzten Fenster direkt auf `ARRIVED`.
-
-Jedes Reveal-Fenster wird pro Missionslauf höchstens einmal ausgeführt.
-
-## Dokumentierte Versuchsergebnisse
-
-### Version 4
-
-- Mock-Lauf bestand zwei Materialisierungs-/Dematerialisierungszyklen.
-- DCS-Fenster 1 funktionierte gut.
-- DCS-Fenster 2 erzeugte Generation 2, aber die Gruppe bewegte sich nicht.
-- Sichtbeobachtung: zwei hintere Fahrzeuge standen im Wasser beziehungsweise Fluss.
-- Kein automatischer Fehler wurde ausgelöst; die Gruppe blieb in `PHYSICAL_MOVING`.
-
-### Version 5
-
-- Bootstrap `READY`.
-- Planung stoppte vor dem Start mit:
-
-```text
-planned vehicle position is not on road: ZONE_TM01_REVEAL_01
-```
-
-- Kein physischer Spawn und kein vollständiger Marker-Test.
-
-### Version 5.1
-
-- Bootstrap `READY`.
-- Planung stoppte vor dem Start mit:
-
-```text
-reveal window exit is too close to route target: ZONE_TM01_REVEAL_02
-```
-
-- Die anschließende Analyse zeigte zusätzliche Systemfehler: fehlende Terminal-Window-Logik, nicht verwendete finale Straßenprojektion, keine Wasserprüfung, kein Bewegungs-Watchdog und keine echte Kreisvisualisierung.
-
-## Verbindlicher Testvertrag
-
-```text
-expected/caching-acceptance.md
-```
-
-Der Vertrag beschreibt das Zielverhalten. Sein Status ist derzeit **nicht bestanden**.
-
-## Nicht Bestandteil von TM01B
-
-- Persistenz über Missions- oder Serverneustart;
-- Cargo und Warehouses;
-- Feindkontakte und Hinterhalte;
-- automatische Spielerentfernungs-, Sichtlinien- oder Sensorlogik;
-- mehrere gleichzeitige Konvois.
-
-Automatische Recovery und lokale Routenneuberechnung waren ursprünglich ausgeschlossen. Nach dem Version-4-Stillstand ist jedoch mindestens ein begrenzter Spawn-Recovery-Mechanismus mit Bewegungs-Watchdog für einen belastbaren Entwurf erforderlich. Der genaue Scope wird im Handoff-Dokument festgehalten.
+PR #8 bleibt Draft. Es besteht keine Merge-Freigabe.
