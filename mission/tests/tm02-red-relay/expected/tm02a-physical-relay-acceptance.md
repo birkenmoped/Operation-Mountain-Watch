@@ -36,12 +36,14 @@ ZONE_TM02A_DESTINATION
 ```
 
 The group must be RED coalition, contain exactly six ground infantry units, and
-use Late Activation. Record the selected DCS country and exact unit types in the
-result document.
+use Late Activation. It is only a MOOSE spawn template and does not need to be
+placed inside `ZONE_TM02A_SOURCE`; keep it outside the TM02A test zones so the
+inactive template and spawned runtime group remain visually distinct. Record the
+selected DCS country and exact unit types in the result document.
 
-The source and destination zones must be large enough for full-group membership.
-The route anchor must be placed on a practically traversable segment between the
-two directly adjacent nodes.
+The source and destination zones must be large enough for full runtime-group
+membership and must cover traversable ground. The route anchor must be placed on
+a practically traversable segment between the two directly adjacent nodes.
 
 ## F10 commands
 
@@ -77,12 +79,14 @@ initial personnel total:    30
 5. Confirm that exactly one runtime group is created from the template.
 6. Immediately select `Start one relay transfer` again.
 7. Confirm that the second request is rejected and no second group appears.
-8. Observe the runtime group moving through the configured route anchor toward
-   the direct destination node.
-9. After the full living group is inside `ZONE_TM02A_DESTINATION`, select
-   `Show active movement`.
-10. Select `Show active movement` a second time.
-11. Select `Show RED relay status` and save the final log segment.
+8. Confirm that `red_relay_started` reports `startWaypointIncluded=true`,
+   `routeAssignmentDelaySeconds=1`, and `totalWaypointCount=3`.
+9. Observe the runtime group moving from its actual spawn coordinate through the
+   configured route anchor toward the direct destination node.
+10. After the full living group is inside `ZONE_TM02A_DESTINATION`, select
+    `Show active movement`.
+11. Select `Show active movement` a second time.
+12. Select `Show RED relay status` and save the final log segment.
 
 ## Mandatory log sequence
 
@@ -116,18 +120,20 @@ PASS requires all of the following:
 7. The runtime group contains exactly six living units at spawn.
 8. The Late Activation template remains inactive.
 9. The movement representation is `PHYSICAL`; no virtual representation exists.
-10. The assigned route contains one anchor plus the destination waypoint.
-11. The configured destination is the source node's direct successor.
-12. The repeated start command is rejected and creates no duplicate group or movement.
-13. No teleport, automatic unstuck, automatic reroute, respawn, or recovery occurs.
-14. The complete living group reaches `ZONE_TM02A_DESTINATION`.
-15. Arrival credits exactly six survivors once.
-16. Destination garrison changes from 6 to 12.
-17. Repeated movement status does not credit arrival again.
-18. Final movement state is `ARRIVED` and representation remains `PHYSICAL`.
-19. Final source plus destination personnel equals the initial total of 30.
-20. No `[OMW][TM02A] level=ERROR` event exists.
-21. PR #8 remains open, draft, and unmerged; no TM02 code is added to its head branch.
+10. The assigned route contains the runtime group's actual start waypoint, one
+    configured anchor, and the destination waypoint.
+11. Route assignment is delayed by one second after spawn.
+12. The configured destination is the source node's direct successor.
+13. The repeated start command is rejected and creates no duplicate group or movement.
+14. No teleport, automatic unstuck, automatic reroute, respawn, or recovery occurs.
+15. The complete living group reaches `ZONE_TM02A_DESTINATION`.
+16. Arrival credits exactly six survivors once.
+17. Destination garrison changes from 6 to 12.
+18. Repeated movement status does not credit arrival again.
+19. Final movement state is `ARRIVED` and representation remains `PHYSICAL`.
+20. Final source plus destination personnel equals the initial total of 30.
+21. No `[OMW][TM02A] level=ERROR` event exists.
+22. PR #8 remains open, draft, and unmerged; no TM02 code is added to its head branch.
 
 ## Immediate failure conditions
 
