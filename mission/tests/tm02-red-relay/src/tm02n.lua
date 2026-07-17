@@ -9,11 +9,7 @@ local TERMINAL_PACKET_STATES = {
 local function copyTable(source)
   local result = {}
   for key, value in pairs(source or {}) do
-    if type(value) == "table" then
-      result[key] = copyTable(value)
-    else
-      result[key] = value
-    end
+    result[key] = type(value) == "table" and copyTable(value) or value
   end
   return result
 end
@@ -65,7 +61,8 @@ function TM02N.start(config, build)
     monitorActive = false,
     monitorGeneration = 0,
     activePacketCount = 0,
-    nextQueueIndex = 1,
+    currentDispatchDepth = 1,
+    maximumDispatchDepth = 0,
     totalLosses = 0,
     nodeById = {},
     packets = {},
@@ -78,9 +75,9 @@ function TM02N.start(config, build)
     state.failed = true
     state.monitorActive = false
     state.monitorGeneration = state.monitorGeneration + 1
-    log("ERROR", event or "network_failed", {
-      reason = tostring(reason),
+    log("ERROR", event or "red_network_failed", {
       missionTimeSeconds = timer.getTime(),
+      reason = tostring(reason),
     })
     announce("TM02N failed: " .. tostring(reason))
   end
@@ -94,6 +91,7 @@ function TM02N.start(config, build)
       currentGarrison = config.headquarters.initialPersonnel,
       parentNodeId = nil,
       childNodeIds = {},
+      depth = 0,
     }
     state.nodeById[hq.nodeId] = hq
 
@@ -109,15 +107,36 @@ function TM02N.start(config, build)
         currentGarrison = 0,
         parentNodeId = definition.parentNodeId,
         childNodeIds = {},
+        depth = nil,
       }
     end
 
-    for _, definition in ipairs(config.shelters) do
-      local parent = state.nodeById[definition.parentNodeId]
-      if not parent then
-        error("missing parent node: " .. tostring(definition.parentNodeId))
+    local unresolved = #config.shelters
+    local passes = 0
+    while unresolved > 0 and passes <= #config.shelters do
+      passes = passes + 1
+      local progress = false
+      for _, definition in ipairs(config.shelters) do
+        local node = state.nodeById[definition.nodeId]
+        if node.depth == nil then
+          local parent = state.nodeById[definition.parentNodeId]
+          if parent and parent.depth ~= nil then
+            node.depth = parent.depth + 1
+            parent.childNodeIds[#parent.childNodeIds + 1] = node.nodeId
+            unresolved = unresolved - 1
+            progress = true
+            if node.depth > state.maximumDispatchDepth then
+              state.maximumDispatchDepth = node.depth
+            end
+          end
+        end
       end
-      parent.childNodeIds[#parent.childNodeIds + 1] = definition.nodeId
+      if not progress then
+        break
+      end
+    end
+    if unresolved > 0 then
+      error("node tree contains a missing parent or cycle")
     end
   end
 
@@ -145,6 +164,7 @@ function TM02N.start(config, build)
 
     local finalTargets = {}
     local plannedPersonnel = 0
+    local previousDepth = 0
     for _, shelter in ipairs(config.shelters) do
       if shelter.targetStrength ~= 10 then
         errors[#errors + 1] = shelter.nodeId .. " targetStrength must equal 10"
@@ -167,10 +187,16 @@ function TM02N.start(config, build)
           end
         end
         local finalTarget = route[#route]
+        local finalNode = state.nodeById[finalTarget]
         if finalTargets[finalTarget] then
           errors[#errors + 1] = "duplicate final destination: " .. finalTarget
         end
         finalTargets[finalTarget] = true
+        if finalNode and finalNode.depth < previousDepth then
+          errors[#errors + 1] = "packet plan is not ordered top-down at " .. packetDefinition.packetId
+        elseif finalNode then
+          previousDepth = finalNode.depth
+        end
       end
       plannedPersonnel = plannedPersonnel + config.movement.packetStrength
     end
@@ -183,14 +209,12 @@ function TM02N.start(config, build)
     if plannedPersonnel > config.headquarters.initialPersonnel then
       errors[#errors + 1] = "planned packet personnel exceeds HQ stock"
     end
-
     return #errors == 0, errors
   end
 
   local function validateMissionObjects()
     local missing = {}
-    local templateGroup = GROUP:FindByName(config.template.groupName)
-    if not templateGroup then
+    if not GROUP:FindByName(config.template.groupName) then
       missing[#missing + 1] = config.template.groupName
     end
     for _, node in pairs(state.nodeById) do
@@ -203,11 +227,14 @@ function TM02N.start(config, build)
 
   local function initialisePackets()
     for index, definition in ipairs(config.packets) do
+      local finalDestinationNodeId = definition.routeNodeIds[#definition.routeNodeIds]
+      local finalNode = state.nodeById[finalDestinationNodeId]
       state.packets[index] = {
         packetId = definition.packetId,
         runtimeAliasSuffix = definition.runtimeAliasSuffix,
         routeNodeIds = copyTable(definition.routeNodeIds),
-        finalDestinationNodeId = definition.routeNodeIds[#definition.routeNodeIds],
+        finalDestinationNodeId = finalDestinationNodeId,
+        targetDepth = finalNode.depth,
         currentLegIndex = 1,
         state = "QUEUED",
         strength = config.movement.packetStrength,
@@ -241,11 +268,7 @@ function TM02N.start(config, build)
       end
     end
 
-    local accountedPersonnel = hq.currentGarrison
-      + shelterPersonnel
-      + inTransitPersonnel
-      + state.totalLosses
-
+    local accountedPersonnel = hq.currentGarrison + shelterPersonnel + inTransitPersonnel + state.totalLosses
     local allSheltersAtTarget = true
     for _, shelter in ipairs(config.shelters) do
       local node = state.nodeById[shelter.nodeId]
@@ -268,20 +291,23 @@ function TM02N.start(config, build)
       arrivedPacketCount = arrivedPacketCount,
       destroyedPacketCount = destroyedPacketCount,
       allSheltersAtTarget = allSheltersAtTarget,
+      currentDispatchDepth = state.currentDispatchDepth,
       networkComplete = state.completed,
     }
   end
 
-  local function logInventory(event)
-    for _, nodeId in ipairs({
-      config.headquarters.nodeId,
-      "RED_SHELTER_A",
-      "RED_SHELTER_B",
-      "RED_SHELTER_AA",
-      "RED_SHELTER_AB",
-      "RED_SHELTER_BA",
-      "RED_SHELTER_BB",
-    }) do
+  local inventoryOrder = {
+    config.headquarters.nodeId,
+    "RED_SHELTER_A",
+    "RED_SHELTER_B",
+    "RED_SHELTER_AA",
+    "RED_SHELTER_AB",
+    "RED_SHELTER_BA",
+    "RED_SHELTER_BB",
+  }
+
+  local function logInventory(reason)
+    for _, nodeId in ipairs(inventoryOrder) do
       local node = state.nodeById[nodeId]
       log("INFO", "red_node_inventory", {
         nodeId = node.nodeId,
@@ -289,10 +315,11 @@ function TM02N.start(config, build)
         currentGarrison = node.currentGarrison,
         targetStrength = node.targetStrength or "POOL",
         atTargetStrength = node.targetStrength == nil or node.currentGarrison == node.targetStrength,
+        depth = node.depth,
       })
     end
     local snapshot = inventorySnapshot()
-    snapshot.reason = event or "manual"
+    snapshot.reason = reason or "manual"
     log("INFO", "red_network_inventory", snapshot)
     return snapshot
   end
@@ -300,16 +327,7 @@ function TM02N.start(config, build)
   local function showInventory()
     local snapshot = logInventory("manual")
     local lines = { "RED NETWORK INVENTORY" }
-    local order = {
-      config.headquarters.nodeId,
-      "RED_SHELTER_A",
-      "RED_SHELTER_B",
-      "RED_SHELTER_AA",
-      "RED_SHELTER_AB",
-      "RED_SHELTER_BA",
-      "RED_SHELTER_BB",
-    }
-    for _, nodeId in ipairs(order) do
+    for _, nodeId in ipairs(inventoryOrder) do
       local node = state.nodeById[nodeId]
       if node.targetStrength then
         lines[#lines + 1] = node.label .. ": " .. node.currentGarrison .. " / " .. node.targetStrength
@@ -317,6 +335,7 @@ function TM02N.start(config, build)
         lines[#lines + 1] = node.label .. ": " .. node.currentGarrison
       end
     end
+    lines[#lines + 1] = "Dispatch level: " .. snapshot.currentDispatchDepth
     lines[#lines + 1] = "In transit: " .. snapshot.inTransitPersonnel
     lines[#lines + 1] = "Losses: " .. snapshot.totalLosses
     lines[#lines + 1] = "Accounted: " .. snapshot.accountedPersonnel .. " / " .. snapshot.initialPersonnel
@@ -333,12 +352,14 @@ function TM02N.start(config, build)
       lines[#lines + 1] = packet.packetId
         .. " | " .. packet.state
         .. " | " .. packet.survivorCount
+        .. " | depth " .. packet.targetDepth
         .. " | " .. tostring(currentNodeId)
         .. " -> " .. tostring(nextNodeId or packet.finalDestinationNodeId)
       log("INFO", "red_packet_status", {
         packetId = packet.packetId,
         packetState = packet.state,
         survivorCount = packet.survivorCount,
+        targetDepth = packet.targetDepth,
         currentLegIndex = packet.currentLegIndex,
         currentNodeId = currentNodeId,
         nextNodeId = nextNodeId or "none",
@@ -350,8 +371,7 @@ function TM02N.start(config, build)
   end
 
   local function buildLegRoute(packet)
-    local group = packet.runtimeGroup
-    if not group then
+    if not packet.runtimeGroup then
       error("runtime group unavailable for " .. packet.packetId)
     end
     local nextNodeId = packet.routeNodeIds[packet.currentLegIndex + 1]
@@ -363,7 +383,7 @@ function TM02N.start(config, build)
     if not destinationZone then
       error("destination zone unavailable: " .. nextNode.zoneName)
     end
-    local startCoordinate = group:GetCoordinate()
+    local startCoordinate = packet.runtimeGroup:GetCoordinate()
     local destinationCoordinate = destinationZone:GetCoordinate()
     if not startCoordinate or not destinationCoordinate then
       error("route coordinate unavailable for " .. packet.packetId)
@@ -376,10 +396,7 @@ function TM02N.start(config, build)
 
   local function assignCurrentLeg(packet)
     local waypoints, nextNode = buildLegRoute(packet)
-    local assigned = packet.runtimeGroup:Route(
-      waypoints,
-      config.routing.assignmentDelaySeconds
-    )
+    local assigned = packet.runtimeGroup:Route(waypoints, config.routing.assignmentDelaySeconds)
     if not assigned then
       error("route assignment returned nil for " .. packet.packetId)
     end
@@ -390,6 +407,7 @@ function TM02N.start(config, build)
       sourceNodeId = packet.routeNodeIds[packet.currentLegIndex],
       destinationNodeId = nextNode.nodeId,
       finalDestinationNodeId = packet.finalDestinationNodeId,
+      targetDepth = packet.targetDepth,
       runtimeGroupName = packet.runtimeGroupName,
       survivorCount = packet.survivorCount,
       waypointCount = #waypoints,
@@ -409,8 +427,7 @@ function TM02N.start(config, build)
       error("HQ source zone unavailable")
     end
     local alias = config.template.runtimeAliasPrefix .. packet.runtimeAliasSuffix
-    local spawner = SPAWN:NewWithAlias(config.template.groupName, alias)
-    local group = spawner:SpawnInZone(sourceZone, false)
+    local group = SPAWN:NewWithAlias(config.template.groupName, alias):SpawnInZone(sourceZone, false)
     if not group then
       error("spawn returned nil for " .. packet.packetId)
     end
@@ -425,6 +442,7 @@ function TM02N.start(config, build)
     log("INFO", "red_packet_dispatched", {
       packetId = packet.packetId,
       finalDestinationNodeId = packet.finalDestinationNodeId,
+      targetDepth = packet.targetDepth,
       hqPersonnel = hq.currentGarrison,
       routeNodeIds = join(packet.routeNodeIds, ">"),
       runtimeGroupName = packet.runtimeGroupName,
@@ -435,14 +453,20 @@ function TM02N.start(config, build)
   end
 
   local function dispatchAvailablePackets()
-    while not state.failed
-      and state.activePacketCount < config.movement.maxActivePackets
-      and state.nextQueueIndex <= #state.packets do
-      local packet = state.packets[state.nextQueueIndex]
-      state.nextQueueIndex = state.nextQueueIndex + 1
-      local ok, dispatchError = pcall(dispatchPacket, packet)
+    while not state.failed and state.activePacketCount < config.movement.maxActivePackets do
+      local queued = nil
+      for _, packet in ipairs(state.packets) do
+        if packet.state == "QUEUED" and packet.targetDepth == state.currentDispatchDepth then
+          queued = packet
+          break
+        end
+      end
+      if not queued then
+        return
+      end
+      local ok, dispatchError = pcall(dispatchPacket, queued)
       if not ok then
-        packet.state = "FAILED"
+        queued.state = "FAILED"
         fail(dispatchError, "red_packet_dispatch_failed")
         return
       end
@@ -465,6 +489,7 @@ function TM02N.start(config, build)
       destinationNodeId = destinationNode.nodeId,
       destinationGarrison = destinationNode.currentGarrison,
       targetStrength = destinationNode.targetStrength,
+      targetDepth = packet.targetDepth,
       survivorCount = packet.survivorCount,
       activePacketCount = state.activePacketCount,
     })
@@ -515,6 +540,7 @@ function TM02N.start(config, build)
       currentLegIndex = packet.currentLegIndex,
       nodeId = nextNode.nodeId,
       finalDestinationNodeId = packet.finalDestinationNodeId,
+      targetDepth = packet.targetDepth,
       survivorCount = packet.survivorCount,
     })
 
@@ -522,9 +548,40 @@ function TM02N.start(config, build)
       finalizePacket(packet)
       return
     end
-
     packet.currentLegIndex = packet.currentLegIndex + 1
     assignCurrentLeg(packet)
+  end
+
+  local function depthAtTarget(depth)
+    for _, shelter in ipairs(config.shelters) do
+      local node = state.nodeById[shelter.nodeId]
+      if node.depth == depth and node.currentGarrison ~= node.targetStrength then
+        return false
+      end
+    end
+    return true
+  end
+
+  local function depthHasNonTerminalPackets(depth)
+    for _, packet in ipairs(state.packets) do
+      if packet.targetDepth == depth and not TERMINAL_PACKET_STATES[packet.state] then
+        return true
+      end
+    end
+    return false
+  end
+
+  local function advanceDispatchDepthIfReady()
+    while state.currentDispatchDepth < state.maximumDispatchDepth
+      and depthAtTarget(state.currentDispatchDepth)
+      and not depthHasNonTerminalPackets(state.currentDispatchDepth) do
+      local previousDepth = state.currentDispatchDepth
+      state.currentDispatchDepth = state.currentDispatchDepth + 1
+      log("INFO", "red_network_fill_level_advanced", {
+        previousDepth = previousDepth,
+        currentDispatchDepth = state.currentDispatchDepth,
+      })
+    end
   end
 
   local function allPacketsTerminal()
@@ -542,6 +599,7 @@ function TM02N.start(config, build)
         reconcilePacket(packet)
       end
     end
+    advanceDispatchDepthIfReady()
     dispatchAvailablePackets()
 
     local snapshot = inventorySnapshot()
@@ -555,6 +613,7 @@ function TM02N.start(config, build)
         and snapshot.destroyedPacketCount == 0
         and snapshot.accountingValid
       state.monitorActive = false
+      snapshot.networkComplete = state.completed
       log("INFO", "red_network_completed", snapshot)
       announce(
         state.completed
@@ -606,6 +665,7 @@ function TM02N.start(config, build)
       packetStrength = config.movement.packetStrength,
       maxActivePackets = config.movement.maxActivePackets,
       initialPersonnel = config.headquarters.initialPersonnel,
+      fillOrder = "TOP_DOWN",
     })
     dispatchAvailablePackets()
     if not state.failed then
@@ -624,11 +684,13 @@ function TM02N.start(config, build)
       missingObjects = #missingObjects == 0 and "none" or join(missingObjects, ","),
       checkedNodeCount = 1 + #config.shelters,
       checkedPacketCount = #config.packets,
+      fillOrder = "TOP_DOWN",
     })
     announce(
       "TM02N validation"
         .. "\nConfiguration: " .. tostring(configValid)
         .. "\nMission objects: " .. tostring(objectsValid)
+        .. "\nFill order: TOP_DOWN"
         .. "\nMissing: " .. (#missingObjects == 0 and "none" or join(missingObjects, ", "))
     )
     return configValid and objectsValid
@@ -663,14 +725,16 @@ function TM02N.start(config, build)
     nodeCount = 1 + #config.shelters,
     packetCount = #config.packets,
     initialPersonnel = config.headquarters.initialPersonnel,
+    fillOrder = "TOP_DOWN",
   })
-  announce("TM02N READY: HQ 100, six shelters target strength 10")
+  announce("TM02N READY: top-down fill, HQ 100, six shelters target strength 10")
 
   state.showInventory = showInventory
   state.showPackets = showPackets
   state.startAutomaticFill = startAutomaticFill
   state.validateAndReport = validateAndReport
   state.inventorySnapshot = inventorySnapshot
+  state.monitorTick = monitorTick
   return state
 end
 
