@@ -1,5 +1,5 @@
 local config = {
-  configurationVersion = "TM01C-automatic-player-and-enemy-interest-6",
+  configurationVersion = "TM01C-automatic-player-and-enemy-interest-7",
   testId = "TM01",
   stageId = "TM01C",
   scenarioId = "TEST.TM01.CONVOY.001",
@@ -61,14 +61,24 @@ local config = {
   },
 
   enemyInterest = {
-    -- Deterministic enemy-proximity proof of concept. Only living units in the
-    -- explicitly named RED test groups count. This is not DCS detection, LOS,
-    -- hostile intent, sensor contact, or fire-event processing.
+    -- Deterministic enemy-proximity proof of concept. Each listed name identifies
+    -- one separate RED one-unit picket group placed along the convoy route.
+    -- Only living units in these explicit groups count. This is not DCS detection,
+    -- LOS, hostile intent, sensor contact, or fire-event processing.
     enabled = true,
     unpackRadiusMeters = 750,
     packRadiusMeters = 1000,
     groupNames = {
       "TEST_TM01E_RED_INFANTRY_01",
+      "TEST_TM01E_RED_INFANTRY_02",
+      "TEST_TM01E_RED_INFANTRY_03",
+      "TEST_TM01E_RED_INFANTRY_04",
+      "TEST_TM01E_RED_INFANTRY_05",
+      "TEST_TM01E_RED_INFANTRY_06",
+      "TEST_TM01E_RED_INFANTRY_07",
+      "TEST_TM01E_RED_INFANTRY_08",
+      "TEST_TM01E_RED_INFANTRY_09",
+      "TEST_TM01E_RED_INFANTRY_10",
     },
   },
 
