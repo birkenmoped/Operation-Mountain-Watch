@@ -19,9 +19,10 @@ TM01C
 - COLLAPSED_PROXY: nur das aktuelle Führungsfahrzeug physisch
 - Stable Slots, Survivor- und Schadenszustand im CampaignState
 - manuelles und automatisches Pack/Unpack
+- deterministische BLUE-Spieler- und RED-Gegnernähe als Relevanzquellen
 ```
 
-Cargo, Warehouses, Feindkräfte und Persistenz über einen Missions- oder Serverneustart sind noch nicht Bestandteil von TM01C.
+Cargo, Warehouses und Persistenz über einen Missions- oder Serverneustart sind noch nicht Bestandteil von TM01C.
 
 ## Aktueller Status
 
@@ -29,30 +30,37 @@ Cargo, Warehouses, Feindkräfte und Persistenz über einen Missions- oder Server
 TM01A: akzeptierte physische Baseline
 TM01B: NICHT BESTANDEN / NICHT ABNAHMEFÄHIG
 TM01C manueller Kern: PASS
-TM01C automatische BLUE-Spielerrelevanz: PASS für visuellen Einzelspieler-Nahbereichstest
+TM01C automatische BLUE-Spielerrelevanz Version 5: PASS für visuellen Einzelspieler-Nahbereichstest
+TM01C automatische RED-Gegnernähe Version 8: PASS für isolierten Enemy-Proximity-Live-Fire-Lauf
+TM01C kombinierter Player-/Enemy-Monitor Version 8: PARTIAL PASS
 ```
 
 Aktuelle Konfiguration:
 
 ```text
-TM01C-automatic-player-interest-5
+TM01C-automatic-player-and-enemy-interest-8
 ```
 
-Aktuelle Automatik:
+Aktuelle kombinierte Automatik:
 
 ```text
 BLUE-Spieler <= 500 m horizontal
+ODER
+lebende konfigurierte RED-Unit <= 750 m horizontal
 → automatisch entpacken
 
 alle gültigen BLUE-Spieler > 750 m horizontal
-→ 30 Sekunden kontinuierliche Abwesenheit
+UND
+alle lebenden konfigurierten RED-Units > 1000 m horizontal
+→ 30 Sekunden kontinuierliche gemeinsame Abwesenheit
 → automatisch einpacken
 
-500–750 m
+BLUE 500–750 m
+RED 750–1000 m
 → Hysterese; bestehende Repräsentation beibehalten
 ```
 
-DCS-Abnahme vom 17. Juli 2026:
+### BLUE-Abnahme vom 17. Juli 2026
 
 ```text
 5/5 automatische Pack-Anforderungen bestätigt
@@ -70,13 +78,39 @@ Ergebnisbericht:
 results/2026-07-17-tm01c-automatic-player-interest-pass.md
 ```
 
+Dieser Lauf verwendete Version 5. Der BLUE-Pfad muss innerhalb der kombinierten Version-8-Konfiguration noch gezielt regressionsgetestet werden.
+
+### RED-Enemy-Proximity-Abnahme vom 17. Juli 2026
+
+```text
+7 gegnerausgelöste automatische Unpacks
+7 enemy-spezifische Aktivierungspolicy-Anpassungen
+8 bestätigte Routenaktivierungen einschließlich Initialspawn
+8 erfolgreiche Packvorgänge
+1 Enemy-Hysterese-Timerabbruch
+0 TM01C-ERROR-Ereignisse im Version-8-Segment
+0 convoy_route_activation_timeout
+0 halted=true
+0 movementState=FAILED
+```
+
+Der BLUE-Spieler lag während aller sieben Enemy-Unpacks deutlich außerhalb der Player-Pack-Grenze. Die Anforderungen enthielten `triggeredByEnemy=true` und `triggeredByPlayer=false`.
+
+Ergebnisbericht:
+
+```text
+results/2026-07-17-tm01c-enemy-proximity-regression-pass.md
+```
+
 Noch offen:
 
 ```text
+- Player-only-Regression innerhalb Version 8
+- kombinierte Player-/Enemy-Prioritätsfälle
 - Mehrspieler-Nähe mit mindestens zwei BLUE-Spielern
 - expliziter Höhentest
 - operative Produktionsradien
-- Sichtlinie, Sensor- und Gegnerrelevanz
+- Sichtlinie, Sensorik und hostile-intent-Semantik
 - verbleibende Gesamtregressionen vor Merge-Freigabe
 ```
 
@@ -168,9 +202,11 @@ COLLAPSED_PROXY
 → alte Proxygruppe entfernen und Entfernung bestätigen
 → Survivor-Gruppe neu erzeugen
 → gespeicherte Schäden wiederherstellen und verifizieren
-→ physische Bewegung bestätigen
+→ Routenaktivierung nach kontextabhängiger Policy bestätigen
 → EXPANDED / EN_ROUTE
 ```
+
+Normalerweise ist ein physischer Bewegungsnachweis von 2 m erforderlich. Bei einem ausschließlich gegnerausgelösten Unpack darf DCS Ground AI taktisch stehen bleiben. In diesem Kontext genügen erfolgreiche Routenzuweisung, lebende Runtime-Gruppe und bestätigte Schadenswiederherstellung.
 
 Zerstörte Stable Slots werden nicht wiederhergestellt.
 
@@ -184,7 +220,40 @@ coalition.getPlayers(coalition.side.BLUE)
 
 Gültig sind nur lebende, tatsächlich besetzte BLUE-Spielerunits mit gültiger Position. Zuschauer, normale AI und unbesetzte Client-Slots zählen nicht. Bei mehreren Spielern zählt die kleinste horizontale Distanz.
 
-Der Player-Interest-Monitor umschließt den bestehenden Konvoi-Tick. Es gibt keinen zusätzlichen Hochfrequenz-Scheduler.
+```text
+Unpack: <= 500 m
+Hysterese: 500–750 m
+Pack-freigebend: > 750 m
+```
+
+## Gegnerrelevanz
+
+Quelle:
+
+```lua
+Group.getByName(configuredGroupName)
+group:getUnits()
+```
+
+Berücksichtigt werden nur lebende Units in den ausdrücklich konfigurierten Gruppen:
+
+```text
+TEST_TM01E_RED_INFANTRY_01
+...
+TEST_TM01E_RED_INFANTRY_10
+```
+
+```text
+Unpack: <= 750 m
+Hysterese: 750–1000 m
+Pack-freigebend: > 1000 m
+```
+
+Das ist deterministische horizontale Gegnernähe. Es ist noch keine Sichtlinien-, Sensor-, Waffenreichweiten- oder Hostile-Intent-Auswertung.
+
+## Gemeinsamer Repräsentationsmonitor
+
+Der `representation_interest_monitor.lua` umschließt den bestehenden Konvoi-Tick. Es gibt keinen zusätzlichen Hochfrequenz-Scheduler.
 
 Keine neue automatische Aktion während:
 
@@ -193,6 +262,8 @@ PACKING
 UNPACKING
 ACTIVATING_ROUTE
 ```
+
+Der Pack-Timer darf nur laufen, wenn **alle aktivierten Relevanzquellen** außerhalb ihrer jeweiligen Pack-Grenze liegen.
 
 ## F10-Menü
 
@@ -227,10 +298,15 @@ Mission-Editor-Ladereihenfolge:
 notes/2026-07-16-tm01c-dcs-findings.md
 notes/2026-07-16-convoy-doctrine-settings-capabilities-and-decisions.md
 notes/2026-07-17-automatic-player-interest-implementation.md
+notes/2026-07-17-automatic-enemy-interest-implementation.md
+notes/2026-07-17-ten-red-picket-layout.md
 expected/proxy-pack-unpack-acceptance.md
 expected/automatic-player-interest-acceptance.md
+expected/automatic-enemy-interest-acceptance.md
 results/2026-07-16-tm01c-manual-cycle-heading-pass.md
 results/2026-07-17-tm01c-automatic-player-interest-pass.md
+results/2026-07-17-enemy-unpack-route-activation-timeout.md
+results/2026-07-17-tm01c-enemy-proximity-regression-pass.md
 ```
 
 ## Scope-Schutz
@@ -241,7 +317,7 @@ Nicht automatisch ergänzen:
 - Teleport;
 - permanentes Re-Routing;
 - automatische Straßensuche pro Fahrzeug und Tick;
-- RED-/Feindrelevanz ohne eigenen Test;
+- nicht konfigurierte RED-Gruppen als implizite Relevanzquelle;
 - Sichtlinie oder Sensorik ohne eigenen Entwurf;
 - Persistenz über Missionsneustart ohne Persistenzvertrag.
 
