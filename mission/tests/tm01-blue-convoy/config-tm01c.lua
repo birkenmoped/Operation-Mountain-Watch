@@ -1,5 +1,5 @@
 local config = {
-  configurationVersion = "TM01C-automatic-player-interest-5",
+  configurationVersion = "TM01C-automatic-player-and-enemy-interest-6",
   testId = "TM01",
   stageId = "TM01C",
   scenarioId = "TEST.TM01.CONVOY.001",
@@ -44,14 +44,32 @@ local config = {
     unpackLeadOffsetCandidatesMeters = { 0, 15, 30, 45, 60 },
   },
 
+  representationInterest = {
+    -- Shared transition policy. Packing is allowed only while every enabled
+    -- relevance source is outside its own pack boundary for the full delay.
+    enabled = true,
+    packDelaySeconds = 30,
+    retrySeconds = 5,
+  },
+
   playerInterest = {
     -- Visual proof-of-concept only. This is horizontal proximity, not line of sight,
     -- sensor detection, threat relevance, or a production relevance radius.
     enabled = true,
     unpackRadiusMeters = 500,
     packRadiusMeters = 750,
-    packDelaySeconds = 30,
-    retrySeconds = 5,
+  },
+
+  enemyInterest = {
+    -- Deterministic enemy-proximity proof of concept. Only living units in the
+    -- explicitly named RED test groups count. This is not DCS detection, LOS,
+    -- hostile intent, sensor contact, or fire-event processing.
+    enabled = true,
+    unpackRadiusMeters = 750,
+    packRadiusMeters = 1000,
+    groupNames = {
+      "TEST_TM01E_RED_INFANTRY_01",
+    },
   },
 
   transitions = {
@@ -90,7 +108,7 @@ local config = {
   excludedSystems = {
     revealWindows = true,
     automaticPlayerInterestDetection = false,
-    automaticEnemyInterestDetection = true,
+    automaticEnemyInterestDetection = false,
     persistenceAcrossMissionRestart = true,
     cargoUnits = true,
     manifests = true,
