@@ -1,5 +1,5 @@
 local config = {
-  configurationVersion = "TM02V-red-proxy-movement-4",
+  configurationVersion = "TM02V-red-proxy-dynamic-fill-5",
   testId = "TM02",
   stageId = "TM02V",
 
@@ -21,6 +21,11 @@ local config = {
     sourceUnitIndex = 1,
     runtimeAliasPrefix = "TM02V_RED_PROXY_",
     expectedUnitCount = 1,
+    launchSlots = {
+      { x = -12, y = 0 },
+      { x = 0, y = 0 },
+      { x = 12, y = 0 },
+    },
   },
 
   physical = {
@@ -29,52 +34,25 @@ local config = {
 
   headquarters = {
     nodeId = "RED_HQ",
-    initialPersonnel = 47,
+    initialPersonnel = 100,
     zoneName = "ZONE_TM02N_HQ",
   },
 
   shelters = {
-    { nodeId = "RED_SHELTER_A", label = "A", parentNodeId = "RED_HQ", zoneName = "ZONE_TM02N_A", targetStrength = 10, initialGarrison = 10 },
-    { nodeId = "RED_SHELTER_B", label = "B", parentNodeId = "RED_HQ", zoneName = "ZONE_TM02N_B", targetStrength = 10, initialGarrison = 10 },
-    { nodeId = "RED_SHELTER_AA", label = "AA", parentNodeId = "RED_SHELTER_A", zoneName = "ZONE_TM02N_AA", targetStrength = 10, initialGarrison = 7 },
-    { nodeId = "RED_SHELTER_AB", label = "AB", parentNodeId = "RED_SHELTER_A", zoneName = "ZONE_TM02N_AB", targetStrength = 10, initialGarrison = 6 },
-    { nodeId = "RED_SHELTER_BA", label = "BA", parentNodeId = "RED_SHELTER_B", zoneName = "ZONE_TM02N_BA", targetStrength = 10, initialGarrison = 10 },
-    { nodeId = "RED_SHELTER_BB", label = "BB", parentNodeId = "RED_SHELTER_B", zoneName = "ZONE_TM02N_BB", targetStrength = 10, initialGarrison = 4 },
+    { nodeId = "RED_SHELTER_A", label = "A", parentNodeId = "RED_HQ", zoneName = "ZONE_TM02N_A", targetStrength = 10, initialGarrison = 0 },
+    { nodeId = "RED_SHELTER_B", label = "B", parentNodeId = "RED_HQ", zoneName = "ZONE_TM02N_B", targetStrength = 10, initialGarrison = 0 },
+    { nodeId = "RED_SHELTER_AA", label = "AA", parentNodeId = "RED_SHELTER_A", zoneName = "ZONE_TM02N_AA", targetStrength = 10, initialGarrison = 0 },
+    { nodeId = "RED_SHELTER_AB", label = "AB", parentNodeId = "RED_SHELTER_A", zoneName = "ZONE_TM02N_AB", targetStrength = 10, initialGarrison = 0 },
+    { nodeId = "RED_SHELTER_BA", label = "BA", parentNodeId = "RED_SHELTER_B", zoneName = "ZONE_TM02N_BA", targetStrength = 10, initialGarrison = 0 },
+    { nodeId = "RED_SHELTER_BB", label = "BB", parentNodeId = "RED_SHELTER_B", zoneName = "ZONE_TM02N_BB", targetStrength = 10, initialGarrison = 0 },
   },
 
-  recordedLosses = 6,
-
-  movements = {
-    {
-      packetId = "TEST.TM02.VIRTUAL.PACKET.001",
-      runtimeAliasSuffix = "001",
-      strength = 3,
-      routeNodeIds = { "RED_HQ", "RED_SHELTER_A", "RED_SHELTER_AA" },
-      finalDestinationNodeId = "RED_SHELTER_AA",
-      markerId = 220201,
-      launchOffsetMeters = { x = -12, y = 0 },
-    },
-    {
-      packetId = "TEST.TM02.VIRTUAL.PACKET.002",
-      runtimeAliasSuffix = "002",
-      strength = 4,
-      routeNodeIds = { "RED_HQ", "RED_SHELTER_A", "RED_SHELTER_AB" },
-      finalDestinationNodeId = "RED_SHELTER_AB",
-      markerId = 220202,
-      launchOffsetMeters = { x = 0, y = 0 },
-    },
-    {
-      packetId = "TEST.TM02.VIRTUAL.PACKET.003",
-      runtimeAliasSuffix = "003",
-      strength = 6,
-      routeNodeIds = { "RED_HQ", "RED_SHELTER_B", "RED_SHELTER_BB" },
-      finalDestinationNodeId = "RED_SHELTER_BB",
-      markerId = 220203,
-      launchOffsetMeters = { x = 12, y = 0 },
-    },
-  },
+  recordedLosses = 0,
 
   movement = {
+    originPolicy = "HQ_TO_FINAL",
+    fillOrder = "TOP_DOWN",
+    packetMaxStrength = 10,
     maxActivePackets = 3,
     monitorInitialDelaySeconds = 2,
     monitorIntervalSeconds = 2,
@@ -90,6 +68,7 @@ local config = {
     showMessages = true,
     enableF10Menu = true,
     markersEnabledOnStart = true,
+    markerIdBase = 220200,
   },
 }
 
