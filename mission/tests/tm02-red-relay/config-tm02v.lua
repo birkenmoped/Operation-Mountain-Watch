@@ -1,5 +1,5 @@
 local config = {
-  configurationVersion = "TM02V-red-proxy-movement-3",
+  configurationVersion = "TM02V-red-proxy-movement-4",
   testId = "TM02",
   stageId = "TM02V",
 
@@ -52,6 +52,7 @@ local config = {
       routeNodeIds = { "RED_HQ", "RED_SHELTER_A", "RED_SHELTER_AA" },
       finalDestinationNodeId = "RED_SHELTER_AA",
       markerId = 220201,
+      launchOffsetMeters = { x = -12, y = 0 },
     },
     {
       packetId = "TEST.TM02.VIRTUAL.PACKET.002",
@@ -60,6 +61,7 @@ local config = {
       routeNodeIds = { "RED_HQ", "RED_SHELTER_A", "RED_SHELTER_AB" },
       finalDestinationNodeId = "RED_SHELTER_AB",
       markerId = 220202,
+      launchOffsetMeters = { x = 0, y = 0 },
     },
     {
       packetId = "TEST.TM02.VIRTUAL.PACKET.003",
@@ -68,6 +70,7 @@ local config = {
       routeNodeIds = { "RED_HQ", "RED_SHELTER_B", "RED_SHELTER_BB" },
       finalDestinationNodeId = "RED_SHELTER_BB",
       markerId = 220203,
+      launchOffsetMeters = { x = 12, y = 0 },
     },
   },
 
