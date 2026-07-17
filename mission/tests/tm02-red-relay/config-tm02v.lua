@@ -1,5 +1,5 @@
 local config = {
-  configurationVersion = "TM02V-red-proxy-movement-1",
+  configurationVersion = "TM02V-red-proxy-movement-2",
   testId = "TM02",
   stageId = "TM02V",
   movementId = "TEST.TM02.VIRTUAL.PACKET.001",
@@ -18,7 +18,8 @@ local config = {
   },
 
   proxy = {
-    templateGroupName = "TPL_TEST_RED_PROXY_01",
+    sourcePolicy = "LEADER_FROM_MOVEMENT_TEMPLATE",
+    sourceUnitIndex = 1,
     runtimeAliasPrefix = "TM02V_RED_PROXY_",
     expectedUnitCount = 1,
   },
