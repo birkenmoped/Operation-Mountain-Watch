@@ -1,21 +1,102 @@
-# TM02V RED leader-proxy movement acceptance
+# TM02V RED multi-proxy movement acceptance
 
 ## Purpose
 
-TM02V validates a RED movement whose authoritative strength remains in metadata while one real infantryman carries the current DCS world position. The proxy is not a separate Mission Editor template. It is derived dynamically from unit slot 1 of the normal group template that already represents the movement strength.
+TM02V validates several simultaneous RED movements. Every logical packet owns its own physical leader proxy, route, coordinate, marker, representation state and runtime identity.
 
-For this acceptance:
+A proxy is never shared between packets.
 
 ```text
-Logical packet: 6 personnel
-Source template: TPL_TEST_RED_PACKET_06_01
-Proxy: unit slot 1 from that template
-Route: RED_HQ -> RED_SHELTER_A -> RED_SHELTER_AA
+one logical packet = one runtime leader proxy
 ```
 
-A ten-person movement would analogously derive its proxy from unit slot 1 of `TPL_TEST_RED_PACKET_10_01`.
+The leader proxy is dynamically derived from unit slot 1 of the packet's normal strength template. No dedicated proxy template is required.
 
-## Representation doctrine
+## Test packets
+
+```text
+Packet 001: strength 3, HQ -> A -> AA
+Packet 002: strength 4, HQ -> A -> AB
+Packet 003: strength 6, HQ -> B -> BB
+```
+
+All three packets start together and move independently.
+
+Derived proxy sources:
+
+```text
+Packet 001 -> TPL_TEST_RED_PACKET_03_01 -> unit slot 1
+Packet 002 -> TPL_TEST_RED_PACKET_04_01 -> unit slot 1
+Packet 003 -> TPL_TEST_RED_PACKET_06_01 -> unit slot 1
+```
+
+Each runtime proxy must have a different group name and a different marker ID.
+
+## Initial accounting
+
+```text
+HQ: 47
+A:  10 / 10
+B:  10 / 10
+AA:  7 / 10
+AB:  6 / 10
+BA: 10 / 10
+BB:  4 / 10
+Recorded losses: 6
+Total: 100
+```
+
+After all packets start:
+
+```text
+HQ: 34
+Shelters: 47
+In transit: 13
+Recorded losses: 6
+Total: 100
+```
+
+Final state without transit losses:
+
+```text
+HQ: 34
+A:  10 / 10
+B:  10 / 10
+AA: 10 / 10
+AB: 10 / 10
+BA: 10 / 10
+BB: 10 / 10
+In transit: 0
+Recorded losses: 6
+Total: 100
+```
+
+## Per-packet metadata
+
+Every packet must retain independent fields:
+
+```lua
+{
+  packetId = "TEST.TM02.VIRTUAL.PACKET.001",
+  strength = 3,
+  survivorCount = 3,
+  routeNodeIds = { "RED_HQ", "RED_SHELTER_A", "RED_SHELTER_AA" },
+  currentLegIndex = 1,
+  finalDestinationNodeId = "RED_SHELTER_AA",
+  movementState = "EN_ROUTE",
+  representationState = "LEADER_PROXY",
+  proxyGroupName = "...",
+  physicalGroupName = nil,
+  currentCoordinate = { x = ..., y = ..., z = ... },
+  markerId = 220201,
+}
+```
+
+Changing one packet must not change any other packet's state or runtime group.
+
+## Representation cycle
+
+Each packet independently supports:
 
 ```text
 NONE
@@ -25,172 +106,117 @@ NONE
 -> PHYSICAL_GARRISON
 ```
 
-The one physical leader is only the positional representation of the complete logical packet. It is never counted as an additional person.
-
-The authoritative accounting invariant remains:
+Different packets may be in different representation states at the same mission time. For example:
 
 ```text
-HQ + shelter garrisons + logical personnel in transit + recorded losses = 100
+Packet 001: PHYSICAL
+Packet 002: LEADER_PROXY
+Packet 003: LEADER_PROXY
 ```
 
-## Required Mission Editor objects
+This is valid and required.
 
-No dedicated proxy group is required.
-
-Use the existing Late Activation infantry templates:
-
-```text
-TPL_TEST_RED_PACKET_01_01
-TPL_TEST_RED_PACKET_02_01
-TPL_TEST_RED_PACKET_03_01
-TPL_TEST_RED_PACKET_04_01
-TPL_TEST_RED_PACKET_05_01
-TPL_TEST_RED_PACKET_06_01
-TPL_TEST_RED_PACKET_07_01
-TPL_TEST_RED_PACKET_08_01
-TPL_TEST_RED_PACKET_09_01
-TPL_TEST_RED_PACKET_10_01
-```
-
-Each template must contain exactly the strength encoded in its name. Unit slot 1 must be the intended group leader because that slot is retained when the dynamic one-unit proxy template is built.
-
-Reuse the existing zones:
-
-```text
-ZONE_TM02N_HQ
-ZONE_TM02N_A
-ZONE_TM02N_B
-ZONE_TM02N_AA
-ZONE_TM02N_AB
-ZONE_TM02N_BA
-ZONE_TM02N_BB
-```
-
-## Dynamic leader-proxy construction
-
-At runtime TM02V:
-
-1. selects the standard template matching the movement strength;
-2. copies its MOOSE spawn template;
-3. retains only `units[1]`;
-4. preserves category, country and coalition metadata;
-5. creates a one-unit runtime spawner with `SPAWN:NewFromTemplate`;
-6. spawns that derived leader at the required coordinate or in the source zone.
-
-For the six-person acceptance, both initial proxy spawn and later repacking use the leader definition from `TPL_TEST_RED_PACKET_06_01`. No `TPL_TEST_RED_PROXY_01` object may be required.
-
-## F10 commands
+## F10 menu
 
 ```text
 OMW Tests
-└── TM02V Proxy Movement
+└── TM02V Multi-Proxy Movement
     ├── Validate test
-    ├── Start proxy movement
-    ├── Show movement status
-    ├── Force unpack
-    ├── Force pack
-    └── Toggle proxy marker
+    ├── Start all proxy movements
+    ├── Show all packet status
+    ├── Toggle packet markers
+    ├── Packet 001 -> RED_SHELTER_AA
+    │   ├── Show status
+    │   ├── Force unpack
+    │   └── Force pack
+    ├── Packet 002 -> RED_SHELTER_AB
+    │   ├── Show status
+    │   ├── Force unpack
+    │   └── Force pack
+    └── Packet 003 -> RED_SHELTER_BB
+        ├── Show status
+        ├── Force unpack
+        └── Force pack
 ```
 
-## Test sequence
+## DCS execution
 
-1. Start the mission and confirm successful validation.
-2. Select `Start proxy movement`.
-3. Confirm that exactly one infantryman appears in `ZONE_TM02N_HQ`.
-4. Confirm that status still reports logical strength 6.
-5. Observe the moving debug marker and proxy along HQ -> A.
-6. Select `Force unpack` before A.
-7. Confirm that exactly six physical infantrymen replace the proxy at its current position.
-8. Select `Force pack`.
-9. Confirm that the six-man group is replaced by one leader proxy and that logical strength remains 6.
-10. Let the proxy pass A and continue toward AA.
-11. Let it enter `ZONE_TM02N_AA`.
-12. Confirm automatic materialization of six visible infantrymen in AA.
-13. Confirm the final group remains visible and the proxy no longer exists.
+1. Validate the test.
+2. Start all proxy movements once.
+3. Confirm three separate one-man RED proxies appear at HQ.
+4. Confirm the three proxies have distinct runtime group names.
+5. Confirm three independent map markers move with the proxies.
+6. Force-unpack Packet 001 while Packets 002 and 003 remain packed.
+7. Confirm Packet 001 becomes a three-man group while the other two remain one-man proxies.
+8. Force-pack Packet 001 again.
+9. Optionally unpack Packet 002 or Packet 003 independently.
+10. Allow all packets to pass their intermediate nodes.
+11. Confirm each packet materializes automatically at its own final destination.
+12. Confirm AA, AB and BB reach exactly 10 personnel.
+13. Confirm final accounting remains 100.
 
-## Required logs
+## Mandatory log evidence
 
-Successful bootstrap must include:
+Startup:
 
 ```text
-configurationVersion=TM02V-red-proxy-movement-2
-event=red_proxy_leader_adapter_installed
-sourcePolicy=LEADER_FROM_MOVEMENT_TEMPLATE
-sourceTemplate=TPL_TEST_RED_PACKET_06_01
-sourceUnitIndex=1
+event=red_proxy_leader_adapter_installed sourcePolicy=LEADER_FROM_PACKET_TEMPLATE
+event=red_proxy_validation configurationValid=true missionObjectsValid=true checkedPacketCount=3
+event=startup configurationVersion=TM02V-red-proxy-movement-3 packetCount=3
 ```
 
-Each proxy creation must include:
+Start:
 
 ```text
-event=red_proxy_leader_template_derived
-sourceTemplate=TPL_TEST_RED_PACKET_06_01
-sourceUnitIndex=1
+event=red_proxy_packet_started packetId=TEST.TM02.VIRTUAL.PACKET.001 strength=3 activePacketCount=1
+event=red_proxy_packet_started packetId=TEST.TM02.VIRTUAL.PACKET.002 strength=4 activePacketCount=2
+event=red_proxy_packet_started packetId=TEST.TM02.VIRTUAL.PACKET.003 strength=6 activePacketCount=3
+event=red_proxy_movements_started packetCount=3 activePacketCount=3 inTransitPersonnel=13 accountingValid=true
 ```
 
-Validation must report:
+Independent transition evidence:
 
 ```text
-event=red_proxy_validation
-configurationValid=true
-missionObjectsValid=true
-missingObjects=none
+event=red_proxy_unpacked packetId=TEST.TM02.VIRTUAL.PACKET.001 survivorCount=3
+event=red_proxy_packet_status packetId=TEST.TM02.VIRTUAL.PACKET.002 representationState=LEADER_PROXY
+event=red_proxy_packet_status packetId=TEST.TM02.VIRTUAL.PACKET.003 representationState=LEADER_PROXY
 ```
 
-The log must not contain `TPL_TEST_RED_PROXY_01` as a required or missing object.
-
-## Expected accounting
-
-Initial:
+Completion:
 
 ```text
-HQ: 40
-shelters: 54
-recorded losses: 6
-accounted: 100
+event=red_proxy_arrived packetId=TEST.TM02.VIRTUAL.PACKET.001 destinationNodeId=RED_SHELTER_AA
+event=red_proxy_arrived packetId=TEST.TM02.VIRTUAL.PACKET.002 destinationNodeId=RED_SHELTER_AB
+event=red_proxy_arrived packetId=TEST.TM02.VIRTUAL.PACKET.003 destinationNodeId=RED_SHELTER_BB
+event=red_proxy_network_completed packetCount=3 arrivedPacketCount=3 accountedPersonnel=100 accountingValid=true allSheltersAtTarget=true networkComplete=true
 ```
 
-En route:
+## PASS criteria
 
-```text
-HQ: 34
-shelters: 54
-logical in transit: 6
-recorded losses: 6
-accounted: 100
-physical proxy count: 1, not added to personnel
-```
+TM02V passes only when:
 
-Final without transit losses:
+- exactly three logical packets exist;
+- exactly three independent proxies exist while all packets are packed;
+- no proxy is shared;
+- every proxy follows its packet's own route;
+- every packet owns a unique marker and runtime identity;
+- one packet can unpack or pack without changing the others;
+- destination materialization uses the correct strength template;
+- AA, AB and BB finish at exactly 10;
+- HQ finishes at 34;
+- no packet remains in transit;
+- accounting remains exactly 100;
+- no `[OMW][TM02V] level=ERROR` event occurs.
 
-```text
-HQ: 34
-AA: 10 / 10
-all shelters: 60
-in transit: 0
-recorded losses: 6
-accounted: 100
-```
+## Automatic FAIL conditions
 
-## Acceptance criteria
+The test fails if:
 
-PASS requires all of the following:
-
-1. No dedicated proxy template exists or is required.
-2. The standard six-person template validates.
-3. Unit slot 1 of the six-person template is used to derive the proxy.
-4. The packed representation contains exactly one living runtime unit.
-5. Logical packet strength remains six while packed.
-6. The debug marker follows the proxy coordinate.
-7. Manual unpack creates exactly six physical units at the proxy position.
-8. The old proxy is removed only after the full group has spawned and accepted its route.
-9. Manual pack creates exactly one derived leader proxy at the physical group position.
-10. The old physical group is removed only after the proxy has spawned and accepted its route.
-11. Transit losses, when present, reduce logical survivor count and increase recorded losses exactly once.
-12. The proxy is never counted as additional personnel.
-13. A is crossed as a relay without changing its garrison.
-14. Arrival at AA automatically materializes the physical survivor group.
-15. Arrival credit occurs exactly once.
-16. AA reaches 10 / 10 without transit losses.
-17. Final accounting remains exactly 100.
-18. No `[OMW][TM02V] level=ERROR` event exists.
+- the controller exposes only one `state.packet` singleton;
+- two logical packets reference the same proxy group;
+- only one movement can run at a time;
+- packing or unpacking one packet changes another packet;
+- a packet follows another packet's route or marker;
+- a destination is overfilled;
+- personnel are duplicated or lost from accounting;
+- an arrival requires a diagnostic F10 command.
