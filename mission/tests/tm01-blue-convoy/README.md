@@ -2,327 +2,330 @@
 
 ## Ziel
 
-TM01 untersucht die zuverlässige Führung eines blauen KI-Konvois auf der Hauptstraßenverbindung von Bagram nach Jalalabad.
+TM01 untersucht eine stabil identifizierte blaue Konvoientität zwischen Bagram und Jalalabad.
 
-Der Test trennt die physische MOOSE-Steuerung von der späteren Virtualisierung. Cargo Units, Ladung, Warehouses, Feindkräfte und CampaignState-Persistenz sind ausdrücklich nicht Bestandteil dieser Testreihe.
+```text
+TM01A
+- kontrollierter physischer Spawn
+- kontrollierte vollständige Straßenroute
+
+TM01B
+- historisches Reveal-Window-/Caching-Experiment
+- nicht bestanden und nicht abnahmefähig
+
+TM01C
+- ein physischer strategischer Konvoi mit zwei Repräsentationen
+- EXPANDED: alle überlebenden Fahrzeuge physisch
+- COLLAPSED_PROXY: nur das aktuelle Führungsfahrzeug physisch
+- Stable Slots, Survivor- und Schadenszustand im CampaignState
+- manuelles und automatisches Pack/Unpack
+- deterministische BLUE-Spieler- und RED-Gegnernähe als Relevanzquellen
+```
+
+Cargo, Warehouses und Persistenz über einen Missions- oder Serverneustart sind noch nicht Bestandteil von TM01C.
+
+## Aktueller Status
+
+```text
+TM01A: akzeptierte physische Baseline
+TM01B: NICHT BESTANDEN / NICHT ABNAHMEFÄHIG
+TM01C manueller Kern: PASS
+TM01C automatische BLUE-Spielerrelevanz Version 5: PASS für visuellen Einzelspieler-Nahbereichstest
+TM01C automatische RED-Gegnernähe Version 8: PASS für isolierten Enemy-Proximity-Live-Fire-Lauf
+TM01C kombinierter Player-/Enemy-Monitor Version 8: PARTIAL PASS
+```
+
+Aktuelle Statusnotiz:
+
+```text
+notes/2026-07-17-current-relevance-test-status.md
+```
+
+Aktuelle Konfiguration:
+
+```text
+TM01C-automatic-player-and-enemy-interest-8
+```
+
+Aktuelle kombinierte Automatik:
+
+```text
+BLUE-Spieler <= 500 m horizontal
+ODER
+lebende konfigurierte RED-Unit <= 750 m horizontal
+→ automatisch entpacken
+
+alle gültigen BLUE-Spieler > 750 m horizontal
+UND
+alle lebenden konfigurierten RED-Units > 1000 m horizontal
+→ 30 Sekunden kontinuierliche gemeinsame Abwesenheit
+→ automatisch einpacken
+
+BLUE 500–750 m
+RED 750–1000 m
+→ Hysterese; bestehende Repräsentation beibehalten
+```
+
+### BLUE-Abnahme vom 17. Juli 2026
+
+```text
+5/5 automatische Pack-Anforderungen bestätigt
+3/3 automatische Unpack-Anforderungen bestätigt
+1/1 Pack-Timer korrekt abgebrochen
+5/5 Routenaktivierungen bestätigt
+0 TM01C-ERROR-Ereignisse
+0 halted=true
+0 movementState=FAILED
+```
+
+Ergebnisbericht:
+
+```text
+results/2026-07-17-tm01c-automatic-player-interest-pass.md
+```
+
+Dieser Lauf verwendete Version 5. Der BLUE-Pfad muss innerhalb der kombinierten Version-8-Konfiguration noch gezielt regressionsgetestet werden.
+
+### RED-Enemy-Proximity-Abnahme vom 17. Juli 2026
+
+```text
+7 gegnerausgelöste automatische Unpacks
+7 enemy-spezifische Aktivierungspolicy-Anpassungen
+8 bestätigte Routenaktivierungen einschließlich Initialspawn
+8 erfolgreiche Packvorgänge
+1 Enemy-Hysterese-Timerabbruch
+0 TM01C-ERROR-Ereignisse im Version-8-Segment
+0 convoy_route_activation_timeout
+0 halted=true
+0 movementState=FAILED
+```
+
+Der BLUE-Spieler lag während aller sieben Enemy-Unpacks deutlich außerhalb der Player-Pack-Grenze. Die Anforderungen enthielten `triggeredByEnemy=true` und `triggeredByPlayer=false`.
+
+Ergebnisbericht:
+
+```text
+results/2026-07-17-tm01c-enemy-proximity-regression-pass.md
+```
+
+Noch offen:
+
+```text
+- Player-only-Regression innerhalb Version 8
+- kombinierte Player-/Enemy-Prioritätsfälle
+- Mehrspieler-Nähe mit mindestens zwei BLUE-Spielern
+- expliziter Höhentest
+- operative Produktionsradien
+- Sichtlinie, Sensorik und hostile-intent-Semantik
+- verbleibende Gesamtregressionen vor Merge-Freigabe
+```
 
 ## Testobjekt
 
-Vorgesehene physische Gruppe:
-
 ```text
-TPL_TEST_BLUE_CONVOY_STANDARD_01
+Entity-ID: TEST.TM01.CONVOY.001
+Route-ID:  ROUTE_TM01_BAGRAM_JALALABAD
+Template:  TPL_TEST_BLUE_CONVOY_STANDARD_01
+Fahrzeuge: 6
 ```
 
-Entwurf der Zusammensetzung:
+DCS-Gruppennamen sind flüchtige Laufzeitdaten. `CampaignState` bleibt die autoritative Quelle für die strategische Entität.
+
+## Route
 
 ```text
-1. Lead HMMWV oder MRAP
-2. vorderer HMMWV, MRAP oder Gun Truck
-3. schwerer Transport-Lkw
-4. schwerer Transport-Lkw
-5. Führungs-, Berge- oder Sicherungsfahrzeug
-6. rückwärtiger HMMWV oder MRAP
+ZONE_TM01_START_BAGRAM
+→ ZONE_TM01_ROUTE_01
+→ ZONE_TM01_ROUTE_02
+→ ZONE_TM01_ROUTE_03
+→ ZONE_TM01_ROUTE_04
+→ ZONE_TM01_ROUTE_05
+→ ZONE_TM01_ROUTE_06
+→ ZONE_TM01_ROUTE_07
+→ ZONE_TM01_TARGET_JALALABAD
 ```
 
-Die Lkw führen in TM01 noch keine Cargo-Manifeste. Die Zusammensetzung prüft nur Gruppenführung, Reihenfolge, Geschwindigkeit, Engstellen und Verluste.
+Die Route wird einmal aus Start, sieben Ankern und Ziel als geordneter Straßenpfad kompiliert. Dieser Pfad ist Grundlage für:
 
-## Gemeinsame MOOSE-Komponenten
+- Straßenfortschritt;
+- Restwegpunkte;
+- Fahrzeugpositionen beim Spawn und Unpack;
+- lokale Fahrzeug-Headings;
+- Proxy- und Lead-Projektion;
+- Zielüberwachung.
+
+## Aktive Marschparameter
 
 ```text
-TestMissionController
-├── TestMenu
-├── DebugReporter
-├── RouteRegistry
-├── RouteMonitor
-└── ConvoyController
+roadOnly:                       true
+speedKph:                       30
+formation:                      ON_ROAD
+routeSampleMeters:              10
+maximumRoadSnapMeters:          1500
+roadPositionToleranceMeters:    30
+vehicleSpacingMeters:           15
+minimumVehicleSeparationMeters: 8
 ```
 
-Stufe B ergänzt:
+`vehicleSpacingMeters` beschreibt den Spawn-/Unpack-Abstand. Die spätere DCS-Option `Formation Interval` ist ein getrennter Mechanismus und noch nicht Teil dieses Tests.
+
+## Repräsentationsmodell
+
+### EXPANDED
+
+- alle überlebenden Stable Slots besitzen physische Fahrzeuge;
+- Verluste und Teilschäden werden laufend in den CampaignState übernommen;
+- das vorderste überlebende Fahrzeug ist die aktuelle Lead-Rolle.
+
+### COLLAPSED_PROXY
+
+- genau das aktuelle Führungsfahrzeug bleibt physisch;
+- alle anderen Survivor bleiben als Domainzustand gespeichert;
+- der Proxy fährt weiterhin dieselbe Reststrecke;
+- das Proxyfahrzeug ist keine andere strategische Entität.
+
+## Pack
 
 ```text
-ConvoyVirtualizer
-MaterializationAnchorRegistry
+EXPANDED
+→ lebende Stable Slots erfassen
+→ aktuelles Lead bestimmen
+→ reale Leadposition auf Route projizieren
+→ Restweg erneut zuweisen
+→ alle anderen physischen Survivor entfernen
+→ Entfernung nativ bestätigen
+→ COLLAPSED_PROXY
 ```
 
-## Stufe A – physische Baseline
-
-Missionsdatei:
+## Unpack
 
 ```text
-TM01A-MOOSE-Blue-Convoy-Physical.miz
+COLLAPSED_PROXY
+→ reale Proxyposition auf globale Route projizieren
+→ sichere vollständige Aufstellung hinter dem Lead suchen
+→ für jeden Survivor eigene Straßenposition und eigenes Heading berechnen
+→ Wasser und unzulässige Abstände ausschließen
+→ alte Proxygruppe entfernen und Entfernung bestätigen
+→ Survivor-Gruppe neu erzeugen
+→ gespeicherte Schäden wiederherstellen und verifizieren
+→ Routenaktivierung nach kontextabhängiger Policy bestätigen
+→ EXPANDED / EN_ROUTE
 ```
 
-### Erster Meilenstein: TM01A-Bootstrap
+Normalerweise ist ein physischer Bewegungsnachweis von 2 m erforderlich. Bei einem ausschließlich gegnerausgelösten Unpack darf DCS Ground AI taktisch stehen bleiben. In diesem Kontext genügen erfolgreiche Routenzuweisung, lebende Runtime-Gruppe und bestätigte Schadenswiederherstellung.
 
-Der erste Meilenstein umfasst den weiterhin verwendeten Bootstrap vor der physischen Baseline. Er:
+Zerstörte Stable Slots werden nicht wiederhergestellt.
 
-- prüft beim Build die SHA-256-Prüfsumme von `vendor/moose/Moose.lua` gegen `vendor/moose/VERSION.md`;
-- erzeugt `dist/TM01A.lua` als einzelnes Projekt-Skriptbündel;
-- meldet die beim Build erwartete MOOSE-Version, Dateiprüfsumme, Build-Commit und Build-Zeitstempel, ohne diese Werte als Laufzeitmessung auszugeben;
-- prüft zur Laufzeit die benötigten nativen DCS- und MOOSE-APIs, das Konvoi-Template sowie Start-, Ziel- und sieben Routenzonen;
-- benötigt keine TM01B-Reveal-Zonen;
-- meldet `READY`, `FAIL_CONFIGURATION` oder `FAIL_SCRIPT`;
-- stellt unter `F10 Other > OMW Tests > TM01A` die Befehle `Show status` und `Validate configuration` bereit.
+## Spielerrelevanz
 
-Das Bündel wird reproduzierbar mit folgendem Befehl erzeugt:
+Quelle:
+
+```lua
+coalition.getPlayers(coalition.side.BLUE)
+```
+
+Gültig sind nur lebende, tatsächlich besetzte BLUE-Spielerunits mit gültiger Position. Zuschauer, normale AI und unbesetzte Client-Slots zählen nicht. Bei mehreren Spielern zählt die kleinste horizontale Distanz.
+
+```text
+Unpack: <= 500 m
+Hysterese: 500–750 m
+Pack-freigebend: > 750 m
+```
+
+## Gegnerrelevanz
+
+Quelle:
+
+```lua
+Group.getByName(configuredGroupName)
+group:getUnits()
+```
+
+Berücksichtigt werden nur lebende Units in den ausdrücklich konfigurierten Gruppen:
+
+```text
+TEST_TM01E_RED_INFANTRY_01
+...
+TEST_TM01E_RED_INFANTRY_10
+```
+
+```text
+Unpack: <= 750 m
+Hysterese: 750–1000 m
+Pack-freigebend: > 1000 m
+```
+
+Das ist deterministische horizontale Gegnernähe. Es ist noch keine Sichtlinien-, Sensor-, Waffenreichweiten- oder Hostile-Intent-Auswertung.
+
+## Gemeinsamer Repräsentationsmonitor
+
+Der `representation_interest_monitor.lua` umschließt den bestehenden Konvoi-Tick. Es gibt keinen zusätzlichen Hochfrequenz-Scheduler.
+
+Keine neue automatische Aktion während:
+
+```text
+PACKING
+UNPACKING
+ACTIVATING_ROUTE
+```
+
+Der Pack-Timer darf nur laufen, wenn **alle aktivierten Relevanzquellen** außerhalb ihrer jeweiligen Pack-Grenze liegen.
+
+## F10-Menü
+
+```text
+OMW Tests
+└── TM01C
+    ├── Start convoy
+    ├── Pack convoy
+    ├── Unpack convoy
+    ├── Show status
+    └── Validate configuration
+```
+
+Die manuellen Befehle bleiben Diagnosewerkzeuge. Sie deaktivieren die Automatik nicht dauerhaft.
+
+## Build
 
 ```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File tools\build-test-bundle.ps1
+powershell -NoProfile -ExecutionPolicy Bypass -File tools\build-tm01c-bundle.ps1
 ```
 
-Ladefolge im Mission Editor:
+Mission-Editor-Ladereihenfolge:
 
 ```text
 1. DO SCRIPT FILE: vendor/moose/Moose.lua
-2. DO SCRIPT FILE: mission/tests/tm01-blue-convoy/dist/TM01A.lua
+2. DO SCRIPT FILE: mission/tests/tm01-blue-convoy/dist/TM01C.lua
 ```
 
-Der Bootstrap selbst erzeugt keine Gruppe. Die nachfolgend beschriebene Bewegung, Überwachung und Reset-Logik bleibt spätere Arbeit innerhalb von Stufe A.
-
-### MOOSE-Provenienz und Fehlerstatus
-
-`mooseVerificationMode=BUILD_HASH_PLUS_RUNTIME_API_CHECK` bezeichnet zwei getrennte Prüfungen:
-
-- Weicht der lokale Hash von `vendor/moose/Moose.lua` von `vendor/moose/VERSION.md` ab, bricht der Build ohne Bündelaktualisierung ab.
-- Fehlt zur Laufzeit eine der dreizehn verwendeten MOOSE-APIs, meldet der Bootstrap `FAIL_SCRIPT`.
-- Fehlt eines der zehn TM01A-Pflichtobjekte im Mission Editor, meldet der Bootstrap `FAIL_CONFIGURATION`.
-- Die exakte Provenienz der von DCS geladenen MOOSE-Datei wird in diesem Meilenstein manuell über das MOOSE-eigene Log-Banner bestätigt. Das Bündel behauptet keinen programmgesteuerten Vergleich der geladenen Version oder Datei-Prüfsumme.
-
-### Zweiter Meilenstein: kontrollierter physischer Spawn
-
-Der zweite Meilenstein ergänzt unter `F10 Other > OMW Tests > TM01A`:
-
-- `Spawn convoy`;
-- `Show convoy status`.
-
-`Spawn convoy` ist nur bei Bootstrap-Ergebnis `READY` zulässig und verwendet `SPAWN:NewWithAlias` mit diesen getrennten Identitäten:
+## Verbindliche Dokumente
 
 ```text
-Logische Entity-ID: TEST.TM01.CONVOY.001
-Mission-Editor-Template: TPL_TEST_BLUE_CONVOY_STANDARD_01
-Angeforderter Alias: TM01A_BLUE_CONVOY_001
-Tatsächlicher Laufzeitname: vom zurückgegebenen GROUP-Wrapper gelesen
-Spawnzone: ZONE_TM01_START_BAGRAM
+notes/2026-07-16-tm01c-dcs-findings.md
+notes/2026-07-16-convoy-doctrine-settings-capabilities-and-decisions.md
+notes/2026-07-17-automatic-player-interest-implementation.md
+notes/2026-07-17-automatic-enemy-interest-implementation.md
+notes/2026-07-17-ten-red-picket-layout.md
+notes/2026-07-17-current-relevance-test-status.md
+expected/proxy-pack-unpack-acceptance.md
+expected/automatic-player-interest-acceptance.md
+expected/automatic-enemy-interest-acceptance.md
+results/2026-07-16-tm01c-manual-cycle-heading-pass.md
+results/2026-07-17-tm01c-automatic-player-interest-pass.md
+results/2026-07-17-enemy-unpack-route-activation-timeout.md
+results/2026-07-17-tm01c-enemy-proximity-regression-pass.md
 ```
 
-Der Controller führt höchstens einen Spawnversuch aus, der DCS eine Gruppe erzeugen kann. Ein weiterer F10-Aufruf erzeugt keine zweite Gruppe. Nach erfolgreichem Spawn prüft er Laufzeitname, Lebendstatus, sechs lebende Units, vollständige Mitgliedschaft in der Startzone und dass das Late-Activation-Template inaktiv geblieben ist.
+## Scope-Schutz
 
-Der Controller weist keine Route, Wegpunkte, Aufgabe, Geschwindigkeit oder Bewegung an. Das Template muss daher ohne eigenständige Bewegungsroute vorbereitet sein; der Stillstand wird für mindestens zwei Minuten in DCS abgenommen.
+Nicht automatisch ergänzen:
 
-### Dritter Meilenstein: kontrolliertes Straßenrouting
+- Recovery oder Unstuck;
+- Teleport;
+- permanentes Re-Routing;
+- automatische Straßensuche pro Fahrzeug und Tick;
+- nicht konfigurierte RED-Gruppen als implizite Relevanzquelle;
+- Sichtlinie oder Sensorik ohne eigenen Entwurf;
+- Persistenz über Missionsneustart ohne Persistenzvertrag.
 
-Der dritte Meilenstein ergänzt:
-
-- `Start convoy route`;
-- `Show route status`.
-
-Die Route wird erst nach erfolgreichem manuellem Spawn und nur bei lebender, eindeutig zugeordneter Laufzeitgruppe freigegeben. Der Route-Controller kopiert die sieben konfigurierten Ankernamen in ihrer Reihenfolge, ergänzt `ZONE_TM01_TARGET_JALALABAD` als achten und letzten Punkt und erzeugt alle Wegpunkte vollständig, bevor er die Route genau einmal zuweist. Es gibt keine Hintergrundprüfung; Ankunft wird bei `Show route status` erkannt.
-
-Verwendete neue MOOSE-APIs aus der vendorten Version 2.9.18:
-
-- `ZONE_BASE:GetCoordinate(Height)` in `vendor/moose/Moose.lua:17961`: optionaler Höhenaufschlag; liefert die `COORDINATE` des Zonenzentrums.
-- `COORDINATE:WaypointGround(Speed, Formation, DCSTasks)` in `vendor/moose/Moose.lua:35077`: Geschwindigkeit in km/h, Formation als DCS-Aktionsstring, optionale Tasks; liefert einen DCS-Routenpunkt und rechnet km/h intern durch `3.6` in m/s um.
-- `CONTROLLABLE:Route(Route, DelaySeconds)` in `vendor/moose/Moose.lua:53638`: vollständige Routenpunkttabelle zuerst, optionale Verzögerung danach; erzeugt eine RouteTask, setzt sie über `SetTask` und ersetzt damit die vorhandene Aufgabe. Liefert den `CONTROLLABLE`-Wrapper oder `nil`, wenn kein DCS-Objekt verfügbar ist. TM01A übergibt Verzögerung `0`.
-
-Die konfigurierte Formation `ON_ROAD` wird auf den in MOOSE 2.9.18 definierten DCS-Text `On Road` abgebildet (`ENUMS.Formation.Vehicle.OnRoad` in `vendor/moose/Moose.lua:398`). `WaypointGround` erwartet bereits km/h, daher wird der konfigurierte Wert `30` unverändert übergeben. Es werden keine Zufallskoordinaten, Routenneuberechnung, Scheduler oder automatischen Eingriffe verwendet.
-
-### Funktionsumfang
-
-- MOOSE wird zuerst geladen;
-- die Late-Activation-Templategruppe wird über `SPAWN` erzeugt;
-- `ConvoyController` weist die geprüfte Route zu;
-- RouteMonitor erfasst Kontrollpunkte, Geschwindigkeit und Stillstand;
-- F10-Menü startet, stoppt und setzt den Test zurück;
-- der Konvoi bleibt von Bagram bis Jalalabad physisch;
-- keine Virtualisierung oder automatische Reparatur.
-
-### Mission-Editor-Objekte
-
-Pflichtobjekte:
-
-```text
-TPL_TEST_BLUE_CONVOY_STANDARD_01
-ZONE_TM01_START_BAGRAM
-ZONE_TM01_TARGET_JALALABAD
-ZONE_TM01_ROUTE_01
-ZONE_TM01_ROUTE_02
-ZONE_TM01_ROUTE_03
-ZONE_TM01_ROUTE_04
-ZONE_TM01_ROUTE_05
-ZONE_TM01_ROUTE_06
-ZONE_TM01_ROUTE_07
-```
-
-Die Anzahl der Routenanker darf nach Streckenprüfung erhöht werden. Kritische Kreuzungen, Engstellen, Ortsdurchfahrten, Brücken und Richtungswechsel erhalten eigene Anker.
-
-### Routing
-
-Die Route wird als explizite, versionierte Reihenfolge von Ankern geführt. MOOSE baut daraus die physische Route und weist sie dem Konvoi zu.
-
-Die Route muss:
-
-- auf der gewünschten Hauptstraßenachse bleiben;
-- an kritischen Abzweigungen eindeutig sein;
-- keine unvalidierten Querfeldeinsegmente enthalten;
-- abschnittsweise testbar sein;
-- einen eindeutigen Zielbereich besitzen.
-
-### Watchdog
-
-Beobachtete Zustände:
-
-```text
-SPAWNING
-ROUTING
-MOVING
-SLOW
-STOPPED
-STUCK
-ARRIVED
-DESTROYED
-FAILED
-```
-
-Erster Richtwert für `STUCK`:
-
-```text
-Geschwindigkeit unter 1 km/h
-für mindestens 120 Sekunden
-außerhalb eines erlaubten Haltezustands
-und außerhalb der Zielzone
-```
-
-Der Watchdog meldet den Fehler, verändert die Gruppe aber nicht automatisch.
-
-### Abnahmekriterien
-
-Stufe A ist bestanden, wenn:
-
-1. genau eine physische Konvoigruppe erzeugt wird;
-2. die sechs vorgesehenen Fahrzeuge korrekt vorhanden sind;
-3. der Konvoi die Kontrollpunkte in der festgelegten Reihenfolge passiert;
-4. kein überlebendes Fahrzeug dauerhaft an einer Engstelle verbleibt;
-5. keine unplausible Abkürzung außerhalb der validierten Route erfolgt;
-6. kurzfristiges Aufstauen sich ohne Skripteingriff auflöst;
-7. der Konvoi die Jalalabad-Zielzone erreicht;
-8. alle Zustandswechsel und Kontrollpunkte im Log erscheinen;
-9. Reset keinen zweiten aktiven Konvoi zurücklässt.
-
-## Stufe B – virtuelle Bewegung
-
-Missionsdatei:
-
-```text
-TM01B-MOOSE-Blue-Convoy-Virtualized.miz
-```
-
-### Zustandsmodell
-
-```text
-VIRTUAL_MOVING
-MATERIALIZING
-PHYSICAL_MOVING
-DEMATERIALIZING
-VIRTUAL_MOVING
-ARRIVED
-FAILED
-```
-
-### Reveal-Abschnitte
-
-Pflichtzonen:
-
-```text
-ZONE_TM01_REVEAL_01_ENTRY
-ZONE_TM01_REVEAL_01_EXIT
-ZONE_TM01_REVEAL_02_ENTRY
-ZONE_TM01_REVEAL_02_EXIT
-```
-
-Der virtuelle Konvoi wird vor dem Entry-Anker materialisiert, durch den physischen `ConvoyController` geführt und nach dem Exit-Anker wieder dematerialisiert.
-
-Die beiden Reveal-Abschnitte sollen unterschiedliche Routensituationen abdecken, beispielsweise:
-
-- einen relativ geraden Straßenabschnitt;
-- einen Abschnitt mit Kurven, Kreuzung oder enger Ortsdurchfahrt.
-
-### Virtueller Zustand
-
-Mindestens zu speichern:
-
-```lua
-{
-  convoyId = "TEST.TM01.CONVOY.001",
-  state = "VIRTUAL_MOVING",
-  routeId = "ROUTE_TM01_BAGRAM_JALALABAD",
-  segmentIndex = 1,
-  segmentProgress = 0,
-  survivingVehicleSlots = { 1, 2, 3, 4, 5, 6 },
-  virtualSpeedKph = 30,
-}
-```
-
-### Materialisierung
-
-Beim Materialisieren:
-
-1. aktuellen Segmentfortschritt auf einen geprüften Straßenanker abbilden;
-2. das Template mit der noch vorhandenen Zusammensetzung erzeugen;
-3. dieselbe physische Reststrecke wie in Stufe A zuweisen;
-4. stabile Convoy-ID dem Laufzeitobjekt zuordnen;
-5. doppelte physische Instanzen ausschließen.
-
-Beim Dematerialisieren:
-
-1. aktuelle Position und Segmentfortschritt bestimmen;
-2. vorhandene Fahrzeuge und Verluste erfassen;
-3. physischen Controller sauber beenden;
-4. physische Gruppe entfernen;
-5. virtuelle Bewegung mit demselben Zustand fortsetzen.
-
-### Sichtbarer Debugmodus
-
-TM01B soll das Ein- und Auspacken absichtlich beobachtbar machen:
-
-- Spieler- oder Beobachterslots in der Nähe der Reveal-Abschnitte;
-- Kartenmarker für virtuellen Fortschritt;
-- Nachrichten vor Materialisierung und Dematerialisierung;
-- sichtbare Kennzeichnung der Entry- und Exit-Zonen;
-- optional verlangsamter Übergang im Debugmodus.
-
-Diese Sichtbarkeit ist eine Testfunktion und kein Vorbild für die spätere Produktionsvirtualisierung.
-
-### Abnahmekriterien
-
-Stufe B ist bestanden, wenn:
-
-1. der virtuelle Konvoi beide Reveal-Abschnitte in korrekter Reihenfolge erreicht;
-2. bei jeder Materialisierung genau eine physische Gruppe entsteht;
-3. die erste Materialisierung mit der erwarteten Zusammensetzung erfolgt;
-4. die Gruppe im Reveal-Abschnitt durch denselben Controller wie Stufe A geführt wird;
-5. nach jeder Dematerialisierung keine Restgruppe verbleibt;
-6. Segmentfortschritt und Zeit nach dem Einpacken weiterlaufen;
-7. ein absichtlich verlorenes Fahrzeug bei der zweiten Materialisierung fehlt;
-8. Convoy-ID und Fahrzeugslot-Zuordnung erhalten bleiben;
-9. der Konvoi abschließend Jalalabad erreicht;
-10. kein Zustand gleichzeitig `VIRTUAL` und `PHYSICAL` ist.
-
-## Nicht Bestandteil
-
-- Fracht und Cargo Units;
-- Warehouse-Gutschriften;
-- Feindkontakte oder Hinterhalte;
-- Spielerentfernungs- und Sichtlinienautomatik;
-- Persistenz über Missionsneustart;
-- automatische Teleport- oder Unstuck-Logik;
-- mehrere Konvois oder Serials.
-
-## Offene Mission-Editor-Arbeit
-
-- genaue Hauptstraßenroute Bagram–Jalalabad abfahren und validieren;
-- geeignete Routenanker platzieren;
-- zwei Reveal-Abschnitte festlegen;
-- Fahrzeuge des Templates gegen verfügbare DCS-Typen prüfen;
-- Beobachter- und Debugslots anlegen;
-- Streckenabschnitte einzeln testen, bevor der Gesamtlauf bewertet wird.
+PR #8 bleibt Draft. Es besteht keine Merge-Freigabe.

@@ -2,9 +2,9 @@
 
 ## Zweck
 
-Dieses Verzeichnis sammelt isolierte DCS-Testmissionen, ihre Konfigurationen, Missionsbriefe, erwarteten Ergebnisse und spätere Testprotokolle.
+Dieses Verzeichnis sammelt isolierte DCS-Testmissionen, ihre Konfigurationen, Missionsbriefe, erwarteten Ergebnisse und Testprotokolle.
 
-Die Testmissionen sind keine Kampagnenreleases. Sie dienen dazu, einzelne technische und spielmechanische Risiken mit reproduzierbaren Eingaben zu untersuchen.
+Die Testmissionen sind keine Kampagnenreleases. Sie untersuchen einzelne technische und spielmechanische Risiken mit reproduzierbaren Eingaben.
 
 ## Grundregel
 
@@ -13,16 +13,26 @@ Alle projektbezogenen Testmissionen verwenden MOOSE bereits in der ersten physis
 ```text
 Stufe A
 - MOOSE aktiv
-- vollständig physisch
+- vollständig physische Laufzeitrepräsentation
 - keine Virtualisierung
 - keine Persistenz
 - keine Warehouse- oder Cargo-Logik
 
 Stufe B
-- identischer PhysicalController
-- zusätzliche virtuelle Bewegung
-- geplante Materialisierung und Dematerialisierung
+- flüchtiger CampaignState im Arbeitsspeicher
+- kontrollierte Dematerialisierung
+- keine physische Gruppe während der virtuellen Phase
+- kontrollierte Materialisierung
+- keine Persistenz über Missions- oder Serverneustart
+
+spätere Persistenzstufe
+- versionierter Snapshot
+- Backup-Recovery
+- Wiederherstellung stabiler IDs nach Neustart
+- idempotente Transaktionen
 ```
+
+Persistenz wird erst Bestandteil einer Teststufe, wenn Neustartwiederherstellung oder dauerhafte Transaktionen zu deren Abnahmekriterien gehören.
 
 ## Verbindliche MOOSE-Baseline
 
@@ -47,7 +57,7 @@ Maßgeblich sind:
 Für Testmissionen gilt:
 
 - kein automatischer Download von MOOSE;
-- kein direkter Bezug auf den aktuellen Stand von `master-ng` oder `develop`;
+- kein direkter Bezug auf den jeweils aktuellen Stand von `master-ng` oder `develop`;
 - keine Dynamic Includes;
 - keine gleichzeitige Einbindung von `Moose.lua` und `Moose_.lua`;
 - keine lokale Änderung der vendorten MOOSE-Datei;
@@ -63,7 +73,9 @@ mission/tests/
 ├── README.md
 ├── tm01-blue-convoy/
 │   ├── README.md
-│   └── config.lua
+│   ├── config.lua
+│   ├── expected/
+│   └── results/
 └── tm02-red-relay/
     ├── README.md
     └── config.lua
@@ -71,21 +83,48 @@ mission/tests/
 
 ### TM01 – Blauer Straßenkonvoi
 
-Prüft die Führung eines blauen KI-Konvois von Bagram nach Jalalabad.
+TM01 verwendet Bagram–Jalalabad als technische Stress- und Regressionsteststrecke.
 
-- Stufe A: vollständig physischer MOOSE-Konvoi;
-- Stufe B: virtuelle Bewegung mit zwei geplanten Reveal-Abschnitten.
+```text
+TM01A
+- kontrollierter MOOSE-Bootstrap: PASS
+- kontrollierter physischer Spawn: PASS
+- kontrollierte physische Gesamtroute bis Jalalabad: PASS
+- dokumentierte Einschränkung: erheblicher DCS-Straßenumweg
+
+TM01B.1
+- nächster Meilenstein
+- kontrollierter Cache-Zyklus
+- flüchtiger In-Memory-CampaignState
+- manuelle Dematerialisierung und Materialisierung
+- keine Neustartpersistenz
+```
+
+Die erfolgreiche physische Gesamtfahrt ist abgeschlossen. Die ungewöhnliche konkrete Routenführung ist eine dokumentierte DCS-Pathfinding-Grenze und kein fehlender TM01A-Test.
 
 ### TM02 – Rote Relaisbewegung
 
-Prüft die Verteilung roter Personengruppen von einem zentralen Hauptquartier über Zwischenquartiere bis Bagram.
+TM02 untersucht die Verteilung roter Personengruppen von einem zentralen Hauptquartier über Zwischenquartiere bis Bagram.
 
 - Stufe A: vollständig physische Marschgruppen;
-- Stufe B: virtueller Marsch mit einer Zwischenmaterialisierung und Materialisierung im Zielraum.
+- Stufe B: virtueller Marsch mit kontrollierter Zwischenmaterialisierung und Materialisierung im Zielraum.
+
+TM02 wird nicht vorgezogen, solange der grundlegende Cache-Zyklus aus TM01B.1 nicht nachgewiesen ist.
 
 ## TM01A-Testbündel
 
-Der TM01A-Bootstrap prüft beim Build den Hash der gepinnten MOOSE-Datei und validiert zur Laufzeit die benötigte API-Oberfläche sowie die Pflichtobjekte aus dem Mission Editor. Der zweite Meilenstein ergänzt das manuell ausgelöste, einmalige Erzeugen des physischen Testkonvois in der Bagram-Startzone. Der dritte Meilenstein weist diesem vorhandenen Konvoi ausschließlich nach einem weiteren F10-Befehl einmalig die deklarierte Straßenroute zu. Das reproduzierbare Projekt-Skriptbündel wird mit
+Der TM01A-Bootstrap prüft beim Build den Hash der gepinnten MOOSE-Datei und validiert zur Laufzeit die benötigte API-Oberfläche sowie die Pflichtobjekte aus dem Mission Editor.
+
+Die akzeptierte Stufe umfasst:
+
+- manuell ausgelösten, einmaligen physischen Spawn;
+- getrennten manuellen Routenstart;
+- sieben geordnete Routenanker plus Jalalabad-Zielzone;
+- genau eine Routenzuweisung;
+- Erkennung der vollständigen Ankunft;
+- Schutz gegen doppelte Spawn- und Routenbefehle.
+
+Das reproduzierbare Projekt-Skriptbündel wird mit
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File tools\build-test-bundle.ps1
@@ -93,7 +132,11 @@ powershell -NoProfile -ExecutionPolicy Bypass -File tools\build-test-bundle.ps1
 
 als `mission/tests/tm01-blue-convoy/dist/TM01A.lua` erzeugt. In der Mission wird zuerst `vendor/moose/Moose.lua` und danach genau dieses Bündel geladen.
 
-TM01A kann die exakte Provenienz der tatsächlich von DCS geladenen MOOSE-Datei unter dieser Zwei-Dateien-Ladearchitektur nicht programmgesteuert bestimmen. Der Modus `BUILD_HASH_PLUS_RUNTIME_API_CHECK` bedeutet: Der Build bricht bei abweichendem Vendor-Hash ab, und die Laufzeit prüft die dreizehn verwendeten MOOSE-APIs. Commit und Zeitstempel der geladenen Datei werden manuell anhand des MOOSE-eigenen DCS-Log-Banners bestätigt.
+TM01A kann die exakte Provenienz der tatsächlich von DCS geladenen MOOSE-Datei unter dieser Zwei-Dateien-Ladearchitektur nicht programmgesteuert bestimmen. Der Modus `BUILD_HASH_PLUS_RUNTIME_API_CHECK` bedeutet:
+
+- Der Build bricht bei abweichendem Vendor-Hash ab.
+- Die Laufzeit prüft die verwendeten MOOSE-APIs.
+- Commit und Zeitstempel der geladenen Datei werden manuell anhand des MOOSE-eigenen DCS-Log-Banners bestätigt.
 
 ## Benennung
 
@@ -130,7 +173,8 @@ Beispiele:
 
 ```text
 ZONE_TM01_START_BAGRAM
-ZONE_TM01_REVEAL_01
+ZONE_TM01_REVEAL_01_ENTRY
+ZONE_TM01_REVEAL_01_EXIT
 ZONE_TM02_NODE_03
 ZONE_TM02_TARGET_BAGRAM
 ```
@@ -141,7 +185,7 @@ Stabile Testentitäten:
 TEST.<test-id>.<entity-role>.<sequence>
 ```
 
-Beispiel:
+Beispiele:
 
 ```text
 TEST.TM01.CONVOY.001
@@ -149,8 +193,6 @@ TEST.TM02.PACKET.014
 ```
 
 ## Erwartete Unterstruktur je Test
-
-Sobald die Mission implementiert wird, kann der jeweilige Ordner erweitert werden:
 
 ```text
 <test>/
@@ -165,7 +207,7 @@ Sobald die Mission implementiert wird, kann der jeweilige Ordner erweitert werde
 ├── expected/
 │   └── acceptance.md
 └── results/
-    └── YYYY-MM-DD-<dcs-version>.md
+    └── YYYY-MM-DD-<stage>-<purpose>.md
 ```
 
 Leere Verzeichnisse werden nicht über `.gitkeep` angelegt. Sie entstehen, sobald echte Dateien vorhanden sind.
@@ -185,7 +227,7 @@ Die Groß- und Kleinschreibung des Upstream-Dateinamens `Moose.lua` wird im Repo
 
 Kein Projektskript darf MOOSE-Klassen verwenden, bevor Schritt 1 erfolgreich abgeschlossen wurde.
 
-Fehlende MOOSE-Laufzeit-APIs führen zu `FAIL_SCRIPT`. Eine fehlende Templategruppe oder Pflichtzone führt zu `FAIL_CONFIGURATION`. Eine exakte geladene MOOSE-Version oder Dateiprüfsumme wird in TM01A nicht automatisch verglichen.
+Fehlende MOOSE-Laufzeit-APIs führen zu `FAIL_SCRIPT`. Eine fehlende Templategruppe oder Pflichtzone führt zu `FAIL_CONFIGURATION`. Eine exakte geladene MOOSE-Version oder Datei-Prüfsumme wird nicht automatisch mit dem Bundle verglichen.
 
 ## Startprotokoll
 
@@ -202,20 +244,23 @@ Konfigurationsversion
 Startzeit
 ```
 
-Ein abweichender lokaler `Moose.lua`-Hash verhindert bereits den Bundle-Build. Fehlende benötigte MOOSE-APIs ergeben zur Laufzeit `FAIL_SCRIPT`. Die exakte Provenienz der geladenen Datei wird in diesem Meilenstein manuell über das MOOSE-Log-Banner bestätigt.
+Ein abweichender lokaler `Moose.lua`-Hash verhindert bereits den Bundle-Build. Fehlende benötigte MOOSE-APIs ergeben zur Laufzeit `FAIL_SCRIPT`. Die exakte Provenienz der geladenen Datei wird manuell über das MOOSE-Log-Banner bestätigt.
 
 ## Gemeinsame Testfunktionen
 
-Späterer gemeinsamer Testcode soll mindestens bereitstellen:
+Gemeinsamer Testcode stellt nur Funktionen bereit, die für die jeweilige Stufe tatsächlich implementiert und abgenommen sind.
 
-- Start, Pause und Reset über F10;
+Mögliche Bausteine:
+
 - strukturierte Logausgabe mit Test-ID;
 - Zustandsanzeige und Fortschrittsmeldungen;
 - Gruppen-, Zonen- und Templatevalidierung;
 - MOOSE-Versions- und Ladeprüfung;
-- Watchdog für Stillstand und fehlende Gruppen;
-- Abschlussbericht für Abnahmekriterien;
-- Erkennung doppelter physischer Instanzen.
+- Erkennung doppelter physischer Instanzen;
+- kontrollierte F10-Testbefehle;
+- Abschlussbericht für Abnahmekriterien.
+
+Stop, Pause, Reset, Watchdog oder automatische Recovery sind keine impliziten Bestandteile. Sie benötigen einen eigenen Testvertrag, bevor sie implementiert werden.
 
 ## Testdisziplin
 
@@ -227,7 +272,10 @@ Späterer gemeinsamer Testcode soll mindestens bereitstellen:
 - Jede verwendete MOOSE-API wird gegen Release 2.9.18 beziehungsweise die vendorte Datei geprüft.
 - Die `develop`-Dokumentation wird nicht als alleiniger Nachweis für eine Release-API verwendet.
 - Eine bekannte DCS-Einschränkung wird dokumentiert und nicht durch stilles Teleportieren verborgen.
+- `CampaignState` bleibt bei virtualisierten Entitäten autoritativ.
+- Eine Entität darf nicht gleichzeitig virtuell und physisch autoritativ sein.
 - Nach jedem MOOSE-Update werden alle vorhandenen MOOSE-Testmissionen erneut ausgeführt.
+- Ein statischer Codecheck oder Bundle-Build ist kein DCS-Acceptance-Nachweis.
 
 ## Ergebnisstatus
 

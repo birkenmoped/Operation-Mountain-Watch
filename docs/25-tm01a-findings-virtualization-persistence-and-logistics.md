@@ -129,6 +129,8 @@ Nachgewiesen wurde:
 - wiederholte Statusabfragen erzeugten kein zweites Ankunftsereignis;
 - der Schutz gegen einen zweiten Routenbefehl wurde durch Operatorbeobachtung bestätigt; ein separates `convoy_route_rejected`-Ereignis wurde in dem archivierten Loglauf nicht erfasst.
 
+Die physische Gesamtstrecke Bagram–Jalalabad ist damit für TM01A abgeschlossen. Eine spätere Verfeinerung der Anker dient Regression, Routenqualität oder produktionsnahen Routendaten, nicht dem noch ausstehenden Nachweis einer vollständigen Fahrt.
+
 ### Gemessene Fahrzeit
 
 Die Route wurde bei Missionszeit `190.152` Sekunden gestartet und bei Missionszeit `25946.837` Sekunden als angekommen erkannt.
@@ -304,13 +306,33 @@ Dematerialisierung ist nur zulässig, wenn:
 
 Danach wird die physische Gruppe entfernt und derselbe strategische Verband als `VIRTUAL_MOVING` fortgeführt.
 
+### TM01B.1 – kontrollierter Cache-Zyklus
+
+Der nächste Konvoimeilenstein prüft die grundlegende Repräsentationsumschaltung zunächst kontrolliert und innerhalb derselben Mission auf der bestehenden Bagram–Jalalabad-Stressroute.
+
+Für diese isolierte Stufe gelten bewusst reduzierte Übergangsregeln:
+
+- Materialisierung und Dematerialisierung werden manuell über F10 ausgelöst;
+- Entry- und Exit-Zonen sind vorab im Mission Editor validierte Testanker;
+- der virtuelle Übergang zwischen zwei Reveal-Abschnitten darf manuell fortgeschrieben werden;
+- Spielerentfernung, Sichtlinie, Sensoren und automatische Zeitfortschreibung sind noch nicht Teil der Abnahme;
+- Fahrzeugslots, Verluste, stabile Entity-ID und Ausschluss doppelter physischer Instanzen bleiben verbindlich.
+
+Der Testvertrag liegt unter:
+
+```text
+mission/tests/tm01-blue-convoy/expected/caching-acceptance.md
+```
+
 ## Persistenz – aktueller und geplanter Stand
 
 ### Aktueller Teststand
 
 TM01A ist flüchtig. Seine Lua-Zustände existieren nur innerhalb der laufenden Mission. Weder Spawnzustand noch Route, Laufzeitgruppe oder Fortschritt werden über einen Neustart gespeichert.
 
-Auch die erste isolierte TM01B-Virtualisierungsstufe darf zunächst ohne Neustartpersistenz getestet werden. Dauerhafte CampaignState-Persistenz ist ein eigener vertikaler Meilenstein.
+Auch TM01B.1 verwendet zunächst ausschließlich einen flüchtigen `CampaignState` im Arbeitsspeicher. Dauerhafte CampaignState-Persistenz ist keine Voraussetzung für den kontrollierten Cache-Zyklus und bleibt ein eigener vertikaler Meilenstein.
+
+ADR 0011 bleibt vollständig gültig. Geändert wird nur die Implementierungsreihenfolge: Snapshot, Backup und Journal werden umgesetzt, sobald ein Test Neustartwiederherstellung oder dauerhafte genau-einmalige Transaktionen tatsächlich benötigt.
 
 ### Zielmodell
 
@@ -407,26 +429,30 @@ Sie benötigt eine neue Routenaufnahme, praktische Fahrprüfung, typische Fahrze
 
 ## Aktualisierte Arbeitsreihenfolge
 
-1. Persistenz-ADR und Transporthierarchie dokumentieren.
-2. Kleinen Persistence-Test für eine blaue `StrategicEntity` und eine rote `RedCell` bauen.
-3. Snapshot, Backup, Transaktionsjournal und Wiederherstellung testen.
-4. Bagram–Jalalabad als technische Stressroute kennzeichnen.
-5. Fenty–Connolly als operative Route erfassen und praktisch validieren.
-6. Kanonische Polylinie, Länge, typische Fahrzeit und Materialisierungsanker speichern.
-7. TM01B-Virtualisierung auf einer operativ sinnvollen Route implementieren.
-8. Interest-/Proximity-Logik für Spieler, Feinde, Sichtlinie und Sensoren ergänzen.
-9. Physical-to-Virtual- und Virtual-to-Physical-Reconciliation testen.
-10. Cargo- und Warehouse-Transaktionen erst nach stabiler Zustands- und Persistenzschicht anbinden.
+1. Persistenz-ADR, Transporthierarchie und TM01A-Erkenntnisse dokumentieren.
+2. TM01B.1 als kontrollierten In-Memory-Cache-Zyklus auf der bestehenden Stressroute implementieren.
+3. Physical-to-Virtual- und Virtual-to-Physical-Übergänge, Fahrzeugslots, Verluste und Duplikatschutz in DCS validieren.
+4. Reveal-Zonen und Materialisierungsanker für den kontrollierten Test praktisch prüfen.
+5. Fenty–Connolly als operative Route erfassen und vollständig physisch validieren.
+6. Kanonische Polylinie, Länge, typische Fahrzeit, Engstellen und Materialisierungsanker speichern.
+7. Die nachgewiesene Caching- und Virtualisierungslogik auf Fenty–Connolly übertragen.
+8. Interest-, Proximity-, Sichtlinien- und Sensorlogik ergänzen.
+9. Versionierte Persistenz, Backup-Recovery und Journal implementieren, sobald Neustartwiederherstellung oder dauerhafte Transaktionen Teil des nächsten Testvertrags sind.
+10. Cargo- und Warehouse-Transaktionen erst an eine stabile Zustands-, Reconciliation- und Persistenzschicht anbinden.
 
 ## Offene Punkte
 
-- endgültiges Snapshotformat;
-- zulässiger Serverpfad und DCS-Sandbox-Konfiguration;
-- genaue Speicherintervalle unter Last;
+- Platzierung und praktische Validierung der vier TM01B-Reveal-Zonen;
+- zuverlässige Fahrzeugslot-Erkennung über mehrere physische Generationen;
+- kontrolliertes Entfernen einer physischen Gruppe ohne künstliches Verlustereignis;
+- Wiederaufbau einer Gruppe mit ausschließlich erhaltenen Fahrzeugslots;
 - Auswahl zwischen effektiver Geschwindigkeit und typischer Fahrzeit je Routenkante;
 - Projektion physischer DCS-Koordinaten auf die kanonische Polylinie;
 - Toleranz für `ROUTE_DIVERGED`;
 - Materialisierungsradien nach Einheitstyp, Spielerplattform und Sensorlage;
 - Validierung von Fenty–Connolly und möglicher Alternativroute;
+- endgültiges Snapshotformat;
+- zulässiger Serverpfad und DCS-Sandbox-Konfiguration;
+- genaue Speicherintervalle unter Last;
 - Transportwegentscheidung für Fahrzeuge und übergroße Fracht;
 - kontrollierter späterer Offlinefortschritt für ausgewählte strategische Systeme.
