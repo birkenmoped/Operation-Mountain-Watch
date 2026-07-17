@@ -6,6 +6,11 @@ local MOOSE_FORMATIONS = {
 }
 
 local ROUTE_ASSIGNMENT_DELAY_SECONDS = 1
+local TERMINAL_MOVEMENT_STATES = {
+  ARRIVED = true,
+  DESTROYED = true,
+  FAILED = true,
+}
 
 local function display(value)
   if value == nil then
@@ -23,6 +28,9 @@ function PhysicalRelayController.new(options)
     spawnAttempted = false,
     routeAssignmentAttempted = false,
     arrivalEventLogged = false,
+    arrivalMonitorActive = false,
+    arrivalMonitorGeneration = 0,
+    arrivalMonitorScheduleId = nil,
   }
 
   local function announce(text)
@@ -143,6 +151,166 @@ function PhysicalRelayController.new(options)
         waypoints = waypoints,
       }
     end)
+  end
+
+  local function arrivalMonitorSettings()
+    local settings = config.arrivalMonitoring or {}
+    local initialDelaySeconds = settings.initialDelaySeconds
+    local intervalSeconds = settings.intervalSeconds
+    if type(initialDelaySeconds) ~= "number" or initialDelaySeconds <= 0 then
+      error("arrivalMonitoring.initialDelaySeconds must be greater than zero")
+    end
+    if type(intervalSeconds) ~= "number" or intervalSeconds <= 0 then
+      error("arrivalMonitoring.intervalSeconds must be greater than zero")
+    end
+    return initialDelaySeconds, intervalSeconds
+  end
+
+  local function logArrival(arrival)
+    if controller.arrivalEventLogged then
+      return
+    end
+    controller.arrivalEventLogged = true
+    logger:info("red_relay_arrived", {
+      destinationNodeId = arrival.destinationNodeId,
+      movementId = arrival.movementId,
+      missionTimeSeconds = timer.getTime(),
+      runtimeGroupName = arrival.runtimeGroupName,
+      survivorCount = arrival.survivorCount,
+      targetZoneMembership = true,
+    })
+    announce(
+      "RED relay arrived"
+        .. "\nMovement: " .. arrival.movementId
+        .. "\nSurvivors credited: " .. arrival.survivorCount
+        .. "\nDestination: " .. arrival.destinationNodeId
+    )
+  end
+
+  local function reconcileActiveMovement()
+    local movement = options.campaignState:getMovementSnapshot()
+    if not movement then
+      return false, "movement is unavailable"
+    end
+    if TERMINAL_MOVEMENT_STATES[movement.movementState] then
+      return false, movement.movementState
+    end
+    if movement.movementState ~= "EN_ROUTE" then
+      return true, movement.movementState
+    end
+    if not controller.runtimeGroup then
+      fail("runtime group is unavailable", "red_relay_arrival_monitor_failed")
+      return false, "FAILED"
+    end
+
+    local destinationZone = ZONE:FindByName(config.zones.target)
+    if not destinationZone then
+      fail("destination zone is unavailable", "red_relay_arrival_monitor_failed")
+      return false, "FAILED"
+    end
+
+    local inspectionOk, inspection = inspectGroup(
+      controller.runtimeGroup,
+      nil,
+      destinationZone,
+      nil
+    )
+    if not inspectionOk then
+      fail(inspection, "red_relay_arrival_monitor_inspection_failed")
+      return false, "FAILED"
+    end
+
+    local synced, syncReason = options.campaignState:syncSurvivors(
+      inspection.survivorCount
+    )
+    if not synced then
+      fail(syncReason, "red_relay_survivor_sync_failed")
+      return false, "FAILED"
+    end
+
+    if inspection.survivorCount < 1 then
+      local destroyed, destroyedReason = options.campaignState:markDestroyed()
+      if not destroyed then
+        fail(destroyedReason, "red_relay_destroyed_state_failed")
+        return false, "FAILED"
+      end
+      return false, "DESTROYED"
+    end
+
+    if inspection.destinationZoneMembership == true then
+      local completed, completionReason = options.campaignState:completeArrival()
+      if not completed then
+        fail(completionReason, "red_relay_arrival_completion_failed")
+        return false, "FAILED"
+      end
+      local arrival = options.campaignState:getMovementSnapshot()
+      logArrival(arrival)
+      return false, "ARRIVED"
+    end
+
+    return true, "EN_ROUTE"
+  end
+
+  local function stopArrivalMonitor(reason)
+    if not controller.arrivalMonitorActive then
+      return
+    end
+    controller.arrivalMonitorActive = false
+    local fields = commonFields()
+    fields.missionTimeSeconds = timer.getTime()
+    fields.reason = reason or "stopped"
+    logger:info("red_relay_arrival_monitor_stopped", fields)
+  end
+
+  local function startArrivalMonitor()
+    local settingsOk, initialDelayOrError, intervalSeconds = pcall(arrivalMonitorSettings)
+    if not settingsOk then
+      fail(initialDelayOrError, "red_relay_arrival_monitor_configuration_failed")
+      return false
+    end
+
+    controller.arrivalMonitorGeneration = controller.arrivalMonitorGeneration + 1
+    local generation = controller.arrivalMonitorGeneration
+    controller.arrivalMonitorActive = true
+    local firstRunAt = timer.getTime() + initialDelayOrError
+
+    local scheduleOk, scheduleIdOrError = pcall(function()
+      return timer.scheduleFunction(function(_, scheduledTime)
+        if not controller.arrivalMonitorActive
+          or generation ~= controller.arrivalMonitorGeneration then
+          return nil
+        end
+
+        local tickOk, keepRunning, reason = pcall(reconcileActiveMovement)
+        if not tickOk then
+          fail(keepRunning, "red_relay_arrival_monitor_failed")
+          stopArrivalMonitor("FAILED")
+          return nil
+        end
+        if not keepRunning then
+          stopArrivalMonitor(reason)
+          return nil
+        end
+        return timer.getTime() + intervalSeconds
+      end, nil, firstRunAt)
+    end)
+
+    if not scheduleOk or not scheduleIdOrError then
+      controller.arrivalMonitorActive = false
+      fail(
+        scheduleOk and "timer.scheduleFunction returned nil" or scheduleIdOrError,
+        "red_relay_arrival_monitor_start_failed"
+      )
+      return false
+    end
+
+    controller.arrivalMonitorScheduleId = scheduleIdOrError
+    local fields = commonFields()
+    fields.firstCheckDelaySeconds = initialDelayOrError
+    fields.intervalSeconds = intervalSeconds
+    fields.missionTimeSeconds = timer.getTime()
+    logger:info("red_relay_arrival_monitor_started", fields)
+    return true
   end
 
   function controller:startOneTransfer()
@@ -317,6 +485,8 @@ function PhysicalRelayController.new(options)
         .. "\nFighters: " .. config.movement.fighterCount
         .. "\nDestination: " .. config.transfer.destinationNodeId
     )
+
+    startArrivalMonitor()
   end
 
   function controller:showActiveMovement()
@@ -332,6 +502,7 @@ function PhysicalRelayController.new(options)
 
     local destinationMembership = nil
     local inspectionError = nil
+    local observedSurvivorCount = nil
     if self.runtimeGroup then
       local destinationZone = ZONE:FindByName(config.zones.target)
       local inspectionOk, inspection = inspectGroup(
@@ -341,52 +512,22 @@ function PhysicalRelayController.new(options)
         nil
       )
       if inspectionOk then
-        self.runtimeGroupName = inspection.runtimeGroupName or self.runtimeGroupName
         destinationMembership = inspection.destinationZoneMembership
-        local synced = true
-        local syncReason = nil
-        if movement.movementState ~= "ARRIVED"
-          and movement.movementState ~= "DESTROYED" then
-          synced, syncReason = options.campaignState:syncSurvivors(
-            inspection.survivorCount
-          )
-        end
-        if not synced then
-          fail(syncReason, "red_relay_survivor_sync_failed")
-        elseif inspection.survivorCount < 1
-          and movement.movementState ~= "ARRIVED"
-          and movement.movementState ~= "DESTROYED" then
-          options.campaignState:markDestroyed()
-        elseif destinationMembership == true
-          and movement.movementState == "EN_ROUTE" then
-          local completed, completionReason = options.campaignState:completeArrival()
-          if completed and not self.arrivalEventLogged then
-            self.arrivalEventLogged = true
-            local arrival = options.campaignState:getMovementSnapshot()
-            logger:info("red_relay_arrived", {
-              destinationNodeId = arrival.destinationNodeId,
-              movementId = arrival.movementId,
-              missionTimeSeconds = timer.getTime(),
-              runtimeGroupName = arrival.runtimeGroupName,
-              survivorCount = arrival.survivorCount,
-              targetZoneMembership = true,
-            })
-          elseif not completed then
-            inspectionError = completionReason
-          end
-        end
+        observedSurvivorCount = inspection.survivorCount
       else
         inspectionError = inspection
       end
     end
 
-    movement = options.campaignState:getMovementSnapshot()
     local fields = commonFields()
     fields.arrivalCredited = movement.arrivalCredited
+    fields.arrivalMonitorActive = self.arrivalMonitorActive
     fields.destinationZoneMembership = destinationMembership == nil
       and "unavailable" or destinationMembership
     fields.failureReason = movement.failureReason or "none"
     fields.missionTimeSeconds = timer.getTime()
+    fields.observedSurvivorCount = observedSurvivorCount == nil
+      and "unavailable" or observedSurvivorCount
     fields.routeAssigned = movement.routeAssigned
     fields.survivorCount = movement.survivorCount
     if inspectionError then
@@ -400,8 +541,10 @@ function PhysicalRelayController.new(options)
         .. "\nRepresentation: " .. movement.representationState
         .. "\nRuntime group: " .. display(movement.runtimeGroupName)
         .. "\nSurvivors: " .. movement.survivorCount
+        .. "\nObserved survivors: " .. display(observedSurvivorCount)
         .. "\nInside destination: " .. display(destinationMembership)
         .. "\nArrival credited: " .. tostring(movement.arrivalCredited)
+        .. "\nArrival monitor active: " .. tostring(self.arrivalMonitorActive)
     )
   end
 
