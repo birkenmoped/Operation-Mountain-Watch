@@ -1,98 +1,85 @@
-# TM02V RED multi-proxy movement acceptance
+# TM02V RED dynamic proxy-fill acceptance
 
 ## Purpose
 
-TM02V validates several simultaneous RED movements. Every logical packet owns its own physical leader proxy, route, coordinate, marker, representation state and runtime identity.
+TM02V validates the proxy representation for the original RED network objective: fill every configured shelter to its target strength from an authoritative HQ personnel pool.
 
-A proxy is never shared between packets.
+No movement list, packet count, packet strength, or destination assignment is hard-coded. Packets are generated from current deficits at runtime.
 
 ```text
-one logical packet = one runtime leader proxy
+current deficit -> exact packet strength -> own leader proxy -> own route -> visible destination group
 ```
 
-The leader proxy is dynamically derived from unit slot 1 of the packet's normal strength template. No dedicated proxy template is required.
+Every logical packet owns its own physical leader proxy, route, coordinate, marker, representation state, launch slot and runtime identity. A proxy is never shared.
 
-## Test packets
-
-```text
-Packet 001: strength 3, HQ -> A -> AA
-Packet 002: strength 4, HQ -> A -> AB
-Packet 003: strength 6, HQ -> B -> BB
-```
-
-All three packets start together and move independently.
-
-Derived proxy sources:
+## Initial state for this acceptance
 
 ```text
-Packet 001 -> TPL_TEST_RED_PACKET_03_01 -> unit slot 1
-Packet 002 -> TPL_TEST_RED_PACKET_04_01 -> unit slot 1
-Packet 003 -> TPL_TEST_RED_PACKET_06_01 -> unit slot 1
-```
-
-Each runtime proxy must have a different group name and a different marker ID.
-
-## Initial accounting
-
-```text
-HQ: 47
-A:  10 / 10
-B:  10 / 10
-AA:  7 / 10
-AB:  6 / 10
-BA: 10 / 10
-BB:  4 / 10
-Recorded losses: 6
+HQ: 100
+A:   0 / 10
+B:   0 / 10
+AA:  0 / 10
+AB:  0 / 10
+BA:  0 / 10
+BB:  0 / 10
+Recorded losses: 0
 Total: 100
 ```
 
-After all packets start:
+## Dynamic generation doctrine
+
+The controller calculates for every shelter:
 
 ```text
-HQ: 34
-Shelters: 47
-In transit: 13
-Recorded losses: 6
-Total: 100
+deficit = targetStrength - currentGarrison - inboundPersonnel
 ```
 
-Final state without transit losses:
+When a dispatch slot is free, it generates a packet with:
 
 ```text
-HQ: 34
-A:  10 / 10
-B:  10 / 10
-AA: 10 / 10
-AB: 10 / 10
-BA: 10 / 10
-BB: 10 / 10
-In transit: 0
-Recorded losses: 6
-Total: 100
+strength = min(packetMaxStrength, deficit, available HQ personnel)
 ```
 
-## Per-packet metadata
+For this acceptance all deficits are 10, so six ten-person packets are expected. This is an outcome of the configured state, not a fixed movement plan.
 
-Every packet must retain independent fields:
+The same controller must also accept partial deficits from 1 through 10 and select the corresponding existing template automatically.
 
-```lua
-{
-  packetId = "TEST.TM02.VIRTUAL.PACKET.001",
-  strength = 3,
-  survivorCount = 3,
-  routeNodeIds = { "RED_HQ", "RED_SHELTER_A", "RED_SHELTER_AA" },
-  currentLegIndex = 1,
-  finalDestinationNodeId = "RED_SHELTER_AA",
-  movementState = "EN_ROUTE",
-  representationState = "LEADER_PROXY",
-  proxyGroupName = "...",
-  physicalGroupName = nil,
-  currentCoordinate = { x = ..., y = ..., z = ... },
-  markerId = 220201,
-}
+## Top-down fill barrier
+
+Depth 1 must be completed first:
+
+```text
+HQ -> A
+HQ -> B
 ```
 
-Changing one packet must not change any other packet's state or runtime group.
+Only after A and B both reach 10 may depth 2 dispatch:
+
+```text
+HQ -> A -> AA
+HQ -> A -> AB
+HQ -> B -> BA
+HQ -> B -> BB
+```
+
+Intermediate nodes are transit nodes for leaf-bound packets and are not debited or credited during pass-through.
+
+## Concurrency and proxies
+
+```text
+maxActivePackets = 3
+launchSlotCount = 3
+```
+
+Each active packet has exactly one independent leader proxy derived from unit slot 1 of its own strength template.
+
+For a ten-person packet:
+
+```text
+TPL_TEST_RED_PACKET_10_01 -> unit slot 1 -> one-man proxy
+```
+
+The three launch slots are spatially separated inside the HQ zone. The proxies may later converge physically because of DCS routing, but they must remain different runtime groups and different packet identities.
 
 ## Representation cycle
 
@@ -106,105 +93,144 @@ NONE
 -> PHYSICAL_GARRISON
 ```
 
-Different packets may be in different representation states at the same mission time. For example:
+At the final destination a packed packet automatically materializes as the complete survivor group. The physical group remains visible in the destination zone.
 
-```text
-Packet 001: PHYSICAL
-Packet 002: LEADER_PROXY
-Packet 003: LEADER_PROXY
-```
+Manual pack and unpack commands apply only to the selected packet.
 
-This is valid and required.
-
-## F10 menu
+## Dynamic F10 menu
 
 ```text
 OMW Tests
-└── TM02V Multi-Proxy Movement
+└── TM02V Dynamic Proxy Fill
     ├── Validate test
-    ├── Start all proxy movements
-    ├── Show all packet status
+    ├── Start automatic proxy fill
+    ├── Show network and packet status
     ├── Toggle packet markers
-    ├── Packet 001 -> RED_SHELTER_AA
-    │   ├── Show status
-    │   ├── Force unpack
-    │   └── Force pack
-    ├── Packet 002 -> RED_SHELTER_AB
-    │   ├── Show status
-    │   ├── Force unpack
-    │   └── Force pack
-    └── Packet 003 -> RED_SHELTER_BB
+    └── Packet NNN -> destination
         ├── Show status
         ├── Force unpack
         └── Force pack
 ```
 
-## DCS execution
+Packet submenus are created when the runtime dispatcher generates the packets. There are no configured packet menus before the fill starts.
 
-1. Validate the test.
-2. Start all proxy movements once.
-3. Confirm three separate one-man RED proxies appear at HQ.
-4. Confirm the three proxies have distinct runtime group names.
-5. Confirm three independent map markers move with the proxies.
-6. Force-unpack Packet 001 while Packets 002 and 003 remain packed.
-7. Confirm Packet 001 becomes a three-man group while the other two remain one-man proxies.
-8. Force-pack Packet 001 again.
-9. Optionally unpack Packet 002 or Packet 003 independently.
-10. Allow all packets to pass their intermediate nodes.
-11. Confirm each packet materializes automatically at its own final destination.
-12. Confirm AA, AB and BB reach exactly 10 personnel.
-13. Confirm final accounting remains 100.
+## Expected no-loss sequence
 
-## Mandatory log evidence
-
-Startup:
+Immediately after start:
 
 ```text
-event=red_proxy_leader_adapter_installed sourcePolicy=LEADER_FROM_PACKET_TEMPLATE
-event=red_proxy_validation configurationValid=true missionObjectsValid=true checkedPacketCount=3
-event=startup configurationVersion=TM02V-red-proxy-movement-3 packetCount=3
+Generated packets: 2
+Active packets: 2
+HQ: 80
+Targets: A and B
 ```
 
-Start:
+No AA, AB, BA or BB packet may exist before A and B are full.
+
+After A and B arrive:
 
 ```text
-event=red_proxy_packet_started packetId=TEST.TM02.VIRTUAL.PACKET.001 strength=3 activePacketCount=1
-event=red_proxy_packet_started packetId=TEST.TM02.VIRTUAL.PACKET.002 strength=4 activePacketCount=2
-event=red_proxy_packet_started packetId=TEST.TM02.VIRTUAL.PACKET.003 strength=6 activePacketCount=3
-event=red_proxy_movements_started packetCount=3 activePacketCount=3 inTransitPersonnel=13 accountingValid=true
+event=red_proxy_fill_level_advanced previousDepth=1 currentDispatchDepth=2
 ```
 
-Independent transition evidence:
+The controller then generates leaf packets as slots permit. With three active slots, three leaf packets start first and the fourth starts automatically when a slot becomes free.
+
+No second F10 start command is permitted or required.
+
+## Final state
 
 ```text
-event=red_proxy_unpacked packetId=TEST.TM02.VIRTUAL.PACKET.001 survivorCount=3
-event=red_proxy_packet_status packetId=TEST.TM02.VIRTUAL.PACKET.002 representationState=LEADER_PROXY
-event=red_proxy_packet_status packetId=TEST.TM02.VIRTUAL.PACKET.003 representationState=LEADER_PROXY
+HQ: 40
+A:  10 / 10
+B:  10 / 10
+AA: 10 / 10
+AB: 10 / 10
+BA: 10 / 10
+BB: 10 / 10
+In transit: 0
+Recorded losses: 0
+Total deficit: 0
+Accounted: 100 / 100
 ```
 
-Completion:
+Six visible physical garrison groups must remain in the six shelter zones.
+
+## Mandatory startup evidence
 
 ```text
-event=red_proxy_arrived packetId=TEST.TM02.VIRTUAL.PACKET.001 destinationNodeId=RED_SHELTER_AA
-event=red_proxy_arrived packetId=TEST.TM02.VIRTUAL.PACKET.002 destinationNodeId=RED_SHELTER_AB
-event=red_proxy_arrived packetId=TEST.TM02.VIRTUAL.PACKET.003 destinationNodeId=RED_SHELTER_BB
-event=red_proxy_network_completed packetCount=3 arrivedPacketCount=3 accountedPersonnel=100 accountingValid=true allSheltersAtTarget=true networkComplete=true
+event=red_proxy_leader_adapter_installed launchSlotCount=3
+event=red_proxy_validation configurationValid=true missionObjectsValid=true dynamicPacketGeneration=true initialDeficit=60
+event=startup configurationVersion=TM02V-red-proxy-dynamic-fill-5 configuredMovementCount=0 initialHqPersonnel=100 initialShelterDeficit=60
 ```
+
+`configuredMovementCount=0` is intentional. Packets must be generated from live deficits.
+
+## Mandatory dispatch evidence
+
+Depth 1:
+
+```text
+event=red_proxy_packet_generated destinationNodeId=RED_SHELTER_A strength=10 targetDepth=1
+event=red_proxy_packet_generated destinationNodeId=RED_SHELTER_B strength=10 targetDepth=1
+```
+
+Depth 2, only after the fill-level transition:
+
+```text
+event=red_proxy_packet_generated destinationNodeId=RED_SHELTER_AA strength=10 targetDepth=2
+event=red_proxy_packet_generated destinationNodeId=RED_SHELTER_AB strength=10 targetDepth=2
+event=red_proxy_packet_generated destinationNodeId=RED_SHELTER_BA strength=10 targetDepth=2
+event=red_proxy_packet_generated destinationNodeId=RED_SHELTER_BB strength=10 targetDepth=2
+```
+
+Every generated packet must have its own `packetId`, proxy runtime group name and marker ID.
+
+## Mandatory completion evidence
+
+```text
+event=red_proxy_network_completed
+generatedPacketCount=6
+arrivedPacketCount=6
+destroyedPacketCount=0
+hqPersonnel=40
+shelterPersonnel=60
+inTransitPersonnel=0
+totalLosses=0
+totalDeficit=0
+accountedPersonnel=100
+accountingValid=true
+allSheltersAtTarget=true
+networkComplete=true
+```
+
+## Variable-deficit regression
+
+Outside DCS, the same controller is also tested with:
+
+```text
+A deficit 1
+B deficit 2
+AA deficit 3
+AB deficit 4
+BA deficit 5
+BB deficit 6
+```
+
+It must dynamically generate strengths `1, 2, 3, 4, 5, 6`, respect the same top-down barrier and finish every shelter at 10.
 
 ## PASS criteria
 
 TM02V passes only when:
 
-- exactly three logical packets exist;
-- exactly three independent proxies exist while all packets are packed;
-- no proxy is shared;
-- every proxy follows its packet's own route;
-- every packet owns a unique marker and runtime identity;
-- one packet can unpack or pack without changing the others;
-- destination materialization uses the correct strength template;
-- AA, AB and BB finish at exactly 10;
-- HQ finishes at 34;
-- no packet remains in transit;
+- all six shelters finish at target strength;
+- packets are generated from deficits rather than a fixed movement list;
+- A and B are completed before any leaf packet dispatch;
+- every simultaneously active packet has its own proxy and launch slot;
+- each packet follows its own route and marker;
+- automatic dispatch continues when earlier packets arrive;
+- manual pack or unpack affects only the selected packet;
+- destination materialization uses the exact survivor strength;
+- all six destination groups remain physically visible;
 - accounting remains exactly 100;
 - no `[OMW][TM02V] level=ERROR` event occurs.
 
@@ -212,11 +238,11 @@ TM02V passes only when:
 
 The test fails if:
 
-- the controller exposes only one `state.packet` singleton;
-- two logical packets reference the same proxy group;
-- only one movement can run at a time;
-- packing or unpacking one packet changes another packet;
-- a packet follows another packet's route or marker;
+- only selected shelters are serviced;
+- the controller stops after a fixed number of packets while deficits remain;
+- packets or destinations are hard-coded in `config.movements`;
+- a leaf packet starts before A and B are full;
+- two logical packets share one proxy;
 - a destination is overfilled;
-- personnel are duplicated or lost from accounting;
-- an arrival requires a diagnostic F10 command.
+- personnel are duplicated or disappear from accounting;
+- an arrival or subsequent dispatch requires a diagnostic F10 command.
