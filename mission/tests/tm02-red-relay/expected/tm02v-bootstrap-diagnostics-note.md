@@ -2,9 +2,22 @@
 
 The first DCS startup reached TM02V and MOOSE successfully but failed validation because the initial design required a dedicated `TPL_TEST_RED_PROXY_01` group. The early-return path also prevented the normal F10 test menu from being created.
 
-Two corrections followed:
+The current design corrects both problems:
 
 1. bootstrap diagnostics remain available when Mission Editor validation fails;
-2. the dedicated proxy template requirement was removed entirely.
+2. no dedicated proxy template is required;
+3. every logical packet derives its own leader proxy from unit slot 1 of its own strength template;
+4. the bootstrap status reports configured and active packet counts.
 
-TM02V version 2 now derives the proxy dynamically from unit slot 1 of the standard strength template. For the current six-person test this is `TPL_TEST_RED_PACKET_06_01`. The previous missing-proxy failure is therefore superseded and must not recur.
+Fallback menu:
+
+```text
+OMW Tests
+└── TM02V Multi-Proxy Movement
+    ├── Validate test
+    └── Show bootstrap status
+```
+
+The fallback menu is diagnostic only. Mission Editor corrections require saving and restarting the mission.
+
+A successful version 3 bootstrap installs the full global menu plus one independent submenu for each configured packet. The former singleton `state.packet` design is superseded and must not recur.
