@@ -6,6 +6,7 @@ $ErrorActionPreference = "Stop"
 
 $repositoryRoot = Split-Path -Parent $PSScriptRoot
 $configPath = Join-Path $repositoryRoot "mission/tests/tm02-red-relay/config-tm02v.lua"
+$adapterPath = Join-Path $repositoryRoot "mission/tests/tm02-red-relay/src/tm02v-leader-proxy-adapter.lua"
 $sourcePath = Join-Path $repositoryRoot "mission/tests/tm02-red-relay/src/tm02v.lua"
 $diagnosticsPath = Join-Path $repositoryRoot "mission/tests/tm02-red-relay/src/tm02v-bootstrap-diagnostics.lua"
 $outputPath = Join-Path $repositoryRoot "mission/tests/tm02-red-relay/dist/TM02V.lua"
@@ -17,6 +18,7 @@ function Get-NormalizedSource {
 }
 
 $configContent = Get-NormalizedSource -Path $configPath
+$adapterContent = Get-NormalizedSource -Path $adapterPath
 $sourceContent = Get-NormalizedSource -Path $sourcePath
 $diagnosticsContent = Get-NormalizedSource -Path $diagnosticsPath
 $buildTimestamp = [DateTime]::UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ", [Globalization.CultureInfo]::InvariantCulture)
@@ -31,13 +33,19 @@ $builder = New-Object System.Text.StringBuilder
 [void]$builder.AppendLine("local TM02VConfig = (function()")
 [void]$builder.AppendLine($configContent)
 [void]$builder.AppendLine("end)()")
+[void]$builder.AppendLine("local TM02VLeaderProxyAdapter = (function()")
+[void]$builder.AppendLine($adapterContent)
+[void]$builder.AppendLine("end)()")
 [void]$builder.AppendLine("local TM02V = (function()")
 [void]$builder.AppendLine($sourceContent)
 [void]$builder.AppendLine("end)()")
 [void]$builder.AppendLine("local TM02VDiagnostics = (function()")
 [void]$builder.AppendLine($diagnosticsContent)
 [void]$builder.AppendLine("end)()")
-[void]$builder.AppendLine("local ok, result = pcall(function() return TM02V.start(TM02VConfig, TM02VBuild) end)")
+[void]$builder.AppendLine("local ok, result = pcall(function()")
+[void]$builder.AppendLine("  TM02VLeaderProxyAdapter.install(TM02VConfig)")
+[void]$builder.AppendLine("  return TM02V.start(TM02VConfig, TM02VBuild)")
+[void]$builder.AppendLine("end)")
 [void]$builder.AppendLine("if not ok then")
 [void]$builder.AppendLine('  env.info("[OMW][TM02V] level=ERROR event=bootstrap_uncaught_error reason=" .. tostring(result))')
 [void]$builder.AppendLine("elseif type(result) == \"table\" and result.failed == true then")
