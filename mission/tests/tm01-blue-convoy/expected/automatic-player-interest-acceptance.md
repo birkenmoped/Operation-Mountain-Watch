@@ -1,16 +1,44 @@
 # TM01C – Abnahme automatische BLUE-Spielerrelevanz
 
-Status: DCS-Laufzeitnachweis erforderlich
+Status: **visueller Einzelspieler-Nahbereichstest bestanden; erweiterte Abnahmen teilweise offen**
 
-## Voraussetzungen
+Ergebnisnachweis:
+
+```text
+mission/tests/tm01-blue-convoy/results/
+2026-07-17-tm01c-automatic-player-interest-pass.md
+```
+
+Konfiguration:
+
+```text
+TM01C-automatic-player-interest-5
+```
+
+## Abnahmematrix
+
+| Test | Status | Nachweis |
+|---|---|---|
+| A – Auto-Pack nach 30 s Abwesenheit | PASS | 5/5 automatische Pack-Anforderungen vollständig bestätigt |
+| B – Auto-Unpack bei Annäherung | PASS | 3/3 automatische Unpack-Anforderungen vollständig bestätigt |
+| C – Timerabbruch | PASS | Timer nach 27 s bei 743,67 m abgebrochen |
+| D – Hysterese | PASS | kein Pack-/Unpack-Flattern im Bereich 500–750 m |
+| E – allgemeiner Transition-Schutz | PASS im beobachteten Lauf | keine Doppelanforderung oder parallele Transition; gezielte Grenzüberquerung in jeder einzelnen Transition bleibt offen |
+| F – mehrere Spieler | OFFEN | zweiter BLUE-Spieler nicht Teil dieses Laufs |
+| G – expliziter Höhentest | OFFEN | horizontales Distanzmodell aktiv; gezielter großer Höhenunterschied noch nicht separat abgenommen |
+
+## Voraussetzungen des bestandenen Laufs
 
 - Bundle aus aktuellem Branch neu gebaut;
 - Konfigurationskennung `TM01C-automatic-player-interest-5` im Startup-Log;
-- ein besetzter BLUE-Hubschrauber oder ein anderes gültiges BLUE-Spielerfahrzeug;
+- ein besetzter BLUE-OH-58D;
 - Konvoi vollständig gestartet und Routenaktivierung bestätigt;
-- keine RED-/Feindrelevanzlogik aktiv.
+- keine RED-/Feindrelevanzlogik aktiv;
+- MOOSE 2.9.18 mit erwartetem Commit und Build-Hash.
 
-## Test A – Auto-Pack nach Abwesenheit
+## Test A – Auto-Pack nach Abwesenheit – PASS
+
+Verfahren:
 
 1. Konvoi starten.
 2. Spieler auf mehr als 750 m horizontalen Abstand bringen.
@@ -18,7 +46,7 @@ Status: DCS-Laufzeitnachweis erforderlich
 4. mindestens 30 Sekunden dauerhaft außerhalb bleiben.
 5. sichtbares und protokolliertes Packen prüfen.
 
-Erwartet:
+Bestätigte Ereigniskette:
 
 ```text
 playerInterestBand=OUTSIDE
@@ -30,13 +58,17 @@ representationState=COLLAPSED_PROXY
 halted=false
 ```
 
-## Test B – Auto-Unpack bei Annäherung
+Der Log enthält fünf vollständige automatische Pack-Zyklen. Jeder Timer lief exakt 30 Sekunden bis zur Anforderung. Es gab keine fehlgeschlagene oder doppelte Pack-Anforderung.
+
+## Test B – Auto-Unpack bei Annäherung – PASS
+
+Verfahren:
 
 1. Mit eingepacktem Konvoi auf höchstens 500 m horizontal annähern.
 2. sichtbares Entpacken beobachten.
 3. Ausrichtung und Routenaktivierung prüfen.
 
-Erwartet:
+Bestätigte Ereigniskette:
 
 ```text
 player_relevance_entered
@@ -48,80 +80,113 @@ representationState=EXPANDED
 halted=false
 ```
 
-## Test C – Timerabbruch
+Automatische Unpack-Anforderungen wurden bei 486,53 m, 485,89 m und 491,63 m ausgelöst. Alle drei führten zu genau einem bestätigten Unpack und anschließend bestätigter Bewegung.
+
+Die visuelle Beobachtung bestätigte korrekt entlang der Straße ausgerichtete Fahrzeuge und störungsfreies Weiterfahren.
+
+## Test C – Timerabbruch – PASS
+
+Verfahren:
 
 1. Expandierten Konvoi verlassen und `automatic_pack_timer_started` abwarten.
-2. nach ungefähr 15–25 Sekunden wieder auf höchstens 750 m annähern.
+2. vor Ablauf von 30 Sekunden wieder auf höchstens 750 m annähern.
 3. prüfen, dass kein Packen erfolgt.
 
-Erwartet:
+Bestätigt:
 
 ```text
+automatic_pack_timer_started
+...
 automatic_pack_timer_cancelled
+timerElapsedSeconds=27
+nearestPlayerDistanceMeters=743.665...
 ```
 
-Nicht erwartet:
+Aus dem abgebrochenen Timer folgte kein `automatic_pack_requested`.
+
+## Test D – Hysterese – PASS
+
+Bestätigte Bänder:
 
 ```text
-automatic_pack_requested
-convoy_packed
+Distanz <= 500 m
+→ INSIDE_UNPACK
+
+500 m < Distanz <= 750 m
+→ HYSTERESIS
+
+Distanz > 750 m
+→ OUTSIDE
 ```
 
-## Test D – Hysterese
-
-1. Konvoi expandiert halten.
-2. zwischen 500 und 750 m bleiben oder mehrfach innerhalb dieses Bandes pendeln.
-3. prüfen, dass kein Pack-/Unpack-Flattern entsteht.
-
-Erwartet:
+Der Log enthält wiederholte Wechsel durch `HYSTERESIS` in beiden Repräsentationszuständen. Es trat kein Flattern auf:
 
 ```text
-playerInterestBand=HYSTERESIS
-representationState bleibt EXPANDED
+EXPANDED bleibt EXPANDED
+COLLAPSED_PROXY bleibt COLLAPSED_PROXY
 ```
 
-Danach mit eingepacktem Proxy denselben Bereich prüfen:
+Ein Wiedereintritt in die Hysteresezone brach einen laufenden Pack-Timer korrekt ab.
+
+## Test E – Transition-Schutz – PASS im beobachteten Lauf / gezielte Teiltests offen
+
+Im gesamten Lauf trat nicht auf:
 
 ```text
-representationState bleibt COLLAPSED_PROXY
+parallele zweite Transition
+doppelte automatische Pack-Anforderung
+doppelte automatische Unpack-Anforderung
+Pack und Unpack gleichzeitig
 ```
 
-## Test E – Transition-Schutz
+Die Automatik wertete nach abgeschlossener Routenaktivierung erneut aus. Ein gezieltes Überqueren der Distanzgrenzen genau während jeder einzelnen Phase bleibt als optionaler Stresstest offen:
 
-Während `PACKING`, `UNPACKING` oder `ACTIVATING_ROUTE` die Distanzgrenzen überqueren.
+```text
+PACKING
+UNPACKING
+ACTIVATING_ROUTE
+```
 
-Erwartet:
+## Test F – mehrere Spieler – OFFEN
 
-- keine parallele zweite Transition;
-- keine doppelten Pack-/Unpack-Anforderungen;
-- neue Auswertung erst nach Rückkehr zu `IDLE`.
+Noch zu prüfen:
 
-## Test F – mehrere Spieler
-
-Mit zwei BLUE-Spielern testen:
-
-- ein Spieler außerhalb 750 m;
-- ein Spieler innerhalb 500 m.
-
-Erwartet:
-
+- ein BLUE-Spieler außerhalb 750 m;
+- ein BLUE-Spieler innerhalb 500 m;
 - der nähere Spieler bestimmt die Relevanz;
-- der Konvoi bleibt beziehungsweise wird expandiert;
-- Auto-Pack startet erst, wenn **alle** gültigen BLUE-Spieler außerhalb 750 m sind.
+- Auto-Pack startet erst, wenn alle gültigen BLUE-Spieler außerhalb 750 m sind.
 
-## Test G – Spielerhöhe
+Dieser Test ist für Multiplayer-Skalierung relevant, blockiert aber nicht das PASS des vereinbarten Einzelspieler-Proof-of-Concepts.
 
-Direkt über dem Konvoi in größerer Höhe fliegen, aber horizontal innerhalb 500 m bleiben.
+## Test G – Spielerhöhe – OFFEN
 
-Erwartet:
+Noch separat zu prüfen:
 
-- Spieler gilt als relevant;
-- Distanz ist horizontal;
-- kein Auto-Pack aufgrund reiner Flughöhe.
+- Spieler direkt über dem Konvoi;
+- großer Höhenunterschied;
+- horizontal innerhalb 500 m;
+- kein Auto-Pack allein aufgrund der Höhe.
+
+Die Implementierung protokollierte `distanceModel=HORIZONTAL_2D`; der separate DCS-Nachweis mit bewusst großer Höhe bleibt offen.
+
+## Zusätzliche positive Regressionen
+
+Der Abnahmelauf bewies zusätzlich:
+
+```text
+- drei beobachtete Fahrzeugverluste;
+- Survivor-Liste reduzierte sich auf 5,2,1;
+- zerstörte Slots blieben nach Pack/Unpack zerstört;
+- partielle Schäden wurden pro Stable Slot erhalten;
+- zwei beschädigte Fahrzeuge wurden nach Unpack wiederhergestellt und verifiziert;
+- alle Routenaktivierungen wurden bestätigt;
+- kein Controller-Halt;
+- keine TM01C-ERROR-Ereignisse.
+```
 
 ## Fehlerkriterien
 
-Der Lauf ist nicht bestanden bei:
+Im bestandenen Lauf trat keines dieser Kriterien auf:
 
 ```text
 player_interest_monitor_initialization_failed
@@ -135,24 +200,16 @@ halted=true
 movementState=FAILED
 ```
 
-## Zu sammelnde Logereignisse
+Ein erneuter manueller `Start convoy`-Aufruf wurde erwartungsgemäß mit `convoy has already been started` abgewiesen. Das ist kein Fehler der Automatik.
+
+## Abnahmeentscheidung
 
 ```text
-startup
-configuration_valid
-player_interest_monitor_initialized
-player_relevance_band_changed
-player_relevance_entered
-player_relevance_exited
-automatic_pack_timer_started
-automatic_pack_timer_cancelled
-automatic_pack_requested
-automatic_unpack_requested
-convoy_pack_started
-convoy_packed
-convoy_unpack_started
-convoy_unpacked
-convoy_route_activation_confirmed
-player_interest_status
-convoy_proxy_status
+Visueller Einzelspieler-Proof-of-Concept: PASS
+Mehrspieler-Nähe:                      OFFEN
+Expliziter Höhentest:                  OFFEN
+Operative Produktionsradien:           NICHT FESTGELEGT
+Sichtlinie/Sensorik/Feindrelevanz:      NICHT BESTANDTEIL
 ```
+
+Die automatische Pack-/Unpack-Grundfunktion ist damit in DCS nachgewiesen.
