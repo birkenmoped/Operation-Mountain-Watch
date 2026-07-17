@@ -1,5 +1,5 @@
 local config = {
-  configurationVersion = "TM01C-automatic-player-and-enemy-interest-7",
+  configurationVersion = "TM01C-automatic-player-and-enemy-interest-8",
   testId = "TM01",
   stageId = "TM01C",
   scenarioId = "TEST.TM01.CONVOY.001",
@@ -89,17 +89,18 @@ local config = {
     destroyConfirmationTimeoutSeconds = 10,
     automaticUnpackAtTarget = true,
 
-    -- A newly spawned DCS group is not treated as en route until its controller
-    -- has accepted the route and measurable physical movement has been observed.
-    -- Signed progress along the compiled road is diagnostic only because mixed
-    -- vehicle groups can briefly reverse or reposition while forming on the road.
-    -- Reissue is bounded to this activation phase and is never used as an
-    -- automatic unstuck mechanism after activation succeeds.
+    -- A newly spawned DCS group normally remains in ACTIVATING_ROUTE until its
+    -- controller accepted the route and measurable physical movement occurred.
+    -- Enemy-triggered unpack is the deliberate exception: DCS ground AI may
+    -- accept the route but hold position to engage the nearby threat. In that
+    -- context successful route assignment plus verified damage restoration is
+    -- sufficient; the controller must remain serviceable for later auto-pack.
     routeActivationInitialDelaySeconds = 1,
     routeActivationPollSeconds = 1,
     routeActivationReissueSeconds = 5,
     routeActivationTimeoutSeconds = 30,
     routeActivationMovementThresholdMeters = 2,
+    allowStationaryEnemyTriggeredUnpack = true,
 
     -- Damage is domain state keyed by stable vehicle slot. It is sampled while
     -- physical and explicitly restored and verified after a representation spawn.
