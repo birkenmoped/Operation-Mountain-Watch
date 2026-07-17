@@ -55,10 +55,12 @@ function TM02VDiagnostics.install(config, state)
       missionObjectsValid = #missing == 0,
       missingObjects = #missing == 0 and "none" or join(missing, ","),
       missionRestartRequired = #missing > 0,
+      dynamicPacketGeneration = true,
     })
     announce(table.concat({
       "TM02V diagnostic validation",
       "Mission objects: " .. tostring(#missing == 0),
+      "Dynamic packet generation: true",
       "Missing: " .. (#missing == 0 and "none" or join(missing, ", ")),
       #missing == 0 and "Restart the mission to complete normal bootstrap."
         or "Correct the Mission Editor objects, save, and restart the mission.",
@@ -69,24 +71,26 @@ function TM02VDiagnostics.install(config, state)
     log("INFO", "red_proxy_bootstrap_status", {
       failed = state and state.failed == true,
       started = state and state.started == true,
-      configuredPacketCount = config.movements and #config.movements or 0,
+      generatedPacketCount = state and state.packets and #state.packets or 0,
       activePacketCount = state and state.activePacketCount or 0,
+      dynamicPacketGeneration = true,
     })
     announce(table.concat({
       "TM02V bootstrap status",
       "Failed: " .. tostring(state and state.failed == true),
       "Started: " .. tostring(state and state.started == true),
-      "Configured packets: " .. tostring(config.movements and #config.movements or 0),
+      "Dynamic packet generation: true",
+      "Generated packets: " .. tostring(state and state.packets and #state.packets or 0),
       "Active packets: " .. tostring(state and state.activePacketCount or 0),
     }, "\n"))
   end
 
   local root = MENU_MISSION:New("OMW Tests")
-  local menu = MENU_MISSION:New("TM02V Multi-Proxy Movement", root)
+  local menu = MENU_MISSION:New("TM02V Dynamic Proxy Fill", root)
   MENU_MISSION_COMMAND:New("Validate test", menu, validateFromMenu)
   MENU_MISSION_COMMAND:New("Show bootstrap status", menu, showBootstrapStatus)
   log("INFO", "red_proxy_diagnostic_menu_ready", {
-    path = "OMW Tests/TM02V Multi-Proxy Movement",
+    path = "OMW Tests/TM02V Dynamic Proxy Fill",
     commands = "Validate test,Show bootstrap status",
   })
   return { root = root, menu = menu }
