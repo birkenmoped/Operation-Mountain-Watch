@@ -1,5 +1,5 @@
 local config = {
-  configurationVersion = "TM02W2-red-source-cost-reservation-1",
+  configurationVersion = "TM02W2-red-source-cost-reservation-2",
   testId = "TM02",
   stageId = "TM02W2",
 
@@ -105,7 +105,12 @@ local config = {
     requireMultipleCandidateEvaluations = true,
     requireMultiHopTask = true,
     requireReservationInfluence = true,
-    requireNonNearestSelection = true,
+
+    -- Whether a non-nearest source is optimal depends on the real mission
+    -- geometry and inventory state. DCS records the count but does not fail
+    -- when the nearest viable source also has the lowest total cost.
+    -- The static Lua harness overrides this to true on controlled geometry.
+    requireNonNearestSelection = false,
   },
 
   debug = {
