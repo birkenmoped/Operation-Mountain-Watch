@@ -10,6 +10,7 @@ $w2ConfigPath = Join-Path $repositoryRoot "mission/tests/tm02-red-network/config
 $w2SourcePath = Join-Path $repositoryRoot "mission/tests/tm02-red-network/src/tm02w2.lua"
 $w2eConfigPath = Join-Path $repositoryRoot "mission/tests/tm02-red-network/config-tm02w2e.lua"
 $w2eAdapterPath = Join-Path $repositoryRoot "mission/tests/tm02-red-network/src/tm02w2e-leader-proxy-adapter.lua"
+$w2eNavigationPath = Join-Path $repositoryRoot "mission/tests/tm02-red-network/src/tm02w2e-moose-navigation.lua"
 $w2eSourcePath = Join-Path $repositoryRoot "mission/tests/tm02-red-network/src/tm02w2e.lua"
 $outputPath = Join-Path $repositoryRoot "mission/tests/tm02-red-network/dist/TM02W2E.lua"
 
@@ -24,6 +25,7 @@ $w2ConfigContent = Get-NormalizedSource -Path $w2ConfigPath
 $w2SourceContent = Get-NormalizedSource -Path $w2SourcePath
 $w2eConfigContent = Get-NormalizedSource -Path $w2eConfigPath
 $w2eAdapterContent = Get-NormalizedSource -Path $w2eAdapterPath
+$w2eNavigationContent = Get-NormalizedSource -Path $w2eNavigationPath
 $w2eSourceContent = Get-NormalizedSource -Path $w2eSourcePath
 $buildTimestamp = [DateTime]::UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ", [Globalization.CultureInfo]::InvariantCulture)
 
@@ -57,6 +59,9 @@ $builder = New-Object System.Text.StringBuilder
 [void]$builder.AppendLine("local TM02W2ELeaderProxyAdapter = (function()")
 [void]$builder.AppendLine($w2eAdapterContent)
 [void]$builder.AppendLine("end)()")
+[void]$builder.AppendLine("local TM02W2EMooseNavigation = (function()")
+[void]$builder.AppendLine($w2eNavigationContent)
+[void]$builder.AppendLine("end)()")
 [void]$builder.AppendLine("local TM02W2E = (function()")
 [void]$builder.AppendLine($w2eSourceContent)
 [void]$builder.AppendLine("end)()")
@@ -70,11 +75,20 @@ $builder = New-Object System.Text.StringBuilder
 [void]$builder.AppendLine('    error("TM02W2 planner validation failed")')
 [void]$builder.AppendLine("  end")
 [void]$builder.AppendLine("  TM02W2ELeaderProxyAdapter.install(TM02W2EConfig)")
+[void]$builder.AppendLine("  local navigation = TM02W2EMooseNavigation.install(TM02W2EConfig, registry, planner)")
+[void]$builder.AppendLine("  if navigation.valid ~= true then")
+[void]$builder.AppendLine('    error("TM02W2E MOOSE navigation validation failed")')
+[void]$builder.AppendLine("  end")
+[void]$builder.AppendLine("  if navigation:preparePlannerTasks() ~= true then")
+[void]$builder.AppendLine('    error("TM02W2E safe route planning failed")')
+[void]$builder.AppendLine("  end")
 [void]$builder.AppendLine("  local execution = TM02W2E.start(TM02W2EConfig, registry, planner, TM02W2EBuild)")
 [void]$builder.AppendLine("  if execution.configurationValid ~= true then")
 [void]$builder.AppendLine('    error("TM02W2E execution validation failed")')
 [void]$builder.AppendLine("  end")
+[void]$builder.AppendLine("  navigation:attach(execution)")
 [void]$builder.AppendLine("  _G.OMW_TM02W2E_STATE = execution")
+[void]$builder.AppendLine("  _G.OMW_TM02W2E_NAVIGATION = navigation")
 [void]$builder.AppendLine("end)")
 [void]$builder.AppendLine("if not bootstrapOk then")
 [void]$builder.AppendLine('  env.info("[OMW][TM02W2E] level=ERROR event=execution_bootstrap_uncaught_error reason=" .. tostring(bootstrapError))')
