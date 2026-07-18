@@ -9,8 +9,9 @@ $w1SourcePath = Join-Path $repositoryRoot "mission/tests/tm02-red-network/src/tm
 $w2ConfigPath = Join-Path $repositoryRoot "mission/tests/tm02-red-network/config-tm02w2.lua"
 $w2SourcePath = Join-Path $repositoryRoot "mission/tests/tm02-red-network/src/tm02w2.lua"
 $w2eConfigPath = Join-Path $repositoryRoot "mission/tests/tm02-red-network/config-tm02w2e.lua"
+$w2eBootstrapMenuPath = Join-Path $repositoryRoot "mission/tests/tm02-red-network/src/tm02w2e-bootstrap-menu.lua"
 $w2eAdapterPath = Join-Path $repositoryRoot "mission/tests/tm02-red-network/src/tm02w2e-leader-proxy-adapter.lua"
-$w2eNavigationPath = Join-Path $repositoryRoot "mission/tests/tm02-red-network/src/tm02w2e-moose-navigation-v3.lua"
+$w2eNavigationPath = Join-Path $repositoryRoot "mission/tests/tm02-red-network/src/tm02w2e-moose-navigation-v4.lua"
 $w2eCombatEventsPath = Join-Path $repositoryRoot "mission/tests/tm02-red-network/src/tm02w2e-combat-events-v3.lua"
 $w2eSourcePath = Join-Path $repositoryRoot "mission/tests/tm02-red-network/src/tm02w2e.lua"
 $outputPath = Join-Path $repositoryRoot "mission/tests/tm02-red-network/dist/TM02W2E.lua"
@@ -25,6 +26,7 @@ $w1SourceContent = Get-NormalizedSource -Path $w1SourcePath
 $w2ConfigContent = Get-NormalizedSource -Path $w2ConfigPath
 $w2SourceContent = Get-NormalizedSource -Path $w2SourcePath
 $w2eConfigContent = Get-NormalizedSource -Path $w2eConfigPath
+$w2eBootstrapMenuContent = Get-NormalizedSource -Path $w2eBootstrapMenuPath
 $w2eAdapterContent = Get-NormalizedSource -Path $w2eAdapterPath
 $w2eNavigationContent = Get-NormalizedSource -Path $w2eNavigationPath
 $w2eCombatEventsContent = Get-NormalizedSource -Path $w2eCombatEventsPath
@@ -58,10 +60,13 @@ $builder = New-Object System.Text.StringBuilder
 [void]$builder.AppendLine("local TM02W2 = (function()")
 [void]$builder.AppendLine($w2SourceContent)
 [void]$builder.AppendLine("end)()")
+[void]$builder.AppendLine("local TM02W2EBootstrapMenu = (function()")
+[void]$builder.AppendLine($w2eBootstrapMenuContent)
+[void]$builder.AppendLine("end)()")
 [void]$builder.AppendLine("local TM02W2ELeaderProxyAdapter = (function()")
 [void]$builder.AppendLine($w2eAdapterContent)
 [void]$builder.AppendLine("end)()")
-[void]$builder.AppendLine("local TM02W2EMooseNavigationV3 = (function()")
+[void]$builder.AppendLine("local TM02W2EMooseNavigationV4 = (function()")
 [void]$builder.AppendLine($w2eNavigationContent)
 [void]$builder.AppendLine("end)()")
 [void]$builder.AppendLine("local TM02W2ECombatEventsV3 = (function()")
@@ -70,22 +75,34 @@ $builder = New-Object System.Text.StringBuilder
 [void]$builder.AppendLine("local TM02W2E = (function()")
 [void]$builder.AppendLine($w2eSourceContent)
 [void]$builder.AppendLine("end)()")
+[void]$builder.AppendLine("local bootstrapMenu = TM02W2EBootstrapMenu.install(TM02W2EConfig, TM02W2EBuild)")
 [void]$builder.AppendLine("local bootstrapOk, bootstrapError = pcall(function()")
+[void]$builder.AppendLine("  bootstrapMenu:update({ phase = 'REGISTRY', detail = 'validating RED registry' })")
 [void]$builder.AppendLine("  local registry = TM02W1.start(TM02W2PlannerConfig.network, TM02W2EBuild)")
 [void]$builder.AppendLine("  if registry.configurationValid ~= true then")
 [void]$builder.AppendLine('    error("TM02W1 registry validation failed")')
 [void]$builder.AppendLine("  end")
+[void]$builder.AppendLine("  bootstrapMenu:update({ phase = 'PLANNER', detail = 'validating accepted reservation plan' })")
 [void]$builder.AppendLine("  local planner = TM02W2.start(TM02W2PlannerConfig, registry, TM02W2EBuild)")
 [void]$builder.AppendLine("  if planner.configurationValid ~= true then")
 [void]$builder.AppendLine('    error("TM02W2 planner validation failed")')
 [void]$builder.AppendLine("  end")
 [void]$builder.AppendLine("  TM02W2ELeaderProxyAdapter.install(TM02W2EConfig)")
-[void]$builder.AppendLine("  local navigation = TM02W2EMooseNavigationV3.install(TM02W2EConfig, registry, planner)")
-[void]$builder.AppendLine("  if navigation.valid ~= true then")
-[void]$builder.AppendLine('    error("TM02W2E hybrid navigation validation failed")')
-[void]$builder.AppendLine("  end")
-[void]$builder.AppendLine("  if navigation:preparePlannerTasks() ~= true then")
-[void]$builder.AppendLine('    error("TM02W2E safe route planning failed")')
+[void]$builder.AppendLine("  bootstrapMenu:update({ phase = 'NAVIGATION', detail = 'compiling MOOSE road and fallback routes' })")
+[void]$builder.AppendLine("  local navigation = TM02W2EMooseNavigationV4.install(TM02W2EConfig, registry, planner)")
+[void]$builder.AppendLine("  local routingReady = navigation.valid == true and navigation:preparePlannerTasks() == true")
+[void]$builder.AppendLine("  bootstrapMenu:update({")
+[void]$builder.AppendLine("    phase = routingReady and 'EXECUTOR' or 'BLOCKED',")
+[void]$builder.AppendLine("    detail = routingReady and 'creating execution controller' or 'no safe route for every reserved task',")
+[void]$builder.AppendLine("    navigationValid = navigation.valid == true,")
+[void]$builder.AppendLine("    routingReady = routingReady,")
+[void]$builder.AppendLine("    errorCount = #navigation.errors,")
+[void]$builder.AppendLine("    warningCount = #navigation.warnings,")
+[void]$builder.AppendLine("  })")
+[void]$builder.AppendLine("  if routingReady ~= true then")
+[void]$builder.AppendLine('    env.info("[OMW][TM02W2E] level=ERROR event=execution_bootstrap_blocked reason=navigation_not_ready")')
+[void]$builder.AppendLine("    _G.OMW_TM02W2E_NAVIGATION = navigation")
+[void]$builder.AppendLine("    return")
 [void]$builder.AppendLine("  end")
 [void]$builder.AppendLine("  local execution = TM02W2E.start(TM02W2EConfig, registry, planner, TM02W2EBuild)")
 [void]$builder.AppendLine("  if execution.configurationValid ~= true then")
@@ -96,13 +113,28 @@ $builder = New-Object System.Text.StringBuilder
 [void]$builder.AppendLine('    error("TM02W2E combat event guard validation failed")')
 [void]$builder.AppendLine("  end")
 [void]$builder.AppendLine("  navigation:attach(execution)")
+[void]$builder.AppendLine("  bootstrapMenu:update({")
+[void]$builder.AppendLine("    phase = 'READY',")
+[void]$builder.AppendLine("    detail = 'TM02W2E execution menu is ready',")
+[void]$builder.AppendLine("    navigationValid = true,")
+[void]$builder.AppendLine("    routingReady = true,")
+[void]$builder.AppendLine("    executionReady = true,")
+[void]$builder.AppendLine("    errorCount = #navigation.errors,")
+[void]$builder.AppendLine("    warningCount = #navigation.warnings,")
+[void]$builder.AppendLine("  })")
 [void]$builder.AppendLine("  _G.OMW_TM02W2E_STATE = execution")
 [void]$builder.AppendLine("  _G.OMW_TM02W2E_NAVIGATION = navigation")
 [void]$builder.AppendLine("  _G.OMW_TM02W2E_COMBAT_EVENTS = combatEvents")
 [void]$builder.AppendLine("end)")
 [void]$builder.AppendLine("if not bootstrapOk then")
+[void]$builder.AppendLine("  bootstrapMenu:update({")
+[void]$builder.AppendLine("    phase = 'FAILED',")
+[void]$builder.AppendLine("    detail = tostring(bootstrapError),")
+[void]$builder.AppendLine("    executionReady = false,")
+[void]$builder.AppendLine("  })")
 [void]$builder.AppendLine('  env.info("[OMW][TM02W2E] level=ERROR event=execution_bootstrap_uncaught_error reason=" .. tostring(bootstrapError))')
 [void]$builder.AppendLine("end")
+[void]$builder.AppendLine("_G.OMW_TM02W2E_BOOTSTRAP = bootstrapMenu")
 
 $outputDirectory = Split-Path -Parent $outputPath
 [void](New-Item -ItemType Directory -Path $outputDirectory -Force)
