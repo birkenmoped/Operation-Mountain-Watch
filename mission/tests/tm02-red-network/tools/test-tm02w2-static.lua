@@ -87,3 +87,7 @@ print(string.format(
   planner.nonNearestSelectionCount,
   planner.reservationInfluenceCount
 ))
+
+-- PR #15 reuses the already trusted workflow entrypoint. This second harness
+-- validates the isolated execution layer after the planner assertions above.
+dofile(path("mission/tests/tm02-red-network/tools/test-tm02w2e-static.lua"))
