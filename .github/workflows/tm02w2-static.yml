@@ -1,0 +1,29 @@
+name: TM02W2 static Lua test
+
+on:
+  push:
+    branches:
+      - feature/tm02w2-red-source-cost-selection
+    paths:
+      - "mission/tests/tm02-red-network/config-tm02w2.lua"
+      - "mission/tests/tm02-red-network/src/tm02w1.lua"
+      - "mission/tests/tm02-red-network/src/tm02w2.lua"
+      - "mission/tests/tm02-red-network/tools/test-tm02w2-static.lua"
+      - ".github/workflows/tm02w2-static.yml"
+  pull_request:
+    paths:
+      - "mission/tests/tm02-red-network/config-tm02w2.lua"
+      - "mission/tests/tm02-red-network/src/tm02w1.lua"
+      - "mission/tests/tm02-red-network/src/tm02w2.lua"
+      - "mission/tests/tm02-red-network/tools/test-tm02w2-static.lua"
+      - ".github/workflows/tm02w2-static.yml"
+
+jobs:
+  lua-static-harness:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Lua 5.1
+        run: sudo apt-get update && sudo apt-get install -y lua5.1
+      - name: Run TM02W2 static harness
+        run: lua5.1 mission/tests/tm02-red-network/tools/test-tm02w2-static.lua "$GITHUB_WORKSPACE"
