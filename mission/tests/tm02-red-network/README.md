@@ -28,9 +28,23 @@ Generated local bundle:
 dist/TM02W1.lua
 ```
 
-TM02W1 reuses the seven existing TM02V location zones and the ten existing personnel templates. It registers HQ, two sub-HQs and four ordinary sites, then builds seven configured logical links including one cross-link.
+TM02W1 uses a representative test fixture with:
 
-No additional Mission Editor route groups or route waypoints are required for W1. W1 does not move personnel, choose a source, issue orders or use scenery buildings yet.
+```text
+11 RED locations
+3 command areas: CENTRAL, LEFT and RIGHT
+10 directed command links
+17 bidirectional movement links
+2 BLUE objective zones
+```
+
+The fixture size is not a production minimum or maximum.
+
+The command graph and movement graph are deliberately separate. A RED site may report through one command area while personnel later move through another area when that route is cheaper or operationally preferable.
+
+The ten existing TM02V personnel-strength templates remain unchanged. No Mission Editor route groups or route waypoints are required for W1.
+
+W1 validates registry, command hierarchy, movement connectivity, alternative paths, cross-area movement links and BLUE objective associations. It does not move personnel, choose a source, issue orders or use scenery buildings yet.
 
 Planned successors:
 
