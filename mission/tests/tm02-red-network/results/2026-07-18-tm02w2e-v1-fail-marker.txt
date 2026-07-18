@@ -1,1 +1,24 @@
-TM02W2E version 1 DCS navigation failed on 2026-07-18. Superseded by road-transit and watchdog version 2.
+TM02W2E reserved-task execution version 1 - DCS FAIL
+Date: 2026-07-18
+Mission: OMW_TEST_TM02W2E_RED_TASK_EXECUTION.miz
+Configuration: TM02W2E-red-reserved-task-execution-1
+
+The accepted planner produced seven tasks and the execution layer started four proxies. No task arrived. Three tasks remained queued because the first wave never released capacity.
+
+Observed navigation failures:
+- one route passed the BLUE FOB and entered combat;
+- other proxies became trapped in buildings or courtyards;
+- at least one proxy moved repeatedly within a small area;
+- the monitor classified none of these cases as a navigation failure;
+- no full group was materialized at a destination.
+
+Representative state:
+activeTaskCount=4
+arrivedTaskCount=0
+queuedTaskCount=3
+failedTaskCount=0
+errorCount=0
+
+Root cause: direct DCS ground routing between node-zone coordinates without road portals, validated road paths, BLUE-area exclusion, stuck detection or bounded recovery.
+
+Version 2 changes only physical navigation. Planner decisions, reservations, concurrency and 108-person accounting remain unchanged.
