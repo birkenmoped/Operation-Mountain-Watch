@@ -8,7 +8,9 @@ DCS MISSION SETUP REQUIRED
 DCS VALIDATION PENDING
 ```
 
-TM02W1 prüft ausschließlich Mission-Editor-Registry, Site/Node-Trennung und einen allgemeinen Netzwerkgraphen. Es bewegt noch kein Personal und trifft keine Kommandeursentscheidung.
+TM02W1 setzt direkt auf der bestandenen TM02V-Testmission auf. Es prüft ausschließlich die Registrierung der vorhandenen Netzwerkstandorte, die Trennung von Site und Node sowie den allgemeinen Graphen.
+
+TM02W1 bewegt noch kein Personal und trifft keine Kommandeursentscheidung.
 
 ## Missionsname
 
@@ -24,185 +26,110 @@ Anzeigename:
 OMW TM02W1 - RED Network Registry
 ```
 
-Empfohlene Grundlage ist eine Kopie der zuletzt bestandenen TM02V-Testmission. Die TM02V-Skriptaktion wird in der Kopie entfernt oder deaktiviert. Die ursprüngliche TM02V-Mission bleibt unverändert.
+## Was aus TM02V unverändert übernommen wird
 
-## Benötigte graphische Punkte
+Die bestehende TM02V-Mission wird kopiert.
 
-Der kleinste vollständige TM02W1-Aufbau benötigt:
+Unverändert erhalten bleiben:
 
-```text
-6 kreisförmige Triggerzonen als Netzwerkstandorte
-6 Late-Activation-Routengruppen
-mindestens 2 Wegpunkte je Routengruppe
-```
+- die zehn roten Vorlagengruppen `TPL_TEST_RED_PACKET_01_01` bis `TPL_TEST_RED_PACKET_10_01`;
+- der Blue-Client-Slot;
+- die vorhandenen Positionen von HQ, A, B, AA, AB, BA und BB;
+- MOOSE und die übrigen allgemeinen Testmissionsobjekte.
 
-Damit sind mindestens vorhanden:
+Die zehn roten Gruppen sind Stärkevorlagen. Sie sind keine Netzverbindungen und werden in W1 nicht aktiviert.
 
-```text
-6 Standortanker
-12 Routenendpunkte/Wegpunkte
-```
+## Benötigte Netzwerkpunkte
 
-Zwischenwegpunkte sind erlaubt und für Geländekorridore empfohlen. Sie sind keine zusätzlichen Netzknoten.
+Es werden keine neuen Netzwerkpunkte benötigt.
 
-Zusätzlich benötigt die Mission einen Blue-Client-Slot für das F10-Menü und die üblichen Skriptaktionen. Diese Objekte zählen nicht zum Netzwerkgraphen.
-
-## Exakte Standortzonen
-
-Alle sechs Standorte werden als kreisförmige Triggerzonen mit Radius `100 m` angelegt.
+Die vorhandene TM02V-Struktur besitzt bereits genau die sieben benötigten Standorte:
 
 ```text
-OMW_RED_HQ_Test
-OMW_RED_SUBHQ_Test
-OMW_RED_SITE_RearCompound
-OMW_RED_SITE_FrontFarm
-OMW_RED_SITE_ValleyHouse
-OMW_RED_SITE_ReplacementFarm
+1 Haupt-HQ
+2 Unter-HQs: A und B
+4 normale Sites: AA, AB, BA und BB
 ```
 
-Regeln:
-
-- Kreisradius exakt 100 m für den ersten Abnahmelauf;
-- Abstand der Zonenmittelpunkte mindestens 250 m;
-- Zonen dürfen sich nicht überlappen;
-- keine weitere Zone mit einem Präfix `OMW_RED_HQ_`, `OMW_RED_SUBHQ_`, `OMW_RED_SITE_` oder `OMW_RED_NODEAREA_`;
-- TM02W1 verwendet noch kein `OMW_RED_NODEAREA_*`;
-- HQ und SUBHQ erzeugen jeweils einen aktiven Node am gleichnamigen Site;
-- die vier normalen Sites bleiben unbesetzt und besitzen in W1 noch keinen Node.
-
-### Wiederverwendung der bisherigen TM02-Zonen
-
-Beim Kopieren der vorhandenen Testmission können sechs Zonen umbenannt werden:
+Gesamt:
 
 ```text
-ZONE_TM02N_HQ  -> OMW_RED_HQ_Test
-ZONE_TM02N_A   -> OMW_RED_SUBHQ_Test
-ZONE_TM02N_B   -> OMW_RED_SITE_RearCompound
-ZONE_TM02N_AA  -> OMW_RED_SITE_FrontFarm
-ZONE_TM02N_AB  -> OMW_RED_SITE_ValleyHouse
-ZONE_TM02N_BA  -> OMW_RED_SITE_ReplacementFarm
+7 kreisförmige Triggerzonen einschließlich HQ
+0 zusätzliche Routengruppen
+0 zusätzliche Routenwegpunkte
 ```
 
-`ZONE_TM02N_BB` wird gelöscht oder erhält einen Namen ohne `OMW_RED_*`-Präfix.
-
-Die geometrische Position der übernommenen Zonen darf angepasst werden, solange die Abstands- und Routenregeln eingehalten werden.
-
-## Exakte Routengruppen
-
-Jede Route ist eine RED-Bodengruppe mit genau einer Infanterieeinheit.
-
-Empfohlene Einheit:
+## Exakte Umbenennung der vorhandenen Zonen
 
 ```text
-Insurgents / Infantry AK
+ZONE_TM02N_HQ -> OMW_RED_HQ_Test
+ZONE_TM02N_A  -> OMW_RED_SUBHQ_A
+ZONE_TM02N_B  -> OMW_RED_SUBHQ_B
+ZONE_TM02N_AA -> OMW_RED_SITE_AA
+ZONE_TM02N_AB -> OMW_RED_SITE_AB
+ZONE_TM02N_BA -> OMW_RED_SITE_BA
+ZONE_TM02N_BB -> OMW_RED_SITE_BB
 ```
 
-Gruppeneinstellungen:
+Die Zonenpositionen und Radien dürfen für den ersten W1-Lauf unverändert bleiben.
+
+Es darf keine weitere Triggerzone mit einem der folgenden Präfixe existieren:
 
 ```text
-Late Activation:        aktiviert
-Hidden on planner map:  aktiviert
-Visible before start:   beliebig; Gruppe wird nicht aktiviert
-Einheitenzahl:          genau 1
+OMW_RED_HQ_
+OMW_RED_SUBHQ_
+OMW_RED_SITE_
+OMW_RED_NODEAREA_
 ```
 
-Wegpunkte:
+HQ sowie A und B werden als vorhandene aktive Nodes registriert. AA, AB, BA und BB werden als verfügbare, noch unbesetzte Sites registriert.
+
+## Logische Netzwerkverbindungen
+
+Die Verbindungen werden für W1 in `config-tm02w1.lua` definiert. Dafür werden keine zusätzlichen DCS-Gruppen benötigt.
 
 ```text
-Typ:          Turning Point
-Aktion:       Off Road
-Geschwindigkeit: 5 km/h
-Anzahl:       mindestens 2
+HQ <-> A
+HQ <-> B
+A  <-> AA
+A  <-> AB
+B  <-> BA
+B  <-> BB
+AB <-> BA
 ```
 
-Der erste Wegpunkt liegt vorzugsweise im Zentrum der Quellzone. Der letzte Wegpunkt liegt vorzugsweise im Zentrum der Zielzone. Jeder Endpunkt muss innerhalb genau einer Standortzone liegen.
+Die letzte Verbindung `AB <-> BA` ist die Querverbindung. Sie beweist, dass das Produktionsnetz kein reiner Baum sein muss.
 
-Die Wegpunktrichtung dient nur der eindeutigen Registrierung und Logausgabe. Alle W1-Verbindungen werden logisch als bidirektional registriert.
-
-### Route 1
+Erwartete Topologie:
 
 ```text
-Gruppenname: OMW_RED_ROUTE_HQ_SubHQ
-WP1: OMW_RED_HQ_Test
-letzter WP: OMW_RED_SUBHQ_Test
+                 OMW_RED_HQ_Test
+                    /       \
+                   /         \
+       OMW_RED_SUBHQ_A     OMW_RED_SUBHQ_B
+           /       \           /       \
+          /         \         /         \
+OMW_RED_SITE_AA  OMW_RED_SITE_AB---OMW_RED_SITE_BA  OMW_RED_SITE_BB
 ```
 
-### Route 2
+## Warum W1 keine Wegpunkte benötigt
+
+W1 validiert nur den logischen Graphen. Es bewegt keine DCS-Gruppe.
+
+Für jeden Link berechnet W1 lediglich:
 
 ```text
-Gruppenname: OMW_RED_ROUTE_SubHQ_Rear
-WP1: OMW_RED_SUBHQ_Test
-letzter WP: OMW_RED_SITE_RearCompound
+Luftlinienentfernung zwischen den Zonenmittelpunkten
+rechnerische Laufzeit bei 5 km/h
 ```
 
-### Route 3
+Diese Werte dienen nur der Registry- und Graphprüfung.
 
-```text
-Gruppenname: OMW_RED_ROUTE_Rear_Front
-WP1: OMW_RED_SITE_RearCompound
-letzter WP: OMW_RED_SITE_FrontFarm
-```
-
-### Route 4
-
-```text
-Gruppenname: OMW_RED_ROUTE_Front_Valley
-WP1: OMW_RED_SITE_FrontFarm
-letzter WP: OMW_RED_SITE_ValleyHouse
-```
-
-### Route 5 – alternative Querverbindung
-
-```text
-Gruppenname: OMW_RED_ROUTE_Rear_Valley
-WP1: OMW_RED_SITE_RearCompound
-letzter WP: OMW_RED_SITE_ValleyHouse
-```
-
-Diese Route erzeugt zusammen mit Route 3 und Route 4 den erforderlichen alternativen Weg beziehungsweise Zyklus.
-
-### Route 6 – späterer Ersatzstandort
-
-```text
-Gruppenname: OMW_RED_ROUTE_Rear_Replacement
-WP1: OMW_RED_SITE_RearCompound
-letzter WP: OMW_RED_SITE_ReplacementFarm
-```
-
-Der Replacement-Site bleibt in W1 unbesetzt. Er wird bereits in den Graph aufgenommen, damit dieselbe Missionsgeometrie später für W5 weiterverwendet werden kann.
-
-## Erwartete Topologie
-
-```text
-OMW_RED_HQ_Test
-       |
-OMW_RED_SUBHQ_Test
-       |
-OMW_RED_SITE_RearCompound
-       |             \
-       |              \
-OMW_RED_SITE_FrontFarm  OMW_RED_SITE_ReplacementFarm
-       |              
-       |              
-OMW_RED_SITE_ValleyHouse
-       ^
-       |
-       +--- alternative Verbindung von RearCompound
-```
-
-Graphwerte:
-
-```text
-Standorte/Vertices: 6
-Routen/Edges:       6
-Komponenten:        1
-vom HQ erreichbar: 6
-Alternative:       ja
-```
+Ab TM02W2 bewegen sich reale Laufgruppen Knoten für Knoten entlang des Graphen. Für den ersten W2-Test kann die bereits bekannte direkte Off-Road-Bewegung zwischen den vorhandenen Testzonen verwendet werden. Geländespezifische Wegpunktvorlagen oder Routenkorridore werden nur dann ergänzt, wenn die spätere Afghanistan-Produktionsmission sie wegen unpassierbaren Geländes tatsächlich benötigt.
 
 ## Skript bauen
 
-Auf dem Branch:
+Branch:
 
 ```text
 feature/tm02w-red-network-registry
@@ -213,6 +140,7 @@ PowerShell:
 ```powershell
 cd P:\DCS-DEV\Operation-Mountain-Watch
 
+git fetch origin
 git switch feature/tm02w-red-network-registry
 git pull --ff-only
 
@@ -228,7 +156,7 @@ mission/tests/tm02-red-network/dist/TM02W1.lua
 
 ## DCS-Trigger
 
-In der kopierten Mission wird die bisherige TM02V-Skriptaktion entfernt.
+In der kopierten Mission wird die bisherige TM02V-Skriptaktion entfernt oder deaktiviert.
 
 Ein Trigger genügt:
 
@@ -244,8 +172,6 @@ Aktionen in dieser Reihenfolge:
 2. DO SCRIPT FILE -> mission/tests/tm02-red-network/dist/TM02W1.lua
 ```
 
-TM02W1 benötigt für die Registry selbst keine MOOSE-Funktion. MOOSE bleibt geladen, damit die Testmission dem späteren Projektaufbau entspricht.
-
 Nach jeder Neuerzeugung von `TM02W1.lua` muss die Datei im Mission Editor erneut ausgewählt und die Mission gespeichert werden.
 
 ## Erwartetes F10-Menü
@@ -256,7 +182,7 @@ F10 Other
     └── TM02W1 RED Network Registry
         ├── Show validation summary
         ├── List locations
-        ├── List routes
+        ├── List links
         └── Toggle markers
 ```
 
@@ -264,48 +190,46 @@ F10 Other
 
 ```text
 event=red_network_registry_validation
-configurationVersion=TM02W1-red-network-registry-1
+configurationVersion=TM02W1-red-network-registry-2
 configurationValid=true
 headquartersCount=1
-subHeadquartersCount=1
+subHeadquartersCount=2
 ordinarySiteCount=4
 nodeAreaCount=0
-activeNodeCount=2
-routeCount=6
-locationCount=6
+activeNodeCount=3
+linkCount=7
+locationCount=7
 componentCount=1
-connectedLocationCount=6
+connectedLocationCount=7
 hasAlternativeConnection=true
 errorCount=0
 ```
 
-Zusätzlich müssen genau sechs Ereignisse `red_network_location_registered` und sechs Ereignisse `red_network_route_registered` vorhanden sein.
+Zusätzlich müssen genau sieben Ereignisse `red_network_location_registered` und sieben Ereignisse `red_network_link_registered` vorhanden sein.
 
 ## PASS
 
 TM02W1 besteht, wenn:
 
-- exakt die sechs erwarteten Standortzonen registriert werden;
-- exakt ein HQ und ein SUBHQ erkannt werden;
-- nur HQ und SUBHQ aktive Nodes besitzen;
-- die vier normalen Sites ohne Node registriert werden;
-- exakt sechs Late-Activation-Routen erkannt werden;
-- jeder Routenendpunkt eindeutig einer Standortzone zugeordnet wird;
-- alle sechs Standorte vom HQ erreichbar sind;
-- der Graph eine alternative Verbindung enthält und daher kein reiner Baum ist;
-- Distanz und erwartete Reisezeit für jede Route berechnet werden;
+- exakt die sieben bestehenden TM02-Zonen unter ihren neuen Präfixnamen registriert werden;
+- exakt ein HQ und zwei Unter-HQs erkannt werden;
+- HQ, A und B aktive Nodes besitzen;
+- AA, AB, BA und BB als Sites ohne aktiven Node registriert werden;
+- exakt sieben konfigurierte Links registriert werden;
+- alle sieben Standorte vom HQ erreichbar sind;
+- die Querverbindung `AB <-> BA` erkannt wird;
+- der Graph dadurch nicht auf einen Baum beschränkt ist;
+- für jeden Link direkte Entfernung und rechnerische Laufzeit berechnet werden;
 - keine Gruppe aktiviert oder bewegt wird;
 - kein `[OMW][TM02W1] level=ERROR` im Log erscheint.
 
 ## Automatische FAIL-Fälle
 
-- fehlendes oder zusätzliches Objekt mit einem TM02W1-Präfix;
-- mehrere HQs oder kein HQ;
-- überlappende Standortzonen mit mehrdeutigem Routenendpunkt;
-- Routengruppe nicht auf Late Activation;
-- Routengruppe mit mehr oder weniger als einer Einheit;
-- weniger als zwei Wegpunkte;
-- Start und Ziel derselben Route im gleichen Site;
+- fehlende oder zusätzliche Zone mit einem W1-Präfix;
+- mehrere Haupt-HQs oder kein Haupt-HQ;
+- fehlender Link-Endpunkt;
+- doppelter Linkname;
+- Link von einem Site zu sich selbst;
 - nicht erreichbarer Standort;
-- kein alternativer Weg beziehungsweise kein Zyklus;
+- fehlende Querverbindung;
 - Bewegung, Auffüllung oder Kommandeursentscheidung in W1.
