@@ -43,6 +43,12 @@ trigger = {
 missionCommands = nil
 
 local config = assert(dofile(path("mission/tests/tm02-red-network/config-tm02w2.lua")))
+
+-- The real DCS fixture may legitimately select the nearest viable source for
+-- every task. Controlled static geometry must still prove that the cost model
+-- can prefer a farther source when depletion and fragmentation make it cheaper.
+config.planning.requireNonNearestSelection = true
+
 local TM02W1 = assert(dofile(path("mission/tests/tm02-red-network/src/tm02w1.lua")))
 local TM02W2 = assert(dofile(path("mission/tests/tm02-red-network/src/tm02w2.lua")))
 
@@ -61,6 +67,7 @@ assert(#(function()
 end)() == 11, "expected 11 active W2 nodes")
 
 local planner = TM02W2.start(config, registry, build)
+assert(config.configurationVersion == "TM02W2-red-source-cost-reservation-2", "expected W2 version 2")
 assert(planner.configurationValid == true, table.concat(planner.errors or {}, "; "))
 assert(planner.initialDeficit == 18, "expected initial deficit 18")
 assert(planner.totalReservedInbound == 18, "expected inbound reservations 18")
@@ -69,7 +76,7 @@ assert(planner.unresolvedDeficit == 0, "expected no unresolved deficit")
 assert(#planner.tasks >= 4, "expected at least four tasks")
 assert(planner.candidateEvaluationCount > #planner.tasks, "expected multiple candidate evaluations")
 assert(planner.multiHopTaskCount >= 1, "expected a multi-hop task")
-assert(planner.nonNearestSelectionCount >= 1, "expected a non-nearest source selection")
+assert(planner.nonNearestSelectionCount >= 1, "expected a non-nearest source selection on controlled geometry")
 assert(planner.reservationInfluenceCount >= 1, "expected reservation influence")
 
 print(string.format(
