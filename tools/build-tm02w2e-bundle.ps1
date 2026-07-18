@@ -11,6 +11,7 @@ $w2SourcePath = Join-Path $repositoryRoot "mission/tests/tm02-red-network/src/tm
 $w2eConfigPath = Join-Path $repositoryRoot "mission/tests/tm02-red-network/config-tm02w2e.lua"
 $w2eAdapterPath = Join-Path $repositoryRoot "mission/tests/tm02-red-network/src/tm02w2e-leader-proxy-adapter.lua"
 $w2eNavigationPath = Join-Path $repositoryRoot "mission/tests/tm02-red-network/src/tm02w2e-moose-navigation.lua"
+$w2eCombatEventsPath = Join-Path $repositoryRoot "mission/tests/tm02-red-network/src/tm02w2e-combat-events.lua"
 $w2eSourcePath = Join-Path $repositoryRoot "mission/tests/tm02-red-network/src/tm02w2e.lua"
 $outputPath = Join-Path $repositoryRoot "mission/tests/tm02-red-network/dist/TM02W2E.lua"
 
@@ -26,6 +27,7 @@ $w2SourceContent = Get-NormalizedSource -Path $w2SourcePath
 $w2eConfigContent = Get-NormalizedSource -Path $w2eConfigPath
 $w2eAdapterContent = Get-NormalizedSource -Path $w2eAdapterPath
 $w2eNavigationContent = Get-NormalizedSource -Path $w2eNavigationPath
+$w2eCombatEventsContent = Get-NormalizedSource -Path $w2eCombatEventsPath
 $w2eSourceContent = Get-NormalizedSource -Path $w2eSourcePath
 $buildTimestamp = [DateTime]::UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ", [Globalization.CultureInfo]::InvariantCulture)
 
@@ -62,6 +64,9 @@ $builder = New-Object System.Text.StringBuilder
 [void]$builder.AppendLine("local TM02W2EMooseNavigation = (function()")
 [void]$builder.AppendLine($w2eNavigationContent)
 [void]$builder.AppendLine("end)()")
+[void]$builder.AppendLine("local TM02W2ECombatEvents = (function()")
+[void]$builder.AppendLine($w2eCombatEventsContent)
+[void]$builder.AppendLine("end)()")
 [void]$builder.AppendLine("local TM02W2E = (function()")
 [void]$builder.AppendLine($w2eSourceContent)
 [void]$builder.AppendLine("end)()")
@@ -86,9 +91,14 @@ $builder = New-Object System.Text.StringBuilder
 [void]$builder.AppendLine("  if execution.configurationValid ~= true then")
 [void]$builder.AppendLine('    error("TM02W2E execution validation failed")')
 [void]$builder.AppendLine("  end")
+[void]$builder.AppendLine("  local combatEvents = TM02W2ECombatEvents.install(TM02W2EConfig, execution)")
+[void]$builder.AppendLine("  if combatEvents.valid ~= true then")
+[void]$builder.AppendLine('    error("TM02W2E combat event guard validation failed")')
+[void]$builder.AppendLine("  end")
 [void]$builder.AppendLine("  navigation:attach(execution)")
 [void]$builder.AppendLine("  _G.OMW_TM02W2E_STATE = execution")
 [void]$builder.AppendLine("  _G.OMW_TM02W2E_NAVIGATION = navigation")
+[void]$builder.AppendLine("  _G.OMW_TM02W2E_COMBAT_EVENTS = combatEvents")
 [void]$builder.AppendLine("end)")
 [void]$builder.AppendLine("if not bootstrapOk then")
 [void]$builder.AppendLine('  env.info("[OMW][TM02W2E] level=ERROR event=execution_bootstrap_uncaught_error reason=" .. tostring(bootstrapError))')
