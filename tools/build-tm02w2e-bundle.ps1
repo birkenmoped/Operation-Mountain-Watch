@@ -12,6 +12,7 @@ $w2eConfigPath = Join-Path $repositoryRoot "mission/tests/tm02-red-network/confi
 $w2eBootstrapMenuPath = Join-Path $repositoryRoot "mission/tests/tm02-red-network/src/tm02w2e-bootstrap-menu.lua"
 $w2eAdapterPath = Join-Path $repositoryRoot "mission/tests/tm02-red-network/src/tm02w2e-leader-proxy-adapter.lua"
 $w2eNavigationPath = Join-Path $repositoryRoot "mission/tests/tm02-red-network/src/tm02w2e-moose-navigation-v4.lua"
+$w2eProgressWatchdogPath = Join-Path $repositoryRoot "mission/tests/tm02-red-network/src/tm02w2e-progress-watchdog-v5.lua"
 $w2eCombatEventsPath = Join-Path $repositoryRoot "mission/tests/tm02-red-network/src/tm02w2e-combat-events-v3.lua"
 $w2eSourcePath = Join-Path $repositoryRoot "mission/tests/tm02-red-network/src/tm02w2e.lua"
 $outputPath = Join-Path $repositoryRoot "mission/tests/tm02-red-network/dist/TM02W2E.lua"
@@ -29,6 +30,7 @@ $w2eConfigContent = Get-NormalizedSource -Path $w2eConfigPath
 $w2eBootstrapMenuContent = Get-NormalizedSource -Path $w2eBootstrapMenuPath
 $w2eAdapterContent = Get-NormalizedSource -Path $w2eAdapterPath
 $w2eNavigationContent = Get-NormalizedSource -Path $w2eNavigationPath
+$w2eProgressWatchdogContent = Get-NormalizedSource -Path $w2eProgressWatchdogPath
 $w2eCombatEventsContent = Get-NormalizedSource -Path $w2eCombatEventsPath
 $w2eSourceContent = Get-NormalizedSource -Path $w2eSourcePath
 $buildTimestamp = [DateTime]::UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ", [Globalization.CultureInfo]::InvariantCulture)
@@ -68,6 +70,9 @@ $builder = New-Object System.Text.StringBuilder
 [void]$builder.AppendLine("end)()")
 [void]$builder.AppendLine("local TM02W2EMooseNavigationV4 = (function()")
 [void]$builder.AppendLine($w2eNavigationContent)
+[void]$builder.AppendLine("end)()")
+[void]$builder.AppendLine("local TM02W2EProgressWatchdogV5 = (function()")
+[void]$builder.AppendLine($w2eProgressWatchdogContent)
 [void]$builder.AppendLine("end)()")
 [void]$builder.AppendLine("local TM02W2ECombatEventsV3 = (function()")
 [void]$builder.AppendLine($w2eCombatEventsContent)
@@ -112,18 +117,23 @@ $builder = New-Object System.Text.StringBuilder
 [void]$builder.AppendLine("  if combatEvents.valid ~= true then")
 [void]$builder.AppendLine('    error("TM02W2E combat event guard validation failed")')
 [void]$builder.AppendLine("  end")
-[void]$builder.AppendLine("  navigation:attach(execution)")
+[void]$builder.AppendLine("  local progressWatchdog = TM02W2EProgressWatchdogV5.install(TM02W2EConfig, registry, planner, navigation, execution)")
+[void]$builder.AppendLine("  if progressWatchdog.valid ~= true then")
+[void]$builder.AppendLine('    error("TM02W2E route-progress watchdog validation failed")')
+[void]$builder.AppendLine("  end")
+[void]$builder.AppendLine("  progressWatchdog:attach()")
 [void]$builder.AppendLine("  bootstrapMenu:update({")
 [void]$builder.AppendLine("    phase = 'READY',")
 [void]$builder.AppendLine("    detail = 'TM02W2E execution menu is ready',")
 [void]$builder.AppendLine("    navigationValid = true,")
 [void]$builder.AppendLine("    routingReady = true,")
 [void]$builder.AppendLine("    executionReady = true,")
-[void]$builder.AppendLine("    errorCount = #navigation.errors,")
+[void]$builder.AppendLine("    errorCount = #navigation.errors + #progressWatchdog.errors,")
 [void]$builder.AppendLine("    warningCount = #navigation.warnings,")
 [void]$builder.AppendLine("  })")
 [void]$builder.AppendLine("  _G.OMW_TM02W2E_STATE = execution")
 [void]$builder.AppendLine("  _G.OMW_TM02W2E_NAVIGATION = navigation")
+[void]$builder.AppendLine("  _G.OMW_TM02W2E_PROGRESS_WATCHDOG = progressWatchdog")
 [void]$builder.AppendLine("  _G.OMW_TM02W2E_COMBAT_EVENTS = combatEvents")
 [void]$builder.AppendLine("end)")
 [void]$builder.AppendLine("if not bootstrapOk then")
