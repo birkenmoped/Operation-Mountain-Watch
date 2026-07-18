@@ -73,7 +73,11 @@ local config = {
     crossTrackLimitMeters = 60,
     combatCooldownSeconds = 90,
 
-    recoveryAdvanceSequenceMeters = { 75, 150, 300, 600, 1200 },
+    -- First confirmed navigation failure advances the abstract one-man proxy
+    -- 75 m along the already validated safe route. A second confirmed failure
+    -- places it 25 m before the portal, still on that safe route. This keeps the
+    -- recovery bounded and prevents endless DCS courtyard loops.
+    recoveryAdvanceSequenceMeters = { 75 },
     recoveryRoadSnapMeters = 180,
     terminalRecoveryDistanceFromPortalMeters = 25,
   },
