@@ -1,5 +1,5 @@
 local config = {
-  configurationVersion = "TM02W2E-red-hybrid-navigation-watchdog-3",
+  configurationVersion = "TM02W2E-red-hybrid-navigation-watchdog-4",
   testId = "TM02",
   stageId = "TM02W2E",
   mission = {
@@ -51,9 +51,10 @@ local config = {
   },
   navigation = {
     blueObjectiveBufferMeters = 250,
-    exclusionClearanceMeters = 150,
+    exclusionClearanceMeters = 200,
+    avoidanceRingPointCount = 48,
     maximumRoadSnapMeters = 1500,
-    maximumRoadPathMeters = 25000,
+    maximumRoadPathMeters = 50000,
     maximumRoadDetourFactor = 8,
     routeWaypointSpacingMeters = 100,
     offRoadWaypointSpacingMeters = 150,
