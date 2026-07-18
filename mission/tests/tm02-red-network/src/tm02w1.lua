@@ -43,13 +43,6 @@ local function distance2D(first, second)
   return math.sqrt(dx * dx + dz * dz)
 end
 
-local function pointFromMission(value)
-  return {
-    x = value and value.x or 0,
-    z = value and value.y or 0,
-  }
-end
-
 function TM02W1.start(config, build)
   local prefix = "[OMW][TM02W1]"
 
@@ -76,8 +69,8 @@ function TM02W1.start(config, build)
     siteById = {},
     nodeById = {},
     nodeAreas = {},
-    routeById = {},
-    routes = {},
+    linkById = {},
+    links = {},
     headquartersIds = {},
     subHeadquartersIds = {},
     ordinarySiteIds = {},
@@ -208,129 +201,6 @@ function TM02W1.start(config, build)
     end)
   end
 
-  local function locationMatches(point)
-    local matches = {}
-    local tolerance = config.graph.endpointToleranceMeters or 0
-    for siteId, site in pairs(state.siteById) do
-      local distance = distance2D(point, site.coordinate)
-      if distance <= site.radius + tolerance then
-        matches[#matches + 1] = siteId
-      end
-    end
-    table.sort(matches)
-    return matches
-  end
-
-  local function routeDistance(points)
-    local total = 0
-    for index = 2, #points do
-      total = total + distance2D(
-        pointFromMission(points[index - 1]),
-        pointFromMission(points[index])
-      )
-    end
-    return total
-  end
-
-  local function registerRouteGroup(group, countryName)
-    if not startsWith(group.name, config.prefixes.route) then
-      return
-    end
-
-    if state.routeById[group.name] then
-      addError("DUPLICATE_ROUTE_ID", group.name)
-      return
-    end
-
-    local points = group.route and group.route.points or {}
-    local unitCount = #(group.units or {})
-
-    if config.graph.requireLateActivationRoutes == true and group.lateActivation ~= true then
-      addError("ROUTE_NOT_LATE_ACTIVATED", group.name)
-    end
-
-    if config.graph.requireSingleUnitRouteGroups == true and unitCount ~= 1 then
-      addError("ROUTE_GROUP_UNIT_COUNT", group.name .. " count=" .. tostring(unitCount))
-    end
-
-    if #points < (config.graph.minimumRouteWaypointCount or 2) then
-      addError("ROUTE_WAYPOINT_COUNT", group.name .. " count=" .. tostring(#points))
-      return
-    end
-
-    local firstPoint = pointFromMission(points[1])
-    local lastPoint = pointFromMission(points[#points])
-    local sourceMatches = locationMatches(firstPoint)
-    local targetMatches = locationMatches(lastPoint)
-
-    if #sourceMatches ~= 1 then
-      addError(
-        "ROUTE_SOURCE_AMBIGUOUS",
-        group.name .. " matches=" .. tostring(#sourceMatches)
-      )
-      return
-    end
-
-    if #targetMatches ~= 1 then
-      addError(
-        "ROUTE_TARGET_AMBIGUOUS",
-        group.name .. " matches=" .. tostring(#targetMatches)
-      )
-      return
-    end
-
-    local sourceSiteId = sourceMatches[1]
-    local targetSiteId = targetMatches[1]
-    if sourceSiteId == targetSiteId then
-      addError("ROUTE_SELF_REFERENCE", group.name .. " site=" .. sourceSiteId)
-      return
-    end
-
-    local distanceMeters = routeDistance(points)
-    local speedMetersPerSecond = (config.graph.defaultWalkingSpeedKph or 5) / 3.6
-    local route = {
-      routeId = group.name,
-      sourceSiteId = sourceSiteId,
-      targetSiteId = targetSiteId,
-      direction = config.graph.direction,
-      distanceMeters = distanceMeters,
-      expectedTravelTimeSeconds = distanceMeters / speedMetersPerSecond,
-      waypointCount = #points,
-      countryName = countryName or "unknown",
-      lateActivation = group.lateActivation == true,
-      unitCount = unitCount,
-      points = points,
-    }
-
-    state.routeById[route.routeId] = route
-    state.routes[#state.routes + 1] = route
-  end
-
-  local function scanRouteGroups()
-    local coalitionName = config.mission.routeCoalition or "red"
-    local coalitionData = env.mission
-      and env.mission.coalition
-      and env.mission.coalition[coalitionName]
-
-    if not coalitionData then
-      addError("ROUTE_COALITION_MISSING", coalitionName)
-      return
-    end
-
-    for _, country in pairs(coalitionData.country or {}) do
-      local vehicleGroups = country.vehicle and country.vehicle.group or {}
-      for _, group in pairs(vehicleGroups) do
-        if type(group) == "table" and type(group.name) == "string" then
-          registerRouteGroup(group, country.name)
-        end
-      end
-    end
-
-    table.sort(state.routes, function(first, second)
-      return first.routeId < second.routeId
-    end)
-  end
-
   local function validateExactNames(label, actualValues, expectedValues)
     local actualSet = listToSet(actualValues)
     local expectedSet = listToSet(expectedValues)
@@ -348,7 +218,7 @@ function TM02W1.start(config, build)
     end
   end
 
-  local function validateExpectedObjects()
+  local function validateExpectedZones()
     validateExactNames("HEADQUARTERS", state.headquartersIds, config.expected.headquarters)
     validateExactNames("SUB_HEADQUARTERS", state.subHeadquartersIds, config.expected.subHeadquarters)
     validateExactNames("SITE", state.ordinarySiteIds, config.expected.sites)
@@ -359,14 +229,52 @@ function TM02W1.start(config, build)
     end
     validateExactNames("NODE_AREA", nodeAreaIds, config.expected.nodeAreas)
 
-    local routeIds = {}
-    for _, route in ipairs(state.routes) do
-      routeIds[#routeIds + 1] = route.routeId
-    end
-    validateExactNames("ROUTE", routeIds, config.expected.routes)
-
     if #state.headquartersIds ~= 1 then
       addError("HEADQUARTERS_COUNT", #state.headquartersIds)
+    end
+  end
+
+  local function registerConfiguredLinks()
+    local speedMetersPerSecond = (config.graph.defaultWalkingSpeedKph or 5) / 3.6
+
+    for _, definition in ipairs(config.links or {}) do
+      local linkId = definition.linkId
+      local source = state.siteById[definition.sourceSiteId]
+      local target = state.siteById[definition.targetSiteId]
+
+      if type(linkId) ~= "string" or linkId == "" then
+        addError("LINK_ID_INVALID", tostring(linkId))
+      elseif state.linkById[linkId] then
+        addError("DUPLICATE_LINK_ID", linkId)
+      elseif not source then
+        addError("LINK_SOURCE_MISSING", linkId .. " source=" .. tostring(definition.sourceSiteId))
+      elseif not target then
+        addError("LINK_TARGET_MISSING", linkId .. " target=" .. tostring(definition.targetSiteId))
+      elseif source.siteId == target.siteId then
+        addError("LINK_SELF_REFERENCE", linkId .. " site=" .. source.siteId)
+      else
+        local distanceMeters = distance2D(source.coordinate, target.coordinate)
+        local link = {
+          linkId = linkId,
+          sourceSiteId = source.siteId,
+          targetSiteId = target.siteId,
+          direction = definition.direction or "BIDIRECTIONAL",
+          distanceMeters = distanceMeters,
+          expectedTravelTimeSeconds = distanceMeters / speedMetersPerSecond,
+        }
+        state.linkById[link.linkId] = link
+        state.links[#state.links + 1] = link
+      end
+    end
+
+    table.sort(state.links, function(first, second)
+      return first.linkId < second.linkId
+    end)
+  end
+
+  local function addAdjacency(adjacency, sourceId, targetId)
+    if adjacency[sourceId] and adjacency[targetId] then
+      adjacency[sourceId][targetId] = true
     end
   end
 
@@ -378,12 +286,10 @@ function TM02W1.start(config, build)
       locationCount = locationCount + 1
     end
 
-    for _, route in ipairs(state.routes) do
-      if adjacency[route.sourceSiteId] and adjacency[route.targetSiteId] then
-        adjacency[route.sourceSiteId][route.targetSiteId] = true
-        if config.graph.direction == "BIDIRECTIONAL" then
-          adjacency[route.targetSiteId][route.sourceSiteId] = true
-        end
+    for _, link in ipairs(state.links) do
+      addAdjacency(adjacency, link.sourceSiteId, link.targetSiteId)
+      if link.direction == "BIDIRECTIONAL" then
+        addAdjacency(adjacency, link.targetSiteId, link.sourceSiteId)
       end
     end
 
@@ -428,11 +334,11 @@ function TM02W1.start(config, build)
     end
 
     state.graph.locationCount = locationCount
-    state.graph.edgeCount = #state.routes
+    state.graph.edgeCount = #state.links
     state.graph.componentCount = componentCount
     state.graph.connectedLocationCount = connectedFromHq
     state.graph.hasAlternativeConnection = componentCount == 1
-      and #state.routes >= locationCount
+      and #state.links >= locationCount
 
     if config.graph.requireAllLocationsConnectedToHq == true
       and connectedFromHq ~= locationCount then
@@ -446,7 +352,7 @@ function TM02W1.start(config, build)
       and state.graph.hasAlternativeConnection ~= true then
       addError(
         "GRAPH_HAS_NO_ALTERNATIVE_CONNECTION",
-        "locations=" .. tostring(locationCount) .. " routes=" .. tostring(#state.routes)
+        "locations=" .. tostring(locationCount) .. " links=" .. tostring(#state.links)
       )
     end
   end
@@ -497,17 +403,17 @@ function TM02W1.start(config, build)
       nextMarkerId = nextMarkerId + 1
     end
 
-    for _, route in ipairs(state.routes) do
-      local source = state.siteById[route.sourceSiteId]
-      local target = state.siteById[route.targetSiteId]
+    for _, link in ipairs(state.links) do
+      local source = state.siteById[link.sourceSiteId]
+      local target = state.siteById[link.targetSiteId]
       local midpoint = {
         x = (source.coordinate.x + target.coordinate.x) / 2,
         z = (source.coordinate.z + target.coordinate.z) / 2,
       }
-      local text = route.routeId
-        .. "\n" .. route.sourceSiteId .. " <-> " .. route.targetSiteId
-        .. "\ndistanceM=" .. tostring(math.floor(route.distanceMeters + 0.5))
-        .. " travelS=" .. tostring(math.floor(route.expectedTravelTimeSeconds + 0.5))
+      local text = link.linkId
+        .. "\n" .. link.sourceSiteId .. " <-> " .. link.targetSiteId
+        .. "\ndirectDistanceM=" .. tostring(math.floor(link.distanceMeters + 0.5))
+        .. " travelS=" .. tostring(math.floor(link.expectedTravelTimeSeconds + 0.5))
       trigger.action.markToAll(
         nextMarkerId,
         text,
@@ -534,22 +440,21 @@ function TM02W1.start(config, build)
       })
     end
 
-    for _, route in ipairs(state.routes) do
-      log("INFO", "red_network_route_registered", {
-        routeId = route.routeId,
-        sourceSiteId = route.sourceSiteId,
-        targetSiteId = route.targetSiteId,
-        direction = route.direction,
-        waypointCount = route.waypointCount,
-        distanceMeters = math.floor(route.distanceMeters + 0.5),
-        expectedTravelTimeSeconds = math.floor(route.expectedTravelTimeSeconds + 0.5),
+    for _, link in ipairs(state.links) do
+      log("INFO", "red_network_link_registered", {
+        linkId = link.linkId,
+        sourceSiteId = link.sourceSiteId,
+        targetSiteId = link.targetSiteId,
+        direction = link.direction,
+        directDistanceMeters = math.floor(link.distanceMeters + 0.5),
+        expectedTravelTimeSeconds = math.floor(link.expectedTravelTimeSeconds + 0.5),
       })
     end
   end
 
   local function showSummary()
     local text = string.format(
-      "TM02W1 %s | locations=%d nodes=%d routes=%d components=%d connectedFromHQ=%d alternative=%s errors=%d warnings=%d",
+      "TM02W1 %s | locations=%d nodes=%d links=%d components=%d connectedFromHQ=%d alternative=%s errors=%d warnings=%d",
       state.configurationValid and "PASS" or "FAIL",
       state.graph.locationCount,
       #sortedKeys(state.nodeById),
@@ -565,7 +470,7 @@ function TM02W1.start(config, build)
       configurationValid = state.configurationValid,
       locationCount = state.graph.locationCount,
       nodeCount = #sortedKeys(state.nodeById),
-      routeCount = state.graph.edgeCount,
+      linkCount = state.graph.edgeCount,
       componentCount = state.graph.componentCount,
       connectedLocationCount = state.graph.connectedLocationCount,
       hasAlternativeConnection = state.graph.hasAlternativeConnection,
@@ -587,13 +492,13 @@ function TM02W1.start(config, build)
     end
   end
 
-  local function showRoutes()
-    for _, route in ipairs(state.routes) do
+  local function showLinks()
+    for _, link in ipairs(state.links) do
       announce(
-        route.routeId
-          .. " | " .. route.sourceSiteId
-          .. " <-> " .. route.targetSiteId
-          .. " | " .. tostring(math.floor(route.distanceMeters + 0.5)) .. " m"
+        link.linkId
+          .. " | " .. link.sourceSiteId
+          .. " <-> " .. link.targetSiteId
+          .. " | " .. tostring(math.floor(link.distanceMeters + 0.5)) .. " m direct"
       )
     end
   end
@@ -606,7 +511,7 @@ function TM02W1.start(config, build)
     state.menu = missionCommands.addSubMenu("TM02W1 RED Network Registry", root)
     missionCommands.addCommand("Show validation summary", state.menu, showSummary)
     missionCommands.addCommand("List locations", state.menu, showLocations)
-    missionCommands.addCommand("List routes", state.menu, showRoutes)
+    missionCommands.addCommand("List links", state.menu, showLinks)
     missionCommands.addCommand("Toggle markers", state.menu, function()
       state.markersEnabled = not state.markersEnabled
       drawMarkers()
@@ -616,8 +521,8 @@ function TM02W1.start(config, build)
 
   local ok, reason = pcall(function()
     scanZones()
-    scanRouteGroups()
-    validateExpectedObjects()
+    validateExpectedZones()
+    registerConfiguredLinks()
     buildAndValidateGraph()
   end)
 
@@ -639,7 +544,7 @@ function TM02W1.start(config, build)
     ordinarySiteCount = #state.ordinarySiteIds,
     nodeAreaCount = #state.nodeAreas,
     activeNodeCount = #sortedKeys(state.nodeById),
-    routeCount = #state.routes,
+    linkCount = #state.links,
     locationCount = state.graph.locationCount,
     componentCount = state.graph.componentCount,
     connectedLocationCount = state.graph.connectedLocationCount,
