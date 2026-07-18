@@ -28,7 +28,9 @@ Generated local bundle:
 dist/TM02W1.lua
 ```
 
-TM02W1 registers Mission Editor sites and routes, validates graph connectivity and verifies that the test topology is not restricted to a tree. It does not move personnel, choose a source, issue orders or use scenery buildings yet.
+TM02W1 reuses the seven existing TM02V location zones and the ten existing personnel templates. It registers HQ, two sub-HQs and four ordinary sites, then builds seven configured logical links including one cross-link.
+
+No additional Mission Editor route groups or route waypoints are required for W1. W1 does not move personnel, choose a source, issue orders or use scenery buildings yet.
 
 Planned successors:
 
