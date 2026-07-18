@@ -1,0 +1,1 @@
+TM02W2E version 1 DCS navigation failed on 2026-07-18. Superseded by road-transit and watchdog version 2.
