@@ -10,8 +10,8 @@ $w2ConfigPath = Join-Path $repositoryRoot "mission/tests/tm02-red-network/config
 $w2SourcePath = Join-Path $repositoryRoot "mission/tests/tm02-red-network/src/tm02w2.lua"
 $w2eConfigPath = Join-Path $repositoryRoot "mission/tests/tm02-red-network/config-tm02w2e.lua"
 $w2eAdapterPath = Join-Path $repositoryRoot "mission/tests/tm02-red-network/src/tm02w2e-leader-proxy-adapter.lua"
-$w2eNavigationPath = Join-Path $repositoryRoot "mission/tests/tm02-red-network/src/tm02w2e-moose-navigation.lua"
-$w2eCombatEventsPath = Join-Path $repositoryRoot "mission/tests/tm02-red-network/src/tm02w2e-combat-events.lua"
+$w2eNavigationPath = Join-Path $repositoryRoot "mission/tests/tm02-red-network/src/tm02w2e-moose-navigation-v3.lua"
+$w2eCombatEventsPath = Join-Path $repositoryRoot "mission/tests/tm02-red-network/src/tm02w2e-combat-events-v3.lua"
 $w2eSourcePath = Join-Path $repositoryRoot "mission/tests/tm02-red-network/src/tm02w2e.lua"
 $outputPath = Join-Path $repositoryRoot "mission/tests/tm02-red-network/dist/TM02W2E.lua"
 
@@ -61,10 +61,10 @@ $builder = New-Object System.Text.StringBuilder
 [void]$builder.AppendLine("local TM02W2ELeaderProxyAdapter = (function()")
 [void]$builder.AppendLine($w2eAdapterContent)
 [void]$builder.AppendLine("end)()")
-[void]$builder.AppendLine("local TM02W2EMooseNavigation = (function()")
+[void]$builder.AppendLine("local TM02W2EMooseNavigationV3 = (function()")
 [void]$builder.AppendLine($w2eNavigationContent)
 [void]$builder.AppendLine("end)()")
-[void]$builder.AppendLine("local TM02W2ECombatEvents = (function()")
+[void]$builder.AppendLine("local TM02W2ECombatEventsV3 = (function()")
 [void]$builder.AppendLine($w2eCombatEventsContent)
 [void]$builder.AppendLine("end)()")
 [void]$builder.AppendLine("local TM02W2E = (function()")
@@ -80,9 +80,9 @@ $builder = New-Object System.Text.StringBuilder
 [void]$builder.AppendLine('    error("TM02W2 planner validation failed")')
 [void]$builder.AppendLine("  end")
 [void]$builder.AppendLine("  TM02W2ELeaderProxyAdapter.install(TM02W2EConfig)")
-[void]$builder.AppendLine("  local navigation = TM02W2EMooseNavigation.install(TM02W2EConfig, registry, planner)")
+[void]$builder.AppendLine("  local navigation = TM02W2EMooseNavigationV3.install(TM02W2EConfig, registry, planner)")
 [void]$builder.AppendLine("  if navigation.valid ~= true then")
-[void]$builder.AppendLine('    error("TM02W2E MOOSE navigation validation failed")')
+[void]$builder.AppendLine('    error("TM02W2E hybrid navigation validation failed")')
 [void]$builder.AppendLine("  end")
 [void]$builder.AppendLine("  if navigation:preparePlannerTasks() ~= true then")
 [void]$builder.AppendLine('    error("TM02W2E safe route planning failed")')
@@ -91,7 +91,7 @@ $builder = New-Object System.Text.StringBuilder
 [void]$builder.AppendLine("  if execution.configurationValid ~= true then")
 [void]$builder.AppendLine('    error("TM02W2E execution validation failed")')
 [void]$builder.AppendLine("  end")
-[void]$builder.AppendLine("  local combatEvents = TM02W2ECombatEvents.install(TM02W2EConfig, execution)")
+[void]$builder.AppendLine("  local combatEvents = TM02W2ECombatEventsV3.install(TM02W2EConfig, execution)")
 [void]$builder.AppendLine("  if combatEvents.valid ~= true then")
 [void]$builder.AppendLine('    error("TM02W2E combat event guard validation failed")')
 [void]$builder.AppendLine("  end")
