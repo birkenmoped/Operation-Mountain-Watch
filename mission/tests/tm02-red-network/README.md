@@ -5,7 +5,7 @@ This directory contains the staged TM02W production-network tests that follow th
 ## Completed stage
 
 ```text
-TM02W1 – RED Network Registry: DCS PASS
+TM02W1 - RED Network Registry: DCS PASS
 ```
 
 W1 result:
@@ -19,10 +19,10 @@ W1 validates the representative RED registry, separate command and movement grap
 ## Current stage
 
 ```text
-TM02W2 – RED Source, Cost and Reservation Planning
+TM02W2 - RED Source, Cost and Reservation Planning
 ```
 
-TM02W2 version 1 is intentionally planner-only. It adds:
+TM02W2 version 2 is intentionally planner-only. It adds:
 
 - personnel inventories at active logical nodes;
 - guard floors, defensive targets and hard capacities;
@@ -32,7 +32,17 @@ TM02W2 version 1 is intentionally planner-only. It adds:
 - transactional inbound and outbound reservations;
 - guard-floor, overfill and accounting checks.
 
-It does not yet spawn or move a proxy group. The next W2 increment will execute accepted reservation tasks using the TM02V proxy layer.
+The real DCS network uses irregular site geometry. A non-nearest source selection is recorded but is not mandatory in DCS. The controlled Lua 5.1 harness explicitly requires and proves that the cost model can select a farther source when total cost is lower.
+
+Version-1 DCS result:
+
+```text
+results/2026-07-18-tm02w2-source-cost-reservation-v1-fail.md
+```
+
+The version-1 planner reserved the complete deficit correctly but failed an overly strict geometry-dependent acceptance assertion. Version 2 corrects only that test boundary.
+
+W2 does not yet spawn or move a proxy group. The next W2 increment will execute accepted reservation tasks using the TM02V proxy layer.
 
 Implemented W2 files:
 
@@ -40,6 +50,7 @@ Implemented W2 files:
 config-tm02w2.lua
 src/tm02w2.lua
 expected/tm02w2-source-cost-reservation-acceptance.md
+tools/test-tm02w2-static.lua
 ```
 
 Build locally with:
@@ -69,15 +80,13 @@ W1 and W2 use the same Mission Editor network fixture:
 0 route waypoints
 ```
 
-The fixture size is not a production minimum or maximum.
-
-The command graph and movement graph remain deliberately separate. A RED site may report through one command area while personnel move through another area when that route is cheaper or operationally preferable.
+The fixture size is not a production minimum or maximum. The command graph and movement graph remain separate. A RED site may report through one command area while personnel move through another area when that route is cheaper or operationally preferable.
 
 ## Planned successors
 
 ```text
-TM02W2 next increment – execute reserved tasks through TM02V proxies
-TM02W3 – delayed reports and bounded command
-TM02W4 – two-team attack, planned depletion and replenishment
-TM02W5 – scenery-site destruction and replacement occupation
+TM02W2 next increment - execute reserved tasks through TM02V proxies
+TM02W3 - delayed reports and bounded command
+TM02W4 - two-team attack, planned depletion and replenishment
+TM02W5 - scenery-site destruction and replacement occupation
 ```
