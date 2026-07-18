@@ -24,10 +24,13 @@ jobs:
       - uses: actions/checkout@v4
       - name: Install Lua 5.1
         run: sudo apt-get update && sudo apt-get install -y lua5.1
-      - name: Check TM02W2E navigation and bootstrap syntax
+      - name: Check TM02W2E navigation and watchdog syntax
         run: |
           luac5.1 -p mission/tests/tm02-red-network/src/tm02w2e-bootstrap-menu.lua
           luac5.1 -p mission/tests/tm02-red-network/src/tm02w2e-moose-navigation-v4.lua
+          luac5.1 -p mission/tests/tm02-red-network/src/tm02w2e-progress-watchdog-v5.lua
           luac5.1 -p mission/tests/tm02-red-network/src/tm02w2e-combat-events-v3.lua
+      - name: Run TM02W2E route-progress watchdog harness
+        run: lua5.1 mission/tests/tm02-red-network/tools/test-tm02w2e-watchdog-static.lua "$GITHUB_WORKSPACE"
       - name: Run TM02W2E execution harness
         run: lua5.1 mission/tests/tm02-red-network/tools/test-tm02w2e-static.lua "$GITHUB_WORKSPACE"
