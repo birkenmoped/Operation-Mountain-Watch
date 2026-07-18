@@ -1,13 +1,11 @@
 local config = {
-  configurationVersion = "TM02W2E-red-reserved-task-execution-1",
+  configurationVersion = "TM02W2E-red-road-transit-watchdog-2",
   testId = "TM02",
   stageId = "TM02W2E",
-
   mission = {
     fileName = "OMW_TEST_TM02W2E_RED_TASK_EXECUTION.miz",
-    displayName = "OMW TM02W2E - RED Reserved Task Execution",
+    displayName = "OMW TM02W2E - RED Road Transit and Watchdog",
   },
-
   templatesByStrength = {
     [1] = "TPL_TEST_RED_PACKET_01_01",
     [2] = "TPL_TEST_RED_PACKET_02_01",
@@ -20,7 +18,6 @@ local config = {
     [9] = "TPL_TEST_RED_PACKET_09_01",
     [10] = "TPL_TEST_RED_PACKET_10_01",
   },
-
   proxy = {
     sourcePolicy = "LEADER_FROM_TASK_TEMPLATE",
     sourceUnitIndex = 1,
@@ -35,11 +32,9 @@ local config = {
       { x = 15, y = 10 },
     },
   },
-
   physical = {
     runtimeAliasPrefix = "TM02W2E_RED_FULL_",
   },
-
   execution = {
     maxActiveTasks = 4,
     maxActiveOutboundPerSource = 1,
@@ -47,15 +42,29 @@ local config = {
     monitorIntervalSeconds = 2,
     autoStart = false,
   },
-
   routing = {
-    -- Technical acceleration for the geographically large real test fixture.
-    -- This is proxy travel speed, not a doctrinal infantry movement rate.
     proxyTestSpeedKph = 120,
-    formation = "Off Road",
+    formation = "On Road",
+    roadFormation = "On Road",
     assignmentDelaySeconds = 1,
   },
-
+  navigation = {
+    blueObjectiveBufferMeters = 250,
+    maximumRoadSnapMeters = 1500,
+    routeWaypointSpacingMeters = 100,
+    portalArrivalRadiusMeters = 100,
+    watchdogInitialDelaySeconds = 5,
+    watchdogIntervalSeconds = 5,
+    stuckWindowSeconds = 30,
+    minimumTravelMeters = 8,
+    minimumProgressMeters = 5,
+    circularTravelMeters = 25,
+    circularNetMeters = 8,
+    combatCooldownSeconds = 90,
+    recoveryAdvanceMeters = 20,
+    maximumRecoveryAdvanceMeters = 80,
+    maxRecoveryAttempts = 4,
+  },
   debug = {
     showMessages = true,
     enableF10Menu = true,
@@ -63,5 +72,4 @@ local config = {
     markerIdBase = 220600,
   },
 }
-
 return config
