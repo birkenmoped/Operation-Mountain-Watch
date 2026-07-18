@@ -2,33 +2,61 @@
 
 This directory contains the staged TM02W production-network tests that follow the completed TM02V packet/proxy stage.
 
+## Completed stage
+
+```text
+TM02W1 – RED Network Registry: DCS PASS
+```
+
+W1 result:
+
+```text
+results/2026-07-18-tm02w1-red-network-registry-v3-pass.md
+```
+
+W1 validates the representative RED registry, separate command and movement graphs, alternative paths, cross-area movement links and BLUE objective associations.
+
 ## Current stage
 
 ```text
-TM02W1 – RED Network Registry
+TM02W2 – RED Source, Cost and Reservation Planning
 ```
 
-Implemented files:
+TM02W2 version 1 is intentionally planner-only. It adds:
+
+- personnel inventories at active logical nodes;
+- guard floors, defensive targets and hard capacities;
+- multiple candidate sources;
+- weighted shortest paths over the W1 movement graph;
+- source-depletion and packet-fragmentation penalties;
+- transactional inbound and outbound reservations;
+- guard-floor, overfill and accounting checks.
+
+It does not yet spawn or move a proxy group. The next W2 increment will execute accepted reservation tasks using the TM02V proxy layer.
+
+Implemented W2 files:
 
 ```text
-config-tm02w1.lua
-src/tm02w1.lua
-expected/tm02w1-dcs-mission-setup-and-acceptance.md
+config-tm02w2.lua
+src/tm02w2.lua
+expected/tm02w2-source-cost-reservation-acceptance.md
 ```
 
 Build locally with:
 
 ```powershell
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\tools\build-tm02w1-bundle.ps1
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\tools\build-tm02w2-bundle.ps1
 ```
 
 Generated local bundle:
 
 ```text
-dist/TM02W1.lua
+dist/TM02W2.lua
 ```
 
-TM02W1 uses a representative test fixture with:
+## Shared fixture
+
+W1 and W2 use the same Mission Editor network fixture:
 
 ```text
 11 RED locations
@@ -36,20 +64,19 @@ TM02W1 uses a representative test fixture with:
 10 directed command links
 17 bidirectional movement links
 2 BLUE objective zones
+10 existing TM02V personnel-strength templates
+0 route groups
+0 route waypoints
 ```
 
 The fixture size is not a production minimum or maximum.
 
-The command graph and movement graph are deliberately separate. A RED site may report through one command area while personnel later move through another area when that route is cheaper or operationally preferable.
+The command graph and movement graph remain deliberately separate. A RED site may report through one command area while personnel move through another area when that route is cheaper or operationally preferable.
 
-The ten existing TM02V personnel-strength templates remain unchanged. No Mission Editor route groups or route waypoints are required for W1.
-
-W1 validates registry, command hierarchy, movement connectivity, alternative paths, cross-area movement links and BLUE objective associations. It does not move personnel, choose a source, issue orders or use scenery buildings yet.
-
-Planned successors:
+## Planned successors
 
 ```text
-TM02W2 – multiple sources and cost selection
+TM02W2 next increment – execute reserved tasks through TM02V proxies
 TM02W3 – delayed reports and bounded command
 TM02W4 – two-team attack, planned depletion and replenishment
 TM02W5 – scenery-site destruction and replacement occupation
