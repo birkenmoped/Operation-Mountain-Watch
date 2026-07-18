@@ -1,10 +1,10 @@
 local config = {
-  configurationVersion = "TM02W2E-red-road-transit-watchdog-2",
+  configurationVersion = "TM02W2E-red-hybrid-navigation-watchdog-3",
   testId = "TM02",
   stageId = "TM02W2E",
   mission = {
     fileName = "OMW_TEST_TM02W2E_RED_TASK_EXECUTION.miz",
-    displayName = "OMW TM02W2E - RED Road Transit and Watchdog",
+    displayName = "OMW TM02W2E - RED Hybrid Navigation and Watchdog",
   },
   templatesByStrength = {
     [1] = "TPL_TEST_RED_PACKET_01_01",
@@ -44,14 +44,19 @@ local config = {
   },
   routing = {
     proxyTestSpeedKph = 120,
-    formation = "On Road",
+    formation = "Off Road",
     roadFormation = "On Road",
+    offRoadFormation = "Off Road",
     assignmentDelaySeconds = 1,
   },
   navigation = {
     blueObjectiveBufferMeters = 250,
+    exclusionClearanceMeters = 150,
     maximumRoadSnapMeters = 1500,
+    maximumRoadPathMeters = 25000,
+    maximumRoadDetourFactor = 8,
     routeWaypointSpacingMeters = 100,
+    offRoadWaypointSpacingMeters = 150,
     portalArrivalRadiusMeters = 100,
     watchdogInitialDelaySeconds = 5,
     watchdogIntervalSeconds = 5,
