@@ -1,5 +1,5 @@
 local config = {
-  configurationVersion = "TM02W2F-red-commander-timeslice-4",
+  configurationVersion = "TM02W2F-red-direct-offroad-canary-5",
   testId = "TM02",
   stageId = "TM02W2F",
 
@@ -39,21 +39,23 @@ local config = {
       OMW_RED_SITE_Right_02 = 8,
     },
     optimization = {
-      primary = "MINIMIZE_COMPLETION_TIME",
+      primary = "MINIMIZE_COMPLETION_TIME_WITH_COMMAND_BUDGET",
       secondary = "MINIMIZE_TASK_COUNT",
-      tertiary = "MINIMIZE_SAFE_ROUTE_DISTANCE",
+      tertiary = "MINIMIZE_SAFE_NETWORK_DISTANCE",
     },
   },
 
   commanderTest = {
     planningIntervalSeconds = 30,
     commandBudgetPerCycle = 4,
-    maxActiveTransportsGlobal = 8,
+    maxActiveTransportsGlobal = 4,
     maxActiveTransportsPerFirstEdge = 2,
-    spawnIntervalSeconds = 8,
-    minimumPredecessorProgressMeters = 250,
-    maximumLaunchHoldSeconds = 45,
+    spawnIntervalSeconds = 10,
+    minimumPredecessorProgressMeters = 150,
     schedulerTickSeconds = 1,
+    canaryProgressMeters = 75,
+    canaryTimeoutSeconds = 120,
+    launchHoldWarningSeconds = 60,
   },
 
   proxy = {
@@ -61,11 +63,13 @@ local config = {
     sourceUnitIndex = 1,
     runtimeAliasPrefix = "TM02W2F_RED_PROXY_",
     expectedUnitCount = 1,
+    -- All slots use the exact source-zone center. Temporal separation and the
+    -- canary gate replace the unsafe free Cartesian launch spreading.
     launchSlots = {
-      { x = -16, y = -12 }, { x = -8, y = -12 }, { x = 0, y = -12 }, { x = 8, y = -12 }, { x = 16, y = -12 },
-      { x = -16, y = -4 },  { x = -8, y = -4 },  { x = 0, y = -4 },  { x = 8, y = -4 },  { x = 16, y = -4 },
-      { x = -16, y = 4 },   { x = -8, y = 4 },   { x = 0, y = 4 },   { x = 8, y = 4 },   { x = 16, y = 4 },
-      { x = -16, y = 12 },  { x = -8, y = 12 },  { x = 0, y = 12 },  { x = 8, y = 12 },  { x = 16, y = 12 },
+      { x = 0, y = 0 },
+      { x = 0, y = 0 },
+      { x = 0, y = 0 },
+      { x = 0, y = 0 },
     },
   },
 
@@ -75,58 +79,41 @@ local config = {
   },
 
   execution = {
-    maxActiveTasks = 8,
-    maxActiveOutboundPerSource = 8,
+    maxActiveTasks = 4,
+    maxActiveOutboundPerSource = 4,
     monitorInitialDelaySeconds = 2,
     monitorIntervalSeconds = 2,
     autoStart = false,
   },
 
   routing = {
-    proxyTestSpeedKph = 120,
+    proxyTestSpeedKph = 15,
     formation = "Off Road",
     roadFormation = "On Road",
     offRoadFormation = "Off Road",
     assignmentDelaySeconds = 1,
+    physicalMode = "DIRECT_OFFROAD",
+    maximumPhysicalWaypointsPerLeg = 2,
   },
 
   navigation = {
     blueObjectiveBufferMeters = 250,
-    exclusionClearanceMeters = 200,
-    avoidanceRingPointCount = 48,
-    maximumRoadSnapMeters = 6000,
-    maximumRoadPathMeters = 50000,
-    maximumRoadDetourFactor = 8,
-    routeWaypointSpacingMeters = 100,
-    offRoadWaypointSpacingMeters = 150,
-    portalArrivalRadiusMeters = 100,
     combatCooldownSeconds = 90,
-  },
-
-  routeReassignmentWatchdog = {
-    initialDelaySeconds = 10,
-    intervalSeconds = 3,
-    sampleWindowSeconds = 24,
-    minimumTravelMeters = 5,
-    minimumProgressMeters = 4,
-    crossTrackLimitMeters = 60,
-    maximumRouteReassignmentsPerTask = 3,
-    perTaskRecoveryCooldownSeconds = 30,
-    globalRecoveryIntervalSeconds = 8,
-    blockedResetProgressMeters = 100,
+    roadsUsedForNormalMovement = false,
+    automaticRecoveryEnabled = false,
   },
 
   transitRepresentation = {
     enableF10Menu = true,
     menuTitle = "TM02W2F Initial Network Fill",
-    startCommand = "Beschleunigten RED-Commander starten",
+    startCommand = "Direkten RED-Commander-Test starten",
     unpackCommand = "Alle Reise-Proxies entpacken",
     packCommand = "Alle Reisegruppen packen",
     statusCommand = "Status anzeigen",
     commanderStatusCommand = "Commander-Status anzeigen",
     listCommand = "Reiseauftraege ins Log schreiben",
     markerCommand = "Task-Marker umschalten",
-    transitionIntervalSeconds = 0.75,
+    transitionIntervalSeconds = 1,
   },
 
   debug = {
