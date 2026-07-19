@@ -13,9 +13,10 @@ $w2fBootstrapPath = Join-Path $repositoryRoot "mission/tests/tm02-red-network/sr
 $leaderAdapterPath = Join-Path $repositoryRoot "mission/tests/tm02-red-network/src/tm02w2e-leader-proxy-adapter.lua"
 $navigationPath = Join-Path $repositoryRoot "mission/tests/tm02-red-network/src/tm02w2e-moose-navigation-v4.lua"
 $launchSpreadPath = Join-Path $repositoryRoot "mission/tests/tm02-red-network/src/tm02w2f-launch-spread-adapter.lua"
-$progressWatchdogPath = Join-Path $repositoryRoot "mission/tests/tm02-red-network/src/tm02w2e-progress-watchdog-v5.lua"
 $combatEventsPath = Join-Path $repositoryRoot "mission/tests/tm02-red-network/src/tm02w2e-combat-events-v3.lua"
 $executorPath = Join-Path $repositoryRoot "mission/tests/tm02-red-network/src/tm02w2e.lua"
+$commanderSchedulerPath = Join-Path $repositoryRoot "mission/tests/tm02-red-network/src/tm02w2f-commander-scheduler.lua"
+$routeReassignmentWatchdogPath = Join-Path $repositoryRoot "mission/tests/tm02-red-network/src/tm02w2f-route-reassignment-watchdog.lua"
 $transitRepresentationPath = Join-Path $repositoryRoot "mission/tests/tm02-red-network/src/tm02w2f-transit-representation.lua"
 $outputPath = Join-Path $repositoryRoot "mission/tests/tm02-red-network/dist/TM02W2F.lua"
 
@@ -33,9 +34,10 @@ $w2fBootstrap = Get-NormalizedSource -Path $w2fBootstrapPath
 $leaderAdapter = Get-NormalizedSource -Path $leaderAdapterPath
 $navigation = Get-NormalizedSource -Path $navigationPath
 $launchSpread = Get-NormalizedSource -Path $launchSpreadPath
-$progressWatchdog = Get-NormalizedSource -Path $progressWatchdogPath
 $combatEvents = Get-NormalizedSource -Path $combatEventsPath
 $executor = Get-NormalizedSource -Path $executorPath
+$commanderScheduler = Get-NormalizedSource -Path $commanderSchedulerPath
+$routeReassignmentWatchdog = Get-NormalizedSource -Path $routeReassignmentWatchdogPath
 $transitRepresentation = Get-NormalizedSource -Path $transitRepresentationPath
 $buildTimestamp = [DateTime]::UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ", [Globalization.CultureInfo]::InvariantCulture)
 
@@ -74,14 +76,17 @@ $builder = New-Object System.Text.StringBuilder
 [void]$builder.AppendLine("local TM02W2FLaunchSpreadAdapter = (function()")
 [void]$builder.AppendLine($launchSpread)
 [void]$builder.AppendLine("end)()")
-[void]$builder.AppendLine("local TM02W2EProgressWatchdogV5 = (function()")
-[void]$builder.AppendLine($progressWatchdog)
-[void]$builder.AppendLine("end)()")
 [void]$builder.AppendLine("local TM02W2ECombatEventsV3 = (function()")
 [void]$builder.AppendLine($combatEvents)
 [void]$builder.AppendLine("end)()")
 [void]$builder.AppendLine("local TM02W2E = (function()")
 [void]$builder.AppendLine($executor)
+[void]$builder.AppendLine("end)()")
+[void]$builder.AppendLine("local TM02W2FCommanderScheduler = (function()")
+[void]$builder.AppendLine($commanderScheduler)
+[void]$builder.AppendLine("end)()")
+[void]$builder.AppendLine("local TM02W2FRouteReassignmentWatchdog = (function()")
+[void]$builder.AppendLine($routeReassignmentWatchdog)
 [void]$builder.AppendLine("end)()")
 [void]$builder.AppendLine("local TM02W2FTransitRepresentation = (function()")
 [void]$builder.AppendLine($transitRepresentation)
@@ -100,7 +105,7 @@ $builder = New-Object System.Text.StringBuilder
 [void]$builder.AppendLine("  local routingReady = navigation.valid == true and navigation:preparePlannerTasks() == true")
 [void]$builder.AppendLine("  bootstrapMenu:update({")
 [void]$builder.AppendLine("    phase = routingReady and 'EXECUTOR' or 'BLOCKED',")
-[void]$builder.AppendLine("    detail = routingReady and 'creating concurrent initial-fill executor' or 'safe route missing for at least one packet',")
+[void]$builder.AppendLine("    detail = routingReady and 'creating accelerated commander executor' or 'safe route missing for at least one packet',")
 [void]$builder.AppendLine("    navigationValid = navigation.valid == true,")
 [void]$builder.AppendLine("    routingReady = routingReady,")
 [void]$builder.AppendLine("    errorCount = #navigation.errors,")
@@ -114,27 +119,30 @@ $builder = New-Object System.Text.StringBuilder
 [void]$builder.AppendLine("  TM02W2FConfig.debug.enableF10Menu = false")
 [void]$builder.AppendLine("  local execution = TM02W2E.start(TM02W2FConfig, registry, planner, TM02W2FBuild)")
 [void]$builder.AppendLine("  if execution.configurationValid ~= true then error('TM02W2F execution validation failed') end")
+[void]$builder.AppendLine("  local commander = TM02W2FCommanderScheduler.install(TM02W2FConfig, execution, navigation, planner)")
+[void]$builder.AppendLine("  if commander.valid ~= true then error('TM02W2F commander scheduler validation failed') end")
 [void]$builder.AppendLine("  local combatEvents = TM02W2ECombatEventsV3.install(TM02W2FConfig, execution)")
 [void]$builder.AppendLine("  if combatEvents.valid ~= true then error('TM02W2F combat event guard validation failed') end")
-[void]$builder.AppendLine("  local progressWatchdog = TM02W2EProgressWatchdogV5.install(TM02W2FConfig, registry, planner, navigation, execution)")
-[void]$builder.AppendLine("  if progressWatchdog.valid ~= true then error('TM02W2F route-progress watchdog validation failed') end")
+[void]$builder.AppendLine("  local routeWatchdog = TM02W2FRouteReassignmentWatchdog.install(TM02W2FConfig, execution, navigation)")
+[void]$builder.AppendLine("  if routeWatchdog.valid ~= true then error('TM02W2F same-group watchdog validation failed') end")
 [void]$builder.AppendLine("  local transitRepresentation = TM02W2FTransitRepresentation.install(TM02W2FConfig, execution, navigation)")
 [void]$builder.AppendLine("  if transitRepresentation.valid ~= true then error('TM02W2F transit representation validation failed') end")
-[void]$builder.AppendLine("  progressWatchdog:attach()")
+[void]$builder.AppendLine("  routeWatchdog:attach()")
 [void]$builder.AppendLine("  bootstrapMenu:update({")
 [void]$builder.AppendLine("    phase = 'READY',")
-[void]$builder.AppendLine("    detail = 'initial fill and global travelling-group controls are ready',")
+[void]$builder.AppendLine("    detail = 'accelerated commander, serialized spawns and manual travelling-group controls are ready',")
 [void]$builder.AppendLine("    navigationValid = true,")
 [void]$builder.AppendLine("    routingReady = true,")
 [void]$builder.AppendLine("    executionReady = true,")
-[void]$builder.AppendLine("    errorCount = #navigation.errors + #progressWatchdog.errors + #transitRepresentation.errors,")
+[void]$builder.AppendLine("    errorCount = #navigation.errors + #commander.errors + #routeWatchdog.errors + #transitRepresentation.errors,")
 [void]$builder.AppendLine("    warningCount = #navigation.warnings + #planner.warnings,")
 [void]$builder.AppendLine("  })")
 [void]$builder.AppendLine("  _G.OMW_TM02W2F_REGISTRY = registry")
 [void]$builder.AppendLine("  _G.OMW_TM02W2F_PLANNER = planner")
 [void]$builder.AppendLine("  _G.OMW_TM02W2F_STATE = execution")
 [void]$builder.AppendLine("  _G.OMW_TM02W2F_NAVIGATION = navigation")
-[void]$builder.AppendLine("  _G.OMW_TM02W2F_PROGRESS_WATCHDOG = progressWatchdog")
+[void]$builder.AppendLine("  _G.OMW_TM02W2F_COMMANDER = commander")
+[void]$builder.AppendLine("  _G.OMW_TM02W2F_ROUTE_WATCHDOG = routeWatchdog")
 [void]$builder.AppendLine("  _G.OMW_TM02W2F_TRANSIT_REPRESENTATION = transitRepresentation")
 [void]$builder.AppendLine("  _G.OMW_TM02W2F_COMBAT_EVENTS = combatEvents")
 [void]$builder.AppendLine("end)")
