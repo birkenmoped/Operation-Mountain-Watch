@@ -12,6 +12,7 @@ $w2fPlannerPath = Join-Path $repositoryRoot "mission/tests/tm02-red-network/src/
 $w2fBootstrapPath = Join-Path $repositoryRoot "mission/tests/tm02-red-network/src/tm02w2f-bootstrap-menu.lua"
 $leaderAdapterPath = Join-Path $repositoryRoot "mission/tests/tm02-red-network/src/tm02w2e-leader-proxy-adapter.lua"
 $navigationPath = Join-Path $repositoryRoot "mission/tests/tm02-red-network/src/tm02w2e-moose-navigation-v4.lua"
+$launchSpreadPath = Join-Path $repositoryRoot "mission/tests/tm02-red-network/src/tm02w2f-launch-spread-adapter.lua"
 $progressWatchdogPath = Join-Path $repositoryRoot "mission/tests/tm02-red-network/src/tm02w2e-progress-watchdog-v5.lua"
 $combatEventsPath = Join-Path $repositoryRoot "mission/tests/tm02-red-network/src/tm02w2e-combat-events-v3.lua"
 $executorPath = Join-Path $repositoryRoot "mission/tests/tm02-red-network/src/tm02w2e.lua"
@@ -31,6 +32,7 @@ $w2fPlanner = Get-NormalizedSource -Path $w2fPlannerPath
 $w2fBootstrap = Get-NormalizedSource -Path $w2fBootstrapPath
 $leaderAdapter = Get-NormalizedSource -Path $leaderAdapterPath
 $navigation = Get-NormalizedSource -Path $navigationPath
+$launchSpread = Get-NormalizedSource -Path $launchSpreadPath
 $progressWatchdog = Get-NormalizedSource -Path $progressWatchdogPath
 $combatEvents = Get-NormalizedSource -Path $combatEventsPath
 $executor = Get-NormalizedSource -Path $executorPath
@@ -69,6 +71,9 @@ $builder = New-Object System.Text.StringBuilder
 [void]$builder.AppendLine("local TM02W2EMooseNavigationV4 = (function()")
 [void]$builder.AppendLine($navigation)
 [void]$builder.AppendLine("end)()")
+[void]$builder.AppendLine("local TM02W2FLaunchSpreadAdapter = (function()")
+[void]$builder.AppendLine($launchSpread)
+[void]$builder.AppendLine("end)()")
 [void]$builder.AppendLine("local TM02W2EProgressWatchdogV5 = (function()")
 [void]$builder.AppendLine($progressWatchdog)
 [void]$builder.AppendLine("end)()")
@@ -105,6 +110,7 @@ $builder = New-Object System.Text.StringBuilder
 [void]$builder.AppendLine("    _G.OMW_TM02W2F_NAVIGATION = navigation")
 [void]$builder.AppendLine("    return")
 [void]$builder.AppendLine("  end")
+[void]$builder.AppendLine("  TM02W2FLaunchSpreadAdapter.install(TM02W2FConfig)")
 [void]$builder.AppendLine("  TM02W2FConfig.debug.enableF10Menu = false")
 [void]$builder.AppendLine("  local execution = TM02W2E.start(TM02W2FConfig, registry, planner, TM02W2FBuild)")
 [void]$builder.AppendLine("  if execution.configurationValid ~= true then error('TM02W2F execution validation failed') end")
