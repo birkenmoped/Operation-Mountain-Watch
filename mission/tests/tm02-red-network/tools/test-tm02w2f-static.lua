@@ -261,7 +261,7 @@ assert(supply.currentPersonnel == 112, "supply must begin with 112 personnel")
 assert(supply.currentPersonnel - supply.reservedOutbound == 24,
   "supply must retain 24 personnel")
 
-assert(config.configurationVersion == "TM02W2F-red-direct-offroad-canary-5",
+assert(config.configurationVersion == "TM02W2F-red-direct-offroad-canary-6",
   "unexpected configuration version")
 assert(config.commanderTest.planningIntervalSeconds == 30,
   "commander planning interval must be 30 seconds")
