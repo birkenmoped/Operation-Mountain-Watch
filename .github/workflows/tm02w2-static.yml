@@ -48,6 +48,7 @@ jobs:
           luac5.1 -p mission/tests/tm02-red-network/config-tm02w2f.lua
           luac5.1 -p mission/tests/tm02-red-network/src/tm02w2f-initial-fill-planner.lua
           luac5.1 -p mission/tests/tm02-red-network/src/tm02w2f-bootstrap-menu.lua
+          luac5.1 -p mission/tests/tm02-red-network/src/tm02w2f-launch-spread-adapter.lua
           luac5.1 -p mission/tests/tm02-red-network/src/tm02w2f-transit-representation.lua
       - name: Run TM02W2F planner harness
         run: lua5.1 mission/tests/tm02-red-network/tools/test-tm02w2f-static.lua "$GITHUB_WORKSPACE"
