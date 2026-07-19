@@ -60,4 +60,28 @@ assert(supply.currentPersonnel == 112, "supply must begin with 112 personnel")
 assert(supply.currentPersonnel - supply.reservedOutbound == 24,
   "supply must retain 24 personnel")
 
-print("TM02W2F static planner PASS: tasks=20 reserved=88 total=112")
+assert(config.commanderTest.planningIntervalSeconds == 30, "commander planning interval must be 30 seconds")
+assert(config.commanderTest.commandBudgetPerCycle == 4, "commander command budget must be four")
+assert(config.commanderTest.maxActiveTransportsGlobal == 8, "global active transport limit must be eight")
+assert(config.commanderTest.maxActiveTransportsPerFirstEdge == 2,
+  "first-edge transport limit must be two")
+assert(config.commanderTest.spawnIntervalSeconds == 8, "spawn interval must be eight seconds")
+assert(config.commanderTest.minimumPredecessorProgressMeters == 250,
+  "predecessor progress threshold must be 250 metres")
+assert(config.commanderTest.maximumLaunchHoldSeconds == 45,
+  "maximum launch hold must be 45 seconds")
+assert(config.execution.maxActiveTasks == config.commanderTest.maxActiveTransportsGlobal,
+  "executor and commander global limits must match")
+
+assert(config.routeReassignmentWatchdog.maximumRouteReassignmentsPerTask == 3,
+  "same-group route reassignment limit must be three")
+assert(config.routeReassignmentWatchdog.globalRecoveryIntervalSeconds == 8,
+  "global recovery operations must be serialized")
+assert(config.navigation.recoveryAdvanceSequenceMeters == nil,
+  "TM02W2F must not configure relocation recovery")
+assert(config.navigation.terminalRecoveryEnabled == nil,
+  "TM02W2F must not configure terminal relocation")
+assert(config.transitRepresentation.transitionIntervalSeconds >= 0.5,
+  "manual group conversion must be serialized")
+
+print("TM02W2F static contract PASS: tasks=20 reserved=88 commander=30s/4 spawn=8s active=8")
