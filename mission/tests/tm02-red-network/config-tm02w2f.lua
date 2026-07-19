@@ -1,5 +1,5 @@
 local config = {
-  configurationVersion = "TM02W2F-red-direct-offroad-canary-5",
+  configurationVersion = "TM02W2F-red-direct-offroad-canary-6",
   testId = "TM02",
   stageId = "TM02W2F",
 
