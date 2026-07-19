@@ -1,5 +1,5 @@
 local config = {
-  configurationVersion = "TM02W2F-red-initial-network-fill-1",
+  configurationVersion = "TM02W2F-red-initial-network-fill-2",
   testId = "TM02",
   stageId = "TM02W2F",
 
@@ -38,6 +38,11 @@ local config = {
       OMW_RED_SITE_Right_01 = 8,
       OMW_RED_SITE_Right_02 = 8,
     },
+    optimization = {
+      primary = "MINIMIZE_COMPLETION_TIME",
+      secondary = "MINIMIZE_TASK_COUNT",
+      tertiary = "MINIMIZE_SAFE_ROUTE_DISTANCE",
+    },
   },
 
   proxy = {
@@ -46,20 +51,21 @@ local config = {
     runtimeAliasPrefix = "TM02W2F_RED_PROXY_",
     expectedUnitCount = 1,
     launchSlots = {
-      { x = -30, y = -20 }, { x = -15, y = -20 }, { x = 0, y = -20 }, { x = 15, y = -20 }, { x = 30, y = -20 },
-      { x = -30, y = -10 }, { x = -15, y = -10 }, { x = 0, y = -10 }, { x = 15, y = -10 }, { x = 30, y = -10 },
-      { x = -30, y = 10 }, { x = -15, y = 10 }, { x = 0, y = 10 }, { x = 15, y = 10 }, { x = 30, y = 10 },
-      { x = -30, y = 20 }, { x = -15, y = 20 }, { x = 0, y = 20 }, { x = 15, y = 20 }, { x = 30, y = 20 },
+      { x = -16, y = -12 }, { x = -8, y = -12 }, { x = 0, y = -12 }, { x = 8, y = -12 }, { x = 16, y = -12 },
+      { x = -16, y = -4 },  { x = -8, y = -4 },  { x = 0, y = -4 },  { x = 8, y = -4 },  { x = 16, y = -4 },
+      { x = -16, y = 4 },   { x = -8, y = 4 },   { x = 0, y = 4 },   { x = 8, y = 4 },   { x = 16, y = 4 },
+      { x = -16, y = 12 },  { x = -8, y = 12 },  { x = 0, y = 12 },  { x = 8, y = 12 },  { x = 16, y = 12 },
     },
   },
 
   physical = {
-    runtimeAliasPrefix = "TM02W2F_RED_FULL_",
+    runtimeAliasPrefix = "TM02W2F_RED_GARRISON_",
+    transitRuntimeAliasPrefix = "TM02W2F_RED_TRANSIT_FULL_",
   },
 
   execution = {
     maxActiveTasks = 20,
-    maxActiveOutboundPerSource = 4,
+    maxActiveOutboundPerSource = 20,
     monitorInitialDelaySeconds = 2,
     monitorIntervalSeconds = 2,
     autoStart = false,
@@ -107,17 +113,18 @@ local config = {
     maxRoadRecoveriesPerLeg = 3,
     progressRequiredToResetEpisodeMeters = 300,
     progressRequiredToResetEpisodeSeconds = 60,
-
     terminalRecoveryEnabled = false,
   },
 
-  representation = {
-    proxyTemplateStrength = 1,
-    proxyAliasPrefix = "TM02W2F_GARRISON_PROXY_",
-    physicalAliasPrefix = "TM02W2F_GARRISON_FULL_",
-    nodePacketSpacingMeters = 18,
-    transitionBatchSize = 6,
-    transitionBatchDelaySeconds = 0.1,
+  transitRepresentation = {
+    enableF10Menu = true,
+    menuTitle = "TM02W2F Initial Network Fill",
+    startCommand = "Initiales Auffuellen starten",
+    unpackCommand = "Alle Reise-Proxies entpacken",
+    packCommand = "Alle Reisegruppen packen",
+    statusCommand = "Status anzeigen",
+    listCommand = "Reiseauftraege ins Log schreiben",
+    markerCommand = "Task-Marker umschalten",
   },
 
   debug = {
