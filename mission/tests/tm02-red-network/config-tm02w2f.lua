@@ -1,5 +1,5 @@
 local config = {
-  configurationVersion = "TM02W2F-red-initial-network-fill-3",
+  configurationVersion = "TM02W2F-red-commander-timeslice-4",
   testId = "TM02",
   stageId = "TM02W2F",
 
@@ -45,6 +45,17 @@ local config = {
     },
   },
 
+  commanderTest = {
+    planningIntervalSeconds = 30,
+    commandBudgetPerCycle = 4,
+    maxActiveTransportsGlobal = 8,
+    maxActiveTransportsPerFirstEdge = 2,
+    spawnIntervalSeconds = 8,
+    minimumPredecessorProgressMeters = 250,
+    maximumLaunchHoldSeconds = 45,
+    schedulerTickSeconds = 1,
+  },
+
   proxy = {
     sourcePolicy = "LEADER_FROM_TASK_TEMPLATE",
     sourceUnitIndex = 1,
@@ -64,8 +75,8 @@ local config = {
   },
 
   execution = {
-    maxActiveTasks = 20,
-    maxActiveOutboundPerSource = 20,
+    maxActiveTasks = 8,
+    maxActiveOutboundPerSource = 8,
     monitorInitialDelaySeconds = 2,
     monitorIntervalSeconds = 2,
     autoStart = false,
@@ -89,48 +100,33 @@ local config = {
     routeWaypointSpacingMeters = 100,
     offRoadWaypointSpacingMeters = 150,
     portalArrivalRadiusMeters = 100,
+    combatCooldownSeconds = 90,
+  },
 
-    watchdogInitialDelaySeconds = 5,
-    watchdogIntervalSeconds = 3,
-    stuckWindowSeconds = 18,
+  routeReassignmentWatchdog = {
+    initialDelaySeconds = 10,
+    intervalSeconds = 3,
+    sampleWindowSeconds = 24,
     minimumTravelMeters = 5,
     minimumProgressMeters = 4,
-    circularTravelMeters = 6,
-    circularNetMeters = 12,
-    routeEfficiencyFloor = 0.15,
-    ineffectiveWindowLimit = 2,
-    wrongWayMeters = 12,
     crossTrackLimitMeters = 60,
-    combatCooldownSeconds = 90,
-
-    localRecoveryStepMeters = 20,
-    maxLocalRecoveryAttemptsPerEpisode = 5,
-    maxLocalRelocationMetersPerEpisode = 100,
-    roadRecoverySearchStartMeters = 50,
-    roadRecoverySearchEndMeters = 500,
-    roadRecoverySearchStepMeters = 25,
-    roadRecoverySnapLimitMeters = 120,
-    maxRoadRecoveriesPerLeg = 3,
-    progressRequiredToResetEpisodeMeters = 300,
-    progressRequiredToResetEpisodeSeconds = 60,
-    terminalRecoveryEnabled = false,
-
-    -- The inherited V5 watchdog is still used in this stacked test. Give it
-    -- only 20-metre relocations, so it cannot reach its terminal-jump branch
-    -- during a normal TM02W2F run. Any terminal-relocation log is a hard FAIL.
-    recoveryAdvanceSequenceMeters = {},
-    terminalRecoveryDistanceFromPortalMeters = 25,
+    maximumRouteReassignmentsPerTask = 3,
+    perTaskRecoveryCooldownSeconds = 30,
+    globalRecoveryIntervalSeconds = 8,
+    blockedResetProgressMeters = 100,
   },
 
   transitRepresentation = {
     enableF10Menu = true,
     menuTitle = "TM02W2F Initial Network Fill",
-    startCommand = "Initiales Auffuellen starten",
+    startCommand = "Beschleunigten RED-Commander starten",
     unpackCommand = "Alle Reise-Proxies entpacken",
     packCommand = "Alle Reisegruppen packen",
     statusCommand = "Status anzeigen",
+    commanderStatusCommand = "Commander-Status anzeigen",
     listCommand = "Reiseauftraege ins Log schreiben",
     markerCommand = "Task-Marker umschalten",
+    transitionIntervalSeconds = 0.75,
   },
 
   debug = {
@@ -140,9 +136,5 @@ local config = {
     markerIdBase = 220800,
   },
 }
-
-for index = 1, 250 do
-  config.navigation.recoveryAdvanceSequenceMeters[index] = 20
-end
 
 return config
