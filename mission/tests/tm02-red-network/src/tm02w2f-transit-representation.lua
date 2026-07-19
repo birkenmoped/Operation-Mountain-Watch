@@ -1,7 +1,13 @@
 local TM02W2FTransitRepresentation = {}
 
 function TM02W2FTransitRepresentation.install(config, executionState, navigation)
-  local state = { valid = true, errors = {}, menu = nil }
+  local state = {
+    valid = true,
+    errors = {},
+    menu = nil,
+    transitionActive = false,
+    transitionGeneration = 0,
+  }
 
   local function log(level, event, fields)
     local keys, parts = {}, {}
@@ -84,20 +90,22 @@ function TM02W2FTransitRepresentation.install(config, executionState, navigation
     return bestAlong, bestDistance
   end
 
-  local function sliceRoute(coordinates, requestedMeters)
+  local function sliceRoute(coordinates, requestedMeters, currentCoordinate)
+    local result = { currentCoordinate }
     local cumulative = 0
     for index = 2, #coordinates do
       local first, second = coordinates[index - 1], coordinates[index]
       local segmentMeters = distance2D(first, second)
       if cumulative + segmentMeters >= requestedMeters then
         local fraction = segmentMeters > 0 and (requestedMeters - cumulative) / segmentMeters or 0
-        local result = { interpolate(first, second, fraction) }
+        result[#result + 1] = interpolate(first, second, fraction)
         for remaining = index, #coordinates do result[#result + 1] = coordinates[remaining] end
         return result
       end
       cumulative = cumulative + segmentMeters
     end
-    return { coordinates[#coordinates - 1], coordinates[#coordinates] }
+    result[#result + 1] = coordinates[#coordinates]
+    return result
   end
 
   local function remainingContext(task)
@@ -106,9 +114,10 @@ function TM02W2FTransitRepresentation.install(config, executionState, navigation
     if not context or type(context.coordinates) ~= "table" or #context.coordinates < 2 then
       return nil, "ROUTE_CONTEXT_UNAVAILABLE"
     end
-    local along, crossTrack = projectAlong(context.coordinates, group:GetCoordinate())
+    local currentCoordinate = group:GetCoordinate()
+    local along, crossTrack = projectAlong(context.coordinates, currentCoordinate)
     if not along then return nil, "ROUTE_PROJECTION_UNAVAILABLE" end
-    local coordinates = sliceRoute(context.coordinates, along)
+    local coordinates = sliceRoute(context.coordinates, along, currentCoordinate)
     return {
       sourceSiteId = context.sourceSiteId,
       targetSiteId = context.targetSiteId,
@@ -127,13 +136,16 @@ function TM02W2FTransitRepresentation.install(config, executionState, navigation
     for _, coordinate in ipairs(context.coordinates) do
       waypoints[#waypoints + 1] = coordinate:WaypointGround(config.routing.proxyTestSpeedKph, formation)
     end
+    local nativeRoute = group.__OMWTM02W2EOriginalRoute or group.Route
     local ok, assigned = pcall(function()
-      return group:Route(waypoints, config.routing.assignmentDelaySeconds)
+      return nativeRoute(group, waypoints, config.routing.assignmentDelaySeconds)
     end)
     if not ok or not assigned then return false end
     navigation.routeContextByGroupName[group:GetName()] = context
     log("INFO", "transit_route_reassigned", {
-      groupName = group:GetName(), reason = reason, waypointCount = #waypoints,
+      groupName = group:GetName(),
+      reason = reason,
+      waypointCount = #waypoints,
       remainingDistanceMeters = string.format("%.1f", context.lengthMeters),
     })
     return true
@@ -153,6 +165,7 @@ function TM02W2FTransitRepresentation.install(config, executionState, navigation
     task.navV5GroupName = nil
     task.navV5IneffectiveWindowCount = 0
     task.navHighestRouteProgressMeters = 0
+    task.w2fWatchdogSample = nil
   end
 
   local function convertTask(task, unpack)
@@ -177,32 +190,86 @@ function TM02W2FTransitRepresentation.install(config, executionState, navigation
       pcall(function() replacement:Destroy() end)
       return false, "ROUTE_ASSIGNMENT_FAILED"
     end
+
     local oldName = oldGroup:GetName()
     task.proxyGroup = replacement
     task.proxyGroupName = replacement:GetName()
     task.transitExpanded = unpack == true
     task.transitRepresentation = unpack and "FULL_GROUP" or "LEADER_PROXY"
+    task.currentCoordinate = coordinate:GetVec3()
     resetSamples(task)
     pcall(function() oldGroup:Destroy() end)
     navigation.routeContextByGroupName[oldName] = nil
     log("INFO", unpack and "travelling_proxy_unpacked" or "travelling_group_packed", {
-      taskId = task.taskId, strength = task.survivorCount,
-      oldGroupName = oldName, newGroupName = replacement:GetName(),
+      taskId = task.taskId,
+      strength = task.survivorCount,
+      oldGroupName = oldName,
+      newGroupName = replacement:GetName(),
       remainingDistanceMeters = string.format("%.1f", context.lengthMeters),
       crossTrackMeters = string.format("%.1f", context.crossTrackMeters),
     })
     return true
   end
 
-  local function convertAll(unpack)
-    local eligible, converted, errors = 0, 0, 0
+  local function collectCandidates(unpack)
+    local result = {}
     for _, task in ipairs(executionState.tasks or {}) do
       local candidate = task.movementState == "EN_ROUTE"
         and task.proxyGroup ~= nil
         and ((unpack and task.transitExpanded ~= true)
           or (not unpack and task.transitExpanded == true))
-      if candidate then
-        eligible = eligible + 1
+      if candidate then result[#result + 1] = task end
+    end
+    return result
+  end
+
+  local function beginSerializedConversion(unpack)
+    if state.transitionActive then
+      announce("TM02W2F: eine Pack-/Entpackoperation laeuft bereits")
+      return false
+    end
+    local candidates = collectCandidates(unpack)
+    if #candidates == 0 then
+      announce(unpack and "Keine gepackten Reise-Proxies vorhanden" or "Keine entpackten Reisegruppen vorhanden")
+      return true
+    end
+
+    state.transitionActive = true
+    state.transitionGeneration = state.transitionGeneration + 1
+    local transitionGeneration = state.transitionGeneration
+    local index, converted, skipped, errors = 1, 0, 0, 0
+    local operation = unpack and "UNPACK" or "PACK"
+    log("INFO", "serialized_transit_conversion_started", {
+      operation = operation,
+      candidateCount = #candidates,
+      intervalSeconds = config.transitRepresentation.transitionIntervalSeconds,
+    })
+    announce((unpack and "Reise-Proxies werden entpackt: " or "Reisegruppen werden gepackt: ") .. #candidates)
+
+    timer.scheduleFunction(function(_, scheduledTime)
+      if transitionGeneration ~= state.transitionGeneration then return nil end
+      local task = candidates[index]
+      if not task then
+        state.transitionActive = false
+        log(errors == 0 and "INFO" or "WARNING", "serialized_transit_conversion_completed", {
+          operation = operation,
+          candidateCount = #candidates,
+          convertedCount = converted,
+          skippedCount = skipped,
+          errorCount = errors,
+        })
+        announce((unpack and "Reise-Proxies entpackt: " or "Reisegruppen gepackt: ")
+          .. converted .. " / " .. #candidates .. "; uebersprungen: " .. skipped .. "; Fehler: " .. errors)
+        return nil
+      end
+
+      local stillEligible = task.movementState == "EN_ROUTE"
+        and task.proxyGroup ~= nil
+        and ((unpack and task.transitExpanded ~= true)
+          or (not unpack and task.transitExpanded == true))
+      if not stillEligible then
+        skipped = skipped + 1
+      else
         local ok, success, reason = pcall(convertTask, task, unpack)
         if ok and success == true then
           converted = converted + 1
@@ -210,19 +277,15 @@ function TM02W2FTransitRepresentation.install(config, executionState, navigation
           errors = errors + 1
           log("ERROR", "transit_conversion_failed", {
             taskId = task.taskId,
-            operation = unpack and "UNPACK" or "PACK",
+            operation = operation,
             reason = ok and tostring(reason) or tostring(success),
           })
         end
       end
-    end
-    log(errors == 0 and "INFO" or "WARNING",
-      unpack and "all_travelling_proxies_unpacked" or "all_travelling_groups_packed", {
-        eligibleCount = eligible, convertedCount = converted, errorCount = errors,
-      })
-    announce((unpack and "Reise-Proxies entpackt: " or "Reisegruppen gepackt: ")
-      .. converted .. " / " .. eligible .. "; Fehler: " .. errors)
-    return errors == 0
+      index = index + 1
+      return scheduledTime + config.transitRepresentation.transitionIntervalSeconds
+    end, nil, timer.getTime() + 0.1)
+    return true
   end
 
   local function showStatus()
@@ -234,11 +297,15 @@ function TM02W2FTransitRepresentation.install(config, executionState, navigation
       end
     end
     log("INFO", "transit_representation_status", {
-      travellingCount = travelling, packedProxyCount = packed,
+      travellingCount = travelling,
+      packedProxyCount = packed,
       unpackedFullGroupCount = unpacked,
+      transitionActive = state.transitionActive,
     })
     announce("TM02W2F Reise-Darstellung\nReisend: " .. travelling
-      .. "\nGepackte Proxies: " .. packed .. "\nEntpackte Gruppen: " .. unpacked)
+      .. "\nGepackte Proxies: " .. packed
+      .. "\nEntpackte Gruppen: " .. unpacked
+      .. "\nUmstellung aktiv: " .. tostring(state.transitionActive))
   end
 
   if type(executionState) ~= "table" or executionState.configurationValid ~= true then
@@ -254,20 +321,26 @@ function TM02W2FTransitRepresentation.install(config, executionState, navigation
     local root = MENU_MISSION:New("OMW Tests")
     local menu = MENU_MISSION:New(config.transitRepresentation.menuTitle, root)
     MENU_MISSION_COMMAND:New(config.transitRepresentation.startCommand, menu, executionState.startExecution)
-    MENU_MISSION_COMMAND:New(config.transitRepresentation.unpackCommand, menu, function() return convertAll(true) end)
-    MENU_MISSION_COMMAND:New(config.transitRepresentation.packCommand, menu, function() return convertAll(false) end)
+    MENU_MISSION_COMMAND:New(config.transitRepresentation.unpackCommand, menu, function() return beginSerializedConversion(true) end)
+    MENU_MISSION_COMMAND:New(config.transitRepresentation.packCommand, menu, function() return beginSerializedConversion(false) end)
     MENU_MISSION_COMMAND:New(config.transitRepresentation.statusCommand, menu, showStatus)
+    if type(executionState.showCommanderStatus) == "function" then
+      MENU_MISSION_COMMAND:New(config.transitRepresentation.commanderStatusCommand, menu, executionState.showCommanderStatus)
+    end
     MENU_MISSION_COMMAND:New(config.transitRepresentation.listCommand, menu, executionState.showTasks)
     MENU_MISSION_COMMAND:New(config.transitRepresentation.markerCommand, menu, executionState.toggleMarkers)
     state.menu = { root = root, menu = menu }
   end
 
-  state.unpackAllTravelling = function() return convertAll(true) end
-  state.packAllTravelling = function() return convertAll(false) end
+  state.unpackAllTravelling = function() return beginSerializedConversion(true) end
+  state.packAllTravelling = function() return beginSerializedConversion(false) end
   state.showStatus = showStatus
   log(state.valid and "INFO" or "ERROR", "transit_representation_validation", {
     configurationVersion = config.configurationVersion,
-    valid = state.valid, menuInstalled = state.menu ~= nil, errorCount = #state.errors,
+    valid = state.valid,
+    menuInstalled = state.menu ~= nil,
+    transitionIntervalSeconds = config.transitRepresentation.transitionIntervalSeconds,
+    errorCount = #state.errors,
   })
   return state
 end
