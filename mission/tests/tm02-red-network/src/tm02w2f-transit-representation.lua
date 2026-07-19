@@ -63,6 +63,75 @@ function TM02W2FTransitRepresentation.install(config, executionState, navigation
     return total
   end
 
+  local function pairKey(firstId, secondId)
+    if firstId < secondId then return firstId .. "\0" .. secondId end
+    return secondId .. "\0" .. firstId
+  end
+
+  local function reverseArray(values)
+    local result = {}
+    for index = #(values or {}), 1, -1 do result[#result + 1] = values[index] end
+    return result
+  end
+
+  local function directedPlan(sourceSiteId, targetSiteId)
+    local plan = navigation.planByPair[pairKey(sourceSiteId, targetSiteId)]
+    if not plan or plan.safe ~= true then return nil end
+    if plan.sourceSiteId == sourceSiteId and plan.targetSiteId == targetSiteId then return plan end
+    return {
+      safe = true,
+      mode = plan.mode,
+      coordinates = reverseArray(plan.coordinates),
+      lengthMeters = plan.lengthMeters,
+      sourceSiteId = sourceSiteId,
+      targetSiteId = targetSiteId,
+      linkId = plan.linkId,
+    }
+  end
+
+  local function nearestSiteToWaypoint(waypoint)
+    if type(waypoint) ~= "table" or type(waypoint.x) ~= "number" or type(waypoint.y) ~= "number" then
+      return nil
+    end
+    local point = { x = waypoint.x, z = waypoint.y }
+    local bestSiteId, bestDistance = nil, math.huge
+    for siteId, site in pairs(navigation.registryState and navigation.registryState.siteById or {}) do
+      local candidate = distance2D(point, site.coordinate)
+      if candidate < bestDistance then
+        bestDistance = candidate
+        bestSiteId = siteId
+      end
+    end
+    if bestSiteId then return bestSiteId end
+    for siteId, portal in pairs(navigation.portalsBySiteId or {}) do
+      local candidate = distance2D(point, portal)
+      if candidate < bestDistance then
+        bestDistance = candidate
+        bestSiteId = siteId
+      end
+    end
+    return bestSiteId
+  end
+
+  local function sampleCoordinates(coordinates, spacingMeters)
+    if type(coordinates) ~= "table" or #coordinates < 2 then return nil end
+    local result = { coordinates[1] }
+    for segmentIndex = 2, #coordinates do
+      local first, second = coordinates[segmentIndex - 1], coordinates[segmentIndex]
+      local segmentMeters = distance2D(first, second)
+      local steps = math.max(1, math.ceil(segmentMeters / spacingMeters))
+      for step = 1, steps do result[#result + 1] = interpolate(first, second, step / steps) end
+    end
+    return result
+  end
+
+  local function zoneName(zone)
+    if not zone then return nil end
+    local ok, result = pcall(function() return zone:GetName() end)
+    if ok and result then return result end
+    return zone.ZoneName or zone.name
+  end
+
   local function projectAlong(coordinates, position)
     local point = vec3(position)
     if not point or type(coordinates) ~= "table" or #coordinates < 2 then return nil end
@@ -136,7 +205,7 @@ function TM02W2FTransitRepresentation.install(config, executionState, navigation
     for _, coordinate in ipairs(context.coordinates) do
       waypoints[#waypoints + 1] = coordinate:WaypointGround(config.routing.proxyTestSpeedKph, formation)
     end
-    local nativeRoute = group.__OMWTM02W2EOriginalRoute or group.Route
+    local nativeRoute = group.__OMWTM02W2EOriginalRoute or group.__OMWTM02W2FOriginalRoute or group.Route
     local ok, assigned = pcall(function()
       return nativeRoute(group, waypoints, config.routing.assignmentDelaySeconds)
     end)
@@ -149,6 +218,54 @@ function TM02W2FTransitRepresentation.install(config, executionState, navigation
       remainingDistanceMeters = string.format("%.1f", context.lengthMeters),
     })
     return true
+  end
+
+  local function wrapTravelGroup(group)
+    if not group or group.__OMWTM02W2EV4Wrapped == true or group.__OMWTM02W2FTransitWrapped == true then
+      return group
+    end
+    if type(group.Route) ~= "function" or type(group.IsCompletelyInZone) ~= "function" then return group end
+
+    group.__OMWTM02W2FTransitWrapped = true
+    group.__OMWTM02W2FOriginalRoute = group.Route
+    group.__OMWTM02W2FOriginalIsCompletelyInZone = group.IsCompletelyInZone
+    group.__OMWTM02W2EOriginalRoute = group.__OMWTM02W2EOriginalRoute or group.Route
+
+    function group:Route(route, delay)
+      local firstWaypoint = type(route) == "table" and route[1] or nil
+      local lastWaypoint = type(route) == "table" and route[#route] or nil
+      local sourceSiteId = nearestSiteToWaypoint(firstWaypoint)
+      local targetSiteId = nearestSiteToWaypoint(lastWaypoint)
+      local plan = sourceSiteId and targetSiteId and directedPlan(sourceSiteId, targetSiteId) or nil
+      if plan then
+        local spacing = plan.mode == "ROAD"
+          and (config.navigation.routeWaypointSpacingMeters or 100)
+          or (config.navigation.offRoadWaypointSpacingMeters or 150)
+        local sampled = sampleCoordinates(plan.coordinates, spacing)
+        local context = sampled and {
+          sourceSiteId = sourceSiteId,
+          targetSiteId = targetSiteId,
+          mode = plan.mode,
+          coordinates = sampled,
+          lengthMeters = plan.lengthMeters,
+        } or nil
+        if context and assignRoute(self, context, "executor-leg-after-manual-representation") then return self end
+      end
+      return self.__OMWTM02W2FOriginalRoute(self, route, delay)
+    end
+
+    function group:IsCompletelyInZone(zone)
+      local context = navigation.routeContextByGroupName[self:GetName()]
+      local targetName = zoneName(zone)
+      if context and targetName == context.targetSiteId then
+        local portal = navigation.portalsBySiteId[context.targetSiteId]
+        if portal and distance2D(self:GetCoordinate(), portal) <= (config.navigation.portalArrivalRadiusMeters or 100) then
+          return true
+        end
+      end
+      return self.__OMWTM02W2FOriginalIsCompletelyInZone(self, zone)
+    end
+    return group
   end
 
   local generation = 0
@@ -181,6 +298,7 @@ function TM02W2FTransitRepresentation.install(config, executionState, navigation
       and nextAlias(task, config.physical.transitRuntimeAliasPrefix)
       or nextAlias(task, config.proxy.runtimeAliasPrefix)
     local replacement = SPAWN:NewWithAlias(templateName, alias):SpawnFromCoordinate(coordinate)
+    replacement = wrapTravelGroup(replacement)
     local expectedCount = unpack and task.survivorCount or config.proxy.expectedUnitCount
     if not replacement or replacement:CountAliveUnits() ~= expectedCount then
       if replacement then pcall(function() replacement:Destroy() end) end
