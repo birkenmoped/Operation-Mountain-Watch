@@ -1328,6 +1328,7 @@ local function createBatch(_, now)
   local summary = string.format(
     "TOWNS-Marker fertig: %d von %d erstellt, %d Fehler.",
     MODULE.created, total, MODULE.failed
+  )
   log(summary)
   if trigger and trigger.action and trigger.action.outText then
     trigger.action.outText(summary, 15)
