@@ -60,28 +60,47 @@ assert(supply.currentPersonnel == 112, "supply must begin with 112 personnel")
 assert(supply.currentPersonnel - supply.reservedOutbound == 24,
   "supply must retain 24 personnel")
 
-assert(config.commanderTest.planningIntervalSeconds == 30, "commander planning interval must be 30 seconds")
-assert(config.commanderTest.commandBudgetPerCycle == 4, "commander command budget must be four")
-assert(config.commanderTest.maxActiveTransportsGlobal == 8, "global active transport limit must be eight")
+assert(config.configurationVersion == "TM02W2F-red-direct-offroad-canary-5",
+  "unexpected configuration version")
+assert(config.commanderTest.planningIntervalSeconds == 30,
+  "commander planning interval must be 30 seconds")
+assert(config.commanderTest.commandBudgetPerCycle == 4,
+  "commander command budget must be four")
+assert(config.commanderTest.maxActiveTransportsGlobal == 4,
+  "global active transport limit must be four")
 assert(config.commanderTest.maxActiveTransportsPerFirstEdge == 2,
   "first-edge transport limit must be two")
-assert(config.commanderTest.spawnIntervalSeconds == 8, "spawn interval must be eight seconds")
-assert(config.commanderTest.minimumPredecessorProgressMeters == 250,
-  "predecessor progress threshold must be 250 metres")
-assert(config.commanderTest.maximumLaunchHoldSeconds == 45,
-  "maximum launch hold must be 45 seconds")
+assert(config.commanderTest.spawnIntervalSeconds == 10,
+  "spawn interval must be ten seconds")
+assert(config.commanderTest.minimumPredecessorProgressMeters == 150,
+  "predecessor progress threshold must be 150 metres")
+assert(config.commanderTest.canaryProgressMeters == 75,
+  "canary must prove 75 metres of movement")
+assert(config.commanderTest.canaryTimeoutSeconds == 120,
+  "canary timeout must be 120 seconds")
 assert(config.execution.maxActiveTasks == config.commanderTest.maxActiveTransportsGlobal,
   "executor and commander global limits must match")
 
-assert(config.routeReassignmentWatchdog.maximumRouteReassignmentsPerTask == 3,
-  "same-group route reassignment limit must be three")
-assert(config.routeReassignmentWatchdog.globalRecoveryIntervalSeconds == 8,
-  "global recovery operations must be serialized")
-assert(config.navigation.recoveryAdvanceSequenceMeters == nil,
-  "TM02W2F must not configure relocation recovery")
-assert(config.navigation.terminalRecoveryEnabled == nil,
-  "TM02W2F must not configure terminal relocation")
+assert(config.routing.physicalMode == "DIRECT_OFFROAD",
+  "physical movement must be direct off-road")
+assert(config.routing.maximumPhysicalWaypointsPerLeg == 2,
+  "physical route must contain only start and destination")
+assert(config.routing.formation == "Off Road",
+  "executor formation must be Off Road")
+assert(config.navigation.roadsUsedForNormalMovement == false,
+  "normal movement must not use roads")
+assert(config.navigation.automaticRecoveryEnabled == false,
+  "automatic recovery must be disabled for the canary run")
+assert(config.routeReassignmentWatchdog == nil,
+  "legacy route-reassignment watchdog must not be configured")
+
+assert(#config.proxy.launchSlots == config.execution.maxActiveTasks,
+  "launch slot count must match executor capacity")
+for _, slot in ipairs(config.proxy.launchSlots) do
+  assert(slot.x == 0 and slot.y == 0,
+    "free Cartesian launch spreading is forbidden")
+end
 assert(config.transitRepresentation.transitionIntervalSeconds >= 0.5,
   "manual group conversion must be serialized")
 
-print("TM02W2F static contract PASS: tasks=20 reserved=88 commander=30s/4 spawn=8s active=8")
+print("TM02W2F static contract PASS: tasks=20 direct-offroad=2wp canary=75m spawn=10s active=4")
