@@ -4,6 +4,15 @@ local function directedKey(sourceSiteId, targetSiteId)
   return tostring(sourceSiteId) .. "\0" .. tostring(targetSiteId)
 end
 
+local function sortedKeys(values)
+  local keys = {}
+  for key in pairs(values or {}) do
+    keys[#keys + 1] = key
+  end
+  table.sort(keys)
+  return keys
+end
+
 local function distance2D(first, second)
   local dx = (second.x or 0) - (first.x or 0)
   local dz = (second.z or 0) - (first.z or 0)
@@ -48,6 +57,8 @@ function TM02W2FDirectOffroadNavigation.install(config, registryState, plannerSt
     safeEdgeCount = 0,
     blockedEdgeCount = 0,
     safeTaskCount = 0,
+    moosePathCount = 0,
+    fallbackPathCount = 0,
   }
 
   local function log(level, event, fields)
@@ -67,14 +78,35 @@ function TM02W2FDirectOffroadNavigation.install(config, registryState, plannerSt
     log("ERROR", "direct_navigation_error", { code = code, detail = detail })
   end
 
+  local function addWarning(code, detail)
+    state.warnings[#state.warnings + 1] = tostring(code) .. ": " .. tostring(detail)
+    log("WARNING", "direct_navigation_warning", { code = code, detail = detail })
+  end
+
   if type(registryState) ~= "table" or registryState.configurationValid ~= true then
     addError("REGISTRY_INVALID", "TM02W1 registry unavailable or invalid")
   end
   if type(plannerState) ~= "table" or plannerState.configurationValid ~= true then
     addError("PLANNER_INVALID", "TM02W2F planner unavailable or invalid")
   end
-  if type(ASTAR) ~= "table" or type(ASTAR.New) ~= "function" then
-    addError("MOOSE_ASTAR_MISSING", "ASTAR.New unavailable")
+
+  local requiredAstarApis = {
+    "New",
+    "AddNodeFromCoordinate",
+    "SetStartCoordinate",
+    "SetEndCoordinate",
+    "SetValidNeighbourFunction",
+    "SetCostFunction",
+    "GetPath",
+  }
+  if type(ASTAR) ~= "table" then
+    addError("MOOSE_ASTAR_MISSING", "ASTAR table unavailable")
+  else
+    for _, methodName in ipairs(requiredAstarApis) do
+      if type(ASTAR[methodName]) ~= "function" then
+        addError("MOOSE_ASTAR_API_MISSING", methodName)
+      end
+    end
   end
   if type(COORDINATE) ~= "table" or type(COORDINATE.NewFromVec3) ~= "function" then
     addError("MOOSE_COORDINATE_MISSING", "COORDINATE.NewFromVec3 unavailable")
@@ -150,63 +182,155 @@ function TM02W2FDirectOffroadNavigation.install(config, registryState, plannerSt
     return self.planByDirectedPair[directedKey(sourceSiteId, targetSiteId)]
   end
 
-  function state:preparePlannerTasks()
-    self.safeTaskCount = 0
-    for _, task in ipairs(plannerState.tasks or {}) do
-      local astar = ASTAR:New()
-      local nodesBySiteId = {}
-      for siteId, site in pairs(registryState.siteById or {}) do
-        local node = astar:AddNodeFromCoordinate(coordinateFromSite(site))
-        node.siteId = siteId
-        nodesBySiteId[siteId] = node
+  local function customLogicalPath(sourceSiteId, targetSiteId)
+    local siteIds = sortedKeys(registryState.siteById)
+    local cost = { [sourceSiteId] = 0 }
+    local previous = {}
+    local visited = {}
+
+    while true do
+      local currentSiteId
+      local currentCost = math.huge
+      for _, siteId in ipairs(siteIds) do
+        if not visited[siteId] and cost[siteId] and cost[siteId] < currentCost then
+          currentSiteId = siteId
+          currentCost = cost[siteId]
+        end
       end
 
-      local startNode = nodesBySiteId[task.sourceSiteId]
-      local endNode = nodesBySiteId[task.targetSiteId]
-      if not startNode or not endNode then
-        addError("TASK_ENDPOINT_MISSING", task.taskId)
-      else
-        astar:FindStartNode(startNode)
-        astar:FindEndNode(endNode)
-        astar:SetValidNeighbourFunction(function(firstNode, secondNode)
-          local plan = self:getLegPlan(firstNode.siteId, secondNode.siteId)
-          return plan ~= nil and plan.safe == true
-        end)
-        astar:SetCostFunction(function(firstNode, secondNode)
-          local plan = self:getLegPlan(firstNode.siteId, secondNode.siteId)
-          return plan and plan.safe == true and plan.lengthMeters or ASTAR.INF
-        end)
+      if not currentSiteId then
+        return nil
+      end
+      if currentSiteId == targetSiteId then
+        break
+      end
 
-        local ok, result = pcall(function() return astar:GetPath(false, false) end)
-        if not ok or type(result) ~= "table" or #result < 2 then
-          addError("SAFE_DIRECT_LOGICAL_PATH_MISSING", task.taskId)
-        else
-          local path, linkIds = {}, {}
-          local complete = true
-          for _, node in ipairs(result) do path[#path + 1] = node.siteId end
-          for index = 1, #path - 1 do
-            local plan = self:getLegPlan(path[index], path[index + 1])
-            if not plan or plan.safe ~= true then
-              complete = false
-              addError("SAFE_DIRECT_LEG_MISSING", task.taskId .. " leg=" .. path[index] .. ">" .. path[index + 1])
-              break
+      visited[currentSiteId] = true
+      for _, candidateSiteId in ipairs(siteIds) do
+        if candidateSiteId ~= currentSiteId and not visited[candidateSiteId] then
+          local plan = state:getLegPlan(currentSiteId, candidateSiteId)
+          if plan and plan.safe == true then
+            local candidateCost = currentCost + plan.lengthMeters
+            if not cost[candidateSiteId] or candidateCost < cost[candidateSiteId] then
+              cost[candidateSiteId] = candidateCost
+              previous[candidateSiteId] = currentSiteId
             end
-            linkIds[#linkIds + 1] = plan.linkId
           end
-          if complete then
-            task.path = path
-            task.linkIds = linkIds
-            self.safeTaskCount = self.safeTaskCount + 1
-            log("INFO", "direct_offroad_task_path_selected", {
-              taskId = task.taskId,
-              sourceSiteId = task.sourceSiteId,
-              targetSiteId = task.targetSiteId,
-              path = table.concat(path, ">"),
-              legCount = #path - 1,
-              physicalWaypointsPerLeg = 2,
-              method = "MOOSE_ASTAR_RED_NETWORK",
-            })
+        end
+      end
+    end
+
+    local path = {}
+    local currentSiteId = targetSiteId
+    while currentSiteId do
+      table.insert(path, 1, currentSiteId)
+      currentSiteId = previous[currentSiteId]
+    end
+    if path[1] ~= sourceSiteId then
+      return nil
+    end
+    return path
+  end
+
+  local function mooseLogicalPath(task)
+    local astar = ASTAR:New()
+    local nodesBySiteId = {}
+    for siteId, site in pairs(registryState.siteById or {}) do
+      local node = astar:AddNodeFromCoordinate(coordinateFromSite(site))
+      node.siteId = siteId
+      nodesBySiteId[siteId] = node
+    end
+
+    local startNode = nodesBySiteId[task.sourceSiteId]
+    local endNode = nodesBySiteId[task.targetSiteId]
+    if not startNode or not endNode then
+      return nil, "TASK_ENDPOINT_MISSING"
+    end
+
+    astar:SetStartCoordinate(startNode.coordinate)
+    astar:SetEndCoordinate(endNode.coordinate)
+    astar:SetValidNeighbourFunction(function(firstNode, secondNode)
+      local plan = state:getLegPlan(firstNode.siteId, secondNode.siteId)
+      return plan ~= nil and plan.safe == true
+    end)
+    astar:SetCostFunction(function(firstNode, secondNode)
+      return distance2D(firstNode.coordinate, secondNode.coordinate)
+    end)
+
+    local ok, result = pcall(function()
+      return astar:GetPath(false, false)
+    end)
+    if not ok then
+      return nil, "RUNTIME_ERROR:" .. tostring(result)
+    end
+    if type(result) ~= "table" or #result < 2 then
+      return nil, "NO_PATH"
+    end
+
+    local path = {}
+    for _, node in ipairs(result) do
+      if type(node) ~= "table" or not node.siteId then
+        return nil, "RESULT_NODE_WITHOUT_SITE_ID"
+      end
+      path[#path + 1] = node.siteId
+    end
+    if path[1] ~= task.sourceSiteId or path[#path] ~= task.targetSiteId then
+      return nil, "RESULT_ENDPOINT_MISMATCH"
+    end
+    return path, nil
+  end
+
+  function state:preparePlannerTasks()
+    self.safeTaskCount = 0
+    self.moosePathCount = 0
+    self.fallbackPathCount = 0
+
+    for _, task in ipairs(plannerState.tasks or {}) do
+      local path, mooseFailure = mooseLogicalPath(task)
+      local method = "MOOSE_ASTAR_RED_NETWORK"
+
+      if not path then
+        addWarning("MOOSE_ASTAR_FALLBACK", task.taskId .. " reason=" .. tostring(mooseFailure))
+        path = customLogicalPath(task.sourceSiteId, task.targetSiteId)
+        method = "CUSTOM_GRAPH_AFTER_MOOSE_ASTAR"
+      end
+
+      if not path or #path < 2 then
+        addError("SAFE_DIRECT_LOGICAL_PATH_MISSING",
+          task.taskId .. " mooseReason=" .. tostring(mooseFailure))
+      else
+        local linkIds = {}
+        local complete = true
+        for index = 1, #path - 1 do
+          local plan = self:getLegPlan(path[index], path[index + 1])
+          if not plan or plan.safe ~= true then
+            complete = false
+            addError("SAFE_DIRECT_LEG_MISSING",
+              task.taskId .. " leg=" .. path[index] .. ">" .. path[index + 1])
+            break
           end
+          linkIds[#linkIds + 1] = plan.linkId
+        end
+
+        if complete then
+          task.path = path
+          task.linkIds = linkIds
+          task.routingMethod = method
+          self.safeTaskCount = self.safeTaskCount + 1
+          if method == "MOOSE_ASTAR_RED_NETWORK" then
+            self.moosePathCount = self.moosePathCount + 1
+          else
+            self.fallbackPathCount = self.fallbackPathCount + 1
+          end
+          log("INFO", "direct_offroad_task_path_selected", {
+            taskId = task.taskId,
+            sourceSiteId = task.sourceSiteId,
+            targetSiteId = task.targetSiteId,
+            path = table.concat(path, ">"),
+            legCount = #path - 1,
+            physicalWaypointsPerLeg = 2,
+            method = method,
+          })
         end
       end
     end
@@ -221,6 +345,8 @@ function TM02W2FDirectOffroadNavigation.install(config, registryState, plannerSt
       expectedTaskCount = #(plannerState.tasks or {}),
       safeDirectedEdgeCount = self.safeEdgeCount,
       blockedDirectedEdgeCount = self.blockedEdgeCount,
+      moosePathCount = self.moosePathCount,
+      fallbackPathCount = self.fallbackPathCount,
       maximumPhysicalWaypointsPerLeg = 2,
       roadsUsed = false,
       automaticRecoveryEnabled = false,
