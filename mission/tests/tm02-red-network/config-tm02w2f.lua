@@ -1,5 +1,5 @@
 local config = {
-  configurationVersion = "TM02W2F-red-initial-network-fill-2",
+  configurationVersion = "TM02W2F-red-initial-network-fill-3",
   testId = "TM02",
   stageId = "TM02W2F",
 
@@ -114,6 +114,12 @@ local config = {
     progressRequiredToResetEpisodeMeters = 300,
     progressRequiredToResetEpisodeSeconds = 60,
     terminalRecoveryEnabled = false,
+
+    -- The inherited V5 watchdog is still used in this stacked test. Give it
+    -- only 20-metre relocations, so it cannot reach its terminal-jump branch
+    -- during a normal TM02W2F run. Any terminal-relocation log is a hard FAIL.
+    recoveryAdvanceSequenceMeters = {},
+    terminalRecoveryDistanceFromPortalMeters = 25,
   },
 
   transitRepresentation = {
@@ -134,5 +140,9 @@ local config = {
     markerIdBase = 220800,
   },
 }
+
+for index = 1, 250 do
+  config.navigation.recoveryAdvanceSequenceMeters[index] = 20
+end
 
 return config
