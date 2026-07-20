@@ -261,7 +261,7 @@ assert(supply.currentPersonnel == 112, "supply must begin with 112 personnel")
 assert(supply.currentPersonnel - supply.reservedOutbound == 24,
   "supply must retain 24 personnel")
 
-assert(config.configurationVersion == "TM02W2F-red-direct-offroad-canary-6",
+assert(config.configurationVersion == "TM02W2F-red-direct-offroad-watchdog-7",
   "unexpected configuration version")
 assert(config.commanderTest.planningIntervalSeconds == 30,
   "commander planning interval must be 30 seconds")
@@ -282,16 +282,27 @@ assert(config.commanderTest.canaryTimeoutSeconds == 120,
 assert(config.execution.maxActiveTasks == config.commanderTest.maxActiveTransportsGlobal,
   "executor and commander global limits must match")
 
-assert(config.routing.physicalMode == "DIRECT_OFFROAD",
-  "physical movement must be direct off-road")
-assert(config.routing.maximumPhysicalWaypointsPerLeg == 2,
-  "physical route must contain only start and destination")
+assert(config.routing.physicalMode == "DIRECT_OFFROAD_WITH_BOUNDED_RECOVERY",
+  "normal movement plus bounded recovery mode is required")
+assert(config.routing.maximumPhysicalWaypointsPerLeg == 4,
+  "recovery routes must never exceed four physical waypoints")
 assert(config.routing.formation == "Off Road",
-  "executor formation must be Off Road")
+  "executor formation must remain Off Road")
 assert(config.navigation.roadsUsedForNormalMovement == false,
   "normal movement must not use roads")
-assert(config.navigation.automaticRecoveryEnabled == false,
-  "automatic recovery must be disabled for the canary run")
+assert(config.navigation.automaticRecoveryEnabled == true,
+  "automatic recovery is mandatory")
+assert(type(config.watchdog) == "table" and config.watchdog.enabled == true,
+  "progress watchdog must be configured and enabled")
+assert(config.watchdog.stallWindowSeconds >= 20,
+  "stall detection window is too aggressive")
+assert(config.watchdog.globalRecoveryIntervalSeconds >= 5,
+  "global recovery serialization interval is too small")
+assert(config.watchdog.maxRecoveryAttemptsPerEpisode >= 3
+  and config.watchdog.maxRecoveryAttemptsPerEpisode <= 8,
+  "recovery attempts must be bounded")
+assert(config.watchdog.blockedResetProgressMeters > config.watchdog.minimumProgressMeters,
+  "episode reset progress must exceed the stall progress threshold")
 assert(config.routeReassignmentWatchdog == nil,
   "legacy route-reassignment watchdog must not be configured")
 
@@ -304,4 +315,4 @@ end
 assert(config.transitRepresentation.transitionIntervalSeconds >= 0.5,
   "manual group conversion must be serialized")
 
-print("TM02W2F static contract PASS: tasks=20 astar=20 fallback=1 direct-offroad=2wp canary=75m")
+print("TM02W2F static contract PASS: tasks=20 astar=20 fallback=1 watchdog=mandatory max-recovery-waypoints=4")
