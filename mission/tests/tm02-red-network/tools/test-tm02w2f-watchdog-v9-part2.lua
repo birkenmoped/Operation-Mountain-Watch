@@ -46,6 +46,7 @@ assert(proxyTask.w2fProgressWatchdog.episodeRelocations == 0,
   "150 m real progress must restore one episode recovery credit")
 assert(proxyTask.w2fProgressWatchdog.legRelocations == 1,
   "real progress must not reset the hard leg relocation count")
+proxyTask.movementState = "ARRIVED"
 
 local exposedTask = addTask("STATIC-EXPOSED", 0, 1, false, 2)
 exposureMode = "PLAYER_AIR"
@@ -76,6 +77,7 @@ assert(exposedTask.proxyGroup ~= exposedGroup,
   "proxy must relocate after the exposure-clear interval")
 assert(exposedMonitor.episodeRelocations == 1,
   "clear relocation must consume one episode credit")
+exposedTask.movementState = "ARRIVED"
 
 local fullTask = addTask("STATIC-FULL", 0, 3, true, 4)
 exposureMode = "CLEAR"
@@ -102,6 +104,7 @@ assert(math.abs(fullTask.proxyGroup:GetCoordinate().x
   "full-group relocation distance mismatch")
 assert(fullTask.transitExpanded == true,
   "watchdog must preserve full-group representation")
+fullTask.movementState = "ARRIVED"
 
 local roadTask = addTask("STATIC-ROAD-FAIL", 0, 1, false, 2, 500)
 initialize(roadTask)
@@ -130,6 +133,7 @@ assert(roadMonitor.routeRefreshes == 0 and roadMonitor.localDetours == 0,
   "new episode must restart non-teleport recovery stages")
 assert(roadTask.navigationState == "DIRECT_OFFROAD",
   "reopened episode must leave wait state")
+roadTask.movementState = "ARRIVED"
 
 now = 5000
 local nextAt = scheduledCallback(nil, 0)
