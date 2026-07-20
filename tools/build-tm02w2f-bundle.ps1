@@ -16,6 +16,7 @@ $combatEventsPath = Join-Path $repositoryRoot "mission/tests/tm02-red-network/sr
 $executorPath = Join-Path $repositoryRoot "mission/tests/tm02-red-network/src/tm02w2e.lua"
 $commanderSchedulerPath = Join-Path $repositoryRoot "mission/tests/tm02-red-network/src/tm02w2f-commander-scheduler.lua"
 $transitRepresentationPath = Join-Path $repositoryRoot "mission/tests/tm02-red-network/src/tm02w2f-transit-representation.lua"
+$progressWatchdogPath = Join-Path $repositoryRoot "mission/tests/tm02-red-network/src/tm02w2f-progress-watchdog.lua"
 $outputPath = Join-Path $repositoryRoot "mission/tests/tm02-red-network/dist/TM02W2F.lua"
 
 function Get-NormalizedSource {
@@ -35,6 +36,7 @@ $combatEvents = Get-NormalizedSource -Path $combatEventsPath
 $executor = Get-NormalizedSource -Path $executorPath
 $commanderScheduler = Get-NormalizedSource -Path $commanderSchedulerPath
 $transitRepresentation = Get-NormalizedSource -Path $transitRepresentationPath
+$progressWatchdog = Get-NormalizedSource -Path $progressWatchdogPath
 $buildTimestamp = [DateTime]::UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ", [Globalization.CultureInfo]::InvariantCulture)
 
 $builder = New-Object System.Text.StringBuilder
@@ -81,6 +83,9 @@ $builder = New-Object System.Text.StringBuilder
 [void]$builder.AppendLine("local TM02W2FTransitRepresentation = (function()")
 [void]$builder.AppendLine($transitRepresentation)
 [void]$builder.AppendLine("end)()")
+[void]$builder.AppendLine("local TM02W2FProgressWatchdog = (function()")
+[void]$builder.AppendLine($progressWatchdog)
+[void]$builder.AppendLine("end)()")
 [void]$builder.AppendLine("local bootstrapMenu = TM02W2FBootstrapMenu.install(TM02W2FConfig, TM02W2FBuild)")
 [void]$builder.AppendLine("local bootstrapOk, bootstrapError = pcall(function()")
 [void]$builder.AppendLine("  bootstrapMenu:update({ phase = 'REGISTRY', detail = 'validating all eleven RED network nodes' })")
@@ -95,7 +100,7 @@ $builder = New-Object System.Text.StringBuilder
 [void]$builder.AppendLine("  local routingReady = navigation.valid == true and navigation:preparePlannerTasks() == true")
 [void]$builder.AppendLine("  bootstrapMenu:update({")
 [void]$builder.AppendLine("    phase = routingReady and 'EXECUTOR' or 'BLOCKED',")
-[void]$builder.AppendLine("    detail = routingReady and 'creating direct off-road canary executor' or 'safe direct off-road network path missing',")
+[void]$builder.AppendLine("    detail = routingReady and 'creating direct off-road executor with bounded recovery' or 'safe direct off-road network path missing',")
 [void]$builder.AppendLine("    navigationValid = navigation.valid == true,")
 [void]$builder.AppendLine("    routingReady = routingReady,")
 [void]$builder.AppendLine("    errorCount = #navigation.errors,")
@@ -114,14 +119,16 @@ $builder = New-Object System.Text.StringBuilder
 [void]$builder.AppendLine("  if combatEvents.valid ~= true then error('TM02W2F combat event guard validation failed') end")
 [void]$builder.AppendLine("  local transitRepresentation = TM02W2FTransitRepresentation.install(TM02W2FConfig, execution, navigation)")
 [void]$builder.AppendLine("  if transitRepresentation.valid ~= true then error('TM02W2F transit representation validation failed') end")
+[void]$builder.AppendLine("  local progressWatchdog = TM02W2FProgressWatchdog.install(TM02W2FConfig, execution, navigation, transitRepresentation)")
+[void]$builder.AppendLine("  if progressWatchdog.valid ~= true then error('TM02W2F progress watchdog validation failed') end")
 [void]$builder.AppendLine("  bootstrapMenu:update({")
 [void]$builder.AppendLine("    phase = 'READY',")
-[void]$builder.AppendLine("    detail = 'direct off-road canary, time-sliced commander and manual travelling-group controls are ready',")
+[void]$builder.AppendLine("    detail = 'direct off-road commander and bounded stall-recovery watchdog are ready',")
 [void]$builder.AppendLine("    navigationValid = true,")
 [void]$builder.AppendLine("    routingReady = true,")
 [void]$builder.AppendLine("    executionReady = true,")
-[void]$builder.AppendLine("    errorCount = #navigation.errors + #commander.errors + #transitRepresentation.errors,")
-[void]$builder.AppendLine("    warningCount = #navigation.warnings + #planner.warnings,")
+[void]$builder.AppendLine("    errorCount = #navigation.errors + #commander.errors + #transitRepresentation.errors + #progressWatchdog.errors,")
+[void]$builder.AppendLine("    warningCount = #navigation.warnings + #planner.warnings + #progressWatchdog.warnings,")
 [void]$builder.AppendLine("  })")
 [void]$builder.AppendLine("  _G.OMW_TM02W2F_REGISTRY = registry")
 [void]$builder.AppendLine("  _G.OMW_TM02W2F_PLANNER = planner")
@@ -129,6 +136,7 @@ $builder = New-Object System.Text.StringBuilder
 [void]$builder.AppendLine("  _G.OMW_TM02W2F_NAVIGATION = navigation")
 [void]$builder.AppendLine("  _G.OMW_TM02W2F_COMMANDER = commander")
 [void]$builder.AppendLine("  _G.OMW_TM02W2F_TRANSIT_REPRESENTATION = transitRepresentation")
+[void]$builder.AppendLine("  _G.OMW_TM02W2F_PROGRESS_WATCHDOG = progressWatchdog")
 [void]$builder.AppendLine("  _G.OMW_TM02W2F_COMBAT_EVENTS = combatEvents")
 [void]$builder.AppendLine("end)")
 [void]$builder.AppendLine("if not bootstrapOk then")
