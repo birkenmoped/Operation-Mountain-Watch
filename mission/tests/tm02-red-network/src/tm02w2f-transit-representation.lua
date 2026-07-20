@@ -87,7 +87,7 @@ function TM02W2FTransitRepresentation.install(config, executionState, navigation
     task.w2fWatchdogSample = nil
   end
 
-  local function convertTask(task, unpack)
+  local function convertTask(task, unpack, reason)
     if task.movementState ~= "EN_ROUTE" or not task.proxyGroup or task.proxyGroup:IsAlive() ~= true then
       return false, "TASK_NOT_TRAVELLING"
     end
@@ -107,11 +107,8 @@ function TM02W2FTransitRepresentation.install(config, executionState, navigation
       return false, "SPAWN_COUNT_MISMATCH"
     end
 
-    local routeOk, routeError = assignDirectRoute(
-      replacement,
-      task,
-      unpack and "manual-unpack-all" or "manual-pack-all"
-    )
+    local conversionReason = reason or (unpack and "manual-unpack-all" or "manual-pack-all")
+    local routeOk, routeError = assignDirectRoute(replacement, task, conversionReason)
     if routeOk ~= true then
       pcall(function() replacement:Destroy() end)
       return false, routeError
@@ -135,8 +132,46 @@ function TM02W2FTransitRepresentation.install(config, executionState, navigation
       waypointCount = 2,
       physicalMode = "DIRECT_OFFROAD",
       roadsUsed = false,
+      conversionReason = conversionReason,
     })
     return true, nil
+  end
+
+  local function convertTaskForRecovery(task, reason)
+    if state.transitionActive then
+      return false, "TRANSITION_BUSY"
+    end
+    state.transitionActive = true
+    state.transitionGeneration = state.transitionGeneration + 1
+    local unpack = task.transitExpanded ~= true
+    local ok, success, failureReason = pcall(
+      convertTask,
+      task,
+      unpack,
+      reason or "watchdog-representation-reset"
+    )
+    state.transitionActive = false
+    if not ok or success ~= true then
+      local detail = ok and tostring(failureReason) or tostring(success)
+      log("ERROR", "watchdog_representation_reset_failed", {
+        taskId = task.taskId,
+        reason = detail,
+      })
+      return false, detail
+    end
+    log("INFO", "watchdog_representation_reset_completed", {
+      taskId = task.taskId,
+      representation = task.transitRepresentation,
+      groupName = task.proxyGroupName or "none",
+    })
+    return true, nil
+  end
+
+  local function reassignDirectRouteForRecovery(task, reason)
+    if task.movementState ~= "EN_ROUTE" or not task.proxyGroup or task.proxyGroup:IsAlive() ~= true then
+      return false, "TASK_NOT_TRAVELLING"
+    end
+    return assignDirectRoute(task.proxyGroup, task, reason or "watchdog-direct-reset")
   end
 
   local function collectCandidates(unpack)
@@ -200,7 +235,12 @@ function TM02W2FTransitRepresentation.install(config, executionState, navigation
       if not stillEligible then
         skipped = skipped + 1
       else
-        local ok, success, reason = pcall(convertTask, task, unpack)
+        local ok, success, reason = pcall(
+          convertTask,
+          task,
+          unpack,
+          unpack and "manual-unpack-all" or "manual-pack-all"
+        )
         if ok and success == true then
           converted = converted + 1
         else
@@ -265,15 +305,19 @@ function TM02W2FTransitRepresentation.install(config, executionState, navigation
 
   state.unpackAllTravelling = function() return beginSerializedConversion(true) end
   state.packAllTravelling = function() return beginSerializedConversion(false) end
+  state.convertTaskForRecovery = convertTaskForRecovery
+  state.reassignDirectRouteForRecovery = reassignDirectRouteForRecovery
+  state.isTransitionActive = function() return state.transitionActive end
   state.showStatus = showStatus
   log(state.valid and "INFO" or "ERROR", "transit_representation_validation", {
     configurationVersion = config.configurationVersion,
     valid = state.valid,
     menuInstalled = state.menu ~= nil,
     transitionIntervalSeconds = config.transitRepresentation.transitionIntervalSeconds,
-    physicalMode = "DIRECT_OFFROAD",
+    physicalMode = config.routing.physicalMode,
     maximumAssignedWaypoints = 2,
-    roadsUsed = false,
+    roadsUsedForNormalMovement = false,
+    automaticRecoveryInterface = true,
     errorCount = #state.errors,
   })
   return state
