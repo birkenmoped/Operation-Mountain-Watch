@@ -140,7 +140,9 @@ local config = {
     roadRecoveryResetProgressMeters = 300,
     recoveryExhaustedRetrySeconds = 60,
 
-    exposureScanIntervalSeconds = 10,
+    -- Exposure is sampled on every watchdog tick. A relocation additionally
+    -- requires 120 continuously clear seconds.
+    exposureScanIntervalSeconds = 3,
     exposureClearSeconds = 120,
     playerAircraftSafetyRadiusMeters = 8000,
     playerGroundSafetyRadiusMeters = 3000,
