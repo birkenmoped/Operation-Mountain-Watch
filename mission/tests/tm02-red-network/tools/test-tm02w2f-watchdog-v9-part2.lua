@@ -135,6 +135,40 @@ assert(roadTask.navigationState == "DIRECT_OFFROAD",
   "reopened episode must leave wait state")
 roadTask.movementState = "ARRIVED"
 
+local offRouteTerminalTask = addTaskAt(
+  "STATIC-TERMINAL-OFF-ROUTE", 1950, 500, 1, false, 2)
+initialize(offRouteTerminalTask)
+local offRouteMonitor = offRouteTerminalTask.w2fProgressWatchdog
+offRouteMonitor.routeRefreshes = config.watchdog.routeRefreshAttempts
+offRouteMonitor.localDetours = config.watchdog.localDetourAttempts
+offRouteMonitor.exposureClearSince = now - config.watchdog.exposureClearSeconds
+offRouteMonitor.exposed = false
+offRouteMonitor.graceUntil = now
+offRouteMonitor.nextRecoveryAt = now
+triggerConfirmedStall(offRouteTerminalTask)
+assert(offRouteMonitor.terminalRecoveryUsed == false,
+  "projected remaining distance must not authorize terminal relocation")
+assert(offRouteTerminalTask.navigationState == "RECOVERING_DIRECT_OFFROAD_RELOCATION",
+  "off-route task must use normal bounded relocation instead of terminal relocation")
+offRouteTerminalTask.movementState = "ARRIVED"
+
+local trueTerminalTask = addTaskAt(
+  "STATIC-TERMINAL-PHYSICAL", 1930, 0, 1, false, 2)
+initialize(trueTerminalTask)
+local trueTerminalMonitor = trueTerminalTask.w2fProgressWatchdog
+trueTerminalMonitor.routeRefreshes = config.watchdog.routeRefreshAttempts
+trueTerminalMonitor.localDetours = config.watchdog.localDetourAttempts
+trueTerminalMonitor.exposureClearSince = now - config.watchdog.exposureClearSeconds
+trueTerminalMonitor.exposed = false
+trueTerminalMonitor.graceUntil = now
+trueTerminalMonitor.nextRecoveryAt = now
+triggerConfirmedStall(trueTerminalTask)
+assert(trueTerminalMonitor.terminalRecoveryUsed == true,
+  "physical distance inside 100 m must authorize terminal relocation")
+assert(math.abs(trueTerminalTask.proxyGroup:GetCoordinate().x - 1975) < 0.01,
+  "terminal relocation must stop 25 m before the target")
+trueTerminalTask.movementState = "ARRIVED"
+
 now = 5000
 local nextAt = scheduledCallback(nil, 0)
 assert(nextAt == now + config.watchdog.sampleIntervalSeconds,
@@ -157,4 +191,4 @@ assert(watchdogSource:find("RECOVERY_EXHAUSTED_WAIT", 1, true),
 assert(watchdogSource:find("recovery_deferred_exposed", 1, true),
   "exposure guard logging missing")
 
-print("TM02W2F watchdog 9 PASS: refresh=2 detour=4 proxy=75m full=40m exposure-defer credits wait-retry")
+print("TM02W2F watchdog 9 PASS: refresh=2 detour=4 proxy=75m full=40m exposure-defer credits wait-retry physical-terminal-gate")
