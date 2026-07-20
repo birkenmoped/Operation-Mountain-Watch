@@ -15,10 +15,8 @@ $directNavigationPath = Join-Path $repositoryRoot "mission/tests/tm02-red-networ
 $combatEventsPath = Join-Path $repositoryRoot "mission/tests/tm02-red-network/src/tm02w2e-combat-events-v3.lua"
 $executorPath = Join-Path $repositoryRoot "mission/tests/tm02-red-network/src/tm02w2e.lua"
 $commanderSchedulerPath = Join-Path $repositoryRoot "mission/tests/tm02-red-network/src/tm02w2f-commander-scheduler.lua"
-$transitRepresentationPath = Join-Path $repositoryRoot "mission/tests/tm02-red-network/src/tm02w2f-transit-representation.lua"
-$progressWatchdogPart1Path = Join-Path $repositoryRoot "mission/tests/tm02-red-network/src/tm02w2f-progress-watchdog-v8-part1.lua"
-$progressWatchdogPart2Path = Join-Path $repositoryRoot "mission/tests/tm02-red-network/src/tm02w2f-progress-watchdog-v8-part2.lua"
-$progressWatchdogPart3Path = Join-Path $repositoryRoot "mission/tests/tm02-red-network/src/tm02w2f-progress-watchdog-v8-part3.lua"
+$transitRepresentationPath = Join-Path $repositoryRoot "mission/tests/tm02-red-network/src/tm02w2f-transit-representation-v9.lua"
+$progressWatchdogPath = Join-Path $repositoryRoot "mission/tests/tm02-red-network/src/tm02w2f-progress-watchdog-v9.lua"
 $outputPath = Join-Path $repositoryRoot "mission/tests/tm02-red-network/dist/TM02W2F.lua"
 
 function Get-NormalizedSource {
@@ -38,9 +36,7 @@ $combatEvents = Get-NormalizedSource -Path $combatEventsPath
 $executor = Get-NormalizedSource -Path $executorPath
 $commanderScheduler = Get-NormalizedSource -Path $commanderSchedulerPath
 $transitRepresentation = Get-NormalizedSource -Path $transitRepresentationPath
-$progressWatchdogPart1 = Get-NormalizedSource -Path $progressWatchdogPart1Path
-$progressWatchdogPart2 = Get-NormalizedSource -Path $progressWatchdogPart2Path
-$progressWatchdogPart3 = Get-NormalizedSource -Path $progressWatchdogPart3Path
+$progressWatchdog = Get-NormalizedSource -Path $progressWatchdogPath
 $buildTimestamp = [DateTime]::UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ", [Globalization.CultureInfo]::InvariantCulture)
 
 $builder = New-Object System.Text.StringBuilder
@@ -88,9 +84,7 @@ $builder = New-Object System.Text.StringBuilder
 [void]$builder.AppendLine($transitRepresentation)
 [void]$builder.AppendLine("end)()")
 [void]$builder.AppendLine("local TM02W2FProgressWatchdog = (function()")
-[void]$builder.AppendLine($progressWatchdogPart1)
-[void]$builder.AppendLine($progressWatchdogPart2)
-[void]$builder.AppendLine($progressWatchdogPart3)
+[void]$builder.AppendLine($progressWatchdog)
 [void]$builder.AppendLine("end)()")
 [void]$builder.AppendLine("local bootstrapMenu = TM02W2FBootstrapMenu.install(TM02W2FConfig, TM02W2FBuild)")
 [void]$builder.AppendLine("local bootstrapOk, bootstrapError = pcall(function()")
@@ -106,7 +100,7 @@ $builder = New-Object System.Text.StringBuilder
 [void]$builder.AppendLine("  local routingReady = navigation.valid == true and navigation:preparePlannerTasks() == true")
 [void]$builder.AppendLine("  bootstrapMenu:update({")
 [void]$builder.AppendLine("    phase = routingReady and 'EXECUTOR' or 'BLOCKED',")
-[void]$builder.AppendLine("    detail = routingReady and 'creating direct off-road executor with route-progress recovery' or 'safe direct off-road network path missing',")
+[void]$builder.AppendLine("    detail = routingReady and 'creating direct off-road executor with exposure-guarded recovery' or 'safe direct off-road network path missing',")
 [void]$builder.AppendLine("    navigationValid = navigation.valid == true,")
 [void]$builder.AppendLine("    routingReady = routingReady,")
 [void]$builder.AppendLine("    errorCount = #navigation.errors,")
@@ -129,7 +123,7 @@ $builder = New-Object System.Text.StringBuilder
 [void]$builder.AppendLine("  if progressWatchdog.valid ~= true then error('TM02W2F progress watchdog validation failed') end")
 [void]$builder.AppendLine("  bootstrapMenu:update({")
 [void]$builder.AppendLine("    phase = 'READY',")
-[void]$builder.AppendLine("    detail = 'direct off-road commander and route-progress recovery watchdog are ready',")
+[void]$builder.AppendLine("    detail = 'direct off-road commander and exposure-guarded watchdog 9 are ready',")
 [void]$builder.AppendLine("    navigationValid = true,")
 [void]$builder.AppendLine("    routingReady = true,")
 [void]$builder.AppendLine("    executionReady = true,")
