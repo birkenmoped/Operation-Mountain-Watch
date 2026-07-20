@@ -1,20 +1,28 @@
 # 03 – Systemarchitektur
 
+## Verbindliche MOOSE-first-Regel
+
+Diese Architektur unterliegt [`GOV-001`](00-project-governance.md).
+
+MOOSE ist der verbindliche technische Grundstock des gesamten Projekts. Für jede Komponente und jede neue Mechanik werden zuerst alle einschlägigen MOOSE-Klassen, Funktionen und Framework-Muster identifiziert, kombiniert und getestet. Native DCS-Aufrufe, Eigenentwicklungen oder hybride Lösungen dürfen erst vorgeschlagen werden, nachdem die verbleibende MOOSE-Grenze dokumentiert wurde. Die Freigabe einer solchen Abweichung trifft ausschließlich der Projektinhaber.
+
 ## Technologiestack
 
 - DCS Mission Editor für Karte, Slots, Zonen, Vorlagen und statische Infrastruktur
-- MOOSE als primäres Framework
+- MOOSE als verbindliches primäres Framework und erste Implementierungsebene
 - MOOSE CTLD für Spielerlogistik und Fracht
 - MOOSE CSAR für Rettungsfälle
-- eigene Lua-Module für Kampagnenzustand, Persistenz, Virtualisierung, Warehouse-Synchronisierung, gegnerische Entscheidungslogik und verdeckte Zwischenstellungen
+- eigene Lua-Module für Kampagnenzustand, Persistenz, Virtualisierung, Warehouse-Synchronisierung, gegnerische Entscheidungslogik und verdeckte Zwischenstellungen nur dort, wo MOOSE die genehmigte Anforderung nicht vollständig erfüllt oder der Projektinhaber eine Ergänzung ausdrücklich freigegeben hat
 
-MIST wird nicht zusätzlich geladen, solange keine konkrete technische Abhängigkeit dokumentiert ist.
+MIST wird nicht zusätzlich geladen, solange keine konkrete technische Abhängigkeit dokumentiert und nach GOV-001 ausdrücklich genehmigt ist.
 
 ## Komponenten
 
 ### CampaignState
 
 Autoritative Quelle für Basen, FOBs, Ressourcen, rote Zellen, strategische Entitäten, aktive Aufträge, CSAR-Fälle, Warehouse-Transaktionen, Concealment-Zustände und Intelligence-Fortschritt.
+
+Vor einer Eigenimplementierung werden MOOSE-Zustands-, Event-, FSM-, Set-, Wrapper- und Persistenz-nahe Mechaniken darauf geprüft, welche Teile sie übernehmen oder strukturieren können.
 
 ### EntityManager
 
@@ -28,6 +36,8 @@ Virtuelle Bewegung erfolgt entlang einer kanonischen, versionierten Route. Der M
 
 Materialisierung erfolgt vor relevantem Spieler- oder Feindkontakt an geprüften Ankern. Direkte Sichtlinie, Sensorbeobachtung, Platzbedarf, Straßenzugang und plausible Verbindung zur virtuellen Position werden vor dem Spawn geprüft. Eine Entität darf nie gleichzeitig `VIRTUAL` und `PHYSICAL` sein.
 
+MOOSE-Funktionen für Spawn, Respawn, Teleport, Routing, Zonen, Sets, Events, Schedulers, Detection und Tasking werden vor jeder eigenen Virtualisierungs- oder Recovery-Mechanik vollständig ausgeschöpft. Eine technische Grenze wird dokumentiert und dem Projektinhaber zur Entscheidung vorgelegt.
+
 ### LogisticsManager
 
 Verarbeitet CTLD-Lieferungen, Konvois, Lufttransport, C-130J-Abwürfe und die Gutschrift von Ressourcen. Er erzeugt Liefertransaktionen, greift aber nicht direkt auf native DCS-Warehouse-Funktionen zu.
@@ -40,9 +50,13 @@ Kapselt DCS `Warehouse` und MOOSE `STORAGE`. Er registriert Warehouse-Knoten, bi
 
 `CampaignState` bleibt die persistente Autorität. Native Warehouses werden nur an dauerhaften, spielerrelevanten Logistikknoten eingesetzt.
 
+Die konkrete Aufteilung zwischen MOOSE `STORAGE`, MOOSE-Warehouse-Funktionen, nativer DCS-Warehouse-API und Projektcode unterliegt einer dokumentierten GOV-001-Entscheidung.
+
 ### RedDirector
 
 Wählt Ziele, reserviert Kräfte, plant Angriffe, steuert Rückzug und Wiederaufbau und reagiert auf abstrakte HUMINT-Meldungen.
+
+Für Scheduling, Tasking, Events, FSMs, Detection, Sets und Gruppensteuerung werden die verfügbaren MOOSE-Mechaniken als Grundlage verwendet.
 
 ### ConcealmentManager
 
@@ -76,13 +90,15 @@ Die Kampagnenzeit friert im ersten Prototyp ein, solange Server oder Mission nic
 
 Domänenlogik darf nicht direkt von einem konkreten DCS-Gruppennamen, Warehouse-Objekt, Scenery-Objekt oder internen DCS-Itemnamen abhängen. DCS- und MOOSE-Aufrufe werden in Adapter- oder Systemmodulen gekapselt.
 
+Die Kapselung ist keine Erlaubnis, MOOSE zu umgehen. Adapter verwenden MOOSE, wo eine geeignete Framework-Funktion existiert. Ein direkter nativer DCS-Aufruf oder eine Eigenimplementierung benötigt die dokumentierte Prüfung und Entscheidung nach GOV-001.
+
 Insbesondere gilt:
 
 - `LogisticsManager` bucht gegen strategische Ressourcen und Liefertransaktionen;
-- `WarehouseAdapter` übernimmt die native DCS-Projektion;
+- `WarehouseAdapter` übernimmt die genehmigte MOOSE-/DCS-Projektion;
 - `RedDirector` entscheidet über operative Absicht;
 - `ConcealmentManager` entscheidet über physische verdeckte Repräsentation;
-- `VirtualizationManager` erzeugt und entfernt physische Gruppen;
+- `VirtualizationManager` erzeugt und entfernt physische Gruppen auf Grundlage der verfügbaren MOOSE-Lifecycle-Mechanismen;
 - nur `CampaignState` wird persistent gespeichert.
 
 ## Geplanter Startumfang
