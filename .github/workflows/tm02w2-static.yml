@@ -45,7 +45,6 @@ jobs:
       - name: Install Lua 5.1
         run: sudo apt-get update && sudo apt-get install -y lua5.1
       - name: Check TM02W2F source syntax
-        if: ${{ hashFiles('mission/tests/tm02-red-network/config-tm02w2f.lua') != '' }}
         run: |
           luac5.1 -p mission/tests/tm02-red-network/config-tm02w2f.lua
           luac5.1 -p mission/tests/tm02-red-network/src/tm02w2f-initial-fill-planner.lua
@@ -53,30 +52,38 @@ jobs:
           luac5.1 -p mission/tests/tm02-red-network/src/tm02w2f-direct-offroad-navigation.lua
           luac5.1 -p mission/tests/tm02-red-network/src/tm02w2f-commander-scheduler.lua
           luac5.1 -p mission/tests/tm02-red-network/src/tm02w2f-transit-representation.lua
-          luac5.1 -p mission/tests/tm02-red-network/src/tm02w2f-progress-watchdog.lua
+          cat \
+            mission/tests/tm02-red-network/src/tm02w2f-progress-watchdog-v8-part1.lua \
+            mission/tests/tm02-red-network/src/tm02w2f-progress-watchdog-v8-part2.lua \
+            mission/tests/tm02-red-network/src/tm02w2f-progress-watchdog-v8-part3.lua \
+            > /tmp/tm02w2f-progress-watchdog-v8.lua
+          luac5.1 -p /tmp/tm02w2f-progress-watchdog-v8.lua
       - name: Run TM02W2F planner and ASTAR contract harness
-        if: ${{ hashFiles('mission/tests/tm02-red-network/config-tm02w2f.lua') != '' }}
-        run: lua5.1 mission/tests/tm02-red-network/tools/test-tm02w2f-static.lua "$GITHUB_WORKSPACE"
+        run: lua5.1 mission/tests/tm02-red-network/tools/test-tm02w2f-v8-static.lua "$GITHUB_WORKSPACE"
       - name: Run TM02W2F commander canary harness
-        if: ${{ hashFiles('mission/tests/tm02-red-network/config-tm02w2f.lua') != '' }}
         run: lua5.1 mission/tests/tm02-red-network/tools/test-tm02w2f-scheduler-static.lua "$GITHUB_WORKSPACE"
-      - name: Run TM02W2F bounded recovery watchdog harness
-        if: ${{ hashFiles('mission/tests/tm02-red-network/config-tm02w2f.lua') != '' }}
-        run: lua5.1 mission/tests/tm02-red-network/tools/test-tm02w2f-watchdog-static.lua "$GITHUB_WORKSPACE"
+      - name: Run TM02W2F route-progress watchdog harness
+        run: lua5.1 mission/tests/tm02-red-network/tools/test-tm02w2f-watchdog-v8-static.lua "$GITHUB_WORKSPACE"
       - name: Build TM02W2F DCS bundle
-        if: ${{ hashFiles('mission/tests/tm02-red-network/config-tm02w2f.lua') != '' }}
         shell: pwsh
         run: ./tools/build-tm02w2f-bundle.ps1
       - name: Check generated TM02W2F bundle syntax
-        if: ${{ hashFiles('mission/tests/tm02-red-network/config-tm02w2f.lua') != '' }}
         run: luac5.1 -p mission/tests/tm02-red-network/dist/TM02W2F.lua
-      - name: Verify bounded recovery bundle contract
-        if: ${{ hashFiles('mission/tests/tm02-red-network/config-tm02w2f.lua') != '' }}
+      - name: Verify route-progress recovery bundle contract
         run: |
           ! grep -q "TM02W2EMooseNavigationV4" mission/tests/tm02-red-network/dist/TM02W2F.lua
           ! grep -q "RouteReassignmentWatchdog" mission/tests/tm02-red-network/dist/TM02W2F.lua
           ! grep -q "LaunchSpreadAdapter" mission/tests/tm02-red-network/dist/TM02W2F.lua
+          ! grep -q "convertTaskForRecovery" /tmp/tm02w2f-progress-watchdog-v8.lua
+          ! grep -q "transitRepresentation" /tmp/tm02w2f-progress-watchdog-v8.lua
           grep -q "TM02W2FProgressWatchdog" mission/tests/tm02-red-network/dist/TM02W2F.lua
-          grep -q "DIRECT_OFFROAD_WITH_BOUNDED_RECOVERY" mission/tests/tm02-red-network/dist/TM02W2F.lua
-          grep -q "URBAN_ROAD_ESCAPE" mission/tests/tm02-red-network/dist/TM02W2F.lua
-          grep -q "RURAL_MICRO_DETOUR" mission/tests/tm02-red-network/dist/TM02W2F.lua
+          grep -q "DIRECT_OFFROAD_WITH_PROGRESS_RELOCATION_RECOVERY" mission/tests/tm02-red-network/dist/TM02W2F.lua
+          grep -q "DIRECT_OFFROAD_RELOCATION_75M" mission/tests/tm02-red-network/dist/TM02W2F.lua
+          grep -q "ROAD_RECOVERY_TO_LEG_TARGET" mission/tests/tm02-red-network/dist/TM02W2F.lua
+          grep -q "terminalRecoveryThresholdMeters" mission/tests/tm02-red-network/dist/TM02W2F.lua
+      - name: Upload TM02W2F test bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: TM02W2F-progress-watchdog-8
+          path: mission/tests/tm02-red-network/dist/TM02W2F.lua
+          if-no-files-found: error
