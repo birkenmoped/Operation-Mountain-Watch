@@ -1,5 +1,5 @@
 local config = {
-  configurationVersion = "TM02W2F-red-direct-offroad-progress-watchdog-8",
+  configurationVersion = "TM02W2F-red-direct-offroad-watchdog-9",
   testId = "TM02",
   stageId = "TM02W2F",
 
@@ -90,13 +90,14 @@ local config = {
     roadFormation = "On Road",
     offRoadFormation = "Off Road",
     assignmentDelaySeconds = 1,
-    physicalMode = "DIRECT_OFFROAD_WITH_PROGRESS_RELOCATION_RECOVERY",
+    physicalMode = "DIRECT_OFFROAD_WITH_EXPOSURE_GUARDED_RECOVERY",
     maximumPhysicalWaypointsPerLeg = 4,
   },
 
   navigation = {
     blueObjectiveBufferMeters = 250,
-    combatCooldownSeconds = 90,
+    combatCooldownSeconds = 180,
+    hitCooldownSeconds = 300,
     roadsUsedForNormalMovement = false,
     automaticRecoveryEnabled = true,
   },
@@ -119,30 +120,44 @@ local config = {
     perTaskRecoveryCooldownSeconds = 20,
     globalRecoveryIntervalSeconds = 8,
 
-    -- A confirmed off-road stall may relocate the current representation by
-    -- exactly 75 m along the already validated direct leg. Four such attempts
-    -- are permitted per recovery episode. Pack/unpack is never used.
-    maxOffroadRelocationsPerEpisode = 4,
-    relocationAdvanceMeters = 75,
+    routeRefreshAttempts = 2,
+    routeRefreshCooldownSeconds = 15,
 
-    -- Terminal relocation is only available inside the final 100 m and places
-    -- the representation no closer than 25 m before the current leg target.
+    localDetourAttempts = 4,
+    localDetourNearLateralMeters = 30,
+    localDetourFarLateralMeters = 60,
+    localDetourForwardMeters = 90,
+
+    proxyMaxRelocationsPerEpisode = 10,
+    proxyRelocationAdvanceMeters = 75,
+    proxyMaxRelocationsPerLeg = 24,
+
+    fullGroupMaxRelocationsPerEpisode = 6,
+    fullGroupRelocationAdvanceMeters = 40,
+    fullGroupMaxRelocationsPerLeg = 12,
+
+    recoveryCreditProgressMeters = 150,
+    roadRecoveryResetProgressMeters = 300,
+    recoveryExhaustedRetrySeconds = 60,
+
+    exposureScanIntervalSeconds = 10,
+    exposureClearSeconds = 120,
+    playerAircraftSafetyRadiusMeters = 8000,
+    playerGroundSafetyRadiusMeters = 3000,
+    enemyGroundSafetyRadiusMeters = 1500,
+    enemyAirSafetyRadiusMeters = 5000,
+
     terminalRecoveryThresholdMeters = 100,
     terminalRecoveryOffsetMeters = 25,
 
-    -- Four failed off-road relocations switch the same representation to one
-    -- road route for the remainder of the current leg.
     maximumRoadSnapDistanceMeters = 250,
     minimumRoadSegmentMeters = 60,
-
-    -- Recovery counters reset only after substantial real movement.
-    episodeResetProgressMeters = 200,
   },
 
   transitRepresentation = {
     enableF10Menu = true,
     menuTitle = "TM02W2F Initial Network Fill",
-    startCommand = "RED-Commander mit Progress-Watchdog starten",
+    startCommand = "RED-Commander mit Watchdog 9 starten",
     unpackCommand = "Alle Reise-Proxies entpacken",
     packCommand = "Alle Reisegruppen packen",
     statusCommand = "Status anzeigen",
