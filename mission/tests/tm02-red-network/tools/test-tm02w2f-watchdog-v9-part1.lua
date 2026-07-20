@@ -14,12 +14,11 @@ local function loadPatchedWatchdog()
   handle:close()
   local original = "local remaining = projection.totalMeters - projection.alongMeters"
   local replacement = "local remaining = distance2D(group:GetCoordinate(), context.target)"
-  local count = 0
-  source = source:gsub(original, function()
-    count = count + 1
-    return replacement
-  end)
-  assert(count == 1, "physical terminal-distance patch count mismatch: " .. tostring(count))
+  local first, last = source:find(original, 1, true)
+  assert(first and last, "physical terminal-distance source gate was not found")
+  assert(source:find(original, last + 1, true) == nil,
+    "physical terminal-distance source gate is not unique")
+  source = source:sub(1, first - 1) .. replacement .. source:sub(last + 1)
   local chunk, errorMessage = loadstring(source)
   assert(chunk, errorMessage)
   return chunk()
