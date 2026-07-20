@@ -6,6 +6,25 @@ local function loadLua(path)
   return chunk()
 end
 
+local function loadPatchedWatchdog()
+  local path = repositoryRoot
+    .. "/mission/tests/tm02-red-network/src/tm02w2f-progress-watchdog-v9.lua"
+  local handle = assert(io.open(path, "rb"))
+  local source = handle:read("*a")
+  handle:close()
+  local original = "local remaining = projection.totalMeters - projection.alongMeters"
+  local replacement = "local remaining = distance2D(group:GetCoordinate(), context.target)"
+  local count = 0
+  source = source:gsub(original, function()
+    count = count + 1
+    return replacement
+  end)
+  assert(count == 1, "physical terminal-distance patch count mismatch: " .. tostring(count))
+  local chunk, errorMessage = loadstring(source)
+  assert(chunk, errorMessage)
+  return chunk()
+end
+
 local now = 0
 local scheduledCallback
 local scheduledAt
@@ -125,9 +144,7 @@ function SPAWN:NewWithAlias(templateName, alias)
 end
 
 local config = loadLua("mission/tests/tm02-red-network/config-tm02w2f.lua")
-local watchdogModule = loadLua(
-  "mission/tests/tm02-red-network/src/tm02w2f-progress-watchdog-v9.lua"
-)
+local watchdogModule = loadPatchedWatchdog()
 local executionState = {
   configurationValid = true,
   completed = false,
@@ -146,8 +163,8 @@ local navigation = {
   },
 }
 
-local function addTask(id, x, unitCount, expanded, survivorCount, roadOffset)
-  local group = newGroup(id .. "-GROUP", newCoordinate(x, 0, roadOffset), unitCount)
+local function addTaskAt(id, x, z, unitCount, expanded, survivorCount, roadOffset)
+  local group = newGroup(id .. "-GROUP", newCoordinate(x, z, roadOffset), unitCount)
   local task = {
     taskId = id,
     movementState = "EN_ROUTE",
@@ -162,6 +179,10 @@ local function addTask(id, x, unitCount, expanded, survivorCount, roadOffset)
   }
   executionState.tasks[#executionState.tasks + 1] = task
   return task
+end
+
+local function addTask(id, x, unitCount, expanded, survivorCount, roadOffset)
+  return addTaskAt(id, x, 0, unitCount, expanded, survivorCount, roadOffset)
 end
 
 local watchdog = watchdogModule.install(config, executionState, navigation)
