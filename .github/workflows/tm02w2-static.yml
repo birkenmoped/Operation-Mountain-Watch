@@ -52,7 +52,18 @@ jobs:
             > /tmp/test-tm02w2f-watchdog-v9.lua
           luac5.1 -p /tmp/test-tm02w2f-watchdog-v9.lua
       - name: Run watchdog 9 behavior harness
-        run: lua5.1 /tmp/test-tm02w2f-watchdog-v9.lua "$GITHUB_WORKSPACE"
+        shell: bash
+        run: |
+          set -o pipefail
+          lua5.1 /tmp/test-tm02w2f-watchdog-v9.lua "$GITHUB_WORKSPACE" 2>&1 \
+            | tee /tmp/watchdog9-harness.log
+      - name: Upload watchdog 9 diagnostics
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: TM02W2F-watchdog-9-diagnostics
+          path: /tmp/watchdog9-harness.log
+          if-no-files-found: error
 
   initial-fill-static-harness:
     runs-on: ubuntu-latest
