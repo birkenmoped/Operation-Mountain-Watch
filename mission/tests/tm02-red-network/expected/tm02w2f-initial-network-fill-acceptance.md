@@ -1,5 +1,18 @@
 # TM02W2F Initial Network Fill Acceptance
 
+## Binding MOOSE-first acceptance rule
+
+This acceptance contract is governed by [`mission/tests/GOVERNANCE.md`](../../GOVERNANCE.md) and project rule [`GOV-001`](../../../../docs/00-project-governance.md).
+
+All available and applicable MOOSE capabilities must be evaluated and used as the implementation foundation for TM02W2F, including movement, routing, tasking, spawn, respawn, teleport, group lifecycle, pack/unpack, materialization, recovery, schedulers, events, sets, zones, coordinates, and state-machine patterns.
+
+A native DCS call, project-specific mechanism, or hybrid fallback cannot be accepted merely because it appears to work. The relevant MOOSE options and their limitations must first be documented and tested. Only the project owner may approve a deviation from MOOSE. Discussion of disadvantages or alternatives is not approval.
+
+A final PASS additionally requires one of the following for every tested mechanism:
+
+- the mechanism is implemented on the applicable MOOSE foundation; or
+- an exact non-MOOSE exception has been explicitly approved by the project owner and recorded in an ADR or equivalent decision document.
+
 ## Purpose
 
 TM02W2F tests the initial population of all eleven RED network nodes through a
@@ -164,6 +177,7 @@ For every successful global command:
 
 Any of the following is a hard FAIL:
 
+- implementation of a native DCS or custom mechanism without the required MOOSE evaluation and explicit project-owner approval;
 - `CREATING PATH MAKES TOO LONG`;
 - more than two physical waypoints assigned to a normal leg;
 - any normal route with `On Road` formation;
