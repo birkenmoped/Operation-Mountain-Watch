@@ -53,12 +53,16 @@ jobs:
           luac5.1 -p mission/tests/tm02-red-network/src/tm02w2f-direct-offroad-navigation.lua
           luac5.1 -p mission/tests/tm02-red-network/src/tm02w2f-commander-scheduler.lua
           luac5.1 -p mission/tests/tm02-red-network/src/tm02w2f-transit-representation.lua
+          luac5.1 -p mission/tests/tm02-red-network/src/tm02w2f-progress-watchdog.lua
       - name: Run TM02W2F planner and ASTAR contract harness
         if: ${{ hashFiles('mission/tests/tm02-red-network/config-tm02w2f.lua') != '' }}
         run: lua5.1 mission/tests/tm02-red-network/tools/test-tm02w2f-static.lua "$GITHUB_WORKSPACE"
       - name: Run TM02W2F commander canary harness
         if: ${{ hashFiles('mission/tests/tm02-red-network/config-tm02w2f.lua') != '' }}
         run: lua5.1 mission/tests/tm02-red-network/tools/test-tm02w2f-scheduler-static.lua "$GITHUB_WORKSPACE"
+      - name: Run TM02W2F bounded recovery watchdog harness
+        if: ${{ hashFiles('mission/tests/tm02-red-network/config-tm02w2f.lua') != '' }}
+        run: lua5.1 mission/tests/tm02-red-network/tools/test-tm02w2f-watchdog-static.lua "$GITHUB_WORKSPACE"
       - name: Build TM02W2F DCS bundle
         if: ${{ hashFiles('mission/tests/tm02-red-network/config-tm02w2f.lua') != '' }}
         shell: pwsh
@@ -66,10 +70,13 @@ jobs:
       - name: Check generated TM02W2F bundle syntax
         if: ${{ hashFiles('mission/tests/tm02-red-network/config-tm02w2f.lua') != '' }}
         run: luac5.1 -p mission/tests/tm02-red-network/dist/TM02W2F.lua
-      - name: Reject legacy road and recovery modules from generated bundle
+      - name: Verify bounded recovery bundle contract
         if: ${{ hashFiles('mission/tests/tm02-red-network/config-tm02w2f.lua') != '' }}
         run: |
           ! grep -q "TM02W2EMooseNavigationV4" mission/tests/tm02-red-network/dist/TM02W2F.lua
           ! grep -q "RouteReassignmentWatchdog" mission/tests/tm02-red-network/dist/TM02W2F.lua
           ! grep -q "LaunchSpreadAdapter" mission/tests/tm02-red-network/dist/TM02W2F.lua
-          grep -q "DIRECT_OFFROAD" mission/tests/tm02-red-network/dist/TM02W2F.lua
+          grep -q "TM02W2FProgressWatchdog" mission/tests/tm02-red-network/dist/TM02W2F.lua
+          grep -q "DIRECT_OFFROAD_WITH_BOUNDED_RECOVERY" mission/tests/tm02-red-network/dist/TM02W2F.lua
+          grep -q "URBAN_ROAD_ESCAPE" mission/tests/tm02-red-network/dist/TM02W2F.lua
+          grep -q "RURAL_MICRO_DETOUR" mission/tests/tm02-red-network/dist/TM02W2F.lua
