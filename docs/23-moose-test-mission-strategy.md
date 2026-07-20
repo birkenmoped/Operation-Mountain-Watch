@@ -1,5 +1,13 @@
 # 23 – Strategie für MOOSE-Testmissionen
 
+## Verbindliche Projektregel
+
+Diese Teststrategie unterliegt [`GOV-001`](00-project-governance.md) und der testweiten Regel [`mission/tests/GOVERNANCE.md`](../mission/tests/GOVERNANCE.md).
+
+Operation Mountain Watch ist MOOSE-first. Jede Testmechanik verwendet alle verfügbaren und anwendbaren MOOSE-Funktionen als technischen Grundstock. Mehrere MOOSE-Funktionen werden kombiniert, wenn eine einzelne Funktion die Anforderung nicht vollständig erfüllt.
+
+MOOSE-Grenzen, Nachteile und Alternativen dürfen jederzeit untersucht und diskutiert werden. Ein nativer DCS-Aufruf, eine Eigenentwicklung oder eine hybride Lösung darf jedoch erst als akzeptierte Richtung umgesetzt werden, wenn die MOOSE-Optionen und ihre verbleibende Grenze dokumentiert wurden und der Projektinhaber die Ausnahme ausdrücklich genehmigt hat.
+
 ## Ziel
 
 Operation Mountain Watch verwendet eigenständige Testmissionen, um technische Risiken isoliert zu untersuchen, bevor die Mechaniken in die Kampagnenmission übernommen werden.
@@ -7,6 +15,8 @@ Operation Mountain Watch verwendet eigenständige Testmissionen, um technische R
 MOOSE wird bereits in der einfachsten physischen Teststufe als Orchestrierungs-, Routing-, Beobachtungs- und Debugschicht eingesetzt. Dadurch entstehen keine parallelen Vanilla- und MOOSE-Implementierungen derselben Mechanik.
 
 Die DCS-KI bleibt für die tatsächliche Bewegung, Kollisionsbehandlung und Wegfindung physischer Gruppen verantwortlich. MOOSE weist Aufgaben zu, verwaltet Wrapper und Zustände, beobachtet den Ablauf und stellt reproduzierbare Teststeuerung bereit.
+
+Diese DCS-Verantwortung ist keine automatische Erlaubnis, MOOSE zu umgehen. Zuerst werden die verfügbaren MOOSE-Routing-, Tasking-, Lifecycle-, Spawn-, Respawn-, Teleport-, Scheduler-, Event-, FSM-, Detection-, Set-, Zone-, Coordinate- und Utility-Mechanismen getestet.
 
 ## Grundsatz
 
@@ -68,7 +78,8 @@ Die komprimierte `Moose_.lua` ist kein anderer Funktionszweig. Sie darf später 
 - Routing- und Zustandsbeobachtung entstehen nur einmal;
 - die physische Referenzlogik kann in Stufe B unverändert wiederverwendet werden;
 - Fehler lassen sich zwischen physischem Controller und Virtualisierungsschicht trennen;
-- Debug- und Abnahmewerkzeuge werden von Beginn an standardisiert.
+- Debug- und Abnahmewerkzeuge werden von Beginn an standardisiert;
+- Eigenimplementierungen entstehen nur nach dokumentierter MOOSE-Grenze und ausdrücklicher Entscheidung des Projektinhabers.
 
 ## Verwendete MOOSE-Bausteine
 
@@ -81,6 +92,8 @@ Abhängig vom Test werden insbesondere folgende MOOSE-Bereiche verwendet:
 - `COORDINATE` für Straßenanker und geprüfte Pfade;
 - `SCHEDULER` für Watchdogs, Dispatcher und Zustandsprüfungen;
 - MOOSE-Eventbehandlung für Verluste und Gruppenende;
+- MOOSE-FSM- und Ops-Klassen, soweit sie für die jeweilige Mechanik geeignet sind;
+- MOOSE-Spawn-, Respawn-, Teleport- und Lifecycle-Methoden vor einer eigenen Ersatzlogik;
 - `MENU_*` für reproduzierbare Testaktionen;
 - `MESSAGE` sowie Projektlogging für sichtbare Zustandsmeldungen.
 
@@ -119,11 +132,14 @@ TestMissionController
 
 Der szenariospezifische Controller entscheidet über fachliche Zustände. Der physische Adapter übersetzt diese in MOOSE- und DCS-Gruppen. Der virtuelle Adapter berechnet Fortschritt, Zeit und Verluste ohne physische Gruppe.
 
+Der physische Adapter muss die einschlägigen MOOSE-Funktionen verwenden. Direkte DCS-Aufrufe oder eigene Lifecycle-Mechanismen benötigen die dokumentierte GOV-001-Ausnahme.
+
 ## Verzeichnisstruktur
 
 ```text
 mission/tests/
 ├── README.md
+├── GOVERNANCE.md
 ├── tm01-blue-convoy/
 │   ├── README.md
 │   └── config.lua
@@ -185,7 +201,9 @@ Jede Testmission bietet mindestens:
 - Logging jedes Zustandswechsels;
 - Kennzeichnung von Spawn-, Reveal-, Ziel- und Fehlerzonen;
 - Erkennung doppelter physischer Gruppen;
-- Zusammenfassung der Abnahmekriterien am Testende.
+- Zusammenfassung der Abnahmekriterien am Testende;
+- Nachweis, welche MOOSE-Funktionen die getestete Mechanik tragen;
+- Kennzeichnung jeder genehmigten Nicht-MOOSE-Ausnahme.
 
 Stufe B darf Materialisierung für Beobachtungszwecke absichtlich sichtbar durchführen. Produktionsvirtualisierung muss später direkte Spielerbeobachtung vermeiden.
 
@@ -209,3 +227,5 @@ Diese Systeme werden erst nach stabiler physischer und virtueller Bewegungslogik
 Stufe B darf keine zweite unabhängige Bewegungsimplementierung enthalten. Jede materialisierte Gruppe wird durch denselben physischen Controller geführt, der in Stufe A validiert wurde.
 
 Ein Frameworkupdate gilt nicht als abgeschlossen, bevor die vorhandenen physischen und virtualisierten Teststufen mit dem neuen MOOSE-Stand erneut ausgeführt und dokumentiert wurden.
+
+Ein Test kann nicht abschließend akzeptiert werden, wenn eine anwendbare MOOSE-Funktion ohne dokumentierte Prüfung umgangen wurde oder eine native DCS-/Eigenlösung ohne ausdrückliche Projektinhaberfreigabe eingesetzt wird.

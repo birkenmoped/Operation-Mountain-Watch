@@ -1,5 +1,13 @@
 # 24 – MOOSE-Version und Build-Variante
 
+## Verbindliche Governance
+
+Dieses Dokument unterliegt [`GOV-001`](00-project-governance.md).
+
+Die Festlegung einer MOOSE-Version und Build-Variante dient nicht nur der Reproduzierbarkeit. Sie stellt zugleich sicher, dass alle verfügbaren und anwendbaren MOOSE-Funktionen gegen eine konkrete Frameworkfassung geprüft und als Projektgrundstock verwendet werden.
+
+Eine fehlende, nachteilige oder unzureichende MOOSE-Funktion darf dokumentiert und diskutiert werden. Daraus folgt keine automatische Berechtigung zur nativen DCS- oder Eigenimplementierung. Eine solche Ausnahme entscheidet ausschließlich der Projektinhaber und sie wird als ADR mit geprüften MOOSE-Alternativen, Begründung und Regressionstests festgehalten.
+
 ## Ziel
 
 Dieses Dokument legt fest, aus welchem Upstream-Stand und in welcher Build-Variante Operation Mountain Watch das MOOSE-Framework verwendet.
@@ -10,7 +18,8 @@ Die Entscheidung soll gleichzeitig erreichen:
 - nachvollziehbare API-Dokumentation;
 - gute Fehlersuche während der Entwicklung;
 - kontrollierte Framework-Updates;
-- keine unbemerkte Abhängigkeit von einem beweglichen Upstream-Branch.
+- keine unbemerkte Abhängigkeit von einem beweglichen Upstream-Branch;
+- belastbare Prüfung, ob MOOSE eine Projektanforderung vollständig oder nur teilweise erfüllt.
 
 ## Offizieller Upstream-Aufbau
 
@@ -49,6 +58,8 @@ Komprimierung: keine
 
 Die Entscheidung ist in ADR 0010 festgehalten.
 
+MOOSE ist nach GOV-001 die verbindliche erste Implementierungsebene. Projektcode prüft die in dieser Fassung enthaltenen Klassen, Funktionen und Muster, bevor native DCS-Aufrufe oder Eigenlösungen vorgeschlagen werden.
+
 ## Warum ein Release
 
 Ein gepinnter Release verhindert, dass sich das Framework ohne Änderung im Projekt-Repository verändert.
@@ -60,7 +71,7 @@ Damit gelten für alle Entwickler, Testmissionen und Server dieselben:
 - Bugfixes und bekannte Einschränkungen;
 - Logmeldungen;
 - CTLD- und CSAR-Verhaltensstände;
-- Spawn-, Routing- und Eventimplementierungen.
+- Spawn-, Routing-, Respawn-, Teleport-, Lifecycle-, Scheduler-, FSM- und Eventimplementierungen.
 
 Ein Update von MOOSE ist eine bewusste Projektänderung und kein automatischer Downloadvorgang.
 
@@ -87,6 +98,8 @@ Eigenschaften:
 
 Operation Mountain Watch verwendet diese Variante zunächst für Entwicklung, Testmissionen und Serverbetrieb.
 
+Die lesbare Fassung ist zugleich die maßgebliche technische Quelle für die nach GOV-001 erforderliche Prüfung verfügbarer MOOSE-Lösungen.
+
 ### `Moose_.lua`
 
 `Moose_.lua` wird im offiziellen Buildprozess mit LuaSrcDiet aus der erzeugten MOOSE-Fassung komprimiert.
@@ -98,7 +111,8 @@ Dabei werden insbesondere nicht erforderliche Kommentare, Formatierung und Leerr
 1. sie aus genau demselben Release wie die getestete `Moose.lua` stammt;
 2. ihre Herkunft und SHA-256-Prüfsumme dokumentiert sind;
 3. alle relevanten Testmissionen erneut ausgeführt wurden;
-4. nur die Include-Variante und nicht gleichzeitig die MOOSE-Version geändert wird.
+4. nur die Include-Variante und nicht gleichzeitig die MOOSE-Version geändert wird;
+5. der Projektinhaber die Änderung ausdrücklich freigegeben hat.
 
 ## Keine doppelte Einbindung
 
@@ -202,6 +216,14 @@ Die `develop`-Dokumentation ist keine ausreichende Grundlage für einen API-Aufr
 
 Jede verwendete Methode wird gegen die gepinnte Frameworkdatei oder die passende stabile Dokumentation geprüft.
 
+Vor einer Nicht-MOOSE-Lösung wird zusätzlich dokumentiert:
+
+- welche MOOSE-Klassen und Methoden geprüft wurden;
+- ob mehrere MOOSE-Mechanismen kombiniert werden können;
+- welches konkrete Testverhalten die Grenze belegt;
+- welche Nachteile eine MOOSE-Lösung tatsächlich verursacht;
+- welcher Fallback dem Projektinhaber zur Entscheidung vorgelegt wird.
+
 ## Einsatz von `develop`
 
 Ein Wechsel oder eine Teilübernahme aus `develop` ist nur als dokumentierte Ausnahme zulässig.
@@ -213,7 +235,8 @@ Erforderlich sind:
 - der exakte vollständige Commit-SHA;
 - eine dokumentierte Abweichung vom Release;
 - ein Rückfallpfad auf den gepinnten Release;
-- vollständige Regressionstests der betroffenen Test- und Kampagnenmechaniken.
+- vollständige Regressionstests der betroffenen Test- und Kampagnenmechaniken;
+- ausdrückliche Freigabe durch den Projektinhaber.
 
 Ein Bezug auf den unfixierten Branchnamen `develop` ist nicht zulässig.
 
@@ -230,7 +253,8 @@ Ein MOOSE-Update wird als eigener Änderungsvorgang behandelt:
 7. TM02A und TM02B ausführen;
 8. CTLD-, CSAR-, Cargo-, Warehouse- und Virtualisierungstests ausführen, sobald vorhanden;
 9. DCS-Logdateien auf neue Fehler und Warnungen prüfen;
-10. erst nach erfolgreicher Regression in die Kampagnenbasis übernehmen.
+10. prüfen, ob bisherige Eigen- oder DCS-Ausnahmen nun durch MOOSE ersetzt werden können;
+11. erst nach erfolgreicher Regression und Projektinhaberfreigabe in die Kampagnenbasis übernehmen.
 
 Version und Build-Variante werden nicht gleichzeitig geändert, sofern dies für den Test nicht ausdrücklich erforderlich ist.
 

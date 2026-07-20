@@ -1,5 +1,13 @@
 # MOOSE-Testmissionen
 
+## Verbindliche Governance
+
+Alle Dateien und Testreihen unter `mission/tests/` unterliegen [`mission/tests/GOVERNANCE.md`](GOVERNANCE.md) und der projektweiten Regel [`GOV-001`](../../docs/00-project-governance.md).
+
+Operation Mountain Watch ist MOOSE-first. Jede Testmechanik muss zuerst alle verfügbaren und anwendbaren MOOSE-Funktionen, Klassen und Framework-Muster als technischen Grundstock verwenden. Mehrere MOOSE-Mechanismen werden kombiniert, wenn eine einzelne Funktion nicht vollständig ausreicht.
+
+MOOSE-Grenzen, Nachteile und Alternativen dürfen jederzeit untersucht und diskutiert werden. Eine native DCS-, Eigen- oder Hybridlösung darf jedoch nur nach dokumentierter MOOSE-Prüfung und ausdrücklicher Genehmigung durch den Projektinhaber als akzeptierte Implementierung verwendet werden. Diese Entscheidung kann nicht aus einem Testergebnis oder einer technischen Empfehlung abgeleitet werden.
+
 ## Zweck
 
 Dieses Verzeichnis sammelt isolierte DCS-Testmissionen, ihre Konfigurationen, Missionsbriefe, erwarteten Ergebnisse und Testprotokolle.
@@ -50,7 +58,10 @@ Komprimierung: keine
 
 Maßgeblich sind:
 
+- `docs/00-project-governance.md`;
+- `docs/23-moose-test-mission-strategy.md`;
 - `docs/24-moose-version-and-build-policy.md`;
+- `docs/adr/0009-use-moose-from-first-test-stage.md`;
 - `docs/adr/0010-pin-moose-release-and-readable-static-build.md`;
 - `vendor/moose/VERSION.md`.
 
@@ -62,7 +73,9 @@ Für Testmissionen gilt:
 - keine gleichzeitige Einbindung von `Moose.lua` und `Moose_.lua`;
 - keine lokale Änderung der vendorten MOOSE-Datei;
 - eindeutiger Abbruch, wenn MOOSE nicht geladen werden kann;
-- Ausgabe der erwarteten MOOSE-Provenienz, des Prüfmodus und der Test-ID beim Szenariostart.
+- Ausgabe der erwarteten MOOSE-Provenienz, des Prüfmodus und der Test-ID beim Szenariostart;
+- keine stille Umgehung einer verfügbaren MOOSE-Funktion;
+- keine akzeptierte native DCS- oder Eigenlösung ohne ausdrückliche Projektinhaberentscheidung.
 
 `Moose_.lua` darf erst nach einer getrennten Entscheidung und vollständiger Regression als alternative Distributionsfassung desselben Releases verwendet werden.
 
@@ -71,14 +84,19 @@ Für Testmissionen gilt:
 ```text
 mission/tests/
 ├── README.md
+├── GOVERNANCE.md
 ├── tm01-blue-convoy/
 │   ├── README.md
 │   ├── config.lua
 │   ├── expected/
 │   └── results/
-└── tm02-red-relay/
+├── tm02-red-relay/
+│   ├── README.md
+│   └── config.lua
+└── tm02-red-network/
     ├── README.md
-    └── config.lua
+    ├── expected/
+    └── results/
 ```
 
 ### TM01 – Blauer Straßenkonvoi
@@ -102,14 +120,15 @@ TM01B.1
 
 Die erfolgreiche physische Gesamtfahrt ist abgeschlossen. Die ungewöhnliche konkrete Routenführung ist eine dokumentierte DCS-Pathfinding-Grenze und kein fehlender TM01A-Test.
 
-### TM02 – Rote Relaisbewegung
+### TM02 – Rote Relais- und Netzwerkbewegung
 
-TM02 untersucht die Verteilung roter Personengruppen von einem zentralen Hauptquartier über Zwischenquartiere bis Bagram.
+TM02 untersucht die Verteilung roter Personengruppen von einem zentralen Hauptquartier über Zwischenquartiere und später über ein kostenbewertetes Netzwerk.
 
 - Stufe A: vollständig physische Marschgruppen;
-- Stufe B: virtueller Marsch mit kontrollierter Zwischenmaterialisierung und Materialisierung im Zielraum.
+- Stufe B: virtueller Marsch mit kontrollierter Zwischenmaterialisierung und Materialisierung im Zielraum;
+- spätere TM02W-Stufen: getrennte Kommando-, Bewegungs- und Personalnetze sowie begrenzte Commander-Entscheidungen.
 
-TM02 wird nicht vorgezogen, solange der grundlegende Cache-Zyklus aus TM01B.1 nicht nachgewiesen ist.
+Jede TM02-Recovery-, Pack-/Unpack-, Materialisierungs-, Spawn-, Respawn-, Teleport- und Routingentscheidung muss die verfügbaren MOOSE-Mechanismen zuerst prüfen und verwenden.
 
 ## TM01A-Testbündel
 
@@ -229,6 +248,8 @@ Kein Projektskript darf MOOSE-Klassen verwenden, bevor Schritt 1 erfolgreich abg
 
 Fehlende MOOSE-Laufzeit-APIs führen zu `FAIL_SCRIPT`. Eine fehlende Templategruppe oder Pflichtzone führt zu `FAIL_CONFIGURATION`. Eine exakte geladene MOOSE-Version oder Datei-Prüfsumme wird nicht automatisch mit dem Bundle verglichen.
 
+Es gibt keinen automatischen Fallback auf native DCS- oder Eigenlogik. Ein solcher Pfad muss nach GOV-001 ausdrücklich entschieden und dokumentiert sein.
+
 ## Startprotokoll
 
 Jede Testmission protokolliert beim Start mindestens:
@@ -258,9 +279,10 @@ Mögliche Bausteine:
 - MOOSE-Versions- und Ladeprüfung;
 - Erkennung doppelter physischer Instanzen;
 - kontrollierte F10-Testbefehle;
-- Abschlussbericht für Abnahmekriterien.
+- Abschlussbericht für Abnahmekriterien;
+- Dokumentation der verwendeten MOOSE-Bausteine und jeder genehmigten Ausnahme.
 
-Stop, Pause, Reset, Watchdog oder automatische Recovery sind keine impliziten Bestandteile. Sie benötigen einen eigenen Testvertrag, bevor sie implementiert werden.
+Stop, Pause, Reset, Watchdog oder automatische Recovery sind keine impliziten Bestandteile. Sie benötigen einen eigenen Testvertrag, bevor sie implementiert werden. Der Testvertrag beginnt mit der Prüfung der dafür verfügbaren MOOSE-Funktionen.
 
 ## Testdisziplin
 
@@ -272,10 +294,12 @@ Stop, Pause, Reset, Watchdog oder automatische Recovery sind keine impliziten Be
 - Jede verwendete MOOSE-API wird gegen Release 2.9.18 beziehungsweise die vendorte Datei geprüft.
 - Die `develop`-Dokumentation wird nicht als alleiniger Nachweis für eine Release-API verwendet.
 - Eine bekannte DCS-Einschränkung wird dokumentiert und nicht durch stilles Teleportieren verborgen.
+- Verfügbare MOOSE-Teleport-, Respawn-, Spawn-, Tasking-, Routing- oder Lifecycle-Funktionen werden vor einer eigenen Lösung getestet.
 - `CampaignState` bleibt bei virtualisierten Entitäten autoritativ.
 - Eine Entität darf nicht gleichzeitig virtuell und physisch autoritativ sein.
 - Nach jedem MOOSE-Update werden alle vorhandenen MOOSE-Testmissionen erneut ausgeführt.
 - Ein statischer Codecheck oder Bundle-Build ist kein DCS-Acceptance-Nachweis.
+- Eine native DCS-, Eigen- oder Hybridlösung ohne dokumentierte MOOSE-Prüfung und Projektinhaberfreigabe ist ein Akzeptanzfehler.
 
 ## Ergebnisstatus
 
@@ -290,4 +314,4 @@ FAIL_CONFIGURATION
 ABORTED
 ```
 
-`PASS_WITH_LIMITATION` ist nur zulässig, wenn die Einschränkung reproduzierbar dokumentiert ist.
+`PASS_WITH_LIMITATION` ist nur zulässig, wenn die Einschränkung reproduzierbar dokumentiert ist. Eine dokumentierte Einschränkung erteilt keine Freigabe für eine Nicht-MOOSE-Lösung.
