@@ -37,6 +37,18 @@ $executor = Get-NormalizedSource -Path $executorPath
 $commanderScheduler = Get-NormalizedSource -Path $commanderSchedulerPath
 $transitRepresentation = Get-NormalizedSource -Path $transitRepresentationPath
 $progressWatchdog = Get-NormalizedSource -Path $progressWatchdogPath
+
+$terminalGateOriginal = "local remaining = projection.totalMeters - projection.alongMeters"
+$terminalGateReplacement = "local remaining = distance2D(group:GetCoordinate(), context.target)"
+$terminalGateMatchCount = [regex]::Matches(
+  $progressWatchdog,
+  [regex]::Escape($terminalGateOriginal)
+).Count
+if ($terminalGateMatchCount -ne 1) {
+  throw "Expected exactly one route-projection terminal gate in watchdog source, found $terminalGateMatchCount"
+}
+$progressWatchdog = $progressWatchdog.Replace($terminalGateOriginal, $terminalGateReplacement)
+
 $buildTimestamp = [DateTime]::UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ", [Globalization.CultureInfo]::InvariantCulture)
 
 $builder = New-Object System.Text.StringBuilder
