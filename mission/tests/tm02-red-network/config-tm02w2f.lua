@@ -1,5 +1,5 @@
 local config = {
-  configurationVersion = "TM02W2F-red-direct-offroad-watchdog-7",
+  configurationVersion = "TM02W2F-red-direct-offroad-progress-watchdog-8",
   testId = "TM02",
   stageId = "TM02W2F",
 
@@ -63,8 +63,6 @@ local config = {
     sourceUnitIndex = 1,
     runtimeAliasPrefix = "TM02W2F_RED_PROXY_",
     expectedUnitCount = 1,
-    -- All slots use the exact source-zone center. Temporal separation and the
-    -- canary gate replace the unsafe free Cartesian launch spreading.
     launchSlots = {
       { x = 0, y = 0 },
       { x = 0, y = 0 },
@@ -92,7 +90,7 @@ local config = {
     roadFormation = "On Road",
     offRoadFormation = "Off Road",
     assignmentDelaySeconds = 1,
-    physicalMode = "DIRECT_OFFROAD_WITH_BOUNDED_RECOVERY",
+    physicalMode = "DIRECT_OFFROAD_WITH_PROGRESS_RELOCATION_RECOVERY",
     maximumPhysicalWaypointsPerLeg = 4,
   },
 
@@ -105,30 +103,46 @@ local config = {
 
   watchdog = {
     enabled = true,
-    initialDelaySeconds = 12,
-    sampleIntervalSeconds = 5,
-    stallWindowSeconds = 30,
-    minimumProgressMeters = 6,
-    minimumDistanceToDestinationMeters = 100,
-    postRecoveryGraceSeconds = 20,
+    initialDelaySeconds = 8,
+    sampleIntervalSeconds = 3,
+    stallWindowSeconds = 18,
+    minimumTravelMeters = 5,
+    minimumProgressMeters = 4,
+    circularTravelMeters = 6,
+    circularNetMeters = 12,
+    routeEfficiencyFloor = 0.15,
+    ineffectiveWindowLimit = 2,
+    wrongWayMeters = 12,
+    crossTrackLimitMeters = 60,
+    minimumDistanceToDestinationMeters = 25,
+    postRecoveryGraceSeconds = 18,
     perTaskRecoveryCooldownSeconds = 20,
     globalRecoveryIntervalSeconds = 8,
-    maxRecoveryAttemptsPerEpisode = 6,
-    blockedResetProgressMeters = 100,
-    microDetourLateralMeters = 45,
-    microDetourForwardMeters = 90,
-    urbanScanRadiusMeters = 180,
-    urbanSceneryThreshold = 8,
-    urbanCacheCellMeters = 250,
-    urbanCacheSeconds = 600,
-    roadEscapeForwardMeters = 400,
-    maximumRoadSnapDistanceMeters = 220,
+
+    -- A confirmed off-road stall may relocate the current representation by
+    -- exactly 75 m along the already validated direct leg. Four such attempts
+    -- are permitted per recovery episode. Pack/unpack is never used.
+    maxOffroadRelocationsPerEpisode = 4,
+    relocationAdvanceMeters = 75,
+
+    -- Terminal relocation is only available inside the final 100 m and places
+    -- the representation no closer than 25 m before the current leg target.
+    terminalRecoveryThresholdMeters = 100,
+    terminalRecoveryOffsetMeters = 25,
+
+    -- Four failed off-road relocations switch the same representation to one
+    -- road route for the remainder of the current leg.
+    maximumRoadSnapDistanceMeters = 250,
+    minimumRoadSegmentMeters = 60,
+
+    -- Recovery counters reset only after substantial real movement.
+    episodeResetProgressMeters = 200,
   },
 
   transitRepresentation = {
     enableF10Menu = true,
     menuTitle = "TM02W2F Initial Network Fill",
-    startCommand = "RED-Commander mit Watchdog starten",
+    startCommand = "RED-Commander mit Progress-Watchdog starten",
     unpackCommand = "Alle Reise-Proxies entpacken",
     packCommand = "Alle Reisegruppen packen",
     statusCommand = "Status anzeigen",
