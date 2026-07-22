@@ -18,7 +18,7 @@ Jeder Entscheidungsfall wird einzeln behandelt. Die Auswahl wird erst nach ausdr
 | 2 | Jalalabad | Army Aviation | Task Force Six Shooters / 6-6 Cavalry mit B/1-10 Aviation und Utility-/MEDEVAC-Element | entschieden |
 | 3 | Kandahar | A-10C | 75th Expeditionary Fighter Squadron | entschieden |
 | 4 | Camp Bastion | AH-1W / UH-1Y | HMLA-169 „Vipers“ | entschieden |
-| 5 | Camp Bastion | MV-22B | offen | ausstehend |
+| 5 | Camp Bastion | MV-22B | keine aktive Umsetzung | entschieden: entfällt vollständig |
 | 6 | Camp Bastion | CH-53D / CH-53E | offen | ausstehend |
 
 ---
@@ -291,3 +291,35 @@ HMLA-369 bleibt ausschließlich als historischer Vorgänger in der Forschungs- u
 - Payload-Templates für CAS, Escort und Armed Reconnaissance,
 - endgültige Entscheidung zur physischen Darstellung der fünf UH-1Y,
 - Warehouse-Anker und eindeutige Zuordnung zu Camp Bastion.
+
+---
+
+## 5. Camp Bastion – MV-22B
+
+### Historischer Kontext
+
+Im historischen Kampagnenzeitraum waren aufeinanderfolgend VMM-365 „Blue Knights“ und VMM-264 „Black Knights“ mit MV-22B in Afghanistan eingesetzt. Diese Information bleibt ausschließlich in der historischen ORBAT-Dokumentation erhalten.
+
+### Verbindliche Entscheidung
+
+Da in der vorgesehenen DCS-Grundinstallation kein verwendbares MV-22B-Asset zur Verfügung steht, werden beide Verbände vollständig aus der aktiven Missions-ORBAT gestrichen:
+
+```text
+VMM-365 „Blue Knights“: keine aktive Umsetzung
+VMM-264 „Black Knights“: keine aktive Umsetzung
+MV-22B-Bestand in der aktiven Mission: 0
+```
+
+Es wird insbesondere nicht vorgesehen:
+
+- kein strategischer oder abstrakter MV-22B-Bestand im CampaignState,
+- keine Spieler-Slots,
+- keine KI-SQUADRON,
+- keine Late-Activation-Templates,
+- keine Payload-Templates,
+- keine Statics oder Ersatzdarstellungen,
+- keine RAT-Flüge,
+- keine verpflichtende oder optionale MV-22B-Community-Mod-Abhängigkeit,
+- kein späterer automatischer Wechsel zwischen VMM-365 und VMM-264.
+
+Die Mission bildet diese Einheiten somit nicht ab. Eine spätere Wiedereinführung wäre eine neue, ausdrücklich zu treffende Architektur- und ORBAT-Entscheidung und keine bereits vorbereitete Option.
