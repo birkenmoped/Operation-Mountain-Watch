@@ -30,3 +30,4 @@ Current air-operations planning documents:
 
 - [`US Air Order of Battle 2010–2011`](docs/us-air-orbat-2010-2011.md)
 - [`Luftoperations- und ORBAT-Umsetzung`](docs/18-air-operations-implementation.md)
+- [`Verbindliche Entscheidungen zur aktiven Luft-ORBAT`](docs/19-active-air-orbat-decisions.md)
