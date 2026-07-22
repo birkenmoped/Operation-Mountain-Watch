@@ -4,39 +4,30 @@
 
 Dieses Dokument hält die verbindlichen Auswahlentscheidungen für Einheiten fest, bei denen sich im historischen Kampagnenzeitraum Ablösungen, Überschneidungen oder alternative plausible Darstellungen ergeben.
 
-Die vollständige historische und planerische Grundlage bleibt in [`us-air-orbat-2010-2011.md`](us-air-orbat-2010-2011.md) erhalten. Nicht ausgewählte Einheiten bleiben dort als historischer Kontext dokumentiert, werden aber nicht für Spieler-Slots, KI-Squadrons, Payload-Templates oder Statics der aktiven Mission umgesetzt.
+Die vollständige historische und planerische Grundlage bleibt in [`us-air-orbat-2010-2011.md`](us-air-orbat-2010-2011.md) erhalten. Nicht ausgewählte Einheiten bleiben dort als historischer Kontext dokumentiert, werden aber nicht für Spieler-Slots, KI-Squadrons, Payload-Templates, Statics oder Bestände der aktiven Mission umgesetzt.
 
-Jeder Entscheidungsfall wird einzeln behandelt. Die Auswahl wird erst nach ausdrücklicher Entscheidung des Missionsdesigners verbindlich.
+Die gemeinsamen Betriebsregeln stehen in [`18-air-operations-implementation.md`](18-air-operations-implementation.md). Dazu gehören insbesondere gepoolte Statics, endgültige Verluste, maximal vier Spieler- und vier KI-Luftfahrzeuge je Typ und Basis als lokale Obergrenze sowie maximal zwei parallele KI-Unterstützungsmissionen mit jeweils höchstens zwei Luftfahrzeugen.
 
 ---
 
 ## Entscheidungsstatus
 
-| Nr. | Flugplatz | Muster / Bereich | Gewählte Einheit | Status |
+| Nr. | Flugplatz | Muster / Bereich | Verbindliche Entscheidung | Status |
 |---:|---|---|---|---|
-| 1 | Bagram | F-15E | 336th Expeditionary Fighter Squadron | entschieden |
+| 1 | Bagram | F-15E | 336th Expeditionary Fighter Squadron, 16 F-15E | entschieden |
 | 2 | Jalalabad | Army Aviation | Task Force Six Shooters / 6-6 Cavalry mit B/1-10 Aviation und Utility-/MEDEVAC-Element | entschieden |
-| 3 | Kandahar | A-10C | 75th Expeditionary Fighter Squadron | entschieden |
-| 4 | Camp Bastion | AH-1W / UH-1Y | HMLA-169 „Vipers“ | entschieden |
+| 3 | Kandahar | A-10C | 75th Expeditionary Fighter Squadron, 16 A-10C | entschieden |
+| 4 | Camp Bastion | AH-1W / UH-1Y | HMLA-169 „Vipers“, 10 AH-1W und 5 UH-1Y | entschieden |
 | 5 | Camp Bastion | MV-22B | keine aktive Umsetzung | entschieden: entfällt vollständig |
-| 6 | Camp Bastion | CH-53D / CH-53E | offen | ausstehend |
+| 6 | Camp Bastion | CH-53D / CH-53E | HMH-361 (-) Reinforced, 17 CH-53E | entschieden |
+
+Damit sind die bisher identifizierten Ablösungs- und Überschneidungsfälle abgeschlossen. Ein automatisches fortlaufendes Kampagnendatum mit dynamischen Staffelwechseln wird zunächst nicht umgesetzt.
 
 ---
 
 ## 1. Bagram – F-15E
 
-### Historische Alternativen
-
-Für den Kampagnenzeitraum standen als missionsgestalterische Auswahl zur Verfügung:
-
-- 494th Expeditionary Fighter Squadron für die frühe Übergangsphase im August 2010,
-- 336th Expeditionary Fighter Squadron für den größeren späteren Teil des Kampagnenzeitraums.
-
-Die genaue Übergabe ist nicht taggenau als belastbare Grundlage für einen dynamischen Staffelwechsel gesichert.
-
 ### Verbindliche Entscheidung
-
-Für die aktive Missions-ORBAT wird ausschließlich verwendet:
 
 ```text
 Einheit: 336th Expeditionary Fighter Squadron
@@ -45,18 +36,9 @@ Muster: F-15E
 Lokaler ORBAT-Bestand: 16 Luftfahrzeuge
 ```
 
-### Betriebsgrenzen
+### Nicht aktiv umgesetzt
 
-- höchstens vier gleichzeitig aktive Spieler-Luftfahrzeuge,
-- höchstens vier gleichzeitig aktive KI-Luftfahrzeuge als lokale technische Obergrenze,
-- normale KI-Unterstützungsmissionen weiterhin durch die globale Grenze von zwei parallelen Two-Ship-Aufträgen beschränkt,
-- gepoolte Static-Darstellung aus dem inaktiven lokalen Bestand,
-- endgültige Verluste ohne automatischen Ersatz,
-- F-15E bleibt wegen der unsicheren langfristigen Modulpflege als `THIRD_PARTY_AT_RISK` eingestuft.
-
-### Ausgeschlossene aktive Umsetzung
-
-Die 494th Expeditionary Fighter Squadron wird nicht als aktive Einheit aufgebaut. Für sie werden daher zunächst nicht angelegt:
+Die 494th Expeditionary Fighter Squadron bleibt ausschließlich als historische Vorgängereinheit dokumentiert. Für sie werden nicht angelegt:
 
 - keine Spieler-Slots,
 - keine KI-SQUADRON,
@@ -64,32 +46,13 @@ Die 494th Expeditionary Fighter Squadron wird nicht als aktive Einheit aufgebaut
 - keine eigenen Static-Gruppen oder Liveries,
 - kein automatischer Staffelwechsel.
 
-Die 494th EFS bleibt ausschließlich als historische Vorgängereinheit in der Forschungs- und ORBAT-Dokumentation erhalten.
-
-### Noch für die Missionseditor-Arbeitsliste festzulegen
-
-- konkrete Zahl sichtbarer F-15E-Statics innerhalb des empfohlenen Bereichs,
-- verwendete Liveries,
-- Spieler- und KI-Parkpositionen,
-- Template-Gruppengrößen und Payloads,
-- Verhalten bei fehlender oder später nicht mehr nutzbarer F-15E-Modulinstallation.
+Die F-15E bleibt wegen der unsicheren langfristigen Modulpflege als `THIRD_PARTY_AT_RISK` eingestuft. Ihre Spieler- und Missionseditorobjekte müssen deaktivierbar bleiben, ohne die strategische Struktur der Kampagne umzubauen.
 
 ---
 
 ## 2. Jalalabad Airfield / FOB Fenty – Army Aviation
 
-### Historische Alternativen
-
-Für die aktive Missionsdarstellung standen zwei aufeinanderfolgende Zustände zur Auswahl:
-
-- Task Force Lighthorse für den früheren Zeitraum bis ungefähr November 2010,
-- Task Force Six Shooters / 6th Squadron, 6th Cavalry Regiment für den späteren Zeitraum ab ungefähr November 2010.
-
-Beide Zustände werden nicht gleichzeitig umgesetzt. Ein automatischer Verbandswechsel während der laufenden Kampagne ist zunächst nicht vorgesehen.
-
 ### Verbindliche Entscheidung
-
-Für die aktive Missions-ORBAT wird ausschließlich der spätere Zustand mit Task Force Six Shooters verwendet:
 
 ```text
 Flugplatz: Jalalabad Airfield / FOB Fenty
@@ -107,15 +70,7 @@ Muster: UH-60-Familie
 Lokaler ORBAT-Bestand: 6 Luftfahrzeuge
 ```
 
-### Betriebsgrenzen
-
-Für jeden der drei Luftfahrzeugtypen gelten:
-
-- höchstens vier gleichzeitig aktive Spieler-Luftfahrzeuge, sofern ein spielbares Modul oder der eingeplante UH-60L Community Mod verfügbar ist,
-- höchstens vier gleichzeitig aktive KI-Luftfahrzeuge als lokale technische Obergrenze,
-- normale KI-Unterstützungsmissionen weiterhin durch die globale Grenze von zwei parallelen Aufträgen mit jeweils höchstens zwei Luftfahrzeugen beschränkt,
-- gepoolte Static-Darstellung aus dem inaktiven lokalen Bestand,
-- endgültige Verluste ohne automatischen Ersatz.
+### MEDEVAC-Regel
 
 MEDEVAC wird ausschließlich als Two-Ship-Paket eingesetzt:
 
@@ -124,9 +79,9 @@ MEDEVAC wird ausschließlich als Two-Ship-Paket eingesetzt:
 1 UH-60 Cover: Sicherung und Feuerunterstützung aus der Luft
 ```
 
-Ein einzelner UH-60 darf daher nicht als regulärer MEDEVAC-Auftrag eingesetzt werden.
+Ein einzelner UH-60 darf nicht als regulärer MEDEVAC-Auftrag eingesetzt werden.
 
-### Geplante technische SQUADRON-Struktur
+### Geplante technische Struktur
 
 ```text
 AW_US_JALALABAD
@@ -135,47 +90,15 @@ AW_US_JALALABAD
 └── SQ_JBAD_UTILITY_UH60
 ```
 
-Die konkrete Anzahl der MOOSE-Gruppen wird später aus KI-Bestand und Template-Gruppengröße berechnet. Bei Two-Ship-Templates entsprechen vier aktive KI-Luftfahrzeuge zwei MOOSE-Gruppen.
+### Nicht aktiv umgesetzt
 
-### Ausgeschlossene aktive Umsetzung
-
-Task Force Lighthorse wird nicht als aktive Einheit aufgebaut. Für den früheren Verbandszustand werden daher zunächst nicht angelegt:
-
-- keine Spieler-Slots,
-- keine KI-SQUADRONs,
-- keine eigenen Payload-Templates,
-- keine eigenen Static-Gruppen oder Liveries,
-- kein automatischer Wechsel zu Task Force Six Shooters.
-
-Task Force Lighthorse bleibt ausschließlich als historischer Vorgänger in der Forschungs- und ORBAT-Dokumentation erhalten.
-
-### Noch für die Missionseditor-Arbeitsliste festzulegen
-
-- konkrete Zahl sichtbarer OH-58D-, AH-64D- und UH-60-Statics,
-- verfügbare und historisch passende Liveries,
-- vier Spieler-Luftfahrzeuge je nutzbarem Muster und deren Parkpositionen,
-- KI-Template-Parkpositionen und Startverfahren,
-- Payload-Templates für Aufklärung, Armed Reconnaissance, CAS, Eskorte, Utility und MEDEVAC,
-- getrennte Ein-Schiff-Templates für UH-60 MEDEVAC Lead und Cover,
-- Warehouse-Anker und eindeutige Zuordnung zu Jalalabad Airfield,
-- Kompatibilität des UH-60L Community Mods mit Multiplayer, Multicrew, Fracht und MOOSE-Ereigniserkennung.
+Task Force Lighthorse bleibt ausschließlich als historische Vorgängereinheit dokumentiert. Es werden keine Lighthorse-Spieler-Slots, KI-SQUADRONs, Payload-Templates, Statics, Liveries oder automatischen Verbandswechsel vorbereitet.
 
 ---
 
 ## 3. Kandahar Airfield – A-10C
 
-### Historische Alternativen
-
-Für die aktive Missionsdarstellung standen zwei aufeinanderfolgende Expeditionary Fighter Squadrons zur Auswahl:
-
-- 81st Expeditionary Fighter Squadron für den frühen Kampagnenzustand bis ungefähr Spätsommer 2010,
-- 75th Expeditionary Fighter Squadron für den späteren Zustand ab ungefähr September 2010 bis 2011.
-
-Beide Staffeln werden nicht gleichzeitig umgesetzt. Ein automatischer Staffelwechsel während der laufenden Kampagne ist zunächst nicht vorgesehen.
-
 ### Verbindliche Entscheidung
-
-Für die aktive Missions-ORBAT wird ausschließlich die 75th Expeditionary Fighter Squadron verwendet:
 
 ```text
 Einheit: 75th Expeditionary Fighter Squadron
@@ -184,61 +107,22 @@ Muster: A-10C
 Lokaler ORBAT-Bestand: 16 Luftfahrzeuge
 ```
 
-### Betriebsgrenzen
-
-- höchstens vier gleichzeitig aktive Spieler-Luftfahrzeuge,
-- höchstens vier gleichzeitig aktive KI-Luftfahrzeuge als lokale technische Obergrenze,
-- normale KI-Unterstützungsmissionen weiterhin durch die globale Grenze von zwei parallelen Aufträgen mit jeweils höchstens zwei Luftfahrzeugen beschränkt,
-- reguläre A-10C-Unterstützung grundsätzlich als Einzel- oder Two-Ship-Auftrag, nicht als dauerhaft aktive Großformation,
-- gepoolte Static-Darstellung aus dem inaktiven lokalen Bestand,
-- endgültige Verluste ohne automatischen Ersatz.
-
-### Geplante technische SQUADRON-Struktur
+### Geplante technische Struktur
 
 ```text
 AW_US_KANDAHAR
 └── SQ_75_EFS_A10C
 ```
 
-Die KI-Templates werden für maximal Two-Ship-Einsätze ausgelegt. Vier aktive KI-A-10C entsprechen daher höchstens zwei gleichzeitig verfügbaren Two-Ship-Gruppen; die globale operative KI-Grenze kann den tatsächlichen Einsatz weiter reduzieren.
+### Nicht aktiv umgesetzt
 
-### Ausgeschlossene aktive Umsetzung
-
-Die 81st Expeditionary Fighter Squadron wird nicht als aktive Einheit aufgebaut. Für sie werden daher zunächst nicht angelegt:
-
-- keine Spieler-Slots,
-- keine KI-SQUADRON,
-- keine eigenen Payload-Templates,
-- keine eigenen Static-Gruppen oder Liveries,
-- kein automatischer Wechsel zur 75th EFS.
-
-Die 81st EFS bleibt ausschließlich als historische Vorgängereinheit in der Forschungs- und ORBAT-Dokumentation erhalten.
-
-### Noch für die Missionseditor-Arbeitsliste festzulegen
-
-- konkrete Zahl sichtbarer A-10C-Statics,
-- historisch passende 75th-EFS-Liveries oder verfügbare Ersatzlackierungen,
-- vier Spieler-Luftfahrzeuge und deren Parkpositionen,
-- KI-Template-Parkpositionen und Startverfahren,
-- Payload-Templates für CAS, Armed Overwatch und gegebenenfalls FAC(A),
-- Warehouse-Anker und eindeutige Zuordnung zu Kandahar Airfield.
+Die 81st Expeditionary Fighter Squadron bleibt ausschließlich als historische Vorgängereinheit dokumentiert. Für sie werden keine Spieler-Slots, KI-SQUADRON, Payload-Templates, Statics, Liveries oder automatischen Staffelwechsel angelegt.
 
 ---
 
 ## 4. Camp Bastion – HMLA Light Attack / Utility
 
-### Historische Alternativen
-
-Für Camp Bastion standen zwei aufeinanderfolgende Marine Light Attack Helicopter Squadrons zur Auswahl:
-
-- HMLA-369 „Gunfighters“ bis zum 14. November 2010,
-- HMLA-169 „Vipers“ vom 14. November 2010 bis zum 19. Mai 2011.
-
-Beide Verbände werden nicht gleichzeitig umgesetzt. Ein automatischer Staffelwechsel während der laufenden Kampagne ist zunächst nicht vorgesehen.
-
 ### Verbindliche Entscheidung
-
-Für die aktive Missions-ORBAT wird ausschließlich HMLA-169 „Vipers“ verwendet:
 
 ```text
 Einheit: HMLA-169 „Vipers“
@@ -251,20 +135,9 @@ Muster: UH-1Y
 Lokaler ORBAT-Bestand: 5 Luftfahrzeuge
 ```
 
-Die fünf UH-1Y bleiben Bestandteil der historischen und strategischen ORBAT. Ihre physische Umsetzung in DCS wird erst festgelegt, nachdem geprüft wurde, ob ein geeignetes natives oder optionales Asset verfügbar ist. Es wird nicht automatisch eine UH-1H als historisch falscher Ersatz gesetzt.
+Die fünf UH-1Y bleiben Bestandteil der historischen und strategischen ORBAT. Ihre physische Umsetzung in DCS bleibt deaktiviert, bis ein geeignetes natives oder ausdrücklich zugelassenes Asset bestätigt ist. Eine UH-1H wird nicht automatisch als historisch falscher Ersatz verwendet.
 
-### Betriebsgrenzen und technische Verfügbarkeit
-
-- AH-1W wird als KI-Luftfahrzeug vorgesehen, sofern der konkrete DCS-Typ in der verwendeten DCS-Version bestätigt und mit MOOSE AIRWING getestet ist,
-- keine AH-1W-Spieler-Slots,
-- höchstens vier gleichzeitig aktive KI-AH-1W als lokale technische Obergrenze,
-- normale Kampfunterstützung grundsätzlich als Einzel- oder Two-Ship-Auftrag,
-- die globale Grenze von zwei parallelen KI-Unterstützungsmissionen bleibt wirksam,
-- gepoolte Static-Darstellung aus dem inaktiven lokalen Bestand,
-- endgültige Verluste ohne automatischen Ersatz,
-- UH-1Y-Spieler-, KI- und Static-Umsetzung bleibt bis zur Asset-Entscheidung deaktiviert beziehungsweise offen.
-
-### Geplante technische SQUADRON-Struktur
+### Geplante technische Struktur
 
 ```text
 AW_USMC_BASTION
@@ -272,37 +145,17 @@ AW_USMC_BASTION
 └── SQ_HMLA_169_UH1Y   # erst nach bestätigter Asset-Entscheidung aktivieren
 ```
 
-### Ausgeschlossene aktive Umsetzung
+### Nicht aktiv umgesetzt
 
-HMLA-369 „Gunfighters“ wird nicht als aktive Einheit aufgebaut. Für diesen früheren Verbandszustand werden daher zunächst nicht angelegt:
-
-- keine eigenen KI-SQUADRONs,
-- keine eigenen Payload-Templates,
-- keine eigenen Static-Gruppen oder Liveries,
-- kein automatischer Wechsel zu HMLA-169.
-
-HMLA-369 bleibt ausschließlich als historischer Vorgänger in der Forschungs- und ORBAT-Dokumentation erhalten.
-
-### Noch für die Missionseditor-Arbeitsliste festzulegen
-
-- Bestätigung des genauen DCS-Typnamens und der verfügbaren AH-1W-Liveries,
-- konkrete Zahl sichtbarer AH-1W-Statics,
-- KI-Template-Parkpositionen und Startverfahren,
-- Payload-Templates für CAS, Escort und Armed Reconnaissance,
-- endgültige Entscheidung zur physischen Darstellung der fünf UH-1Y,
-- Warehouse-Anker und eindeutige Zuordnung zu Camp Bastion.
+HMLA-369 „Gunfighters“ bleibt ausschließlich als historische Vorgängereinheit dokumentiert. Für diesen früheren Verbandszustand werden keine KI-SQUADRONs, Payload-Templates, Statics, Liveries oder automatischen Staffelwechsel angelegt.
 
 ---
 
 ## 5. Camp Bastion – MV-22B
 
-### Historischer Kontext
-
-Im historischen Kampagnenzeitraum waren aufeinanderfolgend VMM-365 „Blue Knights“ und VMM-264 „Black Knights“ mit MV-22B in Afghanistan eingesetzt. Diese Information bleibt ausschließlich in der historischen ORBAT-Dokumentation erhalten.
-
 ### Verbindliche Entscheidung
 
-Da in der vorgesehenen DCS-Grundinstallation kein verwendbares MV-22B-Asset zur Verfügung steht, werden beide Verbände vollständig aus der aktiven Missions-ORBAT gestrichen:
+Da kein verwendbares MV-22B-Asset für die vorgesehene Mission zur Verfügung steht, werden VMM-365 „Blue Knights“ und VMM-264 „Black Knights“ vollständig aus der aktiven Missions-ORBAT gestrichen.
 
 ```text
 VMM-365 „Blue Knights“: keine aktive Umsetzung
@@ -310,7 +163,7 @@ VMM-264 „Black Knights“: keine aktive Umsetzung
 MV-22B-Bestand in der aktiven Mission: 0
 ```
 
-Es wird insbesondere nicht vorgesehen:
+Es wird nicht vorgesehen:
 
 - kein strategischer oder abstrakter MV-22B-Bestand im CampaignState,
 - keine Spieler-Slots,
@@ -319,7 +172,79 @@ Es wird insbesondere nicht vorgesehen:
 - keine Payload-Templates,
 - keine Statics oder Ersatzdarstellungen,
 - keine RAT-Flüge,
-- keine verpflichtende oder optionale MV-22B-Community-Mod-Abhängigkeit,
-- kein späterer automatischer Wechsel zwischen VMM-365 und VMM-264.
+- keine verpflichtende oder optionale MV-22B-Community-Mod-Abhängigkeit.
 
-Die Mission bildet diese Einheiten somit nicht ab. Eine spätere Wiedereinführung wäre eine neue, ausdrücklich zu treffende Architektur- und ORBAT-Entscheidung und keine bereits vorbereitete Option.
+Eine spätere Wiedereinführung wäre eine neue ausdrückliche Architektur- und ORBAT-Entscheidung.
+
+---
+
+## 6. Camp Bastion – Heavy Lift
+
+### Historische Alternativen
+
+Für den Kampagnenzeitraum waren mehrere CH-53-Verbände relevant:
+
+- HMH-363 „Red Lions“ mit CH-53D für den frühen Zeitraum,
+- HMH-362 „Ugly Angels“ als späterer CH-53D-Verband,
+- HMH-361 (-) Reinforced mit CH-53E ab Kampagnenbeginn.
+
+Die CH-53D- und CH-53E-Bestände werden nicht addiert. Eine parallele Darstellung aller Verbände würde einen überhöhten Bestand erzeugen und für die CH-53D eine nicht bestätigte Ersatzlösung erfordern.
+
+### Verbindliche Entscheidung
+
+Für die aktive Missions-ORBAT wird ausschließlich verwendet:
+
+```text
+Einheit: HMH-361 (-) Reinforced
+Flugplatz: Camp Bastion
+Muster: CH-53E
+Lokaler ORBAT-Bestand: 17 Luftfahrzeuge
+```
+
+### Betriebs- und Darstellungsregeln
+
+- CH-53E wird als KI-Luftfahrzeug eingeplant, sofern der konkrete DCS-Typname, das Parkverhalten und die MOOSE-AIRWING-Nutzung in der verwendeten DCS-Version bestätigt sind.
+- Es werden keine CH-53E-Spieler-Slots vorgesehen.
+- Höchstens vier CH-53E dürfen gleichzeitig als lokale technische Obergrenze aktiv sein.
+- Normale Transport- oder Unterstützungsaufträge werden als Einzel- oder Two-Ship-Flüge geplant.
+- Die globale Grenze von zwei parallelen KI-Unterstützungsmissionen bleibt wirksam.
+- Die statische Darstellung erfolgt aus dem gepoolten inaktiven Bestand.
+- Verluste sind endgültig und werden nicht automatisch ersetzt.
+
+### Geplante technische Struktur
+
+```text
+AW_USMC_BASTION
+└── SQ_HMH_361_CH53E
+```
+
+### Nicht aktiv umgesetzt
+
+HMH-363 und HMH-362 sowie sämtliche CH-53D-Bestände werden nicht aktiv umgesetzt. Für sie werden nicht angelegt:
+
+- keine KI-SQUADRONs,
+- keine Late-Activation-Templates,
+- keine Payload-Templates,
+- keine Statics oder Ersatzdarstellungen,
+- kein automatischer Verbandswechsel,
+- keine CH-53E- oder andere Ersatzdarstellung für CH-53D.
+
+Die CH-53D-Verbände bleiben nur als historischer Kontext in der Forschungs- und ORBAT-Dokumentation erhalten.
+
+---
+
+## Verbleibende offene Punkte
+
+Die Ablösungsentscheidungen sind abgeschlossen. Noch offen sind keine Staffelwechsel, sondern technische und missionsgestalterische Detailentscheidungen:
+
+- genaue Zahl und Platzierung gepoolter Statics je Muster,
+- historisch passende oder verfügbare Liveries,
+- konkrete Spieler- und KI-Parkpositionen,
+- Payload- und Rollen-Templates,
+- technische Verwendbarkeit karteneigener Warehouse-Gebäude,
+- DCS-Typnamen und MOOSE-Verhalten der KI-Muster,
+- physische Darstellung der UH-1Y,
+- versionsbezogene Prüfung des UH-60L Community Mods,
+- Fallback-Verhalten für F-15E und andere Risikomodule.
+
+Diese Punkte werden in der Missionseditor-Arbeitsliste getrennt nach Aufgaben des Missionsdesigners und vorzubereitenden Entwicklungsinformationen geführt.
