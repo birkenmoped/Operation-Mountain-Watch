@@ -25,3 +25,8 @@ Early design and prototyping. No gameplay release exists yet.
 ## Documentation
 
 Project design documents are stored in [`docs/`](docs/).
+
+Current air-operations planning documents:
+
+- [`US Air Order of Battle 2010–2011`](docs/us-air-orbat-2010-2011.md)
+- [`Luftoperations- und ORBAT-Umsetzung`](docs/18-air-operations-implementation.md)
