@@ -16,7 +16,7 @@ Jeder Entscheidungsfall wird einzeln behandelt. Die Auswahl wird erst nach ausdr
 |---:|---|---|---|---|
 | 1 | Bagram | F-15E | 336th Expeditionary Fighter Squadron | entschieden |
 | 2 | Jalalabad | Army Aviation | Task Force Six Shooters / 6-6 Cavalry mit B/1-10 Aviation und Utility-/MEDEVAC-Element | entschieden |
-| 3 | Kandahar | A-10C | offen | ausstehend |
+| 3 | Kandahar | A-10C | 75th Expeditionary Fighter Squadron | entschieden |
 | 4 | Camp Bastion | AH-1W / UH-1Y | offen | ausstehend |
 | 5 | Camp Bastion | MV-22B | offen | ausstehend |
 | 6 | Camp Bastion | CH-53D / CH-53E | offen | ausstehend |
@@ -159,3 +159,66 @@ Task Force Lighthorse bleibt ausschließlich als historischer Vorgänger in der 
 - getrennte Ein-Schiff-Templates für UH-60 MEDEVAC Lead und Cover,
 - Warehouse-Anker und eindeutige Zuordnung zu Jalalabad Airfield,
 - Kompatibilität des UH-60L Community Mods mit Multiplayer, Multicrew, Fracht und MOOSE-Ereigniserkennung.
+
+---
+
+## 3. Kandahar Airfield – A-10C
+
+### Historische Alternativen
+
+Für die aktive Missionsdarstellung standen zwei aufeinanderfolgende Expeditionary Fighter Squadrons zur Auswahl:
+
+- 81st Expeditionary Fighter Squadron für den frühen Kampagnenzustand bis ungefähr Spätsommer 2010,
+- 75th Expeditionary Fighter Squadron für den späteren Zustand ab ungefähr September 2010 bis 2011.
+
+Beide Staffeln werden nicht gleichzeitig umgesetzt. Ein automatischer Staffelwechsel während der laufenden Kampagne ist zunächst nicht vorgesehen.
+
+### Verbindliche Entscheidung
+
+Für die aktive Missions-ORBAT wird ausschließlich die 75th Expeditionary Fighter Squadron verwendet:
+
+```text
+Einheit: 75th Expeditionary Fighter Squadron
+Flugplatz: Kandahar Airfield
+Muster: A-10C
+Lokaler ORBAT-Bestand: 16 Luftfahrzeuge
+```
+
+### Betriebsgrenzen
+
+- höchstens vier gleichzeitig aktive Spieler-Luftfahrzeuge,
+- höchstens vier gleichzeitig aktive KI-Luftfahrzeuge als lokale technische Obergrenze,
+- normale KI-Unterstützungsmissionen weiterhin durch die globale Grenze von zwei parallelen Aufträgen mit jeweils höchstens zwei Luftfahrzeugen beschränkt,
+- reguläre A-10C-Unterstützung grundsätzlich als Einzel- oder Two-Ship-Auftrag, nicht als dauerhaft aktive Großformation,
+- gepoolte Static-Darstellung aus dem inaktiven lokalen Bestand,
+- endgültige Verluste ohne automatischen Ersatz.
+
+### Geplante technische SQUADRON-Struktur
+
+```text
+AW_US_KANDAHAR
+└── SQ_75_EFS_A10C
+```
+
+Die KI-Templates werden für maximal Two-Ship-Einsätze ausgelegt. Vier aktive KI-A-10C entsprechen daher höchstens zwei gleichzeitig verfügbaren Two-Ship-Gruppen; die globale operative KI-Grenze kann den tatsächlichen Einsatz weiter reduzieren.
+
+### Ausgeschlossene aktive Umsetzung
+
+Die 81st Expeditionary Fighter Squadron wird nicht als aktive Einheit aufgebaut. Für sie werden daher zunächst nicht angelegt:
+
+- keine Spieler-Slots,
+- keine KI-SQUADRON,
+- keine eigenen Payload-Templates,
+- keine eigenen Static-Gruppen oder Liveries,
+- kein automatischer Wechsel zur 75th EFS.
+
+Die 81st EFS bleibt ausschließlich als historische Vorgängereinheit in der Forschungs- und ORBAT-Dokumentation erhalten.
+
+### Noch für die Missionseditor-Arbeitsliste festzulegen
+
+- konkrete Zahl sichtbarer A-10C-Statics,
+- historisch passende 75th-EFS-Liveries oder verfügbare Ersatzlackierungen,
+- vier Spieler-Luftfahrzeuge und deren Parkpositionen,
+- KI-Template-Parkpositionen und Startverfahren,
+- Payload-Templates für CAS, Armed Overwatch und gegebenenfalls FAC(A),
+- Warehouse-Anker und eindeutige Zuordnung zu Kandahar Airfield.
