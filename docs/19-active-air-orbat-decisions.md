@@ -17,7 +17,7 @@ Jeder Entscheidungsfall wird einzeln behandelt. Die Auswahl wird erst nach ausdr
 | 1 | Bagram | F-15E | 336th Expeditionary Fighter Squadron | entschieden |
 | 2 | Jalalabad | Army Aviation | Task Force Six Shooters / 6-6 Cavalry mit B/1-10 Aviation und Utility-/MEDEVAC-Element | entschieden |
 | 3 | Kandahar | A-10C | 75th Expeditionary Fighter Squadron | entschieden |
-| 4 | Camp Bastion | AH-1W / UH-1Y | offen | ausstehend |
+| 4 | Camp Bastion | AH-1W / UH-1Y | HMLA-169 „Vipers“ | entschieden |
 | 5 | Camp Bastion | MV-22B | offen | ausstehend |
 | 6 | Camp Bastion | CH-53D / CH-53E | offen | ausstehend |
 
@@ -222,3 +222,72 @@ Die 81st EFS bleibt ausschließlich als historische Vorgängereinheit in der For
 - KI-Template-Parkpositionen und Startverfahren,
 - Payload-Templates für CAS, Armed Overwatch und gegebenenfalls FAC(A),
 - Warehouse-Anker und eindeutige Zuordnung zu Kandahar Airfield.
+
+---
+
+## 4. Camp Bastion – HMLA Light Attack / Utility
+
+### Historische Alternativen
+
+Für Camp Bastion standen zwei aufeinanderfolgende Marine Light Attack Helicopter Squadrons zur Auswahl:
+
+- HMLA-369 „Gunfighters“ bis zum 14. November 2010,
+- HMLA-169 „Vipers“ vom 14. November 2010 bis zum 19. Mai 2011.
+
+Beide Verbände werden nicht gleichzeitig umgesetzt. Ein automatischer Staffelwechsel während der laufenden Kampagne ist zunächst nicht vorgesehen.
+
+### Verbindliche Entscheidung
+
+Für die aktive Missions-ORBAT wird ausschließlich HMLA-169 „Vipers“ verwendet:
+
+```text
+Einheit: HMLA-169 „Vipers“
+Flugplatz: Camp Bastion
+
+Muster: AH-1W
+Lokaler ORBAT-Bestand: 10 Luftfahrzeuge
+
+Muster: UH-1Y
+Lokaler ORBAT-Bestand: 5 Luftfahrzeuge
+```
+
+Die fünf UH-1Y bleiben Bestandteil der historischen und strategischen ORBAT. Ihre physische Umsetzung in DCS wird erst festgelegt, nachdem geprüft wurde, ob ein geeignetes natives oder optionales Asset verfügbar ist. Es wird nicht automatisch eine UH-1H als historisch falscher Ersatz gesetzt.
+
+### Betriebsgrenzen und technische Verfügbarkeit
+
+- AH-1W wird als KI-Luftfahrzeug vorgesehen, sofern der konkrete DCS-Typ in der verwendeten DCS-Version bestätigt und mit MOOSE AIRWING getestet ist,
+- keine AH-1W-Spieler-Slots,
+- höchstens vier gleichzeitig aktive KI-AH-1W als lokale technische Obergrenze,
+- normale Kampfunterstützung grundsätzlich als Einzel- oder Two-Ship-Auftrag,
+- die globale Grenze von zwei parallelen KI-Unterstützungsmissionen bleibt wirksam,
+- gepoolte Static-Darstellung aus dem inaktiven lokalen Bestand,
+- endgültige Verluste ohne automatischen Ersatz,
+- UH-1Y-Spieler-, KI- und Static-Umsetzung bleibt bis zur Asset-Entscheidung deaktiviert beziehungsweise offen.
+
+### Geplante technische SQUADRON-Struktur
+
+```text
+AW_USMC_BASTION
+├── SQ_HMLA_169_AH1W
+└── SQ_HMLA_169_UH1Y   # erst nach bestätigter Asset-Entscheidung aktivieren
+```
+
+### Ausgeschlossene aktive Umsetzung
+
+HMLA-369 „Gunfighters“ wird nicht als aktive Einheit aufgebaut. Für diesen früheren Verbandszustand werden daher zunächst nicht angelegt:
+
+- keine eigenen KI-SQUADRONs,
+- keine eigenen Payload-Templates,
+- keine eigenen Static-Gruppen oder Liveries,
+- kein automatischer Wechsel zu HMLA-169.
+
+HMLA-369 bleibt ausschließlich als historischer Vorgänger in der Forschungs- und ORBAT-Dokumentation erhalten.
+
+### Noch für die Missionseditor-Arbeitsliste festzulegen
+
+- Bestätigung des genauen DCS-Typnamens und der verfügbaren AH-1W-Liveries,
+- konkrete Zahl sichtbarer AH-1W-Statics,
+- KI-Template-Parkpositionen und Startverfahren,
+- Payload-Templates für CAS, Escort und Armed Reconnaissance,
+- endgültige Entscheidung zur physischen Darstellung der fünf UH-1Y,
+- Warehouse-Anker und eindeutige Zuordnung zu Camp Bastion.
