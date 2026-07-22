@@ -15,7 +15,7 @@ Jeder Entscheidungsfall wird einzeln behandelt. Die Auswahl wird erst nach ausdr
 | Nr. | Flugplatz | Muster / Bereich | Gewählte Einheit | Status |
 |---:|---|---|---|---|
 | 1 | Bagram | F-15E | 336th Expeditionary Fighter Squadron | entschieden |
-| 2 | Jalalabad | Army Aviation | offen | ausstehend |
+| 2 | Jalalabad | Army Aviation | Task Force Six Shooters / 6-6 Cavalry mit B/1-10 Aviation und Utility-/MEDEVAC-Element | entschieden |
 | 3 | Kandahar | A-10C | offen | ausstehend |
 | 4 | Camp Bastion | AH-1W / UH-1Y | offen | ausstehend |
 | 5 | Camp Bastion | MV-22B | offen | ausstehend |
@@ -73,3 +73,89 @@ Die 494th EFS bleibt ausschließlich als historische Vorgängereinheit in der Fo
 - Spieler- und KI-Parkpositionen,
 - Template-Gruppengrößen und Payloads,
 - Verhalten bei fehlender oder später nicht mehr nutzbarer F-15E-Modulinstallation.
+
+---
+
+## 2. Jalalabad Airfield / FOB Fenty – Army Aviation
+
+### Historische Alternativen
+
+Für die aktive Missionsdarstellung standen zwei aufeinanderfolgende Zustände zur Auswahl:
+
+- Task Force Lighthorse für den früheren Zeitraum bis ungefähr November 2010,
+- Task Force Six Shooters / 6th Squadron, 6th Cavalry Regiment für den späteren Zeitraum ab ungefähr November 2010.
+
+Beide Zustände werden nicht gleichzeitig umgesetzt. Ein automatischer Verbandswechsel während der laufenden Kampagne ist zunächst nicht vorgesehen.
+
+### Verbindliche Entscheidung
+
+Für die aktive Missions-ORBAT wird ausschließlich der spätere Zustand mit Task Force Six Shooters verwendet:
+
+```text
+Flugplatz: Jalalabad Airfield / FOB Fenty
+
+Einheit: 6th Squadron, 6th Cavalry Regiment / Task Force Six Shooters
+Muster: OH-58D
+Lokaler ORBAT-Bestand: 24 Luftfahrzeuge
+
+Einheit: B Company, 1-10 Aviation
+Muster: AH-64D
+Lokaler ORBAT-Bestand: 8 Luftfahrzeuge
+
+Einheit: angegliedertes Utility-/MEDEVAC-Element
+Muster: UH-60-Familie
+Lokaler ORBAT-Bestand: 6 Luftfahrzeuge
+```
+
+### Betriebsgrenzen
+
+Für jeden der drei Luftfahrzeugtypen gelten:
+
+- höchstens vier gleichzeitig aktive Spieler-Luftfahrzeuge, sofern ein spielbares Modul oder der eingeplante UH-60L Community Mod verfügbar ist,
+- höchstens vier gleichzeitig aktive KI-Luftfahrzeuge als lokale technische Obergrenze,
+- normale KI-Unterstützungsmissionen weiterhin durch die globale Grenze von zwei parallelen Aufträgen mit jeweils höchstens zwei Luftfahrzeugen beschränkt,
+- gepoolte Static-Darstellung aus dem inaktiven lokalen Bestand,
+- endgültige Verluste ohne automatischen Ersatz.
+
+MEDEVAC wird ausschließlich als Two-Ship-Paket eingesetzt:
+
+```text
+1 UH-60 MEDEVAC Lead: Landung und Aufnahme
+1 UH-60 Cover: Sicherung und Feuerunterstützung aus der Luft
+```
+
+Ein einzelner UH-60 darf daher nicht als regulärer MEDEVAC-Auftrag eingesetzt werden.
+
+### Geplante technische SQUADRON-Struktur
+
+```text
+AW_US_JALALABAD
+├── SQ_6_6_CAV_OH58D
+├── SQ_B_1_10_AVN_AH64D
+└── SQ_JBAD_UTILITY_UH60
+```
+
+Die konkrete Anzahl der MOOSE-Gruppen wird später aus KI-Bestand und Template-Gruppengröße berechnet. Bei Two-Ship-Templates entsprechen vier aktive KI-Luftfahrzeuge zwei MOOSE-Gruppen.
+
+### Ausgeschlossene aktive Umsetzung
+
+Task Force Lighthorse wird nicht als aktive Einheit aufgebaut. Für den früheren Verbandszustand werden daher zunächst nicht angelegt:
+
+- keine Spieler-Slots,
+- keine KI-SQUADRONs,
+- keine eigenen Payload-Templates,
+- keine eigenen Static-Gruppen oder Liveries,
+- kein automatischer Wechsel zu Task Force Six Shooters.
+
+Task Force Lighthorse bleibt ausschließlich als historischer Vorgänger in der Forschungs- und ORBAT-Dokumentation erhalten.
+
+### Noch für die Missionseditor-Arbeitsliste festzulegen
+
+- konkrete Zahl sichtbarer OH-58D-, AH-64D- und UH-60-Statics,
+- verfügbare und historisch passende Liveries,
+- vier Spieler-Luftfahrzeuge je nutzbarem Muster und deren Parkpositionen,
+- KI-Template-Parkpositionen und Startverfahren,
+- Payload-Templates für Aufklärung, Armed Reconnaissance, CAS, Eskorte, Utility und MEDEVAC,
+- getrennte Ein-Schiff-Templates für UH-60 MEDEVAC Lead und Cover,
+- Warehouse-Anker und eindeutige Zuordnung zu Jalalabad Airfield,
+- Kompatibilität des UH-60L Community Mods mit Multiplayer, Multicrew, Fracht und MOOSE-Ereigniserkennung.
