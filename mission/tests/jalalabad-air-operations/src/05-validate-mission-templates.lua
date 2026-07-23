@@ -1,27 +1,15 @@
 local TAG = "[OMW][ValidateMissionTemplates]"
 local function log(msg) env.info(TAG .. " " .. tostring(msg)) end
 
-local expectedGroups = {
-  "CLIENT_US_JBAD_OH58D_01", "CLIENT_US_JBAD_OH58D_02", "CLIENT_US_JBAD_OH58D_03", "CLIENT_US_JBAD_OH58D_04",
-  "CLIENT_US_JBAD_AH64D_01", "CLIENT_US_JBAD_AH64D_02", "CLIENT_US_JBAD_AH64D_03", "CLIENT_US_JBAD_AH64D_04",
-  "CLIENT_US_JBAD_UH60L_01", "CLIENT_US_JBAD_UH60L_02", "CLIENT_US_JBAD_UH60L_03", "CLIENT_US_JBAD_UH60L_04",
-  "TPL_AIR_US_JBAD_OH58D_RECON_2SHIP", "TPL_AIR_US_JBAD_AH64D_CAS_2SHIP",
-  "TPL_AIR_US_JBAD_UH60_MEDEVAC_LEAD_1SHIP", "TPL_AIR_US_JBAD_UH60_MEDEVAC_COVER_1SHIP"
-}
-
-local expectedStatics = {
-  "STATIC_AIR_US_JBAD_OH58D_01", "STATIC_AIR_US_JBAD_AH64D_01", "STATIC_AIR_US_JBAD_UH60_01"
-}
-
-local expectedZones = {
-  "ZONE_AIR_US_JBAD_STATIC_OH58D", "ZONE_AIR_US_JBAD_STATIC_AH64D", "ZONE_AIR_US_JBAD_STATIC_UH60",
-  "ZONE_AIR_US_JBAD_MEDEVAC_READY", "ZONE_AIR_US_JBAD_LOGISTICS_LOAD", "ZONE_AIR_US_JBAD_LOGISTICS_UNLOAD",
-  "ZONE_AIR_US_JBAD_SLING_PICKUP", "ZONE_AIR_US_JBAD_C130_UNLOAD"
-}
+local function appendAll(target, source)
+  for _, value in ipairs(source or {}) do
+    target[#target + 1] = value
+  end
+end
 
 local function check(kind, names, finder)
   local present, missing = 0, 0
-  for _, name in ipairs(names) do
+  for _, name in ipairs(names or {}) do
     local ok, object = pcall(finder, name)
     if ok and object then
       present = present + 1
@@ -32,18 +20,51 @@ local function check(kind, names, finder)
     end
   end
   log(string.format("SUMMARY %s present=%d missing=%d", kind, present, missing))
+  return present, missing
 end
 
 local function main()
-  check("GROUP", expectedGroups, function(name) return GROUP and GROUP:FindByName(name) end)
-  check("STATIC", expectedStatics, function(name) return STATIC and STATIC:FindByName(name, false) end)
-  check("ZONE", expectedZones, function(name) return ZONE and ZONE:FindByName(name) end)
+  local cfg = OMW and OMW.AirOps and OMW.AirOps.Jalalabad
+  if not cfg then
+    log("ERROR Jalalabad manifest unavailable")
+    return
+  end
 
-  -- The warehouse is intentionally absent in the initial fixture. Query it
-  -- without raising so that the validator can emit a normal MISSING result.
-  local warehouse = (STATIC and STATIC:FindByName("WH_AIR_US_JALALABAD", false)) or
-                    (UNIT and UNIT:FindByName("WH_AIR_US_JALALABAD"))
-  log("WAREHOUSE_ANCHOR " .. (warehouse and "OK" or "MISSING") .. " WH_AIR_US_JALALABAD")
+  local requiredGroups = {}
+  appendAll(requiredGroups, cfg.PlayerGroups.Required.OH58D)
+  appendAll(requiredGroups, cfg.PlayerGroups.Required.AH64D)
+  requiredGroups[#requiredGroups + 1] = cfg.Templates.OH58DRecon
+  requiredGroups[#requiredGroups + 1] = cfg.Templates.AH64DCAS
+  requiredGroups[#requiredGroups + 1] = cfg.Templates.UH60MedevacLead
+  requiredGroups[#requiredGroups + 1] = cfg.Templates.UH60MedevacCover
+
+  local optionalGroups = {}
+  appendAll(optionalGroups, cfg.PlayerGroups.Optional.UH60L)
+
+  local statics = {}
+  appendAll(statics, cfg.Statics.OH58D)
+  appendAll(statics, cfg.Statics.AH64D)
+  appendAll(statics, cfg.Statics.UH60)
+
+  check("REQUIRED_GROUP", requiredGroups, function(name) return GROUP and GROUP:FindByName(name) end)
+  local optionalPresent, optionalMissing = check("OPTIONAL_UH60L_GROUP", optionalGroups, function(name) return GROUP and GROUP:FindByName(name) end)
+  if optionalPresent ~= 0 and optionalPresent ~= 4 then
+    log(string.format("ERROR OPTIONAL_UH60L_GROUP partial-set present=%d missing=%d expected=0-or-4", optionalPresent, optionalMissing))
+  end
+
+  check("STATIC", statics, function(name) return STATIC and STATIC:FindByName(name, false) end)
+  check("ZONE", cfg.Zones, function(name) return ZONE and ZONE:FindByName(name) end)
+
+  local warehouse = (STATIC and STATIC:FindByName(cfg.WarehouseName, false)) or
+                    (UNIT and UNIT:FindByName(cfg.WarehouseName))
+  log("WAREHOUSE_ANCHOR " .. (warehouse and "OK" or "MISSING") .. " " .. cfg.WarehouseName)
 end
 
-if SCHEDULER then SCHEDULER:New(nil, main, {}, 5) else timer.scheduleFunction(function() main() return nil end, nil, timer.getTime() + 5) end
+if SCHEDULER then
+  SCHEDULER:New(nil, main, {}, 5)
+else
+  timer.scheduleFunction(function()
+    main()
+    return nil
+  end, nil, timer.getTime() + 5)
+end
