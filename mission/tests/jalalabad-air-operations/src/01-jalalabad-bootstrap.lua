@@ -68,12 +68,31 @@ OMW.AirOps.Jalalabad = {
     CoreRuntimeParkingDemand = 10,
     RuntimeParkingDemandWithUH60L = 12,
 
-    Model = "CLIENT_RESERVED_DYNAMIC_AI_POOL_FREEPLACED_STATICS_LATE_ACTIVATION_TEMPLATES"
+    -- The C01-C14 heavy-lift ramp has no credible free-placement alternative for
+    -- all visible Chinooks. Five CH-47 statics plus two Client aircraft consume
+    -- seven visual ramp positions and leave seven visual positions available.
+    -- Four of the five statics align with actual DCS parking nodes in the current
+    -- mission and those terminal IDs are deliberately blacklisted for AI spawning.
+    CH47VisualRampPositions = 14,
+    CH47StaticAircraft = 5,
+    CH47PlayerPositions = 2,
+    CH47RemainingVisualPositions = 7,
+    CH47DCSNodeReservations = 4,
+    StaticParkingReservations = {
+      STATIC_AIR_US_JBAD_CH47_01 = 49,
+      STATIC_AIR_US_JBAD_CH47_02 = 37,
+      STATIC_AIR_US_JBAD_CH47_03 = 23,
+      STATIC_AIR_US_JBAD_CH47_04 = 35
+    },
+    StaticParkingBlacklist = { 23, 35, 37, 49 },
+
+    Model = "CLIENT_RESERVED_DYNAMIC_AI_POOL_DEDICATED_CH47_STATIC_PARKING_LATE_ACTIVATION_TEMPLATES"
   },
 
   -- Visible caps are deliberately lower than the inventory and lower than the
-  -- 2011 snapshot. Statics are free-placed on suitable apron areas and must not
-  -- consume or obstruct the operational DCS spawn/return positions.
+  -- 2011 snapshot. Most statics are free-placed. The four explicitly mapped
+  -- CH-47 parking nodes are intentional permanent static reservations and are
+  -- removed from the MOOSE parking pool through the blacklist above.
   StaticCaps = {
     OH58D = 7,
     AH64D = 4,
@@ -150,7 +169,8 @@ OMW.AirOps.Jalalabad = {
     "ZONE_AIR_US_JBAD_C130_UNLOAD"
   },
 
-  DetectedTypes = {}
+  DetectedTypes = {},
+  ParkingReservationsOK = false
 }
 
 local function validate()
@@ -170,9 +190,14 @@ local function validate()
   end
 
   local ok, result = pcall(function()
+    if airbase.SetParkingSpotBlacklist then
+      airbase:SetParkingSpotBlacklist(cfg.Parking.StaticParkingBlacklist)
+    end
+
     local airwing = AIRWING:New(cfg.WarehouseName, cfg.AirwingName)
     airwing:SetAirbase(airbase)
     airwing:SetTakeoffCold()
+    airwing:SetSafeParkingOn()
     return airwing
   end)
 
@@ -184,7 +209,8 @@ local function validate()
   cfg.Airbase = airbase
   cfg.Airwing = result
   log("AIRWING constructed and explicitly linked. Awaiting corrected complete-node assembly before Start().")
-  log("RAMP MODEL: inventory=24/8/8/8 visibleCaps=7/4/4/5 clients=6+2optional dynamicAIReserve=4 runtimeDemand=10+2optional templateAircraft=7(non-runtime) of 36 comparable positions.")
+  log("PARKING BLACKLIST: intentional CH-47 static reservations TerminalIDs=23,35,37,49; Client parking protected by SafeParking.")
+  log("RAMP MODEL: inventory=24/8/8/8 visibleCaps=7/4/4/5 clients=6+2optional dynamicAIReserve=4 runtimeDemand=10+2optional templateAircraft=7(non-runtime) CH47visual=14-5statics-2clients=7remaining.")
 end
 
 if SCHEDULER then
