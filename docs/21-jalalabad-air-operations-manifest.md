@@ -1,29 +1,50 @@
-# 21 – Jalalabad Air Operations Manifest
+# 21 – Jalalabad Air Operations: Manifest, Testchronik und Abschlussstand
 
-## Zweck und Status
+## 1. Status und Autorität
 
-Dieses Manifest definiert die erste konkrete Missionseditor- und MOOSE-Umsetzung der Luft-ORBAT für **Jalalabad Airfield / FOB Fenty**.
+Dieses Dokument ist die verbindliche Jalalabad-spezifische Quelle für:
 
-Es basiert auf der bereitgestellten Arbeitskopie:
+- lokale Luft-ORBAT,
+- Spieler- und KI-Grenzen,
+- MOOSE-AIRWING-/SQUADRON-Struktur,
+- sichtbare Statics und virtuelle Reserve,
+- Park- und Flächenkonzept,
+- Missionseditor-Namen,
+- bisherige DCS-Tests,
+- Fehlerursachen und Korrekturen,
+- aktuellen Abschlussauftrag.
+
+Bei Widersprüchen mit älteren allgemeinen Planungsständen gilt für Jalalabad dieses Dokument zusammen mit:
+
+```text
+mission/tests/jalalabad-air-operations/README.md
+mission/tests/jalalabad-air-operations/expected/jalalabad-complete-node-acceptance.md
+```
+
+Der projektweite Build-, Übertragungs- und Testworkflow steht in:
+
+```text
+docs/22-test-mission-build-transfer-and-validation-workflow.md
+```
+
+## 2. Technische Ausgangsbasis
+
+### 2.1 Testmission
 
 ```text
 Operation_Mountain_Watch_Jalalabad_AirOps_Test_01.miz
-SHA-256: 898703f5b738a632492e514f8943327634a0d094716fd7f4c971c9b2582fb50b
 ```
 
-Der aktuelle Stand ist eine **Diagnose- und Platzierungsvorgabe**. Parking-IDs, nutzbare Warehouse-Anker, verfügbare DCS-Typen und konkrete Liveries werden erst nach dem ersten Diagnose-Testlauf endgültig eingetragen.
+Karte und Missionszeitraum:
 
-## 1. Technische Ausgangsbasis
+```text
+DCS: Afghanistan
+2. Mai 2011
+```
 
-### Mission
+Die Ausgangsmission lädt bereits MOOSE und ein bestehendes TM02W2F-Testbundle. Jalalabad AirOps bleibt als getrennt gebautes Bundle erhalten.
 
-- Karte: DCS: Afghanistan
-- Missionsdatum: 2. Mai 2011
-- bestehendes Hauptskript: `TM02W2F.lua`
-- bestehender Teststand bleibt unverändert erhalten
-- Air-Ops-Code wird in getrennten Dateien ergänzt und nicht in das generierte `TM02W2F.lua` geschrieben
-
-### Festgeschriebene MOOSE-Basis
+### 2.2 MOOSE-Basis
 
 ```text
 MOOSE Commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
@@ -31,295 +52,768 @@ Build: 2026-06-14T16:11:05+02:00
 Moose.lua SHA-256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
 ```
 
-Die MOOSE-Datei wird während der Jalalabad-Prototypphase nicht stillschweigend ersetzt.
+Die MOOSE-Datei darf während der Testreihe nicht stillschweigend ausgetauscht werden.
 
-### Festgestellter Altbestand
-
-Die Arbeitskopie enthält einen einzelnen Spieler-OH-58D:
+### 2.3 Repository
 
 ```text
-Gruppe: TEST_TM01A_CLIENT_01
-Einheit: TEST_TM01A_CLIENT_UNIT_01
-Typ: OH58D
-Airdrome-ID: 16
-Parking: 112 / C10
+Branch: feature/jalalabad-air-operations-diagnostics
+Draft-PR: #18
+Builder: tools/build-jalalabad-air-operations-bundle.ps1
+Bundle: mission/tests/jalalabad-air-operations/dist/OMW_AirOps_Jalalabad.lua
+Builder-Version: JBAD-AIR-OPS-COMPLETE-2
 ```
 
-Dieser Slot befindet sich im Bereich Bagram und ist kein Jalalabad-Slot. Er wird nicht in die Jalalabad-Bestandsrechnung übernommen.
+## 3. Historische und bildliche Evidenz
 
-## 2. Verbindliche lokale ORBAT
+### 3.1 Task Force Shooter
 
-| Verband | Typ | Lokaler Gesamtbestand |
-|---|---|---:|
-| 6th Squadron, 6th Cavalry Regiment / Task Force Six Shooters | OH-58D | 24 |
-| B Company, 1-10 Aviation | AH-64D | 8 |
-| angegliedertes Utility-/MEDEVAC-Element | UH-60-Familie | 6 |
+Zeitgenössische Berichte beschreiben Task Force Shooter in Jalalabad / FOB Fenty als multi-funktionalen Heeresfliegerverband mit:
 
-Gemeinsame Betriebsgrenzen:
+- OH-58D,
+- AH-64D,
+- UH-60,
+- CH-47.
+
+Die frühere Planung mit ausschließlich OH-58D, AH-64D und UH-60 war deshalb unvollständig.
+
+### 3.2 Satellitenaufnahme 2011
+
+Auf der gemeinsam ausgewerteten Momentaufnahme wurden mindestens gezählt:
 
 ```text
-maximal 4 Spieler-Luftfahrzeuge je nutzbarem Typ
-maximal 4 gleichzeitig aktive KI-Luftfahrzeuge je Typ
-maximal 2 parallele KI-Unterstützungsmissionen
-maximal 2 Luftfahrzeuge je Unterstützungsmission
-endgültige Verluste ohne automatischen Ersatz
-gepoolte Statics
+13 OH-58
+ 7 AH-64
+ 7 UH-60
+ 7 CH-47
+ 1 Mi-8
+ 1 UH-1
 ```
 
-## 3. Spieler-Slots
+Die Zuordnung einzelner AH-64 und UH-60 ist wegen Auflösung, Schattenwurf und ähnlicher Silhouetten teilweise unsicher. Der Gesamtbefund belegt jedoch klar eine gemischte Ramp-Belegung und ein substantielles CH-47-Kontingent.
 
-### 3.1 OH-58D
+Die Aufnahme zeigt nur einen Zeitpunkt. Weitere Flugzeuge können:
 
-| Gruppe | Einheit | Typ | Skill |
-|---|---|---|---|
-| `CLIENT_US_JBAD_OH58D_01` | `CLIENT_US_JBAD_OH58D_01_UNIT_01` | `OH58D` | Client |
-| `CLIENT_US_JBAD_OH58D_02` | `CLIENT_US_JBAD_OH58D_02_UNIT_01` | `OH58D` | Client |
-| `CLIENT_US_JBAD_OH58D_03` | `CLIENT_US_JBAD_OH58D_03_UNIT_01` | `OH58D` | Client |
-| `CLIENT_US_JBAD_OH58D_04` | `CLIENT_US_JBAD_OH58D_04_UNIT_01` | `OH58D` | Client |
+- im Einsatz,
+- in Wartung,
+- in Hallen,
+- auf nicht dargestellten Dispersal-Flächen,
+- oder vorübergehend an anderen Standorten gewesen sein.
 
-### 3.2 AH-64D
+Mi-8 und UH-1 werden als beobachtete externe oder transiente Luftfahrzeuge festgehalten. Sie werden derzeit nicht dem US-Task-Force-Shooter-Bestand zugerechnet.
 
-| Gruppe | Einheit | Typ | Skill |
-|---|---|---|---|
-| `CLIENT_US_JBAD_AH64D_01` | `CLIENT_US_JBAD_AH64D_01_UNIT_01` | `AH-64D_BLK_II` | Client |
-| `CLIENT_US_JBAD_AH64D_02` | `CLIENT_US_JBAD_AH64D_02_UNIT_01` | `AH-64D_BLK_II` | Client |
-| `CLIENT_US_JBAD_AH64D_03` | `CLIENT_US_JBAD_AH64D_03_UNIT_01` | `AH-64D_BLK_II` | Client |
-| `CLIENT_US_JBAD_AH64D_04` | `CLIENT_US_JBAD_AH64D_04_UNIT_01` | `AH-64D_BLK_II` | Client |
-
-### 3.3 UH-60L Community Mod
-
-Die UH-60L-Spielerplätze werden vorbereitet, aber noch nicht in die modfreie Diagnosemission eingesetzt:
-
-| Gruppe | Einheit | vorgesehener Typ | Status |
-|---|---|---|---|
-| `CLIENT_US_JBAD_UH60L_01` | `CLIENT_US_JBAD_UH60L_01_UNIT_01` | `UH-60L` | optional, Test ausstehend |
-| `CLIENT_US_JBAD_UH60L_02` | `CLIENT_US_JBAD_UH60L_02_UNIT_01` | `UH-60L` | optional, Test ausstehend |
-| `CLIENT_US_JBAD_UH60L_03` | `CLIENT_US_JBAD_UH60L_03_UNIT_01` | `UH-60L` | optional, Test ausstehend |
-| `CLIENT_US_JBAD_UH60L_04` | `CLIENT_US_JBAD_UH60L_04_UNIT_01` | `UH-60L` | optional, Test ausstehend |
-
-Vor der endgültigen Aufnahme wird geprüft, ob eine Mission mit diesen Einheiten von Servern und Clients ohne installierten Community Mod geladen werden kann. Falls nicht, werden eine Kernmission und eine UH-60L-Modvariante getrennt geführt.
-
-## 4. KI-Templates
-
-Alle Vorlagen werden als **Late Activation** angelegt.
-
-### 4.1 OH-58D Armed Reconnaissance
+## 4. Verbindlicher logischer Bestand
 
 ```text
-Gruppenname: TPL_AIR_US_JBAD_OH58D_RECON_2SHIP
-Einheiten:
-  TPL_AIR_US_JBAD_OH58D_RECON_2SHIP_UNIT_01
-  TPL_AIR_US_JBAD_OH58D_RECON_2SHIP_UNIT_02
-Typ: OH58D
-Gruppengröße: 2
-MOOSE Asset-Gruppen: 2
-maximal gleichzeitig verfügbar: 4 Luftfahrzeuge
+24 OH-58D
+ 8 AH-64D
+ 8 UH-60-Familie
+ 8 CH-47 Heavy Lift
 ```
 
-Vorgesehene Rollen:
-
-- Reconnaissance
-- Armed Reconnaissance
-- Escort
-- leichte CAS-Unterstützung
-
-### 4.2 AH-64D CAS
+Gesamt:
 
 ```text
-Gruppenname: TPL_AIR_US_JBAD_AH64D_CAS_2SHIP
-Einheiten:
-  TPL_AIR_US_JBAD_AH64D_CAS_2SHIP_UNIT_01
-  TPL_AIR_US_JBAD_AH64D_CAS_2SHIP_UNIT_02
-Typ: AH-64D_BLK_II
-Gruppengröße: 2
-MOOSE Asset-Gruppen: 2
-maximal gleichzeitig verfügbar: 4 Luftfahrzeuge
+48 Luftfahrzeuge
 ```
 
-Vorgesehene Rollen:
+Diese 48 Luftfahrzeuge müssen und dürfen nicht gleichzeitig physisch auf der DCS-Ramp dargestellt werden.
 
-- CAS
-- Escort
-- Armed Reconnaissance
-- Luft-QRF
+## 5. Vier getrennte Darstellungsebenen
 
-### 4.3 UH-60 MEDEVAC Lead
+### 5.1 Logischer Bestand
+
+Der CampaignState beziehungsweise der MOOSE-SQUADRON-Bestand ist die autoritative Anzahl noch vorhandener Luftfahrzeuge.
+
+### 5.2 Aktive Luftfahrzeuge
+
+Spieler- und KI-Luftfahrzeuge, die aktuell gespawnt oder für einen Einsatz reserviert sind.
+
+### 5.3 Sichtbare Statics
+
+Ein begrenzter visueller Ausschnitt der inaktiven Bestandsmaschinen.
+
+### 5.4 Virtuelle Reserve
+
+Noch vorhandene Maschinen, die nicht sichtbar auf der Ramp stehen. Sie gelten beispielsweise als:
+
+- in Hallen,
+- in Wartung,
+- auf nicht modellierten Abstellflächen,
+- oder als nicht sichtbarer Bereitschaftsbestand.
+
+## 6. Verlust- und Nachrückregel
+
+Ein endgültiger Verlust reduziert den logischen Gesamtbestand dauerhaft:
 
 ```text
-Gruppenname: TPL_AIR_US_JBAD_UH60_MEDEVAC_LEAD_1SHIP
-Einheit: TPL_AIR_US_JBAD_UH60_MEDEVAC_LEAD_1SHIP_UNIT_01
-Typ: nach Diagnose UH-60A oder UH-60L
-Gruppengröße: 1
-MOOSE Asset-Gruppen: 3
+verbleibender Bestand
+= Ausgangsbestand
+- endgültig verlorene Spielerflugzeuge
+- endgültig verlorene KI-Flugzeuge
+- zerstörte Bestands-Statics
 ```
 
-### 4.4 UH-60 MEDEVAC Cover
+Ein anderes, zuvor virtuelles Reserveflugzeug darf anschließend einen späteren Einsatz übernehmen. Das ist kein automatischer Ersatz von außen, sondern ein anderes bereits vorhandenes Bestandsflugzeug.
+
+Ein während der Mission zerstörtes Static wird nicht unmittelbar an derselben Stelle neu erzeugt. Eine kontrollierte neue Ramp-Verteilung darf erst:
+
+- beim nächsten Missionsstart,
+- oder durch einen später ausdrücklich implementierten Ramp-/Wartungszyklus
+
+erfolgen.
+
+Maximal sichtbare Statics je Typ:
 
 ```text
-Gruppenname: TPL_AIR_US_JBAD_UH60_MEDEVAC_COVER_1SHIP
-Einheit: TPL_AIR_US_JBAD_UH60_MEDEVAC_COVER_1SHIP_UNIT_01
-Typ: nach Diagnose UH-60A oder UH-60L
-Gruppengröße: 1
-MOOSE Asset-Gruppen: 3
+min(
+  konfigurierte Static-Obergrenze,
+  verbleibender Bestand
+  - aktive Spieler
+  - aktive KI
+  - bereits reservierte Einsätze
+)
 ```
 
-Die zwei UH-60-SQUADRONs teilen den historischen Gesamtbestand funktional in drei Lead- und drei Cover-Luftfahrzeuge. Ein `MedevacPackageCoordinator` darf nur vollständige Pakete aus genau einem Lead und einem Cover freigeben. Die globale KI-Grenze verhindert mehr als vier gleichzeitig aktive UH-60.
+## 7. Parkplatz- und Flächenmodell
 
-Verbindliche Paketregel:
+### 7.1 Festgestellte DCS-Kapazität
+
+Die Diagnose hat für Jalalabad insgesamt 50 MOOSE-/DCS-Parking-Einträge geliefert.
+
+Davon wurden anhand der Karte und der Satellitenaufnahme ungefähr 36 Positionen als für die reale Hubschrauberbelegung vergleichbar oder funktional geeignet identifiziert.
+
+Wichtige Bereiche:
 
 ```text
-1 Lead landet und übernimmt Verwundete oder Personal
-1 Cover bleibt in der Luft und sichert den Landevorgang
-kein regulärer Single-Ship-MEDEVAC
+G01-G07   kleiner OH-58D-Bereich
+C01-C14   großer Heavy-Lift-/CH-47-Bereich
+weitere südliche und westliche Aprons für AH-64D und UH-60
 ```
 
-## 5. Geplante MOOSE-Struktur
+DCS-Flächen und reale Satellitenpositionen stimmen nicht 1:1 überein. Deshalb sind visuelle Anpassungen und frei platzierte Statics zulässig, solange keine operativen Flächen blockiert werden.
+
+### 7.2 Spielerbegrenzung
+
+Die ursprünglich geplanten vier Spielerluftfahrzeuge je Typ sind für Jalalabad aufgehoben.
+
+Verbindlich:
 
 ```text
-AW_US_JALALABAD
-├── SQ_6_6_CAV_OH58D
-├── SQ_B_1_10_AVN_AH64D
-├── SQ_JBAD_MEDEVAC_LEAD_UH60
-└── SQ_JBAD_MEDEVAC_COVER_UH60
+maximal 2 Spielerluftfahrzeuge je nutzbarem Typ in Jalalabad
 ```
 
-Der AIRWING wird erst aktiviert, wenn Warehouse-Anker, Airbase-Bezug und alle vier KI-Templates validiert wurden.
-
-## 6. Gepoolte Statics
-
-Verbindliche anfängliche sichtbare Zielzahlen:
-
-| Typ | Gesamtbestand | sichtbare Statics |
-|---|---:|---:|
-| OH-58D | 24 | 8 |
-| AH-64D | 8 | 4 |
-| UH-60-Familie | 6 | 2 |
-
-Namen:
+### 7.3 Verpflichtende Kern-Spielergruppen
 
 ```text
-STATIC_AIR_US_JBAD_OH58D_01 bis 08
-STATIC_AIR_US_JBAD_AH64D_01 bis 04
-STATIC_AIR_US_JBAD_UH60_01 bis 02
+CLIENT_US_JBAD_OH58D_01
+CLIENT_US_JBAD_OH58D_02
+
+CLIENT_US_JBAD_AH64D_01
+CLIENT_US_JBAD_AH64D_02
+
+CLIENT_US_JBAD_CH47_01
+CLIENT_US_JBAD_CH47_02
 ```
 
 Regeln:
 
-- Statics gehören zum lokalen Gesamtbestand und werden nicht addiert.
-- Sie stehen außerhalb der operativen Spieler- und KI-Parkflächen.
-- Sie werden keinem bestimmten Slot oder Template dauerhaft zugeordnet.
-- Zerstörte Statics zählen später als endgültiger Verlust.
-- Die konkrete Livery wird nach dem DCS-/Livery-Diagnoselauf festgelegt.
+- eine DCS-Gruppe je Spielerluftfahrzeug,
+- genau eine Einheit je Gruppe,
+- Skill `Client`,
+- Cold Start,
+- Einheitennamen mit Suffix `-1`,
+- Client-Slots werden nicht als KI-Templates wiederverwendet.
 
-## 7. Warehouse und Airbase
-
-### MOOSE-Airbase
-
-```text
-DCS-/MOOSE-Name: Jalalabad
-MOOSE-Objekt: AIRBASE:FindByName("Jalalabad")
-Airbase-ID: wird durch DumpAirbaseParking.lua bestätigt
-```
-
-### Warehouse-Anker
-
-Erwarteter Name:
+### 7.4 Optionale UH-60L-Spielergruppen
 
 ```text
-WH_AIR_US_JALALABAD
+CLIENT_US_JBAD_UH60L_01
+CLIENT_US_JBAD_UH60L_02
 ```
 
-Der Diagnose-Test prüft:
+Es gelten nur zwei zulässige Zustände:
 
-1. ob ein benanntes Missions-`STATIC` oder `UNIT` bereits vorhanden ist,
-2. welche `STATIC`-, `UNIT`- und `SCENERY`-Objekte sich im Umfeld befinden,
-3. ob lediglich DCS-Airbase-Storage vorhanden ist,
-4. ob ein technisches Warehouse-Static gesetzt werden muss.
+```text
+0 Gruppen vorhanden
+oder
+2 Gruppen vorhanden
+```
 
-Solange kein benannter Missionsanker erkannt wird, wird kein AIRWING erzeugt.
+Ein einzelner UH-60L-Slot ist nicht zulässig. Die Kernmission muss ohne installierten Community-Mod lauffähig bleiben.
 
-## 8. Benötigte Zonen
+### 7.5 KI-Template-Positionen
+
+```text
+TPL_AIR_US_JBAD_OH58D_RECON_2SHIP          2 Positionen
+TPL_AIR_US_JBAD_AH64D_CAS_2SHIP            2 Positionen
+TPL_AIR_US_JBAD_UH60_MEDEVAC_LEAD_1SHIP    1 Position
+TPL_AIR_US_JBAD_UH60_MEDEVAC_COVER_1SHIP   1 Position
+TPL_AIR_US_JBAD_CH47_HEAVYLIFT_1SHIP       1 Position
+```
+
+Gesamt:
+
+```text
+7 Template-Startpositionen
+```
+
+Alle Templates:
+
+- BLUE / USA,
+- Skill `High`,
+- Late Activation,
+- nicht `Uncontrolled`,
+- Cold Start.
+
+### 7.6 Formale Operationskapazität
+
+```text
+6 verpflichtende Kern-Spielerpositionen
+7 KI-Template-Startpositionen
+--------------------------------------
+13 Kern-Operationspositionen
+
++ 2 optionale UH-60L-Spielerpositionen
+= 15 Operationspositionen mit Mod
+```
+
+Von 36 vergleichbaren Flächen verbleiben damit 23 ohne beziehungsweise 21 mit UH-60L-Mod für sichtbare Ramp-Darstellung und Sicherheitsreserve.
+
+## 8. Sichtbare Static-Obergrenzen
+
+Erster verbindlicher Ramp-Zustand:
+
+```text
+7 OH-58D-Statics
+4 AH-64D-Statics
+4 UH-60A-Statics
+5 CH-47-Statics
+----------------
+20 sichtbare Statics
+```
+
+Namen:
+
+```text
+STATIC_AIR_US_JBAD_OH58D_01 bis _07
+STATIC_AIR_US_JBAD_AH64D_01 bis _04
+STATIC_AIR_US_JBAD_UH60_01 bis _04
+STATIC_AIR_US_JBAD_CH47_01 bis _05
+```
+
+Die Statics:
+
+- gehören zum logischen Bestand,
+- sind keine zusätzlichen Luftfahrzeuge,
+- dürfen frei auf geeigneten Apronflächen platziert werden,
+- dürfen keine Spawn-, Rückkehr- oder Rollposition blockieren,
+- benötigen ausreichenden Rotorabstand,
+- werden keinem bestimmten Spieler- oder KI-Asset dauerhaft zugeordnet.
+
+Die 20 Statics plus 13 Kern-Operationspositionen ergeben konservativ 33 belegte oder reservierte Flächen. Mit zwei optionalen UH-60L-Slots sind es 35 von 36.
+
+## 9. MOOSE-Struktur
+
+```text
+AW_US_JALALABAD
+├── SQ_US_JBAD_OH58D_6_6_CAV
+├── SQ_US_JBAD_AH64D_B_1_10_AVN
+├── SQ_US_JBAD_UH60_UTILITY_MEDEVAC
+└── SQ_US_JBAD_CH47_HEAVYLIFT
+```
+
+### 9.1 OH-58D
+
+```text
+Bestand: 24
+Templategröße: 2
+MOOSE-Asset-Gruppen: 12
+Capability: RECON
+```
+
+### 9.2 AH-64D
+
+```text
+Bestand: 8
+Templategröße: 2
+MOOSE-Asset-Gruppen: 4
+Capability: CAS
+```
+
+### 9.3 UH-60
+
+```text
+Bestand: 8
+Templategröße: 1
+MOOSE-Asset-Gruppen: 8
+Capabilities: Transport, Land, Ground Escort
+```
+
+Der historische Bestand wird als ein gemeinsames SQUADRON geführt. Lead und Cover sind getrennte Payloadtemplates und keine getrennten Bestände.
+
+MEDEVAC-Regel:
+
+```text
+1 Lead + 1 Cover
+kein Single-Ship-Fallback
+```
+
+### 9.4 CH-47
+
+```text
+Bestand: 8
+Templategröße: 1
+MOOSE-Asset-Gruppen: 8
+Capabilities: Troop Transport, Cargo Transport, Land
+```
+
+Der interne DCS-Typ des verfügbaren CH-47 wird aus folgendem Template erkannt:
+
+```text
+TPL_AIR_US_JBAD_CH47_HEAVYLIFT_1SHIP
+```
+
+Dieser erkannte Typ wird anschließend verbindlich für CH-47-Spielergruppen und Statics geprüft. Dadurch wird kein unbestätigter interner Typname fest in den Validator geschrieben.
+
+## 10. Funktionszonen
 
 ```text
 ZONE_AIR_US_JBAD_STATIC_OH58D
 ZONE_AIR_US_JBAD_STATIC_AH64D
 ZONE_AIR_US_JBAD_STATIC_UH60
+ZONE_AIR_US_JBAD_STATIC_CH47
 ZONE_AIR_US_JBAD_MEDEVAC_READY
+ZONE_AIR_US_JBAD_CH47_READY
+ZONE_AIR_US_JBAD_HEAVYLIFT_LOAD
 ZONE_AIR_US_JBAD_LOGISTICS_LOAD
 ZONE_AIR_US_JBAD_LOGISTICS_UNLOAD
 ZONE_AIR_US_JBAD_SLING_PICKUP
 ZONE_AIR_US_JBAD_C130_UNLOAD
 ```
 
-Vorhandene übergeordnete Zonen wie `OMW_BLUE_OBJECTIVE_Airport` und `ZONE_TM01_TARGET_JALALABAD` bleiben bestehen, ersetzen aber keine der kleineren funktionsspezifischen Air-Ops-Zonen.
+C1-C14 dient als bevorzugter CH-47-/Heavy-Lift-Bereich. Die genaue Verteilung der fünf CH-47-Statics, zwei CH-47-Spielerpositionen sowie KI-/Rückkehrflächen wird visuell im Missionseditor festgelegt.
 
-## 9. Parking-Anforderungen
-
-Die endgültigen Parking-IDs werden erst nach `DumpAirbaseParking.lua` festgelegt.
-
-Benötigt werden getrennte Flächen für:
-
-- vier OH-58D-Spielerslots,
-- vier AH-64D-Spielerslots,
-- optional vier UH-60L-Spielerslots,
-- mindestens zwei kollisionsfreie OH-58D-KI-Spots,
-- mindestens zwei kollisionsfreie AH-64D-KI-Spots,
-- mindestens zwei getrennte UH-60-MEDEVAC-Bereitschaftspositionen,
-- 8 OH-58D-, 4 AH-64D- und 2 UH-60-Staticpositionen,
-- C-130-Roll- und Entladebetrieb,
-- Logistik- und Außenlastbetrieb.
-
-KI-Spawnpositionen und Staticflächen dürfen sich nicht überschneiden.
-
-## 10. Diagnosepaket
-
-Das erste Diagnosepaket enthält:
+## 11. Aktivitätsgrenzen
 
 ```text
-DumpAircraftTypes.lua
-DumpAirbaseParking.lua
-ProbeWarehouseAnchor.lua
-ValidateMissionTemplates.lua
-OMW_AirOps_Jalalabad_Bootstrap.lua
+maximale Spieler-Luftfahrzeuge je Typ und Basis: 2
+maximale gleichzeitig aktive KI-Luftfahrzeuge je Typ und Basis: 4
+maximale parallele Unterstützungsmissionen: 2
+maximale Luftfahrzeuge je Unterstützungsmission: 2
+maximale gleichzeitig aktive Unterstützungs-Luftfahrzeuge: 4
 ```
 
-Der Bootstrap arbeitet zunächst mit:
+Diese Grenzen sind von der logischen SQUADRON-Größe zu unterscheiden. Ein SQUADRON kann beispielsweise acht CH-47 besitzen, obwohl höchstens vier gleichzeitig als KI aktiv werden dürfen.
+
+## 12. Warehouse und Airbase
+
+Bestätigt:
+
+```text
+MOOSE-Airbase: Jalalabad
+Airbase-ID: 19
+Parking-Einträge: 50
+Warehouse-Anker: WH_AIR_US_JALALABAD
+Koalition: BLUE
+Land: USA
+DCS-Warehouse verfügbar: ja
+MOOSE-Storage verfügbar: ja
+```
+
+Der AIRWING wird erzeugt durch:
 
 ```lua
-enableRuntimeObjects = false
+AIRWING:New("WH_AIR_US_JALALABAD", "AW_US_JALALABAD")
 ```
 
-Er erzeugt daher noch keinen AIRWING und keine SQUADRONs, sondern bestätigt nur die Voraussetzungen.
+und explizit Jalalabad zugeordnet.
 
-## 11. Erwarteter erster Testlauf
-
-Die Diagnosemission wird ohne Bearbeitung im Mission Editor gestartet und nach etwa 20 bis 30 Sekunden beendet.
-
-Im `dcs.log` werden die Zeilen mit folgenden Präfixen benötigt:
+## 13. Build-Reihenfolge
 
 ```text
-[OMW][AIR-OPS][AIRCRAFT-TYPES]
-[OMW][AIR-OPS][PARKING]
-[OMW][AIR-OPS][WAREHOUSE-PROBE]
-[OMW][AIR-OPS][TEMPLATE-VALIDATION]
-[OMW][AIR-OPS][JBAD-BOOTSTRAP]
+01-jalalabad-bootstrap.lua
+02-dump-airbase-parking.lua
+03-probe-warehouse-anchor.lua
+04-dump-aircraft-types.lua
+05-validate-mission-templates.lua
+06-construct-oh58d-squadron.lua
+07-construct-ah64d-squadron.lua
+08-construct-uh60-squadron.lua
+09-construct-ch47-squadron.lua
+09-finalize-jalalabad-node.lua
 ```
 
-Erwartete Ergebnisse im unveränderten Ausgangszustand:
+Der doppelte numerische Präfix `09` ist technisch unschädlich, da die Reihenfolge ausdrücklich im PowerShell-Builder festgelegt ist. Bei einer späteren Bereinigung darf der Dateiname geändert werden, aber niemals ohne gleichzeitige Builder-Anpassung.
 
-- Typ- und Parking-Dump laufen vollständig durch.
-- Warehouse-Probe empfiehlt voraussichtlich einen technischen Static-Anker.
-- Template-Validierung meldet die noch nicht angelegten Gruppen, Statics und Zonen als fehlend.
-- Bootstrap endet mit `PREREQUISITES_MISSING` und erzeugt keine Laufzeitobjekte.
+## 14. Chronologische Test- und Fehlerhistorie
 
-Diese Fehler sind im ersten Testlauf erwartete Bestandsaufnahme und kein Fehlschlag der Diagnosemission.
+### 14.1 Lokaler Branchwechsel zunächst blockiert
 
-## 12. Freigabekriterien für die Missionseditor-Platzierung
+Ausgangszustand:
 
-Die konkrete ME-Platzierung beginnt erst, wenn aus dem Diagnose-Log bestätigt sind:
+```text
+aktueller Branch: feature/tm02w2f-red-initial-network-fill
+lokal geändert: mission/tests/tm02-red-relay/dist/TM02A.lua
+weitere nicht verfolgte dist-Dateien vorhanden
+```
 
-1. exakter Airbase-Name und Airbase-ID,
-2. vollständige Parking-Tabelle,
-3. verfügbare Typnamen für OH-58D, AH-64D, UH-60A und UH-60L,
-4. Warehouse-Ankerentscheidung,
-5. keine Lua-Fehler in den fünf neuen Skripten.
+Folge:
+
+- Wechsel auf den Jalalabad-Branch wurde zunächst durch die verfolgte lokale Änderung verhindert.
+- Ein später ausgeführtes `git pull --ff-only` aktualisierte versehentlich den weiterhin aktiven TM02-Branch.
+- Der Jalalabad-Builder war dort nicht vorhanden.
+
+Korrektur:
+
+```powershell
+git stash push -m "Preserve local TM02A bundle before Jalalabad AirOps switch" -- mission/tests/tm02-red-relay/dist/TM02A.lua
+
+git switch --track origin/feature/jalalabad-air-operations-diagnostics
+```
+
+Erkenntnis:
+
+Ein erfolgreicher Pull bedeutet nicht, dass der richtige Branch aktiv ist. Vor jedem Build werden `git branch --show-current` und `git rev-parse HEAD` geprüft.
+
+### 14.2 Erster reproduzierbarer Build
+
+Bestätigter Stand:
+
+```text
+Commit: 69c037beb94bc38befb3eff78021e42da2f51d5c
+Bundlegröße: 9489 Bytes
+SHA-256: 7B754CD8F964A868B65B95C62B01C5C1891ABF01160EBC72F5D20E0D3995036A
+```
+
+Builder-Ausgabe und unabhängiges `Get-FileHash` stimmten überein.
+
+### 14.3 Erster DCS-Diagnoselauf: PARTIAL
+
+Erfolgreich:
+
+- Jalalabad erkannt,
+- Airbase-ID 19,
+- 50 Parking-Einträge ausgelesen,
+- Parking-Typen und freie Positionen protokolliert,
+- fehlende Gruppen, Statics und Zonen erkannt.
+
+Fehler:
+
+```text
+STATIC not found for: WH_AIR_US_JALALABAD
+Error in timer function
+```
+
+Ursache:
+
+`STATIC:FindByName(name)` wirft in der verwendeten MOOSE-Version bei einem fehlenden Static standardmäßig einen Fehler.
+
+Betroffen:
+
+```text
+01-jalalabad-bootstrap.lua
+03-probe-warehouse-anchor.lua
+05-validate-mission-templates.lua
+```
+
+Korrektur:
+
+```lua
+STATIC:FindByName(name, false)
+```
+
+Ergebnisbewertung:
+
+```text
+PARTIAL – Parking- und Airbase-Diagnose gültig; Warehouse-/Bootstrap-Pfade mussten erneut getestet werden.
+```
+
+### 14.4 Retest ohne Warehouse-Anker: PASS
+
+Bestätigt:
+
+```text
+STATIC found=false
+UNIT found=false
+Airbase found=true name=Jalalabad
+DCS warehouse verfügbar
+MOOSE storage verfügbar
+WAITING: Warehouse anchor missing
+```
+
+Keine Timerfehler mehr.
+
+### 14.5 Erster Warehouse-Anker-Lauf: FAIL durch nicht gespeicherten Namen
+
+Das statische Objekt war sichtbar platziert, aber der Einheitenname `WH_AIR_US_JALALABAD` war im Missionseditor nicht gespeichert worden.
+
+Log:
+
+```text
+STATIC found=false
+WAREHOUSE_ANCHOR MISSING
+WAITING: Warehouse anchor missing
+```
+
+Ursache:
+
+Missionseditor-Benennung beziehungsweise Speichern, kein Lua-Fehler.
+
+Korrektur:
+
+- Einheitenname erneut setzen,
+- Mission ausdrücklich speichern,
+- Test wiederholen.
+
+Erkenntnis:
+
+Bei einem sichtbaren, aber nicht gefundenen ME-Objekt zuerst Gruppen-/Einheitenname und gespeicherte `.miz` prüfen.
+
+### 14.6 Warehouse-Anker und AIRWING-Konstruktion: PASS
+
+Bestätigt:
+
+```text
+STATIC found=true
+coalition=Blue
+country=USA
+DCS warehouse call successful=true available=true
+MOOSE storage call successful=true available=true
+WAREHOUSE_ANCHOR OK WH_AIR_US_JALALABAD
+AIRWING constructed and explicitly linked
+```
+
+Das AIRWING wurde in dieser Stufe bewusst nicht gestartet.
+
+### 14.7 OH-58D-SQUADRON: PASS
+
+Bestätigt:
+
+```text
+Template: TPL_AIR_US_JBAD_OH58D_RECON_2SHIP
+DCS-Typ: OH58D
+Templategröße: 2
+logischer Bestand: 24
+Asset-Gruppen: 12
+Capability: RECON
+AIRWING-Verknüpfung: erfolgreich
+```
+
+Das AIRWING blieb ungestartet; keine spontanen Flugzeugspawns.
+
+### 14.8 AH-64D-SQUADRON: PASS
+
+Bestätigt:
+
+```text
+Template: TPL_AIR_US_JBAD_AH64D_CAS_2SHIP
+DCS-Typ: AH-64D_BLK_II
+Templategröße: 2
+logischer Bestand: 8
+Asset-Gruppen: 4
+Capability: CAS
+AIRWING-Verknüpfung: erfolgreich
+```
+
+### 14.9 Unbesetzte Client-Slots falsch über Runtime-GROUP geplant
+
+Problem:
+
+Unbesetzte `Client`-Gruppen sind nicht zuverlässig als aktive MOOSE-`GROUP` verfügbar.
+
+Korrektur:
+
+Client-Slots und Late-Activation-Templates werden über:
+
+```lua
+_DATABASE.Templates.Groups
+```
+
+validiert.
+
+### 14.10 Zu frühe Vollständigkeitserklärung 24/8/6
+
+Fehlerhafte Annahme:
+
+```text
+24 OH-58D / 8 AH-64D / 6 UH-60 = vollständiger Jalalabad-Knoten
+```
+
+Die Satellitenbilder und zeitgenössischen Berichte zeigten ein substanzielles CH-47-Kontingent. Zusätzlich waren mindestens sieben UH-60 sichtbar, sodass ein Bestand von nur sechs nicht tragfähig war.
+
+Korrektur:
+
+```text
+24 OH-58D / 8 AH-64D / 8 UH-60 / 8 CH-47
+```
+
+Der damalige Abschlussgate wurde sofort blockiert, damit kein falsches `RESULT: COMPLETE` ausgegeben werden konnte.
+
+### 14.11 Parkplatzanalyse und Spielerreduktion
+
+Die reale sichtbare Ramp-Belegung ist in DCS nicht 1:1 reproduzierbar. Insbesondere stehen für den realen OH-58D-Bereich mit mehr als zehn Maschinen nur sieben geeignete G-Positionen zur Verfügung.
+
+Entscheidung:
+
+```text
+Spielerplätze von 4 auf 2 je Typ reduzieren
+Gesamtbestand virtuell führen
+sichtbare Statics begrenzen
+```
+
+Damit wird nicht versucht, alle 48 Bestandsflugzeuge gleichzeitig darzustellen.
+
+## 15. Was gut funktioniert hat
+
+- Repository-basierter Source-/Builder-Workflow.
+- Reproduzierbarer PowerShell-Build mit Commit- und SHA-Ausgabe.
+- Erneutes Einbetten des Bundles in die `.miz` konnte über Hash nachgewiesen werden.
+- MOOSE erkannte Jalalabad und alle 50 Parking-Einträge zuverlässig.
+- DCS-Warehouse und MOOSE-Storage sind am Flugplatz verfügbar.
+- Benannter Warehouse-Anker funktioniert als AIRWING-Anker.
+- AIRWING-Konstruktion und explizite Airbase-Zuordnung funktionieren.
+- OH-58D- und AH-64D-SQUADRON-Konstruktion funktionieren.
+- MOOSE-Asset-Gruppenzählung wurde korrekt von Luftfahrzeuganzahl und Templategröße abgeleitet.
+- Fehlende Objekte werden nach der `STATIC:FindByName(..., false)`-Korrektur kontrolliert gemeldet.
+- Browser-Upload der `dcs.log` reicht für die meisten PASS/FAIL-Prüfungen.
+
+## 16. Was nicht gut funktioniert hat
+
+- Zu viele sehr kleine Einzeltests führten zu unnötigem Zeitaufwand.
+- Der aktive Branch wurde anfangs nicht vor dem Pull ausreichend abgesichert.
+- Eine alte lokale generierte Datei blockierte den Branchwechsel.
+- Fehlende Statics verursachten aufgrund eines falschen MOOSE-Aufrufs Timerfehler.
+- Ein Missionseditor-Name wurde nicht gespeichert und erzeugte einen vermeintlichen Codefehler.
+- Client-Slots sollten zunächst über die falsche Runtime-Abstraktion geprüft werden.
+- Die historische ORBAT wurde zu früh als vollständig erklärt.
+- Satellitenbild und Parkflächen wurden zu spät in die Bestandsplanung einbezogen.
+- Sichtbarer Ramp-Bestand und logischer Gesamtbestand wurden zunächst vermischt.
+- Vier Spielerplätze je Typ waren für Jalalabad angesichts der real nutzbaren Flächen zu hoch.
+
+## 17. Gegenmaßnahmen für das gesamte Projekt
+
+- Einheitlicher Workflow in `docs/22-test-mission-build-transfer-and-validation-workflow.md`.
+- Vor jedem Build: Branch, Status und Commit prüfen.
+- Nach jedem Build: Bundlehash prüfen und Datei im ME neu auswählen.
+- Ergebnisse standardmäßig nur über `dcs.log`; `.miz` nur bei klar definiertem Bedarf.
+- Jeder Fehlerlauf bleibt als eigener Bericht erhalten.
+- Keine Vollständigkeitserklärung ohne historische Plausibilitätsprüfung und DCS-Gesamttest.
+- Bestands-, Aktiv-, Static- und Reserveebene getrennt modellieren.
+- Größere Knoten in einem vollständigen Arbeitsgang umsetzen, nachdem technische Grundannahmen isoliert bestätigt wurden.
+
+## 18. Aktueller Implementierungsstand
+
+### In DCS bestätigt
+
+- Airbase und Parking,
+- Warehouse-Anker,
+- DCS-Warehouse und MOOSE-Storage,
+- AIRWING-Konstruktion,
+- OH-58D-SQUADRON,
+- AH-64D-SQUADRON.
+
+### Im Repository umgesetzt, aber noch nicht im abschließenden DCS-Lauf bestätigt
+
+- UH-60-Bestand auf acht angehoben,
+- CH-47-Templateerkennung,
+- CH-47-SQUADRON mit acht Single-Ship-Asset-Gruppen,
+- CH-47-Heavy-Lift-Payload,
+- zwei Spielerplätze je Typ,
+- sechs verpflichtende Kern-Spielergruppen,
+- 20 Static-Obergrenzen,
+- elf Funktionszonen,
+- korrigierter Finalizer,
+- virtuelle Reserve und Parkplatzmodell,
+- Builder-Version `JBAD-AIR-OPS-COMPLETE-2`.
+
+### Noch offen
+
+- Missionseditor-Platzierung des CH-47-Templates,
+- tatsächlicher interner DCS-Typ des gewählten CH-47,
+- zwei CH-47-Client-Slots,
+- korrigierte zwei OH-58D- und zwei AH-64D-Client-Slots,
+- zwei UH-60A-Templates,
+- 20 Statics,
+- elf Zonen,
+- visuelle C1-C14- und Ramp-Aufteilung,
+- vollständiger DCS-Abschlusslauf,
+- späterer persistenter Static-/Ramp-Manager für Verluste und Neustarts.
+
+## 19. Aktueller Build- und Übertragungsablauf
+
+### Repository
+
+```powershell
+cd P:\DCS-DEV\Operation-Mountain-Watch
+
+git branch --show-current
+git status --short
+git pull --ff-only
+git rev-parse HEAD
+```
+
+Der erwartete Commit wird vor dem nächsten Test separat genannt und muss exakt übereinstimmen.
+
+### Build
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass `
+  -File ".\tools\build-jalalabad-air-operations-bundle.ps1"
+```
+
+### Hash prüfen
+
+```powershell
+Get-FileHash `
+  .\mission\tests\jalalabad-air-operations\dist\OMW_AirOps_Jalalabad.lua `
+  -Algorithm SHA256
+```
+
+### Mission aktualisieren
+
+Im Missionseditor:
+
+```text
+DO SCRIPT FILE -> OMW_AirOps_Jalalabad.lua
+```
+
+öffnen, die neue Datei erneut auswählen und Mission speichern.
+
+## 20. Aktueller vollständiger Missionseditor-Auftrag
+
+Die ausführbare Liste steht in:
+
+```text
+mission/tests/jalalabad-air-operations/expected/jalalabad-complete-node-acceptance.md
+```
+
+Sie verlangt zusammengefasst:
+
+```text
+5 KI-Templates
+6 verpflichtende Kern-Spielergruppen
+0 oder 2 optionale UH-60L-Spielergruppen
+20 sichtbare Statics
+11 Funktionszonen
+1 Warehouse-Anker
+4 MOOSE-SQUADRONs
+```
+
+## 21. Abschlusskriterium
+
+Jalalabad gilt erst als abgeschlossen, wenn der DCS-Gesamttest meldet:
+
+```text
+[OMW][AirOps.JBAD.COMPLETE] RESULT: COMPLETE. Jalalabad AirOps node OPERATIONAL; AIRWING started; COMMANDER linked; missionsQueued=0; spontaneousSpawns=0.
+```
+
+und zusätzlich gilt:
+
+- keine relevanten Lua-/Timerfehler,
+- alle verpflichtenden ME-Objekte validiert,
+- keine spontanen OMW-Luftfahrzeugspawns ohne Auftrag,
+- Spieler-, KI-, Static- und Rollflächen visuell kollisionsfrei,
+- CH-47-Typ korrekt erkannt,
+- Ergebnisbericht im Repository,
+- PR bleibt bis zur ausdrücklichen Freigabe Draft.
