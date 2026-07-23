@@ -3,7 +3,10 @@ local function log(msg) env.info(TAG .. " " .. tostring(msg)) end
 
 local function main()
   local anchorName = "WH_AIR_US_JALALABAD"
-  local static = STATIC and STATIC:FindByName(anchorName) or nil
+
+  -- A missing named anchor is expected before the first Mission Editor setup.
+  -- STATIC:FindByName raises by default, therefore use RaiseError=false.
+  local static = STATIC and STATIC:FindByName(anchorName, false) or nil
   local unit = UNIT and UNIT:FindByName(anchorName) or nil
 
   log("Anchor name=" .. anchorName)
