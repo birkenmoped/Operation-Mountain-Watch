@@ -50,12 +50,25 @@ OMW.AirOps.Jalalabad = {
 
   Parking = {
     ComparableHelicopterPositions = 36,
+
+    -- Client positions are reserved at runtime so MOOSE must not use them for
+    -- dynamic AI spawning.
     CorePlayerPositions = 6,
     OptionalUH60LPlayerPositions = 2,
-    AITemplateSeedPositions = 7,
-    CoreOperationalDemand = 13,
-    OperationalDemandWithUH60L = 15,
-    Model = "VIRTUAL_INVENTORY_PHYSICAL_SPAWN_POOL_FREEPLACED_STATICS"
+
+    -- Seven aircraft are placed in the Mission Editor only as Late Activation
+    -- authoring templates. They are never activated and therefore do not consume
+    -- seven runtime parking positions.
+    TemplateAuthoringAircraft = 7,
+
+    -- The global support limit allows at most four AI aircraft at once. Reserve
+    -- four suitable free runtime positions, including at least two CH-47-capable
+    -- positions and at least two small/medium helicopter positions.
+    DynamicAIParkingReserve = 4,
+    CoreRuntimeParkingDemand = 10,
+    RuntimeParkingDemandWithUH60L = 12,
+
+    Model = "CLIENT_RESERVED_DYNAMIC_AI_POOL_FREEPLACED_STATICS_LATE_ACTIVATION_TEMPLATES"
   },
 
   -- Visible caps are deliberately lower than the inventory and lower than the
@@ -85,7 +98,9 @@ OMW.AirOps.Jalalabad = {
     PackageSize = 2,
     LeadAircraft = 1,
     CoverAircraft = 1,
-    AllowSingleShip = false
+    AllowSingleShip = false,
+    DCSGroupModel = "TWO_INDEPENDENT_SINGLE_SHIP_GROUPS",
+    CoordinationModel = "ONE_LOGICAL_MEDEVAC_PACKAGE"
   },
 
   Templates = {
@@ -169,7 +184,7 @@ local function validate()
   cfg.Airbase = airbase
   cfg.Airwing = result
   log("AIRWING constructed and explicitly linked. Awaiting corrected complete-node assembly before Start().")
-  log("RAMP MODEL: inventory=24/8/8/8 visibleCaps=7/4/4/5 playerSlotsPerType=2 operationalParking=13+2optional of 36 comparable positions.")
+  log("RAMP MODEL: inventory=24/8/8/8 visibleCaps=7/4/4/5 clients=6+2optional dynamicAIReserve=4 runtimeDemand=10+2optional templateAircraft=7(non-runtime) of 36 comparable positions.")
 end
 
 if SCHEDULER then
