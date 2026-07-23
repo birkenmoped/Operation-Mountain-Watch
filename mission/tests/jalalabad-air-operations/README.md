@@ -1,20 +1,20 @@
-# Jalalabad Air Operations Test
+# Jalalabad Air Operations – vollständiger Knotenabschluss
 
-## Ziel und Status
+## Status
 
-Dieser Test bereitet die erste MOOSE-AIRWING-/SQUADRON-Umsetzung für Jalalabad / FOB Fenty vor.
+Die isolierten Vorprüfungen sind abgeschlossen:
 
-Abgeschlossen und als PASS dokumentiert sind:
+- Jalalabad als MOOSE-Airbase ID 19 erkannt,
+- 50 Parking-Einträge ausgelesen,
+- Warehouse-Anker `WH_AIR_US_JALALABAD` als BLUE-/USA-Static bestätigt,
+- natives DCS-Warehouse und MOOSE-Storage verfügbar,
+- `AW_US_JALALABAD` erfolgreich konstruiert und Jalalabad explizit zugeordnet,
+- OH-58D-Template `OH58D`, Gruppengröße 2, 12 Asset-Gruppen aus 24 Luftfahrzeugen bestätigt,
+- AH-64D-Template `AH-64D_BLK_II`, Gruppengröße 2, 4 Asset-Gruppen aus 8 Luftfahrzeugen bestätigt.
 
-- Diagnose des leeren Ausgangszustands,
-- Erkennung des Warehouse-Ankers,
-- Konstruktion des nicht gestarteten Jalalabad-AIRWING,
-- explizite Zuordnung des AIRWING zu Jalalabad,
-- Konstruktion und Verknüpfung des OH-58D-SQUADRONs mit 24 Luftfahrzeugen in 12 zweischiffigen Asset-Gruppen.
+Ab jetzt gibt es keine weiteren Einzelfreigaben pro Objekt. Die Mission wird in einem einzigen Arbeitsgang zum vollständigen Jalalabad-Air-Ops-Knoten ergänzt und anschließend mit einem Gesamttest abgenommen.
 
-Die aktuelle Stufe ergänzt genau ein zweischiffiges AH-64D-KI-Template und prüft die Konstruktion und Verknüpfung des zweiten `SQUADRON`. Das AIRWING wird weiterhin nicht gestartet; es werden keine Aufträge erzeugt und keine Luftfahrzeuge gespawnt.
-
-Verbindlicher lokaler Bestand:
+## Verbindliche lokale ORBAT
 
 ```text
 24 OH-58D – 6-6 Cavalry / Task Force Six Shooters
@@ -36,9 +36,7 @@ SHA-256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
 Operation_Mountain_Watch_Jalalabad_AirOps_Test_01.miz
 ```
 
-Die Mission lädt neben MOOSE weiterhin das TM02W2F-Testbundle. Die Jalalabad-Air-Ops-Objekte werden stufenweise und isoliert ergänzt.
-
-## Verbindlicher Repository-Workflow
+## Repository-Workflow
 
 ```powershell
 cd P:\DCS-DEV\Operation-Mountain-Watch
@@ -63,22 +61,15 @@ Die Datei unter `dist` wird nicht manuell bearbeitet. Änderungen erfolgen aussc
 
 ## Mission aktualisieren
 
-Im DCS-Missionseditor:
+Nach jedem Build im DCS-Missionseditor:
 
-1. vorhandenen Trigger mit `DO SCRIPT FILE` öffnen,
-2. diese Datei erneut auswählen:
-
-```text
-mission\tests\jalalabad-air-operations\dist\OMW_AirOps_Jalalabad.lua
-```
-
+1. vorhandenen Trigger `DO SCRIPT FILE -> OMW_AirOps_Jalalabad.lua` öffnen,
+2. die neu gebaute Datei erneut auswählen,
 3. Mission speichern.
 
-Das erneute Auswählen ist nach jedem lokalen Build erforderlich, weil DCS die Lua-Datei beim Speichern in die `.miz` einbettet. Ein späteres Neubauen der externen Datei aktualisiert die bereits gespeicherte Mission nicht automatisch.
+DCS bettet den Inhalt beim Speichern in die `.miz` ein; ein späterer externer Build aktualisiert die Mission nicht automatisch.
 
 ## Build-Reihenfolge
-
-Der Builder fügt diese Quellen in fester Reihenfolge zusammen:
 
 ```text
 01-jalalabad-bootstrap.lua
@@ -88,73 +79,115 @@ Der Builder fügt diese Quellen in fester Reihenfolge zusammen:
 05-validate-mission-templates.lua
 06-construct-oh58d-squadron.lua
 07-construct-ah64d-squadron.lua
+08-construct-uh60-squadron.lua
+09-finalize-jalalabad-node.lua
 ```
 
-## Erstes Air Operations Manifest
-
-| Pool | Bestand | Spieler maximal | KI maximal lokal | anfänglich sichtbare Statics |
-|---|---:|---:|---:|---:|
-| OH-58D | 24 | 4 | 4 | 8 |
-| AH-64D | 8 | 4 | 4 | 4 |
-| UH-60-Familie | 6 | 4 optional | 4 | 2 |
-
-Die Static-Zahlen sind Zielwerte für den initialen Ramp-Zustand und kein zusätzlicher Bestand.
-
-Erwartete DCS-Typen:
-
-| Rolle | erwarteter DCS-Typ | Status |
-|---|---|---|
-| OH-58D Spieler/KI | `OH58D` | bestätigt |
-| AH-64D Spieler/KI | `AH-64D_BLK_II` | in aktueller Stufe bestätigen |
-| UH-60 KI | `UH-60A` | im DCS-Test bestätigen |
-| UH-60 Spieler | UH-60L Community Mod | optional; Typname noch offen |
-
-KI-`UH-60A` und Spieler-UH-60L bilden denselben konzeptionellen Bestand von sechs UH-60 ab.
-
-## Asset-Gruppen statt Einzelmaschinen
-
-`SQUADRON:New(TemplateGroupName, Ngroups, SquadronName)` erwartet bei `Ngroups` die Zahl der Asset-Gruppen. Ein zweischiffiges Template repräsentiert deshalb zwei Luftfahrzeuge je Asset-Gruppe.
+Builder-Version:
 
 ```text
-OH-58D: 24 Luftfahrzeuge / 2 je Gruppe = 12 Asset-Gruppen
-AH-64D:  8 Luftfahrzeuge / 2 je Gruppe =  4 Asset-Gruppen
+JBAD-AIR-OPS-COMPLETE-1
 ```
 
-Die Obergrenze von vier gleichzeitig lokalen KI-Luftfahrzeugen wird später durch Missionsanforderungen und Dispatch-Limits gesteuert; sie entspricht nicht dem Gesamtbestand im SQUADRON.
+## Vollständiges lokales Manifest
 
-## Abgeschlossene Ergebnisse
+### AIRWING und SQUADRONs
+
+```text
+AW_US_JALALABAD
+SQ_US_JBAD_OH58D_6_6_CAV
+SQ_US_JBAD_AH64D_B_1_10_AVN
+SQ_US_JBAD_UH60_UTILITY_MEDEVAC
+```
+
+### KI-Templates
+
+```text
+TPL_AIR_US_JBAD_OH58D_RECON_2SHIP
+TPL_AIR_US_JBAD_AH64D_CAS_2SHIP
+TPL_AIR_US_JBAD_UH60_MEDEVAC_LEAD_1SHIP
+TPL_AIR_US_JBAD_UH60_MEDEVAC_COVER_1SHIP
+```
+
+### Verpflichtende Kern-Spielergruppen
+
+```text
+CLIENT_US_JBAD_OH58D_01 bis _04
+CLIENT_US_JBAD_AH64D_01 bis _04
+```
+
+### Optionale Community-Mod-Spielergruppen
+
+```text
+CLIENT_US_JBAD_UH60L_01 bis _04
+```
+
+Die UH-60L-Gruppen sind entweder vollständig mit vier Gruppen vorhanden oder vollständig abwesend. Sie sind keine Voraussetzung für die Kernmission.
+
+### Gepoolte Statics
+
+```text
+STATIC_AIR_US_JBAD_OH58D_01 bis _08
+STATIC_AIR_US_JBAD_AH64D_01 bis _04
+STATIC_AIR_US_JBAD_UH60_01 bis _02
+```
+
+### Zonen
+
+```text
+ZONE_AIR_US_JBAD_STATIC_OH58D
+ZONE_AIR_US_JBAD_STATIC_AH64D
+ZONE_AIR_US_JBAD_STATIC_UH60
+ZONE_AIR_US_JBAD_MEDEVAC_READY
+ZONE_AIR_US_JBAD_LOGISTICS_LOAD
+ZONE_AIR_US_JBAD_LOGISTICS_UNLOAD
+ZONE_AIR_US_JBAD_SLING_PICKUP
+ZONE_AIR_US_JBAD_C130_UNLOAD
+```
+
+## Bestands- und Einsatzregeln
+
+```text
+maximale Spieler-Luftfahrzeuge je Typ und Basis: 4
+maximale gleichzeitig aktive KI-Luftfahrzeuge je Typ und Basis: 4
+maximale parallele Unterstützungsmissionen: 2
+maximale Luftfahrzeuge je Unterstützungsmission: 2
+maximale gleichzeitig aktive Unterstützungs-Luftfahrzeuge: 4
+```
+
+MEDEVAC:
+
+```text
+1 Lead + 1 Cover
+kein Single-Ship-Fallback
+```
+
+Die UH-60-Umsetzung verwendet ein gemeinsames sechs Luftfahrzeuge umfassendes SQUADRON und zwei getrennte Ein-Schiff-Payloadtemplates. Dadurch wird der lokale Bestand nicht doppelt gezählt.
+
+## Abgeschlossene Ergebnisberichte
 
 ```text
 results/2026-07-23-jalalabad-air-operations-diagnostics-v1-partial.md
 results/2026-07-23-jalalabad-air-operations-diagnostics-v2-pass.md
 results/2026-07-23-jalalabad-airwing-anchor-construction-pass.md
 results/2026-07-23-jalalabad-oh58d-squadron-construction-pass.md
+results/2026-07-23-jalalabad-ah64d-squadron-construction-pass.md
 ```
 
-Bestätigt sind:
+## Aktueller Arbeitsauftrag
 
-- Jalalabad als MOOSE-Airbase ID 19,
-- 50 auslesbare Parking-Einträge,
-- natives DCS-Warehouse verfügbar,
-- MOOSE-Storage verfügbar,
-- Warehouse-Anker `WH_AIR_US_JALALABAD` als BLUE-/USA-Static erkannt,
-- `AIRWING:New()` und `SetAirbase()` ohne Lua-Fehler,
-- OH-58D-Typ `OH58D` und zweischiffiges Template bestätigt,
-- `SQ_US_JBAD_OH58D_6_6_CAV` mit 12 Asset-Gruppen und RECON-Capability verknüpft,
-- AIRWING `AW_US_JALALABAD` bleibt in der Validierungsstufe ungestartet.
-
-## Aktueller nächster Schritt
-
-Mission-Editor- und Abnahmevorgabe:
+Die vollständige Missionseditor- und Abnahmevorgabe steht in:
 
 ```text
-expected/jalalabad-ah64d-squadron-construction-acceptance.md
+expected/jalalabad-complete-node-acceptance.md
 ```
 
-Es wird genau eine spät aktivierte BLUE-/USA-Gruppe mit zwei AH-64D BLK II angelegt:
+Nach Umsetzung aller dort genannten Objekte läuft genau ein Gesamttest. Das Bundle startet das AIRWING und verknüpft es mit `OMW_BLUE_COMMANDER` nur dann, wenn sämtliche verpflichtenden Gruppen, Templates, Statics, Zonen, Payloads und Policy-Werte vollständig validiert wurden.
+
+Erwartetes Abschlussresultat:
 
 ```text
-TPL_AIR_US_JBAD_AH64D_CAS_2SHIP
+[OMW][AirOps.JBAD.COMPLETE] RESULT: COMPLETE. Jalalabad AirOps node OPERATIONAL; AIRWING started; COMMANDER linked; missionsQueued=0; spontaneousSpawns=0.
 ```
 
-Das neue Bundle prüft Typ, Gruppenstärke, Umrechnung von acht Luftfahrzeugen in vier Asset-Gruppen, `SQUADRON:New()`, `SetGrouping(2)`, CAS-Capability und `AIRWING:AddSquadron()`. Ein AIRWING-Start, Spieler-Slots, Payload-Pools, AUFTRAG-Missionen und tatsächliche Spawns bleiben außerhalb dieser Stufe.
+Globale Kampagnenadapter für Persistenz, Verlustbuchung und spätere Auftragserzeugung bauen anschließend auf diesem abgeschlossenen lokalen Knoten auf; die Jalalabad-ORBAT und Missionseditor-Namensstruktur werden danach nicht erneut stufenweise erweitert.
