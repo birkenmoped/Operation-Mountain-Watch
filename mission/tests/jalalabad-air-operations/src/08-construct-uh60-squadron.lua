@@ -1,5 +1,5 @@
 -- Operation Mountain Watch - Jalalabad UH-60 Utility/MEDEVAC squadron assembly
--- One six-aircraft squadron uses separate one-ship lead and cover payload templates.
+-- One eight-aircraft squadron uses separate one-ship lead and cover payload templates.
 local TAG = "[OMW][AirOps.JBAD.UH60]"
 local function log(msg) env.info(TAG .. " " .. tostring(msg)) end
 
@@ -53,8 +53,8 @@ local function main()
   end
 
   local aircraftCount = cfg.Inventory and cfg.Inventory.UH60 or 0
-  if aircraftCount ~= 6 then
-    log("ERROR: Jalalabad UH-60 inventory must be exactly 6; found=" .. tostring(aircraftCount))
+  if aircraftCount ~= 8 then
+    log("ERROR: Jalalabad UH-60 inventory must be exactly 8; found=" .. tostring(aircraftCount))
     return
   end
 
