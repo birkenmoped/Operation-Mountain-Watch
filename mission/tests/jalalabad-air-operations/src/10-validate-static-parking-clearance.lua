@@ -1,11 +1,12 @@
--- Operation Mountain Watch - Jalalabad static-to-parking clearance validation
--- DCS does not mark a parking node occupied when a free-placed static overlaps it.
--- This gate prevents AIRWING activation when a static center is effectively on a
--- functional parking-node center.
+-- Operation Mountain Watch - Jalalabad static parking reservation validation
+-- Some visible CH-47 statics intentionally occupy real DCS parking nodes because
+-- the heavy-lift ramp has no credible alternative placement. Those terminal IDs
+-- must be blacklisted so MOOSE never treats the apparently free nodes as spawn spots.
 local TAG = "[OMW][AirOps.JBAD.PARKING]"
 local function log(msg) env.info(TAG .. " " .. tostring(msg)) end
 
-local CLEARANCE_METERS = 8
+local ALIGNMENT_TOLERANCE_METERS = 8
+local NON_RESERVED_CLEARANCE_METERS = 8
 
 local function appendAll(target, source)
   for _, value in ipairs(source or {}) do
@@ -22,6 +23,14 @@ local function distance2D(firstCoordinate, secondCoordinate)
   return math.sqrt(dx * dx + dz * dz)
 end
 
+local function joinNumbers(values)
+  local text = {}
+  for _, value in ipairs(values or {}) do
+    text[#text + 1] = tostring(value)
+  end
+  return table.concat(text, ",")
+end
+
 local function main()
   local cfg = OMW and OMW.AirOps and OMW.AirOps.Jalalabad
   if not cfg then
@@ -35,6 +44,22 @@ local function main()
     return
   end
 
+  local parking = cfg.Parking or {}
+  local reservations = parking.StaticParkingReservations or {}
+  local blacklist = parking.StaticParkingBlacklist or {}
+
+  if airbase.SetParkingSpotBlacklist then
+    airbase:SetParkingSpotBlacklist(blacklist)
+  else
+    log("ERROR: AIRBASE:SetParkingSpotBlacklist is unavailable.")
+    cfg.ParkingReservationsOK = false
+    return
+  end
+
+  if cfg.Airwing and cfg.Airwing.SetSafeParkingOn then
+    cfg.Airwing:SetSafeParkingOn()
+  end
+
   local parkingSpots = airbase:GetParkingSpotsTable() or {}
   local staticNames = {}
   appendAll(staticNames, cfg.Statics and cfg.Statics.OH58D)
@@ -43,6 +68,8 @@ local function main()
   appendAll(staticNames, cfg.Statics and cfg.Statics.CH47)
 
   local violations = 0
+  local confirmedReservations = 0
+
   for _, staticName in ipairs(staticNames) do
     local static = STATIC and STATIC:FindByName(staticName, false) or nil
     if static then
@@ -50,54 +77,73 @@ local function main()
       local nearestDistance = nil
       local nearestTerminalID = nil
 
-      for _, parking in ipairs(parkingSpots) do
-        local distance = distance2D(staticCoordinate, parking.Coordinate)
+      for _, spot in ipairs(parkingSpots) do
+        local distance = distance2D(staticCoordinate, spot.Coordinate)
         if distance and (not nearestDistance or distance < nearestDistance) then
           nearestDistance = distance
-          nearestTerminalID = parking.TerminalID
+          nearestTerminalID = spot.TerminalID
         end
       end
 
-      if nearestDistance and nearestDistance < CLEARANCE_METERS then
+      local expectedTerminalID = reservations[staticName]
+      if expectedTerminalID then
+        if nearestTerminalID == expectedTerminalID and nearestDistance and nearestDistance <= ALIGNMENT_TOLERANCE_METERS then
+          confirmedReservations = confirmedReservations + 1
+          log(string.format(
+            "OK STATIC_PARKING_RESERVED name=%s TerminalID=%s distance=%.1fm blacklisted=true",
+            staticName,
+            tostring(nearestTerminalID),
+            nearestDistance
+          ))
+        else
+          violations = violations + 1
+          log(string.format(
+            "ERROR STATIC_PARKING_RESERVATION_MISMATCH name=%s expectedTerminalID=%s nearestTerminalID=%s distance=%s tolerance=%.1fm",
+            staticName,
+            tostring(expectedTerminalID),
+            tostring(nearestTerminalID),
+            nearestDistance and string.format("%.1fm", nearestDistance) or "unknown",
+            ALIGNMENT_TOLERANCE_METERS
+          ))
+        end
+      elseif nearestDistance and nearestDistance < NON_RESERVED_CLEARANCE_METERS then
         violations = violations + 1
         log(string.format(
-          "ERROR STATIC_PARKING_OVERLAP name=%s nearestTerminalID=%s distance=%.1fm minimum=%.1fm",
+          "ERROR UNDECLARED_STATIC_PARKING_OVERLAP name=%s nearestTerminalID=%s distance=%.1fm minimum=%.1fm",
           staticName,
           tostring(nearestTerminalID),
           nearestDistance,
-          CLEARANCE_METERS
+          NON_RESERVED_CLEARANCE_METERS
         ))
       else
         log(string.format(
-          "OK STATIC_PARKING_CLEARANCE name=%s nearestTerminalID=%s distance=%s minimum=%.1fm",
+          "OK STATIC_PARKING_CLEAR name=%s nearestTerminalID=%s distance=%s minimum=%.1fm",
           staticName,
           tostring(nearestTerminalID),
           nearestDistance and string.format("%.1fm", nearestDistance) or "unknown",
-          CLEARANCE_METERS
+          NON_RESERVED_CLEARANCE_METERS
         ))
       end
     end
   end
 
-  cfg.ParkingClearanceOK = violations == 0
-  if violations > 0 then
-    -- The complete-node finalizer already uses CorrectionPending.CH47 as an
-    -- activation gate. The current observed overlaps are on the CH-47 ramp, so
-    -- re-use that gate after CH-47 construction has completed.
-    cfg.CorrectionPending = cfg.CorrectionPending or {}
-    cfg.CorrectionPending.CH47 = true
-    cfg.CorrectionPending.Reason = "Static aircraft overlap functional DCS parking nodes."
+  cfg.ParkingReservationsOK = violations == 0 and confirmedReservations == parking.CH47DCSNodeReservations
+  if not cfg.ParkingReservationsOK then
     log(string.format(
-      "RESULT: FAIL staticParkingOverlapCount=%d clearance=%.1fm AIRWING_START_BLOCKED=true",
+      "RESULT: FAIL intentionalReservationsConfirmed=%d expected=%s violations=%d blacklistedTerminalIDs=%s AIRWING_START_BLOCKED=true",
+      confirmedReservations,
+      tostring(parking.CH47DCSNodeReservations),
       violations,
-      CLEARANCE_METERS
+      joinNumbers(blacklist)
     ))
     return
   end
 
   log(string.format(
-    "RESULT: PASS staticParkingOverlapCount=0 clearance=%.1fm AIRWING_START_BLOCKED=false",
-    CLEARANCE_METERS
+    "RESULT: PASS intentionalReservationsConfirmed=%d blacklistedTerminalIDs=%s ch47VisualPositionsRemaining=%s unexpectedOverlaps=0 AIRWING_START_BLOCKED=false",
+    confirmedReservations,
+    joinNumbers(blacklist),
+    tostring(parking.CH47RemainingVisualPositions)
   ))
 end
 
