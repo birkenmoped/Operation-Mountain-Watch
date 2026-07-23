@@ -1,5 +1,4 @@
--- Operation Mountain Watch - Jalalabad OH-58D squadron construction test
--- Validation stage only: constructs and links the squadron, but does not start the AIRWING.
+-- Operation Mountain Watch - Jalalabad OH-58D squadron assembly
 local TAG = "[OMW][AirOps.JBAD.OH58D]"
 local function log(msg) env.info(TAG .. " " .. tostring(msg)) end
 
@@ -51,7 +50,7 @@ local function main()
   end
 
   local assetGroups = aircraftCount / groupSize
-  local squadronName = "SQ_US_JBAD_OH58D_6_6_CAV"
+  local squadronName = cfg.SquadronNames and cfg.SquadronNames.OH58D or "SQ_US_JBAD_OH58D_6_6_CAV"
 
   cfg.Squadrons = cfg.Squadrons or {}
   if cfg.Squadrons.OH58D then
@@ -62,25 +61,31 @@ local function main()
   local ok, result = pcall(function()
     local squadron = SQUADRON:New(templateName, assetGroups, squadronName)
     squadron:SetGrouping(groupSize)
+    if AI and AI.Skill and AI.Skill.HIGH then
+      squadron:SetSkill(AI.Skill.HIGH)
+    end
     squadron:AddMissionCapability({ AUFTRAG.Type.RECON }, 100)
     airwing:AddSquadron(squadron)
-    return squadron
+    local payload = airwing:NewPayload(template, -1, { AUFTRAG.Type.RECON }, 100)
+    return { Squadron = squadron, Payload = payload }
   end)
 
-  if not ok or not result then
-    log("ERROR: SQUADRON construction or AIRWING linking failed: " .. tostring(result))
+  if not ok or not result or not result.Squadron then
+    log("ERROR: SQUADRON construction, payload registration or AIRWING linking failed: " .. tostring(result))
     return
   end
 
   local linked = airwing:GetSquadron(squadronName)
-  if linked ~= result then
+  if linked ~= result.Squadron then
     log("ERROR: AIRWING:GetSquadron did not return the constructed squadron.")
     return
   end
 
-  cfg.Squadrons.OH58D = result
+  cfg.Squadrons.OH58D = result.Squadron
+  cfg.Payloads = cfg.Payloads or {}
+  cfg.Payloads.OH58DRecon = result.Payload
   log(string.format(
-    "SQUADRON constructed and linked. name=%s aircraft=%d assetGroups=%d groupSize=%d capability=RECON. AIRWING not started.",
+    "SQUADRON ready. name=%s aircraft=%d assetGroups=%d groupSize=%d capability=RECON payload=UNLIMITED.",
     squadronName,
     aircraftCount,
     assetGroups,
