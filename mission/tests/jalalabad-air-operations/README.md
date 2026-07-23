@@ -4,7 +4,7 @@
 
 Dieser Test bereitet die erste MOOSE-AIRWING-/SQUADRON-Umsetzung für Jalalabad / FOB Fenty vor.
 
-Die aktuelle Stufe ist ausschließlich diagnostisch. Das Bundle startet keine AIRWING-Operationen, erzeugt keine Aufträge, verändert keine Bestände und schreibt keinen Kampagnenzustand.
+Die Diagnose des leeren Ausgangszustands ist mit Version 2 abgeschlossen und als PASS dokumentiert. Die aktuelle Stufe prüft ausschließlich einen benannten Mission-Editor-Warehouse-Anker und die Konstruktion eines nicht gestarteten AIRWING. Es werden weiterhin keine Aufträge erzeugt, keine Luftfahrzeuge gespawnt, keine Bestände verändert und keine Kampagnendaten geschrieben.
 
 Verbindlicher lokaler Bestand:
 
@@ -26,10 +26,9 @@ SHA-256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
 
 ```text
 Operation_Mountain_Watch_Jalalabad_AirOps_Test_01.miz
-SHA-256: 898703f5b738a632492e514f8943327634a0d094716fd7f4c971c9b2582fb50b
 ```
 
-Die Ausgangsmission enthält noch keine Jalalabad-Air-Ops-Gruppen oder -Statics. Sie lädt neben MOOSE weiterhin das TM02W2F-Testbundle.
+Die Mission lädt neben MOOSE weiterhin das TM02W2F-Testbundle. Die Jalalabad-Air-Ops-Objekte werden stufenweise und isoliert ergänzt.
 
 ## Verbindlicher Repository-Workflow
 
@@ -69,6 +68,8 @@ mission\tests\jalalabad-air-operations\dist\OMW_AirOps_Jalalabad.lua
 
 Das erneute Auswählen ist nach jedem lokalen Build erforderlich, weil DCS die Lua-Datei beim Speichern in die `.miz` einbettet. Ein späteres Neubauen der externen Datei aktualisiert die bereits gespeicherte Mission nicht automatisch.
 
+Für die aktuelle Warehouse-Anker-Stufe ist kein Neubau erforderlich, solange das bereits validierte Bundle aus Quellcommit `95d7571a4806d1eea1e22bfe5372d26c14426cc9` weiterhin eingebettet ist.
+
 ## Build-Reihenfolge
 
 Der Builder fügt diese Quellen in fester Reihenfolge zusammen:
@@ -102,21 +103,30 @@ Erwartete DCS-Typen:
 
 KI-`UH-60A` und Spieler-UH-60L bilden denselben konzeptionellen Bestand von sechs UH-60 ab.
 
-## Erwarteter erster Lauf
+## Abgeschlossene Diagnose
 
-Da die Missionseditorobjekte noch nicht angelegt wurden, sind Meldungen über fehlende Gruppen, Statics, Zonen und den Warehouse-Anker zunächst korrekt.
+Ergebnisberichte:
 
-Der Lauf soll belastbar liefern:
+```text
+results/2026-07-23-jalalabad-air-operations-diagnostics-v1-partial.md
+results/2026-07-23-jalalabad-air-operations-diagnostics-v2-pass.md
+```
 
-- DCS-/MOOSE-Name und ID von Jalalabad,
-- Parking-IDs und Terminaltypen,
-- Warehouse-/Storage-Verfügbarkeit,
-- interne Typnamen bereits angelegter Testgruppen,
-- vollständige Liste der noch fehlenden Air-Ops-Objekte,
-- mögliche Lua- oder DCS-API-Fehler.
+Bestätigt sind:
 
-Nach dem Lauf werden benötigt:
+- Jalalabad als MOOSE-Airbase ID 19,
+- 50 auslesbare Parking-Einträge,
+- natives DCS-Warehouse verfügbar,
+- MOOSE-Storage verfügbar,
+- fehlender Warehouse-Anker wird ohne Lua-Fehler verarbeitet,
+- leere Gruppen-, Static- und Zonenbasis wird korrekt protokolliert.
 
-- aktualisierte `.miz`,
-- `dcs.log`,
-- Screenshots der vorgesehenen Parking-, Warehouse-, MEDEVAC-, Logistik- und Static-Bereiche.
+## Aktueller nächster Schritt
+
+Mission-Editor- und Abnahmevorgabe:
+
+```text
+expected/jalalabad-airwing-anchor-construction-acceptance.md
+```
+
+Es wird genau ein BLUE-/USA-Static mit dem Unit-Namen `WH_AIR_US_JALALABAD` im Flugplatzbereich ergänzt. Das vorhandene Bundle prüft danach ausschließlich die Warehouse-Ankererkennung, `AIRWING:New()` und die explizite Jalalabad-Zuordnung. SQUADRONs, Templates, Spieler-Slots, Flugaufträge und Bestandslogik bleiben weiterhin außerhalb dieser Stufe.
