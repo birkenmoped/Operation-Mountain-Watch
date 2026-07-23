@@ -1,57 +1,93 @@
-# 25 – Jalalabad final validation and operational baseline
+# 25 – Jalalabad: finale Validierung und operative Grundbaseline
 
-## Status
+## 1. Status
 
-Jalalabad / FOB Fenty is accepted as the validated local Air Operations baseline.
+Jalalabad Airfield / FOB Fenty ist als lokaler Air-Ops-Grundknoten angenommen und validiert.
 
-This document supersedes the pending/open status sections in older Jalalabad documents. The historical decision and test chronology in `docs/21-jalalabad-air-operations-manifest.md` remains valid, but its former sections describing the complete-node DCS test as outstanding are no longer current.
+```text
+Status: OPERATIONAL / ACCEPTED
+Gesamttest: PASS
+PR: #18, weiterhin Draft bis zur ausdrücklichen Freigabe
+```
 
-Authoritative final result:
+Dieses Dokument ersetzt alle älteren Jalalabad-Abschnitte, die den vollständigen DCS-Abschlusslauf noch als ausstehend bezeichnen.
+
+Autoritatives Endergebnis:
 
 ```text
 [OMW][AirOps.JBAD.COMPLETE] RESULT: COMPLETE. Jalalabad AirOps node OPERATIONAL; AIRWING started; COMMANDER linked; missionsQueued=0; spontaneousSpawns=0.
 ```
 
-Detailed test evidence:
+Detaillierter Ergebnisbericht:
 
 ```text
 mission/tests/jalalabad-air-operations/results/2026-07-24-jalalabad-complete-node-pass.md
 ```
 
-## Validated repository and bundle baseline
+## 2. Validierte Repository- und Bundle-Baseline
 
 ```text
-Source branch:   feature/jalalabad-air-operations-diagnostics
-Source commit:   6cee9a5db7abf1934d0f86bf9fdf91a0446374d0
-BuilderVersion:  JBAD-AIR-OPS-COMPLETE-5
-Embedded bundle: l10n/DEFAULT/OMW_AirOps_Jalalabad.lua
+Source-Branch:    feature/jalalabad-air-operations-diagnostics
+Source-Commit:    6cee9a5db7abf1934d0f86bf9fdf91a0446374d0
+Builder:          tools/build-jalalabad-air-operations-bundle.ps1
+BuilderVersion:   JBAD-AIR-OPS-COMPLETE-5
+Eingebettete Datei: l10n/DEFAULT/OMW_AirOps_Jalalabad.lua
+Bundlegröße:      50273 Bytes
+Bundle SHA-256:   13f6ef2235a8d1abd13924c0e6bc297515039795766e98d7e15572c1f06ea18a
+GeneratedUtc:     2026-07-23T22:48:46.2604962Z
 ```
 
-The final validation mission embedded exactly this bundle.
+Die finale Testmission enthielt nachweislich exakt dieses Bundle.
 
-## Validated logical inventory
+## 3. Validierte Nachweisdateien
+
+```text
+Operation_Mountain_Watch_Jalalabad_AirOps_Test_01(6).miz
+SHA-256: 16c607a9ffe9157779c09ad0e7557287697f91239c60e53fa33fd91d22396e8f
+
+dcs(57).log
+SHA-256: 1460c11af132a29421b091496702f8a1da70636c9303e4c72c82513b4e58a836
+
+debrief(14).log
+SHA-256: 2ae6f3e48cd0adea313b5c622226f6e965adf9b1ed51c51abcc33642d4ca12e4
+```
+
+Testumgebung:
+
+```text
+DCS 2.9.28.26283 MT
+DCS: Afghanistan
+Missionsdatum: 2. Mai 2011
+MOOSE Commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+```
+
+## 4. Validierter logischer Bestand
 
 ```text
 24 OH-58D
  8 AH-64D
- 8 UH-60-family
- 8 CH-47 heavy-lift aircraft
+ 8 UH-60-Familie
+ 8 CH-47 Heavy Lift
+-------------------
+48 Luftfahrzeuge
 ```
 
-Logical inventory, active aircraft, visible statics and virtual reserve remain separate layers. Permanent losses reduce the logical inventory; a surviving virtual-reserve airframe may perform a later sortie but is not an external replacement.
+Logischer Bestand, aktive Luftfahrzeuge, sichtbare Statics und virtuelle Reserve bleiben getrennte Ebenen.
 
-## Validated Mission Editor baseline
+Ein endgültiger Verlust reduziert den logischen Bestand dauerhaft. Eine andere überlebende, bislang virtuelle Bestandsmaschine darf einen späteren Einsatz übernehmen; sie ist kein externer Ersatz.
+
+## 5. Validierte Missionseditor-Baseline
 
 ```text
-6 required Client groups
-5 Late-Activation AI template groups
-20 visible aircraft statics
-11 functional zones
-1 warehouse anchor
-0 optional UH-60L Client groups in the mod-free baseline
+6 verpflichtende Clientgruppen
+5 Late-Activation-KI-Templategruppen mit zusammen 7 Luftfahrzeugen
+20 sichtbare Luftfahrzeug-Statics
+11 Funktionszonen
+1 Warehouse-Anker
+0 optionale UH-60L-Clientgruppen im modfreien Kernstand
 ```
 
-Validated DCS type names:
+Validierte DCS-Typnamen:
 
 ```text
 OH-58D: OH58D
@@ -60,7 +96,13 @@ UH-60A: UH-60A
 CH-47F: CH-47Fbl1
 ```
 
-## Validated MOOSE structure
+Validierte UH-60-Livery für Lead und Cover:
+
+```text
+standard
+```
+
+## 6. Validierte MOOSE-Struktur
 
 ```text
 AW_US_JALALABAD
@@ -70,99 +112,174 @@ AW_US_JALALABAD
 └── SQ_US_JBAD_CH47_HEAVYLIFT
 ```
 
-Validated asset representation:
+Validierte Bestandsabbildung:
 
 ```text
-OH-58D: 24 aircraft / 12 two-ship asset groups / RECON
-AH-64D: 8 aircraft / 4 two-ship asset groups / CAS
-UH-60:  8 aircraft / 8 single-ship asset groups / TRANSPORT, LAND, GROUNDESCORT
-CH-47:  8 aircraft / 8 single-ship asset groups / TROOPTRANSPORT, CARGOTRANSPORT, LAND
+OH-58D: 24 Luftfahrzeuge / 12 Two-Ship-Asset-Gruppen / RECON
+AH-64D:  8 Luftfahrzeuge /  4 Two-Ship-Asset-Gruppen / CAS
+UH-60:   8 Luftfahrzeuge /  8 Single-Ship-Asset-Gruppen / TROOPTRANSPORT, CARGOTRANSPORT, LANDATCOORDINATE, GROUNDESCORT
+CH-47:   8 Luftfahrzeuge /  8 Single-Ship-Asset-Gruppen / TROOPTRANSPORT, CARGOTRANSPORT, LANDATCOORDINATE
 ```
 
-MEDEVAC remains modeled as two independently taskable single-ship DCS groups coordinated as one logical package:
+## 7. Validiertes MEDEVAC-Grundmodell
+
+MEDEVAC wird als zwei unabhängig taskbare Single-Ship-DCS-Gruppen modelliert, die gemeinsam ein logisches Paket bilden:
 
 ```text
-1 lead + 1 cover
-no single-ship fallback
+1 Lead
++
+1 Cover
+=
+1 logisches MEDEVAC-Two-Ship-Paket
 ```
-
-The later runtime coordinator that atomically reserves, starts, tasks and releases both aircraft remains a separate implementation and validation item.
-
-## Validated parking model
-
-Core runtime demand:
 
 ```text
-6 reserved Client positions
-4 dynamic AI reserve positions
-= 10 runtime positions
-
-+ 2 optional UH-60L Client positions
-= 12 positions with the optional mod variant
+PackageSize = 2
+LeadAircraft = 1
+CoverAircraft = 1
+AllowSingleShip = false
+DCSGroupModel = TWO_INDEPENDENT_SINGLE_SHIP_GROUPS
+CoordinationModel = ONE_LOGICAL_MEDEVAC_PACKAGE
 ```
 
-Late-Activation templates are authoring seeds and are not counted as permanently occupied runtime parking positions.
+Die Template-, Payload- und SQUADRON-Grundlage ist validiert. Der spätere Laufzeitkoordinator, der beide Assets atomar reserviert, gemeinsam startet, getrennt taskt und gemeinsam freigibt, bleibt eine eigenständige Folgestufe.
 
-### Intentional CH-47 reservations
+## 8. Validiertes Parkplatzmodell
 
-The following visible CH-47 statics intentionally occupy real DCS parking nodes:
+Kernbedarf zur Laufzeit:
 
 ```text
-STATIC_AIR_US_JBAD_CH47_01 -> TerminalID 49
-STATIC_AIR_US_JBAD_CH47_02 -> TerminalID 37
-STATIC_AIR_US_JBAD_CH47_03 -> TerminalID 23
-STATIC_AIR_US_JBAD_CH47_04 -> TerminalID 35
+6 reservierte Clientpositionen
+4 dynamische KI-Reservepositionen
+--------------------------------
+10 Runtime-Positionen
+
++ 2 optionale UH-60L-Clientpositionen
+= 12 Positionen mit Modvariante
 ```
 
-The corresponding MOOSE parking blacklist is:
+Die sieben Luftfahrzeuge der Late-Activation-Templates sind Authoring-Seeds und werden nicht als dauerhaft belegte Runtime-Parkpositionen gezählt.
+
+### 8.1 Absichtliche CH-47-Reservierungen
+
+Vier sichtbare CH-47-Statics belegen echte DCS-Parking-Nodes:
+
+```text
+STATIC_AIR_US_JBAD_CH47_01 -> TerminalID 49 -> 4.1 m
+STATIC_AIR_US_JBAD_CH47_02 -> TerminalID 37 -> 4.4 m
+STATIC_AIR_US_JBAD_CH47_03 -> TerminalID 23 -> 4.7 m
+STATIC_AIR_US_JBAD_CH47_04 -> TerminalID 35 -> 5.4 m
+```
+
+MOOSE-Parking-Blacklist:
 
 ```text
 23,35,37,49
 ```
 
-`AIRWING:SetSafeParkingOn()` protects Client positions. The parking validator confirmed all four intended reservations, zero undeclared overlaps and seven remaining visual CH-47 positions after five statics and two Client slots.
+`AIRWING:SetSafeParkingOn()` schützt die Clientpositionen.
 
-## Runtime acceptance
+Der Parking-Validator bestätigte:
 
-The final debrief ran for 81.562 seconds. The AIRWING and COMMANDER were active for approximately 66 seconds after activation.
+```text
+intentionalReservationsConfirmed=4
+blacklistedTerminalIDs=23,35,37,49
+ch47VisualPositionsRemaining=7
+unexpectedOverlaps=0
+AIRWING_START_BLOCKED=false
+```
 
-No Jalalabad AI aircraft spawned, started engines, took off, landed, crashed or was lost without an assigned mission. The only engine-start event belonged to an unrelated existing OH-58D at Bagram.
+## 9. Runtime-Abnahme
 
-No relevant OMW Lua or timer error occurred.
+Die Mission lief laut Debrief:
 
-## Scope of this acceptance
+```text
+81.562 Sekunden
+```
 
-This PASS closes the local Jalalabad Air Operations node assembly and startup validation.
+AIRWING und COMMANDER waren nach der Aktivierung ungefähr 66 Sekunden aktiv.
 
-It confirms:
+In diesem Zeitraum wurde für Jalalabad kein ungeplanter KI-Vorgang registriert:
 
-- Mission Editor names, counts and types;
-- warehouse and airbase association;
-- SQUADRON inventories and asset-group sizes;
-- payload registration;
-- parking blacklist and Safe Parking setup;
-- AIRWING start;
-- COMMANDER linkage and start;
-- absence of spontaneous Jalalabad sorties.
+- kein Birth/Spawn,
+- kein Engine Start,
+- kein Takeoff,
+- kein Landing,
+- kein Crash,
+- kein Dead/Loss.
 
-It does not yet validate:
+Der einzige Engine-Start im Debrief gehörte zu einer unabhängigen, bereits vorhandenen OH-58D in Bagram.
 
-- tactical AUFTRAG generation and completion;
-- OPSTRANSPORT cargo and troop flows;
-- dynamic load/unload-zone behavior;
-- the runtime 1+1 MEDEVAC coordinator;
-- persistent loss accounting across mission restarts;
-- persistent visual ramp/static redistribution;
-- combat damage, recovery and replacement-state integration.
+Es trat kein relevanter OMW-Jalalabad-Lua- oder Timerfehler auf.
 
-These are follow-on campaign capabilities and must not reopen the already accepted basic Jalalabad node assembly unless a regression is demonstrated.
+## 10. Externe Meldungen
 
-## Repository workflow remains binding
+Der bekannte Shutdown-Fehler:
 
-The project-wide build and transfer process remains documented in:
+```text
+Saved Games\DCS.openbeta\Scripts\Hooks\bhHook.lua:168
+attempt to index upvalue 'tcp' (a nil value)
+```
+
+trat erst nach `Dispatcher Stop` auf und gehört nicht zum Jalalabad-AirOps-Bundle.
+
+Weitere DCS-, Terrain-, Modul-, OH-58D- und CH-47-Warnungen unterbrachen den Test nicht und erzeugten keinen OMW-Fehler.
+
+## 11. Umfang dieser Abnahme
+
+Dieser PASS schließt den lokalen Jalalabad-Air-Ops-Grundaufbau und dessen Startvalidierung ab.
+
+Bestätigt sind:
+
+- Missionseditor-Namen, Anzahlen und Typen,
+- Warehouse- und Airbase-Zuordnung,
+- SQUADRON-Bestände und Asset-Gruppengrößen,
+- Payloadregistrierung,
+- Parking-Blacklist,
+- Safe Parking,
+- AIRWING-Start,
+- COMMANDER-Verknüpfung und -Start,
+- null eingereihte Missionen,
+- keine spontane Jalalabad-KI-Mission.
+
+Noch nicht validiert sind:
+
+- taktische AUFTRAG-Erzeugung und Missionsabschluss,
+- OPSTRANSPORT für Fracht und Truppen,
+- operative Lade-/Entladezonenlogik,
+- der vollständige 1+1-MEDEVAC-Laufzeitkoordinator,
+- persistente Verlustrechnung über Missionsneustarts,
+- persistente sichtbare Ramp-/Static-Neuverteilung,
+- Combat-Damage-, Recovery- und Replacement-State-Integration.
+
+Diese Punkte sind Folgestufen der Kampagne. Sie öffnen den bereits angenommenen Jalalabad-Grundknoten nur bei einer nachgewiesenen Regression erneut.
+
+## 12. Verbindlicher Workflow
+
+Der projektweite Build-, Übertragungs- und Testprozess steht in:
 
 ```text
 docs/22-test-mission-build-transfer-and-validation-workflow.md
 ```
 
-The generated bundle must always be rebuilt from repository sources, reselected in Mission Editor `DO SCRIPT FILE`, and the `.miz` saved before a DCS validation run.
+Grundregel:
+
+1. Repository und richtigen Branch aktualisieren.
+2. Bundle aus den Repository-Quellen neu bauen.
+3. Hash und Buildkopf prüfen.
+4. Bundle im Missionseditor erneut über `DO SCRIPT FILE` auswählen.
+5. `.miz` speichern.
+6. Acceptance-Lauf ausführen.
+7. Ergebnis dauerhaft dokumentieren.
+
+Ein externer Neubau ändert eine bereits gespeicherte `.miz` nicht automatisch.
+
+## 13. Autoritative Verweise
+
+```text
+docs/21-jalalabad-air-operations-manifest.md
+docs/23-jalalabad-parking-template-and-medevac-model.md
+docs/24-jalalabad-ch47-static-parking-reservations.md
+mission/tests/jalalabad-air-operations/expected/jalalabad-complete-node-acceptance.md
+mission/tests/jalalabad-air-operations/results/2026-07-24-jalalabad-complete-node-pass.md
+```
