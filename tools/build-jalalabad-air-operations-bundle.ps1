@@ -19,7 +19,7 @@ $sourceFiles = @(
     '07-construct-ah64d-squadron.lua',
     '08-construct-uh60-squadron.lua',
     '09-construct-ch47-squadron.lua',
-    '09-finalize-jalalabad-node.lua'
+    '10-validate-and-start-complete-node.lua'
 )
 
 if (-not (Test-Path -LiteralPath $sourceDir -PathType Container)) {
@@ -28,7 +28,7 @@ if (-not (Test-Path -LiteralPath $sourceDir -PathType Container)) {
 
 New-Item -ItemType Directory -Path $distDir -Force | Out-Null
 
-$builderVersion = 'JBAD-AIR-OPS-COMPLETE-2'
+$builderVersion = 'JBAD-AIR-OPS-COMPLETE-3'
 $commit = 'UNKNOWN'
 try {
     $commit = (& git -C $repoRoot rev-parse HEAD 2>$null).Trim()
