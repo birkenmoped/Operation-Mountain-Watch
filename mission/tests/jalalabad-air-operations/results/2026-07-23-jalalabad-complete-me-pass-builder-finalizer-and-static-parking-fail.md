@@ -169,6 +169,21 @@ The debrief contains:
 
 No Jalalabad AI takeoff, landing, crash or loss event was recorded.
 
+## Non-OMW side findings
+
+The latest mission run contains no OMW timer-function error, Lua stack traceback or AirOps script exception.
+
+Separate DCS/module messages were present and did not cause the AirOps result:
+
+```text
+OH58D: Corrupt damage model
+OH-58D cockpit/device and sound prototype warnings
+CH-47Fbl1 effect-preset warning during DCS initialization
+Saved Games hook bhHook.lua: tcp is nil during mission shutdown
+```
+
+These messages are external to the Jalalabad AirOps bundle. The `bhHook.lua` error occurs after mission termination and has already been observed independently in prior tests.
+
 ## Retest requirements
 
 1. Pull the corrected branch.
