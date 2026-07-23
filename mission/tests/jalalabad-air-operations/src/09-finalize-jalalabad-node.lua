@@ -1,4 +1,4 @@
--- Operation Mountain Watch - complete Jalalabad Air Operations node validation and activation
+-- Operation Mountain Watch - corrected complete Jalalabad Air Operations validation and activation
 local TAG = "[OMW][AirOps.JBAD.COMPLETE]"
 local function log(msg) env.info(TAG .. " " .. tostring(msg)) end
 
@@ -26,12 +26,12 @@ local function validateMissionGroup(name, expectedType, expectedSize)
   for index, unit in ipairs(units) do
     local typeName = unit and unit.type or "nil"
     if typeName ~= expectedType then
-      log(string.format("ERROR GROUP_TEMPLATE %s unit=%d type=%s expected=%s", name, index, tostring(typeName), expectedType))
+      log(string.format("ERROR GROUP_TEMPLATE %s unit=%d type=%s expected=%s", name, index, tostring(typeName), tostring(expectedType)))
       return false
     end
   end
 
-  log(string.format("OK GROUP_TEMPLATE %s type=%s size=%d", name, expectedType, expectedSize))
+  log(string.format("OK GROUP_TEMPLATE %s type=%s size=%d", name, tostring(expectedType), expectedSize))
   return true
 end
 
@@ -44,15 +44,15 @@ local function validateStatic(name, expectedType)
 
   local typeName = static:GetTypeName()
   if typeName ~= expectedType then
-    log(string.format("ERROR STATIC %s type=%s expected=%s", name, tostring(typeName), expectedType))
+    log(string.format("ERROR STATIC %s type=%s expected=%s", name, tostring(typeName), tostring(expectedType)))
     return false
   end
 
-  log(string.format("OK STATIC %s type=%s", name, expectedType))
+  log(string.format("OK STATIC %s type=%s", name, tostring(expectedType)))
   return true
 end
 
-local function validateOptionalUH60L(groups)
+local function validateOptionalGroups(groups, expectedCount)
   local present = {}
   for _, name in ipairs(groups or {}) do
     local template = getMissionTemplate(name)
@@ -62,12 +62,12 @@ local function validateOptionalUH60L(groups)
   end
 
   if #present == 0 then
-    log("OPTIONAL UH60L player slots absent=4 accepted=true coreMissionUnaffected=true")
+    log(string.format("OPTIONAL UH60L player slots absent=%d accepted=true coreMissionUnaffected=true", expectedCount))
     return true
   end
 
-  if #present ~= 4 then
-    log(string.format("ERROR OPTIONAL UH60L player slots must be either 0 or 4; present=%d", #present))
+  if #present ~= expectedCount then
+    log(string.format("ERROR OPTIONAL UH60L player slots must be either 0 or %d; present=%d", expectedCount, #present))
     return false
   end
 
@@ -86,8 +86,40 @@ local function validateOptionalUH60L(groups)
     detectedType = typeName
   end
 
-  log(string.format("OPTIONAL UH60L player slots present=4 type=%s accepted=true", tostring(detectedType)))
+  log(string.format("OPTIONAL UH60L player slots present=%d type=%s accepted=true", expectedCount, tostring(detectedType)))
   return true
+end
+
+local function validateRampModel(cfg)
+  local ok = true
+  local parking = cfg.Parking or {}
+  local caps = cfg.StaticCaps or {}
+
+  if parking.ComparableHelicopterPositions ~= 36 or
+     parking.CorePlayerPositions ~= 6 or
+     parking.OptionalUH60LPlayerPositions ~= 2 or
+     parking.AITemplateSeedPositions ~= 7 or
+     parking.CoreOperationalDemand ~= 13 or
+     parking.OperationalDemandWithUH60L ~= 15 then
+    log("ERROR: Parking model does not match the locked 36-position Jalalabad plan.")
+    ok = false
+  end
+
+  if caps.OH58D ~= 7 or caps.AH64D ~= 4 or caps.UH60 ~= 4 or caps.CH47 ~= 5 then
+    log("ERROR: Visible static caps do not match 7/4/4/5.")
+    ok = false
+  end
+
+  if caps.OH58D > cfg.Inventory.OH58D or caps.AH64D > cfg.Inventory.AH64D or
+     caps.UH60 > cfg.Inventory.UH60 or caps.CH47 > cfg.Inventory.CH47 then
+    log("ERROR: A visible static cap exceeds its logical inventory.")
+    ok = false
+  end
+
+  if ok then
+    log("OK RAMP_MODEL inventoryVirtual=true operationalPositions=13 optionalPositions=2 comparablePositions=36 staticCaps=7/4/4/5.")
+  end
+  return ok
 end
 
 local function main()
@@ -97,39 +129,28 @@ local function main()
     return
   end
 
-  -- The previously declared 24/8/6 manifest omitted the locally based CH-47
-  -- heavy-lift element visible in 2011 imagery and documented in contemporary
-  -- Task Force Shooter reporting. Never activate the node while this correction
-  -- is pending; doing so would produce a false COMPLETE result.
-  if cfg.CorrectionPending and cfg.CorrectionPending.CH47 then
-    cfg.Status = "INCOMPLETE_CH47_CORRECTION"
-    log("ERROR: CH-47 heavy-lift component is required but not yet implemented in the complete-node manifest.")
-    log("RESULT: INCOMPLETE. AIRWING and COMMANDER remain unstarted pending the revised CH-47 squadron, templates, slots, statics and parking plan.")
-    return
-  end
-
   local ok = true
+  local ch47Type = cfg.DetectedTypes and cfg.DetectedTypes.CH47 or nil
+
+  if cfg.CorrectionPending and cfg.CorrectionPending.CH47 then
+    log("ERROR: CH-47 correction remains pending; template/type/squadron construction did not complete.")
+    ok = false
+  end
+  if not ch47Type then
+    log("ERROR: Canonical CH-47 DCS type was not detected from the heavy-lift template.")
+    ok = false
+  end
 
   if not cfg.Airwing then
     log("ERROR: AIRWING is not constructed.")
     ok = false
   end
 
-  if not cfg.Squadrons or not cfg.Squadrons.OH58D then
-    log("ERROR: OH-58D SQUADRON is unavailable.")
-    ok = false
-  end
-  if not cfg.Squadrons or not cfg.Squadrons.AH64D then
-    log("ERROR: AH-64D SQUADRON is unavailable.")
-    ok = false
-  end
-  if not cfg.Squadrons or not cfg.Squadrons.UH60 then
-    log("ERROR: UH-60 SQUADRON is unavailable.")
-    ok = false
-  end
-  if not cfg.Squadrons or not cfg.Squadrons.CH47 then
-    log("ERROR: CH-47 SQUADRON is unavailable.")
-    ok = false
+  for key, label in pairs({ OH58D = "OH-58D", AH64D = "AH-64D", UH60 = "UH-60", CH47 = "CH-47" }) do
+    if not cfg.Squadrons or not cfg.Squadrons[key] then
+      log("ERROR: " .. label .. " SQUADRON is unavailable.")
+      ok = false
+    end
   end
 
   if not cfg.Payloads or not cfg.Payloads.OH58DRecon then
@@ -149,26 +170,37 @@ local function main()
     ok = false
   end
 
-  for _, name in ipairs(cfg.PlayerGroups.Required.OH58D) do
+  for _, name in ipairs(cfg.PlayerGroups.Required.OH58D or {}) do
     if not validateMissionGroup(name, "OH58D", 1) then ok = false end
   end
-  for _, name in ipairs(cfg.PlayerGroups.Required.AH64D) do
+  for _, name in ipairs(cfg.PlayerGroups.Required.AH64D or {}) do
     if not validateMissionGroup(name, "AH-64D_BLK_II", 1) then ok = false end
+  end
+  if ch47Type then
+    for _, name in ipairs(cfg.PlayerGroups.Required.CH47 or {}) do
+      if not validateMissionGroup(name, ch47Type, 1) then ok = false end
+    end
   end
 
   if not validateMissionGroup(cfg.Templates.OH58DRecon, "OH58D", 2) then ok = false end
   if not validateMissionGroup(cfg.Templates.AH64DCAS, "AH-64D_BLK_II", 2) then ok = false end
   if not validateMissionGroup(cfg.Templates.UH60MedevacLead, "UH-60A", 1) then ok = false end
   if not validateMissionGroup(cfg.Templates.UH60MedevacCover, "UH-60A", 1) then ok = false end
+  if ch47Type and not validateMissionGroup(cfg.Templates.CH47HeavyLift, ch47Type, 1) then ok = false end
 
-  for _, name in ipairs(cfg.Statics.OH58D) do
+  for _, name in ipairs(cfg.Statics.OH58D or {}) do
     if not validateStatic(name, "OH58D") then ok = false end
   end
-  for _, name in ipairs(cfg.Statics.AH64D) do
+  for _, name in ipairs(cfg.Statics.AH64D or {}) do
     if not validateStatic(name, "AH-64D_BLK_II") then ok = false end
   end
-  for _, name in ipairs(cfg.Statics.UH60) do
+  for _, name in ipairs(cfg.Statics.UH60 or {}) do
     if not validateStatic(name, "UH-60A") then ok = false end
+  end
+  if ch47Type then
+    for _, name in ipairs(cfg.Statics.CH47 or {}) do
+      if not validateStatic(name, ch47Type) then ok = false end
+    end
   end
 
   for _, name in ipairs(cfg.Zones or {}) do
@@ -188,23 +220,26 @@ local function main()
     ok = false
   end
 
-  if not validateOptionalUH60L(cfg.PlayerGroups.Optional.UH60L) then
+  if not validateOptionalGroups(cfg.PlayerGroups.Optional.UH60L, 2) then
     ok = false
   end
 
-  if cfg.Inventory.OH58D ~= 24 or cfg.Inventory.AH64D ~= 8 or cfg.Inventory.UH60 ~= 6 or cfg.Inventory.CH47 ~= 8 then
-    log("ERROR: Inventory manifest does not match 24/8/6/8.")
+  if cfg.Inventory.OH58D ~= 24 or cfg.Inventory.AH64D ~= 8 or cfg.Inventory.UH60 ~= 8 or cfg.Inventory.CH47 ~= 8 then
+    log("ERROR: Inventory manifest does not match 24/8/8/8.")
     ok = false
   end
-  if cfg.Limits.PlayerPerType ~= 4 or cfg.Limits.AIPerType ~= 4 or
+  if cfg.Limits.PlayerPerType ~= 2 or cfg.Limits.AIPerType ~= 4 or
      cfg.Limits.ConcurrentSupportMissions ~= 2 or cfg.Limits.AircraftPerMission ~= 2 or
      cfg.Limits.ConcurrentSupportAircraft ~= 4 then
-    log("ERROR: Air Operations limits do not match the locked policy.")
+    log("ERROR: Air Operations limits do not match player=2 and locked AI policy.")
     ok = false
   end
   if cfg.Medevac.PackageSize ~= 2 or cfg.Medevac.LeadAircraft ~= 1 or
      cfg.Medevac.CoverAircraft ~= 1 or cfg.Medevac.AllowSingleShip ~= false then
     log("ERROR: MEDEVAC package policy must be 1 lead + 1 cover with no single-ship fallback.")
+    ok = false
+  end
+  if not validateRampModel(cfg) then
     ok = false
   end
 
@@ -238,14 +273,14 @@ local function main()
 
   cfg.Status = "OPERATIONAL"
   log("RESULT: COMPLETE. Jalalabad AirOps node OPERATIONAL; AIRWING started; COMMANDER linked; missionsQueued=0; spontaneousSpawns=0.")
-  log("SUMMARY inventory=OH58D:24/AH64D:8/UH60:6/CH47:8 medevac=1+1.")
+  log("SUMMARY inventory=OH58D:24/AH64D:8/UH60:8/CH47:8 corePlayerSlots=6 optionalUH60L=0or2 staticCaps=OH58D:7/AH64D:4/UH60:4/CH47:5 zones=11 templates=5 squadrons=4 medevac=1+1 virtualReserve=true.")
 end
 
 if SCHEDULER then
-  SCHEDULER:New(nil, main, {}, 16)
+  SCHEDULER:New(nil, main, {}, 18)
 else
   timer.scheduleFunction(function()
     main()
     return nil
-  end, nil, timer.getTime() + 16)
+  end, nil, timer.getTime() + 18)
 end
