@@ -6,7 +6,7 @@ Dieses Dokument hält die verbindlichen Auswahlentscheidungen für Einheiten fes
 
 Die vollständige historische und planerische Grundlage bleibt in [`us-air-orbat-2010-2011.md`](us-air-orbat-2010-2011.md) erhalten. Nicht ausgewählte Einheiten bleiben dort als historischer Kontext dokumentiert, werden aber nicht für Spieler-Slots, KI-Squadrons, Payload-Templates, Statics oder Bestände der aktiven Mission umgesetzt.
 
-Die gemeinsamen Betriebsregeln stehen in [`18-air-operations-implementation.md`](18-air-operations-implementation.md). Dazu gehören insbesondere gepoolte Statics, endgültige Verluste, maximal vier Spieler- und vier KI-Luftfahrzeuge je Typ und Basis als lokale Obergrenze sowie maximal zwei parallele KI-Unterstützungsmissionen mit jeweils höchstens zwei Luftfahrzeugen.
+Die gemeinsamen Betriebsregeln stehen in [`18-air-operations-implementation.md`](18-air-operations-implementation.md). Dazu gehören insbesondere gepoolte Statics, endgültige Verluste, maximal vier Spieler- und vier KI-Luftfahrzeuge je Typ und Basis als globale technische Obergrenzen sowie maximal zwei parallele KI-Unterstützungsmissionen mit jeweils höchstens zwei Luftfahrzeugen. Einzelne Basen dürfen aufgrund realer Park- und Missionseditorgrenzen strengere lokale Limits festlegen. Für Jalalabad gilt verbindlich ein Limit von zwei Spielerluftfahrzeugen je nutzbarem Typ.
 
 ---
 
@@ -15,7 +15,7 @@ Die gemeinsamen Betriebsregeln stehen in [`18-air-operations-implementation.md`]
 | Nr. | Flugplatz | Muster / Bereich | Verbindliche Entscheidung | Status |
 |---:|---|---|---|---|
 | 1 | Bagram | F-15E | 336th Expeditionary Fighter Squadron, 16 F-15E | entschieden |
-| 2 | Jalalabad | Army Aviation | Task Force Six Shooters / 6-6 Cavalry mit B/1-10 Aviation und Utility-/MEDEVAC-Element | entschieden |
+| 2 | Jalalabad | Army Aviation | Task Force Six Shooters mit 24 OH-58D, 8 AH-64D, 8 UH-60 und 8 CH-47 | korrigiert und entschieden |
 | 3 | Kandahar | A-10C | 75th Expeditionary Fighter Squadron, 16 A-10C | entschieden |
 | 4 | Camp Bastion | AH-1W / UH-1Y | HMLA-169 „Vipers“, 10 AH-1W und 5 UH-1Y | entschieden |
 | 5 | Camp Bastion | MV-22B | keine aktive Umsetzung | entschieden: entfällt vollständig |
@@ -67,7 +67,56 @@ Lokaler ORBAT-Bestand: 8 Luftfahrzeuge
 
 Einheit: angegliedertes Utility-/MEDEVAC-Element
 Muster: UH-60-Familie
-Lokaler ORBAT-Bestand: 6 Luftfahrzeuge
+Lokaler ORBAT-Bestand: 8 Luftfahrzeuge
+
+Einheit: Task Force Shooter Heavy-Lift-Element
+Muster: CH-47
+Lokaler ORBAT-Bestand: 8 Luftfahrzeuge
+```
+
+Die genaue CH-47-Unterstellung wird neutral gehalten, solange der exakte Rotations- und Kompaniebezug für den gewählten Missionszeitpunkt nicht belastbar abgeschlossen ist. Der Bestand selbst ist durch zeitgenössische Task-Force-Berichte und die sichtbare 2011er Ramp-Belegung hinreichend begründet.
+
+### Evidenz und Momentaufnahme
+
+Auf der ausgewerteten Satellitenaufnahme wurden mindestens gezählt:
+
+```text
+13 OH-58
+ 7 AH-64
+ 7 UH-60
+ 7 CH-47
+ 1 Mi-8
+ 1 UH-1
+```
+
+Die Aufnahme ist keine vollständige Inventarliste. Weitere Luftfahrzeuge können im Einsatz, in Wartung, in Hallen oder auf anderen Flächen gewesen sein. Mi-8 und UH-1 werden als beobachtete externe oder transiente Luftfahrzeuge dokumentiert und nicht dem US-Task-Force-Shooter-Bestand zugerechnet.
+
+### Darstellungsregel
+
+Der logische ORBAT-Bestand, aktive Luftfahrzeuge, sichtbare Statics und virtuelle Reserve sind getrennte Ebenen.
+
+Nicht jedes Bestandsflugzeug muss gleichzeitig sichtbar sein. Ein dauerhaft verlorenes Luftfahrzeug reduziert den Gesamtbestand. Eine andere, bislang virtuelle Bestandsmaschine kann später nachrücken, ohne dass dies einen externen Ersatz darstellt.
+
+### Lokales Spielerlimit
+
+Aufgrund der begrenzten realitätsnahen DCS-Parkflächen gilt in Jalalabad:
+
+```text
+maximal 2 Spielerluftfahrzeuge je nutzbarem Typ
+```
+
+Verpflichtende Kern-Spielertypen:
+
+```text
+OH-58D: 2
+AH-64D: 2
+CH-47: 2
+```
+
+Optional:
+
+```text
+UH-60L Community Mod: 0 oder 2
 ```
 
 ### MEDEVAC-Regel
@@ -85,14 +134,37 @@ Ein einzelner UH-60 darf nicht als regulärer MEDEVAC-Auftrag eingesetzt werden.
 
 ```text
 AW_US_JALALABAD
-├── SQ_6_6_CAV_OH58D
-├── SQ_B_1_10_AVN_AH64D
-└── SQ_JBAD_UTILITY_UH60
+├── SQ_US_JBAD_OH58D_6_6_CAV
+├── SQ_US_JBAD_AH64D_B_1_10_AVN
+├── SQ_US_JBAD_UH60_UTILITY_MEDEVAC
+└── SQ_US_JBAD_CH47_HEAVYLIFT
 ```
+
+Bestandsabbildung in MOOSE:
+
+```text
+OH-58D: 24 Luftfahrzeuge / Two-Ship-Template = 12 Asset-Gruppen
+AH-64D:  8 Luftfahrzeuge / Two-Ship-Template =  4 Asset-Gruppen
+UH-60:   8 Luftfahrzeuge / Single-Ship-Template = 8 Asset-Gruppen
+CH-47:   8 Luftfahrzeuge / Single-Ship-Template = 8 Asset-Gruppen
+```
+
+### Sichtbare Static-Obergrenzen
+
+```text
+7 OH-58D
+4 AH-64D
+4 UH-60A
+5 CH-47
+```
+
+Diese Statics sind Teil des logischen Bestands und kein zusätzlicher Bestand. Die vollständige Park-, Template-, Zonen- und Verlustregel steht in [`21-jalalabad-air-operations-manifest.md`](21-jalalabad-air-operations-manifest.md).
 
 ### Nicht aktiv umgesetzt
 
 Task Force Lighthorse bleibt ausschließlich als historische Vorgängereinheit dokumentiert. Es werden keine Lighthorse-Spieler-Slots, KI-SQUADRONs, Payload-Templates, Statics, Liveries oder automatischen Verbandswechsel vorbereitet.
+
+Für Mi-8 und UH-1 werden aus der einzelnen Satellitenbeobachtung keine US-Bestände, SQUADRONs oder verpflichtenden Spielerplätze abgeleitet. Eine spätere atmosphärische oder externe Darstellung wäre eine getrennte Entscheidung.
 
 ---
 
@@ -147,7 +219,7 @@ AW_USMC_BASTION
 
 ### Nicht aktiv umgesetzt
 
-HMLA-369 „Gunfighters“ bleibt ausschließlich als historische Vorgängereinheit dokumentiert. Für diesen früheren Verbandszustand werden keine KI-SQUADRONs, Payload-Templates, Statics, Liveries oder automatischen Staffelwechsel angelegt.
+HMLA-369 „Gunfighters“ bleibt ausschließlich als historische Vorgängereinheit dokumentiert. Für diesen früheren Verbandszustand werden keine KI-SQUADRONs, Payload-Templates, Statics, Liveries oder automatischen Staffelwechsel vorbereitet.
 
 ---
 
@@ -237,14 +309,16 @@ Die CH-53D-Verbände bleiben nur als historischer Kontext in der Forschungs- und
 
 Die Ablösungsentscheidungen sind abgeschlossen. Noch offen sind keine Staffelwechsel, sondern technische und missionsgestalterische Detailentscheidungen:
 
-- genaue Zahl und Platzierung gepoolter Statics je Muster,
+- genaue Platzierung gepoolter Statics je Muster,
 - historisch passende oder verfügbare Liveries,
 - konkrete Spieler- und KI-Parkpositionen,
 - Payload- und Rollen-Templates,
 - technische Verwendbarkeit karteneigener Warehouse-Gebäude,
-- DCS-Typnamen und MOOSE-Verhalten der KI-Muster,
+- DCS-Typnamen und MOOSE-Verhalten der noch unbestätigten KI-Muster,
 - physische Darstellung der UH-1Y,
 - versionsbezogene Prüfung des UH-60L Community Mods,
-- Fallback-Verhalten für F-15E und andere Risikomodule.
+- Fallback-Verhalten für F-15E und andere Risikomodule,
+- DCS-Typ- und Parkverhalten des Jalalabad-CH-47,
+- persistente Ramp-/Static-Neuverteilung nach Verlusten und Missionsneustarts.
 
-Diese Punkte werden in der Missionseditor-Arbeitsliste getrennt nach Aufgaben des Missionsdesigners und vorzubereitenden Entwicklungsinformationen geführt.
+Die konkrete Jalalabad-Umsetzung und Testhistorie ist in Dokument 21 festgehalten. Der projektweite Testmissions-Workflow ist in Dokument 22 verbindlich definiert.
