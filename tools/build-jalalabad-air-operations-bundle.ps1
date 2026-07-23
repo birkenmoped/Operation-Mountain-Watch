@@ -14,7 +14,8 @@ $sourceFiles = @(
     '02-dump-airbase-parking.lua',
     '03-probe-warehouse-anchor.lua',
     '04-dump-aircraft-types.lua',
-    '05-validate-mission-templates.lua'
+    '05-validate-mission-templates.lua',
+    '06-construct-oh58d-squadron.lua'
 )
 
 if (-not (Test-Path -LiteralPath $sourceDir -PathType Container)) {
@@ -23,7 +24,7 @@ if (-not (Test-Path -LiteralPath $sourceDir -PathType Container)) {
 
 New-Item -ItemType Directory -Path $distDir -Force | Out-Null
 
-$builderVersion = 'JBAD-AIR-OPS-DIAGNOSTICS-1'
+$builderVersion = 'JBAD-AIR-OPS-DIAGNOSTICS-2'
 $commit = 'UNKNOWN'
 try {
     $commit = (& git -C $repoRoot rev-parse HEAD 2>$null).Trim()
