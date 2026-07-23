@@ -9,9 +9,10 @@ Abgeschlossen und als PASS dokumentiert sind:
 - Diagnose des leeren Ausgangszustands,
 - Erkennung des Warehouse-Ankers,
 - Konstruktion des nicht gestarteten Jalalabad-AIRWING,
-- explizite Zuordnung des AIRWING zu Jalalabad.
+- explizite Zuordnung des AIRWING zu Jalalabad,
+- Konstruktion und Verknüpfung des OH-58D-SQUADRONs mit 24 Luftfahrzeugen in 12 zweischiffigen Asset-Gruppen.
 
-Die aktuelle Stufe ergänzt genau ein zweischiffiges OH-58D-KI-Template und prüft die Konstruktion und Verknüpfung eines `SQUADRON`. Das AIRWING wird weiterhin nicht gestartet; es werden keine Aufträge erzeugt und keine Luftfahrzeuge gespawnt.
+Die aktuelle Stufe ergänzt genau ein zweischiffiges AH-64D-KI-Template und prüft die Konstruktion und Verknüpfung des zweiten `SQUADRON`. Das AIRWING wird weiterhin nicht gestartet; es werden keine Aufträge erzeugt und keine Luftfahrzeuge gespawnt.
 
 Verbindlicher lokaler Bestand:
 
@@ -86,6 +87,7 @@ Der Builder fügt diese Quellen in fester Reihenfolge zusammen:
 04-dump-aircraft-types.lua
 05-validate-mission-templates.lua
 06-construct-oh58d-squadron.lua
+07-construct-ah64d-squadron.lua
 ```
 
 ## Erstes Air Operations Manifest
@@ -103,7 +105,7 @@ Erwartete DCS-Typen:
 | Rolle | erwarteter DCS-Typ | Status |
 |---|---|---|
 | OH-58D Spieler/KI | `OH58D` | bestätigt |
-| AH-64D Spieler/KI | `AH-64D_BLK_II` | im DCS-Test bestätigen |
+| AH-64D Spieler/KI | `AH-64D_BLK_II` | in aktueller Stufe bestätigen |
 | UH-60 KI | `UH-60A` | im DCS-Test bestätigen |
 | UH-60 Spieler | UH-60L Community Mod | optional; Typname noch offen |
 
@@ -113,10 +115,9 @@ KI-`UH-60A` und Spieler-UH-60L bilden denselben konzeptionellen Bestand von sech
 
 `SQUADRON:New(TemplateGroupName, Ngroups, SquadronName)` erwartet bei `Ngroups` die Zahl der Asset-Gruppen. Ein zweischiffiges Template repräsentiert deshalb zwei Luftfahrzeuge je Asset-Gruppe.
 
-Für den OH-58D-Bestand gilt:
-
 ```text
-24 Luftfahrzeuge / 2 je Gruppe = 12 Asset-Gruppen
+OH-58D: 24 Luftfahrzeuge / 2 je Gruppe = 12 Asset-Gruppen
+AH-64D:  8 Luftfahrzeuge / 2 je Gruppe =  4 Asset-Gruppen
 ```
 
 Die Obergrenze von vier gleichzeitig lokalen KI-Luftfahrzeugen wird später durch Missionsanforderungen und Dispatch-Limits gesteuert; sie entspricht nicht dem Gesamtbestand im SQUADRON.
@@ -127,6 +128,7 @@ Die Obergrenze von vier gleichzeitig lokalen KI-Luftfahrzeugen wird später durc
 results/2026-07-23-jalalabad-air-operations-diagnostics-v1-partial.md
 results/2026-07-23-jalalabad-air-operations-diagnostics-v2-pass.md
 results/2026-07-23-jalalabad-airwing-anchor-construction-pass.md
+results/2026-07-23-jalalabad-oh58d-squadron-construction-pass.md
 ```
 
 Bestätigt sind:
@@ -137,6 +139,8 @@ Bestätigt sind:
 - MOOSE-Storage verfügbar,
 - Warehouse-Anker `WH_AIR_US_JALALABAD` als BLUE-/USA-Static erkannt,
 - `AIRWING:New()` und `SetAirbase()` ohne Lua-Fehler,
+- OH-58D-Typ `OH58D` und zweischiffiges Template bestätigt,
+- `SQ_US_JBAD_OH58D_6_6_CAV` mit 12 Asset-Gruppen und RECON-Capability verknüpft,
 - AIRWING `AW_US_JALALABAD` bleibt in der Validierungsstufe ungestartet.
 
 ## Aktueller nächster Schritt
@@ -144,13 +148,13 @@ Bestätigt sind:
 Mission-Editor- und Abnahmevorgabe:
 
 ```text
-expected/jalalabad-oh58d-squadron-construction-acceptance.md
+expected/jalalabad-ah64d-squadron-construction-acceptance.md
 ```
 
-Es wird genau eine spät aktivierte BLUE-/USA-Gruppe mit zwei OH-58D angelegt:
+Es wird genau eine spät aktivierte BLUE-/USA-Gruppe mit zwei AH-64D BLK II angelegt:
 
 ```text
-TPL_AIR_US_JBAD_OH58D_RECON_2SHIP
+TPL_AIR_US_JBAD_AH64D_CAS_2SHIP
 ```
 
-Das neue Bundle prüft Typ, Gruppenstärke, Umrechnung von 24 Luftfahrzeugen in 12 Asset-Gruppen, `SQUADRON:New()`, `SetGrouping(2)`, RECON-Capability und `AIRWING:AddSquadron()`. Ein AIRWING-Start, Spieler-Slots, Payload-Pools, AUFTRAG-Missionen und tatsächliche Spawns bleiben außerhalb dieser Stufe.
+Das neue Bundle prüft Typ, Gruppenstärke, Umrechnung von acht Luftfahrzeugen in vier Asset-Gruppen, `SQUADRON:New()`, `SetGrouping(2)`, CAS-Capability und `AIRWING:AddSquadron()`. Ein AIRWING-Start, Spieler-Slots, Payload-Pools, AUFTRAG-Missionen und tatsächliche Spawns bleiben außerhalb dieser Stufe.
