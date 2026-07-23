@@ -1,75 +1,115 @@
 # Jalalabad Air Operations
 
-## Status: CH-47 correction required
+## Korrigierter Arbeitsstand
 
-The previously declared complete Jalalabad manifest was incomplete. It contained:
+Die lokale ORBAT wird nicht 1:1 auf sichtbare Statics oder DCS-Parkpositionen abgebildet.
+
+```text
+logischer Bestand = CampaignState-/MOOSE-Reserve
+sichtbare Statics = begrenzter visueller Ausschnitt
+aktive Spieler/KI = momentan eingesetzte Luftfahrzeuge
+virtuelle Reserve = Hallen, Wartung und nicht dargestellte Abstellflächen
+```
+
+Ein verlorenes Luftfahrzeug reduziert den Gesamtbestand dauerhaft. Eine andere, bislang unsichtbare Bestandsmaschine kann anschließend einen späteren Einsatz übernehmen. Das ist kein externer Ersatz.
+
+## 2011er Ramp-Momentaufnahme
+
+Mindestens sichtbar:
+
+```text
+13 OH-58
+ 7 AH-64
+ 7 UH-60
+ 7 CH-47
+ 1 Mi-8
+ 1 UH-1
+```
+
+Mi-8 und UH-1 werden als beobachtete externe oder transiente Luftfahrzeuge geführt und derzeit nicht dem US-Task-Force-Shooter-Bestand zugerechnet.
+
+## Logischer Jalalabad-Bestand
 
 ```text
 24 OH-58D
  8 AH-64D
- 6 UH-60-family
+ 8 UH-60-Familie
+ 8 CH-47 Heavy Lift
 ```
 
-Contemporary Task Force Shooter reporting and 2011 satellite imagery confirm that Jalalabad / FOB Fenty also hosted a substantial CH-47 heavy-lift element. The node must therefore not be declared complete without CH-47.
+## DCS-Kapazitätsmodell
 
-Current evidence-based working manifest:
+Für die realitätsnahen Hubschrauberflächen wurden 36 vergleichbare DCS-Positionen erfasst.
+
+Jalalabad verwendet deshalb eine lokale Spielerbegrenzung von zwei Luftfahrzeugen je nutzbarem Typ:
 
 ```text
-24 OH-58D
- 8 AH-64D
- 6 UH-60-family
- 8 CH-47 heavy-lift aircraft
+2 OH-58D-Spielerplätze
+2 AH-64D-Spielerplätze
+2 CH-47-Spielerplätze
+0 oder 2 optionale UH-60L-Spielerplätze
 ```
 
-The eight-aircraft CH-47 working count is based on the visible concentration in the 2011 satellite captures and the documented nine-aircraft RC-East heavy-lift company scale. Exact sub-unit attribution is intentionally left generic until the rotation boundary is fully reconciled.
+KI-Templates benötigen zusammen sieben Mission-Editor-Startpositionen. Damit werden 13 Kern-Operationspositionen beziehungsweise 15 mit optionalem UH-60L reserviert.
 
-## Valid confirmed results
-
-The following DCS results remain valid:
-
-- Jalalabad detected as MOOSE Airbase ID 19,
-- 50 parking entries readable,
-- `WH_AIR_US_JALALABAD` recognized as BLUE/USA static warehouse anchor,
-- native DCS warehouse and MOOSE storage available,
-- `AW_US_JALALABAD` construction and explicit airbase linking,
-- OH-58D type `OH58D`, two-ship template, 24 aircraft -> 12 asset groups,
-- AH-64D type `AH-64D_BLK_II`, two-ship template, 8 aircraft -> 4 asset groups.
-
-The only withdrawn claim is that the 24/8/6 manifest represented the complete local ORBAT.
-
-## Technical safety state
-
-The bootstrap now records:
+Sichtbare Static-Obergrenzen:
 
 ```text
-CH47 = 8
-CorrectionPending.CH47 = true
+7 OH-58D
+4 AH-64D
+4 UH-60A
+5 CH-47
 ```
 
-The final activation gate is hard-blocked while this flag is present. It must report `INCOMPLETE` and must not start the AIRWING or link the COMMANDER.
+Die 20 Statics plus 13 Kern-Operationspositionen ergeben 33 von 36 Positionen. Mit zwei optionalen UH-60L-Plätzen sind es 35. Statics dürfen auf geeigneten Apronflächen frei platziert werden, dürfen aber keine Spawn-, Rückkehr- oder Rollflächen blockieren.
 
-## Superseded Mission Editor instruction
+## Technische Struktur
 
-Do not execute the previous file as a completion work order:
+```text
+AW_US_JALALABAD
+├── SQ_US_JBAD_OH58D_6_6_CAV
+├── SQ_US_JBAD_AH64D_B_1_10_AVN
+├── SQ_US_JBAD_UH60_UTILITY_MEDEVAC
+└── SQ_US_JBAD_CH47_HEAVYLIFT
+```
+
+Templates:
+
+```text
+TPL_AIR_US_JBAD_OH58D_RECON_2SHIP
+TPL_AIR_US_JBAD_AH64D_CAS_2SHIP
+TPL_AIR_US_JBAD_UH60_MEDEVAC_LEAD_1SHIP
+TPL_AIR_US_JBAD_UH60_MEDEVAC_COVER_1SHIP
+TPL_AIR_US_JBAD_CH47_HEAVYLIFT_1SHIP
+```
+
+Der CH-47-DCS-Typ wird aus dem Mission-Editor-Template erkannt und anschließend für Spielergruppen und Statics verbindlich validiert.
+
+## Gültige bestätigte Ergebnisse
+
+- Jalalabad als MOOSE-Airbase ID 19,
+- 50 auslesbare Parking-Einträge,
+- Warehouse-Anker `WH_AIR_US_JALALABAD`,
+- natives DCS-Warehouse und MOOSE-Storage,
+- AIRWING-Konstruktion und explizite Airbase-Zuordnung,
+- OH-58D-Typ und OH-58D-SQUADRON-Konstruktion,
+- AH-64D-Typ und AH-64D-SQUADRON-Konstruktion.
+
+## Aktueller Missionseditor-Arbeitsauftrag
 
 ```text
 expected/jalalabad-complete-node-acceptance.md
 ```
 
-That file is retained only as a superseded record and is marked accordingly. A revised single-pass Jalalabad work package must add the CH-47 squadron, mission templates, player slots, pooled statics and heavy-lift parking/zone plan before the final DCS acceptance run.
+## Repository-Workflow
 
-## Evidence record
+```powershell
+cd P:\DCS-DEV\Operation-Mountain-Watch
 
-```text
-results/2026-07-23-jalalabad-ch47-orbat-correction.md
+git pull --ff-only
+
+powershell.exe -NoProfile -ExecutionPolicy Bypass `
+  -File .\tools\build-jalalabad-air-operations-bundle.ps1
 ```
 
-## Repository workflow
-
-The branch remains:
-
-```text
-feature/jalalabad-air-operations-diagnostics
-```
-
-Do not rebuild and re-embed the current bundle for a final acceptance run. The next usable build will be the revised CH-47-complete package.
+Nach dem Build muss `OMW_AirOps_Jalalabad.lua` im Mission Editor erneut ausgewählt und die Mission gespeichert werden.
