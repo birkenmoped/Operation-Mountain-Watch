@@ -19,6 +19,23 @@ Operation Mountain Watch is a dynamic multiplayer COIN campaign for DCS World on
 - DCS groups are temporary physical representations of strategic entities.
 - Do not let CampaignState, CTLD, MOOSE Warehouse, and DCS warehouses independently own the same resource.
 
+## MOOSE dependency
+
+- Use the pinned MOOSE release recorded in `vendor/moose/VERSION.md`.
+- The initial selected baseline is release `2.9.18` from the `master-ng` release family.
+- Use the static readable include at `vendor/moose/Moose.lua`.
+- Preserve the exact upstream filename and case: `Moose.lua`.
+- Load MOOSE before all project scripts that reference MOOSE classes.
+- Load exactly one MOOSE include file in a mission.
+- Do not load `Moose.lua` and `Moose_.lua` together.
+- Do not use `Moose_Include_Dynamic` for mission runtime.
+- Do not depend on an unpinned `master-ng` or `develop` branch.
+- A development-branch exception requires a separate ADR and an exact full commit SHA.
+- Do not edit vendored MOOSE source files.
+- Verify every MOOSE API against the vendored source or matching stable documentation.
+- Do not use develop-branch documentation as the sole evidence for release behavior.
+- A MOOSE version or build-variant update requires all relevant MOOSE test missions to be rerun.
+
 ## Lua conventions
 
 - Avoid global variables; modules return tables.
@@ -46,3 +63,4 @@ Before completing a change:
 2. Review the complete diff.
 3. State which behavior still requires an in-game DCS test.
 4. Record test results for pathfinding, multiplayer synchronization, dynamic cargo, or AI behavior when relevant.
+5. Confirm that the configured MOOSE version and include variant match `vendor/moose/VERSION.md`.
