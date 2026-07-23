@@ -3,7 +3,18 @@
 local TAG = "[OMW][AirOps.JBAD.UH60]"
 local function log(msg) env.info(TAG .. " " .. tostring(msg)) end
 
-local function validateTemplate(templateName, expectedType, role)
+local function getTemplateLivery(templateName)
+  if not _DATABASE or not _DATABASE.Templates or not _DATABASE.Templates.Groups then
+    return nil
+  end
+
+  local entry = _DATABASE.Templates.Groups[templateName]
+  local template = entry and entry.Template or nil
+  local unit = template and template.units and template.units[1] or nil
+  return unit and (unit.livery_id or unit.livery) or nil
+end
+
+local function validateTemplate(templateName, expectedType, role, expectedLivery)
   local template = templateName and GROUP:FindByName(templateName) or nil
   if not template then
     log("WAITING: " .. role .. " template missing: " .. tostring(templateName))
@@ -17,9 +28,28 @@ local function validateTemplate(templateName, expectedType, role)
   end
 
   local typeName = units[1] and units[1]:GetTypeName() or "nil"
-  log(string.format("%s template unit name=%s type=%s", role, units[1] and units[1]:GetName() or "nil", tostring(typeName)))
+  local livery = getTemplateLivery(templateName)
+  log(string.format(
+    "%s template unit name=%s type=%s livery=%s",
+    role,
+    units[1] and units[1]:GetName() or "nil",
+    tostring(typeName),
+    tostring(livery)
+  ))
+
   if typeName ~= expectedType then
     log(string.format("ERROR: %s template %s must use type %s; found=%s", role, templateName, expectedType, tostring(typeName)))
+    return nil
+  end
+
+  if expectedLivery and tostring(livery) ~= expectedLivery then
+    log(string.format(
+      "ERROR: %s template %s must use livery %s; found=%s",
+      role,
+      templateName,
+      expectedLivery,
+      tostring(livery)
+    ))
     return nil
   end
 
@@ -46,8 +76,9 @@ local function main()
 
   local leadName = cfg.Templates and cfg.Templates.UH60MedevacLead
   local coverName = cfg.Templates and cfg.Templates.UH60MedevacCover
-  local leadTemplate = validateTemplate(leadName, "UH-60A", "MEDEVAC_LEAD")
-  local coverTemplate = validateTemplate(coverName, "UH-60A", "MEDEVAC_COVER")
+  local requiredLivery = "standard"
+  local leadTemplate = validateTemplate(leadName, "UH-60A", "MEDEVAC_LEAD", requiredLivery)
+  local coverTemplate = validateTemplate(coverName, "UH-60A", "MEDEVAC_COVER", requiredLivery)
   if not leadTemplate or not coverTemplate then
     return
   end
@@ -118,10 +149,11 @@ local function main()
   cfg.Payloads.UH60MedevacCover = result.CoverPayload
 
   log(string.format(
-    "SQUADRON ready. name=%s aircraft=%d assetGroups=%d groupSize=1 capabilities=TRANSPORT/LAND/GROUNDESCORT medevacPackage=1+1 payloads=UNLIMITED.",
+    "SQUADRON ready. name=%s aircraft=%d assetGroups=%d groupSize=1 capabilities=TRANSPORT/LAND/GROUNDESCORT medevacPackage=1+1 livery=%s payloads=UNLIMITED.",
     squadronName,
     aircraftCount,
-    aircraftCount
+    aircraftCount,
+    requiredLivery
   ))
 end
 
