@@ -4,7 +4,14 @@
 
 Dieser Test bereitet die erste MOOSE-AIRWING-/SQUADRON-Umsetzung für Jalalabad / FOB Fenty vor.
 
-Die Diagnose des leeren Ausgangszustands ist mit Version 2 abgeschlossen und als PASS dokumentiert. Die aktuelle Stufe prüft ausschließlich einen benannten Mission-Editor-Warehouse-Anker und die Konstruktion eines nicht gestarteten AIRWING. Es werden weiterhin keine Aufträge erzeugt, keine Luftfahrzeuge gespawnt, keine Bestände verändert und keine Kampagnendaten geschrieben.
+Abgeschlossen und als PASS dokumentiert sind:
+
+- Diagnose des leeren Ausgangszustands,
+- Erkennung des Warehouse-Ankers,
+- Konstruktion des nicht gestarteten Jalalabad-AIRWING,
+- explizite Zuordnung des AIRWING zu Jalalabad.
+
+Die aktuelle Stufe ergänzt genau ein zweischiffiges OH-58D-KI-Template und prüft die Konstruktion und Verknüpfung eines `SQUADRON`. Das AIRWING wird weiterhin nicht gestartet; es werden keine Aufträge erzeugt und keine Luftfahrzeuge gespawnt.
 
 Verbindlicher lokaler Bestand:
 
@@ -57,7 +64,7 @@ Die Datei unter `dist` wird nicht manuell bearbeitet. Änderungen erfolgen aussc
 
 Im DCS-Missionseditor:
 
-1. vorhandenen Trigger mit `DO SCRIPT FILE` öffnen oder einen neuen Trigger nach `Moose.lua` anlegen,
+1. vorhandenen Trigger mit `DO SCRIPT FILE` öffnen,
 2. diese Datei erneut auswählen:
 
 ```text
@@ -67,8 +74,6 @@ mission\tests\jalalabad-air-operations\dist\OMW_AirOps_Jalalabad.lua
 3. Mission speichern.
 
 Das erneute Auswählen ist nach jedem lokalen Build erforderlich, weil DCS die Lua-Datei beim Speichern in die `.miz` einbettet. Ein späteres Neubauen der externen Datei aktualisiert die bereits gespeicherte Mission nicht automatisch.
-
-Für die aktuelle Warehouse-Anker-Stufe ist kein Neubau erforderlich, solange das bereits validierte Bundle aus Quellcommit `95d7571a4806d1eea1e22bfe5372d26c14426cc9` weiterhin eingebettet ist.
 
 ## Build-Reihenfolge
 
@@ -80,6 +85,7 @@ Der Builder fügt diese Quellen in fester Reihenfolge zusammen:
 03-probe-warehouse-anchor.lua
 04-dump-aircraft-types.lua
 05-validate-mission-templates.lua
+06-construct-oh58d-squadron.lua
 ```
 
 ## Erstes Air Operations Manifest
@@ -96,20 +102,31 @@ Erwartete DCS-Typen:
 
 | Rolle | erwarteter DCS-Typ | Status |
 |---|---|---|
-| OH-58D Spieler/KI | `OH58D` | in Ausgangsmission bestätigt |
+| OH-58D Spieler/KI | `OH58D` | bestätigt |
 | AH-64D Spieler/KI | `AH-64D_BLK_II` | im DCS-Test bestätigen |
 | UH-60 KI | `UH-60A` | im DCS-Test bestätigen |
 | UH-60 Spieler | UH-60L Community Mod | optional; Typname noch offen |
 
 KI-`UH-60A` und Spieler-UH-60L bilden denselben konzeptionellen Bestand von sechs UH-60 ab.
 
-## Abgeschlossene Diagnose
+## Asset-Gruppen statt Einzelmaschinen
 
-Ergebnisberichte:
+`SQUADRON:New(TemplateGroupName, Ngroups, SquadronName)` erwartet bei `Ngroups` die Zahl der Asset-Gruppen. Ein zweischiffiges Template repräsentiert deshalb zwei Luftfahrzeuge je Asset-Gruppe.
+
+Für den OH-58D-Bestand gilt:
+
+```text
+24 Luftfahrzeuge / 2 je Gruppe = 12 Asset-Gruppen
+```
+
+Die Obergrenze von vier gleichzeitig lokalen KI-Luftfahrzeugen wird später durch Missionsanforderungen und Dispatch-Limits gesteuert; sie entspricht nicht dem Gesamtbestand im SQUADRON.
+
+## Abgeschlossene Ergebnisse
 
 ```text
 results/2026-07-23-jalalabad-air-operations-diagnostics-v1-partial.md
 results/2026-07-23-jalalabad-air-operations-diagnostics-v2-pass.md
+results/2026-07-23-jalalabad-airwing-anchor-construction-pass.md
 ```
 
 Bestätigt sind:
@@ -118,15 +135,22 @@ Bestätigt sind:
 - 50 auslesbare Parking-Einträge,
 - natives DCS-Warehouse verfügbar,
 - MOOSE-Storage verfügbar,
-- fehlender Warehouse-Anker wird ohne Lua-Fehler verarbeitet,
-- leere Gruppen-, Static- und Zonenbasis wird korrekt protokolliert.
+- Warehouse-Anker `WH_AIR_US_JALALABAD` als BLUE-/USA-Static erkannt,
+- `AIRWING:New()` und `SetAirbase()` ohne Lua-Fehler,
+- AIRWING `AW_US_JALALABAD` bleibt in der Validierungsstufe ungestartet.
 
 ## Aktueller nächster Schritt
 
 Mission-Editor- und Abnahmevorgabe:
 
 ```text
-expected/jalalabad-airwing-anchor-construction-acceptance.md
+expected/jalalabad-oh58d-squadron-construction-acceptance.md
 ```
 
-Es wird genau ein BLUE-/USA-Static mit dem Unit-Namen `WH_AIR_US_JALALABAD` im Flugplatzbereich ergänzt. Das vorhandene Bundle prüft danach ausschließlich die Warehouse-Ankererkennung, `AIRWING:New()` und die explizite Jalalabad-Zuordnung. SQUADRONs, Templates, Spieler-Slots, Flugaufträge und Bestandslogik bleiben weiterhin außerhalb dieser Stufe.
+Es wird genau eine spät aktivierte BLUE-/USA-Gruppe mit zwei OH-58D angelegt:
+
+```text
+TPL_AIR_US_JBAD_OH58D_RECON_2SHIP
+```
+
+Das neue Bundle prüft Typ, Gruppenstärke, Umrechnung von 24 Luftfahrzeugen in 12 Asset-Gruppen, `SQUADRON:New()`, `SetGrouping(2)`, RECON-Capability und `AIRWING:AddSquadron()`. Ein AIRWING-Start, Spieler-Slots, Payload-Pools, AUFTRAG-Missionen und tatsächliche Spawns bleiben außerhalb dieser Stufe.
