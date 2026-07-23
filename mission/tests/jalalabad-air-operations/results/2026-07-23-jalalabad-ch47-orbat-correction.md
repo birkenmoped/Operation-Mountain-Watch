@@ -1,55 +1,86 @@
-# Jalalabad CH-47 ORBAT correction
+# Jalalabad ORBAT and ramp correction
 
-## Status
+## Reason
 
-The previously declared `24 OH-58D / 8 AH-64D / 6 UH-60` Jalalabad manifest was incomplete and must not be accepted as a complete local Air Operations node.
+The previous `24 OH-58D / 8 AH-64D / 6 UH-60` manifest omitted the CH-47 heavy-lift component and incorrectly implied that the complete inventory should be represented directly on the ramp.
 
-The missing component is a locally based or permanently forward-staged CH-47 heavy-lift element.
+The supplied 2011 satellite composite shows at least:
 
-## Evidence
+```text
+13 OH-58
+ 7 AH-64
+ 7 UH-60
+ 7 CH-47
+ 1 Mi-8
+ 1 UH-1
+```
 
-### Contemporary official unit reporting
+The image is a momentary ramp state. Aircraft may also be airborne, in maintenance, inside hangars or on non-visible dispersal areas.
 
-The DVIDS article **“TF Shooter takes over aviation ops”** dated 20 November 2010 states that Task Force Shooter at Forward Operating Base Fenty was a multi-functional aviation task force and explicitly included all four major U.S. Army helicopter types:
+Contemporary Task Force Shooter reporting identifies Jalalabad / FOB Fenty as a multi-functional aviation task force location using OH-58D, AH-64D, UH-60 and CH-47 aircraft. The exact heavy-lift sub-unit attribution remains intentionally generic until the rotation boundary is fully reconciled.
 
-- OH-58D Kiowa Warrior,
-- AH-64D Apache Longbow,
-- UH-60 Black Hawk,
-- CH-47 Chinook.
-
-The same report states that the task force provided assault and lift support from Jalalabad.
-
-### Contemporary imagery
-
-Multiple satellite captures from February and March 2011 show a sustained concentration of tandem-rotor helicopters on the Jalalabad heavy-lift parking areas. One clear capture contains approximately eight CH-47-shaped airframes distributed across the two large aprons. The repeated appearance and apron organization are inconsistent with treating all aircraft as incidental transient traffic.
-
-### Heavy-lift company scale
-
-The DVIDS article **“Spartan soldiers complete RC-East mission”** reports that Bravo Company, 7th Battalion, 158th Aviation Regiment assumed responsibility for nine CH-47 Chinooks during its 2011-2012 Regional Command-East deployment. The company was split among three forward operating bases. This does not prove that all nine aircraft were permanently at Jalalabad, but it establishes the correct order of magnitude and supports an eight-aircraft Jalalabad working count when combined with the satellite evidence.
-
-## Corrective decision
-
-The Jalalabad node must include CH-47 heavy lift before it can be declared complete.
-
-Working mission-design baseline:
+## Corrected logical inventory
 
 ```text
 24 OH-58D
  8 AH-64D
- 6 UH-60-family
+ 8 UH-60-family
  8 CH-47 heavy-lift aircraft
 ```
 
-The CH-47 figure is an evidence-based working count derived from the visible 2011 Jalalabad concentration and the documented nine-aircraft RC-East heavy-lift company scale. The exact sub-unit attribution changed during the deployment and is therefore represented initially as a generic Task Force Shooter heavy-lift detachment rather than with an unsupported company designation.
+Mi-8 and UH-1 remain recorded as observed external or transient aircraft and are not currently charged to the US Task Force Shooter inventory.
 
-## Technical consequence
+## Core design decision
 
-Until the revised CH-47 implementation is present, the final activation gate must remain blocked:
+The local numerical inventory, active aircraft, visible statics and DCS parking capacity are separate layers.
+
+Not every SQUADRON asset must be visible. A hidden reserve aircraft may fly a later sortie after another airframe is lost, but the loss remains permanent and reduces the total inventory.
+
+Visible statics are a capped representation of the remaining inactive reserve. A destroyed static is a real loss. It is not immediately respawned during the same mission. A different surviving reserve aircraft may occupy a visual static slot after a later controlled ramp refresh or mission restart.
+
+## Parking-limited representation
+
+Comparable DCS helicopter positions:
 
 ```text
-Jalalabad status = INCOMPLETE
-AIRWING must not Start()
-COMMANDER must not be linked
+36
 ```
 
-The confirmed Warehouse, Parking, OH-58D and AH-64D test results remain valid. Only the claim of a complete Jalalabad ORBAT is withdrawn.
+Local player limit:
+
+```text
+2 aircraft per playable type at Jalalabad
+```
+
+Core operational demand:
+
+```text
+6 required player positions
+7 late-activation template start positions
+= 13 core operational positions
+```
+
+Optional two UH-60L player positions raise this to 15.
+
+Visible static caps:
+
+```text
+7 OH-58D
+4 AH-64D
+4 UH-60A
+5 CH-47
+= 20 visible statics
+```
+
+This uses 33 of 36 comparable positions without the UH-60L mod, or 35 of 36 with both optional UH-60L slots.
+
+## Technical implementation
+
+- local inventory set to `24/8/8/8`,
+- player slots reduced to two per type,
+- CH-47 heavy-lift template and SQUADRON added,
+- CH-47 internal DCS type discovered from the mission template,
+- final validator uses virtual inventory and static caps,
+- AIRWING/COMMANDER activation remains gated by the complete corrected manifest.
+
+The confirmed Warehouse, Parking, OH-58D and AH-64D test results remain valid.
