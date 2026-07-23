@@ -36,10 +36,12 @@ end
 
 local function main()
   check("GROUP", expectedGroups, function(name) return GROUP and GROUP:FindByName(name) end)
-  check("STATIC", expectedStatics, function(name) return STATIC and STATIC:FindByName(name) end)
+  check("STATIC", expectedStatics, function(name) return STATIC and STATIC:FindByName(name, false) end)
   check("ZONE", expectedZones, function(name) return ZONE and ZONE:FindByName(name) end)
 
-  local warehouse = (STATIC and STATIC:FindByName("WH_AIR_US_JALALABAD")) or
+  -- The warehouse is intentionally absent in the initial fixture. Query it
+  -- without raising so that the validator can emit a normal MISSING result.
+  local warehouse = (STATIC and STATIC:FindByName("WH_AIR_US_JALALABAD", false)) or
                     (UNIT and UNIT:FindByName("WH_AIR_US_JALALABAD"))
   log("WAREHOUSE_ANCHOR " .. (warehouse and "OK" or "MISSING") .. " WH_AIR_US_JALALABAD")
 end
