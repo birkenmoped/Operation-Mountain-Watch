@@ -2,34 +2,36 @@
 local TAG = "[OMW][AirOps.JBAD.COMPLETE]"
 local function log(msg) env.info(TAG .. " " .. tostring(msg)) end
 
-local function appendAll(target, source)
-  for _, value in ipairs(source or {}) do
-    target[#target + 1] = value
+local function getMissionTemplate(name)
+  if not _DATABASE or not _DATABASE.Templates or not _DATABASE.Templates.Groups then
+    return nil
   end
+  local data = _DATABASE.Templates.Groups[name]
+  return data and data.Template or nil
 end
 
-local function validateGroup(name, expectedType, expectedSize)
-  local group = GROUP:FindByName(name)
-  if not group then
-    log("MISSING GROUP " .. name)
+local function validateMissionGroup(name, expectedType, expectedSize)
+  local template = getMissionTemplate(name)
+  if not template then
+    log("MISSING GROUP_TEMPLATE " .. name)
     return false
   end
 
-  local units = group:GetUnits() or {}
+  local units = template.units or {}
   if #units ~= expectedSize then
-    log(string.format("ERROR GROUP %s size=%d expected=%d", name, #units, expectedSize))
+    log(string.format("ERROR GROUP_TEMPLATE %s size=%d expected=%d", name, #units, expectedSize))
     return false
   end
 
   for index, unit in ipairs(units) do
-    local typeName = unit and unit:GetTypeName() or "nil"
+    local typeName = unit and unit.type or "nil"
     if typeName ~= expectedType then
-      log(string.format("ERROR GROUP %s unit=%d type=%s expected=%s", name, index, tostring(typeName), expectedType))
+      log(string.format("ERROR GROUP_TEMPLATE %s unit=%d type=%s expected=%s", name, index, tostring(typeName), expectedType))
       return false
     end
   end
 
-  log(string.format("OK GROUP %s type=%s size=%d", name, expectedType, expectedSize))
+  log(string.format("OK GROUP_TEMPLATE %s type=%s size=%d", name, expectedType, expectedSize))
   return true
 end
 
@@ -53,9 +55,9 @@ end
 local function validateOptionalUH60L(groups)
   local present = {}
   for _, name in ipairs(groups or {}) do
-    local group = GROUP:FindByName(name)
-    if group then
-      present[#present + 1] = group
+    local template = getMissionTemplate(name)
+    if template then
+      present[#present + 1] = { Name = name, Template = template }
     end
   end
 
@@ -70,13 +72,13 @@ local function validateOptionalUH60L(groups)
   end
 
   local detectedType = nil
-  for _, group in ipairs(present) do
-    local units = group:GetUnits() or {}
+  for _, item in ipairs(present) do
+    local units = item.Template.units or {}
     if #units ~= 1 then
-      log(string.format("ERROR OPTIONAL UH60L group %s must contain exactly one aircraft", group:GetName()))
+      log(string.format("ERROR OPTIONAL UH60L group %s must contain exactly one aircraft", item.Name))
       return false
     end
-    local typeName = units[1]:GetTypeName()
+    local typeName = units[1] and units[1].type or "nil"
     if detectedType and detectedType ~= typeName then
       log(string.format("ERROR OPTIONAL UH60L groups use inconsistent types %s and %s", detectedType, tostring(typeName)))
       return false
@@ -128,21 +130,17 @@ local function main()
     ok = false
   end
 
-  local requiredGroups = {}
-  appendAll(requiredGroups, cfg.PlayerGroups and cfg.PlayerGroups.Required and cfg.PlayerGroups.Required.OH58D)
-  appendAll(requiredGroups, cfg.PlayerGroups and cfg.PlayerGroups.Required and cfg.PlayerGroups.Required.AH64D)
-
   for _, name in ipairs(cfg.PlayerGroups.Required.OH58D) do
-    if not validateGroup(name, "OH58D", 1) then ok = false end
+    if not validateMissionGroup(name, "OH58D", 1) then ok = false end
   end
   for _, name in ipairs(cfg.PlayerGroups.Required.AH64D) do
-    if not validateGroup(name, "AH-64D_BLK_II", 1) then ok = false end
+    if not validateMissionGroup(name, "AH-64D_BLK_II", 1) then ok = false end
   end
 
-  if not validateGroup(cfg.Templates.OH58DRecon, "OH58D", 2) then ok = false end
-  if not validateGroup(cfg.Templates.AH64DCAS, "AH-64D_BLK_II", 2) then ok = false end
-  if not validateGroup(cfg.Templates.UH60MedevacLead, "UH-60A", 1) then ok = false end
-  if not validateGroup(cfg.Templates.UH60MedevacCover, "UH-60A", 1) then ok = false end
+  if not validateMissionGroup(cfg.Templates.OH58DRecon, "OH58D", 2) then ok = false end
+  if not validateMissionGroup(cfg.Templates.AH64DCAS, "AH-64D_BLK_II", 2) then ok = false end
+  if not validateMissionGroup(cfg.Templates.UH60MedevacLead, "UH-60A", 1) then ok = false end
+  if not validateMissionGroup(cfg.Templates.UH60MedevacCover, "UH-60A", 1) then ok = false end
 
   for _, name in ipairs(cfg.Statics.OH58D) do
     if not validateStatic(name, "OH58D") then ok = false end
@@ -194,6 +192,12 @@ local function main()
   if not ok then
     cfg.Status = "INCOMPLETE"
     log("RESULT: INCOMPLETE. AIRWING and COMMANDER remain unstarted; correct all preceding ERROR/MISSING lines.")
+    return
+  end
+
+  if not COMMANDER then
+    cfg.Status = "ERROR"
+    log("ERROR: MOOSE COMMANDER class is unavailable.")
     return
   end
 
