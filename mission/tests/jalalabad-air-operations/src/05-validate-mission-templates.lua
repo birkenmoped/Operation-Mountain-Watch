@@ -23,6 +23,13 @@ local function check(kind, names, finder)
   return present, missing
 end
 
+local function findMissionTemplate(name)
+  if not _DATABASE or not _DATABASE.Templates or not _DATABASE.Templates.Groups then
+    return nil
+  end
+  return _DATABASE.Templates.Groups[name]
+end
+
 local function main()
   local cfg = OMW and OMW.AirOps and OMW.AirOps.Jalalabad
   if not cfg then
@@ -30,13 +37,16 @@ local function main()
     return
   end
 
-  local requiredGroups = {}
-  appendAll(requiredGroups, cfg.PlayerGroups.Required.OH58D)
-  appendAll(requiredGroups, cfg.PlayerGroups.Required.AH64D)
-  requiredGroups[#requiredGroups + 1] = cfg.Templates.OH58DRecon
-  requiredGroups[#requiredGroups + 1] = cfg.Templates.AH64DCAS
-  requiredGroups[#requiredGroups + 1] = cfg.Templates.UH60MedevacLead
-  requiredGroups[#requiredGroups + 1] = cfg.Templates.UH60MedevacCover
+  local requiredPlayerGroups = {}
+  appendAll(requiredPlayerGroups, cfg.PlayerGroups.Required.OH58D)
+  appendAll(requiredPlayerGroups, cfg.PlayerGroups.Required.AH64D)
+
+  local requiredAITemplates = {
+    cfg.Templates.OH58DRecon,
+    cfg.Templates.AH64DCAS,
+    cfg.Templates.UH60MedevacLead,
+    cfg.Templates.UH60MedevacCover
+  }
 
   local optionalGroups = {}
   appendAll(optionalGroups, cfg.PlayerGroups.Optional.UH60L)
@@ -46,10 +56,12 @@ local function main()
   appendAll(statics, cfg.Statics.AH64D)
   appendAll(statics, cfg.Statics.UH60)
 
-  check("REQUIRED_GROUP", requiredGroups, function(name) return GROUP and GROUP:FindByName(name) end)
-  local optionalPresent, optionalMissing = check("OPTIONAL_UH60L_GROUP", optionalGroups, function(name) return GROUP and GROUP:FindByName(name) end)
+  check("REQUIRED_PLAYER_TEMPLATE", requiredPlayerGroups, findMissionTemplate)
+  check("REQUIRED_AI_TEMPLATE", requiredAITemplates, findMissionTemplate)
+
+  local optionalPresent, optionalMissing = check("OPTIONAL_UH60L_TEMPLATE", optionalGroups, findMissionTemplate)
   if optionalPresent ~= 0 and optionalPresent ~= 4 then
-    log(string.format("ERROR OPTIONAL_UH60L_GROUP partial-set present=%d missing=%d expected=0-or-4", optionalPresent, optionalMissing))
+    log(string.format("ERROR OPTIONAL_UH60L_TEMPLATE partial-set present=%d missing=%d expected=0-or-4", optionalPresent, optionalMissing))
   end
 
   check("STATIC", statics, function(name) return STATIC and STATIC:FindByName(name, false) end)
