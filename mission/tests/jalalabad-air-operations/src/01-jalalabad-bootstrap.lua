@@ -15,7 +15,7 @@ local function numbered(prefix, count)
 end
 
 OMW.AirOps.Jalalabad = {
-  Status = "ASSEMBLING",
+  Status = "ASSEMBLING_CH47_CORRECTION",
   AirbaseName = AIRBASE.Afghanistan and AIRBASE.Afghanistan.Jalalabad or "Jalalabad",
   WarehouseName = "WH_AIR_US_JALALABAD",
   AirwingName = "AW_US_JALALABAD",
@@ -23,7 +23,13 @@ OMW.AirOps.Jalalabad = {
   Inventory = {
     OH58D = 24,
     AH64D = 8,
-    UH60 = 6
+    UH60 = 6,
+    CH47 = 8
+  },
+
+  CorrectionPending = {
+    CH47 = true,
+    Reason = "2011 satellite imagery and contemporary TF Shooter reporting confirm a missing Jalalabad CH-47 heavy-lift component."
   },
 
   Limits = {
@@ -113,6 +119,7 @@ local function validate()
   cfg.Airbase = airbase
   cfg.Airwing = result
   log("AIRWING constructed and explicitly linked. Awaiting complete-node assembly before Start().")
+  log("CORRECTION: CH-47 heavy-lift inventory=8 is now required before Jalalabad can become OPERATIONAL.")
 end
 
 if SCHEDULER then
