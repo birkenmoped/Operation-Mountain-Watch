@@ -31,6 +31,13 @@ local function joinNumbers(values)
   return table.concat(text, ",")
 end
 
+local function blockStart(cfg, reason)
+  cfg.ParkingReservationsOK = false
+  cfg.CorrectionPending = cfg.CorrectionPending or {}
+  cfg.CorrectionPending.CH47 = true
+  cfg.CorrectionPending.Reason = reason
+end
+
 local function main()
   local cfg = OMW and OMW.AirOps and OMW.AirOps.Jalalabad
   if not cfg then
@@ -41,6 +48,7 @@ local function main()
   local airbase = cfg.Airbase or (AIRBASE and AIRBASE:FindByName(cfg.AirbaseName))
   if not airbase then
     log("ERROR: Jalalabad airbase is unavailable.")
+    blockStart(cfg, "Jalalabad airbase unavailable during static parking reservation validation.")
     return
   end
 
@@ -52,7 +60,7 @@ local function main()
     airbase:SetParkingSpotBlacklist(blacklist)
   else
     log("ERROR: AIRBASE:SetParkingSpotBlacklist is unavailable.")
-    cfg.ParkingReservationsOK = false
+    blockStart(cfg, "MOOSE parking blacklist API unavailable.")
     return
   end
 
@@ -129,6 +137,7 @@ local function main()
 
   cfg.ParkingReservationsOK = violations == 0 and confirmedReservations == parking.CH47DCSNodeReservations
   if not cfg.ParkingReservationsOK then
+    blockStart(cfg, "Static parking reservation validation failed.")
     log(string.format(
       "RESULT: FAIL intentionalReservationsConfirmed=%d expected=%s violations=%d blacklistedTerminalIDs=%s AIRWING_START_BLOCKED=true",
       confirmedReservations,
