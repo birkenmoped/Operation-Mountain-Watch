@@ -35,7 +35,10 @@ local function validate()
 
   log("Airbase OK: " .. airbase:GetName() .. " ID=" .. tostring(airbase:GetID()))
 
-  local anchor = STATIC:FindByName(cfg.WarehouseName) or UNIT:FindByName(cfg.WarehouseName)
+  -- STATIC:FindByName raises an error by default when the object is absent.
+  -- The missing anchor is an expected stage-1 condition, so explicitly disable
+  -- that error and report a controlled WAITING result instead.
+  local anchor = STATIC:FindByName(cfg.WarehouseName, false) or UNIT:FindByName(cfg.WarehouseName)
   if not anchor then
     log("WAITING: Warehouse anchor missing: " .. cfg.WarehouseName)
     return
