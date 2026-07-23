@@ -1,8 +1,10 @@
 # Jalalabad Air Operations Test
 
-## Ziel
+## Ziel und Status
 
-Dieser Test führt die erste MOOSE-AIRWING-/SQUADRON-Umsetzung für die aktive US-Luft-ORBAT in Jalalabad / FOB Fenty ein.
+Dieser Test bereitet die erste MOOSE-AIRWING-/SQUADRON-Umsetzung für Jalalabad / FOB Fenty vor.
+
+Die aktuelle Stufe ist ausschließlich diagnostisch. Das Bundle startet keine AIRWING-Operationen, erzeugt keine Aufträge, verändert keine Bestände und schreibt keinen Kampagnenzustand.
 
 Verbindlicher lokaler Bestand:
 
@@ -29,133 +31,92 @@ SHA-256: 898703f5b738a632492e514f8943327634a0d094716fd7f4c971c9b2582fb50b
 
 Die Ausgangsmission enthält noch keine Jalalabad-Air-Ops-Gruppen oder -Statics. Sie lädt neben MOOSE weiterhin das TM02W2F-Testbundle.
 
-## Erstes Air Operations Manifest
+## Verbindlicher Repository-Workflow
 
-### Bestands- und Aktivitätsgrenzen
+```powershell
+cd P:\DCS-DEV\Operation-Mountain-Watch
+
+git fetch origin
+git switch feature/jalalabad-air-operations-diagnostics
+git pull --ff-only
+
+git rev-parse HEAD
+
+powershell.exe -NoProfile -ExecutionPolicy Bypass `
+  -File .\tools\build-jalalabad-air-operations-bundle.ps1
+```
+
+Erzeugte Datei:
+
+```text
+P:\DCS-DEV\Operation-Mountain-Watch\mission\tests\jalalabad-air-operations\dist\OMW_AirOps_Jalalabad.lua
+```
+
+Die Datei unter `dist` wird nicht manuell bearbeitet. Änderungen erfolgen ausschließlich in `src` und werden danach neu gebaut.
+
+## Mission aktualisieren
+
+Im DCS-Missionseditor:
+
+1. vorhandenen Trigger mit `DO SCRIPT FILE` öffnen oder einen neuen Trigger nach `Moose.lua` anlegen,
+2. diese Datei erneut auswählen:
+
+```text
+mission\tests\jalalabad-air-operations\dist\OMW_AirOps_Jalalabad.lua
+```
+
+3. Mission speichern.
+
+Das erneute Auswählen ist nach jedem lokalen Build erforderlich, weil DCS die Lua-Datei beim Speichern in die `.miz` einbettet. Ein späteres Neubauen der externen Datei aktualisiert die bereits gespeicherte Mission nicht automatisch.
+
+## Build-Reihenfolge
+
+Der Builder fügt diese Quellen in fester Reihenfolge zusammen:
+
+```text
+01-jalalabad-bootstrap.lua
+02-dump-airbase-parking.lua
+03-probe-warehouse-anchor.lua
+04-dump-aircraft-types.lua
+05-validate-mission-templates.lua
+```
+
+## Erstes Air Operations Manifest
 
 | Pool | Bestand | Spieler maximal | KI maximal lokal | anfänglich sichtbare Statics |
 |---|---:|---:|---:|---:|
 | OH-58D | 24 | 4 | 4 | 8 |
 | AH-64D | 8 | 4 | 4 | 4 |
-| UH-60-Familie | 6 | 4 optional | 4, durch Gesamtpool begrenzt | 2 |
+| UH-60-Familie | 6 | 4 optional | 4 | 2 |
 
-Die Static-Zahlen sind Zielwerte für den initialen Ramp-Zustand. Der spätere `StaticAirframeManager` reduziert sichtbare Statics, wenn der verbleibende inaktive Pool dafür nicht ausreicht.
+Die Static-Zahlen sind Zielwerte für den initialen Ramp-Zustand und kein zusätzlicher Bestand.
 
-### DCS-Typen
+Erwartete DCS-Typen:
 
 | Rolle | erwarteter DCS-Typ | Status |
 |---|---|---|
 | OH-58D Spieler/KI | `OH58D` | in Ausgangsmission bestätigt |
 | AH-64D Spieler/KI | `AH-64D_BLK_II` | im DCS-Test bestätigen |
 | UH-60 KI | `UH-60A` | im DCS-Test bestätigen |
-| UH-60 Spieler | UH-60L Community Mod, erwarteter Typname noch offen | optional, Diagnose erforderlich |
+| UH-60 Spieler | UH-60L Community Mod | optional; Typname noch offen |
 
-KI-`UH-60A` und Spieler-UH-60L bilden denselben konzeptionellen Bestand von sechs UH-60 ab. Sie sind keine getrennten ORBAT-Pools.
+KI-`UH-60A` und Spieler-UH-60L bilden denselben konzeptionellen Bestand von sechs UH-60 ab.
 
-### Spielergruppen
+## Erwarteter erster Lauf
 
-Je Spieler-Luftfahrzeug wird eine eigene DCS-Gruppe angelegt.
+Da die Missionseditorobjekte noch nicht angelegt wurden, sind Meldungen über fehlende Gruppen, Statics, Zonen und den Warehouse-Anker zunächst korrekt.
 
-```text
-CLIENT_US_JBAD_OH58D_01
-CLIENT_US_JBAD_OH58D_02
-CLIENT_US_JBAD_OH58D_03
-CLIENT_US_JBAD_OH58D_04
+Der Lauf soll belastbar liefern:
 
-CLIENT_US_JBAD_AH64D_01
-CLIENT_US_JBAD_AH64D_02
-CLIENT_US_JBAD_AH64D_03
-CLIENT_US_JBAD_AH64D_04
+- DCS-/MOOSE-Name und ID von Jalalabad,
+- Parking-IDs und Terminaltypen,
+- Warehouse-/Storage-Verfügbarkeit,
+- interne Typnamen bereits angelegter Testgruppen,
+- vollständige Liste der noch fehlenden Air-Ops-Objekte,
+- mögliche Lua- oder DCS-API-Fehler.
 
-CLIENT_US_JBAD_UH60L_01
-CLIENT_US_JBAD_UH60L_02
-CLIENT_US_JBAD_UH60L_03
-CLIENT_US_JBAD_UH60L_04
-```
+Nach dem Lauf werden benötigt:
 
-Die UH-60L-Gruppen werden nur angelegt, wenn bestätigt ist, dass die Mission ohne installierten Mod weiterhin für andere Spieler nutzbar bleibt.
-
-### KI-Templates
-
-Alle Gruppen werden als **Late Activation** angelegt.
-
-```text
-TPL_AIR_US_JBAD_OH58D_RECON_2SHIP
-TPL_AIR_US_JBAD_AH64D_CAS_2SHIP
-TPL_AIR_US_JBAD_UH60_MEDEVAC_LEAD_1SHIP
-TPL_AIR_US_JBAD_UH60_MEDEVAC_COVER_1SHIP
-```
-
-Erste Gruppenzahlen für MOOSE:
-
-```text
-OH-58D: 4 KI-Luftfahrzeuge / 2 je Gruppe = 2 Asset-Gruppen
-AH-64D: 4 KI-Luftfahrzeuge / 2 je Gruppe = 2 Asset-Gruppen
-UH-60: 4 KI-Luftfahrzeuge / 1 je technische Gruppe = 4 Asset-Gruppen
-```
-
-Die vier UH-60-Asset-Gruppen stellen maximal zwei vollständige MEDEVAC-Pakete dar. Eine Mission reserviert immer genau einen Lead und einen Cover-Hubschrauber.
-
-### Statische Luftfahrzeuge
-
-```text
-STATIC_AIR_US_JBAD_OH58D_01 bis _08
-STATIC_AIR_US_JBAD_AH64D_01 bis _04
-STATIC_AIR_US_JBAD_UH60_01 bis _02
-```
-
-Statics stehen auf getrennten Display-Abstellflächen und dürfen keine operativen Spawn- oder Rückkehrparkplätze blockieren.
-
-### Warehouse
-
-Bevorzugter technischer Name:
-
-```text
-WH_AIR_US_JALALABAD
-```
-
-Da in der Ausgangsmission kein benannter Missions-Static im Jalalabad-Bereich existiert, ist mit hoher Wahrscheinlichkeit ein zusätzlicher technischer Warehouse-Static im vorhandenen Lagerbereich erforderlich. Das Diagnosewerkzeug `ProbeWarehouseAnchor.lua` prüft den endgültigen Zustand.
-
-### Zonen
-
-```text
-ZONE_AIR_US_JBAD_STATIC_OH58D
-ZONE_AIR_US_JBAD_STATIC_AH64D
-ZONE_AIR_US_JBAD_STATIC_UH60
-ZONE_AIR_US_JBAD_MEDEVAC_READY
-ZONE_AIR_US_JBAD_LOGISTICS_LOAD
-ZONE_AIR_US_JBAD_LOGISTICS_UNLOAD
-ZONE_AIR_US_JBAD_SLING_PICKUP
-ZONE_AIR_US_JBAD_C130_UNLOAD
-```
-
-Vorhandene Zonen dürfen wiederverwendet werden, wenn Name und Zweck eindeutig angepasst beziehungsweise dokumentiert sind. Es dürfen keine zwei Zonen mit identischer Funktion parallel bestehen.
-
-## Diagnose-Reihenfolge
-
-Nach `Moose.lua` werden zunächst diese Skripte geladen:
-
-```text
-1. diagnostics/DumpAircraftTypes.lua
-2. diagnostics/DumpAirbaseParking.lua
-3. diagnostics/ProbeWarehouseAnchor.lua
-4. diagnostics/ValidateMissionTemplates.lua
-```
-
-Der operative AIRWING-Bootstrap wird erst aktiviert, wenn die Validierung keine blockierenden Fehler mehr meldet.
-
-## Vom Missionsdesigner jetzt anzulegen
-
-1. Weitere Arbeitskopie für die erste Platzierung erstellen.
-2. Warehouse-Static `WH_AIR_US_JALALABAD` in einem plausiblen Lagerbereich platzieren.
-3. Die vier KI-Templates mit den exakt vorgegebenen Namen als Late Activation anlegen.
-4. Zunächst je Muster nur **einen** Spieler-Testslot anlegen:
-   - `CLIENT_US_JBAD_OH58D_01`
-   - `CLIENT_US_JBAD_AH64D_01`
-   - optional `CLIENT_US_JBAD_UH60L_01`
-5. Die acht, vier und zwei vorgesehenen Static-Abstellpunkte als Gruppenfamilien vorbereiten.
-6. Die acht Air-Ops-Zonen anlegen beziehungsweise vorhandene Zonen eindeutig zuordnen.
-7. Diagnose-Skripte nach MOOSE laden und einen kurzen Testlauf durchführen.
-8. `.miz`, `dcs.log` und Screenshots der Park-/Static-Bereiche bereitstellen.
-
-Die restlichen Spielerplätze werden erst dupliziert, nachdem ein Testslot des jeweiligen Musters kollisionsfrei funktioniert.
+- aktualisierte `.miz`,
+- `dcs.log`,
+- Screenshots der vorgesehenen Parking-, Warehouse-, MEDEVAC-, Logistik- und Static-Bereiche.
