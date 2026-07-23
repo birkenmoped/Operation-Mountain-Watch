@@ -1,5 +1,4 @@
--- Operation Mountain Watch - Jalalabad AH-64D squadron construction test
--- Validation stage only: constructs and links the squadron, but does not start the AIRWING.
+-- Operation Mountain Watch - Jalalabad AH-64D squadron assembly
 local TAG = "[OMW][AirOps.JBAD.AH64D]"
 local function log(msg) env.info(TAG .. " " .. tostring(msg)) end
 
@@ -51,7 +50,7 @@ local function main()
   end
 
   local assetGroups = aircraftCount / groupSize
-  local squadronName = "SQ_US_JBAD_AH64D_B_1_10_AVN"
+  local squadronName = cfg.SquadronNames and cfg.SquadronNames.AH64D or "SQ_US_JBAD_AH64D_B_1_10_AVN"
 
   cfg.Squadrons = cfg.Squadrons or {}
   if cfg.Squadrons.AH64D then
@@ -62,25 +61,31 @@ local function main()
   local ok, result = pcall(function()
     local squadron = SQUADRON:New(templateName, assetGroups, squadronName)
     squadron:SetGrouping(groupSize)
+    if AI and AI.Skill and AI.Skill.HIGH then
+      squadron:SetSkill(AI.Skill.HIGH)
+    end
     squadron:AddMissionCapability({ AUFTRAG.Type.CAS }, 100)
     airwing:AddSquadron(squadron)
-    return squadron
+    local payload = airwing:NewPayload(template, -1, { AUFTRAG.Type.CAS }, 100)
+    return { Squadron = squadron, Payload = payload }
   end)
 
-  if not ok or not result then
-    log("ERROR: SQUADRON construction or AIRWING linking failed: " .. tostring(result))
+  if not ok or not result or not result.Squadron then
+    log("ERROR: SQUADRON construction, payload registration or AIRWING linking failed: " .. tostring(result))
     return
   end
 
   local linked = airwing:GetSquadron(squadronName)
-  if linked ~= result then
+  if linked ~= result.Squadron then
     log("ERROR: AIRWING:GetSquadron did not return the constructed squadron.")
     return
   end
 
-  cfg.Squadrons.AH64D = result
+  cfg.Squadrons.AH64D = result.Squadron
+  cfg.Payloads = cfg.Payloads or {}
+  cfg.Payloads.AH64DCAS = result.Payload
   log(string.format(
-    "SQUADRON constructed and linked. name=%s aircraft=%d assetGroups=%d groupSize=%d capability=CAS. AIRWING not started.",
+    "SQUADRON ready. name=%s aircraft=%d assetGroups=%d groupSize=%d capability=CAS payload=UNLIMITED.",
     squadronName,
     aircraftCount,
     assetGroups,
