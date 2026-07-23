@@ -97,6 +97,17 @@ local function main()
     return
   end
 
+  -- The previously declared 24/8/6 manifest omitted the locally based CH-47
+  -- heavy-lift element visible in 2011 imagery and documented in contemporary
+  -- Task Force Shooter reporting. Never activate the node while this correction
+  -- is pending; doing so would produce a false COMPLETE result.
+  if cfg.CorrectionPending and cfg.CorrectionPending.CH47 then
+    cfg.Status = "INCOMPLETE_CH47_CORRECTION"
+    log("ERROR: CH-47 heavy-lift component is required but not yet implemented in the complete-node manifest.")
+    log("RESULT: INCOMPLETE. AIRWING and COMMANDER remain unstarted pending the revised CH-47 squadron, templates, slots, statics and parking plan.")
+    return
+  end
+
   local ok = true
 
   if not cfg.Airwing then
@@ -116,6 +127,10 @@ local function main()
     log("ERROR: UH-60 SQUADRON is unavailable.")
     ok = false
   end
+  if not cfg.Squadrons or not cfg.Squadrons.CH47 then
+    log("ERROR: CH-47 SQUADRON is unavailable.")
+    ok = false
+  end
 
   if not cfg.Payloads or not cfg.Payloads.OH58DRecon then
     log("ERROR: OH-58D RECON payload is unavailable.")
@@ -127,6 +142,10 @@ local function main()
   end
   if not cfg.Payloads or not cfg.Payloads.UH60MedevacLead or not cfg.Payloads.UH60MedevacCover then
     log("ERROR: UH-60 MEDEVAC lead/cover payloads are unavailable.")
+    ok = false
+  end
+  if not cfg.Payloads or not cfg.Payloads.CH47HeavyLift then
+    log("ERROR: CH-47 heavy-lift payload is unavailable.")
     ok = false
   end
 
@@ -173,8 +192,8 @@ local function main()
     ok = false
   end
 
-  if cfg.Inventory.OH58D ~= 24 or cfg.Inventory.AH64D ~= 8 or cfg.Inventory.UH60 ~= 6 then
-    log("ERROR: Inventory manifest does not match 24/8/6.")
+  if cfg.Inventory.OH58D ~= 24 or cfg.Inventory.AH64D ~= 8 or cfg.Inventory.UH60 ~= 6 or cfg.Inventory.CH47 ~= 8 then
+    log("ERROR: Inventory manifest does not match 24/8/6/8.")
     ok = false
   end
   if cfg.Limits.PlayerPerType ~= 4 or cfg.Limits.AIPerType ~= 4 or
@@ -219,7 +238,7 @@ local function main()
 
   cfg.Status = "OPERATIONAL"
   log("RESULT: COMPLETE. Jalalabad AirOps node OPERATIONAL; AIRWING started; COMMANDER linked; missionsQueued=0; spontaneousSpawns=0.")
-  log("SUMMARY inventory=OH58D:24/AH64D:8/UH60:6 corePlayerSlots=8 optionalUH60L=0or4 statics=14 zones=8 templates=4 squadrons=3 medevac=1+1.")
+  log("SUMMARY inventory=OH58D:24/AH64D:8/UH60:6/CH47:8 medevac=1+1.")
 end
 
 if SCHEDULER then
