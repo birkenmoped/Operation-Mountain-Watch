@@ -13,6 +13,8 @@ virtuelle Reserve = Hallen, Wartung und nicht dargestellte Abstellflächen
 
 Ein verlorenes Luftfahrzeug reduziert den Gesamtbestand dauerhaft. Eine andere, bislang unsichtbare Bestandsmaschine kann anschließend einen späteren Einsatz übernehmen. Das ist kein externer Ersatz.
 
+Ein zerstörtes Static wird während derselben laufenden Mission nicht sofort sichtbar ersetzt. Bei einer späteren kontrollierten Ramp-Aktualisierung oder beim nächsten Missionsstart kann jedoch ein anderes überlebendes Reserveflugzeug einen freien Static-Platz einnehmen.
+
 ## 2011er Ramp-Momentaufnahme
 
 Mindestens sichtbar:
