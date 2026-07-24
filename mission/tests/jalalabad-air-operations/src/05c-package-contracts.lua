@@ -78,6 +78,17 @@ else
       valid = false
       log(string.format("ERROR contract arithmetic squadron=%s assetGroups=%d grouping=%d inventory=%d", key, contract.AssetGroups, contract.Grouping, contract.InventoryAircraft))
     end
+    local pool = cfg.Parking and cfg.Parking.SquadronPools and cfg.Parking.SquadronPools[key] or nil
+    if not pool then
+      valid = false
+      log("ERROR parking pool missing squadron=" .. tostring(key))
+    else
+      pool.GroupSize = contract.Grouping
+    end
+  end
+
+  if cfg.Parking then
+    cfg.Parking.Model = "CONTRACT_DRIVEN_PHYSICAL_GROUPS_OH58D2_AH64D2_UH60_1_CH47_1"
   end
 
   for testId, package in pairs(contracts.Tests) do
@@ -93,7 +104,7 @@ else
 
   cfg.PackageContractsOK = valid
   if valid then
-    log("PASS version=JBAD-PACKAGES-1 OH58D=1x2 AH64D=1x2 UH60=independentSingles CH47=1x1 assetGroups=12/4/8/8")
+    log("PASS version=JBAD-PACKAGES-1 OH58D=1x2 AH64D=1x2 UH60=independentSingles CH47=1x1 assetGroups=12/4/8/8 parkingGroupSizes=2/2/1/1")
   else
     log("BLOCKED package-contract validation failed")
   end
