@@ -28,6 +28,7 @@ $sourceFiles = @(
     '13-phase1-mission-factory.lua',
     '14-phase1-test-controller.lua',
     '14a-phase1-lifecycle-corrections.lua',
+    '14b-phase1-sequence-finalization.lua',
     '15-phase1-f10-and-acceptance.lua',
     '16-phase1-moose-compatibility.lua'
 )
