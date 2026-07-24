@@ -1,5 +1,4 @@
 -- Operation Mountain Watch - Jalalabad Air Operations bootstrap
--- Corrected complete-node assembly based on the 2011 ramp snapshot and DCS parking limits.
 OMW = OMW or {}
 OMW.AirOps = OMW.AirOps or {}
 
@@ -20,46 +19,26 @@ OMW.AirOps.Jalalabad = {
   WarehouseName = "WH_AIR_US_JALALABAD",
   AirwingName = "AW_US_JALALABAD",
 
-  Inventory = {
-    OH58D = 24,
-    AH64D = 8,
-    UH60 = 8,
-    CH47 = 8
-  },
-
-  ObservedRampMinimum = {
-    OH58D = 13,
-    AH64D = 7,
-    UH60 = 7,
-    CH47 = 7,
-    MI8 = 1,
-    UH1 = 1
-  },
-
-  ObservedExternalOrTransient = {
-    MI8 = 1,
-    UH1 = 1
-  },
+  Inventory = { OH58D = 24, AH64D = 8, UH60 = 8, CH47 = 8 },
+  ObservedRampMinimum = { OH58D = 13, AH64D = 7, UH60 = 7, CH47 = 7, MI8 = 1, UH1 = 1 },
+  ObservedExternalOrTransient = { MI8 = 1, UH1 = 1 },
 
   Parking = {
     ComparableHelicopterPositions = 36,
     CorePlayerPositions = 6,
     OptionalUH60LPlayerPositions = 2,
-
-    -- Templates are technical seed groups and deliberately do not occupy
-    -- operational parking positions.
     TemplateAuthoringAircraft = 7,
     TemplateOperationalParkingPositions = 0,
     TemplatesUseOperationalParking = false,
     TemplateMinimumParkingClearanceMeters = 100,
-
-    -- MOOSE TerminalIDs, not the labels displayed in the Mission Editor.
-    -- Each pool is exclusive to one SQUADRON; no general-airbase fallback.
     PoolCoordinateToleranceMeters = 2,
     PoolStaticClearanceMeters = 12,
+
+    -- One physical DCS spawn group contains one aircraft. OH-58D and AH-64D
+    -- Two-Ships consist of two independently controlled single-ship groups.
     SquadronPools = {
       OH58D = {
-        GroupSize = 2,
+        GroupSize = 1,
         TerminalType = 40,
         Entries = {
           { Label = "G01", TerminalID = 19, X = 73027.2, Z = 389096.3 },
@@ -70,7 +49,7 @@ OMW.AirOps.Jalalabad = {
         }
       },
       AH64D = {
-        GroupSize = 2,
+        GroupSize = 1,
         TerminalType = 40,
         Entries = {
           { Label = "F04", TerminalID = 26, X = 72760.1, Z = 389173.6 },
@@ -115,21 +94,11 @@ OMW.AirOps.Jalalabad = {
       STATIC_AIR_US_JBAD_CH47_04 = 35
     },
     StaticParkingBlacklist = { 23, 35, 37, 49 },
-
-    Model = "EXCLUSIVE_TYPE_SPECIFIC_SQUADRON_POOLS_TEMPLATES_OFF_PARKING"
+    Model = "EXCLUSIVE_TYPE_SPECIFIC_SINGLE_SHIP_SQUADRON_POOLS"
   },
 
-  StaticCaps = {
-    OH58D = 7,
-    AH64D = 4,
-    UH60 = 4,
-    CH47 = 5
-  },
-
-  CorrectionPending = {
-    CH47 = true,
-    Reason = "CH-47 squadron and type consistency must be validated before final activation."
-  },
+  StaticCaps = { OH58D = 7, AH64D = 4, UH60 = 4, CH47 = 5 },
+  CorrectionPending = { CH47 = true, Reason = "CH-47 squadron and type consistency must be validated before final activation." },
 
   Limits = {
     PlayerPerType = 2,
@@ -169,8 +138,9 @@ OMW.AirOps.Jalalabad = {
       AH64D = numbered("CLIENT_US_JBAD_AH64D", 2),
       CH47 = numbered("CLIENT_US_JBAD_CH47", 2)
     },
-    Optional = {
-      UH60L = numbered("CLIENT_US_JBAD_UH60L", 2)
+    Optional = { UH60L = numbered("CLIENT_US_JBAD_UH60L", 2) },
+    Excluded = {
+      TEST_TM01A_CLIENT_01 = { "TEST_TM01A_CLIENT_UNIT_01" }
     }
   },
 
@@ -181,8 +151,6 @@ OMW.AirOps.Jalalabad = {
     CH47 = numbered("STATIC_AIR_US_JBAD_CH47", 5)
   },
 
-  -- Static-display and template-readiness zones were removed. Only functional
-  -- logistics zones remain part of the baseline manifest.
   Zones = {
     "ZONE_AIR_US_JBAD_HEAVYLIFT_LOAD",
     "ZONE_AIR_US_JBAD_LOGISTICS_LOAD",
@@ -193,7 +161,8 @@ OMW.AirOps.Jalalabad = {
 
   DetectedTypes = {},
   ParkingReservationsOK = false,
-  ParkingPoolsOK = false
+  ParkingPoolsOK = false,
+  NameContractOK = false
 }
 
 local function getPool(key)
@@ -204,9 +173,7 @@ end
 function OMW.AirOps.Jalalabad:GetSquadronParkingIDs(key)
   local result = {}
   local pool = getPool(key)
-  for _, entry in ipairs(pool and pool.Entries or {}) do
-    result[#result + 1] = entry.TerminalID
-  end
+  for _, entry in ipairs(pool and pool.Entries or {}) do result[#result + 1] = entry.TerminalID end
   return result
 end
 
@@ -220,33 +187,26 @@ end
 
 function OMW.AirOps.Jalalabad:GetSquadronParkingSet(key)
   local result = {}
-  for _, terminalId in ipairs(self:GetSquadronParkingIDs(key)) do
-    result[terminalId] = true
-  end
+  for _, terminalId in ipairs(self:GetSquadronParkingIDs(key)) do result[terminalId] = true end
   return result
+end
+
+function OMW.AirOps.Jalalabad:GetRuntimeGroupPrefix(key)
+  local name = self.SquadronNames and self.SquadronNames[key]
+  return name and (name .. "_AID-") or nil
 end
 
 local function validate()
   local cfg = OMW.AirOps.Jalalabad
   local airbase = AIRBASE:FindByName(cfg.AirbaseName)
-  if not airbase then
-    log("ERROR: Airbase not found: " .. tostring(cfg.AirbaseName))
-    return
-  end
-
+  if not airbase then log("ERROR: Airbase not found: " .. tostring(cfg.AirbaseName)) return end
   log("Airbase OK: " .. airbase:GetName() .. " ID=" .. tostring(airbase:GetID()))
 
   local anchor = STATIC:FindByName(cfg.WarehouseName, false) or UNIT:FindByName(cfg.WarehouseName)
-  if not anchor then
-    log("WAITING: Warehouse anchor missing: " .. cfg.WarehouseName)
-    return
-  end
+  if not anchor then log("WAITING: Warehouse anchor missing: " .. cfg.WarehouseName) return end
 
   local ok, result = pcall(function()
-    if airbase.SetParkingSpotBlacklist then
-      airbase:SetParkingSpotBlacklist(cfg.Parking.StaticParkingBlacklist)
-    end
-
+    if airbase.SetParkingSpotBlacklist then airbase:SetParkingSpotBlacklist(cfg.Parking.StaticParkingBlacklist) end
     local airwing = AIRWING:New(cfg.WarehouseName, cfg.AirwingName)
     airwing:SetAirbase(airbase)
     airwing:SetTakeoffCold()
@@ -254,23 +214,16 @@ local function validate()
     return airwing
   end)
 
-  if not ok or not result then
-    log("ERROR: AIRWING construction failed: " .. tostring(result))
-    return
-  end
-
+  if not ok or not result then log("ERROR: AIRWING construction failed: " .. tostring(result)) return end
   cfg.Airbase = airbase
   cfg.Airwing = result
-  log("AIRWING constructed and explicitly linked. Awaiting corrected complete-node assembly before Start().")
-  log("PARKING BLACKLIST: intentional CH-47 static reservations TerminalIDs=23,35,37,49; Client parking protected by SafeParking.")
-  log("RAMP MODEL: inventory=24/8/8/8 visibleCaps=7/4/4/5 clients=6+2optional templatesOffParking=7 exclusivePools=OH58D:G01-G05/AH64D:F04-F06/UH60:F01-F03/CH47:C03-C10.")
+  log("AIRWING constructed and explicitly linked. Awaiting validation before Start().")
+  log("RUNTIME NAME CONTRACT: exact SQUADRON_AID group prefixes and exact unit names required; type-only matching prohibited.")
+  log("RAMP MODEL: OH58D/AH64D use two independent single-ship DCS groups per logical Two-Ship; all squadrons despawn after landing.")
 end
 
 if SCHEDULER then
   SCHEDULER:New(nil, validate, {}, 7)
 else
-  timer.scheduleFunction(function()
-    validate()
-    return nil
-  end, nil, timer.getTime() + 7)
+  timer.scheduleFunction(function() validate() return nil end, nil, timer.getTime() + 7)
 end
