@@ -6,7 +6,7 @@ local TAG = "[OMW][AirOps.JBAD.PARKING]"
 local function log(msg) env.info(TAG .. " " .. tostring(msg)) end
 
 local ALIGNMENT_TOLERANCE_METERS = 8
-local NON_RESERVED_CLEARANCE_METERS = 8
+local NON_RESERVED_CLEARANCE_METERS = 12
 
 local function appendAll(target, source)
   for _, value in ipairs(source or {}) do
@@ -25,9 +25,7 @@ end
 
 local function joinNumbers(values)
   local text = {}
-  for _, value in ipairs(values or {}) do
-    text[#text + 1] = tostring(value)
-  end
+  for _, value in ipairs(values or {}) do text[#text + 1] = tostring(value) end
   return table.concat(text, ",")
 end
 
@@ -64,9 +62,7 @@ local function main()
     return
   end
 
-  if cfg.Airwing and cfg.Airwing.SetSafeParkingOn then
-    cfg.Airwing:SetSafeParkingOn()
-  end
+  if cfg.Airwing and cfg.Airwing.SetSafeParkingOn then cfg.Airwing:SetSafeParkingOn() end
 
   local parkingSpots = airbase:GetParkingSpotsTable() or {}
   local staticNames = {}
@@ -82,9 +78,7 @@ local function main()
     local static = STATIC and STATIC:FindByName(staticName, false) or nil
     if static then
       local staticCoordinate = static:GetCoordinate()
-      local nearestDistance = nil
-      local nearestTerminalID = nil
-
+      local nearestDistance, nearestTerminalID
       for _, spot in ipairs(parkingSpots) do
         local distance = distance2D(staticCoordinate, spot.Coordinate)
         if distance and (not nearestDistance or distance < nearestDistance) then
@@ -97,40 +91,16 @@ local function main()
       if expectedTerminalID then
         if nearestTerminalID == expectedTerminalID and nearestDistance and nearestDistance <= ALIGNMENT_TOLERANCE_METERS then
           confirmedReservations = confirmedReservations + 1
-          log(string.format(
-            "OK STATIC_PARKING_RESERVED name=%s TerminalID=%s distance=%.1fm blacklisted=true",
-            staticName,
-            tostring(nearestTerminalID),
-            nearestDistance
-          ))
+          log(string.format("OK STATIC_PARKING_RESERVED name=%s TerminalID=%s distance=%.1fm blacklisted=true", staticName, tostring(nearestTerminalID), nearestDistance))
         else
           violations = violations + 1
-          log(string.format(
-            "ERROR STATIC_PARKING_RESERVATION_MISMATCH name=%s expectedTerminalID=%s nearestTerminalID=%s distance=%s tolerance=%.1fm",
-            staticName,
-            tostring(expectedTerminalID),
-            tostring(nearestTerminalID),
-            nearestDistance and string.format("%.1fm", nearestDistance) or "unknown",
-            ALIGNMENT_TOLERANCE_METERS
-          ))
+          log(string.format("ERROR STATIC_PARKING_RESERVATION_MISMATCH name=%s expectedTerminalID=%s nearestTerminalID=%s distance=%s tolerance=%.1fm", staticName, tostring(expectedTerminalID), tostring(nearestTerminalID), nearestDistance and string.format("%.1fm", nearestDistance) or "unknown", ALIGNMENT_TOLERANCE_METERS))
         end
       elseif nearestDistance and nearestDistance < NON_RESERVED_CLEARANCE_METERS then
         violations = violations + 1
-        log(string.format(
-          "ERROR UNDECLARED_STATIC_PARKING_OVERLAP name=%s nearestTerminalID=%s distance=%.1fm minimum=%.1fm",
-          staticName,
-          tostring(nearestTerminalID),
-          nearestDistance,
-          NON_RESERVED_CLEARANCE_METERS
-        ))
+        log(string.format("ERROR UNDECLARED_STATIC_PARKING_OVERLAP name=%s nearestTerminalID=%s distance=%.1fm minimum=%.1fm", staticName, tostring(nearestTerminalID), nearestDistance, NON_RESERVED_CLEARANCE_METERS))
       else
-        log(string.format(
-          "OK STATIC_PARKING_CLEAR name=%s nearestTerminalID=%s distance=%s minimum=%.1fm",
-          staticName,
-          tostring(nearestTerminalID),
-          nearestDistance and string.format("%.1fm", nearestDistance) or "unknown",
-          NON_RESERVED_CLEARANCE_METERS
-        ))
+        log(string.format("OK STATIC_PARKING_CLEAR name=%s nearestTerminalID=%s distance=%s minimum=%.1fm", staticName, tostring(nearestTerminalID), nearestDistance and string.format("%.1fm", nearestDistance) or "unknown", NON_RESERVED_CLEARANCE_METERS))
       end
     end
   end
@@ -138,29 +108,15 @@ local function main()
   cfg.ParkingReservationsOK = violations == 0 and confirmedReservations == parking.CH47DCSNodeReservations
   if not cfg.ParkingReservationsOK then
     blockStart(cfg, "Static parking reservation validation failed.")
-    log(string.format(
-      "RESULT: FAIL intentionalReservationsConfirmed=%d expected=%s violations=%d blacklistedTerminalIDs=%s AIRWING_START_BLOCKED=true",
-      confirmedReservations,
-      tostring(parking.CH47DCSNodeReservations),
-      violations,
-      joinNumbers(blacklist)
-    ))
+    log(string.format("RESULT: FAIL intentionalReservationsConfirmed=%d expected=%s violations=%d blacklistedTerminalIDs=%s AIRWING_START_BLOCKED=true", confirmedReservations, tostring(parking.CH47DCSNodeReservations), violations, joinNumbers(blacklist)))
     return
   end
 
-  log(string.format(
-    "RESULT: PASS intentionalReservationsConfirmed=%d blacklistedTerminalIDs=%s ch47VisualPositionsRemaining=%s unexpectedOverlaps=0 AIRWING_START_BLOCKED=false",
-    confirmedReservations,
-    joinNumbers(blacklist),
-    tostring(parking.CH47RemainingVisualPositions)
-  ))
+  log(string.format("RESULT: PASS intentionalReservationsConfirmed=%d blacklistedTerminalIDs=%s ch47VisualPositionsRemaining=%s unexpectedOverlaps=0 minimumNonReservedClearance=%.1fm AIRWING_START_BLOCKED=false", confirmedReservations, joinNumbers(blacklist), tostring(parking.CH47RemainingVisualPositions), NON_RESERVED_CLEARANCE_METERS))
 end
 
 if SCHEDULER then
   SCHEDULER:New(nil, main, {}, 17)
 else
-  timer.scheduleFunction(function()
-    main()
-    return nil
-  end, nil, timer.getTime() + 17)
+  timer.scheduleFunction(function() main() return nil end, nil, timer.getTime() + 17)
 end
