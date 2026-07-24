@@ -9,7 +9,7 @@ else
   local ph1 = cfg.Phase1 or {}
   cfg.Phase1 = ph1
 
-  ph1.Version = "JBAD-PHASE1-3"
+  ph1.Version = "JBAD-PHASE1-4"
   ph1.Enabled = true
   ph1.State = ph1.State or "WAITING_FOR_BASELINE"
   ph1.Classification = ph1.Classification or "NOT_RUN"
@@ -30,7 +30,7 @@ else
     CASTargetTemplate = "TPL_GROUND_RED_JBAD_PHASE1_CAS_TARGET",
     UHTroopTemplate = "TPL_GROUND_BLUE_JBAD_PHASE1_UH60_TROOPS",
     UHLoadZone = "ZONE_AIR_US_JBAD_LOGISTICS_LOAD",
-    UHUnloadZone = "ZONE_AIR_US_JBAD_LOGISTICS_UNLOAD",
+    UHUnloadZone = "ZONE_TEST_US_JBAD_UH60_DROPOFF",
     CH47Cargo = "TEST_CARGO_BLUE_JBAD_CH47_01",
     CH47PickupZone = "ZONE_AIR_US_JBAD_SLING_PICKUP",
     CH47DropZone = "ZONE_AIR_US_JBAD_LOGISTICS_UNLOAD"
@@ -70,8 +70,11 @@ else
     UH60_ABORT = definition("UH60_ABORT", "UH-60A Spawn/Reservation Abort", "UH60", "UH60MedevacLead", "UH-60A", 1, 1, "TROOPTRANSPORT")
   }
 
+  ph1.Tests.UH60_TROOP.AllowObjectiveDrivenTerminal = true
   ph1.Tests.CH47_CARGO.OneShotObject = true
+  ph1.Tests.CH47_CARGO.AllowObjectiveDrivenTerminal = true
   ph1.Tests.UH60_ABORT.AbortOnBirth = true
+  ph1.Tests.UH60_ABORT.AllowObjectiveDrivenTerminal = false
   ph1.Tests.UH60_ABORT.RequireEngineStart = false
   ph1.Tests.UH60_ABORT.RequireTakeoff = false
   ph1.Tests.UH60_ABORT.RequireExecution = false
@@ -98,5 +101,5 @@ else
   ph1.ParkingBlacklist = {}
   for _, terminalId in ipairs((cfg.Parking and cfg.Parking.StaticParkingBlacklist) or {}) do ph1.ParkingBlacklist[terminalId] = true end
 
-  log("READY version=" .. ph1.Version .. " tests=5 exactRuntimeNames=true physicalGroupSizes=1/1/1/1 logicalTwoShips=OH58D:2assets/AH64D:2assets separateSpawnExecutionRecoveryReleaseTimeouts=true")
+  log("READY version=" .. ph1.Version .. " tests=5 exactRuntimeNames=true physicalGroupSizes=1/1/1/1 logicalTwoShips=OH58D:2assets/AH64D:2assets safeReconRouteRequired=true dedicatedUH60DropZone=true objectiveDrivenTransportTerminal=true")
 end
