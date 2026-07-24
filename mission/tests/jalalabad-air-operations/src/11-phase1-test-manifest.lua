@@ -9,7 +9,7 @@ else
   local ph1 = cfg.Phase1 or {}
   cfg.Phase1 = ph1
 
-  ph1.Version = "JBAD-PHASE1-4"
+  ph1.Version = "JBAD-PHASE1-6"
   ph1.Enabled = true
   ph1.State = ph1.State or "WAITING_FOR_BASELINE"
   ph1.Classification = ph1.Classification or "NOT_RUN"
@@ -48,6 +48,7 @@ else
       ExpectedAircraft = expectedAircraft,
       ExpectedGroupPrefix = cfg:GetRuntimeGroupPrefix(squadronKey),
       ExpectedUnitSuffix = "-01",
+      ExpectedUnitSuffixes = { "-01" },
       MissionType = missionType,
       SpawnTimeout = 600,
       ExecutionTimeout = 5400,
@@ -63,13 +64,18 @@ else
   end
 
   ph1.Tests = {
-    OH58D_RECON = definition("OH58D_RECON", "OH-58D Two-Ship RECON", "OH58D", "OH58DRecon", "OH58D", 2, 2, "RECON"),
+    OH58D_RECON = definition("OH58D_RECON", "OH-58D Physical Two-Ship RECON", "OH58D", "OH58DRecon", "OH58D", 1, 2, "RECON"),
     AH64D_CAS = definition("AH64D_CAS", "AH-64D Two-Ship CAS", "AH64D", "AH64DCAS", "AH-64D_BLK_II", 2, 2, "CAS"),
     UH60_TROOP = definition("UH60_TROOP", "UH-60A Single-Ship TROOPTRANSPORT", "UH60", "UH60MedevacLead", "UH-60A", 1, 1, "TROOPTRANSPORT"),
     CH47_CARGO = definition("CH47_CARGO", "CH-47F Single-Ship CARGOTRANSPORT", "CH47", "CH47HeavyLift", "CH-47Fbl1", 1, 1, "CARGOTRANSPORT"),
     UH60_ABORT = definition("UH60_ABORT", "UH-60A Spawn/Reservation Abort", "UH60", "UH60MedevacLead", "UH-60A", 1, 1, "TROOPTRANSPORT")
   }
 
+  ph1.Tests.OH58D_RECON.ExpectedUnitSuffixes = { "-01", "-02" }
+  ph1.Tests.OH58D_RECON.RecoveryCorridorZones = {
+    ph1.Objects.ReconZones[2],
+    ph1.Objects.ReconZones[1]
+  }
   ph1.Tests.UH60_TROOP.AllowObjectiveDrivenTerminal = true
   ph1.Tests.CH47_CARGO.OneShotObject = true
   ph1.Tests.CH47_CARGO.AllowObjectiveDrivenTerminal = true
@@ -101,5 +107,5 @@ else
   ph1.ParkingBlacklist = {}
   for _, terminalId in ipairs((cfg.Parking and cfg.Parking.StaticParkingBlacklist) or {}) do ph1.ParkingBlacklist[terminalId] = true end
 
-  log("READY version=" .. ph1.Version .. " tests=5 exactRuntimeNames=true physicalGroupSizes=1/1/1/1 logicalTwoShips=OH58D:2assets/AH64D:2assets safeReconRouteRequired=true dedicatedUH60DropZone=true objectiveDrivenTransportTerminal=true")
+  log("READY version=" .. ph1.Version .. " tests=5 exactRuntimeNames=true physicalGroupSizes=OH58D:2/AH64D:1/UH60:1/CH47:1 OH58DTwoShip=onePhysicalGroup safeReconRecoveryCorridor=true dedicatedUH60DropZone=true objectiveDrivenTransportTerminal=true")
 end
