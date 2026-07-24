@@ -15,6 +15,16 @@ local function main()
     return
   end
 
+  if cfg.ParkingPoolsOK ~= true then
+    log("ERROR: Exclusive AH64D parking pool is not validated; SQUADRON construction blocked.")
+    return
+  end
+  local parkingIDs = cfg:GetSquadronParkingIDs("AH64D")
+  if #parkingIDs == 0 then
+    log("ERROR: Exclusive AH64D parking pool is empty.")
+    return
+  end
+
   if not GROUP or not SQUADRON or not AUFTRAG then
     log("ERROR: Required MOOSE classes GROUP, SQUADRON or AUFTRAG are unavailable.")
     return
@@ -61,6 +71,8 @@ local function main()
   local ok, result = pcall(function()
     local squadron = SQUADRON:New(templateName, assetGroups, squadronName)
     squadron:SetGrouping(groupSize)
+    squadron:SetParkingIDs(parkingIDs)
+    squadron:SetTakeoffCold()
     if AI and AI.Skill and AI.Skill.HIGH then
       squadron:SetSkill(AI.Skill.HIGH)
     end
@@ -84,6 +96,9 @@ local function main()
   cfg.Squadrons.AH64D = result.Squadron
   cfg.Payloads = cfg.Payloads or {}
   cfg.Payloads.AH64DCAS = result.Payload
+  local labels = {}
+  for _, entry in ipairs(cfg.Parking.SquadronPools.AH64D.Entries) do labels[#labels + 1] = entry.Label end
+  log("PARKING_POOL locked=true labels=" .. table.concat(labels, ",") .. " TerminalIDs=" .. table.concat(parkingIDs, ",") .. " takeoff=COLD fallback=DISABLED")
   log(string.format(
     "SQUADRON ready. name=%s aircraft=%d assetGroups=%d groupSize=%d capability=CAS payload=UNLIMITED.",
     squadronName,
