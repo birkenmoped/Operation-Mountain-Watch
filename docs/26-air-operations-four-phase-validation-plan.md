@@ -97,6 +97,7 @@ mission/tests/jalalabad-air-operations/src/12-phase1-runtime-observer.lua
 mission/tests/jalalabad-air-operations/src/13-phase1-mission-factory.lua
 mission/tests/jalalabad-air-operations/src/14-phase1-test-controller.lua
 mission/tests/jalalabad-air-operations/src/15-phase1-f10-and-acceptance.lua
+mission/tests/jalalabad-air-operations/src/16-phase1-moose-compatibility.lua
 ```
 
 Builder:
