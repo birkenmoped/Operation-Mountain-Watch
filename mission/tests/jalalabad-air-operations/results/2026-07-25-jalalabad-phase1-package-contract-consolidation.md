@@ -4,9 +4,18 @@ Date: 2026-07-25
 
 Status: **IMPLEMENTED / DCS VALIDATION PENDING**
 
+## Authoritative documentation
+
+- `docs/27-jalalabad-air-operations-phase1-postmortem-and-guardrails.md`
+- `docs/28-jalalabad-air-operations-development-incident-log.md`
+- `mission/tests/jalalabad-air-operations/expected/jalalabad-phase1-package-contract.md`
+- `mission/tests/jalalabad-air-operations/expected/jalalabad-phase1-architecture-regression-checklist.md`
+
 ## Reason
 
 The previous Phase-1 implementation validated two-aircraft OH-58D and AH-64D Mission Editor templates but then used `SQUADRON:SetGrouping(1)`. This converted the intended physical two-ships into unrelated single-ship DCS groups. Package structure, MOOSE asset accounting, aircraft event counting and tactical behavior were therefore inconsistent.
+
+The same development cycle also exposed broader category errors: MOOSE templates, dynamic AIRWING spawns, visible statics, Client groups, logical inventory and tactical packages were treated as if they were interchangeable representations. They are separate layers and are now documented and checked separately.
 
 ## Binding model
 
@@ -34,6 +43,7 @@ CH47   8 groups /  8 aircraft
 - Kept the explicit OH-58D recovery route `RECON_03 -> RECON_02 -> RECON_01 -> Jalalabad`.
 - Separated package selection/readiness from phased lifecycle handling.
 - Updated the bundle version to `JBAD-AIR-OPS-PHASE1-7`.
+- Added a complete incident history and a mandatory architecture regression checklist.
 
 ## Required DCS validation
 
