@@ -8,40 +8,62 @@ Dieses Dokument hält den verbindlichen Ausbau- und Validierungsplan für die MO
 Jalalabad-Grundknoten: OPERATIONAL / ACCEPTED
 Phase 1 Testpaket: IMPLEMENTED / DCS VALIDATION PENDING
 Implementierungsbranch: feature/jalalabad-airwing-phase1-functional-tests
-BuilderVersion: JBAD-AIR-OPS-PHASE1-2
+BuilderVersion: JBAD-AIR-OPS-PHASE1-3
 ```
 
-Der validierte Grundknoten wird durch die Folgetests nicht erneut geöffnet, solange keine Regression nachgewiesen wird.
+Der frühere Phase-1-Lauf hat zwei Architekturfehler nachgewiesen:
+
+- type-only-Zuordnung konnte eine Client-/Testgruppe als AIRWING-Missionsgruppe übernehmen;
+- eine gemeinsame Two-Ship-DCS-Gruppe führte bei Hubschraubern zu einer blockierten Recovery, weil nur der Lead landete.
 
 ## 2. Phase 1 – Jalalabad AIRWING und SQUADRONs
 
-Jalalabad bleibt der einzige operative Testknoten. Aufträge werden kontrolliert und direkt an `AW_US_JALALABAD` übergeben. Der COMMANDER bleibt gestartet, erzeugt und verteilt in dieser Phase aber keine Aufträge.
+Jalalabad bleibt der einzige operative Testknoten. Die Aufträge werden kontrolliert und direkt an `AW_US_JALALAD` beziehungsweise `AW_US_JALALABAD` übergeben. Der COMMANDER bleibt gestartet, erzeugt und verteilt in dieser Phase jedoch keine eigenen Aufträge.
 
 Verbindliche Reihenfolge:
 
 ```text
-1. OH-58D Two-Ship -> RECON
-2. AH-64D Two-Ship -> CAS
+1. OH-58D logisches Two-Ship -> RECON
+2. AH-64D logisches Two-Ship -> CAS
 3. UH-60A Single-Ship -> TROOPTRANSPORT
 4. CH-47F Single-Ship -> CARGOTRANSPORT
 5. UH-60A -> definierter Abbruch nach Spawn
 ```
 
-Für jeden regulären Auftrag werden geprüft:
+### Physisches Gruppenmodell
 
-- Auftragserzeugung und AIRWING-Queue,
-- Auswahl des festgelegten SQUADRONs und Payloads,
-- Reservierung genau einer Asset-Gruppe,
-- korrekte Gruppengröße und korrekter DCS-Typ,
-- Spawn ausschließlich im typbezogenen SQUADRON-Parkplatzpool,
-- kein Spawn auf CH-47-Static- oder Clientpositionen,
-- Engine Start, Takeoff und Missionsausführung,
-- fachliches Missionsziel,
-- RTB und Landung in Jalalabad,
-- Despawn beziehungsweise Rücklagerung,
-- vollständige Bestandsfreigabe.
+Alle SQUADRON-Assets werden als Single-Ship-DCS-Gruppen erzeugt:
 
-Verbindliche Spawnpools:
+```text
+OH-58D RECON: 2 unabhängige Gruppen mit je 1 Luftfahrzeug
+AH-64D CAS:   2 unabhängige Gruppen mit je 1 Luftfahrzeug
+UH-60A:       1 Gruppe mit 1 Luftfahrzeug
+CH-47F:       1 Gruppe mit 1 Luftfahrzeug
+```
+
+OH-58D und AH-64D bleiben fachlich Two-Ship-Pakete, besitzen aber zwei unabhängige Spawn-, Anflug-, Lande- und Despawn-Lebenszyklen.
+
+### Exakte Laufzeitidentität
+
+Eine Runtimegruppe wird nur akzeptiert, wenn ihr Name exakt zum zugewiesenen SQUADRON passt:
+
+```text
+Gruppe:  <SQUADRON-NAME>_AID-<Nummer>
+Einheit: <GRUPPENNAME>-01
+```
+
+Der DCS-Typ allein darf niemals eine Missionsgruppe identifizieren. Client-, Player-, Template- und sonstige Missionseditorgruppen werden über ihre eindeutigen Gruppen- und Einheitennamen ausgeschlossen.
+
+### SQUADRON-Konfiguration
+
+```lua
+squadron:SetGrouping(1)
+squadron:SetParkingIDs(...)
+squadron:SetTakeoffCold()
+squadron:SetDespawnAfterLanding(true)
+```
+
+### Verbindliche Spawnpools
 
 ```text
 OH-58D: G01-G05 / TerminalIDs 19,43,6,5,48
@@ -50,11 +72,46 @@ UH-60A: F01-F03 / TerminalIDs 10,8,1
 CH-47F: C03-C10 / TerminalIDs 28,44,0,41,9,25,18,42
 ```
 
-Die sieben technischen AIRWING-Templates stehen außerhalb aller operativen Parking-Nodes. Die konkrete Startposition kommt ausschließlich aus `SQUADRON:SetParkingIDs()`, der Startzustand aus `SQUADRON:SetTakeoffCold()`.
+### Bestandsmodell
 
-Der Abbruchtest muss nachweisen, dass eine bereits reservierte und gespawnte UH-60-Asset-Gruppe ohne Start dauerhaft freigegeben wird.
+Da jedes Asset eine Single-Ship-Gruppe ist, werden folgende vollständige Bestände erwartet:
 
-Phase 1 verwendet ein gemeinsames F10-gesteuertes Testpaket und keine Folge isolierter Einzelbundles.
+```text
+OH-58D: 24 Assetgruppen
+AH-64D: 8 Assetgruppen
+UH-60A: 8 Assetgruppen
+CH-47F: 8 Assetgruppen
+```
+
+### Getrennte Zeitfenster
+
+Die Teststeuerung verwendet getrennte Fristen:
+
+```text
+SpawnTimeout
+ExecutionTimeout
+RecoveryTimeout
+ReleaseTimeout
+```
+
+Ein erfolgreicher Auftrag darf nicht mehr während einer noch laufenden ordnungsgemäßen RTB-/Recovery-Phase durch einen gemeinsamen Gesamt-Timeout beendet werden.
+
+### Phase-1-Prüfpunkte
+
+- Auftragserzeugung und AIRWING-Queue;
+- Auswahl des festgelegten SQUADRONs und Payloads;
+- exakte Runtime-Gruppen- und Einheitennamen;
+- korrekte Anzahl unabhängiger Assetgruppen;
+- korrekter DCS-Typ;
+- Spawn ausschließlich im typbezogenen Parkplatzpool;
+- Engine Start, Takeoff und Missionsausführung;
+- fachliches Missionsziel;
+- SUCCESS;
+- RTB und unabhängige Landung aller Gruppen;
+- Despawn nach jedem einzelnen Land-Ereignis;
+- vollständige Bestandsfreigabe.
+
+Phase 1 wird erst nach Einzel-PASS für OH-58D und AH-64D erneut als Gesamtablauf gestartet.
 
 ## 3. Phase 2 – COMMANDER und Jalalabad-Gesamtbetrieb
 
@@ -66,12 +123,12 @@ Auftragsbedarf -> COMMANDER -> AW_US_JALALABAD -> SQUADRON -> Assets
 
 Zu testen sind insbesondere:
 
-- fachlich korrektes SQUADRON,
-- Ablehnung ungeeigneter Typen,
-- Queue- und Bestandsverhalten,
-- mindestens zwei parallele Aufträge,
-- maximal zwei Unterstützungsmissionen,
-- maximal vier aktive Unterstützungs-Luftfahrzeuge,
+- fachlich korrektes SQUADRON;
+- Ablehnung ungeeigneter Typen;
+- Queue- und Bestandsverhalten;
+- mindestens zwei parallele Aufträge;
+- maximal zwei Unterstützungsmissionen;
+- maximal vier aktive Unterstützungs-Luftfahrzeuge;
 - vollständiger atomarer 1+1-MEDEVAC-Koordinator.
 
 ## 4. Phase 3 – Zweites AIRWING
@@ -80,10 +137,10 @@ Genau ein zweiter, funktional anderer Knoten wird vollständig aufgebaut. Kandid
 
 Zu validieren sind:
 
-- Fähigkeit und räumliche Eignung,
-- getrennte lokale Bestände,
-- getrennte typbezogene Parkressourcen,
-- parallele Missionen an zwei Basen,
+- Fähigkeit und räumliche Eignung;
+- getrennte lokale Bestände;
+- getrennte typbezogene Parkressourcen;
+- parallele Missionen an zwei Basen;
 - nachvollziehbarer Fallback bei fehlenden Fähigkeiten oder Beständen.
 
 ## 5. Phase 4 – Rollout und Gesamtsystem
@@ -106,29 +163,24 @@ Der abschließende Systemtest umfasst mehrere AIRWINGs, lange Multiplayer-Laufze
 
 ```text
 mission/tests/jalalabad-air-operations/src/05a-validate-squadron-parking-pools.lua
+mission/tests/jalalabad-air-operations/src/05b-validate-runtime-name-contract.lua
 mission/tests/jalalabad-air-operations/src/11-phase1-test-manifest.lua
 mission/tests/jalalabad-air-operations/src/12-phase1-runtime-observer.lua
 mission/tests/jalalabad-air-operations/src/13-phase1-mission-factory.lua
 mission/tests/jalalabad-air-operations/src/14-phase1-test-controller.lua
+mission/tests/jalalabad-air-operations/src/14a-phase1-lifecycle-corrections.lua
+mission/tests/jalalabad-air-operations/src/14b-phase1-sequence-finalization.lua
 mission/tests/jalalabad-air-operations/src/15-phase1-f10-and-acceptance.lua
 mission/tests/jalalabad-air-operations/src/16-phase1-moose-compatibility.lua
-mission/tests/jalalabad-air-operations/src/17-phase1-runtime-parking-enforcement.lua
 ```
 
 Builder:
 
 ```text
 tools/build-jalalabad-air-operations-bundle.ps1
-BuilderVersion: JBAD-AIR-OPS-PHASE1-2
-```
-
-Acceptance- und Missionseditorvorgaben:
-
-```text
-mission/tests/jalalabad-air-operations/expected/jalalabad-phase1-airwing-functional-acceptance.md
-mission/tests/jalalabad-air-operations/expected/jalalabad-phase1-mission-editor-worklist.md
+BuilderVersion: JBAD-AIR-OPS-PHASE1-3
 ```
 
 ## 7. Freigaberegel
 
-Phase 1 ist erst abgeschlossen, wenn alle fünf Testfälle in einem dokumentierten DCS-Lauf PASS sind. Eine erfolgreiche Lua-Syntaxprüfung, statische Harness-Prüfung oder Bundle-Erzeugung ersetzt keinen DCS-Acceptance-Test.
+Phase 1 ist erst abgeschlossen, wenn alle fünf Testfälle in einem dokumentierten DCS-Lauf PASS sind. Lua-Syntaxprüfung, statische Bundleprüfung und eine fehlerfreie `.miz`-Archivstruktur ersetzen keinen DCS-Acceptance-Test.
