@@ -8,11 +8,11 @@ local function getTemplateLivery(templateName)
   return unit and (unit.livery_id or unit.livery) or nil
 end
 
-local function validateTemplate(templateName, role)
+local function validateTemplate(templateName, role, expectedUnits)
   local template = templateName and GROUP:FindByName(templateName) or nil
   if not template then log("ERROR: " .. role .. " template missing: " .. tostring(templateName)) return nil end
   local units = template:GetUnits() or {}
-  if #units ~= 1 then log(string.format("ERROR: %s template %s must contain exactly 1 unit; found=%d", role, templateName, #units)) return nil end
+  if #units ~= expectedUnits then log(string.format("ERROR: %s template %s units=%d contract=%d", role, templateName, #units, expectedUnits)) return nil end
   local typeName = units[1] and units[1]:GetTypeName() or "nil"
   local livery = getTemplateLivery(templateName)
   if typeName ~= "UH-60A" then log(string.format("ERROR: %s template %s type=%s expected=UH-60A", role, templateName, tostring(typeName))) return nil end
@@ -23,13 +23,15 @@ end
 local function main()
   local cfg = OMW and OMW.AirOps and OMW.AirOps.Jalalabad
   if not cfg or not cfg.Airwing then log("ERROR: Jalalabad configuration or AIRWING unavailable.") return end
-  if cfg.ParkingPoolsOK ~= true or cfg.NameContractOK ~= true then log("ERROR: Parking/name validation not passed; SQUADRON blocked.") return end
+  if cfg.ParkingPoolsOK ~= true or cfg.NameContractOK ~= true or cfg.PackageContractsOK ~= true then log("ERROR: Parking/name/package validation not passed; SQUADRON blocked.") return end
   if not GROUP or not SQUADRON or not AUFTRAG then log("ERROR: Required MOOSE classes unavailable.") return end
 
-  local leadName = cfg.Templates.UH60MedevacLead
-  local coverName = cfg.Templates.UH60MedevacCover
-  local leadTemplate = validateTemplate(leadName, "MEDEVAC_LEAD")
-  local coverTemplate = validateTemplate(coverName, "MEDEVAC_COVER")
+  local contract = cfg:GetSquadronContract("UH60")
+  if not contract then log("ERROR: UH-60 package contract unavailable.") return end
+  local leadName = cfg.Templates[contract.TemplateKey]
+  local coverName = cfg.Templates[contract.CoverTemplateKey]
+  local leadTemplate = validateTemplate(leadName, "MEDEVAC_LEAD", contract.TemplateUnits)
+  local coverTemplate = validateTemplate(coverName, "MEDEVAC_GUARD", contract.TemplateUnits)
   if not leadTemplate or not coverTemplate then return end
 
   local aircraftCount = cfg.Inventory.UH60
@@ -41,7 +43,7 @@ local function main()
   local missionTypes = { AUFTRAG.Type.TROOPTRANSPORT, AUFTRAG.Type.CARGOTRANSPORT, AUFTRAG.Type.LANDATCOORDINATE, AUFTRAG.Type.GROUNDESCORT }
   local ok, result = pcall(function()
     local squadron = SQUADRON:New(leadName, aircraftCount, squadronName)
-    squadron:SetGrouping(1)
+    squadron:SetGrouping(contract.Grouping)
     squadron:SetParkingIDs(parkingIDs)
     squadron:SetTakeoffCold()
     squadron:SetDespawnAfterLanding(true)
@@ -59,7 +61,7 @@ local function main()
   cfg.Payloads = cfg.Payloads or {}
   cfg.Payloads.UH60MedevacLead = result.LeadPayload
   cfg.Payloads.UH60MedevacCover = result.CoverPayload
-  log("SQUADRON ready name=" .. squadronName .. " physicalGroups=8 groupSize=1 runtimePrefix=" .. cfg:GetRuntimeGroupPrefix("UH60") .. " parkingIDs=" .. table.concat(parkingIDs, ",") .. " despawnAfterLanding=true")
+  log(string.format("SQUADRON ready name=%s model=%s medevacPackage=%s aircraft=%d assetGroups=%d grouping=%d parkingIDs=%s despawnAfterLanding=true", squadronName, contract.Model, contract.PackageModel, aircraftCount, contract.AssetGroups, contract.Grouping, table.concat(parkingIDs, ",")))
 end
 
 if SCHEDULER then SCHEDULER:New(nil, main, {}, 13) else timer.scheduleFunction(function() main() return nil end, nil, timer.getTime() + 13) end
