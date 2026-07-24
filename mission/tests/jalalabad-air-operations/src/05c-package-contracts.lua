@@ -7,7 +7,7 @@ if not cfg then
   log("ERROR: Jalalabad configuration unavailable.")
 else
   local contracts = {
-    Version = "JBAD-PACKAGES-1",
+    Version = "JBAD-PACKAGES-2",
     Squadrons = {
       OH58D = {
         TemplateKey = "OH58DRecon",
@@ -74,9 +74,13 @@ else
       valid = false
       log(string.format("ERROR inventory mismatch squadron=%s configured=%s contract=%d", key, tostring(configured), contract.InventoryAircraft))
     end
+    if type(contract.AssetGroups) ~= "number" or contract.AssetGroups < 1 or contract.AssetGroups % 1 ~= 0 then
+      valid = false
+      log(string.format("ERROR invalid SQUADRON constructor asset-group count squadron=%s assetGroups=%s", key, tostring(contract.AssetGroups)))
+    end
     if contract.AssetGroups * contract.Grouping ~= contract.InventoryAircraft then
       valid = false
-      log(string.format("ERROR contract arithmetic squadron=%s assetGroups=%d grouping=%d inventory=%d", key, contract.AssetGroups, contract.Grouping, contract.InventoryAircraft))
+      log(string.format("ERROR contract arithmetic squadron=%s assetGroups=%d grouping=%d inventoryAircraft=%d", key, contract.AssetGroups, contract.Grouping, contract.InventoryAircraft))
     end
     local pool = cfg.Parking and cfg.Parking.SquadronPools and cfg.Parking.SquadronPools[key] or nil
     if not pool then
@@ -104,7 +108,7 @@ else
 
   cfg.PackageContractsOK = valid
   if valid then
-    log("PASS version=JBAD-PACKAGES-1 OH58D=1x2 AH64D=1x2 UH60=independentSingles CH47=1x1 assetGroups=12/4/8/8 parkingGroupSizes=2/2/1/1")
+    log("PASS version=JBAD-PACKAGES-2 constructorSemantics=SQUADRON_New_counts_asset_groups OH58D=12groupsx2/AH64D=4groupsx2/UH60=8groupsx1/CH47=8groupsx1 testPackages=OH58D:1x2/AH64D:1x2/UH60:1x1/CH47:1x1")
   else
     log("BLOCKED package-contract validation failed")
   end
