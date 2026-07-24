@@ -25,8 +25,11 @@ local function main()
   if cfg.Squadrons.OH58D then log("SKIP: OH-58D squadron already constructed.") return end
 
   local ok, result = pcall(function()
+    -- The OH-58D reconnaissance package is one physical DCS group containing
+    -- two aircraft. This is required so DCS maintains an actual two-ship
+    -- formation instead of dispatching two unrelated single-ship groups.
     local squadron = SQUADRON:New(templateName, aircraftCount, squadronName)
-    squadron:SetGrouping(1)
+    squadron:SetGrouping(2)
     squadron:SetParkingIDs(parkingIDs)
     squadron:SetTakeoffCold()
     squadron:SetDespawnAfterLanding(true)
@@ -42,7 +45,7 @@ local function main()
   cfg.Squadrons.OH58D = result.Squadron
   cfg.Payloads = cfg.Payloads or {}
   cfg.Payloads.OH58DRecon = result.Payload
-  log("SQUADRON ready name=" .. squadronName .. " physicalGroups=24 groupSize=1 logicalTwoShip=2assets runtimePrefix=" .. cfg:GetRuntimeGroupPrefix("OH58D") .. " parkingIDs=" .. table.concat(parkingIDs, ",") .. " despawnAfterLanding=true")
+  log("SQUADRON ready name=" .. squadronName .. " physicalGroups=12 groupSize=2 logicalTwoShip=onePhysicalGroup runtimePrefix=" .. cfg:GetRuntimeGroupPrefix("OH58D") .. " parkingIDs=" .. table.concat(parkingIDs, ",") .. " despawnAfterLanding=true")
 end
 
 if SCHEDULER then SCHEDULER:New(nil, main, {}, 9) else timer.scheduleFunction(function() main() return nil end, nil, timer.getTime() + 9) end
