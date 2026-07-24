@@ -1,10 +1,81 @@
 # Jalalabad Phase 1 – Missionseditor-Arbeitsliste
 
-## 1. Ausgangsbasis
+## 1. Aktuelle Testmission
 
-Zu verwenden ist eine Kopie der validierten Jalalabad-Testmission. Die bestehenden Clientgruppen, AIRWING-Templates, Statics, Warehouse-Objekte und elf Grundzonen bleiben unverändert.
+Weiterzuverwenden ist:
 
-Insbesondere nicht verändern:
+```text
+OMW_Jalalabad_AirOps_Phase1_ParkingPools_Test.miz
+```
+
+Die Datei wird für den nächsten Lauf nicht erneut umbenannt.
+
+## 2. Technische AIRWING-Templates
+
+Diese fünf Gruppen bleiben mit unveränderten Namen, Typen, Gruppengrößen, Liveries und Payloads erhalten:
+
+```text
+TPL_AIR_US_JBAD_OH58D_RECON_2SHIP
+TPL_AIR_US_JBAD_AH64D_CAS_2SHIP
+TPL_AIR_US_JBAD_UH60_MEDEVAC_LEAD_1SHIP
+TPL_AIR_US_JBAD_UH60_MEDEVAC_COVER_1SHIP
+TPL_AIR_US_JBAD_CH47_HEAVYLIFT_1SHIP
+```
+
+Verbindlich:
+
+- Late Activation bleibt aktiviert;
+- die Templates stehen auf einer technischen Fläche außerhalb aller funktionalen DCS-Parkpositionen;
+- sie erhalten keine operativen Parkplätze;
+- der tatsächliche KI-Startzustand wird durch `SQUADRON:SetTakeoffCold()` festgelegt;
+- die tatsächlichen Spawnplätze werden ausschließlich durch `SQUADRON:SetParkingIDs()` festgelegt.
+
+Der Validator verlangt mindestens 100 Meter Abstand jeder Templateeinheit zum nächsten DCS-Parking-Node.
+
+## 3. Exklusive KI-Parkplatzpools
+
+### OH-58D
+
+```text
+G01 -> TerminalID 19
+G02 -> TerminalID 43
+G03 -> TerminalID 6
+G04 -> TerminalID 5
+G05 -> TerminalID 48
+```
+
+### AH-64D
+
+```text
+F04 -> TerminalID 26
+F05 -> TerminalID 51
+F06 -> TerminalID 11
+```
+
+### UH-60A
+
+```text
+F01 -> TerminalID 10
+F02 -> TerminalID 8
+F03 -> TerminalID 1
+```
+
+### CH-47F
+
+```text
+C03 -> TerminalID 28
+C04 -> TerminalID 44
+C05 -> TerminalID 0
+C06 -> TerminalID 41
+C07 -> TerminalID 9
+C08 -> TerminalID 25
+C09 -> TerminalID 18
+C10 -> TerminalID 42
+```
+
+Diese Pools sind typgebunden und überschneiden sich nicht. Ein SQUADRON darf nicht auf einen allgemeinen Jalalabad-Parkplatz ausweichen. Ist sein Pool nicht ausreichend verfügbar, muss der Auftrag warten oder kontrolliert fehlschlagen.
+
+## 4. Unverändert gesperrte CH-47-Staticpositionen
 
 ```text
 STATIC_AIR_US_JBAD_CH47_01 -> TerminalID 49
@@ -13,118 +84,61 @@ STATIC_AIR_US_JBAD_CH47_03 -> TerminalID 23
 STATIC_AIR_US_JBAD_CH47_04 -> TerminalID 35
 ```
 
-## 2. Neue RECON-Zonen
+Diese vier TerminalIDs bleiben blacklisted und dürfen in keinem SQUADRON-Pool auftauchen.
 
-Anlegen:
+F04 beziehungsweise TerminalID 26 ist in der aktuellen Testmission frei und gehört zum AH-64D-Pool.
+
+## 5. Entfernte Grundzonen
+
+Folgende früheren Darstellungs- oder Templatezonen sind nicht mehr Bestandteil der Mission und dürfen nicht wieder angelegt werden:
+
+```text
+ZONE_AIR_US_JBAD_STATIC_OH58D
+ZONE_AIR_US_JBAD_STATIC_AH64D
+ZONE_AIR_US_JBAD_STATIC_UH60
+ZONE_AIR_US_JBAD_STATIC_CH47
+ZONE_AIR_US_JBAD_MEDEVAC_READY
+ZONE_AIR_US_JBAD_CH47_READY
+```
+
+## 6. Verbleibende Funktionszonen
+
+```text
+ZONE_AIR_US_JBAD_HEAVYLIFT_LOAD
+ZONE_AIR_US_JBAD_LOGISTICS_LOAD
+ZONE_AIR_US_JBAD_LOGISTICS_UNLOAD
+ZONE_AIR_US_JBAD_SLING_PICKUP
+ZONE_AIR_US_JBAD_C130_UNLOAD
+```
+
+Zusätzlich bleiben die vier Phase-1-Testzonen bestehen:
 
 ```text
 ZONE_TEST_US_JBAD_RECON_01
 ZONE_TEST_US_JBAD_RECON_02
 ZONE_TEST_US_JBAD_RECON_03
-```
-
-Vorgaben:
-
-- außerhalb des Flugplatzbereichs,
-- in sinnvoller Reihenfolge entlang einer kurzen Route,
-- ungefähr 12 bis 25 km von Jalalabad entfernt,
-- keine Überlagerung mit der CAS-Zone,
-- Radius ungefähr 500 bis 1000 m,
-- keine zufällige Reihenfolge im Skript.
-
-## 3. CAS-Testbereich
-
-Zone:
-
-```text
 ZONE_TEST_US_JBAD_CAS
 ```
 
-Zieltemplate:
+## 7. Phase-1-Testobjekte
+
+Unverändert erforderlich:
 
 ```text
-Gruppe: TPL_GROUND_RED_JBAD_PHASE1_CAS_TARGET
-Koalition: RED
-Late Activation: aktiviert
-Uncontrolled: nicht relevant
+TPL_GROUND_RED_JBAD_PHASE1_CAS_TARGET
+TPL_GROUND_BLUE_JBAD_PHASE1_UH60_TROOPS
+TEST_CARGO_BLUE_JBAD_CH47_01
 ```
 
-Empfehlung:
+Dabei gilt:
 
-- zwei bis vier ungepanzerte oder leicht gepanzerte Fahrzeuge,
-- keine SAM- oder AAA-Einheit,
-- Gruppe vollständig innerhalb der CAS-Zone,
-- keine anderen RED-Gruppen in der unmittelbaren Umgebung,
-- Entfernung ungefähr 15 bis 25 km von Jalalabad.
+- CAS-Zieltemplate: RED, Late Activation, leichte Fahrzeuge, innerhalb der CAS-Zone;
+- UH-60-Truppentemplate: BLUE/USA, Late Activation, innerhalb der Logistik-Ladezone;
+- CH-47-Cargo: natives DCS-Slingload-Cargo innerhalb der Pickup-Zone und außerhalb der Entladezone.
 
-Das Template wird nicht manuell aktiviert. Das Phase-1-Bundle erzeugt für den Test einen Spawn daraus.
+Das CH-47-Cargo ist pro Missionsstart nur einmal vollständig verwendbar.
 
-## 4. UH-60-Truppentemplate
-
-Anlegen:
-
-```text
-Gruppe: TPL_GROUND_BLUE_JBAD_PHASE1_UH60_TROOPS
-Koalition: BLUE
-Land: USA
-Late Activation: aktiviert
-```
-
-Empfehlung:
-
-- eine kleine Infanteriegruppe,
-- Templateposition vollständig innerhalb von `ZONE_AIR_US_JBAD_LOGISTICS_LOAD`,
-- ebener, hindernisfreier Landeplatz,
-- ausreichend Abstand zu Statics, Fahrzeugen und Gebäuden.
-
-Das Template wird durch das Bundle gespawnt und anschließend als `TROOPTRANSPORT`-Fracht verwendet.
-
-## 5. CH-47-Cargo
-
-Anlegen:
-
-```text
-Static-/Cargoname: TEST_CARGO_BLUE_JBAD_CH47_01
-Koalition: BLUE
-Cargo: als natives DCS-Slingload-Cargo konfiguriert
-```
-
-Position:
-
-```text
-innerhalb ZONE_AIR_US_JBAD_SLING_PICKUP
-außerhalb ZONE_AIR_US_JBAD_LOGISTICS_UNLOAD
-```
-
-Vorgaben:
-
-- für CH-47 realistisch transportierbare Masse,
-- keine Kollision mit Ramp-, Client-, KI- oder Rollpositionen,
-- keine direkte Nähe zu den blackgelisteten CH-47-Statics,
-- Drop-Zone muss eine echte Missionseditorzone bleiben, weil der DCS-Cargo-Task deren Zone-ID benötigt.
-
-Das Cargo ist innerhalb eines Missionsstarts nur einmal verwendbar. Nach erfolgreicher Lieferung ist für einen vollständigen Wiederholungslauf ein Missionsneustart erforderlich.
-
-## 6. Bestehende Lade-/Entladezonen prüfen
-
-```text
-ZONE_AIR_US_JBAD_LOGISTICS_LOAD
-ZONE_AIR_US_JBAD_LOGISTICS_UNLOAD
-ZONE_AIR_US_JBAD_SLING_PICKUP
-```
-
-Prüfen:
-
-- Radius,
-- Gefälle und Bodenbeschaffenheit,
-- Rotorfreiheit,
-- keine Gebäude oder Leitungen,
-- keine Überschneidung mit aktiven Park- oder Rollflächen,
-- ausreichender Abstand zwischen Pickup und Dropoff.
-
-## 7. Trigger und Bundle
-
-Keine zusätzliche Kette aus Einzeltriggern anlegen.
+## 8. Trigger und Bundle
 
 Reihenfolge bei `MISSION START`:
 
@@ -135,21 +149,32 @@ Reihenfolge bei `MISSION START`:
 
 Nach jedem Neubau:
 
-1. `OMW_AirOps_Jalalabad.lua` erneut auswählen,
-2. Mission speichern,
-3. Buildkopf auf `JBAD-AIR-OPS-PHASE1-1` prüfen,
-4. Mission starten,
-5. F10-Menü `OMW AirOps Tests -> Jalalabad Phase 1` verwenden.
+1. `OMW_AirOps_Jalalabad.lua` erneut auswählen;
+2. Mission speichern;
+3. Buildkopf auf `JBAD-AIR-OPS-PHASE1-2` prüfen;
+4. Mission starten;
+5. zuerst den F10-Status anzeigen;
+6. danach den angeordneten Einzel- oder Gesamttest starten.
 
-## 8. Erste Übergabe nach dem Test
+## 9. Erwartete Parkplatzvorprüfung
 
-Standardmäßig wird nur die neue `dcs.log` benötigt.
+Vor dem AIRWING-Start wird erwartet:
 
-Zusätzlich `.miz`, Debrief oder Screenshots nur bei:
+```text
+[OMW][AirOps.JBAD.PARKING-POOLS] RESULT: PASS pools=OH58D:5/AH64D:3/UH60:3/CH47:8 templatesOffParking=true poolOverlap=0 clientOverlap=0 blacklistOverlap=0 staticClearance=PASS
+```
 
-- fehlenden Phase-1-Missionseditorobjekten,
-- nicht auflösbaren Client-TerminalIDs,
-- Parking- oder Spawnproblemen,
-- Cargo-/Transportproblemen,
-- nicht erklärbaren Laufzeitfehlern,
+Ein Spawn außerhalb des zum SQUADRON gehörenden Pools ist ein harter Testfehler.
+
+## 10. Übergabe nach dem Test
+
+Standardmäßig genügt die neue `dcs.log`.
+
+Die `.miz` ist zusätzlich erforderlich bei:
+
+- nicht auflösbaren TerminalIDs;
+- Parking-Pool- oder Static-Abstandsfehlern;
+- fehlenden Missionseditorobjekten;
+- Cargo-/Transportproblemen;
+- nicht erklärbaren Laufzeitfehlern;
 - finaler Meilensteinabnahme.
