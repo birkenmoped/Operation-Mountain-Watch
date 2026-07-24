@@ -7,7 +7,6 @@ local function getTemplateLivery(templateName)
   if not _DATABASE or not _DATABASE.Templates or not _DATABASE.Templates.Groups then
     return nil
   end
-
   local entry = _DATABASE.Templates.Groups[templateName]
   local template = entry and entry.Template or nil
   local unit = template and template.units and template.units[1] or nil
@@ -29,30 +28,16 @@ local function validateTemplate(templateName, expectedType, role, expectedLivery
 
   local typeName = units[1] and units[1]:GetTypeName() or "nil"
   local livery = getTemplateLivery(templateName)
-  log(string.format(
-    "%s template unit name=%s type=%s livery=%s",
-    role,
-    units[1] and units[1]:GetName() or "nil",
-    tostring(typeName),
-    tostring(livery)
-  ))
+  log(string.format("%s template unit name=%s type=%s livery=%s", role, units[1] and units[1]:GetName() or "nil", tostring(typeName), tostring(livery)))
 
   if typeName ~= expectedType then
     log(string.format("ERROR: %s template %s must use type %s; found=%s", role, templateName, expectedType, tostring(typeName)))
     return nil
   end
-
   if expectedLivery and tostring(livery) ~= expectedLivery then
-    log(string.format(
-      "ERROR: %s template %s must use livery %s; found=%s",
-      role,
-      templateName,
-      expectedLivery,
-      tostring(livery)
-    ))
+    log(string.format("ERROR: %s template %s must use livery %s; found=%s", role, templateName, expectedLivery, tostring(livery)))
     return nil
   end
-
   return template
 end
 
@@ -69,6 +54,16 @@ local function main()
     return
   end
 
+  if cfg.ParkingPoolsOK ~= true then
+    log("ERROR: Exclusive UH60 parking pool is not validated; SQUADRON construction blocked.")
+    return
+  end
+  local parkingIDs = cfg:GetSquadronParkingIDs("UH60")
+  if #parkingIDs == 0 then
+    log("ERROR: Exclusive UH60 parking pool is empty.")
+    return
+  end
+
   if not GROUP or not SQUADRON or not AUFTRAG then
     log("ERROR: Required MOOSE classes GROUP, SQUADRON or AUFTRAG are unavailable.")
     return
@@ -79,9 +74,7 @@ local function main()
   local requiredLivery = "standard"
   local leadTemplate = validateTemplate(leadName, "UH-60A", "MEDEVAC_LEAD", requiredLivery)
   local coverTemplate = validateTemplate(coverName, "UH-60A", "MEDEVAC_COVER", requiredLivery)
-  if not leadTemplate or not coverTemplate then
-    return
-  end
+  if not leadTemplate or not coverTemplate then return end
 
   local aircraftCount = cfg.Inventory and cfg.Inventory.UH60 or 0
   if aircraftCount ~= 8 then
@@ -106,9 +99,9 @@ local function main()
   local ok, result = pcall(function()
     local squadron = SQUADRON:New(leadName, aircraftCount, squadronName)
     squadron:SetGrouping(1)
-    if AI and AI.Skill and AI.Skill.HIGH then
-      squadron:SetSkill(AI.Skill.HIGH)
-    end
+    squadron:SetParkingIDs(parkingIDs)
+    squadron:SetTakeoffCold()
+    if AI and AI.Skill and AI.Skill.HIGH then squadron:SetSkill(AI.Skill.HIGH) end
     squadron:AddMissionCapability(missionTypes, 100)
     airwing:AddSquadron(squadron)
 
@@ -118,27 +111,15 @@ local function main()
       { AUFTRAG.Type.TROOPTRANSPORT, AUFTRAG.Type.CARGOTRANSPORT, AUFTRAG.Type.LANDATCOORDINATE },
       100
     )
-    local coverPayload = airwing:NewPayload(
-      coverTemplate,
-      -1,
-      { AUFTRAG.Type.GROUNDESCORT },
-      100
-    )
-
-    return {
-      Squadron = squadron,
-      LeadPayload = leadPayload,
-      CoverPayload = coverPayload
-    }
+    local coverPayload = airwing:NewPayload(coverTemplate, -1, { AUFTRAG.Type.GROUNDESCORT }, 100)
+    return { Squadron = squadron, LeadPayload = leadPayload, CoverPayload = coverPayload }
   end)
 
   if not ok or not result or not result.Squadron then
     log("ERROR: SQUADRON construction, payload registration or AIRWING linking failed: " .. tostring(result))
     return
   end
-
-  local linked = airwing:GetSquadron(squadronName)
-  if linked ~= result.Squadron then
+  if airwing:GetSquadron(squadronName) ~= result.Squadron then
     log("ERROR: AIRWING:GetSquadron did not return the constructed squadron.")
     return
   end
@@ -148,20 +129,14 @@ local function main()
   cfg.Payloads.UH60MedevacLead = result.LeadPayload
   cfg.Payloads.UH60MedevacCover = result.CoverPayload
 
-  log(string.format(
-    "SQUADRON ready. name=%s aircraft=%d assetGroups=%d groupSize=1 capabilities=TRANSPORT/LAND/GROUNDESCORT medevacPackage=1+1 livery=%s payloads=UNLIMITED.",
-    squadronName,
-    aircraftCount,
-    aircraftCount,
-    requiredLivery
-  ))
+  local labels = {}
+  for _, entry in ipairs(cfg.Parking.SquadronPools.UH60.Entries) do labels[#labels + 1] = entry.Label end
+  log("PARKING_POOL locked=true labels=" .. table.concat(labels, ",") .. " TerminalIDs=" .. table.concat(parkingIDs, ",") .. " takeoff=COLD fallback=DISABLED")
+  log(string.format("SQUADRON ready. name=%s aircraft=%d assetGroups=%d groupSize=1 capabilities=TRANSPORT/LAND/GROUNDESCORT medevacPackage=1+1 livery=%s payloads=UNLIMITED.", squadronName, aircraftCount, aircraftCount, requiredLivery))
 end
 
 if SCHEDULER then
   SCHEDULER:New(nil, main, {}, 13)
 else
-  timer.scheduleFunction(function()
-    main()
-    return nil
-  end, nil, timer.getTime() + 13)
+  timer.scheduleFunction(function() main() return nil end, nil, timer.getTime() + 13)
 end
