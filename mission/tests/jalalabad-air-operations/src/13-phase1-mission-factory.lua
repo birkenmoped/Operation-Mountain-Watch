@@ -149,8 +149,8 @@ else
     mission:AddRequiredPayload(payload)
     mission:SetPriority(10, false)
     mission:SetRepeat(0)
-    mission:SetTime(1, definition.Timeout)
-    mission:SetDuration(definition.Timeout)
+    mission:SetTime(1, definition.ExecutionTimeout)
+    mission:SetDuration(definition.ExecutionTimeout)
     mission:SetMissionRange(50)
     mission:SetEvaluationTime(5)
     attachCallbacks(mission)
@@ -242,5 +242,5 @@ else
     return nil, "no factory for test: " .. tostring(testId)
   end
 
-  log("READY constructors=RECON,CAS,TROOPTRANSPORT,CARGOTRANSPORT restrictions=Squadron+Payload+1AssetGroup")
+  log("READY constructors=RECON,CAS,TROOPTRANSPORT,CARGOTRANSPORT restrictions=Squadron+Payload+ExactRequiredAssetCount")
 end
