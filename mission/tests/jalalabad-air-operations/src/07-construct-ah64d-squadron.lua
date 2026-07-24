@@ -4,115 +4,45 @@ local function log(msg) env.info(TAG .. " " .. tostring(msg)) end
 
 local function main()
   local cfg = OMW and OMW.AirOps and OMW.AirOps.Jalalabad
-  if not cfg then
-    log("ERROR: Jalalabad configuration is unavailable.")
-    return
-  end
+  if not cfg or not cfg.Airwing then log("ERROR: Jalalabad configuration or AIRWING unavailable.") return end
+  if cfg.ParkingPoolsOK ~= true or cfg.NameContractOK ~= true then log("ERROR: Parking/name validation not passed; SQUADRON blocked.") return end
+  if not GROUP or not SQUADRON or not AUFTRAG then log("ERROR: Required MOOSE classes unavailable.") return end
 
-  local airwing = cfg.Airwing
-  if not airwing then
-    log("WAITING: AIRWING is not constructed.")
-    return
-  end
-
-  if cfg.ParkingPoolsOK ~= true then
-    log("ERROR: Exclusive AH64D parking pool is not validated; SQUADRON construction blocked.")
-    return
-  end
-  local parkingIDs = cfg:GetSquadronParkingIDs("AH64D")
-  if #parkingIDs == 0 then
-    log("ERROR: Exclusive AH64D parking pool is empty.")
-    return
-  end
-
-  if not GROUP or not SQUADRON or not AUFTRAG then
-    log("ERROR: Required MOOSE classes GROUP, SQUADRON or AUFTRAG are unavailable.")
-    return
-  end
-
-  local templateName = cfg.Templates and cfg.Templates.AH64DCAS
-  local template = templateName and GROUP:FindByName(templateName) or nil
-  if not template then
-    log("WAITING: AH-64D template missing: " .. tostring(templateName))
-    return
-  end
-
+  local templateName = cfg.Templates.AH64DCAS
+  local template = GROUP:FindByName(templateName)
+  if not template then log("ERROR: AH-64D template missing: " .. tostring(templateName)) return end
   local units = template:GetUnits() or {}
-  local groupSize = #units
-  if groupSize ~= 2 then
-    log(string.format("ERROR: Template %s must contain exactly 2 units; found=%d", templateName, groupSize))
-    return
-  end
-
+  if #units ~= 2 then log(string.format("ERROR: Template %s must contain exactly 2 authoring units; found=%d", templateName, #units)) return end
   for index, unit in ipairs(units) do
     local typeName = unit and unit:GetTypeName() or "nil"
-    log(string.format("Template unit=%d name=%s type=%s", index, unit and unit:GetName() or "nil", tostring(typeName)))
-    if typeName ~= "AH-64D_BLK_II" then
-      log(string.format("ERROR: Template %s unit %d must be type AH-64D_BLK_II; found=%s", templateName, index, tostring(typeName)))
-      return
-    end
+    if typeName ~= "AH-64D_BLK_II" then log(string.format("ERROR: Template %s unit %d type=%s expected=AH-64D_BLK_II", templateName, index, tostring(typeName))) return end
   end
 
-  local aircraftCount = cfg.Inventory and cfg.Inventory.AH64D or 0
-  if aircraftCount <= 0 or aircraftCount % groupSize ~= 0 then
-    log(string.format("ERROR: Invalid AH-64D inventory=%s for groupSize=%d", tostring(aircraftCount), groupSize))
-    return
-  end
-
-  local assetGroups = aircraftCount / groupSize
-  local squadronName = cfg.SquadronNames and cfg.SquadronNames.AH64D or "SQ_US_JBAD_AH64D_B_1_10_AVN"
-
+  local aircraftCount = cfg.Inventory.AH64D
+  local squadronName = cfg.SquadronNames.AH64D
+  local parkingIDs = cfg:GetSquadronParkingIDs("AH64D")
   cfg.Squadrons = cfg.Squadrons or {}
-  if cfg.Squadrons.AH64D then
-    log("SKIP: AH-64D squadron already constructed in this mission run.")
-    return
-  end
+  if cfg.Squadrons.AH64D then log("SKIP: AH-64D squadron already constructed.") return end
 
   local ok, result = pcall(function()
-    local squadron = SQUADRON:New(templateName, assetGroups, squadronName)
-    squadron:SetGrouping(groupSize)
+    local squadron = SQUADRON:New(templateName, aircraftCount, squadronName)
+    squadron:SetGrouping(1)
     squadron:SetParkingIDs(parkingIDs)
     squadron:SetTakeoffCold()
-    if AI and AI.Skill and AI.Skill.HIGH then
-      squadron:SetSkill(AI.Skill.HIGH)
-    end
+    squadron:SetDespawnAfterLanding(true)
+    if AI and AI.Skill and AI.Skill.HIGH then squadron:SetSkill(AI.Skill.HIGH) end
     squadron:AddMissionCapability({ AUFTRAG.Type.CAS }, 100)
-    airwing:AddSquadron(squadron)
-    local payload = airwing:NewPayload(template, -1, { AUFTRAG.Type.CAS }, 100)
+    cfg.Airwing:AddSquadron(squadron)
+    local payload = cfg.Airwing:NewPayload(template, -1, { AUFTRAG.Type.CAS }, 100)
     return { Squadron = squadron, Payload = payload }
   end)
-
-  if not ok or not result or not result.Squadron then
-    log("ERROR: SQUADRON construction, payload registration or AIRWING linking failed: " .. tostring(result))
-    return
-  end
-
-  local linked = airwing:GetSquadron(squadronName)
-  if linked ~= result.Squadron then
-    log("ERROR: AIRWING:GetSquadron did not return the constructed squadron.")
-    return
-  end
+  if not ok or not result or not result.Squadron then log("ERROR: AH-64D SQUADRON construction failed: " .. tostring(result)) return end
+  if cfg.Airwing:GetSquadron(squadronName) ~= result.Squadron then log("ERROR: AIRWING link validation failed.") return end
 
   cfg.Squadrons.AH64D = result.Squadron
   cfg.Payloads = cfg.Payloads or {}
   cfg.Payloads.AH64DCAS = result.Payload
-  local labels = {}
-  for _, entry in ipairs(cfg.Parking.SquadronPools.AH64D.Entries) do labels[#labels + 1] = entry.Label end
-  log("PARKING_POOL locked=true labels=" .. table.concat(labels, ",") .. " TerminalIDs=" .. table.concat(parkingIDs, ",") .. " takeoff=COLD fallback=DISABLED")
-  log(string.format(
-    "SQUADRON ready. name=%s aircraft=%d assetGroups=%d groupSize=%d capability=CAS payload=UNLIMITED.",
-    squadronName,
-    aircraftCount,
-    assetGroups,
-    groupSize
-  ))
+  log("SQUADRON ready name=" .. squadronName .. " physicalGroups=8 groupSize=1 logicalTwoShip=2assets runtimePrefix=" .. cfg:GetRuntimeGroupPrefix("AH64D") .. " parkingIDs=" .. table.concat(parkingIDs, ",") .. " despawnAfterLanding=true")
 end
 
-if SCHEDULER then
-  SCHEDULER:New(nil, main, {}, 11)
-else
-  timer.scheduleFunction(function()
-    main()
-    return nil
-  end, nil, timer.getTime() + 11)
-end
+if SCHEDULER then SCHEDULER:New(nil, main, {}, 11) else timer.scheduleFunction(function() main() return nil end, nil, timer.getTime() + 11) end
