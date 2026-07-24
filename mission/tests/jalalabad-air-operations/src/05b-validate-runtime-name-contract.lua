@@ -13,6 +13,7 @@ end
 local function main()
   local cfg = OMW and OMW.AirOps and OMW.AirOps.Jalalabad
   if not cfg then log("ERROR: Jalalabad configuration unavailable.") return end
+  if cfg.PackageContractsOK ~= true then log("ERROR: Package contracts unavailable; name validation blocked.") return end
 
   cfg.NameContractOK = false
   cfg.AuthoringGroupNames = {}
@@ -58,13 +59,14 @@ local function main()
   local prefixOwner = {}
   for _, key in ipairs({ "OH58D", "AH64D", "UH60", "CH47" }) do
     local prefix = cfg:GetRuntimeGroupPrefix(key)
-    if not prefix or prefix == "" or prefixOwner[prefix] then
+    local contract = cfg:GetSquadronContract(key)
+    if not prefix or prefix == "" or prefixOwner[prefix] or not contract then
       ok = false
-      log(string.format("ERROR RUNTIME_PREFIX_INVALID squadron=%s prefix=%s owner=%s", key, tostring(prefix), tostring(prefixOwner[prefix])))
+      log(string.format("ERROR RUNTIME_PREFIX_INVALID squadron=%s prefix=%s owner=%s contract=%s", key, tostring(prefix), tostring(prefixOwner[prefix]), tostring(contract ~= nil)))
     else
       prefixOwner[prefix] = key
       cfg.RuntimeGroupPrefixes[key] = prefix
-      log(string.format("RUNTIME_PREFIX squadron=%s prefix=%s unitRule=<group>-01", key, prefix))
+      log(string.format("RUNTIME_PREFIX squadron=%s prefix=%s grouping=%d unitRules=<group>%s model=%s", key, prefix, contract.Grouping, table.concat(contract.RuntimeUnitSuffixes, ",<group>"), contract.Model))
     end
   end
 
@@ -82,7 +84,7 @@ local function main()
     local groupCount, unitCount = 0, 0
     for _ in pairs(cfg.AuthoringGroupNames) do groupCount = groupCount + 1 end
     for _ in pairs(cfg.AuthoringUnitNames) do unitCount = unitCount + 1 end
-    log(string.format("RESULT: PASS fixedGroups=%d fixedUnits=%d runtimePrefixes=4 typeOnlyMatching=false exactGroupAndUnitMatching=true", groupCount, unitCount))
+    log(string.format("RESULT: PASS fixedGroups=%d fixedUnits=%d runtimePrefixes=4 typeOnlyMatching=false packageAwareUnitSuffixes=true", groupCount, unitCount))
   else
     log("RESULT: FAIL AIRWING_START_BLOCKED=true")
   end
