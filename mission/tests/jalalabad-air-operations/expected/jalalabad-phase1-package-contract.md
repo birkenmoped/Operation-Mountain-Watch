@@ -1,6 +1,6 @@
 # Jalalabad Phase 1 package contract
 
-Status: implemented in `JBAD-AIR-OPS-PHASE1-7`; DCS validation pending.
+Status: implemented in `JBAD-AIR-OPS-PHASE1-8`; DCS validation pending.
 
 This file is the binding package model for the deterministic Phase-1 tests and the later dynamic request layer.
 
@@ -22,12 +22,14 @@ In case of contradiction, the central package contract in Lua and the stricter r
 
 ## Non-negotiable rules
 
+- `SQUADRON:New(template, Nassets, name)` receives the number of MOOSE asset groups, not the number of individual aircraft.
+- The Jalalabad constructor counts are therefore `OH58D=12`, `AH64D=4`, `UH60=8`, `CH47=8`.
 - `SQUADRON:SetGrouping()` must equal the physical group size defined here.
 - A two-aircraft template must not be converted into two unrelated single-ship groups.
 - `AUFTRAG:SetRequiredAssets()` counts physical MOOSE asset groups, not aircraft.
 - Runtime event counting counts aircraft by exact unit name and groups by exact group name.
-- Inventory readiness counts MOOSE asset groups: `OH58D=12`, `AH64D=4`, `UH60=8`, `CH47=8`.
-- Package arithmetic must always hold: `RequiredGroups * Grouping = RequiredAircraft`.
+- Inventory readiness counts the actual entries in `squadron.assets` and must equal the constructor asset-group count.
+- Package arithmetic must always hold: `AssetGroups * Grouping = InventoryAircraft` and `RequiredGroups * Grouping = RequiredAircraft`.
 - The current UH-60 troop transport test validates one transport lead. It is not the later full MEDEVAC lead/guard package test.
 - MOOSE templates, dynamic AIRWING spawns, visible statics, Client groups and logical inventory are separate layers.
 - A routing, landing, despawn or test-controller defect must not be “fixed” by changing the tactical package model.
