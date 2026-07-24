@@ -1,6 +1,4 @@
 -- Operation Mountain Watch - Jalalabad CH-47 heavy-lift squadron assembly
--- The actual DCS type string is discovered from the Mission Editor template and
--- becomes the canonical type for player slots and statics in the final validator.
 local TAG = "[OMW][AirOps.JBAD.CH47]"
 local function log(msg) env.info(TAG .. " " .. tostring(msg)) end
 
@@ -19,6 +17,16 @@ local function main()
   local airwing = cfg.Airwing
   if not airwing then
     log("WAITING: AIRWING is not constructed.")
+    return
+  end
+
+  if cfg.ParkingPoolsOK ~= true then
+    log("ERROR: Exclusive CH47 parking pool is not validated; SQUADRON construction blocked.")
+    return
+  end
+  local parkingIDs = cfg:GetSquadronParkingIDs("CH47")
+  if #parkingIDs == 0 then
+    log("ERROR: Exclusive CH47 parking pool is empty.")
     return
   end
 
@@ -69,12 +77,11 @@ local function main()
   local ok, result = pcall(function()
     local squadron = SQUADRON:New(templateName, aircraftCount, squadronName)
     squadron:SetGrouping(1)
-    if AI and AI.Skill and AI.Skill.HIGH then
-      squadron:SetSkill(AI.Skill.HIGH)
-    end
+    squadron:SetParkingIDs(parkingIDs)
+    squadron:SetTakeoffCold()
+    if AI and AI.Skill and AI.Skill.HIGH then squadron:SetSkill(AI.Skill.HIGH) end
     squadron:AddMissionCapability(missionTypes, 100)
     airwing:AddSquadron(squadron)
-
     local payload = airwing:NewPayload(template, -1, missionTypes, 100)
     return { Squadron = squadron, Payload = payload }
   end)
@@ -83,9 +90,7 @@ local function main()
     log("ERROR: CH-47 SQUADRON construction, payload registration or AIRWING linking failed: " .. tostring(result))
     return
   end
-
-  local linked = airwing:GetSquadron(squadronName)
-  if linked ~= result.Squadron then
+  if airwing:GetSquadron(squadronName) ~= result.Squadron then
     log("ERROR: AIRWING:GetSquadron did not return the constructed CH-47 squadron.")
     return
   end
@@ -98,20 +103,14 @@ local function main()
   cfg.CorrectionPending = cfg.CorrectionPending or {}
   cfg.CorrectionPending.CH47 = false
 
-  log(string.format(
-    "SQUADRON ready. name=%s type=%s aircraft=%d assetGroups=%d groupSize=1 capabilities=TROOPTRANSPORT/CARGOTRANSPORT/LAND payloads=UNLIMITED.",
-    squadronName,
-    tostring(typeName),
-    aircraftCount,
-    aircraftCount
-  ))
+  local labels = {}
+  for _, entry in ipairs(cfg.Parking.SquadronPools.CH47.Entries) do labels[#labels + 1] = entry.Label end
+  log("PARKING_POOL locked=true labels=" .. table.concat(labels, ",") .. " TerminalIDs=" .. table.concat(parkingIDs, ",") .. " takeoff=COLD fallback=DISABLED")
+  log(string.format("SQUADRON ready. name=%s type=%s aircraft=%d assetGroups=%d groupSize=1 capabilities=TROOPTRANSPORT/CARGOTRANSPORT/LAND payloads=UNLIMITED.", squadronName, tostring(typeName), aircraftCount, aircraftCount))
 end
 
 if SCHEDULER then
   SCHEDULER:New(nil, main, {}, 15)
 else
-  timer.scheduleFunction(function()
-    main()
-    return nil
-  end, nil, timer.getTime() + 15)
+  timer.scheduleFunction(function() main() return nil end, nil, timer.getTime() + 15)
 end
