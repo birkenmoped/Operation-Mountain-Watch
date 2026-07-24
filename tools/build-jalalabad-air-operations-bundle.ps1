@@ -25,7 +25,8 @@ $sourceFiles = @(
     '12-phase1-runtime-observer.lua',
     '13-phase1-mission-factory.lua',
     '14-phase1-test-controller.lua',
-    '15-phase1-f10-and-acceptance.lua'
+    '15-phase1-f10-and-acceptance.lua',
+    '16-phase1-moose-compatibility.lua'
 )
 
 if (-not (Test-Path -LiteralPath $sourceDir -PathType Container)) {
