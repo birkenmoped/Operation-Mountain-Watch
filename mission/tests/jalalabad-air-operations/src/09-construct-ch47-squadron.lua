@@ -23,7 +23,8 @@ local function main()
   local typeName = units[1] and units[1]:GetTypeName() or "nil"
   if not looksLikeCH47(typeName) then log(string.format("ERROR: Template %s is not recognized as CH-47; found=%s", templateName, tostring(typeName))) return end
 
-  local aircraftCount = cfg.Inventory.CH47
+  local aircraftCount = contract.InventoryAircraft
+  local assetGroupCount = contract.AssetGroups
   local squadronName = cfg.SquadronNames.CH47
   local parkingIDs = cfg:GetSquadronParkingIDs("CH47")
   cfg.Squadrons = cfg.Squadrons or {}
@@ -31,7 +32,8 @@ local function main()
 
   local missionTypes = { AUFTRAG.Type.TROOPTRANSPORT, AUFTRAG.Type.CARGOTRANSPORT, AUFTRAG.Type.LANDATCOORDINATE }
   local ok, result = pcall(function()
-    local squadron = SQUADRON:New(templateName, aircraftCount, squadronName)
+    -- SQUADRON:New() expects the number of MOOSE asset groups, not aircraft.
+    local squadron = SQUADRON:New(templateName, assetGroupCount, squadronName)
     squadron:SetGrouping(contract.Grouping)
     squadron:SetParkingIDs(parkingIDs)
     squadron:SetTakeoffCold()
@@ -52,7 +54,7 @@ local function main()
   cfg.DetectedTypes.CH47 = typeName
   cfg.CorrectionPending = cfg.CorrectionPending or {}
   cfg.CorrectionPending.CH47 = false
-  log(string.format("SQUADRON ready name=%s model=%s aircraft=%d assetGroups=%d grouping=%d parkingIDs=%s despawnAfterLanding=true", squadronName, contract.Model, aircraftCount, contract.AssetGroups, contract.Grouping, table.concat(parkingIDs, ",")))
+  log(string.format("SQUADRON ready name=%s model=%s inventoryAircraft=%d constructorAssetGroups=%d grouping=%d computedAircraft=%d parkingIDs=%s despawnAfterLanding=true", squadronName, contract.Model, aircraftCount, assetGroupCount, contract.Grouping, assetGroupCount * contract.Grouping, table.concat(parkingIDs, ",")))
 end
 
 if SCHEDULER then SCHEDULER:New(nil, main, {}, 15) else timer.scheduleFunction(function() main() return nil end, nil, timer.getTime() + 15) end
