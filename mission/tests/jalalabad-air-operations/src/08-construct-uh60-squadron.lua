@@ -48,7 +48,13 @@ local function main()
     squadron:SetGrouping(contract.Grouping)
     squadron:SetParkingIDs(parkingIDs)
     squadron:SetTakeoffCold()
-    squadron:SetDespawnAfterLanding(true)
+
+    -- UH-60 transport and MEDEVAC sorties require intermediate landings at
+    -- pickup and drop-off locations. Automatic despawn at every landing would
+    -- destroy the carrier at the first LZ. The active FLIGHTGROUP arms final
+    -- despawn only after a verified unload and before the RTB landing.
+    squadron:SetDespawnAfterLanding(false)
+
     if AI and AI.Skill and AI.Skill.HIGH then squadron:SetSkill(AI.Skill.HIGH) end
     squadron:AddMissionCapability(missionTypes, 100)
     cfg.Airwing:AddSquadron(squadron)
@@ -63,7 +69,7 @@ local function main()
   cfg.Payloads = cfg.Payloads or {}
   cfg.Payloads.UH60MedevacLead = result.LeadPayload
   cfg.Payloads.UH60MedevacCover = result.CoverPayload
-  log(string.format("SQUADRON ready name=%s model=%s medevacPackage=%s inventoryAircraft=%d constructorAssetGroups=%d grouping=%d computedAircraft=%d parkingIDs=%s despawnAfterLanding=true", squadronName, contract.Model, contract.PackageModel, aircraftCount, assetGroupCount, contract.Grouping, assetGroupCount * contract.Grouping, table.concat(parkingIDs, ",")))
+  log(string.format("SQUADRON ready name=%s model=%s medevacPackage=%s inventoryAircraft=%d constructorAssetGroups=%d grouping=%d computedAircraft=%d parkingIDs=%s despawnAfterLanding=false intermediateLandingsRequired=true finalDespawnArmedAfterVerifiedUnload=true", squadronName, contract.Model, contract.PackageModel, aircraftCount, assetGroupCount, contract.Grouping, assetGroupCount * contract.Grouping, table.concat(parkingIDs, ",")))
 end
 
 if SCHEDULER then SCHEDULER:New(nil, main, {}, 13) else timer.scheduleFunction(function() main() return nil end, nil, timer.getTime() + 13) end
