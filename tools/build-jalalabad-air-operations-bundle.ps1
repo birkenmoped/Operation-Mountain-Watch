@@ -16,6 +16,7 @@ $sourceFiles = @(
     '04-dump-aircraft-types.lua',
     '05-validate-mission-templates.lua',
     '05a-validate-squadron-parking-pools.lua',
+    '05b-validate-runtime-name-contract.lua',
     '06-construct-oh58d-squadron.lua',
     '07-construct-ah64d-squadron.lua',
     '08-construct-uh60-squadron.lua',
@@ -26,9 +27,9 @@ $sourceFiles = @(
     '12-phase1-runtime-observer.lua',
     '13-phase1-mission-factory.lua',
     '14-phase1-test-controller.lua',
+    '14a-phase1-lifecycle-corrections.lua',
     '15-phase1-f10-and-acceptance.lua',
-    '16-phase1-moose-compatibility.lua',
-    '17-phase1-runtime-parking-enforcement.lua'
+    '16-phase1-moose-compatibility.lua'
 )
 
 if (-not (Test-Path -LiteralPath $sourceDir -PathType Container)) {
@@ -37,7 +38,7 @@ if (-not (Test-Path -LiteralPath $sourceDir -PathType Container)) {
 
 New-Item -ItemType Directory -Path $distDir -Force | Out-Null
 
-$builderVersion = 'JBAD-AIR-OPS-PHASE1-2'
+$builderVersion = 'JBAD-AIR-OPS-PHASE1-3'
 $commit = 'UNKNOWN'
 try {
     $commit = (& git -C $repoRoot rev-parse HEAD 2>$null).Trim()
