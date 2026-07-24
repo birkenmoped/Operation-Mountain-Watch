@@ -1,16 +1,118 @@
 # Jalalabad Phase 1 – Missionseditor-Arbeitsliste
 
-## 1. Testmissionsdatei
+## 1. Verbindliche Aufgabentrennung
 
-Der fehlgeschlagene Lauf bleibt unverändert erhalten. Für den nächsten Lauf ist eine neue Arbeitskopie zu verwenden:
+Für dieses Projekt gilt:
 
 ```text
-OMW_Jalalabad_AirOps_Phase1_ExactNames_Recovery_Test.miz
+ChatGPT / Codeentwicklung:
+- Lua-Quellcode im Repository ändern
+- Builder und technische Dokumentation ändern
+- Änderungen auf den bestehenden Entwicklungsbranch schreiben
+- erwarteten Commit und die lokalen Buildbefehle nennen
+
+Missionsdesigner:
+- Repository lokal abrufen
+- Bundle lokal bauen und prüfen
+- Missionsdatei im DCS-Missionseditor öffnen
+- Bundle in die Missionsdatei einbetten
+- Missionsdatei speichern oder umbenennen
+- DCS-Testlauf durchführen
 ```
 
-An den Missionseditorobjekten sind keine weiteren Änderungen erforderlich. Die neue Datei unterscheidet sich durch das eingebettete Bundle `JBAD-AIR-OPS-PHASE1-3`.
+ChatGPT erstellt, verändert, entpackt, packt oder ersetzt keine `.miz`-Datei, sofern der Missionsdesigner dies nicht ausdrücklich beauftragt.
 
-## 2. Technische AIRWING-Templates
+Automatisch erzeugte oder bereitgestellte Testmissionen sind kein Bestandteil des normalen Arbeitsablaufs. Die Missionsdatei bleibt vollständig unter Kontrolle des Missionsdesigners.
+
+## 2. Missionsdatei
+
+Für den nächsten Test wird die vorhandene Arbeitsmission des Missionsdesigners weiterverwendet. Eine Umbenennung erfolgt nur nach ausdrücklicher Festlegung durch den Missionsdesigner oder nach einer konkreten gemeinsamen Anweisung.
+
+An den Missionseditorobjekten sind für den aktuellen Codefix keine weiteren Änderungen erforderlich.
+
+## 3. Lokaler Abruf des Entwicklungsstands
+
+PowerShell:
+
+```powershell
+cd P:\DCS-DEV\Operation-Mountain-Watch
+
+git branch --show-current
+git status --short
+git fetch origin
+```
+
+Existiert der Branch lokal noch nicht:
+
+```powershell
+git switch --track origin/feature/jalalabad-airwing-phase1-functional-tests
+```
+
+Existiert er bereits:
+
+```powershell
+git switch feature/jalalabad-airwing-phase1-functional-tests
+git pull --ff-only
+```
+
+Danach:
+
+```powershell
+git rev-parse HEAD
+```
+
+Der erwartete Commit wird für jeden Testlauf ausdrücklich in der jeweiligen Übergabe genannt. Bei einem abweichenden Commit wird das Bundle nicht gebaut und der Test nicht gestartet.
+
+## 4. Bundle lokal bauen
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass `
+  -File ".\tools\build-jalalabad-air-operations-bundle.ps1"
+```
+
+Der Builder erzeugt lokal:
+
+```text
+P:\DCS-DEV\Operation-Mountain-Watch\mission\tests\jalalabad-air-operations\dist\OMW_AirOps_Jalalabad.lua
+```
+
+## 5. Bundle unabhängig prüfen
+
+```powershell
+Get-Item `
+  ".\mission\tests\jalalabad-air-operations\dist\OMW_AirOps_Jalalabad.lua" |
+  Select-Object FullName, Length, LastWriteTime
+
+Get-FileHash `
+  ".\mission\tests\jalalabad-air-operations\dist\OMW_AirOps_Jalalabad.lua" `
+  -Algorithm SHA256
+```
+
+Im Dateikopf muss für diesen Entwicklungsstand stehen:
+
+```text
+BuilderVersion: JBAD-AIR-OPS-PHASE1-3
+GitCommit: <derselbe Commit wie git rev-parse HEAD>
+```
+
+## 6. Bundle durch den Missionsdesigner einbetten
+
+Im DCS-Missionseditor:
+
+1. die vorhandene Arbeitsmission öffnen;
+2. die Triggeraktion mit `OMW_AirOps_Jalalabad.lua` öffnen;
+3. die lokal gebaute Datei erneut auswählen;
+4. Mission unter dem vom Missionsdesigner festgelegten Namen speichern;
+5. keine weiteren Missionseditorobjekte verändern, sofern dies nicht ausdrücklich angeordnet wurde.
+
+Ladereihenfolge bei `MISSION START`:
+
+```text
+1. Moose.lua
+2. OMW_AirOps_Jalalabad.lua
+```
+
+## 7. Technische AIRWING-Templates
 
 Diese Gruppen bleiben unverändert:
 
@@ -26,11 +128,11 @@ Verbindlich:
 
 - Late Activation bleibt aktiviert;
 - die Templates stehen außerhalb aller operativen DCS-Parkpositionen;
-- Gruppennamen und Namen jeder Templateeinheit bleiben eindeutig;
-- die Two-Ship-Templates liefern weiterhin Typ, Payload und Livery;
+- Gruppen- und Einheitennamen bleiben eindeutig;
+- die Two-Ship-Templates liefern Typ, Payload und Livery;
 - MOOSE erzeugt daraus bei OH-58D und AH-64D zwei unabhängige Single-Ship-DCS-Gruppen.
 
-## 3. Exklusive KI-Parkplatzpools
+## 8. Exklusive KI-Parkplatzpools
 
 ```text
 OH-58D: G01-G05 / TerminalIDs 19,43,6,5,48
@@ -41,7 +143,7 @@ CH-47F: C03-C10 / TerminalIDs 28,44,0,41,9,25,18,42
 
 F04 beziehungsweise TerminalID 26 ist frei und Bestandteil des AH-64D-Pools.
 
-## 4. Weiterhin gesperrte Staticpositionen
+Weiterhin gesperrt:
 
 ```text
 STATIC_AIR_US_JBAD_CH47_01 -> TerminalID 49
@@ -50,89 +152,32 @@ STATIC_AIR_US_JBAD_CH47_03 -> TerminalID 23
 STATIC_AIR_US_JBAD_CH47_04 -> TerminalID 35
 ```
 
-## 5. Vorhandene Funktions- und Testzonen
+## 9. Eindeutige Laufzeitnamen
 
-Funktionszonen:
-
-```text
-ZONE_AIR_US_JBAD_HEAVYLIFT_LOAD
-ZONE_AIR_US_JBAD_LOGISTICS_LOAD
-ZONE_AIR_US_JBAD_LOGISTICS_UNLOAD
-ZONE_AIR_US_JBAD_SLING_PICKUP
-ZONE_AIR_US_JBAD_C130_UNLOAD
-```
-
-Testzonen:
-
-```text
-ZONE_TEST_US_JBAD_RECON_01
-ZONE_TEST_US_JBAD_RECON_02
-ZONE_TEST_US_JBAD_RECON_03
-ZONE_TEST_US_JBAD_CAS
-```
-
-## 6. Phase-1-Testobjekte
-
-Unverändert erforderlich:
-
-```text
-TPL_GROUND_RED_JBAD_PHASE1_CAS_TARGET
-TPL_GROUND_BLUE_JBAD_PHASE1_UH60_TROOPS
-TEST_CARGO_BLUE_JBAD_CH47_01
-```
-
-## 7. Eindeutige Namen
-
-Die Teststeuerung identifiziert Runtimeeinheiten nicht mehr allein über den Luftfahrzeugtyp.
-
-Verbindliches MOOSE-Laufzeitformat:
+Die Teststeuerung identifiziert Runtimeeinheiten nicht allein über den Luftfahrzeugtyp.
 
 ```text
 Gruppe:  <SQUADRON-NAME>_AID-<Nummer>
 Einheit: <GRUPPENNAME>-01
 ```
 
-Client-, Player-, Template- und sonstige Missionseditorgruppen werden über ihre festen Namen ausgeschlossen. Diese Testgruppe bleibt insbesondere ausgeschlossen:
+Client-, Player-, Template- und sonstige Missionseditorgruppen werden über ihre festen Namen ausgeschlossen. Insbesondere:
 
 ```text
 TEST_TM01A_CLIENT_01
 ```
 
-## 8. Eingebettete Skripte
+## 10. Testreihenfolge
 
-Ladereihenfolge bei `MISSION START`:
-
-```text
-1. Moose.lua
-2. OMW_AirOps_Jalalabad.lua
-```
-
-Erwarteter Bundlekopf:
-
-```text
-BuilderVersion: JBAD-AIR-OPS-PHASE1-3
-```
-
-## 9. Testreihenfolge
-
-Nicht sofort den Gesamtablauf starten. Zunächst getrennte Validierung:
+Nicht sofort den Gesamtablauf starten:
 
 ```text
 1. Status anzeigen
 2. OH-58D RECON als Einzeltest
-3. Mission neu starten und Log prüfen
+3. Mission neu starten und dcs.log auswerten
 4. AH-64D CAS als Einzeltest
-5. Mission neu starten und Log prüfen
-6. erst nach beiden Einzel-PASS Gesamtablauf starten
+5. Mission neu starten und dcs.log auswerten
+6. erst nach beiden Einzel-PASS den Gesamtablauf starten
 ```
 
 Der CH-47-Cargotest bleibt pro Missionsstart einmalig verwendbar.
-
-## 10. Erwartete Änderungen gegenüber dem fehlgeschlagenen Lauf
-
-- `TEST_TM01A_CLIENT_01` wird nicht als AIRWING-Gruppe registriert;
-- OH-58D und AH-64D spawnen als zwei voneinander unabhängige Single-Ship-Gruppen;
-- beide Gruppen landen unabhängig;
-- jede Gruppe despawnt nach ihrem eigenen Land-Ereignis;
-- die Landefläche wird nicht durch einen wartenden Lead dauerhaft blockiert;
-- Spawn-, Ausführungs-, Recovery- und Freigabe-Timeouts werden getrennt ausgewertet.
