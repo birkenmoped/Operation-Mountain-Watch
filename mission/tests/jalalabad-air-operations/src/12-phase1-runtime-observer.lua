@@ -1,6 +1,6 @@
 -- Operation Mountain Watch - Jalalabad AIRWING Phase 1 runtime observer
--- Runtime groups are identified by exact MOOSE SQUADRON/AID names and exact
--- unit names. Aircraft type alone is never sufficient.
+-- Exact runtime identity is derived from the active package contract. A physical
+-- two-ship is one DCS group with the exact unit names <group>-01 and <group>-02.
 local TAG = "[OMW][AirOps.JBAD.PH1.OBS]"
 local function log(msg) env.info(TAG .. " " .. tostring(msg)) end
 
@@ -14,6 +14,17 @@ else
 
   local managedTypes = { OH58D = true, ["AH-64D_BLK_II"] = true, ["UH-60A"] = true, ["CH-47Fbl1"] = true }
 
+  local function countKeys(values)
+    local count = 0
+    for _ in pairs(values or {}) do count = count + 1 end
+    return count
+  end
+
+  local function increment(counter)
+    ph1.Counters = ph1.Counters or {}
+    ph1.Counters[counter] = (ph1.Counters[counter] or 0) + 1
+  end
+
   local function distance2D(first, second)
     if not first or not second then return nil end
     local a = first.GetVec3 and first:GetVec3() or first
@@ -24,6 +35,10 @@ else
     local dx = (a.x or 0) - (b.x or 0)
     local dz = az - bz
     return math.sqrt(dx * dx + dz * dz)
+  end
+
+  local function startsWith(value, prefix)
+    return value and prefix and string.sub(value, 1, #prefix) == prefix
   end
 
   local function getGroupName(eventData)
@@ -65,27 +80,11 @@ else
     return nil
   end
 
-  local function countKeys(values)
-    local count = 0
-    for _ in pairs(values or {}) do count = count + 1 end
-    return count
-  end
-
-  local function increment(counter)
-    ph1.Counters = ph1.Counters or {}
-    ph1.Counters[counter] = (ph1.Counters[counter] or 0) + 1
-  end
-
-  local function setUnitEvent(bucket, unitName)
-    if not ph1.Runtime or not unitName then return false end
-    ph1.Runtime[bucket] = ph1.Runtime[bucket] or {}
-    if ph1.Runtime[bucket][unitName] then return false end
-    ph1.Runtime[bucket][unitName] = true
-    return true
-  end
-
-  local function startsWith(value, prefix)
-    return value and prefix and string.sub(value, 1, #prefix) == prefix
+  local function expectedSuffixes(definition)
+    if definition and definition.ExpectedUnitSuffixes and #definition.ExpectedUnitSuffixes > 0 then
+      return definition.ExpectedUnitSuffixes
+    end
+    return { definition and definition.ExpectedUnitSuffix or "-01" }
   end
 
   local function isAuthoringName(groupName, unitName)
@@ -103,8 +102,10 @@ else
   local function exactRuntimeName(definition, groupName, unitName)
     if not definition or not groupName or not unitName then return false, "missing-name" end
     if not startsWith(groupName, definition.ExpectedGroupPrefix) then return false, "wrong-group-prefix" end
-    if unitName ~= groupName .. definition.ExpectedUnitSuffix then return false, "wrong-unit-name" end
-    return true
+    for _, suffix in ipairs(expectedSuffixes(definition)) do
+      if unitName == groupName .. suffix then return true end
+    end
+    return false, "wrong-unit-name"
   end
 
   local function registerMissionGroup(groupName, source)
@@ -115,12 +116,26 @@ else
     if runtime.ExpectedGroupNames[groupName] then return true end
     if countKeys(runtime.ExpectedGroupNames) >= definition.ExpectedGroups then
       runtime.HardFailure = "too-many-exact-runtime-groups"
-      log("ERROR TOO_MANY_RUNTIME_GROUPS testId=" .. tostring(ph1.ActiveTestId) .. " group=" .. groupName)
+      log("ERROR TOO_MANY_RUNTIME_GROUPS testId=" .. tostring(ph1.ActiveTestId) .. " group=" .. tostring(groupName))
       return false
     end
     runtime.ExpectedGroupNames[groupName] = true
-    runtime.ExpectedUnitNames[groupName .. definition.ExpectedUnitSuffix] = groupName
-    log("MISSION_GROUP testId=" .. tostring(ph1.ActiveTestId) .. " group=" .. groupName .. " unit=" .. groupName .. definition.ExpectedUnitSuffix .. " source=" .. tostring(source))
+    runtime.ExpectedUnitNames = runtime.ExpectedUnitNames or {}
+    local names = {}
+    for _, suffix in ipairs(expectedSuffixes(definition)) do
+      local unitName = groupName .. suffix
+      runtime.ExpectedUnitNames[unitName] = groupName
+      names[#names + 1] = unitName
+    end
+    log("MISSION_GROUP testId=" .. tostring(ph1.ActiveTestId) .. " group=" .. groupName .. " units=" .. table.concat(names, ",") .. " source=" .. tostring(source))
+    return true
+  end
+
+  local function setUnitEvent(bucket, unitName)
+    if not ph1.Runtime or not unitName then return false end
+    ph1.Runtime[bucket] = ph1.Runtime[bucket] or {}
+    if ph1.Runtime[bucket][unitName] then return false end
+    ph1.Runtime[bucket][unitName] = true
     return true
   end
 
@@ -154,8 +169,8 @@ else
   end
 
   function observer:IsNearJalalabad(coordinate, radius)
-    local airbaseCoordinate = cfg.Airbase and cfg.Airbase:GetCoordinate() or nil
-    local distance = distance2D(coordinate, airbaseCoordinate)
+    local base = cfg.Airbase and cfg.Airbase:GetCoordinate() or nil
+    local distance = distance2D(coordinate, base)
     return distance and distance <= (radius or ph1.Limits.JalalabadBirthRadiusMeters), distance
   end
 
@@ -248,7 +263,7 @@ else
         if registerMissionGroup(name, "mission:GetOpsGroups") then found = found + 1 end
       end
     end
-    for groupName in pairs(ph1.ActiveMission.groupdata or {}) do
+    for groupName in pairs((ph1.ActiveMission and ph1.ActiveMission.groupdata) or {}) do
       if registerMissionGroup(groupName, "mission.groupdata") then found = found + 1 end
     end
     return found
@@ -272,10 +287,10 @@ else
 
   function observer:UpdateDistanceTracking()
     if not ph1.ActiveMission or not ph1.Runtime then return end
-    local airbaseCoordinate = cfg.Airbase and cfg.Airbase:GetCoordinate() or nil
-    if not airbaseCoordinate then return end
+    local base = cfg.Airbase and cfg.Airbase:GetCoordinate() or nil
+    if not base then return end
     for _, item in ipairs(self:GetRuntimeGroupCoordinates()) do
-      local distance = distance2D(item.Coordinate, airbaseCoordinate)
+      local distance = distance2D(item.Coordinate, base)
       if distance then
         ph1.Runtime.MaxDistanceFromBase = math.max(ph1.Runtime.MaxDistanceFromBase or 0, distance)
         if ph1.Runtime.MissionTerminal and (ph1.Runtime.MaxDistanceFromBase or 0) >= ph1.Limits.MissionAreaDistanceMeters and distance <= ph1.Limits.RTBDetectionRadiusMeters and not ph1.Runtime.RTBObserved then
@@ -290,25 +305,20 @@ else
     if not ph1.ActiveMission or not ph1.Runtime or not ph1.ActiveDefinition then return false end
     if isAuthoringName(groupName, unitName) then return false end
     observer:RefreshMissionGroups()
-    local exact, reason = exactRuntimeName(ph1.ActiveDefinition, groupName, unitName)
-    if not exact then return false, reason end
-    if typeName ~= ph1.ActiveDefinition.ExpectedType then return false, "wrong-type" end
-    if not ph1.Runtime.ExpectedGroupNames[groupName] then
-      -- Birth can precede GetOpsGroups population. Exact active SQUADRON/AID group
-      -- and exact one-unit name are sufficient; no type-only fallback exists.
-      if not registerMissionGroup(groupName, "exact-birth-name") then return false, "group-not-registered" end
-    end
+    local exact = exactRuntimeName(ph1.ActiveDefinition, groupName, unitName)
+    if not exact then return false end
+    if typeName ~= ph1.ActiveDefinition.ExpectedType then return false end
+    if not ph1.Runtime.ExpectedGroupNames[groupName] and not registerMissionGroup(groupName, "exact-birth-name") then return false end
     return ph1.Runtime.ExpectedUnitNames[unitName] == groupName
   end
 
   local function registerExpectedEvent(stage, bucket, counter, eventData)
     local groupName, unitName, typeName = getGroupName(eventData), getUnitName(eventData), getTypeName(eventData)
-    local expected = expectedEvent(groupName, unitName, typeName)
-    if not expected then return false end
+    if not expectedEvent(groupName, unitName, typeName) then return false end
     if setUnitEvent(bucket, unitName) then
       increment(counter)
       ph1.Runtime[stage .. "Count"] = (ph1.Runtime[stage .. "Count"] or 0) + 1
-      log(string.format("EVENT testId=%s stage=%s group=%s unit=%s type=%s count=%d", tostring(ph1.ActiveTestId), stage, groupName, unitName, typeName, ph1.Runtime[stage .. "Count"]))
+      log(string.format("EVENT testId=%s stage=%s group=%s unit=%s type=%s count=%d expected=%d", tostring(ph1.ActiveTestId), stage, groupName, unitName, typeName, ph1.Runtime[stage .. "Count"], ph1.ActiveDefinition.ExpectedAircraft))
     end
     return true
   end
@@ -320,33 +330,32 @@ else
   function handler:OnEventBirth(eventData)
     local groupName, unitName, typeName = getGroupName(eventData), getUnitName(eventData), getTypeName(eventData)
     local coordinate = getCoordinate(eventData)
-    local expected = expectedEvent(groupName, unitName, typeName)
-    if expected then
+    if expectedEvent(groupName, unitName, typeName) then
       if setUnitEvent("BornUnits", unitName) then
         increment("aircraftSpawned")
         ph1.Runtime.BirthCount = (ph1.Runtime.BirthCount or 0) + 1
       end
+      local newGroup = not ph1.Runtime.BornGroupNames[groupName]
       ph1.Runtime.BornGroupNames[groupName] = true
+      if newGroup then increment("groupsSpawned") end
       local definition = ph1.ActiveDefinition
-      if ph1.Runtime.BirthCount > definition.ExpectedAircraft then ph1.Runtime.HardFailure = "unexpected-aircraft-count-" .. ph1.Runtime.BirthCount end
-      if countKeys(ph1.Runtime.BornGroupNames) > definition.ExpectedGroups then ph1.Runtime.HardFailure = "unexpected-group-count-" .. countKeys(ph1.Runtime.BornGroupNames) end
+      if ph1.Runtime.BirthCount > definition.ExpectedAircraft then ph1.Runtime.HardFailure = "unexpected-aircraft-count-" .. tostring(ph1.Runtime.BirthCount) end
+      if countKeys(ph1.Runtime.BornGroupNames) > definition.ExpectedGroups then ph1.Runtime.HardFailure = "unexpected-group-count-" .. tostring(countKeys(ph1.Runtime.BornGroupNames)) end
 
       local terminalId, parkingDistance = nearestParking(coordinate)
       local staticName, staticDistance = nearestStatic(coordinate)
-      log(string.format("EVENT testId=%s stage=SPAWN group=%s unit=%s type=%s TerminalID=%s parkingDistance=%s nearestStatic=%s staticDistance=%s", tostring(ph1.ActiveTestId), groupName, unitName, typeName, tostring(terminalId), parkingDistance and string.format("%.1fm", parkingDistance) or "unknown", tostring(staticName), staticDistance and string.format("%.1fm", staticDistance) or "unknown"))
-
       local poolKey = definition.ParkingPoolKey or definition.SquadronKey
       local allowed = cfg.ParkingPoolTerminalIDs and cfg.ParkingPoolTerminalIDs[poolKey] or nil
+      log(string.format("EVENT testId=%s stage=SPAWN group=%s unit=%s type=%s TerminalID=%s parkingDistance=%s", tostring(ph1.ActiveTestId), groupName, unitName, typeName, tostring(terminalId), parkingDistance and string.format("%.1fm", parkingDistance) or "unknown"))
       if not terminalId or not parkingDistance or parkingDistance > ph1.Limits.ParkingBirthMatchMeters or not allowed or not allowed[terminalId] then
         increment("parkingViolations")
         ph1.Runtime.HardFailure = "spawn-outside-squadron-pool-" .. tostring(terminalId)
-        log(string.format("ERROR SPAWN_OUTSIDE_SQUADRON_POOL testId=%s group=%s squadron=%s TerminalID=%s distance=%s", tostring(ph1.ActiveTestId), groupName, poolKey, tostring(terminalId), parkingDistance and string.format("%.1fm", parkingDistance) or "unknown"))
       else
-        log(string.format("SPAWN_POOL_CONFIRMED testId=%s group=%s unit=%s squadron=%s label=%s TerminalID=%s", tostring(ph1.ActiveTestId), groupName, unitName, poolKey, tostring(cfg:GetSquadronParkingLabel(poolKey, terminalId)), tostring(terminalId)))
+        log(string.format("SPAWN_POOL_CONFIRMED group=%s unit=%s label=%s TerminalID=%s", groupName, unitName, tostring(cfg:GetSquadronParkingLabel(poolKey, terminalId)), tostring(terminalId)))
       end
       if terminalId and ph1.ClientParkingIDs and ph1.ClientParkingIDs[terminalId] then
         increment("parkingViolations")
-        ph1.Runtime.HardFailure = "spawn-on-client-terminal-" .. terminalId
+        ph1.Runtime.HardFailure = "spawn-on-client-terminal-" .. tostring(terminalId)
       end
       if staticDistance and staticDistance < ph1.Limits.StaticSpawnClearanceMeters then
         increment("parkingViolations")
@@ -356,10 +365,7 @@ else
       return
     end
 
-    if isAuthoringName(groupName, unitName) then
-      log("IGNORED_AUTHORING_EVENT stage=Birth group=" .. tostring(groupName) .. " unit=" .. tostring(unitName))
-      return
-    end
+    if isAuthoringName(groupName, unitName) then return end
     local managed, owner = belongsToAnyManagedSquadron(groupName)
     local nearBase = observer:IsNearJalalabad(coordinate)
     if ph1.ActiveMission and nearBase and managedTypes[typeName] and managed then
@@ -382,7 +388,7 @@ else
         ph1.Runtime.LandingCount = (ph1.Runtime.LandingCount or 0) + 1
       end
       ph1.Runtime.RTBObserved = true
-      log(string.format("EVENT testId=%s stage=LAND_AT_JALALABAD group=%s unit=%s distance=%.0fm count=%d", tostring(ph1.ActiveTestId), groupName, unitName, distance or -1, ph1.Runtime.LandingCount or 0))
+      log(string.format("EVENT testId=%s stage=LAND_AT_JALALABAD group=%s unit=%s distance=%.0fm count=%d expected=%d", tostring(ph1.ActiveTestId), groupName, unitName, distance or -1, ph1.Runtime.LandingCount or 0, ph1.ActiveDefinition.ExpectedAircraft))
     else
       ph1.Runtime.RemoteLandingCount = (ph1.Runtime.RemoteLandingCount or 0) + 1
       increment("remoteLandings")
@@ -403,5 +409,5 @@ else
   function handler:OnEventCrash(eventData) handleLoss("CRASH", eventData) end
   function handler:OnEventDead(eventData) handleLoss("DEAD", eventData) end
 
-  log("READY exactGroupPrefix=true exactUnitName=true typeOnlyMatching=false allEventsFiltered=true handlers=Birth,EngineStartup,Takeoff,Land,EngineShutdown,Crash,Dead")
+  log("READY packageAware=true exactGroupPrefix=true exactUnitSuffixes=true typeOnlyMatching=false physicalTwoShips=OH58D,AH64D")
 end
