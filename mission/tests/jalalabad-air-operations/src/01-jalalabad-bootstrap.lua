@@ -14,7 +14,7 @@ local function numbered(prefix, count)
 end
 
 OMW.AirOps.Jalalabad = {
-  Status = "ASSEMBLING_CORRECTED_RAMP",
+  Status = "ASSEMBLING_CONTRACT_DRIVEN_RAMP",
   AirbaseName = AIRBASE.Afghanistan and AIRBASE.Afghanistan.Jalalabad or "Jalalabad",
   WarehouseName = "WH_AIR_US_JALALABAD",
   AirwingName = "AW_US_JALALABAD",
@@ -34,11 +34,11 @@ OMW.AirOps.Jalalabad = {
     PoolCoordinateToleranceMeters = 2,
     PoolStaticClearanceMeters = 12,
 
-    -- One physical DCS spawn group contains one aircraft. OH-58D and AH-64D
-    -- Two-Ships consist of two independently controlled single-ship groups.
+    -- GroupSize is the physical DCS group size. It is reasserted by the
+    -- canonical package contract before parking validation and construction.
     SquadronPools = {
       OH58D = {
-        GroupSize = 1,
+        GroupSize = 2,
         TerminalType = 40,
         Entries = {
           { Label = "G01", TerminalID = 19, X = 73027.2, Z = 389096.3 },
@@ -49,7 +49,7 @@ OMW.AirOps.Jalalabad = {
         }
       },
       AH64D = {
-        GroupSize = 1,
+        GroupSize = 2,
         TerminalType = 40,
         Entries = {
           { Label = "F04", TerminalID = 26, X = 72760.1, Z = 389173.6 },
@@ -94,7 +94,7 @@ OMW.AirOps.Jalalabad = {
       STATIC_AIR_US_JBAD_CH47_04 = 35
     },
     StaticParkingBlacklist = { 23, 35, 37, 49 },
-    Model = "EXCLUSIVE_TYPE_SPECIFIC_SINGLE_SHIP_SQUADRON_POOLS"
+    Model = "CONTRACT_DRIVEN_PHYSICAL_GROUPS_OH58D2_AH64D2_UH60_1_CH47_1"
   },
 
   StaticCaps = { OH58D = 7, AH64D = 4, UH60 = 4, CH47 = 5 },
@@ -162,7 +162,8 @@ OMW.AirOps.Jalalabad = {
   DetectedTypes = {},
   ParkingReservationsOK = false,
   ParkingPoolsOK = false,
-  NameContractOK = false
+  NameContractOK = false,
+  PackageContractsOK = false
 }
 
 local function getPool(key)
@@ -202,6 +203,7 @@ local function validate()
   if not airbase then log("ERROR: Airbase not found: " .. tostring(cfg.AirbaseName)) return end
   log("Airbase OK: " .. airbase:GetName() .. " ID=" .. tostring(airbase:GetID()))
 
+  if cfg.PackageContractsOK ~= true then log("WAITING: Package contracts not validated.") return end
   local anchor = STATIC:FindByName(cfg.WarehouseName, false) or UNIT:FindByName(cfg.WarehouseName)
   if not anchor then log("WAITING: Warehouse anchor missing: " .. cfg.WarehouseName) return end
 
@@ -218,8 +220,8 @@ local function validate()
   cfg.Airbase = airbase
   cfg.Airwing = result
   log("AIRWING constructed and explicitly linked. Awaiting validation before Start().")
-  log("RUNTIME NAME CONTRACT: exact SQUADRON_AID group prefixes and exact unit names required; type-only matching prohibited.")
-  log("RAMP MODEL: OH58D/AH64D use two independent single-ship DCS groups per logical Two-Ship; all squadrons despawn after landing.")
+  log("RUNTIME NAME CONTRACT: exact SQUADRON_AID group prefixes and package-specific exact unit suffixes required; type-only matching prohibited.")
+  log("PACKAGE MODEL: OH58D=one physical two-ship; AH64D=one physical two-ship; UH60=independent lead/guard singles; CH47=single-ship.")
 end
 
 if SCHEDULER then
