@@ -38,12 +38,12 @@ else
     if ph1.AcceptanceGateLogged or cfg.BaselineReady ~= true then return end
     local objectsReady = ph1.Factory:ValidateMissionEditorObjects()
     local clientParkingReady = ph1.ClientParkingResolved or ph1.Observer:ResolveClientParkingIDs()
-    local ready = objectsReady and clientParkingReady and cfg.ParkingReservationsOK == true and cfg.ParkingPoolsOK == true and cfg.NameContractOK == true
+    local ready = objectsReady and clientParkingReady and cfg.ParkingReservationsOK == true and cfg.ParkingPoolsOK == true and cfg.NameContractOK == true and cfg.PackageContractsOK == true
     ph1.AcceptanceGateLogged = true
     if ready then
-      log("RESULT: READY. Phase 1 armed; exact runtime names and exclusive parking pools active; OH-58D terrain/route gate PASS; dedicated UH-60 drop zone and pickup/delivery lifecycle PASS; vertical helicopter takeoff/landing preference active.")
+      log("RESULT: READY. Package contracts active: OH-58D=one physical two-ship; AH-64D=one physical two-ship; UH-60=independent lead/guard assets; CH-47=single-ship. Per-test route and objective checks remain deferred until test start.")
     else
-      log("RESULT: BLOCKED. Required: Mission Editor objects, Client parking, static reservations, exclusive SQUADRON pools, exact runtime-name contract, safe OH-58D route, dedicated UH-60 drop zone and vertical helicopter operation preference.")
+      log("RESULT: BLOCKED. Required: Mission Editor objects, Client parking, static reservations, exclusive SQUADRON pools, exact runtime names and valid package contracts.")
     end
   end
 
