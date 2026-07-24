@@ -9,25 +9,11 @@ if not cfg or not ph1 or not ph1.Controller then
 else
   ph1.API = ph1.API or {}
 
-  function ph1.API.StartSequence()
-    return ph1.Controller:StartSequence()
-  end
-
-  function ph1.API.StartTest(testId)
-    return ph1.Controller:StartTest(testId)
-  end
-
-  function ph1.API.AbortActive(reason)
-    return ph1.Controller:AbortActive(reason or "deterministic-trigger-abort")
-  end
-
-  function ph1.API.Status()
-    return ph1.Controller:GetStatusText()
-  end
-
-  function ph1.API.Reset()
-    return ph1.Controller:ResetController()
-  end
+  function ph1.API.StartSequence() return ph1.Controller:StartSequence() end
+  function ph1.API.StartTest(testId) return ph1.Controller:StartTest(testId) end
+  function ph1.API.AbortActive(reason) return ph1.Controller:AbortActive(reason or "deterministic-trigger-abort") end
+  function ph1.API.Status() return ph1.Controller:GetStatusText() end
+  function ph1.API.Reset() return ph1.Controller:ResetController() end
 
   local function createMenus()
     if ph1.MenuCreated then return true end
@@ -41,30 +27,14 @@ else
     ph1.MenuRoot = root
     ph1.Menu = menu
 
-    MENU_COALITION_COMMAND:New(coalition.side.BLUE, "Status anzeigen", menu, function()
-      ph1.Controller:ShowStatus()
-    end)
-    MENU_COALITION_COMMAND:New(coalition.side.BLUE, "Gesamtablauf starten", menu, function()
-      ph1.Controller:StartSequence()
-    end)
-    MENU_COALITION_COMMAND:New(coalition.side.BLUE, "OH-58D RECON starten", menu, function()
-      ph1.Controller:StartTest("OH58D_RECON")
-    end)
-    MENU_COALITION_COMMAND:New(coalition.side.BLUE, "AH-64D CAS starten", menu, function()
-      ph1.Controller:StartTest("AH64D_CAS")
-    end)
-    MENU_COALITION_COMMAND:New(coalition.side.BLUE, "UH-60A Transport starten", menu, function()
-      ph1.Controller:StartTest("UH60_TROOP")
-    end)
-    MENU_COALITION_COMMAND:New(coalition.side.BLUE, "CH-47F Cargo starten", menu, function()
-      ph1.Controller:StartTest("CH47_CARGO")
-    end)
-    MENU_COALITION_COMMAND:New(coalition.side.BLUE, "Aktiven Auftrag abbrechen", menu, function()
-      ph1.Controller:AbortActive("manual-f10-abort")
-    end)
-    MENU_COALITION_COMMAND:New(coalition.side.BLUE, "Testcontroller zuruecksetzen", menu, function()
-      ph1.Controller:ResetController()
-    end)
+    MENU_COALITION_COMMAND:New(coalition.side.BLUE, "Status anzeigen", menu, function() ph1.Controller:ShowStatus() end)
+    MENU_COALITION_COMMAND:New(coalition.side.BLUE, "Gesamtablauf starten", menu, function() ph1.Controller:StartSequence() end)
+    MENU_COALITION_COMMAND:New(coalition.side.BLUE, "OH-58D RECON starten", menu, function() ph1.Controller:StartTest("OH58D_RECON") end)
+    MENU_COALITION_COMMAND:New(coalition.side.BLUE, "AH-64D CAS starten", menu, function() ph1.Controller:StartTest("AH64D_CAS") end)
+    MENU_COALITION_COMMAND:New(coalition.side.BLUE, "UH-60A Transport starten", menu, function() ph1.Controller:StartTest("UH60_TROOP") end)
+    MENU_COALITION_COMMAND:New(coalition.side.BLUE, "CH-47F Cargo starten", menu, function() ph1.Controller:StartTest("CH47_CARGO") end)
+    MENU_COALITION_COMMAND:New(coalition.side.BLUE, "Aktiven Auftrag abbrechen", menu, function() ph1.Controller:AbortActive("manual-f10-abort") end)
+    MENU_COALITION_COMMAND:New(coalition.side.BLUE, "Testcontroller zuruecksetzen", menu, function() ph1.Controller:ResetController() end)
 
     ph1.MenuCreated = true
     log("READY F10=OMW_AirOps_Tests/Jalalabad_Phase_1 commands=8")
@@ -77,12 +47,12 @@ else
 
     local objectsReady = ph1.Factory:ValidateMissionEditorObjects()
     local clientParkingReady = ph1.ClientParkingResolved or ph1.Observer:ResolveClientParkingIDs()
-    if objectsReady and clientParkingReady and cfg.ParkingReservationsOK == true then
+    if objectsReady and clientParkingReady and cfg.ParkingReservationsOK == true and cfg.ParkingPoolsOK == true then
       ph1.AcceptanceGateLogged = true
-      log("RESULT: READY. Phase 1 functional package armed; direct AIRWING tasking only; COMMANDER autonomous tasking disabled; testsQueued=0.")
+      log("RESULT: READY. Phase 1 functional package armed; exclusive type-specific SQUADRON parking pools validated; direct AIRWING tasking only; COMMANDER autonomous tasking disabled; testsQueued=0.")
     else
       ph1.AcceptanceGateLogged = true
-      log("RESULT: BLOCKED. Phase 1 functional package requires all documented Mission Editor objects and resolvable Client parking positions.")
+      log("RESULT: BLOCKED. Phase 1 requires all documented Mission Editor objects, resolvable Client parking positions, static reservations, and validated exclusive SQUADRON parking pools.")
     end
   end
 
