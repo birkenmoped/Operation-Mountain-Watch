@@ -1,6 +1,7 @@
 -- Operation Mountain Watch - Jalalabad CH-47 heavy-lift squadron assembly
 local TAG = "[OMW][AirOps.JBAD.CH47]"
 local function log(msg) env.info(TAG .. " " .. tostring(msg)) end
+
 local function looksLikeCH47(typeName)
   local upper = string.upper(tostring(typeName or ""))
   return string.find(upper, "CH%-47") ~= nil or string.find(upper, "CH47") ~= nil
@@ -9,14 +10,16 @@ end
 local function main()
   local cfg = OMW and OMW.AirOps and OMW.AirOps.Jalalabad
   if not cfg or not cfg.Airwing then log("ERROR: Jalalabad configuration or AIRWING unavailable.") return end
-  if cfg.ParkingPoolsOK ~= true or cfg.NameContractOK ~= true then log("ERROR: Parking/name validation not passed; SQUADRON blocked.") return end
+  if cfg.ParkingPoolsOK ~= true or cfg.NameContractOK ~= true or cfg.PackageContractsOK ~= true then log("ERROR: Parking/name/package validation not passed; SQUADRON blocked.") return end
   if not GROUP or not SQUADRON or not AUFTRAG then log("ERROR: Required MOOSE classes unavailable.") return end
 
-  local templateName = cfg.Templates.CH47HeavyLift
+  local contract = cfg:GetSquadronContract("CH47")
+  if not contract then log("ERROR: CH-47 package contract unavailable.") return end
+  local templateName = cfg.Templates[contract.TemplateKey]
   local template = GROUP:FindByName(templateName)
   if not template then log("ERROR: CH-47 template missing: " .. tostring(templateName)) return end
   local units = template:GetUnits() or {}
-  if #units ~= 1 then log(string.format("ERROR: CH-47 template %s must contain exactly 1 unit; found=%d", templateName, #units)) return end
+  if #units ~= contract.TemplateUnits then log(string.format("ERROR: Template %s units=%d contract=%d", templateName, #units, contract.TemplateUnits)) return end
   local typeName = units[1] and units[1]:GetTypeName() or "nil"
   if not looksLikeCH47(typeName) then log(string.format("ERROR: Template %s is not recognized as CH-47; found=%s", templateName, tostring(typeName))) return end
 
@@ -29,7 +32,7 @@ local function main()
   local missionTypes = { AUFTRAG.Type.TROOPTRANSPORT, AUFTRAG.Type.CARGOTRANSPORT, AUFTRAG.Type.LANDATCOORDINATE }
   local ok, result = pcall(function()
     local squadron = SQUADRON:New(templateName, aircraftCount, squadronName)
-    squadron:SetGrouping(1)
+    squadron:SetGrouping(contract.Grouping)
     squadron:SetParkingIDs(parkingIDs)
     squadron:SetTakeoffCold()
     squadron:SetDespawnAfterLanding(true)
@@ -49,7 +52,7 @@ local function main()
   cfg.DetectedTypes.CH47 = typeName
   cfg.CorrectionPending = cfg.CorrectionPending or {}
   cfg.CorrectionPending.CH47 = false
-  log("SQUADRON ready name=" .. squadronName .. " physicalGroups=8 groupSize=1 runtimePrefix=" .. cfg:GetRuntimeGroupPrefix("CH47") .. " parkingIDs=" .. table.concat(parkingIDs, ",") .. " despawnAfterLanding=true")
+  log(string.format("SQUADRON ready name=%s model=%s aircraft=%d assetGroups=%d grouping=%d parkingIDs=%s despawnAfterLanding=true", squadronName, contract.Model, aircraftCount, contract.AssetGroups, contract.Grouping, table.concat(parkingIDs, ",")))
 end
 
 if SCHEDULER then SCHEDULER:New(nil, main, {}, 15) else timer.scheduleFunction(function() main() return nil end, nil, timer.getTime() + 15) end
