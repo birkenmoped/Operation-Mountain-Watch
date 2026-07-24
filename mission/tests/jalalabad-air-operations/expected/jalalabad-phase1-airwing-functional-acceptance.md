@@ -5,216 +5,134 @@
 ```text
 Testpaket: IMPLEMENTED
 DCS-Acceptance: PENDING
-BuilderVersion: JBAD-AIR-OPS-PHASE1-2
+BuilderVersion: JBAD-AIR-OPS-PHASE1-3
 ```
 
-Diese Stufe validiert echte, direkt an `AW_US_JALALABAD` übergebene AUFTRAG-Missionen und die verbindliche typbezogene Parkplatzwahl der vier SQUADRONs.
+Phase 1 validiert echte AUFTRAG-Missionen, exklusive typbezogene Parkpositionen, exakte MOOSE-Laufzeitnamen und die vollständige Rückgabe der AIRWING-Assets.
 
-## 2. Teststeuerung
+## 2. Verbindliche Laufzeitidentität
 
-F10-Menü für BLUE:
+Eine Luftfahrzeuggruppe gehört nur dann zum aktiven Test, wenn alle Merkmale stimmen:
 
 ```text
-OMW AirOps Tests
-└── Jalalabad Phase 1
-    ├── Status anzeigen
-    ├── Gesamtablauf starten
-    ├── OH-58D RECON starten
-    ├── AH-64D CAS starten
-    ├── UH-60A Transport starten
-    ├── CH-47F Cargo starten
-    ├── Aktiven Auftrag abbrechen
-    └── Testcontroller zuruecksetzen
+Gruppenname beginnt exakt mit:
+<SQUADRON-NAME>_AID-
+
+Einheitenname bei Single-Ship-Gruppe:
+<GRUPPENNAME>-01
+
+DCS-Typ entspricht dem Testmanifest.
 ```
 
-Es darf immer nur ein Phase-1-Auftrag aktiv sein.
+Eine Erkennung allein über den DCS-Typ ist verboten. Client-, Player-, Template- und sonstige Missionseditorgruppen werden über ihre eindeutigen Gruppen- und Einheitennamen ausgeschlossen.
 
-## 3. Verbindliche SQUADRON-Parkplatzpools
-
-Die technischen AIRWING-Templates stehen außerhalb aller operativen Parkpositionen. Der Spawn erfolgt ausschließlich über diese MOOSE-TerminalIDs:
+Insbesondere darf folgende Test-/Clientgruppe niemals als OH-58D-AIRWING-Gruppe registriert werden:
 
 ```text
-OH-58D / G01-G05:
-19,43,6,5,48
-
-AH-64D / F04-F06:
-26,51,11
-
-UH-60A / F01-F03:
-10,8,1
-
-CH-47F / C03-C10:
-28,44,0,41,9,25,18,42
+TEST_TM01A_CLIENT_01
 ```
+
+## 3. Physisches Gruppenmodell
+
+Alle vier SQUADRONs erzeugen ausschließlich Single-Ship-DCS-Gruppen:
+
+```text
+OH-58D RECON: 2 unabhängige Gruppen mit je 1 Luftfahrzeug
+AH-64D CAS:   2 unabhängige Gruppen mit je 1 Luftfahrzeug
+UH-60A:       1 Gruppe mit 1 Luftfahrzeug
+CH-47F:       1 Gruppe mit 1 Luftfahrzeug
+```
+
+OH-58D und AH-64D bilden damit ein logisches Two-Ship-Paket aus zwei unabhängig landenden und freizugebenden DCS-Gruppen. Eine gemeinsame DCS-Gruppe mit Lead und Wingman ist nicht mehr zulässig.
+
+## 4. SQUADRON-Konfiguration
 
 Jedes SQUADRON verwendet:
 
 ```lua
-SQUADRON:SetParkingIDs(...)
-SQUADRON:SetTakeoffCold()
+squadron:SetGrouping(1)
+squadron:SetParkingIDs(...)
+squadron:SetTakeoffCold()
+squadron:SetDespawnAfterLanding(true)
 ```
 
-Ein Fallback auf andere Jalalabad-Terminals ist nicht zulässig.
+`SetDespawnAfterLanding(true)` muss jede gelandete Single-Ship-Gruppe nach dem Land-Ereignis entfernen, damit die Landefläche freigegeben und das Asset an das AIRWING/Warehouse zurückgegeben werden kann.
 
-Vor dem AIRWING-Start muss erscheinen:
+## 5. Exklusive Spawnpools
 
 ```text
-[OMW][AirOps.JBAD.PARKING-POOLS] RESULT: PASS pools=OH58D:5/AH64D:3/UH60:3/CH47:8 templatesOffParking=true poolOverlap=0 clientOverlap=0 blacklistOverlap=0 staticClearance=PASS
+OH-58D: G01-G05 / TerminalIDs 19,43,6,5,48
+AH-64D: F04-F06 / TerminalIDs 26,51,11
+UH-60A: F01-F03 / TerminalIDs 10,8,1
+CH-47F: C03-C10 / TerminalIDs 28,44,0,41,9,25,18,42
 ```
 
-Die Prüfung bestätigt zusätzlich:
+Ein Spawn außerhalb des zum SQUADRON gehörenden Pools ist ein harter FAIL.
 
-- alle TerminalIDs existieren;
-- die festgeschriebenen Koordinaten stimmen;
-- Terminaltypen stimmen mit dem jeweiligen Pool überein;
-- kein Pool überschneidet sich mit einem anderen Pool;
-- keine Poolposition ist ein Clientplatz;
-- keine Poolposition ist `23`, `35`, `37` oder `49`;
-- mindestens 12 Meter Abstand zu nicht reservierten Aircraft-Statics;
-- alle sieben Templateflugzeuge stehen mindestens 100 Meter vom nächsten Parking-Node entfernt.
+## 6. Erwartete Assetbestände
 
-## 4. Testfälle
-
-### OH-58D RECON
+Da alle Assets Single-Ship-Gruppen sind, werden folgende vollständige Bestände erwartet:
 
 ```text
-SQUADRON: SQ_US_JBAD_OH58D_6_6_CAV
-Luftfahrzeuge: 2
-DCS-Typ: OH58D
-AUFTRAG: RECON
-Zulässige Spawnplätze: G01-G05 / 19,43,6,5,48
+OH-58D: 24 Assetgruppen
+AH-64D: 8 Assetgruppen
+UH-60A: 8 Assetgruppen
+CH-47F: 8 Assetgruppen
 ```
 
-### AH-64D CAS
+Vor und nach jedem Test müssen alle Bestände vollständig frei sein.
+
+## 7. Getrennte Zeitfenster
+
+Die Teststeuerung verwendet getrennte Fristen:
 
 ```text
-SQUADRON: SQ_US_JBAD_AH64D_B_1_10_AVN
-Luftfahrzeuge: 2
-DCS-Typ: AH-64D_BLK_II
-AUFTRAG: CAS
-Zulässige Spawnplätze: F04-F06 / 26,51,11
+SpawnTimeout
+ExecutionTimeout
+RecoveryTimeout
+ReleaseTimeout
 ```
 
-Das Testziel wird aus `TPL_GROUND_RED_JBAD_PHASE1_CAS_TARGET` erzeugt.
+Ein fachlich erfolgreicher Auftrag darf nicht mehr wegen des früher gemeinsam verwendeten Gesamt-Timeouts fehlschlagen, während die Luftfahrzeuge ordnungsgemäß zum Heimatflugplatz zurückkehren.
 
-### UH-60A TROOPTRANSPORT
+## 8. Testfälle
 
 ```text
-SQUADRON: SQ_US_JBAD_UH60_UTILITY_MEDEVAC
-Luftfahrzeuge: 1
-DCS-Typ: UH-60A
-AUFTRAG: TROOPTRANSPORT
-Zulässige Spawnplätze: F01-F03 / 10,8,1
+OH58D_RECON: 2 Gruppen / 2 Luftfahrzeuge
+AH64D_CAS:   2 Gruppen / 2 Luftfahrzeuge
+UH60_TROOP:  1 Gruppe  / 1 Luftfahrzeug
+CH47_CARGO:  1 Gruppe  / 1 Luftfahrzeug
+UH60_ABORT:  1 Gruppe  / 1 Luftfahrzeug
 ```
 
-### CH-47F CARGOTRANSPORT
+Für reguläre Tests werden geprüft:
+
+- QUEUED, REQUESTED und SCHEDULED;
+- exakte Laufzeitnamen;
+- korrekte Gruppe und korrekter DCS-Typ;
+- Spawn im typbezogenen Parkplatzpool;
+- Engine Start und Takeoff;
+- STARTED und EXECUTING;
+- fachliches Missionsziel;
+- SUCCESS;
+- RTB und Landung in Jalalabad;
+- Despawn nach Landung;
+- vollständige Assetfreigabe.
+
+## 9. Erwartete Vorprüfungen
 
 ```text
-SQUADRON: SQ_US_JBAD_CH47_HEAVYLIFT
-Luftfahrzeuge: 1
-DCS-Typ: CH-47Fbl1
-AUFTRAG: CARGOTRANSPORT
-Zulässige Spawnplätze: C03-C10 / 28,44,0,41,9,25,18,42
+[OMW][AirOps.JBAD.NAMES] RESULT: PASS ...
+[OMW][AirOps.JBAD.PARKING-POOLS] RESULT: PASS ...
+[OMW][AirOps.JBAD.PARKING] RESULT: PASS ...
+[OMW][AirOps.JBAD.COMPLETE] RESULT: COMPLETE ...
+[OMW][AirOps.JBAD.PH1.MENU] RESULT: READY ...
 ```
 
-Das native DCS-Slingload-Cargo muss von der Pickup- in die Drop-Zone gelangen.
-
-### UH-60A Abbruchtest
-
-Ein zweiter UH-60A-TROOPTRANSPORT wird nach dem ersten bestätigten Birth-Ereignis automatisch abgebrochen. Das Asset muss vollständig freigegeben werden.
-
-## 5. Birth- und Parking-Prüfung
-
-Für jedes erwartete Luftfahrzeug wird der nächstgelegene Jalalabad-Terminal ermittelt. PASS setzt voraus:
-
-```text
-Parking-Distanz zum Terminalmittelpunkt <= 30 m
-TerminalID gehört zum ParkingPoolKey des aktiven Tests
-TerminalID ist kein Clientplatz
-TerminalID ist nicht 23,35,37,49
-Abstand zum nächsten nicht reservierten Aircraft-Static >= 12 m
-```
-
-Erwartete positive Meldung:
-
-```text
-[OMW][AirOps.JBAD.PH1.PARKING] SPAWN_POOL_CONFIRMED ...
-```
-
-Jede Meldung `SPAWN_OUTSIDE_SQUADRON_POOL` ist ein harter FAIL.
-
-Client-, Player- und technische Template-Birth-Ereignisse dürfen nicht als AIRWING-Missionsgruppe übernommen werden. Insbesondere darf `TEST_TM01A_CLIENT_01` nicht mehr als provisorische OH-58D-Missionsgruppe registriert werden.
-
-## 6. Bestands- und Lebenszyklusprüfung
-
-Erwartete MOOSE-Asset-Gruppen:
-
-```text
-OH-58D: 12
-AH-64D: 4
-UH-60A: 8
-CH-47F: 8
-```
-
-Ein regulärer Test ist nur PASS, wenn vollständig erkannt wurden:
-
-```text
-QUEUED
-REQUESTED
-SCHEDULED
-Birth/Spawn
-EngineStartup
-Takeoff
-STARTED
-EXECUTING
-fachliches Missionsziel
-SUCCESS
-RTB
-Land in Jalalabad
-Asset release
-```
-
-Nach jedem Test müssen drei aufeinanderfolgende Polls bestätigen:
-
-```text
-Queue = 0
-requested = 0
-spawned = 0
-isReserved = 0
-Bestand entspricht dem Vorher-Snapshot
-```
-
-## 7. Gesamt-PASS
-
-Erwartete Abschlussmeldung:
+## 10. Gesamt-PASS
 
 ```text
 [OMW][AirOps.JBAD.PH1] RESULT: PASS testsPassed=5/5 abortRelease=PASS unexpectedSpawns=0 parkingViolations=0 losses=0 blockedAssets=0 finalInventoryRestored=true
 ```
 
-Zusätzliche Bedingungen:
-
-- Grundknoten bleibt `OPERATIONAL`;
-- Static-Parking-Validator bleibt PASS;
-- SQUADRON-Parking-Pool-Validator bleibt PASS;
-- keine spontane oder zusätzliche KI-Gruppe;
-- keine falsche Gruppengröße oder falscher DCS-Typ;
-- kein relevanter OMW-Lua-/Timerfehler;
-- kein dauerhaft blockiertes Asset.
-
-## 8. Klassifikation
-
-```text
-PASS:
-alle fünf Tests vollständig bestanden
-
-PARTIAL:
-Testlauf verwertbar, aber mindestens ein Teil nicht sicher bewertbar
-
-FAIL:
-falscher Typ, falsches SQUADRON, Spawn außerhalb des typbezogenen Pools,
-Parking-Verstoß, Verlust, Lua-Fehler, unbeabsichtigter Spawn,
-Mission FAIL/CANCEL oder nicht freigegebener Bestand
-```
-
-Jeder DCS-Lauf erhält einen eigenen Bericht unter `results/`.
+DCS-Acceptance bleibt bis zu einem realen, dokumentierten Testlauf `PENDING`.
