@@ -31,7 +31,8 @@ $sourceFiles = @(
     '14b-phase1-sequence-finalization.lua',
     '15-phase1-f10-and-acceptance.lua',
     '16-phase1-moose-compatibility.lua',
-    '17-phase1-operational-safety.lua'
+    '17-phase1-operational-safety.lua',
+    '18-phase1-readiness-and-recon-telemetry.lua'
 )
 
 if (-not (Test-Path -LiteralPath $sourceDir -PathType Container)) {
@@ -40,7 +41,7 @@ if (-not (Test-Path -LiteralPath $sourceDir -PathType Container)) {
 
 New-Item -ItemType Directory -Path $distDir -Force | Out-Null
 
-$builderVersion = 'JBAD-AIR-OPS-PHASE1-4'
+$builderVersion = 'JBAD-AIR-OPS-PHASE1-5'
 $commit = 'UNKNOWN'
 try {
     $commit = (& git -C $repoRoot rev-parse HEAD 2>$null).Trim()
