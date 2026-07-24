@@ -8,6 +8,7 @@ Dieses Dokument hält den verbindlichen Ausbau- und Validierungsplan für die MO
 Jalalabad-Grundknoten: OPERATIONAL / ACCEPTED
 Phase 1 Testpaket: IMPLEMENTED / DCS VALIDATION PENDING
 Implementierungsbranch: feature/jalalabad-airwing-phase1-functional-tests
+BuilderVersion: JBAD-AIR-OPS-PHASE1-2
 ```
 
 Der validierte Grundknoten wird durch die Folgetests nicht erneut geöffnet, solange keine Regression nachgewiesen wird.
@@ -32,12 +33,24 @@ Für jeden regulären Auftrag werden geprüft:
 - Auswahl des festgelegten SQUADRONs und Payloads,
 - Reservierung genau einer Asset-Gruppe,
 - korrekte Gruppengröße und korrekter DCS-Typ,
-- Spawn außerhalb der CH-47-Blacklist und der Clientpositionen,
+- Spawn ausschließlich im typbezogenen SQUADRON-Parkplatzpool,
+- kein Spawn auf CH-47-Static- oder Clientpositionen,
 - Engine Start, Takeoff und Missionsausführung,
 - fachliches Missionsziel,
 - RTB und Landung in Jalalabad,
 - Despawn beziehungsweise Rücklagerung,
 - vollständige Bestandsfreigabe.
+
+Verbindliche Spawnpools:
+
+```text
+OH-58D: G01-G05 / TerminalIDs 19,43,6,5,48
+AH-64D: F04-F06 / TerminalIDs 26,51,11
+UH-60A: F01-F03 / TerminalIDs 10,8,1
+CH-47F: C03-C10 / TerminalIDs 28,44,0,41,9,25,18,42
+```
+
+Die sieben technischen AIRWING-Templates stehen außerhalb aller operativen Parking-Nodes. Die konkrete Startposition kommt ausschließlich aus `SQUADRON:SetParkingIDs()`, der Startzustand aus `SQUADRON:SetTakeoffCold()`.
 
 Der Abbruchtest muss nachweisen, dass eine bereits reservierte und gespawnte UH-60-Asset-Gruppe ohne Start dauerhaft freigegeben wird.
 
@@ -69,7 +82,7 @@ Zu validieren sind:
 
 - Fähigkeit und räumliche Eignung,
 - getrennte lokale Bestände,
-- getrennte Parkressourcen,
+- getrennte typbezogene Parkressourcen,
 - parallele Missionen an zwei Basen,
 - nachvollziehbarer Fallback bei fehlenden Fähigkeiten oder Beständen.
 
@@ -92,19 +105,21 @@ Der abschließende Systemtest umfasst mehrere AIRWINGs, lange Multiplayer-Laufze
 ## 6. Phase-1-Implementierungsdateien
 
 ```text
+mission/tests/jalalabad-air-operations/src/05a-validate-squadron-parking-pools.lua
 mission/tests/jalalabad-air-operations/src/11-phase1-test-manifest.lua
 mission/tests/jalalabad-air-operations/src/12-phase1-runtime-observer.lua
 mission/tests/jalalabad-air-operations/src/13-phase1-mission-factory.lua
 mission/tests/jalalabad-air-operations/src/14-phase1-test-controller.lua
 mission/tests/jalalabad-air-operations/src/15-phase1-f10-and-acceptance.lua
 mission/tests/jalalabad-air-operations/src/16-phase1-moose-compatibility.lua
+mission/tests/jalalabad-air-operations/src/17-phase1-runtime-parking-enforcement.lua
 ```
 
 Builder:
 
 ```text
 tools/build-jalalabad-air-operations-bundle.ps1
-BuilderVersion: JBAD-AIR-OPS-PHASE1-1
+BuilderVersion: JBAD-AIR-OPS-PHASE1-2
 ```
 
 Acceptance- und Missionseditorvorgaben:
@@ -116,4 +131,4 @@ mission/tests/jalalabad-air-operations/expected/jalalabad-phase1-mission-editor-
 
 ## 7. Freigaberegel
 
-Phase 1 ist erst abgeschlossen, wenn alle fünf Testfälle in einem dokumentierten DCS-Lauf PASS sind. Eine erfolgreiche Lua-Syntaxprüfung oder Bundle-Erzeugung ersetzt keinen DCS-Acceptance-Test.
+Phase 1 ist erst abgeschlossen, wenn alle fünf Testfälle in einem dokumentierten DCS-Lauf PASS sind. Eine erfolgreiche Lua-Syntaxprüfung, statische Harness-Prüfung oder Bundle-Erzeugung ersetzt keinen DCS-Acceptance-Test.
