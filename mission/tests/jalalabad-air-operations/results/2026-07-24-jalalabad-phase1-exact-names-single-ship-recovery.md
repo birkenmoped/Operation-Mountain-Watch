@@ -6,9 +6,10 @@
 Repository-Fix: IMPLEMENTED
 BuilderVersion: JBAD-AIR-OPS-PHASE1-3
 Lua-Syntaxprüfung der korrigierten Quellen: PASS
-MIZ-Archivprüfung: PASS
 DCS-Laufzeitvalidierung: PENDING
 ```
+
+Die Missionsdatei wurde nicht durch den Repository-Fix geändert. Der Missionsdesigner ruft den Branch lokal ab, baut das Bundle lokal, prüft es und bettet es anschließend selbst in seine `.miz` ein.
 
 ## Nachgewiesene Fehler des vorherigen Laufs
 
@@ -29,6 +30,19 @@ DCS-Laufzeitvalidierung: PENDING
 - getrennte Spawn-, Ausführungs-, Recovery- und Freigabezeiten;
 - Bestandsmodell auf `24/8/8/8` Single-Ship-Assetgruppen umgestellt;
 - Gesamtsequenz-Abnahme auf die neuen Bestände angepasst.
+
+## Verbindlicher Bereitstellungsweg
+
+```text
+1. Branch lokal abrufen
+2. erwarteten Commit prüfen
+3. Bundle lokal bauen
+4. Datei und SHA-256 lokal prüfen
+5. Missionsdesigner bettet das Bundle in seine bestehende `.miz` ein
+6. Missionsdesigner speichert und startet den Test
+```
+
+Eine automatisch durch ChatGPT erstellte oder geänderte `.miz` gehört nicht zu diesem Ablauf.
 
 ## Nächste DCS-Validierung
 
