@@ -16,9 +16,80 @@ Der frühere Phase-1-Lauf hat zwei Architekturfehler nachgewiesen:
 - type-only-Zuordnung konnte eine Client-/Testgruppe als AIRWING-Missionsgruppe übernehmen;
 - eine gemeinsame Two-Ship-DCS-Gruppe führte bei Hubschraubern zu einer blockierten Recovery, weil nur der Lead landete.
 
-## 2. Phase 1 – Jalalabad AIRWING und SQUADRONs
+## 2. Verbindliche Aufgabentrennung und Bereitstellung
 
-Jalalabad bleibt der einzige operative Testknoten. Die Aufträge werden kontrolliert und direkt an `AW_US_JALALAD` beziehungsweise `AW_US_JALALABAD` übergeben. Der COMMANDER bleibt gestartet, erzeugt und verteilt in dieser Phase jedoch keine eigenen Aufträge.
+Für alle vier Phasen gilt:
+
+```text
+Codeentwicklung:
+- Lua-Quellen, Builder und Repository-Dokumentation ändern
+- Änderungen auf den vorgesehenen Entwicklungsbranch schreiben
+- erwarteten Commit und lokale Buildbefehle nennen
+
+Missionsdesigner:
+- Branch lokal abrufen
+- Commit prüfen
+- Bundle lokal bauen und prüfen
+- Bundle im DCS-Missionseditor in die eigene .miz einbetten
+- Missionsdatei speichern oder umbenennen
+- DCS-Test durchführen
+```
+
+Eine `.miz` wird durch ChatGPT nicht erstellt oder verändert, sofern der Missionsdesigner dies nicht ausdrücklich beauftragt.
+
+Verbindlicher lokaler Abruf:
+
+```powershell
+cd P:\DCS-DEV\Operation-Mountain-Watch
+
+git branch --show-current
+git status --short
+git fetch origin
+```
+
+Branch lokal noch nicht vorhanden:
+
+```powershell
+git switch --track origin/feature/jalalabad-airwing-phase1-functional-tests
+```
+
+Branch lokal vorhanden:
+
+```powershell
+git switch feature/jalalabad-airwing-phase1-functional-tests
+git pull --ff-only
+```
+
+Commit prüfen:
+
+```powershell
+git rev-parse HEAD
+```
+
+Bundle bauen:
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass `
+  -File ".\tools\build-jalalabad-air-operations-bundle.ps1"
+```
+
+Bundle unabhängig prüfen:
+
+```powershell
+Get-Item `
+  ".\mission\tests\jalalabad-air-operations\dist\OMW_AirOps_Jalalabad.lua" |
+  Select-Object FullName, Length, LastWriteTime
+
+Get-FileHash `
+  ".\mission\tests\jalalabad-air-operations\dist\OMW_AirOps_Jalalabad.lua" `
+  -Algorithm SHA256
+```
+
+Der erwartete Commit wird mit jeder Testübergabe ausdrücklich genannt.
+
+## 3. Phase 1 – Jalalabad AIRWING und SQUADRONs
+
+Jalalabad bleibt der einzige operative Testknoten. Die Aufträge werden kontrolliert und direkt an `AW_US_JALALABAD` übergeben. Der COMMANDER bleibt gestartet, erzeugt und verteilt in dieser Phase jedoch keine eigenen Aufträge.
 
 Verbindliche Reihenfolge:
 
@@ -113,7 +184,7 @@ Ein erfolgreicher Auftrag darf nicht mehr während einer noch laufenden ordnungs
 
 Phase 1 wird erst nach Einzel-PASS für OH-58D und AH-64D erneut als Gesamtablauf gestartet.
 
-## 3. Phase 2 – COMMANDER und Jalalabad-Gesamtbetrieb
+## 4. Phase 2 – COMMANDER und Jalalabad-Gesamtbetrieb
 
 Nach Phase-1-PASS werden Aufträge über die echte Befehlskette übergeben:
 
@@ -131,7 +202,7 @@ Zu testen sind insbesondere:
 - maximal vier aktive Unterstützungs-Luftfahrzeuge;
 - vollständiger atomarer 1+1-MEDEVAC-Koordinator.
 
-## 4. Phase 3 – Zweites AIRWING
+## 5. Phase 3 – Zweites AIRWING
 
 Genau ein zweiter, funktional anderer Knoten wird vollständig aufgebaut. Kandidaten sind Bagram, Kandahar oder Camp Bastion.
 
@@ -143,7 +214,7 @@ Zu validieren sind:
 - parallele Missionen an zwei Basen;
 - nachvollziehbarer Fallback bei fehlenden Fähigkeiten oder Beständen.
 
-## 5. Phase 4 – Rollout und Gesamtsystem
+## 6. Phase 4 – Rollout und Gesamtsystem
 
 Nach dem Zwei-AIRWING-PASS werden die übrigen Basen jeweils mit eigenem Manifest umgesetzt:
 
@@ -159,7 +230,7 @@ Shindand
 
 Der abschließende Systemtest umfasst mehrere AIRWINGs, lange Multiplayer-Laufzeiten, Verluste, erschöpfte Bestände, beschädigte Basen, Persistenz, Ramp-Neuverteilung, Combat Damage, Recovery und Replacement State.
 
-## 6. Phase-1-Implementierungsdateien
+## 7. Phase-1-Implementierungsdateien
 
 ```text
 mission/tests/jalalabad-air-operations/src/05a-validate-squadron-parking-pools.lua
@@ -181,6 +252,6 @@ tools/build-jalalabad-air-operations-bundle.ps1
 BuilderVersion: JBAD-AIR-OPS-PHASE1-3
 ```
 
-## 7. Freigaberegel
+## 8. Freigaberegel
 
-Phase 1 ist erst abgeschlossen, wenn alle fünf Testfälle in einem dokumentierten DCS-Lauf PASS sind. Lua-Syntaxprüfung, statische Bundleprüfung und eine fehlerfreie `.miz`-Archivstruktur ersetzen keinen DCS-Acceptance-Test.
+Phase 1 ist erst abgeschlossen, wenn alle fünf Testfälle in einem dokumentierten DCS-Lauf PASS sind. Lua-Syntaxprüfung und statische Bundleprüfung ersetzen keinen DCS-Acceptance-Test.
