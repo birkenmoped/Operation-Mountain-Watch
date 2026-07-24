@@ -4,12 +4,13 @@ Status: implemented in `JBAD-AIR-OPS-PHASE1-7`; DCS validation pending.
 
 This file is the binding package model for the deterministic Phase-1 tests and the later dynamic request layer.
 
-Authoritative background and mandatory regression rules:
+Authoritative background, complete incident history and mandatory regression rules:
 
 - `docs/27-jalalabad-air-operations-phase1-postmortem-and-guardrails.md`
+- `docs/28-jalalabad-air-operations-development-incident-log.md`
 - `mission/tests/jalalabad-air-operations/expected/jalalabad-phase1-architecture-regression-checklist.md`
 
-In case of contradiction, the central package contract in Lua and the stricter rule in the two documents above apply. No later source file may silently redefine the package model.
+In case of contradiction, the central package contract in Lua and the stricter rule in the documents above apply. No later source file may silently redefine the package model.
 
 | Squadron/test | Mission Editor template | Physical DCS group | Required MOOSE asset groups | Aircraft | Runtime unit names |
 |---|---:|---:|---:|---:|---|
