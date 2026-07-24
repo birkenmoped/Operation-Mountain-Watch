@@ -1,4 +1,6 @@
--- Operation Mountain Watch - Phase 1 corrected lifecycle, inventory and timeout model
+-- Operation Mountain Watch - Phase 1 phased lifecycle and timeout model
+-- Package selection and inventory readiness are handled by the canonical package
+-- contract module. This file only manages the lifecycle of the active test.
 local TAG = "[OMW][AirOps.JBAD.PH1.LIFECYCLE]"
 local function log(msg) env.info(TAG .. " " .. tostring(msg)) end
 
@@ -8,8 +10,6 @@ local controller = ph1 and ph1.Controller
 if not cfg or not ph1 or not controller then
   log("ERROR: Phase 1 controller unavailable.")
 else
-  local expectedAssetGroups = { OH58D = 24, AH64D = 8, UH60 = 8, CH47 = 8 }
-
   local function queueCount()
     local count = 0
     for _ in pairs((cfg.Airwing and cfg.Airwing.missionqueue) or {}) do count = count + 1 end
@@ -27,51 +27,12 @@ else
     ph1.Counters[counter] = (ph1.Counters[counter] or 0) + 1
   end
 
-  local function coalitionMessage(text, seconds)
-    if trigger and trigger.action and trigger.action.outTextForCoalition then
-      trigger.action.outTextForCoalition(coalition.side.BLUE, "OMW Jalalabad Phase 1\n" .. tostring(text), seconds or 15)
-    end
-  end
-
-  local function inventoryReady(snapshots)
-    for key, expected in pairs(expectedAssetGroups) do
-      local item = snapshots and snapshots[key]
-      if not item or item.total ~= expected or item.busy ~= 0 or item.available ~= expected then
-        return false, string.format("%s total=%s available=%s busy=%s expected=%d", key, item and item.total or "nil", item and item.available or "nil", item and item.busy or "nil", expected)
-      end
-    end
-    return true
-  end
-
   local function setPhase(runtime, phase, timeout)
     if not runtime then return end
     runtime.Phase = phase
     runtime.PhaseStartedAt = timer.getTime()
     runtime.PhaseDeadline = timer.getTime() + timeout
     log(string.format("PHASE testId=%s phase=%s timeout=%ds deadline=%.1f", tostring(ph1.ActiveTestId), phase, timeout, runtime.PhaseDeadline))
-  end
-
-  function controller:InitializeWhenReady()
-    if ph1.State ~= "WAITING_FOR_BASELINE" and ph1.State ~= "BLOCKED" then return true end
-    if cfg.Status ~= "OPERATIONAL" or not cfg.Airwing then ph1.State = "WAITING_FOR_BASELINE" return false end
-    cfg.BaselineReady = true
-    if cfg.ParkingReservationsOK ~= true then ph1.State = "BLOCKED" ph1.BlockReason = "parking-reservation-regression" return false end
-    if cfg.ParkingPoolsOK ~= true then ph1.State = "BLOCKED" ph1.BlockReason = "parking-pools-invalid" return false end
-    if cfg.NameContractOK ~= true then ph1.State = "BLOCKED" ph1.BlockReason = "runtime-name-contract-invalid" return false end
-    if not ph1.Factory:ValidateMissionEditorObjects() then ph1.State = "BLOCKED" ph1.BlockReason = "mission-editor-objects-missing" return false end
-    if not ph1.ClientParkingResolved and not ph1.Observer:ResolveClientParkingIDs() then ph1.State = "BLOCKED" ph1.BlockReason = "client-parking-unresolved" return false end
-
-    local snapshots = ph1.Observer:SnapshotAllSquadrons()
-    local ready, reason = inventoryReady(snapshots)
-    if not ready then ph1.State = "WAITING_FOR_BASELINE" ph1.BlockReason = reason return false end
-    if queueCount() ~= 0 then ph1.State = "BLOCKED" ph1.BlockReason = "pre-existing-airwing-mission-queue" return false end
-
-    ph1.State = "READY"
-    ph1.BlockReason = nil
-    ph1.Observer:LogSnapshot("PHASE1_READY", snapshots)
-    log("READY inventory=OH58D:24/AH64D:8/UH60:8/CH47:8 exactRuntimeNames=true independentSingleShipGroups=true")
-    coalitionMessage("Testpaket ist READY.", 10)
-    return true
   end
 
   function controller:ResetRuntime(definition)
@@ -105,54 +66,6 @@ else
       MaxExpectedSquadronBusy = 0
     }
     setPhase(ph1.Runtime, "SPAWN", definition.SpawnTimeout)
-  end
-
-  function controller:StartTest(testId)
-    if ph1.ActiveMission then coalitionMessage("Abgelehnt: Test aktiv: " .. tostring(ph1.ActiveTestId), 12) return false end
-    if not self:InitializeWhenReady() then coalitionMessage("Nicht bereit: " .. tostring(ph1.BlockReason or ph1.State), 15) return false end
-    local definition = ph1.Tests[testId]
-    if not definition then coalitionMessage("Unbekannter Test: " .. tostring(testId), 10) return false end
-    if not definition.ExpectedGroupPrefix or definition.ExpectedGroupPrefix == "" then coalitionMessage("Abgelehnt: Runtime-Gruppenpräfix fehlt.", 15) return false end
-    if queueCount() ~= 0 then ph1.State = "BLOCKED" ph1.BlockReason = "airwing-mission-queue-not-empty" return false end
-
-    local snapshots = ph1.Observer:SnapshotAllSquadrons()
-    local ready, reason = inventoryReady(snapshots)
-    if not ready then
-      ph1.State = "BLOCKED"
-      ph1.BlockReason = "inventory-not-clean: " .. tostring(reason)
-      ph1.Observer:LogSnapshot("START_BLOCKED", snapshots)
-      coalitionMessage("Abgelehnt: Bestand nicht vollständig frei.", 15)
-      return false
-    end
-
-    ph1.ActiveTestId = testId
-    ph1.ActiveDefinition = definition
-    self:ResetRuntime(definition)
-    ph1.BaselineInventory = snapshots
-    ph1.Observer:LogSnapshot("BEFORE_" .. testId, snapshots)
-
-    local mission, createError = ph1.Factory:Create(testId)
-    if not mission then
-      ph1.Runtime.PendingFailure = "mission-create-failed: " .. tostring(createError)
-      self:FinalizeTest("FAIL", ph1.Runtime.PendingFailure, false)
-      return false
-    end
-
-    ph1.ActiveMission = mission
-    increment("missionsCreated")
-    ph1.State = "QUEUING"
-    local ok, result = pcall(function() return cfg.Airwing:AddMission(mission) end)
-    if not ok then
-      ph1.Runtime.PendingFailure = "airwing-add-mission-failed: " .. tostring(result)
-      self:FinalizeTest("FAIL", ph1.Runtime.PendingFailure, false)
-      return false
-    end
-
-    increment("missionsQueued")
-    ph1.State = "ACTIVE"
-    log(string.format("START testId=%s squadron=%s runtimePrefix=%s expectedGroups=%d expectedAircraft=%d spawnTimeout=%ds executionTimeout=%ds recoveryTimeout=%ds releaseTimeout=%ds", testId, definition.SquadronKey, definition.ExpectedGroupPrefix, definition.ExpectedGroups, definition.ExpectedAircraft, definition.SpawnTimeout, definition.ExecutionTimeout, definition.RecoveryTimeout, definition.ReleaseTimeout))
-    coalitionMessage("Gestartet: " .. definition.Label, 12)
-    return true
   end
 
   function controller:OnMissionState(state, mission, from, event, to)
@@ -197,7 +110,10 @@ else
 
     if runtime.ObjectiveCheck and not runtime.ObjectiveSatisfied then
       local ok, satisfied = pcall(runtime.ObjectiveCheck)
-      if ok and satisfied then runtime.ObjectiveSatisfied = true log("EVENT testId=" .. tostring(ph1.ActiveTestId) .. " stage=OBJECTIVE_CONFIRMED") end
+      if ok and satisfied then
+        runtime.ObjectiveSatisfied = true
+        log("EVENT testId=" .. tostring(ph1.ActiveTestId) .. " stage=OBJECTIVE_CONFIRMED")
+      end
     end
 
     local current = ph1.Observer:SnapshotAllSquadrons()
@@ -247,9 +163,9 @@ else
     elseif runtime.MissionState == "SUCCESS" and not lifecycleOK then
       runtime.LastPendingCriterion = lifecycleReason
     elseif runtime.MissionState == "CANCELLED" and definition.ExpectedTerminalState ~= "CANCELLED" then
-      -- Pinned MOOSE temporarily enters CANCELLED while evaluating custom
-      -- success conditions. The execution/recovery timeout remains authoritative.
       runtime.LastPendingCriterion = "moose-evaluating-custom-success"
+    elseif runtime.LandingCount == definition.ExpectedAircraft and not released then
+      runtime.LastPendingCriterion = "awaiting-inventory-release"
     end
   end
 
@@ -260,9 +176,11 @@ else
       local remaining = math.max(0, (ph1.Runtime.PhaseDeadline or timer.getTime()) - timer.getTime())
       text = text .. "\nPhase: " .. tostring(ph1.Runtime.Phase) .. string.format(" (%.0fs)", remaining)
       text = text .. "\nExpected exact groups: " .. tostring(countKeys(ph1.Runtime.ExpectedGroupNames)) .. "/" .. tostring(ph1.ActiveDefinition and ph1.ActiveDefinition.ExpectedGroups or 0)
+      text = text .. "\nExpected aircraft: " .. tostring(ph1.Runtime.BirthCount or 0) .. "/" .. tostring(ph1.ActiveDefinition and ph1.ActiveDefinition.ExpectedAircraft or 0)
+      if ph1.Runtime.LastPendingCriterion then text = text .. "\nPending: " .. tostring(ph1.Runtime.LastPendingCriterion) end
     end
     return text
   end
 
-  log("READY correctedInventory=24/8/8/8 phasedTimeouts=SPAWN/EXECUTION/RECOVERY/RELEASE exactGroupCounts=true")
+  log("READY phasedTimeouts=SPAWN/EXECUTION/RECOVERY/RELEASE packageCounts=definition-driven")
 end
