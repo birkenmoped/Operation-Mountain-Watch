@@ -5,10 +5,10 @@
 ```text
 Testpaket: IMPLEMENTED
 DCS-Acceptance: PENDING
-BuilderVersion: JBAD-AIR-OPS-PHASE1-1
+BuilderVersion: JBAD-AIR-OPS-PHASE1-2
 ```
 
-Diese Abnahme ergänzt den bereits akzeptierten Jalalabad-Grundknoten. Sie validiert erstmals echte, direkt an `AW_US_JALALABAD` übergebene AUFTRAG-Missionen.
+Diese Stufe validiert echte, direkt an `AW_US_JALALABAD` übergebene AUFTRAG-Missionen und die verbindliche typbezogene Parkplatzwahl der vier SQUADRONs.
 
 ## 2. Teststeuerung
 
@@ -27,76 +27,125 @@ OMW AirOps Tests
     └── Testcontroller zuruecksetzen
 ```
 
-Deterministische Lua-Schnittstelle:
-
-```lua
-OMW.AirOps.Jalalabad.Phase1.API.StartSequence()
-OMW.AirOps.Jalalabad.Phase1.API.StartTest("OH58D_RECON")
-OMW.AirOps.Jalalabad.Phase1.API.AbortActive()
-OMW.AirOps.Jalalabad.Phase1.API.Status()
-```
-
 Es darf immer nur ein Phase-1-Auftrag aktiv sein.
 
-## 3. Testfälle
+## 3. Verbindliche SQUADRON-Parkplatzpools
+
+Die technischen AIRWING-Templates stehen außerhalb aller operativen Parkpositionen. Der Spawn erfolgt ausschließlich über diese MOOSE-TerminalIDs:
+
+```text
+OH-58D / G01-G05:
+19,43,6,5,48
+
+AH-64D / F04-F06:
+26,51,11
+
+UH-60A / F01-F03:
+10,8,1
+
+CH-47F / C03-C10:
+28,44,0,41,9,25,18,42
+```
+
+Jedes SQUADRON verwendet:
+
+```lua
+SQUADRON:SetParkingIDs(...)
+SQUADRON:SetTakeoffCold()
+```
+
+Ein Fallback auf andere Jalalabad-Terminals ist nicht zulässig.
+
+Vor dem AIRWING-Start muss erscheinen:
+
+```text
+[OMW][AirOps.JBAD.PARKING-POOLS] RESULT: PASS pools=OH58D:5/AH64D:3/UH60:3/CH47:8 templatesOffParking=true poolOverlap=0 clientOverlap=0 blacklistOverlap=0 staticClearance=PASS
+```
+
+Die Prüfung bestätigt zusätzlich:
+
+- alle TerminalIDs existieren;
+- die festgeschriebenen Koordinaten stimmen;
+- Terminaltypen stimmen mit dem jeweiligen Pool überein;
+- kein Pool überschneidet sich mit einem anderen Pool;
+- keine Poolposition ist ein Clientplatz;
+- keine Poolposition ist `23`, `35`, `37` oder `49`;
+- mindestens 12 Meter Abstand zu nicht reservierten Aircraft-Statics;
+- alle sieben Templateflugzeuge stehen mindestens 100 Meter vom nächsten Parking-Node entfernt.
+
+## 4. Testfälle
 
 ### OH-58D RECON
 
 ```text
 SQUADRON: SQ_US_JBAD_OH58D_6_6_CAV
-Payload: OH58DRecon
-Asset-Gruppen: 1
 Luftfahrzeuge: 2
 DCS-Typ: OH58D
 AUFTRAG: RECON
+Zulässige Spawnplätze: G01-G05 / 19,43,6,5,48
 ```
-
-Der Auftrag führt deterministisch durch drei Missionseditorzonen und darf nicht endlos oder zufällig wiederholt werden.
 
 ### AH-64D CAS
 
 ```text
 SQUADRON: SQ_US_JBAD_AH64D_B_1_10_AVN
-Payload: AH64DCAS
-Asset-Gruppen: 1
 Luftfahrzeuge: 2
 DCS-Typ: AH-64D_BLK_II
 AUFTRAG: CAS
+Zulässige Spawnplätze: F04-F06 / 26,51,11
 ```
 
-Das Testziel wird aus einem Late-Activation-Template gespawnt. Erfolg setzt die Vernichtung der Testzielgruppe voraus.
+Das Testziel wird aus `TPL_GROUND_RED_JBAD_PHASE1_CAS_TARGET` erzeugt.
 
 ### UH-60A TROOPTRANSPORT
 
 ```text
 SQUADRON: SQ_US_JBAD_UH60_UTILITY_MEDEVAC
-Payload: UH60MedevacLead
-Asset-Gruppen: 1
 Luftfahrzeuge: 1
 DCS-Typ: UH-60A
 AUFTRAG: TROOPTRANSPORT
+Zulässige Spawnplätze: F01-F03 / 10,8,1
 ```
-
-Die Truppengruppe wird in der Ladezone erzeugt und muss nachweislich die Entladezone erreichen. Der MEDEVAC-Cover-Payload wird nicht verwendet.
 
 ### CH-47F CARGOTRANSPORT
 
 ```text
 SQUADRON: SQ_US_JBAD_CH47_HEAVYLIFT
-Payload: CH47HeavyLift
-Asset-Gruppen: 1
 Luftfahrzeuge: 1
 DCS-Typ: CH-47Fbl1
 AUFTRAG: CARGOTRANSPORT
+Zulässige Spawnplätze: C03-C10 / 28,44,0,41,9,25,18,42
 ```
 
-Der Auftrag verwendet ein natives DCS-Slingload-Cargo und eine im Missionseditor definierte Drop-Zone. Das Cargo muss vor dem Test in der Pickup-Zone und nach dem Test in der Drop-Zone liegen.
+Das native DCS-Slingload-Cargo muss von der Pickup- in die Drop-Zone gelangen.
 
 ### UH-60A Abbruchtest
 
-Ein zweiter UH-60A-TROOPTRANSPORT wird nach dem ersten bestätigten Birth-Ereignis automatisch abgebrochen. Das Luftfahrzeug darf nicht starten. Auftrag, Queueeintrag und Assetreservierung müssen vollständig freigegeben werden.
+Ein zweiter UH-60A-TROOPTRANSPORT wird nach dem ersten bestätigten Birth-Ereignis automatisch abgebrochen. Das Asset muss vollständig freigegeben werden.
 
-## 4. Bestandsprüfung
+## 5. Birth- und Parking-Prüfung
+
+Für jedes erwartete Luftfahrzeug wird der nächstgelegene Jalalabad-Terminal ermittelt. PASS setzt voraus:
+
+```text
+Parking-Distanz zum Terminalmittelpunkt <= 30 m
+TerminalID gehört zum ParkingPoolKey des aktiven Tests
+TerminalID ist kein Clientplatz
+TerminalID ist nicht 23,35,37,49
+Abstand zum nächsten nicht reservierten Aircraft-Static >= 12 m
+```
+
+Erwartete positive Meldung:
+
+```text
+[OMW][AirOps.JBAD.PH1.PARKING] SPAWN_POOL_CONFIRMED ...
+```
+
+Jede Meldung `SPAWN_OUTSIDE_SQUADRON_POOL` ist ein harter FAIL.
+
+Client-, Player- und technische Template-Birth-Ereignisse dürfen nicht als AIRWING-Missionsgruppe übernommen werden. Insbesondere darf `TEST_TM01A_CLIENT_01` nicht mehr als provisorische OH-58D-Missionsgruppe registriert werden.
+
+## 6. Bestands- und Lebenszyklusprüfung
 
 Erwartete MOOSE-Asset-Gruppen:
 
@@ -106,36 +155,6 @@ AH-64D: 4
 UH-60A: 8
 CH-47F: 8
 ```
-
-Vor jedem Test müssen alle Asset-Gruppen frei sein und die AIRWING-Queue muss leer sein. Während eines Tests darf genau eine Asset-Gruppe des festgelegten SQUADRONs beschäftigt sein. Nach dem Test müssen drei aufeinanderfolgende Polls bestätigen:
-
-```text
-Queue = 0
-requested = 0
-spawned = 0
-isReserved = 0
-Bestand entspricht dem Vorher-Snapshot
-```
-
-## 5. Parking-Prüfung
-
-Beim Birth-Ereignis wird für jedes Luftfahrzeug der nächstgelegene Jalalabad-Terminal ermittelt.
-
-Unzulässig:
-
-```text
-23,35,37,49
-```
-
-Zusätzlich werden die sechs Clientpositionen aus `_DATABASE.Templates.Groups` geometrisch den DCS-Terminals zugeordnet. Kein dynamisches KI-Luftfahrzeug darf eine dieser Positionen verwenden.
-
-Mindestabstand zum nächsten sichtbaren Aircraft-Static beim Spawn:
-
-```text
-12 Meter
-```
-
-## 6. Lebenszyklus
 
 Ein regulärer Test ist nur PASS, wenn vollständig erkannt wurden:
 
@@ -155,7 +174,15 @@ Land in Jalalabad
 Asset release
 ```
 
-Die Events werden pro Einheit dedupliziert. Ein Two-Ship-Test benötigt jeweils zwei eindeutige Birth-, Engine-, Takeoff- und Landing-Ereignisse.
+Nach jedem Test müssen drei aufeinanderfolgende Polls bestätigen:
+
+```text
+Queue = 0
+requested = 0
+spawned = 0
+isReserved = 0
+Bestand entspricht dem Vorher-Snapshot
+```
 
 ## 7. Gesamt-PASS
 
@@ -168,7 +195,8 @@ Erwartete Abschlussmeldung:
 Zusätzliche Bedingungen:
 
 - Grundknoten bleibt `OPERATIONAL`;
-- Parking-Grundvalidator bleibt PASS;
+- Static-Parking-Validator bleibt PASS;
+- SQUADRON-Parking-Pool-Validator bleibt PASS;
 - keine spontane oder zusätzliche KI-Gruppe;
 - keine falsche Gruppengröße oder falscher DCS-Typ;
 - kein relevanter OMW-Lua-/Timerfehler;
@@ -181,11 +209,12 @@ PASS:
 alle fünf Tests vollständig bestanden
 
 PARTIAL:
-Testlauf verwertbar, aber mindestens ein nicht sicher bewertbarer Teil
+Testlauf verwertbar, aber mindestens ein Teil nicht sicher bewertbar
 
 FAIL:
-falscher Typ, falsches SQUADRON, Parking-Verstoß, Verlust, Lua-Fehler,
-unbeabsichtigter Spawn, Mission FAIL/CANCEL oder nicht freigegebener Bestand
+falscher Typ, falsches SQUADRON, Spawn außerhalb des typbezogenen Pools,
+Parking-Verstoß, Verlust, Lua-Fehler, unbeabsichtigter Spawn,
+Mission FAIL/CANCEL oder nicht freigegebener Bestand
 ```
 
 Jeder DCS-Lauf erhält einen eigenen Bericht unter `results/`.
