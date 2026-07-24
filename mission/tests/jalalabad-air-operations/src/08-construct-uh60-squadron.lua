@@ -34,7 +34,8 @@ local function main()
   local coverTemplate = validateTemplate(coverName, "MEDEVAC_GUARD", contract.TemplateUnits)
   if not leadTemplate or not coverTemplate then return end
 
-  local aircraftCount = cfg.Inventory.UH60
+  local aircraftCount = contract.InventoryAircraft
+  local assetGroupCount = contract.AssetGroups
   local squadronName = cfg.SquadronNames.UH60
   local parkingIDs = cfg:GetSquadronParkingIDs("UH60")
   cfg.Squadrons = cfg.Squadrons or {}
@@ -42,7 +43,8 @@ local function main()
 
   local missionTypes = { AUFTRAG.Type.TROOPTRANSPORT, AUFTRAG.Type.CARGOTRANSPORT, AUFTRAG.Type.LANDATCOORDINATE, AUFTRAG.Type.GROUNDESCORT }
   local ok, result = pcall(function()
-    local squadron = SQUADRON:New(leadName, aircraftCount, squadronName)
+    -- SQUADRON:New() expects the number of MOOSE asset groups, not aircraft.
+    local squadron = SQUADRON:New(leadName, assetGroupCount, squadronName)
     squadron:SetGrouping(contract.Grouping)
     squadron:SetParkingIDs(parkingIDs)
     squadron:SetTakeoffCold()
@@ -61,7 +63,7 @@ local function main()
   cfg.Payloads = cfg.Payloads or {}
   cfg.Payloads.UH60MedevacLead = result.LeadPayload
   cfg.Payloads.UH60MedevacCover = result.CoverPayload
-  log(string.format("SQUADRON ready name=%s model=%s medevacPackage=%s aircraft=%d assetGroups=%d grouping=%d parkingIDs=%s despawnAfterLanding=true", squadronName, contract.Model, contract.PackageModel, aircraftCount, contract.AssetGroups, contract.Grouping, table.concat(parkingIDs, ",")))
+  log(string.format("SQUADRON ready name=%s model=%s medevacPackage=%s inventoryAircraft=%d constructorAssetGroups=%d grouping=%d computedAircraft=%d parkingIDs=%s despawnAfterLanding=true", squadronName, contract.Model, contract.PackageModel, aircraftCount, assetGroupCount, contract.Grouping, assetGroupCount * contract.Grouping, table.concat(parkingIDs, ",")))
 end
 
 if SCHEDULER then SCHEDULER:New(nil, main, {}, 13) else timer.scheduleFunction(function() main() return nil end, nil, timer.getTime() + 13) end
