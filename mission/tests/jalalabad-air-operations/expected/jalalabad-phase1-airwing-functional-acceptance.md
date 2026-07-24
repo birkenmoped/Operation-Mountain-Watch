@@ -10,7 +10,63 @@ BuilderVersion: JBAD-AIR-OPS-PHASE1-3
 
 Phase 1 validiert echte AUFTRAG-Missionen, exklusive typbezogene Parkpositionen, exakte MOOSE-Laufzeitnamen und die vollständige Rückgabe der AIRWING-Assets.
 
-## 2. Verbindliche Laufzeitidentität
+## 2. Verbindlicher Bereitstellungsweg
+
+Der Code wird im Repository geändert. Die Missionsdatei wird ausschließlich durch den Missionsdesigner geändert, sofern nicht ausdrücklich etwas anderes beauftragt wurde.
+
+Normaler Ablauf:
+
+```powershell
+cd P:\DCS-DEV\Operation-Mountain-Watch
+
+git branch --show-current
+git status --short
+git fetch origin
+```
+
+Branch lokal noch nicht vorhanden:
+
+```powershell
+git switch --track origin/feature/jalalabad-airwing-phase1-functional-tests
+```
+
+Branch lokal vorhanden:
+
+```powershell
+git switch feature/jalalabad-airwing-phase1-functional-tests
+git pull --ff-only
+```
+
+Commit prüfen:
+
+```powershell
+git rev-parse HEAD
+```
+
+Der für den Test erwartete Commit wird in der jeweiligen Testübergabe ausdrücklich genannt.
+
+Bundle bauen:
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass `
+  -File ".\tools\build-jalalabad-air-operations-bundle.ps1"
+```
+
+Bundle unabhängig prüfen:
+
+```powershell
+Get-Item `
+  ".\mission\tests\jalalabad-air-operations\dist\OMW_AirOps_Jalalabad.lua" |
+  Select-Object FullName, Length, LastWriteTime
+
+Get-FileHash `
+  ".\mission\tests\jalalabad-air-operations\dist\OMW_AirOps_Jalalabad.lua" `
+  -Algorithm SHA256
+```
+
+Danach bettet der Missionsdesigner die lokal gebaute Lua-Datei in seine `.miz` ein und speichert die Mission. Eine durch ChatGPT vorbereitete `.miz` ist nicht Teil dieses Standardverfahrens.
+
+## 3. Verbindliche Laufzeitidentität
 
 Eine Luftfahrzeuggruppe gehört nur dann zum aktiven Test, wenn alle Merkmale stimmen:
 
@@ -32,7 +88,7 @@ Insbesondere darf folgende Test-/Clientgruppe niemals als OH-58D-AIRWING-Gruppe 
 TEST_TM01A_CLIENT_01
 ```
 
-## 3. Physisches Gruppenmodell
+## 4. Physisches Gruppenmodell
 
 Alle vier SQUADRONs erzeugen ausschließlich Single-Ship-DCS-Gruppen:
 
@@ -43,9 +99,9 @@ UH-60A:       1 Gruppe mit 1 Luftfahrzeug
 CH-47F:       1 Gruppe mit 1 Luftfahrzeug
 ```
 
-OH-58D und AH-64D bilden damit ein logisches Two-Ship-Paket aus zwei unabhängig landenden und freizugebenden DCS-Gruppen. Eine gemeinsame DCS-Gruppe mit Lead und Wingman ist nicht mehr zulässig.
+OH-58D und AH-64D bilden ein logisches Two-Ship-Paket aus zwei unabhängig landenden und freizugebenden DCS-Gruppen. Eine gemeinsame DCS-Gruppe mit Lead und Wingman ist nicht mehr zulässig.
 
-## 4. SQUADRON-Konfiguration
+## 5. SQUADRON-Konfiguration
 
 Jedes SQUADRON verwendet:
 
@@ -56,9 +112,9 @@ squadron:SetTakeoffCold()
 squadron:SetDespawnAfterLanding(true)
 ```
 
-`SetDespawnAfterLanding(true)` muss jede gelandete Single-Ship-Gruppe nach dem Land-Ereignis entfernen, damit die Landefläche freigegeben und das Asset an das AIRWING/Warehouse zurückgegeben werden kann.
+`SetDespawnAfterLanding(true)` muss jede gelandete Single-Ship-Gruppe nach dem Land-Ereignis entfernen, damit die Landefläche freigegeben und das Asset an AIRWING beziehungsweise Warehouse zurückgegeben werden kann.
 
-## 5. Exklusive Spawnpools
+## 6. Exklusive Spawnpools
 
 ```text
 OH-58D: G01-G05 / TerminalIDs 19,43,6,5,48
@@ -69,7 +125,7 @@ CH-47F: C03-C10 / TerminalIDs 28,44,0,41,9,25,18,42
 
 Ein Spawn außerhalb des zum SQUADRON gehörenden Pools ist ein harter FAIL.
 
-## 6. Erwartete Assetbestände
+## 7. Erwartete Assetbestände
 
 Da alle Assets Single-Ship-Gruppen sind, werden folgende vollständige Bestände erwartet:
 
@@ -82,7 +138,7 @@ CH-47F: 8 Assetgruppen
 
 Vor und nach jedem Test müssen alle Bestände vollständig frei sein.
 
-## 7. Getrennte Zeitfenster
+## 8. Getrennte Zeitfenster
 
 Die Teststeuerung verwendet getrennte Fristen:
 
@@ -93,9 +149,9 @@ RecoveryTimeout
 ReleaseTimeout
 ```
 
-Ein fachlich erfolgreicher Auftrag darf nicht mehr wegen des früher gemeinsam verwendeten Gesamt-Timeouts fehlschlagen, während die Luftfahrzeuge ordnungsgemäß zum Heimatflugplatz zurückkehren.
+Ein fachlich erfolgreicher Auftrag darf nicht mehr wegen eines gemeinsam verwendeten Gesamt-Timeouts fehlschlagen, während die Luftfahrzeuge ordnungsgemäß zum Heimatflugplatz zurückkehren.
 
-## 8. Testfälle
+## 9. Testfälle
 
 ```text
 OH58D_RECON: 2 Gruppen / 2 Luftfahrzeuge
@@ -119,7 +175,7 @@ Für reguläre Tests werden geprüft:
 - Despawn nach Landung;
 - vollständige Assetfreigabe.
 
-## 9. Erwartete Vorprüfungen
+## 10. Erwartete Vorprüfungen
 
 ```text
 [OMW][AirOps.JBAD.NAMES] RESULT: PASS ...
@@ -129,10 +185,10 @@ Für reguläre Tests werden geprüft:
 [OMW][AirOps.JBAD.PH1.MENU] RESULT: READY ...
 ```
 
-## 10. Gesamt-PASS
+## 11. Gesamt-PASS
 
 ```text
 [OMW][AirOps.JBAD.PH1] RESULT: PASS testsPassed=5/5 abortRelease=PASS unexpectedSpawns=0 parkingViolations=0 losses=0 blockedAssets=0 finalInventoryRestored=true
 ```
 
-DCS-Acceptance bleibt bis zu einem realen, dokumentierten Testlauf `PENDING`.
+DCS-Acceptance bleibt bis zu einem realen, vom Missionsdesigner gestarteten und dokumentierten Testlauf `PENDING`.
