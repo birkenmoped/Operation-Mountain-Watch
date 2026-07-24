@@ -2,15 +2,29 @@
 
 ## Status
 
-Der lokale Air-Ops-Knoten Jalalabad / FOB Fenty ist vollständig aufgebaut und im DCS-Gesamttest validiert.
+Der lokale Air-Ops-Grundknoten Jalalabad / FOB Fenty ist vollständig aufgebaut und im DCS-Gesamttest validiert.
 
 ```text
-Status: OPERATIONAL / ACCEPTED
-Finaler Source-Commit: 6cee9a5db7abf1934d0f86bf9fdf91a0446374d0
-BuilderVersion: JBAD-AIR-OPS-COMPLETE-5
+Grundknoten: OPERATIONAL / ACCEPTED
+Taktische Phase-1-Funktionstests: IMPLEMENTED / DCS VALIDATION PENDING
+Finaler akzeptierter Grundknoten-Commit: 6cee9a5db7abf1934d0f86bf9fdf91a0446374d0
+Grundknoten-BuilderVersion: JBAD-AIR-OPS-COMPLETE-5
+Aktueller funktionaler Paketvertrag: JBAD-AIR-OPS-PHASE1-7
 ```
 
-Finales Ergebnis:
+Die Grundknoten-Abnahme belegt AIRWING-/SQUADRON-Aufbau, Parking, Warehouse, COMMANDER und fehlerfreien Leerlauf. Sie belegt nicht automatisch die korrekte taktische Ausführung von RECON, CAS, TROOPTRANSPORT, CARGOTRANSPORT oder MEDEVAC.
+
+Die späteren taktischen Tests deckten mehrere Architektur- und Testfehler auf. Deren Ursachen, Fehlannahmen und verbindliche Schutzregeln sind hier dokumentiert:
+
+```text
+../../../docs/27-jalalabad-air-operations-phase1-postmortem-and-guardrails.md
+expected/jalalabad-phase1-package-contract.md
+expected/jalalabad-phase1-architecture-regression-checklist.md
+```
+
+Diese drei Dokumente sind vor jeder weiteren Air-Operations-Implementierung und vor der Übertragung auf einen anderen Flugplatz verbindlich zu lesen.
+
+Finales Ergebnis des akzeptierten Grundknotens:
 
 ```text
 [OMW][AirOps.JBAD.COMPLETE] RESULT: COMPLETE. Jalalabad AirOps node OPERATIONAL; AIRWING started; COMMANDER linked; missionsQueued=0; spontaneousSpawns=0.
@@ -23,11 +37,74 @@ Autoritative Dokumente:
 ../../../docs/23-jalalabad-parking-template-and-medevac-model.md
 ../../../docs/24-jalalabad-ch47-static-parking-reservations.md
 ../../../docs/25-jalalabad-final-validation-and-operational-baseline.md
+../../../docs/27-jalalabad-air-operations-phase1-postmortem-and-guardrails.md
 expected/jalalabad-complete-node-acceptance.md
+expected/jalalabad-phase1-package-contract.md
+expected/jalalabad-phase1-architecture-regression-checklist.md
 results/2026-07-24-jalalabad-complete-node-pass.md
 ```
 
-## Finaler Nachweisstand
+## Verbindliche Ebenentrennung
+
+Folgende Dinge sind getrennte Ebenen und dürfen weder in Code, Logs noch Dokumentation vermischt werden:
+
+```text
+logischer Flugzeugbestand
+MOOSE-Templates als technische Kopiervorlagen
+physische dynamische DCS-Gruppen / MOOSE-Assets
+sichtbare statische Bestandsmaschinen
+Client-Gruppen und deren Parkpositionen
+taktische Pakete aus einer oder mehreren Gruppen
+```
+
+Insbesondere gilt:
+
+```text
+Two-Ship-Template + SetGrouping(2) = eine physische DCS-Gruppe mit zwei Luftfahrzeugen
+zwei Single-Ship-Assets = zwei unabhängige DCS-Gruppen, kein physisches Two-Ship
+sichtbares Static = keine AIRWING-Bestandsgruppe
+Template = Authoring-Seed, keine dauerhaft aktive Ramp-Maschine
+```
+
+## Verbindlicher Paketvertrag
+
+```text
+OH-58D RECON
+  24 Luftfahrzeuge
+  12 MOOSE-Asset-Gruppen
+  1 physische DCS-Gruppe je Auftrag
+  2 Luftfahrzeuge je Gruppe
+  Runtime-Einheiten: <group>-01 und <group>-02
+
+AH-64D CAS
+  8 Luftfahrzeuge
+  4 MOOSE-Asset-Gruppen
+  1 physische DCS-Gruppe je Auftrag
+  2 Luftfahrzeuge je Gruppe
+  Runtime-Einheiten: <group>-01 und <group>-02
+
+UH-60
+  8 Luftfahrzeuge
+  8 Single-Ship-Asset-Gruppen
+  TROOPTRANSPORT-Test: ein Single-Ship
+  späteres MEDEVAC: getrennte Lead- und Guard-Single-Ships als ein koordiniertes Paket
+
+CH-47
+  8 Luftfahrzeuge
+  8 Single-Ship-Asset-Gruppen
+  1 Gruppe / 1 Luftfahrzeug je Auftrag
+```
+
+Zwingend:
+
+```text
+AssetGroups × Grouping = InventoryAircraft
+RequiredGroups × Grouping = RequiredAircraft
+```
+
+Paketmodell, Grouping, erwartete Gruppen, erwartete Luftfahrzeuge und Runtime-Suffixe werden zentral definiert. Sie dürfen nicht durch nachgelagerte Lua-Dateien still überschrieben werden.
+
+## Finaler Nachweisstand des Grundknotens
 
 ```text
 Operation_Mountain_Watch_Jalalabad_AirOps_Test_01(6).miz
@@ -40,7 +117,7 @@ debrief(14).log
 SHA-256: 2ae6f3e48cd0adea313b5c622226f6e965adf9b1ed51c51abcc33642d4ca12e4
 ```
 
-Eingebettetes Bundle:
+Eingebettetes Bundle des akzeptierten Grundknotens:
 
 ```text
 Datei: l10n/DEFAULT/OMW_AirOps_Jalalabad.lua
@@ -182,8 +259,8 @@ AW_US_JALALABAD
 Bestandsabbildung:
 
 ```text
-OH-58D: 24 / 12 Two-Ship-Asset-Gruppen / RECON
-AH-64D:  8 /  4 Two-Ship-Asset-Gruppen / CAS
+OH-58D: 24 / 12 physische Two-Ship-Asset-Gruppen / RECON
+AH-64D:  8 /  4 physische Two-Ship-Asset-Gruppen / CAS
 UH-60:   8 /  8 Single-Ship-Asset-Gruppen / TRANSPORT, LAND, GROUNDESCORT
 CH-47:   8 /  8 Single-Ship-Asset-Gruppen / TROOPTRANSPORT, CARGOTRANSPORT, LAND
 ```
@@ -195,7 +272,7 @@ MEDEVAC:
 +
 1 unabhängige Cover-Single-Ship-Gruppe
 =
-1 logisches MEDEVAC-Two-Ship-Paket
+1 logisch koordiniertes MEDEVAC-Paket
 ```
 
 Der vollständige Laufzeitkoordinator bleibt eine separate Folgestufe.
@@ -225,7 +302,7 @@ dist/      lokal erzeugtes Bundle
 
 `dist/OMW_AirOps_Jalalabad.lua` wird ausschließlich durch den Builder erzeugt und nicht manuell editiert.
 
-## Repository-Workflow
+## Repository- und Missionseditor-Workflow
 
 Verbindlicher Gesamtworkflow:
 
@@ -233,7 +310,16 @@ Verbindlicher Gesamtworkflow:
 ../../../docs/22-test-mission-build-transfer-and-validation-workflow.md
 ```
 
-Kernbefehle:
+Arbeitsgrenze:
+
+```text
+Assistent: Lua, Builder, Dokumentation, GitHub-Commit, Logauswertung
+Projektinhaber: lokaler Pull, Bundle-Build, DO SCRIPT FILE, .miz, DCS-Test
+```
+
+Ohne ausdrücklichen Auftrag erstellt oder verändert der Assistent keine `.miz`.
+
+Kernbefehle für die aktuelle taktische Testphase:
 
 ```powershell
 cd P:\DCS-DEV\Operation-Mountain-Watch
@@ -241,7 +327,7 @@ cd P:\DCS-DEV\Operation-Mountain-Watch
 git branch --show-current
 git status --short
 git fetch origin
-git switch feature/jalalabad-air-operations-diagnostics
+git switch feature/jalalabad-airwing-phase1-functional-tests
 git pull --ff-only
 git rev-parse HEAD
 
@@ -251,13 +337,28 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass `
 
 Nach jedem Neubau muss `OMW_AirOps_Jalalabad.lua` im Missionseditor erneut über `DO SCRIPT FILE` ausgewählt und die `.miz` gespeichert werden.
 
+## Taktische Abnahmereihenfolge
+
+1. OH-58D als eine physische Two-Ship-Gruppe mit explizitem Rückkorridor.
+2. AH-64D als eine physische Two-Ship-Gruppe mit gemeinsamer Rückkehr und zwei gezählten Landungen.
+3. UH-60 als echter Single-Ship-TROOPTRANSPORT mit Pickup und Dropoff.
+4. CH-47 als Single-Ship-CARGOTRANSPORT mit physisch belegter Frachtzustellung.
+5. UH-60-Abbruch und Bestandsfreigabe.
+6. Gesamtablauf erst nach den isolierten Einzeltests.
+7. vollständiges 1+1-MEDEVAC-Paket als separate spätere Stufe.
+
+Ein Build oder statischer Test ist kein DCS-PASS. Der aktuelle funktionale Paketvertrag bleibt bis zu neuen DCS-Logs `DCS VALIDATION PENDING`.
+
 ## Folgestufen
 
 Der Grundaufbau ist abgeschlossen. Separat zu implementieren und zu validieren sind:
 
-- taktische AUFTRAG-Erzeugung,
+- taktische AUFTRAG-Erzeugung und robuste Missionsausführung,
+- dynamische, spielergesteuerte Auftragsanforderungen,
 - OPSTRANSPORT-Logistik,
 - operative Lade-/Entladezonen,
 - vollständige 1+1-MEDEVAC-Ausführung,
 - persistente Verlustrechnung,
 - persistente Ramp-/Static-Neuverteilung.
+
+Die dynamische Spieleranforderung darf erst auf den in DCS abgenommenen Paketverträgen aufbauen. Der spätere Planner wählt einen Vertrag aus; er darf Grouping, TemplateUnits oder Paketmodell nicht verändern.
