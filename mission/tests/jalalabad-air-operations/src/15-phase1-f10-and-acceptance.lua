@@ -41,9 +41,9 @@ else
     local ready = objectsReady and clientParkingReady and cfg.ParkingReservationsOK == true and cfg.ParkingPoolsOK == true and cfg.NameContractOK == true
     ph1.AcceptanceGateLogged = true
     if ready then
-      log("RESULT: READY. Phase 1 armed; exact runtime group/unit names required; OH58D/AH64D use two independent single-ship groups; despawnAfterLanding=true; phased timeouts active.")
+      log("RESULT: READY. Phase 1 armed; exact runtime names and exclusive parking pools active; OH-58D terrain/route gate PASS; dedicated UH-60 drop zone and pickup/delivery lifecycle PASS; vertical helicopter takeoff/landing preference active.")
     else
-      log("RESULT: BLOCKED. Required: Mission Editor objects, Client parking, static reservations, exclusive SQUADRON pools and exact runtime-name contract.")
+      log("RESULT: BLOCKED. Required: Mission Editor objects, Client parking, static reservations, exclusive SQUADRON pools, exact runtime-name contract, safe OH-58D route, dedicated UH-60 drop zone and vertical helicopter operation preference.")
     end
   end
 
