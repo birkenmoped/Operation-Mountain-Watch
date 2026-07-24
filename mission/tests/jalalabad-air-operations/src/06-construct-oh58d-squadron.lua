@@ -5,14 +5,16 @@ local function log(msg) env.info(TAG .. " " .. tostring(msg)) end
 local function main()
   local cfg = OMW and OMW.AirOps and OMW.AirOps.Jalalabad
   if not cfg or not cfg.Airwing then log("ERROR: Jalalabad configuration or AIRWING unavailable.") return end
-  if cfg.ParkingPoolsOK ~= true or cfg.NameContractOK ~= true then log("ERROR: Parking/name validation not passed; SQUADRON blocked.") return end
+  if cfg.ParkingPoolsOK ~= true or cfg.NameContractOK ~= true or cfg.PackageContractsOK ~= true then log("ERROR: Parking/name/package validation not passed; SQUADRON blocked.") return end
   if not GROUP or not SQUADRON or not AUFTRAG then log("ERROR: Required MOOSE classes unavailable.") return end
 
-  local templateName = cfg.Templates.OH58DRecon
+  local contract = cfg:GetSquadronContract("OH58D")
+  if not contract then log("ERROR: OH-58D package contract unavailable.") return end
+  local templateName = cfg.Templates[contract.TemplateKey]
   local template = GROUP:FindByName(templateName)
   if not template then log("ERROR: OH-58D template missing: " .. tostring(templateName)) return end
   local units = template:GetUnits() or {}
-  if #units ~= 2 then log(string.format("ERROR: Template %s must contain exactly 2 authoring units; found=%d", templateName, #units)) return end
+  if #units ~= contract.TemplateUnits then log(string.format("ERROR: Template %s units=%d contract=%d", templateName, #units, contract.TemplateUnits)) return end
   for index, unit in ipairs(units) do
     local typeName = unit and unit:GetTypeName() or "nil"
     if typeName ~= "OH58D" then log(string.format("ERROR: Template %s unit %d type=%s expected=OH58D", templateName, index, tostring(typeName))) return end
@@ -25,11 +27,8 @@ local function main()
   if cfg.Squadrons.OH58D then log("SKIP: OH-58D squadron already constructed.") return end
 
   local ok, result = pcall(function()
-    -- The OH-58D reconnaissance package is one physical DCS group containing
-    -- two aircraft. This is required so DCS maintains an actual two-ship
-    -- formation instead of dispatching two unrelated single-ship groups.
     local squadron = SQUADRON:New(templateName, aircraftCount, squadronName)
-    squadron:SetGrouping(2)
+    squadron:SetGrouping(contract.Grouping)
     squadron:SetParkingIDs(parkingIDs)
     squadron:SetTakeoffCold()
     squadron:SetDespawnAfterLanding(true)
@@ -45,7 +44,7 @@ local function main()
   cfg.Squadrons.OH58D = result.Squadron
   cfg.Payloads = cfg.Payloads or {}
   cfg.Payloads.OH58DRecon = result.Payload
-  log("SQUADRON ready name=" .. squadronName .. " physicalGroups=12 groupSize=2 logicalTwoShip=onePhysicalGroup runtimePrefix=" .. cfg:GetRuntimeGroupPrefix("OH58D") .. " parkingIDs=" .. table.concat(parkingIDs, ",") .. " despawnAfterLanding=true")
+  log(string.format("SQUADRON ready name=%s model=%s aircraft=%d assetGroups=%d grouping=%d runtimeUnits=%s parkingIDs=%s despawnAfterLanding=true", squadronName, contract.Model, aircraftCount, contract.AssetGroups, contract.Grouping, table.concat(contract.RuntimeUnitSuffixes, ","), table.concat(parkingIDs, ",")))
 end
 
 if SCHEDULER then SCHEDULER:New(nil, main, {}, 9) else timer.scheduleFunction(function() main() return nil end, nil, timer.getTime() + 9) end
