@@ -20,9 +20,6 @@ OMW.AirOps.Jalalabad = {
   WarehouseName = "WH_AIR_US_JALALABAD",
   AirwingName = "AW_US_JALALABAD",
 
-  -- Logical campaign inventory. This is not a demand for one physical parking
-  -- position per airframe. Aircraft not represented by an active group or a
-  -- visible static remain in the numerical reserve.
   Inventory = {
     OH58D = 24,
     AH64D = 8,
@@ -30,8 +27,6 @@ OMW.AirOps.Jalalabad = {
     CH47 = 8
   },
 
-  -- Minimum aircraft visible in the supplied February/March 2011 satellite
-  -- snapshot. This is evidence for local presence, not the complete inventory.
   ObservedRampMinimum = {
     OH58D = 13,
     AH64D = 7,
@@ -41,8 +36,6 @@ OMW.AirOps.Jalalabad = {
     UH1 = 1
   },
 
-  -- Mi-8 and UH-1 are recorded as observed traffic but are not charged to the
-  -- US Task Force Shooter campaign inventory until their operator is resolved.
   ObservedExternalOrTransient = {
     MI8 = 1,
     UH1 = 1
@@ -50,29 +43,66 @@ OMW.AirOps.Jalalabad = {
 
   Parking = {
     ComparableHelicopterPositions = 36,
-
-    -- Client positions are reserved at runtime so MOOSE must not use them for
-    -- dynamic AI spawning.
     CorePlayerPositions = 6,
     OptionalUH60LPlayerPositions = 2,
 
-    -- Seven aircraft are placed in the Mission Editor only as Late Activation
-    -- authoring templates. They are never activated and therefore do not consume
-    -- seven runtime parking positions.
+    -- Templates are technical seed groups and deliberately do not occupy
+    -- operational parking positions.
     TemplateAuthoringAircraft = 7,
+    TemplateOperationalParkingPositions = 0,
+    TemplatesUseOperationalParking = false,
+    TemplateMinimumParkingClearanceMeters = 100,
 
-    -- The global support limit allows at most four AI aircraft at once. Reserve
-    -- four suitable free runtime positions, including at least two CH-47-capable
-    -- positions and at least two small/medium helicopter positions.
-    DynamicAIParkingReserve = 4,
-    CoreRuntimeParkingDemand = 10,
-    RuntimeParkingDemandWithUH60L = 12,
+    -- MOOSE TerminalIDs, not the labels displayed in the Mission Editor.
+    -- Each pool is exclusive to one SQUADRON; no general-airbase fallback.
+    PoolCoordinateToleranceMeters = 2,
+    PoolStaticClearanceMeters = 12,
+    SquadronPools = {
+      OH58D = {
+        GroupSize = 2,
+        TerminalType = 40,
+        Entries = {
+          { Label = "G01", TerminalID = 19, X = 73027.2, Z = 389096.3 },
+          { Label = "G02", TerminalID = 43, X = 72991.8, Z = 389143.7 },
+          { Label = "G03", TerminalID = 6,  X = 72895.0, Z = 389270.4 },
+          { Label = "G04", TerminalID = 5,  X = 72857.8, Z = 389318.1 },
+          { Label = "G05", TerminalID = 48, X = 72838.7, Z = 389344.2 }
+        }
+      },
+      AH64D = {
+        GroupSize = 2,
+        TerminalType = 40,
+        Entries = {
+          { Label = "F04", TerminalID = 26, X = 72760.1, Z = 389173.6 },
+          { Label = "F05", TerminalID = 51, X = 72732.7, Z = 389208.3 },
+          { Label = "F06", TerminalID = 11, X = 72705.8, Z = 389243.2 }
+        }
+      },
+      UH60 = {
+        GroupSize = 1,
+        TerminalType = 104,
+        Entries = {
+          { Label = "F01", TerminalID = 10, X = 72865.1, Z = 389033.6 },
+          { Label = "F02", TerminalID = 8,  X = 72836.8, Z = 389063.8 },
+          { Label = "F03", TerminalID = 1,  X = 72810.7, Z = 389096.9 }
+        }
+      },
+      CH47 = {
+        GroupSize = 1,
+        TerminalType = 40,
+        Entries = {
+          { Label = "C03", TerminalID = 28, X = 72478.5, Z = 389867.0 },
+          { Label = "C04", TerminalID = 44, X = 72459.1, Z = 389892.2 },
+          { Label = "C05", TerminalID = 0,  X = 72440.1, Z = 389917.6 },
+          { Label = "C06", TerminalID = 41, X = 72420.9, Z = 389943.7 },
+          { Label = "C07", TerminalID = 9,  X = 72401.8, Z = 389968.6 },
+          { Label = "C08", TerminalID = 25, X = 72383.2, Z = 389993.6 },
+          { Label = "C09", TerminalID = 18, X = 72364.1, Z = 390019.8 },
+          { Label = "C10", TerminalID = 42, X = 72346.4, Z = 390046.0 }
+        }
+      }
+    },
 
-    -- The C01-C14 heavy-lift ramp has no credible free-placement alternative for
-    -- all visible Chinooks. Five CH-47 statics plus two Client aircraft consume
-    -- seven visual ramp positions and leave seven visual positions available.
-    -- Four of the five statics align with actual DCS parking nodes in the current
-    -- mission and those terminal IDs are deliberately blacklisted for AI spawning.
     CH47VisualRampPositions = 14,
     CH47StaticAircraft = 5,
     CH47PlayerPositions = 2,
@@ -86,13 +116,9 @@ OMW.AirOps.Jalalabad = {
     },
     StaticParkingBlacklist = { 23, 35, 37, 49 },
 
-    Model = "CLIENT_RESERVED_DYNAMIC_AI_POOL_DEDICATED_CH47_STATIC_PARKING_LATE_ACTIVATION_TEMPLATES"
+    Model = "EXCLUSIVE_TYPE_SPECIFIC_SQUADRON_POOLS_TEMPLATES_OFF_PARKING"
   },
 
-  -- Visible caps are deliberately lower than the inventory and lower than the
-  -- 2011 snapshot. Most statics are free-placed. The four explicitly mapped
-  -- CH-47 parking nodes are intentional permanent static reservations and are
-  -- removed from the MOOSE parking pool through the blacklist above.
   StaticCaps = {
     OH58D = 7,
     AH64D = 4,
@@ -155,13 +181,9 @@ OMW.AirOps.Jalalabad = {
     CH47 = numbered("STATIC_AIR_US_JBAD_CH47", 5)
   },
 
+  -- Static-display and template-readiness zones were removed. Only functional
+  -- logistics zones remain part of the baseline manifest.
   Zones = {
-    "ZONE_AIR_US_JBAD_STATIC_OH58D",
-    "ZONE_AIR_US_JBAD_STATIC_AH64D",
-    "ZONE_AIR_US_JBAD_STATIC_UH60",
-    "ZONE_AIR_US_JBAD_STATIC_CH47",
-    "ZONE_AIR_US_JBAD_MEDEVAC_READY",
-    "ZONE_AIR_US_JBAD_CH47_READY",
     "ZONE_AIR_US_JBAD_HEAVYLIFT_LOAD",
     "ZONE_AIR_US_JBAD_LOGISTICS_LOAD",
     "ZONE_AIR_US_JBAD_LOGISTICS_UNLOAD",
@@ -170,8 +192,39 @@ OMW.AirOps.Jalalabad = {
   },
 
   DetectedTypes = {},
-  ParkingReservationsOK = false
+  ParkingReservationsOK = false,
+  ParkingPoolsOK = false
 }
+
+local function getPool(key)
+  local cfg = OMW.AirOps.Jalalabad
+  return cfg.Parking and cfg.Parking.SquadronPools and cfg.Parking.SquadronPools[key] or nil
+end
+
+function OMW.AirOps.Jalalabad:GetSquadronParkingIDs(key)
+  local result = {}
+  local pool = getPool(key)
+  for _, entry in ipairs(pool and pool.Entries or {}) do
+    result[#result + 1] = entry.TerminalID
+  end
+  return result
+end
+
+function OMW.AirOps.Jalalabad:GetSquadronParkingLabel(key, terminalId)
+  local pool = getPool(key)
+  for _, entry in ipairs(pool and pool.Entries or {}) do
+    if entry.TerminalID == terminalId then return entry.Label end
+  end
+  return nil
+end
+
+function OMW.AirOps.Jalalabad:GetSquadronParkingSet(key)
+  local result = {}
+  for _, terminalId in ipairs(self:GetSquadronParkingIDs(key)) do
+    result[terminalId] = true
+  end
+  return result
+end
 
 local function validate()
   local cfg = OMW.AirOps.Jalalabad
@@ -210,7 +263,7 @@ local function validate()
   cfg.Airwing = result
   log("AIRWING constructed and explicitly linked. Awaiting corrected complete-node assembly before Start().")
   log("PARKING BLACKLIST: intentional CH-47 static reservations TerminalIDs=23,35,37,49; Client parking protected by SafeParking.")
-  log("RAMP MODEL: inventory=24/8/8/8 visibleCaps=7/4/4/5 clients=6+2optional dynamicAIReserve=4 runtimeDemand=10+2optional templateAircraft=7(non-runtime) CH47visual=14-5statics-2clients=7remaining.")
+  log("RAMP MODEL: inventory=24/8/8/8 visibleCaps=7/4/4/5 clients=6+2optional templatesOffParking=7 exclusivePools=OH58D:G01-G05/AH64D:F04-F06/UH60:F01-F03/CH47:C03-C10.")
 end
 
 if SCHEDULER then
