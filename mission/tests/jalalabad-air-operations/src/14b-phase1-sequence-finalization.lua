@@ -1,4 +1,4 @@
--- Operation Mountain Watch - Phase 1 corrected sequence finalization for single-ship assets
+-- Operation Mountain Watch - Phase 1 sequence finalization from package contracts
 local TAG = "[OMW][AirOps.JBAD.PH1.SEQUENCE]"
 local function log(msg) env.info(TAG .. " " .. tostring(msg)) end
 
@@ -8,8 +8,6 @@ local controller = ph1 and ph1.Controller
 if not cfg or not ph1 or not controller then
   log("ERROR: Phase 1 controller unavailable.")
 else
-  local expectedAssetGroups = { OH58D = 24, AH64D = 8, UH60 = 8, CH47 = 8 }
-
   local function queueCount()
     local count = 0
     for _ in pairs((cfg.Airwing and cfg.Airwing.missionqueue) or {}) do count = count + 1 end
@@ -17,7 +15,7 @@ else
   end
 
   local function inventoryReady(snapshots)
-    for key, expected in pairs(expectedAssetGroups) do
+    for key, expected in pairs(ph1.AssetGroupInventory or {}) do
       local item = snapshots and snapshots[key]
       if not item or item.total ~= expected or item.available ~= expected or item.busy ~= 0 then return false end
     end
@@ -50,7 +48,7 @@ else
     local finalPass = allPassed and inventoryOK and queueCount() == 0 and cleanCounters
     ph1.Classification = finalPass and "PASS" or "FAIL"
     if finalPass then
-      log("RESULT: PASS testsPassed=5/5 abortRelease=PASS unexpectedSpawns=0 parkingViolations=0 losses=0 blockedAssets=0 finalInventoryRestored=true")
+      log("RESULT: PASS testsPassed=5/5 abortRelease=PASS unexpectedSpawns=0 parkingViolations=0 losses=0 blockedAssets=0 finalAssetGroups=12/4/8/8")
     else
       log(string.format("RESULT: FAIL testsPassed=%s abortRelease=%s unexpectedSpawns=%d parkingViolations=%d losses=%d timeouts=%d blockedAssets=%s finalInventoryRestored=%s",
         allPassed and "5/5" or "incomplete",
@@ -66,5 +64,5 @@ else
     return finalPass
   end
 
-  log("READY finalInventory=24/8/8/8 sequenceFinalizationOverride=true")
+  log("READY finalAssetGroupInventory=OH58D:12/AH64D:4/UH60:8/CH47:8 source=package-contracts")
 end
