@@ -5,14 +5,16 @@ local function log(msg) env.info(TAG .. " " .. tostring(msg)) end
 local function main()
   local cfg = OMW and OMW.AirOps and OMW.AirOps.Jalalabad
   if not cfg or not cfg.Airwing then log("ERROR: Jalalabad configuration or AIRWING unavailable.") return end
-  if cfg.ParkingPoolsOK ~= true or cfg.NameContractOK ~= true then log("ERROR: Parking/name validation not passed; SQUADRON blocked.") return end
+  if cfg.ParkingPoolsOK ~= true or cfg.NameContractOK ~= true or cfg.PackageContractsOK ~= true then log("ERROR: Parking/name/package validation not passed; SQUADRON blocked.") return end
   if not GROUP or not SQUADRON or not AUFTRAG then log("ERROR: Required MOOSE classes unavailable.") return end
 
-  local templateName = cfg.Templates.AH64DCAS
+  local contract = cfg:GetSquadronContract("AH64D")
+  if not contract then log("ERROR: AH-64D package contract unavailable.") return end
+  local templateName = cfg.Templates[contract.TemplateKey]
   local template = GROUP:FindByName(templateName)
   if not template then log("ERROR: AH-64D template missing: " .. tostring(templateName)) return end
   local units = template:GetUnits() or {}
-  if #units ~= 2 then log(string.format("ERROR: Template %s must contain exactly 2 authoring units; found=%d", templateName, #units)) return end
+  if #units ~= contract.TemplateUnits then log(string.format("ERROR: Template %s units=%d contract=%d", templateName, #units, contract.TemplateUnits)) return end
   for index, unit in ipairs(units) do
     local typeName = unit and unit:GetTypeName() or "nil"
     if typeName ~= "AH-64D_BLK_II" then log(string.format("ERROR: Template %s unit %d type=%s expected=AH-64D_BLK_II", templateName, index, tostring(typeName))) return end
@@ -26,7 +28,7 @@ local function main()
 
   local ok, result = pcall(function()
     local squadron = SQUADRON:New(templateName, aircraftCount, squadronName)
-    squadron:SetGrouping(1)
+    squadron:SetGrouping(contract.Grouping)
     squadron:SetParkingIDs(parkingIDs)
     squadron:SetTakeoffCold()
     squadron:SetDespawnAfterLanding(true)
@@ -42,7 +44,7 @@ local function main()
   cfg.Squadrons.AH64D = result.Squadron
   cfg.Payloads = cfg.Payloads or {}
   cfg.Payloads.AH64DCAS = result.Payload
-  log("SQUADRON ready name=" .. squadronName .. " physicalGroups=8 groupSize=1 logicalTwoShip=2assets runtimePrefix=" .. cfg:GetRuntimeGroupPrefix("AH64D") .. " parkingIDs=" .. table.concat(parkingIDs, ",") .. " despawnAfterLanding=true")
+  log(string.format("SQUADRON ready name=%s model=%s aircraft=%d assetGroups=%d grouping=%d runtimeUnits=%s parkingIDs=%s despawnAfterLanding=true", squadronName, contract.Model, aircraftCount, contract.AssetGroups, contract.Grouping, table.concat(contract.RuntimeUnitSuffixes, ","), table.concat(parkingIDs, ",")))
 end
 
 if SCHEDULER then SCHEDULER:New(nil, main, {}, 11) else timer.scheduleFunction(function() main() return nil end, nil, timer.getTime() + 11) end
