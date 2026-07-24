@@ -20,14 +20,17 @@ local function main()
     if typeName ~= "OH58D" then log(string.format("ERROR: Template %s unit %d type=%s expected=OH58D", templateName, index, tostring(typeName))) return end
   end
 
-  local aircraftCount = cfg.Inventory.OH58D
+  local aircraftCount = contract.InventoryAircraft
+  local assetGroupCount = contract.AssetGroups
   local squadronName = cfg.SquadronNames.OH58D
   local parkingIDs = cfg:GetSquadronParkingIDs("OH58D")
   cfg.Squadrons = cfg.Squadrons or {}
   if cfg.Squadrons.OH58D then log("SKIP: OH-58D squadron already constructed.") return end
 
   local ok, result = pcall(function()
-    local squadron = SQUADRON:New(templateName, aircraftCount, squadronName)
+    -- SQUADRON:New() expects the number of MOOSE asset groups, not aircraft.
+    -- Each asset group contains contract.Grouping aircraft from the ME template.
+    local squadron = SQUADRON:New(templateName, assetGroupCount, squadronName)
     squadron:SetGrouping(contract.Grouping)
     squadron:SetParkingIDs(parkingIDs)
     squadron:SetTakeoffCold()
@@ -44,7 +47,7 @@ local function main()
   cfg.Squadrons.OH58D = result.Squadron
   cfg.Payloads = cfg.Payloads or {}
   cfg.Payloads.OH58DRecon = result.Payload
-  log(string.format("SQUADRON ready name=%s model=%s aircraft=%d assetGroups=%d grouping=%d runtimeUnits=%s parkingIDs=%s despawnAfterLanding=true", squadronName, contract.Model, aircraftCount, contract.AssetGroups, contract.Grouping, table.concat(contract.RuntimeUnitSuffixes, ","), table.concat(parkingIDs, ",")))
+  log(string.format("SQUADRON ready name=%s model=%s inventoryAircraft=%d constructorAssetGroups=%d grouping=%d computedAircraft=%d runtimeUnits=%s parkingIDs=%s despawnAfterLanding=true", squadronName, contract.Model, aircraftCount, assetGroupCount, contract.Grouping, assetGroupCount * contract.Grouping, table.concat(contract.RuntimeUnitSuffixes, ","), table.concat(parkingIDs, ",")))
 end
 
 if SCHEDULER then SCHEDULER:New(nil, main, {}, 9) else timer.scheduleFunction(function() main() return nil end, nil, timer.getTime() + 9) end
