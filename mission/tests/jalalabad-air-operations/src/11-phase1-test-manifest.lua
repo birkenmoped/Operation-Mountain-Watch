@@ -11,7 +11,7 @@ else
   local ph1 = cfg.Phase1 or {}
   cfg.Phase1 = ph1
 
-  ph1.Version = "JBAD-PHASE1-7"
+  ph1.Version = "JBAD-PHASE1-9"
   ph1.Enabled = true
   ph1.State = ph1.State or "WAITING_FOR_BASELINE"
   ph1.Classification = ph1.Classification or "NOT_RUN"
@@ -114,6 +114,9 @@ else
   end
 
   ph1.Tests.UH60_TROOP.AllowObjectiveDrivenTerminal = true
+  ph1.Tests.UH60_TROOP.RequireNativeCargoLifecycle = true
+  ph1.Tests.UH60_TROOP.RequireIntermediateLandings = true
+  ph1.Tests.UH60_TROOP.RequireExactBaseLandingIdentity = true
   ph1.Tests.CH47_CARGO.OneShotObject = true
   ph1.Tests.CH47_CARGO.AllowObjectiveDrivenTerminal = true
   ph1.Tests.UH60_ABORT.AbortOnBirth = true
@@ -149,5 +152,5 @@ else
   ph1.ParkingBlacklist = {}
   for _, terminalId in ipairs((cfg.Parking and cfg.Parking.StaticParkingBlacklist) or {}) do ph1.ParkingBlacklist[terminalId] = true end
 
-  log("READY version=JBAD-PHASE1-7 contracts=OH58D:1x2/AH64D:1x2/UH60:1x1/CH47:1x1 assetGroups=12/4/8/8 exactRuntimeNames=true")
+  log("READY version=JBAD-PHASE1-9 contracts=OH58D:1x2/AH64D:1x2/UH60:1x1/CH47:1x1 assetGroups=12/4/8/8 exactRuntimeNames=true strictUH60CargoLifecycle=true")
 end
