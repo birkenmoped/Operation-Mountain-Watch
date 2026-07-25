@@ -16,8 +16,8 @@ $sourceFiles = @(
     '04-dump-aircraft-types.lua',
     '05-validate-mission-templates.lua',
     '05a-validate-squadron-parking-pools.lua',
-    '05b-validate-runtime-name-contract.lua',
     '05c-package-contracts.lua',
+    '05b-validate-runtime-name-contract.lua',
     '06-construct-oh58d-squadron.lua',
     '07-construct-ah64d-squadron.lua',
     '08-construct-uh60-squadron.lua',
@@ -52,6 +52,28 @@ foreach ($obsolete in $obsoleteOverrideFiles) {
         throw "MOOSE-first regression: obsolete override source still exists: $obsolete"
     }
 }
+
+function Assert-SourceBefore {
+    param(
+        [Parameter(Mandatory = $true)][string]$Dependency,
+        [Parameter(Mandatory = $true)][string]$Dependent
+    )
+
+    $dependencyIndex = [Array]::IndexOf($sourceFiles, $Dependency)
+    $dependentIndex = [Array]::IndexOf($sourceFiles, $Dependent)
+    if ($dependencyIndex -lt 0 -or $dependentIndex -lt 0) {
+        throw "Builder dependency gate references an unknown source: dependency=$Dependency dependent=$Dependent"
+    }
+    if ($dependencyIndex -ge $dependentIndex) {
+        throw "Builder dependency order invalid: '$Dependency' must be embedded before '$Dependent'."
+    }
+}
+
+# Runtime-name validation reads package contracts and produces the prefixes that
+# the Phase-1 manifest consumes. The order is therefore a hard build contract.
+Assert-SourceBefore -Dependency '05c-package-contracts.lua' -Dependent '05b-validate-runtime-name-contract.lua'
+Assert-SourceBefore -Dependency '05b-validate-runtime-name-contract.lua' -Dependent '11-phase1-test-manifest.lua'
+Assert-SourceBefore -Dependency '14-phase1-test-controller.lua' -Dependent '15-phase1-f10-and-acceptance.lua'
 
 $sourceText = @{}
 foreach ($fileName in $sourceFiles) {
@@ -144,7 +166,7 @@ foreach ($api in $requiredMooseApis) {
 
 New-Item -ItemType Directory -Path $distDir -Force | Out-Null
 
-$builderVersion = 'JBAD-AIR-OPS-PHASE1-11-MOOSE-FIRST'
+$builderVersion = 'JBAD-AIR-OPS-PHASE1-12-MOOSE-FIRST'
 $commit = 'UNKNOWN'
 try {
     $commit = (& git -C $repoRoot rev-parse HEAD 2>$null).Trim()
