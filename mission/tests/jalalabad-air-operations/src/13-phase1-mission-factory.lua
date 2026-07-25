@@ -10,6 +10,10 @@ else
   local factory = ph1.Factory or {}
   ph1.Factory = factory
 
+  local UH60_LANDING_RADIUS_METERS = 5
+  local UH60_INFANTRY_OFFSET_METERS = 45
+  local UH60_INFANTRY_OFFSET_BEARING = 90
+
   local function findZone(name)
     return name and ZONE and ZONE:FindByName(name) or nil
   end
@@ -27,6 +31,24 @@ else
     local spawner = SPAWN:New(templateName)
     if coordinate then return spawner:SpawnFromVec2(coordinate:GetVec2()) end
     return spawner:Spawn()
+  end
+
+  local function translatedCoordinate(coordinate, distance, bearing)
+    if not coordinate or not coordinate.Translate then return nil end
+    local ok, translated = pcall(function() return coordinate:Translate(distance, bearing) end)
+    return ok and translated or nil
+  end
+
+  local function runtimeRadiusZone(name, coordinate, radius)
+    if not ZONE_RADIUS or not coordinate or not coordinate.GetVec2 then return nil end
+    return ZONE_RADIUS:New(name, coordinate:GetVec2(), radius, true)
+  end
+
+  local function safeOffset(zone)
+    if not zone or not zone.GetRadius then return nil end
+    local radius = tonumber(zone:GetRadius()) or 0
+    local offset = math.min(UH60_INFANTRY_OFFSET_METERS, radius - UH60_LANDING_RADIUS_METERS - 10)
+    return offset >= 20 and offset or nil
   end
 
   function factory:ValidateMissionEditorObjects()
@@ -123,12 +145,52 @@ else
 
   local function createGroupTransport(definition)
     local pickup = findZone(ph1.Objects.UHLoadZone)
-    local deploy = findZone(ph1.Objects.UHUnloadZone)
-    local troops = spawnGroup(ph1.Objects.UHTroopTemplate, pickup and pickup:GetCoordinate() or nil)
+    local objectiveDeploy = findZone(ph1.Objects.UHUnloadZone)
+    if not pickup or not objectiveDeploy then return nil, "UH-60 pickup/deploy zone unavailable" end
+
+    local pickupOffset = safeOffset(pickup)
+    local disembarkOffset = safeOffset(objectiveDeploy)
+    if not pickupOffset or not disembarkOffset then return nil, "UH-60 logistics zone too small for separated landing/cargo geometry" end
+
+    local pickupCenter = pickup:GetCoordinate()
+    local deployCenter = objectiveDeploy:GetCoordinate()
+    local troopCoordinate = translatedCoordinate(pickupCenter, pickupOffset, UH60_INFANTRY_OFFSET_BEARING)
+    local disembarkCoordinate = translatedCoordinate(deployCenter, disembarkOffset, UH60_INFANTRY_OFFSET_BEARING)
+    if not troopCoordinate or not disembarkCoordinate then return nil, "MOOSE COORDINATE:Translate failed for UH-60 logistics geometry" end
+
+    local pickupLandingZone = runtimeRadiusZone("OMW_RUNTIME_UH60_PICKUP_LZ", pickupCenter, UH60_LANDING_RADIUS_METERS)
+    local deployLandingZone = runtimeRadiusZone("OMW_RUNTIME_UH60_DROPOFF_LZ", deployCenter, UH60_LANDING_RADIUS_METERS)
+    local disembarkZone = runtimeRadiusZone("OMW_RUNTIME_UH60_DISEMBARK", disembarkCoordinate, UH60_LANDING_RADIUS_METERS)
+    if not pickupLandingZone or not deployLandingZone or not disembarkZone then return nil, "MOOSE ZONE_RADIUS construction failed for UH-60 logistics geometry" end
+
+    local troops = spawnGroup(ph1.Objects.UHTroopTemplate, troopCoordinate)
     if not troops then return nil, "troop cargo spawn failed" end
     ph1.Runtime.CargoGroupName = troops:GetName()
     ph1.Runtime.CargoTemplateName = ph1.Objects.UHTroopTemplate
-    return ph1.Logistics:CreateGroupTransport(definition, troops, pickup, deploy)
+    ph1.Runtime.PickupLandingZone = pickupLandingZone
+    ph1.Runtime.DeployLandingZone = deployLandingZone
+    ph1.Runtime.DisembarkZone = disembarkZone
+
+    local transport, transportError = ph1.Logistics:CreateGroupTransport(definition, troops, pickup, deployLandingZone)
+    if not transport then return nil, transportError or "OPSTRANSPORT construction failed" end
+    if not transport.SetEmbarkZone or not transport.SetDisembarkZone then
+      return nil, "pinned MOOSE OPSTRANSPORT embark/disembark zone API unavailable"
+    end
+
+    transport:SetEmbarkZone(pickupLandingZone)
+    transport:SetDisembarkZone(disembarkZone)
+    if transport.OMWMetadata then
+      transport.OMWMetadata.PickupZone = pickup
+      transport.OMWMetadata.DeployZone = objectiveDeploy
+      transport.OMWMetadata.EmbarkZone = pickupLandingZone
+      transport.OMWMetadata.CarrierDeployZone = deployLandingZone
+      transport.OMWMetadata.DisembarkZone = disembarkZone
+    end
+
+    log(string.format("GROUP_TRANSPORT_GEOMETRY pickupCarrierZone=%s pickupRadius=%.0fm infantryOffset=%.0fm deployCarrierZone=%s deployRadius=%.0fm disembarkOffset=%.0fm authority=OPSTRANSPORT:SetEmbarkZone/SetDisembarkZone",
+      pickupLandingZone:GetName(), UH60_LANDING_RADIUS_METERS, pickupOffset,
+      deployLandingZone:GetName(), UH60_LANDING_RADIUS_METERS, disembarkOffset))
+    return transport
   end
 
   local function createSlingCargo(definition)
@@ -172,5 +234,5 @@ else
     return "AUFTRAG", mission
   end
 
-  log("READY authority=AUFTRAG/OPSTRANSPORT payloadAPI=AddRequiredPayload objectives=AddConditionSuccess customObjectivePollers=false directDatabaseAccess=false")
+  log("READY authority=AUFTRAG/OPSTRANSPORT payloadAPI=AddRequiredPayload objectives=AddConditionSuccess customObjectivePollers=false directDatabaseAccess=false UH60LandingGeometry=MOOSE_SetEmbarkZone_SetDisembarkZone")
 end
