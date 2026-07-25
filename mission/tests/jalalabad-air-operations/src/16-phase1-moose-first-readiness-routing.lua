@@ -41,26 +41,16 @@ else
     return ok and tonumber(value) or nil
   end
 
-  local function sampleLeg(first, second, spacing)
-    local a, b = first and first:GetVec3() or nil, second and second:GetVec3() or nil
-    if not a or not b then return nil, nil, "coordinate-unavailable" end
-    local length = distance2D(a, b)
-    if not length then return nil, nil, "distance-unavailable" end
-    local steps = math.max(1, math.ceil(length / math.max(100, spacing or 750)))
-    local maximum = -math.huge
-    for index = 0, steps do
-      local fraction = index / steps
-      local coordinate = COORDINATE:NewFromVec3({ x = a.x + (b.x - a.x) * fraction, y = 0, z = a.z + (b.z - a.z) * fraction })
-      local height = landHeight(coordinate)
-      if not height then return nil, nil, "terrain-height-unavailable" end
-      maximum = math.max(maximum, height)
+  local function resolveEgressZone(definition)
+    if not definition or not definition.EgressZoneKey then return nil end
+    if definition.EgressZoneKey == "RECON_01" then
+      return ZONE and ZONE:FindByName(ph1.Objects.ReconZones[1]) or nil
+    elseif definition.EgressZoneKey == "RECON_02" then
+      return ZONE and ZONE:FindByName(ph1.Objects.ReconZones[2]) or nil
+    elseif definition.EgressZoneKey == "RECON_03" then
+      return ZONE and ZONE:FindByName(ph1.Objects.ReconZones[3]) or nil
     end
-    return maximum, length
-  end
-
-  local function altitudeFeetForTerrain(maximumTerrainMeters, clearanceMeters)
-    if not maximumTerrainMeters then return nil end
-    return math.ceil(((maximumTerrainMeters + clearanceMeters) * 3.280839895) / 100) * 100
+    return nil
   end
 
   local function applyVerticalHelicopterOption(flightgroup, groupName)
@@ -106,7 +96,7 @@ else
     local definition = ph1.ActiveDefinition
     if not runtime or not definition or not runtime.BoundGroupNames[groupName] then return false end
     if runtime.FinalDespawnArmed ~= true or runtime.ObjectiveSatisfied ~= true or runtime.RTBObserved ~= true then return false end
-    if not definition.NativeTerminal or not runtime.NativeStates or runtime.NativeStates[definition.NativeTerminal] ~= true then return false end
+    if not definition.NativeTerminal or not runtime.NativeStates or not runtime.NativeStates[definition.NativeTerminal] then return false end
     if not groupCompletedFinalLanding(runtime, groupName) or groupHasPhysicalLoss(runtime, groupName) then return false end
     return true
   end
@@ -191,70 +181,6 @@ else
     return true
   end
 
-  function routing:BuildReconProfile(logResult)
-    local airbase = cfg.Airbase or (AIRBASE and AIRBASE:FindByName(cfg.AirbaseName))
-    if not airbase then return false, "Jalalabad airbase unavailable" end
-    local coordinates = { airbase:GetCoordinate() }
-    for _, name in ipairs(ph1.Objects.ReconZones) do
-      local zone = ZONE and ZONE:FindByName(name) or nil
-      if not zone then return false, "missing RECON zone: " .. tostring(name) end
-      coordinates[#coordinates + 1] = zone:GetCoordinate()
-    end
-    coordinates[#coordinates + 1] = ZONE:FindByName(ph1.Objects.ReconZones[2]):GetCoordinate()
-    coordinates[#coordinates + 1] = ZONE:FindByName(ph1.Objects.ReconZones[1]):GetCoordinate()
-    coordinates[#coordinates + 1] = airbase:GetCoordinate()
-
-    local profile = { TotalRouteMeters = 0, MaximumTerrainMeters = -math.huge, LegDistances = {}, LegTerrain = {}, SpeedKnots = 80 }
-    for index = 1, #coordinates - 1 do
-      local terrain, length, err = sampleLeg(coordinates[index], coordinates[index + 1], ph1.Limits.TerrainSampleSpacingMeters)
-      if not terrain then return false, "RECON terrain scan failed: " .. tostring(err) end
-      profile.LegDistances[index], profile.LegTerrain[index] = length, terrain
-      profile.TotalRouteMeters = profile.TotalRouteMeters + length
-      profile.MaximumTerrainMeters = math.max(profile.MaximumTerrainMeters, terrain)
-    end
-    profile.AltitudeFeet = altitudeFeetForTerrain(profile.MaximumTerrainMeters, ph1.Limits.ReconClearanceAGLMeters)
-    profile.MissionRangeNM = math.max(20, math.ceil(profile.TotalRouteMeters / 2 / 1852) + 5)
-    self.ReconProfile = profile
-    ph1.Tests.OH58D_RECON.MissionRangeNM = profile.MissionRangeNM
-    if logResult then
-      log(string.format("RECON_PROFILE READY route=%.0fm maxTerrain=%.0fm altitude=%dft_ASL missionRange=%dNM recovery=03->02->01->Jalalabad fuelLimit=telemetry-only",
-        profile.TotalRouteMeters, profile.MaximumTerrainMeters, profile.AltitudeFeet, profile.MissionRangeNM))
-    end
-    return true, nil, profile
-  end
-
-  function routing:BuildCASRecoveryProfile(logResult)
-    local airbase = cfg.Airbase or (AIRBASE and AIRBASE:FindByName(cfg.AirbaseName))
-    local casZone = ZONE and ZONE:FindByName(ph1.Objects.CASZone) or nil
-    local egressZone = ZONE and ZONE:FindByName(ph1.Objects.ReconZones[1]) or nil
-    if not airbase or not casZone or not egressZone then
-      return false, "CAS recovery airbase/zone unavailable"
-    end
-
-    local points = { casZone:GetCoordinate(), egressZone:GetCoordinate(), airbase:GetCoordinate() }
-    local profile = {
-      TotalRouteMeters = 0,
-      MaximumTerrainMeters = -math.huge,
-      SpeedKnots = ph1.Limits.RecoverySpeedKnots,
-      EgressCoordinate = egressZone:GetCoordinate(),
-      EgressZoneName = egressZone:GetName()
-    }
-    for index = 1, #points - 1 do
-      local terrain, length, err = sampleLeg(points[index], points[index + 1], ph1.Limits.TerrainSampleSpacingMeters)
-      if not terrain then return false, "CAS recovery terrain scan failed: " .. tostring(err) end
-      profile.TotalRouteMeters = profile.TotalRouteMeters + length
-      profile.MaximumTerrainMeters = math.max(profile.MaximumTerrainMeters, terrain)
-    end
-    profile.AltitudeFeet = altitudeFeetForTerrain(profile.MaximumTerrainMeters, ph1.Limits.RecoveryClearanceAGLMeters)
-    self.CASRecoveryProfile = profile
-    if logResult then
-      log(string.format("CAS_RECOVERY_PROFILE READY route=CAS->%s->Jalalabad distance=%.0fm maxTerrain=%.0fm clearance=%dm altitude=%dft_ASL speed=%dkt authority=AUFTRAG:SetMissionEgressCoord",
-        profile.EgressZoneName, profile.TotalRouteMeters, profile.MaximumTerrainMeters,
-        ph1.Limits.RecoveryClearanceAGLMeters, profile.AltitudeFeet, profile.SpeedKnots))
-    end
-    return true, nil, profile
-  end
-
   function routing:ConfigureMission(testId, mission, definition)
     if not mission or not definition then return false, "mission/definition unavailable" end
 
@@ -270,21 +196,24 @@ else
         tostring(testId), tostring(definition.TacticalFormation), tostring(formation)))
     end
 
-    if definition.RecoveryProfile == "CAS_MOUNTAIN_CORRIDOR" then
-      local profile = self.CASRecoveryProfile
-      if not profile then
-        local ready, reason, built = self:BuildCASRecoveryProfile(false)
-        if not ready then return false, reason end
-        profile = built
-      end
+    if definition.ReturnAltitudePolicy == "MATCH_INGRESS" then
+      local egressZone = resolveEgressZone(definition)
+      local ingressAltitude = tonumber(mission.OMWIngressAltitudeFeet or definition.FlightAltitudeFeet)
+      local ingressSpeed = tonumber(mission.OMWIngressSpeedKnots or definition.FlightSpeedKnots)
+      if not egressZone then return false, "fixed-altitude egress zone unavailable: " .. tostring(definition.EgressZoneKey) end
+      if not ingressAltitude or not ingressSpeed then return false, "fixed ingress altitude/speed unavailable" end
       if not mission.SetMissionEgressCoord then return false, "AUFTRAG:SetMissionEgressCoord unavailable" end
+
       local ok, result = pcall(function()
-        return mission:SetMissionEgressCoord(profile.EgressCoordinate, profile.AltitudeFeet, profile.SpeedKnots)
+        return mission:SetMissionEgressCoord(egressZone:GetCoordinate(), ingressAltitude, ingressSpeed)
       end)
-      if not ok or not result then return false, "CAS recovery egress configuration failed" end
-      log(string.format("MOUNTAIN_RECOVERY_APPLIED testId=%s egress=%s altitude=%dft_ASL speed=%dkt clearance=%dm authority=AUFTRAG:SetMissionEgressCoord",
-        tostring(testId), tostring(profile.EgressZoneName), profile.AltitudeFeet, profile.SpeedKnots,
-        ph1.Limits.RecoveryClearanceAGLMeters))
+      if not ok or not result then return false, "MOOSE fixed-altitude egress configuration failed" end
+
+      mission.OMWEgressAltitudeFeet = ingressAltitude
+      mission.OMWEgressSpeedKnots = ingressSpeed
+      mission.OMWEgressZoneName = egressZone:GetName()
+      log(string.format("RETURN_ALTITUDE_MATCH_APPLIED testId=%s ingressAltitude=%dft egressAltitude=%dft equal=true ingressSpeed=%dkt egressSpeed=%dkt egress=%s terrainAltitudeCalculation=false authority=AUFTRAG:SetMissionEgressCoord",
+        tostring(testId), ingressAltitude, ingressAltitude, ingressSpeed, ingressSpeed, mission.OMWEgressZoneName))
     end
 
     return true
@@ -304,8 +233,20 @@ else
   end
 
   function routing:ValidateTestReady(testId, logResult)
-    if testId == "OH58D_RECON" then return self:BuildReconProfile(logResult) end
-    if testId == "AH64D_CAS" then return self:BuildCASRecoveryProfile(logResult) end
+    local definition = ph1.Tests[testId]
+    if definition and definition.ReturnAltitudePolicy == "MATCH_INGRESS" then
+      local egressZone = resolveEgressZone(definition)
+      if not egressZone then return false, "fixed-altitude egress zone unavailable" end
+      if not definition.FlightAltitudeFeet or not definition.FlightSpeedKnots then
+        return false, "fixed flight altitude/speed unavailable"
+      end
+      if logResult then
+        log(string.format("FIXED_FLIGHT_PROFILE READY testId=%s ingressAltitude=%dft returnAltitude=%dft equal=true speed=%dkt egress=%s terrainAltitudeCalculation=false",
+          tostring(testId), definition.FlightAltitudeFeet, definition.FlightAltitudeFeet,
+          definition.FlightSpeedKnots, egressZone:GetName()))
+      end
+      return true
+    end
     if testId == "UH60_TROOP" or testId == "UH60_ABORT" then
       local pickup, deploy = ZONE:FindByName(ph1.Objects.UHLoadZone), ZONE:FindByName(ph1.Objects.UHUnloadZone)
       if not pickup or not deploy then return false, "UH-60 pickup/deploy zones unavailable" end
@@ -371,24 +312,21 @@ else
     ph1.Runtime.ReleaseLogged = false
     ph1.Runtime.ReleaseStablePolls = 0
 
-    if ph1.ActiveTestId == "OH58D_RECON" and ph1.ActiveKind == "AUFTRAG" then
-      local zone1 = ZONE:FindByName(ph1.Objects.ReconZones[1])
-      local profile = self.ReconProfile
-      local egressUID = owner.GetGroupEgressWaypointUID and owner:GetGroupEgressWaypointUID(flightgroup) or nil
-      if not zone1 or not profile or not egressUID or not flightgroup.AddWaypoint then
-        ph1.Runtime.HardFailure = "recovery-corridor-MOOSE-waypoint-unavailable"
+    local definition = ph1.ActiveDefinition
+    if definition.ReturnAltitudePolicy == "MATCH_INGRESS" then
+      local ingressAltitude = tonumber(definition.FlightAltitudeFeet)
+      local configuredEgressAltitude = ph1.ActiveObject and tonumber(ph1.ActiveObject.OMWEgressAltitudeFeet) or nil
+      if not ingressAltitude or configuredEgressAltitude ~= ingressAltitude then
+        ph1.Runtime.HardFailure = "return-altitude-does-not-match-ingress-" .. tostring(groupName)
+        log(string.format("ERROR RETURN_ALTITUDE_BIND_ASSERT testId=%s group=%s ingress=%s egress=%s equal=false",
+          tostring(ph1.ActiveTestId), tostring(groupName), tostring(ingressAltitude), tostring(configuredEgressAltitude)))
         return
       end
-      local ok, waypoint = pcall(function()
-        return flightgroup:AddWaypoint(zone1:GetCoordinate(), profile.SpeedKnots, egressUID, profile.AltitudeFeet, false)
-      end)
-      if not ok or not waypoint then
-        ph1.Runtime.HardFailure = "recovery-corridor-add-waypoint-failed"
-        return
-      end
-      if flightgroup.UpdateRoute then flightgroup:UpdateRoute() end
-      ph1.Runtime.RecoveryCorridorApplied = true
-      log("RECOVERY_CORRIDOR_APPLIED group=" .. groupName .. " route=RECON_03->RECON_02->RECON_01->Jalalabad MOOSE=SetMissionEgressCoord/AddWaypoint/UpdateRoute")
+      ph1.Runtime.ReturnAltitudeMatchedGroups = ph1.Runtime.ReturnAltitudeMatchedGroups or {}
+      ph1.Runtime.ReturnAltitudeMatchedGroups[groupName] = true
+      log(string.format("RETURN_ALTITUDE_BIND_ASSERT testId=%s group=%s ingressAltitude=%dft egressAltitude=%dft equal=true egress=%s terrainAltitudeCalculation=false",
+        tostring(ph1.ActiveTestId), tostring(groupName), ingressAltitude, configuredEgressAltitude,
+        tostring(ph1.ActiveObject and ph1.ActiveObject.OMWEgressZoneName)))
     end
 
     if SCHEDULER then
@@ -401,5 +339,5 @@ else
     end
   end
 
-  log("READY publicMOOSE=true routeAuthority=AUFTRAG+FLIGHTGROUP verticalHelicopterOps=FLIGHTGROUP:SetOptionPreferVertical(advisory) tacticalFormation=AUFTRAG:SetFormation(EchelonRight300) mountainRecovery=AUFTRAG:SetMissionEgressCoord terrainClearance=sampled-ASL terminalAircraftLoss=IMMEDIATE_FAIL expectedFinalDespawn=NON_LOSS_WAIT_FOR_MOOSE_LEGION_RETURN assetRelease=LEGION:OnAfterLegionAssetReturned fuel=empirical-telemetry selfStoppingSchedulers=true")
+  log("READY publicMOOSE=true routeAuthority=AUFTRAG+FLIGHTGROUP verticalHelicopterOps=FLIGHTGROUP:SetOptionPreferVertical(advisory) tacticalFormation=AUFTRAG:SetFormation(EchelonRight300) rotorReturnAltitude=AUFTRAG:SetMissionEgressCoord(MATCH_INGRESS) terrainAltitudeCalculation=false terminalAircraftLoss=IMMEDIATE_FAIL expectedFinalDespawn=NON_LOSS_WAIT_FOR_MOOSE_LEGION_RETURN assetRelease=LEGION:OnAfterLegionAssetReturned fuel=empirical-telemetry selfStoppingSchedulers=true")
 end
