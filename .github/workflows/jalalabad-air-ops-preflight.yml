@@ -42,8 +42,9 @@ jobs:
           $bundle = './mission/tests/jalalabad-air-operations/dist/OMW_AirOps_Jalalabad.lua'
           if (-not (Test-Path -LiteralPath $bundle -PathType Leaf)) { throw 'Generated bundle missing.' }
           $content = Get-Content -LiteralPath $bundle -Raw -Encoding UTF8
-          if ($content -notmatch 'BuilderVersion: JBAD-AIR-OPS-PHASE1-14-MOOSE-FIRST') { throw 'Unexpected builder version.' }
+          if ($content -notmatch 'BuilderVersion: JBAD-AIR-OPS-PHASE1-15-MOOSE-FIRST') { throw 'Unexpected builder version.' }
           if ($content -notmatch 'InitializationSmoke: synchronous-name-contract/deferred-airwing-hook/immediate-f10-menu') { throw 'Initialization smoke header missing.' }
+          if ($content -notmatch 'MissionObjectContract: canonical-OMW_Jalalabad_AirOps_Phase1_Test') { throw 'Canonical Mission Editor object contract header missing.' }
 
       - name: Execute Phase 1 initialization smoke test
         run: lua5.4 ./tools/test-jalalabad-phase1-init-smoke.lua
