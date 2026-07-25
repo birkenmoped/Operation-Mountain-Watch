@@ -25,7 +25,10 @@ local function addStaticNames(cfg)
 end
 
 local function missionTemplate(name)
-  return _DATABASE and _DATABASE.Templates and _DATABASE.Templates.Groups and _DATABASE.Templates.Groups[name] or nil
+  if not name or not _DATABASE or not _DATABASE.GetGroupTemplate then return nil end
+  local ok, template = pcall(function() return _DATABASE:GetGroupTemplate(name) end)
+  if not ok or type(template) ~= "table" then return nil end
+  return template
 end
 
 local function resolveClientParking(cfg, spots)
@@ -33,8 +36,8 @@ local function resolveClientParking(cfg, spots)
   local ok = true
   for _, key in ipairs({ "OH58D", "AH64D", "CH47" }) do
     for _, groupName in ipairs((cfg.PlayerGroups.Required and cfg.PlayerGroups.Required[key]) or {}) do
-      local entry = missionTemplate(groupName)
-      local unit = entry and entry.Template and entry.Template.units and entry.Template.units[1] or nil
+      local template = missionTemplate(groupName)
+      local unit = template and template.units and template.units[1] or nil
       local nearestId, nearestDistance
       if unit then
         local point = { x = unit.x or 0, z = unit.y or unit.z or 0 }
@@ -68,8 +71,8 @@ local function validateTemplatesOffParking(cfg, spots)
     cfg.Templates.UH60MedevacCover,
     cfg.Templates.CH47HeavyLift
   }) do
-    local entry = missionTemplate(templateName)
-    for index, unit in ipairs(entry and entry.Template and entry.Template.units or {}) do
+    local template = missionTemplate(templateName)
+    for index, unit in ipairs(template and template.units or {}) do
       local point = { x = unit.x or 0, z = unit.y or unit.z or 0 }
       local nearestId, nearestDistance
       for _, spot in ipairs(spots) do
@@ -184,7 +187,7 @@ local function main()
   cfg.ParkingPoolTerminalIDs = poolSets
   cfg.ParkingPoolsOK = ok and counts.OH58D == 5 and counts.AH64D == 3 and counts.UH60 == 3 and counts.CH47 == 8
   if cfg.ParkingPoolsOK then
-    log("RESULT: PASS pools=OH58D:5/AH64D:3/UH60:3/CH47:8 templatesOffParking=true poolOverlap=0 clientOverlap=0 blacklistOverlap=0 staticClearance=PASS")
+    log("RESULT: PASS pools=OH58D:5/AH64D:3/UH60:3/CH47:8 templatesOffParking=true poolOverlap=0 clientOverlap=0 blacklistOverlap=0 staticClearance=PASS templateLookup=DATABASE:GetGroupTemplate")
   else
     log(string.format("RESULT: FAIL pools=OH58D:%s/AH64D:%s/UH60:%s/CH47:%s AIRWING_START_BLOCKED=true", tostring(counts.OH58D), tostring(counts.AH64D), tostring(counts.UH60), tostring(counts.CH47)))
   end
