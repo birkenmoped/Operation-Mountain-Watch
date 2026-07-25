@@ -18,6 +18,14 @@ Dynamic persistent COIN multiplayer campaign for DCS World on the Afghanistan ma
 - MOOSE CSAR
 - Custom campaign state, persistence, red-force director, and virtualization modules
 
+## Verbindliche MOOSE-First-Entwicklungsrichtlinie
+
+Vor der Entwicklung eigener Lua-Funktionen muss zuerst geprüft werden, ob MOOSE die benötigte Funktionalität bereits bereitstellt. Vorhandene MOOSE-Funktionen sind vorrangig zu verwenden; eine Eigenentwicklung muss technisch begründet und dokumentiert werden.
+
+- [`Verbindliche MOOSE-First-Entwicklungsrichtlinie`](docs/26-moose-first-development-policy.md)
+
+Diese Prüfung ist ein verpflichtender Bestandteil jeder Lua-Implementierung und jedes Code-Reviews im Projekt.
+
 ## Status
 
 Early design and prototyping. No gameplay release exists yet.
@@ -56,6 +64,7 @@ Current air-operations documents:
 - [`Jalalabad: Parking-, Template-, Static- und MEDEVAC-Modell`](docs/23-jalalabad-parking-template-and-medevac-model.md)
 - [`Jalalabad: validierte CH-47-Static-Parkplatzreservierungen`](docs/24-jalalabad-ch47-static-parking-reservations.md)
 - [`Jalalabad: finale Validierung und operative Grundbaseline`](docs/25-jalalabad-final-validation-and-operational-baseline.md)
+- [`Verbindliche MOOSE-First-Entwicklungsrichtlinie`](docs/26-moose-first-development-policy.md)
 
 Für Jalalabad sind Dokumente 21, 23, 24 und 25 sowie die zugehörigen `expected/`- und `results/`-Dateien autoritativ. Ältere allgemeine Zwischenwerte wie vier Spielerplätze je Typ, sechs UH-60, kein CH-47, 13/15 Runtime-Parkplätze oder eine pauschale Ablehnung von Statics auf Parking-Nodes sind aufgehoben.
 
