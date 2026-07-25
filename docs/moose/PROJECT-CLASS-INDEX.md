@@ -22,12 +22,15 @@ Die Statusdefinitionen stehen in [`README.md`](README.md).
 | `Ops.Squadron` | `SQUADRON` | `VALIDATED` | Vier typgebundene Jalalabad-Bestände mit Gruppierung, Skill und Mission Capabilities | Jalalabad Complete Node PASS |
 | `Functional.Warehouse` | `WAREHOUSE` | `VALIDATED` über `AIRWING` | Warehouse-Funktion und physische Ressourcenbasis des AIRWING | Log bestätigt gestartetes `WAREHOUSE / AIRWING` |
 | `Ops.Auftrag` | `AUFTRAG` | `IN_USE_PARTIAL` | Missionstypen und Capabilities für RECON, CAS, Transport, Landung und Escort | Capability-/Payload-Konfiguration validiert; taktische Auftragserzeugung offen |
-| `Ops.Commander` | `COMMANDER` | `VALIDATED` für Grundstart | Blue Commander erstellen, AIRWING anbinden und ohne spontane Missionen starten | Jalalabad Complete Node PASS |
+| `Ops.FlightGroup` | `FLIGHTGROUP` | `IN_USE_PARTIAL` | Gebundene UH-60-Laufzeitgruppe, Vertikaloption, RTB-, Lande- und Terminalereignisse | Operativer Transportpfad beobachtet; vollständige PASS-Abnahme offen |
+| `Ops.OpsTransport` | `OPSTRANSPORT` | `IN_USE_PARTIAL` | UH-60-Truppentransport mit getrennten Pickup-/Embark- und Deploy-/Disembark-Zonen | Native Zustände bis `DELIVERED` beobachtet; End-to-End-Abnahme offen |
 | `Core.Scheduler` | `SCHEDULER` | `VALIDATED` | Verzögerte, geordnete Konstruktion und Validierung der Jalalabad-Komponenten | Jalalabad-Bundle ohne relevanten Timerfehler |
+| `Core.Spawn` | `SPAWN` | `IN_USE_PARTIAL` | CAS-Ziel und transportierbare Infanterie aus Mission-Editor-Templates erzeugen | Runtime-Spawns beobachtet; gesamter Phase-1-Ablauf offen |
 | `Wrapper.Group` | `GROUP` | `VALIDATED` | Late-Activation-Templates finden und Einheiten prüfen; Payloadvorlagen an AIRWING übergeben | Squadron-Konstruktion und Payloadregistrierung bestanden |
 | `Wrapper.Unit` | `UNIT` | `VALIDATED` | Typnamen und Namen von Template-Einheiten prüfen; optionaler Warehouse-Anker | Jalalabad-Validatoren bestanden |
 | `Wrapper.Static` | `STATIC` | `VALIDATED` | Warehouse-Anker und sichtbare Luftfahrzeug-Statics finden und validieren | 20/20 Statics und Warehouse-Anker bestätigt |
 | `Core.Zone` | `ZONE` | `VALIDATED` | Benannte Mission-Editor-Zonen finden und Vollständigkeit prüfen | 11/11 Zonen bestätigt |
+| `Core.Zone` | `ZONE_RADIUS` | `IN_USE_PARTIAL` | Kleine Runtime-Landezonen an missionsseitig festgelegten Zonenmittelpunkten | Quellstand und Syntax geprüft; korrigierter DCS-Lauf offen |
 | MOOSE Template Database | `_DATABASE` | `INTERNAL_RESTRICTED` | Unbesetzte Client- und Late-Activation-Gruppen in der Template-Datenbank validieren | Nur für Diagnose/Validierung; keine allgemeine Produktions-API |
 
 ## 3. Implizit verwendete Basisklassen
@@ -47,8 +50,6 @@ Diese Einträge gelten nicht automatisch als praktisch vollständig validiert. V
 
 | Modul / Klasse | Global | Status | Geplanter Einsatz | Voraussetzung vor Implementierung |
 |---|---|---|---|---|
-| `Ops.FlightGroup` | `FLIGHTGROUP` | `PLANNED` | Laufzeitsteuerung gebundener Hubschrauber und Fluggruppen, Optionen, Missions- und Transportereignisse | Signaturen, Bindung durch AIRWING und FSM-Callbacks prüfen |
-| `Ops.OpsTransport` | `OPSTRANSPORT` | `PLANNED` | Truppen- und Frachttransporte zwischen Lade- und Entladezonen | Carrier-/Cargo-Modell und Failure-/Success-Zustände in DCS validieren |
 | `Ops.ArmyGroup` | `ARMYGROUP` | `PLANNED` | Laufzeitsteuerung von Bodengruppen, insbesondere transportierbarer oder entpackter Gruppen | Verhalten bei Transport, Feindkontakt, Route und Festfahren prüfen |
 | `Ops.Brigade` | `BRIGADE` | `PLANNED` | Bestands- und Einsatzmanager größerer Bodeneinheiten | Zusammenspiel mit CampaignState und COMMANDER klären |
 | `Ops.CTLD` | `CTLD` | `PLANNED` | Spielerlogistik, Truppen und Fracht | Abgrenzung zu OPSTRANSPORT und CampaignState festlegen |
@@ -56,7 +57,6 @@ Diese Einträge gelten nicht automatisch als praktisch vollständig validiert. V
 | `Functional.Rat` | `RAT` | `PLANNED` | Ausschließlich nicht persistenter, atmosphärischer Hintergrundverkehr | Kein Ressourcen- oder Bestandsübergang; Spawnlimits testen |
 | `Core.Event` | `EVENT` | `PLANNED` | Zentrale Reaktion auf Birth, Dead, Crash, Land, Takeoff und weitere DCS-Ereignisse | Eventdaten und Mehrfachmeldungen versionsbezogen testen |
 | `Core.Set` | `SET_GROUP`, weitere Sets | `PLANNED` | Dynamische Mengen von Gruppen, Zonen oder Objekten | Filter, Aktualisierung und Performance prüfen |
-| `Core.Spawn` | `SPAWN` | `PLANNED` | Dynamisches Erzeugen projektgesteuerter Gruppen, soweit AIRWING/BRIGADE dies nicht übernehmen | Vor Nutzung prüfen, ob OPS-/Warehouse-Assets geeigneter sind |
 
 ## 5. Kandidaten für spätere Architekturentscheidungen
 
