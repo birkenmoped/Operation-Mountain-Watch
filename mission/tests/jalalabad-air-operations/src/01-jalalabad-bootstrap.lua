@@ -1,0 +1,223 @@
+-- Operation Mountain Watch - Jalalabad Air Operations bootstrap
+-- Corrected complete-node assembly based on the 2011 ramp snapshot and DCS parking limits.
+OMW = OMW or {}
+OMW.AirOps = OMW.AirOps or {}
+
+local TAG = "[OMW][AirOps.JBAD]"
+local function log(msg) env.info(TAG .. " " .. tostring(msg)) end
+
+local function numbered(prefix, count)
+  local result = {}
+  for index = 1, count do
+    result[#result + 1] = string.format("%s_%02d", prefix, index)
+  end
+  return result
+end
+
+OMW.AirOps.Jalalabad = {
+  Status = "ASSEMBLING_CORRECTED_RAMP",
+  AirbaseName = AIRBASE.Afghanistan and AIRBASE.Afghanistan.Jalalabad or "Jalalabad",
+  WarehouseName = "WH_AIR_US_JALALABAD",
+  AirwingName = "AW_US_JALALABAD",
+
+  -- Logical campaign inventory. This is not a demand for one physical parking
+  -- position per airframe. Aircraft not represented by an active group or a
+  -- visible static remain in the numerical reserve.
+  Inventory = {
+    OH58D = 24,
+    AH64D = 8,
+    UH60 = 8,
+    CH47 = 8
+  },
+
+  -- Minimum aircraft visible in the supplied February/March 2011 satellite
+  -- snapshot. This is evidence for local presence, not the complete inventory.
+  ObservedRampMinimum = {
+    OH58D = 13,
+    AH64D = 7,
+    UH60 = 7,
+    CH47 = 7,
+    MI8 = 1,
+    UH1 = 1
+  },
+
+  -- Mi-8 and UH-1 are recorded as observed traffic but are not charged to the
+  -- US Task Force Shooter campaign inventory until their operator is resolved.
+  ObservedExternalOrTransient = {
+    MI8 = 1,
+    UH1 = 1
+  },
+
+  Parking = {
+    ComparableHelicopterPositions = 36,
+
+    -- Client positions are reserved at runtime so MOOSE must not use them for
+    -- dynamic AI spawning.
+    CorePlayerPositions = 6,
+    OptionalUH60LPlayerPositions = 2,
+
+    -- Seven aircraft are placed in the Mission Editor only as Late Activation
+    -- authoring templates. They are never activated and therefore do not consume
+    -- seven runtime parking positions.
+    TemplateAuthoringAircraft = 7,
+
+    -- The global support limit allows at most four AI aircraft at once. Reserve
+    -- four suitable free runtime positions, including at least two CH-47-capable
+    -- positions and at least two small/medium helicopter positions.
+    DynamicAIParkingReserve = 4,
+    CoreRuntimeParkingDemand = 10,
+    RuntimeParkingDemandWithUH60L = 12,
+
+    -- The C01-C14 heavy-lift ramp has no credible free-placement alternative for
+    -- all visible Chinooks. Five CH-47 statics plus two Client aircraft consume
+    -- seven visual ramp positions and leave seven visual positions available.
+    -- Four of the five statics align with actual DCS parking nodes in the current
+    -- mission and those terminal IDs are deliberately blacklisted for AI spawning.
+    CH47VisualRampPositions = 14,
+    CH47StaticAircraft = 5,
+    CH47PlayerPositions = 2,
+    CH47RemainingVisualPositions = 7,
+    CH47DCSNodeReservations = 4,
+    StaticParkingReservations = {
+      STATIC_AIR_US_JBAD_CH47_01 = 49,
+      STATIC_AIR_US_JBAD_CH47_02 = 37,
+      STATIC_AIR_US_JBAD_CH47_03 = 23,
+      STATIC_AIR_US_JBAD_CH47_04 = 35
+    },
+    StaticParkingBlacklist = { 23, 35, 37, 49 },
+
+    Model = "CLIENT_RESERVED_DYNAMIC_AI_POOL_DEDICATED_CH47_STATIC_PARKING_LATE_ACTIVATION_TEMPLATES"
+  },
+
+  -- Visible caps are deliberately lower than the inventory and lower than the
+  -- 2011 snapshot. Most statics are free-placed. The four explicitly mapped
+  -- CH-47 parking nodes are intentional permanent static reservations and are
+  -- removed from the MOOSE parking pool through the blacklist above.
+  StaticCaps = {
+    OH58D = 7,
+    AH64D = 4,
+    UH60 = 4,
+    CH47 = 5
+  },
+
+  CorrectionPending = {
+    CH47 = true,
+    Reason = "CH-47 squadron and type consistency must be validated before final activation."
+  },
+
+  Limits = {
+    PlayerPerType = 2,
+    AIPerType = 4,
+    ConcurrentSupportMissions = 2,
+    AircraftPerMission = 2,
+    ConcurrentSupportAircraft = 4
+  },
+
+  Medevac = {
+    PackageSize = 2,
+    LeadAircraft = 1,
+    CoverAircraft = 1,
+    AllowSingleShip = false,
+    DCSGroupModel = "TWO_INDEPENDENT_SINGLE_SHIP_GROUPS",
+    CoordinationModel = "ONE_LOGICAL_MEDEVAC_PACKAGE"
+  },
+
+  Templates = {
+    OH58DRecon = "TPL_AIR_US_JBAD_OH58D_RECON_2SHIP",
+    AH64DCAS = "TPL_AIR_US_JBAD_AH64D_CAS_2SHIP",
+    UH60MedevacLead = "TPL_AIR_US_JBAD_UH60_MEDEVAC_LEAD_1SHIP",
+    UH60MedevacCover = "TPL_AIR_US_JBAD_UH60_MEDEVAC_COVER_1SHIP",
+    CH47HeavyLift = "TPL_AIR_US_JBAD_CH47_HEAVYLIFT_1SHIP"
+  },
+
+  SquadronNames = {
+    OH58D = "SQ_US_JBAD_OH58D_6_6_CAV",
+    AH64D = "SQ_US_JBAD_AH64D_B_1_10_AVN",
+    UH60 = "SQ_US_JBAD_UH60_UTILITY_MEDEVAC",
+    CH47 = "SQ_US_JBAD_CH47_HEAVYLIFT"
+  },
+
+  PlayerGroups = {
+    Required = {
+      OH58D = numbered("CLIENT_US_JBAD_OH58D", 2),
+      AH64D = numbered("CLIENT_US_JBAD_AH64D", 2),
+      CH47 = numbered("CLIENT_US_JBAD_CH47", 2)
+    },
+    Optional = {
+      UH60L = numbered("CLIENT_US_JBAD_UH60L", 2)
+    }
+  },
+
+  Statics = {
+    OH58D = numbered("STATIC_AIR_US_JBAD_OH58D", 7),
+    AH64D = numbered("STATIC_AIR_US_JBAD_AH64D", 4),
+    UH60 = numbered("STATIC_AIR_US_JBAD_UH60", 4),
+    CH47 = numbered("STATIC_AIR_US_JBAD_CH47", 5)
+  },
+
+  Zones = {
+    "ZONE_AIR_US_JBAD_STATIC_OH58D",
+    "ZONE_AIR_US_JBAD_STATIC_AH64D",
+    "ZONE_AIR_US_JBAD_STATIC_UH60",
+    "ZONE_AIR_US_JBAD_STATIC_CH47",
+    "ZONE_AIR_US_JBAD_MEDEVAC_READY",
+    "ZONE_AIR_US_JBAD_CH47_READY",
+    "ZONE_AIR_US_JBAD_HEAVYLIFT_LOAD",
+    "ZONE_AIR_US_JBAD_LOGISTICS_LOAD",
+    "ZONE_AIR_US_JBAD_LOGISTICS_UNLOAD",
+    "ZONE_AIR_US_JBAD_SLING_PICKUP",
+    "ZONE_AIR_US_JBAD_C130_UNLOAD"
+  },
+
+  DetectedTypes = {},
+  ParkingReservationsOK = false
+}
+
+local function validate()
+  local cfg = OMW.AirOps.Jalalabad
+  local airbase = AIRBASE:FindByName(cfg.AirbaseName)
+  if not airbase then
+    log("ERROR: Airbase not found: " .. tostring(cfg.AirbaseName))
+    return
+  end
+
+  log("Airbase OK: " .. airbase:GetName() .. " ID=" .. tostring(airbase:GetID()))
+
+  local anchor = STATIC:FindByName(cfg.WarehouseName, false) or UNIT:FindByName(cfg.WarehouseName)
+  if not anchor then
+    log("WAITING: Warehouse anchor missing: " .. cfg.WarehouseName)
+    return
+  end
+
+  local ok, result = pcall(function()
+    if airbase.SetParkingSpotBlacklist then
+      airbase:SetParkingSpotBlacklist(cfg.Parking.StaticParkingBlacklist)
+    end
+
+    local airwing = AIRWING:New(cfg.WarehouseName, cfg.AirwingName)
+    airwing:SetAirbase(airbase)
+    airwing:SetTakeoffCold()
+    airwing:SetSafeParkingOn()
+    return airwing
+  end)
+
+  if not ok or not result then
+    log("ERROR: AIRWING construction failed: " .. tostring(result))
+    return
+  end
+
+  cfg.Airbase = airbase
+  cfg.Airwing = result
+  log("AIRWING constructed and explicitly linked. Awaiting corrected complete-node assembly before Start().")
+  log("PARKING BLACKLIST: intentional CH-47 static reservations TerminalIDs=23,35,37,49; Client parking protected by SafeParking.")
+  log("RAMP MODEL: inventory=24/8/8/8 visibleCaps=7/4/4/5 clients=6+2optional dynamicAIReserve=4 runtimeDemand=10+2optional templateAircraft=7(non-runtime) CH47visual=14-5statics-2clients=7remaining.")
+end
+
+if SCHEDULER then
+  SCHEDULER:New(nil, validate, {}, 7)
+else
+  timer.scheduleFunction(function()
+    validate()
+    return nil
+  end, nil, timer.getTime() + 7)
+end

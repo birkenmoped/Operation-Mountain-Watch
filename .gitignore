@@ -24,3 +24,6 @@ Thumbs.db
 .env
 *.local.lua
 secrets/
+
+# Generated DCS test bundles
+mission/tests/**/dist/
