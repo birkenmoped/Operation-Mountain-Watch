@@ -21,16 +21,16 @@ Die Statusdefinitionen stehen in [`README.md`](README.md).
 | `Ops.Airwing` | `AIRWING` | `VALIDATED` | Lokaler Ressourcen- und Einsatzmanager für Jalalabad; Airbase-Zuordnung, Parking-Schutz, Squadrons und Payloads | Jalalabad Complete Node PASS |
 | `Ops.Squadron` | `SQUADRON` | `VALIDATED` | Vier typgebundene Jalalabad-Bestände mit Gruppierung, Skill und Mission Capabilities | Jalalabad Complete Node PASS |
 | `Functional.Warehouse` | `WAREHOUSE` | `VALIDATED` über `AIRWING` | Warehouse-Funktion und physische Ressourcenbasis des AIRWING | Log bestätigt gestartetes `WAREHOUSE / AIRWING` |
-| `Ops.Auftrag` | `AUFTRAG` | `IN_USE_PARTIAL` | Missionstypen und Capabilities für RECON, CAS, Transport, Landung und Escort | Capability-/Payload-Konfiguration validiert; taktische Auftragserzeugung offen |
-| `Ops.FlightGroup` | `FLIGHTGROUP` | `IN_USE_PARTIAL` | Gebundene UH-60-Laufzeitgruppe, Vertikaloption, RTB-, Lande- und Terminalereignisse | Operativer Transportpfad beobachtet; vollständige PASS-Abnahme offen |
-| `Ops.OpsTransport` | `OPSTRANSPORT` | `IN_USE_PARTIAL` | UH-60-Truppentransport mit getrennten Pickup-/Embark- und Deploy-/Disembark-Zonen | Native Zustände bis `DELIVERED` beobachtet; End-to-End-Abnahme offen |
+| `Ops.Auftrag` | `AUFTRAG` | `IN_USE_PARTIAL` | Missionstypen und Capabilities für RECON, CAS, Slingload-Transport, Landung und Escort. `NewCARGOTRANSPORT` bleibt die native Autorität; ein dünner Adapter bindet wegen eines im gepinnten und aktuellen Develop-Quellstand bestätigten Verschachtelungsfehlers `groupId`/`zoneId` an die innere DCS-`CargoTransportation`-Task. | UH-60-PASS; CH-47-Fehllauf und Quellursache dokumentiert; korrigierter CH-47-DCS-Lauf offen |
+| `Ops.FlightGroup` | `FLIGHTGROUP` | `IN_USE_PARTIAL` | Gebundene UH-60-/CH-47-Laufzeitgruppe, Vertikaloption, RTB-, Lande- und Terminalereignisse | UH-60-End-to-End-PASS; CH-47-Verlustpfad beobachtet |
+| `Ops.OpsTransport` | `OPSTRANSPORT` | `IN_USE_PARTIAL` | UH-60-Truppentransport mit getrennten Pickup-/Embark- und Deploy-/Disembark-Zonen | UH-60-End-to-End-PASS; weitere Transportvarianten offen |
 | `Core.Scheduler` | `SCHEDULER` | `VALIDATED` | Verzögerte, geordnete Konstruktion und Validierung der Jalalabad-Komponenten | Jalalabad-Bundle ohne relevanten Timerfehler |
 | `Core.Spawn` | `SPAWN` | `IN_USE_PARTIAL` | CAS-Ziel und transportierbare Infanterie aus Mission-Editor-Templates erzeugen | Runtime-Spawns beobachtet; gesamter Phase-1-Ablauf offen |
 | `Wrapper.Group` | `GROUP` | `VALIDATED` | Late-Activation-Templates finden und Einheiten prüfen; Payloadvorlagen an AIRWING übergeben | Squadron-Konstruktion und Payloadregistrierung bestanden |
 | `Wrapper.Unit` | `UNIT` | `VALIDATED` | Typnamen und Namen von Template-Einheiten prüfen; optionaler Warehouse-Anker | Jalalabad-Validatoren bestanden |
-| `Wrapper.Static` | `STATIC` | `VALIDATED` | Warehouse-Anker und sichtbare Luftfahrzeug-Statics finden und validieren | 20/20 Statics und Warehouse-Anker bestätigt |
-| `Core.Zone` | `ZONE` | `VALIDATED` | Benannte Mission-Editor-Zonen finden und Vollständigkeit prüfen | 11/11 Zonen bestätigt |
-| `Core.Zone` | `ZONE_RADIUS` | `IN_USE_PARTIAL` | Kleine Runtime-Landezonen an missionsseitig festgelegten Zonenmittelpunkten | Quellstand und Syntax geprüft; korrigierter DCS-Lauf offen |
+| `Wrapper.Static` | `STATIC` | `VALIDATED` | Warehouse-Anker, sichtbare Luftfahrzeug-Statics und CH-47-Slingload finden und validieren | 20/20 Statics und Warehouse-Anker bestätigt; Slingload-Aufnahme beobachtet |
+| `Core.Zone` | `ZONE` | `VALIDATED` | Benannte Mission-Editor-Zonen finden und Vollständigkeit prüfen | 11/11 Zonen bestätigt; CH-47-Zielzone besitzt die für DCS erforderliche ME-Zonen-ID |
+| `Core.Zone` | `ZONE_RADIUS` | `IN_USE_PARTIAL` | Kleine Runtime-Landezonen an missionsseitig festgelegten Zonenmittelpunkten | UH-60-End-to-End-PASS |
 | MOOSE Template Database | `_DATABASE` | `INTERNAL_RESTRICTED` | Unbesetzte Client- und Late-Activation-Gruppen in der Template-Datenbank validieren | Nur für Diagnose/Validierung; keine allgemeine Produktions-API |
 
 ## 3. Implizit verwendete Basisklassen
@@ -79,18 +79,19 @@ Kandidaten dürfen nicht ohne den verbindlichen Rechercheweg als Architekturstan
 | `Ops.Fleet` / `Ops.NavyGroup` | `NOT_USED` | Der aktuelle Afghanistan-Kampagnenumfang enthält keine operative Seestreitkraft. |
 | `Ops.Airboss` | `NOT_USED` | Keine Trägeroperationen im aktuellen Kampagnenscope. |
 
-## 7. Direkte DCS-API-Nutzung
+## 7. Direkte DCS-API- und Taskstruktur-Nutzung
 
-Direkte DCS-API-Aufrufe sind keine MOOSE-Module und werden deshalb getrennt betrachtet.
+Direkte DCS-API-Aufrufe und DCS-Taskstrukturen sind keine MOOSE-Module und werden deshalb getrennt betrachtet.
 
 Aktuell bekannte Fälle:
 
-| API | Verwendung | Bewertung |
+| API / Struktur | Verwendung | Bewertung |
 |---|---|---|
 | `timer.scheduleFunction` | Fallback, falls `SCHEDULER` beim Laden nicht verfügbar ist | Nur als dokumentierter Fallback zulässig |
 | `env.info` | Projektlogging | Zulässig; MOOSE-Logging kann ergänzend geprüft werden |
 | `coalition.side.BLUE` | Konstruktorparameter für `COMMANDER` | DCS-Konstante, von MOOSE erwartet |
 | `AI.Skill.HIGH` | Skill-Konfiguration von SQUADRONs | DCS-Konstante, über MOOSE-Methode gesetzt |
+| `AUFTRAG.DCStask.params.tasks[*].params` | Übertragung der bereits von `AUFTRAG:NewCARGOTRANSPORT()` erzeugten Cargo- und Zielzonen-ID auf die tatsächlich ausgeführte innere `CargoTransportation`-Task | Eng begrenzter, fail-closed Adapter für den nachgewiesenen Upstream-Verschachtelungsfehler; kein eigener Missions-FSM; bei jedem MOOSE-Update erneut prüfen; DCS-Abnahme offen |
 
 ## 8. Aktualisierungsregel
 
