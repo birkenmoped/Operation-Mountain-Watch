@@ -1,0 +1,49 @@
+name: Jalalabad AirOps Preflight
+
+on:
+  push:
+    branches:
+      - feature/jalalabad-airwing-phase1-functional-tests
+    paths:
+      - 'mission/tests/jalalabad-air-operations/**'
+      - 'tools/build-jalalabad-air-operations-bundle.ps1'
+      - 'tools/test-jalalabad-phase1-init-smoke.lua'
+      - '.github/workflows/jalalabad-air-ops-preflight.yml'
+  pull_request:
+    paths:
+      - 'mission/tests/jalalabad-air-operations/**'
+      - 'tools/build-jalalabad-air-operations-bundle.ps1'
+      - 'tools/test-jalalabad-phase1-init-smoke.lua'
+      - '.github/workflows/jalalabad-air-ops-preflight.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  preflight:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Lua 5.4
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y lua5.4
+
+      - name: Build canonical Jalalabad bundle
+        shell: pwsh
+        run: ./tools/build-jalalabad-air-operations-bundle.ps1
+
+      - name: Verify generated bundle header
+        shell: pwsh
+        run: |
+          $bundle = './mission/tests/jalalabad-air-operations/dist/OMW_AirOps_Jalalabad.lua'
+          if (-not (Test-Path -LiteralPath $bundle -PathType Leaf)) { throw 'Generated bundle missing.' }
+          $content = Get-Content -LiteralPath $bundle -Raw -Encoding UTF8
+          if ($content -notmatch 'BuilderVersion: JBAD-AIR-OPS-PHASE1-14-MOOSE-FIRST') { throw 'Unexpected builder version.' }
+          if ($content -notmatch 'InitializationSmoke: synchronous-name-contract/deferred-airwing-hook/immediate-f10-menu') { throw 'Initialization smoke header missing.' }
+
+      - name: Execute Phase 1 initialization smoke test
+        run: lua5.4 ./tools/test-jalalabad-phase1-init-smoke.lua
