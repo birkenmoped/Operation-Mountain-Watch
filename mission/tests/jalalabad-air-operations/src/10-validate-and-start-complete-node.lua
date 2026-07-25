@@ -209,6 +209,22 @@ local function main()
     return
   end
 
+  if not cfg.Airwing.SetOptionPreferVerticalLanding then
+    cfg.Status = "ERROR"
+    log("ERROR: Pinned MOOSE AIRWING:SetOptionPreferVerticalLanding is unavailable.")
+    return
+  end
+  local verticalOptionOK, verticalOptionResult = pcall(function()
+    return cfg.Airwing:SetOptionPreferVerticalLanding()
+  end)
+  if not verticalOptionOK or not verticalOptionResult or cfg.Airwing.OptionPreferVerticalLanding ~= true then
+    cfg.Status = "ERROR"
+    log("ERROR: AIRWING vertical helicopter option could not be applied before start: " .. tostring(verticalOptionResult))
+    return
+  end
+  cfg.VerticalHelicopterOpsEnabled = true
+  log("AIRWING_OPTION preferVerticalTakeoffAndLanding=true beforeAirwingStart=true scope=AUFTRAG")
+
   local started, result = pcall(function()
     cfg.Airwing:Start()
     OMW.AirOps.BlueCommander = OMW.AirOps.BlueCommander or COMMANDER:New(coalition.side.BLUE, "OMW_BLUE_COMMANDER")
@@ -219,8 +235,8 @@ local function main()
   if not started or not result then cfg.Status = "ERROR" log("ERROR: AIRWING/COMMANDER activation failed: " .. tostring(result)) return end
 
   cfg.Status = "OPERATIONAL"
-  log("RESULT: COMPLETE. Jalalabad AirOps node OPERATIONAL; AIRWING observer hook attached; AIRWING started; COMMANDER linked; missionsQueued=0; spontaneousSpawns=0.")
-  log("SUMMARY inventory=OH58D:24/AH64D:8/UH60:8/CH47:8 corePlayerSlots=6 optionalUH60L=0or2 templateAircraft=7offParking exclusivePools=OH58D:5/AH64D:3/UH60:3/CH47:8 staticCaps=OH58D:7/AH64D:4/UH60:4/CH47:5 zones=5 templates=5 squadrons=4 medevac=twoIndependentSinglesAsOnePackage virtualReserve=true templateLookup=DATABASE:GetGroupTemplate observerHook=OnAfterFlightOnMission.")
+  log("RESULT: COMPLETE. Jalalabad AirOps node OPERATIONAL; AIRWING observer hook attached; vertical helicopter option applied; AIRWING started; COMMANDER linked; missionsQueued=0; spontaneousSpawns=0.")
+  log("SUMMARY inventory=OH58D:24/AH64D:8/UH60:8/CH47:8 corePlayerSlots=6 optionalUH60L=0or2 templateAircraft=7offParking exclusivePools=OH58D:5/AH64D:3/UH60:3/CH47:8 staticCaps=OH58D:7/AH64D:4/UH60:4/CH47:5 zones=5 templates=5 squadrons=4 medevac=twoIndependentSinglesAsOnePackage virtualReserve=true verticalHelicopterOps=AIRWING:SetOptionPreferVerticalLanding templateLookup=DATABASE:GetGroupTemplate observerHook=OnAfterFlightOnMission.")
 end
 
 if SCHEDULER then
