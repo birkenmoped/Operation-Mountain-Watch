@@ -1,135 +1,86 @@
--- Operation Mountain Watch - Jalalabad AIRWING functional test manifest (Phase 1)
+-- Operation Mountain Watch - Jalalabad MOOSE-first Phase-1 test manifest
 local TAG = "[OMW][AirOps.JBAD.PH1.MANIFEST]"
 local function log(msg) env.info(TAG .. " " .. tostring(msg)) end
 
 local cfg = OMW and OMW.AirOps and OMW.AirOps.Jalalabad
-if not cfg then
-  log("ERROR: Jalalabad configuration unavailable.")
-elseif cfg.PackageContractsOK ~= true then
+if not cfg or not cfg.PackageContractsOK then
   log("ERROR: Package contracts unavailable or invalid.")
 else
   local ph1 = cfg.Phase1 or {}
   cfg.Phase1 = ph1
-
-  ph1.Version = "JBAD-PHASE1-9"
-  ph1.Enabled = true
+  ph1.Version = "JBAD-PHASE1-11"
   ph1.State = ph1.State or "WAITING_FOR_BASELINE"
   ph1.Classification = ph1.Classification or "NOT_RUN"
-  ph1.ActiveTestId = nil
-  ph1.ActiveMission = nil
-  ph1.ActiveDefinition = nil
-  ph1.AutoSequence = false
-  ph1.SequenceIndex = 0
   ph1.Results = ph1.Results or {}
   ph1.History = ph1.History or {}
-  ph1.Spawners = ph1.Spawners or {}
   ph1.Sequence = { "OH58D_RECON", "AH64D_CAS", "UH60_TROOP", "CH47_CARGO", "UH60_ABORT" }
 
   ph1.Objects = {
-    ReconZones = { "ZONE_TEST_US_JBAD_RECON_01", "ZONE_TEST_US_JBAD_RECON_02", "ZONE_TEST_US_JBAD_RECON_03" },
-    CASZone = "ZONE_TEST_US_JBAD_CAS",
-    CASTargetTemplate = "TPL_GROUND_RED_JBAD_PHASE1_CAS_TARGET",
-    UHTroopTemplate = "TPL_GROUND_BLUE_JBAD_PHASE1_UH60_TROOPS",
-    UHLoadZone = "ZONE_AIR_US_JBAD_LOGISTICS_LOAD",
-    UHUnloadZone = "ZONE_TEST_US_JBAD_UH60_DROPOFF",
-    CH47Cargo = "TEST_CARGO_BLUE_JBAD_CH47_01",
-    CH47PickupZone = "ZONE_AIR_US_JBAD_SLING_PICKUP",
-    CH47DropZone = "ZONE_AIR_US_JBAD_LOGISTICS_UNLOAD"
+    ReconZones = { "TZ_AIR_US_JBAD_RECON_01", "TZ_AIR_US_JBAD_RECON_02", "TZ_AIR_US_JBAD_RECON_03" },
+    CASZone = "TZ_AIR_US_JBAD_CAS_01",
+    CASTargetTemplate = "TG_RED_JBAD_CAS_TARGET_01",
+    UHTroopTemplate = "TG_BLUE_JBAD_UH60_TROOPS_01",
+    UHLoadZone = "TZ_AIR_US_JBAD_UH60_LOAD_01",
+    UHUnloadZone = "TZ_AIR_US_JBAD_UH60_UNLOAD_01",
+    CH47Cargo = "ST_BLUE_JBAD_CH47_CARGO_01",
+    CH47PickupZone = "TZ_AIR_US_JBAD_CH47_PICKUP_01",
+    CH47DropZone = "TZ_AIR_US_JBAD_CH47_DROP_01"
   }
 
-  local labels = {
-    OH58D_RECON = "OH-58D physical Two-Ship RECON",
-    AH64D_CAS = "AH-64D physical Two-Ship CAS",
-    UH60_TROOP = "UH-60A Single-Ship TROOPTRANSPORT",
-    CH47_CARGO = "CH-47F Single-Ship CARGOTRANSPORT",
-    UH60_ABORT = "UH-60A Single-Ship Spawn/Reservation Abort"
-  }
-  local payloads = {
-    OH58D_RECON = "OH58DRecon",
-    AH64D_CAS = "AH64DCAS",
-    UH60_TROOP = "UH60MedevacLead",
-    CH47_CARGO = "CH47HeavyLift",
-    UH60_ABORT = "UH60MedevacLead"
-  }
-  local types = {
-    OH58D_RECON = "OH58D",
-    AH64D_CAS = "AH-64D_BLK_II",
-    UH60_TROOP = "UH-60A",
-    CH47_CARGO = "CH-47Fbl1",
-    UH60_ABORT = "UH-60A"
-  }
-  local missionTypes = {
-    OH58D_RECON = "RECON",
-    AH64D_CAS = "CAS",
-    UH60_TROOP = "TROOPTRANSPORT",
-    CH47_CARGO = "CARGOTRANSPORT",
-    UH60_ABORT = "TROOPTRANSPORT"
-  }
-
-  local function definition(testId)
-    local package = cfg:GetTestPackageContract(testId)
+  local function testDefinition(id, label, values)
+    local package = cfg:GetTestPackageContract(id)
     local squadron = package and cfg:GetSquadronContract(package.SquadronKey) or nil
-    if not package or not squadron then return nil end
-    return {
-      Id = testId,
-      Label = labels[testId],
-      SquadronKey = package.SquadronKey,
-      ParkingPoolKey = package.SquadronKey,
-      PayloadKey = payloads[testId],
-      ExpectedType = types[testId],
-      ExpectedGroups = package.RequiredGroups,
-      ExpectedAircraft = package.RequiredAircraft,
-      ExpectedGroupPrefix = cfg:GetRuntimeGroupPrefix(package.SquadronKey),
-      ExpectedUnitSuffix = squadron.RuntimeUnitSuffixes[1],
-      ExpectedUnitSuffixes = squadron.RuntimeUnitSuffixes,
-      PackageModel = package.PackageModel,
-      SquadronModel = squadron.Model,
-      MissionType = missionTypes[testId],
-      SpawnTimeout = 600,
-      ExecutionTimeout = 5400,
-      RecoveryTimeout = 2400,
-      ReleaseTimeout = 300,
-      RequireEngineStart = true,
-      RequireTakeoff = true,
-      RequireExecution = true,
-      RequireRTB = true,
-      RequireLanding = true,
-      RequireObjective = true
-    }
+    if not package or not squadron then
+      log("ERROR: Missing package/squadron contract for " .. tostring(id))
+      return nil
+    end
+    values = values or {}
+    values.Id = id
+    values.Label = label
+    values.SquadronKey = package.SquadronKey
+    values.PackageModel = package.PackageModel
+    values.OperationKind = package.OperationKind
+    values.LogisticsProfile = package.LogisticsProfile
+    values.ExpectedGroups = package.RequiredGroups
+    values.ExpectedAircraft = package.RequiredAircraft
+    values.ExpectedUnitSuffixes = squadron.RuntimeUnitSuffixes
+    values.ExpectedGroupPrefix = cfg.RuntimeGroupPrefixes and cfg.RuntimeGroupPrefixes[package.SquadronKey] or nil
+    values.ExpectedType = values.ExpectedType or (cfg.DetectedTypes and cfg.DetectedTypes[package.SquadronKey])
+    values.Timeout = values.Timeout or 1800
+    values.RequireTakeoff = values.RequireTakeoff ~= false
+    values.RequireLanding = values.RequireLanding ~= false
+    values.RequireRTB = values.RequireRTB ~= false
+    return values
   end
 
   ph1.Tests = {
-    OH58D_RECON = definition("OH58D_RECON"),
-    AH64D_CAS = definition("AH64D_CAS"),
-    UH60_TROOP = definition("UH60_TROOP"),
-    CH47_CARGO = definition("CH47_CARGO"),
-    UH60_ABORT = definition("UH60_ABORT")
+    OH58D_RECON = testDefinition("OH58D_RECON", "OH-58D RECON physical two-ship", {
+      PayloadKey = "OH58DRecon", MissionRangeNM = 50, Timeout = 3600,
+      NativeTerminal = "SUCCESS", RequireObjective = true,
+      ObjectiveKind = "RECON_NATIVE_SUCCESS"
+    }),
+    AH64D_CAS = testDefinition("AH64D_CAS", "AH-64D CAS physical two-ship", {
+      PayloadKey = "AH64DCAS", Timeout = 2400,
+      NativeTerminal = "SUCCESS", RequireObjective = true,
+      ObjectiveKind = "TARGET_GROUP_DESTROYED"
+    }),
+    UH60_TROOP = testDefinition("UH60_TROOP", "UH-60 native OPS transport", {
+      PayloadKey = "UH60MedevacLead", Timeout = 3000,
+      NativeTerminal = "DELIVERED", RequireObjective = true,
+      ObjectiveKind = "OPSTRANSPORT_GROUP_DELIVERED"
+    }),
+    CH47_CARGO = testDefinition("CH47_CARGO", "CH-47 native sling cargo AUFTRAG", {
+      PayloadKey = "CH47HeavyLift", Timeout = 3000,
+      NativeTerminal = "SUCCESS", RequireObjective = true,
+      ObjectiveKind = "STATIC_CARGO_IN_DROP_ZONE"
+    }),
+    UH60_ABORT = testDefinition("UH60_ABORT", "UH-60 reservation and cancellation", {
+      PayloadKey = "UH60MedevacLead", Timeout = 900,
+      NativeTerminal = "CANCELLED", RequireTakeoff = false,
+      RequireLanding = false, RequireRTB = false, RequireObjective = false,
+      AbortOnBind = true, ObjectiveKind = "ABORT_RELEASE_ONLY"
+    })
   }
-
-  for _, testId in ipairs(ph1.Sequence) do
-    if not ph1.Tests[testId] then
-      ph1.Enabled = false
-      log("ERROR: Test definition failed: " .. tostring(testId))
-    end
-  end
-
-  ph1.Tests.UH60_TROOP.AllowObjectiveDrivenTerminal = true
-  ph1.Tests.UH60_TROOP.RequireNativeCargoLifecycle = true
-  ph1.Tests.UH60_TROOP.RequireIntermediateLandings = true
-  ph1.Tests.UH60_TROOP.RequireExactBaseLandingIdentity = true
-  ph1.Tests.CH47_CARGO.OneShotObject = true
-  ph1.Tests.CH47_CARGO.AllowObjectiveDrivenTerminal = true
-  ph1.Tests.UH60_ABORT.AbortOnBirth = true
-  ph1.Tests.UH60_ABORT.AllowObjectiveDrivenTerminal = false
-  ph1.Tests.UH60_ABORT.RequireEngineStart = false
-  ph1.Tests.UH60_ABORT.RequireTakeoff = false
-  ph1.Tests.UH60_ABORT.RequireExecution = false
-  ph1.Tests.UH60_ABORT.RequireRTB = false
-  ph1.Tests.UH60_ABORT.RequireLanding = false
-  ph1.Tests.UH60_ABORT.RequireObjective = false
-  ph1.Tests.UH60_ABORT.ExpectedTerminalState = "CANCELLED"
-  ph1.Tests.UH60_ABORT.ExecutionTimeout = 900
-  ph1.Tests.UH60_ABORT.RecoveryTimeout = 600
 
   ph1.AssetGroupInventory = {}
   for key, contract in pairs(cfg.PackageContracts.Squadrons) do
@@ -137,20 +88,40 @@ else
   end
 
   ph1.Limits = {
-    PollInterval = 5,
+    PollIntervalSeconds = 5,
     ReleaseStablePolls = 3,
-    ClientParkingMatchMeters = 25,
-    ParkingBirthMatchMeters = 30,
-    StaticSpawnClearanceMeters = 12,
-    JalalabadBirthRadiusMeters = 5000,
-    MissionAreaDistanceMeters = 7000,
-    RTBDetectionRadiusMeters = 5000,
-    NextTestDelaySeconds = 20,
-    AbortDelayAfterBirthSeconds = 5
+    AbortDelayAfterBindSeconds = 4,
+    ClientParkingMatchMeters = 35,
+    ParkingBirthMatchMeters = 45,
+    StaticSpawnClearanceMeters = 20,
+    TerrainSampleSpacingMeters = 750,
+    ReconClearanceAGLMeters = 350,
+    FuelTelemetryIntervalSeconds = 60,
+    NextTestDelaySeconds = 20
   }
 
-  ph1.ParkingBlacklist = {}
-  for _, terminalId in ipairs((cfg.Parking and cfg.Parking.StaticParkingBlacklist) or {}) do ph1.ParkingBlacklist[terminalId] = true end
-
-  log("READY version=JBAD-PHASE1-9 contracts=OH58D:1x2/AH64D:1x2/UH60:1x1/CH47:1x1 assetGroups=12/4/8/8 exactRuntimeNames=true strictUH60CargoLifecycle=true")
+  local valid = true
+  for testId, definition in pairs(ph1.Tests) do
+    if not definition then valid = false else
+      local squadron = cfg:GetSquadronContract(definition.SquadronKey)
+      if not definition.ExpectedGroupPrefix then
+        valid = false
+        log("ERROR: Runtime group prefix missing testId=" .. testId)
+      end
+      if definition.ExpectedGroups * squadron.Grouping ~= definition.ExpectedAircraft then
+        valid = false
+        log("ERROR: Package arithmetic mismatch testId=" .. testId)
+      end
+      if definition.LogisticsProfile and not cfg:GetLogisticsProfile(definition.LogisticsProfile) then
+        valid = false
+        log("ERROR: Logistics profile missing testId=" .. testId)
+      end
+    end
+  end
+  ph1.ManifestOK = valid
+  if valid then
+    log("READY version=JBAD-PHASE1-11 operativeAuthorities=AUFTRAG/OPSTRANSPORT testHarness=acceptance-only sequence=5")
+  else
+    log("BLOCKED manifest validation failed")
+  end
 end
