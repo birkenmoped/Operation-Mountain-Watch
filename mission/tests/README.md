@@ -6,6 +6,22 @@ Für alle Testmissionen gilt verbindlich:
 docs/22-test-mission-build-transfer-and-validation-workflow.md
 ```
 
+Für alle taktischen Hubschrauber-Testmissionen gilt zusätzlich:
+
+```text
+docs/27-helicopter-formations-and-ah64-afghanistan-configuration.md
+```
+
+Damit sind insbesondere folgende Punkte projektweit vorgegeben:
+
+- Combat Cruise beziehungsweise eine begründete taktische Alternative statt einer pauschalen Vee-Standardformation,
+- missionsphasenabhängiger Formationswechsel,
+- dokumentierte FCR-Darstellung beim AH-64D,
+- IAFS/Robbie Tank mit 300 Schuss als AH-64D-COIN-Standardbaseline,
+- MOOSE-First-Prüfung vor eigener Formations- oder Abstandslogik.
+
+Lokale `expected/`-Dokumente dürfen diese Baseline konkretisieren, aber nicht stillschweigend ersetzen.
+
 Kurzablauf:
 
 ```powershell
