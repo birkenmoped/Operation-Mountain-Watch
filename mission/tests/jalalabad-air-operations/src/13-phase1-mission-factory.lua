@@ -31,7 +31,9 @@ else
 
   function factory:ValidateMissionEditorObjects()
     local missing = {}
-    for _, zoneName in ipairs(ph1.Objects.ReconZones or {}) do if not findZone(zoneName) then missing[#missing + 1] = zoneName end end
+    for _, zoneName in ipairs(ph1.Objects.ReconZones or {}) do
+      if not findZone(zoneName) then missing[#missing + 1] = zoneName end
+    end
     for _, zoneName in ipairs({ ph1.Objects.CASZone, ph1.Objects.UHLoadZone, ph1.Objects.UHUnloadZone, ph1.Objects.CH47PickupZone, ph1.Objects.CH47DropZone }) do
       if zoneName and not findZone(zoneName) then missing[#missing + 1] = zoneName end
     end
@@ -51,7 +53,7 @@ else
     return true
   end
 
-  local function attachAuftragCallbacks(mission, definition)
+  local function attachAuftragCallbacks(mission)
     local function state(name, from, event, to)
       if ph1.Controller and ph1.Controller.OnNativeState then
         ph1.Controller:OnNativeState("AUFTRAG", name, mission, from, event, to)
@@ -66,24 +68,27 @@ else
     function mission:OnAfterSuccess(from, event, to) state("SUCCESS", from, event, to) end
     function mission:OnAfterFailed(from, event, to) state("FAILED", from, event, to) end
     function mission:OnAfterCancel(from, event, to) state("CANCELLED", from, event, to) end
-    mission.OMWDefinition = definition
   end
 
   local function configureAuftrag(mission, definition)
-    if not mission then return nil end
-    mission:SetName("OMW JBAD PH1 " .. definition.Id)
-    mission:SetRequiredAssets(definition.ExpectedGroups, definition.ExpectedGroups)
+    if not mission then return nil, "AUFTRAG constructor returned nil" end
     local squadron = cfg.Squadrons and cfg.Squadrons[definition.SquadronKey] or nil
-    if squadron and mission.AssignSquadrons then mission:AssignSquadrons({ squadron }) end
     local payload = cfg.Payloads and cfg.Payloads[definition.PayloadKey] or nil
-    if payload and mission.SetRequiredPayloads then mission:SetRequiredPayloads({ payload }) end
+    if not squadron then return nil, "squadron unavailable: " .. tostring(definition.SquadronKey) end
+    if not payload then return nil, "payload unavailable: " .. tostring(definition.PayloadKey) end
+
+    mission:SetName("OMW-JBAD-PH1-" .. definition.Id)
+    mission:SetRequiredAssets(definition.ExpectedGroups, definition.ExpectedGroups)
+    mission:AssignSquadrons({ squadron })
+    mission:AddRequiredPayload(payload)
     mission:SetPriority(20, true)
-    if mission.SetRepeat then mission:SetRepeat(0) end
-    if mission.SetTime then mission:SetTime(1) end
-    if mission.SetDuration then mission:SetDuration(definition.Timeout) end
-    if mission.SetMissionRange and definition.MissionRangeNM then mission:SetMissionRange(definition.MissionRangeNM) end
-    if mission.SetEvaluationTime then mission:SetEvaluationTime(10) end
-    attachAuftragCallbacks(mission, definition)
+    mission:SetRepeat(0)
+    mission:SetTime(1, definition.Timeout)
+    mission:SetDuration(definition.Timeout)
+    mission:SetMissionRange(definition.MissionRangeNM or 50)
+    mission:SetEvaluationTime(10)
+    attachAuftragCallbacks(mission)
+    mission.OMWDefinition = definition
     return mission
   end
 
@@ -96,7 +101,9 @@ else
     local mission = AUFTRAG:NewRECON(zones, speed, altitude, false, false, "Vee")
     if mission and mission.SetFormation then mission:SetFormation("Vee") end
     local zone2 = findZone(ph1.Objects.ReconZones[2])
-    if mission and zone2 and mission.SetMissionEgressCoord then mission:SetMissionEgressCoord(zone2:GetCoordinate(), altitude, speed) end
+    if mission and zone2 and mission.SetMissionEgressCoord then
+      mission:SetMissionEgressCoord(zone2:GetCoordinate(), altitude, speed)
+    end
     return configureAuftrag(mission, definition)
   end
 
@@ -104,12 +111,13 @@ else
     local zone = findZone(ph1.Objects.CASZone)
     local target = spawnGroup(ph1.Objects.CASTargetTemplate, zone and zone:GetCoordinate() or nil)
     if not target then return nil, "CAS target spawn failed" end
-    ph1.Runtime.CASTargetGroupName = target:GetName()
-    local mission = AUFTRAG:NewCAS(zone, 1000, 120, zone:GetCoordinate())
-    mission:AddConditionSuccess(function(groupName)
-      local group = GROUP:FindByName(groupName)
+    local targetName = target:GetName()
+    ph1.Runtime.CASTargetGroupName = targetName
+    local mission = AUFTRAG:NewCAS(zone, 3500, 110, zone:GetCoordinate(), nil, nil, { "Ground Units" })
+    mission:AddConditionSuccess(function()
+      local group = GROUP:FindByName(targetName)
       return not group or not group:IsAlive()
-    end, target:GetName())
+    end)
     return configureAuftrag(mission, definition)
   end
 
@@ -120,26 +128,27 @@ else
     if not troops then return nil, "troop cargo spawn failed" end
     ph1.Runtime.CargoGroupName = troops:GetName()
     ph1.Runtime.CargoTemplateName = ph1.Objects.UHTroopTemplate
-    local transport, err = ph1.Logistics:CreateGroupTransport(definition, troops, pickup, deploy)
-    if not transport then return nil, err end
-    return transport
+    return ph1.Logistics:CreateGroupTransport(definition, troops, pickup, deploy)
   end
 
   local function createSlingCargo(definition)
     local cargo = findStatic(ph1.Objects.CH47Cargo)
     local drop = findZone(ph1.Objects.CH47DropZone)
     if not cargo or not drop then return nil, "static cargo or drop zone unavailable" end
+    local cargoName = ph1.Objects.CH47Cargo
+    local dropName = ph1.Objects.CH47DropZone
     local mission = AUFTRAG:NewCARGOTRANSPORT(cargo, drop)
-    mission:AddConditionSuccess(function(cargoName, zoneName)
+    mission:AddConditionSuccess(function()
       local object = STATIC:FindByName(cargoName, false)
-      local zone = ZONE:FindByName(zoneName)
+      local zone = ZONE:FindByName(dropName)
       return object and zone and object:IsInZone(zone) or false
-    end, ph1.Objects.CH47Cargo, ph1.Objects.CH47DropZone)
+    end)
     return configureAuftrag(mission, definition)
   end
 
   local function createAbort(definition)
     local zone = findZone(ph1.Objects.UHLoadZone)
+    if not zone then return nil, "UH-60 abort target zone unavailable" end
     local mission = AUFTRAG:NewLANDATCOORDINATE(zone:GetCoordinate(), 0, 0, 60, 80, 1000, false)
     return configureAuftrag(mission, definition)
   end
@@ -154,14 +163,14 @@ else
     end
 
     local mission, err
-    if testId == "OH58D_RECON" then mission = createRecon(definition)
+    if testId == "OH58D_RECON" then mission, err = createRecon(definition)
     elseif testId == "AH64D_CAS" then mission, err = createCAS(definition)
     elseif testId == "CH47_CARGO" then mission, err = createSlingCargo(definition)
-    elseif testId == "UH60_ABORT" then mission = createAbort(definition)
+    elseif testId == "UH60_ABORT" then mission, err = createAbort(definition)
     end
     if not mission then return nil, nil, err or "AUFTRAG construction failed" end
     return "AUFTRAG", mission
   end
 
-  log("READY factoryAuthority=AUFTRAG/OPSTRANSPORT objectiveConditions=AUFTRAG_AddConditionSuccess customObjectivePollers=false directDatabaseAccess=false")
+  log("READY authority=AUFTRAG/OPSTRANSPORT payloadAPI=AddRequiredPayload objectives=AddConditionSuccess customObjectivePollers=false directDatabaseAccess=false")
 end
