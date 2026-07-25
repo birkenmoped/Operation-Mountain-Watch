@@ -15,10 +15,19 @@ end
 
 local function main()
   local cfg = OMW and OMW.AirOps and OMW.AirOps.Jalalabad
-  if not cfg then log("ERROR: Jalalabad configuration unavailable.") return end
-  if cfg.PackageContractsOK ~= true then log("ERROR: Package contracts unavailable; name validation blocked.") return end
+  if not cfg then
+    log("ERROR: Jalalabad configuration unavailable.")
+    return false
+  end
 
+  cfg.NameContractInitialized = false
   cfg.NameContractOK = false
+
+  if cfg.PackageContractsOK ~= true then
+    log("ERROR: Package contracts unavailable; name validation blocked.")
+    return false
+  end
+
   cfg.AuthoringGroupNames = {}
   cfg.AuthoringUnitNames = {}
   cfg.RuntimeGroupPrefixes = {}
@@ -83,6 +92,7 @@ local function main()
   end
 
   cfg.NameContractOK = ok
+  cfg.NameContractInitialized = true
   if ok then
     local groupCount, unitCount = 0, 0
     for _ in pairs(cfg.AuthoringGroupNames) do groupCount = groupCount + 1 end
@@ -91,6 +101,21 @@ local function main()
   else
     log("RESULT: FAIL AIRWING_START_BLOCKED=true")
   end
+  return ok
 end
 
-if SCHEDULER then SCHEDULER:New(nil, main, {}, 8.5) else timer.scheduleFunction(function() main() return nil end, nil, timer.getTime() + 8.5) end
+-- This contract is a load-time dependency of 11-phase1-test-manifest.lua.
+-- It must therefore finish synchronously while the bundle is being evaluated.
+local invoked, initialized = pcall(main)
+if not invoked then
+  local cfg = OMW and OMW.AirOps and OMW.AirOps.Jalalabad
+  if cfg then
+    cfg.NameContractInitialized = false
+    cfg.NameContractOK = false
+  end
+  log("ERROR: Synchronous runtime-name initialization failed: " .. tostring(initialized))
+elseif initialized then
+  log("INITIALIZATION mode=SYNCHRONOUS ready=true")
+else
+  log("INITIALIZATION mode=SYNCHRONOUS ready=false")
+end
