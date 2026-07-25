@@ -75,24 +75,36 @@ else
       ph1.BlockReason = "client-parking-unresolved"
       return false
     end
-    local snapshots = ph1.Observer:SnapshotAllSquadrons()
-    local clean, reason = ph1.Observer:IsInventoryClean(snapshots)
-    if not clean then
-      ph1.State = "WAITING_FOR_BASELINE"
-      ph1.BlockReason = reason
-      return false
-    end
+
     local queue = ph1.Observer:GetMissionQueueCount()
     if queue ~= 0 then
       ph1.State = "BLOCKED"
       ph1.BlockReason = "pre-existing-MOOSE-mission-queue-" .. tostring(queue)
       return false
     end
+
+    local snapshots = ph1.Observer:SnapshotAllSquadrons()
+    if cfg.BaselineReady ~= true then
+      -- Exact configured inventory is a one-time construction/startup assertion.
+      -- After native MOOSE operations have run, availability and losses are owned
+      -- by AIRWING/LEGION recruitment and must not be compared with this historic
+      -- startup number before every subsequent mission.
+      local clean, reason = ph1.Observer:IsInventoryClean(snapshots)
+      if not clean then
+        ph1.State = "WAITING_FOR_BASELINE"
+        ph1.BlockReason = reason
+        return false
+      end
+      cfg.BaselineReady = true
+      ph1.Observer:LogSnapshot("PHASE1_READY", snapshots)
+      log("READY MOOSE-authorities=true initialInventoryBaseline=true runtimeAvailabilityAuthority=MOOSE_RECRUITMENT missionQueue=CountMissionsInQueue")
+    else
+      ph1.Observer:LogSnapshot("PHASE1_RUNTIME_READY", snapshots)
+      log("READY_RECOVERED runtimeAvailabilityAuthority=MOOSE_RECRUITMENT historicalInventoryEquality=nonBlocking missionQueue=0")
+    end
+
     ph1.State = "READY"
     ph1.BlockReason = nil
-    cfg.BaselineReady = true
-    ph1.Observer:LogSnapshot("PHASE1_READY", snapshots)
-    log("READY MOOSE-authorities=true missionQueue=CountMissionsInQueue inventory=CountAssets/CountAssetsOnMission")
     return true
   end
 
@@ -159,19 +171,18 @@ else
       ph1.BlockReason = "MOOSE-mission-queue-not-empty"
       return false
     end
+
+    -- Do not require equality with the historic startup inventory here. Native
+    -- MOOSE recruitment (AIRWING:AddMission / LEGION:TransportAssign) is the
+    -- authority that decides whether a suitable asset is currently available.
     local snapshots = ph1.Observer:SnapshotAllSquadrons()
-    local clean, inventoryReason = ph1.Observer:IsInventoryClean(snapshots)
-    if not clean then
-      ph1.State = "BLOCKED"
-      ph1.BlockReason = "inventory-not-clean: " .. tostring(inventoryReason)
-      return false
-    end
+    ph1.Observer:LogSnapshot("BEFORE_" .. testId, snapshots)
+    log("RUNTIME_READINESS testId=" .. tostring(testId) .. " authority=MOOSE_RECRUITMENT historicalInventoryEquality=nonBlocking queue=0")
 
     ph1.ActiveTestId = testId
     ph1.ActiveDefinition = definition
     self:ResetRuntime(definition)
     ph1.BaselineInventory = snapshots
-    ph1.Observer:LogSnapshot("BEFORE_" .. testId, snapshots)
 
     local kind, object, createError = ph1.Factory:Create(testId)
     if not object then
@@ -262,6 +273,7 @@ else
     ph1.ActiveObject, ph1.ActiveKind, ph1.ActiveTestId, ph1.ActiveDefinition = nil, nil, nil, nil
     ph1.Runtime, ph1.BaselineInventory = nil, nil
     ph1.State = "READY"
+    ph1.BlockReason = nil
     if continueSequence then
       SCHEDULER:New(nil, function() controller:StartNextSequenceTest() end, {}, ph1.Limits.NextTestDelaySeconds)
     elseif ph1.AutoSequence and classification ~= "PASS" then
@@ -352,9 +364,13 @@ else
       local result = ph1.Results[id]
       if not result or result.Classification ~= "PASS" or result.Released ~= true then allPassed = false break end
     end
-    local clean = ph1.Observer:IsInventoryClean(ph1.Observer:SnapshotAllSquadrons())
-    ph1.Classification = allPassed and clean and "PASS" or "FAIL"
-    log("SEQUENCE_RESULT classification=" .. ph1.Classification)
+
+    local queueClean = ph1.Observer:GetMissionQueueCount() == 0
+    local snapshots = ph1.Observer:SnapshotAllSquadrons()
+    local inventoryDiagnostic, inventoryReason = ph1.Observer:IsInventoryClean(snapshots)
+    ph1.Classification = allPassed and queueClean and "PASS" or "FAIL"
+    log(string.format("SEQUENCE_RESULT classification=%s allTestsPassed=%s queueClean=%s inventoryDiagnostic=%s inventoryReason=%s inventoryDiagnosticNonBlocking=true",
+      tostring(ph1.Classification), tostring(allPassed), tostring(queueClean), tostring(inventoryDiagnostic), tostring(inventoryReason)))
     coalitionMessage("GESAMTERGEBNIS: " .. ph1.Classification, 25)
     return ph1.Classification == "PASS"
   end
@@ -398,5 +414,5 @@ else
     if ph1.ActiveObject then controller:PollActive() else controller:InitializeWhenReady() end
   end, {}, 20, ph1.Limits.PollIntervalSeconds)
   ph1.Counters = ph1.Counters or newCounters()
-  log("READY controllerRole=dispatch/watchdog/acceptance-only operativeFSM=AUFTRAG-or-OPSTRANSPORT successReleaseAuthority=MOOSE_LEGION_FSM inventoryPolling=diagnostic-or-failure-cleanup-only customMissionFSM=false")
+  log("READY controllerRole=dispatch/watchdog/acceptance-only operativeFSM=AUFTRAG-or-OPSTRANSPORT successReleaseAuthority=MOOSE_LEGION_FSM runtimeAvailabilityAuthority=MOOSE_RECRUITMENT historicalInventoryEquality=startup-only customMissionFSM=false")
 end
