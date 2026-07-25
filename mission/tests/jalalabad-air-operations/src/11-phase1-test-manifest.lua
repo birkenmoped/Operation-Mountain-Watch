@@ -10,7 +10,7 @@ elseif cfg.NameContractInitialized ~= true or cfg.NameContractOK ~= true then
 else
   local ph1 = cfg.Phase1 or {}
   cfg.Phase1 = ph1
-  ph1.Version = "JBAD-PHASE1-13"
+  ph1.Version = "JBAD-PHASE1-14"
   ph1.State = ph1.State or "WAITING_FOR_BASELINE"
   ph1.Classification = ph1.Classification or "NOT_RUN"
   ph1.Results = ph1.Results or {}
@@ -65,14 +65,21 @@ else
       PayloadKey = "OH58DRecon", MissionRangeNM = 50, Timeout = 3600, RecoveryTimeout = 2400,
       NativeTerminal = "SUCCESS", RequireObjective = true,
       ObjectiveKind = "RECON_NATIVE_SUCCESS",
-      TacticalFormation = "ECHELON_RIGHT_300"
+      TacticalFormation = "ECHELON_RIGHT_300",
+      FlightAltitudeFeet = 6500,
+      FlightSpeedKnots = 80,
+      ReturnAltitudePolicy = "MATCH_INGRESS",
+      EgressZoneKey = "RECON_01"
     }),
     AH64D_CAS = testDefinition("AH64D_CAS", "AH-64D CAS physical two-ship", {
       PayloadKey = "AH64DCAS", Timeout = 2400, RecoveryTimeout = 2400,
       NativeTerminal = "SUCCESS", RequireObjective = true,
       ObjectiveKind = "TARGET_GROUP_DESTROYED",
       TacticalFormation = "ECHELON_RIGHT_300",
-      RecoveryProfile = "CAS_MOUNTAIN_CORRIDOR"
+      FlightAltitudeFeet = 3500,
+      FlightSpeedKnots = 110,
+      ReturnAltitudePolicy = "MATCH_INGRESS",
+      EgressZoneKey = "RECON_01"
     }),
     UH60_TROOP = testDefinition("UH60_TROOP", "UH-60 native OPS transport", {
       PayloadKey = "UH60MedevacLead", Timeout = 3000, RecoveryTimeout = 1800,
@@ -105,10 +112,6 @@ else
     ClientParkingMatchMeters = 35,
     ParkingBirthMatchMeters = 45,
     StaticSpawnClearanceMeters = 20,
-    TerrainSampleSpacingMeters = 750,
-    ReconClearanceAGLMeters = 350,
-    RecoveryClearanceAGLMeters = 500,
-    RecoverySpeedKnots = 100,
     FuelTelemetryIntervalSeconds = 60,
     NextTestDelaySeconds = 20
   }
@@ -133,11 +136,25 @@ else
         valid = false
         log("ERROR: Recovery timeout missing testId=" .. testId)
       end
+      if definition.ReturnAltitudePolicy == "MATCH_INGRESS" then
+        if not definition.FlightAltitudeFeet or definition.FlightAltitudeFeet <= 0 then
+          valid = false
+          log("ERROR: Fixed flight altitude missing testId=" .. testId)
+        end
+        if not definition.FlightSpeedKnots or definition.FlightSpeedKnots <= 0 then
+          valid = false
+          log("ERROR: Fixed flight speed missing testId=" .. testId)
+        end
+        if not definition.EgressZoneKey then
+          valid = false
+          log("ERROR: Egress zone key missing testId=" .. testId)
+        end
+      end
     end
   end
   ph1.ManifestOK = valid
   if valid then
-    log("READY version=JBAD-PHASE1-13 operativeAuthorities=AUFTRAG/OPSTRANSPORT testHarness=acceptance-only sequence=5 nameContract=SYNCHRONOUS missionEditorObjectContract=CANONICAL operationAndRecoveryDeadlines=SEPARATE tacticalRotorFormation=ECHELON_APPROXIMATION")
+    log("READY version=JBAD-PHASE1-14 operativeAuthorities=AUFTRAG/OPSTRANSPORT testHarness=acceptance-only sequence=5 nameContract=SYNCHRONOUS missionEditorObjectContract=CANONICAL operationAndRecoveryDeadlines=SEPARATE tacticalRotorFormation=ECHELON_APPROXIMATION rotorReturnAltitude=MATCH_INGRESS terrainAltitudeCalculation=false")
   else
     log("BLOCKED manifest validation failed")
   end
