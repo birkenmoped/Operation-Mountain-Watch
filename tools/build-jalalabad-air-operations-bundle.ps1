@@ -33,8 +33,24 @@ $sourceFiles = @(
     '16-phase1-moose-first-readiness-routing.lua'
 )
 
+$obsoleteOverrideFiles = @(
+    '14a-phase1-lifecycle-corrections.lua',
+    '14b-phase1-sequence-finalization.lua',
+    '16-phase1-moose-compatibility.lua',
+    '17-phase1-operational-safety.lua',
+    '18-phase1-readiness-and-recon-telemetry.lua',
+    '19-phase1-oh58-formation-recovery-counting.lua',
+    '20-phase1-uh60-transport-lifecycle.lua'
+)
+
 if (-not (Test-Path -LiteralPath $sourceDir -PathType Container)) {
     throw "Source directory not found: $sourceDir"
+}
+
+foreach ($obsolete in $obsoleteOverrideFiles) {
+    if (Test-Path -LiteralPath (Join-Path $sourceDir $obsolete) -PathType Leaf) {
+        throw "MOOSE-first regression: obsolete override source still exists: $obsolete"
+    }
 }
 
 $sourceText = @{}
@@ -57,19 +73,22 @@ if ($allCanonicalSource -match '(?m)^\s*[^-\r\n]*:SetDespawnAfterLanding\s*\(\s*
 }
 
 # MOOSE-first architecture gate: canonical runtime code must not read the listed
-# internal implementation tables. Public methods and native object callbacks are
-# mandatory.
+# internal implementation tables or restore the removed parallel mission FSM.
 $forbiddenInternalPatterns = @(
     '\.missionqueue',
     'squadron\.assets',
     '_DATABASE\.Templates\.Groups',
     'mission\.groupdata',
     'opsgroup\.groupname',
-    'opsgroup\.group'
+    'opsgroup\.group',
+    'RefreshMissionGroups',
+    'MarkObjectiveDrivenSuccess',
+    'runtime\.ObjectiveCheck',
+    'MissionStateSeen'
 )
 foreach ($pattern in $forbiddenInternalPatterns) {
     if ($allCanonicalSource -match $pattern) {
-        throw "MOOSE-first regression: forbidden internal access matched pattern '$pattern'."
+        throw "MOOSE-first regression: forbidden custom/internal pattern '$pattern'."
     }
 }
 
@@ -80,11 +99,14 @@ $requiredMooseApis = @(
     'OnAfterFlightOnMission',
     'AddConditionSuccess',
     'OPSTRANSPORT:New',
+    'LEGION.RecruitCohortAssets',
     'RecruitAssetsForTransport',
     'TransportAssign',
     'OnAfterLoaded',
     'OnAfterUnloaded',
-    'OnAfterDelivered'
+    'OnAfterDelivered',
+    'DynamicCargoLoaded',
+    'DynamicCargoUnloaded'
 )
 foreach ($api in $requiredMooseApis) {
     if ($allCanonicalSource -notmatch [regex]::Escape($api)) {
