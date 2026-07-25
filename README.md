@@ -74,6 +74,7 @@ Current air-operations documents:
 - [`Jalalabad: validierte CH-47-Static-Parkplatzreservierungen`](docs/24-jalalabad-ch47-static-parking-reservations.md)
 - [`Jalalabad: finale Validierung und operative Grundbaseline`](docs/25-jalalabad-final-validation-and-operational-baseline.md)
 - [`Verbindliche MOOSE-First-Entwicklungsrichtlinie`](docs/26-moose-first-development-policy.md)
+- [`Hubschrauberformationen und AH-64D-Konfiguration im Afghanistan-COIN-Szenario`](docs/27-helicopter-formations-and-ah64-afghanistan-configuration.md)
 
 MOOSE project reference:
 
@@ -85,6 +86,8 @@ MOOSE project reference:
 - [`MOOSE logistics and transport`](docs/moose/LOGISTICS-AND-TRANSPORT.md)
 - [`MOOSE events and FSM`](docs/moose/EVENTS-AND-FSM.md)
 - [`Verified MOOSE methods`](docs/moose/VERIFIED-METHODS.md)
+
+Für taktische Hubschrauberformationen sowie FCR-, IAFS- und 30-mm-Konfigurationen des AH-64D gilt Dokument 27 projektweit. Die Jalalabad-spezifische Ableitung steht unter [`mission/tests/jalalabad-air-operations/expected/jalalabad-helicopter-doctrine-and-ah64-loadout.md`](mission/tests/jalalabad-air-operations/expected/jalalabad-helicopter-doctrine-and-ah64-loadout.md).
 
 Für Jalalabad sind Dokumente 21, 23, 24 und 25 sowie die zugehörigen `expected/`- und `results/`-Dateien autoritativ. Ältere allgemeine Zwischenwerte wie vier Spielerplätze je Typ, sechs UH-60, kein CH-47, 13/15 Runtime-Parkplätze oder eine pauschale Ablehnung von Statics auf Parking-Nodes sind aufgehoben.
 
