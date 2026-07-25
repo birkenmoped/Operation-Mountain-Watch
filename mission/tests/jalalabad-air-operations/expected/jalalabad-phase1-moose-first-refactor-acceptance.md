@@ -1,21 +1,24 @@
 # Jalalabad Phase 1 – MOOSE-first Refactoring Acceptance Contract
 
-Status: **REQUIRED BEFORE PRODUCTIONIZATION OR AIRFIELD REUSE**  
+Status: **IMPLEMENTED / LOCAL BUILD AND DCS VALIDATION PENDING**  
+BuilderVersion: `JBAD-AIR-OPS-PHASE1-11-MOOSE-FIRST`  
 Review source: `docs/29-jalalabad-air-operations-moose-code-review.md`  
-Incident addendum: `docs/30-jalalabad-air-operations-phase1-incident-addendum-and-refactor-gate.md`
+Implementation: `docs/31-jalalabad-air-operations-moose-first-refactor-implementation.md`
 
 ## 1. Scope
 
-This contract does not change the current PHASE1-9 DCS retest fixture. It defines the mandatory architecture for the subsequent consolidation before:
+This contract is the mandatory architecture before:
 
 - copying the node to another airfield;
 - adding dynamic player-request tasking;
 - implementing the full UH-60 MEDEVAC lead/guard package;
 - treating the Phase-1 harness as production mission code.
 
+The repository implementation is complete. Runtime acceptance remains open until the local build and DCS tests pass.
+
 ## 2. Public MOOSE API gate
 
-The consolidated source must not directly depend on the following internal containers unless an exception is documented with the pinned MOOSE source location and a regression test:
+Forbidden in the canonical runtime:
 
 ```text
 squadron.assets
@@ -26,80 +29,138 @@ opsgroup.group
 _DATABASE.Templates.Groups
 ```
 
-Expected public replacements include:
+Required public replacements:
 
 ```text
-AIRWING:CountAssets
+SQUADRON:CountAssets
 AIRWING:CountAssetsOnMission
 AIRWING:CountMissionsInQueue
-AUFTRAG:GetOpsGroups
+AIRWING:OnAfterFlightOnMission
+OPSTRANSPORT:GetCarriers
 GROUP:GetTemplate
 GROUP:GetTemplateRoutePoints
-FLIGHTGROUP/OPSGROUP public getters and state queries
+FLIGHTGROUP/OPSGROUP callbacks and state queries
 ```
 
 Acceptance:
 
-- [ ] no undocumented private-field access;
-- [ ] all exceptions identify the exact pinned MOOSE commit;
-- [ ] every exception has a static regression check;
-- [ ] public API behavior is preferred over field introspection.
+- [x] no canonical runtime dependence on the forbidden private containers;
+- [x] public API behavior replaces field introspection;
+- [x] builder rejects reintroduction of the forbidden patterns;
+- [x] pinned MOOSE commit is recorded in the bundle header;
+- [ ] locally built bundle passes all static builder gates.
 
-## 3. Single mission authority
+## 3. Native operational authorities
 
-MOOSE AUFTRAG is the only operational mission-state authority.
+### AUFTRAG
 
-Required:
+AUFTRAG is the operational authority for RECON, CAS, static sling cargo, freight and abort missions.
 
-- [ ] start conditions use `AUFTRAG:AddConditionStart` where applicable;
-- [ ] push conditions use `AUFTRAG:AddConditionPush` where applicable;
-- [ ] physical success uses `AUFTRAG:AddConditionSuccess`;
-- [ ] physical failure uses `AUFTRAG:AddConditionFailure`;
-- [ ] native AUFTRAG callbacks provide the mission-state timeline;
-- [ ] no second custom SUCCESS/FAILED/CANCELLED/DONE state machine;
-- [ ] no post-hoc terminal-state normalization.
+- [x] physical success uses `AUFTRAG:AddConditionSuccess` where applicable;
+- [x] native AUFTRAG callbacks provide the mission-state timeline;
+- [x] no second custom SUCCESS/FAILED/CANCELLED/DONE mission FSM;
+- [x] no post-hoc terminal-state normalization;
+- [x] required SQUADRON and payload use public AUFTRAG methods;
+- [ ] isolated DCS AUFTRAG tests pass.
 
-The acceptance harness may classify a DCS run as PASS or FAIL after observing MOOSE, but it must not rewrite the operational mission state.
+### OPSTRANSPORT
+
+OPSTRANSPORT is the operational authority for group, vehicle and storage logistics.
+
+- [x] group transport uses `OPSTRANSPORT:New`;
+- [x] storage logistics uses `OPSTRANSPORT:AddCargoStorage`;
+- [x] carrier requirements use `SetRequiredCarriers`;
+- [x] exact carrier SQUADRON recruitment uses `LEGION.RecruitCohortAssets`;
+- [x] generic fallback uses `AIRWING:RecruitAssetsForTransport`;
+- [x] assignment uses `AIRWING:TransportAssign`;
+- [x] cancellation uses `AIRWING:TransportCancel`;
+- [ ] isolated DCS OPSTRANSPORT tests pass.
+
+The acceptance harness may classify a DCS run after observing MOOSE, but it must not rewrite the operational state.
 
 ## 4. Object-bound lifecycle
 
 Required after MOOSE assigns an asset:
 
-- [ ] store the concrete FLIGHTGROUP/OPSGROUP reference;
-- [ ] attach callbacks once to that object;
-- [ ] use object callbacks for mission start, execution, cargo, landing and loss;
-- [ ] global event observation becomes diagnostic only;
-- [ ] runtime names remain a test invariant, not the primary object locator;
-- [ ] callbacks are attached before the first operation they must observe.
+- [x] exact FLIGHTGROUP reference is obtained from `AIRWING:OnAfterFlightOnMission` or `OPSTRANSPORT:GetCarriers`;
+- [x] callbacks are attached once to that concrete object;
+- [x] runtime names remain assertions, not the primary object locator;
+- [x] DCS Engine/Takeoff/Land/Shutdown/Loss events are scoped to the already-bound GROUP;
+- [x] final Jalalabad landing compares actual event Place identity;
+- [x] no global type-only/provisional event ownership remains;
+- [ ] DCS logs confirm no missed early events.
 
-## 5. UH-60 transport lifecycle
+## 5. Generic native logistics lifecycle
 
-Pickup acceptance:
+### 5.1 GROUP_CARGO
 
-- [ ] pickup landing is inside the configured load zone;
-- [ ] expected cargo identity matches `TPL_GROUND_BLUE_JBAD_PHASE1_UH60_TROOPS` runtime cargo;
-- [ ] expected cargo reports loaded into the expected carrier through a public MOOSE state/query;
-- [ ] `LoadingDone` is observed;
-- [ ] post-pickup takeoff is observed.
+Required MOOSE evidence:
 
-Drop-off acceptance:
+- [x] `OPSTRANSPORT:OnAfterLoaded` records the exact cargo and carrier;
+- [x] carrier `OnAfterLoadingDone` is recorded;
+- [x] `OPSTRANSPORT:OnAfterUnloaded` records the exact cargo and carrier;
+- [x] carrier `OnAfterUnloadingDone` is recorded;
+- [x] `OPSTRANSPORT:OnAfterDelivered` is the native terminal authority;
+- [x] `GetNcargoDelivered() == GetNcargoTotal()` is required;
+- [ ] DCS confirms the complete sequence.
 
-- [ ] drop-off landing is inside `ZONE_TEST_US_JBAD_UH60_DROPOFF`;
-- [ ] `Unloaded` reports the expected cargo object;
-- [ ] `UnloadingDone` is observed;
-- [ ] cargo is alive in the drop-off zone;
-- [ ] cargo is not still loaded and not in the pickup zone;
-- [ ] physical objective is confirmed before final despawn is armed.
+Independent physical acceptance:
 
-RTB acceptance:
+- [x] pickup landing must be inside the configured pickup zone;
+- [x] drop-off landing must be inside the configured deploy zone;
+- [x] exact cargo identity is checked;
+- [x] cargo must be alive in the deploy zone;
+- [x] cargo disappearance or distance alone is not proof of loading;
+- [ ] UH-60 group-cargo DCS test passes.
 
-- [ ] post-dropoff takeoff is observed;
-- [ ] final landing place equals the Jalalabad airbase object or ID;
-- [ ] pickup/drop-off landings do not increment final base landing count;
-- [ ] final despawn occurs only after verified objective and final RTB landing;
-- [ ] one UH-60 asset group returns to stock.
+### 5.2 STORAGE_CARGO
 
-## 6. Package model invariants
+- [x] fuel, weapons and equipment use `AddCargoStorage`;
+- [x] item weight and total cargo weight are passed to MOOSE recruitment;
+- [x] carrier SQUADRON can be selected by contract;
+- [x] optional `VerifyDelivered` callback may verify warehouse inventory without controlling transport execution;
+- [ ] first concrete STORAGE_CARGO mission and DCS test are still pending.
+
+### 5.3 STATIC_SLING_CARGO
+
+- [x] static sling cargo remains native `AUFTRAG:NewCARGOTRANSPORT`;
+- [x] no artificial OPSTRANSPORT group-cargo events are invented for a Static;
+- [x] native AUFTRAG success and physical Static-in-drop-zone are both required;
+- [ ] CH-47 DCS regression test passes.
+
+### 5.4 STATIC_FREIGHT_CARGO
+
+- [x] contract reserves native AUFTRAG FREIGHTTRANSPORT authority;
+- [ ] concrete freight object and test mission are not yet defined.
+
+### 5.5 DYNAMIC_CARGO
+
+- [x] MOOSE `DynamicCargoLoaded` is observed;
+- [x] MOOSE `DynamicCargoUnloaded` is observed;
+- [x] MOOSE `DynamicCargoRemoved` is observed;
+- [ ] concrete DCS Dynamic Cargo scenario is not yet defined.
+
+## 6. Intermediate landing and final despawn
+
+Pinned-MOOSE fact:
+
+```text
+SQUADRON:SetDespawnAfterLanding(false)
+sets despawnAfterLanding=true in the pinned version.
+```
+
+Acceptance:
+
+- [x] UH-60 squadron-wide despawn setter is omitted;
+- [x] CH-47 squadron-wide despawn setter is omitted;
+- [x] builder rejects a real `SetDespawnAfterLanding(false)` call;
+- [x] final despawn is armed on the exact FLIGHTGROUP only after native delivery plus physical objective confirmation;
+- [ ] UH-60 survives pickup landing;
+- [ ] UH-60 survives deploy landing;
+- [ ] CH-47 survives every operational intermediate landing required by its logistics profile;
+- [ ] final RTB landing performs the intended despawn and stock return.
+
+## 7. Package model invariants
 
 ```text
 OH58D: 12 asset groups × grouping 2 = 24 aircraft
@@ -108,44 +169,59 @@ UH60:   8 asset groups × grouping 1 =  8 aircraft
 CH47:   8 asset groups × grouping 1 =  8 aircraft
 ```
 
-- [ ] package contract remains the single source for inventory and grouping;
-- [ ] no lifecycle fix changes a physical group model;
-- [ ] OH-58D and AH-64D remain physical two-ships;
-- [ ] UH-60 remains single-ship assets, with later lead/guard package coordination above the physical group layer;
-- [ ] CH-47 remains a physical single-ship.
+- [x] package contract remains the single source for inventory and grouping;
+- [x] no lifecycle fix changes a physical group model;
+- [x] OH-58D and AH-64D remain physical two-ships;
+- [x] UH-60 remains single-ship assets;
+- [x] CH-47 remains a physical single-ship;
+- [ ] all package models pass DCS runtime validation.
 
-## 7. Override-chain removal
+## 8. Override-chain removal
+
+Removed:
+
+```text
+14a-phase1-lifecycle-corrections.lua
+14b-phase1-sequence-finalization.lua
+16-phase1-moose-compatibility.lua
+17-phase1-operational-safety.lua
+18-phase1-readiness-and-recon-telemetry.lua
+19-phase1-oh58-formation-recovery-counting.lua
+20-phase1-uh60-transport-lifecycle.lua
+```
 
 Target state:
 
-- [ ] no chained method replacement across `14a`, `14b`, `17`, `18`, `19`, `20`;
-- [ ] one mission factory;
-- [ ] one acceptance observer;
-- [ ] one small test-sequence controller;
-- [ ] per-mission acceptance specifications are data or bounded adapters;
-- [ ] builder order is not used as a hidden configuration mechanism;
-- [ ] no new `21-phase1-*` corrective monkey patch.
+- [x] no chained method replacement across the removed sources;
+- [x] one mission/transport factory;
+- [x] one acceptance observer;
+- [x] one generic logistics adapter;
+- [x] one small dispatch/watchdog/acceptance controller;
+- [x] one readiness/routing/telemetry module;
+- [x] builder order is no longer a hidden override mechanism;
+- [x] no new corrective monkey-patch source was added.
 
-## 8. Polling policy
+## 9. Polling policy
 
-Polling is allowed only for:
+Polling remains allowed only for:
 
-- bounded timeout watchdogs;
-- periodic telemetry;
-- independent invariant checks;
-- final acceptance stability confirmation where no native event exists.
+- bounded timeout watchdog;
+- periodic fuel telemetry;
+- final inventory-release stability confirmation;
+- independent physical objective checks.
 
-Polling is not allowed as the primary source for:
+Polling is not the primary source for:
 
-- AUFTRAG mission state;
-- FLIGHTGROUP landing/takeoff state;
-- cargo loaded/unloaded state;
-- mission queue size when a public AIRWING query exists;
-- asset counts when public LEGION/AIRWING queries exist.
+- [x] AUFTRAG mission state;
+- [x] OPSTRANSPORT state;
+- [x] cargo loaded/unloaded/delivered state;
+- [x] mission queue size;
+- [x] asset counts;
+- [x] FLIGHTGROUP ownership.
 
-## 9. Custom code that remains valid
+## 10. Custom code that remains valid
 
-The refactor must preserve these project-owned responsibilities:
+The refactor preserves these project-owned responsibilities:
 
 - ORBAT and package contracts;
 - Mission Editor naming contracts;
@@ -157,29 +233,32 @@ The refactor must preserve these project-owned responsibilities:
 - campaign persistence boundaries;
 - later player-request policy and package selection.
 
-## 10. Required validation
+## 11. Static validation
 
-Static:
+- [x] builder has deterministic canonical source order;
+- [x] builder rejects obsolete override files;
+- [x] builder rejects forbidden private-field patterns;
+- [x] builder requires the named native MOOSE APIs;
+- [x] MOOSE APIs were checked against the pinned source;
+- [ ] local PowerShell builder execution passes;
+- [ ] locally built complete Lua bundle parses successfully;
+- [ ] bundle header contains the expected local Git commit.
 
-- [ ] Lua 5.1 parse succeeds;
-- [ ] no forbidden private-field access without exception;
-- [ ] no chained replacement of core factory/controller/observer methods;
-- [ ] public MOOSE methods named in this contract exist in the pinned framework;
-- [ ] package arithmetic passes;
-- [ ] builder produces deterministic source order and header.
+The execution container could not clone GitHub or execute Windows PowerShell because external DNS/network access was unavailable. The local project build is therefore mandatory.
 
-DCS isolated tests:
+## 12. DCS validation order
 
-1. OH-58D RECON physical two-ship;
-2. AH-64D CAS physical two-ship;
-3. UH-60 TROOPTRANSPORT full native cargo lifecycle;
-4. CH-47 CARGOTRANSPORT;
-5. UH-60 abort/release;
-6. complete sequence only after all isolated tests pass.
+1. UH-60 OPSTRANSPORT group-cargo flow.
+2. CH-47 static sling CARGOTRANSPORT.
+3. OH-58D physical two-ship RECON and recovery corridor.
+4. AH-64D physical two-ship CAS.
+5. UH-60 abort/release.
+6. Complete sequence only after all isolated tests pass.
 
-Final gate:
+## 13. Final gate
 
 ```text
 No additional airfield and no dynamic player tasking
-until all isolated tests and the consolidated full sequence pass in DCS.
+until the local build, all isolated DCS tests and the
+consolidated full sequence pass.
 ```
