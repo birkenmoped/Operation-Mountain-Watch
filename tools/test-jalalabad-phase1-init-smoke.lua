@@ -1,7 +1,8 @@
 -- Executable pre-DCS initialization smoke test for Jalalabad Phase 1.
 -- This does not simulate DCS flight operations. It verifies that the canonical
 -- Phase-1 modules load in order, tolerate a not-yet-constructed AIRWING, attach
--- the AIRWING callback later, and create the F10 menu immediately.
+-- the AIRWING callback later, create the F10 menu immediately, and preserve the
+-- binding Mission Editor object names used by the Phase-1 test mission.
 
 local logs = {}
 local scheduled = {}
@@ -187,6 +188,7 @@ end
 local ph1 = cfg.Phase1
 assertTrue(ph1 ~= nil, "Phase1 table was not created")
 assertTrue(ph1.ManifestOK == true, "manifest did not validate")
+assertEqual(ph1.Version, "JBAD-PHASE1-12", "manifest version")
 assertTrue(ph1.Observer ~= nil, "observer was not created")
 assertTrue(ph1.Logistics ~= nil, "logistics adapter was not created")
 assertTrue(ph1.Factory ~= nil, "factory was not created")
@@ -196,6 +198,27 @@ assertTrue(ph1.MenuCreated == true, "F10 menu was not created immediately")
 assertEqual(menuCount, 2, "F10 menu count")
 assertEqual(commandCount, 8, "F10 command count")
 assertTrue(ph1.Observer.AirwingHookAttached ~= true, "AIRWING hook attached before AIRWING existed")
+
+local expectedObjects = {
+  ReconZones = { "ZONE_TEST_US_JBAD_RECON_01", "ZONE_TEST_US_JBAD_RECON_02", "ZONE_TEST_US_JBAD_RECON_03" },
+  CASZone = "ZONE_TEST_US_JBAD_CAS",
+  CASTargetTemplate = "TPL_GROUND_RED_JBAD_PHASE1_CAS_TARGET",
+  UHTroopTemplate = "TPL_GROUND_BLUE_JBAD_PHASE1_UH60_TROOPS",
+  UHLoadZone = "ZONE_AIR_US_JBAD_LOGISTICS_LOAD",
+  UHUnloadZone = "ZONE_TEST_US_JBAD_UH60_DROPOFF",
+  CH47Cargo = "TEST_CARGO_BLUE_JBAD_CH47_01",
+  CH47PickupZone = "ZONE_AIR_US_JBAD_SLING_PICKUP",
+  CH47DropZone = "ZONE_AIR_US_JBAD_LOGISTICS_UNLOAD"
+}
+
+for index, expectedName in ipairs(expectedObjects.ReconZones) do
+  assertEqual(ph1.Objects.ReconZones[index], expectedName, "Mission Editor RECON zone " .. tostring(index))
+end
+for key, expectedName in pairs(expectedObjects) do
+  if key ~= "ReconZones" then
+    assertEqual(ph1.Objects[key], expectedName, "Mission Editor object " .. key)
+  end
+end
 
 local previousCallbackCount = 0
 local airwing = {
@@ -213,6 +236,7 @@ airwing:OnAfterFlightOnMission("FROM", "FlightOnMission", "TO", nil, {})
 assertEqual(previousCallbackCount, 1, "previous AIRWING callback was not preserved")
 
 assertTrue(logContains("PH1.MANIFEST] READY"), "manifest READY marker missing")
+assertTrue(logContains("missionEditorObjectContract=CANONICAL"), "canonical Mission Editor object marker missing")
 assertTrue(logContains("PH1.OBS] READY"), "observer READY marker missing")
 assertTrue(logContains("AIRWING_HOOK READY"), "AIRWING hook READY marker missing")
 assertTrue(logContains("PH1.LOGISTICS] READY"), "logistics READY marker missing")
@@ -222,4 +246,4 @@ assertTrue(logContains("PH1.MENU] READY F10="), "F10 READY marker missing")
 assertTrue(logContains("commands=8 availability=IMMEDIATE baselineIndependent=true"), "immediate F10 contract marker missing")
 assertTrue(logContains("PH1.ROUTING] READY"), "routing READY marker missing")
 
-print(string.format("PHASE1_INIT_SMOKE_PASS menus=%d commands=%d scheduled=%d", menuCount, commandCount, #scheduled))
+print(string.format("PHASE1_INIT_SMOKE_PASS menus=%d commands=%d scheduled=%d missionObjects=11", menuCount, commandCount, #scheduled))
