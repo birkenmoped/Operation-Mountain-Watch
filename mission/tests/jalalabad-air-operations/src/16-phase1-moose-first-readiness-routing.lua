@@ -10,6 +10,8 @@ else
   local routing = ph1.Routing or {}
   ph1.Routing = routing
 
+  local HELICOPTER_SQUADRONS = { OH58D = true, AH64D = true, UH60 = true, CH47 = true }
+
   local function distance2D(first, second)
     if not first or not second then return nil end
     local a = first.GetVec3 and first:GetVec3() or first
@@ -42,6 +44,51 @@ else
       maximum = math.max(maximum, height)
     end
     return maximum, length
+  end
+
+  local function applyVerticalHelicopterOption(flightgroup, groupName)
+    local runtime, definition = ph1.Runtime, ph1.ActiveDefinition
+    if not runtime or not definition or not HELICOPTER_SQUADRONS[definition.SquadronKey] then return true end
+    if not flightgroup or not flightgroup.SetOptionPreferVertical then
+      runtime.HardFailure = "vertical-option-MOOSE-method-unavailable-" .. tostring(groupName)
+      log("ERROR FLIGHTGROUP_OPTION group=" .. tostring(groupName) .. " SetOptionPreferVertical unavailable")
+      return false
+    end
+    local ok, result = pcall(function() return flightgroup:SetOptionPreferVertical() end)
+    if not ok or not result or flightgroup.OptionPreferVertical ~= true then
+      runtime.HardFailure = "vertical-option-apply-failed-" .. tostring(groupName)
+      log("ERROR FLIGHTGROUP_OPTION group=" .. tostring(groupName) .. " preferVerticalTakeoffAndLanding failed=" .. tostring(result))
+      return false
+    end
+    runtime.VerticalOptionAppliedGroups = runtime.VerticalOptionAppliedGroups or {}
+    runtime.VerticalOptionAppliedGroups[groupName] = true
+    log(string.format("FLIGHTGROUP_OPTION testId=%s group=%s preferVerticalTakeoffAndLanding=true source=MOOSE_FLIGHTGROUP authority=%s beforeEngineStart=true",
+      tostring(ph1.ActiveTestId), tostring(groupName), tostring(ph1.ActiveKind)))
+    return true
+  end
+
+  local function attachTerminalLossFinalizer(flightgroup, groupName)
+    if not flightgroup or flightgroup.OMWPhase1TerminalLossFinalizerAttached then return end
+    flightgroup.OMWPhase1TerminalLossFinalizerAttached = true
+    local previousDead = flightgroup.OnAfterDead
+    function flightgroup:OnAfterDead(from, event, to)
+      if previousDead then pcall(previousDead, self, from, event, to) end
+      local runtime = ph1.Runtime
+      if not runtime or not runtime.BoundGroupNames[groupName] or runtime.TerminalLossFinalized then return end
+      runtime.TerminalLossFinalized = true
+      local reason = runtime.HardFailure or ("flightgroup-dead-" .. tostring(groupName))
+      runtime.HardFailure = reason
+      log(string.format("TERMINAL_LOSS testId=%s group=%s reason=%s objective=%s nativeState=%s classification=FAIL immediate=true",
+        tostring(ph1.ActiveTestId), tostring(groupName), tostring(reason), tostring(runtime.ObjectiveSatisfied == true), tostring(runtime.NativeState)))
+      if ph1.Controller and ph1.Controller.AbortActive then
+        pcall(function() ph1.Controller:AbortActive("terminal-aircraft-loss") end)
+      end
+      if ph1.Controller and ph1.Controller.FinalizeTest then
+        ph1.Controller:FinalizeTest("FAIL", reason, false)
+      else
+        log("ERROR TERMINAL_LOSS controller finalization API unavailable")
+      end
+    end
   end
 
   function routing:BuildReconProfile(logResult)
@@ -119,17 +166,22 @@ else
     if not ph1.Runtime or not ph1.Runtime.BoundGroupNames[groupName] then return false end
     local group = GROUP and GROUP:FindByName(groupName) or nil
     if not group then return false end
+    local groupAliveOK, groupAlive = pcall(function() return group:IsAlive() end)
+    if not groupAliveOK or groupAlive ~= true then return false end
     for _, unit in ipairs(group:GetUnits() or {}) do
+      local unitAliveOK, unitAlive = pcall(function() return unit:IsAlive() end)
+      if not unitAliveOK or unitAlive ~= true then return false end
       local fuel = nil
       local dcs = unit.GetDCSObject and unit:GetDCSObject() or nil
       if dcs and dcs.getFuel then
         local ok, value = pcall(function() return dcs:getFuel() end)
         if ok then fuel = value end
       end
-      local coordinate = unit:GetCoordinate()
+      local coordinateOK, coordinate = pcall(function() return unit:GetCoordinate() end)
+      if not coordinateOK or not coordinate then return false end
       log(string.format("FUEL testId=%s group=%s unit=%s fuel=%s altitudeMSL=%.0fm terrainMSL=%.0fm",
         tostring(ph1.ActiveTestId), groupName, unit:GetName(), fuel and string.format("%.1f%%", fuel * 100) or "unknown",
-        coordinate and coordinate.y or -1, coordinate and (landHeight(coordinate) or -1) or -1))
+        coordinate.y or -1, landHeight(coordinate) or -1))
     end
     return true
   end
@@ -137,6 +189,9 @@ else
   function routing:OnFlightGroupBound(flightgroup, owner)
     if not ph1.Runtime or not ph1.ActiveDefinition then return end
     local groupName = flightgroup:GetName()
+    if not applyVerticalHelicopterOption(flightgroup, groupName) then return end
+    attachTerminalLossFinalizer(flightgroup, groupName)
+
     if ph1.ActiveTestId == "OH58D_RECON" and ph1.ActiveKind == "AUFTRAG" then
       local zone1 = ZONE:FindByName(ph1.Objects.ReconZones[1])
       local profile = self.ReconProfile
@@ -167,5 +222,5 @@ else
     end
   end
 
-  log("READY publicMOOSE=true routeAuthority=AUFTRAG+FLIGHTGROUP terrainPolicy=project-specific-advisory fuel=empirical-telemetry selfStoppingSchedulers=true")
+  log("READY publicMOOSE=true routeAuthority=AUFTRAG+FLIGHTGROUP verticalHelicopterOps=FLIGHTGROUP:SetOptionPreferVertical terminalAircraftLoss=IMMEDIATE_FAIL terrainPolicy=project-specific-advisory fuel=empirical-telemetry selfStoppingSchedulers=true")
 end
