@@ -102,17 +102,17 @@ else
   local function createRecon(definition)
     local zones = SET_ZONE:New()
     for _, name in ipairs(ph1.Objects.ReconZones) do zones:AddZone(findZone(name)) end
-    local profile = ph1.Routing and ph1.Routing.ReconProfile or nil
-    local altitude = profile and profile.AltitudeFeet or 6500
-    local speed = profile and profile.SpeedKnots or 80
+    local altitude = definition.FlightAltitudeFeet
+    local speed = definition.FlightSpeedKnots
+    if not altitude or not speed then return nil, "OH-58 fixed flight altitude/speed unavailable" end
 
-    -- Formation is applied centrally through routing:ConfigureMission(). Do not
-    -- hard-code Vee/Wedge here; DCS has no direct Combat Cruise enum and the
-    -- project uses EchelonRight.D300 as the documented two-ship approximation.
+    -- The outbound profile already behaved correctly in DCS. Keep its explicit
+    -- altitude and speed unchanged. Routing:ConfigureMission applies the same
+    -- values to the MOOSE egress waypoint; no terrain-derived recovery altitude.
     local mission = AUFTRAG:NewRECON(zones, speed, altitude, false, false)
-    local zone2 = findZone(ph1.Objects.ReconZones[2])
-    if mission and zone2 and mission.SetMissionEgressCoord then
-      mission:SetMissionEgressCoord(zone2:GetCoordinate(), altitude, speed)
+    if mission then
+      mission.OMWIngressAltitudeFeet = altitude
+      mission.OMWIngressSpeedKnots = speed
     end
     return configureAuftrag(mission, definition)
   end
@@ -123,7 +123,15 @@ else
     if not target then return nil, "CAS target spawn failed" end
     local targetName = target:GetName()
     ph1.Runtime.CASTargetGroupName = targetName
-    local mission = AUFTRAG:NewCAS(zone, 3500, 110, zone:GetCoordinate(), nil, nil, { "Ground Units" })
+    local altitude = definition.FlightAltitudeFeet
+    local speed = definition.FlightSpeedKnots
+    if not altitude or not speed then return nil, "AH-64 fixed flight altitude/speed unavailable" end
+
+    -- Preserve the successful outbound CAS profile. The same altitude and speed
+    -- are reused by Routing:ConfigureMission for egress and return transit.
+    local mission = AUFTRAG:NewCAS(zone, altitude, speed, zone:GetCoordinate(), nil, nil, { "Ground Units" })
+    mission.OMWIngressAltitudeFeet = altitude
+    mission.OMWIngressSpeedKnots = speed
     mission:AddConditionSuccess(function()
       local group = GROUP:FindByName(targetName)
       return not group or not group:IsAlive()
@@ -277,5 +285,5 @@ else
     return "AUFTRAG", mission
   end
 
-  log("READY authority=AUFTRAG/OPSTRANSPORT payloadAPI=AddRequiredPayload objectives=AddConditionSuccess customObjectivePollers=false directDatabaseAccess=false UH60LandingGeometry=ME_AuthoredCenters+OPSTRANSPORT_PublicZoneAPI CH47SlingTaskAdapter=INNER_DCS_TASK_PARAMETERS CH47ObjectiveLatch=STATIC_IN_ZONE reconFormation=ROUTING_CONFIGURED")
+  log("READY authority=AUFTRAG/OPSTRANSPORT payloadAPI=AddRequiredPayload objectives=AddConditionSuccess customObjectivePollers=false directDatabaseAccess=false UH60LandingGeometry=ME_AuthoredCenters+OPSTRANSPORT_PublicZoneAPI CH47SlingTaskAdapter=INNER_DCS_TASK_PARAMETERS CH47ObjectiveLatch=STATIC_IN_ZONE reconFormation=ROUTING_CONFIGURED rotorIngressAltitude=FIXED rotorReturnAltitude=MATCH_INGRESS terrainAltitudeCalculation=false")
 end
