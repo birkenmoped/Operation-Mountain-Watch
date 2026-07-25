@@ -11,6 +11,18 @@ else
   ph1.Routing = routing
 
   local HELICOPTER_SQUADRONS = { OH58D = true, AH64D = true, UH60 = true, CH47 = true }
+  local TACTICAL_FORMATIONS = {
+    ECHELON_RIGHT_300 = function()
+      return ENUMS and ENUMS.Formation and ENUMS.Formation.RotaryWing
+        and ENUMS.Formation.RotaryWing.EchelonRight
+        and ENUMS.Formation.RotaryWing.EchelonRight.D300 or nil
+    end,
+    ECHELON_LEFT_300 = function()
+      return ENUMS and ENUMS.Formation and ENUMS.Formation.RotaryWing
+        and ENUMS.Formation.RotaryWing.EchelonLeft
+        and ENUMS.Formation.RotaryWing.EchelonLeft.D300 or nil
+    end
+  }
 
   local function distance2D(first, second)
     if not first or not second then return nil end
@@ -46,6 +58,11 @@ else
     return maximum, length
   end
 
+  local function altitudeFeetForTerrain(maximumTerrainMeters, clearanceMeters)
+    if not maximumTerrainMeters then return nil end
+    return math.ceil(((maximumTerrainMeters + clearanceMeters) * 3.280839895) / 100) * 100
+  end
+
   local function applyVerticalHelicopterOption(flightgroup, groupName)
     local runtime, definition = ph1.Runtime, ph1.ActiveDefinition
     if not runtime or not definition or not HELICOPTER_SQUADRONS[definition.SquadronKey] then return true end
@@ -62,7 +79,7 @@ else
     end
     runtime.VerticalOptionAppliedGroups = runtime.VerticalOptionAppliedGroups or {}
     runtime.VerticalOptionAppliedGroups[groupName] = true
-    log(string.format("FLIGHTGROUP_OPTION testId=%s group=%s preferVerticalTakeoffAndLanding=true source=MOOSE_FLIGHTGROUP authority=%s beforeEngineStart=true",
+    log(string.format("FLIGHTGROUP_OPTION testId=%s group=%s preferVerticalTakeoffAndLanding=true source=MOOSE_FLIGHTGROUP authority=%s beforeEngineStart=true advisory=true",
       tostring(ph1.ActiveTestId), tostring(groupName), tostring(ph1.ActiveKind)))
     return true
   end
@@ -195,7 +212,7 @@ else
       profile.TotalRouteMeters = profile.TotalRouteMeters + length
       profile.MaximumTerrainMeters = math.max(profile.MaximumTerrainMeters, terrain)
     end
-    profile.AltitudeFeet = math.ceil(((profile.MaximumTerrainMeters + ph1.Limits.ReconClearanceAGLMeters) * 3.280839895) / 100) * 100
+    profile.AltitudeFeet = altitudeFeetForTerrain(profile.MaximumTerrainMeters, ph1.Limits.ReconClearanceAGLMeters)
     profile.MissionRangeNM = math.max(20, math.ceil(profile.TotalRouteMeters / 2 / 1852) + 5)
     self.ReconProfile = profile
     ph1.Tests.OH58D_RECON.MissionRangeNM = profile.MissionRangeNM
@@ -204,6 +221,73 @@ else
         profile.TotalRouteMeters, profile.MaximumTerrainMeters, profile.AltitudeFeet, profile.MissionRangeNM))
     end
     return true, nil, profile
+  end
+
+  function routing:BuildCASRecoveryProfile(logResult)
+    local airbase = cfg.Airbase or (AIRBASE and AIRBASE:FindByName(cfg.AirbaseName))
+    local casZone = ZONE and ZONE:FindByName(ph1.Objects.CASZone) or nil
+    local egressZone = ZONE and ZONE:FindByName(ph1.Objects.ReconZones[1]) or nil
+    if not airbase or not casZone or not egressZone then
+      return false, "CAS recovery airbase/zone unavailable"
+    end
+
+    local points = { casZone:GetCoordinate(), egressZone:GetCoordinate(), airbase:GetCoordinate() }
+    local profile = {
+      TotalRouteMeters = 0,
+      MaximumTerrainMeters = -math.huge,
+      SpeedKnots = ph1.Limits.RecoverySpeedKnots,
+      EgressCoordinate = egressZone:GetCoordinate(),
+      EgressZoneName = egressZone:GetName()
+    }
+    for index = 1, #points - 1 do
+      local terrain, length, err = sampleLeg(points[index], points[index + 1], ph1.Limits.TerrainSampleSpacingMeters)
+      if not terrain then return false, "CAS recovery terrain scan failed: " .. tostring(err) end
+      profile.TotalRouteMeters = profile.TotalRouteMeters + length
+      profile.MaximumTerrainMeters = math.max(profile.MaximumTerrainMeters, terrain)
+    end
+    profile.AltitudeFeet = altitudeFeetForTerrain(profile.MaximumTerrainMeters, ph1.Limits.RecoveryClearanceAGLMeters)
+    self.CASRecoveryProfile = profile
+    if logResult then
+      log(string.format("CAS_RECOVERY_PROFILE READY route=CAS->%s->Jalalabad distance=%.0fm maxTerrain=%.0fm clearance=%dm altitude=%dft_ASL speed=%dkt authority=AUFTRAG:SetMissionEgressCoord",
+        profile.EgressZoneName, profile.TotalRouteMeters, profile.MaximumTerrainMeters,
+        ph1.Limits.RecoveryClearanceAGLMeters, profile.AltitudeFeet, profile.SpeedKnots))
+    end
+    return true, nil, profile
+  end
+
+  function routing:ConfigureMission(testId, mission, definition)
+    if not mission or not definition then return false, "mission/definition unavailable" end
+
+    if definition.TacticalFormation then
+      local resolver = TACTICAL_FORMATIONS[definition.TacticalFormation]
+      local formation = resolver and resolver() or nil
+      if not formation or not mission.SetFormation then
+        return false, "MOOSE rotary formation unavailable: " .. tostring(definition.TacticalFormation)
+      end
+      local ok, result = pcall(function() return mission:SetFormation(formation) end)
+      if not ok or not result then return false, "MOOSE SetFormation failed" end
+      log(string.format("TACTICAL_FORMATION_APPLIED testId=%s formation=%s value=%s doctrineApproximation=COMBAT_CRUISE_RIGHT authority=AUFTRAG:SetFormation",
+        tostring(testId), tostring(definition.TacticalFormation), tostring(formation)))
+    end
+
+    if definition.RecoveryProfile == "CAS_MOUNTAIN_CORRIDOR" then
+      local profile = self.CASRecoveryProfile
+      if not profile then
+        local ready, reason, built = self:BuildCASRecoveryProfile(false)
+        if not ready then return false, reason end
+        profile = built
+      end
+      if not mission.SetMissionEgressCoord then return false, "AUFTRAG:SetMissionEgressCoord unavailable" end
+      local ok, result = pcall(function()
+        return mission:SetMissionEgressCoord(profile.EgressCoordinate, profile.AltitudeFeet, profile.SpeedKnots)
+      end)
+      if not ok or not result then return false, "CAS recovery egress configuration failed" end
+      log(string.format("MOUNTAIN_RECOVERY_APPLIED testId=%s egress=%s altitude=%dft_ASL speed=%dkt clearance=%dm authority=AUFTRAG:SetMissionEgressCoord",
+        tostring(testId), tostring(profile.EgressZoneName), profile.AltitudeFeet, profile.SpeedKnots,
+        ph1.Limits.RecoveryClearanceAGLMeters))
+    end
+
+    return true
   end
 
   local function templateRoutePointCount(group)
@@ -221,6 +305,7 @@ else
 
   function routing:ValidateTestReady(testId, logResult)
     if testId == "OH58D_RECON" then return self:BuildReconProfile(logResult) end
+    if testId == "AH64D_CAS" then return self:BuildCASRecoveryProfile(logResult) end
     if testId == "UH60_TROOP" or testId == "UH60_ABORT" then
       local pickup, deploy = ZONE:FindByName(ph1.Objects.UHLoadZone), ZONE:FindByName(ph1.Objects.UHUnloadZone)
       if not pickup or not deploy then return false, "UH-60 pickup/deploy zones unavailable" end
@@ -238,7 +323,7 @@ else
       if not cargo or not pickup or not drop then return false, "CH-47 cargo objects unavailable" end
       if not cargo:IsInZone(pickup) then return false, "CH-47 static cargo not inside pickup zone" end
       if cargo:IsInZone(drop) then return false, "CH-47 static cargo already inside drop zone" end
-      if logResult then log("SLING_CARGO_PROFILE READY authority=AUFTRAG:NewCARGOTRANSPORT physicalSuccess=STATIC:IsInZone") end
+      if logResult then log("SLING_CARGO_PROFILE READY authority=AUFTRAG:NewCARGOTRANSPORT physicalSuccess=STATIC:IsInZone requiredTaskAdapter=CARGOTRANSPORT_TASK_BOUND") end
       return true
     end
     if logResult then log("TEST_READINESS READY testId=" .. tostring(testId) .. " additionalChecks=none") end
@@ -316,5 +401,5 @@ else
     end
   end
 
-  log("READY publicMOOSE=true routeAuthority=AUFTRAG+FLIGHTGROUP verticalHelicopterOps=FLIGHTGROUP:SetOptionPreferVertical terminalAircraftLoss=IMMEDIATE_FAIL expectedFinalDespawn=NON_LOSS_WAIT_FOR_MOOSE_LEGION_RETURN assetRelease=LEGION:OnAfterLegionAssetReturned terrainPolicy=project-specific-advisory fuel=empirical-telemetry selfStoppingSchedulers=true")
+  log("READY publicMOOSE=true routeAuthority=AUFTRAG+FLIGHTGROUP verticalHelicopterOps=FLIGHTGROUP:SetOptionPreferVertical(advisory) tacticalFormation=AUFTRAG:SetFormation(EchelonRight300) mountainRecovery=AUFTRAG:SetMissionEgressCoord terrainClearance=sampled-ASL terminalAircraftLoss=IMMEDIATE_FAIL expectedFinalDespawn=NON_LOSS_WAIT_FOR_MOOSE_LEGION_RETURN assetRelease=LEGION:OnAfterLegionAssetReturned fuel=empirical-telemetry selfStoppingSchedulers=true")
 end
