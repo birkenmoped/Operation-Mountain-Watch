@@ -1,6 +1,6 @@
 -- Operation Mountain Watch - generic MOOSE-native logistics authority adapter
 -- GROUP/STORAGE logistics use OPSTRANSPORT. Static sling and internal freight use
--- their native AUFTRAG constructors. DCS dynamic cargo uses MOOSE EVENTS.
+-- native AUFTRAG constructors. DCS dynamic cargo uses MOOSE EVENTS.
 local TAG = "[OMW][AirOps.JBAD.PH1.LOGISTICS]"
 local function log(msg) env.info(TAG .. " " .. tostring(msg)) end
 
@@ -24,12 +24,9 @@ else
   end
 
   local function coordinateInZone(coordinate, zone)
-    if not coordinate or not zone then return false end
-    if zone.IsCoordinateInZone then
-      local ok, value = pcall(function() return zone:IsCoordinateInZone(coordinate) end)
-      if ok then return value == true end
-    end
-    return false
+    if not coordinate or not zone or not zone.IsCoordinateInZone then return false end
+    local ok, value = pcall(function() return zone:IsCoordinateInZone(coordinate) end)
+    return ok and value == true
   end
 
   local function eventCoordinate(eventData)
@@ -44,9 +41,9 @@ else
     return nil
   end
 
-  local function nativeState(state)
+  local function nativeState(state, transport)
     if ph1.Controller and ph1.Controller.OnNativeState then
-      ph1.Controller:OnNativeState("OPSTRANSPORT", state, ph1.ActiveObject)
+      ph1.Controller:OnNativeState("OPSTRANSPORT", state, transport or ph1.ActiveObject)
     end
   end
 
@@ -67,6 +64,16 @@ else
     end
   end
 
+  local function validateGroupCargoIdentity(metadata, cargo)
+    if metadata.Profile ~= "GROUP_CARGO" or not metadata.CargoName then return true end
+    local actual = objectName(cargo)
+    if actual ~= metadata.CargoName and ph1.Runtime then
+      ph1.Runtime.HardFailure = "wrong-native-cargo-" .. tostring(actual)
+      return false
+    end
+    return true
+  end
+
   local function installTransportCallbacks(transport, metadata)
     transport.OMWMetadata = metadata
 
@@ -74,7 +81,7 @@ else
     function transport:OnAfterQueued(from, event, to)
       if previousQueued then pcall(previousQueued, self, from, event, to) end
       if ph1.ActiveObject ~= self then return end
-      nativeState("QUEUED")
+      nativeState("QUEUED", self)
       log("NATIVE_TRANSPORT state=QUEUED operation=" .. tostring(metadata.TestId))
     end
 
@@ -82,7 +89,7 @@ else
     function transport:OnAfterRequested(from, event, to)
       if previousRequested then pcall(previousRequested, self, from, event, to) end
       if ph1.ActiveObject ~= self then return end
-      nativeState("REQUESTED")
+      nativeState("REQUESTED", self)
       log("NATIVE_TRANSPORT state=REQUESTED operation=" .. tostring(metadata.TestId))
     end
 
@@ -90,7 +97,7 @@ else
     function transport:OnAfterScheduled(from, event, to)
       if previousScheduled then pcall(previousScheduled, self, from, event, to) end
       if ph1.ActiveObject ~= self then return end
-      nativeState("SCHEDULED")
+      nativeState("SCHEDULED", self)
       bindAfterEvent(self, "OPSTRANSPORT_SCHEDULED")
       log("NATIVE_TRANSPORT state=SCHEDULED operation=" .. tostring(metadata.TestId))
     end
@@ -99,7 +106,7 @@ else
     function transport:OnAfterExecuting(from, event, to)
       if previousExecuting then pcall(previousExecuting, self, from, event, to) end
       if ph1.ActiveObject ~= self then return end
-      nativeState("EXECUTING")
+      nativeState("EXECUTING", self)
       bindAfterEvent(self, "OPSTRANSPORT_EXECUTING")
       log("NATIVE_TRANSPORT state=EXECUTING operation=" .. tostring(metadata.TestId))
     end
@@ -109,15 +116,11 @@ else
       if previousLoaded then pcall(previousLoaded, self, from, event, to, cargo, carrier, carrierElement) end
       if ph1.ActiveObject ~= self or not ph1.Runtime then return end
       observer:BindFlightGroup(carrier, self, "OPSTRANSPORT_LOADED")
-      local cargoName = objectName(cargo)
-      if metadata.Profile == "GROUP_CARGO" and metadata.CargoName and cargoName ~= metadata.CargoName then
-        ph1.Runtime.HardFailure = "wrong-native-cargo-loaded-" .. tostring(cargoName)
-        return
-      end
+      if not validateGroupCargoIdentity(metadata, cargo) then return end
       ph1.Runtime.NativeCargoLoaded = true
-      ph1.Runtime.NativeCargoLoadedName = cargoName
+      ph1.Runtime.NativeCargoLoadedName = objectName(cargo)
       log(string.format("NATIVE_CARGO event=Loaded operation=%s profile=%s cargo=%s carrier=%s pickupLanding=%s",
-        tostring(metadata.TestId), tostring(metadata.Profile), tostring(cargoName), tostring(objectName(carrier)), tostring(ph1.Runtime.PickupLandingObserved)))
+        tostring(metadata.TestId), tostring(metadata.Profile), tostring(objectName(cargo)), tostring(objectName(carrier)), tostring(ph1.Runtime.PickupLandingObserved)))
     end
 
     local previousUnloaded = transport.OnAfterUnloaded
@@ -125,15 +128,11 @@ else
       if previousUnloaded then pcall(previousUnloaded, self, from, event, to, cargo, carrier) end
       if ph1.ActiveObject ~= self or not ph1.Runtime then return end
       observer:BindFlightGroup(carrier, self, "OPSTRANSPORT_UNLOADED")
-      local cargoName = objectName(cargo)
-      if metadata.Profile == "GROUP_CARGO" and metadata.CargoName and cargoName ~= metadata.CargoName then
-        ph1.Runtime.HardFailure = "wrong-native-cargo-unloaded-" .. tostring(cargoName)
-        return
-      end
+      if not validateGroupCargoIdentity(metadata, cargo) then return end
       ph1.Runtime.NativeCargoUnloaded = true
-      ph1.Runtime.NativeCargoUnloadedName = cargoName
+      ph1.Runtime.NativeCargoUnloadedName = objectName(cargo)
       log(string.format("NATIVE_CARGO event=Unloaded operation=%s profile=%s cargo=%s carrier=%s dropoffLanding=%s",
-        tostring(metadata.TestId), tostring(metadata.Profile), tostring(cargoName), tostring(objectName(carrier)), tostring(ph1.Runtime.DropoffLandingObserved)))
+        tostring(metadata.TestId), tostring(metadata.Profile), tostring(objectName(cargo)), tostring(objectName(carrier)), tostring(ph1.Runtime.DropoffLandingObserved)))
       logistics:RefreshObjective()
     end
 
@@ -142,7 +141,7 @@ else
       if previousDelivered then pcall(previousDelivered, self, from, event, to) end
       if ph1.ActiveObject ~= self or not ph1.Runtime then return end
       ph1.Runtime.NativeTransportDelivered = true
-      nativeState("DELIVERED")
+      nativeState("DELIVERED", self)
       bindAfterEvent(self, "OPSTRANSPORT_DELIVERED")
       logistics:RefreshObjective()
       log(string.format("NATIVE_TRANSPORT state=DELIVERED operation=%s profile=%s delivered=%d/%d",
@@ -153,7 +152,7 @@ else
     function transport:OnAfterCancel(from, event, to)
       if previousCancel then pcall(previousCancel, self, from, event, to) end
       if ph1.ActiveObject ~= self then return end
-      nativeState("CANCELLED")
+      nativeState("CANCELLED", self)
       log("NATIVE_TRANSPORT state=CANCELLED operation=" .. tostring(metadata.TestId))
     end
 
@@ -186,9 +185,11 @@ else
     if not spec or not spec.PickupZone or not spec.DeployZone or not spec.StorageFrom or not spec.StorageTo then
       return nil, "storage-transport-input-missing"
     end
+    local amount = tonumber(spec.CargoAmount) or 0
+    if amount <= 0 then return nil, "storage-cargo-amount-invalid" end
     local transport = OPSTRANSPORT:New(nil, spec.PickupZone, spec.DeployZone)
     transport:SetRequiredCarriers(spec.RequiredCarriersMin or 1, spec.RequiredCarriersMax or spec.RequiredCarriersMin or 1)
-    transport:AddCargoStorage(spec.StorageFrom, spec.StorageTo, spec.CargoType, spec.CargoAmount, spec.CargoWeight or 1)
+    transport:AddCargoStorage(spec.StorageFrom, spec.StorageTo, spec.CargoType, amount, spec.CargoWeight or 1)
     transport:SetPriority(spec.Priority or 50, spec.Importance, spec.Urgent)
     installTransportCallbacks(transport, {
       TestId = spec.Id or "STORAGE_LOGISTICS",
@@ -198,8 +199,8 @@ else
       CarrierSquadronKey = spec.CarrierSquadronKey or "CH47",
       StorageSpec = spec
     })
-    log(string.format("LOGISTICS_CREATED operation=%s authority=OPSTRANSPORT profile=STORAGE_CARGO carrierSquadron=%s cargoType=%s amount=%s",
-      tostring(spec.Id or "STORAGE_LOGISTICS"), tostring(spec.CarrierSquadronKey or "CH47"), tostring(spec.CargoType), tostring(spec.CargoAmount)))
+    log(string.format("LOGISTICS_CREATED operation=%s authority=OPSTRANSPORT profile=STORAGE_CARGO carrierSquadron=%s cargoType=%s amount=%d",
+      tostring(spec.Id or "STORAGE_LOGISTICS"), tostring(spec.CarrierSquadronKey or "CH47"), tostring(spec.CargoType), amount))
     return transport
   end
 
@@ -213,13 +214,13 @@ else
       end
       if total <= 0 then return nil, nil, "group-cargo-weight-unavailable" end
       return maximum, total
-    elseif metadata.Profile == "STORAGE_CARGO" then
+    end
+    if metadata.Profile == "STORAGE_CARGO" then
       local spec = metadata.StorageSpec or {}
       local itemWeight = tonumber(spec.CargoWeight) or 1
       local amount = tonumber(spec.CargoAmount) or 0
       if amount <= 0 then return nil, nil, "storage-cargo-amount-invalid" end
-      local total = itemWeight * amount
-      return math.min(total, itemWeight), total
+      return itemWeight, itemWeight * amount
     end
     return nil, nil, nil
   end
@@ -233,17 +234,8 @@ else
     local deploy = transport:GetDeployZone()
     local target = deploy and deploy:GetVec2() or nil
     local recruited, assets, legions = LEGION.RecruitCohortAssets(
-      { squadron },
-      AUFTRAG.Type.OPSTRANSPORT,
-      AUFTRAG.Type.OPSTRANSPORT,
-      minimum,
-      maximum,
-      target,
-      nil,
-      nil,
-      nil,
-      cargoWeight,
-      totalWeight
+      { squadron }, AUFTRAG.Type.OPSTRANSPORT, AUFTRAG.Type.OPSTRANSPORT,
+      minimum, maximum, target, nil, nil, nil, cargoWeight, totalWeight
     )
     return recruited, assets, legions, recruited and nil or "MOOSE-exact-cohort-recruitment-failed"
   end
@@ -267,15 +259,13 @@ else
   end
 
   function logistics:OnCarrierLanding(groupName, eventData)
-    if not ph1.Runtime or ph1.ActiveDefinition.OperationKind ~= "OPSTRANSPORT" then return end
+    if not ph1.Runtime or not ph1.ActiveDefinition or ph1.ActiveDefinition.OperationKind ~= "OPSTRANSPORT" then return end
     local metadata = ph1.ActiveObject and ph1.ActiveObject.OMWMetadata or {}
     local coordinate = eventCoordinate(eventData)
-    local pickup = metadata.PickupZone
-    local deploy = metadata.DeployZone
-    if coordinateInZone(coordinate, pickup) and not ph1.Runtime.NativeCargoLoaded then
+    if coordinateInZone(coordinate, metadata.PickupZone) and not ph1.Runtime.NativeCargoLoaded then
       ph1.Runtime.PickupLandingObserved = true
       log("LOGISTICS_PHYSICAL event=PICKUP_LANDING group=" .. tostring(groupName))
-    elseif coordinateInZone(coordinate, deploy) and ph1.Runtime.NativeCargoLoaded then
+    elseif coordinateInZone(coordinate, metadata.DeployZone) and ph1.Runtime.NativeCargoLoaded then
       ph1.Runtime.DropoffLandingObserved = true
       log("LOGISTICS_PHYSICAL event=DROPOFF_LANDING group=" .. tostring(groupName))
     else
@@ -310,6 +300,17 @@ else
     return false
   end
 
+  local function verifyStorageDelivery(metadata, transport)
+    local verifier = metadata.StorageSpec and metadata.StorageSpec.VerifyDelivered or nil
+    if not verifier then return true, false end
+    local ok, value = pcall(verifier, metadata.StorageSpec, transport)
+    if not ok then
+      if ph1.Runtime then ph1.Runtime.HardFailure = "storage-delivery-verifier-error-" .. tostring(value) end
+      return false, true
+    end
+    return value == true, true
+  end
+
   function logistics:RefreshObjective()
     local runtime = ph1.Runtime
     local definition = ph1.ActiveDefinition
@@ -332,18 +333,16 @@ else
       local metadata = transport and transport.OMWMetadata or {}
       local delivered = transport and transport.GetNcargoDelivered and transport:GetNcargoDelivered() or 0
       local total = transport and transport.GetNcargoTotal and transport:GetNcargoTotal() or 0
-      local verifier = metadata.StorageSpec and metadata.StorageSpec.VerifyDelivered or nil
-      local verified = verifier and verifier(metadata.StorageSpec, transport) or true
+      local verified, customVerifier = verifyStorageDelivery(metadata, transport)
       if runtime.NativeTransportDelivered and total > 0 and delivered == total and verified then
         runtime.ObjectiveSatisfied = true
-        log("LOGISTICS_OBJECTIVE PASS profile=STORAGE_CARGO nativeDelivered=true storageVerification=" .. tostring(verifier ~= nil))
+        log("LOGISTICS_OBJECTIVE PASS profile=STORAGE_CARGO nativeDelivered=true customStorageVerification=" .. tostring(customVerifier))
         self:ArmFinalDespawn()
       end
     elseif definition.LogisticsProfile == "STATIC_SLING_CARGO" then
       local cargo = STATIC and STATIC:FindByName(ph1.Objects.CH47Cargo, false) or nil
       local zone = ZONE and ZONE:FindByName(ph1.Objects.CH47DropZone) or nil
-      local inZone = cargo and zone and cargo:IsInZone(zone) or false
-      if runtime.NativeState == "SUCCESS" and inZone then
+      if runtime.NativeState == "SUCCESS" and cargo and zone and cargo:IsInZone(zone) then
         runtime.ObjectiveSatisfied = true
         log("LOGISTICS_OBJECTIVE PASS profile=STATIC_SLING_CARGO nativeAuftragSuccess=true physicalCargoAtDrop=true")
         self:ArmFinalDespawn()
@@ -374,23 +373,23 @@ else
   if EVENTS.DynamicCargoRemoved and EVENTS.DynamicCargoRemoved ~= -1 then dynamicHandler:HandleEvent(EVENTS.DynamicCargoRemoved) end
 
   function dynamicHandler:OnEventDynamicCargoLoaded(eventData)
-    if not ph1.Runtime or ph1.ActiveDefinition.LogisticsProfile ~= "DYNAMIC_CARGO" then return end
+    if not ph1.Runtime or not ph1.ActiveDefinition or ph1.ActiveDefinition.LogisticsProfile ~= "DYNAMIC_CARGO" then return end
     ph1.Runtime.DynamicCargoLoaded = true
     ph1.Runtime.DynamicCargoName = eventData.IniDynamicCargoName
     log("NATIVE_DYNAMIC_CARGO event=Loaded cargo=" .. tostring(eventData.IniDynamicCargoName))
   end
   function dynamicHandler:OnEventDynamicCargoUnloaded(eventData)
-    if not ph1.Runtime or ph1.ActiveDefinition.LogisticsProfile ~= "DYNAMIC_CARGO" then return end
+    if not ph1.Runtime or not ph1.ActiveDefinition or ph1.ActiveDefinition.LogisticsProfile ~= "DYNAMIC_CARGO" then return end
     ph1.Runtime.DynamicCargoUnloaded = true
     ph1.Runtime.DynamicCargoName = eventData.IniDynamicCargoName
     log("NATIVE_DYNAMIC_CARGO event=Unloaded cargo=" .. tostring(eventData.IniDynamicCargoName))
     logistics:RefreshObjective()
   end
   function dynamicHandler:OnEventDynamicCargoRemoved(eventData)
-    if not ph1.Runtime or ph1.ActiveDefinition.LogisticsProfile ~= "DYNAMIC_CARGO" then return end
+    if not ph1.Runtime or not ph1.ActiveDefinition or ph1.ActiveDefinition.LogisticsProfile ~= "DYNAMIC_CARGO" then return end
     ph1.Runtime.DynamicCargoRemoved = true
     log("NATIVE_DYNAMIC_CARGO event=Removed cargo=" .. tostring(eventData.IniDynamicCargoName))
   end
 
-  log("READY genericProfiles=GROUP_CARGO/STORAGE_CARGO/STATIC_SLING_CARGO/STATIC_FREIGHT_CARGO/DYNAMIC_CARGO groupAndStorageAuthority=OPSTRANSPORT exactCarrierCohortRecruitment=LEGION.RecruitCohortAssets")
+  log("READY profiles=GROUP/STORAGE/STATIC_SLING/STATIC_FREIGHT/DYNAMIC groupAndStorageAuthority=OPSTRANSPORT exactCarrierRecruitment=LEGION.RecruitCohortAssets")
 end
