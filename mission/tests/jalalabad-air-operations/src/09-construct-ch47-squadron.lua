@@ -23,21 +23,27 @@ local function main()
   local typeName = units[1] and units[1]:GetTypeName() or "nil"
   if not looksLikeCH47(typeName) then log(string.format("ERROR: Template %s is not recognized as CH-47; found=%s", templateName, tostring(typeName))) return end
 
-  local aircraftCount = contract.InventoryAircraft
-  local assetGroupCount = contract.AssetGroups
   local squadronName = cfg.SquadronNames.CH47
   local parkingIDs = cfg:GetSquadronParkingIDs("CH47")
   cfg.Squadrons = cfg.Squadrons or {}
   if cfg.Squadrons.CH47 then log("SKIP: CH-47 squadron already constructed.") return end
 
-  local missionTypes = { AUFTRAG.Type.TROOPTRANSPORT, AUFTRAG.Type.CARGOTRANSPORT, AUFTRAG.Type.LANDATCOORDINATE }
+  local missionTypes = {
+    AUFTRAG.Type.TROOPTRANSPORT,
+    AUFTRAG.Type.CARGOTRANSPORT,
+    AUFTRAG.Type.FREIGHTTRANSPORT,
+    AUFTRAG.Type.LANDATCOORDINATE
+  }
   local ok, result = pcall(function()
-    -- SQUADRON:New() expects the number of MOOSE asset groups, not aircraft.
-    local squadron = SQUADRON:New(templateName, assetGroupCount, squadronName)
+    local squadron = SQUADRON:New(templateName, contract.AssetGroups, squadronName)
     squadron:SetGrouping(contract.Grouping)
     squadron:SetParkingIDs(parkingIDs)
     squadron:SetTakeoffCold()
-    squadron:SetDespawnAfterLanding(true)
+
+    -- Keep squadron-wide despawn unset. Static slingload and future freight or
+    -- storage transports may include operational pickup/deploy phases. The exact
+    -- FLIGHTGROUP is armed for final despawn only by the native logistics adapter.
+
     if AI and AI.Skill and AI.Skill.HIGH then squadron:SetSkill(AI.Skill.HIGH) end
     squadron:AddMissionCapability(missionTypes, 100)
     cfg.Airwing:AddSquadron(squadron)
@@ -54,7 +60,9 @@ local function main()
   cfg.DetectedTypes.CH47 = typeName
   cfg.CorrectionPending = cfg.CorrectionPending or {}
   cfg.CorrectionPending.CH47 = false
-  log(string.format("SQUADRON ready name=%s model=%s inventoryAircraft=%d constructorAssetGroups=%d grouping=%d computedAircraft=%d parkingIDs=%s despawnAfterLanding=true", squadronName, contract.Model, aircraftCount, assetGroupCount, contract.Grouping, assetGroupCount * contract.Grouping, table.concat(parkingIDs, ",")))
+  log(string.format("SQUADRON ready name=%s model=%s inventoryAircraft=%d constructorAssetGroups=%d grouping=%d computedAircraft=%d parkingIDs=%s despawnAfterLanding=UNSET nativeCargoAuthorities=AUFTRAG_CARGOTRANSPORT/FREIGHTTRANSPORT",
+    squadronName, contract.Model, contract.InventoryAircraft, contract.AssetGroups,
+    contract.Grouping, contract.AssetGroups * contract.Grouping, table.concat(parkingIDs, ",")))
 end
 
 if SCHEDULER then SCHEDULER:New(nil, main, {}, 15) else timer.scheduleFunction(function() main() return nil end, nil, timer.getTime() + 15) end
