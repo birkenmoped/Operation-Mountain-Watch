@@ -84,6 +84,22 @@ foreach ($fileName in $sourceFiles) {
     $sourceText[$fileName] = Get-Content -LiteralPath $path -Raw -Encoding UTF8
 }
 
+# File order alone is insufficient when a dependency is scheduled for later.
+# The runtime-name contract must complete while the bundle is evaluated because
+# the manifest, observer, factory, controller and F10 menu are initialized next.
+$nameContractSource = $sourceText['05b-validate-runtime-name-contract.lua']
+if ($nameContractSource -match '\bSCHEDULER\b|timer\.scheduleFunction') {
+    throw "Builder dependency timing invalid: 05b runtime-name validation must not be scheduled."
+}
+if ($nameContractSource -notmatch 'pcall\s*\(\s*main\s*\)' -or $nameContractSource -notmatch 'INITIALIZATION mode=SYNCHRONOUS') {
+    throw "Builder dependency timing invalid: 05b must invoke main synchronously and emit the synchronous initialization marker."
+}
+
+$manifestSource = $sourceText['11-phase1-test-manifest.lua']
+if ($manifestSource -notmatch 'NameContractInitialized' -or $manifestSource -notmatch 'NameContractOK') {
+    throw "Builder dependency gate invalid: Phase-1 manifest must require the initialized runtime-name contract."
+}
+
 $allCanonicalSource = [string]::Join("`n", ($sourceFiles | ForEach-Object { $sourceText[$_] }))
 
 function Get-SourcePatternHits {
@@ -166,7 +182,7 @@ foreach ($api in $requiredMooseApis) {
 
 New-Item -ItemType Directory -Path $distDir -Force | Out-Null
 
-$builderVersion = 'JBAD-AIR-OPS-PHASE1-12-MOOSE-FIRST'
+$builderVersion = 'JBAD-AIR-OPS-PHASE1-13-MOOSE-FIRST'
 $commit = 'UNKNOWN'
 try {
     $commit = (& git -C $repoRoot rev-parse HEAD 2>$null).Trim()
