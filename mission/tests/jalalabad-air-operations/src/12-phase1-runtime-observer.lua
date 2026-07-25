@@ -395,13 +395,28 @@ else
     return true
   end
 
-  local previousFlightOnMission = cfg.Airwing.OnAfterFlightOnMission
-  function cfg.Airwing:OnAfterFlightOnMission(from, event, to, flightgroup, mission)
-    if previousFlightOnMission then pcall(previousFlightOnMission, self, from, event, to, flightgroup, mission) end
-    if ph1.ActiveObject == mission and ph1.ActiveDefinition and ph1.ActiveDefinition.OperationKind == "AUFTRAG" then
-      observer:BindFlightGroup(flightgroup, mission, "AIRWING_FLIGHT_ON_MISSION")
+  function observer:AttachAirwing(airwing)
+    if self.AirwingHookAttached then
+      return self.AttachedAirwing == airwing
     end
+    if not airwing then
+      log("ERROR AIRWING_HOOK attach failed: AIRWING unavailable")
+      return false
+    end
+
+    local previousFlightOnMission = airwing.OnAfterFlightOnMission
+    function airwing:OnAfterFlightOnMission(from, event, to, flightgroup, mission)
+      if previousFlightOnMission then pcall(previousFlightOnMission, self, from, event, to, flightgroup, mission) end
+      if ph1.ActiveObject == mission and ph1.ActiveDefinition and ph1.ActiveDefinition.OperationKind == "AUFTRAG" then
+        observer:BindFlightGroup(flightgroup, mission, "AIRWING_FLIGHT_ON_MISSION")
+      end
+    end
+
+    self.AttachedAirwing = airwing
+    self.AirwingHookAttached = true
+    log("AIRWING_HOOK READY event=OnAfterFlightOnMission attachment=DEFERRED_UNTIL_CONSTRUCTION")
+    return true
   end
 
-  log("READY sourceOfTruth=MOOSE_OBJECT_REFERENCES inventory=CountAssets/CountAssetsOnMission queue=CountMissionsInQueue lifecycle=object-scoped-GROUP+FLIGHTGROUP events nameMatching=ASSERTION_ONLY")
+  log("READY sourceOfTruth=MOOSE_OBJECT_REFERENCES inventory=CountAssets/CountAssetsOnMission queue=CountMissionsInQueue lifecycle=object-scoped-GROUP+FLIGHTGROUP events nameMatching=ASSERTION_ONLY airwingHook=DEFERRED")
 end
