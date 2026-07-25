@@ -23,21 +23,10 @@ local function check(kind, names, finder)
   return present, missing
 end
 
--- Public MOOSE wrapper path for Mission Editor templates, including unoccupied
--- Client groups and Late-Activation templates. GROUP:Register() creates a
--- wrapper reference only; GROUP:GetTemplate() remains the template source.
 local function findMissionTemplate(name)
-  if not name or not GROUP then return nil end
-
-  local group = GROUP:FindByName(name)
-  if not group and GROUP.Register then
-    local registerOK, registered = pcall(function() return GROUP:Register(name) end)
-    if registerOK then group = registered end
-  end
-  if not group or not group.GetTemplate then return nil end
-
-  local templateOK, template = pcall(function() return group:GetTemplate() end)
-  if not templateOK or type(template) ~= "table" then return nil end
+  if not name or not _DATABASE or not _DATABASE.GetGroupTemplate then return nil end
+  local ok, template = pcall(function() return _DATABASE:GetGroupTemplate(name) end)
+  if not ok or type(template) ~= "table" then return nil end
   return template
 end
 
@@ -84,7 +73,7 @@ local function main()
   local warehouse = (STATIC and STATIC:FindByName(cfg.WarehouseName, false)) or
                     (UNIT and UNIT:FindByName(cfg.WarehouseName))
   log("WAREHOUSE_ANCHOR " .. (warehouse and "OK" or "MISSING") .. " " .. cfg.WarehouseName)
-  log("RAMP_MODEL inventory=24/8/8/8 playerPerType=2 staticCaps=7/4/4/5 comparableParking=36 templateLookup=GROUP:Register+GetTemplate")
+  log("RAMP_MODEL inventory=24/8/8/8 playerPerType=2 staticCaps=7/4/4/5 comparableParking=36 templateLookup=DATABASE:GetGroupTemplate")
 end
 
 if SCHEDULER then
