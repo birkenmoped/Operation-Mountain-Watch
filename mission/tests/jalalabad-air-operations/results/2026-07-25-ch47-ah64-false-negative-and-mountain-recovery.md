@@ -55,7 +55,27 @@ CH47SlingTaskAdapter=INNER_DCS_TASK_PARAMETERS
 
 Therefore this run used an older generated bundle. It did not test the current adapter which copies the MOOSE-derived `groupId` and `zoneId` into the inner DCS `CargoTransportation` task.
 
-The physical cargo release seen by the observer is not sufficient to reclassify this specific old-bundle run as a native MOOSE success because the old AUFTRAG evaluation ended in `FAILED`. The corrected bundle must be retested before changing the CH-47 objective semantics further.
+The physical cargo release seen by the observer is not sufficient to reclassify this specific old-bundle run as a native MOOSE success because the old AUFTRAG evaluation ended in `FAILED`. The corrected bundle must be retested.
+
+### Additional CH-47 acceptance correction
+
+The successful `STATIC:IsInZone(dropZone)` evaluation previously existed only as the return value of the MOOSE success condition. If DCS subsequently removed or transformed the slingload Static, the controller could still retain `objective=false`.
+
+The success callback now latches the physical evidence at the exact successful evaluation edge:
+
+```lua
+if satisfied then
+  ph1.Runtime.ObjectiveSatisfied = true
+end
+```
+
+Expected marker:
+
+```text
+SLING_CARGO_OBJECTIVE PASS ... evidence=STATIC:IsInZone latched=true
+```
+
+This does not replace MOOSE authority. The test still requires native AUFTRAG `SUCCESS`, the physical objective latch, the required flight events and `LEGION_ASSET_RETURNED`.
 
 ## AH-64 observation
 
@@ -188,6 +208,8 @@ mission:SetFormation(...)
 
 This is explicitly an **approximation** of Combat Cruise Right within the formations DCS actually supports. It is not documented as doctrinal equivalence.
 
+The former hard-coded `"Vee"` argument and the second explicit `SetFormation("Vee")` call were removed from the RECON factory. Formation ownership is now centralized in the routing configuration.
+
 Expected marker:
 
 ```text
@@ -209,14 +231,9 @@ The method is therefore treated as a DCS preference, not as a guaranteed takeoff
 
 ```text
 mission/tests/jalalabad-air-operations/src/11-phase1-test-manifest.lua
+mission/tests/jalalabad-air-operations/src/13-phase1-mission-factory.lua
 mission/tests/jalalabad-air-operations/src/14-phase1-test-controller.lua
 mission/tests/jalalabad-air-operations/src/16-phase1-moose-first-readiness-routing.lua
-```
-
-The already committed CH-47 adapter remains in:
-
-```text
-mission/tests/jalalabad-air-operations/src/13-phase1-mission-factory.lua
 ```
 
 ## Validation status
@@ -225,7 +242,7 @@ Completed:
 
 - source inspection against pinned MOOSE;
 - current-log lifecycle analysis;
-- Lua syntax checks for the changed controller and routing blocks;
+- Lua syntax checks for changed factory, controller and routing blocks;
 - branch commits created;
 - no mission-editor object or geometry changes;
 - no PR merge or readiness-state change.
@@ -234,6 +251,7 @@ Not yet completed:
 
 - DCS runtime validation of the regenerated bundle;
 - CH-47 native `SUCCESS` with `CARGOTRANSPORT_TASK_BOUND` present;
+- CH-47 `SLING_CARGO_OBJECTIVE PASS` physical latch;
 - AH-64 PASS after the non-blocking cancellation change;
 - AH-64 terrain-safe egress behavior;
 - runtime confirmation of the Echelon Right 300 formation.
@@ -243,7 +261,10 @@ Not yet completed:
 ```text
 JBAD-PHASE1-13
 CH47SlingTaskAdapter=INNER_DCS_TASK_PARAMETERS
+CH47ObjectiveLatch=STATIC_IN_ZONE
+reconFormation=ROUTING_CONFIGURED
 CARGOTRANSPORT_TASK_BOUND
+SLING_CARGO_OBJECTIVE PASS
 cancellationSemantics=AUFTRAG_INTERMEDIATE_NONBLOCKING
 operationAndRecoveryDeadlines=SEPARATE
 TACTICAL_FORMATION_APPLIED
