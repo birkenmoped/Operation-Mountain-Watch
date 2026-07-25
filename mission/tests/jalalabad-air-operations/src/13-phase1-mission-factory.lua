@@ -189,6 +189,38 @@ else
     return transport
   end
 
+  local function bindMooseSlingCargoTaskParameters(mission)
+    -- MOOSE 73d3ed1 creates a ComboTask containing the native DCS
+    -- CargoTransportation task, but NewCARGOTRANSPORT writes groupId/zoneId
+    -- to the outer ComboTask params. DCS executes the inner task, so copy the
+    -- already MOOSE-derived values into that task without replacing AUFTRAG.
+    local combo = mission and mission.DCStask or nil
+    local comboParams = combo and combo.params or nil
+    local tasks = comboParams and comboParams.tasks or nil
+    if not combo or combo.id ~= "ComboTask" or type(tasks) ~= "table" then
+      return false, "MOOSE CARGOTRANSPORT ComboTask unavailable"
+    end
+
+    local cargoTask = nil
+    for _, task in ipairs(tasks) do
+      if task and task.id == "CargoTransportation" then
+        cargoTask = task
+        break
+      end
+    end
+    if not cargoTask then return false, "MOOSE CargoTransportation task unavailable" end
+    if comboParams.groupId == nil or comboParams.zoneId == nil then
+      return false, "MOOSE CARGOTRANSPORT groupId/zoneId unavailable"
+    end
+
+    cargoTask.params = cargoTask.params or {}
+    cargoTask.params.groupId = comboParams.groupId
+    cargoTask.params.zoneId = comboParams.zoneId
+    log(string.format("CARGOTRANSPORT_TASK_BOUND authority=AUFTRAG:NewCARGOTRANSPORT adapter=INNER_DCS_TASK_PARAMETERS groupId=%s zoneId=%s outerTask=%s innerTask=%s",
+      tostring(cargoTask.params.groupId), tostring(cargoTask.params.zoneId), tostring(combo.id), tostring(cargoTask.id)))
+    return true
+  end
+
   local function createSlingCargo(definition)
     local cargo = findStatic(ph1.Objects.CH47Cargo)
     local drop = findZone(ph1.Objects.CH47DropZone)
@@ -196,6 +228,9 @@ else
     local cargoName = ph1.Objects.CH47Cargo
     local dropName = ph1.Objects.CH47DropZone
     local mission = AUFTRAG:NewCARGOTRANSPORT(cargo, drop)
+    if not mission then return nil, "AUFTRAG:NewCARGOTRANSPORT returned nil" end
+    local taskBound, taskError = bindMooseSlingCargoTaskParameters(mission)
+    if not taskBound then return nil, taskError end
     mission:AddConditionSuccess(function()
       local object = STATIC:FindByName(cargoName, false)
       local zone = ZONE:FindByName(dropName)
@@ -230,5 +265,5 @@ else
     return "AUFTRAG", mission
   end
 
-  log("READY authority=AUFTRAG/OPSTRANSPORT payloadAPI=AddRequiredPayload objectives=AddConditionSuccess customObjectivePollers=false directDatabaseAccess=false UH60LandingGeometry=ME_AuthoredCenters+OPSTRANSPORT_PublicZoneAPI")
+  log("READY authority=AUFTRAG/OPSTRANSPORT payloadAPI=AddRequiredPayload objectives=AddConditionSuccess customObjectivePollers=false directDatabaseAccess=false UH60LandingGeometry=ME_AuthoredCenters+OPSTRANSPORT_PublicZoneAPI CH47SlingTaskAdapter=INNER_DCS_TASK_PARAMETERS")
 end
