@@ -10,23 +10,27 @@ elseif cfg.NameContractInitialized ~= true or cfg.NameContractOK ~= true then
 else
   local ph1 = cfg.Phase1 or {}
   cfg.Phase1 = ph1
-  ph1.Version = "JBAD-PHASE1-11"
+  ph1.Version = "JBAD-PHASE1-12"
   ph1.State = ph1.State or "WAITING_FOR_BASELINE"
   ph1.Classification = ph1.Classification or "NOT_RUN"
   ph1.Results = ph1.Results or {}
   ph1.History = ph1.History or {}
   ph1.Sequence = { "OH58D_RECON", "AH64D_CAS", "UH60_TROOP", "CH47_CARGO", "UH60_ABORT" }
 
+  -- Canonical Mission Editor object contract of
+  -- OMW_Jalalabad_AirOps_Phase1_Test.miz. These names predate the MOOSE-first
+  -- refactor and must not be replaced by invented TZ_/TG_/ST_ aliases unless
+  -- the mission itself is explicitly migrated in the Mission Editor.
   ph1.Objects = {
-    ReconZones = { "TZ_AIR_US_JBAD_RECON_01", "TZ_AIR_US_JBAD_RECON_02", "TZ_AIR_US_JBAD_RECON_03" },
-    CASZone = "TZ_AIR_US_JBAD_CAS_01",
-    CASTargetTemplate = "TG_RED_JBAD_CAS_TARGET_01",
-    UHTroopTemplate = "TG_BLUE_JBAD_UH60_TROOPS_01",
-    UHLoadZone = "TZ_AIR_US_JBAD_UH60_LOAD_01",
-    UHUnloadZone = "TZ_AIR_US_JBAD_UH60_UNLOAD_01",
-    CH47Cargo = "ST_BLUE_JBAD_CH47_CARGO_01",
-    CH47PickupZone = "TZ_AIR_US_JBAD_CH47_PICKUP_01",
-    CH47DropZone = "TZ_AIR_US_JBAD_CH47_DROP_01"
+    ReconZones = { "ZONE_TEST_US_JBAD_RECON_01", "ZONE_TEST_US_JBAD_RECON_02", "ZONE_TEST_US_JBAD_RECON_03" },
+    CASZone = "ZONE_TEST_US_JBAD_CAS",
+    CASTargetTemplate = "TPL_GROUND_RED_JBAD_PHASE1_CAS_TARGET",
+    UHTroopTemplate = "TPL_GROUND_BLUE_JBAD_PHASE1_UH60_TROOPS",
+    UHLoadZone = "ZONE_AIR_US_JBAD_LOGISTICS_LOAD",
+    UHUnloadZone = "ZONE_TEST_US_JBAD_UH60_DROPOFF",
+    CH47Cargo = "TEST_CARGO_BLUE_JBAD_CH47_01",
+    CH47PickupZone = "ZONE_AIR_US_JBAD_SLING_PICKUP",
+    CH47DropZone = "ZONE_AIR_US_JBAD_LOGISTICS_UNLOAD"
   }
 
   local function testDefinition(id, label, values)
@@ -122,7 +126,7 @@ else
   end
   ph1.ManifestOK = valid
   if valid then
-    log("READY version=JBAD-PHASE1-11 operativeAuthorities=AUFTRAG/OPSTRANSPORT testHarness=acceptance-only sequence=5 nameContract=SYNCHRONOUS")
+    log("READY version=JBAD-PHASE1-12 operativeAuthorities=AUFTRAG/OPSTRANSPORT testHarness=acceptance-only sequence=5 nameContract=SYNCHRONOUS missionEditorObjectContract=CANONICAL")
   else
     log("BLOCKED manifest validation failed")
   end
