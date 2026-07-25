@@ -64,12 +64,32 @@ foreach ($fileName in $sourceFiles) {
 
 $allCanonicalSource = [string]::Join("`n", ($sourceFiles | ForEach-Object { $sourceText[$_] }))
 
+function Get-SourcePatternHits {
+    param(
+        [Parameter(Mandatory = $true)][string]$Pattern,
+        [Parameter(Mandatory = $true)][string]$Label
+    )
+
+    $hits = New-Object System.Collections.Generic.List[string]
+    foreach ($fileName in $sourceFiles) {
+        $lineNumber = 0
+        foreach ($line in ($sourceText[$fileName] -split "`r?`n")) {
+            $lineNumber++
+            if ($line -match $Pattern) {
+                $hits.Add("$fileName`:$lineNumber [$Label]")
+            }
+        }
+    }
+    return $hits
+}
+
 # Pinned MOOSE 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54 implements
 # SQUADRON:SetDespawnAfterLanding(false) as an enable operation. A false call is
 # therefore forbidden. Carrier squadrons leave the option unset and arm the
 # exact FLIGHTGROUP only after native delivery confirmation.
-if ($allCanonicalSource -match '(?m)^\s*[^-\r\n]*:SetDespawnAfterLanding\s*\(\s*false\s*\)') {
-    throw 'Regression: SetDespawnAfterLanding(false) enables despawn in the pinned MOOSE version. Omit the setter.'
+$regressionHits = New-Object System.Collections.Generic.List[string]
+foreach ($hit in (Get-SourcePatternHits -Pattern '^\s*[^-\r\n]*:SetDespawnAfterLanding\s*\(\s*false\s*\)' -Label 'SetDespawnAfterLanding(false)')) {
+    $regressionHits.Add($hit)
 }
 
 # MOOSE-first architecture gate: canonical runtime code must not read the listed
@@ -87,12 +107,17 @@ $forbiddenInternalPatterns = @(
     'MissionStateSeen'
 )
 foreach ($pattern in $forbiddenInternalPatterns) {
-    if ($allCanonicalSource -match $pattern) {
-        throw "MOOSE-first regression: forbidden custom/internal pattern '$pattern'."
+    foreach ($hit in (Get-SourcePatternHits -Pattern $pattern -Label $pattern)) {
+        $regressionHits.Add($hit)
     }
 }
 
+if ($regressionHits.Count -gt 0) {
+    throw ("MOOSE-first source regressions found:`n - " + [string]::Join("`n - ", $regressionHits))
+}
+
 $requiredMooseApis = @(
+    'GetGroupTemplate',
     'CountMissionsInQueue',
     'CountAssetsOnMission',
     'CountAssets',
