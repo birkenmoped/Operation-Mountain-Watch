@@ -3,7 +3,18 @@ local TAG = "[OMW][AirOps.JBAD.NAMES]"
 local function log(msg) env.info(TAG .. " " .. tostring(msg)) end
 
 local function missionTemplate(name)
-  return _DATABASE and _DATABASE.Templates and _DATABASE.Templates.Groups and _DATABASE.Templates.Groups[name] or nil
+  if not name or not GROUP then return nil end
+
+  local group = GROUP:FindByName(name)
+  if not group and GROUP.Register then
+    local registerOK, registered = pcall(function() return GROUP:Register(name) end)
+    if registerOK then group = registered end
+  end
+  if not group or not group.GetTemplate then return nil end
+
+  local templateOK, template = pcall(function() return group:GetTemplate() end)
+  if not templateOK or type(template) ~= "table" then return nil end
+  return template
 end
 
 local function append(target, values)
@@ -36,12 +47,12 @@ local function main()
       log("ERROR DUPLICATE_CONFIGURED_GROUP_NAME name=" .. tostring(groupName))
     end
     cfg.AuthoringGroupNames[groupName] = true
-    local entry = missionTemplate(groupName)
-    if not entry or not entry.Template then
+    local template = missionTemplate(groupName)
+    if not template then
       local optional = string.sub(groupName, 1, #"CLIENT_US_JBAD_UH60L_") == "CLIENT_US_JBAD_UH60L_"
       if not optional then ok = false log("ERROR CONFIGURED_GROUP_MISSING name=" .. tostring(groupName)) end
     else
-      for _, unit in ipairs(entry.Template.units or {}) do
+      for _, unit in ipairs(template.units or {}) do
         local unitName = unit and unit.name
         if not unitName or unitName == "" then
           ok = false
@@ -84,7 +95,7 @@ local function main()
     local groupCount, unitCount = 0, 0
     for _ in pairs(cfg.AuthoringGroupNames) do groupCount = groupCount + 1 end
     for _ in pairs(cfg.AuthoringUnitNames) do unitCount = unitCount + 1 end
-    log(string.format("RESULT: PASS fixedGroups=%d fixedUnits=%d runtimePrefixes=4 typeOnlyMatching=false packageAwareUnitSuffixes=true", groupCount, unitCount))
+    log(string.format("RESULT: PASS fixedGroups=%d fixedUnits=%d runtimePrefixes=4 typeOnlyMatching=false packageAwareUnitSuffixes=true templateLookup=GROUP:Register+GetTemplate", groupCount, unitCount))
   else
     log("RESULT: FAIL AIRWING_START_BLOCKED=true")
   end
