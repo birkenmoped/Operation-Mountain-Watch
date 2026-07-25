@@ -9,6 +9,11 @@ $sourceDir = Join-Path $repoRoot 'mission\tests\jalalabad-air-operations\src'
 $distDir = Join-Path $repoRoot 'mission\tests\jalalabad-air-operations\dist'
 $outputFile = Join-Path $distDir 'OMW_AirOps_Jalalabad.lua'
 
+# A failed build must never leave an older apparently usable bundle behind.
+if (Test-Path -LiteralPath $outputFile -PathType Leaf) {
+    Remove-Item -LiteralPath $outputFile -Force
+}
+
 $sourceFiles = @(
     '01-jalalabad-bootstrap.lua',
     '02-dump-airbase-parking.lua',
@@ -73,6 +78,10 @@ function Assert-SourceBefore {
 # the Phase-1 manifest consumes. The order is therefore a hard build contract.
 Assert-SourceBefore -Dependency '05c-package-contracts.lua' -Dependent '05b-validate-runtime-name-contract.lua'
 Assert-SourceBefore -Dependency '05b-validate-runtime-name-contract.lua' -Dependent '11-phase1-test-manifest.lua'
+Assert-SourceBefore -Dependency '11-phase1-test-manifest.lua' -Dependent '12-phase1-runtime-observer.lua'
+Assert-SourceBefore -Dependency '12-phase1-runtime-observer.lua' -Dependent '12a-phase1-moose-logistics.lua'
+Assert-SourceBefore -Dependency '12a-phase1-moose-logistics.lua' -Dependent '13-phase1-mission-factory.lua'
+Assert-SourceBefore -Dependency '13-phase1-mission-factory.lua' -Dependent '14-phase1-test-controller.lua'
 Assert-SourceBefore -Dependency '14-phase1-test-controller.lua' -Dependent '15-phase1-f10-and-acceptance.lua'
 
 $sourceText = @{}
@@ -98,6 +107,43 @@ if ($nameContractSource -notmatch 'pcall\s*\(\s*main\s*\)' -or $nameContractSour
 $manifestSource = $sourceText['11-phase1-test-manifest.lua']
 if ($manifestSource -notmatch 'NameContractInitialized' -or $manifestSource -notmatch 'NameContractOK') {
     throw "Builder dependency gate invalid: Phase-1 manifest must require the initialized runtime-name contract."
+}
+
+# The observer is loaded before the delayed AIRWING construction/activation has
+# completed. It may define an attachment API, but it must not dereference
+# cfg.Airwing while the bundle is evaluated.
+$observerSource = $sourceText['12-phase1-runtime-observer.lua']
+if ($observerSource -match 'local\s+previousFlightOnMission\s*=\s*cfg\.Airwing\.') {
+    throw "Initialization smoke test failed: observer dereferences cfg.Airwing at bundle load time."
+}
+if ($observerSource -notmatch 'function\s+observer:AttachAirwing\s*\(' -or
+    $observerSource -notmatch 'airwing\.OnAfterFlightOnMission' -or
+    $observerSource -notmatch 'airwingHook=DEFERRED') {
+    throw "Initialization smoke test failed: observer must expose a deferred AIRWING hook attachment."
+}
+
+# The complete-node activation must attach the observer callback to the exact
+# AIRWING object before AIRWING:Start() can emit FlightOnMission events.
+$completeNodeSource = $sourceText['10-validate-and-start-complete-node.lua']
+$attachIndex = $completeNodeSource.IndexOf('observer:AttachAirwing')
+$airwingStartIndex = $completeNodeSource.IndexOf('cfg.Airwing:Start()')
+if ($attachIndex -lt 0 -or $airwingStartIndex -lt 0 -or $attachIndex -ge $airwingStartIndex) {
+    throw "Initialization smoke test failed: observer AIRWING hook must be attached before AIRWING:Start()."
+}
+
+# The F10 diagnostic/control menu is deliberately baseline-independent. This
+# guarantees a visible status surface even if later AIRWING validation blocks.
+$menuSource = $sourceText['15-phase1-f10-and-acceptance.lua']
+$immediateMenuIndex = $menuSource.IndexOf('local menuInitialized = createMenus()')
+$menuSchedulerIndex = $menuSource.IndexOf('SCHEDULER:New')
+if ($immediateMenuIndex -lt 0 -or $menuSchedulerIndex -lt 0 -or $immediateMenuIndex -ge $menuSchedulerIndex) {
+    throw "Initialization smoke test failed: F10 menu must be created immediately before the acceptance scheduler."
+}
+if ($menuSource -match 'BaselineReady\s*==\s*true\s*then\s*createMenus') {
+    throw "Initialization smoke test failed: F10 menu creation must not depend on AIRWING baseline readiness."
+}
+if ($menuSource -notmatch 'commands=8 availability=IMMEDIATE baselineIndependent=true') {
+    throw "Initialization smoke test failed: immediate F10 menu readiness marker missing."
 }
 
 $allCanonicalSource = [string]::Join("`n", ($sourceFiles | ForEach-Object { $sourceText[$_] }))
@@ -182,7 +228,7 @@ foreach ($api in $requiredMooseApis) {
 
 New-Item -ItemType Directory -Path $distDir -Force | Out-Null
 
-$builderVersion = 'JBAD-AIR-OPS-PHASE1-13-MOOSE-FIRST'
+$builderVersion = 'JBAD-AIR-OPS-PHASE1-14-MOOSE-FIRST'
 $commit = 'UNKNOWN'
 try {
     $commit = (& git -C $repoRoot rev-parse HEAD 2>$null).Trim()
@@ -197,6 +243,7 @@ $header = @"
 -- GitCommit: $commit
 -- MOOSE-Pin: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
 -- Architecture: AUFTRAG/OPSTRANSPORT/FLIGHTGROUP native authority
+-- InitializationSmoke: synchronous-name-contract/deferred-airwing-hook/immediate-f10-menu
 -- GeneratedUtc: $([DateTime]::UtcNow.ToString('o'))
 
 "@
@@ -215,5 +262,6 @@ $content = [string]::Concat($chunks)
 $hash = (Get-FileHash -LiteralPath $outputFile -Algorithm SHA256).Hash.ToLowerInvariant()
 Write-Host "Built: $outputFile"
 Write-Host "BuilderVersion: $builderVersion"
+Write-Host "InitializationSmoke: PASS"
 Write-Host "SHA256: $hash"
 Write-Host "GitCommit: $commit"
