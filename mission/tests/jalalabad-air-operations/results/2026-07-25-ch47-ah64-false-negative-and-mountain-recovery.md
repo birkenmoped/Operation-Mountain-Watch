@@ -1,4 +1,4 @@
-# CH-47/AH-64 false-negative scoring and AH-64 mountain recovery
+# CH-47/AH-64 false-negative scoring and rotor return altitude
 
 ## Scope
 
@@ -128,7 +128,7 @@ The previous controller used one deadline for:
 - mission execution;
 - target engagement;
 - RTB;
-- mountain transit;
+- return transit;
 - landing;
 - MOOSE asset return.
 
@@ -147,9 +147,11 @@ Expected marker:
 RECOVERY_WINDOW_ARMED testId=AH64D_CAS nativeTerminal=SUCCESS
 ```
 
-## Root cause 3: terrain-unaware default recovery
+## Root cause 3: return transit did not preserve the outbound altitude
 
-The AH-64 telemetry showed very small terrain clearances during the return flight, including approximately:
+The outbound flights of both the OH-58D RECON and AH-64D CAS tests were visually acceptable. The defect appeared after mission completion: the return transit descended into valleys and repeatedly climbed terrain flanks.
+
+AH-64 telemetry included approximately:
 
 ```text
 1656 m MSL over 1586 m terrain = 70 m AGL
@@ -158,27 +160,48 @@ The AH-64 telemetry showed very small terrain clearances during the return fligh
 630 m MSL over 602 m terrain = 28 m AGL
 ```
 
-This produced an inefficient valley-following return with repeated steep climbs over ridgelines.
+The required project rule is therefore deliberately simple:
+
+```text
+outbound altitude = return altitude
+```
+
+No terrain sampling, maximum-terrain calculation or separate recovery altitude is permitted for these tests.
 
 ### MOOSE-first correction
 
-Before dispatching the AH-64 CAS AUFTRAG, OMW now:
+The mission definitions now contain the already accepted outbound values:
 
-1. samples terrain from the CAS zone through `ZONE_TEST_US_JBAD_RECON_01` to Jalalabad;
-2. determines the highest sampled terrain point;
-3. adds 500 m recovery clearance;
-4. configures the AUFTRAG egress with:
+```text
+OH-58D RECON: 6500 ft / 80 kt
+AH-64D CAS:   3500 ft / 110 kt
+```
+
+The same values are passed to the native MOOSE mission constructors:
 
 ```lua
-mission:SetMissionEgressCoord(egressCoordinate, altitudeFeetASL, 100)
+AUFTRAG:NewRECON(zones, speed, altitude, false, false)
+AUFTRAG:NewCAS(zone, altitude, speed, coordinate, nil, nil, targetTypes)
 ```
+
+and reused unchanged for the mission egress:
+
+```lua
+mission:SetMissionEgressCoord(egressCoordinate, ingressAltitude, ingressSpeed)
+```
+
+Both missions use the existing basis-near `ZONE_TEST_US_JBAD_RECON_01` as their egress point. Normal landing descent may begin after that point; the long return transit must not receive a lower altitude than the outbound transit.
 
 Expected markers:
 
 ```text
-CAS_RECOVERY_PROFILE READY ... clearance=500m
-MOUNTAIN_RECOVERY_APPLIED testId=AH64D_CAS ... authority=AUFTRAG:SetMissionEgressCoord
+FIXED_FLIGHT_PROFILE READY testId=OH58D_RECON ingressAltitude=6500ft returnAltitude=6500ft equal=true terrainAltitudeCalculation=false
+FIXED_FLIGHT_PROFILE READY testId=AH64D_CAS ingressAltitude=3500ft returnAltitude=3500ft equal=true terrainAltitudeCalculation=false
+RETURN_ALTITUDE_MATCH_APPLIED ... equal=true ... authority=AUFTRAG:SetMissionEgressCoord
+RETURN_ALTITUDE_BIND_ASSERT ... equal=true
 ```
+
+The former `CAS_MOUNTAIN_CORRIDOR`, terrain scanning, maximum terrain and 500 m recovery-clearance logic were removed.
 
 The final DCS runtime behavior remains to be validated.
 
@@ -208,7 +231,7 @@ mission:SetFormation(...)
 
 This is explicitly an **approximation** of Combat Cruise Right within the formations DCS actually supports. It is not documented as doctrinal equivalence.
 
-The former hard-coded `"Vee"` argument and the second explicit `SetFormation("Vee")` call were removed from the RECON factory. Formation ownership is now centralized in the routing configuration.
+The former hard-coded `"Vee"` argument and the second explicit `SetFormation("Vee")` call were removed from the RECON factory. Formation ownership is centralized in the routing configuration.
 
 Expected marker:
 
@@ -242,9 +265,12 @@ Completed:
 
 - source inspection against pinned MOOSE;
 - current-log lifecycle analysis;
-- Lua syntax checks for changed factory, controller and routing blocks;
+- removal of terrain-derived rotor altitude calculations;
+- fixed outbound altitude definitions for OH-58D and AH-64D;
+- identical ingress/egress altitude configuration;
+- Lua syntax checks for changed factory, manifest and routing files;
 - branch commits created;
-- no mission-editor object or geometry changes;
+- no Mission Editor object or geometry changes;
 - no PR merge or readiness-state change.
 
 Not yet completed:
@@ -253,23 +279,26 @@ Not yet completed:
 - CH-47 native `SUCCESS` with `CARGOTRANSPORT_TASK_BOUND` present;
 - CH-47 `SLING_CARGO_OBJECTIVE PASS` physical latch;
 - AH-64 PASS after the non-blocking cancellation change;
-- AH-64 terrain-safe egress behavior;
+- OH-58D and AH-64D return flight at the configured outbound altitude;
 - runtime confirmation of the Echelon Right 300 formation.
 
 ## Required next-run markers
 
 ```text
-JBAD-PHASE1-13
+JBAD-PHASE1-14
 CH47SlingTaskAdapter=INNER_DCS_TASK_PARAMETERS
 CH47ObjectiveLatch=STATIC_IN_ZONE
-reconFormation=ROUTING_CONFIGURED
+rotorIngressAltitude=FIXED
+rotorReturnAltitude=MATCH_INGRESS
+terrainAltitudeCalculation=false
 CARGOTRANSPORT_TASK_BOUND
 SLING_CARGO_OBJECTIVE PASS
 cancellationSemantics=AUFTRAG_INTERMEDIATE_NONBLOCKING
 operationAndRecoveryDeadlines=SEPARATE
 TACTICAL_FORMATION_APPLIED
-CAS_RECOVERY_PROFILE READY
-MOUNTAIN_RECOVERY_APPLIED
+FIXED_FLIGHT_PROFILE READY
+RETURN_ALTITUDE_MATCH_APPLIED
+RETURN_ALTITUDE_BIND_ASSERT
 RECOVERY_WINDOW_ARMED
 ```
 
