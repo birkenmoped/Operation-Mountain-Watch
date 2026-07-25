@@ -3,13 +3,14 @@ local TAG = "[OMW][AirOps.JBAD.UH60]"
 local function log(msg) env.info(TAG .. " " .. tostring(msg)) end
 
 local function getTemplateLivery(templateName)
-  local entry = _DATABASE and _DATABASE.Templates and _DATABASE.Templates.Groups and _DATABASE.Templates.Groups[templateName] or nil
-  local unit = entry and entry.Template and entry.Template.units and entry.Template.units[1] or nil
+  local group = templateName and GROUP and GROUP:FindByName(templateName) or nil
+  local template = group and group.GetTemplate and group:GetTemplate() or nil
+  local unit = template and template.units and template.units[1] or nil
   return unit and (unit.livery_id or unit.livery) or nil
 end
 
 local function validateTemplate(templateName, role, expectedUnits)
-  local template = templateName and GROUP:FindByName(templateName) or nil
+  local template = templateName and GROUP and GROUP:FindByName(templateName) or nil
   if not template then log("ERROR: " .. role .. " template missing: " .. tostring(templateName)) return nil end
   local units = template:GetUnits() or {}
   if #units ~= expectedUnits then log(string.format("ERROR: %s template %s units=%d contract=%d", role, templateName, #units, expectedUnits)) return nil end
@@ -24,7 +25,7 @@ local function main()
   local cfg = OMW and OMW.AirOps and OMW.AirOps.Jalalabad
   if not cfg or not cfg.Airwing then log("ERROR: Jalalabad configuration or AIRWING unavailable.") return end
   if cfg.ParkingPoolsOK ~= true or cfg.NameContractOK ~= true or cfg.PackageContractsOK ~= true then log("ERROR: Parking/name/package validation not passed; SQUADRON blocked.") return end
-  if not GROUP or not SQUADRON or not AUFTRAG then log("ERROR: Required MOOSE classes unavailable.") return end
+  if not GROUP or not SQUADRON or not AUFTRAG or not OPSTRANSPORT then log("ERROR: Required MOOSE classes unavailable.") return end
 
   local contract = cfg:GetSquadronContract("UH60")
   if not contract then log("ERROR: UH-60 package contract unavailable.") return end
@@ -34,34 +35,38 @@ local function main()
   local coverTemplate = validateTemplate(coverName, "MEDEVAC_GUARD", contract.TemplateUnits)
   if not leadTemplate or not coverTemplate then return end
 
-  local aircraftCount = contract.InventoryAircraft
-  local assetGroupCount = contract.AssetGroups
   local squadronName = cfg.SquadronNames.UH60
   local parkingIDs = cfg:GetSquadronParkingIDs("UH60")
   cfg.Squadrons = cfg.Squadrons or {}
   if cfg.Squadrons.UH60 then log("SKIP: UH-60 squadron already constructed.") return end
 
-  local missionTypes = { AUFTRAG.Type.TROOPTRANSPORT, AUFTRAG.Type.CARGOTRANSPORT, AUFTRAG.Type.LANDATCOORDINATE, AUFTRAG.Type.GROUNDESCORT }
+  local missionTypes = {
+    AUFTRAG.Type.OPSTRANSPORT,
+    AUFTRAG.Type.TROOPTRANSPORT,
+    AUFTRAG.Type.CARGOTRANSPORT,
+    AUFTRAG.Type.LANDATCOORDINATE,
+    AUFTRAG.Type.GROUNDESCORT
+  }
   local ok, result = pcall(function()
-    -- SQUADRON:New() expects the number of MOOSE asset groups, not aircraft.
-    local squadron = SQUADRON:New(leadName, assetGroupCount, squadronName)
+    local squadron = SQUADRON:New(leadName, contract.AssetGroups, squadronName)
     squadron:SetGrouping(contract.Grouping)
     squadron:SetParkingIDs(parkingIDs)
     squadron:SetTakeoffCold()
 
-    -- IMPORTANT - pinned MOOSE commit 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54:
-    -- SQUADRON:SetDespawnAfterLanding(false) does NOT disable the option. The
-    -- implementation treats every false/nil argument as the default-enable path
-    -- and writes despawnAfterLanding=true. Therefore this setter must not be
-    -- called at squadron level for UH-60 transport/MEDEVAC assets. The unset
-    -- value propagates through LEGION without arming FLIGHTGROUP despawn. The
-    -- active FLIGHTGROUP may arm SetDespawnAfterLanding() only after verified
-    -- unload, so the subsequent final RTB landing can release the asset.
+    -- Pinned MOOSE 73d3ed1 treats SetDespawnAfterLanding(false) as TRUE.
+    -- Therefore the option must stay unset for every carrier that can perform
+    -- intermediate pickup/deploy landings. Final despawn is enabled on the exact
+    -- FLIGHTGROUP only after the native transport/cargo authority reports delivery.
 
     if AI and AI.Skill and AI.Skill.HIGH then squadron:SetSkill(AI.Skill.HIGH) end
     squadron:AddMissionCapability(missionTypes, 100)
     cfg.Airwing:AddSquadron(squadron)
-    local leadPayload = cfg.Airwing:NewPayload(leadTemplate, -1, { AUFTRAG.Type.TROOPTRANSPORT, AUFTRAG.Type.CARGOTRANSPORT, AUFTRAG.Type.LANDATCOORDINATE }, 100)
+    local leadPayload = cfg.Airwing:NewPayload(leadTemplate, -1, {
+      AUFTRAG.Type.OPSTRANSPORT,
+      AUFTRAG.Type.TROOPTRANSPORT,
+      AUFTRAG.Type.CARGOTRANSPORT,
+      AUFTRAG.Type.LANDATCOORDINATE
+    }, 100)
     local coverPayload = cfg.Airwing:NewPayload(coverTemplate, -1, { AUFTRAG.Type.GROUNDESCORT }, 100)
     return { Squadron = squadron, LeadPayload = leadPayload, CoverPayload = coverPayload }
   end)
@@ -72,7 +77,9 @@ local function main()
   cfg.Payloads = cfg.Payloads or {}
   cfg.Payloads.UH60MedevacLead = result.LeadPayload
   cfg.Payloads.UH60MedevacCover = result.CoverPayload
-  log(string.format("SQUADRON ready name=%s model=%s medevacPackage=%s inventoryAircraft=%d constructorAssetGroups=%d grouping=%d computedAircraft=%d parkingIDs=%s despawnAfterLanding=UNSET intermediateLandingsRequired=true finalDespawnArmedAfterVerifiedUnload=true pinnedMooseFalseArgumentBugAvoided=true", squadronName, contract.Model, contract.PackageModel, aircraftCount, assetGroupCount, contract.Grouping, assetGroupCount * contract.Grouping, table.concat(parkingIDs, ",")))
+  log(string.format("SQUADRON ready name=%s model=%s medevacPackage=%s inventoryAircraft=%d constructorAssetGroups=%d grouping=%d computedAircraft=%d parkingIDs=%s despawnAfterLanding=UNSET nativeOpsTransport=true",
+    squadronName, contract.Model, contract.PackageModel, contract.InventoryAircraft, contract.AssetGroups,
+    contract.Grouping, contract.AssetGroups * contract.Grouping, table.concat(parkingIDs, ",")))
 end
 
 if SCHEDULER then SCHEDULER:New(nil, main, {}, 13) else timer.scheduleFunction(function() main() return nil end, nil, timer.getTime() + 13) end
