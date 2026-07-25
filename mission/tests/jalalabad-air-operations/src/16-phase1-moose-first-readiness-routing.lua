@@ -115,23 +115,23 @@ else
     return true
   end
 
-  local function fuelTelemetry(flightgroup, groupName)
-    if not ph1.Runtime or not ph1.Runtime.BoundGroupNames[groupName] then return end
+  local function fuelTelemetry(groupName)
+    if not ph1.Runtime or not ph1.Runtime.BoundGroupNames[groupName] then return false end
     local group = GROUP and GROUP:FindByName(groupName) or nil
-    if group then
-      for _, unit in ipairs(group:GetUnits() or {}) do
-        local fuel = nil
-        local dcs = unit.GetDCSObject and unit:GetDCSObject() or nil
-        if dcs and dcs.getFuel then
-          local ok, value = pcall(function() return dcs:getFuel() end)
-          if ok then fuel = value end
-        end
-        local coordinate = unit:GetCoordinate()
-        log(string.format("FUEL testId=%s group=%s unit=%s fuel=%s altitudeMSL=%.0fm terrainMSL=%.0fm",
-          tostring(ph1.ActiveTestId), groupName, unit:GetName(), fuel and string.format("%.1f%%", fuel * 100) or "unknown",
-          coordinate and coordinate.y or -1, coordinate and (landHeight(coordinate) or -1) or -1))
+    if not group then return false end
+    for _, unit in ipairs(group:GetUnits() or {}) do
+      local fuel = nil
+      local dcs = unit.GetDCSObject and unit:GetDCSObject() or nil
+      if dcs and dcs.getFuel then
+        local ok, value = pcall(function() return dcs:getFuel() end)
+        if ok then fuel = value end
       end
+      local coordinate = unit:GetCoordinate()
+      log(string.format("FUEL testId=%s group=%s unit=%s fuel=%s altitudeMSL=%.0fm terrainMSL=%.0fm",
+        tostring(ph1.ActiveTestId), groupName, unit:GetName(), fuel and string.format("%.1f%%", fuel * 100) or "unknown",
+        coordinate and coordinate.y or -1, coordinate and (landHeight(coordinate) or -1) or -1))
     end
+    return true
   end
 
   function routing:OnFlightGroupBound(flightgroup, owner)
@@ -158,9 +158,14 @@ else
     end
 
     if SCHEDULER then
-      SCHEDULER:New(nil, function() fuelTelemetry(flightgroup, groupName) end, {}, 30, ph1.Limits.FuelTelemetryIntervalSeconds)
+      local telemetryScheduler
+      telemetryScheduler = SCHEDULER:New(nil, function()
+        if not fuelTelemetry(groupName) then
+          if telemetryScheduler and telemetryScheduler.Stop then telemetryScheduler:Stop() end
+        end
+      end, {}, 30, ph1.Limits.FuelTelemetryIntervalSeconds)
     end
   end
 
-  log("READY publicMOOSE=true routeAuthority=AUFTRAG+FLIGHTGROUP terrainPolicy=project-specific-advisory fuel=empirical-telemetry")
+  log("READY publicMOOSE=true routeAuthority=AUFTRAG+FLIGHTGROUP terrainPolicy=project-specific-advisory fuel=empirical-telemetry selfStoppingSchedulers=true")
 end
