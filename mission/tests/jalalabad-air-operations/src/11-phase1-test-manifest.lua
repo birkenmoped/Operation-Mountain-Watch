@@ -5,6 +5,8 @@ local function log(msg) env.info(TAG .. " " .. tostring(msg)) end
 local cfg = OMW and OMW.AirOps and OMW.AirOps.Jalalabad
 if not cfg or not cfg.PackageContractsOK then
   log("ERROR: Package contracts unavailable or invalid.")
+elseif cfg.NameContractInitialized ~= true or cfg.NameContractOK ~= true then
+  log(string.format("ERROR: Runtime name contract unavailable or invalid initialized=%s valid=%s", tostring(cfg.NameContractInitialized), tostring(cfg.NameContractOK)))
 else
   local ph1 = cfg.Phase1 or {}
   cfg.Phase1 = ph1
@@ -120,7 +122,7 @@ else
   end
   ph1.ManifestOK = valid
   if valid then
-    log("READY version=JBAD-PHASE1-11 operativeAuthorities=AUFTRAG/OPSTRANSPORT testHarness=acceptance-only sequence=5")
+    log("READY version=JBAD-PHASE1-11 operativeAuthorities=AUFTRAG/OPSTRANSPORT testHarness=acceptance-only sequence=5 nameContract=SYNCHRONOUS")
   else
     log("BLOCKED manifest validation failed")
   end
