@@ -196,6 +196,19 @@ local function main()
   end
   if not COMMANDER then cfg.Status = "ERROR" log("ERROR: MOOSE COMMANDER class is unavailable.") return end
 
+  local observer = cfg.Phase1 and cfg.Phase1.Observer or nil
+  if not observer or not observer.AttachAirwing then
+    cfg.Status = "ERROR"
+    log("ERROR: Phase-1 observer AIRWING attachment API unavailable.")
+    return
+  end
+  local hookCallOK, hookAttached = pcall(function() return observer:AttachAirwing(cfg.Airwing) end)
+  if not hookCallOK or hookAttached ~= true then
+    cfg.Status = "ERROR"
+    log("ERROR: Phase-1 observer AIRWING hook attachment failed: " .. tostring(hookAttached))
+    return
+  end
+
   local started, result = pcall(function()
     cfg.Airwing:Start()
     OMW.AirOps.BlueCommander = OMW.AirOps.BlueCommander or COMMANDER:New(coalition.side.BLUE, "OMW_BLUE_COMMANDER")
@@ -206,8 +219,8 @@ local function main()
   if not started or not result then cfg.Status = "ERROR" log("ERROR: AIRWING/COMMANDER activation failed: " .. tostring(result)) return end
 
   cfg.Status = "OPERATIONAL"
-  log("RESULT: COMPLETE. Jalalabad AirOps node OPERATIONAL; AIRWING started; COMMANDER linked; missionsQueued=0; spontaneousSpawns=0.")
-  log("SUMMARY inventory=OH58D:24/AH64D:8/UH60:8/CH47:8 corePlayerSlots=6 optionalUH60L=0or2 templateAircraft=7offParking exclusivePools=OH58D:5/AH64D:3/UH60:3/CH47:8 staticCaps=OH58D:7/AH64D:4/UH60:4/CH47:5 zones=5 templates=5 squadrons=4 medevac=twoIndependentSinglesAsOnePackage virtualReserve=true templateLookup=DATABASE:GetGroupTemplate.")
+  log("RESULT: COMPLETE. Jalalabad AirOps node OPERATIONAL; AIRWING observer hook attached; AIRWING started; COMMANDER linked; missionsQueued=0; spontaneousSpawns=0.")
+  log("SUMMARY inventory=OH58D:24/AH64D:8/UH60:8/CH47:8 corePlayerSlots=6 optionalUH60L=0or2 templateAircraft=7offParking exclusivePools=OH58D:5/AH64D:3/UH60:3/CH47:8 staticCaps=OH58D:7/AH64D:4/UH60:4/CH47:5 zones=5 templates=5 squadrons=4 medevac=twoIndependentSinglesAsOnePackage virtualReserve=true templateLookup=DATABASE:GetGroupTemplate observerHook=OnAfterFlightOnMission.")
 end
 
 if SCHEDULER then
