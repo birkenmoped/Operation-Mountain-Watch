@@ -23,8 +23,17 @@ Dynamic persistent COIN multiplayer campaign for DCS World on the Afghanistan ma
 Vor der Entwicklung eigener Lua-Funktionen muss zuerst geprüft werden, ob MOOSE die benötigte Funktionalität bereits bereitstellt. Vorhandene MOOSE-Funktionen sind vorrangig zu verwenden; eine Eigenentwicklung muss technisch begründet und dokumentiert werden.
 
 - [`Verbindliche MOOSE-First-Entwicklungsrichtlinie`](docs/26-moose-first-development-policy.md)
+- [`MOOSE-Projektdokumentation und Klassenregister`](docs/moose/README.md)
 
-Diese Prüfung ist ein verpflichtender Bestandteil jeder Lua-Implementierung und jedes Code-Reviews im Projekt.
+Der verbindliche Rechercheweg umfasst:
+
+1. passende MOOSE-Klassendokumentation,
+2. Kontrolle des tatsächlichen MOOSE-Quellcodes,
+3. Prüfung offizieller Demo- und Testmissionen,
+4. erst danach gegebenenfalls projektspezifischen Lua-Code,
+5. Dokumentation von Klasse, Methode, MOOSE-Stand, Einschränkungen und Testnachweis.
+
+Diese Prüfung ist ein verpflichtender Bestandteil jeder Lua-Implementierung und jedes Code-Reviews im Projekt. Neue verwendete oder relevante MOOSE-Module werden fortlaufend unter `docs/moose/` ergänzt.
 
 ## Status
 
@@ -65,6 +74,17 @@ Current air-operations documents:
 - [`Jalalabad: validierte CH-47-Static-Parkplatzreservierungen`](docs/24-jalalabad-ch47-static-parking-reservations.md)
 - [`Jalalabad: finale Validierung und operative Grundbaseline`](docs/25-jalalabad-final-validation-and-operational-baseline.md)
 - [`Verbindliche MOOSE-First-Entwicklungsrichtlinie`](docs/26-moose-first-development-policy.md)
+
+MOOSE project reference:
+
+- [`MOOSE documentation index`](docs/moose/README.md)
+- [`MOOSE version and source traceability`](docs/moose/VERSION-AND-SOURCES.md)
+- [`MOOSE project class registry`](docs/moose/PROJECT-CLASS-INDEX.md)
+- [`MOOSE air operations`](docs/moose/AIR-OPERATIONS.md)
+- [`MOOSE ground operations`](docs/moose/GROUND-OPERATIONS.md)
+- [`MOOSE logistics and transport`](docs/moose/LOGISTICS-AND-TRANSPORT.md)
+- [`MOOSE events and FSM`](docs/moose/EVENTS-AND-FSM.md)
+- [`Verified MOOSE methods`](docs/moose/VERIFIED-METHODS.md)
 
 Für Jalalabad sind Dokumente 21, 23, 24 und 25 sowie die zugehörigen `expected/`- und `results/`-Dateien autoritativ. Ältere allgemeine Zwischenwerte wie vier Spielerplätze je Typ, sechs UH-60, kein CH-47, 13/15 Runtime-Parkplätze oder eine pauschale Ablehnung von Statics auf Parking-Nodes sind aufgehoben.
 
