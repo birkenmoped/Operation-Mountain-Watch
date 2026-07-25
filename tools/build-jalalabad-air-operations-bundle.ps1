@@ -109,6 +109,42 @@ if ($manifestSource -notmatch 'NameContractInitialized' -or $manifestSource -not
     throw "Builder dependency gate invalid: Phase-1 manifest must require the initialized runtime-name contract."
 }
 
+# Canonical Mission Editor object contract from OMW_Jalalabad_AirOps_Phase1_Test.miz.
+# A Lua-only refactor must not silently rename Mission Editor objects. Any future
+# migration requires an explicit Mission Editor change and a deliberate contract update.
+$canonicalMissionObjects = @(
+    'ZONE_TEST_US_JBAD_RECON_01',
+    'ZONE_TEST_US_JBAD_RECON_02',
+    'ZONE_TEST_US_JBAD_RECON_03',
+    'ZONE_TEST_US_JBAD_CAS',
+    'TPL_GROUND_RED_JBAD_PHASE1_CAS_TARGET',
+    'TPL_GROUND_BLUE_JBAD_PHASE1_UH60_TROOPS',
+    'ZONE_AIR_US_JBAD_LOGISTICS_LOAD',
+    'ZONE_TEST_US_JBAD_UH60_DROPOFF',
+    'TEST_CARGO_BLUE_JBAD_CH47_01',
+    'ZONE_AIR_US_JBAD_SLING_PICKUP',
+    'ZONE_AIR_US_JBAD_LOGISTICS_UNLOAD'
+)
+foreach ($objectName in $canonicalMissionObjects) {
+    if ($manifestSource -notmatch [regex]::Escape($objectName)) {
+        throw "Mission Editor object contract regression: canonical object '$objectName' is missing from the Phase-1 manifest."
+    }
+}
+$inventedMissionObjectAliases = @(
+    'TZ_AIR_US_JBAD_',
+    'TG_RED_JBAD_CAS_TARGET_01',
+    'TG_BLUE_JBAD_UH60_TROOPS_01',
+    'ST_BLUE_JBAD_CH47_CARGO_01'
+)
+foreach ($alias in $inventedMissionObjectAliases) {
+    if ($manifestSource -match [regex]::Escape($alias)) {
+        throw "Mission Editor object contract regression: invented alias '$alias' must not replace the canonical .miz object names."
+    }
+}
+if ($manifestSource -notmatch 'missionEditorObjectContract=CANONICAL') {
+    throw "Mission Editor object contract regression: canonical readiness marker missing."
+}
+
 # The observer is loaded before the delayed AIRWING construction/activation has
 # completed. It may define an attachment API, but it must not dereference
 # cfg.Airwing while the bundle is evaluated.
@@ -228,7 +264,7 @@ foreach ($api in $requiredMooseApis) {
 
 New-Item -ItemType Directory -Path $distDir -Force | Out-Null
 
-$builderVersion = 'JBAD-AIR-OPS-PHASE1-14-MOOSE-FIRST'
+$builderVersion = 'JBAD-AIR-OPS-PHASE1-15-MOOSE-FIRST'
 $commit = 'UNKNOWN'
 try {
     $commit = (& git -C $repoRoot rev-parse HEAD 2>$null).Trim()
@@ -244,6 +280,7 @@ $header = @"
 -- MOOSE-Pin: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
 -- Architecture: AUFTRAG/OPSTRANSPORT/FLIGHTGROUP native authority
 -- InitializationSmoke: synchronous-name-contract/deferred-airwing-hook/immediate-f10-menu
+-- MissionObjectContract: canonical-OMW_Jalalabad_AirOps_Phase1_Test
 -- GeneratedUtc: $([DateTime]::UtcNow.ToString('o'))
 
 "@
@@ -263,5 +300,6 @@ $hash = (Get-FileHash -LiteralPath $outputFile -Algorithm SHA256).Hash.ToLowerIn
 Write-Host "Built: $outputFile"
 Write-Host "BuilderVersion: $builderVersion"
 Write-Host "InitializationSmoke: PASS"
+Write-Host "MissionObjectContract: PASS"
 Write-Host "SHA256: $hash"
 Write-Host "GitCommit: $commit"
