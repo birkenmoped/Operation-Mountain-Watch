@@ -49,11 +49,14 @@ local function main()
     squadron:SetParkingIDs(parkingIDs)
     squadron:SetTakeoffCold()
 
-    -- UH-60 transport and MEDEVAC sorties require intermediate landings at
-    -- pickup and drop-off locations. Automatic despawn at every landing would
-    -- destroy the carrier at the first LZ. The active FLIGHTGROUP arms final
-    -- despawn only after a verified unload and before the RTB landing.
-    squadron:SetDespawnAfterLanding(false)
+    -- IMPORTANT - pinned MOOSE commit 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54:
+    -- SQUADRON:SetDespawnAfterLanding(false) does NOT disable the option. The
+    -- implementation treats every false/nil argument as the default-enable path
+    -- and writes despawnAfterLanding=true. Therefore this setter must not be
+    -- called at squadron level for UH-60 transport/MEDEVAC assets. The unset
+    -- value propagates through LEGION without arming FLIGHTGROUP despawn. The
+    -- active FLIGHTGROUP may arm SetDespawnAfterLanding() only after verified
+    -- unload, so the subsequent final RTB landing can release the asset.
 
     if AI and AI.Skill and AI.Skill.HIGH then squadron:SetSkill(AI.Skill.HIGH) end
     squadron:AddMissionCapability(missionTypes, 100)
@@ -69,7 +72,7 @@ local function main()
   cfg.Payloads = cfg.Payloads or {}
   cfg.Payloads.UH60MedevacLead = result.LeadPayload
   cfg.Payloads.UH60MedevacCover = result.CoverPayload
-  log(string.format("SQUADRON ready name=%s model=%s medevacPackage=%s inventoryAircraft=%d constructorAssetGroups=%d grouping=%d computedAircraft=%d parkingIDs=%s despawnAfterLanding=false intermediateLandingsRequired=true finalDespawnArmedAfterVerifiedUnload=true", squadronName, contract.Model, contract.PackageModel, aircraftCount, assetGroupCount, contract.Grouping, assetGroupCount * contract.Grouping, table.concat(parkingIDs, ",")))
+  log(string.format("SQUADRON ready name=%s model=%s medevacPackage=%s inventoryAircraft=%d constructorAssetGroups=%d grouping=%d computedAircraft=%d parkingIDs=%s despawnAfterLanding=UNSET intermediateLandingsRequired=true finalDespawnArmedAfterVerifiedUnload=true pinnedMooseFalseArgumentBugAvoided=true", squadronName, contract.Model, contract.PackageModel, aircraftCount, assetGroupCount, contract.Grouping, assetGroupCount * contract.Grouping, table.concat(parkingIDs, ",")))
 end
 
 if SCHEDULER then SCHEDULER:New(nil, main, {}, 13) else timer.scheduleFunction(function() main() return nil end, nil, timer.getTime() + 13) end
