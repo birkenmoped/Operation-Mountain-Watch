@@ -1,7 +1,7 @@
 -- Operation Mountain Watch - MOOSE-first Phase-1 test controller
 -- AUFTRAG and OPSTRANSPORT remain the operative FSMs. This controller only
 -- dispatches native objects, applies a watchdog and evaluates independent DCS
--- acceptance evidence after the native operation has reached its terminal state.
+-- acceptance evidence after the native operation and MOOSE asset lifecycle have completed.
 local TAG = "[OMW][AirOps.JBAD.PH1]"
 local function log(msg) env.info(TAG .. " " .. tostring(msg)) end
 
@@ -110,6 +110,7 @@ else
       BirthCount = 0, EngineStartCount = 0, TakeoffCount = 0, LandingCount = 0, EngineShutdownCount = 0,
       RemoteLandingCount = 0, ObjectiveSatisfied = false, RTBObserved = false,
       HardFailure = nil, PendingFailure = nil, ReleaseStablePolls = 0,
+      LegionAssetReturnedCount = 0, AssetReleaseConfirmed = false,
       FinalDespawnArmed = false, AbortRequested = false, AbortScheduled = false
     }
   end
@@ -279,15 +280,44 @@ else
       self:RequestFailure("watchdog-timeout")
     end
 
+    -- Successful MOOSE-managed assets are released by the authoritative LEGION
+    -- FSM edge. Inventory equality is deliberately not a second success gate:
+    -- LEGION:onafterNewAsset has already returned the asset to the cohort before
+    -- LegionAssetReturned is triggered.
+    local expectedReturns = tonumber(definition.ExpectedGroups) or 0
+    local returnedCount = tonumber(runtime.LegionAssetReturnedCount) or 0
+    local authoritativeReleased = expectedReturns > 0 and returnedCount >= expectedReturns
+    runtime.AssetReleaseConfirmed = authoritativeReleased
+
+    -- Inventory/queue polling remains a cleanup fallback only after a real
+    -- failure. It must never classify an untouched pre-spawn baseline as a
+    -- completed successful sortie and must never block a MOOSE return event.
     local restored, restoreReason, restoredData = ph1.Observer:IsInventoryRestored(ph1.BaselineInventory)
     local queueClean = ph1.Observer:GetMissionQueueCount() == 0
-    if restored and queueClean then runtime.ReleaseStablePolls = runtime.ReleaseStablePolls + 1 else runtime.ReleaseStablePolls = 0 end
-    local released = runtime.ReleaseStablePolls >= ph1.Limits.ReleaseStablePolls
+    local cleanupReleased = false
+    if runtime.PendingFailure then
+      if restored and queueClean then
+        runtime.ReleaseStablePolls = runtime.ReleaseStablePolls + 1
+      else
+        runtime.ReleaseStablePolls = 0
+      end
+      cleanupReleased = runtime.ReleaseStablePolls >= ph1.Limits.ReleaseStablePolls
+    else
+      runtime.ReleaseStablePolls = 0
+    end
+
+    local released = authoritativeReleased or cleanupReleased
     if released and not runtime.ReleaseLogged then
       runtime.ReleaseLogged = true
       increment("assetsReturned")
-      ph1.Observer:LogSnapshot("AFTER_" .. definition.Id, restoredData)
-      log("ACCEPTANCE event=ASSET_RELEASED stablePolls=" .. tostring(runtime.ReleaseStablePolls))
+      local afterSnapshot = restoredData or ph1.Observer:SnapshotAllSquadrons()
+      ph1.Observer:LogSnapshot("AFTER_" .. definition.Id, afterSnapshot)
+      if authoritativeReleased then
+        log(string.format("ACCEPTANCE event=ASSET_RELEASED authority=MOOSE_LEGION_FSM returnedGroups=%d expectedGroups=%d inventoryRestored=%s queueClean=%s inventoryDiagnosticNonBlocking=true",
+          returnedCount, expectedReturns, tostring(restored), tostring(queueClean)))
+      else
+        log("ACCEPTANCE event=ASSET_RELEASED authority=INVENTORY_CLEANUP_FALLBACK stablePolls=" .. tostring(runtime.ReleaseStablePolls))
+      end
     end
 
     if runtime.PendingFailure then
@@ -299,7 +329,9 @@ else
 
     local accepted, pending = acceptanceSatisfied(runtime, definition)
     runtime.LastPendingCriterion = pending
-    if accepted and released then self:FinalizeTest("PASS", "native-operation-and-independent-acceptance-complete", true) end
+    if accepted and authoritativeReleased then
+      self:FinalizeTest("PASS", "native-operation-independent-acceptance-and-MOOSE-asset-return-complete", true)
+    end
   end
 
   function controller:StartSequence()
@@ -366,5 +398,5 @@ else
     if ph1.ActiveObject then controller:PollActive() else controller:InitializeWhenReady() end
   end, {}, 20, ph1.Limits.PollIntervalSeconds)
   ph1.Counters = ph1.Counters or newCounters()
-  log("READY controllerRole=dispatch/watchdog/acceptance-only operativeFSM=AUFTRAG-or-OPSTRANSPORT customMissionFSM=false")
+  log("READY controllerRole=dispatch/watchdog/acceptance-only operativeFSM=AUFTRAG-or-OPSTRANSPORT successReleaseAuthority=MOOSE_LEGION_FSM inventoryPolling=diagnostic-or-failure-cleanup-only customMissionFSM=false")
 end
