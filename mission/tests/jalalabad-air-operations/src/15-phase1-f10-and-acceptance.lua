@@ -1,4 +1,4 @@
--- Operation Mountain Watch - Jalalabad AIRWING Phase 1 F10 controls and acceptance gate
+-- Operation Mountain Watch - Jalalabad MOOSE-first Phase-1 F10 controls and acceptance gate
 local TAG = "[OMW][AirOps.JBAD.PH1.MENU]"
 local function log(msg) env.info(TAG .. " " .. tostring(msg)) end
 
@@ -17,7 +17,6 @@ else
   local function createMenus()
     if ph1.MenuCreated then return true end
     if not MENU_COALITION or not MENU_COALITION_COMMAND then log("ERROR: MOOSE menu classes unavailable.") return false end
-
     local root = MENU_COALITION:New(coalition.side.BLUE, "OMW AirOps Tests")
     local menu = MENU_COALITION:New(coalition.side.BLUE, "Jalalabad Phase 1", root)
     ph1.MenuRoot, ph1.Menu = root, menu
@@ -38,12 +37,12 @@ else
     if ph1.AcceptanceGateLogged or cfg.BaselineReady ~= true then return end
     local objectsReady = ph1.Factory:ValidateMissionEditorObjects()
     local clientParkingReady = ph1.ClientParkingResolved or ph1.Observer:ResolveClientParkingIDs()
-    local ready = objectsReady and clientParkingReady and cfg.ParkingReservationsOK == true and cfg.ParkingPoolsOK == true and cfg.NameContractOK == true and cfg.PackageContractsOK == true
+    local ready = objectsReady and clientParkingReady and cfg.ParkingReservationsOK == true and cfg.ParkingPoolsOK == true and cfg.NameContractOK == true and cfg.PackageContractsOK == true and ph1.ManifestOK == true
     ph1.AcceptanceGateLogged = true
     if ready then
-      log("RESULT: READY. Package contracts active: OH-58D=one physical two-ship; AH-64D=one physical two-ship; UH-60=independent lead/guard assets; CH-47=single-ship. Per-test route and objective checks remain deferred until test start.")
+      log("RESULT: READY. Operative authority is native MOOSE AUFTRAG/OPSTRANSPORT/FLIGHTGROUP; the OMW harness supplies package assertions, watchdog and independent DCS acceptance only.")
     else
-      log("RESULT: BLOCKED. Required: Mission Editor objects, Client parking, static reservations, exclusive SQUADRON pools, exact runtime names and valid package contracts.")
+      log("RESULT: BLOCKED. Required: Mission Editor objects, Client parking, static reservations, exclusive SQUADRON pools, exact runtime names, package contracts and MOOSE-first manifest.")
     end
   end
 
