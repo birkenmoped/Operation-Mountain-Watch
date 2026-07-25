@@ -67,6 +67,33 @@ else
     return true
   end
 
+  local function groupHasPhysicalLoss(runtime, groupName)
+    for unitName, lost in pairs(runtime.LostUnits or {}) do
+      if lost and runtime.ExpectedUnitNames and runtime.ExpectedUnitNames[unitName] == groupName then return true end
+    end
+    return false
+  end
+
+  local function groupCompletedFinalLanding(runtime, groupName)
+    local expected, landed = 0, 0
+    for unitName, expectedGroupName in pairs(runtime.ExpectedUnitNames or {}) do
+      if expectedGroupName == groupName then
+        expected = expected + 1
+        if runtime.LandedUnits and runtime.LandedUnits[unitName] then landed = landed + 1 end
+      end
+    end
+    return expected > 0 and landed == expected
+  end
+
+  local function isExpectedFinalDespawn(runtime, groupName)
+    local definition = ph1.ActiveDefinition
+    if not runtime or not definition or not runtime.BoundGroupNames[groupName] then return false end
+    if runtime.FinalDespawnArmed ~= true or runtime.ObjectiveSatisfied ~= true or runtime.RTBObserved ~= true then return false end
+    if not definition.NativeTerminal or not runtime.NativeStates or runtime.NativeStates[definition.NativeTerminal] ~= true then return false end
+    if not groupCompletedFinalLanding(runtime, groupName) or groupHasPhysicalLoss(runtime, groupName) then return false end
+    return true
+  end
+
   local function attachTerminalLossFinalizer(flightgroup, groupName)
     if not flightgroup or flightgroup.OMWPhase1TerminalLossFinalizerAttached then return end
     flightgroup.OMWPhase1TerminalLossFinalizerAttached = true
@@ -74,7 +101,21 @@ else
     function flightgroup:OnAfterDead(from, event, to)
       if previousDead then pcall(previousDead, self, from, event, to) end
       local runtime = ph1.Runtime
-      if not runtime or not runtime.BoundGroupNames[groupName] or runtime.TerminalLossFinalized then return end
+      if not runtime or not runtime.BoundGroupNames[groupName] then return end
+
+      if isExpectedFinalDespawn(runtime, groupName) then
+        local observerReason = "flightgroup-dead-" .. tostring(groupName)
+        if runtime.HardFailure == observerReason then runtime.HardFailure = nil end
+        runtime.ExpectedFinalDespawnObservedGroups = runtime.ExpectedFinalDespawnObservedGroups or {}
+        if not runtime.ExpectedFinalDespawnObservedGroups[groupName] then
+          runtime.ExpectedFinalDespawnObservedGroups[groupName] = true
+          log(string.format("EXPECTED_FINAL_DESPAWN testId=%s group=%s objective=true nativeTerminal=%s finalLanding=true physicalLoss=false classification=NON_LOSS waitForAssetRelease=true",
+            tostring(ph1.ActiveTestId), tostring(groupName), tostring(ph1.ActiveDefinition and ph1.ActiveDefinition.NativeTerminal)))
+        end
+        return
+      end
+
+      if runtime.TerminalLossFinalized then return end
       runtime.TerminalLossFinalized = true
       local reason = runtime.HardFailure or ("flightgroup-dead-" .. tostring(groupName))
       runtime.HardFailure = reason
@@ -222,5 +263,5 @@ else
     end
   end
 
-  log("READY publicMOOSE=true routeAuthority=AUFTRAG+FLIGHTGROUP verticalHelicopterOps=FLIGHTGROUP:SetOptionPreferVertical terminalAircraftLoss=IMMEDIATE_FAIL terrainPolicy=project-specific-advisory fuel=empirical-telemetry selfStoppingSchedulers=true")
+  log("READY publicMOOSE=true routeAuthority=AUFTRAG+FLIGHTGROUP verticalHelicopterOps=FLIGHTGROUP:SetOptionPreferVertical terminalAircraftLoss=IMMEDIATE_FAIL expectedFinalDespawn=NON_LOSS_WAIT_FOR_ASSET_RELEASE terrainPolicy=project-specific-advisory fuel=empirical-telemetry selfStoppingSchedulers=true")
 end
