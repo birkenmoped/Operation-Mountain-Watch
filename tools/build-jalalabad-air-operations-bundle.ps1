@@ -42,9 +42,20 @@ if (-not (Test-Path -LiteralPath $sourceDir -PathType Container)) {
     throw "Source directory not found: $sourceDir"
 }
 
+# Pinned MOOSE commit 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+# implements SQUADRON:SetDespawnAfterLanding(false) as an enable operation.
+# UH-60 transport assets must leave the squadron-level option unset so pickup
+# and drop-off landings do not despawn the active FLIGHTGROUP.
+$uh60SquadronPath = Join-Path $sourceDir '08-construct-uh60-squadron.lua'
+$uh60SquadronSource = Get-Content -LiteralPath $uh60SquadronPath -Raw -Encoding UTF8
+$forbiddenFalseSetter = '(?m)^\s*squadron:SetDespawnAfterLanding\s*\(\s*false\s*\)\s*$'
+if ($uh60SquadronSource -match $forbiddenFalseSetter) {
+    throw 'UH-60 regression: SetDespawnAfterLanding(false) enables despawn in the pinned MOOSE version. Omit the setter entirely.'
+}
+
 New-Item -ItemType Directory -Path $distDir -Force | Out-Null
 
-$builderVersion = 'JBAD-AIR-OPS-PHASE1-9'
+$builderVersion = 'JBAD-AIR-OPS-PHASE1-9-HOTFIX1'
 $commit = 'UNKNOWN'
 try {
     $commit = (& git -C $repoRoot rev-parse HEAD 2>$null).Trim()
