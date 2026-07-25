@@ -2,35 +2,22 @@
 
 ## Status
 
-Der lokale Air-Ops-Grundknoten Jalalabad / FOB Fenty ist vollständig aufgebaut und im DCS-Gesamttest validiert.
-
 ```text
-Grundknoten: OPERATIONAL / ACCEPTED
-Taktische Phase-1-Funktionstests: IMPLEMENTED / DCS VALIDATION PENDING
-Finaler akzeptierter Grundknoten-Commit: 6cee9a5db7abf1934d0f86bf9fdf91a0446374d0
-Grundknoten-BuilderVersion: JBAD-AIR-OPS-COMPLETE-5
-Aktueller funktionaler Paketvertrag: JBAD-AIR-OPS-PHASE1-7
+Grundknoten:
+  OPERATIONAL / ACCEPTED
+  Commit: 6cee9a5db7abf1934d0f86bf9fdf91a0446374d0
+  BuilderVersion: JBAD-AIR-OPS-COMPLETE-5
+
+Taktische Phase 1:
+  MOOSE-FIRST REFACTOR IMPLEMENTED
+  LOCAL BUILD AND DCS VALIDATION PENDING
+  BuilderVersion: JBAD-AIR-OPS-PHASE1-11-MOOSE-FIRST
+  MOOSE-Pin: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
 ```
 
-Die Grundknoten-Abnahme belegt AIRWING-/SQUADRON-Aufbau, Parking, Warehouse, COMMANDER und fehlerfreien Leerlauf. Sie belegt nicht automatisch die korrekte taktische Ausführung von RECON, CAS, TROOPTRANSPORT, CARGOTRANSPORT oder MEDEVAC.
+Die Grundknoten-Abnahme belegt AIRWING-/SQUADRON-Aufbau, Parking, Warehouse, COMMANDER und fehlerfreien Leerlauf. Sie belegt nicht automatisch die korrekte taktische Ausführung von RECON, CAS, OPSTRANSPORT, CARGOTRANSPORT oder MEDEVAC.
 
-Die späteren taktischen Tests deckten mehrere Architektur- und Testfehler auf. Deren Ursachen, Fehlannahmen und verbindliche Schutzregeln sind hier dokumentiert:
-
-```text
-../../../docs/27-jalalabad-air-operations-phase1-postmortem-and-guardrails.md
-expected/jalalabad-phase1-package-contract.md
-expected/jalalabad-phase1-architecture-regression-checklist.md
-```
-
-Diese drei Dokumente sind vor jeder weiteren Air-Operations-Implementierung und vor der Übertragung auf einen anderen Flugplatz verbindlich zu lesen.
-
-Finales Ergebnis des akzeptierten Grundknotens:
-
-```text
-[OMW][AirOps.JBAD.COMPLETE] RESULT: COMPLETE. Jalalabad AirOps node OPERATIONAL; AIRWING started; COMMANDER linked; missionsQueued=0; spontaneousSpawns=0.
-```
-
-Autoritative Dokumente:
+## Autoritative Dokumente
 
 ```text
 ../../../docs/21-jalalabad-air-operations-manifest.md
@@ -38,15 +25,18 @@ Autoritative Dokumente:
 ../../../docs/24-jalalabad-ch47-static-parking-reservations.md
 ../../../docs/25-jalalabad-final-validation-and-operational-baseline.md
 ../../../docs/27-jalalabad-air-operations-phase1-postmortem-and-guardrails.md
+../../../docs/28-jalalabad-air-operations-development-incident-log.md
+../../../docs/29-jalalabad-air-operations-moose-code-review.md
+../../../docs/31-jalalabad-air-operations-moose-first-refactor-implementation.md
 expected/jalalabad-complete-node-acceptance.md
 expected/jalalabad-phase1-package-contract.md
 expected/jalalabad-phase1-architecture-regression-checklist.md
+expected/jalalabad-phase1-moose-first-refactor-acceptance.md
 results/2026-07-24-jalalabad-complete-node-pass.md
+results/2026-07-25-jalalabad-phase1-moose-first-refactor-implemented.md
 ```
 
 ## Verbindliche Ebenentrennung
-
-Folgende Dinge sind getrennte Ebenen und dürfen weder in Code, Logs noch Dokumentation vermischt werden:
 
 ```text
 logischer Flugzeugbestand
@@ -57,13 +47,20 @@ Client-Gruppen und deren Parkpositionen
 taktische Pakete aus einer oder mehreren Gruppen
 ```
 
-Insbesondere gilt:
+Insbesondere:
 
 ```text
-Two-Ship-Template + SetGrouping(2) = eine physische DCS-Gruppe mit zwei Luftfahrzeugen
-zwei Single-Ship-Assets = zwei unabhängige DCS-Gruppen, kein physisches Two-Ship
-sichtbares Static = keine AIRWING-Bestandsgruppe
-Template = Authoring-Seed, keine dauerhaft aktive Ramp-Maschine
+Two-Ship-Template + SetGrouping(2)
+= eine physische DCS-Gruppe mit zwei Luftfahrzeugen
+
+zwei Single-Ship-Assets
+= zwei unabhängige DCS-Gruppen, kein physisches Two-Ship
+
+Static
+= sichtbare Ramp-Darstellung, kein AIRWING-Asset
+
+Template
+= Authoring-Seed, keine aktive Bestandsmaschine
 ```
 
 ## Verbindlicher Paketvertrag
@@ -72,27 +69,30 @@ Template = Authoring-Seed, keine dauerhaft aktive Ramp-Maschine
 OH-58D RECON
   24 Luftfahrzeuge
   12 MOOSE-Asset-Gruppen
-  1 physische DCS-Gruppe je Auftrag
-  2 Luftfahrzeuge je Gruppe
-  Runtime-Einheiten: <group>-01 und <group>-02
+  SetGrouping(2)
+  1 physische DCS-Gruppe / 2 Luftfahrzeuge je Auftrag
+  operative Autorität: AUFTRAG
 
 AH-64D CAS
   8 Luftfahrzeuge
   4 MOOSE-Asset-Gruppen
-  1 physische DCS-Gruppe je Auftrag
-  2 Luftfahrzeuge je Gruppe
-  Runtime-Einheiten: <group>-01 und <group>-02
+  SetGrouping(2)
+  1 physische DCS-Gruppe / 2 Luftfahrzeuge je Auftrag
+  operative Autorität: AUFTRAG
 
 UH-60
   8 Luftfahrzeuge
   8 Single-Ship-Asset-Gruppen
-  TROOPTRANSPORT-Test: ein Single-Ship
-  späteres MEDEVAC: getrennte Lead- und Guard-Single-Ships als ein koordiniertes Paket
+  SetGrouping(1)
+  TROOPTRANSPORT: OPSTRANSPORT GROUP_CARGO
+  späteres MEDEVAC: Lead + Guard als koordiniertes Paket
 
 CH-47
   8 Luftfahrzeuge
   8 Single-Ship-Asset-Gruppen
-  1 Gruppe / 1 Luftfahrzeug je Auftrag
+  SetGrouping(1)
+  Static Sling Cargo: AUFTRAG CARGOTRANSPORT
+  Group-/Storage-Logistik: OPSTRANSPORT
 ```
 
 Zwingend:
@@ -102,102 +102,167 @@ AssetGroups × Grouping = InventoryAircraft
 RequiredGroups × Grouping = RequiredAircraft
 ```
 
-Paketmodell, Grouping, erwartete Gruppen, erwartete Luftfahrzeuge und Runtime-Suffixe werden zentral definiert. Sie dürfen nicht durch nachgelagerte Lua-Dateien still überschrieben werden.
+## MOOSE-first Laufzeitarchitektur
 
-## Finaler Nachweisstand des Grundknotens
-
-```text
-Operation_Mountain_Watch_Jalalabad_AirOps_Test_01(6).miz
-SHA-256: 16c607a9ffe9157779c09ad0e7557287697f91239c60e53fa33fd91d22396e8f
-
-dcs(57).log
-SHA-256: 1460c11af132a29421b091496702f8a1da70636c9303e4c72c82513b4e58a836
-
-debrief(14).log
-SHA-256: 2ae6f3e48cd0adea313b5c622226f6e965adf9b1ed51c51abcc33642d4ca12e4
-```
-
-Eingebettetes Bundle des akzeptierten Grundknotens:
+MOOSE ist die operative Autorität:
 
 ```text
-Datei: l10n/DEFAULT/OMW_AirOps_Jalalabad.lua
-Größe: 50273 Bytes
-SHA-256: 13f6ef2235a8d1abd13924c0e6bc297515039795766e98d7e15572c1f06ea18a
-GeneratedUtc: 2026-07-23T22:48:46.2604962Z
+AUFTRAG
+  RECON
+  CAS
+  Static CARGOTRANSPORT
+  FREIGHTTRANSPORT
+  Abort/Cancel
+
+OPSTRANSPORT
+  Infanteriegruppen
+  Fahrzeuggruppen
+  andere OPSGROUP-Cargos
+  STORAGE-Transfer für Fuel, Waffen und Ausrüstung
+
+FLIGHTGROUP / OPSGROUP
+  konkrete dynamische Gruppe
+  RTB
+  LoadingDone
+  UnloadingDone
+  Lifecycle-Events
+
+AIRWING / SQUADRON / LEGION
+  Mission Queue
+  Asset-Bestand
+  Asset-Rekrutierung
+  Carrier-Zuweisung
 ```
 
-## Darstellungsmodell
-
-Die lokale ORBAT wird nicht 1:1 durch sichtbare Statics oder DCS-Parkpositionen abgebildet.
+Der OMW-Code besitzt nur:
 
 ```text
-logischer Bestand = CampaignState-/MOOSE-Reserve
-sichtbare Statics = begrenzte visuelle Ramp-Darstellung
-aktive Spieler/KI = aktuell verwendete oder reservierte Luftfahrzeuge
-virtuelle Reserve = Hallen, Wartung und nicht dargestellte Abstellflächen
+Paket- und ORBAT-Vertrag
+Parking-/Namensassertions
+taktische Routen
+Watchdog
+unabhängige DCS-Abnahmekriterien
+Testbericht
 ```
 
-Ein endgültiger Verlust reduziert den logischen Bestand dauerhaft. Eine andere überlebende, bislang unsichtbare Bestandsmaschine darf später eingesetzt werden; sie ist kein externer Ersatz.
-
-## 2011er Ramp-Momentaufnahme
-
-Mindestens sichtbar gezählt:
+## Ersetzte Eigenentwicklungen
 
 ```text
-13 OH-58
- 7 AH-64
- 7 UH-60
- 7 CH-47
- 1 Mi-8
- 1 UH-1
+interne missionqueue-Auswertung
+  -> AIRWING:CountMissionsInQueue
+
+squadron.assets und eigene requested/spawned/reserved-Zählung
+  -> SQUADRON:CountAssets + AIRWING:CountAssetsOnMission
+
+AID-Namenssuche und mission.groupdata
+  -> AIRWING:OnAfterFlightOnMission + OPSTRANSPORT:GetCarriers
+
+eigene operative Mission-FSM
+  -> AUFTRAG-/OPSTRANSPORT-FSM
+
+eigene Erfolgspoller
+  -> AUFTRAG:AddConditionSuccess + native OPSTRANSPORT delivery
+
+UH-60-spezifischer Cargo-Workaround
+  -> generischer MOOSE-native Logistikadapter
 ```
 
-Mi-8 und UH-1 bleiben als externe oder transiente Luftfahrzeuge dokumentiert und werden nicht dem US-Task-Force-Shooter-Bestand zugerechnet.
+## Generische Logistikprofile
 
-## Validierter logischer Bestand
+```text
+GROUP_CARGO
+  OPSTRANSPORT Loaded / Unloaded / Delivered
+  Carrier LoadingDone / UnloadingDone
+  Infanterie, Fahrzeuge und andere OPSGROUPs
+
+STORAGE_CARGO
+  OPSTRANSPORT:AddCargoStorage
+  Fuel, Waffen, Ausrüstung und Warehouse-Storage
+  Carrier-Rekrutierung über LEGION.RecruitCohortAssets
+
+STATIC_SLING_CARGO
+  AUFTRAG:NewCARGOTRANSPORT
+  native AUFTRAG-Zustände plus Static-in-Drop-Zone
+
+STATIC_FREIGHT_CARGO
+  AUFTRAG FREIGHTTRANSPORT
+
+DYNAMIC_CARGO
+  EVENTS.DynamicCargoLoaded
+  EVENTS.DynamicCargoUnloaded
+  EVENTS.DynamicCargoRemoved
+```
+
+Static Sling Cargo erzeugt keine OPSTRANSPORT-Gruppen-Cargo-Ereignisse. Dafür werden keine künstlichen Loaded-/Unloaded-Zustände erfunden.
+
+## Despawn-Regel
+
+In der gepinnten MOOSE-Version aktiviert
+
+```lua
+SQUADRON:SetDespawnAfterLanding(false)
+```
+
+das Despawnen trotzdem.
+
+Deshalb gilt:
+
+```text
+UH-60 und CH-47:
+  squadron-weites SetDespawnAfterLanding bleibt ungesetzt
+
+nach nativer Delivery plus physischer Zielbestätigung:
+  exaktes FLIGHTGROUP:SetDespawnAfterLanding()
+
+Pickup-/Deploy-Landung:
+  kein Despawn
+
+folgende finale RTB-Landung:
+  Despawn und Asset-Rückgabe erlaubt
+```
+
+Der Builder blockiert die erneute Verwendung des fehlerhaften `false`-Aufrufs.
+
+## Entfernte Override-Dateien
+
+```text
+14a-phase1-lifecycle-corrections.lua
+14b-phase1-sequence-finalization.lua
+16-phase1-moose-compatibility.lua
+17-phase1-operational-safety.lua
+18-phase1-readiness-and-recon-telemetry.lua
+19-phase1-oh58-formation-recovery-counting.lua
+20-phase1-uh60-transport-lifecycle.lua
+```
+
+Kanonische Phase-1-Quellen:
+
+```text
+11-phase1-test-manifest.lua
+12-phase1-runtime-observer.lua
+12a-phase1-moose-logistics.lua
+13-phase1-mission-factory.lua
+14-phase1-test-controller.lua
+15-phase1-f10-and-acceptance.lua
+16-phase1-moose-first-readiness-routing.lua
+```
+
+## Validierte Grundknoten-Baseline
 
 ```text
 24 OH-58D
  8 AH-64D
- 8 UH-60-Familie
- 8 CH-47 Heavy Lift
-```
+ 8 UH-60
+ 8 CH-47
 
-## Validierte Missionseditor-Baseline
-
-```text
 6 verpflichtende Clientgruppen
 5 Late-Activation-KI-Templategruppen
 20 sichtbare Luftfahrzeug-Statics
 11 Funktionszonen
 1 Warehouse-Anker
-0 optionale UH-60L-Clientgruppen im modfreien Kernstand
 ```
 
-Spielerplätze:
-
-```text
-2 OH-58D
-2 AH-64D
-2 CH-47
-```
-
-Optionale Modvariante:
-
-```text
-0 oder 2 UH-60L-Clientgruppen
-```
-
-Static-Obergrenzen:
-
-```text
-7 OH-58D
-4 AH-64D
-4 UH-60A
-5 CH-47F
-```
-
-## Validierte DCS-Typen
+DCS-Typen:
 
 ```text
 OH58D
@@ -206,120 +271,39 @@ UH-60A
 CH-47Fbl1
 ```
 
-Beide UH-60-MEDEVAC-Templates verwenden die Livery `standard`.
-
-## Parkplatzmodell
+Parking:
 
 ```text
 6 Clientpositionen
 4 dynamische KI-Reservepositionen
-= 10 Runtime-Positionen
-
-+ 2 optionale UH-60L-Positionen
-= 12 Runtime-Positionen mit Modvariante
+4 absichtlich belegte CH-47-Static-Parkknoten: 23,35,37,49
+AIRWING:SetSafeParkingOn schützt Clientpositionen
 ```
-
-Die sieben Luftfahrzeuge der fünf Late-Activation-Templates sind Authoring-Seeds und belegen keine sieben dauerhaften Runtime-Parkplätze.
-
-Vier CH-47-Statics belegen absichtlich echte DCS-Parking-Nodes:
-
-```text
-CH47_01 -> TerminalID 49
-CH47_02 -> TerminalID 37
-CH47_03 -> TerminalID 23
-CH47_04 -> TerminalID 35
-```
-
-MOOSE-Blacklist:
-
-```text
-23,35,37,49
-```
-
-Der Validator bestätigte:
-
-```text
-4 absichtliche Reservierungen
-7 verbleibende visuelle CH-47-Positionen
-0 nicht deklarierte Static-Parking-Überlagerungen
-```
-
-Clientpositionen werden durch `AIRWING:SetSafeParkingOn()` geschützt.
-
-## Technische Struktur
-
-```text
-AW_US_JALALABAD
-├── SQ_US_JBAD_OH58D_6_6_CAV
-├── SQ_US_JBAD_AH64D_B_1_10_AVN
-├── SQ_US_JBAD_UH60_UTILITY_MEDEVAC
-└── SQ_US_JBAD_CH47_HEAVYLIFT
-```
-
-Bestandsabbildung:
-
-```text
-OH-58D: 24 / 12 physische Two-Ship-Asset-Gruppen / RECON
-AH-64D:  8 /  4 physische Two-Ship-Asset-Gruppen / CAS
-UH-60:   8 /  8 Single-Ship-Asset-Gruppen / TRANSPORT, LAND, GROUNDESCORT
-CH-47:   8 /  8 Single-Ship-Asset-Gruppen / TROOPTRANSPORT, CARGOTRANSPORT, LAND
-```
-
-MEDEVAC:
-
-```text
-1 unabhängige Lead-Single-Ship-Gruppe
-+
-1 unabhängige Cover-Single-Ship-Gruppe
-=
-1 logisch koordiniertes MEDEVAC-Paket
-```
-
-Der vollständige Laufzeitkoordinator bleibt eine separate Folgestufe.
-
-## Bestätigte Infrastruktur
-
-- Jalalabad als MOOSE-Airbase ID 19,
-- 50 auslesbare Parking-Einträge,
-- Warehouse-Anker `WH_AIR_US_JALALABAD`,
-- natives DCS-Warehouse und MOOSE-Storage,
-- explizite AIRWING-Zuordnung zu Jalalabad,
-- Parking-Blacklist und Safe Parking,
-- vier SQUADRONs,
-- AIRWING-Start,
-- COMMANDER-Verknüpfung und -Start,
-- null eingereihte Missionen,
-- keine spontane Jalalabad-KI-Mission im Abschlusslauf.
-
-## Verzeichnisstruktur
-
-```text
-src/       einzelne Lua-Quellen
-expected/  Acceptance-, Platzierungs- und Sollzustandsdokumente
-results/   chronologische PASS-/PARTIAL-/FAIL-Berichte
-dist/      lokal erzeugtes Bundle
-```
-
-`dist/OMW_AirOps_Jalalabad.lua` wird ausschließlich durch den Builder erzeugt und nicht manuell editiert.
 
 ## Repository- und Missionseditor-Workflow
-
-Verbindlicher Gesamtworkflow:
-
-```text
-../../../docs/22-test-mission-build-transfer-and-validation-workflow.md
-```
 
 Arbeitsgrenze:
 
 ```text
-Assistent: Lua, Builder, Dokumentation, GitHub-Commit, Logauswertung
-Projektinhaber: lokaler Pull, Bundle-Build, DO SCRIPT FILE, .miz, DCS-Test
+Assistent:
+  Lua
+  Builder
+  Dokumentation
+  GitHub-Commit
+  Logauswertung
+
+Projektinhaber:
+  lokaler Pull
+  lokaler Build
+  DO SCRIPT FILE
+  Missionseditor
+  .miz
+  DCS-Test
 ```
 
 Ohne ausdrücklichen Auftrag erstellt oder verändert der Assistent keine `.miz`.
 
-Kernbefehle für die aktuelle taktische Testphase:
+Lokaler Build:
 
 ```powershell
 cd P:\DCS-DEV\Operation-Mountain-Watch
@@ -335,30 +319,25 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass `
   -File ".\tools\build-jalalabad-air-operations-bundle.ps1"
 ```
 
-Nach jedem Neubau muss `OMW_AirOps_Jalalabad.lua` im Missionseditor erneut über `DO SCRIPT FILE` ausgewählt und die `.miz` gespeichert werden.
+Nach jedem Neubau muss `OMW_AirOps_Jalalabad.lua` in der bestehenden `DO SCRIPT FILE`-Aktion erneut ausgewählt und die Mission unter demselben Namen gespeichert werden.
 
-## Taktische Abnahmereihenfolge
+## Nächste Abnahmereihenfolge
 
-1. OH-58D als eine physische Two-Ship-Gruppe mit explizitem Rückkorridor.
-2. AH-64D als eine physische Two-Ship-Gruppe mit gemeinsamer Rückkehr und zwei gezählten Landungen.
-3. UH-60 als echter Single-Ship-TROOPTRANSPORT mit Pickup und Dropoff.
-4. CH-47 als Single-Ship-CARGOTRANSPORT mit physisch belegter Frachtzustellung.
-5. UH-60-Abbruch und Bestandsfreigabe.
-6. Gesamtablauf erst nach den isolierten Einzeltests.
-7. vollständiges 1+1-MEDEVAC-Paket als separate spätere Stufe.
+```text
+1. UH-60 OPSTRANSPORT GROUP_CARGO
+2. CH-47 AUFTRAG STATIC_SLING_CARGO
+3. OH-58D RECON physical two-ship
+4. AH-64D CAS physical two-ship
+5. UH-60 Abort/Release
+6. Gesamtablauf
+```
 
-Ein Build oder statischer Test ist kein DCS-PASS. Der aktuelle funktionale Paketvertrag bleibt bis zu neuen DCS-Logs `DCS VALIDATION PENDING`.
+Der UH-60-Test steht zuerst, weil der wiederholte Despawn an der Pickup-Landung der unmittelbar zu beseitigende Fehler war.
 
-## Folgestufen
+## Freigabegrenze
 
-Der Grundaufbau ist abgeschlossen. Separat zu implementieren und zu validieren sind:
+```text
+IMPLEMENTED ist kein DCS PASS.
+```
 
-- taktische AUFTRAG-Erzeugung und robuste Missionsausführung,
-- dynamische, spielergesteuerte Auftragsanforderungen,
-- OPSTRANSPORT-Logistik,
-- operative Lade-/Entladezonen,
-- vollständige 1+1-MEDEVAC-Ausführung,
-- persistente Verlustrechnung,
-- persistente Ramp-/Static-Neuverteilung.
-
-Die dynamische Spieleranforderung darf erst auf den in DCS abgenommenen Paketverträgen aufbauen. Der spätere Planner wählt einen Vertrag aus; er darf Grouping, TemplateUnits oder Paketmodell nicht verändern.
+Weitere Flugplätze, dynamische Spieleranforderungen und das vollständige MEDEVAC-Paket bleiben gesperrt, bis der lokale Build und alle DCS-Abnahmen bestanden sind.
