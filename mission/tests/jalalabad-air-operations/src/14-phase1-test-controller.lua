@@ -37,6 +37,14 @@ else
     return runtime.NativeStates and runtime.NativeStates[definition.NativeTerminal] == true
   end
 
+  local function markFailure(runtime, reason)
+    if not runtime or runtime.PendingFailure then return end
+    runtime.PendingFailure = reason
+    runtime.FailureCleanupDeadline = timer.getTime() + (ph1.Limits.FailureCleanupTimeoutSeconds or 300)
+    log(string.format("FAILURE_PENDING testId=%s reason=%s cleanupDeadline=%.1f",
+      tostring(ph1.ActiveTestId), tostring(reason), runtime.FailureCleanupDeadline))
+  end
+
   local function physicalObjectiveSatisfied()
     local runtime = ph1.Runtime
     local definition = ph1.ActiveDefinition
@@ -109,10 +117,14 @@ else
   end
 
   function controller:ResetRuntime(definition)
+    local now = timer.getTime()
     ph1.Runtime = {
       TestId = definition.Id,
-      StartedAt = timer.getTime(),
-      Deadline = timer.getTime() + definition.Timeout,
+      StartedAt = now,
+      OperationDeadline = now + definition.Timeout,
+      RecoveryDeadline = nil,
+      FailureCleanupDeadline = nil,
+      NativeTerminalAt = nil,
       NativeState = "CREATED",
       NativeStates = { CREATED = true },
       BoundGroupNames = {},
@@ -130,16 +142,44 @@ else
   function controller:OnNativeState(kind, state, object, from, event, to)
     if object ~= ph1.ActiveObject or not ph1.Runtime then return end
     local runtime = ph1.Runtime
+    local definition = ph1.ActiveDefinition
     runtime.NativeKind = kind
     runtime.NativeState = state
     runtime.NativeStates[state] = true
     log(string.format("NATIVE_STATE testId=%s authority=%s state=%s from=%s to=%s", tostring(ph1.ActiveTestId), tostring(kind), tostring(state), tostring(from), tostring(to)))
 
     if state == "SCHEDULED" then increment("assetsReserved") end
-    if state == "FAILED" then runtime.PendingFailure = runtime.PendingFailure or "native-operation-failed" end
-    if state == "CANCELLED" and ph1.ActiveDefinition.NativeTerminal ~= "CANCELLED" then
-      runtime.PendingFailure = runtime.PendingFailure or "unexpected-native-cancellation"
+
+    -- AUFTRAG uses Cancelled -> Done -> Success/Failed as its normal result
+    -- evaluation chain. Therefore Cancelled is only terminal for the deliberate
+    -- abort test; for all other missions it is a non-blocking intermediate edge.
+    if state == "CANCELLED" then
+      if definition.NativeTerminal == "CANCELLED" then
+        log("NATIVE_TRANSITION event=CANCELLED role=EXPECTED_TERMINAL testId=" .. tostring(ph1.ActiveTestId))
+      else
+        runtime.IntermediateCancellationObserved = true
+        log("NATIVE_TRANSITION event=CANCELLED role=INTERMEDIATE_RESULT_EVALUATION nonBlocking=true testId=" .. tostring(ph1.ActiveTestId))
+      end
     end
+
+    if state == "FAILED" then
+      if nativeTerminalReached(runtime, definition) then
+        log("NATIVE_TRANSITION event=FAILED role=LATE_AFTER_EXPECTED_TERMINAL nonBlocking=true testId=" .. tostring(ph1.ActiveTestId))
+      else
+        markFailure(runtime, "native-operation-failed")
+      end
+    end
+
+    if state == definition.NativeTerminal and not runtime.NativeTerminalAt then
+      runtime.NativeTerminalAt = timer.getTime()
+      runtime.RecoveryDeadline = runtime.NativeTerminalAt + (definition.RecoveryTimeout or 2400)
+      runtime.FinalDespawnArmed = true
+      if runtime.PendingFailure == "unexpected-native-cancellation" then runtime.PendingFailure = nil end
+      log(string.format("RECOVERY_WINDOW_ARMED testId=%s nativeTerminal=%s operationDuration=%.1fs recoveryTimeout=%ds recoveryDeadline=%.1f",
+        tostring(ph1.ActiveTestId), tostring(definition.NativeTerminal),
+        runtime.NativeTerminalAt - runtime.StartedAt, definition.RecoveryTimeout or 2400, runtime.RecoveryDeadline))
+    end
+
     physicalObjectiveSatisfied()
   end
 
@@ -186,12 +226,27 @@ else
 
     local kind, object, createError = ph1.Factory:Create(testId)
     if not object then
-      ph1.Runtime.PendingFailure = "operation-create-failed: " .. tostring(createError)
+      markFailure(ph1.Runtime, "operation-create-failed: " .. tostring(createError))
       self:FinalizeTest("FAIL", ph1.Runtime.PendingFailure, false)
       return false
     end
     ph1.ActiveKind = kind
     ph1.ActiveObject = object
+
+    if kind == "AUFTRAG" and (definition.TacticalFormation or definition.RecoveryProfile) then
+      if not ph1.Routing or not ph1.Routing.ConfigureMission then
+        markFailure(ph1.Runtime, "MOOSE mission tactical configuration API unavailable")
+        self:FinalizeTest("FAIL", ph1.Runtime.PendingFailure, false)
+        return false
+      end
+      local configured, configurationError = ph1.Routing:ConfigureMission(testId, object, definition)
+      if not configured then
+        markFailure(ph1.Runtime, "mission tactical configuration failed: " .. tostring(configurationError))
+        self:FinalizeTest("FAIL", ph1.Runtime.PendingFailure, false)
+        return false
+      end
+    end
+
     increment("missionsCreated")
     ph1.State = "ACTIVE"
 
@@ -205,13 +260,14 @@ else
       ok, dispatchError = false, "unknown-operation-kind-" .. tostring(kind)
     end
     if not ok then
-      ph1.Runtime.PendingFailure = "native-dispatch-failed: " .. tostring(dispatchError)
+      markFailure(ph1.Runtime, "native-dispatch-failed: " .. tostring(dispatchError))
       self:FinalizeTest("FAIL", ph1.Runtime.PendingFailure, false)
       return false
     end
 
-    log(string.format("START testId=%s authority=%s package=%s expectedGroups=%d expectedAircraft=%d nativeTerminal=%s",
-      testId, kind, definition.PackageModel, definition.ExpectedGroups, definition.ExpectedAircraft, definition.NativeTerminal))
+    log(string.format("START testId=%s authority=%s package=%s expectedGroups=%d expectedAircraft=%d nativeTerminal=%s operationTimeout=%ds recoveryTimeout=%ds",
+      testId, kind, definition.PackageModel, definition.ExpectedGroups, definition.ExpectedAircraft,
+      definition.NativeTerminal, definition.Timeout, definition.RecoveryTimeout or 2400))
     coalitionMessage("Gestartet: " .. definition.Label, 12)
     return true
   end
@@ -227,14 +283,14 @@ else
     else
       ok, err = pcall(function() cfg.Airwing:TransportCancel(ph1.ActiveObject) end)
     end
-    if not ok then ph1.Runtime.PendingFailure = "native-cancel-failed: " .. tostring(err) end
+    if not ok then markFailure(ph1.Runtime, "native-cancel-failed: " .. tostring(err)) end
     log("ABORT_REQUEST authority=" .. tostring(ph1.ActiveKind) .. " reason=" .. tostring(ph1.Runtime.AbortReason))
     return ok
   end
 
   function controller:RequestFailure(reason)
     if not ph1.Runtime then return end
-    ph1.Runtime.PendingFailure = ph1.Runtime.PendingFailure or reason
+    markFailure(ph1.Runtime, reason)
     if ph1.ActiveObject and not ph1.Runtime.AbortRequested then self:AbortActive("failure-cleanup") end
   end
 
@@ -287,9 +343,17 @@ else
     if not runtime or not definition or not ph1.ActiveObject then return end
     if definition.LogisticsProfile then ph1.Logistics:RefreshObjective() end
     if runtime.HardFailure then self:RequestFailure(runtime.HardFailure) end
-    if timer.getTime() >= runtime.Deadline and not runtime.PendingFailure then
-      increment("timeouts")
-      self:RequestFailure("watchdog-timeout")
+
+    local now = timer.getTime()
+    local terminalReached = nativeTerminalReached(runtime, definition)
+    if not runtime.PendingFailure then
+      if not terminalReached and now >= runtime.OperationDeadline then
+        increment("timeouts")
+        self:RequestFailure("operation-watchdog-timeout")
+      elseif terminalReached and runtime.RecoveryDeadline and now >= runtime.RecoveryDeadline then
+        increment("timeouts")
+        self:RequestFailure("recovery-watchdog-timeout")
+      end
     end
 
     -- Successful MOOSE-managed assets are released by the authoritative LEGION
@@ -333,7 +397,7 @@ else
     end
 
     if runtime.PendingFailure then
-      if released or timer.getTime() >= runtime.Deadline + 300 then
+      if released or (runtime.FailureCleanupDeadline and now >= runtime.FailureCleanupDeadline) then
         self:FinalizeTest("FAIL", runtime.PendingFailure .. (released and "" or "; " .. tostring(restoreReason or "assets-not-released")), released)
       end
       return
@@ -392,6 +456,8 @@ else
       "MOOSE mission queue: " .. tostring(ph1.Observer:GetMissionQueueCount()), "Block: " .. tostring(ph1.BlockReason or "none")
     }
     if ph1.Runtime then
+      local phase = nativeTerminalReached(ph1.Runtime, ph1.ActiveDefinition) and "RECOVERY" or "OPERATION"
+      lines[#lines + 1] = "Phase: " .. phase
       lines[#lines + 1] = "Native state: " .. tostring(ph1.Runtime.NativeState)
       lines[#lines + 1] = string.format("Birth/Engine/TO/Land: %d/%d/%d/%d", ph1.Runtime.BirthCount or 0, ph1.Runtime.EngineStartCount or 0, ph1.Runtime.TakeoffCount or 0, ph1.Runtime.LandingCount or 0)
       lines[#lines + 1] = "Objective/RTB: " .. tostring(ph1.Runtime.ObjectiveSatisfied) .. "/" .. tostring(ph1.Runtime.RTBObserved)
@@ -414,5 +480,5 @@ else
     if ph1.ActiveObject then controller:PollActive() else controller:InitializeWhenReady() end
   end, {}, 20, ph1.Limits.PollIntervalSeconds)
   ph1.Counters = ph1.Counters or newCounters()
-  log("READY controllerRole=dispatch/watchdog/acceptance-only operativeFSM=AUFTRAG-or-OPSTRANSPORT successReleaseAuthority=MOOSE_LEGION_FSM runtimeAvailabilityAuthority=MOOSE_RECRUITMENT historicalInventoryEquality=startup-only customMissionFSM=false")
+  log("READY controllerRole=dispatch/watchdog/acceptance-only operativeFSM=AUFTRAG-or-OPSTRANSPORT cancellationSemantics=AUFTRAG_INTERMEDIATE_NONBLOCKING operationAndRecoveryDeadlines=SEPARATE successReleaseAuthority=MOOSE_LEGION_FSM runtimeAvailabilityAuthority=MOOSE_RECRUITMENT historicalInventoryEquality=startup-only customMissionFSM=false")
 end
