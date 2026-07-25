@@ -47,10 +47,38 @@ else
     end
   end
 
+  function logistics:AttachCarrierCargoCallbacks(carrier, transport)
+    if not carrier or carrier.OMWNativeCargoCallbacksAttached then return end
+    carrier.OMWNativeCargoCallbacksAttached = true
+    local carrierName = objectName(carrier) or "unknown"
+
+    local previousLoadingDone = carrier.OnAfterLoadingDone
+    function carrier:OnAfterLoadingDone(from, event, to)
+      if previousLoadingDone then pcall(previousLoadingDone, self, from, event, to) end
+      if ph1.ActiveObject ~= transport or not ph1.Runtime then return end
+      ph1.Runtime.NativeCarrierLoadingDoneGroups = ph1.Runtime.NativeCarrierLoadingDoneGroups or {}
+      ph1.Runtime.NativeCarrierLoadingDoneGroups[carrierName] = true
+      ph1.Runtime.NativeCarrierLoadingDone = true
+      log(string.format("NATIVE_CARRIER_CARGO event=LoadingDone carrier=%s profile=%s", carrierName, tostring(transport.OMWMetadata and transport.OMWMetadata.Profile)))
+    end
+
+    local previousUnloadingDone = carrier.OnAfterUnloadingDone
+    function carrier:OnAfterUnloadingDone(from, event, to)
+      if previousUnloadingDone then pcall(previousUnloadingDone, self, from, event, to) end
+      if ph1.ActiveObject ~= transport or not ph1.Runtime then return end
+      ph1.Runtime.NativeCarrierUnloadingDoneGroups = ph1.Runtime.NativeCarrierUnloadingDoneGroups or {}
+      ph1.Runtime.NativeCarrierUnloadingDoneGroups[carrierName] = true
+      ph1.Runtime.NativeCarrierUnloadingDone = true
+      log(string.format("NATIVE_CARRIER_CARGO event=UnloadingDone carrier=%s profile=%s", carrierName, tostring(transport.OMWMetadata and transport.OMWMetadata.Profile)))
+      logistics:RefreshObjective()
+    end
+  end
+
   function logistics:BindTransportCarriers(transport, source)
     if ph1.ActiveObject ~= transport or not ph1.Runtime then return 0 end
     local count = 0
     for _, carrier in pairs(transport:GetCarriers() or {}) do
+      self:AttachCarrierCargoCallbacks(carrier, transport)
       if observer:BindFlightGroup(carrier, transport, source or "OPSTRANSPORT") then count = count + 1 end
     end
     return count
@@ -115,6 +143,7 @@ else
     function transport:OnAfterLoaded(from, event, to, cargo, carrier, carrierElement)
       if previousLoaded then pcall(previousLoaded, self, from, event, to, cargo, carrier, carrierElement) end
       if ph1.ActiveObject ~= self or not ph1.Runtime then return end
+      logistics:AttachCarrierCargoCallbacks(carrier, self)
       observer:BindFlightGroup(carrier, self, "OPSTRANSPORT_LOADED")
       if not validateGroupCargoIdentity(metadata, cargo) then return end
       ph1.Runtime.NativeCargoLoaded = true
@@ -127,6 +156,7 @@ else
     function transport:OnAfterUnloaded(from, event, to, cargo, carrier)
       if previousUnloaded then pcall(previousUnloaded, self, from, event, to, cargo, carrier) end
       if ph1.ActiveObject ~= self or not ph1.Runtime then return end
+      logistics:AttachCarrierCargoCallbacks(carrier, self)
       observer:BindFlightGroup(carrier, self, "OPSTRANSPORT_UNLOADED")
       if not validateGroupCargoIdentity(metadata, cargo) then return end
       ph1.Runtime.NativeCargoUnloaded = true
@@ -322,10 +352,11 @@ else
       local delivered = transport and transport.GetNcargoDelivered and transport:GetNcargoDelivered() or 0
       local total = transport and transport.GetNcargoTotal and transport:GetNcargoTotal() or 0
       local physicallyDelivered = groupAliveInZone(runtime.CargoGroupName, metadata.DeployZone)
-      if runtime.PickupLandingObserved and runtime.NativeCargoLoaded and runtime.DropoffLandingObserved and
-         runtime.NativeCargoUnloaded and runtime.NativeTransportDelivered and total > 0 and delivered == total and physicallyDelivered then
+      if runtime.PickupLandingObserved and runtime.NativeCargoLoaded and runtime.NativeCarrierLoadingDone and
+         runtime.DropoffLandingObserved and runtime.NativeCargoUnloaded and runtime.NativeCarrierUnloadingDone and
+         runtime.NativeTransportDelivered and total > 0 and delivered == total and physicallyDelivered then
         runtime.ObjectiveSatisfied = true
-        log("LOGISTICS_OBJECTIVE PASS profile=GROUP_CARGO nativeLoaded=true nativeUnloaded=true nativeDelivered=true physicalCargoAtDeploy=true")
+        log("LOGISTICS_OBJECTIVE PASS profile=GROUP_CARGO Loaded+LoadingDone+Unloaded+UnloadingDone+Delivered=true physicalCargoAtDeploy=true")
         self:ArmFinalDespawn()
       end
     elseif definition.LogisticsProfile == "STORAGE_CARGO" then
@@ -334,9 +365,10 @@ else
       local delivered = transport and transport.GetNcargoDelivered and transport:GetNcargoDelivered() or 0
       local total = transport and transport.GetNcargoTotal and transport:GetNcargoTotal() or 0
       local verified, customVerifier = verifyStorageDelivery(metadata, transport)
-      if runtime.NativeTransportDelivered and total > 0 and delivered == total and verified then
+      if runtime.NativeCarrierLoadingDone and runtime.NativeCarrierUnloadingDone and runtime.NativeTransportDelivered and
+         total > 0 and delivered == total and verified then
         runtime.ObjectiveSatisfied = true
-        log("LOGISTICS_OBJECTIVE PASS profile=STORAGE_CARGO nativeDelivered=true customStorageVerification=" .. tostring(customVerifier))
+        log("LOGISTICS_OBJECTIVE PASS profile=STORAGE_CARGO LoadingDone+UnloadingDone+Delivered=true customStorageVerification=" .. tostring(customVerifier))
         self:ArmFinalDespawn()
       end
     elseif definition.LogisticsProfile == "STATIC_SLING_CARGO" then
@@ -391,5 +423,5 @@ else
     log("NATIVE_DYNAMIC_CARGO event=Removed cargo=" .. tostring(eventData.IniDynamicCargoName))
   end
 
-  log("READY profiles=GROUP/STORAGE/STATIC_SLING/STATIC_FREIGHT/DYNAMIC groupAndStorageAuthority=OPSTRANSPORT exactCarrierRecruitment=LEGION.RecruitCohortAssets")
+  log("READY profiles=GROUP/STORAGE/STATIC_SLING/STATIC_FREIGHT/DYNAMIC nativeCarrierCargoEvents=LoadingDone/UnloadingDone nativeTransportEvents=Loaded/Unloaded/Delivered")
 end
