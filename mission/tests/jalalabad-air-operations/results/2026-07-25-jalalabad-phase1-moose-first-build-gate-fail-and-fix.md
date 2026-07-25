@@ -1,4 +1,4 @@
-# Jalalabad Phase 1 – MOOSE-first Build-Gate FAIL und Korrektur
+# Jalalabad Phase 1 – MOOSE-first Build-Gate FAIL und vollständige Korrektur
 
 Stand: 2026-07-25  
 Branch: `feature/jalalabad-airwing-phase1-functional-tests`  
@@ -29,28 +29,31 @@ GitCommit: 522ea5e5924ff6e338ac8de91eba8806667e7415
 
 Dieses alte Bundle ist für den MOOSE-first-Teststand ungültig und darf nicht in die `.miz` übernommen werden.
 
-## 2. Ursache
-
-Das Refactoring hatte direkte Zugriffe auf MOOSE-interne Tabellen als unzulässig definiert und im Builder blockiert. Zwei ältere Validierungsdateien verwendeten dennoch weiterhin:
-
-```lua
-_DATABASE.Templates.Groups
-```
-
-Betroffen waren:
+Nach einer ersten unvollständigen Korrektur wurde der Build bei Commit
 
 ```text
-05-validate-mission-templates.lua
-05b-validate-runtime-name-contract.lua
+fb037f645f090db0449f944075216e954ec5e3ad
 ```
 
-Der neue Builder-Gate hat damit korrekt funktioniert. Der Fehler lag darin, dass der Refactoring-Stand vor einem vollständigen lokalen Builder-Durchlauf veröffentlicht wurde.
+erneut mit derselben Meldung abgebrochen.
 
-## 3. Korrektur
+## 2. Vollständige Ursache
 
-Beide direkten Tabellenzugriffe wurden im GitHub-Branch entfernt.
+Der Builder prüft alle kanonischen Lua-Quellen gemeinsam. Die erste Fehlerausgabe nannte nur das verbotene Muster, jedoch nicht die betroffenen Dateien. Deshalb wurden zunächst nur zwei Fundstellen korrigiert.
 
-Verwendet wird nun der öffentliche MOOSE-Wrapperpfad:
+Die vollständige Prüfung aller Builder-Quellen ergab insgesamt fünf betroffene Dateien:
+
+```text
+04-dump-aircraft-types.lua
+05-validate-mission-templates.lua
+05a-validate-squadron-parking-pools.lua
+05b-validate-runtime-name-contract.lua
+10-validate-and-start-complete-node.lua
+```
+
+Alle fünf Dateien griffen direkt oder indirekt auf die interne MOOSE-Gruppenvorlagentabelle zu.
+
+Der zunächst verwendete Ersatz
 
 ```lua
 GROUP:FindByName(name)
@@ -58,21 +61,68 @@ GROUP:Register(name)
 GROUP:GetTemplate()
 ```
 
-`GROUP:Register()` wird nur verwendet, wenn für eine unbesetzte Clientgruppe oder ein Late-Activation-Template noch kein Wrapper durch `GROUP:FindByName()` geliefert wird. `GROUP:GetTemplate()` bleibt die öffentliche Quelle für die Mission-Editor-Vorlage.
+war ebenfalls nicht die endgültig richtige Lösung. `GROUP:Register()` kann für nicht vorhandene optionale Gruppen einen Wrapper erzeugen. Das ist für eine reine Existenzprüfung unnötig und kann die Laufzeitdatenbank beeinflussen.
 
-Die Namensprüfung wertet nun direkt die von `GROUP:GetTemplate()` gelieferte Template-Tabelle aus; die frühere interne Zwischenstruktur mit `entry.Template` entfällt.
+## 3. Verwendete MOOSE-Funktion
 
-## 4. GitHub-Commits
+Die gepinnte MOOSE-Version stellt die öffentliche Methode bereit:
 
-```text
-75d0aeaf58991144461992380b924218751fcb31
-  05-validate-mission-templates.lua
-
-5fdd00549ba5ed477a5f9acc497cdc79a7f0de01
-  05b-validate-runtime-name-contract.lua
+```lua
+DATABASE:GetGroupTemplate(GroupName)
 ```
 
-## 5. Unveränderte Grenzen
+Die kanonische Verwendung lautet jetzt in allen fünf Dateien:
+
+```lua
+local ok, template = pcall(function()
+  return _DATABASE:GetGroupTemplate(name)
+end)
+```
+
+Damit werden Mission-Editor-Gruppenvorlagen einschließlich unbesetzter Clientgruppen und Late-Activation-Templates über eine dokumentierte MOOSE-Methode gelesen. Es wird nicht mehr direkt auf die interne Tabellenstruktur zugegriffen und es werden keine künstlichen GROUP-Wrapper erzeugt.
+
+## 4. Betroffene Korrekturen
+
+```text
+6bc564221be7049aa1f7311db938c48681a6fe97
+  04-dump-aircraft-types.lua
+
+4c0207d5ee3712530f1014b88b1e9b57c89db1c0
+  05-validate-mission-templates.lua
+
+9353e5ac0ca50aa2a6a0ecb860d11d75c0b4ff4c
+  05a-validate-squadron-parking-pools.lua
+
+bc3dcf30194e582a31e0b452e272a032c3332437
+  05b-validate-runtime-name-contract.lua
+
+caddfc1e0faba35f9b4af67f68c81397637d6b1f
+  10-validate-and-start-complete-node.lua
+```
+
+Die früheren Commits `75d0aeaf...` und `5fdd0054...` mit dem `GROUP:Register()`-Ansatz sind durch diese einheitliche DATABASE-API-Korrektur superseded.
+
+## 5. Builder-Diagnostik
+
+Der Builder wurde zusätzlich verbessert:
+
+```text
+899d37446fe940696ec3e19b9816c7d8cc9e9613
+```
+
+Der Regression-Gate prüft weiterhin alle verbotenen Muster. Bei einem Treffer werden jetzt jedoch sämtliche Fundstellen mit Dateiname und Zeilennummer ausgegeben.
+
+Beispiel:
+
+```text
+MOOSE-first source regressions found:
+ - 04-dump-aircraft-types.lua:8 [_DATABASE\.Templates\.Groups]
+ - 05a-validate-squadron-parking-pools.lua:30 [_DATABASE\.Templates\.Groups]
+```
+
+Zusätzlich ist `GetGroupTemplate` nun eine verpflichtende MOOSE-API des kanonischen Bundles.
+
+## 6. Unveränderte Grenzen
 
 - keine `.miz` geändert;
 - keine Mission-Editor-Objekte geändert;
@@ -82,15 +132,27 @@ Die Namensprüfung wertet nun direkt die von `GROUP:GetTemplate()` gelieferte Te
 - keine DCS-Abnahme durchgeführt;
 - kein altes PHASE1-9-Bundle darf weiterverwendet werden.
 
-## 6. Noch ausstehend
+## 7. Lokaler Fremdkörper `-File`
 
-Der Projektinhaber muss nach dem Pull:
+Beim zweiten lokalen Versuch zeigte `git status --short`:
 
-1. das alte `dist/OMW_AirOps_Jalalabad.lua` löschen;
-2. den Builder erneut ausführen;
-3. den neuen Bundle-Header prüfen;
-4. erst nach erfolgreichem Build das Bundle in der bestehenden `.miz` neu auswählen;
-5. zunächst ausschließlich den UH-60-OPSTRANSPORT-Test durchführen.
+```text
+?? -File
+```
+
+Diese unversionierte Datei gehört nicht zum Repository und nicht zum Builder. Sie entstand wahrscheinlich durch eine zuvor unvollständig interpretierte PowerShell-Befehlszeile. Sie muss vor dem nächsten Pull/Build lokal gelöscht werden.
+
+## 8. Noch ausstehend
+
+Nach dem Pull des endgültigen Branch-HEAD:
+
+1. lokale Datei `-File` löschen;
+2. sicherstellen, dass `git status --short` leer ist;
+3. altes `dist/OMW_AirOps_Jalalabad.lua` löschen;
+4. Builder erneut ausführen;
+5. neuen Bundle-Header prüfen;
+6. erst nach erfolgreichem Build das Bundle in der bestehenden `.miz` neu auswählen;
+7. zunächst ausschließlich den UH-60-OPSTRANSPORT-Test durchführen.
 
 Erwarteter Bundle-Header:
 
