@@ -18,6 +18,15 @@ Dynamic persistent COIN multiplayer campaign for DCS World on the Afghanistan ma
 - MOOSE CSAR
 - Custom campaign state, persistence, red-force director, and virtualization modules
 
+## Projektweit verbindliche Entwicklungsrichtlinien
+
+Die folgenden Vorgaben gelten für das gesamte Hauptprojekt **Operation Mountain Watch** und damit für alle Teilbereiche, Testmissionen, Feature-Branches, Diagnosezweige und späteren Erweiterungen. Sie sind nicht auf Jalalabad, PR #18 oder ein einzelnes Unterprojekt beschränkt.
+
+- [`Verbindliche MOOSE-First-Entwicklungsrichtlinie`](docs/26-moose-first-development-policy.md)
+- [`MOOSE-Projektdokumentation und Klassenregister`](docs/moose/README.md)
+
+Vor der Entwicklung eigener Lua-Funktionen müssen die passende MOOSE-Dokumentation, der tatsächlich verwendete MOOSE-Quellstand und die offiziellen Demo- beziehungsweise Testmissionen geprüft werden. Vorhandene MOOSE-Funktionalität ist vorrangig zu verwenden. Abweichungen und Eigenentwicklungen müssen technisch begründet, versionsbezogen dokumentiert und durch reproduzierbare DCS-Tests abgesichert werden.
+
 ## Status
 
 Early design and prototyping. No gameplay release exists yet.
@@ -58,6 +67,12 @@ Current air-operations documents:
 - [`Jalalabad: finale Validierung und operative Grundbaseline`](docs/25-jalalabad-final-validation-and-operational-baseline.md)
 
 Für Jalalabad sind Dokumente 21, 23, 24 und 25 sowie die zugehörigen `expected/`- und `results/`-Dateien autoritativ. Ältere allgemeine Zwischenwerte wie vier Spielerplätze je Typ, sechs UH-60, kein CH-47, 13/15 Runtime-Parkplätze oder eine pauschale Ablehnung von Statics auf Parking-Nodes sind aufgehoben.
+
+Project-wide MOOSE documentation:
+
+- [`MOOSE-Projektdokumentation`](docs/moose/README.md)
+- [`MOOSE-Projektklassenindex`](docs/moose/PROJECT-CLASS-INDEX.md)
+- [`Verifizierte MOOSE-Methoden`](docs/moose/VERIFIED-METHODS.md)
 
 Test- und Implementierungsdateien:
 
