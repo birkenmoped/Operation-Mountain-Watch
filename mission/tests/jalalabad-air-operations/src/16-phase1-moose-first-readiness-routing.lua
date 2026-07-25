@@ -132,6 +132,48 @@ else
     end
   end
 
+  local function attachLegionAssetReturnFinalizer()
+    if routing.LegionAssetReturnHookAttached then return routing.LegionAssetReturnHookAirwing == cfg.Airwing end
+    local airwing = cfg.Airwing
+    if not airwing then return false end
+
+    local previousAssetReturned = airwing.OnAfterLegionAssetReturned
+    function airwing:OnAfterLegionAssetReturned(from, event, to, cohort, asset)
+      if previousAssetReturned then pcall(previousAssetReturned, self, from, event, to, cohort, asset) end
+
+      local runtime = ph1.Runtime
+      local definition = ph1.ActiveDefinition
+      local groupName = asset and asset.spawngroupname or nil
+      if not runtime or not definition or not groupName or not runtime.BoundGroupNames[groupName] then return end
+
+      runtime.LegionAssetReturnedGroups = runtime.LegionAssetReturnedGroups or {}
+      if runtime.LegionAssetReturnedGroups[groupName] then return end
+      runtime.LegionAssetReturnedGroups[groupName] = true
+      runtime.LegionAssetReturnedCount = (runtime.LegionAssetReturnedCount or 0) + 1
+
+      -- A pre-spawn inventory poll can see the untouched baseline as "released".
+      -- The real MOOSE return event re-arms the acceptance edge for the actual asset.
+      runtime.ReleaseLogged = false
+      runtime.ReleaseStablePolls = math.max(0, (ph1.Limits.ReleaseStablePolls or 1) - 1)
+      log(string.format("AIRWING_EVENT testId=%s event=LEGION_ASSET_RETURNED group=%s cohort=%s returnedGroups=%d expectedGroups=%d source=MOOSE_LEGION_FSM",
+        tostring(ph1.ActiveTestId), tostring(groupName), tostring(cohort and cohort.name),
+        runtime.LegionAssetReturnedCount, tonumber(definition.ExpectedGroups) or 0))
+
+      if SCHEDULER and ph1.Controller and ph1.Controller.PollActive then
+        SCHEDULER:New(nil, function()
+          if ph1.Runtime == runtime and ph1.ActiveDefinition == definition and ph1.ActiveObject then
+            ph1.Controller:PollActive()
+          end
+        end, {}, 1)
+      end
+    end
+
+    routing.LegionAssetReturnHookAttached = true
+    routing.LegionAssetReturnHookAirwing = airwing
+    log("AIRWING_HOOK READY event=OnAfterLegionAssetReturned releaseAuthority=MOOSE_LEGION_FSM")
+    return true
+  end
+
   function routing:BuildReconProfile(logResult)
     local airbase = cfg.Airbase or (AIRBASE and AIRBASE:FindByName(cfg.AirbaseName))
     if not airbase then return false, "Jalalabad airbase unavailable" end
@@ -232,6 +274,17 @@ else
     local groupName = flightgroup:GetName()
     if not applyVerticalHelicopterOption(flightgroup, groupName) then return end
     attachTerminalLossFinalizer(flightgroup, groupName)
+    if not attachLegionAssetReturnFinalizer() then
+      ph1.Runtime.HardFailure = "MOOSE-LegionAssetReturned-hook-unavailable"
+      return
+    end
+
+    if ph1.Runtime.ReleaseLogged or (ph1.Runtime.ReleaseStablePolls or 0) > 0 then
+      log(string.format("ACCEPTANCE_RESET testId=%s group=%s reason=asset-now-committed previousReleaseLogged=%s previousStablePolls=%d",
+        tostring(ph1.ActiveTestId), tostring(groupName), tostring(ph1.Runtime.ReleaseLogged == true), ph1.Runtime.ReleaseStablePolls or 0))
+    end
+    ph1.Runtime.ReleaseLogged = false
+    ph1.Runtime.ReleaseStablePolls = 0
 
     if ph1.ActiveTestId == "OH58D_RECON" and ph1.ActiveKind == "AUFTRAG" then
       local zone1 = ZONE:FindByName(ph1.Objects.ReconZones[1])
@@ -263,5 +316,5 @@ else
     end
   end
 
-  log("READY publicMOOSE=true routeAuthority=AUFTRAG+FLIGHTGROUP verticalHelicopterOps=FLIGHTGROUP:SetOptionPreferVertical terminalAircraftLoss=IMMEDIATE_FAIL expectedFinalDespawn=NON_LOSS_WAIT_FOR_ASSET_RELEASE terrainPolicy=project-specific-advisory fuel=empirical-telemetry selfStoppingSchedulers=true")
+  log("READY publicMOOSE=true routeAuthority=AUFTRAG+FLIGHTGROUP verticalHelicopterOps=FLIGHTGROUP:SetOptionPreferVertical terminalAircraftLoss=IMMEDIATE_FAIL expectedFinalDespawn=NON_LOSS_WAIT_FOR_MOOSE_LEGION_RETURN assetRelease=LEGION:OnAfterLegionAssetReturned terrainPolicy=project-specific-advisory fuel=empirical-telemetry selfStoppingSchedulers=true")
 end
