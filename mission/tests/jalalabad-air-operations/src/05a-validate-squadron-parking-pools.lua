@@ -32,7 +32,9 @@ local function missionTemplate(name)
 end
 
 local function resolveClientParking(cfg, spots)
-  local result = {}
+  local byTerminal = {}
+  local byGroup = {}
+  local resolvedCount = 0
   local ok = true
   for _, key in ipairs({ "OH58D", "AH64D", "CH47" }) do
     for _, groupName in ipairs((cfg.PlayerGroups.Required and cfg.PlayerGroups.Required[key]) or {}) do
@@ -50,7 +52,9 @@ local function resolveClientParking(cfg, spots)
         end
       end
       if nearestId and nearestDistance and nearestDistance <= 2 then
-        result[nearestId] = groupName
+        byTerminal[nearestId] = groupName
+        byGroup[groupName] = nearestId
+        resolvedCount = resolvedCount + 1
         log(string.format("CLIENT_RESERVED group=%s TerminalID=%s distance=%.1fm", groupName, tostring(nearestId), nearestDistance))
       else
         ok = false
@@ -58,7 +62,7 @@ local function resolveClientParking(cfg, spots)
       end
     end
   end
-  return result, ok
+  return byTerminal, byGroup, ok, resolvedCount
 end
 
 local function validateTemplatesOffParking(cfg, spots)
@@ -109,12 +113,29 @@ local function main()
 
   local blacklist = {}
   for _, id in ipairs(parking.StaticParkingBlacklist or {}) do blacklist[id] = true end
-  local clientIds, clientsOK = resolveClientParking(cfg, spots)
+  local clientIds, clientMappings, clientsOK, clientCount = resolveClientParking(cfg, spots)
+  cfg.ClientParkingByTerminal = clientIds
+  cfg.ClientParkingByGroup = clientMappings
+  cfg.ClientParkingContractOK = clientsOK and clientCount == 6
+
+  local phase1ClientProtectionReady = false
+  if cfg.Phase1 then
+    local protectedIds = {}
+    for terminalId in pairs(clientIds) do protectedIds[terminalId] = true end
+    cfg.Phase1.ClientParkingIDs = protectedIds
+    cfg.Phase1.ClientParkingMappings = clientMappings
+    cfg.Phase1.ClientParkingResolved = cfg.ClientParkingContractOK
+    phase1ClientProtectionReady = cfg.Phase1.ClientParkingResolved == true
+    log(string.format("PHASE1_CLIENT_PROTECTION ready=%s clients=%d source=DATABASE:GetGroupTemplate", tostring(phase1ClientProtectionReady), clientCount))
+  else
+    log("ERROR PHASE1_CLIENT_PROTECTION Phase-1 table unavailable")
+  end
+
   local templatesOK = validateTemplatesOffParking(cfg, spots)
   local staticNames = addStaticNames(cfg)
   local usedIds = {}
   local poolSets = {}
-  local ok = clientsOK and templatesOK
+  local ok = cfg.ClientParkingContractOK and phase1ClientProtectionReady and templatesOK
   local counts = {}
 
   for _, key in ipairs({ "OH58D", "AH64D", "UH60", "CH47" }) do
@@ -187,7 +208,7 @@ local function main()
   cfg.ParkingPoolTerminalIDs = poolSets
   cfg.ParkingPoolsOK = ok and counts.OH58D == 5 and counts.AH64D == 3 and counts.UH60 == 3 and counts.CH47 == 8
   if cfg.ParkingPoolsOK then
-    log("RESULT: PASS pools=OH58D:5/AH64D:3/UH60:3/CH47:8 templatesOffParking=true poolOverlap=0 clientOverlap=0 blacklistOverlap=0 staticClearance=PASS templateLookup=DATABASE:GetGroupTemplate")
+    log("RESULT: PASS pools=OH58D:5/AH64D:3/UH60:3/CH47:8 templatesOffParking=true poolOverlap=0 clientOverlap=0 blacklistOverlap=0 staticClearance=PASS phase1ClientProtection=true templateLookup=DATABASE:GetGroupTemplate")
   else
     log(string.format("RESULT: FAIL pools=OH58D:%s/AH64D:%s/UH60:%s/CH47:%s AIRWING_START_BLOCKED=true", tostring(counts.OH58D), tostring(counts.AH64D), tostring(counts.UH60), tostring(counts.CH47)))
   end
