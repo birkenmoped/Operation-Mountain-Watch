@@ -29,7 +29,7 @@ else
     MENU_COALITION_COMMAND:New(coalition.side.BLUE, "Aktiven Auftrag abbrechen", menu, function() ph1.Controller:AbortActive("manual-f10-abort") end)
     MENU_COALITION_COMMAND:New(coalition.side.BLUE, "Testcontroller zuruecksetzen", menu, function() ph1.Controller:ResetController() end)
     ph1.MenuCreated = true
-    log("READY F10=OMW_AirOps_Tests/Jalalabad_Phase_1 commands=8")
+    log("READY F10=OMW_AirOps_Tests/Jalalabad_Phase_1 commands=8 availability=IMMEDIATE baselineIndependent=true")
     return true
   end
 
@@ -46,9 +46,14 @@ else
     end
   end
 
-  local function initialize()
-    if cfg.BaselineReady == true then createMenus() acceptanceGate() end
+  -- The diagnostic/control menu must exist even while AIRWING baseline checks are
+  -- still pending. Test commands enforce readiness in Controller:StartTest().
+  local menuInitialized = createMenus()
+  if not menuInitialized then log("ERROR: Immediate F10 menu initialization failed.") end
+
+  local function initializeAcceptance()
+    acceptanceGate()
   end
 
-  SCHEDULER:New(nil, initialize, {}, 22, 10)
+  SCHEDULER:New(nil, initializeAcceptance, {}, 22, 10)
 end
