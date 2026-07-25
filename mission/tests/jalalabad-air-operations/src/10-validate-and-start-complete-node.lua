@@ -3,9 +3,10 @@ local TAG = "[OMW][AirOps.JBAD.COMPLETE]"
 local function log(msg) env.info(TAG .. " " .. tostring(msg)) end
 
 local function getMissionTemplate(name)
-  if not _DATABASE or not _DATABASE.Templates or not _DATABASE.Templates.Groups then return nil end
-  local data = _DATABASE.Templates.Groups[name]
-  return data and data.Template or nil
+  if not name or not _DATABASE or not _DATABASE.GetGroupTemplate then return nil end
+  local ok, template = pcall(function() return _DATABASE:GetGroupTemplate(name) end)
+  if not ok or type(template) ~= "table" then return nil end
+  return template
 end
 
 local function validateMissionGroup(name, expectedType, expectedSize)
@@ -206,7 +207,7 @@ local function main()
 
   cfg.Status = "OPERATIONAL"
   log("RESULT: COMPLETE. Jalalabad AirOps node OPERATIONAL; AIRWING started; COMMANDER linked; missionsQueued=0; spontaneousSpawns=0.")
-  log("SUMMARY inventory=OH58D:24/AH64D:8/UH60:8/CH47:8 corePlayerSlots=6 optionalUH60L=0or2 templateAircraft=7offParking exclusivePools=OH58D:5/AH64D:3/UH60:3/CH47:8 staticCaps=OH58D:7/AH64D:4/UH60:4/CH47:5 zones=5 templates=5 squadrons=4 medevac=twoIndependentSinglesAsOnePackage virtualReserve=true.")
+  log("SUMMARY inventory=OH58D:24/AH64D:8/UH60:8/CH47:8 corePlayerSlots=6 optionalUH60L=0or2 templateAircraft=7offParking exclusivePools=OH58D:5/AH64D:3/UH60:3/CH47:8 staticCaps=OH58D:7/AH64D:4/UH60:4/CH47:5 zones=5 templates=5 squadrons=4 medevac=twoIndependentSinglesAsOnePackage virtualReserve=true templateLookup=DATABASE:GetGroupTemplate.")
 end
 
 if SCHEDULER then
