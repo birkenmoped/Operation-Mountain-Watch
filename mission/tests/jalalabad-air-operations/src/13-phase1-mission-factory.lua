@@ -1,246 +1,167 @@
--- Operation Mountain Watch - Jalalabad AIRWING Phase 1 mission factory
+-- Operation Mountain Watch - MOOSE-first Phase-1 operation factory
 local TAG = "[OMW][AirOps.JBAD.PH1.FACTORY]"
 local function log(msg) env.info(TAG .. " " .. tostring(msg)) end
 
 local cfg = OMW and OMW.AirOps and OMW.AirOps.Jalalabad
 local ph1 = cfg and cfg.Phase1
-if not cfg or not ph1 then
-  log("ERROR: Phase 1 manifest is unavailable.")
+if not cfg or not ph1 or not ph1.ManifestOK or not ph1.Observer or not ph1.Logistics then
+  log("ERROR: Phase-1 dependencies unavailable.")
 else
   local factory = ph1.Factory or {}
   ph1.Factory = factory
 
-  local function distance2D(first, second)
-    if not first or not second then return nil end
-    local a = first.GetVec3 and first:GetVec3() or first
-    local b = second.GetVec3 and second:GetVec3() or second
-    if not a or not b then return nil end
-    local dx = (a.x or 0) - (b.x or 0)
-    local az = a.z
-    if az == nil then az = a.y or 0 end
-    local bz = b.z
-    if bz == nil then bz = b.y or 0 end
-    local dz = az - bz
-    return math.sqrt(dx * dx + dz * dz)
+  local function findZone(name)
+    return name and ZONE and ZONE:FindByName(name) or nil
   end
 
-  local function coordinateInZone(coordinate, zone)
-    if not coordinate or not zone then return false end
-    local radius = zone.GetRadius and zone:GetRadius() or nil
-    local center = zone.GetCoordinate and zone:GetCoordinate() or nil
-    local distance = distance2D(coordinate, center)
-    return distance and radius and distance <= radius or false
+  local function findTemplate(name)
+    return name and GROUP and GROUP:FindByName(name) or nil
   end
 
-  local function groupInZone(groupName, zone)
-    local group = GROUP and GROUP:FindByName(groupName) or nil
-    if not group or not group:IsAlive() then return false end
-    if group.IsAnyInZone then
-      local ok, result = pcall(function() return group:IsAnyInZone(zone) end)
-      if ok then return result == true end
-    end
-    local ok, coordinate = pcall(function() return group:GetCoordinate() end)
-    return ok and coordinateInZone(coordinate, zone) or false
+  local function findStatic(name)
+    return name and STATIC and STATIC:FindByName(name, false) or nil
   end
 
-  local function staticInZone(staticName, zone)
-    local static = STATIC and STATIC:FindByName(staticName, false) or nil
-    if not static then return false end
-    local ok, coordinate = pcall(function() return static:GetCoordinate() end)
-    return ok and coordinateInZone(coordinate, zone) or false
-  end
-
-  local function missionObjectsAvailable()
-    local missing = {}
-    for _, zoneName in ipairs(ph1.Objects.ReconZones or {}) do
-      if not (ZONE and ZONE:FindByName(zoneName)) then missing[#missing + 1] = zoneName end
-    end
-    for _, zoneName in ipairs({
-      ph1.Objects.CASZone,
-      ph1.Objects.UHLoadZone,
-      ph1.Objects.UHUnloadZone,
-      ph1.Objects.CH47PickupZone,
-      ph1.Objects.CH47DropZone
-    }) do
-      if zoneName and not (ZONE and ZONE:FindByName(zoneName)) then missing[#missing + 1] = zoneName end
-    end
-
-    local templateDatabase = _DATABASE and _DATABASE.Templates and _DATABASE.Templates.Groups or nil
-    for _, groupName in ipairs({ ph1.Objects.CASTargetTemplate, ph1.Objects.UHTroopTemplate }) do
-      if groupName and not (templateDatabase and templateDatabase[groupName]) then missing[#missing + 1] = groupName end
-    end
-
-    if not (STATIC and STATIC:FindByName(ph1.Objects.CH47Cargo, false)) then
-      missing[#missing + 1] = ph1.Objects.CH47Cargo
-    end
-
-    ph1.MissingMissionEditorObjects = missing
-    ph1.FactoryReady = #missing == 0
-    if ph1.FactoryReady then
-      log("ME_OBJECTS PASS reconZones=3 casZone=1 targetTemplates=2 cargo=1 loadUnloadZones=3")
-    else
-      log("ME_OBJECTS BLOCKED missing=" .. table.concat(missing, ","))
-    end
-    return ph1.FactoryReady, missing
+  local function spawnGroup(templateName, coordinate)
+    if not SPAWN or not findTemplate(templateName) then return nil end
+    local spawner = SPAWN:New(templateName)
+    if coordinate then return spawner:SpawnFromVec2(coordinate:GetVec2()) end
+    return spawner:Spawn()
   end
 
   function factory:ValidateMissionEditorObjects()
-    return missionObjectsAvailable()
+    local missing = {}
+    for _, zoneName in ipairs(ph1.Objects.ReconZones or {}) do if not findZone(zoneName) then missing[#missing + 1] = zoneName end end
+    for _, zoneName in ipairs({ ph1.Objects.CASZone, ph1.Objects.UHLoadZone, ph1.Objects.UHUnloadZone, ph1.Objects.CH47PickupZone, ph1.Objects.CH47DropZone }) do
+      if zoneName and not findZone(zoneName) then missing[#missing + 1] = zoneName end
+    end
+    for _, groupName in ipairs({ ph1.Objects.CASTargetTemplate, ph1.Objects.UHTroopTemplate }) do
+      if groupName and not findTemplate(groupName) then missing[#missing + 1] = groupName end
+    end
+    if not findStatic(ph1.Objects.CH47Cargo) then missing[#missing + 1] = ph1.Objects.CH47Cargo end
+    ph1.MissingMissionEditorObjects = missing
+    return #missing == 0, missing
   end
 
-  local function spawnCASObjective()
-    ph1.Spawners.CAS = ph1.Spawners.CAS or SPAWN:New(ph1.Objects.CASTargetTemplate)
-    local group = ph1.Spawners.CAS:Spawn()
-    if not group then return nil, "CAS target spawn failed" end
-    ph1.Runtime.CASTargetGroupName = group:GetName()
-    log("OBJECTIVE spawned=CAS_TARGET group=" .. tostring(ph1.Runtime.CASTargetGroupName))
-    return group
+  function factory:ValidateTestReady(testId, logResult)
+    local baseOK, missing = self:ValidateMissionEditorObjects()
+    if not baseOK then return false, "missing Mission Editor objects: " .. table.concat(missing, ",") end
+    if ph1.Routing and ph1.Routing.ValidateTestReady then return ph1.Routing:ValidateTestReady(testId, logResult) end
+    if logResult then log("TEST_READINESS READY testId=" .. tostring(testId) .. " routingModule=not-required") end
+    return true
   end
 
-  local function spawnTroops()
-    ph1.Spawners.Troops = ph1.Spawners.Troops or SPAWN:New(ph1.Objects.UHTroopTemplate)
-    local group = ph1.Spawners.Troops:Spawn()
-    if not group then return nil, "troop group spawn failed" end
-    ph1.Runtime.TroopGroupName = group:GetName()
-    log("OBJECTIVE spawned=TROOPS group=" .. tostring(ph1.Runtime.TroopGroupName))
-    return group
+  local function attachAuftragCallbacks(mission, definition)
+    local function state(name, from, event, to)
+      if ph1.Controller and ph1.Controller.OnNativeState then
+        ph1.Controller:OnNativeState("AUFTRAG", name, mission, from, event, to)
+      end
+    end
+    function mission:OnAfterQueued(from, event, to) state("QUEUED", from, event, to) end
+    function mission:OnAfterRequested(from, event, to) state("REQUESTED", from, event, to) end
+    function mission:OnAfterScheduled(from, event, to) state("SCHEDULED", from, event, to) end
+    function mission:OnAfterStarted(from, event, to) state("STARTED", from, event, to) end
+    function mission:OnAfterExecuting(from, event, to) state("EXECUTING", from, event, to) end
+    function mission:OnAfterDone(from, event, to) state("DONE", from, event, to) end
+    function mission:OnAfterSuccess(from, event, to) state("SUCCESS", from, event, to) end
+    function mission:OnAfterFailed(from, event, to) state("FAILED", from, event, to) end
+    function mission:OnAfterCancel(from, event, to) state("CANCELLED", from, event, to) end
+    mission.OMWDefinition = definition
   end
 
-  local function attachCallbacks(mission)
-    function mission:OnAfterQueued(from, event, to)
-      if ph1.Controller then ph1.Controller:OnMissionState("QUEUED", self, from, event, to) end
-    end
-    function mission:OnAfterRequested(from, event, to)
-      if ph1.Controller then ph1.Controller:OnMissionState("REQUESTED", self, from, event, to) end
-    end
-    function mission:OnAfterScheduled(from, event, to)
-      if ph1.Controller then ph1.Controller:OnMissionState("SCHEDULED", self, from, event, to) end
-    end
-    function mission:OnAfterStarted(from, event, to)
-      if ph1.Controller then ph1.Controller:OnMissionState("STARTED", self, from, event, to) end
-    end
-    function mission:OnAfterExecuting(from, event, to)
-      if ph1.Controller then ph1.Controller:OnMissionState("EXECUTING", self, from, event, to) end
-    end
-    function mission:OnAfterDone(from, event, to)
-      if ph1.Controller then ph1.Controller:OnMissionState("DONE", self, from, event, to) end
-    end
-    function mission:OnAfterSuccess(from, event, to)
-      if ph1.Controller then ph1.Controller:OnMissionState("SUCCESS", self, from, event, to) end
-    end
-    function mission:OnAfterFailed(from, event, to)
-      if ph1.Controller then ph1.Controller:OnMissionState("FAILED", self, from, event, to) end
-    end
-    function mission:OnAfterCancel(from, event, to)
-      if ph1.Controller then ph1.Controller:OnMissionState("CANCELLED", self, from, event, to) end
-    end
-  end
-
-  local function configureMission(mission, definition)
-    if not mission then return nil, "AUFTRAG constructor returned nil" end
-    local squadron = cfg.Squadrons and cfg.Squadrons[definition.SquadronKey]
-    local payload = cfg.Payloads and cfg.Payloads[definition.PayloadKey]
-    if not squadron then return nil, "squadron unavailable: " .. tostring(definition.SquadronKey) end
-    if not payload then return nil, "payload unavailable: " .. tostring(definition.PayloadKey) end
-
-    mission:SetName("OMW-JBAD-PH1-" .. definition.Id)
+  local function configureAuftrag(mission, definition)
+    if not mission then return nil end
+    mission:SetName("OMW JBAD PH1 " .. definition.Id)
     mission:SetRequiredAssets(definition.ExpectedGroups, definition.ExpectedGroups)
-    mission:AssignSquadrons({ squadron })
-    mission:AddRequiredPayload(payload)
-    mission:SetPriority(10, false)
-    mission:SetRepeat(0)
-    mission:SetTime(1, definition.ExecutionTimeout)
-    mission:SetDuration(definition.ExecutionTimeout)
-    mission:SetMissionRange(50)
-    mission:SetEvaluationTime(5)
-    attachCallbacks(mission)
+    local squadron = cfg.Squadrons and cfg.Squadrons[definition.SquadronKey] or nil
+    if squadron and mission.AssignSquadrons then mission:AssignSquadrons({ squadron }) end
+    local payload = cfg.Payloads and cfg.Payloads[definition.PayloadKey] or nil
+    if payload and mission.SetRequiredPayloads then mission:SetRequiredPayloads({ payload }) end
+    mission:SetPriority(20, true)
+    if mission.SetRepeat then mission:SetRepeat(0) end
+    if mission.SetTime then mission:SetTime(1) end
+    if mission.SetDuration then mission:SetDuration(definition.Timeout) end
+    if mission.SetMissionRange and definition.MissionRangeNM then mission:SetMissionRange(definition.MissionRangeNM) end
+    if mission.SetEvaluationTime then mission:SetEvaluationTime(10) end
+    attachAuftragCallbacks(mission, definition)
     return mission
   end
 
   local function createRecon(definition)
-    local zoneSet = SET_ZONE:New()
-    for _, zoneName in ipairs(ph1.Objects.ReconZones) do
-      zoneSet:AddZone(ZONE:FindByName(zoneName))
-    end
-    local mission = AUFTRAG:NewRECON(zoneSet, 90, 4000, false, false, "Vee")
-    ph1.Runtime.ObjectiveCheck = function()
-      return ph1.Runtime.MissionState == "SUCCESS"
-    end
-    return configureMission(mission, definition)
+    local zones = SET_ZONE:New()
+    for _, name in ipairs(ph1.Objects.ReconZones) do zones:AddZone(findZone(name)) end
+    local profile = ph1.Routing and ph1.Routing.ReconProfile or nil
+    local altitude = profile and profile.AltitudeFeet or 6500
+    local speed = profile and profile.SpeedKnots or 80
+    local mission = AUFTRAG:NewRECON(zones, speed, altitude, false, false, "Vee")
+    if mission and mission.SetFormation then mission:SetFormation("Vee") end
+    local zone2 = findZone(ph1.Objects.ReconZones[2])
+    if mission and zone2 and mission.SetMissionEgressCoord then mission:SetMissionEgressCoord(zone2:GetCoordinate(), altitude, speed) end
+    return configureAuftrag(mission, definition)
   end
 
   local function createCAS(definition)
-    local target, spawnError = spawnCASObjective()
-    if not target then return nil, spawnError end
-    local zone = ZONE:FindByName(ph1.Objects.CASZone)
-    local mission = AUFTRAG:NewCAS(zone, 3500, 110, zone:GetCoordinate(), nil, nil, { "Ground Units" })
-    mission:AddConditionSuccess(function()
-      local group = GROUP:FindByName(ph1.Runtime.CASTargetGroupName)
+    local zone = findZone(ph1.Objects.CASZone)
+    local target = spawnGroup(ph1.Objects.CASTargetTemplate, zone and zone:GetCoordinate() or nil)
+    if not target then return nil, "CAS target spawn failed" end
+    ph1.Runtime.CASTargetGroupName = target:GetName()
+    local mission = AUFTRAG:NewCAS(zone, 1000, 120, zone:GetCoordinate())
+    mission:AddConditionSuccess(function(groupName)
+      local group = GROUP:FindByName(groupName)
       return not group or not group:IsAlive()
-    end)
-    ph1.Runtime.ObjectiveCheck = function()
-      local group = GROUP:FindByName(ph1.Runtime.CASTargetGroupName)
-      return not group or not group:IsAlive()
-    end
-    return configureMission(mission, definition)
+    end, target:GetName())
+    return configureAuftrag(mission, definition)
   end
 
-  local function createTroopTransport(definition)
-    local troops, spawnError = spawnTroops()
-    if not troops then return nil, spawnError end
-    local loadZone = ZONE:FindByName(ph1.Objects.UHLoadZone)
-    local unloadZone = ZONE:FindByName(ph1.Objects.UHUnloadZone)
-    local mission = AUFTRAG:NewTROOPTRANSPORT(troops, unloadZone:GetCoordinate(), loadZone:GetCoordinate(), math.max(100, loadZone:GetRadius()))
-    if not definition.AbortOnBirth then
-      mission:AddConditionSuccess(function()
-        return groupInZone(ph1.Runtime.TroopGroupName, unloadZone)
-      end)
-    end
-    ph1.Runtime.ObjectiveCheck = function()
-      return groupInZone(ph1.Runtime.TroopGroupName, unloadZone)
-    end
-    return configureMission(mission, definition)
+  local function createGroupTransport(definition)
+    local pickup = findZone(ph1.Objects.UHLoadZone)
+    local deploy = findZone(ph1.Objects.UHUnloadZone)
+    local troops = spawnGroup(ph1.Objects.UHTroopTemplate, pickup and pickup:GetCoordinate() or nil)
+    if not troops then return nil, "troop cargo spawn failed" end
+    ph1.Runtime.CargoGroupName = troops:GetName()
+    ph1.Runtime.CargoTemplateName = ph1.Objects.UHTroopTemplate
+    local transport, err = ph1.Logistics:CreateGroupTransport(definition, troops, pickup, deploy)
+    if not transport then return nil, err end
+    return transport
   end
 
-  local function createCargoTransport(definition)
-    local cargo = STATIC:FindByName(ph1.Objects.CH47Cargo, false)
-    local pickupZone = ZONE:FindByName(ph1.Objects.CH47PickupZone)
-    local dropZone = ZONE:FindByName(ph1.Objects.CH47DropZone)
-    if not cargo then return nil, "CH-47 cargo static unavailable" end
-    if staticInZone(ph1.Objects.CH47Cargo, dropZone) then
-      return nil, "CH-47 cargo is already inside the drop zone; restart the mission"
-    end
-    if not staticInZone(ph1.Objects.CH47Cargo, pickupZone) then
-      return nil, "CH-47 cargo is outside the required pickup zone"
-    end
-    local mission = AUFTRAG:NewCARGOTRANSPORT(cargo, dropZone)
-    mission:AddConditionSuccess(function()
-      return staticInZone(ph1.Objects.CH47Cargo, dropZone)
-    end)
-    ph1.Runtime.ObjectiveCheck = function()
-      return staticInZone(ph1.Objects.CH47Cargo, dropZone)
-    end
-    return configureMission(mission, definition)
+  local function createSlingCargo(definition)
+    local cargo = findStatic(ph1.Objects.CH47Cargo)
+    local drop = findZone(ph1.Objects.CH47DropZone)
+    if not cargo or not drop then return nil, "static cargo or drop zone unavailable" end
+    local mission = AUFTRAG:NewCARGOTRANSPORT(cargo, drop)
+    mission:AddConditionSuccess(function(cargoName, zoneName)
+      local object = STATIC:FindByName(cargoName, false)
+      local zone = ZONE:FindByName(zoneName)
+      return object and zone and object:IsInZone(zone) or false
+    end, ph1.Objects.CH47Cargo, ph1.Objects.CH47DropZone)
+    return configureAuftrag(mission, definition)
+  end
+
+  local function createAbort(definition)
+    local zone = findZone(ph1.Objects.UHLoadZone)
+    local mission = AUFTRAG:NewLANDATCOORDINATE(zone:GetCoordinate(), 0, 0, 60, 80, 1000, false)
+    return configureAuftrag(mission, definition)
   end
 
   function factory:Create(testId)
     local definition = ph1.Tests[testId]
-    if not definition then return nil, "unknown test: " .. tostring(testId) end
-    local ready = self:ValidateMissionEditorObjects()
-    if not ready then return nil, "required Mission Editor objects are missing" end
-    if not AUFTRAG or not SPAWN or not SET_ZONE then return nil, "required MOOSE classes are unavailable" end
-
-    if testId == "OH58D_RECON" then
-      return createRecon(definition)
-    elseif testId == "AH64D_CAS" then
-      return createCAS(definition)
-    elseif testId == "UH60_TROOP" or testId == "UH60_ABORT" then
-      return createTroopTransport(definition)
-    elseif testId == "CH47_CARGO" then
-      return createCargoTransport(definition)
+    if not definition then return nil, nil, "unknown test: " .. tostring(testId) end
+    if definition.OperationKind == "OPSTRANSPORT" then
+      local transport, err = createGroupTransport(definition)
+      if not transport then return nil, nil, err end
+      return "OPSTRANSPORT", transport
     end
-    return nil, "no factory for test: " .. tostring(testId)
+
+    local mission, err
+    if testId == "OH58D_RECON" then mission = createRecon(definition)
+    elseif testId == "AH64D_CAS" then mission, err = createCAS(definition)
+    elseif testId == "CH47_CARGO" then mission, err = createSlingCargo(definition)
+    elseif testId == "UH60_ABORT" then mission = createAbort(definition)
+    end
+    if not mission then return nil, nil, err or "AUFTRAG construction failed" end
+    return "AUFTRAG", mission
   end
 
-  log("READY constructors=RECON,CAS,TROOPTRANSPORT,CARGOTRANSPORT restrictions=Squadron+Payload+ExactRequiredAssetCount")
+  log("READY factoryAuthority=AUFTRAG/OPSTRANSPORT objectiveConditions=AUFTRAG_AddConditionSuccess customObjectivePollers=false directDatabaseAccess=false")
 end
