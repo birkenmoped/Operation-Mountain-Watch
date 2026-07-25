@@ -105,8 +105,11 @@ else
     local profile = ph1.Routing and ph1.Routing.ReconProfile or nil
     local altitude = profile and profile.AltitudeFeet or 6500
     local speed = profile and profile.SpeedKnots or 80
-    local mission = AUFTRAG:NewRECON(zones, speed, altitude, false, false, "Vee")
-    if mission and mission.SetFormation then mission:SetFormation("Vee") end
+
+    -- Formation is applied centrally through routing:ConfigureMission(). Do not
+    -- hard-code Vee/Wedge here; DCS has no direct Combat Cruise enum and the
+    -- project uses EchelonRight.D300 as the documented two-ship approximation.
+    local mission = AUFTRAG:NewRECON(zones, speed, altitude, false, false)
     local zone2 = findZone(ph1.Objects.ReconZones[2])
     if mission and zone2 and mission.SetMissionEgressCoord then
       mission:SetMissionEgressCoord(zone2:GetCoordinate(), altitude, speed)
@@ -234,7 +237,16 @@ else
     mission:AddConditionSuccess(function()
       local object = STATIC:FindByName(cargoName, false)
       local zone = ZONE:FindByName(dropName)
-      return object and zone and object:IsInZone(zone) or false
+      local satisfied = object and zone and object:IsInZone(zone) or false
+      if satisfied and ph1.Runtime and ph1.ActiveDefinition == definition then
+        ph1.Runtime.ObjectiveSatisfied = true
+        if not ph1.Runtime.SlingObjectiveLogged then
+          ph1.Runtime.SlingObjectiveLogged = true
+          log(string.format("SLING_CARGO_OBJECTIVE PASS testId=%s cargo=%s zone=%s evidence=STATIC:IsInZone latched=true",
+            tostring(definition.Id), tostring(cargoName), tostring(dropName)))
+        end
+      end
+      return satisfied
     end)
     return configureAuftrag(mission, definition)
   end
@@ -265,5 +277,5 @@ else
     return "AUFTRAG", mission
   end
 
-  log("READY authority=AUFTRAG/OPSTRANSPORT payloadAPI=AddRequiredPayload objectives=AddConditionSuccess customObjectivePollers=false directDatabaseAccess=false UH60LandingGeometry=ME_AuthoredCenters+OPSTRANSPORT_PublicZoneAPI CH47SlingTaskAdapter=INNER_DCS_TASK_PARAMETERS")
+  log("READY authority=AUFTRAG/OPSTRANSPORT payloadAPI=AddRequiredPayload objectives=AddConditionSuccess customObjectivePollers=false directDatabaseAccess=false UH60LandingGeometry=ME_AuthoredCenters+OPSTRANSPORT_PublicZoneAPI CH47SlingTaskAdapter=INNER_DCS_TASK_PARAMETERS CH47ObjectiveLatch=STATIC_IN_ZONE reconFormation=ROUTING_CONFIGURED")
 end
