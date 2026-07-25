@@ -11,7 +11,7 @@ local function main()
   local cfg = OMW and OMW.AirOps and OMW.AirOps.Jalalabad
   if not cfg or not cfg.Airwing then log("ERROR: Jalalabad configuration or AIRWING unavailable.") return end
   if cfg.ParkingPoolsOK ~= true or cfg.NameContractOK ~= true or cfg.PackageContractsOK ~= true then log("ERROR: Parking/name/package validation not passed; SQUADRON blocked.") return end
-  if not GROUP or not SQUADRON or not AUFTRAG then log("ERROR: Required MOOSE classes unavailable.") return end
+  if not GROUP or not SQUADRON or not AUFTRAG or not OPSTRANSPORT then log("ERROR: Required MOOSE classes unavailable.") return end
 
   local contract = cfg:GetSquadronContract("CH47")
   if not contract then log("ERROR: CH-47 package contract unavailable.") return end
@@ -29,6 +29,7 @@ local function main()
   if cfg.Squadrons.CH47 then log("SKIP: CH-47 squadron already constructed.") return end
 
   local missionTypes = {
+    AUFTRAG.Type.OPSTRANSPORT,
     AUFTRAG.Type.TROOPTRANSPORT,
     AUFTRAG.Type.CARGOTRANSPORT,
     AUFTRAG.Type.FREIGHTTRANSPORT,
@@ -40,8 +41,8 @@ local function main()
     squadron:SetParkingIDs(parkingIDs)
     squadron:SetTakeoffCold()
 
-    -- Keep squadron-wide despawn unset. Static slingload and future freight or
-    -- storage transports may include operational pickup/deploy phases. The exact
+    -- Keep squadron-wide despawn unset. Static slingload, group transport and
+    -- storage transport may include operational pickup/deploy phases. The exact
     -- FLIGHTGROUP is armed for final despawn only by the native logistics adapter.
 
     if AI and AI.Skill and AI.Skill.HIGH then squadron:SetSkill(AI.Skill.HIGH) end
@@ -60,7 +61,7 @@ local function main()
   cfg.DetectedTypes.CH47 = typeName
   cfg.CorrectionPending = cfg.CorrectionPending or {}
   cfg.CorrectionPending.CH47 = false
-  log(string.format("SQUADRON ready name=%s model=%s inventoryAircraft=%d constructorAssetGroups=%d grouping=%d computedAircraft=%d parkingIDs=%s despawnAfterLanding=UNSET nativeCargoAuthorities=AUFTRAG_CARGOTRANSPORT/FREIGHTTRANSPORT",
+  log(string.format("SQUADRON ready name=%s model=%s inventoryAircraft=%d constructorAssetGroups=%d grouping=%d computedAircraft=%d parkingIDs=%s despawnAfterLanding=UNSET nativeCargoAuthorities=OPSTRANSPORT/CARGOTRANSPORT/FREIGHTTRANSPORT",
     squadronName, contract.Model, contract.InventoryAircraft, contract.AssetGroups,
     contract.Grouping, contract.AssetGroups * contract.Grouping, table.concat(parkingIDs, ",")))
 end
