@@ -11,8 +11,11 @@ else
   ph1.Factory = factory
 
   local UH60_LANDING_RADIUS_METERS = 5
-  local UH60_INFANTRY_OFFSET_METERS = 45
-  local UH60_INFANTRY_OFFSET_BEARING = 90
+  local UH60_LANDING_CLEARANCE_METERS = 12
+  local UH60_CARGO_CLEARANCE_METERS = 8
+  local UH60_DESIRED_LZ_CARGO_SEPARATION_METERS = 18
+  local UH60_MINIMUM_LZ_CARGO_SEPARATION_METERS = 12
+  local UH60_CLEAR_POSITION_CANDIDATES = 100
 
   local function findZone(name)
     return name and ZONE and ZONE:FindByName(name) or nil
@@ -33,22 +36,82 @@ else
     return spawner:Spawn()
   end
 
-  local function translatedCoordinate(coordinate, distance, bearing)
-    if not coordinate or not coordinate.Translate then return nil end
-    local ok, translated = pcall(function() return coordinate:Translate(distance, bearing) end)
-    return ok and translated or nil
-  end
-
   local function runtimeRadiusZone(name, coordinate, radius)
     if not ZONE_RADIUS or not coordinate or not coordinate.GetVec2 then return nil end
     return ZONE_RADIUS:New(name, coordinate:GetVec2(), radius, true)
   end
 
-  local function safeOffset(zone)
-    if not zone or not zone.GetRadius then return nil end
-    local radius = tonumber(zone:GetRadius()) or 0
-    local offset = math.min(UH60_INFANTRY_OFFSET_METERS, radius - UH60_LANDING_RADIUS_METERS - 10)
-    return offset >= 20 and offset or nil
+  local function vec2Distance(first, second)
+    if not first or not second then return nil end
+    local dx = (first.x or 0) - (second.x or 0)
+    local dy = (first.y or 0) - (second.y or 0)
+    return math.sqrt(dx * dx + dy * dy)
+  end
+
+  local function clearPositions(zone, clearance)
+    if not zone or not zone.GetClearZonePositions then
+      return nil, "MOOSE ZONE_RADIUS:GetClearZonePositions unavailable"
+    end
+    local ok, positions = pcall(function()
+      return zone:GetClearZonePositions(clearance, UH60_CLEAR_POSITION_CANDIDATES)
+    end)
+    if not ok then return nil, "MOOSE clear-zone search failed: " .. tostring(positions) end
+    if type(positions) ~= "table" or #positions == 0 then
+      return nil, string.format("no MOOSE clear position found in %s clearance=%dm", tostring(zone:GetName()), clearance)
+    end
+    return positions
+  end
+
+  local function nearestPosition(positions, reference)
+    local selected, selectedDistance
+    for _, position in ipairs(positions or {}) do
+      local distance = vec2Distance(position, reference)
+      if distance and (not selectedDistance or distance < selectedDistance) then
+        selected, selectedDistance = position, distance
+      end
+    end
+    return selected
+  end
+
+  local function separatedPosition(positions, reference)
+    local selected, selectedDistance
+    for _, position in ipairs(positions or {}) do
+      local distance = vec2Distance(position, reference)
+      if distance and distance >= UH60_DESIRED_LZ_CARGO_SEPARATION_METERS and
+         (not selectedDistance or distance > selectedDistance) then
+        selected, selectedDistance = position, distance
+      end
+    end
+    if selected then return selected, selectedDistance end
+
+    for _, position in ipairs(positions or {}) do
+      local distance = vec2Distance(position, reference)
+      if distance and distance >= UH60_MINIMUM_LZ_CARGO_SEPARATION_METERS and
+         (not selectedDistance or distance > selectedDistance) then
+        selected, selectedDistance = position, distance
+      end
+    end
+    return selected, selectedDistance
+  end
+
+  local function buildTransportGeometry(zone, label)
+    local landingPositions, landingError = clearPositions(zone, UH60_LANDING_CLEARANCE_METERS)
+    if not landingPositions then return nil, nil, nil, landingError end
+
+    local cargoPositions, cargoError = clearPositions(zone, UH60_CARGO_CLEARANCE_METERS)
+    if not cargoPositions then return nil, nil, nil, cargoError end
+
+    local landingVec2 = nearestPosition(landingPositions, zone:GetVec2())
+    local cargoVec2, separation = separatedPosition(cargoPositions, landingVec2)
+    if not landingVec2 or not cargoVec2 then
+      return nil, nil, nil, string.format("no separated MOOSE clear landing/cargo positions found in %s", tostring(zone:GetName()))
+    end
+
+    local landingCoordinate = COORDINATE:NewFromVec2(landingVec2)
+    local cargoCoordinate = COORDINATE:NewFromVec2(cargoVec2)
+    log(string.format("MOOSE_CLEAR_GEOMETRY role=%s sourceZone=%s landingClearance=%dm cargoClearance=%dm separation=%.1fm authority=ZONE_RADIUS:GetClearZonePositions",
+      tostring(label), tostring(zone:GetName()), UH60_LANDING_CLEARANCE_METERS, UH60_CARGO_CLEARANCE_METERS, separation or -1))
+    return landingCoordinate, cargoCoordinate, separation
   end
 
   function factory:ValidateMissionEditorObjects()
@@ -148,20 +211,17 @@ else
     local objectiveDeploy = findZone(ph1.Objects.UHUnloadZone)
     if not pickup or not objectiveDeploy then return nil, "UH-60 pickup/deploy zone unavailable" end
 
-    local pickupOffset = safeOffset(pickup)
-    local disembarkOffset = safeOffset(objectiveDeploy)
-    if not pickupOffset or not disembarkOffset then return nil, "UH-60 logistics zone too small for separated landing/cargo geometry" end
+    local pickupLandingCoordinate, troopCoordinate, pickupSeparation, pickupError = buildTransportGeometry(pickup, "PICKUP")
+    if not pickupLandingCoordinate then return nil, pickupError end
+    local deployLandingCoordinate, disembarkCoordinate, deploySeparation, deployError = buildTransportGeometry(objectiveDeploy, "DROPOFF")
+    if not deployLandingCoordinate then return nil, deployError end
 
-    local pickupCenter = pickup:GetCoordinate()
-    local deployCenter = objectiveDeploy:GetCoordinate()
-    local troopCoordinate = translatedCoordinate(pickupCenter, pickupOffset, UH60_INFANTRY_OFFSET_BEARING)
-    local disembarkCoordinate = translatedCoordinate(deployCenter, disembarkOffset, UH60_INFANTRY_OFFSET_BEARING)
-    if not troopCoordinate or not disembarkCoordinate then return nil, "MOOSE COORDINATE:Translate failed for UH-60 logistics geometry" end
-
-    local pickupLandingZone = runtimeRadiusZone("OMW_RUNTIME_UH60_PICKUP_LZ", pickupCenter, UH60_LANDING_RADIUS_METERS)
-    local deployLandingZone = runtimeRadiusZone("OMW_RUNTIME_UH60_DROPOFF_LZ", deployCenter, UH60_LANDING_RADIUS_METERS)
-    local disembarkZone = runtimeRadiusZone("OMW_RUNTIME_UH60_DISEMBARK", disembarkCoordinate, UH60_LANDING_RADIUS_METERS)
-    if not pickupLandingZone or not deployLandingZone or not disembarkZone then return nil, "MOOSE ZONE_RADIUS construction failed for UH-60 logistics geometry" end
+    local pickupLandingZone = runtimeRadiusZone("OMW_RUNTIME_UH60_PICKUP_LZ", pickupLandingCoordinate, UH60_LANDING_RADIUS_METERS)
+    local deployLandingZone = runtimeRadiusZone("OMW_RUNTIME_UH60_DROPOFF_LZ", deployLandingCoordinate, UH60_LANDING_RADIUS_METERS)
+    local disembarkZone = runtimeRadiusZone("OMW_RUNTIME_UH60_DISEMBARK", disembarkCoordinate, 2)
+    if not pickupLandingZone or not deployLandingZone or not disembarkZone then
+      return nil, "MOOSE ZONE_RADIUS construction failed for UH-60 logistics geometry"
+    end
 
     local troops = spawnGroup(ph1.Objects.UHTroopTemplate, troopCoordinate)
     if not troops then return nil, "troop cargo spawn failed" end
@@ -171,25 +231,31 @@ else
     ph1.Runtime.DeployLandingZone = deployLandingZone
     ph1.Runtime.DisembarkZone = disembarkZone
 
-    local transport, transportError = ph1.Logistics:CreateGroupTransport(definition, troops, pickup, deployLandingZone)
+    -- The constructor receives the original ME zones so MOOSE can register the
+    -- cargo in its pickup/deploy combination. Public OPSTRANSPORT setters then
+    -- separate carrier landing zones from cargo embark/disembark zones.
+    local transport, transportError = ph1.Logistics:CreateGroupTransport(definition, troops, pickup, objectiveDeploy)
     if not transport then return nil, transportError or "OPSTRANSPORT construction failed" end
-    if not transport.SetEmbarkZone or not transport.SetDisembarkZone then
-      return nil, "pinned MOOSE OPSTRANSPORT embark/disembark zone API unavailable"
+    if not transport.SetPickupZone or not transport.SetDeployZone or not transport.SetEmbarkZone or not transport.SetDisembarkZone then
+      return nil, "pinned MOOSE OPSTRANSPORT zone API unavailable"
     end
 
-    transport:SetEmbarkZone(pickupLandingZone)
+    transport:SetPickupZone(pickupLandingZone)
+    transport:SetEmbarkZone(pickup)
+    transport:SetDeployZone(deployLandingZone)
     transport:SetDisembarkZone(disembarkZone)
     if transport.OMWMetadata then
       transport.OMWMetadata.PickupZone = pickup
       transport.OMWMetadata.DeployZone = objectiveDeploy
-      transport.OMWMetadata.EmbarkZone = pickupLandingZone
+      transport.OMWMetadata.CarrierPickupZone = pickupLandingZone
+      transport.OMWMetadata.EmbarkZone = pickup
       transport.OMWMetadata.CarrierDeployZone = deployLandingZone
       transport.OMWMetadata.DisembarkZone = disembarkZone
     end
 
-    log(string.format("GROUP_TRANSPORT_GEOMETRY pickupCarrierZone=%s pickupRadius=%.0fm infantryOffset=%.0fm deployCarrierZone=%s deployRadius=%.0fm disembarkOffset=%.0fm authority=OPSTRANSPORT:SetEmbarkZone/SetDisembarkZone",
-      pickupLandingZone:GetName(), UH60_LANDING_RADIUS_METERS, pickupOffset,
-      deployLandingZone:GetName(), UH60_LANDING_RADIUS_METERS, disembarkOffset))
+    log(string.format("GROUP_TRANSPORT_GEOMETRY pickupCarrierZone=%s pickupRadius=%.0fm pickupCargoSeparation=%.1fm deployCarrierZone=%s deployRadius=%.0fm deployCargoSeparation=%.1fm authority=OPSTRANSPORT:SetPickupZone/SetEmbarkZone/SetDeployZone/SetDisembarkZone clearAuthority=ZONE_RADIUS:GetClearZonePositions",
+      pickupLandingZone:GetName(), UH60_LANDING_RADIUS_METERS, pickupSeparation or -1,
+      deployLandingZone:GetName(), UH60_LANDING_RADIUS_METERS, deploySeparation or -1))
     return transport
   end
 
@@ -234,5 +300,5 @@ else
     return "AUFTRAG", mission
   end
 
-  log("READY authority=AUFTRAG/OPSTRANSPORT payloadAPI=AddRequiredPayload objectives=AddConditionSuccess customObjectivePollers=false directDatabaseAccess=false UH60LandingGeometry=MOOSE_SetEmbarkZone_SetDisembarkZone")
+  log("READY authority=AUFTRAG/OPSTRANSPORT payloadAPI=AddRequiredPayload objectives=AddConditionSuccess customObjectivePollers=false directDatabaseAccess=false UH60LandingGeometry=MOOSE_ClearZonePositions+OPSTRANSPORT_PublicZoneAPI")
 end
