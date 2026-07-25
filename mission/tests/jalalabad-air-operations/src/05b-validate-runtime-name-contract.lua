@@ -3,17 +3,9 @@ local TAG = "[OMW][AirOps.JBAD.NAMES]"
 local function log(msg) env.info(TAG .. " " .. tostring(msg)) end
 
 local function missionTemplate(name)
-  if not name or not GROUP then return nil end
-
-  local group = GROUP:FindByName(name)
-  if not group and GROUP.Register then
-    local registerOK, registered = pcall(function() return GROUP:Register(name) end)
-    if registerOK then group = registered end
-  end
-  if not group or not group.GetTemplate then return nil end
-
-  local templateOK, template = pcall(function() return group:GetTemplate() end)
-  if not templateOK or type(template) ~= "table" then return nil end
+  if not name or not _DATABASE or not _DATABASE.GetGroupTemplate then return nil end
+  local ok, template = pcall(function() return _DATABASE:GetGroupTemplate(name) end)
+  if not ok or type(template) ~= "table" then return nil end
   return template
 end
 
@@ -95,7 +87,7 @@ local function main()
     local groupCount, unitCount = 0, 0
     for _ in pairs(cfg.AuthoringGroupNames) do groupCount = groupCount + 1 end
     for _ in pairs(cfg.AuthoringUnitNames) do unitCount = unitCount + 1 end
-    log(string.format("RESULT: PASS fixedGroups=%d fixedUnits=%d runtimePrefixes=4 typeOnlyMatching=false packageAwareUnitSuffixes=true templateLookup=GROUP:Register+GetTemplate", groupCount, unitCount))
+    log(string.format("RESULT: PASS fixedGroups=%d fixedUnits=%d runtimePrefixes=4 typeOnlyMatching=false packageAwareUnitSuffixes=true templateLookup=DATABASE:GetGroupTemplate", groupCount, unitCount))
   else
     log("RESULT: FAIL AIRWING_START_BLOCKED=true")
   end
