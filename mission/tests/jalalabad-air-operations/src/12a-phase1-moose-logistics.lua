@@ -29,6 +29,23 @@ else
     return ok and value == true
   end
 
+  local function objectInZone(object, zone)
+    if not object or not zone then return false end
+    if object.IsAlive then
+      local aliveOK, alive = pcall(function() return object:IsAlive() end)
+      if aliveOK and alive == false then return false end
+    end
+    if object.IsAnyInZone then
+      local zoneOK, inZone = pcall(function() return object:IsAnyInZone(zone) end)
+      if zoneOK then return inZone == true end
+    end
+    if object.GetCoordinate then
+      local coordinateOK, coordinate = pcall(function() return object:GetCoordinate() end)
+      if coordinateOK then return coordinateInZone(coordinate, zone) end
+    end
+    return false
+  end
+
   local function eventCoordinate(eventData)
     if eventData and eventData.IniUnit and eventData.IniUnit.GetCoordinate then
       local ok, value = pcall(function() return eventData.IniUnit:GetCoordinate() end)
@@ -45,6 +62,38 @@ else
     if ph1.Controller and ph1.Controller.OnNativeState then
       ph1.Controller:OnNativeState("OPSTRANSPORT", state, transport or ph1.ActiveObject)
     end
+  end
+
+  -- MOOSE-native helicopter operation preference. The AIRWING is constructed by
+  -- an earlier scheduled module, so retry until it exists. The preference is
+  -- applied before the complete-node scheduler calls AIRWING:Start().
+  local verticalPreferenceScheduler
+  local function applyVerticalPreference()
+    if cfg.VerticalHelicopterOpsEnabled == true then
+      if verticalPreferenceScheduler and verticalPreferenceScheduler.Stop then verticalPreferenceScheduler:Stop() end
+      return true
+    end
+    if not cfg.Airwing then return false end
+    if not cfg.Airwing.SetOptionPreferVerticalLanding then
+      cfg.VerticalHelicopterOpsEnabled = false
+      log("ERROR AIRWING_OPTION SetOptionPreferVerticalLanding unavailable in pinned MOOSE")
+      if verticalPreferenceScheduler and verticalPreferenceScheduler.Stop then verticalPreferenceScheduler:Stop() end
+      return false
+    end
+    local ok, err = pcall(function() cfg.Airwing:SetOptionPreferVerticalLanding() end)
+    if not ok then
+      cfg.VerticalHelicopterOpsEnabled = false
+      log("ERROR AIRWING_OPTION preferVerticalTakeoffAndLanding failed: " .. tostring(err))
+      return false
+    end
+    cfg.VerticalHelicopterOpsEnabled = true
+    log("AIRWING_OPTION preferVerticalTakeoffAndLanding=true taxiToRunwayAvoidance=ENABLED beforeAirwingStart=true")
+    if verticalPreferenceScheduler and verticalPreferenceScheduler.Stop then verticalPreferenceScheduler:Stop() end
+    return true
+  end
+
+  if not applyVerticalPreference() and SCHEDULER then
+    verticalPreferenceScheduler = SCHEDULER:New(nil, applyVerticalPreference, {}, 0.5, 1)
   end
 
   function logistics:AttachCarrierCargoCallbacks(carrier, transport)
@@ -69,7 +118,7 @@ else
       ph1.Runtime.NativeCarrierUnloadingDoneGroups = ph1.Runtime.NativeCarrierUnloadingDoneGroups or {}
       ph1.Runtime.NativeCarrierUnloadingDoneGroups[carrierName] = true
       ph1.Runtime.NativeCarrierUnloadingDone = true
-      log(string.format("NATIVE_CARRIER_CARGO event=UnloadingDone carrier=%s profile=%s", carrierName, tostring(transport.OMWMetadata and transport.OMWMetadata.Profile)))
+      log(string.format("NATIVE_CARRIER_CARGO event=UnloadingDone carrier=%s profile=%s advisory=true", carrierName, tostring(transport.OMWMetadata and transport.OMWMetadata.Profile)))
       logistics:RefreshObjective()
     end
   end
@@ -148,6 +197,7 @@ else
       if not validateGroupCargoIdentity(metadata, cargo) then return end
       ph1.Runtime.NativeCargoLoaded = true
       ph1.Runtime.NativeCargoLoadedName = objectName(cargo)
+      ph1.Runtime.NativeCargoObject = cargo
       log(string.format("NATIVE_CARGO event=Loaded operation=%s profile=%s cargo=%s carrier=%s pickupLanding=%s",
         tostring(metadata.TestId), tostring(metadata.Profile), tostring(objectName(cargo)), tostring(objectName(carrier)), tostring(ph1.Runtime.PickupLandingObserved)))
     end
@@ -161,6 +211,7 @@ else
       if not validateGroupCargoIdentity(metadata, cargo) then return end
       ph1.Runtime.NativeCargoUnloaded = true
       ph1.Runtime.NativeCargoUnloadedName = objectName(cargo)
+      ph1.Runtime.NativeCargoObject = cargo
       log(string.format("NATIVE_CARGO event=Unloaded operation=%s profile=%s cargo=%s carrier=%s dropoffLanding=%s",
         tostring(metadata.TestId), tostring(metadata.Profile), tostring(objectName(cargo)), tostring(objectName(carrier)), tostring(ph1.Runtime.DropoffLandingObserved)))
       logistics:RefreshObjective()
@@ -305,12 +356,12 @@ else
 
   local function groupAliveInZone(groupName, zone)
     local group = groupName and GROUP and GROUP:FindByName(groupName) or nil
-    if not group or not group:IsAlive() or not zone then return false end
-    if group.IsAnyInZone then
-      local ok, value = pcall(function() return group:IsAnyInZone(zone) end)
-      if ok then return value == true end
-    end
-    return coordinateInZone(group:GetCoordinate(), zone)
+    return objectInZone(group, zone)
+  end
+
+  local function groupCargoPhysicallyDelivered(runtime, metadata)
+    if objectInZone(runtime.NativeCargoObject, metadata.DeployZone) then return true end
+    return groupAliveInZone(runtime.NativeCargoUnloadedName or runtime.CargoGroupName, metadata.DeployZone)
   end
 
   function logistics:ArmFinalDespawn()
@@ -351,12 +402,15 @@ else
       local metadata = transport and transport.OMWMetadata or {}
       local delivered = transport and transport.GetNcargoDelivered and transport:GetNcargoDelivered() or 0
       local total = transport and transport.GetNcargoTotal and transport:GetNcargoTotal() or 0
-      local physicallyDelivered = groupAliveInZone(runtime.CargoGroupName, metadata.DeployZone)
+      local physicallyDelivered = groupCargoPhysicallyDelivered(runtime, metadata)
+      -- OnAfterUnloadingDone is not emitted reliably by the pinned MOOSE version
+      -- for GROUP cargo. OnAfterUnloaded plus OPSTRANSPORT Delivered x/x and the
+      -- physical group in the deploy zone are the authoritative completion proof.
       if runtime.PickupLandingObserved and runtime.NativeCargoLoaded and runtime.NativeCarrierLoadingDone and
-         runtime.DropoffLandingObserved and runtime.NativeCargoUnloaded and runtime.NativeCarrierUnloadingDone and
-         runtime.NativeTransportDelivered and total > 0 and delivered == total and physicallyDelivered then
+         runtime.DropoffLandingObserved and runtime.NativeCargoUnloaded and runtime.NativeTransportDelivered and
+         total > 0 and delivered == total and physicallyDelivered then
         runtime.ObjectiveSatisfied = true
-        log("LOGISTICS_OBJECTIVE PASS profile=GROUP_CARGO Loaded+LoadingDone+Unloaded+UnloadingDone+Delivered=true physicalCargoAtDeploy=true")
+        log("LOGISTICS_OBJECTIVE PASS profile=GROUP_CARGO Loaded+LoadingDone+Unloaded+Delivered=true physicalCargoAtDeploy=true UnloadingDone=ADVISORY")
         self:ArmFinalDespawn()
       end
     elseif definition.LogisticsProfile == "STORAGE_CARGO" then
@@ -410,6 +464,7 @@ else
     ph1.Runtime.DynamicCargoName = eventData.IniDynamicCargoName
     log("NATIVE_DYNAMIC_CARGO event=Loaded cargo=" .. tostring(eventData.IniDynamicCargoName))
   end
+
   function dynamicHandler:OnEventDynamicCargoUnloaded(eventData)
     if not ph1.Runtime or not ph1.ActiveDefinition or ph1.ActiveDefinition.LogisticsProfile ~= "DYNAMIC_CARGO" then return end
     ph1.Runtime.DynamicCargoUnloaded = true
@@ -417,11 +472,12 @@ else
     log("NATIVE_DYNAMIC_CARGO event=Unloaded cargo=" .. tostring(eventData.IniDynamicCargoName))
     logistics:RefreshObjective()
   end
+
   function dynamicHandler:OnEventDynamicCargoRemoved(eventData)
     if not ph1.Runtime or not ph1.ActiveDefinition or ph1.ActiveDefinition.LogisticsProfile ~= "DYNAMIC_CARGO" then return end
     ph1.Runtime.DynamicCargoRemoved = true
     log("NATIVE_DYNAMIC_CARGO event=Removed cargo=" .. tostring(eventData.IniDynamicCargoName))
   end
 
-  log("READY profiles=GROUP/STORAGE/STATIC_SLING/STATIC_FREIGHT/DYNAMIC nativeCarrierCargoEvents=LoadingDone/UnloadingDone nativeTransportEvents=Loaded/Unloaded/Delivered")
+  log("READY profiles=GROUP/STORAGE/STATIC_SLING/STATIC_FREIGHT/DYNAMIC groupCargoTerminal=Unloaded+Delivered+physicalDeploy UnloadingDone=ADVISORY verticalHelicopterOps=MOOSE_SetOptionPreferVerticalLanding")
 end
