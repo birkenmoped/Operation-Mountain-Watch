@@ -47,7 +47,9 @@ Validated source commit: 6cee9a5db7abf1934d0f86bf9fdf91a0446374d0
 Validated builder: JBAD-AIR-OPS-COMPLETE-5
 ```
 
-Bagram is the next Air Operations node. Its November/December 2011 fighter ORBAT is now documented as the 335th Expeditionary Fighter Squadron with F-15E and the 121st Expeditionary Fighter Squadron ANG Rainbow deployment with F-16C Block 30 aircraft contributed by the 119th, 121st and 124th Fighter Squadrons. Mission Editor construction and DCS validation are still pending.
+Bagram is assembled in the shared Mission Editor test mission with its current Client, AI-template, Static and Warehouse baseline. Its historical fighter ORBAT remains the 335th Expeditionary Fighter Squadron with F-15E and the 121st Expeditionary Fighter Squadron ANG Rainbow deployment with F-16C Block 30 aircraft contributed by the 119th, 121st and 124th Fighter Squadrons. The current Mission Editor state and all intentional DCS type substitutions are documented separately from the earlier planning manifest.
+
+Kandahar construction has started. The current US baseline contains A-10C, C-130, CSAR represented by UH-60A, MQ-1/MQ-9, Client groups, AI templates, Statics and a Warehouse anchor. F-16, CH-47, AH-64, US-Army UH-60, Mi-8/Mi-17 and V-22 are not to be added until their units and stationing in the November/December 2011 target period are sufficiently established.
 
 This does not yet include tactical AUFTRAG generation, OPSTRANSPORT, persistent losses or full runtime MEDEVAC coordination.
 
@@ -79,6 +81,8 @@ Current air-operations documents:
 - [`Hubschrauberformationen und AH-64D-Konfiguration im Afghanistan-COIN-Szenario`](docs/27-helicopter-formations-and-ah64-afghanistan-configuration.md)
 - [`Bagram: Fighter-ORBAT und Missionseditor-Arbeitsanweisung`](docs/28-bagram-air-operations-manifest.md)
 - [`Projektweite Spielerluftfahrzeug-Obergrenze`](docs/29-player-aircraft-slot-policy.md)
+- [`Kandahar: aktueller USAF-Grundaufbau und Evidenzregeln`](docs/30-kandahar-air-operations-manifest.md)
+- [`Bagram: aktueller Missionseditor-Stand`](docs/31-bagram-current-mission-editor-baseline.md)
 
 MOOSE project reference:
 
@@ -95,7 +99,9 @@ Für taktische Hubschrauberformationen sowie FCR-, IAFS- und 30-mm-Konfiguration
 
 Für Jalalabad sind Dokumente 21, 23, 24 und 25 sowie die zugehörigen `expected/`- und `results/`-Dateien autoritativ. Ältere allgemeine Zwischenwerte wie vier Spielerplätze je Typ, sechs UH-60, kein CH-47, 13/15 Runtime-Parkplätze oder eine pauschale Ablehnung von Statics auf Parking-Nodes sind aufgehoben.
 
-Für Bagram ist Dokument 28 für die Fighter-ORBAT und den Missionseditor-Grundaufbau autoritativ. Dokument 29 ist für die projektweite Client-Obergrenze autoritativ und ersetzt in Dokument 28 alle Angaben mit vier Clientgruppen beziehungsweise vier Client-Parking-Nodes je Muster. Bis zur vollständigen Aktualisierung aller älteren ORBAT-Tabellen ersetzt Dokument 28 für November/Dezember 2011 die frühere Zuordnung zur 336th EFS durch die belegte 335th EFS und ergänzt die 121st EFS als ANG-Rainbow-F-16-Verband.
+Für Bagram bleibt Dokument 28 für die historische Fighter-ORBAT relevant. Dokument 29 ist für die projektweite Client-Obergrenze autoritativ. Dokument 31 ersetzt für den tatsächlich gesetzten Missionseditor-Aufbau alle abweichenden Planwerte aus Dokument 28, insbesondere vier Clients je Muster, zusätzliche F-16-Templates und künstliche Funktionszonen.
+
+Für Kandahar ist Dokument 30 für den aktuellen Aufbau, die Evidenzklassifizierung und die noch nicht freigegebenen Muster autoritativ. Einzelne Satellitensichtungen begründen keine dauerhafte Client-, Template- oder Static-Struktur ohne belastbare Einheitenzuordnung.
 
 Test- und Implementierungsdateien:
 
