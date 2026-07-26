@@ -21,6 +21,7 @@ function TM01M.start(dependencies)
     arrived = false,
     destroyed = false,
     scheduler = nil,
+    route = nil,
   }
 
   local function log(level, event, fields)
@@ -51,13 +52,14 @@ function TM01M.start(dependencies)
   local function requiredMooseApis()
     local required = {
       { "SPAWN.NewWithAlias", SPAWN and SPAWN.NewWithAlias },
+      { "SPAWN.SpawnFromCoordinate", SPAWN and SPAWN.SpawnFromCoordinate },
       { "GROUP.FindByName", GROUP and GROUP.FindByName },
       { "CONTROLLABLE.Route", CONTROLLABLE and CONTROLLABLE.Route },
+      { "CONTROLLABLE.TaskGroundOnRoad", CONTROLLABLE and CONTROLLABLE.TaskGroundOnRoad },
       { "GROUP.CountAliveUnits", GROUP and GROUP.CountAliveUnits },
       { "GROUP.IsCompletelyInZone", GROUP and GROUP.IsCompletelyInZone },
       { "ZONE.FindByName", ZONE and ZONE.FindByName },
       { "ZONE_BASE.GetCoordinate", ZONE_BASE and ZONE_BASE.GetCoordinate },
-      { "COORDINATE.WaypointGround", COORDINATE and COORDINATE.WaypointGround },
       { "SCHEDULER.New", SCHEDULER and SCHEDULER.New },
       { "MESSAGE.New", MESSAGE and MESSAGE.New },
       { "MENU_MISSION.New", MENU_MISSION and MENU_MISSION.New },
@@ -98,19 +100,31 @@ function TM01M.start(dependencies)
     return #missing == 0 and #errors == 0, objects, missing, errors
   end
 
-  local function buildRoute(objects)
-    local waypoints = {}
+  local function buildRoadRoute(runtimeGroup, objects)
+    local destinations = {}
     for _, zone in ipairs(objects.routeZones) do
-      waypoints[#waypoints + 1] = zone:GetCoordinate():WaypointGround(
-        config.routing.speedKph,
-        config.routing.formation
-      )
+      destinations[#destinations + 1] = zone:GetCoordinate()
     end
-    waypoints[#waypoints + 1] = objects.targetZone:GetCoordinate():WaypointGround(
-      config.routing.speedKph,
-      config.routing.formation
-    )
-    return waypoints
+    destinations[#destinations + 1] = objects.targetZone:GetCoordinate()
+
+    local route = {}
+    local fromCoordinate = runtimeGroup:GetCoordinate()
+    for _, toCoordinate in ipairs(destinations) do
+      local segment = runtimeGroup:TaskGroundOnRoad(
+        toCoordinate,
+        config.routing.speedKph,
+        config.routing.offRoadFormation or "Off Road",
+        false,
+        fromCoordinate
+      )
+      for index, waypoint in ipairs(segment or {}) do
+        if #route == 0 or index > 1 then
+          route[#route + 1] = waypoint
+        end
+      end
+      fromCoordinate = toCoordinate
+    end
+    return route
   end
 
   local apiOk, missingApis = requiredMooseApis()
@@ -132,8 +146,6 @@ function TM01M.start(dependencies)
     return state
   end
 
-  local route = buildRoute(objects)
-
   local function spawnConvoy()
     if state.runtimeGroup and state.runtimeGroup:IsAlive() == true then
       message("Spawn rejected: convoy already exists")
@@ -141,7 +153,7 @@ function TM01M.start(dependencies)
     end
 
     state.spawner = SPAWN:NewWithAlias(config.template.groupName, config.template.runtimeAlias)
-    state.runtimeGroup = state.spawner:Spawn()
+    state.runtimeGroup = state.spawner:SpawnFromCoordinate(objects.startZone:GetCoordinate())
     if not state.runtimeGroup or state.runtimeGroup:IsAlive() ~= true then
       setOutcome(OUTCOME_FAIL_SCRIPT, "SPAWN did not create a living convoy")
       message("Convoy spawn failed")
@@ -159,14 +171,19 @@ function TM01M.start(dependencies)
       return false
     end
 
+    state.route = nil
     state.routeStarted = false
     state.arrived = false
     state.destroyed = false
+    local spawnCoordinate = state.runtimeGroup:GetCoordinate()
     log("INFO", "convoy_spawned", {
       runtimeGroupName = state.runtimeGroup:GetName(),
       aliveUnits = alive,
+      spawnZoneName = config.zones.start,
+      spawnX = math.floor(spawnCoordinate.x + 0.5),
+      spawnY = math.floor(spawnCoordinate.z + 0.5),
     })
-    message("MOOSE convoy spawned: " .. state.runtimeGroup:GetName())
+    message("MOOSE convoy spawned in " .. config.zones.start .. ": " .. state.runtimeGroup:GetName())
     return true
   end
 
@@ -179,18 +196,27 @@ function TM01M.start(dependencies)
       message("Route rejected: already started")
       return false
     end
-    local assigned = state.runtimeGroup:Route(route, config.routing.routeDelaySeconds)
+
+    state.route = buildRoadRoute(state.runtimeGroup, objects)
+    if not state.route or #state.route < 2 then
+      setOutcome(OUTCOME_FAIL_SCRIPT, "MOOSE road path generation produced no usable route")
+      message("MOOSE road path generation failed")
+      return false
+    end
+
+    local assigned = state.runtimeGroup:Route(state.route, config.routing.routeDelaySeconds)
     if not assigned then
       message("MOOSE route assignment failed")
       return false
     end
     state.routeStarted = true
     log("INFO", "convoy_route_started", {
-      waypointCount = #route,
+      waypointCount = #state.route,
+      anchorCount = #objects.routeZones,
       speedKph = config.routing.speedKph,
-      formation = config.routing.formation,
+      routeMode = "MOOSE_TaskGroundOnRoad",
     })
-    message("MOOSE convoy route started")
+    message("MOOSE road route started")
     return true
   end
 
@@ -201,6 +227,7 @@ function TM01M.start(dependencies)
       "Convoy alive: " .. tostring(state.runtimeGroup and state.runtimeGroup:IsAlive() == true),
       "Vehicles alive: " .. tostring(alive),
       "Route started: " .. tostring(state.routeStarted),
+      "Route waypoints: " .. tostring(state.route and #state.route or 0),
       "Arrived: " .. tostring(state.arrived),
       "Destroyed: " .. tostring(state.destroyed),
     }, "\n"))
@@ -248,14 +275,13 @@ function TM01M.start(dependencies)
   state.startRoute = startRoute
   state.showStatus = showStatus
   state.objects = objects
-  state.route = route
 
   setOutcome(OUTCOME_READY, "TM01M MOOSE-native physical convoy baseline is ready")
   log("INFO", "startup", {
     testId = build.testId,
     stageId = build.stageId,
     configurationVersion = config.configurationVersion,
-    routeWaypointCount = #route,
+    routeAnchorCount = #objects.routeZones,
     customCampaignStateLoaded = false,
     customProxyControllerLoaded = false,
     customInterestMonitorLoaded = false,
