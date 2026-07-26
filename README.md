@@ -78,6 +78,7 @@ Current air-operations documents:
 - [`Verbindliche MOOSE-First-Entwicklungsrichtlinie`](docs/26-moose-first-development-policy.md)
 - [`Hubschrauberformationen und AH-64D-Konfiguration im Afghanistan-COIN-Szenario`](docs/27-helicopter-formations-and-ah64-afghanistan-configuration.md)
 - [`Bagram: Fighter-ORBAT und Missionseditor-Arbeitsanweisung`](docs/28-bagram-air-operations-manifest.md)
+- [`Projektweite Spielerluftfahrzeug-Obergrenze`](docs/29-player-aircraft-slot-policy.md)
 
 MOOSE project reference:
 
@@ -94,7 +95,7 @@ Für taktische Hubschrauberformationen sowie FCR-, IAFS- und 30-mm-Konfiguration
 
 Für Jalalabad sind Dokumente 21, 23, 24 und 25 sowie die zugehörigen `expected/`- und `results/`-Dateien autoritativ. Ältere allgemeine Zwischenwerte wie vier Spielerplätze je Typ, sechs UH-60, kein CH-47, 13/15 Runtime-Parkplätze oder eine pauschale Ablehnung von Statics auf Parking-Nodes sind aufgehoben.
 
-Für Bagram ist Dokument 28 für die Fighter-ORBAT und den Missionseditor-Grundaufbau autoritativ. Bis zur vollständigen Aktualisierung aller älteren ORBAT-Tabellen ersetzt es für November/Dezember 2011 die frühere Zuordnung zur 336th EFS durch die belegte 335th EFS und ergänzt die 121st EFS als ANG-Rainbow-F-16-Verband.
+Für Bagram ist Dokument 28 für die Fighter-ORBAT und den Missionseditor-Grundaufbau autoritativ. Dokument 29 ist für die projektweite Client-Obergrenze autoritativ und ersetzt in Dokument 28 alle Angaben mit vier Clientgruppen beziehungsweise vier Client-Parking-Nodes je Muster. Bis zur vollständigen Aktualisierung aller älteren ORBAT-Tabellen ersetzt Dokument 28 für November/Dezember 2011 die frühere Zuordnung zur 336th EFS durch die belegte 335th EFS und ergänzt die 121st EFS als ANG-Rainbow-F-16-Verband.
 
 Test- und Implementierungsdateien:
 
