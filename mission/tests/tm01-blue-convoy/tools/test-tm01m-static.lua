@@ -38,6 +38,7 @@ zones[config.zones.target] = { GetCoordinate = function() return coordinate(conf
 _G.ZONE = { FindByName = function(_, name) return zones[name] end }
 _G.ZONE_BASE = { GetCoordinate = function() end }
 _G.COORDINATE = { WaypointGround = function() end }
+_G.CONTROLLABLE = { Route = function() end }
 
 local runtimeGroup = {
   alive = true,
@@ -57,7 +58,6 @@ _G.GROUP = {
     if name == config.template.groupName then return { template = true } end
     return nil
   end,
-  Route = function() end,
   CountAliveUnits = function() end,
   IsCompletelyInZone = function() end,
 }
@@ -100,5 +100,9 @@ assert(not source:find("trigger.action.outText", 1, true), "native text output i
 assert(not source:find("Group.getByName", 1, true), "native group lookup is forbidden")
 assert(not source:find("ConvoyProxyController", 1, true), "old proxy controller is forbidden")
 assert(not source:find("RepresentationInterestMonitor", 1, true), "old interest monitor is forbidden")
+assert(source:find("CONTROLLABLE and CONTROLLABLE.Route", 1, true),
+  "TM01M must validate the inherited CONTROLLABLE.Route implementation")
+assert(not source:find('"GROUP.Route", GROUP and GROUP.Route', 1, true),
+  "TM01M must not require Route to be declared directly on GROUP")
 
-print("TM01M static PASS: MOOSE SPAWN/GROUP/SCHEDULER/MESSAGE route baseline")
+print("TM01M static PASS: MOOSE SPAWN/GROUP/CONTROLLABLE/SCHEDULER/MESSAGE route baseline")
