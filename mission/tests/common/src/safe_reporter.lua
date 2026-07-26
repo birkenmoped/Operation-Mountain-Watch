@@ -9,12 +9,13 @@ local function sanitize(value)
   return text
 end
 
-function SafeReporter.report(event, outcome, detail)
+function SafeReporter.report(event, outcome, detail, prefix)
   if type(env) ~= "table" or type(env.info) ~= "function" then
     return false
   end
 
-  local line = "[OMW][TM01A] level=ERROR event=" .. sanitize(event)
+  local reportPrefix = prefix or "[OMW][TM01A]"
+  local line = sanitize(reportPrefix) .. " level=ERROR event=" .. sanitize(event)
     .. " outcome=" .. sanitize(outcome)
     .. " error=" .. sanitize(detail)
   env.info(line)
