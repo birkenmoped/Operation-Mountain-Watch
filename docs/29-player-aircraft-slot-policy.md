@@ -63,16 +63,45 @@ Für Spieler sind zu reservieren:
 
 Diese vier Positionen dürfen weder von Statics noch von dynamischer KI genutzt werden. Weitere geeignete Fighter-Parking-Nodes bleiben für KI, Recovery, Reserve und spätere Erweiterungen verfügbar.
 
-## 5. Korrigierte Bagram-Baseline
+## 5. Verbindliche Bagram-KI-Templates
+
+Die zuvor vorgesehene zweite F-16C-KI-Gruppe für `ARMED_RECON` beziehungsweise Recon entfällt. Eine eigene F-16-Recon-Templategruppe ist für den Bagram-Grundknoten weder missionsgestalterisch erforderlich noch fachlich sinnvoll.
+
+### F-15E
+
+```text
+TPL_AIR_US_BGRM_F15E_CAS_2SHIP
+TPL_AIR_US_BGRM_F15E_STRIKE_2SHIP
+```
+
+### F-16C
+
+```text
+TPL_AIR_US_BGRM_F16C_CAS_2SHIP
+```
+
+Nicht anzulegen ist:
+
+```text
+TPL_AIR_US_BGRM_F16C_ARMED_RECON_2SHIP
+```
+
+Weitere F-16C-Rollen dürfen später über zusätzliche Payloads oder AUFTRAG-Zuweisungen auf Basis des vorhandenen CAS-Templates geprüft werden. Eine zusätzliche Missionseditor-Templategruppe wird dafür nicht vorsorglich angelegt.
+
+## 6. Korrigierte Bagram-Baseline
 
 ```text
 4 Clientgruppen insgesamt
   2 F-15E
   2 F-16C
 
-4 Late-Activation-KI-Templates
+3 Late-Activation-KI-Templates
   2 F-15E-Two-Ship-Templates
-  2 F-16C-Two-Ship-Templates
+  1 F-16C-Two-Ship-Template
+
+6 Templateflugzeuge insgesamt
+  4 F-15E
+  2 F-16C
 
 16 sichtbare Statics
   9 F-15E
@@ -84,9 +113,9 @@ Diese vier Positionen dürfen weder von Statics noch von dynamischer KI genutzt 
 1 AIRWING
 ```
 
-Die 16 Statics bleiben unverändert. Die Satelliten-Momentaufnahme wird nicht über eine feste Addition von vier Clientflugzeugen rekonstruiert. Sichtbare Statics, aktive Spieler-/KI-Flugzeuge und virtuelle Reserve sind getrennte Repräsentationsebenen. Die tatsächliche Rampdarstellung hängt vom jeweiligen Missionszustand ab.
+Die 16 Statics bleiben unverändert. Die Satelliten-Momentaufnahme wird nicht über eine feste Addition von Client- oder Templateflugzeugen rekonstruiert. Sichtbare Statics, aktive Spieler-/KI-Flugzeuge und virtuelle Reserve sind getrennte Repräsentationsebenen. Die tatsächliche Rampdarstellung hängt vom jeweiligen Missionszustand ab.
 
-## 6. Korrigierte Arbeitsanweisung
+## 7. Korrigierte Arbeitsanweisung
 
 Im Missionseditor:
 
@@ -94,20 +123,26 @@ Im Missionseditor:
 2. genau die vier in Abschnitt 3 genannten Clientgruppen setzen;
 3. jede Clientgruppe mit genau einer Unit anlegen;
 4. Clientpositionen dauerhaft von Statics und KI freihalten;
-5. mindestens vier zusätzliche dynamische KI-Reservepositionen je Typ anstreben, soweit die Bagram-Parking-Geometrie dies erlaubt;
-6. die tatsächlichen TerminalIDs dokumentieren;
-7. Parking-Blacklist nur aus bewusst durch Statics belegten Nodes ableiten.
+5. zwei F-15E-Two-Ship-Templates für CAS und STRIKE anlegen;
+6. genau ein F-16C-Two-Ship-Template für CAS anlegen;
+7. kein separates F-16C-Recon-/Armed-Recon-Template anlegen;
+8. mindestens vier zusätzliche dynamische KI-Reservepositionen je Typ anstreben, soweit die Bagram-Parking-Geometrie dies erlaubt;
+9. die tatsächlichen TerminalIDs dokumentieren;
+10. Parking-Blacklist nur aus bewusst durch Statics belegten Nodes ableiten.
 
-## 7. Verhältnis zum Bagram-Manifest
+## 8. Verhältnis zum Bagram-Manifest
 
-Dieses Dokument ist für die Clientanzahl autoritativ und ersetzt im Bagram-Manifest `docs/28-bagram-air-operations-manifest.md` insbesondere:
+Dieses Dokument ist für die Clientanzahl und die F-16C-KI-Templateauswahl autoritativ und ersetzt im Bagram-Manifest `docs/28-bagram-air-operations-manifest.md` insbesondere:
 
 - die Aussage von vier Spielerluftfahrzeugen je Fighter-Typ,
 - die Clientgruppen `_03` und `_04`,
 - die Forderung nach vier Client-Parking-Nodes je Typ,
+- das Template `TPL_AIR_US_BGRM_F16C_ARMED_RECON_2SHIP`,
+- die Forderung nach zwei F-16C-KI-Templates,
+- die Acceptance-Angabe von vier KI-Templates beziehungsweise acht Templateflugzeugen,
 - die Acceptance-Angabe von acht Clientgruppen,
 - die Safe-Parking-Angabe für acht Clientpositionen.
 
-Alle übrigen historischen, ORBAT-, Template-, Warehouse-, Zonen-, Static- und Parking-Aussagen des Bagram-Manifests bleiben bestehen.
+Alle übrigen historischen, ORBAT-, Warehouse-, Zonen-, Static- und Parking-Aussagen des Bagram-Manifests bleiben bestehen.
 
 Die beiden Dokumente sind bei der nächsten redaktionellen Konsolidierung zusammenzuführen; bis dahin hat diese verbindliche Korrektur bei Widersprüchen Vorrang.
