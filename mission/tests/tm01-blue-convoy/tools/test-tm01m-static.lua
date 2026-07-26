@@ -185,6 +185,7 @@ assert(state.routePlan.pathlineDiagnostics[2]:find(":reversed", 1, true),
   "second PATHLINE must be oriented from Kabul toward Jalalabad")
 
 assert(state.spawnConvoy() == true, "spawn failed")
+assert(state.spawnConvoy() == false, "duplicate spawn must be rejected")
 assert(type(spawnPositions) == "table" and #spawnPositions == 6,
   "MOOSE absolute unit layout must contain six positions")
 for index, position in ipairs(spawnPositions) do
@@ -199,6 +200,7 @@ for index, position in ipairs(spawnPositions) do
 end
 
 assert(state.startRoute() == true, "route start failed")
+assert(state.startRoute() == false, "duplicate route start must be rejected")
 assert(#runtimeGroup.route >= 4, "MSR route must contain multiple constrained waypoints")
 assert(runtimeGroup.route[1].x > spawnPositions[1].x,
   "first route waypoint must be ahead of the lead vehicle")
