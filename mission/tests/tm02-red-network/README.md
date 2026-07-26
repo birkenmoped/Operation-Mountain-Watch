@@ -1,5 +1,15 @@
 # TM02 RED network tests
 
+## Binding implementation rule
+
+All TM02 RED network tests are governed by [`mission/tests/GOVERNANCE.md`](../GOVERNANCE.md) and project rule [`GOV-001`](../../../docs/00-project-governance.md).
+
+TM02 is MOOSE-first. Every applicable MOOSE function, class, lifecycle mechanism, routing method, tasking method, scheduler, event system, state-machine pattern, wrapper, set, zone, coordinate, detection mechanism, and utility must be evaluated and used as the implementation foundation before native DCS or custom code is proposed.
+
+MOOSE limitations and disadvantages may be investigated and discussed at any time. Only the project owner decides whether a documented limitation authorizes a native DCS, project-specific, or hybrid implementation. No test result or implementation decision may infer that approval.
+
+This rule applies specifically to movement, spawn, respawn, teleport, pack/unpack, materialization, dematerialization, recovery, stuck detection, route reassignment, loss handling, and group lifecycle behavior.
+
 This directory contains the staged TM02W production-network tests that follow the completed TM02V packet/proxy stage.
 
 ## Completed stages
@@ -45,6 +55,8 @@ TM02W2 execution - execute accepted reservation tasks through independent RED pr
 ```
 
 This increment must preserve the accepted W2 plan while physically executing each task. It remains separate from delayed reports and bounded commander cycles, which belong to W3.
+
+Every recovery or representation design in this stage must first use and test the relevant MOOSE capabilities. A custom watchdog may coordinate MOOSE mechanisms, but it may not silently replace an available MOOSE lifecycle or movement function. Any proposed exception requires a documented MOOSE capability analysis and explicit project-owner approval.
 
 ## Shared fixture
 

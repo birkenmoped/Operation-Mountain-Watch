@@ -10,11 +10,22 @@ Operation Mountain Watch is a dynamic multiplayer COIN campaign for DCS World on
 - Design documentation: German.
 - Player-facing text: German and English where practical.
 
+## Binding implementation governance
+
+- `docs/00-project-governance.md` is binding and has precedence over older or more specific documentation.
+- Operation Mountain Watch is MOOSE-first.
+- Identify, evaluate, and use all available and applicable MOOSE capabilities before proposing native DCS scripting, custom project code, or a hybrid fallback.
+- A technical discussion of MOOSE limitations or disadvantages does not authorize a non-MOOSE implementation.
+- Only the project owner may approve bypassing, replacing, or supplementing an applicable MOOSE capability with native DCS or custom code.
+- Before requesting such approval, document the requirement, MOOSE capabilities evaluated, test evidence, precise limitation, proposed fallback, and lifecycle, persistence, performance, maintenance, compatibility, and testing impact.
+- Until explicit project-owner approval exists, non-MOOSE work is exploratory only and must not be presented as the accepted implementation direction.
+- Every approved exception must be recorded in an ADR or equivalently explicit decision document.
+
 ## Architecture
 
-- Use MOOSE as the primary DCS scripting framework.
+- Use MOOSE as the mandatory DCS scripting foundation.
 - Prefer MOOSE CTLD and MOOSE CSAR.
-- Do not add MIST unless a concrete dependency is documented in an ADR.
+- Do not add MIST unless a concrete dependency is documented in an ADR and explicitly approved by the project owner under GOV-001.
 - `CampaignState` is the authoritative source for strategic state and resources.
 - DCS groups are temporary physical representations of strategic entities.
 - Do not let CampaignState, CTLD, MOOSE Warehouse, and DCS warehouses independently own the same resource.
@@ -30,7 +41,7 @@ Operation Mountain Watch is a dynamic multiplayer COIN campaign for DCS World on
 - Do not load `Moose.lua` and `Moose_.lua` together.
 - Do not use `Moose_Include_Dynamic` for mission runtime.
 - Do not depend on an unpinned `master-ng` or `develop` branch.
-- A development-branch exception requires a separate ADR and an exact full commit SHA.
+- A development-branch exception requires a separate ADR, an exact full commit SHA, and explicit project-owner approval.
 - Do not edit vendored MOOSE source files.
 - Verify every MOOSE API against the vendored source or matching stable documentation.
 - Do not use develop-branch documentation as the sole evidence for release behavior.
@@ -64,3 +75,4 @@ Before completing a change:
 3. State which behavior still requires an in-game DCS test.
 4. Record test results for pathfinding, multiplayer synchronization, dynamic cargo, or AI behavior when relevant.
 5. Confirm that the configured MOOSE version and include variant match `vendor/moose/VERSION.md`.
+6. Confirm that the implementation follows GOV-001 or references an explicit project-owner-approved exception.
