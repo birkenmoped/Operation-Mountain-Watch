@@ -1,80 +1,169 @@
-# TM01M MOOSE-native physical convoy acceptance
+# TM01M – MOOSE-native MSR-Konvoi: DCS-Abnahme
 
-Status: DCS TEST PENDING
+Status: DCS-REGRESSION AUSSTEHEND
 
-## Purpose
+## Zweck
 
-TM01M is a clean-room MOOSE-native replacement baseline. It does not load or call the former TM01B/TM01C custom runtime architecture.
+TM01M ist die saubere MOOSE-native physische Baseline für einen blauen Konvoi von Bagram nach Jalalabad. Die Teststufe enthält keine Virtualisierung, keinen CampaignState, kein Pack/Unpack und keinen Unstuck- oder Teleport-Mechanismus.
 
-The following former runtime components are intentionally absent:
-
-- `ConvoyProxyController`;
-- `ConvoyCacheController`;
-- `ProxyCampaignState`;
-- `RepresentationInterestMonitor`;
-- custom pack/unpack logic;
-- proxy movement;
-- custom unstuck or relocation watchdog;
-- virtual movement and reveal windows.
-
-## Required Mission Editor objects
+Die Route wird nicht mehr aus den historischen Zonen `ZONE_TM01_ROUTE_01` bis `ZONE_TM01_ROUTE_07` zusammengesetzt. Verbindliche Routenquelle sind die im Mission Editor gezeichneten und von MOOSE als `PATHLINE` registrierten MSR-Abschnitte:
 
 ```text
-TPL_TEST_BLUE_CONVOY_01
 ZONE_TM01_START_BAGRAM
-ZONE_TM01_ROUTE_01
-ZONE_TM01_ROUTE_02
-ZONE_TM01_ROUTE_03
-ZONE_TM01_ROUTE_04
-ZONE_TM01_ROUTE_05
-ZONE_TM01_ROUTE_06
-ZONE_TM01_ROUTE_07
-ZONE_TM01_TARGET_JALALABAD
+→ MSR_EAST_E03
+→ MSR_EAST_E02
+→ ZONE_TM01_TARGET_JALALABAD
 ```
 
-The existing TM01C fixture may be copied. The old TM01C bundle must be removed from the mission trigger list.
+## Verbindliche Mission-Editor-Objekte
 
-## Script order
+```text
+TPL_TEST_BLUE_CONVOY_STANDARD_01
+ZONE_TM01_START_BAGRAM
+ZONE_TM01_TARGET_JALALABAD
+MSR_EAST_E03
+MSR_EAST_E02
+```
+
+Die bisherigen Route-Anchor-Zonen dürfen in der Mission verbleiben, werden von TM01M jedoch nicht mehr aufgelöst oder für die Routenerzeugung verwendet.
+
+## Scriptreihenfolge
 
 1. `vendor/moose/Moose.lua`
-2. generated `mission/tests/tm01-blue-convoy/dist/TM01M.lua`
+2. erzeugtes `mission/tests/tm01-blue-convoy/dist/TM01M.lua`
 
-## Test procedure
+## Vorbereitungen
 
-1. Start the mission and confirm `TM01M READY`.
-2. Use `F10 -> Other -> OMW Tests -> TM01M MOOSE Native Convoy -> Spawn convoy`.
-3. Confirm exactly six living vehicles and no duplicate physical convoy.
-4. Use `Start route`.
-5. Observe the convoy throughout the complete route.
-6. Periodically use `Show status`.
-7. Allow the convoy to reach `ZONE_TM01_TARGET_JALALABAD`.
-8. Preserve `dcs.log` and `debrief.log`.
+1. Branch aktualisieren und sicherstellen, dass die Konfigurationsversion `TM01M-moose-native-msr-pathline-1` eingebettet ist.
+2. Bundle neu bauen:
 
-## PASS criteria
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass `
+  -File ".\tools\build-tm01m-bundle.ps1"
+```
 
-- bootstrap outcome is `READY`;
-- exactly one physical six-vehicle group is spawned by MOOSE `SPAWN`;
-- duplicate spawn and duplicate route start are rejected;
-- route contains seven anchor waypoints plus the target waypoint;
-- route is assigned through the MOOSE `GROUP:Route` wrapper;
-- movement uses `On Road` and 30 km/h;
-- supervision is executed by MOOSE `SCHEDULER`;
-- user messages are emitted by MOOSE `MESSAGE`;
-- arrival is detected exactly once when the complete living group is inside the target zone;
-- no custom proxy, virtual movement, pack/unpack, CampaignState or relocation code is loaded;
-- no Lua error occurs.
+3. Die Mission ausschließlich im DCS Mission Editor öffnen.
+4. Im vorhandenen `DO SCRIPT FILE`-Trigger die neu erzeugte `dist/TM01M.lua` erneut auswählen, damit keine ältere eingebettete Kopie verwendet wird.
+5. `Moose.lua` weiterhin vor `TM01M.lua` laden.
+6. DCS-Log vor dem Lauf leeren oder den Laufbeginn eindeutig markieren.
 
-## FAIL criteria
+## Erwarteter Bootstrap
 
-- any old TM01B/TM01C runtime module is included in the generated bundle;
-- more than one runtime convoy exists;
-- fewer or more than six vehicles spawn without combat loss;
-- route assignment fails;
-- the convoy permanently stops before arrival;
-- any custom teleport, recovery spawn or relocation occurs;
-- arrival is logged more than once;
-- any TM01M Lua error occurs.
+Vor einer F10-Aktion müssen folgende Ereignisse erscheinen:
 
-## Follow-on decision
+```text
+event=msr_route_plan_compiled
+routeMode=MOOSE_PATHLINE_MSR
+msrPathlines=MSR_EAST_E03,MSR_EAST_E02
+msrPathlineCount=2
+sourcePointCount=641
+pathlineDirections=MSR_EAST_E03:reversed,MSR_EAST_E02:reversed
+routeLengthMeters=...
+startConnectorMeters=...
+targetConnectorMeters=...
 
-Only after this physical baseline is tested will missing requirements be added. A custom OMW function may return only when the corresponding MOOSE capability has been tested and documented as insufficient.
+event=bootstrap_outcome
+outcome=READY
+
+event=startup
+configurationVersion=TM01M-moose-native-msr-pathline-1
+routeMode=MOOSE_PATHLINE_MSR
+msrPathlineCount=2
+```
+
+Die konkrete Gesamtlänge hängt von den durch DCS berechneten Straßenverbindungen zwischen Startzone, MSR und Zielzone ab. Sie muss numerisch und größer als null sein.
+
+## Spawn-Abnahme
+
+1. `F10 > Other > OMW Tests > TM01M MOOSE Native MSR Convoy > Spawn convoy` genau einmal ausführen.
+2. Genau eine Laufzeitgruppe mit sechs Fahrzeugen prüfen.
+3. Jedes Fahrzeug einzeln kontrollieren:
+   - vollständig innerhalb `ZONE_TM01_START_BAGRAM`;
+   - auf einer befahrbaren Straße;
+   - ausreichender Abstand zum vorherigen Fahrzeug;
+   - Front in lokaler Marschrichtung;
+   - kein Fahrzeug in einem Gebäude, auf einem Dach, in einer Mauer oder quer zur Straße.
+4. Ohne Routenstart mindestens 30 Sekunden prüfen, dass der Konvoi stationär bleibt.
+5. Einen zweiten Spawnversuch ausführen und dessen Ablehnung prüfen.
+
+Erwartetes Spawnereignis:
+
+```text
+event=convoy_spawned
+spawnZoneName=ZONE_TM01_START_BAGRAM
+spawnPositionMode=MOOSE_InitSetUnitAbsolutePositions
+msrFirstPathline=MSR_EAST_E03
+aliveUnits=6
+spawnX=...
+spawnY=...
+spawnHeadingDeg=...
+spawnLeadRouteDistanceMeters=...
+spawnRearRouteDistanceMeters=...
+maximumSpawnRoadSnapMeters=...
+```
+
+## Routen-Abnahme
+
+1. `Start MSR route` genau einmal ausführen.
+2. Prüfen, dass der erste erzeugte Wegpunkt vor dem Führungsfahrzeug liegt und kein Nullwegpunkt auf der aktuellen Position zugewiesen wird.
+3. Im Log prüfen:
+
+```text
+event=convoy_route_started
+routeMode=MOOSE_PATHLINE_MSR
+msrPathlineCount=2
+msrPathlines=MSR_EAST_E03,MSR_EAST_E02
+formation=On Road
+speedKph=30
+waypointCount=...
+routeLengthMeters=...
+maximumWaypointRoadSnapMeters=...
+```
+
+4. Der Konvoi muss zunächst den Straßenanschluss von Bagram zur `MSR_EAST_E03` verwenden.
+5. Danach muss er der `MSR_EAST_E03` in Richtung Kabul folgen.
+6. Am gemeinsamen Knoten muss er auf `MSR_EAST_E02` wechseln und dieser in Richtung Jalalabad folgen.
+7. Die Fahrt darf nicht an der Position der historischen `ZONE_TM01_ROUTE_01` enden.
+8. Einen zweiten Routenstart ausführen und dessen Ablehnung prüfen.
+9. Den Konvoi bis vollständig in `ZONE_TM01_TARGET_JALALABAD` beobachten.
+
+## PASS-Kriterien
+
+- Bootstrap endet mit `READY`.
+- Beide MSR-Zeichnungen werden als MOOSE-`PATHLINE` gefunden und in Fahrtrichtung orientiert.
+- Es werden keine historischen Route-Anchor-Zonen benötigt.
+- Genau sechs Fahrzeuge werden über MOOSE `SPAWN` erzeugt.
+- Die einzelnen absoluten Positionen und Headings werden über `SPAWN:InitSetUnitAbsolutePositions()` gesetzt.
+- Alle Fahrzeuge stehen beim Spawn auf der Straße und vollständig in der Startzone.
+- Die Route wird einmal als durchgehende, MSR-gebundene Wegpunktliste erzeugt und über den MOOSE-Wrapper `GROUP:Route()` zugewiesen.
+- Die Formation lautet `On Road`, die Sollgeschwindigkeit 30 km/h.
+- Der Konvoi fährt über `MSR_EAST_E03` und `MSR_EAST_E02` bis Jalalabad.
+- Die Ankunft wird genau einmal erkannt, wenn die vollständige lebende Gruppe in der Zielzone steht.
+- Es tritt kein TM01M-Lua-Fehler auf.
+- Es wird keine alte TM01B-/TM01C-Runtime, keine Virtualisierung und keine Recovery-/Teleportlogik geladen.
+
+## FAIL-Kriterien
+
+- ein Fahrzeug erscheint abseits der Straße, in einem Objekt oder auf einem Dach;
+- ein Fahrzeug zeigt beim Spawn erkennbar in die falsche Marschrichtung;
+- `MSR_EAST_E03` oder `MSR_EAST_E02` fehlt oder kann nicht kompiliert werden;
+- TM01M verwendet weiterhin `ZONE_TM01_ROUTE_01` bis `ZONE_TM01_ROUTE_07`;
+- die Route endet am ersten historischen Route-Anchor;
+- die Gruppe bleibt vor Jalalabad dauerhaft stehen;
+- Routen- oder Spawnzuweisung wird doppelt ausgeführt;
+- ein benutzerdefinierter Teleport, Respawn oder Unstuck-Vorgang greift ein;
+- ein TM01M-Lua-Fehler tritt auf.
+
+## Nachweis
+
+Nach dem Lauf sind mindestens zu sichern:
+
+```text
+dcs.log
+debrief.log
+Screenshots der vollständigen Spawnaufstellung
+Screenshot oder Track des Übergangs E03 → E02
+Screenshot der vollständigen Zielankunft
+```
+
+Der Test gilt erst nach dokumentiertem DCS-Lauf als bestanden. Der statische Harness belegt nur API-Verträge, Routenstruktur und Codeausschlüsse; er belegt nicht das tatsächliche Verhalten der DCS-Ground-AI.
