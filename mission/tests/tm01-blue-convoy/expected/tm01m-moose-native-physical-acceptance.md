@@ -1,85 +1,112 @@
-# TM01M – MOOSE-native MSR-Konvoi: DCS-Abnahme
+# TM01M – Fünf gleichzeitige MOOSE-native MSR-Konvois: DCS-Abnahme
 
-Status: `30-km/h-Baseline PASS`; `40-km/h-Geschwindigkeitsregression AUSSTEHEND`
+Status: `30-km/h-Einzelkonvoi-Baseline PASS`; `50-km/h-Fünf-Konvoi-Stresstest AUSSTEHEND`
 
 ## Zweck
 
-TM01M ist die saubere MOOSE-native physische Baseline für einen blauen Konvoi von Bagram nach Jalalabad. Die Teststufe enthält keine Virtualisierung, keinen CampaignState, kein Pack/Unpack und keinen Unstuck- oder Teleport-Mechanismus.
+TM01M prüft nun fünf gleichzeitig aktive physische Konvois auf fünf getrennten MSR-Verbindungen. Alle Verbände verwenden dasselbe Mission-Editor-Template und dieselben gemeinsamen Marschparameter.
 
-Verbindliche Routenquelle sind die im Mission Editor gezeichneten und von MOOSE als `PATHLINE` registrierten MSR-Abschnitte:
+Die Teststufe enthält weiterhin keine Virtualisierung, keinen CampaignState, kein Pack/Unpack und keine Recovery-, Teleport- oder Unstuck-Logik.
 
-```text
-ZONE_TM01_START_BAGRAM
-→ MSR_EAST_E03
-→ MSR_EAST_E02
-→ ZONE_TM01_TARGET_JALALABAD
-```
+Der nicht ausgeführte 40-km/h-Einzelkonvoi-Zwischenschritt wird durch diesen größeren 50-km/h-Stresstest ersetzt. Daraus folgt ausdrücklich noch kein Nachweis, dass 50 km/h für jeden gemischten Verband dauerhaft fahrbar sind.
 
-Die historischen Zonen `ZONE_TM01_ROUTE_01` bis `ZONE_TM01_ROUTE_07` werden nicht aufgelöst und nicht für die Routenerzeugung verwendet.
-
-## Verbindliche Mission-Editor-Objekte
+## Konfiguration
 
 ```text
-TPL_TEST_BLUE_CONVOY_STANDARD_01
-ZONE_TM01_START_BAGRAM
-ZONE_TM01_TARGET_JALALABAD
-MSR_EAST_E03
-MSR_EAST_E02
-```
-
-## Scriptreihenfolge
-
-1. `vendor/moose/Moose.lua`
-2. erzeugtes `mission/tests/tm01-blue-convoy/dist/TM01M.lua`
-
-## Validierte 30-km/h-Baseline
-
-Der DCS-Lauf mit
-
-```text
-Commit:               0db10501f81c160cd5818088e760af181b33d86d
-Konfiguration:        TM01M-moose-native-msr-pathline-1
-Sollgeschwindigkeit:  30 km/h
-```
-
-bestand die vollständige Fahrt von Bagram nach Jalalabad.
-
-Nachgewiesen wurden:
-
-```text
-routeLengthMeters=213189
-waypointCount=89
-maximumSpawnRoadSnapMeters=2
-maximumWaypointRoadSnapMeters=19
-survivingVehicles=6
-```
-
-Die simulierte Fahrt dauerte ungefähr von `08:00` bis `15:11`. Daraus ergibt sich eine Durchschnittsgeschwindigkeit von ungefähr `29,7 km/h` beziehungsweise `16,0 kn`; dies entspricht der vorgegebenen Geschwindigkeit von `30 km/h`.
-
-Autoritativer Ergebnisbericht:
-
-```text
-mission/tests/tm01-blue-convoy/results/2026-07-26-tm01m-msr-pathline-v1-pass.md
-```
-
-## Aktuelles Testinkrement
-
-```text
-Konfigurationsversion: TM01M-moose-native-msr-pathline-2
-Sollgeschwindigkeit:   40 km/h
+Konfigurationsversion: TM01M-moose-native-five-convoys-1
+Konvoi-Anzahl:         5
+Fahrzeuge je Konvoi:   6
+Gesamtfahrzeuge:       30
+Sollgeschwindigkeit:   50 km/h
 Formation:             On Road
+Template:              TPL_TEST_BLUE_CONVOY_STANDARD_01
 ```
 
-Die Erhöhung von `30 km/h` auf `40 km/h` ist ein kontrollierter nächster Schritt. Sie ist nicht als bereits nachgewiesene Höchstgeschwindigkeit des Verbands zu verstehen.
-
-Der Testkonvoi besteht aus:
+Jeder Verband besteht aus dem unveränderten gemeinsamen Template:
 
 ```text
 3 × M1043 HMMWV Armament
 3 × CHAP_M1083
 ```
 
-Da die konkrete fahrdynamische Begrenzung des verwendeten CHAP-M1083-Modells nicht aus den bisherigen Logs hervorgeht, muss die gemeinsame Marschfähigkeit bei `40 km/h` erneut in DCS geprüft werden.
+## Verbindliche Routen
+
+### EAST-E3: Bagram → Kabul
+
+```text
+MSR_EAST_E3_START_BAGRAM
+→ MSR_EAST_E03
+→ MSR_EAST_E3_TARGET_KABUL
+```
+
+### EAST-E2: Kabul → Jalalabad
+
+```text
+MSR_EAST_E2_START_KABUL
+→ MSR_EAST_E02
+→ MSR_EAST_E2_TARGET_JALALABAD
+```
+
+### EAST-E1: Torkham → Jalalabad
+
+```text
+MSR_EAST_E1_START_TORKHAM
+→ MSR_EAST_E01
+→ MSR_EAST_E1_TARGET_JALALABAD
+```
+
+### KUNAR-K1: Jalalabad → Asadabad
+
+```text
+MSR_KUNAR K1_START_JALALABAD
+→ MSR_KUNAR_K01
+→ MSR_KUNAR K1_TARGET_ASADABAD
+```
+
+### CALIFORNIA: Asadabad → FOB Bostik
+
+```text
+MSR_CALIFORNIA_START_ASADABAD
+→ MSR_CAL_C01
+→ MSR_CAL_C02
+→ MSR_CALIFORNIA_TARGET_FOB_BOSTIK
+```
+
+Die im Mission Editor sichtbaren Beschriftungen mit Leerzeichen und Bindestrichen sind nicht die MOOSE-Objektnamen. Für `PATHLINE:FindByName()` gelten ausschließlich die oben genannten internen Namen mit Unterstrichen.
+
+## MOOSE-First-Aufbau
+
+TM01M verwendet weiterhin ausschließlich die bereits geprüften MOOSE-Bausteine:
+
+```text
+PATHLINE:FindByName()
+PATHLINE:GetNumberOfPoints()
+PATHLINE:GetPoint2DFromIndex()
+COORDINATE:GetClosestPointToRoad()
+COORDINATE:GetPathOnRoad()
+COORDINATE:WaypointGround()
+SPAWN:NewWithAlias()
+SPAWN:InitSetUnitAbsolutePositions()
+SPAWN:Spawn()
+GROUP:Route()
+SCHEDULER:New()
+MESSAGE:New()
+MENU_MISSION / MENU_MISSION_COMMAND
+```
+
+Aus demselben Template werden fünf voneinander unabhängige MOOSE-`SPAWN`-Instanzen mit eindeutigen Laufzeitaliasen erzeugt. Ein einziger MOOSE-`SCHEDULER` überwacht alle fünf Verbände.
+
+## Laufzeitalias und Konvoi-IDs
+
+```text
+EAST_E3_BGR_KBL      → TM01M_E3_BGR_KBL
+EAST_E2_KBL_JBAD     → TM01M_E2_KBL_JBAD
+EAST_E1_TRK_JBAD     → TM01M_E1_TRK_JBAD
+KUNAR_K1_JBAD_ASAD   → TM01M_K1_JBAD_ASAD
+CAL_ASAD_BOSTIK      → TM01M_CAL_ASAD_BOS
+```
+
+Jeder relevante Logeintrag enthält `convoyId=...`, damit Route, Spawn, Routenstart, Zerstörung und Ankunft eindeutig zugeordnet werden können.
 
 ## Vorbereitungen
 
@@ -91,108 +118,204 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass `
   -File ".\tools\build-tm01m-bundle.ps1"
 ```
 
-3. Die Mission ausschließlich im DCS Mission Editor öffnen.
-4. Im vorhandenen `DO SCRIPT FILE`-Trigger die neu erzeugte `dist/TM01M.lua` erneut auswählen.
+3. Die Mission `OMW_TEST_TM01M_MooseFirst(3).miz` im DCS Mission Editor öffnen.
+4. Im vorhandenen `DO SCRIPT FILE`-Trigger die neu erzeugte Datei `mission/tests/tm01-blue-convoy/dist/TM01M.lua` erneut auswählen.
 5. `Moose.lua` weiterhin vor `TM01M.lua` laden.
 6. Mission speichern.
 7. DCS-Log vor dem Lauf leeren oder den Laufbeginn eindeutig markieren.
 
+Die hochgeladene Missionsdatei enthält noch die alte eingebettete Konfiguration `TM01M-moose-native-msr-pathline-1` mit einem Einzelkonvoi und 30 km/h. Ohne erneutes Auswählen und Speichern würde deshalb nicht der Fünf-Konvoi-Test laufen.
+
 ## Erwarteter Bootstrap
 
-```text
-event=msr_route_plan_compiled
-routeMode=MOOSE_PATHLINE_MSR
-msrPathlines=MSR_EAST_E03,MSR_EAST_E02
-msrPathlineCount=2
-sourcePointCount=641
-pathlineDirections=MSR_EAST_E03:reversed,MSR_EAST_E02:reversed
-routeLengthMeters=...
+Für jeden Konvoi muss genau ein Ereignis erscheinen:
 
+```text
+event=convoy_route_plan_compiled
+convoyId=...
+runtimeAlias=...
+routeMode=MOOSE_PATHLINE_MSR
+startZoneName=...
+targetZoneName=...
+msrPathlines=...
+pathlineDirections=...
+msrPathlineCount=...
+sourcePointCount=...
+compiledPointCount=...
+routeLengthMeters=...
+```
+
+Danach muss die Gesamtsumme erscheinen:
+
+```text
+event=multi_convoy_route_plans_compiled
+convoyCount=5
+msrPathlineCount=6
+sourcePointCount=1618
+compiledPointCount=...
+totalRouteLengthMeters=...
+```
+
+Zusätzlich:
+
+```text
 event=bootstrap_outcome
 outcome=READY
 
 event=startup
-configurationVersion=TM01M-moose-native-msr-pathline-2
-routeMode=MOOSE_PATHLINE_MSR
-msrPathlineCount=2
+configurationVersion=TM01M-moose-native-five-convoys-1
+convoyCount=5
+msrPathlineCount=6
+speedKph=50
+formation=On Road
 ```
+
+## Start über F10
+
+Empfohlener Teststart:
+
+```text
+F10
+→ Other
+→ OMW Tests
+→ TM01M Five MSR Convoys
+→ Launch all five convoys
+```
+
+Dieser Befehl erzeugt alle fünf Verbände und weist anschließend allen fünf Gruppen die Route mit identischer Verzögerung zu.
+
+Alternativ stehen getrennte Befehle zur Verfügung:
+
+```text
+Spawn all convoys
+Start all MSR routes
+Show fleet status
+```
+
+Für Diagnosezwecke existiert außerdem je Konvoi ein eigenes Untermenü.
 
 ## Spawn-Abnahme
 
-1. `F10 > Other > OMW Tests > TM01M MOOSE Native MSR Convoy > Spawn convoy` genau einmal ausführen.
-2. Genau eine Laufzeitgruppe mit sechs Fahrzeugen prüfen.
-3. Jedes Fahrzeug muss:
-   - vollständig innerhalb `ZONE_TM01_START_BAGRAM` stehen;
-   - auf einer befahrbaren Straße stehen;
-   - ausreichenden Abstand zum vorherigen Fahrzeug besitzen;
-   - in lokaler Marschrichtung ausgerichtet sein;
-   - frei von Gebäuden, Dächern, Mauern und anderen Hindernissen sein.
-4. Ohne Routenstart mindestens 30 Sekunden Stillstand prüfen.
-5. Einen zweiten Spawnversuch ausführen und dessen Ablehnung prüfen.
+Nach `Launch all five convoys` oder `Spawn all convoys` müssen genau fünf Laufzeitgruppen mit insgesamt 30 Fahrzeugen existieren.
 
-Erwartetes Ereignis:
+Für jeden Verband ist zu prüfen:
+
+- sechs Fahrzeuge vorhanden;
+- alle Fahrzeuge innerhalb der zugehörigen Startzone;
+- alle Fahrzeuge auf einer befahrbaren Straße;
+- korrekte lokale Marschrichtung;
+- ausreichender Abstand zwischen den Fahrzeugen;
+- kein Fahrzeug in einem Gebäude, auf einem Dach, in einer Mauer oder quer zur Straße;
+- keine Überschneidung mit einem anderen gleichzeitig gestarteten Verband.
+
+Erwartet werden genau fünf Ereignisse:
 
 ```text
 event=convoy_spawned
-spawnZoneName=ZONE_TM01_START_BAGRAM
-spawnPositionMode=MOOSE_InitSetUnitAbsolutePositions
-msrFirstPathline=MSR_EAST_E03
+convoyId=...
+runtimeAlias=...
 aliveUnits=6
-spawnX=...
-spawnY=...
-spawnHeadingDeg=...
-maximumSpawnRoadSnapMeters=...
+spawnPositionMode=MOOSE_InitSetUnitAbsolutePositions
+spawnZoneName=...
+msrFirstPathline=...
 ```
 
-## 40-km/h-Routenabnahme
+Danach:
 
-1. `Start MSR route` genau einmal ausführen.
-2. Im Log prüfen:
+```text
+event=multi_convoy_spawn_completed
+requestedConvoys=5
+spawnedConvoys=5
+totalExpectedVehicles=30
+```
+
+## Routenabnahme bei 50 km/h
+
+Erwartet werden genau fünf Ereignisse:
 
 ```text
 event=convoy_route_started
+convoyId=...
+runtimeAlias=...
 routeMode=MOOSE_PATHLINE_MSR
-msrPathlineCount=2
-msrPathlines=MSR_EAST_E03,MSR_EAST_E02
+speedKph=50
 formation=On Road
-speedKph=40
 waypointCount=...
 routeLengthMeters=...
 maximumWaypointRoadSnapMeters=...
 ```
 
-3. Der Verband muss den Straßenanschluss von Bagram zur `MSR_EAST_E03` verwenden.
-4. Er muss über `MSR_EAST_E03` nach Kabul und anschließend über `MSR_EAST_E02` nach Jalalabad fahren.
-5. Alle sechs Fahrzeuge müssen als zusammenhängender Verband weiterfahren. Kurzfristige Abstandsänderungen sind zulässig; ein dauerhaft zurückbleibendes oder verlorenes Fahrzeug ist nicht zulässig.
-6. Besondere Beobachtungspunkte sind enge Kurven, Steigungen, Brücken und der Übergang E03 → E02.
-7. Einen zweiten Routenstart ausführen und dessen Ablehnung prüfen.
-8. Den Konvoi bis vollständig in `ZONE_TM01_TARGET_JALALABAD` beobachten.
+Danach:
 
-Die rechnerische Mindestfahrzeit für `213.189 km` bei konstanten `40 km/h` beträgt ungefähr `5 h 20 min`. Dies ist kein hartes PASS-Kriterium, da die DCS-Ground-AI in Kurven, an Steigungen und bei Verbandskorrekturen langsamer fahren darf.
+```text
+event=multi_convoy_routes_started
+requestedConvoys=5
+startedConvoys=5
+speedKph=50
+formation=On Road
+```
+
+Besonders zu beobachten sind:
+
+- Fahrzeugabstände bei 50 km/h;
+- dauerhaft zurückfallende M1043 oder CHAP M1083;
+- Brücken, enge Kurven und Steigungen;
+- gleichzeitige KI-Wegfindung von 30 Fahrzeugen;
+- die stark überlappenden Jalalabad-Zonen von EAST-E1, EAST-E2 und KUNAR-K1;
+- die überlappenden Asadabad-Zonen von KUNAR-K1 und CALIFORNIA;
+- mögliche gegenseitige Blockaden an Ziel- und Startbereichen;
+- der Übergang `MSR_CAL_C01 → MSR_CAL_C02`.
+
+## Ankunft
+
+Für jeden Verband muss genau einmal erscheinen:
+
+```text
+event=convoy_arrived
+convoyId=...
+runtimeAlias=...
+survivingVehicles=6
+targetZoneName=...
+routeMode=MOOSE_PATHLINE_MSR
+```
+
+Wenn alle fünf Konvois angekommen sind:
+
+```text
+event=all_convoys_arrived
+convoyCount=5
+survivingVehicles=30
+speedKph=50
+```
 
 ## PASS-Kriterien
 
-- Bootstrap endet mit `READY` und meldet Version 2.
-- Beide MSR-PATHLINEs werden gefunden und korrekt orientiert.
-- Genau sechs Fahrzeuge werden über MOOSE `SPAWN` erzeugt.
-- Alle Fahrzeuge stehen beim Spawn korrekt auf der Straße.
-- Die Route wird einmalig über `GROUP:Route()` zugewiesen.
-- Das Routenereignis meldet `speedKph=40` und `formation=On Road`.
-- Drei M1043 und drei CHAP M1083 bleiben marschfähig.
-- Kein Fahrzeug fällt dauerhaft zurück oder verlässt die Route.
-- Der vollständige Verband erreicht Jalalabad.
-- Die Ankunft wird genau einmal mit `survivingVehicles=6` erkannt.
+- Bootstrap endet mit `READY`.
+- Alle fünf Routenpläne werden aus insgesamt sechs MOOSE-`PATHLINE`-Objekten kompiliert.
+- Fünf Gruppen werden aus demselben Template über unabhängige MOOSE-`SPAWN`-Instanzen erzeugt.
+- Genau 30 Fahrzeuge stehen korrekt auf ihren Straßen.
+- Alle fünf Gruppen erhalten genau einmal eine Route über `GROUP:Route()`.
+- Jedes Routenereignis meldet `speedKph=50` und `formation=On Road`.
+- Kein Fahrzeug fällt dauerhaft zurück oder verlässt seine Route.
+- Kein Verband blockiert einen anderen dauerhaft.
+- Alle fünf vollständigen Verbände erreichen ihre jeweilige Zielzone.
+- Es werden fünf Einzelankünfte und genau eine Gesamtankunft erkannt.
+- `all_convoys_arrived` meldet `survivingVehicles=30`.
 - Es tritt kein TM01M-Lua-Fehler auf.
 - Es greift keine Virtualisierungs-, Recovery-, Teleport- oder Unstuck-Logik ein.
 
 ## FAIL-Kriterien
 
-- die eingebettete Konfiguration meldet weiterhin Version 1 oder `speedKph=30`;
+- die eingebettete Konfiguration meldet weiterhin eine ältere TM01M-Version;
+- Bootstrap findet eine der zehn Zonen oder eine der sechs PATHLINEs nicht;
+- weniger als fünf Konvois oder weniger als 30 Fahrzeuge werden erzeugt;
 - ein Fahrzeug erscheint abseits der Straße oder in einem Objekt;
-- ein M1043 oder CHAP M1083 kann die Marschgruppe dauerhaft nicht halten;
-- der Verband reißt dauerhaft auseinander;
-- ein Fahrzeug bleibt an Kurve, Steigung, Brücke oder MSR-Übergang zurück;
-- die Gruppe bleibt vor Jalalabad dauerhaft stehen;
+- ein Verband erhält keine Route oder eine falsche MSR-Zuordnung;
+- ein M1043 oder CHAP M1083 kann 50 km/h im Verband dauerhaft nicht halten;
+- ein Konvoi reißt dauerhaft auseinander;
+- zwei Verbände blockieren sich dauerhaft in Jalalabad oder Asadabad;
+- der CALIFORNIA-Konvoi scheitert am Übergang C01 → C02;
+- ein Verband bleibt vor seiner Zielzone dauerhaft stehen;
 - Spawn oder Routenzuweisung wird doppelt ausgeführt;
 - ein benutzerdefinierter Teleport, Respawn oder Unstuck-Vorgang greift ein;
 - ein TM01M-Lua-Fehler tritt auf.
@@ -204,10 +327,11 @@ Nach dem Lauf sind mindestens zu sichern:
 ```text
 dcs.log
 debrief.log
-Screenshot der vollständigen Spawnaufstellung
-Nachweis eines repräsentativen Fahrtabschnitts mit allen sechs Fahrzeugen
-Screenshot der vollständigen Zielankunft
-beobachtete Simulationszeit von Routenstart bis Ankunft
+Screenshot der fünf Spawnaufstellungen
+Nachweis aller fünf gleichzeitig fahrenden Verbände
+Screenshot oder Track kritischer Knoten in Jalalabad und Asadabad
+Screenshot der vollständigen Zielankunft jedes Verbands
+beobachtete Simulationszeiten je Konvoi
 ```
 
-Die 30-km/h-Baseline ist akzeptiert. Die 40-km/h-Erhöhung gilt erst nach einem dokumentierten DCS-Lauf als bestanden.
+Der 50-km/h-Fünf-Konvoi-Test gilt erst nach einem dokumentierten DCS-Lauf als bestanden.
