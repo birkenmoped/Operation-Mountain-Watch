@@ -1,0 +1,31 @@
+name: TM01M static Lua tests
+
+on:
+  pull_request:
+    paths:
+      - "mission/tests/tm01-blue-convoy/config-tm01m.lua"
+      - "mission/tests/tm01-blue-convoy/src/tm01m.lua"
+      - "mission/tests/tm01-blue-convoy/tools/test-tm01m-static.lua"
+      - "tools/build-tm01m-bundle.ps1"
+      - ".github/workflows/tm01m-static.yml"
+  workflow_dispatch:
+
+jobs:
+  tm01m-static-harness:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Lua 5.1
+        run: sudo apt-get update && sudo apt-get install -y lua5.1
+      - name: Check TM01M source syntax
+        run: |
+          luac5.1 -p mission/tests/tm01-blue-convoy/config-tm01m.lua
+          luac5.1 -p mission/tests/tm01-blue-convoy/src/tm01m.lua
+          luac5.1 -p mission/tests/tm01-blue-convoy/tools/test-tm01m-static.lua
+      - name: Run TM01M MOOSE contract harness
+        run: lua5.1 mission/tests/tm01-blue-convoy/tools/test-tm01m-static.lua "$GITHUB_WORKSPACE"
+      - name: Build TM01M DCS bundle
+        shell: pwsh
+        run: ./tools/build-tm01m-bundle.ps1
+      - name: Check generated TM01M bundle syntax
+        run: luac5.1 -p mission/tests/tm01-blue-convoy/dist/TM01M.lua
