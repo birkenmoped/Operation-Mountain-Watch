@@ -49,7 +49,7 @@ Validated builder: JBAD-AIR-OPS-COMPLETE-5
 
 Bagram is assembled in the shared Mission Editor test mission with its current Client, AI-template, Static and Warehouse baseline. Its historical fighter ORBAT remains the 335th Expeditionary Fighter Squadron with F-15E and the 121st Expeditionary Fighter Squadron ANG Rainbow deployment with F-16C Block 30 aircraft contributed by the 119th, 121st and 124th Fighter Squadrons. The current Mission Editor state and all intentional DCS type substitutions are documented separately from the earlier planning manifest.
 
-Kandahar construction has started. The current US baseline contains A-10C, C-130, CSAR represented by UH-60A, MQ-1/MQ-9, Client groups, AI templates, Statics and a Warehouse anchor. F-16, CH-47, AH-64, US-Army UH-60, Mi-8/Mi-17 and V-22 are not to be added until their units and stationing in the November/December 2011 target period are sufficiently established.
+Kandahar construction has started. The current USAF baseline contains A-10C, C-130, CSAR represented by UH-60A, MQ-1/MQ-9, Client groups, AI templates, Statics and a Warehouse anchor. The US Army Mustang Ramp is now confirmed as a separate Category-A aviation node for the November/December 2011 period, with AH-64, OH-58D, CH-47 and UH-60 assigned to the 159th Combat Aviation Brigade / Task Force Thunder structure. Its first Mission Editor baseline is documented but not yet built or validated.
 
 This does not yet include tactical AUFTRAG generation, OPSTRANSPORT, persistent losses or full runtime MEDEVAC coordination.
 
@@ -83,6 +83,8 @@ Current air-operations documents:
 - [`Projektweite Spielerluftfahrzeug-Obergrenze`](docs/29-player-aircraft-slot-policy.md)
 - [`Kandahar: aktueller USAF-Grundaufbau und Evidenzregeln`](docs/30-kandahar-air-operations-manifest.md)
 - [`Bagram: aktueller Missionseditor-Stand`](docs/31-bagram-current-mission-editor-baseline.md)
+- [`Kandahar: eingeschränkte ISR-Drohnen-Assets`](docs/32-kandahar-isr-asset-policy.md)
+- [`Kandahar: Mustang Ramp Army Aviation Baseline`](docs/33-kandahar-mustang-ramp-army-aviation-baseline.md)
 
 MOOSE project reference:
 
@@ -101,7 +103,7 @@ Für Jalalabad sind Dokumente 21, 23, 24 und 25 sowie die zugehörigen `expected
 
 Für Bagram bleibt Dokument 28 für die historische Fighter-ORBAT relevant. Dokument 29 ist für die projektweite Client-Obergrenze autoritativ. Dokument 31 ersetzt für den tatsächlich gesetzten Missionseditor-Aufbau alle abweichenden Planwerte aus Dokument 28, insbesondere vier Clients je Muster, zusätzliche F-16-Templates und künstliche Funktionszonen.
 
-Für Kandahar ist Dokument 30 für den aktuellen Aufbau, die Evidenzklassifizierung und die noch nicht freigegebenen Muster autoritativ. Einzelne Satellitensichtungen begründen keine dauerhafte Client-, Template- oder Static-Struktur ohne belastbare Einheitenzuordnung.
+Für Kandahar ist Dokument 30 für den bisherigen USAF-Aufbau und die allgemeine Evidenzklassifizierung autoritativ. Dokument 32 regelt die eingeschränkt anforderbaren MQ-1-/MQ-9-Assets. Dokument 33 ersetzt für AH-64, OH-58D, CH-47 und US-Army-UH-60 die frühere Zurückstellung aus Dokument 30 und definiert den ersten Mustang-Ramp-Missionseditor-Ausbauschritt.
 
 Test- und Implementierungsdateien:
 
