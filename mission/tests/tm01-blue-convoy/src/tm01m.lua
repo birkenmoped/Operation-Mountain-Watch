@@ -52,7 +52,7 @@ function TM01M.start(dependencies)
     local required = {
       { "SPAWN.NewWithAlias", SPAWN and SPAWN.NewWithAlias },
       { "GROUP.FindByName", GROUP and GROUP.FindByName },
-      { "GROUP.Route", GROUP and GROUP.Route },
+      { "CONTROLLABLE.Route", CONTROLLABLE and CONTROLLABLE.Route },
       { "GROUP.CountAliveUnits", GROUP and GROUP.CountAliveUnits },
       { "GROUP.IsCompletelyInZone", GROUP and GROUP.IsCompletelyInZone },
       { "ZONE.FindByName", ZONE and ZONE.FindByName },
