@@ -1,0 +1,113 @@
+# 29 – Verbindliche Spielerluftfahrzeug-Obergrenze
+
+## 1. Status und Geltungsbereich
+
+**Projektweit verbindlich**
+
+Diese Regel gilt für alle Flugplätze, FARPs und Luftfahrzeugtypen in **Operation Mountain Watch**. Sie präzisiert und ersetzt ältere allgemeine Planungswerte mit bis zu vier Spielerluftfahrzeugen je Typ und Basis.
+
+```text
+maximale Spielerluftfahrzeuge je Muster und Basis: 2
+maximale Clientgruppen je Muster und Basis: 2
+Luftfahrzeuge je Clientgruppe: 1
+```
+
+Multicrew-Sitze zählen nicht als zusätzliche Luftfahrzeuge.
+
+## 2. Abgrenzung
+
+Die Obergrenze betrifft ausschließlich im Missionseditor gesetzte Spieler-/Client-Luftfahrzeuge. Sie verändert nicht automatisch:
+
+- den historischen oder strategischen ORBAT-Bestand,
+- die Anzahl der MOOSE-SQUADRON-Asset-Gruppen,
+- die maximal gleichzeitig aktiven KI-Luftfahrzeuge,
+- die Anzahl sichtbarer Statics,
+- virtuelle Reserveflugzeuge im CampaignState.
+
+Spielergruppen dürfen nicht zugleich als KI-Templates verwendet werden.
+
+## 3. Verbindliche Anwendung auf Bagram
+
+Für den Bagram-Fighter-Grundknoten gelten daher genau vier Clientgruppen insgesamt:
+
+### F-15E
+
+```text
+CLIENT_US_BGRM_F15E_01
+  CLIENT_US_BGRM_F15E_01_UNIT_01
+
+CLIENT_US_BGRM_F15E_02
+  CLIENT_US_BGRM_F15E_02_UNIT_01
+```
+
+### F-16C
+
+```text
+CLIENT_US_BGRM_F16C_01
+  CLIENT_US_BGRM_F16C_01_UNIT_01
+
+CLIENT_US_BGRM_F16C_02
+  CLIENT_US_BGRM_F16C_02_UNIT_01
+```
+
+Die zuvor im Bagram-Manifest genannten Gruppen `_03` und `_04` je Muster werden **nicht angelegt**.
+
+## 4. Bagram-Parking
+
+Für Spieler sind zu reservieren:
+
+```text
+2 kollisionsfreie F-15E-Parking-Nodes
+2 kollisionsfreie F-16C-Parking-Nodes
+```
+
+Diese vier Positionen dürfen weder von Statics noch von dynamischer KI genutzt werden. Weitere geeignete Fighter-Parking-Nodes bleiben für KI, Recovery, Reserve und spätere Erweiterungen verfügbar.
+
+## 5. Korrigierte Bagram-Baseline
+
+```text
+4 Clientgruppen insgesamt
+  2 F-15E
+  2 F-16C
+
+4 Late-Activation-KI-Templates
+  2 F-15E-Two-Ship-Templates
+  2 F-16C-Two-Ship-Templates
+
+16 sichtbare Statics
+  9 F-15E
+  7 F-16C
+
+6 Zonen
+1 Warehouse-Anker
+2 SQUADRONs
+1 AIRWING
+```
+
+Die 16 Statics bleiben unverändert. Die Satelliten-Momentaufnahme wird nicht über eine feste Addition von vier Clientflugzeugen rekonstruiert. Sichtbare Statics, aktive Spieler-/KI-Flugzeuge und virtuelle Reserve sind getrennte Repräsentationsebenen. Die tatsächliche Rampdarstellung hängt vom jeweiligen Missionszustand ab.
+
+## 6. Korrigierte Arbeitsanweisung
+
+Im Missionseditor:
+
+1. je zwei Spielerpositionen für F-15E und F-16C auswählen;
+2. genau die vier in Abschnitt 3 genannten Clientgruppen setzen;
+3. jede Clientgruppe mit genau einer Unit anlegen;
+4. Clientpositionen dauerhaft von Statics und KI freihalten;
+5. mindestens vier zusätzliche dynamische KI-Reservepositionen je Typ anstreben, soweit die Bagram-Parking-Geometrie dies erlaubt;
+6. die tatsächlichen TerminalIDs dokumentieren;
+7. Parking-Blacklist nur aus bewusst durch Statics belegten Nodes ableiten.
+
+## 7. Verhältnis zum Bagram-Manifest
+
+Dieses Dokument ist für die Clientanzahl autoritativ und ersetzt im Bagram-Manifest `docs/28-bagram-air-operations-manifest.md` insbesondere:
+
+- die Aussage von vier Spielerluftfahrzeugen je Fighter-Typ,
+- die Clientgruppen `_03` und `_04`,
+- die Forderung nach vier Client-Parking-Nodes je Typ,
+- die Acceptance-Angabe von acht Clientgruppen,
+- die Safe-Parking-Angabe für acht Clientpositionen.
+
+Alle übrigen historischen, ORBAT-, Template-, Warehouse-, Zonen-, Static- und Parking-Aussagen des Bagram-Manifests bleiben bestehen.
+
+Die beiden Dokumente sind bei der nächsten redaktionellen Konsolidierung zusammenzuführen; bis dahin hat diese verbindliche Korrektur bei Widersprüchen Vorrang.
