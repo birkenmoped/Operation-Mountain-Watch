@@ -66,8 +66,11 @@ _G.COORDINATE = {
 }
 
 local config = loadLua("mission/tests/tm01-blue-convoy/config-tm01m.lua")
-assert(config.zones.routeAnchors == nil, "TM01M must no longer depend on route-anchor zones")
-assert(#config.routing.msrPathlines == 2, "expected two configured MSR PATHLINE objects")
+assert(config.configurationVersion == "TM01M-moose-native-five-convoys-1")
+assert(config.routing.speedKph == 50, "expected 50 km/h multi-convoy test")
+assert(#config.convoys == 5, "expected five configured convoys")
+assert(config.zones == nil, "legacy single-convoy zones table must be removed")
+assert(config.routing.msrPathlines == nil, "legacy shared route pathlines must be removed")
 
 local ZoneMethods = {}
 function ZoneMethods:GetCoordinate() return coordinate(self.name, self.x, self.y) end
@@ -77,12 +80,30 @@ function ZoneMethods:IsVec2InZone(vec2)
   return math.sqrt(dx * dx + dy * dy) <= self.radius
 end
 
-local zones = {
-  [config.zones.start] = setmetatable({ name = config.zones.start, x = 0, y = 0, radius = 500 },
-    { __index = ZoneMethods }),
-  [config.zones.target] = setmetatable({ name = config.zones.target, x = 3000, y = 0, radius = 500 },
-    { __index = ZoneMethods }),
+local zones = {}
+local routeGeometry = {
+  EAST_E3_BGR_KBL = { startX = 0, targetX = 1000, y = 0, reversed = true },
+  EAST_E2_KBL_JBAD = { startX = 2000, targetX = 3000, y = 1000, reversed = true },
+  EAST_E1_TRK_JBAD = { startX = 4000, targetX = 5000, y = 2000 },
+  KUNAR_K1_JBAD_ASAD = { startX = 6000, targetX = 7000, y = 3000 },
+  CAL_ASAD_BOSTIK = { startX = 8000, targetX = 10000, y = 4000 },
 }
+
+for _, convoyConfig in ipairs(config.convoys) do
+  local geometry = assert(routeGeometry[convoyConfig.id])
+  zones[convoyConfig.startZone] = setmetatable({
+    name = convoyConfig.startZone,
+    x = geometry.startX,
+    y = geometry.y,
+    radius = 500,
+  }, { __index = ZoneMethods })
+  zones[convoyConfig.targetZone] = setmetatable({
+    name = convoyConfig.targetZone,
+    x = geometry.targetX,
+    y = geometry.y,
+    radius = 500,
+  }, { __index = ZoneMethods })
+end
 
 _G.ZONE = { FindByName = function(_, name) return zones[name] end }
 _G.ZONE_BASE = {
@@ -94,24 +115,41 @@ local PathlineMethods = {}
 function PathlineMethods:GetNumberOfPoints() return #self.points end
 function PathlineMethods:GetPoint2DFromIndex(index) return self.points[index] end
 
-local pathlines = {
-  [config.routing.msrPathlines[1]] = setmetatable({
-    name = config.routing.msrPathlines[1],
-    -- Deliberately opposite to the required Bagram -> Kabul direction.
-    points = {
-      { x = 1500, y = 0 },
-      { x = 200, y = 0 },
-    },
-  }, { __index = PathlineMethods }),
-  [config.routing.msrPathlines[2]] = setmetatable({
-    name = config.routing.msrPathlines[2],
-    -- Deliberately opposite to the required Kabul -> Jalalabad direction.
-    points = {
-      { x = 2800, y = 0 },
-      { x = 1500, y = 0 },
-    },
-  }, { __index = PathlineMethods }),
-}
+local pathlines = {}
+for _, convoyConfig in ipairs(config.convoys) do
+  local geometry = assert(routeGeometry[convoyConfig.id])
+  if #convoyConfig.msrPathlines == 1 then
+    local points
+    if geometry.reversed then
+      points = {
+        { x = geometry.targetX - 100, y = geometry.y },
+        { x = geometry.startX + 100, y = geometry.y },
+      }
+    else
+      points = {
+        { x = geometry.startX + 100, y = geometry.y },
+        { x = geometry.targetX - 100, y = geometry.y },
+      }
+    end
+    pathlines[convoyConfig.msrPathlines[1]] = setmetatable({ points = points }, {
+      __index = PathlineMethods,
+    })
+  else
+    assert(convoyConfig.id == "CAL_ASAD_BOSTIK", "only California route should use two PATHLINE objects")
+    pathlines[convoyConfig.msrPathlines[1]] = setmetatable({
+      points = {
+        { x = geometry.startX + 100, y = geometry.y },
+        { x = 9000, y = geometry.y },
+      },
+    }, { __index = PathlineMethods })
+    pathlines[convoyConfig.msrPathlines[2]] = setmetatable({
+      points = {
+        { x = 9000, y = geometry.y },
+        { x = geometry.targetX - 100, y = geometry.y },
+      },
+    }, { __index = PathlineMethods })
+  end
+end
 
 _G.PATHLINE = {
   FindByName = function(_, name) return pathlines[name] end,
@@ -119,18 +157,28 @@ _G.PATHLINE = {
   GetPoint2DFromIndex = PathlineMethods.GetPoint2DFromIndex,
 }
 
-local runtimeGroup = {
-  alive = true,
-  route = nil,
-  IsAlive = function(self) return self.alive end,
-  CountAliveUnits = function() return 6 end,
-  GetName = function() return "TM01M_BLUE_CONVOY#001" end,
-  Route = function(self, route)
+local runtimeGroups = {}
+local spawnPositionsByAlias = {}
+local function newRuntimeGroup(alias)
+  local group = {
+    alias = alias,
+    alive = true,
+    route = nil,
+    inZone = false,
+  }
+  function group:IsAlive() return self.alive end
+  function group:CountAliveUnits() return self.alive and 6 or 0 end
+  function group:GetName() return self.alias .. "#001" end
+  function group:Route(route)
     self.route = route
     return true
-  end,
-  IsCompletelyInZone = function() return false end,
-}
+  end
+  function group:IsCompletelyInZone()
+    return self.inZone
+  end
+  runtimeGroups[alias] = group
+  return group
+end
 
 _G.GROUP = {
   FindByName = function(_, name)
@@ -142,26 +190,33 @@ _G.GROUP = {
 }
 _G.CONTROLLABLE = { Route = function() end }
 
-local spawnPositions = nil
-local spawner = {
-  InitSetUnitAbsolutePositions = function(self, positions)
-    spawnPositions = positions
-    self.positions = positions
-    return self
-  end,
-  Spawn = function() return runtimeGroup end,
-}
-
+local spawners = {}
 _G.SPAWN = {
   InitSetUnitAbsolutePositions = function() end,
   Spawn = function() end,
-  NewWithAlias = function() return spawner end,
+  NewWithAlias = function(_, templateName, alias)
+    assert(templateName == config.template.groupName)
+    assert(spawners[alias] == nil, "runtime alias must be unique: " .. tostring(alias))
+    local spawner = { alias = alias }
+    function spawner:InitSetUnitAbsolutePositions(positions)
+      spawnPositionsByAlias[self.alias] = positions
+      self.positions = positions
+      return self
+    end
+    function spawner:Spawn()
+      return newRuntimeGroup(self.alias)
+    end
+    spawners[alias] = spawner
+    return spawner
+  end,
 }
 
 local schedulerCalls = 0
+local schedulerCallback = nil
 _G.SCHEDULER = {
   New = function(_, _, callback)
     schedulerCalls = schedulerCalls + 1
+    schedulerCallback = callback
     assert(type(callback) == "function", "scheduler callback missing")
     return { callback = callback }
   end,
@@ -177,40 +232,73 @@ local state = module.start({
 })
 
 assert(state.outcome == "READY", state.detail)
-assert(schedulerCalls == 1, "exactly one MOOSE scheduler expected")
-assert(state.routePlan ~= nil, "MSR route plan must be compiled during bootstrap")
-assert(state.routePlan.pathlineDiagnostics[1]:find(":reversed", 1, true),
-  "first PATHLINE must be oriented from Bagram toward Kabul")
-assert(state.routePlan.pathlineDiagnostics[2]:find(":reversed", 1, true),
-  "second PATHLINE must be oriented from Kabul toward Jalalabad")
+assert(#state.convoys == 5, "five convoy runtime states expected")
+assert(schedulerCalls == 1, "exactly one MOOSE scheduler expected for all convoys")
+for _, convoyState in ipairs(state.convoys) do
+  assert(convoyState.routePlan ~= nil, "route plan missing for " .. convoyState.config.id)
+end
+assert(state.convoyById.EAST_E3_BGR_KBL.routePlan.pathlineDiagnostics[1]:find(":reversed", 1, true))
+assert(state.convoyById.EAST_E2_KBL_JBAD.routePlan.pathlineDiagnostics[1]:find(":reversed", 1, true))
+assert(state.convoyById.EAST_E1_TRK_JBAD.routePlan.pathlineDiagnostics[1]:find(":forward", 1, true))
+assert(state.convoyById.KUNAR_K1_JBAD_ASAD.routePlan.pathlineDiagnostics[1]:find(":forward", 1, true))
+assert(#state.convoyById.CAL_ASAD_BOSTIK.routePlan.pathlineDiagnostics == 2)
 
-assert(state.spawnConvoy() == true, "spawn failed")
-assert(state.spawnConvoy() == false, "duplicate spawn must be rejected")
-assert(type(spawnPositions) == "table" and #spawnPositions == 6,
-  "MOOSE absolute unit layout must contain six positions")
-for index, position in ipairs(spawnPositions) do
-  assert(zones[config.zones.start]:IsVec2InZone({ x = position.x, y = position.y }),
-    "spawned vehicle must remain inside start zone")
-  assert(position.heading == 0, "test route heading must point north")
-  if index > 1 then
-    assert(math.abs((spawnPositions[index - 1].x - position.x)
-      - config.routing.vehicleSpacingMeters) < 0.001,
-      "vehicles must be spaced individually along the route")
+assert(state.spawnAllConvoys() == true, "multi-convoy spawn failed")
+assert(state.spawnAllConvoys() == false, "duplicate multi-convoy spawn must be rejected")
+for _, convoyState in ipairs(state.convoys) do
+  local positions = spawnPositionsByAlias[convoyState.config.runtimeAlias]
+  assert(type(positions) == "table" and #positions == 6,
+    "six absolute spawn positions expected for " .. convoyState.config.id)
+  for index, position in ipairs(positions) do
+    assert(convoyState.objects.startZone:IsVec2InZone({ x = position.x, y = position.y }),
+      "spawned vehicle must remain inside start zone")
+    assert(position.heading == 0, "test route heading must point north")
+    if index > 1 then
+      assert(math.abs((positions[index - 1].x - position.x)
+        - config.routing.vehicleSpacingMeters) < 0.001,
+        "vehicles must be spaced individually along the route")
+    end
   end
 end
 
-assert(state.startRoute() == true, "route start failed")
-assert(state.startRoute() == false, "duplicate route start must be rejected")
-assert(#runtimeGroup.route >= 4, "MSR route must contain multiple constrained waypoints")
-assert(runtimeGroup.route[1].x > spawnPositions[1].x,
-  "first route waypoint must be ahead of the lead vehicle")
-assert(runtimeGroup.route[#runtimeGroup.route].x == zones[config.zones.target].x,
-  "final route waypoint must reach the target-zone road coordinate")
-for _, waypoint in ipairs(runtimeGroup.route) do
-  assert(waypoint.speed == config.routing.speedKph, "unexpected route speed")
-  assert(waypoint.formation == config.routing.formation, "route must use On Road formation")
+assert(state.startAllRoutes() == true, "multi-convoy route start failed")
+assert(state.startAllRoutes() == false, "duplicate multi-convoy route start must be rejected")
+for _, convoyState in ipairs(state.convoys) do
+  local runtimeGroup = runtimeGroups[convoyState.config.runtimeAlias]
+  assert(runtimeGroup and #runtimeGroup.route >= 2,
+    "assigned route missing for " .. convoyState.config.id)
+  assert(runtimeGroup.route[1].x > spawnPositionsByAlias[convoyState.config.runtimeAlias][1].x,
+    "first route waypoint must be ahead of the lead vehicle")
+  assert(runtimeGroup.route[#runtimeGroup.route].x
+      == zones[convoyState.config.targetZone].x,
+    "final route waypoint must reach target-zone road coordinate")
+  for _, waypoint in ipairs(runtimeGroup.route) do
+    assert(waypoint.speed == 50, "every waypoint must command 50 km/h")
+    assert(waypoint.formation == "On Road", "route must use On Road formation")
+  end
 end
-assert(#messages >= 3, "expected MOOSE MESSAGE output")
+
+for _, runtimeGroup in pairs(runtimeGroups) do runtimeGroup.inZone = true end
+assert(type(schedulerCallback) == "function")
+schedulerCallback()
+for _, convoyState in ipairs(state.convoys) do
+  assert(convoyState.arrived == true, "arrival must be detected for " .. convoyState.config.id)
+end
+assert(state.allArrivedLogged == true, "aggregate all-convoys arrival must be logged")
+
+local function countLogEvent(event)
+  local count = 0
+  for _, text in ipairs(logs) do
+    if text:find("event=" .. event, 1, true) then count = count + 1 end
+  end
+  return count
+end
+assert(countLogEvent("convoy_route_plan_compiled") == 5)
+assert(countLogEvent("convoy_spawned") == 5)
+assert(countLogEvent("convoy_route_started") == 5)
+assert(countLogEvent("convoy_arrived") == 5)
+assert(countLogEvent("all_convoys_arrived") == 1)
+assert(#messages >= 4, "expected MOOSE MESSAGE output")
 
 local source = assert(io.open(repositoryRoot .. "/mission/tests/tm01-blue-convoy/src/tm01m.lua", "rb")):read("*a")
 assert(not source:find("timer.scheduleFunction", 1, true), "native timer scheduling is forbidden")
@@ -224,9 +312,11 @@ assert(source:find("PATHLINE:FindByName", 1, true),
   "TM01M must resolve Mission Editor MSR PATHLINE objects through MOOSE")
 assert(source:find("InitSetUnitAbsolutePositions", 1, true),
   "TM01M must use MOOSE absolute per-unit spawn placement")
+assert(source:find("SPAWN:NewWithAlias", 1, true),
+  "TM01M must create independent MOOSE spawners from the shared template")
 assert(source:find("CONTROLLABLE and CONTROLLABLE.Route", 1, true),
   "TM01M must validate the inherited CONTROLLABLE.Route implementation")
 assert(not source:find('"GROUP.Route", GROUP and GROUP.Route', 1, true),
   "TM01M must not require Route to be declared directly on GROUP")
 
-print("TM01M static PASS: MOOSE PATHLINE MSR routing and absolute per-unit road spawn")
+print("TM01M static PASS: five simultaneous MOOSE PATHLINE convoys at 50 km/h")
