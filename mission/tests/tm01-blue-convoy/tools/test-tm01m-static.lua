@@ -66,8 +66,10 @@ _G.COORDINATE = {
 }
 
 local config = loadLua("mission/tests/tm01-blue-convoy/config-tm01m.lua")
-assert(config.configurationVersion == "TM01M-moose-native-five-convoys-1")
+assert(config.configurationVersion == "TM01M-moose-native-five-convoys-2")
 assert(config.routing.speedKph == 50, "expected 50 km/h multi-convoy test")
+assert(config.arrival.despawnDelaySeconds == 60, "expected 60-second arrival dwell")
+assert(config.arrival.generateDestroyEvents == false, "arrival cleanup must be silent")
 assert(#config.convoys == 5, "expected five configured convoys")
 assert(config.zones == nil, "legacy single-convoy zones table must be removed")
 assert(config.routing.msrPathlines == nil, "legacy shared route pathlines must be removed")
@@ -165,6 +167,9 @@ local function newRuntimeGroup(alias)
     alive = true,
     route = nil,
     inZone = false,
+    destroyScheduled = false,
+    destroyGenerateEvent = nil,
+    destroyDelay = nil,
   }
   function group:IsAlive() return self.alive end
   function group:CountAliveUnits() return self.alive and 6 or 0 end
@@ -176,6 +181,11 @@ local function newRuntimeGroup(alias)
   function group:IsCompletelyInZone()
     return self.inZone
   end
+  function group:Destroy(generateEvent, delay)
+    self.destroyScheduled = true
+    self.destroyGenerateEvent = generateEvent
+    self.destroyDelay = delay
+  end
   runtimeGroups[alias] = group
   return group
 end
@@ -185,6 +195,7 @@ _G.GROUP = {
     if name == config.template.groupName then return { template = true } end
     return nil
   end,
+  Destroy = function() end,
   CountAliveUnits = function() end,
   IsCompletelyInZone = function() end,
 }
@@ -233,7 +244,7 @@ local state = module.start({
 
 assert(state.outcome == "READY", state.detail)
 assert(#state.convoys == 5, "five convoy runtime states expected")
-assert(schedulerCalls == 1, "exactly one MOOSE scheduler expected for all convoys")
+assert(schedulerCalls == 1, "exactly one MOOSE supervisor expected for all convoys")
 for _, convoyState in ipairs(state.convoys) do
   assert(convoyState.routePlan ~= nil, "route plan missing for " .. convoyState.config.id)
 end
@@ -282,9 +293,30 @@ for _, runtimeGroup in pairs(runtimeGroups) do runtimeGroup.inZone = true end
 assert(type(schedulerCallback) == "function")
 schedulerCallback()
 for _, convoyState in ipairs(state.convoys) do
+  local runtimeGroup = runtimeGroups[convoyState.config.runtimeAlias]
   assert(convoyState.arrived == true, "arrival must be detected for " .. convoyState.config.id)
+  assert(convoyState.arrivalVehicleCount == 6,
+    "arrival vehicle count must be retained for " .. convoyState.config.id)
+  assert(convoyState.despawnScheduled == true,
+    "despawn must be scheduled for " .. convoyState.config.id)
+  assert(runtimeGroup.destroyScheduled == true,
+    "MOOSE GROUP:Destroy must be called for " .. convoyState.config.id)
+  assert(runtimeGroup.destroyGenerateEvent == false,
+    "arrival despawn must not generate dead/crash events")
+  assert(runtimeGroup.destroyDelay == 60,
+    "arrival despawn delay must be 60 seconds")
 end
 assert(state.allArrivedLogged == true, "aggregate all-convoys arrival must be logged")
+
+for _, runtimeGroup in pairs(runtimeGroups) do runtimeGroup.alive = false end
+schedulerCallback()
+for _, convoyState in ipairs(state.convoys) do
+  assert(convoyState.despawned == true,
+    "scheduled despawn must be recognized for " .. convoyState.config.id)
+  assert(convoyState.destroyed == false,
+    "scheduled cleanup must not be classified as combat destruction")
+end
+assert(state.allDespawnedLogged == true, "aggregate cleanup completion must be logged")
 
 local function countLogEvent(event)
   local count = 0
@@ -293,12 +325,26 @@ local function countLogEvent(event)
   end
   return count
 end
+
+local function findLogEvent(event)
+  for _, text in ipairs(logs) do
+    if text:find("event=" .. event, 1, true) then return text end
+  end
+  return nil
+end
+
 assert(countLogEvent("convoy_route_plan_compiled") == 5)
 assert(countLogEvent("convoy_spawned") == 5)
 assert(countLogEvent("convoy_route_started") == 5)
 assert(countLogEvent("convoy_arrived") == 5)
+assert(countLogEvent("convoy_despawn_scheduled") == 5)
+assert(countLogEvent("convoy_despawned") == 5)
+assert(countLogEvent("convoy_destroyed") == 0)
 assert(countLogEvent("all_convoys_arrived") == 1)
-assert(#messages >= 4, "expected MOOSE MESSAGE output")
+assert(countLogEvent("all_convoys_despawned") == 1)
+assert(findLogEvent("all_convoys_arrived"):find("survivingVehicles=30", 1, true),
+  "aggregate arrival must retain all 30 vehicles even after later cleanup")
+assert(#messages >= 5, "expected MOOSE MESSAGE output")
 
 local source = assert(io.open(repositoryRoot .. "/mission/tests/tm01-blue-convoy/src/tm01m.lua", "rb")):read("*a")
 assert(not source:find("timer.scheduleFunction", 1, true), "native timer scheduling is forbidden")
@@ -318,5 +364,9 @@ assert(source:find("CONTROLLABLE and CONTROLLABLE.Route", 1, true),
   "TM01M must validate the inherited CONTROLLABLE.Route implementation")
 assert(not source:find('"GROUP.Route", GROUP and GROUP.Route', 1, true),
   "TM01M must not require Route to be declared directly on GROUP")
+assert(source:find('"GROUP.Destroy", GROUP and GROUP.Destroy', 1, true),
+  "TM01M must validate the MOOSE GROUP.Destroy implementation")
+assert(source:find("runtimeGroup:Destroy", 1, true),
+  "TM01M must use MOOSE delayed group destruction for arrival cleanup")
 
-print("TM01M static PASS: five simultaneous MOOSE PATHLINE convoys at 50 km/h")
+print("TM01M static PASS: five simultaneous MOOSE PATHLINE convoys with 60-second cleanup")
