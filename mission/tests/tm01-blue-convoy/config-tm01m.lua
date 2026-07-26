@@ -1,5 +1,5 @@
 local config = {
-  configurationVersion = "TM01M-moose-native-physical-2",
+  configurationVersion = "TM01M-moose-native-physical-3",
   testId = "TM01",
   stageId = "TM01M",
 
@@ -30,7 +30,7 @@ local config = {
 
   routing = {
     speedKph = 30,
-    formation = "On Road",
+    offRoadFormation = "Off Road",
     routeDelaySeconds = 1,
   },
 
