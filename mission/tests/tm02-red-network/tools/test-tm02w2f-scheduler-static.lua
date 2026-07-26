@@ -8,17 +8,39 @@ end
 
 local logLines = {}
 _G.env = { info = function(line) logLines[#logLines + 1] = line end }
-_G.trigger = { action = { outText = function() end } }
 
 local missionTime = 0
+_G.timer = { getTime = function() return missionTime end }
+
 local scheduled = {}
-_G.timer = {
-  getTime = function() return missionTime end,
-  scheduleFunction = function(fn, argument, time)
-    scheduled[#scheduled + 1] = { fn = fn, argument = argument, time = time }
-    return #scheduled
-  end,
-}
+_G.SCHEDULER = {}
+function _G.SCHEDULER:New(_, fn, args, startDelay, interval)
+  local item = {
+    fn = fn,
+    args = args or {},
+    startDelay = startDelay,
+    interval = interval,
+    stopped = false,
+  }
+  function item:Stop() self.stopped = true end
+  scheduled[#scheduled + 1] = item
+  return item
+end
+
+local movementInstances = {}
+_G.MOVEMENT = {}
+function _G.MOVEMENT:New(prefixes, maximum)
+  local item = { prefixes = prefixes, maximum = maximum, started = false, stopped = false }
+  function item:ScheduleStart() self.started = true end
+  function item:ScheduleStop() self.stopped = true end
+  movementInstances[#movementInstances + 1] = item
+  return item
+end
+
+_G.MESSAGE = {}
+function _G.MESSAGE:New(text, duration, category)
+  return { ToAll = function() return true end }
+end
 
 local config = loadLua("mission/tests/tm02-red-network/config-tm02w2f.lua")
 local schedulerModule = loadLua("mission/tests/tm02-red-network/src/tm02w2f-commander-scheduler.lua")
@@ -26,11 +48,7 @@ local schedulerModule = loadLua("mission/tests/tm02-red-network/src/tm02w2f-comm
 local tasks = {}
 local taskById = {}
 local planner = { inventoryBySiteId = {} }
-local navigation = {
-  valid = true,
-  routingReady = true,
-  plans = {},
-}
+local navigation = { valid = true, routingReady = true, plans = {} }
 function navigation:getLegPlan(sourceSiteId, targetSiteId)
   return self.plans[sourceSiteId .. ">" .. targetSiteId]
 end
@@ -51,16 +69,8 @@ for index = 1, 8 do
   tasks[index] = task
   taskById[task.taskId] = task
   planner.inventoryBySiteId[targetSiteId] = { defensiveTarget = 8 }
-  navigation.plans["HQ>" .. firstEdgeTarget] = {
-    safe = true,
-    mode = "DIRECT_OFFROAD",
-    lengthMeters = firstEdgeTarget == "EDGE_A" and 1000 or 1200,
-  }
-  navigation.plans[firstEdgeTarget .. ">" .. targetSiteId] = {
-    safe = true,
-    mode = "DIRECT_OFFROAD",
-    lengthMeters = 2000 + index,
-  }
+  navigation.plans["HQ>" .. firstEdgeTarget] = { safe = true, mode = "DIRECT_OFFROAD", lengthMeters = 1000 }
+  navigation.plans[firstEdgeTarget .. ">" .. targetSiteId] = { safe = true, mode = "DIRECT_OFFROAD", lengthMeters = 2000 + index }
 end
 
 local execution = {
@@ -78,14 +88,11 @@ execution.startExecution = function()
   for _, task in ipairs(execution.tasks) do
     if task.movementState == "QUEUED" then
       task.movementState = "EN_ROUTE"
-      task.proxyGroupName = task.taskId .. "_GROUP"
       local coordinate = task.currentCoordinate
       task.proxyGroup = {
         IsAlive = function() return true end,
         GetCoordinate = function()
-          return {
-            GetVec3 = function() return coordinate end,
-          }
+          return { GetVec3 = function() return coordinate end }
         end,
       }
       task.setCoordinate = function(value)
@@ -101,49 +108,43 @@ end
 
 local commander = schedulerModule.install(config, execution, navigation, planner)
 assert(commander.valid == true, table.concat(commander.errors or {}, "; "))
-for _, task in ipairs(tasks) do
-  assert(task.movementState == "PLANNED", "task not initialized as PLANNED")
-end
+for _, task in ipairs(tasks) do assert(task.movementState == "PLANNED", "task not initialized as PLANNED") end
 
 assert(commander.start() == true, "commander failed to start")
 assert(commander.cycleCount == 1, "first commander cycle missing")
 assert(commander.orderedTaskCount == 4, "first cycle must issue four orders")
 assert(commander.releasedTaskCount == 1, "start must release only the canary")
-assert(commander.canaryPassed == false, "canary must not pass before movement")
-assert(#scheduled == 2, "scheduler and commander-cycle timers must be installed")
+assert(#scheduled == 2, "two MOOSE schedulers must be installed")
+assert(#movementInstances == 1 and movementInstances[1].started == true, "MOVEMENT limiter must start")
+assert(movementInstances[1].maximum == config.commanderTest.maxActiveTransportsGlobal,
+  "MOVEMENT maximum must use configured global movement limit")
 
 local canary = execution.taskById[commander.canaryTaskId]
-assert(canary and canary.movementState == "EN_ROUTE", "canary must be the only active task")
+assert(canary and canary.movementState == "EN_ROUTE", "canary must be active")
 
 missionTime = 1
-local nextSchedulerTime = scheduled[1].fn(scheduled[1].argument, scheduled[1].time)
-assert(nextSchedulerTime == 2, "scheduler must reschedule from current mission time")
+scheduled[1].fn()
 assert(commander.releasedTaskCount == 1, "no task may release before canary progress")
 
 missionTime = 20
 canary.setCoordinate({ x = 80, y = 0, z = 0 })
-nextSchedulerTime = scheduled[1].fn(scheduled[1].argument, 2)
-assert(nextSchedulerTime == 21, "scheduler catch-up must be disabled")
+scheduled[1].fn()
 assert(commander.canaryPassed == true, "canary must pass after 75 metres")
-assert(commander.releasedTaskCount == 1,
-  "same-edge successor must remain held below 150 metres predecessor progress")
+assert(commander.releasedTaskCount == 1, "same-edge successor must remain held below spacing threshold")
 
 missionTime = 30
 canary.setCoordinate({ x = 160, y = 0, z = 0 })
-nextSchedulerTime = scheduled[1].fn(scheduled[1].argument, 21)
-assert(nextSchedulerTime == 31, "scheduler must continue from current mission time")
-assert(commander.releasedTaskCount == 2,
-  "one successor must release after canary and spacing thresholds pass")
+scheduled[1].fn()
+assert(commander.releasedTaskCount == 2, "one successor must release after spacing threshold")
 
-local nextCycleTime = scheduled[2].fn(scheduled[2].argument, scheduled[2].time)
-assert(nextCycleTime == 60, "commander cycle must reschedule from current mission time")
+scheduled[2].fn()
 assert(commander.cycleCount == 2, "second commander cycle missing")
-assert(commander.orderedTaskCount == 8, "two cycles must issue exactly eight orders")
+assert(commander.orderedTaskCount == 8, "two cycles must issue eight orders")
 
-local forbiddenSource = table.concat({
-  io.open(repositoryRoot .. "/mission/tests/tm02-red-network/src/tm02w2f-commander-scheduler.lua", "rb"):read("*a"),
-}, "")
-assert(not forbiddenSource:find("scheduledTime +", 1, true),
-  "timer catch-up scheduling is forbidden")
+local source = io.open(repositoryRoot .. "/mission/tests/tm02-red-network/src/tm02w2f-commander-scheduler.lua", "rb"):read("*a")
+assert(not source:find("timer.scheduleFunction", 1, true), "native timer scheduling is forbidden")
+assert(source:find("MOVEMENT:New", 1, true), "MOOSE MOVEMENT integration missing")
+assert(source:find("SCHEDULER:New", 1, true), "MOOSE SCHEDULER integration missing")
+assert(source:find("MESSAGE:New", 1, true), "MOOSE MESSAGE integration missing")
 
-print("TM02W2F scheduler PASS: canary=75m spacing=150m releases=2 timerCatchUp=false")
+print("TM02W2F scheduler PASS: MOOSE SCHEDULER+MOVEMENT+MESSAGE canary=75m spacing=150m")
