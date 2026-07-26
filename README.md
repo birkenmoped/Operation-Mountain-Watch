@@ -47,6 +47,8 @@ Validated source commit: 6cee9a5db7abf1934d0f86bf9fdf91a0446374d0
 Validated builder: JBAD-AIR-OPS-COMPLETE-5
 ```
 
+Bagram is the next Air Operations node. Its November/December 2011 fighter ORBAT is now documented as the 335th Expeditionary Fighter Squadron with F-15E and the 121st Expeditionary Fighter Squadron ANG Rainbow deployment with F-16C Block 30 aircraft contributed by the 119th, 121st and 124th Fighter Squadrons. Mission Editor construction and DCS validation are still pending.
+
 This does not yet include tactical AUFTRAG generation, OPSTRANSPORT, persistent losses or full runtime MEDEVAC coordination.
 
 ## Verbindlicher Testmissions-Workflow
@@ -75,6 +77,7 @@ Current air-operations documents:
 - [`Jalalabad: finale Validierung und operative Grundbaseline`](docs/25-jalalabad-final-validation-and-operational-baseline.md)
 - [`Verbindliche MOOSE-First-Entwicklungsrichtlinie`](docs/26-moose-first-development-policy.md)
 - [`Hubschrauberformationen und AH-64D-Konfiguration im Afghanistan-COIN-Szenario`](docs/27-helicopter-formations-and-ah64-afghanistan-configuration.md)
+- [`Bagram: Fighter-ORBAT und Missionseditor-Arbeitsanweisung`](docs/28-bagram-air-operations-manifest.md)
 
 MOOSE project reference:
 
@@ -90,6 +93,8 @@ MOOSE project reference:
 Für taktische Hubschrauberformationen sowie FCR-, IAFS- und 30-mm-Konfigurationen des AH-64D gilt Dokument 27 projektweit. Die Jalalabad-spezifische Ableitung steht unter [`mission/tests/jalalabad-air-operations/expected/jalalabad-helicopter-doctrine-and-ah64-loadout.md`](mission/tests/jalalabad-air-operations/expected/jalalabad-helicopter-doctrine-and-ah64-loadout.md).
 
 Für Jalalabad sind Dokumente 21, 23, 24 und 25 sowie die zugehörigen `expected/`- und `results/`-Dateien autoritativ. Ältere allgemeine Zwischenwerte wie vier Spielerplätze je Typ, sechs UH-60, kein CH-47, 13/15 Runtime-Parkplätze oder eine pauschale Ablehnung von Statics auf Parking-Nodes sind aufgehoben.
+
+Für Bagram ist Dokument 28 für die Fighter-ORBAT und den Missionseditor-Grundaufbau autoritativ. Bis zur vollständigen Aktualisierung aller älteren ORBAT-Tabellen ersetzt es für November/Dezember 2011 die frühere Zuordnung zur 336th EFS durch die belegte 335th EFS und ergänzt die 121st EFS als ANG-Rainbow-F-16-Verband.
 
 Test- und Implementierungsdateien:
 
