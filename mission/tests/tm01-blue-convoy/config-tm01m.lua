@@ -1,5 +1,5 @@
 local config = {
-  configurationVersion = "TM01M-moose-native-msr-pathline-1",
+  configurationVersion = "TM01M-moose-native-msr-pathline-2",
   testId = "TM01",
   stageId = "TM01M",
 
@@ -24,7 +24,7 @@ local config = {
       "MSR_EAST_E03",
       "MSR_EAST_E02",
     },
-    speedKph = 30,
+    speedKph = 40,
     formation = "On Road",
     routeDelaySeconds = 1,
     routeStartLeadMeters = 100,
