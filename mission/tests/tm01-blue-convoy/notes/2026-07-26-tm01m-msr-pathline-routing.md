@@ -1,7 +1,7 @@
 # TM01M – Umstellung auf MSR-PATHLINE-Routing und straßengerechten Spawn
 
 Datum: 26. Juli 2026  
-Status: IMPLEMENTIERT, DCS-REGRESSION AUSSTEHEND
+Status: `30-km/h-Baseline DCS PASS`; `40-km/h-Regressionslauf AUSSTEHEND`
 
 ## Ausgangslage
 
@@ -56,7 +56,7 @@ Der Logeintrag mit 21 Wegpunkten bewies deshalb nur, dass eine Tabelle zugewiese
 
 Vor einer Eigenentwicklung wurden die Möglichkeiten der gepinnten MOOSE-Fassung 2.9.18 geprüft.
 
-Verwendbare MOOSE-Funktionen:
+Verwendete MOOSE-Funktionen:
 
 ```text
 PATHLINE:FindByName()
@@ -90,7 +90,7 @@ Die Zonen `ZONE_TM01_ROUTE_01` bis `ZONE_TM01_ROUTE_07` werden von TM01M nicht m
 1. Start- und Zielzone werden mit MOOSE auf die jeweils nächste DCS-Straße projiziert.
 2. `MSR_EAST_E03` und `MSR_EAST_E02` werden über `PATHLINE` aus der MOOSE-Datenbank gelesen.
 3. Jeder PATHLINE-Abschnitt wird automatisch so orientiert, dass seine nächstgelegene Seite an den vorherigen Abschnitt anschließt.
-4. Für die vorliegende Mission werden beide Zeichnungen deshalb umgekehrt verwendet:
+4. Für die vorliegende Mission werden beide Zeichnungen umgekehrt verwendet:
 
 ```text
 MSR_EAST_E03: Bagram → Kabul
@@ -111,17 +111,62 @@ MSR_EAST_E02: Kabul → Jalalabad
 
 Damit wird die bereits im TM01C-Lauf nachgewiesene Grundidee übernommen, nun aber ohne die alte Proxy-, CampaignState- oder Pack-/Unpack-Architektur.
 
-## Neue Konfigurationsversion
+## DCS-Ergebnis der Version 1
+
+Validierter Stand:
 
 ```text
-TM01M-moose-native-msr-pathline-1
+Commit:               0db10501f81c160cd5818088e760af181b33d86d
+Konfiguration:        TM01M-moose-native-msr-pathline-1
+Sollgeschwindigkeit:  30 km/h
+DCS:                  2.9.28.26283
 ```
 
-Wesentliche Parameter:
+Der Lauf war vollständig erfolgreich:
 
 ```text
-msrPathlines:                    MSR_EAST_E03, MSR_EAST_E02
-speedKph:                        30
+routeLengthMeters=213189
+waypointCount=89
+maximumSpawnRoadSnapMeters=2
+maximumWaypointRoadSnapMeters=19
+survivingVehicles=6
+```
+
+Der Konvoi bestand aus drei `M1043 HMMWV Armament` und drei `CHAP_M1083`. Alle sechs Fahrzeuge erreichten Jalalabad und waren im Debrief mit `dead=false` enthalten.
+
+Die simulierte Fahrt dauerte ungefähr von `08:00` bis `15:11`, also rund `7 h 11 min`. Aus `213,189 km` und dieser Fahrzeit ergibt sich eine Durchschnittsgeschwindigkeit von rund `29,7 km/h` beziehungsweise `16,0 kn`. Die beobachteten ungefähr 16 kn entsprechen damit nahezu exakt der konfigurierten Sollgeschwindigkeit von 30 km/h.
+
+Autoritativer Ergebnisbericht:
+
+```text
+mission/tests/tm01-blue-convoy/results/2026-07-26-tm01m-msr-pathline-v1-pass.md
+```
+
+Damit sind nun auch die zuvor offenen Punkte in DCS nachgewiesen:
+
+- tatsächliche Straßenprojektion auf der Afghanistan-Karte;
+- kollisionsfreie Aufstellung aller sechs konkreten Fahrzeuge;
+- durchgehendes DCS-Ground-AI-Verhalten über die vollständige Strecke;
+- korrekter Übergang E03 → E02;
+- vollständige Zielankunft aller sechs Fahrzeuge.
+
+## Kontrollierte Geschwindigkeitserhöhung
+
+Neue Konfigurationsversion:
+
+```text
+TM01M-moose-native-msr-pathline-2
+```
+
+Geänderter Parameter:
+
+```text
+speedKph: 30 → 40
+```
+
+Unverändert bleiben:
+
+```text
 formation:                       On Road
 waypointSpacingMeters:           2500
 vehicleSpacingMeters:            18
@@ -131,9 +176,21 @@ maximumSpawnRoadSnapMeters:      30
 maximumWaypointRoadSnapMeters:   250
 ```
 
+Die Erhöhung auf `40 km/h` beziehungsweise ungefähr `21,6 kn` ist bewusst moderat. Die konkrete gemeinsame Höchstgeschwindigkeit der gemischten Gruppe ist nicht aus dem bisherigen Log ableitbar. Insbesondere muss das verwendete CHAP-M1083-Modell im Verband praktisch geprüft werden.
+
+Für die validierte Strecke von `213,189 km` ergibt sich bei konstant 40 km/h eine theoretische Fahrzeit von ungefähr `5 h 20 min`. Das ist nur ein Orientierungswert, da DCS-Ground-AI in Kurven, an Steigungen, Brücken und bei Verbandskorrekturen langsamer fahren kann.
+
+Der nächste DCS-Lauf muss deshalb nachweisen:
+
+- alle sechs Fahrzeuge halten die Marschgruppe;
+- kein Fahrzeug fällt dauerhaft zurück;
+- der Übergang E03 → E02 bleibt störungsfrei;
+- alle sechs Fahrzeuge erreichen erneut die Zielzone;
+- es entstehen keine neuen Kurven-, Brücken- oder Stauprobleme.
+
 ## Statische Verifikation
 
-Der statische Harness prüft nun:
+Der statische Harness prüft weiterhin:
 
 - Auflösung beider MSR-PATHLINE-Objekte;
 - automatische Umkehr beider Testpfade in Fahrtrichtung;
@@ -142,18 +199,9 @@ Der statische Harness prüft nun:
 - vollständige Startzonenmitgliedschaft;
 - ersten Routenwegpunkt vor dem Führungsfahrzeug;
 - mehrere MSR-Stützwegpunkte bis zur Zielzone;
+- Verwendung der konfigurierten Geschwindigkeit für jeden erzeugten Wegpunkt;
 - ausschließliche MOOSE-Routen- und Spawn-APIs;
 - Ausschluss von `TaskGroundOnRoad()` und historischen Route-Anchor-Zonen;
 - Ausschluss der alten TM01B-/TM01C-Runtime.
 
-## Noch nicht bewiesen
-
-Die statische Prüfung kann folgende Punkte nicht bestätigen:
-
-- tatsächliche Straßenprojektion auf der Afghanistan-Karte;
-- kollisionsfreie Aufstellung aller sechs konkreten Fahrzeugmodelle;
-- DCS-Ground-AI-Verhalten über die vollständige Strecke;
-- korrekter Übergang E03 → E02 im laufenden Simulator;
-- vollständige Zielankunft und Multiplayer-Synchronisierung.
-
-Diese Punkte müssen mit der aktualisierten Mission in DCS geprüft und als Ergebnisbericht dokumentiert werden.
+Die statische Prüfung kann die praktische Marschfähigkeit bei 40 km/h nicht bestätigen. Diese bleibt Gegenstand des nächsten DCS-Regressionslaufs.
