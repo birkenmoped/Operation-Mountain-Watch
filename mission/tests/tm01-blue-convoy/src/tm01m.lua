@@ -57,6 +57,7 @@ function TM01M.start(dependencies)
     convoys = {},
     convoyById = {},
     allArrivedLogged = false,
+    allDespawnedLogged = false,
   }
 
   local function log(level, event, fields)
@@ -90,6 +91,7 @@ function TM01M.start(dependencies)
       { "SPAWN.InitSetUnitAbsolutePositions", SPAWN and SPAWN.InitSetUnitAbsolutePositions },
       { "SPAWN.Spawn", SPAWN and SPAWN.Spawn },
       { "GROUP.FindByName", GROUP and GROUP.FindByName },
+      { "GROUP.Destroy", GROUP and GROUP.Destroy },
       { "CONTROLLABLE.Route", CONTROLLABLE and CONTROLLABLE.Route },
       { "GROUP.CountAliveUnits", GROUP and GROUP.CountAliveUnits },
       { "GROUP.IsCompletelyInZone", GROUP and GROUP.IsCompletelyInZone },
@@ -132,6 +134,15 @@ function TM01M.start(dependencies)
       or type(config.routing.speedKph) ~= "number"
       or config.routing.speedKph <= 0 then
       errors[#errors + 1] = "routing.speedKph"
+    end
+    if type(config.arrival) ~= "table"
+      or type(config.arrival.despawnDelaySeconds) ~= "number"
+      or config.arrival.despawnDelaySeconds < 0 then
+      errors[#errors + 1] = "arrival.despawnDelaySeconds"
+    end
+    if type(config.arrival) ~= "table"
+      or type(config.arrival.generateDestroyEvents) ~= "boolean" then
+      errors[#errors + 1] = "arrival.generateDestroyEvents"
     end
 
     local ids, aliases = {}, {}
@@ -201,6 +212,10 @@ function TM01M.start(dependencies)
         spawner = nil,
         routeStarted = false,
         arrived = false,
+        arrivalVehicleCount = 0,
+        despawnScheduled = false,
+        despawned = false,
+        despawnScheduleFailed = false,
         destroyed = false,
         route = nil,
         routeEntries = nil,
@@ -688,8 +703,13 @@ function TM01M.start(dependencies)
     convoyState.routeEntries = nil
     convoyState.routeStarted = false
     convoyState.arrived = false
+    convoyState.arrivalVehicleCount = 0
+    convoyState.despawnScheduled = false
+    convoyState.despawned = false
+    convoyState.despawnScheduleFailed = false
     convoyState.destroyed = false
     state.allArrivedLogged = false
+    state.allDespawnedLogged = false
     log("INFO", "convoy_spawned", {
       convoyId = convoyState.config.id,
       runtimeAlias = convoyState.config.runtimeAlias,
@@ -822,6 +842,8 @@ function TM01M.start(dependencies)
       .. " alive=" .. tostring(alive)
       .. " route=" .. tostring(convoyState.routeStarted)
       .. " arrived=" .. tostring(convoyState.arrived)
+      .. " despawnScheduled=" .. tostring(convoyState.despawnScheduled)
+      .. " despawned=" .. tostring(convoyState.despawned)
       .. " destroyed=" .. tostring(convoyState.destroyed)
   end
 
@@ -832,10 +854,13 @@ function TM01M.start(dependencies)
       "Vehicles alive: " .. tostring(
         convoyState.runtimeGroup and convoyState.runtimeGroup:CountAliveUnits() or 0
       ),
+      "Vehicles at arrival: " .. tostring(convoyState.arrivalVehicleCount),
       "MSR pathlines: " .. join(convoyState.config.msrPathlines),
       "Route started: " .. tostring(convoyState.routeStarted),
       "Route waypoints: " .. tostring(convoyState.route and #convoyState.route or 0),
       "Arrived: " .. tostring(convoyState.arrived),
+      "Despawn scheduled: " .. tostring(convoyState.despawnScheduled),
+      "Despawned: " .. tostring(convoyState.despawned),
       "Destroyed: " .. tostring(convoyState.destroyed),
     }, "\n"))
   end
@@ -845,6 +870,7 @@ function TM01M.start(dependencies)
       "Outcome: " .. tostring(state.outcome),
       "Convoys: " .. tostring(#state.convoys),
       "Commanded speed: " .. tostring(config.routing.speedKph) .. " km/h",
+      "Arrival dwell: " .. tostring(config.arrival.despawnDelaySeconds) .. " seconds",
     }
     for _, convoyState in ipairs(state.convoys) do
       lines[#lines + 1] = convoyStatusLine(convoyState)
@@ -852,47 +878,113 @@ function TM01M.start(dependencies)
     message(table.concat(lines, "\n"), math.max(config.messages.durationSeconds, 25))
   end
 
+  local function scheduleArrivalDespawn(convoyState)
+    local destroyOk, destroyError = pcall(function()
+      convoyState.runtimeGroup:Destroy(
+        config.arrival.generateDestroyEvents,
+        config.arrival.despawnDelaySeconds
+      )
+    end)
+    if not destroyOk then
+      convoyState.despawnScheduleFailed = true
+      state.outcome = OUTCOME_FAIL_SCRIPT
+      state.detail = "MOOSE delayed convoy despawn failed for " .. convoyState.config.id
+      log("ERROR", "convoy_despawn_schedule_failed", {
+        convoyId = convoyState.config.id,
+        detail = tostring(destroyError),
+      })
+      return false
+    end
+
+    convoyState.despawnScheduled = true
+    log("INFO", "convoy_despawn_scheduled", {
+      convoyId = convoyState.config.id,
+      runtimeAlias = convoyState.config.runtimeAlias,
+      runtimeGroupName = convoyState.runtimeGroup:GetName(),
+      targetZoneName = convoyState.config.targetZone,
+      delaySeconds = config.arrival.despawnDelaySeconds,
+      generateDestroyEvents = config.arrival.generateDestroyEvents,
+      method = "MOOSE_GROUP_Destroy",
+    })
+    return true
+  end
+
   local function supervise()
     local arrivedCount = 0
-    local survivingVehicles = 0
+    local arrivedVehicles = 0
+    local despawnedCount = 0
     for _, convoyState in ipairs(state.convoys) do
       if convoyState.runtimeGroup then
         if convoyState.runtimeGroup:IsAlive() ~= true
           or convoyState.runtimeGroup:CountAliveUnits() < 1 then
-          if not convoyState.destroyed then
+          if convoyState.arrived and convoyState.despawnScheduled then
+            if not convoyState.despawned then
+              convoyState.despawned = true
+              log("INFO", "convoy_despawned", {
+                convoyId = convoyState.config.id,
+                runtimeAlias = convoyState.config.runtimeAlias,
+                targetZoneName = convoyState.config.targetZone,
+                delaySeconds = config.arrival.despawnDelaySeconds,
+                method = "MOOSE_GROUP_Destroy",
+              })
+            end
+          elseif not convoyState.destroyed then
             convoyState.destroyed = true
             log("INFO", "convoy_destroyed", { convoyId = convoyState.config.id })
             message("Convoy destroyed: " .. convoyState.config.displayName)
           end
         else
-          survivingVehicles = survivingVehicles + convoyState.runtimeGroup:CountAliveUnits()
           if convoyState.routeStarted and not convoyState.arrived
             and convoyState.runtimeGroup:IsCompletelyInZone(convoyState.objects.targetZone) == true then
             convoyState.arrived = true
+            convoyState.arrivalVehicleCount = convoyState.runtimeGroup:CountAliveUnits()
             log("INFO", "convoy_arrived", {
               convoyId = convoyState.config.id,
               runtimeAlias = convoyState.config.runtimeAlias,
               runtimeGroupName = convoyState.runtimeGroup:GetName(),
-              survivingVehicles = convoyState.runtimeGroup:CountAliveUnits(),
+              survivingVehicles = convoyState.arrivalVehicleCount,
               targetZoneName = convoyState.config.targetZone,
               routeMode = "MOOSE_PATHLINE_MSR",
             })
-            message("Convoy arrived: " .. convoyState.config.displayName)
+            local despawnScheduled = scheduleArrivalDespawn(convoyState)
+            if despawnScheduled then
+              message("Convoy arrived: " .. convoyState.config.displayName
+                .. "; despawn in " .. tostring(config.arrival.despawnDelaySeconds) .. " seconds")
+            else
+              message("Convoy arrived, but despawn scheduling failed: "
+                .. convoyState.config.displayName)
+            end
           end
         end
       end
-      if convoyState.arrived then arrivedCount = arrivedCount + 1 end
+      if convoyState.arrived then
+        arrivedCount = arrivedCount + 1
+        arrivedVehicles = arrivedVehicles + convoyState.arrivalVehicleCount
+      end
+      if convoyState.despawned then despawnedCount = despawnedCount + 1 end
     end
 
     if arrivedCount == #state.convoys and not state.allArrivedLogged then
       state.allArrivedLogged = true
       log("INFO", "all_convoys_arrived", {
         convoyCount = #state.convoys,
-        survivingVehicles = survivingVehicles,
+        survivingVehicles = arrivedVehicles,
         speedKph = config.routing.speedKph,
+        despawnDelaySeconds = config.arrival.despawnDelaySeconds,
       })
       message("TM01M PASS: all " .. tostring(#state.convoys)
-        .. " convoys arrived with " .. tostring(survivingVehicles) .. " vehicles")
+        .. " convoys arrived with " .. tostring(arrivedVehicles) .. " vehicles")
+    end
+
+    if despawnedCount == #state.convoys and not state.allDespawnedLogged then
+      state.allDespawnedLogged = true
+      log("INFO", "all_convoys_despawned", {
+        convoyCount = #state.convoys,
+        delaySeconds = config.arrival.despawnDelaySeconds,
+        generateDestroyEvents = config.arrival.generateDestroyEvents,
+        method = "MOOSE_GROUP_Destroy",
+      })
+      message("TM01M cleanup complete: all arrived convoys despawned")
     end
   end
 
@@ -946,13 +1038,16 @@ function TM01M.start(dependencies)
     msrPathlineCount = totalPathlineCount,
     speedKph = config.routing.speedKph,
     formation = config.routing.formation,
+    arrivalDespawnDelaySeconds = config.arrival.despawnDelaySeconds,
+    arrivalDestroyEvents = config.arrival.generateDestroyEvents,
     customCampaignStateLoaded = false,
     customProxyControllerLoaded = false,
     customInterestMonitorLoaded = false,
     customWatchdogLoaded = false,
   })
   message("TM01M READY: five MOOSE-native MSR convoys at "
-    .. tostring(config.routing.speedKph) .. " km/h")
+    .. tostring(config.routing.speedKph) .. " km/h; arrival dwell "
+    .. tostring(config.arrival.despawnDelaySeconds) .. " seconds")
   return state
 end
 
