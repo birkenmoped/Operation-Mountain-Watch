@@ -1,15 +1,15 @@
 local config = {
-  configurationVersion = "TM01M-moose-native-physical-1",
+  configurationVersion = "TM01M-moose-native-physical-2",
   testId = "TM01",
   stageId = "TM01M",
 
   mission = {
-    fileName = "OMW_TEST_TM01M_MOOSE_NATIVE_CONVOY.miz",
+    fileName = "OMW_TEST_TM01M_MooseFirst.miz",
     displayName = "OMW TM01M - MOOSE Native Physical Convoy",
   },
 
   template = {
-    groupName = "TPL_TEST_BLUE_CONVOY_01",
+    groupName = "TPL_TEST_BLUE_CONVOY_STANDARD_01",
     runtimeAlias = "TM01M_BLUE_CONVOY",
     expectedVehicleCount = 6,
   },
