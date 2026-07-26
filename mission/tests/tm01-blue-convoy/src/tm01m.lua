@@ -53,17 +53,10 @@ function TM01M.start(dependencies)
   local state = {
     outcome = OUTCOME_FAIL_SCRIPT,
     detail = "bootstrap not completed",
-    runtimeGroup = nil,
-    spawner = nil,
-    routeStarted = false,
-    arrived = false,
-    destroyed = false,
     scheduler = nil,
-    route = nil,
-    routeEntries = nil,
-    routePlan = nil,
-    spawnPositions = nil,
-    spawnLeadDistance = nil,
+    convoys = {},
+    convoyById = {},
+    allArrivedLogged = false,
   }
 
   local function log(level, event, fields)
@@ -124,49 +117,120 @@ function TM01M.start(dependencies)
     return #missing == 0, missing
   end
 
+  local function validateConfig()
+    local errors = {}
+    if type(config.convoys) ~= "table" or #config.convoys < 1 then
+      errors[#errors + 1] = "convoys"
+      return false, errors
+    end
+    if type(config.template) ~= "table"
+      or type(config.template.groupName) ~= "string"
+      or type(config.template.expectedVehicleCount) ~= "number" then
+      errors[#errors + 1] = "template"
+    end
+    if type(config.routing) ~= "table"
+      or type(config.routing.speedKph) ~= "number"
+      or config.routing.speedKph <= 0 then
+      errors[#errors + 1] = "routing.speedKph"
+    end
+
+    local ids, aliases = {}, {}
+    for index, convoyConfig in ipairs(config.convoys) do
+      local prefix = "convoys[" .. tostring(index) .. "]"
+      if type(convoyConfig.id) ~= "string" or convoyConfig.id == "" then
+        errors[#errors + 1] = prefix .. ".id"
+      elseif ids[convoyConfig.id] then
+        errors[#errors + 1] = prefix .. ".id_duplicate"
+      else
+        ids[convoyConfig.id] = true
+      end
+      if type(convoyConfig.runtimeAlias) ~= "string" or convoyConfig.runtimeAlias == "" then
+        errors[#errors + 1] = prefix .. ".runtimeAlias"
+      elseif aliases[convoyConfig.runtimeAlias] then
+        errors[#errors + 1] = prefix .. ".runtimeAlias_duplicate"
+      else
+        aliases[convoyConfig.runtimeAlias] = true
+      end
+      if type(convoyConfig.startZone) ~= "string" or convoyConfig.startZone == "" then
+        errors[#errors + 1] = prefix .. ".startZone"
+      end
+      if type(convoyConfig.targetZone) ~= "string" or convoyConfig.targetZone == "" then
+        errors[#errors + 1] = prefix .. ".targetZone"
+      end
+      if type(convoyConfig.msrPathlines) ~= "table" or #convoyConfig.msrPathlines < 1 then
+        errors[#errors + 1] = prefix .. ".msrPathlines"
+      end
+    end
+    return #errors == 0, errors
+  end
+
+  local function resolveZone(name, missing, errors, convoyId)
+    local zoneOk, zone = pcall(function() return ZONE:FindByName(name) end)
+    if not zoneOk then
+      errors[#errors + 1] = tostring(convoyId) .. ":" .. tostring(name) .. ":" .. tostring(zone)
+      return nil
+    end
+    if not zone then missing[#missing + 1] = tostring(convoyId) .. ":" .. tostring(name) end
+    return zone
+  end
+
+  local function resolvePathline(name, missing, errors, convoyId)
+    local pathOk, pathline = pcall(function() return PATHLINE:FindByName(name) end)
+    if not pathOk then
+      errors[#errors + 1] = tostring(convoyId) .. ":" .. tostring(name) .. ":" .. tostring(pathline)
+      return nil
+    end
+    if not pathline then missing[#missing + 1] = tostring(convoyId) .. ":" .. tostring(name) end
+    return pathline
+  end
+
   local function resolveMissionObjects()
     local missing, errors = {}, {}
-    local objects = { pathlines = {} }
-
     local ok, template = pcall(function() return GROUP:FindByName(config.template.groupName) end)
-    if not ok then errors[#errors + 1] = tostring(template)
-    elseif not template then missing[#missing + 1] = config.template.groupName
-    else objects.template = template end
-
-    local function resolveZone(name)
-      local zoneOk, zone = pcall(function() return ZONE:FindByName(name) end)
-      if not zoneOk then
-        errors[#errors + 1] = tostring(name) .. ":" .. tostring(zone)
-        return nil
-      end
-      if not zone then missing[#missing + 1] = name end
-      return zone
+    if not ok then
+      errors[#errors + 1] = tostring(template)
+    elseif not template then
+      missing[#missing + 1] = config.template.groupName
     end
 
-    local function resolvePathline(name)
-      local pathOk, pathline = pcall(function() return PATHLINE:FindByName(name) end)
-      if not pathOk then
-        errors[#errors + 1] = tostring(name) .. ":" .. tostring(pathline)
-        return nil
-      end
-      if not pathline then missing[#missing + 1] = name end
-      return pathline
-    end
-
-    objects.startZone = resolveZone(config.zones.start)
-    objects.targetZone = resolveZone(config.zones.target)
-    for _, name in ipairs(config.routing.msrPathlines or {}) do
-      objects.pathlines[#objects.pathlines + 1] = {
-        name = name,
-        object = resolvePathline(name),
+    for _, convoyConfig in ipairs(config.convoys) do
+      local convoyState = {
+        config = convoyConfig,
+        objects = { pathlines = {} },
+        runtimeGroup = nil,
+        spawner = nil,
+        routeStarted = false,
+        arrived = false,
+        destroyed = false,
+        route = nil,
+        routeEntries = nil,
+        routePlan = nil,
+        spawnPositions = nil,
+        spawnLeadDistance = nil,
       }
+      convoyState.objects.startZone = resolveZone(
+        convoyConfig.startZone,
+        missing,
+        errors,
+        convoyConfig.id
+      )
+      convoyState.objects.targetZone = resolveZone(
+        convoyConfig.targetZone,
+        missing,
+        errors,
+        convoyConfig.id
+      )
+      for _, name in ipairs(convoyConfig.msrPathlines or {}) do
+        convoyState.objects.pathlines[#convoyState.objects.pathlines + 1] = {
+          name = name,
+          object = resolvePathline(name, missing, errors, convoyConfig.id),
+        }
+      end
+      state.convoys[#state.convoys + 1] = convoyState
+      state.convoyById[convoyConfig.id] = convoyState
     end
 
-    if #objects.pathlines < 1 then
-      missing[#missing + 1] = "routing.msrPathlines"
-    end
-
-    return #missing == 0 and #errors == 0, objects, missing, errors
+    return #missing == 0 and #errors == 0, template, missing, errors
   end
 
   local function pathlinePoints(pathline)
@@ -262,10 +326,12 @@ function TM01M.start(dependencies)
     return totalDistance
   end
 
-  local function buildRoutePlan(objects)
+  local function buildRoutePlan(convoyState)
     return pcall(function()
-      local startRoad, startRoadSnap = roadCoordinateForZone(objects.startZone, config.zones.start)
-      local targetRoad, targetRoadSnap = roadCoordinateForZone(objects.targetZone, config.zones.target)
+      local convoyConfig = convoyState.config
+      local objects = convoyState.objects
+      local startRoad, startRoadSnap = roadCoordinateForZone(objects.startZone, convoyConfig.startZone)
+      local targetRoad, targetRoadSnap = roadCoordinateForZone(objects.targetZone, convoyConfig.targetZone)
 
       local routePoints = {}
       local boundaries = {}
@@ -299,7 +365,7 @@ function TM01M.start(dependencies)
         routePoints,
         startRoad,
         firstPathlineCoordinate,
-        "start-to-msr"
+        convoyConfig.id .. ":start-to-msr"
       )
 
       for _, entry in ipairs(orientedPathlines) do
@@ -318,7 +384,7 @@ function TM01M.start(dependencies)
         routePoints,
         lastPathlineCoordinate,
         targetRoad,
-        "msr-to-target"
+        convoyConfig.id .. ":msr-to-target"
       )
 
       if #routePoints < 2 then error("compiled MSR route contains fewer than two points") end
@@ -375,12 +441,13 @@ function TM01M.start(dependencies)
     return headingDegrees(fromVec2, toVec2)
   end
 
-  local function buildSpawnPositions(routePlan)
+  local function buildSpawnPositions(convoyState)
+    local routePlan = convoyState.routePlan
     local count = config.template.expectedVehicleCount
     local leadDistance = config.routing.spawnRearClearanceMeters
       + (count - 1) * config.routing.vehicleSpacingMeters
     if leadDistance >= routePlan.totalDistance then
-      return nil, nil, "route is too short for the configured convoy layout"
+      return nil, nil, nil, "route is too short for the configured convoy layout"
     end
 
     local positions = {}
@@ -400,7 +467,7 @@ function TM01M.start(dependencies)
           .. tostring(index) .. ": " .. tostring(snapDistance)
       end
       local vec2 = roadCoordinate:GetVec2()
-      if state.objects.startZone:IsVec2InZone(vec2) ~= true then
+      if convoyState.objects.startZone:IsVec2InZone(vec2) ~= true then
         return nil, nil, nil, "spawn layout leaves start zone at vehicle " .. tostring(index)
       end
       positions[index] = {
@@ -431,8 +498,9 @@ function TM01M.start(dependencies)
     return result
   end
 
-  local function buildRouteWaypoints(routePlan, fromDistance)
+  local function buildRouteWaypoints(convoyState, fromDistance)
     return pcall(function()
+      local routePlan = convoyState.routePlan
       local requestedDistances = {}
       local firstDistance = math.min(
         routePlan.totalDistance,
@@ -504,8 +572,15 @@ function TM01M.start(dependencies)
     return state
   end
 
-  local objectsOk, objects, missingObjects, objectErrors = resolveMissionObjects()
-  state.objects = objects
+  local configOk, configErrors = validateConfig()
+  if not configOk then
+    setOutcome(OUTCOME_FAIL_CONFIGURATION, "TM01M multi-convoy configuration is invalid")
+    log("ERROR", "configuration_validation_failed", { errors = join(configErrors) })
+    return state
+  end
+
+  local objectsOk, template, missingObjects, objectErrors = resolveMissionObjects()
+  state.template = template
   if #objectErrors > 0 then
     setOutcome(OUTCOME_FAIL_SCRIPT, "Mission Editor object lookup failed")
     log("ERROR", "mission_object_lookup_failed", { errors = join(objectErrors) })
@@ -517,72 +592,110 @@ function TM01M.start(dependencies)
     return state
   end
 
-  local planOk, routePlanOrError = buildRoutePlan(objects)
-  if not planOk then
-    setOutcome(OUTCOME_FAIL_CONFIGURATION, "MSR route plan could not be compiled")
-    log("ERROR", "msr_route_plan_failed", { detail = tostring(routePlanOrError) })
-    return state
+  local totalSourcePointCount = 0
+  local totalCompiledPointCount = 0
+  local totalRouteLengthMeters = 0
+  local totalPathlineCount = 0
+  for _, convoyState in ipairs(state.convoys) do
+    local planOk, routePlanOrError = buildRoutePlan(convoyState)
+    if not planOk then
+      setOutcome(OUTCOME_FAIL_CONFIGURATION, "MSR route plan could not be compiled")
+      log("ERROR", "convoy_route_plan_failed", {
+        convoyId = convoyState.config.id,
+        detail = tostring(routePlanOrError),
+      })
+      return state
+    end
+    convoyState.routePlan = routePlanOrError
+    totalSourcePointCount = totalSourcePointCount + convoyState.routePlan.sourcePointCount
+    totalCompiledPointCount = totalCompiledPointCount + #convoyState.routePlan.points
+    totalRouteLengthMeters = totalRouteLengthMeters + convoyState.routePlan.totalDistance
+    totalPathlineCount = totalPathlineCount + #convoyState.objects.pathlines
+    log("INFO", "convoy_route_plan_compiled", {
+      convoyId = convoyState.config.id,
+      runtimeAlias = convoyState.config.runtimeAlias,
+      routeMode = "MOOSE_PATHLINE_MSR",
+      startZoneName = convoyState.config.startZone,
+      targetZoneName = convoyState.config.targetZone,
+      msrPathlines = join(convoyState.config.msrPathlines),
+      pathlineDirections = join(convoyState.routePlan.pathlineDiagnostics),
+      msrPathlineCount = #convoyState.objects.pathlines,
+      sourcePointCount = convoyState.routePlan.sourcePointCount,
+      compiledPointCount = #convoyState.routePlan.points,
+      routeLengthMeters = rounded(convoyState.routePlan.totalDistance),
+      startRoadSnapMeters = rounded(convoyState.routePlan.startRoadSnapMeters),
+      targetRoadSnapMeters = rounded(convoyState.routePlan.targetRoadSnapMeters),
+      startConnectorMeters = rounded(convoyState.routePlan.startConnectorMeters),
+      targetConnectorMeters = rounded(convoyState.routePlan.targetConnectorMeters),
+    })
   end
-  state.routePlan = routePlanOrError
-  log("INFO", "msr_route_plan_compiled", {
-    routeMode = "MOOSE_PATHLINE_MSR",
-    msrPathlines = join(config.routing.msrPathlines),
-    pathlineDirections = join(state.routePlan.pathlineDiagnostics),
-    msrPathlineCount = #objects.pathlines,
-    sourcePointCount = state.routePlan.sourcePointCount,
-    compiledPointCount = #state.routePlan.points,
-    routeLengthMeters = rounded(state.routePlan.totalDistance),
-    startRoadSnapMeters = rounded(state.routePlan.startRoadSnapMeters),
-    targetRoadSnapMeters = rounded(state.routePlan.targetRoadSnapMeters),
-    startConnectorMeters = rounded(state.routePlan.startConnectorMeters),
-    targetConnectorMeters = rounded(state.routePlan.targetConnectorMeters),
+  log("INFO", "multi_convoy_route_plans_compiled", {
+    convoyCount = #state.convoys,
+    msrPathlineCount = totalPathlineCount,
+    sourcePointCount = totalSourcePointCount,
+    compiledPointCount = totalCompiledPointCount,
+    totalRouteLengthMeters = rounded(totalRouteLengthMeters),
   })
 
-  local function spawnConvoy()
-    if state.runtimeGroup and state.runtimeGroup:IsAlive() == true then
-      message("Spawn rejected: convoy already exists")
+  local function spawnConvoy(convoyState, silent)
+    if convoyState.runtimeGroup and convoyState.runtimeGroup:IsAlive() == true then
+      if not silent then message("Spawn rejected: " .. convoyState.config.id .. " already exists") end
       return false
     end
 
-    local positions, leadDistance, maximumSpawnRoadSnap, layoutError = buildSpawnPositions(state.routePlan)
+    local positions, leadDistance, maximumSpawnRoadSnap, layoutError = buildSpawnPositions(convoyState)
     if not positions then
-      setOutcome(OUTCOME_FAIL_CONFIGURATION, "MSR spawn layout could not be compiled")
-      log("ERROR", "convoy_spawn_layout_failed", { detail = tostring(layoutError) })
-      message("MOOSE MSR spawn layout failed")
+      state.outcome = OUTCOME_FAIL_CONFIGURATION
+      state.detail = "MSR spawn layout could not be compiled for " .. convoyState.config.id
+      log("ERROR", "convoy_spawn_layout_failed", {
+        convoyId = convoyState.config.id,
+        detail = tostring(layoutError),
+      })
+      if not silent then message("MOOSE MSR spawn layout failed: " .. convoyState.config.id) end
       return false
     end
 
-    state.spawner = SPAWN:NewWithAlias(config.template.groupName, config.template.runtimeAlias)
-    state.spawner:InitSetUnitAbsolutePositions(positions)
-    state.runtimeGroup = state.spawner:Spawn()
-    if not state.runtimeGroup or state.runtimeGroup:IsAlive() ~= true then
-      setOutcome(OUTCOME_FAIL_SCRIPT, "SPAWN did not create a living convoy")
-      message("Convoy spawn failed")
+    convoyState.spawner = SPAWN:NewWithAlias(
+      config.template.groupName,
+      convoyState.config.runtimeAlias
+    )
+    convoyState.spawner:InitSetUnitAbsolutePositions(positions)
+    convoyState.runtimeGroup = convoyState.spawner:Spawn()
+    if not convoyState.runtimeGroup or convoyState.runtimeGroup:IsAlive() ~= true then
+      state.outcome = OUTCOME_FAIL_SCRIPT
+      state.detail = "SPAWN did not create a living convoy for " .. convoyState.config.id
+      log("ERROR", "convoy_spawn_failed", { convoyId = convoyState.config.id })
+      if not silent then message("Convoy spawn failed: " .. convoyState.config.id) end
       return false
     end
 
-    local alive = state.runtimeGroup:CountAliveUnits()
+    local alive = convoyState.runtimeGroup:CountAliveUnits()
     if alive ~= config.template.expectedVehicleCount then
-      setOutcome(OUTCOME_FAIL_SCRIPT, "spawned convoy vehicle count mismatch")
+      state.outcome = OUTCOME_FAIL_SCRIPT
+      state.detail = "spawned convoy vehicle count mismatch for " .. convoyState.config.id
       log("ERROR", "spawn_count_mismatch", {
+        convoyId = convoyState.config.id,
         expected = config.template.expectedVehicleCount,
         observed = alive,
       })
-      message("Convoy spawn failed: vehicle count mismatch")
+      if not silent then message("Convoy spawn count mismatch: " .. convoyState.config.id) end
       return false
     end
 
-    state.spawnPositions = positions
-    state.spawnLeadDistance = leadDistance
-    state.route = nil
-    state.routeEntries = nil
-    state.routeStarted = false
-    state.arrived = false
-    state.destroyed = false
+    convoyState.spawnPositions = positions
+    convoyState.spawnLeadDistance = leadDistance
+    convoyState.route = nil
+    convoyState.routeEntries = nil
+    convoyState.routeStarted = false
+    convoyState.arrived = false
+    convoyState.destroyed = false
+    state.allArrivedLogged = false
     log("INFO", "convoy_spawned", {
-      runtimeGroupName = state.runtimeGroup:GetName(),
+      convoyId = convoyState.config.id,
+      runtimeAlias = convoyState.config.runtimeAlias,
+      runtimeGroupName = convoyState.runtimeGroup:GetName(),
       aliveUnits = alive,
-      spawnZoneName = config.zones.start,
+      spawnZoneName = convoyState.config.startZone,
       spawnX = rounded(positions[1].x),
       spawnY = rounded(positions[1].y),
       spawnHeadingDeg = rounded(positions[1].heading),
@@ -590,90 +703,196 @@ function TM01M.start(dependencies)
       spawnRearRouteDistanceMeters = rounded(config.routing.spawnRearClearanceMeters),
       spawnPositionMode = "MOOSE_InitSetUnitAbsolutePositions",
       maximumSpawnRoadSnapMeters = rounded(maximumSpawnRoadSnap),
-      msrFirstPathline = config.routing.msrPathlines[1],
+      msrFirstPathline = convoyState.config.msrPathlines[1],
     })
-    message("MOOSE convoy spawned on " .. config.routing.msrPathlines[1]
-      .. " from " .. config.zones.start .. ": " .. state.runtimeGroup:GetName())
+    if not silent then
+      message("Spawned " .. convoyState.config.displayName .. ": "
+        .. convoyState.runtimeGroup:GetName())
+    end
     return true
   end
 
-  local function startRoute()
-    if not state.runtimeGroup or state.runtimeGroup:IsAlive() ~= true then
-      message("Route rejected: no living convoy")
+  local function startRoute(convoyState, silent)
+    if not convoyState.runtimeGroup or convoyState.runtimeGroup:IsAlive() ~= true then
+      if not silent then message("Route rejected: no living convoy " .. convoyState.config.id) end
       return false
     end
-    if state.routeStarted then
-      message("Route rejected: already started")
+    if convoyState.routeStarted then
+      if not silent then message("Route rejected: already started " .. convoyState.config.id) end
       return false
     end
 
     local routeOk, routeOrError = buildRouteWaypoints(
-      state.routePlan,
-      assert(state.spawnLeadDistance, "spawn lead distance is unavailable")
+      convoyState,
+      assert(convoyState.spawnLeadDistance, "spawn lead distance is unavailable")
     )
     if not routeOk then
-      setOutcome(OUTCOME_FAIL_SCRIPT, "MOOSE MSR waypoint generation failed")
-      log("ERROR", "convoy_route_generation_failed", { detail = tostring(routeOrError) })
-      message("MOOSE MSR route generation failed")
+      state.outcome = OUTCOME_FAIL_SCRIPT
+      state.detail = "MOOSE MSR waypoint generation failed for " .. convoyState.config.id
+      log("ERROR", "convoy_route_generation_failed", {
+        convoyId = convoyState.config.id,
+        detail = tostring(routeOrError),
+      })
+      if not silent then message("MOOSE MSR route generation failed: " .. convoyState.config.id) end
       return false
     end
 
-    state.route = routeOrError.waypoints
-    state.routeEntries = routeOrError.entries
-    local assigned = state.runtimeGroup:Route(state.route, config.routing.routeDelaySeconds)
+    convoyState.route = routeOrError.waypoints
+    convoyState.routeEntries = routeOrError.entries
+    local assigned = convoyState.runtimeGroup:Route(
+      convoyState.route,
+      config.routing.routeDelaySeconds
+    )
     if not assigned then
-      message("MOOSE route assignment failed")
+      log("ERROR", "convoy_route_assignment_failed", { convoyId = convoyState.config.id })
+      if not silent then message("MOOSE route assignment failed: " .. convoyState.config.id) end
       return false
     end
-    state.routeStarted = true
+    convoyState.routeStarted = true
     log("INFO", "convoy_route_started", {
-      waypointCount = #state.route,
-      msrPathlineCount = #state.objects.pathlines,
-      msrPathlines = join(config.routing.msrPathlines),
+      convoyId = convoyState.config.id,
+      runtimeAlias = convoyState.config.runtimeAlias,
+      waypointCount = #convoyState.route,
+      msrPathlineCount = #convoyState.objects.pathlines,
+      msrPathlines = join(convoyState.config.msrPathlines),
       speedKph = config.routing.speedKph,
       formation = config.routing.formation,
       routeMode = "MOOSE_PATHLINE_MSR",
-      routeLengthMeters = rounded(state.routePlan.totalDistance - state.spawnLeadDistance),
+      routeLengthMeters = rounded(convoyState.routePlan.totalDistance - convoyState.spawnLeadDistance),
       maximumWaypointRoadSnapMeters = rounded(routeOrError.maximumObservedSnap),
     })
-    message("MOOSE MSR route started")
+    if not silent then message("Route started: " .. convoyState.config.displayName) end
     return true
   end
 
-  local function showStatus()
-    local alive = state.runtimeGroup and state.runtimeGroup:CountAliveUnits() or 0
+  local function spawnAllConvoys(silent)
+    local spawned = 0
+    for _, convoyState in ipairs(state.convoys) do
+      if spawnConvoy(convoyState, true) then spawned = spawned + 1 end
+    end
+    log("INFO", "multi_convoy_spawn_completed", {
+      requestedConvoys = #state.convoys,
+      spawnedConvoys = spawned,
+      totalExpectedVehicles = #state.convoys * config.template.expectedVehicleCount,
+    })
+    if not silent then
+      message("TM01M spawned " .. tostring(spawned) .. "/" .. tostring(#state.convoys)
+        .. " convoys")
+    end
+    return spawned == #state.convoys
+  end
+
+  local function startAllRoutes(silent)
+    local started = 0
+    for _, convoyState in ipairs(state.convoys) do
+      if startRoute(convoyState, true) then started = started + 1 end
+    end
+    log("INFO", "multi_convoy_routes_started", {
+      requestedConvoys = #state.convoys,
+      startedConvoys = started,
+      speedKph = config.routing.speedKph,
+      formation = config.routing.formation,
+    })
+    if not silent then
+      message("TM01M started " .. tostring(started) .. "/" .. tostring(#state.convoys)
+        .. " MSR routes at " .. tostring(config.routing.speedKph) .. " km/h")
+    end
+    return started == #state.convoys
+  end
+
+  local function launchAllConvoys()
+    local spawned = spawnAllConvoys(true)
+    local started = false
+    if spawned then started = startAllRoutes(true) end
+    log("INFO", "multi_convoy_launch_completed", {
+      convoyCount = #state.convoys,
+      spawnedAll = spawned,
+      startedAll = started,
+      speedKph = config.routing.speedKph,
+    })
+    message("TM01M launch: spawn=" .. tostring(spawned)
+      .. " routes=" .. tostring(started)
+      .. " speed=" .. tostring(config.routing.speedKph) .. " km/h")
+    return spawned and started
+  end
+
+  local function convoyStatusLine(convoyState)
+    local alive = convoyState.runtimeGroup and convoyState.runtimeGroup:CountAliveUnits() or 0
+    return convoyState.config.id
+      .. " alive=" .. tostring(alive)
+      .. " route=" .. tostring(convoyState.routeStarted)
+      .. " arrived=" .. tostring(convoyState.arrived)
+      .. " destroyed=" .. tostring(convoyState.destroyed)
+  end
+
+  local function showConvoyStatus(convoyState)
     message(table.concat({
-      "Outcome: " .. tostring(state.outcome),
-      "Convoy alive: " .. tostring(state.runtimeGroup and state.runtimeGroup:IsAlive() == true),
-      "Vehicles alive: " .. tostring(alive),
-      "MSR pathlines: " .. join(config.routing.msrPathlines),
-      "Route started: " .. tostring(state.routeStarted),
-      "Route waypoints: " .. tostring(state.route and #state.route or 0),
-      "Arrived: " .. tostring(state.arrived),
-      "Destroyed: " .. tostring(state.destroyed),
+      convoyState.config.displayName,
+      "ID: " .. convoyState.config.id,
+      "Vehicles alive: " .. tostring(
+        convoyState.runtimeGroup and convoyState.runtimeGroup:CountAliveUnits() or 0
+      ),
+      "MSR pathlines: " .. join(convoyState.config.msrPathlines),
+      "Route started: " .. tostring(convoyState.routeStarted),
+      "Route waypoints: " .. tostring(convoyState.route and #convoyState.route or 0),
+      "Arrived: " .. tostring(convoyState.arrived),
+      "Destroyed: " .. tostring(convoyState.destroyed),
     }, "\n"))
   end
 
-  local function supervise()
-    if not state.runtimeGroup then return end
-    if state.runtimeGroup:IsAlive() ~= true or state.runtimeGroup:CountAliveUnits() < 1 then
-      if not state.destroyed then
-        state.destroyed = true
-        log("INFO", "convoy_destroyed", {})
-        message("MOOSE convoy destroyed")
-      end
-      return
+  local function showFleetStatus()
+    local lines = {
+      "Outcome: " .. tostring(state.outcome),
+      "Convoys: " .. tostring(#state.convoys),
+      "Commanded speed: " .. tostring(config.routing.speedKph) .. " km/h",
+    }
+    for _, convoyState in ipairs(state.convoys) do
+      lines[#lines + 1] = convoyStatusLine(convoyState)
     end
-    if state.routeStarted and not state.arrived
-      and state.runtimeGroup:IsCompletelyInZone(objects.targetZone) == true then
-      state.arrived = true
-      log("INFO", "convoy_arrived", {
-        runtimeGroupName = state.runtimeGroup:GetName(),
-        survivingVehicles = state.runtimeGroup:CountAliveUnits(),
-        targetZoneName = config.zones.target,
-        routeMode = "MOOSE_PATHLINE_MSR",
+    message(table.concat(lines, "\n"), math.max(config.messages.durationSeconds, 25))
+  end
+
+  local function supervise()
+    local arrivedCount = 0
+    local survivingVehicles = 0
+    for _, convoyState in ipairs(state.convoys) do
+      if convoyState.runtimeGroup then
+        if convoyState.runtimeGroup:IsAlive() ~= true
+          or convoyState.runtimeGroup:CountAliveUnits() < 1 then
+          if not convoyState.destroyed then
+            convoyState.destroyed = true
+            log("INFO", "convoy_destroyed", { convoyId = convoyState.config.id })
+            message("Convoy destroyed: " .. convoyState.config.displayName)
+          end
+        else
+          survivingVehicles = survivingVehicles + convoyState.runtimeGroup:CountAliveUnits()
+          if convoyState.routeStarted and not convoyState.arrived
+            and convoyState.runtimeGroup:IsCompletelyInZone(convoyState.objects.targetZone) == true then
+            convoyState.arrived = true
+            log("INFO", "convoy_arrived", {
+              convoyId = convoyState.config.id,
+              runtimeAlias = convoyState.config.runtimeAlias,
+              runtimeGroupName = convoyState.runtimeGroup:GetName(),
+              survivingVehicles = convoyState.runtimeGroup:CountAliveUnits(),
+              targetZoneName = convoyState.config.targetZone,
+              routeMode = "MOOSE_PATHLINE_MSR",
+            })
+            message("Convoy arrived: " .. convoyState.config.displayName)
+          end
+        end
+      end
+      if convoyState.arrived then arrivedCount = arrivedCount + 1 end
+    end
+
+    if arrivedCount == #state.convoys and not state.allArrivedLogged then
+      state.allArrivedLogged = true
+      log("INFO", "all_convoys_arrived", {
+        convoyCount = #state.convoys,
+        survivingVehicles = survivingVehicles,
+        speedKph = config.routing.speedKph,
       })
-      message("MOOSE convoy arrived at " .. config.zones.target)
+      message("TM01M PASS: all " .. tostring(#state.convoys)
+        .. " convoys arrived with " .. tostring(survivingVehicles) .. " vehicles")
     end
   end
 
@@ -687,30 +906,53 @@ function TM01M.start(dependencies)
 
   if config.debug.enableF10Menu == true then
     local root = MENU_MISSION:New("OMW Tests")
-    local menu = MENU_MISSION:New("TM01M MOOSE Native MSR Convoy", root)
-    MENU_MISSION_COMMAND:New("Spawn convoy", menu, spawnConvoy)
-    MENU_MISSION_COMMAND:New("Start MSR route", menu, startRoute)
-    MENU_MISSION_COMMAND:New("Show status", menu, showStatus)
+    local menu = MENU_MISSION:New("TM01M Five MSR Convoys", root)
+    MENU_MISSION_COMMAND:New("Launch all five convoys", menu, launchAllConvoys)
+    MENU_MISSION_COMMAND:New("Spawn all convoys", menu, spawnAllConvoys)
+    MENU_MISSION_COMMAND:New("Start all MSR routes", menu, startAllRoutes)
+    MENU_MISSION_COMMAND:New("Show fleet status", menu, showFleetStatus)
+
+    if config.debug.enableIndividualMenus == true then
+      for _, convoyState in ipairs(state.convoys) do
+        local convoyMenu = MENU_MISSION:New(convoyState.config.id, menu)
+        MENU_MISSION_COMMAND:New("Spawn convoy", convoyMenu, spawnConvoy, convoyState)
+        MENU_MISSION_COMMAND:New("Start route", convoyMenu, startRoute, convoyState)
+        MENU_MISSION_COMMAND:New("Show status", convoyMenu, showConvoyStatus, convoyState)
+      end
+    end
   end
 
-  state.spawnConvoy = spawnConvoy
-  state.startRoute = startRoute
-  state.showStatus = showStatus
+  state.spawnConvoy = function(convoyId)
+    local convoyState = state.convoyById[convoyId]
+    return convoyState and spawnConvoy(convoyState, false) or false
+  end
+  state.startRoute = function(convoyId)
+    local convoyState = state.convoyById[convoyId]
+    return convoyState and startRoute(convoyState, false) or false
+  end
+  state.spawnAllConvoys = spawnAllConvoys
+  state.startAllRoutes = startAllRoutes
+  state.launchAllConvoys = launchAllConvoys
+  state.showFleetStatus = showFleetStatus
+  state.supervise = supervise
 
-  setOutcome(OUTCOME_READY, "TM01M MOOSE-native MSR convoy baseline is ready")
+  setOutcome(OUTCOME_READY, "TM01M five-convoy MOOSE-native MSR test is ready")
   log("INFO", "startup", {
     testId = build.testId,
     stageId = build.stageId,
     configurationVersion = config.configurationVersion,
     routeMode = "MOOSE_PATHLINE_MSR",
-    msrPathlineCount = #objects.pathlines,
-    msrPathlines = join(config.routing.msrPathlines),
+    convoyCount = #state.convoys,
+    msrPathlineCount = totalPathlineCount,
+    speedKph = config.routing.speedKph,
+    formation = config.routing.formation,
     customCampaignStateLoaded = false,
     customProxyControllerLoaded = false,
     customInterestMonitorLoaded = false,
     customWatchdogLoaded = false,
   })
-  message("TM01M READY: MOOSE-native MSR convoy baseline")
+  message("TM01M READY: five MOOSE-native MSR convoys at "
+    .. tostring(config.routing.speedKph) .. " km/h")
   return state
 end
 
