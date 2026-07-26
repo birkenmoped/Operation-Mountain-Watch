@@ -1,5 +1,5 @@
 local config = {
-  configurationVersion = "TM01M-moose-native-five-convoys-1",
+  configurationVersion = "TM01M-moose-native-five-convoys-2",
   testId = "TM01",
   stageId = "TM01M",
 
@@ -75,6 +75,11 @@ local config = {
     maximumSpawnRoadSnapMeters = 30,
     maximumPathlineJoinMeters = 250,
     maximumWaypointRoadSnapMeters = 250,
+  },
+
+  arrival = {
+    despawnDelaySeconds = 60,
+    generateDestroyEvents = false,
   },
 
   supervision = {
