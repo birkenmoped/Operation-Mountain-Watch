@@ -42,11 +42,14 @@ Current air-operations planning documents:
 - [`Verbindliche Entscheidungen zur aktiven Luft-ORBAT`](docs/19-active-air-orbat-decisions.md)
 - [`Missionseditor-Arbeitsliste für die Luft-ORBAT`](docs/20-air-orbat-mission-editor-worklist.md)
 - [`Jalalabad Air Operations Manifest`](docs/21-jalalabad-air-operations-manifest.md)
+- [`ISR-, FAC-, AFAC-, JTAC-, CAS- und AAR-Architektur`](docs/moose/ISR-FAC-CAS-AAR.md)
 
 Project-wide MOOSE documentation:
 
 - [`MOOSE-Projektdokumentation`](docs/moose/README.md)
 - [`MOOSE-Projektklassenindex`](docs/moose/PROJECT-CLASS-INDEX.md)
+- [`MOOSE-Luftoperationen`](docs/moose/AIR-OPERATIONS.md)
+- [`ISR-, FAC-, AFAC-, JTAC-, CAS- und AAR-Architektur`](docs/moose/ISR-FAC-CAS-AAR.md)
 - [`Verifizierte MOOSE-Methoden`](docs/moose/VERIFIED-METHODS.md)
 
 Diagnostic mission scripts are stored in [`scripts/diagnostics/`](scripts/diagnostics/). Air-operations bootstrap scripts are stored in [`scripts/air-operations/`](scripts/air-operations/).
