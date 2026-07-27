@@ -89,6 +89,7 @@ Eine Nummer und eine stabile `document_id` dürfen im aktuellen Bestand jeweils 
 | `OMW-GOV-MOOSE-VERSION` | `docs/moose/VERSION-AND-SOURCES.md` | `BINDING` |
 | `OMW-MOOSE-DOCUMENTATION-INDEX` | `docs/moose/README.md` | `BINDING` |
 | `OMW-MOOSE-CLASS-INDEX` | `docs/moose/PROJECT-CLASS-INDEX.md` | `BINDING` |
+| `OMW-MOOSE-FOG-OF-WAR-RECCE` | `docs/moose/FOG-OF-WAR-RECCE.md` | `PLANNED`; MOOSE-Fähigkeits- und Grenzenanalyse |
 | `OMW-MOOSE-VERIFIED-METHODS` | `docs/moose/VERIFIED-METHODS.md` | `BINDING` |
 | `OMW-CSAR-INDEX` | `docs/csar/README.md` | `BINDING` |
 | `OMW-CSAR-SOURCE-NOTES-1-8` | `docs/csar/source-notes-1-8.md` | `BINDING`; Quellenregister |

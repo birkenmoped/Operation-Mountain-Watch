@@ -10,8 +10,10 @@ project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
 superseded_by:
 source_branch: main
-source_commit:
+source_commit: 40a6de25b36a821dd1cc37523620c82890ad3f3b
 validated_in_dcs: false
+document_class: MOOSE_CAPABILITY_ASSESSMENT
+owning_policy: OMW-GOV-001
 ---
 
 # MOOSE Fog of War, INTEL und RECCE/Aufklärung
