@@ -5,7 +5,7 @@ authoritative_for:
   - project MOOSE class statuses
   - planned MOOSE integration candidates
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
-source_branch: agent/afghanistan-nsl-documentation
+source_branch: main
 validated_in_dcs: partial
 ---
 
@@ -61,11 +61,11 @@ Diese Einträge gelten nicht automatisch als praktisch vollständig validiert. V
 | `Ops.FlightGroup` | `FLIGHTGROUP` | `PLANNED` | Laufzeitsteuerung gebundener Hubschrauber und Fluggruppen; CAS-Station, Fuel-, Munitions-, Refuelling- und RTB-Logik | Signaturen, Bindung durch AIRWING, Fuel-/Ammo-Methoden und FSM-Callbacks prüfen |
 | `Core.Point` | `COORDINATE` | `PLANNED` | Afghanistan-NSL-Punkte aus WGS84 mit `NewFromLLDD()` in DCS-Koordinaten überführen; Distanz- und Prüfberichte erzeugen | Signatur im eingebundenen MOOSE-Stand, Afghanistan-Kartenkonvertierung und Landhöhenverhalten testen |
 | `Core.Zone` | `ZONE_RADIUS`, `ZONE_POLYGON_BASE` | `PLANNED` | NSL-Schutzgeometrien und zentrale Prüfung von Zielkoordinaten über `IsCoordinateInZone()` beziehungsweise `IsVec2InZone()` | Konstruktoren, Randverhalten, Polygonquelle, Registrierungsstrategie und Performance mit großem Datenbestand testen |
-| `Ops.Intel` | `INTEL` | `PLANNED` | Gemeinsames taktisches Lagebild für UAVs, Bodensensoren und erkannte Kontakte/Cluster | Kontaktmodell, Events, Timeout und Abgrenzung zu CampaignState/RedDirector prüfen |
+| `Ops.Intel` | `INTEL` | `PLANNED` | Primäres taktisches Lagebild für UAVs, Bodensensoren und erkannte Kontakte/Cluster; Sensorarten, räumliche Filter, Events und kontrollierte HUMINT-Einspeisung | Kontaktmodell, Events, dokumentierte Nachverfolgungszeiten, obsoletes `SetForgetTime()`, Agent-Lifecycle und Abgrenzung zu CampaignState/RedDirector prüfen |
 | `Ops.Target` | `TARGET` | `PLANNED` | Standardisierte Ziele für Spieler-, AI-, FAC-, CAS- und Strike-Aufträge | Zieltypen, Zustände, BDA und Bindung an AUFTRAG prüfen |
 | Player-Task-System | `PLAYERTASKCONTROLLER` und zugehörige Klassen | `PLANNED` | Spieleraufträge aus Gruppe, Einheit, Zone, Koordinate oder Suchgebiet; Annahme und AI-Eskalation | Exakte Klassen, Signaturen, Multiplayer-Verhalten und Menürechte prüfen |
 | `Functional.Designate` | `DESIGNATE` | `PLANNED` | Laser-, Rauch-, Beleuchtungs- und Zielmarkierungsdienst für UAV, AFAC und JTAC | Zusammenspiel mit INTEL, Detection, Spielergruppen und aktuellem MOOSE-Stand prüfen |
-| Detection-Klassen | `DETECTION_*` | `PLANNED` | Sensorerkennung für DESIGNATE und gegebenenfalls ergänzend zu INTEL | Geeignete Detection-Klasse, Sichtlinie, Reichweite und Performance festlegen |
+| Detection-Klassen | `DETECTION_*` | `PLANNED`, eingeschränkt | Sensorerkennung für `DESIGNATE` oder nachgewiesene Spezialfälle; kein paralleles strategisches Lagebild neben `INTEL` | Tatsächliche Abhängigkeit, geeignete Detection-Klasse, Sichtlinie, Reichweite und Performance festlegen |
 | `Ops.OpsTransport` | `OPSTRANSPORT` | `PLANNED` | Truppen- und Frachttransporte zwischen Lade- und Entladezonen | Carrier-/Cargo-Modell und Failure-/Success-Zustände in DCS validieren |
 | `Ops.ArmyGroup` | `ARMYGROUP` | `PLANNED` | Laufzeitsteuerung von Bodengruppen, insbesondere transportierbarer oder entpackter Gruppen und JTAC-Patrouillen | Verhalten bei Transport, Feindkontakt, Route, Markierung und Festfahren prüfen |
 | `Ops.Brigade` | `BRIGADE` | `PLANNED` | Bestands- und Einsatzmanager größerer Bodeneinheiten | Zusammenspiel mit CampaignState und COMMANDER klären |
@@ -82,7 +82,7 @@ Diese Einträge gelten nicht automatisch als praktisch vollständig validiert. V
 
 | Funktion / Missionstyp | Status | Geplanter Zweck | Vor DCS-Einsatz zu prüfen |
 |---|---|---|---|
-| `AUFTRAG:NewRECON()` | `PLANNED` | ISR- und UAV-Aufklärungsmissionen | Zonen, Sensorverhalten, Dauer und Abschluss |
+| `AUFTRAG:NewRECON()` | `PLANNED` | ISR- und UAV-Aufklärungsmissionen für Luft-, Boden- und Marinegruppen | Zonen, Dauer, Höhe, Wiederholung und Abschluss; RECON ist ein Bewegungsauftrag und registriert das Asset nicht automatisch als `INTEL`-Agent |
 | `AUFTRAG:NewFAC()` | `PLANNED` | gebietsbezogene FAC-Mission für UAV oder anderes Asset | Signatur, Luft-/Bodenfähigkeit, Funk und Zielerkennung |
 | `AUFTRAG:NewFACA()` | `PLANNED` | FAC(A) gegen konkrete bestätigte Zielgruppe | Zieltyp, Designation, Datalink, Funk und Missionsende |
 | `AUFTRAG:NewCAS()` | `PLANNED` | CAS-Orbit und Bereitschaft in einem Einsatzraum | Reaktion auf Ziele, Rückkehr zum Orbit, RTB und Abschluss |
@@ -108,7 +108,10 @@ Für alle offensiven Auftragstypen gilt: Erkennung oder feindliche Koalitionszug
 
 | Modul / Klasse | Global | Status | Möglicher Nutzen | Noch offene Entscheidung |
 |---|---|---|---|---|
-| `Ops.OpsZone` | `OPSZONE` | `CANDIDATE` | Operative Zonen mit Besitz- und Zustandslogik | Prüfen, ob die Kampagnenzonen damit vollständig abbildbar sind |
+| `Ops.Intel` | `INTEL_DLINK` | `CANDIDATE` | Aggregation getrennter Luft-, Boden- und HUMINT-INTEL-Netze zu einem kontrollierten BLUE-Lagebild | Verfügbarkeit im eingebundenen MOOSE-Commit, Cache-/Ablaufsemantik, Deduplizierung und Performance prüfen |
+| `Ops.PlayerRecce` | `PLAYERRECCE` | `CANDIDATE` | Spielergeführte Aufklärung, Zielberichte, Player-Task-Übergabe, SRS und OH-58D-Kiowa-Autolase | OH-58D-MMS, Sichtgeometrie, Laser, Multiplayer und Verhältnis zu INTEL praktisch validieren |
+| `Ops.TARS` | `TARS` | `CANDIDATE` | Verzögerte Foto-/IMINT-Aufklärung mit Film, Rückkehr, Debrief und koalitionsbezogenen F10-Markern | Verfügbarkeit, unterstützte Module, Sensorprofile, Markerlebensdauer und CampaignState-Integration prüfen |
+| `Ops.OpsZone` | `OPSZONE` | `CANDIDATE` | Operative Zonen mit Besitz- und Zustandslogik | Prüfen, ob die Kampagnenzonen vollständig abbildbar sind und ob direkte Zonenscans das Fog-of-War-Modell umgehen |
 | `Ops.Operation` | `OPERATION` | `CANDIDATE` | Mehrstufige operative Abläufe | Nutzen gegenüber projektgesteuerten Kampagnenphasen prüfen |
 
 Kandidaten dürfen nicht ohne den verbindlichen Rechercheweg als Architekturstandard übernommen werden.
@@ -117,7 +120,7 @@ Kandidaten dürfen nicht ohne den verbindlichen Rechercheweg als Architekturstan
 
 | Modul / Klasse | Status | Entscheidung |
 |---|---|---|
-| `Ops.Chief` | `NOT_USED` | Zielauswahl, Kampagnenlogik und Auftragserzeugung bleiben zunächst bei `CampaignState`, `MissionGenerator`, `RedDirector` und deren Adaptern. |
+| `Ops.Chief` | `NOT_USED` | Zielauswahl, Kampagnenlogik und Auftragserzeugung bleiben zunächst bei `CampaignState`, `MissionGenerator`, `RedDirector` und deren Adaptern. Eine spätere Neubewertung muss berücksichtigen, dass CHIEF-Zonenbesitz laut Develop-Dokumentation über direkte Zonenscans und nicht über das Detection-Netz bestimmt wird. |
 | `Ops.Fleet` / `Ops.NavyGroup` | `NOT_USED` | Der aktuelle Afghanistan-Kampagnenumfang enthält keine operative Seestreitkraft. |
 | `Ops.Airboss` | `NOT_USED` | Keine Trägeroperationen im aktuellen Kampagnenscope. |
 
@@ -137,6 +140,10 @@ Direkte DCS-API-Aufrufe sind keine MOOSE-Module und werden deshalb getrennt betr
 Die verbindliche Ausarbeitung für ISR, FAC, AFAC, JTAC, CAS, UAV, BDA und AAR steht in:
 
 - [`ISR-FAC-CAS-AAR.md`](ISR-FAC-CAS-AAR.md)
+
+Die ergänzende MOOSE-Fähigkeits- und Grenzenanalyse für Fog of War und RECCE steht in:
+
+- [`FOG-OF-WAR-RECCE.md`](FOG-OF-WAR-RECCE.md)
 
 Die verbindliche Ausarbeitung für No-Strike- und Zielschutz steht in:
 
