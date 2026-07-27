@@ -27,6 +27,18 @@ Die folgenden Vorgaben gelten für das gesamte Hauptprojekt **Operation Mountain
 
 Vor der Entwicklung eigener Lua-Funktionen müssen die passende MOOSE-Dokumentation, der tatsächlich verwendete MOOSE-Quellstand und die offiziellen Demo- beziehungsweise Testmissionen geprüft werden. Vorhandene MOOSE-Funktionalität ist vorrangig zu verwenden. Abweichungen und Eigenentwicklungen müssen technisch begründet, versionsbezogen dokumentiert und durch reproduzierbare DCS-Tests abgesichert werden.
 
+## Quellenattribution: Graveyard of Empires
+
+Sämtliche Credits für die zugrunde liegende Recherche, Datensammlung, Zusammenstellung und historische Aufbereitung der von **Graveyard of Empires** übernommenen Afghanistan-/OEF-/ISAF-Unterlagen gehen an:
+
+- **Graveyard of Empires** — <https://www.patreon.com/cw/graveyard4DCS>
+
+Graveyard of Empires erklärt, dass die dort präsentierten Informationen aus offenen Quellen stammen. Operation Mountain Watch übernimmt und strukturiert ausgewählte Inhalte ausschließlich für die eigene Missionsgestaltung und beansprucht keine eigene Urheberschaft an dieser Recherche oder Datensammlung.
+
+Die verbindliche projektweite Attribution, das Quellenverständnis und die Abgrenzung zwischen offenen Ausgangsinformationen und den von Graveyard of Empires erstellten Zusammenstellungen sind dokumentiert unter:
+
+- [`Graveyard of Empires – Credits, Quellenverständnis und Attribution`](docs/sources/graveyard-of-empires.md)
+
 ## Status
 
 Early design and prototyping. No gameplay release exists yet.
