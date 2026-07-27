@@ -1,10 +1,14 @@
 # Afghanistan TAD- und Color-Net-Frequenzplan
 
+> **Credits und Urheberschaft der Recherche:** Sämtliche Credits für die zugrunde liegende Recherche, Zusammenstellung, Einordnung und DCS-spezifische Aufbereitung gehen an **Graveyard of Empires**: <https://www.patreon.com/cw/graveyard4DCS>
+>
+> Die vorliegende Projektdatei überträgt und strukturiert diese Informationen lediglich für die Missionsgestaltung von **Operation Mountain Watch**. Sie beansprucht keine eigene Urheberschaft an der zugrunde liegenden Recherche, Datensammlung oder ursprünglichen Darstellung.
+
 ## 1. Status und Zweck
 
 **Status:** `REFERENCE` / projektweiter Frequenzanhang für Missionsdesign und spätere technische Implementierung.
 
-Dieses Dokument übernimmt die Inhalte des Beitrags **„TAD & Color Nets: Tactical Frequency Presets for Afghanistan Theater“** von *Graveyard of Empires* sowie die bereitgestellte Anlage **„Afghanistan Theater - Radio Color Preset“**, Version `v1.0` vom **17. Oktober 2025**.
+Dieses Dokument übernimmt die Inhalte des Beitrags **„TAD & Color Nets: Tactical Frequency Presets for Afghanistan Theater“** von **Graveyard of Empires** sowie die bereitgestellte Anlage **„Afghanistan Theater - Radio Color Preset“**, Version `v1.0` vom **17. Oktober 2025**.
 
 Der Frequenzplan stellt für **Operation Mountain Watch** bereit:
 
@@ -15,6 +19,21 @@ Der Frequenzplan stellt für **Operation Mountain Watch** bereit:
 - eine stabile logische Netzbezeichnung, die unabhängig von späteren Änderungen der numerischen Frequenz verwendet werden kann.
 
 Die Tabellen sind als **DCS-Missionsdesign-Datensatz** zu verstehen. Sie sind keine freigegebene historische COMPLAN-, ATO- oder SPINS-Frequenzliste und belegen nicht, dass diese numerischen Zuordnungen im realen Afghanistan-Einsatz verwendet wurden.
+
+### 1.1 Herkunft der Informationen und Quellenverständnis
+
+Graveyard of Empires beschreibt den eigenen Ansatz auf der Patreon-Seite mit dem zentralen Hinweis:
+
+> “All the information presented here come from open sources - sometimes easily accessible but little understood, other times more improbable, but no less interesting!”
+
+Für **Operation Mountain Watch** ist dieser Hinweis verbindlich wie folgt zu verstehen:
+
+- Die von Graveyard of Empires präsentierten Informationen stammen nach eigener Aussage vollständig aus **offenen Quellen**.
+- Der besondere Wert der Arbeit liegt in der langjährigen Recherche, Auswahl, Einordnung, Zusammenführung und missionsbezogenen Aufbereitung verstreuter Informationen.
+- **Open Source** bedeutet in diesem Zusammenhang öffentlich zugängliche Informationsquellen. Es bedeutet nicht automatisch, dass jeder einzelne Datensatz eine Primärquelle darstellt, vollständig verifiziert ist oder ohne Kontextprüfung übernommen werden darf.
+- Ungewöhnliche, schwer auffindbare oder wenig verstandene Fundstellen können relevant sein, müssen im Projekt aber weiterhin hinsichtlich Zeitraum, Funktion, technischem Kontext und Verwendbarkeit geprüft werden.
+- Graveyard of Empires ist bei jeder direkten oder abgeleiteten Verwendung sichtbar als Quelle der Recherche und Zusammenstellung zu nennen.
+- Soweit konkrete ursprüngliche Primär- oder Sekundärquellen bekannt werden, werden diese **zusätzlich** dokumentiert. Sie ersetzen nicht den Credit für die von Graveyard of Empires geleistete Sammlung, Einordnung und DCS-Aufbereitung.
 
 ## 2. Begriffe und operativer Hintergrund
 
@@ -61,6 +80,7 @@ Für **Operation Mountain Watch** gelten auf Basis dieser Quelle folgende Regeln
 8. **Jede Vergabe wird zentral registriert.** Ad-hoc-Zuweisungen außerhalb des projektweiten Frequenzregisters sind nicht zulässig.
 9. **Frequenzen werden nicht anhand realer historischer Geheimhaltung behauptet.** Der Datensatz ist eine DCS-konforme, quellenbasierte Missionsdesign-Lösung.
 10. **Änderungen erhalten eine neue Planversion.** Anpassungen werden mit Quelle, Datum, Grund und betroffenen Slots dokumentiert.
+11. **Credits bleiben erhalten.** Jede Weiterverwendung, Konvertierung oder technische Ableitung aus diesem Frequenzplan muss Graveyard of Empires als Quelle der Recherche und ursprünglichen DCS-Aufbereitung sichtbar nennen.
 
 ## 4. Technische Kennung und Datenmodell
 
@@ -104,6 +124,7 @@ CLR_TURQUOISE_20
 | `area` | Einsatzraum oder Flugplatz |
 | `status` | `FREE`, `ALLOCATED`, `RESERVED_AI_ATC`, `BLOCKED`, `RETIRED` |
 | `source_version` | hier zunächst `AFG-COLOR-v1.0-2025-10-17` |
+| `source_credit` | `Graveyard of Empires` mit Verweis auf das Patreon-Profil und den konkreten Beitrag |
 | `valid_from` / `valid_to` | Gültigkeitszeitraum der projektseitigen Zuordnung |
 | `notes` | Einschränkungen, Funkgerätekompatibilität, Konflikte |
 
@@ -263,7 +284,7 @@ Vor jeder Vergabe ist folgende Reihenfolge einzuhalten:
 2. **Benötigten Funkbereich und Modulation bestimmen:** anhand der tatsächlich beteiligten DCS-Module und ihrer Funkgeräte.
 3. **Reservierungen prüfen:** AI-/ATC-Slots aus Abschnitt 6 sowie bereits missionsweit belegte Netze ausschließen.
 4. **Freien Color-Net-Slot auswählen:** bevorzugt aus einem für die Rolle vorgesehenen Pool; keine zufällige globale Vergabe ohne Band- und Kompatibilitätsprüfung.
-5. **Netz registrieren:** `net_id`, Frequenz, Modulation, Rolle, Eigentümer, Einsatzraum und Gültigkeit eintragen.
+5. **Netz registrieren:** `net_id`, Frequenz, Modulation, Rolle, Eigentümer, Einsatzraum, Gültigkeit und Quellen-Credit eintragen.
 6. **Briefing synchronisieren:** Mission Briefing, Kneeboard, F10-Menüs, SRS-/Radio-Presets und technische Konfiguration müssen dieselbe Zuordnung verwenden.
 7. **Laufzeitstabilität sicherstellen:** Ein aktiver JTAC oder C2-Knoten behält sein Netz für seine gesamte Lebensdauer beziehungsweise den gesamten Auftrag.
 8. **Freigabe dokumentieren:** Ein Slot wird erst nach Ende oder eindeutigem Abbruch der zugewiesenen Funktion wieder als `FREE` markiert.
@@ -279,6 +300,7 @@ Für eine spätere dynamische Implementierung ist ein zentraler Frequenzmanager 
 - parallele Doppelvergabe verhindert,
 - einer JTAC-/FAC(A)-Instanz einen stabilen Slot zuweist,
 - die Zuordnung für Briefing, F10-Menüs, SRS und Logging bereitstellt,
+- den Quellen- und Credit-Hinweis in exportierten Unterlagen beibehält,
 - nach Missionsende oder Persistenz-Recovery den Zustand korrekt wiederherstellt.
 
 Vor Eigenentwicklung ist gemäß der verbindlichen MOOSE-First-Richtlinie zu prüfen, welche vorhandenen MOOSE-Klassen und Methoden Frequenz, Modulation, Callsign, FAC/JTAC, FAC(A), DESIGNATE, AIRBOSS/ATC-nahe Funktionen sowie dynamische Aufgaben bereits abbilden. Eine eigene Vergabelogik darf nur den nicht durch MOOSE abgedeckten Teil ergänzen.
@@ -292,6 +314,7 @@ Der Ausgangsbeitrag weist darauf hin, dass der Frequenzplan nach DCS-Theater-Upd
 - Nach DCS-Afghanistan-Updates sind insbesondere die AI-/Airfield-Frequenzen erneut zu prüfen.
 - Jede Änderung erhält eine nachvollziehbare Änderungsnotiz mit alter und neuer Zuordnung.
 - Missionen müssen ihre verwendete Frequenzplanversion im Briefing oder in der Konfiguration ausweisen.
+- Der Credit für Graveyard of Empires bleibt auch bei projektseitigen Änderungen, Teilmengen, Exporten und technischen Konvertierungen erhalten.
 
 Empfohlene Versionskennung für den unveränderten Ausgangsdatensatz:
 
@@ -299,14 +322,21 @@ Empfohlene Versionskennung für den unveränderten Ausgangsdatensatz:
 AFG-COLOR-v1.0-2025-10-17
 ```
 
-## 11. Quellen und Quellenstatus
+## 11. Credits, Quellen und Quellenstatus
 
-- Graveyard of Empires: *TAD & Color Nets: Tactical Frequency Presets for Afghanistan Theater*, veröffentlicht am 24. Oktober 2025: <https://www.patreon.com/graveyard4DCS/posts/tad-color-nets-141675991?collection=833534>
-- Projektseitig bereitgestellte Anlage: *Afghanistan Theater - Radio Color Preset*, Version `v1.0`, Stand 17. Oktober 2025, fünf Seiten.
+**Sämtliche Credits für die zugrunde liegende Recherche, Sammlung, Einordnung und ursprüngliche DCS-Aufbereitung gehen an Graveyard of Empires.**
+
+- Graveyard of Empires - Patreon-Profil: <https://www.patreon.com/cw/graveyard4DCS>
+- Graveyard of Empires: *TAD & Color Nets: Tactical Frequency Presets for Afghanistan Theater*: <https://www.patreon.com/graveyard4DCS/posts/tad-color-nets-141675991?collection=833534>
+- Von Graveyard of Empires veröffentlichte und projektseitig bereitgestellte Anlage: *Afghanistan Theater - Radio Color Preset*, Version `v1.0`, Stand 17. Oktober 2025, fünf Seiten.
+
+Die Verwendung in **Operation Mountain Watch** erfolgt als strukturierte Dokumentation und missionsdesignerische Adaption der von Graveyard of Empires veröffentlichten Open-Source-Recherche. Die projektseitige Übertragung der Tabellen, technische Benennung und Ableitung von Implementierungsregeln begründet keinen eigenen Anspruch auf die zugrunde liegende Recherche oder Zusammenstellung.
 
 ### 11.1 Quellenabgrenzung
 
 Der Beitrag erläutert das reale Verfahren und die operative Zweckmäßigkeit codierter TAD-/Color-Netze. Die beigefügte numerische Tabelle ist eine für DCS World erstellte Afghanistan-Theater-Zuordnung. Sie darf nicht als offengelegte reale Afghanistan-Frequenztabelle ausgegeben werden.
+
+Die Aussage, dass sämtliche präsentierten Informationen aus offenen Quellen stammen, beschreibt die Herkunft der von Graveyard of Empires ausgewerteten Informationen. Sie bedeutet nicht, dass jede projektseitige Ableitung bereits gegen die jeweilige ursprüngliche Quelle verifiziert wurde. Der Credit für die Rechercheleistung und der projektseitige Verifikationsstatus sind deshalb getrennt zu behandeln.
 
 ## 12. Offene Projektaufgaben
 
@@ -317,3 +347,4 @@ Der Beitrag erläutert das reale Verfahren und die operative Zweckmäßigkeit co
 - [ ] SRS-, Briefing- und Kneeboard-Ausgabe aus derselben Datenquelle erzeugen.
 - [ ] Nach jedem relevanten Afghanistan-Kartenupdate die Airfield-Frequenzen gegen den aktuellen DCS-Stand prüfen.
 - [ ] MOOSE-Methoden für Frequenz-/Modulationszuweisung und dynamische JTAC-/FAC(A)-Instanzen versionsbezogen verifizieren.
+- [ ] Credits und konkrete Quellenlinks in allen späteren maschinenlesbaren Exporten und erzeugten Missionsunterlagen erhalten.
