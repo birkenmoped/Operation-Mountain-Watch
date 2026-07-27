@@ -51,6 +51,7 @@ Diese Quelle ist zu verwenden, wenn die Mission einen stabilen Master-/Release-S
 - [`PROJECT-CLASS-INDEX.md`](PROJECT-CLASS-INDEX.md) – alle für OMW relevanten MOOSE-Klassen mit Status
 - [`AIR-OPERATIONS.md`](AIR-OPERATIONS.md) – AIRWING-, SQUADRON-, AUFTRAG- und COMMANDER-Architektur
 - [`ISR-FAC-CAS-AAR.md`](ISR-FAC-CAS-AAR.md) – Aufklärung, Fog-of-War, FAC/FAC(A)/AFAC/JTAC, Spieler- und AI-CAS, UAV-Einsatz, Loitering, BDA und Luftbetankung
+- [`Afghanistan No-Strike List (NSL)`](../28-no-strike-list-afghanistan.md) – Zielschutz, Quelldatenprüfung und geplante MOOSE-Integration
 - [`GROUND-OPERATIONS.md`](GROUND-OPERATIONS.md) – Bodengruppen, Brigaden, Spawning und Gruppenmengen
 - [`LOGISTICS-AND-TRANSPORT.md`](LOGISTICS-AND-TRANSPORT.md) – Warehouse, OPSTRANSPORT, CTLD, CSAR und RAT
 - [`EVENTS-AND-FSM.md`](EVENTS-AND-FSM.md) – Events, FSM-Callbacks und Scheduler
