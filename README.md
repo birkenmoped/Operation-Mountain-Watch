@@ -16,16 +16,53 @@ Dynamic persistent COIN multiplayer campaign for DCS World on the Afghanistan ma
 - MOOSE
 - MOOSE CTLD
 - MOOSE CSAR
-- Custom campaign state, persistence, red-force director, and virtualization modules
+- Custom campaign state, persistence, red-force director, and virtualization modules where MOOSE does not provide the project-specific domain model
+
+## Verbindliche Projekt-Governance
+
+Die höchste projektinterne Entscheidungsinstanz ist:
+
+- [`OMW-GOV-001 – Projekt-Governance`](docs/00-project-governance.md)
+
+Das zentrale Register für Dokumentnummern und stabile IDs ist:
+
+- [`OMW-GOV-DOCUMENT-REGISTRY – Zentrales Dokumentregister`](docs/DOCUMENT-REGISTRY.md)
+
+Bei widersprüchlichen Angaben gelten die dort definierte Quellenhierarchie, die Dokumentstatus und die Supersede-Regeln. Verweise sollen künftig stabile Dokument-IDs und Pfade verwenden und nicht nur Bezeichnungen wie „Dokument 28“.
+
+## Verbindlicher Kampagnenrahmen
+
+```text
+Historischer Recherche- und Kampagnenzeitraum:
+01.08.2010 bis 31.12.2011
+
+Aktive Missions-ORBAT:
+zusammengesetzte, spielbare Auswahl innerhalb dieses Zeitraums
+mit besonderer Evidenzbasis aus verfügbaren Satellitenbildern Ende 2011
+```
+
+Es wird kein automatischer historischer Staffelwechsel nach Kampagnendatum umgesetzt. Reale Rotationen bleiben als historischer Kontext erhalten; die aktive Missionsbaseline wird ausdrücklich in den zuständigen Entscheidungsdokumenten festgelegt.
+
+## Aktuelle Projektphase
+
+```text
+COMPLETE_FOUNDATION_BUILD_PHASE
+```
+
+Zunächst wird das vollständige Missionsgrundgerüst aufgebaut: Flugplätze, Luftoperationsknoten, FOBs, Einheiten, Spielergruppen, KI-Templates, Statics, Warehouses, Naming und grundlegende MOOSE-Strukturen. Darauf setzen anschließend gezielte Funktions-, Integrations- und Acceptance-Tests auf.
+
+Der frühere vertikale Jalalabad–Connolly-Prototyp bleibt als Entwicklungsnachweis erhalten, ist aber nicht mehr die aktuelle Ablaufstrategie.
 
 ## Projektweit verbindliche Entwicklungsrichtlinien
 
-Die folgenden Vorgaben gelten für das gesamte Hauptprojekt **Operation Mountain Watch** und damit für alle Teilbereiche, Testmissionen, Feature-Branches, Diagnosezweige und späteren Erweiterungen. Sie sind nicht auf Jalalabad, PR #18 oder ein einzelnes Unterprojekt beschränkt.
+Die folgenden Vorgaben gelten für das gesamte Hauptprojekt und alle Unterprojekte, Testmissionen, Feature-Branches, Diagnosezweige und Erweiterungen:
 
-- [`Verbindliche MOOSE-First-Entwicklungsrichtlinie`](docs/26-moose-first-development-policy.md)
+- [`OMW-GOV-001 – Projekt-Governance`](docs/00-project-governance.md)
+- [`OMW-GOV-MOOSE-FIRST – Verbindliche MOOSE-First-Entwicklungsrichtlinie`](docs/26-moose-first-development-policy.md)
 - [`MOOSE-Projektdokumentation und Klassenregister`](docs/moose/README.md)
+- [`MOOSE-Version und Quellen`](docs/moose/VERSION-AND-SOURCES.md)
 
-Vor der Entwicklung eigener Lua-Funktionen müssen die passende MOOSE-Dokumentation, der tatsächlich verwendete MOOSE-Quellstand und die offiziellen Demo- beziehungsweise Testmissionen geprüft werden. Vorhandene MOOSE-Funktionalität ist vorrangig zu verwenden. Abweichungen und Eigenentwicklungen müssen technisch begründet, versionsbezogen dokumentiert und durch reproduzierbare DCS-Tests abgesichert werden.
+Vor eigener Lua-Logik müssen passende MOOSE-Funktionen, Dokumentation, Quellcode und offizielle Beispiele geprüft werden. Eine technische Begründung allein genehmigt keine Abweichung. Jede produktive Nicht-MOOSE-, Native-DCS- oder projektspezifische Parallelimplementierung benötigt zusätzlich die ausdrückliche Freigabe des Projektinhabers und eine dokumentierte Ausnahme.
 
 ## Quellenattribution: Graveyard of Empires
 
@@ -33,41 +70,44 @@ Sämtliche Credits für die zugrunde liegende Recherche, Datensammlung, Zusammen
 
 - **Graveyard of Empires** — <https://www.patreon.com/cw/graveyard4DCS>
 
-Graveyard of Empires erklärt, dass die dort präsentierten Informationen aus offenen Quellen stammen und für eine möglichst realitätsnahe Missionsgestaltung im DCS-Afghanistan-Theater aufbereitet werden. Operation Mountain Watch nutzt deshalb alle für das Projekt relevanten **frei zugänglich veröffentlichten oder vom Projektinhaber rechtmäßig bereitgestellten** Informationen und Dokumente fachlich, strukturell und technisch.
+Operation Mountain Watch wertet alle frei zugänglichen oder vom Projektinhaber rechtmäßig bereitgestellten Inhalte vollständig für Dokumentation, Datenmodelle, Missionsdesign und DCS-/MOOSE-Umsetzung aus.
 
-Nicht frei zugängliche Patreon-Inhalte werden nicht beschafft, umgangen oder rekonstruiert. Die umfassende inhaltliche Nutzung frei bereitgestellter Quellen bedeutet zugleich nicht, dass vollständige Artikel, Grafiken oder Dateien automatisch als gemeinfrei behandelt oder unverändert im öffentlichen Repository gespiegelt werden. Attribution, Quellenlinks und die Trennung zwischen Quellinhalt und eigener Umsetzung bleiben erhalten.
+Nach Entscheidung des Projektmanagers beziehungsweise Autors dürfen Originaldateien, normalisierte Daten und abgeleitete Projektdateien in das Repository und in Missionspakete aufgenommen werden. Attribution, Quellenlink, konkrete Nutzungsbedingungen und die Trennung zwischen Quellinhalt und OMW-Entscheidung bleiben verpflichtend. Nicht rechtmäßig zugängliche Paywall-Inhalte werden nicht beschafft, umgangen oder rekonstruiert.
 
-Die verbindliche projektweite Attribution, das Quellenverständnis, der zulässige Nutzungsumfang und die Abgrenzung zwischen fachlicher Nutzung und Reproduktion sind dokumentiert unter:
+Die zentrale Regel ist dokumentiert unter:
 
-- [`Graveyard of Empires – Credits, Quellenverständnis und Attribution`](docs/sources/graveyard-of-empires.md)
+- [`OMW-GOV-SOURCE-USE – Graveyard of Empires: Credits, Quellen- und Dateinutzung`](docs/sources/graveyard-of-empires.md)
 
 ## Status
 
-Early design and prototyping. No gameplay release exists yet.
+Foundation build and controlled technical validation. No gameplay release exists yet.
 
 ## Documentation
 
 Project design documents are stored in [`docs/`](docs/).
 
-Current air-operations planning documents:
+### Zentrale Entscheidungen und Arbeitsbaselines
 
-- [`US Air Order of Battle 2010–2011`](docs/us-air-orbat-2010-2011.md)
+- [`Historischer und organisatorischer Rahmen`](docs/09-historical-setting.md)
+- [`US Air ORBAT – historische Recherche und Planungsbestand`](docs/us-air-orbat-2010-2011.md)
 - [`Luftoperations- und ORBAT-Umsetzung`](docs/18-air-operations-implementation.md)
-- [`Verbindliche Entscheidungen zur aktiven Luft-ORBAT`](docs/19-active-air-orbat-decisions.md)
+- [`OMW-AIR-ACTIVE-ORBAT – Verbindliche aktive Luft-ORBAT`](docs/19-active-air-orbat-decisions.md)
 - [`Missionseditor-Arbeitsliste für die Luft-ORBAT`](docs/20-air-orbat-mission-editor-worklist.md)
 - [`Jalalabad Air Operations Manifest`](docs/21-jalalabad-air-operations-manifest.md)
+
+### Kommunikation, C2 und AAR
+
 - [`ISR-, FAC-, AFAC-, JTAC-, CAS- und AAR-Architektur`](docs/moose/ISR-FAC-CAS-AAR.md)
 - [`OEF Air/Land C2- und JTAC-Callsign-Referenz`](docs/27-oef-jtac-callsign-reference.md)
 - [`Afghanistan TAD- und Color-Net-Frequenzplan`](docs/28-afghanistan-tad-color-nets.md)
 - [`ISAF 2009–2013 – Air-to-Air Refuelling und ACO-Referenz`](docs/29-isaf-2009-2013-air-to-air-refueling.md)
 - [`ISAF 2009–2013 – AAR Areas: Bildreferenz zu Patreon Teil 2`](docs/30-isaf-2009-2013-aar-part2-figure-reference.md)
 
-Project-wide MOOSE documentation:
+### MOOSE
 
 - [`MOOSE-Projektdokumentation`](docs/moose/README.md)
 - [`MOOSE-Projektklassenindex`](docs/moose/PROJECT-CLASS-INDEX.md)
 - [`MOOSE-Luftoperationen`](docs/moose/AIR-OPERATIONS.md)
-- [`ISR-, FAC-, AFAC-, JTAC-, CAS- und AAR-Architektur`](docs/moose/ISR-FAC-CAS-AAR.md)
 - [`Verifizierte MOOSE-Methoden`](docs/moose/VERIFIED-METHODS.md)
 
 Diagnostic mission scripts are stored in [`scripts/diagnostics/`](scripts/diagnostics/). Air-operations bootstrap scripts are stored in [`scripts/air-operations/`](scripts/air-operations/).
