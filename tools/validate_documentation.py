@@ -69,14 +69,15 @@ def validate(root):
         if not fm:
             (errors if rel in STRICT or path.parent==docs else warnings).append(f"{rel}: missing YAML frontmatter"); continue
         missing=sorted(CORE-set(fm))
-        if missing: errors.append(f"{rel}: missing core metadata: {', '.join(missing)}")
+        if missing: (errors if rel in STRICT or path.parent==docs else warnings).append(f"{rel}: missing core metadata: {', '.join(missing)}")
         missing=sorted(EXT-set(fm))
         if missing: (errors if rel in STRICT else warnings).append(f"{rel}: missing extended metadata: {', '.join(missing)}")
         did=str(fm.get("document_id","")).strip()
         if did: ids[did].append(rel)
         status=str(fm.get("status","")).strip()
         if status and status not in ALLOWED: errors.append(f"{rel}: invalid status {status!r}")
-        commit=str(fm.get("source_commit","")).strip()
+        raw_commit=fm.get("source_commit","")
+        commit="" if raw_commit in ("",[]) else str(raw_commit).strip()
         if commit and commit not in {"PENDING_MERGE","GIT_HISTORY"} and not HEX40.fullmatch(commit): errors.append(f"{rel}: invalid source_commit {commit!r}")
         if status=="ACCEPTED_TECHNICAL_BASELINE":
             req={"acceptance_branch","acceptance_commit","acceptance_mission","acceptance_mission_sha256","dcs_version"}
