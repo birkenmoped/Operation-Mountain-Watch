@@ -90,7 +90,7 @@ Aktueller nachvollziehbarer Nachweisstand:
 
 ```yaml
 acceptance: JALALABAD_COMPLETE_AIR_OPERATIONS_NODE
-mOOSE_commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+moose_commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
 moose_lua_sha256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
 evidence_type: RECONSTRUCTED_FROM_IDENTICAL_ARTIFACT
 moose_lua_changed_locally: false
