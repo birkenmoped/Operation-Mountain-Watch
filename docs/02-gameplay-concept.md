@@ -1,39 +1,69 @@
+---
+document_id: OMW-GAMEPLAY-CONCEPT
+status: BINDING
+document_class: GAMEPLAY_CONCEPT
+owning_policy: OMW-GOV-001
+authoritative_for:
+  - high-level BLUE and RED gameplay loops
+  - project mission-type and scaling principles
+scenario_period: 2010-08-01/2011-12-31
+project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
+supersedes:
+superseded_by:
+source_branch: agent/complete-documentation-authority-migration
+source_commit:
+validated_in_dcs: false
+---
+
 # 02 – Gameplay-Konzept
 
-## Strategische Lage
+## 1. Grundmodell
 
-Blau betreibt große Hauptbasen, Flugplätze und vorgeschobene FOBs. Hauptbasen besitzen nahezu unbegrenzte strategische Reserven; lokale FOBs verfügen über begrenztes Personal, Munition, Treibstoff, Baumaterial und Fahrzeuge.
+BLUE betreibt strategische Hauptbasen, regionale Luft- und Logistikknoten sowie vorgeschobene FOBs. Strategische Reserven werden nicht automatisch zu lokal verfügbaren Ressourcen.
 
-Rot besteht aus regionalen Zellen mit begrenztem Personal und Material. Zellen nutzen Camps, Verstecke, Sammelpunkte, Hinterhaltstellungen und Rückzugsräume. Fahrzeuge und schwere Waffen sind verfügbar, aber seltener als Infanterie.
+RED besteht aus regionalen Zellen und Netzwerken mit begrenztem Personal, Material und Verbindungen. Camps, Hide Sites, Caches, Sammelpunkte, Hinterhaltstellungen und Rückzugsräume besitzen nachvollziehbare Herkunft und Funktion.
 
-## Kernschleife Blau
+Der ursprüngliche Gameplay-Text bleibt unverändert erhalten:
 
-1. Lage und Aufträge bewerten.
-2. Aufklärung, Versorgung oder Schutzmaßnahmen planen.
-3. Angriff verhindern, laufenden Angriff abwehren oder gegnerische Infrastruktur bekämpfen.
-4. Verluste ersetzen, FOBs verstärken oder zerstörte Stellungen wiederaufbauen.
-5. Erkenntnisse über Zellführer, Kuriere und die gegnerische Führung gewinnen.
+- [`Legacy-Gameplay-Konzept`](evidence/source-records/legacy-02-gameplay-concept.md)
 
-## Kernschleife Rot
+## 2. BLUE-Kernschleife
 
-1. Ziel aus bekannten blauen Einrichtungen und gemeldeten Bewegungen auswählen.
-2. Kräfte und Waffen aus einer regionalen Zelle reservieren.
-3. Angriff vorbereiten und Kräfte virtuell oder physisch verlegen.
-4. Hinterhalt, Mörserangriff, Raid oder größeren Angriff durchführen.
-5. Bei hohen Verlusten zurückziehen oder zerstreuen.
-6. Verlorene Kräfte und Camps mit Verzögerung ersetzen.
+1. Lage, Ressourcen und offene `MissionDemand`-Objekte bewerten.
+2. Aufklärung, Versorgung, Schutz oder Angriff planen.
+3. gegnerische Operation verhindern, abwehren oder deren Infrastruktur bekämpfen.
+4. Verluste, Versorgung und Einsatzbereitschaft bearbeiten.
+5. Erkenntnisse über Netzwerke, Routen, Kuriere und Führung gewinnen.
+6. strategische Folgen in den CampaignState übernehmen.
 
-## Dynamische Missionsarten
+## 3. RED-Kernschleife
 
-- Versorgung per LKW, Hubschrauber, Transportflugzeug oder Luftabwurf
-- Konvoieskorte und Route Clearance
-- QRF für angegriffene FOBs oder Patrouillen
-- Aufklärung verdächtiger Dörfer, Täler und Pässe
-- Zerstörung von Camps, Waffenlagern und Mörserstellungen
-- CSAR und konkurrierende Gefangennahme eines Piloten
-- Wiederaufbau zerstörter FOBs
-- Suche nach Zellführern, Kurieren und HVTs
+1. Ziel anhand eigener Informationen und Ressourcen auswählen.
+2. Personal, Waffen, Fahrzeuge und Transportkapazität reservieren.
+3. Operation vorbereiten und Kräfte real oder kontrolliert virtualisiert verlegen.
+4. Hinterhalt, Mörserangriff, Raid, Logistik oder größeren Angriff durchführen.
+5. bei Verlusten zurückziehen, zerstreuen oder evakuieren.
+6. nur über vorhandene Netzwerke und Ressourcen regenerieren.
 
-## Skalierung
+## 4. Missionsarten
 
-Die Spielerzahl beeinflusst ein gegnerisches Bedrohungsbudget. Skaliert werden vor allem parallele Operationen, verfügbare Rollen, Angriffshäufigkeit und Einsatz schwerer Mittel – nicht nur die rohe Zahl gleichzeitig gespawnter Einheiten.
+- Straßen-, Hubschrauber- und Fixed-Wing-Logistik;
+- Konvoieskorte und Route Clearance;
+- QRF und CASEVAC/MEDEVAC;
+- Reconnaissance, ISR, HUMINT und Armed Reconnaissance;
+- CAS, Strike, Raid und Seize/Destroy;
+- CSAR und konkurrierende Capture-/Recovery-Vorgänge;
+- FOB-Verstärkung, Reparatur und Wiederaufbau;
+- Target Development und HVT-/Netzwerkoperationen.
+
+## 5. Skalierung
+
+Die Spielerzahl beeinflusst vor allem:
+
+- Zahl paralleler Operationen;
+- verfügbare Rollen und Tasking;
+- RED-Bereitschaft und Angriffshäufigkeit;
+- Einsatz schwerer Mittel;
+- Materialisierungs- und Performancebudgets.
+
+Skalierung erfolgt nicht lediglich durch mehr gleichzeitig gespawnte Einheiten.
