@@ -106,6 +106,7 @@ Evidenzdokumente sind keine parallele Projekt-Governance. Veraltete Nummern in u
 ### Kommunikation, C2, ROE und AAR
 
 - [`ISR-, FAC-, AFAC-, JTAC-, CAS- und AAR-Architektur`](docs/moose/ISR-FAC-CAS-AAR.md)
+- [`MQ-1B Predator und MQ-9 Reaper in Afghanistan – Einsatz-, Bewaffnungs- und Höhenbaseline`](docs/50-mq1-mq9-afghanistan-employment.md)
 - [`OEF Air/Land C2- und JTAC-Callsign-Referenz`](docs/27-oef-jtac-callsign-reference.md)
 - [`Afghanistan TAD- und Color-Net-Frequenzplan`](docs/28-afghanistan-tad-color-nets.md)
 - [`ISAF 2009–2013 – Air-to-Air Refuelling und ACO-Referenz`](docs/29-isaf-2009-2013-air-to-air-refueling.md)
