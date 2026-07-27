@@ -59,11 +59,47 @@ Daraus folgen für das Projekt verbindlich diese Einschränkungen:
 5. Die Liste darf nicht mit Flugzeug-, Tanker-, AWACS-, Range-Control- oder sonstigen Aircrew-Callsigns gleichgesetzt werden.
 6. Jede projektseitige Weiterverwendung muss Graveyard of Empires als Quelle der Recherche und Zusammenstellung sichtbar nennen.
 
+### 2.1 Vollständiger Begleittext des Patreon-Beitrags
+
+Der vom Projektinhaber bereitgestellte Seitentext bestätigt ausdrücklich:
+
+- Ziel des Beitrags ist eine reale Callsign-Referenz für Joint Terminal Attack Controllers, analog zu früheren Listen für Tanker und Kampfflugzeuge.
+- Die Open-Source-Literatur liefert viele Einzelinformationen; die schwierige Aufgabe ist die zeit- und ortsbezogene Zuordnung.
+- Graveyard of Empires verwendete die ISAF-Dislozierung von 2009 für eine primäre Ortszuordnung.
+- Als Arbeitsbeispiele werden After-Action-Reviews, Bücher, Artikel und Wikileaks-Suchergebnisse genannt.
+
+Der Seitentext ist damit als **Methodennachweis für die Zusammenstellung** dokumentiert. Er ist jedoch kein Einzelnachweis für jeden der 52 Callsigns.
+
+### 2.2 Bereitgestellte Quellenbelege und Beweiswert
+
+Die folgenden Ausschnitte wurden zusammen mit dem vollständigen Patreon-Seitentext bereitgestellt. Ihr Beweiswert wird getrennt nach Callsign, Funktion, Nation, Zeitraum und Ort bewertet.
+
+| Beleg | Direkt belegt | Nicht allein belegt | Status im Projekt |
+|---|---|---|---|
+| *Airpower in Afghanistan 2005–10: The Air Commanders’ Perspectives* – ASOC-Ausschnitt | Das ASOC führte den Codenamen **Trinity**; es war mit dem CAOC in Qatar an der Zuweisung von Luftressourcen und der täglichen Führung des Luftkrieges beteiligt. Der Text erwähnt außerdem die Verlagerung der Funktion vom US-Drehkreuz Bagram zum ISAF-Hauptquartier. | Kein JTAC-Team; keine einzelne regionale JTAC-Zuordnung. | `SOURCE_EXCERPT_VERIFIED` für ASOC-Callsign und C2-Funktion. |
+| Operation-Anaconda-/A-10-Ausschnitt | **Jaguar 12** war ein USAF Special Tactics Squadron Controller, eingebettet in ein australisches SAS-Team. | Der Ausschnitt belegt nicht die spätere Primärzuordnung **Bagram** und nicht, dass `Jaguar` über den gesamten Projektzeitraum dort stationiert war. | `SOURCE_EXCERPT_VERIFIED` für Callsign, USAF-Controller-Rolle und Operation-Anaconda-Kontext; Ortszuordnung bleibt `TENTATIVE`. |
+| WarDiaries-/Afghan-War-Diary-Ausschnitt vom 23.10.2006 | **Windmill 05** wird nahe Tarin Kowt im Distrikt Tarin Kowt, Provinz Uruzgan, genannt. | Der Ausschnitt bezeichnet Windmill nicht ausdrücklich als JTAC; er kann ein Fahrzeug-, Patrouillen-, QRF- oder anderes taktisches Element bezeichnen. | `SOURCE_EXCERPT_VERIFIED` für Callsign, Datum und Uruzgan-Ortsbezug; JTAC-Funktion bleibt `UNVERIFIED`. |
+| Ausschnitt zu *Dressed to Kill* | **Norseman Two One** wird ausdrücklich als Funkrufzeichen eines dänischen JTAC bezeichnet. | Der Ausschnitt allein nennt keinen präzisen Einsatzort und keine belastbare zeitliche Einordnung. | `SOURCE_EXCERPT_VERIFIED` für Callsign, dänische Zugehörigkeit und JTAC-Funktion; Helmand-Zuordnung bleibt `TENTATIVE`. |
+| NATO-Karte „Afghanistan ISAF RC and PRT Locations“ | Regionalkommandos, PRT-Standorte, Lead Nations und Truppenbeiträge als Grundlage der geografischen Zuordnung. Die Karte trägt den Datenstand **20.04.2009**. | Die Karte enthält selbst keine Callsigns und belegt keine individuelle Teamstationierung. | `METHODOLOGY_SOURCE_VERIFIED` für die 2009er Primärzuordnung nach nationalen Verantwortungsbereichen. |
+
+### 2.3 Konsequenzen für einzelne Einträge
+
+Auf Grundlage der nun vorliegenden Ausschnitte gelten folgende differenzierte Einstufungen:
+
+| Eintrag | Callsign belegt | Funktion belegt | Nation/Organisation belegt | Ort belegt | Projektstatus |
+|---|---:|---:|---:|---:|---|
+| Trinity | ja | ASOC / Air-Land C2 | im Ausschnitt nicht national zugeordnet | Verlagerung von Bagram zum ISAF HQ erwähnt | `PARTIALLY_VERIFIED` |
+| Jaguar / Jaguar 12 | ja | USAF STS Controller | USAF | Operation-Anaconda-Einsatzraum, aber nicht Bagram als Primärstandort | `PARTIALLY_VERIFIED` |
+| Windmill / Windmill 05 | ja | nein | im Ausschnitt nicht eindeutig | Tarin Kowt, Uruzgan | `PARTIALLY_VERIFIED` |
+| Norseman / Norseman Two One | ja | dänischer JTAC | Dänemark | im Ausschnitt nicht genannt | `PARTIALLY_VERIFIED` |
+
+Die Grundliste bleibt dennoch insgesamt `REFERENCE`, weil diese vier Beispiele nicht automatisch die übrigen Callsigns oder alle Ortszuordnungen verifizieren.
+
 ## 3. Air Support Operations Center
 
 | Funktion | Callsign | Ortszuordnung | Nation |
 |---|---|---|---|
-| Air Support Operations Center (ASOC) | **Trinity** | landesweite beziehungsweise übergeordnete C2-Funktion | im Ausgangsmaterial nicht angegeben |
+| Air Support Operations Center (ASOC) | **Trinity** | landesweite beziehungsweise übergeordnete C2-Funktion; im Quellenbeleg als vom US-Hub Bagram zum ISAF HQ verlagert beschrieben | im Ausgangsmaterial nicht angegeben |
 
 `TRINITY` ist im Missionsdesign als Air/Land-C2- beziehungsweise ASOC-Knoten zu verwenden und nicht als gewöhnliches Boden-JTAC-Team.
 
@@ -258,19 +294,38 @@ MOOSE-Funktionen für FAC, FAC(A), DESIGNATE, PLAYER TASKS und Air/Land-C2 bleib
 
 - Graveyard of Empires – Patreon-Profil: <https://www.patreon.com/cw/graveyard4DCS>
 - Graveyard of Empires: *JTAC Callsign List*, veröffentlicht am 19. Juni 2025: <https://www.patreon.com/graveyard4DCS/posts/jtac-callsign-131134457?collection=833534>
+- Projektseitig bereitgestellter vollständiger Seitentext des Beitrags.
 - Projektseitig bereitgestellte Ausgangsgrafik: *Operation Enduring Freedom – Tentative Callsign List for Air/Land C2 and JTAC Teams*.
+- Projektseitig bereitgestellter Ausschnitt aus *Airpower in Afghanistan 2005–10: The Air Commanders’ Perspectives* zum ASOC-Callsign `Trinity`.
+- Projektseitig bereitgestellter Operation-Anaconda-/A-10-Ausschnitt zu `Jaguar 12`.
+- Projektseitig bereitgestellter WarDiaries-Ausschnitt vom 23.10.2006 zu `Windmill 05` bei Tarin Kowt.
+- Projektseitig bereitgestellter Ausschnitt zu *Dressed to Kill* und dem dänischen JTAC-Callsign `Norseman Two One`.
+- Projektseitig bereitgestellte NATO-Karte *Afghanistan ISAF RC and PRT Locations*, Datenstand 20.04.2009.
 
 Die Verwendung im Projekt erfolgt ausschließlich als strukturierte Dokumentation und missionsdesignerische Adaption der von Graveyard of Empires veröffentlichten Open-Source-Recherche.
 
-## 10. Verifikationsbedarf
+## 10. Verifikationsbedarf und noch ausstehende Quellenabrufe
 
-Vor einer Einstufung als `VERIFIED` sind für die tatsächlich verwendeten Callsigns nach Möglichkeit zu sichern:
+Durch die bereitgestellten Ausschnitte sind die von Graveyard of Empires gezeigten **Arbeitsbeispiele** nun inhaltlich dokumentiert. Die zuvor pauschal als offen bezeichneten Quellen sind damit teilweise abgedeckt, aber nicht vollständig bibliografisch erschlossen.
 
-- konkrete Primärfundstelle,
+Noch ausstehend sind:
+
+- vollständige Publikationsdaten, Seitenzahl und Dokumentfassung des `Trinity`-Ausschnitts,
+- vollständige Publikationsdaten, Autor, Seitenzahl und exakter Titel des Operation-Anaconda-/A-10-Textes zu `Jaguar 12`,
+- dauerhafte URL oder Archivkennung des WarDiaries-Datensatzes zu `Windmill 05`,
+- genaue Fundstelle im Buch beziehungsweise in der zitierten Rezension zu `Norseman Two One`,
+- offizielle NATO-Dokumentkennung beziehungsweise dauerhafte Fundstelle der ISAF-Karte vom 20.04.2009,
+- Einzelnachweise für die übrigen Callsigns der Liste,
+- belegte Zeiträume, Einheiten und Funktionen für alle später tatsächlich in der Mission verwendeten Callsigns,
+- Abgrenzung zu gleichlautenden Flugzeug-, Fahrzeug-, Patrouillen- oder Funknetz-Callsigns.
+
+Vor einer Einstufung eines einzelnen Callsigns als `VERIFIED` sind nach Möglichkeit zu sichern:
+
+- konkrete Primär- oder belastbare Sekundärfundstelle,
 - belegter Zeitraum,
 - Einheit oder Team,
 - Einsatzort,
-- Funktion als JTAC, FAC, TACP, TOC oder sonstiges Air/Land-C2-Element,
-- Abgrenzung zu gleichlautenden Flugzeug- oder Netz-Callsigns.
+- Funktion als JTAC, FAC, TACP, ASOC, TOC oder anderes Air/Land-C2-Element,
+- Abgrenzung zu gleichlautenden Callsigns anderer Funktionen.
 
-Bis dahin bleibt dieses Dokument eine belastbare Missionsdesign-Referenz mit ausdrücklich dokumentierter Quellenunsicherheit. Diese Unsicherheit mindert nicht die Forschungs- und Aufbereitungsleistung von Graveyard of Empires, sondern beschreibt ausschließlich den projektseitigen Verifikationsstatus einzelner historischer Zuordnungen.
+Bis dahin bleibt die Gesamtliste eine belastbare Missionsdesign-Referenz mit dokumentiertem, eintragsbezogenem Verifikationsstatus. Diese Einschränkung mindert nicht die Forschungs- und Aufbereitungsleistung von Graveyard of Empires, sondern beschreibt ausschließlich den projektseitigen Nachweisstand.
