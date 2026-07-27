@@ -27,6 +27,7 @@ Aktuelle Nummern und IDs stehen in [`OMW-GOV-DOCUMENT-REGISTRY`](../DOCUMENT-REG
 ## 2. Aktuelle Evidenzdokumente
 
 - [`Jalalabad Air Operations – Ausgangsaudit`](jalalabad-air-operations-baseline-audit.md)
+- [`FOB Salerno – Satellitenbeobachtungen 2010/2011`](salerno-satellite-observations.md)
 
 ## 3. Legacy-Quelldatensätze
 
