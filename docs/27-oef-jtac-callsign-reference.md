@@ -1,10 +1,14 @@
 # OEF Air/Land C2- und JTAC-Callsign-Referenz
 
+> **Credits und Urheberschaft der Recherche:** Sämtliche Credits für die zugrunde liegende Recherche, Zusammenstellung und historische Aufbereitung gehen an **Graveyard of Empires**: <https://www.patreon.com/cw/graveyard4DCS>
+>
+> Die vorliegende Projektdatei überträgt und strukturiert diese Informationen lediglich für die Missionsgestaltung von **Operation Mountain Watch**. Sie beansprucht keine eigene Urheberschaft an der zugrunde liegenden Recherche oder Datensammlung.
+
 ## 1. Status und Zweck
 
 **Status:** `REFERENCE` / historische Missionsdesign-Referenz, noch nicht für jeden Eintrag gegen eine Primärquelle verifiziert.
 
-Dieses Dokument übernimmt die im Projekt bereitgestellte Grafik **„Operation Enduring Freedom – Tentative Callsign List for Air/Land C2 and JTAC Teams“** und die methodischen Hinweise aus dem zugehörigen Beitrag von *Graveyard of Empires*.
+Dieses Dokument übernimmt die im Projekt bereitgestellte Grafik **„Operation Enduring Freedom – Tentative Callsign List for Air/Land C2 and JTAC Teams“** und die methodischen Hinweise aus dem zugehörigen Beitrag von **Graveyard of Empires**.
 
 Die Liste enthält:
 
@@ -17,9 +21,21 @@ Die Callsigns dienen als historisch begründeter Namenspool für Briefings, Funk
 
 Sie stellen keine vollständige ORBAT, keine Frequenzliste und keinen Nachweis dar, dass alle aufgeführten Callsigns gleichzeitig aktiv waren.
 
-## 2. Quellenlage und Einschränkungen
+## 2. Herkunft der Informationen und Quellenverständnis
 
-Der zugehörige Beitrag wurde am **19. Juni 2025** veröffentlicht. Der Autor beschreibt folgende Vorgehensweise:
+Graveyard of Empires beschreibt den eigenen Ansatz auf der Patreon-Seite mit dem zentralen Hinweis:
+
+> “All the information presented here come from open sources - sometimes easily accessible but little understood, other times more improbable, but no less interesting!”
+
+Für die Verwendung im Projekt bedeutet dies:
+
+- Die Informationen stammen nach Aussage von Graveyard of Empires vollständig aus **offenen Quellen**.
+- Der besondere Wert der Arbeit liegt in der Recherche, Einordnung, Zusammenführung und Interpretation verstreuter Informationen.
+- „Offene Quelle“ bedeutet nicht automatisch, dass jeder einzelne Datensatz bereits als Primärquelle vollständig verifiziert ist.
+- Auch ungewöhnliche oder schwer auffindbare Fundstellen können relevant sein, müssen aber hinsichtlich Zeitraum, Kontext und Funktion geprüft werden.
+- Die Arbeit von Graveyard of Empires ist als kuratierte Open-Source-Recherche zu würdigen und nicht als bloße ungeprüfte Link- oder Datensammlung zu behandeln.
+
+Der zugehörige Beitrag wurde am **19. Juni 2025** veröffentlicht. Graveyard of Empires beschreibt folgende Vorgehensweise:
 
 - Callsigns wurden aus öffentlich zugänglicher Literatur, After-Action-Reviews, Büchern, Artikeln und weiteren offenen Quellen zusammengetragen.
 - Die Zuordnung zu einem primären Einsatzort wurde anhand der ISAF-Dislozierung und nationalen Verantwortungsbereiche um **2009** vorgenommen.
@@ -41,6 +57,7 @@ Daraus folgen für das Projekt verbindlich diese Einschränkungen:
 3. Die Länderabkürzungen werden zunächst quellennah übernommen und sind nicht durchgehend als NATO-Standardabkürzungen zu verstehen.
 4. Die Liste enthält keine Funkfrequenzen, Laser-Codes, Rufnummern oder Teamstärken.
 5. Die Liste darf nicht mit Flugzeug-, Tanker-, AWACS-, Range-Control- oder sonstigen Aircrew-Callsigns gleichgesetzt werden.
+6. Jede projektseitige Weiterverwendung muss Graveyard of Empires als Quelle der Recherche und Zusammenstellung sichtbar nennen.
 
 ## 3. Air Support Operations Center
 
@@ -230,14 +247,20 @@ Bei einer späteren Implementierung sind mindestens getrennt zu verwalten:
 - Laser-Code,
 - Markierungsfähigkeiten,
 - zuständiger TOC-/ASOC-Knoten,
-- historischer Status beziehungsweise Adaptionskennzeichen.
+- historischer Status beziehungsweise Adaptionskennzeichen,
+- Quellen- und Credit-Hinweis auf Graveyard of Empires.
 
 MOOSE-Funktionen für FAC, FAC(A), DESIGNATE, PLAYER TASKS und Air/Land-C2 bleiben gemäß der verbindlichen MOOSE-First-Richtlinie vorrangig. Diese Callsign-Liste ist eine Daten- und Missionsdesign-Referenz und ersetzt keine technische MOOSE-Prüfung.
 
-## 9. Quellen
+## 9. Credits und Quellen
 
+**Sämtliche Credits für die zugrunde liegende Recherche, Sammlung und historische Aufbereitung gehen an Graveyard of Empires.**
+
+- Graveyard of Empires – Patreon-Profil: <https://www.patreon.com/cw/graveyard4DCS>
 - Graveyard of Empires: *JTAC Callsign List*, veröffentlicht am 19. Juni 2025: <https://www.patreon.com/graveyard4DCS/posts/jtac-callsign-131134457?collection=833534>
 - Projektseitig bereitgestellte Ausgangsgrafik: *Operation Enduring Freedom – Tentative Callsign List for Air/Land C2 and JTAC Teams*.
+
+Die Verwendung im Projekt erfolgt ausschließlich als strukturierte Dokumentation und missionsdesignerische Adaption der von Graveyard of Empires veröffentlichten Open-Source-Recherche.
 
 ## 10. Verifikationsbedarf
 
@@ -250,4 +273,4 @@ Vor einer Einstufung als `VERIFIED` sind für die tatsächlich verwendeten Calls
 - Funktion als JTAC, FAC, TACP, TOC oder sonstiges Air/Land-C2-Element,
 - Abgrenzung zu gleichlautenden Flugzeug- oder Netz-Callsigns.
 
-Bis dahin bleibt dieses Dokument eine belastbare Missionsdesign-Referenz mit ausdrücklich dokumentierter Quellenunsicherheit.
+Bis dahin bleibt dieses Dokument eine belastbare Missionsdesign-Referenz mit ausdrücklich dokumentierter Quellenunsicherheit. Diese Unsicherheit mindert nicht die Forschungs- und Aufbereitungsleistung von Graveyard of Empires, sondern beschreibt ausschließlich den projektseitigen Verifikationsstatus einzelner historischer Zuordnungen.
