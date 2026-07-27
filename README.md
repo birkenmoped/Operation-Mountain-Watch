@@ -27,3 +27,5 @@ Early design and prototyping. No gameplay release exists yet.
 Project design documents are stored in [`docs/`](docs/).
 
 The current consolidation of TM01A test results, DCS routing findings, virtualization design, persistence rules, and the revised logistics hierarchy is documented in [`docs/25-tm01a-findings-virtualization-persistence-and-logistics.md`](docs/25-tm01a-findings-virtualization-persistence-and-logistics.md).
+
+The accepted target architecture for the red personnel network, bounded commander decisions, delayed HUMINT-based knowledge, dynamic scenery sites, destruction, and replacement occupation is documented in [`docs/26-red-force-network-command-intelligence-and-sites.md`](docs/26-red-force-network-command-intelligence-and-sites.md).
