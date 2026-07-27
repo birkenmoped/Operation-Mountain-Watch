@@ -68,6 +68,8 @@ Eine Nummer und eine stabile `document_id` dürfen im aktuellen Bestand jeweils 
 | 47 | `OMW-C2-AIRCRAFT-TACTICAL-CALLSIGNS` | `docs/47-aircraft-tactical-callsigns.md` | `BINDING` | Quellenreferenz |
 | 48 | `OMW-TARGETING-AFGHANISTAN-NSL` | `docs/48-afghanistan-no-strike-list.md` | `BINDING` | Targeting-Architektur |
 | 49 | `OMW-MSR-ROUTE-DESIGN` | `docs/49-msr-routendesign-und-infrastrukturmarker.md` | `PLANNED` | Design-/Arbeitsliste |
+| 51 | `OMW-AIR-SALERNO-MANIFEST` | `docs/51-salerno-air-operations-manifest.md` | `BINDING_PROJECT_DECISION` | Salerno-ORBAT und ME-Baseline |
+| 52 | `OMW-AIR-MANIFEST-NAMING` | `docs/52-air-operations-manifest-naming-standard.md` | `BINDING` | allgemeiner Air-Ops-Benennungsstandard |
 
 ## 3. Reservierte Nummern auf offenen Branches
 
@@ -76,6 +78,7 @@ Eine Nummer und eine stabile `document_id` dürfen im aktuellen Bestand jeweils 
 | 18 | 22–25 | nur Draft-PR #18; branchgebundene Air-Ops-Dokumente |
 | 18 | 27 | branchlokale Kollision; vor Integration zwingend neu nummerieren |
 | 24 | 31–36 | nur Draft-PR #24; Bagram/Kandahar |
+| 34 | 50 | nur Draft-PR #34; MQ-1/MQ-9 Afghanistan Employment |
 
 ## 4. Nicht nummerierte aktuelle Dokumente
 
