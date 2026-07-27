@@ -1,0 +1,37 @@
+name: Trigger PR33 main synchronization
+
+on:
+  pull_request:
+    types:
+      - synchronize
+      - opened
+      - reopened
+    branches:
+      - main
+    paths:
+      - .github/workflows/sync-pr33-with-main.yml
+      - .github/workflows/sync-pr33-trigger.yml
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    if: github.event.pull_request.number == 33
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out PR branch
+        uses: actions/checkout@v4
+        with:
+          ref: agent/complete-documentation-authority-migration
+          fetch-depth: 0
+
+      - name: Run one-time synchronization script
+        shell: bash
+        run: |
+          awk '
+            /^        run: \|$/ { capture=1; next }
+            capture { sub(/^          /, ""); print }
+          ' .github/workflows/sync-pr33-with-main.yml > /tmp/sync-pr33.sh
+          bash -n /tmp/sync-pr33.sh
+          bash /tmp/sync-pr33.sh
