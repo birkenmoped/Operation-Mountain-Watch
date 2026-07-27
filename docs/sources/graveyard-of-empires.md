@@ -37,16 +37,32 @@ Für die Projektdokumentation bedeutet dies verbindlich:
 4. Operation Mountain Watch ersetzt diese Quellenarbeit nicht durch pauschales Allgemeinwissen und gibt die Arbeit nicht als eigene Recherche aus.
 5. Nicht verfügbare Patreon-Beiträge oder Anhänge bleiben als **AUSSTEHEND** markiert. Fehlende Inhalte werden nicht rekonstruiert oder hinzugedichtet.
 
-## Abgrenzung: offene Quellen und Weiterverwendung
+## Verbindlicher Nutzungsumfang für Operation Mountain Watch
 
-Die Aussage, dass die zugrunde liegenden Informationen aus offenen Quellen stammen, beschreibt zunächst deren Herkunft. Sie ist nicht automatisch gleichbedeutend mit einer bestimmten Lizenz für die von Graveyard of Empires erstellten Zusammenstellungen, Grafiken, Kneeboards, CombatFlite-Dateien oder sonstigen abgeleiteten Werke.
+Für das Projekt gilt folgende Entscheidung:
+
+1. **Alle von Graveyard of Empires frei zugänglich veröffentlichten Informationen und Dokumente sollen für unsere Missionsgestaltung ausgewertet und fachlich genutzt werden.**
+2. Dies umfasst insbesondere Fakten, historische Zusammenhänge, Verfahren, Lessons Learned, Frequenz- und Callsign-Zuordnungen, Karteninformationen, Geometrien, Tabellen, Organisationsbeziehungen, Missionsdesign-Ansätze und technische Hinweise.
+3. Die Informationen dürfen für die Projektzwecke normalisiert, strukturiert, miteinander verknüpft und in DCS-/MOOSE-Konfigurationen, Missionslogik, Briefings, Kneeboards und Datenregistern umgesetzt werden.
+4. Frei angebotene Anhänge dürfen vollständig ausgewertet werden. Für die öffentliche Projektdokumentation werden daraus grundsätzlich die für das Missionsdesign notwendigen Inhalte, Daten und Schlussfolgerungen übernommen.
+5. **Inhalte hinter einer Patreon-Paywall werden nicht beschafft, umgangen, rekonstruiert oder ohne ausdrückliche Bereitstellung verwendet.** Grundlage sind ausschließlich Beiträge, Seiten und Anhänge, die Graveyard of Empires selbst frei zugänglich gemacht hat oder die vom Projektinhaber rechtmäßig bereitgestellt wurden.
+6. Fehlende oder nicht zugängliche Inhalte bleiben als `AUSSTEHEND` gekennzeichnet. Aus Vorschaubildern, Überschriften oder Fragmenten werden keine angeblichen Vollinhalte konstruiert.
+7. Die frei zugängliche Bereitstellung und die erkennbare Absicht, der DCS-Community realistischere Missionsgestaltung zu ermöglichen, bilden den sachlichen Nutzungsrahmen des Projekts.
+8. Diese Projektentscheidung behandelt die Materialien nicht als gemeinfrei und ersetzt keine ausdrückliche Lizenz. Credits, Quellenlinks und die Trennung zwischen Quellinhalt und eigener technischer Umsetzung bleiben deshalb erhalten.
+
+## Abgrenzung: fachliche Nutzung und Reproduktion
+
+Operation Mountain Watch nutzt die frei bereitgestellten Materialien umfassend **inhaltlich und funktional**. Dabei wird zwischen der Nutzung von Informationen und der unveränderten Reproduktion eines Werkes unterschieden.
 
 Daher gilt:
 
+- Fakten, Daten, Verfahren, Zuordnungen und missionsrelevante Schlussfolgerungen werden vollständig ausgewertet und dürfen in eigene Projektstrukturen übertragen werden;
+- der fachliche Inhalt darf paraphrasiert, normalisiert, tabellarisch neu strukturiert und technisch implementiert werden;
 - sichtbare Attribution zu Graveyard of Empires bleibt erhalten;
 - Originalmaterial wird nicht als Eigenwerk von Operation Mountain Watch bezeichnet;
 - Quellenstatus und Bearbeitungsstand werden getrennt dokumentiert;
-- eine öffentliche Weitergabe umfangreicher Originaldateien oder nahezu identischer Reproduktionen wird getrennt von der fachlichen Quellenübernahme bewertet;
+- vollständige Artikeltexte, komplette grafische Gestaltungen oder nahezu identische Spiegelungen werden nicht allein deshalb in das öffentliche Repository kopiert, weil sie frei lesbar oder herunterladbar sind;
+- frei bereitgestellte Originaldateien werden nur dann öffentlich im Repository weiterverteilt, wenn dies für das Projekt erforderlich und durch die erkennbare Bereitstellung oder eine ausdrückliche Erlaubnis gedeckt ist; andernfalls werden Quelle, Dateiname und ausgewertete Inhalte dokumentiert;
 - projektseitige Ergänzungen, Interpretationen und technische Implementierungen werden klar von den übernommenen Quellenaussagen getrennt.
 
 ## Standard-Creditzeile
@@ -64,8 +80,9 @@ Eine deutschsprachige Fassung ist ebenfalls zulässig:
 Bei jeder weiteren Quellenübernahme wird festgehalten:
 
 - konkreter Patreon-Beitrag oder Anhang,
-- Abruf- beziehungsweise Bereitstellungsstatus,
+- freier, bereitgestellter oder ausstehender Zugriffsstatus,
 - tatsächlich übernommener Inhalt,
 - nicht verfügbare Bestandteile als `AUSSTEHEND`,
 - projektseitige Verarbeitung oder technische Ableitung getrennt vom Quellinhalt,
-- sichtbarer Credit zu Graveyard of Empires.
+- sichtbarer Credit zu Graveyard of Empires,
+- bekannte ursprüngliche Primär- oder Sekundärquellen zusätzlich zum Graveyard-of-Empires-Credit.
