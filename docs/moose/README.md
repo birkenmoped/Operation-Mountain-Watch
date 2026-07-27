@@ -1,63 +1,89 @@
----
-document_id: OMW-MOOSE-DOCUMENTATION-INDEX
-status: BINDING
-document_class: TECHNICAL_DOCUMENTATION_INDEX
-owning_policy: OMW-GOV-001
-authoritative_for:
-  - project-specific MOOSE documentation structure
-  - distinction between official MOOSE sources and OMW evidence
-scenario_period: 2010-08-01/2011-12-31
-project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
-supersedes:
-  - unclassified MOOSE documentation index
-superseded_by:
-source_branch: agent/complete-documentation-authority-migration
-source_commit: PENDING_MERGE
-validated_in_dcs: false
----
-
 # MOOSE-Projektdokumentation
 
-## 1. Zweck
+## Zweck
 
-Diese Dokumentation ist die projektspezifische MOOSE-Wissensbasis für **Operation Mountain Watch**. Sie ersetzt weder die offizielle MOOSE-Klassendokumentation noch den Quellcode des tatsächlich verwendeten Commits.
+Diese Dokumentation ist die projektspezifische MOOSE-Wissensbasis für **Operation Mountain Watch**.
 
-Der vollständige frühere Index bleibt unverändert erhalten:
+Sie ersetzt nicht die offizielle MOOSE-Klassendokumentation. Sie hält ausschließlich fest:
 
-- [`Legacy-MOOSE-Dokumentationsindex`](../evidence/source-records/legacy-moose-readme.md)
+- welche MOOSE-Module und Klassen im Projekt verwendet oder konkret geplant werden;
+- welche Methoden im Projekt geprüft wurden;
+- welcher MOOSE-Stand zugrunde lag;
+- welche DCS- und Missionseditor-Voraussetzungen bestehen;
+- welche Einschränkungen oder Workarounds bekannt sind;
+- welche projektspezifischen Entscheidungen getroffen wurden;
+- welche Testmission oder welcher Acceptance-Bericht den Einsatz belegt.
 
-## 2. Verbindliche Arbeitsregel
+## Verbindliche Arbeitsanweisung
 
-- [`OMW-GOV-MOOSE-FIRST`](../26-moose-first-development-policy.md) definiert das vollständige Prüf- und Ausnahmeverfahren.
-- [`OMW-GOV-MOOSE-VERSION`](VERSION-AND-SOURCES.md) definiert Versions- und Nachweispflichten.
-- Eine technische Begründung allein genehmigt keine Nicht-MOOSE-Lösung.
-- Produktionsabweichungen benötigen ausdrückliche Projektinhaberfreigabe und reproduzierbare Acceptance.
+Vor jeder Eigenentwicklung gelten:
 
-## 3. Dokumentationsstruktur
+- `OMW-GOV-001` – `docs/00-project-governance.md` nach Integration der zentralen Governance;
+- [`OMW-GOV-MOOSE-FIRST – Verbindliche MOOSE-First-Entwicklungsrichtlinie`](../26-moose-first-development-policy.md).
 
-- [`VERSION-AND-SOURCES.md`](VERSION-AND-SOURCES.md) – MOOSE-Version, Quellen und Acceptance-Provenienz;
-- [`PROJECT-CLASS-INDEX.md`](PROJECT-CLASS-INDEX.md) – Projektstatus relevanter Klassen;
-- [`VERIFIED-METHODS.md`](VERIFIED-METHODS.md) – praktisch geprüfte Methoden und Nachweisgrenzen;
-- [`AIR-OPERATIONS.md`](AIR-OPERATIONS.md) – AIRBASE, AIRWING, SQUADRON, COMMANDER und AUFTRAG;
-- [`GROUND-OPERATIONS.md`](GROUND-OPERATIONS.md) – geplante Bodengruppen-, Brigade- und Movement-Architektur;
-- [`LOGISTICS-AND-TRANSPORT.md`](LOGISTICS-AND-TRANSPORT.md) – Warehouse, OPSTRANSPORT, CTLD und Carrier/Cargo;
-- [`EVENTS-AND-FSM.md`](EVENTS-AND-FSM.md) – Events, FSM, Scheduler und Callback-Regeln;
-- [`ISR-FAC-CAS-AAR.md`](ISR-FAC-CAS-AAR.md) – geplante ISR-, FAC-/JTAC-, CAS- und AAR-Kette;
-- [`FOG-OF-WAR-RECCE.md`](FOG-OF-WAR-RECCE.md) – MOOSE-Develop-Fähigkeiten und Grenzen von INTEL, INTEL_DLINK, PLAYERRECCE, TARS, RECON, DETECTION, DESIGNATE und CHIEF.
+Die dort definierte Reihenfolge aus Klassendokumentation, Quellcodeprüfung, offiziellen Demo-/Testmissionen, MOOSE-Lösung und erst danach möglicher Ergänzung ist projektweit verbindlich.
 
-## 4. Statusregel
+Eine technische Begründung allein genehmigt keine Nicht-MOOSE-Lösung. Jede produktive Native-DCS- oder projektspezifische Parallelimplementierung benötigt zusätzlich die ausdrückliche Freigabe des Projektinhabers.
 
-MOOSE-Klassen- und Methodenstatus sind keine Governance-Dokumentstatuswerte.
+## Primäre externe Quellen
 
-Beispiele:
+### Develop-Dokumentation
 
-```text
-CANDIDATE
-PLANNED
-IN_USE_PARTIAL
-VALIDATED_FOR_DOCUMENTED_SCOPE
-INTERNAL_RESTRICTED
-REJECTED_FOR_PROJECT_USE
-```
+<https://flightcontrol-master.github.io/MOOSE_DOCS_DEVELOP/Documentation/index.html>
 
-Jeder `VALIDATED`-Eintrag benötigt einen konkreten Test- und Versionsnachweis. Er gilt nicht automatisch für andere Methoden, Klassen, Basen, MOOSE-Versionen oder Missionen.
+Diese Quelle ist zu verwenden, wenn die Mission tatsächlich einen Develop-Stand von MOOSE lädt.
+
+### Stable-/Master-Dokumentation
+
+<https://flightcontrol-master.github.io/MOOSE_DOCS/Documentation/>
+
+Diese Quelle ist zu verwenden, wenn die Mission einen stabilen Master-/Release-Stand lädt.
+
+### MOOSE-Quellcode
+
+<https://github.com/FlightControl-Master/MOOSE>
+
+### Offizielle Demo- und Testmissionen
+
+- <https://github.com/FlightControl-Master/MOOSE_MISSIONS>
+- <https://github.com/FlightControl-Master/MOOSE_MISSIONS_UNPACKED>
+
+## Dokumentationsstruktur
+
+- [`VERSION-AND-SOURCES.md`](VERSION-AND-SOURCES.md) – verwendeter MOOSE-Stand, Quellenhierarchie und Nachweispflicht
+- [`PROJECT-CLASS-INDEX.md`](PROJECT-CLASS-INDEX.md) – alle für OMW relevanten MOOSE-Klassen mit Status
+- [`AIR-OPERATIONS.md`](AIR-OPERATIONS.md) – AIRWING-, SQUADRON-, AUFTRAG- und COMMANDER-Architektur
+- [`ISR-FAC-CAS-AAR.md`](ISR-FAC-CAS-AAR.md) – Aufklärung, Fog-of-War, FAC/FAC(A)/AFAC/JTAC, Spieler- und AI-CAS, UAV-Einsatz, Loitering, BDA und Luftbetankung
+- [`FOG-OF-WAR-RECCE.md`](FOG-OF-WAR-RECCE.md) – geprüfte MOOSE-Develop-Fähigkeiten und Grenzen von INTEL, INTEL_DLINK, PLAYERRECCE, TARS, RECON, DETECTION, DESIGNATE und CHIEF
+- [`OMW-TARGETING-AFGHANISTAN-NSL – Afghanistan No-Strike List`](../48-afghanistan-no-strike-list.md) – Zielschutz, Quelldatenprüfung und geplante MOOSE-Integration
+- [`GROUND-OPERATIONS.md`](GROUND-OPERATIONS.md) – Bodengruppen, Brigaden, Spawning und Gruppenmengen
+- [`LOGISTICS-AND-TRANSPORT.md`](LOGISTICS-AND-TRANSPORT.md) – Warehouse, OPSTRANSPORT, CTLD, CSAR und RAT
+- [`EVENTS-AND-FSM.md`](EVENTS-AND-FSM.md) – Events, FSM-Callbacks und Scheduler
+- [`VERIFIED-METHODS.md`](VERIFIED-METHODS.md) – praktisch bestätigte Methoden und ihre Projektverwendung
+
+## Statusbegriffe
+
+| Status | Bedeutung |
+|---|---|
+| `VALIDATED` | Konkreter Einsatz wurde mit dokumentiertem OMW-Stand in DCS erfolgreich geprüft. |
+| `IN_USE_PARTIAL` | Klasse oder Methode wird bereits verwendet, aber nicht alle vorgesehenen Laufzeitpfade wurden validiert. |
+| `PLANNED` | Architekturentscheidung ist getroffen, Implementierung oder DCS-Test steht noch aus. |
+| `CANDIDATE` | Möglicherweise geeignet; MOOSE-Recherche und Architekturentscheidung stehen noch aus. |
+| `NOT_USED` | Bewusst derzeit nicht Teil der Architektur. |
+| `INTERNAL_RESTRICTED` | Interner MOOSE-Zugriff; nur begründet für Diagnose oder Validierung zulässig. |
+
+Diese Klassenstatus ersetzen nicht die allgemeinen Dokumentstatus aus `OMW-GOV-001`.
+
+## Pflegepflicht
+
+Sobald eine weitere MOOSE-Klasse oder Methode im Projekt hilfreich, notwendig oder tatsächlich verwendet wird, muss sie im selben Entwicklungsstand dokumentiert werden.
+
+Mindestens zu aktualisieren sind:
+
+1. [`PROJECT-CLASS-INDEX.md`](PROJECT-CLASS-INDEX.md),
+2. die passende thematische Datei,
+3. bei einem erfolgreichen DCS-Nachweis [`VERIFIED-METHODS.md`](VERIFIED-METHODS.md),
+4. der zugehörige Test- oder Acceptance-Bericht,
+5. bei einer Nicht-MOOSE-Ergänzung der Eigentümerfreigabe-ADR.
+
+Eine reine Erwähnung in der MOOSE-Dokumentation reicht nicht für den Status `VALIDATED`.
