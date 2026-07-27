@@ -16,6 +16,10 @@ supersedes:
   - automatic interpretation of draft-branch PASS results as repository-wide truth
 source_branch: agent/reconcile-documentation-authority
 validated_in_dcs: false
+document_class: PROJECT_GOVERNANCE
+owning_policy: OMW-GOV-001
+source_commit: GIT_HISTORY
+superseded_by:
 ---
 
 # Operation Mountain Watch – Projekt-Governance

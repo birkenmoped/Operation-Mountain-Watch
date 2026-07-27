@@ -13,6 +13,10 @@ supersedes:
   - project rules that generally prohibit repository inclusion of provided original files
 source_branch: agent/reconcile-documentation-authority
 validated_in_dcs: false
+document_class: SOURCE_USE_POLICY
+scenario_period:
+source_commit: GIT_HISTORY
+superseded_by:
 ---
 
 # Graveyard of Empires – Credits, Quellen- und Dateinutzung

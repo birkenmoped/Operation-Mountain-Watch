@@ -11,6 +11,13 @@ not_authoritative_for:
   - current project governance
 source_record: docs/evidence/source-records/legacy-21-jalalabad-air-operations-baseline-audit.md
 validated_in_dcs: false
+owning_policy: OMW-GOV-001
+scenario_period: 2010-08-01/2011-12-31
+project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
+supersedes:
+superseded_by:
+source_branch: agent/resolve-document-number-collisions
+source_commit: GIT_HISTORY
 ---
 
 # Jalalabad Air Operations – Prüfung der Ausgangsmission

@@ -14,6 +14,7 @@ superseded_by:
 source_branch: agent/resolve-document-number-collisions
 source_commit:
 validated_in_dcs: false
+document_class: AIR_OPERATIONS_ARCHITECTURE
 ---
 
 # 18 – Luftoperations- und ORBAT-Umsetzung

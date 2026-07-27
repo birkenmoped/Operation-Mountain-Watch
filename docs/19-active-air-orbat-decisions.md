@@ -16,6 +16,9 @@ supersedes:
   - player limits above two aircraft per type and base
 source_branch: agent/reconcile-documentation-authority
 validated_in_dcs: false
+document_class: PROJECT_DECISION
+source_commit: GIT_HISTORY
+superseded_by:
 ---
 
 # 19 – Verbindliche Entscheidungen zur aktiven Luft-ORBAT

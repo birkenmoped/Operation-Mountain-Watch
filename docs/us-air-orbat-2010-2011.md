@@ -12,6 +12,11 @@ superseded_by_for_active_orbat:
   - basis-specific current mission-editor baselines
 source_branch: agent/reconcile-documentation-authority
 validated_in_dcs: false
+document_class: HISTORICAL_RESEARCH_REFERENCE
+owning_policy: OMW-GOV-001
+supersedes:
+superseded_by:
+source_commit: GIT_HISTORY
 ---
 
 # US Air Order of Battle – Research and MOOSE Integration Context

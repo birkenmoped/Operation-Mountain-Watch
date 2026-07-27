@@ -10,6 +10,10 @@ project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 source_branch: agent/resolve-document-number-collisions
 source_commit:
 validated_in_dcs: false
+document_class: MOOSE_VERSION_POLICY
+scenario_period:
+supersedes:
+superseded_by:
 ---
 
 # MOOSE-Version und Quellen
