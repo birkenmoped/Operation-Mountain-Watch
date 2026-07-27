@@ -2,7 +2,7 @@
 
 ## 1. Status
 
-**Dokumentationsstatus:** `PARTIAL / TEIL 2–3 AUSSTEHEND`
+**Dokumentationsstatus:** `PARTIAL / TEIL 3 AUSSTEHEND`
 
 Diese Datei dokumentiert ausschließlich Inhalte, die aus den im Projekt bereitgestellten Quellen direkt übernommen oder technisch extrahiert werden konnten.
 
@@ -11,18 +11,20 @@ Status der vom Projektinhaber angegebenen Patreon-Quellen:
 - **AUSGEWERTET:** `ISAF 2009–2013 – ACO Building – Introduction (1/x)`  
   <https://www.patreon.com/graveyard4DCS/posts/isaf-2009-2013-1-141193187?collection=833534>  
   Vollständiger Beitragstext wurde am 27. Juli 2026 vom Projektinhaber bereitgestellt.
-- **AUSSTEHEND:** `ISAF 2009–2013 – ACO Building`, Teil 2  
-  <https://www.patreon.com/graveyard4DCS/posts/isaf-2009-2013-2-141257957?collection=833534>
+- **AUSGEWERTET:** `ISAF 2009–2013 – ACO Building – Air-to-Air Refueling Areas (2/x)`  
+  <https://www.patreon.com/graveyard4DCS/posts/isaf-2009-2013-2-141257957?collection=833534>  
+  Vollständiger Beitragstext wurde am 27. Juli 2026 vom Projektinhaber bereitgestellt.
 - **AUSSTEHEND:** `ISAF 2009–2013 – ACO Building`, Teil 3  
   <https://www.patreon.com/graveyard4DCS/posts/isaf-2009-2013-3-141708508?collection=833534>
 
-Aus den weiterhin nicht verfügbaren Teilen 2 und 3 werden **keine ergänzenden allgemeinen Aussagen, Zusammenfassungen oder Interpretationen abgeleitet**.
+Aus dem weiterhin nicht verfügbaren Teil 3 werden **keine ergänzenden allgemeinen Aussagen, Zusammenfassungen oder Interpretationen abgeleitet**.
 
 ## 2. Verfügbare Quellen und Anhänge
 
 | Quelle | Status | Dokumentierter Inhalt |
 |---|---|---|
 | Patreon Teil 1: `Introduction (1/x)` | ausgewertet | Veränderungen der afghanischen Luftraumlage zwischen 2001–2003 und 2009–2013 |
+| Patreon Teil 2: `Air-to-Air Refueling Areas (2/x)` | ausgewertet | Mindestanforderungen, Dimensionierung und Mission-Editor-Hinweise für AAR Areas |
 | `AAR Areas - Afghanistan.pdf` | ausgewertet | AARA-Tabelle und Übersichtskarte |
 | `Air-to-Air Refueling - Optimal Speed and Altitude.jpg` | ausgewertet | KC-130- und KC-135-Profile |
 | `AAR ROZ - 2009-2013.kmz` | technisch extrahiert | Kontrollpunkte, Orbitlinien und Gebietsgeometrien |
@@ -217,7 +219,262 @@ Der Beitrag kündigt für die folgenden Teile an:
 1. Aufbau der Air-to-Air Refuelling Areas,
 2. Aufbau verschiedener ROZ für Indirect Fire um FOBs.
 
-## 4. AAR Areas aus dem bereitgestellten PDF
+## 4. Patreon Teil 2 – Air-to-Air Refueling Areas
+
+**Titel:** `ISAF 2009-2013 - ACO Building - Air-to-Air Refueling Areas (2/x)`  
+**Autor:** Graveyard of Empires  
+**Veröffentlichung:** 19. Oktober 2025
+
+### 4.1 Ausgangspunkt
+
+Der Beitrag setzt voraus, dass der zivile Luftraum entsprechend dem AIP bereits in die ACO übernommen wurde. Danach sollen die AAR Areas angelegt werden.
+
+Der Beitrag gliedert die Mindestanforderungen in:
+
+1. Altitude,
+2. Horizontal Plane,
+3. Mission Editor Setup Advice.
+
+### 4.2 Vertikaler Luftraumbedarf
+
+Für einen einzelnen Tanker nennt der Beitrag als Mindestwert:
+
+```text
+4.000 ft vertikaler Block
+```
+
+Wenn möglich, sollen zusätzlich 1.000 bis 2.000 ft vorgesehen werden. Dadurch erhält die Tankerbesatzung Flexibilität, beispielsweise um VMC zu bleiben, wenn Wolkenobergrenzen die Base Level erreichen.
+
+Für zwei Tanker im selben Gebiet nennt der Beitrag als Standardwert:
+
+```text
+7.000 ft vertikaler Block
+```
+
+Bei Formationsbetrieb kann der vertikale Abstand reduziert werden auf:
+
+- 500 ft unter VMC,
+- 1.000 ft unter IMC.
+
+Da die ACO den ungünstigsten Fall abbilden soll, wird für diese Planungsstufe ein Abstand von 1.000 ft verwendet.
+
+Als generelle Empfehlung nennt der Beitrag für AAR Areas:
+
+```text
+5.000 bis 10.000 ft vertikaler Luftraum
+```
+
+Damit sollen unterschiedliche Mehrtanker-Konfigurationen aufgenommen werden können.
+
+### 4.3 Mindestbetankungshöhe
+
+Als allgemeine Empfehlung nennt der Beitrag:
+
+```text
+10.000 ft AGL Mindesthöhe für AAR
+```
+
+Zweck laut Quelle ist das Verbleiben oberhalb der MANPADS- und AAA-Bedrohung.
+
+Für Afghanistan nennt der Beitrag folgende Auswirkungen:
+
+- im Süden ist FL150 im Allgemeinen die niedrigste Base Level,
+- im Norden ist ein Flug oberhalb FL200 stets erforderlich,
+- in einzelnen Gebieten ist es sogar unmöglich, 10.000 ft AGL einzuhalten.
+
+HAAR und C-130 sollen separat betrachtet werden, da der 10.000-ft-AGL-Puffer nicht zu ihren Leistungsprofilen passt.
+
+Der Beitrag nennt:
+
+- C-130-Familie: optimale AAR-Höhe FL100,
+- Standard-HAAR: 500 bis 1.000 ft AGL,
+- Afghanistan mit verbreiteter Small-Arms-Fire-Bedrohung: 3.000 bis 5.000 ft AGL als vorbeugende Maßnahme.
+
+Daraus folgert der Beitrag, dass HAAR in Afghanistan nur in den niedrigsten Regionen geplant werden könne, vorzugsweise über Wüstengebieten zur Reduzierung der SAF-Bedrohung.
+
+### 4.4 Lage der AAR Areas
+
+AAR Areas sollen laut Beitrag außerhalb liegen von:
+
+- Airways,
+- Class-C-Controlled-Airspace,
+- Class-D-Controlled-Airspace.
+
+Wenn Airways und zivile Lufträume noch nicht vollständig in der ACO enthalten sind, empfiehlt der Beitrag die Verwendung von SkyVector, weil dort aktuelle Airways und kontrollierter Luftraum sichtbar seien.
+
+Der Beitrag empfiehlt, viele AAR Areas vorzubereiten, da sie:
+
+- nur bei Bedarf aktiviert werden,
+- im deaktivierten Zustand keinen Einfluss auf den Betrieb haben,
+- eine kurzfristige ACO-Änderung zur Neuanlage einer ROZ vermeiden.
+
+Für HAAR verweist der Beitrag auf frühere Arbeiten zur CSAR-Stationierung. Für etwa 2010 nennt er HH-60-Stationierungen in:
+
+- Bagram,
+- Kandahar.
+
+HAAR Areas sollen am Rand der unbetankten Reichweite liegen, um den effektiven Einsatzradius zu verdoppeln.
+
+Als sinnvolle vorgeschlagene Positionen nennt der Beitrag:
+
+- nahe Camp Bastion,
+- zwischen Qalat und Ghazni,
+- nahe Mazar-e-Sharif.
+
+### 4.5 Dimensionierung des Anchor Pattern
+
+Der Beitrag verweist auf ATP 3.3.4.2 und nennt für ein Anchor Pattern:
+
+```text
+7 bis 20 NM Breite
+50 NM Länge
+```
+
+Für Afghanistan beschreibt er typische Zeitmuster von:
+
+- 15 Minuten für einen 2-ship Fighter Flight,
+- teilweise 20 Minuten für größere Formationen wie 4-ships oder größere Receiver wie AWACS.
+
+Die im Beitrag verwendete Beispielrechnung:
+
+```text
+300 kt IAS bei FL200 ≈ 450 kt TAS
+450 kt TAS ≈ 7,5 NM/min
+```
+
+Genannte Kurvenradien bei gleicher Geschwindigkeit:
+
+| Angle of Bank | Kurvenradius |
+|---:|---:|
+| 15° | 10 NM |
+| 20° | 7 NM |
+| 25° | 5,5 NM |
+
+Daraus nennt der Beitrag:
+
+- typische Trackbreite von 10 bis 20 NM,
+- 15 NM als geeigneten Referenzwert,
+- etwa fünf Minuten für zwei vollständige 360°-Kurven.
+
+Für die Legs verbleiben bei 10- beziehungsweise 15-minütiger Restzeit:
+
+- 5 Minuten beziehungsweise 7 Minuten 30 Sekunden pro Leg,
+- daraus rechnerisch etwa 35 beziehungsweise 55 NM.
+
+Der Beitrag weist jedoch darauf hin, dass Tanker in Afghanistan keine strikten Zeitreferenzen beziehungsweise ARCT einhielten und die genaue Leg-Länge daher keine entscheidende Rolle spielte. Eine Länge von 35 NM wird als ausreichend bezeichnet.
+
+Mit seitlichen Puffern nennt der Beitrag als geeignete AAR-Area-Abmessung:
+
+```text
+25 × 50 NM
+```
+
+Diese Box soll ein Standardmuster von 15 Minuten aufnehmen können.
+
+### 4.6 DCS-spezifisches Tankerverhalten
+
+Der Beitrag beschreibt ein abweichendes DCS-Verhalten während der Betankung:
+
+- ohne Receiver folgt der Tanker dem geplanten Track,
+- während der Betankung fliegt er Kurven mit ungefähr 10° Angle of Bank,
+- dadurch können Racetracks breiter als 20 NM werden.
+
+Empfohlen wird deshalb:
+
+- die AAR Area anhand des Verhaltens des Tankers ohne laufende Betankung zu erstellen,
+- zu akzeptieren, dass der Tanker während der Betankung auf dem Cold Leg zeitweise außerhalb des Gebiets fliegt,
+- das Hot Leg entlang des nächstgelegenen Konfliktfaktors zu legen,
+- die Kurvenrichtung so zu wählen, dass der Tanker von diesem Faktor wegdreht.
+
+Als Beispiel nennt der Beitrag ein Hot Leg entlang einer westlich gelegenen Airway, wobei der Tanker nach Osten abdreht.
+
+Falls ein Einflug nach Pakistan vermieden werden muss, soll der Track weiter nach Norden verschoben werden.
+
+ARCP und Hot Leg sollen daher unter Berücksichtigung des DCS-Tankerverhaltens gewählt werden.
+
+### 4.7 Benennung der Tankergebiete
+
+Der Beitrag beschreibt thematische Namenskonventionen für AAR Areas.
+
+Genannte Beispiele:
+
+- 2001: Figuren der griechischen Mythologie,
+- nach 2004: Muppets-Thema mit Namen wie `Scooter`, `Pepe` und `Clifford`.
+
+Für eigene Gebiete soll ein konsistentes eigenes Thema gewählt werden.
+
+### 4.8 Frequenzzuweisung
+
+Tankerfrequenzen können laut Beitrag zugewiesen werden:
+
+- nach Tanker-Callsign,
+- nach AAR Area.
+
+Beschriebenes Verfahren:
+
+1. Während des Transits überwacht die Besatzung die Callsign-Frequenz.
+2. Nach Erreichen der AAR Area wechselt sie auf die Area-Frequenz.
+
+Als Vorteil nennt der Beitrag:
+
+- ein Ersatz-Tanker kann den ursprünglich in der ATO vorgesehenen Tanker ohne Umstellung für Receiver ablösen,
+- ein Tanker im Transit zwischen Gebieten bleibt über seine Callsign-Frequenz erreichbar.
+
+Empfohlen wird:
+
+- eine eigene Frequenz je AAR Area,
+- Frequenzwechsel des Tankers nach Erreichen der Station.
+
+### 4.9 A/A TACAN
+
+Der Beitrag beschreibt eine vergleichbare Zuweisung für A/A-TACAN:
+
+- jedes Gebiet erhält einen eigenen Kanal,
+- einzelne Tanker können zusätzlich eigene TACAN-Kanäle in der ATO erhalten.
+
+A/A-TACAN liefert laut Beitrag normalerweise:
+
+- Entfernung,
+- keine Peilung.
+
+Da die DCS-Option `Bearing` laut Beitrag offenbar nicht funktioniert, soll sie nicht ausgewählt werden.
+
+### 4.10 Tankergeschwindigkeit
+
+Der Beitrag beschreibt:
+
+- der Tanker passt seine Geschwindigkeit an den Receiver an,
+- jeder Receiver besitzt eine optimale AAR-Geschwindigkeit,
+- zwischen zwei Receivern reduziert der Tanker die Geschwindigkeit auf seine Max-Endurance-AOA zur Kraftstoffeinsparung.
+
+Als Quelle für optimale Tankergeschwindigkeiten nennt der Beitrag die nationalen SRD.
+
+Aufgeführte Beispiele für KC-135:
+
+| Receiver | Optimal FL | IAS | Mach |
+|---|---:|---:|---:|
+| A-10A/C | FL150 | 220 kt | 0,68 |
+| F-4A/F | FL300 | 315 kt | 0,81 |
+| F-16 | FL300 | 315 kt | 0,81 |
+| F-15 | FL200 | 300 kt | 0,82 |
+
+Der Beitrag weist darauf hin, dass IAS und Ground Speed bei FL200 deutlich voneinander abweichen.
+
+Genannte Beziehung:
+
+```text
+GS = TAS ± Wind
+```
+
+Daher muss IAS in TAS umgerechnet werden, um eine passende Ground Speed festzulegen.
+
+### 4.11 Schlussfolgerung des Beitrags
+
+Der Beitrag erklärt die oben genannten Werte und Verfahren als Grundlage zum Aufbau einer realistischen AAR-Area-Konfiguration für das Afghanistan-Szenario 2009–2013.
+
+Eine eigene vollständige Konfiguration wird für den folgenden Beitrag angekündigt.
+
+## 5. AAR Areas aus dem bereitgestellten PDF
 
 Die Quelle unterscheidet:
 
@@ -252,9 +509,9 @@ Safety Altitude: 1,500' Obstacle Clearance
 | 18 | Seymour | LA | 10 000 ft–FL160 | N32°40.60′ E067°49.40′ | 225°T | N/A | Zinc 12 | 62X | 10 000 ft |
 | 19 | Smithers | LA | 5 000–10 000 ft | N36°39.70′ E068°11.30′ | 095°T | N/A | White 10 | 63X | 2 000 ft |
 
-## 5. Optimale Profile aus der bereitgestellten Grafik
+## 6. Optimale Profile aus der bereitgestellten Grafik
 
-### 5.1 KC-130
+### 6.1 KC-130
 
 | Domain | Receiver | Domain-Bereich | Optimal FL | Optimal IAS |
 |---|---|---|---:|---:|
@@ -264,7 +521,7 @@ Safety Altitude: 1,500' Obstacle Clearance
 
 `HAAR` wird unverändert aus der Grafik übernommen. Eine ausgeschriebene Bedeutung ist in der bereitgestellten Quelle nicht enthalten.
 
-### 5.2 KC-135 – Boom Domain
+### 6.2 KC-135 – Boom Domain
 
 Domain-Bereich laut Grafik:
 
@@ -289,7 +546,7 @@ IAS 200–320 kt
 | F-4 | FL300 | 315 kt |
 | KC-135 | FL250 | 275 kt |
 
-### 5.3 KC-135 – MPRS Domain
+### 6.3 KC-135 – MPRS Domain
 
 Domain-Bereich laut Grafik:
 
@@ -318,7 +575,7 @@ IAS 220–300 kt
 | Su-30 | FL220 | 275 kt |
 | Tornado | FL150 | 270 kt |
 
-## 6. Maschinenlesbare Ablage
+## 7. Maschinenlesbare Ablage
 
 Die aus den bereitgestellten Anhängen übernommenen Daten liegen zusätzlich unter:
 
@@ -326,25 +583,25 @@ Die aus den bereitgestellten Anhängen übernommenen Daten liegen zusätzlich un
 - [`data/air-operations/aar/isaf-2009-2013-aar-areas.geojson`](../data/air-operations/aar/isaf-2009-2013-aar-areas.geojson)
 - [`data/air-operations/aar/isaf-2009-2013-aar-receiver-profiles.csv`](../data/air-operations/aar/isaf-2009-2013-aar-receiver-profiles.csv)
 
-## 7. Projektinterne Einordnung
+## 8. Projektinterne Einordnung
 
-Dieser Abschnitt ist **keine Wiedergabe der ausstehenden Patreon-Beiträge**.
+Dieser Abschnitt ist **keine Wiedergabe des ausstehenden Patreon-Beitrags Teil 3**.
 
 Die technische AAR-Umsetzung im Projekt bleibt in folgender vorhandener Projektdokumentation beschrieben:
 
 - [`moose/ISR-FAC-CAS-AAR.md`](moose/ISR-FAC-CAS-AAR.md)
 
-Die hier dokumentierten Tabellen, Geometrien und Aussagen aus Teil 1 sind Referenzdaten. Eine DCS- oder MOOSE-Validierung ist durch diese Quellenübernahme nicht erfolgt.
+Die hier dokumentierten Tabellen, Geometrien und Aussagen aus Teil 1 und Teil 2 sind Referenzdaten. Eine DCS- oder MOOSE-Validierung ist durch diese Quellenübernahme nicht erfolgt.
 
-## 8. Ausstehende Arbeiten
+## 9. Ausstehende Arbeiten
 
-- Inhalt der Patreon-Beiträge Teil 2 und Teil 3 abrufen.
+- Inhalt des Patreon-Beitrags Teil 3 abrufen.
 - Danach ausschließlich tatsächlich belegte Inhalte ergänzen.
-- Abweichungen zwischen Beiträgen und Anhängen dokumentieren.
+- Abweichungen zwischen Beitrag und Anhängen dokumentieren.
 - CombatFlite-Datei separat auswerten und nur verifizierte Inhalte übernehmen.
 
 Bis dahin bleibt das Dokument im Status:
 
 ```text
-PARTIAL / TEIL 2–3 AUSSTEHEND
+PARTIAL / TEIL 3 AUSSTEHEND
 ```
