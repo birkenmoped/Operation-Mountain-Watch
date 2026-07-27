@@ -33,9 +33,11 @@ Sämtliche Credits für die zugrunde liegende Recherche, Datensammlung, Zusammen
 
 - **Graveyard of Empires** — <https://www.patreon.com/cw/graveyard4DCS>
 
-Graveyard of Empires erklärt, dass die dort präsentierten Informationen aus offenen Quellen stammen. Operation Mountain Watch übernimmt und strukturiert ausgewählte Inhalte ausschließlich für die eigene Missionsgestaltung und beansprucht keine eigene Urheberschaft an dieser Recherche oder Datensammlung.
+Graveyard of Empires erklärt, dass die dort präsentierten Informationen aus offenen Quellen stammen und für eine möglichst realitätsnahe Missionsgestaltung im DCS-Afghanistan-Theater aufbereitet werden. Operation Mountain Watch nutzt deshalb alle für das Projekt relevanten **frei zugänglich veröffentlichten oder vom Projektinhaber rechtmäßig bereitgestellten** Informationen und Dokumente fachlich, strukturell und technisch.
 
-Die verbindliche projektweite Attribution, das Quellenverständnis und die Abgrenzung zwischen offenen Ausgangsinformationen und den von Graveyard of Empires erstellten Zusammenstellungen sind dokumentiert unter:
+Nicht frei zugängliche Patreon-Inhalte werden nicht beschafft, umgangen oder rekonstruiert. Die umfassende inhaltliche Nutzung frei bereitgestellter Quellen bedeutet zugleich nicht, dass vollständige Artikel, Grafiken oder Dateien automatisch als gemeinfrei behandelt oder unverändert im öffentlichen Repository gespiegelt werden. Attribution, Quellenlinks und die Trennung zwischen Quellinhalt und eigener Umsetzung bleiben erhalten.
+
+Die verbindliche projektweite Attribution, das Quellenverständnis, der zulässige Nutzungsumfang und die Abgrenzung zwischen fachlicher Nutzung und Reproduktion sind dokumentiert unter:
 
 - [`Graveyard of Empires – Credits, Quellenverständnis und Attribution`](docs/sources/graveyard-of-empires.md)
 
