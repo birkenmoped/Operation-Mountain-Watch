@@ -1,165 +1,107 @@
+---
+document_id: OMW-LOGISTICS
+status: BINDING
+document_class: LOGISTICS_ARCHITECTURE
+owning_policy: OMW-GOV-001
+authoritative_for:
+  - common logistics manifest and ownership model
+  - supported strategic transport modes
+  - one-time cargo credit and loss semantics
+scenario_period: 2010-08-01/2011-12-31
+project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
+supersedes:
+  - prototype-only logistics wording
+superseded_by:
+source_branch: agent/complete-documentation-authority-migration
+source_commit:
+validated_in_dcs: false
+---
+
 # 05 – Logistik
 
-## Ziel
+## 1. Zweck und Autorität
 
-Logistik soll spielerisch relevant sein, ohne die Kampagne durch Mikromanagement zu dominieren. Hauptbasen besitzen große strategische Reserven; FOBs sind lokal begrenzt und müssen versorgt, verstärkt und gegebenenfalls neu aufgebaut werden.
+Logistik ist strategisch und spielerisch relevant, ohne unnötiges Mikromanagement. Hauptbasen verfügen über große strategische Reserven; lokale Knoten besitzen begrenzte, tatsächlich zu transportierende Bestände.
 
-## Transportarten
+Der vollständige frühere Logistikentwurf bleibt unverändert erhalten:
 
-Die Kampagne unterscheidet fünf reguläre Lieferverfahren sowie eine automatische Rückfallebene:
+- [`Legacy-Logistikarchitektur`](evidence/source-records/legacy-05-logistics.md)
 
-1. Straßenkonvoi
-2. Hubschraubertransport mit interner Fracht
-3. Hubschraubertransport mit Außenlast
-4. Transportflugzeug mit Landung und Entladung
-5. Transportflugzeug mit Luftabwurf
-6. automatische AI-Notversorgung als begrenzte Rückfallebene
+Maßgebliche Grundlagen:
 
-Straße, interne Drehflüglerfracht, Außenlast, gelandeter Lufttransport und Luftabwurf sind gleichwertige logistische Werkzeuge mit unterschiedlichen Voraussetzungen, Risiken und Kapazitäten. Kein Verfahren ersetzt grundsätzlich die anderen.
+- [`OMW-ARCH-CAMPAIGN-STATE`](04-campaign-state.md)
+- [`OMW-ARCH-CAMPAIGN-DYNAMIC-MISSION`](37-campaign-architecture-and-dynamic-mission-design.md)
+- [`OMW-GOV-MOOSE-FIRST`](26-moose-first-development-policy.md)
+- [`MOOSE-Logistik und Transport`](moose/LOGISTICS-AND-TRANSPORT.md)
 
-## Gemeinsames Manifestmodell
+## 2. Transportarten
 
-Jede Lieferung besitzt unabhängig vom Transportweg eine eindeutige Cargo-ID und ein Manifest. Das Manifest beschreibt Ressourcenart, Menge, Gewicht, Volumen, Herkunft, Ziel und aktuellen Status.
+- `ROAD_CONVOY`;
+- `HELICOPTER_INTERNAL`;
+- `HELICOPTER_SLING`;
+- `FIXED_WING_LANDED`;
+- `FIXED_WING_AIRDROP`;
+- ausdrücklich genehmigte begrenzte AI-Notversorgung.
 
-Mögliche Statuswerte:
+Kein Transportverfahren ersetzt automatisch die anderen. Kapazität, Reichweite, Infrastruktur, Bedrohung und Verfügbarkeit bestimmen die Auswahl.
 
-- `AVAILABLE`
-- `LOADING`
-- `INTERNAL`
-- `SLING`
-- `IN_TRANSIT`
-- `DELIVERED`
-- `LOST`
-- `DESTROYED`
+## 3. Gemeinsames Manifestmodell
 
-Eine Cargo-ID darf genau einmal einem Zielbestand gutgeschrieben werden. Ein Wechsel zwischen interner Fracht, Außenlast, Zwischenlager und Weitertransport erzeugt keine neue Ressource.
+Jede Lieferung besitzt genau eine stabile Cargo-ID und ein Manifest mit mindestens:
 
-## Straßenkonvoi
+```text
+cargoId
+resourceType
+quantity
+weight
+volume
+origin
+destination
+transportMode
+carrierEntityId
+status
+reservationId
+```
 
-Straßenkonvois transportieren große Mengen an Personal, Munition, Treibstoff, Baumaterial und Fahrzeugen zwischen straßengebundenen Basen. Sie sind langsam, planbar und anfällig für IEDs, RPGs und Hinterhalte.
+Zustände umfassen unter anderem:
 
-Entfernte, unbegleitete Konvois dürfen virtualisiert werden. Bei Spielereskorte, Feindkontakt, Annäherung an ein Ziel oder einen Hinterhalt bleiben sie physisch. Große Konvois werden physisch in mehrere kleinere Gruppen aufgeteilt.
+```text
+AVAILABLE
+RESERVED
+LOADING
+INTERNAL
+SLING
+IN_TRANSIT
+TRANSFERRED
+DELIVERED
+LOST
+DESTROYED
+```
 
-## Hubschraubertransport mit interner Fracht
+Eine Cargo-ID darf einem Zielbestand genau einmal gutgeschrieben werden. Umschlag oder Wechsel des Transportmittels erzeugt keine neue Ressource.
 
-Interne Fracht wird im Laderaum transportiert. Dazu zählen je nach Plattform und technischer Integration:
+## 4. CampaignState- und Laufzeittrennung
 
-- Kisten und Behälter
-- Paletten oder palletisierte Versorgungsgüter
-- Munition, Treibstoff und Baumaterial als Manifest
-- Personal, Ingenieurgruppen und Verwundete
+CampaignState führt Eigentum, Menge, Reservierung und Ergebnis. MOOSE CTLD, `OPSTRANSPORT`, DCS Dynamic Cargo, Slingload-Objekte und Gruppen führen die operative Darstellung aus.
 
-Die Kampagnenlogik prüft:
+Ein projektspezifischer Adapter darf nur nach der vollständigen MOOSE-Prüfung und ausdrücklicher Projektinhaberfreigabe eingesetzt werden.
 
-1. Die Fracht ist an einer gültigen Ladezone verfügbar.
-2. Gewicht und Volumen liegen innerhalb des Plattformprofils.
-3. Die Cargo-ID wird dem Luftfahrzeug zugeordnet.
-4. Das Luftfahrzeug erreicht eine gültige Entlade- oder Übergabezone.
-5. Die Cargo-ID wird genau einmal an das Ziel übergeben.
+## 5. Verlust und Abschluss
 
-Interne Fracht kann nativ durch das DCS-Modul, über MOOSE CTLD oder durch einen projektspezifischen Adapter repräsentiert werden. Der strategische Zustand bleibt davon unabhängig.
+- zerstörte oder endgültig verlorene Fracht wird nicht gutgeschrieben;
+- ein zerstörter Transport kann nicht allein durch vorheriges Entladen automatisch als erfolgreich gelten, wenn die Missionsbedingungen seinen Erhalt verlangen;
+- stabile Endposition und gültige Übergabezone werden vor Gutschrift geprüft;
+- Teillieferung, Notabwurf und Umschlag werden ausdrücklich modelliert;
+- alle Zustandsänderungen werden mit Cargo- und Entity-ID protokolliert.
 
-## Hubschraubertransport mit Außenlast
+## 6. Acceptance
 
-Außenlasten werden als physische Frachtobjekte am Lasthaken transportiert. Dieser Pfad ist technisch von interner Fracht getrennt.
+Jeder Transportpfad benötigt eigene Tests für:
 
-Die Kampagnenlogik berücksichtigt:
-
-- Aufnahme an einer gültigen Außenlastzone
-- erfolgreichen Hook- oder Sling-Zustand
-- Gewichtslimit der Plattform
-- Verlust, Zerstörung oder Notabwurf
-- Ablage innerhalb einer gültigen Absetzzone
-- stabile Endposition vor der Ressourcengutschrift
-
-Eine zuvor intern transportierte Fracht darf nur über einen expliziten Umschlagprozess zur Außenlast werden. Dieselbe Cargo-ID darf nicht gleichzeitig intern und extern geführt werden.
-
-## Hubschrauberplattformen
-
-### CH-47F
-
-Die CH-47F ist die primäre schwere taktische Transportplattform. Für sie werden getrennt unterstützt und getestet:
-
-- interne Kisten und Paletten
-- Truppentransport
-- interne Frachtentladung
-- einpunktige Außenlast
-- spätere Mehrpunkt-Außenlast, sobald im verwendeten DCS-Stand verfügbar
-
-### UH-1H
-
-Die UH-1H ist die leichte Transportplattform. Für sie werden ebenfalls getrennt unterstützt und getestet:
-
-- interne Kisten oder kleine Paletten über den verfügbaren DCS-, CTLD- oder Adapterpfad
-- Truppentransport
-- kleinere Außenlasten
-- CSAR- und MEDEVAC-Transport
-
-Die genaue technische Schnittstelle für interne Fracht und Außenlast wird in der Testmission gegen die installierte DCS- und MOOSE-Version geprüft.
-
-### UH-60L Community Mod
-
-Der UH-60L Community Mod ist eine optionale Plattform für interne Fracht, Außenlast, Transport, MEDEVAC und Verbindung. Er wird nicht zur verpflichtenden Projekt- oder Serverabhängigkeit. Unterstützte Frachtarten werden versionsbezogen dokumentiert.
-
-## C-130J mit Landung
-
-Die C-130J kann geeignete Flugplätze und größere operative Basen direkt versorgen. Die vorgesehene Lieferkette lautet:
-
-1. Fracht an einer strategischen oder regionalen Basis laden.
-2. Flug zum Zielairfield durchführen.
-3. sicher landen und einen definierten Entlade- oder Lagerbereich erreichen.
-4. Fracht entladen beziehungsweise an das lokale Lager übergeben.
-5. Manifest genau einmal dem Zielbestand gutschreiben.
-
-Dieses Verfahren ist nur für Ziele mit geeigneter Start- und Landebahn, Rollwegen, Parkpositionen und Entladefläche zulässig. Jalalabad Airfield / FOB Fenty ist im Kernoperationsraum die wichtigste Ausnahme gegenüber reinen FOBs und soll für gelandete C-130J-Lieferungen geprüft werden. Auch Bagram und Kabul sind grundsätzlich geeignete logistische Knoten.
-
-Die genaue DCS- und Warehouse-Integration für gelandete Entladung muss im Spiel getestet werden; sie wird nicht allein aus der allgemeinen Modulbeschreibung abgeleitet.
-
-## C-130J-Luftabwurf
-
-Luftabwurf versorgt Ziele ohne geeignete Landebahn oder bei gesperrten Straßen- und Landezonen. DCS simuliert den physischen Abwurf. Die Kampagnenlogik bewertet nur:
-
-1. Das Frachtobjekt ist stabil gelandet.
-2. Seine Endposition liegt innerhalb der definierten Drop Zone.
-3. Die Cargo-ID wurde noch nicht gutgeschrieben.
-
-Bei Erfolg wird das Manifest dem Ziel-FOB gutgeschrieben. Abwurfhöhe, Geschwindigkeit, Fallschirm und Drift werden nicht doppelt simuliert.
-
-## Hybride Steuerung
-
-Normale Versorgung wird über Spielerauftrag oder F10-Menü angefordert. Automatische Maßnahmen greifen nur bei kritischem Mindestbestand, aktivem Großangriff oder längerer Abwesenheit geeigneter Logistikspieler.
-
-Der Dispatcher berücksichtigt:
-
-- verfügbare Plattformen
-- Frachtgewicht und Volumen
-- Zielinfrastruktur
-- Bedrohungslage
-- Wetter und Tageszeit
-- Dringlichkeit
-- verfügbare Eskorte
-- Straßen-, Lande-, Absetz- und Drop-Zone-Status
-
-## FOB-Wiederaufbau
-
-Ein zerstörter FOB wird stufenweise aufgebaut:
-
-1. Standort sichern.
-2. Baucontainer und Ingenieurgruppe liefern.
-3. minimale Infrastruktur erzeugen.
-4. Personal, Munition, Treibstoff und Fahrzeuge separat zuführen.
-5. volle Einsatzbereitschaft herstellen.
-
-Die Lieferungen können je nach Ziel und Lage per Konvoi, interner Hubschrauberfracht, Außenlast oder Luftabwurf erfolgen. Ein gelandeter C-130J-Transport ist nur an dafür geeigneten Airfields oder großen Basen möglich.
-
-## Noch zu entscheiden und zu testen
-
-- genaue Kapazitäten der FOB-Klassen
-- Cargo-Manifeste, Kistentypen und Palettenmodelle
-- CH-47F: interne Kisten, interne Paletten, einpunktige Außenlast und Warehouse-Transfer
-- UH-1H: interne Fracht, Truppen und Außenlast über die tatsächlich verfügbaren DCS-/CTLD-Pfade
-- optionaler UH-60L-Mod: interne Fracht, Außenlast, Multiplayer- und Abhängigkeitsfolgen
-- Umschlag zwischen Lager, interner Fracht und Außenlast
-- Regeln für verlorene, zerstörte oder außerhalb der Absetzzone gelandete Fracht
-- C-130J-Landung, Entladung und Warehouse-Übergabe
-- Umfang automatischer AI-Nachversorgung
+- Aufnahme und Reservierung;
+- Gewicht und Kapazität;
+- Übergabe und Einmalgutschrift;
+- Zerstörung, Abbruch und Disconnect;
+- Multiplayer-Synchronisation;
+- Persistenz und Missionsneustart;
+- verwendete DCS- und MOOSE-Version.

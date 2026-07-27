@@ -1,22 +1,47 @@
+---
+document_id: OMW-ADR-0001-MOOSE-PRIMARY
+status: SUPERSEDED
+document_class: ADR
+owning_policy: OMW-GOV-001
+authoritative_for:
+  - historical decision to use MOOSE as primary framework
+scenario_period:
+project_phase:
+supersedes:
+superseded_by:
+  - OMW-GOV-MOOSE-FIRST
+  - OMW-GOV-001
+source_branch: agent/complete-documentation-authority-migration
+source_commit:
+validated_in_dcs: false
+---
+
 # ADR-0001: MOOSE als primäres Framework
 
 ## Status
 
-Angenommen
+`SUPERSEDED` in der Regelungstiefe, Entscheidung inhaltlich fortgeführt.
 
-## Kontext
+Die ursprüngliche Entscheidung, MOOSE als primäres DCS-Scripting-Framework zu verwenden, bleibt gültig. Das damalige ADR beschreibt jedoch nicht das heute zwingende Ausnahme- und Eigentümerfreigabeverfahren.
 
-Die Mission benötigt dynamische Spawns, Objekt-Wrapper, Events, Scheduler, Zonen, Menüs, CTLD, CSAR und umfangreiche operative Logik. Ein paralleler Einsatz mehrerer allgemeiner Frameworks erhöht Integrations- und Debugaufwand.
+Verbindlich sind deshalb:
 
-## Entscheidung
+- [`OMW-GOV-001`](../00-project-governance.md)
+- [`OMW-GOV-MOOSE-FIRST`](../26-moose-first-development-policy.md)
 
-MOOSE wird als primäres DCS-Scripting-Framework verwendet. Eigene Kampagnenmodule bauen auf MOOSE und der nativen DCS-Scripting-API auf.
+## Historische Entscheidung
 
-MIST wird nicht standardmäßig geladen. Eine spätere Aufnahme erfordert eine konkret benannte Funktion oder Abhängigkeit und ein weiteres ADR.
+MOOSE wurde gewählt, um dynamische Spawns, Wrapper, Events, Scheduler, Zonen, Menüs, CTLD, CSAR und operative Logik in einem einheitlichen Framework abzubilden. MIST wird nicht standardmäßig parallel geladen.
 
-## Konsequenzen
+## Aktuelle Ergänzung
 
-- Eine getestete MOOSE-Version wird im Projekt festgeschrieben.
-- Mission-Editor-Vorlagen und Namenskonventionen müssen mit MOOSE abgestimmt sein.
-- Entwickler müssen zwischen strategischer Domänenlogik und MOOSE-/DCS-Objekten trennen.
-- Beispiele aus älteren MOOSE-Versionen werden nicht ungeprüft übernommen.
+Eigene Kampagnenmodule dürfen nicht allein deshalb auf der nativen DCS-API aufbauen, weil MOOSE ein projektspezifisches Domänenmodell nicht vollständig bereitstellt.
+
+Jede produktive Ergänzung benötigt:
+
+1. dokumentierte MOOSE-Prüfung;
+2. nachgewiesene technische Lücke;
+3. kleinstmöglichen Ergänzungsumfang;
+4. ausdrückliche Projektinhaberfreigabe;
+5. ADR- oder Acceptance-Dokumentation;
+6. reproduzierbaren DCS-Test.

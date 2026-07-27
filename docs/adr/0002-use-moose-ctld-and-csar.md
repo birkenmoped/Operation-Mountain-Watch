@@ -1,27 +1,47 @@
+---
+document_id: OMW-ADR-0002-MOOSE-CTLD-CSAR
+status: SUPERSEDED
+document_class: ADR
+owning_policy: OMW-GOV-001
+authoritative_for:
+  - historical prototype choice of MOOSE CTLD and MOOSE CSAR
+scenario_period:
+project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
+supersedes:
+superseded_by:
+  - OMW-GOV-MOOSE-FIRST
+  - OMW-ARCH-CAMPAIGN-DYNAMIC-MISSION
+  - OMW-CSAR-INDEX
+source_branch: agent/complete-documentation-authority-migration
+source_commit:
+validated_in_dcs: false
+---
+
 # ADR-0002: MOOSE CTLD und MOOSE CSAR
 
 ## Status
 
-Angenommen für den ersten Prototyp
+`SUPERSEDED` als prototypbezogene Entscheidung.
 
-## Kontext
+Die Präferenz für MOOSE CTLD und MOOSE CSAR bleibt bestehen, ist aber keine pauschale technische Acceptance und keine Freigabe für ungeprüfte Adapter.
 
-Ciribob DCS-CTLD und DCS-CSAR sind bewährte Systeme, benötigen jedoch MIST und verwenden ein zusätzliches prozedurales Objekt- und Eventmodell. MOOSE enthält eigene CTLD- und CSAR-Implementierungen, die sich direkter in MOOSE-Events und die geplante Architektur integrieren lassen.
+Verbindlich sind:
 
-## Entscheidung
+- [`OMW-GOV-MOOSE-FIRST`](../26-moose-first-development-policy.md)
+- [`OMW-ARCH-CAMPAIGN-DYNAMIC-MISSION`](../37-campaign-architecture-and-dynamic-mission-design.md)
+- [`OMW-CSAR-INDEX`](../csar/README.md)
 
-Der erste Prototyp verwendet MOOSE CTLD und MOOSE CSAR. Ciribob CTLD/CSAR und MIST werden nicht parallel geladen.
+## Fortgeführte Entscheidung
 
-Vor endgültiger Festlegung müssen folgende Funktionen in DCS getestet werden:
+- MOOSE CTLD und MOOSE CSAR werden vorrangig geprüft und eingesetzt.
+- Ciribob CTLD/CSAR und MIST werden nicht parallel geladen, solange kein dokumentiertes, reproduzierbares Funktionsdefizit und keine ausdrückliche Projektinhaberfreigabe vorliegen.
+- Fehlende projektspezifische Kampagnenlogik wird nur über genehmigte, kleine Adapter ergänzt.
 
-- C-130J Dynamic Cargo und Luftabwurf
-- Erkennung der stabilen Endposition eines Pakets
-- CTLD-Aufnahme, Absetzen und Bau aus mehreren Lieferungen
-- MOOSE-CSAR-Ereignisse, Funkbaken und Rückgabe an eine Rettungseinrichtung
-- Integration eigener Capture- und Kampagnenlogik
+## Noch erforderliche Acceptance
 
-## Konsequenzen
-
-- Ein einheitliches MOOSE-Event- und Objektmodell reduziert Integrationscode.
-- Fehlende Funktionen werden zuerst durch kleine Adapter ergänzt.
-- Ein Wechsel zu Ciribob CTLD oder CSAR erfolgt nur nach einem dokumentierten, reproduzierbaren Funktionsdefizit.
+- C-130J Dynamic Cargo und Luftabwurf;
+- stabile Paket-Endposition;
+- CTLD-Aufnahme, Absetzen und Bau aus mehreren Lieferungen;
+- MOOSE-CSAR-Ereignisse, Funkbaken und Übergabe an Rettungseinrichtungen;
+- Integration mit Capture-, CampaignState- und Persistenzlogik;
+- Multiplayer- und Langzeittest.

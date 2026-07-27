@@ -11,6 +11,10 @@ supersedes:
   - technical justification without explicit owner approval
 source_branch: agent/reconcile-documentation-authority
 validated_in_dcs: false
+document_class: GOVERNANCE_POLICY
+scenario_period:
+source_commit: GIT_HISTORY
+superseded_by:
 ---
 
 # Verbindliche MOOSE-First-Entwicklungsrichtlinie

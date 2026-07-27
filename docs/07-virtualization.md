@@ -1,52 +1,91 @@
-# 07 – Virtualisierung
+---
+document_id: OMW-VIRTUALIZATION
+status: BINDING
+document_class: REPRESENTATION_ARCHITECTURE
+owning_policy: OMW-GOV-001
+authoritative_for:
+  - strategic versus physical representation rules
+  - materialization and dematerialization safety constraints
+  - preservation of campaign identity across representation changes
+scenario_period: 2010-08-01/2011-12-31
+project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
+supersedes:
+  - prototype-only virtualization wording
+superseded_by:
+source_branch: agent/complete-documentation-authority-migration
+source_commit:
+validated_in_dcs: false
+---
 
-## Zweck
+# 07 – Virtualisierung und physische Repräsentation
 
-Entfernte Gruppen und Konvois werden als strategische Entitäten statt als aktive DCS-Gruppen geführt. Dadurch entfallen Wegfindung, Sensorberechnung, Kollisionen und KI-Last, solange kein physischer Kontakt möglich ist.
+## 1. Zweck
 
-## Virtueller Zustand
+Entfernte Einheiten und Transporte können als strategische Entitäten geführt werden, solange keine relevante physische Interaktion möglich ist. Die Virtualisierung reduziert DCS-KI-, Sensor-, Wegfindungs- und Kollisionslast, ohne strategische Identität oder Ressourcen zu verlieren.
 
-- keine DCS-Gruppe
-- mathematisch fortgeschriebene Position
-- erhaltene Zusammensetzung, Fracht, Verluste, Auftrag und Route
-- Bewegung mit abschnittsabhängiger Durchschnittsgeschwindigkeit
+Der vollständige frühere Entwurf bleibt unverändert erhalten:
 
-## Physischer Zustand
+- [`Legacy-Virtualisierungsentwurf`](evidence/source-records/legacy-07-virtualization.md)
 
-Eine DCS-Gruppe wird aus einer Mission-Editor-Vorlage erzeugt und mit der strategischen Entity-ID verknüpft. Beim Rückwechsel werden Position, Überlebende, Fracht und relevanter Zustand gespeichert.
+Übergeordnete Architektur:
 
-## Materialisierung
+- [`OMW-ARCH-CAMPAIGN-DYNAMIC-MISSION`](37-campaign-architecture-and-dynamic-mission-design.md)
 
-Materialisierung erfolgt bei:
+## 2. Virtueller Zustand
 
-- Annäherung eines Spielers oder relevanter blauer/roter KI
-- bevorstehendem Kampf
-- aktivem Eskorteinsatz
-- Annäherung an FOB, Camp, Checkpoint oder Missionsziel
-- Aufklärung einer vorbereiteten Angriffszone
+Eine virtualisierte Entity besitzt mindestens:
 
-Spawns erfolgen nur an validierten Straßen-, Gelände- oder Versteckankern und außerhalb plausibler Beobachtung.
+- stabile CampaignState-ID;
+- Zusammensetzung und Verluste;
+- Fracht und Ressourcen;
+- Auftrag und Ziel;
+- Route, Segment und mathematische Position;
+- Geschwindigkeit und Zeitstempel;
+- Exposure-, Tracking- und Kontaktstatus;
+- keine aktive DCS-Gruppe.
 
-## Dematerialisierung
+## 3. Materialisierung
+
+Materialisierung ist erforderlich bei:
+
+- Spieler- oder relevanter KI-Nähe;
+- bevorstehender Beobachtungs- oder Kampfchance;
+- aktivem Eskorte-, Recon- oder Intercept-Auftrag;
+- Annäherung an Ziel, FOB, Cache, Checkpoint oder Hinterhalt;
+- zwingendem Exposure Window.
+
+Spawns erfolgen nur an validierten Ankern, mit korrekter Fahrtrichtung und außerhalb plausibler unmittelbarer Beobachtung.
+
+## 4. Dematerialisierung
 
 Nur zulässig, wenn:
 
-- seit mehreren Minuten kein Kontakt besteht
-- kein Spieler die Gruppe beobachtet oder eskortiert
-- keine Waffe unterwegs ist
-- keine Be-/Entladung oder Zielinteraktion läuft
-- die Gruppe nicht kritisch beschädigt ist
+- kein Spieler oder relevanter Sensor die Gruppe beobachtet oder verfolgt;
+- kein Kampf, Waffeneinsatz oder unmittelbarer Kontakt besteht;
+- keine Be-/Entladung, Landung oder Zielinteraktion läuft;
+- Mindestzeit und Mindestdistanz erfüllt sind;
+- der Zustand vollständig in CampaignState überführt werden kann.
 
-Aktivierungs- und Deaktivierungsradien verwenden Hysterese, um ständiges Ein- und Auspacken zu vermeiden.
+Aktivierungs- und Deaktivierungsgrenzen verwenden Hysterese.
 
-## Straßenkonvois
+## 5. Fairness- und Sicherheitsregel
 
-Virtuelle Konvois bewegen sich entlang gespeicherter Straßenpolylinien und benötigen kein Proxy-Fahrzeug. Bei Materialisierung werden mehrere kleine Gruppen auf validierten Ankern erzeugt. Ein Stuck Detector darf nur außerhalb der Spielerbeobachtung repositionieren.
+Unzulässig sind:
 
-## Rote Vorhut
+- sichtbare Teleportation;
+- Dematerialisierung während Aufklärung, Verfolgung oder Kampf;
+- Zurücksetzen einer entdeckten Gruppe als Stuck-Recovery;
+- Verlust von Fracht, Schäden oder Entity-ID beim Wechsel;
+- Proxy-Fahrzeuge als unabhängige zweite strategische Wahrheit.
 
-Physische Spotter oder Vorausfahrzeuge können als eigene Entities eingesetzt werden. Sie sind nicht die technische Repräsentation der gesamten virtualisierten Gruppe.
+## 6. Acceptance
 
-## Grenzen
+Zu testen sind insbesondere:
 
-Exakter individueller Subsystemschaden, Munitionszustand und laufende DCS-Controller-Aufgaben können nach Respawn nicht grundsätzlich identisch rekonstruiert werden und müssen im Prototyp praktisch geprüft werden.
+- Pack/Unpack mit Beobachtungsstatus;
+- Watchguard für verpackte und entpackte Gruppen;
+- Stuck-Recovery ohne unfairen Teleport;
+- Verluste und Frachtzustand;
+- Multiplayer-Synchronisation;
+- Missionsneustart und Persistenz;
+- Performancegrenzen und Exposure Windows.

@@ -1,144 +1,110 @@
 ---
 document_id: OMW-GOV-DOCUMENT-REGISTRY
 status: BINDING_PROJECT_DECISION
+document_class: DOCUMENT_REGISTRY
 owning_policy: OMW-GOV-001
 authoritative_for:
   - document number reservations
   - stable document IDs
   - main-branch document inventory
   - merge-time renumbering
+scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
-source_branch: agent/resolve-document-number-collisions
-source_commit:
+supersedes:
+  - registry without complete non-numbered document inventory
+superseded_by:
+source_branch: agent/complete-documentation-authority-migration
+source_commit: PENDING_MERGE
 validated_in_dcs: false
 ---
 
 # Operation Mountain Watch – Zentrales Dokumentregister
 
-## 1. Zweck und Bestandsregel
+## 1. Regeln
 
-Dieses Register reserviert projektweit Dokumentnummern und stabile IDs. Eine Nummer darf nur einmal als aktuelle Nummer vergeben sein.
+Eine Nummer und eine stabile `document_id` dürfen im aktuellen Bestand jeweils nur einmal vergeben sein. Der reale Repository-Baum entscheidet, welche Dateien auf `main` vorhanden sind. Offene Branches werden separat im [`Unterprojektregister`](SUBPROJECT-REGISTRY.md) geführt.
 
-Für die Frage, welche Datei auf `main` vorhanden ist, gilt ausschließlich der reale Repository-Baum. Dateien auf offenen PR- oder Feature-Branches werden separat als Reservierung oder branchgebundene Evidenz geführt.
+## 2. Nummerierte Dokumente
 
-Verweise verwenden bevorzugt:
+| Nr. | Stabile ID | Pfad | Status | Klasse/Funktion |
+|---:|---|---|---|---|
+| 00 | `OMW-GOV-001` | `docs/00-project-governance.md` | `BINDING_PROJECT_DECISION` | höchste Governance |
+| 01 | `OMW-VISION` | `docs/01-vision.md` | `BINDING` | Projektvision |
+| 02 | `OMW-GAMEPLAY-CONCEPT` | `docs/02-gameplay-concept.md` | `BINDING` | Gameplay-Konzept |
+| 03 | `OMW-ARCH-SYSTEM` | `docs/03-system-architecture.md` | `BINDING` | Systemarchitektur |
+| 04 | `OMW-ARCH-CAMPAIGN-STATE` | `docs/04-campaign-state.md` | `BINDING` | Domain Model |
+| 05 | `OMW-LOGISTICS` | `docs/05-logistics.md` | `BINDING` | Logistikarchitektur |
+| 06 | `OMW-RED-DIRECTOR` | `docs/06-red-director.md` | `SUPERSEDED` | früher RED-Entwurf |
+| 07 | `OMW-VIRTUALIZATION` | `docs/07-virtualization.md` | `BINDING` | Repräsentationsarchitektur |
+| 08 | `OMW-CSAR-LEGACY` | `docs/08-csar.md` | `SUPERSEDED` | früher CSAR-Entwurf |
+| 09 | `OMW-HIST-SETTING` | `docs/09-historical-setting.md` | `BINDING` | historischer Rahmen |
+| 10 | `OMW-THEATER-SECTORS` | `docs/10-theater-and-sectors.md` | `BINDING` | Theatermodell |
+| 11 | `OMW-BASES-FOBS` | `docs/11-bases-and-fobs.md` | `PLANNED` | Basen-/FOB-Modell |
+| 12 | `OMW-ROUTE-NETWORK` | `docs/12-route-network.md` | `SUPERSEDED` | frühes Routennetz |
+| 13 | `OMW-UNIT-CATALOG` | `docs/13-unit-catalog.md` | `PLANNED` | Katalogplanung |
+| 14 | `OMW-PHASE-VERTICAL-PROTOTYPE` | `docs/14-prototype-scope.md` | `SUPERSEDED` | historische Phase |
+| 15 | `OMW-TEMPLATE-LIBRARY-SPAWNING` | `docs/15-template-library-and-spawning.md` | `BINDING` | Template-Architektur |
+| 16 | `OMW-WORLD-DATA-ROUTING` | `docs/16-world-data-and-routing.md` | `BINDING` | World-Data-Architektur |
+| 17 | `OMW-ARCH-PATHFINDING-OPTIONS` | `docs/17-pathfinding-options.md` | `PLANNED` | technische Designreferenz |
+| 18 | `OMW-AIR-IMPLEMENTATION` | `docs/18-air-operations-implementation.md` | `BINDING` | technische Luftoperationen |
+| 19 | `OMW-AIR-ACTIVE-ORBAT` | `docs/19-active-air-orbat-decisions.md` | `BINDING_PROJECT_DECISION` | aktive ORBAT/Clientgrenzen |
+| 20 | `OMW-AIR-ME-WORKLIST` | `docs/20-air-orbat-mission-editor-worklist.md` | `BINDING` | Air-Ops-ME-Workflow |
+| 21 | `OMW-AIR-JBAD-MANIFEST` | `docs/21-jalalabad-air-operations-manifest.md` | `BINDING` | Jalalabad-ME-Baseline |
+| 26 | `OMW-GOV-MOOSE-FIRST` | `docs/26-moose-first-development-policy.md` | `BINDING_PROJECT_DECISION` | MOOSE-First |
+| 27 | `OMW-C2-JTAC-CALLSIGNS` | `docs/27-oef-jtac-callsign-reference.md` | `BINDING` | Quellenreferenz |
+| 28 | `OMW-C2-TAD-COLOR-NETS` | `docs/28-afghanistan-tad-color-nets.md` | `BINDING` | Quellenbasierter Datensatz |
+| 29 | `OMW-AAR-ISAF-ACO` | `docs/29-isaf-2009-2013-air-to-air-refueling.md` | `BINDING` | AAR-/ACO-Referenz |
+| 30 | `OMW-AAR-PART2-FIGURE` | `docs/30-isaf-2009-2013-aar-part2-figure-reference.md` | `BINDING` | Abbildungsreferenz |
+| 37 | `OMW-ARCH-CAMPAIGN-DYNAMIC-MISSION` | `docs/37-campaign-architecture-and-dynamic-mission-design.md` | `BINDING` | Kampagnenarchitektur |
+| 38 | `OMW-ME-MASTER-WORKLIST` | `docs/38-mission-editor-master-worklist.md` | `BINDING` | ME-Masterarbeitsliste |
+| 39 | `OMW-REVIEW-TM01-TM02-MOOSE-FIRST` | `docs/39-tm01-tm02-moose-first-code-review.md` | `DRAFT` | Code Review |
+| 40 | `OMW-PLAN-TM01-TM02-MOOSE-ADOPTION` | `docs/40-moose-module-adoption-plan-for-tm01-tm02.md` | `PLANNED` | Implementierungsplan |
+| 41 | `OMW-WX-HISTORICAL-BASELINE` | `docs/41-historical-weather-baseline-2010-2011.md` | `BINDING` | Wetterdatenbaseline |
+| 42 | `OMW-WX-DCS-IMPLEMENTATION` | `docs/42-dcs-weather-editor-validation.md` | `BINDING` | DCS-Editorbaseline |
+| 43 | `OMW-WX-RAIN-PROFILE` | `docs/43-dcs-rain-shower-preset-validation.md` | `BINDING` | visuell bestätigtes Arbeitsprofil |
+| 44 | `OMW-WX-MIST-PROFILE` | `docs/44-dcs-valley-mist-low-cloud-test-profile.md` | `PLANNED` | Testprofil |
+| 45 | `OMW-C2-AIR-C2-CAS-AFGHANISTAN` | `docs/45-air-c2-cas-afghanistan.md` | `BINDING` | Quellenbasierte Designreferenz |
+| 46 | `OMW-ROE-NON-LETHAL-USE-OF-FORCE` | `docs/46-non-lethal-use-of-force.md` | `PLANNED` | Quellenbasierte Designreferenz |
+| 47 | `OMW-C2-AIRCRAFT-TACTICAL-CALLSIGNS` | `docs/47-aircraft-tactical-callsigns.md` | `BINDING` | Quellenreferenz |
+| 48 | `OMW-TARGETING-AFGHANISTAN-NSL` | `docs/48-afghanistan-no-strike-list.md` | `BINDING` | Targeting-Architektur |
+| 49 | `OMW-MSR-ROUTE-DESIGN` | `docs/49-msr-routendesign-und-infrastrukturmarker.md` | `PLANNED` | Design-/Arbeitsliste |
 
-```text
-<document_id> – <Pfad>
-```
+## 3. Reservierte Nummern auf offenen Branches
 
-und nicht nur eine Nummer wie „Dokument 28“.
+| PR | Nummern | Status |
+|---:|---|---|
+| 18 | 22–25 | nur Draft-PR #18; branchgebundene Air-Ops-Dokumente |
+| 18 | 27 | branchlokale Kollision; vor Integration zwingend neu nummerieren |
+| 24 | 31–36 | nur Draft-PR #24; Bagram/Kandahar |
 
-## 2. Aktuell auf `main` vorhandene nummerierte Dokumente
+## 4. Nicht nummerierte aktuelle Dokumente
 
-| Nr. | Stabile ID | Pfad | Dokumentstatus / Funktion |
-|---:|---|---|---|
-| 00 | `OMW-GOV-001` | `docs/00-project-governance.md` | `BINDING_PROJECT_DECISION`; höchste Projekt-Governance |
-| 01 | `OMW-VISION` | `docs/01-vision.md` | Legacy-Grundlagendokument; Statusmigration ausstehend |
-| 02 | `OMW-GAMEPLAY-CONCEPT` | `docs/02-gameplay-concept.md` | Legacy-Grundlagendokument; Statusmigration ausstehend |
-| 03 | `OMW-ARCH-SYSTEM` | `docs/03-system-architecture.md` | `BINDING`; Systemgrenzen und Supersede-Hinweis zum vertikalen Prototyp |
-| 04 | `OMW-ARCH-CAMPAIGN-STATE` | `docs/04-campaign-state.md` | Legacy-Grundlagendokument; Statusmigration und Abgleich mit Dokument 37 ausstehend |
-| 05 | `OMW-LOGISTICS` | `docs/05-logistics.md` | Legacy-Fachdokument; Statusmigration ausstehend |
-| 06 | `OMW-RED-DIRECTOR` | `docs/06-red-director.md` | Legacy-Fachdokument; Statusmigration ausstehend |
-| 07 | `OMW-VIRTUALIZATION` | `docs/07-virtualization.md` | Legacy-Fachdokument; Statusmigration ausstehend |
-| 08 | `OMW-CSAR-LEGACY` | `docs/08-csar.md` | frühes CSAR-Grundlagendokument; aktuelle CSAR-Dokumentation zusätzlich beachten |
-| 09 | `OMW-HIST-SETTING` | `docs/09-historical-setting.md` | `BINDING_PROJECT_DECISION`; historischer Rahmen und Kampagnenzeitraum |
-| 10 | `OMW-THEATER-SECTORS` | `docs/10-theater-and-sectors.md` | Legacy-Fachdokument; Statusmigration ausstehend |
-| 11 | `OMW-BASES-FOBS` | `docs/11-bases-and-fobs.md` | Legacy-Fachdokument; Statusmigration ausstehend |
-| 12 | `OMW-ROUTE-NETWORK` | `docs/12-route-network.md` | Legacy-Fachdokument; Statusmigration ausstehend |
-| 13 | `OMW-UNIT-CATALOG` | `docs/13-unit-catalog.md` | Legacy-Fachdokument; Statusmigration ausstehend |
-| 14 | `OMW-PHASE-VERTICAL-PROTOTYPE` | `docs/14-prototype-scope.md` | `SUPERSEDED`; frühere vertikale Prototypphase |
-| 15 | `OMW-TEMPLATE-LIBRARY-SPAWNING` | `docs/15-template-library-and-spawning.md` | Legacy-Designgrundlage; Statusmigration ausstehend |
-| 16 | `OMW-WORLD-DATA-ROUTING` | `docs/16-world-data-and-routing.md` | Legacy-Designgrundlage; Statusmigration ausstehend |
-| 17 | `OMW-ARCH-PATHFINDING-OPTIONS` | `docs/17-pathfinding-options.md` | Pathfinding- und Routingoptionen; Statusmigration ausstehend |
-| 18 | `OMW-AIR-IMPLEMENTATION` | `docs/18-air-operations-implementation.md` | `BINDING`; technische Luftoperationsregeln, keine ORBAT- oder Client-Autorität |
-| 19 | `OMW-AIR-ACTIVE-ORBAT` | `docs/19-active-air-orbat-decisions.md` | `BINDING_PROJECT_DECISION`; aktive Luft-ORBAT und Client-Grenzen |
-| 20 | `OMW-AIR-ME-WORKLIST` | `docs/20-air-orbat-mission-editor-worklist.md` | `BINDING`; Foundation-Build-Arbeitsablauf für Luftoperationsknoten |
-| 21 | `OMW-AIR-JBAD-MANIFEST` | `docs/21-jalalabad-air-operations-manifest.md` | älteres Jalalabad-Manifest; bis Statusmigration keine Autorität über Dokument 19/20 |
-| 26 | `OMW-GOV-MOOSE-FIRST` | `docs/26-moose-first-development-policy.md` | `BINDING_PROJECT_DECISION`; MOOSE-First-Richtlinie |
-| 27 | `OMW-C2-JTAC-CALLSIGNS` | `docs/27-oef-jtac-callsign-reference.md` | JTAC-Callsign-Referenz |
-| 28 | `OMW-C2-TAD-COLOR-NETS` | `docs/28-afghanistan-tad-color-nets.md` | TAD-/Color-Net-Frequenzplan |
-| 29 | `OMW-AAR-ISAF-ACO` | `docs/29-isaf-2009-2013-air-to-air-refueling.md` | ISAF-AAR-/ACO-Referenz |
-| 30 | `OMW-AAR-PART2-FIGURE` | `docs/30-isaf-2009-2013-aar-part2-figure-reference.md` | AAR-Abbildungsreferenz |
-| 37 | `OMW-ARCH-CAMPAIGN-DYNAMIC-MISSION` | `docs/37-campaign-architecture-and-dynamic-mission-design.md` | Kampagnen- und Produktionsarchitektur; Governance-Metadatenmigration ausstehend |
-| 38 | `OMW-ME-MASTER-WORKLIST` | `docs/38-mission-editor-master-worklist.md` | Foundation-Build-Masterarbeitsliste |
-| 39 | `OMW-REVIEW-TM01-TM02-MOOSE-FIRST` | `docs/39-tm01-tm02-moose-first-code-review.md` | TM01-/TM02-MOOSE-First-Review |
-| 40 | `OMW-PLAN-TM01-TM02-MOOSE-ADOPTION` | `docs/40-moose-module-adoption-plan-for-tm01-tm02.md` | MOOSE-Adoptionsplan |
-| 41 | `OMW-WX-HISTORICAL-BASELINE` | `docs/41-historical-weather-baseline-2010-2011.md` | historische Wetterbaseline |
-| 42 | `OMW-WX-DCS-IMPLEMENTATION` | `docs/42-dcs-weather-editor-validation.md` | DCS-Wettereditor-Validierung |
-| 43 | `OMW-WX-RAIN-PROFILE` | `docs/43-dcs-rain-shower-preset-validation.md` | Regen-/Schauerprofil |
-| 44 | `OMW-WX-MIST-PROFILE` | `docs/44-dcs-valley-mist-low-cloud-test-profile.md` | Talnebel-/Tiefe-Wolken-Testprofil |
-| 45 | `OMW-C2-AIR-C2-CAS-AFGHANISTAN` | `docs/45-air-c2-cas-afghanistan.md` | Air C2 und CAS |
-| 46 | `OMW-ROE-NON-LETHAL-USE-OF-FORCE` | `docs/46-non-lethal-use-of-force.md` | Show of Presence / Show of Force |
-| 47 | `OMW-C2-AIRCRAFT-TACTICAL-CALLSIGNS` | `docs/47-aircraft-tactical-callsigns.md` | Aircraft Tactical Callsigns |
-| 48 | `OMW-TARGETING-AFGHANISTAN-NSL` | `docs/48-afghanistan-no-strike-list.md` | Afghanistan No-Strike List und Targeting-Architektur |
-| 49 | `OMW-MSR-ROUTE-DESIGN` | `docs/49-msr-routendesign-und-infrastrukturmarker.md` | MSR-Routendesign und Infrastrukturmarker |
-
-## 3. Reservierungen für offene, nicht auf `main` integrierte Zweige
-
-Diese Dateien sind nicht Bestandteil des aktuellen `main`-Baums. Ihre technische oder fachliche Aussage gilt nur entsprechend ihrem Branch-, PR- und Acceptance-Status.
-
-### 3.1 PR #18 – Jalalabad Air Operations
-
-| Nr. | Stabile ID | Zielpfad | Status |
-|---:|---|---|---|
-| 22 | `OMW-TEST-BUILD-TRANSFER` | `docs/22-test-mission-build-transfer-and-validation-workflow.md` | nur auf Draft-PR #18 |
-| 23 | `OMW-AIR-JBAD-PARKING-MEDEVAC` | `docs/23-jalalabad-parking-template-and-medevac-model.md` | nur auf Draft-PR #18 |
-| 24 | `OMW-AIR-JBAD-CH47-PARKING` | `docs/24-jalalabad-ch47-static-parking-reservations.md` | nur auf Draft-PR #18 |
-| 25 | `OMW-AIR-JBAD-ACCEPTANCE` | `docs/25-jalalabad-final-validation-and-operational-baseline.md` | nur auf Draft-PR #18; `ACCEPTED_TECHNICAL_BASELINE` für exakt dokumentierten Teststand |
-
-PR #18 enthält zusätzlich einen branchlokalen Pfad `docs/27-helicopter-formations-and-ah64-afghanistan-configuration.md`. Die Nummer 27 ist auf `main` bereits vergeben und muss vor einer späteren Integration neu reserviert werden.
-
-### 3.2 PR #24 – Bagram/Kandahar Air Operations
-
-| Nr. | Stabile ID | Zielpfad | Status |
-|---:|---|---|---|
-| 31 | `OMW-AIR-BAGRAM-MANIFEST` | `docs/31-bagram-air-operations-manifest.md` | reserviert für Draft-PR #24 |
-| 32 | `OMW-AIR-PLAYER-SLOT-POLICY` | `docs/32-player-aircraft-slot-policy.md` | reserviert für Draft-PR #24 |
-| 33 | `OMW-AIR-KANDAHAR-MANIFEST` | `docs/33-kandahar-air-operations-manifest.md` | reserviert für Draft-PR #24 |
-| 34 | `OMW-AIR-BAGRAM-ME-BASELINE` | `docs/34-bagram-current-mission-editor-baseline.md` | reserviert für Draft-PR #24 |
-| 35 | `OMW-AIR-KANDAHAR-ISR-POLICY` | `docs/35-kandahar-isr-asset-policy.md` | reserviert für Draft-PR #24 |
-| 36 | `OMW-AIR-KANDAHAR-MUSTANG-RAMP` | `docs/36-kandahar-mustang-ramp-army-aviation-baseline.md` | reserviert für Draft-PR #24 |
-
-## 4. Nicht nummerierte stabile Dokumente
-
-| Stabile ID | Pfad | Status / Funktion |
+| Stabile ID | Pfad | Status/Funktion |
 |---|---|---|
-| `OMW-AIR-US-ORBAT-RESEARCH` | `docs/us-air-orbat-2010-2011.md` | historischer Recherche- und Planungsbestand |
-| `OMW-GOV-SOURCE-USE` | `docs/sources/graveyard-of-empires.md` | zentrale Quellen-, Datei- und Veröffentlichungsregel |
-| `OMW-GOV-MOOSE-VERSION` | `docs/moose/VERSION-AND-SOURCES.md` | MOOSE-Versions- und Nachweisregeln |
-| `OMW-MOOSE-CLASS-INDEX` | `docs/moose/PROJECT-CLASS-INDEX.md` | projektbezogener MOOSE-Klassenindex |
-| `OMW-MOOSE-VERIFIED-METHODS` | `docs/moose/VERIFIED-METHODS.md` | praktisch verifizierte Methoden |
-| `OMW-TARGETING-AFGHANISTAN-NSL-DATA-USE` | `docs/targeting/afghanistan-nsl-data-use-policy.md` | verbindliche NSL-Datenverwendung |
-| `OMW-EVIDENCE-JBAD-AIR-OPS-BASELINE-AUDIT` | `docs/evidence/jalalabad-air-operations-baseline-audit.md` | unnummerierter historischer Ausgangs-Audit |
-| `OMW-EVIDENCE-INDEX` | `docs/evidence/README.md` | Einordnung von Evidenz- und Legacy-Datensätzen |
+| `OMW-GOV-DOCUMENTATION-INDEX` | `docs/README.md` | `BINDING`; Themenindex |
+| `OMW-GOV-DOCUMENT-METADATA` | `docs/DOCUMENT-METADATA-POLICY.md` | `BINDING`; Metadaten/Provenienz |
+| `OMW-GOV-SUBPROJECT-REGISTRY` | `docs/SUBPROJECT-REGISTRY.md` | `BINDING`; offene Unterprojekte |
+| `OMW-AIR-US-ORBAT-RESEARCH` | `docs/us-air-orbat-2010-2011.md` | `BINDING`; historische Forschung |
+| `OMW-GOV-SOURCE-USE` | `docs/sources/graveyard-of-empires.md` | `BINDING_PROJECT_DECISION` |
+| `OMW-GOV-MOOSE-VERSION` | `docs/moose/VERSION-AND-SOURCES.md` | `BINDING` |
+| `OMW-MOOSE-DOCUMENTATION-INDEX` | `docs/moose/README.md` | `BINDING` |
+| `OMW-MOOSE-CLASS-INDEX` | `docs/moose/PROJECT-CLASS-INDEX.md` | `BINDING` |
+| `OMW-MOOSE-FOG-OF-WAR-RECCE` | `docs/moose/FOG-OF-WAR-RECCE.md` | `PLANNED`; MOOSE-Fähigkeits- und Grenzenanalyse |
+| `OMW-MOOSE-VERIFIED-METHODS` | `docs/moose/VERIFIED-METHODS.md` | `BINDING` |
+| `OMW-CSAR-INDEX` | `docs/csar/README.md` | `BINDING` |
+| `OMW-CSAR-SOURCE-NOTES-1-8` | `docs/csar/source-notes-1-8.md` | `BINDING`; Quellenregister |
+| `OMW-CSAR-AFGHANISTAN-2010-FACILITIES` | `docs/csar/afghanistan-2010-facilities-and-coverage.md` | `BINDING`; Datensatzreferenz |
+| `OMW-CSAR-MISSION-DESIGN-REQUIREMENTS` | `docs/csar/mission-design-requirements.md` | `PLANNED`; Anforderungen |
+| `OMW-WX-DATASET-DOCUMENTATION` | `docs/data/weather/README.md` | `BINDING`; Wetterdatensatz |
+| `OMW-TARGETING-AFGHANISTAN-NSL-DATA-USE` | `docs/targeting/afghanistan-nsl-data-use-policy.md` | `BINDING`; technische Datenverwendung |
+| `OMW-TARGETING-AFGHANISTAN-NSL-LEGACY-PATH` | `docs/targeting/afghanistan-no-strike-list.md` | `SUPERSEDED`; Kompatibilitätspfad |
+| `OMW-ADR-0001-USE-MOOSE` | `docs/adr/0001-use-moose.md` | `SUPERSEDED`; historische ADR |
+| `OMW-ADR-0002-USE-MOOSE-CTLD-CSAR` | `docs/adr/0002-use-moose-ctld-and-csar.md` | `SUPERSEDED`; historische ADR |
+| `OMW-ADR-0003-ME-GROUP-TEMPLATES` | `docs/adr/0003-use-mission-editor-group-templates.md` | `BINDING`; Spawnvorlagen |
+| `OMW-ADR-0004-LOCATION-REGISTRY` | `docs/adr/0004-use-explicit-location-registry.md` | `BINDING`; Orts-/Routenregister |
+| `OMW-EVIDENCE-INDEX` | `docs/evidence/README.md` | `BINDING`; Evidenzeinordnung |
+| `OMW-TEST-JBAD-AIR-OPS-INDEX` | `mission/tests/jalalabad-air-operations/README.md` | `BINDING`; Testprojektindex |
 
-Weitere thematische Unterverzeichnisse wie `docs/csar/`, `docs/moose/`, `docs/sources/` und `docs/targeting/` werden im geplanten vollständigen Themenindex `docs/README.md` erfasst. Das Fehlen dieses Themenindex ist als P1-Dokumentationsaufgabe offen.
+## 5. Legacy- und Evidenzregel
 
-## 5. Legacy-Evidenz und historische Titelnummern
-
-Unveränderte Quelldatensätze unter `docs/evidence/source-records/` dürfen ihre damaligen Titelzeilen behalten. Eine darin enthaltene alte Nummer ist keine aktuelle Nummernvergabe und darf nicht als aktiver Querverweis verwendet werden.
-
-Aktuell erhalten bleiben unter anderem:
-
-- `legacy-18-msr-routendesign-und-infrastrukturmarker.md`;
-- `legacy-18-air-operations-implementation-pre-governance.md`;
-- `legacy-20-air-orbat-mission-editor-worklist-vertical-prototype.md`;
-- `legacy-21-jalalabad-air-operations-baseline-audit.md`.
-
-## 6. Branch- und Merge-Regel
-
-1. Ein Branch darf neue Dokumente zunächst ohne endgültige Nummer entwickeln.
-2. Spätestens vor Merge wird eine Nummer in diesem Register reserviert.
-3. Kollidierende Branch-Dateinamen werden vor Merge umbenannt.
-4. README-Links, Querverweise und ADRs werden im selben Änderungssatz angepasst.
-5. Alte Nummern dürfen in Historie oder unveränderter Evidenz genannt werden, aber nicht als aktuelle Referenz bestehen bleiben.
-6. Branchspezifische Dubletten zentraler Richtlinien werden entfernt oder auf das zentrale Dokument umgestellt.
-7. Technische Prüfberichte, Baseline-Audits und unveränderte Entwicklungsprotokolle werden bevorzugt als unnummerierte Evidenzdokumente geführt.
-8. Ein Branchdokument darf nicht als vorhandene `main`-Datei verlinkt werden; stattdessen wird PR, Branch und Commit angegeben.
-
-## 7. Pflege
-
-Jede Reservierung oder Statusänderung erfolgt gemeinsam mit der zugehörigen Dokumentänderung. Ein ungenutzter reservierter Platz kann durch ausdrückliche Projektentscheidung freigegeben werden; eine bereits veröffentlichte stabile ID wird nicht neu vergeben.
-
-Die vollständige Statusmigration und der Themenindex werden als eigene P1/P2-Arbeitspakete durchgeführt. Dieses Register trennt bis dahin ausdrücklich zwischen realem `main`-Bestand, offenen Branchreservierungen und Legacy-Evidenz.
+Dateien unter `docs/evidence/source-records/` bewahren frühere Vollfassungen. Ihre alten Titelnummern und Aussagen sind keine aktuelle Nummern-, Status- oder Governance-Vergabe.

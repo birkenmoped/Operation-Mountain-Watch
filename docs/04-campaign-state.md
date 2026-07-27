@@ -1,65 +1,86 @@
-# 04 – Kampagnenzustand
+---
+document_id: OMW-ARCH-CAMPAIGN-STATE
+status: BINDING
+document_class: DOMAIN_MODEL
+owning_policy: OMW-GOV-001
+authoritative_for:
+  - CampaignState strategic authority
+  - persistent strategic entity identity
+  - separation of strategic state from DCS and MOOSE representations
+scenario_period: 2010-08-01/2011-12-31
+project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
+supersedes:
+  - prototype-only resource scope wording
+superseded_by:
+source_branch: agent/complete-documentation-authority-migration
+source_commit:
+validated_in_dcs: false
+---
 
-## Grundsatz
+# 04 – CampaignState
 
-`CampaignState` ist die einzige autoritative Quelle für strategische Ressourcen und Zustände. DCS-Gruppen, CTLD-Fracht, MOOSE-Warehouses und sichtbare Objekte bilden diesen Zustand ab, besitzen ihn aber nicht unabhängig.
+## 1. Autorität
 
-## Hauptobjekte
+`CampaignState` ist die einzige strategische Wahrheit für Ressourcen, Entitäten, Verluste, Aufträge und persistente Zustände.
 
-### Airbase
+DCS-Gruppen, CTLD-Fracht, MOOSE-Warehouses, AIRWING-/SQUADRON-Bestände, Statics und andere Laufzeitobjekte bilden diesen Zustand ab. Sie dürfen ihn nicht unabhängig besitzen oder erhöhen.
 
-- stabile ID und DCS-Airbase-Referenz
-- Rolle und Fähigkeiten
-- strategische Lagerbestände
-- verfügbare Luft- und Bodenverbände
-- angeschlossene Routen und versorgte FOBs
+Der ursprüngliche Objektentwurf bleibt unverändert erhalten:
 
-### FOB
+- [`Legacy-CampaignState-Grundlage`](evidence/source-records/legacy-04-campaign-state.md)
 
-- Zustand: `OPERATIONAL`, `DEGRADED`, `CRITICAL`, `OVERRUN`, `DESTROYED`, `REBUILDING`
-- Personal, Munition, Treibstoff, Baumaterial und Fahrzeuge
-- maximale Kapazitäten
-- Garnison und Verteidigungsfähigkeit
-- Heli-Landezonen, Drop Zone und Straßenanbindung
-- physische Ausbau- und Schadensstufe
+Übergeordnete Produktionsarchitektur:
 
-### RedCell
+- [`OMW-ARCH-CAMPAIGN-DYNAMIC-MISSION`](37-campaign-architecture-and-dynamic-mission-design.md)
 
-- Region, Camps und Verstecke
-- verfügbares Personal, Waffen und Fahrzeuge
-- Moral, Bereitschaft und Wiederaufbauzeit
-- laufende Operation und reservierte Kräfte
-- bekannte blaue Ziele und gemeldete Bewegungen
+## 2. Kernobjekte
 
-### StrategicEntity
+Mindestens vorgesehen:
 
-- stabile ID
-- Koalition, Rolle und Zusammensetzung
-- Zustand `VIRTUAL` oder `PHYSICAL`
-- Position, Route, Geschwindigkeit und Auftrag
-- Verluste, Fracht und letzter Kontakt
-- optionale Referenz auf eine DCS-Gruppe
+- `AirbaseState`;
+- `FOBState`;
+- `RedNetworkState` und `RedSiteState`;
+- `StrategicEntity`;
+- `CargoManifest`;
+- `MissionDemand`;
+- `CSARIncident`;
+- `IntelligenceRecord`;
+- `SettlementSupportState`.
 
-### CSARCase
+Jedes Objekt besitzt eine stabile ID, einen Schema- und Zustandsstatus sowie nachvollziehbare Beziehungen zu Ressourcen und Aufträgen.
 
-- Pilot und Koalition
-- Position und Status
-- Informationsstand beider Seiten
-- Rettungs- oder Capture-Team
-- Rücktransport, Gefangenschaft oder Abschluss
+## 3. Repräsentationsregel
 
-## Anfangsressourcen
+```text
+CampaignState entity
+→ optional MOOSE/DCS representation
+→ events and observed result
+→ validated state transition
+→ persisted CampaignState
+```
 
-Für den Prototyp werden nur folgende Ressourcen getrennt geführt:
+Laufzeitnamen oder MOOSE-Wrapper sind keine persistenten Primärschlüssel.
 
-- `PERSONNEL`
-- `AMMUNITION`
-- `FUEL`
-- `CONSTRUCTION`
-- `VEHICLES`
+## 4. Ressourcen
 
-Weitere Ressourcen werden nur ergänzt, wenn daraus ein klarer spielerischer Nutzen entsteht.
+Ressourcen werden nur getrennt geführt, wenn sie spielerische oder strategische Wirkung besitzen. Dazu zählen insbesondere:
 
-## Persistenz
+- Personal;
+- Fahrzeuge und Luftfahrzeuge;
+- Munition;
+- Treibstoff;
+- Baumaterial und Versorgungsgüter;
+- Cargo-Manifeste;
+- Bereitschaft, Schaden und Verluste.
 
-Gespeichert werden strategische IDs und Domänendaten, nicht flüchtige MOOSE-Wrapper oder DCS-Controller-Zustände. Jeder Speichervorgang erhält eine Schema-Version für spätere Migrationen.
+## 5. Persistenz
+
+Gespeichert werden strategische IDs und Domänendaten, nicht flüchtige Controller-, Wrapper- oder Scheduler-Zustände.
+
+Jeder Speicherstand benötigt:
+
+- Schema-Version;
+- Kampagnen- und Missionskennung;
+- Migrationspfad;
+- Integritätsprüfung;
+- reproduzierbare Rekonstruktion der zulässigen Laufzeitobjekte.

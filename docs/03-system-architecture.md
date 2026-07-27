@@ -13,6 +13,7 @@ superseded_by:
 source_branch: agent/resolve-document-number-collisions
 source_commit:
 validated_in_dcs: false
+document_class: SYSTEM_ARCHITECTURE
 ---
 
 # 03 – Systemarchitektur

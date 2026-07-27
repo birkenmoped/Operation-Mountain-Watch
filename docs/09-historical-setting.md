@@ -12,6 +12,9 @@ supersedes:
   - campaign end before 2011-05-20
 source_branch: agent/reconcile-documentation-authority
 validated_in_dcs: false
+document_class: HISTORICAL_BASELINE
+source_commit: GIT_HISTORY
+superseded_by:
 ---
 
 # 09 – Historischer und organisatorischer Rahmen

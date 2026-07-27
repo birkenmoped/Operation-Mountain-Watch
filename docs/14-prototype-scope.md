@@ -11,6 +11,9 @@ superseded_by:
   - COMPLETE_FOUNDATION_BUILD_PHASE
 source_branch: agent/reconcile-documentation-authority
 validated_in_dcs: false
+document_class: HISTORICAL_PHASE_BASELINE
+source_commit: GIT_HISTORY
+supersedes:
 ---
 
 # 14 – Vertikaler Prototyp

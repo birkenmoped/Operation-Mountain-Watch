@@ -1,152 +1,98 @@
+---
+document_id: OMW-BASES-FOBS
+status: PLANNED
+document_class: BASE_AND_FOB_MODEL
+owning_policy: OMW-GOV-001
+authoritative_for:
+  - planned campaign functions and common metadata of bases, FOBs, COPs and checkpoints
+not_authoritative_for:
+  - active air ORBAT
+  - final Mission Editor object state
+scenario_period: 2010-08-01/2011-12-31
+project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
+supersedes:
+  - vertical-prototype-only base sequence
+superseded_by:
+source_branch: agent/complete-documentation-authority-migration
+source_commit:
+validated_in_dcs: false
+---
+
 # 11 – Basen, FOBs und Luftstützpunkte
 
-## Basenhierarchie
+## 1. Einordnung
 
-### Bagram Airfield
+Dieses Dokument beschreibt die geplanten Kampagnenfunktionen und gemeinsamen Datenfelder von Hauptbasen, Luftoperationsknoten, FOBs, COPs und Checkpoints.
 
-Kampagnenfunktion:
+Der vollständige frühere Basenentwurf bleibt unverändert erhalten:
 
-- strategisches Hauptquartier
-- zentrale Lufttransportkapazität
-- große Reserven
-- schwere Wartung und Reparatur
-- Kampfflugzeuge und größere Unterstützungsverbände
+- [`Legacy-Basen- und FOB-Planung`](evidence/source-records/legacy-11-bases-and-fobs.md)
 
-Bagram besitzt umfangreiche Reserven, diese sind jedoch nicht automatisch an vorgeschobenen Basen verfügbar. Material muss priorisiert und per Luft- oder Straßenverbindung in den Operationsraum transportiert werden.
+Aktive Luftfahrzeugbestände und Staffeln stehen ausschließlich in:
 
-### Kabul
+- [`OMW-AIR-ACTIVE-ORBAT`](19-active-air-orbat-decisions.md)
 
-Kampagnenfunktion:
+Konkrete Missionseditorzustände stehen in den basisbezogenen Manifesten und Acceptance-Berichten.
 
-- politischer und logistischer Rückraum
-- Personal- und Materialtransport
-- Regierungs- und ISAF-Infrastruktur
-- alternative strategische Drehscheibe
+## 2. Gemeinsames Basenmodell
 
-Kabul ist kein taktisches Hauptquartier der Kernkampagne, kann aber strategische Transporte, Verstärkungen und besondere Missionen unterstützen.
+Jeder Standort erhält mindestens:
 
-### Jalalabad Airfield / FOB Fenty
+```text
+locationId
+displayName
+baseClass
+sectorId
+missionEditorAnchors
+campaignFunction
+resourceCapacity
+personnelAndGarrison
+warehouse
+roadAccess
+airAccess
+landingAndDropZones
+repairAndMedicalCapabilities
+defenseCapabilities
+damageState
+rebuildState
+```
 
-Kampagnenfunktion:
-
-- operatives Hauptquartier von Task Force Bastogne
-- regionales Lager für Nangarhar, Laghman, Kunar und Nuristan
-- Zusammenstellung von Konvois
-- Hubschrauber- und QRF-Bereitschaft
-- Aufnahme gelandeter taktischer Lufttransporte
-- Vorbereitung von Aufklärungs-, HVT- und CSAR-Einsätzen
-- Verstärkung und Wiederaufbau vorgeschobener Außenposten
-
-Jalalabad ist die native DCS-Airbase. FOB Fenty wird als missionsspezifische Infrastruktur am oder neben dem Flugplatz aufgebaut und logisch mit Jalalabad verbunden.
-
-Jalalabad/Fenty ist im taktischen Kernraum ein besonderer Logistikknoten, weil dort sowohl Straßenkonvois und Hubschrauber als auch gelandete C-130J-Transporte zusammengeführt werden können. Der genaue Ablauf für Entladung, Parkposition und Warehouse-Übergabe muss in DCS geprüft werden.
-
-## Vorgeschobene Standorte
-
-### FOB Connolly
-
-Vorgesehene Rolle im ersten Prototyp:
-
-- Ziel einer regionalen Combat Logistics Patrol
-- begrenzte lokale Vorräte
-- QRF- und Patrouillenstützpunkt
-- Hubschrauber-Landezone für Personal und Fracht
-- möglicher Empfang kleiner Außenlasten oder abgesetzter CTLD-Fracht
-- möglicher Angriffspunkt für Hinterhalte, indirektes Feuer und Versorgungsausfälle
-
-FOB Connolly besitzt keine reguläre C-130J-Landefähigkeit. Seine Versorgung erfolgt primär per Straße und Hubschrauber; Luftabwurf ist nur bei geeigneter Drop Zone und entsprechender Missionslage vorgesehen.
-
-### FOB Mehtar Lam
-
-Vorgesehene spätere Rolle:
-
-- Stützpunkt in Laghman
-- PRT- und Stabilitätsmissionen
-- regionale Versorgung und Verbindung zwischen Jalalabad und nördlicheren Sektoren
-
-### FOB Blessing
-
-Vorgesehene spätere Rolle:
-
-- abgelegener Außenposten in Kunar
-- hubschrauberabhängige Versorgung
-- Mörser- und Belagerungsdruck
-- Ausgangspunkt für Operationen im Kunar River Valley und Pech Valley
-
-### Afghanische Kontrollpunkte und COPs
-
-Kleinere ANA-, ANP- und Grenzpolizeiposten sichern Straßen, Täler, Übergänge und Siedlungen. Sie verfügen über geringe Vorräte und begrenzte Verteidigungsfähigkeit, können aber lokale Aufklärung, Vorwarnung und Routenpräsenz erzeugen.
-
-Ihre Versorgung erfolgt mit kleinen Straßenfahrzeugen, leichten Hubschraubern oder einzelnen Frachtpaketen. Direkter Fixed-Wing-Betrieb ist nicht vorgesehen.
-
-## Logisches Basenmodell
-
-Jede Base oder jeder FOB erhält:
-
-- stabile ID
-- Anzeigename und historische Rolle
-- Basenklasse
-- Missionseditor-Zonen und physische Vorlagen
-- Ressourcenbestände und Kapazitäten
-- Garnison und Verteidigungsfähigkeit
-- Straßen- und Luftanbindung
-- Landezonen, Drop Zones und Lagerbereiche
-- Reparatur-, Sanitäts- und CSAR-Fähigkeiten
-- Ausbau-, Schadens- und Wiederaufbaustufe
-
-Zusätzlich werden die zulässigen Lieferverfahren explizit erfasst:
-
-- `ROAD_CONVOY`
-- `HELICOPTER_INTERNAL`
-- `HELICOPTER_SLING`
-- `FIXED_WING_LANDED`
-- `FIXED_WING_AIRDROP`
-
-FOBs werden aus statischen Objekten, FARP-Komponenten, Helipads, Lagerobjekten, Verteidigungsstellungen und Ressourcenpunkten aufgebaut. Sie müssen keine nativen DCS-Airbases sein.
-
-## Ressourcenfluss
-
-- Bagram erzeugt oder erhält strategische Theaterreserven.
-- Kabul unterstützt Personal- und Materialbewegung im Rückraum.
-- Jalalabad/Fenty hält einen regionalen Vorrat und verteilt ihn per Straße, Hubschrauber oder taktischem Lufttransport weiter.
-- Lokale FOBs und COPs besitzen begrenzte Bestände.
-- Unterbrochene Verkehrswege, verlorene Konvois, fehlende Hubschrauberkapazität oder gesperrte Flugplätze reduzieren die tatsächliche Verfügbarkeit.
-
-## Funktionale Luftstreitkräfte
+## 3. Strategische Rollen
 
 ### Bagram
 
-- A-10C für CAS und Armed Overwatch
-- F-16C für CAS, Präzisionsangriffe und Air Presence
-- F-15E für größere Präzisions- und Nachtangriffe
-- C-130J für regionalen Lufttransport, gelandete Lieferungen und Luftabwurf
-- größere Hubschrauber- und MEDEVAC-Kapazität
+Strategisches Hauptquartier, Theaterreserven, schwere Wartung, Fighter-/Transportknoten und übergeordnete Luftoperationsbasis.
 
-### Jalalabad/Fenty
+### Kabul
 
-- AH-64D
-- OH-58D
-- CH-47F als primärer schwerer taktischer Transport
-- UH-1H als spielbare leichte Transportoption; historische Einordnung separat prüfen
-- UH-60 als AI- oder Skriptplattform
-- optionaler UH-60L Community Mod, sofern die Serverpolitik dies zulässt
-- C-130J für gelandete Anlieferung und Abholung, sofern Park- und Entladeabläufe funktionieren
-- kleinere ISR- und Verbindungsflugzeuge
-- zeitweise vorgeschobene Fixed-Wing-Unterstützung, sofern für die konkrete Mission plausibel
+Politischer und logistischer Rückraum, Personal- und Materialbewegung sowie alternative strategische Drehscheibe.
 
-### Externe Theaterunterstützung
+### Jalalabad / FOB Fenty
 
-F/A-18C-Einsätze können von einem Trägerverband im Arabischen Meer kommen. Wegen Entfernung und Tankerbedarf gelten sie nicht als unmittelbar verfügbare Standard-QRF.
+Regionaler operativer und logistischer Knoten für Nangarhar, Laghman, Kunar und Nuristan mit Straße, Hubschrauber, QRF, CSAR und taktischem Lufttransport.
 
-Diese Zuordnung ist eine funktionale Kampagnenplanung, keine vollständige historische Order of Battle. Konkrete Staffeln, Stationierungen und Verfügbarkeiten werden vor einer historischen Veröffentlichung separat geprüft.
+### Vorgeschobene Standorte
 
-## Noch zu testen
+FOBs, COPs und Checkpoints besitzen begrenzte Ressourcen, Fähigkeiten und Zufahrtsarten. Nicht jeder Standort unterstützt Fixed-Wing-Betrieb, Slingload, Luftabwurf oder ein eigenes AIRWING.
 
-- Parkpositionen und Größenklassen an Bagram, Kabul und Jalalabad
-- C-130J-Start, Landung, Rangieren, Entladung und Warehouse-Übergabe
-- CH-47F-Abstellplätze, interne Fracht und Außenlast
-- UH-1H-CTLD- und Frachtpfade
-- Multiplayer-Folgen eines optionalen UH-60L Community Mods
-- Spieler-Slots und Konflikte mit statischer Infrastruktur
-- Konvoi-Ausfahrten aus Jalalabad/Fenty
-- geeignete Flächen für FOB-Vorlagen und Wiederaufbaustufen
+## 4. Zulässige Lieferverfahren
+
+Pro Standort ausdrücklich konfigurieren:
+
+```text
+ROAD_CONVOY
+HELICOPTER_INTERNAL
+HELICOPTER_SLING
+FIXED_WING_LANDED
+FIXED_WING_AIRDROP
+```
+
+## 5. Foundation-Build-Anforderungen
+
+- Standort und DCS-Anker validieren;
+- Warehouse- und Ressourcenmodell festlegen;
+- Zufahrten, Parkplätze und Landezonen prüfen;
+- Garnison, Verteidigung und Bereitschaft definieren;
+- Schadens- und Wiederaufbaustufen modellieren;
+- basisbezogene Manifeste und Testfälle anlegen;
+- keine ORBAT-Zahlen aus dieser allgemeinen Planung ableiten.

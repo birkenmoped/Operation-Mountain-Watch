@@ -14,6 +14,7 @@ superseded_by:
 source_branch: agent/resolve-document-number-collisions
 source_commit:
 validated_in_dcs: false
+document_class: MISSION_EDITOR_WORKLIST
 ---
 
 # 20 – Missionseditor-Arbeitsliste für die Luft-ORBAT
