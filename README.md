@@ -45,6 +45,10 @@ Current air-operations planning documents:
 - [`ISR-, FAC-, AFAC-, JTAC-, CAS- und AAR-Architektur`](docs/moose/ISR-FAC-CAS-AAR.md)
 - [`OEF Air/Land C2- und JTAC-Callsign-Referenz`](docs/27-oef-jtac-callsign-reference.md)
 
+Targeting, ROE and protected-entity planning:
+
+- [`Afghanistan No-Strike List (NSL)`](docs/28-no-strike-list-afghanistan.md)
+
 Project-wide MOOSE documentation:
 
 - [`MOOSE-Projektdokumentation`](docs/moose/README.md)
