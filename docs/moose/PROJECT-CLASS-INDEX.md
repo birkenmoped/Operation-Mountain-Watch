@@ -13,7 +13,7 @@ supersedes:
   - class index without complete governance metadata
 superseded_by:
 source_branch: agent/complete-documentation-authority-migration
-source_commit:
+source_commit: PENDING_MERGE
 validated_in_dcs: partial
 ---
 
@@ -49,17 +49,31 @@ Diese Klassenstatus sind keine Governance-Dokumentstatuswerte.
 | `AIRWING` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Konstruktion und Grundstart des Jalalabad-Knotens |
 | `SQUADRON` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | vier Jalalabad-Bestände und Payloadregistrierung |
 | `COMMANDER` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | AIRWING-Anbindung und Grundstart |
-| `AUFTRAG` | `IN_USE_PARTIAL` | Capability-/Payloadzuordnung; taktische Ausführung offen |
+| `AUFTRAG` | `IN_USE_PARTIAL` | Capability-/Payloadzuordnung; taktische Ausführung offen; `NewRECON()` registriert ein Asset nicht automatisch als `INTEL`-Agent |
 | `WAREHOUSE` | `IN_USE_PARTIAL` | Warehouse-Funktion über AIRWING; strategische Logistik offen |
 | `SCHEDULER` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | geordnete Konstruktion und Diagnose |
 | `GROUP`, `UNIT`, `STATIC`, `ZONE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Template-, Static-, Warehouse- und Zonenvalidierung |
 | `ARMYGROUP`, `BRIGADE`, `OPSGROUP` | `PLANNED` | Bodenoperations- und Bestandsmodell |
 | `OPSTRANSPORT` | `PLANNED` | taktischer Transport |
 | `CTLD`, `CSAR`, `AICSAR` | `PLANNED` / teilweise verwendet | separate Acceptance erforderlich |
+| `INTEL` | `PLANNED` | primäres taktisches Lagebild; Sensorarten, räumliche Filter, Kontakt-/Clusterereignisse und kontrollierte HUMINT-Einspeisung; Laufzeitnachweis im gepinnten MOOSE-Stand fehlt |
+| `INTEL_DLINK` | `CANDIDATE` | Aggregation getrennter Luft-, Boden- und HUMINT-Netze; Cache, Deduplizierung und Performance offen |
+| `PLAYERRECCE` | `CANDIDATE` | spielergeführte Aufklärung, Zielberichte und OH-58D-Kiowa-Autolase; Modul- und Multiplayerprüfung offen |
+| `TARS` | `CANDIDATE` | verzögerte Foto-/IMINT-Aufklärung mit Rückkehr und Debrief; Verfügbarkeit und CampaignState-Integration offen |
+| `DETECTION_*` | `PLANNED`, eingeschränkt | nur für DESIGNATE oder nachgewiesene Spezialfälle; kein paralleles strategisches Lagebild neben `INTEL` |
 | `Core.Astar`, `PATHLINE`, `MOVEMENT` | `PLANNED` | Routing und Bewegungsbegrenzung |
 | `_DATABASE` | `INTERNAL_RESTRICTED` | nur Diagnose und Templateprüfung |
+| `CHIEF` | `REJECTED_FOR_PROJECT_USE` | bleibt in der aktuellen Produktionsarchitektur `NOT_USED`; direkte Zonenlogik darf das Fog-of-War-Modell nicht umgehen |
 
-## 4. Nachweisregel
+## 4. Fog-of-War- und RECCE-Grenzen
+
+- [`OMW-MOOSE-FOG-OF-WAR-RECCE`](FOG-OF-WAR-RECCE.md) ist die vollständige Fähigkeits- und Grenzenanalyse.
+- `AUFTRAG:NewRECON()` ist ein Bewegungs-/Missionsauftrag und registriert das eingesetzte Asset nicht automatisch als `INTEL`-Agent.
+- `INTEL:SetForgetTime()` ist im geprüften Develop-Stand als obsolet und nicht funktionsfähig dokumentiert.
+- Direkte Zonen- oder Datenbankscans dürfen das Fog-of-War-Modell nicht umgehen.
+- `CHIEF` bleibt für die aktuelle Produktionsarchitektur `NOT_USED`; eine spätere Neubewertung muss seine direkte Zonenlogik berücksichtigen.
+
+## 5. Nachweisregel
 
 Ein Klassenstatus wird nur angehoben, wenn:
 
