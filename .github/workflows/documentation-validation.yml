@@ -48,6 +48,20 @@ jobs:
           name: documentation-validation-report
           path: documentation-validation.txt
           if-no-files-found: error
+      - name: Archive checked-out documentation
+        if: always()
+        shell: bash
+        run: |
+          tar --exclude=.git -czf documentation-snapshot.tar.gz \
+            README.md docs tools .github/workflows/documentation-validation.yml \
+            mission/tests/jalalabad-air-operations/README.md
+      - name: Upload checked-out documentation snapshot
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: documentation-snapshot
+          path: documentation-snapshot.tar.gz
+          if-no-files-found: error
       - name: Fail on documentation validation errors
         if: steps.validate.outputs.exit_code != '0'
         run: exit 1
