@@ -36,20 +36,28 @@ Für die Projektdokumentation wird daraus festgehalten:
 - Die NSL ist keine geheime, klassifizierte oder aus nichtöffentlichen militärischen Systemen übernommene Datenbasis.
 - Die konkrete ursprüngliche Einzelquelle jedes der 2.954 Datensätze ist in den bereitgestellten Dateien nicht separat hinterlegt.
 
-### 2.3 Offene Quellen sind nicht automatisch eine Datenlizenz
+### 2.3 Projektfreigabe, Veröffentlichung und Lizenzbezeichnung
 
-Die Aussage „open sources“ beschreibt die Herkunft und öffentliche Zugänglichkeit der Informationen. Sie benennt keine konkrete Weiterveröffentlichungslizenz für die von Graveyard of Empires erstellte Zusammenstellung, beispielsweise Creative Commons, Open Database License oder Public Domain.
+Die Aussage „open sources“ beschreibt die Herkunft und öffentliche Zugänglichkeit der Informationen. Sie benennt für sich allein keine allgemeine Weiterveröffentlichungslizenz wie Creative Commons, Open Database License oder Public Domain.
 
-Daraus folgt die projektseitige Trennung:
+Für **Operation Mountain Watch** ist der konkrete Nutzungs- und Veröffentlichungsumfang jedoch bereits verbindlich entschieden durch:
 
-| Verwendung | Bewertung |
+- `OMW-GOV-SOURCE-USE` – `docs/sources/graveyard-of-empires.md`;
+- `OMW-TARGETING-AFGHANISTAN-NSL-DATA-USE` – `docs/targeting/afghanistan-nsl-data-use-policy.md`.
+
+Daraus folgt projektweit:
+
+| Verwendung | Verbindliche Projektregel |
 |---|---|
-| interne Nutzung im Projekt und in Testmissionen | mit vollständiger Attribution als bereitgestellte Projektquelle nutzbar |
-| Dokumentation von Struktur, Hashes, Kategorien und Prüfergebnissen | mit Credit und Quellenverweis dokumentierbar |
-| Veröffentlichung abgeleiteter Missionslogik ohne vollständige Koordinatendatei | mit Quellenhinweis dokumentierbar |
-| öffentliche Weiterverteilung der vollständigen `.cf`-, `.kml`-/`.kmz`- oder normalisierten Koordinatendatei | ausdrückliche Freigabe beziehungsweise Lizenzangabe des Autors erforderlich oder zumindest vorab einzuholen |
+| interne Nutzung im Projekt und in Testmissionen | genehmigt; vollständige Attribution und Provenienz bleiben verpflichtend |
+| Dokumentation von Struktur, Hashes, Kategorien und Prüfergebnissen | genehmigt; Credit und Quellenverweis sind beizubehalten |
+| Normalisierung aller 2.954 Einträge sowie Konvertierung in Lua, JSON, CSV, GeoJSON oder andere Laufzeitformate | genehmigt und vorgesehen |
+| Einbindung normalisierter und abgeleiteter Daten in Missionen, Testpakete und veröffentlichte Projektartefakte | genehmigt und vorgesehen |
+| Aufnahme der ursprünglichen `.cf`-, `.kml`-/`.kmz`-Dateien in Repository oder Missionspakete | nach dokumentierter Entscheidung des Projektmanagers beziehungsweise Autors zulässig; der konkrete Umfang wird als `PUBLIC`, `INTERNAL` oder `MISSION_PACKAGE_ONLY` festgelegt |
 
-Die vollständige Koordinatendatenbank bleibt deshalb bis zu einer eindeutigen Freigabe als **extern bereitgestellte Projektreferenz** behandelt. Diese Vorsichtsmaßnahme stellt die offene Herkunft der Informationen nicht infrage und schmälert nicht den Credit von Graveyard of Empires.
+Eine fehlende ausdrückliche Lizenzbezeichnung im Ausgangsmaterial ist innerhalb dieser Projektentscheidung **kein Implementierungs- oder Veröffentlichungsblocker**. Attribution, Quellenlink, Hash- und Provenienznachweis sowie konkrete materialspezifische Nutzungsbedingungen bleiben verpflichtend. Werden später ausdrücklich entgegenstehende Bedingungen bekannt, wird der betroffene Projektbestand geprüft und erforderlichenfalls angepasst.
+
+Diese interne Projektentscheidung behauptet nicht, dass der Datensatz gemeinfrei oder allgemein lizenzfrei ist. Sie legt den für Operation Mountain Watch genehmigten Projekt- und Veröffentlichungsumfang fest.
 
 ## 3. Vollständig übernommene Patreon-Quellenserie
 
@@ -653,7 +661,7 @@ Die NSL-Funktion gilt erst als `VALIDATED`, wenn:
 
 Die drei Patreon-Volltexte sind vollständig erfasst. Offen bleiben:
 
-1. ausdrückliche Freigabe oder Lizenzangabe für die öffentliche Weiterverteilung der vollständigen kompilierten Koordinatendatei,
+1. konkreten Veröffentlichungsumfang der ursprünglichen `.cf`-, `.kml`-/`.kmz`-Dateien als `PUBLIC`, `INTERNAL` oder `MISSION_PACKAGE_ONLY` dokumentieren,
 2. Prüfung, ob Graveyard of Empires eine spätere NSL-Version mit Welterbestätten und Energieinfrastruktur veröffentlicht hat,
 3. Ermittlung der ursprünglichen Einzelquelle je Punkt, soweit möglich,
 4. abschließende Bestätigung der Bedeutung des Präfixes `JUS`,
@@ -669,10 +677,12 @@ Die drei Patreon-Volltexte sind vollständig erfasst. Offen bleiben:
 
 ## 16. Nächste Arbeitspakete
 
-### NSL-01 – Attribution und Weiterverteilung
+### NSL-01 – Attribution und Veröffentlichungsumfang
 
 - Credit „Graveyard of Empires“ verbindlich führen.
-- ausdrückliche Freigabe oder Lizenzangabe für eine öffentliche Weiterverteilung einholen.
+- Projektmanagerentscheidung zum konkreten Ablage- und Veröffentlichungsumfang der Originaldateien dokumentieren.
+- Eine fehlende ausdrückliche Lizenzbezeichnung nicht als Implementierungsblocker behandeln.
+- Später bekannt werdende konkrete entgegenstehende Nutzungsbedingungen prüfen und erforderlichenfalls umsetzen.
 
 ### NSL-02 – Folgeveröffentlichungen und Quellenregister
 
@@ -729,9 +739,11 @@ Die drei Patreon-Volltexte sind vollständig erfasst. Offen bleiben:
 
 ### Projektquellen
 
-- [Verbindliche MOOSE-First-Entwicklungsrichtlinie](../26-moose-first-development-policy.md)
-- [MOOSE-Projektdokumentation](../moose/README.md)
-- [ISR-, FAC-, AFAC-, JTAC-, CAS- und AAR-Architektur](../moose/ISR-FAC-CAS-AAR.md)
+- [OMW-GOV-SOURCE-USE – zentrale Quellen-, Datei- und Veröffentlichungsregel](sources/graveyard-of-empires.md)
+- [OMW-TARGETING-AFGHANISTAN-NSL-DATA-USE – NSL-spezifische Datenverwendung](targeting/afghanistan-nsl-data-use-policy.md)
+- [Verbindliche MOOSE-First-Entwicklungsrichtlinie](26-moose-first-development-policy.md)
+- [MOOSE-Projektdokumentation](moose/README.md)
+- [ISR-, FAC-, AFAC-, JTAC-, CAS- und AAR-Architektur](moose/ISR-FAC-CAS-AAR.md)
 
 ### MOOSE
 
