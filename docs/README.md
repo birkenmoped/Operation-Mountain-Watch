@@ -55,9 +55,11 @@ Ein offener Draft-PR ist keine `main`-Autorität. Ein branchgebundener PASS blei
 | Systemarchitektur | [`OMW-ARCH-SYSTEM`](03-system-architecture.md) | `BINDING` | Dokument 37 |
 | CampaignState/dynamische Kampagne | [`OMW-ARCH-CAMPAIGN-DYNAMIC-MISSION`](37-campaign-architecture-and-dynamic-mission-design.md) | `BINDING` | Dokumente 04–07, TM01/TM02-Reviews |
 | Fog of War / RECCE | [`OMW-MOOSE-FOG-OF-WAR-RECCE`](moose/FOG-OF-WAR-RECCE.md) | `PLANNED` | MOOSE-Develop geprüft; Laufzeitvalidierung im gepinnten MOOSE-Stand ausstehend |
-| aktive Luft-ORBAT/Clientgrenzen | [`OMW-AIR-ACTIVE-ORBAT`](19-active-air-orbat-decisions.md) | `BINDING_PROJECT_DECISION` | historische ORBAT-Recherche |
+| aktive Luft-ORBAT/Clientgrenzen | [`OMW-AIR-ACTIVE-ORBAT`](19-active-air-orbat-decisions.md) | `BINDING_PROJECT_DECISION` | historische ORBAT-Recherche und basisbezogene Manifeste |
 | technische Luftoperationen | [`OMW-AIR-IMPLEMENTATION`](18-air-operations-implementation.md) | `BINDING` | MOOSE Air Operations |
+| Air-Ops-Benennungsstandard | [`OMW-AIR-MANIFEST-NAMING`](52-air-operations-manifest-naming-standard.md) | `BINDING` | basisbezogene Manifeste und ME-Baselines |
 | Jalalabad-ME-Baseline | [`OMW-AIR-JBAD-MANIFEST`](21-jalalabad-air-operations-manifest.md) | `BINDING` | PR #18 und Testprojektindex |
+| Salerno-ORBAT und ME-Baseline | [`OMW-AIR-SALERNO-MANIFEST`](51-salerno-air-operations-manifest.md) | `BINDING_PROJECT_DECISION` | Task-Force-Beschreibung und Satellitenauswertung 2010/2011 |
 | Missionseditor-Masterarbeit | [`OMW-ME-MASTER-WORKLIST`](38-mission-editor-master-worklist.md) | `BINDING` | basisbezogene Manifeste |
 | MSR/Routing | [`OMW-MSR-ROUTE-DESIGN`](49-msr-routendesign-und-infrastrukturmarker.md) | `PLANNED` | TM01M und Legacy-Routentests |
 | CSAR-Quellen/Anforderungen | [`OMW-CSAR-INDEX`](csar/README.md) | `BINDING` | CSAR-Unterdokumente |
@@ -96,6 +98,8 @@ Ein offener Draft-PR ist keine `main`-Autorität. Ein branchgebundener PASS blei
 - [20 – Air-Ops-ME-Arbeitsliste](20-air-orbat-mission-editor-worklist.md)
 - [21 – Jalalabad-Manifest](21-jalalabad-air-operations-manifest.md)
 - [26 – MOOSE-First](26-moose-first-development-policy.md)
+- [51 – FOB-Salerno-Manifest](51-salerno-air-operations-manifest.md)
+- [52 – Air-Ops-Benennungsstandard](52-air-operations-manifest-naming-standard.md)
 
 ### Kommunikation, AAR, Architektur und Fachbereiche
 
@@ -164,7 +168,7 @@ Der vollständige und verbindliche Überblick steht in:
 
 - [`OMW-GOV-SUBPROJECT-REGISTRY`](SUBPROJECT-REGISTRY.md).
 
-Er erfasst derzeit PR #3–#18, #22, #24 und #33 einschließlich Parent-/Base-Beziehungen, Acceptance-Grenzen und Produktionsrelevanz.
+Er erfasst offene und historische Unterprojekte einschließlich Parent-/Base-Beziehungen, Acceptance-Grenzen und Produktionsrelevanz.
 
 ## 8. Status-, Provenienz- und Querverweisregel
 
