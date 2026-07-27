@@ -1,4 +1,21 @@
-# Graveyard of Empires – Credits, Quellenverständnis und Attribution
+---
+document_id: OMW-GOV-SOURCE-USE
+status: BINDING_PROJECT_DECISION
+owning_policy: OMW-GOV-001
+authoritative_for:
+  - Graveyard of Empires attribution
+  - source evaluation
+  - original file use
+  - normalized and derived data publication
+project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
+supersedes:
+  - project rules that treat missing explicit licence text as an automatic implementation blocker
+  - project rules that generally prohibit repository inclusion of provided original files
+source_branch: agent/reconcile-documentation-authority
+validated_in_dcs: false
+---
+
+# Graveyard of Empires – Credits, Quellen- und Dateinutzung
 
 ## Verbindliche Credit-Zuordnung
 
@@ -7,82 +24,121 @@
 - **Graveyard of Empires**
 - <https://www.patreon.com/cw/graveyard4DCS>
 
-**Operation Mountain Watch** übernimmt, überträgt, strukturiert und verarbeitet ausgewählte Inhalte für die eigene DCS-Missionsgestaltung. Das Projekt beansprucht keine eigene Urheberschaft an der von Graveyard of Empires geleisteten Recherche oder Zusammenstellung.
+Operation Mountain Watch übernimmt, strukturiert, normalisiert und verarbeitet Inhalte für die eigene DCS-Missionsgestaltung. Das Projekt beansprucht keine eigene Urheberschaft an der von Graveyard of Empires geleisteten Recherche oder Zusammenstellung.
 
-Diese Credit-Zuordnung gilt projektweit für alle aus Graveyard-of-Empires-Material abgeleiteten:
+Diese Credit-Zuordnung gilt projektweit für alle daraus abgeleiteten:
 
-- Dokumentationen und Tabellen,
-- Frequenz-, Callsign-, ACO-, AAR-, ROZ-, CSAR- und NSL-Datensätze,
-- CombatFlite-, KMZ-, Karten- und Kneeboard-Auswertungen,
-- normalisierten CSV-, GeoJSON- und Konfigurationsdaten,
-- späteren DCS- oder MOOSE-Umsetzungen.
+- Dokumentationen und Tabellen;
+- Frequenz-, Callsign-, ACO-, AAR-, ROZ-, CSAR- und NSL-Datensätze;
+- CombatFlite-, KMZ-, Karten- und Kneeboard-Auswertungen;
+- normalisierten CSV-, GeoJSON-, Lua- und Konfigurationsdaten;
+- DCS- und MOOSE-Umsetzungen;
+- Missionspakete und öffentliche Projektartefakte.
 
-## Eigendarstellung und Zielsetzung des Projekts
+## Quellenverständnis
 
-Graveyard of Empires beschreibt auf der Patreon-Seite, dass über viele Jahre Informationen zu militärischen Operationen in Afghanistan gesammelt wurden. Die Veröffentlichung des Afghanistan-Theaters für DCS World habe den Anlass gegeben, dieses Material für eine möglichst realitätsnahe Nachbildung der NATO- und alliierten Luftoperationen zu Beginn des 21. Jahrhunderts aufzubereiten und zu teilen.
+Graveyard of Empires erklärt, dass die dargestellten Informationen aus offenen Quellen stammen und für eine möglichst realitätsnahe Missionsgestaltung im DCS-Afghanistan-Theater aufbereitet werden.
 
-Die Arbeit ist außerdem den afghanischen und ausländischen Zivilisten und Kombattanten gewidmet, die im „Graveyard of Empires“ ums Leben kamen.
+Für Operation Mountain Watch gilt:
 
-## Zentrale Aussage zur Quellenherkunft
+1. Die eigentliche Quellenarbeit, Auswahl, Einordnung und Zusammenstellung wird sichtbar Graveyard of Empires zugerechnet.
+2. Konkrete Aussagen werden nach Zeit, Ort, Aussagekraft und verfügbarer Evidenz eingeordnet.
+3. Nicht verfügbare Inhalte werden nicht durch Allgemeinwissen ersetzt oder rekonstruiert.
+4. Projektseitige Entscheidungen, Annahmen und technische Umsetzungen werden von Quellenaussagen getrennt gekennzeichnet.
+5. Wo Primär- oder Fachquellen bekannt sind, werden sie zusätzlich dokumentiert.
 
-Graveyard of Empires erklärt ausdrücklich:
+## Verbindlicher Nutzungsumfang
 
-> “All the information presented here come from open sources - sometimes easily accessible but little understood, other times more improbable, but no less interesting!”
+Für alle von Graveyard of Empires frei zugänglich veröffentlichten oder vom Projektinhaber rechtmäßig bereitgestellten Informationen und Dateien gilt bis auf Weiteres:
 
-Für die Projektdokumentation bedeutet dies verbindlich:
+- vollständige fachliche Auswertung ist zulässig und ausdrücklich erwünscht;
+- Fakten, Verfahren, Geometrien, Tabellen, Organisationsbeziehungen und Missionsdesign-Erkenntnisse dürfen vollständig in eigene Projektstrukturen überführt werden;
+- Inhalte dürfen paraphrasiert, übersetzt, normalisiert, tabellarisch neu strukturiert und technisch implementiert werden;
+- Originaldateien dürfen nach Entscheidung des Projektmanagers beziehungsweise Autors in das öffentliche oder interne Repository aufgenommen werden;
+- normalisierte und abgeleitete Daten dürfen im Repository, in Missionen, Kneeboards, Briefings und Distributionspaketen gespeichert und weitergegeben werden;
+- dies gilt insbesondere für NSL-, ACO-, AAR-, ROZ-, Callsign-, Frequenz-, CombatFlite-, KMZ-, Karten- und Referenzdateien;
+- die fehlende Nennung einer ausdrücklichen Lizenz im Ausgangsmaterial ist innerhalb dieser Projektentscheidung kein automatischer Implementierungsblocker;
+- Attribution, Quellenlink und konkrete materialspezifische Bedingungen bleiben verpflichtend.
 
-1. Die dargestellten Informationen beruhen nach Aussage von Graveyard of Empires auf **offenen Quellen**.
-2. Der eigenständige Wert der Arbeit liegt insbesondere in Recherche, Auswahl, Einordnung, Verknüpfung und missionsgestalterischer Aufbereitung verstreuter Quellen.
-3. Auch schwer auffindbare oder ungewöhnliche offene Quellen können relevant sein; ihre konkrete Aussage, zeitliche Gültigkeit und Einordnung müssen dennoch quellenbezogen dokumentiert werden.
-4. Operation Mountain Watch ersetzt diese Quellenarbeit nicht durch pauschales Allgemeinwissen und gibt die Arbeit nicht als eigene Recherche aus.
-5. Nicht verfügbare Patreon-Beiträge oder Anhänge bleiben als **AUSSTEHEND** markiert. Fehlende Inhalte werden nicht rekonstruiert oder hinzugedichtet.
+## Originaldateien
 
-## Verbindlicher Nutzungsumfang für Operation Mountain Watch
+Die Aufnahme einer Originaldatei erfolgt bewusst und nicht automatisch. Vor einer Veröffentlichung sind mindestens zu prüfen:
 
-Für das Projekt gilt folgende Entscheidung:
+```yaml
+source_creator:
+source_url:
+access_status: FREE | PROVIDED_LAWFULLY | PAYWALLED | UNKNOWN
+project_relevance:
+repository_scope: PUBLIC | INTERNAL | MISSION_PACKAGE_ONLY
+specific_usage_terms:
+attribution_present:
+project_manager_decision:
+```
 
-1. **Alle von Graveyard of Empires frei zugänglich veröffentlichten Informationen und Dokumente sollen für unsere Missionsgestaltung ausgewertet und fachlich genutzt werden.**
-2. Dies umfasst insbesondere Fakten, historische Zusammenhänge, Verfahren, Lessons Learned, Frequenz- und Callsign-Zuordnungen, Karteninformationen, Geometrien, Tabellen, Organisationsbeziehungen, Missionsdesign-Ansätze und technische Hinweise.
-3. Die Informationen dürfen für die Projektzwecke normalisiert, strukturiert, miteinander verknüpft und in DCS-/MOOSE-Konfigurationen, Missionslogik, Briefings, Kneeboards und Datenregistern umgesetzt werden.
-4. Frei angebotene Anhänge dürfen vollständig ausgewertet werden. Für die öffentliche Projektdokumentation werden daraus grundsätzlich die für das Missionsdesign notwendigen Inhalte, Daten und Schlussfolgerungen übernommen.
-5. **Inhalte hinter einer Patreon-Paywall werden nicht beschafft, umgangen, rekonstruiert oder ohne ausdrückliche Bereitstellung verwendet.** Grundlage sind ausschließlich Beiträge, Seiten und Anhänge, die Graveyard of Empires selbst frei zugänglich gemacht hat oder die vom Projektinhaber rechtmäßig bereitgestellt wurden.
-6. Fehlende oder nicht zugängliche Inhalte bleiben als `AUSSTEHEND` gekennzeichnet. Aus Vorschaubildern, Überschriften oder Fragmenten werden keine angeblichen Vollinhalte konstruiert.
-7. Die frei zugängliche Bereitstellung und die erkennbare Absicht, der DCS-Community realistischere Missionsgestaltung zu ermöglichen, bilden den sachlichen Nutzungsrahmen des Projekts.
-8. Diese Projektentscheidung behandelt die Materialien nicht als gemeinfrei und ersetzt keine ausdrückliche Lizenz. Credits, Quellenlinks und die Trennung zwischen Quellinhalt und eigener technischer Umsetzung bleiben deshalb erhalten.
+Der Projektmanager beziehungsweise Autor entscheidet über:
 
-## Abgrenzung: fachliche Nutzung und Reproduktion
+- öffentliche Repository-Aufnahme;
+- interne Ablage;
+- Aufnahme nur in Missionspakete;
+- ausschließliche Verwendung normalisierter oder abgeleiteter Daten.
 
-Operation Mountain Watch nutzt die frei bereitgestellten Materialien umfassend **inhaltlich und funktional**. Dabei wird zwischen der Nutzung von Informationen und der unveränderten Reproduktion eines Werkes unterschieden.
+## Paywall- und Zugriffsschranke
 
-Daher gilt:
+Nicht rechtmäßig zugängliche Inhalte hinter einer Patreon- oder sonstigen Paywall werden nicht:
 
-- Fakten, Daten, Verfahren, Zuordnungen und missionsrelevante Schlussfolgerungen werden vollständig ausgewertet und dürfen in eigene Projektstrukturen übertragen werden;
-- der fachliche Inhalt darf paraphrasiert, normalisiert, tabellarisch neu strukturiert und technisch implementiert werden;
-- sichtbare Attribution zu Graveyard of Empires bleibt erhalten;
-- Originalmaterial wird nicht als Eigenwerk von Operation Mountain Watch bezeichnet;
-- Quellenstatus und Bearbeitungsstand werden getrennt dokumentiert;
-- vollständige Artikeltexte, komplette grafische Gestaltungen oder nahezu identische Spiegelungen werden nicht allein deshalb in das öffentliche Repository kopiert, weil sie frei lesbar oder herunterladbar sind;
-- frei bereitgestellte Originaldateien werden nur dann öffentlich im Repository weiterverteilt, wenn dies für das Projekt erforderlich und durch die erkennbare Bereitstellung oder eine ausdrückliche Erlaubnis gedeckt ist; andernfalls werden Quelle, Dateiname und ausgewertete Inhalte dokumentiert;
-- projektseitige Ergänzungen, Interpretationen und technische Implementierungen werden klar von den übernommenen Quellenaussagen getrennt.
+- beschafft;
+- umgangen;
+- aus Fragmenten rekonstruiert;
+- als vollständig bekannt dargestellt.
+
+Zulässige Grundlagen sind:
+
+- frei veröffentlichte Beiträge und Anhänge;
+- vom Projektinhaber rechtmäßig bereitgestellte Dateien;
+- offene Originalquellen;
+- Materialien mit einer konkreten Erlaubnis oder Projektfreigabe.
+
+Nicht verfügbare Bestandteile bleiben `AUSSTEHEND`.
+
+## Konkrete Nutzungsbedingungen
+
+Materialspezifische Bedingungen bleiben wirksam. Enthält eine Datei beispielsweise ein ausdrückliches Verbot der Veränderung oder Weitergabe, muss dies für genau diese Datei berücksichtigt werden. Die zentrale Projektfreigabe hebt konkrete entgegenstehende Bedingungen nicht stillschweigend auf.
+
+## Rechtliche und projektinterne Einordnung
+
+Diese Regel ist eine verbindliche interne Projekt- und Veröffentlichungsentscheidung. Sie stellt nicht fest, dass sämtliche Materialien gemeinfrei, lizenzfrei oder außerhalb des Urheberrechts liegen.
+
+Die Projektentscheidung lautet vielmehr:
+
+- die Materialien werden für ihren erkennbaren DCS-Missionsdesign-Zweck verwendet;
+- die Urheberschaft und Quellenzusammenstellung werden sichtbar zugerechnet;
+- der Projektmanager entscheidet über den konkreten Weitergabeumfang;
+- konkrete Nutzungsbedingungen und Zugriffsschranken werden beachtet.
 
 ## Standard-Creditzeile
 
-Für Dokumente, Datensätze, Briefings und Missionsunterlagen, die wesentlich auf Graveyard-of-Empires-Material beruhen, ist mindestens folgende Creditzeile zu verwenden:
+Mindestens zu verwenden:
 
 > **Research and source compilation credits: Graveyard of Empires — <https://www.patreon.com/cw/graveyard4DCS>**
 
-Eine deutschsprachige Fassung ist ebenfalls zulässig:
+oder:
 
 > **Credits für Recherche und Quellenzusammenstellung: Graveyard of Empires — <https://www.patreon.com/cw/graveyard4DCS>**
 
-## Dokumentationsregel
+## Dokumentationspflicht
 
 Bei jeder weiteren Quellenübernahme wird festgehalten:
 
-- konkreter Patreon-Beitrag oder Anhang,
-- freier, bereitgestellter oder ausstehender Zugriffsstatus,
-- tatsächlich übernommener Inhalt,
-- nicht verfügbare Bestandteile als `AUSSTEHEND`,
-- projektseitige Verarbeitung oder technische Ableitung getrennt vom Quellinhalt,
-- sichtbarer Credit zu Graveyard of Empires,
-- bekannte ursprüngliche Primär- oder Sekundärquellen zusätzlich zum Graveyard-of-Empires-Credit.
+- konkreter Beitrag, Link oder Anhang;
+- Zugriffsstatus;
+- tatsächlich ausgewerteter Inhalt;
+- nicht verfügbare Bestandteile;
+- Originaldatei, normalisierte Daten und projektspezifische Ableitungen getrennt;
+- spezifische Nutzungsbedingungen;
+- Entscheidung über den Weitergabeumfang;
+- sichtbarer Credit;
+- bekannte Primär- und Sekundärquellen.
+
+## Verhältnis zu branchspezifischen Richtlinien
+
+Branchspezifische Quellen- oder NSL-Richtlinien dürfen fachliche Details ergänzen. Sie dürfen diese zentrale Regel nicht parallel ersetzen oder widersprüchlich neu definieren. Vor dem Merge werden doppelte Richtlinientexte entfernt oder als Verweis auf `OMW-GOV-SOURCE-USE` umgestellt.
