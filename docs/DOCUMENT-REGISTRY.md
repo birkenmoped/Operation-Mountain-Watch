@@ -100,6 +100,12 @@ PR #18 enthält zusätzlich einen branchlokalen Pfad `docs/27-helicopter-formati
 | 35 | `OMW-AIR-KANDAHAR-ISR-POLICY` | `docs/35-kandahar-isr-asset-policy.md` | reserviert für Draft-PR #24 |
 | 36 | `OMW-AIR-KANDAHAR-MUSTANG-RAMP` | `docs/36-kandahar-mustang-ramp-army-aviation-baseline.md` | reserviert für Draft-PR #24 |
 
+### 3.3 Branch `agent/document-mq1-mq9-afghanistan`
+
+| Nr. | Stabile ID | Zielpfad | Status |
+|---:|---|---|---|
+| 50 | `OMW-AIR-UAS-AFGHANISTAN` | `docs/50-mq1-mq9-afghanistan-employment.md` | branchlokale Reservierung; vor Merge als aktuelles `main`-Dokument in Abschnitt 2 überführen |
+
 ## 4. Nicht nummerierte stabile Dokumente
 
 | Stabile ID | Pfad | Status / Funktion |
