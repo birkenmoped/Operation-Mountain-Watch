@@ -6,21 +6,24 @@ Diese Dokumentation ist die projektspezifische MOOSE-Wissensbasis für **Operati
 
 Sie ersetzt nicht die offizielle MOOSE-Klassendokumentation. Sie hält ausschließlich fest:
 
-- welche MOOSE-Module und Klassen im Projekt verwendet oder konkret geplant werden,
-- welche Methoden im Projekt geprüft wurden,
-- welcher MOOSE-Stand zugrunde lag,
-- welche DCS- und Mission-Editor-Voraussetzungen bestehen,
-- welche Einschränkungen oder Workarounds bekannt sind,
-- welche projektspezifischen Entscheidungen getroffen wurden,
+- welche MOOSE-Module und Klassen im Projekt verwendet oder konkret geplant werden;
+- welche Methoden im Projekt geprüft wurden;
+- welcher MOOSE-Stand zugrunde lag;
+- welche DCS- und Missionseditor-Voraussetzungen bestehen;
+- welche Einschränkungen oder Workarounds bekannt sind;
+- welche projektspezifischen Entscheidungen getroffen wurden;
 - welche Testmission oder welcher Acceptance-Bericht den Einsatz belegt.
 
 ## Verbindliche Arbeitsanweisung
 
-Vor jeder Eigenentwicklung gilt:
+Vor jeder Eigenentwicklung gelten:
 
-- [`Verbindliche MOOSE-First-Entwicklungsrichtlinie`](../26-moose-first-development-policy.md)
+- `OMW-GOV-001` – `docs/00-project-governance.md` nach Integration der zentralen Governance;
+- [`OMW-GOV-MOOSE-FIRST – Verbindliche MOOSE-First-Entwicklungsrichtlinie`](../26-moose-first-development-policy.md).
 
-Die dort definierte Reihenfolge aus Klassendokumentation, Quellcodeprüfung, offiziellen Demo-/Testmissionen, MOOSE-Lösung und erst danach möglicher Eigenentwicklung ist projektweit verbindlich.
+Die dort definierte Reihenfolge aus Klassendokumentation, Quellcodeprüfung, offiziellen Demo-/Testmissionen, MOOSE-Lösung und erst danach möglicher Ergänzung ist projektweit verbindlich.
+
+Eine technische Begründung allein genehmigt keine Nicht-MOOSE-Lösung. Jede produktive Native-DCS- oder projektspezifische Parallelimplementierung benötigt zusätzlich die ausdrückliche Freigabe des Projektinhabers.
 
 ## Primäre externe Quellen
 
@@ -51,6 +54,7 @@ Diese Quelle ist zu verwenden, wenn die Mission einen stabilen Master-/Release-S
 - [`PROJECT-CLASS-INDEX.md`](PROJECT-CLASS-INDEX.md) – alle für OMW relevanten MOOSE-Klassen mit Status
 - [`AIR-OPERATIONS.md`](AIR-OPERATIONS.md) – AIRWING-, SQUADRON-, AUFTRAG- und COMMANDER-Architektur
 - [`ISR-FAC-CAS-AAR.md`](ISR-FAC-CAS-AAR.md) – Aufklärung, Fog-of-War, FAC/FAC(A)/AFAC/JTAC, Spieler- und AI-CAS, UAV-Einsatz, Loitering, BDA und Luftbetankung
+- [`OMW-TARGETING-AFGHANISTAN-NSL – Afghanistan No-Strike List`](../48-afghanistan-no-strike-list.md) – Zielschutz, Quelldatenprüfung und geplante MOOSE-Integration
 - [`GROUND-OPERATIONS.md`](GROUND-OPERATIONS.md) – Bodengruppen, Brigaden, Spawning und Gruppenmengen
 - [`LOGISTICS-AND-TRANSPORT.md`](LOGISTICS-AND-TRANSPORT.md) – Warehouse, OPSTRANSPORT, CTLD, CSAR und RAT
 - [`EVENTS-AND-FSM.md`](EVENTS-AND-FSM.md) – Events, FSM-Callbacks und Scheduler
@@ -67,6 +71,8 @@ Diese Quelle ist zu verwenden, wenn die Mission einen stabilen Master-/Release-S
 | `NOT_USED` | Bewusst derzeit nicht Teil der Architektur. |
 | `INTERNAL_RESTRICTED` | Interner MOOSE-Zugriff; nur begründet für Diagnose oder Validierung zulässig. |
 
+Diese Klassenstatus ersetzen nicht die allgemeinen Dokumentstatus aus `OMW-GOV-001`.
+
 ## Pflegepflicht
 
 Sobald eine weitere MOOSE-Klasse oder Methode im Projekt hilfreich, notwendig oder tatsächlich verwendet wird, muss sie im selben Entwicklungsstand dokumentiert werden.
@@ -76,6 +82,7 @@ Mindestens zu aktualisieren sind:
 1. [`PROJECT-CLASS-INDEX.md`](PROJECT-CLASS-INDEX.md),
 2. die passende thematische Datei,
 3. bei einem erfolgreichen DCS-Nachweis [`VERIFIED-METHODS.md`](VERIFIED-METHODS.md),
-4. der zugehörige Test- oder Acceptance-Bericht.
+4. der zugehörige Test- oder Acceptance-Bericht,
+5. bei einer Nicht-MOOSE-Ergänzung der Eigentümerfreigabe-ADR.
 
 Eine reine Erwähnung in der MOOSE-Dokumentation reicht nicht für den Status `VALIDATED`.
