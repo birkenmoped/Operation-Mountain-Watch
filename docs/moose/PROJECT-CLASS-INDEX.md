@@ -48,6 +48,8 @@ Diese Einträge gelten nicht automatisch als praktisch vollständig validiert. V
 | Modul / Klasse | Global | Status | Geplanter Einsatz | Voraussetzung vor Implementierung |
 |---|---|---|---|---|
 | `Ops.FlightGroup` | `FLIGHTGROUP` | `PLANNED` | Laufzeitsteuerung gebundener Hubschrauber und Fluggruppen; CAS-Station, Fuel-, Munitions-, Refuelling- und RTB-Logik | Signaturen, Bindung durch AIRWING, Fuel-/Ammo-Methoden und FSM-Callbacks prüfen |
+| `Core.Point` | `COORDINATE` | `PLANNED` | Afghanistan-NSL-Punkte aus WGS84 mit `NewFromLLDD()` in DCS-Koordinaten überführen; Distanz- und Prüfberichte erzeugen | Signatur im eingebundenen MOOSE-Stand, Afghanistan-Kartenkonvertierung und Landhöhenverhalten testen |
+| `Core.Zone` | `ZONE_RADIUS`, `ZONE_POLYGON_BASE` | `PLANNED` | NSL-Schutzgeometrien und zentrale Prüfung von Zielkoordinaten über `IsCoordinateInZone()` beziehungsweise `IsVec2InZone()` | Konstruktoren, Randverhalten, Polygonquelle, Registrierungsstrategie und Performance mit großem Datenbestand testen |
 | `Ops.Intel` | `INTEL` | `PLANNED` | Gemeinsames taktisches Lagebild für UAVs, Bodensensoren und erkannte Kontakte/Cluster | Kontaktmodell, Events, Timeout und Abgrenzung zu CampaignState/RedDirector prüfen |
 | `Ops.Target` | `TARGET` | `PLANNED` | Standardisierte Ziele für Spieler-, AI-, FAC-, CAS- und Strike-Aufträge | Zieltypen, Zustände, BDA und Bindung an AUFTRAG prüfen |
 | Player-Task-System | `PLAYERTASKCONTROLLER` und zugehörige Klassen | `PLANNED` | Spieleraufträge aus Gruppe, Einheit, Zone, Koordinate oder Suchgebiet; Annahme und AI-Eskalation | Exakte Klassen, Signaturen, Multiplayer-Verhalten und Menürechte prüfen |
@@ -60,7 +62,7 @@ Diese Einträge gelten nicht automatisch als praktisch vollständig validiert. V
 | `Ops.CSAR` | `CSAR` | `PLANNED` | CSAR-Spielmechanik und Rettungsaufträge | Abgrenzung zu MEDEVAC und Persistenz festlegen |
 | `Functional.Rat` | `RAT` | `PLANNED` | Ausschließlich nicht persistenter, atmosphärischer Hintergrundverkehr | Kein Ressourcen- oder Bestandsübergang; Spawnlimits testen |
 | `Core.Event` | `EVENT` | `PLANNED` | Zentrale Reaktion auf Birth, Dead, Crash, Land, Takeoff, Treffer, Zielverluste und BDA | Eventdaten und Mehrfachmeldungen versionsbezogen testen |
-| `Core.Set` | `SET_GROUP`, weitere Sets | `PLANNED` | Dynamische Mengen von Sensor-, Markierer-, Spieler- und Zielgruppen | Filter, Aktualisierung und Performance prüfen |
+| `Core.Set` | `SET_GROUP`, `SET_ZONE`, weitere Sets | `PLANNED` | Dynamische Mengen von Sensor-, Markierer-, Spieler-, Ziel- und gegebenenfalls Schutzgebietszonen | Filter, Aktualisierung, Registrierungsstrategie und Performance prüfen |
 | `Core.Spawn` | `SPAWN` | `PLANNED` | Dynamisches Erzeugen projektgesteuerter Gruppen, soweit AIRWING/BRIGADE dies nicht übernehmen | Vor Nutzung prüfen, ob OPS-/Warehouse-Assets geeigneter sind |
 | `Core.Menu` | Menüklassen | `PLANNED` | Spieler-Kontaktmeldungen, Unterstützungsanforderungen und Markierungssteuerung | Bedienkonzept, Rechte und Mehrspieler-Sichtbarkeit festlegen |
 | `Core.Message` | `MESSAGE` | `PLANNED` | Kontaktberichte, Aufgabenbriefings, Laser-Codes, Status- und BDA-Meldungen | Ausgabe-, Frequenz- und Lokalisierungskonzept festlegen |
@@ -79,7 +81,15 @@ Diese Einträge gelten nicht automatisch als praktisch vollständig validiert. V
 | PRECISIONBOMBING-Auftrag | `PLANNED` | präziser Angriff bei bestätigtem Ziel | geeignete Payload, Zieltyp, Laser-/Koordinatenverwendung |
 | AUTO-Auftrag | `PLANNED` | automatische Wahl eines geeigneten Angriffsprofils, falls im MOOSE-Stand geeignet | Verhalten und Kontrollierbarkeit gegen feste Auftragstypen vergleichen |
 
-## 6. Kandidaten für spätere Architekturentscheidungen
+## 6. Afghanistan-NSL und Zielschutz
+
+Die verbindliche Datenanalyse, Schutzlogik und MOOSE-Planung steht in:
+
+- [`Afghanistan No-Strike List (NSL)`](../28-no-strike-list-afghanistan.md)
+
+Für alle offensiven Auftragstypen gilt: Erkennung oder feindliche Koalitionszugehörigkeit ersetzt keine positive NSL-Prüfung. Die konkreten Methoden gelten erst nach Quellcodeprüfung und DCS-Test als `VALIDATED`.
+
+## 7. Kandidaten für spätere Architekturentscheidungen
 
 | Modul / Klasse | Global | Status | Möglicher Nutzen | Noch offene Entscheidung |
 |---|---|---|---|---|
@@ -88,7 +98,7 @@ Diese Einträge gelten nicht automatisch als praktisch vollständig validiert. V
 
 Kandidaten dürfen nicht ohne den verbindlichen Rechercheweg als Architekturstandard übernommen werden.
 
-## 7. Bewusst derzeit nicht verwendet
+## 8. Bewusst derzeit nicht verwendet
 
 | Modul / Klasse | Status | Entscheidung |
 |---|---|---|
@@ -96,7 +106,7 @@ Kandidaten dürfen nicht ohne den verbindlichen Rechercheweg als Architekturstan
 | `Ops.Fleet` / `Ops.NavyGroup` | `NOT_USED` | Der aktuelle Afghanistan-Kampagnenumfang enthält keine operative Seestreitkraft. |
 | `Ops.Airboss` | `NOT_USED` | Keine Trägeroperationen im aktuellen Kampagnenscope. |
 
-## 8. Direkte DCS-API-Nutzung
+## 9. Direkte DCS-API-Nutzung
 
 Direkte DCS-API-Aufrufe sind keine MOOSE-Module und werden deshalb getrennt betrachtet.
 
@@ -109,13 +119,17 @@ Aktuell bekannte Fälle:
 | `coalition.side.BLUE` | Konstruktorparameter für `COMMANDER` | DCS-Konstante, von MOOSE erwartet |
 | `AI.Skill.HIGH` | Skill-Konfiguration von SQUADRONs | DCS-Konstante, über MOOSE-Methode gesetzt |
 
-## 9. Zugehörige Architektur
+## 10. Zugehörige Architektur
 
 Die verbindliche Ausarbeitung für ISR, FAC, AFAC, JTAC, CAS, UAV, BDA und AAR steht in:
 
 - [`ISR-FAC-CAS-AAR.md`](ISR-FAC-CAS-AAR.md)
 
-## 10. Aktualisierungsregel
+Die verbindliche Ausarbeitung für No-Strike- und Zielschutz steht in:
+
+- [`Afghanistan No-Strike List (NSL)`](../28-no-strike-list-afghanistan.md)
+
+## 11. Aktualisierungsregel
 
 Bei jeder neuen MOOSE-basierten Implementierung ist dieser Index im selben Commit oder Pull Request zu aktualisieren.
 
