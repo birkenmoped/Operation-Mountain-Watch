@@ -1,38 +1,67 @@
+---
+document_id: OMW-EVIDENCE-INDEX
+status: BINDING
+document_class: EVIDENCE_INDEX
+owning_policy: OMW-GOV-001
+authoritative_for:
+  - classification of evidence and legacy source records
+  - separation of historical records from current authority
+scenario_period:
+project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
+supersedes:
+  - earlier evidence index with incomplete legacy inventory
+superseded_by:
+source_branch: agent/complete-documentation-authority-migration
+source_commit:
+validated_in_dcs: false
+---
+
 # Operation Mountain Watch – Evidenzdokumente
 
-## Zweck
+## 1. Zweck
 
-Dieses Verzeichnis enthält technische Prüfberichte, Ausgangsanalysen, historische Entwicklungsstände und unveränderte Legacy-Datensätze.
+Dieses Verzeichnis enthält technische Prüfberichte, Ausgangsanalysen, historische Entwicklungsstände und unveränderte Legacy-Quelldatensätze.
 
-Evidenzdokumente dienen der Nachvollziehbarkeit. Sie sind nicht automatisch aktuelle Projekt-Governance, aktive ORBAT, Produktionsarchitektur oder verbindliche Implementierungsvorgabe.
+Evidenzdokumente dienen der Nachvollziehbarkeit. Sie sind nicht automatisch aktuelle Governance, aktive ORBAT, Produktionsarchitektur oder verbindliche Implementierungsvorgabe.
 
-## Nummerierungsregel
+## 2. Nummerierungsregel
 
-Unnummerierte Evidenzdokumente erhalten eine stabile `document_id`, aber keine reguläre Dokumentnummer.
+Unnummerierte Evidenzdokumente erhalten eine stabile `document_id`, aber keine reguläre Dokumentnummer. Historische Titelnummern in unveränderten Quelldatensätzen sind keine aktuelle Nummernvergabe.
 
-Unter `source-records/` können unveränderte historische Dateien liegen. Deren damalige Titel können veraltete Nummern oder Formulierungen enthalten. Diese werden ausschließlich zur Beweissicherung erhalten und stellen **keine aktuelle Nummernvergabe oder Autorität** dar.
-
-Aktuelle Nummern und stabile IDs werden ausschließlich im zentralen Register verwaltet:
+Aktuelle Nummern und IDs stehen in:
 
 - [`OMW-GOV-DOCUMENT-REGISTRY`](../DOCUMENT-REGISTRY.md)
 
-## Aktuelle Evidenzdokumente
+## 3. Aktuelle Evidenzdokumente
 
-- [`OMW-EVIDENCE-JBAD-AIR-OPS-BASELINE-AUDIT`](jalalabad-air-operations-baseline-audit.md) – Prüfung der ursprünglichen Jalalabad-Air-Ops-Ausgangsmission; historischer Teststand, keine aktuelle ORBAT-Autorität
+- [`OMW-EVIDENCE-JBAD-AIR-OPS-BASELINE-AUDIT`](jalalabad-air-operations-baseline-audit.md) – Prüfung der ursprünglichen Jalalabad-Ausgangsmission; `HISTORICAL_TEST_FIXTURE`.
 
-## Unveränderte Legacy-Datensätze
+## 4. Legacy-Quelldatensätze
 
-- [`legacy-18-msr-routendesign-und-infrastrukturmarker.md`](source-records/legacy-18-msr-routendesign-und-infrastrukturmarker.md) – vollständiger früherer MSR-Entwurfsstand
-- [`legacy-18-air-operations-implementation-pre-governance.md`](source-records/legacy-18-air-operations-implementation-pre-governance.md) – vollständige frühere Luftoperationsfassung mit inzwischen ersetzter Vier-Client-Regel
-- [`legacy-20-air-orbat-mission-editor-worklist-vertical-prototype.md`](source-records/legacy-20-air-orbat-mission-editor-worklist-vertical-prototype.md) – vollständige frühere Jalalabad-first-Arbeitsliste
-- [`legacy-21-jalalabad-air-operations-baseline-audit.md`](source-records/legacy-21-jalalabad-air-operations-baseline-audit.md) – unveränderter ursprünglicher Jalalabad-Baseline-Audittext
+### P0-Bereinigung
 
-## Aktuelle fachliche Einordnungen
+- [`legacy-18-msr-routendesign-und-infrastrukturmarker.md`](source-records/legacy-18-msr-routendesign-und-infrastrukturmarker.md)
+- [`legacy-18-air-operations-implementation-pre-governance.md`](source-records/legacy-18-air-operations-implementation-pre-governance.md)
+- [`legacy-20-air-orbat-mission-editor-worklist-vertical-prototype.md`](source-records/legacy-20-air-orbat-mission-editor-worklist-vertical-prototype.md)
+- [`legacy-21-jalalabad-air-operations-baseline-audit.md`](source-records/legacy-21-jalalabad-air-operations-baseline-audit.md)
 
-- [`OMW-AIR-IMPLEMENTATION – Dokument 18`](../18-air-operations-implementation.md)
-- [`OMW-AIR-ACTIVE-ORBAT – Dokument 19`](../19-active-air-orbat-decisions.md)
-- [`OMW-AIR-ME-WORKLIST – Dokument 20`](../20-air-orbat-mission-editor-worklist.md)
-- [`OMW-AIR-JBAD-MANIFEST – Dokument 21`](../21-jalalabad-air-operations-manifest.md)
-- [`OMW-MSR-ROUTE-DESIGN – Dokument 49`](../49-msr-routendesign-und-infrastrukturmarker.md)
+### Autoritäts- und Statusmigration
 
-Bei Widersprüchen gilt die Autoritätshierarchie aus `OMW-GOV-001`, nicht die Detailtiefe des älteren Evidenzdokuments.
+- [`legacy-root-readme-pre-documentation-index.md`](source-records/legacy-root-readme-pre-documentation-index.md)
+- [`legacy-21-jalalabad-air-operations-manifest-pre-governance.md`](source-records/legacy-21-jalalabad-air-operations-manifest-pre-governance.md)
+- [`legacy-37-campaign-architecture-pre-governance.md`](source-records/legacy-37-campaign-architecture-pre-governance.md)
+- [`legacy-38-mission-editor-master-worklist-pre-governance.md`](source-records/legacy-38-mission-editor-master-worklist-pre-governance.md)
+- [`legacy-27-oef-jtac-callsign-reference.md`](source-records/legacy-27-oef-jtac-callsign-reference.md)
+- [`legacy-45-air-c2-cas-afghanistan-source-capture.md`](source-records/legacy-45-air-c2-cas-afghanistan-source-capture.md)
+- [`legacy-46-non-lethal-use-of-force-source-capture.md`](source-records/legacy-46-non-lethal-use-of-force-source-capture.md)
+- [`legacy-47-aircraft-tactical-callsigns-source-capture.md`](source-records/legacy-47-aircraft-tactical-callsigns-source-capture.md)
+- [`legacy-48-afghanistan-no-strike-list-source-and-architecture.md`](source-records/legacy-48-afghanistan-no-strike-list-source-and-architecture.md)
+- [`legacy-csar-readme-source-series.md`](source-records/legacy-csar-readme-source-series.md)
+- [`legacy-49-msr-route-design-pre-metadata-migration.md`](source-records/legacy-49-msr-route-design-pre-metadata-migration.md)
+
+## 5. Verwendungsregel
+
+- Aktuelle normative Aussagen werden aus den kanonischen Dokumenten gelesen.
+- Legacy-Dateien dürfen zur Rekonstruktion früherer Entscheidungen, Inhalte und Diffs verwendet werden.
+- Bei Widerspruch gewinnt die Hierarchie aus `OMW-GOV-001`.
+- Ein Legacy-Text wird nicht allein durch Detailtiefe erneut verbindlich.

@@ -1,419 +1,204 @@
-# Operation Mountain Watch – Missionseditor-Masterarbeitsliste
-
-## 1. Zweck
-
-Diese Arbeitsliste enthält alle Objekte, Zonen, Marker, Templates und Metadaten, die im DCS-Missionseditor vorbereitet werden müssen, damit die geplante Kampagnenarchitektur später sauber durch MOOSE und den CampaignState genutzt werden kann.
-
-Die Liste ist bewusst als **Missionsdesigner-Arbeitsgrundlage** formuliert. Sie wird während des Codereviews von TM01 und TM02 weiter präzisiert.
-
-## 2. Verbindliche Benennungsregeln
-
-Vor dem Setzen größerer Objektmengen ist ein einheitliches Namensschema festzulegen.
-
-Empfohlene Präfixe:
-
-- `OMW_BLUE_AIRBASE_...`
-- `OMW_BLUE_FOB_...`
-- `OMW_BLUE_FARP_...`
-- `OMW_BLUE_WH_...`
-- `OMW_BLUE_ARTY_...`
-- `OMW_BLUE_AMMO_...`
-- `OMW_BLUE_PATROL_...`
-- `OMW_RED_HQ_...`
-- `OMW_RED_DIST_...`
-- `OMW_RED_HIDE_...`
-- `OMW_RED_CACHE_...`
-- `OMW_RED_TRANSFER_...`
-- `OMW_RED_ROUTE_...`
-- `OMW_SETTLEMENT_...`
-- `OMW_DELIVERY_...`
-- `OMW_HUMINT_...`
-- `OMW_TM01_...`
-- `OMW_TM02_...`
-
-Jeder Name muss eindeutig, stabil und ohne nachträgliche automatische Umnummerierung nutzbar sein.
-
-## 3. Flugplätze und Luft-ORBAT
-
-Für jeden bereits festgelegten Flugplatz und jedes dort geplante ORBAT sind folgende Arbeiten durchzuführen.
-
-### 3.1 Flugplatz-Stammdaten
-
-- [ ] Flugplatzname und DCS-Airbase-ID dokumentieren
-- [ ] Koalition festlegen
-- [ ] AIRWING-Name festlegen
-- [ ] COMMANDER-Zuordnung festlegen
-- [ ] Warehouse-Zuordnung festlegen
-- [ ] verfügbare Parkpositionen prüfen
-- [ ] große Muster wie C-130J auf geeignete Slots prüfen
-- [ ] Hubschrauberparkplätze prüfen
-- [ ] Taxiwege und bekannte AI-Probleme dokumentieren
-- [ ] Spawn- und Recovery-Verfahren pro Muster testen
-
-### 3.2 Squadron-Templates
-
-Für jedes festgelegte Muster:
-
-- [ ] eine oder mehrere korrekt benannte Late-Activated-Gruppen als Squadron-Template setzen
-- [ ] Land- oder Ramp-Start korrekt festlegen
-- [ ] Funkfrequenz festlegen
-- [ ] Callsign-Konzept festlegen
-- [ ] Livery festlegen
-- [ ] Nutzlastvarianten definieren
-- [ ] Treibstoffmenge definieren
-- [ ] Startpositionen gegen gegenseitige Blockierung testen
-- [ ] `SetOptionPreferVertical()`-Eignung für Hubschrauber dokumentieren
-- [ ] Nacht- und Schlechtwettertauglichkeit prüfen, sofern vorgesehen
-
-### 3.3 Rollen pro Squadron
-
-Pro Squadron dokumentieren und im späteren Code abbilden:
-
-- [ ] CAP
-- [ ] CAS
-- [ ] Armed Reconnaissance
-- [ ] Strike
-- [ ] Escort
-- [ ] SEAD/DEAD, sofern vorhanden
-- [ ] Transport
-- [ ] CSAR
-- [ ] Reconnaissance
-- [ ] Logistics
-
-### 3.4 Flugplatzunterstützung
-
-- [ ] ATIS-Frequenz und Textdaten vorbereiten
-- [ ] FLIGHTCONTROL-Verfahren definieren
-- [ ] Tanker-Orbits als Zonen oder Wegpunkte setzen
-- [ ] AWACS-Orbits als Zonen oder Wegpunkte setzen
-- [ ] Holding Areas vorbereiten
-- [ ] An- und Abflugkorridore dokumentieren
-- [ ] Notfall- und Alternate-Airfields festlegen
-
-## 4. BLUE-FOBs und FARPs
-
-Für jeden FOB beziehungsweise FARP:
-
-### 4.1 Grundobjekte
-
-- [ ] eindeutigen Mittelpunkt beziehungsweise Referenzpunkt setzen
-- [ ] FOB-Zone setzen
-- [ ] Perimeter-Zone setzen
-- [ ] Spawn-/Assembly-Zone für Bodengruppen setzen
-- [ ] Fahrzeugausfahrt definieren
-- [ ] Hubschrauber-Landezonen definieren
-- [ ] FARP-Pads und Parkpositionen prüfen
-- [ ] statische Basisausstattung setzen
-- [ ] Beleuchtung und Nachtbetrieb prüfen
-
-### 4.2 Einheiten und Verbandsstruktur
-
-- [ ] Brigade-Zuordnung festlegen
-- [ ] Platoon-Templates für Infanterie setzen
-- [ ] Platoon-Templates für Patrouillenfahrzeuge setzen
-- [ ] Quick Reaction Force definieren
-- [ ] Base-Defense-Gruppen setzen
-- [ ] Artilleriegruppe setzen, sofern vorgesehen
-- [ ] AmmoTruck-Template setzen
-- [ ] Logistikfahrzeuge setzen
-- [ ] CSAR-Assets zuordnen
-- [ ] Transporthubschrauber oder Abstellbereiche zuordnen
-
-### 4.3 Warehouse
-
-- [ ] Warehouse-Objekt beziehungsweise DCS-Lagerreferenz festlegen
-- [ ] Warehouse-Zone setzen
-- [ ] Ladezone setzen
-- [ ] Entladezone setzen
-- [ ] initiale Bestände definieren
-- [ ] Treibstoffkapazität festlegen
-- [ ] Munitionskapazität festlegen
-- [ ] Fahrzeugreserve festlegen
-- [ ] Personalreserve festlegen
-- [ ] Wiederaufbau- und Verlustregeln dokumentieren
-
-### 4.4 Patrouillenräume
-
-- [ ] lokale Patrouillenrouten setzen
-- [ ] Kontrollpunkte setzen
-- [ ] Wendepunkte prüfen
-- [ ] problematische Straßenstellen markieren
-- [ ] alternative Routen definieren
-- [ ] Sperrzonen und No-Go-Bereiche definieren
-- [ ] Reaktionsräume für QRF festlegen
-
-## 5. Artillerie und Munitionslogistik
-
-Für jede BLUE-Artilleriestellung:
-
-- [ ] Artilleriegruppe eindeutig benennen
-- [ ] Feuerstellungszone definieren
-- [ ] Mindest- und Maximalreichweite dokumentieren
-- [ ] zugeordnetes FOB/Warehouse festlegen
-- [ ] AmmoTruck-Startpunkt festlegen
-- [ ] Übergabepunkt für taktische Munitionsversorgung setzen
-- [ ] sichere Anfahrt testen
-- [ ] Ausweichstellung vorbereiten, sofern vorgesehen
-- [ ] Friendly-Fire- und No-Fire-Zonen setzen
-- [ ] zivile Schutzbereiche markieren
-
-## 6. CSAR-Infrastruktur
-
-- [ ] CSAR-fähige Spieler-Slots kennzeichnen
-- [ ] AI-CSAR-Assets als Templates setzen
-- [ ] Start- und Bereitschaftsorte definieren
-- [ ] medizinische Übergabepunkte festlegen
-- [ ] Hospital- oder FOB-Recovery-Zonen setzen
-- [ ] Capture-Räume beziehungsweise RED-Einflussräume definieren
-- [ ] problematische Hochgebirgsbereiche dokumentieren
-- [ ] Nacht-CSAR-Verfahren prüfen
-
-## 7. TM01 – BLUE-Konvoi- und Virtualisierungstestbereich
-
-### 7.1 Konvoi-Templates
-
-- [ ] alle TM01-Konvoi-Templates eindeutig benennen
-- [ ] Fahrzeugreihenfolge prüfen
-- [ ] maximale Gruppengröße dokumentieren
-- [ ] Startzonen setzen
-- [ ] Zielzonen setzen
-- [ ] echte Warehouse-Quellen und -Ziele zuordnen
-- [ ] transportierte Güter je Template definieren
-
-### 7.2 Routen
-
-- [ ] Hauptrouten im Missionseditor setzen
-- [ ] alternative Routen setzen
-- [ ] kritische Engstellen markieren
-- [ ] Brücken markieren
-- [ ] enge Ortsdurchfahrten markieren
-- [ ] bekannte AI-Staupunkte markieren
-- [ ] Recovery-/Reset-Punkte setzen
-- [ ] Pack-/Unpack-Korridore festlegen
-
-### 7.3 Beobachtungs- und Schutzbereiche
-
-- [ ] Spieler-Näherungszonen definieren
-- [ ] Feind-Näherungszonen definieren
-- [ ] No-Teleport-Zonen definieren
-- [ ] Kampf- und Aufklärungszustände testbar machen
-- [ ] Testmarker für Watchguard-Zustände setzen
-
-## 8. TM02 – RED-Netzwerk, Unterschlüpfe und Caches
-
-TM02 muss nach der neuen Architektur umfassend neu vorbereitet werden.
-
-### 8.1 Initiale RED-Knoten
-
-- [ ] ein RED-HQ festlegen
-- [ ] 2 bis 3 initiale Verteilerdepots festlegen
-- [ ] Warehouse- oder Bestandsreferenzen definieren
-- [ ] initiale RED-Bestände festlegen
-- [ ] zulässige Ausgangsrouten definieren
-- [ ] BLUE-Abstände und Missionsraum prüfen
-
-### 8.2 Candidate Sites
-
-Für jeden potenziellen Standort:
-
-- [ ] eindeutige Candidate-Site-ID setzen
-- [ ] Mittelpunkt setzen
-- [ ] Standortzone setzen
-- [ ] Standorttyp festlegen
-- [ ] urban, ländlich oder abgelegen klassifizieren
-- [ ] Straßenzugang ja/nein festlegen
-- [ ] Infanteriezugang festlegen
-- [ ] zulässige Transportart festlegen
-- [ ] Kapazität festlegen
-- [ ] mögliche statische Darstellung auswählen
-- [ ] Bau-/Aktivierungszone setzen
-- [ ] Flucht- oder Evakuierungsrichtung dokumentieren
-- [ ] Abstand zu anderen RED-Standorten prüfen
-- [ ] Abstand zu BLUE prüfen
-- [ ] Eignung bei Nacht und Tag prüfen
-
-### 8.3 Statische Standort-Templates
-
-Für jeden Standorttyp:
-
-- [ ] unauffälliges Urban-Safe-House-Template
-- [ ] ländliches Hide-Site-Template
-- [ ] Forward-Cache-Template
-- [ ] Waffenlager-Template
-- [ ] Munitionslager-Template
-- [ ] medizinisches Lager, sofern vorgesehen
-- [ ] Transferpunkt-Template
-- [ ] zerstörte oder geräumte Variante
-
-Die Darstellung darf bestehende Szeneriegebäude nutzen, muss aber über stabile Triggerzonen und Referenzpunkte auswertbar bleiben.
-
-### 8.4 RED-Transport-Templates
-
-- [ ] leichte Infanterieträgergruppe
-- [ ] größere Trägergruppe
-- [ ] Pickup-/Truck-Transport nur für geeignete Straßen
-- [ ] Eskorte, sofern strategisch begründet
-- [ ] Hybridtransport mit Fahrzeug-Transferpunkt und Infanterie-Endstrecke
-- [ ] Rückkehr- oder Evakuierungsgruppe
-
-Jedes Template erhält definierte Kapazität und zulässige Frachtarten.
-
-### 8.5 RED-Routen und Transferpunkte
-
-- [ ] Straßennetze für Fahrzeugtransporte setzen
-- [ ] Transferpunkte Fahrzeug zu Infanterie setzen
-- [ ] Infanteriekorridore setzen
-- [ ] Engstellen und Beobachtungspunkte markieren
-- [ ] Exposure Windows setzen
-- [ ] alternative Routen definieren
-- [ ] wiederholte Routennutzung auswertbar machen
-- [ ] Zielnähe-Zonen für physische Materialisierung setzen
-
-### 8.6 Aufklärung und Tracking
-
-- [ ] Zonen für mögliche Area-of-Interest-Markierungen vorbereiten
-- [ ] Suchzonen unterschiedlicher Größe definieren
-- [ ] PLAYERRECCE-Testbereiche vorbereiten
-- [ ] Beobachtungspunkte für Boden- und Luftaufklärung setzen
-- [ ] Follow-to-destination-Testfälle vorbereiten
-- [ ] No-Dematerialization-Zonen und -Situationen testen
-
-## 9. Städte und Dörfer für Civil Support & HUMINT
-
-Die erste Ausbaustufe soll nur ausgewählte Orte umfassen.
-
-### 9.1 Auswahl je Ortschaft
-
-- [ ] Name und eindeutige ID festlegen
-- [ ] Mittelpunkt setzen
-- [ ] Settlement-Zone setzen
-- [ ] Größe klassifizieren: Dorf, größere Ortschaft, Stadt
-- [ ] HUMINT-Radius festlegen
-- [ ] Nähe zu RED-Kandidaten prüfen
-- [ ] Nähe zu MSR/ASR prüfen
-- [ ] Nähe zu BLUE-FOB prüfen
-- [ ] Start-Support-Level festlegen
-- [ ] bei vorhandenem BLUE-FOB Level 1 als Vorschuss setzen
-
-### 9.2 Zustellpunkte
-
-Je Ortschaft prüfen und nur geeignete Verfahren freigeben:
-
-- [ ] Hubschrauber-Lande- und interne Entladezone
-- [ ] Slingload-Absetzpunkt
-- [ ] C-130J-Abwurfzone
-- [ ] Anflugrichtung dokumentieren
-- [ ] Abflugrichtung dokumentieren
-- [ ] Geländeneigung prüfen
-- [ ] Gebäude und Stromleitungen prüfen
-- [ ] ausreichend freie Fläche prüfen
-- [ ] sichtbare Marker oder statische Orientierungspunkte setzen
-- [ ] Triggerzone zur Lieferbestätigung setzen
-- [ ] Fallback nur dann setzen, wenn zwingend erforderlich
-
-Nicht jeder Ort muss C-130J-Abwurf und Hubschrauberzustellung gleichzeitig erlauben.
-
-### 9.3 Zugelassene Spielerluftfahrzeuge
-
-- [ ] UH-1H Huey für interne Fracht und Slingload vorsehen
-- [ ] festgelegte UH-60-Variante vorsehen
-- [ ] festgelegte CH-47-Variante vorsehen
-- [ ] C-130J für Abwurf vorsehen
-- [ ] zulässige Cargo-Objekte je Muster testen
-- [ ] maximale Frachtmengen festlegen
-- [ ] Entlade- und Abwurferkennung testen
-
-Keine KI-Transporte und keine Bodenkonvois für diese Sidequests.
-
-### 9.4 HUMINT-Ausgabe
-
-Für jede Ortschaft vorbereiten:
-
-- [ ] Level-1-Meldungstexte
-- [ ] Level-2-Meldungstexte
-- [ ] Level-3-Meldungstexte
-- [ ] grobe Richtungssektoren
-- [ ] mögliche Suchradien
-- [ ] passende Kartenmarker
-- [ ] Ablauf- und Veraltungszeit der Information
-- [ ] Folgeauftragstypen
-
-## 10. Missionsmarker und Debug-Hilfen
-
-Für Entwicklung und Test:
-
-- [ ] Marker für alle Warehouses
-- [ ] Marker für Candidate Sites
-- [ ] Marker für aktive RED-Standorte
-- [ ] Marker für virtuelle und physische Bewegungen
-- [ ] Marker für ExposureScore und ExposureDebt
-- [ ] Marker für Tracking-Zustand
-- [ ] Marker für Settlement-Support
-- [ ] Marker für HUMINT-Radius
-- [ ] Marker für MissionDemand-Zustand
-- [ ] schaltbares Debug-Menü vorbereiten
-
-Produktive Missionen dürfen geheime RED-Daten natürlich nicht für normale Spieler anzeigen.
-
-## 11. Datenexport für den Code
-
-Alle im Editor gesetzten Objekte müssen in einer maschinenlesbaren Masterliste dokumentiert werden.
-
-Pro Eintrag mindestens:
-
-- ID
-- DCS-Name
-- Typ
-- Koordinate
-- Zone
-- Koalition
-- Parent-Objekt
-- CampaignState-Zuordnung
-- erlaubte Rollen
-- relevante Metadaten
-- Teststatus
-
-Empfohlene Tabellen beziehungsweise Dateien:
-
-- Airbases
-- Squadrons
-- FOBs
-- Warehouses
-- Brigades und Platoons
-- Artillery Sites
-- CSAR Sites
-- TM01 Routes
-- RED Candidate Sites
-- RED Distribution Network
-- Settlements
-- Delivery Points
-- HUMINT Profiles
-
-## 12. Empfohlene Bearbeitungsreihenfolge
-
-1. Benennungsstandard endgültig festlegen.
-2. Alle bereits beschlossenen Flugplätze und ORBATs vollständig setzen.
-3. FOBs, FARPs, Einheiten und Warehouses setzen.
-4. TM01-Routen und Konvoiobjekte bereinigen.
-5. TM02-HQ, Verteilerdepots und Candidate Sites setzen.
-6. RED-Transport- und Standorttemplates erstellen.
-7. ausgewählte Settlements festlegen.
-8. Zustell- und Abwurfzonen setzen.
-9. HUMINT-Radien und Suchräume setzen.
-10. Debug-Marker und Testfälle ergänzen.
-11. alle Namen und Koordinaten in die Projektdokumentation exportieren.
-12. erst danach produktiven Implementierungscode auf die finalen Namen binden.
-
-## 13. Noch zu ergänzende konkrete Listen
-
-Nach dem vollständigen Codereview von TM01 und TM02 werden folgende Tabellen ergänzt:
-
-- vollständige Flugplatzliste mit ORBAT-Zuordnung
-- vollständige FOB-Liste mit Einheiten und Warehouse-Anfangsbeständen
-- vollständige Candidate-Site-Liste
-- vollständige Settlement-Liste
-- konkrete Zustellpunktnamen
-- konkrete C-130J-Abwurfzonen
-- konkrete TM01- und TM02-Editorobjekte
-- verbindliche Template-Namen
-- verbindliche Triggerzonen-Namen
+---
+document_id: OMW-ME-MASTER-WORKLIST
+status: BINDING
+document_class: WORKLIST
+owning_policy: OMW-GOV-001
+authoritative_for:
+  - project-wide Mission Editor foundation-build worklist
+  - required authoring metadata and validation evidence
+  - separation of Mission Editor, campaign-domain and MOOSE responsibilities
+scenario_period: 2010-08-01/2011-12-31
+project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
+supersedes:
+  - incomplete or prototype-only Mission Editor worklists
+superseded_by:
+source_branch: agent/complete-documentation-authority-migration
+source_commit:
+validated_in_dcs: false
+---
+
+# 38 – Missionseditor-Masterarbeitsliste
+
+## 1. Zweck und Abgrenzung
+
+Diese Arbeitsliste ist die projektweite Foundation-Build-Grundlage für Objekte, Zonen, Marker, Templates und Metadaten im DCS Mission Editor.
+
+Maßgebliche Grundlagen:
+
+- [`OMW-GOV-001`](00-project-governance.md);
+- [`OMW-GOV-MOOSE-FIRST`](26-moose-first-development-policy.md);
+- [`OMW-ARCH-CAMPAIGN-DYNAMIC-MISSION`](37-campaign-architecture-and-dynamic-mission-design.md);
+- [`OMW-AIR-ACTIVE-ORBAT`](19-active-air-orbat-decisions.md);
+- [`OMW-AIR-ME-WORKLIST`](20-air-orbat-mission-editor-worklist.md).
+
+Der vollständige frühere Arbeitsstand bleibt unverändert erhalten:
+
+- [`Legacy-Masterarbeitsliste`](evidence/source-records/legacy-38-mission-editor-master-worklist-pre-governance.md)
+
+## 2. Grundregeln
+
+- stabile, eindeutige Namen ohne automatische Umnummerierung;
+- keine Doppelbestände durch Client-Gruppen, Templates, aktive Gruppen und Statics;
+- jede physische Einheit benötigt einen CampaignState- oder MissionDemand-Bezug;
+- keine technische Funktion als validiert kennzeichnen, bevor ein reproduzierbarer DCS-Test vorliegt;
+- branchgebundene Tests nicht als allgemeine `main`-Acceptance darstellen;
+- MOOSE-Funktionen vor eigener Lua-Logik prüfen;
+- Nicht-MOOSE-Ausnahmen nur mit ausdrücklicher Projektinhaberfreigabe.
+
+## 3. Benennungsfamilien
+
+```text
+OMW_BLUE_AIRBASE_...
+OMW_BLUE_FOB_...
+OMW_BLUE_FARP_...
+OMW_BLUE_WH_...
+OMW_BLUE_ARTY_...
+OMW_BLUE_PATROL_...
+OMW_RED_HQ_...
+OMW_RED_DIST_...
+OMW_RED_HIDE_...
+OMW_RED_CACHE_...
+OMW_RED_TRANSFER_...
+OMW_RED_ROUTE_...
+OMW_SETTLEMENT_...
+OMW_DELIVERY_...
+OMW_HUMINT_...
+```
+
+Fachspezifische bestehende Namen wie `AW_US_...`, `SQ_US_...`, `CLIENT_US_...`, `TPL_AIR_US_...`, `STATIC_AIR_US_...` und `ZONE_AIR_US_...` bleiben in den zuständigen Manifesten verbindlich.
+
+## 4. Flugplätze und Luftoperationsknoten
+
+Für jeden Knoten sind zu dokumentieren und zu prüfen:
+
+### Stammdaten
+
+- [ ] DCS-Airbase-Name und ID;
+- [ ] Koalition und Land;
+- [ ] zuständiger `AIRWING`;
+- [ ] `COMMANDER`-Zuordnung;
+- [ ] Warehouse-Anker und DCS-Airbase-Bezug;
+- [ ] Parkpositionen und Größenklassen;
+- [ ] Taxiwege und bekannte KI-Probleme;
+- [ ] Spawn- und Recovery-Verfahren.
+
+### Client-Gruppen
+
+- [ ] Anzahl ausschließlich nach Dokument 19;
+- [ ] ein Luftfahrzeug je Client-Gruppe;
+- [ ] eindeutige Gruppen- und Einheitennamen;
+- [ ] Cold-/Hot-Start nach lokaler Baseline;
+- [ ] Multicrew und Modulabhängigkeiten dokumentieren;
+- [ ] keine Wiederverwendung als KI-Template.
+
+### KI-Templates und SQUADRONs
+
+- [ ] `Late Activation`;
+- [ ] Gruppengröße und MOOSE-Asset-Zahl dokumentieren;
+- [ ] Rollen, Payloads, Liveries und Treibstoff definieren;
+- [ ] Startpositionen gegen Blockierung testen;
+- [ ] Hubschrauberoptionen wie `SetOptionPreferVertical()` versionsbezogen prüfen;
+- [ ] Templatebestand nicht als zusätzlichen Kampagnenbestand zählen.
+
+### Statics
+
+- [ ] sichtbare Zielzahl je Typ;
+- [ ] Bestandsbezug und Obergrenze;
+- [ ] getrennte Rampflächen;
+- [ ] Kollisions- und Rotorabstände;
+- [ ] Verlustzuordnung zum CampaignState;
+- [ ] keine sofortige sichtbare Nachbesetzung ohne genehmigten Ramp-Zyklus.
+
+## 5. FOBs, COPs, OPs und Bodenkräfte
+
+- [ ] stabile Standort-ID und Anzeigename;
+- [ ] Zonen, Anker und Template-Gruppe;
+- [ ] Garnison, Bereitschaft und Ressourcen;
+- [ ] Warehouse, Munition und Treibstoff;
+- [ ] Straßen-, Luft- und Fußzugang;
+- [ ] Patrouillen- und QRF-Bereiche;
+- [ ] Landezonen, Slingload- und Entladepunkte;
+- [ ] Schadens-, Wiederaufbau- und Verlustzustände;
+- [ ] zugeordnete `BRIGADE`, `PLATOON`, `ARMYGROUP` oder `OPSGROUP`-Struktur.
+
+## 6. Routen und Logistik
+
+- [ ] MSR-/ASR-Segmente nach Dokument 49;
+- [ ] `PATHLINE`s und Routinganker getrennt erfassen;
+- [ ] Brücken, Furten, Engstellen, Tore und Übergabepunkte markieren;
+- [ ] Assembly Areas und Withdrawal Points;
+- [ ] alternative Routen und Sperrbedingungen;
+- [ ] Fahrzeug- und Infanterieeignung;
+- [ ] `Core.Astar`, MOOSE-Routing und `OPSTRANSPORT` prüfen;
+- [ ] keine ungeprüfte Offroad-Navigation voraussetzen.
+
+## 7. RED-Netzwerk
+
+- [ ] HQ, Verteilerdepots, Hide Sites und Caches;
+- [ ] Candidate Sites mit Metadaten;
+- [ ] Kommando-, Bewegungs- und Personalnetze getrennt erfassen;
+- [ ] Guard Floor, Readiness Target und Hard Capacity;
+- [ ] alternative Versorgungswege;
+- [ ] Materialisierungs- und Dematerialisierungsanker;
+- [ ] keine Übergänge in Sichtweite von Spielern;
+- [ ] Tracking-, Aufklärungs- und Kampfzustände berücksichtigen.
+
+## 8. Aufklärung, C2 und Targeting
+
+- [ ] JTAC-/FAC-/AFAC-/ASOC-Knoten;
+- [ ] Callsigns und Frequenznetze aus den zuständigen Referenzen;
+- [ ] Sensor- und Beobachtungszonen;
+- [ ] HUMINT-, SIGINT- und Visual-Exposure-Metadaten;
+- [ ] gestufte Erkenntniszustände;
+- [ ] No-Strike-List-Daten in die Zielprüfung einbinden;
+- [ ] positive Zielbestätigung und ziviles Umfeld dokumentieren;
+- [ ] keine Zielnominierung ohne NSL-Prüfung.
+
+## 9. CSAR und medizinische Infrastruktur
+
+- [ ] Rettungseinrichtungen und Coverage-Radien;
+- [ ] CSAR-/MEDEVAC-Basen und Bereitschaftspositionen;
+- [ ] Funkbaken, Authentifizierung und Duress-Anforderungen;
+- [ ] Landezonen und Hot-and-high-Grenzen;
+- [ ] medizinische Rollen und Übergabepunkte;
+- [ ] Spieler- und KI-Reservierung desselben `CSARIncident` synchronisieren;
+- [ ] keine Doppelrettung zulassen.
+
+## 10. Wetter und Umgebungsprofile
+
+- [ ] historische Baseline nach Dokument 41;
+- [ ] DCS-Editor-Grenzen nach Dokument 42;
+- [ ] Regen-/Schauerprofil nach Dokument 43;
+- [ ] Talnebel-/Tiefe-Wolken-Profil nach Dokument 44;
+- [ ] Sichtweite, Wolkenbasis, Wind und Temperatur pro Test dokumentieren;
+- [ ] Flugplatz-, Hubschrauber- und KI-Verhalten separat validieren.
+
+## 11. Pflichtnachweise je Arbeitspaket
+
+```text
+OMW branch
+OMW commit
+Missionsdatei
+Mission SHA-256
+Bundle-Datei
+Bundle SHA-256
+DCS-Version
+MOOSE branch/release
+MOOSE commit
+Moose.lua SHA-256
+Testbedingungen
+Erwartete Logmeldungen
+Beobachtetes Ergebnis
+Offene Einschränkungen
+```
+
+## 12. Abschlussregel
+
+Ein Objektpaket ist erst produktionsreif, wenn:
+
+- sein zuständiges Manifest und seine Source of Truth geklärt sind;
+- Namens-, Bestands- und Zonenprüfung bestanden wurden;
+- MOOSE-Konstruktion reproduzierbar funktioniert;
+- Start, Rückkehr, Verlust und Abbruch geprüft wurden;
+- keine Kollisionen oder Doppelzählungen bestehen;
+- der exakt getestete Stand dokumentiert ist.
