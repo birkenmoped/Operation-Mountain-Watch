@@ -6,7 +6,7 @@ authoritative_for:
   - stable document IDs
   - merge-time renumbering
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
-source_branch: agent/reconcile-documentation-authority
+source_branch: agent/resolve-document-number-collisions
 validated_in_dcs: false
 ---
 
@@ -31,6 +31,7 @@ und nicht nur eine Nummer wie „Dokument 28“.
 | 00 | `OMW-GOV-001` | `docs/00-project-governance.md` | höchste Projekt-Governance |
 | 09 | `OMW-HIST-SETTING` | `docs/09-historical-setting.md` | historischer Rahmen und Kampagnenzeitraum |
 | 14 | `OMW-PHASE-VERTICAL-PROTOTYPE` | `docs/14-prototype-scope.md` | frühere Projektphase; durch Foundation Build ersetzt |
+| 17 | `OMW-ARCH-PATHFINDING-OPTIONS` | `docs/17-pathfinding-options.md` | Pathfinding- und Routingoptionen |
 | 18 | `OMW-AIR-IMPLEMENTATION` | `docs/18-air-operations-implementation.md` | gemeinsame technische Luftoperationsregeln |
 | 19 | `OMW-AIR-ACTIVE-ORBAT` | `docs/19-active-air-orbat-decisions.md` | aktive Luft-ORBAT |
 | 20 | `OMW-AIR-ME-WORKLIST` | `docs/20-air-orbat-mission-editor-worklist.md` | Luft-ORBAT-Missionseditor-Arbeitsliste |
@@ -44,6 +45,19 @@ und nicht nur eine Nummer wie „Dokument 28“.
 | 28 | `OMW-C2-TAD-COLOR-NETS` | `docs/28-afghanistan-tad-color-nets.md` | TAD-/Color-Net-Frequenzplan |
 | 29 | `OMW-AAR-ISAF-ACO` | `docs/29-isaf-2009-2013-air-to-air-refueling.md` | ISAF-AAR-/ACO-Referenz |
 | 30 | `OMW-AAR-PART2-FIGURE` | `docs/30-isaf-2009-2013-aar-part2-figure-reference.md` | AAR-Abbildungsreferenz |
+| 37 | `OMW-ARCH-CAMPAIGN-DYNAMIC-MISSION` | `docs/37-campaign-architecture-and-dynamic-mission-design.md` | Kampagnenarchitektur |
+| 38 | `OMW-ME-MASTER-WORKLIST` | `docs/38-mission-editor-master-worklist.md` | Missionseditor-Masterarbeitsliste |
+| 39 | `OMW-REVIEW-TM01-TM02-MOOSE-FIRST` | `docs/39-tm01-tm02-moose-first-code-review.md` | TM01-/TM02-MOOSE-First-Review |
+| 40 | `OMW-PLAN-TM01-TM02-MOOSE-ADOPTION` | `docs/40-moose-module-adoption-plan-for-tm01-tm02.md` | MOOSE-Adoptionsplan |
+| 41 | `OMW-WX-HISTORICAL-BASELINE` | `docs/41-historical-weather-baseline-2010-2011.md` | historische Wetterbaseline |
+| 42 | `OMW-WX-DCS-IMPLEMENTATION` | `docs/42-dcs-weather-editor-validation.md` | DCS-Wettereditor-Validierung |
+| 43 | `OMW-WX-RAIN-PROFILE` | `docs/43-dcs-rain-shower-preset-validation.md` | Regen-/Schauerprofil |
+| 44 | `OMW-WX-MIST-PROFILE` | `docs/44-dcs-valley-mist-low-cloud-test-profile.md` | Talnebel-/Tiefe-Wolken-Testprofil |
+| 45 | `OMW-C2-AIR-C2-CAS-AFGHANISTAN` | `docs/45-air-c2-cas-afghanistan.md` | Air C2 und CAS |
+| 46 | `OMW-ROE-NON-LETHAL-USE-OF-FORCE` | `docs/46-non-lethal-use-of-force.md` | Show of Presence / Show of Force |
+| 47 | `OMW-C2-AIRCRAFT-TACTICAL-CALLSIGNS` | `docs/47-aircraft-tactical-callsigns.md` | Aircraft Tactical Callsigns |
+| 48 | `OMW-TARGETING-AFGHANISTAN-NSL` | `docs/48-afghanistan-no-strike-list.md` | Afghanistan No-Strike List |
+| 49 | `OMW-MSR-ROUTE-DESIGN` | `docs/49-msr-routendesign-und-infrastrukturmarker.md` | MSR-Routendesign und Infrastrukturmarker |
 
 ## Reservierungen für noch ungemergte Fachzweige
 
@@ -51,24 +65,12 @@ Die folgenden Nummern sind für die genannten stabilen IDs reserviert. Bestehend
 
 | Nr. | Stabile ID | Vorgesehener Zielpfad | Aktueller Branch-/PR-Hinweis |
 |---:|---|---|---|
-| 31 | `OMW-AIR-BAGRAM-MANIFEST` | `docs/31-bagram-air-operations-manifest.md` | PR #24; aktuell fälschlich `28-...` |
-| 32 | `OMW-AIR-PLAYER-SLOT-POLICY` | `docs/32-player-aircraft-slot-policy.md` | PR #24; aktuell fälschlich `29-...` |
-| 33 | `OMW-AIR-KANDAHAR-MANIFEST` | `docs/33-kandahar-air-operations-manifest.md` | PR #24; aktuell fälschlich `30-...` |
-| 34 | `OMW-AIR-BAGRAM-ME-BASELINE` | `docs/34-bagram-current-mission-editor-baseline.md` | PR #24; aktuell `31-...` |
-| 35 | `OMW-AIR-KANDAHAR-ISR-POLICY` | `docs/35-kandahar-isr-asset-policy.md` | PR #24; aktuell `32-...` |
-| 36 | `OMW-AIR-KANDAHAR-MUSTANG-RAMP` | `docs/36-kandahar-mustang-ramp-army-aviation-baseline.md` | PR #24; aktuell `33-...` |
-| 37 | `OMW-ARCH-CAMPAIGN-DYNAMIC-MISSION` | `docs/37-campaign-architecture-and-dynamic-mission-design.md` | PR #20; aktuell fälschlich `27-...` |
-| 38 | `OMW-ME-MASTER-WORKLIST` | `docs/38-mission-editor-master-worklist.md` | PR #20; aktuell fälschlich `28-...` |
-| 39 | `OMW-REVIEW-TM01-TM02-MOOSE-FIRST` | `docs/39-tm01-tm02-moose-first-code-review.md` | PR #21; aktuell fälschlich `29-...` |
-| 40 | `OMW-PLAN-TM01-TM02-MOOSE-ADOPTION` | `docs/40-moose-module-adoption-plan-for-tm01-tm02.md` | PR #21; aktuell fälschlich `30-...` |
-| 41 | `OMW-WX-HISTORICAL-BASELINE` | `docs/41-historical-weather-baseline.md` | PR #23; aktuelle Branch-Nummer vor Merge prüfen |
-| 42 | `OMW-WX-DCS-IMPLEMENTATION` | `docs/42-dcs-weather-implementation.md` | PR #23 |
-| 43 | `OMW-WX-RAIN-PROFILE` | `docs/43-dcs-rain-profile.md` | PR #23 |
-| 44 | `OMW-WX-MIST-PROFILE` | `docs/44-dcs-mist-profile.md` | PR #23 |
-| 45 | `OMW-C2-AIR-C2-CAS-AFGHANISTAN` | `docs/45-air-c2-cas-afghanistan.md` | PR #25 |
-| 46 | `OMW-ROE-NON-LETHAL-USE-OF-FORCE` | `docs/46-non-lethal-use-of-force.md` | PR #26; aktuell fälschlich `27-...` |
-| 47 | `OMW-C2-AIRCRAFT-TACTICAL-CALLSIGNS` | `docs/47-aircraft-tactical-callsigns.md` | PR #27 |
-| 48 | `OMW-TARGETING-AFGHANISTAN-NSL` | `docs/48-afghanistan-no-strike-list.md` | PR #30 |
+| 31 | `OMW-AIR-BAGRAM-MANIFEST` | `docs/31-bagram-air-operations-manifest.md` | PR #24 |
+| 32 | `OMW-AIR-PLAYER-SLOT-POLICY` | `docs/32-player-aircraft-slot-policy.md` | PR #24 |
+| 33 | `OMW-AIR-KANDAHAR-MANIFEST` | `docs/33-kandahar-air-operations-manifest.md` | PR #24 |
+| 34 | `OMW-AIR-BAGRAM-ME-BASELINE` | `docs/34-bagram-current-mission-editor-baseline.md` | PR #24 |
+| 35 | `OMW-AIR-KANDAHAR-ISR-POLICY` | `docs/35-kandahar-isr-asset-policy.md` | PR #24 |
+| 36 | `OMW-AIR-KANDAHAR-MUSTANG-RAMP` | `docs/36-kandahar-mustang-ramp-army-aviation-baseline.md` | PR #24 |
 
 ## Nicht nummerierte stabile Dokumente
 
@@ -79,6 +81,19 @@ Die folgenden Nummern sind für die genannten stabilen IDs reserviert. Bestehend
 | `OMW-GOV-MOOSE-VERSION` | `docs/moose/VERSION-AND-SOURCES.md` | MOOSE-Versions- und Nachweisregeln |
 | `OMW-MOOSE-CLASS-INDEX` | `docs/moose/PROJECT-CLASS-INDEX.md` | projektbezogener MOOSE-Klassenindex |
 | `OMW-MOOSE-VERIFIED-METHODS` | `docs/moose/VERIFIED-METHODS.md` | praktisch verifizierte Methoden |
+| `OMW-EVIDENCE-JBAD-AIR-OPS-BASELINE-AUDIT` | `docs/evidence/jalalabad-air-operations-baseline-audit.md` | unnummerierter technischer Ausgangs-Audit; historische Evidenz |
+| `OMW-EVIDENCE-INDEX` | `docs/evidence/README.md` | Einordnung von Evidenz- und Legacy-Datensätzen |
+
+## Legacy-Evidenz und historische Titelnummern
+
+Unveränderte Quelldatensätze unter `docs/evidence/source-records/` dürfen ihre damaligen Titelzeilen behalten. Eine darin enthaltene alte Nummer ist keine aktuelle Nummernvergabe und darf nicht als aktiver Querverweis verwendet werden.
+
+Aktuell erhalten bleiben:
+
+- `docs/evidence/source-records/legacy-18-msr-routendesign-und-infrastrukturmarker.md`
+- `docs/evidence/source-records/legacy-21-jalalabad-air-operations-baseline-audit.md`
+
+Die aktuellen Referenzen sind `OMW-MSR-ROUTE-DESIGN` beziehungsweise `OMW-EVIDENCE-JBAD-AIR-OPS-BASELINE-AUDIT`.
 
 ## Branch- und Merge-Regel
 
@@ -86,8 +101,9 @@ Die folgenden Nummern sind für die genannten stabilen IDs reserviert. Bestehend
 2. Spätestens vor Merge wird eine Nummer in diesem Register reserviert.
 3. Kollidierende Branch-Dateinamen werden vor Merge umbenannt.
 4. README-Links, Querverweise und ADRs werden im selben Commit angepasst.
-5. Alte Nummern dürfen in der Historie genannt werden, aber nicht als aktuelle Referenz bestehen bleiben.
+5. Alte Nummern dürfen in der Historie oder unveränderten Evidenz genannt werden, aber nicht als aktuelle Referenz bestehen bleiben.
 6. Branchspezifische Dubletten zentraler Richtlinien werden nicht als parallele Wahrheit gemergt. Sie werden entfernt oder auf das zentrale Dokument umgestellt.
+7. Technische Prüfberichte, Baseline-Audits und unveränderte Entwicklungsprotokolle werden bevorzugt als unnummerierte Evidenzdokumente geführt.
 
 ## Pflege
 

@@ -94,6 +94,14 @@ Project design documents are stored in [`docs/`](docs/).
 - [`OMW-AIR-ACTIVE-ORBAT – Verbindliche aktive Luft-ORBAT`](docs/19-active-air-orbat-decisions.md)
 - [`Missionseditor-Arbeitsliste für die Luft-ORBAT`](docs/20-air-orbat-mission-editor-worklist.md)
 - [`Jalalabad Air Operations Manifest`](docs/21-jalalabad-air-operations-manifest.md)
+- [`OMW-MSR-ROUTE-DESIGN – MSR-Routendesign und Infrastrukturmarker`](docs/49-msr-routendesign-und-infrastrukturmarker.md)
+
+### Technische Evidenz und historische Entwicklungsstände
+
+- [`Evidenzdokumente und Legacy-Datensätze`](docs/evidence/README.md)
+- [`Jalalabad Air Operations – Prüfung der Ausgangsmission`](docs/evidence/jalalabad-air-operations-baseline-audit.md)
+
+Evidenzdokumente sind keine parallele Projekt-Governance. Veraltete Nummern in unveränderten Legacy-Quelldatensätzen gelten nicht als aktive Dokumentnummern.
 
 ### Kommunikation, C2, ROE und AAR
 
