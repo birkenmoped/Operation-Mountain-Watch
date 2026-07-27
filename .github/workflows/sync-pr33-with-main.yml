@@ -1,4 +1,4 @@
-name: Sync PR33 with main
+name: Sync PR33 with main v2
 
 on:
   push:
@@ -40,8 +40,6 @@ jobs:
 
           if [ "$merge_rc" -ne 0 ]; then
             unmerged="$(git diff --name-only --diff-filter=U)"
-            allowed="docs/moose/PROJECT-CLASS-INDEX.md
-docs/moose/README.md"
             while IFS= read -r file; do
               [ -z "$file" ] && continue
               case "$file" in
@@ -120,14 +118,28 @@ docs/moose/README.md"
 
           path = 'docs/moose/PROJECT-CLASS-INDEX.md'
           text = read(path)
-          rows = """| `INTEL` | `PLANNED` | primäres taktisches Lagebild; Sensorarten, räumliche Filter, Kontakt-/Clusterereignisse und kontrollierte HUMINT-Einspeisung; Laufzeitnachweis im gepinnten MOOSE-Stand fehlt |\n| `INTEL_DLINK` | `CANDIDATE` | Aggregation getrennter Luft-, Boden- und HUMINT-Netze; Cache, Deduplizierung und Performance offen |\n| `PLAYERRECCE` | `CANDIDATE` | spielergeführte Aufklärung, Zielberichte und OH-58D-Kiowa-Autolase; Modul- und Multiplayerprüfung offen |\n| `TARS` | `CANDIDATE` | verzögerte Foto-/IMINT-Aufklärung mit Rückkehr und Debrief; Verfügbarkeit und CampaignState-Integration offen |\n| `DETECTION_*` | `PLANNED`, eingeschränkt | nur für DESIGNATE oder nachgewiesene Spezialfälle; kein paralleles strategisches Lagebild neben INTEL |\n"""
+          rows = """| `INTEL` | `PLANNED` | primäres taktisches Lagebild; Sensorarten, räumliche Filter, Kontakt-/Clusterereignisse und kontrollierte HUMINT-Einspeisung; Laufzeitnachweis im gepinnten MOOSE-Stand fehlt |
+| `INTEL_DLINK` | `CANDIDATE` | Aggregation getrennter Luft-, Boden- und HUMINT-Netze; Cache, Deduplizierung und Performance offen |
+| `PLAYERRECCE` | `CANDIDATE` | spielergeführte Aufklärung, Zielberichte und OH-58D-Kiowa-Autolase; Modul- und Multiplayerprüfung offen |
+| `TARS` | `CANDIDATE` | verzögerte Foto-/IMINT-Aufklärung mit Rückkehr und Debrief; Verfügbarkeit und CampaignState-Integration offen |
+| `DETECTION_*` | `PLANNED`, eingeschränkt | nur für DESIGNATE oder nachgewiesene Spezialfälle; kein paralleles strategisches Lagebild neben INTEL |
+"""
           if '| `INTEL_DLINK` | `CANDIDATE` |' not in text:
               anchor = '| `CTLD`, `CSAR`, `AICSAR` | `PLANNED` / teilweise verwendet | separate Acceptance erforderlich |\n'
               if anchor not in text:
                   raise RuntimeError('Class index insertion anchor missing')
               text = text.replace(anchor, anchor + rows)
 
-          section = """## 4. Fog-of-War- und RECCE-Grenzen\n\n- [`OMW-MOOSE-FOG-OF-WAR-RECCE`](FOG-OF-WAR-RECCE.md) ist die vollständige Fähigkeits- und Grenzenanalyse.\n- `AUFTRAG:NewRECON()` ist ein Bewegungs-/Missionsauftrag und registriert das eingesetzte Asset nicht automatisch als `INTEL`-Agent.\n- `INTEL:SetForgetTime()` ist im geprüften Develop-Stand als obsolet und nicht funktionsfähig dokumentiert.\n- Direkte Zonen- oder Datenbankscans dürfen das Fog-of-War-Modell nicht umgehen.\n- `CHIEF` bleibt für die aktuelle Produktionsarchitektur `NOT_USED`; eine spätere Neubewertung muss seine direkte Zonenlogik berücksichtigen.\n\n## 5. Nachweisregel\n"""
+          section = """## 4. Fog-of-War- und RECCE-Grenzen
+
+- [`OMW-MOOSE-FOG-OF-WAR-RECCE`](FOG-OF-WAR-RECCE.md) ist die vollständige Fähigkeits- und Grenzenanalyse.
+- `AUFTRAG:NewRECON()` ist ein Bewegungs-/Missionsauftrag und registriert das eingesetzte Asset nicht automatisch als `INTEL`-Agent.
+- `INTEL:SetForgetTime()` ist im geprüften Develop-Stand als obsolet und nicht funktionsfähig dokumentiert.
+- Direkte Zonen- oder Datenbankscans dürfen das Fog-of-War-Modell nicht umgehen.
+- `CHIEF` bleibt für die aktuelle Produktionsarchitektur `NOT_USED`; eine spätere Neubewertung muss seine direkte Zonenlogik berücksichtigen.
+
+## 5. Nachweisregel
+"""
           if '## 4. Fog-of-War- und RECCE-Grenzen' not in text:
               if '## 4. Nachweisregel\n' not in text:
                   raise RuntimeError('Class index section anchor missing')
