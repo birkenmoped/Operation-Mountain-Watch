@@ -43,6 +43,7 @@ Current air-operations planning documents:
 - [`Missionseditor-Arbeitsliste für die Luft-ORBAT`](docs/20-air-orbat-mission-editor-worklist.md)
 - [`Jalalabad Air Operations Manifest`](docs/21-jalalabad-air-operations-manifest.md)
 - [`ISR-, FAC-, AFAC-, JTAC-, CAS- und AAR-Architektur`](docs/moose/ISR-FAC-CAS-AAR.md)
+- [`OEF Air/Land C2- und JTAC-Callsign-Referenz`](docs/27-oef-jtac-callsign-reference.md)
 
 Project-wide MOOSE documentation:
 
