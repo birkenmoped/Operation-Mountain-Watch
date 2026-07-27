@@ -95,13 +95,14 @@ Project design documents are stored in [`docs/`](docs/).
 - [`Missionseditor-Arbeitsliste für die Luft-ORBAT`](docs/20-air-orbat-mission-editor-worklist.md)
 - [`Jalalabad Air Operations Manifest`](docs/21-jalalabad-air-operations-manifest.md)
 
-### Kommunikation, C2 und AAR
+### Kommunikation, C2, ROE und AAR
 
 - [`ISR-, FAC-, AFAC-, JTAC-, CAS- und AAR-Architektur`](docs/moose/ISR-FAC-CAS-AAR.md)
 - [`OEF Air/Land C2- und JTAC-Callsign-Referenz`](docs/27-oef-jtac-callsign-reference.md)
 - [`Afghanistan TAD- und Color-Net-Frequenzplan`](docs/28-afghanistan-tad-color-nets.md)
 - [`ISAF 2009–2013 – Air-to-Air Refuelling und ACO-Referenz`](docs/29-isaf-2009-2013-air-to-air-refueling.md)
 - [`ISAF 2009–2013 – AAR Areas: Bildreferenz zu Patreon Teil 2`](docs/30-isaf-2009-2013-aar-part2-figure-reference.md)
+- [`OMW-ROE-NON-LETHAL-USE-OF-FORCE – Show of Presence und Show of Force`](docs/46-non-lethal-use-of-force.md)
 
 ### MOOSE
 
