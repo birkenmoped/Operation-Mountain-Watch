@@ -1,23 +1,21 @@
 # ISAF 2009–2013 – Air-to-Air Refuelling und ACO-Referenz
 
-## 1. Status
+## 1. Status und Quellenabgrenzung
 
-**Dokumentationsstatus:** `PARTIAL / TEIL 3 AUSSTEHEND`
+**Dokumentationsstatus:** `REFERENCE / PATREON-TEILE 1–3 AUSGEWERTET`
 
-Diese Datei dokumentiert ausschließlich Inhalte, die aus den im Projekt bereitgestellten Quellen direkt übernommen oder technisch extrahiert werden konnten.
+Diese Datei dokumentiert ausschließlich Inhalte, die aus den vom Projektinhaber bereitgestellten Beiträgen und Anhängen direkt übernommen oder technisch extrahiert werden konnten.
 
-Status der vom Projektinhaber angegebenen Patreon-Quellen:
+Status der Patreon-Quellen:
 
 - **AUSGEWERTET:** `ISAF 2009–2013 – ACO Building – Introduction (1/x)`  
-  <https://www.patreon.com/graveyard4DCS/posts/isaf-2009-2013-1-141193187?collection=833534>  
-  Vollständiger Beitragstext wurde am 27. Juli 2026 vom Projektinhaber bereitgestellt.
+  <https://www.patreon.com/graveyard4DCS/posts/isaf-2009-2013-1-141193187?collection=833534>
 - **AUSGEWERTET:** `ISAF 2009–2013 – ACO Building – Air-to-Air Refueling Areas (2/x)`  
-  <https://www.patreon.com/graveyard4DCS/posts/isaf-2009-2013-2-141257957?collection=833534>  
-  Vollständiger Beitragstext wurde am 27. Juli 2026 vom Projektinhaber bereitgestellt.
-- **AUSSTEHEND:** `ISAF 2009–2013 – ACO Building`, Teil 3  
+  <https://www.patreon.com/graveyard4DCS/posts/isaf-2009-2013-2-141257957?collection=833534>
+- **AUSGEWERTET:** `ISAF 2009–2013 – ACO Building – Air-to-Air Refueling Areas – CombatFlite Template and Kneeboard (3/x)`  
   <https://www.patreon.com/graveyard4DCS/posts/isaf-2009-2013-3-141708508?collection=833534>
 
-Aus dem weiterhin nicht verfügbaren Teil 3 werden **keine ergänzenden allgemeinen Aussagen, Zusammenfassungen oder Interpretationen abgeleitet**.
+Die Beitragstexte wurden am 27. Juli 2026 vom Projektinhaber bereitgestellt. Aussagen in den Abschnitten 3 bis 5 sind als Wiedergabe dieser Quellen zu verstehen und nicht als unabhängig verifizierte historische Feststellungen.
 
 ## 2. Verfügbare Quellen und Anhänge
 
@@ -25,10 +23,12 @@ Aus dem weiterhin nicht verfügbaren Teil 3 werden **keine ergänzenden allgemei
 |---|---|---|
 | Patreon Teil 1: `Introduction (1/x)` | ausgewertet | Veränderungen der afghanischen Luftraumlage zwischen 2001–2003 und 2009–2013 |
 | Patreon Teil 2: `Air-to-Air Refueling Areas (2/x)` | ausgewertet | Mindestanforderungen, Dimensionierung und Mission-Editor-Hinweise für AAR Areas |
-| `AAR Areas - Afghanistan.pdf` | ausgewertet | AARA-Tabelle und Übersichtskarte |
+| Patreon Teil 3: `CombatFlite Template and Kneeboard (3/x)` | ausgewertet | Aufbau der Gesamtvorlage, CGRS, Kneeboard-Nutzung und Erläuterung der AARA-Tabelle |
+| `AAR Areas - Afghanistan.pdf` | ausgewertet | vollständige AARA-Tabelle und Übersichtskarte |
 | `Air-to-Air Refueling - Optimal Speed and Altitude.jpg` | ausgewertet | KC-130- und KC-135-Profile |
+| bereitgestellter Kneeboard-Ausschnitt | ausgewertet | Bestätigung der Tabellenstruktur und der ersten sechs AAR Areas |
 | `AAR ROZ - 2009-2013.kmz` | technisch extrahiert | Kontrollpunkte, Orbitlinien und Gebietsgeometrien |
-| `AAR ROZ - 2009-2013.cf` | vorhanden | weitergehende inhaltliche Auswertung ausstehend |
+| `AAR ROZ - 2009-2013.cf` | vorhanden | vollständige technische CombatFlite-Auswertung weiterhin ausstehend |
 
 ## 3. Patreon Teil 1 – ACO Building: Introduction
 
@@ -57,13 +57,13 @@ Der Beitrag analysiert vier Veränderungen, die sich auf eine ACO für 2009–20
 
 ### 3.2 Airfields
 
-Für die unmittelbare Phase nach dem 11. September 2001 beschreibt der Beitrag feste Flügeloperationen von außerhalb Afghanistans, insbesondere von:
+Für die unmittelbare Phase nach dem 11. September 2001 beschreibt der Beitrag Fixed-Wing-Operationen von außerhalb Afghanistans, insbesondere von:
 
 - Diego Garcia,
 - Trägerverbänden im Arabischen Meer,
 - regionalen Partnerbasen wie Karshi-Khanabad in Usbekistan.
 
-Als Auswirkung nennt der Beitrag:
+Als Auswirkungen nennt der Beitrag:
 
 - einen vergleichsweise wenig belasteten afghanischen Luftraum,
 - gleichzeitig längere Reaktionszeiten für Close Air Support.
@@ -76,9 +76,9 @@ Aufgeführte Flugplätze und Zeitangaben:
 - Kandahar: bis 2004,
 - Camp Bastion: bis 2009.
 
-Der Beitrag nennt dort militärische Flugsicherungsstellen und beschreibt Radarleistungen sowie Luftraum der Klassen C und D.
+Der Beitrag nennt dort militärische Flugsicherungsstellen, Radarleistungen und Luftraum der Klassen C und D.
 
-Weitere im Beitrag genannte Rollen:
+Weitere genannte Rollen:
 
 - Herat und Mazar-e-Sharif: zeitweilige Fast-Jet-Detachments,
 - Jalalabad: verstärkte Rotary-Wing-Nutzung,
@@ -206,18 +206,7 @@ Der Beitrag beschreibt die ACO 2009–2013 als deutlich stärker belastet als fr
 
 Für große Höhen beschreibt der Beitrag ein Umfeld, das eher einem Friedensbetrieb als einer großen konventionellen Kampfoperation ähnelte. Militärische Aktivitäten hätten dort nicht mehr automatisch Vorrang vor zivilen Anforderungen gehabt, sondern seien eng in den zivilen Verkehr integriert worden.
 
-Für niedrige Höhen beschreibt er weiterhin einen heißen Einsatzraum, in dem:
-
-- Kampfflugzeuge,
-- Hubschrauber,
-- UAVs
-
-in enger räumlicher Nähe operierten.
-
-Der Beitrag kündigt für die folgenden Teile an:
-
-1. Aufbau der Air-to-Air Refuelling Areas,
-2. Aufbau verschiedener ROZ für Indirect Fire um FOBs.
+Für niedrige Höhen beschreibt er weiterhin einen heißen Einsatzraum, in dem Kampfflugzeuge, Hubschrauber und UAVs in enger räumlicher Nähe operierten.
 
 ## 4. Patreon Teil 2 – Air-to-Air Refueling Areas
 
@@ -225,17 +214,7 @@ Der Beitrag kündigt für die folgenden Teile an:
 **Autor:** Graveyard of Empires  
 **Veröffentlichung:** 19. Oktober 2025
 
-### 4.1 Ausgangspunkt
-
-Der Beitrag setzt voraus, dass der zivile Luftraum entsprechend dem AIP bereits in die ACO übernommen wurde. Danach sollen die AAR Areas angelegt werden.
-
-Der Beitrag gliedert die Mindestanforderungen in:
-
-1. Altitude,
-2. Horizontal Plane,
-3. Mission Editor Setup Advice.
-
-### 4.2 Vertikaler Luftraumbedarf
+### 4.1 Vertikaler Luftraumbedarf
 
 Für einen einzelnen Tanker nennt der Beitrag als Mindestwert:
 
@@ -264,9 +243,7 @@ Als generelle Empfehlung nennt der Beitrag für AAR Areas:
 5.000 bis 10.000 ft vertikaler Luftraum
 ```
 
-Damit sollen unterschiedliche Mehrtanker-Konfigurationen aufgenommen werden können.
-
-### 4.3 Mindestbetankungshöhe
+### 4.2 Mindestbetankungshöhe
 
 Als allgemeine Empfehlung nennt der Beitrag:
 
@@ -276,7 +253,7 @@ Als allgemeine Empfehlung nennt der Beitrag:
 
 Zweck laut Quelle ist das Verbleiben oberhalb der MANPADS- und AAA-Bedrohung.
 
-Für Afghanistan nennt der Beitrag folgende Auswirkungen:
+Für Afghanistan nennt der Beitrag:
 
 - im Süden ist FL150 im Allgemeinen die niedrigste Base Level,
 - im Norden ist ein Flug oberhalb FL200 stets erforderlich,
@@ -292,7 +269,7 @@ Der Beitrag nennt:
 
 Daraus folgert der Beitrag, dass HAAR in Afghanistan nur in den niedrigsten Regionen geplant werden könne, vorzugsweise über Wüstengebieten zur Reduzierung der SAF-Bedrohung.
 
-### 4.4 Lage der AAR Areas
+### 4.3 Lage der AAR Areas
 
 AAR Areas sollen laut Beitrag außerhalb liegen von:
 
@@ -302,26 +279,17 @@ AAR Areas sollen laut Beitrag außerhalb liegen von:
 
 Wenn Airways und zivile Lufträume noch nicht vollständig in der ACO enthalten sind, empfiehlt der Beitrag die Verwendung von SkyVector, weil dort aktuelle Airways und kontrollierter Luftraum sichtbar seien.
 
-Der Beitrag empfiehlt, viele AAR Areas vorzubereiten, da sie:
+Der Beitrag empfiehlt, viele AAR Areas vorzubereiten, da sie nur bei Bedarf aktiviert werden und im deaktivierten Zustand keinen Einfluss auf den Betrieb haben.
 
-- nur bei Bedarf aktiviert werden,
-- im deaktivierten Zustand keinen Einfluss auf den Betrieb haben,
-- eine kurzfristige ACO-Änderung zur Neuanlage einer ROZ vermeiden.
+Für etwa 2010 nennt er HH-60-Stationierungen in Bagram und Kandahar. HAAR Areas sollen am Rand der unbetankten Reichweite liegen, um den effektiven Einsatzradius zu verdoppeln.
 
-Für HAAR verweist der Beitrag auf frühere Arbeiten zur CSAR-Stationierung. Für etwa 2010 nennt er HH-60-Stationierungen in:
-
-- Bagram,
-- Kandahar.
-
-HAAR Areas sollen am Rand der unbetankten Reichweite liegen, um den effektiven Einsatzradius zu verdoppeln.
-
-Als sinnvolle vorgeschlagene Positionen nennt der Beitrag:
+Als vorgeschlagene Positionen nennt der Beitrag:
 
 - nahe Camp Bastion,
 - zwischen Qalat und Ghazni,
 - nahe Mazar-e-Sharif.
 
-### 4.5 Dimensionierung des Anchor Pattern
+### 4.4 Dimensionierung des Anchor Pattern
 
 Der Beitrag verweist auf ATP 3.3.4.2 und nennt für ein Anchor Pattern:
 
@@ -335,14 +303,14 @@ Für Afghanistan beschreibt er typische Zeitmuster von:
 - 15 Minuten für einen 2-ship Fighter Flight,
 - teilweise 20 Minuten für größere Formationen wie 4-ships oder größere Receiver wie AWACS.
 
-Die im Beitrag verwendete Beispielrechnung:
+Die verwendete Beispielrechnung:
 
 ```text
 300 kt IAS bei FL200 ≈ 450 kt TAS
 450 kt TAS ≈ 7,5 NM/min
 ```
 
-Genannte Kurvenradien bei gleicher Geschwindigkeit:
+Genannte Kurvenradien:
 
 | Angle of Bank | Kurvenradius |
 |---:|---:|
@@ -361,7 +329,7 @@ Für die Legs verbleiben bei 10- beziehungsweise 15-minütiger Restzeit:
 - 5 Minuten beziehungsweise 7 Minuten 30 Sekunden pro Leg,
 - daraus rechnerisch etwa 35 beziehungsweise 55 NM.
 
-Der Beitrag weist jedoch darauf hin, dass Tanker in Afghanistan keine strikten Zeitreferenzen beziehungsweise ARCT einhielten und die genaue Leg-Länge daher keine entscheidende Rolle spielte. Eine Länge von 35 NM wird als ausreichend bezeichnet.
+Der Beitrag weist darauf hin, dass Tanker in Afghanistan keine strikten Zeitreferenzen beziehungsweise ARCT einhielten. Eine Länge von 35 NM wird als ausreichend bezeichnet.
 
 Mit seitlichen Puffern nennt der Beitrag als geeignete AAR-Area-Abmessung:
 
@@ -369,11 +337,9 @@ Mit seitlichen Puffern nennt der Beitrag als geeignete AAR-Area-Abmessung:
 25 × 50 NM
 ```
 
-Diese Box soll ein Standardmuster von 15 Minuten aufnehmen können.
+### 4.5 DCS-spezifisches Tankerverhalten
 
-### 4.6 DCS-spezifisches Tankerverhalten
-
-Der Beitrag beschreibt ein abweichendes DCS-Verhalten während der Betankung:
+Der Beitrag beschreibt:
 
 - ohne Receiver folgt der Tanker dem geplanten Track,
 - während der Betankung fliegt er Kurven mit ungefähr 10° Angle of Bank,
@@ -381,31 +347,21 @@ Der Beitrag beschreibt ein abweichendes DCS-Verhalten während der Betankung:
 
 Empfohlen wird deshalb:
 
-- die AAR Area anhand des Verhaltens des Tankers ohne laufende Betankung zu erstellen,
+- die AAR Area anhand des Tankerverhaltens ohne laufende Betankung zu erstellen,
 - zu akzeptieren, dass der Tanker während der Betankung auf dem Cold Leg zeitweise außerhalb des Gebiets fliegt,
 - das Hot Leg entlang des nächstgelegenen Konfliktfaktors zu legen,
 - die Kurvenrichtung so zu wählen, dass der Tanker von diesem Faktor wegdreht.
 
-Als Beispiel nennt der Beitrag ein Hot Leg entlang einer westlich gelegenen Airway, wobei der Tanker nach Osten abdreht.
+Als Beispiel nennt der Beitrag ein Hot Leg entlang einer westlich gelegenen Airway, wobei der Tanker nach Osten abdreht. Falls ein Einflug nach Pakistan vermieden werden muss, soll der Track weiter nach Norden verschoben werden.
 
-Falls ein Einflug nach Pakistan vermieden werden muss, soll der Track weiter nach Norden verschoben werden.
+### 4.6 Benennung, Frequenzen und TACAN
 
-ARCP und Hot Leg sollen daher unter Berücksichtigung des DCS-Tankerverhaltens gewählt werden.
-
-### 4.7 Benennung der Tankergebiete
-
-Der Beitrag beschreibt thematische Namenskonventionen für AAR Areas.
-
-Genannte Beispiele:
+Der Beitrag beschreibt thematische Namenskonventionen:
 
 - 2001: Figuren der griechischen Mythologie,
 - nach 2004: Muppets-Thema mit Namen wie `Scooter`, `Pepe` und `Clifford`.
 
-Für eigene Gebiete soll ein konsistentes eigenes Thema gewählt werden.
-
-### 4.8 Frequenzzuweisung
-
-Tankerfrequenzen können laut Beitrag zugewiesen werden:
+Tankerfrequenzen können zugewiesen werden:
 
 - nach Tanker-Callsign,
 - nach AAR Area.
@@ -415,31 +371,16 @@ Beschriebenes Verfahren:
 1. Während des Transits überwacht die Besatzung die Callsign-Frequenz.
 2. Nach Erreichen der AAR Area wechselt sie auf die Area-Frequenz.
 
-Als Vorteil nennt der Beitrag:
+Empfohlen wird eine eigene Frequenz je AAR Area.
 
-- ein Ersatz-Tanker kann den ursprünglich in der ATO vorgesehenen Tanker ohne Umstellung für Receiver ablösen,
-- ein Tanker im Transit zwischen Gebieten bleibt über seine Callsign-Frequenz erreichbar.
-
-Empfohlen wird:
-
-- eine eigene Frequenz je AAR Area,
-- Frequenzwechsel des Tankers nach Erreichen der Station.
-
-### 4.9 A/A TACAN
-
-Der Beitrag beschreibt eine vergleichbare Zuweisung für A/A-TACAN:
+Für A/A-TACAN beschreibt der Beitrag:
 
 - jedes Gebiet erhält einen eigenen Kanal,
-- einzelne Tanker können zusätzlich eigene TACAN-Kanäle in der ATO erhalten.
+- einzelne Tanker können zusätzlich eigene TACAN-Kanäle in der ATO erhalten,
+- A/A-TACAN liefert normalerweise Entfernung, aber keine Peilung,
+- die DCS-Option `Bearing` soll laut Beitrag nicht ausgewählt werden, da sie offenbar nicht funktioniert.
 
-A/A-TACAN liefert laut Beitrag normalerweise:
-
-- Entfernung,
-- keine Peilung.
-
-Da die DCS-Option `Bearing` laut Beitrag offenbar nicht funktioniert, soll sie nicht ausgewählt werden.
-
-### 4.10 Tankergeschwindigkeit
+### 4.7 Tankergeschwindigkeit
 
 Der Beitrag beschreibt:
 
@@ -458,9 +399,7 @@ Aufgeführte Beispiele für KC-135:
 | F-16 | FL300 | 315 kt | 0,81 |
 | F-15 | FL200 | 300 kt | 0,82 |
 
-Der Beitrag weist darauf hin, dass IAS und Ground Speed bei FL200 deutlich voneinander abweichen.
-
-Genannte Beziehung:
+Der Beitrag weist darauf hin, dass IAS und Ground Speed bei FL200 deutlich voneinander abweichen:
 
 ```text
 GS = TAS ± Wind
@@ -468,20 +407,131 @@ GS = TAS ± Wind
 
 Daher muss IAS in TAS umgerechnet werden, um eine passende Ground Speed festzulegen.
 
-### 4.11 Schlussfolgerung des Beitrags
+## 5. Patreon Teil 3 – CombatFlite Template and Kneeboard
 
-Der Beitrag erklärt die oben genannten Werte und Verfahren als Grundlage zum Aufbau einer realistischen AAR-Area-Konfiguration für das Afghanistan-Szenario 2009–2013.
+**Titel:** `ISAF 2009-2013 - ACO Building - Air-to-Air Refueling Areas - CombatFlite Template and Kneeboard (3/x)`  
+**Autor:** Graveyard of Empires  
+**Veröffentlichung:** 26. Oktober 2025
 
-Eine eigene vollständige Konfiguration wird für den folgenden Beitrag angekündigt.
+### 5.1 Gesamtvorlage
 
-## 5. AAR Areas aus dem bereitgestellten PDF
+Der Beitrag stellt eine zusammenhängende CombatFlite-Vorlage bereit. Diese soll direkt in die in Arbeit befindliche übergreifende Afghanistan-Missionsvorlage integriert werden.
+
+Die Vorlage enthält das CGRS Grid für den Zeitraum 2009–2013. Der Beitrag weist ausdrücklich darauf hin, dass dieses Grid von dem zu Beginn von OEF im Jahr 2001 verwendeten Grid abweicht.
+
+### 5.2 Kneeboard-Seiten
+
+Zum praktischen Einsatz der AAR Areas werden Kneeboard-Seiten bereitgestellt. Der Beitrag beschreibt sie als Hilfsmittel:
+
+- während der Missionsplanung,
+- während des Fluges.
+
+Einzelne Seiten könnten im Flug nur selten benötigt werden, aber bereits vor dem Flug von hohem Nutzen sein.
+
+Die Namen der Areas folgen einem gemeinsamen Thema. Der Beitrag nennt das gewählte Thema nicht ausdrücklich. Die im Kneeboard sichtbaren Namen umfassen unter anderem `Barney`, `Bart`, `Homer`, `Krusty`, `Marge`, `Milhouse` und `Smithers`.
+
+### 5.3 Höhenblöcke und Tankeranzahl
+
+Der Beitrag erläutert die im Kneeboard angegebenen Höhenblöcke:
+
+- ein 5.000-ft-Block kann jeweils nur einen Tanker aufnehmen,
+- deshalb ist für einen solchen Block nur ein A/A-TACAN-Kanal angegeben,
+- ein 10.000-ft-Block kann bei Bedarf zwei Tanker gleichzeitig aufnehmen.
+
+Für die vertikale Staffelung wird empfohlen:
+
+- BOOM-Tanker oberhalb der MPRS-Tanker,
+- MPRS-Tanker niedriger, da deren optimale Betankungshöhen und -geschwindigkeiten niedriger seien.
+
+Wenn BOOM- und MPRS-Tanker dieselbe Area verwenden sollen, verlangt der Beitrag eine **sequenzielle Nutzung**. Der erste Tanker muss seine Betankung abgeschlossen haben, bevor der nächste Tanker in die Area einfliegt.
+
+Für simulierte Transits zu oder von AAR Areas können Tanker den IFR-Routen folgen, die nach Aussage des Beitrags im Allgemeinen neben den Tankertracks liegen.
+
+### 5.4 Control Point, RV und ARCT
+
+Der Control Point (`CP` beziehungsweise `ARCP`) ist laut Beitrag der Punkt, an dem sich der Receiver in Astern-/Observation-Position befinden soll.
+
+Vereinfacht kann er als der Punkt betrachtet werden, an dem der Receiver den Tanker zum Control Time (`CT` beziehungsweise `ARCT`) trifft.
+
+Der Beitrag beschreibt für Afghanistan:
+
+- einen lockeren Betankungszeitplan,
+- große zeitliche Abstände zwischen Receivern,
+- deshalb keine strikte Einhaltung der Zeitvorgaben,
+- hohe Flexibilität realer Tankerbesatzungen, die ihren Track zur Erleichterung des Intercepts anpassen konnten, beispielsweise durch Eindrehen zum Receiver.
+
+Für DCS weist der Beitrag darauf hin, dass diese Flexibilität nicht zur Verfügung steht. Da regelmäßige ARCT schwer zu erzwingen seien, müssen Zeit- und Kraftstoffbedarf für die Rejoin-Phase eingeplant werden.
+
+Kurze AAR-Holding-Patterns reduzieren den Rejoin-Aufwand. Als Vergleich nennt der Beitrag:
+
+```text
+35-NM-Leg: geringerer Rejoin-Aufwand
+70-NM-Leg: höherer Rejoin-Aufwand beim Verfolgen des Tankers
+```
+
+### 5.5 True Headings
+
+Die Routenkurse werden als True Headings angegeben. Dadurch sollen sie unabhängig vom betrachteten Zeitraum gültig bleiben, da sich die magnetische Deklination im Lauf der Zeit verändert.
+
+### 5.6 Initial Point / ARIP
+
+Ein Tankertrack wird normalerweise durch zwei Punkte definiert:
+
+- Initial Point (`IP` beziehungsweise `ARIP`),
+- Control Point (`CP` beziehungsweise `ARCP`).
+
+Der ARIP ist laut Beitrag der letzte Punkt, an dem Tanker oder Receiver die vorgesehene AAR-Höhe und AAR-Geschwindigkeit erreicht haben müssen, sofern sie noch nicht entsprechend stabilisiert sind.
+
+Dieser Punkt ist in den CombatFlite-Racetracks enthalten. Aus Gründen der Vereinfachung wurde er nicht auf der Kneeboard-Seite dargestellt.
+
+### 5.7 Color Frequencies
+
+Die im Kneeboard angegebenen Farbbezeichnungen verweisen auf die zuvor veröffentlichte Tabelle der taktischen Frequenzen.
+
+Dadurch muss bei einer Frequenzänderung nicht die AARA-Kneeboard-Seite aktualisiert werden. Als einziges zu pflegendes Dokument ist die Frequenzreferenz vorgesehen:
+
+- [`Afghanistan TAD- und Color-Net-Frequenzplan`](28-afghanistan-tad-color-nets.md)
+
+### 5.8 Safety Altitude
+
+Die Safety Altitude wird laut Beitrag mit einem Hindernisabstand von 1.500 ft berechnet.
+
+Sie ist besonders relevant:
+
+- bei Nacht,
+- unter IMC,
+- bei Verlust des Sichtkontakts zum Tanker während des Rejoins,
+- zur Höhenstaffelung beziehungsweise Deconfliction,
+- bei Notfällen während der Betankung und beginnendem Höhenverlust.
+
+Als Beispiele für einen Betankungsnotfall nennt der Beitrag:
+
+- Leistungsverlust eines Triebwerks infolge eines Betankungsproblems,
+- gebrochene Probe,
+- gebrochener Schlauch.
+
+Innerhalb der AAR Area soll die Safety Altitude nicht unterschritten werden, sofern der Boden nicht sicher sichtbar ist.
+
+### 5.9 HAAR Areas
+
+Für potenzielle Nutzer eines HH-60-Mods wurden drei HAAR Areas in niedriger Höhe aufgenommen.
+
+Der Racetrack ist dort nur als Richtwert gedacht. Die Betankung soll im Allgemeinen geradlinig erfolgen:
+
+1. Rendezvous an einem Ende der Area,
+2. Betankung entlang der Area,
+3. Abschluss der Betankung vor Erreichen des anderen Endes.
+
+Der Beitrag bezieht sich in diesem Zusammenhang auf die erwartete Nutzung eines MC-130J mit einem MH-60 beziehungsweise HH-60-Mod.
+
+## 6. AAR Areas aus PDF und Kneeboard
 
 Die Quelle unterscheidet:
 
-- **AARA (HA):** Nummer 1 bis 16
-- **AARA (LA):** Nummer 17 bis 19
+- **AARA (HA):** Nummer 1 bis 16,
+- **AARA (LA):** Nummer 17 bis 19.
 
-Die Tabellenfußnote nennt für die Safety Altitude:
+Die Tabellenfußnote nennt:
 
 ```text
 Safety Altitude: 1,500' Obstacle Clearance
@@ -509,9 +559,9 @@ Safety Altitude: 1,500' Obstacle Clearance
 | 18 | Seymour | LA | 10 000 ft–FL160 | N32°40.60′ E067°49.40′ | 225°T | N/A | Zinc 12 | 62X | 10 000 ft |
 | 19 | Smithers | LA | 5 000–10 000 ft | N36°39.70′ E068°11.30′ | 095°T | N/A | White 10 | 63X | 2 000 ft |
 
-## 6. Optimale Profile aus der bereitgestellten Grafik
+## 7. Optimale Profile aus der bereitgestellten Grafik
 
-### 6.1 KC-130
+### 7.1 KC-130
 
 | Domain | Receiver | Domain-Bereich | Optimal FL | Optimal IAS |
 |---|---|---|---:|---:|
@@ -519,9 +569,9 @@ Safety Altitude: 1,500' Obstacle Clearance
 | High Speed Domain | S-3 + V-22 | FL050–FL200; 185–250 kt IAS | FL150 | 200 kt |
 | High Speed Domain | Fixed Wings AAR | FL050–FL200; 185–250 kt IAS | FL150 | 240 kt |
 
-`HAAR` wird unverändert aus der Grafik übernommen. Eine ausgeschriebene Bedeutung ist in der bereitgestellten Quelle nicht enthalten.
+`HAAR` wird unverändert aus der Grafik übernommen. Eine ausgeschriebene Bedeutung ist in der bereitgestellten Grafik nicht enthalten; Teil 2 verwendet den Begriff `Helicopter AAR`.
 
-### 6.2 KC-135 – Boom Domain
+### 7.2 KC-135 – Boom Domain
 
 Domain-Bereich laut Grafik:
 
@@ -546,7 +596,7 @@ IAS 200–320 kt
 | F-4 | FL300 | 315 kt |
 | KC-135 | FL250 | 275 kt |
 
-### 6.3 KC-135 – MPRS Domain
+### 7.3 KC-135 – MPRS Domain
 
 Domain-Bereich laut Grafik:
 
@@ -575,7 +625,7 @@ IAS 220–300 kt
 | Su-30 | FL220 | 275 kt |
 | Tornado | FL150 | 270 kt |
 
-## 7. Maschinenlesbare Ablage
+## 8. Maschinenlesbare Ablage
 
 Die aus den bereitgestellten Anhängen übernommenen Daten liegen zusätzlich unter:
 
@@ -583,25 +633,23 @@ Die aus den bereitgestellten Anhängen übernommenen Daten liegen zusätzlich un
 - [`data/air-operations/aar/isaf-2009-2013-aar-areas.geojson`](../data/air-operations/aar/isaf-2009-2013-aar-areas.geojson)
 - [`data/air-operations/aar/isaf-2009-2013-aar-receiver-profiles.csv`](../data/air-operations/aar/isaf-2009-2013-aar-receiver-profiles.csv)
 
-## 8. Projektinterne Einordnung
+## 9. Projektinterne Einordnung
 
-Dieser Abschnitt ist **keine Wiedergabe des ausstehenden Patreon-Beitrags Teil 3**.
+Dieser Abschnitt ist keine Wiedergabe der Patreon-Beiträge.
 
 Die technische AAR-Umsetzung im Projekt bleibt in folgender vorhandener Projektdokumentation beschrieben:
 
 - [`moose/ISR-FAC-CAS-AAR.md`](moose/ISR-FAC-CAS-AAR.md)
 
-Die hier dokumentierten Tabellen, Geometrien und Aussagen aus Teil 1 und Teil 2 sind Referenzdaten. Eine DCS- oder MOOSE-Validierung ist durch diese Quellenübernahme nicht erfolgt.
+Die hier dokumentierten Tabellen, Geometrien und Quellenangaben sind Referenzdaten. Eine DCS- oder MOOSE-Validierung ist durch die Quellenübernahme nicht erfolgt.
 
-## 9. Ausstehende Arbeiten
+## 10. Noch ausstehende technische Arbeiten
 
-- Inhalt des Patreon-Beitrags Teil 3 abrufen.
-- Danach ausschließlich tatsächlich belegte Inhalte ergänzen.
-- Abweichungen zwischen Beitrag und Anhängen dokumentieren.
-- CombatFlite-Datei separat auswerten und nur verifizierte Inhalte übernehmen.
+Die Patreon-Quellen 1 bis 3 sind vollständig ausgewertet. Ausstehend bleiben ausschließlich Arbeiten an den Anhängen beziehungsweise an der technischen Umsetzung:
 
-Bis dahin bleibt das Dokument im Status:
-
-```text
-PARTIAL / TEIL 3 AUSSTEHEND
-```
+- CombatFlite-Datei vollständig technisch auswerten,
+- enthaltenes CGRS Grid 2009–2013 separat extrahieren und dokumentieren,
+- ARIP-, ARCP-, Racetrack- und AARA-Geometrien gegen KMZ und PDF abgleichen,
+- Kneeboard-Seiten als Missionsressourcen einordnen,
+- Abweichungen zwischen CombatFlite-Datei, KMZ, PDF, Grafik und Kneeboard dokumentieren,
+- spätere DCS-/MOOSE-Testmission durchführen.
