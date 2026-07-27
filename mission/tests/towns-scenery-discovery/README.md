@@ -1,22 +1,65 @@
+---
+document_id: OMW-TEST-SCENERY-DISCOVERY-01
+status: HISTORICAL_TEST_FIXTURE
+owning_policy: OMW-GOV-MOOSE-FIRST
+authoritative_for:
+  - original native-DCS scenery discovery test procedure
+production_architecture: false
+moose_first_review: PENDING
+native_dcs_exception_approved: false
+source_branch: agent/towns-discovery
+validated_in_dcs: false
+---
+
 # OMW TOWNS Scenery Discovery Test 01
 
-This is a one-time DCS map-data discovery test. It does not test convoys, infantry movement or live unit behaviour.
+## Status and governance
+
+This is a one-time DCS map-data discovery test created before the project-wide MOOSE-first exception procedure was established.
+
+```text
+HISTORICAL_TEST_FIXTURE
+NOT_PRODUCTION_ARCHITECTURE
+MOOSE_FIRST_REVIEW_PENDING
+NATIVE_DCS_EXCEPTION_NOT_APPROVED
+```
+
+The test may be preserved and executed to collect evidence. Its native DCS implementation must not become a production settlement-classification foundation until:
+
+1. relevant MOOSE `SCENERY`, wrapper, set, zone, coordinate, search, scheduler and marker capabilities have been evaluated;
+2. the findings and any remaining technical gap have been documented;
+3. the project owner has explicitly approved the smallest required native DCS fallback;
+4. the approved design has been validated in DCS.
 
 ## Purpose
 
-The test checks whether DCS exposes useful `SCENERY` objects around selected map positions. It is intended to answer the prerequisite question before building a larger settlement classifier:
+The test checks whether DCS exposes useful `SCENERY` objects around selected map positions. It answers the prerequisite question before building a larger settlement classifier:
 
 > Can physical map scenery around a coordinate be measured reliably enough to distinguish empty, isolated, sparse and dense areas?
 
-The density labels are provisional. They describe only the number of searchable DCS `SCENERY` objects and are not yet interpreted as city, village or inhabited terrain.
+The density labels are provisional. They describe only the number of searchable DCS `SCENERY` objects and are not interpreted as city, village or inhabited terrain.
 
-## Script
+## Current implementation
 
 ```text
 mission/tests/towns-scenery-discovery/dist/OMW_TOWNS_SCENERY_DISCOVERY_TEST.lua
 ```
 
-The script uses the native DCS mission-scripting API. MOOSE is not required.
+The historical fixture uses the native DCS mission-scripting API. This describes the existing implementation; it is not an approved statement that MOOSE is unnecessary.
+
+## Required MOOSE-first follow-up
+
+The review must at least check:
+
+- MOOSE `SCENERY` wrappers and lookup methods;
+- applicable `SET_*` classes;
+- zone and coordinate search mechanisms;
+- schedulers and controlled batch execution;
+- map-marker and message helpers;
+- whether MOOSE already wraps the same native search call;
+- whether a small native callback is still technically required.
+
+The result must be added to the project MOOSE documentation and, if a fallback remains necessary, to an owner-approved exception record.
 
 ## Mission Editor setup
 
@@ -42,11 +85,11 @@ Kamdesh
 Nari
 ```
 
-These points provide a first comparison across large cities, smaller settlements and less-developed map regions.
+These points compare large cities, smaller settlements and less-developed map regions.
 
 ## Optional manual probe zones
 
-To test locations that have no `towns.lua` entry, create circular Mission Editor trigger zones at the desired positions:
+Create circular Mission Editor trigger zones at desired positions:
 
 ```text
 OMW_SCENERY_PROBE_01
@@ -55,7 +98,7 @@ OMW_SCENERY_PROBE_02
 OMW_SCENERY_PROBE_20
 ```
 
-The zone centre is scanned. The zone radius is recorded as context but does not change the four configured scan radii.
+The zone centre is scanned. The zone radius is recorded as context but does not change the configured scan radii.
 
 Recommended first probes:
 
@@ -79,7 +122,7 @@ For every reference point and probe-zone centre it performs one `SCENERY` search
 1,000 m
 ```
 
-Points are processed one after another at 0.25-second intervals to avoid a same-frame scan burst.
+Points are processed at 0.25-second intervals to avoid a same-frame scan burst.
 
 ## Output
 
@@ -89,12 +132,12 @@ Each point produces one structured `dcs.log` line:
 [OMW-SCENERY-DISCOVERY] RESULT|id=...|label=...|source=...|class=...|counts=100m=... 250m=... 500m=... 1000m=...|nearest_m=...|types=...
 ```
 
-After completion, the script creates one F10 marker per result. The marker contains:
+After completion, the script creates one F10 marker per result containing:
 
 - provisional density class;
 - cumulative object counts;
-- distance to the nearest found scenery object;
-- up to five most frequent DCS scenery type names.
+- distance to the nearest scenery object;
+- up to five frequent DCS scenery type names.
 
 F10 menu:
 
@@ -110,8 +153,6 @@ F10 Other
 
 ## Provisional classes
 
-The first version classifies only by the number of unique scenery objects within 500 m:
-
 ```text
 SCENERY_NONE
 SCENERY_ISOLATED
@@ -121,7 +162,7 @@ SCENERY_HIGH
 SCENERY_VERY_HIGH
 ```
 
-The thresholds are deliberately configurable and must be calibrated against the visible Afghanistan map before any operational settlement meaning is assigned.
+The thresholds are configurable and must be calibrated against the visible Afghanistan map before any operational settlement meaning is assigned.
 
 ## First acceptance question
 
@@ -130,6 +171,6 @@ The first DCS run is useful when it shows whether:
 1. dense visible cities return substantially higher counts than empty control areas;
 2. unnamed visible settlements are detectable through manual probe zones;
 3. label-only or unfinished areas return low or zero counts;
-4. the reported scenery type names are stable enough to separate buildings from irrelevant scenery.
+4. reported scenery type names are stable enough to separate buildings from irrelevant scenery.
 
-No convoy or infantry test should be built on top of this until those four observations are recorded.
+No convoy, infantry, settlement-classification or production metadata system may be built on this fixture until the four observations and the mandatory MOOSE-first review are recorded.
