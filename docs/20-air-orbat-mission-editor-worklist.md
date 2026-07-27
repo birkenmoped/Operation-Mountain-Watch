@@ -1,88 +1,118 @@
+---
+document_id: OMW-AIR-ME-WORKLIST
+status: BINDING
+owning_policy: OMW-GOV-001
+authoritative_for:
+  - air-operations Mission Editor workflow
+  - division of work between mission design and development
+  - per-base authoring and validation sequence
+scenario_period: 2010-08-01/2011-12-31
+project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
+supersedes:
+  - Jalalabad-first vertical-prototype implementation sequence
+superseded_by:
+source_branch: agent/resolve-document-number-collisions
+source_commit:
+validated_in_dcs: false
+---
+
 # 20 – Missionseditor-Arbeitsliste für die Luft-ORBAT
 
-## Zweck
+## 1. Zweck und verbindliche Grundlagen
 
-Dieses Dokument trennt verbindlich:
+Dieses Dokument trennt:
 
-1. die vom Missionsdesigner im DCS Mission Editor auszuführenden Arbeiten,
-2. die zuvor oder parallel durch die Entwicklung bereitzustellenden Informationen, Konfigurationen und Prüfskripte,
-3. die Reihenfolge, in der die Luft-ORBAT technisch aufgebaut und validiert wird.
+1. die im DCS Mission Editor auszuführenden Arbeiten;
+2. die durch Entwicklung und Dokumentation bereitzustellenden Vorgaben;
+3. die Reihenfolge von Foundation Build, Knotenprüfung und technischer Acceptance.
 
-Die historische Auswahl der aktiven Einheiten ist in [`19-active-air-orbat-decisions.md`](19-active-air-orbat-decisions.md) abgeschlossen. Die gemeinsamen Betriebsregeln stehen in [`18-air-operations-implementation.md`](18-air-operations-implementation.md).
+Maßgeblich sind:
 
----
+- [`OMW-GOV-001`](00-project-governance.md) für Projektphase und Autorität;
+- [`OMW-AIR-ACTIVE-ORBAT – Dokument 19`](19-active-air-orbat-decisions.md) für Verbände, Bestände und Client-Grenzen;
+- [`OMW-AIR-IMPLEMENTATION – Dokument 18`](18-air-operations-implementation.md) für gemeinsame technische Regeln;
+- [`OMW-ME-MASTER-WORKLIST – Dokument 38`](38-mission-editor-master-worklist.md) für die vollständige Foundation-Build-Arbeitsliste.
 
-## 1. Umsetzungsreihenfolge
+Der vollständige frühere Jalalabad-first-Arbeitsstand bleibt unverändert erhalten unter:
 
-Die vollständige ORBAT wird nicht gleichzeitig auf allen Flugplätzen aufgebaut.
+- [`legacy-20-air-orbat-mission-editor-worklist-vertical-prototype.md`](evidence/source-records/legacy-20-air-orbat-mission-editor-worklist-vertical-prototype.md).
 
-Verbindliche Reihenfolge:
+## 2. Projektphase und Umsetzungsreihenfolge
 
-1. **Jalalabad Airfield / FOB Fenty** als vertikaler Prototyp,
-2. Warehouse-, Parking-, Spieler-, KI- und Static-Mechanik in Jalalabad validieren,
-3. MEDEVAC-Two-Ship und globale KI-Einsatzgrenzen validieren,
-4. erst danach Übertragung des bewährten Schemas auf Bagram, Kandahar, Khost, Camp Bastion, Camp Dwyer, Tarinkot und Shindand,
-5. atmosphärischen RAT-Verkehr zuletzt ergänzen.
+Aktuelle Projektphase:
 
-Bagram und andere große Basen werden zunächst nicht vollständig ausgebaut. Dies entspricht dem bestehenden Prototypfokus auf Jalalabad/Fenty und FOB Connolly.
+```text
+COMPLETE_FOUNDATION_BUILD_PHASE
+```
 
----
+Der Missionsgrundbau wird nach fachlich getrennten Arbeitspaketen vollständig aufgebaut. Daraus folgen diese Regeln:
 
-## 2. Grundsatz der Aufgabenteilung
+1. Relevante Flugplätze, Luftoperationsknoten, FOBs und gemeinsame Namenskonventionen dürfen parallel vorbereitet werden.
+2. Jeder Knoten erhält ein eigenes Manifest, einen dokumentierten Missionseditor-Stand und definierte Testfälle.
+3. Teilprüfungen dürfen früh stattfinden, blockieren aber nicht pauschal die Bearbeitung anderer Knoten.
+4. Eine technische Acceptance gilt nur für den exakt getesteten Branch-, Commit-, Missions-, Bundle- und MOOSE-Stand.
+5. Eine Basis darf erst produktiv aktiviert werden, wenn ihre eigenen Abnahmekriterien erfüllt sind.
+6. Atmosphärischer RAT-Verkehr wird erst ergänzt, wenn operative Park-, Spawn- und Performancegrenzen des betroffenen Knotens stabil sind.
 
-### Missionsdesigner
+Jalalabad/Fenty bleibt ein wertvoller technischer Test- und Regressionsknoten. Es ist jedoch **keine verpflichtende Eingangsschranke** mehr, vor der Bagram, Kandahar oder andere Basen nicht aufgebaut werden dürfen.
 
-Der Missionsdesigner ist verantwortlich für alle Objekte und Eigenschaften, die nur im DCS Mission Editor zuverlässig angelegt oder visuell geprüft werden können:
+## 3. Aufgabenteilung
 
-- physische Platzierung,
-- Parkpositionen,
-- Spieler-Slots,
-- Late-Activation-Templates,
-- Static-Objekte,
-- Liveries und sichtbare Markierungen,
-- Zonen und Triggerzonen,
-- FARP-, Helipad- und Warehouse-Infrastruktur,
-- Prüfung von Rollwegen, Rotorabständen und Kollisionen,
-- Speicherung und Bereitstellung der `.miz`-Testmission.
+### 3.1 Missionsdesigner
 
-### Entwicklung
+Der Missionsdesigner verantwortet Objekte und Eigenschaften, die im DCS Mission Editor angelegt oder visuell geprüft werden müssen:
 
-Die Entwicklung ist verantwortlich für alle Vorgaben und Komponenten, die vor der Platzierung eindeutig definiert werden müssen:
+- physische Platzierung;
+- Parkpositionen und Rollwege;
+- Client-Gruppen;
+- Late-Activation-Templates;
+- Static-Objekte;
+- Liveries und sichtbare Markierungen;
+- Zonen und Triggerzonen;
+- FARP-, Helipad- und Warehouse-Infrastruktur;
+- Rotor-, Flügel- und Sicherheitsabstände;
+- Kollisions- und Spawnprüfung;
+- Speicherung und Bereitstellung der `.miz`-Arbeits- und Testmission.
 
-- verbindliche Objekt- und Gruppennamen,
-- ORBAT-Konfiguration,
-- Template-Matrix,
-- Rollen- und Payload-Matrix,
-- AIRWING- und SQUADRON-Konfiguration,
-- Diagnose- und Validierungsskripte,
-- Bestands-, Static-, Verlust- und Slotlogik,
-- MEDEVAC-Paketsteuerung,
-- globale KI-Auftragsbegrenzung,
-- Persistenzanbindung und Logging.
+### 3.2 Entwicklung und Dokumentation
 
-Der Missionsdesigner soll keine eigenen MOOSE-Strukturen oder Benennungssysteme erfinden müssen.
+Die Entwicklung stellt vor oder parallel zur Platzierung bereit:
 
----
+- verbindliche Gruppen-, Einheiten-, Static- und Zonennamen;
+- aktive ORBAT-Konfiguration aus Dokument 19;
+- Template- und Rollenmatrix;
+- Payload- und Fähigkeitsmatrix;
+- AIRWING- und SQUADRON-Konfiguration;
+- Diagnose- und Validierungsskripte;
+- Bestands-, Static-, Verlust- und Reservierungslogik;
+- MEDEVAC-Paketkoordination;
+- globale KI-Auftragsbegrenzung;
+- CampaignState-, Persistenz- und Logging-Anbindung.
 
-## 3. Von der Entwicklung vor der eigentlichen ME-Platzierung bereitzustellen
+Der Missionsdesigner soll keine eigenen MOOSE-Strukturen, Bestandsregeln oder Benennungssysteme erfinden müssen.
 
-Für jeden Flugplatz wird ein separates **Air Operations Manifest** vorbereitet. Dieses muss mindestens enthalten:
+## 4. Erforderliches Air Operations Manifest je Knoten
 
-| Information | Inhalt |
+Vor der verbindlichen ME-Platzierung muss je Flugplatz oder Luftoperationsknoten ein Manifest mindestens enthalten:
+
+| Bereich | Erforderlicher Inhalt |
 |---|---|
-| aktive Einheiten | verbindlicher Verband und Luftfahrzeugbestand |
-| DCS-Typ | bestätigter interner DCS-Typname |
-| Verfügbarkeit | Spieler, KI, Community-Mod oder nur strategisch |
-| Spieler-Slots | genaue Zahl und vollständige Gruppen-/Einheitennamen |
-| KI-Templates | genaue Zahl, Gruppengröße, Rolle und vollständige Namen |
-| Payloads | benötigte Missionsrollen und zugehörige Template-Namen |
-| Statics | Zielzahl, mögliche Liveries und zulässiger Abstellbereich |
-| Warehouse | zu prüfendes Kartenobjekt oder zu setzender technischer Anker |
-| Parken | benötigte Parkkategorien und zu prüfende Parkpositionen |
+| Autorität | Dokument-ID, Status, owning policy und gültige Projektphase |
+| aktive Einheiten | Verband, Typ und lokaler Kampagnenbestand nach Dokument 19 |
+| DCS-Typ | bestätigter interner Typname und Modulabhängigkeit |
+| Client-Slots | Zahl gemäß Dokument 19 und vollständige Gruppen-/Einheitennamen |
+| KI-Templates | Zahl, Gruppengröße, Rolle, Late Activation und vollständige Namen |
+| Payloads | Rollen, Loadouts und Payload-Template-Namen |
+| Statics | Zielzahl, Livery, Abstellbereich und Bestandsbezug |
+| Warehouse | vorhandener oder technischer MOOSE-Anker |
+| Parking | Kategorien, IDs, Blacklists und Sicherheitsabstände |
 | Zonen | vollständige Zonenliste mit Zweck und Benennung |
-| Testfälle | erwartetes Verhalten und Abnahmekriterien |
+| Tests | Diagnose-, Konstruktions-, Integrations- und Acceptance-Fälle |
+| Provenienz | OMW-Branch/Commit, Mission/Hash, Bundle/Hash und MOOSE/Hash |
 
-Zusätzlich werden folgende Diagnosewerkzeuge vorbereitet:
+## 5. Gemeinsame Diagnosewerkzeuge
+
+Je nach Knoten werden mindestens folgende Funktionen benötigt:
 
 ```text
 DumpAircraftTypes.lua
@@ -91,286 +121,139 @@ ProbeWarehouseAnchor.lua
 ValidateMissionTemplates.lua
 ```
 
-Diese Werkzeuge sollen aus der verwendeten DCS-Version ermitteln beziehungsweise prüfen:
+Sie prüfen beziehungsweise ermitteln:
 
-- tatsächliche DCS-Typnamen,
-- Airbase- und Parking-IDs,
-- Größe und Eignung von Parkpositionen,
-- Erkennbarkeit karteneigener Warehouse-Objekte,
-- vorhandene Gruppen, Einheiten, Statics und Zonen,
+- tatsächliche DCS-Typnamen;
+- Airbase- und Parking-IDs;
+- Größe und Eignung von Parkpositionen;
+- Erkennbarkeit benannter Warehouse-Anker;
+- vorhandene Gruppen, Einheiten, Statics und Zonen;
 - doppelte oder falsch benannte Missionsobjekte.
 
-Außerdem wird eine konkrete MOOSE-Version mit Dateihash festgeschrieben. Die Mission soll nicht mit einer unbestimmten oder laufend wechselnden `Moose.lua` entwickelt werden.
+Die verwendete MOOSE-Version wird mit Commit und Dateihash festgeschrieben.
 
----
+## 6. Gemeinsamer Missionseditor-Arbeitsablauf
 
-## 4. Arbeitsauftrag 1 – Jalalabad-Testmission vorbereiten
+### 6.1 Baseline sichern
 
-### Vom Missionsdesigner jetzt auszuführen
+1. Arbeitskopie der aktuellen Hauptmission oder des zuständigen Testharness erstellen.
+2. Dateiname, Ausgangscommit und Hash dokumentieren.
+3. Unbeteiligte Missionsobjekte unverändert lassen.
+4. Änderungen ausschließlich für das definierte Arbeitspaket vornehmen.
 
-1. Eine Arbeitskopie der aktuellen Prototypmission anlegen.
-2. Die Arbeitskopie eindeutig benennen, beispielsweise:
+### 6.2 Airbase, Warehouse und Parking
 
-```text
-Operation_Mountain_Watch_Jalalabad_AirOps_Test_01.miz
-```
+1. Airbase-ID und MOOSE-Name bestätigen.
+2. Vorhandene Missionsobjekte auf Eignung als Warehouse-Anker prüfen.
+3. Reine Kartenszenerie nicht als benanntes MOOSE-Objekt voraussetzen.
+4. Bei Bedarf genau einen technischen Warehouse-Anker im Lagerbereich setzen.
+5. Client-, KI-, Static-, Bereitschafts-, Logistik- und Entladeflächen trennen.
+6. Parkpositionen und Blacklists dokumentieren.
+7. Rollwege, Startflächen und Sicherheitsabstände freihalten.
 
-3. In dieser Kopie noch **keine vollständige Luft-ORBAT auf allen Basen** platzieren.
-4. Vorhandene Jalalabad-/Fenty-Infrastruktur, Trigger, Zonen und bereits vorhandene Spielergruppen unverändert erhalten.
-5. Die Arbeitskopie für die weitere Analyse bereitstellen.
+### 6.3 Client-Gruppen
 
-Die Arbeitskopie ist die gemeinsame technische Referenz. Alle nachfolgenden Gruppen-, Zonen- und Static-Namen werden auf genau dieser Mission aufgebaut.
+Die Zahl der Client-Luftfahrzeuge wird ausschließlich aus Dokument 19 übernommen und nicht in dieser Arbeitsliste dupliziert.
 
-### Von der Entwicklung anschließend bereitzustellen
+Verbindliche technische Regeln:
 
-- Jalalabad Air Operations Manifest,
-- festgeschriebene MOOSE-Version,
-- Warehouse-Prüfskript,
-- Parking-Dump,
-- DCS-Typ- und Livery-Prüfung,
-- Validierungsskript für Namen und Templates,
-- erste AIRWING-/SQUADRON-Bootstrap-Datei.
+- ein Luftfahrzeug je Client-Gruppe;
+- vollständige, eindeutige Gruppen- und Einheitennamen;
+- keine Wiederverwendung als KI-Template;
+- Multicrew-Sitze zählen nicht als zusätzliche Luftfahrzeuge;
+- Modabhängigkeiten müssen sichtbar und deaktivierbar sein.
 
----
+### 6.4 KI-Templates
 
-## 5. Jalalabad – vom Missionsdesigner nach Lieferung des Manifests auszuführen
+KI-Templates werden grundsätzlich als `Late Activation` angelegt.
 
-## 5.1 Warehouse und Airbase-Bezug
+Zu dokumentieren sind:
 
-1. Prüfen, ob ein vorhandenes karteneigenes Warehouse-Gebäude durch das bereitgestellte Prüfskript als geeigneter MOOSE-Anker erkannt wird.
-2. Falls das Ergebnis positiv ist, das vorhandene Objekt verwenden und kein zusätzliches Warehouse setzen.
-3. Falls das Ergebnis negativ ist, genau ein technisches Warehouse-Static im bestehenden Lagerbereich platzieren:
+- Rolle;
+- Gruppengröße;
+- Anzahl der MOOSE-Asset-Gruppen;
+- Payload- und Fähigkeitszuordnung;
+- Start- und Rückkehrverfahren;
+- zulässige Parking-IDs und Blacklists;
+- lokale und globale KI-Grenzen aus Dokument 18.
 
-```text
-WH_AIR_US_JALALABAD
-```
+### 6.5 Statics
 
-4. Das Warehouse darf keine Rollwege, Landezonen oder Parkpositionen blockieren.
-5. Ein Tanklager wird nicht allein für MOOSE benötigt. Zusätzliche Tanks werden nur gesetzt, wenn sie als sichtbare und später zerstörbare Kampagneninfrastruktur vorgesehen sind.
+- Statics sind Teil des logischen Bestands und kein zusätzlicher Bestand;
+- Staticflächen werden von operativen Spawn- und Parkpositionen getrennt;
+- Statics werden nicht dauerhaft einem bestimmten Client oder Template zugeordnet;
+- Zerstörung muss eindeutig erkannt und dem CampaignState gemeldet werden;
+- sichtbare Zielzahlen stammen aus dem zuständigen Manifest und dürfen Dokument 19 nicht widersprechen.
 
-## 5.2 Parkbereiche festlegen
+### 6.6 Zonen
 
-In Jalalabad werden getrennte Bereiche benötigt für:
+Zonen werden funktionsbezogen benannt und dokumentiert. Typische Bereiche:
 
-- Spieler-Hubschrauber,
-- KI-Spawn und KI-Rückkehr,
-- sichtbare gepoolte Statics,
-- MEDEVAC-Bereitschaft,
-- Logistik- und Frachtbetrieb,
-- C-130-Roll- und Entladebetrieb.
+- Static-Abstellung;
+- KI-Spawn und Rückkehr;
+- MEDEVAC-Bereitschaft;
+- Logistik laden/entladen;
+- Slingload;
+- C-130-Entladung oder Abwurf;
+- Test- und Sicherheitszonen.
 
-Der Missionsdesigner prüft visuell:
+Doppelte Zonen für denselben Zweck sind zu vermeiden.
 
-- Rotorabstände,
-- Überschneidungen der Spawnpunkte,
-- Rollwege,
-- Kollision mit Statics und Bodenobjekten,
-- Nutzbarkeit durch Two-Ship-Gruppen,
-- ausreichend freie Fläche für UH-60 und AH-64D,
-- getrennte Flächen für sichtbare OH-58D-Statics.
+## 7. Nach jedem ME-Arbeitsstand bereitzustellen
 
-Die exakten Parking-IDs werden mit `DumpAirbaseParking.lua` ermittelt und danach in der technischen Konfiguration festgeschrieben.
+- aktuelle `.miz` mit Hash;
+- zugehörige `dcs.log` eines kontrollierten Testlaufs;
+- Screenshots der betroffenen Park-, Roll-, Spawn- und Static-Bereiche;
+- Liste nicht verfügbarer Typen oder Liveries;
+- dokumentierte Spawn-, Taxi-, Rotor-, Kollisions- oder Rückkehrprobleme;
+- aktualisiertes Manifest beziehungsweise Acceptance-Protokoll.
 
-## 5.3 Spieler-Slots
+## 8. Mindesttest je Luftoperationsknoten
 
-Nach Freigabe des Jalalabad-Manifests werden höchstens vier Spieler-Luftfahrzeuge je nutzbarem Muster angelegt.
+1. Missionsstart ohne relevante Lua-Fehler.
+2. Airbase und Warehouse-Anker werden erkannt.
+3. Erwartete Gruppen, Einheiten, Statics und Zonen sind vorhanden.
+4. Client-Gruppen entsprechen Dokument 19.
+5. Jedes KI-Template kann kontrolliert erzeugt werden.
+6. Multi-Ship-Gruppen erscheinen kollisionsfrei.
+7. Parking-Blacklist und sichere Parkpositionen wirken.
+8. AIRWING und SQUADRONs werden ohne ungewollte Missionen gestartet.
+9. Rückkehr, Freigabe und Verlust verändern Bestände nicht doppelt.
+10. Testnachweis enthält Branch, Commit, Mission, Bundle, DCS- und MOOSE-Version.
 
-Vorgesehene Gruppenfamilien:
+## 9. Jalalabad als technischer Teststand
 
-```text
-CLIENT_US_JBAD_OH58D_01
-CLIENT_US_JBAD_OH58D_02
-CLIENT_US_JBAD_OH58D_03
-CLIENT_US_JBAD_OH58D_04
+Die Jalalabad-Testmission und ihre Acceptance-Berichte bleiben als technische Evidenz erhalten. Sie beweisen ausschließlich den jeweils dokumentierten Teststand.
 
-CLIENT_US_JBAD_AH64D_01
-CLIENT_US_JBAD_AH64D_02
-CLIENT_US_JBAD_AH64D_03
-CLIENT_US_JBAD_AH64D_04
+Der technische Branch ist weiterhin Draft:
 
-CLIENT_US_JBAD_UH60L_01
-CLIENT_US_JBAD_UH60L_02
-CLIENT_US_JBAD_UH60L_03
-CLIENT_US_JBAD_UH60L_04
-```
+- [PR #18 – Validate Jalalabad / FOB Fenty Air Operations baseline](https://github.com/birkenmoped/Operation-Mountain-Watch/pull/18)
 
-Regeln:
+Nicht auf `main` vorhandene Dokumente oder Testergebnisse aus PR #18 dürfen nur als branchgebundene technische Evidenz zitiert werden, nicht als vorhandene `main`-Dateien.
 
-- grundsätzlich eine Spieler-Maschine je DCS-Gruppe,
-- Client-Slots werden nicht als KI-Templates wiederverwendet,
-- UH-60L-Slots bleiben optional und dürfen die Kernmission ohne Mod nicht unbrauchbar machen,
-- Multicrew-Sitze zählen nicht als zusätzliche Luftfahrzeuge,
-- endgültige Gruppennamen werden aus dem Manifest übernommen und nicht frei verändert.
+## 10. Übertragung und Parallelisierung
 
-## 5.4 KI-Templates
+Gemeinsame Muster, Namenskonventionen und validierte MOOSE-Verfahren dürfen wiederverwendet werden. Ungeprüft übernommen werden dürfen jedoch nicht:
 
-Alle KI-Templates werden im Missionseditor als **Late Activation** angelegt und nicht als dauerhaft aktive Gruppen gestartet.
+- Parking-IDs;
+- Blacklists;
+- Warehouse-Anker;
+- DCS-Typen und Liveries;
+- Template-Gruppengrößen;
+- Static-Zahlen;
+- lokale Bestände;
+- Zonenlagen;
+- Acceptance-Status.
 
-Vorgesehene Mindeststruktur:
+Jeder Knoten erhält eine eigene Prüfung. Parallelisierung im Foundation Build ändert nichts an dieser lokalen Abnahmepflicht.
 
-```text
-TPL_AIR_US_JBAD_OH58D_RECON_2SHIP
-TPL_AIR_US_JBAD_AH64D_CAS_2SHIP
-TPL_AIR_US_JBAD_UH60_MEDEVAC_LEAD_1SHIP
-TPL_AIR_US_JBAD_UH60_MEDEVAC_COVER_1SHIP
-```
+## 11. Unmittelbare Arbeitsgrundlage
 
-Zusätzliche Utility-, Escort- oder Transporttemplates werden erst nach Festlegung der Rollenmatrix ergänzt.
+Die nächste ME-Arbeit richtet sich nicht mehr nach einer exklusiven Jalalabad-first-Folge, sondern nach:
 
-Regeln:
+- Dokument 38 als Master-Worklist;
+- Dokument 19 für aktive Luft-ORBAT und Client-Grenzen;
+- Dokument 18 für gemeinsame technische Regeln;
+- den jeweils vorhandenen oder als Draft gekennzeichneten Basenmanifesten.
 
-- OH-58D und AH-64D werden für reguläre Unterstützung grundsätzlich als Two-Ship vorbereitet,
-- MEDEVAC Lead und Cover müssen getrennte Ein-Schiff-Gruppen sein,
-- die Template-Gruppengröße darf später nicht ohne Anpassung der SQUADRON-Bestandsrechnung verändert werden,
-- keine `#`-Zeichen in Template-Namen,
-- Gruppen- und Einheitennamen müssen eindeutig sein,
-- jede Vorlage erhält nur die für ihre Rolle benötigte Grundkonfiguration; die endgültige Payload-Zuordnung erfolgt über die vorbereitete Payload-Matrix.
-
-## 5.5 Gepoolte Statics
-
-Der Missionsdesigner legt Static-Abstellpositionen an, aber zunächst nur in der vom Manifest vorgegebenen Zielzahl.
-
-Benennungsfamilien:
-
-```text
-STATIC_AIR_US_JBAD_OH58D_01
-STATIC_AIR_US_JBAD_AH64D_01
-STATIC_AIR_US_JBAD_UH60_01
-```
-
-Regeln:
-
-- Statics sind Teil des lokalen ORBAT-Bestands und kein zusätzlicher Bestand,
-- Statics stehen auf getrennten Abstellflächen und blockieren keine operativen Parkplätze,
-- Statics werden nicht dauerhaft einem bestimmten Spieler-Slot oder KI-Template zugeordnet,
-- zerstörte Statics zählen später als endgültiger Bestandsverlust,
-- die genaue sichtbare Anzahl wird durch das Jalalabad-Manifest festgelegt.
-
-## 5.6 Zonen
-
-Mindestens folgende Zonenfamilien werden für Jalalabad vorbereitet:
-
-```text
-ZONE_AIR_US_JBAD_STATIC_OH58D
-ZONE_AIR_US_JBAD_STATIC_AH64D
-ZONE_AIR_US_JBAD_STATIC_UH60
-ZONE_AIR_US_JBAD_MEDEVAC_READY
-ZONE_AIR_US_JBAD_LOGISTICS_LOAD
-ZONE_AIR_US_JBAD_LOGISTICS_UNLOAD
-ZONE_AIR_US_JBAD_SLING_PICKUP
-ZONE_AIR_US_JBAD_C130_UNLOAD
-```
-
-Die bereits im Prototyp geplanten Lande-, Fracht-, Außenlast- und C-130-Zonen werden wiederverwendet, sofern Zweck, Lage und Name eindeutig sind. Doppelte Zonen für denselben Zweck sollen vermieden werden.
-
----
-
-## 6. Nach der Missionseditor-Bearbeitung bereitzustellen
-
-Nach jedem Arbeitsstand stellt der Missionsdesigner bereit:
-
-- die aktuelle `.miz`,
-- die zugehörige `dcs.log` eines kurzen Testlaufs,
-- Screenshots der belegten Park- und Static-Bereiche,
-- Hinweise auf im Mission Editor nicht auswählbare Typen oder Liveries,
-- eine Liste auffälliger Spawn-, Roll- oder Kollisionsprobleme.
-
-Der Testlauf muss mindestens enthalten:
-
-1. Missionsstart ohne Lua-Fehler,
-2. Erkennung von Jalalabad Airfield,
-3. Erkennung des Warehouse-Ankers,
-4. Auflistung der Parking-IDs,
-5. Validierung aller erwarteten Gruppen und Zonen,
-6. manueller Spawn jedes KI-Templates,
-7. Prüfung, ob Two-Ship-Gruppen kollisionsfrei erscheinen,
-8. Prüfung von MEDEVAC Lead und Cover als getrennte Gruppen.
-
----
-
-## 7. Von der Entwicklung nach Erhalt der Jalalabad-Testmission umzusetzen
-
-## 7.1 Konfiguration
-
-- strukturierte Jalalabad-ORBAT als Lua-Datenmodell,
-- Bestände 24 OH-58D, 8 AH-64D und 6 UH-60,
-- vier Spieler-Luftfahrzeuge je nutzbarem Muster als Obergrenze,
-- vier KI-Luftfahrzeuge je Muster als lokale technische Obergrenze,
-- maximal zwei parallele Unterstützungsmissionen mit jeweils höchstens zwei Luftfahrzeugen.
-
-## 7.2 MOOSE-Bootstrap
-
-- `AW_US_JALALABAD` anlegen,
-- `SQ_6_6_CAV_OH58D` anlegen,
-- `SQ_B_1_10_AVN_AH64D` anlegen,
-- `SQ_JBAD_UTILITY_UH60` anlegen,
-- Templates, Fähigkeiten und Payloads zuordnen,
-- Airbase und Warehouse explizit verbinden,
-- Start, Rückkehr und Verlust protokollieren.
-
-## 7.3 Manager und Adapter
-
-- `AirOperationsManager`,
-- `AirframePool` für numerische Bestände,
-- `StaticAirframeManager` für gepoolte Statics,
-- `PlayerSlotManager` für Bestandsgrenzen,
-- `MedevacPackageCoordinator` für Lead und Cover,
-- Adapter zwischen `CampaignState` und MOOSE AIRWING/SQUADRON,
-- globale KI-Auftragsreservierung,
-- Verlust- und Persistenzanbindung.
-
-## 7.4 Validierung
-
-- keine Doppelzählung von Spieler-, KI- und Static-Darstellungen,
-- kein MEDEVAC-Start mit nur einem verfügbaren UH-60,
-- keine dritte parallele KI-Unterstützungsmission,
-- keine Überschreitung von vier aktiven KI-Luftfahrzeugen eines Musters in Jalalabad,
-- endgültiger Bestandsabzug bei bestätigtem Verlust,
-- Wiederherstellung freier Bestände nach ordnungsgemäßer Rückkehr,
-- reproduzierbares Speichern und Laden.
-
----
-
-## 8. Übertragung auf weitere Flugplätze
-
-Erst nach erfolgreicher Jalalabad-Abnahme wird dasselbe Verfahren je Flugplatz wiederholt.
-
-| Flugplatz | Erstes verbindliches Kernpaket |
-|---|---|
-| Bagram | 336th EFS mit 16 F-15E; später C-130, HH-60G und weitere lokale Bestände |
-| Kandahar | 75th EFS mit 16 A-10C; anschließend regionale Army-Aviation-Bestände |
-| Khost / Salerno | AH-64D-, OH-58D- und Utility-Bestand gemäß bereinigter lokaler ORBAT |
-| Camp Bastion | HMLA-169 mit 10 AH-1W; UH-1Y zunächst nicht physisch; HMH-361 mit 17 CH-53E |
-| Camp Dwyer | lokal bereinigte USMC-Bestände ohne Doppelzählung mit Bastion |
-| Tarinkot | lokal festgelegte Army-Aviation-Bestände ohne dynamischen Detachment-Manager |
-| Shindand | lokale Ausbildungs-, Spezialoperations- und Unterstützungsbestände nach technischer Prüfung |
-
-Für jeden Platz wird vor der ME-Arbeit ein eigenes Manifest erstellt. Es werden keine Namen, Template-Größen oder Static-Zahlen aus Jalalabad ungeprüft kopiert.
-
----
-
-## 9. RAT-Verkehr
-
-RAT wird erst nach erfolgreicher AIRWING- und Bestandsvalidierung ergänzt.
-
-Vorgesehen sind ausschließlich seltene atmosphärische Flüge:
-
-- ein bis zwei C-130-Flüge pro Kampagnentag,
-- null bis ein C-17-Flug pro Kampagnentag,
-- null bis zwei gelegentliche CH-47-Verbindungsflüge pro Kampagnentag,
-- höchstens ein gleichzeitig aktiver Fixed-Wing-Hintergrundflug,
-- höchstens ein gleichzeitig aktiver Rotary-Wing-Hintergrundflug.
-
-RAT-Flüge verändern keine Bestände und transportieren keine CampaignState-Ressourcen.
-
----
-
-## 10. Unmittelbar nächster Schritt
-
-Der Missionsdesigner erstellt und übermittelt jetzt ausschließlich die Arbeitskopie:
-
-```text
-Operation_Mountain_Watch_Jalalabad_AirOps_Test_01.miz
-```
-
-Danach liefert die Entwicklung das Jalalabad Air Operations Manifest und die vier Diagnosewerkzeuge. Erst auf dieser Grundlage beginnt die konkrete Platzierung von Spieler-Slots, KI-Templates, Statics und Warehouse-Anker.
+Arbeitspakete dürfen parallel vorbereitet werden. Produktive Aktivierung erfolgt je Knoten erst nach dessen eigener Acceptance.
