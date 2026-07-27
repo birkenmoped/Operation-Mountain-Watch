@@ -1,15 +1,17 @@
 ---
 document_id: OMW-AIR-KANDAHAR-ISR-POLICY
-status: PLANNED
+status: IMPLEMENTED_IN_MIZ_UNVALIDATED
 authoritative_for:
   - Kandahar MQ-1 and MQ-9 Mission Editor templates
   - restricted ISR asset design
   - ISR and armed-ISR separation
+  - Mission Editor UAV state in OMW_TEST_TM01M_MooseFirst(17).miz
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
   - docs/32-kandahar-isr-asset-policy.md
 source_branch: docs/bagram-air-operations-manifest
+source_mission: OMW_TEST_TM01M_MooseFirst(17).miz
 validated_in_dcs: false
 ---
 
@@ -19,10 +21,10 @@ validated_in_dcs: false
 
 Grundsatz und Missionseditor-Templates sind vorhanden. Die konkrete Verfügbarkeits-, Freigabe-, Cooldown-, ROE-, Verlust- und Wiederholungslogik ist noch nicht technisch validiert.
 
-Missionseditor-Nachweis:
+Aktueller Missionseditor-Nachweis:
 
 ```text
-OMW_TEST_TM01M_MooseFirst(13).miz
+OMW_TEST_TM01M_MooseFirst(17).miz
 ```
 
 ## 2. Historische und technische Einordnung
@@ -80,10 +82,12 @@ Start: Luftstart
 Höhe: 2.000 m BARO
 Geschwindigkeit: ca. 111 km/h
 Fuel: 200
-Bewaffnung: 2 identische Lenkflugkörper
-Callsign: Ford 3-1
+Bewaffnung: keine; pylons = {}
+Callsign: Enfield 3-1
 Frequenz: 127,5 MHz AM
 ```
+
+Die MQ-1A ist in Revision 17 ausdrücklich als unbewaffnetes RECON-/ISR-Asset konfiguriert. Ein späterer Waffeneinsatz ist für dieses Template nicht vorgesehen, solange keine neue ausdrückliche Projektentscheidung getroffen wird.
 
 ### MQ-9 Reaper
 
@@ -134,11 +138,14 @@ Mögliche Aufgaben:
 Trennung:
 
 ```text
-RECON:
-Aufklärung ohne selbstständigen Waffeneinsatz
+MQ-1 RECON:
+unbewaffnete Aufklärung ohne eigenen Waffeneinsatz
+
+MQ-9 RECON:
+Aufklärung mit vorhandener Bewaffnung, aber ohne automatische Waffenfreigabe
 
 ARMED ISR:
-Aufklärung mit begrenzter, ausdrücklich freizugebender Wirkung
+nur nach ausdrücklich freigegebener Missions-, ROE- oder Zielzuweisung
 ```
 
 Standard für reine ISR-Aufträge:
@@ -149,7 +156,7 @@ keine selbstständige Bekämpfung zufällig erkannter Ziele
 Waffeneinsatz nur nach expliziter Missions-, ROE- oder Zielzuweisung
 ```
 
-Der Missionseditor-Task `Reconnaissance` allein gilt nicht als nachgewiesene Schutzmaßnahme gegen unbeabsichtigten Waffeneinsatz.
+Der Missionseditor-Task `Reconnaissance` allein gilt nicht als nachgewiesene Schutzmaßnahme gegen unbeabsichtigten Waffeneinsatz der bewaffneten MQ-9.
 
 ## 6. Bevorzugtes erstes Verfügbarkeitsmodell
 
@@ -160,7 +167,7 @@ kein sofortiger Wiederaufruf
 Cooldown nach Rückkehr, Abbruch oder Verlust
 Anforderung nur für definierte ISR-Aufgaben
 Weapons Hold als Standard
-bewaffnete Wirkung nur nach ausdrücklicher Freigabe
+bewaffnete Wirkung der MQ-9 nur nach ausdrücklicher Freigabe
 ```
 
 Konkrete Zahlen und Regeln bleiben bis zum MOOSE-First-Entwurf offen.
@@ -174,8 +181,7 @@ Konkrete Zahlen und Regeln bleiben bis zum MOOSE-First-Entwurf offen.
 - Cooldown und Missionsdauer;
 - Treibstoff-, Abbruch- und Verlustbehandlung;
 - persistenter Bestand;
-- Wechsel von RECON zu ARMED ISR;
-- Autorität für Waffenfreigabe;
+- Autorität für eine mögliche MQ-9-Waffenfreigabe;
 - Rückkehr, Landung und Wiederverfügbarkeit.
 
 ## 8. MOOSE-First-Anforderung
@@ -183,7 +189,7 @@ Konkrete Zahlen und Regeln bleiben bis zum MOOSE-First-Entwurf offen.
 Vor eigener Lua-Logik sind mindestens zu prüfen:
 
 - `AIRWING` und `SQUADRON`;
-- `AUFTRAG` für Reconnaissance, Orbit und Strike;
+- `AUFTRAG` für Reconnaissance, Orbit und gegebenenfalls Strike;
 - begrenzte Assetbestände und Missionswarteschlangen;
 - COMMANDER- und Player-Tasking;
 - ROE, Alarm State und Zielzuweisung;
@@ -209,10 +215,11 @@ extern gebundene beziehungsweise nicht freigegebene Kapazität
 
 ```text
 MQ-1 und MQ-9 sind anforderbare, eingeschränkt verfügbare KI-ISR-Assets.
-Je Muster existiert ein Late-Activation-1-Ship-Template.
-Beide Templates besitzen begrenzte Bewaffnung.
+Je Muster existiert ein 1-Ship-Template.
+Die MQ-1A ist in Revision 17 unbewaffnet.
+Die MQ-9 besitzt weiterhin 2 × GBU-38.
 Standardrolle ist ISR/RECON mit Weapons Hold.
-Bewaffnung ist keine automatische Waffenfreigabe.
+Bewaffnung der MQ-9 ist keine automatische Waffenfreigabe.
 Verfügbarkeit, Cooldown, ROE und Verlustlogik bleiben vor technischer Freigabe offen.
 Umsetzung erfolgt MOOSE-first.
 ```
