@@ -1,12 +1,14 @@
 ---
 document_id: OMW-GOV-MOOSE-VERSION
 status: BINDING
+owning_policy: OMW-GOV-001
 authoritative_for:
   - MOOSE version provenance
   - acceptance evidence requirements
   - documentation source hierarchy
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
-source_branch: agent/reconcile-documentation-authority
+source_branch: agent/resolve-document-number-collisions
+source_commit:
 validated_in_dcs: false
 ---
 
@@ -95,19 +97,26 @@ moose_lua_sha256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a9
 evidence_type: RECONSTRUCTED_FROM_IDENTICAL_ARTIFACT
 moose_lua_changed_locally: false
 original_acceptance_report_contained_full_hash: false
+omw_pr: 18
+omw_branch: feature/jalalabad-air-operations-diagnostics
+omw_commit: 734de196b37730c291edb892936a7dc685d88dc6
+merged_to_main: false
 ```
 
 Einordnung:
 
 - Die `Moose.lua` wurde projektseitig nicht verändert.
 - Der Hash ist aus anderen Tests beziehungsweise dem identischen unveränderten Artefakt bekannt.
-- Damit besteht keine begründete funktionale Unsicherheit darüber, welche Datei verwendet wurde.
-- Der vollständige Hash war im ursprünglichen Jalalabad-Bericht nicht zeitgleich protokolliert; dieser Unterschied bleibt aus Gründen der Nachvollziehbarkeit sichtbar.
+- Der vollständige Hash war im ursprünglichen Jalalabad-Bericht nicht zeitgleich protokolliert; dieser Unterschied bleibt sichtbar.
+- Die Acceptance gilt für den exakt dokumentierten technischen Stand von Draft-PR #18.
+- Die zugehörigen Dokumente und Ergebnisdateien befinden sich **nicht auf `main`** und dürfen nicht als relative `main`-Pfade verlinkt werden.
+- Projektweite ORBAT- und Client-Entscheidungen stehen in Dokument 19 auf `main`.
 
-Referenz:
+Branchgebundene Referenzen:
 
-- `docs/25-jalalabad-final-validation-and-operational-baseline.md`
-- `mission/tests/jalalabad-air-operations/results/2026-07-24-jalalabad-complete-node-pass.md`
+- [PR #18 – Validate Jalalabad / FOB Fenty Air Operations baseline](https://github.com/birkenmoped/Operation-Mountain-Watch/pull/18)
+- [Dokument 25 auf dem PR-Branch](https://github.com/birkenmoped/Operation-Mountain-Watch/blob/feature/jalalabad-air-operations-diagnostics/docs/25-jalalabad-final-validation-and-operational-baseline.md)
+- [Jalalabad Complete Node PASS auf dem PR-Branch](https://github.com/birkenmoped/Operation-Mountain-Watch/blob/feature/jalalabad-air-operations-diagnostics/mission/tests/jalalabad-air-operations/results/2026-07-24-jalalabad-complete-node-pass.md)
 
 ## 7. Umgang mit Develop-Funktionen
 
