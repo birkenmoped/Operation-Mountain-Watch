@@ -1,44 +1,49 @@
+---
+document_id: OMW-ADR-0003-ME-GROUP-TEMPLATES
+status: BINDING
+document_class: ADR
+owning_policy: OMW-GOV-001
+authoritative_for:
+  - use of Mission Editor Late Activation groups as primary spawn templates
+  - separation of persistent entity IDs from DCS and MOOSE runtime names
+scenario_period: 2010-08-01/2011-12-31
+project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
+supersedes:
+  - undocumented preference for fully dynamic DCS group tables
+superseded_by:
+source_branch: design/map-and-unit-catalog
+source_commit: fca101b4cf207719941700dd98ec86d92adf1abb
+validated_in_dcs: partial
+---
+
 # ADR 0003 – Mission-Editor-Gruppen als primäre Spawnvorlagen
 
-- Status: Accepted
-- Date: 2026-07-13
+## Kontext
 
-## Context
+Die Kampagne muss physische Gruppen dynamisch materialisieren, virtualisieren und mit reduziertem Zustand wiederherstellen. Vollständig dynamische DCS-Gruppentabellen erfordern die Pflege zahlreicher DCS-spezifischer Felder. MOOSE-Laufzeitnamen dürfen zugleich nicht als persistente Kampagnenidentität verwendet werden.
 
-Die Kampagne muss viele physische Gruppen dynamisch materialisieren, virtualisieren und später mit reduziertem Zustand wiederherstellen. MOOSE unterstützt sowohl Mission-Editor-Gruppen mit `Late Activation` als auch vollständig in Lua aufgebaute DCS-Gruppentabellen.
+## Entscheidung
 
-Vollständig dynamische Tabellen erfordern die fehlerfreie Pflege zahlreicher DCS-spezifischer Felder für Einheiten, Formationen, Aufgaben, Payloads, Funkdaten und Namen. Gleichzeitig dürfen MOOSE-Laufzeitnamen nicht als persistente Kampagnenidentität verwendet werden.
+Reguläre Bodenverbände, Konvois, QRFs, Garnisonen, rote Zellen und AI-Luftfahrzeuge werden grundsätzlich aus wiederverwendbaren Mission-Editor-Gruppen erzeugt, die auf `Late Activation` stehen.
 
-## Decision
+Standardmechanismen sind:
 
-Reguläre Bodenverbände, Konvois, QRFs, Garnisonen, rote Zellen und AI-Luftfahrzeuge werden aus wiederverwendbaren Mission-Editor-Gruppen erzeugt, die auf `Late Activation` gesetzt sind.
+```lua
+SPAWN:New()
+SPAWN:NewWithAlias()
+```
 
-MOOSE `SPAWN:New()` oder `SPAWN:NewWithAlias()` ist der Standardmechanismus. Der CampaignState vergibt davon unabhängige strategische Entity-IDs.
+Der CampaignState vergibt unabhängige strategische Entity-IDs. `SPAWN:NewFromTemplate()` und vollständig dynamische DCS-Gruppentabellen sind nur für begründete, MOOSE-first geprüfte und separat getestete Sonderfälle zulässig.
 
-`SPAWN:NewFromTemplate()` und vollständig dynamische DCS-Gruppentabellen werden nur für begründete Sonderfälle oder spätere, getestete Wiederherstellungslogik eingesetzt.
-
-## Consequences
-
-### Positive
-
-- DCS-spezifische Gruppendetails bleiben im Mission Editor prüfbar.
-- Komplexe Payloads, Formationen und Länderzuordnungen müssen nicht manuell rekonstruiert werden.
-- Templates können in isolierten Testmissionen validiert werden.
-- MOOSE wird entsprechend seinem vorgesehenen Standardworkflow verwendet.
-- CampaignState und physische DCS-Namen bleiben sauber getrennt.
-
-### Negative
-
-- Die `.miz` enthält eine Template-Bibliothek.
-- Änderungen an Zusammensetzungen erfordern teilweise Mission-Editor-Arbeit.
-- Stark variable Reststärken benötigen mehrere Varianten oder eine getestete Template-Manipulation.
-- Templates und externe Metadaten müssen synchron gehalten werden.
-
-## Rules
+## Regeln
 
 - Template-Namen beginnen mit `TPL_`.
 - Template- und Aliasnamen enthalten kein `#`.
 - Jedes Template besitzt externe Metadaten.
 - Spieler-Slots sind keine dynamischen Spawnvorlagen.
 - Persistente Entity-IDs werden nie aus MOOSE-Laufzeitnamen abgeleitet.
-- Vollständig dynamische Gruppentabellen benötigen eine dokumentierte Begründung und eigene Tests.
+- Dynamische Gruppentabellen benötigen dokumentierte Lücke, Eigentümerfreigabe und Acceptance.
+
+## Konsequenzen
+
+Mission-Editor-Details bleiben prüfbar; komplexe Payloads, Formationen und Länderzuordnungen werden nicht unnötig in Lua rekonstruiert. Änderungen an Zusammensetzungen benötigen dafür teilweise Missionseditor-Arbeit und synchronisierte Metadaten.

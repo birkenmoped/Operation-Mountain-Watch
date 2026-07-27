@@ -1,0 +1,35 @@
+name: Documentation validation
+
+on:
+  pull_request:
+    paths:
+      - "README.md"
+      - "docs/**"
+      - "mission/tests/**/README.md"
+      - "tools/validate_documentation.py"
+      - ".github/workflows/documentation-validation.yml"
+  push:
+    branches:
+      - main
+    paths:
+      - "README.md"
+      - "docs/**"
+      - "mission/tests/**/README.md"
+      - "tools/validate_documentation.py"
+      - ".github/workflows/documentation-validation.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  validate-documentation:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Use Python 3
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+      - name: Validate documentation metadata and links
+        run: python tools/validate_documentation.py .

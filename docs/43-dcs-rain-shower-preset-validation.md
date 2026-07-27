@@ -1,36 +1,40 @@
 ---
 document_id: OMW-WX-RAIN-PROFILE
-status: ACCEPTED_TECHNICAL_BASELINE
-document_class: DCS_TEST_PROFILE
+status: BINDING
+document_class: DCS_WORKING_PROFILE
 owning_policy: OMW-GOV-001
 authoritative_for:
-  - visually validated Jalalabad rain-shower working profile
+  - current visually confirmed Jalalabad rain-shower working profile
+  - separation of historical observations from DCS editor approximations
 not_authoritative_for:
-  - universal cloud-base geometry
+  - formal technical acceptance
   - all aircraft, AI or multiplayer conditions
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
+  - unsupported ACCEPTED_TECHNICAL_BASELINE classification
 superseded_by:
-source_branch: docs/historical-weather-baseline-2010-2011
-source_commit:
+source_branch: agent/complete-documentation-authority-migration
+source_commit: PENDING_MERGE
 validated_in_dcs: partial
+validation_status: VISUALLY_CONFIRMED_WORKING_PROFILE
 ---
 
 # 43 – DCS-Regenschauerprofil und Editor-Validierung
 
-## 1. Acceptance-Umfang
+## 1. Status
 
-Dieses Dokument führt das visuell geprüfte Arbeitsprofil `SHR-01-DCS-PLAYABLE-V1` als begrenzte technische Baseline für wechselnde Regenschauer bei weiterhin möglichem Flugbetrieb.
+`SHR-01-DCS-PLAYABLE-V1` ist ein **verbindlich dokumentiertes, visuell bestätigtes Arbeitsprofil**. Es ist keine formale technische Acceptance-Baseline.
 
-Der vollständige Testbericht mit METAR-Verlauf, Editorwerten und Beobachtungen bleibt unverändert erhalten:
+Der vollständige bisherige Testbericht bleibt erhalten:
 
 - [`Legacy-Regenschauer-Testbericht`](evidence/source-records/legacy-43-dcs-rain-shower-preset-validation.md)
 
 Grundlagen:
 
-- [`OMW-WX-HISTORICAL-BASELINE`](41-historical-weather-baseline-2010-2011.md)
-- [`OMW-WX-DCS-IMPLEMENTATION`](42-dcs-weather-editor-validation.md)
+- [`OMW-WX-HISTORICAL-BASELINE`](41-historical-weather-baseline-2010-2011.md);
+- [`OMW-WX-DCS-IMPLEMENTATION`](42-dcs-weather-editor-validation.md);
+- [`OMW-GOV-DOCUMENT-METADATA`](DOCUMENT-METADATA-POLICY.md).
 
 ## 2. Historische Referenz
 
@@ -42,39 +46,41 @@ Temperatur: 20 °C
 QNH:        29.85 inHg
 ```
 
-## 3. Akzeptiertes Arbeitsprofil
+## 3. DCS-Arbeitsprofil
 
 ```text
 Profilname:           SHR-01-DCS-PLAYABLE-V1
 Wettermodus:          statisch
 Temperatur:           20 °C
-QNH:                   29.85 inHg
+QNH:                  29.85 inHg
 Wolkenpreset:         Bedeckt und Regen 2
 Wolkenbasis Editor:   8.850 ft
-Nebel:                 aus
-Staubsturm:            aus
-33 ft:                 170° / 8 kt
-1.600 ft:              170° / 10 kt
-6.600 ft:              180° / 15 kt
-26.000 ft:             200° / 25 kt
-Turbulenz:             4 kt
+Nebel:                aus
+Staubsturm:           aus
+33 ft:                170° / 8 kt
+1.600 ft:             170° / 10 kt
+6.600 ft:             180° / 15 kt
+26.000 ft:            200° / 25 kt
+Turbulenz:            4 kt
 ```
 
-## 4. Herkunft der Werte
+Datum, Uhrzeit, Temperatur, QNH und Bodenwind stammen aus der historischen Beobachtung. Höhenwinde, Turbulenz, Wolkenpreset und Editorbasis sind DCS-Arbeitswerte beziehungsweise Näherungen.
 
-- Datum, Uhrzeit, Temperatur, QNH und Bodenwind: historische Beobachtung;
-- DCS-Windrichtung: um 180 Grad umgesetzter Arbeitswert;
-- Höhenwinde und Turbulenz: modellierte DCS-Arbeitswerte;
-- Wolkenpreset und Editorbasis: DCS-Näherung an die beobachtete Lage.
+## 4. Beobachtete Wirkung
 
-## 5. Acceptance-Grenzen
+Visuell bestätigt wurden räumlich unterschiedliche Schauerbereiche, trockene Zwischenräume, brauchbare Bodensicht außerhalb stärkerer Niederschläge und grundsätzlich möglicher Flugbetrieb.
 
-Die Baseline bestätigt ausschließlich die dokumentierte visuelle Nutzbarkeit des Profils. Noch offen sind:
+## 5. Fehlende Acceptance-Provenienz
 
-- genaue geometrische Wolkenuntergrenze per Flugmessung;
-- Verhalten verschiedener Luftfahrzeugtypen;
-- KI-Start, Landung und Navigation;
-- Multiplayer-Synchronisation;
-- reproduzierbarer Missions- und Hashnachweis in einem formalen Acceptance-Paket.
+Für `ACCEPTED_TECHNICAL_BASELINE` fehlen weiterhin mindestens:
 
-Bis dieser Nachweis ergänzt ist, darf die Baseline nicht als universell technisch freigegebenes Wetterpreset bezeichnet werden.
+- reproduzierbare Missionsdatei und SHA-256;
+- exakter Branch- und Commitnachweis des Wettertests;
+- formales Acceptance-Paket;
+- vollständige DCS- und MOOSE-Provenienz;
+- Flugmessung der geometrischen Wolkenbasis;
+- OH-58D-, AH_64D-, UH-60- und CH-47-Tests;
+- KI-, Sensor- und Multiplayerprüfung;
+- Langzeitbeobachtung der Schauerzonen.
+
+Erst nach vollständiger Provenienz darf der Status erneut auf `ACCEPTED_TECHNICAL_BASELINE` angehoben werden.
