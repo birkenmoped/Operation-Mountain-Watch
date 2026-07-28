@@ -55,7 +55,7 @@ Alle acht Artikeltexte wurden aus den vom Projektinhaber bereitgestellten vollst
 | [`source-notes-1-8.md`](source-notes-1-8.md) | quellengetreue Auswertung | `SOURCE_REFERENCE` | kein eigenständiges BINDING ohne diesen Index |
 | [`afghanistan-2010-facilities-and-coverage.md`](afghanistan-2010-facilities-and-coverage.md) | aus Quellen und CombatFlite abgeleitete Orts-/Coverage-Daten | `SOURCE_DERIVED_DATA` | `PLANNED` für Missionsnutzung |
 | [`mission-design-requirements.md`](mission-design-requirements.md) | quellenbasierte Missionsanforderungen | `WORKLIST` / `DESIGN_REQUIREMENTS` | `PLANNED` |
-| spätere MOOSE-CSAR-Architektur | technische Implementierung | `ARCHITECTURE` | separat anzulegen |
+| [`moose-csar-aicsar-development-baseline.md`](moose-csar-aicsar-development-baseline.md) | konsolidierte Architektur-, Entscheidungs- und Testbaseline | `ARCHITECTURE_AND_TEST_PLAN` | `PLANNED` |
 | spätere DCS-Acceptance | getesteter Laufzeitstand | `TEST_RESULT` | separat als `ACCEPTED_TECHNICAL_BASELINE` |
 
 ## 4. Verbindliche fachliche Themen
@@ -80,12 +80,13 @@ Die Quellenserie ist für folgende Bereiche auszuwerten und in der Missionsgesta
 - `AICSAR` darf nur übernehmen, wenn der Vorfall nicht wirksam durch einen Spieler reserviert ist.
 - Rettung, Gefangennahme, Tod, Ablauf und Rückführung sind persistente Kampagnenzustände.
 - MOOSE CSAR und AICSAR werden vorrangig geprüft; projektspezifische Ergänzungen benötigen Dokument 26 und Eigentümerfreigabe.
+- Die aktuelle technische und spielerische Arbeitsbaseline steht in [`OMW-CSAR-MOOSE-AICSAR-DEVELOPMENT-BASELINE`](moose-csar-aicsar-development-baseline.md).
 
 ## 6. Noch erforderliche technische Dokumente
 
-1. MOOSE-CSAR-/AICSAR-Architektur für OMW;
-2. `CSARIncident`-Datenmodell und Zustandsautomat;
-3. Spieler-/KI-Reservierungs- und Übergabelogik;
-4. Capture-/Evasion-/NAR-Erweiterungen;
-5. DCS-Testharness und Acceptance-Bericht;
-6. Multiplayer-, Persistenz- und Missionsneustarttests.
+1. `CSARIncident`-Datenmodell und endgültiger Zustandsautomat;
+2. DCS-Testharness für `Ops.CSAR`, `Functional.AICSAR` und `Wrapper.Net`;
+3. Acceptance-Bericht für Spieler-CSAR und AICSAR;
+4. Dedicated-Server-Acceptance für Slot-Lock und Reconnect;
+5. Multiplayer-, Persistenz- und Missionsneustarttests;
+6. optionale Capture-/Evasion-/NAR-Erweiterungen nach Freigabe.
