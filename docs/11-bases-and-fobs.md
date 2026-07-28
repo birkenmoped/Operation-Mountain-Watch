@@ -13,8 +13,8 @@ project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
   - vertical-prototype-only base sequence
 superseded_by:
-source_branch: agent/complete-documentation-authority-migration
-source_commit:
+source_branch: agent/document-shindand-air-operations
+source_commit: PENDING_MERGE
 validated_in_dcs: false
 ---
 
@@ -162,7 +162,56 @@ Vorgeschobener Detachment-Standort aus dem Kandahar-Regionalpool. CH-47-Platoon-
 
 ### Shindand Air Base
 
-Air-Advisor- und Ausbildungsstandort. Am 30.09.2011 sind 838 AEAG und 444 AEAS im USAF-zentrierten Stichtags-ORBAT genannt. Army-Aviation-Bestände werden daraus nicht abgeleitet.
+Shindand ist im OMW-Zeitraum ein gemischter westafghanischer Luftfahrt-, Ausbildungs-, Unterstützungs- und Camp-Knoten.
+
+Historisch und quellenkritisch zu trennen sind:
+
+- Air-Advisor- und Ausbildungsbetrieb;
+- 838th Air Expeditionary Advisory Group und 444th Air Expeditionary Advisory Squadron am 30.09.2011;
+- afghanischer Mi-17- und später Fixed-Wing-Ausbildungsbetrieb;
+- Camp-/Koalitions- und regionale Bodenführungsfunktionen;
+- rotierende US-Army-Aviation-Elemente und spätere Rampennutzung.
+
+Die Air-Advisor-Struktur beweist keine bestimmte Army-Aviation-Stärke. Umgekehrt darf die für OMW ausgewählte Army-Aviation-Baseline nicht auf den afghanischen Ausbildungsbestand übertragen werden.
+
+#### OMW-Knotenmodell
+
+```yaml
+locationId: SHINDAND_AIR_BASE
+siteCode: SHND
+baseClass: PERMANENT_HUB
+campaignFunction:
+  - US_ARMY_AVIATION
+  - AIR_ADVISOR_TRAINING_CONTEXT
+  - REGIONAL_LOGISTICS
+  - MEDEVAC_TRANSFER
+missionEditorAirbaseIdObserved: 14
+airwing: AW_US_SHINDAND
+warehouseAnchor: WH_AIR_US_SHINDAND
+```
+
+Aktive OMW-Bestände stehen ausschließlich in Dokument 19 und im Shindand-Manifest:
+
+- [`OMW-AIR-SHINDAND-MANIFEST`](shindand-air-operations-manifest.md).
+
+Die technische Übergabe steht in:
+
+- [`OMW-AIR-SHINDAND-IMPLEMENTATION-HANDOFF`](shindand-air-operations-implementation-handoff.md).
+
+#### Flächenmodell
+
+| Bereich | geplante Hauptfunktion | Bestandsgrenze |
+|---|---|---|
+| nordöstliche Rotary-Wing-Ramp | US-Army AH-64/UH-60/CH-47 | `AW_US_SHINDAND` |
+| östliche/Camp-Shindand-Ramp | Afghan Air Force, Air Advisor und gemischter Support | getrennt vom US-Army-Bestand |
+| nordwestliche Trainingsrampe | afghanischer Ausbildungsbetrieb | getrennt vom US-Army-Bestand |
+| Hardened Shelters | Legacy, Wartung und Atmosphäre | kein versteckter Bestand abgeleitet |
+| südöstliche Rampenfläche | Reserve und später validierte Funktionsflächen | kein ungeprüfter Dynamic Spawn |
+| südwestliche Bereiche | Lagerung, Industrie und Low-Use-Szene | kein normaler AIRWING-Betrieb |
+
+Die Satellitenbeobachtungen vom 30.09.2013 sind ausschließlich `POST_PERIOD_CONTEXT`:
+
+- [`OMW-EVIDENCE-SHINDAND-SATELLITE-2013`](evidence/shindand-satellite-observations-2013.md).
 
 ### Vorgeschobene Standorte
 
@@ -180,6 +229,7 @@ FOBs, COPs und Checkpoints besitzen begrenzte Ressourcen, Fähigkeiten und Zufah
 | FOB Sharana | `ROTATIONAL_DETACHMENT` | CH-47-/Army-Aviation-Knoten | Dokument 50, S05 |
 | FOB Wolverine | `LONG_TERM_DETACHMENT` | OH-58D, später CH-47, Wartung | Dokument 50, S05/S14/S15 |
 | Tarinkot | `LONG_TERM_DETACHMENT` | CH-47-Platoon aus Kandahar-Pool | Dokument 50, S05 |
+| Shindand Air Base | `PERMANENT_HUB` | Air Advisor, Ausbildung, Camp-/Koalitionsknoten; aktive OMW-Army-Aviation-Auswahl separat in Dokument 19 | Dokumente 50 und 55; Shindand-Manifest |
 | Camp Wright | `FARP` | 3-17 CAV Refuel/Rearm | Dokument 50 |
 | FOB Wilson | `FARP` | 2-17 CAV Refuel/Rearm | Dokument 50, S13 |
 | COP Sayed Abad | `MISSION_STAGING` | Talon-Purge-PZ/Aufnahmeraum | Dokument 50, S05 |
