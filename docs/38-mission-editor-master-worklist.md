@@ -12,8 +12,8 @@ project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
   - incomplete or prototype-only Mission Editor worklists
 superseded_by:
-source_branch: agent/complete-documentation-authority-migration
-source_commit:
+source_branch: agent/document-shindand-air-operations
+source_commit: PENDING_MERGE
 validated_in_dcs: false
 ---
 
@@ -108,6 +108,56 @@ Für jeden Knoten sind zu dokumentieren und zu prüfen:
 - [ ] Kollisions- und Rotorabstände;
 - [ ] Verlustzuordnung zum CampaignState;
 - [ ] keine sofortige sichtbare Nachbesetzung ohne genehmigten Ramp-Zyklus.
+
+### 4.1 Shindand – dokumentierter Foundation-Build-Stand
+
+Autoritative lokale Dokumente:
+
+- [`OMW-AIR-SHINDAND-MANIFEST`](shindand-air-operations-manifest.md);
+- [`OMW-AIR-SHINDAND-IMPLEMENTATION-HANDOFF`](shindand-air-operations-implementation-handoff.md);
+- [`OMW-EVIDENCE-SHINDAND-SATELLITE-2013`](evidence/shindand-satellite-observations-2013.md).
+
+Geprüfte Missionsdatei:
+
+```text
+OMW_Template(2).miz
+SHA-256: 645f09b21793324a1df4d442fbaeffc0d1a2ee7c97f6453a4c3a97dde82c6e00
+```
+
+Abgeschlossen:
+
+- [x] Standortcode `SHND` festgelegt;
+- [x] aktive lokale ORBAT `8 AH-64D / 8 UH-60 / 4 CH-47` festgelegt;
+- [x] `AW_US_SHINDAND` und `WH_AIR_US_SHINDAND` festgelegt;
+- [x] vier Clientgruppen und Unitnamen strukturell geprüft;
+- [x] fünf KI-Templategruppen und sechs Template-Units strukturell geprüft;
+- [x] `Late Activation = true` für alle fünf KI-Templates geprüft;
+- [x] neun Luftfahrzeug-Statics strukturell geprüft;
+- [x] AH-64A als gewolltes Vanilla-KI-/Static-Ersatzmodell dokumentiert;
+- [x] Client-Parkingwerte `6, 8, 12, 28` dokumentiert;
+- [x] Warehouse-Anker als Missionsobjekt vorhanden;
+- [x] Satellitenbilder 2013 als `POST_PERIOD_CONTEXT` abgegrenzt.
+
+Offen:
+
+- [ ] Runtime-Airbase-Name und Airbase-ID 14 im DCS-/MOOSE-Lauf bestätigen;
+- [ ] Warehouse-Erkennung testen;
+- [ ] vollständigen Parking-Dump erstellen;
+- [ ] finale KI-Allowlist und Blacklist festlegen;
+- [ ] vier minimale Funktionszonen anlegen;
+- [ ] Payload-, Funk- und Callsign-Baseline festlegen;
+- [ ] AIRWING und SQUADRONs registrieren;
+- [ ] gemeinsamen UH-60-Pool ohne Doppelbestand implementieren;
+- [ ] AUFTRAG- und OPSTRANSPORT-Ausführung testen;
+- [ ] Safe Parking und parallele Rückkehr testen;
+- [ ] Verlust-, Rückgabe- und Disconnect-Logik testen;
+- [ ] dynamische Static-/Rampenumverteilung separat abnehmen.
+
+```yaml
+mission_editor_structure: PASS
+runtime_validation: NOT_RUN
+validated_in_dcs: false
+```
 
 ## 5. FOBs, COPs, OPs und Bodenkräfte
 
