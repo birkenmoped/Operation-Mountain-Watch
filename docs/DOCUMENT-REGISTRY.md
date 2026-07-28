@@ -95,6 +95,7 @@ Eine Nummer und eine stabile `document_id` dürfen im aktuellen Bestand jeweils 
 | `OMW-CSAR-SOURCE-NOTES-1-8` | `docs/csar/source-notes-1-8.md` | `BINDING`; Quellenregister |
 | `OMW-CSAR-AFGHANISTAN-2010-FACILITIES` | `docs/csar/afghanistan-2010-facilities-and-coverage.md` | `BINDING`; Datensatzreferenz |
 | `OMW-CSAR-MISSION-DESIGN-REQUIREMENTS` | `docs/csar/mission-design-requirements.md` | `PLANNED`; Anforderungen |
+| `OMW-CSAR-MOOSE-AICSAR-DEVELOPMENT-BASELINE` | `docs/csar/moose-csar-aicsar-development-baseline.md` | `PLANNED`; Architektur-, Entscheidungs- und Testbaseline |
 | `OMW-WX-DATASET-DOCUMENTATION` | `docs/data/weather/README.md` | `BINDING`; Wetterdatensatz |
 | `OMW-TARGETING-AFGHANISTAN-NSL-DATA-USE` | `docs/targeting/afghanistan-nsl-data-use-policy.md` | `BINDING`; technische Datenverwendung |
 | `OMW-TARGETING-AFGHANISTAN-NSL-LEGACY-PATH` | `docs/targeting/afghanistan-no-strike-list.md` | `SUPERSEDED`; Kompatibilitätspfad |
