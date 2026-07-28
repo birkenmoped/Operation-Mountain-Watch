@@ -30,7 +30,7 @@ Maßgebliche übergeordnete Regeln:
 - [`OMW-GOV-001`](00-project-governance.md) – höchste Projekt-Governance;
 - [`OMW-GOV-MOOSE-FIRST`](26-moose-first-development-policy.md) – vollständiges MOOSE-First- und Ausnahmeverfahren;
 - [`OMW-ARCH-SYSTEM`](03-system-architecture.md) – übergeordnete Systemgrenzen;
-- [`OMW-RED-INSURGENT-FECTIONS-BEHAVIOR`](56-insurgent-factions-shadow-governance-and-red-commander-behavior.md) – quellenbasierte RED-Verhaltensreferenz und MVP-Abgrenzung.
+- [`OMW-RED-INSURGENT-FACTIONS-BEHAVIOR`](56-insurgent-factions-shadow-governance-and-red-commander-behavior.md) – quellenbasierte RED-Verhaltensreferenz und MVP-Abgrenzung.
 
 Der vollständige frühere Architekturtext bleibt unverändert erhalten:
 
