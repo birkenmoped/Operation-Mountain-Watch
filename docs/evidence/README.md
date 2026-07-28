@@ -100,6 +100,8 @@ Aktuelle Nummern und IDs stehen in [`OMW-GOV-DOCUMENT-REGISTRY`](../DOCUMENT-REG
 
 - [`Weapon of Choice – frühe SOF-/SOAR-Hintergrundreferenz`](source-records/weapon-of-choice-special-operations-background.md) – behandelt 2001/2002; nur `BACKGROUND_ONLY`, keine Stationierungs- oder ORBAT-Autorität für 2010/2011.
 - [`CENTCOM Posture Statement 2022 – Afghanistan-Kontext`](source-records/centcom-posture-statement-2022-afghanistan-context.md) – nur `POST_PERIOD_CONTEXT`; keine ORBAT-, Basierungs- oder TTP-Autorität für 2010/2011.
+- [`The Workhorse of Helmand – Chinook-Memoir`](source-records/workhorse-of-helmand-chinook-memoir.md) – `SECONDARY_MEMOIR`; Kapitel 15/16 liegen im OMW-Zeitraum, bleiben aber keine offizielle Einsatzchronik.
+- [`RAND Intelligence Operations and Metrics 2008 – eingeschränkte Quellenakte`](source-records/rand-intelligence-operations-metrics-2008-restricted.md) – `RESTRICTED_SOURCE`; wegen sichtbarer FOUO-/REL-TO- und Distribution-Statement-C-Kennzeichnung keine inhaltliche Repository-Übernahme.
 
 ## 5. Verwendungsregel
 
@@ -108,3 +110,4 @@ Aktuelle Nummern und IDs stehen in [`OMW-GOV-DOCUMENT-REGISTRY`](../DOCUMENT-REG
 3. Alte Dokumentnummern in Legacy-Dateien werden nicht erneut vergeben.
 4. Ein historischer PASS wird nicht ohne vollständige Provenienz und aktuellen Geltungsbereich zur technischen Acceptance.
 5. Externe Hintergrundakten dürfen keine zeitgenössischen OMW-Einheiten, Bestände oder Standorte ersetzen.
+6. Quellen mit sichtbarer Verteilungsbeschränkung werden bis zur geklärten Berechtigung nicht inhaltlich publiziert oder als Projektautorität verwendet.
