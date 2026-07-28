@@ -15,7 +15,7 @@ project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
   - incomplete documentation index without subproject registry
 superseded_by:
-source_branch: agent/complete-documentation-authority-migration
+source_branch: agent/document-ato-asr-aar-buddy-lasing
 source_commit: PENDING_MERGE
 validated_in_dcs: false
 ---
@@ -64,6 +64,9 @@ Ein offener Draft-PR ist keine `main`-Autorität. Ein branchgebundener PASS blei
 | NSL/Targeting | [`OMW-TARGETING-AFGHANISTAN-NSL`](48-afghanistan-no-strike-list.md) | `BINDING` | [Datenrichtlinie](targeting/afghanistan-nsl-data-use-policy.md) |
 | Wetterdaten | [`OMW-WX-HISTORICAL-BASELINE`](41-historical-weather-baseline-2010-2011.md) | `BINDING` | [Datensatzdokumentation](data/weather/README.md) |
 | Regen-Arbeitsprofil | [`OMW-WX-RAIN-PROFILE`](43-dcs-rain-shower-preset-validation.md) | `BINDING` | visuell bestätigt, keine formale Acceptance |
+| ATO/ACO/SPINS | [`OMW-C2-ATO-ACO-SPINS`](54-air-tasking-order-aco-spins.md) | `BINDING` in Draft-PR #37 | Combined-Ops-Quick-Guide und NATO ATP-3.3.2.1 |
+| JTAR/ASR | [`OMW-C2-JTAR-ASR`](55-jtar-asr-air-support-request.md) | `BINDING` in Draft-PR #37 | NATO ATP-3.3.2.1 Annex C |
+| Buddy Lasing | [`OMW-CAS-BUDDY-LASING`](56-buddy-lasing-phraseology.md) | `BINDING` in Draft-PR #37 | Graveyard-of-Empires-Quellenfassung |
 | technische Evidenz | [`OMW-EVIDENCE-INDEX`](evidence/README.md) | `BINDING` für Einordnung | Testberichte und Legacy-Texte |
 
 ## 4. Nummerierte Dokumente auf `main`
@@ -117,6 +120,12 @@ Ein offener Draft-PR ist keine `main`-Autorität. Ein branchgebundener PASS blei
 - [48 – Afghanistan No-Strike List](48-afghanistan-no-strike-list.md)
 - [49 – MSR-Routendesign](49-msr-routendesign-und-infrastrukturmarker.md)
 
+### Branchgebundene Fachreferenzen in Draft-PR #37
+
+- [54 – ATO, ACO und SPINS](54-air-tasking-order-aco-spins.md)
+- [55 – JTAR/ASR](55-jtar-asr-air-support-request.md)
+- [56 – Buddy Lasing](56-buddy-lasing-phraseology.md)
+
 ## 5. Architekturentscheidungen
 
 - [`ADR-0001`](adr/0001-use-moose.md) – historische Grundentscheidung MOOSE;
@@ -164,7 +173,7 @@ Der vollständige und verbindliche Überblick steht in:
 
 - [`OMW-GOV-SUBPROJECT-REGISTRY`](SUBPROJECT-REGISTRY.md).
 
-Er erfasst derzeit PR #3–#18, #22, #24 und #33 einschließlich Parent-/Base-Beziehungen, Acceptance-Grenzen und Produktionsrelevanz.
+Er erfasst derzeit PR #3–#18, #22, #24, #33, #34, #36 und #37 einschließlich Parent-/Base-Beziehungen, Acceptance-Grenzen und Produktionsrelevanz.
 
 ## 8. Status-, Provenienz- und Querverweisregel
 

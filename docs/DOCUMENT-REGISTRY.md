@@ -13,7 +13,7 @@ project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
   - registry without complete non-numbered document inventory
 superseded_by:
-source_branch: agent/complete-documentation-authority-migration
+source_branch: agent/document-ato-asr-aar-buddy-lasing
 source_commit: PENDING_MERGE
 validated_in_dcs: false
 ---
@@ -76,6 +76,9 @@ Eine Nummer und eine stabile `document_id` dürfen im aktuellen Bestand jeweils 
 | 18 | 22–25 | nur Draft-PR #18; branchgebundene Air-Ops-Dokumente |
 | 18 | 27 | branchlokale Kollision; vor Integration zwingend neu nummerieren |
 | 24 | 31–36 | nur Draft-PR #24; Bagram/Kandahar |
+| 34 | 50 | nur Draft-PR #34; MQ-1/MQ-9 Afghanistan-Einsatzreferenz |
+| 36 | 51–53 | nur Draft-PR #36; Salerno-Manifest, Benennungsstandard und Implementierungsübergabe |
+| 37 | 54–56 | nur Draft-PR #37; ATO/ACO/SPINS, JTAR/ASR und Buddy Lasing |
 
 ## 4. Nicht nummerierte aktuelle Dokumente
 
