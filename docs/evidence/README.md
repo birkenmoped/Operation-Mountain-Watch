@@ -27,6 +27,7 @@ Aktuelle Nummern und IDs stehen in [`OMW-GOV-DOCUMENT-REGISTRY`](../DOCUMENT-REG
 ## 2. Aktuelle Evidenzdokumente
 
 - [`Jalalabad Air Operations – Ausgangsaudit`](jalalabad-air-operations-baseline-audit.md)
+- [`Quellenaufnahme-Audit 28.07.2026`](source-intake-audit-2026-07-28.md) – ordnet die im Afghanistan-Kräfte-, Aviation-, Air-C2-, ORBAT- und RED-Commander-Arbeitsstrang identifizierten Quellen ihren Fachreferenzen, Ausschlussakten oder offenen Prüfständen zu.
 
 ## 3. Legacy-Quelldatensätze
 
@@ -96,9 +97,24 @@ Aktuelle Nummern und IDs stehen in [`OMW-GOV-DOCUMENT-REGISTRY`](../DOCUMENT-REG
 - [`legacy-moose-events-and-fsm.md`](source-records/legacy-moose-events-and-fsm.md)
 - [`legacy-moose-isr-fac-cas-aar.md`](source-records/legacy-moose-isr-fac-cas-aar.md)
 
-## 4. Verwendungsregel
+## 4. Externe Quellenakten und quellenkritische Fachreferenzen
+
+- [`Weapon of Choice – frühe SOF-/SOAR-Hintergrundreferenz`](source-records/weapon-of-choice-special-operations-background.md) – behandelt 2001/2002; nur `BACKGROUND_ONLY`, keine Stationierungs- oder ORBAT-Autorität für 2010/2011.
+- [`CENTCOM Posture Statement 2022 – Afghanistan-Kontext`](source-records/centcom-posture-statement-2022-afghanistan-context.md) – nur `POST_PERIOD_CONTEXT`; keine ORBAT-, Basierungs- oder TTP-Autorität für 2010/2011.
+- [`The Workhorse of Helmand – Chinook-Memoir`](source-records/workhorse-of-helmand-chinook-memoir.md) – `SECONDARY_MEMOIR`; Kapitel 15/16 liegen im OMW-Zeitraum, bleiben aber keine offizielle Einsatzchronik.
+- [`RAND Intelligence Operations and Metrics 2008 – eingeschränkte Quellenakte`](source-records/rand-intelligence-operations-metrics-2008-restricted.md) – `RESTRICTED_SOURCE`; wegen sichtbarer FOUO-/REL-TO- und Distribution-Statement-C-Kennzeichnung keine inhaltliche Repository-Übernahme.
+- [`Afghanistan War von Rodney P. Carlisle – quellenkritische Auswertung`](../53-afghanistan-war-carlisle-source-review.md) – `SECONDARY_BACKGROUND_REFERENCE`; Redaktionsstand September 2010, keine ORBAT- oder Technikautorität.
+- [`Air Tasking, Airspace Control, CAS Requests und Missionsdaten`](../54-air-tasking-airspace-control-cas-requests-and-mission-data.md) – konsolidiert und qualifiziert die ATO-/ACO-/SPINS-/JTAR-/ASR-/AAR-/Buddy-Lasing-Quellenserie.
+- [`Monatliche Koalitions-ORBAT und Basierung 2010–2011`](../55-monthly-coalition-orbat-and-basing-2010-2011.md) – erschließt Morgans Monatsstände mit zeitlichen, Scope- und Stärkegrenzen; keine aktive ORBAT-Autorität.
+- [`Insurgentengruppen, Schattenherrschaft und RED-Commander-Verhalten`](../56-insurgent-factions-shadow-governance-and-red-commander-behavior.md) – konsolidiert die Crisis-Group-Regionalstudie und quellenqualifizierte COIN-, ANSF- und Strategieanalysen zu einem Verhaltensmodell.
+
+## 5. Verwendungsregel
 
 1. Legacy-Texte dürfen zitiert werden, müssen aber als historische Fassung gekennzeichnet sein.
 2. Bei Widerspruch gilt die aktuelle Source of Truth aus [`docs/README.md`](../README.md).
 3. Alte Dokumentnummern in Legacy-Dateien werden nicht erneut vergeben.
 4. Ein historischer PASS wird nicht ohne vollständige Provenienz und aktuellen Geltungsbereich zur technischen Acceptance.
+5. Externe Hintergrundakten dürfen keine zeitgenössischen OMW-Einheiten, Bestände oder Standorte ersetzen.
+6. Quellen mit sichtbarer Verteilungsbeschränkung werden bis zur geklärten Berechtigung nicht inhaltlich publiziert oder als Projektautorität verwendet.
+7. Nichtamtliche DCS-/Blog-/Forenquellen werden als Sekundär-, Hypothesen- oder Lead-Quellen geführt und nicht stillschweigend zu historischen Tatsachen hochgestuft.
+8. Synthetische ATO-/CAS-/AAR-Beispiele werden eindeutig als `EXAMPLE_ONLY` markiert.

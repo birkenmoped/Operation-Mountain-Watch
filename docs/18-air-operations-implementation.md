@@ -34,6 +34,10 @@ Dafür ist ausschließlich verbindlich:
 
 - [`OMW-AIR-ACTIVE-ORBAT – Dokument 19`](19-active-air-orbat-decisions.md).
 
+Die historische Evidenz für Basen, Verbände, Konfigurationen und Einsatzmuster steht in:
+
+- [`OMW-HIST-AFGHANISTAN-FORCE-BASING-AVIATION – Dokument 50`](50-afghanistan-force-basing-aviation-2010-2011.md).
+
 Weitere maßgebliche Grundlagen:
 
 - [`OMW-GOV-001`](00-project-governance.md);
@@ -243,3 +247,188 @@ Vor produktiver Verwendung eines Luftoperationsknotens sind mindestens zu prüfe
 10. reproduzierbarer DCS-Test mit Mission-, Bundle-, Commit- und MOOSE-Nachweis.
 
 Ein technischer PASS gilt nur für den exakt dokumentierten Teststand und ersetzt nicht automatisch Governance oder aktive ORBAT.
+
+## 14. Quellenbasierte historische Einsatzmuster
+
+Die folgenden Muster stammen aus der konsolidierten Evidenz in Dokument 50. Sie sind **technische Darstellungsziele**, keine neuen aktiven Bestandsentscheidungen.
+
+### 14.1 Kiowa Scout Weapons Team
+
+Historisch direkt belegt:
+
+```text
+2 × OH-58D
+```
+
+Technische Rollen:
+
+- `ARMED_RECONNAISSANCE`;
+- `ROUTE_RECONNAISSANCE`;
+- `SCREEN`;
+- `ESCORT`;
+- leichte Feuerunterstützung.
+
+Umsetzung:
+
+- bevorzugt ein Two-Ship-Template oder zwei koordinierte Single-Ship-Gruppen;
+- gemeinsame Reservierung gegen den lokalen OH-58D-Pool;
+- gemeinsame Missions-ID;
+- getrennte Verlust- und Rückkehrereignisse;
+- kein automatischer Ersatz bei Verlust.
+
+### 14.2 Light Air Assault
+
+Quellenbasiertes Paket:
+
+```text
+2 × CH-47
+2 × AH-64 Escort
+optional ISR
+optional Fixed-Wing-CAS
+Nachtinsertion
+```
+
+Da die aktuelle globale KI-Grenze maximal vier Supportluftfahrzeuge zulässt, kann dieses Paket vollständig aktiv dargestellt werden, sofern keine weitere Supportmission parallel läuft. Spielerluftfahrzeuge können einen Teil des Pakets übernehmen.
+
+### 14.3 Large Air Assault
+
+Quellenbasiertes Muster:
+
+```text
+4 × CH-47
+mehrere Turns
+mehrere HLZs
+AH-64 Escort
+HLZ-ISR
+Fixed-Wing-Overwatch
+Fire-Support-Plan
+```
+
+Eine vollständige gleichzeitige KI-Darstellung kann die Performance- und Concurrency-Grenzen überschreiten. Zulässige technische Abbildung:
+
+- gestaffelte Wellen;
+- Spieler als Teil des Pakets;
+- virtuelle Vor- und Nachläufe im CampaignState;
+- begrenzte aktive Escort-Komponente;
+- getrennte Folgeversorgung;
+- isolierte Performance-Tests vor jeder Grenzanhebung.
+
+### 14.4 Night Cordon and Search
+
+Quellenbasiertes Muster:
+
+```text
+2 × CH-47
+ungefähr 70 Soldaten gesamt
+mehrere HLZs/PZs möglich
+2–5 Tage Bodeneinsatz
+anschließende Exfiltration
+```
+
+Technisch sind mindestens drei getrennte Phasen zu führen:
+
+```text
+INFILTRATION
+GROUND_OPERATION_AND_RESUPPLY
+EXFILTRATION
+```
+
+Der Abschluss der Infiltration darf die spätere Exfiltration nicht automatisch als verfügbar oder erfolgreich verbuchen.
+
+### 14.5 Talon-Purge-/Mehrturn-Muster
+
+Historischer Maßstab:
+
+- 4 CH-47 und 2 UH-60;
+- knapp 350 Personen;
+- fünf HLZs;
+- mehrere Turns je Luftfahrzeug;
+- ungefähr 30 Passagiere je CH-47 und Turn.
+
+Umsetzung:
+
+- Passagiere pro Turn und Luftfahrzeug reservieren;
+- Teilwellen getrennt protokollieren;
+- verlorene oder abgebrochene Welle nicht als transportiert verbuchen;
+- HLZ-Verfügbarkeit und Bedrohungszustand pro Welle prüfen;
+- keine einmalige Gruppenaktivierung als Ersatz für den gesamten Mehrturn-Transport verwenden.
+
+### 14.6 Munitionsrotation
+
+Operation Bulldog Bite belegt, dass OH-58D und AH-64 ihre mitgeführte Munition vollständig verbrauchen und durch frische Luftfahrzeuge abgelöst werden konnten.
+
+Daraus folgen optionale Runtime-Zustände:
+
+```text
+AMMO_AVAILABLE
+BINGO_AMMO
+RTB_REARM
+FARP_REARM
+RELIEF_ON_STATION
+```
+
+Vor Einführung ist zu prüfen, welche MOOSE-AIRWING-/AUFTRAG-Funktionalität Fuel-, Munition-, RTB- und Replacement-Verhalten bereits abbildet.
+
+## 15. Historische Konfigurationsvarianten
+
+### 15.1 OH-58D AN/ALQ-144
+
+Dokument 50 belegt visuell:
+
+- 31.01.2011, Kandahar: AN/ALQ-144-Familie sichtbar;
+- März 2012, Jalalabad: zwei Maschinen ohne sichtbaren AN/ALQ-144, außerhalb des OMW-Zeitraums.
+
+Technische Regel:
+
+- 2010/2011 darf die OH-58D-Darstellung mit sichtbarem ALQ-144 nicht als anachronistisch verworfen werden;
+- ein post-periodischer Zustand ohne sichtbaren ALQ-144 wird nicht rückwirkend als Standard erzwungen;
+- verfügbare DCS-Modelle, Liveries und Modvarianten werden als technische Abbildungsgrenze dokumentiert.
+
+### 15.2 OH-58D Mischbewaffnung
+
+Das Kandahar-Test-Fire-Foto zeigt:
+
+- einen Siebenrohr-Raketenbehälter der M260-/70-mm-Systemfamilie;
+- auf der Gegenseite wahrscheinlich einen Zweifachträger mit zwei Hellfire.
+
+Diese Konfiguration darf als historisch plausible Payloadvariante vorgesehen werden. Sie wird nicht als häufigste oder einzige Einsatzbeladung bezeichnet. Die genaue Hellfire-Untervariante bleibt offen.
+
+### 15.3 Zeit- und Quellenmetadaten
+
+Jede historisch spezifische Payload- oder Livery-Variante führt mindestens:
+
+```text
+historicalSourceIds
+evidenceClass
+effectiveFrom
+effectiveTo
+configurationNotes
+sourceConflict
+```
+
+## 16. Wartungs- und Bereitschaftsmodell
+
+Quellen belegen hohe Flugbelastung, schnelle Materialalterung, FARP-Zyklen und umfangreiche Aviation-Reparaturen. Daher dürfen nominaler und mission-ready Bestand nicht gleichgesetzt werden.
+
+Erweiterbares Modell:
+
+```lua
+aircraftState = {
+  nominal = 0,
+  missionReady = 0,
+  maintenance = 0,
+  damaged = 0,
+  destroyed = 0,
+  aogWaitingParts = 0
+}
+```
+
+Mögliche MissionDemand-Typen:
+
+- `AOG_PARTS_DELIVERY`;
+- `FIELD_REPAIR_SUPPORT`;
+- `DOWNED_AIRCRAFT_RECOVERY`;
+- `FARP_FUEL_DELIVERY`;
+- `FARP_AMMUNITION_DELIVERY`.
+
+Diese Erweiterung ist noch keine implementierte technische Baseline. Vor eigenem Code sind MOOSE-Warehouse-, AIRWING-, AUFTRAG-, OPSTRANSPORT- und Event/FSM-Funktionen vollständig zu prüfen.
