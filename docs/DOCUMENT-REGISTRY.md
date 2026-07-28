@@ -77,7 +77,7 @@ Eine Nummer und eine stabile `document_id` dürfen im aktuellen Bestand jeweils 
 | 18 | 27 | branchlokale Kollision; vor Integration zwingend neu nummerieren |
 | 24 | 31–36 | nur Draft-PR #24; Bagram/Kandahar |
 | 34 | 50 | nur Draft-PR #34; MQ-1/MQ-9 Afghanistan Employment |
-| 36 | 51–52 | nur Draft-PR #36; Salerno-Manifest und Air-Ops-Benennungsstandard |
+| 36 | 51–53 | nur Draft-PR #36; Salerno-Manifest, Air-Ops-Benennungsstandard und Implementierungsübergabe |
 
 ### Nicht nummerierte Dokumente auf offenen Branches
 
