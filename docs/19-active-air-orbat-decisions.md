@@ -13,11 +13,12 @@ supersedes:
   - Bagram 336th EFS active baseline
   - Kandahar 75th EFS active baseline
   - Jalalabad 24/8/6 inventory
+  - provisional Shindand research ranges and working estimates
   - player limits above two aircraft per type and base
-source_branch: agent/reconcile-documentation-authority
+source_branch: agent/document-shindand-air-operations
 validated_in_dcs: false
 document_class: PROJECT_DECISION
-source_commit: GIT_HISTORY
+source_commit: PENDING_MERGE
 superseded_by:
 ---
 
@@ -70,6 +71,7 @@ Diese Regel ersetzt sämtliche älteren Angaben von vier, vier bis acht oder meh
 | 5 | Camp Bastion | AH-1W / UH-1Y | HMLA-169 „Vipers“, 10 AH-1W und 5 UH-1Y | `BINDING` |
 | 6 | Camp Bastion | MV-22B | keine aktive Umsetzung | `BINDING`: entfällt vollständig |
 | 7 | Camp Bastion | CH-53E | HMH-361 (-) Reinforced, 17 CH-53E | `BINDING` |
+| 8 | Shindand | Army Aviation | 8 AH-64D, 8 UH-60 einschließlich MEDEVAC, 4 CH-47 | `BINDING_PROJECT_DECISION`; quellennahe spielbare Auswahl |
 
 Ein automatischer Staffelwechsel anhand eines fortlaufenden Kampagnendatums wird zunächst nicht umgesetzt.
 
@@ -256,12 +258,70 @@ AW_USMC_BASTION
 
 HMH-363, HMH-362 und CH-53D bleiben historischer Kontext und erzeugen keinen parallelen aktiven Bestand.
 
+---
+
+## 7. Shindand Air Base – Army Aviation
+
+### Verbindliche aktive Entscheidung
+
+```text
+Flugplatz: Shindand Air Base
+
+8 AH-64D
+8 UH-60 einschließlich MEDEVAC
+4 CH-47
+----------------
+20 Hubschrauber
+```
+
+Diese Zahlen sind eine quellennahe und spielbare OMW-Projektentscheidung. Sie sind keine Behauptung einer amtlich belegten exakten Stichtagsstärke.
+
+### Technische Struktur
+
+```text
+AW_US_SHINDAND
+├── SQ_US_SHND_AH64D_ATTACK
+├── SQ_US_SHND_UH60_UTILITY_MEDEVAC
+└── SQ_US_SHND_CH47_HEAVYLIFT
+```
+
+Mangels ausreichend bestätigter lokaler Untereinheitsidentität werden keine Company- oder Battalion-Bezeichnungen erfunden.
+
+### Gemeinsamer UH-60-Bestand
+
+MEDEVAC Lead und Cover werden als koordiniertes Zweierpaket aus demselben Gesamtbestand von acht UH-60 reserviert. Utility-, Air-Assault- und MEDEVAC-Rollen dürfen keine parallelen Bestände erzeugen.
+
+### DCS-Ersatzdarstellung
+
+```text
+AH-64D Spieler: AH-64D_BLK_II
+AH-64D KI/Statics: AH-64A als einfaches Vanilla-Ersatzmodell ohne Longbow-Radar
+UH-60 KI/Statics: UH-60A
+CH-47 Spieler: CH-47Fbl1
+CH-47 KI/Statics: CH-47D
+```
+
+Alle Ersatzmodelle greifen auf den jeweiligen gemeinsamen logischen Bestand zu.
+
+### Autoritative Detailquelle
+
+Clients, Templates, Statics, Parking, Warehouse, Liveries und die strukturelle `.miz`-Prüfung stehen in:
+
+- [`OMW-AIR-SHINDAND-MANIFEST`](shindand-air-operations-manifest.md);
+- [`OMW-AIR-SHINDAND-IMPLEMENTATION-HANDOFF`](shindand-air-operations-implementation-handoff.md).
+
+### Historische Abgrenzung
+
+- 838 AEAG und 444 AEAS belegen Air-Advisor-/Ausbildungsfunktionen, nicht den hier ausgewählten Army-Aviation-Gesamtbestand.
+- Die ausgewerteten Satellitenbilder vom 30.09.2013 sind `POST_PERIOD_CONTEXT` und dienen vor allem der Rampen- und Flächenplanung.
+- Afghanische Ausbildungs- und Koalitionskomponenten werden nicht aus demselben US-Army-Bestand gespeist.
+
 ## Verbleibende technische Detailentscheidungen
 
 Noch offen sind nicht die oben festgelegten aktiven Verbände und Bestände, sondern unter anderem:
 
-- genaue Zahl und Platzierung gepoolter Statics je Muster;
-- historisch passende oder verfügbare Liveries;
+- genaue Zahl und Platzierung gepoolter Statics je Muster, soweit kein basisbezogenes Manifest vorliegt;
+- historisch passende oder verfügbare Liveries, soweit kein basisbezogenes Manifest vorliegt;
 - konkrete Client- und KI-Parkpositionen;
 - Payload- und Rollen-Templates;
 - technische Verwendbarkeit karteneigener Warehouse-Gebäude;
