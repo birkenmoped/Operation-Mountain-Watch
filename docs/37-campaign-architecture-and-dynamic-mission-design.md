@@ -8,6 +8,7 @@ authoritative_for:
   - MissionDemand architecture
   - BLUE and RED campaign object model
   - adaptive materialization and intelligence progression
+  - single-opponent RED Commander baseline for the initial implementation
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
@@ -28,7 +29,8 @@ Maßgebliche übergeordnete Regeln:
 
 - [`OMW-GOV-001`](00-project-governance.md) – höchste Projekt-Governance;
 - [`OMW-GOV-MOOSE-FIRST`](26-moose-first-development-policy.md) – vollständiges MOOSE-First- und Ausnahmeverfahren;
-- [`OMW-ARCH-SYSTEM`](03-system-architecture.md) – übergeordnete Systemgrenzen.
+- [`OMW-ARCH-SYSTEM`](03-system-architecture.md) – übergeordnete Systemgrenzen;
+- [`OMW-RED-INSURGENT-FECTIONS-BEHAVIOR`](56-insurgent-factions-shadow-governance-and-red-commander-behavior.md) – quellenbasierte RED-Verhaltensreferenz und MVP-Abgrenzung.
 
 Der vollständige frühere Architekturtext bleibt unverändert erhalten:
 
@@ -146,7 +148,24 @@ Die operative Abbildung erfolgt vorrangig über:
 
 Für jeden Vorfall existiert genau ein autoritatives `CSARIncident`-Objekt. Spieler und `AICSAR` dürfen nicht denselben Vorfall doppelt retten. Die CSAR-Quellen und Missionsanforderungen stehen unter [`docs/csar/`](csar/README.md).
 
-## 7. RED-Struktur
+## 7. RED-Struktur – einfache Grundversion
+
+### 7.1 Ein konsolidierter Gegner
+
+Die erste produktive RED-Baseline verwendet genau:
+
+```text
+1 RED Commander
+1 REDState
+1 gemeinsamen Ressourcenpool
+1 gemeinsames Netzwerk aus Standorten und lokalen Zellen
+```
+
+Historische Unterschiede zwischen Taliban, Haqqani-Netzwerk, Hizb-e Islami und lokalen bewaffneten oder kriminellen Netzwerken werden zunächst nur als Quellen- und Verhaltenskontext geführt. Sie erzeugen keine getrennten Runtime-Fraktionen, Beziehungen, Logistikpools oder Commander.
+
+Die Mehrfraktionssimulation bleibt bis auf ausdrückliche spätere Freigabe zurückgestellt.
+
+### 7.2 RED-Netzwerk
 
 RED bildet ein insurgentes Netzwerk mit unterschiedlichen Standorttypen:
 
@@ -159,6 +178,21 @@ RED bildet ein insurgentes Netzwerk mit unterschiedlichen Standorttypen:
 Standorte durchlaufen nachvollziehbare Zustände von `UNKNOWN` beziehungsweise `CANDIDATE` bis `OPERATIONAL`, `COMPROMISED`, `EVACUATING`, `ABANDONED` oder `DESTROYED`.
 
 Neue Standorte entstehen nur durch reale oder nachvollziehbar virtualisierte Prozesse: Auswahl, Anmarsch, Einrichtung, Aktivierung und Versorgung.
+
+### 7.3 RED-MVP-Aktionen
+
+Die erste funktionsfähige Version beschränkt sich auf wenige, klar testbare Kernaktionen:
+
+```text
+OBSERVE_ROUTE
+BUILD_CACHE
+CONDUCT_IED_ATTACK
+CONDUCT_AMBUSH
+PROBE_CHECKPOINT
+DISPERSE_UNDER_PRESSURE
+```
+
+Erweiterte virtuelle Einflusswirkungen, komplexe Angriffe, Infiltration und eine optionale spätere Mehrfraktionssimulation werden erst nach stabiler Kernfunktion ergänzt.
 
 ## 8. Adaptive Materialisierung
 
@@ -194,6 +228,8 @@ HUMINT, SIGINT und visuelle Erkenntnisse besitzen unterschiedliche Quellen, Gena
 
 Ausgewählte Ortschaften können begrenzte Support- und HUMINT-Stufen erhalten. Das System ist kein vollständiges politisches Loyalitätsmodell. Lieferungen und Unterstützung erzeugen nur dann Informationen, wenn lokal tatsächlich verwertbares Wissen vorhanden ist.
 
+Die einfache Grundversion darf diese Werte zunächst auf wenige robuste Einflussgrößen beschränken. Ein vollständiges Schattenherrschafts-, Rekrutierungs- oder Fraktionsmodell ist keine Voraussetzung für den ersten lauffähigen RED Commander.
+
 ## 11. Projektphase und Umsetzung
 
 Die aktuelle Phase ist:
@@ -201,6 +237,17 @@ Die aktuelle Phase ist:
 ```text
 COMPLETE_FOUNDATION_BUILD_PHASE
 ```
+
+Für RED gilt zusätzlich die Implementierungsreihenfolge:
+
+```text
+STAGE_1_SINGLE_RED_CORE
+STAGE_2_BASIC_INFLUENCE
+STAGE_3_ADVANCED_ACTIONS
+STAGE_4_OPTIONAL_MULTIFACTION
+```
+
+`STAGE_4_OPTIONAL_MULTIFACTION` ist bis auf Weiteres zurückgestellt.
 
 Der Missionsgrundbau darf nach fachlich getrennten Arbeitspaketen parallel entstehen. Technische Acceptance bleibt stets an den exakt getesteten Branch-, Commit-, Missions-, Bundle-, DCS- und MOOSE-Stand gebunden.
 
@@ -216,3 +263,12 @@ Eine Kampagnenfunktion gilt erst als integriert, wenn:
 - Beobachtung und Verfolgung respektiert werden;
 - Persistenz reproduzierbar arbeitet;
 - ein DCS-Testfall mit erwarteten Logmeldungen vorliegt.
+
+Für die RED-Grundversion gilt zusätzlich:
+
+- genau ein konsolidierter RED Commander;
+- genau ein gemeinsamer RED-Ressourcenpool;
+- keine versteckten Fraktionspools oder Relationslogik;
+- getestete Kernaktionen vor jeder Erweiterung;
+- Rückzug und Dispersal statt obligatorischem Kampf bis zur Vernichtung;
+- Mehrfraktionsfunktionen nur nach gesonderter Projektinhaberfreigabe.
