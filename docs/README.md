@@ -176,11 +176,14 @@ Branchgebundene Dokumente:
 
 - [`OMW-AIR-SALERNO-MANIFEST`](51-salerno-air-operations-manifest.md) – reservierte Nummer 51;
 - [`OMW-AIR-MANIFEST-NAMING`](52-air-operations-manifest-naming-standard.md) – reservierte Nummer 52;
+- [`OMW-AIR-SALERNO-IMPLEMENTATION-HANDOFF`](53-salerno-air-operations-implementation-handoff.md) – Revision-20-Strukturnachweis und Runtime-Übergabe, reservierte Nummer 53;
 - [`OMW-AIR-MANIFEST-TEMPLATE`](air-operations-manifest-template.md);
 - [`OMW-EVIDENCE-SALERNO-SATELLITE-OBSERVATIONS`](evidence/salerno-satellite-observations.md);
 - [`OMW-EVIDENCE-SALERNO-SOURCE-NOTES`](evidence/salerno-source-notes.md).
 
-Diese Dateien sind im Draft-PR fachlich festgelegt, aber vor einem Merge keine `main`-Autorität. Bei Integration werden die reservierten Nummern 51–52 in den Abschnitt der auf `main` vorhandenen Dokumente verschoben.
+Diese Dateien sind im Draft-PR fachlich festgelegt, aber vor einem Merge keine `main`-Autorität. Bei Integration werden die reservierten Nummern 51–53 in den Abschnitt der auf `main` vorhandenen Dokumente verschoben.
+
+Der aktuell dokumentierte Missionseditorstand ist `OMW_TEST_TM01M_MooseFirst(20).miz`: struktureller PASS, jedoch noch kein DCS-/MOOSE-Laufzeit-PASS.
 
 ## 8. Status-, Provenienz- und Querverweisregel
 
