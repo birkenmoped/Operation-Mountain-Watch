@@ -7,7 +7,7 @@ authoritative_for:
   - MSR route segmentation
   - route geometry and routing-point separation
   - infrastructure marker classification
-  - MSR design worklist
+  - route-clearance, observation, IED-risk and reinfiltration design worklist
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
@@ -22,26 +22,26 @@ validated_in_dcs: false
 
 ## 1. Zweck
 
-Dieses Dokument ist die aktuelle Design- und Arbeitsreferenz für Main Supply Routes, Routensegmente, MOOSE-`PATHLINE`s, Routinganker und Infrastrukturmarker.
+Dieses Dokument ist die aktuelle Design- und Arbeitsreferenz für Main Supply Routes, Routensegmente, MOOSE-`PATHLINE`s, Routinganker, Infrastrukturmarker, Route Clearance und RED-Routeneinfluss.
 
 Der vollständige frühere Entwurfsstand bleibt unverändert erhalten:
 
 - [`Legacy-MSR-Entwurf`](evidence/source-records/legacy-49-msr-route-design-pre-metadata-migration.md)
 
-Maßgebliche Architektur:
+Maßgebliche Architektur und Fachreferenzen:
 
 - [`OMW-ARCH-CAMPAIGN-DYNAMIC-MISSION`](37-campaign-architecture-and-dynamic-mission-design.md)
 - [`OMW-ME-MASTER-WORKLIST`](38-mission-editor-master-worklist.md)
 - [`OMW-GOV-MOOSE-FIRST`](26-moose-first-development-policy.md)
-- [`OMW-HIST-AFGHANISTAN-WAR-CARLISLE-SOURCE-REVIEW`](53-afghanistan-war-carlisle-source-review.md) für Route-Clearance-, IED- und PRT-Missionsmuster.
+- [`OMW-HIST-AFGHANISTAN-WAR-CARLISLE-SOURCE-REVIEW`](53-afghanistan-war-carlisle-source-review.md) für Route-Clearance-, IED- und PRT-Missionsmuster
+- [`OMW-RED-INSURGENT-FACTIONS-BEHAVIOR`](56-insurgent-factions-shadow-governance-and-red-commander-behavior.md)
+- [`OMW-RED-KANDAHAR-HELMAND-ENEMY-SYSTEM`](57-kandahar-helmand-enemy-system-and-red-commander-strategy.md) für historisch belegte Route-Observation-, IED-, Ambush-, Support-Zone- und Reinfiltrationsmuster
 
 ## 2. Datenebenen
 
 ### 2.1 Routengeometrie
 
 Jedes MSR-Segment besitzt genau eine geordnete Missionseditor-Draw-Linie beziehungsweise MOOSE-`PATHLINE`.
-
-Beispiele:
 
 ```text
 MSR_EAST_E01
@@ -60,14 +60,14 @@ RP_K01_002
 RP_K01_003
 ```
 
-Routingpunkte werden nur an tatsächlich erforderlichen Stellen gesetzt, etwa an:
+Routingpunkte werden nur an tatsächlich erforderlichen Stellen gesetzt:
 
-- problematischen Kreuzungen;
-- parallelen Straßen;
-- zwingenden Brücken oder Furten;
-- Talwechseln;
+- problematische Kreuzungen;
+- parallele Straßen;
+- zwingende Brücken oder Furten;
+- Talwechsel;
 - Basiszufahrten;
-- bekannten DCS-Pathfinding-Problemen.
+- bekannte DCS-Pathfinding-Probleme.
 
 ### 2.3 Infrastruktur- und Taktikmarker
 
@@ -93,11 +93,14 @@ SUS_   verdächtiger Straßenabschnitt oder Indikator
 BYP_   geprüfte Ausweichstelle
 HALT_  vorgesehener sicherer Konvoi-Halt
 REC_   Recovery-/Bergepunkt
+OBS_   möglicher Beobachtungs- oder Pattern-of-Life-Punkt
+AMB_   quellen- oder testbasierter Hinterhaltsraum
+INF_   möglicher Infiltrationszugang zum Routensektor
 ```
 
-Marker dokumentieren Funktion und Lage. Sie ersetzen keine Zonen, Templates oder Laufzeitobjekte, sofern diese technisch benötigt werden.
+Marker dokumentieren Funktion und Lage. Sie ersetzen keine Zonen, Templates oder Laufzeitobjekte.
 
-`IED_` und `SUS_` werden im Mission Editor nicht als dauerhaft sichtbare Spielerinformation verwendet. Sie sind Authoring- beziehungsweise Laufzeitreferenzen und werden nur entsprechend Intelligence-/Detection-Status aufgedeckt.
+`IED_`, `SUS_`, `OBS_`, `AMB_` und `INF_` sind keine dauerhaft sichtbaren Spielerinformationen. Ihre Sichtbarkeit hängt von Intelligence-, Detection- und CampaignState ab.
 
 ## 3. Segmentmetadaten
 
@@ -121,7 +124,7 @@ alternativeSegments
 validationState
 ```
 
-Zusätzliche Route-Security-Felder:
+Zusätzliche Route-Security- und RED-Einflussfelder:
 
 ```text
 clearanceStatus
@@ -135,6 +138,14 @@ eodRequired
 localTipConfidence
 civilianTrafficLevel
 reconstructionDependency
+redObservationLevel
+redPatternKnowledge
+redCacheAccess
+redAmbushAccess
+redReinfiltrationAccess
+bluePatrolFrequency
+blueHoldStrength
+routePredictability
 ```
 
 Zulässige `clearanceStatus`-Werte:
@@ -148,19 +159,20 @@ BLOCKED
 DEGRADED
 ```
 
-`CLEARED` ist zeitgebunden. Ein Segment bleibt nicht unbegrenzt sicher, wenn sich Feindlage, Beobachtung, ziviler Verkehr oder letzter Prüfzeitpunkt ändern.
+`CLEARED` ist zeitgebunden. Ein Segment bleibt nicht unbegrenzt sicher, wenn sich Feindlage, Beobachtung, ziviler Verkehr, Hold-Präsenz oder letzter Prüfzeitpunkt ändern.
 
 ## 4. Route-Clearance-Modell
 
-Die Delaram–Bakwa-Vignette aus Dokument 53 wird nicht als exakte OMW-Einheit oder Technikbaseline verwendet, aber als belastbares Missionsmuster:
+Die Delaram–Bakwa-Vignette aus Dokument 53 und die Helmand-/Kandahar-Studien aus Dokument 57 werden als Missionsmuster, nicht als exakte OMW-Einheitsbaseline verwendet:
 
-1. Route-Clearance-Element führt den Hauptkonvoi.
+1. Route-Clearance-Element führt den Hauptkonvoi;
 2. verdächtige Indikatoren können zum Halt führen;
 3. Engineer-/EOD-Prüfung benötigt Zeit und Sicherung;
 4. Bypass ist nur nach Prüfung zulässig;
-5. Gegner können den Halt, Stau oder Ausweichweg für einen Complex Ambush nutzen;
-6. ausgeschlossene oder voreilende Fahrzeuge verlieren den Schutz des gemeinsamen Verfahrens;
-7. Erfolg ist eine sichere, nachvollziehbar freigegebene Route.
+5. Gegner können Halt, Stau, Ausweichweg oder zurückliegende Strecke für einen Hinterhalt nutzen;
+6. einzelne Fahrzeuge außerhalb der Formation verlieren Schutz;
+7. RED kann Wege hinter oder neben einer Bewegung erneut mit IEDs versehen;
+8. Erfolg ist eine sichere, nachvollziehbar freigegebene Route, nicht nur das Erreichen des Zielpunkts.
 
 Zustände eines IED-Objekts:
 
@@ -184,9 +196,73 @@ RADIO
 UNKNOWN
 ```
 
-Die konkrete Erkennungswahrscheinlichkeit, Sprengwirkung und technische Neutralisierung werden nicht aus Dokument 53 übernommen, sondern in separaten Testmissionen validiert.
+Erkennungswahrscheinlichkeit, Sprengwirkung und technische Neutralisierung werden in separaten Testmissionen validiert.
 
-## 5. MOOSE-First-Routing
+## 5. RED-Route-Cycle
+
+Quellenbasierter Zyklus des konsolidierten RED Commanders:
+
+```text
+OBSERVE_ROUTE
+→ LEARN_PATTERN
+→ BUILD_OR_REFRESH_CACHE
+→ EMPLACE_IED_OR_PREPARE_AMBUSH
+→ ATTACK_OR_FORCE_HALT
+→ DISPERSE
+→ ASSESS_BLUE_REACTION
+→ REINFILTRATE_IF_PRESSURE_DROPS
+```
+
+### 5.1 Beobachtung
+
+Route-Observation kann virtuell erfolgen. Physische Beobachter werden nur erzeugt, wenn:
+
+- ihre Entdeckung spielerisch relevant ist;
+- ein RECCE-/HUMINT-Auftrag sie aufklären kann;
+- ihr Verlust oder Rückzug einen CampaignState-Effekt besitzt.
+
+### 5.2 Predictability
+
+`routePredictability` steigt unter anderem bei:
+
+- identischen Abfahrtszeiten;
+- wiederholten Haltepunkten;
+- unveränderten Marschgeschwindigkeiten;
+- stets gleichen Ausweichrouten;
+- fehlender Gegenaufklärung.
+
+Höhere Vorhersagbarkeit erhöht RED-Aktionsqualität, nicht automatisch die Zahl der Spawn-Gruppen.
+
+### 5.3 Reinfiltration
+
+Nach einer erfolgreichen Route-Clearance sinkt RED-Einfluss zunächst. Ohne Patrouillen, Hold, lokale Meldungen und erneute Prüfung kann der Sektor wechseln:
+
+```text
+CLEARED
+→ DEGRADED
+→ RED_OBSERVED
+→ RED_CACHE_REBUILT
+→ UNCLEARED_OR_ATTACK_READY
+```
+
+Die technische Benennung der Zwischenzustände darf intern abweichen; die Wirkung muss erhalten bleiben.
+
+## 6. Taktische Erweiterungen
+
+Spätere, nicht zum MVP gehörende Muster:
+
+```text
+FEINT_ATTACK
+MULTI_DIRECTION_ATTACK
+SECONDARY_ATTACK_ON_RESPONDERS
+MOTORCYCLE_IED
+SVBIED_ATTACK
+ROUTE_BOXING
+```
+
+`SECONDARY_ATTACK_ON_RESPONDERS` darf nur mit klaren Voraussetzungen und geringer Häufigkeit erzeugt werden. Es darf keine allwissende KI-Reaktion auf jeden BLUE-Responder entstehen.
+
+## 7. MOOSE-First-Routing
 
 Vor eigener Routenberechnung sind insbesondere zu prüfen:
 
@@ -197,18 +273,20 @@ Vor eigener Routenberechnung sind insbesondere zu prüfen:
 - `OPSTRANSPORT`;
 - Wrapper-, Set-, Detection-, Event- und Scheduler-Funktionen.
 
-Vor eigener Route-Clearance- oder IED-Zustandslogik ist zusätzlich zu prüfen, welche MOOSE-Funktionen bereits abbilden:
+Vor eigener Route-Clearance-, IED-, Beobachtungs- oder Reinfiltrationslogik ist zusätzlich zu prüfen, welche MOOSE-Funktionen bereits abbilden:
 
 - Detektion und Intel-Level;
 - Zonen- und Wegereignisse;
 - Aufgaben/FSMs;
 - Escort-/Convoy-Verhalten;
 - Cargo-/Engineer-Transport;
-- dynamische Re-Route und Halt/Resume.
+- dynamische Re-Route und Halt/Resume;
+- lokales INTEL-/DETECTION-Lagebild;
+- Spawn, Despawn und persistente Zustandsübergabe.
 
-Eigene Routing- oder IED-Logik benötigt das vollständige Ausnahmeverfahren aus Dokument 26.
+Eigene Logik benötigt das vollständige Ausnahmeverfahren aus Dokument 26.
 
-## 6. DCS-spezifische Regeln
+## 8. DCS-spezifische Regeln
 
 - Fahrzeuge verwenden nur validierte Straßen und Wege.
 - Keine unrealistischen Offroad-Routen durch Wald, Wasser oder steile Hänge.
@@ -220,8 +298,10 @@ Eigene Routing- oder IED-Logik benötigt das vollständige Ausnahmeverfahren aus
 - Bypass-Entscheidungen dürfen keine unrealistische Geländequerung erzeugen.
 - Zerstörte oder bewegungsunfähige Fahrzeuge erzeugen einen Blockage-/Recovery-Zustand.
 - Watchguard-Teleportation ist bei Feindkontakt, Aufklärung oder Angriff zu sperren beziehungsweise kontrolliert zu begrenzen.
+- Ein RED-Beobachter oder eine vorbereitete Zelle darf nicht sichtbar direkt neben Spielern gespawnt werden.
+- Reinfiltration erfolgt zeitverzögert und aus plausiblen Zuführungsräumen.
 
-## 7. PRT- und Infrastrukturabhängigkeit
+## 9. PRT- und Infrastrukturabhängigkeit
 
 Routen können von Reconstruction-Projekten abhängen:
 
@@ -245,7 +325,7 @@ Ein beschädigtes Projekt kann:
 
 Die Wiederherstellung wird nicht allein durch das Platzieren eines statischen Objekts abgeschlossen. CampaignState, Transport, Sicherung und Übergabe müssen zusammengeführt werden.
 
-## 8. Validierung je Segment
+## 10. Validierung je Segment
 
 - [ ] Draw-/PATHLINE-Geometrie geprüft;
 - [ ] Straßenanschluss in DCS geprüft;
@@ -262,10 +342,14 @@ Die Wiederherstellung wird nicht allein durch das Platzieren eines statischen Ob
 - [ ] Watchguard bei Beobachtung/Feindkontakt/Angriff geprüft;
 - [ ] alternative Route oder Abbruchverhalten definiert;
 - [ ] zeitliche Gültigkeit von `CLEARED` geprüft;
+- [ ] RED-Observation und Pattern-Knowledge geprüft;
+- [ ] Dispersal und plausibler Rückzug geprüft;
+- [ ] Reinfiltration nach sinkender Hold-Präsenz geprüft;
+- [ ] keine unmittelbaren Spawns im Sicht- oder Sensorsbereich der Spieler;
 - [ ] CampaignState-/Persistenzübergabe geprüft;
 - [ ] DCS-, OMW- und MOOSE-Version dokumentiert;
 - [ ] Ergebnisbericht mit Logs und Mission-Hash erstellt.
 
-## 9. Status
+## 11. Status
 
-Das Datenmodell und die Markerregeln sind geplant. Eine Route, ein Segment, eine Route-Clearance-Sequenz oder ein IED-Verfahren wird erst nach reproduzierbarem DCS-Test als technisch akzeptiert geführt.
+Das Datenmodell und die Markerregeln sind geplant. Eine Route, ein Segment, eine Route-Clearance-Sequenz, ein IED-Verfahren oder ein RED-Reinfiltrationszyklus wird erst nach reproduzierbarem DCS-Test als technisch akzeptiert geführt.
