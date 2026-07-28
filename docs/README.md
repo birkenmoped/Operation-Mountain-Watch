@@ -59,15 +59,16 @@ Ein offener Draft-PR ist keine `main`-Autorität. Ein branchgebundener PASS blei
 | Carlisle-*Afghanistan War*-Quellenkritik | [`OMW-HIST-AFGHANISTAN-WAR-CARLISLE-SOURCE-REVIEW`](53-afghanistan-war-carlisle-source-review.md) | `BINDING` | Sekundär-/Hintergrundreferenz; Redaktionsstand September 2010 |
 | Air Tasking, Airspace Control und CAS Requests | [`OMW-AIR-TASKING-AIRSPACE-CAS-REQUESTS`](54-air-tasking-airspace-control-cas-requests-and-mission-data.md) | `BINDING` | NATO-2019-Doktrin, ATO-/ACO-/SPINS-Guides, JTAR-/ASR-, AAR- und Buddy-Lasing-Quellen |
 | monatliche Koalitions-ORBAT, Basierung und AOR | [`OMW-HIST-MONTHLY-COALITION-ORBAT-BASING`](55-monthly-coalition-orbat-and-basing-2010-2011.md) | `BINDING` | Wesley-Morgan-Monatsstände; keine aktive ORBAT- oder Iststärkenautorität |
-| konsolidierter RED Commander und insurgentes Verhalten | [`OMW-RED-INSURGENT-FACTIONS-BEHAVIOR`](56-insurgent-factions-shadow-governance-and-red-commander-behavior.md) | `BINDING` | ein Gegner in der Grundversion; historische Fraktionsunterschiede nur Quellenkontext und spätere Erweiterungsoption |
+| konsolidierter RED Commander und insurgentes Verhalten | [`OMW-RED-INSURGENT-FACTIONS-BEHAVIOR`](56-insurgent-factions-shadow-governance-and-red-commander-behavior.md) | `BINDING` | ein Gegner in der Grundversion; Reinfiltration als MVP-Kernaktion; Mehrfraktion nur spätere Option |
+| Kandahar-/Helmand-Enemy-System und RED-Strategie | [`OMW-RED-KANDAHAR-HELMAND-ENEMY-SYSTEM`](57-kandahar-helmand-enemy-system-and-red-commander-strategy.md) | `BINDING` | neun ISW-/New-America-Studien zu Marjah, Hamkari, Kandahar und Helmand; keine Spawn- oder aktive ORBAT-Autorität |
 | Systemarchitektur | [`OMW-ARCH-SYSTEM`](03-system-architecture.md) | `BINDING` | Dokument 37 |
-| CampaignState/dynamische Kampagne | [`OMW-ARCH-CAMPAIGN-DYNAMIC-MISSION`](37-campaign-architecture-and-dynamic-mission-design.md) | `BINDING` | Dokumente 04–07, 56 und TM01/TM02-Reviews |
+| CampaignState/dynamische Kampagne | [`OMW-ARCH-CAMPAIGN-DYNAMIC-MISSION`](37-campaign-architecture-and-dynamic-mission-design.md) | `BINDING` | Dokumente 04–07, 56–57 und TM01/TM02-Reviews |
 | Fog of War / RECCE | [`OMW-MOOSE-FOG-OF-WAR-RECCE`](moose/FOG-OF-WAR-RECCE.md) | `PLANNED` | MOOSE-Develop geprüft; Laufzeitvalidierung im gepinnten MOOSE-Stand ausstehend |
 | aktive Luft-ORBAT/Clientgrenzen | [`OMW-AIR-ACTIVE-ORBAT`](19-active-air-orbat-decisions.md) | `BINDING_PROJECT_DECISION` | historische ORBAT-Recherche |
 | technische Luftoperationen | [`OMW-AIR-IMPLEMENTATION`](18-air-operations-implementation.md) | `BINDING` | MOOSE Air Operations |
 | Jalalabad-ME-Baseline | [`OMW-AIR-JBAD-MANIFEST`](21-jalalabad-air-operations-manifest.md) | `BINDING` | PR #18 und Testprojektindex |
 | Missionseditor-Masterarbeit | [`OMW-ME-MASTER-WORKLIST`](38-mission-editor-master-worklist.md) | `BINDING` | basisbezogene Manifeste |
-| MSR/Routing | [`OMW-MSR-ROUTE-DESIGN`](49-msr-routendesign-und-infrastrukturmarker.md) | `PLANNED` | TM01M und Legacy-Routentests |
+| MSR/Routing | [`OMW-MSR-ROUTE-DESIGN`](49-msr-routendesign-und-infrastrukturmarker.md) | `PLANNED` | TM01M, Route-Clearance-, RED-Observation-, IED- und Reinfiltrationsmuster |
 | CSAR-Quellen/Anforderungen | [`OMW-CSAR-INDEX`](csar/README.md) | `BINDING` | CSAR-Unterdokumente |
 | NSL/Targeting | [`OMW-TARGETING-AFGHANISTAN-NSL`](48-afghanistan-no-strike-list.md) | `BINDING` | [Datenrichtlinie](targeting/afghanistan-nsl-data-use-policy.md) |
 | Wetterdaten | [`OMW-WX-HISTORICAL-BASELINE`](41-historical-weather-baseline-2010-2011.md) | `BINDING` | [Datensatzdokumentation](data/weather/README.md) |
@@ -131,6 +132,7 @@ Ein offener Draft-PR ist keine `main`-Autorität. Ein branchgebundener PASS blei
 - [54 – Air Tasking, Airspace Control, CAS Requests und Missionsdaten](54-air-tasking-airspace-control-cas-requests-and-mission-data.md)
 - [55 – Monatliche Koalitions-ORBAT und Basierung 2010–2011](55-monthly-coalition-orbat-and-basing-2010-2011.md)
 - [56 – Insurgentisches Verhalten und konsolidierter RED Commander](56-insurgent-factions-shadow-governance-and-red-commander-behavior.md)
+- [57 – Kandahar und Helmand: Enemy System und RED-Commander-Strategie](57-kandahar-helmand-enemy-system-and-red-commander-strategy.md)
 
 ## 5. Architekturentscheidungen
 
@@ -171,6 +173,7 @@ Ein offener Draft-PR ist keine `main`-Autorität. Ein branchgebundener PASS blei
 - [`OMW-AIR-TASKING-AIRSPACE-CAS-REQUESTS`](54-air-tasking-airspace-control-cas-requests-and-mission-data.md)
 - [`OMW-HIST-MONTHLY-COALITION-ORBAT-BASING`](55-monthly-coalition-orbat-and-basing-2010-2011.md)
 - [`OMW-RED-INSURGENT-FACTIONS-BEHAVIOR`](56-insurgent-factions-shadow-governance-and-red-commander-behavior.md)
+- [`OMW-RED-KANDAHAR-HELMAND-ENEMY-SYSTEM`](57-kandahar-helmand-enemy-system-and-red-commander-strategy.md)
 - [`OMW-TARGETING-AFGHANISTAN-NSL-DATA-USE`](targeting/afghanistan-nsl-data-use-policy.md)
 - [`OMW-TARGETING-AFGHANISTAN-NSL-LEGACY-PATH`](targeting/afghanistan-no-strike-list.md)
 - [`OMW-WX-DATASET-DOCUMENTATION`](data/weather/README.md)
