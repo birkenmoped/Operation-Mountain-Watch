@@ -48,7 +48,7 @@ Dieses Register bildet offene Pull Requests, ihre Abhängigkeiten, Dokumentation
 | 22 | `feature/tm01m-moose-native-baseline` | PR 8 | TM01M MOOSE-native Convoys | `mission/tests/tm01-blue-convoy/` | `DRAFT` | Ein- und Fünf-Convoy-PASS; Cleanup-Follow-up offen | offen | bevorzugte MOOSE-native Convoy-Richtung |
 | 24 | `docs/bagram-air-operations-manifest` | PR 18 | Bagram/Kandahar Dokumentation | branchlokale Dokumente 31–36 | `DRAFT` | Dokumentationsabgleich; keine neue DCS-Acceptance | offen | Foundation-Build-Dokumentation |
 | 33 | `agent/complete-documentation-authority-migration` | `main` | Governance-, Status- und Indexmigration | `docs/`, ausgewählte Test-READMEs, Validator | `DRAFT` | Dokumentationsvalidator erfolgreich; keine Runtime-Acceptance | offen | Ziel dieses Registers |
-| 36 | `agent/document-salerno-air-operations` | `main` | FOB Salerno Air Operations | Dokumente 51–52, Manifestvorlage und Salerno-Evidenz | `DRAFT`; fachliche Projektentscheidungen im Branch | Dokumentations- und ME-Planung; keine DCS-Acceptance | offen | nächster Army-Aviation-Knoten nach Bagram, Jalalabad und Kandahar |
+| 36 | `agent/document-salerno-air-operations` | `main` | FOB Salerno Air Operations | Dokumente 51–53, Manifestvorlage und Salerno-Evidenz | `DRAFT`; fachliche Projektentscheidungen im Branch | Revision 20 strukturell PASS; AIRWING-/DCS-/MOOSE-Laufzeit noch ausstehend | offen | vollständige Übergabe für den nächsten Army-Aviation-Knoten |
 
 ## 3. Stackstruktur
 
