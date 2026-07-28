@@ -7,7 +7,7 @@ authoritative_for:
   - source-critical insurgent behavior model for OMW mission and campaign design
   - consolidated single-opponent RED Commander baseline for the initial implementation
   - historically grounded RED goals, action types, constraints and campaign metrics
-  - use of route influence, caches, intimidation, recruitment and shadow governance as campaign effects
+  - use of route influence, caches, intimidation, recruitment, reinfiltration and shadow governance as campaign effects
 not_authoritative_for:
   - exact nationwide insurgent strength
   - separate runtime factions, commanders or resource pools
@@ -25,7 +25,7 @@ source_commit: PENDING_MERGE
 validated_in_dcs: false
 ---
 
-# Insurgentisches Verhalten und konsolidierter RED Commander
+# 56 – Insurgentisches Verhalten und konsolidierter RED Commander
 
 ## 1. Verbindliche Grundentscheidung
 
@@ -58,7 +58,7 @@ DEFERRED_MULTIFACTION_EXTENSION
 
 und bleibt bis auf ausdrückliche spätere Freigabe zurückgestellt.
 
-## 2. Zweck
+## 2. Zweck und Fachreferenzen
 
 Dieses Dokument beschreibt:
 
@@ -66,19 +66,28 @@ Dieses Dokument beschreibt:
 - Aufbau und Nutzung von Caches, Hide Sites und lokalen Zellen;
 - Verhalten unter BLUE-Druck;
 - Auswahl virtueller und physischer Aktionen;
+- Reinfiltration nach unzureichendem Hold;
 - Einfluss auf Bevölkerung, Verwaltung und Verkehrswege;
 - geeignete CampaignState-Zustände und Messgrößen;
 - einen stufenweisen, bewusst einfachen Implementierungsplan.
 
-Der frühere [`OMW-RED-DIRECTOR`](06-red-director.md) bleibt als ersetzter historischer Entwurf erhalten. Die technische Umsetzung muss aus dieser Designreferenz, [`OMW-ARCH-CAMPAIGN-DYNAMIC-MISSION`](37-campaign-architecture-and-dynamic-mission-design.md), MOOSE-First und gesonderter DCS-Acceptance abgeleitet werden.
+Der frühere [`OMW-RED-DIRECTOR`](06-red-director.md) bleibt als ersetzter historischer Entwurf erhalten.
+
+Detaillierte regionale Quellen- und Systemanalyse:
+
+- [`OMW-RED-KANDAHAR-HELMAND-ENEMY-SYSTEM`](57-kandahar-helmand-enemy-system-and-red-commander-strategy.md).
+
+Technische Einordnung:
+
+- [`OMW-ARCH-CAMPAIGN-DYNAMIC-MISSION`](37-campaign-architecture-and-dynamic-mission-design.md);
+- [`OMW-GOV-MOOSE-FIRST`](26-moose-first-development-policy.md);
+- MOOSE-Dokumentation und gesonderte DCS-Acceptance.
 
 ## 3. Quellen und Grenzen
 
 ### 3.1 International Crisis Group – *The Insurgency in Afghanistan's Heartland*, 2011
 
-**Datei:** `Group-STATEPLAY-2011.pdf`
-
-Höchste Relevanz für den zentral-östlichen Raum. Die Studie behandelt:
+Stärkste Quelle für den zentral-östlichen Raum:
 
 - Schattenverwaltungen;
 - lokale Zellen und Kommandeure;
@@ -86,39 +95,44 @@ Höchste Relevanz für den zentral-östlichen Raum. Die Studie behandelt:
 - Finanzierung und Besteuerung;
 - Safehouses und Waffenlager;
 - Infiltration;
-- IED-, Hinterhalts- und komplexe Angriffsmuster;
-- historische Unterschiede und Konkurrenz zwischen insurgenten Organisationen.
+- IED-, Hinterhalts- und komplexe Angriffsmuster.
 
 Grenzen:
 
 - regionaler Fokus;
 - viele interviewbasierte Aussagen;
 - lokale Schätzungen sind nicht landesweit übertragbar;
-- die historische Existenz mehrerer Gruppen verpflichtet OMW nicht zu einer Mehrfraktionssimulation.
+- mehrere historische Gruppen verpflichten OMW nicht zu einer Mehrfraktionssimulation.
 
-### 3.2 Exum/Fick/Humayun/Kilcullen – *Triage*, 2009
+### 3.2 Kandahar-/Helmand-Studien 2009–2011
 
-Vorperiodische Strategie- und COIN-Referenz zu Bevölkerungsschutz, Momentum, Priorisierung und Erschöpfungsstrategie. Keine neutrale Ereignischronik und keine Ist-ORBAT für 2010/2011.
+Dokument 57 erschließt neun zusätzliche Studien zu:
 
-### 3.3 Rainer Glatz – *ISAF Lessons Learned: A German Perspective*, 2011
+- Marjah und Operation Moshtarak;
+- Hamkari und dem Kandahar-Ring;
+- Helmand Supply-, Support- und Attack-Zonen;
+- Clear-Hold-Reinfiltration;
+- Nachtaktivität und Einschüchterung;
+- Finanzierung, Drogenwirtschaft und Schattenverwaltung;
+- lokale Zellautonomie;
+- ANSF- und Governance-Grenzen.
 
-Zeitgenössische Fachperspektive auf HUMINT, Comprehensive Approach, nationale Caveats, Endstate und Messgrößen. Keine vollständige amtliche ISAF-Doktrin.
+Hauptableitung:
 
-### 3.4 James M. Dubik – *Accelerating Combat Power in Afghanistan*, 2009
+```text
+CLEAR_COMPLETE != AREA_SECURED
+AREA_SECURED != POPULATION_CONTROLLED
+```
 
-Vorperiodische Referenz für ANSF-Kampfkraft, Ausbildung, Führung, Partnerschaft und Abhängigkeit von Combat Multipliers. Zielgrößen sind keine automatisch erreichten Iststärken.
+### 3.3 Weitere Quellen
 
-### 3.5 Khalatbari/Kazim – *Afghanistan and Pakistan – A Paradigm Shift?*, 2010
+- Exum/Fick/Humayun/Kilcullen, *Triage* – Bevölkerungsschutz, Momentum, Priorisierung und Erschöpfungsstrategie;
+- Rainer Glatz – HUMINT, Comprehensive Approach, Caveats und Endstate;
+- James M. Dubik – ANSF-Kampfkraft, Ausbildung, Führung und Combat Multipliers;
+- Khalatbari/Kazim – sekundäre Stärke-, Finanzierungs- und Pakistanangaben;
+- Armajani, Berdal und Noev/Ullman – Hintergrund, keine taktische Runtime-Autorität.
 
-Sekundäranalyse zu Sicherheitslage, Korruption, Drogenökonomie und Pakistanbezug. Die genannte Schätzung von ungefähr 35.000 Taliban-Fußkämpfern und 900 Kommandeuren ist nur `SECONDARY_ESTIMATE`, keine Spawnzahl oder Bestandsbaseline.
-
-### 3.6 Weitere Hintergrundquellen
-
-Armajani 2021, Berdal 2016 und Noev/Ullman 2010 liefern historischen beziehungsweise strategischen Kontext, aber keine taktische ORBAT oder Runtime-Autorität.
-
-## 4. Historische Vielfalt als optionale Verhaltensprofile
-
-Die Grundversion verwendet keine getrennten Fraktionen. Quellenunterschiede dürfen nur als optionale Aktionsprofile gespeichert werden:
+## 4. Historische Vielfalt als optionale Profile
 
 ```text
 SOURCE_PROFILE_GENERAL_INSURGENT
@@ -151,6 +165,8 @@ red_state:
   leadership_cohesion: 0..100
   manpower_pool: 0..100
   finance: 0..100
+  explosives: 0..100
+  weapons: 0..100
   intelligence_access: 0..100
   cache_capacity: 0..100
   mobility: 0..100
@@ -165,21 +181,18 @@ Diese Werte sind abstrakte Kampagnenkapazitäten. Sie entsprechen keiner exakten
 
 ### 5.1 Lokale Zellstruktur
 
-Für Laghman nennt die Crisis Group als lokales Beispiel ungefähr 23 kleine Gruppen mit jeweils etwa zehn bis dreißig Kämpfern und insgesamt ungefähr 400 Männern.
-
-Für OMW folgt daraus nur:
+Quellenbeispiele zeigen:
 
 ```text
 mehrere kleine örtliche Zellen
 + begrenzte gemeinsame Koordination
 + temporäre Zusammenfassung für ausgewählte Aktionen
++ taktische Handlungsfreiheit innerhalb eines strategischen Auftrags
 ```
 
-Die Zahlen sind keine allgemeine Provinzformel.
+Regionale Zahlen sind keine allgemeine Provinzformel und keine Spawnvorgabe.
 
 ## 6. AreaInfluenceState
-
-Jeder relevante Ort, Distrikt oder Routensektor kann getrennte Einflusswerte besitzen:
 
 ```yaml
 area_state:
@@ -189,62 +202,81 @@ area_state:
   population_passivity: 0..100
   government_legitimacy: 0..100
   government_security_presence: 0..100
+  hold_strength: 0..100
   route_control: 0..100
   recruitment_access: 0..100
   intelligence_penetration: 0..100
   cache_network: 0..100
   shadow_governance: 0..100
+  reinfiltration_access: 0..100
 ```
 
-Nicht auf einen einzigen `control`-Wert reduzieren. Zu trennen sind insbesondere:
+Nicht auf einen einzigen `control`-Wert reduzieren. Zu trennen sind:
 
 - Zustimmung;
 - Duldung aus Angst;
 - bewaffnete Präsenz;
 - Nachtbewegungsfreiheit;
 - Cache- und Informantenzugang;
-- Einfluss auf Verwaltung oder Justiz.
+- Einfluss auf Verwaltung oder Justiz;
+- physische Hold-Präsenz von BLUE/ANSF.
 
 Sichtbare Zusammenfassung:
 
 ```text
 ABSENT
 LATENT
-INFLUENCING
-CONTESTED
-SHADOW_GOVERNANCE
-DOMINANT
+ESTABLISHING
+ACTIVE
+DISRUPTED
+BLUE_CLEARED_NOT_HELD
+BLUE_HELD
+REINFILTRATING
+RECONSTITUTED
 ```
 
-Für das erste lauffähige System dürfen zunächst nur `armed_presence`, `route_control`, `cache_network` und `pressure_level` umgesetzt werden.
+Für das erste lauffähige System werden umgesetzt:
+
+```text
+armed_presence
+route_control
+cache_network
+pressure_level
+hold_strength
+reinfiltration_access
+```
 
 ## 7. Ziele des RED Commanders
 
-### 7.1 Überleben
+### 7.1 Netzwerk überleben lassen
 
 - Führung und Kader erhalten;
-- Kräfte bei Überlegenheit des Gegners aufteilen;
+- Kräfte bei Überlegenheit aufteilen;
 - Caches und Hide Sites schützen;
-- Kontakt abbrechen statt bis zur Vernichtung zu kämpfen.
+- Kontakt abbrechen statt bis zur Vernichtung zu kämpfen;
+- kurzfristige Geländeverluste akzeptieren, wenn das Netzwerk erhalten bleibt.
 
 ### 7.2 Bewegungsfreiheit begrenzen
 
 - Routen beobachten;
 - IEDs und Hinterhalte vorbereiten;
 - Checkpoints und Außenposten binden;
-- Convoys verzögern oder zu Umwegen zwingen.
+- Convoys verzögern oder zu Umwegen zwingen;
+- EOD-, ISR-, QRF- und Route-Clearance-Kapazität binden.
 
 ### 7.3 Ressourcen sichern
 
 - Caches und Nachschubwege erhalten;
 - Rekrutierungs- und Finanzierungsmöglichkeiten schützen;
-- Verluste regenerieren.
+- Verluste regenerieren;
+- externe und lokale Versorgung kombinieren.
 
 ### 7.4 Bevölkerung und Regierung beeinflussen
 
 - Informanten einschüchtern;
 - staatliche Legitimität schwächen;
 - lokale Beschwerden ausnutzen;
+- Schutzversprechen von BLUE und Regierung unglaubwürdig machen;
 - später optional Schattenjustiz und Abgabenerhebung simulieren.
 
 ### 7.5 Koalition erschöpfen
@@ -256,12 +288,28 @@ Für das erste lauffähige System dürfen zunächst nur `armed_presence`, `route
 
 ## 8. Aktionsportfolio
 
-Gesamtes quellenbasiertes Portfolio:
+### 8.1 MVP
+
+```text
+OBSERVE_ROUTE
+BUILD_CACHE
+CONDUCT_IED_ATTACK
+CONDUCT_AMBUSH
+PROBE_CHECKPOINT
+DISPERSE_UNDER_PRESSURE
+REINFILTRATE_SECTOR
+```
+
+`REINFILTRATE_SECTOR` ist aufgrund der Marjah- und Kandahar-Erfahrungen Bestandteil der Grundversion.
+
+### 8.2 Vollständiges quellenbasiertes Portfolio
 
 ```text
 RECRUIT_LOCAL_CELL
 INTIMIDATE_COMMUNITY
+INTIMIDATE_LOCAL_CONTACT
 PUNISH_INFORMANT
+DISTRIBUTE_NIGHT_LETTERS
 BUILD_CACHE
 ESTABLISH_HIDE_SITE
 MOVE_CADRE
@@ -269,8 +317,12 @@ OBSERVE_ROUTE
 CONDUCT_IED_ATTACK
 CONDUCT_AMBUSH
 CONDUCT_COMPLEX_AMBUSH
+FEINT_ATTACK
+MULTI_DIRECTION_ATTACK
+SECONDARY_ATTACK_ON_RESPONDERS
 PROBE_CHECKPOINT
 DISRUPT_ROUTE
+REINFILTRATE_SECTOR
 CONDUCT_TARGETED_ASSASSINATION
 CONDUCT_KIDNAPPING
 CONDUCT_HIGH_PROFILE_COMPLEX_ATTACK
@@ -283,11 +335,11 @@ RUN_SHADOW_COURT
 COLLECT_TAX_OR_EXTORTION
 ```
 
-Nicht jede Aktion benötigt eine physische DCS-Gruppe. Rekrutierung, Einschüchterung, Infiltration, Propaganda und Schattenherrschaft sind primär CampaignState-Ereignisse.
+Nicht jede Aktion benötigt eine physische DCS-Gruppe. Rekrutierung, Einschüchterung, Infiltration, Propaganda, Reinfiltrationsvorbereitung und Schattenherrschaft sind primär CampaignState-Ereignisse.
 
-## 9. Prioritätslogik
+## 9. Strategische Prioritätslogik
 
-### 9.1 Route mit hohem Nutzwert
+### 9.1 Wertvolle und vorhersehbare Route
 
 ```text
 OBSERVE_ROUTE
@@ -307,27 +359,39 @@ Erfolg kann bedeuten:
 
 ### 9.2 Hoher BLUE-Druck
 
-- Zellen verkleinern;
-- Führungs- und Cache-Standorte verlegen;
-- offene Sammelpunkte vermeiden;
-- Kontakt abbrechen;
-- später regenerieren.
+```text
+REDUCE_GROUP_SIZE
+MOVE_CADRE
+HIDE_WEAPONS
+DISPERSE_UNDER_PRESSURE
+AVOID_DECISIVE_ENGAGEMENT
+REMOTE_REGROUP
+```
 
-### 9.3 Schwache lokale Regierung
+### 9.3 Unzureichendes Hold nach BLUE-Clear
 
-Später können priorisiert werden:
+```text
+REINFILTRATE_SECTOR
+RESTORE_OBSERVERS
+REBUILD_CACHE
+INTIMIDATE_LOCAL_CONTACT
+RESUME_SMALL_ATTACKS
+```
+
+### 9.4 Schwache Regierung oder Polizei
+
+Später priorisierbar:
 
 ```text
 RECRUIT_LOCAL_CELL
 INTIMIDATE_COMMUNITY
+PUNISH_INFORMANT
 ESTABLISH_SHADOW_OFFICIAL
 RUN_SHADOW_COURT
 COLLECT_TAX_OR_EXTORTION
 ```
 
-Diese Funktionen sind keine Voraussetzung für die erste RED-Version.
-
-### 9.4 Komplexer Angriff
+### 9.5 Komplexer Angriff
 
 Nur bei erfüllten Voraussetzungen:
 
@@ -343,9 +407,58 @@ requirements:
 
 Komplexe Angriffe werden nicht zufällig erzeugt.
 
-## 10. Taktische Muster
+## 10. Clear-Hold-Reinfiltration
 
-### 10.1 IED und Hinterhalt
+```text
+BLUE_CLEAR
+→ RED_WITHDRAW_OR_MELT_INTO_POPULATION
+→ RED_DISRUPTED
+→ BLUE_SECURES_KEY_NODES
+→ BLUE_REDUCES_HOLD_PRESENCE
+→ RED_RETURNS_AT_NIGHT
+→ OBSERVERS_AND_INTIMIDATION
+→ CACHE_REBUILT
+→ SMALL_ATTACKS_RESUME
+→ RED_RECONSTITUTED
+```
+
+Verbindlich:
+
+```text
+AREA_CLEARED != AREA_SECURED
+AREA_SECURED != POPULATION_CONTROLLED
+TACTICAL_VICTORY != CAMPAIGN_SUCCESS
+```
+
+### 10.1 Zustandsübergänge
+
+```text
+ACTIVE
+  --successful clear-->
+DISRUPTED
+
+DISRUPTED
+  --insufficient hold-->
+BLUE_CLEARED_NOT_HELD
+
+BLUE_CLEARED_NOT_HELD
+  --night access + surviving network-->
+REINFILTRATING
+
+REINFILTRATING
+  --cache and local access restored-->
+RECONSTITUTED
+
+RECONSTITUTED
+  --new attack-->
+ACTIVE
+```
+
+`BLUE_HELD` reduziert Reinfiltration, verhindert sie aber nicht automatisch.
+
+## 11. Taktische Muster
+
+### 11.1 IED und Hinterhalt
 
 1. Route beobachten;
 2. Routine erkennen;
@@ -357,15 +470,15 @@ Komplexe Angriffe werden nicht zufällig erzeugt.
 
 Nicht jede IED-Aktion benötigt einen bis zum Tod kämpfenden Trupp.
 
-### 10.2 Checkpoint Probe
+### 11.2 Checkpoint Probe
 
 - Annäherungswege testen;
 - Reaktionszeit messen;
 - Feuerpositionen oder tote Winkel erkennen;
 - ohne unnötige Verluste abbrechen;
-- Informationen für spätere Aktion speichern.
+- Informationen für spätere Aktionen speichern.
 
-### 10.3 Dispersal
+### 11.3 Dispersal
 
 Bei gegnerischer Überlegenheit:
 
@@ -375,19 +488,51 @@ Bei gegnerischer Überlegenheit:
 - benachbarte Sektoren nutzen;
 - später in neuer Zusammensetzung zurückkehren.
 
-### 10.4 Komplexer Angriff
+### 11.4 Kleine Teams unter Druck
 
-Mögliche Elemente:
+- Beobachter, IED-Teams und Feuertrupps trennen;
+- größere Sammelpunkte vermeiden;
+- Nacht- und Übergangszeiten nutzen;
+- Caches statt dauerhaft mitgeführter Waffen nutzen;
+- lokale Zellen nur begrenzt über das Gesamtnetz informieren.
 
-- mehrere Angriffsteile;
-- IED oder Fahrzeugbombe;
-- vorbereitete Waffenlager;
-- zeitliche Staffelung;
-- Angriff auf symbolische oder hochwertige Ziele.
+### 11.5 Feint und mehrstufiger Angriff
 
-Diese Aktionsklasse ist selten und wird erst nach Stabilisierung der Kernfunktionen umgesetzt.
+Spätere Erweiterung:
 
-## 11. Rekrutierung und Bevölkerung
+1. Ablenkung oder Feint;
+2. Feuer aus zweiter Richtung;
+3. Hauptangriff oder IED;
+4. optionaler Angriff auf eintreffende Reaktionskräfte;
+5. schneller Abbruch.
+
+Diese Aktionsklasse wird erst nach Stabilisierung der MVP-Funktionen umgesetzt.
+
+## 12. Lokale Zellautonomie
+
+Der RED Commander entscheidet:
+
+```text
+Sektor
+Zweck
+Ressourcenbudget
+Eskalationsgrenze
+gewünschter Kampagneneffekt
+```
+
+Die lokale Zelle entscheidet innerhalb dieses Auftrags:
+
+```text
+Zeitpunkt
+Angriffspunkt
+Abbruch
+Rückzugsrichtung
+Cache-Nutzung
+```
+
+Dies ist delegierte taktische Ausführung innerhalb eines gemeinsamen REDState, keine zweite Fraktion oder ein zweiter strategischer Commander.
+
+## 13. Rekrutierung und Bevölkerung
 
 Mögliche Einflussfaktoren:
 
@@ -404,18 +549,18 @@ Mögliche Einflussfaktoren:
 
 Verbindlich:
 
-> Ethnie, Religion oder Wohnort allein erzeugen keine feindliche Zugehörigkeit.
+> Ethnie, Religion, Stamm oder Wohnort allein erzeugen keine feindliche Zugehörigkeit.
 
-## 12. Geschützte zivile Objekte
+## 14. Geschützte zivile Objekte
 
-Moscheen, Schulen, medizinische Einrichtungen und andere zivile Objekte bleiben grundsätzlich geschützt.
+Moscheen, Schulen, medizinische Einrichtungen, Bazaare und andere zivile Objekte bleiben grundsätzlich geschützt.
 
 - Kategorie oder Standort allein ist keine feindliche Signatur;
 - militärische Nutzung muss nachrichten- und ereignisbasiert festgestellt werden;
 - NSL, ROE, Positive Identification und Kollateralschadensprüfung bleiben vollständig wirksam;
 - verdeckte Nutzung ist ein Intelligence-Problem, keine pauschale Zielklasse.
 
-## 13. Infiltration und Intelligence
+## 15. Infiltration und Intelligence
 
 Mögliche RED-Effekte:
 
@@ -426,6 +571,7 @@ false_target_report
 insider_access
 weapons_cache_survival
 attack_timing_bonus
+night_reinfiltration_access
 ```
 
 Mögliche BLUE-Gegenmaßnahmen:
@@ -437,40 +583,58 @@ source_validation
 randomized_routes
 cache_search
 force_protection
+persistent_patrolling
+local_official_protection
 ```
 
 Technische ISR-Sensoren allein decken das Netzwerk nicht vollständig auf. RECCE, HUMINT, Pattern-of-Life und Quellenvalidierung bleiben erforderlich.
 
-## 14. Erfolgsmessung
+## 16. Finanzierung
 
-RED-Erfolg ist nicht nur zerstörtes BLUE-Material.
+Zulässige abstrakte Quellen:
 
-Mögliche RED-Metriken:
+```text
+LOCAL_TAXATION
+EXTORTION
+NARCOTICS_REVENUE
+SMUGGLING
+EXTERNAL_SUPPORT
+CAPTURED_MATERIEL
+LOCAL_DONATIONS_OR_COERCION
+```
+
+Konkrete Dollarbeträge aus Einzelquellen werden nicht direkt als CampaignState-Balance übernommen. Lokale Selbstfinanzierung und zentrale Unterstützung können gleichzeitig bestehen.
+
+## 17. Erfolgsmessung
+
+### RED
 
 - Routen nur unter höherem Aufwand nutzbar;
 - Cache-Netz überlebt;
 - lokale Zellen können regenerieren;
-- Informanten werden eingeschüchtert;
+- ein geräumter Sektor wird erneut infiltriert;
+- Informanten und Funktionsträger werden eingeschüchtert;
 - BLUE bindet überproportional viele Kräfte;
-- psychologische Wirkung wird erzielt;
 - Führung und externe Unterstützung bleiben funktionsfähig.
 
-BLUE-/Campaign-Metriken:
+### BLUE/Campaign
 
-- sichere Straßennutzung;
+- sichere Straßennutzung über längere Zeit;
 - freiwillige Meldungen;
 - sinkende Einschüchterung;
 - stabile lokale Verwaltung;
-- dauerhafte Sicherheit statt kurzfristiger Präsenz;
+- wirksames Hold statt kurzfristiger Präsenz;
+- erkannte und unterbrochene Reinfiltration;
 - ANSF-Readiness;
 - zivile Schäden und Fehlidentifikationen.
 
 ```text
 BLUE_KILLS != BLUE_SUCCESS
 TERRAIN_OCCUPIED != LEGITIMATE_CONTROL
+CLEAR_COMPLETE != CAMPAIGN_COMPLETE
 ```
 
-## 15. Kampagnenphasen
+## 18. Kampagnenphasen
 
 ```text
 PREPARE
@@ -479,12 +643,13 @@ SHAPE
 OFFENSIVE
 EXPLOIT
 DISPERSE
+REINFILTRATE
 RECOVER
 ```
 
 Der eine RED Commander kann in unterschiedlichen Sektoren gleichzeitig verschiedene Phasen führen. Dafür sind keine getrennten Fraktionen nötig.
 
-## 16. Technische Zielarchitektur
+## 19. Technische Zielarchitektur
 
 ```text
 REDState
@@ -510,14 +675,14 @@ separate faction commanders
 
 Vor eigener Lua-Logik sind passende MOOSE-FSM-, OPS-, AUFTRAG-, INTEL-, DETECTION-, ZONE-, SPAWN- und Event-Funktionen zu prüfen.
 
-## 17. Priorisierte Umsetzung
+## 20. Priorisierte Umsetzung
 
 ### Stufe 1 – einfaches Grundkonzept
 
 1. einen `REDState` definieren;
 2. HQ, Depots, Hide Sites und Forward Caches führen;
 3. kleine lokale Zellen aus einem gemeinsamen Pool erzeugen;
-4. ausschließlich folgende Kernaktionen umsetzen:
+4. folgende Kernaktionen umsetzen:
 
 ```text
 OBSERVE_ROUTE
@@ -526,6 +691,7 @@ CONDUCT_IED_ATTACK
 CONDUCT_AMBUSH
 PROBE_CHECKPOINT
 DISPERSE_UNDER_PRESSURE
+REINFILTRATE_SECTOR
 ```
 
 5. Erfolg, Verlust, Rückzug und Ressourcenverbrauch zurückschreiben;
@@ -534,6 +700,8 @@ DISPERSE_UNDER_PRESSURE
 
 ### Stufe 2 – einfache Einflusswirkungen
 
+- Hold-Präsenz;
+- Reinfiltrationswahrscheinlichkeit;
 - Route Influence;
 - Cache-Regeneration;
 - begrenzte Rekrutierung;
@@ -545,6 +713,7 @@ DISPERSE_UNDER_PRESSURE
 - gezielte Tötung;
 - Infiltration;
 - Entführung;
+- Feint und mehrstufiger Angriff;
 - komplexe Angriffe;
 - Schattenjustiz;
 - Propaganda.
@@ -562,7 +731,7 @@ Nur nach:
 
 Bis dahin bleibt Stufe 4 zurückgestellt.
 
-## 18. Abnahmekriterien
+## 21. Abnahmekriterien
 
 Die RED-Grundversion gilt erst als integriert, wenn:
 
@@ -571,6 +740,7 @@ Die RED-Grundversion gilt erst als integriert, wenn:
 - keine verdeckten Fraktionspools vorhanden sind;
 - jeder physische Spawn Ursprung, Auftrag und Ressourcenverbrauch besitzt;
 - Rückzug und Dispersal funktionieren;
+- `REINFILTRATE_SECTOR` nach unzureichendem Hold reproduzierbar funktioniert;
 - IED-, Hinterhalt- und Probe-Aktionen reproduzierbar getestet sind;
 - keine pauschale Zielauswahl nach Ethnie, Religion oder ziviler Objektkategorie erfolgt;
 - MOOSE-First dokumentiert ist;
