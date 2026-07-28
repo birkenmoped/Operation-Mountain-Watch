@@ -122,7 +122,21 @@ Das Audit bezieht sich auf die in diesem Quellenarbeitsgang identifizierten Mate
 | GoE *Paveway II – Buddy-Lasing Phraseology* | `INCORPORATED_WITH_LIMITS` | Dokument 54, T14 | modernes DCS-Trainingsprofil, keine 2010/2011-Rückprojektion |
 | ISAF 2009–2013 ACO/AAR-Quellen und Dateien | `INCORPORATED` | Dokumente 29/30; Dokument 54 als Datenmodell | geographische/operationelle AAR-Baseline bleibt in 29/30 |
 
-## 8. Quellen, die in anderen OMW-Fachsträngen bereits erfasst sind
+## 8. Monatliche ORBAT, Aufstandsnetzwerke und strategische Analysen
+
+| Quelle/Datei | Status | Repository-Ziel | Bemerkung |
+|---|---|---|---|
+| `Morgan-AfghanistanOrderBattle-2012.pdf` – Wesley Morgan, *Afghanistan Order of Battle 2009-2012* | `INCORPORATED_WITH_LIMITS` | Dokument 55; ergänzend Dokumente 50/11/13 | monatliche Koalitions-ORBAT, Basen und AORs; wechselnder Scope, meist keine Iststärken, keine vollständige Support-/PRT-/Black-SOF-Struktur |
+| `Group-STATEPLAY-2011.pdf` – International Crisis Group, *The Insurgency in Afghanistan's Heartland* | `INCORPORATED_WITH_LIMITS` | Dokument 56 | stärkste RED-Verhaltensquelle; sieben zentral-östliche Provinzen, interviewbasierte Regionalstudie, keine nationale Gesamt-ORBAT |
+| `Exum-Triage-2009.pdf` – *Triage* | `INCORPORATED_WITH_LIMITS` | Dokument 56 | Vorperiodenreferenz zu Erschöpfungsstrategie, Bevölkerungsschutz, Momentum, ink-blot und Outcome-Metriken |
+| `GLATZ-ISAFLessonsLearned-2011.pdf` | `INCORPORATED_WITH_LIMITS` | Dokument 56; ergänzend Dokument 55 | zeitgenössische deutsche Fachperspektive; RC-N, Comprehensive Approach, HUMINT und Caveats; persönliche Auffassung, keine vollständige Doktrin |
+| `Dubik-ACCELERATINGCOMBATPOWER-2009.pdf` | `INCORPORATED_WITH_LIMITS` | Dokument 56 | Vorperioden-Planungsreferenz zu ANSF-Throughput, Kampfkraft, Vertrauen und Combat-Multiplier-Abhängigkeit |
+| `Khalatbari-AfghanistanPakistan-2010.pdf` | `INCORPORATED_WITH_LIMITS` | Dokument 56 | zeitgenössische Sekundäranalyse; Taliban-Stärke und Finanzierung nur als unsichere Sekundärschätzungen |
+| `Armajani-Taliban-2021.pdf` | `BACKGROUND_ONLY` | Dokument 56 | post-periodischer historischer Überblick zu Pakistan/ISI, Madrasas, Proxy-Netzwerken und Hizb-e Islami |
+| `Berdal-MissionFar-2016.pdf` | `BACKGROUND_ONLY` | Dokument 56 | post-periodische Strategie- und Bündniskritik; keine taktische ORBAT |
+| `Noev-AfghanistanPakistanNATOs-2010.pdf` | `BACKGROUND_ONLY` | Dokument 56 | NATO-Kohäsion, Expeditionary-/Hybrid-Kontext; kaum direkte Einheiten- oder Taktikdaten |
+
+## 9. Quellen, die in anderen OMW-Fachsträngen bereits erfasst sind
 
 Die folgenden Themen besitzen bereits eigene Fachreferenzen und werden in diesem PR nicht erneut vollständig dupliziert:
 
@@ -137,7 +151,7 @@ Die folgenden Themen besitzen bereits eigene Fachreferenzen und werden in diesem
 
 Neue Quellen werden dort nur ergänzt, wenn sie einen bisher fehlenden autoritativen Inhalt liefern. Dokument 54 verweist auf diese Quellenbereiche und ersetzt sie nicht.
 
-## 9. Nicht als Projektquelle zu übernehmende Dateien
+## 10. Nicht als Projektquelle zu übernehmende Dateien
 
 | Datei/Typ | Status | Begründung |
 |---|---|---|
@@ -145,7 +159,7 @@ Neue Quellen werden dort nur ergänzt, wenn sie einen bisher fehlenden autoritat
 | automatisch erzeugte Vorschaubilder ohne Herkunftsmetadaten | `OUT_OF_SCOPE` bis zur Zuordnung | keine selbstständige Evidenz |
 | doppelte Patreon-PDF-Exporte desselben Posts | `INCORPORATED` über einen eindeutigen Quellenrecord | keine Mehrfachzählung |
 
-## 10. Offene Aufnahmeaufgaben
+## 11. Offene Aufnahmeaufgaben
 
 Trotz der erfolgten Aufnahme bleiben Primärquellenprüfungen offen:
 
@@ -158,9 +172,12 @@ Trotz der erfolgten Aufnahme bleiben Primärquellenprüfungen offen:
 7. exakte PRT-Zuständigkeiten und Standortwechsel 2010/2011;
 8. unbestätigte ArmyAircrews-Verlusteinträge;
 9. die im CH-47-Working-Paper genannten Primärinterviews und After-Action Reports;
-10. alle Quellen, die später neu hochgeladen oder diesem Arbeitsstrang ausdrücklich hinzugefügt werden.
+10. Normalisierung der 17 Morgan-Monatsstände August 2010 bis Dezember 2011 in einen strukturierten Datensatz;
+11. Primärquellen-Gegenprüfung ausgewählter Morgan-Standorte und Rotationen durch ISAF-Placemats, DVIDS und nationale Quellen;
+12. regionale Verifikation von RED-Stärken und Führungsstrukturen außerhalb der sieben Crisis-Group-Provinzen;
+13. alle Quellen, die später neu hochgeladen oder diesem Arbeitsstrang ausdrücklich hinzugefügt werden.
 
-## 11. Abschlussstatus
+## 12. Abschlussstatus
 
 Für die in diesem Audit identifizierten Quellen existiert nun jeweils:
 
