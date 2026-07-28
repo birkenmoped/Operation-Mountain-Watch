@@ -27,6 +27,7 @@ Aktuelle Nummern und IDs stehen in [`OMW-GOV-DOCUMENT-REGISTRY`](../DOCUMENT-REG
 ## 2. Aktuelle Evidenzdokumente
 
 - [`Jalalabad Air Operations – Ausgangsaudit`](jalalabad-air-operations-baseline-audit.md)
+- [`Tarinkot – Satellitenbildbeobachtungen vom 03. und 17. Mai 2012`](tarinkot-satellite-observations-2012.md) – dokumentiert die post-periodische sichtbare Rampenbelegung, Identifikationsmerkmale und Grenzen; keine eigenständige 2010/2011-ORBAT-Autorität.
 - [`Quellenaufnahme-Audit 28.07.2026`](source-intake-audit-2026-07-28.md) – ordnet die im Afghanistan-Kräfte-, Aviation-, Air-C2-, ORBAT- und RED-Commander-Arbeitsstrang identifizierten Quellen ihren Fachreferenzen, Ausschlussakten oder offenen Prüfständen zu.
 
 ## 3. Legacy-Quelldatensätze
