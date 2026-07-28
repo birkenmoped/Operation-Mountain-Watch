@@ -13,7 +13,7 @@ project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
   - registry without complete non-numbered document inventory
 superseded_by:
-source_branch: agent/complete-documentation-authority-migration
+source_branch: agent/document-ato-asr-aar-buddy-lasing
 source_commit: PENDING_MERGE
 validated_in_dcs: false
 ---
@@ -76,6 +76,9 @@ Eine Nummer und eine stabile `document_id` dürfen im aktuellen Bestand jeweils 
 | 18 | 22–25 | nur Draft-PR #18; branchgebundene Air-Ops-Dokumente |
 | 18 | 27 | branchlokale Kollision; vor Integration zwingend neu nummerieren |
 | 24 | 31–36 | nur Draft-PR #24; Bagram/Kandahar |
+| 34 | 50 | nur Draft-PR #34; MQ-1/MQ-9 Afghanistan-Einsatzreferenz |
+| 36 | 51–53 | nur Draft-PR #36; Salerno-Manifest, Benennungsstandard und Implementierungsübergabe |
+| 37 | 54–56 | nur Draft-PR #37; ATO/ACO/SPINS, JTAR/ASR und Buddy Lasing |
 
 ## 4. Nicht nummerierte aktuelle Dokumente
 
@@ -100,7 +103,7 @@ Eine Nummer und eine stabile `document_id` dürfen im aktuellen Bestand jeweils 
 | `OMW-TARGETING-AFGHANISTAN-NSL-DATA-USE` | `docs/targeting/afghanistan-nsl-data-use-policy.md` | `BINDING`; technische Datenverwendung |
 | `OMW-TARGETING-AFGHANISTAN-NSL-LEGACY-PATH` | `docs/targeting/afghanistan-no-strike-list.md` | `SUPERSEDED`; Kompatibilitätspfad |
 | `OMW-ADR-0001-USE-MOOSE` | `docs/adr/0001-use-moose.md` | `SUPERSEDED`; historische ADR |
-| `OMW-ADR-0002-USE-MOOSE-CTLD-CSAR` | `docs/adr/0002-use-moose-ctld-and-csar.md` | `SUPERSEDED`; historische ADR |
+| `OMW-ADR-0002-USE-MOOSE-CTLD-CSAR` | `docs/adr/0002-use-moose-ctld-csar.md` | `SUPERSEDED`; historische ADR |
 | `OMW-ADR-0003-ME-GROUP-TEMPLATES` | `docs/adr/0003-use-mission-editor-group-templates.md` | `BINDING`; Spawnvorlagen |
 | `OMW-ADR-0004-LOCATION-REGISTRY` | `docs/adr/0004-use-explicit-location-registry.md` | `BINDING`; Orts-/Routenregister |
 | `OMW-EVIDENCE-INDEX` | `docs/evidence/README.md` | `BINDING`; Evidenzeinordnung |
