@@ -76,6 +76,8 @@ Eine Nummer und eine stabile `document_id` dürfen im aktuellen Bestand jeweils 
 | 55 | `OMW-HIST-MONTHLY-COALITION-ORBAT-BASING` | `docs/55-monthly-coalition-orbat-and-basing-2010-2011.md` | `BINDING` | monatliche Koalitions-ORBAT-, Basierungs- und AOR-Referenz |
 | 56 | `OMW-RED-INSURGENT-FACTIONS-BEHAVIOR` | `docs/56-insurgent-factions-shadow-governance-and-red-commander-behavior.md` | `BINDING` | konsolidierter RED Commander; historisches Insurgentenverhalten und optionale spätere Mehrfraktionsreferenz |
 | 57 | `OMW-RED-KANDAHAR-HELMAND-ENEMY-SYSTEM` | `docs/57-kandahar-helmand-enemy-system-and-red-commander-strategy.md` | `BINDING` | Kandahar-/Helmand-Enemy-System, Clear-Hold-Reinfiltration, Kräfte-/ANSF-Kontext und RED-Strategie |
+| 58 | `OMW-RED-EASTERN-AFGHANISTAN-NETWORK-OPERATIONS` | `docs/58-eastern-afghanistan-network-operations-and-complex-attack-model.md` | `BINDING` | ostafghanisches Netzwerk-, Infiltrations-, Facilitation- und Complex-Attack-Modell |
+| 59 | `OMW-COIN-ASSESSMENT-TRANSITIONS-NONSTATE-SECURITY` | `docs/59-campaign-assessment-operational-transitions-and-nonstate-security.md` | `BINDING` | Campaign Assessment, Clear-Hold-Build und nichtstaatliche Sicherheitsakteure |
 
 ## 3. Reservierte Nummern auf offenen Branches
 
