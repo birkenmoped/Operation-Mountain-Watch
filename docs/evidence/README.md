@@ -99,6 +99,7 @@ Aktuelle Nummern und IDs stehen in [`OMW-GOV-DOCUMENT-REGISTRY`](../DOCUMENT-REG
 ## 4. Externe Quellenakten
 
 - [`Weapon of Choice – frühe SOF-/SOAR-Hintergrundreferenz`](source-records/weapon-of-choice-special-operations-background.md) – behandelt 2001/2002; nur `BACKGROUND_ONLY`, keine Stationierungs- oder ORBAT-Autorität für 2010/2011.
+- [`CENTCOM Posture Statement 2022 – Afghanistan-Kontext`](source-records/centcom-posture-statement-2022-afghanistan-context.md) – nur `POST_PERIOD_CONTEXT`; keine ORBAT-, Basierungs- oder TTP-Autorität für 2010/2011.
 
 ## 5. Verwendungsregel
 
