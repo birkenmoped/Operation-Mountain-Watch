@@ -156,9 +156,36 @@ Vorgeschobener Aviation- und Zabul-Knoten:
 - CH-47-Platoon-/Detachment-Rolle 2011;
 - lokale Kiowa-Wartungs- und Bewaffnungsfunktionen 2011.
 
-### Tarinkot / Tarin Kowt
+### Tarinkot / Tarin Kowt / Camp Holland
 
-Vorgeschobener Detachment-Standort aus dem Kandahar-Regionalpool. CH-47-Platoon-Präsenz ist 2011 belegt. Andere lokale Luftfahrzeugmuster und exakte Bestände benötigen basisbezogene Quellen und Manifestentscheidungen.
+Tarinkot wird als mehrschichtiger RC-South-Knoten modelliert und ausdrücklich nicht auf die Funktion eines reinen Flugfelds reduziert.
+
+Für den OMW-Zeitraum sind belegt beziehungsweise quellenqualifiziert:
+
+- Combined Team Uruzgan mit Führung aus Camp Holland;
+- 1/2 Stryker Cavalry im Raum Uruzgan;
+- 6 Royal Australian Regiment mit Mentoring- und Reconstruction-Auftrag;
+- Australian Special Operations Task Group / Task Force 66 in Camp Holland;
+- niederländische, australische und amerikanische Führungs- und Manöverelemente im Verlauf der monatlichen ORBAT-Reihe;
+- vorgeschobene CH-47-Platoon-/Detachment-Präsenz ab 2011 als Teil des Kandahar-Regionalpools;
+- Direct-Support-Aufträge aus der auf Kandahar, Tarinkot und FOB Wolverine verteilten CH-47-Struktur.
+
+Die Quellen nennen keinen belastbaren Gesamt-Personalbestand für Camp Holland/Tarin Kowt. Gebäude-, Zelt-, Fahrzeug- oder Luftfahrzeugzahlen dürfen nicht in eine Personalstärke umgerechnet werden.
+
+Die projektseitig ausgewerteten Satellitenbilder vom 03. und 17.05.2012 liegen außerhalb des OMW-Zeitraums und werden nur als `POST_PERIOD_CONTEXT` verwendet. Sichtbar sind am 17.05.2012:
+
+```text
+14 AH-64
+ 6 UH-60
+ 1 CH-47
+ 0 bestätigte OH-58D
+```
+
+Zusätzlich ist ein nicht identifiziertes Fixed-Wing-Luftfahrzeug auf der südwestlichen Abstellfläche sichtbar. Daraus wird keine permanente lokale Fixed-Wing-Einheit abgeleitet.
+
+Die post-periodische Beobachtung belegt nicht den exakten 2011er Bestand, widerlegt aber die frühere Annahme, Tarinkot müsse als kleiner Außenposten mit höchstens zwei bis vier Luftfahrzeugen je Muster dargestellt werden. Die aktive OMW-Bestandsentscheidung steht ausschließlich in Dokument 19. Vollständige Beobachtung und Grenzen:
+
+- [`OMW-EVIDENCE-TARINKOT-SATELLITE-2012`](evidence/tarinkot-satellite-observations-2012.md).
 
 ### Shindand Air Base
 
@@ -179,7 +206,7 @@ FOBs, COPs und Checkpoints besitzen begrenzte Ressourcen, Fähigkeiten und Zufah
 | FOB Shank | `LONG_TERM_DETACHMENT` | kleiner CH-47-Standort | Dokument 50, S05 |
 | FOB Sharana | `ROTATIONAL_DETACHMENT` | CH-47-/Army-Aviation-Knoten | Dokument 50, S05 |
 | FOB Wolverine | `LONG_TERM_DETACHMENT` | OH-58D, später CH-47, Wartung | Dokument 50, S05/S14/S15 |
-| Tarinkot | `LONG_TERM_DETACHMENT` | CH-47-Platoon aus Kandahar-Pool | Dokument 50, S05 |
+| Tarinkot / Camp Holland | `LONG_TERM_DETACHMENT` und Combined-Team-Knoten | C2, Bodenkräfte, SOF und CH-47-Platoon aus Kandahar-Pool; post-periodisch große AH-64-/UH-60-Rampenbelegung | Dokumente 50/55; Tarinkot-Satellitenevidenz 2012 |
 | Camp Wright | `FARP` | 3-17 CAV Refuel/Rearm | Dokument 50 |
 | FOB Wilson | `FARP` | 2-17 CAV Refuel/Rearm | Dokument 50, S13 |
 | COP Sayed Abad | `MISSION_STAGING` | Talon-Purge-PZ/Aufnahmeraum | Dokument 50, S05 |
