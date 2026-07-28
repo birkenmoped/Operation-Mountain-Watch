@@ -61,14 +61,16 @@ Ein offener Draft-PR ist keine `main`-Autorität. Ein branchgebundener PASS blei
 | monatliche Koalitions-ORBAT, Basierung und AOR | [`OMW-HIST-MONTHLY-COALITION-ORBAT-BASING`](55-monthly-coalition-orbat-and-basing-2010-2011.md) | `BINDING` | Wesley-Morgan-Monatsstände; keine aktive ORBAT- oder Iststärkenautorität |
 | konsolidierter RED Commander und insurgentes Verhalten | [`OMW-RED-INSURGENT-FACTIONS-BEHAVIOR`](56-insurgent-factions-shadow-governance-and-red-commander-behavior.md) | `BINDING` | ein Gegner in der Grundversion; Reinfiltration als MVP-Kernaktion; Mehrfraktion nur spätere Option |
 | Kandahar-/Helmand-Enemy-System und RED-Strategie | [`OMW-RED-KANDAHAR-HELMAND-ENEMY-SYSTEM`](57-kandahar-helmand-enemy-system-and-red-commander-strategy.md) | `BINDING` | neun ISW-/New-America-Studien zu Marjah, Hamkari, Kandahar und Helmand; keine Spawn- oder aktive ORBAT-Autorität |
+| Ostafghanistan, Netzwerkoperationen und komplexe Angriffsplanung | [`OMW-RED-EASTERN-AFGHANISTAN-NETWORK-OPERATIONS`](58-eastern-afghanistan-network-operations-and-complex-attack-model.md) | `BINDING` | Haqqani-/QST-/CTC-Quellen zu Sanctuary, Facilitation, Staging, Compartmentation und High-Complexity-Profil; keine zweite Runtime-Fraktion |
+| Campaign Assessment, Übergänge und nichtstaatliche Sicherheitsakteure | [`OMW-COIN-ASSESSMENT-TRANSITIONS-NONSTATE-SECURITY`](59-campaign-assessment-operational-transitions-and-nonstate-security.md) | `BINDING` | Cordesman-, Dubik-, McNally-, Kagan- und Kandahar-PSC-Quellen; keine aktive PSC-ORBAT |
 | Systemarchitektur | [`OMW-ARCH-SYSTEM`](03-system-architecture.md) | `BINDING` | Dokument 37 |
-| CampaignState/dynamische Kampagne | [`OMW-ARCH-CAMPAIGN-DYNAMIC-MISSION`](37-campaign-architecture-and-dynamic-mission-design.md) | `BINDING` | Dokumente 04–07, 56–57 und TM01/TM02-Reviews |
+| CampaignState/dynamische Kampagne | [`OMW-ARCH-CAMPAIGN-DYNAMIC-MISSION`](37-campaign-architecture-and-dynamic-mission-design.md) | `BINDING` | Dokumente 04–07, 56–59 und TM01/TM02-Reviews |
 | Fog of War / RECCE | [`OMW-MOOSE-FOG-OF-WAR-RECCE`](moose/FOG-OF-WAR-RECCE.md) | `PLANNED` | MOOSE-Develop geprüft; Laufzeitvalidierung im gepinnten MOOSE-Stand ausstehend |
 | aktive Luft-ORBAT/Clientgrenzen | [`OMW-AIR-ACTIVE-ORBAT`](19-active-air-orbat-decisions.md) | `BINDING_PROJECT_DECISION` | historische ORBAT-Recherche |
 | technische Luftoperationen | [`OMW-AIR-IMPLEMENTATION`](18-air-operations-implementation.md) | `BINDING` | MOOSE Air Operations |
 | Jalalabad-ME-Baseline | [`OMW-AIR-JBAD-MANIFEST`](21-jalalabad-air-operations-manifest.md) | `BINDING` | PR #18 und Testprojektindex |
 | Missionseditor-Masterarbeit | [`OMW-ME-MASTER-WORKLIST`](38-mission-editor-master-worklist.md) | `BINDING` | basisbezogene Manifeste |
-| MSR/Routing | [`OMW-MSR-ROUTE-DESIGN`](49-msr-routendesign-und-infrastrukturmarker.md) | `PLANNED` | TM01M, Route-Clearance-, RED-Observation-, IED- und Reinfiltrationsmuster |
+| MSR/Routing | [`OMW-MSR-ROUTE-DESIGN`](49-msr-routendesign-und-infrastrukturmarker.md) | `PLANNED` | TM01M, Route-Clearance-, RED-Observation-, IED-, Facilitation- und Reinfiltrationsmuster |
 | CSAR-Quellen/Anforderungen | [`OMW-CSAR-INDEX`](csar/README.md) | `BINDING` | CSAR-Unterdokumente |
 | NSL/Targeting | [`OMW-TARGETING-AFGHANISTAN-NSL`](48-afghanistan-no-strike-list.md) | `BINDING` | [Datenrichtlinie](targeting/afghanistan-nsl-data-use-policy.md) |
 | Wetterdaten | [`OMW-WX-HISTORICAL-BASELINE`](41-historical-weather-baseline-2010-2011.md) | `BINDING` | [Datensatzdokumentation](data/weather/README.md) |
@@ -133,6 +135,8 @@ Ein offener Draft-PR ist keine `main`-Autorität. Ein branchgebundener PASS blei
 - [55 – Monatliche Koalitions-ORBAT und Basierung 2010–2011](55-monthly-coalition-orbat-and-basing-2010-2011.md)
 - [56 – Insurgentisches Verhalten und konsolidierter RED Commander](56-insurgent-factions-shadow-governance-and-red-commander-behavior.md)
 - [57 – Kandahar und Helmand: Enemy System und RED-Commander-Strategie](57-kandahar-helmand-enemy-system-and-red-commander-strategy.md)
+- [58 – Ostafghanistan: Netzwerkoperationen, Infiltration und komplexe Angriffsplanung](58-eastern-afghanistan-network-operations-and-complex-attack-model.md)
+- [59 – Kampagnenbewertung, operative Übergänge und nichtstaatliche Sicherheitsakteure](59-campaign-assessment-operational-transitions-and-nonstate-security.md)
 
 ## 5. Architekturentscheidungen
 
@@ -174,6 +178,8 @@ Ein offener Draft-PR ist keine `main`-Autorität. Ein branchgebundener PASS blei
 - [`OMW-HIST-MONTHLY-COALITION-ORBAT-BASING`](55-monthly-coalition-orbat-and-basing-2010-2011.md)
 - [`OMW-RED-INSURGENT-FACTIONS-BEHAVIOR`](56-insurgent-factions-shadow-governance-and-red-commander-behavior.md)
 - [`OMW-RED-KANDAHAR-HELMAND-ENEMY-SYSTEM`](57-kandahar-helmand-enemy-system-and-red-commander-strategy.md)
+- [`OMW-RED-EASTERN-AFGHANISTAN-NETWORK-OPERATIONS`](58-eastern-afghanistan-network-operations-and-complex-attack-model.md)
+- [`OMW-COIN-ASSESSMENT-TRANSITIONS-NONSTATE-SECURITY`](59-campaign-assessment-operational-transitions-and-nonstate-security.md)
 - [`OMW-TARGETING-AFGHANISTAN-NSL-DATA-USE`](targeting/afghanistan-nsl-data-use-policy.md)
 - [`OMW-TARGETING-AFGHANISTAN-NSL-LEGACY-PATH`](targeting/afghanistan-no-strike-list.md)
 - [`OMW-WX-DATASET-DOCUMENTATION`](data/weather/README.md)
