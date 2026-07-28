@@ -13,7 +13,7 @@ project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
   - registry without complete non-numbered document inventory
 superseded_by:
-source_branch: agent/complete-documentation-authority-migration
+source_branch: agent/document-shindand-air-operations
 source_commit: PENDING_MERGE
 validated_in_dcs: false
 ---
@@ -85,6 +85,8 @@ Eine Nummer und eine stabile `document_id` dürfen im aktuellen Bestand jeweils 
 | 18 | 27 | branchlokale Kollision; vor Integration zwingend neu nummerieren |
 | 24 | 31–36 | nur Draft-PR #24; Bagram/Kandahar |
 
+Die Shindand-Dokumente bleiben vorerst absichtlich nicht nummeriert, um keine Kollision mit den offenen Dokumentationsbranches zu erzeugen.
+
 ## 4. Nicht nummerierte aktuelle Dokumente
 
 | Stabile ID | Pfad | Status/Funktion |
@@ -92,6 +94,8 @@ Eine Nummer und eine stabile `document_id` dürfen im aktuellen Bestand jeweils 
 | `OMW-GOV-DOCUMENTATION-INDEX` | `docs/README.md` | `BINDING`; Themenindex |
 | `OMW-GOV-DOCUMENT-METADATA` | `docs/DOCUMENT-METADATA-POLICY.md` | `BINDING`; Metadaten/Provenienz |
 | `OMW-GOV-SUBPROJECT-REGISTRY` | `docs/SUBPROJECT-REGISTRY.md` | `BINDING`; offene Unterprojekte |
+| `OMW-AIR-SHINDAND-MANIFEST` | `docs/shindand-air-operations-manifest.md` | `BINDING_PROJECT_DECISION`; ORBAT und Missionseditorbaseline |
+| `OMW-AIR-SHINDAND-IMPLEMENTATION-HANDOFF` | `docs/shindand-air-operations-implementation-handoff.md` | `BINDING`; Runtime-Implementierungsübergabe |
 | `OMW-AIR-US-ORBAT-RESEARCH` | `docs/us-air-orbat-2010-2011.md` | `BINDING`; historische Forschung |
 | `OMW-GOV-SOURCE-USE` | `docs/sources/graveyard-of-empires.md` | `BINDING_PROJECT_DECISION` |
 | `OMW-GOV-MOOSE-VERSION` | `docs/moose/VERSION-AND-SOURCES.md` | `BINDING` |
@@ -113,6 +117,7 @@ Eine Nummer und eine stabile `document_id` dürfen im aktuellen Bestand jeweils 
 | `OMW-ADR-0004-LOCATION-REGISTRY` | `docs/adr/0004-use-explicit-location-registry.md` | `BINDING`; Orts-/Routenregister |
 | `OMW-EVIDENCE-INDEX` | `docs/evidence/README.md` | `BINDING`; Evidenzeinordnung |
 | `OMW-EVIDENCE-SOURCE-INTAKE-AUDIT-2026-07-28` | `docs/evidence/source-intake-audit-2026-07-28.md` | `BINDING`; Quellenaufnahme- und Zuordnungsnachweis |
+| `OMW-EVIDENCE-SHINDAND-SATELLITE-2013` | `docs/evidence/shindand-satellite-observations-2013.md` | `BINDING`; Post-Period-Rampen- und Flächenbeobachtung |
 | `OMW-TEST-JBAD-AIR-OPS-INDEX` | `mission/tests/jalalabad-air-operations/README.md` | `BINDING`; Testprojektindex |
 
 ## 5. Legacy- und Evidenzregel

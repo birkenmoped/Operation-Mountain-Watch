@@ -15,7 +15,7 @@ project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
   - incomplete documentation index without subproject registry
 superseded_by:
-source_branch: agent/complete-documentation-authority-migration
+source_branch: agent/document-shindand-air-operations
 source_commit: PENDING_MERGE
 validated_in_dcs: false
 ---
@@ -67,6 +67,8 @@ Ein offener Draft-PR ist keine `main`-Autorität. Ein branchgebundener PASS blei
 | aktive Luft-ORBAT/Clientgrenzen | [`OMW-AIR-ACTIVE-ORBAT`](19-active-air-orbat-decisions.md) | `BINDING_PROJECT_DECISION` | historische ORBAT-Recherche |
 | technische Luftoperationen | [`OMW-AIR-IMPLEMENTATION`](18-air-operations-implementation.md) | `BINDING` | MOOSE Air Operations |
 | Jalalabad-ME-Baseline | [`OMW-AIR-JBAD-MANIFEST`](21-jalalabad-air-operations-manifest.md) | `BINDING` | PR #18 und Testprojektindex |
+| Shindand-ME-Baseline | [`OMW-AIR-SHINDAND-MANIFEST`](shindand-air-operations-manifest.md) | `BINDING_PROJECT_DECISION` auf Shindand-Branch | `.miz`-Strukturprüfung und Satellitenevidenz |
+| Shindand-Implementierungsübergabe | [`OMW-AIR-SHINDAND-IMPLEMENTATION-HANDOFF`](shindand-air-operations-implementation-handoff.md) | `BINDING` auf Shindand-Branch | AIRWING, SQUADRON, Warehouse, Parking, AUFTRAG, Verlustlogik und Zonenplan |
 | Missionseditor-Masterarbeit | [`OMW-ME-MASTER-WORKLIST`](38-mission-editor-master-worklist.md) | `BINDING` | basisbezogene Manifeste |
 | MSR/Routing | [`OMW-MSR-ROUTE-DESIGN`](49-msr-routendesign-und-infrastrukturmarker.md) | `PLANNED` | TM01M, Route-Clearance-, RED-Observation-, IED- und Reinfiltrationsmuster |
 | CSAR-Quellen/Anforderungen | [`OMW-CSAR-INDEX`](csar/README.md) | `BINDING` | CSAR-Unterdokumente |
@@ -105,6 +107,11 @@ Ein offener Draft-PR ist keine `main`-Autorität. Ein branchgebundener PASS blei
 - [20 – Air-Ops-ME-Arbeitsliste](20-air-orbat-mission-editor-worklist.md)
 - [21 – Jalalabad-Manifest](21-jalalabad-air-operations-manifest.md)
 - [26 – MOOSE-First](26-moose-first-development-policy.md)
+
+Nicht nummerierte basisbezogene Air-Ops-Dokumente auf dem Shindand-Branch:
+
+- [`OMW-AIR-SHINDAND-MANIFEST`](shindand-air-operations-manifest.md)
+- [`OMW-AIR-SHINDAND-IMPLEMENTATION-HANDOFF`](shindand-air-operations-implementation-handoff.md)
 
 ### Kommunikation, AAR, Architektur und Fachbereiche
 
@@ -183,6 +190,7 @@ Ein offener Draft-PR ist keine `main`-Autorität. Ein branchgebundener PASS blei
 - [`OMW-EVIDENCE-INDEX`](evidence/README.md)
 - [`OMW-EVIDENCE-SOURCE-INTAKE-AUDIT-2026-07-28`](evidence/source-intake-audit-2026-07-28.md)
 - [`Jalalabad-Ausgangsaudit`](evidence/jalalabad-air-operations-baseline-audit.md)
+- [`OMW-EVIDENCE-SHINDAND-SATELLITE-2013`](evidence/shindand-satellite-observations-2013.md)
 
 ## 7. Unterprojekte und offene Branches
 
@@ -190,7 +198,7 @@ Der vollständige und verbindliche Überblick steht in:
 
 - [`OMW-GOV-SUBPROJECT-REGISTRY`](SUBPROJECT-REGISTRY.md).
 
-Er erfasst derzeit PR #3–#18, #22, #24, #33 und #38 einschließlich Parent-/Base-Beziehungen, Acceptance-Grenzen und Produktionsrelevanz.
+Er erfasst offene Entwicklungs- und Dokumentationsstränge einschließlich Parent-/Base-Beziehungen, Acceptance-Grenzen und Produktionsrelevanz.
 
 ## 8. Status-, Provenienz- und Querverweisregel
 

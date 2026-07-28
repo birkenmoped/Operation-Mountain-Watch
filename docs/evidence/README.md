@@ -11,7 +11,7 @@ project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
   - evidence index without the complete migration inventory
 superseded_by:
-source_branch: agent/complete-documentation-authority-migration
+source_branch: agent/document-shindand-air-operations
 source_commit: PENDING_MERGE
 validated_in_dcs: false
 ---
@@ -28,6 +28,7 @@ Aktuelle Nummern und IDs stehen in [`OMW-GOV-DOCUMENT-REGISTRY`](../DOCUMENT-REG
 
 - [`Jalalabad Air Operations – Ausgangsaudit`](jalalabad-air-operations-baseline-audit.md)
 - [`Quellenaufnahme-Audit 28.07.2026`](source-intake-audit-2026-07-28.md) – ordnet die im Afghanistan-Kräfte-, Aviation-, Air-C2-, ORBAT- und RED-Commander-Arbeitsstrang identifizierten Quellen ihren Fachreferenzen, Ausschlussakten oder offenen Prüfständen zu.
+- [`Shindand Satellite Observations – 30 September 2013`](shindand-satellite-observations-2013.md) – `POST_PERIOD_CONTEXT` für Rampengeometrie, Flächennutzung und visuelle Szenengestaltung; keine exakte 2010/2011-ORBAT-Autorität.
 
 ## 3. Legacy-Quelldatensätze
 

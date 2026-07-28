@@ -14,7 +14,7 @@ project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
   - incomplete open-branch list in the documentation index
 superseded_by:
-source_branch: agent/complete-documentation-authority-migration
+source_branch: agent/document-shindand-air-operations
 source_commit: PENDING_MERGE
 validated_in_dcs: false
 ---
@@ -48,7 +48,8 @@ Dieses Register bildet offene Pull Requests, ihre Abhängigkeiten, Dokumentation
 | 22 | `feature/tm01m-moose-native-baseline` | PR 8 | TM01M MOOSE-native Convoys | `mission/tests/tm01-blue-convoy/` | `DRAFT` | Ein- und Fünf-Convoy-PASS; Cleanup-Follow-up offen | offen | bevorzugte MOOSE-native Convoy-Richtung |
 | 24 | `docs/bagram-air-operations-manifest` | PR 18 | Bagram/Kandahar Dokumentation | branchlokale Dokumente 31–36 | `DRAFT` | Dokumentationsabgleich; keine neue DCS-Acceptance | offen | Foundation-Build-Dokumentation |
 | 33 | `agent/complete-documentation-authority-migration` | `main` | Governance-, Status- und Indexmigration | `docs/`, ausgewählte Test-READMEs, Validator | `DRAFT` | Dokumentationsvalidator erfolgreich; keine Runtime-Acceptance | offen | Ziel dieses Registers |
-| 38 | `docs/afghanistan-force-aviation-source-consolidation` | `main` | Konsolidierung Afghanistan-Kräfte, Basen, Aviation, Air C2, Koalitions-ORBAT sowie Kandahar-/Helmand-Enemy-System und RED-Commander-Strategie | Dokumente 50–57; Dokumente 05/09/11/13/18/29/37/45/49; Register, Index, Quellenaufnahme-Audit und externe Quellenakten | `DRAFT`; quellenqualifizierte historische, Air-C2- und RED-Verhaltensreferenzen | Dokumentationsvalidator nach aktuellem Head erneut zu prüfen; keine DCS-/MOOSE-Runtime-Acceptance | offen | Forschungs-, Missionsdesign- und Datenmodellgrundlage; aktive ORBAT bleibt Dokument 19; genau ein RED Commander bleibt verbindliche Grundversion |
+| 38 | `docs/afghanistan-force-aviation-source-consolidation` | `main` | Konsolidierung Afghanistan-Kräfte, Basen, Aviation, Air C2, Koalitions-ORBAT sowie Kandahar-/Helmand-Enemy-System und RED-Commander-Strategie | Dokumente 50–57; Dokumente 05/09/11/13/18/29/37/45/49; Register, Index, Quellenaufnahme-Audit und externe Quellenakten | `DRAFT`; quellenqualifizierte historische, Air-C2- und RED-Verhaltensreferenzen | Dokumentationsvalidator nach aktuellem Head erneut zu prüfen; keine DCS-/MOOSE-Runtime-Acceptance | 40 und 41 | Forschungs-, Missionsdesign- und Datenmodellgrundlage; aktive ORBAT bleibt Dokument 19; genau ein RED Commander bleibt verbindliche Grundversion |
+| 41 | `agent/document-shindand-air-operations` | PR 38 | Shindand Air Operations Manifest und Implementierungsübergabe | `docs/shindand-air-operations-manifest.md`, `docs/shindand-air-operations-implementation-handoff.md`, Shindand-Evidenz sowie Dokumente 11/19/38 und Register | `DRAFT`; aktive Shindand-Projektentscheidung branchgebunden | `.miz`-Struktur-PASS; keine DCS-/MOOSE-Runtime-Acceptance | offen | vollständige Foundation-Build- und Runtime-Übergabe für `AW_US_SHINDAND` |
 
 ## 3. Stackstruktur
 
@@ -61,6 +62,8 @@ main
 ├── PR 18 → PR 24
 ├── PR 33
 └── PR 38
+    ├── PR 40
+    └── PR 41
 ```
 
 ## 4. Verbindliche Regeln
