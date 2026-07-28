@@ -14,7 +14,7 @@ project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
   - incomplete open-branch list in the documentation index
 superseded_by:
-source_branch: agent/complete-documentation-authority-migration
+source_branch: agent/document-ato-asr-aar-buddy-lasing
 source_commit: PENDING_MERGE
 validated_in_dcs: false
 ---
@@ -48,6 +48,9 @@ Dieses Register bildet offene Pull Requests, ihre Abhängigkeiten, Dokumentation
 | 22 | `feature/tm01m-moose-native-baseline` | PR 8 | TM01M MOOSE-native Convoys | `mission/tests/tm01-blue-convoy/` | `DRAFT` | Ein- und Fünf-Convoy-PASS; Cleanup-Follow-up offen | offen | bevorzugte MOOSE-native Convoy-Richtung |
 | 24 | `docs/bagram-air-operations-manifest` | PR 18 | Bagram/Kandahar Dokumentation | branchlokale Dokumente 31–36 | `DRAFT` | Dokumentationsabgleich; keine neue DCS-Acceptance | offen | Foundation-Build-Dokumentation |
 | 33 | `agent/complete-documentation-authority-migration` | `main` | Governance-, Status- und Indexmigration | `docs/`, ausgewählte Test-READMEs, Validator | `DRAFT` | Dokumentationsvalidator erfolgreich; keine Runtime-Acceptance | offen | Ziel dieses Registers |
+| 34 | `agent/document-mq1-mq9-afghanistan` | `main` | MQ-1/MQ-9-Einsatz in Afghanistan | Dokument 50 | `DRAFT` | Dokumentationsänderung; keine DCS-Acceptance | offen | UAS-Planungsreferenz |
+| 36 | `agent/document-salerno-air-operations` | `main` | FOB Salerno Air Operations | Dokumente 51–53 und Evidenz | `DRAFT` | `.miz`-Strukturnachweis; keine DCS-/MOOSE-Laufzeit-Acceptance | offen | Air-Ops-Foundation-Build |
+| 37 | `agent/document-ato-asr-aar-buddy-lasing` | `main` | ATO/ACO/SPINS, JTAR/ASR, Tanker und Buddy Lasing | Dokumente 29, 45 und 54–56 | `DRAFT` | Quellen- und Dokumentationsauswertung; keine DCS-Acceptance | offen | Air-C2-, CAS-, AAR- und Briefing-Grundlage |
 
 ## 3. Stackstruktur
 
@@ -58,7 +61,10 @@ main
 │   └── PR 22
 ├── PR 17
 ├── PR 18 → PR 24
-└── PR 33
+├── PR 33
+├── PR 34
+├── PR 36
+└── PR 37
 ```
 
 ## 4. Verbindliche Regeln
