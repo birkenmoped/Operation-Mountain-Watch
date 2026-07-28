@@ -51,10 +51,13 @@ Ein offener Draft-PR ist keine `main`-Autorität. Ein branchgebundener PASS blei
 | Dokumentmetadaten | [`OMW-GOV-DOCUMENT-METADATA`](DOCUMENT-METADATA-POLICY.md) | `BINDING` | Dokumentationsvalidator |
 | Dokumentnummern/IDs | [`OMW-GOV-DOCUMENT-REGISTRY`](DOCUMENT-REGISTRY.md) | `BINDING_PROJECT_DECISION` | dieser Index |
 | Unterprojekte/PR-Stacks | [`OMW-GOV-SUBPROJECT-REGISTRY`](SUBPROJECT-REGISTRY.md) | `BINDING` | GitHub-PR-Metadaten |
+| Quellenaufnahme dieses Arbeitsstrangs | [`OMW-EVIDENCE-SOURCE-INTAKE-AUDIT-2026-07-28`](evidence/source-intake-audit-2026-07-28.md) | `BINDING` | Zuordnung, Ausschlüsse und offene Primärquellenprüfung |
 | historischer Rahmen | [`OMW-HIST-SETTING`](09-historical-setting.md) | `BINDING` | historische Quellen |
 | historische Kräfte-, Basen- und Aviation-Recherche | [`OMW-HIST-AFGHANISTAN-FORCE-BASING-AVIATION`](50-afghanistan-force-basing-aviation-2010-2011.md) | `BINDING` | CMH-, Army-, DVIDS-, ORBAT- und Fachquellen; keine aktive ORBAT-Autorität |
 | USMC RC-Southwest und Koalitionsoperationen | [`OMW-HIST-USMC-RC-SOUTHWEST-COALITION-OPS`](51-usmc-rc-southwest-and-coalition-operations-2010-2011.md) | `BINDING` | USMC-Anthologie, Army.mil, CENTCOM und quellenqualifizierte Sekundär-/Lead-Quellen |
 | Army Aviation Vignetten und COIN-Intelligence/Metriken | [`OMW-HIST-ARMY-AVIATION-COIN-INTELLIGENCE-METRICS`](52-army-aviation-vignettes-and-coin-intelligence-metrics.md) | `BINDING` | Army-/State-DoD-/UK-MoD-Ursprungsquellen, qualifiziertes Memoir und gesperrte Quellenakte |
+| Carlisle-*Afghanistan War*-Quellenkritik | [`OMW-HIST-AFGHANISTAN-WAR-CARLISLE-SOURCE-REVIEW`](53-afghanistan-war-carlisle-source-review.md) | `BINDING` | Sekundär-/Hintergrundreferenz; Redaktionsstand September 2010 |
+| Air Tasking, Airspace Control und CAS Requests | [`OMW-AIR-TASKING-AIRSPACE-CAS-REQUESTS`](54-air-tasking-airspace-control-cas-requests-and-mission-data.md) | `BINDING` | NATO-2019-Doktrin, ATO-/ACO-/SPINS-Guides, JTAR-/ASR-, AAR- und Buddy-Lasing-Quellen |
 | Systemarchitektur | [`OMW-ARCH-SYSTEM`](03-system-architecture.md) | `BINDING` | Dokument 37 |
 | CampaignState/dynamische Kampagne | [`OMW-ARCH-CAMPAIGN-DYNAMIC-MISSION`](37-campaign-architecture-and-dynamic-mission-design.md) | `BINDING` | Dokumente 04–07, TM01/TM02-Reviews |
 | Fog of War / RECCE | [`OMW-MOOSE-FOG-OF-WAR-RECCE`](moose/FOG-OF-WAR-RECCE.md) | `PLANNED` | MOOSE-Develop geprüft; Laufzeitvalidierung im gepinnten MOOSE-Stand ausstehend |
@@ -122,6 +125,8 @@ Ein offener Draft-PR ist keine `main`-Autorität. Ein branchgebundener PASS blei
 - [50 – Afghanistan Kräfte, Basen und Aviation 2010–2011](50-afghanistan-force-basing-aviation-2010-2011.md)
 - [51 – USMC RC-Southwest und Koalitionsoperationen 2010–2011](51-usmc-rc-southwest-and-coalition-operations-2010-2011.md)
 - [52 – Army Aviation Vignetten, Chinook Operations und COIN-Intelligence/Metriken](52-army-aviation-vignettes-and-coin-intelligence-metrics.md)
+- [53 – *Afghanistan War* von Rodney P. Carlisle: quellenkritische Auswertung](53-afghanistan-war-carlisle-source-review.md)
+- [54 – Air Tasking, Airspace Control, CAS Requests und Missionsdaten](54-air-tasking-airspace-control-cas-requests-and-mission-data.md)
 
 ## 5. Architekturentscheidungen
 
@@ -158,6 +163,8 @@ Ein offener Draft-PR ist keine `main`-Autorität. Ein branchgebundener PASS blei
 - [`OMW-HIST-AFGHANISTAN-FORCE-BASING-AVIATION`](50-afghanistan-force-basing-aviation-2010-2011.md)
 - [`OMW-HIST-USMC-RC-SOUTHWEST-COALITION-OPS`](51-usmc-rc-southwest-and-coalition-operations-2010-2011.md)
 - [`OMW-HIST-ARMY-AVIATION-COIN-INTELLIGENCE-METRICS`](52-army-aviation-vignettes-and-coin-intelligence-metrics.md)
+- [`OMW-HIST-AFGHANISTAN-WAR-CARLISLE-SOURCE-REVIEW`](53-afghanistan-war-carlisle-source-review.md)
+- [`OMW-AIR-TASKING-AIRSPACE-CAS-REQUESTS`](54-air-tasking-airspace-control-cas-requests-and-mission-data.md)
 - [`OMW-TARGETING-AFGHANISTAN-NSL-DATA-USE`](targeting/afghanistan-nsl-data-use-policy.md)
 - [`OMW-TARGETING-AFGHANISTAN-NSL-LEGACY-PATH`](targeting/afghanistan-no-strike-list.md)
 - [`OMW-WX-DATASET-DOCUMENTATION`](data/weather/README.md)
@@ -165,6 +172,7 @@ Ein offener Draft-PR ist keine `main`-Autorität. Ein branchgebundener PASS blei
 ### Evidenz
 
 - [`OMW-EVIDENCE-INDEX`](evidence/README.md)
+- [`OMW-EVIDENCE-SOURCE-INTAKE-AUDIT-2026-07-28`](evidence/source-intake-audit-2026-07-28.md)
 - [`Jalalabad-Ausgangsaudit`](evidence/jalalabad-air-operations-baseline-audit.md)
 
 ## 7. Unterprojekte und offene Branches
