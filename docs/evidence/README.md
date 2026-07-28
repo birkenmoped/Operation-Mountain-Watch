@@ -27,6 +27,7 @@ Aktuelle Nummern und IDs stehen in [`OMW-GOV-DOCUMENT-REGISTRY`](../DOCUMENT-REG
 ## 2. Aktuelle Evidenzdokumente
 
 - [`Jalalabad Air Operations – Ausgangsaudit`](jalalabad-air-operations-baseline-audit.md)
+- [`Tarinkot Mission-Editor-Audit – OMW_Template(3).miz`](tarinkot-mission-editor-audit-omw-template-3.md) – struktureller Nachweis der Tarinkot-Clients, KI-Seeds, Statics, Parking-IDs, Warehouse-Anker und fehlenden Funktionszonen im geprüften Missionsstand.
 - [`Tarinkot – Satellitenbildbeobachtungen vom 03. und 17. Mai 2012`](tarinkot-satellite-observations-2012.md) – dokumentiert die post-periodische sichtbare Rampenbelegung, Identifikationsmerkmale und Grenzen; keine eigenständige 2010/2011-ORBAT-Autorität.
 - [`Quellenaufnahme-Audit 28.07.2026`](source-intake-audit-2026-07-28.md) – ordnet die im Afghanistan-Kräfte-, Aviation-, Air-C2-, ORBAT- und RED-Commander-Arbeitsstrang identifizierten Quellen ihren Fachreferenzen, Ausschlussakten oder offenen Prüfständen zu.
 
@@ -105,7 +106,7 @@ Aktuelle Nummern und IDs stehen in [`OMW-GOV-DOCUMENT-REGISTRY`](../DOCUMENT-REG
 - [`The Workhorse of Helmand – Chinook-Memoir`](source-records/workhorse-of-helmand-chinook-memoir.md) – `SECONDARY_MEMOIR`; Kapitel 15/16 liegen im OMW-Zeitraum, bleiben aber keine offizielle Einsatzchronik.
 - [`RAND Intelligence Operations and Metrics 2008 – eingeschränkte Quellenakte`](source-records/rand-intelligence-operations-metrics-2008-restricted.md) – `RESTRICTED_SOURCE`; wegen sichtbarer FOUO-/REL-TO- und Distribution-Statement-C-Kennzeichnung keine inhaltliche Repository-Übernahme.
 - [`Afghanistan War von Rodney P. Carlisle – quellenkritische Auswertung`](../53-afghanistan-war-carlisle-source-review.md) – `SECONDARY_BACKGROUND_REFERENCE`; Redaktionsstand September 2010, keine ORBAT- oder Technikautorität.
-- [`Air Tasking, Airspace Control, CAS Requests und Missionsdaten`](../54-air-tasking-airspace-control-cas-requests-and-mission-data.md) – konsolidiert und qualifiziert die ATO-/ACO-/SPINS-/JTAR-/ASR-/AAR-/Buddy-Lasing-Quellenserie.
+- [`Air Tasking, Airspace Control und CAS Requests`](../54-air-tasking-airspace-control-cas-requests-and-mission-data.md) – konsolidiert und qualifiziert die ATO-/ACO-/SPINS-/JTAR-/ASR-/AAR-/Buddy-Lasing-Quellenserie.
 - [`Monatliche Koalitions-ORBAT und Basierung 2010–2011`](../55-monthly-coalition-orbat-and-basing-2010-2011.md) – erschließt Morgans Monatsstände mit zeitlichen, Scope- und Stärkegrenzen; keine aktive ORBAT-Autorität.
 - [`Insurgentengruppen, Schattenherrschaft und RED-Commander-Verhalten`](../56-insurgent-factions-shadow-governance-and-red-commander-behavior.md) – konsolidiert die Crisis-Group-Regionalstudie und quellenqualifizierte COIN-, ANSF- und Strategieanalysen zu einem Verhaltensmodell.
 
