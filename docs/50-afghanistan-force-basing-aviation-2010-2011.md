@@ -141,7 +141,7 @@ Jede Zahl bleibt mit ihrer Evidenzklasse verbunden. Eine Schätzung darf nicht a
 - Quellenwert: USAF-/AETF-A-Präsenzliste für einen Stichtag.
 - Grenze: **kein vollständiger US-Luftfahrt-ORBAT**; Army Combat Aviation Brigades, Aviation Task Forces und Air Cavalry Squadrons fehlen systematisch.
 
-## 4.4 OH-58D-Biografie und Medien
+## 4.4 OH-58D-Biografie und offizielle Medien
 
 ### S07 – STRASAM, Ryan Robicheaux
 
@@ -213,6 +213,19 @@ Jede Zahl bleibt mit ihrer Evidenzklasse verbunden. Eine Schätzung darf nicht a
 - Quellenwert: Recherchehinweise zu Unfällen und Verlusten.
 - Einstufung: `LEAD_ONLY`; keine Bestands- oder Stationierungsquelle. Jeder Eintrag benötigt eine unabhängige offizielle Bestätigung.
 
+### S18 – DVIDS, Echo Troop 3-17 CAV und Camp Wright FARP
+
+- <https://www.dvidshub.net/news/44181/echo-troop-3-17-cavalry-regiment-makes-mission-happen>
+- <https://www.dvidshub.net/image/240989/farp-they-never-stop>
+- Quellenwert: Camp Wright FARP im Januar 2010, Echo Troop 3-17 CAV, ungefähr ein Dutzend Soldaten, 24/7-Betrieb sowie Betankung und Wiederbewaffnung von Task-Force-Lighthorse-Luftfahrzeugen.
+- Einordnung: `PRE_PERIOD_CONTINUITY`; FARP-Struktur stützt die spätere Task-Force- und Missionsmodellierung.
+
+### S19 – DVIDS, Craig Joint Theater Hospital auf Bagram
+
+- <https://www.dvidshub.net/video/92479/baf-hospital-cares-injured-afghans-package-short>
+- Quellenwert: medizinischer Theaterknoten auf Bagram; die Quelle berichtet für Juli 2010 nahezu 3.000 behandelte US- und afghanische Patienten.
+- Einordnung: `PRE_PERIOD_CONTINUITY` unmittelbar vor Kampagnenbeginn.
+
 # 5. Theaterweite Lage und Kräfteansatz
 
 ## 5.1 Kräftehöhe
@@ -238,7 +251,7 @@ S01 beschreibt Afghanistan als stark segmentierten Operationsraum:
 
 Für OMW folgt daraus:
 
-- ROAD_CONVOY und Lufttransport sind komplementär;
+- `ROAD_CONVOY` und Lufttransport sind komplementär;
 - abgelegene FOBs/COPs benötigen abgestufte Versorgungspfade;
 - CH-47-Verfügbarkeit ist ein operativer Engpass und kein unbegrenztes Teleportmittel;
 - PZ/HLZ, FARP, Nachtflug, Escort und Wetter müssen missionsrelevant sein.
@@ -285,13 +298,13 @@ Die Zahl 1.200 beschreibt die unterstützten deutschen Kräfte im genannten Kont
 
 | Standort | Belegte Funktion im Zeitraum | Evidenz | Quellen |
 |---|---|---|---|
-| Bagram Airfield | strategischer Luft-, Logistik-, Rescue-, Transport- und Army-Aviation-Knoten; OH-58D-Sicherungsbetrieb bereits Mai 2010; CH-47- und weitere Aviation-Elemente im Zeitraum | `DIRECT_OFFICIAL` | S06, S09, S05 |
+| Bagram Airfield | strategischer Luft-, Logistik-, Rescue-, Transport-, medizinischer und Army-Aviation-Knoten; OH-58D-Sicherungsbetrieb bereits Mai 2010; CH-47- und weitere Aviation-Elemente im Zeitraum | `CORROBORATED` | S05, S06, S09, S19 |
 | Jalalabad Airfield / FOB Fenty | regionaler multifunktionaler Army-Aviation-Hub für Nangarhar, Nuristan, Kunar und Laghman; TF Lighthorse bis Nov. 2010, danach TF Shooter | `DIRECT_OFFICIAL` | S08, S05 |
-| Kandahar Airfield | großer USAF- und Army-Aviation-Knoten; Task Force Destiny/101st CAB; 2-17 CAV OH-58D; CH-47-Pool; A-10, C-130, MQ-1/MQ-9 und Rescue am Stichtag 30.09.2011 | `CORROBORATED` | S06, S10, S12, S05 |
+| Kandahar Airfield | großer USAF- und Army-Aviation-Knoten; Task Force Destiny/101st CAB; 2-17 CAV OH-58D; CH-47-Pool; A-10, C-130, MQ-1/MQ-9 und Rescue am Stichtag 30.09.2011 | `CORROBORATED` | S05, S06, S10, S12 |
 | FOB Salerno / Khost | RC-East Aviation- und CH-47-Detachment-Standort; B/7-158-Hauptquartier ab April 2011 laut Working Paper | `SECONDARY`, primärquellenbasiertes Working Paper | S05 |
 | FOB Shank | kleiner, intensiv genutzter CH-47-Detachment-Standort; später Teil der B/7-158-Verteilung | `SECONDARY`, detailliert belegt | S05 |
 | FOB Sharana | CH-47-/Army-Aviation-Standort beziehungsweise Detachment; Übergang auf 6-6 CAV im Dezember 2010 laut Working Paper | `SECONDARY` | S05 |
-| FOB Wolverine | OH-58D-Detachment ab Juni 2010; zwei OH-58D im Nov. 2010 direkt belegt; CH-47-Platoon ab 2011; lokale Kiowa-Wartung 2011 | `CORROBORATED` | S14, S15, S05 |
+| FOB Wolverine | OH-58D-Detachment ab Juni 2010; zwei OH-58D im Nov. 2010 direkt belegt; CH-47-Platoon ab 2011; lokale Kiowa-Wartung 2011 | `CORROBORATED` | S05, S14, S15 |
 | Tarinkot / Tarin Kowt | vorgeschobener CH-47-Platoon-/Detachment-Standort ab 2011; Bestandteil des Kandahar-Regionalpools | `SECONDARY`, detailliert belegt | S05 |
 | Shindand Air Base | USAF-Air-Advisor-Struktur am 30.09.2011; 438 AEW, 838 AEAG, 444 AEAS | `SECONDARY` für Stichtagsliste; keine Army-Aviation-Stärke daraus | S06 |
 | Kabul | AETF-A-Hauptquartier und Air-Advisor-/Supportstrukturen; politischer und logistischer Rückraum | `SECONDARY` für Stichtagsliste | S06 |
@@ -309,9 +322,9 @@ Die Zahl 1.200 beschreibt die unterstützten deutschen Kräfte im genannten Kont
 | FOB Pul-e-Khumri | Standort von 1-87 Infantry | RC-North-Basis | S01 |
 | FOB Blessing | Ende Feb./Anfang März 2011 aufgegeben beziehungsweise an afghanische Kräfte übergeben | Übergabe-, Evakuierungs- und Folgeoperationsszenarien | S01 |
 | COP Honaker-Miracle | trotz Pech Realignment gehalten; Schutz Asadabads und Sperre gegen Infiltration | isolierter COP, Belagerung/Resupply/QRF | S01 |
-| Camp Wright | FARP von Echo Troop, 3-17 CAV; 24/7-Betrieb, AH-64-Betankung/-Bewaffnung | FARP, Munition, Kraftstoff, Turnaround | S08 ergänzende DVIDS-Quelle im Quellenkontext |
+| Camp Wright | FARP von Echo Troop, 3-17 CAV; ungefähr ein Dutzend Soldaten, 24/7-Betrieb, AH-64-Betankung/-Bewaffnung | FARP, Munition, Kraftstoff, Turnaround | S18 |
 | FOB Wilson | Forward Arming and Refueling Point von E Troop, 2-17 CAV am 17.09.2010 | FARP für RC-South | S13 |
-| FOB Howz-e Madad | Battalion-FOB im Dragon-Strike-Kontext; durch CH-47-Operationen unterstützt | Bodenbasis/Ziel-/Versorgungsknoten; kein alleiniger Beweis dauerhafter CH-47-Stationierung | S05, S01 |
+| FOB Howz-e Madad | Battalion-FOB im Dragon-Strike-Kontext; durch CH-47-Operationen unterstützt | Bodenbasis/Ziel-/Versorgungsknoten; kein alleiniger Beweis dauerhafter CH-47-Stationierung | S01, S05 |
 | COP Sayed Abad | Aufnahme-/Startbereich für Talon-Purge-Kräfte | PZ/FOB-Unterstützung; nicht automatisch permanenter CH-47-Bestand | S05 |
 
 ## 6.3 Stationierung versus Nutzung
@@ -601,7 +614,16 @@ S05 belegt AH-64 als typischen Escort für CH-47-Nacht-Air-Assaults:
 
 Bei größeren Operationen waren zusätzliche ISR- und Fixed-Wing-Assets vorgesehen.
 
-## 9.3 Operation Bulldog Bite
+## 9.3 FARP-Nutzung
+
+S18 belegt am Camp Wright FARP die schnelle Betankung und Wiederbewaffnung von AH-64 der Task Force Lighthorse. Das stützt:
+
+- vorgeschobene Fuel-/Ammo-Knoten;
+- kurze Turnaround-Zeiten;
+- Wiedereinsatz nach Refuel/Rearm;
+- kleine, rund um die Uhr arbeitende FARP-Teams.
+
+## 9.4 Operation Bulldog Bite
 
 S01 nennt für 12.–25.11.2010 im Watapur District/Kunar:
 
@@ -621,7 +643,7 @@ Für OMW ergibt sich:
 - ein Feuerunterstützungspaket kann von Rotary-Wing-Fires zu Fixed-Wing-CAS übergehen;
 - Ablösung und Tank-/Munitionszustand müssen in längeren Gefechten modelliert werden.
 
-# 10. UH-60 und MEDEVAC
+# 10. UH-60, MEDEVAC und medizinische Knoten
 
 ## 10.1 Logar
 
@@ -638,6 +660,10 @@ S05 nennt 2 × UH-60 zusätzlich zu 4 × CH-47 bei Operation Talon Purge. Die ko
 ## 10.3 MEDEVAC-Grundmodell
 
 S08 belegt MEDEVAC-UH-60 innerhalb der multifunktionalen Jalalabad-Task-Force. Die konkrete OMW-Two-Ship-Regel ist eine Projektentscheidung in Dokument 18/19 und darf nicht fälschlich als allgemeine historische TOE-Aussage ausgegeben werden.
+
+## 10.4 Craig Joint Theater Hospital
+
+S19 belegt Bagram als großen medizinischen Aufnahmeknoten. Die Quelle nennt für Juli 2010 nahezu 3.000 behandelte US- und afghanische Patienten. Dies stützt Bagram als MEDEVAC-/CASEVAC-Ziel und medizinischen Kampagnenknoten, ohne daraus eine vollständige medizinische ORBAT abzuleiten.
 
 # 11. USAF-/USMC-Stichtag 30.09.2011
 
@@ -865,7 +891,7 @@ Diese Schritte sollen in OMW-Briefing, Auftragserzeugung und Missionslogik sicht
 
 ## 13.3 Begrenzte Munitions- und Flugzeitausdauer
 
-S01 und S05 zeigen:
+S01, S05, S13 und S18 zeigen:
 
 - Rotary-Wing-Fires können ihre Munition während eines langen Gefechts vollständig verbrauchen;
 - Ablösung durch frische Luftfahrzeuge war erforderlich;
@@ -1140,5 +1166,6 @@ Historisch besonders belastbar und unmittelbar nutzbar sind:
 - getrennte nominale, mission-ready, wartende, beschädigte und verlorene Bestände;
 - M-ATV/MRAP als prägende geschützte Mobilität;
 - FOB Blessing, COP Honaker-Miracle, COP Stout, Howz-e Madad, FOB Wilson und Camp Wright als konkrete Szenarioanker;
+- Bagram als medizinischer Theaterknoten;
 - erhebliche saisonale und operative Intensität während des Surge;
 - sichtbare Quellenkonflikte statt künstlicher Scheingenauigkeit.
