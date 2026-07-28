@@ -92,6 +92,12 @@ Diese Kräfte können außerdem zeitweise Lufttransport, Aufklärung, MEDEVAC od
 
 Die Kampagne ist historisch plausibel, aber keine exakte Rekonstruktion eines einzelnen Tages. Insurgentennetzwerke, konkrete Führungspersonen, HVTs, Missionsabläufe und Verluste bleiben fiktiv oder abstrahiert. Reale Namen werden verwendet, wenn sie für den regionalen Rahmen, Basen, Einheiten oder Führungsstrukturen erforderlich und ausreichend belegt sind.
 
+Als historische Fachreferenz für ein grenzüberschreitendes, familien-, stammes- und facilitatorbasiertes Aufstandsnetzwerk dient:
+
+- [`OMW-INSURGENCY-HAQQANI-NETWORK – Haqqani Network`](insurgency/haqqani-network.md).
+
+Diese Referenz legt weder eine namentliche aktive RED-Fraktion noch reale Haqqani-Führungspersonen als Missions-HVTs fest. Insbesondere darf nicht jede Aufständischenaktivität in Nangarhar, Laghman, Kunar oder Nuristan dem Haqqani Network zugerechnet werden.
+
 ## Verbindlicher Settingtext
 
 > Afghanistan, August 2010 bis Dezember 2011 – ISAF / Regional Command-East
