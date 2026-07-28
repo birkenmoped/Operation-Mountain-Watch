@@ -96,9 +96,14 @@ Aktuelle Nummern und IDs stehen in [`OMW-GOV-DOCUMENT-REGISTRY`](../DOCUMENT-REG
 - [`legacy-moose-events-and-fsm.md`](source-records/legacy-moose-events-and-fsm.md)
 - [`legacy-moose-isr-fac-cas-aar.md`](source-records/legacy-moose-isr-fac-cas-aar.md)
 
-## 4. Verwendungsregel
+## 4. Externe Quellenakten
+
+- [`Weapon of Choice – frühe SOF-/SOAR-Hintergrundreferenz`](source-records/weapon-of-choice-special-operations-background.md) – behandelt 2001/2002; nur `BACKGROUND_ONLY`, keine Stationierungs- oder ORBAT-Autorität für 2010/2011.
+
+## 5. Verwendungsregel
 
 1. Legacy-Texte dürfen zitiert werden, müssen aber als historische Fassung gekennzeichnet sein.
 2. Bei Widerspruch gilt die aktuelle Source of Truth aus [`docs/README.md`](../README.md).
 3. Alte Dokumentnummern in Legacy-Dateien werden nicht erneut vergeben.
 4. Ein historischer PASS wird nicht ohne vollständige Provenienz und aktuellen Geltungsbereich zur technischen Acceptance.
+5. Externe Hintergrundakten dürfen keine zeitgenössischen OMW-Einheiten, Bestände oder Standorte ersetzen.
