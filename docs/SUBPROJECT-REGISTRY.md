@@ -48,6 +48,7 @@ Dieses Register bildet offene Pull Requests, ihre Abhängigkeiten, Dokumentation
 | 22 | `feature/tm01m-moose-native-baseline` | PR 8 | TM01M MOOSE-native Convoys | `mission/tests/tm01-blue-convoy/` | `DRAFT` | Ein- und Fünf-Convoy-PASS; Cleanup-Follow-up offen | offen | bevorzugte MOOSE-native Convoy-Richtung |
 | 24 | `docs/bagram-air-operations-manifest` | PR 18 | Bagram/Kandahar Dokumentation | branchlokale Dokumente 31–36 | `DRAFT` | Dokumentationsabgleich; keine neue DCS-Acceptance | offen | Foundation-Build-Dokumentation |
 | 33 | `agent/complete-documentation-authority-migration` | `main` | Governance-, Status- und Indexmigration | `docs/`, ausgewählte Test-READMEs, Validator | `DRAFT` | Dokumentationsvalidator erfolgreich; keine Runtime-Acceptance | offen | Ziel dieses Registers |
+| 38 | `docs/afghanistan-force-aviation-source-consolidation` | `main` | Konsolidierung Afghanistan-Kräfte, Basen, Aviation und TTPs | `docs/50-afghanistan-force-basing-aviation-2010-2011.md`, Dokumente 05/09/11/13/18 sowie Register/Index | `DRAFT`; neue historische Referenz | Dokumentations-CI ausstehend; keine DCS-/MOOSE-Runtime-Acceptance | offen | quellenqualifizierte Forschungs- und Designgrundlage; aktive ORBAT bleibt Dokument 19 |
 
 ## 3. Stackstruktur
 
@@ -58,7 +59,8 @@ main
 │   └── PR 22
 ├── PR 17
 ├── PR 18 → PR 24
-└── PR 33
+├── PR 33
+└── PR 38
 ```
 
 ## 4. Verbindliche Regeln
