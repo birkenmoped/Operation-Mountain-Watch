@@ -1,15 +1,16 @@
 ---
-document_id: OMW-RED-INSURGENT-FACTIONS-BEHAVIOR
+document_id: OMW-RED-INSURGENT-FECTIONS-BEHAVIOR
 status: BINDING
 document_class: SOURCE_DERIVED_DESIGN_REFERENCE
 owning_policy: OMW-GOV-001
 authoritative_for:
-  - source-critical insurgent faction model for OMW mission and campaign design
-  - historically grounded RED commander goals, action types, constraints and metrics
-  - separation of Taliban, Haqqani network, Hizb-e Islami and criminal or local power networks
+  - source-critical insurgent behavior model for OMW mission and campaign design
+  - consolidated single-opponent RED Commander baseline for the initial implementation
+  - historically grounded RED Commander goals, action types, constraints and metrics
   - use of shadow governance, intimidation, recruitment and route influence as campaign effects
 not_authoritative_for:
   - exact nationwide insurgent strength
+  - separate runtime factions, commanders or resource pools
   - deterministic behavior based on ethnicity, religion or province alone
   - target authorization against religious, educational or civilian locations
   - active runtime implementation or DCS/MOOSE acceptance
@@ -17,26 +18,62 @@ scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
   - OMW-RED-DIRECTOR as current behavioral design authority
+  - mandatory multi-faction RED architecture from the initial version of this document
 superseded_by:
 source_branch: docs/afghanistan-force-aviation-source-consolidation
 source_commit: PENDING_MERGE
 validated_in_dcs: false
 ---
 
-# Insurgentengruppen, Schattenherrschaft und Verhalten des RED Commanders
+# Insurgentisches Verhalten und konsolidierter RED Commander
 
-## 1. Zweck
+## 1. Zweck und verbindliche Grundentscheidung
 
-Dieses Dokument überführt die neu bereitgestellten Afghanistan-Quellen in ein quellenkritisches Verhaltensmodell für die rote Seite. Es beantwortet nicht nur die Frage, **welche bewaffneten Gruppen vorhanden waren**, sondern vor allem:
+Dieses Dokument überführt die Afghanistan-Quellen in ein quellenkritisches Verhaltensmodell für die rote Seite. Es beschreibt:
 
-- welche Ziele sie verfolgten;
-- wie sie Einfluss aufbauten und erhielten;
-- wann sie offen kämpften und wann sie auswichen;
-- wie sie Bevölkerung, Verwaltung, Verkehrswege und Sicherheitskräfte beeinflussten;
-- wie Kooperation, Konkurrenz und persönliche Rivalitäten zwischen Gruppen wirkten;
-- welche Effekte ein dynamischer OMW-RED-Commander statt bloßer zufälliger Spawns abbilden sollte.
+- welche Ziele der Gegner verfolgt;
+- wie er Einfluss aufbaut und erhält;
+- wann er offen kämpft und wann er ausweicht;
+- wie er Bevölkerung, Verwaltung, Verkehrswege und Sicherheitskräfte beeinflusst;
+- welche virtuellen und physischen Aktionen ein dynamischer RED Commander erzeugen darf;
+- welche Zustände und Messgrößen für die persistente Kampagne benötigt werden.
+
+### 1.1 MVP-Entscheidung: ein Gegner, ein Commander
+
+Für die erste funktionsfähige Kampagnenbaseline gilt verbindlich:
+
+```text
+1 konsolidierter RED Commander
+1 gemeinsamer RED-Ressourcenpool
+1 gemeinsames Einfluss- und Netzwerkmodell
+keine getrennten Fraktionskommandeure
+keine Fraktionsbeziehungen
+keine parallelen Taliban-/Haqqani-/HiG-Bestände
+```
+
+Der technische und spielmechanische Gegner wird zunächst als:
+
+```text
+INSURGENT_NETWORK
+```
+
+geführt.
+
+Historische Unterschiede zwischen Taliban, Haqqani-Netzwerk, Hizb-e Islami und lokalen bewaffneten oder kriminellen Netzwerken bleiben als **Quellenwissen und optionale Verhaltensprofile** erhalten. Sie erzeugen in der Grundversion jedoch keine eigenständigen Gegner, Ressourcenpools, Führungsstrukturen oder Spawnlogiken.
+
+Die Mehrfraktionssimulation ist:
+
+```text
+DEFERRED_MULTIFACTION_EXTENSION
+```
+
+und darf erst nach einer ausdrücklich genehmigten späteren Projektphase eingeführt werden, wenn der einfache RED Commander stabil funktioniert und reproduzierbar getestet ist.
+
+### 1.2 Autoritätsgrenze
 
 Der frühere [`OMW-RED-DIRECTOR`](06-red-director.md) bleibt als ersetzter historischer Entwurf erhalten. Die technische Umsetzung muss aus dieser Designreferenz, [`OMW-ARCH-CAMPAIGN-DYNAMIC-MISSION`](37-campaign-architecture-and-dynamic-mission-design.md), MOOSE-First und gesonderter DCS-Acceptance abgeleitet werden.
+
+Dieses Dokument begründet Verhalten und Datenmodell. Es ist keine technische Acceptance und keine Freigabe für eine sofortige Vollsimulation aller beschriebenen Effekte.
 
 ## 2. Quellen und quellenkritische Einordnung
 
@@ -53,17 +90,18 @@ Die Studie untersucht sieben zentral-östliche Provinzen und beschreibt Taliban,
 - regionaler Fokus; keine landesweite ORBAT;
 - viele Aussagen beruhen auf Interviews mit Regierungs-, Sicherheits- und ehemaligen Aufständischen;
 - lokale Schätzungen dürfen nicht auf ganz Afghanistan hochgerechnet werden;
-- benannte Personen, Netzwerke und Zustände sind zeitgebunden.
+- benannte Personen, Netzwerke und Zustände sind zeitgebunden;
+- die historische Existenz mehrerer Gruppen verpflichtet OMW nicht zu einer Mehrfraktionssimulation in der Grundversion.
 
 ### 2.2 Exum/Fick/Humayun/Kilcullen – *Triage*, 2009
 
 **Datei:** `Exum-Triage-2009.pdf`
 
-**Wert:** strategische Vorperiodenreferenz für Bevölkerungskontrolle, Momentum, „ink blot/oil spot“, Priorisierung und die Taliban-Strategie der Erschöpfung.
+**Wert:** strategische Vorperiodenreferenz für Bevölkerungskontrolle, Momentum, Priorisierung und die Aufstandsstrategie der Erschöpfung.
 
 **Grenzen:**
 
-- Juni 2009, also vor dem OMW-Hauptzeitraum;
+- Juni 2009, vor dem OMW-Hauptzeitraum;
 - policy-orientierte Empfehlung, keine neutrale Ereignischronik;
 - Truppen- und ANSF-Zahlen gelten nur für den jeweils genannten Stichtag.
 
@@ -89,7 +127,7 @@ Die Studie untersucht sieben zentral-östliche Provinzen und beschreibt Taliban,
 
 **Wert:** zeitgenössischer Überblick über Sicherheitsverschlechterung, Korruption, Drogenökonomie, regionale Spannungen und Pakistanbezug.
 
-**Grenzen:** Sekundäranalyse mit teils pauschalen oder schwer nachprüfbaren Zahlen. Die genannte Schätzung von ungefähr 35.000 Taliban-Fußkämpfern und 900 Kommandeuren ist als `SECONDARY_ESTIMATE` zu führen, nicht als exakter OMW-Gesamtbestand.
+**Grenzen:** Sekundäranalyse mit teils pauschalen oder schwer nachprüfbaren Zahlen. Die genannte Schätzung von ungefähr 35.000 Taliban-Fußkämpfern und 900 Kommandeuren ist als `SECONDARY_ESTIMATE` zu führen, nicht als exakter OMW-Gesamtbestand oder Spawnzahl.
 
 ### 2.6 Jon Armajani – *The Taliban*, 2021
 
@@ -115,23 +153,43 @@ Die Studie untersucht sieben zentral-östliche Provinzen und beschreibt Taliban,
 
 **Grenzen:** strategischer Policy Brief; kaum direkt verwertbare Einheiten-, Basen- oder Taktikdaten.
 
-## 3. Grundentscheidung: RED ist kein einheitlicher Gegner
+## 3. Historische Vielfalt ohne Mehrfraktionssimulation
 
-Ein einzelner allwissender „Taliban Commander“ wäre historisch und spielmechanisch falsch. Der RED Commander muss mindestens drei Hauptfraktionen und zusätzliche lokale Netzwerke getrennt führen:
+Die Quellen zeigen unterschiedliche insurgente Organisationen und lokale Netzwerke. Für die Grundversion werden diese Unterschiede nicht als getrennte Gegner simuliert, sondern als optionale Herkunfts- oder Fähigkeitsmerkmale einzelner Operationen.
+
+Zulässige Quellen-Tags ohne eigene Runtime-Autorität:
 
 ```text
-TALIBAN_QUETTA_ALIGNED
-HAQQANI_NETWORK
-HIZB_E_ISLAMI_GULBUDDIN
-LOCAL_INSURGENT_OR_CRIMINAL_NETWORK
+SOURCE_PROFILE_GENERAL_TALIBAN_STYLE
+SOURCE_PROFILE_HIGH_COMPLEXITY_NETWORK
+SOURCE_PROFILE_LOCAL_INSURGENT_OR_CRIMINAL
+SOURCE_PROFILE_HIZB_E_ISLAMI_CONTEXT
 ```
 
-Optional können regionale Untertypen angelegt werden, aber nur wenn Quellen oder Missionsdesign einen konkreten Unterschied rechtfertigen.
+Diese Tags dürfen beeinflussen:
 
-Jede Fraktion besitzt eigene Zustände:
+- zulässige Aktionskomplexität;
+- erforderliche Vorbereitung;
+- Reichweite einer Zelle;
+- Operationssicherheit;
+- Fähigkeit zu Safehouse-, Cache- oder Infiltrationsnutzung;
+- erwartete psychologische Wirkung.
+
+Sie dürfen in der Grundversion **nicht** erzeugen:
+
+- getrennte Commander;
+- getrennte Bestände;
+- Fraktionskrieg;
+- Diplomatie- oder Relationssimulation;
+- Doppelbesteuerung oder Konkurrenzereignisse als eigenes Subsystem;
+- zusätzliche RED-Spawns ohne CampaignState-Herkunft.
+
+## 4. Konsolidierter RED-Zustand
+
+Der RED Commander besitzt zunächst einen gemeinsamen Zustand:
 
 ```yaml
-faction_state:
+red_state:
   leadership_cohesion: 0..100
   manpower_pool: 0..100
   finance: 0..100
@@ -142,109 +200,30 @@ faction_state:
   mobility: 0..100
   external_support: 0..100
   operational_security: 0..100
-  relations:
-    TALIBAN_QUETTA_ALIGNED: -100..100
-    HAQQANI_NETWORK: -100..100
-    HIZB_E_ISLAMI_GULBUDDIN: -100..100
+  attack_cell_capacity: 0..100
+  logistics_capacity: 0..100
+  pressure_level: 0..100
 ```
 
-Die Relationen sind dynamisch. Kooperation gegen gemeinsame Ziele kann gleichzeitig mit Konkurrenz um Straßen, Entführungs- oder Finanzierungsräume bestehen.
+Diese Werte sind abstrakte Kampagnenkapazitäten. Sie entsprechen keiner landesweiten Kopfzahl und werden nicht direkt in DCS-Gruppen umgerechnet.
 
-## 4. Historisch belegte regionale Organisationsmuster
+### 4.1 Lokale Zellstruktur
 
-### 4.1 Zentral-östlicher Raum
+Für Laghman nennt die Crisis Group als lokale Schätzung ungefähr 23 kleine Taliban-Gruppen mit jeweils etwa zehn bis dreißig Kämpfern und insgesamt ungefähr 400 Männern.
 
-Die Crisis Group beschreibt im Umfeld Kabuls drei parallel wirksame Hauptakteure:
-
-- Taliban;
-- Haqqani-Netzwerk;
-- Hizb-e Islami Gulbuddin.
-
-Im Mai 2011 bestanden in 35 von 62 untersuchten Distrikten durch die Quetta Shura eingesetzte Taliban-Schatten-Gouverneure. Diese Strukturen erhoben Abgaben, schlichteten Streitigkeiten und setzten lokale militärische Kommandeure ein.
-
-Daraus folgt: **Einfluss ist nicht gleich physische Besetzung.** Ein Distrikt kann tagsüber von Regierungskräften patrouilliert werden und zugleich nachts oder sozial durch eine Schattenverwaltung beeinflusst sein.
-
-### 4.2 Laghman als lokales Größenbeispiel
-
-Für Laghman nennt die Quelle eine Schätzung von ungefähr 23 kleinen Taliban-Gruppen mit jeweils etwa zehn bis dreißig Kämpfern und insgesamt ungefähr 400 Männern. Dies ist ein brauchbares Beispiel für ein zellulares Regionalmodell.
-
-Es ist ausdrücklich **keine** landesweite Standardstärke. Für OMW darf daraus lediglich abgeleitet werden:
+Für OMW folgt daraus nur das Strukturprinzip:
 
 ```text
 mehrere kleine, örtlich gebundene Gruppen
-+ gemeinsame politische/militärische Koordination
-+ begrenzte, aber kombinierbare Kräfte
++ begrenzte gemeinsame Koordination
++ temporäre Zusammenfassung für ausgewählte Aktionen
 ```
 
-### 4.3 Kabul und hochrangige Ziele
+Die Zahl 400 ist keine allgemeine Distrikt- oder Provinzformel und keine automatische Spawnstärke.
 
-In und um Kabul waren Aufständische zahlen- und feuerkraftmäßig unterlegen. Die Crisis Group beschreibt deshalb ein Ziel, die Hauptstadt nicht zwingend physisch zu erobern, sondern psychologisch unhaltbar erscheinen zu lassen.
+## 5. Einfluss- statt Frontlinienmodell
 
-Der RED Commander benötigt folglich einen Unterschied zwischen:
-
-```text
-TERRITORIAL_CAPTURE
-PSYCHOLOGICAL_EFFECT
-```
-
-Ein komplexer Anschlag, der zeitweise Medienwirkung, Unsicherheit und politische Kosten erzeugt, kann aus RED-Sicht erfolgreicher sein als ein verlustreicher Versuch, Gelände zu halten.
-
-## 5. Fraktionsprofile
-
-### 5.1 Taliban / Quetta-Shura-nahe Strukturen
-
-Typische Fähigkeiten und Schwerpunkte:
-
-- robustere politische und militärische Befehlskette als viele lokale Gruppen;
-- Schatten-Gouverneure, Schatten-Gerichte und lokale Kommandeursbestellung;
-- Einbindung lokaler religiöser, sozialer und früherer Mudschaheddin-Netzwerke;
-- Rekrutierung über lokale Konflikte, Schutzversprechen, Ideologie und Zwang;
-- territoriale Einflussbildung vom Dorf bis zum Distrikt;
-- Kampagnenrahmen und Propaganda, beispielsweise Al-Faath/Victory 2010 und Badr 2011;
-- IED, Hinterhalt, Einschüchterung, gezielte Tötung und zeitweilige größere Angriffe.
-
-### 5.2 Haqqani-Netzwerk
-
-Typische Fähigkeiten und Schwerpunkte:
-
-- größere Reichweite und Penetration im zentral-östlichen Raum;
-- gut ausgebildete Kämpfer und Zugang zu grenzüberschreitenden Rückzugs- und Unterstützungsräumen;
-- hochrangige, komplexe und koordinierte Anschläge;
-- Nutzung von Safehouses, Waffenlagern und lokalen Unterstützern;
-- Bereitstellung von Einrichtungen oder Fähigkeiten für andere Gruppen;
-- flexible Verlegung unter Druck, unter anderem über Khost in Richtung Logar/Kabul;
-- stärkere Eignung für mehrere Angriffsteile, Selbstmordattentäter, Fahrzeugbomben und vorbereitete Angriffszellen.
-
-Haqqani darf im Spiel nicht einfach als „stärkere Taliban-Infanterie“ abgebildet werden. Der Unterschied liegt vor allem in Netzwerkzugang, Operationssicherheit, Zielauswahl, Komplexität und Reichweite.
-
-### 5.3 Hizb-e Islami Gulbuddin
-
-Typische Fähigkeiten und Schwerpunkte:
-
-- historische lokale Verwurzelung und frühere Dominanz in Teilen des Zentral- und Ostens;
-- lokale Kommandeure mit politischen, wirtschaftlichen und persönlichen Netzwerken;
-- Kontrolle oder Einfluss auf wichtige Straßenabschnitte;
-- wechselnde lokale Kooperationen, auch mit ungewöhnlichen Partnern;
-- Konkurrenz mit Taliban und Haqqani um Autorität, Ressourcen und Einfluss;
-- Verbindungen in politische oder staatliche Strukturen können je nach Region relevant sein.
-
-### 5.4 Lokale bewaffnete, kriminelle und Macht-Netzwerke
-
-Die Quellen zeigen eine Überlagerung von Aufstand, Korruption, Schmuggel, Entführung, Drogenökonomie und lokalen Machtkämpfen. Nicht jede feindliche Aktivität ist zentral ideologisch gesteuert.
-
-Ein lokales Netzwerk kann:
-
-- zeitweise für Taliban oder HiG arbeiten;
-- Informationen verkaufen;
-- Schutzgeld erheben;
-- Entführungen durchführen;
-- eine Straße oder Ressource kontrollieren;
-- mit Regierungsvertretern kolludieren;
-- sich bei Druck neutral stellen oder die Seite wechseln.
-
-## 6. Einfluss- statt Frontlinienmodell
-
-Jeder relevante Distrikt, Ort oder Routensektor sollte getrennte Einflusswerte besitzen:
+Jeder relevante Distrikt, Ort oder Routensektor kann getrennte Einflusswerte besitzen:
 
 ```yaml
 area_state:
@@ -262,7 +241,7 @@ area_state:
   cache_network: 0..100
 ```
 
-Diese Werte dürfen nicht auf einen einzigen „control“-Wert reduziert werden. Insbesondere sind zu trennen:
+Diese Werte dürfen nicht auf einen einzigen `control`-Wert reduziert werden. Insbesondere sind zu trennen:
 
 - echte Zustimmung;
 - passive Duldung aus Angst;
@@ -284,52 +263,60 @@ DOMINANT
 
 Der sichtbare Zustand ist nur eine Zusammenfassung; die einzelnen Dimensionen bleiben erhalten.
 
-## 7. Ziele des RED Commanders
+## 6. Ziele des RED Commanders
 
-Der RED Commander priorisiert nicht ausschließlich Vernichtung oder Geländegewinn. Historisch plausible Zielklassen sind:
+Der RED Commander priorisiert nicht ausschließlich Vernichtung oder Geländegewinn.
 
-1. **Überleben und Operationssicherheit**
-   - Führung und Kader erhalten;
-   - Zellen auflösen oder verlegen;
-   - Cache- und Safehouse-Netz schützen;
-   - bei Überlegenheit des Gegners Kontakt vermeiden.
+### 6.1 Überleben und Operationssicherheit
 
-2. **Einfluss und Schattenherrschaft**
-   - lokale Streitbeilegung anbieten oder erzwingen;
-   - Schattenfunktionäre einsetzen;
-   - Abgaben erheben;
-   - staatliche Autorität verdrängen oder delegitimieren.
+- Führung und Kader erhalten;
+- Zellen auflösen oder verlegen;
+- Cache- und Safehouse-Netz schützen;
+- bei Überlegenheit des Gegners Kontakt vermeiden;
+- nach Verlusten regenerieren statt sofort erneut anzugreifen.
 
-3. **Bevölkerung kontrollieren**
-   - Zustimmung gewinnen;
-   - Passivität durch Einschüchterung erzeugen;
-   - Informanten bestrafen;
-   - lokale Beschwerden instrumentalisieren.
+### 6.2 Einfluss und Schattenherrschaft
 
-4. **Koalition und Regierung erschöpfen**
-   - dauerhafte Unsicherheit erzeugen;
-   - politische und mediale Kosten erhöhen;
-   - Reaktionskräfte binden;
-   - westliche öffentliche Unterstützung schwächen.
+- Schattenfunktionäre einsetzen;
+- Streitigkeiten schlichten oder kontrollieren;
+- Abgaben erheben;
+- staatliche Autorität verdrängen oder delegitimieren.
 
-5. **Bewegungsfreiheit begrenzen**
-   - MSR/ASR mit IED, Hinterhalten oder Beobachtung bedrohen;
-   - Checkpoints und Außenposten isolieren;
-   - Nachtbewegung und lokale Logistik dominieren.
+### 6.3 Bevölkerung kontrollieren
 
-6. **Ressourcen sichern**
-   - Schutzgeld, Steuern, Entführung, Schmuggel und lokale Wirtschaftszugänge;
-   - Kontrolle von Straßen, Grenzräumen oder wertvollen Gütern;
-   - externe Unterstützung und Rückzugsräume erhalten.
+- Zustimmung gewinnen;
+- Passivität durch Einschüchterung erzeugen;
+- Informanten bestrafen;
+- lokale Beschwerden instrumentalisieren.
 
-7. **Hochwertige psychologische Effekte**
-   - sichtbare Regierungs-, Sicherheits- oder internationale Ziele angreifen;
-   - spektakuläre, aber zeitlich begrenzte Wirkung erzeugen;
-   - Unsicherheit in vermeintlich sicheren Räumen demonstrieren.
+### 6.4 Koalition und Regierung erschöpfen
 
-## 8. Aktionsportfolio
+- dauerhafte Unsicherheit erzeugen;
+- politische und mediale Kosten erhöhen;
+- Reaktionskräfte binden;
+- westliche öffentliche Unterstützung schwächen.
 
-Der RED Commander wählt aus einem Portfolio, nicht aus einer einzigen Spawnroutine:
+### 6.5 Bewegungsfreiheit begrenzen
+
+- MSR/ASR mit IED, Hinterhalten oder Beobachtung bedrohen;
+- Checkpoints und Außenposten isolieren;
+- Nachtbewegung und lokale Logistik dominieren.
+
+### 6.6 Ressourcen sichern
+
+- Schutzgeld, Steuern, Entführung, Schmuggel und lokale Wirtschaftszugänge;
+- Kontrolle von Straßen, Grenzräumen oder wertvollen Gütern;
+- externe Unterstützung und Rückzugsräume erhalten.
+
+### 6.7 Hochwertige psychologische Effekte
+
+- sichtbare Regierungs-, Sicherheits- oder internationale Ziele angreifen;
+- spektakuläre, aber zeitlich begrenzte Wirkung erzeugen;
+- Unsicherheit in vermeintlich sicheren Räumen demonstrieren.
+
+## 7. Aktionsportfolio der Grundversion
+
+Der RED Commander wählt aus einem gemeinsamen Portfolio:
 
 ```text
 RECRUIT_LOCAL_CELL
@@ -343,7 +330,9 @@ ESTABLISH_SAFEHOUSE
 MOVE_CADRE
 INFILTRATE_SECURITY_OR_GOVERNMENT
 COLLUDE_WITH_OFFICIAL
+OBSERVE_ROUTE
 CONDUCT_IED_ATTACK
+CONDUCT_AMBUSH
 CONDUCT_COMPLEX_AMBUSH
 CONDUCT_TARGETED_ASSASSINATION
 CONDUCT_KIDNAPPING
@@ -351,47 +340,53 @@ CONDUCT_HIGH_PROFILE_COMPLEX_ATTACK
 PROBE_CHECKPOINT
 DISRUPT_ROUTE
 DEFEND_RESOURCE_OR_ROUTE
-COOPERATE_WITH_FACTION
-COMPETE_WITH_FACTION
-ATTACK_RIVAL_FACTION
 DISPERSE_UNDER_PRESSURE
-CROSS_BORDER_OR_REMOTE_REGROUP
+REMOTE_REGROUP
 PROPAGANDA_EXPLOIT_EVENT
 NEGOTIATE_OR_FEIGN_RECONCILIATION
 ```
 
 Nicht jede Aktion benötigt eine physische DCS-Gruppe. Schattenverwaltung, Rekrutierung, Finanzierung, Propaganda, Infiltration und Kollusion sind CampaignState-Ereignisse. Erst wenn eine Aktion in die physische Welt übergeht, wird eine passende Gruppe, Route oder Mission erzeugt.
 
-## 9. Prioritätslogik
+Für die MVP-Implementierung müssen nicht alle Aktionen gleichzeitig umgesetzt werden. Der priorisierte Kernumfang steht in Abschnitt 17.
 
-### 9.1 Schwache Regierung und fehlende Justiz
+## 8. Prioritätslogik
 
-Wenn `government_legitimacy` und `government_security_presence` niedrig sind:
+### 8.1 Schwache Regierung und fehlende Justiz
+
+Wenn `government_legitimacy` und `government_security_presence` niedrig sind, werden wahrscheinlicher:
 
 ```text
-SHADOW_COURT
-SHADOW_OFFICIAL
-TAX_OR_EXTORTION
+RUN_SHADOW_COURT
+ESTABLISH_SHADOW_OFFICIAL
+COLLECT_TAX_OR_EXTORTION
 RECRUIT_LOCAL_CELL
 ```
 
-werden wahrscheinlicher als ein sofortiger Großangriff.
+Ein sofortiger Großangriff ist in diesem Zustand nicht automatisch die beste RED-Entscheidung.
 
-### 9.2 Hoher Verkehrs- oder Logistikwert
+### 8.2 Hoher Verkehrs- oder Logistikwert
 
-Wenn eine Route stark genutzt und nur begrenzt gesichert ist:
+Wenn eine Route stark genutzt und nur begrenzt gesichert ist, werden priorisiert:
 
 ```text
 OBSERVE_ROUTE
 BUILD_CACHE
-IED_ATTACK
-AMBUSH
-KIDNAPPING_OR_EXTORTION
+CONDUCT_IED_ATTACK
+CONDUCT_AMBUSH
+CONDUCT_KIDNAPPING
+COLLECT_TAX_OR_EXTORTION
 ```
 
-werden priorisiert. Der Erfolg ist nicht nur ein zerstörter Konvoi, sondern auch Verzögerung, Routenwechsel, zusätzliche Sicherungskräfte oder sinkende lokale Bewegungsfreiheit.
+Der Erfolg ist nicht nur ein zerstörter Konvoi, sondern auch:
 
-### 9.3 Hoher militärischer Druck
+- Verzögerung;
+- Routenwechsel;
+- zusätzliche Sicherungskräfte;
+- sinkende lokale Bewegungsfreiheit;
+- höherer logistischer Aufwand.
+
+### 8.3 Hoher militärischer Druck
 
 Bei hoher ISR-, SOF-, Ground- und Air-Presence:
 
@@ -405,32 +400,22 @@ Bei hoher ISR-, SOF-, Ground- und Air-Presence:
 
 Der Gegner darf nicht unrealistisch immer bis zur Vernichtung kämpfen.
 
-### 9.4 Zivile Schäden oder fehlerhafte Operationen
+### 8.4 Zivile Schäden oder fehlerhafte Operationen
 
-Erleidet die Bevölkerung zivile Schäden, ungerechtfertigte Festnahmen oder wiederholte Eingriffe:
+Erleidet die Bevölkerung zivile Schäden, ungerechtfertigte Festnahmen oder wiederholte Eingriffe, können steigen:
 
 ```text
-recruitment_access += effect
-population_passivity += effect
-propaganda_opportunity += effect
-intelligence_access += possible_effect
+recruitment_access
+population_passivity
+propaganda_opportunity
+intelligence_access
 ```
 
-Die Wirkung ist nicht automatisch echte Unterstützung. Angst, Wut, Opportunismus und Schutzsuche müssen getrennt bleiben.
+Die Wirkung ist nicht automatisch echte Unterstützung. Angst, Wut, Opportunismus und Schutzsuche bleiben getrennt.
 
-### 9.5 Fraktionsrivalität
+### 8.5 Hochwertiges Ziel und komplexe Angriffsfähigkeit
 
-Bei wertvollen Straßen, Entführungsräumen, Finanzierung oder persönlichen Konflikten:
-
-- Kooperation kann sinken;
-- konkurrierende Schattenfunktionäre können auftreten;
-- Ressourcen können doppelt besteuert werden;
-- gezielte Gewalt gegen Rivalen ist möglich;
-- gemeinsame Angriffe bleiben dennoch möglich, wenn ein übergeordnetes Ziel attraktiv ist.
-
-### 9.6 Hochwertiges Ziel und Haqqani-Zugang
-
-Ein komplexer Angriff wird nur erwogen, wenn mehrere Voraussetzungen erfüllt sind:
+Ein hochkomplexer Angriff wird nur erwogen, wenn mehrere Voraussetzungen erfüllt sind:
 
 ```yaml
 requirements:
@@ -440,14 +425,16 @@ requirements:
   operational_security: sufficient
   target_value: high
   expected_psychological_effect: high
-  exfiltration_required: false|optional
+  pressure_level: acceptable
 ```
 
-Damit wird verhindert, dass hochkomplexe Anschläge zufällig und ohne Vorbereitung erscheinen.
+Damit wird verhindert, dass komplexe Anschläge zufällig und ohne Vorbereitung erscheinen.
 
-## 10. Rekrutierungs- und Mobilisierungsfaktoren
+Die Herkunft einer solchen Fähigkeit kann in Quellenmetadaten mit einem historischen Profil versehen werden. Runtime-seitig bleibt es jedoch eine Aktion desselben konsolidierten RED Commanders.
 
-Die Crisis Group nennt keine einzige universelle Motivation. Für OMW sind mindestens folgende Faktoren zu modellieren:
+## 9. Rekrutierungs- und Mobilisierungsfaktoren
+
+Die Quellen nennen keine einzige universelle Motivation. Für OMW sind mindestens folgende Faktoren zu berücksichtigen:
 
 - fehlende Sicherheit und schwache staatliche Präsenz;
 - Korruption und Straflosigkeit;
@@ -462,13 +449,13 @@ Die Crisis Group nennt keine einzige universelle Motivation. Für OMW sind minde
 - religiöse Mobilisierung und Propaganda;
 - Zwang, Drohung und Schutzsuche.
 
-Daraus folgt eine verbindliche Modellregel:
+Verbindliche Modellregel:
 
 > Ethnie, Religion oder Wohnort allein erzeugen keine feindliche Zugehörigkeit.
 
 Sie können Kontext liefern, dürfen aber niemals als deterministischer Rekrutierungs- oder Zielparameter dienen.
 
-## 11. Moscheen, Mullahs und Madrasas
+## 10. Moscheen, Mullahs und Madrasas
 
 Die Quellen beschreiben religiöse Netzwerke als mögliche Räume für Rekrutierung, Nachrichtenzugang, Mobilisierung und in einzelnen belegten Fällen Waffenlagerung.
 
@@ -480,20 +467,18 @@ Für OMW gilt dennoch:
 - No-Strike-List, ROE, Positive Identification und Kollateralschadensprüfung bleiben vollständig wirksam;
 - verdeckte Nutzung kann als Intelligence-/Investigation-Problem modelliert werden, nicht als pauschale Zielklasse.
 
-## 12. Infiltration, Kollusion und Informationskrieg
+## 11. Infiltration, Kollusion und Informationskrieg
 
-Die Quellen zeigen, dass erfolgreiche Angriffe teilweise durch:
+Die Quellen zeigen, dass erfolgreiche Angriffe teilweise erleichtert wurden durch:
 
 - korrupte Funktionäre;
 - kolludierende Sicherheitskräfte;
 - eingeschleuste Personen;
 - lokale Informanten;
 - falsche oder manipulierte Zielinformationen;
-- Waffenlager und Safehouses in urbanen Räumen
+- Waffenlager und Safehouses in urbanen Räumen.
 
-erleichtert wurden.
-
-Der RED Commander benötigt deshalb eine nichtphysische Fähigkeit `SECURITY_PENETRATION`. Sie kann folgende Effekte auslösen:
+Der RED Commander kann deshalb eine nichtphysische Fähigkeit `SECURITY_PENETRATION` besitzen. Mögliche Effekte:
 
 ```text
 checkpoint_warning
@@ -505,7 +490,7 @@ attack_timing_bonus
 prisoner_or_detainee_information
 ```
 
-Gleichzeitig muss BLUE/ANSF eine Gegenlinie besitzen:
+BLUE/ANSF benötigt eine Gegenlinie:
 
 ```text
 vetting
@@ -516,9 +501,9 @@ cache_search
 force_protection
 ```
 
-## 13. Taktische Muster
+## 12. Taktische Muster
 
-### 13.1 IED und Hinterhalt
+### 12.1 IED und Hinterhalt
 
 Historisch plausible Kombination:
 
@@ -531,7 +516,7 @@ Historisch plausible Kombination:
 
 Nicht jede IED-Aktion benötigt einen anschließend bis zum Tod kämpfenden Trupp.
 
-### 13.2 Komplexer Angriff
+### 12.2 Komplexer Angriff
 
 Komplexe Angriffe können kombinieren:
 
@@ -542,9 +527,9 @@ Komplexe Angriffe können kombinieren:
 - Angriff auf Sicherheitskräfte, Regierungsstellen oder symbolische Ziele;
 - zeitliche Staffelung, um Reaktionskräfte zu binden.
 
-Diese Aktionsklasse ist selten, vorbereitungsintensiv und fraktionsabhängig.
+Diese Aktionsklasse ist selten, vorbereitungsintensiv und für die Grundversion nicht zwingend erforderlich. Sie kann nach Stabilisierung der Kernaktionen ergänzt werden.
 
-### 13.3 Gezielte Tötung und Einschüchterung
+### 12.3 Gezielte Tötung und Einschüchterung
 
 Ziele können sein:
 
@@ -552,60 +537,57 @@ Ziele können sein:
 - Polizei- oder NDS-Personal;
 - Informanten;
 - religiöse oder gesellschaftliche Gegner;
-- rivalisierende Kommandeure.
+- lokale Machtkonkurrenten.
 
 Der Effekt ist häufig größer als der unmittelbare materielle Schaden, weil er Kooperation mit Regierung und Koalition abschrecken soll.
 
-### 13.4 Dispersal und Rückzug
+### 12.4 Dispersal und Rückzug
 
 Bei gegnerischer Überlegenheit:
 
 - Kontakt abbrechen;
 - Kräfte in Kleingruppen teilen;
 - Waffen verstecken;
-- zivile Räume nicht automatisch als Deckung missbrauchen, sondern nur bei konkret modellierter Netzwerkfähigkeit;
 - in benachbarte Distrikte oder externe Rückzugsräume verlegen;
 - später mit neuer Zusammensetzung zurückkehren.
 
-## 14. BLUE- und ANSF-Gegenwirkungen aus den Quellen
+Zivile Räume werden nicht automatisch als Deckung missbraucht. Eine solche Nutzung darf nur bei konkret modellierter Netzwerkfähigkeit und unter vollständiger ROE-/NSL-Beachtung dargestellt werden.
 
-### 14.1 Bevölkerungsschutz und Legitimität
+## 13. BLUE- und ANSF-Gegenwirkungen
 
-Exum et al. argumentieren, dass Bevölkerungsschutz Vorrang vor reinem Terrain- oder Kill-Count-Denken besitzt. Für die Kampagne bedeutet dies:
+### 13.1 Bevölkerungsschutz und Legitimität
+
+Für die Kampagne gilt:
 
 ```text
 BLUE_KILLS != BLUE_SUCCESS
 TERRAIN_OCCUPIED != LEGITIMATE_CONTROL
 ```
 
-Erfolg misst sich unter anderem an wahrgenommener Sicherheit, Bewegungsfreiheit, funktionierender Verwaltung und freiwilliger Informationsweitergabe.
+Erfolg misst sich unter anderem an:
 
-### 14.2 Intelligence
+- wahrgenommener Sicherheit;
+- Bewegungsfreiheit;
+- funktionierender Verwaltung;
+- freiwilliger Informationsweitergabe;
+- sinkender Einschüchterung;
+- dauerhaft nutzbaren Verkehrswegen.
 
-Glatz fordert im COIN-Umfeld:
+### 13.2 Intelligence
 
-- mehr HUMINT und lokale Informationsgewinnung;
+Im COIN-Umfeld sind erforderlich:
+
+- HUMINT und lokale Informationsgewinnung;
 - zeitnahe Analyse auf taktischer Ebene;
 - Sprach-, Regional-, Sozial-, Wirtschafts-, Rechts- und Politikkompetenz;
-- bessere Verbindung zwischen Collectors, Analysten, Targeting und Operators;
-- Verlagerung geeigneter Intelligence-Fähigkeiten bis auf Bataillonsebene;
+- Verbindung zwischen Collectors, Analysten, Targeting und Operators;
 - organisationsübergreifendes Information Sharing.
 
-Für OMW folgt daraus, dass ISR-Sensoren allein den RED Commander nicht vollständig aufdecken. Technische Aufklärung muss mit RECCE, HUMINT, Pattern-of-Life und Quellenvalidierung verbunden werden.
+ISR-Sensoren allein decken den RED Commander nicht vollständig auf. Technische Aufklärung muss mit RECCE, HUMINT, Pattern-of-Life und Quellenvalidierung verbunden werden.
 
-### 14.3 ANSF-Kampfkraft
+### 13.3 ANSF-Kampfkraft
 
-Dubik trennt nominelle Stärke von nutzbarer Kampfkraft. Relevante Faktoren sind:
-
-- ausreichende Zahl;
-- Ausbildung und Ausrüstung;
-- Führung;
-- Kohäsion und Vertrauen;
-- Partnerschaft mit Koalitionskräften;
-- Zugang zu Artillerie, Luftunterstützung, MEDEVAC, Transport und weiteren Combat Multipliers;
-- funktionierende Ministerien und Hauptquartiere.
-
-Ein ANSF-Verband darf deshalb nicht nur über eine Anzahl von Gruppen definiert werden. Er benötigt mindestens:
+Nominelle Stärke ist nicht identisch mit nutzbarer Kampfkraft. Relevante Faktoren:
 
 ```yaml
 ansf_readiness:
@@ -621,11 +603,13 @@ ansf_readiness:
   infiltration_risk: 0..100
 ```
 
-## 15. Messgrößen des RED Commanders
+Dieses Modell ist unabhängig von der Entscheidung, RED zunächst als einen konsolidierten Gegner zu führen.
+
+## 14. Messgrößen des RED Commanders
 
 Der RED Commander bewertet Erfolg nicht nur anhand vernichteter Einheiten.
 
-### 15.1 Primäre RED-Metriken
+### 14.1 Primäre RED-Metriken
 
 - Bevölkerung hat Angst, mit Regierung/ISAF zusammenzuarbeiten;
 - Schattenjustiz wird häufiger genutzt;
@@ -637,9 +621,9 @@ Der RED Commander bewertet Erfolg nicht nur anhand vernichteter Einheiten.
 - Regierung verliert Legitimität;
 - Koalition bindet überproportional viele Kräfte;
 - hochrangige Anschläge erzeugen psychologische oder politische Wirkung;
-- Fraktionsführung und externe Unterstützung bleiben funktionsfähig.
+- Führung und externe Unterstützung bleiben funktionsfähig.
 
-### 15.2 Primäre BLUE-/Campaign-Metriken
+### 14.2 Primäre BLUE-/Campaign-Metriken
 
 - subjektive Sicherheit der Bevölkerung;
 - freiwillige Meldungen und Hinweise;
@@ -652,7 +636,7 @@ Der RED Commander bewertet Erfolg nicht nur anhand vernichteter Einheiten.
 - zivile Schäden und Fehlidentifikationen;
 - klare, messbare Endstates statt bloßer Aktivitätszahlen.
 
-## 16. Jahreszeit, Kampagnen und Momentum
+## 15. Jahreszeit, Kampagnen und Momentum
 
 Die Quellen belegen saisonal benannte Offensiven und eine starke Bedeutung von Momentum. Daraus darf kein starrer Kalenderautomat entstehen. Wetter, Gelände, lokale Ernte- und Bewegungsbedingungen, Führungslage, Verluste, Finanzierung und BLUE-Druck müssen einbezogen werden.
 
@@ -668,29 +652,29 @@ DISPERSE
 RECOVER
 ```
 
-Ein Fraktionskommandeur kann in einem Distrikt `OFFENSIVE` und gleichzeitig in einem anderen `DISPERSE` sein.
+Der konsolidierte RED Commander kann in einem Distrikt `OFFENSIVE` und gleichzeitig in einem anderen `DISPERSE` sein. Dafür sind keine getrennten Fraktionen erforderlich.
 
-## 17. Nicht zulässige Vereinfachungen
+## 16. Nicht zulässige Vereinfachungen
 
 Folgende Modelle sind ausdrücklich zu vermeiden:
 
 - jeder Paschtune oder jeder konservative Distrikt ist Taliban;
 - jede Moschee oder Madrasa ist ein feindliches Objekt;
-- Taliban, Haqqani und HiG sind austauschbare Skins derselben KI;
 - hohe Kill-Zahl reduziert automatisch Aufstandsunterstützung;
 - ein eroberter Ort bleibt ohne dauerhafte Sicherheit und Governance unter BLUE-Kontrolle;
 - jede entdeckte RED-Gruppe kämpft bis zur Vernichtung;
 - landesweite Kämpferzahlen werden unmittelbar in DCS-Spawns übersetzt;
-- Korruption oder Kriminalität ist immer zentral von der Talibanführung gesteuert;
+- Korruption oder Kriminalität ist immer zentral vom RED Commander gesteuert;
 - ein ziviler Schaden erzeugt stets denselben linearen Effekt;
-- ein erfolgreicher Angriff beweist automatisch breite lokale Unterstützung.
+- ein erfolgreicher Angriff beweist automatisch breite lokale Unterstützung;
+- historische Organisationsvielfalt wird ohne operativen Nutzen sofort als komplexe Mehrfraktionssimulation umgesetzt.
 
-## 18. Technische Zielarchitektur
+## 17. Technische Zielarchitektur der Grundversion
 
 Die Implementierung soll MOOSE-First und CampaignState-basiert erfolgen:
 
 ```text
-FactionState
+REDState
   -> AreaInfluenceState
   -> RED strategic planner
   -> action selection
@@ -700,19 +684,83 @@ FactionState
   -> campaign consequence
 ```
 
+Nicht Bestandteil der Grundversion:
+
+```text
+FactionState[]
+FactionRelations
+FactionDiplomacy
+FactionConflict
+separate faction logistics
+separate faction commanders
+```
+
 Vor eigener Lua-Logik ist zu prüfen, welche MOOSE-FSM-, OPS-, AUFTRAG-, INTEL-, DETECTION-, ZONE-, SPAWN- und Event-Funktionen die jeweilige Teilaufgabe bereits abbilden.
 
-Die Quellen begründen das Verhalten und Datenmodell. Sie liefern keine technische Acceptance für eine konkrete MOOSE-Klasse oder Implementierung.
+## 18. Priorisierte MVP-Umsetzung
 
-## 19. Priorisierte Umsetzungsschritte
+### Stufe 1 – einfaches funktionsfähiges Grundkonzept
 
-1. `FactionState` und dynamische Beziehungen zwischen Taliban, Haqqani, HiG und lokalen Netzwerken definieren;
-2. mehrdimensionale `AreaInfluenceState`-Werte in CampaignState aufnehmen;
-3. Aktionsportfolio in virtuelle und physische Aktionen trennen;
-4. Route-Control-, Shadow-Governance-, Recruitment- und Intelligence-Penetration-Effekte modellieren;
-5. RED-Aktionswahl anhand lokaler Zustände statt reinem Zufall implementieren;
-6. seltene komplexe Angriffe an Vorbedingungen und Vorbereitung koppeln;
-7. BLUE-/ANSF-Aktionen mit Legitimitäts-, Sicherheits-, Intelligence- und Civilian-Harm-Effekten verbinden;
-8. MOOSE-Dokumentation auf vorhandene Klassen/Funktionen prüfen;
-9. separaten Teststrang für jede Aktionsklasse anlegen;
-10. keine Änderung der aktiven ORBAT und kein Produktionsstatus ohne Projektinhaberfreigabe und DCS-Test.
+1. einen `REDState` definieren;
+2. RED-Hauptquartier, Depots, Hide Sites und Forward Caches als Netzwerk führen;
+3. kleine lokale Zellen aus einem gemeinsamen Ressourcenpool erzeugen;
+4. zunächst nur folgende physische Kernaktionen umsetzen:
+   - `OBSERVE_ROUTE`;
+   - `BUILD_CACHE`;
+   - `CONDUCT_IED_ATTACK`;
+   - `CONDUCT_AMBUSH`;
+   - `PROBE_CHECKPOINT`;
+   - `DISPERSE_UNDER_PRESSURE`;
+5. Erfolg, Verlust, Rückzug und Ressourcenverbrauch in CampaignState zurückschreiben;
+6. keine zufälligen oder zwecklosen Spawns;
+7. jede Aktionsklasse isoliert in DCS testen.
+
+### Stufe 2 – einfache virtuelle Einflusswirkungen
+
+Nach stabiler Stufe 1:
+
+- Rekrutierung;
+- Einschüchterung;
+- Cache-Regeneration;
+- Route Influence;
+- begrenzte HUMINT-/Informanteneffekte;
+- lokale Legitimitäts- und Passivitätswerte.
+
+### Stufe 3 – erweiterte Aktionen
+
+Erst nach stabiler Stufe 2:
+
+- gezielte Tötung;
+- Infiltration;
+- Entführung;
+- komplexe Angriffe;
+- Schattenjustiz und Abgabenerhebung;
+- Propaganda- und psychologische Effekte.
+
+### Stufe 4 – optionale Mehrfraktionssimulation
+
+Die historische Trennung von Taliban, Haqqani, Hizb-e Islami und lokalen Netzwerken kann später als Zusatzsimulation geprüft werden. Voraussetzungen:
+
+- Grundsystem läuft stabil;
+- CampaignState und Persistenz sind belastbar;
+- RED-Kernaktionen sind getestet;
+- klare spielmechanische Vorteile gegenüber zusätzlicher Komplexität sind nachgewiesen;
+- ausdrückliche Freigabe des Projektinhabers liegt vor;
+- eigener Architektur-, MOOSE-First- und Acceptance-Strang wird angelegt.
+
+Bis dahin bleibt Stufe 4 zurückgestellt.
+
+## 19. Abnahmekriterien
+
+Die RED-Grundversion gilt erst als integriert, wenn:
+
+- genau ein konsolidierter RED Commander existiert;
+- keine verdeckte Doppelzählung durch Fraktionspools entsteht;
+- jeder physische Spawn einen Ursprung, Auftrag und Ressourcenverbrauch besitzt;
+- Rückzug statt Vernichtung möglich und getestet ist;
+- IED-, Hinterhalt- und Dispersal-Aktionen reproduzierbar funktionieren;
+- virtuelle Effekte keine unerklärten physischen Kräfte erzeugen;
+- NSL, ROE und zivile Schutzregeln eingehalten werden;
+- MOOSE-First-Prüfung dokumentiert ist;
+- DCS-Testfälle mit erwarteten Logmeldungen vorliegen;
+- keine Änderung der aktiven ORBAT oder Produktionsfreigabe ohne Projektinhaberentscheidung erfolgt.
