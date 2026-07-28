@@ -150,7 +150,30 @@ Das Audit bezieht sich auf die in diesem Quellenarbeitsgang identifizierten Mate
 | `Kashyap-AFPAKSTRATEGY-2009.pdf` | `BACKGROUND_ONLY` | Dokument 57 | Literaturübersicht; nur strategischer Pakistan-/Safe-Haven-/Logistikrahmen |
 | `Dressler-COUNTERINSURGENCYHELMAND-2011.pdf` | `INCORPORATED_WITH_LIMITS` | Dokument 57; Dokumente 37/56 | zeitgenössische Wirkung, Reinfiltration, ANSF, Drogenfinanzierung, Governance und Restgefahren |
 
-## 10. Quellen, die in anderen OMW-Fachsträngen bereits erfasst sind
+## 10. Ostafghanistan, Haqqani-Netzwerk und High-Complexity-Profil
+
+| Quelle/Datei | Status | Repository-Ziel | Bemerkung |
+|---|---|---|---|
+| `Dressler-HAQQANINETWORK-2010(2).pdf` | `INCORPORATED_WITH_LIMITS` | Dokument 58; ergänzend Dokument 56 | in-period Analyse zu Loya Paktia, Reconstitution, Expansion, Facilitation, Kabul-Zellen und Regeneration |
+| `Dressler-IRRECONCILABLES-2010(1).pdf` | `INCORPORATED_WITH_LIMITS` | Dokument 58 | kurzer, stark wertender Policy-Backgrounder; Beziehungen und Verhandlungskontext, keine alleinige Intent-Autorität |
+| `Dressler-HAQQANINETWORKKURRAM-2011(2).pdf` | `INCORPORATED_WITH_LIMITS` | Dokument 58 | Kurram als Ausweich-, Transit- und Sanctuary-Raum; berichtsbasierte Angaben zu Absprachen |
+| `Rassler-HaqqaniNexusEvolution-2011(2).pdf` | `INCORPORATED_WITH_LIMITS` | Dokument 58 | CTC-Analyse mit Primärsprachmaterial zu Nexus-, Broker-, Ressourcenaggregations- und Resilienzfunktion |
+| `Dressler-HAQQANINETWORK-2012(2).pdf` | `INCORPORATED_WITH_LIMITS` | Dokument 58 | near-period retrospective; 2010/2011-Routen, Safehavens, Nangarhar/Jalalabad, Kabul-Staging und komplexe Angriffe; 2012-Empfehlungen bleiben post-periodisch |
+| `Weinbaum-TenaciousToxicHaqqani-2016(2).pdf` | `BACKGROUND_ONLY` | Dokument 58 | post-periodische Kontextprüfung zu Resilienz, Finanzierung und Allianzen |
+| `Lurie-HaqqaniNetwork-2020(1).pdf` | `LEAD_ONLY` / `BACKGROUND_ONLY` | Dokument 58 | spätes Policy-Perspective-Papier; keine 2010/2011-Stärke- oder Strukturautorität |
+| `Dressler-QUETTASHURATALIBAN-2009(1).pdf` | `INCORPORATED_WITH_LIMITS` / `PRE_PERIOD_CONTINUITY` | Dokumente 57–59 | strategische Führung, lokale Ausführung, Schattenverwaltung und gezielte Einflussoperationen; südlicher Vorperiodenfokus |
+
+## 11. Campaign Assessment, operative Übergänge und Sicherheitsakteure
+
+| Quelle/Datei | Status | Repository-Ziel | Bemerkung |
+|---|---|---|---|
+| `Cordesman-Afghanistan-2018(1).pdf` | `INCORPORATED_WITH_LIMITS` | Dokument 59 | post-periodische Metrikkritik und historische Grafikkompilation; jede Grafik behält eigene Provenienz |
+| `McNally-TALIBANRESURGENT-2015(1).pdf` | `BACKGROUND_ONLY` / `POST_PERIOD_VALIDATION` | Dokument 59 | bestätigt Clear-Hold-Regeneration und Enabler-Lücken 2014/2015; keine Rückprojektion als 2010/2011-Istlage |
+| `KAGAN-RealSurge-2007(1).pdf` | `BACKGROUND_ONLY` | Dokument 59 | Irak-spezifische Operationsanalyse; nur abstrakte LoC-/Support-Raum- und Präsenzprinzipien |
+| `Dubik-OPERATIONALARTCOUNTERINSURGENCY-2012(1).pdf` | `INCORPORATED_WITH_LIMITS` | Dokument 59; ergänzend Dokument 37 | Clear-Hold-Build, operative Übergänge, Assessment und civil-military alignment; überwiegend Irak-Fälle |
+| `Forsberg-CONSOLIDATINGPRIVATESECURITY-2010(1).pdf` | `INCORPORATED_WITH_LIMITS` | Dokument 59; ergänzend Dokumente 49/57 | Kandahar-PSCs, Powerbroker, Highway One und geplante Kandahar Security Company; Planzahlen sind keine Iststärke |
+
+## 12. Quellen, die in anderen OMW-Fachsträngen bereits erfasst sind
 
 Die folgenden Themen besitzen eigene Fachreferenzen und werden nicht erneut vollständig dupliziert:
 
@@ -165,7 +188,7 @@ Die folgenden Themen besitzen eigene Fachreferenzen und werden nicht erneut voll
 
 Neue Quellen werden dort nur ergänzt, wenn sie einen bisher fehlenden autoritativen Inhalt liefern. Dokument 54 verweist auf diese Quellenbereiche und ersetzt sie nicht.
 
-## 11. Nicht als Projektquelle zu übernehmende Dateien
+## 13. Nicht als Projektquelle zu übernehmende Dateien
 
 | Datei/Typ | Status | Begründung |
 |---|---|---|
@@ -173,7 +196,7 @@ Neue Quellen werden dort nur ergänzt, wenn sie einen bisher fehlenden autoritat
 | automatisch erzeugte Vorschaubilder ohne Herkunftsmetadaten | `OUT_OF_SCOPE` bis zur Zuordnung | keine selbstständige Evidenz |
 | doppelte Patreon-PDF-Exporte desselben Posts | `INCORPORATED` über einen eindeutigen Quellenrecord | keine Mehrfachzählung |
 
-## 12. Offene Aufnahmeaufgaben
+## 14. Offene Aufnahmeaufgaben
 
 Trotz der erfolgten Aufnahme bleiben Primärquellenprüfungen offen:
 
@@ -191,9 +214,12 @@ Trotz der erfolgten Aufnahme bleiben Primärquellenprüfungen offen:
 12. regionale Verifikation von RED-Stärken und Führungsstrukturen außerhalb der untersuchten Studienräume;
 13. Primärquellenprüfung einzelner Kämpfer-, Finanzierungs- und Anlagenzahlen aus den Kandahar-/Helmand-Studien;
 14. Georeferenzierung ausgewählter historischer Enemy-System-Karten gegen OMW-Location-Registry und DCS-Terrain;
-15. alle Quellen, die später neu hochgeladen oder diesem Arbeitsstrang ausdrücklich hinzugefügt werden.
+15. Primärquellenprüfung der in Dokument 58 übernommenen Einzelereignisse, Routenbezeichnungen und Festnahmewerte;
+16. geographische Validierung der Ostafghanistan-Facilitation-Routen gegen DCS-Terrain und Location Registry;
+17. Primärquellenprüfung der Kandahar-PSC-Eigentums-, Einfluss- und Planzahlen;
+18. alle Quellen, die später neu hochgeladen oder diesem Arbeitsstrang ausdrücklich hinzugefügt werden.
 
-## 13. Abschlussstatus
+## 15. Abschlussstatus
 
 Für die in diesem Audit identifizierten Quellen existiert nun jeweils:
 
