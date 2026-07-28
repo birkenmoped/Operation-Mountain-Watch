@@ -69,6 +69,7 @@ Eine Nummer und eine stabile `document_id` dürfen im aktuellen Bestand jeweils 
 | 48 | `OMW-TARGETING-AFGHANISTAN-NSL` | `docs/48-afghanistan-no-strike-list.md` | `BINDING` | Targeting-Architektur |
 | 49 | `OMW-MSR-ROUTE-DESIGN` | `docs/49-msr-routendesign-und-infrastrukturmarker.md` | `PLANNED` | Design-/Arbeitsliste |
 | 50 | `OMW-HIST-AFGHANISTAN-FORCE-BASING-AVIATION` | `docs/50-afghanistan-force-basing-aviation-2010-2011.md` | `BINDING` | historische Kräfte-, Basen-, Aviation- und TTP-Referenz |
+| 51 | `OMW-HIST-USMC-RC-SOUTHWEST-COALITION-OPS` | `docs/51-usmc-rc-southwest-and-coalition-operations-2010-2011.md` | `BINDING` | USMC-RC-Southwest-, Koalitionsoperations- und Missionsmuster-Referenz |
 
 ## 3. Reservierte Nummern auf offenen Branches
 
