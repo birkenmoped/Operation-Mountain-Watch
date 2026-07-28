@@ -4,7 +4,7 @@ status: BINDING
 document_class: SOURCE_INTAKE_AUDIT
 owning_policy: OMW-GOV-001
 authoritative_for:
-  - intake status of sources supplied in the Afghanistan force, aviation and air-C2 documentation workstream through 2026-07-28
+  - intake status of sources supplied in the Afghanistan force, aviation, RED Commander and air-C2 documentation workstream through 2026-07-28
   - mapping of each identified source to its current repository destination
 not_authoritative_for:
   - completeness of the user's entire File Library outside this workstream
@@ -136,9 +136,23 @@ Das Audit bezieht sich auf die in diesem Quellenarbeitsgang identifizierten Mate
 | `Berdal-MissionFar-2016.pdf` | `BACKGROUND_ONLY` | Dokument 56 | post-periodische Strategie- und Bündniskritik; keine taktische ORBAT |
 | `Noev-AfghanistanPakistanNATOs-2010.pdf` | `BACKGROUND_ONLY` | Dokument 56 | NATO-Kohäsion, Expeditionary-/Hybrid-Kontext; kaum direkte Einheiten- oder Taktikdaten |
 
-## 9. Quellen, die in anderen OMW-Fachsträngen bereits erfasst sind
+## 9. Kandahar-/Helmand-Enemy-System und RED-Strategie
 
-Die folgenden Themen besitzen bereits eigene Fachreferenzen und werden in diesem PR nicht erneut vollständig dupliziert:
+| Quelle/Datei | Status | Repository-Ziel | Bemerkung |
+|---|---|---|---|
+| `Dressler-OPERATIONMOSHTARAK-2010.pdf` | `INCORPORATED_WITH_LIMITS` | Dokument 57; ergänzend Dokument 56 | Marjah als C2-, Drogen-, Finanz-, IED- und Schattenverwaltungsknoten; Planungsstand vor Hauptangriff |
+| `Dressler-MARJAHSLESSONSKANDAHAR-2010.pdf` | `INCORPORATED_WITH_LIMITS` | Dokument 57; Dokumente 37/56 | Clear-Hold-Probleme, Reinfiltration, Einschüchterung, Polizeigrenzen und Governance Delivery |
+| `Gopal-BattleAfghanistan-2010.pdf` | `INCORPORATED_WITH_LIMITS` | Dokument 57; ergänzend Dokument 56 | feldnahe Kandahar-Studie zu Struktur, Finanzierung, Schattenverwaltung, Taktik und Stärke; interviewbasiert |
+| `Forsberg-POLITICSPOWERKANDAHAR-2010.pdf` | `INCORPORATED_WITH_LIMITS` | Dokument 57 | informelle Macht, Vertragswirtschaft, private Sicherheitskräfte und Governance-Legitimität; keine taktische ORBAT |
+| `Forsberg-COUNTERINSURGENCYKANDAHAR-2010.pdf` | `INCORPORATED_WITH_LIMITS` | Dokument 57; Dokumente 37/49/56 | Hamkari, Enemy System, Support Zones, ANSF, Highway One, Reinfiltration und gegnerische Reaktion |
+| `Forsberg-TALIBANCAMPAIGNKANDAHAR-2009.pdf` | `BACKGROUND_ONLY` / `PRE_PERIOD_CONTINUITY` | Dokument 57 | mehrjährige Kampagnenlogik und Kandahar-Ring; endet vor OMW-Zeitraum |
+| `Dressler-SECURINGHELMAND-2009.pdf` | `BACKGROUND_ONLY` / `PRE_PERIOD_CONTINUITY` | Dokument 57; Dokument 49 | Helmand Supply-, Support- und Attack-Zonen, Barham Chah, Route Boxing und mehrstufige Angriffe |
+| `Kashyap-AFPAKSTRATEGY-2009.pdf` | `BACKGROUND_ONLY` | Dokument 57 | Literaturübersicht; nur strategischer Pakistan-/Safe-Haven-/Logistikrahmen |
+| `Dressler-COUNTERINSURGENCYHELMAND-2011.pdf` | `INCORPORATED_WITH_LIMITS` | Dokument 57; Dokumente 37/56 | zeitgenössische Wirkung, Reinfiltration, ANSF, Drogenfinanzierung, Governance und Restgefahren |
+
+## 10. Quellen, die in anderen OMW-Fachsträngen bereits erfasst sind
+
+Die folgenden Themen besitzen eigene Fachreferenzen und werden nicht erneut vollständig dupliziert:
 
 - Combat Search and Rescue: `docs/csar/`;
 - Air C2 und CAS: Dokument 45;
@@ -151,7 +165,7 @@ Die folgenden Themen besitzen bereits eigene Fachreferenzen und werden in diesem
 
 Neue Quellen werden dort nur ergänzt, wenn sie einen bisher fehlenden autoritativen Inhalt liefern. Dokument 54 verweist auf diese Quellenbereiche und ersetzt sie nicht.
 
-## 10. Nicht als Projektquelle zu übernehmende Dateien
+## 11. Nicht als Projektquelle zu übernehmende Dateien
 
 | Datei/Typ | Status | Begründung |
 |---|---|---|
@@ -159,7 +173,7 @@ Neue Quellen werden dort nur ergänzt, wenn sie einen bisher fehlenden autoritat
 | automatisch erzeugte Vorschaubilder ohne Herkunftsmetadaten | `OUT_OF_SCOPE` bis zur Zuordnung | keine selbstständige Evidenz |
 | doppelte Patreon-PDF-Exporte desselben Posts | `INCORPORATED` über einen eindeutigen Quellenrecord | keine Mehrfachzählung |
 
-## 11. Offene Aufnahmeaufgaben
+## 12. Offene Aufnahmeaufgaben
 
 Trotz der erfolgten Aufnahme bleiben Primärquellenprüfungen offen:
 
@@ -174,10 +188,12 @@ Trotz der erfolgten Aufnahme bleiben Primärquellenprüfungen offen:
 9. die im CH-47-Working-Paper genannten Primärinterviews und After-Action Reports;
 10. Normalisierung der 17 Morgan-Monatsstände August 2010 bis Dezember 2011 in einen strukturierten Datensatz;
 11. Primärquellen-Gegenprüfung ausgewählter Morgan-Standorte und Rotationen durch ISAF-Placemats, DVIDS und nationale Quellen;
-12. regionale Verifikation von RED-Stärken und Führungsstrukturen außerhalb der sieben Crisis-Group-Provinzen;
-13. alle Quellen, die später neu hochgeladen oder diesem Arbeitsstrang ausdrücklich hinzugefügt werden.
+12. regionale Verifikation von RED-Stärken und Führungsstrukturen außerhalb der untersuchten Studienräume;
+13. Primärquellenprüfung einzelner Kämpfer-, Finanzierungs- und Anlagenzahlen aus den Kandahar-/Helmand-Studien;
+14. Georeferenzierung ausgewählter historischer Enemy-System-Karten gegen OMW-Location-Registry und DCS-Terrain;
+15. alle Quellen, die später neu hochgeladen oder diesem Arbeitsstrang ausdrücklich hinzugefügt werden.
 
-## 12. Abschlussstatus
+## 13. Abschlussstatus
 
 Für die in diesem Audit identifizierten Quellen existiert nun jeweils:
 
