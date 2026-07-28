@@ -71,6 +71,8 @@ Eine Nummer und eine stabile `document_id` dürfen im aktuellen Bestand jeweils 
 | 50 | `OMW-HIST-AFGHANISTAN-FORCE-BASING-AVIATION` | `docs/50-afghanistan-force-basing-aviation-2010-2011.md` | `BINDING` | historische Kräfte-, Basen-, Aviation- und TTP-Referenz |
 | 51 | `OMW-HIST-USMC-RC-SOUTHWEST-COALITION-OPS` | `docs/51-usmc-rc-southwest-and-coalition-operations-2010-2011.md` | `BINDING` | USMC-RC-Southwest-, Koalitionsoperations- und Missionsmuster-Referenz |
 | 52 | `OMW-HIST-ARMY-AVIATION-COIN-INTELLIGENCE-METRICS` | `docs/52-army-aviation-vignettes-and-coin-intelligence-metrics.md` | `BINDING` | Army-Aviation-, Chinook-, Emergency-, Intelligence- und Missionsmetriken-Referenz |
+| 53 | `OMW-HIST-AFGHANISTAN-WAR-CARLISLE-SOURCE-REVIEW` | `docs/53-afghanistan-war-carlisle-source-review.md` | `BINDING` | quellenkritische Sekundär- und Hintergrundreferenz |
+| 54 | `OMW-AIR-TASKING-AIRSPACE-CAS-REQUESTS` | `docs/54-air-tasking-airspace-control-cas-requests-and-mission-data.md` | `BINDING` | Air-C2-, ATO-/ACO-/SPINS-, Request- und Missionsdatenreferenz |
 
 ## 3. Reservierte Nummern auf offenen Branches
 
@@ -107,6 +109,7 @@ Eine Nummer und eine stabile `document_id` dürfen im aktuellen Bestand jeweils 
 | `OMW-ADR-0003-ME-GROUP-TEMPLATES` | `docs/adr/0003-use-mission-editor-group-templates.md` | `BINDING`; Spawnvorlagen |
 | `OMW-ADR-0004-LOCATION-REGISTRY` | `docs/adr/0004-use-explicit-location-registry.md` | `BINDING`; Orts-/Routenregister |
 | `OMW-EVIDENCE-INDEX` | `docs/evidence/README.md` | `BINDING`; Evidenzeinordnung |
+| `OMW-EVIDENCE-SOURCE-INTAKE-AUDIT-2026-07-28` | `docs/evidence/source-intake-audit-2026-07-28.md` | `BINDING`; Quellenaufnahme- und Zuordnungsnachweis |
 | `OMW-TEST-JBAD-AIR-OPS-INDEX` | `mission/tests/jalalabad-air-operations/README.md` | `BINDING`; Testprojektindex |
 
 ## 5. Legacy- und Evidenzregel
