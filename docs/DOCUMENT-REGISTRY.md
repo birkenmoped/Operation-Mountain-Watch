@@ -91,6 +91,7 @@ Eine Nummer und eine stabile `document_id` dürfen im aktuellen Bestand jeweils 
 | `OMW-MOOSE-CLASS-INDEX` | `docs/moose/PROJECT-CLASS-INDEX.md` | `BINDING` |
 | `OMW-MOOSE-FOG-OF-WAR-RECCE` | `docs/moose/FOG-OF-WAR-RECCE.md` | `PLANNED`; MOOSE-Fähigkeits- und Grenzenanalyse |
 | `OMW-MOOSE-VERIFIED-METHODS` | `docs/moose/VERIFIED-METHODS.md` | `BINDING` |
+| `OMW-INSURGENCY-HAQQANI-NETWORK` | `docs/insurgency/haqqani-network.md` | `BINDING`; quellenbasierte historische und Missionsdesign-Referenz |
 | `OMW-CSAR-INDEX` | `docs/csar/README.md` | `BINDING` |
 | `OMW-CSAR-SOURCE-NOTES-1-8` | `docs/csar/source-notes-1-8.md` | `BINDING`; Quellenregister |
 | `OMW-CSAR-AFGHANISTAN-2010-FACILITIES` | `docs/csar/afghanistan-2010-facilities-and-coverage.md` | `BINDING`; Datensatzreferenz |

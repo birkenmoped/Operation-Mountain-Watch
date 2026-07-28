@@ -54,6 +54,7 @@ Ein offener Draft-PR ist keine `main`-Autorität. Ein branchgebundener PASS blei
 | historischer Rahmen | [`OMW-HIST-SETTING`](09-historical-setting.md) | `BINDING` | historische Quellen |
 | Systemarchitektur | [`OMW-ARCH-SYSTEM`](03-system-architecture.md) | `BINDING` | Dokument 37 |
 | CampaignState/dynamische Kampagne | [`OMW-ARCH-CAMPAIGN-DYNAMIC-MISSION`](37-campaign-architecture-and-dynamic-mission-design.md) | `BINDING` | Dokumente 04–07, TM01/TM02-Reviews |
+| Insurgentennetzwerke / Haqqani | [`OMW-INSURGENCY-HAQQANI-NETWORK`](insurgency/haqqani-network.md) | `BINDING` | quellenbasierte historische und Missionsdesign-Referenz; aktive RED-Auswahl offen |
 | Fog of War / RECCE | [`OMW-MOOSE-FOG-OF-WAR-RECCE`](moose/FOG-OF-WAR-RECCE.md) | `PLANNED` | MOOSE-Develop geprüft; Laufzeitvalidierung im gepinnten MOOSE-Stand ausstehend |
 | aktive Luft-ORBAT/Clientgrenzen | [`OMW-AIR-ACTIVE-ORBAT`](19-active-air-orbat-decisions.md) | `BINDING_PROJECT_DECISION` | historische ORBAT-Recherche |
 | technische Luftoperationen | [`OMW-AIR-IMPLEMENTATION`](18-air-operations-implementation.md) | `BINDING` | MOOSE Air Operations |
@@ -145,6 +146,10 @@ Ein offener Draft-PR ist keine `main`-Autorität. Ein branchgebundener PASS blei
 - [`OMW-CSAR-SOURCE-NOTES-1-8`](csar/source-notes-1-8.md)
 - [`OMW-CSAR-AFGHANISTAN-2010-FACILITIES`](csar/afghanistan-2010-facilities-and-coverage.md)
 - [`OMW-CSAR-MISSION-DESIGN-REQUIREMENTS`](csar/mission-design-requirements.md)
+
+### Insurgency / RED
+
+- [`OMW-INSURGENCY-HAQQANI-NETWORK`](insurgency/haqqani-network.md) – quellenbasierte historische Einordnung, Netzwerklogistik und Missionsdesign-Kandidaten
 
 ### Quellen, Targeting und Wetterdaten
 
