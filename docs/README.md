@@ -167,7 +167,7 @@ Der vollständige und verbindliche Überblick steht in:
 
 - [`OMW-GOV-SUBPROJECT-REGISTRY`](SUBPROJECT-REGISTRY.md).
 
-Er erfasst derzeit PR #3–#18, #22, #24 und #33 einschließlich Parent-/Base-Beziehungen, Acceptance-Grenzen und Produktionsrelevanz.
+Er erfasst derzeit PR #3–#18, #22, #24, #33 und #38 einschließlich Parent-/Base-Beziehungen, Acceptance-Grenzen und Produktionsrelevanz.
 
 ## 8. Status-, Provenienz- und Querverweisregel
 
