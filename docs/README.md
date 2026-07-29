@@ -65,8 +65,10 @@ Ein offener Draft-PR ist keine `main`-Autorität. Ein branchgebundener PASS blei
 | Campaign Assessment, Übergänge und nichtstaatliche Sicherheitsakteure | [`OMW-COIN-ASSESSMENT-TRANSITIONS-NONSTATE-SECURITY`](59-campaign-assessment-operational-transitions-and-nonstate-security.md) | `BINDING` | Cordesman-, Dubik-, McNally-, Kagan- und Kandahar-PSC-Quellen; keine aktive PSC-ORBAT |
 | Afghan Air Wars, Airpower, ISR und Missionsmuster | [`OMW-HIST-AFGHAN-AIR-WARS-2009-2011`](60-afghan-air-wars-2009-2011-airpower-operations-reference.md) | `BINDING` | Napier 2023; quellenkritische Sekundärsynthese; keine aktive ORBAT-Autorität |
 | COIN, Governance, Strategie und Afghan-led Transition | [`OMW-COIN-GOVERNANCE-STRATEGY-TRANSITION`](61-coin-governance-strategy-and-afghan-led-transition.md) | `BINDING` | U.S. Army CMH, RAND und Colin S. Gray; Governance-, ANSF-, Assessment-, Strategie- und Air-Ground-Referenz |
+| Insurgenten-Kontrolle, Intelligence, TTP und COIN-IPB | [`OMW-RED-CONTROL-INTELLIGENCE-TTP-COIN-IPB`](62-insurgent-control-intelligence-ttp-and-coin-ipb.md) | `BINDING` | NGIC-, TRISA-, MCIA-, CAC- und CTC-A-Quellen; keine automatische Spawn- oder Zielautorität |
+| NTM-A, SFA, Attack the Network, StratCom und lokale Einflussnetzwerke | [`OMW-BLUE-NTMA-SFA-ATN-STRATCOM-LOCAL-INFLUENCE`](63-ntma-sfa-attack-the-network-stratcom-and-local-influence.md) | `BINDING` | NTM-A/CSTC-A, JIEDDO, NATO/ISAF, HTS und DIA; post-periodische Inhalte qualifiziert |
 | Systemarchitektur | [`OMW-ARCH-SYSTEM`](03-system-architecture.md) | `BINDING` | Dokument 37 |
-| CampaignState/dynamische Kampagne | [`OMW-ARCH-CAMPAIGN-DYNAMIC-MISSION`](37-campaign-architecture-and-dynamic-mission-design.md) | `BINDING` | Dokumente 04–07, 56–61 und TM01/TM02-Reviews |
+| CampaignState/dynamische Kampagne | [`OMW-ARCH-CAMPAIGN-DYNAMIC-MISSION`](37-campaign-architecture-and-dynamic-mission-design.md) | `BINDING` | Dokumente 04–07, 56–63 und TM01/TM02-Reviews |
 | Fog of War / RECCE | [`OMW-MOOSE-FOG-OF-WAR-RECCE`](moose/FOG-OF-WAR-RECCE.md) | `PLANNED` | MOOSE-Develop geprüft; Laufzeitvalidierung im gepinnten MOOSE-Stand ausstehend |
 | aktive Luft-ORBAT/Clientgrenzen | [`OMW-AIR-ACTIVE-ORBAT`](19-active-air-orbat-decisions.md) | `BINDING_PROJECT_DECISION` | historische ORBAT-Recherche |
 | technische Luftoperationen | [`OMW-AIR-IMPLEMENTATION`](18-air-operations-implementation.md) | `BINDING` | MOOSE Air Operations |
@@ -141,6 +143,8 @@ Ein offener Draft-PR ist keine `main`-Autorität. Ein branchgebundener PASS blei
 - [59 – Campaign Assessment, Übergänge und nichtstaatliche Sicherheitsakteure](59-campaign-assessment-operational-transitions-and-nonstate-security.md)
 - [60 – Afghan Air Wars: Airpower Operations 2009–2011](60-afghan-air-wars-2009-2011-airpower-operations-reference.md)
 - [61 – COIN, Governance, Strategie und Afghan-led Transition](61-coin-governance-strategy-and-afghan-led-transition.md)
+- [62 – Insurgenten-Kontrolle, Intelligence, TTP und COIN-IPB](62-insurgent-control-intelligence-ttp-and-coin-ipb.md)
+- [63 – NTM-A, SFA, Attack the Network, StratCom und lokale Einflussnetzwerke](63-ntma-sfa-attack-the-network-stratcom-and-local-influence.md)
 
 ## 5. Thematische Einstiegspunkte
 
@@ -152,6 +156,8 @@ Ein offener Draft-PR ist keine `main`-Autorität. Ein branchgebundener PASS blei
 - [`58-eastern-afghanistan-network-operations-and-complex-attack-model.md`](58-eastern-afghanistan-network-operations-and-complex-attack-model.md)
 - [`59-campaign-assessment-operational-transitions-and-nonstate-security.md`](59-campaign-assessment-operational-transitions-and-nonstate-security.md)
 - [`61-coin-governance-strategy-and-afghan-led-transition.md`](61-coin-governance-strategy-and-afghan-led-transition.md)
+- [`62-insurgent-control-intelligence-ttp-and-coin-ipb.md`](62-insurgent-control-intelligence-ttp-and-coin-ipb.md)
+- [`63-ntma-sfa-attack-the-network-stratcom-and-local-influence.md`](63-ntma-sfa-attack-the-network-stratcom-and-local-influence.md)
 
 ### Luftoperationen
 
