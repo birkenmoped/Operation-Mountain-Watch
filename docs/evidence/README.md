@@ -31,6 +31,7 @@ Aktuelle Nummern und IDs stehen in [`OMW-GOV-DOCUMENT-REGISTRY`](../DOCUMENT-REG
 - [`COIN, Governance, Strategie und Afghan-led Transition – Quellenakte 29.07.2026`](source-records/coin-governance-strategy-source-charge-2026-07-29.md) – dokumentiert Quellenklasse, zulässige Nutzung und Ausschlüsse der RAND-, U.S.-Army-CMH-, Gray-, CNN- und Britannica-Charge für Dokument 61.
 - [`Insurgenten-Kontrolle, Intelligence, TTP und COIN-IPB – Quellenakte 29.07.2026`](source-records/insurgent-control-intelligence-ttp-source-charge-2026-07-29.md) – dokumentiert NGIC-, TRISA-, MCIA-, CAC- und CTC-A-Quellen, Verteilungsgrenzen und Designableitungen für Dokument 62.
 - [`NTM-A, SFA, Attack the Network, StratCom und lokale Einflussnetzwerke – Quellenakte 29.07.2026`](source-records/ntma-sfa-atn-stratcom-local-influence-source-charge-2026-07-29.md) – dokumentiert die NTM-A/CSTC-A-, JIEDDO-, NATO/ISAF-, HTS- und DIA-Charge für Dokument 63.
+- [`Afghanistan Order of Battle – Juli 2011`](source-records/afghanistan-order-of-battle-july-2011-source-record.md) – dokumentiert Herkunft, Scope, vollständige Übernahme, Quellengrenzen und Auffälligkeiten des 13-seitigen Juli-2011-Snapshots für Dokument 64.
 
 ## 3. Legacy-Quelldatensätze
 
@@ -113,6 +114,7 @@ Aktuelle Nummern und IDs stehen in [`OMW-GOV-DOCUMENT-REGISTRY`](../DOCUMENT-REG
 - [`COIN, Governance, Strategie und Afghan-led Transition`](../61-coin-governance-strategy-and-afghan-led-transition.md) – konsolidiert die RAND-, U.S.-Army-CMH- und Gray-Quellencharge; enthält keine aktive ORBAT-, Targeting- oder Runtime-Autorität.
 - [`Insurgenten-Kontrolle, Intelligence, TTP und COIN-IPB`](../62-insurgent-control-intelligence-ttp-and-coin-ipb.md) – konsolidiert NGIC-, TRISA-, MCIA-, CAC- und CTC-A-Quellen; keine automatische Spawn- oder Zielautorität.
 - [`NTM-A, SFA, Attack the Network, StratCom und lokale Einflussnetzwerke`](../63-ntma-sfa-attack-the-network-stratcom-and-local-influence.md) – konsolidiert NTM-A/CSTC-A-, JIEDDO-, NATO/ISAF-, HTS- und DIA-Quellen mit expliziter Zeit- und Veröffentlichungsqualifizierung.
+- [`Afghanistan Order of Battle – Juli 2011`](../64-afghanistan-order-of-battle-july-2011.md) – vollständiger quellenkritischer Snapshot; keine aktive ORBAT- oder Iststärkenautorität.
 
 ## 5. Verwendungsregel
 
