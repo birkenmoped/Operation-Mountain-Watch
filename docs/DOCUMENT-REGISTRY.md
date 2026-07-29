@@ -74,24 +74,29 @@ Eine Nummer und eine stabile `document_id` dürfen im aktuellen Bestand jeweils 
 | 53 | `OMW-HIST-AFGHANISTAN-WAR-CARLISLE-SOURCE-REVIEW` | `docs/53-afghanistan-war-carlisle-source-review.md` | `BINDING` | quellenkritische Sekundär- und Hintergrundreferenz |
 | 54 | `OMW-AIR-TASKING-AIRSPACE-CAS-REQUESTS` | `docs/54-air-tasking-airspace-control-cas-requests-and-mission-data.md` | `BINDING` | Air-C2-, ATO-/ACO-/SPINS-, Request- und Missionsdatenreferenz |
 | 55 | `OMW-HIST-MONTHLY-COALITION-ORBAT-BASING` | `docs/55-monthly-coalition-orbat-and-basing-2010-2011.md` | `BINDING` | monatliche Koalitions-ORBAT-, Basierungs- und AOR-Referenz |
-| 56 | `OMW-RED-INSURGENT-FACTIONS-BEHAVIOR` | `docs/56-insurgent-factions-shadow-governance-and-red-commander-behavior.md` | `BINDING` | konsolidierter RED Commander; historisches Insurgentenverhalten und optionale spätere Mehrfraktionsreferenz |
-| 57 | `OMW-RED-KANDAHAR-HELMAND-ENEMY-SYSTEM` | `docs/57-kandahar-helmand-enemy-system-and-red-commander-strategy.md` | `BINDING` | Kandahar-/Helmand-Enemy-System, Clear-Hold-Reinfiltration, Kräfte-/ANSF-Kontext und RED-Strategie |
-| 58 | `OMW-RED-EASTERN-AFGHANISTAN-NETWORK-OPERATIONS` | `docs/58-eastern-afghanistan-network-operations-and-complex-attack-model.md` | `BINDING` | ostafghanisches Netzwerk-, Infiltrations-, Facilitation- und Complex-Attack-Modell |
-| 59 | `OMW-COIN-ASSESSMENT-TRANSITIONS-NONSTATE-SECURITY` | `docs/59-campaign-assessment-operational-transitions-and-nonstate-security.md` | `BINDING` | Campaign Assessment, Clear-Hold-Build und nichtstaatliche Sicherheitsakteure |
-| 60 | `OMW-HIST-AFGHAN-AIR-WARS-2009-2011` | `docs/60-afghan-air-wars-2009-2011-airpower-operations-reference.md` | `BINDING` | quellenkritische Airpower-, ORBAT-, Missionsmuster-, ISR-, CSAR- und RED-Anpassungsreferenz |
-| 61 | `OMW-COIN-GOVERNANCE-STRATEGY-TRANSITION` | `docs/61-coin-governance-strategy-and-afghan-led-transition.md` | `BINDING` | COIN-, Governance-, Strategie-, ANSF-Transition-, Assessment- und Air-Ground-Lehren |
-| 62 | `OMW-RED-CONTROL-INTELLIGENCE-TTP-COIN-IPB` | `docs/62-insurgent-control-intelligence-ttp-and-coin-ipb.md` | `BINDING` | lokale RED-Kontrolle, HUMINT, TTP, Complex Attack, historische Basen und COIN-IPB |
-| 63 | `OMW-BLUE-NTMA-SFA-ATN-STRATCOM-LOCAL-INFLUENCE` | `docs/63-ntma-sfa-attack-the-network-stratcom-and-local-influence.md` | `BINDING` | NTM-A/CSTC-A, SFA, C-IED/AtN, StratCom und lokale Einflussnetzwerke |
-| 64 | `OMW-HIST-AFGHANISTAN-ORBAT-2011-07` | `docs/64-afghanistan-order-of-battle-july-2011.md` | `BINDING` | vollständiger quellenkritischer Juli-2011-ORBAT-Snapshot mit Führung, Einheiten, Basen, Rollen, Rotationen und Fluggerät |
-| 65 | `OMW-STAB-PRT-INTERAGENCY-DISTRICT-FRAMEWORK` | `docs/65-stability-operations-prt-interagency-and-district-framework.md` | `BINDING` | Stability Operations, PRT, Interagency und District Stability Framework |
-| 66 | `OMW-RED-LAYEHA-COMMAND-DISCIPLINE-SHADOW-JUSTICE` | `docs/66-taliban-layeha-command-discipline-and-shadow-justice.md` | `BINDING` | Taliban-Layeha, lokale Führungsfriktion, Disziplin und Shadow Justice |
-| 67 | `OMW-CIED-ROUTE-CLEARANCE-CONVOY-DESIGN` | `docs/67-afghanistan-route-clearance-counter-ied-and-convoy-design.md` | `BINDING` | Route Clearance, C-IED und Convoy-Missionsdesign |
-| 68 | `OMW-OE-KANDAHAR-CITY-DAND-2010` | `docs/68-kandahar-city-and-dand-operational-environment-2010.md` | `BINDING` | Kandahar City/Dand Operational Environment 2010 |
-| 69 | `OMW-STAB-CERP-REGIONAL-PROJECTS-2009-2010` | `docs/69-cerp-regional-projects-2009-2010.md` | `BINDING` | regionale CERP-Projektaktivität 2009–2010 |
-| 70 | `OMW-RED-SIGACT-PATTERNS-2010-08-10` | `docs/70-nato-isaf-sigact-patterns-august-october-2010.md` | `BINDING` | NATO/ISAF-SIGACT-Muster August–Oktober 2010 |
-| 71 | `OMW-HIST-ISAF-FORCE-POSTURE-MAPS-ADDITIONAL-SOURCES` | `docs/71-isaf-force-posture-maps-and-additional-historical-sources.md` | `BINDING` | ISAF-RC-/PRT-Karten und zusätzliche historische Quellen |
-| 72 | `OMW-AIR-AFGHANISTAN-AIP-2008` | `docs/72-afghanistan-aip-2008-airspace-aerodromes-and-flight-procedures.md` | `BINDING` | Afghanistan-AIP-Baseline für Luftraum, Flugplätze, Navaids und Verfahren |
-| 73 | `OMW-AIR-KAIA-LOCAL-OPERATING-PROCEDURES-2009` | `docs/73-kaia-local-operating-procedures-2009.md` | `BINDING` | KAIA-Betriebsverfahren, Frequenzen, Prioritäten, UAV-, Ground- und Emergency-Regeln |
+| 56 | `OMW-RED-INSURGENT-FACTIONS-BEHAVIOR` | `docs/56-insurgent-factions-shadow-governance-and-red-commander-behavior.md` | `BINDING` | konsolidierter RED Commander; historisches Insurgentenverhalten |
+| 57 | `OMW-RED-KANDAHAR-HELMAND-ENEMY-SYSTEM` | `docs/57-kandahar-helmand-enemy-system-and-red-commander-strategy.md` | `BINDING` | Kandahar-/Helmand-Enemy-System |
+| 58 | `OMW-RED-EASTERN-AFGHANISTAN-NETWORK-OPERATIONS` | `docs/58-eastern-afghanistan-network-operations-and-complex-attack-model.md` | `BINDING` | ostafghanisches Netzwerk- und Complex-Attack-Modell |
+| 59 | `OMW-COIN-ASSESSMENT-TRANSITIONS-NONSTATE-SECURITY` | `docs/59-campaign-assessment-operational-transitions-and-nonstate-security.md` | `BINDING` | Campaign Assessment und nichtstaatliche Sicherheitsakteure |
+| 60 | `OMW-HIST-AFGHAN-AIR-WARS-2009-2011` | `docs/60-afghan-air-wars-2009-2011-airpower-operations-reference.md` | `BINDING` | Airpower-, ORBAT-, ISR- und CSAR-Referenz |
+| 61 | `OMW-COIN-GOVERNANCE-STRATEGY-TRANSITION` | `docs/61-coin-governance-strategy-and-afghan-led-transition.md` | `BINDING` | COIN-, Governance- und Transition-Referenz |
+| 62 | `OMW-RED-CONTROL-INTELLIGENCE-TTP-COIN-IPB` | `docs/62-insurgent-control-intelligence-ttp-and-coin-ipb.md` | `BINDING` | RED-Kontrolle, Intelligence, TTP und COIN-IPB |
+| 63 | `OMW-BLUE-NTMA-SFA-ATN-STRATCOM-LOCAL-INFLUENCE` | `docs/63-ntma-sfa-attack-the-network-stratcom-and-local-influence.md` | `BINDING` | NTM-A, SFA, AtN, StratCom und Einflussnetzwerke |
+| 64 | `OMW-HIST-AFGHANISTAN-ORBAT-2011-07` | `docs/64-afghanistan-order-of-battle-july-2011.md` | `BINDING` | vollständiger Juli-2011-ORBAT-Snapshot |
+| 65 | `OMW-STAB-PRT-INTERAGENCY-DISTRICT-FRAMEWORK` | `docs/65-stability-operations-prt-interagency-and-district-framework.md` | `BINDING` | Stability Operations, PRT und District Framework |
+| 66 | `OMW-RED-LAYEHA-COMMAND-DISCIPLINE-SHADOW-JUSTICE` | `docs/66-taliban-layeha-command-discipline-and-shadow-justice.md` | `BINDING` | Taliban-Layeha, Disziplin und Shadow Justice |
+| 67 | `OMW-CIED-ROUTE-CLEARANCE-CONVOY-DESIGN` | `docs/67-afghanistan-route-clearance-counter-ied-and-convoy-design.md` | `BINDING` | Route Clearance, C-IED und Convoy Design |
+| 68 | `OMW-OE-KANDAHAR-CITY-DAND-2010` | `docs/68-kandahar-city-and-dand-operational-environment-2010.md` | `BINDING` | Kandahar City/Dand OE 2010 |
+| 69 | `OMW-STAB-CERP-REGIONAL-PROJECTS-2009-2010` | `docs/69-cerp-regional-projects-2009-2010.md` | `BINDING` | regionale CERP-Projekte |
+| 70 | `OMW-RED-SIGACT-PATTERNS-2010-08-10` | `docs/70-nato-isaf-sigact-patterns-august-october-2010.md` | `BINDING` | SIGACT-Muster Aug–Okt 2010 |
+| 71 | `OMW-HIST-ISAF-FORCE-POSTURE-MAPS-ADDITIONAL-SOURCES` | `docs/71-isaf-force-posture-maps-and-additional-historical-sources.md` | `BINDING` | ISAF-RC-/PRT-Karten und Zusatzquellen |
+| 72 | `OMW-AIR-AFGHANISTAN-AIP-2008` | `docs/72-afghanistan-aip-2008-airspace-aerodromes-and-flight-procedures.md` | `BINDING` | Afghanistan-AIP-Baseline |
+| 73 | `OMW-AIR-KAIA-LOCAL-OPERATING-PROCEDURES-2009` | `docs/73-kaia-local-operating-procedures-2009.md` | `BINDING` | KAIA-Betriebsverfahren |
+| 74 | `OMW-HIST-WANAT-TF-BAYONET-TF-ROCK-FORCE-POSTURE` | `docs/74-wanat-tf-bayonet-tf-rock-force-posture-2007-2008.md` | `BINDING` | Wanat-, TF-Bayonet-/TF-Rock- und Aviation-Force-Posture |
+| 75 | `OMW-HIST-VANGUARD-SMALL-UNIT-OPERATIONS-2006-2011` | `docs/75-vanguard-of-valor-small-unit-operations-2006-2011.md` | `BINDING` | Small-Unit Operations, Enabler, Fires und Sustainment |
+| 76 | `OMW-HIST-STRYKER-KANDAHAR-2009` | `docs/76-stryker-brigade-operations-kandahar-2009.md` | `BINDING` | Stryker-Brigade-/Bataillonsoperationen Kandahar 2009 |
+| 77 | `OMW-HIST-ARSOF-SOF-AVIATION-EARLY-OEF` | `docs/77-arsof-sof-aviation-and-early-oef-operational-models.md` | `BINDING` | ARSOF, SOF Aviation, CSAR, PSYOP und CA 2001–2002 |
+| 78 | `OMW-HIST-US-ARMY-OEF-COMMAND-FORCE-POSTURE-2001-2005` | `docs/78-us-army-oef-command-force-posture-and-orbat-2001-2005.md` | `BINDING` | US-Army-Kommando, Force Posture und ORBAT 2001–2005 |
 
 ## 3. Reservierte Nummern auf offenen Branches
 
@@ -113,23 +118,23 @@ Eine Nummer und eine stabile `document_id` dürfen im aktuellen Bestand jeweils 
 | `OMW-GOV-MOOSE-VERSION` | `docs/moose/VERSION-AND-SOURCES.md` | `BINDING` |
 | `OMW-MOOSE-DOCUMENTATION-INDEX` | `docs/moose/README.md` | `BINDING` |
 | `OMW-MOOSE-CLASS-INDEX` | `docs/moose/PROJECT-CLASS-INDEX.md` | `BINDING` |
-| `OMW-MOOSE-FOG-OF-WAR-RECCE` | `docs/moose/FOG-OF-WAR-RECCE.md` | `PLANNED`; MOOSE-Fähigkeits- und Grenzenanalyse |
+| `OMW-MOOSE-FOG-OF-WAR-RECCE` | `docs/moose/FOG-OF-WAR-RECCE.md` | `PLANNED` |
 | `OMW-MOOSE-VERIFIED-METHODS` | `docs/moose/VERIFIED-METHODS.md` | `BINDING` |
 | `OMW-CSAR-INDEX` | `docs/csar/README.md` | `BINDING` |
-| `OMW-CSAR-SOURCE-NOTES-1-8` | `docs/csar/source-notes-1-8.md` | `BINDING`; Quellenregister |
-| `OMW-CSAR-AFGHANISTAN-2010-FACILITIES` | `docs/csar/afghanistan-2010-facilities-and-coverage.md` | `BINDING`; Datensatzreferenz |
-| `OMW-CSAR-MISSION-DESIGN-REQUIREMENTS` | `docs/csar/mission-design-requirements.md` | `PLANNED`; Anforderungen |
-| `OMW-CSAR-MOOSE-AICSAR-DEVELOPMENT-BASELINE` | `docs/csar/moose-csar-aicsar-development-baseline.md` | `PLANNED`; Architektur-, Entscheidungs- und Testbaseline |
-| `OMW-WX-DATASET-DOCUMENTATION` | `docs/data/weather/README.md` | `BINDING`; Wetterdatensatz |
-| `OMW-TARGETING-AFGHANISTAN-NSL-DATA-USE` | `docs/targeting/afghanistan-nsl-data-use-policy.md` | `BINDING`; technische Datenverwendung |
-| `OMW-TARGETING-AFGHANISTAN-NSL-LEGACY-PATH` | `docs/targeting/afghanistan-no-strike-list.md` | `SUPERSEDED`; Kompatibilitätspfad |
-| `OMW-ADR-0001-USE-MOOSE` | `docs/adr/0001-use-moose.md` | `SUPERSEDED`; historische ADR |
-| `OMW-ADR-0002-USE-MOOSE-CTLD-CSAR` | `docs/adr/0002-use-moose-ctld-and-csar.md` | `SUPERSEDED`; historische ADR |
-| `OMW-ADR-0003-ME-GROUP-TEMPLATES` | `docs/adr/0003-use-mission-editor-group-templates.md` | `BINDING`; Spawnvorlagen |
-| `OMW-ADR-0004-LOCATION-REGISTRY` | `docs/adr/0004-use-explicit-location-registry.md` | `BINDING`; Orts-/Routenregister |
-| `OMW-EVIDENCE-INDEX` | `docs/evidence/README.md` | `BINDING`; Evidenzeinordnung |
-| `OMW-EVIDENCE-SOURCE-INTAKE-AUDIT-2026-07-28` | `docs/evidence/source-intake-audit-2026-07-28.md` | `BINDING`; Quellenaufnahme- und Zuordnungsnachweis |
-| `OMW-TEST-JBAD-AIR-OPS-INDEX` | `mission/tests/jalalabad-air-operations/README.md` | `BINDING`; Testprojektindex |
+| `OMW-CSAR-SOURCE-NOTES-1-8` | `docs/csar/source-notes-1-8.md` | `BINDING` |
+| `OMW-CSAR-AFGHANISTAN-2010-FACILITIES` | `docs/csar/afghanistan-2010-facilities-and-coverage.md` | `BINDING` |
+| `OMW-CSAR-MISSION-DESIGN-REQUIREMENTS` | `docs/csar/mission-design-requirements.md` | `PLANNED` |
+| `OMW-CSAR-MOOSE-AICSAR-DEVELOPMENT-BASELINE` | `docs/csar/moose-csar-aicsar-development-baseline.md` | `PLANNED` |
+| `OMW-WX-DATASET-DOCUMENTATION` | `docs/data/weather/README.md` | `BINDING` |
+| `OMW-TARGETING-AFGHANISTAN-NSL-DATA-USE` | `docs/targeting/afghanistan-nsl-data-use-policy.md` | `BINDING` |
+| `OMW-TARGETING-AFGHANISTAN-NSL-LEGACY-PATH` | `docs/targeting/afghanistan-no-strike-list.md` | `SUPERSEDED` |
+| `OMW-ADR-0001-USE-MOOSE` | `docs/adr/0001-use-moose.md` | `SUPERSEDED` |
+| `OMW-ADR-0002-USE-MOOSE-CTLD-CSAR` | `docs/adr/0002-use-moose-ctld-and-csar.md` | `SUPERSEDED` |
+| `OMW-ADR-0003-ME-GROUP-TEMPLATES` | `docs/adr/0003-use-mission-editor-group-templates.md` | `BINDING` |
+| `OMW-ADR-0004-LOCATION-REGISTRY` | `docs/adr/0004-use-explicit-location-registry.md` | `BINDING` |
+| `OMW-EVIDENCE-INDEX` | `docs/evidence/README.md` | `BINDING` |
+| `OMW-EVIDENCE-SOURCE-INTAKE-AUDIT-2026-07-28` | `docs/evidence/source-intake-audit-2026-07-28.md` | `BINDING` |
+| `OMW-TEST-JBAD-AIR-OPS-INDEX` | `mission/tests/jalalabad-air-operations/README.md` | `BINDING` |
 
 ## 5. Legacy- und Evidenzregel
 
