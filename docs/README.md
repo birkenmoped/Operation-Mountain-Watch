@@ -63,8 +63,10 @@ Ein offener Draft-PR ist keine `main`-Autorität. Ein branchgebundener PASS blei
 | Kandahar-/Helmand-Enemy-System und RED-Strategie | [`OMW-RED-KANDAHAR-HELMAND-ENEMY-SYSTEM`](57-kandahar-helmand-enemy-system-and-red-commander-strategy.md) | `BINDING` | neun ISW-/New-America-Studien zu Marjah, Hamkari, Kandahar und Helmand; keine Spawn- oder aktive ORBAT-Autorität |
 | Ostafghanistan, Netzwerkoperationen und komplexe Angriffsplanung | [`OMW-RED-EASTERN-AFGHANISTAN-NETWORK-OPERATIONS`](58-eastern-afghanistan-network-operations-and-complex-attack-model.md) | `BINDING` | Haqqani-/QST-/CTC-Quellen zu Sanctuary, Facilitation, Staging, Compartmentation und High-Complexity-Profil; keine zweite Runtime-Fraktion |
 | Campaign Assessment, Übergänge und nichtstaatliche Sicherheitsakteure | [`OMW-COIN-ASSESSMENT-TRANSITIONS-NONSTATE-SECURITY`](59-campaign-assessment-operational-transitions-and-nonstate-security.md) | `BINDING` | Cordesman-, Dubik-, McNally-, Kagan- und Kandahar-PSC-Quellen; keine aktive PSC-ORBAT |
+| Afghan Air Wars, Airpower, ISR und Missionsmuster | [`OMW-HIST-AFGHAN-AIR-WARS-2009-2011`](60-afghan-air-wars-2009-2011-airpower-operations-reference.md) | `BINDING` | Napier 2023; quellenkritische Sekundärsynthese; keine aktive ORBAT-Autorität |
+| COIN, Governance, Strategie und Afghan-led Transition | [`OMW-COIN-GOVERNANCE-STRATEGY-TRANSITION`](61-coin-governance-strategy-and-afghan-led-transition.md) | `BINDING` | U.S. Army CMH, RAND und Colin S. Gray; Governance-, ANSF-, Assessment-, Strategie- und Air-Ground-Referenz |
 | Systemarchitektur | [`OMW-ARCH-SYSTEM`](03-system-architecture.md) | `BINDING` | Dokument 37 |
-| CampaignState/dynamische Kampagne | [`OMW-ARCH-CAMPAIGN-DYNAMIC-MISSION`](37-campaign-architecture-and-dynamic-mission-design.md) | `BINDING` | Dokumente 04–07, 56–59 und TM01/TM02-Reviews |
+| CampaignState/dynamische Kampagne | [`OMW-ARCH-CAMPAIGN-DYNAMIC-MISSION`](37-campaign-architecture-and-dynamic-mission-design.md) | `BINDING` | Dokumente 04–07, 56–61 und TM01/TM02-Reviews |
 | Fog of War / RECCE | [`OMW-MOOSE-FOG-OF-WAR-RECCE`](moose/FOG-OF-WAR-RECCE.md) | `PLANNED` | MOOSE-Develop geprüft; Laufzeitvalidierung im gepinnten MOOSE-Stand ausstehend |
 | aktive Luft-ORBAT/Clientgrenzen | [`OMW-AIR-ACTIVE-ORBAT`](19-active-air-orbat-decisions.md) | `BINDING_PROJECT_DECISION` | historische ORBAT-Recherche |
 | technische Luftoperationen | [`OMW-AIR-IMPLEMENTATION`](18-air-operations-implementation.md) | `BINDING` | MOOSE Air Operations |
@@ -135,75 +137,37 @@ Ein offener Draft-PR ist keine `main`-Autorität. Ein branchgebundener PASS blei
 - [55 – Monatliche Koalitions-ORBAT und Basierung 2010–2011](55-monthly-coalition-orbat-and-basing-2010-2011.md)
 - [56 – Insurgentisches Verhalten und konsolidierter RED Commander](56-insurgent-factions-shadow-governance-and-red-commander-behavior.md)
 - [57 – Kandahar und Helmand: Enemy System und RED-Commander-Strategie](57-kandahar-helmand-enemy-system-and-red-commander-strategy.md)
-- [58 – Ostafghanistan: Netzwerkoperationen, Infiltration und komplexe Angriffsplanung](58-eastern-afghanistan-network-operations-and-complex-attack-model.md)
-- [59 – Kampagnenbewertung, operative Übergänge und nichtstaatliche Sicherheitsakteure](59-campaign-assessment-operational-transitions-and-nonstate-security.md)
+- [58 – Ostafghanistan: Netzwerkoperationen und komplexe Angriffsplanung](58-eastern-afghanistan-network-operations-and-complex-attack-model.md)
+- [59 – Campaign Assessment, Übergänge und nichtstaatliche Sicherheitsakteure](59-campaign-assessment-operational-transitions-and-nonstate-security.md)
+- [60 – Afghan Air Wars: Airpower Operations 2009–2011](60-afghan-air-wars-2009-2011-airpower-operations-reference.md)
+- [61 – COIN, Governance, Strategie und Afghan-led Transition](61-coin-governance-strategy-and-afghan-led-transition.md)
 
-## 5. Architekturentscheidungen
+## 5. Thematische Einstiegspunkte
 
-- [`ADR-0001`](adr/0001-use-moose.md) – historische Grundentscheidung MOOSE;
-- [`ADR-0002`](adr/0002-use-moose-ctld-and-csar.md) – historische CTLD-/CSAR-Grundentscheidung;
-- [`OMW-ADR-0003-ME-GROUP-TEMPLATES`](adr/0003-use-mission-editor-group-templates.md) – Mission-Editor-Gruppen als Spawnvorlagen;
-- [`OMW-ADR-0004-LOCATION-REGISTRY`](adr/0004-use-explicit-location-registry.md) – eigenes Ortsregister und validierte Terrainpfade.
+### Kampagne und RED
 
-## 6. Thematische Unterverzeichnisse
+- [`37-campaign-architecture-and-dynamic-mission-design.md`](37-campaign-architecture-and-dynamic-mission-design.md)
+- [`56-insurgent-factions-shadow-governance-and-red-commander-behavior.md`](56-insurgent-factions-shadow-governance-and-red-commander-behavior.md)
+- [`57-kandahar-helmand-enemy-system-and-red-commander-strategy.md`](57-kandahar-helmand-enemy-system-and-red-commander-strategy.md)
+- [`58-eastern-afghanistan-network-operations-and-complex-attack-model.md`](58-eastern-afghanistan-network-operations-and-complex-attack-model.md)
+- [`59-campaign-assessment-operational-transitions-and-nonstate-security.md`](59-campaign-assessment-operational-transitions-and-nonstate-security.md)
+- [`61-coin-governance-strategy-and-afghan-led-transition.md`](61-coin-governance-strategy-and-afghan-led-transition.md)
 
-### MOOSE
+### Luftoperationen
 
-- [`MOOSE-Dokumentationsindex`](moose/README.md)
-- [`VERSION-AND-SOURCES`](moose/VERSION-AND-SOURCES.md)
-- [`PROJECT-CLASS-INDEX`](moose/PROJECT-CLASS-INDEX.md)
-- [`VERIFIED-METHODS`](moose/VERIFIED-METHODS.md)
-- [`AIR-OPERATIONS`](moose/AIR-OPERATIONS.md)
-- [`GROUND-OPERATIONS`](moose/GROUND-OPERATIONS.md)
-- [`LOGISTICS-AND-TRANSPORT`](moose/LOGISTICS-AND-TRANSPORT.md)
-- [`EVENTS-AND-FSM`](moose/EVENTS-AND-FSM.md)
-- [`ISR-FAC-CAS-AAR`](moose/ISR-FAC-CAS-AAR.md)
-- [`FOG-OF-WAR-RECCE`](moose/FOG-OF-WAR-RECCE.md)
+- [`18-air-operations-implementation.md`](18-air-operations-implementation.md)
+- [`29-isaf-2009-2013-air-to-air-refueling.md`](29-isaf-2009-2013-air-to-air-refueling.md)
+- [`45-air-c2-cas-afghanistan.md`](45-air-c2-cas-afghanistan.md)
+- [`54-air-tasking-airspace-control-cas-requests-and-mission-data.md`](54-air-tasking-airspace-control-cas-requests-and-mission-data.md)
+- [`60-afghan-air-wars-2009-2011-airpower-operations-reference.md`](60-afghan-air-wars-2009-2011-airpower-operations-reference.md)
 
-### CSAR
+### Historische Kräfte und Basen
 
-- [`OMW-CSAR-INDEX`](csar/README.md)
-- [`OMW-CSAR-SOURCE-NOTES-1-8`](csar/source-notes-1-8.md)
-- [`OMW-CSAR-AFGHANISTAN-2010-FACILITIES`](csar/afghanistan-2010-facilities-and-coverage.md)
-- [`OMW-CSAR-MISSION-DESIGN-REQUIREMENTS`](csar/mission-design-requirements.md)
+- [`50-afghanistan-force-basing-aviation-2010-2011.md`](50-afghanistan-force-basing-aviation-2010-2011.md)
+- [`51-usmc-rc-southwest-and-coalition-operations-2010-2011.md`](51-usmc-rc-southwest-and-coalition-operations-2010-2011.md)
+- [`52-army-aviation-vignettes-and-coin-intelligence-metrics.md`](52-army-aviation-vignettes-and-coin-intelligence-metrics.md)
+- [`55-monthly-coalition-orbat-and-basing-2010-2011.md`](55-monthly-coalition-orbat-and-basing-2010-2011.md)
 
-### Quellen, Targeting und Wetterdaten
+## 6. Nicht nummerierte aktuelle Dokumente
 
-- [`OMW-GOV-SOURCE-USE`](sources/graveyard-of-empires.md)
-- [`OMW-HIST-AFGHANISTAN-FORCE-BASING-AVIATION`](50-afghanistan-force-basing-aviation-2010-2011.md)
-- [`OMW-HIST-USMC-RC-SOUTHWEST-COALITION-OPS`](51-usmc-rc-southwest-and-coalition-operations-2010-2011.md)
-- [`OMW-HIST-ARMY-AVIATION-COIN-INTELLIGENCE-METRICS`](52-army-aviation-vignettes-and-coin-intelligence-metrics.md)
-- [`OMW-HIST-AFGHANISTAN-WAR-CARLISLE-SOURCE-REVIEW`](53-afghanistan-war-carlisle-source-review.md)
-- [`OMW-AIR-TASKING-AIRSPACE-CAS-REQUESTS`](54-air-tasking-airspace-control-cas-requests-and-mission-data.md)
-- [`OMW-HIST-MONTHLY-COALITION-ORBAT-BASING`](55-monthly-coalition-orbat-and-basing-2010-2011.md)
-- [`OMW-RED-INSURGENT-FACTIONS-BEHAVIOR`](56-insurgent-factions-shadow-governance-and-red-commander-behavior.md)
-- [`OMW-RED-KANDAHAR-HELMAND-ENEMY-SYSTEM`](57-kandahar-helmand-enemy-system-and-red-commander-strategy.md)
-- [`OMW-RED-EASTERN-AFGHANISTAN-NETWORK-OPERATIONS`](58-eastern-afghanistan-network-operations-and-complex-attack-model.md)
-- [`OMW-COIN-ASSESSMENT-TRANSITIONS-NONSTATE-SECURITY`](59-campaign-assessment-operational-transitions-and-nonstate-security.md)
-- [`OMW-TARGETING-AFGHANISTAN-NSL-DATA-USE`](targeting/afghanistan-nsl-data-use-policy.md)
-- [`OMW-TARGETING-AFGHANISTAN-NSL-LEGACY-PATH`](targeting/afghanistan-no-strike-list.md)
-- [`OMW-WX-DATASET-DOCUMENTATION`](data/weather/README.md)
-
-### Evidenz
-
-- [`OMW-EVIDENCE-INDEX`](evidence/README.md)
-- [`OMW-EVIDENCE-SOURCE-INTAKE-AUDIT-2026-07-28`](evidence/source-intake-audit-2026-07-28.md)
-- [`Jalalabad-Ausgangsaudit`](evidence/jalalabad-air-operations-baseline-audit.md)
-
-## 7. Unterprojekte und offene Branches
-
-Der vollständige und verbindliche Überblick steht in:
-
-- [`OMW-GOV-SUBPROJECT-REGISTRY`](SUBPROJECT-REGISTRY.md).
-
-Er erfasst derzeit PR #3–#18, #22, #24, #33 und #38 einschließlich Parent-/Base-Beziehungen, Acceptance-Grenzen und Produktionsrelevanz.
-
-## 8. Status-, Provenienz- und Querverweisregel
-
-- Zulässige Governance-Statuswerte stehen in `OMW-GOV-001`.
-- Quellen- und Bearbeitungszustände werden getrennt geführt.
-- `source_commit` folgt [`OMW-GOV-DOCUMENT-METADATA`](DOCUMENT-METADATA-POLICY.md).
-- `ACCEPTED_TECHNICAL_BASELINE` benötigt vollständige technische Provenienz.
-- Verweise verwenden stabile ID und relativen Pfad.
-- Branchdateien werden mit PR, Branch und Commit bezeichnet.
-- Legacy-Texte besitzen keine parallele Governance-Autorität.
+Siehe [`DOCUMENT-REGISTRY.md`](DOCUMENT-REGISTRY.md). Das Register ist für Nummern und stabile IDs maßgeblich.
