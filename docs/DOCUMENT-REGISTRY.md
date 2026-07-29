@@ -79,6 +79,7 @@ Eine Nummer und eine stabile `document_id` dürfen im aktuellen Bestand jeweils 
 | 58 | `OMW-RED-EASTERN-AFGHANISTAN-NETWORK-OPERATIONS` | `docs/58-eastern-afghanistan-network-operations-and-complex-attack-model.md` | `BINDING` | ostafghanisches Netzwerk-, Infiltrations-, Facilitation- und Complex-Attack-Modell |
 | 59 | `OMW-COIN-ASSESSMENT-TRANSITIONS-NONSTATE-SECURITY` | `docs/59-campaign-assessment-operational-transitions-and-nonstate-security.md` | `BINDING` | Campaign Assessment, Clear-Hold-Build und nichtstaatliche Sicherheitsakteure |
 | 60 | `OMW-HIST-AFGHAN-AIR-WARS-2009-2011` | `docs/60-afghan-air-wars-2009-2011-airpower-operations-reference.md` | `BINDING` | quellenkritische Airpower-, ORBAT-, Missionsmuster-, ISR-, CSAR- und RED-Anpassungsreferenz |
+| 61 | `OMW-COIN-GOVERNANCE-STRATEGY-TRANSITION` | `docs/61-coin-governance-strategy-and-afghan-led-transition.md` | `BINDING` | COIN-, Governance-, Strategie-, ANSF-Transition-, Assessment- und Air-Ground-Lehren |
 
 ## 3. Reservierte Nummern auf offenen Branches
 
