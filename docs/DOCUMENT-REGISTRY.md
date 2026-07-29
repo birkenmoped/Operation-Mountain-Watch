@@ -13,7 +13,7 @@ project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
   - registry without complete non-numbered document inventory
 superseded_by:
-source_branch: agent/complete-documentation-authority-migration
+source_branch: docs/afghan-air-wars-source-integration
 source_commit: PENDING_MERGE
 validated_in_dcs: false
 ---
@@ -78,6 +78,11 @@ Eine Nummer und eine stabile `document_id` dürfen im aktuellen Bestand jeweils 
 | 57 | `OMW-RED-KANDAHAR-HELMAND-ENEMY-SYSTEM` | `docs/57-kandahar-helmand-enemy-system-and-red-commander-strategy.md` | `BINDING` | Kandahar-/Helmand-Enemy-System, Clear-Hold-Reinfiltration, Kräfte-/ANSF-Kontext und RED-Strategie |
 | 58 | `OMW-RED-EASTERN-AFGHANISTAN-NETWORK-OPERATIONS` | `docs/58-eastern-afghanistan-network-operations-and-complex-attack-model.md` | `BINDING` | ostafghanisches Netzwerk-, Infiltrations-, Facilitation- und Complex-Attack-Modell |
 | 59 | `OMW-COIN-ASSESSMENT-TRANSITIONS-NONSTATE-SECURITY` | `docs/59-campaign-assessment-operational-transitions-and-nonstate-security.md` | `BINDING` | Campaign Assessment, Clear-Hold-Build und nichtstaatliche Sicherheitsakteure |
+| 60 | `OMW-HIST-AFGHAN-AIR-WARS-2009-2011` | `docs/60-afghan-air-wars-2009-2011-airpower-operations-reference.md` | `BINDING` | quellenkritische Airpower-, ORBAT-, Missionsmuster-, ISR-, CSAR- und RED-Anpassungsreferenz |
+| 61 | `OMW-COIN-GOVERNANCE-STRATEGY-TRANSITION` | `docs/61-coin-governance-strategy-and-afghan-led-transition.md` | `BINDING` | COIN-, Governance-, Strategie-, ANSF-Transition-, Assessment- und Air-Ground-Lehren |
+| 62 | `OMW-RED-CONTROL-INTELLIGENCE-TTP-COIN-IPB` | `docs/62-insurgent-control-intelligence-ttp-and-coin-ipb.md` | `BINDING` | lokale RED-Kontrolle, HUMINT, TTP, Complex Attack, historische Basen und COIN-IPB |
+| 63 | `OMW-BLUE-NTMA-SFA-ATN-STRATCOM-LOCAL-INFLUENCE` | `docs/63-ntma-sfa-attack-the-network-stratcom-and-local-influence.md` | `BINDING` | NTM-A/CSTC-A, SFA, C-IED/AtN, StratCom und lokale Einflussnetzwerke |
+| 64 | `OMW-HIST-AFGHANISTAN-ORBAT-2011-07` | `docs/64-afghanistan-order-of-battle-july-2011.md` | `BINDING` | vollständiger quellenkritischer Juli-2011-ORBAT-Snapshot mit Führung, Einheiten, Basen, Rollen, Rotationen und Fluggerät |
 
 ## 3. Reservierte Nummern auf offenen Branches
 
