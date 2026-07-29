@@ -11,7 +11,7 @@ project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
   - evidence index without the complete migration inventory
 superseded_by:
-source_branch: docs/afghan-air-wars-source-integration
+source_branch: docs/afghanistan-aip-kaia-lop
 source_commit: PENDING_MERGE
 validated_in_dcs: false
 ---
@@ -32,6 +32,8 @@ Aktuelle Nummern und IDs stehen in [`OMW-GOV-DOCUMENT-REGISTRY`](../DOCUMENT-REG
 - [`Insurgenten-Kontrolle, Intelligence, TTP und COIN-IPB – Quellenakte 29.07.2026`](source-records/insurgent-control-intelligence-ttp-source-charge-2026-07-29.md) – dokumentiert NGIC-, TRISA-, MCIA-, CAC- und CTC-A-Quellen, Verteilungsgrenzen und Designableitungen für Dokument 62.
 - [`NTM-A, SFA, Attack the Network, StratCom und lokale Einflussnetzwerke – Quellenakte 29.07.2026`](source-records/ntma-sfa-atn-stratcom-local-influence-source-charge-2026-07-29.md) – dokumentiert die NTM-A/CSTC-A-, JIEDDO-, NATO/ISAF-, HTS- und DIA-Charge für Dokument 63.
 - [`Afghanistan Order of Battle – Juli 2011`](source-records/afghanistan-order-of-battle-july-2011-source-record.md) – dokumentiert Herkunft, Scope, vollständige Übernahme, Quellengrenzen und Auffälligkeiten des 13-seitigen Juli-2011-Snapshots für Dokument 64.
+- [`Stability, Layeha, Route Clearance, CERP und SIGACTs – Quellenakte 29.07.2026`](source-records/stability-layeha-route-clearance-cerp-sigacts-source-charge-2026-07-29.md) – dokumentiert die Quellencharge zu Dokumenten 65–71 mit Provenienz, Grenzen und offenen Extraktionsständen.
+- [`Afghanistan AIP 2008 und KAIA LOP 2009 – Quellenakte`](source-records/afghanistan-aip-2008-and-kaia-lop-2009-source-record.md) – dokumentiert die offizielle Afghanistan-AIP, 29th Edition, sowie die NATO/ISAF KAIA LOP V9.7 einschließlich Frequenzen, Navaids, Verfahren, Quellenauffälligkeiten und DCS-Runtime-Grenzen für Dokumente 72 und 73.
 
 ## 3. Legacy-Quelldatensätze
 
@@ -115,6 +117,9 @@ Aktuelle Nummern und IDs stehen in [`OMW-GOV-DOCUMENT-REGISTRY`](../DOCUMENT-REG
 - [`Insurgenten-Kontrolle, Intelligence, TTP und COIN-IPB`](../62-insurgent-control-intelligence-ttp-and-coin-ipb.md) – konsolidiert NGIC-, TRISA-, MCIA-, CAC- und CTC-A-Quellen; keine automatische Spawn- oder Zielautorität.
 - [`NTM-A, SFA, Attack the Network, StratCom und lokale Einflussnetzwerke`](../63-ntma-sfa-attack-the-network-stratcom-and-local-influence.md) – konsolidiert NTM-A/CSTC-A-, JIEDDO-, NATO/ISAF-, HTS- und DIA-Quellen mit expliziter Zeit- und Veröffentlichungsqualifizierung.
 - [`Afghanistan Order of Battle – Juli 2011`](../64-afghanistan-order-of-battle-july-2011.md) – vollständiger quellenkritischer Snapshot; keine aktive ORBAT- oder Iststärkenautorität.
+- [`Stability Operations, PRT, Layeha, Route Clearance, CERP und SIGACTs`](source-records/stability-layeha-route-clearance-cerp-sigacts-source-charge-2026-07-29.md) – Quellenakte zu Dokumenten 65–71; historische und operative Ableitungen bleiben zeit- und scopegebunden.
+- [`Afghanistan AIP 2008`](../72-afghanistan-aip-2008-airspace-aerodromes-and-flight-procedures.md) – offizielle aeronautische Primärquelle; historische Werte überschreiben nicht die DCS-Runtime-Konfiguration.
+- [`KAIA Local Operating Procedures 2009`](../73-kaia-local-operating-procedures-2009.md) – operative Primärquelle für KAIA; keine automatische unveränderte Gültigkeit für spätere Zeitpunkte oder native DCS-ATC-Werte.
 
 ## 5. Verwendungsregel
 
