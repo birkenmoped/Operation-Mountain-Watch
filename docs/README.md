@@ -15,7 +15,7 @@ project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
   - incomplete documentation index without subproject registry
 superseded_by:
-source_branch: docs/afghan-air-wars-source-integration
+source_branch: docs/afghanistan-aip-kaia-lop
 source_commit: PENDING_MERGE
 validated_in_dcs: false
 ---
@@ -59,24 +59,33 @@ Ein offener Draft-PR ist keine `main`-Autorität. Ein branchgebundener PASS blei
 | Carlisle-*Afghanistan War*-Quellenkritik | [`OMW-HIST-AFGHANISTAN-WAR-CARLISLE-SOURCE-REVIEW`](53-afghanistan-war-carlisle-source-review.md) | `BINDING` | Sekundär-/Hintergrundreferenz; Redaktionsstand September 2010 |
 | Air Tasking, Airspace Control und CAS Requests | [`OMW-AIR-TASKING-AIRSPACE-CAS-REQUESTS`](54-air-tasking-airspace-control-cas-requests-and-mission-data.md) | `BINDING` | NATO-2019-Doktrin, ATO-/ACO-/SPINS-Guides, JTAR-/ASR-, AAR- und Buddy-Lasing-Quellen |
 | monatliche Koalitions-ORBAT, Basierung und AOR | [`OMW-HIST-MONTHLY-COALITION-ORBAT-BASING`](55-monthly-coalition-orbat-and-basing-2010-2011.md) | `BINDING` | Wesley-Morgan-Monatsstände; keine aktive ORBAT- oder Iststärkenautorität |
-| Juli-2011-ORBAT-Vollsnapshot | [`OMW-HIST-AFGHANISTAN-ORBAT-2011-07`](64-afghanistan-order-of-battle-july-2011.md) | `BINDING` | vollständige Einheit-, Standort-, AOR-, Rollen-, Rotations- und Fluggerättranskription aus der 13-seitigen Juli-Ausgabe |
-| konsolidierter RED Commander und insurgentes Verhalten | [`OMW-RED-INSURGENT-FACTIONS-BEHAVIOR`](56-insurgent-factions-shadow-governance-and-red-commander-behavior.md) | `BINDING` | ein Gegner in der Grundversion; Reinfiltration als MVP-Kernaktion; Mehrfraktion nur spätere Option |
-| Kandahar-/Helmand-Enemy-System und RED-Strategie | [`OMW-RED-KANDAHAR-HELMAND-ENEMY-SYSTEM`](57-kandahar-helmand-enemy-system-and-red-commander-strategy.md) | `BINDING` | neun ISW-/New-America-Studien zu Marjah, Hamkari, Kandahar und Helmand; keine Spawn- oder aktive ORBAT-Autorität |
-| Ostafghanistan, Netzwerkoperationen und komplexe Angriffsplanung | [`OMW-RED-EASTERN-AFGHANISTAN-NETWORK-OPERATIONS`](58-eastern-afghanistan-network-operations-and-complex-attack-model.md) | `BINDING` | Haqqani-/QST-/CTC-Quellen zu Sanctuary, Facilitation, Staging, Compartmentation und High-Complexity-Profil; keine zweite Runtime-Fraktion |
-| Campaign Assessment, Übergänge und nichtstaatliche Sicherheitsakteure | [`OMW-COIN-ASSESSMENT-TRANSITIONS-NONSTATE-SECURITY`](59-campaign-assessment-operational-transitions-and-nonstate-security.md) | `BINDING` | Cordesman-, Dubik-, McNally-, Kagan- und Kandahar-PSC-Quellen; keine aktive PSC-ORBAT |
-| Afghan Air Wars, Airpower, ISR und Missionsmuster | [`OMW-HIST-AFGHAN-AIR-WARS-2009-2011`](60-afghan-air-wars-2009-2011-airpower-operations-reference.md) | `BINDING` | Napier 2023; quellenkritische Sekundärsynthese; keine aktive ORBAT-Autorität |
-| COIN, Governance, Strategie und Afghan-led Transition | [`OMW-COIN-GOVERNANCE-STRATEGY-TRANSITION`](61-coin-governance-strategy-and-afghan-led-transition.md) | `BINDING` | U.S. Army CMH, RAND und Colin S. Gray; Governance-, ANSF-, Assessment-, Strategie- und Air-Ground-Referenz |
-| Insurgenten-Kontrolle, Intelligence, TTP und COIN-IPB | [`OMW-RED-CONTROL-INTELLIGENCE-TTP-COIN-IPB`](62-insurgent-control-intelligence-ttp-and-coin-ipb.md) | `BINDING` | NGIC-, TRISA-, MCIA-, CAC- und CTC-A-Quellen; keine automatische Spawn- oder Zielautorität |
-| NTM-A, SFA, Attack the Network, StratCom und lokale Einflussnetzwerke | [`OMW-BLUE-NTMA-SFA-ATN-STRATCOM-LOCAL-INFLUENCE`](63-ntma-sfa-attack-the-network-stratcom-and-local-influence.md) | `BINDING` | NTM-A/CSTC-A, JIEDDO, NATO/ISAF, HTS und DIA; post-periodische Inhalte qualifiziert |
+| Juli-2011-ORBAT-Vollsnapshot | [`OMW-HIST-AFGHANISTAN-ORBAT-2011-07`](64-afghanistan-order-of-battle-july-2011.md) | `BINDING` | vollständige Einheit-, Standort-, AOR-, Rollen-, Rotations- und Fluggerättranskription |
+| konsolidierter RED Commander und insurgentes Verhalten | [`OMW-RED-INSURGENT-FACTIONS-BEHAVIOR`](56-insurgent-factions-shadow-governance-and-red-commander-behavior.md) | `BINDING` | ein Gegner in der Grundversion; Mehrfraktion nur spätere Option |
+| Kandahar-/Helmand-Enemy-System und RED-Strategie | [`OMW-RED-KANDAHAR-HELMAND-ENEMY-SYSTEM`](57-kandahar-helmand-enemy-system-and-red-commander-strategy.md) | `BINDING` | ISW-/New-America-Studien; keine Spawn- oder aktive ORBAT-Autorität |
+| Ostafghanistan, Netzwerkoperationen und komplexe Angriffsplanung | [`OMW-RED-EASTERN-AFGHANISTAN-NETWORK-OPERATIONS`](58-eastern-afghanistan-network-operations-and-complex-attack-model.md) | `BINDING` | Haqqani-/QST-/CTC-Quellen; keine zweite Runtime-Fraktion |
+| Campaign Assessment, Übergänge und nichtstaatliche Sicherheitsakteure | [`OMW-COIN-ASSESSMENT-TRANSITIONS-NONSTATE-SECURITY`](59-campaign-assessment-operational-transitions-and-nonstate-security.md) | `BINDING` | Campaign-Assessment- und PSC-Quellen |
+| Afghan Air Wars, Airpower, ISR und Missionsmuster | [`OMW-HIST-AFGHAN-AIR-WARS-2009-2011`](60-afghan-air-wars-2009-2011-airpower-operations-reference.md) | `BINDING` | Napier 2023; quellenkritische Sekundärsynthese |
+| COIN, Governance, Strategie und Afghan-led Transition | [`OMW-COIN-GOVERNANCE-STRATEGY-TRANSITION`](61-coin-governance-strategy-and-afghan-led-transition.md) | `BINDING` | RAND, U.S. Army CMH und Gray |
+| Insurgenten-Kontrolle, Intelligence, TTP und COIN-IPB | [`OMW-RED-CONTROL-INTELLIGENCE-TTP-COIN-IPB`](62-insurgent-control-intelligence-ttp-and-coin-ipb.md) | `BINDING` | NGIC-, TRISA-, MCIA-, CAC- und CTC-A-Quellen |
+| NTM-A, SFA, Attack the Network, StratCom und lokale Einflussnetzwerke | [`OMW-BLUE-NTMA-SFA-ATN-STRATCOM-LOCAL-INFLUENCE`](63-ntma-sfa-attack-the-network-stratcom-and-local-influence.md) | `BINDING` | NTM-A/CSTC-A, JIEDDO, NATO/ISAF, HTS und DIA |
+| Stability Operations, PRT und District Stability Framework | [`OMW-STAB-PRT-INTERAGENCY-DISTRICT-FRAMEWORK`](65-stability-operations-prt-interagency-and-district-framework.md) | `BINDING` | MCCLL und RC-East-Stability-Operations-Material |
+| Taliban-Layeha, RED-Disziplin und Shadow Justice | [`OMW-RED-LAYEHA-COMMAND-DISCIPLINE-SHADOW-JUSTICE`](66-taliban-layeha-command-discipline-and-shadow-justice.md) | `BINDING` | NPS-Analyse der Taliban-Layeha 2009 |
+| Route Clearance, C-IED und Convoy Design | [`OMW-CIED-ROUTE-CLEARANCE-CONVOY-DESIGN`](67-afghanistan-route-clearance-counter-ied-and-convoy-design.md) | `BINDING` | Afghanistan Route Clearance Supplement und C-IED Smart Book |
+| Kandahar City und Dand Operational Environment | [`OMW-OE-KANDAHAR-CITY-DAND-2010`](68-kandahar-city-and-dand-operational-environment-2010.md) | `BINDING` | SOIC District Narrative Analysis vom 30.03.2010 |
+| CERP-Projektaktivität | [`OMW-STAB-CERP-REGIONAL-PROJECTS-2009-2010`](69-cerp-regional-projects-2009-2010.md) | `BINDING` | sechs regionale CIDNE-/CERP-Pakete |
+| NATO/ISAF-SIGACT-Muster | [`OMW-RED-SIGACT-PATTERNS-2010-08-10`](70-nato-isaf-sigact-patterns-august-october-2010.md) | `BINDING` | sieben Narrative und sechs Kartenpakete, 29.08.–24.10.2010 |
+| ISAF-RC-/PRT-Karten und zusätzliche historische Quellen | [`OMW-HIST-ISAF-FORCE-POSTURE-MAPS-ADDITIONAL-SOURCES`](71-isaf-force-posture-maps-and-additional-historical-sources.md) | `BINDING` | Force-Posture-Karten, 2009 Essay, 2008 RC-East OSINT und historische Sanktionsliste |
+| Afghanistan-AIP: Luftraum, Flugplätze, Navaids und Verfahren | [`OMW-AIR-AFGHANISTAN-AIP-2008`](72-afghanistan-aip-2008-airspace-aerodromes-and-flight-procedures.md) | `BINDING` | offizielle Afghanistan AIP, 29th Edition, effective 20.11.2008 |
+| KAIA Local Operating Procedures | [`OMW-AIR-KAIA-LOCAL-OPERATING-PROCEDURES-2009`](73-kaia-local-operating-procedures-2009.md) | `BINDING` | NATO/ISAF KAIA LOP V9.7, effective 20.10.2009 |
 | Systemarchitektur | [`OMW-ARCH-SYSTEM`](03-system-architecture.md) | `BINDING` | Dokument 37 |
-| CampaignState/dynamische Kampagne | [`OMW-ARCH-CAMPAIGN-DYNAMIC-MISSION`](37-campaign-architecture-and-dynamic-mission-design.md) | `BINDING` | Dokumente 04–07, 56–64 und TM01/TM02-Reviews |
-| Fog of War / RECCE | [`OMW-MOOSE-FOG-OF-WAR-RECCE`](moose/FOG-OF-WAR-RECCE.md) | `PLANNED` | MOOSE-Develop geprüft; Laufzeitvalidierung im gepinnten MOOSE-Stand ausstehend |
+| CampaignState/dynamische Kampagne | [`OMW-ARCH-CAMPAIGN-DYNAMIC-MISSION`](37-campaign-architecture-and-dynamic-mission-design.md) | `BINDING` | Dokumente 04–07, 56–73 und TM01/TM02-Reviews |
+| Fog of War / RECCE | [`OMW-MOOSE-FOG-OF-WAR-RECCE`](moose/FOG-OF-WAR-RECCE.md) | `PLANNED` | MOOSE-Develop geprüft; Laufzeitvalidierung ausstehend |
 | aktive Luft-ORBAT/Clientgrenzen | [`OMW-AIR-ACTIVE-ORBAT`](19-active-air-orbat-decisions.md) | `BINDING_PROJECT_DECISION` | historische ORBAT-Recherche |
 | technische Luftoperationen | [`OMW-AIR-IMPLEMENTATION`](18-air-operations-implementation.md) | `BINDING` | MOOSE Air Operations |
 | Jalalabad-ME-Baseline | [`OMW-AIR-JBAD-MANIFEST`](21-jalalabad-air-operations-manifest.md) | `BINDING` | PR #18 und Testprojektindex |
 | Missionseditor-Masterarbeit | [`OMW-ME-MASTER-WORKLIST`](38-mission-editor-master-worklist.md) | `BINDING` | basisbezogene Manifeste |
-| MSR/Routing | [`OMW-MSR-ROUTE-DESIGN`](49-msr-routendesign-und-infrastrukturmarker.md) | `PLANNED` | TM01M, Route-Clearance-, RED-Observation-, IED-, Facilitation- und Reinfiltrationsmuster |
-| CSAR-Quellen/Anforderungen | [`OMW-CSAR-INDEX`](csar/README.md) | `BINDING` | CSAR-Unterdokumente |
+| MSR/Routing | [`OMW-MSR-ROUTE-DESIGN`](49-msr-routendesign-und-infrastrukturmarker.md) | `PLANNED` | Dokument 67, TM01M und RED-/IED-Muster |
+| CSAR-Quellen/Anforderungen | [`OMW-CSAR-INDEX`](csar/README.md) | `BINDING` | CSAR-Unterdokumente sowie Dokumente 72/73 |
 | NSL/Targeting | [`OMW-TARGETING-AFGHANISTAN-NSL`](48-afghanistan-no-strike-list.md) | `BINDING` | [Datenrichtlinie](targeting/afghanistan-nsl-data-use-policy.md) |
 | Wetterdaten | [`OMW-WX-HISTORICAL-BASELINE`](41-historical-weather-baseline-2010-2011.md) | `BINDING` | [Datensatzdokumentation](data/weather/README.md) |
 | Regen-Arbeitsprofil | [`OMW-WX-RAIN-PROFILE`](43-dcs-rain-shower-preset-validation.md) | `BINDING` | visuell bestätigt, keine formale Acceptance |
@@ -147,6 +156,15 @@ Ein offener Draft-PR ist keine `main`-Autorität. Ein branchgebundener PASS blei
 - [62 – Insurgenten-Kontrolle, Intelligence, TTP und COIN-IPB](62-insurgent-control-intelligence-ttp-and-coin-ipb.md)
 - [63 – NTM-A, SFA, Attack the Network, StratCom und lokale Einflussnetzwerke](63-ntma-sfa-attack-the-network-stratcom-and-local-influence.md)
 - [64 – Afghanistan Order of Battle: vollständiger Juli-2011-Snapshot](64-afghanistan-order-of-battle-july-2011.md)
+- [65 – Stability Operations, PRT, Interagency und District Framework](65-stability-operations-prt-interagency-and-district-framework.md)
+- [66 – Taliban Layeha, Command Discipline und Shadow Justice](66-taliban-layeha-command-discipline-and-shadow-justice.md)
+- [67 – Afghanistan Route Clearance, C-IED und Convoy Design](67-afghanistan-route-clearance-counter-ied-and-convoy-design.md)
+- [68 – Kandahar City und Dand Operational Environment 2010](68-kandahar-city-and-dand-operational-environment-2010.md)
+- [69 – CERP Regional Projects 2009–2010](69-cerp-regional-projects-2009-2010.md)
+- [70 – NATO/ISAF SIGACT Patterns August–October 2010](70-nato-isaf-sigact-patterns-august-october-2010.md)
+- [71 – ISAF Force-Posture Maps und zusätzliche historische Quellen](71-isaf-force-posture-maps-and-additional-historical-sources.md)
+- [72 – Afghanistan AIP 2008](72-afghanistan-aip-2008-airspace-aerodromes-and-flight-procedures.md)
+- [73 – KAIA Local Operating Procedures 2009](73-kaia-local-operating-procedures-2009.md)
 
 ## 5. Thematische Einstiegspunkte
 
@@ -160,6 +178,12 @@ Ein offener Draft-PR ist keine `main`-Autorität. Ein branchgebundener PASS blei
 - [`61-coin-governance-strategy-and-afghan-led-transition.md`](61-coin-governance-strategy-and-afghan-led-transition.md)
 - [`62-insurgent-control-intelligence-ttp-and-coin-ipb.md`](62-insurgent-control-intelligence-ttp-and-coin-ipb.md)
 - [`63-ntma-sfa-attack-the-network-stratcom-and-local-influence.md`](63-ntma-sfa-attack-the-network-stratcom-and-local-influence.md)
+- [`65-stability-operations-prt-interagency-and-district-framework.md`](65-stability-operations-prt-interagency-and-district-framework.md)
+- [`66-taliban-layeha-command-discipline-and-shadow-justice.md`](66-taliban-layeha-command-discipline-and-shadow-justice.md)
+- [`68-kandahar-city-and-dand-operational-environment-2010.md`](68-kandahar-city-and-dand-operational-environment-2010.md)
+- [`69-cerp-regional-projects-2009-2010.md`](69-cerp-regional-projects-2009-2010.md)
+- [`70-nato-isaf-sigact-patterns-august-october-2010.md`](70-nato-isaf-sigact-patterns-august-october-2010.md)
+- [`71-isaf-force-posture-maps-and-additional-historical-sources.md`](71-isaf-force-posture-maps-and-additional-historical-sources.md)
 
 ### Luftoperationen
 
@@ -169,6 +193,14 @@ Ein offener Draft-PR ist keine `main`-Autorität. Ein branchgebundener PASS blei
 - [`54-air-tasking-airspace-control-cas-requests-and-mission-data.md`](54-air-tasking-airspace-control-cas-requests-and-mission-data.md)
 - [`60-afghan-air-wars-2009-2011-airpower-operations-reference.md`](60-afghan-air-wars-2009-2011-airpower-operations-reference.md)
 - [`64-afghanistan-order-of-battle-july-2011.md`](64-afghanistan-order-of-battle-july-2011.md)
+- [`72-afghanistan-aip-2008-airspace-aerodromes-and-flight-procedures.md`](72-afghanistan-aip-2008-airspace-aerodromes-and-flight-procedures.md)
+- [`73-kaia-local-operating-procedures-2009.md`](73-kaia-local-operating-procedures-2009.md)
+
+### Routen, C-IED und Convoys
+
+- [`49-msr-routendesign-und-infrastrukturmarker.md`](49-msr-routendesign-und-infrastrukturmarker.md)
+- [`67-afghanistan-route-clearance-counter-ied-and-convoy-design.md`](67-afghanistan-route-clearance-counter-ied-and-convoy-design.md)
+- [`70-nato-isaf-sigact-patterns-august-october-2010.md`](70-nato-isaf-sigact-patterns-august-october-2010.md)
 
 ### Historische Kräfte und Basen
 
@@ -177,6 +209,9 @@ Ein offener Draft-PR ist keine `main`-Autorität. Ein branchgebundener PASS blei
 - [`52-army-aviation-vignettes-and-coin-intelligence-metrics.md`](52-army-aviation-vignettes-and-coin-intelligence-metrics.md)
 - [`55-monthly-coalition-orbat-and-basing-2010-2011.md`](55-monthly-coalition-orbat-and-basing-2010-2011.md)
 - [`64-afghanistan-order-of-battle-july-2011.md`](64-afghanistan-order-of-battle-july-2011.md)
+- [`71-isaf-force-posture-maps-and-additional-historical-sources.md`](71-isaf-force-posture-maps-and-additional-historical-sources.md)
+- [`72-afghanistan-aip-2008-airspace-aerodromes-and-flight-procedures.md`](72-afghanistan-aip-2008-airspace-aerodromes-and-flight-procedures.md)
+- [`73-kaia-local-operating-procedures-2009.md`](73-kaia-local-operating-procedures-2009.md)
 
 ## 6. Nicht nummerierte aktuelle Dokumente
 
