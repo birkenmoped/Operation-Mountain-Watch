@@ -29,6 +29,8 @@ Aktuelle Nummern und IDs stehen in [`OMW-GOV-DOCUMENT-REGISTRY`](../DOCUMENT-REG
 - [`Jalalabad Air Operations – Ausgangsaudit`](jalalabad-air-operations-baseline-audit.md)
 - [`Quellenaufnahme-Audit 28.07.2026`](source-intake-audit-2026-07-28.md) – ordnet die im Afghanistan-Kräfte-, Aviation-, Air-C2-, ORBAT- und RED-Commander-Arbeitsstrang identifizierten Quellen ihren Fachreferenzen, Ausschlussakten oder offenen Prüfständen zu.
 - [`COIN, Governance, Strategie und Afghan-led Transition – Quellenakte 29.07.2026`](source-records/coin-governance-strategy-source-charge-2026-07-29.md) – dokumentiert Quellenklasse, zulässige Nutzung und Ausschlüsse der RAND-, U.S.-Army-CMH-, Gray-, CNN- und Britannica-Charge für Dokument 61.
+- [`Insurgenten-Kontrolle, Intelligence, TTP und COIN-IPB – Quellenakte 29.07.2026`](source-records/insurgent-control-intelligence-ttp-source-charge-2026-07-29.md) – dokumentiert NGIC-, TRISA-, MCIA-, CAC- und CTC-A-Quellen, Verteilungsgrenzen und Designableitungen für Dokument 62.
+- [`NTM-A, SFA, Attack the Network, StratCom und lokale Einflussnetzwerke – Quellenakte 29.07.2026`](source-records/ntma-sfa-atn-stratcom-local-influence-source-charge-2026-07-29.md) – dokumentiert die NTM-A/CSTC-A-, JIEDDO-, NATO/ISAF-, HTS- und DIA-Charge für Dokument 63.
 
 ## 3. Legacy-Quelldatensätze
 
@@ -108,7 +110,9 @@ Aktuelle Nummern und IDs stehen in [`OMW-GOV-DOCUMENT-REGISTRY`](../DOCUMENT-REG
 - [`Air Tasking, Airspace Control, CAS Requests und Missionsdaten`](../54-air-tasking-airspace-control-cas-requests-and-mission-data.md) – konsolidiert und qualifiziert die ATO-/ACO-/SPINS-/JTAR-/ASR-/AAR-/Buddy-Lasing-Quellenserie.
 - [`Monatliche Koalitions-ORBAT und Basierung 2010–2011`](../55-monthly-coalition-orbat-and-basing-2010-2011.md) – erschließt Morgans Monatsstände mit zeitlichen, Scope- und Stärkegrenzen; keine aktive ORBAT-Autorität.
 - [`Insurgentengruppen, Schattenherrschaft und RED-Commander-Verhalten`](../56-insurgent-factions-shadow-governance-and-red-commander-behavior.md) – konsolidiert die Crisis-Group-Regionalstudie und quellenqualifizierte COIN-, ANSF- und Strategieanalysen zu einem Verhaltensmodell.
-- [`COIN, Governance, Strategie und Afghan-led Transition`](../61-coin-governance-strategy-and-afghan-led-transition.md) – konsolidiert die neue RAND-, U.S.-Army-CMH- und Gray-Quellencharge; enthält keine aktive ORBAT-, Targeting- oder Runtime-Autorität.
+- [`COIN, Governance, Strategie und Afghan-led Transition`](../61-coin-governance-strategy-and-afghan-led-transition.md) – konsolidiert die RAND-, U.S.-Army-CMH- und Gray-Quellencharge; enthält keine aktive ORBAT-, Targeting- oder Runtime-Autorität.
+- [`Insurgenten-Kontrolle, Intelligence, TTP und COIN-IPB`](../62-insurgent-control-intelligence-ttp-and-coin-ipb.md) – konsolidiert NGIC-, TRISA-, MCIA-, CAC- und CTC-A-Quellen; keine automatische Spawn- oder Zielautorität.
+- [`NTM-A, SFA, Attack the Network, StratCom und lokale Einflussnetzwerke`](../63-ntma-sfa-attack-the-network-stratcom-and-local-influence.md) – konsolidiert NTM-A/CSTC-A-, JIEDDO-, NATO/ISAF-, HTS- und DIA-Quellen mit expliziter Zeit- und Veröffentlichungsqualifizierung.
 
 ## 5. Verwendungsregel
 
