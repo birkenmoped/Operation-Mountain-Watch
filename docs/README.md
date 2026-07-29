@@ -59,6 +59,7 @@ Ein offener Draft-PR ist keine `main`-Autorität. Ein branchgebundener PASS blei
 | Carlisle-*Afghanistan War*-Quellenkritik | [`OMW-HIST-AFGHANISTAN-WAR-CARLISLE-SOURCE-REVIEW`](53-afghanistan-war-carlisle-source-review.md) | `BINDING` | Sekundär-/Hintergrundreferenz; Redaktionsstand September 2010 |
 | Air Tasking, Airspace Control und CAS Requests | [`OMW-AIR-TASKING-AIRSPACE-CAS-REQUESTS`](54-air-tasking-airspace-control-cas-requests-and-mission-data.md) | `BINDING` | NATO-2019-Doktrin, ATO-/ACO-/SPINS-Guides, JTAR-/ASR-, AAR- und Buddy-Lasing-Quellen |
 | monatliche Koalitions-ORBAT, Basierung und AOR | [`OMW-HIST-MONTHLY-COALITION-ORBAT-BASING`](55-monthly-coalition-orbat-and-basing-2010-2011.md) | `BINDING` | Wesley-Morgan-Monatsstände; keine aktive ORBAT- oder Iststärkenautorität |
+| Juli-2011-ORBAT-Vollsnapshot | [`OMW-HIST-AFGHANISTAN-ORBAT-2011-07`](64-afghanistan-order-of-battle-july-2011.md) | `BINDING` | vollständige Einheit-, Standort-, AOR-, Rollen-, Rotations- und Fluggerättranskription aus der 13-seitigen Juli-Ausgabe |
 | konsolidierter RED Commander und insurgentes Verhalten | [`OMW-RED-INSURGENT-FACTIONS-BEHAVIOR`](56-insurgent-factions-shadow-governance-and-red-commander-behavior.md) | `BINDING` | ein Gegner in der Grundversion; Reinfiltration als MVP-Kernaktion; Mehrfraktion nur spätere Option |
 | Kandahar-/Helmand-Enemy-System und RED-Strategie | [`OMW-RED-KANDAHAR-HELMAND-ENEMY-SYSTEM`](57-kandahar-helmand-enemy-system-and-red-commander-strategy.md) | `BINDING` | neun ISW-/New-America-Studien zu Marjah, Hamkari, Kandahar und Helmand; keine Spawn- oder aktive ORBAT-Autorität |
 | Ostafghanistan, Netzwerkoperationen und komplexe Angriffsplanung | [`OMW-RED-EASTERN-AFGHANISTAN-NETWORK-OPERATIONS`](58-eastern-afghanistan-network-operations-and-complex-attack-model.md) | `BINDING` | Haqqani-/QST-/CTC-Quellen zu Sanctuary, Facilitation, Staging, Compartmentation und High-Complexity-Profil; keine zweite Runtime-Fraktion |
@@ -68,7 +69,7 @@ Ein offener Draft-PR ist keine `main`-Autorität. Ein branchgebundener PASS blei
 | Insurgenten-Kontrolle, Intelligence, TTP und COIN-IPB | [`OMW-RED-CONTROL-INTELLIGENCE-TTP-COIN-IPB`](62-insurgent-control-intelligence-ttp-and-coin-ipb.md) | `BINDING` | NGIC-, TRISA-, MCIA-, CAC- und CTC-A-Quellen; keine automatische Spawn- oder Zielautorität |
 | NTM-A, SFA, Attack the Network, StratCom und lokale Einflussnetzwerke | [`OMW-BLUE-NTMA-SFA-ATN-STRATCOM-LOCAL-INFLUENCE`](63-ntma-sfa-attack-the-network-stratcom-and-local-influence.md) | `BINDING` | NTM-A/CSTC-A, JIEDDO, NATO/ISAF, HTS und DIA; post-periodische Inhalte qualifiziert |
 | Systemarchitektur | [`OMW-ARCH-SYSTEM`](03-system-architecture.md) | `BINDING` | Dokument 37 |
-| CampaignState/dynamische Kampagne | [`OMW-ARCH-CAMPAIGN-DYNAMIC-MISSION`](37-campaign-architecture-and-dynamic-mission-design.md) | `BINDING` | Dokumente 04–07, 56–63 und TM01/TM02-Reviews |
+| CampaignState/dynamische Kampagne | [`OMW-ARCH-CAMPAIGN-DYNAMIC-MISSION`](37-campaign-architecture-and-dynamic-mission-design.md) | `BINDING` | Dokumente 04–07, 56–64 und TM01/TM02-Reviews |
 | Fog of War / RECCE | [`OMW-MOOSE-FOG-OF-WAR-RECCE`](moose/FOG-OF-WAR-RECCE.md) | `PLANNED` | MOOSE-Develop geprüft; Laufzeitvalidierung im gepinnten MOOSE-Stand ausstehend |
 | aktive Luft-ORBAT/Clientgrenzen | [`OMW-AIR-ACTIVE-ORBAT`](19-active-air-orbat-decisions.md) | `BINDING_PROJECT_DECISION` | historische ORBAT-Recherche |
 | technische Luftoperationen | [`OMW-AIR-IMPLEMENTATION`](18-air-operations-implementation.md) | `BINDING` | MOOSE Air Operations |
@@ -145,6 +146,7 @@ Ein offener Draft-PR ist keine `main`-Autorität. Ein branchgebundener PASS blei
 - [61 – COIN, Governance, Strategie und Afghan-led Transition](61-coin-governance-strategy-and-afghan-led-transition.md)
 - [62 – Insurgenten-Kontrolle, Intelligence, TTP und COIN-IPB](62-insurgent-control-intelligence-ttp-and-coin-ipb.md)
 - [63 – NTM-A, SFA, Attack the Network, StratCom und lokale Einflussnetzwerke](63-ntma-sfa-attack-the-network-stratcom-and-local-influence.md)
+- [64 – Afghanistan Order of Battle: vollständiger Juli-2011-Snapshot](64-afghanistan-order-of-battle-july-2011.md)
 
 ## 5. Thematische Einstiegspunkte
 
@@ -166,6 +168,7 @@ Ein offener Draft-PR ist keine `main`-Autorität. Ein branchgebundener PASS blei
 - [`45-air-c2-cas-afghanistan.md`](45-air-c2-cas-afghanistan.md)
 - [`54-air-tasking-airspace-control-cas-requests-and-mission-data.md`](54-air-tasking-airspace-control-cas-requests-and-mission-data.md)
 - [`60-afghan-air-wars-2009-2011-airpower-operations-reference.md`](60-afghan-air-wars-2009-2011-airpower-operations-reference.md)
+- [`64-afghanistan-order-of-battle-july-2011.md`](64-afghanistan-order-of-battle-july-2011.md)
 
 ### Historische Kräfte und Basen
 
@@ -173,6 +176,7 @@ Ein offener Draft-PR ist keine `main`-Autorität. Ein branchgebundener PASS blei
 - [`51-usmc-rc-southwest-and-coalition-operations-2010-2011.md`](51-usmc-rc-southwest-and-coalition-operations-2010-2011.md)
 - [`52-army-aviation-vignettes-and-coin-intelligence-metrics.md`](52-army-aviation-vignettes-and-coin-intelligence-metrics.md)
 - [`55-monthly-coalition-orbat-and-basing-2010-2011.md`](55-monthly-coalition-orbat-and-basing-2010-2011.md)
+- [`64-afghanistan-order-of-battle-july-2011.md`](64-afghanistan-order-of-battle-july-2011.md)
 
 ## 6. Nicht nummerierte aktuelle Dokumente
 
