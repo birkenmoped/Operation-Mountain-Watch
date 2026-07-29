@@ -128,6 +128,6 @@ Aktuelle Nummern und IDs stehen in [`OMW-GOV-DOCUMENT-REGISTRY`](../DOCUMENT-REG
 3. Alte Dokumentnummern in Legacy-Dateien werden nicht erneut vergeben.
 4. Ein historischer PASS wird nicht ohne vollständige Provenienz und aktuellen Geltungsbereich zur technischen Acceptance.
 5. Externe Hintergrundakten dürfen keine zeitgenössischen OMW-Einheiten, Bestände oder Standorte ersetzen.
-6. Quellen mit sichtbarer Verteilungsbeschränkung werden bis zur geklärten Berechtigung nicht inhaltlich publiziert oder als Projektautorität verwendet.
+6. Historische Quellen mit sichtbaren früheren Verteilungs- oder Klassifizierungsmarkierungen werden quellenkritisch nach dokumentierter öffentlicher Freigabe, Herkunft und konkretem Inhalt behandelt; eine Markierung allein führt weder automatisch zur Nutzung noch zum pauschalen Ausschluss.
 7. Nichtamtliche DCS-/Blog-/Forenquellen werden als Sekundär-, Hypothesen- oder Lead-Quellen geführt und nicht stillschweigend zu historischen Tatsachen hochgestuft.
 8. Synthetische ATO-/CAS-/AAR-Beispiele werden eindeutig als `EXAMPLE_ONLY` markiert.
