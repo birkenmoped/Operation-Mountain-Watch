@@ -28,6 +28,7 @@ Aktuelle Nummern und IDs stehen in [`OMW-GOV-DOCUMENT-REGISTRY`](../DOCUMENT-REG
 
 - [`Jalalabad Air Operations – Ausgangsaudit`](jalalabad-air-operations-baseline-audit.md)
 - [`Quellenaufnahme-Audit 28.07.2026`](source-intake-audit-2026-07-28.md) – ordnet die im Afghanistan-Kräfte-, Aviation-, Air-C2-, ORBAT- und RED-Commander-Arbeitsstrang identifizierten Quellen ihren Fachreferenzen, Ausschlussakten oder offenen Prüfständen zu.
+- [`COIN, Governance, Strategie und Afghan-led Transition – Quellenakte 29.07.2026`](source-records/coin-governance-strategy-source-charge-2026-07-29.md) – dokumentiert Quellenklasse, zulässige Nutzung und Ausschlüsse der RAND-, U.S.-Army-CMH-, Gray-, CNN- und Britannica-Charge für Dokument 61.
 
 ## 3. Legacy-Quelldatensätze
 
@@ -107,6 +108,7 @@ Aktuelle Nummern und IDs stehen in [`OMW-GOV-DOCUMENT-REGISTRY`](../DOCUMENT-REG
 - [`Air Tasking, Airspace Control, CAS Requests und Missionsdaten`](../54-air-tasking-airspace-control-cas-requests-and-mission-data.md) – konsolidiert und qualifiziert die ATO-/ACO-/SPINS-/JTAR-/ASR-/AAR-/Buddy-Lasing-Quellenserie.
 - [`Monatliche Koalitions-ORBAT und Basierung 2010–2011`](../55-monthly-coalition-orbat-and-basing-2010-2011.md) – erschließt Morgans Monatsstände mit zeitlichen, Scope- und Stärkegrenzen; keine aktive ORBAT-Autorität.
 - [`Insurgentengruppen, Schattenherrschaft und RED-Commander-Verhalten`](../56-insurgent-factions-shadow-governance-and-red-commander-behavior.md) – konsolidiert die Crisis-Group-Regionalstudie und quellenqualifizierte COIN-, ANSF- und Strategieanalysen zu einem Verhaltensmodell.
+- [`COIN, Governance, Strategie und Afghan-led Transition`](../61-coin-governance-strategy-and-afghan-led-transition.md) – konsolidiert die neue RAND-, U.S.-Army-CMH- und Gray-Quellencharge; enthält keine aktive ORBAT-, Targeting- oder Runtime-Autorität.
 
 ## 5. Verwendungsregel
 
