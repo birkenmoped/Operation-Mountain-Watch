@@ -82,6 +82,7 @@ Eine Nummer und eine stabile `document_id` dürfen im aktuellen Bestand jeweils 
 | 61 | `OMW-COIN-GOVERNANCE-STRATEGY-TRANSITION` | `docs/61-coin-governance-strategy-and-afghan-led-transition.md` | `BINDING` | COIN-, Governance-, Strategie-, ANSF-Transition-, Assessment- und Air-Ground-Lehren |
 | 62 | `OMW-RED-CONTROL-INTELLIGENCE-TTP-COIN-IPB` | `docs/62-insurgent-control-intelligence-ttp-and-coin-ipb.md` | `BINDING` | lokale RED-Kontrolle, HUMINT, TTP, Complex Attack, historische Basen und COIN-IPB |
 | 63 | `OMW-BLUE-NTMA-SFA-ATN-STRATCOM-LOCAL-INFLUENCE` | `docs/63-ntma-sfa-attack-the-network-stratcom-and-local-influence.md` | `BINDING` | NTM-A/CSTC-A, SFA, C-IED/AtN, StratCom und lokale Einflussnetzwerke |
+| 64 | `OMW-HIST-AFGHANISTAN-ORBAT-2011-07` | `docs/64-afghanistan-order-of-battle-july-2011.md` | `BINDING` | vollständiger quellenkritischer Juli-2011-ORBAT-Snapshot mit Führung, Einheiten, Basen, Rollen, Rotationen und Fluggerät |
 
 ## 3. Reservierte Nummern auf offenen Branches
 
