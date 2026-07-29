@@ -13,7 +13,7 @@ project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
   - registry without complete non-numbered document inventory
 superseded_by:
-source_branch: docs/afghan-air-wars-source-integration
+source_branch: docs/afghanistan-aip-kaia-lop
 source_commit: PENDING_MERGE
 validated_in_dcs: false
 ---
@@ -83,6 +83,15 @@ Eine Nummer und eine stabile `document_id` dürfen im aktuellen Bestand jeweils 
 | 62 | `OMW-RED-CONTROL-INTELLIGENCE-TTP-COIN-IPB` | `docs/62-insurgent-control-intelligence-ttp-and-coin-ipb.md` | `BINDING` | lokale RED-Kontrolle, HUMINT, TTP, Complex Attack, historische Basen und COIN-IPB |
 | 63 | `OMW-BLUE-NTMA-SFA-ATN-STRATCOM-LOCAL-INFLUENCE` | `docs/63-ntma-sfa-attack-the-network-stratcom-and-local-influence.md` | `BINDING` | NTM-A/CSTC-A, SFA, C-IED/AtN, StratCom und lokale Einflussnetzwerke |
 | 64 | `OMW-HIST-AFGHANISTAN-ORBAT-2011-07` | `docs/64-afghanistan-order-of-battle-july-2011.md` | `BINDING` | vollständiger quellenkritischer Juli-2011-ORBAT-Snapshot mit Führung, Einheiten, Basen, Rollen, Rotationen und Fluggerät |
+| 65 | `OMW-STAB-PRT-INTERAGENCY-DISTRICT-FRAMEWORK` | `docs/65-stability-operations-prt-interagency-and-district-framework.md` | `BINDING` | Stability Operations, PRT, Interagency und District Stability Framework |
+| 66 | `OMW-RED-LAYEHA-COMMAND-DISCIPLINE-SHADOW-JUSTICE` | `docs/66-taliban-layeha-command-discipline-and-shadow-justice.md` | `BINDING` | Taliban-Layeha, lokale Führungsfriktion, Disziplin und Shadow Justice |
+| 67 | `OMW-CIED-ROUTE-CLEARANCE-CONVOY-DESIGN` | `docs/67-afghanistan-route-clearance-counter-ied-and-convoy-design.md` | `BINDING` | Route Clearance, C-IED und Convoy-Missionsdesign |
+| 68 | `OMW-OE-KANDAHAR-CITY-DAND-2010` | `docs/68-kandahar-city-and-dand-operational-environment-2010.md` | `BINDING` | Kandahar City/Dand Operational Environment 2010 |
+| 69 | `OMW-STAB-CERP-REGIONAL-PROJECTS-2009-2010` | `docs/69-cerp-regional-projects-2009-2010.md` | `BINDING` | regionale CERP-Projektaktivität 2009–2010 |
+| 70 | `OMW-RED-SIGACT-PATTERNS-2010-08-10` | `docs/70-nato-isaf-sigact-patterns-august-october-2010.md` | `BINDING` | NATO/ISAF-SIGACT-Muster August–Oktober 2010 |
+| 71 | `OMW-HIST-ISAF-FORCE-POSTURE-MAPS-ADDITIONAL-SOURCES` | `docs/71-isaf-force-posture-maps-and-additional-historical-sources.md` | `BINDING` | ISAF-RC-/PRT-Karten und zusätzliche historische Quellen |
+| 72 | `OMW-AIR-AFGHANISTAN-AIP-2008` | `docs/72-afghanistan-aip-2008-airspace-aerodromes-and-flight-procedures.md` | `BINDING` | Afghanistan-AIP-Baseline für Luftraum, Flugplätze, Navaids und Verfahren |
+| 73 | `OMW-AIR-KAIA-LOCAL-OPERATING-PROCEDURES-2009` | `docs/73-kaia-local-operating-procedures-2009.md` | `BINDING` | KAIA-Betriebsverfahren, Frequenzen, Prioritäten, UAV-, Ground- und Emergency-Regeln |
 
 ## 3. Reservierte Nummern auf offenen Branches
 
