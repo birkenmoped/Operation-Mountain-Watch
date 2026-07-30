@@ -38,12 +38,13 @@ local function runTest()
 
   local ok, missionOrError = pcall(function()
     -- ALERT5 spawns an uncontrolled aircraft prepared for the supplied operational
-    -- mission type. TROOPTRANSPORT is an actual HH-60G payload/task contract in this
-    -- baseline; LANDATCOORDINATE is not used as an ALERT5 payload selector.
+    -- mission type. The already registered HH-60G payload is bound explicitly,
+    -- matching the accepted Jalalabad AUFTRAG construction pattern.
     local mission = AUFTRAG:NewALERT5(AUFTRAG.Type.TROOPTRANSPORT)
     mission:SetName("TEST_BGRM_HH60G_CONTROLLED_SPAWN")
     mission:SetRequiredAssets(1, 1)
     mission:AssignSquadrons({ cfg.Squadrons.HH60G })
+    mission:AddRequiredPayload(cfg.Payloads.HH60G)
     mission:SetRepeat(0)
     cfg.Airwing:AddMission(mission)
     return mission
@@ -57,7 +58,7 @@ local function runTest()
 
   local mission = missionOrError
   cfg.Tests.HH60GControlledSpawnMission = mission
-  log("MISSION_QUEUED name=TEST_BGRM_HH60G_CONTROLLED_SPAWN requiredAssets=1 squadron=" .. cfg.SquadronNames.HH60G .. " cohortCapability=ALERT5 payloadMissionType=TROOPTRANSPORT")
+  log("MISSION_QUEUED name=TEST_BGRM_HH60G_CONTROLLED_SPAWN requiredAssets=1 squadron=" .. cfg.SquadronNames.HH60G .. " cohortCapability=ALERT5 payloadMissionType=TROOPTRANSPORT requiredPayloadBound=true")
 
   local spawnedExactlyOne = false
 
