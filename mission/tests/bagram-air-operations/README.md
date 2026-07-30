@@ -1,8 +1,8 @@
 # Bagram Air Operations Runtime Baseline
 
-Status: `IMPLEMENTATION_PENDING_DCS_VALIDATION`
+Status: `AIRWING_BASELINE_PASS_PARKING_DIAGNOSTIC_PENDING`
 
-This test family constructs the binding Bagram AIRWING/SQUADRON inventory without spontaneous tasking.
+This test family constructs the binding Bagram AIRWING/SQUADRON inventory without spontaneous tasking and now captures the complete Bagram parking table for the next reservation decision.
 
 ## Binding logical inventory
 
@@ -29,9 +29,11 @@ separate Army MEDEVAC inventory
 
 ```text
 src/01-bagram-bootstrap.lua
+src/02-dump-airbase-parking.lua
 src/05-construct-bagram-squadrons.lua
 src/11-validate-and-start-complete-node.lua
 expected/bagram-airwing-squadron-baseline-acceptance.md
+results/2026-07-30-bagram-airwing-baseline-fail-template-contract.md
 ```
 
 ## Inventory semantics
@@ -56,17 +58,45 @@ No fourteenth fighter airframe may be created.
 
 Clients, Late Activation templates and statics are representations of these logical inventories and are not added to them.
 
-## First acceptance boundary
+## Accepted baseline
 
-The first DCS run proves only:
+The corrected DCS run proved:
 
 - warehouse-anchor discovery;
 - one `AW_US_BAGRAM` instance;
-- six SQUADRON objects;
+- exactly six SQUADRON objects;
 - exact group-count and logical-reserve accounting;
-- template/type validation;
-- Safe Parking activation;
-- no spontaneous tasking;
-- fail-closed startup.
+- all six actual Mission Editor template names;
+- AIRWING start with 75 logical airframes;
+- no spontaneous tasking.
+
+Accepted completion markers:
+
+```text
+PASS: AW_US_BAGRAM started with exactly 6 squadrons and 75 logical airframes.
+ACCOUNTING: MOOSE-managed=73 fighterLogicalReserve=2 total=75.
+```
+
+## Parking diagnostic increment
+
+`src/02-dump-airbase-parking.lua` is read-only. It records for every Bagram parking node:
+
+```text
+TerminalID
+TerminalID0
+TerminalType
+Free
+TOAC
+OccupiedBy
+x/y/z
+```
+
+It also records totals by terminal type and the overall free/occupied-or-reserved count. The output is the evidence base for the later client/static blacklist and type-specific parking pools. This diagnostic does not yet change the AIRBASE blacklist or AIRWING parking policy.
+
+Required log prefix:
+
+```text
+[OMW][AirOps.BGRAM.ParkingDump]
+```
 
 AUFTRAG execution, OPSTRANSPORT, CSAR execution, loss persistence and repair timing remain later isolated increments.
