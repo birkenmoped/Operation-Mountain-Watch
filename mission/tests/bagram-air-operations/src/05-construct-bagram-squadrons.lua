@@ -107,6 +107,7 @@ local function construct()
       grouping = 1,
       name = cfg.SquadronNames.HH60G,
       missions = {
+        AUFTRAG.Type.ALERT5,
         AUFTRAG.Type.TROOPTRANSPORT,
         AUFTRAG.Type.LANDATCOORDINATE,
         AUFTRAG.Type.GROUNDESCORT
@@ -176,7 +177,7 @@ local function construct()
   cfg.Status = "SQUADRONS_READY"
 
   log("SQUADRONS ready: F15E=6x2+1reserve F16C=6x2+1reserve C130=20x1 HH60G=6x1 UH60=10x1 CH47=13x1.")
-  log("HH60G NOTE: baseline registers only verified generic mission capabilities; dedicated CSAR execution remains a later isolated MOOSE-first test.")
+  log("HH60G NOTE: ALERT5 is registered only for the isolated controlled-spawn test; dedicated CSAR execution remains a later MOOSE-first test.")
 end
 
 if SCHEDULER then
