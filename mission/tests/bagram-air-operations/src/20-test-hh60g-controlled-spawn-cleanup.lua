@@ -25,8 +25,8 @@ local function runTest()
     log("ERROR: required AUFTRAG/AIRWING/HH60G objects unavailable.")
     return
   end
-  if not AUFTRAG.Type or not AUFTRAG.Type.ALERT5 or not AUFTRAG.Type.LANDATCOORDINATE then
-    log("ERROR: required AUFTRAG mission types ALERT5/LANDATCOORDINATE unavailable.")
+  if not AUFTRAG.Type or not AUFTRAG.Type.ALERT5 or not AUFTRAG.Type.TROOPTRANSPORT then
+    log("ERROR: required AUFTRAG mission types ALERT5/TROOPTRANSPORT unavailable.")
     return
   end
   if not cfg.Payloads or not cfg.Payloads.HH60G then
@@ -37,10 +37,10 @@ local function runTest()
   cfg.Tests.HH60GControlledSpawnStarted = true
 
   local ok, missionOrError = pcall(function()
-    -- ALERT5 is a real AUFTRAG mission type. The HH-60G cohort must therefore
-    -- advertise ALERT5 capability in addition to the mission type used for its
-    -- payload/task selection (LANDATCOORDINATE).
-    local mission = AUFTRAG:NewALERT5(AUFTRAG.Type.LANDATCOORDINATE)
+    -- ALERT5 spawns an uncontrolled aircraft prepared for the supplied operational
+    -- mission type. TROOPTRANSPORT is an actual HH-60G payload/task contract in this
+    -- baseline; LANDATCOORDINATE is not used as an ALERT5 payload selector.
+    local mission = AUFTRAG:NewALERT5(AUFTRAG.Type.TROOPTRANSPORT)
     mission:SetName("TEST_BGRM_HH60G_CONTROLLED_SPAWN")
     mission:SetRequiredAssets(1, 1)
     mission:AssignSquadrons({ cfg.Squadrons.HH60G })
@@ -57,7 +57,7 @@ local function runTest()
 
   local mission = missionOrError
   cfg.Tests.HH60GControlledSpawnMission = mission
-  log("MISSION_QUEUED name=TEST_BGRM_HH60G_CONTROLLED_SPAWN requiredAssets=1 squadron=" .. cfg.SquadronNames.HH60G .. " cohortCapability=ALERT5 payloadMissionType=LANDATCOORDINATE")
+  log("MISSION_QUEUED name=TEST_BGRM_HH60G_CONTROLLED_SPAWN requiredAssets=1 squadron=" .. cfg.SquadronNames.HH60G .. " cohortCapability=ALERT5 payloadMissionType=TROOPTRANSPORT")
 
   local spawnedExactlyOne = false
 
