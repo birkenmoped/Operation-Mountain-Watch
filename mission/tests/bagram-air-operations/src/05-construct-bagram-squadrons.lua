@@ -59,13 +59,15 @@ local function construct()
   end
 
   local ok, result = pcall(function()
+    -- Only mission types already verified in the pinned MOOSE 2.9.18 project
+    -- reference are registered in this no-tasking construction baseline.
     local specs = {
       F15E = {
         template = cfg.Templates.F15E,
         groups = 6,
         grouping = 2,
         name = cfg.SquadronNames.F15E,
-        missions = { AUFTRAG.Type.CAS, AUFTRAG.Type.BOMBING }
+        missions = { AUFTRAG.Type.CAS }
       },
       F16C = {
         template = cfg.Templates.F16C,
@@ -86,21 +88,33 @@ local function construct()
         groups = 6,
         grouping = 1,
         name = cfg.SquadronNames.HH60G,
-        missions = { AUFTRAG.Type.CSAR, AUFTRAG.Type.RESCUEHELO, AUFTRAG.Type.GROUNDESCORT }
+        missions = {
+          AUFTRAG.Type.TROOPTRANSPORT,
+          AUFTRAG.Type.LANDATCOORDINATE,
+          AUFTRAG.Type.GROUNDESCORT
+        }
       },
       UH60 = {
         template = cfg.Templates.UH60Transport,
         groups = 10,
         grouping = 1,
         name = cfg.SquadronNames.UH60,
-        missions = { AUFTRAG.Type.TROOPTRANSPORT, AUFTRAG.Type.CARGOTRANSPORT, AUFTRAG.Type.LANDATCOORDINATE }
+        missions = {
+          AUFTRAG.Type.TROOPTRANSPORT,
+          AUFTRAG.Type.CARGOTRANSPORT,
+          AUFTRAG.Type.LANDATCOORDINATE
+        }
       },
       CH47 = {
         template = cfg.Templates.CH47,
         groups = 13,
         grouping = 1,
         name = cfg.SquadronNames.CH47,
-        missions = { AUFTRAG.Type.TROOPTRANSPORT, AUFTRAG.Type.CARGOTRANSPORT, AUFTRAG.Type.LANDATCOORDINATE }
+        missions = {
+          AUFTRAG.Type.TROOPTRANSPORT,
+          AUFTRAG.Type.CARGOTRANSPORT,
+          AUFTRAG.Type.LANDATCOORDINATE
+        }
       }
     }
 
@@ -118,8 +132,16 @@ local function construct()
       F15E = addPayload(cfg.Airwing, templates.F15E, specs.F15E.missions),
       F16C = addPayload(cfg.Airwing, templates.F16C, specs.F16C.missions),
       C130 = addPayload(cfg.Airwing, templates.C130, specs.C130.missions),
-      HH60GLead = addPayload(cfg.Airwing, templates.HH60GLead, { AUFTRAG.Type.CSAR, AUFTRAG.Type.RESCUEHELO }),
-      HH60GCover = addPayload(cfg.Airwing, templates.HH60GCover, { AUFTRAG.Type.GROUNDESCORT }),
+      HH60GLead = addPayload(
+        cfg.Airwing,
+        templates.HH60GLead,
+        { AUFTRAG.Type.TROOPTRANSPORT, AUFTRAG.Type.LANDATCOORDINATE }
+      ),
+      HH60GCover = addPayload(
+        cfg.Airwing,
+        templates.HH60GCover,
+        { AUFTRAG.Type.GROUNDESCORT }
+      ),
       UH60Transport = addPayload(cfg.Airwing, templates.UH60Transport, specs.UH60.missions),
       UH60Utility = addPayload(cfg.Airwing, templates.UH60Utility, specs.UH60.missions),
       CH47 = addPayload(cfg.Airwing, templates.CH47, specs.CH47.missions)
@@ -138,6 +160,7 @@ local function construct()
   cfg.Status = "SQUADRONS_READY"
 
   log("SQUADRONS ready: F15E=6x2+1reserve F16C=6x2+1reserve C130=20x1 HH60G=6x1 UH60=10x1 CH47=13x1.")
+  log("HH60G NOTE: baseline registers only verified generic mission capabilities; dedicated CSAR execution remains a later isolated MOOSE-first test.")
 end
 
 if SCHEDULER then
