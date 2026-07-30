@@ -14,7 +14,8 @@ $sourceFiles = @(
     '02-dump-airbase-parking.lua',
     '03-validate-bagram-parking-contract.lua',
     '05-construct-bagram-squadrons.lua',
-    '11-validate-and-start-complete-node.lua'
+    '11-validate-and-start-complete-node.lua',
+    '20-test-hh60g-controlled-spawn-cleanup.lua'
 )
 
 if (-not (Test-Path -LiteralPath $sourceDir -PathType Container)) {
@@ -23,7 +24,7 @@ if (-not (Test-Path -LiteralPath $sourceDir -PathType Container)) {
 
 New-Item -ItemType Directory -Path $distDir -Force | Out-Null
 
-$builderVersion = 'BGRAM-AIR-OPS-PARKING-CONTRACT-3'
+$builderVersion = 'BGRAM-HH60G-CONTROLLED-SPAWN-4'
 $commit = 'UNKNOWN'
 try {
     $commit = (& git -C $repoRoot rev-parse HEAD 2>$null).Trim()
