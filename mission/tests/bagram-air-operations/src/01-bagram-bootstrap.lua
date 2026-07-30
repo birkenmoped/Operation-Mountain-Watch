@@ -53,10 +53,12 @@ OMW.AirOps.Bagram = {
     "SEPARATE_ARMY_MEDEVAC_POOL"
   },
 
-  -- Test-only switch for the current isolated increment. This branch is not the
-  -- production mission baseline. Only one HH-60G asset group may be recruited.
+  -- Test-only switches. The isolated HH-60G recruitment/spawn/cleanup test is
+  -- accepted and therefore disabled. The next active increment is the larger
+  -- Bagram-to-Jalalabad fixed-wing movement wave.
   Tests = {
-    HH60GControlledSpawn = true
+    HH60GControlledSpawn = false,
+    FixedWingBagramToJalalabad = true
   },
 
   Squadrons = {},
