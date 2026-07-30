@@ -82,7 +82,7 @@ local function construct()
       groups = 6,
       grouping = 2,
       name = cfg.SquadronNames.F15E,
-      missions = { AUFTRAG.Type.CAS }
+      missions = { AUFTRAG.Type.ALERT5, AUFTRAG.Type.CAS }
     },
     {
       key = "F16C",
@@ -90,7 +90,7 @@ local function construct()
       groups = 6,
       grouping = 2,
       name = cfg.SquadronNames.F16C,
-      missions = { AUFTRAG.Type.CAS }
+      missions = { AUFTRAG.Type.ALERT5, AUFTRAG.Type.CAS }
     },
     {
       key = "C130",
@@ -98,7 +98,7 @@ local function construct()
       groups = 20,
       grouping = 1,
       name = cfg.SquadronNames.C130,
-      missions = { AUFTRAG.Type.TROOPTRANSPORT, AUFTRAG.Type.CARGOTRANSPORT }
+      missions = { AUFTRAG.Type.ALERT5, AUFTRAG.Type.TROOPTRANSPORT, AUFTRAG.Type.CARGOTRANSPORT }
     },
     {
       key = "HH60G",
@@ -177,7 +177,8 @@ local function construct()
   cfg.Status = "SQUADRONS_READY"
 
   log("SQUADRONS ready: F15E=6x2+1reserve F16C=6x2+1reserve C130=20x1 HH60G=6x1 UH60=10x1 CH47=13x1.")
-  log("HH60G NOTE: ALERT5 is registered only for the isolated controlled-spawn test; dedicated CSAR execution remains a later MOOSE-first test.")
+  log("TEST NOTE: ALERT5 recruitment is enabled for F15E, F16C and C130 only to support the active Bagram-to-Jalalabad fixed-wing movement wave.")
+  log("HH60G NOTE: ALERT5 remains registered because the accepted isolated spawn test uses the same architecture; the test switch is now disabled.")
 end
 
 if SCHEDULER then
