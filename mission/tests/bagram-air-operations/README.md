@@ -1,8 +1,8 @@
 # Bagram Air Operations Runtime Baseline
 
-Status: `AIRWING_AND_PARKING_CONTRACT_PASS_CONTROLLED_SPAWN_PENDING`
+Status: `HH60G_CONTROLLED_SPAWN_PASS_FIXED_WING_MOVEMENT_ACTIVE`
 
-This test family constructs the binding Bagram AIRWING/SQUADRON inventory without spontaneous tasking, validates the complete parking contract, and now proceeds to isolated controlled spawn/despawn tests.
+This test family constructs the binding Bagram AIRWING/SQUADRON inventory, validates the complete parking contract, and advances runtime acceptance through controlled MOOSE recruitment and integration waves.
 
 ## Binding logical inventory
 
@@ -25,7 +25,7 @@ EA-6B
 separate Army MEDEVAC inventory
 ```
 
-## Files
+## Runtime source files
 
 ```text
 src/01-bagram-bootstrap.lua
@@ -33,10 +33,21 @@ src/02-dump-airbase-parking.lua
 src/03-validate-bagram-parking-contract.lua
 src/05-construct-bagram-squadrons.lua
 src/11-validate-and-start-complete-node.lua
+src/20-test-hh60g-controlled-spawn-cleanup.lua
+src/21-test-fixed-wing-bagram-jalalabad.lua
+```
+
+## Acceptance and results
+
+```text
 expected/bagram-airwing-squadron-baseline-acceptance.md
 expected/bagram-controlled-spawn-despawn-acceptance.md
+expected/bagram-hh60g-controlled-spawn-cleanup-acceptance.md
+expected/bagram-jalalabad-fixed-wing-movement-acceptance.md
+
 results/2026-07-30-bagram-airwing-baseline-fail-template-contract.md
 results/2026-07-30-bagram-parking-contract-pass.md
+results/2026-07-30-bagram-hh60g-controlled-spawn-cleanup-pass.md
 ```
 
 ## Inventory semantics
@@ -50,16 +61,14 @@ UH-60: 10 groups x 1 aircraft
 CH-47: 13 groups x 1 aircraft
 ```
 
-The fighter templates are two-ship authoring seeds. They therefore use:
+The fighter templates are two-ship authoring seeds:
 
 ```text
 F-15E: 6 groups x 2 aircraft = 12 MOOSE-controlled aircraft + 1 logical reserve
 F-16C: 6 groups x 2 aircraft = 12 MOOSE-controlled aircraft + 1 logical reserve
 ```
 
-No fourteenth fighter airframe may be created.
-
-Clients, Late Activation templates and statics are representations of these logical inventories and are not added to them.
+No fourteenth fighter airframe may be created. Clients, Late Activation templates and statics represent the logical inventories and are not added to them.
 
 ## Accepted AIRWING baseline
 
@@ -73,7 +82,7 @@ The corrected DCS run proved:
 - AIRWING start with 75 logical airframes;
 - no spontaneous tasking.
 
-Accepted completion markers:
+Accepted markers:
 
 ```text
 PASS: AW_US_BAGRAM started with exactly 6 squadrons and 75 logical airframes.
@@ -82,13 +91,11 @@ ACCOUNTING: MOOSE-managed=73 fighterLogicalReserve=2 total=75.
 
 ## Accepted parking contract
 
-The validated Bagram parking table contains:
-
 ```text
 187 parking nodes
 179 initially free
 8 client-reserved
-30 effective blacklist entries after static-aircraft overlap detection
+30 effective blacklist entries
 ```
 
 The eight binding client reservations are:
@@ -104,34 +111,89 @@ The eight binding client reservations are:
  85 CLIENT_US_BGRM_CH47F_02
 ```
 
-The accepted effective blacklist is:
+Accepted effective blacklist:
 
 ```text
 4,11,12,16,21,25,26,27,35,42,44,64,71,72,81,82,85,88,106,111,119,120,121,125,126,128,141,142,149,185
 ```
 
-Accepted parking markers:
+## Accepted HH-60G increment
+
+The isolated MOOSE-native HH-60G test passed:
 
 ```text
-[OMW][AirOps.BGRAM.ParkingContract] RESULT: PASS clients=8 blacklistCount=30 ... AIRWING_START_BLOCKED=false
-[OMW][AirOps.BGRAM.Finalize] PARKING: contract validated blacklistCount=30 ...
+requiredPayloadBound=true
+one OPSGROUP
+one aircraft
+alive spawn
+mission executing
+cancel successful
+opsGroups=0
+aliveGroups=0
+TEST_PASS spawnedExactlyOne=true cleanupComplete=true
 ```
 
-## Next isolated increment
+The test switch is now disabled:
 
-The next boundary is not operational tasking. Each active aircraft class is tested independently for one controlled MOOSE recruitment, safe spawn on a non-blacklisted position, and cleanup/inventory reconciliation.
+```lua
+HH60GControlledSpawn = false
+```
 
-Test order:
+The source harness remains in the bundle for reproducibility and logs `SKIP` while disabled.
+
+## Active integration increment
+
+The active test is:
 
 ```text
-HH-60G
-UH-60 Utility
-CH-47
-C-130
-F-15E
-F-16C
+Bagram -> Jalalabad Fixed-Wing Movement
 ```
 
-The detailed acceptance contract is `expected/bagram-controlled-spawn-despawn-acceptance.md`.
+First wave:
 
-AUFTRAG execution, OPSTRANSPORT, CSAR execution, loss persistence and repair timing remain later isolated increments.
+```text
+2 x F-15E two-ship groups
+2 x F-16C two-ship groups
+4 x C-130 single-ship groups
+= 8 groups / 12 aircraft
+```
+
+The test validates:
+
+- exact recruitment from three Bagram squadrons;
+- Bagram stock withdrawal;
+- parallel parking and startup exposure;
+- 30-second dispatch spacing;
+- taxi and takeoff;
+- flight to Jalalabad using native MOOSE `FLIGHTGROUP` methods;
+- landing and transient parking at Jalalabad;
+- return of all assets to the original Bagram legion;
+- full stock restoration;
+- coexistence with the existing Jalalabad AIRWING and `OMW_BLUE_COMMANDER`;
+- no second COMMANDER creation.
+
+Active switch:
+
+```lua
+FixedWingBagramToJalalabad = true
+```
+
+BuilderVersion:
+
+```text
+BGRAM-JBAD-FIXED-WING-WAVE-1
+```
+
+The detailed contract is `expected/bagram-jalalabad-fixed-wing-movement-acceptance.md`.
+
+## Later increments
+
+Not yet accepted:
+
+- combat CAS execution;
+- OPSTRANSPORT;
+- CSAR execution;
+- UH-60 and CH-47 operational movement;
+- loss persistence;
+- maintenance, repair and replacement timing;
+- permanent cohort relocation between airfields.
