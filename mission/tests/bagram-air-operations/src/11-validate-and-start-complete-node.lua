@@ -18,6 +18,10 @@ local function validateAndStart()
     log("SKIP: Bagram AIRWING already started.")
     return
   end
+  if cfg.ParkingContractOK ~= true then
+    log("WAITING: parking contract not validated; reason=" .. tostring(cfg.ParkingContractFailure or "pending"))
+    return
+  end
 
   local required = { "F15E", "F16C", "C130", "HH60G", "UH60", "CH47" }
   for _, key in ipairs(required) do
@@ -70,9 +74,10 @@ local function validateAndStart()
   end
 
   cfg.Started = true
-  cfg.Status = "STARTED_NO_TASKING_BASELINE"
+  cfg.Status = "STARTED_PARKING_CONTRACT_BASELINE"
   log("PASS: AW_US_BAGRAM started with exactly 6 squadrons and 75 logical airframes.")
   log("ACCOUNTING: MOOSE-managed=73 fighterLogicalReserve=2 total=75.")
+  log("PARKING: contract validated blacklistCount=" .. tostring(#(cfg.ParkingBlacklist or {})) .. " terminalIDs=" .. table.concat(cfg.ParkingBlacklist or {}, ","))
   log("SCOPE: no spontaneous AUFTRAG, OPSTRANSPORT or CSAR execution is created by this baseline.")
 end
 
