@@ -25,14 +25,16 @@ OMW.AirOps.Bagram = {
     F16C = 1
   },
 
+  -- Exact Mission Editor template contract in OMW_Template_v4_Bagram.miz.
+  -- The current baseline has one HH-60G seed and one UH-60 utility seed.
+  -- Separate HH-60G lead/cover and UH-60 transport seeds are not required for
+  -- the no-tasking AIRWING/SQUADRON construction test.
   Templates = {
     F15E = "TPL_AIR_US_BGRM_F15E_CAS_2SHIP",
     F16C = "TPL_AIR_US_BGRM_F16_CAS_2SHIP",
     C130 = "TPL_AIR_US_BGRM_C130_TRANSPORT_1SHIP",
-    HH60GLead = "TPL_AIR_US_BGRM_HH60G_CSAR_LEAD_1SHIP",
-    HH60GCover = "TPL_AIR_US_BGRM_HH60G_CSAR_COVER_1SHIP",
-    UH60Transport = "TPL_AIR_US_BGRM_UH60_TRANSPORT_1SHIP",
-    UH60Utility = "TPL_AIR_US_BGRM_UH60_UTILITY_1SHIP",
+    HH60G = "TPL_AIR_US_BGRM_HH60G_CSAR_1SHIP",
+    UH60 = "TPL_AIR_US_BGRM_UH60_UTILITY_1SHIP",
     CH47 = "TPL_AIR_US_BGRM_CH47_TRANSPORT_1SHIP"
   },
 
