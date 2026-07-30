@@ -12,6 +12,7 @@ $outputFile = Join-Path $distDir 'OMW_AirOps_Bagram.lua'
 $sourceFiles = @(
     '01-bagram-bootstrap.lua',
     '02-dump-airbase-parking.lua',
+    '03-validate-bagram-parking-contract.lua',
     '05-construct-bagram-squadrons.lua',
     '11-validate-and-start-complete-node.lua'
 )
@@ -22,7 +23,7 @@ if (-not (Test-Path -LiteralPath $sourceDir -PathType Container)) {
 
 New-Item -ItemType Directory -Path $distDir -Force | Out-Null
 
-$builderVersion = 'BGRAM-AIR-OPS-PARKING-DIAGNOSTIC-2'
+$builderVersion = 'BGRAM-AIR-OPS-PARKING-CONTRACT-3'
 $commit = 'UNKNOWN'
 try {
     $commit = (& git -C $repoRoot rev-parse HEAD 2>$null).Trim()
