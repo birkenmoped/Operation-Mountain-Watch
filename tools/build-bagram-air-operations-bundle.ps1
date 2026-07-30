@@ -24,7 +24,7 @@ if (-not (Test-Path -LiteralPath $sourceDir -PathType Container)) {
 
 New-Item -ItemType Directory -Path $distDir -Force | Out-Null
 
-$builderVersion = 'BGRAM-HH60G-ALERT5-CAPABILITY-FIX-5'
+$builderVersion = 'BGRAM-HH60G-ALERT5-PAYLOAD-FIX-6'
 $commit = 'UNKNOWN'
 try {
     $commit = (& git -C $repoRoot rev-parse HEAD 2>$null).Trim()
