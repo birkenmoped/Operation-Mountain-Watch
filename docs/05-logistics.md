@@ -8,13 +8,14 @@ authoritative_for:
   - supported strategic transport modes
   - one-time cargo credit and loss semantics
   - separation of theater-level supply ingress from inner-Afghan distribution
+  - separation of the Pakistan Southern Distribution Network from Northern Distribution Network corridors
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
   - prototype-only logistics wording
 superseded_by:
 source_branch: main
-source_commit: 1bfc09df8143ca3641ba47e79fa453df5fdd7a09
+source_commit: c3762527fa92f38eee3860642128d6b2bb7f561f
 validated_in_dcs: false
 ---
 
@@ -36,8 +37,9 @@ Maßgebliche Grundlagen:
 - [`MOOSE-Logistik und Transport`](moose/LOGISTICS-AND-TRANSPORT.md)
 - [`OMW-HIST-AFGHANISTAN-FORCE-BASING-AVIATION`](50-afghanistan-force-basing-aviation-2010-2011.md)
 - [`OMW-EVIDENCE-NDN-CSIS-2010`](evidence/source-records/northern-distribution-network-csis-2010-source-record.md)
+- [`OMW-EVIDENCE-SDN-PAKISTAN-GLOC`](evidence/source-records/southern-distribution-network-pakistan-gloc-source-record.md)
 
-Dokument 50 ist die quellenqualifizierte historische Referenz für Kräfte-, Basierungs- und Aviation-Sustainment-Fragen. Die NDN-Quellenakte dokumentiert strategische Zuführungskorridore und deren Grenzen. Dieses Dokument bleibt für das technische und strategische Logistikmodell autoritativ.
+Dokument 50 ist die quellenqualifizierte historische Referenz für Kräfte-, Basierungs- und Aviation-Sustainment-Fragen. Die NDN- und SDN-Quellenakten dokumentieren strategische Zuführungskorridore und deren Grenzen. Dieses Dokument bleibt für das technische und strategische Logistikmodell autoritativ.
 
 ## 2. Transportarten
 
@@ -251,8 +253,8 @@ Die zeitgenössische CSIS-Analyse vom Januar 2010 beschreibt das `Northern Distr
 Quellenbelegte Hauptkorridore:
 
 ```text
-NDN NORTH
-Riga
+NDN NORTHERN RAIL ROUTE
+Riga oder Tallinn
 → Russland
 → Kazakhstan
 → Uzbekistan
@@ -261,7 +263,7 @@ Riga
 ```
 
 ```text
-NDN SOUTH / CAUCASUS
+NDN CAUCASUS / POTI ROUTE
 Türkei oder Europäische Union
 → Poti
 → Baku
@@ -308,6 +310,85 @@ FOB_COP_DESTINATION
 Mögliche GLOC-Zustände wie `OPEN`, `DEGRADED`, `DISRUPTED` und `CLOSED` sind OMW-Designvorschläge, keine Terminologie der historischen Quelle. Umsetzung und Werte benötigen eine eigene Architekturentscheidung, MOOSE-First-Prüfung und Acceptance.
 
 Quelle: [`OMW-EVIDENCE-NDN-CSIS-2010`](evidence/source-records/northern-distribution-network-csis-2010-source-record.md).
+
+### 6.8 Southern Distribution Network über Pakistan
+
+Das `Southern Distribution Network` bezeichnet die strategischen Ground Lines of Communication durch Pakistan. Es darf nicht mit dem innerhalb der NDN-Korridorfamilie gelegenen Kaukasus-/Poti-Korridor verwechselt werden.
+
+Quellenbelegte Grundstruktur:
+
+```text
+SDN TORKHAM CORRIDOR
+Karachi
+→ Pakistan northbound surface route
+→ Peshawar / Khyber corridor
+→ Torkham
+→ Jalalabad
+→ Bagram logistics hub
+```
+
+```text
+SDN CHAMAN CORRIDOR
+Karachi
+→ Quetta
+→ Chaman / Weesh–Spin Boldak
+→ Kandahar logistics hub
+```
+
+Die GAO-Prüfung vom Juni 2010 nennt für den üblichen strategischen Fluss:
+
+```text
+Torkham crossing → Bagram logistics hub
+Chaman crossing  → Kandahar logistics hub
+```
+
+Genannte ungefähre Distanzen:
+
+```text
+Karachi → Bagram:   1.210 miles
+Karachi → Kandahar:   690 miles
+```
+
+Über Pakistan wurden sowohl Unit Equipment als auch Sustainment Materiel transportiert, darunter Fahrzeuge, Lebensmittel, Wasser, Baumaterial, Ersatzteile und Kraftstoff. Hochpriorisierte und sensitive Güter wurden häufiger per Lufttransport bewegt.
+
+Für Mai bis November 2009 nennt GAO mehr als 21.500 TEU über die Pakistan-Surface-Routes gegenüber mehr als 4.700 TEU über das damals noch weniger ausgereifte NDN. Diese Werte belegen die damalige Größenordnung, sind aber keine OMW-Lieferfrequenz oder Bestandsvorgabe.
+
+Historische Verwundbarkeiten:
+
+- vollständige Abhängigkeit von privaten Transportauftragnehmern innerhalb Pakistans;
+- keine US-Militärtransporteinheiten und keine US-militärische Ladungssicherung auf diesen Strecken;
+- Angriffe auf Lkw, Terminals und Grenzstaus;
+- Diebstahl beziehungsweise Pilferage;
+- begrenzte RFID- und Positionssichtbarkeit;
+- politisch bedingte Grenzschließungen;
+- Rückstaus in Karachi und an den Grenzübergängen;
+- für Chaman dokumentierte Begrenzung auf insgesamt 100 Lkw pro Tag im GAO-Prüfzeitraum.
+
+Nach dem Eingang an einem afghanischen Logistikhub wurde Fracht weiter zu FOBs und COPs verteilt. GAO beschreibt dafür überwiegend Host-Nation-Contractor-Trucks, ergänzend US-Militär-Lkw und Lufttransport für hochpriorisierte oder sensitive Güter.
+
+Für OMW gilt verbindlich:
+
+1. `Southern Distribution Network / SDN` bezeichnet ausschließlich die Pakistan-GLOC;
+2. der NDN-Kaukasuskorridor heißt bevorzugt `NDN CAUCASUS / POTI ROUTE`, nicht pauschal `Southern Distribution Network`;
+3. Torkham und Chaman sind strategische Entry Nodes, keine automatischen lokalen Warehouse-Gutschriften;
+4. Bagram und Kandahar sind strategische Hubs, von denen die innerafghanische Verteilung getrennt modelliert wird;
+5. die typische Zuordnung Torkham–Bagram entscheidet nicht die konkrete Linienführung von `MSR EAST-E3` zwischen Kabul und Bagram;
+6. die bereitgestellte SDN-Karte ist schematisch und darf nicht als DCS-`PATHLINE` digitalisiert werden.
+
+Zulässige strategische Korridorobjekte:
+
+```text
+GLOC_SDN_TORKHAM
+GLOC_SDN_CHAMAN
+ENTRY_TORKHAM
+ENTRY_WEESH_CHAMAN
+HUB_BAGRAM
+HUB_KANDAHAR
+```
+
+Mögliche Statusfelder wie `borderStatus`, `portBacklog`, `truckAvailability`, `contractorSecurity`, `cargoVisibility`, `transitDelay`, `attackDisruption` und `pilferageRisk` sind OMW-Designvorschläge. Konkrete Werte benötigen eine eigene Datenentscheidung und technische Acceptance.
+
+Quelle: [`OMW-EVIDENCE-SDN-PAKISTAN-GLOC`](evidence/source-records/southern-distribution-network-pakistan-gloc-source-record.md).
 
 ## 7. Logistische Standortfunktionen
 
