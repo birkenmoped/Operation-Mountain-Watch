@@ -1,4 +1,4 @@
-# Bagram handoff addendum - revised mission and disabled transfer test
+# Bagram handoff addendum - current mission and disabled transfer test
 
 This addendum supplements:
 
@@ -6,24 +6,27 @@ This addendum supplements:
 docs/handoffs/2026-07-31-bagram-current-state-and-kandahar-chat-handoff.md
 ```
 
-## Revised provisional Bagram Mission Editor file
+## Current Bagram Mission Editor file
 
-The latest provisional Bagram Mission Editor file supplied by the project owner in the Bagram chat is:
+The latest Bagram Mission Editor file supplied by the project owner in the Bagram chat was received under the upload name:
 
 ```text
 OMW_Template_v4_Bagram(5).miz
 ```
 
+The project owner clarified that this is the newly renamed mission version and that it already contains the latest Bagram Mission Editor state.
+
 Status:
 
 ```text
-provisional
+current Bagram Mission Editor working version
+contains the latest Bagram asset/template revision
 supplied in chat
 not committed to the repository
-not yet a complete DCS runtime acceptance baseline after the model substitutions
+runtime acceptance after all model substitutions still pending
 ```
 
-The file is the latest known visual and template-editing state for Bagram. It is not a Kandahar mission and must not be treated as the Kandahar Mission Editor source of truth.
+This file is the current Bagram Mission Editor baseline for later Bagram work. It is not a Kandahar mission and must not be treated as the Kandahar Mission Editor source of truth.
 
 Observed intended substitutions include:
 
@@ -62,7 +65,7 @@ Consequences:
 - the normal rebuilt Bagram bundle no longer starts the 8-group / 12-aircraft test wave automatically;
 - no new Kandahar work should assume that a Bagram mass-transfer is still running by default.
 
-Before using the Bagram mission again, rebuild and re-embed:
+Before using the current Bagram mission again, rebuild and re-embed:
 
 ```powershell
 cd P:\DCS-DEV\Operation-Mountain-Watch
@@ -77,7 +80,7 @@ Then reselect:
 P:\DCS-DEV\Operation-Mountain-Watch\mission\tests\bagram-air-operations\dist\OMW_AirOps_Bagram.lua
 ```
 
-in the existing Mission Editor `DO SCRIPT FILE` action and save the `.miz`.
+in the existing Mission Editor `DO SCRIPT FILE` action and save the current Bagram `.miz`.
 
 ## Instruction for the Kandahar chat
 
