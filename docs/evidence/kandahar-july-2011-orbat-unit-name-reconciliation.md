@@ -6,12 +6,14 @@ authoritative_for:
   - source-reported July 2011 unit names at Kandahar Airfield
   - separation of historical Kandahar Airfield basing from the DCS Kandahar Heliport mapping
   - Kandahar AIRWING and SQUADRON naming corrections
+  - active Kandahar 74th EFS alignment
   - exclusion of Tarin Kowt and FOB Wolverine aviation units from Kandahar inventories
 scenario_period: 2011-07-01/2011-07-31
 source_branch: agent/kandahar-airwing-baseline-contract
 source_documents:
   - docs/64-afghanistan-order-of-battle-july-2011.md
   - docs/19-active-air-orbat-decisions.md
+  - docs/33-kandahar-air-operations-manifest.md
   - docs/36-kandahar-mustang-ramp-army-aviation-baseline.md
 validated_in_dcs: false
 ---
@@ -38,7 +40,7 @@ ALLE UNTEN AUFGEFUEHRTEN EINHEITEN = alle durch diese Juli-2011-Quelle am Stando
 NICHT = vollständige Personal- und Unterstützungsbelegung des gesamten Flugplatzes
 ```
 
-Die historische Juli-2011-Liste erzeugt außerdem nicht automatisch aktive MOOSE-SQUADRONs oder Bestände. Dafür bleibt `OMW-AIR-ACTIVE-ORBAT` maßgeblich.
+Die historische Juli-2011-Liste erzeugt nicht automatisch aktive MOOSE-SQUADRONs oder Bestände. Die aktive A-10C-Auswahl wurde jedoch durch ausdrückliche Projektentscheidung an den belegten Juli-2011-Verband angeglichen.
 
 ## 2. Durch die Juli-2011-ORBAT am Kandahar Airfield gemeldete Aviation-Einheiten
 
@@ -59,7 +61,14 @@ Die historische Juli-2011-Liste erzeugt außerdem nicht automatisch aktive MOOSE
     └── C-130; Transport Support
 ```
 
-Die 74th EFS ist die historisch gemeldete A-10C-Einheit des Juli-2011-Snapshots. Die aktive OMW-Entscheidung verwendet dagegen bewusst die `107th Expeditionary Fighter Squadron` mit 16 A-10C als spielbare Kampagnenauswahl innerhalb des Gesamtzeitraums. Beide Aussagen sind getrennt zu führen; sie dürfen nicht als parallele aktive SQUADRONs registriert werden.
+Die 74th EFS ist die historisch gemeldete A-10C-Einheit des Juli-2011-Snapshots und mit Projektentscheidung vom 31.07.2026 zugleich die aktive OMW-Kandahar-A-10C-SQUADRON:
+
+```text
+SQ_US_KAF_A10C_74_EFS
+16 A-10C
+```
+
+Die früheren aktiven Arbeitsstände `75th EFS` und `107th EFS` sind superseded. Sie bleiben ausschließlich historischer Rotationskontext und dürfen nicht als parallele aktive SQUADRONs registriert werden.
 
 Die 46th ERQS stellt Guardian-Angel-Personal und keinen eigenen HH-60G-Airframepool. Sie wird daher als Unterstützungsverband dokumentiert, nicht als separate MOOSE-Flugzeug-SQUADRON.
 
@@ -190,9 +199,9 @@ Die Warehouse-Namen bleiben unverändert, weil sie technische Mission-Editor-Ank
 ### 7.1 Main Airfield / 451st AEW
 
 ```text
-SQ_US_KAF_A10C_107_EFS
-Historical/runtime label: 107th Expeditionary Fighter Squadron
-Status: aktive OMW-Auswahl; 16 A-10C
+SQ_US_KAF_A10C_74_EFS
+Historical/runtime label: 74th Expeditionary Fighter Squadron
+Status: aktive OMW-Auswahl; 16 A-10C; Juli-2011-belegt
 
 SQ_US_KAF_HH60G_26_ERQS
 Historical label: 26th Expeditionary Rescue Squadron
@@ -205,7 +214,12 @@ SQ_US_KAF_C130_772_EAS
 Historical label: 772nd Expeditionary Airlift Squadron
 ```
 
-Der Juli-2011-Snapshot mit der 74th EFS bleibt dokumentiert, erzeugt aber neben der aktiven 107th EFS keine zweite A-10C-SQUADRON.
+Nicht mehr zulässig:
+
+```text
+SQ_US_KAF_A10C_107_EFS
+SQ_75_EFS_A10C
+```
 
 ### 7.2 Kandahar Heliport / TF Thunder
 
@@ -246,7 +260,14 @@ AW_US_KAF_451_AEW
 AW_US_KAF_159_CAB_TF_THUNDER
 ```
 
-Vor SQUADRON-Registrierung sind die in Abschnitt 7 festgelegten Kennungen zu verwenden. Insbesondere ist `SQ_US_KAF_AH64_3_101_AVN` verboten, weil 3-101 im Juli 2011 am FOB Tarin Kowt gemeldet ist.
+Vor SQUADRON-Registrierung sind die in Abschnitt 7 festgelegten Kennungen zu verwenden. Insbesondere gilt:
+
+```text
+SQ_US_KAF_A10C_74_EFS ist die einzige aktive Kandahar-A-10C-SQUADRON
+SQ_US_KAF_A10C_107_EFS ist verboten
+SQ_75_EFS_A10C ist verboten
+SQ_US_KAF_AH64_3_101_AVN ist verboten
+```
 
 Weiterhin offen bleiben:
 
@@ -259,4 +280,4 @@ Safe-Parking-Allow-/Blocklists
 controlled-spawn acceptance
 ```
 
-Die Korrektur der Einheitsnamen autorisiert noch keinen AIRWING-Start und keine Bestandsregistrierung.
+Die Korrektur der Einheitsnamen autorisiert noch keinen AIRWING-Start und keine Bestandsregistrierung außerhalb der ausdrücklich beschlossenen 16 A-10C.
