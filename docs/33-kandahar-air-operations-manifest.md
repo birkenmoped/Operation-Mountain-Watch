@@ -14,34 +14,41 @@ supersedes:
   - docs/30-kandahar-air-operations-manifest.md
   - Kandahar 75th EFS active baseline
   - single-AIRWING assumption across Kandahar and Kandahar Heliport
+  - Kandahar Heliport warehouse missing/unapproved state
 source_branch: agent/kandahar-airwing-baseline-contract
-source_mission: OMW_Template_v4_Kandahar(1).miz
-source_mission_sha256: 07cc90b18bf3a09fee8c650cb9f1668c9ec6c2412a37be5f005642d216deeb8a
+source_mission: OMW_Template_v4_Kandahar(4).miz
+source_mission_sha256: 0732f929d4e35641c84bfb34bd75912692c3a1b7b7a0106847ce56e21aa5345c
 validated_in_dcs: false
+object_contract_validated_in_dcs: true
+heliport_warehouse_validated_in_dcs: true
 ---
 
 # 33 – Kandahar Air Operations Manifest
 
 ## 1. Dokumentstatus
 
-Die aktuelle Kandahar-Mission-Editor-Baseline ist strukturell auditiert. Sie ist noch keine validierte AIRWING-/SQUADRON-Laufzeitimplementierung.
+Die aktuelle Kandahar-Mission-Editor-Baseline ist strukturell und hinsichtlich beider nativer Airbases, Parkingtabellen sowie beider Warehouse-Anker in DCS/MOOSE auditiert. Sie ist noch keine validierte produktive AIRWING-/SQUADRON-Laufzeitimplementierung.
 
 Verbindliche Source-of-Truth:
 
 ```text
-OMW_Template_v4_Kandahar(1).miz
-2.180.824 Bytes
-SHA-256: 07cc90b18bf3a09fee8c650cb9f1668c9ec6c2412a37be5f005642d216deeb8a
+OMW_Template_v4_Kandahar(4).miz
+2.183.450 Bytes
+SHA-256: 0732f929d4e35641c84bfb34bd75912692c3a1b7b7a0106847ce56e21aa5345c
 ```
 
-Vollständiger Rohbefund:
+Evidenz:
 
-- [`OMW-EVIDENCE-KANDAHAR-ME-AUDIT-V4-1`](evidence/kandahar-mission-editor-audit-omw-template-v4-kandahar-1.md).
+- [`OMW-EVIDENCE-KANDAHAR-ME-AUDIT-V4-1`](evidence/kandahar-mission-editor-audit-omw-template-v4-kandahar-1.md): vollständiger Ausgangsbestand;
+- [`OMW-EVIDENCE-KANDAHAR-ME-AUDIT-V4-3`](evidence/kandahar-mission-editor-audit-omw-template-v4-kandahar-3.md): strukturelle Anlage des Heliport-Warehouses;
+- [`Kandahar Dual-Airbase No-Spawn Diagnostic – PASS`](../mission/tests/kandahar-air-operations/results/2026-07-31-kandahar-dual-airbase-no-spawn-pass.md);
+- [`Kandahar Heliport Warehouse No-Spawn Diagnostic – PASS`](../mission/tests/kandahar-air-operations/results/2026-07-31-kandahar-heliport-warehouse-pass.md).
 
 Spezialdokumente:
 
 - `OMW-AIR-KANDAHAR-ISR-POLICY`: MQ-1/MQ-9;
 - `OMW-AIR-KANDAHAR-MUSTANG-RAMP`: Army Aviation / 159th CAB;
+- `OMW-AIR-KANDAHAR-HELIPORT-WAREHOUSE`: verbindlicher Heliport-Warehouse-Vertrag;
 - dieses Dokument: gemeinsame Kandahar-USAF-Struktur, Airbase-/Warehouse-Vertrag und basisweite Integrationsregeln.
 
 ## 2. Evidenz- und ORBAT-Regel
@@ -75,32 +82,49 @@ Bestand und Verfügbarkeit: gemäß OMW-AIR-KANDAHAR-ISR-POLICY
 
 81st, 74th und 75th EFS bleiben Rotationskontext und werden nicht als parallele aktive Kandahar-SQUADRONs angelegt.
 
-## 3. Aktueller Missionseditorstand
+## 3. Aktueller Missionseditor- und Runtime-Stand
 
 ### 3.1 Native Airbases
 
 ```text
 AIRBASE.Afghanistan.Kandahar
 DCS airdromeId: 7
+Kategorie: Airdrome
 Verwendung: Main Airfield / Fixed Wing
+Runtime-Parking: 316 Nodes
 
 AIRBASE.Afghanistan.Kandahar_Heliport
 DCS airdromeId: 15
+Kategorie: Helipad
 Verwendung: Mustang Ramp / Rotary Wing
+Runtime-Parking: 86 Nodes
 ```
 
-Mission-Editor-Parkplatznummern sind keine autoritativen MOOSE-TerminalIDs. Beide Airbases benötigen getrennte Runtime-Diagnosen.
+Mission-Editor-Parkplatznummern sind keine autoritativen MOOSE-TerminalIDs. Die verbindlichen MOOSE-TerminalIDs stammen aus dem akzeptierten Runtime-Dump.
 
 ### 3.2 USAF-Clientgruppen
 
 ```text
-CLIENT_US_KAF_A10C_01 | A-10C_2   | Z20 | airdromeId 7
-CLIENT_US_KAF_A10C_02 | A-10C_2   | Z19 | airdromeId 7
-CLIENT_US_KAF_C130_01 | C-130J-30 | S01 | airdromeId 7
-CLIENT_US_KAF_C130_02 | C-130J-30 | S02 | airdromeId 7
+CLIENT_US_KAF_A10C_01 | A-10C_2   | Z20 | airdromeId 7 | TerminalID 282
+CLIENT_US_KAF_A10C_02 | A-10C_2   | Z19 | airdromeId 7 | TerminalID 287
+CLIENT_US_KAF_C130_01 | C-130J-30 | S01 | airdromeId 7 | TerminalID 294
+CLIENT_US_KAF_C130_02 | C-130J-30 | S02 | airdromeId 7 | TerminalID 92
 ```
 
-### 3.3 USAF-/ISR-KI-Templates
+### 3.3 Mustang-Ramp-Clientgruppen
+
+```text
+CLIENT_US_KAF_AH64D_01 | AH-64D_BLK_II | MST38-H | airdromeId 15 | TerminalID 30
+CLIENT_US_KAF_AH64D_02 | AH-64D_BLK_II | MST30-H | airdromeId 15 | TerminalID 19
+CLIENT_US_KAF_OH58D_01 | OH58D          | MST01-H | airdromeId 15 | TerminalID 80
+CLIENT_US_KAF_OH58D_02 | OH58D          | MST11-H | airdromeId 15 | TerminalID 23
+CLIENT_US_KAF_CH47F_01 | CH-47Fbl1      | MST75-H | airdromeId 15 | TerminalID 4
+CLIENT_US_KAF_CH47F_02 | CH-47Fbl1      | MST82-H | airdromeId 15 | TerminalID 47
+```
+
+Alle zehn Clientgruppen lagen beim akzeptierten Diagnoselauf mit `distance=0.00 m` auf ihrem Runtime-Terminal.
+
+### 3.4 USAF-/ISR-KI-Templates
 
 ```text
 TPL_AIR_US_KAF_A10C_CAS_2SHIP       | 2 x A-10C
@@ -114,7 +138,7 @@ Alle sind Late Activation, nicht `Uncontrolled` und Authoring-Seeds ohne zusätz
 
 Das ältere HH-60G-Lead-/Cover-Templatepaar ist nicht mehr vorhanden. Die aktuelle Mission verwendet einen typbasierten CSAR-Seed.
 
-### 3.4 USAF-/ISR-Statics
+### 3.5 USAF-/ISR-Statics
 
 ```text
 6 x A-10C_2
@@ -125,7 +149,19 @@ Das ältere HH-60G-Lead-/Cover-Templatepaar ist nicht mehr vorhanden. Die aktuel
 Gesamt: 13
 ```
 
-### 3.5 UN-Statics
+### 3.6 Army-Aviation-Statics
+
+```text
+8 x AH-64D_BLK_II
+8 x OH58D
+10 x CH-47Fbl1
+8 x UH-60A
+Gesamt: 34
+```
+
+Zusammen mit USAF/ISR ergeben sich 47 US-Flugzeug-Statics.
+
+### 3.7 UN-Statics
 
 ```text
 2 x Mi-26
@@ -134,16 +170,29 @@ Gesamt: 13
 
 Diese sechs Objekte sind nicht Teil der US-ORBAT oder eines US-AIRWING-Bestands.
 
-### 3.6 Warehouse-Anker
+### 3.8 Warehouse-Anker
 
 ```text
+Kandahar Main Airfield
 WH_AIR_US_KANDAHAR
-DCS-Objekttyp: container_40ft
+DCS-Typ: container_40ft
+Koalition: Blue / 2
+Runtime: validiert
+
+Kandahar Heliport / Mustang Ramp
+WH_AIR_US_KANDAHAR_HELI
+DCS-Typ: container_20ft
+Koalition: Blue / 2
+Runtime: validiert
+Nächste Heliport-TerminalID: 60
+Abstand: 149.63 m
+Nächste Main-TerminalID: 90
+Abstand: 722.85 m
 ```
 
-Dieser Anker ist für den Main-Airfield-/USAF-Vertrag reserviert. Ein zweiter Warehouse-Anker für `Kandahar_Heliport` ist noch nicht vorhanden.
+Der Heliport-Warehouse-Name und der Mission-Editor-Anker sind damit verbindlich und runtime-validiert.
 
-### 3.7 Vorhandene Funktionszone
+### 3.9 Vorhandene Funktionszone
 
 ```text
 ZONE_AIR_US_KAF_CSAR_UNLOAD
@@ -165,8 +214,6 @@ Kandahar Main Airfield und Kandahar Heliport betreiben.
 
 ### 4.1 Main-Airfield-Vertrag
 
-Reserviert bleiben:
-
 ```text
 AW_US_KANDAHAR
 WH_AIR_US_KANDAHAR
@@ -184,31 +231,27 @@ Die technische Zuordnung von `SQ_US_KAF_HH60G_26_ERS`, `SQ_US_KAF_MQ1_361_ERS` u
 
 ### 4.2 Heliport-/Mustang-Ramp-Vertrag
 
-Für:
-
 ```text
 AIRBASE.Afghanistan.Kandahar_Heliport
+WH_AIR_US_KANDAHAR_HELI
+AIRWING-Name: noch festzulegen
 ```
-
-ist ein zweites AIRWING-/WAREHOUSE-Paar erforderlich.
 
 Verbindliche Grenze:
 
 - der zweite AIRWING-Name wird nicht erfunden;
-- der zweite Warehouse-Name wird nicht erfunden;
-- der Warehouse-Anker muss im Mission Editor angelegt und strukturell auditiert werden;
-- erst danach dürfen die Mustang-Ramp-SQUADRONs registriert werden;
-- bis dahin bleibt der gesamte Heliport-Vertrag fail-closed deaktiviert.
-
-Die endgültigen beiden Bezeichner werden durch den Projektinhaber festgelegt.
+- der Warehouse-Name `WH_AIR_US_KANDAHAR_HELI` ist genehmigt und runtime-validiert;
+- der Warehouse-Anker ist korrekt dem Heliport zugeordnet;
+- Mustang-Ramp-SQUADRONs dürfen erst nach AIRWING-Namensfreigabe, Bestandsfestlegung und Parking-Preflight registriert werden;
+- bis dahin bleibt der Heliport-AIRWING-Vertrag fail-closed deaktiviert.
 
 ## 5. AIRWING-Registrierung
 
 Die spätere Implementierung muss:
 
 1. `WH_AIR_US_KANDAHAR` eindeutig erkennen und an `AIRBASE.Afghanistan.Kandahar` binden;
-2. den noch festzulegenden Heliport-Anker eindeutig erkennen und an `AIRBASE.Afghanistan.Kandahar_Heliport` binden;
-3. jedes AIRWING erst nach erfolgreicher Warehouse-, Template- und Parking-Prüfung starten;
+2. `WH_AIR_US_KANDAHAR_HELI` eindeutig erkennen und an `AIRBASE.Afghanistan.Kandahar_Heliport` binden;
+3. jedes AIRWING erst nach erfolgreicher Warehouse-, Template-, Inventory- und Parking-Prüfung starten;
 4. USAF-, ISR- und Army-Aviation-SQUADRONs ohne Doppelzählung registrieren;
 5. Clientgruppen, Statics und Templates nicht als zusätzliche Airframes zählen;
 6. native DCS-Ersatztypen transparent den historischen Rollen zuordnen;
@@ -290,24 +333,25 @@ ISR-Payloadabweichungen stehen verbindlich in Dokument 35. OH-58D-APKWS benötig
 
 ## 9. Safe Parking und Blacklist
 
-Die nächste Runtime-Diagnose muss getrennt erfassen:
+Die vollständigen Runtime-Parkingtables sind erfasst:
 
 ```text
-AIRBASE.Afghanistan.Kandahar
-AIRBASE.Afghanistan.Kandahar_Heliport
+Kandahar Main: 316 Nodes
+Kandahar Heliport: 86 Nodes
 ```
 
-Verbindliche Schritte:
+Die Client-TerminalIDs sind verbindlich reserviert. Die endgültigen Safe-Parking-Allow-/Blocklists bleiben noch abzuleiten.
 
-1. alle TerminalIDs, Helipad-IDs, Terminaltypen und Koordinaten protokollieren;
-2. Clientpositionen dauerhaft reservieren;
-3. Statics dem nächsten Parking-/Helipad-Node zuordnen;
-4. bewusst belegte Nodes als Blacklist-Kandidaten ausgeben;
-5. Safe Parking je Luftfahrzeugklasse testen;
-6. Größen-, Rotor-, Shelter-, Rollweg- und Revettementkonflikte sperren;
-7. Main-Airfield- und Heliport-Allow-/Blocklists getrennt dokumentieren.
+Verbindliche nächste Schritte:
 
-Die endgültigen Listen werden ausschließlich aus Laufzeitdaten abgeleitet.
+1. Client-TerminalIDs dauerhaft sperren;
+2. Statics und bewusst belegte Nodes in Blocklist-Kandidaten überführen;
+3. Safe Parking je Luftfahrzeugklasse testen;
+4. Größen-, Rotor-, Shelter-, Rollweg- und Revettementkonflikte sperren;
+5. Main-Airfield- und Heliport-Allow-/Blocklists getrennt dokumentieren;
+6. kontrollierte Einzelspawns erst nach bestandenem No-Spawn-Preflight zulassen.
+
+Die endgültigen Listen werden ausschließlich aus den akzeptierten Laufzeitdaten abgeleitet.
 
 ## 10. Verlust- und Rückgabelogik
 
@@ -359,40 +403,43 @@ Weitere Zonen werden erst angelegt, wenn eine konkrete MOOSE-/OPSTRANSPORT-/CSAR
 
 ## 13. Nächster Runtime-Inkrement
 
-Der nächste Teststand ist:
+Nach dem bestandenen Dual-Airbase- und Heliport-Warehouse-Audit ist der nächste technische Teststand:
 
 ```text
-Kandahar Dual-Airbase No-Spawn Diagnostic
+Kandahar Dual-AIRWING Registration Preflight
 ```
 
-Er muss prüfen und protokollieren:
+Voraussetzungen vor Implementierung:
 
-- MOOSE-Version und Hash;
-- beide Airbases und ihre IDs;
-- vorhandenen Main-Airfield-Warehouse-Anker;
-- Fehlen des zweiten Heliport-Warehouse-Ankers;
-- sämtliche Clients, Templates, Statics und Zonen;
-- tatsächliche Typen und Payload-Signaturen;
-- TerminalIDs, Helipad-IDs, Terminaltypen und Koordinaten;
-- Clientbelegungen und Static-Nähe;
-- Safe-Parking-Kandidaten getrennt je Airbase.
+```text
+verbindlicher Heliport-AIRWING-Name
+A-10-/C-130-Template-Typentscheidung
+logischer C-130-Bestand für den ersten Fixed-Wing-Stand oder ausdrücklicher A-10-only-Start
+regionale Army-Aviation-Bestandsentscheidung vor Mustang-SQUADRON-Registrierung
+```
 
-Er darf noch keine AIRWINGs starten, keine SQUADRON-Bestände registrieren, keine Assets spawnen und keine AUFTRAG-/OPSTRANSPORT-/CSAR-/ISR-Funktion ausführen.
+Der Preflight muss:
+
+- beide Warehouse-Anker und nativen Airbases erneut fail-closed validieren;
+- beide AIRWING-Verträge konstruieren, aber noch nicht automatisch starten;
+- keine produktiven SQUADRON-Bestände ohne freigegebene Inventarzahlen registrieren;
+- Clientreservierungen und spätere Parking-Allow-/Blocklists laden;
+- keine AUFTRAG-, OPSTRANSPORT-, CSAR- oder ISR-Funktion erzeugen;
+- keine automatischen Spawns zulassen.
 
 ## 14. Offene Kandahar-Entscheidungen
 
-- zweiter AIRWING- und Warehouse-Name für Kandahar Heliport;
-- Mission-Editor-Anlage des zweiten Warehouse-Ankers;
+- AIRWING-Name für Kandahar Heliport;
 - logische Anfangsbestände außer A-10C;
 - regionale Army-Aviation-Gesamtbestände und Detachment-Abzüge;
 - technische Airbase-Zuordnung des 26th ERQS;
 - UAV-Warehouse- oder externes Kontingentmodell;
-- vollständige TerminalID-/Helipad-/Allow-/Blocklist-Tabellen;
+- vollständige Allow-/Blocklist-Tabellen;
 - Payloads, ROE und Freigabeautoritäten;
 - A-10-/C-130-Template-Typangleichung;
 - Wartung, Cooldown, Reparatur und Wiederbeschaffung;
 - CampaignState-Schnittstelle;
-- Performance- und Runtime-Acceptance.
+- Controlled-Spawn-, Performance- und Runtime-Acceptance.
 
 ## 15. Acceptance-Kriterien für die spätere Registrierung
 
