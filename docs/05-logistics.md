@@ -7,13 +7,14 @@ authoritative_for:
   - common logistics manifest and ownership model
   - supported strategic transport modes
   - one-time cargo credit and loss semantics
+  - separation of theater-level supply ingress from inner-Afghan distribution
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
   - prototype-only logistics wording
 superseded_by:
-source_branch: agent/complete-documentation-authority-migration
-source_commit:
+source_branch: main
+source_commit: 1bfc09df8143ca3641ba47e79fa453df5fdd7a09
 validated_in_dcs: false
 ---
 
@@ -34,8 +35,9 @@ Maßgebliche Grundlagen:
 - [`OMW-GOV-MOOSE-FIRST`](26-moose-first-development-policy.md)
 - [`MOOSE-Logistik und Transport`](moose/LOGISTICS-AND-TRANSPORT.md)
 - [`OMW-HIST-AFGHANISTAN-FORCE-BASING-AVIATION`](50-afghanistan-force-basing-aviation-2010-2011.md)
+- [`OMW-EVIDENCE-NDN-CSIS-2010`](evidence/source-records/northern-distribution-network-csis-2010-source-record.md)
 
-Dokument 50 ist die quellenqualifizierte historische Referenz. Dieses Dokument bleibt für das technische und strategische Logistikmodell autoritativ.
+Dokument 50 ist die quellenqualifizierte historische Referenz für Kräfte-, Basierungs- und Aviation-Sustainment-Fragen. Die NDN-Quellenakte dokumentiert strategische Zuführungskorridore und deren Grenzen. Dieses Dokument bleibt für das technische und strategische Logistikmodell autoritativ.
 
 ## 2. Transportarten
 
@@ -241,6 +243,71 @@ Die Rapid Equipping Force brachte im FY2011 Army-weit mehr als 221 Ausrüstungst
 - sie darf nicht als unbeschränkte Beschaffungsmöglichkeit dienen.
 
 Quelle: Dokument 50, S03.
+
+### 6.7 Northern Distribution Network und strategische Theaterzuführung
+
+Die zeitgenössische CSIS-Analyse vom Januar 2010 beschreibt das `Northern Distribution Network` als kommerziell basierten strategischen Versorgungskorridor für Afghanistan. Es diente der Redundanz gegenüber der stark gefährdeten und politisch verwundbaren Pakistan-Zuführung sowie der Aufnahme des zusätzlichen nichtmilitärischen Versorgungsbedarfs des US-Aufwuchses 2009/2010.
+
+Quellenbelegte Hauptkorridore:
+
+```text
+NDN NORTH
+Riga
+→ Russland
+→ Kazakhstan
+→ Uzbekistan
+→ Termez–Galaba–Hairatan
+→ Afghanistan
+```
+
+```text
+NDN SOUTH / CAUCASUS
+Türkei oder Europäische Union
+→ Poti
+→ Baku
+→ Kaspisches Meer
+→ Atyrau oder Aktau
+→ Uzbekistan
+→ Afghanistan
+```
+
+Für September 2009 nennt die Quelle etwa 30 Prozent der damaligen NDN-Sendungen für den Kaukasus-Korridor. Der Bericht erwähnt außerdem nahezu täglichen Bahnverkehr ab Hairatan mit Lebensmitteln beziehungsweise landwirtschaftlichen Produkten, Petroleumprodukten und Baumaterial.
+
+Die Quelle belegt damit einen realen strategischen Gütereingang nach Afghanistan, aber nicht die anschließende straßen- oder schienengenaue Verteilung zu einzelnen US-/ISAF-Basen. Insbesondere bestimmt sie keine lokale MSR-Bezeichnung und keine DCS-`PATHLINE`.
+
+Strategische Risiken des NDN:
+
+- politische Abhängigkeit von Russland und zentralasiatischen Transitstaaten;
+- Korruption, Transitgebühren sowie komplizierte Zoll- und Grenzverfahren;
+- Grenzschließungen und zwischenstaatliche Spannungen;
+- regionale Konflikte im Kaukasus;
+- mögliche Angriffe auf Bahn-, Hafen- oder Straßeninfrastruktur;
+- Nutzung wachsender Abhängigkeit als politischer Hebel.
+
+Für OMW gilt daher verbindlich:
+
+1. strategische Theaterzuführung und innerafghanische Verteilung sind getrennte Logistikstufen;
+2. ein offener NDN-Korridor erzeugt keine unmittelbare Gutschrift an einem FOB oder COP;
+3. Fracht muss nach dem Eingang in Afghanistan weiterhin über regionale Hubs, Straßenkonvois, Fixed Wing oder Rotary Wing verteilt werden;
+4. eine strategische Transitstörung kann Theaterreserven verzögern, auch wenn lokale MSRs offen sind;
+5. eine lokale MSR-Sperrung kann Versorgung am Ziel verhindern, obwohl der strategische GLOC offen ist;
+6. NDN-Quellen dürfen nicht zur Festlegung von `MSR EAST-E3` oder anderer lokaler Routenlinien verwendet werden.
+
+Die Quelle beschreibt auch infrastrukturell plausible Iran-Korridore über Chabahar–Zaranj–Delaram, Dogharoun–Herat und Khaf–Herat. Für 2009/2010 bewertet sie eine reguläre US-/NATO-Nutzung aufgrund iranischer Politik, gegenseitigen Misstrauens und US-Sanktionen jedoch als nicht praktikabel. Der direkte China-Wakhan-Zugang wird wegen Gelände, einspuriger unbefestigter Straße und langer Wintersperre als ungeeignet für bedeutende Transportmengen eingeordnet.
+
+Eine spätere CampaignState-Erweiterung darf strategische Ebenen getrennt führen, beispielsweise:
+
+```text
+THEATER_GLOC
+AFGHAN_ENTRY_NODE
+STRATEGIC_HUB
+REGIONAL_HUB
+FOB_COP_DESTINATION
+```
+
+Mögliche GLOC-Zustände wie `OPEN`, `DEGRADED`, `DISRUPTED` und `CLOSED` sind OMW-Designvorschläge, keine Terminologie der historischen Quelle. Umsetzung und Werte benötigen eine eigene Architekturentscheidung, MOOSE-First-Prüfung und Acceptance.
+
+Quelle: [`OMW-EVIDENCE-NDN-CSIS-2010`](evidence/source-records/northern-distribution-network-csis-2010-source-record.md).
 
 ## 7. Logistische Standortfunktionen
 
