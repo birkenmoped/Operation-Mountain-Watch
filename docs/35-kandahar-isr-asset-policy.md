@@ -1,6 +1,6 @@
 ---
 document_id: OMW-AIR-KANDAHAR-ISR-POLICY
-status: IMPLEMENTED_IN_MIZ_UNVALIDATED
+status: STRUCTURALLY_AUDITED_RUNTIME_BLOCKED
 owning_policy: OMW-GOV-001
 authoritative_for:
   - Kandahar MQ-1 and MQ-9 Mission Editor templates
@@ -8,11 +8,14 @@ authoritative_for:
   - ISR and armed-ISR separation
   - ISR runtime implementation handoff
 scenario_period: 2010-08-01/2011-12-31
-project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
+project_phase: AIRWING_OBJECT_CONTRACT
 supersedes:
   - docs/32-kandahar-isr-asset-policy.md
-source_branch: docs/bagram-air-operations-manifest
-source_mission: OMW_TEST_TM01M_MooseFirst(18).miz
+  - MQ-1 unarmed payload claim for OMW_TEST_TM01M_MooseFirst(18).miz
+  - MQ-9 two-GBU-38 payload claim for OMW_TEST_TM01M_MooseFirst(18).miz
+source_branch: agent/kandahar-airwing-baseline-contract
+source_mission: OMW_Template_v4_Kandahar(1).miz
+source_mission_sha256: 07cc90b18bf3a09fee8c650cb9f1668c9ec6c2412a37be5f005642d216deeb8a
 validated_in_dcs: false
 ---
 
@@ -20,7 +23,13 @@ validated_in_dcs: false
 
 ## 1. Dokumentstatus
 
-Die Missionseditor-Templates und Statics sind vorhanden. Die konkrete AIRWING-/SQUADRON-Registrierung, Anforderungsfreigabe, Cooldown-, ROE-, Verlust- und Rückgabelogik ist noch nicht in DCS/MOOSE validiert.
+Die Missionseditor-Templates und Statics sind strukturell bestätigt. Die konkrete AIRWING-/SQUADRON-Registrierung, Anforderungsfreigabe, Cooldown-, ROE-, Verlust- und Rückgabelogik ist noch nicht in DCS/MOOSE validiert.
+
+Die aktuelle Mission widerspricht den älteren dokumentierten Payloadangaben. Deshalb bleiben beide UAV-SQUADRONs bis zur Payloadkorrektur beziehungsweise ausdrücklichen Freigabe fail-closed deaktiviert.
+
+Rohbefund:
+
+- [`OMW-EVIDENCE-KANDAHAR-ME-AUDIT-V4-1`](evidence/kandahar-mission-editor-audit-omw-template-v4-kandahar-1.md).
 
 ## 2. Historische und technische Einordnung
 
@@ -40,79 +49,113 @@ STATIC_AIR_US_KAF_MQ9_01
 
 Diese Statics sind visuelle Repräsentationen und kein zusätzlicher logischer Bestand.
 
-## 3. Missionseditor-Templates – Revision 18
+## 3. Tatsächliche Missionseditor-Templates
 
-### MQ-1A Predator
+### 3.1 MQ-1A Predator
 
 ```text
 TPL_AIR_US_KAF_MQ1A_RECON_1SHIP
-  TPL_AIR_US_KAF_MQ1A_RECON_1SHIP_UNIT_01
 DCS-Typ: RQ-1A Predator
 Gruppengröße: 1
-Skill: High
 Late Activation: ja
 Uncontrolled: nein
-Task: Reconnaissance
 Start: Luftstart
-Höhe: 2.000 m BARO
-Geschwindigkeit: ca. 111 km/h
-Fuel: 200
-Bewaffnung: keine; pylons leer
-Callsign: Ford 3-1
-Frequenz: 127,5 MHz AM
 ```
 
-### MQ-9 Reaper
+Payload-Rohbefund:
+
+```text
+zwei belegte Pylon-Einträge
+CLSID je Pylon: {ee368869-c35a-486a-afe7-284beb7c5d52}
+```
+
+Damit ist das aktuelle Template nicht unbewaffnet. Die exakte Waffenbezeichnung dieses CLSIDs muss gegen den tatsächlich verwendeten DCS-Datenstand verifiziert werden.
+
+Verbindliche RECON-only-Zielregel:
+
+```text
+MQ-1A
+RECON-only
+Weapons Hold
+keine Strike-Rolle
+```
+
+Vor Laufzeitregistrierung muss deshalb eine der folgenden Bedingungen erfüllt sein:
+
+1. beide Pylons werden im Mission Editor geleert; oder
+2. der CLSID wird eindeutig gemappt, die Bewaffnung durch den Projektinhaber ausdrücklich freigegeben und eine neue operative Rolle dokumentiert.
+
+Ohne diese Entscheidung bleibt `SQ_US_KAF_MQ1_361_ERS` deaktiviert.
+
+### 3.2 MQ-9 Reaper
 
 ```text
 TPL_AIR_US_KAF_MQ9_RECON_1SHIP
-  TPL_AIR_US_KAF_MQ9_RECON_1SHIP_UNIT_01
 DCS-Typ: MQ-9 Reaper
 Gruppengröße: 1
-Skill: High
 Late Activation: ja
 Uncontrolled: nein
-Task: Reconnaissance
 Start: Luftstart
-Höhe: 2.000 m BARO
-Geschwindigkeit: ca. 296 km/h
-Fuel: 1.300
-Bewaffnung: 2 × GBU-38
-Callsign: Chevy 3-1
-Frequenz: 251 MHz AM
 ```
 
-Die Luftstarts sind zunächst Authoring-/Testbaseline. Vor AIRWING-Integration ist zu entscheiden, ob die UAVs als Kandahar-Warehouse-Assets oder als abstrahiertes externes ISR-Kontingent behandelt werden.
-
-## 4. Verbindliche operative Trennung
+Payload-Rohbefund:
 
 ```text
-MQ-1A:
-RECON-only Baseline
-unbewaffnet
-Weapons Hold
-keine Strike-Rolle
-
-MQ-9:
-RECON als Standard
-bewaffnete Fähigkeit vorhanden
-Weapons Hold als Standard
-ARMED ISR nur nach ausdrücklicher Missions- und ROE-Freigabe
+Pylon 1: AGM114x2_OH_58
+Pylon 2: Bomben-CLSID mit NFP_PRESID=Paveway_II und Laser Code 1688
+Pylon 3: Bomben-CLSID mit NFP_PRESID=Paveway_II und Laser Code 1688
+Pylon 4: AGM114x2_OH_58
 ```
 
-Der DCS-Task `Reconnaissance` ist allein kein ausreichender Schutz gegen unbeabsichtigten Waffeneinsatz. ROE und Zielzuweisung müssen ausdrücklich gesetzt und getestet werden.
-
-## 5. AIRWING- und SQUADRON-Registrierung
-
-Vorgesehene Struktur:
+Damit trägt das aktuelle Template:
 
 ```text
-AW_US_KANDAHAR
-├── SQ_US_KAF_MQ1_361_ERS
-└── SQ_US_KAF_MQ9_361_ERS
+4 x AGM-114
+2 x Paveway-II-konfigurierte Bomben
 ```
 
-Die UAV-SQUADRONs verwenden `WH_AIR_US_KANDAHAR` als organisatorischen Anker, sofern der Architekturtest kein externes Kontingentmodell verlangt.
+Die exakte Bombenvariante muss noch gegen den verwendeten DCS-Datenstand gemappt werden. Die ältere Angabe `2 x GBU-38` ist für die aktuelle Mission ausdrücklich aufgehoben.
+
+Verbindliche operative Trennung:
+
+```text
+MQ-9 Standard: RECON / Weapons Hold
+MQ-9 ARMED ISR: nur nach ausdrücklicher Missions- und ROE-Freigabe
+keine automatische Zielbekämpfung
+```
+
+## 4. Luftstart und organisatorisches Modell
+
+Beide aktuellen Templates sind Luftstart-Seeds. Für den ersten technischen Diagnoselauf benötigen sie keine physischen Kandahar-Startplätze.
+
+Vor SQUADRON-Registrierung ist zu entscheiden:
+
+```text
+Variante A: organisatorische Assets von AW_US_KANDAHAR
+Variante B: abstrahiertes externes ISR-Kontingent
+```
+
+Die Wahl beeinflusst:
+
+- Bestand und Verlustbilanz;
+- Rückkehrdefinition bei Air-Spawn;
+- Cooldown und Wiederverfügbarkeit;
+- Warehouse-Zuordnung;
+- Parking-Anforderungen;
+- Persistenz.
+
+Eine bloße Luftstartposition darf nicht stillschweigend als sichere Rückkehr oder als unbegrenzte Verfügbarkeit interpretiert werden.
+
+## 5. AIRWING- und SQUADRON-Grenze
+
+Reservierte SQUADRON-Kennungen:
+
+```text
+SQ_US_KAF_MQ1_361_ERS
+SQ_US_KAF_MQ9_361_ERS
+```
+
+Der technische AIRWING-Vertrag bleibt offen, bis das Warehouse- oder externe Kontingentmodell entschieden ist.
 
 Die Registrierung muss:
 
@@ -120,8 +163,10 @@ Die Registrierung muss:
 - Template, Static und logischen Bestand strikt trennen;
 - maximal einen aktiven UAV-Auftrag gleichzeitig zulassen, bis anders entschieden;
 - MQ-1 und MQ-9 getrennte Verfügbarkeiten führen;
-- eine fehlende Templategruppe fail-closed behandeln;
-- kein UAV beim Missionsstart spontan aktivieren.
+- eine fehlende oder unerwartet bewaffnete Templategruppe fail-closed behandeln;
+- kein UAV beim Missionsstart spontan aktivieren;
+- ROE und Zielzuweisung ausdrücklich setzen;
+- Payload-Signaturen beim Start protokollieren.
 
 ## 6. Bestands- und Verfügbarkeitsmodell
 
@@ -140,14 +185,14 @@ verloren
 
 Die eingeschränkte Verfügbarkeit wird innerhalb des Settings durch nationale, nachrichtendienstliche, Special-Operations- oder höher priorisierte Aufgaben erklärt. Eine CIA-Bindung bleibt eine plausible In-World-Erklärung, aber keine ungesicherte feste historische Betreiberzuordnung.
 
-Bevorzugte erste Testregel:
+Bevorzugte erste Testregel nach Payloadfreigabe:
 
 ```text
 maximal 1 aktiver UAV-Auftrag gleichzeitig
 begrenzte Missionsdauer
 kein sofortiger Wiederaufruf
 Cooldown nach Rückkehr, Abbruch oder Verlust
-MQ-1 nur RECON
+MQ-1 RECON-only
 MQ-9 ARMED ISR nur nach ausdrücklicher Freigabe
 ```
 
@@ -180,16 +225,17 @@ MOOSE-first zu prüfen sind `AIRWING`, `SQUADRON`, `AUFTRAG`, `FLIGHTGROUP`, Det
 
 ## 8. Parking und Funktionszonen
 
-Da beide aktuellen Templates per Luftstart authorisiert sind, benötigen sie für den ersten technischen Test keine physischen Kandahar-Startplätze.
+Da beide Templates per Luftstart authorisiert sind, benötigen sie für den No-Spawn-Diagnosetest keine physischen Kandahar-Startplätze.
 
 Falls später reale Start-/Landesequenzen verwendet werden:
 
+- geeignete Airbase und Warehouse-Zuordnung zuerst festlegen;
 - TerminalIDs und geeignete UAV-Parkpositionen per Laufzeitdiagnose bestimmen;
 - Safe Parking aktivieren;
 - durch UAV-Statics belegte Plätze blacklisten;
 - keine Position aus der Static-Platzierung erraten.
 
-Dauerhafte Flugplatz-Hilfszonen sind für ISR nicht erforderlich. Orbit-, Recon- und Zielzonen sind auftragsbezogen und werden durch die jeweilige Mission erzeugt oder referenziert.
+Dauerhafte Flugplatz-Hilfszonen sind für ISR nicht erforderlich. Orbit-, Recon- und Zielzonen sind auftragsbezogen.
 
 ## 9. Verlust- und Rückgabelogik
 
@@ -206,10 +252,13 @@ Despawn ohne bestätigte sichere Rückkehr -> nicht automatisch verfügbar
 
 Ein verlorenes UAV darf nicht allein wegen eines erfolgreichen Recon- oder Strike-Ergebnisses zurückgegeben werden.
 
-Bei extern abstrahiertem Air-Spawn muss eine getestete Endzustandsregel definieren, wann „sichere Rückkehr“ als erfüllt gilt.
+Bei extern abstrahiertem Air-Spawn muss eine getestete Endzustandsregel definieren, wann sichere Rückkehr als erfüllt gilt.
 
 ## 10. Offene Entscheidungen
 
+- MQ-1-Payload leeren oder ausdrücklich bewaffnete Rolle freigeben;
+- exakte Zuordnung des MQ-1-CLSIDs;
+- exakte Zuordnung der MQ-9-Paveway-II-Bomben;
 - logischer MQ-1- und MQ-9-Gesamtbestand;
 - Warehouse-Asset oder externes Kontingent;
 - anforderungsberechtigte Rollen/Spieler;
@@ -224,8 +273,10 @@ Bei extern abstrahiertem Air-Spawn muss eine getestete Endzustandsregel definier
 ```text
 beide Templates eindeutig erkannt
 beide bleiben bis zur Anforderung inaktiv
-MQ-1 startet unbewaffnet und bekämpft keine Ziele
-MQ-9 startet mit 2 × GBU-38, aber Weapons Hold
+MQ-1-Payload entspricht der ausdrücklich freigegebenen RECON-only-Konfiguration
+MQ-1 bekämpft keine Ziele
+MQ-9-Payload ist eindeutig gemappt
+MQ-9 startet standardmäßig mit Weapons Hold
 maximal 1 UAV-Auftrag gleichzeitig
 abgelehnte Anforderungen verbrauchen kein Asset
 Rückkehr führt in Cooldown und anschließend korrekt in verfügbar
