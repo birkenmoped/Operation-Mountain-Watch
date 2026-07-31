@@ -7,6 +7,7 @@ authoritative_for:
   - MSR route segmentation
   - route geometry and routing-point separation
   - infrastructure marker classification
+  - historical route baseline for MSR California
   - route-clearance, observation, IED-risk and reinfiltration design worklist
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
@@ -101,6 +102,96 @@ INF_   möglicher Infiltrationszugang zum Routensektor
 Marker dokumentieren Funktion und Lage. Sie ersetzen keine Zonen, Templates oder Laufzeitobjekte.
 
 `IED_`, `SUS_`, `OBS_`, `AMB_` und `INF_` sind keine dauerhaft sichtbaren Spielerinformationen. Ihre Sichtbarkeit hängt von Intelligence-, Detection- und CampaignState ab.
+
+### 2.4 Historisch belegte Routenbaseline: MSR California
+
+Für den Missionszeitraum ist `MSR California` als reale US-/ISAF-Main-Supply-Route im Kunar-Tal belegt. Die Bezeichnung darf nicht mit der projektinternen Sammelbezeichnung `MSR_KUNAR` gleichgesetzt werden.
+
+#### 2.4.1 Quellenbelegte Strecken- und Funktionsmerkmale
+
+Die Silver-Star-Narrative zu Specialist Jeffrey A. Conn beschreibt `MSR California` für Oktober 2011 mit folgenden Merkmalen:
+
+- eine ausgebaute beziehungsweise verbesserte Straße;
+- Nord-Süd-Verlauf parallel zum Kunar River;
+- einzige Straßenverbindung zwischen Northern Kunar und der Provinzhauptstadt Asadabad;
+- alleinige bodengebundene Versorgungsachse von südlichen Logistikknoten zu FOB Bostick;
+- wiederholt für größere Brigade-Nachschubbewegungen genutzt;
+- durch dominierendes Hochgelände und seitlich einmündende Täler stark beobachtungs- und hinterhaltsgefährdet.
+
+Damit wird die bereits im Legacy-Entwurf festgehaltene Projektsegmentierung grundsätzlich bestätigt:
+
+```text
+MSR_CAL_C01  Asadabad → Asmar
+MSR_CAL_C02  Asmar → Naray / FOB Bostick
+```
+
+Diese Zweiteilung ist eine projektinterne operative Segmentierung. Die Quellen bestätigen den durchgehenden Nord-Süd-Korridor, die Verbindung nach Asadabad und die Versorgungsfunktion für FOB Bostick. Sie definieren jedoch weder den exakten Segmentwechsel bei Asmar noch eine meter- oder straßengenau übertragbare DCS-Geometrie.
+
+#### 2.4.2 Shal Mountain als schlüsselgebendes Gelände
+
+Die Citation ordnet Shal Mountain im Asmar District als entscheidendes Gelände unmittelbar über dem Routenkorridor ein:
+
+- Shal Mountain liegt ungefähr sieben Kilometer nördlich von COP Monti;
+- der Berg erhebt sich laut Narrative etwa 1.100 Fuß über den Talboden;
+- er überblickt `MSR California`;
+- er dominiert zugleich eine ost-westlich verlaufende insurgente Versorgungs- und Infiltrationsachse im Shal Valley;
+- Shal und Dab Valleys dienten als Zuführungs- und Feuerstellungsräume für Angriffe auf Konvois und Sicherungskräfte entlang der MSR.
+
+Aufständische nutzten Shal Mountain über Jahre als Gefechtsstellung gegen ANA- und US-Kräfte auf `MSR California`. Im Juli 2011 wurden bei einem komplexen Hinterhalt während einer größeren Nachschuboperation zwei Soldaten des First Platoon, Bravo Company, getötet.
+
+Während Operation `RUGGED SARAK` vom 8. bis 16. Oktober 2011 nahmen Bravo Company, 2-27 Infantry, und drei ANA-Kompanien Shal Mountain. Ziel war die Kontrolle des schlüsselgebenden Geländes, die Unterbindung der insurgenten Ost-West-Versorgungsroute und der Aufbau eines neuen ANA-Außenpostens. Second und Third Platoon sicherten Gefechtsstellungen an `MSR California`, während First Platoon das Hochgelände hielt.
+
+#### 2.4.3 Ergänzende Gefechtsraumindizien
+
+Ein offizieller U.S.-Army-Rückblick auf einen Einsatz im September 2009 beschreibt eine Patrouille von COP Pirtle-King zu FOB Bostick auf `MSR California`. Der Hinterhalt erfolgte gleichzeitig aus dem Hochgelände unmittelbar neben der Straße und von der gegenüberliegenden Seite des Flusses. Dies stützt für das Missionsdesign folgende Geländelogik:
+
+- die Straße ist zwischen Fluss und Steilhängen kanalisiert;
+- BLUE kann von derselben Straßenseite aus erhöhten Feuerstellungen bekämpft werden;
+- zusätzliche Feuerstellungen können jenseits des Flusses liegen;
+- verwundete oder liegengebliebene Fahrzeuge besitzen unter solchen Bedingungen keine eindeutig sichere Bergeseite.
+
+#### 2.4.4 Konsequenzen für OMW-Geometrie und Marker
+
+Für die spätere Einzeichnung und Validierung gelten folgende Arbeitsannahmen:
+
+1. `MSR_CAL_C01` und `MSR_CAL_C02` müssen dem tatsächlich im DCS-Terrain vorhandenen straßengebundenen Kunar-River-Korridor folgen.
+2. Asadabad, Asmar und die Zufahrt zu FOB Bostick bleiben die primären Routenknoten.
+3. Der Shal-Mountain-/Shal-Valley-Raum ist als quellenbelegter Route-Dominance- und Ambush-Sektor zu erfassen.
+4. Beobachtungs- und Hinterhaltsräume sind nicht nur straßennah, sondern auch auf dominierendem Hochgelände und jenseits des Flusses vorzusehen.
+5. Für den historischen Kernkorridor ist keine gleichwertige, dauerhaft nutzbare Parallelstraße belegt. Ein DCS-Bypass darf daher nicht automatisch als strategisch gleichwertige Alternativ-MSR behandelt werden.
+6. Der Verlust von Shal Mountain beziehungsweise unzureichende Hold-Präsenz muss den RED-Beobachtungs-, Ambush- und Infiltrationszugang erhöhen können.
+7. Eine Operation zur Einnahme oder dauerhaften Sicherung des Hochgeländes kann als Route-Security-, ANA-Outpost- oder Clear-and-Hold-Mission umgesetzt werden.
+
+Vorzusehende Markerklassen, zunächst ohne endgültige Koordinate:
+
+```text
+NODE_ASADABAD
+NODE_ASMAR
+NODE_BOSTICK_GATE
+OBS_CAL_SHAL_MOUNTAIN
+AMB_CAL_SHAL_DAB_SECTOR
+INF_CAL_SHAL_VALLEY
+CHK_CAL_KUNAR_CORRIDOR
+GATE_BOSTICK
+```
+
+Die Silver-Star-Narrative belegt einen komplexen Hinterhalt, aber keinen exakten IED-Punkt. Aus dieser Quelle allein darf deshalb kein punktgenauer `IED_`-Marker erzeugt werden. Exakte Markerkoordinaten erfordern separate Karten-, Satellitenbild- oder SIGACT-Validierung.
+
+#### 2.4.5 Quellenqualität und Provenienz
+
+Primär verwendete Quelle:
+
+- [Military Times Hall of Valor – Jeffrey A. Conn, Silver Star](https://valor.militarytimes.com/recipient/recipient-84896/), abgerufene Award Narrative für Operation `RUGGED SARAK`, 8.–16. Oktober 2011.
+
+Offizielle inhaltliche Bestätigung:
+
+- [U.S. Army Medical Department Center of History and Heritage – Silver Star citations OIF/OEF](https://achh.army.mil/regiment/silverstar-oifoef-oifoef1/), weitgehend gleichlautende Citation.
+
+Ergänzende Gefechtsraumquelle:
+
+- [Army University Press, NCO Journal – Reaching the Finish Line](https://www.armyupress.army.mil/Journals/NCO-Journal/Muddy-Boots/Reaching-the-Finish-Line/), retrospektiver Bericht zum Hinterhalt auf `MSR California` im September 2009.
+
+Die Hall-of-Valor-Seite ist eine Sekundärpublikation einer militärischen Auszeichnungsnarrative. Die wesentlichen Routenangaben werden durch die offizielle AMEDD-Veröffentlichung bestätigt. Die Quellen liefern eine hohe Sicherheit für Name, allgemeinen Verlauf, Funktion und taktische Bedeutung der Route, aber keine ausreichende Grundlage für eine punktgenaue DCS- oder Google-Earth-Linienführung.
 
 ## 3. Segmentmetadaten
 
