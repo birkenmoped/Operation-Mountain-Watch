@@ -14,6 +14,7 @@ project_phase: AIRWING_OBJECT_CONTRACT
 supersedes:
   - docs/30-kandahar-air-operations-manifest.md
   - Kandahar 75th EFS active baseline
+  - Kandahar 107th EFS active baseline
   - single-AIRWING assumption across Kandahar and Kandahar Heliport
   - generic AW_US_KANDAHAR AIRWING name
   - Kandahar assignment of 3-101 Attack Aviation
@@ -43,6 +44,7 @@ SHA-256: 0732f929d4e35641c84bfb34bd75912692c3a1b7b7a0106847ce56e21aa5345c
 Maßgebliche Dokumente:
 
 - [`Kandahar Juli-2011 ORBAT Unit Name Reconciliation`](evidence/kandahar-july-2011-orbat-unit-name-reconciliation.md)
+- [`Kandahar A-10C Active Unit Decision`](evidence/kandahar-a10c-active-unit-decision-2026-07-31.md)
 - [`Kandahar Heliport Warehouse and AIRWING Contract`](kandahar-heliport-warehouse-contract.md)
 - [`Kandahar Mustang Ramp Army Aviation Baseline`](36-kandahar-mustang-ramp-army-aviation-baseline.md)
 - `OMW-AIR-KANDAHAR-ISR-POLICY` für MQ-1/MQ-9
@@ -53,12 +55,12 @@ Maßgebliche Dokumente:
 Die Juli-2011-ORBAT ist die historische Stichtagsreferenz für Einheitsnamen und Standorte. Sie ist nicht vollständig für Black SOF, Logistik, Transport, Sanität, Intelligence und Provincial Reconstruction Teams.
 
 ```text
-HISTORICAL JULY 2011 ROSTER != ACTIVE OMW RUNTIME ORBAT
+HISTORICAL JULY 2011 ROSTER != COMPLETE BASE OCCUPANCY
 SOURCE-REPORTED UNIT != AUTOMATIC MOOSE SQUADRON
 KANDAHAR AIRFIELD IN SOURCE != SEPARATE DCS KANDAHAR HELIPORT NAME
 ```
 
-Die aktive OMW-Luft-ORBAT bleibt eine quellenbasierte, spielbare Auswahl innerhalb des Gesamtzeitraums 01.08.2010 bis 31.12.2011.
+Für die Kandahar-A-10C-Komponente wurde die aktive OMW-Auswahl ausdrücklich an den belegten Juli-2011-Verband angeglichen.
 
 ## 3. Historische Juli-2011-Einheiten am Kandahar Airfield
 
@@ -134,25 +136,34 @@ Task Force Linebacker / 863rd Engineer Battalion
 
 Diese Verbände sind in der basisweiten historischen Dokumentation zu führen, nicht in Aircraft-Inventories.
 
-## 4. Aktive OMW-Auswahl versus Juli-2011-Snapshot
+## 4. Verbindliche aktive Kandahar-A-10C-Einheit
 
-Die Juli-2011-ORBAT meldet die `74th Expeditionary Fighter Squadron` als A-10C-Verband. Die verbindliche aktive OMW-Entscheidung verwendet jedoch:
+Mit Projektentscheidung vom 31.07.2026 wird die aktive OMW-A-10C-Komponente auf die im Juli-2011-ORBAT belegte Einheit umgestellt:
 
 ```text
-107th Expeditionary Fighter Squadron
+74th Expeditionary Fighter Squadron
 16 A-10C
+Kandahar Airfield
+451st Air Expeditionary Wing
 ```
 
-Das ist eine bewusste Kampagnenauswahl innerhalb des Gesamtzeitraums und kein behaupteter exakter Juli-2011-Gleichzeitstand.
+Die 74th EFS ersetzt als aktive OMW-Auswahl:
+
+```text
+75th Expeditionary Fighter Squadron
+107th Expeditionary Fighter Squadron
+```
 
 Verbindlich:
 
 ```text
-nur eine aktive A-10C-SQUADRON
-keine parallele 74th und 107th EFS
-historische 74th EFS bleibt dokumentiert
-aktive Runtime-SQUADRON bleibt 107th EFS
+nur eine aktive Kandahar-A-10C-SQUADRON
+aktive Runtime-SQUADRON ist 74th EFS
+keine parallele 75th oder 107th EFS
+Bestand bleibt 16 A-10C
 ```
+
+Die 75th EFS bleibt historischer Vorgänger; die Juli-2011-Quelle dokumentiert ihre Ablösung durch die 74th EFS im April 2011. Die 81st und 107th EFS bleiben Rotationskontext ohne aktiven OMW-Bestand.
 
 Die 46th ERQS stellt Guardian-Angel-Personal und keinen eigenen Flugzeugbestand. Sie wird nicht als separate MOOSE-Aircraft-SQUADRON registriert.
 
@@ -199,9 +210,9 @@ Der Quellenname für beide Bereiche ist `Kandahar Airfield`. Die Trennung des Ar
 ### 6.1 AW_US_KAF_451_AEW
 
 ```text
-SQ_US_KAF_A10C_107_EFS
-107th Expeditionary Fighter Squadron
-16 A-10C; aktive OMW-Entscheidung
+SQ_US_KAF_A10C_74_EFS
+74th Expeditionary Fighter Squadron
+16 A-10C; aktive OMW-Entscheidung und Juli-2011-belegt
 
 SQ_US_KAF_HH60G_26_ERQS
 26th Expeditionary Rescue Squadron
@@ -237,6 +248,8 @@ Superseded beziehungsweise verboten:
 
 ```text
 AW_US_KANDAHAR
+SQ_US_KAF_A10C_107_EFS
+SQ_75_EFS_A10C
 SQ_US_KAF_AH64_3_101_AVN
 SQ_US_KAF_UH60_159_CAB
 ```
@@ -342,7 +355,7 @@ Endgültige Safe-Parking-Allow-/Blocklists sind noch nicht freigegeben. Sie werd
 Verbindlich entschieden:
 
 ```text
-SQ_US_KAF_A10C_107_EFS: 16 A-10C
+SQ_US_KAF_A10C_74_EFS: 16 A-10C
 ```
 
 Noch festzulegen:
@@ -441,6 +454,8 @@ Der Preflight muss:
 ```text
 beide Warehouse-/Airbase-Bindungen verifizieren
 alle SQUADRON-Namen aus Abschnitt 6 prüfen
+74th EFS als einzige Kandahar-A-10C-SQUADRON erzwingen
+75th und 107th EFS als aktive SQUADRONs ausschließen
 3-101 und 4-101 als Kandahar-SQUADRONs ausschließen
 Templates und Gruppengrößen prüfen
 Client-Terminals reservieren
@@ -472,6 +487,8 @@ Performance- und Controlled-Spawn-Acceptance
 AIRWINGs entsprechen 451st AEW und TF Thunder / 159th CAB
 genau ein Warehouse je nativer Airbase erkannt
 alle SQUADRONs verwenden quellenbelegte Einheitsnamen
+SQ_US_KAF_A10C_74_EFS ist die einzige aktive Kandahar-A-10C-SQUADRON
+keine aktive Kandahar-SQUADRON für 75th oder 107th EFS
 keine Kandahar-SQUADRON für 3-101 oder 4-101
 keine Doppelzählung von Clients, Templates oder Statics
 16 A-10C logisch registriert
