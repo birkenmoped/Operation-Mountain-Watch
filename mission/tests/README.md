@@ -22,7 +22,38 @@ Damit sind insbesondere folgende Punkte projektweit vorgegeben:
 
 Lokale `expected/`-Dokumente dürfen diese Baseline konkretisieren, aber nicht stillschweigend ersetzen.
 
-Kurzablauf:
+## Verbindliche Übergabe jedes neuen Teststands
+
+Jede Implementierungs- oder Korrekturübergabe muss dem Benutzer einen unmittelbar ausführbaren lokalen Befehlsblock liefern. Er muss mindestens enthalten:
+
+```powershell
+cd P:\DCS-DEV\Operation-Mountain-Watch
+
+git pull --ff-only
+
+git branch --show-current
+git rev-parse HEAD
+
+powershell.exe -NoProfile -ExecutionPolicy Bypass `
+  -File ".\tools\<KONKRETER_TESTBUILDER>.ps1"
+```
+
+Zusätzlich sind immer konkret zu nennen:
+
+```text
+Branch
+Erwarteter Commit
+Builder-Version
+Erzeugter Bundlepfad
+Zu öffnende .miz
+Im Trigger neu auszuwählende Lua-Datei
+Erwarteter PASS-/FAIL-Abschlussmarker
+Danach benötigte Logdateien
+```
+
+Ein allgemeiner Hinweis wie „Bundle neu bauen“, „Mission aktualisieren“ oder „Retest durchführen“ reicht nicht aus. Nach dem Build muss ausdrücklich angewiesen werden, das Bundle im bestehenden `DO SCRIPT FILE`-Trigger erneut auszuwählen und die `.miz` zu speichern, da ein externer Neubau die eingebettete Datei nicht automatisch aktualisiert.
+
+## Kurzablauf
 
 ```powershell
 cd P:\DCS-DEV\Operation-Mountain-Watch
