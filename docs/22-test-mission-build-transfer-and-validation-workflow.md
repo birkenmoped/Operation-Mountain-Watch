@@ -26,6 +26,7 @@ Der Benutzer muss diesen Ablauf in späteren Gesprächen nicht erneut erklären.
 7. Die `dcs.log` genügt normalerweise für PASS/FAIL. Die `.miz` wird nur in den unter Abschnitt 8 genannten Fällen benötigt.
 8. Kein Teststand wird als vollständig oder produktionsreif bezeichnet, solange der zugehörige DCS-Acceptance-Test nicht PASS ist.
 9. Nach jedem Test werden Fehlerursache, Korrektur und verbleibende Risiken im Repository dokumentiert, bevor der nächste Arbeitsauftrag erteilt wird.
+10. **Jede Antwort, die einen neuen oder geänderten Teststand zur lokalen Ausführung übergibt, muss den vollständigen, unmittelbar kopierbaren lokalen Build- und Einbindungsblock enthalten. Ein bloßer Hinweis wie „Bundle neu bauen“ oder „Retest durchführen“ ist unzulässig.**
 
 ## 3. Standardablauf: Repository aktualisieren
 
@@ -297,6 +298,43 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass `
 - erwartete Abschlussmeldung,
 - unzulässige Fehler,
 - danach benötigte Datei, standardmäßig nur `dcs.log`.
+
+### 10.5 Pflichtblock in jeder Implementierungsübergabe
+
+Nach jeder Code-, Builder- oder Test-Harness-Änderung muss die abschließende Antwort mindestens folgenden konkret ausgefüllten Block enthalten:
+
+```powershell
+cd P:\DCS-DEV\Operation-Mountain-Watch
+
+git pull --ff-only
+
+git branch --show-current
+git rev-parse HEAD
+
+powershell.exe -NoProfile -ExecutionPolicy Bypass `
+  -File ".\tools\<KONKRETER_BUILDER>.ps1"
+```
+
+Unmittelbar danach müssen genannt werden:
+
+```text
+Erwarteter Branch:       <KONKRETER_BRANCH>
+Erwarteter Commit:       <KONKRETER_COMMIT>
+Erwartete BuilderVersion:<KONKRETE_VERSION>
+Erzeugtes Bundle:        <KONKRETER_DIST_PFAD>
+Zu öffnende Mission:     <KONKRETE_MIZ>
+```
+
+Darauf folgt die explizite Missionseditor-Anweisung:
+
+1. die vorhandene `DO SCRIPT FILE`-Aktion des Bundles öffnen,
+2. die neu erzeugte Lua-Datei erneut auswählen,
+3. die `.miz` speichern,
+4. die Mission starten,
+5. bis zum konkret genannten PASS-/FAIL-Abschlussmarker laufen lassen,
+6. die konkret geforderten Logdateien bereitstellen.
+
+Diese Angaben dürfen nicht durch Verweise auf frühere Nachrichten, allgemeine Formulierungen oder Platzhalter ersetzt werden. Wenn noch kein ausführbarer lokaler Teststand vorliegt, muss dies ausdrücklich gesagt werden; dann darf kein scheinbar ausführbarer Testauftrag ausgegeben werden.
 
 ## 11. Typische Fehler und Gegenmaßnahmen
 
