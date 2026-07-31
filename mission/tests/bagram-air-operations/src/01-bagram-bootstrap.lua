@@ -53,12 +53,12 @@ OMW.AirOps.Bagram = {
     "SEPARATE_ARMY_MEDEVAC_POOL"
   },
 
-  -- Test-only switches. The isolated HH-60G recruitment/spawn/cleanup test is
-  -- accepted and therefore disabled. The next active increment is the larger
-  -- Bagram-to-Jalalabad fixed-wing movement wave.
+  -- Test-only switches. Accepted or suspended test harnesses remain in the
+  -- bundle as historical/diagnostic fixtures but must not execute by default.
+  -- Re-enable a switch only for an explicitly prepared and documented retest.
   Tests = {
     HH60GControlledSpawn = false,
-    FixedWingBagramToJalalabad = true
+    FixedWingBagramToJalalabad = false
   },
 
   Squadrons = {},
