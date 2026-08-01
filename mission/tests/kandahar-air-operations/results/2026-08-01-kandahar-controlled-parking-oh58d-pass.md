@@ -2,9 +2,9 @@
 
 Date: 2026-08-01
 
-Status: `PASS`
+Status: `PASS_ISOLATED_CASE`
 
-This result records the isolated OH-58D debug case that was already generated before the automatic one-run matrix decision.
+This result records the isolated OH-58D debug case that was generated before the automatic one-run matrix decision.
 
 Runtime result:
 
@@ -33,4 +33,4 @@ SQ_US_KAF_OH58D_7_17_CAV_AID-37-02 -> TerminalID 66, type 40, node distance 1.77
 
 Both units were alive, on the ground, on AIRWING-allowed and non-blocked parking positions. The registration and parking-contract preflights also passed in the same mission run.
 
-This PASS is retained as targeted debug evidence. It does not require the remaining eight cases to be run separately. The primary follow-on is the automatic one-run controlled parking matrix.
+This PASS proves the isolated OH-58D physical parking case only. The later matrix-v1 run demonstrated that unchanged parking-ID lists allow subsequent requests to reuse TerminalIDs 66 and 82. Dynamic multi-request reservation therefore requires the matrix-v2 `AIRWING:SetParkingIDs(remainingAllowedIDs)` update and remains pending runtime acceptance.
