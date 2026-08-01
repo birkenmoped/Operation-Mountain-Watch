@@ -105,6 +105,7 @@ Tactical AUFTRAG generation, OPSTRANSPORT, persistent losses and full runtime co
 - [`OMW-AIR-BAGRAM-ME-BASELINE – Tatsächlich gesetzter Bagram-Missionseditorstand`](docs/34-bagram-current-mission-editor-baseline.md)
 - [`OMW-AIR-KANDAHAR-ISR-POLICY – Eingeschränkte ISR-Drohnen-Assets`](docs/35-kandahar-isr-asset-policy.md)
 - [`OMW-AIR-KANDAHAR-MUSTANG-RAMP – Army Aviation Baseline`](docs/36-kandahar-mustang-ramp-army-aviation-baseline.md)
+- [`OMW-AIR-KANDAHAR-OH58D-ARMAMENT-DECISION – OH-58D Bewaffnungs- und Payload-Baseline`](docs/evidence/kandahar-oh58d-armament-loadout-decision-2026-08-01.md)
 
 ## Authority by subject
 
@@ -119,6 +120,7 @@ Tactical AUFTRAG generation, OPSTRANSPORT, persistent losses and full runtime co
 - `OMW-AIR-KANDAHAR-MANIFEST`: 107th EFS / 16 A-10C, USAF baseline and evidence classes.
 - `OMW-AIR-KANDAHAR-ISR-POLICY`: restricted MQ-1/MQ-9 use.
 - `OMW-AIR-KANDAHAR-MUSTANG-RAMP`: AH-64D, OH-58D, CH-47 and Army UH-60 node.
+- `OMW-AIR-KANDAHAR-OH58D-ARMAMENT-DECISION`: `H10 Rockets, Gun` as the OH-58D default, H17 and Hellfire as task-specific alternatives, APKWS excluded from 2010–2011, and 60% internal fuel as the provisional weight-compliant DCS value pending hot-and-high validation.
 
 ### Jalalabad
 
