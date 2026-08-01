@@ -162,6 +162,69 @@ STRIKE:
 
 Diese Payloadwerte sind eine verbindliche Authoring-Baseline, aber noch keine DCS-Acceptance. Der finale gespeicherte `.miz`-Stand, die CLSIDs, die Zündereinstellungen für beide Luftfahrzeuge, die Strike-Aufgabe `Bodenangriff` und das KI-Waffenverhalten müssen noch extrahiert und getestet werden.
 
+#### 2.2.2 F-16C-CAS-Payloadbaseline vom 01.08.2026
+
+Die verbindliche Payload-Arbeitsentscheidung ist dokumentiert in:
+
+```text
+docs/evidence/bagram-f16c-cas-payload-decision-2026-08-01.md
+```
+
+Historisches 2011-Sollbild als bindende Projekt-Arbeitsinterpretation pro Luftfahrzeug:
+
+```text
+2 x GBU-38
+2 x GBU-54
+2 x 370-gal-Außentank
+2 x AIM-120 auf Station 1 und 9
+Station 2 und 8 clean
+Targeting Pod
+interne M61A1
+```
+
+Die reale GBU-54 war GPS/INS- und laserfähig. Das historische Sollbild bot daher vier GPS/INS-fähige Waffen, von denen zwei zusätzlich laserfähig waren.
+
+Die native DCS-F-16C besitzt keine GBU-54 und kann die historische Mischung nicht exakt abbilden. Verbindliche Vanilla-DCS-Funktionsannäherung:
+
+```text
+TPL_AIR_US_BGRM_F16_CAS_2SHIP
+ME-Aufgabe: CAS
+Payload: OMW F-16 CAS Functional GBU-54 Substitute
+
+Station 1: 1 x AIM-120
+Station 2: clean
+Station 3: BRU-57 mit 2 x GBU-38
+Station 4: 370-gal-Außentank
+Station 5R: Targeting Pod; genauer Typ und CLSID durch finalen .miz-Audit zu erfassen
+Station 6: 370-gal-Außentank
+Station 7: TER-9A mit 2 x GBU-12
+Station 8: clean
+Station 9: 1 x AIM-120
+Intern: M61A1
+```
+
+Für das Standard-CAS-Loadout gelten ausdrücklich:
+
+```text
+keine AIM-9 auf Station 2 oder 8
+kein zusätzlicher AIM-120 auf Station 2 oder 8
+Station 2 und 8 ohne beabsichtigten Launcher oder Unterflügeladapter
+kein ECM-Pod ohne separaten Nachweis
+```
+
+Der DCS-Ersatz erhält vier 500-lb-Präzisionswaffen sowie GPS- und Laserangriffsmöglichkeiten. Er ist nicht historisch exakt:
+
+```text
+historisch: 4 GPS/INS-fähige Waffen, davon 2 zusätzlich laserfähig
+DCS-Ersatz: 2 GPS/INS-Waffen plus 2 ausschließlich lasergeführte Waffen
+```
+
+Die GBU-12 ist ausschließlich der funktionale Ersatz für die Laserfähigkeit der nicht verfügbaren GBU-54. Sie darf nicht als fotografisch bestätigte 2011-Standardwaffe der ausgewerteten Flugzeuge beschrieben werden.
+
+Die seitliche Zuordnung `Station 3 = GBU-38` und `Station 7 = GBU-12` ist die aktuelle Authoring-Baseline. Eine Spiegelung wäre keine neue Payloadfamilie, muss aber im finalen `.miz`-Audit dokumentiert werden und für beide Flugzeuge des Two-Ship-Seeds identisch sein.
+
+Noch ausstehend sind die finalen CLSIDs, der genaue AIM-120-Typ, der Targeting-Pod-Typ, die sichtbare Clean-Darstellung von Station 2 und 8 sowie die KI-Verwendung beider Bombenarten.
+
 ### 2.3 Statics
 
 ```text
@@ -275,7 +338,7 @@ Vorgesehene Rollen nach vorhandenen Templates:
 
 ```text
 F-15E: CAS und STRIKE über getrennte Payload-Seeds derselben SQUADRON
-F-16C: CAS; weitere Rollen ohne vorsorgliches Zusatztemplate
+F-16C: CAS mit funktionalem GBU-54-Ersatz; weitere Rollen ohne vorsorgliches Zusatztemplate
 C-130: TRANSPORT / AIRLIFT
 CH-47: TRANSPORT / OPSTRANSPORT
 UH-60: TRANSPORT / UTILITY
@@ -292,6 +355,8 @@ STRIKE-Seed -> AUFTRAG.Type.STRIKE -> ENUMS.MissionTask.GROUNDATTACK -> DCS/ME B
 `Präzisionsangriff / Pinpoint Strike` ist nicht die von MOOSE 2.9.18 für `AUFTRAG.Type.STRIKE` verwendete DCS-Missionsaufgabe.
 
 Der aktuelle Runtime-Code registriert weiterhin nur den CAS-Seed und die Fähigkeiten `ALERT5` und `CAS`. Die Registrierung des Strike-Seeds als zweites Payload derselben F-15E-SQUADRON ist ein offener MOOSE-First-Implementierungsschritt und darf den Bestand nicht duplizieren.
+
+Für den F-16C-CAS-Seed muss der spätere Runtime-Test zusätzlich beweisen, dass die gewählte CAS-Aufgabe den dokumentierten Payload übernimmt und die KI sowohl GBU-38 als auch GBU-12 nur unter passenden Ziel- und Führungsbedingungen einsetzt.
 
 Vor eigener Tasking-Logik sind MOOSE `AIRWING`, `SQUADRON`, `AUFTRAG`, `OPSTRANSPORT`, `FLIGHTGROUP` und vorhandene CSAR-Funktionen zu prüfen.
 
@@ -373,6 +438,10 @@ Namen, Koordinaten und Radien werden erst mit der jeweiligen Funktionsimplementi
 - logische Anfangsbestände für C-130, CH-47, UH-60 und HH-60G;
 - historische endgültige SQUADRON-Bezeichnungen dieser Komponenten;
 - finale `.miz`-Extraktion und CLSID-/Zünderprüfung der F-15E-CAS-/Strike-Payloads;
+- finale `.miz`-Extraktion und vollständige CLSID-Prüfung des F-16C-CAS-Payloads;
+- sichtbare Clean-Darstellung der F-16C-Stationen 2 und 8 ohne unbeabsichtigte Launcher;
+- genaue AIM-120-Untervariante und Targeting-Pod-CLSID der F-16C;
+- KI-Verwendung von GBU-38 und GBU-12 im selben F-16C-CAS-Auftrag;
 - MOOSE-Registrierung des Strike-Payloads und `AUFTRAG.Type.STRIKE` ohne Bestandsduplizierung;
 - Cooldown-, Wartungs- und Reparaturzeiten;
 - persistente Verlustübergabe an CampaignState;
@@ -387,10 +456,15 @@ genau 1 AIRWING gestartet
 keine Doppelzählung von Clients, Templates oder Statics
 13 F-15E und 13 F-16C logisch ohne 14. Airframe abgebildet
 keine Spawns auf reservierten Client- oder Static-Spots
-CAS-AUFTRAG wählt den CAS-Payload
-STRIKE-AUFTRAG wählt den Strike-Payload
-Strike-Seed ist als Bodenangriff gespeichert
-Zünderwerte und CLSIDs entsprechen der Payloadentscheidung
+F-15E-CAS-AUFTRAG wählt den CAS-Payload
+F-15E-STRIKE-AUFTRAG wählt den Strike-Payload
+F-15E-Strike-Seed ist als Bodenangriff gespeichert
+F-15E-Zünderwerte und CLSIDs entsprechen der Payloadentscheidung
+F-16C-CAS-AUFTRAG wählt den funktionalen GBU-54-Ersatzpayload
+F-16C-Stationen 2 und 8 sind leer und rendern ohne unbeabsichtigte Launcher
+F-16C trägt keine AIM-9 im Standard-CAS-Payload
+F-16C-GBU-38- und GBU-12-Einsatz wird unter passenden Bedingungen validiert
+F-16C-Rack-, Waffen-, AIM-120- und Targeting-Pod-CLSIDs entsprechen der Payloadentscheidung
 AUFTRAG kann Assets anfordern, starten, zurückführen und freigeben
 Verluste reduzieren den Bestand
 sichere Rückkehr gibt den korrekten Bestand zurück
