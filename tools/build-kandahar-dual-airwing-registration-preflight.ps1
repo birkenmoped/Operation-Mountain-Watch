@@ -15,7 +15,7 @@ if (-not (Test-Path -LiteralPath $sourceFile -PathType Leaf)) {
 
 New-Item -ItemType Directory -Path $distDir -Force | Out-Null
 
-$builderVersion = 'KAF-DUAL-AIRWING-REGISTRATION-PREFLIGHT-1'
+$builderVersion = 'KAF-DUAL-AIRWING-REGISTRATION-PREFLIGHT-2'
 $sourceMission = 'OMW_Template_v4_Kandahar(4).miz'
 $sourceMissionSha256 = '0732f929d4e35641c84bfb34bd75912692c3a1b7b7a0106847ce56e21aa5345c'
 $expectedMooseSha256 = 'e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915'
@@ -42,6 +42,7 @@ $content = $header + (Get-Content -LiteralPath $sourceFile -Raw -Encoding UTF8)
 
 $requiredTokens = @(
     'AIRWING:New',
+    ':SetAirbase(',
     'SQUADRON:New',
     'AW_US_KAF_451_AEW',
     'AW_US_KAF_159_CAB_TF_THUNDER',
