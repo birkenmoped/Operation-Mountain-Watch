@@ -1,19 +1,19 @@
 # Kandahar UAV controlled spawn – acceptance
 
-Status: `FIRST_RUNTIME_FAIL_CORRECTED_RETEST_REQUIRED`
+Status: `RUNTIME_ACCEPTED`
 
-## Purpose
+## Accepted scope
 
-Validate the fixed, SQUADRON-specific Kandahar UAV parking contract after removal of the eleven calibration marker groups and restoration of the normal aircraft statics.
-
-The test performs one mission run with:
+This contract validates one controlled cold warehouse self-request for each Kandahar UAV type:
 
 ```text
 1 x MQ-1 / RQ-1A Predator asset group
 1 x MQ-9 Reaper asset group
 ```
 
-Both aircraft remain cold and uncontrolled. The test starts only the Kandahar Main AIRWING.
+Only the Kandahar Main AIRWING is started. Both groups remain cold, uncontrolled and on the ground. No AUFTRAG, OPSTRANSPORT, payload mutation, taxi command, route or takeoff is created.
+
+Landing, taxi-in and final post-landing parking remain outside this acceptance increment.
 
 ## Binding parking pools
 
@@ -38,15 +38,13 @@ G10 -> TerminalID 54
 G11 -> TerminalID 263
 ```
 
-At runtime, each list is intersected with the accepted Kandahar Main AIRWING allowlist. A position occupied by a restored aircraft static or protected client is excluded. There is no fallback to unrestricted Main-airfield parking.
-
-At least one available TerminalID must remain in each pool.
+Each pool is intersected at runtime with the accepted Kandahar Main AIRWING allowlist. Static-occupied, client-reserved and otherwise blocked positions are removed. There is no unrestricted Main-airfield fallback.
 
 ## MOOSE registered-asset synchronization
 
-`SQUADRON:SetParkingIDs()` sets the cohort-level parking list. During `LEGION:onafterNewAsset`, MOOSE copies that list to each registered warehouse asset as `asset.parkingIDs`.
+MOOSE copies `SQUADRON.parkingIDs` to `asset.parkingIDs` during `LEGION:onafterNewAsset`.
 
-Kandahar derives the final static/client-filtered UAV pools only after the SQUADRON assets have already been registered. The filtered lists must therefore also be synchronized to the existing asset records before the Main AIRWING starts.
+Because Kandahar derives the final static/client-filtered UAV pools after registration, the accepted lists must also be synchronized to the already registered warehouse assets before the Main AIRWING starts.
 
 Implemented source:
 
@@ -62,168 +60,149 @@ MQ-1 registered asset groups: 4
 MQ-9 registered asset groups: 2
 ```
 
-This synchronization does not start an AIRWING, spawn an asset, create an AUFTRAG or OPSTRANSPORT, mutate payloads, or issue taxi/takeoff commands.
+## Accepted runtime evidence
 
-## First runtime result and correction
-
-The first physical spawn run established:
-
-```text
-fixed UAV contract: PASS
-MQ-1 spawn: TerminalID 317, outside G01-G08 pool
-MQ-9 spawn: TerminalID 281, outside G09-G11 pool
-controlled spawn result: FAIL
-```
-
-Both selected positions were valid in the broad Main AIRWING allowlist but absent from the type-specific SQUADRON pools.
-
-Root cause:
-
-```text
-The filtered parking IDs were applied to the SQUADRON objects after asset registration.
-The already registered warehouse asset records still had no type-specific asset.parkingIDs.
-The warehouse allocator therefore used unrestricted Main AIRWING parking candidates.
-```
-
-The correction synchronizes the filtered SQUADRON pools to all six already registered UAV asset records before the controlled self-requests.
-
-Result evidence:
+Result artifact:
 
 ```text
 mission/tests/kandahar-air-operations/results/
-2026-08-02-kandahar-uav-controlled-spawn-fail-asset-parking-not-synced.md
+2026-08-02-kandahar-uav-controlled-spawn-pass.md
 ```
 
-## Mission preparation
-
-Remove all calibration-only groups:
+Evidence logs:
 
 ```text
-CAL_AIR_US_KAF_UAV_G01
-CAL_AIR_US_KAF_UAV_G02
-CAL_AIR_US_KAF_UAV_G03
-CAL_AIR_US_KAF_UAV_G04
-CAL_AIR_US_KAF_UAV_G05
-CAL_AIR_US_KAF_UAV_G06
-CAL_AIR_US_KAF_UAV_G07
-CAL_AIR_US_KAF_UAV_G08
-CAL_AIR_US_KAF_UAV_G09
-CAL_AIR_US_KAF_UAV_G10
-CAL_AIR_US_KAF_UAV_G11
+dcs(113).log
+SHA-256: 7a396dc5f7fb384190bc69187cbda9944bf52ee1965feeb8e48df6fefa5133af
+
+debrief(66).log
+SHA-256: 0a67bb535e3952865b1308566f1b0c82218b26d9d595ecb38cbc623355baedf7
 ```
 
-Restore the normal aircraft statics to their intended production positions before running this test.
-
-Retain the operational templates:
+DCS runtime:
 
 ```text
-TPL_AIR_US_KAF_MQ1A_RECON_1SHIP
-TPL_AIR_US_KAF_MQ9_RECON_1SHIP
+2.9.28.26385
+Terrain revision 27850
 ```
 
-## Build
+## Accepted runtime sequence
 
-```powershell
-cd P:\DCS-DEV\Operation-Mountain-Watch
-
-git switch agent/kandahar-airwing-baseline-contract
-git pull --ff-only origin agent/kandahar-airwing-baseline-contract
-
-powershell -ExecutionPolicy Bypass -File `
-  .\tools\build-kandahar-uav-controlled-spawn.ps1
-```
-
-Expected builder version:
-
-```text
-KAF-UAV-CONTROLLED-SPAWN-2
-```
-
-Generated bundle:
-
-```text
-mission\tests\kandahar-air-operations\dist\
-OMW_AirOps_Kandahar_UAV_Controlled_Spawn.lua
-```
-
-Load only this Kandahar test bundle after MOOSE. It already includes:
-
-```text
-05  - registration preflight
-06  - Main/Heliport parking contract
-10  - fixed UAV parking contract
-10b - registered UAV asset parking synchronization
-11  - controlled UAV spawn test
-```
-
-Do not load the calibration, general controlled-spawn, or parking-matrix bundles in parallel.
-
-## Required log sequence
-
-The baseline preflights must pass:
+Baseline preflights:
 
 ```text
 [OMW][AirOps.KAF.RegistrationPreflight] RESULT: PASS
 [OMW][AirOps.KAF.ParkingContract] RESULT: PASS
 ```
 
-The fixed UAV contract must report separate filtered pools:
+Filtered UAV contract:
 
 ```text
-[OMW][AirOps.KAF.UAVParkingContract] RESULT: PASS ... separatePools=true staticFiltered=true clientFiltered=true noFallback=true mq1Restricted=true mq9Restricted=true
+MQ-1 available: G01,G04,G05,G06,G07,G08
+MQ-1 TerminalIDs: 46,129,143,189,224,291
+MQ-1 unavailable: G02,G03
+
+MQ-9 available: G09,G10,G11
+MQ-9 TerminalIDs: 27,54,263
+MQ-9 unavailable: none
+
+RESULT: PASS
+separatePools=true
+staticFiltered=true
+clientFiltered=true
+noFallback=true
 ```
 
-The registered asset synchronization must pass before the AIRWING starts:
+Registered asset synchronization:
 
 ```text
-[OMW][AirOps.KAF.UAVAssetParkingSync] RESULT: PASS mq1Assets=4 ... mq9Assets=2 ... registeredAssetsSynchronized=true noStart=true noSpawn=true
+[OMW][AirOps.KAF.UAVAssetParkingSync]
+RESULT: PASS
+mq1Assets=4
+mq9Assets=2
+registeredAssetsSynchronized=true
 ```
 
-The controlled test must then report:
+Physical controlled spawns:
 
 ```text
-REQUEST_ISSUED index=1 case=MQ1 ...
-SELF_REQUEST_FULFILLED index=1 case=MQ1 ...
-GROUP_SPAWNED case=MQ1 ... alive=true airborne=false allOnGround=true
-UNIT_PARKED case=MQ1 ... inSquadronPool=true mainAllowed=true blocked=false
-CASE_RESULT: PASS index=1 case=MQ1 ...
+MQ-1
+TerminalID=291
+TerminalType=104
+nodeDistance=1.77
+inSquadronPool=true
+mainAllowed=true
+blocked=false
+alive=true
+airborne=false
+allOnGround=true
+CASE_RESULT: PASS
 
-REQUEST_ISSUED index=2 case=MQ9 ...
-SELF_REQUEST_FULFILLED index=2 case=MQ9 ...
-GROUP_SPAWNED case=MQ9 ... alive=true airborne=false allOnGround=true
-UNIT_PARKED case=MQ9 ... inSquadronPool=true mainAllowed=true blocked=false
-CASE_RESULT: PASS index=2 case=MQ9 ...
+MQ-9
+TerminalID=263
+TerminalType=104
+nodeDistance=1.77
+inSquadronPool=true
+mainAllowed=true
+blocked=false
+alive=true
+airborne=false
+allOnGround=true
+CASE_RESULT: PASS
 ```
 
-## Required final result
+Final accepted result:
 
 ```text
-[OMW][AirOps.KAF.UAVControlledSpawn] RESULT: PASS cases=2 passed=2 failed=0 assetGroups=2 units=2 mq1TerminalID=<one available G01-G08 ID> mq1Pool=G01-G08 mq9TerminalID=<one available G09-G11 ID> mq9Pool=G09-G11 separatePools=true cold=true uncontrolled=true mainAirwingStarted=true heliportAirwingStopped=true noFallback=true noAUFTRAG=true noTransport=true noPayloadMutation=true noTaxi=true noTakeoff=true
+[OMW][AirOps.KAF.UAVControlledSpawn]
+RESULT: PASS
+cases=2
+passed=2
+failed=0
+assetGroups=2
+units=2
+mq1TerminalID=291
+mq9TerminalID=263
+separatePools=true
+cold=true
+uncontrolled=true
+mainAirwingStarted=true
+heliportAirwingStopped=true
+noFallback=true
+noAUFTRAG=true
+noTransport=true
+noPayloadMutation=true
+noTaxi=true
+noTakeoff=true
 ```
 
-## Failure conditions
+## Debrief cross-check
 
-The test fails if:
+The debrief contains no engine-start, taxi, takeoff, landing, crash or dead event for the controlled UAV test. The graveyard is empty.
 
-- the registered asset synchronization does not cover exactly four MQ-1 and two MQ-9 asset groups;
-- any registered UAV asset does not receive the current filtered type-specific list;
-- MQ-1 appears outside the currently available G01-G08 TerminalIDs;
-- MQ-9 appears outside the currently available G09-G11 TerminalIDs;
+## Non-blocking messages
+
+The following messages are recorded but do not invalidate this acceptance:
+
+```text
+EVENTMETA warning for DCS event ID 61
+AIRWING ReturnPayloadFromAsset: asset had no payload attached
+bhHook.lua shutdown error: tcp is nil
+```
+
+The payload messages belong to the deliberately payloadless warehouse self-requests. The `bhHook.lua` error occurs during DCS shutdown and is external to the Kandahar test.
+
+## Failure conditions retained for future regression tests
+
+The controlled-spawn contract fails if:
+
+- synchronization does not cover exactly four MQ-1 and two MQ-9 asset groups;
+- any registered UAV asset lacks the current filtered type-specific list;
+- MQ-1 spawns outside an available G01-G08 position;
+- MQ-9 spawns outside an available G09-G11 position;
 - a blocked, static-occupied or client-reserved TerminalID is used;
-- either UAV uses an unrestricted Main-airfield fallback;
+- either UAV uses unrestricted Main-airfield fallback;
+- the wrong template, type, group count or unit count is delivered;
 - either group is airborne or not fully on the ground;
-- the wrong template or DCS type is delivered;
-- more or fewer than one asset group and one unit per case is delivered;
 - the Heliport AIRWING starts;
-- an AUFTRAG, OPSTRANSPORT, payload mutation, taxi, route, or takeoff command is introduced.
-
-## Runtime duration and evidence
-
-Allow at least 150 seconds after mission start and provide the current:
-
-```text
-dcs.log
-debrief.log
-```
-
-Landing, taxi-in and final post-landing parking remain a separate acceptance increment after the controlled spawn contract passes.
+- an AUFTRAG, OPSTRANSPORT, payload mutation, taxi, route or takeoff command is introduced.
