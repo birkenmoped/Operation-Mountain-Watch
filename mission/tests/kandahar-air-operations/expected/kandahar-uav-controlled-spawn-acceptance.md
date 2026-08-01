@@ -1,6 +1,6 @@
 # Kandahar UAV controlled spawn – acceptance
 
-Status: `PREPARED_NOT_RUNTIME_ACCEPTED`
+Status: `FIRST_RUNTIME_FAIL_CORRECTED_RETEST_REQUIRED`
 
 ## Purpose
 
@@ -42,6 +42,58 @@ At runtime, each list is intersected with the accepted Kandahar Main AIRWING all
 
 At least one available TerminalID must remain in each pool.
 
+## MOOSE registered-asset synchronization
+
+`SQUADRON:SetParkingIDs()` sets the cohort-level parking list. During `LEGION:onafterNewAsset`, MOOSE copies that list to each registered warehouse asset as `asset.parkingIDs`.
+
+Kandahar derives the final static/client-filtered UAV pools only after the SQUADRON assets have already been registered. The filtered lists must therefore also be synchronized to the existing asset records before the Main AIRWING starts.
+
+Implemented source:
+
+```text
+mission/tests/kandahar-air-operations/src/
+10b-kandahar-uav-registered-asset-parking-sync.lua
+```
+
+Required synchronization inventory:
+
+```text
+MQ-1 registered asset groups: 4
+MQ-9 registered asset groups: 2
+```
+
+This synchronization does not start an AIRWING, spawn an asset, create an AUFTRAG or OPSTRANSPORT, mutate payloads, or issue taxi/takeoff commands.
+
+## First runtime result and correction
+
+The first physical spawn run established:
+
+```text
+fixed UAV contract: PASS
+MQ-1 spawn: TerminalID 317, outside G01-G08 pool
+MQ-9 spawn: TerminalID 281, outside G09-G11 pool
+controlled spawn result: FAIL
+```
+
+Both selected positions were valid in the broad Main AIRWING allowlist but absent from the type-specific SQUADRON pools.
+
+Root cause:
+
+```text
+The filtered parking IDs were applied to the SQUADRON objects after asset registration.
+The already registered warehouse asset records still had no type-specific asset.parkingIDs.
+The warehouse allocator therefore used unrestricted Main AIRWING parking candidates.
+```
+
+The correction synchronizes the filtered SQUADRON pools to all six already registered UAV asset records before the controlled self-requests.
+
+Result evidence:
+
+```text
+mission/tests/kandahar-air-operations/results/
+2026-08-02-kandahar-uav-controlled-spawn-fail-asset-parking-not-synced.md
+```
+
 ## Mission preparation
 
 Remove all calibration-only groups:
@@ -81,6 +133,12 @@ powershell -ExecutionPolicy Bypass -File `
   .\tools\build-kandahar-uav-controlled-spawn.ps1
 ```
 
+Expected builder version:
+
+```text
+KAF-UAV-CONTROLLED-SPAWN-2
+```
+
 Generated bundle:
 
 ```text
@@ -91,10 +149,11 @@ OMW_AirOps_Kandahar_UAV_Controlled_Spawn.lua
 Load only this Kandahar test bundle after MOOSE. It already includes:
 
 ```text
-05 - registration preflight
-06 - Main/Heliport parking contract
-10 - fixed UAV parking contract
-11 - controlled UAV spawn test
+05  - registration preflight
+06  - Main/Heliport parking contract
+10  - fixed UAV parking contract
+10b - registered UAV asset parking synchronization
+11  - controlled UAV spawn test
 ```
 
 Do not load the calibration, general controlled-spawn, or parking-matrix bundles in parallel.
@@ -112,6 +171,12 @@ The fixed UAV contract must report separate filtered pools:
 
 ```text
 [OMW][AirOps.KAF.UAVParkingContract] RESULT: PASS ... separatePools=true staticFiltered=true clientFiltered=true noFallback=true mq1Restricted=true mq9Restricted=true
+```
+
+The registered asset synchronization must pass before the AIRWING starts:
+
+```text
+[OMW][AirOps.KAF.UAVAssetParkingSync] RESULT: PASS mq1Assets=4 ... mq9Assets=2 ... registeredAssetsSynchronized=true noStart=true noSpawn=true
 ```
 
 The controlled test must then report:
@@ -140,6 +205,8 @@ CASE_RESULT: PASS index=2 case=MQ9 ...
 
 The test fails if:
 
+- the registered asset synchronization does not cover exactly four MQ-1 and two MQ-9 asset groups;
+- any registered UAV asset does not receive the current filtered type-specific list;
 - MQ-1 appears outside the currently available G01-G08 TerminalIDs;
 - MQ-9 appears outside the currently available G09-G11 TerminalIDs;
 - a blocked, static-occupied or client-reserved TerminalID is used;
