@@ -13,7 +13,7 @@ Builder:
 
 ```text
 tools/build-kandahar-dual-airwing-registration-preflight.ps1
-BuilderVersion: KAF-DUAL-AIRWING-REGISTRATION-PREFLIGHT-1
+BuilderVersion: KAF-DUAL-AIRWING-REGISTRATION-PREFLIGHT-2
 ```
 
 The test is deliberately limited to object construction and SQUADRON registration. It does not authorize productive runtime operation.
@@ -31,6 +31,10 @@ Warehouse: WH_AIR_US_KANDAHAR_HELI
 Airbase: AIRBASE.Afghanistan.Kandahar_Heliport
 Expected DCS ID: 15
 ```
+
+MOOSE automatically associates a warehouse with an airbase inside its automatic connection radius. Kandahar Main and Kandahar Heliport are close enough that automatic selection is ambiguous for the Main warehouse. The preflight must therefore use the native MOOSE `AIRWING:SetAirbase()` method explicitly for both AIRWINGs before SQUADRON registration.
+
+The automatic constructor result may initially report ID 15 for `AW_US_KAF_451_AEW`. That is diagnostic context, not an accepted final binding. The final binding after `SetAirbase()` must be ID 7.
 
 ## Required SQUADRON registrations
 
@@ -98,7 +102,14 @@ The expected registered physical inventory is therefore:
 
 ## Required log evidence
 
-The log must contain exactly two successful AIRWING construction lines:
+The log must contain explicit native-MOOSE binding confirmation for both AIRWINGs:
+
+```text
+AIRWING_AIRBASE_BOUND key=Main airwing=AW_US_KAF_451_AEW ... expectedID=7 actualID=7 explicit=true
+AIRWING_AIRBASE_BOUND key=Heliport airwing=AW_US_KAF_159_CAB_TF_THUNDER ... expectedID=15 actualID=15 explicit=true
+```
+
+The log must then contain exactly two successful AIRWING construction lines:
 
 ```text
 AIRWING_CONSTRUCTED key=Main name=AW_US_KAF_451_AEW ... airbaseID=7 running=false
@@ -144,7 +155,8 @@ A PASS proves only:
 ```text
 warehouse names resolve;
 airbases resolve with the expected IDs;
-AIRWING constructors bind to the intended warehouses and airbases;
+AIRWING constructors bind to the intended warehouses;
+AIRWING:SetAirbase explicitly resolves the Kandahar/Kandahar Heliport ambiguity;
 all nine physical SQUADRON objects can be created from the approved templates;
 asset-group arithmetic matches the approved inventory decision;
 all SQUADRONs register under the correct AIRWING;
