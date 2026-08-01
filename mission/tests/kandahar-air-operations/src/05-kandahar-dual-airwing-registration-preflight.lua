@@ -286,7 +286,25 @@ local function validateTemplate(spec)
   return true
 end
 
+local function getAirbase(airwing)
+  if airwing and airwing.GetAirbase then
+    local ok, value = pcall(function()
+      return airwing:GetAirbase()
+    end)
+    if ok then
+      return value
+    end
+  end
+  return airwing and airwing.airbase or nil
+end
+
 local function constructAirwing(spec, key)
+  local expectedAirbase = AIRBASE:FindByName(spec.AirbaseName)
+  if not expectedAirbase then
+    fail("AIRWING_EXPECTED_AIRBASE_MISSING key=" .. key .. " name=" .. tostring(spec.AirbaseName))
+    return nil
+  end
+
   local ok, airwing = pcall(function()
     return AIRWING:New(spec.WarehouseName, spec.AirwingName)
   end)
@@ -319,14 +337,40 @@ local function constructAirwing(spec, key)
     ))
   end
 
-  local boundAirbase = airwing.airbase
-  if not boundAirbase or tonumber(boundAirbase:GetID()) ~= tonumber(spec.AirbaseID) then
+  local initialAirbase = getAirbase(airwing)
+  local initialID = initialAirbase and initialAirbase:GetID() or nil
+
+  local bindOK, bindResult = pcall(function()
+    return airwing:SetAirbase(expectedAirbase)
+  end)
+  if not bindOK then
     fail(string.format(
-      "AIRWING_AIRBASE_BINDING_MISMATCH key=%s airwing=%s expectedID=%s actualID=%s",
+      "AIRWING_SET_AIRBASE_FAILED key=%s airwing=%s expectedID=%s error=%s",
       key,
       spec.AirwingName,
       tostring(spec.AirbaseID),
+      tostring(bindResult)
+    ))
+  end
+
+  local boundAirbase = getAirbase(airwing)
+  if not boundAirbase or tonumber(boundAirbase:GetID()) ~= tonumber(spec.AirbaseID) then
+    fail(string.format(
+      "AIRWING_AIRBASE_BINDING_MISMATCH key=%s airwing=%s expectedID=%s initialID=%s actualID=%s",
+      key,
+      spec.AirwingName,
+      tostring(spec.AirbaseID),
+      tostring(initialID),
       boundAirbase and tostring(boundAirbase:GetID()) or "nil"
+    ))
+  else
+    log(string.format(
+      "AIRWING_AIRBASE_BOUND key=%s airwing=%s initialID=%s expectedID=%s actualID=%s explicit=true",
+      key,
+      spec.AirwingName,
+      tostring(initialID),
+      tostring(spec.AirbaseID),
+      tostring(boundAirbase:GetID())
     ))
   end
 
