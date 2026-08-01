@@ -6,6 +6,7 @@ authoritative_for:
   - Kandahar Mission Editor air-operations baseline
   - Kandahar July 2011 source-reported unit roster
   - Kandahar active A-10C unit and inventory
+  - Kandahar A-10C II CAS template payload baseline
   - Kandahar dual-airbase AIRWING and warehouse architecture
   - Kandahar SQUADRON identifiers
   - Kandahar-wide runtime implementation handoff
@@ -45,6 +46,8 @@ Maßgebliche Dokumente:
 
 - [`Kandahar Juli-2011 ORBAT Unit Name Reconciliation`](evidence/kandahar-july-2011-orbat-unit-name-reconciliation.md)
 - [`Kandahar A-10C Active Unit Decision`](evidence/kandahar-a10c-active-unit-decision-2026-07-31.md)
+- [`Kandahar A-10C II CAS Loadout Decision`](evidence/kandahar-a10c-cas-loadout-decision-2026-08-01.md)
+- [`Kandahar revision (4) Template Type Reconciliation`](evidence/kandahar-miz4-template-type-reconciliation.md)
 - [`Kandahar Heliport Warehouse and AIRWING Contract`](kandahar-heliport-warehouse-contract.md)
 - [`Kandahar Mustang Ramp Army Aviation Baseline`](36-kandahar-mustang-ramp-army-aviation-baseline.md)
 - `OMW-AIR-KANDAHAR-ISR-POLICY` für MQ-1/MQ-9
@@ -281,8 +284,8 @@ Alle zehn Clientpositionen lagen im Runtime-Audit exakt auf ihren TerminalIDs un
 ### 7.3 KI-Templates
 
 ```text
-TPL_AIR_US_KAF_A10C_CAS_2SHIP       | 2 x A-10C
-TPL_AIR_US_KAF_C130_TRANSPORT_1SHIP | 1 x C-130
+TPL_AIR_US_KAF_A10C_CAS_2SHIP       | 2 x A-10C_2
+TPL_AIR_US_KAF_C130_TRANSPORT_1SHIP | 1 x C-130J-30
 TPL_AIR_US_KAF_HH60G_CSAR_1SHIP     | 1 x UH-60A
 TPL_AIR_US_KAF_MQ1A_RECON_1SHIP     | 1 x RQ-1A Predator
 TPL_AIR_US_KAF_MQ9_RECON_1SHIP      | 1 x MQ-9 Reaper
@@ -295,19 +298,77 @@ TPL_AIR_US_KAF_UH60_MEDEVAC_1SHIP   | 1 x UH-60A
 
 Alle Templates sind Late Activation, nicht Uncontrolled und reine Authoring-Seeds.
 
-A-10- und C-130-Template-Typen weichen noch von Clients/Statics ab:
+Für Revision `(4)` sind die früheren A-10- und C-130-Typabweichungen geschlossen:
 
 ```text
-A-10 template: A-10C
-Clients/Statics: A-10C_2
-
-C-130 template: C-130
-Clients/Statics: C-130J-30
+A-10 clients = template = statics = A-10C_2
+C-130 clients = template = statics = C-130J-30
 ```
 
-Diese Abweichungen müssen vor SQUADRON-Registrierung korrigiert oder ausdrücklich als technische Repräsentation genehmigt werden.
+Maßgebliche Korrektur:
 
-### 7.4 US-Statics
+- [`Kandahar revision (4) Template Type Reconciliation`](evidence/kandahar-miz4-template-type-reconciliation.md)
+
+### 7.4 A-10C II CAS-Payload-Baseline
+
+Verbindlicher Authoring-Seed:
+
+```text
+TPL_AIR_US_KAF_A10C_CAS_2SHIP
+2 x A-10C_2
+Task: CAS
+Skill: Veteran
+Late Activation: enabled
+Callsign: Pig 1
+Radio: 251 MHz AM
+```
+
+Verbindliche DCS-Stationsbelegung:
+
+| Station | Store |
+|---:|---|
+| 11 | leer |
+| 10 | AN/AAQ-28 LITENING II AT TGP |
+| 9 | SUU-25, acht Leuchtfackeln gemäß DCS-Anzeige; exakter LUU-2-Untertyp im Screenshot nicht erfasst |
+| 8 | 1 × GBU-38 |
+| 7 | 1 × GBU-38 |
+| 6 | leer |
+| 5 | 1 × GBU-38 |
+| 4 | 1 × GBU-38 |
+| 3 | LAU-117 mit 1 × AGM-65D |
+| 2 | LAU-131 mit 7 × Hydra 70 M156 SM |
+| 1 | leer |
+
+Interne Waffe und Mission-Editor-Werte:
+
+```text
+GAU-8/A: 100 Prozent, CM mixed
+Fuel: 100 Prozent / 11,087 lb
+Chaff: 240
+Flares: 240
+Weapon mass: 5,697 lb
+Total mass: 42,413 lb
+Maximum mass: 46,476 lb
+Displayed load ratio: 91 percent
+```
+
+Die vier GBU-38 sind symmetrisch auf den Paaren `8/4` und `7/5` verteilt. TGP plus SUU-25 liegen gegenüber AGM-65D/LAU-117 plus LAU-131/M156. Diese Verteilung ist eine verbindliche OMW-Missionseditorentscheidung und kein behaupteter offizieller USAF-Loadsheet-Standard.
+
+Historisch direkt belegt sind A-10C, GBU-38, ein Raketenbehälter, AGM-65 und 30-mm-Munition in Kandahar. Nicht direkt als eine gemeinsame Standardkonfiguration belegt sind die exakte Viererzahl der GBU-38, der Maverick-Untertyp `D`, der Raketentyp `M156 SM`, der SUU-25 und diese vollständige Stationsanordnung.
+
+Maßgebliche Entscheidung und Quellenabgrenzung:
+
+- [`Kandahar A-10C II CAS Loadout Decision`](evidence/kandahar-a10c-cas-loadout-decision-2026-08-01.md)
+
+Der Screenshot stammt aus `OMW_Template_v4_Kandahar.miz`; ein gespeichertes Missionsartefakt mit Größe und SHA-256 wurde für diesen Payload-Stand noch nicht geliefert. Deshalb gilt:
+
+```yaml
+payload_authoring_decision: BINDING
+saved_mission_payload_audit: PENDING
+dcs_spawn_takeoff_recovery_acceptance: NOT_RUN
+```
+
+### 7.5 US-Statics
 
 ```text
 6 x A-10C_2
@@ -321,7 +382,7 @@ Diese Abweichungen müssen vor SQUADRON-Registrierung korrigiert oder ausdrückl
 Gesamt: 47
 ```
 
-### 7.5 UN-Statics
+### 7.6 UN-Statics
 
 ```text
 2 x Mi-26
@@ -420,6 +481,8 @@ OH-58D: aktuelles Template enthält APKWS und AGM-114
 
 MQ-1/MQ-9 werden gemäß ISR-Policy behandelt. APKWS benötigt eine ausdrückliche Perioden-/Projektentscheidung. Keine dieser Konfigurationen wird allein durch vorhandene ME-Payloads automatisch freigegeben.
 
+Die A-10C-Payload-Baseline ist dagegen durch Abschnitt 7.4 ausdrücklich als OMW-Projektentscheidung freigegeben. Ihre Speicherung im Missionsartefakt und DCS-Laufzeitakzeptanz bleiben getrennte, noch offene Nachweise.
+
 ## 12. Verlust- und Rückgabelogik
 
 ```text
@@ -458,6 +521,8 @@ alle SQUADRON-Namen aus Abschnitt 6 prüfen
 75th und 107th EFS als aktive SQUADRONs ausschließen
 3-101 und 4-101 als Kandahar-SQUADRONs ausschließen
 Templates und Gruppengrößen prüfen
+A-10C-Template als 2 x A-10C_2 prüfen
+den gespeicherten A-10C-Payload gegen Abschnitt 7.4 prüfen
 Client-Terminals reservieren
 Safe-Parking-Kandidaten getrennt je Airbase ausgeben
 keinen produktiven Army-Bestand erfinden
@@ -472,7 +537,8 @@ logische Bestände außer 16 A-10C
 regionaler 159-CAB-Gesamtbestand und alle Detachment-Abzüge
 technische Zuordnung und Bestand der 26th ERQS
 UAV-Warehouse- oder externes Kontingentmodell
-A-10-/C-130-Template-Typangleichung
+A-10C-Payload: gespeichertes Missionsartefakt, Hash und semantischer Audit
+A-10C-Payload: Spawn-, Taxi-, Start- und Recovery-Acceptance bei 42,413 lb DCS-Anzeige
 MQ-1-/MQ-9-Freigaben
 OH-58D-APKWS-Entscheidung
 Safe-Parking-Allow-/Blocklists
@@ -492,9 +558,11 @@ keine aktive Kandahar-SQUADRON für 75th oder 107th EFS
 keine Kandahar-SQUADRON für 3-101 oder 4-101
 keine Doppelzählung von Clients, Templates oder Statics
 16 A-10C logisch registriert
+TPL_AIR_US_KAF_A10C_CAS_2SHIP ist 2 x A-10C_2
+beide A-10C-Templateeinheiten entsprechen dem Payload aus Abschnitt 7.4
 weitere Bestände nur nach ausdrücklicher Entscheidung
 keine Spawns auf Client- oder Static-Nodes
 Late-Activation-Templates bleiben bis zur Zuweisung inaktiv
 Verluste und beschädigte Rückkehr verändern Bestände korrekt
-keine relevanten Lua-, Parking-, Timer- oder Eventfehler
+keine relevanten Lua-, Parking-, Timer-, Payload- oder Eventfehler
 ```
