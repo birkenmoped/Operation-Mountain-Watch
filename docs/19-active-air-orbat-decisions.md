@@ -7,6 +7,7 @@ authoritative_for:
   - active squadron selection
   - local aircraft inventory
   - player aircraft limits
+  - project-wide active AH-64D CAS payload baseline
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
@@ -72,6 +73,50 @@ Diese Regel ersetzt sämtliche älteren Angaben von vier, vier bis acht oder meh
 | 7 | Camp Bastion | CH-53E | HMH-361 (-) Reinforced, 17 CH-53E | `BINDING` |
 
 Ein automatischer Staffelwechsel anhand eines fortlaufenden Kampagnendatums wird zunächst nicht umgesetzt.
+
+## Projektweite AH-64D-CAS-Payload-Baseline
+
+Für den AH-64D wird genau **ein** reguläres CAS-Payload-Template geführt. Separate Light-, Heavy-, Anti-Armor- oder Strike-Payloadvarianten werden nicht angelegt.
+
+Diese Festlegung betrifft ausschließlich Bewaffnung und Mission-Editor-Templatekonfiguration. Sie erzeugt keine zusätzliche Stationierung, keinen neuen Bestand und keine weitere aktive SQUADRON außerhalb der in diesem Dokument festgelegten ORBAT.
+
+### Verbindliche Beladung je AH-64D
+
+| System | Verbindliche Konfiguration |
+|---|---|
+| Hydra 70 | 2 × M261 mit jeweils 19 × M151 HE; insgesamt 38 Raketen |
+| Hellfire | 2 × AGM-114K insgesamt; jeweils 1 Flugkörper auf jedem M299-Vierfachstarter |
+| Bordkanone | 300 × M789 HEDP; im DCS Mission Editor 25 Prozent Kanonenmunition |
+| interner Zusatztank | IAFS/Robbie Tank installiert |
+| interner Kraftstoff | aktueller Mission-Editor-Arbeitsstand 100 Prozent |
+
+### Abgrenzung
+
+- Die M299-Starter bleiben montiert, werden aber nur teilbestückt.
+- Acht Hellfires sind nicht die reguläre OMW-CAS-Beladung.
+- M257-Beleuchtungsraketen werden nicht dauerhaft im einzigen CAS-Template mitgeführt.
+- M229 HE, M274 TP-SM und andere Spezialmischungen gehören nicht zur Standardbeladung.
+- Beide M261 erhalten die reine DCS-Auswahl `19 × Hydra 70 M151 HE`; die gemischte Auswahl `A/B: M151; E: M257` ist nicht zu verwenden.
+- Die zwei Hellfires dienen im COIN-/CAS-Profil als Präzisionsreserve gegen ein relevantes Fahrzeug, eine befestigte Feuerstellung oder ein geeignetes Strukturziel.
+- Die verringerte Hellfire-Zahl reduziert das Abfluggewicht gegenüber einer Achtfachbeladung deutlich und ist mit dem Hot-and-high- und Verweildauerprofil Afghanistans vereinbar.
+
+### Templateanwendung
+
+Die Baseline gilt für jedes aktive OMW-AH-64D-CAS-Template nach folgendem Namensmuster:
+
+```text
+TPL_AIR_US_<BASE>_AH64D_CAS_2SHIP
+```
+
+Für Jalalabad ist dies:
+
+```text
+TPL_AIR_US_JBAD_AH64D_CAS_2SHIP
+```
+
+Das Template enthält zwei identisch beladene AH-64D. Die Beladung ist im Mission Editor je Luftfahrzeug zu prüfen; ein Payload-Preset allein ersetzt nicht die Kontrolle der tatsächlich gespeicherten Pylonen-, Kanonen-, IAFS- und Kraftstoffwerte.
+
+Die Konfiguration ist eine verbindliche Mission-Editor-Baseline. `validated_in_dcs: false` bleibt bestehen, bis Spawn, Start, Auftrag, Waffenverfügbarkeit, Rückkehr und AIRWING-/SQUADRON-Nutzung auf einem exakt dokumentierten Missions-, DCS- und MOOSE-Stand reproduzierbar geprüft wurden.
 
 ---
 
@@ -258,12 +303,12 @@ HMH-363, HMH-362 und CH-53D bleiben historischer Kontext und erzeugen keinen par
 
 ## Verbleibende technische Detailentscheidungen
 
-Noch offen sind nicht die oben festgelegten aktiven Verbände und Bestände, sondern unter anderem:
+Noch offen sind nicht die oben festgelegten aktiven Verbände, Bestände und die AH-64D-CAS-Payload-Baseline, sondern unter anderem:
 
 - genaue Zahl und Platzierung gepoolter Statics je Muster;
 - historisch passende oder verfügbare Liveries;
 - konkrete Client- und KI-Parkpositionen;
-- Payload- und Rollen-Templates;
+- weitere Payload- und Rollen-Templates außerhalb der festgelegten AH-64D-CAS-Baseline;
 - technische Verwendbarkeit karteneigener Warehouse-Gebäude;
 - DCS-Typnamen und MOOSE-Verhalten der KI-Muster;
 - physische Darstellung der UH-1Y;
