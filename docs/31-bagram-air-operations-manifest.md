@@ -111,6 +111,35 @@ native DCS-Spielerabbildung: F-16C Block 50
 
 Der Block 50 ist ein ausdrücklich gekennzeichneter technischer Ersatz. Die Abweichung bleibt in Mission, Dokumentation und Payload-Auswahl sichtbar.
 
+### 4.1 F-16C-CAS-Payloadgrenze
+
+Die verbindliche Payload-Arbeitsentscheidung ist dokumentiert in:
+
+```text
+docs/evidence/bagram-f16c-cas-payload-decision-2026-08-01.md
+```
+
+Historisches 2011-Sollbild als projektseitige Arbeitsinterpretation:
+
+```text
+2 x GBU-38
+2 x GBU-54
+2 x Wingtip-AIM-120
+Station 2 und 8 clean
+keine AIM-9 im Standard-CAS-Loadout
+```
+
+Die native DCS-F-16C bildet die GBU-54 nicht ab und erlaubt damit keine exakte Reproduktion des historischen Dual-Mode-Loadouts. Die verbindliche Vanilla-DCS-Funktionsannäherung lautet:
+
+```text
+2 x GBU-38 auf BRU-57
+2 x GBU-12 auf TER-9A
+2 x Wingtip-AIM-120
+Station 2 und 8 clean
+```
+
+Diese Konfiguration erhält vier 500-lb-Präzisionswaffen sowie GPS- und Laserangriffsmöglichkeiten. Sie ist ausdrücklich kein historisch exaktes Außenlastbild: Nur zwei statt vier Waffen bleiben GPS/INS-fähig, und die GBU-12 besitzt nicht die Dual-Mode-Flexibilität der GBU-54.
+
 ## 5. Verbindliche Clientregel
 
 ```text
@@ -216,5 +245,6 @@ Transport-, Rescue- und Army-Aviation-Komponenten werden als Erweiterung desselb
 - Dieses Dokument: historische Fighter-Evidenz und aktive Fighter-ORBAT.
 - `OMW-AIR-PLAYER-SLOT-POLICY`: projektweite Clientobergrenze und Template-/Zonenkorrekturen.
 - `OMW-AIR-BAGRAM-ME-BASELINE`: tatsächlich gesetzter Missionseditorstand.
+- `OMW-EVIDENCE-BAGRAM-F16C-CAS-PAYLOAD-2026-08-01`: historisches F-16C-CAS-Sollbild, DCS-Grenzen und verbindlicher funktionaler Ersatz.
 
 Bei einem Widerspruch zu älteren Bagram-Planwerten gelten die beiden letztgenannten Baselines für die konkrete Umsetzung.
