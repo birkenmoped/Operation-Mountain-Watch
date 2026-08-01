@@ -66,7 +66,7 @@ _G.COORDINATE = {
 }
 
 local config = loadLua("mission/tests/tm01-blue-convoy/config-tm01m.lua")
-assert(config.configurationVersion == "TM01M-moose-native-five-convoys-3")
+assert(config.configurationVersion == "TM01M-moose-native-five-convoys-4")
 assert(config.routing.speedKph == 50, "expected 50 km/h multi-convoy test")
 assert(config.arrival.despawnDelaySeconds == 60, "expected 60-second arrival dwell")
 assert(config.arrival.generateDestroyEvents == false, "arrival cleanup must be silent")
@@ -76,28 +76,28 @@ assert(config.routing.msrPathlines == nil, "legacy shared route pathlines must b
 
 local expectedEndpoints = {
   EAST_E3_BGR_KBL = {
-    startZone = "MSR_HORSESHOE_START_BAGRAM",
-    targetZone = "MSR_HORSESHOE_E3_TARGET_KABUL",
+    startZone = "OMW_LOG_NODE_BAGRAM",
+    targetZone = "OMW_LOG_NODE_KABUL",
     pathlines = { "MSR_EAST_E03" },
   },
   EAST_E2_KBL_JBAD = {
-    startZone = "MSR_ILLINOIS_E2_START_KABUL",
-    targetZone = "MSR_ILLINOIS_E2_TARGET_JALALABAD",
+    startZone = "OMW_LOG_NODE_KABUL",
+    targetZone = "OMW_LOG_NODE_JALALABAD",
     pathlines = { "MSR_EAST_E02" },
   },
   EAST_E1_TRK_JBAD = {
-    startZone = "MSR_ILLINOIS_E1_START_TORKHAM",
-    targetZone = "MSR_ILLINOIS_E1_TARGET_JALALABAD",
+    startZone = "OMW_LOG_NODE_TORKHAM",
+    targetZone = "OMW_LOG_NODE_JALALABAD",
     pathlines = { "MSR_EAST_E01" },
   },
   KUNAR_K1_JBAD_ASAD = {
-    startZone = "MSR_CALIFORNIA-C1_START_JALALABAD",
-    targetZone = "MSR_CALIFORNIA-C1_TARGET_ASADABAD",
+    startZone = "OMW_LOG_NODE_JALALABAD",
+    targetZone = "OMW_LOG_NODE_ASADABAD",
     pathlines = { "MSR_KUNAR_K01" },
   },
   CAL_ASAD_BOSTIK = {
-    startZone = "MSR_CALIFORNIA-C2_START_ASADABAD",
-    targetZone = "MSR_CALIFORNIA-C03_TARGET_FOB_BOSTIK",
+    startZone = "OMW_LOG_NODE_ASADABAD",
+    targetZone = "OMW_LOG_NODE_BOSTICK",
     pathlines = { "MSR_CAL_C01", "MSR_CAL_C02" },
   },
 }
@@ -113,6 +113,16 @@ local legacyEndpointNames = {
   "MSR_KUNAR K1_TARGET_ASADABAD",
   "MSR_CALIFORNIA_START_ASADABAD",
   "MSR_CALIFORNIA_TARGET_FOB_BOSTIK",
+  "MSR_HORSESHOE_START_BAGRAM",
+  "MSR_HORSESHOE_E3_TARGET_KABUL",
+  "MSR_ILLINOIS_E2_START_KABUL",
+  "MSR_ILLINOIS_E2_TARGET_JALALABAD",
+  "MSR_ILLINOIS_E1_START_TORKHAM",
+  "MSR_ILLINOIS_E1_TARGET_JALALABAD",
+  "MSR_CALIFORNIA-C1_START_JALALABAD",
+  "MSR_CALIFORNIA-C1_TARGET_ASADABAD",
+  "MSR_CALIFORNIA-C2_START_ASADABAD",
+  "MSR_CALIFORNIA-C03_TARGET_FOB_BOSTIK",
 }
 
 local configuredEndpointNames = {}
@@ -120,9 +130,9 @@ for _, convoyConfig in ipairs(config.convoys) do
   local expected = assert(expectedEndpoints[convoyConfig.id],
     "unexpected convoy id " .. tostring(convoyConfig.id))
   assert(convoyConfig.startZone == expected.startZone,
-    "renamed start zone mismatch for " .. convoyConfig.id)
+    "shared logistics start node mismatch for " .. convoyConfig.id)
   assert(convoyConfig.targetZone == expected.targetZone,
-    "renamed target zone mismatch for " .. convoyConfig.id)
+    "shared logistics target node mismatch for " .. convoyConfig.id)
   assert(#convoyConfig.msrPathlines == #expected.pathlines,
     "PATHLINE count changed for " .. convoyConfig.id)
   for index, pathlineName in ipairs(expected.pathlines) do
@@ -137,6 +147,21 @@ for _, legacyName in ipairs(legacyEndpointNames) do
     "legacy endpoint name must not remain configured: " .. legacyName)
 end
 
+local expectedSharedNodes = {
+  OMW_LOG_NODE_BAGRAM = true,
+  OMW_LOG_NODE_KABUL = true,
+  OMW_LOG_NODE_TORKHAM = true,
+  OMW_LOG_NODE_JALALABAD = true,
+  OMW_LOG_NODE_ASADABAD = true,
+  OMW_LOG_NODE_BOSTICK = true,
+}
+local sharedNodeCount = 0
+for nodeName in pairs(configuredEndpointNames) do
+  assert(expectedSharedNodes[nodeName], "unexpected logistics node " .. tostring(nodeName))
+  sharedNodeCount = sharedNodeCount + 1
+end
+assert(sharedNodeCount == 6, "five routes must reuse exactly six logistics nodes")
+
 local ZoneMethods = {}
 function ZoneMethods:GetCoordinate() return coordinate(self.name, self.x, self.y) end
 function ZoneMethods:IsVec2InZone(vec2)
@@ -145,26 +170,20 @@ function ZoneMethods:IsVec2InZone(vec2)
   return math.sqrt(dx * dx + dy * dy) <= self.radius
 end
 
-local zones = {}
-local routeGeometry = {
-  EAST_E3_BGR_KBL = { startX = 0, targetX = 1000, y = 0, reversed = true },
-  EAST_E2_KBL_JBAD = { startX = 2000, targetX = 3000, y = 1000, reversed = true },
-  EAST_E1_TRK_JBAD = { startX = 4000, targetX = 5000, y = 2000 },
-  KUNAR_K1_JBAD_ASAD = { startX = 6000, targetX = 7000, y = 3000 },
-  CAL_ASAD_BOSTIK = { startX = 8000, targetX = 10000, y = 4000 },
+local nodeGeometry = {
+  OMW_LOG_NODE_BAGRAM = { x = 0, y = 0 },
+  OMW_LOG_NODE_KABUL = { x = 1000, y = 0 },
+  OMW_LOG_NODE_TORKHAM = { x = 2000, y = 0 },
+  OMW_LOG_NODE_JALALABAD = { x = 3000, y = 0 },
+  OMW_LOG_NODE_ASADABAD = { x = 4000, y = 0 },
+  OMW_LOG_NODE_BOSTICK = { x = 6000, y = 0 },
 }
 
-for _, convoyConfig in ipairs(config.convoys) do
-  local geometry = assert(routeGeometry[convoyConfig.id])
-  zones[convoyConfig.startZone] = setmetatable({
-    name = convoyConfig.startZone,
-    x = geometry.startX,
-    y = geometry.y,
-    radius = 500,
-  }, { __index = ZoneMethods })
-  zones[convoyConfig.targetZone] = setmetatable({
-    name = convoyConfig.targetZone,
-    x = geometry.targetX,
+local zones = {}
+for nodeName, geometry in pairs(nodeGeometry) do
+  zones[nodeName] = setmetatable({
+    name = nodeName,
+    x = geometry.x,
     y = geometry.y,
     radius = 500,
   }, { __index = ZoneMethods })
@@ -176,6 +195,14 @@ _G.ZONE_BASE = {
   IsVec2InZone = ZoneMethods.IsVec2InZone,
 }
 
+local routeGeometry = {
+  EAST_E3_BGR_KBL = { startX = 0, targetX = 1000, y = 0, reversed = true },
+  EAST_E2_KBL_JBAD = { startX = 1000, targetX = 3000, y = 0, reversed = true },
+  EAST_E1_TRK_JBAD = { startX = 2000, targetX = 3000, y = 0 },
+  KUNAR_K1_JBAD_ASAD = { startX = 3000, targetX = 4000, y = 0 },
+  CAL_ASAD_BOSTIK = { startX = 4000, targetX = 6000, y = 0 },
+}
+
 local PathlineMethods = {}
 function PathlineMethods:GetNumberOfPoints() return #self.points end
 function PathlineMethods:GetPoint2DFromIndex(index) return self.points[index] end
@@ -183,6 +210,8 @@ function PathlineMethods:GetPoint2DFromIndex(index) return self.points[index] en
 local pathlines = {}
 for _, convoyConfig in ipairs(config.convoys) do
   local geometry = assert(routeGeometry[convoyConfig.id])
+  assert(zones[convoyConfig.startZone].x == geometry.startX)
+  assert(zones[convoyConfig.targetZone].x == geometry.targetX)
   if #convoyConfig.msrPathlines == 1 then
     local points
     if geometry.reversed then
@@ -204,12 +233,12 @@ for _, convoyConfig in ipairs(config.convoys) do
     pathlines[convoyConfig.msrPathlines[1]] = setmetatable({
       points = {
         { x = geometry.startX + 100, y = geometry.y },
-        { x = 9000, y = geometry.y },
+        { x = 5000, y = geometry.y },
       },
     }, { __index = PathlineMethods })
     pathlines[convoyConfig.msrPathlines[2]] = setmetatable({
       points = {
-        { x = 9000, y = geometry.y },
+        { x = 5000, y = geometry.y },
         { x = geometry.targetX - 100, y = geometry.y },
       },
     }, { __index = PathlineMethods })
@@ -326,7 +355,7 @@ for _, convoyState in ipairs(state.convoys) do
   for index, position in ipairs(positions) do
     assert(convoyState.objects.startZone:IsVec2InZone({ x = position.x, y = position.y }),
       "spawned vehicle must remain inside start zone")
-    assert(position.heading == 0, "test route heading must point north")
+    assert(position.heading == 0, "test route heading must point east")
     if index > 1 then
       assert(math.abs((positions[index - 1].x - position.x)
         - config.routing.vehicleSpacingMeters) < 0.001,
@@ -432,4 +461,4 @@ assert(source:find('"GROUP.Destroy", GROUP and GROUP.Destroy', 1, true),
 assert(source:find("runtimeGroup:Destroy", 1, true),
   "TM01M must use MOOSE delayed group destruction for arrival cleanup")
 
-print("TM01M static PASS: renamed MSR endpoints, five PATHLINE convoys and 60-second cleanup")
+print("TM01M static PASS: six shared OMW logistics nodes, five PATHLINE convoys and 60-second cleanup")
