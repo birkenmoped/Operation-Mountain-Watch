@@ -66,13 +66,76 @@ _G.COORDINATE = {
 }
 
 local config = loadLua("mission/tests/tm01-blue-convoy/config-tm01m.lua")
-assert(config.configurationVersion == "TM01M-moose-native-five-convoys-2")
+assert(config.configurationVersion == "TM01M-moose-native-five-convoys-3")
 assert(config.routing.speedKph == 50, "expected 50 km/h multi-convoy test")
 assert(config.arrival.despawnDelaySeconds == 60, "expected 60-second arrival dwell")
 assert(config.arrival.generateDestroyEvents == false, "arrival cleanup must be silent")
 assert(#config.convoys == 5, "expected five configured convoys")
 assert(config.zones == nil, "legacy single-convoy zones table must be removed")
 assert(config.routing.msrPathlines == nil, "legacy shared route pathlines must be removed")
+
+local expectedEndpoints = {
+  EAST_E3_BGR_KBL = {
+    startZone = "MSR_HORSESHOE_START_BAGRAM",
+    targetZone = "MSR_HORSESHOE_E3_TARGET_KABUL",
+    pathlines = { "MSR_EAST_E03" },
+  },
+  EAST_E2_KBL_JBAD = {
+    startZone = "MSR_ILLINOIS_E2_START_KABUL",
+    targetZone = "MSR_ILLINOIS_E2_TARGET_JALALABAD",
+    pathlines = { "MSR_EAST_E02" },
+  },
+  EAST_E1_TRK_JBAD = {
+    startZone = "MSR_ILLINOIS_E1_START_TORKHAM",
+    targetZone = "MSR_ILLINOIS_E1_TARGET_JALALABAD",
+    pathlines = { "MSR_EAST_E01" },
+  },
+  KUNAR_K1_JBAD_ASAD = {
+    startZone = "MSR_CALIFORNIA-C1_START_JALALABAD",
+    targetZone = "MSR_CALIFORNIA-C1_TARGET_ASADABAD",
+    pathlines = { "MSR_KUNAR_K01" },
+  },
+  CAL_ASAD_BOSTIK = {
+    startZone = "MSR_CALIFORNIA-C2_START_ASADABAD",
+    targetZone = "MSR_CALIFORNIA-C03_TARGET_FOB_BOSTIK",
+    pathlines = { "MSR_CAL_C01", "MSR_CAL_C02" },
+  },
+}
+
+local legacyEndpointNames = {
+  "MSR_EAST_E3_START_BAGRAM",
+  "MSR_EAST_E3_TARGET_KABUL",
+  "MSR_EAST_E2_START_KABUL",
+  "MSR_EAST_E2_TARGET_JALALABAD",
+  "MSR_EAST_E1_START_TORKHAM",
+  "MSR_EAST_E1_TARGET_JALALABAD",
+  "MSR_KUNAR K1_START_JALALABAD",
+  "MSR_KUNAR K1_TARGET_ASADABAD",
+  "MSR_CALIFORNIA_START_ASADABAD",
+  "MSR_CALIFORNIA_TARGET_FOB_BOSTIK",
+}
+
+local configuredEndpointNames = {}
+for _, convoyConfig in ipairs(config.convoys) do
+  local expected = assert(expectedEndpoints[convoyConfig.id],
+    "unexpected convoy id " .. tostring(convoyConfig.id))
+  assert(convoyConfig.startZone == expected.startZone,
+    "renamed start zone mismatch for " .. convoyConfig.id)
+  assert(convoyConfig.targetZone == expected.targetZone,
+    "renamed target zone mismatch for " .. convoyConfig.id)
+  assert(#convoyConfig.msrPathlines == #expected.pathlines,
+    "PATHLINE count changed for " .. convoyConfig.id)
+  for index, pathlineName in ipairs(expected.pathlines) do
+    assert(convoyConfig.msrPathlines[index] == pathlineName,
+      "internal PATHLINE binding changed for " .. convoyConfig.id)
+  end
+  configuredEndpointNames[convoyConfig.startZone] = true
+  configuredEndpointNames[convoyConfig.targetZone] = true
+end
+for _, legacyName in ipairs(legacyEndpointNames) do
+  assert(configuredEndpointNames[legacyName] ~= true,
+    "legacy endpoint name must not remain configured: " .. legacyName)
+end
 
 local ZoneMethods = {}
 function ZoneMethods:GetCoordinate() return coordinate(self.name, self.x, self.y) end
@@ -369,4 +432,4 @@ assert(source:find('"GROUP.Destroy", GROUP and GROUP.Destroy', 1, true),
 assert(source:find("runtimeGroup:Destroy", 1, true),
   "TM01M must use MOOSE delayed group destruction for arrival cleanup")
 
-print("TM01M static PASS: five simultaneous MOOSE PATHLINE convoys with 60-second cleanup")
+print("TM01M static PASS: renamed MSR endpoints, five PATHLINE convoys and 60-second cleanup")
