@@ -4,33 +4,42 @@ status: BINDING
 approved_by: project_owner
 approval_date: 2026-08-01
 authoritative_for:
-  - Kandahar MQ-1 and MQ-9 spawn parking
+  - Kandahar MQ-1 spawn parking
+  - Kandahar MQ-9 spawn parking
   - Kandahar MQ-1 and MQ-9 landing and post-landing parking
   - Kandahar UAV apron runtime acceptance
 source_branch: agent/kandahar-airwing-baseline-contract
-source_mission: OMW_Template_v4_Kandahar.miz
+source_mission: OMW_Template_v4_Kandahar(9).miz
+source_sha256: 47657b2ae532f98185a9f7c33b04f1ec9fc99ee1264496b44e93184d5ac39f1c
 supersedes:
   - unrestricted Main-airfield parking for SQ_US_KAF_MQ1_361_ERS
   - unrestricted Main-airfield parking for SQ_US_KAF_MQ9_361_ERS
+  - shared seven-position MQ-1/MQ-9 G-apron pool
 ---
 
 # Kandahar UAV parking restriction decision
 
-## Binding decision
-
-The Kandahar MQ-1 and MQ-9 squadrons may use only the following Mission Editor parking labels:
+## Binding type-specific parking split
 
 ```text
-G01
-G04
-G05
-G07
-G08
-G10
-G11
+SQ_US_KAF_MQ1_361_ERS -> G01, G02, G03, G04, G05, G06, G07, G08
+SQ_US_KAF_MQ9_361_ERS -> G09, G10, G11
 ```
 
-This restriction applies to all physical ground handling at Kandahar Main:
+The MQ-9 physically fits only on G09-G11 in the validated Mission Editor layout. G01-G08 are reserved for the smaller MQ-1/RQ-1A representation.
+
+A listed position is usable only while it is not occupied or excluded by:
+
+- an accepted aircraft static;
+- a client reservation;
+- another Main-airfield parking blacklist reason;
+- an active parking reservation.
+
+Static-occupied positions are removed from the applicable type pool. They are not reassigned to the other UAV type.
+
+## Scope
+
+The split applies to:
 
 - initial spawn;
 - cold or hot start;
@@ -39,99 +48,77 @@ This restriction applies to all physical ground handling at Kandahar Main:
 - post-landing taxi;
 - final parking and storage.
 
-The UAV squadrons must not use the unrestricted Kandahar Main AIRWING parking pool.
+Neither UAV SQUADRON may use the unrestricted Kandahar Main AIRWING parking pool.
 
-Affected squadrons:
+## Mission-derived structural mapping
 
-```text
-SQ_US_KAF_MQ1_361_ERS
-SQ_US_KAF_MQ9_361_ERS
-```
-
-## Runtime evidence that triggered the decision
-
-The automatic controlled-parking matrix used unrestricted Main-airfield parking and produced:
+Source artifact:
 
 ```text
-MQ-1 / RQ-1A Predator -> TerminalID 317
-MQ-9 Reaper           -> TerminalID 239
+OMW_Template_v4_Kandahar(9).miz
+Size: 2,191,639 bytes
+SHA-256: 47657b2ae532f98185a9f7c33b04f1ec9fc99ee1264496b44e93184d5ac39f1c
 ```
 
-Both positions were selected from the general Main AIRWING pool. This behavior is rejected for the Kandahar UAV implementation even though both spawns were technically valid, alive, on the ground and outside blocked/client parking.
+The mission contains the following structural parking fields:
 
-## Mission Editor labels versus runtime IDs
+```text
+G01 -> 189 -> RQ-1A Predator
+G02 -> 303 -> RQ-1A Predator
+G03 -> 202 -> RQ-1A Predator
+G04 -> 224 -> RQ-1A Predator
+G05 -> 46  -> RQ-1A Predator
+G06 -> 291 -> RQ-1A Predator
+G07 -> 129 -> RQ-1A Predator
+G08 -> 143 -> RQ-1A Predator
+G09 -> 27  -> MQ-9 Reaper
+G10 -> 54  -> MQ-9 Reaper
+G11 -> 263 -> MQ-9 Reaper
+```
 
-The labels `G01`, `G04`, `G05`, `G07`, `G08`, `G10` and `G11` are Mission Editor/airfield labels. They are not automatically equivalent to MOOSE/DCS runtime `TerminalID` values.
+These values must still be confirmed against native runtime TerminalIDs. The calibration code resolves the authoritative label from each marker unit's `parking_id`; it does not rely on the calibration group-name suffix.
 
-The runtime implementation must therefore remain fail-closed until the seven labels have been mapped against the current Kandahar mission revision and DCS terrain version.
-
-No TerminalID may be guessed from label order, nearby static placement or visual similarity.
-
-## MOOSE-first implementation boundary
-
-### Spawn restriction
-
-The approved MOOSE mechanism is the squadron-level parking contract:
+## MOOSE-first spawn implementation
 
 ```lua
-SQ_US_KAF_MQ1_361_ERS:SetParkingIDs(UAV_G_APRON_TERMINAL_IDS)
-SQ_US_KAF_MQ9_361_ERS:SetParkingIDs(UAV_G_APRON_TERMINAL_IDS)
+SQ_US_KAF_MQ1_361_ERS:SetParkingIDs(MQ1_AVAILABLE_G01_TO_G08_TERMINAL_IDS)
+SQ_US_KAF_MQ9_361_ERS:SetParkingIDs(MQ9_AVAILABLE_G09_TO_G11_TERMINAL_IDS)
 ```
 
-`SQUADRON:SetParkingIDs()` restricts assets of that squadron to the configured runtime parking IDs. The general Main AIRWING safe-parking and client/static blocklists remain active.
+Each list is the intersection of its type-specific G-pool with the accepted Kandahar Main AIRWING allowlist.
 
-### Landing and final parking
+## Landing and final parking
 
-Squadron spawn parking alone is not accepted as proof that DCS AI will use the same pool after landing.
+Squadron spawn parking alone is not accepted as proof of post-landing stand selection.
 
-A dedicated runtime acceptance test must demonstrate that both MQ-1 and MQ-9:
+A dedicated runtime test must demonstrate that each type:
 
-1. land at Kandahar Main;
-2. taxi without entering blocked/client positions;
-3. stop only on one of the seven mapped G-apron TerminalIDs;
-4. are not returned to stock or declared safely recovered before the final parking position is confirmed.
+1. lands at Kandahar Main;
+2. taxis without entering blocked/client positions;
+3. stops only in its own type-specific G-pool;
+4. is not returned to stock before the final parking position is confirmed.
 
-If the current MOOSE/DCS combination cannot guarantee the post-landing stand, the UAV operational implementation remains blocked. Silent fallback to arbitrary Kandahar parking is prohibited.
-
-## Required calibration evidence
-
-The next calibration increment must produce an explicit table:
-
-```text
-ME label | runtime TerminalID | terminal type | coordinate | client/static conflict | accepted
-G01      | ...                | ...           | ...        | ...                    | ...
-G04      | ...                | ...           | ...        | ...                    | ...
-G05      | ...                | ...           | ...        | ...                    | ...
-G07      | ...                | ...           | ...        | ...                    | ...
-G08      | ...                | ...           | ...        | ...                    | ...
-G10      | ...                | ...           | ...        | ...                    | ...
-G11      | ...                | ...           | ...        | ...                    | ...
-```
-
-The mapping must be tied to the exact `.miz` hash and DCS build used for acceptance.
+Silent fallback to arbitrary Kandahar parking is prohibited.
 
 ## Acceptance criteria
 
-The UAV parking contract passes only when all of the following are true:
-
 ```text
-all seven G labels mapped to runtime TerminalIDs
-MQ-1 spawn TerminalID belongs to the mapped G pool
-MQ-9 spawn TerminalID belongs to the mapped G pool
-MQ-1 landing/final parking TerminalID belongs to the mapped G pool
-MQ-9 landing/final parking TerminalID belongs to the mapped G pool
-no client-reserved TerminalID used
-no static-blocked TerminalID used
-no arbitrary Main-airfield fallback
-no inferred or guessed mapping
+all eleven G labels mapped to unique runtime TerminalIDs
+G01-G08 validated with RQ-1A markers
+G09-G11 validated with MQ-9 markers
+MQ-1 spawn and final parking only in available G01-G08 positions
+MQ-9 spawn and final parking only in available G09-G11 positions
+static-blocked positions excluded
+client-reserved positions excluded
+no cross-use between MQ-1 and MQ-9 pools
+no unrestricted Main-airfield fallback
 ```
-
-Any spawn, landing or final parking outside the mapped G pool is a test failure.
 
 ## Current status
 
 ```text
 Policy decision: BINDING
+Mission structural mapping: RECORDED
 Runtime TerminalID mapping: REQUIRED
 Spawn restriction: NOT YET RUNTIME ACCEPTED
 Landing/final-parking restriction: NOT YET RUNTIME ACCEPTED
