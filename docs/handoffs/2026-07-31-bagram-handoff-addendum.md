@@ -82,6 +82,77 @@ P:\DCS-DEV\Operation-Mountain-Watch\mission\tests\bagram-air-operations\dist\OMW
 
 in the existing Mission Editor `DO SCRIPT FILE` action and save the current Bagram `.miz`.
 
+## F-15E payload decision added on 2026-08-01
+
+The current project-owner-approved F-15E authoring baseline is now documented in:
+
+```text
+docs/evidence/bagram-f15e-cas-strike-payload-decision-2026-08-01.md
+```
+
+CAS seed per aircraft:
+
+```text
+TPL_AIR_US_BGRM_F15E_CAS_2SHIP
+ME task: CAS
+3 x GBU-54/B
+3 x GBU-38
+2 x external fuel tank
+1 x AIM-9M
+1 x AIM-120
+LANTIRN navigation pod
+Targeting pod
+```
+
+Strike seed per aircraft:
+
+```text
+TPL_AIR_US_BGRM_F15E_STRIKE_2SHIP
+ME task: Bodenangriff / Ground Attack
+MOOSE mission type: AUFTRAG.Type.STRIKE
+1 x GBU-31(V)1/B
+1 x GBU-31(V)3/B
+2 x external fuel tank
+1 x AIM-9M
+1 x AIM-120
+LANTIRN navigation pod
+Targeting pod
+```
+
+Agreed fuze working baseline:
+
+```text
+GBU-31(V)1/B:
+  MXU-735
+  FMU-139
+  ARM 10 s
+  function delay 0 s
+
+GBU-31(V)3/B:
+  FMU-143
+  ARM 12 s
+  function delay 60 ms
+```
+
+MOOSE 2.9.18 maps:
+
+```text
+AUFTRAG.Type.STRIKE
+-> ENUMS.MissionTask.GROUNDATTACK
+-> DCS/ME Ground Attack / Bodenangriff
+```
+
+`Präzisionsangriff / Pinpoint Strike` is not the MOOSE 2.9.18 mapping for `AUFTRAG.Type.STRIKE`.
+
+Current limitation:
+
+- the screenshots establish the working authoring decision but do not replace a final `.miz` extraction;
+- exact AIM-120 and pod CLSIDs still require inspection;
+- the final saved strike task and fuze values still require verification;
+- the current runtime code registers only the F-15E CAS seed and `ALERT5`/`CAS` capabilities;
+- the strike payload and `AUFTRAG.Type.STRIKE` capability remain a later MOOSE-first implementation and runtime-test increment;
+- CAS and strike remain payloads of the same 13-aircraft F-15E SQUADRON and must not create duplicate inventory.
+
 ## Instruction for the Kandahar chat
 
 The Kandahar chat must read both the original handoff and this addendum, then inspect `main`, PR #24, the branch `docs/bagram-air-operations-manifest`, and all Kandahar-specific documents before proposing implementation changes.
