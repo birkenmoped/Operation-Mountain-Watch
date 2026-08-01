@@ -1,42 +1,32 @@
 # Kandahar UAV G-apron calibration
 
-Status: `PREPARED_NOT_RUNTIME_ACCEPTED`
+Status: `TYPE_SPECIFIC_11_POSITION_CALIBRATION_PREPARED`
 
-## Objective
-
-Map the owner-approved Kandahar UAV parking labels
+## Binding split
 
 ```text
-G01, G04, G05, G07, G08, G10, G11
+MQ-1 / RQ-1A Predator -> G01-G08
+MQ-9 Reaper           -> G09-G11
 ```
 
-to the exact native DCS/MOOSE runtime TerminalIDs of the current Kandahar mission.
+Only positions still allowed by the Kandahar Main parking contract are passed to the applicable SQUADRON. Static-occupied or otherwise blocked positions are excluded. There is no unrestricted Main-airfield fallback.
 
-## One-time Mission Editor preparation
-
-At Kandahar Main create seven one-unit `RQ-1A Predator` groups:
+## Supplied calibration mission
 
 ```text
-CAL_AIR_US_KAF_UAV_G01 -> parking G01
-CAL_AIR_US_KAF_UAV_G04 -> parking G04
-CAL_AIR_US_KAF_UAV_G05 -> parking G05
-CAL_AIR_US_KAF_UAV_G07 -> parking G07
-CAL_AIR_US_KAF_UAV_G08 -> parking G08
-CAL_AIR_US_KAF_UAV_G10 -> parking G10
-CAL_AIR_US_KAF_UAV_G11 -> parking G11
+OMW_Template_v4_Kandahar(9).miz
+Size: 2,191,639 bytes
+SHA-256: 47657b2ae532f98185a9f7c33b04f1ec9fc99ee1264496b44e93184d5ac39f1c
 ```
 
-For every group:
+The mission contains all eleven G-positions:
 
 ```text
-Takeoff from parking cold
-Late Activation ON
-Uncontrolled OFF
-one unit
-no activation trigger
+G01-G08 occupied by RQ-1A Predator markers
+G09-G11 occupied by MQ-9 Reaper markers
 ```
 
-They are calibration markers only. They are not inventory and never spawn.
+The code uses each unit's actual `parking_id` as the authoritative G-label. It does not assume that the calibration group's name suffix matches the assigned stand.
 
 ## Build
 
@@ -57,15 +47,26 @@ mission\tests\kandahar-air-operations\dist\
 OMW_AirOps_Kandahar_UAV_G_Apron_Calibration.lua
 ```
 
-Replace the previous Kandahar matrix bundle with this file. Do not load any other Kandahar preflight or matrix bundle in parallel.
+Replace the previous Kandahar matrix/calibration bundle with this file. Do not load another Kandahar preflight or matrix bundle in parallel.
 
 ## Run
 
-Allow at least 40 seconds. Return the current:
+Allow at least 40 seconds and return:
 
 ```text
 dcs.log
 debrief.log
 ```
 
-The accepted runtime mapping will then be committed and used for the MQ-1/MQ-9 spawn restriction. A separate later test remains required for landing, taxi-in and final parking on the same G-apron pool.
+Expected calibration result for the supplied static-cleared mission:
+
+```text
+labels=11
+mapped=11
+mq1Available=8
+mq9Available=3
+unavailableLabels=none
+RESULT: PASS
+```
+
+A separate later test remains required for physical MQ-1/MQ-9 spawn and for landing, taxi-in and final parking.
