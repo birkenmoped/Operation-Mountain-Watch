@@ -91,6 +91,77 @@ Templates sind Authoring-Seeds und kein zusätzlicher Bestand.
 
 Für F-16C existiert bewusst kein separates `ARMED_RECON`-Template.
 
+#### 2.2.1 F-15E CAS-/Strike-Payloadbaseline vom 01.08.2026
+
+Die verbindliche Payload-Arbeitsentscheidung ist dokumentiert in:
+
+```text
+docs/evidence/bagram-f15e-cas-strike-payload-decision-2026-08-01.md
+```
+
+Gemeinsame Ausstattung beider F-15E-Seeds pro Luftfahrzeug:
+
+```text
+2 x Außentank
+1 x AIM-9M
+1 x AIM-120; genaue Untervariante durch finalen .miz-Audit zu erfassen
+LANTIRN Navigation Pod
+Targeting Pod; genauer CLSID durch finalen .miz-Audit zu erfassen
+interne M61A1
+```
+
+CAS-Seed:
+
+```text
+TPL_AIR_US_BGRM_F15E_CAS_2SHIP
+ME-Aufgabe: CAS
+Payload: OMW Standard CAS
+3 x GBU-54/B
+3 x GBU-38
+```
+
+Strike-Seed:
+
+```text
+TPL_AIR_US_BGRM_F15E_STRIKE_2SHIP
+ME-Aufgabe: Bodenangriff / Ground Attack
+MOOSE-Zuordnung: AUFTRAG.Type.STRIKE
+Payload: OMW Standard STRIKE
+1 x GBU-31(V)1/B
+1 x GBU-31(V)3/B
+```
+
+Vereinbarte Zünder-Arbeitsbaseline:
+
+```text
+GBU-31(V)1/B:
+  MXU-735
+  FMU-139
+  Scharfschaltverzögerung 10 s
+  Funktionsverzögerung 0 s
+
+GBU-31(V)3/B:
+  FMU-143
+  Scharfschaltverzögerung 12 s
+  Funktionsverzögerung 60 ms
+```
+
+Screenshot-basierte ME-Massenwerte:
+
+```text
+CAS:
+  interner Kraftstoff 30.518 lb / 100 Prozent
+  Waffen 5.884 lb
+  Gesamt 75.339 lb / 93 Prozent
+
+STRIKE:
+  interner Kraftstoff 30.518 lb / 100 Prozent
+  Waffen 6.839 lb
+  Gesamt 76.293 lb / 94 Prozent
+```
+
+Diese Payloadwerte sind eine verbindliche Authoring-Baseline, aber noch keine DCS-Acceptance. Der finale gespeicherte `.miz`-Stand, die CLSIDs, die Zündereinstellungen für beide Luftfahrzeuge, die Strike-Aufgabe `Bodenangriff` und das KI-Waffenverhalten müssen noch extrahiert und getestet werden.
+
 ### 2.3 Statics
 
 ```text
@@ -203,13 +274,24 @@ Der Anker ist Referenzobjekt; seine sichtbare Objektart definiert nicht automati
 Vorgesehene Rollen nach vorhandenen Templates:
 
 ```text
-F-15E: CAS, STRIKE; später ggf. ESCORT über AUFTRAG/Payload
+F-15E: CAS und STRIKE über getrennte Payload-Seeds derselben SQUADRON
 F-16C: CAS; weitere Rollen ohne vorsorgliches Zusatztemplate
 C-130: TRANSPORT / AIRLIFT
 CH-47: TRANSPORT / OPSTRANSPORT
 UH-60: TRANSPORT / UTILITY
 HH-60G: CSAR Lead/Cover
 ```
+
+MOOSE-2.9.18-Zuordnung für die F-15E:
+
+```text
+CAS-Seed -> AUFTRAG.Type.CAS -> DCS/ME CAS
+STRIKE-Seed -> AUFTRAG.Type.STRIKE -> ENUMS.MissionTask.GROUNDATTACK -> DCS/ME Bodenangriff
+```
+
+`Präzisionsangriff / Pinpoint Strike` ist nicht die von MOOSE 2.9.18 für `AUFTRAG.Type.STRIKE` verwendete DCS-Missionsaufgabe.
+
+Der aktuelle Runtime-Code registriert weiterhin nur den CAS-Seed und die Fähigkeiten `ALERT5` und `CAS`. Die Registrierung des Strike-Seeds als zweites Payload derselben F-15E-SQUADRON ist ein offener MOOSE-First-Implementierungsschritt und darf den Bestand nicht duplizieren.
 
 Vor eigener Tasking-Logik sind MOOSE `AIRWING`, `SQUADRON`, `AUFTRAG`, `OPSTRANSPORT`, `FLIGHTGROUP` und vorhandene CSAR-Funktionen zu prüfen.
 
@@ -290,7 +372,8 @@ Namen, Koordinaten und Radien werden erst mit der jeweiligen Funktionsimplementi
 
 - logische Anfangsbestände für C-130, CH-47, UH-60 und HH-60G;
 - historische endgültige SQUADRON-Bezeichnungen dieser Komponenten;
-- Payloadsets und ROE je AUFTRAG-Rolle;
+- finale `.miz`-Extraktion und CLSID-/Zünderprüfung der F-15E-CAS-/Strike-Payloads;
+- MOOSE-Registrierung des Strike-Payloads und `AUFTRAG.Type.STRIKE` ohne Bestandsduplizierung;
 - Cooldown-, Wartungs- und Reparaturzeiten;
 - persistente Verlustübergabe an CampaignState;
 - vollständige TerminalID-/Blacklist-Tabelle;
@@ -304,9 +387,13 @@ genau 1 AIRWING gestartet
 keine Doppelzählung von Clients, Templates oder Statics
 13 F-15E und 13 F-16C logisch ohne 14. Airframe abgebildet
 keine Spawns auf reservierten Client- oder Static-Spots
+CAS-AUFTRAG wählt den CAS-Payload
+STRIKE-AUFTRAG wählt den Strike-Payload
+Strike-Seed ist als Bodenangriff gespeichert
+Zünderwerte und CLSIDs entsprechen der Payloadentscheidung
 AUFTRAG kann Assets anfordern, starten, zurückführen und freigeben
 Verluste reduzieren den Bestand
 sichere Rückkehr gibt den korrekten Bestand zurück
 keine spontane Aktivierung der Late-Activation-Templates
-keine relevante Lua-, Parking- oder Timerfehlermeldung
+keine relevante Lua-, Parking-, Payload- oder Timerfehlermeldung
 ```
