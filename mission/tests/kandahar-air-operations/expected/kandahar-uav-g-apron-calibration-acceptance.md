@@ -2,39 +2,55 @@
 
 Status: `PREPARED_NOT_RUNTIME_ACCEPTED`
 
-## Mission Editor calibration markers
-
-Create exactly seven one-unit aircraft groups at Kandahar Main.
-
-Use an `RQ-1A Predator` for each group. The aircraft type is only a non-spawning coordinate carrier; these groups are not added to any AIRWING inventory.
-
-Required settings for every group:
+## Binding parking split
 
 ```text
-country: USA
-unit count: 1
-start type: Takeoff from parking cold
-Late Activation: ON
-Uncontrolled: OFF
-airdrome: Kandahar / ID 7
-trigger activation: none
+MQ-1 / RQ-1A Predator: G01-G08 only
+MQ-9 Reaper:           G09-G11 only
 ```
 
-Required group names and selected Mission Editor parking labels:
+A position is usable only while it remains present in the accepted Kandahar Main AIRWING allowlist. Any G-position blocked by a static aircraft, client reservation or other accepted parking exclusion is removed from the applicable SQUADRON pool.
+
+No UAV may silently fall back to unrestricted Kandahar Main parking.
+
+## Calibration source
 
 ```text
-CAL_AIR_US_KAF_UAV_G01 -> G01
-CAL_AIR_US_KAF_UAV_G04 -> G04
-CAL_AIR_US_KAF_UAV_G05 -> G05
-CAL_AIR_US_KAF_UAV_G07 -> G07
-CAL_AIR_US_KAF_UAV_G08 -> G08
-CAL_AIR_US_KAF_UAV_G10 -> G10
-CAL_AIR_US_KAF_UAV_G11 -> G11
+Artifact: OMW_Template_v4_Kandahar(9).miz
+Size:     2,191,639 bytes
+SHA-256:  47657b2ae532f98185a9f7c33b04f1ec9fc99ee1264496b44e93184d5ac39f1c
+Airbase:  Kandahar / ID 7
 ```
 
-The group name must match exactly. Do not use unit names as a substitute for the group names.
+The Mission Editor source contains eleven one-unit Late Activation calibration groups. The actual stand assignment is determined from each unit's `parking_id`, not from the suffix of its group name. This is required because several group-name suffixes do not match their assigned stand labels in the supplied artifact.
 
-The seven groups remain Late Activated and must never be activated by a trigger.
+## Required physical fit markers
+
+```text
+G01-G08: one RQ-1A Predator each
+G09-G11: one MQ-9 Reaper each
+```
+
+The marker aircraft are calibration-only objects. They are not AIRWING inventory and must never be activated.
+
+## Mission-derived parking fields
+
+```text
+Label | Marker type       | mission parking
+G01   | RQ-1A Predator    | 189
+G02   | RQ-1A Predator    | 303
+G03   | RQ-1A Predator    | 202
+G04   | RQ-1A Predator    | 224
+G05   | RQ-1A Predator    | 46
+G06   | RQ-1A Predator    | 291
+G07   | RQ-1A Predator    | 129
+G08   | RQ-1A Predator    | 143
+G09   | MQ-9 Reaper       | 27
+G10   | MQ-9 Reaper       | 54
+G11   | MQ-9 Reaper       | 263
+```
+
+These mission-file values are structural evidence only. Runtime acceptance still requires correlation with native MOOSE/DCS `TerminalID` values.
 
 ## Build
 
@@ -57,17 +73,18 @@ OMW_AirOps_Kandahar_UAV_G_Apron_Calibration.lua
 
 Load only this Kandahar bundle after MOOSE. It already contains the registration and parking-contract preflights.
 
-Do not load the registration, parking-contract, controlled-case or controlled-matrix Kandahar bundles in parallel.
-
 ## Runtime boundary
 
 Permitted:
 
 - construct the accepted two AIRWINGs and nine SQUADRONs;
 - apply the accepted Main and Heliport parking contracts;
-- read seven Late Activation calibration templates;
+- read eleven Late Activation marker templates;
+- resolve the actual G-label from `parking_id`;
 - correlate each marker coordinate with the nearest native Kandahar Main parking node;
-- assign the resulting seven runtime TerminalIDs to the MQ-1 and MQ-9 SQUADRON objects with `SQUADRON:SetParkingIDs()`.
+- intersect each type-specific G-pool with the accepted Main AIRWING allowlist;
+- assign G01-G08 to `SQ_US_KAF_MQ1_361_ERS`;
+- assign G09-G11 to `SQ_US_KAF_MQ9_361_ERS`.
 
 Forbidden:
 
@@ -77,7 +94,8 @@ Forbidden:
 - OPSTRANSPORT;
 - COMMANDER or CHIEF;
 - payload registration or mutation;
-- client-parking override.
+- client-parking override;
+- fallback to unrestricted Main parking.
 
 ## Required log sequence
 
@@ -88,37 +106,34 @@ The existing preflights must pass first:
 [OMW][AirOps.KAF.ParkingContract] RESULT: PASS
 ```
 
-Then exactly seven mapping lines must appear:
+Then exactly eleven mapping lines must appear, one for every label G01-G11:
 
 ```text
-[OMW][AirOps.KAF.UAVGApronCalibration] MAP label=G01 ...
-[OMW][AirOps.KAF.UAVGApronCalibration] MAP label=G04 ...
-[OMW][AirOps.KAF.UAVGApronCalibration] MAP label=G05 ...
-[OMW][AirOps.KAF.UAVGApronCalibration] MAP label=G07 ...
-[OMW][AirOps.KAF.UAVGApronCalibration] MAP label=G08 ...
-[OMW][AirOps.KAF.UAVGApronCalibration] MAP label=G10 ...
-[OMW][AirOps.KAF.UAVGApronCalibration] MAP label=G11 ...
+[OMW][AirOps.KAF.UAVGApronCalibration] MAP label=Gxx ...
 ```
 
 Each line must report:
 
 ```text
+correct marker type for the label
 unique runtimeTerminalID
+missionParking equal to runtimeTerminalID for this DCS terrain revision
 coordinateDelta <= 5.00 m
-allowed=true
-blocked=false
-airdromeId=7 or nil only when DCS omits that field from the template
+airdromeId=7
+allowed=true/false
+blocked=true/false
+available=true only when allowed and not blocked
 ```
 
-No two labels may resolve to the same runtime TerminalID.
+## Required final result for the supplied test mission
 
-## Required final result
+Because the statics were temporarily moved away for this calibration run, all eleven positions are expected to remain available:
 
 ```text
-[OMW][AirOps.KAF.UAVGApronCalibration] RESULT: PASS labels=7 mapped=7 runtimeTerminalIDs=<seven unique IDs> mq1Restricted=true mq9Restricted=true noStart=true noSpawn=true noMission=true noTransport=true noPayloadMutation=true
+[OMW][AirOps.KAF.UAVGApronCalibration] RESULT: PASS labels=11 mapped=11 mq1Labels=8 mq1Available=8 mq1TerminalIDs=<eight IDs> mq9Labels=3 mq9Available=3 mq9TerminalIDs=<three IDs> unavailableLabels=none mq1Restricted=true mq9Restricted=true noStart=true noSpawn=true noMission=true noTransport=true noPayloadMutation=true
 ```
 
-Any missing marker, duplicate TerminalID, blocked/client position, coordinate delta above five metres, incorrect airbase, or unrestricted SQUADRON parking is a failure.
+In a later operational mission with statics restored, blocked G-positions may be excluded without changing the type split, provided at least one valid position remains for each UAV type.
 
 ## Runtime duration and evidence
 
@@ -129,4 +144,4 @@ dcs.log
 debrief.log
 ```
 
-The resulting seven-label mapping will then be committed as the binding runtime-ID contract and used by the controlled UAV spawn test.
+After this calibration passes, the next test is a controlled MQ-1/MQ-9 spawn test using their separate pools. Landing, taxi-in and final parking remain a separate acceptance step.
