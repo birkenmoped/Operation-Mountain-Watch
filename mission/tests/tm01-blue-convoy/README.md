@@ -13,17 +13,16 @@ results/2026-07-26-tm01m-msr-pathline-v1-pass.md
 results/2026-07-26-tm01m-five-convoy-50kph-pass.md
 ```
 
-The current renamed-endpoint and cleanup regression is documented under:
+The current shared-logistics-node and cleanup regression is documented under:
 
 ```text
-notes/2026-08-01-tm01m-msr-endpoint-renaming.md
 expected/tm01m-moose-native-physical-acceptance.md
 ```
 
 ## Current configuration
 
 ```text
-TM01M-moose-native-five-convoys-3
+TM01M-moose-native-five-convoys-4
 ```
 
 ```text
@@ -34,7 +33,7 @@ TM01M-moose-native-five-convoys-3
 On Road
 1 shared Mission Editor template
 6 unchanged internal Mission Editor PATHLINE objects
-10 renamed Mission Editor start/target zones
+6 shared OMW_LOG_NODE locations
 60-second post-arrival dwell
 ```
 
@@ -42,33 +41,33 @@ On Road
 
 ```text
 MSR HORSESHOE
-MSR_HORSESHOE_START_BAGRAM
+OMW_LOG_NODE_BAGRAM
 → MSR_EAST_E03
-→ MSR_HORSESHOE_E3_TARGET_KABUL
+→ OMW_LOG_NODE_KABUL
 
 MSR ILLINOIS-E2
-MSR_ILLINOIS_E2_START_KABUL
+OMW_LOG_NODE_KABUL
 → MSR_EAST_E02
-→ MSR_ILLINOIS_E2_TARGET_JALALABAD
+→ OMW_LOG_NODE_JALALABAD
 
 MSR ILLINOIS-E1
-MSR_ILLINOIS_E1_START_TORKHAM
+OMW_LOG_NODE_TORKHAM
 → MSR_EAST_E01
-→ MSR_ILLINOIS_E1_TARGET_JALALABAD
+→ OMW_LOG_NODE_JALALABAD
 
 MSR CALIFORNIA-C1
-MSR_CALIFORNIA-C1_START_JALALABAD
+OMW_LOG_NODE_JALALABAD
 → MSR_KUNAR_K01
-→ MSR_CALIFORNIA-C1_TARGET_ASADABAD
+→ OMW_LOG_NODE_ASADABAD
 
 MSR CALIFORNIA-C2/C3
-MSR_CALIFORNIA-C2_START_ASADABAD
+OMW_LOG_NODE_ASADABAD
 → MSR_CAL_C01
 → MSR_CAL_C02
-→ MSR_CALIFORNIA-C03_TARGET_FOB_BOSTIK
+→ OMW_LOG_NODE_BOSTICK
 ```
 
-The internal PATHLINE names are retained because the Mission Editor objects themselves were not renamed. Only the start and target trigger-zone names changed.
+A location node is intentionally reusable as both origin and destination. Kabul, Jalalabad and Asadabad therefore no longer require separate start and target zones. The internal PATHLINE names remain unchanged because the Mission Editor route drawings themselves were not renamed.
 
 ## Build
 
