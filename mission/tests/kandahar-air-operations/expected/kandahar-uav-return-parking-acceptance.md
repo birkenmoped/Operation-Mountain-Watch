@@ -1,6 +1,6 @@
 # Kandahar UAV return and final-parking acceptance
 
-Status: `PREPARED_NOT_RUNTIME_ACCEPTED`
+Status: `V2_PREPARED_NOT_RUNTIME_ACCEPTED`
 
 ## Purpose
 
@@ -44,14 +44,38 @@ Statics, clients and the Main-airfield parking blacklist remove positions from t
 The generated bundle contains:
 
 ```text
-05  registration preflight
-06  Main/Heliport parking contract
-10  fixed UAV type-specific parking contract
-10b registered UAV asset parking synchronization
-12  UAV return and final-parking test
+05   registration preflight
+06   Main/Heliport parking contract
+10   fixed UAV type-specific parking contract
+10b  registered UAV asset parking synchronization
+12   UAV return and final-parking test
+12b  MOOSE no-despawn compatibility policy
 ```
 
 The previously accepted cold controlled-spawn test is not run in parallel.
+
+## V1 runtime failure and root cause
+
+The first return-parking run successfully completed both ORBIT missions and both UAVs landed at Kandahar. Both groups were then removed immediately after the landing event, so no taxi-in, final parking or arrival event could be accepted.
+
+The cause was the public MOOSE call:
+
+```lua
+AIRWING:SetDespawnAfterLanding(false)
+```
+
+In the embedded AIRWING v0.9.7 and SQUADRON v0.8.1 implementations, a false or omitted argument enters the `else` branch and sets `despawnAfterLanding=true`. Therefore the apparent disable call actually enabled immediate post-landing despawn.
+
+V2 does not use that public false call as proof of a disabled policy. Source `12b` explicitly clears the instance state on:
+
+```text
+AW_US_KAF_451_AEW
+SQ_US_KAF_MQ1_361_ERS
+SQ_US_KAF_MQ9_361_ERS
+every assigned UAV FLIGHTGROUP
+```
+
+No global MOOSE class or method is modified.
 
 ## MOOSE-first mission model
 
@@ -75,6 +99,23 @@ The MQ-9 mission is queued 45 seconds after the MQ-1 mission.
 [OMW][AirOps.KAF.ParkingContract] RESULT: PASS
 [OMW][AirOps.KAF.UAVParkingContract] RESULT: PASS
 [OMW][AirOps.KAF.UAVAssetParkingSync] RESULT: PASS
+[OMW][AirOps.KAF.UAVNoDespawnPolicy] RESULT: PASS
+```
+
+The no-despawn line must contain:
+
+```text
+airwing=false
+mq1Squadron=false
+mq9Squadron=false
+flightPolicyWrapped=true
+publicFalseSetterUsed=false
+```
+
+For each assigned flight, the log must contain:
+
+```text
+FLIGHT_POLICY_APPLIED ... despawnAfterLanding=false ok=true
 ```
 
 The Heliport AIRWING must remain stopped.
@@ -86,6 +127,7 @@ For both `MQ1` and `MQ9`:
 ```text
 MISSION_QUEUED
 FLIGHT_ASSIGNED
+FLIGHT_POLICY_APPLIED ... despawnAfterLanding=false
 ENGINE_ON
 TAXI_OUT
 TAKEOFF ... airbaseID=7
@@ -133,9 +175,12 @@ warehouseReturnNotClaimed=true
 
 The test fails if any of the following occurs:
 
+- the no-despawn compatibility policy does not pass before flight assignment;
+- the AIRWING, either UAV SQUADRON or an assigned UAV FLIGHTGROUP has `despawnAfterLanding=true`;
 - either mission recruits the wrong SQUADRON or aircraft type;
 - either UAV fails to start, taxi, take off or become airborne;
 - either UAV fails to return and land at Kandahar Main / airbase ID 7;
+- an aircraft disappears after touchdown before taxi-in and final parking;
 - MQ-1 finishes outside its currently available G01-G08 pool;
 - MQ-9 finishes outside its currently available G09-G11 pool;
 - a final parking position is blocked or absent from the Main allowlist;
@@ -146,7 +191,7 @@ The test fails if any of the following occurs:
 
 ## Deliberate boundary
 
-This increment does not accept warehouse stock restoration after arrival. `SetDespawnAfterLanding(false)` is used so final taxi-in and parking can be observed before any later cleanup or stock-return test.
+This increment does not accept warehouse stock restoration after arrival. The aircraft must remain physically present through taxi-in and the final parking/arrival events before any later cleanup or stock-return test.
 
 Therefore:
 
@@ -170,7 +215,7 @@ after MOOSE. Do not load the controlled-spawn, calibration or parking-matrix bun
 
 ## Runtime and evidence
 
-Run the mission until the final `RESULT` line appears. The hard timeout is 2400 seconds after the test begins, so reserve up to approximately 41 minutes after mission start.
+Run the mission beyond both touchdown events until the final `RESULT` line appears. A landing event alone is not acceptance. The hard timeout is 2400 seconds after the test begins, so reserve up to approximately 41 minutes after mission start.
 
 Return the current:
 
