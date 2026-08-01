@@ -1,6 +1,6 @@
 # TM01M – Fünf gleichzeitige MOOSE-native MSR-Konvois: DCS-Abnahme
 
-Status: `50-km/h-Fünf-Konvoi-Baseline PASS`; `umbenannte MSR-Endpunkte + 60-Sekunden-Zielbereichsbereinigung AUSSTEHEND`
+Status: `50-km/h-Fünf-Konvoi-Baseline PASS`; `gemeinsame OMW-Logistikknoten + 60-Sekunden-Zielbereichsbereinigung AUSSTEHEND`
 
 ## Bestätigte Baseline
 
@@ -35,57 +35,66 @@ mission/tests/tm01-blue-convoy/results/2026-07-26-tm01m-five-convoy-50kph-pass.m
 ## Aktuelles Folgeinkrement
 
 ```text
-TM01M-moose-native-five-convoys-3
+TM01M-moose-native-five-convoys-4
 ```
 
-Dieses Inkrement kombiniert zwei nachgelagerte Anpassungen, ohne die bestätigte Routengeometrie zu verändern:
+Dieses Inkrement kombiniert zwei nachgelagerte Anpassungen, ohne die bestätigte PATHLINE-Geometrie zu verändern:
 
-1. die Mission-Editor-Start- und Zielzonen verwenden die neuen fachlichen MSR-Namen;
+1. die fünf Routen verwenden sechs gemeinsame `OMW_LOG_NODE_*`-Standortknoten; ein Knoten darf sowohl Start als auch Ziel sein;
 2. vollständig angekommene Konvois werden nach 60 Sekunden über MOOSE `GROUP:Destroy(false, 60)` still entfernt.
 
-## Verbindliche Mission-Editor-Endpunkte
+## Verbindliche Standortknoten
 
 ```text
 MSR HORSESHOE / Bagram → Kabul
-MSR_HORSESHOE_START_BAGRAM
-MSR_HORSESHOE_E3_TARGET_KABUL
+OMW_LOG_NODE_BAGRAM
+OMW_LOG_NODE_KABUL
 
 MSR ILLINOIS-E2 / Kabul → Jalalabad
-MSR_ILLINOIS_E2_START_KABUL
-MSR_ILLINOIS_E2_TARGET_JALALABAD
+OMW_LOG_NODE_KABUL
+OMW_LOG_NODE_JALALABAD
 
 MSR ILLINOIS-E1 / Torkham → Jalalabad
-MSR_ILLINOIS_E1_START_TORKHAM
-MSR_ILLINOIS_E1_TARGET_JALALABAD
+OMW_LOG_NODE_TORKHAM
+OMW_LOG_NODE_JALALABAD
 
 MSR CALIFORNIA-C1 / Jalalabad → Asadabad
-MSR_CALIFORNIA-C1_START_JALALABAD
-MSR_CALIFORNIA-C1_TARGET_ASADABAD
+OMW_LOG_NODE_JALALABAD
+OMW_LOG_NODE_ASADABAD
 
-MSR CALIFORNIA-C2/C3 / Asadabad → FOB Bostik
-MSR_CALIFORNIA-C2_START_ASADABAD
-MSR_CALIFORNIA-C03_TARGET_FOB_BOSTIK
+MSR CALIFORNIA-C2/C3 / Asadabad → FOB Bostick
+OMW_LOG_NODE_ASADABAD
+OMW_LOG_NODE_BOSTICK
 ```
 
-Die Schreibweise ist exakt einzuhalten. Insbesondere gehören die Bindestriche in `MSR_CALIFORNIA-C1_*`, `MSR_CALIFORNIA-C2_*` und `MSR_CALIFORNIA-C03_*` zum Objektnamen. Der Zielname verwendet weiterhin die in der Mission gespeicherte Schreibweise `BOSTIK`.
+Damit werden genau sechs eindeutige Knoten verwendet:
+
+```text
+OMW_LOG_NODE_BAGRAM
+OMW_LOG_NODE_KABUL
+OMW_LOG_NODE_TORKHAM
+OMW_LOG_NODE_JALALABAD
+OMW_LOG_NODE_ASADABAD
+OMW_LOG_NODE_BOSTICK
+```
+
+Kabul, Jalalabad und Asadabad besitzen keine getrennten Start- und Zielzonen mehr.
 
 ## Unveränderte interne PATHLINE-Bindungen
-
-Die sichtbare und fachliche MSR-Benennung wurde angepasst. Die internen Mission-Editor-PATHLINE-Namen wurden nicht umbenannt und bleiben verbindlich:
 
 ```text
 HORSESHOE Bagram → Kabul           MSR_EAST_E03
 ILLINOIS-E2 Kabul → Jalalabad      MSR_EAST_E02
 ILLINOIS-E1 Torkham → Jalalabad    MSR_EAST_E01
 CALIFORNIA-C1 Jbad → Asadabad      MSR_KUNAR_K01
-CALIFORNIA-C2/C3 Asad → Bostik     MSR_CAL_C01 + MSR_CAL_C02
+CALIFORNIA-C2/C3 Asad → Bostick    MSR_CAL_C01 + MSR_CAL_C02
 ```
 
-Die stabilen internen Konvoi-IDs und Laufzeitaliasse bleiben ebenfalls unverändert. Dadurch wird die bereits bestandene Routen-, Spawn- und Diagnoselogik nicht unnötig neu identifiziert.
+Die stabilen internen Konvoi-IDs und Laufzeitaliasse bleiben unverändert. Die historische interne ID `CAL_ASAD_BOSTIK` wird zur Vergleichbarkeit der bisherigen Logs vorerst nicht umbenannt; der tatsächliche Standortknoten und Anzeigename verwenden `BOSTICK`.
 
 ## Veraltete Endpunktnamen
 
-Die folgenden Namen dürfen in der aktuellen TM01M-Konfiguration nicht mehr verwendet werden:
+Sowohl die ursprünglichen Richtungsanker als auch die zwischenzeitlichen MSR-bezogenen Start-/Zielzonen dürfen nicht mehr verwendet werden. Dazu gehören insbesondere:
 
 ```text
 MSR_EAST_E3_START_BAGRAM
@@ -98,6 +107,17 @@ MSR_KUNAR K1_START_JALALABAD
 MSR_KUNAR K1_TARGET_ASADABAD
 MSR_CALIFORNIA_START_ASADABAD
 MSR_CALIFORNIA_TARGET_FOB_BOSTIK
+
+MSR_HORSESHOE_START_BAGRAM
+MSR_HORSESHOE_E3_TARGET_KABUL
+MSR_ILLINOIS_E2_START_KABUL
+MSR_ILLINOIS_E2_TARGET_JALALABAD
+MSR_ILLINOIS_E1_START_TORKHAM
+MSR_ILLINOIS_E1_TARGET_JALALABAD
+MSR_CALIFORNIA-C1_START_JALALABAD
+MSR_CALIFORNIA-C1_TARGET_ASADABAD
+MSR_CALIFORNIA-C2_START_ASADABAD
+MSR_CALIFORNIA-C03_TARGET_FOB_BOSTIK
 ```
 
 Ein Lookup auf einen dieser Namen ist ein Konfigurationsfehler.
@@ -116,7 +136,7 @@ Aufruf in TM01M:
 runtimeGroup:Destroy(false, 60)
 ```
 
-MOOSE übernimmt sowohl die Verzögerung als auch das Entfernen. Es gibt keinen eigenen Lua-Timer und keinen nativen DCS-Despawn. `GenerateEvent=false` verhindert künstliche Dead-/Crash-Ereignisse für eine erfolgreich angekommene Lieferung.
+MOOSE übernimmt sowohl die Verzögerung als auch das Entfernen. Es gibt keinen eigenen Lua-Timer und keinen nativen DCS-Despawn.
 
 ## Vorbereitung
 
@@ -148,7 +168,7 @@ event=bootstrap_outcome
 outcome=READY
 
 event=startup
-configurationVersion=TM01M-moose-native-five-convoys-3
+configurationVersion=TM01M-moose-native-five-convoys-4
 convoyCount=5
 msrPathlineCount=6
 speedKph=50
@@ -157,11 +177,11 @@ arrivalDespawnDelaySeconds=60
 arrivalDestroyEvents=false
 ```
 
-Alle fünf `convoy_route_plan_compiled`-Ereignisse müssen die neuen Start- und Zielzonennamen ausgeben. Es darf kein `mission_configuration_missing`, `mission_object_lookup_failed` oder `convoy_route_plan_failed` auftreten.
+Alle fünf `convoy_route_plan_compiled`-Ereignisse müssen die gemeinsamen `OMW_LOG_NODE_*`-Namen ausgeben. Es darf kein `mission_configuration_missing`, `mission_object_lookup_failed` oder `convoy_route_plan_failed` auftreten.
 
 ## Routen- und Spawn-Regression
 
-Erwartet werden weiterhin:
+Erwartet werden:
 
 ```text
 5 × event=convoy_route_plan_compiled
@@ -187,7 +207,7 @@ Bei jeder vollständigen Ankunft:
 event=convoy_arrived
 convoyId=...
 survivingVehicles=6
-targetZoneName=<neuer Endpunktname>
+targetZoneName=<OMW_LOG_NODE_*>
 
 event=convoy_despawn_scheduled
 convoyId=...
@@ -225,22 +245,22 @@ method=MOOSE_GROUP_Destroy
 
 ### Jalalabad
 
-- beide ILLINOIS-Konvois erreichen ihre jeweils korrekt umbenannte Zielzone;
+- beide ILLINOIS-Konvois erreichen dieselbe `OMW_LOG_NODE_JALALABAD`-Zone;
+- CALIFORNIA-C1 kann denselben Knoten als Start verwenden;
 - der zuerst angekommene Verband verschwindet nach 60 Sekunden;
-- die Zielstraße wird für den später ankommenden Verband freigegeben;
 - keine Bereinigung entfernt die falsche Laufzeitgruppe.
 
 ### Asadabad
 
-- CALIFORNIA-C1 endet in `MSR_CALIFORNIA-C1_TARGET_ASADABAD`;
-- CALIFORNIA-C2/C3 startet unabhängig in `MSR_CALIFORNIA-C2_START_ASADABAD`;
+- CALIFORNIA-C1 endet in `OMW_LOG_NODE_ASADABAD`;
+- CALIFORNIA-C2/C3 verwendet denselben Knoten als Start;
 - das spätere Entfernen des C1-Konvois beeinflusst den bereits abgefahrenen C2/C3-Konvoi nicht.
 
 ## PASS-Kriterien
 
 - Bootstrap endet mit `READY`.
-- Alle zehn neuen Endpunktnamen werden gefunden.
-- Kein veralteter Endpunktname wird benötigt.
+- Alle sechs gemeinsamen Standortknoten werden gefunden.
+- Kein veralteter Start-/Zielanker wird benötigt.
 - Die sechs internen PATHLINE-Namen bleiben unverändert funktionsfähig.
 - Alle fünf Verbände erreichen ihr Ziel mit jeweils sechs Fahrzeugen.
 - Genau fünf stille 60-Sekunden-Despawnvorgänge werden geplant und abgeschlossen.
