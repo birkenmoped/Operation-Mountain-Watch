@@ -6,8 +6,10 @@ authoritative_for:
   - Afghanistan route-clearance mission archetypes
   - C-IED and convoy risk abstractions
   - terrain, season, formation and recovery design factors
+  - OMW standard logistics convoy composition
 scenario_period: 2010-08-01/2011-12-31
-source_branch: docs/stability-layeha-route-clearance-cerp-sigacts
+source_branch: main
+source_commit: PENDING_COMMIT
 validated_in_dcs: false
 ---
 
@@ -111,7 +113,36 @@ The Smart Book's METHANE structure supports player reporting: military/callsign,
 6. Repeated formations, lanes or timing increase RED adaptation.
 7. Route clearance creates a temporary confidence window, not permanent safety.
 
-## 11. Source limits
+## 11. Verbindliche OMW-Standardvorlage für Logistikkonvois
+
+Der Projektinhaber legt für die reguläre OMW-Logistikkonvoi-Vorlage folgende sieben Fahrzeuge und Marschreihenfolge fest:
+
+| Position | Fahrzeug | Funktion |
+|---:|---|---|
+| 1 | M-ATV | Lead Security |
+| 2 | M1083 | Cargo 1 |
+| 3 | MaxxPro | Convoy Commander / C2 |
+| 4 | M1083 | Cargo 2 |
+| 5 | MaxxPro | Mid-column Security / Support |
+| 6 | M1083 | Cargo 3 |
+| 7 | M-ATV | Rear Security |
+
+Verbindliche Ableitung:
+
+```text
+2 x M-ATV
+2 x MaxxPro
+3 x M1083
+7 Fahrzeuge je Standardkonvoi
+```
+
+Die bisherige sechs Fahrzeuge umfassende TM01M-Testvorlage mit HMMWVs ist damit für neue Builds und neue DCS-Abnahmen ersetzt. Bereits bestandene Ergebnisberichte bleiben als historische Nachweise ihres exakt getesteten Stands erhalten und werden nicht rückwirkend umgeschrieben.
+
+Diese Zusammensetzung ist eine bewusste OMW-Missionsdesign- und Spielbarkeitsentscheidung. Sie wird nicht als Behauptung verstanden, dass jeder reale Konvoi im gesamten Szenariozeitraum exakt diese unveränderliche Reihenfolge verwendete. Missionsspezifische Route-Clearance-, EOD-, Recovery-, VIP-, QRF- oder schwerere Versorgungskonvois dürfen eigene, ausdrücklich dokumentierte Templates verwenden.
+
+Technische Mission-Editor-Vorlagen müssen die Positionen 1 bis 7 in dieser Reihenfolge abbilden. Die zuständige Laufzeitkonfiguration muss `expectedVehicleCount = 7` verwenden und darf einen Spawn mit abweichender Fahrzeugzahl nicht als erfolgreich akzeptieren.
+
+## 12. Source limits
 
 - The repository stores paraphrased mission-design abstractions, not the FOUO source PDFs.
 - Equipment protection values and real procedures are not reproduced as current specifications.
