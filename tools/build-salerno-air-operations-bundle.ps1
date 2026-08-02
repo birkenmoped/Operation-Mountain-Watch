@@ -13,7 +13,8 @@ $sourceFiles = @(
     '02-resolve-airbase-and-parking.lua',
     '03-probe-warehouse-and-objects.lua',
     '04-construct-airwing-anchor.lua',
-    '05-construct-squadrons.lua'
+    '05-construct-squadrons.lua',
+    '06-register-squadrons-with-airwing.lua'
 )
 
 if (-not (Test-Path -LiteralPath $sourceDir -PathType Container)) {
@@ -21,7 +22,7 @@ if (-not (Test-Path -LiteralPath $sourceDir -PathType Container)) {
 }
 
 New-Item -ItemType Directory -Path $distDir -Force | Out-Null
-$builderVersion = 'SAL-SQUADRON-CONSTRUCT-3'
+$builderVersion = 'SAL-SQUADRON-REGISTER-4'
 $commit = 'UNKNOWN'
 try { $commit = (& git -C $repoRoot rev-parse HEAD 2>$null).Trim() } catch { $commit = 'UNKNOWN' }
 
