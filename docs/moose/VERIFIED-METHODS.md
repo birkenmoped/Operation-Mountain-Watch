@@ -6,105 +6,144 @@ Dieses Dokument ist das projektspezifische Methodenregister für praktisch gepr�
 
 Ein Eintrag bedeutet nicht, dass die gesamte Klasse oder jeder denkbare Ablauf validiert ist. Er belegt nur den beschriebenen Einsatz im angegebenen OMW-Teststand.
 
-## 2. Aktuelle Nachweisgrenze
+## 2. Nachweisstände
 
-Der Jalalabad-Complete-Node-PASS dokumentiert den OMW-Commit und das beobachtete Verhalten. Der exakte MOOSE-Upstream-Commit und der Hash der geladenen `Moose.lua` wurden beim ursprünglichen Test nicht erfasst.
+### Jalalabad-Grundbaseline
 
-Daher gilt für die folgenden Einträge:
+Der Jalalabad-Complete-Node-PASS dokumentiert das beobachtete Laufzeitverhalten. Der exakte MOOSE-Upstream-Stand wurde im ursprünglichen Lauf nicht zeitgleich protokolliert; die spätere Rekonstruktion aus dem identischen Artefakt bleibt als solche gekennzeichnet.
+
+### Salerno COMMANDER-Dispatch
+
+Der Salerno-Stage-18-PASS besitzt vollständige Artefaktprovenienz:
 
 ```text
-OMW runtime behavior: validated
-Exact MOOSE upstream revision: not recorded
+MOOSE commit:            73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+Embedded Moose.lua SHA:  e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
+DCS version:             2.9.28.26385
+OMW branch:              agent/salerno-read-only-diagnostics
+OMW source commit:       dba0465afbff14fb719abdeb1f9b06e24ff24717
+BuilderVersion:          SAL-COMMANDER-SELECTION-18
+Bundle SHA-256:          75ea74cdaa60800899345924fc4eb450c15211d605bf972767d9d68e265421ee
+Mission:                 OMW_Template_v5_Salerno.miz
 ```
-
-Bei der nächsten Verwendung auf einem neu festgelegten MOOSE-Stand müssen die Signaturen erneut geprüft und der MOOSE-Commit ergänzt werden.
 
 ## 3. AIRBASE
 
 | Methode | Status | OMW-Verwendung | Beobachtetes Ergebnis |
 |---|---|---|---|
-| `AIRBASE:FindByName(name)` | `VALIDATED` | Jalalabad-Wrapper ermitteln | Airbase gefunden |
-| `airbase:GetName()` | `VALIDATED` | Diagnose und Identitätsprüfung | Name ausgegeben |
-| `airbase:GetID()` | `VALIDATED` | Diagnose und Identitätsprüfung | ID ausgegeben |
-| `airbase:SetParkingSpotBlacklist(ids)` | `VALIDATED` | TerminalIDs 23, 35, 37 und 49 für CH-47-Statics sperren | Reservations bestätigt; kein unerwarteter Overlap |
+| `AIRBASE:FindByName(name)` | `VALIDATED` | Jalalabad und Salerno ermitteln | Erwartete AIRBASE-Wrapper gefunden |
+| `airbase:GetName()` | `VALIDATED` | Diagnose und Identitätsprüfung | Namen ausgegeben |
+| `airbase:GetID()` | `VALIDATED` | Diagnose und Identitätsprüfung | IDs ausgegeben |
+| `airbase:SetParkingSpotBlacklist(ids)` | `VALIDATED` für Jalalabad | TerminalIDs für CH-47-Statics sperren | Jalalabad-Reservations bestätigt |
 
-OMW-Quelle:
-
-```text
-mission/tests/jalalabad-air-operations/src/01-jalalabad-bootstrap.lua
-```
+Salerno-Parking bleibt trotz erfolgreicher Terminal-ID-Kalibrierung `DEFERRED`, weil tatsächliche Multi-Unit-Spawns den konfigurierten Parking-Vertrag nicht zuverlässig einhielten.
 
 ## 4. AIRWING
 
-| Methode | Status | OMW-Verwendung | Beobachtetes Ergebnis |
+| Methode / Callback | Status | OMW-Verwendung | Beobachtetes Ergebnis |
 |---|---|---|---|
-| `AIRWING:New(warehouseName, alias)` | `VALIDATED` | Jalalabad-AIRWING mit Warehouse-Anker erstellen | AIRWING konstruiert |
-| `airwing:SetAirbase(airbase)` | `VALIDATED` | Explizite Zuordnung zu Jalalabad | AIRWING an richtigen Flugplatz gebunden |
-| `airwing:SetTakeoffCold()` | `VALIDATED` für Grundkonfiguration | Cold-Start als Standard setzen | Start ohne Konfigurationsfehler |
-| `airwing:SetSafeParkingOn()` | `VALIDATED` | Client-Parkpositionen schützen | Kein unerwarteter AI-Spawn auf Client-Positionen |
-| `airwing:AddSquadron(squadron)` | `VALIDATED` | Vier Jalalabad-Squadrons anbinden | Alle vier Squadrons über `GetSquadron()` wiedergefunden |
-| `airwing:NewPayload(group, amount, types, performance)` | `VALIDATED` für Registrierung | Payloads für RECON, CAS, Transport, Land und Escort registrieren | Alle erwarteten Payloadobjekte erzeugt |
+| `AIRWING:New(warehouseName, alias)` | `VALIDATED` | Jalalabad- und Salerno-AIRWING konstruieren | AIRWINGs erstellt |
+| `airwing:SetAirbase(airbase)` | `VALIDATED` | Explizite Flugplatzzuordnung | Richtiger lokaler Knoten gebunden |
+| `airwing:SetTakeoffCold()` | `VALIDATED` für Grundkonfiguration | Cold-Start als Standard setzen | Konfiguration ohne Fehler; konkrete Salerno-Bodenspawnrealisierung nicht Teil von Stage 18 |
+| `airwing:SetSafeParkingOn()` | `VALIDATED` nur für Jalalabad-Baseline | Jalalabad-Clientpositionen schützen | Jalalabad-Grundtest ohne unerwarteten Overlap |
+| `airwing:AddSquadron(squadron)` | `VALIDATED` | Squadrons anbinden | Jalalabad 4/4, Salerno 5/5 registriert |
+| `airwing:NewPayload(group, amount, types, performance)` | `VALIDATED` für Registrierung | Payloads registrieren | Erwartete Payloadobjekte vorhanden; Salerno meldete zehn Definitionen |
 | `airwing:GetSquadron(name)` | `VALIDATED` | Verknüpfung kontrollieren | Identisches Squadron-Objekt zurückgegeben |
-| `airwing:Start()` | `VALIDATED` für Grundstart | Vollständig validierten Knoten starten | AIRWING operational; keine spontane Mission |
+| `airwing:Start()` | `VALIDATED` | Vollständig validierten Knoten starten | Jalalabad und Salerno liefen im Zustand `Running` |
+| `airwing:OnAfterMissionAssign(From, Event, To, Mission, Legions)` | `VALIDATED` als Callback | COMMANDER-Übergabe diagnostizieren | Salerno-MissionAssign beobachtet |
+| `airwing:OnAfterMissionRequest(From, Event, To, Mission, Assets)` | `VALIDATED` als Callback | AIRWING-Missionsanforderung diagnostizieren | Salerno-MissionRequest beobachtet |
+| `airwing:OnAfterOpsOnMission(From, Event, To, OpsGroup, Mission)` | `VALIDATED` als Callback | Operativ gebundene Fluggruppe erfassen | AH-64-OPSGROUP für Salerno-CAS gemeldet |
 
-Noch nicht durch diesen Test validiert:
+Durch Stage 18 praktisch bestätigt:
 
-- Start eines echten AUFTRAG,
-- Asset-Spawn,
-- Taxi/Takeoff,
-- Missionserfüllung,
-- Recovery,
-- Verlust- und Nachschubpfade.
+- eine COMMANDER-ausgewählte Mission wurde in der Salerno-AIRWING-Queue geführt;
+- ein Asset war `OnMission: Total=1, Active=1`;
+- der AUFTRAG erreichte `started`.
+
+Nicht validiert sind taktische Zielbekämpfung, reguläre Rückkehr, Landung, Recovery und persistente Bestandsbuchung.
 
 ## 5. SQUADRON
 
 | Methode | Status | OMW-Verwendung | Beobachtetes Ergebnis |
 |---|---|---|---|
-| `SQUADRON:New(template, numberOfGroups, name)` | `VALIDATED` | OH-58D, AH-64D, UH-60 und CH-47 Bestände erzeugen | 12/4/8/8 Asset-Gruppen konstruiert |
-| `squadron:SetGrouping(size)` | `VALIDATED` | Two-Ship für OH-58D/AH-64D; Single-Ship für UH-60/CH-47 | Erwartete Gruppierung registriert |
-| `squadron:SetSkill(AI.Skill.HIGH)` | `VALIDATED` für Konfiguration | AI-Skill festlegen | Kein Konstruktor-/Startfehler |
-| `squadron:AddMissionCapability(types, performance)` | `VALIDATED` für Registrierung | Missionstypen pro Squadron freigeben | Capability-Konfiguration akzeptiert |
-
-OMW-Quellen:
-
-```text
-mission/tests/jalalabad-air-operations/src/06-construct-oh58d-squadron.lua
-mission/tests/jalalabad-air-operations/src/07-construct-ah64d-squadron.lua
-mission/tests/jalalabad-air-operations/src/08-construct-uh60-squadron.lua
-mission/tests/jalalabad-air-operations/src/09-construct-ch47-squadron.lua
-```
+| `SQUADRON:New(template, numberOfGroups, name)` | `VALIDATED` | Typgebundene Bestände erzeugen | Jalalabad und Salerno vollständig konstruiert |
+| `squadron:SetGrouping(size)` | `VALIDATED` | Single-/Two-Ship-Gruppierung festlegen | Erwartete Gruppierung registriert |
+| `squadron:SetSkill(AI.Skill.HIGH)` | `VALIDATED` für Konfiguration | AI-Skill setzen | Kein Konstruktor-/Startfehler |
+| `squadron:AddMissionCapability(types, performance)` | `VALIDATED` | Missionstypen freigeben | Salerno-AH-64 wurde für CAS durch COMMANDER als geeignet erkannt |
 
 ## 6. COMMANDER
 
-| Methode | Status | OMW-Verwendung | Beobachtetes Ergebnis |
+| Methode / Callback | Status | OMW-Verwendung | Beobachtetes Ergebnis |
 |---|---|---|---|
-| `COMMANDER:New(coalition, alias)` | `VALIDATED` | Blue Commander erstellen | Objekt erstellt |
-| `commander:AddAirwing(airwing)` | `VALIDATED` | Jalalabad-AIRWING anbinden | AIRWING unter COMMANDER gestartet |
-| `commander:Start()` | `VALIDATED` für Grundstart | Commander aktivieren | Stabiler Leerlauf; keine spontane Mission |
+| `COMMANDER:New(coalition, alias)` | `VALIDATED` | Blue Commander erstellen | Objekt im Zustand `NotReadyYet` erstellt |
+| `commander:AddAirwing(airwing)` | `VALIDATED` | AIRWING als Legion anbinden | Salerno in `commander.legions`; Reverse-Link gesetzt |
+| `commander:SetVerbosity(level)` | `VALIDATED` für Diagnose | MOOSE-Auswahllogging erhöhen | Status- und Queueausgaben erzeugt |
+| `commander:Start()` | `VALIDATED` | COMMANDER-FSM aktivieren | Salerno `NotReadyYet -> OnDuty` |
+| `commander:CanMission(mission)` | `VALIDATED` für isolierten CAS | Eignung der angebundenen Legions prüfen | `true` für Salerno-CAS |
+| `commander:AddMission(mission)` | `VALIDATED` für isolierten CAS | CAS-AUFTRAG in COMMANDER-Queue aufnehmen | Mission zunächst `PLANNED`, anschließend ausgewählt |
+| `commander:Status()` | `VALIDATED` | Öffentlichen FSM-Statuszyklus auslösen | `CheckMissionQueue()`-Pfad führte zur Auswahl |
+| `commander:MissionCancel(mission)` | `VALIDATED` für Test-Cleanup | Auftrag nach Nachweiserbringung abbrechen | Aufruf erfolgreich; AIRWING anschließend ohne aktive Mission |
+| `commander:OnAfterMissionAssign(From, Event, To, Mission, Legions)` | `VALIDATED` als Callback | Auswahlentscheidung protokollieren | `AW_US_SALERNO` als ausführende Legion gemeldet |
+| `commander:OnAfterOpsOnMission(From, Event, To, OpsGroup, Mission)` | `VALIDATED` als Callback | operative Assetbindung protokollieren | AH-64-OPSGROUP gemeldet |
+
+Verbindliche Erkenntnis:
+
+```text
+COMMANDER:New()
+COMMANDER:AddAirwing()
+COMMANDER:Start()
+COMMANDER:AddMission()
+COMMANDER Status/CheckMissionQueue cycle
+```
+
+`New + AddAirwing + AddMission` ohne `Start()` ist unvollständig. Stage 17 blieb deshalb auf `planned`; Stage 18 bestätigte nach Korrektur den normalen Auswahl- und Rekrutierungspfad.
 
 Noch nicht validiert:
 
 ```lua
-commander:AddMission(mission)
 commander:AddOpsTransport(transport)
 ```
 
-## 7. GROUP und UNIT
+## 7. AUFTRAG
+
+| Methode / Callback | Status | OMW-Verwendung | Beobachtetes Ergebnis |
+|---|---|---|---|
+| `AUFTRAG:NewCAS(zone, altitude, speed, coordinate, heading, leg)` | `VALIDATED` für Salerno-Testgeometrie | Isolierten CAS-Auftrag erzeugen | AUFTRAG erstellt und vom COMMANDER akzeptiert |
+| `mission:SetName(name)` | `VALIDATED` | Stabilen Testnamen setzen | Name in COMMANDER- und AIRWING-Queues sichtbar |
+| `mission:SetRequiredAssets(min, max)` | `VALIDATED` | Genau ein Missionsasset verlangen | AIRWING meldete `Assets=1/1` |
+| `mission:SetTime(start, stop)` | `VALIDATED` für Testkonfiguration | Ausführungsfenster setzen | Auftrag wurde innerhalb des Testfensters bearbeitet |
+| `mission:SetDuration(seconds)` | `VALIDATED` für Konfiguration | Missionsdauer setzen | Ohne Konfigurationsfehler übernommen |
+| `mission:SetReturnToLegion(true)` | `VALIDATED` für Konfiguration | Rückkehrpolicy setzen | Konfiguration akzeptiert; reguläre Recovery nicht getestet |
+| `mission:SetRepeat(0)` | `VALIDATED` für Konfiguration | Wiederholung deaktivieren | Kein erneuter Auftrag im Testfenster |
+| `mission:OnAfterStarted(From, Event, To)` | `VALIDATED` als Callback | Fortschritt nachweisen | `scheduled -> started` beobachtet |
+| `mission:OnAfterDone(From, Event, To)` | `VALIDATED` als Callback für Cleanup | kontrolliertes Ende protokollieren | `started -> done` nach Test-Cleanup |
+
+Beobachtete Zustandsfolge:
+
+```text
+planned -> requested -> scheduled -> started
+```
+
+Der spätere `done`-/`success`-Pfad entstand durch kontrollierten Testabbruch und beweist keine taktische Zielbekämpfung.
+
+`AUFTRAG` bleibt insgesamt `IN_USE_PARTIAL`, weil regulärer Missionsabschluss, Zielwirkung, Rückkehr, Recovery und Verlustpfade noch offen sind.
+
+## 8. GROUP und UNIT
 
 | Methode | Status | OMW-Verwendung | Beobachtetes Ergebnis |
 |---|---|---|---|
-| `GROUP:FindByName(name)` | `VALIDATED` | Late-Activation-Template finden | Alle fünf Templates gefunden |
+| `GROUP:FindByName(name)` | `VALIDATED` | Late-Activation-Templates finden | Erwartete Templates gefunden |
 | `group:GetUnits()` | `VALIDATED` | Gruppengröße und Einheiten prüfen | Erwartete 1- oder 2-Schiff-Größe bestätigt |
 | `unit:GetName()` | `VALIDATED` | Diagnose | Namen ausgegeben |
-| `unit:GetTypeName()` | `VALIDATED` | DCS-Typprüfung | OH58D, AH-64D_BLK_II, UH-60A und CH-47Fbl1 bestätigt |
-| `UNIT:FindByName(name)` | `VALIDATED` als alternative Suche | Warehouse-Anker alternativ als UNIT prüfen | Kein Fehler; tatsächlicher Anker war verfügbar |
+| `unit:GetTypeName()` | `VALIDATED` | DCS-Typprüfung | Erwartete Luftfahrzeugtypen bestätigt |
+| `UNIT:FindByName(name)` | `VALIDATED` als alternative Suche | Warehouse-Anker alternativ prüfen | Aufruf ohne Fehler |
 
-## 8. STATIC
+## 9. STATIC
 
 | Methode | Status | OMW-Verwendung | Beobachtetes Ergebnis |
 |---|---|---|---|
-| `STATIC:FindByName(name, false)` | `VALIDATED` | Warehouse-Anker und 20 sichtbare Aircraft-Statics prüfen | Fehlende optionale Objekte ohne unnötigen MOOSE-Fehler behandelbar; erwartete Statics gefunden |
-| `static:GetTypeName()` | `VALIDATED` | Static-Typ prüfen | Alle erwarteten Typen bestätigt |
+| `STATIC:FindByName(name, false)` | `VALIDATED` | Warehouse-Anker und sichtbare Statics prüfen | Erwartete Objekte gefunden; fehlende optionale Objekte kontrolliert behandelbar |
+| `static:GetTypeName()` | `VALIDATED` | Static-Typ prüfen | Erwartete Typen bestätigt |
 
 Wichtige Projekterkenntnis:
 
@@ -114,96 +153,77 @@ STATIC:FindByName(name, false)
 
 ist bei erwartbar fehlenden Statics dem fehlerwerfenden Standardaufruf vorzuziehen.
 
-## 9. ZONE
+## 10. ZONE
 
 | Methode | Status | OMW-Verwendung | Beobachtetes Ergebnis |
 |---|---|---|---|
-| `ZONE:FindByName(name)` | `VALIDATED` für Existenzprüfung | Elf Jalalabad-Zonen validieren | 11/11 Zonen gefunden |
+| `ZONE:FindByName(name)` | `VALIDATED` | Benannte Mission-Editor-Zonen ermitteln | Erwartete Zonen gefunden |
+| `zone:GetCoordinate()` | `VALIDATED` für Salerno-CAS | Zielkoordinate an `AUFTRAG:NewCAS()` übergeben | CAS-AUFTRAG konstruiert und gestartet |
 
-Nicht validiert sind operative Load-/Unload-, Presence- oder Triggerabläufe dieser Zonen.
+Operative Load-/Unload-, Presence- und Besitzlogik bleibt separat zu testen.
 
-## 10. SCHEDULER
+## 11. SCHEDULER
 
 | Methode | Status | OMW-Verwendung | Beobachtetes Ergebnis |
 |---|---|---|---|
-| `SCHEDULER:New(master, function, args, start)` | `VALIDATED` | Zeitlich geordnete Konstruktion der Testkomponenten | Alle Stufen liefen ohne relevanten OMW-Timerfehler |
+| `SCHEDULER:New(master, function, args, start)` | `VALIDATED` | Geordnete Konstruktion, Snapshots und Cleanup | Teststufen liefen ohne relevanten OMW-Timerfehler |
 
-Einschränkung:
+Feste Verzögerungen sind für Testfixtures zulässig, ersetzen in der Produktionsruntime aber keine FSM- oder Zustandsprüfung.
 
-Feste Startverzögerungen sind für die Testbaseline geeignet, ersetzen in produktiven Abläufen aber keine Zustands- oder Eventprüfung.
+## 12. Interner Zugriff `_DATABASE` und Objektfelder
 
-## 11. AUFTRAG-Typen
-
-Die folgenden Werte wurden erfolgreich für Squadron-Capabilities und Payloadregistrierung verwendet:
-
-```lua
-AUFTRAG.Type.RECON
-AUFTRAG.Type.CAS
-AUFTRAG.Type.TROOPTRANSPORT
-AUFTRAG.Type.CARGOTRANSPORT
-AUFTRAG.Type.LANDATCOORDINATE
-AUFTRAG.Type.GROUNDESCORT
-```
-
-Status:
-
-`IN_USE_PARTIAL`.
-
-Die Verwendung als Typkonstante ist bestätigt. Die Erstellung und vollständige Laufzeit eines konkreten AUFTRAG ist noch nicht validiert.
-
-## 12. Interner Zugriff `_DATABASE`
-
-Verwendeter Zugriff:
+Verwendete Diagnosezugriffe:
 
 ```lua
 _DATABASE.Templates.Groups[groupName]
+commander.legions
+commander.missionqueue
+airwing.cohorts
+airwing.payloads
+airwing.missionqueue
+mission.statusCommander
 ```
-
-Zweck:
-
-- unbesetzte Client-Gruppen,
-- Late-Activation-Templates,
-- Template-Livery
-
-validieren, obwohl die Gruppe nicht als aktive Runtime-`GROUP` existiert.
 
 Status:
 
 `INTERNAL_RESTRICTED`.
 
-Dieser Zugriff ist kein allgemeiner Projektstandard. Bei jedem MOOSE-Update ist die Struktur erneut zu prüfen. Vor einer produktiven Nutzung muss erneut nach einer öffentlichen MOOSE-Methode gesucht werden.
+Diese Zugriffe dienten ausschließlich der Diagnose und Acceptance-Telemetrie. Sie sind keine allgemeine stabile Produktions-API und müssen bei einem MOOSE-Wechsel erneut geprüft werden.
 
 ## 13. Noch nicht validierte, aber vorgesehene Methoden
 
-Diese Liste ist ein Prüfauftrag und kein Nachweis:
-
 ```lua
 FLIGHTGROUP:SetOptionPreferVertical()
-COMMANDER:AddMission(mission)
 COMMANDER:AddOpsTransport(transport)
-AIRWING:AddMission(mission)
+AIRWING:AddMission(mission) -- als produktiver Architekturpfad separat zu bewerten
 FLIGHTGROUP:AddMission(mission)
 ARMYGROUP:AddMission(mission)
 ```
 
-Vor Statusänderung sind Dokumentation, Quellcode, MOOSE-Version und DCS-Test erforderlich.
+## 14. Acceptance-Nachweise
 
-## 14. Acceptance-Nachweis
+### Jalalabad
 
 ```text
-OMW validated source commit:
-6cee9a5db7abf1934d0f86bf9fdf91a0446374d0
-
-BuilderVersion:
-JBAD-AIR-OPS-COMPLETE-5
-
-Result:
-Jalalabad local Air Operations node OPERATIONAL / PASS
+OMW source commit: 6cee9a5db7abf1934d0f86bf9fdf91a0446374d0
+BuilderVersion:    JBAD-AIR-OPS-COMPLETE-5
+Result:            local Air Operations node OPERATIONAL / PASS
 ```
 
-Bericht:
-
 - [`2026-07-24-jalalabad-complete-node-pass.md`](../../mission/tests/jalalabad-air-operations/results/2026-07-24-jalalabad-complete-node-pass.md)
+
+### Salerno
+
+```text
+OMW source commit: dba0465afbff14fb719abdeb1f9b06e24ff24717
+BuilderVersion:    SAL-COMMANDER-SELECTION-18
+Bundle SHA-256:    75ea74cdaa60800899345924fc4eb450c15211d605bf972767d9d68e265421ee
+MOOSE commit:      73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+Moose.lua SHA-256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
+Result:            isolated COMMANDER CAS selection and progress to started / PASS
+```
+
+- [`2026-08-02-salerno-commander-selection-18-pass.md`](../../mission/tests/salerno-air-operations/results/2026-08-02-salerno-commander-selection-18-pass.md)
 
 ## 15. Vorlage für neue Einträge
 
