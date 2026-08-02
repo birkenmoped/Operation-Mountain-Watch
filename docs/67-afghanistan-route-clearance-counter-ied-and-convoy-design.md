@@ -117,7 +117,7 @@ The Smart Book's METHANE structure supports player reporting: military/callsign,
 
 Der Projektinhaber legt zwei reguläre BLUE-Logistikkonvoi-Vorlagen fest. Beide ersetzen die bisherige HMMWV-basierte Testvorlage `TPL_TEST_BLUE_CONVOY_STANDARD_01` für neue Builds und neue DCS-Abnahmen.
 
-### 11.1 BLUE_CONVOY_LIGHT_06
+### 11.1 TPL_BLUE_CONVOY_LIGHT_06
 
 | Position | Fahrzeug | Funktion |
 |---:|---|---|
@@ -135,7 +135,7 @@ Der Projektinhaber legt zwei reguläre BLUE-Logistikkonvoi-Vorlagen fest. Beide 
 6 Fahrzeuge
 ```
 
-### 11.2 BLUE_CONVOY_STANDARD_07
+### 11.2 TPL_BLUE_CONVOY_STANDARD_07
 
 | Position | Fahrzeug | Funktion |
 |---:|---|---|
@@ -156,11 +156,11 @@ Der Projektinhaber legt zwei reguläre BLUE-Logistikkonvoi-Vorlagen fest. Beide 
 
 ### 11.3 Auswahl- und Laufzeitregel
 
-Reguläre TM01M-Konvois wählen ihre Vorlage unabhängig je Spawn und gleichverteilt über die MOOSE-Funktion `SPAWN:InitRandomizeTemplate()` aus:
+Reguläre TM01M-Konvois wählen ihre Vorlage unabhängig je Spawn über die MOOSE-Funktion `SPAWN:InitRandomizeTemplate()` aus:
 
 ```text
-BLUE_CONVOY_LIGHT_06
-BLUE_CONVOY_STANDARD_07
+TPL_BLUE_CONVOY_LIGHT_06
+TPL_BLUE_CONVOY_STANDARD_07
 ```
 
 Es wird keine eigene Lua-Zufallsfunktion eingeführt. Beide Mission-Editor-Gruppen müssen vorhanden und `Late Activation` sein. Ein fehlendes Template führt zu `FAIL_CONFIGURATION`.
@@ -168,6 +168,8 @@ Es wird keine eigene Lua-Zufallsfunktion eingeführt. Beide Mission-Editor-Grupp
 Die Laufzeitlogik muss deshalb sechs und sieben Fahrzeuge als zulässige Anfangsstärke akzeptieren, die tatsächlich ausgewählte Variante protokollieren und die Ankunftsstärke anhand der real erzeugten Gruppe auswerten. Bei fünf gleichzeitig erzeugten Konvois liegt die unbeschädigte Gesamtstärke abhängig von der Auswahl zwischen 30 und 35 Fahrzeugen.
 
 Für die absolute MOOSE-Spawnpositionierung wird ein Sieben-Slot-Layout berechnet. Beim Light-Template nutzt MOOSE nur die ersten sechs Positionen; der siebte hintere Slot bleibt unbesetzt. Dadurch bleibt die Fahrzeugreihenfolge beider Templates unverändert, ohne eigene Positions- oder Spawnlogik außerhalb von MOOSE einzuführen.
+
+Die alte Gruppe `TPL_TEST_BLUE_CONVOY_STANDARD_01` ist aus der aktuellen Mission-Editor-Vorlagenbibliothek zu entfernen. Neue Laufzeitkonfigurationen dürfen sie nicht mehr referenzieren.
 
 Bereits bestandene Ergebnisberichte der früheren sechs Fahrzeuge umfassenden Testvorlage bleiben als historische Nachweise ihres exakt getesteten Stands erhalten und werden nicht rückwirkend umgeschrieben.
 
