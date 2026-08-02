@@ -3,32 +3,28 @@ local function log(msg) env.info(TAG .. " " .. tostring(msg)) end
 
 local function tableCount(value)
   local count = 0
-  if type(value) == "table" then
-    for _ in pairs(value) do count = count + 1 end
-  end
+  if type(value) == "table" then for _ in pairs(value) do count = count + 1 end end
   return count
 end
 
 local function main()
   local cfg = OMW and OMW.AirOps and OMW.AirOps.SalernoDiagnostics
-  if not cfg then
-    log("COMPLETE status=FAIL reason=configuration-missing")
-    return
-  end
+  if not cfg then log("COMPLETE status=FAIL reason=configuration-missing") return end
 
   local airwing = cfg.ConstructedAirwing
-  local squadrons = cfg.ConstructedSquadrons or {}
+  local squadrons = cfg.RegisteredSquadrons or cfg.ConstructedSquadrons or {}
   local contracts = cfg.SquadronContracts or {}
+  local parking = cfg.ParkingContract
   if not airwing or #squadrons ~= cfg.Expected.Squadrons or #contracts ~= cfg.Expected.Squadrons then
     log(string.format("COMPLETE status=FAIL reason=prerequisite-missing airwing=%s squadrons=%d contracts=%d expected=%d",
       tostring(airwing ~= nil), #squadrons, #contracts, cfg.Expected.Squadrons))
     return
   end
-
-  if not AUFTRAG or not AUFTRAG.Type then
-    log("COMPLETE status=FAIL reason=AUFTRAG.Type-unavailable")
+  if not parking or tonumber(parking.Violations) ~= 0 then
+    log("COMPLETE status=FAIL reason=runtime-parking-contract-not-ready")
     return
   end
+  if not AUFTRAG or not AUFTRAG.Type then log("COMPLETE status=FAIL reason=AUFTRAG.Type-unavailable") return end
 
   local capabilityMap = {
     { AUFTRAG.Type.CAS, AUFTRAG.Type.CASENHANCED, AUFTRAG.Type.ESCORT },
@@ -38,9 +34,7 @@ local function main()
     { AUFTRAG.Type.TROOPTRANSPORT, AUFTRAG.Type.CARGOTRANSPORT }
   }
 
-  local failures = 0
-  local capabilitiesConfigured = 0
-  local payloadsAdded = 0
+  local failures, capabilitiesConfigured, payloadsAdded = 0, 0, 0
   cfg.OperationalPayloads = {}
 
   for index, squadron in ipairs(squadrons) do
@@ -56,9 +50,7 @@ local function main()
       failures = failures + 1
       log("ERROR name=" .. tostring(name) .. " reason=invalid-contract")
     else
-      local okCapability, capabilityDetail = pcall(function()
-        squadron:AddMissionCapability(missionTypes)
-      end)
+      local okCapability, capabilityDetail = pcall(function() squadron:AddMissionCapability(missionTypes) end)
       if okCapability then
         capabilitiesConfigured = capabilitiesConfigured + 1
         log(string.format("CAPABILITY name=%s missionTypes=%s", tostring(name), table.concat(missionTypes, ",")))
@@ -67,9 +59,7 @@ local function main()
         log("ERROR name=" .. tostring(name) .. " phase=capability detail=" .. tostring(capabilityDetail))
       end
 
-      local okPayload, payloadOrError = pcall(function()
-        return airwing:NewPayload(template, -1, missionTypes, 50)
-      end)
+      local okPayload, payloadOrError = pcall(function() return airwing:NewPayload(template, -1, missionTypes, 50) end)
       if okPayload and payloadOrError then
         payloadsAdded = payloadsAdded + 1
         cfg.OperationalPayloads[#cfg.OperationalPayloads + 1] = payloadOrError
@@ -82,16 +72,11 @@ local function main()
     end
   end
 
-  local startCalled = false
-  local startOk = false
-  local startDetail = nil
+  local startCalled, startOk, startDetail = false, false, nil
   if failures == 0 and type(airwing.Start) == "function" then
     startCalled = true
     startOk, startDetail = pcall(function() airwing:Start() end)
-    if not startOk then
-      failures = failures + 1
-      log("ERROR phase=airwing-start detail=" .. tostring(startDetail))
-    end
+    if not startOk then failures = failures + 1 log("ERROR phase=airwing-start detail=" .. tostring(startDetail)) end
   elseif type(airwing.Start) ~= "function" then
     failures = failures + 1
     log("ERROR phase=airwing-start reason=Start-unavailable")
@@ -100,19 +85,11 @@ local function main()
   cfg.OperationalBaselineActivated = failures == 0
   cfg.AirwingStartCalled = startCalled
 
-  log(string.format("STATE capabilities=%d/%d payloads=%d/%d payloadTable=%d airwingStartCalled=%s airwingStartOk=%s",
+  log(string.format("STATE capabilities=%d/%d payloads=%d/%d payloadTable=%d airwingStartCalled=%s airwingStartOk=%s parkingContract=true",
     capabilitiesConfigured, cfg.Expected.Squadrons, payloadsAdded, cfg.Expected.Squadrons,
     tableCount(airwing.payloads), tostring(startCalled), tostring(startOk)))
-  log("DEFERRED callsigns=true missions=true reason=requires-authoritative-callsign-contract-and-dedicated-test-zones")
   log(string.format("SAFETY missionsAdded=0 deliberateSpawnsExpected=0 failures=%d", failures))
   log("COMPLETE status=" .. (failures == 0 and "PASS" or "FAIL"))
 end
 
-if SCHEDULER then
-  SCHEDULER:New(nil, main, {}, 18)
-else
-  timer.scheduleFunction(function()
-    main()
-    return nil
-  end, nil, timer.getTime() + 18)
-end
+if SCHEDULER then SCHEDULER:New(nil, main, {}, 18) else timer.scheduleFunction(function() main() return nil end, nil, timer.getTime() + 18) end
