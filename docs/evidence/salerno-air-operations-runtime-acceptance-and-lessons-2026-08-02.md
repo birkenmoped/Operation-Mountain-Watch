@@ -4,14 +4,17 @@ status: ACCEPTED_TECHNICAL_BASELINE
 document_class: ACCEPTANCE_AND_LESSONS_RECORD
 owning_policy: OMW-GOV-001
 authoritative_for:
-  - complete chronology of Salerno AIRWING/SQUADRON/COMMANDER development
-  - classification of Parking calibration, failures and deferral
-  - root causes of invalid and failed COMMANDER stages
-  - reusable rules for later airfield implementations
+  - chronology of the Salerno AIRWING/SQUADRON/COMMANDER development and tests
+  - classification of Salerno parking calibration, experiments, failures and deferral
+  - root causes and corrections for invalid or failed Salerno test stages
+  - accepted Salerno COMMANDER selection and AH-64 assignment path
+  - reusable technical lessons for later airfield implementations
 not_authoritative_for:
-  - project-wide ORBAT
-  - exact Parking compliance
-  - tactical CAS completion or recovery
+  - active project-wide ORBAT
+  - exact parking compliance
+  - tactical target engagement or normal mission completion
+  - return, landing, recovery or persistent inventory booking
+  - production theater COMMANDER design beyond the documented recommendation
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
@@ -19,11 +22,31 @@ superseded_by:
 source_branch: agent/salerno-read-only-diagnostics
 source_commit: dba0465afbff14fb719abdeb1f9b06e24ff24717
 validated_in_dcs: true
+acceptance_branch: agent/salerno-read-only-diagnostics
+acceptance_commit: dba0465afbff14fb719abdeb1f9b06e24ff24717
+acceptance_mission: OMW_Template_v5_Salerno.miz
+acceptance_mission_sha256: 4c9670babced44007952a02100de07b42eecdec156046ca7d1497a6a932edfaf
+dcs_version: 2.9.28.26385
+moose_commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+moose_artifact_sha256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
+acceptance_builder_version: SAL-COMMANDER-SELECTION-18
+acceptance_bundle_sha256: 75ea74cdaa60800899345924fc4eb450c15211d605bf972767d9d68e265421ee
 ---
 
-# Salerno Runtime Acceptance, Fehlversuche und Lessons Learned
+# FOB Salerno AIRWING/SQUADRON/COMMANDER – Runtime Acceptance und Lessons Learned
 
-## 1. Reproduzierbarer PASS-Stand
+## 1. Zweck
+
+Dieses Dokument bewahrt den vollständigen technischen Erkenntnisweg des Salerno-Arbeitsstrangs. Fehlversuche werden nicht entfernt oder nachträglich als Erfolg umgedeutet. Es trennt:
+
+- belastbare Diagnose- und Kalibrierungsergebnisse;
+- intern konsistente Konfiguration ohne bewiesene DCS-Realisierung;
+- verunreinigte beziehungsweise ungültige Testläufe;
+- korrekt erkannte FAILs;
+- den abschließenden isolierten COMMANDER-PASS;
+- weiterhin offene Produktionsfunktionen.
+
+## 2. Akzeptierte Provenienz
 
 ```text
 Branch:                  agent/salerno-read-only-diagnostics
@@ -32,154 +55,238 @@ BuilderVersion:          SAL-COMMANDER-SELECTION-18
 Bundle SHA-256:          75ea74cdaa60800899345924fc4eb450c15211d605bf972767d9d68e265421ee
 Mission:                 OMW_Template_v5_Salerno.miz
 Mission SHA-256:         4c9670babced44007952a02100de07b42eecdec156046ca7d1497a6a932edfaf
-DCS:                     2.9.28.26385
+DCS version:             2.9.28.26385
 MOOSE commit:            73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
-Moose.lua SHA-256:       e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
+Embedded Moose.lua SHA:  e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
 ```
 
-## 2. Belastbare Ausgangsbasis
+## 3. Ausgangsvertrag
+
+Mission Editor:
 
 ```text
-FOB Salerno / Airbase-ID 23
-WH_AIR_US_SALERNO
-6 Clients
-5 KI-Templates / 8 Template-Units
-15 Aircraft-Statics
-1 Zone
-1 AIRWING
-5 SQUADRONs
-20 registrierte Assetgruppen
+6 Clientgruppen
+5 Late-Activation-KI-Templates / 8 Template-Units
+15 Luftfahrzeug-Statics
+1 Warehouse-Anker
+1 Funktionszone
 ```
 
-## 3. Parking-Kalibrierung
+MOOSE:
 
-Die Kalibrierung `SAL-ME-TERMINAL-CALIBRATION-1` bestätigte 32 Zuordnungen bei 44 Runtime-Nodes und null Fehlern. Die Kernlehre lautet:
+```text
+1 AIRWING
+5 SQUADRONs
+20 registrierte Warehouse-Assetgruppen
+5 Capability-Bereiche
+10 interne Payloadtabelleneinträge
+```
+
+## 4. Read-only Diagnose
+
+Der erste technische Schritt löste ausschließlich folgende Objekte auf:
+
+- `AIRBASE.Afghanistan.FOB_Salerno`;
+- `airdromeId = 23`;
+- `WH_AIR_US_SALERNO`;
+- sechs Clientgruppen;
+- fünf KI-Templates;
+- fünfzehn Luftfahrzeug-Statics;
+- `ZONE_AIR_US_SAL_CSAR_UNLOAD`;
+- Runtime-Parkingnodes.
+
+Der read-only Ansatz war richtig. Er verhinderte, dass mutierende AIRWING-, SQUADRON- oder Spawnlogik auf unbestätigten Objekt- oder Airbaseannahmen aufbaute.
+
+## 5. Mission-Editor-/TerminalID-Kalibrierung
+
+```text
+BuilderVersion: SAL-ME-TERMINAL-CALIBRATION-1
+Runtime-Nodes:  44
+Mappings:       32
+Failures:       0
+Result:         PASS
+```
+
+Vollständige Zuordnung:
+
+```text
+ME07=T08, ME08=T13, ME09=T14, ME10=T15, ME11=T16, ME12=T17,
+ME14=T09, ME15=T10, ME16=T11, ME17=T12,
+ME18=T21, ME19=T22, ME20=T19,
+ME24=T41, ME25=T42, ME26=T43, ME27=T44, ME28=T45,
+ME29=T32, ME30=T33, ME31=T34, ME32=T35, ME33=T36,
+ME34=T37, ME35=T38,
+ME37=T26, ME38=T27, ME39=T28,
+ME41=T30, ME42=T31, ME43=T23, ME44=T24
+```
+
+Clientpositionen:
+
+```text
+T18 = ME13 CH-47 Client
+T20 = ME21 CH-47 Client
+T25 = ME36 AH-64D Client
+T29 = ME40 AH-64D Client
+T39 = ME22 OH-58D Client
+T40 = ME23 OH-58D Client
+```
+
+Verbindliche Lehre:
 
 ```text
 Mission-Editor-Parkinglabel != MOOSE TerminalID
 ```
 
-Besonders relevante Zuordnungen:
+Keine Mission-Editor-ID darf ungeprüft als MOOSE-`TerminalID` verwendet werden.
+
+## 6. Type-spezifischer Parkingvertrag und Rückschlag
+
+Arbeitsstand:
 
 ```text
-ME24 -> T41
-ME25 -> T42
-ME35 -> T38
+SAL-TYPE-SPECIFIC-PARKING-14
 ```
 
-Client-TerminalIDs:
+Beispielpools:
 
 ```text
-T18, T20, T25, T29, T39, T40
+AH-64D: T28,T30
+UH-60:  T33,T34,T37
+OH-58D: T43,T44
+CH-47:  linker Heavy-Lift-Pool
 ```
 
-Der vollständige Datensatz steht im Manifest und im Kalibrierungsskript.
-
-## 4. Parking-Vertrag: intern konsistent, real nicht akzeptiert
-
-Type-Pools wurden an SQUADRONs und an die bereits registrierten Assets synchronisiert. Die Prüfung meldete:
+Der Vertrag setzte Parkingpools an SQUADRONs und synchronisierte sie zusätzlich auf bereits registrierte Warehouse-Assets. Die interne Prüfung meldete:
 
 ```text
 syncedAssets=20
 violations=0
 ```
 
-Visuell wurde dennoch ein Apache auf einem erwartbar geschützten Spielerbereich beobachtet. Bei einer Multi-Unit-Gruppe folgte die tatsächliche Platzierung nicht zuverlässig dem erwarteten Type-Pool.
+Dies bewies ausschließlich die Konsistenz der Lua-/MOOSE-Tabellen. Visuell wurde mindestens ein Apache auf einem erwartbar geschützten beziehungsweise reservierten Spielerbereich beobachtet. Die tatsächliche Multi-Unit-Platzierung war damit nicht zuverlässig innerhalb des vorgesehenen Type-Pools nachgewiesen.
 
-Daraus folgt:
+Nicht zulässige Gleichsetzungen:
+
+```text
+configured parkingIDs == realisierte Unitpositionen
+contract violations=0 == tatsächliche Parking-Compliance
+Safe Parking gesetzt == Clientpositionen nachweislich geschützt
+```
+
+Korrekte Bewertung:
 
 ```yaml
-parking_mapping: PASS
-configuration_tables: PASS
-actual_unit_placement: FAIL_NOT_PROVEN
-client_protection: FAIL_NOT_PROVEN
+parking_calibration: PASS
+parking_configuration_consistency: PASS
+actual_spawn_compliance: NOT_ACCEPTED
 operational_parking: DEFERRED
 ```
 
-Die Arbeit war nicht wertlos: Die Zuordnung und die Ausschlussdaten bleiben verwertbar. Nicht haltbar war nur der Anspruch, die Konfiguration beweise die Realisierung.
+## 7. Abgrenzung zum Kandahar-Parkingfehler
 
-## 5. MOOSE-Parking-Erkenntnis
+In Kandahar war eine konkrete Ursache nachgewiesen worden: nach der Assetregistrierung geänderte SQUADRON-ParkingIDs wurden nicht automatisch in bereits registrierte Assets übernommen. Die dortige Lösung synchronisierte die Assetlisten nachträglich.
 
-Bei vorhandenen `asset.parkingIDs` nutzt der verwendete Warehouse-Allocator einen assetbezogenen Prüfpfad. Der generische AIRBASE-Blacklist-/Terminaltyp-Pfad ist dabei nicht identisch.
+Salerno Stage 14 enthielt diese Synchronisierung bereits und meldete zwanzig synchronisierte Assets. Der reine Kandahar-Stale-Asset-Fehler erklärt Salerno daher nicht vollständig.
+
+```text
+Kandahar: nachgewiesener Stale-Asset-Parkingfehler
+Salerno: Assetlisten synchron, tatsächliche Multi-Unit-Platzierung dennoch unzuverlässig
+```
+
+## 8. MOOSE-Quellcodeerkenntnis zum Parking
+
+Im verwendeten MOOSE-Stand folgt der Warehouse-Allocator bei vorhandenen `asset.parkingIDs` dem assetbezogenen Prüfpfad. Der generische Airbase-Blacklist-/Terminaltyp-Pfad wird in diesem Zweig nicht identisch angewandt.
 
 Konsequenzen:
 
-- keine Client-TerminalID in Assetpools;
-- AIRBASE-Blacklist allein ist kein ausreichender Beweis;
-- Unitpositionen nach Spawn erfassen;
-- Gruppenposition und Unitposition nicht gleichsetzen;
-- konfigurierten Pool, tatsächliche Koordinate und nächsten TerminalID gemeinsam protokollieren.
+- Clientpositionen dürfen niemals in Assetpools enthalten sein;
+- eine Airbase-Blacklist allein ist bei assetbezogenen Pools kein ausreichender Nachweis;
+- tatsächliche Unitkoordinaten müssen nach Spawn erfasst werden;
+- Gruppenposition und einzelne Unitpositionen dürfen nicht gleichgesetzt werden;
+- ein belastbarer Folgeversuch benötigt Actual-Spawn-Telemetrie mit nächster Runtime-TerminalID je Unit.
 
-Die konkrete Ursache des Salerno-Multi-Unit-Fehlverhaltens bleibt offen. Kandidaten wie DCS-Relocation, relative Templateoffsets, unvollständige Parkingdata oder Fallback wurden nicht als bewiesen erklärt.
+## 9. Parking bewusst zurückgestellt – Stage 15
 
-## 6. Stage 15 – Parking deferred / direkter Dispatch
-
-`SAL-PARKING-DEFERRED-15` entfernte Parkingmutationen und Parking-Gates. Direkte CAS-, RECON- und LIFT-Aufträge wurden angenommen und erreichten Laufzeitfortschritt.
-
-Bestätigt:
-
-- AIRWING/SQUADRON-Grundlage;
-- Capabilities und Payloads;
-- direkte Missionsanforderung.
-
-Nicht bestätigt:
-
-- kausal eindeutige Spawnposition;
-- Cold-Ground-Start;
-- Parking-Compliance.
-
-## 7. Stage 16 – gemischter Test, ungültig
-
-`SAL-COMMANDER-DISPATCH-16` vermischte noch laufende direkte CAS-/RECON-/LIFT-Missionen mit dem COMMANDER-Test.
-
-Folgen:
-
-- eine Blackhawk erschien direkt in der Luft;
-- die Zeitachse zeigte, dass sie aus dem direkten LIFT-Auftrag stammte;
-- der COMMANDER-CAS-Auftrag blieb `planned`;
-- ein case-sensitiver Vergleich behandelte `planned` fälschlich nicht als Fehler;
-- ein ungültiger PASS-Marker wurde ausgegeben.
-
-Korrekte Klassifikation:
-
-```yaml
-stage_16: INVALID
-blackhawk_source: DIRECT_LIFT
-commander_progress: false
-reported_pass: false_positive
-```
-
-## 8. Stage 17 – isolierter FAIL
-
-`SAL-COMMANDER-ISOLATED-17` entfernte die direkten Missionen und bewertete `planned` korrekt als FAIL. Es erschien kein Luftfahrzeug.
-
-Der Lauf bewies nicht, dass das AIRWING ungeeignet war. Er bewies, dass der COMMANDER-Auswahlzyklus nicht lief.
-
-## 9. Root Cause – COMMANDER nicht gestartet
-
-Die anschließende Prüfung der OMW-Dokumentation, des akzeptierten Jalalabad-Codes und des exakten MOOSE-Quellcodes zeigte:
-
-```lua
-commander = COMMANDER:New(...)
-commander:AddAirwing(airwing)
-commander:Start() -- fehlte in Stage 17
-```
-
-MOOSE-Verhalten:
+Arbeitsstand:
 
 ```text
-New() -> NotReadyYet
-AddAirwing() -> Legion verknüpft, COMMANDER nicht gestartet
-AddMission() -> Mission als PLANNED in Queue
-Start() -> OnDuty und Statuszyklus
-onafterStatus() -> CheckMissionQueue()
+SAL-PARKING-DEFERRED-15
 ```
 
-Der Fehler hätte früher auffallen müssen, weil die korrekte Sequenz bereits in der OMW-Dokumentation und im Jalalabad-Referenzcode vorhanden war.
+Änderung:
 
-## 10. Stage 18 – isolierter COMMANDER-PASS
+- aktive Parkingmutationen aus dem Bundle entfernt;
+- Parking nicht mehr als Gate für AIRWING-Start oder Dispatch verwendet;
+- Kalibrierung und experimentelle Dateien erhalten;
+- Funktionsprüfung auf AIRWING, SQUADRON, Capabilities, Payloads und Dispatch konzentriert.
 
-Korrigierte Sequenz:
+Direkte CAS-, RECON- und LIFT-Aufträge wurden angenommen und erreichten Fortschritt. Der Lauf bestätigte die AIRWING-/SQUADRON-Grundfunktion, war wegen paralleler Missionen jedoch ungeeignet für kausale Spawn- oder Parkingzuordnung.
+
+## 10. Ungültiger gemischter COMMANDER-Test – Stage 16
+
+Arbeitsstand:
+
+```text
+SAL-COMMANDER-DISPATCH-16
+```
+
+Fehler:
+
+1. Direkte CAS-, RECON- und LIFT-Aufträge liefen noch, als der COMMANDER-Test begann.
+2. Eine Blackhawk erschien in der Luft und wurde zunächst dem aktuellen COMMANDER-Kontext zugerechnet.
+3. Die Zeitachse zeigte, dass diese Blackhawk aus der direkten LIFT-Mission stammte.
+4. Der COMMANDER-CAS-Auftrag selbst blieb `planned`.
+5. Die Auswertung prüfte auf `Planned`, während MOOSE `planned` zurückgab.
+6. Dadurch entstand ein sachlich falscher PASS-Marker.
+
+```yaml
+stage_16: INVALID_FAIL
+blackhawk_source: DIRECT_LIFT_TEST
+commander_mission_progress: false
+reported_pass_marker: invalid
+```
+
+Lehren:
+
+- keine parallelen Dispatchpfade bei kausaler Auswahlprüfung;
+- Missionstyp und sichtbarer Aircrafttyp müssen zusammenpassen;
+- alle Aufträge gemeinsam auf einer Zeitachse auswerten;
+- Zustände vor Vergleichen normalisieren;
+- PASS positiv über erwartete Ereignisse definieren.
+
+## 11. Korrekt isolierter FAIL – Stage 17
+
+Arbeitsstand:
+
+```text
+SAL-COMMANDER-ISOLATED-17
+```
+
+Verbesserungen:
+
+- direkte AIRWING-Testmissionen vollständig entfernt;
+- genau ein COMMANDER-CAS-Auftrag;
+- `planned` und `unknown` korrekt als fehlender Fortschritt bewertet.
+
+Ergebnis:
+
+```text
+Mission blieb planned
+kein Aircraft-Spawn
+FINAL status=FAIL
+```
+
+## 12. Root Cause: COMMANDER nicht gestartet
+
+Die Prüfung von OMW-Governance, MOOSE-first-Dokumentation, akzeptiertem Jalalabad-Code, offizieller MOOSE-Dokumentation und verwendetem MOOSE-Quellcode zeigte die fehlende Zeile:
+
+```lua
+commander:Start()
+```
+
+`COMMANDER:New()` erzeugt den FSM im Zustand `NotReadyYet`. `AddAirwing()` verknüpft die Legion, startet den COMMANDER aber nicht. `AddMission()` stellt den AUFTRAG zunächst als `PLANNED` in die Queue. Erst der gestartete Statuszyklus führt `CheckMissionQueue()` aus.
+
+Verbindliche Sequenz:
 
 ```text
 COMMANDER:New()
@@ -187,79 +294,104 @@ COMMANDER:AddAirwing()
 COMMANDER:Start()
 COMMANDER:CanMission()
 COMMANDER:AddMission()
-COMMANDER:Status()
+COMMANDER:Status() / normaler Statuszyklus
 ```
+
+Warum der Fehler früher hätte auffallen müssen:
+
+- der akzeptierte Jalalabad-Code enthielt `COMMANDER:Start()`;
+- `VERIFIED-METHODS.md` führte den Start als validierten Grundaufruf;
+- der MOOSE-Quellcode zeigt `NotReadyYet` und den Statuszyklus nach `Start()`.
+
+## 13. Korrigierter PASS – Stage 18
+
+Arbeitsstand:
+
+```text
+SAL-COMMANDER-SELECTION-18
+```
+
+Ergänzungen:
+
+- `commander:Start()`;
+- Prüfung `NotReadyYet -> OnDuty`;
+- `COMMANDER:CanMission()`;
+- öffentlicher `COMMANDER:Status()`-Trigger zur sofortigen Ausführung des normalen Auswahlpfads;
+- FSM-Telemetrie für `MissionAssign`, `MissionRequest` und `OpsOnMission`;
+- isolierter Auftrag;
+- positive PASS-Kriterien.
 
 Beobachtete Kette:
 
 ```text
-NotReadyYet -> OnDuty
-CanMission=true
-MissionAssign -> AW_US_SALERNO
-AIRWING MissionRequest
-AH-64 AID-111 OpsOnMission
-planned -> requested -> scheduled -> started
-FINAL status=PASS
+COMMANDER OnDuty
+-> CanMission true
+-> mission in commander queue
+-> CheckMissionQueue selection
+-> MissionAssign to AW_US_SALERNO
+-> AIRWING MissionRequest
+-> AH-64 asset recruited
+-> OpsOnMission
+-> AUFTRAG started
 ```
-
-Der kontrollierte Abbruch nach dem Nachweis ist kein taktischer Missionserfolg. `graveyard = {}` bestätigt nur, dass kein Verlust erfasst wurde.
-
-## 11. Akzeptanzgrenze
-
-| Bereich | Status |
-|---|---|
-| Airbase/Warehouse/Objekte | PASS |
-| AIRWING und fünf SQUADRONs | PASS |
-| Capabilities/Payloads | PASS |
-| COMMANDER Start/Eligibility/Selection | PASS |
-| AH-64 Asset assignment | PASS |
-| AUFTRAG bis `started` | PASS |
-| Parking-Kalibrierung | PASS |
-| tatsächliche Parking-Compliance | DEFERRED |
-| taktische Zielbekämpfung | NOT TESTED |
-| Rückkehr/Recovery/Persistenz | NOT TESTED |
-| OPSTRANSPORT | NOT TESTED |
-
-## 12. Verbindliche Lessons Learned
-
-1. **Dokumentation zuerst:** OMW-Doku, verwendete MOOSE-Version, Quellcode und Demos vor Implementierung prüfen.
-2. **Read-only vor Mutation:** Airbase, Warehouse, Templates, Clients, Statics und Zonen zuerst diagnostizieren.
-3. **Parking kalibrieren:** ME-Labels nie direkt als TerminalIDs behandeln.
-4. **Konfiguration ist kein Runtime-Beweis:** Tabellen-PASS und sichtbare Unitposition getrennt bewerten.
-5. **Assetkopien beachten:** Nach Registrierung geänderte SQUADRON-Daten nicht automatisch als Assetdaten voraussetzen.
-6. **Multi-Unit-Telemetrie:** jede Unit mit Koordinate, nächstem TerminalID und Poolprüfung erfassen.
-7. **Isolierte Tests:** ein Dispatchpfad, ein Auftrag, ein erwarteter Assettyp.
-8. **FSM korrekt starten:** Konstruktion und Binding ersetzen `Start()` nicht.
-9. **Zustände normalisieren:** `planned` und `unknown` sind kein Fortschritt.
-10. **Historische FAILs erhalten:** Fehlversuche nicht überschreiben.
-11. **Test-COMMANDER abgrenzen:** lokaler Harness ist nicht theaterweite Produktion.
-12. **Scope ehrlich halten:** Parking, Recovery und Persistenz bleiben offen, obwohl COMMANDER-Dispatch bestanden ist.
-
-## 13. Spätere Parking-Telemetrie
-
-Eine Wiederaufnahme benötigt mindestens:
 
 ```yaml
-mission:
-squadron:
-asset_uid:
-group:
-unit:
-type:
-configured_asset_parking_ids:
-configured_squadron_parking_ids:
-unit_coordinate:
-nearest_terminal_id:
-me_mapping:
-in_expected_pool:
-in_client_pool:
-in_static_exclusion:
-spawn_mode:
+eligibility: true
+selected: true
+assigned_event: true
+requested_event: true
+ops_on_mission_event: true
+progressed: true
+final: PASS
 ```
 
-## 14. Referenzen
+Der Test brach den Auftrag nach dem Funktionsnachweis kontrolliert ab. Ein späterer Done-/Success-Übergang ist deshalb kein taktischer Missionserfolg. Der Debrief enthielt:
 
-- [`Salerno Manifest`](../81-salerno-air-operations-manifest.md)
-- [`Salerno Abschluss-Handoff`](../handoffs/2026-08-02-salerno-complete-state-and-next-airfield-handoff.md)
-- `mission/tests/salerno-air-operations/README.md`
-- vollständige Ergebnisberichte unter `mission/tests/salerno-air-operations/results/`
+```text
+graveyard = {}
+```
+
+## 14. Akzeptanzmatrix
+
+| Bereich | Ergebnis | Grenze |
+|---|---|---|
+| Airbase-/Warehouse-Auflösung | PASS | FOB Salerno ID 23, Warehouse gefunden |
+| Objektvertrag | PASS | Clients, Templates, Statics, Zone vollständig |
+| AIRWING-Konstruktion/Start | PASS | Running |
+| SQUADRON-Konstruktion/Registrierung | PASS | 5/5, 20 Gruppenassets |
+| Capabilities/Payloads | PASS | CAS-Eligibility praktisch bestätigt |
+| COMMANDER-Konstruktion/Start | PASS | `NotReadyYet -> OnDuty` |
+| COMMANDER-Auswahl | PASS | Salerno ausgewählt |
+| AH-64-Assetrekrutierung | PASS | `OpsOnMission` |
+| AUFTRAG-Fortschritt | PASS | bis `started` |
+| Parking-Kalibrierung | PASS | 32 Mappings, 0 Fehler |
+| tatsächliche Parking-Compliance | DEFERRED | visuell nicht zuverlässig |
+| taktische Zielbekämpfung | NOT TESTED | außerhalb des Harness |
+| Rückkehr/Landung/Recovery | NOT TESTED | außerhalb des Harness |
+| Persistenz/Verlustbuchung | NOT TESTED | außerhalb des Harness |
+| OPSTRANSPORT | NOT TESTED | außerhalb des Harness |
+| theaterweiter COMMANDER | NOT IMPLEMENTED | lokaler Test-COMMANDER |
+
+## 15. Verbindliche Lessons Learned
+
+1. Dokumentation und tatsächlicher MOOSE-Quellcode sind vor jeder eigenen Implementierung zu prüfen.
+2. Ein bekannter funktionierender Referenzknoten ist zeilenweise gegen neue Initialisierungssequenzen zu vergleichen.
+3. Kalibrierung, Konfigurationskonsistenz und tatsächliche DCS-Realisierung sind getrennte Acceptance-Ebenen.
+4. Mehrere Missionen dürfen nicht parallel laufen, wenn Auswahl, Aircrafttyp, Spawn oder Parking kausal geprüft werden.
+5. Sichtbeobachtung benötigt Zuordnung über Zeitachse, Mission, Asset-ID und Unit-Telemetrie.
+6. Zustände sind zu normalisieren; PASS verlangt positive erwartete Ereignisse.
+7. FAIL-Berichte und ungültige Teststände bleiben erhalten.
+8. Parking darf eine fachlich akzeptierte AIRWING-/COMMANDER-Grundfunktion nicht blockieren, wenn Parking ausdrücklich aus dem Acceptance-Scope entfernt wurde.
+9. Produktionsarchitektur soll später genau einen theaterweiten BLUE COMMANDER verwenden; lokale COMMANDER-Objekte bleiben Test-Fixtures.
+10. Das nächste Flugplatzinkrement muss jeden Test mit exakt einer Fragestellung und ohne konkurrierenden Dispatchpfad durchführen.
+
+## 16. Weiterhin offene Arbeit
+
+- Actual-Spawn-Telemetrie je Unit einschließlich nächster Runtime-TerminalID;
+- genaue Parking- und Cold-Ground-Spawn-Acceptance;
+- taktische Zielbekämpfung und normaler Missionsabschluss;
+- Rückkehr, Landung und Recovery;
+- persistente Bestands-, Verlust- und Rückgabebuchung;
+- OPSTRANSPORT;
+- Multiplayer- und Langzeittest;
+- theaterweiter Produktions-COMMANDER.
