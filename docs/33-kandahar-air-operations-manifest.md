@@ -3,243 +3,487 @@ document_id: OMW-AIR-KANDAHAR-MANIFEST
 status: BINDING
 owning_policy: OMW-GOV-001
 authoritative_for:
-  - Kandahar USAF Mission Editor baseline
-  - Kandahar evidence classification
+  - Kandahar Mission Editor air-operations baseline
+  - Kandahar July 2011 source-reported unit roster
   - Kandahar active A-10C unit and inventory
+  - Kandahar A-10C II CAS template payload baseline
+  - Kandahar dual-airbase AIRWING and warehouse architecture
+  - Kandahar SQUADRON identifiers
   - Kandahar-wide runtime implementation handoff
 scenario_period: 2010-08-01/2011-12-31
-project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
+project_phase: AIRWING_OBJECT_CONTRACT
 supersedes:
   - docs/30-kandahar-air-operations-manifest.md
   - Kandahar 75th EFS active baseline
-source_branch: docs/bagram-air-operations-manifest
-source_mission: OMW_TEST_TM01M_MooseFirst(18).miz
+  - Kandahar 107th EFS active baseline
+  - single-AIRWING assumption across Kandahar and Kandahar Heliport
+  - generic AW_US_KANDAHAR AIRWING name
+  - Kandahar assignment of 3-101 Attack Aviation
+  - Kandahar Heliport warehouse missing/unapproved state
+source_branch: agent/kandahar-airwing-baseline-contract
+source_mission: OMW_Template_v4_Kandahar(4).miz
+source_mission_sha256: 0732f929d4e35641c84bfb34bd75912692c3a1b7b7a0106847ce56e21aa5345c
 validated_in_dcs: false
+object_contract_validated_in_dcs: true
+heliport_warehouse_validated_in_dcs: true
 ---
 
 # 33 – Kandahar Air Operations Manifest
 
 ## 1. Dokumentstatus
 
-Der Kandahar-Grundaufbau ist in der gemeinsamen Missionseditor-Testmission weit fortgeschritten. Die Objekte sind noch keine validierte AIRWING-/SQUADRON-Laufzeitimplementierung. Dieses Dokument ist die basisweite Übergabe für die spätere MOOSE-Registrierung.
+Die Kandahar-Mission-Editor-Baseline, beide nativen Airbases, die Parkingtabellen und beide Warehouse-Anker sind strukturell sowie read-only in DCS/MOOSE validiert. Eine produktive AIRWING-/SQUADRON-Laufzeitimplementierung ist noch nicht freigegeben.
 
-Spezialdokumente:
-
-- `OMW-AIR-KANDAHAR-ISR-POLICY`: MQ-1/MQ-9;
-- `OMW-AIR-KANDAHAR-MUSTANG-RAMP`: Army Aviation / 159th CAB;
-- dieses Dokument: gemeinsame Kandahar-USAF-Struktur, Warehouse und basisweite Integrationsregeln.
-
-## 2. Evidenz- und ORBAT-Regel
-
-Kategorie A erlaubt Client-, Template-, Static- und SQUADRON-/AIRWING-Strukturen. Einzelne Sichtungen oder Durchgangsverkehr erzeugen keinen stationierten Bestand.
-
-Verbindliche USAF-Auswahl:
+Verbindliche Mission:
 
 ```text
+OMW_Template_v4_Kandahar(4).miz
+2,183,450 bytes
+SHA-256: 0732f929d4e35641c84bfb34bd75912692c3a1b7b7a0106847ce56e21aa5345c
+```
+
+Maßgebliche Dokumente:
+
+- [`Kandahar Juli-2011 ORBAT Unit Name Reconciliation`](evidence/kandahar-july-2011-orbat-unit-name-reconciliation.md)
+- [`Kandahar A-10C Active Unit Decision`](evidence/kandahar-a10c-active-unit-decision-2026-07-31.md)
+- [`Kandahar A-10C II CAS Loadout Decision`](evidence/kandahar-a10c-cas-loadout-decision-2026-08-01.md)
+- [`Kandahar revision (4) Template Type Reconciliation`](evidence/kandahar-miz4-template-type-reconciliation.md)
+- [`Kandahar Heliport Warehouse and AIRWING Contract`](kandahar-heliport-warehouse-contract.md)
+- [`Kandahar Mustang Ramp Army Aviation Baseline`](36-kandahar-mustang-ramp-army-aviation-baseline.md)
+- `OMW-AIR-KANDAHAR-ISR-POLICY` für MQ-1/MQ-9
+- `OMW-AIR-ACTIVE-ORBAT` für aktive Verbände und Bestände
+
+## 2. Autoritäts- und Quellenregel
+
+Die Juli-2011-ORBAT ist die historische Stichtagsreferenz für Einheitsnamen und Standorte. Sie ist nicht vollständig für Black SOF, Logistik, Transport, Sanität, Intelligence und Provincial Reconstruction Teams.
+
+```text
+HISTORICAL JULY 2011 ROSTER != COMPLETE BASE OCCUPANCY
+SOURCE-REPORTED UNIT != AUTOMATIC MOOSE SQUADRON
+KANDAHAR AIRFIELD IN SOURCE != SEPARATE DCS KANDAHAR HELIPORT NAME
+```
+
+Für die Kandahar-A-10C-Komponente wurde die aktive OMW-Auswahl ausdrücklich an den belegten Juli-2011-Verband angeglichen.
+
+## 3. Historische Juli-2011-Einheiten am Kandahar Airfield
+
+### 3.1 U.S. Air Force
+
+```text
+451st Air Expeditionary Wing
+├── 26th Expeditionary Rescue Squadron
+│   HH-60G; Medical Evacuation Support
+├── 46th Expeditionary Rescue Squadron
+│   Guardian Angel rescue/medical specialists
+│   Camp Bastion und Kandahar Airfield
+├── 74th Expeditionary Fighter Squadron
+│   A-10C; Close Air Support
+├── 361st Expeditionary Reconnaissance Squadron
+│   MC-12, MQ-1, MQ-9; Surveillance Support
+└── 772nd Expeditionary Airlift Squadron
+    C-130; Transport Support
+```
+
+### 3.2 U.S. Army Aviation
+
+```text
+Task Force Thunder / 159th Combat Aviation Brigade
+├── Task Force Guns / 4-227 Attack Aviation
+│   Attack Aviation Support in Kandahar Province
+├── Task Force Palehorse / 7-17 Air Cavalry
+│   Scout Aviation Support in Kandahar Province
+└── Task Force Lift / 7-101 General Support Aviation
+    Transport Aviation Support in Kandahar Province
+```
+
+Nicht in Kandahar stationiert:
+
+```text
+Task Force Attack / 3-101 Attack Aviation
+FOB Tarin Kowt; Aviation Support Uruzgan
+
+Task Force Wings / 4-101 Assault Aviation
+FOB Wolverine, Zabul; Aviation Support Zabul
+```
+
+### 3.3 Weitere historische Aviation-Verbände
+
+```text
+Task Force Silver Dart
+Canadian Aviation Headquarters
+
+Task Force Freedom / Canadian Helicopter Force Afghanistan
+Aviation Support central Kandahar
+
+Marine Attack Squadron 513
+AV-8B; Fixed-wing Close Air Support
+
+No. 617 Squadron RAF
+Tornado GR4; Close Air Support für Task Force Helmand
+```
+
+Diese Verbände gehören zum historischen Standortbild, sind aber ohne aktive Projektentscheidung keine OMW-SQUADRONs.
+
+### 3.4 Weitere durch die Juli-2011-Quelle am Kandahar Airfield gemeldete Einheiten
+
+```text
+Regional Command South / 10th Mountain Division
+Task Force Kandahar
+Task Force Automatic / 2-8 Field Artillery
+Task Force Paladin South / 63rd EOD Battalion
+Task Force Overlord / 25th Naval Construction Regiment
+Naval Mobile Construction Battalion 26
+Task Force Packhorse / 368th Engineer Battalion
+Task Force Linebacker / 863rd Engineer Battalion
+```
+
+Diese Verbände sind in der basisweiten historischen Dokumentation zu führen, nicht in Aircraft-Inventories.
+
+## 4. Verbindliche aktive Kandahar-A-10C-Einheit
+
+Mit Projektentscheidung vom 31.07.2026 wird die aktive OMW-A-10C-Komponente auf die im Juli-2011-ORBAT belegte Einheit umgestellt:
+
+```text
+74th Expeditionary Fighter Squadron
+16 A-10C
+Kandahar Airfield
+451st Air Expeditionary Wing
+```
+
+Die 74th EFS ersetzt als aktive OMW-Auswahl:
+
+```text
+75th Expeditionary Fighter Squadron
 107th Expeditionary Fighter Squadron
-Muster: A-10C
-Rolle: CAS
-Lokaler OMW-Bestand: 16
-
-772nd Expeditionary Airlift Squadron
-Muster: C-130J
-Rolle: Tactical Airlift / Airdrop
-Bestand: noch festzulegen
-
-26th Expeditionary Rescue Squadron
-historisches Muster: HH-60G
-DCS-Repräsentation: UH-60A
-Rolle: CSAR
-Bestand: noch festzulegen
-
-361st Expeditionary Reconnaissance Squadron
-Muster: MQ-1 / MQ-9 / MC-12
-DCS physisch: MQ-1A und MQ-9
-Bestand und Verfügbarkeit: gemäß OMW-AIR-KANDAHAR-ISR-POLICY
 ```
-
-81st, 74th und 75th EFS bleiben Rotationskontext und werden nicht als parallele aktive Kandahar-SQUADRONs angelegt.
-
-## 3. Aktueller Missionseditorstand
-
-Quelle:
-
-```text
-OMW_TEST_TM01M_MooseFirst(18).miz
-```
-
-### 3.1 USAF-Clientgruppen
-
-```text
-CLIENT_US_KAF_A10C_01
-CLIENT_US_KAF_A10C_02
-CLIENT_US_KAF_C130_01
-CLIENT_US_KAF_C130_02
-```
-
-Parkpositionen:
-
-```text
-A-10C II: Z20, Z19
-C-130J-30: S01, S02
-```
-
-### 3.2 USAF-KI-Templates
-
-```text
-TPL_AIR_US_KAF_A10C_CAS_2SHIP
-TPL_AIR_US_KAF_C130_TRANSPORT_1SHIP
-TPL_AIR_US_KAF_HH60G_CSAR_LEAD_1SHIP
-TPL_AIR_US_KAF_HH60G_CSAR_COVER_1SHIP
-TPL_AIR_US_KAF_MQ1A_RECON_1SHIP
-TPL_AIR_US_KAF_MQ9_RECON_1SHIP
-```
-
-Alle sind Late Activation, nicht `Uncontrolled` und Authoring-Seeds ohne zusätzlichen logischen Bestand.
-
-### 3.3 USAF-Statics
-
-```text
-6 A-10C
-2 C-130
-2 UH-60A als HH-60G-/CSAR-Repräsentation
-2 MQ-1A Predator
-1 MQ-9 Reaper
-Gesamt: 13 USAF-Luftfahrzeug-Statics
-```
-
-### 3.4 UN-Statics
-
-```text
-2 Mi-26
-4 UH-1H
-```
-
-Diese sechs Objekte sind nicht Teil der US-ORBAT oder des US-AIRWING-Bestands.
-
-### 3.5 Warehouse-Anker
-
-```text
-WH_AIR_US_KANDAHAR
-DCS-Objekttyp: container_40ft
-```
-
-## 4. Basisweite Runtime-Zielstruktur
-
-```text
-AW_US_KANDAHAR
-├── SQ_US_KAF_A10C_107_EFS
-├── SQ_US_KAF_C130_772_EAS
-├── SQ_US_KAF_HH60G_26_ERS
-├── SQ_US_KAF_MQ1_361_ERS
-├── SQ_US_KAF_MQ9_361_ERS
-├── Army-Aviation-SQUADRONs gemäß OMW-AIR-KANDAHAR-MUSTANG-RAMP
-└── spätere separat freigegebene Komponenten
-
-WH_AIR_US_KANDAHAR
-```
-
-Es wird genau ein Kandahar-AIRWING verwendet, sofern der MOOSE-First-Architekturtest nicht zwingend getrennte AIRWINGs für USAF und US Army erfordert. Eine solche Trennung wäre eine Architekturentscheidung und muss vor Umsetzung ausdrücklich dokumentiert werden.
-
-## 5. AIRWING-Registrierung
-
-Die Implementierung muss:
-
-1. `WH_AIR_US_KANDAHAR` eindeutig erkennen;
-2. das Kandahar-AIRWING erst nach erfolgreicher Warehouse-, Template- und Parking-Prüfung starten;
-3. USAF-, ISR- und Army-Aviation-SQUADRONs ohne Doppelzählung registrieren;
-4. Clientgruppen, Statics und Templates nicht als zusätzliche Airframes zählen;
-5. native DCS-Ersatztypen transparent den historischen Rollen zuordnen;
-6. ISR-Einschränkungen und Army-Aviation-Regeln aus den Spezialdokumenten übernehmen;
-7. nicht freigegebene F-16-, V-22- oder Mi-8/Mi-17-Strukturen nicht automatisch registrieren.
-
-## 6. SQUADRON-Bestandsverwaltung
 
 Verbindlich:
 
 ```text
-SQ_US_KAF_A10C_107_EFS: 16 Airframes
+nur eine aktive Kandahar-A-10C-SQUADRON
+aktive Runtime-SQUADRON ist 74th EFS
+keine parallele 75th oder 107th EFS
+Bestand bleibt 16 A-10C
+```
+
+Die 75th EFS bleibt historischer Vorgänger; die Juli-2011-Quelle dokumentiert ihre Ablösung durch die 74th EFS im April 2011. Die 81st und 107th EFS bleiben Rotationskontext ohne aktiven OMW-Bestand.
+
+Die 46th ERQS stellt Guardian-Angel-Personal und keinen eigenen Flugzeugbestand. Sie wird nicht als separate MOOSE-Aircraft-SQUADRON registriert.
+
+## 5. Dual-Airbase-Architektur
+
+DCS modelliert zwei native Airbases:
+
+```text
+AIRBASE.Afghanistan.Kandahar
+DCS ID 7
+Main Airfield
+
+AIRBASE.Afghanistan.Kandahar_Heliport
+DCS ID 15
+Mustang Ramp / Army Aviation
+```
+
+MOOSE 2.9.18 bindet ein AIRWING über sein Warehouse an genau eine Airbase. Daher sind zwei technische AIRWINGs zwingend.
+
+### 5.1 Main Airfield / 451st AEW
+
+```text
+Historical owner: 451st Air Expeditionary Wing
+Technical AIRWING: AW_US_KAF_451_AEW
+Warehouse: WH_AIR_US_KANDAHAR
+Warehouse type: container_40ft
+Native airbase: AIRBASE.Afghanistan.Kandahar / ID 7
+```
+
+### 5.2 Kandahar Heliport / TF Thunder
+
+```text
+Historical owner: Task Force Thunder / 159th Combat Aviation Brigade
+Technical AIRWING: AW_US_KAF_159_CAB_TF_THUNDER
+Warehouse: WH_AIR_US_KANDAHAR_HELI
+Warehouse type: container_20ft
+Native airbase: AIRBASE.Afghanistan.Kandahar_Heliport / ID 15
+```
+
+Der Quellenname für beide Bereiche ist `Kandahar Airfield`. Die Trennung des Army-Ramp-Bereichs in `Kandahar Heliport` ist eine DCS-/MOOSE-technische Abbildung.
+
+## 6. Verbindliche SQUADRON-Kennungen
+
+### 6.1 AW_US_KAF_451_AEW
+
+```text
+SQ_US_KAF_A10C_74_EFS
+74th Expeditionary Fighter Squadron
+16 A-10C; aktive OMW-Entscheidung und Juli-2011-belegt
+
+SQ_US_KAF_HH60G_26_ERQS
+26th Expeditionary Rescue Squadron
+HH-60G; DCS-Repräsentation UH-60A
+
+SQ_US_KAF_MQ1_361_ERS
+SQ_US_KAF_MQ9_361_ERS
+361st Expeditionary Reconnaissance Squadron
+
+SQ_US_KAF_C130_772_EAS
+772nd Expeditionary Airlift Squadron
+```
+
+### 6.2 AW_US_KAF_159_CAB_TF_THUNDER
+
+```text
+SQ_US_KAF_AH64_4_227_AVN
+Task Force Guns / 4-227 Attack Aviation
+
+SQ_US_KAF_OH58D_7_17_CAV
+Task Force Palehorse / 7-17 Air Cavalry
+
+SQ_US_KAF_CH47_7_101_GSAB
+Task Force Lift / 7-101 General Support Aviation
+
+SQ_US_KAF_UH60_7_101_GSAB
+Task Force Lift / 7-101 General Support Aviation
+```
+
+Die Juli-2011-ORBAT löst TF Lift nur bis zur Bataillonsebene auf. CH-47 und UH-60 werden deshalb als typreine technische Pools unter demselben belegten Parent geführt. Eine Company-Bezeichnung wird nicht erfunden.
+
+Superseded beziehungsweise verboten:
+
+```text
+AW_US_KANDAHAR
+SQ_US_KAF_A10C_107_EFS
+SQ_75_EFS_A10C
+SQ_US_KAF_AH64_3_101_AVN
+SQ_US_KAF_UH60_159_CAB
+```
+
+## 7. Mission-Editor-Objektbestand
+
+### 7.1 Main-Airfield-Clients
+
+```text
+CLIENT_US_KAF_A10C_01 | A-10C_2   | TerminalID 282 | Z20
+CLIENT_US_KAF_A10C_02 | A-10C_2   | TerminalID 287 | Z19
+CLIENT_US_KAF_C130_01 | C-130J-30 | TerminalID 294 | S01
+CLIENT_US_KAF_C130_02 | C-130J-30 | TerminalID 92  | S02
+```
+
+### 7.2 Heliport-Clients
+
+```text
+CLIENT_US_KAF_AH64D_01 | AH-64D_BLK_II | TerminalID 30 | MST38-H
+CLIENT_US_KAF_AH64D_02 | AH-64D_BLK_II | TerminalID 19 | MST30-H
+CLIENT_US_KAF_OH58D_01 | OH58D          | TerminalID 80 | MST01-H
+CLIENT_US_KAF_OH58D_02 | OH58D          | TerminalID 23 | MST11-H
+CLIENT_US_KAF_CH47F_01 | CH-47Fbl1      | TerminalID 4  | MST75-H
+CLIENT_US_KAF_CH47F_02 | CH-47Fbl1      | TerminalID 47 | MST82-H
+```
+
+Alle zehn Clientpositionen lagen im Runtime-Audit exakt auf ihren TerminalIDs und sind verbindliche Reservierungen.
+
+### 7.3 KI-Templates
+
+```text
+TPL_AIR_US_KAF_A10C_CAS_2SHIP       | 2 x A-10C_2
+TPL_AIR_US_KAF_C130_TRANSPORT_1SHIP | 1 x C-130J-30
+TPL_AIR_US_KAF_HH60G_CSAR_1SHIP     | 1 x UH-60A
+TPL_AIR_US_KAF_MQ1A_RECON_1SHIP     | 1 x RQ-1A Predator
+TPL_AIR_US_KAF_MQ9_RECON_1SHIP      | 1 x MQ-9 Reaper
+TPL_AIR_US_KAF_AH64D_CAS_2SHIP      | 2 x AH-64D_BLK_II
+TPL_AIR_US_KAF_OH58D_RECON_2SHIP    | 2 x OH58D
+TPL_AIR_US_KAF_CH47_TRANSPORT_1SHIP | 1 x CH-47Fbl1
+TPL_AIR_US_KAF_UH60_TRANSPORT_2SHIP | 2 x UH-60A
+TPL_AIR_US_KAF_UH60_MEDEVAC_1SHIP   | 1 x UH-60A
+```
+
+Alle Templates sind Late Activation, nicht Uncontrolled und reine Authoring-Seeds.
+
+Für Revision `(4)` sind die früheren A-10- und C-130-Typabweichungen geschlossen:
+
+```text
+A-10 clients = template = statics = A-10C_2
+C-130 clients = template = statics = C-130J-30
+```
+
+Maßgebliche Korrektur:
+
+- [`Kandahar revision (4) Template Type Reconciliation`](evidence/kandahar-miz4-template-type-reconciliation.md)
+
+### 7.4 A-10C II CAS-Payload-Baseline
+
+Verbindlicher Authoring-Seed:
+
+```text
+TPL_AIR_US_KAF_A10C_CAS_2SHIP
+2 x A-10C_2
+Task: CAS
+Skill: Veteran
+Late Activation: enabled
+Callsign: Pig 1
+Radio: 251 MHz AM
+```
+
+Verbindliche DCS-Stationsbelegung:
+
+| Station | Store |
+|---:|---|
+| 11 | leer |
+| 10 | AN/AAQ-28 LITENING II AT TGP |
+| 9 | SUU-25, acht Leuchtfackeln gemäß DCS-Anzeige; exakter LUU-2-Untertyp im Screenshot nicht erfasst |
+| 8 | 1 × GBU-38 |
+| 7 | 1 × GBU-38 |
+| 6 | leer |
+| 5 | 1 × GBU-38 |
+| 4 | 1 × GBU-38 |
+| 3 | LAU-117 mit 1 × AGM-65D |
+| 2 | LAU-131 mit 7 × Hydra 70 M156 SM |
+| 1 | leer |
+
+Interne Waffe und Mission-Editor-Werte:
+
+```text
+GAU-8/A: 100 Prozent, CM mixed
+Fuel: 100 Prozent / 11,087 lb
+Chaff: 240
+Flares: 240
+Weapon mass: 5,697 lb
+Total mass: 42,413 lb
+Maximum mass: 46,476 lb
+Displayed load ratio: 91 percent
+```
+
+Die vier GBU-38 sind symmetrisch auf den Paaren `8/4` und `7/5` verteilt. TGP plus SUU-25 liegen gegenüber AGM-65D/LAU-117 plus LAU-131/M156. Diese Verteilung ist eine verbindliche OMW-Missionseditorentscheidung und kein behaupteter offizieller USAF-Loadsheet-Standard.
+
+Historisch direkt belegt sind A-10C, GBU-38, ein Raketenbehälter, AGM-65 und 30-mm-Munition in Kandahar. Nicht direkt als eine gemeinsame Standardkonfiguration belegt sind die exakte Viererzahl der GBU-38, der Maverick-Untertyp `D`, der Raketentyp `M156 SM`, der SUU-25 und diese vollständige Stationsanordnung.
+
+Maßgebliche Entscheidung und Quellenabgrenzung:
+
+- [`Kandahar A-10C II CAS Loadout Decision`](evidence/kandahar-a10c-cas-loadout-decision-2026-08-01.md)
+
+Der Screenshot stammt aus `OMW_Template_v4_Kandahar.miz`; ein gespeichertes Missionsartefakt mit Größe und SHA-256 wurde für diesen Payload-Stand noch nicht geliefert. Deshalb gilt:
+
+```yaml
+payload_authoring_decision: BINDING
+saved_mission_payload_audit: PENDING
+dcs_spawn_takeoff_recovery_acceptance: NOT_RUN
+```
+
+### 7.5 US-Statics
+
+```text
+6 x A-10C_2
+2 x C-130J-30
+10 x UH-60A, davon 2 als USAF-HH-60G-Repräsentation
+2 x RQ-1A Predator
+1 x MQ-9 Reaper
+8 x AH-64D_BLK_II
+8 x OH58D
+10 x CH-47Fbl1
+Gesamt: 47
+```
+
+### 7.6 UN-Statics
+
+```text
+2 x Mi-26
+4 x UH-1H
+```
+
+Statics, Clients, Templates und aktive KI sind Darstellungen eines logischen Bestands und dürfen nicht addiert werden.
+
+## 8. Parking- und Warehouse-Verträge
+
+Runtime-bestätigt:
+
+```text
+Kandahar Main
+316 Parking-Nodes
+Client-reserviert: 282, 287, 294, 92
+Warehouse: WH_AIR_US_KANDAHAR
+
+Kandahar Heliport
+86 Parking-Nodes
+Client-reserviert: 30, 19, 80, 23, 4, 47
+Warehouse: WH_AIR_US_KANDAHAR_HELI
+Nearest warehouse TerminalID: 60
+Warehouse distance: 149.63 m
+```
+
+Endgültige Safe-Parking-Allow-/Blocklists sind noch nicht freigegeben. Sie werden ausschließlich aus Runtime-Tests pro Muster abgeleitet.
+
+## 9. Bestände
+
+Verbindlich entschieden:
+
+```text
+SQ_US_KAF_A10C_74_EFS: 16 A-10C
 ```
 
 Noch festzulegen:
 
 ```text
-SQ_US_KAF_C130_772_EAS
-SQ_US_KAF_HH60G_26_ERS
+SQ_US_KAF_HH60G_26_ERQS
 SQ_US_KAF_MQ1_361_ERS
 SQ_US_KAF_MQ9_361_ERS
-Army-Aviation-SQUADRONs
+SQ_US_KAF_C130_772_EAS
+SQ_US_KAF_AH64_4_227_AVN
+SQ_US_KAF_OH58D_7_17_CAV
+SQ_US_KAF_CH47_7_101_GSAB
+SQ_US_KAF_UH60_7_101_GSAB
 ```
 
-Bestände dürfen nicht aus Static- oder Templateanzahlen abgeleitet werden. Für jede SQUADRON sind separat zu konfigurieren:
+Je SQUADRON getrennt zu führen:
 
 ```text
 initialer Gesamtbestand
-maximal gleichzeitig einsetzbar
-Reserve/nicht verfügbar
+mission-ready Bestand
+maximal gleichzeitig aktiv
+Client-Reservierungen
+aktive KI
+virtuelle Reserve
 Wartung/Cooldown
 beschädigt
 verloren
-Wiederbeschaffungs- oder Reparaturregel
+Reparatur- oder Ersatzregel
 ```
 
-MQ-1/MQ-9 bleiben zusätzlich durch externe Priorisierung und Verfügbarkeitsfreigabe eingeschränkt.
+## 10. Tarinkot- und Outstation-Regel
 
-## 7. Warehouse-Erkennung
-
-Die Erkennung von `WH_AIR_US_KANDAHAR` erfolgt fail-closed:
-
-- nicht gefunden: AIRWING nicht starten;
-- mehrfach gefunden: Konfigurationsfehler;
-- falsche Koalition/ungültiges Objekt: Konfigurationsfehler;
-- Erfolg: Name, Typ, Koalition und Koordinate protokollieren.
-
-Der Container ist ein technischer Anker. Seine DCS-Objektart definiert weder Lagerkapazität noch SQUADRON-Bestand.
-
-## 8. AUFTRAG-Ausführung
-
-Basisweite Rollen:
+Tarinkot besitzt verbindlich:
 
 ```text
-A-10C: CAS, Show of Presence/Force nur gemäß ROE-Dokumentation
-C-130: TRANSPORT, AIRDROP, ggf. OPSTRANSPORT
-HH-60G: CSAR Lead/Cover
-MQ-1/MQ-9: RECON; ARMED ISR nur ausdrücklich freigegeben
-AH-64: CAS, ESCORT
-OH-58D: RECON/AFAC, ESCORT
-CH-47/UH-60: TRANSPORT, OPSTRANSPORT, MEDEVAC/UTILITY gemäß Spezialdokument
+14 AH-64D
+6 UH-60
+2 CH-47
+0 OH-58D
 ```
 
-Jeder AUFTRAG benötigt definierte SQUADRON, Payload, Gruppengröße, ROE, Start-/Zielbedingung, Erfolg, Abbruch, Rückkehr und Verlustbehandlung.
+Diese Airframes werden vom Kandahar-/RC-South-Regionalpool abgezogen.
 
-Vor Eigenlogik sind `AIRWING`, `SQUADRON`, `AUFTRAG`, `OPSTRANSPORT`, `FLIGHTGROUP`, MOOSE CSAR und vorhandene Recon/Detection-Funktionen zu prüfen.
-
-## 9. Safe Parking und Blacklist
-
-Die Runtime-Diagnose muss für Kandahar getrennt erfassen:
+Historische Zuordnung:
 
 ```text
-Main Airfield / Fixed-Wing-Parking
-USAF-CSAR-Bereich
-ISR-Bereich
-Mustang Ramp / Army Aviation
+Task Force Attack / 3-101 Attack Aviation
+FOB Tarin Kowt
 ```
 
-Verbindliche Schritte:
+Damit ist ausgeschlossen, `3-101` gleichzeitig als Kandahar-Verband zu registrieren oder dessen Bestand am Kandahar-Stammknoten nochmals anzusetzen.
 
-1. alle TerminalIDs, Helipad-IDs und Koordinaten protokollieren;
-2. Clientpositionen dauerhaft reservieren;
-3. Statics dem nächsten Parking-/Helipad-Node zuordnen;
-4. bewusst belegte Nodes als Blacklist-Kandidaten ausgeben;
-5. Safe Parking je Luftfahrzeugklasse testen;
-6. Größen-, Rotor-, Shelter-, Rollweg- und Revettementkonflikte sperren;
-7. Mustang-Ramp- und Fixed-Wing-Blacklists getrennt dokumentieren.
+Weitere Forward Detachments, insbesondere FOB Wolverine / TF Wings, sind ebenfalls vor Bestandsfreigabe zu berücksichtigen.
 
-Die endgültigen Blacklists werden ausschließlich aus Laufzeitdaten abgeleitet.
+## 11. ISR- und Payload-Grenzen
 
-## 10. Verlust- und Rückgabelogik
+```text
+MQ-1: aktuelles Template besitzt zwei belegte Waffenstationen
+MQ-9: aktuelles Template besitzt vier AGM-114 und zwei Paveway-II-Bomben
+OH-58D: aktuelles Template enthält APKWS und AGM-114
+```
 
-Verbindliche Zustandsfolge:
+MQ-1/MQ-9 werden gemäß ISR-Policy behandelt. APKWS benötigt eine ausdrückliche Perioden-/Projektentscheidung. Keine dieser Konfigurationen wird allein durch vorhandene ME-Payloads automatisch freigegeben.
+
+Die A-10C-Payload-Baseline ist dagegen durch Abschnitt 7.4 ausdrücklich als OMW-Projektentscheidung freigegeben. Ihre Speicherung im Missionsartefakt und DCS-Laufzeitakzeptanz bleiben getrennte, noch offene Nachweise.
+
+## 12. Verlust- und Rückgabelogik
 
 ```text
 angefordert -> reserviert
@@ -251,52 +495,74 @@ zerstört/Crash -> verloren
 Despawn ohne bestätigte Rückkehr -> nicht automatisch verfügbar
 ```
 
-Ein Auftragserfolg darf einen anschließend verlorenen Airframe nicht zurückgeben. UAVs erhalten zusätzlich die in `OMW-AIR-KANDAHAR-ISR-POLICY` festgelegte externe Nichtverfügbarkeits-/Cooldown-Ebene.
+Ein erfolgreicher Auftrag gibt einen anschließend verlorenen Airframe nicht zurück.
 
-Persistente Verluste werden später an CampaignState übergeben. Bis dahin ist eine deterministische lokale Bestandsbilanz mit Eventprotokollierung erforderlich.
+## 13. Nächster Runtime-Inkrement
 
-## 11. Flugplatzspezifische Funktionszonen
-
-Keine Zonen werden nur zum Zählen, Gruppieren oder Markieren von Statics angelegt.
-
-Voraussichtlich funktional benötigte Zonen:
+Nächster Teststand:
 
 ```text
-Kandahar Fixed-Wing Cargo-/Airdrop-Stagingzone
-Kandahar OPSTRANSPORT Ladezone
-Kandahar OPSTRANSPORT Entlade-/Stagingzone
-Kandahar CSAR-/MEDEVAC-Übergabezone
-Mustang Ramp Cargo-/Slingload-Zone
-Mustang Ramp Troop-Embarkation-Zone
-Mustang Ramp MEDEVAC-Aufnahme-/Übergabezone
+Kandahar Dual-AIRWING Registration Preflight
 ```
 
-ISR-Orbits, Recon-Gebiete und Zielzonen sind auftragsbezogen und keine dauerhaften Flugplatz-Hilfszonen.
-
-Namen, Koordinaten und Radien werden erst festgelegt, wenn die jeweilige MOOSE-Funktion sie tatsächlich benötigt. Parking wird über Airbase-/Helipad-Daten, Safe Parking und Blacklists gelöst.
-
-## 12. Offene Kandahar-Entscheidungen
-
-- logische Anfangsbestände außer A-10C;
-- ein gemeinsames oder getrennte USAF-/Army-AIRWINGs;
-- vollständige TerminalID-/Helipad-/Blacklist-Tabellen;
-- konkrete Funktionszonen;
-- Payloads, ROE und Freigabeautoritäten;
-- Wartung, Cooldown, Reparatur und Wiederbeschaffung;
-- CampaignState-Schnittstelle;
-- Performance- und Runtime-Acceptance.
-
-## 13. Acceptance-Kriterien
+Zu konstruieren, aber zunächst nicht automatisch zu starten:
 
 ```text
-genau 1 Warehouse-Anker erkannt
+AW_US_KAF_451_AEW
+AW_US_KAF_159_CAB_TF_THUNDER
+```
+
+Der Preflight muss:
+
+```text
+beide Warehouse-/Airbase-Bindungen verifizieren
+alle SQUADRON-Namen aus Abschnitt 6 prüfen
+74th EFS als einzige Kandahar-A-10C-SQUADRON erzwingen
+75th und 107th EFS als aktive SQUADRONs ausschließen
+3-101 und 4-101 als Kandahar-SQUADRONs ausschließen
+Templates und Gruppengrößen prüfen
+A-10C-Template als 2 x A-10C_2 prüfen
+den gespeicherten A-10C-Payload gegen Abschnitt 7.4 prüfen
+Client-Terminals reservieren
+Safe-Parking-Kandidaten getrennt je Airbase ausgeben
+keinen produktiven Army-Bestand erfinden
+keine Assets spawnen
+keinen AUFTRAG oder OPSTRANSPORT erzeugen
+```
+
+## 14. Offene Entscheidungen
+
+```text
+logische Bestände außer 16 A-10C
+regionaler 159-CAB-Gesamtbestand und alle Detachment-Abzüge
+technische Zuordnung und Bestand der 26th ERQS
+UAV-Warehouse- oder externes Kontingentmodell
+A-10C-Payload: gespeichertes Missionsartefakt, Hash und semantischer Audit
+A-10C-Payload: Spawn-, Taxi-, Start- und Recovery-Acceptance bei 42,413 lb DCS-Anzeige
+MQ-1-/MQ-9-Freigaben
+OH-58D-APKWS-Entscheidung
+Safe-Parking-Allow-/Blocklists
+Wartung, Cooldown, Reparatur und Wiederbeschaffung
+CampaignState-Schnittstelle
+Performance- und Controlled-Spawn-Acceptance
+```
+
+## 15. Acceptance-Kriterien für die spätere Registrierung
+
+```text
+AIRWINGs entsprechen 451st AEW und TF Thunder / 159th CAB
+genau ein Warehouse je nativer Airbase erkannt
+alle SQUADRONs verwenden quellenbelegte Einheitsnamen
+SQ_US_KAF_A10C_74_EFS ist die einzige aktive Kandahar-A-10C-SQUADRON
+keine aktive Kandahar-SQUADRON für 75th oder 107th EFS
+keine Kandahar-SQUADRON für 3-101 oder 4-101
 keine Doppelzählung von Clients, Templates oder Statics
 16 A-10C logisch registriert
-Spezialbestände gemäß ISR- und Mustang-Ramp-Dokumenten registriert
+TPL_AIR_US_KAF_A10C_CAS_2SHIP ist 2 x A-10C_2
+beide A-10C-Templateeinheiten entsprechen dem Payload aus Abschnitt 7.4
+weitere Bestände nur nach ausdrücklicher Entscheidung
 keine Spawns auf Client- oder Static-Nodes
 Late-Activation-Templates bleiben bis zur Zuweisung inaktiv
-AUFTRAG reserviert, startet, führt zurück und gibt korrekt frei
-Verluste und beschädigte Rückkehr verändern den Bestand korrekt
-keine ungeklärten Muster werden automatisch als stationierte SQUADRON registriert
-keine relevante Lua-, Parking-, Timer- oder Eventfehler
+Verluste und beschädigte Rückkehr verändern Bestände korrekt
+keine relevanten Lua-, Parking-, Timer-, Payload- oder Eventfehler
 ```

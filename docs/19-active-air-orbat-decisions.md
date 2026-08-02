@@ -24,7 +24,7 @@ Basisbezogene Manifeste dürfen aufgrund realer DCS-Park-, Asset- und Missionsed
 |---:|---|---|---|---|
 | 1 | Bagram | F-15E | 336th Expeditionary Fighter Squadron, 16 F-15E | entschieden, noch technisch umzusetzen |
 | 2 | Jalalabad / FOB Fenty | Army Aviation | Task Force Shooter mit 24 OH-58D, 8 AH-64D, 8 UH-60 und 8 CH-47 | **vollständig validierter Referenzknoten** |
-| 3 | Kandahar | A-10C | 75th Expeditionary Fighter Squadron, 16 A-10C | entschieden, noch technisch umzusetzen |
+| 3 | Kandahar | A-10C | 74th Expeditionary Fighter Squadron, 16 A-10C | **verbindlich ausgewählt; historisch für Juli 2011 am Kandahar Airfield belegt** |
 | 4 | Camp Bastion | AH-1W / UH-1Y | HMLA-169 „Vipers“, 10 AH-1W und 5 UH-1Y | entschieden; UH-1Y-DCS-Abbildung offen |
 | 5 | Camp Bastion | MV-22B | keine aktive Umsetzung | entschieden: entfällt vollständig |
 | 6 | Camp Bastion | Heavy Lift | HMH-361 (-) Reinforced, 17 CH-53E | entschieden, DCS-/MOOSE-Verhalten noch zu validieren |
@@ -187,21 +187,35 @@ Task Force Lighthorse bleibt ausschließlich als historische Vorgängereinheit d
 
 ## 6. Kandahar – A-10C
 
+### Verbindliche aktive Entscheidung
+
 ```text
-Einheit: 75th Expeditionary Fighter Squadron
+Einheit: 74th Expeditionary Fighter Squadron
+Übergeordneter Verband: 451st Air Expeditionary Wing
 Flugplatz: Kandahar Airfield
 Muster: A-10C
 Lokaler ORBAT-Bestand: 16
+Historischer Bezug: Juli-2011-ORBAT
 ```
 
-Die 81st Expeditionary Fighter Squadron bleibt historische Vorgängereinheit und erhält keine eigene aktive Umsetzung.
-
-Geplante Struktur:
+Die 74th EFS ist im ausgewerteten Juli-2011-ORBAT ausdrücklich am Kandahar Airfield mit A-10C und Close-Air-Support-Auftrag belegt. Sie ersetzt mit sofortiger Wirkung die früheren aktiven Kandahar-Arbeitsstände:
 
 ```text
-AW_US_KANDAHAR
-└── SQ_75_EFS_A10C
+75th Expeditionary Fighter Squadron
+107th Expeditionary Fighter Squadron
 ```
+
+Die 75th EFS bleibt als historischer Vorgänger erhalten; sie wurde laut Juli-2011-ORBAT im April 2011 durch die 74th EFS abgelöst. Die 81st und 107th EFS bleiben historischer Rotationskontext, erzeugen aber keine parallelen aktiven OMW-SQUADRONs, keine zusätzlichen Clients, Templates, Statics oder Bestände.
+
+Verbindliche technische Struktur:
+
+```text
+AW_US_KAF_451_AEW
+└── SQ_US_KAF_A10C_74_EFS
+    16 A-10C
+```
+
+Es wird genau eine aktive Kandahar-A-10C-SQUADRON registriert.
 
 ## 7. Camp Bastion – HMLA
 
