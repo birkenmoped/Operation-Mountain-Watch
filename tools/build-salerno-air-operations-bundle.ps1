@@ -18,7 +18,9 @@ $sourceFiles = @(
     '07-configure-squadron-baseline.lua',
     '08-activate-operational-baseline.lua',
     '09-validate-dispatch-readiness.lua',
-    '10-dispatch-controlled-missions.lua'
+    '10-dispatch-controlled-missions.lua',
+    '11-construct-commander-baseline.lua',
+    '12-dispatch-commander-controlled-mission.lua'
 )
 
 if (-not (Test-Path -LiteralPath $sourceDir -PathType Container)) {
@@ -26,7 +28,7 @@ if (-not (Test-Path -LiteralPath $sourceDir -PathType Container)) {
 }
 
 New-Item -ItemType Directory -Path $distDir -Force | Out-Null
-$builderVersion = 'SAL-PARKING-DEFERRED-15'
+$builderVersion = 'SAL-COMMANDER-DISPATCH-16'
 $commit = 'UNKNOWN'
 try { $commit = (& git -C $repoRoot rev-parse HEAD 2>$null).Trim() } catch { $commit = 'UNKNOWN' }
 
