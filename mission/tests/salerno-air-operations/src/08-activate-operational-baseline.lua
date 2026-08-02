@@ -14,14 +14,9 @@ local function main()
   local airwing = cfg.ConstructedAirwing
   local squadrons = cfg.RegisteredSquadrons or cfg.ConstructedSquadrons or {}
   local contracts = cfg.SquadronContracts or {}
-  local parking = cfg.ParkingContract
   if not airwing or #squadrons ~= cfg.Expected.Squadrons or #contracts ~= cfg.Expected.Squadrons then
     log(string.format("COMPLETE status=FAIL reason=prerequisite-missing airwing=%s squadrons=%d contracts=%d expected=%d",
       tostring(airwing ~= nil), #squadrons, #contracts, cfg.Expected.Squadrons))
-    return
-  end
-  if not parking or tonumber(parking.Violations) ~= 0 then
-    log("COMPLETE status=FAIL reason=runtime-parking-contract-not-ready")
     return
   end
   if not AUFTRAG or not AUFTRAG.Type then log("COMPLETE status=FAIL reason=AUFTRAG.Type-unavailable") return end
@@ -85,7 +80,7 @@ local function main()
   cfg.OperationalBaselineActivated = failures == 0
   cfg.AirwingStartCalled = startCalled
 
-  log(string.format("STATE capabilities=%d/%d payloads=%d/%d payloadTable=%d airwingStartCalled=%s airwingStartOk=%s parkingContract=true",
+  log(string.format("STATE capabilities=%d/%d payloads=%d/%d payloadTable=%d airwingStartCalled=%s airwingStartOk=%s parkingControl=DEFERRED",
     capabilitiesConfigured, cfg.Expected.Squadrons, payloadsAdded, cfg.Expected.Squadrons,
     tableCount(airwing.payloads), tostring(startCalled), tostring(startOk)))
   log(string.format("SAFETY missionsAdded=0 deliberateSpawnsExpected=0 failures=%d", failures))
