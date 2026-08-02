@@ -6,7 +6,7 @@ local TAG = "[OMW][SALERNO][DIAG]"
 local function log(msg) env.info(TAG .. " " .. tostring(msg)) end
 
 OMW.AirOps.SalernoDiagnostics = {
-  Version = "SAL-SQUADRON-CONFIG-5",
+  Version = "SAL-OPERATIONAL-BASELINE-6",
   AirbaseName = AIRBASE.Afghanistan and AIRBASE.Afghanistan.FOB_Salerno or "FOB Salerno",
   ControlAirbaseName = AIRBASE.Afghanistan and AIRBASE.Afghanistan.Khost or "Khost",
   ExpectedAirbaseID = 23,
@@ -71,4 +71,4 @@ OMW.AirOps.SalernoDiagnostics = {
 }
 
 log("BOOT Version=" .. OMW.AirOps.SalernoDiagnostics.Version)
-log("STAGED_TEST=true AIRWING_CONSTRUCT=true SQUADRON_CONSTRUCT=true SQUADRON_REGISTRATION=true SQUADRON_CONFIG=true AIRWING_START=false spawn=false mutation=true")
+log("STAGED_TEST=true AIRWING_CONSTRUCT=true SQUADRON_CONSTRUCT=true SQUADRON_REGISTRATION=true SQUADRON_CONFIG=true MISSION_CAPABILITIES=true PAYLOADS=true AIRWING_START=true MISSIONS=false spawn=false mutation=true")
