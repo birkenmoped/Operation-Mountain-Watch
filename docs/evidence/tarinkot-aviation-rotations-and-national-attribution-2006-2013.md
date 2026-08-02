@@ -1,18 +1,19 @@
 ---
 document_id: OMW-EVIDENCE-TARINKOT-AVIATION-ROTATIONS
 status: EVIDENCE_REVIEWED
-document_class: HISTORICAL_ROTATION_AND_NATIONAL_ATTRIBUTION_RECORD
 owning_policy: OMW-GOV-001
+document_class: HISTORICAL_ROTATION_AND_NATIONAL_ATTRIBUTION_RECORD
 authoritative_for:
   - source-qualified Tarinkot aviation rotation sequence from Dutch TFU through later U.S. task forces
   - national attribution limits for AH-64 and UH-60 aircraft seen with Dutch, Australian, and U.S. forces
   - predecessor and successor context for the July-2011 Tarinkot object contract
+  - owner-selected Tarinkot working baseline covering March through December 2011
 not_authoritative_for:
   - exact daily aircraft inventory
-  - automatic replacement of the July-2011 active object contract
   - exact unit identity inferred from passenger nationality
   - DCS or MOOSE runtime acceptance
 scenario_period: 2010-08-01/2011-12-31
+active_tarinkot_baseline: 2011-03-01/2011-12-31
 context_period: 2006-01-01/2013-12-31
 source_branch: agent/tarinkot-object-contract-reconciliation
 validated_in_dcs: false
@@ -20,7 +21,7 @@ validated_in_dcs: false
 
 # Tarinkot – Aviation-Rotationen und nationale Zuordnung 2006–2013
 
-## 1. Ergebnis
+## 1. Ergebnis und Eigentümerentscheidung
 
 Die Tarinkot-Aviation-Belegung war zeitabhängig und multinational. Für die OMW-Planung sind mindestens folgende Phasen zu unterscheiden:
 
@@ -31,15 +32,34 @@ Die Tarinkot-Aviation-Belegung war zeitabhängig und multinational. Für die OMW
 März 2010 bis März 2011:
   U.S. Task Force No Mercy / 1-101 und angegliederte C/5-101-UH-60L in Tarin Kowt
 
-ab März 2011 bis in die zweite Jahreshälfte 2011:
+März bis Dezember 2011:
   Task Force Attack / 3-101 als lokaler Aviation-Knoten
+  TF-Attack-UH-60-Komponente, administrative Company offen
   B/1-52 AVN als belegtes CH-47D-Detachment
 
 2012/2013:
   spätere U.S. Rotationen; unter anderem Task Force Brawler / 4-3 AVN
 ```
 
-Eine sichtbare Luftfahrzeugfamilie darf daher nicht ohne Datum und Einheitsbeleg einer Nation oder einem Verband zugeordnet werden.
+Der Projekteigentümer hat am 02.08.2026 für den aktuellen Tarinkot-Aufbau entschieden:
+
+```text
+Verbindliche Arbeitsbaseline:
+März bis Dezember 2011
+
+AH-64:
+Task Force Attack / 3-101 Attack Aviation
+
+UH-60:
+Task-Force-Attack-Komponente
+administrative Company weiterhin offen
+
+CH-47:
+B Company, 1-52 Aviation Regiment
+historisches Muster CH-47D
+```
+
+Eine sichtbare Luftfahrzeugfamilie darf weiterhin nicht ohne Datum und Einheitsbeleg einer Nation oder einem Verband zugeordnet werden.
 
 ## 2. Niederländische AH-64D
 
@@ -71,13 +91,11 @@ August bis spätestens November 2010:
 Niederländische AH-64D-Präsenz in Tarin Kowt ist historisch plausibel und belegt.
 ```
 
-Für einen Juli-2011- oder späteren Snapshot gilt dagegen:
+Für die ausgewählte Arbeitsbaseline März bis Dezember 2011 gilt dagegen:
 
 ```text
 keine niederländische Apache-SQUADRON in Tarin Kowt
 ```
-
-Die aktuelle MIZ trägt als Missionsdatum den 14.01.2011. Auch dieses Datum liegt nach der dokumentierten Rückkehr der niederländischen Apaches im November 2010. Eine niederländische AH-64-Zuordnung wäre für diesen konkreten Missionstag nicht zulässig.
 
 ### 2.3 Gleichzeitige U.S.-Präsenz 2010
 
@@ -128,23 +146,23 @@ Die Company-Bezeichnung und der UH-60L-Typ sind damit für diese Rotation mit mi
 
 ### 3.3 Zeitliche Grenze
 
-C/5-101 ist ein sicherer Name für die Rotation ungefähr März 2010 bis März 2011. Er ist nicht automatisch der richtige Name für den Juli-2011-Snapshot.
+C/5-101 ist ein sicherer Name für die Rotation ungefähr März 2010 bis März 2011. Er ist nicht der Name der ausgewählten Tarinkot-Arbeitsbaseline ab März 2011.
 
 Nach der Transfer-of-Authority am 12.03.2011 übernahm die 159th Combat Aviation Brigade / Task Force Thunder die Aviation-Mission in RC-South. Im September 2011 wird mindestens ein UH-60 am FOB Tarin Kowt Task Force Attack / 3-101 zugeordnet, aber die administrative UH-60-Company wird in dieser Quelle nicht genannt.
 
-Daher gilt für den aktiven Juli-2011-Vertrag weiterhin:
+Daher gilt für den aktiven Vertrag:
 
 ```text
 SQ_US_TKOT_UH60_TF_ATTACK
 ```
 
-und nicht automatisch:
+und nicht:
 
 ```text
 SQ_US_TKOT_UH60_C_5_101_AVN
 ```
 
-C/5-101 ist jedoch als historischer Vorgänger und als präziser Name für frühe OMW-Missionen zu dokumentieren.
+C/5-101 bleibt als historischer Vorgänger und als präziser Name für frühe OMW-Missionen dokumentiert.
 
 ## 4. Australische Kräfte und UH-60
 
@@ -172,7 +190,7 @@ Ohne sichtbare nationale Kennzeichnung, Tail Number, Unit Caption oder offiziell
 
 ## 5. CH-47 und australische Nutzung
 
-Australische Kräfte verfügten in Afghanistan über eigene CH-47-Elemente und nutzten zusätzlich britische, niederländische und amerikanische Lufttransportmittel. Für den aktiven Juli-2011-Tarinkot-Vertrag ist jedoch die spezifischste lokale Quelle:
+Australische Kräfte verfügten in Afghanistan über eigene CH-47-Elemente und nutzten zusätzlich britische, niederländische und amerikanische Lufttransportmittel. Für die ausgewählte Tarinkot-Arbeitsbaseline ist jedoch die spezifischste lokale Quelle:
 
 ```text
 B Company, 1-52 Aviation Regiment
@@ -206,7 +224,7 @@ Verwendung:
 POST_PERIOD_CONTEXT / LEAD_ONLY
 ```
 
-Nicht geeignet für 2011er SQUADRON-Namen oder lokale Stückzahlen.
+Nicht geeignet für die aktive SQUADRON-Benennung oder lokale Stückzahlen der Arbeitsbaseline.
 
 ### 6.3 Nederland en Afghanistan 2001–2021
 
@@ -248,15 +266,18 @@ Upload-Datum und Videobeschreibung sind nicht automatisch Aufnahmedatum oder Ein
 | 2006–07/2010 | 301 Sqn RNLAF / Dutch ATF | verschiedene Koalitions-/U.S.-Assets | niederländische/australische/Koalitions-Assets | Hintergrund vor OMW |
 | 08/2010–11/2010 | niederländische 301 Sqn plus U.S. TF No Mercy möglich | C/5-101 Phantoms, UH-60L | regionale/task-organisierte Assets | frühe OMW-Phase, gemischte nationale Belegung möglich |
 | 12/2010–03/2011 | U.S. TF No Mercy / 1-101 | C/5-101 Phantoms, UH-60L | task-organisierte Assets | niederländische Apaches abgezogen |
-| 03/2011–12/2011 | TF Attack / 3-101 | TF Attack UH-60-Komponente, Company offen | B/1-52 AVN CH-47D | Juli-2011-Objektvertrag |
+| 03/2011–12/2011 | TF Attack / 3-101 | TF Attack UH-60-Komponente, Company offen | B/1-52 AVN CH-47D | ausgewählte Tarinkot-Arbeitsbaseline |
 | 05/2012 | 14 AH-64 sichtbar | 6 UH-60 sichtbar | 1 CH-47 sichtbar | POST_PERIOD_CONTEXT |
 | 01/2013 | spätere Rotation | 6 UH-60L, TF Brawler | 2 CH-47F, TF Brawler | POST_PERIOD_CONTEXT |
 
-## 8. Konsequenz für den aktiven Tarinkot-Objektvertrag
+## 8. Verbindlicher aktiver Tarinkot-Objektvertrag
 
-Keine unmittelbare Änderung an der Juli-2011-Benennung:
+Für den aktuellen Tarinkot-Aufbau gilt:
 
 ```text
+Zeitraum:
+März bis Dezember 2011
+
 AIRWING:
 AW_US_TKOT_TF_ATTACK_3_101_AVN
 
@@ -268,15 +289,16 @@ SQ_US_TKOT_CH47_B_1_52_AVN
 
 Begründung:
 
-- niederländische Apaches sind für 2010 belegt, aber nicht für Juli 2011;
-- C/5-101 Phantoms ist für die Vorgängerrotation bis ungefähr März 2011 belegt;
-- die Juli-2011-ORBAT und September-2011-Direktquelle bestimmen den aktiven Task-Force-Attack-Knoten;
+- niederländische Apaches sind für 2010 belegt, aber nicht Teil der ausgewählten Arbeitsbaseline;
+- C/5-101 Phantoms ist die Vorgängerrotation bis ungefähr März 2011;
+- die Juli-2011-ORBAT und September-2011-Direktquelle bestimmen den Task-Force-Attack-Knoten;
 - B/1-52 ist die spezifischste belegte lokale CH-47-Einheit für 2011;
+- eine genauere administrative UH-60-Company für die ausgewählte Rotation ist derzeit nicht belegt;
 - eine australische UH-60-Einheit ist nicht belegt.
 
 Soll OMW künftig datumsabhängige Rotationen darstellen, müssen getrennte historische Presets beziehungsweise CampaignState-Effective-Dates angelegt werden. Dieselben Luftfahrzeuge dürfen dabei nicht gleichzeitig in mehreren Rotationen gezählt werden.
 
-## 9. Offener Entscheidungspunkt
+## 9. Entscheidung zum MIZ-Datum
 
 Die aktuelle MIZ enthält als Missionsdatum:
 
@@ -284,14 +306,24 @@ Die aktuelle MIZ enthält als Missionsdatum:
 14.01.2011
 ```
 
-Der aktive Objektvertrag verwendet auf ausdrückliche Eigentümerentscheidung die Juli-2011-ORBAT als Standardautorität. Diese beiden Zeitbezüge sind nicht identisch.
+Der Projekteigentümer hat entschieden, dass dieses Datum für den aktuellen Tarinkot-Objektvertrag **nicht** die historische ORBAT-Benennung steuert.
 
-Vor einer streng datumsgebundenen Kampagnenlogik muss deshalb entschieden werden:
+Verbindlich gilt:
 
 ```text
-A) Missionsdatum ist nur technische Kulisse; Juli-2011-ORBAT bleibt aktiver Snapshot
-oder
-B) Missionsdatum ist historisch bindend; dann wären TF No Mercy / 1-101 und C/5-101 statt TF Attack / 3-101 zu verwenden
+Das MIZ-Datum ist für den aktuellen Tarinkot-Aufbau technische Kulisse.
+Die Tarinkot-Arbeitsbaseline ist März bis Dezember 2011.
+Die Juli-2011-ORBAT bleibt die Standardautorität für den aktiven Snapshot.
 ```
 
-Bis zu dieser Entscheidung bleibt der Juli-2011-Vertrag maßgeblich und die MIZ-Datumsabweichung dokumentiert.
+Damit werden für den aktuellen Tarinkot-Vertrag nicht verwendet:
+
+```text
+Task Force No Mercy / 1-101 als aktiver AIRWING-Parent
+SQ_US_TKOT_UH60_C_5_101_AVN als aktive UH-60-SQUADRON
+niederländische 301 Squadron als aktive AH-64-SQUADRON
+```
+
+Diese Verbände bleiben als historische Vorgänger beziehungsweise als mögliche spätere datumsabhängige Presets dokumentiert.
+
+Eine spätere projektweite Änderung der Missionsepoche oder Einführung strikt datumsgebundener Rotationen benötigt eine neue ausdrückliche Eigentümerentscheidung.
