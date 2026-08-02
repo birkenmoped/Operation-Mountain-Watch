@@ -26,11 +26,25 @@ local function main()
     return
   end
 
+  local blocked = {}
+  for _, terminalID in ipairs(cfg.ParkingBlacklist or {}) do blocked[terminalID] = true end
+  local allowedParkingIDs = {}
+  for _, spot in ipairs(airbase:GetParkingSpotsTable() or {}) do
+    if spot.TerminalID and not blocked[spot.TerminalID] then
+      allowedParkingIDs[#allowedParkingIDs + 1] = spot.TerminalID
+    end
+  end
+  table.sort(allowedParkingIDs)
+
   local ok, airwingOrError = pcall(function()
     local airwing = AIRWING:New(cfg.WarehouseName, "AW_US_SALERNO")
     airwing:SetAirbase(airbase)
     airwing:SetTakeoffCold()
     airwing:SetSafeParkingOn()
+    if type(airwing.SetParkingIDs) ~= "function" then
+      error("AIRWING.SetParkingIDs unavailable")
+    end
+    airwing:SetParkingIDs(allowedParkingIDs)
     return airwing
   end)
 
@@ -39,10 +53,13 @@ local function main()
     return
   end
 
+  cfg.AllowedParkingIDs = allowedParkingIDs
   OMW.AirOps.SalernoDiagnostics.ConstructedAirwing = airwingOrError
   log("CONSTRUCTED name=AW_US_SALERNO warehouse=" .. cfg.WarehouseName)
   log("BOUND airbase=" .. tostring(airbase:GetName()) .. " id=" .. tostring(airbase:GetID()))
-  log("CONFIG takeoff=COLD safeParking=true")
+  log("CONFIG takeoff=COLD safeParking=true parkingAllowlist=true")
+  log(string.format("PARKING_CONTRACT allowed=%d blocked=%d blockedIDs=%s",
+    #allowedParkingIDs, #(cfg.ParkingBlacklist or {}), table.concat(cfg.ParkingBlacklist or {}, ",")))
   log("SAFETY startCalled=false squadronsAdded=0 spawnsExpected=0")
   log("COMPLETE status=PASS")
 end
