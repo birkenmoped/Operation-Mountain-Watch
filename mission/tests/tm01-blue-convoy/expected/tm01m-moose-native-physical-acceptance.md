@@ -1,151 +1,113 @@
 # TM01M – Fünf gleichzeitige MOOSE-native MSR-Konvois: DCS-Abnahme
 
-Status: `50-km/h-Fünf-Konvoi-Baseline PASS`; `gemeinsame OMW-Logistikknoten + 60-Sekunden-Zielbereichsbereinigung AUSSTEHEND`
+Status: `frühere 50-km/h-Fünf-Konvoi-Baseline PASS`; `gemeinsame Logistikknoten + STANDARD_07 + Zielbereichsbereinigung AUSSTEHEND`
 
-## Bestätigte Baseline
+## 1. Historisch bestätigte Baseline
 
-Der DCS-Lauf vom 26. Juli 2026 hat die Konfiguration `TM01M-moose-native-five-convoys-1` vollständig bestanden:
-
-```text
-5 Konvois
-6 Fahrzeuge je Konvoi
-30 Fahrzeuge insgesamt
-50 km/h
-On Road
-6 Mission-Editor-PATHLINEs
-1618 PATHLINE-Quellpunkte
-450405 m kompilierte Gesamtroutenlänge
-```
-
-Abschließender Nachweis:
-
-```text
-event=all_convoys_arrived
-convoyCount=5
-speedKph=50
-survivingVehicles=30
-```
-
-Autoritativer Ergebnisbericht:
+Der DCS-Lauf vom 26. Juli 2026 bestätigte die frühere Konfiguration `TM01M-moose-native-five-convoys-1` mit fünf Gruppen, sechs Fahrzeugen je Gruppe und 30 Fahrzeugen insgesamt. Dieser Ergebnisbericht bleibt unverändert als Nachweis des exakt damaligen Stands:
 
 ```text
 mission/tests/tm01-blue-convoy/results/2026-07-26-tm01m-five-convoy-50kph-pass.md
 ```
 
-## Aktuelles Folgeinkrement
+Die frühere HMMWV-basierte Vorlage ist keine aktuelle Missionsvorgabe mehr.
+
+## 2. Aktuelles Folgeinkrement
 
 ```text
-TM01M-moose-native-five-convoys-4
+TM01M-moose-native-five-convoys-5
 ```
 
-Dieses Inkrement kombiniert zwei nachgelagerte Anpassungen, ohne die bestätigte PATHLINE-Geometrie zu verändern:
+Das aktuelle Inkrement kombiniert:
 
-1. die fünf Routen verwenden sechs gemeinsame `OMW_LOG_NODE_*`-Standortknoten; ein Knoten darf sowohl Start als auch Ziel sein;
-2. vollständig angekommene Konvois werden nach 60 Sekunden über MOOSE `GROUP:Destroy(false, 60)` still entfernt.
+1. sechs gemeinsame `OMW_LOG_NODE_*`-Standortknoten;
+2. die neue sieben Fahrzeuge umfassende Standardvorlage `TPL_BLUE_CONVOY_STANDARD_07`;
+3. fünf gleichzeitige Konvois mit insgesamt 35 Fahrzeugen;
+4. 50 km/h und Formation `On Road`;
+5. stille Entfernung vollständig angekommener Gruppen nach 60 Sekunden über MOOSE `GROUP:Destroy(false, 60)`.
 
-## Verbindliche Standortknoten
+Die zusätzliche Vorlage `TPL_BLUE_CONVOY_LIGHT_06` gehört bereits zur Vorlagenbibliothek, wird in Version 5 aber noch nicht zufällig ausgewählt. Die unterschiedliche Fahrzeugzahl beider Varianten erfordert ein separates Folgeinkrement und eine eigene DCS-Abnahme für MOOSE `SPAWN:InitRandomizeTemplate()`.
+
+## 3. Verbindliche Mission-Editor-Vorlagen
+
+### Aktive Vorlage
 
 ```text
-MSR HORSESHOE / Bagram → Kabul
+TPL_BLUE_CONVOY_STANDARD_07
+Late Activation: aktiv
+7 Fahrzeuge
+```
+
+| Position | Fahrzeug | Funktion |
+|---:|---|---|
+| 1 | M-ATV | Lead Security |
+| 2 | M1083 | Cargo 1 |
+| 3 | MaxxPro | Convoy Commander / C2 |
+| 4 | M1083 | Cargo 2 |
+| 5 | MaxxPro | Mid-column Security / Support |
+| 6 | M1083 | Cargo 3 |
+| 7 | M-ATV | Rear Security |
+
+### Vorbereitete Light-Variante
+
+```text
+TPL_BLUE_CONVOY_LIGHT_06
+Late Activation: aktiv
+6 Fahrzeuge
+```
+
+| Position | Fahrzeug | Funktion |
+|---:|---|---|
+| 1 | M-ATV | Lead Security |
+| 2 | M1083 | Cargo 1 |
+| 3 | MaxxPro | Convoy Commander / C2 |
+| 4 | M1083 | Cargo 2 |
+| 5 | MaxxPro | Support / Security |
+| 6 | M-ATV | Rear Security |
+
+### Zu entfernende Altvorlage
+
+```text
+TPL_TEST_BLUE_CONVOY_STANDARD_01
+```
+
+Sie darf in der aktuellen Mission nicht mehr als aktive oder versteckte Template-Gruppe verbleiben. Historische `.miz`-Dateien und Ergebnisberichte dürfen sie ausschließlich als alten Teststand enthalten.
+
+## 4. Standortknoten und Routen
+
+```text
 OMW_LOG_NODE_BAGRAM
-OMW_LOG_NODE_KABUL
+→ MSR_EAST_E03
+→ OMW_LOG_NODE_KABUL
 
-MSR ILLINOIS-E2 / Kabul → Jalalabad
 OMW_LOG_NODE_KABUL
-OMW_LOG_NODE_JALALABAD
+→ MSR_EAST_E02
+→ OMW_LOG_NODE_JALALABAD
 
-MSR ILLINOIS-E1 / Torkham → Jalalabad
 OMW_LOG_NODE_TORKHAM
+→ MSR_EAST_E01
+→ OMW_LOG_NODE_JALALABAD
+
 OMW_LOG_NODE_JALALABAD
+→ MSR_KUNAR_K01
+→ OMW_LOG_NODE_ASADABAD
 
-MSR CALIFORNIA-C1 / Jalalabad → Asadabad
-OMW_LOG_NODE_JALALABAD
 OMW_LOG_NODE_ASADABAD
-
-MSR CALIFORNIA-C2/C3 / Asadabad → FOB Bostick
-OMW_LOG_NODE_ASADABAD
-OMW_LOG_NODE_BOSTICK
+→ MSR_CAL_C01
+→ MSR_CAL_C02
+→ OMW_LOG_NODE_BOSTICK
 ```
 
-Damit werden genau sechs eindeutige Knoten verwendet:
+Kabul, Jalalabad und Asadabad werden bewusst als gemeinsamer Start- und Zielknoten verwendet. Die sechs internen PATHLINE-Namen bleiben unverändert.
 
-```text
-OMW_LOG_NODE_BAGRAM
-OMW_LOG_NODE_KABUL
-OMW_LOG_NODE_TORKHAM
-OMW_LOG_NODE_JALALABAD
-OMW_LOG_NODE_ASADABAD
-OMW_LOG_NODE_BOSTICK
-```
-
-Kabul, Jalalabad und Asadabad besitzen keine getrennten Start- und Zielzonen mehr.
-
-## Unveränderte interne PATHLINE-Bindungen
-
-```text
-HORSESHOE Bagram → Kabul           MSR_EAST_E03
-ILLINOIS-E2 Kabul → Jalalabad      MSR_EAST_E02
-ILLINOIS-E1 Torkham → Jalalabad    MSR_EAST_E01
-CALIFORNIA-C1 Jbad → Asadabad      MSR_KUNAR_K01
-CALIFORNIA-C2/C3 Asad → Bostick    MSR_CAL_C01 + MSR_CAL_C02
-```
-
-Die stabilen internen Konvoi-IDs und Laufzeitaliasse bleiben unverändert. Die historische interne ID `CAL_ASAD_BOSTIK` wird zur Vergleichbarkeit der bisherigen Logs vorerst nicht umbenannt; der tatsächliche Standortknoten und Anzeigename verwenden `BOSTICK`.
-
-## Veraltete Endpunktnamen
-
-Sowohl die ursprünglichen Richtungsanker als auch die zwischenzeitlichen MSR-bezogenen Start-/Zielzonen dürfen nicht mehr verwendet werden. Dazu gehören insbesondere:
-
-```text
-MSR_EAST_E3_START_BAGRAM
-MSR_EAST_E3_TARGET_KABUL
-MSR_EAST_E2_START_KABUL
-MSR_EAST_E2_TARGET_JALALABAD
-MSR_EAST_E1_START_TORKHAM
-MSR_EAST_E1_TARGET_JALALABAD
-MSR_KUNAR K1_START_JALALABAD
-MSR_KUNAR K1_TARGET_ASADABAD
-MSR_CALIFORNIA_START_ASADABAD
-MSR_CALIFORNIA_TARGET_FOB_BOSTIK
-
-MSR_HORSESHOE_START_BAGRAM
-MSR_HORSESHOE_E3_TARGET_KABUL
-MSR_ILLINOIS_E2_START_KABUL
-MSR_ILLINOIS_E2_TARGET_JALALABAD
-MSR_ILLINOIS_E1_START_TORKHAM
-MSR_ILLINOIS_E1_TARGET_JALALABAD
-MSR_CALIFORNIA-C1_START_JALALABAD
-MSR_CALIFORNIA-C1_TARGET_ASADABAD
-MSR_CALIFORNIA-C2_START_ASADABAD
-MSR_CALIFORNIA-C03_TARGET_FOB_BOSTIK
-```
-
-Ein Lookup auf einen dieser Namen ist ein Konfigurationsfehler.
-
-## MOOSE-First-Nachweis der Zielbereichsbereinigung
-
-Verwendet wird die Funktion der gepinnten MOOSE-Version 2.9.18:
-
-```lua
-GROUP:Destroy(GenerateEvent, delay)
-```
-
-Aufruf in TM01M:
-
-```lua
-runtimeGroup:Destroy(false, 60)
-```
-
-MOOSE übernimmt sowohl die Verzögerung als auch das Entfernen. Es gibt keinen eigenen Lua-Timer und keinen nativen DCS-Despawn.
-
-## Vorbereitung
+## 5. Vorbereitung und Build
 
 ```powershell
 cd P:\DCS-DEV\Operation-Mountain-Watch
 
 git fetch origin
 git switch feature/tm01m-moose-native-baseline
-git pull --ff-only
+git pull --ff-only origin feature/tm01m-moose-native-baseline
 
 git rev-parse HEAD
 
@@ -153,22 +115,22 @@ powershell.exe -NoProfile -ExecutionPolicy Bypass `
   -File ".\tools\build-tm01m-bundle.ps1"
 ```
 
-Danach im Mission Editor die neu erzeugte Datei erneut auswählen:
+Danach im Mission Editor:
 
-```text
-mission/tests/tm01-blue-convoy/dist/TM01M.lua
-```
+1. beide neuen `TPL_BLUE_CONVOY_*`-Gruppen auf `Late Activation` prüfen;
+2. `TPL_TEST_BLUE_CONVOY_STANDARD_01` löschen;
+3. das neu gebaute `mission/tests/tm01-blue-convoy/dist/TM01M.lua` erneut im `DO SCRIPT FILE` auswählen;
+4. sicherstellen, dass `Moose.lua` zuerst geladen wird;
+5. Mission unter neuem Testnamen speichern.
 
-`Moose.lua` muss zuerst geladen werden. Die Mission muss anschließend gespeichert werden. Eine bereits in der `.miz` eingebettete ältere TM01M-Datei wird nicht automatisch durch den Repository-Build ersetzt.
-
-## Erwarteter Bootstrap
+## 6. Erwarteter Bootstrap
 
 ```text
 event=bootstrap_outcome
 outcome=READY
 
 event=startup
-configurationVersion=TM01M-moose-native-five-convoys-4
+configurationVersion=TM01M-moose-native-five-convoys-5
 convoyCount=5
 msrPathlineCount=6
 speedKph=50
@@ -177,9 +139,16 @@ arrivalDespawnDelaySeconds=60
 arrivalDestroyEvents=false
 ```
 
-Alle fünf `convoy_route_plan_compiled`-Ereignisse müssen die gemeinsamen `OMW_LOG_NODE_*`-Namen ausgeben. Es darf kein `mission_configuration_missing`, `mission_object_lookup_failed` oder `convoy_route_plan_failed` auftreten.
+Nicht zulässig:
 
-## Routen- und Spawn-Regression
+```text
+event=mission_configuration_missing
+event=mission_object_lookup_failed
+event=convoy_route_plan_failed
+event=spawn_count_mismatch
+```
+
+## 7. Routen- und Spawn-Regression
 
 Erwartet werden:
 
@@ -191,26 +160,25 @@ Erwartet werden:
 
 Abnahme:
 
-- genau fünf Gruppen und 30 Fahrzeuge;
-- sechs Fahrzeuge je Gruppe;
-- alle Fahrzeuge korrekt auf der jeweiligen Straße und in lokaler Marschrichtung;
+- genau fünf Gruppen;
+- genau sieben Fahrzeuge je Gruppe;
+- insgesamt 35 Fahrzeuge;
+- jede Gruppe entspricht `TPL_BLUE_CONVOY_STANDARD_07` in Position und Fahrzeugfolge;
+- alle Fahrzeuge stehen auf der jeweiligen Straße und in lokaler Marschrichtung;
 - keine Gebäude-, Mauer- oder Dachspawns;
-- alle fünf Verbände folgen ihrer unveränderten internen PATHLINE-Geometrie;
+- alle fünf Verbände folgen der unveränderten PATHLINE-Geometrie;
 - jeder Wegpunkt verwendet 50 km/h und `On Road`;
-- CALIFORNIA-C2/C3 wird vollständig über `MSR_CAL_C01` und `MSR_CAL_C02` durchfahren.
+- CALIFORNIA-C2/C3 nutzt vollständig `MSR_CAL_C01` und `MSR_CAL_C02`.
 
-## Ankunft und Abklingzeit
+## 8. Ankunft und Bereinigung
 
-Bei jeder vollständigen Ankunft:
+Bei vollständiger Ankunft jeder Gruppe:
 
 ```text
 event=convoy_arrived
-convoyId=...
-survivingVehicles=6
-targetZoneName=<OMW_LOG_NODE_*>
+survivingVehicles=7
 
 event=convoy_despawn_scheduled
-convoyId=...
 delaySeconds=60
 generateDestroyEvents=false
 method=MOOSE_GROUP_Destroy
@@ -220,8 +188,6 @@ Nach ungefähr 60 Sekunden:
 
 ```text
 event=convoy_despawned
-convoyId=...
-delaySeconds=60
 method=MOOSE_GROUP_Destroy
 ```
 
@@ -230,51 +196,50 @@ Gesamt-PASS:
 ```text
 event=all_convoys_arrived
 convoyCount=5
-survivingVehicles=30
+survivingVehicles=35
 speedKph=50
-despawnDelaySeconds=60
 
 event=all_convoys_despawned
 convoyCount=5
-delaySeconds=60
-generateDestroyEvents=false
-method=MOOSE_GROUP_Destroy
 ```
 
-## Besondere Beobachtungspunkte
+## 9. Besondere Beobachtungspunkte
 
 ### Jalalabad
 
-- beide ILLINOIS-Konvois erreichen dieselbe `OMW_LOG_NODE_JALALABAD`-Zone;
+- beide ILLINOIS-Konvois erreichen `OMW_LOG_NODE_JALALABAD`;
 - CALIFORNIA-C1 kann denselben Knoten als Start verwenden;
-- der zuerst angekommene Verband verschwindet nach 60 Sekunden;
-- keine Bereinigung entfernt die falsche Laufzeitgruppe.
+- die erste angekommene Gruppe wird nach 60 Sekunden entfernt;
+- die Bereinigung erfasst keine falsche Laufzeitgruppe.
 
 ### Asadabad
 
 - CALIFORNIA-C1 endet in `OMW_LOG_NODE_ASADABAD`;
-- CALIFORNIA-C2/C3 verwendet denselben Knoten als Start;
-- das spätere Entfernen des C1-Konvois beeinflusst den bereits abgefahrenen C2/C3-Konvoi nicht.
+- CALIFORNIA-C2/C3 startet am selben Knoten;
+- die spätere Entfernung der ersten Gruppe beeinflusst den abgefahrenen Folgekonvoi nicht.
 
-## PASS-Kriterien
+## 10. PASS-Kriterien
 
 - Bootstrap endet mit `READY`.
+- `TPL_BLUE_CONVOY_STANDARD_07` wird gefunden.
+- `TPL_TEST_BLUE_CONVOY_STANDARD_01` wird nicht benötigt und ist im aktuellen Missionsstand gelöscht.
 - Alle sechs gemeinsamen Standortknoten werden gefunden.
-- Kein veralteter Start-/Zielanker wird benötigt.
-- Die sechs internen PATHLINE-Namen bleiben unverändert funktionsfähig.
-- Alle fünf Verbände erreichen ihr Ziel mit jeweils sechs Fahrzeugen.
-- Genau fünf stille 60-Sekunden-Despawnvorgänge werden geplant und abgeschlossen.
+- Alle fünf Gruppen spawnen mit je sieben Fahrzeugen.
+- Alle 35 Fahrzeuge erreichen bei unbeschädigtem Lauf ihre Zielknoten.
+- Genau fünf stille 60-Sekunden-Despawnvorgänge werden abgeschlossen.
 - Planmäßiges Entfernen erzeugt kein `convoy_destroyed`.
-- `all_convoys_arrived` meldet 30 Fahrzeuge.
+- `all_convoys_arrived` meldet 35 Fahrzeuge.
 - `all_convoys_despawned` erscheint genau einmal.
 - Kein TM01M-Lua-Fehler tritt auf.
 
-## Nachweis
+## 11. Nachweis
 
 ```text
 dcs.log
 debrief.log
-Screenshot der fünf korrekten Spawns
+Screenshot beider neuen Late-Activation-Templates
+Screenshot ohne TPL_TEST_BLUE_CONVOY_STANDARD_01
+Screenshot der fünf korrekten Siebener-Spawns
 Screenshot einer angekommenen Gruppe während der Abklingzeit
 Screenshot desselben Zielbereichs nach dem Despawn
 Nachweis all_convoys_arrived
