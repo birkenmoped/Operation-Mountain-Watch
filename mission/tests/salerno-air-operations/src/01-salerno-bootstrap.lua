@@ -6,22 +6,18 @@ local TAG = "[OMW][SALERNO][DIAG]"
 local function log(msg) env.info(TAG .. " " .. tostring(msg)) end
 
 OMW.AirOps.SalernoDiagnostics = {
-  Version = "SAL-RUNTIME-PARKING-CONTRACT-11",
+  Version = "SAL-RUNTIME-PARKING-CONTRACT-12",
   AirbaseName = AIRBASE.Afghanistan and AIRBASE.Afghanistan.FOB_Salerno or "FOB Salerno",
   ControlAirbaseName = AIRBASE.Afghanistan and AIRBASE.Afghanistan.Khost or "Khost",
   ExpectedAirbaseID = 23,
   WarehouseName = "WH_AIR_US_SALERNO",
 
-  -- Human-facing Mission Editor parking labels only. These are not MOOSE
-  -- TerminalIDs and are never passed to a MOOSE parking API.
   ReservedMissionEditorParkingLabels = {
     [24] = "STATIC_OH58_PAIR",
     [25] = "STATIC_OH58_PAIR",
     [35] = "MAIN_APRON_ACCESS_AND_ROLE2_CSAR_UNLOAD"
   },
 
-  -- Runtime TerminalIDs are classified by world coordinates from the accepted
-  -- Salerno parking dump. This avoids any dependency on Mission Editor labels.
   ParkingGeometry = {
     LEFT_HEAVY = {
       XMin = -46230,
@@ -29,9 +25,18 @@ OMW.AirOps.SalernoDiagnostics = {
       ZMin = 347620,
       ZMax = 347850
     },
+    -- Runtime evidence from stage 11 showed TerminalIDs 21-24 in this eastern
+    -- connector/transition strip. They were incorrectly accepted as RIGHT_ROTARY.
+    -- This strip is always blocked and has precedence over the rotary rectangle.
+    TRANSITION_EXCLUDED = {
+      XMin = -46080,
+      XMax = -45920,
+      ZMin = 347780,
+      ZMax = 348090
+    },
     RIGHT_ROTARY = {
       XMin = -46250,
-      XMax = -45920,
+      XMax = -46081,
       ZMin = 347780,
       ZMax = 348090
     },
@@ -70,4 +75,4 @@ OMW.AirOps.SalernoDiagnostics = {
 }
 
 log("BOOT Version=" .. OMW.AirOps.SalernoDiagnostics.Version)
-log("STAGED_TEST=true AIRWING_CONSTRUCT=true RUNTIME_PARKING_CALIBRATION=true AIRBASE_BLACKLIST=true SQUADRON_ASSET_PARKING_SYNC=true SQUADRON_CONSTRUCT=true SQUADRON_REGISTRATION=true SQUADRON_CONFIG=true MISSION_CAPABILITIES=true PAYLOADS=true AIRWING_START=true DISPATCH_READINESS=true MISSIONS=true spawn=true mutation=true")
+log("STAGED_TEST=true AIRWING_CONSTRUCT=true RUNTIME_PARKING_CALIBRATION=true TRANSITION_EXCLUSION=true AIRBASE_BLACKLIST=true SQUADRON_ASSET_PARKING_SYNC=true SQUADRON_CONSTRUCT=true SQUADRON_REGISTRATION=true SQUADRON_CONFIG=true MISSION_CAPABILITIES=true PAYLOADS=true AIRWING_START=true DISPATCH_READINESS=true MISSIONS=true spawn=true mutation=true")
