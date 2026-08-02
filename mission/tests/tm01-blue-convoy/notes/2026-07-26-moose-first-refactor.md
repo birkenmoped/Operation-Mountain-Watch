@@ -50,9 +50,14 @@ The second file is retained as the isolated implementation source during the mig
 - verification that the MOOSE scheduler stops after a fatal service failure;
 - no duplicate materialization or dematerialization.
 
+## Completed after this note
+
+- TM01M route-anchor zones were replaced by Mission Editor `PATHLINE` objects `MSR_EAST_E03` and `MSR_EAST_E02`.
+- TM01M spawn placement now uses MOOSE `SPAWN:InitSetUnitAbsolutePositions()` with individual road positions and headings.
+- Details are documented in `notes/2026-07-26-tm01m-msr-pathline-routing.md`.
+
 ## Deferred replacements
 
-- route-anchor zones by `PATHLINE`;
 - physical group wrapper by `ARMYGROUP`/`OPSGROUP`;
 - event-driven loss/engagement protection;
 - runtime arrival `GOAL` adapter;
