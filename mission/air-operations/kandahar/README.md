@@ -1,6 +1,6 @@
 # OMW Kandahar AirOps foundation
 
-Status: `PREPARED_FOR_NORMALIZED_RUNTIME_SMOKE_TEST`
+Status: `SMOKE_RETEST_REQUIRED_AFTER_BUILDER_ASSEMBLY_FIX`
 
 ## Purpose
 
@@ -57,8 +57,22 @@ powershell -ExecutionPolicy Bypass -File `
 Expected builder version:
 
 ```text
-OMW-AIROPS-KANDAHAR-FOUNDATION-1
+OMW-AIROPS-KANDAHAR-FOUNDATION-2
 ```
+
+Expected assembly result:
+
+```text
+Assembly: PASS (explicit string list; no nested PowerShell object arrays)
+```
+
+Builder version 1 assembled the source-file pipeline as a nested PowerShell object array. The generated Lua therefore contained an object-type string and DCS rejected it at line 13 with:
+
+```text
+unexpected symbol near ']'
+```
+
+Version 2 uses an explicit `List[string]`, appends every source as a string, rejects `System.Object[]` and related object-string corruption tokens, verifies all required tokens after assembly, writes the file and reads it back for equality.
 
 ## Mission Editor load order
 
@@ -110,7 +124,7 @@ Later mission providers must consume these objects instead of constructing dupli
 
 ## Accepted versus open scope
 
-Accepted foundation:
+Accepted foundation components:
 
 ```text
 AIRWING construction and explicit airbase binding
@@ -120,6 +134,8 @@ MQ-1/MQ-9 type-specific initial-spawn parking
 registered UAV asset parking synchronization
 controlled initial UAV spawn
 ```
+
+Final normalized bundle acceptance remains pending one successful version-2 smoke run.
 
 Still open:
 
