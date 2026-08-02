@@ -79,7 +79,7 @@ Ihre genaue Fahrzeugfolge und Rolle ist in `OMW-CIED-ROUTE-CLEARANCE-CONVOY-DESI
 
 ## 5. MOOSE-native Template-Auswahl
 
-Sind mehrere freigegebene Mission-Editor-Templates für dieselbe Laufzeitrolle vorhanden, ist vor eigener Zufallslogik eine passende MOOSE-Funktion zu verwenden. Für die beiden BLUE-Konvoi-Varianten gilt:
+MOOSE 2.9.18 stellt für eine spätere zufällige Auswahl mehrerer Mission-Editor-Templates folgende Funktion bereit:
 
 ```lua
 SPAWN:InitRandomizeTemplate({
@@ -88,9 +88,13 @@ SPAWN:InitRandomizeTemplate({
 })
 ```
 
-Die Auswahl erfolgt unabhängig je erzeugtem Konvoi. Beide Gruppen müssen im Mission Editor vorhanden, `Late Activation` und zur Laufzeit über MOOSE auflösbar sein. Ein fehlendes Template ist ein Konfigurationsfehler; es gibt keinen stillen Rückfall auf das verbliebene Template.
+Für TM01M gilt eine gestufte Einführung:
 
-Da die Varianten sechs beziehungsweise sieben Fahrzeuge besitzen, muss die Laufzeitlogik beide Fahrzeugzahlen akzeptieren und die ausgewählte Variante protokollieren. Eine globale feste Sollzahl für alle Spawns ist unzulässig.
+1. `TM01M-moose-native-five-convoys-5` verwendet ausschließlich `TPL_BLUE_CONVOY_STANDARD_07` und bestätigt zuerst die neue Siebener-Struktur;
+2. die zufällige Auswahl aus Light und Standard folgt in einem eigenen Inkrement;
+3. dieses Folgeinkrement muss sechs und sieben Fahrzeuge als zulässige Anfangsstärke unterstützen, die ausgewählte Variante protokollieren und gesondert in DCS abgenommen werden.
+
+Bis diese Folgeabnahme vorliegt, ist `TPL_BLUE_CONVOY_LIGHT_06` eine vorbereitete Bibliotheksvorlage, aber keine aktive TM01M-Zufallsvariante. Es wird keine eigene Lua-Zufallsfunktion eingeführt.
 
 ## 6. Spawn- und Beobachtungsregeln
 
