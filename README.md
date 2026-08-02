@@ -40,6 +40,10 @@ The complete documentation entry point is:
 
 - [`OMW-GOV-DOCUMENTATION-INDEX – Documentation Index and Source-of-Truth Matrix`](docs/README.md)
 
+Current Kandahar AirOps continuation handoff:
+
+- [`OMW-HANDOFF-KANDAHAR-AIROPS-2026-08-02`](docs/handoffs/2026-08-02-kandahar-air-operations-chat-handoff.md)
+
 Document numbers and stable IDs are maintained in:
 
 - [`OMW-GOV-DOCUMENT-REGISTRY – Central Document Registry`](docs/DOCUMENT-REGISTRY.md)
