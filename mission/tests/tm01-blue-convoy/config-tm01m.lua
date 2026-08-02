@@ -10,20 +10,23 @@ local config = {
 
   templates = {
     selectionMode = "MOOSE_RANDOMIZED_TEMPLATE",
-    baseGroupName = "BLUE_CONVOY_STANDARD_07",
+    baseGroupName = "TPL_BLUE_CONVOY_STANDARD_07",
     minimumVehicleCount = 6,
     maximumVehicleCount = 7,
     groups = {
       {
-        groupName = "BLUE_CONVOY_LIGHT_06",
+        groupName = "TPL_BLUE_CONVOY_LIGHT_06",
         variant = "LIGHT",
         expectedVehicleCount = 6,
       },
       {
-        groupName = "BLUE_CONVOY_STANDARD_07",
+        groupName = "TPL_BLUE_CONVOY_STANDARD_07",
         variant = "STANDARD",
         expectedVehicleCount = 7,
       },
+    },
+    legacyGroupNames = {
+      "TPL_TEST_BLUE_CONVOY_STANDARD_01",
     },
   },
 
