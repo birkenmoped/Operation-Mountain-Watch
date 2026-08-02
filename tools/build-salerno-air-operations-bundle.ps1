@@ -11,7 +11,8 @@ $outputFile = Join-Path $distDir 'OMW_AirOps_Salerno_Diagnostics.lua'
 $sourceFiles = @(
     '01-salerno-bootstrap.lua',
     '02-resolve-airbase-and-parking.lua',
-    '03-probe-warehouse-and-objects.lua'
+    '03-probe-warehouse-and-objects.lua',
+    '04-construct-airwing-anchor.lua'
 )
 
 if (-not (Test-Path -LiteralPath $sourceDir -PathType Container)) {
@@ -19,7 +20,7 @@ if (-not (Test-Path -LiteralPath $sourceDir -PathType Container)) {
 }
 
 New-Item -ItemType Directory -Path $distDir -Force | Out-Null
-$builderVersion = 'SAL-READONLY-1'
+$builderVersion = 'SAL-AIRWING-ANCHOR-2'
 $commit = 'UNKNOWN'
 try { $commit = (& git -C $repoRoot rev-parse HEAD 2>$null).Trim() } catch { $commit = 'UNKNOWN' }
 
