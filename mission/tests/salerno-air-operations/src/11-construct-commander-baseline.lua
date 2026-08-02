@@ -28,7 +28,7 @@ local function main()
     return
   end
 
-  local commander, failure
+  local commander
   local ok, detail = pcall(function()
     commander = COMMANDER:New(coalition.side.BLUE, "CMD_BLUE_AFGHANISTAN_TEST")
     if type(commander.AddAirwing) == "function" then
@@ -41,8 +41,7 @@ local function main()
   end)
 
   if not ok or not commander then
-    failure = tostring(detail)
-    log("COMPLETE status=FAIL phase=construction detail=" .. failure)
+    log("COMPLETE status=FAIL phase=construction detail=" .. tostring(detail))
     return
   end
 
@@ -52,12 +51,12 @@ local function main()
   local legionCount = tableCount(commander.legions)
   log("CONSTRUCTED alias=CMD_BLUE_AFGHANISTAN_TEST coalition=BLUE")
   log(string.format("BOUND airwing=AW_US_SALERNO legionTableCount=%d", legionCount))
-  log("SAFETY missionsAdded=0 commanderDispatch=false newSpawnsExpected=0 parkingControl=DEFERRED")
+  log("SAFETY isolated=true directAirwingMissions=0 missionsAdded=0 commanderDispatch=false newSpawnsExpected=0 parkingControl=DEFERRED")
   log("COMPLETE status=PASS")
 end
 
 if SCHEDULER then
-  SCHEDULER:New(nil, main, {}, 140)
+  SCHEDULER:New(nil, main, {}, 30)
 else
-  timer.scheduleFunction(function() main() return nil end, nil, timer.getTime() + 140)
+  timer.scheduleFunction(function() main() return nil end, nil, timer.getTime() + 30)
 end
