@@ -47,8 +47,8 @@ The file therefore creates no mission and requests no aircraft by itself.
 ```powershell
 cd P:\DCS-DEV\Operation-Mountain-Watch
 
-git switch agent/kandahar-airwing-baseline-contract
-git pull --ff-only origin agent/kandahar-airwing-baseline-contract
+git switch docs/bagram-air-operations-manifest
+git pull --ff-only origin docs/bagram-air-operations-manifest
 
 powershell -ExecutionPolicy Bypass -File `
   .\tools\build-omw-airops-kandahar.ps1
@@ -156,3 +156,15 @@ COMMANDER integration
 persistent loss/recovery state
 MC-12 physical representation
 ```
+
+## Chat continuation handoff
+
+Before a successor ChatGPT conversation changes Kandahar code, it must read the project authority on `main` and the branch-specific Kandahar evidence and contracts. Working methods and agreements are taken from the repository documentation, not reconstructed from chat memory.
+
+Continuation document:
+
+```text
+docs/handoffs/2026-08-02-kandahar-air-operations-chat-handoff.md
+```
+
+The handoff records the merged PR #47 state, accepted AIRWING/SQUADRON foundation, runtime evidence, UAV parking limitation, open scope and a copyable start prompt for the next chat.
