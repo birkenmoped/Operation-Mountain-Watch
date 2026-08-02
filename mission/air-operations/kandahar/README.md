@@ -1,10 +1,10 @@
 # OMW Kandahar AirOps foundation
 
-Status: `SMOKE_RETEST_REQUIRED_AFTER_BUILDER_ASSEMBLY_FIX`
+Status: `RUNTIME_ACCEPTED_NO_TASKING_FOUNDATION`
 
 ## Purpose
 
-This directory provides the normalized Kandahar AirOps foundation after the isolated registration, parking and controlled-spawn tests.
+This directory provides the normalized Kandahar AirOps foundation after the isolated registration, parking, controlled-spawn and final no-tasking smoke tests.
 
 Generated mission file:
 
@@ -54,7 +54,7 @@ powershell -ExecutionPolicy Bypass -File `
   .\tools\build-omw-airops-kandahar.ps1
 ```
 
-Expected builder version:
+Builder version:
 
 ```text
 OMW-AIROPS-KANDAHAR-FOUNDATION-2
@@ -83,9 +83,9 @@ Version 2 uses an explicit `List[string]`, appends every source as a string, rej
 
 Do not load any Kandahar calibration, controlled-spawn, parking-matrix or return-parking test bundle in parallel.
 
-## Expected normalized runtime result
+## Accepted normalized runtime result
 
-After approximately 32 seconds:
+Runtime acceptance was recorded on `2026-08-02`:
 
 ```text
 [OMW][AirOps.KAF.Foundation] RESULT: READY
@@ -104,7 +104,14 @@ uavInitialSpawnRestricted=true
 uavFinalParkingRestricted=false
 ```
 
-No dynamic aircraft should appear because the foundation does not create or assign a mission and does not issue a Warehouse request.
+The 120.785-second smoke run produced no Kandahar dynamic Birth event, no `SQ_US_KAF` runtime group and no graveyard entry.
+
+Evidence:
+
+```text
+mission/air-operations/kandahar/results/
+2026-08-02-normalized-foundation-smoke-v2-pass.md
+```
 
 ## Runtime API exposed to later modules
 
@@ -122,22 +129,22 @@ OMW.AirOps.Kandahar.KnownLimitations
 
 Later mission providers must consume these objects instead of constructing duplicate AIRWING or SQUADRON instances.
 
-## Accepted versus open scope
-
-Accepted foundation components:
+## Accepted scope
 
 ```text
 AIRWING construction and explicit airbase binding
 SQUADRON construction, grouping and inventory registration
+112-airframe physical inventory baseline
+six deferred MC-12 without physical DCS representation
 Main/Heliport Safe Parking and client/static exclusions
 MQ-1/MQ-9 type-specific initial-spawn parking
 registered UAV asset parking synchronization
 controlled initial UAV spawn
+normalized no-tasking foundation runtime
+start of both AIRWING instances without spontaneous aircraft spawn
 ```
 
-Final normalized bundle acceptance remains pending one successful version-2 smoke run.
-
-Still open:
+## Open scope
 
 ```text
 post-landing UAV stand selection within the type-specific G pool
