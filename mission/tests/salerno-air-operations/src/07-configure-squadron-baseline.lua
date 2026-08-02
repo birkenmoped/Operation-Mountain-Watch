@@ -54,9 +54,7 @@ local function main()
 
   cfg.SquadronBaselineConfigured = failures == 0 and configured == cfg.Expected.Squadrons
 
-  log(string.format(
-    "DEFERRED missionCapabilities=true callsigns=true reason=no-authoritative-salerno-runtime-contract",
-    configured))
+  log("DEFERRED missionCapabilities=true callsigns=true reason=no-authoritative-salerno-runtime-contract")
   log(string.format(
     "SAFETY airwingStartCalled=false missionsAdded=0 payloadsAdded=0 spawnsExpected=0 configured=%d failures=%d",
     configured, failures))
