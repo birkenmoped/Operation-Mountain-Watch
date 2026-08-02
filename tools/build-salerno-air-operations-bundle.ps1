@@ -15,7 +15,8 @@ $sourceFiles = @(
     '04-construct-airwing-anchor.lua',
     '05-construct-squadrons.lua',
     '06-register-squadrons-with-airwing.lua',
-    '07-configure-squadron-baseline.lua'
+    '07-configure-squadron-baseline.lua',
+    '08-activate-operational-baseline.lua'
 )
 
 if (-not (Test-Path -LiteralPath $sourceDir -PathType Container)) {
@@ -23,7 +24,7 @@ if (-not (Test-Path -LiteralPath $sourceDir -PathType Container)) {
 }
 
 New-Item -ItemType Directory -Path $distDir -Force | Out-Null
-$builderVersion = 'SAL-SQUADRON-CONFIG-5'
+$builderVersion = 'SAL-OPERATIONAL-BASELINE-6'
 $commit = 'UNKNOWN'
 try { $commit = (& git -C $repoRoot rev-parse HEAD 2>$null).Trim() } catch { $commit = 'UNKNOWN' }
 
