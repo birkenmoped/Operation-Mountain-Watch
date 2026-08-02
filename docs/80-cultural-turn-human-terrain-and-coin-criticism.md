@@ -1,15 +1,21 @@
 ---
 document_id: OMW-COIN-CULTURAL-TURN-HUMAN-TERRAIN-CRITICISM
 status: BINDING
-class: SOURCE_CRITICAL_OPERATIONAL_DESIGN_REFERENCE
+document_class: SOURCE_CRITICAL_OPERATIONAL_DESIGN_REFERENCE
 owning_policy: OMW-GOV-001
-project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
-source_branch: docs/army-history-baloch-kalay-cultural-turn
-source_commit: PENDING_MERGE
-supersedes: []
-superseded_by: []
+authoritative_for:
+  - cultural understanding and human-terrain design boundaries
+  - source confidence, freshness and representativeness requirements
+  - separation of identity, support, compliance, fear and trust
+  - ethical and methodological limits on sociocultural operational models
 scenario_period: 2010-08-01/2011-12-31
 historical_source_period: 2010
+project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
+supersedes: []
+superseded_by: []
+source_branch: main
+source_commit: GIT_HISTORY
+validated_in_dcs: false
 ---
 
 # The Cultural Turn in U.S. Counterinsurgency: Human Terrain, Application and Criticism
