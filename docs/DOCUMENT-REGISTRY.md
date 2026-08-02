@@ -78,7 +78,7 @@ Eine Nummer und eine stabile `document_id` dürfen im aktuellen Bestand jeweils 
 | 57 | `OMW-RED-KANDAHAR-HELMAND-ENEMY-SYSTEM` | `docs/57-kandahar-helmand-enemy-system-and-red-commander-strategy.md` | `BINDING` | Kandahar-/Helmand-Enemy-System |
 | 58 | `OMW-RED-EASTERN-AFGHANISTAN-NETWORK-OPERATIONS` | `docs/58-eastern-afghanistan-network-operations-and-complex-attack-model.md` | `BINDING` | ostafghanisches Netzwerk- und Complex-Attack-Modell |
 | 59 | `OMW-COIN-ASSESSMENT-TRANSITIONS-NONSTATE-SECURITY` | `docs/59-campaign-assessment-operational-transitions-and-nonstate-security.md` | `BINDING` | Campaign Assessment und nichtstaatliche Sicherheitsakteure |
-| 60 | `OMW-HIST-AFGHAN-AIR-WARS-2009-2011` | `docs/60-afghan-air-wars-2009-2011-airpower-operations-reference.md` | `BINDING` | Airpower-, ORBAT-, ISR- und CSAR-Referenz |
+| 60 | `OMW-HIST-AFGHANISTAN-AIR-WARS-2009-2011` | `docs/60-afghan-air-wars-2009-2011-airpower-operations-reference.md` | `BINDING` | Airpower-, ORBAT-, ISR- und CSAR-Referenz |
 | 61 | `OMW-COIN-GOVERNANCE-STRATEGY-TRANSITION` | `docs/61-coin-governance-strategy-and-afghan-led-transition.md` | `BINDING` | COIN-, Governance- und Transition-Referenz |
 | 62 | `OMW-RED-CONTROL-INTELLIGENCE-TTP-COIN-IPB` | `docs/62-insurgent-control-intelligence-ttp-and-coin-ipb.md` | `BINDING` | RED-Kontrolle, Intelligence, TTP und COIN-IPB |
 | 63 | `OMW-BLUE-NTMA-SFA-ATN-STRATCOM-LOCAL-INFLUENCE` | `docs/63-ntma-sfa-attack-the-network-stratcom-and-local-influence.md` | `BINDING` | NTM-A, SFA, AtN, StratCom und Einflussnetzwerke |
@@ -116,6 +116,8 @@ Eine Nummer und eine stabile `document_id` dürfen im aktuellen Bestand jeweils 
 | `OMW-GOV-DOCUMENTATION-INDEX` | `docs/README.md` | `BINDING`; Themenindex |
 | `OMW-GOV-DOCUMENT-METADATA` | `docs/DOCUMENT-METADATA-POLICY.md` | `BINDING`; Metadaten/Provenienz |
 | `OMW-GOV-SUBPROJECT-REGISTRY` | `docs/SUBPROJECT-REGISTRY.md` | `BINDING`; offene Unterprojekte |
+| `OMW-AIR-AIRFIELD-IMPLEMENTATION-WORKFLOW` | `docs/airfield-airwing-squadron-commander-implementation-workflow.md` | `BINDING`; allgemeiner Airfield-AIRWING-Workflow |
+| `OMW-HANDOFF-TEMPLATE-AIRFIELD-AIRWING-COMMANDER` | `docs/handoffs/TEMPLATE-airfield-airwing-squadron-commander-chat-handoff.md` | `BINDING`; Chat-Handoff-Vorlage |
 | `OMW-AIR-US-ORBAT-RESEARCH` | `docs/us-air-orbat-2010-2011.md` | `BINDING`; historische Forschung |
 | `OMW-GOV-SOURCE-USE` | `docs/sources/graveyard-of-empires.md` | `BINDING_PROJECT_DECISION` |
 | `OMW-GOV-MOOSE-VERSION` | `docs/moose/VERSION-AND-SOURCES.md` | `BINDING` |
