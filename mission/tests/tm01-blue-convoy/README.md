@@ -6,14 +6,16 @@ TM01 contains the convoy development and regression line for Operation Mountain 
 
 TM01M is the clean MOOSE-native physical convoy baseline. It uses Mission Editor MSR drawings through MOOSE `PATHLINE`, road projection and connectors through MOOSE `COORDINATE`, individual road-aligned vehicle placement through `SPAWN:InitSetUnitAbsolutePositions()`, route assignment through `GROUP:Route()`, one shared MOOSE `SCHEDULER` for supervision and delayed silent cleanup through `GROUP:Destroy(false, 60)`.
 
-The accepted single-convoy and five-convoy baselines are documented under:
+The accepted single-convoy and five-convoy baselines remain documented under:
 
 ```text
 results/2026-07-26-tm01m-msr-pathline-v1-pass.md
 results/2026-07-26-tm01m-five-convoy-50kph-pass.md
 ```
 
-The current shared-logistics-node and cleanup regression is documented under:
+Those reports retain the former six-vehicle HMMWV-based test template as historical evidence of the exact tested state.
+
+The current shared-node, seven-vehicle template and cleanup regression is documented under:
 
 ```text
 expected/tm01m-moose-native-physical-acceptance.md
@@ -22,19 +24,49 @@ expected/tm01m-moose-native-physical-acceptance.md
 ## Current configuration
 
 ```text
-TM01M-moose-native-five-convoys-4
+TM01M-moose-native-five-convoys-5
 ```
 
 ```text
 5 simultaneous convoys
-6 vehicles per convoy
-30 total vehicles
+7 vehicles per convoy
+35 total vehicles
 50 km/h
 On Road
-1 shared Mission Editor template
+active template: TPL_BLUE_CONVOY_STANDARD_07
 6 unchanged internal Mission Editor PATHLINE objects
 6 shared OMW_LOG_NODE locations
 60-second post-arrival dwell
+```
+
+## Active convoy template
+
+```text
+TPL_BLUE_CONVOY_STANDARD_07
+```
+
+| Position | Vehicle | Role |
+|---:|---|---|
+| 1 | M-ATV | Lead Security |
+| 2 | M1083 | Cargo 1 |
+| 3 | MaxxPro | Convoy Commander / C2 |
+| 4 | M1083 | Cargo 2 |
+| 5 | MaxxPro | Mid-column Security / Support |
+| 6 | M1083 | Cargo 3 |
+| 7 | M-ATV | Rear Security |
+
+The additional library template is present for a later randomized-template increment:
+
+```text
+TPL_BLUE_CONVOY_LIGHT_06
+```
+
+MOOSE 2.9.18 provides `SPAWN:InitRandomizeTemplate()`. Random selection is not active in configuration version 5 because the two variants have different unit counts and require a dedicated runtime and DCS regression. Version 5 deliberately establishes the seven-vehicle standard template first.
+
+The obsolete template must be removed from the current Mission Editor template library:
+
+```text
+TPL_TEST_BLUE_CONVOY_STANDARD_01
 ```
 
 ## Current routes
