@@ -17,7 +17,8 @@ $sourceFiles = @(
     '06-register-squadrons-with-airwing.lua',
     '07-configure-squadron-baseline.lua',
     '08-activate-operational-baseline.lua',
-    '09-validate-dispatch-readiness.lua'
+    '09-validate-dispatch-readiness.lua',
+    '10-dispatch-controlled-missions.lua'
 )
 
 if (-not (Test-Path -LiteralPath $sourceDir -PathType Container)) {
@@ -25,7 +26,7 @@ if (-not (Test-Path -LiteralPath $sourceDir -PathType Container)) {
 }
 
 New-Item -ItemType Directory -Path $distDir -Force | Out-Null
-$builderVersion = 'SAL-DISPATCH-READINESS-7'
+$builderVersion = 'SAL-CONTROLLED-DISPATCH-8'
 $commit = 'UNKNOWN'
 try { $commit = (& git -C $repoRoot rev-parse HEAD 2>$null).Trim() } catch { $commit = 'UNKNOWN' }
 
