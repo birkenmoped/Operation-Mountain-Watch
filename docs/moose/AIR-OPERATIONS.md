@@ -6,15 +6,17 @@ Militärische Luftoperationen werden grundsätzlich mit den MOOSE-OPS-Klassen um
 
 ```text
 COMMANDER
-└── AIRWING
-    ├── SQUADRON
-    ├── SQUADRON
-    └── SQUADRON
-
-AUFTRAG und OPSTRANSPORT werden an COMMANDER, AIRWING oder geeignete OPSGROUPs übergeben.
+├── AIRWING Jalalabad
+│   └── SQUADRONs
+├── AIRWING Salerno
+│   └── SQUADRONs
+├── weitere AIRWINGs
+└── später gegebenenfalls BRIGADEs
 ```
 
-Aktuell validierter Referenzknoten:
+`AUFTRAG` und `OPSTRANSPORT` werden an COMMANDER, AIRWING oder geeignete OPSGROUPs übergeben.
+
+Aktuell praktisch bestätigte Referenzknoten:
 
 ```text
 AW_US_JALALABAD
@@ -24,13 +26,24 @@ AW_US_JALALABAD
 └── SQ_US_JBAD_CH47_HEAVYLIFT
 ```
 
+```text
+AW_US_SALERNO
+├── SQ_US_SAL_AH64D_TF_TIGERSHARK_ATTACK
+├── SQ_US_SAL_OH58D_B_6_6_CAV
+├── SQ_US_SAL_UH60_TF_TIGERSHARK_ASSAULT
+├── SQ_US_SAL_UH60_MEDEVAC_C_5_159_AVN
+└── SQ_US_SAL_CH47_TF_TIGERSHARK_MEDIUM_LIFT
+```
+
+Der Jalalabad-Test bestätigt den vollständigen Grundstart mit leerer Missionsqueue. Der Salerno-Test bestätigt zusätzlich einen isolierten COMMANDER-gesteuerten CAS-Auftrag bis zum Zustand `started`.
+
 ## 2. AIRBASE
 
 ### Projektzweck
 
-- DCS-Flugplatz über den MOOSE-Wrapper suchen,
-- Airbase-Name und ID diagnostisch bestätigen,
-- absichtlich durch Statics belegte Parkpositionen aus dem MOOSE-Parking-Pool entfernen.
+- DCS-Flugplatz über den MOOSE-Wrapper suchen;
+- Airbase-Name und ID diagnostisch bestätigen;
+- absichtlich belegte Parkpositionen aus dem MOOSE-Parking-Pool entfernen, sofern ein belastbarer lokaler Vertrag vorliegt.
 
 ### Aktuell verwendete Methoden
 
@@ -38,16 +51,18 @@ AW_US_JALALABAD
 AIRBASE:FindByName(name)
 airbase:GetName()
 airbase:GetID()
-airbase:SetParkingSpotBlacklist({ 23, 35, 37, 49 })
+airbase:SetParkingSpotBlacklist(ids)
 ```
 
 ### Validierter Einsatz
 
-Jalalabad wurde gefunden und explizit an das AIRWING gebunden. Vier absichtlich durch CH-47-Statics belegte DCS-Parking-Nodes wurden über die Blacklist geschützt.
+Jalalabad wurde gefunden und explizit an das AIRWING gebunden. Vier durch CH-47-Statics belegte DCS-Parking-Nodes wurden über die Blacklist geschützt.
+
+Salerno wurde ebenfalls gefunden und an `AW_US_SALERNO` gebunden. Die dortige Terminal-ID-Kalibrierung bleibt als Evidenz erhalten; die operative Parking-Steuerung ist wegen nicht zuverlässig erzwungener Multi-Unit-Platzierung jedoch ausdrücklich `DEFERRED`.
 
 ### Einschränkung
 
-Parking-IDs sind karten-, flugplatz- und möglicherweise DCS-versionsabhängig. Sie dürfen nicht ungeprüft auf andere Flugplätze oder Kartenversionen übertragen werden.
+Parking-IDs sind karten-, flugplatz- und DCS-versionsabhängig. Konfigurationswerte oder Asset-`parkingIDs` beweisen allein nicht die tatsächlich realisierte Spawnposition. Parking benötigt je Flugplatz einen separat beobachteten Runtime-Acceptance-Test.
 
 ## 3. AIRWING
 
@@ -57,12 +72,12 @@ Ein `AIRWING` ist der lokale MOOSE-Ressourcen- und Einsatzmanager eines Flugplat
 
 Es verwaltet:
 
-- Squadrons,
-- Asset-Gruppen,
-- Payloads,
-- Missionswarteschlangen,
-- Warehouse-Funktion,
-- Airbase-Bezug,
+- Squadrons;
+- Asset-Gruppen;
+- Payloads;
+- Missionswarteschlangen;
+- Warehouse-Funktion;
+- Airbase-Bezug;
 - Spawn- und Parking-Verhalten.
 
 ### Aktuell verwendete Methoden
@@ -78,20 +93,32 @@ airwing:GetSquadron(squadronName)
 airwing:Start()
 ```
 
+Zusätzlich praktisch beobachtete FSM-Callbacks:
+
+```lua
+airwing:OnAfterMissionAssign(From, Event, To, Mission, Legions)
+airwing:OnAfterMissionRequest(From, Event, To, Mission, Assets)
+airwing:OnAfterOpsOnMission(From, Event, To, OpsGroup, Mission)
+```
+
 ### Verbindliche Startreihenfolge
 
 1. Warehouse-Anker muss existieren.
 2. AIRBASE muss gefunden sein.
-3. Parking-Blacklist muss gesetzt sein.
+3. Lokale Parking-Mutationen dürfen nur bei belastbarem Vertrag gesetzt werden.
 4. AIRWING wird konstruiert.
-5. Airbase, Startart und Safe Parking werden gesetzt.
+5. Airbase und Startart werden gesetzt.
 6. Squadrons und Payloads werden vollständig registriert.
 7. Validierung muss PASS sein.
 8. Erst dann wird `AIRWING:Start()` aufgerufen.
 
 ### Validierter Einsatz
 
-Der Jalalabad-Referenzknoten startete erfolgreich. Es wurden keine spontanen Missionen oder unerwarteten Aircraft-Spawns erzeugt.
+Jalalabad startete erfolgreich und blieb ohne spontane Missionen stabil.
+
+Salerno startete mit fünf SQUADRONs, zwanzig registrierten Assets und zehn Payloaddefinitionen. Ein vom COMMANDER ausgewählter CAS-Auftrag wurde in die AIRWING-Missionsqueue übernommen; ein AH-64-Asset wurde angefordert und als `OpsOnMission` gemeldet. Der Auftrag erreichte `started`.
+
+Nicht dadurch bewiesen sind taktische Zielbekämpfung, vollständiger Missionsabschluss, Rückkehr, Landung, Recovery oder persistente Bestandsbuchung.
 
 ## 4. SQUADRON
 
@@ -101,11 +128,11 @@ Ein `SQUADRON` bildet einen typgebundenen lokalen Luftfahrzeugbestand ab.
 
 Ein Squadron enthält:
 
-- ein Mission-Editor-Template,
-- eine Anzahl von Asset-Gruppen,
-- eine Gruppierungsgröße,
-- Skill,
-- Mission Capabilities,
+- ein Mission-Editor-Template;
+- eine Anzahl von Asset-Gruppen;
+- eine Gruppierungsgröße;
+- Skill;
+- Mission Capabilities;
 - Zuordnung zu einem AIRWING.
 
 ### Konstruktorregel
@@ -114,7 +141,7 @@ Ein Squadron enthält:
 SQUADRON:New(templateGroupName, numberOfGroups, squadronName)
 ```
 
-Der zweite Parameter zählt **Gruppen**, nicht einzelne Luftfahrzeuge.
+Der zweite Parameter zählt Gruppen, nicht einzelne Luftfahrzeuge.
 
 Beispiel:
 
@@ -134,14 +161,11 @@ squadron:AddMissionCapability(missionTypes, performance)
 airwing:AddSquadron(squadron)
 ```
 
-### Validierte Squadrons
+### Validierter Umfang
 
-| Squadron | Bestand | Asset-Gruppen | Grouping | Capabilities |
-|---|---:|---:|---:|---|
-| OH-58D | 24 | 12 | 2 | `RECON` |
-| AH-64D | 8 | 4 | 2 | `CAS` |
-| UH-60 | 8 | 8 | 1 | `TROOPTRANSPORT`, `CARGOTRANSPORT`, `LANDATCOORDINATE`, `GROUNDESCORT` |
-| CH-47 | 8 | 8 | 1 | `TROOPTRANSPORT`, `CARGOTRANSPORT`, `LANDATCOORDINATE` |
+Jalalabad bestätigt vier typgebundene Bestände und deren Grundkonfiguration.
+
+Salerno bestätigt fünf SQUADRONs und für den CAS-Pfad praktisch, dass die registrierte AH-64-Capability durch `COMMANDER:CanMission()` erkannt und ein zugehöriges Asset rekrutiert werden konnte.
 
 ## 5. Payloads
 
@@ -152,18 +176,16 @@ AIRWING-Assets benötigen passende Payloads für die jeweiligen Missionstypen. E
 ### Aktuell verwendete Methode
 
 ```lua
-airwing:NewPayload(templateGroup, -1, missionTypes, performance)
+airwing:NewPayload(templateGroup, amount, missionTypes, performance)
 ```
 
-`-1` wurde im Jalalabad-Grundtest als unbegrenzte Payloadmenge verwendet. Dies ist eine technische Baseline und noch kein persistentes Munitions- oder Nachschubmodell.
+`-1` wird in technischen Baselines als unbegrenzte Payloadmenge verwendet. Dies ist noch kein persistentes Munitions- oder Nachschubmodell.
 
 ### Validierter Stand
 
-- OH-58D RECON-Payload,
-- AH-64D CAS-Payload,
-- UH-60 MEDEVAC-Lead-/Transport-Payload,
-- UH-60 Cover-/Ground-Escort-Payload,
-- CH-47 Heavy-Lift-Payload.
+Jalalabad bestätigt die Registrierung von RECON-, CAS-, MEDEVAC-/Transport-, Ground-Escort- und Heavy-Lift-Payloads.
+
+Salerno bestätigt für den isolierten CAS-Pfad, dass eine passende AH-64-Payload in der COMMANDER-/AIRWING-Eignungs- und Rekrutierungskette verfügbar war. Die zehn registrierten Payloaddefinitionen wurden vom laufenden AIRWING ausgewiesen.
 
 ## 6. AUFTRAG
 
@@ -182,25 +204,54 @@ AUFTRAG.Type.LANDATCOORDINATE
 AUFTRAG.Type.GROUNDESCORT
 ```
 
-### Aktueller Validierungsumfang
+### Praktisch bestätigter CAS-Pfad
+
+Salerno verwendet:
+
+```lua
+AUFTRAG:NewCAS(zone, altitude, speed, coordinate, heading, leg)
+mission:SetName(name)
+mission:SetRequiredAssets(min, max)
+mission:SetTime(start, stop)
+mission:SetDuration(seconds)
+mission:SetReturnToLegion(true)
+mission:SetRepeat(0)
+```
+
+Beobachtete Zustandsfolge:
+
+```text
+planned
+requested
+scheduled
+started
+```
+
+Anschließend wurde der Auftrag durch den Testharness kontrolliert abgebrochen und bereinigt.
+
+### Validierungsgrenze
 
 Validiert sind:
 
-- Capability-Registrierung an SQUADRONs,
-- Payload-Zuordnung zu Missionstypen,
-- AIRWING- und COMMANDER-Grundstart mit leerer Missionswarteschlange.
+- Capability-Registrierung an SQUADRONs;
+- Payload-Zuordnung zu Missionstypen;
+- Konstruktion eines CAS-AUFTRAG;
+- COMMANDER-Eignungsprüfung;
+- Auswahl des Salerno-AIRWING;
+- Assetanforderung;
+- `OpsOnMission`;
+- Fortschritt bis `started`.
 
-Noch nicht validiert sind:
+Nicht validiert sind:
 
-- taktische AUFTRAG-Erzeugung,
-- Auswahl eines geeigneten Squadrons,
-- Spawn und Start eines Missionsassets,
-- Missionsdurchführung,
-- Success-/Failure-Erkennung,
-- Rückkehr, Recovery und Bestandsverbuchung,
-- Abbruch- und Verlustpfade.
+- tatsächliche Zielbekämpfung;
+- taktische Success-/Failure-Erkennung;
+- regulärer Abschluss ohne Test-Cleanup;
+- Rückkehr, Recovery und Bestandsverbuchung;
+- Verlustpfade;
+- OPSTRANSPORT.
 
-`AUFTRAG` bleibt deshalb im Klassenindex `IN_USE_PARTIAL`.
+`AUFTRAG` bleibt deshalb trotz des bestätigten CAS-Dispatchpfads `IN_USE_PARTIAL`.
 
 ## 7. COMMANDER
 
@@ -211,24 +262,82 @@ Der `COMMANDER` verwaltet AIRWINGs, später gegebenenfalls BRIGADEs, und verteil
 ### Aktuell verwendete Methoden
 
 ```lua
-COMMANDER:New(coalition.side.BLUE, "OMW_BLUE_COMMANDER")
+COMMANDER:New(coalition.side.BLUE, alias)
 commander:AddAirwing(airwing)
+commander:SetVerbosity(level)
 commander:Start()
+commander:CanMission(mission)
+commander:AddMission(mission)
+commander:Status()
+commander:MissionCancel(mission)
 ```
+
+Praktisch beobachtete Callbacks:
+
+```lua
+commander:OnAfterMissionAssign(From, Event, To, Mission, Legions)
+commander:OnAfterOpsOnMission(From, Event, To, OpsGroup, Mission)
+```
+
+### Verbindliche Sequenz
+
+Der geprüfte MOOSE-Quellstand zeigt:
+
+```text
+COMMANDER:New()
+  -> FSM-Zustand NotReadyYet
+
+COMMANDER:AddAirwing()
+  -> bindet Legion
+  -> startet den COMMANDER nicht
+
+COMMANDER:Start()
+  -> Zustand OnDuty
+  -> startet Status-Zyklus
+
+COMMANDER:AddMission()
+  -> Mission in missionqueue
+  -> statusCommander=PLANNED
+
+COMMANDER:Status()
+  -> onafterStatus()
+  -> CheckMissionQueue()
+  -> Auswahl und Rekrutierung
+```
+
+Die Reihenfolge `New -> AddAirwing -> Start -> AddMission` ist verbindlich. Stage 17 ließ `Start()` aus und blieb deshalb korrekt auf `planned`; Stage 18 korrigierte diesen Testharness-Fehler.
 
 ### Validierter Umfang
 
-- Konstruktion,
-- Einbindung des Jalalabad-AIRWING,
-- Start,
-- stabiler Leerlauf ohne spontane Missionen.
+Jalalabad bestätigt:
+
+- Konstruktion;
+- AIRWING-Einbindung;
+- Start;
+- stabilen Leerlauf ohne spontane Missionen.
+
+Salerno bestätigt zusätzlich:
+
+- Zustand `OnDuty`;
+- `CanMission=true` für den isolierten CAS-Auftrag;
+- Auswahl von `AW_US_SALERNO`;
+- `MissionAssign`;
+- Weitergabe an die AIRWING-Missionsqueue;
+- AH-64-Assetanforderung und `OpsOnMission`;
+- Auftrag bis `started`;
+- kontrollierten Abbruch und Cleanup.
 
 Noch nicht validiert:
 
 ```lua
-commander:AddMission(mission)
 commander:AddOpsTransport(transport)
 ```
+
+### Produktionsarchitektur
+
+Die lokalen COMMANDER-Objekte in Jalalabad- und Salerno-Testfixtures bleiben für reproduzierbare Acceptance-Tests erhalten.
+
+Für die spätere Kampagnenruntime ist genau ein theaterweiter BLUE COMMANDER vorgesehen. Die einzelnen Flugplatzmodule sollen nur ihre AIRWINGs exportieren; ein zentrales, später geladenes Modul registriert die AIRWINGs und startet den gemeinsamen COMMANDER. Ein eigener Produktions-COMMANDER je Flugplatz ist nicht vorgesehen.
 
 ## 8. GROUP, UNIT und STATIC
 
@@ -241,9 +350,9 @@ group:GetUnits()
 
 Verwendung:
 
-- Template vorhanden,
-- korrekte Gruppengröße,
-- korrekter DCS-Typ,
+- Template vorhanden;
+- korrekte Gruppengröße;
+- korrekter DCS-Typ;
 - Übergabe des Template-Wrappers an `AIRWING:NewPayload()`.
 
 ### UNIT
@@ -256,7 +365,7 @@ UNIT:FindByName(name)
 
 Verwendung:
 
-- Typprüfung der Template-Einheiten,
+- Typprüfung der Template-Einheiten;
 - optionaler Warehouse-Anker als UNIT.
 
 ### STATIC
@@ -268,12 +377,6 @@ static:GetTypeName()
 
 Der zweite Parameter `false` ist bei erwartbar fehlenden Objekten relevant, damit die Suche nicht unnötig einen MOOSE-Fehler erzeugt.
 
-Verwendung:
-
-- Warehouse-Anker,
-- sichtbare Luftfahrzeug-Statics,
-- Typprüfung.
-
 ## 9. ZONE
 
 ### Aktuell verwendete Methode
@@ -282,9 +385,9 @@ Verwendung:
 ZONE:FindByName(name)
 ```
 
-Validiert wurde bislang die Existenz der Jalalabad-Zonen. Ihre spätere operative Verwendung als Lade-, Entlade-, MEDEVAC-, Ready- oder Missionszone ist noch separat zu testen.
+Validiert sind die Existenzprüfungen benannter Mission-Editor-Zonen und die Verwendung einer Salerno-Zone als Zielraum für einen CAS-AUFTRAG. Vollständige operative Load-/Unload-, Presence- oder Besitzlogik ist separat zu testen.
 
-## 10. Interne Template-Datenbank
+## 10. Interne MOOSE-Daten
 
 Für unbesetzte Client-Gruppen und Late-Activation-Templates wurde verwendet:
 
@@ -292,18 +395,22 @@ Für unbesetzte Client-Gruppen und Late-Activation-Templates wurde verwendet:
 _DATABASE.Templates.Groups[groupName]
 ```
 
-Grund:
+Diagnostisch wurden in Salerno außerdem COMMANDER-, AIRWING- und Missionsqueues sowie registrierte Tabellen gezählt. Solche Zugriffe sind nur für Testdiagnostik zulässig und keine stabile Produktions-API.
 
-Unbesetzte Client-Gruppen sind nicht zwingend als aktive Runtime-`GROUP` verfügbar.
+## 11. Verifizierter MOOSE-Stand für Salerno
 
-Bewertung:
+```text
+MOOSE commit:            73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+Embedded Moose.lua SHA:  e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
+Embedded Moose.lua size: 9773155 bytes
+DCS version:             2.9.28.26385
+OMW branch:              agent/salerno-read-only-diagnostics
+OMW source commit:       dba0465afbff14fb719abdeb1f9b06e24ff24717
+BuilderVersion:          SAL-COMMANDER-SELECTION-18
+Bundle SHA-256:          75ea74cdaa60800899345924fc4eb450c15211d605bf972767d9d68e265421ee
+```
 
-- zulässig für Diagnose und Mission-Editor-Validierung,
-- nicht als allgemeine stabile Produktions-API behandeln,
-- Zugriff bei MOOSE-Updates erneut prüfen,
-- möglichst durch eine öffentliche MOOSE-Methode ersetzen, falls eine geeignete Methode vorhanden ist.
-
-## 11. Quellen
+## 12. Quellen
 
 - AIRWING: <https://flightcontrol-master.github.io/MOOSE_DOCS_DEVELOP/Documentation/Ops.Airwing.html>
 - SQUADRON: <https://flightcontrol-master.github.io/MOOSE_DOCS_DEVELOP/Documentation/Ops.Squadron.html>
@@ -314,10 +421,12 @@ Bewertung:
 - UNIT: <https://flightcontrol-master.github.io/MOOSE_DOCS_DEVELOP/Documentation/Wrapper.Unit.html>
 - STATIC: <https://flightcontrol-master.github.io/MOOSE_DOCS_DEVELOP/Documentation/Wrapper.Static.html>
 - ZONE: <https://flightcontrol-master.github.io/MOOSE_DOCS_DEVELOP/Documentation/Core.Zone.html>
+- Exact Salerno MOOSE source: commit `73d3ed119cd9e7e3f2cfcabbaa34513d30529b54`, especially `Moose Development/Moose/Ops/Commander.lua` and `Ops/Legion.lua`.
 
-## 12. OMW-Nachweise
+## 13. OMW-Nachweise
 
 - [`Luftoperations- und ORBAT-Umsetzung`](../18-air-operations-implementation.md)
 - [`Jalalabad: finale Validierung und operative Grundbaseline`](../25-jalalabad-final-validation-and-operational-baseline.md)
 - [`Jalalabad complete Air Operations node: PASS`](../../mission/tests/jalalabad-air-operations/results/2026-07-24-jalalabad-complete-node-pass.md)
-- [`Jalalabad-Testquellen`](../../mission/tests/jalalabad-air-operations/src/)
+- [`Salerno COMMANDER selection stage 18: PASS`](../../mission/tests/salerno-air-operations/results/2026-08-02-salerno-commander-selection-18-pass.md)
+- [`Salerno COMMANDER isolated stage 17: FAIL`](../../mission/tests/salerno-air-operations/results/2026-08-02-salerno-commander-isolated-17-fail.md)
