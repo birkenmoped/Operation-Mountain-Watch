@@ -26,7 +26,7 @@ if (-not (Test-Path -LiteralPath $sourceDir -PathType Container)) {
 }
 
 New-Item -ItemType Directory -Path $distDir -Force | Out-Null
-$builderVersion = 'SAL-PARKING-CONTRACT-9'
+$builderVersion = 'SAL-SQUADRON-PARKING-SECTORS-10'
 $commit = 'UNKNOWN'
 try { $commit = (& git -C $repoRoot rev-parse HEAD 2>$null).Trim() } catch { $commit = 'UNKNOWN' }
 
