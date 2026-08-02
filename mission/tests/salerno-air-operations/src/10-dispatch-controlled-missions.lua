@@ -63,6 +63,12 @@ local function main()
     return
   end
 
+  local airbase = AIRBASE and AIRBASE:FindByName(cfg.AirbaseName) or nil
+  if not airbase or type(airbase.GetCoordinate) ~= "function" then
+    log("COMPLETE status=FAIL reason=airbase-coordinate-missing")
+    return
+  end
+
   local failures = {}
   local missions = {}
   local okBuild, buildDetail = pcall(function()
@@ -70,6 +76,8 @@ local function main()
     reconSet:AddZone(zones.RECON)
 
     local troopSet = SET_GROUP:New()
+    local pickupCoordinate = airbase:GetCoordinate()
+    local deployCoordinate = zones.LIFT:GetCoordinate()
 
     local cas = configureMission(
       AUFTRAG:NewCAS(zones.CAS, 3000, 110, zones.CAS:GetCoordinate(), 90, 2),
@@ -78,7 +86,7 @@ local function main()
       AUFTRAG:NewRECON(reconSet, 90, 2500, false, false),
       "OMW-SAL-TEST-RECON")
     local lift = configureMission(
-      AUFTRAG:NewTROOPTRANSPORT(troopSet, zones.LIFT:GetCoordinate(), nil, 150),
+      AUFTRAG:NewTROOPTRANSPORT(troopSet, pickupCoordinate, deployCoordinate, 150),
       "OMW-SAL-TEST-LIFT")
 
     missions = {
