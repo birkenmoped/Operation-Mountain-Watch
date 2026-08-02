@@ -25,18 +25,19 @@ local function main()
   log("AIRBASE_ID expected=" .. tostring(cfg.ExpectedAirbaseID) .. " actual=" .. tostring(salerno:GetID()) .. " pass=" .. tostring(idOK))
 
   local blacklisted = {}
-  for _, id in ipairs(cfg.ClientParkingBlacklist) do blacklisted[id] = true end
+  for _, id in ipairs(cfg.ParkingBlacklist or {}) do blacklisted[id] = true end
   local spots = salerno:GetParkingSpotsTable() or {}
   table.sort(spots, function(a, b) return (a.TerminalID or -1) < (b.TerminalID or -1) end)
   log("PARKING count=" .. tostring(#spots))
 
   for _, parking in ipairs(spots) do
     local vec3 = parking.Coordinate and parking.Coordinate:GetVec3() or {}
+    local reason = cfg.ParkingBlacklistReasons and cfg.ParkingBlacklistReasons[parking.TerminalID] or nil
     log(string.format(
-      "PARKING terminal=%s terminal0=%s type=%s free=%s toac=%s occupiedBy=%s clientReserved=%s x=%.1f y=%.1f z=%.1f",
+      "PARKING terminal=%s terminal0=%s type=%s free=%s toac=%s occupiedBy=%s spawnBlocked=%s blockReason=%s x=%.1f y=%.1f z=%.1f",
       tostring(parking.TerminalID), tostring(parking.TerminalID0), tostring(parking.TerminalType),
       tostring(parking.Free), tostring(parking.TOAC), tostring(parking.OccupiedBy),
-      tostring(blacklisted[parking.TerminalID] == true),
+      tostring(blacklisted[parking.TerminalID] == true), tostring(reason),
       tonumber(vec3.x) or 0, tonumber(vec3.y) or 0, tonumber(vec3.z) or 0))
   end
 end
