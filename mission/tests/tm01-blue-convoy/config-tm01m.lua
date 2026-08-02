@@ -8,12 +8,15 @@ local config = {
     displayName = "OMW TM01M - Five MOOSE Native MSR Convoys",
   },
 
-  templates = {
-    selectionMode = "MOOSE_RANDOMIZED_TEMPLATE",
-    baseGroupName = "TPL_BLUE_CONVOY_STANDARD_07",
-    minimumVehicleCount = 6,
-    maximumVehicleCount = 7,
-    groups = {
+  template = {
+    groupName = "TPL_BLUE_CONVOY_STANDARD_07",
+    expectedVehicleCount = 7,
+  },
+
+  templateLibrary = {
+    activeSelectionMode = "FIXED_STANDARD_07",
+    plannedSelectionMode = "MOOSE_InitRandomizeTemplate",
+    availableGroups = {
       {
         groupName = "TPL_BLUE_CONVOY_LIGHT_06",
         variant = "LIGHT",
