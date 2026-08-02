@@ -6,11 +6,18 @@ local TAG = "[OMW][SALERNO][DIAG]"
 local function log(msg) env.info(TAG .. " " .. tostring(msg)) end
 
 OMW.AirOps.SalernoDiagnostics = {
-  Version = "SAL-TYPE-SPECIFIC-PARKING-14",
+  Version = "SAL-PARKING-DEFERRED-15",
   AirbaseName = AIRBASE.Afghanistan and AIRBASE.Afghanistan.FOB_Salerno or "FOB Salerno",
   ControlAirbaseName = AIRBASE.Afghanistan and AIRBASE.Afghanistan.Khost or "Khost",
   ExpectedAirbaseID = 23,
   WarehouseName = "WH_AIR_US_SALERNO",
+
+  ParkingStatus = {
+    State = "DEFERRED",
+    Reason = "Multi-unit AIRWING spawns did not reliably honor configured asset parkingIDs or client exclusions.",
+    CalibrationRetained = true,
+    OperationalMutationEnabled = false
+  },
 
   ReservedMissionEditorParkingLabels = {
     [24] = "STATIC_OH58_PAIR",
@@ -45,15 +52,16 @@ OMW.AirOps.SalernoDiagnostics = {
     "TPL_AIR_US_SAL_CH47_TRANSPORT_1SHIP"
   },
   SquadronContracts = {
-    { Name="SQ_US_SAL_AH64D_TF_TIGERSHARK_ATTACK", Template="TPL_AIR_US_SAL_AH64D_CAS_2SHIP", LogicalAircraft=8, UnitsPerTemplate=2, Ngroups=4, ResidualAircraft=0, ParkingSector="RIGHT_APACHE" },
-    { Name="SQ_US_SAL_OH58D_B_6_6_CAV", Template="TPL_AIR_US_SAL_OH58D_RECON_2SHIP", LogicalAircraft=8, UnitsPerTemplate=2, Ngroups=4, ResidualAircraft=0, ParkingSector="RIGHT_KIOWA" },
-    { Name="SQ_US_SAL_UH60_TF_TIGERSHARK_ASSAULT", Template="TPL_AIR_US_SAL_UH60_ASSAULT_2SHIP", LogicalAircraft=7, UnitsPerTemplate=2, Ngroups=3, ResidualAircraft=1, ParkingSector="RIGHT_BLACKHAWK" },
-    { Name="SQ_US_SAL_UH60_MEDEVAC_C_5_159_AVN", Template="TPL_AIR_US_SAL_UH60_MEDEVAC_1SHIP", LogicalAircraft=3, UnitsPerTemplate=1, Ngroups=3, ResidualAircraft=0, ParkingSector="RIGHT_BLACKHAWK" },
-    { Name="SQ_US_SAL_CH47_TF_TIGERSHARK_MEDIUM_LIFT", Template="TPL_AIR_US_SAL_CH47_TRANSPORT_1SHIP", LogicalAircraft=6, UnitsPerTemplate=1, Ngroups=6, ResidualAircraft=0, ParkingSector="LEFT_HEAVY" }
+    { Name="SQ_US_SAL_AH64D_TF_TIGERSHARK_ATTACK", Template="TPL_AIR_US_SAL_AH64D_CAS_2SHIP", LogicalAircraft=8, UnitsPerTemplate=2, Ngroups=4, ResidualAircraft=0, ParkingSector="DEFERRED_RIGHT_APACHE" },
+    { Name="SQ_US_SAL_OH58D_B_6_6_CAV", Template="TPL_AIR_US_SAL_OH58D_RECON_2SHIP", LogicalAircraft=8, UnitsPerTemplate=2, Ngroups=4, ResidualAircraft=0, ParkingSector="DEFERRED_RIGHT_KIOWA" },
+    { Name="SQ_US_SAL_UH60_TF_TIGERSHARK_ASSAULT", Template="TPL_AIR_US_SAL_UH60_ASSAULT_2SHIP", LogicalAircraft=7, UnitsPerTemplate=2, Ngroups=3, ResidualAircraft=1, ParkingSector="DEFERRED_RIGHT_BLACKHAWK" },
+    { Name="SQ_US_SAL_UH60_MEDEVAC_C_5_159_AVN", Template="TPL_AIR_US_SAL_UH60_MEDEVAC_1SHIP", LogicalAircraft=3, UnitsPerTemplate=1, Ngroups=3, ResidualAircraft=0, ParkingSector="DEFERRED_RIGHT_BLACKHAWK" },
+    { Name="SQ_US_SAL_CH47_TF_TIGERSHARK_MEDIUM_LIFT", Template="TPL_AIR_US_SAL_CH47_TRANSPORT_1SHIP", LogicalAircraft=6, UnitsPerTemplate=1, Ngroups=6, ResidualAircraft=0, ParkingSector="DEFERRED_LEFT_HEAVY" }
   },
   Zones = { "ZONE_AIR_US_SAL_CSAR_UNLOAD" },
   Expected = { ClientGroups=6, TemplateGroups=5, TemplateUnits=8, AircraftStatics=15, Warehouses=1, Zones=1, Squadrons=5 }
 }
 
 log("BOOT Version=" .. OMW.AirOps.SalernoDiagnostics.Version)
-log("STAGED_TEST=true AIRWING_CONSTRUCT=true RUNTIME_PARKING_CALIBRATION=true CALIBRATED_ME_TERMINAL_CONTRACT=true TYPE_SPECIFIC_PARKING_POOLS=true AIRBASE_BLACKLIST=true SQUADRON_ASSET_PARKING_SYNC=true SQUADRON_CONSTRUCT=true SQUADRON_REGISTRATION=true SQUADRON_CONFIG=true MISSION_CAPABILITIES=true PAYLOADS=true AIRWING_START=true DISPATCH_READINESS=true MISSIONS=true spawn=true mutation=true")
+log("PARKING state=DEFERRED calibrationRetained=true operationalMutation=false")
+log("STAGED_TEST=true AIRWING_CONSTRUCT=true PARKING_CONTROL=false SQUADRON_CONSTRUCT=true SQUADRON_REGISTRATION=true SQUADRON_CONFIG=true MISSION_CAPABILITIES=true PAYLOADS=true AIRWING_START=true DISPATCH_READINESS=true MISSIONS=true spawn=true mutation=true")
