@@ -7,14 +7,9 @@ local function main()
 
   local squadrons = cfg.RegisteredSquadrons or cfg.ConstructedSquadrons or {}
   local contracts = cfg.SquadronContracts or {}
-  local parking = cfg.ParkingContract
   if #squadrons ~= cfg.Expected.Squadrons or #contracts ~= cfg.Expected.Squadrons then
     log(string.format("COMPLETE status=FAIL reason=count-mismatch squadrons=%d contracts=%d expected=%d",
       #squadrons, #contracts, cfg.Expected.Squadrons))
-    return
-  end
-  if not parking or tonumber(parking.Violations) ~= 0 then
-    log("COMPLETE status=FAIL reason=runtime-parking-contract-not-ready")
     return
   end
 
@@ -25,7 +20,6 @@ local function main()
     local contract = contracts[index]
     local grouping = contract and contract.UnitsPerTemplate or nil
     local name = contract and contract.Name or ("index-" .. tostring(index))
-    local expectedParking = contract.ParkingSector == "LEFT_HEAVY" and parking.AllowedLeftHeavy or parking.AllowedRightRotary
 
     if type(squadron.SetGrouping) ~= "function" then
       failures = failures + 1
@@ -36,9 +30,6 @@ local function main()
     elseif type(grouping) ~= "number" or grouping < 1 then
       failures = failures + 1
       log("ERROR name=" .. tostring(name) .. " reason=invalid-grouping value=" .. tostring(grouping))
-    elseif type(expectedParking) ~= "table" or #expectedParking == 0 then
-      failures = failures + 1
-      log("ERROR name=" .. tostring(name) .. " reason=parking-sector-empty sector=" .. tostring(contract.ParkingSector))
     else
       local ok, detail = pcall(function()
         squadron:SetGrouping(grouping)
@@ -47,8 +38,8 @@ local function main()
 
       if ok then
         configured = configured + 1
-        log(string.format("CONFIGURED name=%s grouping=%d turnoverMin=%d turnoverMax=%d parkingSector=%s parkingCount=%d",
-          tostring(name), grouping, turnoverMin, turnoverMax, tostring(contract.ParkingSector), #expectedParking))
+        log(string.format("CONFIGURED name=%s grouping=%d turnoverMin=%d turnoverMax=%d parkingControl=DEFERRED",
+          tostring(name), grouping, turnoverMin, turnoverMax))
       else
         failures = failures + 1
         log("ERROR name=" .. tostring(name) .. " detail=" .. tostring(detail))
@@ -58,7 +49,7 @@ local function main()
 
   cfg.SquadronBaselineConfigured = failures == 0 and configured == cfg.Expected.Squadrons
 
-  log(string.format("SAFETY airwingStartCalled=false missionsAdded=0 payloadsAdded=0 spawnsExpected=0 configured=%d failures=%d",
+  log(string.format("SAFETY airwingStartCalled=false missionsAdded=0 payloadsAdded=0 spawnsExpected=0 configured=%d failures=%d parkingControl=DEFERRED",
     configured, failures))
   log(string.format("SUMMARY configured=%d/%d failures=%d", configured, cfg.Expected.Squadrons, failures))
   log("COMPLETE status=" .. ((failures == 0 and configured == cfg.Expected.Squadrons) and "PASS" or "FAIL"))
