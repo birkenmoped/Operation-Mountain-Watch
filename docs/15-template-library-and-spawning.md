@@ -32,7 +32,7 @@ Der vollständige frühere Template- und Spawnentwurf bleibt erhalten:
 
 1. Gruppe im DCS Mission Editor anlegen.
 2. `Late Activation` setzen.
-3. eindeutigen, dokumentierten Template-Namen vergeben.
+3. eindeutigen, dokumentierten `TPL_...`-Namen vergeben.
 4. Template über MOOSE `SPAWN`, AIRWING-/SQUADRON- oder OPS-Funktion referenzieren.
 5. an validierter Laufzeitposition, Zone oder Airbase erzeugen.
 6. Laufzeitgruppe mit stabiler CampaignState-Entity-ID verknüpfen.
@@ -49,11 +49,11 @@ Vollständig in Lua aufgebaute DCS-Gruppentabellen sind keine Standardlösung. S
 
 `#` ist in eigenen Template- und Aliasnamen verboten.
 
-Der allgemeine Präfix `TPL_` bleibt für nicht gesondert normierte technische Templates zulässig und bevorzugt. Für kanonische fachliche Vorlagen kann der Projektinhaber jedoch einen eigenen stabilen Bibliotheksnamen festlegen. Die folgenden BLUE-Konvoi-Namen sind eine solche verbindliche Ausnahme und werden ohne `TPL_` geführt:
+Für reguläre BLUE-Logistikkonvois gelten verbindlich:
 
 ```text
-BLUE_CONVOY_LIGHT_06
-BLUE_CONVOY_STANDARD_07
+TPL_BLUE_CONVOY_LIGHT_06
+TPL_BLUE_CONVOY_STANDARD_07
 ```
 
 Der alte Testname ist ersetzt:
@@ -62,7 +62,7 @@ Der alte Testname ist ersetzt:
 TPL_TEST_BLUE_CONVOY_STANDARD_01
 ```
 
-Er darf in neuen Missionsständen und neuen Laufzeitkonfigurationen nicht mehr als aktive Konvoi-Vorlage referenziert werden. Historische Testmissionen und Ergebnisberichte dürfen ihn als Nachweis ihres damaligen Stands weiterhin enthalten.
+Er darf in neuen Missionsständen und neuen Laufzeitkonfigurationen nicht mehr als aktive Konvoi-Vorlage referenziert werden. Die Gruppe ist aus der aktuellen Mission-Editor-Vorlagenbibliothek zu entfernen, sobald die beiden Nachfolgevorlagen angelegt und geprüft sind. Historische Testmissionen und Ergebnisberichte dürfen den Namen ausschließlich als Nachweis ihres damaligen Stands enthalten.
 
 ## 4. Template-Bibliothek
 
@@ -71,8 +71,8 @@ Die Bibliothek wird nach Koalition, Domäne und Rolle strukturiert. Jedes Templa
 Für die regulären BLUE-Logistikkonvois gelten zwei kanonische Varianten:
 
 ```text
-BLUE_CONVOY_LIGHT_06
-BLUE_CONVOY_STANDARD_07
+TPL_BLUE_CONVOY_LIGHT_06
+TPL_BLUE_CONVOY_STANDARD_07
 ```
 
 Ihre genaue Fahrzeugfolge und Rolle ist in `OMW-CIED-ROUTE-CLEARANCE-CONVOY-DESIGN` (`docs/67-afghanistan-route-clearance-counter-ied-and-convoy-design.md`) festgelegt.
@@ -83,8 +83,8 @@ Sind mehrere freigegebene Mission-Editor-Templates für dieselbe Laufzeitrolle v
 
 ```lua
 SPAWN:InitRandomizeTemplate({
-  "BLUE_CONVOY_LIGHT_06",
-  "BLUE_CONVOY_STANDARD_07",
+  "TPL_BLUE_CONVOY_LIGHT_06",
+  "TPL_BLUE_CONVOY_STANDARD_07",
 })
 ```
 
