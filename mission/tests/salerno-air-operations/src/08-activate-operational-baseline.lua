@@ -16,7 +16,7 @@ local function main()
     return
   end
 
-  local airwing = cfg.Airwing
+  local airwing = cfg.ConstructedAirwing
   local squadrons = cfg.ConstructedSquadrons or {}
   local contracts = cfg.SquadronContracts or {}
   if not airwing or #squadrons ~= cfg.Expected.Squadrons or #contracts ~= cfg.Expected.Squadrons then
