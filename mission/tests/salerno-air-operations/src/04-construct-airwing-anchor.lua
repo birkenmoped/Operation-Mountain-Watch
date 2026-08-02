@@ -16,7 +16,6 @@ local function main()
     local airwing = AIRWING:New(cfg.WarehouseName, "AW_US_SALERNO")
     airwing:SetAirbase(airbase)
     airwing:SetTakeoffCold()
-    airwing:SetSafeParkingOn()
     return airwing
   end)
 
@@ -28,8 +27,8 @@ local function main()
   OMW.AirOps.SalernoDiagnostics.ConstructedAirwing = airwingOrError
   log("CONSTRUCTED name=AW_US_SALERNO warehouse=" .. cfg.WarehouseName)
   log("BOUND airbase=" .. tostring(airbase:GetName()) .. " id=" .. tostring(airbase:GetID()))
-  log("CONFIG takeoff=COLD safeParking=true parkingAllocation=SQUADRON_SPECIFIC")
-  log("PARKING_CONTRACT globalAllowlist=false delegatedToSquadrons=true")
+  log("CONFIG takeoff=COLD parkingControl=DEFERRED safeParkingOverride=false")
+  log("PARKING_CONTRACT active=false mutation=false")
   log("SAFETY startCalled=false squadronsAdded=0 spawnsExpected=0")
   log("COMPLETE status=PASS")
 end
