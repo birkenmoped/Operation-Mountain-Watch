@@ -1,35 +1,57 @@
-# FOB Salerno staged diagnostics
+# FOB Salerno AIRWING / COMMANDER diagnostics
 
-This test bundle validates the Salerno Mission Editor contract in controlled stages.
+## Status
 
-## Current stage
-
-Builder version:
-
-```text
-SAL-SQUADRON-CONSTRUCT-3
+```yaml
+status: DRAFT_TEST_FIXTURE
+builder_version: SAL-COMMANDER-SELECTION-18
+parking_assignment: DEFERRED
+commander_dispatch: PENDING_DCS_VALIDATION
 ```
 
-The bundle performs:
+This bundle validates the Salerno AIRWING/SQUADRON baseline and then runs one isolated COMMANDER-controlled CAS mission.
 
-1. airbase and parking resolution;
-2. warehouse, client, template and zone probes;
-3. `AIRWING:New()` construction and binding without `Start()`;
-4. construction of five `SQUADRON` objects without adding them to the AIRWING.
+## MOOSE-first source review for stage 18
 
-It does not start the AIRWING, register SQUADRONs with it, add missions or payloads, or spawn aircraft.
+The stage follows the project MOOSE-first policy and was checked against:
 
-## Squadron contracts
+- `docs/00-project-governance.md`;
+- `docs/22-test-mission-build-transfer-and-validation-workflow.md`;
+- `docs/26-moose-first-development-policy.md`;
+- `docs/moose/AIR-OPERATIONS.md`;
+- `docs/moose/EVENTS-AND-FSM.md`;
+- `docs/moose/VERSION-AND-SOURCES.md`;
+- `docs/moose/VERIFIED-METHODS.md`;
+- the accepted Jalalabad construction/start pattern in `mission/tests/jalalabad-air-operations/src/10-validate-and-start-complete-node.lua`;
+- official MOOSE `2.9.18` source: `Moose Development/Moose/Ops/Commander.lua` and `Ops/Legion.lua`.
 
-| Squadron | Template | Logical aircraft | Units/template | Ngroups | Represented | Residual |
-|---|---|---:|---:|---:|---:|---:|
-| `SQ_US_SAL_AH64D_TF_TIGERSHARK_ATTACK` | `TPL_AIR_US_SAL_AH64D_CAS_2SHIP` | 8 | 2 | 4 | 8 | 0 |
-| `SQ_US_SAL_OH58D_B_6_6_CAV` | `TPL_AIR_US_SAL_OH58D_RECON_2SHIP` | 8 | 2 | 4 | 8 | 0 |
-| `SQ_US_SAL_UH60_TF_TIGERSHARK_ASSAULT` | `TPL_AIR_US_SAL_UH60_ASSAULT_2SHIP` | 7 | 2 | 3 | 6 | 1 |
-| `SQ_US_SAL_UH60_MEDEVAC_C_5_159_AVN` | `TPL_AIR_US_SAL_UH60_MEDEVAC_1SHIP` | 3 | 1 | 3 | 3 | 0 |
-| `SQ_US_SAL_CH47_TF_TIGERSHARK_MEDIUM_LIFT` | `TPL_AIR_US_SAL_CH47_TRANSPORT_1SHIP` | 6 | 1 | 6 | 6 | 0 |
+The decisive MOOSE 2.9.18 behavior is:
 
-The seventh UH-60 Assault aircraft cannot be represented exactly by an exclusively two-aircraft template. This stage records one residual aircraft and does not silently round the runtime capacity up to eight.
+1. `COMMANDER:New()` creates the FSM in state `NotReadyYet`;
+2. `COMMANDER:AddAirwing()` binds the AIRWING but does not start the COMMANDER;
+3. `COMMANDER:Start()` transitions the FSM to `OnDuty` and starts the recurring `Status` cycle;
+4. `COMMANDER:AddMission()` only inserts the AUFTRAG into `missionqueue` with commander status `PLANNED`;
+5. `COMMANDER:onafterStatus()` calls `CheckMissionQueue()`, which performs the selection/recruitment decision.
+
+The previous `SAL-COMMANDER-ISOLATED-17` fixture omitted `COMMANDER:Start()`. The AUFTRAG therefore remained `planned`; this was a test-harness defect, not a demonstrated failure of COMMANDER asset selection.
+
+## Current test sequence
+
+1. Resolve Salerno AIRBASE, Warehouse, templates, clients and zones.
+2. Construct and register five SQUADRONs.
+3. Register mission capabilities and payloads.
+4. Start the AIRWING.
+5. Construct COMMANDER.
+6. Add Salerno AIRWING to COMMANDER.
+7. Attach documented FSM callbacks for `MissionAssign`, `MissionRequest` and `OpsOnMission`.
+8. Call `COMMANDER:Start()` and require state `OnDuty`.
+9. Construct one CAS AUFTRAG.
+10. Log `COMMANDER:CanMission()`.
+11. Add the AUFTRAG through `COMMANDER:AddMission()`.
+12. Trigger the public MOOSE `COMMANDER:Status()` event so the normal `CheckMissionQueue()` selection path executes immediately.
+13. Observe eligibility, assignment, AIRWING request, mission progress and cleanup.
+
+No direct `AIRWING:AddMission()` test runs in this bundle. No RECON or LIFT mission runs in parallel.
 
 ## Build
 
@@ -44,16 +66,42 @@ Output:
 mission/tests/salerno-air-operations/dist/OMW_AirOps_Salerno_Diagnostics.lua
 ```
 
-## Mission Editor integration
-
-Re-select the generated file in the existing Salerno `MISSION START -> DO SCRIPT FILE` action and save the mission after every rebuild.
-
-## Acceptance markers
+Expected builder marker:
 
 ```text
-[OMW][SALERNO][DIAG] COMPLETE status=PASS
-[OMW][SALERNO][AIRWING] COMPLETE status=PASS
-[OMW][SALERNO][SQUADRON] COMPLETE status=PASS
+BuilderVersion: SAL-COMMANDER-SELECTION-18
 ```
 
-Run the mission for at least 15 seconds and provide `dcs.log`.
+## Mission Editor integration
+
+Re-select the generated file in the Salerno `MISSION START -> DO SCRIPT FILE` action and save the mission after every rebuild.
+
+MOOSE must be loaded before this bundle.
+
+## Runtime
+
+Run the mission for at least 125 seconds.
+
+## Key markers
+
+```text
+[OMW][SALERNO][DIAG] BOOT Version=SAL-COMMANDER-SELECTION-18
+[OMW][SALERNO][COMMANDER] FSM beforeStart=NotReadyYet afterStart=OnDuty expectedAfterStart=OnDuty started=true
+[OMW][SALERNO][COMMANDER] COMPLETE status=PASS
+[OMW][SALERNO][COMMANDER-DISPATCH] ELIGIBILITY commanderCanMission=true
+[OMW][SALERNO][COMMANDER-DISPATCH] SELECTION_TRIGGER method=COMMANDER.Status called=true ok=true
+[OMW][SALERNO][COMMANDER] EVENT event=MissionAssign
+[OMW][SALERNO][COMMANDER-DISPATCH] DECISION eligible=true selected=true
+[OMW][SALERNO][COMMANDER-DISPATCH] FINAL status=PASS
+```
+
+A PASS requires all of the following:
+
+- COMMANDER state `OnDuty`;
+- `COMMANDER:CanMission()` returns `true`;
+- selection/assignment is visible through status or event telemetry;
+- the AUFTRAG leaves `planned`;
+- no direct AIRWING test mission is active;
+- no unexpected UH-60, OH-58D or CH-47 spawn occurs.
+
+Parking remains explicitly outside this acceptance scope.
