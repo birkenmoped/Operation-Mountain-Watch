@@ -5,6 +5,7 @@ owning_policy: OMW-GOV-001
 document_class: AIR_OPERATIONS_MANIFEST
 authoritative_for:
   - proposed Tarinkot AIRWING and SQUADRON object contract
+  - Tarinkot unit and technical object naming derived from the July 2011 ORBAT
   - proposed Tarinkot local aircraft inventory and representation limits
   - exact Tarinkot Mission Editor names for the audited source mission
   - Tarinkot warehouse-anchor, client-reservation, seed-template, static, and zone contract
@@ -13,7 +14,7 @@ not_authoritative_for:
   - DCS runtime acceptance
   - untested MOOSE API behavior
   - runtime parking suitability or final parking selection
-  - historical unit identities not explicitly supported by cited project evidence
+  - historical subordinate unit identities not explicitly supported by cited evidence
   - project-wide binding effect before merge to main or explicit owner decision
 scenario_period: 2010-08-01/2011-12-31
 project_phase: TARINKOT_OBJECT_CONTRACT_RECONCILIATION
@@ -26,6 +27,7 @@ validated_in_dcs: false
 supersedes_on_merge:
   - Tarinkot object assumptions from docs/tarinkot-air-operations-baseline PR 40
   - Tarinkot Mission Editor assumptions based on OMW_Template(3).miz
+  - generic Tarinkot AIRWING and SQUADRON names not derived from the July 2011 ORBAT
 ---
 
 # Tarinkot Air Operations Manifest and Object Contract
@@ -35,22 +37,76 @@ supersedes_on_merge:
 Dieses Dokument konsolidiert den Tarinkot-Objektvertrag gegen:
 
 - den aktuellen Stand von `main`;
-- die historische Juli-2011-ORBAT;
+- die verbindliche historische Juli-2011-ORBAT;
 - den älteren Tarinkot-Dokumentationsbranch;
 - die aktuelle Missionsdatei `OMW_Template_v5_Salerno.miz`;
 - die verbindliche airfield-spezifische G0-bis-G10-Arbeitsweise.
 
-Der Vertrag ist auf diesem Branch vollständig und eindeutig formuliert, besitzt aber gemäß Projekt-Governance erst nach Merge nach `main` oder einer ausdrücklichen Eigentümerentscheidung projektweite normative Wirkung.
+Der Vertrag besitzt erst nach Merge nach `main` oder einer ausdrücklichen Eigentümerentscheidung projektweite normative Wirkung.
 
-Bis zur Annahme dieses Vertrags gilt ausdrücklich:
+Bis zur Annahme dieses Vertrags gilt:
 
 ```text
 KEINE TARINKOT-LUA-IMPLEMENTIERUNG
 ```
 
-## 2. Quellen und Priorität
+## 2. Verbindliche Quellen- und Benennungsregel
 
-### 2.1 Mission-Editor-Iststand
+### 2.1 Standardautorität für Verbandsnamen
+
+Für Tarinkot und grundsätzlich für die aktive OMW-ORBAT gilt:
+
+```text
+Die Afghanistan Order of Battle vom Juli 2011 ist die Standardautorität
+für Einheit, Parent, Task-Force-Zuordnung sowie AIRWING- und SQUADRON-Namen.
+```
+
+Davon darf nur abgewichen werden, wenn eine bessere und sicherere Quelle vorliegt, die für denselben Standort, Zeitraum und Gegenstand spezifischer oder höherrangig ist, insbesondere:
+
+- offizielle zeitgenössische militärische Unterlagen;
+- belastbare Unit-History oder Deployment Order;
+- eindeutig datierte Primärquelle mit Standort- und Verbandsbezug;
+- mehrere voneinander unabhängige, übereinstimmende hochwertige Quellen.
+
+Eine Abweichung muss dokumentiert und begründet werden.
+
+Nicht ausreichend, um eine ORBAT-Einheitszuordnung zu ersetzen, sind allein:
+
+- Mission-Editor-Objektnamen;
+- Satellitenbilder ohne eindeutige Verbandsidentifikation;
+- DCS-Typverfügbarkeit;
+- generische technische Begriffe wie `DET`, `UTILITY` oder `HEAVYLIFT`;
+- Vermutungen aus dem Parent-Hub Kandahar.
+
+Mission Editor und Bildquellen bestimmen physische Darstellung, Typen, Mengen und räumliche Anordnung. Sie bestimmen nicht automatisch den historischen Verbandsnamen.
+
+### 2.2 Juli-2011-ORBAT für Tarinkot
+
+Die projektinterne Juli-2011-ORBAT nennt für den Standort:
+
+```text
+Task Force Attack / 3-101 Attack Aviation
+Standort: FOB Tarin Kowt
+Auftrag: Aviation Support Uruzgan
+```
+
+Quelle:
+
+- [`OMW-HIST-AFGHANISTAN-ORBAT-2011-07`](64-afghanistan-order-of-battle-july-2011.md), Abschnitt `11.7 TF Thunder - Aviation RC South`.
+
+Damit ist `Task Force Attack / 3-101 Attack Aviation` die verbindliche historische Parent-Identität für den Tarinkot-Aviation-Knoten, solange keine bessere Quelle vorliegt.
+
+Die ORBAT nennt keine vollständige lokale Typen- oder Stückzahlliste und löst die vor Ort erkennbaren UH-60- und CH-47-Unterelemente nicht bis zu einer eigenen Company oder einem gesonderten Battalion auf.
+
+Daraus folgt:
+
+- AH-64 wird direkt als `3-101 Attack Aviation` benannt;
+- UH-60 und CH-47 werden als an `Task Force Attack` angegliederte technische Pools benannt;
+- UH-60 und CH-47 werden nicht ohne Quelle als organische Bestandteile des Attack-Battalions behauptet;
+- es werden keine fremden Kandahar- oder Wolverine-Verbände nach Tarinkot übertragen;
+- generische, vom ORBAT-Parent losgelöste `*_DET`-SQUADRON-Namen sind nicht zulässig.
+
+### 2.3 Mission-Editor-Iststand
 
 Aktuelle strukturelle Evidenz:
 
@@ -63,61 +119,40 @@ OMW_Template_v5_Salerno.miz
 SHA-256: 203c99ffa6e025a2d9f00dc899439b0167ed9d81981b612f3a8d4fd078c458f5
 ```
 
-### 2.2 Historische Einheitszuordnung
-
-Die projektinterne Juli-2011-ORBAT nennt:
-
-```text
-Task Force Attack / 3-101 Attack Aviation
-Standort: FOB Tarin Kowt
-Auftrag: Aviation Support Uruzgan
-```
-
-Quelle:
-
-- [`OMW-HIST-AFGHANISTAN-ORBAT-2011-07`](64-afghanistan-order-of-battle-july-2011.md), Abschnitt `11.7 TF Thunder - Aviation RC South`.
-
-Diese Quelle autorisiert die historische AH-64-Parent-Zuordnung. Sie nennt keine vollständige lokale Typen- oder Stückzahlliste und belegt keine exakten lokalen UH-60- oder CH-47-Unterverbände.
-
-### 2.3 Bestandsstatus
-
-Der lokale Arbeitsbestand bleibt die bereits vorbereitete OMW-Rekonstruktion:
-
-```yaml
-AH64D: 14
-UH60: 6
-CH47: 2
-OH58D: 0
-```
-
-Diese Zahlen werden durch Merge dieses Manifests zur aktiven Tarinkot-Baseline vorgeschlagen. Sie sind getrennt von Statics, Client-Slots, Seed-Templates und aktiven KI-Gruppen zu führen.
-
-## 3. Fester Standort- und AIRWING-Vertrag
+## 3. Fester Standort-, Parent- und AIRWING-Vertrag
 
 ```yaml
 locationCode: TKOT
 displayName: Tarinkot / Tarin Kowt / Camp Holland
 dcsAirdromeId: 9
-airwingName: AW_US_TARINKOT
+historicalParent: Task Force Attack / 3-101 Attack Aviation
+airwingName: AW_US_TKOT_TF_ATTACK_3_101_AVN
 warehouseAnchorName: WH_AIR_US_TARINKOT
 ```
 
 ### 3.1 Airbase-Auflösung
 
-Die technische Identität des Flugplatzes ist für den Vertrag `airdromeId = 9`.
+Die technische Identität des Flugplatzes ist `airdromeId = 9`.
 
-Nicht vorweggenommen wird:
+Noch diagnostisch zu ermitteln:
 
 ```text
 AIRBASE.Afghanistan.<exakte Konstante>
 MOOSE runtime GetName()-Ergebnis
 ```
 
-Diese Werte müssen im ersten read-only Diagnoselauf aus dem tatsächlich geladenen DCS-/MOOSE-Stand ermittelt und protokolliert werden. Es darf kein Name geraten und keine andere Airbase als Fallback verwendet werden.
+Es darf kein Name geraten und keine andere Airbase als Fallback verwendet werden.
 
 ### 3.2 Ein AIRWING
 
 Tarinkot erhält genau einen lokalen AIRWING:
+
+```text
+AW_US_TKOT_TF_ATTACK_3_101_AVN
+Historical label: Task Force Attack / 3-101 Attack Aviation
+```
+
+Nicht mehr zu verwenden:
 
 ```text
 AW_US_TARINKOT
@@ -132,7 +167,7 @@ separater CH-47-AIRWING
 lokaler Fixed-Wing-AIRWING
 ```
 
-Der generische AIRWING-Name vermeidet die unbelegte Behauptung, dass alle lokalen Utility-, MEDEVAC- und Heavy-Lift-Elemente organisatorisch Teil des Attack-Battalions waren.
+Der AIRWING-Name folgt der Juli-2011-ORBAT. Er beschreibt den lokalen OMW-Aviation-Führungsknoten. Er behauptet nicht, dass jedes angegliederte Luftfahrzeug organisch zum 3-101 Attack Aviation Battalion gehörte.
 
 ## 4. Fester SQUADRON-Vertrag
 
@@ -152,12 +187,6 @@ initialMissionCapability: CAS
 packageSize: 2
 ```
 
-Begründung des technischen Namens:
-
-- `3-101 Attack Aviation` ist für FOB Tarin Kowt im Juli 2011 belegt;
-- eine Company-Bezeichnung wird nicht erfunden;
-- der Name trennt die Tarinkot-Einheit eindeutig von `Task Force Guns / 4-227 Attack Aviation` in Kandahar.
-
 Nicht mehr zu verwenden:
 
 ```text
@@ -167,8 +196,10 @@ SQ_US_TKOT_AH64D_ATTACK_DET
 ### 4.2 UH-60
 
 ```yaml
-squadronName: SQ_US_TKOT_UH60_UTILITY_MEDEVAC_DET
-historicalLabel: local utility and MEDEVAC detachment; exact parent unresolved
+squadronName: SQ_US_TKOT_UH60_TF_ATTACK_ATTACHED
+historicalLabel: Task Force Attack attached UH-60 support element
+historicalParentAuthority: July 2011 ORBAT - Task Force Attack / 3-101 Attack Aviation at FOB Tarin Kowt
+subordinateUnitIdentity: unresolved
 template: TPL_AIR_US_TKOT_UH60_MEDEVAC_1SHIP
 templateAircraftPerGroup: 1
 registeredGroups: 2
@@ -181,9 +212,15 @@ initialMissionCapability:
   - UTILITY
 ```
 
-Es wird kein historischer Company-, Battalion- oder Task-Force-Name ergänzt, solange keine entsprechende Quelle vorliegt.
+Der Name leitet sich vom belegten Tarinkot-Parent `Task Force Attack` ab. `ATTACHED` kennzeichnet ausdrücklich, dass die Juli-2011-ORBAT keinen eigenen lokalen UH-60-Unterverband benennt und keine organische Zuordnung zum Attack-Battalion behauptet wird.
 
-Der aktuelle Mission Editor enthält nur einen 1-Ship-Seed. Der Zielvertrag lautet:
+Nicht mehr zu verwenden:
+
+```text
+SQ_US_TKOT_UH60_UTILITY_MEDEVAC_DET
+```
+
+Der aktuelle Mission Editor enthält einen 1-Ship-Seed. Zielvertrag:
 
 ```text
 2 MOOSE-Gruppen aus demselben 1-Ship-Seed
@@ -191,7 +228,7 @@ Der aktuelle Mission Editor enthält nur einen 1-Ship-Seed. Der Zielvertrag laut
 keine zweite unabhängige Bestandsquelle
 ```
 
-Dieser Mechanismus ist vor Implementierung in der tatsächlich eingebundenen MOOSE-Version 2.9.18 zu prüfen.
+Dieser Mechanismus ist vor Implementierung in MOOSE 2.9.18 zu prüfen.
 
 MEDEVAC-Paketvertrag:
 
@@ -201,22 +238,22 @@ Support: 1 × UH-60A
 atomare Reservierung: 2 Airframes
 ```
 
-Beide aktuellen Seed-Abbilder sind unbewaffnet. Der zweite Hubschrauber wird deshalb als `Support` und nicht als erfundener bewaffneter Gunship-Cover bezeichnet. Eine bewaffnete Cover-Konfiguration benötigt eine gesonderte, quellen- und ME-geprüfte Entscheidung.
+Beide aktuellen Seed-Abbilder sind unbewaffnet. Der zweite Hubschrauber wird als `Support` und nicht als unbelegter bewaffneter Cover bezeichnet.
 
-Nicht mehr zu verwenden:
+Nicht vorhandene und nicht zu verwendende Seed-Namen:
 
 ```text
 TPL_AIR_US_TKOT_UH60_MEDEVAC_LEAD_1SHIP
 TPL_AIR_US_TKOT_UH60_MEDEVAC_COVER_1SHIP
 ```
 
-Diese Objekte existieren in der aktuellen MIZ nicht.
-
 ### 4.3 CH-47
 
 ```yaml
-squadronName: SQ_US_TKOT_CH47_HEAVYLIFT_DET
-historicalLabel: local heavy-lift detachment; exact parent unresolved
+squadronName: SQ_US_TKOT_CH47_TF_ATTACK_ATTACHED
+historicalLabel: Task Force Attack attached CH-47 support element
+historicalParentAuthority: July 2011 ORBAT - Task Force Attack / 3-101 Attack Aviation at FOB Tarin Kowt
+subordinateUnitIdentity: unresolved
 template: TPL_AIR_US_TKOT_CH47_HEAVYLIFT_1SHIP
 templateAircraftPerGroup: 1
 registeredGroups: 1
@@ -230,26 +267,38 @@ initialMissionCapability:
   - LOGISTICS_TRANSPORT
 ```
 
-Der aktuelle Seed und der Client verwenden `CH-47Fbl1`. Es wird keine CH-47D-Abbildung behauptet und kein zweiter Client oder Static erfunden.
+Der Name leitet sich vom belegten lokalen ORBAT-Parent ab. `ATTACHED` verhindert die unbelegte Behauptung, dass die CH-47 organisch zu 3-101 Attack Aviation gehörten.
+
+Nicht mehr zu verwenden:
+
+```text
+SQ_US_TKOT_CH47_HEAVYLIFT_DET
+```
+
+Der aktuelle Seed und der Client verwenden `CH-47Fbl1`. Es wird kein zweiter Client oder Static erfunden.
 
 ### 4.4 Nicht anzulegen
 
 ```text
 SQ_US_TKOT_OH58D_*
 permanente lokale Fixed-Wing-SQUADRON
-zusätzliche Payload- oder Rollen-SQUADRONs für dieselben Airframes
+zusätzliche Rollen-SQUADRONs für dieselben Airframes
+SQUADRON-Namen aus Kandahar TF Lift / 7-101 GSAB ohne Tarinkot-spezifischen Nachweis
+SQUADRON-Namen aus FOB Wolverine TF Wings / 4-101 Assault Aviation
 ```
 
 ## 5. Logischer Bestand und Darstellungsledger
 
 ### 5.1 Nominaler lokaler Bestand
 
-| Musterfamilie | Nominalbestand |
-|---|---:|
-| AH-64D | 14 |
-| UH-60 | 6 |
-| CH-47 | 2 |
-| OH-58D | 0 |
+```yaml
+AH64D: 14
+UH60: 6
+CH47: 2
+OH58D: 0
+```
+
+Diese Werte sind eine vorbereitete OMW-Rekonstruktion. Die Juli-2011-ORBAT autorisiert den Parent und Standort, nicht diese vollständige Stückzahlliste.
 
 ### 5.2 Maximale gleichzeitige Darstellung
 
@@ -272,23 +321,19 @@ sichtbare Statics
 
 Dabei gilt:
 
-- ein unbelegter Client-Slot ist kein aktives Luftfahrzeug;
-- ein Late-Activation-Seed ist kein eigener zusätzlicher Bestand;
-- `SQUADRON`-Gruppenzahl und Luftfahrzeugzahl dürfen nicht verwechselt werden;
-- Verlust, Wartung und Stranding müssen später denselben lokalen Ledger reduzieren;
+- unbelegte Client-Slots sind keine aktiven Luftfahrzeuge;
+- Late-Activation-Seeds sind kein zusätzlicher Bestand;
+- SQUADRON-Gruppenzahl und Luftfahrzeugzahl sind getrennt;
+- Verlust, Wartung und Stranding reduzieren denselben lokalen Ledger;
 - Tarinkot darf nicht zusätzlich im Kandahar-Lokalbestand gezählt werden.
 
 ### 5.4 Regionalpool-Abgrenzung
 
-Die Tarinkot-Werte bleiben Teil der RC-South-Gesamtbetrachtung, sind aber lokal eigenständig verwaltet. Für spätere Konsolidierung gilt:
-
 ```text
 Tarinkot != Kandahar Heliport
+Task Force Attack / 3-101 AVN != Task Force Guns / 4-227 AVN
 Tarinkot-Bestand darf nicht als Kandahar-SQUADRON registriert werden
-3-101 Attack Aviation darf nicht als Kandahar-AH-64-Einheit verwendet werden
 ```
-
-Eine spätere projektweite RC-South-Gesamttabelle muss die lokalen Basen addieren, nicht duplizieren.
 
 ## 6. Mission-Editor-Objektvertrag
 
@@ -314,8 +359,6 @@ CLIENT_US_TKOT_CH47F_01
     internal parking value: 3
 ```
 
-Die drei internen Parking-Werte sind im read-only Diagnoselauf unverändert zu protokollieren. Insbesondere wird der Stringwert `"20"` nicht vor der Laufzeitprüfung stillschweigend normalisiert.
-
 ### 6.2 AI-Seeds
 
 ```text
@@ -330,16 +373,7 @@ TPL_AIR_US_TKOT_CH47_HEAVYLIFT_1SHIP
 └── TPL_AIR_US_TKOT_CH47_HEAVYLIFT_1SHIP_UNIT_01
 ```
 
-Alle Seeds sind:
-
-```yaml
-lateActivation: true
-uncontrolled: false
-initialParkingIds: none
-initialWaypoint: Turning Point
-```
-
-Sie sind damit noch keine akzeptierten Parking-Starts.
+Alle Seeds sind Late Activation, kontrolliert, ohne Parking-ID und beginnen an einem Turning Point. Sie sind noch keine akzeptierten Parking-Starts.
 
 ### 6.3 Statics
 
@@ -349,67 +383,45 @@ STATIC_AIR_US_TKOT_UH60_UTILITY_01 bis _03
 STATIC_AIR_US_TKOT_UH60_MEDEVAC_01
 ```
 
-Keine weitere Tarinkot-Airframe-Static-Serie wird vorausgesetzt.
-
-Die Typabweichung von `STATIC_AIR_US_TKOT_AH64_07` (`AH-64D` statt `AH-64D_BLK_II`) ist dokumentiert und zunächst akzeptiert als rein statische Darstellung. Sie darf nicht auf das AI-Template übertragen werden.
+`STATIC_AIR_US_TKOT_AH64_07` verwendet `AH-64D` statt `AH-64D_BLK_II`. Diese statische Typabweichung wird nicht auf das KI-Template übertragen.
 
 ## 7. Payload- und Capability-Vertrag
 
 ### 7.1 AH-64D CAS
 
-Der aktuelle Seed entspricht der projektweiten AH-64D-CAS-Baseline:
+Aktuelle Baseline je Luftfahrzeug:
 
 ```text
 2 × M261 mit M151 HE
-2 × AGM-114K, jeweils einzeln auf den äußeren M299-Positionen
+2 × AGM-114K
 IAFS_ComboPak_100
 25 Prozent Gun
 ```
 
-Initial zulässige Capability:
+Initiale Capability:
 
 ```text
 CAS als 2-Ship
 ```
 
-Weitere Rollen dürfen denselben Seed nur verwenden, wenn MOOSE-Capability, ROE und Auftragstyp nachweislich passen. Es wird kein neuer Bestand durch zusätzliche Rollen erzeugt.
-
 ### 7.2 UH-60
-
-Aktueller Seed:
 
 ```text
 UH-60A
 keine Pylonen
-kein belegter bewaffneter Cover-Loadout
-```
-
-Initial zulässige Capabilities:
-
-```text
-MEDEVAC
-UTILITY
+Capabilities: MEDEVAC, UTILITY
 ```
 
 ### 7.3 CH-47F
-
-Aktueller Seed:
 
 ```text
 CH-47Fbl1
 PORT M60D
 STARBOARD M60D
+Capabilities: HEAVYLIFT, TROOP_TRANSPORT, LOGISTICS_TRANSPORT
 ```
 
-Initial zulässige Capabilities:
-
-```text
-HEAVYLIFT
-TROOP_TRANSPORT
-LOGISTICS_TRANSPORT
-```
-
-Die Transportabwicklung ist MOOSE-first über vorhandene Transportklassen und insbesondere `OPSTRANSPORT` zu prüfen. Eigene Transportsteuerung ist nur nach dokumentierter Lückenanalyse zulässig.
+Transportsteuerung ist MOOSE-first, insbesondere gegen `OPSTRANSPORT`, zu prüfen.
 
 ## 8. Warehouse-Vertrag
 
@@ -422,12 +434,12 @@ x: -149179.91252612
 y: -30960.324668625
 ```
 
-Fail-fast-Regeln für einen späteren Runtime-Stand:
+Spätere Runtime-Fail-fast-Regeln:
 
 - exakt ein Objekt dieses Namens;
 - keine Ersatzsuche nach beliebigen Containern oder Gebäuden;
-- keine Verwendung als historisch benanntes Lager ohne Evidenz;
-- keine automatische Ableitung unbegrenzter CampaignState-Ressourcen aus den nativen DCS-Warehouse-Werten;
+- keine historische Lagerbezeichnung ohne Evidenz;
+- keine CampaignState-Ableitung aus unbegrenzten nativen DCS-Warehouse-Werten;
 - kein AIRWING-Start bei fehlendem oder mehrfach gefundenem Anker.
 
 ## 9. Parking-Vertrag
@@ -440,9 +452,7 @@ C05-H / interne ID 8
 C07-H / interne ID 3
 ```
 
-Diese Positionen sind für KI-Initialspawns zu blockieren.
-
-### 9.2 Aktueller AI-Allowlist-Status
+### 9.2 AI-Allowlist
 
 ```yaml
 acceptedAHParkingIds: []
@@ -450,27 +460,15 @@ acceptedUH60ParkingIds: []
 acceptedCH47ParkingIds: []
 ```
 
-Es gibt noch keine runtime-validierte positive Parking-Allowlist.
+`C01-H` bis `C21-H`, `K01` bis `K09` und `G01` bis `G03` sind keine bestätigte Kapazität.
 
-### 9.3 Nicht als Kapazitätsnachweis zu behandeln
-
-```text
-C01-H bis C21-H
-K01 bis K09
-G01 bis G03
-```
-
-Die bloße Existenz von Labels beweist weder freie Stellfläche noch Rotorabstand, Spawnrichtung, Rollweg, Kollisionfreiheit oder Eignung für bestimmte Hubschraubertypen.
-
-### 9.4 Erforderliche Reihenfolge
+Erforderliche Reihenfolge:
 
 1. read-only AIRBASE-/Parking-Dump;
 2. Abgleich gegen Clients und Statics;
 3. typweise Positiv-Allowlist;
 4. isolierte Spawn-/Startkalibrierung;
 5. erst danach AIRWING-/SQUADRON-Parking-Policy.
-
-Operational parking und final parking nach Landung bleiben getrennte Akzeptanzgegenstände.
 
 ## 10. Zonenvertrag
 
@@ -480,7 +478,7 @@ Vorhanden:
 OMW_LOG_NODE_TARINKOT
 ```
 
-Für spätere operative Funktionen vorgesehen, aber in der aktuellen MIZ nicht vorhanden:
+Nicht vorhanden und vor funktionsabhängiger Nutzung im Mission Editor anzulegen:
 
 ```text
 ZONE_AIR_US_TKOT_AH64_RAMP
@@ -494,25 +492,17 @@ ZONE_AIR_US_TKOT_HELO_RECOVERY
 ZONE_AIR_US_TKOT_TRANSIENT_FIXED_WING
 ```
 
-Vertrag:
+Kein Lua-Fallback mit erfundenen Koordinaten ist zulässig.
 
-- kein Lua-Fallback mit erfundenen Koordinaten;
-- G5-Diagnostik darf fehlende Zonen lediglich melden;
-- eine Funktion, die eine Zone benötigt, bleibt bis zur Mission-Editor-Anlage deaktiviert;
-- Zonen werden im Mission Editor nach Benennungsschema angelegt und danach erneut auditiert.
+## 11. MOOSE-first-Prüfauftrag
 
-## 11. MOOSE-first-Prüfauftrag vor jeder Implementierung
-
-Vor eigenem Tarinkot-Lua müssen an der tatsächlich eingebundenen MOOSE-Version 2.9.18 und dem exakten eingebetteten Artefakt mindestens geprüft werden:
+Vor Tarinkot-Lua sind an der tatsächlich eingebundenen MOOSE-Version 2.9.18 und dem exakten Artefakt mindestens zu prüfen:
 
 ```text
 AIRBASE
-  FindByName
-  FindByID beziehungsweise vorhandene ID-Auflösung
-  GetName
-  GetID
+  Namens- und ID-Auflösung
   Parking-Datenzugriff
-  SetParkingSpotBlacklist oder aktuelle äquivalente API
+  Parking-Blacklist
 
 AIRWING
   New
@@ -525,8 +515,8 @@ AIRWING
 
 SQUADRON
   New
-  Gruppenzählung bei 2-Ship- und 1-Ship-Seeds
-  Wiederverwendung eines 1-Ship-Seeds für zwei registrierte Gruppen
+  Gruppenzählung für 2-Ship- und 1-Ship-Seeds
+  Wiederverwendung eines 1-Ship-Seeds für zwei Gruppen
   SetGrouping
   AddMissionCapability
   Parking-IDs und Warehouse-Asset-Verhalten
@@ -541,22 +531,16 @@ COMMANDER
 
 AUFTRAG
   CAS
-  MEDEVAC-/Utility-geeignete Missionstypen
+  geeignete MEDEVAC-/Utility-Missionstypen
 
 OPSTRANSPORT
   Heavy-Lift-, Troop- und Logistics-Transport
 
 FLIGHTGROUP und Warehouse-Asset-Lifecycle
-  Spawn
-  Start
-  Landung
-  Rückgabe
-  Verlust
-  Stranding
-  Parking nach Landung
+  Spawn, Start, Landung, Rückgabe, Verlust, Stranding, final parking
 ```
 
-Reihenfolge der Evidenz:
+Evidenzreihenfolge:
 
 1. eingebettete `Moose.lua` mit dokumentiertem Hash;
 2. zugehörige MOOSE-2.9.18-Quellen;
@@ -569,39 +553,39 @@ Reihenfolge der Evidenz:
 | Gate | Status | Tarinkot-Ergebnis |
 |---|---|---|
 | G0 Provenienz | `PASS_BRANCH` | `main`-Basis, Branch, MIZ- und MOOSE-Hash festgelegt |
-| G1 Dokumente/ORBAT/Evidenz | `PASS_BRANCH` | Juli-2011-Zuordnung und aktueller ME-Audit konsolidiert |
-| G2 Objektvertrag | `PROPOSED_COMPLETE` | dieses Manifest; Eigentümerannahme/Merge ausstehend |
-| G3 Mission-Editor-Build | `PARTIAL` | Clients, Seeds, Statics und Warehouse vorhanden; operative Zonen fehlen |
+| G1 Dokumente/ORBAT/Evidenz | `PASS_BRANCH` | Juli-2011-Parent und Benennungsregel festgelegt |
+| G2 Objektvertrag | `PROPOSED_COMPLETE` | Eigentümerannahme oder Merge ausstehend |
+| G3 Mission Editor | `PARTIAL` | Clients, Seeds, Statics und Warehouse vorhanden; Zonen fehlen |
 | G4 MOOSE-Quellenprüfung | `NOT_STARTED` | vor Lua zwingend |
 | G5 Read-only Diagnose | `BLOCKED_BY_G2_G4` | noch kein Lua |
 | G6 Parking-Kalibrierung | `NOT_STARTED` | keine positive AI-Allowlist |
 | G7 AIRWING/SQUADRON/Payload | `NOT_STARTED` | gesperrt |
 | G8 direkter Dispatch | `NOT_STARTED` | gesperrt |
-| G9 COMMANDER-Dispatch / operational parking | `NOT_STARTED` | gesperrt |
+| G9 COMMANDER/operational parking | `NOT_STARTED` | gesperrt |
 | G10 Ergebnisse/Handoff | `NOT_STARTED` | gesperrt |
 
-## 13. Annahmekriterien für den Objektvertrag
+## 13. Annahmekriterien
 
-Der Tarinkot-Objektvertrag gilt als eindeutig, wenn der Projekteigentümer beziehungsweise ein Merge nach `main` folgende Punkte annimmt:
+Der Tarinkot-Objektvertrag gilt als eindeutig, wenn angenommen werden:
 
-1. ein AIRWING `AW_US_TARINKOT`;
-2. Airbase-Identität DCS-ID `9`, runtime Name wird diagnostisch ermittelt;
-3. Warehouse `WH_AIR_US_TARINKOT` exakt wie auditiert;
-4. AH-64-SQUADRON `SQ_US_TKOT_AH64D_3_101_AVN`;
-5. generische, nicht historisch überdehnte UH-60- und CH-47-SQUADRON-Namen;
-6. lokaler Nominalbestand `14 / 6 / 2 / 0`;
-7. aktuelle Seed-Namen und DCS-Typen aus der MIZ;
-8. ein gemeinsamer UH-60-Seed für zwei 1-Ship-Gruppen, vorbehaltlich MOOSE-Quellenprüfung;
-9. Client-Parkpositionen als harte Sperren;
-10. leere AI-Parking-Allowlist bis zur Kalibrierung;
-11. fehlende operative Zonen als Mission-Editor-Aufgabe, nicht als Lua-Fallback;
-12. keine Tarinkot-Lua-Implementierung vor Abschluss von G4.
+1. Juli-2011-ORBAT als Standardautorität für Einheits-, AIRWING- und SQUADRON-Namen;
+2. Abweichung nur bei dokumentierter besserer und sichererer Evidenz;
+3. ein AIRWING `AW_US_TKOT_TF_ATTACK_3_101_AVN`;
+4. Airbase-ID `9`, Runtime-Name wird diagnostisch ermittelt;
+5. Warehouse `WH_AIR_US_TARINKOT`;
+6. `SQ_US_TKOT_AH64D_3_101_AVN`;
+7. `SQ_US_TKOT_UH60_TF_ATTACK_ATTACHED`;
+8. `SQ_US_TKOT_CH47_TF_ATTACK_ATTACHED`;
+9. `ATTACHED` behauptet keine organische Zugehörigkeit zum Attack-Battalion;
+10. lokaler Nominalbestand `14 / 6 / 2 / 0`;
+11. aktuelle Seed-Namen und DCS-Typen aus der MIZ;
+12. ein UH-60-Seed für zwei 1-Ship-Gruppen, vorbehaltlich MOOSE-Prüfung;
+13. Client-Parkpositionen als harte Sperren;
+14. leere AI-Parking-Allowlist bis zur Kalibrierung;
+15. fehlende operative Zonen als Mission-Editor-Aufgabe;
+16. keine Tarinkot-Lua-Implementierung vor Abschluss von G4.
 
 ## 14. Erster zulässiger Schritt nach Annahme
-
-Nach Annahme dieses Vertrags wird noch nicht unmittelbar ein AIRWING erzeugt.
-
-Der nächste zulässige Arbeitsschritt ist:
 
 ```text
 G4: exakte MOOSE-2.9.18-Quellen-/Dokumentationsprüfung
@@ -609,17 +593,7 @@ anschließend
 G5: isoliertes read-only Tarinkot-Diagnosebundle
 ```
 
-Das G5-Bundle darf ausschließlich protokollieren:
-
-- MIZ-/Bundle-/MOOSE-Provenienz;
-- Airbase-ID und runtime Name;
-- Warehouse-Anker;
-- Clients;
-- AI-Seeds;
-- Statics;
-- vorhandene und fehlende Zonen;
-- Parking-Spots und Terminaldaten;
-- Namensduplikate und fehlende Objekte.
+Das G5-Bundle darf ausschließlich Provenienz, Airbase, Warehouse, Clients, Seeds, Statics, Zonen, Parking und Namensfehler protokollieren.
 
 Es darf nicht:
 
