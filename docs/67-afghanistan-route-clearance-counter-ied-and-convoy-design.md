@@ -156,18 +156,22 @@ Der Projektinhaber legt zwei reguläre BLUE-Logistikkonvoi-Vorlagen fest. Beide 
 
 ### 11.3 Auswahl- und Laufzeitregel
 
-Reguläre TM01M-Konvois wählen ihre Vorlage unabhängig je Spawn über die MOOSE-Funktion `SPAWN:InitRandomizeTemplate()` aus:
+Die Einführung erfolgt gestuft:
 
 ```text
-TPL_BLUE_CONVOY_LIGHT_06
-TPL_BLUE_CONVOY_STANDARD_07
+TM01M Version 5:
+TPL_BLUE_CONVOY_STANDARD_07 fest aktiv
+7 Fahrzeuge je Konvoi
+35 Fahrzeuge bei fünf unbeschädigten Konvois
+
+Folgeinkrement:
+zufällige Auswahl zwischen LIGHT_06 und STANDARD_07
+über MOOSE SPAWN:InitRandomizeTemplate()
 ```
 
-Es wird keine eigene Lua-Zufallsfunktion eingeführt. Beide Mission-Editor-Gruppen müssen vorhanden und `Late Activation` sein. Ein fehlendes Template führt zu `FAIL_CONFIGURATION`.
+Die Light-Variante ist bereits als kanonische Mission-Editor-Vorlage definiert, wird aber erst nach bestandener Siebener-Baseline als Zufallsvariante aktiviert. Das Folgeinkrement muss sechs und sieben Fahrzeuge als zulässige Anfangsstärke akzeptieren, die tatsächlich gewählte Variante protokollieren und die Gesamtstärke dynamisch zwischen 30 und 35 Fahrzeugen auswerten.
 
-Die Laufzeitlogik muss deshalb sechs und sieben Fahrzeuge als zulässige Anfangsstärke akzeptieren, die tatsächlich ausgewählte Variante protokollieren und die Ankunftsstärke anhand der real erzeugten Gruppe auswerten. Bei fünf gleichzeitig erzeugten Konvois liegt die unbeschädigte Gesamtstärke abhängig von der Auswahl zwischen 30 und 35 Fahrzeugen.
-
-Für die absolute MOOSE-Spawnpositionierung wird ein Sieben-Slot-Layout berechnet. Beim Light-Template nutzt MOOSE nur die ersten sechs Positionen; der siebte hintere Slot bleibt unbesetzt. Dadurch bleibt die Fahrzeugreihenfolge beider Templates unverändert, ohne eigene Positions- oder Spawnlogik außerhalb von MOOSE einzuführen.
+Es wird keine eigene Lua-Zufallsfunktion eingeführt. Die MOOSE-native Auswahl ist vor Aktivierung separat statisch und in DCS zu prüfen.
 
 Die alte Gruppe `TPL_TEST_BLUE_CONVOY_STANDARD_01` ist aus der aktuellen Mission-Editor-Vorlagenbibliothek zu entfernen. Neue Laufzeitkonfigurationen dürfen sie nicht mehr referenzieren.
 
