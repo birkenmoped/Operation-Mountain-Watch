@@ -157,14 +157,22 @@ persistent loss/recovery state
 MC-12 physical representation
 ```
 
-## Chat continuation handoff
+## Project transition note
 
-Before a successor ChatGPT conversation changes Kandahar code, it must read the project authority on `main` and the branch-specific Kandahar evidence and contracts. Working methods and agreements are taken from the repository documentation, not reconstructed from chat memory.
+Kandahar is a completed AIRWING/SQUADRON foundation and a reference implementation. The successor chat is **not** assigned to continue Kandahar AirOps.
 
-Continuation document:
+The next AIRWING/SQUADRON airport has not yet been selected. The remaining candidate set is:
 
 ```text
-docs/handoffs/2026-08-02-kandahar-air-operations-chat-handoff.md
+Khost / FOB Salerno
+Tarinkot
+Shindand
 ```
 
-The handoff records the merged PR #47 state, accepted AIRWING/SQUADRON foundation, runtime evidence, UAV parking limitation, open scope and a copyable start prompt for the next chat.
+The project-wide successor-chat handoff is:
+
+```text
+docs/handoffs/2026-08-02-next-airport-airwing-squadron-chat-handoff.md
+```
+
+Before any airport-specific work, the successor chat must read the authority on `main`, inspect the air-operations integration branch and inventory all existing documentation and branches for the selected airport. Working methods and agreements are taken from repository documentation, not reconstructed from chat memory.
