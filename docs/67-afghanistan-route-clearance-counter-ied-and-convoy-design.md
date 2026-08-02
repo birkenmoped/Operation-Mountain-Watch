@@ -113,9 +113,29 @@ The Smart Book's METHANE structure supports player reporting: military/callsign,
 6. Repeated formations, lanes or timing increase RED adaptation.
 7. Route clearance creates a temporary confidence window, not permanent safety.
 
-## 11. Verbindliche OMW-Standardvorlage für Logistikkonvois
+## 11. Verbindliche OMW-Logistikkonvoi-Vorlagen
 
-Der Projektinhaber legt für die reguläre OMW-Logistikkonvoi-Vorlage folgende sieben Fahrzeuge und Marschreihenfolge fest:
+Der Projektinhaber legt zwei reguläre BLUE-Logistikkonvoi-Vorlagen fest. Beide ersetzen die bisherige HMMWV-basierte Testvorlage `TPL_TEST_BLUE_CONVOY_STANDARD_01` für neue Builds und neue DCS-Abnahmen.
+
+### 11.1 BLUE_CONVOY_LIGHT_06
+
+| Position | Fahrzeug | Funktion |
+|---:|---|---|
+| 1 | M-ATV | Lead Security |
+| 2 | M1083 | Cargo 1 |
+| 3 | MaxxPro | Convoy Commander / C2 |
+| 4 | M1083 | Cargo 2 |
+| 5 | MaxxPro | Support / Security |
+| 6 | M-ATV | Rear Security |
+
+```text
+2 x M-ATV
+2 x MaxxPro
+2 x M1083
+6 Fahrzeuge
+```
+
+### 11.2 BLUE_CONVOY_STANDARD_07
 
 | Position | Fahrzeug | Funktion |
 |---:|---|---|
@@ -127,20 +147,31 @@ Der Projektinhaber legt für die reguläre OMW-Logistikkonvoi-Vorlage folgende s
 | 6 | M1083 | Cargo 3 |
 | 7 | M-ATV | Rear Security |
 
-Verbindliche Ableitung:
-
 ```text
 2 x M-ATV
 2 x MaxxPro
 3 x M1083
-7 Fahrzeuge je Standardkonvoi
+7 Fahrzeuge
 ```
 
-Die bisherige sechs Fahrzeuge umfassende TM01M-Testvorlage mit HMMWVs ist damit für neue Builds und neue DCS-Abnahmen ersetzt. Bereits bestandene Ergebnisberichte bleiben als historische Nachweise ihres exakt getesteten Stands erhalten und werden nicht rückwirkend umgeschrieben.
+### 11.3 Auswahl- und Laufzeitregel
 
-Diese Zusammensetzung ist eine bewusste OMW-Missionsdesign- und Spielbarkeitsentscheidung. Sie wird nicht als Behauptung verstanden, dass jeder reale Konvoi im gesamten Szenariozeitraum exakt diese unveränderliche Reihenfolge verwendete. Missionsspezifische Route-Clearance-, EOD-, Recovery-, VIP-, QRF- oder schwerere Versorgungskonvois dürfen eigene, ausdrücklich dokumentierte Templates verwenden.
+Reguläre TM01M-Konvois wählen ihre Vorlage unabhängig je Spawn und gleichverteilt über die MOOSE-Funktion `SPAWN:InitRandomizeTemplate()` aus:
 
-Technische Mission-Editor-Vorlagen müssen die Positionen 1 bis 7 in dieser Reihenfolge abbilden. Die zuständige Laufzeitkonfiguration muss `expectedVehicleCount = 7` verwenden und darf einen Spawn mit abweichender Fahrzeugzahl nicht als erfolgreich akzeptieren.
+```text
+BLUE_CONVOY_LIGHT_06
+BLUE_CONVOY_STANDARD_07
+```
+
+Es wird keine eigene Lua-Zufallsfunktion eingeführt. Beide Mission-Editor-Gruppen müssen vorhanden und `Late Activation` sein. Ein fehlendes Template führt zu `FAIL_CONFIGURATION`.
+
+Die Laufzeitlogik muss deshalb sechs und sieben Fahrzeuge als zulässige Anfangsstärke akzeptieren, die tatsächlich ausgewählte Variante protokollieren und die Ankunftsstärke anhand der real erzeugten Gruppe auswerten. Bei fünf gleichzeitig erzeugten Konvois liegt die unbeschädigte Gesamtstärke abhängig von der Auswahl zwischen 30 und 35 Fahrzeugen.
+
+Für die absolute MOOSE-Spawnpositionierung wird ein Sieben-Slot-Layout berechnet. Beim Light-Template nutzt MOOSE nur die ersten sechs Positionen; der siebte hintere Slot bleibt unbesetzt. Dadurch bleibt die Fahrzeugreihenfolge beider Templates unverändert, ohne eigene Positions- oder Spawnlogik außerhalb von MOOSE einzuführen.
+
+Bereits bestandene Ergebnisberichte der früheren sechs Fahrzeuge umfassenden Testvorlage bleiben als historische Nachweise ihres exakt getesteten Stands erhalten und werden nicht rückwirkend umgeschrieben.
+
+Diese Zusammensetzungen sind bewusste OMW-Missionsdesign- und Spielbarkeitsentscheidungen. Sie werden nicht als Behauptung verstanden, dass jeder reale Konvoi im gesamten Szenariozeitraum exakt eine dieser unveränderlichen Reihenfolgen verwendete. Missionsspezifische Route-Clearance-, EOD-, Recovery-, VIP-, QRF- oder schwerere Versorgungskonvois dürfen eigene, ausdrücklich dokumentierte Templates verwenden.
 
 ## 12. Source limits
 
