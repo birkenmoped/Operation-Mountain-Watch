@@ -14,7 +14,7 @@ supersedes:
   - TPL_TEST_BLUE_CONVOY_STANDARD_01
 superseded_by:
 source_branch: main
-source_commit: PENDING_COMMIT
+source_commit: GIT_HISTORY
 validated_in_dcs: false
 ---
 
