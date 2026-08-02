@@ -27,7 +27,7 @@ if (-not (Test-Path -LiteralPath $sourceDir -PathType Container)) {
 }
 
 New-Item -ItemType Directory -Path $distDir -Force | Out-Null
-$builderVersion = 'SAL-COMMANDER-ISOLATED-17'
+$builderVersion = 'SAL-COMMANDER-SELECTION-18'
 $commit = 'UNKNOWN'
 try { $commit = (& git -C $repoRoot rev-parse HEAD 2>$null).Trim() } catch { $commit = 'UNKNOWN' }
 
