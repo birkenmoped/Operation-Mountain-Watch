@@ -1,5 +1,5 @@
 local config = {
-  configurationVersion = "TM01M-moose-native-five-convoys-4",
+  configurationVersion = "TM01M-moose-native-five-convoys-5",
   testId = "TM01",
   stageId = "TM01M",
 
@@ -8,9 +8,23 @@ local config = {
     displayName = "OMW TM01M - Five MOOSE Native MSR Convoys",
   },
 
-  template = {
-    groupName = "TPL_TEST_BLUE_CONVOY_STANDARD_01",
-    expectedVehicleCount = 6,
+  templates = {
+    selectionMode = "MOOSE_RANDOMIZED_TEMPLATE",
+    baseGroupName = "BLUE_CONVOY_STANDARD_07",
+    minimumVehicleCount = 6,
+    maximumVehicleCount = 7,
+    groups = {
+      {
+        groupName = "BLUE_CONVOY_LIGHT_06",
+        variant = "LIGHT",
+        expectedVehicleCount = 6,
+      },
+      {
+        groupName = "BLUE_CONVOY_STANDARD_07",
+        variant = "STANDARD",
+        expectedVehicleCount = 7,
+      },
+    },
   },
 
   convoys = {
