@@ -6,7 +6,7 @@ local TAG = "[OMW][SALERNO][DIAG]"
 local function log(msg) env.info(TAG .. " " .. tostring(msg)) end
 
 OMW.AirOps.SalernoDiagnostics = {
-  Version = "SAL-RUNTIME-PARKING-CONTRACT-12",
+  Version = "SAL-CALIBRATED-PARKING-CONTRACT-13",
   AirbaseName = AIRBASE.Afghanistan and AIRBASE.Afghanistan.FOB_Salerno or "FOB Salerno",
   ControlAirbaseName = AIRBASE.Afghanistan and AIRBASE.Afghanistan.Khost or "Khost",
   ExpectedAirbaseID = 23,
@@ -19,27 +19,8 @@ OMW.AirOps.SalernoDiagnostics = {
   },
 
   ParkingGeometry = {
-    LEFT_HEAVY = {
-      XMin = -46230,
-      XMax = -46100,
-      ZMin = 347620,
-      ZMax = 347850
-    },
-    -- Runtime evidence from stage 11 showed TerminalIDs 21-24 in this eastern
-    -- connector/transition strip. They were incorrectly accepted as RIGHT_ROTARY.
-    -- This strip is always blocked and has precedence over the rotary rectangle.
-    TRANSITION_EXCLUDED = {
-      XMin = -46080,
-      XMax = -45920,
-      ZMin = 347780,
-      ZMax = 348090
-    },
-    RIGHT_ROTARY = {
-      XMin = -46250,
-      XMax = -46081,
-      ZMin = 347780,
-      ZMax = 348090
-    },
+    LEFT_HEAVY = { XMin = -46230, XMax = -46100, ZMin = 347620, ZMax = 347850 },
+    RIGHT_ROTARY = { XMin = -46250, XMax = -45920, ZMin = 347780, ZMax = 348090 },
     StaticPrefix = "STATIC_AIR_US_SAL_",
     DefaultStaticClearanceRadius = 20,
     StaticClearanceRadius = {
@@ -75,4 +56,4 @@ OMW.AirOps.SalernoDiagnostics = {
 }
 
 log("BOOT Version=" .. OMW.AirOps.SalernoDiagnostics.Version)
-log("STAGED_TEST=true AIRWING_CONSTRUCT=true RUNTIME_PARKING_CALIBRATION=true TRANSITION_EXCLUSION=true AIRBASE_BLACKLIST=true SQUADRON_ASSET_PARKING_SYNC=true SQUADRON_CONSTRUCT=true SQUADRON_REGISTRATION=true SQUADRON_CONFIG=true MISSION_CAPABILITIES=true PAYLOADS=true AIRWING_START=true DISPATCH_READINESS=true MISSIONS=true spawn=true mutation=true")
+log("STAGED_TEST=true AIRWING_CONSTRUCT=true RUNTIME_PARKING_CALIBRATION=true CALIBRATED_ME_TERMINAL_CONTRACT=true AIRBASE_BLACKLIST=true SQUADRON_ASSET_PARKING_SYNC=true SQUADRON_CONSTRUCT=true SQUADRON_REGISTRATION=true SQUADRON_CONFIG=true MISSION_CAPABILITIES=true PAYLOADS=true AIRWING_START=true DISPATCH_READINESS=true MISSIONS=true spawn=true mutation=true")
