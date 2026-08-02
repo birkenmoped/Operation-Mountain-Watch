@@ -1,8 +1,16 @@
 ---
 document_id: OMW-HIST-BALUCH-KALAY-AIR-ASSAULT-2005
 status: BINDING
-class: SOURCE_CRITICAL_OPERATIONAL_DESIGN_REFERENCE
+document_class: SOURCE_CRITICAL_OPERATIONAL_DESIGN_REFERENCE
 owning_policy: OMW-GOV-001
+authoritative_for:
+  - historical reconstruction of the 3 May 2005 Baluch Kalay action
+  - source-qualified air-assault, terrain, aviation, fires, casualty and command lessons
+  - mission-design evidence for disrupted insertion, split-force and crossing-control states
+not_authoritative_for:
+  - active 2010-2011 OMW ORBAT
+  - automatic reuse of the 2005 task organization
+  - independently verified casualty or enemy-loss totals
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 source_branch: docs/army-history-baloch-kalay-cultural-turn
 source_commit: PENDING_MERGE
@@ -10,6 +18,7 @@ supersedes: []
 superseded_by: []
 scenario_period: 2010-08-01/2011-12-31
 historical_source_period: 2005-05-03
+validated_in_dcs: false
 ---
 
 # Baluch Kalay: Air Assault, Company Combat and Adaptive Command, 3 May 2005
