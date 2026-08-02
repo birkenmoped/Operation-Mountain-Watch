@@ -15,10 +15,10 @@ supersedes:
   - Kandahar 75th EFS active baseline
   - Jalalabad 24/8/6 inventory
   - player limits above two aircraft per type and base
-source_branch: agent/reconcile-documentation-authority
+source_branch: agent/normalize-salerno-air-orbat
 validated_in_dcs: false
 document_class: PROJECT_DECISION
-source_commit: GIT_HISTORY
+source_commit: PENDING_MERGE
 superseded_by:
 ---
 
@@ -71,6 +71,7 @@ Diese Regel ersetzt sämtliche älteren Angaben von vier, vier bis acht oder meh
 | 5 | Camp Bastion | AH-1W / UH-1Y | HMLA-169 „Vipers“, 10 AH-1W und 5 UH-1Y | `BINDING` |
 | 6 | Camp Bastion | MV-22B | keine aktive Umsetzung | `BINDING`: entfällt vollständig |
 | 7 | Camp Bastion | CH-53E | HMH-361 (-) Reinforced, 17 CH-53E | `BINDING` |
+| 8 | FOB Salerno | Army Aviation | 8 AH-64D, 8 OH-58D, 7 UH-60 Assault, 3 UH-60 MEDEVAC, 6 CH-47 | `BINDING`, quellenbasierte OMW-Rekonstruktion |
 
 Ein automatischer Staffelwechsel anhand eines fortlaufenden Kampagnendatums wird zunächst nicht umgesetzt.
 
@@ -112,6 +113,12 @@ Für Jalalabad ist dies:
 
 ```text
 TPL_AIR_US_JBAD_AH64D_CAS_2SHIP
+```
+
+Für Salerno ist dies:
+
+```text
+TPL_AIR_US_SAL_AH64D_CAS_2SHIP
 ```
 
 Das Template enthält zwei identisch beladene AH-64D. Die Beladung ist im Mission Editor je Luftfahrzeug zu prüfen; ein Payload-Preset allein ersetzt nicht die Kontrolle der tatsächlich gespeicherten Pylonen-, Kanonen-, IAFS- und Kraftstoffwerte.
@@ -210,7 +217,55 @@ Task Force Lighthorse bleibt historische Vorgängereinheit. Sie erzeugt keinen p
 
 ---
 
-## 3. Kandahar Airfield – A-10C
+## 3. FOB Salerno – Army Aviation
+
+### Verbindliche aktive ORBAT
+
+```text
+Flugplatz: FOB Salerno
+Historische Ortsangabe: FOB Salerno, Khost
+
+TF Tigershark / 1-10 Attack Aviation
+ 8 AH-64D
+ 8 OH-58D
+ 7 UH-60 Assault
+ 3 UH-60 MEDEVAC
+
+B Company, 7-158 Aviation / lokaler Poolanteil
+ 6 CH-47
+```
+
+Der Bestand von 32 Luftfahrzeugen ist eine quellenbasierte OMW-Rekonstruktion. Das Juli-2011-ORBAT belegt TF Tigershark in Salerno und den Aviation-Support für Khost und Paktya, nennt jedoch keine vollständige lokale Typen- und Stückzahlliste. Die CH-47-Zahl sechs ist eine dokumentierte OMW-Aufteilung des 25-Luftfahrzeuge-Pools von B/7-158 auf Bagram, Salerno und Shank.
+
+### Technische Struktur
+
+```text
+AW_US_SALERNO
+├── SQ_US_SAL_AH64D_TF_TIGERSHARK_ATTACK
+├── SQ_US_SAL_OH58D_B_6_6_CAV
+├── SQ_US_SAL_UH60_TF_TIGERSHARK_ASSAULT
+├── SQ_US_SAL_UH60_MEDEVAC_C_5_159_AVN
+└── SQ_US_SAL_CH47_TF_TIGERSHARK_MEDIUM_LIFT
+```
+
+### DCS-Abbildung
+
+```text
+DCS-Airbase: AIRBASE.Afghanistan.FOB_Salerno
+beobachtete airdromeId: 23
+```
+
+Die historische CH-47D-Komponente wird im aktuellen Missionsstand technisch durch `CH-47Fbl1` repräsentiert. Diese Abweichung muss in Dokumentation und Mission sichtbar bleiben.
+
+### Bestandsgrenze
+
+Statics, Client-Slots und Late-Activation-Templates sind Repräsentationen desselben lokalen Bestands. Insbesondere dürfen vier CH-47-Statics, zwei CH-47-Clients und ein CH-47-KI-Template nicht als sieben verfügbare Maschinen gezählt werden.
+
+Das basisbezogene Objekt- und Missionseditor-Manifest ist [`OMW-AIR-SALERNO-MANIFEST`](81-salerno-air-operations-manifest.md).
+
+---
+
+## 4. Kandahar Airfield – A-10C
 
 ### Verbindliche aktive ORBAT
 
@@ -236,7 +291,7 @@ Die Auswahl der 107th EFS ist eine bewusste aktive Missionsentscheidung innerhal
 
 ---
 
-## 4. Camp Bastion – HMLA Light Attack / Utility
+## 5. Camp Bastion – HMLA Light Attack / Utility
 
 ### Verbindliche Entscheidung
 
@@ -260,7 +315,7 @@ HMLA-369 bleibt historischer Vorgängerkontext und erzeugt keinen parallelen akt
 
 ---
 
-## 5. Camp Bastion – MV-22B
+## 6. Camp Bastion – MV-22B
 
 ### Verbindliche Entscheidung
 
@@ -274,7 +329,7 @@ Es werden keine Spieler-Slots, KI-SQUADRONs, Templates, Statics, RAT-Flüge oder
 
 ---
 
-## 6. Camp Bastion – Heavy Lift
+## 7. Camp Bastion – Heavy Lift
 
 ### Verbindliche aktive Entscheidung
 
