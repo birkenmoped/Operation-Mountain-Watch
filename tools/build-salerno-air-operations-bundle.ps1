@@ -16,6 +16,7 @@ $sourceFiles = @(
     '05-construct-squadrons.lua',
     '06-register-squadrons-with-airwing.lua',
     '06b-apply-runtime-parking-contract.lua',
+    '06c-enforce-transition-exclusion.lua',
     '07-configure-squadron-baseline.lua',
     '08-activate-operational-baseline.lua',
     '09-validate-dispatch-readiness.lua',
@@ -27,7 +28,7 @@ if (-not (Test-Path -LiteralPath $sourceDir -PathType Container)) {
 }
 
 New-Item -ItemType Directory -Path $distDir -Force | Out-Null
-$builderVersion = 'SAL-RUNTIME-PARKING-CONTRACT-11'
+$builderVersion = 'SAL-RUNTIME-PARKING-CONTRACT-12'
 $commit = 'UNKNOWN'
 try { $commit = (& git -C $repoRoot rev-parse HEAD 2>$null).Trim() } catch { $commit = 'UNKNOWN' }
 
