@@ -1,10 +1,6 @@
 -- Operation Mountain Watch - FOB Salerno runtime parking contract.
---
--- This stage deliberately does not trust Mission Editor parking labels. It derives
--- the actual MOOSE TerminalIDs from the runtime parking table, classifies the two
--- physical aprons by world coordinates, blocks clients/statics/the Role-2 unload
--- node on AIRBASE level, and synchronizes the resulting IDs into every registered
--- SQUADRON warehouse asset before AIRWING start.
+-- Runtime TerminalIDs are derived from the MOOSE parking table; Mission Editor
+-- labels are never passed to MOOSE parking APIs.
 
 local TAG = "[OMW][SALERNO][PARKING-RUNTIME]"
 local function log(msg) env.info(TAG .. " " .. tostring(msg)) end
@@ -98,16 +94,8 @@ local function main()
   local geometry = cfg.ParkingGeometry or {}
   local spots = airbase:GetParkingSpotsTable() or {}
   local contract = {
-    Spots = spots,
-    SpotsByID = {},
-    LeftHeavy = {},
-    RightRotary = {},
-    Unclassified = {},
-    Blocked = {},
-    BlockReasons = {},
-    AllowedLeftHeavy = {},
-    AllowedRightRotary = {},
-    Violations = 0
+    Spots = spots, SpotsByID = {}, LeftHeavy = {}, RightRotary = {}, Unclassified = {},
+    Blocked = {}, BlockReasons = {}, AllowedLeftHeavy = {}, AllowedRightRotary = {}, Violations = 0
   }
 
   local function fail(reason)
@@ -120,14 +108,15 @@ local function main()
     local vec3 = spot.Coordinate and spot.Coordinate:GetVec3() or nil
     if terminalID and vec3 then
       contract.SpotsByID[terminalID] = spot
+
+      -- The broad right-apron rectangle overlaps the south edge of the heavy apron.
+      -- The heavy polygon therefore has explicit precedence. This classification is
+      -- geometric and based on runtime coordinates, not on editor labels or numbering.
       local sector = nil
-      if inBounds(vec3, geometry.LEFT_HEAVY) then sector = "LEFT_HEAVY" end
-      if inBounds(vec3, geometry.RIGHT_ROTARY) then
-        if sector then
-          fail("SECTOR_OVERLAP terminalID=" .. terminalID)
-        else
-          sector = "RIGHT_ROTARY"
-        end
+      if inBounds(vec3, geometry.LEFT_HEAVY) then
+        sector = "LEFT_HEAVY"
+      elseif inBounds(vec3, geometry.RIGHT_ROTARY) then
+        sector = "RIGHT_ROTARY"
       end
 
       if sector == "LEFT_HEAVY" then
@@ -147,14 +136,9 @@ local function main()
 
       log(string.format(
         "CALIBRATE terminalID=%d terminalID0=%s sector=%s x=%.1f z=%.1f client=%s toac=%s",
-        terminalID,
-        tostring(spot.TerminalID0),
-        tostring(sector or "UNCLASSIFIED"),
-        vec3.x,
-        vec3.z,
-        tostring(spot.ClientSpot == true or spot.ClientName ~= nil),
-        tostring(spot.TOAC == true)
-      ))
+        terminalID, tostring(spot.TerminalID0), tostring(sector or "UNCLASSIFIED"),
+        vec3.x, vec3.z,
+        tostring(spot.ClientSpot == true or spot.ClientName ~= nil), tostring(spot.TOAC == true)))
     end
   end
 
@@ -234,9 +218,7 @@ local function main()
   end
 
   if contract.Violations == 0 then
-    local ok, result = pcall(function()
-      return airbase:SetParkingSpotBlacklist(contract.BlockedIDs)
-    end)
+    local ok, result = pcall(function() return airbase:SetParkingSpotBlacklist(contract.BlockedIDs) end)
     if not ok then fail("AIRBASE_BLACKLIST_FAILED error=" .. tostring(result)) end
   end
 
@@ -257,8 +239,9 @@ local function main()
   local syncedAssets = 0
   for _, squadron in ipairs(squadrons) do
     local name = findSquadronName(squadron)
-    local parkingIDs = name:find("CH47", 1, true) and contract.AllowedLeftHeavy or contract.AllowedRightRotary
-    local sector = name:find("CH47", 1, true) and "LEFT_HEAVY" or "RIGHT_ROTARY"
+    local isCH47 = name:find("CH47", 1, true) ~= nil
+    local parkingIDs = isCH47 and contract.AllowedLeftHeavy or contract.AllowedRightRotary
+    local sector = isCH47 and "LEFT_HEAVY" or "RIGHT_ROTARY"
 
     local ok, result = pcall(function()
       squadron:SetParkingIDs(parkingIDs)
@@ -271,9 +254,7 @@ local function main()
     if not ok then
       fail("SQUADRON_SYNC_FAILED name=" .. name .. " error=" .. tostring(result))
     else
-      if not sameNumericSet(squadron.parkingIDs, parkingIDs) then
-        fail("SQUADRON_IDS_MISMATCH name=" .. name)
-      end
+      if not sameNumericSet(squadron.parkingIDs, parkingIDs) then fail("SQUADRON_IDS_MISMATCH name=" .. name) end
       local assetCount = 0
       for _, asset in pairs(squadron.assets or {}) do
         assetCount = assetCount + 1
