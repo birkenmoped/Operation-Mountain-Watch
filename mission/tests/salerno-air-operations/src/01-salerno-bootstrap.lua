@@ -6,7 +6,7 @@ local TAG = "[OMW][SALERNO][DIAG]"
 local function log(msg) env.info(TAG .. " " .. tostring(msg)) end
 
 OMW.AirOps.SalernoDiagnostics = {
-  Version = "SAL-COMMANDER-DISPATCH-16",
+  Version = "SAL-COMMANDER-ISOLATED-17",
   AirbaseName = AIRBASE.Afghanistan and AIRBASE.Afghanistan.FOB_Salerno or "FOB Salerno",
   ControlAirbaseName = AIRBASE.Afghanistan and AIRBASE.Afghanistan.Khost or "Khost",
   ExpectedAirbaseID = 23,
@@ -64,4 +64,4 @@ OMW.AirOps.SalernoDiagnostics = {
 
 log("BOOT Version=" .. OMW.AirOps.SalernoDiagnostics.Version)
 log("PARKING state=DEFERRED calibrationRetained=true operationalMutation=false")
-log("STAGED_TEST=true AIRWING_CONSTRUCT=true PARKING_CONTROL=false SQUADRON_CONSTRUCT=true SQUADRON_REGISTRATION=true SQUADRON_CONFIG=true MISSION_CAPABILITIES=true PAYLOADS=true AIRWING_START=true DIRECT_DISPATCH_BASELINE=true COMMANDER_CONSTRUCT=true COMMANDER_ADD_AIRWING=true COMMANDER_DISPATCH=true spawn=true mutation=true")
+log("STAGED_TEST=true AIRWING_CONSTRUCT=true PARKING_CONTROL=false SQUADRON_CONSTRUCT=true SQUADRON_REGISTRATION=true SQUADRON_CONFIG=true MISSION_CAPABILITIES=true PAYLOADS=true AIRWING_START=true DIRECT_DISPATCH_BASELINE=false COMMANDER_CONSTRUCT=true COMMANDER_ADD_AIRWING=true COMMANDER_DISPATCH=true COMMANDER_ISOLATED=true spawn=true mutation=true")
