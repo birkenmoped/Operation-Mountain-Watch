@@ -15,8 +15,6 @@ $sourceFiles = @(
     '04-construct-airwing-anchor.lua',
     '05-construct-squadrons.lua',
     '06-register-squadrons-with-airwing.lua',
-    '06b-apply-runtime-parking-contract.lua',
-    '06d-apply-calibrated-parking-contract.lua',
     '07-configure-squadron-baseline.lua',
     '08-activate-operational-baseline.lua',
     '09-validate-dispatch-readiness.lua',
@@ -28,7 +26,7 @@ if (-not (Test-Path -LiteralPath $sourceDir -PathType Container)) {
 }
 
 New-Item -ItemType Directory -Path $distDir -Force | Out-Null
-$builderVersion = 'SAL-TYPE-SPECIFIC-PARKING-14'
+$builderVersion = 'SAL-PARKING-DEFERRED-15'
 $commit = 'UNKNOWN'
 try { $commit = (& git -C $repoRoot rev-parse HEAD 2>$null).Trim() } catch { $commit = 'UNKNOWN' }
 
