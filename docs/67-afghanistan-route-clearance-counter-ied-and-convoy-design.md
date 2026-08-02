@@ -2,14 +2,19 @@
 document_id: OMW-CIED-ROUTE-CLEARANCE-CONVOY-DESIGN
 status: BINDING
 document_class: SOURCE_CRITICAL_MISSION_DESIGN_REFERENCE
+owning_policy: OMW-GOV-001
 authoritative_for:
   - Afghanistan route-clearance mission archetypes
   - C-IED and convoy risk abstractions
   - terrain, season, formation and recovery design factors
   - OMW standard logistics convoy composition
 scenario_period: 2010-08-01/2011-12-31
+project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
+supersedes:
+  - earlier HMMWV-based standard convoy working baseline
+superseded_by:
 source_branch: main
-source_commit: PENDING_COMMIT
+source_commit: GIT_HISTORY
 validated_in_dcs: false
 ---
 
