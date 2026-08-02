@@ -6,12 +6,23 @@ local TAG = "[OMW][SALERNO][DIAG]"
 local function log(msg) env.info(TAG .. " " .. tostring(msg)) end
 
 OMW.AirOps.SalernoDiagnostics = {
-  Version = "SAL-CONTROLLED-DISPATCH-8",
+  Version = "SAL-PARKING-CONTRACT-9",
   AirbaseName = AIRBASE.Afghanistan and AIRBASE.Afghanistan.FOB_Salerno or "FOB Salerno",
   ControlAirbaseName = AIRBASE.Afghanistan and AIRBASE.Afghanistan.Khost or "Khost",
   ExpectedAirbaseID = 23,
   WarehouseName = "WH_AIR_US_SALERNO",
-  ClientParkingBlacklist = { 13, 21, 22, 23, 36, 40 },
+  ParkingBlacklist = { 13, 21, 22, 23, 24, 25, 35, 36, 40 },
+  ParkingBlacklistReasons = {
+    [13] = "CLIENT_RESERVED",
+    [21] = "CLIENT_RESERVED",
+    [22] = "CLIENT_RESERVED",
+    [23] = "CLIENT_RESERVED",
+    [24] = "STATIC_OH58_PAIR",
+    [25] = "STATIC_OH58_PAIR",
+    [35] = "MAIN_APRON_ACCESS_AND_ROLE2_CSAR_UNLOAD",
+    [36] = "CLIENT_RESERVED",
+    [40] = "CLIENT_RESERVED"
+  },
   Clients = {
     "CLIENT_US_SAL_AH64D_01", "CLIENT_US_SAL_AH64D_02",
     "CLIENT_US_SAL_OH58D_01", "CLIENT_US_SAL_OH58D_02",
@@ -71,4 +82,4 @@ OMW.AirOps.SalernoDiagnostics = {
 }
 
 log("BOOT Version=" .. OMW.AirOps.SalernoDiagnostics.Version)
-log("STAGED_TEST=true AIRWING_CONSTRUCT=true SQUADRON_CONSTRUCT=true SQUADRON_REGISTRATION=true SQUADRON_CONFIG=true MISSION_CAPABILITIES=true PAYLOADS=true AIRWING_START=true DISPATCH_READINESS=true MISSIONS=true spawn=true mutation=true")
+log("STAGED_TEST=true AIRWING_CONSTRUCT=true PARKING_CONTRACT=true SQUADRON_CONSTRUCT=true SQUADRON_REGISTRATION=true SQUADRON_CONFIG=true MISSION_CAPABILITIES=true PAYLOADS=true AIRWING_START=true DISPATCH_READINESS=true MISSIONS=true spawn=true mutation=true")
