@@ -13,7 +13,7 @@ project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
   - registry without complete non-numbered document inventory
 superseded_by:
-source_branch: docs/army-history-baloch-kalay-cultural-turn
+source_branch: agent/normalize-salerno-air-orbat
 source_commit: PENDING_MERGE
 validated_in_dcs: false
 ---
@@ -99,6 +99,7 @@ Eine Nummer und eine stabile `document_id` dürfen im aktuellen Bestand jeweils 
 | 78 | `OMW-HIST-US-ARMY-OEF-COMMAND-FORCE-POSTURE-2001-2005` | `docs/78-us-army-oef-command-force-posture-and-orbat-2001-2005.md` | `BINDING` | US-Army-Kommando, Force Posture und ORBAT 2001–2005 |
 | 79 | `OMW-HIST-BALUCH-KALAY-AIR-ASSAULT-2005` | `docs/79-baloch-kalay-air-assault-and-company-combat-2005.md` | `BINDING` | Baluch-Kalay-Air-Assault, Company Combat und adaptive Führung |
 | 80 | `OMW-COIN-CULTURAL-TURN-HUMAN-TERRAIN-CRITICISM` | `docs/80-cultural-turn-human-terrain-and-coin-criticism.md` | `BINDING` | Cultural Turn, Human Terrain und quellenkritische COIN-Referenz |
+| 81 | `OMW-AIR-SALERNO-MANIFEST` | `docs/81-salerno-air-operations-manifest.md` | `BINDING` | Salerno-ME-Baseline und Objektvertrag |
 
 ## 3. Reservierte Nummern auf offenen Branches
 
