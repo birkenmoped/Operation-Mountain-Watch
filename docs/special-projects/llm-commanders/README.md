@@ -40,13 +40,14 @@ Die vorhandene Dokumentation von Operation Mountain Watch dient als historische,
 ```text
 OPTIONAL_SPECIAL_PROJECT
 DIRECT_DOCUMENT_MIGRATION_COMPLETE
+LANGUAGE_NEUTRAL_CONTRACT_BASELINE_DEFINED
 NOT_MAIN_PROJECT_AUTHORITY
 NOT_RUNTIME_ACCEPTED
 NOT_DCS_VALIDATED
 NOT_MERGE_READY
 ```
 
-Es wurde noch keine Produktionsruntime, keine akzeptierte DCS-Testmission und keine LLM-Anbindung freigegeben.
+Es wurde noch keine Produktionsruntime, keine akzeptierte DCS-Testmission und keine LLM-Anbindung freigegeben. Die tatsächlichen `.schema.json`-Dateien, Fixtures und Contract Tests sind noch nicht implementiert.
 
 ## 3. MOOSE-First
 
@@ -104,12 +105,13 @@ FORCE_PACKAGE != DCS_GROUP
 ## 5. Dokumentautoritäten
 
 ```text
-13 = CampaignState Event Store and persistent schemas
+13 = CampaignState Event Store and persistent aggregates
 16 = Afghan State and ANSF commander dossier
 17 = contested resource ownership flow and force generation
 02 = common commander domain model
 07 = runtime action and validation contract
 09 = orchestrator architecture
+19 = language-neutral contracts JSON Schema versioning and hashing baseline
 18 = completed migration and consolidation record
 ```
 
@@ -139,12 +141,15 @@ BASIC_INTERPRETATION_REQUIRES_DOCUMENT_18 = NO
 16. [Afghan State und ANSF Commander Dossier](16-afghan-state-and-ansf-commander-dossier.md)
 17. [Ressourceneigentum, Ressourcenfluss und Kräftegenerierung](17-faction-objectives-resource-ownership-flow-and-force-generation-model.md)
 18. [Migrations- und Konsolidierungsakte](18-resource-model-integration-and-dossier-amendments.md)
+19. [Sprachneutrale Runtime-Verträge und JSON-Schema-Baseline](19-language-neutral-contracts-and-json-schemas.md)
 
-Geplantes Folgedokument:
+Nächster Implementierungsblock:
 
 ```text
-19-language-neutral-contracts-and-json-schemas.md
+docs/special-projects/llm-commanders/schemas/
 ```
+
+Dort folgen die tatsächlichen `.schema.json`-Dateien, Registry, positive und negative Fixtures sowie sprachübergreifende Golden Tests.
 
 ## 7. Commander-Kurzprofile
 
@@ -229,24 +234,38 @@ WORLD_TRUTH
 
 Kein Commander erhält Omniszienz. ISAF und Afghan State teilen Informationen nicht automatisch vollständig. ResourceSources, Account-Stände und Shares bleiben subjektiv, solange sie nicht beobachtet oder berichtet wurden.
 
-## 10. Test- und Implementierungsreihenfolge
+## 10. Vertragsgrundsätze
 
 ```text
-1 language-neutral contracts and JSON schemas
-2 in-memory Event Store and reducers
-3 ResourceSource and Share Calculation
-4 ResourceAccount and Transfer Service
-5 ForceGenerationManager and ForcePackageRegistry
-6 five Scripted Commander policies
-7 deterministic virtual campaign
-8 DCS/MOOSE adapter stub
-9 MOOSE 2.9.18 source and API verification
-10 isolated DCS/MOOSE test mission
-11 LLM shadow mode
-12 controlled multi-LLM experiments
+JSON_SCHEMA_BASELINE = DRAFT_2020_12
+SCHEMA_RESOLUTION = EXACT
+UNKNOWN_FIELDS = REJECT
+RESOURCE_QUANTITY = NONNEGATIVE_INTEGER_CAMPAIGN_UNITS
+TIMESTAMPS = UTC_MILLISECONDS_Z
+ADAPTER_INPUT = VALIDATED_DOMAIN_OBJECTS_ONLY
 ```
 
-## 11. Noch offene Daten
+Alle interprozessualen Verträge benötigen stabile IDs, Schema-Referenz, Idempotency Key, Correlation ID, Causation ID, Producer-Metadaten und kanonischen Payload-Hash.
+
+## 11. Test- und Implementierungsreihenfolge
+
+```text
+1 actual JSON schemas registry and fixtures
+2 cross-language canonical-hash and validation tests
+3 in-memory Event Store and reducers
+4 ResourceSource and Share Calculation
+5 ResourceAccount and Transfer Service
+6 ForceGenerationManager and ForcePackageRegistry
+7 five Scripted Commander policies
+8 deterministic virtual campaign
+9 DCS/MOOSE adapter stub
+10 MOOSE 2.9.18 source and API verification
+11 isolated DCS/MOOSE test mission
+12 LLM shadow mode
+13 controlled multi-LLM experiments
+```
+
+## 12. Noch offene Daten
 
 Nicht festgelegt und nicht zu erfinden:
 
@@ -257,9 +276,11 @@ Nicht festgelegt und nicht zu erfinden:
 - konkrete DCS-/Mission-Editor-Objekte;
 - quantifizierter ISAF National Force Pool;
 - quantitative Afghan-State-Training-, Attrition- und Retention-Werte;
+- konkrete MOOSE-Capability-Mappings;
+- endgültige maximale Vertragsgrößen;
 - endgültige Python-/Elixir-/Hybridentscheidung.
 
-## 12. Hauptprojektgrenze
+## 13. Hauptprojektgrenze
 
 Hauptprojekt-Autoritäten bleiben insbesondere:
 
@@ -274,12 +295,14 @@ docs/37-campaign-architecture-and-dynamic-mission-design.md
 
 Das Spezialprojekt darf diese Dokumente nicht stillschweigend überschreiben.
 
-## 13. Konsolidierungsstatus
+## 14. Konsolidierungsstatus
 
 ```text
 DOCUMENTS_01_TO_17_DIRECTLY_UPDATED = YES
 DOCUMENT_18_CONVERTED_TO_MIGRATION_RECORD = YES
+DOCUMENT_19_CONTRACT_BASELINE_DEFINED = YES
 README_INDEX_CURRENT = YES
+ACTUAL_JSON_SCHEMA_ARTIFACTS_CREATED = NO
 RUNTIME_IMPLEMENTED = NO
 MOOSE_ADAPTER_VALIDATED = NO
 DCS_TEST_ACCEPTED = NO
