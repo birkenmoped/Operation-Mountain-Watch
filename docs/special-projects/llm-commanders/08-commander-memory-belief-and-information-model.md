@@ -5,13 +5,26 @@ document_class: MEMORY_BELIEF_AND_INFORMATION_MODEL
 scenario_period: 2010-08-01/2011-12-31
 source_branch: docs/optional-llm-commanders
 validated_in_dcs: false
+authoritative_for:
+  - information provenance and commander beliefs
+  - five-faction information profiles
+  - resource-source and resource-account beliefs
+  - memory retention and information sharing
 ---
 
 # Commander Memory, Belief and Information Model
 
 ## 1. Zweck
 
-Dieses Dokument definiert, wie BLUE, Taliban, Haqqani und HIG Informationen erhalten, bewerten, vergessen, weitergeben und in ein subjektives Lagebild überführen.
+Dieses Dokument definiert, wie fünf Commander Informationen erhalten, bewerten, vergessen, weitergeben und in ein subjektives Lagebild überführen:
+
+```text
+BLUE_ISAF_COMMANDER
+AFGHAN_STATE_COMMANDER
+TALIBAN_COMMANDER
+HAQQANI_COMMANDER
+HIG_COMMANDER
+```
 
 ```text
 WORLD_TRUTH
@@ -31,12 +44,20 @@ Kein Commander erhält direkten Zugriff auf `WORLD_TRUTH`.
 ```text
 WORLD_TRUTH = objektiver CampaignState
 OBSERVATION = technisch oder narrativ erzeugtes Ereignis
-INFORMATION_ITEM = gemeldete, unvollständige Information
-BELIEF = subjektive Bewertung des Commanders
+INFORMATION_ITEM = gemeldete unvollständige Information
+BELIEF = subjektive Bewertung eines Commanders
 MEMORY = persistierte Erfahrung und Beziehungsgeschichte
 ```
 
 Ein Widerspruch zwischen `WORLD_TRUTH` und `BELIEF` ist zulässig und spielmechanisch erwünscht.
+
+Verbindlich:
+
+```text
+SAME_DCS_COALITION != SHARED_INFORMATION_DATABASE
+ISAF_INFORMATION != AUTOMATIC_AFGHAN_INFORMATION
+AFGHAN_INFORMATION != AUTOMATIC_ISAF_INFORMATION
+```
 
 ## 3. Information Item
 
@@ -75,6 +96,9 @@ FAMILY_OR_TRIBAL_CONTACT
 MARKET_CONTACT
 RELIGIOUS_CONTACT
 GOVERNMENT_CONTACT
+ANA_REPORT
+ANP_REPORT
+AFGHAN_INTELLIGENCE_REPORT
 ANSF_OR_SECURITY_INSIDER
 BASE_OR_GATE_WATCHER
 ROUTE_SPOTTER
@@ -83,12 +107,16 @@ TECHNICAL_SENSOR
 SIGINT_REPORT
 ISR_REPORT
 PATROL_REPORT
+CHECKPOINT_REPORT
+RESOURCE_ACCOUNTING_REPORT
+WAREHOUSE_REPORT
+TRANSFER_DELIVERY_REPORT
 CAPTURED_DOCUMENT
 DETAINEE_REPORT
 OPEN_SOURCE_REPORT
 RIVAL_FACTION_REPORT
 FORMAL_LIAISON_REPORT
-POST_ATTACK_OBSERVATION
+POST_OPERATION_OBSERVATION
 RUMOR
 INFERENCE
 ```
@@ -113,7 +141,7 @@ DISPROVEN
 ARCHIVED
 ```
 
-Zustände werden nicht ausschließlich durch Zeit, sondern auch durch neue Berichte, Widersprüche, Quellenverlust und Täuschung verändert.
+Zustände werden durch Zeit, neue Berichte, Widersprüche, Quellenverlust, Täuschung und Ergebnisse verändert.
 
 ## 6. Reliability und Credibility
 
@@ -121,19 +149,15 @@ Zustände werden nicht ausschließlich durch Zeit, sondern auch durch neue Beric
 
 `credibility` bewertet die Plausibilität der konkreten Meldung.
 
-Beispiel:
-
 ```text
-zuverlässige Quelle + überraschende Meldung
-= hohe reliability, mittlere credibility
+reliable source + surprising report
+= high reliability, medium credibility
 
-unzuverlässige Quelle + mehrfach bestätigte Meldung
-= niedrige reliability, steigende credibility
+unreliable source + repeated corroboration
+= low reliability, increasing credibility
 ```
 
 ## 7. Confidence Update
-
-Vorläufiges Modell:
 
 ```text
 new_confidence =
@@ -147,18 +171,17 @@ new_confidence =
 - source_compromise_penalty
 ```
 
-Alle Werte werden auf `0..100` begrenzt.
-
-Die genaue Gewichtung ist konfigurierbar und wird nicht vom LLM frei erfunden.
+Alle Werte werden auf `0..100` begrenzt. Die Gewichtung ist versioniert und nicht frei vom LLM bestimmbar.
 
 ## 8. Knowledge Decay
-
-Jeder Informationstyp besitzt eine eigene Verfallsrate.
 
 ```yaml
 knowledge_decay:
   static_location: slow
   permanent_infrastructure: very_slow
+  resource_source_location: slow
+  resource_account_estimate: fast
+  beneficiary_share_estimate: medium
   route_usage_pattern: medium
   convoy_schedule: fast
   patrol_route: fast
@@ -167,6 +190,7 @@ knowledge_decay:
   faction_relationship: slow
   active_operation: very_fast
   temporary_checkpoint: very_fast
+  force_generation_status: fast
 ```
 
 Ein veralteter Bericht wird nicht gelöscht, sondern als `STALE` markiert.
@@ -176,6 +200,7 @@ Ein veralteter Bericht wird nicht gelöscht, sondern als `STALE` markiert.
 ```yaml
 commander_belief:
   belief_id: string
+  commander_id: string
   subject_ref: string
   proposition: string
   belief_strength: 0..100
@@ -192,9 +217,42 @@ commander_belief:
 
 Das LLM erhält Beliefs und unterstützende Informationsauszüge, aber keine versteckte objektive Wahrheit.
 
-## 10. Falsche und widersprüchliche Lagebilder
+## 10. Resource-bezogene Beliefs
 
-Zulässige Situationen:
+ResourceSources, ResourceAccounts und Fraktionsanteile müssen als eigene subjektive Wissensobjekte behandelt werden.
+
+```text
+KNOWN_RESOURCE_SOURCE
+ESTIMATED_RESOURCE_SOURCE_CAPACITY
+BELIEVED_PHYSICAL_CONTROLLER
+BELIEVED_LEGAL_OWNER
+BELIEVED_ACCESS_SHARE
+BELIEVED_BENEFICIARY_SHARE
+ESTIMATED_RESOURCE_ACCOUNT_STOCK
+BELIEVED_TRANSFER_STATUS
+BELIEVED_FORCE_GENERATION_STATUS
+```
+
+Beispiel:
+
+```text
+WORLD_TRUTH:
+  checkpoint physically held by Afghan State
+  Taliban receives hidden revenue share
+
+AFGHAN_STATE_BELIEF:
+  revenue leakage suspected but unquantified
+
+TALIBAN_BELIEF:
+  local collector reports stable share
+
+ISAF_BELIEF:
+  checkpoint assessed operational, corruption risk medium
+```
+
+Kein Commander darf objektive Shares allein aus technischer Existenz im CampaignState erfahren.
+
+## 11. Falsche und widersprüchliche Lagebilder
 
 ```text
 COMMANDER_A believes route open
@@ -202,9 +260,21 @@ COMMANDER_B believes route compromised
 WORLD_TRUTH route partially monitored
 ```
 
-Der Orchestrator löst diesen Widerspruch nicht automatisch auf. Erst Beobachtung, Aufklärung, Ereignisse oder Ergebnisberichte verändern die Beliefs.
+```text
+ISAF believes Afghan unit ready
+AFGHAN_STATE believes unit requires enablers
+WORLD_TRUTH readiness is mixed and leadership dependent
+```
 
-## 11. Deception Model
+```text
+TALIBAN believes HIG controls recruitment network
+HIG believes local commander remains loyal
+WORLD_TRUTH local commander is negotiating with both
+```
+
+Der Orchestrator löst Widersprüche nicht automatisch für die Commander auf.
+
+## 12. Deception Model
 
 Täuschung kann entstehen durch:
 
@@ -219,9 +289,10 @@ FEIGNED_WITHDRAWAL
 SIMULATED_PREPARATION
 RIVAL_DISINFORMATION
 SOURCE_DOUBLE_GAME
+FALSE_RESOURCE_STOCK_REPORT
+FALSE_TRANSFER_CONFIRMATION
+FALSE_FORCE_READINESS_REPORT
 ```
-
-Jede Täuschung besitzt:
 
 ```yaml
 deception_operation:
@@ -237,9 +308,7 @@ deception_operation:
 
 Eine entdeckte Täuschung reduziert Vertrauen in Quelle, Kanal und Gegenpartei.
 
-## 12. Information Sharing
-
-Informationsweitergabe ist niemals automatisch vollständig.
+## 13. Information Sharing
 
 ```yaml
 information_share:
@@ -266,72 +335,123 @@ INTERCEPTED
 COMPROMISED
 ```
 
-## 13. Fraktionsspezifische Informationsprofile
+### 13.1 ISAF und Afghan State
 
-### 13.1 Taliban
+Informationsteilung hängt ab von:
+
+```text
+CLASSIFICATION
+SOURCE_PROTECTION
+LIAISON_CAPACITY
+TRUST
+POLITICAL_SENSITIVITY
+TECHNICAL_INTEROPERABILITY
+OPERATIONAL_SECURITY
+```
+
+Eine gemeinsame Operation erzeugt keine automatische Vollteilung aller Intelligence- oder ResourceAccount-Daten.
+
+### 13.2 RED-Fraktionen
+
+Geteilte Information kann absichtlich selektiv, verspätet oder verzerrt sein. Gemeinsame Gegnerlage bedeutet keine gemeinsame Datenbank.
+
+## 14. Fraktionsspezifische Informationsprofile
+
+### 14.1 BLUE ISAF
+
+Stärken:
+
+- technische Sensoren;
+- ISR, SIGINT und strukturierte Berichte;
+- formale Auswertung;
+- Air- und Ground-Mission-Reporting;
+- verbesserte Erfassung eigener Assets und Transfers.
+
+Schwächen:
+
+- Sensorbeobachtung ist nicht automatisch Absichtserkenntnis;
+- zeitliche Verzögerung;
+- Terrain- und Prioritätslücken;
+- Fehlinterpretation lokaler Beziehungen;
+- begrenzte Sicht auf informelle Afghan-State- und RED-Ressourcenflüsse;
+- unvollständige Partnerinformationen.
+
+### 14.2 Afghan State
+
+Stärken:
+
+- ANA- und ANP-Berichte;
+- lokale Verwaltungs- und Checkpointinformationen;
+- Community-, Elder- und lokale Machtkontakte;
+- afghanische Intelligence- und Sicherheitsberichte;
+- Einblick in formale staatliche ResourceSources und eigene Force Packages;
+- lokales Sprach-, Sozial- und Kontextwissen.
+
+Schwächen:
+
+- uneinheitliche Berichtsqualität;
+- politische Filterung;
+- Patronage- und Korruptionsverzerrung;
+- lokale Eigeninteressen;
+- mögliche Infiltration;
+- unvollständige Erfassung von Abwesenheit, Verlusten oder Materielumleitung;
+- ISAF-Klassifikationsgrenzen.
+
+### 14.3 Taliban
 
 Stärken:
 
 - lokale Beobachter;
 - soziale und politische Netzwerke;
 - Route Spotters;
-- Einschätzung von Bevölkerung, Verwaltung und lokalen Machtverhältnissen;
-- langfristiges Pattern Learning.
+- Einschätzung von Bevölkerung, Verwaltung und Machtverhältnissen;
+- langfristiges Pattern Learning;
+- Beobachtung lokaler Revenue-, Manpower- und Materielzugänge.
 
 Schwächen:
 
 - uneinheitliche Berichtsqualität;
 - lokale Eigeninteressen;
 - Falschmeldungen zur Selbstdarstellung;
-- verzögerte Weitergabe zwischen Ebenen.
+- verzögerte Weitergabe;
+- verdeckte Rivalität um Ressourcen.
 
-### 13.2 Haqqani
+### 14.4 Haqqani
 
 Stärken:
 
 - compartmentierte Netzwerkberichte;
 - Facilitation- und Routenwissen;
 - hochwertige Zielaufklärung für ausgewählte Operationen;
-- externe Kontakte und technische Spezialisten.
+- externe Kontakte und Spezialisten;
+- Brokerinformationen über externe Supportflüsse.
 
 Schwächen:
 
 - bewusst begrenzte Teilung;
 - einzelne Zellen kennen nur Ausschnitte;
-- Verlust eines Brokers kann mehrere Informationspfade stören.
+- Verlust eines Brokers kann mehrere Informationspfade stören;
+- externe Kanäle können als stabil angenommen werden, obwohl sie kompromittiert sind.
 
-### 13.3 HIG
+### 14.5 HIG
 
 Stärken:
 
 - politische Kontakte;
 - lokale Patronagenetze;
 - mehrere Gesprächskanäle;
-- Zugang zu Gerüchten, Verhandlungen und Seitenwechseln.
+- Zugang zu Gerüchten, Verhandlungen und Seitenwechseln;
+- lokale Commander- und Revenue-Informationen.
 
 Schwächen:
 
 - widersprüchliche Vertreter;
 - Parallelverhandlungen;
 - hohe Verzerrungsgefahr durch Eigeninteressen;
-- unklare Autorität des Meldenden.
+- unklare Autorität des Meldenden;
+- lokale Zustände werden fälschlich als Gesamtfraktionszustand berichtet.
 
-### 13.4 BLUE
-
-Stärken:
-
-- technische Sensoren;
-- ISR, SIGINT und strukturierte Berichte;
-- gemeinsame Lagebilder und formale Auswertung.
-
-Schwächen:
-
-- Sensorbeobachtung ist nicht automatisch Absichtserkenntnis;
-- zeitliche Verzögerung;
-- Lücken durch Terrain und Einsatzprioritäten;
-- mögliche Fehlinterpretation lokaler Beziehungen.
-
-## 14. Memory Classes
+## 15. Memory Classes
 
 ```text
 EPISODIC_MEMORY
@@ -339,30 +459,40 @@ SEMANTIC_MEMORY
 RELATIONSHIP_MEMORY
 OPERATIONAL_MEMORY
 ORGANIZATIONAL_MEMORY
+RESOURCE_MEMORY
 TRAUMA_OR_SHOCK_MEMORY
 ```
 
-### Episodic Memory
+### 15.1 Episodic Memory
 
 Konkrete Ereignisse, Operationen und Ergebnisse.
 
-### Semantic Memory
+### 15.2 Semantic Memory
 
-Verallgemeinerte Muster wie wiederkehrende BLUE-Reaktionen.
+Verallgemeinerte Muster wie wiederkehrende Gegnerreaktionen.
 
-### Relationship Memory
+### 15.3 Relationship Memory
 
-Versprechen, Verrat, Kooperation, Schulden und Konflikte.
+Versprechen, Verrat, Kooperation, Schulden, Partnerfriktion und Konflikte.
 
-### Operational Memory
+### 15.4 Operational Memory
 
 Routen, Knoten, Caches, Methoden und bekannte Gegenmaßnahmen.
 
-### Organizational Memory
+### 15.5 Organizational Memory
 
 Leistung, Loyalität und Zuverlässigkeit eigener Unterführer.
 
-## 15. Memory Record
+### 15.6 Resource Memory
+
+- bekannte oder vermutete ResourceSources;
+- frühere Transfers;
+- wiederkehrende Verluste und Umleitungen;
+- bekannte Share-Konflikte;
+- Force-Generation-Erfolge und Fehlschläge;
+- wiederholte Materiel- oder Finance-Engpässe.
+
+## 16. Memory Record
 
 ```yaml
 memory_record:
@@ -378,31 +508,34 @@ memory_record:
   last_recalled: datetime
   decay_rate: enum
   linked_entities: []
+  linked_resource_sources: []
+  linked_resource_accounts: []
   linked_relationships: []
   lessons_inferred: []
   reconsideration_trigger: []
 ```
 
-## 16. Memory Retention
+## 17. Memory Retention
 
 Langfristig zu speichern sind insbesondere:
 
 - Führungsverluste;
 - große Niederlagen oder Erfolge;
 - kompromittierte Netzwerkknoten;
+- verlorene ResourceSources;
+- große ResourceTransfers;
+- wiederholte Umleitung oder Korruption;
+- Force-Generation-Fehlschläge;
 - gebrochene Vereinbarungen;
 - zuverlässige und unzuverlässige Partner;
-- wiederholte BLUE-Muster;
+- wiederholte Muster;
 - erfolgreiche Täuschungen;
-- entdeckte Doppelspiele;
 - Defektionen;
 - regionale Konflikte zwischen Fraktionen.
 
 Routineereignisse werden verdichtet oder verworfen.
 
-## 17. Memory Summarization
-
-Das LLM erhält keine unbegrenzte Ereignishistorie.
+## 18. Memory Summarization
 
 ```text
 RAW_EVENTS
@@ -413,50 +546,50 @@ RAW_EVENTS
 -> COMMANDER_CONTEXT
 ```
 
-Die Zusammenfassung muss Fakten, Annahmen und Bewertungen getrennt halten.
+Die Zusammenfassung muss Fakten, Annahmen, Schätzungen und Bewertungen getrennt halten.
 
-## 18. Bias und Persönlichkeit
-
-Persönlichkeitswerte beeinflussen, welche Informationen bevorzugt erinnert oder geglaubt werden.
-
-Beispiele:
+## 19. Bias und Persönlichkeit
 
 ```text
 high prestige_sensitivity
--> remembers public humiliation strongly
+-> remembers public humiliation and rival credit strongly
 
 high distrust_of_subordinates
 -> discounts optimistic local reports
 
-high retaliation_bias
--> raises relevance of attributed attacks
+high political_sensitivity
+-> retains partner and legitimacy failures strongly
 
 high operational_security_bias
 -> overweights compromise indicators
+
+high pragmatism
+-> retains useful cross-faction resource agreements
 ```
 
 Bias verändert Bewertung, nicht objektive Daten.
 
-## 19. Commander Input Construction
-
-Pro Turn erhält ein Commander:
+## 20. Commander Input Construction
 
 ```yaml
 memory_and_information_context:
   current_beliefs: []
   high_relevance_information: []
+  resource_beliefs: []
+  force_generation_beliefs: []
   unresolved_contradictions: []
   stale_but_relevant_items: []
   suspected_deception: []
   recent_events: []
   relationship_memories: []
   organizational_memories: []
+  resource_memories: []
   omitted_item_count: integer
 ```
 
-Die Angabe `omitted_item_count` verhindert den Eindruck vollständiger Informationsabdeckung.
+`omitted_item_count` verhindert den Eindruck vollständiger Informationsabdeckung.
 
-## 20. Update Pipeline
+## 21. Update Pipeline
 
 ```text
 INGEST_REPORT
@@ -471,7 +604,7 @@ INGEST_REPORT
 -> BUILD_COMMANDER_CONTEXT
 ```
 
-## 21. Sicherheitsregeln
+## 22. Sicherheitsregeln
 
 1. Keine Fraktion erhält Informationen allein aufgrund technischer Existenz im CampaignState.
 2. Geteilte Information behält Provenienz und Einschränkungen.
@@ -479,9 +612,12 @@ INGEST_REPORT
 4. Widersprüche werden sichtbar gehalten.
 5. Veraltete Informationen bleiben als veraltet erkennbar.
 6. Täuschung verändert Beliefs, nicht rückwirkend World Truth.
-7. Memory darf keine objektiven Fakten ergänzen, die nie beobachtet wurden.
+7. Memory ergänzt keine objektiven Fakten, die nie beobachtet wurden.
+8. Objektive ResourceAccount-Stände werden nicht als Commander-Wissen serialisiert.
+9. ISAF und Afghan State erhalten keine automatische Vollteilung.
+10. ResourceSource-Control und Beneficiary Share werden getrennt geglaubt.
 
-## 22. Testfälle
+## 23. Testfälle
 
 ```text
 TEST-INFO-01 conflicting route reports
@@ -494,17 +630,36 @@ TEST-INFO-07 discovered double agent
 TEST-INFO-08 memory-driven overreaction
 TEST-INFO-09 belief correction after failed operation
 TEST-INFO-10 persistent disagreement between commanders
+TEST-INFO-11 ISAF and Afghan State receive different partner reports
+TEST-INFO-12 hidden Taliban revenue share remains unknown to Afghan State
+TEST-INFO-13 false transfer confirmation is rejected
+TEST-INFO-14 resource account estimate decays
+TEST-INFO-15 five commander views differ from same world state
 ```
 
-## 23. Abnahmekriterien
+## 24. Abnahmekriterien
 
-Das Modell ist erst technisch akzeptiert, wenn:
+Das Modell ist technisch akzeptiert, wenn:
 
 - objektive Wahrheit und Commander-Belief getrennt persistieren;
 - Quellenprovenienz erhalten bleibt;
 - Wissen nachvollziehbar altert;
 - widersprüchliche Berichte parallel bestehen können;
 - Informationsweitergabe unvollständig und verzögert sein kann;
+- ISAF und Afghan State getrennte Informationsprofile besitzen;
+- ResourceSource-, ResourceAccount- und Share-Beliefs subjektiv bleiben;
 - Memory-Zusammenfassungen reproduzierbar erzeugt werden;
 - keine Commander-Instanz Informationen einer anderen automatisch erhält;
-- Testfälle deterministisch wiederholbar sind.
+- alle fünf Commander deterministisch unterschiedliche Views erhalten können.
+
+## 25. Querverweise
+
+```text
+02-common-commander-model.md
+03-inter-faction-relations-and-negotiation.md
+07-runtime-rulebook-and-action-schema.md
+09-orchestrator-architecture-and-adjudication.md
+13-campaign-state-and-event-store-schema.md
+16-afghan-state-and-ansf-commander-dossier.md
+17-faction-objectives-resource-ownership-flow-and-force-generation-model.md
+```
