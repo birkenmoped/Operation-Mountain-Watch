@@ -6,10 +6,11 @@ owning_policy: OMW-GOV-001
 authoritative_for:
   - Tarinkot Air Operations test-package layout
   - accepted G5 read-only diagnostic result
-  - current G6A parking-candidate analysis workflow
-  - separation of geometric parking evidence from controlled spawn acceptance
+  - accepted G6A parking-candidate dataset
+  - current G6B controlled placement workflow
+  - separation of geometric parking evidence from operational parking acceptance
 not_authoritative_for:
-  - final parking allowlists before a documented G6B PASS
+  - final parking allowlists before a documented G6B PASS and later operational validation
   - AIRWING, SQUADRON, payload, AUFTRAG, COMMANDER or OPSTRANSPORT acceptance
   - merge approval or Ready-for-Review approval
 scenario_period: 2010-08-01/2011-12-31
@@ -32,27 +33,26 @@ G2_object_contract: OWNER_ACCEPTED_BRANCH
 G3_mission_editor: PARTIAL_FUNCTION_ZONES_PENDING
 G4_MOOSE_source_review: PASS_SOURCE_REVIEW
 G5_read_only_diagnostics: PASS_DCS
-G6_parking_calibration: G6A_IMPLEMENTED_AWAITING_DCS_TEST
-G7_airwing_squadron_payload: BLOCKED_BY_G6
+G6_parking_calibration: G6A_PASS_DCS_G6B_IMPLEMENTED_AWAITING_DCS
+G7_airwing_squadron_payload: BLOCKED_BY_G6B
 G8_direct_dispatch_and_transport: NOT_STARTED
 G9_commander_and_operational_parking: NOT_STARTED
 G10_lifecycle_results_handoff: NOT_STARTED
 ```
 
-Der G5-Retest bestätigte alle zwölf Statics und endete mit:
+Der erfolgreiche G5-Retest bestätigte:
 
 ```text
 RESULT G5_READ_ONLY_DIAGNOSTICS_COMPLETE status=PASS_STRUCTURE coreMissing=0 zonesMissing=10 mutationCount=0
 ```
 
-G6 wird zweistufig durchgeführt:
+Der G6A-Lauf vom 3. August 2026 endete mit:
 
 ```text
-G6A: read-only Kandidatenanalyse nach MOOSE-Kollisionslogik
-G6B: kontrollierte Spawn- und Platzierungstests je Musterfamilie
+RESULT G6A_PARKING_CANDIDATE_ANALYSIS status=PASS_DATASET reason=none parkingCount=33 modelMissing=0 candidateSetFailures=0 activePlayerClients=0 parkingMutation=0 spawns=0
 ```
 
-G6A ist implementiert. Positive SQUADRON-Parking-Listen bleiben bis zum dokumentierten G6B-PASS gesperrt.
+G6B ist als isolierter MOOSE-SPAWN-Platzierungstest implementiert. Positive SQUADRON-Parking-Listen bleiben weiterhin leer.
 
 ## 2. Verbindliche Referenzen
 
@@ -65,8 +65,10 @@ G6A ist implementiert. Positive SQUADRON-Parking-Listen bleiben bis zum dokument
 - `docs/evidence/tarinkot-g5-pass-and-g6-authorization-2026-08-03.md`
 - `expected/g5-read-only-diagnostics-acceptance.md`
 - `expected/g6a-parking-candidate-analysis-acceptance.md`
+- `expected/g6b-controlled-placement-acceptance.md`
 - `results/2026-08-03-g5-read-only-diagnostics-initial-fail.md`
 - `results/2026-08-03-g5-read-only-diagnostics-retest-pass.md`
+- `results/2026-08-03-g6a-parking-candidate-analysis-pass.md`
 
 ## 3. Paketstruktur
 
@@ -75,23 +77,30 @@ mission/tests/tarinkot-air-operations/
 ├── README.md
 ├── expected/
 │   ├── g5-read-only-diagnostics-acceptance.md
-│   └── g6a-parking-candidate-analysis-acceptance.md
+│   ├── g6a-parking-candidate-analysis-acceptance.md
+│   └── g6b-controlled-placement-acceptance.md
 ├── results/
 │   ├── 2026-08-03-g5-read-only-diagnostics-initial-fail.md
-│   └── 2026-08-03-g5-read-only-diagnostics-retest-pass.md
+│   ├── 2026-08-03-g5-read-only-diagnostics-retest-pass.md
+│   └── 2026-08-03-g6a-parking-candidate-analysis-pass.md
 ├── src/
 │   ├── 01-tarinkot-g5-read-only-diagnostics.lua
-│   └── 02-tarinkot-g6a-parking-candidate-analysis.lua
+│   ├── 02-tarinkot-g6a-parking-candidate-analysis.lua
+│   └── 03-tarinkot-g6b-controlled-placement.lua
 └── dist/
     ├── OMW_AirOps_Tarinkot_G5_ReadOnly.lua
-    └── OMW_AirOps_Tarinkot_G6A_ParkingAnalysis.lua
+    ├── OMW_AirOps_Tarinkot_G6A_ParkingAnalysis.lua
+    ├── OMW_AirOps_Tarinkot_G6B_AH64_Placement.lua
+    ├── OMW_AirOps_Tarinkot_G6B_UH60_Placement.lua
+    └── OMW_AirOps_Tarinkot_G6B_CH47_Placement.lua
 
 tools/
 ├── build-tarinkot-air-operations-g5-diagnostics.ps1
-└── build-tarinkot-air-operations-g6a-parking-analysis.ps1
+├── build-tarinkot-air-operations-g6a-parking-analysis.ps1
+└── build-tarinkot-air-operations-g6b-controlled-placement.ps1
 ```
 
-Dateien unter `dist/` werden ausschließlich durch den jeweiligen Builder erzeugt und nicht manuell bearbeitet.
+Dateien unter `dist/` werden ausschließlich durch den jeweiligen Builder erzeugt und nicht manuell bearbeitet oder eingecheckt.
 
 ## 4. Bestätigte G5-Basis
 
@@ -111,7 +120,7 @@ contract_name_duplicates: 0
 mutation_count: 0
 ```
 
-Die drei Client-Reservierungen bleiben harte Sperren:
+Harte Client-Sperren:
 
 ```text
 TerminalID 20 / C01-H / CLIENT_US_TKOT_AH64D_01
@@ -119,113 +128,118 @@ TerminalID  8 / C05-H / CLIENT_US_TKOT_AH64D_02
 TerminalID  3 / C07-H / CLIENT_US_TKOT_CH47F_01
 ```
 
-Datentypbesonderheit:
+Der abweichende Mission-Editor-Datentyp von `CLIENT_US_TKOT_AH64D_01 unit.parking = "20"` wird nur für Vergleiche numerisch normalisiert; die Mission wird nicht stillschweigend umgeschrieben.
 
-```text
-CLIENT_US_TKOT_AH64D_01 unit.parking = "20"  # Lua string
-CLIENT_US_TKOT_AH64D_02 unit.parking = 8     # Lua number
-CLIENT_US_TKOT_CH47F_01 unit.parking = 3     # Lua number
+## 5. Akzeptierter G6A-Datensatz
+
+```yaml
+AH64_candidates: [0, 1, 6, 11, 13, 14, 18, 22, 24, 25, 28, 33]
+AH64_valid_pairs: 66
+UH60_candidates: [0, 1, 6, 11, 13, 14, 18, 22, 24, 25, 28, 33]
+UH60_valid_pairs: 66
+CH47_candidates: [0, 1, 6, 11, 13, 14, 18, 22, 24, 25, 28, 29, 33]
 ```
 
-Parking-IDs werden für Vergleiche numerisch normalisiert, ohne die Mission-Editor-Templates stillschweigend umzuschreiben.
+Modellradien aus der eingebetteten Runtime:
 
-## 5. G6A – MOOSE-first Kandidatenanalyse
-
-G6A verwendet aus der exakt eingebetteten MOOSE-Version 2.9.18:
-
-```text
-AIRBASE:GetParkingSpotsTable()
-AIRBASE.TerminalType.HelicopterUsable
-AIRBASE._CheckTerminalType()
-COORDINATE:ScanObjects()
-POSITIONABLE:GetBoundingRadius()
-POSITIONABLE:GetObjectSize()
+```yaml
+AH64_radius_m: 9.967
+UH60_radius_m: 10.020
+CH47_radius_m: 7.910
 ```
 
-Die Sicherheitsdistanz entspricht der internen MOOSE-Berechnung:
+Die CH-47-Abmessungen bilden die Rotorfläche nicht vollständig ab. Jeder CH-47-Spawn benötigt deshalb zusätzlich zur automatischen Prüfung eine visuelle Rotor- und Hindernisprüfung.
 
-```text
-safeDistance = (aircraftRadius + obstacleRadius) * 1.1
-scanRadius = 50 m
+Der DCS-Debrief führte weiterhin den Quellmissionsnamen `OMW_Template_v5_Salerno.miz`. Das ist als Provenienz-Warnung dokumentiert; der G6A-Lauf bleibt aufgrund eindeutiger Builder-, Commit-, Airbase-, Parking- und Ergebnismarker verwertbar.
+
+## 6. G6B – kontrollierte Platzierung
+
+Der exakte MOOSE-Quellstand bestätigt:
+
+```lua
+SPAWN:SpawnAtParkingSpot(Airbase, TerminalIDs, SPAWN.Takeoff.Cold)
 ```
 
-Untersuchte Musterfamilien:
+G6B verwendet ausschließlich diesen Pfad. `InitAIOff()` hält die erzeugten Luftfahrzeuge nach dem Spawn stationär. Dadurch wird nur die anfängliche Platzierung geprüft; Engine Start, Taxi und Takeoff bleiben späteren Tests vorbehalten.
+
+Probe-Sets:
 
 ```yaml
 AH64:
-  type: AH-64D_BLK_II
-  required_simultaneous_spots: 2
+  template: TPL_AIR_US_TKOT_AH64D_CAS_2SHIP
+  terminal_ids: [0, 25]
+  groups: 1
+  units: 2
 UH60:
-  type: UH-60A
-  required_simultaneous_spots: 2
+  template: TPL_AIR_US_TKOT_UH60_MEDEVAC_1SHIP
+  terminal_ids: [13, 22]
+  groups: 2
+  units_per_group: 1
 CH47:
-  type: CH-47Fbl1
-  required_simultaneous_spots: 1
+  template: TPL_AIR_US_TKOT_CH47_HEAVYLIFT_1SHIP
+  terminal_ids: [14]
+  groups: 1
+  units: 1
 ```
 
-G6A liest Modellradien aus vorhandenen Template-, Client- oder Static-Objekten. Ein fehlender Radius führt zu `PARTIAL`; es wird kein Ersatzwert erfunden.
+Terminal `29` wird wegen der geringen geometrischen Reserve und der unvollständig abgebildeten CH-47-Rotorfläche nicht im ersten Test verwendet.
 
-## 6. G6A-Sicherheitsgrenze
+## 7. G6B-Sicherheitsgrenze
 
-G6A darf und wird nicht:
+G6B erzeugt keine:
 
 ```text
-AIRWING oder SQUADRON erzeugen
-Payloads registrieren
-Parking-IDs setzen
-Parking-White- oder Blacklists verändern
-SafeParking umschalten
-Client-Parking freigeben
-Gruppen aktivieren oder spawnen
-Missionen oder Transporte erzeugen
-F10-Marker anlegen
-CampaignState oder MIZ verändern
+AIRWING- oder SQUADRON-Objekte
+Payloads
+AUFTRAG-Missionen
+COMMANDER
+OPSTRANSPORT
+Parking-White- oder Blacklists
+SetParkingIDs-Zuweisungen
+SafeParking-Mutationen
+CampaignState- oder MIZ-Änderungen
+zufälligen Spawnpositionen
 ```
 
-Der Builder prüft den Quelltext gegen 18 verbotene Muster.
-
-Der Test muss ohne besetzten Tarinkot-Client laufen. Ein aktiver Spieler in einem Tarinkot-Client führt zu:
+Der Builder prüft verbotene Muster und verlangt ausdrücklich:
 
 ```text
-status=INVALID_ACTIVE_PLAYER_CLIENT
+SPAWN:NewWithAlias
+InitAIOff
+SpawnAtParkingSpot
+SPAWN.Takeoff.Cold
 ```
 
-## 7. Erwartete G6A-Ergebnisse
+## 8. G6B-Durchführung
 
-Zulässiger vollständiger Ergebnisstatus:
+Jede Musterfamilie wird in einer separaten Mission getestet. In jeder Testmission wird nur das jeweilige G6B-Bundle eingebunden:
 
 ```text
-RESULT G6A_PARKING_CANDIDATE_ANALYSIS status=PASS_DATASET
+OMW_Template_v5_Salerno_TKOT_G6B_AH64.miz
+OMW_Template_v5_Salerno_TKOT_G6B_UH60.miz
+OMW_Template_v5_Salerno_TKOT_G6B_CH47.miz
 ```
 
-`PASS_DATASET` erfordert:
+Keinen Tarinkot-Client besetzen. Die Mission mindestens 35 Sekunden laufen lassen.
 
-- exakt 33 Parking-Datensätze;
-- keinen aktiven Tarinkot-Spielerclient;
-- Modellradien für AH-64, UH-60 und CH-47;
-- mindestens eine geeignete AH-64-Zweierkombination;
-- mindestens eine geeignete UH-60-Zweierkombination;
-- mindestens einen geeigneten CH-47-Einzelplatz;
-- `parkingMutation=0` und `spawns=0`.
-
-`PARTIAL` autorisiert noch keine Parking-Liste. `FAIL` oder `INVALID_ACTIVE_PLAYER_CLIENT` erfordern einen korrigierten Wiederholungslauf.
-
-## 8. Abnahmegrenze
-
-G6A beweist nur geometrische Kandidaten nach der MOOSE-Kollisionslogik. Nicht bewiesen sind:
+Erwarteter automatischer Erfolgsmarker:
 
 ```text
-Spawn auf exakt dem angeforderten Terminal
-AH-64-Zweiergruppen-Platzierung
-parallele UH-60-Einzelgruppen-Platzierung
-CH-47-Rotor- und Rollfreiheit
-Cold-Start und Taxi
-Rückkehr- oder Endparkverhalten
+RESULT G6B_<FAMILY>_CONTROLLED_PLACEMENT status=PASS_RUNTIME_PLACEMENT
 ```
 
-Diese Nachweise gehören zu G6B und werden erst aus dem tatsächlichen G6A-Datensatz abgeleitet.
+Zusätzlich visuell prüfen:
 
-Noch nicht akzeptiert:
+```text
+keine Modellüberschneidung
+kein Kontakt zu Static oder Terrain
+Luftfahrzeug steht auf vorbereiteter Fläche
+CH-47-Rotorfläche ist frei
+```
+
+## 9. Abnahmegrenze
+
+Auch nach drei erfolgreichen G6B-Läufen bleiben die produktiven Listen zunächst leer:
 
 ```yaml
 acceptedAHParkingIds: []
@@ -233,25 +247,4 @@ acceptedUH60ParkingIds: []
 acceptedCH47ParkingIds: []
 ```
 
-## 9. Zonenbild
-
-```yaml
-expected_zones: 11
-expected_present:
-  - OMW_LOG_NODE_TARINKOT
-expected_missing: 10
-```
-
-G6A benötigt keine Funktionszone. Zonenabhängige Missionstests bleiben bis zur jeweiligen Mission-Editor-Anlage gesperrt.
-
-## 10. Ergebnisdokumentation
-
-Jeder DCS-Lauf erhält einen unveränderlichen Bericht unter `results/`. Er enthält mindestens:
-
-- Branch und Commit;
-- Builder-Version und Bundle-Hash;
-- Missions- und MOOSE-Provenienz;
-- Modellradien;
-- Kandidatenlisten und gültige Zweierkombinationen;
-- PASS, PARTIAL, FAIL oder INVALID;
-- Folgerungen für G6B.
+G6B akzeptiert nur die konkret getesteten Probe-Sets als technische Basis für die nachfolgende Parking-Entscheidung. G7 bleibt bis zur Auswertung aller drei Logs und visuellen Bestätigungen gesperrt.
