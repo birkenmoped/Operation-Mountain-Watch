@@ -16,7 +16,7 @@ scenario_period: 2010-08-01/2011-12-31
 project_phase: TARINKOT_G5_READ_ONLY_DIAGNOSTICS
 source_branch: agent/tarinkot-object-contract-reconciliation
 source_commit: PENDING_MERGE
-validated_in_dcs: false
+validated_in_dcs: true
 supersedes: []
 superseded_by: []
 ---
@@ -29,10 +29,10 @@ superseded_by: []
 G0_provenance: PASS_BRANCH
 G1_ORBAT_and_evidence: PASS_BRANCH
 G2_object_contract: OWNER_ACCEPTED_BRANCH
-G3_mission_editor: PARTIAL
+G3_mission_editor: PARTIAL_STATIC_CORRECTION_REQUIRED
 G4_MOOSE_source_review: PASS_SOURCE_REVIEW
-G5_read_only_diagnostics: IMPLEMENTED_AWAITING_DCS_TEST
-G6_parking_calibration: NOT_STARTED
+G5_read_only_diagnostics: FAIL_RETEST_REQUIRED
+G6_parking_calibration: BLOCKED_BY_G5
 G7_airwing_squadron_payload: NOT_STARTED
 G8_direct_dispatch_and_transport: NOT_STARTED
 G9_commander_and_operational_parking: NOT_STARTED
@@ -40,6 +40,8 @@ G10_lifecycle_results_handoff: NOT_STARTED
 ```
 
 G5 ist der erste Tarinkot-Lua-Test. Er ist ausschließlich diagnostisch und erzeugt keine operativen MOOSE-Objekte.
+
+Der initiale DCS-Lauf bestätigte Provenienz, read-only-Verhalten, Airbase, Parking, Warehouse, Clients, AI-Seeds, Zonenbild und Namenseindeutigkeit. Der Strukturtest schlug ausschließlich fehl, weil `STATIC_AIR_US_TKOT_AH64_07` nicht als MOOSE-`STATIC` auflösbar war. Vor dem Retest muss dieses Mission-Editor-Objekt vom Legacy-Typ `AH-64D` auf `AH-64D_BLK_II` korrigiert werden.
 
 ## 2. Verbindliche Referenzen
 
@@ -50,6 +52,7 @@ G5 ist der erste Tarinkot-Lua-Test. Er ist ausschließlich diagnostisch und erze
 - `docs/evidence/tarinkot-g2-owner-acceptance-2026-08-03.md`
 - `docs/evidence/tarinkot-g4-moose-2-9-18-source-review.md`
 - `expected/g5-read-only-diagnostics-acceptance.md`
+- `results/2026-08-03-g5-read-only-diagnostics-initial-fail.md`
 
 Ein im Projektverlauf referenziertes `mission/tests/GOVERNANCE.md` ist auf diesem Branch und auf `main` nicht vorhanden. Die geltenden Regeln werden daher aus den oben genannten Governance- und Workflow-Dokumenten übernommen.
 
@@ -60,6 +63,8 @@ mission/tests/tarinkot-air-operations/
 ├── README.md
 ├── expected/
 │   └── g5-read-only-diagnostics-acceptance.md
+├── results/
+│   └── 2026-08-03-g5-read-only-diagnostics-initial-fail.md
 ├── src/
 │   └── 01-tarinkot-g5-read-only-diagnostics.lua
 └── dist/
@@ -108,6 +113,8 @@ MIZ-Strukturen verändern
 
 Der Builder prüft den Quelltext vor dem Build gegen verbotene Konstruktoren und mutierende Aufrufe. Diese statische Prüfung ersetzt keinen DCS-Laufzeittest.
 
+Der initiale Lauf bestätigte `mutationCount=0` und enthielt keine G5-Lua-Exception.
+
 ## 6. Erwartetes aktuelles Zonenbild
 
 ```yaml
@@ -121,17 +128,41 @@ Fehlende Zonen sind in G5 kein Strukturfehler. Sie werden nur protokolliert und 
 
 ## 7. Testauswertung
 
-Der Lauf ist strukturell erfolgreich, wenn die Abschlusszeile enthält:
+Ein Lauf ist strukturell erfolgreich, wenn die Abschlusszeile enthält:
 
 ```text
 RESULT G5_READ_ONLY_DIAGNOSTICS_COMPLETE status=PASS_STRUCTURE coreMissing=0 zonesMissing=10 mutationCount=0
 ```
 
+Initialer Lauf:
+
+```text
+RESULT G5_READ_ONLY_DIAGNOSTICS_COMPLETE status=FAIL_STRUCTURE coreMissing=1 zonesMissing=10 mutationCount=0
+```
+
+Ursache:
+
+```text
+MISSING STATIC name=STATIC_AIR_US_TKOT_AH64_07
+```
+
 Ein PASS akzeptiert noch keine KI-Parkplätze und keine AIRWING-/SQUADRON-Laufzeitfunktion. Er liefert ausschließlich den Datensatz für G6.
 
-## 8. Ergebnisdokumentation
+## 8. Retest-Grenze
 
-Nach dem ersten DCS-Lauf wird ein unveränderlicher Bericht unter `results/` ergänzt. Er enthält mindestens:
+Vor dem Retest ist ausschließlich folgendes Mission-Editor-Objekt zu korrigieren:
+
+```text
+Name: STATIC_AIR_US_TKOT_AH64_07
+Type: AH-64D_BLK_II
+Position und Heading: unverändert
+```
+
+Andere Statics, Clients, AI-Seeds, Parking-Werte, Warehouse und Funktionszonen bleiben unverändert. Danach muss das Bundle wegen des geänderten Branch-Heads neu gebaut, erneut über `DO SCRIPT FILE` eingebettet und mindestens 25 Sekunden getestet werden.
+
+## 9. Ergebnisdokumentation
+
+Jeder DCS-Lauf erhält einen unveränderlichen Bericht unter `results/`. Er enthält mindestens:
 
 - Branch und Commit;
 - Builder-Version;
