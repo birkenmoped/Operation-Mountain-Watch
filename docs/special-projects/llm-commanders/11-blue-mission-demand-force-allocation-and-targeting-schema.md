@@ -5,26 +5,41 @@ document_class: BLUE_MISSION_DEMAND_FORCE_ALLOCATION_TARGETING_SCHEMA
 scenario_period: 2010-08-01/2011-12-31
 source_branch: docs/optional-llm-commanders
 validated_in_dcs: false
+authoritative_for:
+  - ISAF mission demand and force-allocation objects
+  - Afghan partner approval and ownership boundaries
+  - BLUE targeting and air-support gates
+  - ISAF support for Afghan resource and force generation
 ---
 
-# BLUE MissionDemand, Force Allocation und Targeting Schema
+# BLUE MissionDemand, Partner Coordination, Force Allocation und Targeting Schema
 
 ## 1. Zweck
 
-Dieses Dokument definiert die maschinenlesbaren BLUE-Objekte zwischen strategischer Commander-Entscheidung, operativer Bedarfsformulierung, Ressourcenpriorisierung, Target Development, Air Support, Partnerkräften und DCS/MOOSE-Ausführung.
+Dieses Dokument definiert die maschinenlesbaren Objekte zwischen:
+
+- strategischer Entscheidung des `BLUE_ISAF_COMMANDER`;
+- operativer Bedarfsformulierung;
+- ResourceSource-Schutz und Afghan-State-Unterstützung;
+- ISAF-Force- und Enabler-Allokation;
+- Partneranfrage und afghanischer Zustimmung;
+- Target Development und Air Support;
+- DCS-/MOOSE-Ausführung;
+- MISREP, BDA und Campaign Assessment.
 
 ```text
-BLUE_COMMANDER_DECISION
+BLUE_ISAF_COMMANDER_DECISION
 -> MISSION_DEMAND
 -> VALIDATION_AND_PRIORITY
--> FORCE_AND_ENABLER_ALLOCATION
--> OPERATION_PLAN
--> SUBORDINATE_REQUESTS_AND_TASKING
+-> OPTIONAL_AFGHAN_PARTNER_REVIEW
+-> ISAF_FORCE_AND_ENABLER_ALLOCATION
+-> AFGHAN_RESOURCE_OR_FORCE_RESERVATION
+-> JOINT_OR_SINGLE_FACTION_OPERATION_PLAN
 -> DCS_MOOSE_EXECUTION
 -> MISREP_BDA_CAMPAIGN_ASSESSMENT
 ```
 
-Der BLUE Commander fordert Wirkungen und priorisiert Bedarfe. Er erzeugt weder direkt einen ATO-Eintrag noch eine Waffenfreigabe.
+Der BLUE ISAF Commander fordert Wirkungen und priorisiert Bedarfe. Er erzeugt weder direkt einen ATO-Eintrag noch eine Waffenfreigabe oder afghanische Einheit.
 
 ## 2. Verbindliche Trennungen
 
@@ -37,16 +52,21 @@ POSITIVE_IDENTIFICATION != HOSTILE_INTENT
 AFGHAN_LED != ENABLER_INDEPENDENT
 AVAILABLE_ASSET != UNCOMMITTED_ASSET
 TACTICAL_SUCCESS != CAMPAIGN_SUCCESS
+SAME_DCS_COALITION != SAME_FORCE_OWNERSHIP
+PARTNER_SUPPORT != COMMAND_TRANSFER
+MATERIEL_TRANSFER != READY_AFGHAN_UNIT
+CAPTURE_EFFECT != GUARANTEED_DCS_CAPTURE
 ```
 
-## 3. Gemeinsames MissionDemand-Objekt
+## 3. MissionDemand
 
 ```yaml
 mission_demand:
-  schema_version: "1.0"
+  schema_version: "2.0"
   demand_id: string
   originating_turn_id: string
-  owning_commander_id: BLUE_COMMANDER
+  owning_commander_id: BLUE_ISAF_COMMANDER
+  owning_faction_id: ISAF
   requesting_element: string
   campaign_time_created: datetime
   demand_type: enum
@@ -63,8 +83,10 @@ mission_demand:
   operational_need:
     desired_effect: enum
     target_or_problem_refs: []
-    supported_force_refs: []
-    supported_partner_refs: []
+    resource_source_refs: []
+    access_node_refs: []
+    supported_isaf_force_refs: []
+    requested_afghan_force_refs: []
     geographic_scope: []
     earliest_start: datetime|null
     latest_completion: datetime|null
@@ -77,6 +99,14 @@ mission_demand:
     intelligence_gaps: []
     deception_risk: 0..100
     last_verified: datetime|null
+
+  partner_requirements:
+    afghan_partner_required: boolean
+    requested_lead_faction: ISAF|AFGHAN_STATE|null
+    partner_approval_required: boolean
+    requested_afghan_force_package_refs: []
+    requested_afghan_resource_support: []
+    requested_coalition_enablers: []
 
   constraints:
     roe_profile_ref: string
@@ -108,9 +138,20 @@ ROUTE_SECURITY
 CONVOY_SUPPORT
 FORCE_PROTECTION
 PARTNER_FORCE_SUPPORT
+PARTNER_OPERATION_REQUEST
 ISR_COLLECTION
 TARGET_DEVELOPMENT
 NETWORK_DISRUPTION
+RESOURCE_SOURCE_PROTECTION
+RESOURCE_FLOW_INTERDICTION
+REVENUE_NODE_SECURITY
+RECRUITMENT_SITE_PROTECTION
+MATERIEL_TRANSFER_PROTECTION
+ANSF_FORCE_GENERATION_SUPPORT
+TRAINING_SUPPORT
+ADVISOR_SUPPORT
+MATERIEL_TRANSFER
+FINANCE_SUPPORT
 DIRECT_ACTION
 AIR_ASSAULT
 CAS_SUPPORT
@@ -126,6 +167,8 @@ STABILITY_PRESENCE
 DECEPTION_OPERATION
 RECOVERY_AND_RECONSTITUTION
 ```
+
+`MATERIEL_TRANSFER` und `FINANCE_SUPPORT` erzeugen keine automatische afghanische Einheit.
 
 ## 5. Desired Effects
 
@@ -146,7 +189,11 @@ DISRUPT
 ISOLATE
 INTERDICT
 DENY_ACCESS
-CAPTURE
+PROTECT_RESOURCE_SOURCE
+RESTORE_RESOURCE_FLOW
+REDUCE_RED_ACCESS_SHARE
+INCREASE_AFGHAN_ACCESS_SHARE
+CAPTURE_IF_FEASIBLE_AS_CAMPAIGN_EFFECT
 RESCUE
 EVACUATE
 DESTROY
@@ -157,7 +204,7 @@ SUPPORT_GOVERNANCE
 REDUCE_CIVILIAN_RISK
 ```
 
-`DESTROY` ist nur eine Wirkung unter mehreren und darf nicht als Standard eingesetzt werden.
+`DESTROY` ist nur eine Wirkung unter mehreren. Änderungen von Fraktionsanteilen sind gewünschte Kampagneneffekte und werden nicht direkt vom Commander gesetzt.
 
 ## 6. MissionDemand Lifecycle
 
@@ -166,6 +213,10 @@ DRAFT
 SUBMITTED
 VALIDATING
 NEEDS_INFORMATION
+PARTNER_REVIEW_REQUIRED
+PARTNER_ACCEPTED
+PARTNER_DECLINED
+PARTNER_CONDITIONAL
 PRIORITIZED
 APPROVED
 DEFERRED
@@ -188,6 +239,7 @@ Zulässige Rücksprünge:
 
 ```text
 VALIDATING -> NEEDS_INFORMATION
+PARTNER_REVIEW_REQUIRED -> PARTNER_CONDITIONAL
 RESOURCING -> DEFERRED
 TASKED -> SUSPENDED
 EXECUTING -> ABORTED
@@ -196,19 +248,21 @@ ASSESSING -> NEEDS_INFORMATION
 
 ## 7. Priorisierung
 
-Der Priority Score wird nicht allein aus Dringlichkeit berechnet.
-
 ```yaml
 priority_factors:
   catastrophic_loss_prevention: 0..100
   population_protection_value: 0..100
   friendly_force_protection_value: 0..100
   strategic_effect: 0..100
+  terrorist_safe_haven_denial_value: 0..100
   time_sensitivity: 0..100
   intelligence_confidence: 0..100
   target_or_problem_persistence: 0..100
   partner_enablement_value: 0..100
+  resource_source_value: 0..100
+  resource_denial_value: 0..100
   route_or_logistics_value: 0..100
+  transition_value: 0..100
   political_risk: 0..100
   civilian_harm_risk: 0..100
   resource_cost: 0..100
@@ -216,33 +270,14 @@ priority_factors:
   sustainability: 0..100
 ```
 
-Beispielhafte Ausgangsformel:
-
-```text
-PRIORITY =
-  0.20 catastrophic_loss_prevention
-+ 0.14 population_protection_value
-+ 0.12 friendly_force_protection_value
-+ 0.13 strategic_effect
-+ 0.10 time_sensitivity
-+ 0.08 partner_enablement_value
-+ 0.07 route_or_logistics_value
-+ 0.08 sustainability
-+ 0.05 intelligence_confidence
-+ 0.03 target_or_problem_persistence
-- 0.08 political_risk
-- 0.10 civilian_harm_risk
-- 0.06 resource_cost
-- 0.06 opportunity_cost
-```
-
-Die konkrete Formel ist versioniert und testbar. Notfallregeln dürfen gewichtete Scores übersteuern.
+Die konkrete Formel ist versioniert und testbar. Notfallregeln dürfen Scores nur mit protokollierter Begründung übersteuern.
 
 ## 8. Capability Request
 
 ```yaml
 capability_request:
   capability_type: enum
+  owner_faction_requirement: ISAF|AFGHAN_STATE|EITHER
   minimum_quantity: number
   preferred_quantity: number
   minimum_quality: 0..100
@@ -256,7 +291,7 @@ capability_request:
   fallback_capabilities: []
 ```
 
-Zulässige Capability Types:
+Capability Types:
 
 ```text
 GROUND_MANEUVER
@@ -284,13 +319,15 @@ CIVIL_AFFAIRS
 INFORMATION_OPERATIONS
 PARTNER_ADVISORY
 INTELLIGENCE_FUSION
+TRAINING_CAPACITY
 ```
 
-## 9. BLUE Asset State
+## 9. ISAF Asset State
 
 ```yaml
-blue_asset:
+isaf_asset:
   asset_id: string
+  owner_faction_id: ISAF
   asset_type: string
   owning_organization: string
   command_relationship: OPCON|TACON|SUPPORT|COORDINATION_ONLY
@@ -341,13 +378,14 @@ EMERGENCY_ONLY
 RECOVERY_PROTECTED
 ```
 
-## 10. Force Allocation
+## 10. ISAF Force Allocation
 
 ```yaml
 force_allocation:
   allocation_id: string
   demand_id: string
-  asset_id: string
+  owner_faction_id: ISAF
+  asset_or_force_package_id: string
   allocated_capability: string
   allocation_state: PROPOSED|RESERVED|CONFIRMED|TASKED|RELEASED|CANCELLED
   start_window: {}
@@ -372,9 +410,113 @@ RECOVERY_CAPACITY_AVAILABLE
 NO_HIGHER_PRIORITY_LOCK
 ```
 
-## 11. Reserve Policy
+## 11. Afghan Partner Review
 
-Nicht der gesamte Bestand darf verplant werden.
+```yaml
+afghan_partner_review:
+  review_id: string
+  demand_id: string
+  requested_by_commander_id: BLUE_ISAF_COMMANDER
+  reviewing_commander_id: AFGHAN_STATE_COMMANDER
+  requested_lead_role: LEAD|SUPPORTED|SUPPORTING|HOLD_FORCE
+  requested_force_package_refs: []
+  requested_resource_account_refs: []
+  offered_isaf_enabler_refs: []
+  offered_finance_transfer_ref: string|null
+  offered_materiel_transfer_ref: string|null
+  proposed_command_relationship: string
+  proposed_start_window: {}
+  decision: PENDING|ACCEPTED|DECLINED|CONDITIONAL
+  conditions: []
+  decision_rationale: []
+  expires_at: datetime|null
+```
+
+ISAF darf den Partner Review nicht überspringen, wenn afghanische Force Packages oder ResourceAccounts betroffen sind.
+
+## 12. Afghan Partner Force Package
+
+```yaml
+partner_force_package:
+  force_package_ref: string
+  owner_faction_id: AFGHAN_STATE
+  owner_commander_id: AFGHAN_STATE_COMMANDER
+  owner_organization_ref: string
+  mission_role: LEAD|SUPPORTED|SUPPORTING|SECURITY|HOLD_FORCE
+
+  readiness_snapshot:
+    personnel_present: 0..100
+    leadership_quality: 0..100
+    tactical_skill: 0..100
+    staff_planning: 0..100
+    discipline: 0..100
+    logistics: 0..100
+    intelligence: 0..100
+    communications: 0..100
+    eod_access: 0..100
+    air_support_access: 0..100
+    medevac_access: 0..100
+    corruption_risk: 0..100
+    abuse_risk: 0..100
+    infiltration_risk: 0..100
+    local_legitimacy: 0..100
+
+  partner_approval_state: PENDING|ACCEPTED|DECLINED|CONDITIONAL
+  afghan_resource_reservation_refs: []
+  coalition_support_agreement_ref: string|null
+  coalition_enablers_required: []
+  mentor_or_liaison_required: boolean
+  command_relationship: string
+  mission_limitations: []
+  fallback_if_partner_fails: string
+```
+
+```text
+owner_faction_id remains AFGHAN_STATE
+throughout the operation
+```
+
+## 13. Afghan Resource and Force-Generation Support
+
+### 13.1 Support Request
+
+```yaml
+afghan_support_package:
+  support_package_id: string
+  requested_by: AFGHAN_STATE_COMMANDER
+  offered_or_prioritized_by: BLUE_ISAF_COMMANDER
+  support_type: FINANCE|MATERIEL|TRAINING|ADVISOR|ENABLER|INTELLIGENCE
+  quantity_or_capacity: number|null
+  source_ref: string
+  destination_ref: string|null
+  ownership_transfer: boolean
+  agreement_ref: string
+  delivery_or_availability_window: {}
+  lifecycle_state: PROPOSED|APPROVED|RESERVED|IN_TRANSIT|AVAILABLE|PARTIALLY_DELIVERED|DELIVERED|LOST|CANCELLED
+```
+
+### 13.2 Keine Soforteinheit
+
+```text
+FINANCE_SUPPORT
++ MATERIEL_SUPPORT
+!= READY_AFGHAN_FORCE_PACKAGE
+```
+
+Afghan Force Generation benötigt weiterhin:
+
+```text
+RECRUITABLE_MANPOWER
+FINANCE
+MATERIEL
+TRAINING
+RETENTION
+LEADERSHIP
+SUSTAINMENT
+TIME
+```
+
+## 14. Reserve Policy
 
 ```yaml
 reserve_policy:
@@ -386,16 +528,19 @@ reserve_policy:
   rotary_wing_recovery_reserve: number
   isr_retask_reserve: number
   logistics_contingency_reserve: number
+  partner_support_contingency: number
 ```
 
-Der Orchestrator blockiert Zuteilungen, die kritische Mindestreserven ohne ausdrückliche Notfallfreigabe unterschreiten.
+Der Orchestrator blockiert Zuteilungen, die kritische Mindestreserven ohne Emergency Override unterschreiten.
 
-## 12. ISR Collection Requirement
+## 15. ISR Collection Requirement
 
 ```yaml
 collection_requirement:
   collection_id: string
   linked_demand_ids: []
+  requesting_faction_id: ISAF|AFGHAN_STATE
+  dissemination_scope: []
   priority_intelligence_requirement_ref: string|null
   essential_element_of_information: string
   subject_ref: string|null
@@ -405,7 +550,6 @@ collection_requirement:
   required_update_rate: string|null
   acceptable_sensor_types: []
   source_protection_required: boolean
-  dissemination_scope: []
   collection_state: enum
 ```
 
@@ -425,37 +569,46 @@ CANCELLED
 CLOSED
 ```
 
-## 13. Target Development Object
+Eine ISAF-Collection wird nicht automatisch vollständig an Afghan State verteilt.
+
+## 16. Target Development Object
 
 ```yaml
 target_development:
   target_id: string
-  target_category: PERSON|GROUP|VEHICLE|BUILDING|ROUTE|NODE|AREA|CAPABILITY
+  target_category: PERSON|GROUP|FORCE_PACKAGE|VEHICLE|BUILDING|ROUTE|ACCESS_NODE|RESOURCE_SOURCE|AREA|CAPABILITY
   nomination_source: string
   linked_information_items: []
+
   identity_assessment:
     assessed_identity: string|null
     confidence: 0..100
     alternatives: []
+
   activity_assessment:
     observed_activity: []
     hostile_status_basis: []
     confidence: 0..100
+
   location_assessment:
     location_ref: string|null
     confidence: 0..100
     last_verified: datetime|null
     mobility: STATIC|SEMI_MOBILE|MOBILE|UNKNOWN
+
   context:
     civilian_presence: 0..100
     friendly_proximity: 0..100
+    afghan_partner_proximity: 0..100
     protected_site_proximity: 0..100
     expected_pattern_of_life: []
+
   policy_checks:
     no_strike_list_result: CLEAR|POTENTIAL_MATCH|MATCH|NOT_CHECKED
     restricted_target_result: CLEAR|REVIEW_REQUIRED|BLOCKED
     roe_result: AUTHORIZED|REVIEW_REQUIRED|NOT_AUTHORIZED
     legal_review_ref: string|null
+
   effect_options: []
   collection_gaps: []
   lifecycle_state: enum
@@ -479,7 +632,7 @@ DISPROVEN
 REMOVED
 ```
 
-## 14. Targeting Decision
+## 17. Targeting Decision
 
 ```yaml
 targeting_decision:
@@ -496,6 +649,7 @@ targeting_decision:
   civilian_presence_limit: number|null
   friendly_proximity_limit: number|null
   terminal_control_requirement: string|null
+  partner_coordination_requirement: string|null
   abort_conditions: []
   expiry: datetime
 ```
@@ -506,21 +660,22 @@ Decision Enum:
 CONTINUE_COLLECTION
 MONITOR
 NON_KINETIC_ONLY
-CAPTURE_IF_FEASIBLE
+CAPTURE_IF_FEASIBLE_AS_CAMPAIGN_EFFECT
 INTERDICT
 KINETIC_AUTHORIZED_WITH_CONDITIONS
 DENIED
 REMOVE_FROM_TARGET_SET
 ```
 
-## 15. Air Support Request
+## 18. Air Support Request
 
 ```yaml
 air_support_request:
   request_id: string
   linked_demand_id: string
   request_type: PREPLANNED|IMMEDIATE|EMERGENCY
-  supported_unit: string
+  supported_force_package_ref: string
+  supported_force_owner_faction: ISAF|AFGHAN_STATE
   requesting_controller: string|null
   desired_effect: string
   target_ref: string|null
@@ -535,6 +690,7 @@ air_support_request:
   laser_requirements: {}
   communications_plan_ref: string|null
   airspace_control_ref: string|null
+  partner_approval_ref: string|null
   lifecycle_state: enum
 ```
 
@@ -556,12 +712,14 @@ CANCELLED
 ABORTED
 ```
 
-## 16. CAS Execution Gate
+## 19. CAS Execution Gate
 
 Vor einer physischen CAS-Wirkung müssen mindestens geprüft sein:
 
 ```text
 SUPPORTED_FORCE_CONFIRMED
+SUPPORTED_FORCE_OWNER_CONFIRMED
+PARTNER_COORDINATION_VALID_IF_REQUIRED
 TARGET_CORRELATED
 FRIENDLY_POSITIONS_CURRENT
 CIVILIAN_CONTEXT_ASSESSED
@@ -589,54 +747,32 @@ ASSESSMENT
 CHECK_OUT
 ```
 
-## 17. Partner Force Package
-
-```yaml
-partner_force_package:
-  partner_unit_ref: string
-  mission_role: LEAD|SUPPORTED|SUPPORTING|SECURITY|HOLD_FORCE
-  readiness_snapshot:
-    personnel_present: 0..100
-    leadership_quality: 0..100
-    tactical_skill: 0..100
-    staff_planning: 0..100
-    discipline: 0..100
-    logistics: 0..100
-    intelligence: 0..100
-    communications: 0..100
-    eod_access: 0..100
-    air_support_access: 0..100
-    medevac_access: 0..100
-    corruption_risk: 0..100
-    abuse_risk: 0..100
-    infiltration_risk: 0..100
-    local_legitimacy: 0..100
-  coalition_enablers_required: []
-  mentor_or_liaison_required: boolean
-  mission_limitations: []
-  fallback_if_partner_fails: string
-```
-
-## 18. Mission Package
+## 20. Mission Package
 
 ```yaml
 mission_package:
   package_id: string
   linked_demand_ids: []
   supported_goal_ids: []
+  lead_faction_id: ISAF|AFGHAN_STATE
+  supporting_faction_ids: []
   command_element: string
-  ground_elements: []
+  isaf_ground_elements: []
+  afghan_ground_elements: []
   air_elements: []
   isr_elements: []
-  partner_elements: []
   support_elements: []
   reserve_elements: []
+  partner_approval_refs: []
+  ownership_boundaries: {}
+  command_relationships: {}
   communications_plan_ref: string
   airspace_plan_ref: string|null
   medical_plan_ref: string
   recovery_plan_ref: string
   roe_profile_ref: string
   target_authorization_refs: []
+  resource_reservation_refs: []
   phases: []
   decision_points: []
   abort_conditions: []
@@ -644,7 +780,7 @@ mission_package:
   sequel_plans: []
 ```
 
-## 19. Mission Phases
+## 21. Mission Phases
 
 ```text
 SHAPE
@@ -660,113 +796,128 @@ RECOVER
 ASSESS
 ```
 
-Nicht jede Mission verwendet alle Phasen.
+`TRANSFER` bezeichnet Übergabe von Verantwortung oder Raum, nicht automatisch Eigentumsübertragung aller Kräfte und Ressourcen.
 
-## 20. Recovery und Reconstitution
+## 22. Recovery und Reconstitution
 
-Jede größere Mission muss vor Freigabe prüfen:
+Jede größere Mission muss vor Freigabe definieren:
 
 ```text
-FUEL_RECOVERY
-AMMUNITION_RECOVERY
-MAINTENANCE_RECOVERY
-CREW_REST
+FORCE_RECOVERY
 MEDICAL_RECOVERY
-REPLACEMENT_CAPACITY
-BASE_PARKING_AND_FLOW
-FOLLOW_ON_RESERVE
+AIRCRAFT_RECOVERY
+RESERVE_RESTORE
+AFGHAN_PARTNER_RECOVERY
+MATERIEL_ACCOUNTING
+RESOURCE_RESERVATION_RELEASE
 ```
 
-Eine Mission, die den Bestand physisch ausführen kann, aber keine Rückkehr, Wartung oder Folgefähigkeit erlaubt, gilt als nicht vollständig ressourciert.
+Verluste wirken auf:
 
-## 21. Assessment
+- ISAF Coalition Commitment;
+- Force-Package-Readiness;
+- Afghan-State-Rekrutierung und Retention;
+- Materiel-Konten;
+- politische und lokale Wahrnehmung.
+
+## 23. ResourceSource- und AccessNode-Missionen
+
+Eine Operation gegen oder zum Schutz einer ResourceSource benötigt:
+
+```yaml
+resource_source_operation:
+  resource_source_ref: string
+  access_node_refs: []
+  known_legal_owner: string|null
+  believed_physical_controller: string|null
+  desired_effect: PROTECT|RESTORE|DISRUPT|INTERDICT|MONITOR
+  assigned_force_package_refs: []
+  required_capabilities: []
+  civilian_and_economic_constraints: []
+  assessment_requirements: []
+```
+
+Der Missionserfolg setzt keinen exakten neuen Share-Wert. Der Orchestrator adjudiziert die Veränderung anhand der objektiven Lage.
+
+## 24. Assessment
 
 ```yaml
 mission_assessment:
-  mission_id: string
-  tactical_results: []
-  desired_effect_achieved: 0..100
-  unintended_effects: []
-  friendly_losses: []
-  partner_losses: []
-  civilian_harm: []
-  target_status: []
-  network_effect: 0..100
-  population_security_effect: -100..100
-  government_legitimacy_effect: -100..100
-  partner_capability_effect: -100..100
-  route_reliability_effect: -100..100
-  intelligence_gain: 0..100
-  political_cost: 0..100
-  resource_cost: 0..100
-  sustainability: 0..100
-  confidence: 0..100
+  demand_id: string
+  operation_id: string|null
+  tactical_effects: []
+  force_package_effects: []
+  resource_source_effects: []
+  resource_transfer_effects: []
+  population_effects: []
+  governance_effects: []
+  partner_capability_effects: []
+  coalition_commitment_effects: []
+  intelligence_gained: []
+  uncertainties: []
   follow_up_demands: []
 ```
 
-## 22. BLUE-spezifische Validierungsfehler
-
 ```text
-DEMAND_NOT_LINKED_TO_STRATEGIC_GOAL
-DESIRED_EFFECT_UNCLEAR
-PRIORITY_NOT_JUSTIFIED
-INSUFFICIENT_INTELLIGENCE
-TARGET_IDENTITY_UNCONFIRMED
-HOSTILE_STATUS_UNCONFIRMED
-NSL_CHECK_REQUIRED
-ROE_REVIEW_REQUIRED
-CIVILIAN_RISK_EXCEEDS_LIMIT
-FRIENDLY_PROXIMITY_EXCEEDS_LIMIT
-AIRSPACE_CONFLICT
-CONTROLLER_AUTHORITY_MISSING
-ASSET_NOT_READY
-ASSET_CAVEAT_CONFLICT
-CRITICAL_RESERVE_VIOLATION
-RECOVERY_CAPACITY_INSUFFICIENT
-PARTNER_READINESS_INSUFFICIENT
-FOLLOW_ON_FORCE_MISSING
-HOLD_OR_TRANSFER_PLAN_MISSING
+TACTICAL_SUCCESS
+!= RESOURCE_SOURCE_SECURED
+!= POPULATION_PROTECTED
+!= AFGHAN_CAPABILITY_IMPROVED
 ```
 
-## 23. Deterministische Fallbacks
-
-Bei ungültiger BLUE-LLM-Ausgabe:
+## 25. Validierungsregeln
 
 ```text
-1. REQUEST_MORE_INFORMATION
-2. CONTINUE_COLLECTION
-3. PROTECT_CRITICAL_FORCE_OR_POPULATION
-4. PRESERVE_EMERGENCY_RESERVES
-5. DEFER_KINETIC_EFFECT
+NO_AFGHAN_FORCE_WITHOUT_PARTNER_APPROVAL
+NO_AFGHAN_FORCE_OWNED_BY_ISAF
+NO_ISAF_RESOURCE_RESERVATION_AGAINST_AFGHAN_ACCOUNT
+NO_MATERIEL_TRANSFER_WITHOUT_SOURCE_AND_DESTINATION
+NO_SUPPORT_PACKAGE_TO_INSTANT_READY_UNIT
+NO_TARGETING_GATE_BYPASS
+NO_CRITICAL_RESERVE_VIOLATION_WITHOUT_OVERRIDE
+NO_RESOURCE_SHARE_DIRECT_WRITE_BY_COMMANDER
+NO_DCS_CAPTURE_ASSUMPTION
 ```
 
-Ein Schema- oder LLM-Fehler darf keine unautorisierte Waffenwirkung erzeugen.
-
-## 24. MOOSE-/DCS-Projektion
+## 26. Mindesttests
 
 ```text
-MissionDemand
--> OperationPlan
--> AirSupportRequest / CollectionRequirement / GroundTask
--> MOOSE COMMANDER / AIRWING / AUFTRAG / PLAYERTASK
--> INTEL / DETECTION / TARGET / PLAYERRECCE / DESIGNATE
--> DCS groups, routes, zones, tasking and events
--> MISREP / BDA / CampaignState update
+BLUE-001 Afghan unit request enters partner review
+BLUE-002 Afghan State declines operation without enablers
+BLUE-003 accepted partner operation retains Afghan ownership
+BLUE-004 materiel transfer does not create ready unit
+BLUE-005 finance support requires source account
+BLUE-006 ISR sharing respects dissemination scope
+BLUE-007 resource source protection changes state only after adjudication
+BLUE-008 last MEDEVAC reserve remains protected
+BLUE-009 ATO tasking does not grant weapons release
+BLUE-010 capture effect does not assume physical prisoner
+BLUE-011 duplicate transfer delivery does not double credit
+BLUE-012 premature transition is rejected
 ```
 
-Vor eigener Lua-Funktionalität ist zu prüfen, welche MOOSE-Klassen die jeweilige Zuweisung, Aufklärung, Missionserzeugung und Ausführung bereits abbilden.
+## 27. Acceptance-Kriterien
 
-## 25. Acceptance-Kriterien
+Das Schema ist akzeptiert, wenn:
+
+- MissionDemand Wirkung statt direkte Ausführung beschreibt;
+- Afghan-State-Eigentum, Zustimmung und ResourceAccounts erhalten bleiben;
+- ISAF-Capability-Support von Finance-/Materiel-Transfers getrennt ist;
+- Partneroperationen Command Relationships explizit führen;
+- Targeting-, NSL-, ROE-, PID- und CAS-Gates erhalten bleiben;
+- ResourceSource-Missionen keine direkten Share-Writes erlauben;
+- MATERIEL- oder FINANCE-Support keine Soforteinheit erzeugt;
+- Recovery und Campaign Assessment Ressourcen- und Partnerfolgen abbilden;
+- DCS/MOOSE ausschließlich genehmigte Mission Packages materialisiert.
+
+## 28. Querverweise
 
 ```text
-- Ein Demand kann ohne physische Mission bestehen.
-- Ein Demand kann wegen fehlender Intelligence zurückgestellt werden.
-- Zwei Demands konkurrieren reproduzierbar um dieselbe Ressource.
-- Kritische Reserven werden nicht unbemerkt unterschritten.
-- NSL-, ROE- und PID-Prüfungen blockieren unzulässige Targeting-Schritte.
-- Afghan-led Missionen können Koalitions-Enabler erhalten, ohne die Führungsrolle zu verlieren.
-- CAS Request, Mission Tasking und Weapons Release bleiben getrennt.
-- Recovery und Folgefähigkeit beeinflussen die Allokation.
-- Tactical Result und Campaign Effect werden getrennt bewertet.
-- Spieler und KI können auf demselben MissionDemand arbeiten.
+03-inter-faction-relations-and-negotiation.md
+07-runtime-rulebook-and-action-schema.md
+09-orchestrator-architecture-and-adjudication.md
+10-blue-commander-dossier.md
+13-campaign-state-and-event-store-schema.md
+16-afghan-state-and-ansf-commander-dossier.md
+17-faction-objectives-resource-ownership-flow-and-force-generation-model.md
 ```
