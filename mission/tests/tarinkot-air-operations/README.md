@@ -5,15 +5,15 @@ document_class: TEST_PACKAGE_INDEX
 owning_policy: OMW-GOV-001
 authoritative_for:
   - Tarinkot Air Operations test-package layout
-  - current G5 read-only diagnostic build and execution workflow
-  - separation of diagnostic evidence from runtime acceptance
+  - accepted G5 read-only diagnostic result
+  - current G6 parking-calibration entry state
+  - separation of diagnostic evidence from operational runtime acceptance
 not_authoritative_for:
-  - DCS runtime acceptance before a documented PASS
-  - final parking allowlists
-  - AIRWING, SQUADRON, AUFTRAG, COMMANDER or OPSTRANSPORT activation
+  - final parking allowlists before a documented G6 PASS
+  - AIRWING, SQUADRON, payload, AUFTRAG, COMMANDER or OPSTRANSPORT acceptance
   - merge approval or Ready-for-Review approval
 scenario_period: 2010-08-01/2011-12-31
-project_phase: TARINKOT_G5_READ_ONLY_DIAGNOSTICS
+project_phase: TARINKOT_G6_PARKING_CALIBRATION
 source_branch: agent/tarinkot-object-contract-reconciliation
 source_commit: PENDING_MERGE
 validated_in_dcs: true
@@ -29,19 +29,25 @@ superseded_by: []
 G0_provenance: PASS_BRANCH
 G1_ORBAT_and_evidence: PASS_BRANCH
 G2_object_contract: OWNER_ACCEPTED_BRANCH
-G3_mission_editor: PARTIAL_STATIC_CORRECTION_REQUIRED
+G3_mission_editor: PARTIAL_FUNCTION_ZONES_PENDING
 G4_MOOSE_source_review: PASS_SOURCE_REVIEW
-G5_read_only_diagnostics: FAIL_RETEST_REQUIRED
-G6_parking_calibration: BLOCKED_BY_G5
-G7_airwing_squadron_payload: NOT_STARTED
+G5_read_only_diagnostics: PASS_DCS
+G6_parking_calibration: AUTHORIZED_NOT_STARTED
+G7_airwing_squadron_payload: BLOCKED_BY_G6
 G8_direct_dispatch_and_transport: NOT_STARTED
 G9_commander_and_operational_parking: NOT_STARTED
 G10_lifecycle_results_handoff: NOT_STARTED
 ```
 
-G5 ist der erste Tarinkot-Lua-Test. Er ist ausschließlich diagnostisch und erzeugt keine operativen MOOSE-Objekte.
+G5 war der erste Tarinkot-Lua-Test. Er war ausschließlich diagnostisch und erzeugte keine operativen MOOSE-Objekte.
 
-Der initiale DCS-Lauf bestätigte Provenienz, read-only-Verhalten, Airbase, Parking, Warehouse, Clients, AI-Seeds, Zonenbild und Namenseindeutigkeit. Der Strukturtest schlug ausschließlich fehl, weil `STATIC_AIR_US_TKOT_AH64_07` nicht als MOOSE-`STATIC` auflösbar war. Vor dem Retest muss dieses Mission-Editor-Objekt vom Legacy-Typ `AH-64D` auf `AH-64D_BLK_II` korrigiert werden.
+Der initiale DCS-Lauf schlug ausschließlich wegen des Legacy-Typs von `STATIC_AIR_US_TKOT_AH64_07` fehl. Nach der kontrollierten Mission-Editor-Korrektur auf `AH-64D_BLK_II` bestätigte der Retest alle zwölf Statics und endete mit:
+
+```text
+RESULT G5_READ_ONLY_DIAGNOSTICS_COMPLETE status=PASS_STRUCTURE coreMissing=0 zonesMissing=10 mutationCount=0
+```
+
+G5 ist damit abgeschlossen. Der erfasste Parking-Datensatz darf nun in G6 klassifiziert werden; positive SQUADRON-Parking-Listen bleiben bis zum G6-PASS gesperrt.
 
 ## 2. Verbindliche Referenzen
 
@@ -53,6 +59,7 @@ Der initiale DCS-Lauf bestätigte Provenienz, read-only-Verhalten, Airbase, Park
 - `docs/evidence/tarinkot-g4-moose-2-9-18-source-review.md`
 - `expected/g5-read-only-diagnostics-acceptance.md`
 - `results/2026-08-03-g5-read-only-diagnostics-initial-fail.md`
+- `results/2026-08-03-g5-read-only-diagnostics-retest-pass.md`
 
 Ein im Projektverlauf referenziertes `mission/tests/GOVERNANCE.md` ist auf diesem Branch und auf `main` nicht vorhanden. Die geltenden Regeln werden daher aus den oben genannten Governance- und Workflow-Dokumenten übernommen.
 
@@ -64,7 +71,8 @@ mission/tests/tarinkot-air-operations/
 ├── expected/
 │   └── g5-read-only-diagnostics-acceptance.md
 ├── results/
-│   └── 2026-08-03-g5-read-only-diagnostics-initial-fail.md
+│   ├── 2026-08-03-g5-read-only-diagnostics-initial-fail.md
+│   └── 2026-08-03-g5-read-only-diagnostics-retest-pass.md
 ├── src/
 │   └── 01-tarinkot-g5-read-only-diagnostics.lua
 └── dist/
@@ -76,26 +84,43 @@ tools/
 
 Dateien unter `dist/` werden ausschließlich durch den Builder erzeugt und nicht manuell bearbeitet.
 
-## 4. G5-Funktionsumfang
+## 4. G5-Funktionsumfang und bestätigtes Ergebnis
 
-Das Diagnosebundle protokolliert:
+Das Diagnosebundle protokollierte:
 
 - Builder-, Branch- und Commit-Provenienz;
 - erwartete Mission und Hashes;
 - Airbase-ID 9, Runtime-Name, normale und eindeutige ID;
-- Airbase-Kategorie, Koalition und Land;
 - sämtliche MOOSE-Parking-Datensätze;
 - `TerminalID`, `TerminalID0`, `TerminalType`, `Free`, `TOAC`, Belegung und Koordinaten;
 - die drei Client-Templates einschließlich Parking-Wert und Lua-Datentyp;
 - die drei AI-Seeds einschließlich Typ, Gruppengröße, Skill und Late Activation;
 - den Warehouse-Anker und seine Eindeutigkeit;
 - zwölf erwartete Tarinkot-Statics;
-- eine vorhandene und zehn derzeit erwartbar fehlende Funktionszonen;
+- eine vorhandene und zehn erwartbar fehlende Funktionszonen;
 - doppelt vergebene Namen innerhalb des angenommenen Objektvertrags.
+
+Bestätigt:
+
+```yaml
+runtime_airbase: Tarinkot
+runtime_airbase_id: 9
+runtime_unique_airbase_id: 9
+airbase_id_candidate_count: 1
+parking_count: 33
+warehouse_wrapper_count: 1
+clients_found: 3
+ai_seeds_found: 3
+statics_found: 12
+zones_present: 1
+zones_missing: 10
+contract_name_duplicates: 0
+mutation_count: 0
+```
 
 ## 5. Read-only-Sperre
 
-G5 darf nicht:
+G5 durfte und hat nicht:
 
 ```text
 AIRWING erzeugen
@@ -111,11 +136,45 @@ CampaignState verändern
 MIZ-Strukturen verändern
 ```
 
-Der Builder prüft den Quelltext vor dem Build gegen verbotene Konstruktoren und mutierende Aufrufe. Diese statische Prüfung ersetzt keinen DCS-Laufzeittest.
+Bestätigte Laufzeitzeile:
 
-Der initiale Lauf bestätigte `mutationCount=0` und enthielt keine G5-Lua-Exception.
+```text
+READ_ONLY_LOCK AIRWING=0 SQUADRON=0 PAYLOAD=0 SPAWN=0 AUFTRAG=0 COMMANDER=0 OPSTRANSPORT=0 CAMPAIGNSTATE_MUTATION=0 MIZ_MUTATION=0
+```
 
-## 6. Erwartetes aktuelles Zonenbild
+Der Retest enthielt keine Tarinkot-G5-spezifische Lua-, Scheduler- oder Timer-Exception.
+
+## 6. Parking-Ausgangsdaten für G6
+
+G5 erfasste 33 Parking-Datensätze. Die drei belegten Client-Reservierungen bleiben harte Sperren:
+
+```text
+TerminalID 20 / C01-H / CLIENT_US_TKOT_AH64D_01
+TerminalID  8 / C05-H / CLIENT_US_TKOT_AH64D_02
+TerminalID  3 / C07-H / CLIENT_US_TKOT_CH47F_01
+```
+
+Alle drei besitzen Runtime-`TerminalType=40`, `Free=false` und `TOAC=true`.
+
+Datentypbesonderheit:
+
+```text
+CLIENT_US_TKOT_AH64D_01 unit.parking = "20"  # Lua string
+CLIENT_US_TKOT_AH64D_02 unit.parking = 8     # Lua number
+CLIENT_US_TKOT_CH47F_01 unit.parking = 3     # Lua number
+```
+
+G6 muss Terminal-IDs numerisch normalisieren, ohne das Mission-Editor-Template stillschweigend zu verändern.
+
+Noch nicht akzeptiert:
+
+```yaml
+acceptedAHParkingIds: []
+acceptedUH60ParkingIds: []
+acceptedCH47ParkingIds: []
+```
+
+## 7. Aktuelles Zonenbild
 
 ```yaml
 expected_zones: 11
@@ -124,52 +183,59 @@ expected_present:
 expected_missing: 10
 ```
 
-Fehlende Zonen sind in G5 kein Strukturfehler. Sie werden nur protokolliert und erst vor dem jeweiligen späteren Funktionstest im Mission Editor angelegt.
+Die fehlenden Funktionszonen waren in G5 kein Strukturfehler. G6 benötigt noch keine Funktionszone. Zonenabhängige Missionstests bleiben jedoch bis zur jeweiligen Mission-Editor-Anlage gesperrt.
 
-## 7. Testauswertung
-
-Ein Lauf ist strukturell erfolgreich, wenn die Abschlusszeile enthält:
-
-```text
-RESULT G5_READ_ONLY_DIAGNOSTICS_COMPLETE status=PASS_STRUCTURE coreMissing=0 zonesMissing=10 mutationCount=0
-```
+## 8. Ergebnisfolge
 
 Initialer Lauf:
 
 ```text
-RESULT G5_READ_ONLY_DIAGNOSTICS_COMPLETE status=FAIL_STRUCTURE coreMissing=1 zonesMissing=10 mutationCount=0
-```
-
-Ursache:
-
-```text
+Commit: 2c0d76aee2f1cb987872d9903909bd21c904609d
+RESULT ... status=FAIL_STRUCTURE coreMissing=1 zonesMissing=10 mutationCount=0
 MISSING STATIC name=STATIC_AIR_US_TKOT_AH64_07
 ```
 
-Ein PASS akzeptiert noch keine KI-Parkplätze und keine AIRWING-/SQUADRON-Laufzeitfunktion. Er liefert ausschließlich den Datensatz für G6.
-
-## 8. Retest-Grenze
-
-Vor dem Retest ist ausschließlich folgendes Mission-Editor-Objekt zu korrigieren:
+Maßgeblicher Retest:
 
 ```text
-Name: STATIC_AIR_US_TKOT_AH64_07
-Type: AH-64D_BLK_II
-Position und Heading: unverändert
+Commit: 8b2e62878f2421ba894a7abff7c12d526f4cea3d
+STATIC_AIR_US_TKOT_AH64_07 type=AH-64D_BLK_II
+STATIC_SUMMARY expected=12 missing=0
+RESULT ... status=PASS_STRUCTURE coreMissing=0 zonesMissing=10 mutationCount=0
 ```
 
-Andere Statics, Clients, AI-Seeds, Parking-Werte, Warehouse und Funktionszonen bleiben unverändert. Danach muss das Bundle wegen des geänderten Branch-Heads neu gebaut, erneut über `DO SCRIPT FILE` eingebettet und mindestens 25 Sekunden getestet werden.
+Der PASS bestätigt nur die read-only Datenerfassung und den G5-Strukturvertrag. Er bestätigt keine Parking-Eignung, keine Rotorfreiheit und keine operative MOOSE-Funktion.
 
-## 9. Ergebnisdokumentation
+## 9. Nächster zulässiger Schritt: G6
+
+G6 darf jetzt:
+
+1. die 33 Parking-Terminals nach Terminaltyp und physischer Lage klassifizieren;
+2. Client- und Static-Überlappungen bestimmen;
+3. Kandidatenlisten getrennt für AH-64, UH-60 und CH-47 bilden;
+4. isolierte Spawn-/Cold-Start-Kalibrierungen definieren;
+5. fehlerhafte oder kollidierende Kandidaten verwerfen.
+
+G6 darf vor dem dokumentierten PASS weiterhin nicht:
+
+```text
+SQUADRON:SetParkingIDs() in die operative Foundation übernehmen
+SetAllowSpawnOnClientParking() aktivieren
+mehrere Fluggerätfamilien gleichzeitig testen
+operative Missionen oder Transporte starten
+G7-AIRWING/SQUADRON aktivieren
+```
+
+## 10. Ergebnisdokumentation
 
 Jeder DCS-Lauf erhält einen unveränderlichen Bericht unter `results/`. Er enthält mindestens:
 
 - Branch und Commit;
 - Builder-Version;
-- Bundle-SHA-256;
+- Bundle- oder Evidenz-Hash soweit im Testartefakt verfügbar;
 - Missionsdatei und MOOSE-Provenienz;
 - relevante Logzeilen;
 - Parking-Dump;
 - PASS, PARTIAL oder FAIL;
-- erkannte Parking-/Datentyp-Besonderheiten;
-- Folgerungen für G6.
+- Parking-/Datentyp-Besonderheiten;
+- Folgerungen für das nächste Gate.
