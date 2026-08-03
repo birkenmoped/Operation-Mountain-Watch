@@ -6,10 +6,10 @@ owning_policy: OMW-GOV-001
 authoritative_for:
   - observed Tarinkot G5 runtime result on the exact documented commit and bundle
   - identification of the single failing Mission Editor static object
-  - retest boundary before G6
+  - historical retest boundary before G6
 not_authoritative_for:
   - corrected Mission Editor state
-  - G5 PASS acceptance
+  - current G5 PASS acceptance
   - parking allowlists
   - AIRWING, SQUADRON or mission runtime acceptance
   - merge approval or Ready-for-Review approval
@@ -19,7 +19,8 @@ source_branch: agent/tarinkot-object-contract-reconciliation
 source_commit: 2c0d76aee2f1cb987872d9903909bd21c904609d
 validated_in_dcs: true
 supersedes: []
-superseded_by: []
+superseded_by:
+  - mission/tests/tarinkot-air-operations/results/2026-08-03-g5-read-only-diagnostics-retest-pass.md
 ---
 
 # Tarinkot G5 – initialer DCS-Lauf vom 03.08.2026
@@ -40,6 +41,8 @@ name_collisions: PASS
 next_gate: G5_RETEST
 G6_authorized: false
 ```
+
+Dieser historische Erstlauf wurde durch den späteren dokumentierten Retest-PASS abgelöst. Er bleibt erhalten, weil er die Ursache und die kontrollierte Mission-Editor-Korrektur belegt.
 
 Der erste G5-Lauf hat das Diagnosebundle korrekt geladen und vollständig ausgeführt. Der Lauf ist dennoch `FAIL_STRUCTURE`, weil genau ein erwartetes Tarinkot-Static nicht über `STATIC:FindByName()` auflösbar war.
 
@@ -199,7 +202,7 @@ Der DCS-Debrief-Weltzustand führt dieselbe Unit-ID 1624 an derselben Position a
 
 ## 6. Korrektur
 
-Im Mission Editor ist ausschließlich folgendes Objekt zu korrigieren:
+Im Mission Editor war ausschließlich folgendes Objekt zu korrigieren:
 
 ```text
 STATIC_AIR_US_TKOT_AH64_07
@@ -216,9 +219,7 @@ Coalition: unverändert
 Country:   unverändert
 ```
 
-Bevorzugt wird die Typumstellung am bestehenden Objekt. Falls der Mission Editor den Legacy-Eintrag nicht zuverlässig aktualisiert, darf genau dieses Static gelöscht und an identischer Position als `AH-64D_BLK_II` mit demselben Namen neu angelegt werden.
-
-Nicht zu ändern:
+Nicht zu ändern waren:
 
 - andere Tarinkot-Statics;
 - Clients oder AI-Seeds;
@@ -227,14 +228,17 @@ Nicht zu ändern:
 - Funktionszonen;
 - G5-Lua oder Builder.
 
-## 7. Retest
+## 7. Abgelöst durch Retest-PASS
 
-Nach der Mission-Editor-Korrektur ist derselbe G5-Test vollständig zu wiederholen. Da dieser Ergebnisbericht den Branch-Head verändert, muss das Bundle vor dem Retest neu gebaut und erneut in die Test-MIZ eingebettet werden.
-
-Erwartete Abschlusszeile:
+Der kontrollierte Retest ist dokumentiert unter:
 
 ```text
-RESULT G5_READ_ONLY_DIAGNOSTICS_COMPLETE status=PASS_STRUCTURE coreMissing=0 zonesMissing=10 mutationCount=0
+mission/tests/tarinkot-air-operations/results/2026-08-03-g5-read-only-diagnostics-retest-pass.md
 ```
 
-Erst dieser Retest kann G5 auf `PASS_DCS` setzen und G6 freigeben.
+Dort wurde bestätigt:
+
+```text
+STATIC_SUMMARY expected=12 missing=0
+RESULT G5_READ_ONLY_DIAGNOSTICS_COMPLETE status=PASS_STRUCTURE coreMissing=0 zonesMissing=10 mutationCount=0
+```
