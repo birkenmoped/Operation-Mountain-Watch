@@ -10,7 +10,7 @@ not_authoritative_for:
   - merge approval
   - runtime acceptance beyond the cited pull-request evidence
 scenario_period: 2010-08-01/2011-12-31
-project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
+project_phase: TARINKOT_MOOSE_SOURCE_REVIEW_COMPLETE
 supersedes:
   - incomplete open-branch list in the documentation index
 superseded_by:
@@ -50,7 +50,7 @@ Dieses Register bildet offene Pull Requests, ihre Abhängigkeiten, Dokumentation
 | 33 | `agent/complete-documentation-authority-migration` | `main` | Governance-, Status- und Indexmigration | `docs/`, ausgewählte Test-READMEs, Validator | `DRAFT` | Dokumentationsvalidator erfolgreich; keine Runtime-Acceptance | offen | Ziel dieses Registers |
 | 38 | `docs/afghanistan-force-aviation-source-consolidation` | `main` | Konsolidierung Afghanistan-Kräfte, Basen, Aviation, Air C2, Koalitions-ORBAT, RED-Commander-Strategie, ostafghanische Netzwerkoperationen, Campaign Assessment und nichtstaatliche Sicherheitsakteure | Dokumente 50–59; Dokumente 05/09/11/13/18/29/37/45/49; Register, Index, Quellenaufnahme-Audit und externe Quellenakten | `DRAFT`; quellenqualifizierte historische, Air-C2-, RED-Verhaltens- und Assessment-Referenzen | Dokumentationsvalidator erfolgreich auf Head `a3f520e0f15b3ada720e0e81da3f31d478025dd9`, Workflow-Run 104; keine DCS-/MOOSE-Runtime-Acceptance | 40 | Forschungs-, Missionsdesign- und Datenmodellgrundlage; aktive ORBAT bleibt Dokument 19; genau ein RED Commander bleibt verbindliche Grundversion |
 | 40 | `docs/tarinkot-air-operations-baseline` | PR 38 | älterer Tarinkot-Dokumentationsstand auf Basis `OMW_Template(3).miz` | Tarinkot-Manifest, ME-Audit, Satellitenevidenz und Registeränderungen | `HISTORICAL_SUPERSEDED_DRAFT`; weiterhin offen und Draft | keine Runtime-Acceptance; Objektannahmen teilweise veraltet | 53 | nicht mehr als aktive Tarinkot-Source-of-Truth verwenden |
-| 53 | `agent/tarinkot-object-contract-reconciliation` | `main` | aktueller Tarinkot-Objektvertrag, ORBAT-, Evidenz-, FARP- und Registerkonsolidierung | `docs/tarinkot-air-operations-manifest.md`, `docs/11-*`, `docs/19-*`, Register und Tarinkot-Evidenz | `DRAFT`; kein Merge und kein Ready for Review autorisiert | G0/G1 `PASS_BRANCH`; G2 `PROPOSED_COMPLETE_PENDING_OWNER_ACCEPTANCE`; G3 `PARTIAL`; G4 nicht begonnen | G4 nach ausdrücklicher G2-Annahme | aktuelle Tarinkot-Source-of-Truth auf Branch; keine Lua- oder MIZ-Änderung |
+| 53 | `agent/tarinkot-object-contract-reconciliation` | `main` | aktueller Tarinkot-Objektvertrag, ORBAT-, Evidenz-, FARP- und MOOSE-Konsolidierung | `docs/tarinkot-air-operations-manifest.md`, zentrale Register und Tarinkot-Evidenz | `DRAFT`; kein Merge und kein Ready for Review autorisiert | G0/G1 `PASS_BRANCH`; G2 `OWNER_ACCEPTED_BRANCH`; G3 `PARTIAL`; G4 `PASS_SOURCE_REVIEW`; G5 autorisiert, noch nicht begonnen | G5 read-only diagnostics | aktuelle Tarinkot-Source-of-Truth auf Branch; noch keine Tarinkot-Runtime-Aktivierung |
 
 ## 3. Stackstruktur
 
