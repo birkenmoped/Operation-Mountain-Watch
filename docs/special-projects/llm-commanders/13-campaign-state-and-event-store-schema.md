@@ -5,6 +5,13 @@ document_class: CAMPAIGN_STATE_AND_EVENT_STORE_SCHEMA
 scenario_period: 2010-08-01/2011-12-31
 source_branch: docs/optional-llm-commanders
 validated_in_dcs: false
+authoritative_for:
+  - persistent campaign aggregates
+  - event envelope and reducer invariants
+  - five-faction campaign identity
+  - contested resource sources, accounts and flows
+  - force generation and force-package persistence
+  - DCS/MOOSE materialization mappings
 ---
 
 # CampaignState und Event Store – persistentes Datenmodell
@@ -13,7 +20,16 @@ validated_in_dcs: false
 
 Dieses Dokument definiert die autoritative persistente Datenbasis des optionalen Multi-Commander-Projekts.
 
-Der CampaignState bildet die objektive strategische Simulationswahrheit ab. Der Event Store protokolliert jede relevante Zustandsänderung. Commander-LLMs greifen niemals direkt auf den vollständigen CampaignState zu, sondern ausschließlich auf durch den View Builder erzeugte, fraktionsspezifische Ausschnitte.
+Der CampaignState bildet die objektive strategische Simulationswahrheit ab. Der Event Store protokolliert jede relevante Zustandsänderung. Commander erhalten niemals direkten Zugriff auf den vollständigen CampaignState, sondern ausschließlich auf durch den View Builder erzeugte, fraktions- und commander-spezifische Sichten.
+
+Das Dokument integriert verbindlich:
+
+- fünf getrennte Kampagnenfraktionen;
+- die gemeinsame Ressourcenarchitektur aus Dokument 17;
+- die Afghan-State-/ANSF-Fraktion aus Dokument 16;
+- die Integrationsregeln aus Dokument 18;
+- die Trennung zwischen strategischem `ForcePackage` und untergeordnetem `ForceUnit`;
+- die MOOSE-First-Grenze zwischen strategischer Autorisierung und taktischer Ausführung.
 
 ```text
 EVENTS
@@ -26,29 +42,75 @@ EVENTS
 -> NEW_EVENTS
 ```
 
-Verbindliche Trennung:
+Verbindliche Trennungen:
 
 ```text
 CAMPAIGN_STATE != COMMANDER_BELIEF
 EVENT_STORE != COMMANDER_MEMORY
 DCS_OBJECT_STATE != COMPLETE_CAMPAIGN_STATE
 LLM_OUTPUT != AUTHORITATIVE_STATE_CHANGE
+DCS_COALITION != CAMPAIGN_FACTION
+RESOURCE != CAPABILITY
+RESOURCE != POLITICAL_STATE
+FORCE_PACKAGE != DCS_GROUP
 ```
 
-## 2. Architekturgrundsätze
+## 2. Autoritäts- und Querverweisregel
+
+Für Ressourcenbegriffe, Eigentum, Zuflüsse und Kräftegenerierung gilt:
+
+```text
+17-faction-objectives-resource-ownership-flow-and-force-generation-model.md
+```
+
+Für die afghanische Fraktion gilt:
+
+```text
+16-afghan-state-and-ansf-commander-dossier.md
+```
+
+Für die Migration älterer Dokumente gilt:
+
+```text
+18-resource-model-integration-and-dossier-amendments.md
+```
+
+Dieses Dokument konkretisiert diese Entscheidungen als persistentes Datenmodell.
+
+Hauptprojekt-Autoritäten bleiben insbesondere:
+
+```text
+docs/05-logistics.md
+docs/15-template-library-and-spawning.md
+docs/26-moose-first-development-policy.md
+docs/37-campaign-architecture-and-dynamic-mission-design.md
+```
+
+```text
+SPECIAL_PROJECT_CAMPAIGN_STATE
+must not supersede
+MAIN_PROJECT_MOOSE_OR_LOGISTICS_AUTHORITY
+```
+
+## 3. Architekturgrundsätze
 
 1. Der CampaignState ist die einzige autoritative strategische Wahrheit.
 2. Jede fachlich relevante Änderung wird als Ereignis protokolliert.
 3. Ereignisse sind nach dem Schreiben unveränderlich.
 4. Korrekturen erfolgen durch neue kompensierende Ereignisse.
-5. Persistente IDs dürfen niemals aus DCS-Gruppennamen allein abgeleitet werden.
-6. Virtuelle und physische Repräsentation derselben Entität verwenden dieselbe strategische ID.
-7. Fraktionswissen, Beliefs und Erinnerungen werden getrennt vom objektiven State gespeichert.
-8. Ressourcen dürfen nur über validierte Reservierungs- und Verbrauchsereignisse gebunden werden.
-9. Zeit, Version, Ursache und verantwortliche Komponente müssen für jede Änderung nachvollziehbar sein.
-10. Der State muss ohne laufende DCS-Instanz rekonstruierbar und testbar sein.
+5. Persistente IDs werden niemals allein aus DCS-Gruppennamen abgeleitet.
+6. Virtuelle und physische Repräsentationen verwenden dieselbe strategische Referenz.
+7. Fraktionswissen, Beliefs und Erinnerungen bleiben vom objektiven State getrennt.
+8. Ressourcen werden ausschließlich über Quellen-, Konto-, Reservierungs-, Transfer- und Verbrauchsereignisse verändert.
+9. Keine Ressource entsteht ohne eine definierte Quelle.
+10. Kein `ForcePackage` entsteht ohne nachweisbare Ressourcenbindung und fraktionsspezifische Gates.
+11. Zeit, Version, Ursache und verantwortliche Komponente sind für jede Änderung nachvollziehbar.
+12. Der State muss ohne laufende DCS-Instanz rekonstruierbar und testbar sein.
+13. DCS- oder MOOSE-Meldungen werden normalisiert und validiert, bevor sie den CampaignState ändern.
+14. Gleichartige DCS-Ereignisse dürfen keine doppelte Ressourcengutschrift oder doppelte Verluste erzeugen.
+15. MOOSE bleibt der taktische Runtime-Unterbau.
 
-## 3. Persistenzmodell
+## 4. Persistenzmodell
 
 Empfohlene Trennung:
 
@@ -58,38 +120,58 @@ SNAPSHOT_STORE
 READ_MODEL_STORE
 AUDIT_STORE
 DCS_MAPPING_STORE
+SCHEMA_REGISTRY
 ```
 
-### 3.1 Event Store
+### 4.1 Event Store
 
 Enthält die unveränderliche Ereignisfolge.
 
-### 3.2 Snapshot Store
+### 4.2 Snapshot Store
 
 Enthält periodisch erzeugte vollständige oder sektorweise Snapshots zur schnelleren Wiederherstellung.
 
-### 3.3 Read Model Store
+### 4.3 Read Model Store
 
 Enthält abgeleitete, nicht autoritative Sichten für:
 
 - Commander Views;
 - Operationsübersichten;
-- Ressourcenverfügbarkeit;
+- Ressourcenquellen und Fraktionskonten;
+- Force-Generation-Warteschlangen;
 - Kartenlayer;
 - Spielerbriefings;
 - Debugging und Telemetrie.
 
 Read Models können jederzeit aus Event Store und Snapshots neu erzeugt werden.
 
-### 3.4 Audit Store
+### 4.4 Audit Store
 
-Enthält LLM-, Prompt-, Validator- und Adjudikationsdaten, die nicht automatisch Teil der simulierten Welt sind.
+Enthält LLM-, Prompt-, Validator-, Adjudikations- und Adapterdaten, die nicht automatisch Teil der simulierten Welt sind.
 
-### 3.5 DCS Mapping Store
+### 4.5 DCS Mapping Store
 
 Verknüpft strategische Entitäten mit aktuell materialisierten DCS-/MOOSE-Objekten.
 
-## 4. Globale Campaign-Metadaten
+### 4.6 Schema Registry
+
+Enthält Versionen und Kompatibilitätsregeln für:
+
+```text
+EVENT_ENVELOPE
+CAMPAIGN_STATE
+COMMANDER_VIEW
+COMMANDER_DECISION
+RESOURCE_SOURCE
+RESOURCE_ACCOUNT
+FORCE_GENERATION_ORDER
+FORCE_PACKAGE
+OPERATION
+ADAPTER_COMMAND
+ADAPTER_RESULT
+```
+
+## 5. Globale Campaign-Metadaten
 
 ```yaml
 campaign:
@@ -109,11 +191,13 @@ campaign:
   dcs_session_id: string|null
   dcs_mission_build: string|null
   moose_version: string|null
+  moose_adapter_version: string|null
   ruleset_version: string
+  resource_model_version: string
   prompt_bundle_version: string
 ```
 
-## 5. Identitäts- und Referenzsystem
+## 6. Identitäts- und Referenzsystem
 
 Jede persistente Entität besitzt eine stabile ID.
 
@@ -126,12 +210,18 @@ CMD- commander
 SEC- sector
 LOC- location
 RTE- route
-NOD- network or logistics node
+SEG- route segment
+NOD- access, network or logistics node
 ACT- actor
 ORG- organization
+FPG- force package
 UNT- force unit or cell
 AST- asset
-RES- resource pool
+RSC- resource source
+RAC- resource account
+RSV- resource reservation
+RTX- resource transfer
+FGN- force generation order
 INF- information item
 BLF- belief
 MEM- memory item
@@ -148,29 +238,62 @@ MAP- DCS materialization mapping
 
 IDs sind unveränderlich. Namen, Callsigns, Zugehörigkeit, Status und DCS-Repräsentationen dürfen sich ändern.
 
-## 6. Fraktionen und Commander
+## 7. Fraktionen und DCS-Koalitionen
+
+### 7.1 Kanonische Kampagnenfraktionen
+
+```text
+ISAF
+AFGHAN_STATE
+TALIBAN
+HAQQANI
+HIG
+```
+
+Nicht kommandierte Quellhalter und neutrale Akteure werden separat geführt.
 
 ```yaml
 faction:
   faction_id: string
-  faction_type: blue|taliban|haqqani|hig|neutral|government|civilian
+  faction_type: isaf|afghan_state|taliban|haqqani|hig|neutral|civilian|non_commanded
+  dcs_coalition: blue|red|neutral|null
   display_name: string
   active: boolean
   strategic_alignment: string
-  resource_ownership_policy: isolated|shared_by_agreement|hierarchical
-  command_model: centralized|federated|networked|fragmented
+  resource_ownership_policy: isolated|shared_by_agreement|hierarchical|source_holder
+  command_model: centralized|federated|networked|fragmented|non_commanded
   default_visibility_policy: string
 ```
+
+Verbindlich:
+
+```text
+ISAF.dcs_coalition = BLUE
+AFGHAN_STATE.dcs_coalition = BLUE
+ISAF.faction_id != AFGHAN_STATE.faction_id
+```
+
+```text
+SAME_DCS_COALITION
+!= SAME_OWNERSHIP
+!= SAME_COMMAND_AUTHORITY
+!= AUTOMATIC_INFORMATION_SHARING
+```
+
+### 7.2 Commander
 
 ```yaml
 commander:
   commander_id: string
   faction_id: string
+  dcs_coalition: blue|red|neutral|null
   profile_ref: string
   authority_scope:
     geographic_scope: []
     organization_refs: []
-    resource_pool_refs: []
+    force_package_refs: []
+    resource_account_refs: []
+    permitted_resource_source_refs: []
     permitted_action_types: []
   personality_ref: string
   active_goal_refs: []
@@ -183,9 +306,19 @@ commander:
   next_periodic_review_at: datetime|null
 ```
 
-## 7. Geografisches Modell
+Kanonische Commander:
 
-### 7.1 Sector
+```text
+BLUE_ISAF_COMMANDER
+AFGHAN_STATE_COMMANDER
+TALIBAN_COMMANDER
+HAQQANI_COMMANDER
+HIG_COMMANDER
+```
+
+## 8. Geografisches Modell
+
+### 8.1 Sector
 
 ```yaml
 sector:
@@ -202,20 +335,23 @@ sector:
   adjacent_sector_refs: []
 ```
 
-### 7.2 Location
+### 8.2 Location
 
 ```yaml
 location:
   location_id: string
   sector_id: string
-  location_type: airbase|fob|cop|village|city|checkpoint|bridge|pass|crossing|compound|facility|custom
+  location_type: airbase|fob|cop|village|city|checkpoint|bridge|pass|crossing|compound|facility|market|warehouse|custom
   name: string
   coordinates:
     lat: float|null
     lon: float|null
     dcs_x: float|null
     dcs_y: float|null
-  controlled_by_faction: string|null
+  legal_owner_faction_id: string|null
+  physical_controller_faction_id: string|null
+  beneficiary_shares: {}
+  access_shares: {}
   physical_status: intact|damaged|destroyed|abandoned|unknown
   access_status: open|restricted|contested|closed
   strategic_value: 0..100
@@ -224,7 +360,13 @@ location:
   materialization_policy: virtual_only|event_only|hybrid|physical_required
 ```
 
-### 7.3 Route
+```text
+LEGAL_OWNER
+!= PHYSICAL_CONTROLLER
+!= CURRENT_BENEFICIARIES
+```
+
+### 8.3 Route
 
 ```yaml
 route:
@@ -232,23 +374,46 @@ route:
   route_type: msr|asr|local_road|trail|air_corridor|facilitation_route|smuggling_route|custom
   origin_location_id: string
   destination_location_id: string
-  waypoint_refs: []
-  owner_or_primary_user: string|null
+  segment_refs: []
+  routing_anchor_refs: []
+  primary_user_refs: []
+  legal_owner_faction_id: string|null
+  physical_controller_faction_id: string|null
+  access_shares: {}
   capacity: 0..100
   concealment: 0..100
   travel_time_estimate: duration
   physical_condition: 0..100
-  blue_control: 0..100
-  red_access: 0..100
   civilian_usage: 0..100
   interdiction_risk: 0..100
   compromise_status: unknown|suspected|confirmed|clear
   current_status: open|degraded|interdicted|closed
 ```
 
-## 8. Bevölkerung, Governance und lokale Macht
+```yaml
+route_segment:
+  route_segment_id: string
+  route_id: string
+  geometry_ref: string
+  routing_anchor_refs: []
+  infrastructure_node_refs: []
+  physical_controller_faction_id: string|null
+  access_shares: {}
+  capacity: 0..100
+  physical_condition: 0..100
+  threat_indicator_refs: []
+  materialization_mapping_refs: []
+```
 
-Zustände werden pro Sektor und nicht als einzelner pauschaler Score geführt.
+```text
+STRATEGIC_ROUTE
+!= MOOSE_PATHLINE
+!= GUARANTEED_DCS_GROUP_ROUTE
+```
+
+## 9. Bevölkerung, Governance und lokale Macht
+
+Zustände werden pro Sektor und nicht als einzelner Loyalitätswert geführt.
 
 ```yaml
 sector_governance_state:
@@ -261,8 +426,8 @@ sector_governance_state:
   formal_justice_trust: 0..100
   informal_justice_access: 0..100
   informal_justice_trust: 0..100
-  red_shadow_governance: 0..100
-  red_shadow_justice: 0..100
+  taliban_shadow_governance: 0..100
+  taliban_shadow_justice: 0..100
   official_corruption: 0..100
   police_professionalism: 0..100
   police_abuse_risk: 0..100
@@ -270,8 +435,6 @@ sector_governance_state:
   local_powerbroker_influence: 0..100
   shura_representativeness: 0..100
   population_access_to_government: 0..100
-  population_fear_of_government: 0..100
-  population_fear_of_red: 0..100
 ```
 
 ```yaml
@@ -279,18 +442,45 @@ sector_population_state:
   sector_id: string
   perceived_security: 0..100
   freedom_of_movement: 0..100
-  willingness_to_report: 0..100
-  confidence_in_blue: 0..100
-  confidence_in_government: 0..100
-  confidence_in_taliban: 0..100
-  confidence_in_haqqani: 0..100
-  confidence_in_hig: 0..100
-  coercive_compliance_taliban: 0..100
-  coercive_compliance_haqqani: 0..100
-  coercive_compliance_hig: 0..100
-  grievance_against_blue: 0..100
-  grievance_against_government: 0..100
-  grievance_against_red: 0..100
+
+  trust_in_isaf: 0..100
+  trust_in_afghan_government: 0..100
+  trust_in_ana: 0..100
+  trust_in_anp: 0..100
+
+  voluntary_support:
+    TALIBAN: 0..100
+    HAQQANI: 0..100
+    HIG: 0..100
+
+  coercive_compliance:
+    TALIBAN: 0..100
+    HAQQANI: 0..100
+    HIG: 0..100
+
+  fear:
+    ISAF: 0..100
+    AFGHAN_STATE: 0..100
+    TALIBAN: 0..100
+    HAQQANI: 0..100
+    HIG: 0..100
+
+  grievance:
+    ISAF: 0..100
+    AFGHAN_STATE: 0..100
+    TALIBAN: 0..100
+    HAQQANI: 0..100
+    HIG: 0..100
+
+  information_willingness:
+    ISAF: 0..100
+    AFGHAN_STATE: 0..100
+    TALIBAN: 0..100
+    HAQQANI: 0..100
+    HIG: 0..100
+
+  political_alienation: 0..100
+  dual_alignment: 0..100
   displacement_pressure: 0..100
 ```
 
@@ -301,14 +491,15 @@ COMPLIANCE != SUPPORT
 PRESENCE != LEGITIMACY
 PROJECT_OUTPUT != POSITIVE_POLITICAL_EFFECT
 SECURITY_FORCE_PRESENT != POPULATION_PROTECTED
+POPULATION != OWNED_RESOURCE
 ```
 
-## 9. Lokale Akteure und Organisationen
+## 10. Lokale Akteure und Organisationen
 
 ```yaml
 actor:
   actor_id: string
-  actor_type: commander|official|elder|broker|facilitator|source|specialist|civilian_leader|other
+  actor_type: commander|official|elder|broker|facilitator|source|specialist|civilian_leader|local_commander|other
   display_name: string
   primary_faction_id: string|null
   secondary_affiliations: []
@@ -332,11 +523,12 @@ actor:
 organization:
   organization_id: string
   faction_id: string|null
-  organization_type: military|political|government|tribal|commercial|criminal|civilian|network
+  organization_type: military|police|intelligence|political|government|tribal|commercial|criminal|civilian|network
   parent_organization_id: string|null
   member_actor_refs: []
-  controlled_unit_refs: []
-  controlled_resource_pool_refs: []
+  controlled_force_package_refs: []
+  controlled_force_unit_refs: []
+  controlled_resource_account_refs: []
   geographic_scope: []
   cohesion: 0..100
   command_reliability: 0..100
@@ -344,20 +536,57 @@ organization:
   status: active|fragmented|merged|dissolved|inactive
 ```
 
-## 10. Kräfte, Zellen und Assets
+## 11. ForcePackage und ForceUnit
 
-### 10.1 Gemeinsames Force-Objekt
+### 11.1 Begriffstrennung
+
+```text
+ForcePackage
+= strategisches, ressourcengedecktes Kräftepaket,
+  das verfügbar, reserviert und materialisiert werden kann
+
+ForceUnit
+= persistente Teilstruktur oder konkrete Einheit innerhalb
+  eines ForcePackage
+```
+
+Ein ForcePackage kann genau eine DCS-Gruppe, mehrere DCS-Gruppen oder ein zeitlich begrenztes Missionspaket repräsentieren. Die konkrete Zuordnung wird über MOOSE- und DCS-Mappings geführt.
+
+### 11.2 ForcePackage
+
+```yaml
+force_package:
+  force_package_id: string
+  owner_faction_id: string
+  owner_organization_id: string|null
+  package_type: ground_unit|insurgent_cell|support_cell|qrf|convoy|air_mission_capacity|isr_package|logistics_package|other
+  template_ref: string
+  source_force_generation_order_id: string|null
+  component_unit_refs: []
+  home_location_id: string|null
+  current_location_id: string|null
+  readiness_state: planned|forming|available|reserved|assigned|deployed|recovering|maintenance|degraded|lost|disbanded
+  readiness: 0..100
+  cohesion: 0..100
+  leadership_quality: 0..100
+  command_reliability: 0..100
+  current_strength_band: string
+  assigned_operation_id: string|null
+  resource_provenance_refs: []
+  materialization_status: virtual|reserved|materializing|physical|dematerializing|lost
+  materialization_policy: virtual_only|event_only|hybrid|physical_required
+```
+
+### 11.3 ForceUnit
 
 ```yaml
 force_unit:
   unit_id: string
+  parent_force_package_id: string
   faction_id: string
   organization_id: string|null
   unit_type: conventional|special_operations|partner_force|militia|insurgent_cell|support_cell|technical_team
   echelon_or_size_band: string
-  home_location_id: string|null
-  current_location_id: string|null
-  assigned_operation_id: string|null
   readiness: 0..100
   cohesion: 0..100
   leadership_quality: 0..100
@@ -368,20 +597,21 @@ force_unit:
   logistics_state: 0..100
   communications_state: 0..100
   intelligence_state: 0..100
-  current_strength_band: string
   casualty_state: 0..100
   exposure_status: hidden|suspected|detected|identified|engaged
-  materialization_status: virtual|reserved|materializing|physical|dematerializing|lost
   status: ready|tasked|moving|staging|engaged|recovering|degraded|destroyed|disbanded
 ```
 
-### 10.2 BLUE Asset
+### 11.4 ISAF Assets und Capabilities
+
+ISAF-Luft-, ISR-, MEDEVAC-, EOD- und weitere Enabler sind keine gemeinsamen Grundressourcen aus Dokument 17.
 
 ```yaml
-blue_asset:
+capability_asset:
   asset_id: string
-  asset_type: aircraft|helicopter|uav|ground_vehicle|artillery|sensor|medical|eod|logistics|other
+  owner_faction_id: ISAF|AFGHAN_STATE
   owner_organization_id: string
+  asset_type: aircraft|helicopter|uav|ground_vehicle|artillery|sensor|medical|eod|logistics|advisor|other
   home_base_id: string
   current_location_id: string
   readiness_state: ready|alert|tasked|enroute|on_station|engaged|returning|recovering|maintenance|crew_rest|weather_hold|damaged|unavailable|destroyed
@@ -393,52 +623,278 @@ blue_asset:
   crew_state: 0..100|null
   maintenance_state: 0..100
   national_caveats: []
-  weather_limits: []
   reserve_category: uncommitted|local_reserve|regional_reserve|theater_reserve|emergency_only|recovery_protected
   assigned_operation_id: string|null
 ```
 
-## 11. Ressourcenpools und Reservierungen
+## 12. Gemeinsame Ressourcenarchitektur
+
+Version 1 verwendet genau drei gemeinsame umkämpfte Grundressourcen:
+
+```text
+RECRUITABLE_MANPOWER
+FINANCE
+MATERIEL
+```
+
+Nicht als gemeinsame Grundressourcen geführt werden:
+
+```text
+LEGITIMACY
+REPUTATION
+VOLUNTARY_SUPPORT
+COERCIVE_CONTROL
+PRESTIGE
+LOYALTY
+COMMAND_COHESION
+HUMINT_ACCESS
+SPECIALIST_ACCESS
+AIRLIFT
+ISR
+MEDEVAC
+```
+
+Diese Größen sind politische Zustände, Zugänge, organisatorische Gates oder Capability Assets.
+
+### 12.1 ResourceSource
 
 ```yaml
-resource_pool:
-  resource_pool_id: string
-  owner_faction_id: string
-  owner_organization_id: string|null
-  resource_type: manpower|finance|weapons|explosives|fuel|vehicles|airlift|isr|medevac|specialist|political_capital|local_access|other
+resource_source:
+  resource_source_id: string
+  resource_type: RECRUITABLE_MANPOWER|FINANCE|MATERIEL
+  source_type: population|legal_economy|state_revenue|donor_support|external_insurgent_support|illicit_economy|warehouse|cache|convoy|other
+  region_id: string|null
   location_id: string|null
-  total_capacity: number
-  available_capacity: number
-  reserved_capacity: number
-  degraded_capacity: number
-  replenishment_rate: number|null
-  replenishment_interval: duration|null
+  legal_owner_faction_id: string|null
+  physical_controller_faction_id: string|null
+  capacity: number
+  current_available: number
+  regeneration_per_turn: number|null
+  regeneration_interval: duration|null
+  disruption_level: 0..100
+  exhaustion_level: 0..100
   concealment: 0..100
   compromise_risk: 0..100
-  sharing_policy: private|request_only|agreement_only|shared
+  beneficiary_shares: {}
+  access_shares: {}
   status: active|degraded|isolated|exhausted|destroyed
+  state_version: integer
 ```
+
+### 12.2 ResourceAccount
+
+```yaml
+resource_account:
+  resource_account_id: string
+  faction_id: string
+  resource_type: RECRUITABLE_MANPOWER|FINANCE|MATERIEL
+  available: number
+  reserved: number
+  committed: number
+  in_transit: number
+  degraded_or_unusable: number
+  state_version: integer
+```
+
+Verbindliche Invariante:
+
+```text
+available
++ reserved
++ committed
++ in_transit
++ degraded_or_unusable
+<= total_credited_from_sources_and_transfers
+```
+
+### 12.3 ResourceReservation
 
 ```yaml
 resource_reservation:
   reservation_id: string
-  resource_pool_id: string
-  operation_id: string
-  requester_commander_id: string
-  quantity_or_capacity: number
+  resource_account_id: string
+  resource_type: RECRUITABLE_MANPOWER|FINANCE|MATERIEL
+  requesting_commander_id: string
+  force_generation_order_id: string|null
+  operation_id: string|null
+  quantity: number
   reserved_at: datetime
   expires_at: datetime|null
   status: requested|approved|active|consumed|released|expired|cancelled
   state_version_created: integer
 ```
 
-Verbindliche Invariante:
+### 12.4 ResourceTransfer
 
-```text
-available_capacity + reserved_capacity + degraded_capacity <= total_capacity
+```yaml
+resource_transfer:
+  transfer_id: string
+  resource_type: FINANCE|MATERIEL|RECRUITABLE_MANPOWER
+  source_account_id: string
+  destination_account_id: string
+  quantity: number
+  agreement_ref: string|null
+  transport_operation_ref: string|null
+  ownership_transfer: boolean
+  state: proposed|approved|reserved|in_transit|partially_delivered|delivered|lost|destroyed|cancelled
+  idempotency_key: string
 ```
 
-## 12. RED-Netzwerkknoten und Capability Packages
+Ein Transfer erzeugt keine neue Ressource.
+
+```text
+TRANSFER != GENERATION
+DUPLICATE_DELIVERY_EVENT != SECOND_CREDIT
+```
+
+### 12.5 AccessNode und FactionShare
+
+```yaml
+access_node:
+  access_node_id: string
+  node_type: district|route|checkpoint|market|crossing|warehouse|cache|revenue_node|recruitment_network|support_channel|other
+  region_id: string|null
+  location_id: string|null
+  legal_owner_faction_id: string|null
+  physical_controller_faction_id: string|null
+  connected_resource_source_refs: []
+  beneficiary_shares: {}
+  access_shares: {}
+  disruption_level: 0..100
+  materialization_policy: virtual_only|event_only|hybrid|physical_required
+```
+
+```yaml
+faction_share:
+  share_id: string
+  faction_id: string
+  source_or_node_ref: string
+  share_type: access|beneficiary|control_claim|recruitment|revenue
+  percentage: 0..100
+  effective_from: datetime
+  effective_until: datetime|null
+  basis_event_refs: []
+```
+
+## 13. Resource Flow und Kampagnenturn
+
+```text
+RESOURCE_SOURCE_TICK
+-> SOURCE_GENERATION
+-> ACCESS_SHARE_CALCULATION
+-> BENEFICIARY_ALLOCATION
+-> RESOURCE_ACCOUNT_CREDIT
+-> RESERVATION_OR_TRANSFER
+-> FORCE_GENERATION_OR_OPERATION
+-> PHYSICAL_RESULT
+-> CONTROL_AND_SHARE_UPDATE
+```
+
+```yaml
+resource_flow:
+  resource_flow_id: string
+  resource_source_id: string
+  resource_type: RECRUITABLE_MANPOWER|FINANCE|MATERIEL
+  gross_quantity: number
+  disruption_loss: number
+  leakage_loss: number
+  allocations:
+    - faction_id: string
+      quantity: number
+      destination_account_id: string
+  generated_at: datetime
+  event_ref: string
+```
+
+Bestandsformel:
+
+```text
+STOCK_NEXT
+=
+MIN(
+  CAPACITY,
+  STOCK_CURRENT
+  + GENERATED
+  + TRANSFERRED_IN
+  - RESERVED_OR_COMMITTED
+  - CONSUMED
+  - DESTROYED
+  - TRANSFERRED_OUT
+  - DIVERTED
+)
+```
+
+## 14. Force Generation
+
+### 14.1 ForceGenerationOrder
+
+```yaml
+force_generation_order:
+  force_generation_order_id: string
+  faction_id: string
+  requesting_commander_id: string
+  requested_template_ref: string
+  requested_package_type: string
+  source_region_id: string|null
+  resource_reservation_refs: []
+  organizational_gate_requirements: []
+  training_or_preparation_requirements: []
+  requested_at: datetime
+  generation_started_at: datetime|null
+  generation_complete_at: datetime|null
+  lifecycle_state: proposed|validating|rejected|resources_reserved|recruiting|training|equipping|forming|available|cancelled|failed
+  generated_force_package_id: string|null
+```
+
+### 14.2 Gemeinsame Validierungsformel
+
+```text
+RECRUITABLE_MANPOWER
++ FINANCE
++ MATERIEL
++ TIME
++ FACTION_SPECIFIC_ORGANIZATIONAL_GATE
+-> FORCE_PACKAGE
+```
+
+### 14.3 Fraktionsspezifische Gates
+
+```text
+ISAF:
+  NATIONAL_FORCE_POOL
+  COALITION_COMMITMENT
+  REPLACEMENT_CAPACITY
+  TIME
+
+AFGHAN_STATE:
+  TRAINING_CAPACITY
+  RETENTION
+  LEADERSHIP
+  SUSTAINMENT
+
+TALIBAN:
+  CADRE_CAPACITY
+  LOCAL_RECRUITMENT_ACCESS
+  COMMAND_LINK
+
+HAQQANI:
+  NETWORK_ACCESS
+  TRUSTED_CADRE_OR_SPECIALIST_GATE
+  ROUTE_AND_STAGING_ACCESS
+
+HIG:
+  PATRONAGE_ACCESS
+  LOCAL_COMMANDER_GATE
+  REPRESENTATION_AND_COHESION
+```
+
+ISAF rekrutiert nicht aus afghanischen Manpower-Quellen.
+
+```text
+NO_ISAF_RECRUITMENT_FROM_AFGHAN_MANPOWER
+```
+
+## 15. RED-Netzwerkknoten und Capability Packages
 
 ```yaml
 network_node:
@@ -447,27 +903,28 @@ network_node:
   node_type: sanctuary|border_entry|transit|facilitation|safehouse|cache|training|finance|specialist|staging|surveillance|media|other
   location_id: string|null
   connected_route_refs: []
+  connected_resource_source_refs: []
   capacity: 0..100
   concealment: 0..100
   redundancy: 0..100
   replacement_difficulty: 0..100
   compromise_risk: 0..100
-  blue_pressure: 0..100
-  known_by_blue_level: unknown|suspected|correlated|confirmed
+  opposing_pressure: 0..100
+  visibility_by_faction: {}
   status: active|degraded|quarantined|compromised|abandoned|destroyed
 ```
 
 ```yaml
 capability_package:
-  package_id: string
+  capability_package_id: string
   owner_faction_id: string
   sponsor_actor_id: string|null
   strategic_effect: string
   target_ref: string|null
   target_intelligence_level: 0..100
-  manpower_refs: []
-  weapon_resource_refs: []
-  explosive_resource_refs: []
+  assigned_force_package_refs: []
+  materiel_reservation_refs: []
+  finance_reservation_refs: []
   specialist_actor_refs: []
   communication_node_refs: []
   route_refs: []
@@ -479,7 +936,9 @@ capability_package:
   associated_operation_id: string|null
 ```
 
-## 13. Beziehungen, Vereinbarungen und Nachrichten
+Ein `CapabilityPackage` ist keine Ressource. Es ist ein readiness- und gate-geprüftes Bündel aus Kräften, Ressourcenreservierungen, Zugängen und Fähigkeiten.
+
+## 16. Beziehungen, Vereinbarungen und Nachrichten
 
 ```yaml
 relationship_state:
@@ -488,11 +947,19 @@ relationship_state:
   object_faction_id: string
   geographic_scope: []
   formal_alignment: 0..100
+  political_alignment: 0..100
   ideological_alignment: 0..100
   political_trust: 0..100
   operational_trust: 0..100
   intelligence_sharing_willingness: 0..100
   logistics_cooperation_willingness: 0..100
+  finance_support_willingness: 0..100
+  materiel_support_willingness: 0..100
+  training_support_willingness: 0..100
+  enabler_dependency: 0..100
+  command_friction: 0..100
+  transition_pressure: 0..100
+  sovereignty_respect: 0..100
   territorial_competition: 0..100
   recruitment_competition: 0..100
   revenue_competition: 0..100
@@ -510,7 +977,7 @@ Beziehungen sind gerichtet. `A -> B` kann andere Werte besitzen als `B -> A`.
 agreement:
   agreement_id: string
   participant_faction_refs: []
-  agreement_type: information_exchange|transit_access|resource_transfer|specialist_support|joint_operation|revenue_sharing|local_non_aggression|temporary_truce|withdrawal|other
+  agreement_type: information_exchange|transit_access|finance_transfer|materiel_transfer|resource_source_share|specialist_support|enabler_support|training_support|joint_operation|revenue_sharing|local_non_aggression|temporary_truce|withdrawal|other
   geographic_scope: []
   valid_from: datetime
   valid_until: datetime|null
@@ -536,9 +1003,9 @@ faction_message:
   transmission_status: queued|sent|delivered|delayed|intercepted|lost|compromised
 ```
 
-## 14. Objective Intelligence, Beliefs und Memory
+## 17. Information, Beliefs und Memory
 
-### 14.1 Objective Information Item
+### 17.1 Objective Information Item
 
 ```yaml
 information_item:
@@ -560,7 +1027,7 @@ information_item:
   objective_status: valid|contested|false|expired
 ```
 
-### 14.2 Commander Belief
+### 17.2 Commander Belief
 
 ```yaml
 commander_belief:
@@ -577,7 +1044,18 @@ commander_belief:
   next_decay_at: datetime|null
 ```
 
-### 14.3 Commander Memory
+Resource-bezogene Beliefs müssen unterscheiden:
+
+```text
+KNOWN_RESOURCE_STOCK
+ESTIMATED_RESOURCE_STOCK
+BELIEVED_SOURCE_LOCATION
+BELIEVED_PHYSICAL_CONTROLLER
+BELIEVED_BENEFICIARY_SHARE
+BELIEVED_ACCESS_SHARE
+```
+
+### 17.3 Commander Memory
 
 ```yaml
 commander_memory:
@@ -594,12 +1072,13 @@ commander_memory:
   archive_status: active|compressed|archived
 ```
 
-## 15. BLUE MissionDemand, Collection und Targeting
+## 18. MissionDemand, Collection und Targeting
 
 ```yaml
 mission_demand:
   demand_id: string
   requesting_commander_id: string
+  owning_faction_id: string
   demand_type: string
   desired_effect: string
   strategic_context: string
@@ -608,12 +1087,14 @@ mission_demand:
   required_by: datetime|null
   intelligence_basis_refs: []
   required_capabilities: []
+  required_partner_approval_refs: []
+  required_resource_source_refs: []
   acceptable_alternatives: []
   political_constraints: []
   civilian_constraints: []
   assessment_requirements: []
   priority_score: number|null
-  lifecycle_state: draft|submitted|validated|prioritized|approved|allocated|tasked|executing|complete|denied|cancelled|aborted
+  lifecycle_state: draft|submitted|validated|partner_review|prioritized|approved|allocated|tasked|executing|complete|denied|cancelled|aborted
 ```
 
 ```yaml
@@ -628,6 +1109,7 @@ collection_requirement:
   collection_risk: 0..100
   deadline: datetime|null
   assigned_asset_refs: []
+  dissemination_scope: []
   lifecycle_state: draft|validated|queued|allocated|collecting|partial_result|result_available|no_result|compromised|cancelled|closed
 ```
 
@@ -649,7 +1131,9 @@ target_record:
   lifecycle_state: discovered|correlated|under_development|needs_collection|candidate|nominated|reviewing|authorized_for_specific_effect|denied|monitor_only|expired|disproven|removed
 ```
 
-## 16. Operation und Task Lifecycle
+`CAPTURE`, `DETENTION`, `DISARMAMENT` und `DEMOBILIZATION` sind mögliche Kampagneneffekte, aber keine garantiert technisch verfügbare DCS-Wirkung.
+
+## 19. Operation und Task Lifecycle
 
 ```yaml
 operation:
@@ -664,7 +1148,8 @@ operation:
   geographic_scope: []
   origin_refs: []
   target_refs: []
-  participant_refs: []
+  participant_force_package_refs: []
+  supporting_capability_asset_refs: []
   resource_reservation_refs: []
   agreement_refs: []
   route_plan_refs: []
@@ -694,14 +1179,14 @@ operation_task:
   lifecycle_state: pending|ready|active|blocked|complete|failed|cancelled
 ```
 
-## 17. DCS-/MOOSE-Materialisierung
+## 20. DCS-/MOOSE-Materialisierung
 
 ```yaml
 materialization_mapping:
   mapping_id: string
   strategic_entity_ref: string
   dcs_session_id: string
-  dcs_object_type: group|unit|static|zone|warehouse|airbase|task|other
+  dcs_object_type: group|unit|static|zone|warehouse|airbase|task|cargo|other
   dcs_object_name: string
   moose_object_type: string|null
   moose_object_name: string|null
@@ -720,11 +1205,12 @@ ONE_ACTIVE_DCS_OBJECT maps to only one strategic entity
 DEMATERIALIZATION does not recreate consumed resources
 DCS_DESTRUCTION requires validated state transition
 MISSING_DCS_OBJECT != AUTOMATICALLY_DESTROYED
+SAME_ADAPTER_COMMAND_ID != DUPLICATE_MATERIALIZATION
 ```
 
-## 18. Event Envelope
+Der Adapter erhält ausschließlich validierte Fachobjekte. Er entscheidet anhand geprüfter, versionierter Mappings, welche MOOSE-Klasse oder vorhandene MOOSE-Funktion verwendet wird.
 
-Jedes Ereignis verwendet denselben Umschlag:
+## 21. Event Envelope
 
 ```yaml
 event:
@@ -740,6 +1226,7 @@ event:
   actor_ref: string|null
   causation_id: string|null
   correlation_id: string|null
+  idempotency_key: string|null
   aggregate_type: string
   aggregate_id: string
   expected_state_version: integer|null
@@ -749,14 +1236,15 @@ event:
     dcs_session_id: string|null
     turn_id: string|null
     operation_id: string|null
+    force_generation_order_id: string|null
     model_identifier: string|null
     prompt_version: string|null
     adjudication_seed: integer|null
 ```
 
-## 19. Ereigniskategorien
+## 22. Ereigniskategorien
 
-### 19.1 Campaign und Zeit
+### 22.1 Campaign und Zeit
 
 ```text
 CAMPAIGN_INITIALIZED
@@ -768,7 +1256,7 @@ CAMPAIGN_COMPLETED
 SNAPSHOT_CREATED
 ```
 
-### 19.2 Commander und Organisation
+### 22.2 Commander und Organisation
 
 ```text
 COMMANDER_ACTIVATED
@@ -782,7 +1270,7 @@ ACTOR_STATUS_CHANGED
 ACTOR_DEFECTED
 ```
 
-### 19.3 Information, Belief und Memory
+### 22.3 Information, Belief und Memory
 
 ```text
 INFORMATION_REPORTED
@@ -800,26 +1288,55 @@ MEMORY_COMPRESSED
 MEMORY_ARCHIVED
 ```
 
-### 19.4 Ressourcen und Kräfte
+### 22.4 Ressourcenquellen, Konten und Transfers
 
 ```text
-RESOURCE_ADDED
-RESOURCE_DEGRADED
+RESOURCE_SOURCE_CREATED
+RESOURCE_SOURCE_GENERATED
+RESOURCE_SOURCE_DISRUPTED
+RESOURCE_SOURCE_EXHAUSTED
+RESOURCE_SOURCE_DESTROYED
+ACCESS_SHARE_CHANGED
+BENEFICIARY_SHARE_CHANGED
+RESOURCE_ACCOUNT_CREDITED
+RESOURCE_ACCOUNT_DEBITED
 RESOURCE_RESERVED
 RESOURCE_RESERVATION_RELEASED
+RESOURCE_COMMITTED
 RESOURCE_CONSUMED
 RESOURCE_TRANSFER_REQUESTED
+RESOURCE_TRANSFER_APPROVED
 RESOURCE_TRANSFER_STARTED
+RESOURCE_TRANSFER_PARTIALLY_DELIVERED
 RESOURCE_TRANSFER_COMPLETED
 RESOURCE_TRANSFER_DISRUPTED
-UNIT_TASKED
-UNIT_MOVED
-UNIT_DEGRADED
-UNIT_DESTROYED
+RESOURCE_TRANSFER_LOST
+RESOURCE_TRANSFER_DESTROYED
+```
+
+### 22.5 Force Generation und Kräfte
+
+```text
+FORCE_GENERATION_REQUESTED
+FORCE_GENERATION_VALIDATED
+FORCE_GENERATION_REJECTED
+FORCE_GENERATION_RESOURCES_RESERVED
+FORCE_GENERATION_STARTED
+FORCE_GENERATION_PHASE_CHANGED
+FORCE_GENERATION_COMPLETED
+FORCE_GENERATION_CANCELLED
+FORCE_PACKAGE_CREATED
+FORCE_PACKAGE_AVAILABLE
+FORCE_PACKAGE_RESERVED
+FORCE_PACKAGE_ASSIGNED
+FORCE_PACKAGE_DEGRADED
+FORCE_PACKAGE_LOST
+FORCE_PACKAGE_DISBANDED
+FORCE_UNIT_STATUS_CHANGED
 ASSET_READINESS_CHANGED
 ```
 
-### 19.5 Beziehungen und Vereinbarungen
+### 22.6 Beziehungen und Vereinbarungen
 
 ```text
 MESSAGE_SENT
@@ -837,10 +1354,13 @@ RELATIONSHIP_CHANGED
 LOCAL_CLASH_OCCURRED
 ```
 
-### 19.6 MissionDemand, Targeting und Operations
+### 22.7 MissionDemand, Targeting und Operations
 
 ```text
 MISSION_DEMAND_CREATED
+MISSION_DEMAND_PARTNER_REVIEW_REQUESTED
+MISSION_DEMAND_PARTNER_ACCEPTED
+MISSION_DEMAND_PARTNER_DECLINED
 MISSION_DEMAND_PRIORITIZED
 MISSION_DEMAND_APPROVED
 MISSION_DEMAND_DENIED
@@ -863,7 +1383,7 @@ OPERATION_COMPLETED
 OPERATION_FAILED
 ```
 
-### 19.7 DCS und MOOSE
+### 22.8 DCS und MOOSE
 
 ```text
 DCS_SESSION_STARTED
@@ -873,6 +1393,7 @@ ENTITY_MATERIALIZED
 ENTITY_SYNCHRONIZED
 ENTITY_MISSING_IN_DCS
 ENTITY_DEMATERIALIZED
+PHYSICAL_ENTITY_REMOVED
 DCS_DAMAGE_REPORTED
 DCS_DESTRUCTION_REPORTED
 DCS_POSITION_REPORTED
@@ -880,7 +1401,18 @@ DCS_TASK_RESULT_REPORTED
 MOOSE_TASK_STATE_CHANGED
 ```
 
-## 20. State Reducer
+### 22.9 Nur adjudizierte Kampagnenergebnisse
+
+```text
+FORCE_PACKAGE_DETAINED
+FORCE_PACKAGE_DISARMED
+FORCE_PACKAGE_DEMOBILIZED
+FORCE_PACKAGE_DEFECTED
+```
+
+Diese Ereignisse dürfen niemals allein aus dem Verschwinden oder Löschen einer DCS-Gruppe abgeleitet werden.
+
+## 23. State Reducer
 
 Der State Reducer ist deterministisch.
 
@@ -905,9 +1437,10 @@ Er darf nicht:
 - eigenständig strategische Entscheidungen treffen;
 - fehlende Ereignisse erfinden;
 - LLM-Begründungen als Weltwahrheit übernehmen;
-- DCS-Meldungen ungeprüft als endgültiges Ergebnis übernehmen.
+- DCS-Meldungen ungeprüft als endgültiges Ergebnis übernehmen;
+- Zugang, Unterstützung oder Prestige direkt in Einheiten umwandeln.
 
-## 21. Optimistic Concurrency und Locks
+## 24. Optimistic Concurrency und Locks
 
 Jeder schreibende Vorgang enthält die erwartete State-Version.
 
@@ -919,7 +1452,11 @@ THEN reject with STATE_VERSION_CONFLICT
 Zusätzliche Sperren:
 
 ```text
-RESOURCE_LOCK
+RESOURCE_SOURCE_LOCK
+RESOURCE_ACCOUNT_LOCK
+RESOURCE_RESERVATION_LOCK
+FORCE_GENERATION_LOCK
+FORCE_PACKAGE_LOCK
 OPERATION_LOCK
 AGREEMENT_LOCK
 ENTITY_MATERIALIZATION_LOCK
@@ -934,7 +1471,7 @@ Sperren besitzen:
 - Correlation-ID;
 - automatisches Recovery-Verfahren.
 
-## 22. Snapshots
+## 25. Snapshots
 
 Snapshots werden empfohlen:
 
@@ -959,7 +1496,7 @@ snapshot:
 
 Ein Snapshot ist nur gültig, wenn seine Prüfsumme und die anschließende Event-Replay-Kette verifiziert werden können.
 
-## 23. Schema-Versionierung und Migration
+## 26. Schema-Versionierung und Migration
 
 ```text
 SCHEMA_CHANGE
@@ -978,25 +1515,32 @@ Regeln:
 3. Jede Migration besitzt eine eigene Versionsnummer.
 4. Replay vor und nach Migration muss fachlich äquivalente Ergebnisse liefern oder dokumentierte Abweichungen erzeugen.
 5. Inkompatible Änderungen benötigen einen neuen Campaign-Zweig oder eine explizite Konvertierung.
+6. Die Migration von `ResourcePool` zu `ResourceSource`, `ResourceAccount` und `CapabilityAsset` muss ausdrücklich versioniert werden.
 
-## 24. Recovery nach Abbruch oder DCS-Ausfall
+## 27. Recovery nach Abbruch oder DCS-Ausfall
 
 ```text
 1. letzten gültigen Snapshot laden
 2. Events bis zum letzten bestätigten Sequence-Wert wiedergeben
 3. offene Locks prüfen und bereinigen
-4. laufende Operationen auf Recovery-Regeln prüfen
-5. DCS-Mappings als nicht bestätigt markieren
-6. neue DCS-Session starten
-7. erforderliche Entitäten neu materialisieren
-8. Synchronisationsereignisse schreiben
+4. Force-Generation-Aufträge rekonstruieren
+5. laufende Operationen auf Recovery-Regeln prüfen
+6. DCS-Mappings als nicht bestätigt markieren
+7. neue DCS-Session starten
+8. erforderliche Entitäten über MOOSE neu materialisieren
+9. Synchronisationsereignisse schreiben
 ```
 
-Ein DCS-Ausfall darf keine Ressourcen duplizieren und keine bereits bestätigten Verluste rückgängig machen.
+Ein DCS-Ausfall darf:
 
-## 25. Idempotenz
+- keine Ressourcen duplizieren;
+- keine bestätigten Verluste rückgängig machen;
+- keine abgeschlossene Force Generation erneut gutschreiben;
+- keinen identischen Adapterbefehl doppelt materialisieren.
 
-DCS- und externe Adapter können dasselbe Ereignis mehrfach melden. Deshalb benötigt jede externe Meldung einen stabilen Idempotency Key.
+## 28. Idempotenz
+
+Externe Meldungen benötigen einen stabilen Idempotency Key.
 
 ```yaml
 external_event_identity:
@@ -1007,7 +1551,24 @@ external_event_identity:
 
 Bereits verarbeitete Schlüssel werden nicht erneut als State-Änderung angewandt.
 
-## 26. Audit- und Reproduzierbarkeitsanforderungen
+Verbindlich:
+
+```text
+ONE_CARGO_OR_TRANSFER_ID
+-> AT_MOST_ONE_FINAL_CREDIT
+```
+
+```text
+ONE_FORCE_GENERATION_ORDER
+-> AT_MOST_ONE_FORCE_PACKAGE
+```
+
+```text
+ONE_ADAPTER_COMMAND_ID
+-> AT_MOST_ONE_PHYSICAL_EXECUTION
+```
+
+## 29. Audit- und Reproduzierbarkeitsanforderungen
 
 Für jede Commander-Entscheidung müssen verknüpfbar sein:
 
@@ -1022,11 +1583,24 @@ RESULTING_STATE_VERSION
 COMMANDER_VISIBLE_RESULT
 ```
 
+Für jede Force Generation müssen verknüpfbar sein:
+
+```text
+SOURCE_REQUEST
+RESOURCE_SOURCE_PROVENANCE
+RESOURCE_RESERVATIONS
+ORGANIZATIONAL_GATES
+GENERATION_PHASES
+GENERATED_FORCE_PACKAGE
+MATERIALIZATION_RESULTS
+```
+
 Für jede Operation müssen verknüpfbar sein:
 
 ```text
 SOURCE_DECISION
 RESOURCE_RESERVATIONS
+FORCE_PACKAGE_ASSIGNMENTS
 OPERATION_TASKS
 DCS_MAPPINGS
 EXECUTION_EVENTS
@@ -1034,9 +1608,7 @@ ASSESSMENT
 MEMORY_AND_RELATIONSHIP_EFFECTS
 ```
 
-## 27. Datenschutz innerhalb der Simulation
-
-Der View Builder arbeitet mit expliziten Sichtbarkeitsregeln:
+## 30. Sichtbarkeit und Datenschutz innerhalb der Simulation
 
 ```text
 OBJECTIVE_STATE_FIELD
@@ -1051,23 +1623,30 @@ Es ist verboten, vollständige Aggregate ungefiltert in LLM-Prompts zu serialisi
 
 Besonders geschützt:
 
-- gegnerische Ressourcenbestände;
+- gegnerische Ressourcenquellen und Kontostände;
+- exakte Beneficiary- und Access-Shares;
 - versteckte Knoten;
 - nicht erkannte Fraktionsbeziehungen;
 - genaue gegnerische Operationspläne;
 - objektive Quellenzuverlässigkeit;
 - andere Commander-Beliefs und Memories;
-- interne BLUE-Targeting- und NSL-Daten, soweit nicht freigegeben.
+- interne BLUE-Targeting- und NSL-Daten;
+- Afghan-State- und ISAF-Informationen, sofern nicht geteilt.
 
-## 28. Mindestinvarianten
-
-Der Runtime-Kern muss mindestens folgende Invarianten durchsetzen:
+## 31. Mindestinvarianten
 
 ```text
 NO_NEGATIVE_RESOURCE_CAPACITY
+NO_RESOURCE_GENERATION_WITHOUT_SOURCE
 NO_DOUBLE_RESOURCE_RESERVATION
-NO_ACTIVE_OPERATION_WITH_DESTROYED_OWNER_UNIT
+NO_DUPLICATE_RESOURCE_CREDIT
+NO_FORCE_PACKAGE_WITHOUT_RESOURCE_COMMITMENT
+NO_FORCE_PACKAGE_WITHOUT_TEMPLATE_REFERENCE
+NO_ISAF_RECRUITMENT_FROM_AFGHAN_MANPOWER
+NO_POPULATION_OWNERSHIP
+NO_REPUTATION_TO_DIRECT_UNIT_CONVERSION
 NO_FOREIGN_RESOURCE_CONTROL_WITHOUT_AGREEMENT
+NO_AFGHAN_UNIT_OWNED_BY_ISAF
 NO_PHYSICAL_EXECUTION_BEFORE_APPROVAL
 NO_EXECUTE_COMPLEX_OPERATION_WITHOUT_READY_PACKAGE
 NO_KINETIC_BLUE_EFFECT_WITHOUT_REQUIRED_TARGETING_STATUS
@@ -1076,11 +1655,12 @@ NO_STATE_UPDATE_WITH_STALE_VERSION
 NO_COMMANDER_VIEW_WITH_UNAUTHORIZED_WORLD_TRUTH
 NO_EVENT_SEQUENCE_GAP
 NO_SNAPSHOT_WITH_INVALID_HASH
+NO_MISSING_DCS_OBJECT_AUTOMATICALLY_CLASSIFIED_AS_DESTROYED
 ```
 
-## 29. Minimaler Implementierungsumfang
+## 32. Minimaler Implementierungsumfang
 
-Für den ersten deterministischen Test Harness genügt:
+Für den ersten deterministischen Test Harness sind erforderlich:
 
 ```text
 Campaign
@@ -1089,9 +1669,20 @@ Commander
 Sector
 Location
 Route
-ForceUnit
-ResourcePool
+RouteSegment
+PopulationState
+Actor
+Organization
+ResourceSource
+ResourceAccount
 ResourceReservation
+ResourceTransfer
+AccessNode
+FactionShare
+ForceGenerationOrder
+ForcePackage
+ForceUnit
+CapabilityAsset
 InformationItem
 CommanderBelief
 RelationshipState
@@ -1099,46 +1690,55 @@ Agreement
 MissionDemand
 Operation
 OperationTask
+MaterializationMapping
 EventEnvelope
 Snapshot
 ```
 
-Noch nicht erforderlich für Phase 1:
+Noch nicht erforderlich:
 
 - vollständige DCS-Materialisierung;
-- komplette BLUE-ATO-Projektion;
+- komplette ATO-Projektion;
 - vollständige Targeting-Automation;
-- komplexe geografische Datenbank;
 - semantische Vektorsuche für Memory;
-- Echtzeit-Multi-LLM-Kommunikation.
+- Echtzeit-Multi-LLM-Kommunikation;
+- vollständige volkswirtschaftliche Modellierung.
 
-## 30. Empfohlene technische Ablagestruktur
+## 33. Empfohlene technische Ablagestruktur
 
 ```text
 campaign/
   schemas/
     campaign-state.schema.json
     event-envelope.schema.json
+    resource-source.schema.json
+    resource-account.schema.json
+    resource-transfer.schema.json
+    force-generation-order.schema.json
+    force-package.schema.json
     operation.schema.json
-    resource.schema.json
   reducers/
     campaign_reducer
+    resource_source_reducer
+    resource_account_reducer
+    force_generation_reducer
+    force_package_reducer
     operation_reducer
-    resource_reducer
     relationship_reducer
   projections/
     commander_view
     operation_board
-    resource_board
+    resource_flow_board
+    force_generation_board
     map_layers
   migrations/
   snapshots/
   tests/
 ```
 
-Die konkrete Programmiersprache ist in diesem Dokument nicht festgelegt. Die Schnittstellen und Invarianten gelten unabhängig davon, ob der Orchestrator später in Python, Elixir oder einer anderen geeigneten Laufzeit umgesetzt wird.
+Die Programmiersprache ist nicht festgelegt. Schnittstellen und Invarianten gelten für Python, Elixir oder eine andere geeignete Laufzeit.
 
-## 31. Acceptance-Kriterien
+## 34. Acceptance-Kriterien
 
 Das Datenmodell ist erst als Runtime-Basis akzeptiert, wenn folgende Tests bestehen:
 
@@ -1153,22 +1753,28 @@ Das Datenmodell ist erst als Runtime-Basis akzeptiert, wenn folgende Tests beste
 9. unterschiedliche Beliefs bei identischem objektivem State;
 10. reproduzierbares Operationsergebnis bei gleichem Seed;
 11. Schema-Migration mit Replay-Test;
-12. Recovery nach simuliertem Prozess- oder DCS-Abbruch.
+12. Recovery nach simuliertem Prozess- oder DCS-Abbruch;
+13. gleiche Quelle erzeugt bei gleichem State dieselben Fraktionsanteile;
+14. ein Manpower-Anteil kann nicht zwei Force Packages finanzieren;
+15. ein zerstörter Materielbestand kann nicht erneut gutgeschrieben werden;
+16. ISAF kann keine afghanische Einheit als eigenes Force Package übernehmen;
+17. ein Force-Generation-Auftrag erzeugt höchstens ein Force Package;
+18. ein identischer Adapterbefehl erzeugt höchstens eine physische Repräsentation;
+19. DCS-Löschung erzeugt ohne Adjudication weder Gefangennahme noch Entwaffnung;
+20. fünf Commander können parallel auf konsistenten State-Versionen arbeiten.
 
-## 32. Nächster Implementierungsblock
+## 35. Folgedokumente
 
-Auf Basis dieses Schemas folgt:
+Dieses Schema ist verbindliche Grundlage für:
 
 ```text
+02-common-commander-model.md
+07-runtime-rulebook-and-action-schema.md
+09-orchestrator-architecture-and-adjudication.md
+12-multi-commander-test-scenarios.md
 14-deterministic-test-harness-and-scripted-commanders.md
+15-orchestrator-technology-selection-and-deployment-model.md
+19-language-neutral-contracts-and-json-schemas.md
 ```
 
-Dieses Dokument muss festlegen:
-
-- minimale ausführbare Komponenten;
-- geskriptete Commander als Referenzverhalten;
-- Fixture- und Seed-Verwaltung;
-- Event-Replay-Tests;
-- Property- und Invariant-Tests;
-- LLM-freie Baseline;
-- spätere Austauschbarkeit der geskripteten Commander durch LLM-Adapter.
+Vor Runtime-Implementierung müssen die sprachneutralen Verträge in Dokument 19 aus diesem Modell abgeleitet und maschinenlesbar versioniert werden.
