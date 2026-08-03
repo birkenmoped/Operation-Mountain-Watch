@@ -13,7 +13,7 @@ project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
   - registry without complete non-numbered document inventory
 superseded_by:
-source_branch: agent/normalize-salerno-air-orbat
+source_branch: agent/tarinkot-object-contract-reconciliation
 source_commit: PENDING_MERGE
 validated_in_dcs: false
 ---
@@ -119,6 +119,7 @@ Eine Nummer und eine stabile `document_id` dürfen im aktuellen Bestand jeweils 
 | `OMW-AIR-AIRFIELD-IMPLEMENTATION-WORKFLOW` | `docs/airfield-airwing-squadron-commander-implementation-workflow.md` | `BINDING`; allgemeiner Airfield-AIRWING-Workflow |
 | `OMW-HANDOFF-TEMPLATE-AIRFIELD-AIRWING-COMMANDER` | `docs/handoffs/TEMPLATE-airfield-airwing-squadron-commander-chat-handoff.md` | `BINDING`; Chat-Handoff-Vorlage |
 | `OMW-AIR-US-ORBAT-RESEARCH` | `docs/us-air-orbat-2010-2011.md` | `BINDING`; historische Forschung |
+| `OMW-AIR-TKOT-MANIFEST` | `docs/tarinkot-air-operations-manifest.md` | `PROPOSED_BINDING_OBJECT_CONTRACT`; aktueller Tarinkot-Objektvertrag in Draft-PR #53 |
 | `OMW-GOV-SOURCE-USE` | `docs/sources/graveyard-of-empires.md` | `BINDING_PROJECT_DECISION` |
 | `OMW-GOV-MOOSE-VERSION` | `docs/moose/VERSION-AND-SOURCES.md` | `BINDING` |
 | `OMW-MOOSE-DOCUMENTATION-INDEX` | `docs/moose/README.md` | `BINDING` |
@@ -139,6 +140,14 @@ Eine Nummer und eine stabile `document_id` dürfen im aktuellen Bestand jeweils 
 | `OMW-ADR-0004-LOCATION-REGISTRY` | `docs/adr/0004-use-explicit-location-registry.md` | `BINDING` |
 | `OMW-EVIDENCE-INDEX` | `docs/evidence/README.md` | `BINDING` |
 | `OMW-EVIDENCE-SOURCE-INTAKE-AUDIT-2026-07-28` | `docs/evidence/source-intake-audit-2026-07-28.md` | `BINDING` |
+| `OMW-EVIDENCE-TARINKOT-ME-AUDIT-V5` | `docs/evidence/tarinkot-mission-editor-audit-omw-template-v5-salerno.md` | `EVIDENCE_REVIEWED`; aktueller MIZ-Audit |
+| `OMW-EVIDENCE-TARINKOT-AVIATION-2011` | `docs/evidence/tarinkot-2011-aviation-unit-and-aircraft-evidence.md` | `EVIDENCE_REVIEWED`; 2011er Typen- und Einheitennachweis |
+| `OMW-EVIDENCE-TARINKOT-AVIATION-ROTATIONS` | `docs/evidence/tarinkot-aviation-rotations-and-national-attribution-2006-2013.md` | `EVIDENCE_REVIEWED`; Rotations- und Nationalitätsgrenzen |
+| `OMW-EVIDENCE-TARINKOT-POST-PERIOD-AVIATION-BASE-LAYOUT` | `docs/evidence/tarinkot-post-period-aviation-and-base-layout-context-2012-2013.md` | `EVIDENCE_REVIEWED`; Post-period-Kontext |
+| `OMW-DECISION-TARINKOT-ACTIVE-BASELINE-2026-08-02` | `docs/evidence/tarinkot-owner-decision-active-baseline-2026-08-02.md` | `OWNER_DECISION_RECORDED`; aktive historische Baseline |
+| `OMW-EVIDENCE-TARINKOT-FARP-HOT-REFUEL-UH60-2011` | `docs/evidence/tarinkot-farp-hot-refuel-uh60-2011.md` | `EVIDENCE_REVIEWED`; FARP-/Hot-Refuel-Nachweis |
+| `OMW-EVIDENCE-TARINKOT-TF-ATTACK-STRUCTURE-CORRECTION` | `docs/evidence/tarinkot-source-critical-correction-task-force-attack-structure.md` | `EVIDENCE_REVIEWED`; Organisationskorrektur |
+| `OMW-DECISION-TARINKOT-G2-OBJECT-CONTRACT-2026-08-03` | `docs/evidence/tarinkot-g2-object-contract-acceptance-checklist-2026-08-03.md` | `PROPOSED_OWNER_ACCEPTANCE`; G2-Abnahmeliste und Zone-/Gate-Matrix |
 | `OMW-TEST-JBAD-AIR-OPS-INDEX` | `mission/tests/jalalabad-air-operations/README.md` | `BINDING` |
 
 ## 5. Legacy- und Evidenzregel
