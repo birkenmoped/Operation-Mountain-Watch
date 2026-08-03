@@ -5,13 +5,27 @@ document_class: FACTION_COMMANDER_DOSSIER
 scenario_period: 2010-08-01/2011-12-31
 source_branch: docs/optional-llm-commanders
 validated_in_dcs: false
+authoritative_for:
+  - Afghan State campaign-faction identity
+  - Afghan State commander objectives and personality
+  - ANSF ownership training retention and transition behavior
+  - Afghan-specific force-generation gates
+  - relationship to ISAF and Afghan population
 ---
 
 # Afghanischer Staat und ANSF – Commander-Dossier
 
 ## 1. Zweck
 
-Dieses Dokument definiert den historischen, organisatorischen, strategischen und simulationsbezogenen Referenzrahmen für eine eigenständige afghanische Kampagnenfraktion innerhalb des optionalen Multi-Commander-Projekts.
+Dieses Dokument definiert den historischen, organisatorischen, strategischen und simulationsbezogenen Referenzrahmen für die eigenständige afghanische Kampagnenfraktion des optionalen Multi-Commander-Projekts.
+
+Kanonischer Commander-Name:
+
+```text
+AFGHAN_STATE_COMMANDER
+```
+
+`ANSF_COMMANDER` darf nur als funktionale Kurzbezeichnung für militärische oder sicherheitsbezogene Teilaufgaben verwendet werden. Es ist kein zweiter strategischer Commander und kein Synonym für den gesamten Staat.
 
 Die Fraktion umfasst auf Kampagnenebene:
 
@@ -26,10 +40,6 @@ AFGHAN_AIR_COMPONENT
 SELECTED_LOCAL_SECURITY_STRUCTURES_WHERE_SOURCE_SUPPORTED
 ```
 
-Der zugehörige Commander wird zunächst als `AFGHAN_STATE_COMMANDER` beziehungsweise `ANSF_COMMANDER` bezeichnet.
-
-Er ist keine bloße Unterkomponente des BLUE Commanders.
-
 ```text
 DCS_COALITION = BLUE
 CAMPAIGN_FACTION = AFGHAN_STATE
@@ -37,9 +47,9 @@ STRATEGIC_AUTONOMY = PARTIAL
 COMMAND_AUTHORITY != ISAF_OWNERSHIP
 ```
 
-Afghanische Einheiten können technisch derselben DCS-Koalition wie ISAF angehören. Im CampaignState besitzen sie dennoch eigene Eigentums-, Führungs-, Ressourcen-, Ziel- und Entscheidungszustände.
+Afghanische Einheiten können technisch derselben DCS-Koalition wie ISAF angehören. Im CampaignState besitzen sie eigene Eigentums-, Führungs-, Ressourcen-, Ziel- und Entscheidungszustände.
 
-## 2. Projektstatus
+## 2. Projektstatus und Grenzen
 
 ```text
 OPTIONAL_SPECIAL_PROJECT
@@ -49,150 +59,122 @@ NOT_DCS_VALIDATED
 NOT_MAIN_PROJECT_AUTHORITY
 ```
 
-Dieses Dokument trifft keine Aussage darüber, welche konkreten afghanischen Einheiten bereits im Missionseditor angelegt sind. Namen, Standorte, Inventare und Templates dürfen nur aus vorhandenen Manifesten und quellenqualifizierten Projektentscheidungen übernommen werden.
+Dieses Dokument erfindet keine konkreten afghanischen Einheiten, Standorte, Inventare, Templates oder Mission-Editor-Objekte. Solche Daten dürfen nur aus ORBAT-Entscheidungen, Manifesten und quellenqualifizierten Projektentscheidungen übernommen werden.
 
-## 3. Warum eine eigenständige afghanische Fraktion erforderlich ist
-
-Der Aufbau und die schrittweise Übernahme der Sicherheitsverantwortung durch afghanische Institutionen waren für den Szenariozeitraum zentrale strategische Ziele.
-
-Der NATO-Gipfel von Lissabon legte im November 2010 fest, dass der Übergang zu afghanischer Sicherheitsführung Anfang 2011 beginnen und bis Ende 2014 zur vollständigen afghanischen Sicherheitsverantwortung führen sollte. Die erste Transition-Tranche begann 2011.
-
-Die afghanischen Kräfte waren zugleich noch deutlich von Koalitionsunterstützung abhängig. Eine GAO-Bewertung stellte für September 2010 fest, dass keine bewertete ANA-Einheit das volle Missionsspektrum unabhängig von Koalitionshilfe durchführen konnte. Wachstum, Ausbildung, Führung, Ausrüstung, Attrition und langfristige Finanzierung blieben wesentliche Probleme.
-
-Daraus folgt für die Simulation:
+Ressourcen und Force Generation folgen verbindlich:
 
 ```text
-AFGHAN_LED != AFGHAN_INDEPENDENT
-PARTNERED != SUBORDINATE_PROPERTY
-TRAINED_AND_EQUIPPED != SUSTAINABLY_CAPABLE
-FORMAL_UNIT_STRENGTH != MISSION_READY_STRENGTH
+13-campaign-state-and-event-store-schema.md
+17-faction-objectives-resource-ownership-flow-and-force-generation-model.md
+18-resource-model-integration-and-dossier-amendments.md
 ```
 
-Ohne eigene afghanische Fraktion wären folgende Kampagnenfragen nicht abbildbar:
+## 3. Warum eine eigene Kampagnenfraktion erforderlich ist
 
-- ob afghanische Einheiten tatsächlich selbständiger werden;
-- ob sie Operationen planen, führen und erhalten können;
-- ob Bevölkerung und lokale Autoritäten ihnen vertrauen;
-- ob ausgebildetes Personal in der Organisation verbleibt;
-- ob Material einsatzbereit bleibt oder verloren beziehungsweise umgeleitet wird;
-- ob die afghanische Führung eine BLUE-Priorisierung akzeptiert;
-- ob ein Gebiet nach Reduzierung der ISAF-Präsenz gehalten werden kann;
-- ob Transition nur formal erklärt oder praktisch tragfähig ist.
+Ohne eigenständige afghanische Fraktion könnten folgende Kampagnenfragen nicht korrekt dargestellt werden:
 
-## 4. Quellen- und Modellierungsgrenzen
-
-Historische und fachliche Grundlagen sind insbesondere:
-
-- NATO, `Lisbon Summit Declaration`, 20.11.2010;
-- NATO, `Inteqal: Transition to Afghan lead (2011-2014)`;
-- U.S. GAO, `Afghanistan Security: Afghan Army Growing, but Additional Trainers Needed; Long-term Costs Not Determined`, GAO-11-66;
-- U.S. GAO, `Afghanistan's Donor Dependence`, GAO-11-948R;
-- SIGAR- und CSTC-A/NTM-A-Unterlagen zur Finanzierung, Ausbildung, Ausrüstung und Erhaltung der ANSF;
-- bestehende OMW-Dokumentation zu ORBAT, Basierung, Transition, COIN, Governance, Logistik, Partnering und Air C2.
-
-Offizielle Referenzen:
-
-- https://www.nato.int/en/about-us/official-texts-and-resources/official-texts/2010/11/20/lisbon-summit-declaration
-- https://www.nato.int/en/what-we-do/operations-and-missions/inteqal-transition-to-afghan-lead-2011-2014
-- https://www.gao.gov/products/gao-11-66
-- https://www.gao.gov/products/gao-11-948r
-
-Jede Aussage ist einer der folgenden Klassen zuzuordnen:
+- besitzt ISAF oder Afghan State eine konkrete Einheit;
+- darf ISAF eine afghanische Einheit unmittelbar tasken;
+- akzeptiert die afghanische Führung eine vorgeschlagene Operation;
+- kann eine Einheit ohne Koalitions-Enabler handeln;
+- wächst tatsächliche afghanische Capability oder nur formale Stärke;
+- bleiben ausgebildete Kräfte im Dienst;
+- erreicht eine Region afghanisch geführte und nachhaltige Sicherheit;
+- vertraut die Bevölkerung ANA, ANP, Regierung oder ISAF unterschiedlich;
+- wie wirken Korruption, Patronage, Abwesenheit und lokale Loyalität;
+- kann Verantwortung übergeben werden, ohne dass die Sicherheitslage kollabiert.
 
 ```text
-SOURCE_DOCUMENTED
-SOURCE_REPORTED_UNCORROBORATED
-ANALYTICAL_INFERENCE
-SIMULATION_ABSTRACTION
-DESIGN_DECISION
-UNKNOWN
-```
-
-Verbindliche Grenzen:
-
-```text
-AFGHAN_STATE != UNIFIED_PERFECTLY_COMPLIANT_ACTOR
-ANSF != SINGLE_HOMOGENEOUS_FORCE
-ANA_CAPABILITY != ANP_CAPABILITY
+AFGHAN_LED != AFGHAN_SELF_SUFFICIENT
+TRAINED != READY
+EQUIPPED != SUSTAINABLE
 FORMAL_COMMAND != COMPLETE_LOCAL_COMPLIANCE
-DONOR_FINANCING != AFGHAN_SELF_SUSTAINMENT
-UNIT_PRESENT != UNIT_EFFECTIVE
-EQUIPMENT_DELIVERED != EQUIPMENT_OPERATIONAL
-POPULATION_SUPPORT_FOR_ANSF != SUPPORT_FOR_EVERY_GOVERNMENT_ACTOR
 ```
 
-## 5. Strategische Identität
+## 4. Historische Identität
 
 ```text
-PRIMARY_IDENTITY = SOVEREIGN_STATE_AND_SECURITY_PARTNER
-PRIMARY_METHOD = EXPANDING_AFGHAN_SECURITY_CONTROL_WITH_COALITION_SUPPORT
-PRIMARY_STRENGTH = LEGAL_AUTHORITY_LOCAL_PRESENCE_AND_GROWING_FORCE_STRUCTURE
-PRIMARY_WEAKNESS = CAPABILITY_GAPS_DEPENDENCY_AND_INTERNAL_FRICTION
+PRIMARY_IDENTITY = SOVEREIGN_STATE_AND_SECURITY_INSTITUTION_BUILDER
+PRIMARY_METHOD = PARTNERED_SECURITY_EXPANSION_AND_INSTITUTIONAL_GROWTH
+PRIMARY_STRENGTH = LEGAL_AUTHORITY_LOCAL_ACCESS_AND_GROWING_FORCE_BASE
+PRIMARY_WEAKNESS = DEPENDENCE_FRAGMENTATION_ATTRITION_AND_UNEVEN_GOVERNANCE
 ```
 
-Der Afghan State Commander repräsentiert keine einzelne reale Person. Er ist eine Simulationsabstraktion für die kampagnenrelevante afghanische staatliche und sicherheitspolitische Entscheidungsseite.
+Der Commander repräsentiert keine vollkommen einheitliche nationale Organisation. Er muss gleichzeitig berücksichtigen:
 
-Er verfolgt gleichzeitig:
+- zentrale staatliche Interessen;
+- Ministerien und Sicherheitsinstitutionen;
+- Corps-, Brigade-, Kandaks-, Provinz- und Distriktebenen;
+- lokale politische und patronagebezogene Macht;
+- unterschiedliche Fähigkeiten von ANA und Polizeiorganisationen;
+- Abhängigkeit von internationaler Finanzierung und Enablern;
+- regionale, ethnische und institutionelle Balance ohne automatische Loyalitätsannahmen;
+- öffentliche Legitimität und Verhalten gegenüber der Bevölkerung.
 
-- Erhalt des Staates und seiner Institutionen;
-- Schutz wichtiger Bevölkerungs- und Regierungszentren;
-- Ausbau eigener Sicherheitsverantwortung;
-- Erhalt und Entwicklung der ANSF;
-- Begrenzung insurgenter Parallelherrschaft;
-- Sicherung staatlicher Einnahmen, Ausrüstung und Zugänge;
-- politische und regionale Ausbalancierung;
-- Nutzung von Koalitionsunterstützung ohne dauerhafte vollständige Abhängigkeit.
-
-## 6. Strategische Zielhierarchie
-
-Vorläufige Ausgangsreihenfolge:
+## 5. Strategische Zielhierarchie
 
 ```text
 1. PRESERVE_AFGHAN_STATE_SURVIVAL
-2. PRESERVE_ANSF_FORCE_COHESION
-3. PROTECT_CRITICAL_POPULATION_AND_GOVERNMENT_CENTERS
-4. PRESERVE_COMMAND_C2_AND_KEY_SECURITY_INSTALLATIONS
-5. EXPAND_AFGHAN_SECURITY_RESPONSIBILITY
-6. DENY_INSURGENT_PARALLEL_CONTROL
-7. MAINTAIN_CRITICAL_ROUTES_AND_DISTRICT_ACCESS
+2. PROTECT_CRITICAL_POPULATION_AND_GOVERNMENT_CENTERS
+3. PRESERVE_ANSF_FORCE_COHESION
+4. EXPAND_AFGHAN_SECURITY_RESPONSIBILITY
+5. DENY_INSURGENT_PARALLEL_CONTROL
+6. MAINTAIN_CRITICAL_ROUTES_AND_DISTRICT_ACCESS
+7. SECURE_STATE_REVENUE_MANPOWER_AND_MATERIEL_ACCESS
 8. IMPROVE_LOCAL_GOVERNMENT_AND_ANSF_LEGITIMACY
 9. BUILD_INDEPENDENT_OPERATIONAL_CAPABILITY
-10. SECURE_FINANCE_EQUIPMENT_AND_SUSTAINMENT
-11. RETAIN_PERSONNEL_AND_LOCAL_COMMANDERS
-12. REDUCE_DEPENDENCE_ON_COALITION_ENABLERS
+10. SECURE_FUNDING_EQUIPMENT_AND_SUSTAINMENT
+11. REDUCE_DEPENDENCE_ON_COALITION_ENABLERS
+12. RETAIN_LOCAL_COMMANDERS_AND_PERSONNEL
 13. PRESERVE_POLITICAL_AND_REGIONAL_BALANCE
-14. SUPPORT_SUSTAINABLE_TRANSITION
+14. PREVENT_PREMATURE_OR_UNSUSTAINABLE_TRANSITION
 ```
 
-Diese Ziele sind nicht immer deckungsgleich mit den kurzfristigen Prioritäten des BLUE Commanders.
-
-## 7. Verhältnis zu ISAF und BLUE
-
-### 7.1 Grundbeziehung
+Langfristiges Ziel:
 
 ```text
-RELATIONSHIP = ALLIED_PARTNER
-RESOURCE_OWNERSHIP = SEPARATE
-COMMAND_AUTHORITY = CONTEXT_DEPENDENT
-INTELLIGENCE_SHARING = PARTIAL
-OPERATIONAL_DEPENDENCY = VARIABLE
+Afghanistan is secured by Afghan institutions
+rather than permanently by foreign forces.
 ```
 
-ISAF kann:
+## 6. Verhältnis zu ISAF
 
-- ausbilden;
-- beraten;
-- Ausrüstung und Finanzierung bereitstellen;
-- Enabler reservieren;
-- gemeinsame Operationen vorschlagen;
-- kritische Unterstützung leisten;
-- Kapazitätsentwicklung priorisieren.
+```text
+RELATIONSHIP = ALLIED_BUT_AUTONOMOUS_PARTNERS
+```
 
-ISAF besitzt afghanische Einheiten jedoch nicht automatisch und darf sie im CampaignState nicht wie eigenes Inventar behandeln.
+ISAF kann anbieten:
 
-### 7.2 Befehls- und Operationsbeziehungen
+```text
+FINANCE_SUPPORT
+MATERIEL_SUPPORT
+TRAINING_SUPPORT
+ADVISOR_SUPPORT
+ISR_SUPPORT
+EOD_SUPPORT
+MEDEVAC_SUPPORT
+CAS_SUPPORT
+AIRLIFT_SUPPORT
+INTELLIGENCE_PRODUCTS
+```
 
-Jede gemeinsame Operation erhält genau eine Führungsform:
+Afghan State behält:
+
+```text
+AFGHAN_FORCE_PACKAGE_OWNERSHIP
+AFGHAN_OPERATION_APPROVAL
+AFGHAN_RESOURCE_ACCOUNTS
+AFGHAN_COMMANDER_VIEW
+AFGHAN_LOSS_ASSESSMENT
+AFGHAN_POLITICAL_PRIORITIES
+```
+
+```text
+SUPPORT_TRANSFER != COMMAND_TRANSFER
+SAME_DCS_COALITION != SHARED_OWNERSHIP
+```
+
+Mögliche Command Relationships:
 
 ```text
 COALITION_LED
@@ -202,138 +184,92 @@ AFGHAN_LED_ADVISED
 AFGHAN_INDEPENDENT
 ```
 
-Beispiel:
+## 7. Teilorganisationen
 
-```yaml
-operation_relationship:
-  lead_faction: AFGHAN_STATE
-  command_relationship: AFGHAN_LED_WITH_COALITION_ENABLERS
-  afghan_force_packages:
-    - ANA_INFANTRY_PACKAGE_01
-    - ANP_DISTRICT_PACKAGE_03
-  coalition_enablers:
-    - ISR
-    - MEDEVAC
-    - EOD_ADVISORY
-    - CAS_ON_VALID_REQUEST
-```
-
-Der BLUE Commander darf Enabler anbieten, priorisieren oder verweigern. Der Afghan State Commander entscheidet im Rahmen seiner Autorität, ob und wie eigene Kräfte eingesetzt werden.
-
-### 7.3 Typische Interessendifferenzen
-
-| Lage | BLUE-Priorität | Mögliche afghanische Priorität |
-|---|---|---|
-| gefährlicher Distrikt | Druck auf RED erhöhen | eigene Kräfte erhalten |
-| kurzfristige Operation | messbare Wirkung | lokale Beziehungen berücksichtigen |
-| Stationierung | Kampagnenschwerpunkt | politische und regionale Balance |
-| Material | missionsbezogen reservieren | Einheit dauerhaft ausrüsten |
-| lokaler Machthaber | Korruption begrenzen | politische Kooperation erhalten |
-| Transition | Verantwortung erhöhen | weitere Enabler sichern |
-| Festnahme oder Razzia | Netzwerk stören | lokale Spannungen vermeiden |
-| Checkpoint | Route sichern | Präsenz, Einnahmen und Patronage erhalten |
-
-Diese Friktionen sind keine automatische Illoyalität, sondern Teil einer eigenständigen staatlichen und organisatorischen Interessenlage.
-
-## 8. Organisationsmodell
-
-Die Fraktion wird nicht als einheitliche Organisation modelliert.
-
-### 8.1 Afghan National Army
+### 7.1 Afghan National Army
 
 Schwerpunkte:
 
 ```text
-territorial_and_mobile_security_operations
-partnered_ground_operations
-holding_key_terrain
-route_and_district_security
-force_generation_and_training
+GROUND_MANEUVER
+ROUTE_AND_DISTRICT_SECURITY
+FORCE_GENERATION_AND_TRAINING
+HOLD_AND_TRANSFER_OPERATIONS
 ```
 
 Typische Schwachstellen:
 
 ```text
-coalition_enabler_dependency
-leadership_shortfalls
-attrition
-absenteeism
-logistics_and_maintenance_gaps
-specialist_shortages
+COALITION_ENABLER_DEPENDENCY
+LEADERSHIP_SHORTFALLS
+ATTRITION
+ABSENTEEISM
+LOGISTICS_AND_MAINTENANCE_GAPS
+SPECIALIST_SHORTAGES
 ```
 
-### 8.2 Afghan National Police
+### 7.2 Afghan National Police
 
 Schwerpunkte:
 
 ```text
-local_presence
-checkpoint_and_route_control
-law_enforcement
-population_contact
-local_intelligence_access
+LOCAL_PRESENCE
+CHECKPOINT_AND_ROUTE_CONTROL
+LAW_ENFORCEMENT
+POPULATION_CONTACT
+LOCAL_INTELLIGENCE_ACCESS
 ```
 
 Typische Schwachstellen:
 
 ```text
-local_political_pressure
-corruption_leakage
-uneven_training
-infiltration_risk
-high_exposure
-community_trust_variation
+LOCAL_POLITICAL_PRESSURE
+CORRUPTION_LEAKAGE
+UNEVEN_TRAINING
+INFILTRATION_RISK
+HIGH_EXPOSURE
+COMMUNITY_TRUST_VARIATION
 ```
 
-### 8.3 ANCOP und spezialisierte Polizeikräfte
-
-Schwerpunkte:
+### 7.3 ANCOP und spezialisierte Polizeikräfte
 
 ```text
-higher_readiness_police_operations
-public_order
-selected_route_and_area_security
-reinforcement_of_local_police
+HIGHER_READINESS_POLICE_OPERATIONS
+PUBLIC_ORDER
+SELECTED_ROUTE_AND_AREA_SECURITY
+REINFORCEMENT_OF_LOCAL_POLICE
 ```
 
-### 8.4 Afghan Border Police
-
-Schwerpunkte:
+### 7.4 Afghan Border Police
 
 ```text
-border_and_crossing_control
-customs_and_route_access
-interdiction
-remote_post_security
+BORDER_AND_CROSSING_CONTROL
+CUSTOMS_AND_ROUTE_ACCESS
+INTERDICTION
+REMOTE_POST_SECURITY
 ```
 
-### 8.5 Afghan Intelligence and Security Organizations
-
-Schwerpunkte:
+### 7.5 Afghan Intelligence and Security Organizations
 
 ```text
-human_intelligence
-counter_network_information
-source_management
-investigative_support
-threat_warning
+HUMAN_INTELLIGENCE
+COUNTER_NETWORK_INFORMATION
+SOURCE_MANAGEMENT
+INVESTIGATIVE_SUPPORT
+THREAT_WARNING
 ```
 
-### 8.6 Afghan Air Component
-
-Schwerpunkte:
+### 7.6 Afghan Air Component
 
 ```text
-airlift
-limited_medical_and_logistics_support
-selected_mobility_and_reconnaissance_functions
+AIRLIFT
+LIMITED_MEDICAL_AND_LOGISTICS_SUPPORT
+SELECTED_MOBILITY_AND_RECONNAISSANCE_FUNCTIONS
 ```
 
 Keine Fähigkeit darf ohne ORBAT-, Zeit-, Basierungs- und Readiness-Nachweis angenommen werden.
 
-## 9. Eigene Ressourcen und gemeinsamer Ressourcenraum
-
-Für das gemeinsame Ressourcenmodell gelten als umkämpfte Grundressourcen:
+## 8. Gemeinsame Grundressourcen
 
 ```text
 RECRUITABLE_MANPOWER
@@ -341,24 +277,16 @@ FINANCE
 MATERIEL
 ```
 
-Der Afghan State Commander benötigt daraus:
-
-```text
-FINANCE
-+ RECRUITABLE_MANPOWER
-+ MATERIEL
-+ TRAINING_CAPACITY
-+ TIME
-+ RETENTION
-
--> AFGHAN_FORCE_PACKAGE
+```yaml
+afghan_resource_accounts:
+  recruitable_manpower_account_ref: string
+  finance_account_ref: string
+  materiel_account_ref: string
 ```
 
-Die verbindliche Gesamtlogik wird in `17-faction-objectives-resource-ownership-flow-and-force-generation-model.md` definiert.
+### 8.1 Finance
 
-### 9.1 Finance
-
-Afghanische Finanzmittel können stammen aus:
+Mögliche Quellen:
 
 ```text
 AFGHAN_STATE_REVENUE
@@ -367,7 +295,7 @@ INTERNATIONAL_DONOR_SUPPORT
 SECURITY_ASSISTANCE_FUNDING
 ```
 
-Sie können beeinträchtigt werden durch:
+Risiken:
 
 ```text
 RED_CONTROL_OF_REVENUE_NODES
@@ -378,9 +306,9 @@ LOSS_OF_GOVERNMENT_CONTROL
 DONOR_COMMITMENT_REDUCTION
 ```
 
-### 9.2 Recruitable Manpower
+### 8.2 Recruitable Manpower
 
-Der afghanische Staat konkurriert regional mit Taliban, Haqqani und HIG um Zugang zu einem begrenzten Rekrutierungspool.
+Afghan State konkurriert regional mit Taliban, Haqqani und HIG um Zugang zu einem begrenzten Pool.
 
 Zugriff steigt durch:
 
@@ -399,7 +327,7 @@ Zugriff sinkt durch:
 ```text
 RED_COERCION
 RED_VOLUNTARY_SUPPORT
-ASSASSINATION_OR_INTIMIDATION_OF_RECRUITERS
+INTIMIDATION_OF_RECRUITERS
 ATTRITION
 ABSENTEEISM
 PAY_FAILURE
@@ -407,41 +335,22 @@ POOR_LEADERSHIP
 LOCAL_GRIEVANCE
 ```
 
-### 9.3 Materiel
-
-Materiel umfasst abstrakt:
+### 8.3 Materiel
 
 ```text
-weapons
-ammunition
-vehicles
-communications_equipment
-protective_equipment
-fuel
-maintenance_parts
-template_specific_equipment
+WEAPONS
+AMMUNITION
+VEHICLES
+COMMUNICATIONS_EQUIPMENT
+PROTECTIVE_EQUIPMENT
+FUEL
+MAINTENANCE_PARTS
+TEMPLATE_SPECIFIC_EQUIPMENT
 ```
 
-Materiel ist an Warehouses, Basen, Convoys, Cargo oder virtuelle Zuführungsknoten gebunden.
+Materiel ist an Warehouses, Basen, Convoys, Cargo oder virtuelle Zuführungsknoten gebunden und kann geliefert, reserviert, verbraucht, verloren, zerstört, umgeleitet, erbeutet oder übertragen werden.
 
-Es kann:
-
-```text
-delivered
-reserved
-consumed
-lost
-destroyed
-diverted
-captured
-transferred
-```
-
-werden.
-
-## 10. Virtuelle Fähigkeiten und Zustände
-
-Nicht alle wichtigen Größen sind Ressourcen.
+## 9. Virtuelle Fähigkeiten und Zustände
 
 ```yaml
 afghan_state:
@@ -469,35 +378,37 @@ afghan_state:
   transition_readiness: 0..100
 ```
 
-Diese Werte dürfen nicht wie Geld ausgegeben werden.
-
 ```text
 RESOURCE != CAPABILITY
 CAPABILITY != LEGITIMACY
 LEGITIMACY != FORCE_PACKAGE
 ```
 
-## 11. Kräftegenerierung
-
-### 11.1 Grundformel
+## 10. Kräftegenerierung
 
 ```text
-AFGHAN_FORCE_GENERATION
-=
-MIN(
-  AVAILABLE_FINANCE,
-  AVAILABLE_MANPOWER,
-  AVAILABLE_MATERIEL,
-  TRAINING_CAPACITY
-)
-× RETENTION_FACTOR
-× READINESS_FACTOR
-× TIME
+FINANCE
++ RECRUITABLE_MANPOWER
++ MATERIEL
++ TRAINING_CAPACITY
++ RETENTION
++ LEADERSHIP
++ SUSTAINMENT
++ TIME
+-> AFGHAN_FORCE_PACKAGE
 ```
 
-Die Formel ist eine Modellierungsregel, keine konkrete numerische Festlegung.
+```yaml
+afghan_force_generation_gate:
+  training_capacity: 0..100
+  personnel_retention: 0..100
+  leadership_quality: 0..100
+  logistics_and_maintenance: 0..100
+  source_region_ref: string
+  template_ref: string
+```
 
-### 11.2 Force-Package-Lebenszyklus
+Lifecycle:
 
 ```text
 PLANNED
@@ -513,45 +424,31 @@ PLANNED
 -> AVAILABLE_OR_LOST
 ```
 
-### 11.3 Keine Sofortwirkung durch BLUE-Unterstützung
-
 ```text
 BLUE_FINANCE_OR_MATERIEL_TRANSFER
 != IMMEDIATE_READY_UNIT
 ```
 
-Eine neue afghanische Einheit benötigt:
+## 11. Verluste, Retention und Erhaltung
 
-- verfügbares Personal;
-- Finanzierung;
-- Ausrüstung;
-- Ausbildungszeit;
-- Führung;
-- ausreichende Personalbindung;
-- Logistik und Erhaltung;
-- gegebenenfalls fortlaufende Beratung.
-
-### 11.4 Verluste
-
-DCS/MOOSE meldet physische Verluste. Der CampaignState entscheidet über:
+DCS/MOOSE meldet physische Verluste. CampaignState entscheidet über:
 
 ```text
-force_package_loss
-replacement_requirement
-surviving_personnel_fraction
-materiel_loss
-recovery_time
-readiness_reduction
-political_and_recruitment_effects
+FORCE_PACKAGE_LOSS
+SURVIVING_PERSONNEL_FRACTION
+MATERIEL_LOSS
+REPLACEMENT_REQUIREMENT
+RECOVERY_TIME
+READINESS_REDUCTION
+RETENTION_EFFECT
+POLITICAL_AND_RECRUITMENT_EFFECTS
 ```
 
-Gefangennahme, Entwaffnung oder Demobilisierung sind in Version 1 keine regulär aus DCS abgeleiteten Mechaniken. Sie dürfen nur als ausdrücklich adjudizierte Kampagnenereignisse entstehen.
+Gefangennahme, Entwaffnung oder Demobilisierung sind keine regulär aus DCS abgeleiteten Mechaniken. Sie entstehen nur durch ausdrückliche Kampagnen-Adjudication.
 
-## 12. Population und Legitimität
+## 12. Bevölkerung und Legitimität
 
 Die Bevölkerung wird nicht binär zwischen NATO und Taliban aufgeteilt.
-
-Mindestens getrennt:
 
 ```yaml
 population_relation:
@@ -571,74 +468,44 @@ population_relation:
   political_alienation: 0..100
 ```
 
-Ein Gebiet kann gleichzeitig:
-
-```text
-oppose_taliban
- distrust_isaf
- distrust_local_government
- support_ana
- distrust_anp
-```
-
-sein.
-
-### 12.1 Einfluss auf den afghanischen Staat
-
 Legitimität und Vertrauen beeinflussen:
 
 ```text
-recruitment_access
-personnel_retention
-local_information_access
-checkpoint_acceptance
-state_revenue_access
-willingness_to_report_red_activity
-willingness_to_support_operations
+RECRUITMENT_ACCESS
+PERSONNEL_RETENTION
+LOCAL_INFORMATION_ACCESS
+CHECKPOINT_ACCEPTANCE
+STATE_REVENUE_ACCESS
+WILLINGNESS_TO_REPORT_RED_ACTIVITY
+WILLINGNESS_TO_SUPPORT_OPERATIONS
 ```
 
 Sie erzeugen nicht unmittelbar eine Einheit.
 
 ## 13. Intelligence-Profil
 
-Mögliche Informationsquellen:
+Mögliche Quellen:
 
 ```text
 LOCAL_POLICE_REPORT
 ANA_PATROL_REPORT
-NDS_OR_OTHER_SECURITY_REPORT
+AFGHAN_INTELLIGENCE_REPORT
 GOVERNMENT_OFFICIAL_REPORT
 COMMUNITY_ELDER_REPORT
 HUMINT_SOURCE
 ISAF_SHARED_INTELLIGENCE
 CHECKPOINT_REPORT
+RESOURCE_ACCOUNTING_REPORT
+WAREHOUSE_REPORT
 CAPTURED_OR_RECOVERED_MATERIAL_REPORT
 ```
-
-Der Afghan State Commander erhält kein vollständiges BLUE-Lagebild.
 
 ```text
 BLUE_INFORMATION != AUTOMATIC_AFGHAN_INFORMATION
 AFGHAN_INFORMATION != AUTOMATIC_BLUE_INFORMATION
 ```
 
-Informationsaustausch hängt von:
-
-```text
-trust
-classification
-source_protection
-liaison_capacity
-political_sensitivity
-operational_security
-technical_interoperability
-```
-
-ab.
-
 ## 14. Führungsfriktion
-
-Unterstellte Akteure besitzen mindestens:
 
 ```yaml
 subordinate_profile:
@@ -649,92 +516,26 @@ subordinate_profile:
   leadership_quality: 0..100
   corruption_pressure: 0..100
   absenteeism_pressure: 0..100
-  defection_risk: 0..100
   infiltration_risk: 0..100
-  coalition_dependency: 0..100
-  local_legitimacy: 0..100
+  regional_balance_pressure: 0..100
+  command_compliance: 0..100
+  reporting_reliability: 0..100
 ```
 
-Mögliche Reaktionen auf einen Auftrag:
+Mögliche Reaktionen:
 
 ```text
-COMPLY
-PARTIALLY_COMPLY
-REQUEST_MORE_SUPPORT
-DELAY
-MODIFY_FOR_LOCAL_CONDITIONS
-REFUSE_FOR_CAPABILITY_REASON
-REFUSE_FOR_POLITICAL_REASON
-MISREPORT_READINESS
-ABORT_AFTER_START
+FULL_COMPLIANCE
+PARTIAL_COMPLIANCE
+DELAYED_COMPLIANCE
+LOCAL_MODIFICATION
+RESOURCE_DIVERSION
+FALSE_REPORTING
+POLITICAL_REFUSAL
+LOCAL_PATRON_PRIORITY
 ```
 
-## 15. Commander-Persönlichkeitsbaseline
-
-Die Werte sind Simulationsparameter und keine Bewertung einer realen Person.
-
-```yaml
-personality:
-  aggression: 55
-  patience: 69
-  risk_tolerance: 46
-  loss_tolerance: 43
-  prestige_sensitivity: 76
-  ideological_rigidity: 48
-  pragmatism: 81
-  political_sensitivity: 93
-  population_sensitivity: 78
-  operational_security_bias: 64
-  deception_preference: 49
-  retaliation_bias: 47
-  negotiation_preference: 72
-  delegation_preference: 71
-  distrust_of_subordinates: 63
-  adaptability: 76
-```
-
-Der Commander:
-
-- will staatliche Handlungsfähigkeit sichtbar erhalten;
-- vermeidet nach Möglichkeit Verluste, die Kohäsion oder Legitimität gefährden;
-- fordert häufig Koalitions-Enabler an;
-- kann politische und regionale Erwägungen höher gewichten als BLUE;
-- priorisiert häufig den Erhalt eigener Kräfte vor maximalem kurzfristigem Druck;
-- reagiert empfindlich auf öffentliche Demütigung oder Behandlung als bloßer Untergebener;
-- kann lokales Wissen besser als BLUE besitzen, zugleich aber unvollständig oder politisch verzerrt informiert sein.
-
-## 16. Zulässige strategische Aktionen
-
-Abstrakte Aktionsklassen:
-
-```text
-REQUEST_COALITION_SUPPORT
-ACCEPT_PARTNERED_OPERATION
-PROPOSE_AFGHAN_LED_OPERATION
-DECLINE_OPERATION
-REASSIGN_FORCE_PACKAGE
-REINFORCE_DISTRICT
-SECURE_REVENUE_NODE
-SECURE_ROUTE_OR_CHECKPOINT
-PROTECT_RECRUITMENT_ACCESS
-ALLOCATE_TRAINING_CAPACITY
-ALLOCATE_MATERIEL
-PRIORITIZE_FORCE_RECOVERY
-REQUEST_ISR
-REQUEST_MEDEVAC_OR_LOGISTICS_SUPPORT
-INVESTIGATE_CORRUPTION_OR_DIVERSION
-REPLACE_LOCAL_COMMANDER
-NEGOTIATE_LOCAL_SECURITY_ARRANGEMENT
-TRANSFER_SECURITY_RESPONSIBILITY
-DELAY_TRANSITION
-DECLARE_TRANSITION_READY
-```
-
-Diese Aktionen sind keine direkten MOOSE-Methodenaufrufe.
-
-## 17. Transition-Modell
-
-Ein Raum durchläuft nicht automatisch nur aufgrund eines Datums die Transition.
+## 15. Transition-Modell
 
 ```text
 COALITION_LED
@@ -744,160 +545,175 @@ COALITION_LED
 -> AFGHAN_INDEPENDENT
 ```
 
-Voraussetzungen können umfassen:
+Ein Übergang ist nur zulässig, wenn mindestens bewertet sind:
 
-```yaml
-transition_assessment:
-  local_security: 0..100
-  afghan_force_readiness: 0..100
-  afghan_command_capability: 0..100
-  logistics_sustainability: 0..100
-  local_government_capacity: 0..100
-  population_confidence: 0..100
-  red_freedom_of_action: 0..100
-  coalition_enabler_dependency: 0..100
-  reversibility_risk: 0..100
+- Sicherheitslage;
+- Force Readiness;
+- Führung und Planung;
+- Logistik und Maintenance;
+- Intelligence;
+- Enabler-Abhängigkeit;
+- lokale Governance und Legitimität;
+- Fähigkeit, Verluste und Ausfälle zu ersetzen.
+
+```text
+FORMAL_TRANSFER != SUSTAINABLE_TRANSITION
 ```
 
-Transition ist erfolgreich, wenn die afghanische Seite Verantwortung nachhaltig und nicht nur nominell übernehmen kann.
+## 16. Persönlichkeitsbaseline
 
-## 18. Erfolgskriterien
+```yaml
+personality:
+  aggression: 55
+  patience: 68
+  risk_tolerance: 47
+  loss_tolerance: 45
+  prestige_sensitivity: 72
+  ideological_rigidity: 43
+  pragmatism: 80
+  political_sensitivity: 90
+  population_sensitivity: 82
+  operational_security_bias: 65
+  deception_preference: 45
+  retaliation_bias: 48
+  negotiation_preference: 76
+  delegation_preference: 70
+  distrust_of_subordinates: 62
+  adaptability: 77
+```
+
+Die Werte sind `SIMULATION_ABSTRACTION` und keine Bewertung einer realen Person.
+
+```text
+CORE_BEHAVIOR = PRESERVE_STATE + BUILD_FORCE + SECURE_ACCESS + NEGOTIATE_SUPPORT + TRANSITION_CAUTIOUSLY
+```
+
+## 17. Entscheidungsregeln
+
+### 17.1 Fehlende Enabler
+
+```text
+IF operation requires unavailable coalition enablers
+THEN request support decline or conditionally accept
+```
+
+### 17.2 Force Generation
+
+```text
+IF finance manpower materiel training retention and leadership are sufficient
+THEN request force generation
+```
+
+### 17.3 Eigentumsverletzung
+
+```text
+IF ISAF attempts direct tasking without partner approval
+THEN reject and request proper partner process
+```
+
+### 17.4 ResourceSource-Schutz
+
+```text
+IF state revenue manpower or materiel source threatened
+THEN prioritize protection or access restoration
+```
+
+### 17.5 Verfrühte Transition
+
+```text
+IF transition_readiness below threshold
+THEN reject premature responsibility transfer
+```
+
+### 17.6 Lokale politische Kosten
+
+```text
+IF operation threatens legitimacy or regional balance disproportionately
+THEN modify delay or reject
+```
+
+## 18. Scripted-Commander-Baseline
+
+```text
+AFGHAN_STATE_BASELINE_V1
+```
+
+Prioritätslogik:
+
+1. Staat und Force Cohesion erhalten;
+2. kritische Bevölkerungs-, Regierungs- und Sicherheitszentren schützen;
+3. Revenue-, Manpower- und Materielzugang sichern;
+4. nur capability-gerechte Operationen akzeptieren;
+5. fehlende Koalitions-Enabler anfordern;
+6. Force Generation nachhaltig ausführen;
+7. Afghan-led-Verantwortung erhöhen, wenn tragfähig;
+8. verfrühte Transition ablehnen.
+
+## 19. Erfolgskriterien
 
 ```text
 AFGHAN_STATE_SURVIVES
-ANSF_COHESION_MAINTAINED
-STATE_ACCESS_TO_MANPOWER_FINANCE_AND_MATERIEL_SUSTAINED
-RED_PARALLEL_CONTROL_REDUCED
-AFGHAN_LED_OPERATIONS_INCREASE
-COALITION_DEPENDENCY_DECREASES
-CRITICAL_ROUTES_AND_CENTERS_HELD
-POPULATION_TRUST_DOES_NOT_COLLAPSE
-TRANSITION_BECOMES_SUSTAINABLE
+CRITICAL_CENTERS_REMAIN_SECURE
+ANSF_FORCE_COHESION_MAINTAINED
+STATE_RESOURCE_ACCESS_SUSTAINED
+AFGHAN_SECURITY_RESPONSIBILITY_EXPANDS
+INDEPENDENT_CAPABILITY_IMPROVES
+GOVERNMENT_LEGITIMACY_NOT_COLLAPSED
+COALITION_DEPENDENCY_DECLINES_SUSTAINABLY
 ```
 
-Der Afghan State Commander muss nicht jede RED-Einheit zerstören. Strategischer Erfolg entsteht durch ausreichende eigene Handlungsfähigkeit und die Verringerung gegnerischer Fähigkeit, den Staat zu verdrängen.
-
-## 19. Scheiternsbedingungen
+## 20. Warnzustände
 
 ```text
-STATE_REVENUE_AND_DONOR_FLOW_COLLAPSE
-RECRUITMENT_AND_RETENTION_COLLAPSE
-MATERIEL_LOSS_EXCEEDS_REPLACEMENT
-ANSF_FORCE_COHESION_COLLAPSES
-LOCAL_COMMANDERS_DEFECT_OR_FRAGMENT
-CRITICAL_DISTRICTS_AND_ROUTES_LOST
-POPULATION_TRUST_COLLAPSES
-COALITION_SUPPORT_WITHDRAWS_BEFORE_SUSTAINABILITY
-TRANSITION_REVERSES
+STATE_SURVIVAL_AT_RISK
+ANSF_COHESION_COLLAPSE
+RECRUITMENT_POOL_LOST
+FINANCE_OR_MATERIEL_FLOW_COLLAPSE
+ATTRITION_OR_ABSENTEEISM_CRITICAL
+CORRUPTION_LEAKAGE_CRITICAL
+LEADERSHIP_FAILURE
+ENABLER_DEPENDENCY_NOT_REDUCED
+PREMATURE_TRANSITION
+POPULATION_TRUST_COLLAPSE
 ```
 
-## 20. Scripted-Commander-Baseline
-
-Für den ersten deterministischen PoC ist kein fünftes LLM erforderlich. Der afghanische Commander muss jedoch als eigenständiger geskripteter Commander vorhanden sein.
+## 21. Verbindliche Verbote
 
 ```text
-AFGHAN_SCRIPTED_COMMANDER_REQUIRED = YES
-AFGHAN_LLM_REQUIRED_FOR_FIRST_POC = NO
+NO_AFGHAN_FORCE_OWNED_BY_ISAF
+NO_READY_UNIT_FROM_TRANSFER_ALONE
+NO_FORCE_PACKAGE_WITHOUT_RESOURCE_PROVENANCE
+NO_LEGITIMACY_TO_DIRECT_UNIT_CONVERSION
+NO_AUTOMATIC_FULL_INFORMATION_SHARING
+NO_UNSUPPORTED_AFGHAN_CAPABILITY
+NO_DIRECT_DCS_OR_MOOSE_CONTROL
 ```
 
-Baseline-Prioritäten:
+## 22. Acceptance-Kriterien
+
+Das Dossier ist akzeptiert, wenn:
+
+- `AFGHAN_STATE_COMMANDER` der einzige kanonische strategische Name ist;
+- DCS-Koalition und Kampagnenfraktion getrennt bleiben;
+- afghanische Force Packages eigene Eigentums- und Ressourcenbeziehungen besitzen;
+- ISAF-Support keine automatische Befehls- oder Eigentumsübertragung erzeugt;
+- Finance, Manpower und Materiel von Legitimität, Capability und Reputation getrennt sind;
+- Force Generation Training, Retention, Führung und Zeit benötigt;
+- Transition auf Nachhaltigkeit statt formale Übergabe geprüft wird;
+- MOOSE ausschließlich genehmigte Force Packages und Operation Plans ausführt.
+
+## 23. Querverweise
 
 ```text
-1. prevent state or force collapse
-2. protect critical population and government centers
-3. preserve force cohesion and replacement ability
-4. request missing coalition enablers
-5. secure revenue, recruitment and materiel access
-6. accept operations that match readiness
-7. decline or modify operations that exceed capability
-8. increase Afghan lead when sustainability permits
-9. avoid premature transition
-10. reduce long-term dependency
+01-source-inventory-and-faction-baseline.md
+02-common-commander-model.md
+03-inter-faction-relations-and-negotiation.md
+07-runtime-rulebook-and-action-schema.md
+08-commander-memory-belief-and-information-model.md
+09-orchestrator-architecture-and-adjudication.md
+10-blue-commander-dossier.md
+11-blue-mission-demand-force-allocation-and-targeting-schema.md
+13-campaign-state-and-event-store-schema.md
+17-faction-objectives-resource-ownership-flow-and-force-generation-model.md
+18-resource-model-integration-and-dossier-amendments.md
 ```
-
-## 21. Testvarianten
-
-### 21.1 Transition-Oriented Commander
-
-```text
-high_partner_cooperation
-high_training_priority
-high_willingness_to_take_lead
-moderate_risk_tolerance
-```
-
-### 21.2 Force-Preservation Commander
-
-```text
-high_loss_aversion
-high_support_demand
-slow_transition
-strong_focus_on_key_centers
-```
-
-### 21.3 Politically Constrained Commander
-
-```text
-high_political_sensitivity
-high_regional_balance_pressure
-high_local_patron_influence
-uneven_command_compliance
-```
-
-## 22. MOOSE-First-Grenze
-
-```text
-AFGHAN_STATE_COMMANDER
--> proposes intent and resource use
-
-ORCHESTRATOR
--> validates ownership, authority, resources and capability
-
-DCS_MOOSE_ADAPTER
--> maps approved operation to existing MOOSE functionality
-
-MOOSE
--> creates and manages tactical missions and force packages
-
-DCS
--> simulates physical execution
-```
-
-Vor eigenem Lua-Code ist für jede Funktion die tatsächlich eingebundene MOOSE-Version 2.9.18 zu prüfen.
-
-Insbesondere zu prüfen:
-
-- getrennte Eigentümerschaft und Tasking verbündeter Gruppen;
-- COMMANDER-, AUFTRAG-, AIRWING- und OPSTRANSPORT-Nutzung;
-- Missions- und Resultatmeldungen;
-- Warehouse-, Cargo- und Logistikabbildung;
-- Übergabe und Wiederverwendung bestehender Gruppen;
-- sichere Trennung zwischen CampaignState-IDs und DCS-Gruppen-IDs.
-
-## 23. Verbindliche Entscheidungen
-
-```text
-AFGHAN_STATE_FACTION_REQUIRED = YES
-SEPARATE_DCS_COALITION_REQUIRED = NO
-SEPARATE_CAMPAIGN_OWNERSHIP_REQUIRED = YES
-SEPARATE_COMMANDER_VIEW_REQUIRED = YES
-SEPARATE_RESOURCE_ACCOUNT_REQUIRED = YES
-BLUE_DIRECT_OWNERSHIP_OF_ANSF = NO
-SCRIPTED_AFGHAN_COMMANDER_REQUIRED_FOR_FIRST_POC = YES
-FULL_AFGHAN_LLM_REQUIRED_FOR_FIRST_POC = NO
-COMMON_RESOURCE_MODEL_REFERENCE = DOCUMENT_17
-```
-
-## 24. Offene Entscheidungen
-
-Noch festzulegen:
-
-- endgültiger Commander-Identifier;
-- genaue Organisationsabgrenzung zwischen ANA, ANP, ANCOP, ABP und Nachrichtendiensten;
-- regionaler Ausgangsbestand afghanischer Force Packages;
-- Ausgangswerte für Legitimität, Rekrutierung, Retention und Readiness;
-- Übergabekriterien pro Region;
-- konkrete Kosten und Zeiten der Force-Package-Generierung;
-- zulässige afghanische Luft- und Spezialfähigkeiten;
-- MOOSE-2.9.18-Abbildung der Partnering- und Führungsbeziehungen;
-- spätere Entscheidung über einen eigenständigen Afghan-State-LLM-Commander.
