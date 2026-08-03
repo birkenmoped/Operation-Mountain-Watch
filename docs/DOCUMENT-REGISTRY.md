@@ -1,82 +1,80 @@
 ---
 document_id: OMW-GOV-DOCUMENT-REGISTRY
-status: BINDING
+status: BINDING_PROJECT_DECISION
 document_class: DOCUMENT_REGISTRY
 owning_policy: OMW-GOV-001
 authoritative_for:
-  - stable project document identifiers
-  - current numbered-document allocation
-  - registration of unnumbered current documents
-not_authoritative_for:
-  - runtime acceptance
-  - merge approval
+  - document number reservations
+  - stable document IDs
+  - main-branch document inventory
+  - merge-time renumbering
 scenario_period: 2010-08-01/2011-12-31
 project_phase: TARINKOT_MOOSE_SOURCE_REVIEW_COMPLETE
 supersedes:
-  - incomplete document registry before Tarinkot reconciliation
-superseded_by: []
+  - registry without complete non-numbered document inventory
+superseded_by:
 source_branch: agent/tarinkot-object-contract-reconciliation
 source_commit: PENDING_MERGE
 validated_in_dcs: false
 ---
 
-# Dokumentregister
+# Operation Mountain Watch – Zentrales Dokumentregister
 
-## 1. Zweck
+## 1. Regeln
 
-Dieses Register ordnet den aktuellen Dokumentenbestand stabilen `document_id`-Werten und, soweit vorhanden, zweistelligen Dokumentnummern zu. Eine Nummer und eine stabile `document_id` dürfen im aktuellen Bestand jeweils nur einmal verwendet werden.
+Eine Nummer und eine stabile `document_id` dürfen im aktuellen Bestand jeweils nur einmal vergeben sein. Der reale Repository-Baum entscheidet, welche Dateien auf `main` vorhanden sind. Offene Branches werden separat im [`Unterprojektregister`](SUBPROJECT-REGISTRY.md) geführt.
 
-## 2. Nummerierte aktuelle Dokumente
+## 2. Nummerierte Dokumente
 
-| Nr. | Stabile ID | Pfad | Status | Funktion |
+| Nr. | Stabile ID | Pfad | Status | Klasse/Funktion |
 |---:|---|---|---|---|
-| 00 | `OMW-GOV-001` | `docs/00-project-governance.md` | `BINDING` | Projektgovernance |
-| 01 | `OMW-MISSION-DESIGN-001` | `docs/01-mission-design.md` | `BINDING` | Missionsdesign |
-| 02 | `OMW-SETTING-001` | `docs/02-setting.md` | `BINDING` | Setting |
-| 03 | `OMW-CAMPAIGN-STATE-001` | `docs/03-campaign-state.md` | `BINDING` | Kampagnenzustand |
-| 04 | `OMW-LOGISTICS-001` | `docs/04-logistics.md` | `BINDING` | Logistik |
-| 05 | `OMW-BLUE-FORCES-001` | `docs/05-blue-forces.md` | `BINDING` | BLUE-Kräfte |
-| 06 | `OMW-RED-FORCES-001` | `docs/06-red-forces.md` | `BINDING` | RED-Kräfte |
-| 07 | `OMW-MISSION-GENERATION-001` | `docs/07-mission-generation.md` | `BINDING` | Mission Generation |
-| 08 | `OMW-RADIO-001` | `docs/08-radio-and-comms.md` | `BINDING` | Funk und Kommunikation |
-| 09 | `OMW-AIR-ORBAT-RESEARCH-001` | `docs/09-air-orbat-research.md` | `BINDING` | Air-ORBAT-Forschung |
-| 10 | `OMW-MAP-AREAS-001` | `docs/10-map-and-areas.md` | `BINDING` | Karte und Räume |
-| 11 | `OMW-BASES-FOBS-001` | `docs/11-bases-and-fobs.md` | `BINDING` | Basen und FOBs |
-| 12 | `OMW-PLAYER-OPS-001` | `docs/12-player-operations.md` | `BINDING` | Spieleroperationen |
-| 13 | `OMW-UNIT-CATALOG-001` | `docs/13-unit-catalog.md` | `BINDING` | Einheitenkatalog |
-| 14 | `OMW-WEATHER-001` | `docs/14-weather.md` | `BINDING` | Wetter |
-| 15 | `OMW-GROUND-OPS-001` | `docs/15-ground-operations.md` | `BINDING` | Bodenoperationen |
-| 16 | `OMW-AIR-OPS-001` | `docs/16-air-operations.md` | `BINDING` | Luftoperationen |
-| 17 | `OMW-CSAR-001` | `docs/17-csar.md` | `BINDING` | CSAR |
-| 18 | `OMW-IMPLEMENTATION-001` | `docs/18-implementation.md` | `BINDING` | Implementierung |
-| 19 | `OMW-AIR-ORBAT-ACTIVE-001` | `docs/19-active-air-orbat-decisions.md` | `BINDING_PROJECT_DECISION` | aktive Air-ORBAT |
-| 20 | `OMW-AIR-ME-WORKLIST-001` | `docs/20-air-orbat-mission-editor-worklist.md` | `PLANNED` | ME-Arbeitsliste |
-| 21 | `OMW-AIR-JBAD-MANIFEST-001` | `docs/21-jalalabad-air-operations-manifest.md` | `DRAFT` | Jalalabad-Manifest |
-| 26 | `OMW-GOV-MOOSE-FIRST-001` | `docs/26-moose-first-development-policy.md` | `BINDING` | MOOSE-first |
-| 27 | `OMW-AIR-HELICOPTER-FORMATIONS-001` | `docs/27-helicopter-formations-and-ah64-afghanistan-configuration.md` | `DRAFT` | Helicopter-Formationen |
-| 28 | `OMW-WX-AFGHANISTAN-CLIMATE-001` | `docs/28-afghanistan-climate-and-weather-reference.md` | `BINDING` | Klima-Referenz |
-| 29 | `OMW-GEO-AFGHANISTAN-001` | `docs/29-afghanistan-geography-and-operational-environment.md` | `BINDING` | Geographie/OE |
-| 30 | `OMW-GOV-DOCUMENTATION-001` | `docs/30-documentation-governance-and-cross-references.md` | `BINDING` | Dokumentationsgovernance |
-| 37 | `OMW-HIST-AFGHANISTAN-AVIATION-001` | `docs/37-afghanistan-aviation-and-force-basing-2010-2011.md` | `BINDING` | Aviation/Force Basing |
-| 38 | `OMW-AIR-AFGHANISTAN-FORCE-BASING-001` | `docs/38-afghanistan-force-basing-and-aviation-2010-2011.md` | `BINDING` | Force Basing |
-| 39 | `OMW-HIST-AFGHANISTAN-COALITION-ORBAT-001` | `docs/39-afghanistan-coalition-orbat-2010-2011.md` | `BINDING` | Koalitions-ORBAT |
-| 40 | `OMW-AIR-AFGHANISTAN-AIR-C2-001` | `docs/40-afghanistan-air-command-and-control-2010-2011.md` | `BINDING` | Air C2 |
-| 41 | `OMW-HIST-AFGHANISTAN-SOF-001` | `docs/41-afghanistan-special-operations-forces-2010-2011.md` | `BINDING` | SOF |
-| 42 | `OMW-HIST-AFGHANISTAN-ANSF-001` | `docs/42-afghanistan-security-forces-2010-2011.md` | `BINDING` | ANSF |
-| 43 | `OMW-WX-RAIN-SHOWER-PRESET-001` | `docs/43-dcs-rain-shower-preset-validation.md` | `BINDING` | Wetter-Preset-Validierung |
-| 44 | `OMW-HIST-AFGHANISTAN-ISAF-ORBAT-001` | `docs/44-afghanistan-isaf-order-of-battle-2010-2011.md` | `BINDING` | ISAF-ORBAT |
-| 45 | `OMW-HIST-AFGHANISTAN-COIN-001` | `docs/45-afghanistan-coin-and-operational-environment-2010-2011.md` | `BINDING` | COIN/OE |
-| 46 | `OMW-RED-COMMANDER-STRATEGY-001` | `docs/46-red-commander-strategy-and-behavior.md` | `BINDING` | RED Commander |
-| 47 | `OMW-AIR-AFGHANISTAN-TACTICAL-CALLSIGNS-001` | `docs/47-afghanistan-aircraft-tactical-callsigns.md` | `BINDING` | Aircraft Callsigns |
-| 48 | `OMW-AIR-AFGHANISTAN-JTAC-CALLSIGNS-001` | `docs/48-afghanistan-jtac-callsigns.md` | `BINDING` | JTAC Callsigns |
-| 49 | `OMW-TARGETING-AFGHANISTAN-NSL-001` | `docs/49-afghanistan-no-strike-list-and-targeting-policy.md` | `BINDING` | NSL/Targeting |
-| 50 | `OMW-HIST-AFGHANISTAN-FORCE-BASING-AVIATION-001` | `docs/50-afghanistan-force-basing-aviation-2010-2011.md` | `BINDING` | Force Basing/Aviation |
-| 51 | `OMW-AIR-AFGHANISTAN-AIR-C2-OPERATIONS-001` | `docs/51-afghanistan-air-command-control-and-operations.md` | `BINDING` | Air C2/Operations |
-| 52 | `OMW-HIST-AFGHANISTAN-COALITION-ORBAT-001` | `docs/52-afghanistan-coalition-orbat-and-force-posture.md` | `BINDING` | Coalition ORBAT/Force Posture |
-| 53 | `OMW-RED-COMMANDER-STRATEGIC-DOSSIER-001` | `docs/53-red-commander-strategic-dossier.md` | `BINDING` | RED Commander Dossier |
-| 54 | `OMW-RED-NETWORK-OPERATIONS-001` | `docs/54-red-network-operations-and-insurgent-systems.md` | `BINDING` | Insurgent Networks |
-| 55 | `OMW-CAMPAIGN-ASSESSMENT-001` | `docs/55-campaign-assessment-and-nonstate-security.md` | `BINDING` | Campaign Assessment |
-| 56 | `OMW-RED-INSURGENT-FACTIONS-SHADOW-GOVERNANCE` | `docs/56-insurgent-factions-shadow-governance-and-red-commander-behavior.md` | `BINDING` | Insurgent factions and shadow governance |
+| 00 | `OMW-GOV-001` | `docs/00-project-governance.md` | `BINDING_PROJECT_DECISION` | höchste Governance |
+| 01 | `OMW-VISION` | `docs/01-vision.md` | `BINDING` | Projektvision |
+| 02 | `OMW-GAMEPLAY-CONCEPT` | `docs/02-gameplay-concept.md` | `BINDING` | Gameplay-Konzept |
+| 03 | `OMW-ARCH-SYSTEM` | `docs/03-system-architecture.md` | `BINDING` | Systemarchitektur |
+| 04 | `OMW-ARCH-CAMPAIGN-STATE` | `docs/04-campaign-state.md` | `BINDING` | Domain Model |
+| 05 | `OMW-LOGISTICS` | `docs/05-logistics.md` | `BINDING` | Logistikarchitektur |
+| 06 | `OMW-RED-DIRECTOR` | `docs/06-red-director.md` | `SUPERSEDED` | früher RED-Entwurf |
+| 07 | `OMW-VIRTUALIZATION` | `docs/07-virtualization.md` | `BINDING` | Repräsentationsarchitektur |
+| 08 | `OMW-CSAR-LEGACY` | `docs/08-csar.md` | `SUPERSEDED` | früher CSAR-Entwurf |
+| 09 | `OMW-HIST-SETTING` | `docs/09-historical-setting.md` | `BINDING` | historischer Rahmen |
+| 10 | `OMW-THEATER-SECTORS` | `docs/10-theater-and-sectors.md` | `BINDING` | Theatermodell |
+| 11 | `OMW-BASES-FOBS` | `docs/11-bases-and-fobs.md` | `PLANNED` | Basen-/FOB-Modell |
+| 12 | `OMW-ROUTE-NETWORK` | `docs/12-route-network.md` | `SUPERSEDED` | frühes Routennetz |
+| 13 | `OMW-UNIT-CATALOG` | `docs/13-unit-catalog.md` | `PLANNED` | Katalogplanung |
+| 14 | `OMW-PHASE-VERTICAL-PROTOTYPE` | `docs/14-prototype-scope.md` | `SUPERSEDED` | historische Phase |
+| 15 | `OMW-TEMPLATE-LIBRARY-SPAWNING` | `docs/15-template-library-and-spawning.md` | `BINDING` | Template-Architektur |
+| 16 | `OMW-WORLD-DATA-ROUTING` | `docs/16-world-data-and-routing.md` | `BINDING` | World-Data-Architektur |
+| 17 | `OMW-ARCH-PATHFINDING-OPTIONS` | `docs/17-pathfinding-options.md` | `PLANNED` | technische Designreferenz |
+| 18 | `OMW-AIR-IMPLEMENTATION` | `docs/18-air-operations-implementation.md` | `BINDING` | technische Luftoperationen |
+| 19 | `OMW-AIR-ACTIVE-ORBAT` | `docs/19-active-air-orbat-decisions.md` | `BINDING_PROJECT_DECISION` | aktive ORBAT/Clientgrenzen |
+| 20 | `OMW-AIR-ME-WORKLIST` | `docs/20-air-orbat-mission-editor-worklist.md` | `BINDING` | Air-Ops-ME-Workflow |
+| 21 | `OMW-AIR-JBAD-MANIFEST` | `docs/21-jalalabad-air-operations-manifest.md` | `BINDING` | Jalalabad-ME-Baseline |
+| 26 | `OMW-GOV-MOOSE-FIRST` | `docs/26-moose-first-development-policy.md` | `BINDING_PROJECT_DECISION` | MOOSE-First |
+| 27 | `OMW-C2-JTAC-CALLSIGNS` | `docs/27-oef-jtac-callsign-reference.md` | `BINDING` | Quellenreferenz |
+| 28 | `OMW-C2-TAD-COLOR-NETS` | `docs/28-afghanistan-tad-color-nets.md` | `BINDING` | Quellenbasierter Datensatz |
+| 29 | `OMW-AAR-ISAF-ACO` | `docs/29-isaf-2009-2013-air-to-air-refueling.md` | `BINDING` | AAR-/ACO-Referenz |
+| 30 | `OMW-AAR-PART2-FIGURE` | `docs/30-isaf-2009-2013-aar-part2-figure-reference.md` | `BINDING` | Abbildungsreferenz |
+| 37 | `OMW-ARCH-CAMPAIGN-DYNAMIC-MISSION` | `docs/37-campaign-architecture-and-dynamic-mission-design.md` | `BINDING` | Kampagnenarchitektur |
+| 38 | `OMW-ME-MASTER-WORKLIST` | `docs/38-mission-editor-master-worklist.md` | `BINDING` | ME-Masterarbeitsliste |
+| 39 | `OMW-REVIEW-TM01-TM02-MOOSE-FIRST` | `docs/39-tm01-tm02-moose-first-code-review.md` | `DRAFT` | Code Review |
+| 40 | `OMW-PLAN-TM01-TM02-MOOSE-ADOPTION` | `docs/40-moose-module-adoption-plan-for-tm01-tm02.md` | `PLANNED` | Implementierungsplan |
+| 41 | `OMW-WX-HISTORICAL-BASELINE` | `docs/41-historical-weather-baseline-2010-2011.md` | `BINDING` | Wetterdatenbaseline |
+| 42 | `OMW-WX-DCS-IMPLEMENTATION` | `docs/42-dcs-weather-editor-validation.md` | `BINDING` | DCS-Editorbaseline |
+| 43 | `OMW-WX-RAIN-PROFILE` | `docs/43-dcs-rain-shower-preset-validation.md` | `BINDING` | visuell bestätigtes Arbeitsprofil |
+| 44 | `OMW-WX-MIST-PROFILE` | `docs/44-dcs-valley-mist-low-cloud-test-profile.md` | `PLANNED` | Testprofil |
+| 45 | `OMW-C2-AIR-C2-CAS-AFGHANISTAN` | `docs/45-air-c2-cas-afghanistan.md` | `BINDING` | Quellenbasierte Designreferenz |
+| 46 | `OMW-ROE-NON-LETHAL-USE-OF-FORCE` | `docs/46-non-lethal-use-of-force.md` | `PLANNED` | Quellenbasierte Designreferenz |
+| 47 | `OMW-C2-AIRCRAFT-TACTICAL-CALLSIGNS` | `docs/47-aircraft-tactical-callsigns.md` | `BINDING` | Quellenreferenz |
+| 48 | `OMW-TARGETING-AFGHANISTAN-NSL` | `docs/48-afghanistan-no-strike-list.md` | `BINDING` | Targeting-Architektur |
+| 49 | `OMW-MSR-ROUTE-DESIGN` | `docs/49-msr-routendesign-und-infrastrukturmarker.md` | `PLANNED` | Design-/Arbeitsliste |
+| 50 | `OMW-HIST-AFGHANISTAN-FORCE-BASING-AVIATION` | `docs/50-afghanistan-force-basing-aviation-2010-2011.md` | `BINDING` | historische Kräfte-, Basen-, Aviation- und TTP-Referenz |
+| 51 | `OMW-HIST-USMC-RC-SOUTHWEST-COALITION-OPS` | `docs/51-usmc-rc-southwest-and-coalition-operations-2010-2011.md` | `BINDING` | USMC-RC-Southwest-, Koalitionsoperations- und Missionsmuster-Referenz |
+| 52 | `OMW-HIST-ARMY-AVIATION-COIN-INTELLIGENCE-METRICS` | `docs/52-army-aviation-vignettes-and-coin-intelligence-metrics.md` | `BINDING` | Army-Aviation-, Chinook-, Emergency-, Intelligence- und Missionsmetriken-Referenz |
+| 53 | `OMW-HIST-AFGHANISTAN-WAR-CARLISLE-SOURCE-REVIEW` | `docs/53-afghanistan-war-carlisle-source-review.md` | `BINDING` | quellenkritische Sekundär- und Hintergrundreferenz |
+| 54 | `OMW-AIR-TASKING-AIRSPACE-CAS-REQUESTS` | `docs/54-air-tasking-airspace-control-cas-requests-and-mission-data.md` | `BINDING` | Air-C2-, ATO-/ACO-/SPINS-, Request- und Missionsdatenreferenz |
+| 55 | `OMW-HIST-MONTHLY-COALITION-ORBAT-BASING` | `docs/55-monthly-coalition-orbat-and-basing-2010-2011.md` | `BINDING` | monatliche Koalitions-ORBAT-, Basierungs- und AOR-Referenz |
+| 56 | `OMW-RED-INSURGENT-FACTIONS-BEHAVIOR` | `docs/56-insurgent-factions-shadow-governance-and-red-commander-behavior.md` | `BINDING` | konsolidierter RED Commander; historisches Insurgentenverhalten |
 | 57 | `OMW-RED-KANDAHAR-HELMAND-ENEMY-SYSTEM` | `docs/57-kandahar-helmand-enemy-system-and-red-commander-strategy.md` | `BINDING` | Kandahar-/Helmand-Enemy-System |
 | 58 | `OMW-RED-EASTERN-AFGHANISTAN-NETWORK-OPERATIONS` | `docs/58-eastern-afghanistan-network-operations-and-complex-attack-model.md` | `BINDING` | ostafghanisches Netzwerk- und Complex-Attack-Modell |
 | 59 | `OMW-COIN-ASSESSMENT-TRANSITIONS-NONSTATE-SECURITY` | `docs/59-campaign-assessment-operational-transitions-and-nonstate-security.md` | `BINDING` | Campaign Assessment und nichtstaatliche Sicherheitsakteure |
@@ -122,6 +120,7 @@ Dieses Register ordnet den aktuellen Dokumentenbestand stabilen `document_id`-We
 | `OMW-AIR-AIRFIELD-IMPLEMENTATION-WORKFLOW` | `docs/airfield-airwing-squadron-commander-implementation-workflow.md` | `BINDING`; allgemeiner Airfield-AIRWING-Workflow |
 | `OMW-HANDOFF-TEMPLATE-AIRFIELD-AIRWING-COMMANDER` | `docs/handoffs/TEMPLATE-airfield-airwing-squadron-commander-chat-handoff.md` | `BINDING`; Chat-Handoff-Vorlage |
 | `OMW-AIR-US-ORBAT-RESEARCH` | `docs/us-air-orbat-2010-2011.md` | `BINDING`; historische Forschung |
+| `OMW-AIR-TKOT-MANIFEST` | `docs/tarinkot-air-operations-manifest.md` | `DRAFT`; owner-accepted branch contract; G4 complete |
 | `OMW-GOV-SOURCE-USE` | `docs/sources/graveyard-of-empires.md` | `BINDING_PROJECT_DECISION` |
 | `OMW-GOV-MOOSE-VERSION` | `docs/moose/VERSION-AND-SOURCES.md` | `BINDING` |
 | `OMW-MOOSE-DOCUMENTATION-INDEX` | `docs/moose/README.md` | `BINDING` |
@@ -142,17 +141,16 @@ Dieses Register ordnet den aktuellen Dokumentenbestand stabilen `document_id`-We
 | `OMW-ADR-0004-LOCATION-REGISTRY` | `docs/adr/0004-use-explicit-location-registry.md` | `BINDING` |
 | `OMW-EVIDENCE-INDEX` | `docs/evidence/README.md` | `BINDING` |
 | `OMW-EVIDENCE-SOURCE-INTAKE-AUDIT-2026-07-28` | `docs/evidence/source-intake-audit-2026-07-28.md` | `BINDING` |
-| `OMW-AIR-TKOT-MANIFEST` | `docs/tarinkot-air-operations-manifest.md` | `DRAFT`; owner-accepted branch contract; G4 source review complete |
-| `OMW-EVIDENCE-TARINKOT-ME-AUDIT-OMW-TEMPLATE-V5-SALERNO` | `docs/evidence/tarinkot-mission-editor-audit-omw-template-v5-salerno.md` | `BINDING`; current MIZ audit |
-| `OMW-EVIDENCE-TARINKOT-AVIATION-2011` | `docs/evidence/tarinkot-2011-aviation-unit-and-aircraft-evidence.md` | `BINDING`; 2011 aviation/unit evidence |
-| `OMW-EVIDENCE-TARINKOT-AVIATION-ROTATIONS` | `docs/evidence/tarinkot-aviation-rotations-and-national-attribution-2006-2013.md` | `BINDING`; rotation/national-attribution evidence |
-| `OMW-EVIDENCE-TARINKOT-POST-PERIOD-AVIATION-BASE-LAYOUT` | `docs/evidence/tarinkot-post-period-aviation-and-base-layout-context-2012-2013.md` | `BINDING`; post-period context |
-| `OMW-EVIDENCE-TARINKOT-FARP-HOT-REFUEL-UH60-2011` | `docs/evidence/tarinkot-farp-hot-refuel-uh60-2011.md` | `BINDING`; FARP/hot-refuel evidence |
-| `OMW-EVIDENCE-TARINKOT-TF-ATTACK-STRUCTURE-CORRECTION` | `docs/evidence/tarinkot-source-critical-correction-task-force-attack-structure.md` | `BINDING`; source-critical correction |
-| `OMW-DECISION-TARINKOT-ACTIVE-BASELINE-2026-08-02` | `docs/evidence/tarinkot-owner-decision-active-baseline-2026-08-02.md` | `BINDING_PROJECT_DECISION`; historical baseline |
-| `OMW-DECISION-TARINKOT-G2-OBJECT-CONTRACT-2026-08-03` | `docs/evidence/tarinkot-g2-object-contract-acceptance-checklist-2026-08-03.md` | `DRAFT`; complete G2 checklist |
-| `OMW-DECISION-TARINKOT-G2-OWNER-ACCEPTANCE-2026-08-03` | `docs/evidence/tarinkot-g2-owner-acceptance-2026-08-03.md` | `BINDING_PROJECT_DECISION`; explicit G2 acceptance |
-| `OMW-EVIDENCE-TARINKOT-G4-MOOSE-2-9-18-SOURCE-REVIEW` | `docs/evidence/tarinkot-g4-moose-2-9-18-source-review.md` | `BINDING`; exact MOOSE source review |
+| `OMW-EVIDENCE-TARINKOT-ME-AUDIT-V5` | `docs/evidence/tarinkot-mission-editor-audit-omw-template-v5-salerno.md` | `BINDING`; aktueller MIZ-Audit |
+| `OMW-EVIDENCE-TARINKOT-AVIATION-2011` | `docs/evidence/tarinkot-2011-aviation-unit-and-aircraft-evidence.md` | `BINDING`; 2011er Typen- und Einheitennachweis |
+| `OMW-EVIDENCE-TARINKOT-AVIATION-ROTATIONS` | `docs/evidence/tarinkot-aviation-rotations-and-national-attribution-2006-2013.md` | `BINDING`; Rotations- und Nationalitätsgrenzen |
+| `OMW-EVIDENCE-TARINKOT-POST-PERIOD-AVIATION-BASE-LAYOUT` | `docs/evidence/tarinkot-post-period-aviation-and-base-layout-context-2012-2013.md` | `BINDING`; Post-period-Kontext |
+| `OMW-DECISION-TARINKOT-ACTIVE-BASELINE-2026-08-02` | `docs/evidence/tarinkot-owner-decision-active-baseline-2026-08-02.md` | `BINDING_PROJECT_DECISION`; aktive historische Baseline |
+| `OMW-EVIDENCE-TARINKOT-FARP-HOT-REFUEL-UH60-2011` | `docs/evidence/tarinkot-farp-hot-refuel-uh60-2011.md` | `BINDING`; FARP-/Hot-Refuel-Nachweis |
+| `OMW-EVIDENCE-TARINKOT-TF-ATTACK-STRUCTURE-CORRECTION` | `docs/evidence/tarinkot-source-critical-correction-task-force-attack-structure.md` | `BINDING`; Organisationskorrektur |
+| `OMW-DECISION-TARINKOT-G2-OBJECT-CONTRACT-2026-08-03` | `docs/evidence/tarinkot-g2-object-contract-acceptance-checklist-2026-08-03.md` | `DRAFT`; vollständige G2-Abnahmeliste |
+| `OMW-DECISION-TARINKOT-G2-OWNER-ACCEPTANCE-2026-08-03` | `docs/evidence/tarinkot-g2-owner-acceptance-2026-08-03.md` | `BINDING_PROJECT_DECISION`; ausdrückliche G2-Abnahme |
+| `OMW-EVIDENCE-TARINKOT-G4-MOOSE-2-9-18-SOURCE-REVIEW` | `docs/evidence/tarinkot-g4-moose-2-9-18-source-review.md` | `BINDING`; exakte MOOSE-2.9.18-Quellenprüfung |
 | `OMW-TEST-JBAD-AIR-OPS-INDEX` | `mission/tests/jalalabad-air-operations/README.md` | `BINDING` |
 
 ## 5. Legacy- und Evidenzregel
