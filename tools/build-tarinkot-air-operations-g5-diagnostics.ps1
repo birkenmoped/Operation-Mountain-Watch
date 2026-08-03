@@ -28,8 +28,8 @@ $forbiddenPatterns = [ordered]@{
     'Squadron parking assignment' = ':\s*SetParkingIDs\s*\('
     'Commander mission queue mutation' = ':\s*AddMission\s*\('
     'Commander transport queue mutation' = ':\s*AddOpsTransport\s*\('
-    'Group activation' = 'GROUP\s*:\s*Activate\s*\('
-    'Spawn call' = ':\s*Spawn\s*\('
+    'Group or object activation' = ':\s*Activate\s*\('
+    'Spawn call' = ':\s*Spawn[A-Za-z0-9_]*\s*\('
     'Client parking enablement' = ':\s*SetAllowSpawnOnClientParking\s*\('
 }
 
@@ -51,7 +51,7 @@ foreach ($fileName in $sourceFiles) {
 
 New-Item -ItemType Directory -Path $distDir -Force | Out-Null
 
-$builderVersion = 'TKOT-G5-READONLY-1'
+$builderVersion = 'TKOT-G5-READONLY-2'
 $commit = 'UNKNOWN'
 try {
     $commit = (& git -C $repoRoot rev-parse HEAD 2>$null).Trim()
