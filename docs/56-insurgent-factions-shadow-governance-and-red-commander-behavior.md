@@ -605,6 +605,8 @@ LOCAL_DONATIONS_OR_COERCION
 
 Konkrete Dollarbeträge aus Einzelquellen werden nicht direkt als CampaignState-Balance übernommen. Lokale Selbstfinanzierung und zentrale Unterstützung können gleichzeitig bestehen.
 
+Für den OMW-Zeitraum 2010/2011 darf `EXTERNAL_SUPPORT` nicht ohne neue fallbezogene Evidenz als russische staatliche Unterstützung interpretiert werden. Die quellenkritische Grenze und der spätere Nachperioden-Kontext stehen in [`OMW-HIST-RUSSIA-OEF-ISAF-AFGHANISTAN`](82-russia-oef-isaf-afghanistan-role.md).
+
 ## 17. Erfolgsmessung
 
 ### RED
