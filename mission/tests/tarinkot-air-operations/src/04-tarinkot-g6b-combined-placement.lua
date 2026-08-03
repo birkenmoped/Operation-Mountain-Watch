@@ -202,6 +202,7 @@ local function preflight()
       "FAMILY_CONFIG family=%s template=%s expectedType=%s expectedGroups=%d expectedUnits=%d modelRadiusM=%.3f",
       tostring(family.Key),
       tostring(family.TemplateGroup),
+      tostring(family.ExpectedType),
       #(family.SpawnRequests or {}),
       tonumber(family.ExpectedTotalUnits) or -1,
       tonumber(family.ModelRadiusM) or -1
