@@ -43,7 +43,7 @@ Mission: OMW_Template_v5_Salerno.miz
 Mission SHA-256: 203c99ffa6e025a2d9f00dc899439b0167ed9d81981b612f3a8d4fd078c458f5
 Moose.lua SHA-256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
 MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
-Builder version: TKOT-G5-READONLY-1
+Builder version: TKOT-G5-READONLY-2
 Bundle: mission/tests/tarinkot-air-operations/dist/OMW_AirOps_Tarinkot_G5_ReadOnly.lua
 ```
 
@@ -68,7 +68,7 @@ Get-FileHash `
 Builder-Hash und `Get-FileHash` müssen übereinstimmen. Erwartet werden außerdem:
 
 ```text
-BuilderVersion: TKOT-G5-READONLY-1
+BuilderVersion: TKOT-G5-READONLY-2
 ReadOnlyGuardPatternsChecked: 13
 ```
 
@@ -91,7 +91,7 @@ Start und Sperre:
 
 ```text
 BEGIN Tarinkot G5 read-only diagnostics
-version=TKOT-G5-READONLY-1 gitCommit=<ERWARTETER_COMMIT>
+version=TKOT-G5-READONLY-2 gitCommit=<ERWARTETER_COMMIT>
 READ_ONLY_LOCK AIRWING=0 SQUADRON=0 PAYLOAD=0 SPAWN=0 AUFTRAG=0 COMMANDER=0 OPSTRANSPORT=0 CAMPAIGNSTATE_MUTATION=0 MIZ_MUTATION=0
 ```
 
