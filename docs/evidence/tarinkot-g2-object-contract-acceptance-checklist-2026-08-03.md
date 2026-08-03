@@ -1,18 +1,17 @@
 ---
 document_id: OMW-DECISION-TARINKOT-G2-OBJECT-CONTRACT-2026-08-03
-status: DRAFT
+status: BINDING_PROJECT_DECISION
 document_class: OBJECT_CONTRACT_ACCEPTANCE_CHECKLIST
 owning_policy: OMW-GOV-001
 authoritative_for:
-  - consolidated Tarinkot G2 acceptance checklist
-  - distinction between already accepted historical naming and pending technical object-contract decisions
+  - complete owner-accepted Tarinkot G2 object contract
+  - distinction between accepted technical decisions and later runtime questions
   - Tarinkot functional-zone gate dependencies including the historically supported FARP
-  - implementation lock before MOOSE source review
+  - implementation lock and gate sequence before runtime activation
 not_authoritative_for:
-  - project-wide binding effect before explicit owner acceptance and merge to main
-  - MOOSE 2.9.18 API behavior
   - DCS runtime acceptance
   - final AI parking allowlists
+  - merge approval or Ready-for-Review approval
 scenario_period: 2010-08-01/2011-12-31
 decision_date: 2026-08-03
 source_branch: agent/tarinkot-object-contract-reconciliation
@@ -20,32 +19,34 @@ source_mission: OMW_Template_v5_Salerno.miz
 source_mission_sha256: 203c99ffa6e025a2d9f00dc899439b0167ed9d81981b612f3a8d4fd078c458f5
 embedded_moose_sha256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
 validated_in_dcs: false
-decision_state: PROPOSED_OWNER_ACCEPTANCE
-project_phase: TARINKOT_OBJECT_CONTRACT_RECONCILIATION
+decision_state: OWNER_ACCEPTED_BRANCH
+project_phase: TARINKOT_MOOSE_SOURCE_REVIEW_COMPLETE
 source_commit: PENDING_MERGE
-supersedes: []
+supersedes:
+  - proposed owner-acceptance state of this checklist
 superseded_by: []
 ---
 
 # Tarinkot – G2-Objektvertrag und Abnahmeliste
 
-## 1. Zweck
+## 1. Zweck und Entscheidung
 
-Dieses Dokument fasst den vollständigen Tarinkot-G2-Entscheidungsstand zusammen. Es trennt:
+Dieses Dokument enthält den vollständigen Tarinkot-G2-Objektvertrag. Der Projekteigentümer hat ihn am 03.08.2026 ausdrücklich angenommen.
 
-1. bereits ausdrücklich angenommene historische Entscheidungen;
-2. noch als Gesamtvertrag anzunehmende technische Entscheidungen;
-3. erst in späteren Gates zu prüfende Laufzeitfragen.
-
-Bis zur ausdrücklichen Annahme des vollständigen Abschnitts 3 und zum Abschluss von G4 gilt:
-
-```text
-KEINE TARINKOT-LUA-IMPLEMENTIERUNG
+```yaml
+G2_object_contract: OWNER_ACCEPTED_BRANCH
+runtime_acceptance: false
+merge_approval: false
+ready_for_review_approval: false
 ```
 
-## 2. Bereits ausdrücklich angenommen
+Der separate Entscheidungsnachweis steht in:
 
-### 2.1 Historischer Arbeitszeitraum
+```text
+docs/evidence/tarinkot-g2-owner-acceptance-2026-08-03.md
+```
+
+## 2. Historischer Arbeitszeitraum
 
 ```text
 März bis Dezember 2011
@@ -53,7 +54,7 @@ März bis Dezember 2011
 
 Das in der aktuellen MIZ eingetragene Datum `14.01.2011` ist für die aktive Tarinkot-ORBAT und Benennung nicht steuernd.
 
-### 2.2 Historische Organisationsstruktur
+## 3. Historische Organisationsstruktur
 
 ```text
 Lokaler Aviation-Knoten:
@@ -71,7 +72,7 @@ B Company, 1-52 Aviation Regiment
 historisches Muster CH-47D
 ```
 
-### 2.3 Technische Namen
+## 4. Technische Namen
 
 ```text
 AIRWING:
@@ -83,9 +84,7 @@ SQ_US_TKOT_UH60_TF_ATTACK
 SQ_US_TKOT_CH47_B_1_52_AVN
 ```
 
-## 3. Vollständiger technischer G2-Vertrag zur Annahme
-
-### 3.1 Standort und Warehouse
+## 5. Standort und Warehouse
 
 ```yaml
 locationCode: TKOT
@@ -104,7 +103,7 @@ Vertrag:
 - bei fehlendem oder mehrfach vorhandenem Anker erfolgt später Fail-fast;
 - das native unbegrenzte DCS-Warehouse erzeugt keinen unbegrenzten CampaignState-Bestand.
 
-### 3.2 Nominaler lokaler OMW-Bestand
+## 6. Nominaler lokaler OMW-Bestand
 
 ```yaml
 AH64D: 14
@@ -120,7 +119,7 @@ Evidenzgrenze:
 - die exakten Werte `14/6/2/0` sind eine quellennahe OMW-Rekonstruktion;
 - die Werte dürfen nicht zusätzlich in Kandahar oder einem anderen RC-South-Pool gezählt werden.
 
-### 3.3 Darstellungsledger
+## 7. Darstellungsledger
 
 | Musterfamilie | Statics | aktive Clients maximal | aktive KI maximal | maximale gleichzeitige Darstellung |
 |---|---:|---:|---:|---:|
@@ -141,17 +140,30 @@ Statics
 
 Late-Activation-Seeds und unbelegte Client-Slots erhöhen den Bestand nicht.
 
-### 3.4 Mission-Editor-Seeds
+## 8. Mission-Editor-Seeds und registrierter KI-Bestand
 
-```text
-TPL_AIR_US_TKOT_AH64D_CAS_2SHIP
-2 × AH-64D_BLK_II
+```yaml
+AH64:
+  template: TPL_AIR_US_TKOT_AH64D_CAS_2SHIP
+  templateAircraftPerGroup: 2
+  registeredGroups: 2
+  grouping: 2
+  maximumRegisteredAIAircraft: 4
 
-TPL_AIR_US_TKOT_UH60_MEDEVAC_1SHIP
-1 × UH-60A
+UH60:
+  template: TPL_AIR_US_TKOT_UH60_MEDEVAC_1SHIP
+  templateAircraftPerGroup: 1
+  registeredGroups: 2
+  grouping: 1
+  maximumRegisteredAIAircraft: 2
+  seedReuse: SAME_ONE_SHIP_TEMPLATE_SOURCE_CONFIRMED
 
-TPL_AIR_US_TKOT_CH47_HEAVYLIFT_1SHIP
-1 × CH-47Fbl1
+CH47:
+  template: TPL_AIR_US_TKOT_CH47_HEAVYLIFT_1SHIP
+  templateAircraftPerGroup: 1
+  registeredGroups: 1
+  grouping: 1
+  maximumRegisteredAIAircraft: 1
 ```
 
 Historische Abweichung:
@@ -161,29 +173,9 @@ B/1-52 setzte 2011 CH-47D ein.
 CH-47Fbl1 ist ein dokumentierter DCS-Ersatz.
 ```
 
-### 3.5 Geplanter registrierter KI-Bestand
+Die Wiederverwendung des UH-60-One-Ship-Seeds für zwei Asset-Gruppen wurde in G4 anhand der exakten MOOSE-2.9.18-Quelle bestätigt.
 
-```yaml
-AH64:
-  templateAircraftPerGroup: 2
-  registeredGroups: 2
-  maximumRegisteredAIAircraft: 4
-
-UH60:
-  templateAircraftPerGroup: 1
-  registeredGroups: 2
-  maximumRegisteredAIAircraft: 2
-  seedReuse: SAME_ONE_SHIP_TEMPLATE
-
-CH47:
-  templateAircraftPerGroup: 1
-  registeredGroups: 1
-  maximumRegisteredAIAircraft: 1
-```
-
-Die Wiederverwendung eines UH-60-One-Ship-Seeds für zwei registrierte Gruppen ist noch keine bestätigte MOOSE-Funktion. Sie ist in G4 anhand der exakten MOOSE-2.9.18-Quelle zu prüfen.
-
-### 3.6 Client-Reservierungen
+## 9. Client-Reservierungen
 
 ```text
 CLIENT_US_TKOT_AH64D_01
@@ -198,7 +190,7 @@ C07-H / interne Parking-ID 3
 
 Diese Positionen werden für KI-Initialspawns gesperrt. Der Stringwert `"20"` wird vor der Laufzeitdiagnose nicht stillschweigend normalisiert.
 
-### 3.7 AI-Parking-Status
+## 10. AI-Parking-Status
 
 ```yaml
 acceptedAHParkingIds: []
@@ -212,17 +204,17 @@ Eine leere Liste bedeutet:
 - keine Ableitung aus sichtbaren Parkplatzlabels;
 - keine AIRWING-/SQUADRON-Spawnfreigabe vor G6.
 
-## 4. Funktionszonen und Gate-Abhängigkeiten
+G4 bestätigt zusätzlich, dass `SQUADRON:SetParkingIDs()` die normale Terminaltyp- und Airbase-Black-/Whitelist-Prüfung umgehen kann. Positive SQUADRON-Parking-Listen bleiben deshalb bis nach der G6-Kalibrierung verboten.
 
-### 4.1 Bereits vorhanden
+## 11. Funktionszonen
+
+Bereits vorhanden:
 
 ```text
 OMW_LOG_NODE_TARINKOT
 ```
 
-Diese Logistikzone ersetzt keine Air-Ops-Funktionszone.
-
-### 4.2 Erforderliche, noch nicht angelegte Zonen
+Erforderlich, aber noch nicht angelegt:
 
 ```text
 ZONE_AIR_US_TKOT_AH64_RAMP
@@ -239,7 +231,9 @@ ZONE_AIR_US_TKOT_FARP
 
 `ZONE_AIR_US_TKOT_FARP` ist durch die offizielle September-2011-Evidenz zu Hot Refueling und Rapid Turnaround fachlich begründet.
 
-### 4.3 Gate-Matrix
+Keine Zone darf durch Lua-Fallback-Koordinaten erfunden werden.
+
+## 12. Zone-/Gate-Matrix
 
 | Gate/Test | Erforderliche Zone | Regel |
 |---|---|---|
@@ -247,50 +241,89 @@ ZONE_AIR_US_TKOT_FARP
 | G6 Parking-Kalibrierung | keine Funktionszone | Parking-Dump und isolierte Spawn-/Starttests verwenden |
 | G7 AIRWING-/SQUADRON-Grundlage | keine Funktionszone | keine operative Mission auslösen |
 | G8 AH-64-CAS | später separat festgelegter Ziel-/Testbereich | keine FARP- oder Transportzone erforderlich |
-| G8 UH-60 MEDEVAC | `MEDEVAC_READY`, `HELO_RECOVERY` | vor dem MEDEVAC-Test im Mission Editor anlegen und auditieren |
-| G8 UH-60 Utility | `UH60_RAMP` oder `ROTARY_STAGING` je Testvertrag | exakte Funktion vor Test festlegen |
-| G8 CH-47 Transport | `CH47_READY`, `LOGISTICS_LOAD`, `LOGISTICS_UNLOAD` | vor Direct-/OPSTRANSPORT-Test anlegen und auditieren |
-| FARP-/Hot-Refuel-Test | `FARP` | eigene DCS-/MOOSE-Acceptance; nicht Teil des ersten AIRWING-Starts |
+| G8 UH-60 Utility | `UH60_RAMP` oder `ROTARY_STAGING` | exakte Funktion vor Test festlegen |
+| G8 UH-60 MEDEVAC-Paket | `MEDEVAC_READY`, `HELO_RECOVERY` | OMW-Paketlogik; keine native MOOSE-MEDEVAC-Automatik |
+| G8 CH-47 Direct Transport | `CH47_READY`, `LOGISTICS_LOAD`, `LOGISTICS_UNLOAD` | direkten AUFTRAG-Pfad isoliert prüfen |
+| G8 CH-47 OPSTRANSPORT | `LOGISTICS_LOAD`, `LOGISTICS_UNLOAD` | `OPSTRANSPORT:New` plus `COMMANDER:AddOpsTransport` |
+| FARP-/Hot-Refuel-Test | `FARP` | eigene DCS-/MOOSE-Acceptance |
 | Fixed-Wing-Transient-Test | `TRANSIENT_FIXED_WING` | vollständig zurückgestellt |
 
-Keine Zone darf durch Lua-Fallback-Koordinaten erfunden werden.
+## 13. G4-Korrekturen für spätere Implementierung
 
-## 5. G0-bis-G10-Status nach Konsolidierung
+### 13.1 UH-60
+
+MOOSE 2.9.18 besitzt keinen eigenen landgestützten `MEDEVAC`-AUFTRAG. `AUFTRAG:NewRESCUEHELO(Carrier)` ist trägerbezogen.
+
+Geeignete getrennt zu testende Primitive sind:
+
+```text
+LANDATCOORDINATE
+TROOPTRANSPORT
+CARGOTRANSPORT
+FREIGHTTRANSPORT
+GROUNDESCORT
+```
+
+### 13.2 CH-47 OPSTRANSPORT
+
+`AUFTRAG:NewOPSTRANSPORT()` ist im exakten Artefakt auskommentiert und darf nicht aufgerufen werden.
+
+Der gültige Pfad lautet:
+
+```lua
+local transport = OPSTRANSPORT:New(CargoGroups, PickupZone, DeployZone)
+commander:AddOpsTransport(transport)
+```
+
+Die Carrier-SQUADRON benötigt `AUFTRAG.Type.OPSTRANSPORT`.
+
+## 14. Gate-Status
 
 | Gate | Status | Ergebnis |
 |---|---|---|
 | G0 Provenienz | `PASS_BRANCH` | Branch, MIZ, MIZ-Hash und MOOSE-Hash dokumentiert |
 | G1 Dokumente/ORBAT/Evidenz | `PASS_BRANCH` | aktive Baseline und Quellenkritik konsolidiert |
-| G2 Objektvertrag | `PROPOSED_COMPLETE_PENDING_OWNER_ACCEPTANCE` | vollständige Liste liegt in diesem Dokument vor |
+| G2 Objektvertrag | `OWNER_ACCEPTED_BRANCH` | vollständiger Vertrag angenommen |
 | G3 Mission Editor | `PARTIAL` | Kernobjekte vorhanden; Funktionszonen fehlen |
-| G4 MOOSE-Quellenprüfung | `NOT_STARTED` | nach G2-Annahme nächster zulässiger Schritt |
-| G5 Read-only Diagnose | `BLOCKED_BY_G2_G4` | kein Diagnose-Lua vorhanden |
+| G4 MOOSE-Quellenprüfung | `PASS_SOURCE_REVIEW` | exaktes Artefakt und relevante API-Pfade geprüft |
+| G5 Read-only Diagnose | `AUTHORIZED_NOT_STARTED` | nächster zulässiger Implementierungsschritt |
 | G6 Parking-Kalibrierung | `NOT_STARTED` | Allowlisten leer |
-| G7 AIRWING/SQUADRON/Payload | `NOT_STARTED` | gesperrt |
-| G8 direkter Dispatch | `NOT_STARTED` | gesperrt |
+| G7 AIRWING/SQUADRON/Payload | `NOT_STARTED` | gesperrt bis G5/G6 |
+| G8 direkter Dispatch/Transport | `NOT_STARTED` | gesperrt |
 | G9 COMMANDER/Operational Parking | `NOT_STARTED` | gesperrt |
 | G10 Lifecycle/Ergebnisse/Handoff | `NOT_STARTED` | gesperrt |
 
-## 6. Ablösung des älteren Tarinkot-Drafts
+## 15. G5-Freigabegrenze
 
-Draft-PR #40 und dessen auf `OMW_Template(3).miz` basierender Tarinkot-Vertrag werden durch PR #53 fachlich ersetzt.
-
-Bis zu einer ausdrücklichen Merge-/Schließentscheidung gilt:
+G5 darf ausschließlich read-only protokollieren:
 
 ```text
-PR #40: HISTORICAL_SUPERSEDED_DRAFT
-PR #53: CURRENT_TARINKOT_RECONCILIATION_DRAFT
+MIZ-/Bundle-/MOOSE-Provenienz
+AIRBASE:FindByID(9)
+Runtime-Airbase-Name
+GetID() und GetID(true)
+Airbase-Kategorie und Koalition
+vollständige Parking-Datensätze
+TerminalID, TerminalType, ID0, TOAC und Free
+Client-Gruppen und interne Parking-Werte einschließlich Datentyp
+Warehouse-Anker und Eindeutigkeit
+AI-Seeds, DCS-Typen und Templategrößen
+Tarinkot-Statics
+vorhandene und fehlende Funktionszonen
+Namensduplikate und fehlende Pflichtobjekte
 ```
 
-PR #40 darf nicht parallel als alternative aktive Tarinkot-Source-of-Truth verwendet werden.
-
-## 7. Nächster Schritt nach Annahme
-
-Nach ausdrücklicher Annahme des vollständigen Abschnitts 3 und der Zone-/Gate-Regeln aus Abschnitt 4 beginnt:
+G5 darf nicht:
 
 ```text
-G4 – exakte Prüfung der eingebundenen MOOSE-Version 2.9.18,
-der zugehörigen Quellen, Dokumentation und Demos.
+AIRWING erzeugen
+SQUADRON erzeugen
+SetParkingIDs anwenden
+Payloads registrieren
+Assets anfordern oder spawnen
+AUFTRAG erzeugen
+COMMANDER erzeugen oder starten
+OPSTRANSPORT erzeugen
+CampaignState verändern
+MIZ verändern
 ```
-
-G4 enthält noch keine Tarinkot-Lua-Implementierung.
