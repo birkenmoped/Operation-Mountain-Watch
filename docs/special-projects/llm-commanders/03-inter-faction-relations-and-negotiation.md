@@ -5,59 +5,99 @@ document_class: INTER_FACTION_RELATIONSHIP_AND_NEGOTIATION_MODEL
 scenario_period: 2010-08-01/2011-12-31
 source_branch: docs/optional-llm-commanders
 validated_in_dcs: false
+authoritative_for:
+  - directed relationships among the five campaign factions
+  - ISAF and Afghan State partnership friction
+  - Afghan State and RED competition
+  - negotiation channels agreements and resource transfers
 ---
 
-# Beziehungen, Konkurrenz und Verhandlungen zwischen RED Commandern
+# Beziehungen, Konkurrenz, Partnerschaft und Verhandlungen zwischen Fraktionen
 
 ## 1. Zweck
 
-Dieses Dokument definiert, wie Taliban, Haqqani Network und HIG innerhalb der optionalen Multi-Commander-Kampagne miteinander umgehen.
+Dieses Dokument definiert die gerichteten Beziehungen zwischen fünf getrennten Kampagnenfraktionen:
 
-Ziel ist kein statisches Bündnissystem, sondern ein dynamisches Verhältnis aus:
+```text
+ISAF
+AFGHAN_STATE
+TALIBAN
+HAQQANI
+HIG
+```
 
-- gemeinsamer Gegnerschaft zu BLUE;
-- formaler oder ideologischer Nähe;
-- operativer Eigenständigkeit;
-- lokal begrenzter Kooperation;
-- Konkurrenz um Territorium, Personal, Geld, Prestige und politische Autorität;
-- Misstrauen, Täuschung, gebrochenen Zusagen und zeitweiligen Absprachen.
+Ziel ist kein statisches Bündnissystem. Die Kampagne bildet gleichzeitig ab:
+
+- Bündnis und Friktion zwischen ISAF und Afghan State;
+- militärische, politische und ressourcenbezogene Konkurrenz zwischen Afghan State und RED;
+- formale Nähe, operative Eigenständigkeit und Rivalität der drei RED-Fraktionen;
+- regional begrenzte Kooperation;
+- Konkurrenz um Manpower, Finance, Materiel und Zugangsanteile;
+- Informationsaustausch, Unterstützungsleistungen und Transfers;
+- Misstrauen, Täuschung, gebrochene Zusagen und zeitweilige Absprachen.
 
 ```text
 SHARED_ENEMY != UNIFIED_COMMAND
 FORMAL_ALIGNMENT != SHARED_RESOURCES
 LOCAL_COOPERATION != STRATEGIC_TRUST
+SAME_DCS_COALITION != SAME_FACTION
+PARTNERSHIP != OWNERSHIP
 ```
+
+Ressourcenbegriffe folgen Dokument 17. Persistente Beziehungen und Agreements folgen Dokument 13.
 
 ## 2. Bilaterale und asymmetrische Beziehungen
 
-Jede Beziehung wird zweimal geführt:
+Jede Beziehung wird zweimal geführt.
+
+```text
+ISAF_VIEW_OF_AFGHAN_STATE
+AFGHAN_STATE_VIEW_OF_ISAF
+```
 
 ```text
 TALIBAN_VIEW_OF_HAQQANI
 HAQQANI_VIEW_OF_TALIBAN
 ```
 
-Die Werte müssen nicht identisch sein. Ein Akteur kann stärker abhängig sein, mehr Vertrauen investieren oder größere Konkurrenz wahrnehmen als sein Gegenüber.
+Werte müssen nicht identisch sein.
 
 ```yaml
 relationship_state:
   actor_id: string
   counterpart_id: string
+  geographic_scope: []
+
   formal_alignment: 0..100
+  political_alignment: 0..100
   ideological_alignment: 0..100
   political_trust: 0..100
   operational_trust: 0..100
   personal_network_trust: 0..100
+
   intelligence_sharing_willingness: 0..100
   logistics_cooperation_willingness: 0..100
   transit_cooperation_willingness: 0..100
   joint_operation_willingness: 0..100
+
+  finance_support_willingness: 0..100
+  materiel_support_willingness: 0..100
+  training_support_willingness: 0..100
+  enabler_support_willingness: 0..100
+
   territorial_competition: 0..100
   recruitment_competition: 0..100
   revenue_competition: 0..100
+  materiel_competition: 0..100
   patronage_competition: 0..100
   prestige_competition: 0..100
   political_representation_competition: 0..100
+
+  enabler_dependency: 0..100
+  command_friction: 0..100
+  transition_pressure: 0..100
+  perceived_respect_for_sovereignty: 0..100
+
   grievance_level: 0..100
   dependency: 0..100
   fear_of_betrayal: 0..100
@@ -67,25 +107,26 @@ relationship_state:
 
 ## 3. Beziehungsebenen
 
-Beziehungen werden auf drei Ebenen getrennt bewertet:
-
 ### 3.1 Strategische Ebene
 
 - politische Anerkennung;
 - langfristige Zielkompatibilität;
+- staatliche Souveränität;
 - Stellung gegenüber externer Unterstützung;
-- Anspruch auf Gesamtführung;
-- Verhandlungsstrategie gegenüber Regierung und Koalition;
-- überregionale Prestige- und Repräsentationsfragen.
+- Anspruch auf Gesamtführung oder Eigenständigkeit;
+- Transition und Abhängigkeit;
+- Verhandlungsstrategie;
+- Prestige und politische Repräsentation.
 
 ### 3.2 Operative Ebene
 
-- Nutzung von Routen und Safehavens;
-- Austausch von Spezialisten oder Informationen;
+- Nutzung von Routen und Basen;
+- Zuweisung von Enablern;
+- Austausch von Intelligence;
 - Deconfliction paralleler Operationen;
-- gemeinsame Schwerpunktbildung;
 - Ressourcentransfers;
-- zeitweise Unterstützung unter BLUE-Druck.
+- Schutz oder Störung von ResourceSources und AccessNodes;
+- gemeinsame Schwerpunktbildung.
 
 ### 3.3 Lokale Ebene
 
@@ -94,15 +135,187 @@ Beziehungen werden auf drei Ebenen getrennt bewertet:
 - Konkurrenz um Rekruten und Informanten;
 - Familien-, Patronage- und Stammeskontakte;
 - lokale Waffenruhe;
-- spontane Zusammenarbeit oder bewaffneter Konflikt.
+- spontane Zusammenarbeit oder bewaffneter Konflikt;
+- Verhalten einzelner ANA-, ANP- oder RED-Kommandeure.
 
-Ein positives strategisches Verhältnis verhindert keinen lokalen Konflikt. Umgekehrt beweist lokale Kooperation keine strategische Allianz.
+Ein positives strategisches Verhältnis verhindert keinen lokalen Konflikt. Lokale Kooperation beweist keine strategische Allianz.
 
-## 4. Ausgangsprofile 2010-2011
+## 4. ISAF und Afghan State
 
-Die folgenden Werte sind keine historischen Messdaten. Sie sind vorläufige Simulationsstartbereiche, die später durch die Fraktionsdossiers und Szenariovorgaben präzisiert werden.
+### 4.1 Grundbeziehung
 
-### 4.1 Taliban gegenüber Haqqani
+```text
+RELATIONSHIP_TYPE = ALLIED_BUT_AUTONOMOUS_PARTNERS
+```
+
+ISAF und Afghan State sind gegen RED ausgerichtet, besitzen aber getrennte:
+
+```text
+FORCE_PACKAGE_OWNERSHIP
+RESOURCE_ACCOUNTS
+COMMANDER_VIEWS
+OPERATION_AUTHORITY
+LOSS_ASSESSMENT
+POLITICAL_PRIORITIES
+SUCCESS_CONDITIONS
+```
+
+### 4.2 Ausgangsdimensionen
+
+Die Werte sind Simulationsstartbereiche, keine historischen Messwerte.
+
+```yaml
+isaf_to_afghan_state:
+  formal_alignment: 85..100
+  political_alignment: 65..90
+  political_trust: 45..80
+  operational_trust: 45..80
+  intelligence_sharing_willingness: 45..85
+  finance_support_willingness: 70..100
+  materiel_support_willingness: 70..100
+  training_support_willingness: 80..100
+  enabler_support_willingness: 65..95
+  enabler_dependency: 10..35
+  command_friction: 20..60
+  transition_pressure: 50..90
+  perceived_respect_for_sovereignty: 45..85
+
+ afghan_state_to_isaf:
+  formal_alignment: 85..100
+  political_alignment: 60..90
+  political_trust: 40..80
+  operational_trust: 50..85
+  intelligence_sharing_willingness: 35..80
+  finance_support_dependency: 75..100
+  materiel_support_dependency: 65..95
+  training_support_dependency: 70..100
+  enabler_dependency: 60..95
+  command_friction: 20..65
+  transition_pressure: 35..80
+  perceived_respect_for_sovereignty: 35..80
+```
+
+Das YAML-Feld `finance_support_dependency` ist eine gerichtete Beziehungsdimension und keine ResourceAccount-Größe.
+
+### 4.3 Typische Friktionen
+
+```text
+ISAF seeks measurable progress
+AFGHAN_STATE may prioritize force preservation and local balance
+```
+
+```text
+ISAF seeks rapid transition
+AFGHAN_STATE may request continued enablers
+```
+
+```text
+ISAF seeks corruption control
+AFGHAN_STATE actors may depend on patronage arrangements
+```
+
+```text
+ISAF offers support
+AFGHAN_STATE retains approval and command authority over its forces
+```
+
+### 4.4 Partneroperationen
+
+Zulässige Beziehungen:
+
+```text
+COALITION_LED
+PARTNERED
+AFGHAN_LED_WITH_COALITION_ENABLERS
+AFGHAN_LED_ADVISED
+AFGHAN_INDEPENDENT
+```
+
+Jede Partneroperation benötigt:
+
+- Lead-Faction;
+- Eigentümer der Force Packages;
+- Partnerzustimmung;
+- vereinbarte Enabler;
+- getrennte Resource Reservations;
+- Command Relationship;
+- Abbruchrechte;
+- Ergebnis- und Verlustzuordnung.
+
+## 5. Afghan State und RED
+
+Diese Beziehungen sind nicht nur militärische Feindschaft. Afghan State und RED konkurrieren um:
+
+```text
+RECRUITABLE_MANPOWER
+FINANCE_FROM_LOCAL_OR_STATE_SOURCES
+MATERIEL
+ROUTE_AND_CHECKPOINT_ACCESS
+LOCAL_COMMANDERS
+POPULATION_ACCESS
+INFORMATION
+POLITICAL_LEGITIMACY
+```
+
+### 5.1 Afghan State gegenüber Taliban
+
+```yaml
+afghan_state_to_taliban:
+  formal_alignment: 0..10
+  political_trust: 0..20
+  operational_trust: 0..15
+  territorial_competition: 70..100
+  recruitment_competition: 65..100
+  revenue_competition: 70..100
+  materiel_competition: 55..95
+  political_representation_competition: 80..100
+  conflict_risk: 70..100
+  negotiation_channel_quality: 10..60
+```
+
+Verhandlungskanäle können trotz Feindschaft bestehen. Sie erzeugen keine automatische Anerkennung oder Waffenruhe.
+
+### 5.2 Taliban gegenüber Afghan State
+
+Taliban betrachtet den Afghan State regelmäßig zugleich als:
+
+- militärischen Gegner;
+- konkurrierenden Herrschafts- und Justizanspruch;
+- konkurrierenden Rekrutierungsakteur;
+- Inhaber staatlicher Finance- und Materielquellen;
+- mögliches Ziel politischer Delegitimierung;
+- möglichen Verhandlungs- oder Reintegrationskanal für lokale Akteure.
+
+### 5.3 Afghan State und Haqqani
+
+Schwerpunkte:
+
+```text
+route and facilitation denial
+network disruption
+intelligence competition
+materiel and external-support interdiction
+selected local access competition
+```
+
+Haqqani benötigt nicht zwingend flächendeckende politische Kontrolle. Afghan State kann deshalb territoriale Präsenz verbessern, ohne automatisch das Netzwerk zu beseitigen.
+
+### 5.4 Afghan State und HIG
+
+Zusätzliche Besonderheiten:
+
+- politische Kontakte und frühere Parteiverbindungen;
+- lokale Absprachen;
+- Defektion und Kooptation;
+- unklare Vertretungsbefugnis;
+- Konkurrenz um lokale Commander und Patronage;
+- mögliche Teilintegration einzelner Akteure ohne Auflösung der Gesamtfraktion.
+
+## 6. RED-Ausgangsprofile 2010–2011
+
+Die folgenden Werte sind Simulationsstartbereiche.
+
+### 6.1 Taliban gegenüber Haqqani
 
 ```yaml
 taliban_to_haqqani:
@@ -114,15 +327,17 @@ taliban_to_haqqani:
   logistics_cooperation_willingness: 50..80
   joint_operation_willingness: 50..80
   territorial_competition: 15..50
+  recruitment_competition: 10..45
   revenue_competition: 15..45
+  external_support_competition: 20..60
   prestige_competition: 30..65
   dependency: 20..55
   conflict_risk: 5..30
 ```
 
-Taliban kann Haqqani als leistungsfähigen, formal verbundenen, aber eigenständigen Partner betrachten. Reibung entsteht, wenn Haqqani lokale Autorität, Ressourcen oder Prestige beansprucht, ohne sich ausreichend kontrollieren zu lassen.
+Taliban kann Haqqani als leistungsfähigen, formal verbundenen, aber eigenständigen Partner betrachten.
 
-### 4.2 Haqqani gegenüber Taliban
+### 6.2 Haqqani gegenüber Taliban
 
 ```yaml
 haqqani_to_taliban:
@@ -134,16 +349,18 @@ haqqani_to_taliban:
   logistics_cooperation_willingness: 45..80
   joint_operation_willingness: 50..85
   territorial_competition: 10..45
+  recruitment_competition: 5..35
   revenue_competition: 10..40
+  external_support_competition: 20..65
   prestige_competition: 35..70
   dependency: 15..50
   fear_of_betrayal: 15..45
   conflict_risk: 5..25
 ```
 
-Haqqani kann die formale Verbindung akzeptieren, gleichzeitig jedoch eigene Netzwerke, Quellen und Capability Packages schützen. Hohe operative Kooperation darf nicht automatisch zu vollständiger Informationsteilung führen.
+Hohe operative Kooperation führt nicht automatisch zu vollständiger Informationsteilung oder gemeinsamer Ressourcenkontrolle.
 
-### 4.3 Taliban gegenüber HIG
+### 6.3 Taliban gegenüber HIG
 
 ```yaml
 taliban_to_hig:
@@ -157,14 +374,13 @@ taliban_to_hig:
   territorial_competition: 40..85
   recruitment_competition: 35..75
   revenue_competition: 40..85
+  materiel_competition: 20..65
   political_representation_competition: 45..90
   grievance_level: 20..70
   conflict_risk: 25..75
 ```
 
-Taliban kann HIG lokal als nützlichen Mitkämpfer, politisch jedoch als konkurrierende Organisation betrachten. Absprachen bleiben regional, zeitlich und zweckgebunden.
-
-### 4.4 HIG gegenüber Taliban
+### 6.4 HIG gegenüber Taliban
 
 ```yaml
 hig_to_taliban:
@@ -178,17 +394,20 @@ hig_to_taliban:
   territorial_competition: 45..90
   recruitment_competition: 40..80
   revenue_competition: 45..90
+  patronage_competition: 50..95
   political_representation_competition: 55..95
   grievance_level: 25..75
   fear_of_betrayal: 35..80
   conflict_risk: 30..80
 ```
 
-HIG kann die militärische Stärke der Taliban anerkennen, ohne deren politischen Führungsanspruch zu akzeptieren. Hohe Verhandlungsorientierung erhöht zusätzlich den Verdacht, dass HIG eigene Vereinbarungen zulasten anderer Akteure sucht.
+### 6.5 Haqqani und HIG
 
-### 4.5 Haqqani und HIG
+Die direkte Quellenlage ist schwächer.
 
-Die direkte Quellenlage ist schwächer. Daher gelten breitere Startbereiche:
+```text
+DEFAULT_RELATIONSHIP = PRAGMATIC_UNCERTAINTY
+```
 
 ```yaml
 haqqani_to_hig:
@@ -196,6 +415,7 @@ haqqani_to_hig:
   operational_trust: 15..50
   joint_operation_willingness: 10..55
   territorial_competition: 15..65
+  recruitment_competition: 10..55
   revenue_competition: 15..65
   prestige_competition: 20..60
   conflict_risk: 15..60
@@ -206,19 +426,14 @@ hig_to_haqqani:
   operational_trust: 10..45
   joint_operation_willingness: 10..50
   territorial_competition: 15..65
+  recruitment_competition: 10..60
   revenue_competition: 15..65
   fear_of_betrayal: 25..70
   conflict_risk: 15..65
   negotiation_channel_quality: 20..65
 ```
 
-```text
-DEFAULT_RELATIONSHIP = PRAGMATIC_UNCERTAINTY
-```
-
-## 5. Regionale Beziehungsinstanzen
-
-Eine landesweite Beziehung reicht nicht aus. Zusätzlich existiert je überlappendem Raum ein lokaler Zustand:
+## 7. Regionale Beziehungsinstanzen
 
 ```yaml
 regional_relationship:
@@ -230,22 +445,23 @@ regional_relationship:
   shared_route_use: 0..100
   shared_safehaven_use: 0..100
   territorial_dispute: 0..100
+  resource_source_dispute: 0..100
   tax_or_revenue_dispute: 0..100
   recruitment_dispute: 0..100
+  materiel_dispute: 0..100
   recent_cooperation: 0..100
   recent_violence: 0..100
   mediator_present: true|false
   local_agreement_ids: []
 ```
 
-Beispiel: Taliban und HIG können in einem Distrikt kooperieren, während sie in einem angrenzenden Distrikt um Steuereinnahmen kämpfen.
+## 8. Verhandlungskanäle
 
-## 6. Verhandlungskanäle
-
-Verhandlungen benötigen einen tatsächlichen Kanal:
+Verhandlungen benötigen einen tatsächlichen Kanal.
 
 ```text
 DIRECT_COMMANDER_CHANNEL
+FORMAL_LIAISON
 TRUSTED_EMISSARY
 RELIGIOUS_MEDIATOR
 LOCAL_ELDER
@@ -269,11 +485,9 @@ negotiation_channel:
   active: true|false
 ```
 
-Ohne Kanal kann kein Commander direkt mit einem anderen kommunizieren. Schlechte Kanäle können Nachrichten verzerren, verspätet übermitteln oder kompromittieren.
+Ohne Kanal kann kein Commander direkt mit einem anderen kommunizieren.
 
-## 7. Verhandlungsobjekte
-
-Zulässige Verhandlungsgegenstände:
+## 9. Verhandlungsgegenstände
 
 ```text
 INFORMATION_EXCHANGE
@@ -281,21 +495,25 @@ TRANSIT_ACCESS
 SAFEHOUSE_ACCESS
 ROUTE_DECONFLICTION
 TEMPORARY_AREA_DECONFLICTION
-RESOURCE_TRANSFER
+FINANCE_TRANSFER
+MATERIEL_TRANSFER
+RESOURCE_SOURCE_SHARE
 SPECIALIST_SUPPORT
+ENABLER_SUPPORT
+TRAINING_SUPPORT
+PARTNER_OPERATION
 JOINT_OPERATION
-PRISONER_OR_DETAINEE_MATTER
-CREDIT_AND_PROPAGANDA_CLAIM
 REVENUE_SHARING
 LOCAL_NON_AGGRESSION
 TEMPORARY_TRUCE
 MEDIATION_OF_COMMANDER_DISPUTE
 WITHDRAWAL_FROM_DISPUTED_AREA
+REINTEGRATION_OR_DEFECTION_MATTER
 ```
 
-Nicht jeder Commander darf alle Gegenstände mit gleicher Wahrscheinlichkeit anbieten. HIG erhält beispielsweise eine höhere Grundneigung zu politischen Absprachen; Haqqani kann eher spezifische Capability- oder Transitvereinbarungen bevorzugen.
+Keine Verhandlung kann Population Ownership übertragen.
 
-## 8. Vereinbarungsmodell
+## 10. Vereinbarungsmodell
 
 ```yaml
 agreement:
@@ -308,6 +526,9 @@ agreement:
   public_or_secret: public|secret|partially_disclosed
   obligations: []
   benefits: []
+  resource_transfer_refs: []
+  partner_force_refs: []
+  enabler_refs: []
   verification_method: []
   breach_conditions: []
   termination_conditions: []
@@ -316,8 +537,6 @@ agreement:
   campaign_state: proposed|negotiating|active|suspended|breached|expired|terminated
 ```
 
-### 8.1 Verpflichtung
-
 ```yaml
 obligation:
   obligation_id: string
@@ -325,19 +544,66 @@ obligation:
   action: string
   deadline: timestamp|null
   resource_ceiling: {}
+  ownership_boundary: string|null
   verification: string
   fulfilled: true|false|unknown
 ```
 
-## 9. Verhandlungsentscheidung
+## 11. Ressourcen- und Unterstützungssemantik
 
-Der empfangende Commander bewertet:
+### 11.1 Resource Transfer
+
+Nur folgende gemeinsamen Grundressourcen werden als ResourceAccount-Transfer gebucht:
+
+```text
+FINANCE
+MATERIEL
+RECRUITABLE_MANPOWER only where explicitly valid
+```
+
+Ein Transfer benötigt:
+
+- Quelle und Ziel;
+- Menge;
+- Eigentumsübergang oder Leihstatus;
+- Agreement;
+- gegebenenfalls Transportoperation;
+- Verlust- und Abbruchregel;
+- eindeutige Transfer-ID.
+
+### 11.2 Capability Support
+
+Folgende Unterstützungen sind keine Grundressourcentransfers:
+
+```text
+ISR_SUPPORT
+MEDEVAC_SUPPORT
+CAS_SUPPORT
+EOD_SUPPORT
+ADVISOR_SUPPORT
+SPECIALIST_SUPPORT
+AIRLIFT_SUPPORT
+```
+
+Sie bleiben Eigentum der bereitstellenden Fraktion oder Organisation und werden zeitlich reserviert.
+
+### 11.3 ResourceSource Share
+
+Eine Vereinbarung kann einen Anteil an einer ResourceSource verändern, aber keine ResourceSource aus dem Nichts erzeugen.
+
+```text
+SHARE_CHANGE
+!= NEW_RESOURCE
+```
+
+## 12. Verhandlungsentscheidung
 
 ```text
 EXPECTED_BENEFIT
-+ BLUE_PRESSURE_RELIEF
++ PRESSURE_RELIEF
 + RESOURCE_GAIN
 + ACCESS_GAIN
++ CAPABILITY_GAIN
 + RIVAL_CONTAINMENT
 + POLITICAL_GAIN
 - BETRAYAL_RISK
@@ -350,15 +616,14 @@ EXPECTED_BENEFIT
 
 Zusätzliche Persönlichkeitsmodifikatoren:
 
-- Pragmatismus erhöht Annahme zweckmäßiger Absprachen.
+- Pragmatismus erhöht die Annahme zweckmäßiger Absprachen.
 - ideologische Starrheit reduziert bestimmte Kompromisse.
 - Misstrauen erhöht Verifikationsanforderungen.
 - Prestigeempfindlichkeit erschwert einseitig wirkende Zugeständnisse.
-- hohe politische Sensibilität kann eine militärisch günstige, politisch schädliche Vereinbarung verhindern.
+- politische Sensibilität kann eine militärisch günstige, politisch schädliche Vereinbarung verhindern.
+- Souveränitätssensibilität beeinflusst Afghan-State-Reaktionen auf ISAF-Vorgaben.
 
-## 10. Informationsaustausch
-
-Information wird nicht als vollständige Datenbankfreigabe behandelt.
+## 13. Informationsaustausch
 
 ```yaml
 shared_information:
@@ -373,37 +638,32 @@ shared_information:
   expiry: timestamp|null
 ```
 
-Ein Commander kann:
+```text
+SAME_DCS_COALITION
+!= SHARED_INFORMATION_DATABASE
+```
 
-- wahre Information vollständig teilen;
-- Teile zurückhalten;
-- Unsicherheit verschweigen;
-- eine Meldung absichtlich verzerren;
-- falsche Attribution verwenden;
-- einen Rivalen mit korrekter, aber selektiver Information lenken.
-
-Die technische Ebene muss zwischen Irrtum und bewusster Täuschung unterscheiden.
-
-## 11. Gemeinsame Operationen
-
-Eine gemeinsame Operation besitzt keinen automatisch gemeinsamen Oberbefehl.
+## 14. Gemeinsame und Partneroperationen
 
 ```yaml
-joint_operation:
+joint_or_partner_operation:
   operation_id: string
   participants: []
-  sponsor: string
-  lead_actor: string|null
+  lead_faction: string
+  supporting_factions: []
   shared_objective: string
   individual_objectives: {}
-  geographic_scope: []
-  contribution_commitments: {}
+  force_package_contributions: {}
+  capability_contributions: {}
+  resource_contributions: {}
+  ownership_boundaries: {}
+  command_relationships: {}
   information_sharing_scope: []
   deconfliction_rules: []
   credit_sharing_rule: string
   abort_rights: {}
   withdrawal_rules: []
-  betrayal_risk: 0..100
+  betrayal_or_control_failure_risk: 0..100
   status: proposed|assembling|ready|executing|complete|failed|aborted|disputed
 ```
 
@@ -413,29 +673,26 @@ Jeder Teilnehmer behält:
 - eigene Ressourcenbuchung;
 - eigenes Lagebild;
 - eigenes Abbruchrecht;
-- eigene versteckte Ziele;
 - eigene Bewertung des Ergebnisses.
 
-### 11.1 Verdeckte Ziele
+## 15. Verdeckte Ziele
 
-Mögliche versteckte Ziele:
+Zulässige abstrakte versteckte Ziele:
 
 ```text
 TEST_COUNTERPART_RELIABILITY
 GAIN_ROUTE_ACCESS
 OBSERVE_COUNTERPART_CAPABILITY
-SHIFT_LOSSES_TO_COUNTERPART
+SHIFT_COSTS_TO_COUNTERPART
 CLAIM_DISPROPORTIONATE_CREDIT
 WEAKEN_LOCAL_RIVAL
 CREATE_FUTURE_DEPENDENCY
-EXPOSE_COUNTERPART_NETWORK
+PROTECT_AUTONOMY
 ```
 
-Verdeckte Ziele dürfen nur innerhalb definierter Persönlichkeits-, Beziehungs- und Szenariogrenzen gewählt werden.
+Verdeckte Ziele dürfen keine technischen Anleitungen oder direkte Umgehung von Validatoren enthalten.
 
-## 12. Deconfliction ohne Kooperation
-
-Zwei Commander können eine Zusammenarbeit ablehnen, aber dennoch gegenseitige Störung vermeiden.
+## 16. Deconfliction ohne Kooperation
 
 ```yaml
 deconfliction_measure:
@@ -451,240 +708,127 @@ Beispiele:
 
 - getrennte Operationsfenster;
 - unterschiedliche Routen;
-- keine Rekrutierung in einem definierten lokalen Netzwerk;
-- keine Besteuerung bestimmter Märkte durch beide Seiten;
-- gegenseitige Warnung vor BLUE-Operationen ohne weitergehenden Informationsaustausch.
+- keine gleichzeitige Nutzung eines AccessNodes;
+- keine Rekrutierung in einem definierten Netzwerk;
+- abgestimmte Rückzugs- oder Unterstützungsfenster.
 
-## 13. Konflikteskalation
+## 17. Konkurrenz um gemeinsame Ressourcen
 
-### 13.1 Eskalationsleiter
+### 17.1 Recruitable Manpower
+
+Afghan State, Taliban, Haqqani und HIG können um regionale Anteile konkurrieren. ISAF rekrutiert daraus keine Eigenkräfte.
+
+### 17.2 Finance
+
+Konkurrenz kann bestehen um:
+
+- formale staatliche Einnahmen;
+- lokale Wirtschaftszuflüsse;
+- illegale Einnahmen;
+- externe RED-Unterstützung;
+- internationale Unterstützung für Afghan State.
+
+Nicht jede Fraktion ist für jede Quelle zulässig.
+
+### 17.3 Materiel
+
+Materiel kann:
+
+- übertragen;
+- erbeutet;
+- umgeleitet;
+- zerstört;
+- verloren;
+- zwischen RED-Fraktionen umkämpft werden.
+
+## 18. Eskalationsleiter
 
 ```text
 POLITICAL_DISPUTE
--> PRIVATE_WARNING
--> WITHHOLD_INFORMATION
--> WITHHOLD_SUPPORT
--> COMPETE_FOR_LOCAL_ACTORS
--> OBSTRUCT_ROUTE_OR_REVENUE
--> DETAIN_OR_DISARM_LOCAL_MEMBERS
--> LIMITED_LOCAL_CLASH
--> RETALIATORY_ATTACK
--> SUSTAINED_LOCAL_CONFLICT
+RESOURCE_OR_ACCESS_DISPUTE
+WITHHOLD_SUPPORT
+LOCAL_OBSTRUCTION
+PUBLIC_ACCUSATION
+TARGETED_PRESSURE
+LOCALIZED_CLASH
+SUSTAINED_LOCAL_CONFLICT
+BROADER_RELATIONSHIP_BREAKDOWN
 ```
 
-Nicht jeder Streit muss diese Leiter vollständig durchlaufen.
-
-### 13.2 Eskalationsfaktoren
+ISAF/Afghan-State-Friktion verwendet zusätzlich:
 
 ```text
-territorial_overlap
-revenue_dispute
-recruitment_poaching
-broken_agreement
-casualties_caused
-prestige_humiliation
-suspected_betrayal
-external_sponsor_pressure
-weak_mediation
-high_local_commander_autonomy
+PARTNER_DISAGREEMENT
+SUPPORT_DELAY
+PARTNER_REFUSAL
+COMMAND_RELATIONSHIP_DISPUTE
+TRANSITION_DISPUTE
+POLITICAL_ESCALATION
 ```
 
-### 13.3 Deeskalationsfaktoren
+Sie führt nicht automatisch zu bewaffnetem Konflikt.
+
+## 19. Beziehungsereignisse
 
 ```text
-increased_blue_pressure
-credible_mediator
-resource_exhaustion
-leadership_intervention
-mutual_dependency
-shared_immediate_threat
-compensation
-territorial_separation
-replacement_of_local_commander
+INFORMATION_SHARED
+INFORMATION_WITHHELD
+FINANCE_SUPPORT_OFFERED
+MATERIEL_SUPPORT_OFFERED
+TRAINING_SUPPORT_OFFERED
+PARTNER_OPERATION_REQUESTED
+PARTNER_OPERATION_ACCEPTED
+PARTNER_OPERATION_DECLINED
+AGREEMENT_FULFILLED
+AGREEMENT_BREACHED
+CONTROL_FAILURE_REPORTED
+RESOURCE_SOURCE_SHARE_CHANGED
+RESOURCE_TRANSFER_LOST
+LOCAL_CLASH
+PUBLIC_CREDIT_DISPUTE
+TRANSITION_PRESSURE_CHANGED
+SOVEREIGNTY_GRIEVANCE_CHANGED
 ```
 
-## 14. Vertragsbruch und Attribution
-
-Ein Vertragsbruch ist nicht automatisch eindeutig.
-
-```yaml
-breach_assessment:
-  agreement_id: string
-  alleged_breaching_party: string
-  observed_event: string
-  attribution_confidence: 0..100
-  accidental_or_deliberate: accidental|reckless|deliberate|unknown
-  local_or_authorized: local|central|unknown
-  severity: 0..100
-  public_visibility: 0..100
-```
-
-Der Commander kann auf einen vermuteten Bruch reagieren, obwohl die Attribution falsch ist. Das eröffnet BLUE-Täuschung und Missverständnisse als Kampagnenelemente.
-
-## 15. Prestige und Zuschreibung von Erfolgen
-
-Erfolge besitzen eine materielle und eine politische Attribution.
-
-```yaml
-credit_claim:
-  event_id: string
-  claimant: string
-  claimed_contribution: 0..100
-  actual_contribution_known_to_state: 0..100
-  evidence_presented: []
-  audience: local|regional|national|external
-  counterpart_dispute: true|false
-```
-
-Mögliche Folgen:
-
-- Rekrutierungsvorteil;
-- höheres Prestige;
-- mehr externe Unterstützung;
-- Verschlechterung der Partnerbeziehung;
-- Forderung nach größerem Ressourcenanteil;
-- lokaler Wechsel von Kommandeuren oder Unterstützern.
-
-## 16. Ressourcenübertragung
-
-```yaml
-resource_transfer:
-  transfer_id: string
-  sender: string
-  receiver: string
-  resource_type: string
-  amount: 0..100
-  ownership_after_transfer: receiver|temporary_loan|shared_use
-  expected_return: string|null
-  delivery_route: string|null
-  compromise_risk: 0..100
-  conditions: []
-  status: proposed|reserved|in_transit|delivered|intercepted|diverted|disputed
-```
-
-Ressourcen können unterwegs abgefangen, umgeleitet oder nur teilweise geliefert werden. Eine Zusage ist noch kein Bestand beim Empfänger.
-
-## 17. Einfluss lokaler Kommandeure
-
-Lokale Unterführer können zentrale Beziehungen verbessern oder beschädigen.
-
-```yaml
-local_commander_diplomacy:
-  commander_id: string
-  counterpart_contact: string
-  authority_to_negotiate: 0..100
-  personal_trust: 0..100
-  private_interest: 0..100
-  compliance_with_central_policy: 0..100
-  ability_to_spoil_agreement: 0..100
-```
-
-Mögliche Ereignisse:
-
-- lokale eigenmächtige Waffenruhe;
-- geheime Einnahmenteilung;
-- Angriff trotz zentraler Deconfliction;
-- persönliche Fehde;
-- Vermittlung eines regionalen Abkommens;
-- falsche Meldung an die eigene Führung.
-
-## 18. BLUE-Einwirkungsmöglichkeiten
-
-BLUE kann Beziehungen beeinflussen, ohne vollständige Kontrolle zu besitzen:
+## 20. Testfälle
 
 ```text
-DISRUPT_COMMUNICATION_CHANNEL
-EXPOSE_RESOURCE_COMPETITION
-CREATE_ATTRIBUTION_UNCERTAINTY
-PROTECT_DEFECTING_COMMANDER
-INTERDICT_SHARED_ROUTE
-PRESSURE_COMMON_SUPPORT_NODE
-PUBLICIZE_ABUSE_OR_BROKEN_PROMISE
-CHANGE_LOCAL_POWER_BALANCE
-OFFER_POLITICAL_CHANNEL
-CONDUCT_DECEPTION_OPERATION
+REL-001 ISAF requests Afghan-led operation
+REL-002 Afghan State rejects operation without enablers
+REL-003 ISAF materiel transfer preserves Afghan ownership
+REL-004 classified information is only partially shared
+REL-005 Taliban and HIG compete for regional manpower
+REL-006 Haqqani gains larger external support share
+REL-007 local RED non-aggression does not create strategic alliance
+REL-008 HIG agreement fails through local control failure
+REL-009 Taliban-Haqqani joint operation retains separate resources
+REL-010 physical checkpoint control does not guarantee full revenue share
+REL-011 same DCS coalition does not permit direct force tasking
+REL-012 duplicate transfer result does not create second credit
 ```
 
-Erfolg hängt von Intelligence-Qualität, Glaubwürdigkeit und tatsächlichen Bruchlinien ab. Die Simulation darf keine automatische Spaltung aufgrund pauschaler ethnischer oder tribaler Annahmen erzeugen.
+## 21. Acceptance-Kriterien
 
-## 19. Ereignisse und Beziehungsänderungen
+Das Modell ist akzeptiert, wenn:
 
-```yaml
-relationship_event:
-  event_id: string
-  actors: []
-  event_type: string
-  region: string|null
-  verified_by_actor: {}
-  trust_delta: {}
-  grievance_delta: {}
-  dependency_delta: {}
-  competition_delta: {}
-  conflict_risk_delta: {}
-  memory_significance: 0..100
-```
+- alle gerichteten Beziehungen der fünf Fraktionen persistieren können;
+- ISAF und Afghan State als verbündete, aber autonome Partner behandelt werden;
+- Afghan-State-/RED-Konkurrenz nicht auf reine Feindschaft reduziert wird;
+- RED-Konkurrenz um ResourceSources und Zugangsanteile abbildbar ist;
+- Finance-/Materiel-Transfers von Capability Support getrennt sind;
+- Partneroperationen Eigentum und Befehlsgewalt nicht vermischen;
+- Agreements zeitlich, regional und überprüfbar sind;
+- lokale Kooperation keine strategische Allianz erzeugt;
+- Beziehungsänderungen event-sourced und reproduzierbar sind.
 
-Beziehungswerte ändern sich durch Ereignisse, nicht allein durch Zeit. Langsamer Drift ist zulässig, beispielsweise wenn über lange Zeit kein Kontakt besteht.
-
-## 20. LLM-Kommunikationsformat
-
-```json
-{
-  "message_id": "MSG-2041",
-  "sender": "HIG_COMMANDER",
-  "recipient": "TALIBAN_COMMANDER",
-  "channel_id": "CH-WARDAK-ELDER-02",
-  "message_type": "PROPOSE_DECONFLICTION",
-  "proposal": {
-    "area": ["WARDAK-SECTOR-04"],
-    "valid_hours": 72,
-    "obligations": [
-      "no_recruitment_from_counterpart_cells",
-      "separate_route_use_windows"
-    ]
-  },
-  "stated_reason": "Avoid losses while BLUE pressure remains high.",
-  "requested_response_by": "timestamp",
-  "disclosure": "secret"
-}
-```
-
-Das LLM darf nur definierte Nachrichtentypen verwenden. Freier Text ist erläuternd, nicht technisch verbindlich.
-
-## 21. Harte Regeln
-
-1. Beziehungen sind bilateral und asymmetrisch.
-2. Landesweite und regionale Beziehungen werden getrennt geführt.
-3. Kooperation überträgt keine automatische Befehlsgewalt.
-4. Informationen, Ressourcen und Kräfte bleiben Eigentum des jeweiligen Akteurs, sofern kein validierter Transfer vorliegt.
-5. Eine gemeinsame Operation benötigt explizite Beiträge und Abbruchrechte.
-6. Vereinbarungen benötigen Kanal, Laufzeit, Pflichten und Bruchbedingungen.
-7. Lokale Gewalt wird nicht automatisch der zentralen Führung zugerechnet.
-8. Haqqani-HIG-Beziehungen bleiben ohne weitere Quellen variabel und unsicher.
-9. BLUE kann Bruchlinien beeinflussen, aber keine unbegründeten Fraktionskonflikte erzwingen.
-10. Historische Kooperation oder Feindschaft wird nicht als unveränderliche Runtime-Regel behandelt.
-
-## 22. Abnahmekriterien
-
-Das Modell ist ausreichend, wenn:
-
-- alle sechs gerichteten Beziehungen getrennt speicherbar sind;
-- lokale Beziehungen vom strategischen Verhältnis abweichen können;
-- Absprachen, Informationsaustausch, Ressourcentransfers und gemeinsame Operationen eigene Zustände besitzen;
-- Vertragsbruch unsicher attribuiert werden kann;
-- lokale Kommandeure zentrale Vereinbarungen stören können;
-- Konkurrenz und Kooperation gleichzeitig möglich sind;
-- BLUE glaubwürdige Möglichkeiten zur Netzwerkanalyse und Beeinflussung erhält;
-- keine Beziehung eine automatische Allianz, Feindschaft oder Ressourcenvereinigung erzeugt.
-
-## 23. Nächster Schritt
-
-Als nächstes werden die fraktionsspezifischen Dossiers ausgearbeitet. Reihenfolge:
+## 22. Querverweise
 
 ```text
-04-taliban-commander-dossier.md
-05-haqqani-commander-dossier.md
-06-hig-commander-dossier.md
+02-common-commander-model.md
+07-runtime-rulebook-and-action-schema.md
+08-commander-memory-belief-and-information-model.md
+09-orchestrator-architecture-and-adjudication.md
+13-campaign-state-and-event-store-schema.md
+16-afghan-state-and-ansf-commander-dossier.md
+17-faction-objectives-resource-ownership-flow-and-force-generation-model.md
 ```
-
-Das Taliban-Dossier bildet zuerst das politisch-territoriale Referenzprofil. Haqqani und HIG werden anschließend ausdrücklich als andersartige Commander und nicht als Varianten desselben Modells formuliert.
