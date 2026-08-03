@@ -75,6 +75,7 @@ Ein offener Draft-PR ist keine `main`-Autorität. Ein branchgebundener PASS blei
 | CERP-Projektaktivität | [`OMW-STAB-CERP-REGIONAL-PROJECTS-2009-2010`](69-cerp-regional-projects-2009-2010.md) | `BINDING` | sechs regionale CIDNE-/CERP-Pakete |
 | NATO/ISAF-SIGACT-Muster | [`OMW-RED-SIGACT-PATTERNS-2010-08-10`](70-nato-isaf-sigact-patterns-august-october-2010.md) | `BINDING` | sieben Narrative und sechs Kartenpakete, 29.08.–24.10.2010 |
 | ISAF-RC-/PRT-Karten und zusätzliche historische Quellen | [`OMW-HIST-ISAF-FORCE-POSTURE-MAPS-ADDITIONAL-SOURCES`](71-isaf-force-posture-maps-and-additional-historical-sources.md) | `BINDING` | Force-Posture-Karten, 2009 Essay, 2008 RC-East OSINT und historische Sanktionsliste |
+| Russland in OEF/ISAF und Afghanistan | [`OMW-HIST-RUSSIA-OEF-ISAF-AFGHANISTAN`](82-russia-oef-isaf-afghanistan-role.md) | `BINDING` | Primärquellen zu Transit, Mi-17-Wartung und Drogenbekämpfung; Nachperioden-Vorwürfe ausdrücklich getrennt |
 | Afghanistan-AIP: Luftraum, Flugplätze, Navaids und Verfahren | [`OMW-AIR-AFGHANISTAN-AIP-2008`](72-afghanistan-aip-2008-airspace-aerodromes-and-flight-procedures.md) | `BINDING` | offizielle Afghanistan AIP, 29th Edition, effective 20.11.2008 |
 | KAIA Local Operating Procedures | [`OMW-AIR-KAIA-LOCAL-OPERATING-PROCEDURES-2009`](73-kaia-local-operating-procedures-2009.md) | `BINDING` | NATO/ISAF KAIA LOP V9.7, effective 20.10.2009 |
 | Systemarchitektur | [`OMW-ARCH-SYSTEM`](03-system-architecture.md) | `BINDING` | Dokument 37 |
@@ -165,6 +166,7 @@ Ein offener Draft-PR ist keine `main`-Autorität. Ein branchgebundener PASS blei
 - [71 – ISAF Force-Posture Maps und zusätzliche historische Quellen](71-isaf-force-posture-maps-and-additional-historical-sources.md)
 - [72 – Afghanistan AIP 2008](72-afghanistan-aip-2008-airspace-aerodromes-and-flight-procedures.md)
 - [73 – KAIA Local Operating Procedures 2009](73-kaia-local-operating-procedures-2009.md)
+- [82 – Russland, OEF und ISAF in Afghanistan](82-russia-oef-isaf-afghanistan-role.md)
 
 ## 5. Thematische Einstiegspunkte
 
@@ -195,6 +197,7 @@ Ein offener Draft-PR ist keine `main`-Autorität. Ein branchgebundener PASS blei
 - [`64-afghanistan-order-of-battle-july-2011.md`](64-afghanistan-order-of-battle-july-2011.md)
 - [`72-afghanistan-aip-2008-airspace-aerodromes-and-flight-procedures.md`](72-afghanistan-aip-2008-airspace-aerodromes-and-flight-procedures.md)
 - [`73-kaia-local-operating-procedures-2009.md`](73-kaia-local-operating-procedures-2009.md)
+- [`82-russia-oef-isaf-afghanistan-role.md`](82-russia-oef-isaf-afghanistan-role.md)
 
 ### Routen, C-IED und Convoys
 

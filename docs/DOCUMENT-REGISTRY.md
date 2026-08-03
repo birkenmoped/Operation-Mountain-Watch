@@ -100,6 +100,7 @@ Eine Nummer und eine stabile `document_id` dürfen im aktuellen Bestand jeweils 
 | 79 | `OMW-HIST-BALUCH-KALAY-AIR-ASSAULT-2005` | `docs/79-baloch-kalay-air-assault-and-company-combat-2005.md` | `BINDING` | Baluch-Kalay-Air-Assault, Company Combat und adaptive Führung |
 | 80 | `OMW-COIN-CULTURAL-TURN-HUMAN-TERRAIN-CRITICISM` | `docs/80-cultural-turn-human-terrain-and-coin-criticism.md` | `BINDING` | Cultural Turn, Human Terrain und quellenkritische COIN-Referenz |
 | 81 | `OMW-AIR-SALERNO-MANIFEST` | `docs/81-salerno-air-operations-manifest.md` | `BINDING` | Salerno-ME-Baseline und Objektvertrag |
+| 82 | `OMW-HIST-RUSSIA-OEF-ISAF-AFGHANISTAN` | `docs/82-russia-oef-isaf-afghanistan-role.md` | `BINDING` | russische Rolle, Kooperation, Konkurrenz und Evidenzgrenzen in OEF/ISAF |
 
 ## 3. Reservierte Nummern auf offenen Branches
 
