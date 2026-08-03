@@ -180,7 +180,7 @@ isaf_to_afghan_state:
   transition_pressure: 50..90
   perceived_respect_for_sovereignty: 45..85
 
- afghan_state_to_isaf:
+afghan_state_to_isaf:
   formal_alignment: 85..100
   political_alignment: 60..90
   political_trust: 40..80
