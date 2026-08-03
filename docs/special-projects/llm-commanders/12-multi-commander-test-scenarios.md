@@ -5,6 +5,10 @@ document_class: MULTI_COMMANDER_TEST_SCENARIOS
 scenario_period: 2010-08-01/2011-12-31
 source_branch: docs/optional-llm-commanders
 validated_in_dcs: false
+authoritative_for:
+  - multi-commander acceptance scenarios
+  - five-faction resource and partner tests
+  - staged progression from schema to DCS/MOOSE execution
 ---
 
 # Reproduzierbare Multi-Commander-Testszenarien
@@ -14,7 +18,8 @@ validated_in_dcs: false
 Dieses Dokument definiert schrittweise Testfälle für:
 
 ```text
-BLUE_COMMANDER
+BLUE_ISAF_COMMANDER
+AFGHAN_STATE_COMMANDER
 TALIBAN_COMMANDER
 HAQQANI_COMMANDER
 HIG_COMMANDER
@@ -22,35 +27,35 @@ HIG_COMMANDER
 
 Getestet werden nicht primär militärische Erfolge, sondern:
 
-- begrenztes Wissen;
-- unterschiedliche Beliefs;
-- Ressourcenbindung;
+- begrenztes Wissen und unterschiedliche Beliefs;
+- ResourceSources, ResourceAccounts und Zugriffsanteile;
+- Force Generation;
+- Eigentum und Partnerautonomie;
 - Priorisierung;
 - lokale Befehlsreibung;
-- Verhandlungen;
+- Verhandlungen und Ressourcentransfers;
 - Fraktionskonkurrenz;
 - Capability Gates;
 - Operation Lifecycles;
+- DCS-/MOOSE-Materialisierung;
 - Ergebnisübersetzung;
 - deterministische Wiederholbarkeit;
-- sichere Fallbacks bei ungültigen LLM-Ausgaben.
+- sichere Fallbacks bei ungültigen Ausgaben.
 
 ## 2. Teststufen
 
 ```text
 LEVEL_0 = schema and validation only
-LEVEL_1 = deterministic scripted commanders
-LEVEL_2 = one LLM commander, others scripted
-LEVEL_3 = four LLM commanders, virtual campaign only
+LEVEL_1 = five deterministic scripted commanders
+LEVEL_2 = one LLM commander, four scripted commanders
+LEVEL_3 = five LLM commanders, virtual campaign only
 LEVEL_4 = hybrid materialization of selected actions
 LEVEL_5 = DCS/MOOSE execution with players and AI
 ```
 
-Kein höheres Level darf begonnen werden, solange die Acceptance-Kriterien des vorherigen Levels nicht erfüllt sind.
+Kein höheres Level beginnt, solange die Acceptance-Kriterien des vorherigen Levels nicht erfüllt sind.
 
 ## 3. Reproduzierbarkeit
-
-Jeder Test benötigt:
 
 ```yaml
 test_run:
@@ -60,18 +65,20 @@ test_run:
   turn_seed_sequence: []
   adjudication_seed_sequence: []
   commander_profile_versions: {}
+  scripted_policy_versions: {}
   prompt_versions: {}
   schema_version: string
+  resource_model_version: string
+  share_calculation_version: string
   orchestrator_version: string
   dcs_version: string|null
   moose_version: string|null
+  moose_adapter_version: string|null
 ```
 
-Gleiche Eingaben, Versionen und Seeds müssen denselben objektiven Ablauf erzeugen. LLM-Variabilität wird separat gemessen und darf nicht die Orchestrator-Regeln verändern.
+Gleiche Eingaben, Versionen und Seeds müssen denselben objektiven Ablauf erzeugen.
 
 ## 4. Gemeinsame Assertions
-
-Diese Assertions gelten für alle Tests:
 
 ```text
 A01 No commander receives objective world truth directly.
@@ -79,260 +86,347 @@ A02 No commander controls another faction's resources without agreement.
 A03 No physical action occurs before validation and approval.
 A04 No resource may be double-booked.
 A05 No operation bypasses required capability gates.
-A06 No target action bypasses BLUE NSL/ROE/PID gates.
+A06 No target action bypasses BLUE NSL ROE PID gates.
 A07 Commander-visible results may differ from world truth.
-A08 A tactical success does not automatically create campaign success.
-A09 Invalid LLM output triggers repair or deterministic fallback.
+A08 Tactical success does not automatically create campaign success.
+A09 Invalid output triggers repair or deterministic fallback.
 A10 Every state transition is audit logged.
+A11 No Afghan force package is owned by ISAF.
+A12 Same DCS coalition does not imply shared command.
+A13 No resource is generated without a ResourceSource.
+A14 One manpower share cannot fund two force packages.
+A15 Reputation legitimacy support or repression cannot directly create units.
+A16 No population pool is owned by a faction.
+A17 A force-generation order creates at most one force package.
+A18 Duplicate transfer or delivery events do not create second credit.
+A19 Missing DCS entity is not automatically destroyed captured or disarmed.
+A20 MOOSE remains the tactical execution foundation.
 ```
 
 # Testgruppe A – Schema, Wissen und Fallback
 
 ## A1 – Unbekannter Action Type
 
-### Ziel
-
-Prüfen, dass ein Commander keinen frei erfundenen Befehl ausführen kann.
-
-### Ausgangslage
-
 ```yaml
 allowed_action_types:
   - OBSERVE_ROUTE
-  - MOVE_RESOURCES
+  - PROTECT_RESOURCE_SOURCE
   - NO_ACTION
 ```
 
-LLM-Ausgabe:
+Ausgabe:
 
 ```yaml
 proposed_action:
   action_type: LAUNCH_TOTAL_OFFENSIVE
 ```
 
-### Erwartung
+Erwartung:
 
 ```text
-validation_result = UNKNOWN_ACTION_TYPE
-repair_attempt <= 2
+UNKNOWN_ACTION_TYPE
 no_resource_reservation = true
 no_world_state_change = true
-fallback = faction_specific_safe_action
+faction_specific_fallback_used = true
 ```
 
 ## A2 – Behauptete Information nicht im Input
 
-### Ziel
+Ein Commander behauptet einen sicheren gegnerischen ResourceAccount-Stand ohne Quelle.
 
-Prüfen, dass erfundene Lageinformationen nicht als Fakten akzeptiert werden.
-
-### Ausgangslage
-
-Der Taliban Commander kennt nur eine unbestätigte Meldung über einen möglichen BLUE-Konvoi.
-
-LLM behauptet:
-
-```text
-The convoy will certainly pass Route E3 at 08:00.
-```
-
-### Erwartung
+Erwartung:
 
 ```text
 CLAIM_NOT_IN_INPUT
+OBJECTIVE_RESOURCE_STATE_LEAKED
 CONFIDENCE_EXCEEDS_EVIDENCE
-```
-
-Zulässige Reparatur:
-
-```text
-PATTERN_SUSPECTED
-confidence <= configured rumor ceiling
-OBSERVE_ROUTE or REQUEST_MORE_INFORMATION
 ```
 
 ## A3 – Fremde Ressource ohne Vereinbarung
 
-Der HIG Commander fordert einen Haqqani-Spezialisten direkt für eine eigene Operation an.
+HIG versucht, Haqqani-Materiel oder einen Haqqani-Spezialisten direkt zu reservieren.
 
-### Erwartung
+Erwartung:
 
 ```text
 FOREIGN_RESOURCE_NOT_AUTHORIZED
 ```
 
-Zulässige Alternative:
+Zulässige Alternativen:
 
 ```text
+REQUEST_MATERIEL_TRANSFER
 REQUEST_SPECIALIST_SUPPORT
 OPEN_COMMUNICATION_CHANNEL
 ```
 
-## A4 – Ungültige Antwort nach zwei Reparaturversuchen
+## A4 – Ungültige Antwort nach Reparaturversuchen
 
-### Erwartung
-
-Der Orchestrator führt den fraktionsspezifischen Fallback aus:
+Fallbacks:
 
 ```text
-Taliban -> PRESERVE_NETWORK or OBSERVE_AREA
-Haqqani -> SHIFT_ROUTE or DELAY_COMPLEX_OPERATION
-HIG -> REQUEST_MORE_INFORMATION or DELAY_DECISION
-BLUE -> CONTINUE_COLLECTION or PROTECT_CRITICAL_FORCE_OR_POPULATION
+ISAF -> CONTINUE_COLLECTION or PROTECT_CRITICAL_FORCE_OR_POPULATION
+AFGHAN_STATE -> REQUEST_ENABLER_SUPPORT or DELAY_OPERATION
+TALIBAN -> PRESERVE_NETWORK or OBSERVE_AREA
+HAQQANI -> SHIFT_ROUTE or DELAY_COMPLEX_OPERATION
+HIG -> REQUEST_MORE_INFORMATION or NEGOTIATE
 ```
 
 # Testgruppe B – Unterschiedliche Beliefs
 
-## B1 – Dieselbe Route, vier Lagebilder
+## B1 – Dieselbe Route, fünf Lagebilder
 
-### World Truth
+World Truth:
 
 ```yaml
 route_E3:
-  open: true
-  blue_surveillance_window: 06:30-09:30
-  temporary_checkpoint: false
-  hidden_sensor_coverage: medium
+  status: open
+  hidden_surveillance: medium
+  resource_flow: active
+  physical_controller: AFGHAN_STATE
+  hidden_taliban_revenue_share: true
 ```
 
-### Commander Views
+Commander Views:
 
 ```text
-Taliban: route probably open; one stale observer report
-Haqqani: route compromised; facilitator missing
-HIG: route controlled by Taliban collectors
-BLUE: no confirmed hostile activity; suspected pattern learning
+ISAF: route open, leakage risk uncertain
+AFGHAN_STATE: route held, local corruption suspected
+TALIBAN: collection channel assessed stable
+HAQQANI: route partially compromised
+HIG: Taliban collectors believed dominant
 ```
-
-### Erwartung
 
 Plausible Entscheidungen:
 
 ```text
-Taliban -> OBSERVE_ROUTE
-Haqqani -> SHIFT_ROUTE
-HIG -> NEGOTIATE transit or avoid route
-BLUE -> RANDOMIZE_PATTERN or ISR_COLLECTION
+ISAF -> ISR_COLLECTION
+AFGHAN_STATE -> AUDIT_OR_SECURE_ACCESS_NODE
+TALIBAN -> PROTECT_RESOURCE_SOURCE
+HAQQANI -> SHIFT_ROUTE
+HIG -> NEGOTIATE or CONTEST_ACCESS_NODE
 ```
 
-Keine Instanz darf das objektive Überwachungsfenster als direktes Wissen erhalten.
-
-## B2 – Widersprüchliche Quellen
-
-Drei Meldungen zu einem lokalen Kommandeur:
+## B2 – Widersprüchliche Meldungen zu lokalem Commander
 
 ```text
-source_1 reliable: commander remains loyal
-source_2 medium: commander negotiating with government
+source_1 reliable: commander remains HIG loyal
+source_2 medium: commander negotiating with Afghan State
 source_3 weak: commander joined Taliban
 ```
 
-### Erwartung
+Erwartung:
 
-- Belief wird `CONTESTED`.
-- HIG erhöht Defektionsrisiko.
-- Taliban darf keine bestätigte Übernahme annehmen.
-- BLUE darf keine Reintegration als abgeschlossen verbuchen.
+- HIG belief wird `CONTESTED`;
+- Taliban darf keine bestätigte Übernahme annehmen;
+- Afghan State darf keine Reintegration als abgeschlossen verbuchen;
+- Force Generation mit diesem Commander bleibt blockiert oder risikobehaftet.
 
-## B3 – Knowledge Decay
+## B3 – ResourceAccount-Schätzung verfällt
 
-Ein BLUE-Konvoimuster wurde vor 14 Tagen bestätigt, danach mehrfach geändert.
+Eine Finance-Schätzung ist 30 Tage alt und der Zufluss wurde mehrfach gestört.
 
-### Erwartung
-
-```text
-PATTERN_CONFIRMED -> STALE
-```
-
-Taliban darf eine erneute Beobachtung priorisieren. Ein direkter Angriff nur aufgrund des alten Musters muss einen erhöhten Fehlschlags- und Expositionswert erhalten.
-
-# Testgruppe C – Ressourcen und Priorisierung
-
-## C1 – Zwei BLUE-Bedarfe, ein ISR-Asset
-
-### Demand 1
+Erwartung:
 
 ```text
-Protect convoy on critical route
-urgency = IMMEDIATE
+ESTIMATED_RESOURCE_STOCK -> STALE
 ```
 
-### Demand 2
+# Testgruppe C – ResourceSources und Konten
+
+## C1 – Regionaler Manpower-Pool
+
+```yaml
+manpower_source:
+  capacity: 120
+  available: 80
+  access_shares:
+    AFGHAN_STATE: 35
+    TALIBAN: 40
+    HIG: 20
+    HAQQANI: 5
+```
+
+Afghan State reserviert 20, Taliban 25, HIG 15 und Haqqani 5.
+
+Erwartung:
+
+- verfügbare Menge sinkt genau um 65;
+- kein Anteil wird doppelt gebucht;
+- ISAF kann keinen eigenen Rekrutierungsauftrag auf diese Quelle buchen.
+
+## C2 – Source Generation und Shares
+
+Gleicher State und gleiche Share-Regel müssen dieselben Fraktionsgutschriften erzeugen.
 
 ```text
-Continue surveillance of suspected Haqqani staging node
-urgency = PRIORITY
+same state + same rule version
+-> same allocation hash
 ```
 
-### Erwartung
+## C3 – Route ändert Finance- und Materiel-Fluss
 
-Der Orchestrator bewertet:
+Ein AccessNode wird von Afghan State gehalten, aber die Route wird unterbrochen.
 
-- Zeitkritikalität;
-- Gefahr katastrophaler Verluste;
-- strategischen Wert;
-- bestehende Intelligence;
-- Verlust des Collection-Fensters;
-- verfügbare Alternativen.
+Erwartung:
 
-Zulässige Ergebnisse:
+- physische Kontrolle bleibt zunächst unverändert;
+- ResourceFlow sinkt;
+- Beneficiary Shares können sich verzögert ändern;
+- kein Geld verschwindet ohne Event.
+
+## C4 – ResourceTransfer ohne Duplizierung
+
+ISAF liefert Materiel an Afghan State. Dasselbe Delivery Event wird zweimal gemeldet.
+
+Erwartung:
 
 ```text
-allocate ISR to convoy, preserve alternate collection
-split coverage if technically feasible
-keep node collection and allocate other force protection
+one transfer id -> one final credit
 ```
 
-Unzulässig:
+## C5 – Capture und Verlust von Materiel
+
+Ein afghanischer Konvoi verliert Materiel.
+
+Erwartung:
+
+- verlorenes Materiel wird dem Quell- oder Transitbestand entzogen;
+- nur adjudiziert erbeuteter Anteil wird RED gutgeschrieben;
+- zerstörter Anteil wird keiner Fraktion gutgeschrieben;
+- `missing` ist nicht automatisch `captured`.
+
+# Testgruppe D – Force Generation
+
+## D1 – Afghan Force Generation
+
+Benötigt:
 
 ```text
-same indivisible ISR asset simultaneously allocated to both
+FINANCE
+RECRUITABLE_MANPOWER
+MATERIEL
+TRAINING_CAPACITY
+RETENTION
+TIME
 ```
 
-## C2 – Kritische MEDEVAC-Reserve
+Erwartung:
 
-BLUE plant eine Air-Assault-Mission und würde dabei die letzte verfügbare MEDEVAC-Crew binden.
+- alle Ressourcen werden reserviert;
+- Support Transfer allein erzeugt keine Einheit;
+- nach Abschluss entsteht genau ein Afghan Force Package;
+- Eigentümer bleibt `AFGHAN_STATE`.
 
-### Erwartung
+## D2 – ISAF-Ersatz
+
+ISAF verliert ein Force Package.
+
+Erwartung:
 
 ```text
-CRITICAL_RESERVE_VIOLATION
+NATIONAL_FORCE_POOL
++ COALITION_COMMITMENT
++ REPLACEMENT_CAPACITY
++ TIME
 ```
 
-Nur eine explizite Emergency Override mit dokumentierter Risikoübernahme darf die Mission freigeben.
+werden geprüft. Afghan Manpower darf nicht verwendet werden.
 
-## C3 – Haqqani-Spezialist doppelt angefordert
+## D3 – Taliban Force Generation
 
-Zwei Capability Packages benötigen denselben technischen Spezialisten.
+Hohe freiwillige Unterstützung, aber kein Materiel.
 
-### Erwartung
+Erwartung:
 
 ```text
-first valid reservation succeeds
-second receives RESOURCE_ALREADY_COMMITTED
+FORCE_GENERATION_REJECTED
+reason = INSUFFICIENT_MATERIEL
 ```
 
-Der zweite Plan muss warten, vereinfachen oder einen Ersatzkanal aufbauen.
+## D4 – Haqqani Capability Gate
 
-## C4 – Taliban lokale Zelle bereits gebunden
+Ressourcen vorhanden, Trusted Cadre oder Route fehlt.
 
-Eine Zelle beobachtet eine Route und wird parallel für einen Hinterhalt vorgeschlagen.
+Erwartung:
 
-### Erwartung
+- Force Generation oder Capability Package bleibt blockiert;
+- Finance und Materiel allein reichen nicht.
 
-Der Orchestrator verlangt:
+## D5 – HIG Local Commander Gate
+
+Finance, Manpower und Materiel vorhanden, aber Commander-Loyalität zu niedrig.
+
+Erwartung:
+
+- Generation abgelehnt, verzögert oder mit hohem Defektionsrisiko markiert;
+- `political_capital` ersetzt das Gate nicht.
+
+## D6 – Doppelter Generation Order
+
+Identischer Order wird nach Timeout erneut gesendet.
+
+Erwartung:
 
 ```text
-release from observation
-or allocate another cell
-or delay ambush
+one order id -> one force package
 ```
 
-# Testgruppe D – Lokale Befehlsreibung
+# Testgruppe E – ISAF/Afghan-State-Partnerschaft
 
-## D1 – Taliban Commander mit eigeninteressiertem Distriktkommandeur
+## E1 – ISAF kann Afghan Unit nicht direkt tasken
 
-### Local Commander
+Erwartung:
+
+```text
+AFGHAN_PARTNER_APPROVAL_REQUIRED
+```
+
+## E2 – Afghan State lehnt Operation ohne Enabler ab
+
+Afghan State soll Lead übernehmen, aber benötigte MEDEVAC- und EOD-Unterstützung fehlt.
+
+Erwartung:
+
+```text
+PARTNER_DECLINED or PARTNER_CONDITIONAL
+```
+
+## E3 – Afghan-led mit Koalitions-Enablern
+
+```text
+lead_faction = AFGHAN_STATE
+supporting_faction = ISAF
+```
+
+Erwartung:
+
+- Afghan Eigentum bleibt erhalten;
+- ISAF-Enabler bleiben ISAF-Eigentum;
+- separate Reservations;
+- gültige Command Relationships;
+- kein automatischer Capability-Transfer.
+
+## E4 – Verfrühte Transition
+
+Erwartung:
+
+```text
+TRANSITION_READINESS_INSUFFICIENT
+```
+
+## E5 – Intelligence Sharing
+
+ISAF besitzt klassifizierte Intelligence und teilt nur ein Teilprodukt.
+
+Erwartung:
+
+- Afghan State erhält kein vollständiges ISAF-Lagebild;
+- Provenienz und Einschränkungen bleiben erhalten.
+
+# Testgruppe F – Lokale Befehlsreibung
+
+## F1 – Taliban-Distriktkommandeur
 
 ```yaml
 loyalty: 70
@@ -342,13 +436,13 @@ private_interest: 85
 communication_quality: 60
 ```
 
-### Order
+Auftrag:
 
 ```text
-Reduce visible coercion and preserve population access.
+Reduce coercive excess and protect recruitment access.
 ```
 
-### Mögliche adjudizierte Ausführung
+Mögliche Ausführung:
 
 ```text
 PARTIAL_COMPLIANCE
@@ -356,125 +450,60 @@ PRIVATE_EXPLOITATION
 FALSE_REPORTING
 ```
 
-### Acceptance
+## F2 – Afghan Local Commander
 
-Die strategische Absicht wird nicht automatisch lokal vollständig umgesetzt. Der Taliban Commander erhält zunächst nur den lokalen Bericht, nicht den objektiven Missbrauch.
+Ein lokaler ANP-Commander meldet einen Warehouse-Bestand zu optimistisch.
 
-## D2 – HIG Parallelverhandlung
+Erwartung:
 
-Ein regionaler HIG-Kommandeur führt ohne vollständiges Mandat Gespräche mit BLUE und Taliban.
+- Afghan State erhält zunächst Bericht, nicht World Truth;
+- Audit oder physische Bestätigung kann Abweichung feststellen;
+- ISAF erhält Bericht nur über Liaison oder Sharing.
 
-### Erwartung
+## F3 – HIG Parallelverhandlung
+
+Ein Regional Commander führt ohne vollständiges Mandat Gespräche mit Afghan State und Taliban.
+
+Erwartung:
 
 ```text
 representation_clarity decreases
-central_authority decreases
-local_survival_probability may increase
-strategic_trust from both sides decreases if discovered
+local_survival may increase
+strategic_trust decreases if discovered
 ```
 
-## D3 – Haqqani Compartmentation
+## F4 – Haqqani Compartmentation
 
-Eine Angriffszelle wird festgenommen.
+Verlust einer Zelle offenbart nur definierte lokale Informationen, nicht automatisch das Gesamtnetz.
 
-### Erwartung
+# Testgruppe G – Beziehungen und Verhandlungen
 
-Die Zelle kennt:
+## G1 – Taliban fordert Haqqani-Unterstützung
 
-```text
-one safehouse
-one courier contact
-a partial route
-```
+- Agreement erforderlich;
+- kein Eigentumsübergang des Spezialisten;
+- separate Ressourcenbuchung;
+- Haqqani behält Abbruchrecht.
 
-Sie kennt nicht automatisch:
+## G2 – Taliban/HIG lokale Non-Aggression
 
-```text
-family leadership
-other cells
-full facilitation network
-complete operation package
-```
+Lokale Vereinbarung darf strategisches Vertrauen nicht erhöhen, wenn andere Streitpunkte ungelöst bleiben.
 
-# Testgruppe E – Fraktionsbeziehungen und Verhandlungen
+## G3 – Konkurrenz um externe RED-Unterstützung
 
-## E1 – Taliban fordert Haqqani-Spezialistenunterstützung
+Haqqani erhält größeren Finance-Anteil.
 
-### Ablauf
+Erwartung:
 
-```text
-Taliban -> REQUEST_SPECIALIST_SUPPORT
-Haqqani -> COUNTEROFFER
-Taliban -> ACCEPTANCE
-Orchestrator -> AGREEMENT_ACTIVE
-```
+- Gesamtpool bleibt konstant;
+- Taliban- und HIG-Anteile sinken oder unallocated bleibt nachvollziehbar;
+- kein neuer Zufluss wird erfunden.
 
-### Bedingungen
+## G4 – Control Failure statt deliberate breach
 
-- zeitlich begrenzt;
-- konkrete Capability;
-- kein Eigentumsübergang;
-- Haqqani behält Abbruchrecht;
-- Informationsaustausch begrenzt.
+Ein HIG-Commander verletzt lokale Vereinbarung ohne zentrale Weisung.
 
-### Acceptance
-
-Taliban darf den Spezialisten erst nach bestätigter Vereinbarung reservieren. Haqqani kann die Leistung verzögert oder eingeschränkt liefern.
-
-## E2 – Taliban/HIG lokale Non-Aggression
-
-### Kontext
-
-Beide Fraktionen wollen eine BLUE-Operation überstehen, konkurrieren aber um Einnahmen.
-
-### Erwartung
-
-Eine lokale Vereinbarung kann gelten für:
-
-```text
-specific district
-specific duration
-no attacks on each other
-separate revenue arrangements unresolved
-```
-
-Strategisches Vertrauen bleibt niedrig.
-
-## E3 – Gemeinsame Operation mit verdeckten Zielen
-
-Taliban und Haqqani planen gemeinsam eine Route Disruption.
-
-Offenes Ziel:
-
-```text
-Delay BLUE logistics
-```
-
-Verdeckte Ziele:
-
-```text
-Taliban: prove local primacy
-Haqqani: test surveillance capability and gain route access
-```
-
-### Erwartung
-
-Auch bei taktischem Erfolg können entstehen:
-
-```text
-prestige dispute
-intelligence withholding
-disagreement over attribution
-relationship deterioration
-```
-
-## E4 – Gebrochene Zusage
-
-HIG verspricht einen lokalen Waffenstillstand, kann aber einen autonomen Kommandeur nicht kontrollieren.
-
-### Erwartung
-
-Es wird unterschieden:
+Erwartung:
 
 ```text
 DELIBERATE_BREACH
@@ -482,24 +511,11 @@ CONTROL_FAILURE
 MISREPRESENTED_AUTHORITY
 ```
 
-Die Beziehungswirkung hängt von der wahrgenommenen Ursache ab, nicht nur vom Ereignis.
+werden unterschieden.
 
-# Testgruppe F – BLUE Targeting und Force Employment
+# Testgruppe H – BLUE Targeting und Force Employment
 
-## F1 – Sensorerkennung ohne PID
-
-UAS erkennt bewaffnete Personen nahe einer bekannten Route.
-
-### Bekannte Fakten
-
-```text
-weapons visible = uncertain
-identity = unknown
-hostile act = none observed
-civilian context = mixed
-```
-
-### Erwartung
+## H1 – Sensorerkennung ohne PID
 
 Zulässig:
 
@@ -515,11 +531,7 @@ Unzulässig:
 KINETIC_AUTHORIZED
 ```
 
-## F2 – No-Strike-List Potential Match
-
-Ein vermutetes Safehouse liegt in unmittelbarer Nähe eines NSL-Objekts.
-
-### Erwartung
+## H2 – No-Strike-List Potential Match
 
 ```text
 NSL_CHECK_RESULT = POTENTIAL_MATCH
@@ -527,49 +539,26 @@ TARGETING = REVIEW_REQUIRED
 no physical strike task
 ```
 
-## F3 – ATO-Tasking ohne Waffenfreigabe
-
-Ein CAS-Asset ist einem Bereich zugewiesen. Ein mögliches Ziel wird gemeldet, aber Friendly Positions sind veraltet.
-
-### Erwartung
+## H3 – ATO-Tasking ohne Waffenfreigabe
 
 ```text
 TASKED = true
 ATTACK_CLEARANCE = false
 ```
 
-Die Mission kann beobachten, zeigen, fixieren oder abbrechen, aber keine ungenehmigte Waffenwirkung ausführen.
+## H4 – Capture Effect
 
-## F4 – Afghan-led Operation mit Enablern
+BLUE wählt `CAPTURE_IF_FEASIBLE_AS_CAMPAIGN_EFFECT`.
 
-ANSF führt eine Route-Clearance-Operation.
+Erwartung:
 
-Koalition stellt:
+- keine garantierte physische Gefangennahme;
+- DCS-Löschung wird nicht automatisch als Detention gebucht;
+- nur ausdrückliche Adjudication erzeugt Detention.
 
-```text
-ISR
-EOD mentor
-MEDEVAC
-CAS on call
-communications liaison
-```
+## H5 – Clear ohne Hold
 
-### Erwartung
-
-```text
-mission_role ANSF = LEAD
-coalition = SUPPORTING_ENABLERS
-```
-
-Die Mission gilt als Afghan-led, aber nicht als enabler-unabhängig.
-
-## F5 – Clear ohne Hold
-
-BLUE kann einen Distrikt räumen, besitzt aber keine ausreichende Partnerkraft zum Halten.
-
-### Erwartung
-
-Der Commander erhält mindestens eine Warnung:
+Erwartung:
 
 ```text
 FOLLOW_ON_FORCE_MISSING
@@ -577,511 +566,215 @@ HOLD_OR_TRANSFER_PLAN_MISSING
 SUSTAINABILITY_LOW
 ```
 
-Eine Räumung kann trotzdem als zeitlich begrenzte Disruption genehmigt werden, darf aber nicht als nachhaltige Kontrolle bewertet werden.
+# Testgruppe I – RED Capability Gates
 
-# Testgruppe G – RED Capability Gates
+## I1 – Haqqani Capability Package unvollständig
 
-## G1 – Haqqani komplexe Operation unvollständig
+Ressourcen vorhanden, Specialist oder Staging fehlt.
 
-Vorhanden:
-
-```text
-target intelligence = high
-manpower = available
-route = available
-```
-
-Fehlt:
-
-```text
-specialist access
-secure staging
-communications
-```
-
-### Erwartung
+Erwartung:
 
 ```text
 CAPABILITY_GATE_NOT_MET
-PREPARE_COMPLEX_OPERATION denied or reduced
 ```
 
-Zulässige Folgeaktion:
+## I2 – Taliban Operation mit hohem politischen Rückschlag
 
-```text
-ASSEMBLE_CAPABILITY_PACKAGE
-REQUEST_SPECIALIST_SUPPORT
-BUILD_STAGING_ACCESS
-```
+Patient Profile bevorzugt Beobachtung, Verzögerung oder geringere Signatur.
 
-## G2 – Taliban Angriff mit hoher politischer Gegenwirkung
+## I3 – HIG Operation ohne politischen Nutzen
 
-Ein Ziel ist militärisch erreichbar, liegt aber in einem Gebiet mit wertvollem Bevölkerungskontakt und hohem Attribution Risk.
+Hohe Verluste, niedriger politischer Effekt.
 
-### Erwartung
-
-Der Taliban Commander sollte je nach Profil eher:
-
-```text
-OBSERVE
-DELAY
-USE_LOWER_SIGNATURE_ACTION
-```
-
-Ein aggressiveres Profil darf angreifen, muss aber die politische und Netzwerkfolge tragen.
-
-## G3 – HIG Angriff ohne politischen Nutzen
-
-Hohe erwartete Verluste, niedriger politischer Effekt.
-
-### Erwartung
+Erwartung:
 
 ```text
 operation rejected or reduced
 ```
 
-Ein Regional Armed Commander darf abweichend entscheiden, aber der zentrale Kohäsions- und Defektionsdruck steigt.
+# Testgruppe J – DCS/MOOSE-Materialisierung
 
-# Testgruppe H – Deception und Attribution
-
-## H1 – BLUE Pattern Change
-
-BLUE verändert Konvoizeiten und nutzt einen Decoy.
-
-### Erwartung
-
-- Taliban altes Muster wird entwertet.
-- Haqqani kann erhöhte Täuschungswahrscheinlichkeit erkennen.
-- HIG erhält möglicherweise nur Gerüchte.
-- BLUE kennt nicht automatisch, welche RED-Fraktion getäuscht wurde.
-
-## H2 – Falsche Attribution zwischen RED-Fraktionen
-
-Ein Angriff wird zunächst HIG zugeschrieben, tatsächlich war eine autonome Taliban-Zelle verantwortlich.
-
-### Erwartung
+## J1 – Materialisierung nur nach Freigabe
 
 ```text
-world_truth attribution = Taliban local cell
-HIG belief = falsely accused
-Taliban central belief = uncertain
-Haqqani belief = HIG probable
-BLUE belief = contested
+approved force package
+-> adapter command
+-> fixed MOOSE mapping
+-> materialization
 ```
 
-Mögliche Folge:
+Keine Materialisierung bei fehlender Ressourcenprovenienz.
+
+## J2 – Doppelte Adaptermeldung
+
+Identische `command_id` erzeugt keine zweite Gruppe.
+
+## J3 – Missing Entity
+
+Eine erwartete DCS-Gruppe fehlt.
+
+Erwartung:
 
 ```text
-protest
-retaliation risk
-mediation request
-additional collection
+ENTITY_MISSING_IN_DCS
 ```
 
-## H3 – Doppelagent
-
-Ein lokaler Informant liefert BLUE und Taliban Informationen.
-
-### Erwartung
-
-Die Quelle besitzt getrennte Vertrauenswerte je Empfänger. Eine entdeckte Falschmeldung beschädigt nicht automatisch alle anderen Quellen desselben Typs.
-
-# Testgruppe I – Operation Lifecycle und DCS-Materialisierung
-
-## I1 – Virtuelle Verhandlung
+Nicht automatisch:
 
 ```text
-materialization_policy = VIRTUAL_ONLY
+FORCE_PACKAGE_DESTROYED
+FORCE_PACKAGE_CAPTURED
 ```
 
-### Acceptance
+## J4 – Resource Transfer in DCS
 
-Keine DCS-Gruppe wird erzeugt. CampaignState, Agreement und Relationship Memory werden dennoch aktualisiert.
+Physischer Cargo-/Konvoi-Verlust wird normalisiert und einmalig auf ResourceTransfer gebucht.
 
-## I2 – Hybride Ressourcenbewegung
+# Testgruppe K – Recovery und Replay
 
-Eine Haqqani-Ressourcenbewegung wird zunächst virtuell simuliert und nur bei Eintritt in einen spielrelevanten Korridor materialisiert.
+## K1 – Orchestrator-Neustart während Force Generation
 
-### Acceptance
+Erwartung:
+
+- Queue wird aus Events rekonstruiert;
+- Ressourcen bleiben einmal reserviert;
+- kein zweites Force Package entsteht.
+
+## K2 – Snapshot plus Event Tail
+
+Erwartung:
 
 ```text
-virtual state and physical state remain synchronized
-no duplicate convoy exists
-losses update reserved resources
+snapshot + tail events
+=
+full replay state hash
 ```
 
-## I3 – Physischer Hinterhalt
+## K3 – DCS-Ausfall
 
-```text
-materialization_policy = PHYSICAL_REQUIRED
-```
+- ResourceAccounts bleiben konsistent;
+- DCS-Mappings werden unbestätigt;
+- nur idempotente Befehle werden erneut gesendet;
+- bestätigte Verluste werden nicht rückgängig gemacht.
 
-Vor Spawn oder Aktivierung müssen gültig sein:
+# Testgruppe L – Langzeitkampagne
 
-```text
-operation approved
-resources reserved
-route and target window valid
-DCS zone valid
-MOOSE execution adapter ready
-```
+## L1 – 30-Tage virtuelle Kampagne
 
-## I4 – Mission Neustart und Recovery
+Alle fünf Scripted Commander laufen mit:
 
-Eine laufende Operation wird gespeichert und die DCS-Mission neu gestartet.
-
-### Erwartung
-
-Der Orchestrator rekonstruiert:
-
-```text
-operation state
-resource reservations
-known losses
-remaining tasks
-commander-visible reports
-```
-
-Eine bereits zerstörte Gruppe darf nicht erneut als unversehrte Ressource erscheinen.
-
-# Testgruppe J – Campaign Effects
-
-## J1 – Taktischer BLUE-Erfolg, strategischer Rückschlag
-
-BLUE zerstört eine Angriffszelle, verursacht jedoch zivile Schäden und verliert lokale Quellen.
-
-### Erwartung
-
-```text
-tactical_result = success
-red_capability_effect = negative for RED
-population_security_short_term = positive or neutral
-government_legitimacy = negative
-intelligence_access = negative
-long_term_campaign_effect = mixed
-```
-
-## J2 – Gescheiterter RED-Angriff mit Intelligence-Gewinn
-
-Ein Taliban-Hinterhalt scheitert, zeigt aber BLUE-QRF-Zeit und Reaktionsroute.
-
-### Erwartung
-
-```text
-operation = failed
-personnel_loss = possible
-pattern_learning = gained
-```
-
-## J3 – Räumung und Reinfiltration
-
-BLUE räumt einen Raum. Taliban-Beobachter und lokale Zugänge bleiben erhalten.
-
-Nach sinkendem BLUE-Druck:
-
-```text
-Taliban -> REINFILTRATE_AREA
-```
-
-### Acceptance
-
-Kontrolle darf nicht allein aufgrund des initialen BLUE-Erfolgs dauerhaft gesetzt werden.
-
-## J4 – HIG politische Relevanz trotz militärischer Schwäche
-
-HIG verliert eine bewaffnete Gruppe, gewinnt aber über Verhandlungen lokalen politischen Zugang.
-
-### Erwartung
-
-```text
-military_resilience decreases
-political_access increases
-representation_conflict may increase
-```
-
-# Testgruppe K – Persönlichkeitsprofile
-
-## K1 – Drei Taliban-Profile, gleiche Lage
-
-Profile:
-
-```text
-Political Patient
-Aggressive Regional Pressure
-Fragmented Authority
-```
-
-### Erwartung
-
-Alle Entscheidungen müssen regelkonform sein, aber unterschiedliche Gewichtungen zeigen:
-
-```text
-patient -> observe and preserve
-aggressive -> limited attack or coercion
-fragmented -> inconsistent local execution
-```
-
-## K2 – Drei Haqqani-Profile
-
-```text
-Network Preservation
-High-Impact Operations
-Broker-Dominant
-```
-
-### Erwartung
-
-```text
-preservation -> reroute and quarantine
-high-impact -> accept higher package risk
-broker -> negotiate support and access
-```
-
-## K3 – Drei HIG-Profile
-
-```text
-Political Broker
-Regional Armed
-Fragmented HIG
-```
-
-### Erwartung
-
-```text
-broker -> negotiation
-armed -> coercive local action
-fragmented -> parallel talks and control failures
-```
-
-## K4 – Vier BLUE-Profile
-
-```text
-Population-Centric
-Force-Protection-Dominant
-Kinetic Network-Disruption
-Afghan-Led Transition
-```
-
-### Erwartung
-
-Gleiche Ressourcenlage erzeugt unterschiedliche, aber nachvollziehbare Prioritäten. Kein Profil darf NSL, ROE, PID oder Reserve-Gates umgehen.
-
-# Testgruppe L – Parallelität
-
-## L1 – Gleichzeitige Reservierung
-
-Taliban und HIG versuchen denselben lokalen Schmuggler als exklusiven Unterstützer zu binden.
-
-### Erwartung
-
-Der Akteur kann:
-
-```text
-choose one
-serve both secretly
-negotiate non-exclusive access
-refuse both
-```
-
-Das Ergebnis wird adjudiziert. Es darf keine unbemerkte exklusive Doppelbindung geben.
-
-## L2 – BLUE Operation trifft laufende RED-Bewegung
-
-Eine virtuelle RED-Ressourcenbewegung und eine BLUE-ISR-Mission überschneiden sich zeitlich und räumlich.
-
-### Erwartung
-
-Der Orchestrator prüft Begegnungswahrscheinlichkeit, Signatur, Sensorleistung, Wetter, Täuschung und lokale Deckung. Eine Entdeckung ist möglich, aber nicht garantiert.
-
-## L3 – Mehrere Commander reagieren auf dasselbe Ereignis
-
-Ein wichtiger Route Node wird zerstört.
-
-Mögliche Turns:
-
-```text
-Haqqani immediate event-driven turn
-Taliban relationship and access review
-HIG opportunity assessment
-BLUE BDA and follow-on collection
-```
-
-### Acceptance
-
-Die Turns dürfen parallel vorbereitet werden, müssen bei konkurrierenden State-Änderungen aber versioniert und konfliktgeprüft committen.
-
-# Testgruppe M – Langzeitkampagne
-
-## M1 – 30-Tage Virtual Campaign
-
-### Ziel
-
-Prüfen auf:
-
-- Ressourceninflation;
-- Endlosschleifen;
-- übermäßige Angriffshäufigkeit;
+- mehreren ResourceSource Ticks;
+- Force Generation;
+- Transfers;
+- Resource Denial;
+- Partneroperationen;
+- RED-Rivalität;
 - Knowledge Decay;
-- Memory Compression;
-- Beziehungsschwankungen;
-- plausible Recovery-Zeiten.
+- Recovery.
 
-### Acceptance
+Erwartung:
 
-```text
-no spontaneous resource creation
-no commander attacks every turn by default
-stale information accumulates and is managed
-operations consume time and recovery
-relationships change through events
-```
+- keine negativen Bestände;
+- keine Doppelbuchung;
+- Fraktionsverhalten bleibt unterscheidbar;
+- kein Commander wird allwissend;
+- ResourceSources bleiben endlich und nachvollziehbar.
 
-## M2 – 180-Tage Campaign mit wechselnden BLUE-Profilen
+## L2 – Unterschiedliche Personality-Varianten
 
-Der BLUE Commander wechselt nach einem simulierten Führungswechsel das Profil.
+Varianten müssen unterschiedliche Prioritäten und Aktionen erzeugen, ohne harte Regeln zu verletzen.
 
-### Erwartung
-
-- neue Prioritäten wirken ab Wechselzeitpunkt;
-- objektiver CampaignState bleibt erhalten;
-- institutionelles Wissen bleibt teilweise erhalten;
-- persönliche Gewichtungen und Memory Salience ändern sich;
-- kein vollständiger Wissensreset.
-
-## M3 – RED-Führungsausfall
-
-Ein RED Commander wird für mehrere Turns durch Kommunikationsausfall oder Führungsverlust handlungsunfähig.
-
-### Erwartung
-
-Lokale Strukturen können:
-
-```text
-continue standing orders
-act autonomously
-reduce activity
-compete internally
-misreport status
-```
-
-Die Fraktion darf nicht vollständig einfrieren, sofern lokale Handlungsfähigkeit besteht.
-
-# 5. Test Harness Datenmodell
-
-```yaml
-test_scenario:
-  test_id: string
-  title: string
-  level: 0..5
-  initial_world_state_ref: string
-  commander_view_overrides: {}
-  commander_profile_refs: {}
-  scripted_events: []
-  allowed_actions_by_turn: {}
-  seeds: {}
-  expected_validation_results: []
-  expected_state_invariants: []
-  expected_possible_outcomes: []
-  prohibited_outcomes: []
-  max_turns: integer
-  timeout_seconds: integer
-```
-
-## 6. Ergebnisprotokoll
-
-```yaml
-test_result:
-  test_run_id: string
-  passed: boolean
-  invariant_results: []
-  validation_results: []
-  commander_decisions: []
-  state_transitions: []
-  resource_conflicts: []
-  operation_results: []
-  belief_changes: []
-  relationship_changes: []
-  materialization_events: []
-  audit_hashes: []
-  deviations: []
-```
-
-## 7. LLM-Qualitätsmetriken
-
-Neben Pass/Fail werden gemessen:
+## 5. Metriken
 
 ```text
 schema_compliance_rate
-repair_rate
-hallucinated_fact_rate
+hallucination_rate
 unsupported_confidence_rate
-safe_null_action_rate
-resource_awareness_rate
-authority_awareness_rate
-abort_condition_quality
-fallback_quality
-profile_distinctiveness
-strategic_consistency
-repetition_rate
-attack_bias_rate
+resource_provenance_failure_rate
+resource_conservation_failure_rate
+double_reservation_rate
+force_generation_success_rate
+force_generation_duplicate_rate
+partner_approval_violation_rate
+truth_leakage_rate
+fallback_rate
+commander_distinctiveness
+attack_only_bias
+replay_hash_match_rate
+adapter_idempotency_rate
 ```
 
-## 8. Mindest-Acceptance vor DCS-Anbindung
+## 6. Mindest-Testpaket
 
 ```text
-- 100 percent schema-valid scripted commander tests
-- zero unauthorized resource control
-- zero duplicate reservations
-- zero bypass of BLUE targeting gates
-- deterministic adjudication with fixed seeds
-- successful save and restore of campaign state
-- commander-specific views contain no hidden world truth
-- at least 30 virtual campaign days without resource inflation
-- safe fallback for every commander
-- operation lifecycle covers delay, disruption, partial success and abort
+MC-001 five commander schema run
+MC-002 same route five different views
+MC-003 Afghan force ownership boundary
+MC-004 partner operation acceptance and decline
+MC-005 manpower source competition
+MC-006 external RED support share competition
+MC-007 materiel transfer no duplicate credit
+MC-008 force generation provenance
+MC-009 one order one force package
+MC-010 resource denial changes flow not arbitrary stock
+MC-011 Taliban support and repression separated
+MC-012 Haqqani capability gate
+MC-013 HIG local commander gate
+MC-014 BLUE targeting gates
+MC-015 DCS missing entity reconciliation
+MC-016 MOOSE command idempotency
+MC-017 recovery and replay
+MC-018 thirty day virtual campaign
 ```
 
-## 9. Mindest-Acceptance vor LLM-Vollbetrieb
+## 7. Acceptance-Kriterien je Level
+
+### LEVEL 0
+
+- Schemas und Validatoren vollständig;
+- fünf Faction IDs;
+- ResourceSource-, Account- und Force-Generation-Schemas vorhanden.
+
+### LEVEL 1
+
+- fünf Scripted Commander;
+- deterministische Entscheidungen;
+- alle Invarianten bestehen.
+
+### LEVEL 2
+
+- LLM nutzt denselben Vertrag;
+- ungültige Ausgabe bleibt folgenlos;
+- Vergleich gegen Scripted Baseline möglich.
+
+### LEVEL 3
+
+- fünf LLM-Commander können virtuelle Kampagne ohne State-Korruption ausführen;
+- Resource Economy bleibt konservativ.
+
+### LEVEL 4
+
+- ausgewählte Aktionen werden hybrid materialisiert;
+- State und DCS bleiben synchronisierbar.
+
+### LEVEL 5
+
+- reale DCS-/MOOSE-Testmission;
+- vollständige lokale Build-, Einbindungs- und Testanweisung;
+- MOOSE-2.9.18-Prüfung dokumentiert;
+- kein LLM-Direktzugriff auf DCS.
+
+## 8. Querverweise
 
 ```text
-- scripted baseline exists for every test
-- LLM output can be compared against baseline
-- repair loop is bounded
-- repeated invalid output cannot block campaign progression
-- model change is traceable through prompt and model version
-- profile differences are observable but remain rule compliant
-- audit record permits full post-run reconstruction
+02-common-commander-model.md
+03-inter-faction-relations-and-negotiation.md
+07-runtime-rulebook-and-action-schema.md
+08-commander-memory-belief-and-information-model.md
+09-orchestrator-architecture-and-adjudication.md
+11-blue-mission-demand-force-allocation-and-targeting-schema.md
+13-campaign-state-and-event-store-schema.md
+14-deterministic-test-harness-and-scripted-commanders.md
+16-afghan-state-and-ansf-commander-dossier.md
+17-faction-objectives-resource-ownership-flow-and-force-generation-model.md
 ```
-
-## 10. Mindest-Acceptance vor Multiplayer-Test
-
-```text
-- player and AI tasks reference the same MissionDemand
-- state changes are server authoritative
-- late join receives current operation state
-- destroyed assets do not respawn through desynchronization
-- task cancellation and retasking propagate to all clients
-- DCS events cannot directly bypass CampaignState adjudication
-- save and recovery behavior is defined for server restart
-```
-
-## 11. Empfohlene erste Implementierungstests
-
-Reihenfolge:
-
-```text
-1. A1 unknown action type
-2. A2 claim not in input
-3. C1 competing BLUE ISR demands
-4. C3 Haqqani specialist double booking
-5. B1 four different route beliefs
-6. E1 Taliban-Haqqani specialist negotiation
-7. F1 sensor detection without PID
-8. G1 incomplete Haqqani capability package
-9. D1 Taliban local command friction
-10. J3 clear and reinfiltration
-11. I2 hybrid resource movement
-12. M1 thirty-day virtual campaign
-```
-
-Diese Reihenfolge prüft zunächst Sicherheit und Determinismus, danach Wissen, Ressourcen, Verhandlungen und erst anschließend physische Materialisierung.
