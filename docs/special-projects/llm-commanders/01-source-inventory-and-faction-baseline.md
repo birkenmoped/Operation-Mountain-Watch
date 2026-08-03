@@ -5,38 +5,212 @@ document_class: SOURCE_INVENTORY_AND_ANALYTICAL_BASELINE
 scenario_period: 2010-08-01/2011-12-31
 source_branch: docs/optional-llm-commanders
 validated_in_dcs: false
+authoritative_for:
+  - source inventory and source-readiness assessment
+  - evidence gaps for five faction dossiers
+  - evidence basis for resource sources and force generation
 ---
 
-# Quelleninventar und vorläufige Fraktionsbaseline
+# Quelleninventar und Fraktionsbaseline
 
 ## 1. Zweck
 
-Dieses Dokument erfasst die bereits vorhandene Quellenbasis für drei getrennte RED Commander und bewertet, welche Inhalte unmittelbar verwendbar, nur als Hintergrund geeignet oder noch zu ergänzen sind.
+Dieses Dokument erfasst die vorhandene Quellenbasis für fünf getrennte Kampagnen-Commander und das gemeinsame Ressourcenmodell:
 
 ```text
+BLUE_ISAF_COMMANDER
+AFGHAN_STATE_COMMANDER
 TALIBAN_COMMANDER
 HAQQANI_COMMANDER
 HIG_COMMANDER
 ```
 
-Die Bewertung betrifft historische und simulationsbezogene Eignung. Sie erzeugt noch keine Runtime-Parameter und keine endgültigen Persönlichkeitswerte.
+Es bewertet:
 
-## 2. Gemeinsame Hauptquellen aus dem Repository
+- historische und organisatorische Eignung;
+- strategische Ziele;
+- Befehls- und Eigentumsbeziehungen;
+- ResourceSources und Ressourcenzugänge;
+- Force Generation und Erhaltung;
+- Bevölkerungszugang und Informationsgewinn;
+- Beziehungen, Konkurrenz und Verhandlungen;
+- noch offene Quellenlücken.
 
-| Dokument | Hauptnutzen für das Spezialprojekt |
+Dieses Inventar erzeugt keine Runtime-Bestände, DCS-Gruppen, Templates oder endgültigen numerischen Parameter.
+
+## 2. Aussageklassen
+
+```text
+SOURCE_DOCUMENTED
+SOURCE_REPORTED_UNCORROBORATED
+ANALYTICAL_INFERENCE
+SIMULATION_ABSTRACTION
+DESIGN_DECISION
+UNKNOWN
+```
+
+Verbindliche Trennungen:
+
+```text
+historical_relationship != permanent_runtime_alliance
+formal_subordination != complete_operational_control
+shared_enemy != shared_resources
+reported_strength != DCS_spawn_count
+reported_finance != exact runtime account
+population presence != voluntary support
+```
+
+## 3. Aktuelle Modellierungsautoritäten
+
+```text
+02-common-commander-model.md
+03-inter-faction-relations-and-negotiation.md
+04-taliban-commander-dossier.md
+05-haqqani-commander-dossier.md
+06-hig-commander-dossier.md
+10-blue-commander-dossier.md
+13-campaign-state-and-event-store-schema.md
+16-afghan-state-and-ansf-commander-dossier.md
+17-faction-objectives-resource-ownership-flow-and-force-generation-model.md
+18-resource-model-integration-and-dossier-amendments.md
+```
+
+Dieses Dokument ist Quelleninventar, nicht die primäre Runtime-Autorität.
+
+## 4. Hauptprojektquellen und technische Autoritäten
+
+| Dokument oder Dokumentgruppe | Hauptnutzen |
 |---|---|
-| `OMW-RED-INSURGENT-FACTIONS-BEHAVIOR` | gemeinsame Grundlogik für Zellen, Caches, Einschüchterung, Rekrutierung, Reinfiltration, Shadow Governance und Ressourcenabstraktion |
-| `OMW-RED-KANDAHAR-HELMAND-ENEMY-SYSTEM` | Taliban-Kampagnenlogik im Süden, Support-/Attack-Zonen, Clear-Hold-Reinfiltration, Drogen- und Schattenverwaltungsbezüge |
-| `OMW-RED-EASTERN-AFGHANISTAN-NETWORK-OPERATIONS` | Haqqani-Sanctuary-, Facilitation-, Staging-, Compartmentation- und Complex-Attack-Modell |
-| `OMW-RED-CONTROL-INTELLIGENCE-TTP-COIN-IPB` | lokale Kontrolle, HUMINT, Pattern Learning, Knowledge Decay, TTP-Auswahl und Capability Gates |
-| `OMW-RED-LAYEHA-COMMAND-DISCIPLINE-SHADOW-JUSTICE` | Taliban-Führung, Disziplin, lokale Befehlsabweichung, Rivalität, Kriminalität und Shadow Justice |
-| `OMW-RED-SIGACT-PATTERNS-2010-08-10` | zeitlich begrenzte historische Aktivitäts- und Ereignismuster |
-| `OMW-HIST-SETTING` | verbindlicher Zeitraum und historischer Gesamtrahmen der Quellenbasis |
-| `OMW-ARCH-CAMPAIGN-DYNAMIC-MISSION` | CampaignState-, Virtualisierungs- und Materialisierungsprinzipien als technische Referenz, nicht als Spezialprojektbegrenzung |
+| `docs/00-project-governance.md` | Projektgovernance und Entscheidungsautorität |
+| `docs/05-logistics.md` | Eigentum, Cargo, Transfers, Verluste und strategisch-operative Logistikgrenze |
+| `docs/15-template-library-and-spawning.md` | zulässige Templates und Materialisierungsgrundsätze |
+| `docs/22-test-mission-build-transfer-and-validation-workflow.md` | Build-, Einbindungs- und Testworkflow |
+| `docs/26-moose-first-development-policy.md` | verbindliche MOOSE-First-Regel |
+| `docs/37-campaign-architecture-and-dynamic-mission-design.md` | CampaignState, Virtualisierung und Materialisierung |
+| `docs/49-msr-routendesign-und-infrastrukturmarker.md` | Route, Segment, PATHLINE, Marker und Intelligence-Sichtbarkeit |
+| `docs/56-insurgent-factions-shadow-governance-and-red-commander-behavior.md` | insurgente Fraktionen, Kontrolle, Rekrutierung und Shadow Governance |
+| `docs/57...`, `docs/58...`, `docs/62...`, `docs/66...`, `docs/70...` | Taliban-, Haqqani-, HIG-, COIN- und Netzwerkgrundlagen gemäß Dokumentregister |
+| `docs/67-afghanistan-route-clearance-counter-ied-and-convoy-design.md` | Routensicherung, Konvoi- und Clearance-Anforderungen |
+| `docs/19-active-air-orbat-decisions.md` und Airfield-Manifeste | belegte ISAF-/Afghan-Air-Assets und Basierung |
+| `docs/airfield-airwing-squadron-commander-implementation-workflow.md` | aktuelle MOOSE-AIRWING-/SQUADRON-/COMMANDER-Implementierung |
 
-## 3. Quellenlage Taliban Commander
+```text
+SPECIAL_PROJECT_RESOURCE_MODEL
+must not supersede
+MAIN_PROJECT_LOGISTICS_TEMPLATE_OR_MOOSE_AUTHORITY
+```
 
-### 3.1 Quellenstärke
+## 5. Gemeinsame Quellenmatrix
+
+| Bereich | ISAF | Afghan State | Taliban | Haqqani | HIG |
+|---|---|---|---|---|---|
+| strategische Ziele | hoch | hoch | hoch | hoch | mittel bis hoch |
+| Organisationsstruktur | hoch | mittel bis hoch | hoch | hoch | mittel |
+| lokale Befehlsfriktion | mittel | hoch | hoch | hoch | hoch |
+| Force Generation | mittel | hoch | mittel | mittel | niedrig bis mittel |
+| Finance-Quellen | mittel | mittel bis hoch | mittel | mittel bis hoch | niedrig bis mittel |
+| Materiel-Zugänge | hoch für belegte Assets | mittel | mittel | mittel | niedrig bis mittel |
+| Manpower-Zugang | nicht afghanisch | hoch relevant | hoch relevant | selektiv relevant | regional relevant |
+| Bevölkerungsverhältnis | hoch | hoch | hoch | mittel | mittel |
+| Verhandlungen | mittel | hoch | mittel | mittel | hoch |
+| regionale Abdeckung | hoch | mittel | mittel bis hoch | hoch im Kernraum | mittel |
+
+Die Matrix bewertet Quellenreife, nicht militärische Stärke.
+
+## 6. BLUE ISAF
+
+### 6.1 Quellenbasis
+
+Relevante Themen:
+
+- US-/ISAF-Strategie;
+- Verhinderung eines terroristischen Rückzugsraums;
+- Population Protection;
+- Unterstützung des Afghan State;
+- Transition;
+- nationale Kontingente, Caveats und Verluste;
+- Air C2, ISR, CAS, MEDEVAC, CSAR und Logistik;
+- Governance, Entwicklung und politische Legitimität.
+
+### 6.2 Quellengetragene Commander-These
+
+```text
+PRIMARY_IDENTITY = COALITION_CAMPAIGN_AND_FORCE_EMPLOYMENT_COMMANDER
+PRIMARY_GOAL != DESTROY_EVERY_TALIBAN_UNIT
+```
+
+Das Ziel umfasst sichere Bevölkerung und Kräfte, Störung strategisch relevanter Netzwerke, Erhalt der afghanischen Regierung und Übergabe nachhaltiger Sicherheitsverantwortung.
+
+### 6.3 Ressourcen- und Kräftebasis
+
+ISAF-Eigenkräfte stammen nicht aus afghanischem Manpower.
+
+```text
+NATIONAL_FORCE_POOL
++ COALITION_COMMITMENT
++ REPLACEMENT_CAPACITY
++ TIME
+-> ISAF_FORCE_PACKAGE
+```
+
+Quellenbedarf:
+
+- Kontingent- und Rotationslogik;
+- nationale Verlust- und Mandatswirkungen;
+- Ersatz- und Verstärkungszeiten;
+- belegte Basierung, Inventare und Readiness;
+- Umfang und Grenzen der Unterstützungsleistungen an Afghan State.
+
+## 7. Afghan State und ANSF
+
+### 7.1 Quellenbasis
+
+Relevante Themen:
+
+- Government of the Islamic Republic of Afghanistan;
+- ANA, ANP, ANCOP, ABP und afghanische Intelligence-Strukturen;
+- Wachstum, Ausbildung und Ausrüstung;
+- internationale Finanzierung;
+- Attrition, Abwesenheit, Führung, Korruption und Infiltration;
+- Afghan-led Transition;
+- Koalitionsabhängigkeit bei ISR, EOD, MEDEVAC, Luftunterstützung und Logistik;
+- lokale Legitimität und unterschiedliche Wahrnehmung von ANA und ANP.
+
+### 7.2 Commander-These
+
+```text
+DCS_COALITION = BLUE
+CAMPAIGN_FACTION = AFGHAN_STATE
+STRATEGIC_AUTONOMY = PARTIAL
+COMMAND_AUTHORITY != ISAF_OWNERSHIP
+```
+
+### 7.3 Force Generation
+
+```text
+FINANCE
++ RECRUITABLE_MANPOWER
++ MATERIEL
++ TRAINING
++ RETENTION
++ LEADERSHIP
++ SUSTAINMENT
++ TIME
+-> AFGHAN_FORCE_PACKAGE
+```
+
+### 7.4 Offene Quellenpunkte
+
+- regionale Rekrutierungs- und Attritionsunterschiede;
+- organisationsspezifische Readiness;
+- belastbare Ausgangsbestände für Finance und Materiel;
+- konkrete Ausbildungskapazitäten;
+- lokale Vertrauensunterschiede ANA/ANP;
+- belegte afghanische Luft- und Spezialfähigkeiten im Szenariozeitraum.
+
+## 8. Taliban
+
+### 8.1 Quellenstärke
 
 ```text
 HISTORICAL_DEPTH: HIGH
@@ -44,27 +218,21 @@ ORGANIZATIONAL_DEPTH: HIGH
 POLITICAL_GOVERNANCE_DEPTH: HIGH
 TACTICAL_BEHAVIOR_DEPTH: HIGH
 REGIONAL_COVERAGE: MEDIUM_TO_HIGH
-PERSONALITY_PROFILE_DEPTH: MEDIUM
+RESOURCE_FLOW_DEPTH: MEDIUM
 ```
 
-### 3.2 Direkt nutzbare Quellenfelder
+### 8.2 Direkt nutzbare Felder
 
-- Quetta-Shura-orientierte strategische Führung;
-- Provinz- und Distriktstrukturen;
-- Shadow Governors, Shadow Courts und Besteuerung;
-- lokale Zellen mit taktischer Autonomie;
-- strategischer Anspruch auf Kohäsion bei tatsächlich schwankender Befolgung;
-- Bevölkerungskontrolle durch Kombination aus Zugang, Überwachung, Einschüchterung, Sanktion, selektiven Leistungen und Justiz;
-- Trennung von echter Unterstützung, passiver Duldung und erzwungener Compliance;
-- Nutzung von Informanten, Route Spotters, Markt-, Behörden- und Sicherheitskontakten;
-- Lernen wiederkehrender BLUE-Muster;
-- Reinfiltration nach sinkendem Druck;
-- Disziplinarmaßnahmen gegen kriminelle oder politisch schädliche lokale Kommandeure;
-- Konkurrenz um Beute, Steuern, Routen und persönliche Macht.
+- alternative Herrschaftsbewegung;
+- Provinz-, Distrikt- und lokale Strukturen;
+- Shadow Governance und Shadow Justice;
+- lokale Autonomie bei strategischem Kohäsionsanspruch;
+- Unterstützung, Duldung und erzwungene Compliance;
+- Informanten, Beobachter und Pattern Learning;
+- Rekrutierung, Besteuerung und Reinfiltration;
+- Konkurrenz um Routen, Finance, Materiel und lokale Macht.
 
-### 3.3 Vorläufige Commander-These
-
-Der Taliban Commander ist kein taktischer Gefechtsführer für jede Zelle. Er repräsentiert eine strategisch-politische Führung, die versucht, eine heterogene Bewegung durch Zielvorgaben, Ernennungen, Disziplin, Ressourcenverteilung und Legitimitätsanspruch zusammenzuhalten.
+### 8.3 Commander-These
 
 ```text
 PRIMARY_IDENTITY = ALTERNATIVE_GOVERNING_MOVEMENT
@@ -73,16 +241,17 @@ PRIMARY_STRENGTH = TERRITORIAL_AND_SOCIAL_PERSISTENCE
 PRIMARY_WEAKNESS = LOCAL_NONCOMPLIANCE_AND_INTERNAL_FRICTION
 ```
 
-### 3.4 Offene Punkte
+### 8.4 Offene Quellenpunkte
 
-- Unterschiede zwischen Quetta-Shura-Vorgabe und regionalen Kommissionen präzisieren;
-- Personalisierung des Commanders von der realen Person Mullah Omar trennen;
-- regional unterschiedliche Taliban-Netzwerke und Mansour-/Harakat-Kontinuitäten einordnen;
-- politische, militärische und religiöse Autorität als getrennte Dimensionen modellieren.
+- regionale Finance-Mixe;
+- Anteil legaler, illegaler und externer Zuflüsse;
+- regionale Manpower-Zugänge;
+- konkrete Materiel- und Cache-Ausgangsdaten;
+- Unterschiede zwischen strategischer Vorgabe und lokaler Ressourcenumleitung.
 
-## 4. Quellenlage Haqqani Commander
+## 9. Haqqani
 
-### 4.1 Quellenstärke
+### 9.1 Quellenstärke
 
 ```text
 HISTORICAL_DEPTH: HIGH
@@ -90,27 +259,20 @@ NETWORK_STRUCTURE_DEPTH: HIGH
 EXTERNAL_SUPPORT_DEPTH: HIGH
 COMPLEX_OPERATION_DEPTH: HIGH
 POLITICAL_GOVERNANCE_DEPTH: MEDIUM
-PERSONALITY_PROFILE_DEPTH: MEDIUM_TO_HIGH
+RESOURCE_FLOW_DEPTH: MEDIUM_TO_HIGH
 ```
 
-### 4.2 Direkt nutzbare Quellenfelder
+### 9.2 Direkt nutzbare Felder
 
 - familien- und beziehungsgebundene Führung;
-- eigenständige Command-and-Control- und Operationslinien trotz Taliban-Dachbezug;
-- North Waziristan/Miramshah als virtueller Sanctuary- und Führungsraum;
-- Loya Paktia als historischer Kernraum;
-- Border Entry, Transit, Facilitation, Safehaven, Cache, Staging und Target Area als Netzwerkkette;
-- Ressourcenaggregation aus lokalen und externen Kanälen;
-- hohe Redundanz und Anpassung bei Routendruck;
-- Zellen-Compartmentation und begrenzter Schaden bei Kompromittierung einzelner Elemente;
-- Zugriff auf technische Spezialisten und externe Kämpfer als Capability, nicht als unbegrenzte Ressource;
-- hohe Bedeutung komplexer, psychologisch wirksamer Angriffe;
-- Wiederaufbau und Reinfiltration nach Druckabbau;
-- mögliche Spannungen mit Taliban-Vertretern bei territorialer Expansion, Geld, Prestige oder lokaler Kontrolle.
+- eigenständige C2- und Operationslinien;
+- Sanctuary-, Facilitation-, Transit- und Staging-Kette;
+- Finance-, Materiel-, Broker- und Spezialistenzugänge;
+- Compartmentation und Redundanz;
+- ausgewählte hochwertige Capability Packages;
+- Konkurrenz um externe Unterstützung, Prestige und lokale Zugänge.
 
-### 4.3 Vorläufige Commander-These
-
-Der Haqqani Commander ist ein Netzwerkunternehmer und Capability-Aggregator. Er bevorzugt nicht zwingend dauerhafte Flächenkontrolle, sondern den Erhalt von Zugängen, Vermittlern, Routen, Spezialisten und Staging-Möglichkeiten, aus denen bei Bedarf hochwertige Operationen zusammengesetzt werden können.
+### 9.3 Commander-These
 
 ```text
 PRIMARY_IDENTITY = FAMILY_NETWORK_AND_OPERATIONAL_BROKER
@@ -119,16 +281,16 @@ PRIMARY_STRENGTH = RESILIENCE_REACH_AND_COMPARTMENTATION
 PRIMARY_WEAKNESS = DEPENDENCE_ON_KEY_RELATIONSHIPS_AND_FACILITATION_NODES
 ```
 
-### 4.4 Offene Punkte
+### 9.4 Offene Quellenpunkte
 
-- Jalaluddin-Beraterrolle und Siraj-Führungsrolle im Zeitraum quellenkritisch trennen;
-- Familienmitglieder, regionale Kommandeure und externe Partner als Rollen statt starre ORBAT modellieren;
-- politische Unterordnung unter die Taliban von realer operativer Autonomie trennen;
-- lokale Legitimität, Zwang und gekaufte Unterstützung differenzieren.
+- quantitative Ausgangsanteile externer Zuflüsse;
+- regionale Manpower-Nutzung;
+- Abgrenzung lokaler Taliban- und Haqqani-ResourceSources;
+- belastbare Startwerte für Broker-, Routen- und Spezialistenzugang.
 
-## 5. Quellenlage HIG Commander
+## 10. HIG
 
-### 5.1 Quellenstärke
+### 10.1 Quellenstärke
 
 ```text
 HISTORICAL_DEPTH: MEDIUM
@@ -136,37 +298,19 @@ ORGANIZATIONAL_DEPTH: MEDIUM
 POLITICAL_NETWORK_DEPTH: HIGH
 TACTICAL_BEHAVIOR_DEPTH: LOW_TO_MEDIUM
 REGIONAL_COVERAGE: MEDIUM
-PERSONALITY_PROFILE_DEPTH: MEDIUM
+RESOURCE_FLOW_DEPTH: LOW_TO_MEDIUM
 ```
 
-### 5.2 Bereits belegte Kernpunkte
+### 10.2 Direkt nutzbare Felder
 
-Die International-Crisis-Group-Quelle `The Insurgency in Afghanistan's Heartland` liefert die bislang wichtigste HIG-Basis:
+- politisch-militärische Doppelstruktur;
+- regionale Kommandeure und kleine Gefolgschaften;
+- Patronage und politische Kontakte;
+- hohe Verhandlungs- und Deal-Fähigkeit;
+- Defektionen und unklare Vertretungsbefugnis;
+- Konkurrenz mit Taliban um Routen, Finance, Manpower und politische Repräsentation.
 
-- HIG war im zentral-östlichen Raum historisch stark verankert;
-- die militärische Befehlskette war bis 2011 geschwächt;
-- zahlreiche frühere Kommandeure oder Parteikader waren in staatliche und politische Strukturen übergegangen;
-- die militärische Organisation wurde als landesweite Führung mit regionalen, provinziellen und Distriktkommandos beschrieben;
-- lokale Distriktkommandeure verfügten über kleine, begrenzte Gefolgschaften;
-- HIG hatte gegenüber Taliban und Haqqani geringere militärische Resilienz, aber größere Fähigkeit zu politischen Absprachen;
-- Kooperation mit den Taliban war lokal möglich, während strategisches Misstrauen bestehen blieb;
-- in Gebieten eigener Stärke kam es zu bewaffneter Konkurrenz, unter anderem um Routen, Steuern und wirtschaftliche Zugänge;
-- Verhandlungen, Teilabkommen, Defektionen und widersprüchliche Vertretungsansprüche schwächten die organisatorische Eindeutigkeit;
-- politischer und bewaffneter Flügel dürfen weder vollständig gleichgesetzt noch vollständig getrennt angenommen werden.
-
-Ergänzend belegen zeitgenössische Quellen:
-
-- eine eigenständige Identität gegenüber Quetta-Shura-Taliban und Haqqani;
-- eine militärische und politische Doppelstruktur;
-- Schwerpunktaktivität im Osten und Zentralosten;
-- pragmatische lokale Kooperation trotz Rivalität;
-- politische Gesprächs- und Waffenstillstandsangebote im Jahr 2010;
-- Konflikte mit Taliban-Kräften in Baghlan und Wardak;
-- Konkurrenz um Macht und Autorität als wesentliche Bruchlinie.
-
-### 5.3 Vorläufige Commander-These
-
-Der HIG Commander ist kein schwächerer Taliban-Commander. Sein wesentliches Profil ist die Verbindung aus bewaffnetem Druck, historischer Parteiorganisation, persönlichen Netzwerken und politischer Verhandlungsfähigkeit.
+### 10.3 Commander-These
 
 ```text
 PRIMARY_IDENTITY = POLITICAL_MILITARY_FACTION_NETWORK
@@ -175,139 +319,166 @@ PRIMARY_STRENGTH = POLITICAL_ACCESS_DEALMAKING_AND_LOCAL_NETWORKS
 PRIMARY_WEAKNESS = FRAGMENTED_COMMAND_AND_UNCERTAIN_REPRESENTATION
 ```
 
-### 5.4 Modellierungsfolgen
+### 10.4 Offene Quellenpunkte
 
-Der HIG Commander benötigt gegenüber Taliban und Haqqani zusätzliche Parameter:
+- regionale Finance- und Materielquellen;
+- belastbare lokale Commander- und Patronagekarten;
+- Trennung von legal-politischem und bewaffnetem Zugang;
+- Stärke, Bindung und Regenerationsfähigkeit lokaler Force Packages.
 
-```yaml
-hig_state:
-  armed_wing_cohesion: 0..100
-  political_wing_access: 0..100
-  commander_defection_risk: 0..100
-  government_contact_access: 0..100
-  negotiation_credibility: 0..100
-  representation_clarity: 0..100
-  local_patronage: 0..100
-  territorial_access: 0..100
-  revenue_access: 0..100
-  military_resilience: 0..100
-  opportunism: 0..100
-```
+## 11. Quellenbasis des Ressourcenmodells
 
-### 5.5 Offene Punkte
-
-- eigenständige HIG-Quellenakte für 2009-2011 erstellen;
-- regionale Präsenz nach Kapisa, Laghman, Wardak, Ghazni, Logar, Baghlan und Kabul-Zugängen differenzieren;
-- militärische Schwäche nicht mit politischer Bedeutungslosigkeit gleichsetzen;
-- Verhältnis zwischen Hekmatyar, bewaffnetem Flügel, legaler Partei und lokalen Kommandeuren spezifizieren;
-- Verhandlungs- und Seitenwechselmechanik quellenkritisch abbilden;
-- HIG-spezifische TTP nur übernehmen, wenn sie von allgemeinen insurgenten Mustern unterscheidbar belegt sind.
-
-## 6. Vorläufige Vergleichsmatrix
-
-| Dimension | Taliban | Haqqani | HIG |
-|---|---|---|---|
-| primärer Charakter | alternative Herrschaftsbewegung | familiengebundenes Operationsnetzwerk | politische-militärische Fraktion |
-| strategische Reichweite | landesweit | regionaler Kern, überregionale Wirkung | regional konzentriert, politisch vernetzt |
-| territoriale Kontrolle | hoch priorisiert | selektiv und funktional | lokal und umkämpft |
-| Shadow Governance | sehr hoch | begrenzt bis mittel | lokal unterschiedlich |
-| Netzwerk-Compartmentation | mittel | sehr hoch | mittel |
-| komplexe Angriffsfähigkeit | mittel bis hoch | sehr hoch | nicht automatisch hoch |
-| externe Spezialisten | verfügbar, aber nicht einheitlich | besonders wichtig | quellenabhängig |
-| politische Verhandlungsfähigkeit | strategisch kontrolliert | geringer priorisiert | sehr hoch |
-| lokale Kommandeursautonomie | hoch bei formaler Hierarchie | hoch innerhalb des Netzwerkauftrags | sehr hoch und fragmentierungsgefährdet |
-| wichtigste interne Reibung | Disziplin und lokale Eigeninteressen | Familien-/Netzwerkinteressen und territoriale Expansion | Defektion, Vertretungsstreit und Opportunismus |
-
-## 7. Vorläufiges Beziehungsmodell 2010-2011
-
-### 7.1 Taliban zu Haqqani
+Version 1 modelliert ausschließlich:
 
 ```text
-FORMAL_ALIGNMENT: HIGH
-OPERATIONAL_AUTONOMY: HIGH
-LOCAL_COOPERATION: MEDIUM_TO_HIGH
-RESOURCE_SEPARATION: HIGH
-TERRITORIAL_FRICTION: VARIABLE
-PRESTIGE_COMPETITION: MEDIUM
+RECRUITABLE_MANPOWER
+FINANCE
+MATERIEL
 ```
 
-### 7.2 Taliban zu HIG
+Eine Quelle wird nur aktiviert, wenn sie:
+
+- historisch oder analytisch begründbar;
+- geografisch zuordenbar;
+- von mindestens zwei Fraktionen beeinflussbar;
+- endlich oder zuflussbegrenzt;
+- für Force Generation oder Erhaltung relevant ist.
+
+### 11.1 Recruitable Manpower
+
+Quellhalter:
 
 ```text
-SHARED_ENEMY: HIGH
-STRATEGIC_TRUST: LOW
-LOCAL_COOPERATION: VARIABLE
-TERRITORIAL_COMPETITION: HIGH_IN_OVERLAP_AREAS
-REVENUE_COMPETITION: HIGH_IN_SELECTED_DISTRICTS
-ARMED_CONFLICT_RISK: MEDIUM_TO_HIGH
+AFGHAN_POPULATION_AND_LOCAL_COMMUNITIES
 ```
 
-### 7.3 Haqqani zu HIG
+Zu prüfen:
+
+- regionale Bevölkerung und Altersstruktur nur in geeigneten Bändern;
+- freiwillige staatliche und insurgente Rekrutierung;
+- Geld-, Patronage-, Ideologie- und Zwangseinflüsse;
+- Abwanderung, Verluste und Erschöpfung;
+- keine ethnische oder regionale automatische Loyalitätsannahme.
+
+### 11.2 Finance
+
+Mögliche Quellenklassen:
 
 ```text
-DIRECT_EVIDENCE_DEPTH: LOW_TO_MEDIUM
-LOCAL_OVERLAP: PRESENT_IN_CENTRAL_EAST
-COOPERATION: POSSIBLE
-COMPETITION: POSSIBLE
-DEFAULT_RELATIONSHIP: PRAGMATIC_UNCERTAINTY
+AFGHAN_STATE_REVENUE
+FORMAL_TAX_AND_CUSTOMS
+INTERNATIONAL_DONOR_AND_SECURITY_ASSISTANCE
+LOCAL_LEGAL_ECONOMY
+SHADOW_TAXATION
+ILLICIT_ECONOMY
+EXTERNAL_INSURGENT_SUPPORT
+PATRONAGE_CHANNELS
 ```
-
-Für Haqqani-HIG darf ohne weitere Quellen keine feste Allianz oder Feindschaft angenommen werden.
-
-## 8. Gemeinsame Wissens- und Informationsgrundlage
-
-Alle drei Commander dürfen lokale Informationsvorteile besitzen, aber keine Omniszienz.
 
 ```text
-LOCAL_KNOWLEDGE != GLOBAL_TRUTH
-OBSERVED_ACTIVITY != CONFIRMED_INTENT
-SHARED_OPERATION != SHARED_DATABASE
-CAPTURED_CELL != EXPOSED_NETWORK
+ALL_RED_FINANCE != DRUG_MONEY
 ```
 
-Mindestzustände je Information:
+Drogen- oder Schmuggelzugänge werden nur regional und quellenbegründet aktiviert.
 
-```yaml
-knowledge_item:
-  subject:
-  source_type:
-  source_owner:
-  reliability: 0..100
-  confidence: 0..100
-  first_observed:
-  last_verified:
-  geographic_scope:
-  decay_rate:
-  deception_risk:
-  sharing_restrictions:
+### 11.3 Materiel
+
+Mögliche Quellen:
+
+```text
+ISAF_AND_AFGHAN_STATE_WAREHOUSES
+SECURITY_ASSISTANCE_DELIVERIES
+RED_CACHES
+EXTERNAL_SUPPORT_CHANNELS
+CAPTURED_OR_DIVERTED_STOCKS
+CONVOYS_AND_CARGO
 ```
 
-## 9. Quellenlücken und nächste Recherche
+`MATERIEL` ist im Spezialprojekt ein strategisches Aggregat. Die operative und detaillierte Logistik bleibt unter `docs/05-logistics.md` und MOOSE/DCS-Autorität.
 
-Priorität 1:
+## 12. Beziehungs- und Konkurrenzquellen
 
-- HIG-spezifische Organisations-, Führungs- und Regionalquellen 2009-2011;
-- belastbare Taliban-Haqqani-HIG-Beziehungsereignisse je Region;
-- politische und bewaffnete HIG-Strukturen getrennt erfassen;
-- weitere Primär- oder institutionelle Quellen zur Commander-Autorität und lokalen Befolgung.
+Mindestens zu erfassen:
 
-Priorität 2:
+```text
+ISAF <-> AFGHAN_STATE partnership and friction
+AFGHAN_STATE <-> TALIBAN governance and resource competition
+AFGHAN_STATE <-> HAQQANI network and route competition
+AFGHAN_STATE <-> HIG political and local-commander competition
+TALIBAN <-> HAQQANI alignment and autonomy
+TALIBAN <-> HIG rivalry and local cooperation
+HAQQANI <-> HIG pragmatic uncertainty
+```
 
-- Commander-spezifische Persönlichkeitsableitungen;
-- regionale Reichweiten und Ressourcenkanäle;
-- Auswirkungen von Verhandlungen, Defektionen und interner Konkurrenz;
-- Rollen von al-Qaida, ausländischen Kämpfern, kriminellen Netzwerken und lokalen Powerbrokern.
+Ein Ereignis in einer Region wird nicht automatisch als landesweite Beziehung interpretiert.
 
-## 10. Vorläufiger Abschluss
-
-Die Quellenbasis reicht aus, um drei klar unterschiedliche Commander zu entwerfen. Sie reicht noch nicht aus, um alle drei mit identischer Detailtiefe zu parametrisieren.
+## 13. Readiness nach Dokumentbereich
 
 ```text
 TALIBAN_DOSSIER_READINESS = HIGH
 HAQQANI_DOSSIER_READINESS = HIGH
 HIG_DOSSIER_READINESS = MEDIUM
+BLUE_ISAF_DOSSIER_READINESS = HIGH
+AFGHAN_STATE_DOSSIER_READINESS = MEDIUM_TO_HIGH
 INTER_FACTION_MODEL_READINESS = MEDIUM
-RUNTIME_RULEBOOK_READINESS = LOW_TO_MEDIUM
+RESOURCE_MODEL_STRUCTURE_READINESS = HIGH
+RESOURCE_START_VALUE_READINESS = LOW
+RUNTIME_RULEBOOK_READINESS = MEDIUM
+DCS_MOOSE_INTEGRATION_READINESS = LOW
 ```
 
-Als nächster Schritt folgt das gemeinsame Commander-Datenmodell. Danach werden die drei historischen Dossiers getrennt ausgearbeitet.
+## 14. Verbotene Ableitungen
+
+```text
+SOURCE_MENTIONS_UNIT != RUNTIME_TEMPLATE_EXISTS
+SOURCE_MENTIONS_REVENUE != EXACT_FINANCE_VALUE
+SOURCE_MENTIONS_SUPPORT != VOLUNTARY_POPULATION_SUPPORT
+SOURCE_MENTIONS_CONTROL != COMPLETE_RESOURCE_CAPTURE
+SOURCE_MENTIONS_FORCE_SIZE != DCS_GROUP_COUNT
+NEW_DOCUMENT != RUNTIME_ACCEPTANCE
+```
+
+## 15. Nächste Quellenarbeit
+
+Priorität 1:
+
+- konkrete ResourceSource-Ausgangsdaten nach Region;
+- belastbare Startanteile und Kapazitätsbänder;
+- ANSF-Force-Generation-, Attritions- und Trainingsevidenz;
+- ISAF Coalition-Commitment- und Ersatzmodell;
+- HIG-ResourceSources und regionale Commander;
+- Taliban-/Haqqani-Abgrenzung bei externen und lokalen Zuflüssen.
+
+Priorität 2:
+
+- Template-Kosten und Aufbauzeiten erst nach Template-Autorität;
+- regionale Bevölkerungs- und Wirtschaftsbandbreiten;
+- Transfer- und Verlustwahrscheinlichkeiten;
+- MOOSE-2.9.18-Prüfung für Warehouses, Cargo, Spawn, AIRWING, COMMANDER, CHIEF und Operationsprofile.
+
+## 16. Acceptance-Kriterien
+
+Das Inventar ist ausreichend, wenn:
+
+- alle fünf Fraktionen eine nachvollziehbare Quellenbasis besitzen;
+- Quellen und Simulationsentscheidungen getrennt markiert sind;
+- ResourceSources geografisch und fraktionsbezogen begründbar sind;
+- fehlende quantitative Ausgangsdaten offen als `UNKNOWN` bleiben;
+- keine DCS-Objekte, Templates oder Inventare erfunden werden;
+- Hauptprojekt-Autoritäten verlinkt und nicht überschrieben werden;
+- neue Quellen systematisch in Dossiers, Dokument 17 und Testfixtures zurückgeführt werden.
+
+## 17. Querverweise
+
+```text
+02-common-commander-model.md
+03-inter-faction-relations-and-negotiation.md
+04-taliban-commander-dossier.md
+05-haqqani-commander-dossier.md
+06-hig-commander-dossier.md
+10-blue-commander-dossier.md
+13-campaign-state-and-event-store-schema.md
+16-afghan-state-and-ansf-commander-dossier.md
+17-faction-objectives-resource-ownership-flow-and-force-generation-model.md
+18-resource-model-integration-and-dossier-amendments.md
+```
