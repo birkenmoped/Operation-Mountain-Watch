@@ -1,7 +1,7 @@
 ---
 document_id: OMW-SP-LLM-COMMANDERS-RESOURCE-INTEGRATION-AMENDMENTS
 status: MIGRATION_RECORD_COMPLETE
-ocument_class: CROSS_DOCUMENT_MIGRATION_AND_CONSOLIDATION_RECORD
+document_class: CROSS_DOCUMENT_MIGRATION_AND_CONSOLIDATION_RECORD
 scenario_period: 2010-08-01/2011-12-31
 source_branch: docs/optional-llm-commanders
 validated_in_dcs: false
