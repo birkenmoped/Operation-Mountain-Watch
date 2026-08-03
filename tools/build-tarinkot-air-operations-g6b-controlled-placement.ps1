@@ -131,8 +131,8 @@ foreach ($variant in $variants) {
     $requestLines = New-Object System.Collections.Generic.List[string]
     foreach ($request in $variant.Requests) {
         $spotList = ($request.Spots | ForEach-Object { [string][int]$_ }) -join ', '
-        $requestLines.Add(('    {{ Alias = "{0}", ExpectedUnits = {1}, Spots = {{ {2} }} }},' -f `
-            $request.Alias, [int]$request.ExpectedUnits, $spotList))
+        $requestLine = '    {{ Alias = "{0}", ExpectedUnits = {1}, Spots = {{ {2} }} }},' -f $request.Alias, [int]$request.ExpectedUnits, $spotList
+        $requestLines.Add($requestLine)
     }
 
     $header = @"
