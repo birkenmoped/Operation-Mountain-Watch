@@ -1,26 +1,35 @@
 ---
 document_id: OMW-SP-LLM-COMMANDERS-RUNTIME-RULEBOOK
 status: DRAFT_RUNTIME_DESIGN
- document_class: RUNTIME_RULEBOOK_AND_ACTION_SCHEMA
+document_class: RUNTIME_RULEBOOK_AND_ACTION_SCHEMA
 scenario_period: 2010-08-01/2011-12-31
 source_branch: docs/optional-llm-commanders
 validated_in_dcs: false
+authoritative_for:
+  - commander runtime input and output contract
+  - allowed strategic action classes
+  - validation pipeline and failure handling
+  - force-generation and contested-resource actions
+  - faction-specific validators
 ---
 
 # Runtime-Rulebook und strukturiertes Commander Action Schema
 
 ## 1. Zweck
 
-Dieses Dokument definiert die verbindliche Laufzeitschnittstelle zwischen Commander-LLM, Orchestrator, CampaignState und DCS/MOOSE-Ausführung.
+Dieses Dokument definiert die verbindliche Laufzeitschnittstelle zwischen fünf Commander-Instanzen, Orchestrator, CampaignState und DCS/MOOSE-Ausführung.
 
 ```text
-COMMANDER_LLM
+COMMANDER_POLICY_OR_LLM
 -> STRUCTURED_INTENT
 -> SCHEMA_VALIDATION
--> AUTHORITY_AND_RESOURCE_VALIDATION
--> WORLD_AND_SAFETY_VALIDATION
+-> KNOWLEDGE_VALIDATION
+-> AUTHORITY_AND_RELATIONSHIP_VALIDATION
+-> RESOURCE_AND_CAPABILITY_VALIDATION
+-> POLICY_AND_WORLD_VALIDATION
 -> ADJUDICATION
 -> CAMPAIGN_STATE_TRANSITION
+-> MOOSE_COMPATIBLE_EXECUTION_PLAN
 -> DCS_MOOSE_EXECUTION
 -> RESULT_AND_OBSERVATION
 -> COMMANDER_MEMORY_UPDATE
@@ -28,67 +37,95 @@ COMMANDER_LLM
 
 Das LLM entscheidet nicht direkt über objektive Weltzustände und erzeugt keine Lua-, MOOSE- oder DCS-Befehle.
 
-## 2. Autoritative Zuständigkeiten
+## 2. Geltungsbereich und Autoritäten
+
+Kanonische Commander:
+
+```text
+BLUE_ISAF_COMMANDER
+AFGHAN_STATE_COMMANDER
+TALIBAN_COMMANDER
+HAQQANI_COMMANDER
+HIG_COMMANDER
+```
+
+Autoritative Zuständigkeiten:
 
 ```text
 CAMPAIGN_STATE = OBJECTIVE_STRATEGIC_TRUTH
 ORCHESTRATOR = VALIDATION_AND_ADJUDICATION
-COMMANDER_LLM = INTENT_AND_REASONING_WITHIN_PROVIDED_INFORMATION
-DCS_MOOSE = PHYSICAL_EXECUTION_AND_EVENT_GENERATION
+COMMANDER_POLICY_OR_LLM = INTENT_WITHIN_PROVIDED_INFORMATION
+MOOSE = TACTICAL_RUNTIME_FOUNDATION
+DCS = PHYSICAL_SIMULATION_AND_RAW_EVENT_SOURCE
 ```
 
-Der Orchestrator darf eine LLM-Antwort:
+Ressourcen und Force Generation folgen:
 
-- akzeptieren;
-- mit Auflagen akzeptieren;
-- auf eine zulässige Variante reduzieren;
-- verzögern;
-- zur Nachbesserung zurückgeben;
-- ablehnen.
+```text
+13-campaign-state-and-event-store-schema.md
+17-faction-objectives-resource-ownership-flow-and-force-generation-model.md
+```
+
+Die Afghan-State-Fraktion folgt:
+
+```text
+16-afghan-state-and-ansf-commander-dossier.md
+```
 
 ## 3. Grundregeln für alle Commander
 
 1. Kein Commander besitzt Omniszienz.
 2. Kein Commander darf nicht bereitgestellte Weltzustände als Fakten behaupten.
-3. Keine Aktion darf Ressourcen erzeugen, die nicht vorhanden oder plausibel zuführbar sind.
+3. Keine Aktion darf Ressourcen erzeugen, die nicht aus einer ResourceSource oder einem zulässigen externen ISAF-Pool stammen.
 4. Keine Aktion darf fremde Fraktionsressourcen ohne bestätigte Vereinbarung kontrollieren.
-5. Kein Commander darf physische Einheiten direkt teleportieren, spawnen oder zerstören.
-6. Jede relevante Aktion benötigt Ursprung, Ziel, Zweck, Ressourcen, Zeitfenster und Abbruchbedingungen.
+5. Kein Commander darf physische Einheiten direkt teleportieren, spawnen, löschen oder zerstören.
+6. Jede relevante Aktion benötigt Ursprung, Ziel, Zweck, Ressourcen- oder Capability-Bedarf, Zeitfenster und Abbruchbedingungen.
 7. Hochwertige Operationen benötigen vorbereitete Capability Packages.
 8. Historische Ereignisse sind keine automatische Runtime-Vorgabe.
 9. Personen-, Orts- und Zielkategorien allein erzeugen keine Feindklassifikation.
 10. Unsicherheit muss als Unsicherheit ausgegeben werden.
 11. Der Commander darf eine Nullaktion wählen.
-12. Selbsterhalt, Verzögerung, Aufklärung und Verhandlung sind gleichwertige strategische Optionen.
+12. Selbsterhalt, Verzögerung, Aufklärung, Schutz und Verhandlung sind gleichwertige strategische Optionen.
+13. Gleiche DCS-Koalition bedeutet weder gemeinsames Eigentum noch automatische Befehlsgewalt.
+14. ISAF darf afghanische Force Packages nicht als eigenen Bestand behandeln.
+15. Reputation, Legitimität, Unterstützung oder Repression dürfen nicht direkt in Einheiten umgewandelt werden.
+16. Nur der Orchestrator kann nach erfolgreicher Prüfung einen Force-Generation-Auftrag oder Operation Plan erzeugen.
+17. Nur der MOOSE-Adapter darf genehmigte Fachobjekte in taktische Runtime-Aufträge übersetzen.
 
 ## 4. Commander-Turn
-
-Jeder Entscheidungszyklus erhält einen eindeutigen Turn:
 
 ```yaml
 commander_turn:
   turn_id: string
   commander_id: string
-  faction_id: string
+  faction_id: ISAF|AFGHAN_STATE|TALIBAN|HAQQANI|HIG
+  dcs_coalition: BLUE|RED|NEUTRAL
   campaign_time: datetime
   decision_horizon: tactical|operational|strategic
   response_deadline: datetime|null
   input_snapshot_id: string
+  input_state_version: integer
   allowed_action_types: []
   mandatory_questions: []
 ```
 
 Ein Commander darf nur innerhalb der bereitgestellten `allowed_action_types` entscheiden.
 
-## 5. Eingabepaket an das LLM
+## 5. Eingabepaket an Commander Policy oder LLM
 
 ```yaml
 commander_input:
   commander_profile_ref: string
+  faction_id: string
   strategic_goals: []
   current_priorities: []
-  known_resources: {}
+  known_force_packages: []
+  known_resource_accounts: {}
+  known_resource_sources: []
+  known_capability_assets: []
+  known_access_nodes: []
   authority_scope: {}
+  active_force_generation_orders: []
   active_operations: []
   active_agreements: []
   relationship_beliefs: []
@@ -102,14 +139,20 @@ commander_input:
   allowed_action_types: []
 ```
 
-Nicht enthaltene Informationen gelten für das LLM grundsätzlich als unbekannt.
+Nicht enthaltene Informationen gelten grundsätzlich als unbekannt.
+
+```text
+KNOWN_RESOURCE_ACCOUNT
+!= OBJECTIVE_RESOURCE_ACCOUNT
+```
 
 ## 6. Verbindliches Ausgabeobjekt
 
 ```yaml
 commander_decision:
-  schema_version: "1.0"
+  schema_version: "2.0"
   turn_id: string
+  input_state_version: integer
   commander_id: string
   faction_id: string
 
@@ -132,16 +175,19 @@ commander_decision:
     action_id: string
     action_type: enum
     action_variant: string|null
-    target_ref: string|null
-    target_category: string|null
+    target_refs: []
     origin_refs: []
     destination_refs: []
     geographic_scope: []
     start_window: {}
     duration_estimate: string|null
     desired_effects: []
-    required_resources: []
+    assigned_force_package_refs: []
+    required_resource_account_refs: []
+    requested_resource_quantities: {}
+    requested_capability_refs: []
     requested_support: []
+    required_agreement_refs: []
     delegated_to: []
     coordination_requirements: []
     information_requirements: []
@@ -151,6 +197,7 @@ commander_decision:
     political_risk: 0..100
     network_risk: 0..100
     civilian_harm_risk: 0..100
+    resource_loss_risk: 0..100
     attribution_risk: 0..100
     escalation_risk: 0..100
     overall_acceptability: 0..100
@@ -159,38 +206,92 @@ commander_decision:
     political_limits: []
     geographic_limits: []
     resource_limits: []
+    capability_limits: []
     timing_limits: []
     prohibited_outcomes: []
 
   abort_conditions: []
   fallback_action: {}
-
-  alternatives_considered:
-    - action_type: enum
-      rejection_reason: string
-
+  alternatives_considered: []
   relationship_effects_expected: []
   memory_items_to_record: []
 ```
 
-## 7. Zulässige Action Types
+## 7. Action-Klassen
+
+Actions bleiben strategisch beziehungsweise operativ abstrakt. Sie enthalten keine Herstellungs-, Platzierungs- oder Ausführungsanleitung für reale Waffen oder Anschläge.
 
 ### 7.1 Informations- und Aufklärungsaktionen
 
 ```text
 OBSERVE_AREA
 OBSERVE_ROUTE
+OBSERVE_RESOURCE_SOURCE
+OBSERVE_ACCESS_NODE
 OBSERVE_TARGET
-RECRUIT_OBSERVER
 VALIDATE_SOURCE
 BUILD_MONITORING_NETWORK
-LEARN_BLUE_PATTERN
-TEST_BLUE_REACTION
+LEARN_OPPONENT_PATTERN
+TEST_OPPONENT_REACTION
 COUNTER_SURVEILLANCE
 ASSESS_RIVAL_ACTIVITY
+REQUEST_MORE_INFORMATION
 ```
 
-### 7.2 Netzwerk- und Logistikaktionen
+### 7.2 Ressourcenquellen und Zugang
+
+```text
+PROTECT_RESOURCE_SOURCE
+DISRUPT_RESOURCE_SOURCE
+SECURE_ACCESS_NODE
+CONTEST_ACCESS_NODE
+RESTORE_ACCESS_NODE
+REQUEST_RESOURCE_SOURCE_SHARE
+PROPOSE_RESOURCE_SOURCE_SHARE
+CHANGE_BENEFICIARY_SHARE
+PROTECT_RECRUITMENT_ACCESS
+PROTECT_REVENUE_ACCESS
+PROTECT_MATERIEL_ACCESS
+INTERDICT_RESOURCE_FLOW
+RESTORE_RESOURCE_FLOW
+```
+
+`CHANGE_BENEFICIARY_SHARE` ist nur als gewünschter Effekt zulässig. Der Commander darf den objektiven Anteil nicht unmittelbar setzen.
+
+### 7.3 Ressourcenbewegung und Transfers
+
+```text
+MOVE_MATERIEL
+MOVE_FINANCE
+REQUEST_FINANCE_TRANSFER
+PROVIDE_FINANCE_TRANSFER
+REQUEST_MATERIEL_TRANSFER
+PROVIDE_MATERIEL_TRANSFER
+REQUEST_RESOURCE_TRANSFER
+PROVIDE_RESOURCE_TRANSFER
+CANCEL_RESOURCE_TRANSFER
+PROTECT_RESOURCE_TRANSFER
+```
+
+`RECRUITABLE_MANPOWER` wird nicht wie Cargo beliebig zwischen Regionen verschoben. Personaltransfers benötigen eine ausdrücklich erlaubte Force- oder Organisationsbewegung.
+
+### 7.4 Force Generation und Rekonstitution
+
+```text
+REQUEST_FORCE_GENERATION
+REQUEST_FORCE_RECONSTITUTION
+CANCEL_FORCE_GENERATION
+PRIORITIZE_FORCE_GENERATION
+REQUEST_TRAINING_SUPPORT
+REQUEST_ADVISOR_SUPPORT
+REQUEST_EQUIPMENT_SUPPORT
+RELEASE_FORCE_PACKAGE
+DISBAND_FORCE_PACKAGE
+```
+
+Keine dieser Actions erzeugt unmittelbar eine Einheit.
+
+### 7.5 Netzwerk-, Logistik- und Organisationsaktionen
 
 ```text
 BUILD_CACHE
@@ -201,15 +302,16 @@ CLOSE_COMPROMISED_ROUTE
 BUILD_SAFEHOUSE
 RELOCATE_SAFEHOUSE
 BUILD_FACILITATION_NODE
-MOVE_RESOURCES
-REQUEST_RESOURCE_TRANSFER
-PROVIDE_RESOURCE_TRANSFER
 ASSEMBLE_CAPABILITY_PACKAGE
 DISBAND_CAPABILITY_PACKAGE
 RECONSTITUTE_NETWORK
+PROTECT_LOCAL_COMMANDER
+RETAIN_LOCAL_COMMANDER
+DISCIPLINE_SUBORDINATE
+REPLACE_LOCAL_COMMANDER
 ```
 
-### 7.3 Politische und soziale Aktionen
+### 7.6 Politische und soziale Aktionen
 
 ```text
 BUILD_LOCAL_ACCESS
@@ -217,34 +319,40 @@ BUILD_POLITICAL_INFLUENCE
 INFLUENCE_POPULATION
 BUILD_SHADOW_GOVERNANCE
 BUILD_SHADOW_JUSTICE
-EXTRACT_RESOURCES
+SUPPORT_GOVERNANCE
+PROTECT_POPULATION_ACCESS
 ISSUE_WARNING
 APPLY_LIMITED_SANCTION
 PROTECT_LOCAL_ACTOR
-DISCIPLINE_SUBORDINATE
-REPLACE_LOCAL_COMMANDER
-RETAIN_LOCAL_COMMANDER
+REDUCE_COERCIVE_EXCESS
+IMPROVE_PARTNER_LEGITIMACY
 ```
 
-### 7.4 Militärische Aktionen
+### 7.7 Abstrakte militärische Wirkungsaktionen
 
 ```text
-PROBE_CHECKPOINT
-CONDUCT_IED_ATTACK
-CONDUCT_AMBUSH
-CONDUCT_LIMITED_ATTACK
-CONDUCT_INDIRECT_FIRE_HARASSMENT
-CONDUCT_RAID
+PROBE_SECURITY_POSTURE
 DISRUPT_ROUTE
+DISRUPT_FORCE
+DISRUPT_NETWORK
+INTERDICT_MOVEMENT
+CONDUCT_LIMITED_OPERATION
+CONDUCT_RAID_EFFECT
+APPLY_STANDOFF_PRESSURE
 PREPARE_COMPLEX_OPERATION
 EXECUTE_COMPLEX_OPERATION
 DISPERSE_UNDER_PRESSURE
 WITHDRAW_FROM_AREA
 REINFILTRATE_AREA
 DEFEND_CRITICAL_NODE
+PROTECT_CONVOY
+PROTECT_BASE
+PROTECT_POPULATION
 ```
 
-### 7.5 Diplomatie- und Fraktionsaktionen
+Die konkrete taktische Missionsklasse wird erst nach Validierung durch den MOOSE-Adapter aus festen, geprüften Mappings gewählt.
+
+### 7.8 Partnerschaft, Diplomatie und Fraktionsaktionen
 
 ```text
 OPEN_COMMUNICATION_CHANNEL
@@ -255,6 +363,11 @@ REQUEST_TRANSIT_ACCESS
 GRANT_TRANSIT_ACCESS
 REQUEST_SPECIALIST_SUPPORT
 PROVIDE_SPECIALIST_SUPPORT
+REQUEST_ENABLER_SUPPORT
+PROVIDE_ENABLER_SUPPORT
+REQUEST_PARTNER_OPERATION
+ACCEPT_PARTNER_OPERATION
+REJECT_PARTNER_OPERATION
 PROPOSE_JOINT_OPERATION
 ACCEPT_JOINT_OPERATION
 REJECT_JOINT_OPERATION
@@ -266,48 +379,91 @@ CONTAIN_RIVAL
 DEESCALATE_RIVALRY
 ```
 
-### 7.6 Null- und Verwaltungsaktionen
+### 7.9 Null- und Verwaltungsaktionen
 
 ```text
 NO_ACTION
 CONTINUE_CURRENT_OPERATION
 DELAY_DECISION
-REQUEST_MORE_INFORMATION
 CANCEL_OPERATION
 REPRIORITIZE_GOALS
+RELEASE_RESERVATION
+REQUEST_STATE_RECONCILIATION
 ```
 
 ## 8. Action-spezifische Pflichtfelder
 
 ### 8.1 Physische Operation
 
-Eine physische Operation benötigt mindestens:
-
 ```text
 origin_refs
-destination_or_target_ref
-assigned_force_or_cell
-resource_cost
+target_or_destination_refs
+assigned_force_package_refs
+required_capability_refs
+resource_reservation_refs
 start_window
 desired_effect
 abort_conditions
 fallback_action
 ```
 
-### 8.2 Ressourcenbewegung
+### 8.2 ResourceSource- oder AccessNode-Aktion
 
 ```text
-source_node
-destination_node
-resource_type
-requested_quantity_or_capacity
-transport_method
-route_ref
-security_requirement
-loss_tolerance
+resource_source_or_access_node_ref
+known_controller_or_belief
+intended_effect
+geographic_scope
+assigned_force_package_refs
+required_capability_refs
+time_window
+assessment_requirements
 ```
 
-### 8.3 Verhandlung
+### 8.3 Ressourcenbewegung oder Transfer
+
+```text
+source_account_ref
+destination_account_ref
+resource_type
+requested_quantity
+agreement_ref_if_foreign
+transport_operation_ref_if_physical
+route_ref_if_required
+security_requirement
+loss_tolerance
+idempotency_expectation
+```
+
+### 8.4 Force Generation
+
+```text
+requested_template_ref
+requested_package_type
+source_region_ref
+resource_account_refs
+requested_resource_quantities
+organizational_gate_requirements
+training_or_preparation_requirements
+requested_completion_window
+intended_role
+```
+
+### 8.5 Partneroperation ISAF/Afghan State
+
+```text
+lead_faction
+supporting_faction
+partner_force_package_refs
+partner_approval_requirement
+coalition_enabler_refs
+resource_ownership_boundaries
+command_relationship
+support_agreement_ref
+withdrawal_and_abort_rights
+```
+
+### 8.6 Verhandlung
 
 ```text
 counterparty
@@ -321,29 +477,15 @@ breach_conditions
 expiry
 ```
 
-### 8.4 Gemeinsame Operation
-
-```text
-participants
-shared_effect
-separate_objectives
-force_contributions
-resource_contributions
-command_boundaries
-information_sharing_scope
-withdrawal_rights
-credit_and_attribution_expectation
-```
-
-### 8.5 Capability Package
+### 8.7 Capability Package
 
 ```text
 strategic_effect
 target_intelligence
 leadership_sponsor
-manpower_source
-weapons_access
-explosives_access
+assigned_force_package_refs
+finance_reservation_refs
+materiel_reservation_refs
 specialist_access
 communications_access
 route_access
@@ -355,16 +497,34 @@ operational_security
 
 ## 9. Validierungspipeline
 
-### 9.1 Schema Validation
+Validierung erfolgt in fester Reihenfolge:
+
+```text
+1 SCHEMA
+2 IDENTITY_AND_TURN
+3 KNOWLEDGE
+4 AUTHORITY
+5 RELATIONSHIP_AND_AGREEMENT
+6 RESOURCE_SOURCE_AND_ACCOUNT
+7 FORCE_PACKAGE_AND_CAPABILITY
+8 GEOGRAPHY_AND_TIME
+9 POLICY_AND_TARGETING
+10 TECHNICAL_MATERIALIZATION
+11 CONFLICT_AND_CONCURRENCY
+```
+
+Ein später Validator darf keine frühere fehlende Voraussetzung stillschweigend ersetzen.
+
+## 10. Schema Validation
 
 Prüft:
 
-- gültiges JSON/YAML-Objekt;
+- gültiges strukturiertes Objekt;
 - bekannte Felder;
 - korrekte Datentypen;
 - zulässige Enums;
 - vollständige Pflichtfelder;
-- passende `turn_id` und `commander_id`.
+- passende `turn_id`, `commander_id`, `faction_id` und `input_state_version`.
 
 Fehler:
 
@@ -375,11 +535,11 @@ UNKNOWN_ACTION_TYPE
 MISSING_REQUIRED_FIELD
 INVALID_REFERENCE_FORMAT
 TURN_MISMATCH
+FACTION_MISMATCH
+STATE_VERSION_MISSING
 ```
 
-### 9.2 Knowledge Validation
-
-Prüft, ob die Begründung auf bereitgestellten Informationen beruht.
+## 11. Knowledge Validation
 
 ```text
 CLAIM_NOT_IN_INPUT
@@ -387,15 +547,20 @@ CONFIDENCE_EXCEEDS_EVIDENCE
 KNOWN_FALSE_ASSUMPTION
 STALE_INFORMATION_IGNORED
 DECEPTION_RISK_IGNORED
+OBJECTIVE_RESOURCE_STATE_LEAKED
 ```
 
-Nicht jede unbewiesene Annahme ist unzulässig. Sie muss jedoch als `assumption` oder `unknown` markiert sein.
+Nicht jede unbewiesene Annahme ist unzulässig. Sie muss als `assumption` oder `unknown` markiert sein.
 
-### 9.3 Authority Validation
+## 12. Authority Validation
+
+Prüft:
 
 ```text
 COMMANDER_HAS_AUTHORITY
+FORCE_PACKAGE_OWNED_OR_AUTHORIZED
 LOCAL_COMMANDER_AVAILABLE
+PARTNER_APPROVAL_EXISTS
 FOREIGN_RESOURCE_CONTROL_CONFIRMED
 AGREEMENT_EXISTS
 GEOGRAPHIC_SCOPE_ALLOWED
@@ -405,62 +570,107 @@ Fehler:
 
 ```text
 AUTHORITY_EXCEEDED
+FORCE_PACKAGE_NOT_OWNED
+AFGHAN_PARTNER_APPROVAL_REQUIRED
 LOCAL_COMMANDER_NOT_CONTROLLED
 FOREIGN_RESOURCE_NOT_AUTHORIZED
 AGREEMENT_REQUIRED
 GEOGRAPHIC_SCOPE_VIOLATION
 ```
 
-### 9.4 Resource Validation
+## 13. ResourceSource- und ResourceAccount-Validation
+
+Prüft:
 
 ```text
+RESOURCE_SOURCE_EXISTS
+RESOURCE_ACCOUNT_EXISTS
+RESOURCE_PROVENANCE_VALID
 RESOURCE_AVAILABLE
-RESOURCE_RESERVED
+RESOURCE_NOT_DOUBLE_RESERVED
+SOURCE_ACCESS_SUFFICIENT
+BENEFICIARY_SHARE_VALID
+TRANSFER_DOES_NOT_GENERATE_RESOURCE
+```
+
+Fehler:
+
+```text
+RESOURCE_SOURCE_UNKNOWN
+INSUFFICIENT_RESOURCE
+RESOURCE_ALREADY_COMMITTED
+RESOURCE_PROVENANCE_MISSING
+SOURCE_ACCESS_DENIED
+INVALID_BENEFICIARY_SHARE
+DUPLICATE_RESOURCE_CREDIT
+TRANSFER_CREATES_RESOURCE
+```
+
+## 14. Force-Generation-Validation
+
+Prüft:
+
+```text
+TEMPLATE_REFERENCE_VALID
+RESOURCE_RESERVATIONS_COMPLETE
+FACTION_SPECIFIC_GATES_MET
+GENERATION_TIME_VALID
+FORCE_GENERATION_QUEUE_AVAILABLE
+NO_DUPLICATE_FORCE_GENERATION_ORDER
+```
+
+Fehler:
+
+```text
+UNSUPPORTED_FORCE_GENERATION
+TEMPLATE_NOT_AUTHORIZED
+RESOURCE_COMMITMENT_INCOMPLETE
+ORGANIZATIONAL_GATE_NOT_MET
+GENERATION_TIME_INVALID
+DUPLICATE_FORCE_GENERATION
+ISAF_AFGHAN_MANPOWER_VIOLATION
+```
+
+## 15. Capability- und Readiness-Validation
+
+Prüft:
+
+```text
+FORCE_PACKAGE_AVAILABLE
+FORCE_PACKAGE_NOT_DOUBLE_ASSIGNED
+CAPABILITY_ASSET_AVAILABLE
 ROUTE_AVAILABLE
 ORIGIN_NODE_EXISTS
 DESTINATION_NODE_EXISTS
 CAPABILITY_GATE_MET
+RESERVE_POLICY_PRESERVED
 ```
 
 Fehler:
 
 ```text
-INSUFFICIENT_RESOURCE
-RESOURCE_ALREADY_COMMITTED
+FORCE_PACKAGE_ALREADY_ASSIGNED
+CAPABILITY_ALREADY_COMMITTED
 NO_VALID_ROUTE
 NODE_UNAVAILABLE
 CAPABILITY_GATE_NOT_MET
-UNSUPPORTED_FORCE_GENERATION
+CRITICAL_RESERVE_VIOLATION
 ```
 
-### 9.5 Temporal Validation
-
-```text
-START_WINDOW_VALID
-DURATION_PLAUSIBLE
-ACTIVE_OPERATION_CONFLICT_CHECKED
-CAMPAIGN_TIME_CONSISTENT
-```
-
-Fehler:
-
-```text
-INVALID_TIME_WINDOW
-IMPOSSIBLE_DURATION
-SCHEDULING_CONFLICT
-STALE_DECISION
-```
-
-### 9.6 World and Policy Validation
+## 16. Temporal, World and Policy Validation
 
 Prüft:
 
+- Startfenster und Dauer;
+- aktive Operationskonflikte;
 - Existenz und Status referenzierter Orte;
 - Zielklassifikation;
 - Schutz- und Sperrlisten;
 - zivile Risiken;
 - Szenario- und Theatergrenzen;
-- technische Materialisierbarkeit.
+- technische Materialisierbarkeit;
+- BLUE-Targeting-, NSL-, ROE- und PID-Gates;
+- MOOSE-kompatible Ausführbarkeit.
 
 Mögliche Ergebnisse:
 
@@ -468,30 +678,102 @@ Mögliche Ergebnisse:
 VALID
 VALID_WITH_RESTRICTIONS
 REQUIRES_MORE_INTELLIGENCE
+REQUIRES_PARTNER_APPROVAL
 REQUIRES_COORDINATION
+REQUIRES_RESOURCE_ACCESS
 REQUIRES_CAPABILITY_BUILDUP
 REJECTED
 ```
 
-## 10. Adjudication
+## 17. Fraktionsspezifische Validatoren
 
-Nach erfolgreicher Validierung bestimmt der Orchestrator nicht automatisch Erfolg oder Misserfolg. Er erzeugt eine Operation mit Unsicherheit.
+### 17.1 BLUE ISAF
+
+Zusätzliche Prüfung:
+
+- politische und zivile Wirkung;
+- nationale Caveats;
+- Reserven und Recovery;
+- Targeting- und Weapons-Release-Grenzen;
+- Nachhaltigkeit;
+- Partnerautonomie;
+- keine direkte afghanische Force Generation oder Eigentumsübernahme.
+
+```text
+BLUE_PRIMARY_GOAL != DESTROY_EVERY_RED_UNIT
+```
+
+### 17.2 Afghan State
+
+Zusätzliche Prüfung:
+
+- Eigentum afghanischer Force Packages;
+- ausreichende Finance-, Manpower- und Materiel-Reservierungen;
+- Training, Retention, Führung und Sustainment;
+- Partnerunterstützung tatsächlich zugesagt;
+- politische und regionale Folgen;
+- nachhaltige Transition statt rein formaler Übergabe.
+
+### 17.3 Taliban
+
+Zusätzliche Prüfung:
+
+- politische Kontrollwirkung;
+- lokale Disziplin;
+- freiwillige Unterstützung getrennt von Zwang;
+- ResourceSource- und AccessNode-Wirkung;
+- Verhältnis von Bevölkerungseffekt zu militärischem Nutzen;
+- Reinfiltrations- und Persistenzlogik.
+
+### 17.4 Haqqani
+
+Zusätzliche Prüfung:
+
+- Compartmentation;
+- Route- und Knotenverfügbarkeit;
+- Spezialisten- und Staging-Zugang;
+- Ressourcenprovenienz;
+- Capability-Package-Vollständigkeit;
+- Netzwerkexpositionsrisiko.
+
+### 17.5 HIG
+
+Zusätzliche Prüfung:
+
+- Vertretungsbefugnis;
+- politische und militärische Doppelstruktur;
+- Defektionsrisiko;
+- lokale Patronage;
+- Verhandlungsmandat;
+- lokale Commander als organisatorische Gates;
+- Gefahr widersprüchlicher Parallelabsprachen.
+
+## 18. Adjudication
+
+Nach erfolgreicher Validierung bestimmt der Orchestrator nicht automatisch Erfolg oder Misserfolg. Er erzeugt eine Operation, Resource-Änderung oder Force-Generation-Order mit kontrollierter Unsicherheit.
 
 ```yaml
 adjudication:
   action_feasibility: 0..100
+  resource_access_effect: 0..100
+  force_generation_effect: 0..100
   detection_risk: 0..100
   execution_quality: 0..100
   local_compliance_probability: 0..100
   resource_loss_risk: 0..100
   delay_probability: 0..100
   compromise_probability: 0..100
-  effect_ceiling: 0..100
+  political_effect_ceiling: 0..100
+  physical_effect_ceiling: 0..100
 ```
 
-Diese Werte ergeben sich aus CampaignState, lokalen Zuständen, Fraktionsprofil, Ressourcen, Wissen, Terrain, BLUE-Reaktion und Zufall innerhalb kontrollierter Grenzen.
+```text
+INTENDED_EFFECT != GUARANTEED_EFFECT
+PHYSICAL_CONTROL != TOTAL_RESOURCE_CAPTURE
+TACTICAL_SUCCESS != CAMPAIGN_SUCCESS
+```
 
-## 11. Operation Lifecycle
+## 19. Operation Lifecycle
 
 ```text
 PROPOSED
@@ -515,34 +797,38 @@ CANCELLED
 RECOVERING
 ```
 
-Jeder Zustandswechsel benötigt:
+## 20. Force-Generation Lifecycle
 
-```yaml
-transition:
-  operation_id: string
-  from_state: enum
-  to_state: enum
-  timestamp: datetime
-  cause: string
-  evidence_refs: []
-  resource_delta: {}
-  relationship_delta: []
-  knowledge_outputs: []
+```text
+PROPOSED
+VALIDATING
+REJECTED
+RESOURCES_RESERVED
+RECRUITING
+TRAINING
+EQUIPPING
+FORMING
+AVAILABLE
+CANCELLED
+FAILED
 ```
 
-## 12. Ergebnisobjekt an den Commander
+Ein abgeschlossener Auftrag erzeugt höchstens ein `ForcePackage`.
 
-Das LLM erhält kein vollständiges internes Adjudication-Protokoll, sondern ein fraktionsspezifisches Ergebnisbild:
+## 21. Commander Result
 
 ```yaml
 commander_result:
   turn_id: string
+  action_id: string
   operation_id: string|null
+  force_generation_order_id: string|null
   reported_status: enum
   observed_effects: []
-  confirmed_losses: []
+  confirmed_force_package_losses: []
   unconfirmed_losses: []
   resource_changes_known: {}
+  resource_source_changes_believed: []
   new_intelligence: []
   unresolved_reports: []
   relationship_events: []
@@ -552,74 +838,21 @@ commander_result:
 
 Das objektive Ergebnis und der Commander-Bericht dürfen voneinander abweichen.
 
-## 13. Lokale Befehlsreibung
+## 22. DCS-/MOOSE-Ausführungsgrenze
 
-Delegierte Aktionen erhalten eine Ausführungsprüfung:
-
-```yaml
-subordinate_execution:
-  loyalty:
-  competence:
-  discipline:
-  communication_quality:
-  local_pressure:
-  private_interest:
-  ideological_alignment:
-  resource_dependency:
-  compliance_probability:
-```
-
-Mögliche Resultate:
+Der Adapter erhält keine freien LLM-Texte, sondern ausschließlich validierte Operation Plans oder Materialization Commands.
 
 ```text
-FULL_COMPLIANCE
-PARTIAL_COMPLIANCE
-DELAYED_COMPLIANCE
-LOCAL_MODIFICATION
-REFUSAL
-FALSE_REPORTING
-PRIVATE_EXPLOITATION
-DEFECTION
+COMMANDER_ACTION
+-> OPERATION_OR_FORCE_GENERATION_VALIDATION
+-> FORCE_PACKAGE_AVAILABLE
+-> MATERIALIZATION_REQUEST
+-> FIXED_MOOSE_MAPPING
+-> MOOSE_RUNTIME
+-> DCS_RESULT
 ```
 
-Das LLM darf diese Reibung erwarten und durch Auftragstiefe, Ressourcenkontrolle, persönliche Kontakte oder Überwachung beeinflussen, aber nicht vollständig beseitigen.
-
-## 14. Fraktionsspezifische Validatoren
-
-### 14.1 Taliban
-
-Zusätzliche Prüfung:
-
-- politische Kontrollwirkung;
-- lokale Disziplin;
-- Shadow-Governance-Konflikte;
-- Verhältnis von Bevölkerungseffekt zu militärischem Nutzen;
-- Reinfiltrations- und Persistenzlogik.
-
-### 14.2 Haqqani
-
-Zusätzliche Prüfung:
-
-- Compartmentation;
-- Route- und Knotenverfügbarkeit;
-- Spezialisten- und Staging-Zugang;
-- Capability-Package-Vollständigkeit;
-- Netzwerkexpositionsrisiko.
-
-### 14.3 HIG
-
-Zusätzliche Prüfung:
-
-- Vertretungsbefugnis;
-- politische und militärische Doppelstruktur;
-- Defektionsrisiko;
-- lokale Patronage;
-- Verhandlungsmandat;
-- Gefahr widersprüchlicher Parallelabsprachen.
-
-## 15. Verbotene LLM-Ausgaben
-
-Unzulässig sind insbesondere:
+Verboten:
 
 ```text
 DIRECT_LUA
@@ -627,220 +860,111 @@ DIRECT_MOOSE_CALL
 DIRECT_DCS_GROUP_NAME_MANIPULATION
 ARBITRARY_SPAWN
 ARBITRARY_TELEPORT
+ARBITRARY_DELETE
+GENERATED_CODE_EXECUTION
+```
+
+Vor eigener Lua-Implementierung ist die eingebundene MOOSE-Version 2.9.18 einschließlich Quellen und Dokumentation zu prüfen.
+
+## 23. Umgang mit Löschen, Entwaffnung und Gefangennahme
+
+DCS kann regulär Gruppen zerstören oder entfernen, aber keine allgemeine strategische Entwaffnung, Gefangennahme oder Demobilisierung zuverlässig abbilden.
+
+```text
+PHYSICAL_ENTITY_REMOVED
+!= FORCE_PACKAGE_KILLED
+!= FORCE_PACKAGE_DETAINED
+!= FORCE_PACKAGE_DISARMED
+```
+
+Folgende Zustände dürfen nur durch ausdrückliche Adjudication entstehen:
+
+```text
+FORCE_PACKAGE_DETAINED
+FORCE_PACKAGE_DISARMED
+FORCE_PACKAGE_DEMOBILIZED
+FORCE_PACKAGE_DEFECTED
+```
+
+## 24. Fehlerbehandlung und Reparatur
+
+Bei reparierbaren Fehlern erhält der Commander:
+
+```yaml
+validation_feedback:
+  status: repair_required
+  error_codes: []
+  invalid_fields: []
+  permitted_corrections: []
+  immutable_constraints: []
+  repair_deadline: datetime|null
+```
+
+Maximale Reparaturversuche sind konfiguriert. Danach folgt ein deterministischer fraktionsspezifischer Fallback.
+
+## 25. Verbotene Ausgaben
+
+```text
+DIRECT_LUA
+DIRECT_MOOSE_CALL
+DIRECT_DCS_GROUP_NAME_MANIPULATION
+ARBITRARY_SPAWN
+ARBITRARY_TELEPORT
+ARBITRARY_DELETE
 UNDECLARED_RESOURCE_CREATION
+UNSUPPORTED_FORCE_GENERATION
 UNSUPPORTED_TARGET_DECLARATION
 GLOBAL_WORLD_STATE_ASSERTION
 OTHER_COMMANDER_INTERNAL_STATE_ACCESS
 HIDDEN_ORCHESTRATOR_DATA_REQUEST
 FREE_FORM_ACTION_OUTSIDE_ENUM
+AFGHAN_FORCE_TREATED_AS_ISAF_PROPERTY
+REPUTATION_CONVERTED_DIRECTLY_TO_UNIT
 ```
 
-## 16. Fehlerbehandlung und Reparatur
-
-Bei reparierbaren Fehlern erhält das LLM:
-
-```yaml
-validation_feedback:
-  status: REVISION_REQUIRED
-  error_codes: []
-  invalid_fields: []
-  missing_fields: []
-  allowed_corrections: []
-  unchanged_constraints: []
-```
-
-Maximal zwei Reparaturversuche pro Turn. Danach:
+## 26. Mindesttests
 
 ```text
-FALLBACK_TO_NO_ACTION
-oder
-FALLBACK_TO_PREDEFINED_SAFE_ACTION
+RULE-001 unknown action type rejected
+RULE-002 objective resource state leakage rejected
+RULE-003 foreign resource use without agreement rejected
+RULE-004 Afghan force tasking without partner approval rejected
+RULE-005 duplicate resource reservation rejected
+RULE-006 resource transfer cannot create stock
+RULE-007 force generation without source provenance rejected
+RULE-008 ISAF cannot recruit from Afghan manpower
+RULE-009 reputation cannot directly create force package
+RULE-010 one generation order creates at most one package
+RULE-011 MOOSE materialization requires approved package
+RULE-012 missing DCS entity is not automatically destroyed
+RULE-013 detention or disarmament requires adjudication
+RULE-014 invalid LLM output uses deterministic fallback
+RULE-015 five faction-specific validators are active
 ```
 
-Ein ungültiges LLM-Ergebnis darf die Kampagnenlaufzeit nicht blockieren.
+## 27. Acceptance-Kriterien
 
-## 17. Deterministische Fallbacks
+Das Rulebook ist erst technisch akzeptiert, wenn:
 
-Für jede Fraktion werden sichere Standardaktionen definiert.
+- alle fünf Commander dasselbe Decision-Schema verwenden;
+- Action Types ausschließlich strukturierte und abstrakte Wirkungen beschreiben;
+- ResourceSource-, ResourceAccount- und Force-Generation-Prüfungen deterministisch sind;
+- ISAF und Afghan State getrennte Eigentums- und Autoritätsbereiche besitzen;
+- fremde Ressourcen und Partnerkräfte nur über bestätigte Vereinbarungen nutzbar sind;
+- MOOSE-First technisch nachgewiesen ist;
+- kein Commander direkt DCS-, Lua- oder MOOSE-Code erzeugen kann;
+- doppelte Events keine zweite Gutschrift oder Materialisierung erzeugen;
+- DCS-Löschung nicht automatisch Gefangennahme oder Entwaffnung bedeutet;
+- Replay und Fallback reproduzierbar sind.
 
-### Taliban
+## 28. Folgedokumente
+
+Dieses Rulebook wird konkretisiert durch:
 
 ```text
-PRESERVE_NETWORK
-OBSERVE_AREA
-DISPERSE_UNDER_PRESSURE
-CONTINUE_CURRENT_OPERATION
-```
-
-### Haqqani
-
-```text
-QUARANTINE_COMPROMISED_NODE
-SHIFT_ROUTE
-DELAY_COMPLEX_OPERATION
-PRESERVE_NETWORK
-```
-
-### HIG
-
-```text
-MAINTAIN_CONTACTS
-REQUEST_MORE_INFORMATION
-DELAY_DECISION
-PROTECT_LOCAL_PATRONAGE
-```
-
-## 18. Beispiel: gültige Entscheidung
-
-```yaml
-commander_decision:
-  schema_version: "1.0"
-  turn_id: RED-TAL-0042
-  commander_id: TALIBAN_COMMANDER
-  faction_id: TALIBAN
-  assessment:
-    summary: "BLUE route-clearance activity has increased, but the convoy schedule remains uncertain."
-    confidence: 63
-    key_facts:
-      - "Two route observations were reported in the last campaign day."
-    key_assumptions:
-      - "BLUE may repeat the same route tomorrow."
-    unknowns:
-      - "Exact convoy departure time."
-    suspected_deception: []
-  selected_goal:
-    goal_id: RESTRICT_BLUE_MOBILITY
-    priority: 72
-    intended_effect: "Improve route knowledge before committing an attack cell."
-    geographic_scope: [SECTOR_X]
-    time_horizon: short
-  proposed_action:
-    action_id: ACT-RED-TAL-0042-01
-    action_type: OBSERVE_ROUTE
-    action_variant: repeated_pattern_collection
-    target_ref: ROUTE_E3_SEGMENT_04
-    target_category: route
-    origin_refs: [LOCAL_CELL_17]
-    destination_refs: []
-    geographic_scope: [SECTOR_X]
-    start_window:
-      earliest: "2010-09-14T04:00:00"
-      latest: "2010-09-14T10:00:00"
-    duration_estimate: "6h"
-    desired_effects:
-      - UPDATE_CONVOY_SCHEDULE_ESTIMATE
-    required_resources:
-      - type: observer_capacity
-        amount: 1
-    requested_support: []
-    delegated_to: [LOCAL_COMMANDER_17]
-    coordination_requirements: []
-    information_requirements: []
-  risk:
-    military_risk: 18
-    political_risk: 8
-    network_risk: 24
-    civilian_harm_risk: 0
-    attribution_risk: 12
-    escalation_risk: 4
-    overall_acceptability: 86
-  constraints:
-    political_limits: []
-    geographic_limits: [REMAIN_EAST_OF_LINE_A]
-    resource_limits: [NO_ATTACK_CELL_COMMITMENT]
-    timing_limits: []
-    prohibited_outcomes: [CONTACT_WITH_BLUE]
-  abort_conditions:
-    - BLUE_COUNTER_SURVEILLANCE_DETECTED
-    - OBSERVER_COMPROMISED
-  fallback_action:
-    action_type: WITHDRAW_FROM_AREA
-  alternatives_considered:
-    - action_type: CONDUCT_IED_ATTACK
-      rejection_reason: "Target timing and force composition remain insufficiently confirmed."
-  relationship_effects_expected: []
-  memory_items_to_record:
-    - ROUTE_E3_PATTERN_UPDATE
-```
-
-## 19. Beispiel: zurückzuweisende Entscheidung
-
-```text
-"Spawn twenty fighters behind the convoy and destroy it immediately."
-```
-
-Ablehnungsgründe:
-
-```text
-FREE_FORM_ACTION_OUTSIDE_ENUM
-UNSUPPORTED_FORCE_GENERATION
-NO_ORIGIN
-NO_RESOURCE_COST
-NO_TIME_WINDOW
-NO_ABORT_CONDITIONS
-OBJECTIVE_SUCCESS_ASSUMED
-DIRECT_EXECUTION_REQUEST
-```
-
-## 20. Technische Mindestanforderungen
-
-Der spätere Orchestrator benötigt mindestens:
-
-- JSON-Schema-Validierung;
-- stabile IDs für Commander, Fraktionen, Orte, Routen, Ressourcen und Operationen;
-- getrennte objektive und beobachtete Zustände;
-- Ressourcenreservierung;
-- Operationszustandsmaschine;
-- Vereinbarungs- und Beziehungsregister;
-- Knowledge- und Memory-Store je Commander;
-- deterministische Fallbacks;
-- vollständiges Audit-Log;
-- Adapter zu CampaignState;
-- Adapter zur DCS-/MOOSE-Ausführung.
-
-## 21. Audit-Log
-
-Jeder Turn speichert:
-
-```yaml
-audit_record:
-  turn_id:
-  input_snapshot_hash:
-  model_identifier:
-  prompt_version:
-  raw_response_hash:
-  parsed_decision:
-  validation_results:
-  adjudication_result:
-  state_changes:
-  execution_events:
-  commander_visible_result:
-```
-
-Damit bleiben Entscheidungen reproduzierbar und spätere Modell- oder Promptänderungen vergleichbar.
-
-## 22. Abnahmekriterien
-
-Das Runtime-Rulebook gilt als implementierbar, wenn:
-
-1. jede Commander-Antwort schema-validiert wird;
-2. keine freie LLM-Aktion unmittelbar in DCS ausgeführt wird;
-3. Ressourcen und Autorität vor der Adjudication geprüft werden;
-4. objektive Wahrheit und Commander-Wissen getrennt bleiben;
-5. fremde Fraktionsressourcen nur über Vereinbarungen nutzbar sind;
-6. Operationen einen vollständigen Lifecycle besitzen;
-7. Abbruch, Verzögerung, Teilerfolg und Fehlschlag möglich sind;
-8. ungültige Antworten deterministisch abgefangen werden;
-9. alle Entscheidungen auditierbar sind;
-10. MOOSE/DCS ausschließlich über einen kontrollierten Adapter angesprochen werden.
-
-## 23. Nächster Schritt
-
-Als nächstes sind zwei getrennte Dokumente erforderlich:
-
-```text
-08-commander-memory-belief-and-information-model.md
 09-orchestrator-architecture-and-adjudication.md
+12-multi-commander-test-scenarios.md
+13-campaign-state-and-event-store-schema.md
+14-deterministic-test-harness-and-scripted-commanders.md
+19-language-neutral-contracts-and-json-schemas.md
 ```
-
-Dokument 08 spezifiziert Wissen, Gerüchte, Quellenzuverlässigkeit, Gedächtnis und Täuschung. Dokument 09 definiert technische Komponenten, Turn-Steuerung, Validierungsdienste, Zustandsautomaten und DCS-/MOOSE-Adapter.
