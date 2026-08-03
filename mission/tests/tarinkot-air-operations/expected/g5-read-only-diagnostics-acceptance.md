@@ -1,6 +1,6 @@
 ---
 document_id: OMW-TEST-TKOT-G5-READ-ONLY-ACCEPTANCE
-status: PLANNED
+status: BINDING
 document_class: TEST_ACCEPTANCE_SPECIFICATION
 owning_policy: OMW-GOV-001
 authoritative_for:
@@ -8,15 +8,14 @@ authoritative_for:
   - expected evidence and PASS or FAIL criteria
   - local build, mission embedding and result handoff
 not_authoritative_for:
-  - runtime acceptance before a documented PASS
   - parking calibration
   - operational MOOSE-object acceptance
   - merge approval or Ready-for-Review approval
 scenario_period: 2010-08-01/2011-12-31
-project_phase: TARINKOT_G5_READ_ONLY_DIAGNOSTICS
+project_phase: TARINKOT_G5_READ_ONLY_DIAGNOSTICS_COMPLETE
 source_branch: agent/tarinkot-object-contract-reconciliation
 source_commit: PENDING_MERGE
-validated_in_dcs: false
+validated_in_dcs: true
 supersedes: []
 superseded_by: []
 ---
@@ -74,9 +73,9 @@ ReadOnlyGuardPatternsChecked: 13
 
 ## Missionseinbindung
 
-`OMW_Template_v5_Salerno.miz` im Missionseditor öffnen. Das neue Diagnosebundle wird als letzte `DO SCRIPT FILE`-Aktion nach `Moose.lua` und den bereits vorhandenen Projektbundles eingebunden. Danach Mission speichern.
+`OMW_Template_v5_Salerno.miz` im Missionseditor öffnen. Das Diagnosebundle wird als letzte `DO SCRIPT FILE`-Aktion nach `Moose.lua` und den bereits vorhandenen Projektbundles eingebunden. Danach Mission speichern.
 
-Für G5 werden keine Gruppen, Statics, Zonen, Parking-Werte oder Warehouse-Einstellungen geändert.
+Für den initialen G5-Lauf werden keine Gruppen, Statics, Zonen, Parking-Werte oder Warehouse-Einstellungen geändert. Eine im initialen Lauf erkannte einzelne Static-Typabweichung durfte für den Retest unter einem eigenen Ergebnisvertrag korrigiert werden.
 
 ## Lauf
 
@@ -108,12 +107,12 @@ Jeder Parking-Eintrag muss Terminal-ID, Null-basierte ID, Terminaltyp, Frei-Stat
 Client-Templates:
 
 ```text
-CLIENT_US_TKOT_AH64D_01: routeParking value=20 luaType=string
-CLIENT_US_TKOT_AH64D_02: routeParking value=8 luaType=number
-CLIENT_US_TKOT_CH47F_01: routeParking value=3 luaType=number
+CLIENT_US_TKOT_AH64D_01: unitParking value=20 luaType=string
+CLIENT_US_TKOT_AH64D_02: unitParking value=8 luaType=number
+CLIENT_US_TKOT_CH47F_01: unitParking value=3 luaType=number
 ```
 
-Alle drei sollen Airbase-ID 9 als Zahl ausweisen.
+Alle drei müssen Airbase-ID 9 als Zahl ausweisen.
 
 AI-Seeds:
 
@@ -161,3 +160,19 @@ Eine von zehn abweichende Zahl fehlender Zonen muss geprüft werden, ist aber ni
 Ein G5-PASS bestätigt nur die erfolgreiche read-only Datenerfassung. Nicht bestätigt werden Parking-Eignung, Rotorfreiheit, Start/Taxi, AIRWING/SQUADRON, Payloads, Missionen, Transport, COMMANDER oder Lifecycle.
 
 Standardübergabe ist die aktuelle `dcs.log`. Die `.miz` wird zusätzlich benötigt, wenn Einbettung, Commit-Provenienz, Objektbestand oder Zonenbild unklar sind.
+
+## Dokumentiertes Ergebnis
+
+Initialer Lauf:
+
+```text
+mission/tests/tarinkot-air-operations/results/2026-08-03-g5-read-only-diagnostics-initial-fail.md
+```
+
+Maßgeblicher Retest-PASS:
+
+```text
+mission/tests/tarinkot-air-operations/results/2026-08-03-g5-read-only-diagnostics-retest-pass.md
+```
+
+Der Retest bestätigte den erwarteten Abschlussstatus auf Commit `8b2e62878f2421ba894a7abff7c12d526f4cea3d`. G5 ist damit `PASS_DCS`; G6 Parking-Kalibrierung ist freigegeben.
