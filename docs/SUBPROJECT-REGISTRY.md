@@ -14,7 +14,7 @@ project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
   - incomplete open-branch list in the documentation index
 superseded_by:
-source_branch: agent/complete-documentation-authority-migration
+source_branch: agent/tarinkot-object-contract-reconciliation
 source_commit: PENDING_MERGE
 validated_in_dcs: false
 ---
@@ -48,7 +48,9 @@ Dieses Register bildet offene Pull Requests, ihre Abhängigkeiten, Dokumentation
 | 22 | `feature/tm01m-moose-native-baseline` | PR 8 | TM01M MOOSE-native Convoys | `mission/tests/tm01-blue-convoy/` | `DRAFT` | Ein- und Fünf-Convoy-PASS; Cleanup-Follow-up offen | offen | bevorzugte MOOSE-native Convoy-Richtung |
 | 24 | `docs/bagram-air-operations-manifest` | PR 18 | Bagram/Kandahar Dokumentation | branchlokale Dokumente 31–36 | `DRAFT` | Dokumentationsabgleich; keine neue DCS-Acceptance | offen | Foundation-Build-Dokumentation |
 | 33 | `agent/complete-documentation-authority-migration` | `main` | Governance-, Status- und Indexmigration | `docs/`, ausgewählte Test-READMEs, Validator | `DRAFT` | Dokumentationsvalidator erfolgreich; keine Runtime-Acceptance | offen | Ziel dieses Registers |
-| 38 | `docs/afghanistan-force-aviation-source-consolidation` | `main` | Konsolidierung Afghanistan-Kräfte, Basen, Aviation, Air C2, Koalitions-ORBAT, RED-Commander-Strategie, ostafghanische Netzwerkoperationen, Campaign Assessment und nichtstaatliche Sicherheitsakteure | Dokumente 50–59; Dokumente 05/09/11/13/18/29/37/45/49; Register, Index, Quellenaufnahme-Audit und externe Quellenakten | `DRAFT`; quellenqualifizierte historische, Air-C2-, RED-Verhaltens- und Assessment-Referenzen | Dokumentationsvalidator erfolgreich auf Head `a3f520e0f15b3ada720e0e81da3f31d478025dd9`, Workflow-Run 104; keine DCS-/MOOSE-Runtime-Acceptance | offen | Forschungs-, Missionsdesign- und Datenmodellgrundlage; aktive ORBAT bleibt Dokument 19; genau ein RED Commander bleibt verbindliche Grundversion |
+| 38 | `docs/afghanistan-force-aviation-source-consolidation` | `main` | Konsolidierung Afghanistan-Kräfte, Basen, Aviation, Air C2, Koalitions-ORBAT, RED-Commander-Strategie, ostafghanische Netzwerkoperationen, Campaign Assessment und nichtstaatliche Sicherheitsakteure | Dokumente 50–59; Dokumente 05/09/11/13/18/29/37/45/49; Register, Index, Quellenaufnahme-Audit und externe Quellenakten | `DRAFT`; quellenqualifizierte historische, Air-C2-, RED-Verhaltens- und Assessment-Referenzen | Dokumentationsvalidator erfolgreich auf Head `a3f520e0f15b3ada720e0e81da3f31d478025dd9`, Workflow-Run 104; keine DCS-/MOOSE-Runtime-Acceptance | 40 | Forschungs-, Missionsdesign- und Datenmodellgrundlage; aktive ORBAT bleibt Dokument 19; genau ein RED Commander bleibt verbindliche Grundversion |
+| 40 | `docs/tarinkot-air-operations-baseline` | PR 38 | älterer Tarinkot-Dokumentationsstand auf Basis `OMW_Template(3).miz` | Tarinkot-Manifest, ME-Audit, Satellitenevidenz und Registeränderungen | `HISTORICAL_SUPERSEDED_DRAFT`; weiterhin offen und Draft | keine Runtime-Acceptance; Objektannahmen teilweise veraltet | 53 | nicht mehr als aktive Tarinkot-Source-of-Truth verwenden |
+| 53 | `agent/tarinkot-object-contract-reconciliation` | `main` | aktueller Tarinkot-Objektvertrag, ORBAT-, Evidenz-, FARP- und Registerkonsolidierung | `docs/tarinkot-air-operations-manifest.md`, `docs/11-*`, `docs/19-*`, Register und Tarinkot-Evidenz | `DRAFT`; kein Merge und kein Ready for Review autorisiert | G0/G1 `PASS_BRANCH`; G2 `PROPOSED_COMPLETE_PENDING_OWNER_ACCEPTANCE`; G3 `PARTIAL`; G4 nicht begonnen | G4 nach ausdrücklicher G2-Annahme | aktuelle Tarinkot-Source-of-Truth auf Branch; keine Lua- oder MIZ-Änderung |
 
 ## 3. Stackstruktur
 
@@ -60,7 +62,8 @@ main
 ├── PR 17
 ├── PR 18 → PR 24
 ├── PR 33
-└── PR 38
+├── PR 38 → PR 40 [SUPERSEDED]
+└── PR 53 [CURRENT TARINKOT DRAFT]
 ```
 
 ## 4. Verbindliche Regeln
@@ -68,9 +71,10 @@ main
 1. Ein branchgebundener PASS gilt nur für den dokumentierten Branch-, Commit-, Missions-, DCS- und MOOSE-Stand.
 2. Gestapelte Nachfolger erben das Änderungs- und Verwerfungsrisiko des Parent-Branches.
 3. Ein offener Draft-PR ist keine `main`-Autorität.
-4. `HISTORICAL_TEST_FIXTURE` darf nicht als Produktionsarchitektur verwendet werden.
+4. `HISTORICAL_TEST_FIXTURE` und `HISTORICAL_SUPERSEDED_DRAFT` dürfen nicht als Produktionsarchitektur oder aktive Objekt-Source-of-Truth verwendet werden.
 5. Merge und „Ready for Review“ benötigen weiterhin die ausdrückliche Freigabe des Projektinhabers.
 6. Dieses Register wird bei Öffnen, Schließen, Retargeting, Neubau oder Ablösung eines dokumentationsrelevanten PR aktualisiert.
+7. Für Tarinkot ersetzt PR #53 fachlich PR #40; eine formale Schließung oder ein Merge erfolgt nur auf ausdrückliche Eigentümerfreigabe.
 
 ## 5. Synchronisierungsnachweis PR #33
 
