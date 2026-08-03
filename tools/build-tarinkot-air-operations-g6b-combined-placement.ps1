@@ -7,8 +7,8 @@ Set-StrictMode -Version Latest
 $repoRoot = Split-Path -Parent $PSScriptRoot
 $sourceDir = Join-Path $repoRoot 'mission\tests\tarinkot-air-operations\src'
 $distDir = Join-Path $repoRoot 'mission\tests\tarinkot-air-operations\dist'
-$sourceFile = Join-Path $sourceDir '04-tarinkot-g6b-combined-placement.lua'
-$outputFile = Join-Path $distDir 'OMW_AirOps_Tarinkot_G6B_CombinedPlacement.lua'
+$sourceFile = Join-Path $sourceDir '05-tarinkot-g6b-helicopter-apron-retest.lua'
+$outputFile = Join-Path $distDir 'OMW_AirOps_Tarinkot_G6B_HelicopterApronRetest.lua'
 
 if (-not (Test-Path -LiteralPath $sourceFile -PathType Leaf)) {
     throw "Required source file not found: $sourceFile"
@@ -44,7 +44,7 @@ $forbiddenPatterns = [ordered]@{
 
 foreach ($entry in $forbiddenPatterns.GetEnumerator()) {
     if ($sourceText -match $entry.Value) {
-        throw "G6B combined-placement guard rejected source: $($entry.Key) matched pattern $($entry.Value)"
+        throw "G6B helicopter-apron guard rejected source: $($entry.Key) matched pattern $($entry.Value)"
     }
 }
 
@@ -53,18 +53,19 @@ $requiredPatterns = [ordered]@{
     'AI disabled after placement' = ':\s*InitAIOff\s*\('
     'Exact parking spawn path' = ':\s*SpawnAtParkingSpot\s*\('
     'Cold takeoff mode' = 'SPAWN\s*\.\s*Takeoff\s*\.\s*Cold'
-    'Combined result marker' = 'G6B_COMBINED_CONTROLLED_PLACEMENT'
+    'HelicopterOnly contract' = 'AIRBASE\s*\.\s*TerminalType\s*\.\s*HelicopterOnly'
+    'Helicopter apron result marker' = 'G6B_HELICOPTER_APRON_COMBINED'
 }
 
 foreach ($entry in $requiredPatterns.GetEnumerator()) {
     if ($sourceText -notmatch $entry.Value) {
-        throw "G6B combined-placement guard requires: $($entry.Key) pattern $($entry.Value)"
+        throw "G6B helicopter-apron guard requires: $($entry.Key) pattern $($entry.Value)"
     }
 }
 
 New-Item -ItemType Directory -Path $distDir -Force | Out-Null
 
-$builderVersion = 'TKOT-G6B-COMBINED-PLACEMENT-1'
+$builderVersion = 'TKOT-G6B-HELICOPTER-APRON-RETEST-1'
 $commit = 'UNKNOWN'
 try {
     $commit = (& git -C $repoRoot rev-parse HEAD 2>$null).Trim()
@@ -79,19 +80,19 @@ $header = @"
 -- BuilderVersion: $builderVersion
 -- GitCommit: $commit
 -- GeneratedUtc: $generatedUtc
--- TestGate: G6B_COMBINED_CONTROLLED_PLACEMENT
+-- TestGate: G6B_HELICOPTER_APRON_COMBINED_RETEST
 -- ExpectedMissionSHA256: 203c99ffa6e025a2d9f00dc899439b0167ed9d81981b612f3a8d4fd078c458f5
 -- ExpectedMooseSHA256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
 -- ExpectedMooseCommit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
 
-local OMW_TKOT_G6B_COMBINED_BUILD = {
+local OMW_TKOT_G6B_HELOAPRON_BUILD = {
   Builder = "tools/build-tarinkot-air-operations-g6b-combined-placement.ps1",
   BuilderVersion = "$builderVersion",
   GitCommit = "$commit",
   GeneratedUtc = "$generatedUtc"
 }
 
-local OMW_TKOT_G6B_COMBINED_CONFIG = {
+local OMW_TKOT_G6B_HELOAPRON_CONFIG = {
   Families = {
     {
       Key = "AH64",
@@ -100,7 +101,7 @@ local OMW_TKOT_G6B_COMBINED_CONFIG = {
       ModelRadiusM = 9.967,
       ExpectedTotalUnits = 2,
       SpawnRequests = {
-        { Alias = "TKOT_G6B_AH64_PAIR", ExpectedUnits = 2, Spots = { 0, 25 } }
+        { Alias = "TKOT_G6B_AH64_HELOAPRON", ExpectedUnits = 2, Spots = { 4, 23 } }
       }
     },
     {
@@ -110,8 +111,8 @@ local OMW_TKOT_G6B_COMBINED_CONFIG = {
       ModelRadiusM = 10.020,
       ExpectedTotalUnits = 2,
       SpawnRequests = {
-        { Alias = "TKOT_G6B_UH60_LEAD", ExpectedUnits = 1, Spots = { 13 } },
-        { Alias = "TKOT_G6B_UH60_SUPPORT", ExpectedUnits = 1, Spots = { 22 } }
+        { Alias = "TKOT_G6B_UH60_LEAD_HELOAPRON", ExpectedUnits = 1, Spots = { 21 } },
+        { Alias = "TKOT_G6B_UH60_SUPPORT_HELOAPRON", ExpectedUnits = 1, Spots = { 30 } }
       }
     },
     {
@@ -121,18 +122,18 @@ local OMW_TKOT_G6B_COMBINED_CONFIG = {
       ModelRadiusM = 7.910,
       ExpectedTotalUnits = 1,
       SpawnRequests = {
-        { Alias = "TKOT_G6B_CH47_SINGLE", ExpectedUnits = 1, Spots = { 14 } }
+        { Alias = "TKOT_G6B_CH47_HELOAPRON", ExpectedUnits = 1, Spots = { 29 } }
       }
     }
   }
 }
 
--- BEGIN SOURCE: 04-tarinkot-g6b-combined-placement.lua
+-- BEGIN SOURCE: 05-tarinkot-g6b-helicopter-apron-retest.lua
 "@
 
 $footer = @"
 
--- END SOURCE: 04-tarinkot-g6b-combined-placement.lua
+-- END SOURCE: 05-tarinkot-g6b-helicopter-apron-retest.lua
 "@
 
 $content = $header + $sourceText + $footer
@@ -145,6 +146,7 @@ Write-Host "GitCommit: $commit"
 Write-Host "BuilderVersion: $builderVersion"
 Write-Host "ForbiddenGuardPatternsChecked: $($forbiddenPatterns.Count)"
 Write-Host "RequiredGuardPatternsChecked: $($requiredPatterns.Count)"
+Write-Host "ExpectedTerminalType: 40 (HelicopterOnly)"
 Write-Host "FamiliesCombined: 3"
 Write-Host "GroupsRequested: 4"
 Write-Host "AircraftRequested: 5"
