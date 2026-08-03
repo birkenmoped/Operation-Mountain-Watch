@@ -5,15 +5,15 @@ document_class: PROJECT_OWNER_DECISION_RECORD
 owning_policy: OMW-GOV-001
 authoritative_for:
   - explicit owner acceptance of the complete Tarinkot G2 object contract
-  - authorization to begin G4 MOOSE 2.9.18 source review
-  - continued implementation lock against Tarinkot runtime Lua before G4 completion
+  - authorization and completion boundary for G4 MOOSE 2.9.18 source review
+  - continued implementation lock against runtime activation before the relevant gate
 not_authoritative_for:
   - DCS runtime acceptance
   - AI parking suitability
   - G5 or later test acceptance
   - merge approval or Ready-for-Review approval
 scenario_period: 2010-08-01/2011-12-31
-project_phase: TARINKOT_MOOSE_SOURCE_REVIEW
+project_phase: TARINKOT_MOOSE_SOURCE_REVIEW_COMPLETE
 decision_date: 2026-08-03
 source_branch: agent/tarinkot-object-contract-reconciliation
 source_commit: PENDING_MERGE
@@ -24,7 +24,7 @@ source_mission_sha256: 203c99ffa6e025a2d9f00dc899439b0167ed9d81981b612f3a8d4fd07
 embedded_moose_sha256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
 validated_in_dcs: false
 supersedes:
-  - pending-owner-acceptance state recorded in the Tarinkot G2 checklist
+  - pending-owner-acceptance state recorded in the original Tarinkot G2 checklist
 superseded_by: []
 ---
 
@@ -70,28 +70,26 @@ G0_provenance: PASS_BRANCH
 G1_ORBAT_and_evidence: PASS_BRANCH
 G2_object_contract: OWNER_ACCEPTED_BRANCH
 G3_mission_editor: PARTIAL
-G4_MOOSE_source_review: AUTHORIZED
-G5_read_only_diagnostics: BLOCKED_BY_G4
+G4_MOOSE_source_review: PASS_SOURCE_REVIEW
+G5_read_only_diagnostics: AUTHORIZED_NOT_STARTED
 ```
 
 ## 3. Freigabegrenze
 
-Diese Entscheidung autorisiert ausschließlich G4:
+Die Entscheidung autorisierte G4. G4 ist inzwischen mit der exakten eingebetteten MOOSE-Version 2.9.18 abgeschlossen und dokumentiert in:
 
 ```text
-Prüfung der tatsächlich eingebundenen Moose.lua,
-des zugehörigen MOOSE-Commits,
-der passenden Quellen und Dokumentation
-sowie vorhandener Projekt- und MOOSE-Beispiele.
+docs/evidence/tarinkot-g4-moose-2-9-18-source-review.md
 ```
+
+Als nächster Schritt ist ausschließlich das isolierte read-only G5-Diagnosebundle zugelassen.
 
 Nicht autorisiert sind weiterhin:
 
 ```text
-Tarinkot-Lua-Implementierung
-AIRWING-/SQUADRON-Laufzeitaktivierung
+operative AIRWING-/SQUADRON-Aktivierung
 Payloadregistrierung in der Mission
-Spawns
+Assets anfordern oder spawnen
 AUFTRAG-Ausführung
 COMMANDER-Ausführung
 OPSTRANSPORT-Ausführung
@@ -101,16 +99,4 @@ Merge oder Ready for Review
 
 ## 4. Verhältnis zur G2-Checkliste
 
-Die fachlichen Inhalte der Checkliste bleiben unverändert. Ausschließlich deren bisheriger Zustand:
-
-```text
-PROPOSED_COMPLETE_PENDING_OWNER_ACCEPTANCE
-```
-
-wird durch diesen Entscheidungsdatensatz ersetzt mit:
-
-```text
-OWNER_ACCEPTED_BRANCH
-```
-
-Die Checkliste bleibt der vollständige technische Vertragsinhalt; dieses Dokument ist der zugehörige Abnahmenachweis.
+Die G2-Checkliste enthält den vollständigen technischen Vertragsinhalt. Dieses Dokument ist der zugehörige Eigentümer-Abnahmenachweis.
