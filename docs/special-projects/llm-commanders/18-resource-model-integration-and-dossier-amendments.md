@@ -1,739 +1,420 @@
 ---
 document_id: OMW-SP-LLM-COMMANDERS-RESOURCE-INTEGRATION-AMENDMENTS
-status: DRAFT_CROSS_DOCUMENT_DECISION
-document_class: CROSS_DOCUMENT_INTEGRATION_AND_AMENDMENT
+status: MIGRATION_RECORD_COMPLETE
+ocument_class: CROSS_DOCUMENT_MIGRATION_AND_CONSOLIDATION_RECORD
 scenario_period: 2010-08-01/2011-12-31
 source_branch: docs/optional-llm-commanders
 validated_in_dcs: false
 authoritative_for:
-  - integration of Afghan State faction into the commander architecture
-  - interpretation of resource fields in existing dossiers
-  - transition from four to five campaign commanders
-  - cross-document update requirements caused by document 17
+  - record of transition from four to five campaign commanders
+  - record of migration to contested resource model
+  - document-authority and compatibility history
+  - remaining implementation gaps after documentation consolidation
 ---
 
-# Integration des Afghan State Commanders und Amendments zum Ressourcenmodell
+# Integration des Afghan State Commanders und Migration des Ressourcenmodells
 
 ## 1. Zweck
 
-Dieses Dokument integriert die neue afghanische Kampagnenfraktion und das gemeinsame Ressourcenmodell in den bisherigen Dokumentationsstand.
+Dieses Dokument ist die abgeschlossene Migrations- und Konsolidierungsakte für:
 
-Es verhindert, dass ältere Dossiers weiterhin so gelesen werden, als besäße jede Fraktion einen unabhängigen, unbegrenzt regenerierenden Ressourcenpool.
+- Einführung des `AFGHAN_STATE_COMMANDER`;
+- Übergang von vier auf fünf Kampagnen-Commander;
+- Einführung der gemeinsamen Ressourcen `RECRUITABLE_MANPOWER`, `FINANCE` und `MATERIEL`;
+- Trennung von Ressourcen, Capabilities, Zugängen und politischen Zuständen;
+- direkte Aktualisierung der bereits vorhandenen Dokumente 01 bis 17.
 
-Verbindliche Priorität:
+Es ist nicht mehr erforderlich, Dokument 18 als dauerhafte Interpretationsschicht zwischen widersprüchlichen Ursprungsdokumenten zu verwenden. Die Ursprungsdokumente wurden direkt migriert.
 
 ```text
-DOCUMENT_17
-is authoritative for
-resource definitions ownership flow and force generation
+DIRECT_DOCUMENT_MIGRATION = COMPLETE
+RUNTIME_IMPLEMENTATION = NOT_STARTED
+DCS_VALIDATION = NOT_COMPLETED
+```
+
+## 2. Autoritätsreihenfolge nach Migration
+
+```text
+DOCUMENT_13
+= persistent CampaignState and Event Store schema
 ```
 
 ```text
 DOCUMENT_16
-is authoritative for
-the Afghan State and ANSF commander baseline
-```
-
-Die bestehenden Dossiers bleiben für historische Identität, Zielhierarchie, Persönlichkeit, Führungsverhalten und fraktionsspezifische Präferenzen gültig. Ihre Ressourcenfelder sind jedoch durch Dokument 17 zu interpretieren.
-
-## 2. Neue Commander-Gesamtarchitektur
-
-Bisher:
-
-```text
-BLUE_COMMANDER
-TALIBAN_COMMANDER
-HAQQANI_COMMANDER
-HIG_COMMANDER
-```
-
-Neu:
-
-```text
-BLUE_ISAF_COMMANDER
-AFGHAN_STATE_COMMANDER
-TALIBAN_COMMANDER
-HAQQANI_COMMANDER
-HIG_COMMANDER
-```
-
-Technische Koalitionszuordnung:
-
-```text
-BLUE_ISAF_COMMANDER.dcs_coalition = BLUE
-AFGHAN_STATE_COMMANDER.dcs_coalition = BLUE
-```
-
-Kampagnenzuordnung:
-
-```text
-BLUE_ISAF_COMMANDER.faction_id = ISAF
-AFGHAN_STATE_COMMANDER.faction_id = AFGHAN_STATE
-```
-
-Die beiden Fraktionen besitzen getrennte:
-
-```text
-force_package_ownership
-resource_accounts
-commander_views
-mission_demands
-operation_authority
-reservations
-loss_assessment
-success_conditions
-```
-
-## 3. Gemeinsame Ressourcendefinition
-
-Die folgenden drei Größen sind die einzigen gemeinsamen, umkämpften Grundressourcen der ersten Version:
-
-```text
-RECRUITABLE_MANPOWER
-FINANCE
-MATERIEL
-```
-
-Der physische Output ist:
-
-```text
-FORCE_PACKAGE
-```
-
-Die folgenden Größen sind keine Grundressourcen:
-
-```text
-LEGITIMACY
-REPUTATION
-VOLUNTARY_SUPPORT
-COERCIVE_CONTROL
-PRESTIGE
-LOYALTY
-COMMAND_COHESION
-HUMINT_ACCESS
-CAPABILITY
-```
-
-Sie beeinflussen Zugriff, Regeneration, Erhaltung, Risiko oder Gate-Prüfungen.
-
-## 4. Amendment zu Dokument 02 – Common Commander Model
-
-`02-common-commander-model.md` ist künftig mit fünf statt vier Kampagnen-Commandern zu lesen.
-
-Neue gemeinsame Commander-Pflichtfelder:
-
-```yaml
-commander:
-  commander_id:
-  faction_id:
-  dcs_coalition:
-  strategic_objectives: []
-  owned_force_packages: []
-  resource_account_ids: []
-  permitted_resource_sources: []
-  commander_view_id:
-  authority_scope:
-  relationship_ids: []
-```
-
-Zusätzliche Trennung:
-
-```text
-SAME_DCS_COALITION != SAME_FACTION
-ALLIED_RELATIONSHIP != SHARED_OWNERSHIP
-SUPPORT_TRANSFER != COMMAND_TRANSFER
-```
-
-Der Afghan State Commander verwendet dieselben sechs Commander-Layer wie die übrigen Commander:
-
-```text
-IDENTITY
-STRATEGIC_INTENT
-ORGANIZATIONAL_AUTHORITY
-CAPABILITIES_AND_RESOURCES
-KNOWLEDGE_AND_BELIEFS
-DECISION_AND_ACTION
-```
-
-## 5. Amendment zu Dokument 03 – Inter-Faction Relations
-
-Die Beziehungsarchitektur wird um folgende gerichtete Beziehungen erweitert:
-
-```text
-ISAF -> AFGHAN_STATE
-AFGHAN_STATE -> ISAF
-AFGHAN_STATE -> TALIBAN
-TALIBAN -> AFGHAN_STATE
-AFGHAN_STATE -> HAQQANI
-HAQQANI -> AFGHAN_STATE
-AFGHAN_STATE -> HIG
-HIG -> AFGHAN_STATE
-```
-
-### 5.1 ISAF und Afghan State
-
-Erforderliche Dimensionen:
-
-```yaml
-partner_relationship:
-  political_alignment: 0..100
-  operational_trust: 0..100
-  intelligence_sharing: 0..100
-  training_support: 0..100
-  finance_support: 0..100
-  materiel_support: 0..100
-  enabler_dependency: 0..100
-  command_friction: 0..100
-  transition_pressure: 0..100
-  perceived_respect_for_sovereignty: 0..100
-```
-
-### 5.2 Afghan State und RED
-
-Diese Beziehungen sind nicht nur militärische Feindschaft. Sie umfassen Konkurrenz um:
-
-```text
-population_access
-recruitment
-state_and_shadow_revenue
-local_commanders
-routes_and_checkpoints
-materiel
-political_legitimacy
-information
-```
-
-## 6. Amendment zum Taliban-Dossier
-
-Die strategische Zielhierarchie aus `04-taliban-commander-dossier.md` bleibt gültig.
-
-Insbesondere gültig bleiben:
-
-```text
-preserve leadership
-preserve network cohesion
-maintain local intelligence access
-maintain or expand political control
-undermine government legitimacy
-protect recruitment finance and logistics
-retain reinfiltration access
-```
-
-### 6.1 Aktualisierte Ressourceninterpretation
-
-Frühere Felder wie:
-
-```text
-manpower
-weapons
-finance_access
-taxation_access
-recruitment_access
-cache_access
-```
-
-werden künftig aufgeteilt in:
-
-```text
-RESOURCE_ACCOUNT:
-  RECRUITABLE_MANPOWER
-  FINANCE
-  MATERIEL
-
-ACCESS_OR_STATE:
-  recruitment_access
-  taxation_access
-  cache_access
-  voluntary_support
-  coercive_control
-  shadow_governance
-```
-
-### 6.2 Keine automatische Einheitenerzeugung
-
-```text
-HIGH_TALIBAN_SUPPORT
-!= NEW_UNIT
-```
-
-Neue Taliban-Force-Packages benötigen:
-
-```text
-finance
-+ manpower
-+ materiel
-+ cadre capacity
-+ time
-```
-
-### 6.3 Repression
-
-Repression wird nicht mit freiwilliger Unterstützung zusammengeführt.
-
-```text
-VOLUNTARY_SUPPORT != COERCIVE_CONTROL
-```
-
-Sie kann kurzfristig Zugriff erhöhen und langfristig Unterstützung, Wirtschaftsleistung oder Stabilität beschädigen.
-
-## 7. Amendment zum Haqqani-Dossier
-
-Die strategische Identität aus `05-haqqani-commander-dossier.md` bleibt gültig:
-
-```text
-FAMILY_NETWORK_AND_OPERATIONAL_BROKER
-RESOURCE_AGGREGATION_AND_HIGH_COMPLEXITY_OPERATIONS
-```
-
-### 7.1 Aktualisierte Ressourceninterpretation
-
-Frühere Felder wie:
-
-```text
-finance_access
-weapons_access
-explosives_access
-specialist_access
-staging_capacity
-attack_cell_capacity
-```
-
-werden getrennt in:
-
-```text
-RESOURCE_ACCOUNT:
-  FINANCE
-  RECRUITABLE_MANPOWER
-  MATERIEL
-
-ACCESS_OR_GATE:
-  external_support_access
-  specialist_access
-  trusted_broker_capacity
-  route_redundancy
-  staging_access
-  compartmentation
-  target_intelligence
-```
-
-### 7.2 Fraktionsspezifische Force Generation
-
-```text
-finance
-+ selected manpower
-+ materiel
-+ network access
-+ cadre or specialist gate
-+ time
-
--> HAQQANI_FORCE_PACKAGE
-```
-
-Haqqani benötigt nicht zwingend den größten regionalen Manpower-Anteil. Selektiver Kader-, Broker-, Spezialisten- und Routenzugang ist wichtiger als flächendeckende Rekrutierung.
-
-### 7.3 Externe Unterstützung
-
-Externe Unterstützung ist ein endlicher umkämpfter Zufluss. Ein höherer Haqqani-Anteil reduziert den gleichzeitig verfügbaren Anteil anderer RED-Fraktionen.
-
-## 8. Amendment zum HIG-Dossier
-
-Die strategische Identität aus `06-hig-commander-dossier.md` bleibt gültig:
-
-```text
-POLITICAL_MILITARY_FACTION_NETWORK
-LOCAL_POWER_BROKERAGE_AND_OPPORTUNISTIC_COERCION
-```
-
-### 8.1 Aktualisierte Ressourceninterpretation
-
-Frühere Felder wie:
-
-```text
-manpower
-weapons
-explosives
-revenue_access
-cache_capacity
-political_capital
-```
-
-werden getrennt in:
-
-```text
-RESOURCE_ACCOUNT:
-  FINANCE
-  RECRUITABLE_MANPOWER
-  MATERIEL
-
-ACCESS_OR_STATE:
-  patronage_strength
-  regional_recruitment_access
-  local_commander_loyalty
-  political_capital
-  negotiation_credibility
-  representation_clarity
-```
-
-### 8.2 Fraktionsspezifische Force Generation
-
-```text
-finance
-+ regional manpower
-+ materiel
-+ patronage access
-+ local commander gate
-+ time
-
--> HIG_FORCE_PACKAGE
-```
-
-### 8.3 Konkurrenz
-
-HIG konkurriert besonders mit Taliban um:
-
-```text
-regional manpower
-local commanders
-local revenue shares
-political representation
-patronage networks
-route and district access
-```
-
-## 9. Amendment zum BLUE-Dossier
-
-Die strategische Zielhierarchie aus `10-blue-commander-dossier.md` bleibt grundsätzlich gültig.
-
-Sie wird präzisiert:
-
-```text
-BLUE_PRIMARY_GOAL
-!= DESTROY_EVERY_TALIBAN_UNIT
-```
-
-BLUE verfolgt im Szenariozeitraum:
-
-```text
-deny strategic terrorist safe haven
-prevent insurgent overthrow of the Afghan state
-reduce RED operational and political capability
-protect priority populations and coalition forces
-support Afghan security capability
-preserve critical routes and bases
-prepare sustainable transition
-```
-
-Nicht fest gebundene Kämpfer können historisch auch über Reintegration und Versöhnung aus dem Konflikt gelöst werden. Da DCS Gefangennahme und Entwaffnung nicht regulär abbildet, sind solche Ergebnisse nur als ausdrücklich adjudizierte Kampagnenereignisse zulässig.
-
-### 9.1 ISAF-Eigenkräfte
-
-ISAF rekrutiert nicht aus dem afghanischen Manpower-Pool.
-
-```text
-NATIONAL_FORCE_POOL
-+ COALITION_COMMITMENT
-+ REPLACEMENT_CAPACITY
-+ TIME
-
--> ISAF_FORCE_PACKAGE
-```
-
-### 9.2 Lokales Ansehen
-
-```text
-ISAF_LOCAL_TRUST
-!= ISAF_UNIT_GENERATION_RESOURCE
-```
-
-Lokales Vertrauen beeinflusst:
-
-```text
-HUMINT
-population access
-source protection
-freedom of interaction
-political cost
-operation acceptance
-```
-
-### 9.3 Verhältnis zu ANSF
-
-Afghanische Einheiten werden aus dem BLUE-Inventar entfernt und gehören `AFGHAN_STATE`.
-
-BLUE kann übertragen oder bereitstellen:
-
-```text
-finance support
-materiel support
-training capacity
-advisors
-enablers
-intelligence products
-```
-
-Diese Unterstützung erzeugt nicht sofort eine einsatzbereite afghanische Einheit.
-
-## 10. Amendment zum CampaignState-Schema
-
-`13-campaign-state-and-event-store-schema.md` benötigt folgende zusätzliche Aggregate:
-
-```text
-ResourceSource
-ResourceAccount
-ResourceReservation
-ResourceTransfer
-AccessNode
-FactionShare
-PopulationState
-ForceGenerationOrder
-ForcePackage
-```
-
-### 10.1 ResourceSource
-
-```yaml
-resource_source:
-  source_id:
-  resource_type: MANPOWER | FINANCE | MATERIEL
-  region_id:
-  capacity:
-  current_available:
-  regeneration_per_turn:
-  legal_owner:
-  physical_controller:
-  disruption_level:
-  exhaustion_level:
-  beneficiary_shares: {}
-  version:
-```
-
-### 10.2 ResourceAccount
-
-```yaml
-resource_account:
-  account_id:
-  faction_id:
-  resource_type:
-  available:
-  reserved:
-  committed:
-  in_transit:
-  version:
-```
-
-### 10.3 ForceGenerationOrder
-
-```yaml
-force_generation_order:
-  order_id:
-  faction_id:
-  template_id:
-  source_region:
-  resource_reservations: []
-  organizational_gates: []
-  generation_started_at:
-  generation_complete_at:
-  state:
-```
-
-### 10.4 Zusätzliche Invarianten
-
-```text
-NO_RESOURCE_GENERATION_WITHOUT_SOURCE
-NO_FORCE_PACKAGE_WITHOUT_RESOURCE_COMMITMENT
-NO_ISAF_RECRUITMENT_FROM_AFGHAN_MANPOWER
-NO_POPULATION_OWNERSHIP
-NO_REPUTATION_TO_DIRECT_UNIT_CONVERSION
-NO_DUPLICATE_RESOURCE_CREDIT
-```
-
-## 11. Amendment zur Orchestrator-Architektur
-
-`09-orchestrator-architecture-and-adjudication.md` wird um folgende Pipeline erweitert:
-
-```text
-RESOURCE_SOURCE_UPDATE
--> ACCESS_SHARE_CALCULATION
--> FACTION_RESOURCE_ACCOUNT_UPDATE
--> RESOURCE_RESERVATION
--> FORCE_GENERATION_VALIDATION
--> FORCE_PACKAGE_CREATION
--> OPERATION_ASSIGNMENT
--> MOOSE_MATERIALIZATION
--> RESULT_EVENT
--> RESOURCE_AND_CONTROL_UPDATE
-```
-
-Der Orchestrator muss zusätzlich:
-
-- Quellkapazitäten aktualisieren;
-- Beneficiary Shares verwalten;
-- Ressourcenreservierungen transaktionssicher prüfen;
-- Force-Generation-Zeiten verwalten;
-- Materialisierung und Ressourcenverbrauch idempotent koppeln;
-- doppelte DCS-Ergebnisse abfangen.
-
-## 12. Amendment zum Test-Szenario-Dokument
-
-`12-multi-commander-test-scenarios.md` wird von vier auf fünf Commander erweitert.
-
-Neue Testgruppen:
-
-```text
-AFGHAN_STATE_AUTONOMY
-ISAF_AFGHAN_PARTNER_FRICTION
-RESOURCE_SOURCE_COMPETITION
-RED_INTER_FACTION_RESOURCE_COMPETITION
-FORCE_GENERATION
-RESOURCE_DENIAL
-RESOURCE_CAPTURE_AND_TRANSFER
-POPULATION_ACCESS
-```
-
-Mindestfälle:
-
-```text
-AFG-001 Afghan commander declines operation without required enablers
-AFG-002 BLUE cannot task Afghan unit as owned ISAF inventory
-AFG-003 Afghan-led operation can reserve coalition enablers without transferring unit ownership
-AFG-004 donor transfer does not create an immediate ready unit
-AFG-005 premature transition is rejected
-
-RES-001 one manpower share cannot generate two force packages
-RES-002 Taliban recruitment gain reduces available regional manpower
-RES-003 Haqqani external support gain reduces other RED shares
-RES-004 HIG local commander loss reduces regional recruitment access
-RES-005 route control changes finance and materiel flow
-RES-006 captured materiel is removed from prior owner
-RES-007 destroyed materiel cannot be credited
-RES-008 ISAF local trust does not generate ISAF units
-RES-009 repression and voluntary support remain separate
-RES-010 force package cannot materialize before MOOSE adapter acceptance
-```
-
-## 13. Amendment zum deterministischen Test Harness
-
-`14-deterministic-test-harness-and-scripted-commanders.md` benötigt einen fünften Baseline-Commander:
-
-```text
-AFGHAN_STATE_BASELINE_V1
-```
-
-Baseline-Entscheidungen:
-
-```text
-preserve state and force cohesion
-protect critical centers
-request missing coalition enablers
-secure revenue manpower and materiel access
-accept only capability-matched operations
-increase Afghan lead when sustainable
-delay premature transition
-```
-
-Zusätzliche Fixtures:
-
-```text
-regional manpower source
-state and donor finance source
-external RED support source
-materiel warehouse
-route revenue node
-five faction resource accounts
-force generation queue
-```
-
-## 14. Amendment zur Technologieauswahl
-
-Der PoC aus `15-orchestrator-technology-selection-and-deployment-model.md` wird von vier auf fünf Commander erweitert.
-
-```text
-POC_COMMANDERS = 5
-```
-
-Der Technologievergleich muss zusätzlich messen:
-
-```text
-resource transaction safety
-share allocation determinism
-force generation queue recovery
-five commander concurrency
-resource source replay
-idempotent resource and DCS coupling
-```
-
-## 15. README- und Dokumentreihenfolge
-
-Die weitere Dokumentreihenfolge lautet:
-
-```text
-16-afghan-state-and-ansf-commander-dossier.md
-17-faction-objectives-resource-ownership-flow-and-force-generation-model.md
-18-resource-model-integration-and-dossier-amendments.md
-19-language-neutral-contracts-and-json-schemas.md
-```
-
-Die zuvor als Dokument 16 geplanten sprachneutralen Verträge werden aufgrund der fachlich notwendigen Ressourcen- und Fraktionsentscheidung auf Dokument 19 verschoben.
-
-## 16. DCS- und MOOSE-Grenze
-
-```text
-DCS_MOOSE
-= physical force package and mission runtime
+= Afghan State and ANSF commander authority
 ```
 
 ```text
-CAMPAIGN_STATE_ORCHESTRATOR
-= virtual resource source account reservation and authorization
+DOCUMENT_17
+= contested resource ownership flow and force-generation authority
 ```
-
-Verbindlich:
 
 ```text
-LLM_CANNOT_SPAWN
-LLM_CANNOT_TRANSFER_RESOURCE_DIRECTLY
-ORCHESTRATOR_CANNOT_BYPASS_MOOSE
-AFGHAN_AND_ISAF_UNITS_REMAIN_SEPARATE_CAMPAIGN_OWNERSHIP
+DOCUMENT_02
+= common commander domain model
 ```
 
-Vor eigenem Lua-Code ist die tatsächlich eingebundene MOOSE-Version 2.9.18 zu prüfen.
+```text
+DOCUMENT_07
+= runtime action and validation contract
+```
 
-## 17. Verbindlicher Konsolidierungsstand
+```text
+DOCUMENT_09
+= orchestrator service and transaction architecture
+```
+
+Dokument 18 dokumentiert, wie diese Autoritäten entstanden und in ältere Dokumente integriert wurden.
+
+## 3. Verbindlicher konsolidierter Stand
 
 ```text
 CAMPAIGN_COMMANDER_COUNT = 5
+```
 
+```text
 COMMANDERS =
-  BLUE_ISAF
-  AFGHAN_STATE
-  TALIBAN
-  HAQQANI
-  HIG
+  BLUE_ISAF_COMMANDER
+  AFGHAN_STATE_COMMANDER
+  TALIBAN_COMMANDER
+  HAQQANI_COMMANDER
+  HIG_COMMANDER
+```
 
+```text
 COMMON_CONTESTED_RESOURCES =
   RECRUITABLE_MANPOWER
   FINANCE
   MATERIEL
-
-PHYSICAL_OUTPUT =
-  FORCE_PACKAGE
-
-RESOURCE_AUTHORITY =
-  DOCUMENT_17
-
-AFGHAN_FACTION_AUTHORITY =
-  DOCUMENT_16
 ```
 
-## 18. Noch offene Aktualisierungen
+```text
+PHYSICAL_STRATEGIC_OUTPUT = FORCE_PACKAGE
+TACTICAL_RUNTIME_FOUNDATION = MOOSE_2_9_18
+```
 
-Vor Runtime-Implementierung sind die betroffenen Ursprungsdokumente redaktionell direkt zu aktualisieren. Bis dahin besitzt dieses Amendment Vorrang bei Widersprüchen.
+```text
+DCS_COALITION != CAMPAIGN_FACTION
+RESOURCE != CAPABILITY
+RESOURCE != POLITICAL_STATE
+FORCE_PACKAGE != DCS_GROUP
+```
 
-Noch offen:
+## 4. Phase 1 – zentrale Verträge
 
-- direkte Einfügung der Dokument-17-Referenz in 04, 05, 06 und 10;
-- Erweiterung der Commander-Anzahl in 02, 09, 12, 13, 14 und 15;
-- Erstellung der sprachneutralen Schemas in Dokument 19;
-- konkrete ResourceSource-Ausgangsdaten;
-- Force-Package-Kosten und Aufbauzeiten;
-- MOOSE-2.9.18-Prüfung für Materialisierung, Warehouses und Logistik.
+### 4.1 Dokument 13 – CampaignState
+
+Direkt migriert:
+
+- fünf kanonische Fraktionen;
+- DCS-Koalition getrennt von Kampagnenfraktion;
+- `ResourceSource`;
+- `ResourceAccount`;
+- `ResourceReservation`;
+- `ResourceTransfer`;
+- `ResourceFlow`;
+- `AccessNode`;
+- `FactionShare`;
+- `ForceGenerationOrder`;
+- `ForcePackage` und `ForceUnit`;
+- Resource- und Force-Generation-Events;
+- Ownership-, Idempotenz- und Recovery-Invarianten;
+- DCS-Löschung getrennt von Detention, Disarmament und Demobilization.
+
+### 4.2 Dokument 02 – Common Commander Model
+
+Direkt migriert:
+
+- fünf Commander;
+- gemeinsame Commander-Felder;
+- Trennung `ResourceAccount / Capability / Access / PoliticalState`;
+- Force-Generation-Anträge;
+- ISAF-/Afghan-State-Partnerautonomie;
+- resource-bezogene Beliefs und Decisions.
+
+### 4.3 Dokument 07 – Runtime Rulebook
+
+Direkt migriert:
+
+- Frontmatter korrigiert;
+- fünf fraktionsspezifische Validatoren;
+- ResourceSource-, Transfer- und Force-Generation-Actions;
+- abstrakte militärische Wirkungsaktionen statt prozeduraler Taktikanweisungen;
+- Afghan-State-Partnerfreigabe;
+- MOOSE-First- und No-Generated-Code-Grenze.
+
+### 4.4 Dokument 09 – Orchestrator
+
+Direkt migriert:
+
+- `ResourceSourceManager`;
+- `AccessShareCalculator`;
+- `ResourceAccountService`;
+- `ResourceTransferService`;
+- `ForceGenerationManager`;
+- `ForcePackageRegistry`;
+- neue Transaktions- und Recovery-Pipelines;
+- idempotente DCS-/MOOSE-Kopplung.
+
+## 5. Phase 2 – Fraktionen und Partnerschaft
+
+### 5.1 Dokument 03 – Relationships
+
+Direkt migriert:
+
+- ISAF ↔ Afghan State;
+- Afghan State ↔ Taliban;
+- Afghan State ↔ Haqqani;
+- Afghan State ↔ HIG;
+- Finance-/Materiel-Transfer getrennt von Capability Support;
+- Partneroperationen und Souveränitätsfriktion;
+- RED-Konkurrenz um ResourceSources und Shares.
+
+### 5.2 Dokument 10 – BLUE ISAF Dossier
+
+Direkt migriert:
+
+- Zielkorrektur: nicht Vernichtung aller Taliban;
+- strategischer Safe-Haven-, Schutz-, Partner- und Transition-Auftrag;
+- ISAF-eigener Force Pool und `COALITION_COMMITMENT`;
+- lokale ISAF-Reputation als HUMINT-/Zugangsmodifikator, nicht als Unit Currency;
+- Afghan-State-Eigentum und Zustimmung.
+
+### 5.3 Dokument 11 – MissionDemand
+
+Direkt migriert:
+
+- Afghan Partner Review;
+- separate Eigentums- und Ressourcenreservierungen;
+- ResourceSource-, Revenue-, Recruitment- und Force-Generation-Support-Demands;
+- Targeting-, NSL-, ROE-, PID- und CAS-Gates;
+- Capture nur als möglicher Kampagneneffekt.
+
+### 5.4 Dokumente 04, 05 und 06 – RED-Dossiers
+
+Direkt migriert:
+
+```text
+RESOURCE_ACCOUNTS:
+  RECRUITABLE_MANPOWER
+  FINANCE
+  MATERIEL
+```
+
+Getrennt davon:
+
+```text
+ACCESS
+CAPABILITY
+ORGANIZATIONAL_GATES
+POLITICAL_AND_SOCIAL_STATE
+```
+
+Taliban:
+
+- freiwillige Unterstützung und Repression getrennt;
+- Cadre- und Command-Link-Gates;
+- politische Kontrolle, Ressourcenzugang und Reinfiltration.
+
+Haqqani:
+
+- externe Unterstützung endlich und umkämpft;
+- Broker-, Spezialisten-, Route-, Staging- und Compartmentation-Gates;
+- Capability Package getrennt vom ResourceAccount.
+
+HIG:
+
+- Patronage, politisches Kapital und Vertretungsbefugnis getrennt von Finance;
+- Local-Commander-Gate;
+- regionale ResourceSource- und Repräsentationskonkurrenz.
+
+### 5.5 Dokument 08 – Information
+
+Direkt migriert:
+
+- fünftes Afghan-State-Informationsprofil;
+- ISAF-/Afghan-State-Informationsteilung nicht automatisch vollständig;
+- resource-bezogene Beliefs;
+- Resource Memory;
+- Share-, Source- und Account-Provenienz.
+
+## 6. Phase 3 – Tests und Technologie
+
+### 6.1 Dokument 12 – Testszenarien
+
+Direkt migriert:
+
+- fünf Commander auf allen Levels;
+- ResourceSource-, Share-, Transfer- und Force-Generation-Tests;
+- Afghan-State-Eigentum und Partnerautonomie;
+- DCS-Missing-Entity- und MOOSE-Idempotenztests;
+- 30-Tage-Resource-Economy-Langzeittest.
+
+### 6.2 Dokument 14 – Deterministic Harness
+
+Direkt migriert:
+
+```text
+BLUE_ISAF_BASELINE_V2
+AFGHAN_STATE_BASELINE_V1
+TALIBAN_BASELINE_V2
+HAQQANI_BASELINE_V2
+HIG_BASELINE_V2
+```
+
+Zusätzlich:
+
+- ResourceSource Tick;
+- Share Calculation;
+- ResourceAccount Service;
+- Force-Generation-Queue;
+- Transfer- und Recovery-Fixtures;
+- Golden Master, Differential und Shadow Mode.
+
+### 6.3 Dokument 15 – Technology Selection
+
+Direkt migriert:
+
+- PoC mit fünf Commandern;
+- Resource-Economy-Pflichtobjekte;
+- Partnerautonomie;
+- Resource Conservation;
+- Force-Generation-Recovery;
+- Share Determinism;
+- MOOSE-Adapter-Idempotenz;
+- Python-/Elixir-/Hybridvergleich bleibt offen.
+
+## 7. Phase 4 – Quellen und Autoritäten
+
+### 7.1 Dokument 01 – Source Inventory
+
+Direkt migriert:
+
+- Quellenbasis für alle fünf Fraktionen;
+- ISAF-/Transition-/Coalition-Commitment-Quellen;
+- Afghan-State-/ANSF-/Force-Generation-Quellen;
+- ResourceSource- und Quellenreife-Matrix;
+- offene quantitative Ausgangsdaten.
+
+### 7.2 Dokument 16 – Afghan State
+
+Direkt konsolidiert:
+
+```text
+CANONICAL_COMMANDER_NAME = AFGHAN_STATE_COMMANDER
+```
+
+`ANSF_COMMANDER` ist nur funktionale Kurzbezeichnung, kein zweiter strategischer Commander.
+
+### 7.3 Dokument 17 – Resource Model
+
+Direkt konsolidiert:
+
+- `MATERIEL` als strategisches Aggregat;
+- `docs/05-logistics.md` bleibt operative Logistikautorität;
+- `ForcePackage` und `ForceUnit` getrennt;
+- ISAF-Mittel werden erst durch autorisierten Transfer Teil des Afghan-State-Flusses;
+- schriftlicher Ressourcenzyklus und Mermaid-Kreislauf aktualisiert;
+- direkte MOOSE-First- und Template-Autoritätsverweise.
+
+## 8. Nicht mehr gültige Lesarten
+
+Folgende ältere Interpretationen sind verworfen:
+
+```text
+FOUR_COMMANDERS_ONLY
+BLUE_OWNS_ALL_BLUE_COALITION_UNITS
+ANSF_IS_A_BLUE_RESOURCE
+ALL_IMPORTANT_VALUES_ARE_RESOURCES
+SUPPORT_OR_REPRESSION_DIRECTLY_GENERATES_UNITS
+EXTERNAL_SUPPORT_IS_UNLIMITED
+DCS_GROUP_DELETED_MEANS_CAPTURED_OR_DISARMED
+RESOURCE_TRANSFER_CREATES_NEW_STOCK
+```
+
+## 9. Weiterhin offene fachliche Daten
+
+Die Dokumentationsmigration ersetzt keine noch fehlenden Ausgangsdaten.
+
+Offen bleiben:
+
+- konkrete ResourceSource-Kapazitäten je Region;
+- Startanteile und Regenerationsraten;
+- Force-Package-Kosten;
+- Aufbau-, Trainings- und Rekonstitutionszeiten;
+- Template-Zuordnungen;
+- konkreter nationaler ISAF Force Pool und Ersatzlogik;
+- fraktions- und regionsspezifische Finance-Mixe;
+- quantitative Afghan-State-Training-, Attrition- und Retention-Werte;
+- MOOSE-2.9.18-Materialisierungs- und Warehouse-Prüfung.
+
+Diese Werte dürfen nicht erfunden werden.
+
+## 10. Weiterhin offene technische Arbeit
+
+```text
+19-language-neutral-contracts-and-json-schemas.md
+```
+
+Danach:
+
+- konkrete JSON Schemas;
+- Event Upcaster und Migrationen;
+- deterministischer Reference Harness;
+- ResourceSource- und Force-Generation-Fixtures;
+- MOOSE-2.9.18-Adapterprüfung;
+- isolierte DCS-Testmission;
+- erst anschließend LLM Shadow Mode.
+
+## 11. MOOSE-First-Grenze
+
+```text
+ORCHESTRATOR
+= strategic state resource validation and authorization
+```
+
+```text
+MOOSE
+= tactical mission task group and materialization runtime
+```
+
+```text
+LLM_OR_SCRIPTED_COMMANDER
+= structured intent only
+```
+
+Vor eigenem Lua-Code ist die eingebundene MOOSE-Version 2.9.18 einschließlich Quellen und Dokumentation zu prüfen.
+
+## 12. Konsolidierungsstatus
+
+```text
+DIRECT_UPDATE_01_TO_17 = COMPLETE
+DOCUMENT_18_ROLE = MIGRATION_AND_HISTORY_RECORD
+BASIC_INTERPRETATION_REQUIRES_DOCUMENT_18 = NO
+RUNTIME_ACCEPTED = NO
+DCS_VALIDATED = NO
+MERGE_READY = NO
+```
+
+## 13. Querverweise
+
+```text
+README.md
+01-source-inventory-and-faction-baseline.md
+02-common-commander-model.md
+03-inter-faction-relations-and-negotiation.md
+04-taliban-commander-dossier.md
+05-haqqani-commander-dossier.md
+06-hig-commander-dossier.md
+07-runtime-rulebook-and-action-schema.md
+08-commander-memory-belief-and-information-model.md
+09-orchestrator-architecture-and-adjudication.md
+10-blue-commander-dossier.md
+11-blue-mission-demand-force-allocation-and-targeting-schema.md
+12-multi-commander-test-scenarios.md
+13-campaign-state-and-event-store-schema.md
+14-deterministic-test-harness-and-scripted-commanders.md
+15-orchestrator-technology-selection-and-deployment-model.md
+16-afghan-state-and-ansf-commander-dossier.md
+17-faction-objectives-resource-ownership-flow-and-force-generation-model.md
+```
