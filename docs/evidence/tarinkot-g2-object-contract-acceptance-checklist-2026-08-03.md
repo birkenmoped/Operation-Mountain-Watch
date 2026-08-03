@@ -1,6 +1,6 @@
 ---
 document_id: OMW-DECISION-TARINKOT-G2-OBJECT-CONTRACT-2026-08-03
-status: PROPOSED_OWNER_ACCEPTANCE
+status: DRAFT
 document_class: OBJECT_CONTRACT_ACCEPTANCE_CHECKLIST
 owning_policy: OMW-GOV-001
 authoritative_for:
@@ -20,6 +20,11 @@ source_mission: OMW_Template_v5_Salerno.miz
 source_mission_sha256: 203c99ffa6e025a2d9f00dc899439b0167ed9d81981b612f3a8d4fd078c458f5
 embedded_moose_sha256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
 validated_in_dcs: false
+decision_state: PROPOSED_OWNER_ACCEPTANCE
+project_phase: TARINKOT_OBJECT_CONTRACT_RECONCILIATION
+source_commit: PENDING_MERGE
+supersedes: []
+superseded_by: []
 ---
 
 # Tarinkot – G2-Objektvertrag und Abnahmeliste

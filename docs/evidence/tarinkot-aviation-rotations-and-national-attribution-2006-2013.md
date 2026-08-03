@@ -1,6 +1,6 @@
 ---
 document_id: OMW-EVIDENCE-TARINKOT-AVIATION-ROTATIONS
-status: EVIDENCE_REVIEWED
+status: BINDING
 owning_policy: OMW-GOV-001
 document_class: HISTORICAL_ROTATION_AND_NATIONAL_ATTRIBUTION_RECORD
 authoritative_for:
@@ -17,6 +17,11 @@ active_tarinkot_baseline: 2011-03-01/2011-12-31
 context_period: 2006-01-01/2013-12-31
 source_branch: agent/tarinkot-object-contract-reconciliation
 validated_in_dcs: false
+evidence_state: REVIEWED
+project_phase: TARINKOT_OBJECT_CONTRACT_RECONCILIATION
+source_commit: PENDING_MERGE
+supersedes: []
+superseded_by: []
 ---
 
 # Tarinkot – Aviation-Rotationen und nationale Zuordnung 2006–2013

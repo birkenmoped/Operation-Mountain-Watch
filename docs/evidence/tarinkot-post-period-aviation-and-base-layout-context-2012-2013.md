@@ -1,6 +1,6 @@
 ---
 document_id: OMW-EVIDENCE-TARINKOT-POST-PERIOD-AVIATION-BASE-LAYOUT
-status: EVIDENCE_REVIEWED
+status: BINDING
 document_class: POST_PERIOD_CONTEXT_RECORD
 owning_policy: OMW-GOV-001
 authoritative_for:
@@ -17,6 +17,11 @@ scenario_period: 2010-08-01/2011-12-31
 context_period: 2012-05-03/2013-12-31
 source_branch: agent/tarinkot-object-contract-reconciliation
 validated_in_dcs: false
+evidence_state: REVIEWED
+project_phase: TARINKOT_OBJECT_CONTRACT_RECONCILIATION
+source_commit: PENDING_MERGE
+supersedes: []
+superseded_by: []
 ---
 
 # Tarinkot – Post-period Aviation- und Basislayout-Kontext 2012–2013

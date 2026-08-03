@@ -1,6 +1,6 @@
 ---
 document_id: OMW-AIR-TKOT-MANIFEST
-status: PROPOSED_BINDING_OBJECT_CONTRACT
+status: DRAFT
 owning_policy: OMW-GOV-001
 document_class: AIR_OPERATIONS_MANIFEST
 authoritative_for:
@@ -20,7 +20,7 @@ not_authoritative_for:
 scenario_period: 2010-08-01/2011-12-31
 project_phase: TARINKOT_OBJECT_CONTRACT_RECONCILIATION
 source_branch: agent/tarinkot-object-contract-reconciliation
-source_commit: PENDING
+source_commit: PENDING_MERGE
 source_mission: OMW_Template_v5_Salerno.miz
 source_mission_sha256: 203c99ffa6e025a2d9f00dc899439b0167ed9d81981b612f3a8d4fd078c458f5
 embedded_moose_sha256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
@@ -30,6 +30,9 @@ supersedes_on_merge:
   - Tarinkot Mission Editor assumptions based on OMW_Template(3).miz
   - generic Tarinkot AIRWING and SQUADRON names not derived from historical evidence
   - provisional UH-60 and CH-47 TF_ATTACK_ATTACHED names
+object_contract_state: PROPOSED_COMPLETE_PENDING_OWNER_ACCEPTANCE
+supersedes: []
+superseded_by: []
 ---
 
 # Tarinkot Air Operations Manifest and Object Contract
