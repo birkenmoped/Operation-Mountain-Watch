@@ -1,66 +1,103 @@
 ---
 document_id: OMW-TEST-TKOT-G7-AIRWING-SQUADRON-PAYLOAD-FOUNDATION-ACCEPTANCE
-status: PLANNED
+status: ACCEPTED_TECHNICAL_BASELINE
 document_class: TEST_ACCEPTANCE_CONTRACT
 owning_policy: OMW-GOV-001
 authoritative_for:
-  - Tarinkot G7 combined AIRWING, SQUADRON, capability and payload acceptance
+  - accepted Tarinkot G7 AIRWING, SQUADRON, capability and payload foundation
   - application of G6-accepted SQUADRON parking pools
+  - pre-start Warehouse stock and post-start SQUADRON asset boundaries
   - AIRWING vertical-helicopter policy order before AIRWING start
-  - stable idle-node PASS and FAIL criteria
+  - observer-client allowance on hard-excluded client terminals
+  - stable idle-node PASS criteria and accepted result
 not_authoritative_for:
   - tactical AUFTRAG dispatch
-  - vertical takeoff runtime acceptance
+  - actual vertical takeoff runtime acceptance
   - COMMANDER or OPSTRANSPORT acceptance
   - return, landing, recovery, loss or persistence acceptance
   - merge approval or Ready-for-Review approval
 scenario_period: 2010-08-01/2011-12-31
-project_phase: TARINKOT_G7_FOUNDATION
+project_phase: TARINKOT_G7_ACCEPTED_G8_BLOCKED
 source_branch: agent/tarinkot-object-contract-reconciliation
-source_commit: PENDING_MERGE
-validated_in_dcs: false
-supersedes: []
+source_commit: add569fb3231a5563d9c89f865cce7bd764bc0bb
+validated_in_dcs: true
+supersedes:
+  - G7 contract that required all Tarinkot client slots to remain unoccupied
+  - pre-start acceptance of nonempty squadron.assets
 superseded_by: []
 ---
 
 # Tarinkot G7 – AIRWING/SQUADRON/Payload Foundation Acceptance
 
-## 1. Testziel
+## 1. Ergebnis
 
-Ein kombinierter DCS-Lauf muss den vollständigen Tarinkot-Grundknoten ohne operativen Auftrag aufbauen und stabil betreiben:
-
-```text
-1 AIRWING
-3 SQUADRONs
-5 registrierte Asset-Gruppen
-7 registrierte KI-Luftfahrzeuge
-3 rollenbezogene Payloads
-3 automatisch durch AIRWING:AddSquadron erzeugte RELOCATECOHORT-Payloads
-8 akzeptierte HelicopterOnly-ParkingIDs
-0 COMMANDER
-0 AUFTRAG-Instanzen
-0 OPSTRANSPORT
-0 absichtliche Spawns
+```yaml
+gate: G7_AIRWING_SQUADRON_PAYLOAD_FOUNDATION
+classification: PASS_DCS_WITH_TELEMETRY_FIELD_CORRECTION
+core_foundation: PASS
+observer_client: PASS_NON_BLOCKING
+vertical_departure: NOT_TESTED
+G8: BLOCKED_BY_CENTRAL_CONSOLIDATION_AND_STATIC_GATE
 ```
 
-Dieser Lauf bündelt sämtliche technisch zusammengehörigen G7-Prüfungen. Familienweise Einzelläufe sind nur bei einer nicht eindeutig isolierbaren Störung zulässig.
+Der G7-Grundknoten ist für den dokumentierten Branch-, Commit-, Bundle-, MIZ-, DCS- und MOOSE-Stand akzeptiert.
 
-## 2. Provenienzvertrag
+Ergebnisbericht:
+
+```text
+../results/2026-08-04-g7-airwing-squadron-payload-foundation-pass.md
+```
+
+## 2. Akzeptierte Provenienz
 
 ```yaml
 branch: agent/tarinkot-object-contract-reconciliation
+source_commit: add569fb3231a5563d9c89f865cce7bd764bc0bb
 mission: OMW_Template_v6_Tarinkot.miz
+mission_sha256: 86ba08f46c78a94cdf6eb54f7abe85145bdabe2817e7a2a89f2cec34932866bb
+internal_mission_sha256: babaaee09f38ecbacb0c564b1686e20ee5b18ccf9b8abd920f32952d4a8f54a8
+dcs_version: 2.9.28.26385 MT
 moose_release: 2.9.18
 moose_commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
 moose_sha256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
 builder: tools/build-tarinkot-air-operations-g7-foundation.ps1
-builder_version: TKOT-G7-AIRWING-FOUNDATION-1
-bundle: mission/tests/tarinkot-air-operations/dist/OMW_AirOps_Tarinkot_G7_Foundation.lua
+accepted_builder_version: TKOT-G7-AIRWING-FOUNDATION-3
+accepted_bundle: mission/tests/tarinkot-air-operations/dist/OMW_AirOps_Tarinkot_G7_Foundation.lua
+accepted_bundle_sha256: 7018f4e388a349f91bc4169e6200226a32c001e3c4afdbd4daf69b538de2dea8
+dcs_log_sha256: aeacc9fc9270dc033ed49a41eb1b3264880710265386f1d21e0c787a22739e52
+debrief_sha256: 8a33b90efdf57f92a95ff2b07d0c016555d79776da3b708367f63ef09a284588
 ```
 
-Der konkrete Git-Commit und Bundle-SHA-256 werden beim lokalen Build ermittelt und mit dem Lauf protokolliert.
+Vorbereitete statische Korrektur für alle nachfolgenden Builds:
 
-## 3. Objektvertrag
+```yaml
+builder_version: TKOT-G7-AIRWING-FOUNDATION-4
+lifecycle_guard: tools/Test-AirOpsLifecycleGuards.ps1
+ci_workflow: .github/workflows/tarinkot-g7-static-validation.yml
+runtime_retest_required: false
+```
+
+## 3. Testziel
+
+Der kombinierte Lauf musste den Tarinkot-Grundknoten ohne operativen Auftrag aufbauen und stabil betreiben:
+
+```text
+1 AIRWING
+3 SQUADRONs
+5 registrierte Assetgruppen
+7 registrierte KI-Luftfahrzeuge
+3 rollenbezogene Payloads
+3 automatische RELOCATECOHORT-Payloads
+8 akzeptierte HelicopterOnly-ParkingIDs
+0 COMMANDER
+0 AUFTRAG-Instanzen
+0 OPSTRANSPORT
+0 deliberate Spawns
+```
+
+Familienweise Einzelläufe waren nicht erforderlich, weil der kombinierte Log alle Subsysteme eindeutig auflöste.
+
+## 4. Objektvertrag
 
 ### AIRWING
 
@@ -106,9 +143,9 @@ CH47:
   capabilities: [TROOPTRANSPORT, CARGOTRANSPORT, LANDATCOORDINATE]
 ```
 
-`OPSTRANSPORT` und `FREIGHTTRANSPORT` werden in G7 nicht vorsorglich ergänzt. Der spätere Transporttest legt deren konkreten Carrier-, Cargo-, Zonen- und Payloadvertrag separat fest.
+`OPSTRANSPORT` und `FREIGHTTRANSPORT` sind kein Bestandteil von G7.
 
-## 4. Bestandsledger
+## 5. Bestandsledger
 
 ```text
 AH-64: 8 Statics + 2 Clients + 4 registrierte KI = 14
@@ -116,13 +153,13 @@ UH-60: 4 Statics + 0 Clients + 2 registrierte KI = 6
 CH-47: 0 Statics + 1 Client  + 1 registrierte KI = 2
 ```
 
-Der Test prüft diese Rechnung explizit. Late-Activation-Templates sind keine zusätzlichen Luftfahrzeuge.
+Late-Activation-Templates sind keine zusätzlichen Luftfahrzeuge.
 
-Die zwei akzeptierten AH-64-ParkingIDs tragen jeweils genau einen Two-Ship-Start. Damit ist ohne spätere Poolerweiterung nur eine AH-64-Two-Ship-Gruppe gleichzeitig am Boden startfähig. G7 akzeptiert die Registrierung zweier Asset-Gruppen, behauptet aber keine gleichzeitige Bodenbereitstellung beider Gruppen.
+Die zwei AH-64-ParkingIDs tragen eine Two-Ship-Gruppe gleichzeitig. Die zweite registrierte Two-Ship-Gruppe bleibt Warehouse-Reserve, solange keine weiteren akzeptierten Positionen verfügbar sind.
 
-## 5. Parking-Vertrag
+## 6. Parking-Vertrag
 
-Alle acht IDs müssen im Lauf:
+Alle acht IDs waren im Lauf:
 
 ```text
 vorhanden
@@ -133,8 +170,6 @@ keine Client-TerminalID
 untereinander eindeutig
 ```
 
-sein.
-
 Hard Client Exclusions:
 
 ```text
@@ -143,28 +178,55 @@ TerminalID 8
 TerminalID 20
 ```
 
-Nach `AIRWING:AddSquadron()` muss jedes registrierte Asset die ParkingIDs seines SQUADRON übernommen haben. Dies folgt dem MOOSE-Pfad `asset.parkingIDs = cohort.parkingIDs` und wird für jede Asset-Gruppe protokolliert.
+Akzeptierte Pools:
 
-## 6. MOOSE-Vertrag
-
-Verwendet werden ausschließlich vorhandene MOOSE-Primitive:
-
-```lua
-AIRWING:New()
-AIRWING:SetAirbase()
-AIRWING:SetTakeoffCold()
-AIRWING:SetSafeParkingOn()
-AIRWING:SetOptionPreferVerticalLanding()
-SQUADRON:New()
-SQUADRON:SetGrouping()
-SQUADRON:SetParkingIDs()
-SQUADRON:AddMissionCapability()
-AIRWING:AddSquadron()
-AIRWING:GetSquadron()
-AIRWING:NewPayload()
-AIRWING:GetOpsGroups()
-AIRWING:Start()
+```yaml
+AH64: [21, 4]
+UH60: [30, 27, 23]
+CH47: [32, 29, 10]
 ```
+
+Interne Parking-Vererbung wird post-start geprüft. Sie beweist nicht allein die tatsächliche spätere DCS-Spawnposition.
+
+## 7. Verbindlicher MOOSE-Lifecycle
+
+### Pre-Start
+
+Nach `AIRWING:AddSquadron()` werden geprüft:
+
+```text
+airwing.cohorts == 3
+airwing.stock == 5
+squadron.assets == 0/0/0 als erwarteter Deferred-Zustand
+Rollen-Payloads == 3
+Payloads gesamt == 6
+Queues == 0
+OPSGROUPs == 0
+Safe Parking == true
+Vertikaloption == true
+Takeoff == cold parking
+```
+
+Nicht zulässig ist ein Pre-Start-Fail, weil `squadron.assets` noch nicht `Ngroups` enthält.
+
+### Post-Start
+
+Nach `AIRWING:Start()` und abgeschlossener WAREHOUSE-/LEGION-Initialisierung werden geprüft:
+
+```text
+AIRWING Running
+squadron.assets == 2/2/1
+Warehouse-Stock == 5
+SQUADRON.parkingIDs unverändert
+Missionqueue == 0
+Transportqueue == 0
+Requestqueue == 0
+OPSGROUPs == 0
+```
+
+Der akzeptierte Lauf erfüllte sämtliche Werte.
+
+## 8. Vertikaloption
 
 Verbindliche Reihenfolge:
 
@@ -173,15 +235,55 @@ airwing:SetOptionPreferVerticalLanding()
 airwing:Start()
 ```
 
-G7 prüft das gesetzte Policy-Flag. Ein tatsächlicher vertikaler Abflug wird erst mit einem nativen AIRWING-/AUFTRAG-Dispatch in G8 abgenommen.
+G7 akzeptiert nur:
 
-## 7. Verbotene Inhalte
+```text
+Option vor Start gesetzt
+AIRWING stabil Running
+kein spontaner Spawn
+```
 
-Das Bundle darf keine dieser Laufzeitaktionen enthalten:
+Nicht durch G7 akzeptiert:
+
+```text
+Weitergabe an eine reale Tarinkot-FLIGHTGROUP
+tatsächliches vertikales Abheben
+Vermeidung von Taxi oder Runway
+```
+
+Dies gehört in den isolierten nativen G8-AIRWING-/AUFTRAG-Dispatch.
+
+## 9. Observer-Client
+
+Ein Beobachter-Client ist zulässig, wenn seine TerminalID hart aus allen KI-Pools ausgeschlossen ist und der Foundation-Test keine Flugbewegung erzeugt.
+
+Der akzeptierte Lauf enthielt:
+
+```text
+Clientunit: CLIENT_US_TKOT_AH64D_01_UNIT_01
+TerminalID: 20
+Player: Neues Rufz.
+observerClientsDetected: 1
+observerClientsAllowed: 1
+observerClientsBlocking: 0
+```
+
+Das alte Endmarkerfeld `activePlayerClients=0` ist verworfen. Es entstand durch eine nachträgliche Maskierung des bereits erkannten Clients. Künftige Bundles behalten den tatsächlichen Detektionswert und protokollieren:
+
+```text
+observerClientsDetected
+observerClientsAllowed
+observerClientsBlocking
+observerClientUnits
+```
+
+## 10. Verbotene Inhalte
+
+Das G7-Bundle enthält keine:
 
 ```text
 COMMANDER:New
-AUFTRAG-Konstruktor
+AUFTRAG-Konstruktoren
 OPSTRANSPORT:New
 SPAWN
 FLIGHTGROUP:New
@@ -195,48 +297,9 @@ CampaignState-Mutation
 AIRWING:AddMission
 ```
 
-## 8. Ausführung
-
-Testbedingungen:
+## 11. Akzeptierter Finalzustand
 
 ```text
-Tarinkot-Client-Slots unbesetzt
-MOOSE zuerst laden
-nur das G7-Bundle als aktuelles Tarinkot-Testbundle laden
-Mission mindestens 45 Sekunden laufen lassen
-keinen Auftrag oder F10-Testbefehl auslösen
-```
-
-Es ist keine Sichtprüfung gespawnter Luftfahrzeuge erforderlich, weil G7 ausdrücklich null Spawns verlangt.
-
-## 9. Erwartete Zwischenmarker
-
-```text
-PARKING_POOL_SUMMARY accepted=8 expected=8
-STATIC_CONTRACT_SUMMARY found=12 expected=12
-OPS_GROUPS_PRESTART=0
-AIRWING_START_CALLED verticalPolicySetBeforeStart=true missionsCreated=0 commanderCreated=0 transportCreated=0 deliberateSpawns=0
-```
-
-Erwartete Idle-Prüfung:
-
-```text
-IDLE_INSPECTION
-airwingRunning=true
-stock=5
-missionQueue=0
-transportQueue=0
-requestQueue=0
-opsGroups=0
-activePlayerClients=0
-```
-
-## 10. PASS-Kriterium
-
-Der Abschlussmarker muss enthalten:
-
-```text
-RESULT G7_AIRWING_SQUADRON_PAYLOAD_FOUNDATION
 status=PASS
 reason=none
 violations=0
@@ -256,42 +319,49 @@ opsGroups=0
 safeParking=true
 verticalPolicy=true
 takeoffCold=true
-activePlayerClients=0
+observerClientsDetected=1
+observerClientsAllowed=1
+observerClientsBlocking=0
 commanderCreated=0
 auftragCreated=0
 opsTransportCreated=0
 deliberateSpawns=0
 ```
 
-Zusätzlich dürfen im relevanten Laufzeitfenster keine Lua-, Scheduler-, MOOSE- oder Tarinkot-G7-Fehler auftreten.
+Die drei Observer-Felder sind die korrigierte semantische Darstellung der Rohmarker; der akzeptierte Builder v3 gab im letzten Resultat nur das maskierte Altfeld aus.
 
-## 11. FAIL- und INVALID-Kriterien
+## 12. Statischer Guard
 
-`INVALID`:
+Builder-Version 4 muss vor jeder weiteren Nutzung den gemeinsamen Guard bestehen:
 
-- Tarinkot-Client während des Tests besetzt;
-- Bundle doppelt geladen;
-- falscher oder nicht eindeutig zuordenbarer Teststand.
+```powershell
+./tools/Test-AirOpsLifecycleGuards.ps1 `
+  -SourceFile <transformed-source> `
+  -GeneratedFile <bundle> `
+  -RequirePostStartAssetValidation `
+  -RequireVerticalPolicyBeforeStart `
+  -FoundationScope
+```
 
-`FAIL`:
+Der Guard blockiert:
 
-- Objekt-, Template-, Static-, Airbase-, Warehouse- oder Parkingvertrag verletzt;
-- SQUADRON-/Asset-/Payloadanzahl abweichend;
-- AIRWING nicht `Running`;
-- Mission-, Transport- oder Warehouse-Request-Queue nicht leer;
-- gespawnte OPSGROUP vorhanden;
-- Vertical-, Safe-Parking- oder Cold-Takeoff-Policy nicht gesetzt;
-- relevanter Lua-/MOOSE-Fehler.
+- positive Pre-Start-Sollprüfung von `squadron.assets`;
+- Pre-Start-Prüfung geerbter Asset-ParkingIDs;
+- Vertikaloption nach `AIRWING:Start()`;
+- Observer-Zählwertmaskierung;
+- COMMANDER-, AUFTRAG-, OPSTRANSPORT- oder SPAWN-Pfade im Foundation-Gate.
 
-## 12. Gate-Wirkung
-
-Ein vollständiger PASS setzt:
+## 13. Gate-Wirkung
 
 ```yaml
-G7_airwing_squadron_payload: PASS_DCS
-G8_direct_dispatch_vertical_departure: AUTHORIZED
+G7_airwing_squadron_payload: PASS_DCS_WITH_TELEMETRY_FIELD_CORRECTION
+G8_direct_dispatch_vertical_departure: BLOCKED
+g8_blockers:
+  - central lifecycle consolidation remains Draft PR 55 and is not on main
+  - corrected G7 builder and lifecycle guard require successful static workflow
+  - next MIZ and embedded bundle identity are not yet established
 G9_commander: BLOCKED_BY_G8
 G10_lifecycle: NOT_STARTED
 ```
 
-Ein FAIL hält G8 gesperrt. Die Fehlerisolierung erfolgt zunächst aus dem kombinierten Log; ein weiterer DCS-Lauf wird nur für den kleinstmöglichen betroffenen Teilbereich erstellt.
+Ein erneuter langer G7-DCS-Lauf ist nicht erforderlich. Der nächste DCS-Lauf ist erst nach Abschluss der zentralen Konsolidierung der isolierte G8-Dispatch.
