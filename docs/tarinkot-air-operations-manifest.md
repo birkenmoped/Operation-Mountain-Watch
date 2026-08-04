@@ -11,6 +11,7 @@ authoritative_for:
   - Tarinkot warehouse, client, seed-template and static contract
   - accepted G5 runtime basis and G6 parking mapping and placement
   - accepted G7 AIRWING, SQUADRON, capability and payload foundation
+  - accepted Tarinkot G7 static lifecycle and observer-client guard
   - Tarinkot dependency on central AirOps lifecycle and test governance
 not_authoritative_for:
   - actual vertical departure
@@ -36,7 +37,8 @@ moose_source_review_state: PASS_SOURCE_REVIEW
 g5_state: PASS_DCS
 g6_state: PASS_DCS_OWNER_VISUAL_ACCEPTED
 g7_state: PASS_DCS_WITH_TELEMETRY_FIELD_CORRECTION
-g8_state: BLOCKED_BY_CENTRAL_CONSOLIDATION_AND_STATIC_GATE
+g7_static_guard_state: PASS_CI
+g8_state: BLOCKED_BY_CENTRAL_CONSOLIDATION_AND_NEXT_ARTIFACT_GATE
 supersedes_on_merge:
   - Tarinkot object assumptions from docs/tarinkot-air-operations-baseline PR 40
   - Tarinkot Mission Editor assumptions based on OMW_Template(3).miz
@@ -60,6 +62,7 @@ Dieses Dokument ist die aktive Tarinkot-Arbeitsbaseline auf Draft PR #53. Es kon
 - G5-Strukturdiagnose;
 - G6-Parking-Kalibrierung und visuell akzeptierte Platzierung;
 - den am 4. August 2026 akzeptierten G7-Foundation-Lauf;
+- den erfolgreichen statischen G7-Lifecycle-/Builder-Guard;
 - die zentrale Lifecycle- und Testgovernance aus Draft PR #55.
 
 Nicht autorisiert:
@@ -71,7 +74,7 @@ G8-AUFTRAG-Dispatch vor Abschluss der zentralen Konsolidierung
 Behauptung eines tatsächlichen vertikalen Starts
 COMMANDER- oder OPSTRANSPORT-Ausführung
 Lifecycle-, Recovery- oder Persistenzbehauptungen außerhalb des getesteten Scopes
-weitere lange DCS-Läufe ohne statischen Builder-, Dokumentations- und Hashketten-PASS
+weitere lange DCS-Läufe ohne zentrale Main-Baseline und neue Hashkette
 ```
 
 ## 2. Provenienz
@@ -104,6 +107,17 @@ MIZ SHA-256: 86ba08f46c78a94cdf6eb54f7abe85145bdabe2817e7a2a89f2cec34932866bb
 Internal mission SHA-256: babaaee09f38ecbacb0c564b1686e20ee5b18ccf9b8abd920f32952d4a8f54a8
 DCS log SHA-256: aeacc9fc9270dc033ed49a41eb1b3264880710265386f1d21e0c787a22739e52
 Debrief SHA-256: 8a33b90efdf57f92a95ff2b07d0c016555d79776da3b708367f63ef09a284588
+```
+
+### 2.3 Akzeptierter statischer Folgestand
+
+```text
+BuilderVersion: TKOT-G7-AIRWING-FOUNDATION-4
+Lifecycle guard: tools/Test-AirOpsLifecycleGuards.ps1
+Workflow: Tarinkot G7 static validation
+Run ID: 30954380156
+Result: SUCCESS
+Validated head: 940330f5213a8da856bca5c456cd38872b747da7
 ```
 
 Jedes Speichern, Neuverpacken, Überschreiben oder Übertragen der MIZ erzeugt ein neues Artefakt. Der frühere Struktur-PASS bleibt historische Evidenz für seine Hashkette, ist aber nicht automatisch auf die geänderte Datei übertragbar.
@@ -537,13 +551,13 @@ Player Neues Rufz.
 
 TerminalID 20 ist hart aus sämtlichen KI-Pools ausgeschlossen. G7 erzeugt keine Flugbewegung. Künftige Tests dürfen den tatsächlichen Detektionswert nicht auf null maskieren.
 
-## 12. Statischer Folgestand
+## 12. Akzeptierter statischer Folgestand
 
 ```text
 Builder:
 tools/build-tarinkot-air-operations-g7-foundation.ps1
 
-Prepared BuilderVersion:
+BuilderVersion:
 TKOT-G7-AIRWING-FOUNDATION-4
 
 Lifecycle Guard:
@@ -551,6 +565,9 @@ tools/Test-AirOpsLifecycleGuards.ps1
 
 CI Workflow:
 .github/workflows/tarinkot-g7-static-validation.yml
+
+CI Run:
+30954380156 / SUCCESS
 ```
 
 Der Guard blockiert:
@@ -561,7 +578,7 @@ Der Guard blockiert:
 - Observer-Count-Maskierung;
 - COMMANDER-, AUFTRAG-, OPSTRANSPORT- und SPAWN-Pfade im G7-Scope.
 
-Diese Harnesskorrektur benötigt keinen erneuten langen G7-DCS-Lauf. Sie muss statisch bestehen, bevor G8 vorbereitet wird.
+Die statische Prüfung bestand. Diese Harnesskorrektur benötigt keinen erneuten langen G7-DCS-Lauf.
 
 ## 13. Gate-Matrix
 
@@ -577,9 +594,9 @@ Diese Harnesskorrektur benötigt keinen erneuten langen G7-DCS-Lauf. Sie muss st
 | G6A2 Mapping | `PASS_DCS` | 33/33 ME-/MOOSE-Zuordnung vollständig |
 | G6B Parking/Placement | `PASS_DCS_OWNER_VISUAL_ACCEPTED` | acht type-40-Positionen angenommen |
 | G7 AIRWING/SQUADRON/Payload | `PASS_DCS_WITH_TELEMETRY_FIELD_CORRECTION` | Idle-Foundation und Lifecycle akzeptiert |
-| G7 statischer Guard | `IMPLEMENTED_AWAITING_CI` | Builder v4 und gemeinsamer Guard vorhanden |
+| G7 statischer Guard | `PASS_CI` | Builder v4 und gemeinsamer Guard bestanden |
 | zentrale Konsolidierung | `DRAFT_PR_55_NOT_ON_MAIN` | G8 bleibt gesperrt |
-| G8 direkter Dispatch/Vertikalstart | `BLOCKED` | erst nach PR #55 und statischem PASS |
+| G8 direkter Dispatch/Vertikalstart | `BLOCKED` | erst nach PR #55 und neuer Artefaktkette |
 | G9 COMMANDER | `BLOCKED_BY_G8` | nicht begonnen |
 | G10 Lifecycle/Handoff | `NOT_STARTED` | nicht begonnen |
 
@@ -600,4 +617,4 @@ embedded_moose_hash_known: true
 acceptance_documents_synchronized: true
 ```
 
-Der nächste DCS-Lauf ist danach genau ein isolierter G8-AIRWING-/AUFTRAG-Dispatch zur Prüfung der realen Vertikalabflugkette. Kein Merge und kein Ready for Review ohne ausdrückliche Freigabe des Projektinhabers.
+Der statische Tarinkot-Teil ist bereits bestanden. Der nächste DCS-Lauf ist nach der Main-Konsolidierung genau ein isolierter G8-AIRWING-/AUFTRAG-Dispatch zur Prüfung der realen Vertikalabflugkette. Kein Merge und kein Ready for Review ohne ausdrückliche Freigabe des Projektinhabers.
