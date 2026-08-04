@@ -4,6 +4,7 @@ status: ACCEPTED_STATIC_BASELINE
 document_class: STATIC_VALIDATION_RESULT
 owning_policy: OMW-GOV-001
 authoritative_for:
+  - current Tarinkot gate status after central lifecycle merge
   - Tarinkot synchronization with the merged central AirOps lifecycle baseline
   - post-merge G7 static revalidation
   - G8 UH-60 native vertical-dispatch static validation
@@ -19,7 +20,10 @@ project_phase: TARINKOT_G8_STATIC_PASS_AWAITING_MIZ
 source_branch: agent/tarinkot-object-contract-reconciliation
 source_commit: 492716c1967a9afabb191f688e9a03e507242d95
 validated_in_dcs: false
-supersedes: []
+supersedes:
+  - Tarinkot README gate entries that classify PR 55 as Draft or not on main
+  - Tarinkot manifest gate entries that block G8 on central consolidation
+  - PR 53 text that classifies central lifecycle consolidation as incomplete
 superseded_by: []
 ---
 
@@ -70,7 +74,7 @@ Run 30955772776
 SUCCESS
 ```
 
-Damit ist die frühere Abhängigkeit `DRAFT_PR_55_NOT_ON_MAIN` aufgehoben.
+Damit ist die frühere Abhängigkeit `DRAFT_PR_55_NOT_ON_MAIN` aufgehoben. Dieses Dokument ersetzt für den aktuellen Gate-Status die entsprechenden älteren Statuszeilen in Manifest und Test-README; deren historische G5/G6/G7-Inhalte bleiben gültig.
 
 ## 3. G8-Implementierung
 
