@@ -5,19 +5,20 @@ document_class: TEST_PACKAGE_INDEX
 owning_policy: OMW-GOV-001
 authoritative_for:
   - Tarinkot Air Operations test-package layout
-  - accepted G5 read-only diagnostic result
-  - accepted G6A parking-candidate dataset
-  - primary combined G6B controlled-placement workflow
-  - per-family G6B fallback boundary
+  - accepted G5 read-only diagnostics
+  - accepted G6 parking mapping and controlled placement
+  - current combined G7 AIRWING/SQUADRON/payload foundation workflow
+  - airport-level batching and failure-isolation boundary
 not_authoritative_for:
-  - final parking allowlists before a documented combined G6B PASS
-  - AIRWING, SQUADRON, payload, AUFTRAG, COMMANDER or OPSTRANSPORT acceptance
+  - G7 runtime acceptance before a documented DCS PASS
+  - tactical AUFTRAG, vertical departure, COMMANDER or OPSTRANSPORT acceptance
+  - return, landing, recovery, loss or persistence acceptance
   - merge approval or Ready-for-Review approval
 scenario_period: 2010-08-01/2011-12-31
-project_phase: TARINKOT_G6_PARKING_CALIBRATION
+project_phase: TARINKOT_G7_FOUNDATION
 source_branch: agent/tarinkot-object-contract-reconciliation
 source_commit: PENDING_MERGE
-validated_in_dcs: true
+validated_in_dcs: partial
 supersedes: []
 superseded_by: []
 ---
@@ -33,10 +34,13 @@ G2_object_contract: OWNER_ACCEPTED_BRANCH
 G3_mission_editor: PARTIAL_FUNCTION_ZONES_PENDING
 G4_MOOSE_source_review: PASS_SOURCE_REVIEW
 G5_read_only_diagnostics: PASS_DCS
-G6_parking_calibration: G6A_PASS_DCS_G6B_COMBINED_IMPLEMENTED_AWAITING_DCS
-G7_airwing_squadron_payload: BLOCKED_BY_G6B
-G8_direct_dispatch_and_transport: NOT_STARTED
-G9_commander_and_operational_parking: NOT_STARTED
+G6A_geometric_dataset: PASS_DCS_SCOPE_TOO_BROAD_FOR_PRODUCTIVE_LISTS
+G6A2_ME_MOOSE_mapping: PASS_DCS
+G6B_first_combined_run: FAIL_VISUAL_WRONG_APRON
+G6B_final_free_spots: PASS_DCS_OWNER_VISUAL_ACCEPTED
+G7_airwing_squadron_payload: IMPLEMENTED_AWAITING_DCS
+G8_direct_dispatch_vertical_departure: BLOCKED_BY_G7
+G9_commander: BLOCKED_BY_G8
 G10_lifecycle_results_handoff: NOT_STARTED
 ```
 
@@ -51,7 +55,7 @@ Warehouse wrappers: 1
 Clients: 3/3
 AI seeds: 3/3
 Statics: 12/12
-Zones: 1 present / 10 expected missing
+Zones: 1 present / 10 pending
 Name duplicates: 0
 Mutations: 0
 ```
@@ -64,112 +68,162 @@ TerminalID 8
 TerminalID 20
 ```
 
-G6A passed with:
+G6A proved the geometric dataset but used a broad `HelicopterUsable` class that also admitted type-104 general apron positions. Those candidates are not productive Tarinkot helicopter parking.
+
+G6A2 mapped all 33 Mission Editor positions to MOOSE TerminalIDs:
 
 ```text
-RESULT G6A_PARKING_CANDIDATE_ANALYSIS status=PASS_DATASET
-parkingCount=33
-modelMissing=0
-candidateSetFailures=0
-activePlayerClients=0
-parkingMutation=0
-spawns=0
+RESULT G6A2_ME_PARKING_MAP status=PASS_MAP anchors=30 mapped=30 rejected=0 ambiguous=0 duplicates=0 parkingCount=33 clientReferences=3
 ```
 
-Candidate sets:
+The first combined G6B type-104 run failed visual acceptance:
 
 ```text
-AH-64: 0,1,6,11,13,14,18,22,24,25,28,33
-UH-60: 0,1,6,11,13,14,18,22,24,25,28,33
-CH-47: 0,1,6,11,13,14,18,22,24,25,28,29,33
+FAIL_VISUAL_WRONG_APRON
 ```
+
+The final combined type-40 run passed runtime and owner visual acceptance:
+
+```text
+RESULT G6B_HELICOPTER_APRON_COMBINED
+status=PASS_RUNTIME_PLACEMENT
+expectedGroups=7
+groupsFound=7
+expectedUnits=8
+unitsFound=8
+placementFailures=0
+familyFailures=0
+spawnCalls=7
+expectedTerminalType=HelicopterOnly
+```
+
+Accepted operational pools:
+
+```yaml
+AH64:
+  ME: [C04-H, C18-H]
+  TerminalIDs: [21, 4]
+UH60:
+  ME: [C14-H, C12-H, C11-H]
+  TerminalIDs: [30, 27, 23]
+CH47:
+  ME: [C08-H, C09-H, C10-H]
+  TerminalIDs: [32, 29, 10]
+```
+
+G6B remains a placement-only proof. The invalid direct-UNIT and standalone-FLIGHTGROUP departure experiments were withdrawn. No additional G6B run is required.
 
 ## Test batching decision
 
-Technically similar airport checks are combined by default. A routine DCS cycle is not split only because several aircraft families are involved.
-
-The standard sequence is:
+Technically similar airport checks are combined by default:
 
 ```text
 one bundle
 one Mission Editor replacement
 one DCS run
-per-family result records
+per-subsystem result records
 one aggregate result
 ```
 
-Smaller tests are used only for failure isolation.
+Smaller runs are created only when the combined log cannot isolate a failure.
 
-## Primary G6B test
+## Current G7 test
 
-The primary bundle is:
+Builder:
 
 ```text
-OMW_AirOps_Tarinkot_G6B_CombinedPlacement.lua
+tools/build-tarinkot-air-operations-g7-foundation.ps1
 ```
 
-It creates in one run:
+Generated bundle:
+
+```text
+mission/tests/tarinkot-air-operations/dist/OMW_AirOps_Tarinkot_G7_Foundation.lua
+```
+
+Builder version:
+
+```text
+TKOT-G7-AIRWING-FOUNDATION-1
+```
+
+The combined bundle constructs:
+
+```text
+AIRWING:
+AW_US_TKOT_TF_ATTACK_3_101_AVN
+
+SQUADRONs:
+SQ_US_TKOT_AH64D_3_101_AVN
+SQ_US_TKOT_UH60_TF_ATTACK
+SQ_US_TKOT_CH47_B_1_52_AVN
+```
+
+Registered inventory:
 
 ```yaml
 AH64:
-  groups: 1
-  aircraft: 2
-  terminal_ids: [0, 25]
+  groups: 2
+  grouping: 2
+  aircraft: 4
 UH60:
   groups: 2
+  grouping: 1
   aircraft: 2
-  terminal_ids: [13, 22]
 CH47:
   groups: 1
+  grouping: 1
   aircraft: 1
-  terminal_ids: [14]
+aggregate:
+  groups: 5
+  aircraft: 7
 ```
 
-Aggregate:
+G7 applies the accepted SQUADRON parking pools, registers three role payloads and verifies the three automatic `RELOCATECOHORT` payloads created by `AIRWING:AddSquadron()`.
 
-```text
-3 families
-4 groups
-5 aircraft
-4 spawn calls
-5 unique TerminalIDs
-```
-
-The script uses only:
+The vertical-helicopter policy is applied in the accepted order:
 
 ```lua
-SPAWN:SpawnAtParkingSpot(Airbase, TerminalIDs, SPAWN.Takeoff.Cold)
+airwing:SetOptionPreferVerticalLanding()
+airwing:Start()
 ```
 
-with `InitAIOff()`.
+The bundle creates no operational mission and expects no spawn. A real vertical departure belongs to G8 native AIRWING/AUFTRAG dispatch.
 
-It does not create AIRWING, SQUADRON, payload, AUFTRAG, COMMANDER or OPSTRANSPORT objects and does not apply productive parking lists.
-
-Expected per-family markers:
+Expected final marker:
 
 ```text
-FAMILY_RESULT family=AH64 status=PASS_RUNTIME_PLACEMENT
-FAMILY_RESULT family=UH60 status=PASS_RUNTIME_PLACEMENT
-FAMILY_RESULT family=CH47 status=PASS_RUNTIME_PLACEMENT
+RESULT G7_AIRWING_SQUADRON_PAYLOAD_FOUNDATION
+status=PASS
+violations=0
+airwingRunning=true
+squadrons=3
+registeredGroups=5
+registeredAircraft=7
+stock=5
+rolePayloads=3
+totalPayloads=6
+parkingPools=3
+parkingIDs=8
+missionQueue=0
+transportQueue=0
+requestQueue=0
+opsGroups=0
+safeParking=true
+verticalPolicy=true
+takeoffCold=true
+activePlayerClients=0
+commanderCreated=0
+auftragCreated=0
+opsTransportCreated=0
+deliberateSpawns=0
 ```
 
-Expected aggregate marker:
+Detailed contract:
 
 ```text
-RESULT G6B_COMBINED_CONTROLLED_PLACEMENT status=PASS_RUNTIME_PLACEMENT expectedFamilies=3 expectedGroups=4 groupsFound=4 expectedUnits=5 unitsFound=5 placementFailures=0 familyFailures=0 activePlayerClients=0 spawnCalls=4 visualConfirmationRequired=true
+expected/g7-airwing-squadron-payload-foundation-acceptance.md
 ```
-
-## Per-family fallback
-
-These bundles are not routine prerequisites:
-
-```text
-OMW_AirOps_Tarinkot_G6B_AH64_Placement.lua
-OMW_AirOps_Tarinkot_G6B_UH60_Placement.lua
-OMW_AirOps_Tarinkot_G6B_CH47_Placement.lua
-```
-
-They are retained only when a combined failure cannot be isolated sufficiently from the combined log.
 
 ## Package layout
 
@@ -180,42 +234,29 @@ mission/tests/tarinkot-air-operations/
 │   ├── g5-read-only-diagnostics-acceptance.md
 │   ├── g6a-parking-candidate-analysis-acceptance.md
 │   ├── g6b-combined-placement-acceptance.md
-│   └── g6b-controlled-placement-acceptance.md
+│   ├── g6b-controlled-placement-acceptance.md
+│   ├── g6b-helicopter-apron-retest-acceptance.md
+│   └── g7-airwing-squadron-payload-foundation-acceptance.md
 ├── results/
 │   ├── 2026-08-03-g5-read-only-diagnostics-initial-fail.md
 │   ├── 2026-08-03-g5-read-only-diagnostics-retest-pass.md
-│   └── 2026-08-03-g6a-parking-candidate-analysis-pass.md
+│   ├── 2026-08-03-g6a-parking-candidate-analysis-pass.md
+│   ├── 2026-08-03-g6b-combined-placement-fail-wrong-apron.md
+│   └── 2026-08-04-g6b-final-free-spots-pass-and-departure-scope-correction.md
 ├── src/
 │   ├── 01-tarinkot-g5-read-only-diagnostics.lua
 │   ├── 02-tarinkot-g6a-parking-candidate-analysis.lua
 │   ├── 03-tarinkot-g6b-controlled-placement.lua
-│   └── 04-tarinkot-g6b-combined-placement.lua
+│   ├── 04-tarinkot-g6b-combined-placement.lua
+│   ├── 05-tarinkot-g6b-helicopter-apron-retest.lua
+│   ├── 06-tarinkot-g6a2-me-parking-map.lua
+│   └── 07-tarinkot-g7-airwing-squadron-payload-foundation.lua
 └── dist/
     └── generated bundles only
-
-tools/
-├── build-tarinkot-air-operations-g5-diagnostics.ps1
-├── build-tarinkot-air-operations-g6a-parking-analysis.ps1
-├── build-tarinkot-air-operations-g6b-controlled-placement.ps1
-└── build-tarinkot-air-operations-g6b-combined-placement.ps1
 ```
 
-Files under `dist/` are generated locally and are not edited manually.
-
-## G6B visual acceptance
-
-One visual pass checks all five generated aircraft:
-
-```text
-all five aircraft present
-no aircraft overlap
-no static or revetment contact
-all aircraft on prepared surfaces
-no visible rotor contact
-```
-
-The CH-47 rotor envelope remains a visual acceptance item.
+Files under `dist/` are generated locally and never edited manually.
 
 ## Gate effect
 
-A clean combined PASS authorizes G7. A combined FAIL keeps G7 blocked and triggers only the smallest necessary diagnostic fallback.
+A clean G7 PASS authorizes the first isolated G8 native AIRWING/AUFTRAG dispatch. A G7 FAIL keeps G8 blocked and triggers only the smallest necessary diagnostic follow-up.
