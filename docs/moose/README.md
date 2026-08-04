@@ -6,12 +6,13 @@ owning_policy: OMW-GOV-001
 authoritative_for:
   - project-specific MOOSE documentation structure
   - distinction between official MOOSE sources and OMW evidence
+  - navigation to AIRWING, SQUADRON and WAREHOUSE lifecycle governance
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
-  - unclassified MOOSE documentation index
+  - MOOSE index without lifecycle and test-guard navigation
 superseded_by:
-source_branch: agent/complete-documentation-authority-migration
+source_branch: agent/consolidate-air-ops-lifecycle-governance
 source_commit: PENDING_MERGE
 validated_in_dcs: false
 ---
@@ -30,6 +31,8 @@ Der vollständige frühere Index bleibt unverändert erhalten:
 
 - [`OMW-GOV-MOOSE-FIRST`](../26-moose-first-development-policy.md) definiert das vollständige Prüf- und Ausnahmeverfahren.
 - [`OMW-GOV-MOOSE-VERSION`](VERSION-AND-SOURCES.md) definiert Versions- und Nachweispflichten.
+- [`OMW-MOOSE-AIRWING-SQUADRON-WAREHOUSE-LIFECYCLE`](AIRWING-SQUADRON-WAREHOUSE-LIFECYCLE.md) definiert Pre-Start-/Post-Start-Grenzen, Vertikaloption, COMMANDER-Sequenz und AirOps-Guards.
+- [`OMW-TEST-MISSION-BUILD-TRANSFER-VALIDATION`](../22-test-mission-build-transfer-and-validation-workflow.md) definiert die Artefakt- und Hashkette für DCS-Tests.
 - Eine technische Begründung allein genehmigt keine Nicht-MOOSE-Lösung.
 - Produktionsabweichungen benötigen ausdrückliche Projektinhaberfreigabe und reproduzierbare Acceptance.
 
@@ -38,6 +41,7 @@ Der vollständige frühere Index bleibt unverändert erhalten:
 - [`VERSION-AND-SOURCES.md`](VERSION-AND-SOURCES.md) – MOOSE-Version, Quellen und Acceptance-Provenienz;
 - [`PROJECT-CLASS-INDEX.md`](PROJECT-CLASS-INDEX.md) – Projektstatus relevanter Klassen;
 - [`VERIFIED-METHODS.md`](VERIFIED-METHODS.md) – praktisch geprüfte Methoden und Nachweisgrenzen;
+- [`AIRWING-SQUADRON-WAREHOUSE-LIFECYCLE.md`](AIRWING-SQUADRON-WAREHOUSE-LIFECYCLE.md) – verbindliche Lifecycle-Matrix, Prüfzeitpunkte und Test-Guards;
 - [`AIR-OPERATIONS.md`](AIR-OPERATIONS.md) – AIRBASE, AIRWING, SQUADRON, COMMANDER und AUFTRAG;
 - [`GROUND-OPERATIONS.md`](GROUND-OPERATIONS.md) – geplante Bodengruppen-, Brigade- und Movement-Architektur;
 - [`LOGISTICS-AND-TRANSPORT.md`](LOGISTICS-AND-TRANSPORT.md) – Warehouse, OPSTRANSPORT, CTLD und Carrier/Cargo;
@@ -56,6 +60,8 @@ CANDIDATE
 PLANNED
 IN_USE_PARTIAL
 VALIDATED_FOR_DOCUMENTED_SCOPE
+VALIDATED_CONFIGURATION_AND_SOURCE_PATH
+SOURCE_REVIEWED
 INTERNAL_RESTRICTED
 REJECTED_FOR_PROJECT_USE
 ```
