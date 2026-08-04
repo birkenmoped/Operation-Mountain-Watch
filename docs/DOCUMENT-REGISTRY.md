@@ -11,9 +11,9 @@ authoritative_for:
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
-  - registry without complete non-numbered document inventory
+  - registry that listed Document 22 only as a branch reservation
 superseded_by:
-source_branch: agent/normalize-salerno-air-orbat
+source_branch: agent/consolidate-air-ops-lifecycle-governance
 source_commit: PENDING_MERGE
 validated_in_dcs: false
 ---
@@ -50,6 +50,7 @@ Eine Nummer und eine stabile `document_id` dürfen im aktuellen Bestand jeweils 
 | 19 | `OMW-AIR-ACTIVE-ORBAT` | `docs/19-active-air-orbat-decisions.md` | `BINDING_PROJECT_DECISION` | aktive ORBAT/Clientgrenzen |
 | 20 | `OMW-AIR-ME-WORKLIST` | `docs/20-air-orbat-mission-editor-worklist.md` | `BINDING` | Air-Ops-ME-Workflow |
 | 21 | `OMW-AIR-JBAD-MANIFEST` | `docs/21-jalalabad-air-operations-manifest.md` | `BINDING` | Jalalabad-ME-Baseline |
+| 22 | `OMW-TEST-MISSION-BUILD-TRANSFER-VALIDATION` | `docs/22-test-mission-build-transfer-and-validation-workflow.md` | `BINDING` | Testartefakt-, Transfer-, Hash- und Validierungsworkflow |
 | 26 | `OMW-GOV-MOOSE-FIRST` | `docs/26-moose-first-development-policy.md` | `BINDING_PROJECT_DECISION` | MOOSE-First |
 | 27 | `OMW-C2-JTAC-CALLSIGNS` | `docs/27-oef-jtac-callsign-reference.md` | `BINDING` | Quellenreferenz |
 | 28 | `OMW-C2-TAD-COLOR-NETS` | `docs/28-afghanistan-tad-color-nets.md` | `BINDING` | Quellenbasierter Datensatz |
@@ -106,7 +107,8 @@ Eine Nummer und eine stabile `document_id` dürfen im aktuellen Bestand jeweils 
 
 | PR | Nummern | Status |
 |---:|---|---|
-| 18 | 22–25 | nur Draft-PR #18; branchgebundene Air-Ops-Dokumente |
+| 18 | 23–25 | nur Draft-PR #18; branchgebundene Air-Ops-Dokumente |
+| 18 | 22 | branchlokale Altversion; durch die kanonische `main`-Fassung von Dokument 22 ersetzt |
 | 18 | 27 | branchlokale Kollision; vor Integration zwingend neu nummerieren |
 | 24 | 31–36 | nur Draft-PR #24; Bagram/Kandahar |
 
@@ -124,8 +126,10 @@ Eine Nummer und eine stabile `document_id` dürfen im aktuellen Bestand jeweils 
 | `OMW-GOV-MOOSE-VERSION` | `docs/moose/VERSION-AND-SOURCES.md` | `BINDING` |
 | `OMW-MOOSE-DOCUMENTATION-INDEX` | `docs/moose/README.md` | `BINDING` |
 | `OMW-MOOSE-CLASS-INDEX` | `docs/moose/PROJECT-CLASS-INDEX.md` | `BINDING` |
-| `OMW-MOOSE-FOG-OF-WAR-RECCE` | `docs/moose/FOG-OF-WAR-RECCE.md` | `PLANNED` |
 | `OMW-MOOSE-VERIFIED-METHODS` | `docs/moose/VERIFIED-METHODS.md` | `BINDING` |
+| `OMW-MOOSE-AIRWING-SQUADRON-WAREHOUSE-LIFECYCLE` | `docs/moose/AIRWING-SQUADRON-WAREHOUSE-LIFECYCLE.md` | `BINDING`; Lifecycle- und Testgrenzen |
+| `OMW-MOOSE-FOG-OF-WAR-RECCE` | `docs/moose/FOG-OF-WAR-RECCE.md` | `PLANNED` |
+| `OMW-TEST-GOVERNANCE` | `mission/tests/GOVERNANCE.md` | `BINDING`; Missions- und Runtime-Testregeln |
 | `OMW-CSAR-INDEX` | `docs/csar/README.md` | `BINDING` |
 | `OMW-CSAR-SOURCE-NOTES-1-8` | `docs/csar/source-notes-1-8.md` | `BINDING` |
 | `OMW-CSAR-AFGHANISTAN-2010-FACILITIES` | `docs/csar/afghanistan-2010-facilities-and-coverage.md` | `BINDING` |
