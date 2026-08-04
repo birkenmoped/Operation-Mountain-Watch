@@ -18,7 +18,7 @@ not_authoritative_for:
 scenario_period: 2010-08-01/2011-12-31
 project_phase: TARINKOT_G8_STATIC_PASS_AWAITING_MIZ
 source_branch: agent/tarinkot-object-contract-reconciliation
-source_commit: 492716c1967a9afabb191f688e9a03e507242d95
+source_commit: 713f008dab4b77f3fc3553269d89413981dbc5db
 validated_in_dcs: false
 supersedes:
   - Tarinkot README gate entries that classify PR 55 as Draft or not on main
@@ -113,7 +113,7 @@ Operativer Scope:
 
 ## 4. Statischer Nachweis
 
-Validierter Branch-Head:
+Statisch validierter Implementierungs-Head:
 
 ```text
 492716c1967a9afabb191f688e9a03e507242d95
