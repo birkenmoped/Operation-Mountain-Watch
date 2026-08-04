@@ -8,28 +8,31 @@ authoritative_for:
   - Tarinkot unit and technical object naming derived from the safest available sources
   - accepted Tarinkot local aircraft inventory and representation limits
   - exact Tarinkot Mission Editor names for the audited source mission
-  - Tarinkot warehouse-anchor, client-reservation, seed-template, static, parking, and zone contract
-  - accepted G5 read-only runtime basis and G6A parking-candidate dataset
-  - G6B controlled placement gate before AIRWING and SQUADRON implementation
+  - Tarinkot warehouse-anchor, client-reservation, seed-template and static contract
+  - accepted G5 runtime basis and G6 parking mapping and placement results
+  - current G7 AIRWING/SQUADRON/capability/payload implementation contract
 not_authoritative_for:
-  - final operational parking suitability or productive parking allowlists
-  - engine start, taxi, takeoff, mission, return, landing or recovery acceptance
+  - G7 runtime acceptance before a documented DCS PASS
+  - tactical AUFTRAG, vertical departure, COMMANDER or OPSTRANSPORT acceptance
+  - final lifecycle, loss, return, recovery or stranded-state behavior
   - historical subordinate identities not explicitly supported by cited evidence
   - exact 2011 aircraft quantities beyond the documented OMW reconstruction
   - merge approval or Ready-for-Review approval
 scenario_period: 2010-08-01/2011-12-31
-project_phase: TARINKOT_G6_PARKING_CALIBRATION
+project_phase: TARINKOT_G7_FOUNDATION
 source_branch: agent/tarinkot-object-contract-reconciliation
 source_commit: PENDING_MERGE
-source_mission: OMW_Template_v5_Salerno.miz
-source_mission_sha256: 203c99ffa6e025a2d9f00dc899439b0167ed9d81981b612f3a8d4fd078c458f5
+original_source_mission: OMW_Template_v5_Salerno.miz
+original_source_mission_sha256: 203c99ffa6e025a2d9f00dc899439b0167ed9d81981b612f3a8d4fd078c458f5
+current_working_mission: OMW_Template_v6_Tarinkot.miz
 embedded_moose_sha256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
 embedded_moose_commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
-validated_in_dcs: true
+validated_in_dcs: partial
 object_contract_state: OWNER_ACCEPTED_BRANCH
 moose_source_review_state: PASS_SOURCE_REVIEW
 g5_state: PASS_DCS
-g6_state: G6A_PASS_DCS_G6B_IMPLEMENTED_AWAITING_DCS
+g6_state: PASS_DCS_OWNER_VISUAL_ACCEPTED
+g7_state: IMPLEMENTED_AWAITING_DCS
 supersedes_on_merge:
   - Tarinkot object assumptions from docs/tarinkot-air-operations-baseline PR 40
   - Tarinkot Mission Editor assumptions based on OMW_Template(3).miz
@@ -49,19 +52,20 @@ Dieses Dokument ist die aktive Tarinkot-Arbeitsbaseline auf Draft PR #53. Es kon
 - die Juli-2011-ORBAT und zeitgenössische U.S.-Army-/DVIDS-Evidenz;
 - Satellitenbeobachtungen und Mission-Editor-Audits;
 - den angenommenen G2-Objektvertrag;
-- die G4-Prüfung der exakt eingebetteten MOOSE-Version 2.9.18;
-- den akzeptierten G5-Runtime-Befund;
-- den akzeptierten G6A-Parking-Datensatz;
-- den noch ausstehenden G6B-Platzierungsnachweis.
+- die Prüfung der exakt eingebetteten MOOSE-Version 2.9.18;
+- den akzeptierten G5-Strukturstand;
+- die abgeschlossene G6-Parking-Kalibrierung und Platzierungsabnahme;
+- den implementierten, noch nicht in DCS abgenommenen G7-Grundknoten.
 
 Nicht autorisiert sind weiterhin:
 
 ```text
 Merge
 Ready for Review
-produktive AIRWING-/SQUADRON-Aktivierung
-positive SQUADRON-Parking-Listen
-operative AUFTRAG- oder OPSTRANSPORT-Ausführung
+positive G7-Runtimebehauptung vor DCS-PASS
+operativer AUFTRAG-Dispatch
+COMMANDER- oder OPSTRANSPORT-Ausführung
+Lifecycle-, Recovery- oder Persistenzbehauptungen
 MIZ-Änderungen außerhalb des festgelegten Testworkflows
 ```
 
@@ -69,8 +73,9 @@ MIZ-Änderungen außerhalb des festgelegten Testworkflows
 
 ```yaml
 OMW_branch: agent/tarinkot-object-contract-reconciliation
-source_mission: OMW_Template_v5_Salerno.miz
-source_mission_sha256: 203c99ffa6e025a2d9f00dc899439b0167ed9d81981b612f3a8d4fd078c458f5
+original_source_mission: OMW_Template_v5_Salerno.miz
+original_source_mission_sha256: 203c99ffa6e025a2d9f00dc899439b0167ed9d81981b612f3a8d4fd078c458f5
+current_working_mission: OMW_Template_v6_Tarinkot.miz
 mission_date: 2011-01-14
 mission_date_controls_ORBAT: false
 embedded_moose_path: l10n/DEFAULT/Moose.lua
@@ -78,12 +83,12 @@ embedded_moose_sha256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e
 embedded_moose_commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
 MOOSE_release: 2.9.18
 G5_DCS_version: 2.9.28.26385
-G6A_DCS_version: 2.9.28.26385
+G6_DCS_version: 2.9.28.26385
 ```
 
 Das Missionsdatum `14.01.2011` bleibt technische Kulisse. Die aktive Tarinkot-ORBAT wird durch den Eigentümerentscheid März bis Dezember 2011 bestimmt.
 
-Der G6A-Debrief führte weiterhin den Quellmissionsnamen `OMW_Template_v5_Salerno.miz`. Diese Ablageabweichung ist als Provenienz-Warnung dokumentiert; der Lauf bleibt wegen eindeutiger Builder-, Commit-, Airbase-, Parking- und Ergebnismarker verwertbar.
+Die aktuelle Arbeitsmission ist aus dem geprüften Ausgangsstand hervorgegangen. Jeder neue DCS-Lauf muss trotzdem durch Builder-Version, Git-Commit und Bundle-Hash eindeutig zugeordnet werden.
 
 ## 3. Historische Baseline
 
@@ -147,9 +152,9 @@ Evidenzgrenze:
 - die exakten Werte `14/6/2/0` bleiben eine quellennahe OMW-Rekonstruktion;
 - die Werte werden aus dem RC-South-/Kandahar-Parent-Pool abgezogen und nicht doppelt gezählt.
 
-## 6. Darstellungsledger
+## 6. Darstellungs- und Registrierungsledger
 
-| Musterfamilie | Statics | aktive Clients maximal | aktive KI maximal | maximale gleichzeitige Darstellung |
+| Musterfamilie | Statics | aktive Clients maximal | G7 registrierte KI | maximale Repräsentation |
 |---|---:|---:|---:|---:|
 | AH-64 | 8 | 2 | 4 | 14 |
 | UH-60 | 4 | 0 | 2 | 6 |
@@ -161,12 +166,14 @@ Invariante:
 ```text
 Statics
 + aktive Clients
-+ aktive KI
++ registrierte beziehungsweise aktive KI
 + bestätigte Wartungs-/Stranded-Zustände
-<= verbleibender lokaler Bestand je Musterfamilie
+<= lokaler Bestand je Musterfamilie
 ```
 
 Late-Activation-Seeds und unbelegte Client-Slots erhöhen den Bestand nicht.
+
+Wichtig: Registrierung ist nicht gleich gleichzeitige Bodenbereitstellung. Der akzeptierte AH-64-Pool besitzt zwei Positionen und trägt damit eine Two-Ship-Gruppe gleichzeitig. Die zweite registrierte Two-Ship-Asset-Gruppe bleibt Reserve, bis Positionen frei sind oder ein späterer, separat abgenommener Pool ergänzt wird.
 
 ## 7. Mission-Editor-Vertrag
 
@@ -195,7 +202,7 @@ CLIENT_US_TKOT_CH47F_01
 C07-H / interner Parking-Wert 3 / Runtime-TerminalID 3
 ```
 
-Der Stringwert `"20"` wird nur für Vergleiche numerisch normalisiert; die Mission wird nicht stillschweigend umgeschrieben.
+Der Stringwert `"20"` wird für Vergleiche numerisch normalisiert; die Mission wird nicht stillschweigend umgeschrieben.
 
 ### 7.3 AI-Seeds
 
@@ -227,92 +234,63 @@ UH60_statics: 4
 missing_statics: 0
 ```
 
-`STATIC_AIR_US_TKOT_AH64_07` ist bereits als `AH-64D_BLK_II` korrigiert und wurde im erfolgreichen G5-Retest sowie im nachfolgenden Debrief bestätigt. Es besteht kein weiterer Static-Korrekturauftrag.
+`STATIC_AIR_US_TKOT_AH64_07` ist bereits als `AH-64D_BLK_II` korrigiert und wurde im erfolgreichen G5-Retest sowie in nachfolgenden Läufen bestätigt. Es besteht kein weiterer Static-Korrekturauftrag.
 
-### 7.5 Geplanter registrierter KI-Bestand
+## 8. Abgeschlossener Parking-Vertrag
 
-```yaml
-AH64:
-  templateAircraftPerGroup: 2
-  registeredGroups: 2
-  grouping: 2
-  maximumRegisteredAIAircraft: 4
-UH60:
-  templateAircraftPerGroup: 1
-  registeredGroups: 2
-  grouping: 1
-  maximumRegisteredAIAircraft: 2
-  seedReuse: SAME_ONE_SHIP_TEMPLATE_SOURCE_CONFIRMED
-CH47:
-  templateAircraftPerGroup: 1
-  registeredGroups: 1
-  grouping: 1
-  maximumRegisteredAIAircraft: 1
-```
-
-Diese SQUADRON-Registrierung ist noch nicht implementiert; sie bleibt bis zum vollständigen G6B-Ergebnis gesperrt.
-
-## 8. Parking-Vertrag
-
-### 8.1 Produktive Listen
+### 8.1 Client-Ausschlüsse
 
 ```yaml
-acceptedAHParkingIds: []
-acceptedUH60ParkingIds: []
-acceptedCH47ParkingIds: []
+client_terminal_ids: [3, 8, 20]
 ```
 
-### 8.2 Quellenbestätigte MOOSE-Grenzen
+Diese Positionen dürfen nicht in einen KI-Pool aufgenommen werden.
 
-- Parking-Listen verwenden interne `TerminalID`, nicht sichtbare ME-Labels;
-- `allowSpawnOnClientSpots` ist im Warehouse standardmäßig `false`;
-- Client-Template-Koordinaten werden bei der Parkplatzsuche als Hindernisse behandelt;
-- `SetSafeParkingOn()` ist verfügbar;
-- `SQUADRON:SetParkingIDs()` aktiviert einen asset-spezifischen Zweig, der normale Terminaltyp- und Airbase-Black-/Whitelist-Prüfungen umgeht.
+### 8.2 Vollständige ME-/MOOSE-Zuordnung
 
-Daraus folgt:
+G6A2 bestand:
 
 ```text
-keine positive SQUADRON-Parking-Liste vor abgeschlossenem G6B
-SetAllowSpawnOnClientParking() bleibt verboten
-Client-, Static- und Rotorkonflikte müssen vor jeder positiven Liste ausgeschlossen sein
+RESULT G6A2_ME_PARKING_MAP status=PASS_MAP anchors=30 mapped=30 rejected=0 ambiguous=0 duplicates=0 parkingCount=33 clientReferences=3
 ```
 
-### 8.3 Akzeptierter G6A-Datensatz
+### 8.3 Historischer Fehlversuch
 
-```yaml
-AH64_candidates: [0, 1, 6, 11, 13, 14, 18, 22, 24, 25, 28, 33]
-AH64_valid_pairs: 66
-UH60_candidates: [0, 1, 6, 11, 13, 14, 18, 22, 24, 25, 28, 33]
-UH60_valid_pairs: 66
-CH47_candidates: [0, 1, 6, 11, 13, 14, 18, 22, 24, 25, 28, 29, 33]
+Der erste kombinierte G6B-Lauf verwendete type-104/OpenBig-Positionen. Der Lauf platzierte die Modelle technisch an den angeforderten Koordinaten, bestand aber die visuelle Flächenprüfung nicht:
+
+```text
+FAIL_VISUAL_WRONG_APRON
 ```
 
-Modellradien:
+Diese Positionen sind keine akzeptierte Tarinkot-Hubschrauberplatte.
 
-```yaml
-AH64_radius_m: 9.967
-UH60_radius_m: 10.020
-CH47_radius_m: 7.910
-```
-
-Die CH-47-DCS-Abmessungen bilden die vollständige Rotorfläche nicht ab. G6B benötigt deshalb eine visuelle Rotorprüfung.
-
-### 8.4 G6B-Probe-Sets
+### 8.4 Akzeptierte Pools
 
 ```yaml
 AH64:
-  terminal_ids: [0, 25]
-  runtime_shape: one two-ship group
+  mission_editor_labels: [C04-H, C18-H]
+  terminal_ids: [21, 4]
 UH60:
-  terminal_ids: [13, 22]
-  runtime_shape: two independent one-ship groups
+  mission_editor_labels: [C14-H, C12-H, C11-H]
+  terminal_ids: [30, 27, 23]
 CH47:
-  terminal_ids: [14]
-  runtime_shape: one one-ship group
+  mission_editor_labels: [C08-H, C09-H, C10-H]
+  terminal_ids: [32, 29, 10]
 ```
 
-Terminal `29` wird im ersten CH-47-Test wegen der geringen geometrischen Reserve nicht verwendet.
+Alle acht Positionen wurden im finalen kombinierten G6B-Lauf als `TerminalType 40 / HelicopterOnly` verwendet. Der Lauf bestand technisch und wurde vom Eigentümer visuell akzeptiert:
+
+```text
+expectedGroups=7
+groupsFound=7
+expectedUnits=8
+unitsFound=8
+placementFailures=0
+familyFailures=0
+spawnCalls=7
+```
+
+Die Pools dürfen ab G7 über `SQUADRON:SetParkingIDs()` angewendet werden. Da dieser MOOSE-Zweig die normalen Airbase-Listenprüfungen umgeht, validiert G7 alle acht IDs nochmals vor der Registrierung und prüft anschließend die an jedes Asset vererbten `asset.parkingIDs`.
 
 ## 9. Funktionszonen
 
@@ -340,8 +318,8 @@ ZONE_AIR_US_TKOT_FARP
 Regeln:
 
 - keine Zone wird durch Lua-Fallback-Koordinaten erfunden;
-- G5, G6A und G6B benötigen keine neue Funktionszone;
-- zonenabhängige Tests bleiben bis zur jeweiligen ME-Anlage gesperrt;
+- G7 benötigt keine Funktionszone und erzeugt keine synthetische Zone;
+- zonenabhängige G8-Transport- und MEDEVAC-Tests bleiben bis zur jeweiligen ME-Anlage gesperrt;
 - `ZONE_AIR_US_TKOT_FARP` ist durch die September-2011-Evidenz zu Hot Refueling und Rapid Turnaround fachlich begründet.
 
 ## 10. Bestätigte MOOSE-Semantik
@@ -352,84 +330,118 @@ Regeln:
 SQUADRON:New(TemplateGroupName, Ngroups, SquadronName)
 ```
 
-`Ngroups` zählt Asset-Gruppen. `SetGrouping(n)` bestimmt getrennt die Einheiten pro Asset-Gruppe. Ein One-Ship-UH-60-Template kann zwei unabhängige One-Ship-Asset-Gruppen registrieren.
+`Ngroups` zählt Asset-Gruppen. `SetGrouping(n)` bestimmt getrennt die Einheiten pro Asset-Gruppe.
 
-### 10.2 G6B-SPAWN-Pfad
+G7 verwendet:
 
-Im exakten Quellstand ist vorhanden:
-
-```lua
-SPAWN:SpawnAtParkingSpot(Airbase, TerminalIDs, SPAWN.Takeoff.Cold)
+```yaml
+AH64:
+  Ngroups: 2
+  grouping: 2
+UH60:
+  Ngroups: 2
+  grouping: 1
+CH47:
+  Ngroups: 1
+  grouping: 1
 ```
 
-Die Methode erwartet interne Parking-Spot-IDs, löst nur freie Parking-Datensätze auf und übergibt die exakten Datensätze an den Airbase-Spawnpfad. G6B verwendet zusätzlich `InitAIOff()`, damit ausschließlich die anfängliche Platzierung geprüft wird.
+### 10.2 Payloads
 
-### 10.3 UH-60
+`AIRWING:AddSquadron()` erzeugt für jedes SQUADRON automatisch ein unbegrenztes `RELOCATECOHORT`-Payload. G7 registriert zusätzlich genau ein rollenbezogenes Payload je Musterfamilie.
 
-Im exakten Artefakt existiert kein eigener landgestützter `MEDEVAC`-AUFTRAG. `AUFTRAG:NewRESCUEHELO(Carrier)` ist trägerbezogen und darf nicht als Tarinkot-MEDEVAC verwendet werden.
+Erwartung:
 
-Geeignete getrennt zu testende Primitive sind:
+```text
+3 automatische RELOCATECOHORT-Payloads
+3 rollenbezogene Payloads
+6 Payloadtabellen insgesamt
+```
+
+### 10.3 Vertikalflug-Policy
+
+Der verbindliche MOOSE-Pfad lautet:
+
+```lua
+airwing:SetOptionPreferVerticalLanding()
+airwing:Start()
+```
+
+MOOSE überträgt die Policy später im `FlightOnMission`-Pfad auf die von AIRWING verwaltete `FLIGHTGROUP`.
+
+Die nach G6 ausgeführten direkten UNIT- und Standalone-FLIGHTGROUP-Experimente sind verworfen. G7 prüft nur das vor `Start()` gesetzte AIRWING-Policy-Flag und einen stabilen Idle-Knoten. Tatsächlicher Vertikalstart gehört zu G8.
+
+### 10.4 UH-60
+
+Im exakten Artefakt existiert kein eigener landgestützter `MEDEVAC`-AUFTRAG. Geeignete Primitive sind unter anderem:
 
 ```text
 LANDATCOORDINATE
 TROOPTRANSPORT
 CARGOTRANSPORT
-FREIGHTTRANSPORT
 GROUNDESCORT
 ```
 
 Die Bezeichnung MEDEVAC Lead/Support ist OMW-Paketlogik, keine native MOOSE-MEDEVAC-Automatik.
 
-### 10.4 CH-47 und OPSTRANSPORT
+### 10.5 CH-47 und OPSTRANSPORT
 
-`AUFTRAG:NewOPSTRANSPORT(...)` ist in MOOSE 2.9.18 auskommentiert und nicht aufrufbar. Der gültige spätere Pfad lautet:
+`AUFTRAG:NewOPSTRANSPORT(...)` ist in MOOSE 2.9.18 auskommentiert. Der spätere gültige Pfad lautet:
 
 ```lua
 local transport = OPSTRANSPORT:New(CargoGroups, PickupZone, DeployZone)
 commander:AddOpsTransport(transport)
 ```
 
-Pickup- und Deploy-Zone müssen reale ZONE-Objekte sein. Cargo wird nur berücksichtigt, wenn es sich beim Laden in der Pickup-Zone befindet.
+G7 registriert vorsätzlich noch keine OPSTRANSPORT-Capability und kein entsprechendes Payload. Der konkrete Transportvertrag folgt zusammen mit realen Pickup-/Deploy-Zonen in einem eigenen G8-Test.
 
-### 10.5 COMMANDER
+## 11. G7-Grundknotenvertrag
 
-Quellenbestätigt:
-
-```text
-COMMANDER:New
-AddAirwing
-AddMission
-AddOpsTransport
-CanMission
-Start
-```
-
-Trennung:
+### 11.1 AIRWING
 
 ```text
-AUFTRAG → AddMission
-OPSTRANSPORT → AddOpsTransport
+AW_US_TKOT_TF_ATTACK_3_101_AVN
+Warehouse: WH_AIR_US_TARINKOT
+Airbase: Tarinkot / ID 9
+Takeoff: Cold
+Safe Parking: On
+Prefer Vertical Landing/Takeoff: On before Start
 ```
 
-Der vorhandene Jalalabad- und Salerno-Nachweis bestätigt technische Grundpfade, nicht taktische Tarinkot-Missionen oder Tarinkot-OPSTRANSPORT.
+### 11.2 SQUADRONs, Capabilities und Parking
 
-## 11. Gate-Matrix
+```yaml
+AH64:
+  squadron: SQ_US_TKOT_AH64D_3_101_AVN
+  capabilities: [CAS]
+  parking_ids: [21, 4]
+UH60:
+  squadron: SQ_US_TKOT_UH60_TF_ATTACK
+  capabilities: [TROOPTRANSPORT, CARGOTRANSPORT, LANDATCOORDINATE, GROUNDESCORT]
+  parking_ids: [30, 27, 23]
+CH47:
+  squadron: SQ_US_TKOT_CH47_B_1_52_AVN
+  capabilities: [TROOPTRANSPORT, CARGOTRANSPORT, LANDATCOORDINATE]
+  parking_ids: [32, 29, 10]
+```
 
-| Gate/Test | Erforderliche Zone | Regel |
-|---|---|---|
-| G5 read-only Diagnose | keine | abgeschlossen; keine Runtime-Objekte erzeugt |
-| G6A Kandidatenanalyse | keine | abgeschlossen; geometrischer Datensatz ohne Spawn |
-| G6B kontrollierte Platzierung | keine | isolierter `SpawnAtParkingSpot`, AI aus, je Musterfamilie getrennt |
-| G7 AIRWING-/SQUADRON-Grundlage | keine | keine operative Mission auslösen |
-| G8 AH-64-CAS | separat festgelegter Ziel-/Testbereich | kein Transport/FARP erforderlich |
-| G8 UH-60 Utility | `UH60_RAMP` oder `ROTARY_STAGING` | Testvertrag vorher festlegen |
-| G8 UH-60 MEDEVAC-Paket | `MEDEVAC_READY`, `HELO_RECOVERY` | OMW-Paketlogik, kein nativer MEDEVAC-AUFTRAG |
-| G8 CH-47 Direct Transport | `CH47_READY`, `LOGISTICS_LOAD`, `LOGISTICS_UNLOAD` | direkten AUFTRAG-Pfad isoliert prüfen |
-| G8 CH-47 OPSTRANSPORT | `LOGISTICS_LOAD`, `LOGISTICS_UNLOAD` | `OPSTRANSPORT:New` plus `AddOpsTransport` |
-| FARP-/Hot-Refuel-Test | `FARP` | eigene spätere Acceptance |
-| Fixed-Wing-Transient-Test | `TRANSIENT_FIXED_WING` | zurückgestellt |
+### 11.3 G7-Ausschlüsse
 
-## 12. G0-bis-G10-Status
+```text
+COMMANDER: 0
+AUFTRAG-Instanzen: 0
+OPSTRANSPORT: 0
+SPAWN: 0
+synthetische Zonen: 0
+absichtliche Spawns: 0
+Missionqueue: 0
+Transportqueue: 0
+Warehouse-Request-Queue: 0
+```
+
+G7 besteht erst, wenn der AIRWING nach Start stabil `Running` bleibt und `AIRWING:GetOpsGroups()` weiterhin leer ist.
+
+## 12. Gate-Matrix
 
 | Gate | Status | Tarinkot-Ergebnis |
 |---|---|---|
@@ -439,56 +451,61 @@ Der vorhandene Jalalabad- und Salerno-Nachweis bestätigt technische Grundpfade,
 | G3 Mission Editor | `PARTIAL` | Clients, Seeds, Statics und Warehouse vorhanden; Funktionszonen fehlen |
 | G4 MOOSE-Quellenprüfung | `PASS_SOURCE_REVIEW` | exaktes Artefakt und relevante API-Pfade geprüft |
 | G5 Read-only Diagnose | `PASS_DCS` | Struktur, Parking, Objekte und Mutationsfreiheit bestätigt |
-| G6 Parking-Kalibrierung | `G6A_PASS_DCS_G6B_IMPLEMENTED_AWAITING_DCS` | Kandidaten akzeptiert; drei isolierte Platzierungsläufe ausstehend |
-| G7 AIRWING/SQUADRON/Payload | `BLOCKED_BY_G6B` | keine Implementierung vor G6B-Auswertung |
-| G8 direkter Dispatch/Transport | `NOT_STARTED` | gesperrt |
-| G9 COMMANDER/Operational Parking | `NOT_STARTED` | gesperrt |
-| G10 Lifecycle/Ergebnisse/Handoff | `NOT_STARTED` | gesperrt |
+| G6A Geometrie | `PASS_DCS_SCOPE_TOO_BROAD` | Datensatz technisch korrekt, type-104-Scope nicht produktiv |
+| G6A2 Mapping | `PASS_DCS` | 33/33 ME-/MOOSE-Zuordnung vollständig |
+| G6B Parking/Placement | `PASS_DCS_OWNER_VISUAL_ACCEPTED` | acht type-40-Positionen angenommen |
+| G7 AIRWING/SQUADRON/Payload | `IMPLEMENTED_AWAITING_DCS` | kombiniertes Idle-Foundation-Bundle bereit |
+| G8 direkter Dispatch | `BLOCKED_BY_G7` | erster nativer Vertikalstart folgt nach G7-PASS |
+| G9 COMMANDER | `BLOCKED_BY_G8` | nicht begonnen |
+| G10 Lifecycle/Handoff | `NOT_STARTED` | nicht begonnen |
 
-## 13. Akzeptierte und ausstehende Teststände
-
-### 13.1 G5
-
-```text
-RESULT G5_READ_ONLY_DIAGNOSTICS_COMPLETE status=PASS_STRUCTURE coreMissing=0 zonesMissing=10 mutationCount=0
-```
-
-Bestätigt:
-
-```yaml
-runtime_airbase: Tarinkot
-runtime_airbase_id: 9
-parking_count: 33
-warehouse_wrappers: 1
-clients: 3/3
-AI_seeds: 3/3
-statics: 12/12
-zones_present: 1
-zones_missing: 10
-name_duplicates: 0
-mutations: 0
-```
-
-### 13.2 G6A
+## 13. Aktueller G7-Teststand
 
 ```text
-RESULT G6A_PARKING_CANDIDATE_ANALYSIS status=PASS_DATASET reason=none parkingCount=33 modelMissing=0 candidateSetFailures=0 activePlayerClients=0 parkingMutation=0 spawns=0
+Source:
+mission/tests/tarinkot-air-operations/src/07-tarinkot-g7-airwing-squadron-payload-foundation.lua
+
+Builder:
+tools/build-tarinkot-air-operations-g7-foundation.ps1
+
+BuilderVersion:
+TKOT-G7-AIRWING-FOUNDATION-1
+
+Bundle:
+mission/tests/tarinkot-air-operations/dist/OMW_AirOps_Tarinkot_G7_Foundation.lua
+
+Acceptance:
+mission/tests/tarinkot-air-operations/expected/g7-airwing-squadron-payload-foundation-acceptance.md
 ```
 
-### 13.3 G6B
-
-Implementiert sind drei getrennte Bundles:
+Ein PASS benötigt den vollständigen Abschlussmarker:
 
 ```text
-OMW_AirOps_Tarinkot_G6B_AH64_Placement.lua
-OMW_AirOps_Tarinkot_G6B_UH60_Placement.lua
-OMW_AirOps_Tarinkot_G6B_CH47_Placement.lua
+RESULT G7_AIRWING_SQUADRON_PAYLOAD_FOUNDATION status=PASS
 ```
 
-Erwarteter Marker je Lauf:
+mit:
 
 ```text
-RESULT G6B_<FAMILY>_CONTROLLED_PLACEMENT status=PASS_RUNTIME_PLACEMENT
+violations=0
+airwingRunning=true
+squadrons=3
+registeredGroups=5
+registeredAircraft=7
+stock=5
+rolePayloads=3
+totalPayloads=6
+parkingIDs=8
+missionQueue=0
+transportQueue=0
+requestQueue=0
+opsGroups=0
+safeParking=true
+verticalPolicy=true
+takeoffCold=true
+activePlayerClients=0
+commanderCreated=0
+auftragCreated=0
+opsTransportCreated=0
+deliberateSpawns=0
 ```
-
-Ein automatischer PASS benötigt zusätzlich eine visuelle Bestätigung von Modell-, Static-, Terrain- und Rotorfreiheit, bevor G6B insgesamt abgeschlossen wird.
