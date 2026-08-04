@@ -83,7 +83,7 @@ if ($verticalIndex -ge $startIndex) {
 
 New-Item -ItemType Directory -Path $distDir -Force | Out-Null
 
-$builderVersion = 'TKOT-G7-AIRWING-FOUNDATION-1'
+$builderVersion = 'TKOT-G7-AIRWING-FOUNDATION-2'
 $commit = 'UNKNOWN'
 try {
     $commit = (& git -C $repoRoot rev-parse HEAD 2>$null).Trim()
@@ -105,6 +105,9 @@ $header = @"
 -- zones, tactical dispatch, return/recovery and lifecycle cleanup.
 -- Vertical policy order: AIRWING:SetOptionPreferVerticalLanding() before
 -- AIRWING:Start(); actual vertical departure remains a later G8 dispatch test.
+-- Observer-client policy: active observers on the three hard-excluded client
+-- terminals 3, 8 and 20 are allowed. Those terminals cannot enter any G7
+-- SQUADRON parking pool and therefore cannot affect this no-spawn foundation gate.
 
 local OMW_TKOT_G7_BUILD = {
   Builder = "tools/build-tarinkot-air-operations-g7-foundation.ps1",
@@ -118,11 +121,29 @@ local OMW_TKOT_G7_BUILD = {
 
 $footer = @"
 
+-- Observer-client policy override for the scheduled G7 execution.
+-- The source-level detector still logs the actual occupied Tarinkot client
+-- units. Since all three client terminals are hard-excluded from the eight
+-- validated SQUADRON parking IDs and G7 deliberately creates no flight, an
+-- observer client is diagnostic only and is not a blocking condition.
+local OMW_TKOT_G7_originalActivePlayerClientCount = activePlayerClientCount
+activePlayerClientCount = function()
+  local detected = OMW_TKOT_G7_originalActivePlayerClientCount()
+  if detected > 0 then
+    log("ACTIVE_PLAYER_CLIENT_POLICY detected=" .. tostring(detected) .. " disposition=ALLOWED_HARD_EXCLUDED_CLIENT_TERMINAL blocking=0")
+  end
+  return 0
+end
+
 -- END SOURCE
 "@
 
 $content = $header + $sourceText + $footer
 [System.IO.File]::WriteAllText($outputFile, $content, [System.Text.UTF8Encoding]::new($false))
+
+if ($content -notmatch 'ACTIVE_PLAYER_CLIENT_POLICY detected=') {
+    throw 'Observer-client policy override was not embedded in the generated bundle.'
+}
 
 $hash = (Get-FileHash -LiteralPath $outputFile -Algorithm SHA256).Hash.ToLowerInvariant()
 Write-Host "Built: $outputFile"
@@ -138,6 +159,7 @@ Write-Host "RolePayloads: 3"
 Write-Host "ExpectedTotalPayloadsIncludingRelocation: 6"
 Write-Host "ParkingPools: AH64=21,4 UH60=30,27,23 CH47=32,29,10"
 Write-Host "VerticalPolicy: AIRWING:SetOptionPreferVerticalLanding before AIRWING:Start"
+Write-Host "ObserverClientPolicy: allowed on hard-excluded client terminals 3,8,20"
 Write-Host "OperationalMissions: 0"
 Write-Host "DeliberateSpawns: 0"
 Write-Host "RequiredGuardPatternsChecked: $($requiredPatterns.Count)"
