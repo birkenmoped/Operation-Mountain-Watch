@@ -68,10 +68,12 @@ if (-not $content.Contains($oldBlock)) {
 $content = $content.Replace($oldBlock, $newBlock)
 $content = $content.Replace('BuilderVersion: TKOT-G6B-FINAL-FREE-SPOTS-5', 'BuilderVersion: TKOT-G6B-FINAL-FREE-SPOTS-6')
 $content = $content.Replace('BuilderVersion = "TKOT-G6B-FINAL-FREE-SPOTS-5"', 'BuilderVersion = "TKOT-G6B-FINAL-FREE-SPOTS-6"')
-$content = $content.Replace('-- Departure policy: every spawned helicopter UNIT receives`r`n-- CONTROLLABLE:OptionPreferVerticalLanding() before acceptance inspection.', '-- Departure policy: every spawned helicopter group is wrapped as FLIGHTGROUP and receives`r`n-- FLIGHTGROUP:SetOptionPreferVertical() immediately after spawn.')
+$content = $content.Replace('CONTROLLABLE:OptionPreferVerticalLanding()', 'FLIGHTGROUP:SetOptionPreferVertical()')
+$content = $content.Replace('UNIT:OptionPreferVerticalLanding', 'FLIGHTGROUP:SetOptionPreferVertical')
+$content = $content.Replace('every spawned helicopter UNIT receives', 'every spawned helicopter group receives')
 
 if ($content -match 'OptionPreferVerticalLanding') {
-    throw 'Obsolete UNIT:OptionPreferVerticalLanding remained in generated bundle.'
+    throw 'Obsolete UNIT vertical-option call remained in generated bundle.'
 }
 if ($content -notmatch 'FLIGHTGROUP\s*:\s*New\s*\(group\)') {
     throw 'Required FLIGHTGROUP:New(group) call missing.'
