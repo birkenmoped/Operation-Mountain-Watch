@@ -6,22 +6,22 @@ Set-StrictMode -Version Latest
 
 $repoRoot = Split-Path -Parent $PSScriptRoot
 $sourceFile = Join-Path $repoRoot 'mission\tests\tarinkot-air-operations\src\07-tarinkot-g7-airwing-squadron-payload-foundation.lua'
+$guardFile = Join-Path $repoRoot 'tools\Test-AirOpsLifecycleGuards.ps1'
 $distDir = Join-Path $repoRoot 'mission\tests\tarinkot-air-operations\dist'
 $outputFile = Join-Path $distDir 'OMW_AirOps_Tarinkot_G7_Foundation.lua'
 
-if (-not (Test-Path -LiteralPath $sourceFile -PathType Leaf)) {
-    throw "Required source file not found: $sourceFile"
+foreach ($requiredFile in @($sourceFile, $guardFile)) {
+    if (-not (Test-Path -LiteralPath $requiredFile -PathType Leaf)) {
+        throw "Required file not found: $requiredFile"
+    }
 }
 
 $sourceText = Get-Content -LiteralPath $sourceFile -Raw -Encoding UTF8
 
-# MOOSE 2.9.18 AIRWING:AddSquadron() adds the requested assets to the
-# warehouse stock immediately. The LEGION start path subsequently binds those
-# stock items to the cohort/SQUADRON and copies cohort parkingIDs into every
-# asset. Consequently squadron.assets is expected to be empty before
-# AIRWING:Start() and must only be accepted after the delayed idle inspection.
-# The original source checked squadron.assets too early; this builder corrects
-# the timing without changing the accepted object or inventory contract.
+# MOOSE 2.9.18 lifecycle correction:
+# AddSquadron registers Warehouse stock synchronously. The WAREHOUSE/LEGION
+# start path subsequently binds those assets to the COHORT/SQUADRON. Therefore
+# squadron.assets and inherited asset parkingIDs are accepted only after Start.
 $oldConstructionGate = 'if template and #missionTypes == #contract.MissionTypeNames and state.Violations == 0 then'
 $newConstructionGate = 'if template and #missionTypes == #contract.MissionTypeNames then'
 
@@ -72,17 +72,107 @@ if (-not $sourceText.Contains($oldPreStartAssetBlock)) {
 $sourceText = $sourceText.Replace($oldConstructionGate, $newConstructionGate)
 $sourceText = $sourceText.Replace($oldPreStartAssetBlock, $newPreStartAssetBlock)
 
+# Observer-client correction:
+# Keep the actual detected count. Classify the confirmed hard-excluded observer
+# client as allowed/non-blocking instead of overriding the detector to return 0.
+$newObserverFunction = @'
+local function evaluateObserverClients()
+  local units = {}
+  for _, unitName in ipairs(EXPECTED.ClientUnits) do
+    local unit = UNIT and UNIT:FindByName(unitName) or nil
+    if unit then
+      local playerName = safe("CLIENT_PLAYER_NAME_" .. unitName, function()
+        return unit:GetPlayerName()
+      end)
+      if playerName and tostring(playerName) ~= "" then
+        units[#units + 1] = unitName
+        log("OBSERVER_CLIENT unit=" .. unitName .. " player=" .. tostring(playerName))
+      end
+    end
+  end
+
+  local detected = #units
+  local allowed = detected
+  local blocking = 0
+  local unitList = #units > 0 and table.concat(units, ",") or "none"
+  log(string.format(
+    "OBSERVER_CLIENT_POLICY detected=%d allowed=%d blocking=%d units=%s reason=HARD_EXCLUDED_CLIENT_TERMINAL_NO_SPAWN_FOUNDATION",
+    detected, allowed, blocking, unitList
+  ))
+
+  return {
+    Detected = detected,
+    Allowed = allowed,
+    Blocking = blocking,
+    Units = units
+  }
+end
+
+'@
+
+$observerFunctionPattern = '(?ms)^local function activePlayerClientCount\(\).*?(?=^local function getMissionTypes\()'
+if ($sourceText -notmatch $observerFunctionPattern) {
+    throw 'Expected activePlayerClientCount function block was not found.'
+}
+$sourceText = [regex]::Replace($sourceText, $observerFunctionPattern, $newObserverFunction, 1)
+
+$oldMainObserverGate = @'
+  if activePlayerClientCount() > 0 then
+    finish("INVALID", "ACTIVE_PLAYER_CLIENT", false, -1)
+    return
+  end
+'@
+$newMainObserverGate = @'
+  local observer = evaluateObserverClients()
+  if observer.Blocking > 0 then
+    finish("INVALID", "BLOCKING_OBSERVER_CLIENT", false, -1)
+    return
+  end
+'@
+if (-not $sourceText.Contains($oldMainObserverGate)) {
+    throw 'Expected active-player main gate was not found.'
+}
+$sourceText = $sourceText.Replace($oldMainObserverGate, $newMainObserverGate)
+
+$sourceText = $sourceText.Replace('local activeClients = activePlayerClientCount()', 'local observer = evaluateObserverClients()')
+$sourceText = $sourceText.Replace(
+    'activePlayerClients=%d commanderCreated=0',
+    'observerClientsDetected=%d observerClientsAllowed=%d observerClientsBlocking=%d commanderCreated=0'
+)
+$sourceText = $sourceText.Replace(
+    'activePlayerClients=%d",',
+    'observerClientsDetected=%d observerClientsAllowed=%d observerClientsBlocking=%d",'
+)
+$sourceText = $sourceText.Replace(
+    '    activeClients' + "`r`n" + '  ))',
+    '    observer.Detected, observer.Allowed, observer.Blocking' + "`r`n" + '  ))'
+)
+$sourceText = $sourceText.Replace(
+    '    opsGroups, activeClients' + "`r`n" + '  ))',
+    '    opsGroups, observer.Detected, observer.Allowed, observer.Blocking' + "`r`n" + '  ))'
+)
+$sourceText = $sourceText.Replace(
+    'if activeClients ~= 0 then violation("ACTIVE_PLAYER_CLIENT_DURING_G7") end',
+    'if observer.Blocking ~= 0 then violation("BLOCKING_OBSERVER_CLIENT_DURING_G7") end'
+)
+
 if ($sourceText.Contains($oldConstructionGate)) {
     throw 'Legacy fail-fast family construction gate remained after transformation.'
 }
 if ($sourceText.Contains('SQUADRON_ASSET_COUNT_MISMATCH')) {
     throw 'Premature pre-start squadron.assets violation remained after transformation.'
 }
+if ($sourceText.Contains('activePlayerClientCount')) {
+    throw 'Legacy observer-client detector or masking path remained after transformation.'
+}
 if (-not $sourceText.Contains('SQUADRON_STOCK_PRESTART')) {
     throw 'Pre-start warehouse-stock validation was not embedded.'
 }
 if (-not $sourceText.Contains('SQUADRON_ASSET_COUNT_CHANGED')) {
     throw 'Post-start squadron.assets validation is missing.'
+}
+if (-not $sourceText.Contains('OBSERVER_CLIENT_POLICY detected=%d allowed=%d blocking=%d')) {
+    throw 'Separated observer-client telemetry was not embedded.'
 }
 
 $requiredPatterns = @(
@@ -104,13 +194,15 @@ $requiredPatterns = @(
     'SQUADRON_STOCK_PRESTART',
     'squadronAssetsBeforeStart',
     'SQUADRON_ASSET_COUNT_CHANGED',
+    'observerClientsDetected=',
+    'observerClientsAllowed=',
+    'observerClientsBlocking=',
     'verticalPolicySetBeforeStart=true',
     'commanderCreated=0',
     'auftragCreated=0',
     'opsTransportCreated=0',
     'deliberateSpawns=0'
 )
-
 foreach ($pattern in $requiredPatterns) {
     if ($sourceText -notmatch $pattern) {
         throw "Required source pattern missing: $pattern"
@@ -132,7 +224,6 @@ $forbiddenPatterns = @(
     'CampaignState\s*[\.:]',
     ':\s*AddMission\s*\('
 )
-
 foreach ($pattern in $forbiddenPatterns) {
     if ($sourceText -match $pattern) {
         throw "Forbidden source pattern matched: $pattern"
@@ -143,20 +234,15 @@ $verticalCall = 'airwing:SetOptionPreferVerticalLanding()'
 $startCall = 'airwing:Start()'
 $verticalIndex = $sourceText.IndexOf($verticalCall, [System.StringComparison]::Ordinal)
 $startIndex = $sourceText.IndexOf($startCall, [System.StringComparison]::Ordinal)
-
-if ($verticalIndex -lt 0) {
-    throw "Vertical-policy call not found: $verticalCall"
-}
-if ($startIndex -lt 0) {
-    throw "AIRWING start call not found: $startCall"
-}
+if ($verticalIndex -lt 0) { throw "Vertical-policy call not found: $verticalCall" }
+if ($startIndex -lt 0) { throw "AIRWING start call not found: $startCall" }
 if ($verticalIndex -ge $startIndex) {
     throw 'AIRWING:SetOptionPreferVerticalLanding() must occur before AIRWING:Start().'
 }
 
 New-Item -ItemType Directory -Path $distDir -Force | Out-Null
 
-$builderVersion = 'TKOT-G7-AIRWING-FOUNDATION-3'
+$builderVersion = 'TKOT-G7-AIRWING-FOUNDATION-4'
 $commit = 'UNKNOWN'
 try {
     $commit = (& git -C $repoRoot rev-parse HEAD 2>$null).Trim()
@@ -180,9 +266,9 @@ $header = @"
 -- AIRWING:Start(); actual vertical departure remains a later G8 dispatch test.
 -- Asset-link timing: warehouse stock is checked before AIRWING:Start();
 -- squadron.assets and inherited parkingIDs are checked after AIRWING start.
--- Observer-client policy: active observers on the three hard-excluded client
--- terminals 3, 8 and 20 are allowed. Those terminals cannot enter any G7
--- SQUADRON parking pool and therefore cannot affect this no-spawn foundation gate.
+-- Observer-client policy: detected, allowed and blocking counts remain separate.
+-- A confirmed client on hard-excluded terminals 3, 8 or 20 is non-blocking for
+-- this no-spawn foundation gate and is never hidden from final telemetry.
 
 local OMW_TKOT_G7_BUILD = {
   Builder = "tools/build-tarinkot-air-operations-g7-foundation.ps1",
@@ -196,34 +282,33 @@ local OMW_TKOT_G7_BUILD = {
 
 $footer = @"
 
--- Observer-client policy override for the scheduled G7 execution.
--- The source-level detector still logs the actual occupied Tarinkot client
--- units. Since all three client terminals are hard-excluded from the eight
--- validated SQUADRON parking IDs and G7 deliberately creates no flight, an
--- observer client is diagnostic only and is not a blocking condition.
-local OMW_TKOT_G7_originalActivePlayerClientCount = activePlayerClientCount
-activePlayerClientCount = function()
-  local detected = OMW_TKOT_G7_originalActivePlayerClientCount()
-  if detected > 0 then
-    log("ACTIVE_PLAYER_CLIENT_POLICY detected=" .. tostring(detected) .. " disposition=ALLOWED_HARD_EXCLUDED_CLIENT_TERMINAL blocking=0")
-  end
-  return 0
-end
-
 -- END SOURCE
 "@
 
 $content = $header + $sourceText + $footer
 [System.IO.File]::WriteAllText($outputFile, $content, [System.Text.UTF8Encoding]::new($false))
 
-if ($content -notmatch 'ACTIVE_PLAYER_CLIENT_POLICY detected=') {
-    throw 'Observer-client policy override was not embedded in the generated bundle.'
+$tempGuardSource = [System.IO.Path]::GetTempFileName()
+try {
+    [System.IO.File]::WriteAllText($tempGuardSource, $sourceText, [System.Text.UTF8Encoding]::new($false))
+    & $guardFile `
+        -SourceFile $tempGuardSource `
+        -GeneratedFile $outputFile `
+        -RequirePostStartAssetValidation `
+        -RequireVerticalPolicyBeforeStart `
+        -FoundationScope
+} finally {
+    Remove-Item -LiteralPath $tempGuardSource -Force -ErrorAction SilentlyContinue
+}
+
+if ($content -match 'activePlayerClientCount\s*=\s*function') {
+    throw 'Generated bundle contains an observer-count masking override.'
+}
+if ($content -notmatch 'observerClientsDetected=%d observerClientsAllowed=%d observerClientsBlocking=%d') {
+    throw 'Generated bundle does not preserve separated observer-client telemetry.'
 }
 if ($content -match 'SQUADRON_ASSET_COUNT_MISMATCH') {
     throw 'Generated bundle still contains the premature pre-start asset violation.'
-}
-if ($content -notmatch 'SQUADRON_STOCK_PRESTART') {
-    throw 'Generated bundle does not contain the corrected pre-start stock check.'
 }
 
 $hash = (Get-FileHash -LiteralPath $outputFile -Algorithm SHA256).Hash.ToLowerInvariant()
@@ -231,19 +316,20 @@ Write-Host "Built: $outputFile"
 Write-Host "SHA256: $hash"
 Write-Host "GitCommit: $commit"
 Write-Host "BuilderVersion: $builderVersion"
-Write-Host "Gate: G7_AIRWING_SQUADRON_PAYLOAD_FOUNDATION"
-Write-Host "Airwing: AW_US_TKOT_TF_ATTACK_3_101_AVN"
-Write-Host "Squadrons: 3"
-Write-Host "RegisteredGroups: 5"
-Write-Host "RegisteredAircraft: 7"
-Write-Host "RolePayloads: 3"
-Write-Host "ExpectedTotalPayloadsIncludingRelocation: 6"
-Write-Host "ParkingPools: AH64=21,4 UH60=30,27,23 CH47=32,29,10"
-Write-Host "VerticalPolicy: AIRWING:SetOptionPreferVerticalLanding before AIRWING:Start"
-Write-Host "AssetLinkingPolicy: warehouse stock pre-start; squadron.assets post-start"
-Write-Host "ObserverClientPolicy: allowed on hard-excluded client terminals 3,8,20"
-Write-Host "OperationalMissions: 0"
-Write-Host "DeliberateSpawns: 0"
+Write-Host 'LifecycleGuard: PASS'
+Write-Host 'ObserverClientTelemetry: detected/allowed/blocking preserved'
+Write-Host 'Gate: G7_AIRWING_SQUADRON_PAYLOAD_FOUNDATION'
+Write-Host 'Airwing: AW_US_TKOT_TF_ATTACK_3_101_AVN'
+Write-Host 'Squadrons: 3'
+Write-Host 'RegisteredGroups: 5'
+Write-Host 'RegisteredAircraft: 7'
+Write-Host 'RolePayloads: 3'
+Write-Host 'ExpectedTotalPayloadsIncludingRelocation: 6'
+Write-Host 'ParkingPools: AH64=21,4 UH60=30,27,23 CH47=32,29,10'
+Write-Host 'VerticalPolicy: AIRWING:SetOptionPreferVerticalLanding before AIRWING:Start'
+Write-Host 'AssetLinkingPolicy: warehouse stock pre-start; squadron.assets post-start'
+Write-Host 'OperationalMissions: 0'
+Write-Host 'DeliberateSpawns: 0'
 Write-Host "RequiredGuardPatternsChecked: $($requiredPatterns.Count)"
 Write-Host "ForbiddenGuardPatternsChecked: $($forbiddenPatterns.Count)"
-Write-Host "BundlesBuilt: 1"
+Write-Host 'BundlesBuilt: 1'
