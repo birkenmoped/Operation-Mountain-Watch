@@ -9,6 +9,7 @@ authoritative_for:
   - pre-start Warehouse stock and post-start SQUADRON asset boundaries
   - AIRWING vertical-helicopter policy order before AIRWING start
   - observer-client allowance on hard-excluded client terminals
+  - accepted G7 static lifecycle and builder guard
   - stable idle-node PASS criteria and accepted result
 not_authoritative_for:
   - tactical AUFTRAG dispatch
@@ -36,11 +37,12 @@ gate: G7_AIRWING_SQUADRON_PAYLOAD_FOUNDATION
 classification: PASS_DCS_WITH_TELEMETRY_FIELD_CORRECTION
 core_foundation: PASS
 observer_client: PASS_NON_BLOCKING
+static_lifecycle_guard: PASS_CI
 vertical_departure: NOT_TESTED
-G8: BLOCKED_BY_CENTRAL_CONSOLIDATION_AND_STATIC_GATE
+G8: BLOCKED_BY_CENTRAL_CONSOLIDATION_AND_NEXT_ARTIFACT_GATE
 ```
 
-Der G7-Grundknoten ist für den dokumentierten Branch-, Commit-, Bundle-, MIZ-, DCS- und MOOSE-Stand akzeptiert.
+Der G7-Grundknoten ist für den dokumentierten Branch-, Commit-, Bundle-, MIZ-, DCS- und MOOSE-Stand akzeptiert. Der korrigierte Builder und der gemeinsame Lifecycle-Guard haben außerdem die statische CI-Prüfung bestanden.
 
 Ergebnisbericht:
 
@@ -68,12 +70,15 @@ dcs_log_sha256: aeacc9fc9270dc033ed49a41eb1b3264880710265386f1d21e0c787a22739e52
 debrief_sha256: 8a33b90efdf57f92a95ff2b07d0c016555d79776da3b708367f63ef09a284588
 ```
 
-Vorbereitete statische Korrektur für alle nachfolgenden Builds:
+Akzeptierte statische Folgekorrrektur:
 
 ```yaml
 builder_version: TKOT-G7-AIRWING-FOUNDATION-4
 lifecycle_guard: tools/Test-AirOpsLifecycleGuards.ps1
 ci_workflow: .github/workflows/tarinkot-g7-static-validation.yml
+ci_run_id: 30954380156
+ci_result: SUCCESS
+validated_head: 940330f5213a8da856bca5c456cd38872b747da7
 runtime_retest_required: false
 ```
 
@@ -330,9 +335,9 @@ deliberateSpawns=0
 
 Die drei Observer-Felder sind die korrigierte semantische Darstellung der Rohmarker; der akzeptierte Builder v3 gab im letzten Resultat nur das maskierte Altfeld aus.
 
-## 12. Statischer Guard
+## 12. Akzeptierter statischer Guard
 
-Builder-Version 4 muss vor jeder weiteren Nutzung den gemeinsamen Guard bestehen:
+Builder-Version 4 führt den gemeinsamen Guard aus:
 
 ```powershell
 ./tools/Test-AirOpsLifecycleGuards.ps1 `
@@ -342,6 +347,8 @@ Builder-Version 4 muss vor jeder weiteren Nutzung den gemeinsamen Guard bestehen
   -RequireVerticalPolicyBeforeStart `
   -FoundationScope
 ```
+
+Der GitHub-Actions-Lauf `30954380156` bestand auf Head `940330f5213a8da856bca5c456cd38872b747da7`.
 
 Der Guard blockiert:
 
@@ -355,10 +362,10 @@ Der Guard blockiert:
 
 ```yaml
 G7_airwing_squadron_payload: PASS_DCS_WITH_TELEMETRY_FIELD_CORRECTION
+G7_static_lifecycle_guard: PASS_CI
 G8_direct_dispatch_vertical_departure: BLOCKED
 g8_blockers:
   - central lifecycle consolidation remains Draft PR 55 and is not on main
-  - corrected G7 builder and lifecycle guard require successful static workflow
   - next MIZ and embedded bundle identity are not yet established
 G9_commander: BLOCKED_BY_G8
 G10_lifecycle: NOT_STARTED
