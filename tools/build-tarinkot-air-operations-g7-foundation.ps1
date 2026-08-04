@@ -15,6 +15,76 @@ if (-not (Test-Path -LiteralPath $sourceFile -PathType Leaf)) {
 
 $sourceText = Get-Content -LiteralPath $sourceFile -Raw -Encoding UTF8
 
+# MOOSE 2.9.18 AIRWING:AddSquadron() adds the requested assets to the
+# warehouse stock immediately. The LEGION start path subsequently binds those
+# stock items to the cohort/SQUADRON and copies cohort parkingIDs into every
+# asset. Consequently squadron.assets is expected to be empty before
+# AIRWING:Start() and must only be accepted after the delayed idle inspection.
+# The original source checked squadron.assets too early; this builder corrects
+# the timing without changing the accepted object or inventory contract.
+$oldConstructionGate = 'if template and #missionTypes == #contract.MissionTypeNames and state.Violations == 0 then'
+$newConstructionGate = 'if template and #missionTypes == #contract.MissionTypeNames then'
+
+$oldPreStartAssetBlock = @'
+        local assetCount = countTable(squadron.assets)
+        if assetCount ~= contract.Ngroups then
+          violation("SQUADRON_ASSET_COUNT_MISMATCH family=" .. contract.Key .. " expected=" .. tostring(contract.Ngroups) .. " actual=" .. tostring(assetCount))
+        end
+
+        for assetIndex, asset in pairs(squadron.assets or {}) do
+          local parkingAccepted = numericListEqual(asset.parkingIDs, contract.ParkingIDs)
+          log(string.format(
+            "ASSET_CONTRACT family=%s assetIndex=%s squadron=%s parkingIDs=%s expectedParkingIDs=%s parkingAccepted=%s",
+            contract.Key, tostring(assetIndex), tostring(asset.squadname),
+            join(asset.parkingIDs), join(contract.ParkingIDs), tostring(parkingAccepted)
+          ))
+          if not parkingAccepted then
+            violation("ASSET_PARKING_IDS_MISMATCH family=" .. contract.Key .. " assetIndex=" .. tostring(assetIndex))
+          end
+        end
+'@
+
+$newPreStartAssetBlock = @'
+        -- AIRWING:AddSquadron() has synchronously added the asset groups to
+        -- warehouse stock, but MOOSE binds them into squadron.assets only in
+        -- the AIRWING/LEGION start path. Validate cumulative stock here and
+        -- validate squadron.assets plus inherited parking IDs after Start.
+        local stockAfterAdd = countTable(airwing.stock)
+        local expectedStockAfterAdd = registeredGroups + contract.Ngroups
+        local squadronAssetsBeforeStart = countTable(squadron.assets)
+        log(string.format(
+          "SQUADRON_STOCK_PRESTART family=%s stock=%d expectedStock=%d squadronAssetsBeforeStart=%d expectedDeferredAssets=%d",
+          contract.Key, stockAfterAdd, expectedStockAfterAdd,
+          squadronAssetsBeforeStart, contract.Ngroups
+        ))
+        if stockAfterAdd ~= expectedStockAfterAdd then
+          violation("SQUADRON_STOCK_COUNT_MISMATCH family=" .. contract.Key .. " expected=" .. tostring(expectedStockAfterAdd) .. " actual=" .. tostring(stockAfterAdd))
+        end
+'@
+
+if (-not $sourceText.Contains($oldConstructionGate)) {
+    throw "Expected legacy construction gate not found: $oldConstructionGate"
+}
+if (-not $sourceText.Contains($oldPreStartAssetBlock)) {
+    throw 'Expected premature pre-start squadron asset-validation block not found.'
+}
+
+$sourceText = $sourceText.Replace($oldConstructionGate, $newConstructionGate)
+$sourceText = $sourceText.Replace($oldPreStartAssetBlock, $newPreStartAssetBlock)
+
+if ($sourceText.Contains($oldConstructionGate)) {
+    throw 'Legacy fail-fast family construction gate remained after transformation.'
+}
+if ($sourceText.Contains('SQUADRON_ASSET_COUNT_MISMATCH')) {
+    throw 'Premature pre-start squadron.assets violation remained after transformation.'
+}
+if (-not $sourceText.Contains('SQUADRON_STOCK_PRESTART')) {
+    throw 'Pre-start warehouse-stock validation was not embedded.'
+}
+if (-not $sourceText.Contains('SQUADRON_ASSET_COUNT_CHANGED')) {
+    throw 'Post-start squadron.assets validation is missing.'
+}
+
 $requiredPatterns = @(
     'AIRWING\s*:\s*New\s*\(',
     ':\s*SetAirbase\s*\(',
@@ -31,6 +101,9 @@ $requiredPatterns = @(
     ':\s*GetOpsGroups\s*\(',
     'airwing\s*:\s*Start\s*\(',
     'G7_AIRWING_SQUADRON_PAYLOAD_FOUNDATION',
+    'SQUADRON_STOCK_PRESTART',
+    'squadronAssetsBeforeStart',
+    'SQUADRON_ASSET_COUNT_CHANGED',
     'verticalPolicySetBeforeStart=true',
     'commanderCreated=0',
     'auftragCreated=0',
@@ -83,7 +156,7 @@ if ($verticalIndex -ge $startIndex) {
 
 New-Item -ItemType Directory -Path $distDir -Force | Out-Null
 
-$builderVersion = 'TKOT-G7-AIRWING-FOUNDATION-2'
+$builderVersion = 'TKOT-G7-AIRWING-FOUNDATION-3'
 $commit = 'UNKNOWN'
 try {
     $commit = (& git -C $repoRoot rev-parse HEAD 2>$null).Trim()
@@ -105,6 +178,8 @@ $header = @"
 -- zones, tactical dispatch, return/recovery and lifecycle cleanup.
 -- Vertical policy order: AIRWING:SetOptionPreferVerticalLanding() before
 -- AIRWING:Start(); actual vertical departure remains a later G8 dispatch test.
+-- Asset-link timing: warehouse stock is checked before AIRWING:Start();
+-- squadron.assets and inherited parkingIDs are checked after AIRWING start.
 -- Observer-client policy: active observers on the three hard-excluded client
 -- terminals 3, 8 and 20 are allowed. Those terminals cannot enter any G7
 -- SQUADRON parking pool and therefore cannot affect this no-spawn foundation gate.
@@ -144,6 +219,12 @@ $content = $header + $sourceText + $footer
 if ($content -notmatch 'ACTIVE_PLAYER_CLIENT_POLICY detected=') {
     throw 'Observer-client policy override was not embedded in the generated bundle.'
 }
+if ($content -match 'SQUADRON_ASSET_COUNT_MISMATCH') {
+    throw 'Generated bundle still contains the premature pre-start asset violation.'
+}
+if ($content -notmatch 'SQUADRON_STOCK_PRESTART') {
+    throw 'Generated bundle does not contain the corrected pre-start stock check.'
+}
 
 $hash = (Get-FileHash -LiteralPath $outputFile -Algorithm SHA256).Hash.ToLowerInvariant()
 Write-Host "Built: $outputFile"
@@ -159,6 +240,7 @@ Write-Host "RolePayloads: 3"
 Write-Host "ExpectedTotalPayloadsIncludingRelocation: 6"
 Write-Host "ParkingPools: AH64=21,4 UH60=30,27,23 CH47=32,29,10"
 Write-Host "VerticalPolicy: AIRWING:SetOptionPreferVerticalLanding before AIRWING:Start"
+Write-Host "AssetLinkingPolicy: warehouse stock pre-start; squadron.assets post-start"
 Write-Host "ObserverClientPolicy: allowed on hard-excluded client terminals 3,8,20"
 Write-Host "OperationalMissions: 0"
 Write-Host "DeliberateSpawns: 0"
