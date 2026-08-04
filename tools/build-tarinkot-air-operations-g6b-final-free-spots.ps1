@@ -14,6 +14,14 @@ if (-not (Test-Path -LiteralPath $sourceFile -PathType Leaf)) {
 }
 
 $sourceText = Get-Content -LiteralPath $sourceFile -Raw -Encoding UTF8
+$sourceText = $sourceText.Replace(
+    'if expectedFamilies ~= 3 or expectedGroups ~= 4 or expectedUnits ~= 5 then',
+    'if expectedFamilies ~= 3 or expectedGroups ~= 7 or expectedUnits ~= 8 then'
+)
+$sourceText = $sourceText.Replace(
+    'log("PREFLIGHT status=PASS families=3 groups=4 units=5 terminals=5 terminalType=40")',
+    'log("PREFLIGHT status=PASS families=3 groups=7 units=8 terminals=8 terminalType=40")'
+)
 
 $requiredPatterns = @(
     'SPAWN\s*:\s*NewWithAlias\s*\(',
@@ -21,7 +29,9 @@ $requiredPatterns = @(
     ':\s*SpawnAtParkingSpot\s*\(',
     'SPAWN\s*\.\s*Takeoff\s*\.\s*Cold',
     'AIRBASE\s*\.\s*TerminalType\s*\.\s*HelicopterOnly',
-    'G6B_HELICOPTER_APRON_COMBINED'
+    'G6B_HELICOPTER_APRON_COMBINED',
+    'expectedGroups ~= 7',
+    'expectedUnits ~= 8'
 )
 
 foreach ($pattern in $requiredPatterns) {
@@ -50,7 +60,7 @@ foreach ($pattern in $forbiddenPatterns) {
 
 New-Item -ItemType Directory -Path $distDir -Force | Out-Null
 
-$builderVersion = 'TKOT-G6B-FINAL-FREE-SPOTS-1'
+$builderVersion = 'TKOT-G6B-FINAL-FREE-SPOTS-2'
 $commit = 'UNKNOWN'
 try {
     $commit = (& git -C $repoRoot rev-parse HEAD 2>$null).Trim()
