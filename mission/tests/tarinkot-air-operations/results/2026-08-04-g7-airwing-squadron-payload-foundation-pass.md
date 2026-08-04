@@ -7,6 +7,7 @@ authoritative_for:
   - Tarinkot G7 AIRWING, SQUADRON and payload foundation result
   - pre-start Warehouse stock and post-start SQUADRON asset lifecycle evidence
   - classification of the observer-client telemetry defect
+  - accepted static correction and lifecycle guard result
   - gate state before Tarinkot G8
 not_authoritative_for:
   - actual vertical departure
@@ -14,7 +15,7 @@ not_authoritative_for:
   - COMMANDER, OPSTRANSPORT, return, recovery or persistence
   - merge or Ready-for-Review authorization
 scenario_period: 2010-08-01/2011-12-31
-project_phase: TARINKOT_G7_FOUNDATION
+project_phase: TARINKOT_G7_ACCEPTED_G8_BLOCKED
 source_branch: agent/tarinkot-object-contract-reconciliation
 source_commit: add569fb3231a5563d9c89f865cce7bd764bc0bb
 validated_in_dcs: true
@@ -32,11 +33,14 @@ classification: PASS_DCS_WITH_TELEMETRY_FIELD_CORRECTION
 core_foundation: PASS
 observer_policy: PASS_NON_BLOCKING
 final_activePlayerClients_field: INVALIDATED
+static_lifecycle_guard: PASS_CI
 vertical_departure: NOT_TESTED
-G8: BLOCKED_BY_CENTRAL_CONSOLIDATION_STATIC_GATE
+G8: BLOCKED_BY_CENTRAL_CONSOLIDATION_AND_NEXT_ARTIFACT_GATE
 ```
 
 Der G7-Grundknoten ist technisch bestanden. Ein einzelnes Endmarkerfeld meldete `activePlayerClients=0`, obwohl derselbe Lauf zuvor einen aktiven Beobachter-Client erkannt hatte. Der Harness hatte den Rückgabewert nach der Detektion auf null maskiert. Dieses einzelne Feld wird verworfen; der G7-Kernnachweis bleibt gültig.
+
+Der korrigierte Builder und der gemeinsame Lifecycle-Guard wurden anschließend ohne erneuten DCS-Lauf statisch validiert.
 
 ## 2. Provenienz
 
@@ -193,6 +197,14 @@ deliberateSpawns=0
 
 Nur das Feld `activePlayerClients=0` ist verworfen. Alle übrigen Werte stimmen mit den vorhergehenden Einzelmarkern überein.
 
+Semantisch korrigierter Observer-Anteil:
+
+```text
+observerClientsDetected=1
+observerClientsAllowed=1
+observerClientsBlocking=0
+```
+
 ## 8. Debrief
 
 ```text
@@ -227,19 +239,49 @@ COMMANDER
 OPSTRANSPORT
 ```
 
-## 11. Korrektur und nächster Schritt
+## 11. Statische Korrektur
 
-Implementiert beziehungsweise verbindlich vorgesehen:
+Implementiert:
 
-1. zentrale Lifecycle-Matrix;
+```text
+BuilderVersion: TKOT-G7-AIRWING-FOUNDATION-4
+Shared guard: tools/Test-AirOpsLifecycleGuards.ps1
+CI workflow: .github/workflows/tarinkot-g7-static-validation.yml
+```
+
+Der korrigierte Builder:
+
+- prüft Warehouse-Stock vor `AIRWING:Start()`;
+- prüft `squadron.assets` und Parking-Vererbung nach Start;
+- behält tatsächliche Observerwerte bei;
+- trennt detected, allowed und blocking;
+- setzt die Vertikaloption vor AIRWING-Start;
+- verbietet COMMANDER, AUFTRAG-Instanzen, OPSTRANSPORT und SPAWN im G7-Scope.
+
+Statischer Nachweis:
+
+```text
+Workflow: Tarinkot G7 static validation
+Run ID: 30954380156
+Result: SUCCESS
+Validated head: 940330f5213a8da856bca5c456cd38872b747da7
+```
+
+Damit ist der Tarinkot-spezifische statische Guard bestanden. Ein erneuter langer G7-DCS-Lauf ist nicht erforderlich.
+
+## 12. Zentraler Konsolidierungsstand und nächster Schritt
+
+Draft PR #55 enthält die vorgeschlagene main-weite Konsolidierung:
+
+1. Lifecycle-Matrix;
 2. Pre-/Post-Start-Regeln;
 3. MIZ-Invalidierungsregel;
-4. allgemeine Observer-Client-Policy;
+4. Observer-Client-Policy;
 5. zentrales Methodenregister;
 6. kanonisches Dokument 22;
 7. `mission/tests/GOVERNANCE.md`;
-8. zentraler Builder-Guard;
-9. Tarinkot-Dokumentationssynchronisierung;
-10. Sperre weiterer langer DCS-Läufe bis zum statischen PASS.
+8. gemeinsamen Builder-Guard;
+9. Projektregister- und MOOSE-Index-Synchronisierung;
+10. Sperre weiterer langer DCS-Läufe vor dem statischen PASS.
 
-G8 wird erst vorbereitet, wenn der korrigierte Builder den zentralen Lifecycle-Guard besteht und die Dokumentations-/Hashkette vollständig synchron ist. Für diese Konsolidierung ist kein weiterer DCS-Lauf erforderlich.
+G8 bleibt blockiert, bis diese zentrale Baseline ausdrücklich für `main` freigegeben und integriert wurde und die nächste MIZ-/Bundle-Hashkette feststeht. Für die aktuelle Konsolidierung ist kein weiterer DCS-Lauf erforderlich.
