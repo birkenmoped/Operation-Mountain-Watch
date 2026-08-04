@@ -40,6 +40,45 @@ if (-not $sourceText.Contains($newCountGuard) -or -not $sourceText.Contains($new
     throw 'Final eight-aircraft count contract was not embedded.'
 }
 
+# DCS otherwise routes airport-based helicopters through normal taxi and runway
+# departure logic. MOOSE 2.9.18 exposes CONTROLLABLE:OptionPreferVerticalLanding(),
+# which applies to both vertical landing and takeoff. Apply it to every spawned
+# UNIT, matching the already proven Jalalabad behavior rather than only setting
+# the option on the group wrapper.
+$verticalAnchor = @'
+      groupsSpawned = groupsSpawned + 1
+      state.Spawned[#state.Spawned + 1] = {
+'@
+$verticalReplacement = @'
+      groupsSpawned = groupsSpawned + 1
+      local verticalUnits = safe("GET_UNITS_VERTICAL_OPTION_" .. family.Key .. "_" .. requestIndex, function()
+        return group:GetUnits()
+      end) or {}
+      if #verticalUnits ~= expectedUnits then
+        finish("FAIL_SPAWN", "VERTICAL_OPTION_UNIT_COUNT_MISMATCH_" .. family.Key .. "_" .. requestIndex, groupsSpawned, 0, 0, 0)
+        return
+      end
+      for _, verticalUnit in ipairs(verticalUnits) do
+        local _, _, _, optionApplied = safe("PREFER_VERTICAL_" .. verticalUnit:GetName(), function()
+          return verticalUnit:OptionPreferVerticalLanding()
+        end)
+        if not optionApplied then
+          finish("FAIL_SPAWN", "PREFER_VERTICAL_OPTION_FAILED_" .. verticalUnit:GetName(), groupsSpawned, 0, 0, 0)
+          return
+        end
+        log("VERTICAL_TAKEOFF_OPTION unit=" .. tostring(verticalUnit:GetName()) .. " method=UNIT:OptionPreferVerticalLanding applied=true")
+      end
+      state.Spawned[#state.Spawned + 1] = {
+'@
+
+if (-not $sourceText.Contains($verticalAnchor)) {
+    throw 'Vertical-takeoff insertion anchor not found in source.'
+}
+$sourceText = $sourceText.Replace($verticalAnchor, $verticalReplacement)
+if ($sourceText.Contains($verticalAnchor)) {
+    throw 'Vertical-takeoff insertion anchor remained after transformation.'
+}
+
 $requiredPatterns = @(
     'SPAWN\s*:\s*NewWithAlias\s*\(',
     ':\s*InitAIOff\s*\(',
@@ -49,7 +88,10 @@ $requiredPatterns = @(
     'G6B_HELICOPTER_APRON_COMBINED',
     'expectedGroups ~= 7',
     'expectedUnits ~= 8',
-    'groups=7 units=8 terminals=8'
+    'groups=7 units=8 terminals=8',
+    'verticalUnit\s*:\s*OptionPreferVerticalLanding\s*\(',
+    'VERTICAL_TAKEOFF_OPTION unit=',
+    'VERTICAL_OPTION_UNIT_COUNT_MISMATCH'
 )
 
 foreach ($pattern in $requiredPatterns) {
@@ -78,7 +120,7 @@ foreach ($pattern in $forbiddenPatterns) {
 
 New-Item -ItemType Directory -Path $distDir -Force | Out-Null
 
-$builderVersion = 'TKOT-G6B-FINAL-FREE-SPOTS-4'
+$builderVersion = 'TKOT-G6B-FINAL-FREE-SPOTS-5'
 $commit = 'UNKNOWN'
 try {
     $commit = (& git -C $repoRoot rev-parse HEAD 2>$null).Trim()
@@ -96,6 +138,8 @@ $header = @"
 -- TestGate: G6B_FINAL_FREE_SPOTS_COMBINED
 -- Observer-client policy: active clients are permitted only on the three hard-excluded
 -- client terminals 3, 8 and 20. The configured test terminals cannot use those IDs.
+-- Departure policy: every spawned helicopter UNIT receives
+-- CONTROLLABLE:OptionPreferVerticalLanding() before acceptance inspection.
 -- ME/MOOSE mapping basis:
 --   AH-64 C04-H -> 21; C18-H -> 4
 --   CH-47 C08-H -> 32; C09-H -> 29; C10-H -> 10
@@ -179,6 +223,7 @@ Write-Host "GitCommit: $commit"
 Write-Host "BuilderVersion: $builderVersion"
 Write-Host "ExpectedTerminalType: 40 (HelicopterOnly)"
 Write-Host "ObserverClientPolicy: allowed on hard-excluded client terminals 3,8,20"
+Write-Host "DeparturePolicy: UNIT:OptionPreferVerticalLanding on every spawned helicopter"
 Write-Host "CountContract: families=3 groups=7 aircraft=8 terminals=8"
 Write-Host "RequiredGuardPatternsChecked: $($requiredPatterns.Count)"
 Write-Host "FamiliesCombined: 3"
