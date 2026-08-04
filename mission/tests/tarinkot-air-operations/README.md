@@ -8,7 +8,7 @@ authoritative_for:
   - accepted G5 read-only diagnostics
   - accepted G6 parking mapping and controlled placement
   - accepted G7 AIRWING, SQUADRON and payload foundation
-  - corrected G7 lifecycle and observer-client static guard
+  - accepted G7 lifecycle and observer-client static guard
   - current G8 block and central-consolidation dependency
   - airport-level batching and failure-isolation boundary
 not_authoritative_for:
@@ -41,9 +41,9 @@ G6A2_ME_MOOSE_mapping: PASS_DCS
 G6B_first_combined_run: FAIL_VISUAL_WRONG_APRON
 G6B_final_free_spots: PASS_DCS_OWNER_VISUAL_ACCEPTED
 G7_airwing_squadron_payload: PASS_DCS_WITH_TELEMETRY_FIELD_CORRECTION
-G7_lifecycle_guard_correction: IMPLEMENTED_STATIC_VALIDATION_REQUIRED
+G7_lifecycle_guard_correction: PASS_STATIC_CI
 central_lifecycle_consolidation: DRAFT_PR_55_NOT_ON_MAIN
-G8_direct_dispatch_vertical_departure: BLOCKED_BY_CENTRAL_CONSOLIDATION_AND_STATIC_GATE
+G8_direct_dispatch_vertical_departure: BLOCKED_BY_CENTRAL_CONSOLIDATION_AND_NEXT_ARTIFACT_GATE
 G9_commander: BLOCKED_BY_G8
 G10_lifecycle_results_handoff: NOT_STARTED
 ```
@@ -52,10 +52,11 @@ Kein weiterer längerer DCS-Lauf ist zulässig, bevor:
 
 ```text
 Draft PR #55 als zentrale Projektbaseline geprüft und ausdrücklich für main freigegeben wurde
-der G7-Builder den gemeinsamen Lifecycle-Guard erfolgreich durchläuft
 README, Acceptance, Manifest, Ergebnisbericht und PR #53 denselben Stand führen
 die nächste MIZ-/Bundle-Hashkette vollständig feststeht
 ```
+
+Der korrigierte G7-Builder und der gemeinsame Lifecycle-Guard haben die statische GitHub-Actions-Prüfung bereits bestanden.
 
 ## 2. Akzeptierte Basis
 
@@ -239,7 +240,7 @@ Builder:
 tools/build-tarinkot-air-operations-g7-foundation.ps1
 ```
 
-Vorbereitete Builder-Version:
+Builder-Version:
 
 ```text
 TKOT-G7-AIRWING-FOUNDATION-4
@@ -257,6 +258,15 @@ CI-Workflow:
 .github/workflows/tarinkot-g7-static-validation.yml
 ```
 
+Akzeptierte statische Prüfung:
+
+```text
+GitHub Actions workflow: Tarinkot G7 static validation
+Run ID: 30954380156
+Result: SUCCESS
+Validated head: 940330f5213a8da856bca5c456cd38872b747da7
+```
+
 Der korrigierte Builder:
 
 - prüft Warehouse-Stock vor Start;
@@ -266,7 +276,7 @@ Der korrigierte Builder:
 - gibt detected/allowed/blocking getrennt aus;
 - verbietet COMMANDER, AUFTRAG-Instanzen, OPSTRANSPORT und SPAWN im G7-Foundation-Scope.
 
-Builder-Version 4 ist eine statische Harnesskorrektur. Sie ändert den akzeptierten G7-Funktionsumfang nicht und benötigt keinen erneuten 30-Minuten-DCS-Lauf. Vor G8 muss der Builder-/Guard-Workflow erfolgreich sein.
+Builder-Version 4 ist eine statisch akzeptierte Harnesskorrektur. Sie ändert den akzeptierten G7-Funktionsumfang nicht und benötigt keinen erneuten 30-Minuten-DCS-Lauf.
 
 ## 6. Vertikaloption und G8-Grenze
 
@@ -339,10 +349,10 @@ mission/tests/tarinkot-air-operations/
 
 ```yaml
 G7: ACCEPTED_TECHNICAL_BASELINE
+G7_static_guard: PASS_STATIC_CI
 G8_authorization: WITHHELD
 reason:
   - central lifecycle governance remains Draft PR 55 and is not on main
-  - corrected G7 builder must pass static workflow
   - next MIZ/bundle identity must be established
 ```
 
