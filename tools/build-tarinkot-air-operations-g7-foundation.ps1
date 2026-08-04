@@ -143,13 +143,14 @@ $sourceText = $sourceText.Replace(
     'activePlayerClients=%d",',
     'observerClientsDetected=%d observerClientsAllowed=%d observerClientsBlocking=%d",'
 )
-$sourceText = $sourceText.Replace(
-    '    activeClients' + "`r`n" + '  ))',
-    '    observer.Detected, observer.Allowed, observer.Blocking' + "`r`n" + '  ))'
+$sourceText = [regex]::Replace(
+    $sourceText,
+    '(?m)^(\s*)activeClients\s*$',
+    '$1observer.Detected, observer.Allowed, observer.Blocking'
 )
 $sourceText = $sourceText.Replace(
-    '    opsGroups, activeClients' + "`r`n" + '  ))',
-    '    opsGroups, observer.Detected, observer.Allowed, observer.Blocking' + "`r`n" + '  ))'
+    'opsGroups, activeClients',
+    'opsGroups, observer.Detected, observer.Allowed, observer.Blocking'
 )
 $sourceText = $sourceText.Replace(
     'if activeClients ~= 0 then violation("ACTIVE_PLAYER_CLIENT_DURING_G7") end',
@@ -164,6 +165,9 @@ if ($sourceText.Contains('SQUADRON_ASSET_COUNT_MISMATCH')) {
 }
 if ($sourceText.Contains('activePlayerClientCount')) {
     throw 'Legacy observer-client detector or masking path remained after transformation.'
+}
+if ($sourceText -match '\bactiveClients\b') {
+    throw 'Legacy activeClients variable remained after observer telemetry transformation.'
 }
 if (-not $sourceText.Contains('SQUADRON_STOCK_PRESTART')) {
     throw 'Pre-start warehouse-stock validation was not embedded.'
@@ -303,6 +307,9 @@ try {
 
 if ($content -match 'activePlayerClientCount\s*=\s*function') {
     throw 'Generated bundle contains an observer-count masking override.'
+}
+if ($content -match '\bactiveClients\b') {
+    throw 'Generated bundle contains a legacy activeClients field.'
 }
 if ($content -notmatch 'observerClientsDetected=%d observerClientsAllowed=%d observerClientsBlocking=%d') {
     throw 'Generated bundle does not preserve separated observer-client telemetry.'
