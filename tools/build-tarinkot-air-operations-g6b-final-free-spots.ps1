@@ -15,13 +15,41 @@ if (-not (Test-Path -LiteralPath $sourceFile -PathType Leaf)) {
 
 $sourceText = Get-Content -LiteralPath $sourceFile -Raw -Encoding UTF8
 
+# The shared source was originally written for the five-aircraft probe. This
+# builder is authoritative for the final eight-aircraft free-spot test and must
+# replace both hard-coded probe counts before the source is embedded.
+$oldCountGuard = 'if expectedFamilies ~= 3 or expectedGroups ~= 4 or expectedUnits ~= 5 then'
+$newCountGuard = 'if expectedFamilies ~= 3 or expectedGroups ~= 7 or expectedUnits ~= 8 then'
+$oldPreflightMarker = 'PREFLIGHT status=PASS families=3 groups=4 units=5 terminals=5 terminalType=40'
+$newPreflightMarker = 'PREFLIGHT status=PASS families=3 groups=7 units=8 terminals=8 terminalType=40'
+
+if (-not $sourceText.Contains($oldCountGuard)) {
+    throw "Expected legacy count guard not found in source: $oldCountGuard"
+}
+if (-not $sourceText.Contains($oldPreflightMarker)) {
+    throw "Expected legacy preflight marker not found in source: $oldPreflightMarker"
+}
+
+$sourceText = $sourceText.Replace($oldCountGuard, $newCountGuard)
+$sourceText = $sourceText.Replace($oldPreflightMarker, $newPreflightMarker)
+
+if ($sourceText.Contains($oldCountGuard) -or $sourceText.Contains($oldPreflightMarker)) {
+    throw 'Legacy five-aircraft count contract remained after transformation.'
+}
+if (-not $sourceText.Contains($newCountGuard) -or -not $sourceText.Contains($newPreflightMarker)) {
+    throw 'Final eight-aircraft count contract was not embedded.'
+}
+
 $requiredPatterns = @(
     'SPAWN\s*:\s*NewWithAlias\s*\(',
     ':\s*InitAIOff\s*\(',
     ':\s*SpawnAtParkingSpot\s*\(',
     'SPAWN\s*\.\s*Takeoff\s*\.\s*Cold',
     'AIRBASE\s*\.\s*TerminalType\s*\.\s*HelicopterOnly',
-    'G6B_HELICOPTER_APRON_COMBINED'
+    'G6B_HELICOPTER_APRON_COMBINED',
+    'expectedGroups ~= 7',
+    'expectedUnits ~= 8',
+    'groups=7 units=8 terminals=8'
 )
 
 foreach ($pattern in $requiredPatterns) {
@@ -50,7 +78,7 @@ foreach ($pattern in $forbiddenPatterns) {
 
 New-Item -ItemType Directory -Path $distDir -Force | Out-Null
 
-$builderVersion = 'TKOT-G6B-FINAL-FREE-SPOTS-3'
+$builderVersion = 'TKOT-G6B-FINAL-FREE-SPOTS-4'
 $commit = 'UNKNOWN'
 try {
     $commit = (& git -C $repoRoot rev-parse HEAD 2>$null).Trim()
@@ -151,6 +179,8 @@ Write-Host "GitCommit: $commit"
 Write-Host "BuilderVersion: $builderVersion"
 Write-Host "ExpectedTerminalType: 40 (HelicopterOnly)"
 Write-Host "ObserverClientPolicy: allowed on hard-excluded client terminals 3,8,20"
+Write-Host "CountContract: families=3 groups=7 aircraft=8 terminals=8"
+Write-Host "RequiredGuardPatternsChecked: $($requiredPatterns.Count)"
 Write-Host "FamiliesCombined: 3"
 Write-Host "GroupsRequested: 7"
 Write-Host "AircraftRequested: 8"
