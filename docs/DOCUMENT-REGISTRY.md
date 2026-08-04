@@ -9,11 +9,11 @@ authoritative_for:
   - main-branch document inventory
   - merge-time renumbering
 scenario_period: 2010-08-01/2011-12-31
-project_phase: TARINKOT_MOOSE_SOURCE_REVIEW_COMPLETE
+project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
-  - registry without complete non-numbered document inventory
+  - registry that listed Document 22 only as a branch reservation
 superseded_by:
-source_branch: agent/tarinkot-object-contract-reconciliation
+source_branch: agent/consolidate-air-ops-lifecycle-governance
 source_commit: PENDING_MERGE
 validated_in_dcs: false
 ---
@@ -50,6 +50,7 @@ Eine Nummer und eine stabile `document_id` dürfen im aktuellen Bestand jeweils 
 | 19 | `OMW-AIR-ACTIVE-ORBAT` | `docs/19-active-air-orbat-decisions.md` | `BINDING_PROJECT_DECISION` | aktive ORBAT/Clientgrenzen |
 | 20 | `OMW-AIR-ME-WORKLIST` | `docs/20-air-orbat-mission-editor-worklist.md` | `BINDING` | Air-Ops-ME-Workflow |
 | 21 | `OMW-AIR-JBAD-MANIFEST` | `docs/21-jalalabad-air-operations-manifest.md` | `BINDING` | Jalalabad-ME-Baseline |
+| 22 | `OMW-TEST-MISSION-BUILD-TRANSFER-VALIDATION` | `docs/22-test-mission-build-transfer-and-validation-workflow.md` | `BINDING` | Testartefakt-, Transfer-, Hash- und Validierungsworkflow |
 | 26 | `OMW-GOV-MOOSE-FIRST` | `docs/26-moose-first-development-policy.md` | `BINDING_PROJECT_DECISION` | MOOSE-First |
 | 27 | `OMW-C2-JTAC-CALLSIGNS` | `docs/27-oef-jtac-callsign-reference.md` | `BINDING` | Quellenreferenz |
 | 28 | `OMW-C2-TAD-COLOR-NETS` | `docs/28-afghanistan-tad-color-nets.md` | `BINDING` | Quellenbasierter Datensatz |
@@ -106,7 +107,8 @@ Eine Nummer und eine stabile `document_id` dürfen im aktuellen Bestand jeweils 
 
 | PR | Nummern | Status |
 |---:|---|---|
-| 18 | 22–25 | nur Draft-PR #18; branchgebundene Air-Ops-Dokumente |
+| 18 | 23–25 | nur Draft-PR #18; branchgebundene Air-Ops-Dokumente |
+| 18 | 22 | branchlokale Altversion; durch die kanonische `main`-Fassung von Dokument 22 ersetzt |
 | 18 | 27 | branchlokale Kollision; vor Integration zwingend neu nummerieren |
 | 24 | 31–36 | nur Draft-PR #24; Bagram/Kandahar |
 
@@ -120,13 +122,14 @@ Eine Nummer und eine stabile `document_id` dürfen im aktuellen Bestand jeweils 
 | `OMW-AIR-AIRFIELD-IMPLEMENTATION-WORKFLOW` | `docs/airfield-airwing-squadron-commander-implementation-workflow.md` | `BINDING`; allgemeiner Airfield-AIRWING-Workflow |
 | `OMW-HANDOFF-TEMPLATE-AIRFIELD-AIRWING-COMMANDER` | `docs/handoffs/TEMPLATE-airfield-airwing-squadron-commander-chat-handoff.md` | `BINDING`; Chat-Handoff-Vorlage |
 | `OMW-AIR-US-ORBAT-RESEARCH` | `docs/us-air-orbat-2010-2011.md` | `BINDING`; historische Forschung |
-| `OMW-AIR-TKOT-MANIFEST` | `docs/tarinkot-air-operations-manifest.md` | `DRAFT`; owner-accepted branch contract; G4 complete |
 | `OMW-GOV-SOURCE-USE` | `docs/sources/graveyard-of-empires.md` | `BINDING_PROJECT_DECISION` |
 | `OMW-GOV-MOOSE-VERSION` | `docs/moose/VERSION-AND-SOURCES.md` | `BINDING` |
 | `OMW-MOOSE-DOCUMENTATION-INDEX` | `docs/moose/README.md` | `BINDING` |
 | `OMW-MOOSE-CLASS-INDEX` | `docs/moose/PROJECT-CLASS-INDEX.md` | `BINDING` |
-| `OMW-MOOSE-FOG-OF-WAR-RECCE` | `docs/moose/FOG-OF-WAR-RECCE.md` | `PLANNED` |
 | `OMW-MOOSE-VERIFIED-METHODS` | `docs/moose/VERIFIED-METHODS.md` | `BINDING` |
+| `OMW-MOOSE-AIRWING-SQUADRON-WAREHOUSE-LIFECYCLE` | `docs/moose/AIRWING-SQUADRON-WAREHOUSE-LIFECYCLE.md` | `BINDING`; Lifecycle- und Testgrenzen |
+| `OMW-MOOSE-FOG-OF-WAR-RECCE` | `docs/moose/FOG-OF-WAR-RECCE.md` | `PLANNED` |
+| `OMW-TEST-GOVERNANCE` | `mission/tests/GOVERNANCE.md` | `BINDING`; Missions- und Runtime-Testregeln |
 | `OMW-CSAR-INDEX` | `docs/csar/README.md` | `BINDING` |
 | `OMW-CSAR-SOURCE-NOTES-1-8` | `docs/csar/source-notes-1-8.md` | `BINDING` |
 | `OMW-CSAR-AFGHANISTAN-2010-FACILITIES` | `docs/csar/afghanistan-2010-facilities-and-coverage.md` | `BINDING` |
@@ -141,16 +144,6 @@ Eine Nummer und eine stabile `document_id` dürfen im aktuellen Bestand jeweils 
 | `OMW-ADR-0004-LOCATION-REGISTRY` | `docs/adr/0004-use-explicit-location-registry.md` | `BINDING` |
 | `OMW-EVIDENCE-INDEX` | `docs/evidence/README.md` | `BINDING` |
 | `OMW-EVIDENCE-SOURCE-INTAKE-AUDIT-2026-07-28` | `docs/evidence/source-intake-audit-2026-07-28.md` | `BINDING` |
-| `OMW-EVIDENCE-TARINKOT-ME-AUDIT-V5` | `docs/evidence/tarinkot-mission-editor-audit-omw-template-v5-salerno.md` | `BINDING`; aktueller MIZ-Audit |
-| `OMW-EVIDENCE-TARINKOT-AVIATION-2011` | `docs/evidence/tarinkot-2011-aviation-unit-and-aircraft-evidence.md` | `BINDING`; 2011er Typen- und Einheitennachweis |
-| `OMW-EVIDENCE-TARINKOT-AVIATION-ROTATIONS` | `docs/evidence/tarinkot-aviation-rotations-and-national-attribution-2006-2013.md` | `BINDING`; Rotations- und Nationalitätsgrenzen |
-| `OMW-EVIDENCE-TARINKOT-POST-PERIOD-AVIATION-BASE-LAYOUT` | `docs/evidence/tarinkot-post-period-aviation-and-base-layout-context-2012-2013.md` | `BINDING`; Post-period-Kontext |
-| `OMW-DECISION-TARINKOT-ACTIVE-BASELINE-2026-08-02` | `docs/evidence/tarinkot-owner-decision-active-baseline-2026-08-02.md` | `BINDING_PROJECT_DECISION`; aktive historische Baseline |
-| `OMW-EVIDENCE-TARINKOT-FARP-HOT-REFUEL-UH60-2011` | `docs/evidence/tarinkot-farp-hot-refuel-uh60-2011.md` | `BINDING`; FARP-/Hot-Refuel-Nachweis |
-| `OMW-EVIDENCE-TARINKOT-TF-ATTACK-STRUCTURE-CORRECTION` | `docs/evidence/tarinkot-source-critical-correction-task-force-attack-structure.md` | `BINDING`; Organisationskorrektur |
-| `OMW-DECISION-TARINKOT-G2-OBJECT-CONTRACT-2026-08-03` | `docs/evidence/tarinkot-g2-object-contract-acceptance-checklist-2026-08-03.md` | `DRAFT`; vollständige G2-Abnahmeliste |
-| `OMW-DECISION-TARINKOT-G2-OWNER-ACCEPTANCE-2026-08-03` | `docs/evidence/tarinkot-g2-owner-acceptance-2026-08-03.md` | `BINDING_PROJECT_DECISION`; ausdrückliche G2-Abnahme |
-| `OMW-EVIDENCE-TARINKOT-G4-MOOSE-2-9-18-SOURCE-REVIEW` | `docs/evidence/tarinkot-g4-moose-2-9-18-source-review.md` | `BINDING`; exakte MOOSE-2.9.18-Quellenprüfung |
 | `OMW-TEST-JBAD-AIR-OPS-INDEX` | `mission/tests/jalalabad-air-operations/README.md` | `BINDING` |
 
 ## 5. Legacy- und Evidenzregel
