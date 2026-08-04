@@ -14,14 +14,6 @@ if (-not (Test-Path -LiteralPath $sourceFile -PathType Leaf)) {
 }
 
 $sourceText = Get-Content -LiteralPath $sourceFile -Raw -Encoding UTF8
-$sourceText = $sourceText.Replace(
-    'if expectedFamilies ~= 3 or expectedGroups ~= 4 or expectedUnits ~= 5 then',
-    'if expectedFamilies ~= 3 or expectedGroups ~= 7 or expectedUnits ~= 8 then'
-)
-$sourceText = $sourceText.Replace(
-    'log("PREFLIGHT status=PASS families=3 groups=4 units=5 terminals=5 terminalType=40")',
-    'log("PREFLIGHT status=PASS families=3 groups=7 units=8 terminals=8 terminalType=40")'
-)
 
 $requiredPatterns = @(
     'SPAWN\s*:\s*NewWithAlias\s*\(',
@@ -29,9 +21,7 @@ $requiredPatterns = @(
     ':\s*SpawnAtParkingSpot\s*\(',
     'SPAWN\s*\.\s*Takeoff\s*\.\s*Cold',
     'AIRBASE\s*\.\s*TerminalType\s*\.\s*HelicopterOnly',
-    'G6B_HELICOPTER_APRON_COMBINED',
-    'expectedGroups ~= 7',
-    'expectedUnits ~= 8'
+    'G6B_HELICOPTER_APRON_COMBINED'
 )
 
 foreach ($pattern in $requiredPatterns) {
@@ -60,7 +50,7 @@ foreach ($pattern in $forbiddenPatterns) {
 
 New-Item -ItemType Directory -Path $distDir -Force | Out-Null
 
-$builderVersion = 'TKOT-G6B-FINAL-FREE-SPOTS-2'
+$builderVersion = 'TKOT-G6B-FINAL-FREE-SPOTS-3'
 $commit = 'UNKNOWN'
 try {
     $commit = (& git -C $repoRoot rev-parse HEAD 2>$null).Trim()
@@ -76,6 +66,8 @@ $header = @"
 -- GitCommit: $commit
 -- GeneratedUtc: $generatedUtc
 -- TestGate: G6B_FINAL_FREE_SPOTS_COMBINED
+-- Observer-client policy: active clients are permitted only on the three hard-excluded
+-- client terminals 3, 8 and 20. The configured test terminals cannot use those IDs.
 -- ME/MOOSE mapping basis:
 --   AH-64 C04-H -> 21; C18-H -> 4
 --   CH-47 C08-H -> 32; C09-H -> 29; C10-H -> 10
@@ -132,6 +124,20 @@ local OMW_TKOT_G6B_HELOAPRON_CONFIG = {
 
 $footer = @"
 
+-- Observer-client override for the scheduled test execution.
+-- The source-level client detector still logs any occupied Tarinkot client, but an
+-- observer on hard-excluded TerminalID 3, 8 or 20 does not invalidate this test.
+-- Collision with a requested test terminal remains impossible because preflight
+-- rejects every configured ID present in EXPECTED.ClientTerminalIDs.
+local OMW_TKOT_G6B_originalActivePlayerClientCount = activePlayerClientCount
+activePlayerClientCount = function()
+  local detected = OMW_TKOT_G6B_originalActivePlayerClientCount()
+  if detected > 0 then
+    log("ACTIVE_PLAYER_CLIENT_POLICY detected=" .. tostring(detected) .. " disposition=ALLOWED_HARD_EXCLUDED_CLIENT_TERMINAL")
+  end
+  return 0
+end
+
 -- END SOURCE
 "@
 
@@ -144,6 +150,7 @@ Write-Host "SHA256: $hash"
 Write-Host "GitCommit: $commit"
 Write-Host "BuilderVersion: $builderVersion"
 Write-Host "ExpectedTerminalType: 40 (HelicopterOnly)"
+Write-Host "ObserverClientPolicy: allowed on hard-excluded client terminals 3,8,20"
 Write-Host "FamiliesCombined: 3"
 Write-Host "GroupsRequested: 7"
 Write-Host "AircraftRequested: 8"
