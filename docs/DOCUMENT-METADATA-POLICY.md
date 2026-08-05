@@ -13,7 +13,7 @@ supersedes:
   - implicit and inconsistent metadata interpretation
 superseded_by:
 source_branch: agent/complete-documentation-authority-migration
-source_commit: PENDING_MERGE
+source_commit: 666ef7a4a6fad52cc1aaecc7d0953e4d112dc8ff
 validated_in_dcs: false
 ---
 
@@ -23,7 +23,14 @@ validated_in_dcs: false
 
 Diese Richtlinie konkretisiert die Metadatenanforderungen aus [`OMW-GOV-001`](00-project-governance.md). Sie gilt für aktuelle Governance-, Architektur-, Fach-, Baseline-, Register-, ADR-, Daten- und Testindexdokumente.
 
-Unveränderte Quelldatensätze unter `docs/evidence/source-records/` sind von der Frontmatterpflicht ausgenommen. Sie besitzen keine aktuelle Governance-Autorität.
+Unveränderte Quelldatensätze unter `docs/evidence/source-records/` sind von der Frontmatterpflicht ausgenommen. Vorhandenes Frontmatter in solchen Quelldatensätzen dient nur der Provenienz und verleiht keine aktuelle Governance-Autorität. Bei nicht als Legacy gekennzeichneten Quelldatensätzen werden relative Links, Repository-Grenzen und vorhandene stabile IDs dennoch geprüft.
+
+Dateien mit Präfix `docs/evidence/source-records/legacy-` sind unveränderliche Archivkopien früherer Projektstände. Zusätzlich gelten die beiden vor Einführung der Handoff-Metadaten entstandenen Dateien
+
+- `docs/handoffs/2026-07-31-bagram-current-state-and-kandahar-chat-handoff.md` und
+- `docs/handoffs/2026-07-31-bagram-handoff-addendum.md`
+
+als historische Sonderfälle ohne nachträglich erfundene Frontmatter-Provenienz. Legacy-Quelldatensätze und diese Handoffs werden in ihrem ursprünglichen Zustand bewahrt; ihre durch die Archivverschiebung veralteten Links sind keine aktuellen Repository-Verweise. Neue Handoffs und alle aktuellen Missions-Testdokumente unter `mission/tests/` unterliegen dagegen der Frontmatterpflicht.
 
 ## 2. Pflichtfelder
 
@@ -56,6 +63,8 @@ Zulässige Werte sind:
 - leer nur für bereits vorhandene Migrationsbestände, solange der zugehörige PR Draft ist.
 
 Ein leerer Wert ist **nicht** als technische Acceptance-Provenienz zulässig.
+
+`PENDING_MERGE` ist auf einem offenen Arbeitsbranch zulässig, aber nicht auf `main`. Nach der Integration wird der Wert durch den vollständigen Commit ersetzt, der den dokumentierten Quellstand im Repository nachweisbar enthält.
 
 ## 4. Technische Acceptance
 
@@ -94,8 +103,11 @@ Diese Werte ersetzen nicht den Governance-Status.
 - doppelte Dokument-IDs und Dokumentnummern;
 - zulässige Governance-Statuswerte;
 - Frontmatter und Pflichtschlüssel;
+- zulässige Projektphasen und DCS-Validierungswerte;
 - relative Links und Überschriftenanker;
 - Acceptance-Provenienz;
-- zentrale Unterprojekt- und Kompatibilitätspfade.
+- registrierte Dokument-IDs gegen die zugehörigen Repository-Pfade;
+- aktuelle Handoffs und alle Markdown-Testdokumente unter `mission/tests/`;
+- Archiv- und Quelldatensatzpfade ohne ihnen aktuelle Autorität zuzuschreiben.
 
-Fehler blockieren den CI-Lauf. Noch nicht vollständig migrierte ältere Metadaten werden als Warnungen ausgegeben, sofern sie keine technische Acceptance beanspruchen.
+Fehler blockieren den CI-Lauf. Auf Pull-Request-Branches darf `PENDING_MERGE` bis zur Integration bestehen; der `main`-Lauf verbietet diesen Wert ausdrücklich.

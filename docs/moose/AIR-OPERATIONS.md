@@ -15,7 +15,7 @@ supersedes:
   - unclassified MOOSE air-operations reference
 superseded_by:
 source_branch: agent/complete-documentation-authority-migration
-source_commit:
+source_commit: 801b88b58bd2fc799535edd2e80fc463bc4c4dc9
 validated_in_dcs: partial
 ---
 

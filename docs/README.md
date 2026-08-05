@@ -16,7 +16,7 @@ supersedes:
   - incomplete documentation index without subproject registry
 superseded_by:
 source_branch: docs/afghanistan-aip-kaia-lop
-source_commit: PENDING_MERGE
+source_commit: 2c220ee6a27cfc5f9570ab7deaf0cc1b97771a04
 validated_in_dcs: false
 ---
 

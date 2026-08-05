@@ -2,11 +2,16 @@
 document_id: OMW-RED-LAYEHA-COMMAND-DISCIPLINE-SHADOW-JUSTICE
 status: BINDING
 document_class: SOURCE_CRITICAL_RED_DESIGN_REFERENCE
+owning_policy: OMW-GOV-001
 authoritative_for:
   - Taliban 2009 Layeha-derived command and discipline abstractions
   - RED local-command friction and shadow-justice modeling
 scenario_period: 2010-08-01/2011-12-31
+project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
+supersedes:
+superseded_by:
 source_branch: docs/stability-layeha-route-clearance-cerp-sigacts
+source_commit: 0274b5115aa86538e2a20c289931c35c50f7e295
 validated_in_dcs: false
 ---
 

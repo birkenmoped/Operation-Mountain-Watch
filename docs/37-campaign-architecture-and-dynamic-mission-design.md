@@ -16,7 +16,7 @@ supersedes:
   - incomplete campaign architecture descriptions in legacy foundation documents
 superseded_by:
 source_branch: agent/complete-documentation-authority-migration
-source_commit:
+source_commit: 665319e29cd253688e07cd1f4233f9be64624919
 validated_in_dcs: false
 ---
 

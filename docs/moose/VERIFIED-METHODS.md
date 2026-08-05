@@ -16,7 +16,7 @@ supersedes:
   - method register without lifecycle timing, vertical-option and COMMANDER details
 superseded_by:
 source_branch: agent/consolidate-air-ops-lifecycle-governance
-source_commit: PENDING_MERGE
+source_commit: 801b88b58bd2fc799535edd2e80fc463bc4c4dc9
 validated_in_dcs: partial
 ---
 

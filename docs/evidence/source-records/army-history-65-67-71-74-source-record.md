@@ -3,7 +3,7 @@ record_id: OMW-SOURCE-ARMY-HISTORY-65-67-71-74
 status: ACTIVE
 owning_policy: OMW-GOV-001
 source_branch: docs/army-history-baloch-kalay-cultural-turn
-source_commit: PENDING_MERGE
+source_commit: 46353187234dad30d7a6fbb8278b64cb44d57cdb
 ---
 
 # Source Record: Army History Nos. 65, 67, 71 and 74

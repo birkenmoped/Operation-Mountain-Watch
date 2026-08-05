@@ -20,7 +20,7 @@ project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
 superseded_by:
 source_branch: agent/normalize-salerno-air-orbat
-source_commit: PENDING_MERGE
+source_commit: 4ce9b9297f8c473ee2a789f14d187fb667d37647
 validated_in_dcs: true
 acceptance_branch: agent/salerno-read-only-diagnostics
 acceptance_commit: dba0465afbff14fb719abdeb1f9b06e24ff24717

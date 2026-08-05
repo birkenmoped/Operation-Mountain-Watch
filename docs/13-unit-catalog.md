@@ -14,7 +14,7 @@ project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
 superseded_by:
 source_branch: agent/complete-documentation-authority-migration
-source_commit:
+source_commit: d2f45fa6424f22cbd13dd0cbfb9c59e7b0466a16
 validated_in_dcs: false
 ---
 

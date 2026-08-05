@@ -12,7 +12,7 @@ supersedes:
   - evidence index without the complete migration inventory
 superseded_by:
 source_branch: docs/afghanistan-aip-kaia-lop
-source_commit: PENDING_MERGE
+source_commit: 512a6c23d6924608f8f1762886eabf9b6d5441be
 validated_in_dcs: false
 ---
 

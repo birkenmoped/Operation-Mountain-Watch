@@ -22,7 +22,7 @@ supersedes:
   - test-specific observer-client overrides that hide detected clients
 superseded_by:
 source_branch: agent/consolidate-air-ops-lifecycle-governance
-source_commit: PENDING_MERGE
+source_commit: 801b88b58bd2fc799535edd2e80fc463bc4c4dc9
 validated_in_dcs: partial
 moose_release: 2.9.18
 moose_commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54

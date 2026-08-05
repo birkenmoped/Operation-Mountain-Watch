@@ -16,7 +16,7 @@ supersedes:
   - SOURCE_CAPTURE_COMPLETE used as document status
 superseded_by:
 source_branch: agent/complete-documentation-authority-migration
-source_commit:
+source_commit: 29785e4ec81224371608d2777e91708a6ec765e3
 validated_in_dcs: false
 ---
 
