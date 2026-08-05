@@ -11,7 +11,7 @@ project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
   - evidence index without the complete migration inventory
 superseded_by:
-source_branch: docs/afghanistan-aip-kaia-lop
+source_branch: agent/tarinkot-object-contract-reconciliation
 source_commit: PENDING_MERGE
 validated_in_dcs: false
 ---
@@ -27,6 +27,14 @@ Aktuelle Nummern und IDs stehen in [`OMW-GOV-DOCUMENT-REGISTRY`](../DOCUMENT-REG
 ## 2. Aktuelle Evidenzdokumente
 
 - [`Jalalabad Air Operations – Ausgangsaudit`](jalalabad-air-operations-baseline-audit.md)
+- [`Tarinkot – aktueller Mission-Editor-Audit`](tarinkot-mission-editor-audit-omw-template-v5-salerno.md) – dokumentiert die aktuelle MIZ-Provenienz, Airbase-ID 9, Clients, Seeds, Statics, Warehouse, Zonen und eingebetteten Skripte.
+- [`Tarinkot – Aviation-Einheiten und Luftfahrzeugpräsenz 2011`](tarinkot-2011-aviation-unit-and-aircraft-evidence.md) – bestätigt AH-64-, UH-60- und CH-47-Präsenz, Task Force Attack / 3-101 sowie B/1-52 als lokales CH-47D-Detachment.
+- [`Tarinkot – Aviation-Rotationen und nationale Zuordnung 2006–2013`](tarinkot-aviation-rotations-and-national-attribution-2006-2013.md) – trennt niederländische, amerikanische und spätere Rotationen und verhindert eine rückwirkende Vermischung der Bestände.
+- [`Tarinkot – Post-periodischer Aviation- und Basislayout-Kontext 2012–2013`](tarinkot-post-period-aviation-and-base-layout-context-2012-2013.md) – dokumentiert Satelliten-/DVIDS-Kontext, sechs UH-60L, zwei CH-47F sowie Camp Holland, Camp Russell und Camp Cole ohne Rückdatierung auf 2011.
+- [`Tarinkot – Eigentümerentscheidung zur aktiven Arbeitsbaseline`](tarinkot-owner-decision-active-baseline-2026-08-02.md) – bindet März bis Dezember 2011, Task Force Attack / 3-101, die offene UH-60-Company und B/1-52 CH-47D.
+- [`Tarinkot – FARP-Hot-Refuel und UH-60-Beobachtung September 2011`](tarinkot-farp-hot-refuel-uh60-2011.md) – bestätigt Hot Refueling, Rapid Turnaround und den lokalen FARP; die sichtbare Nummer `52` bleibt ohne Company-Zuordnung.
+- [`Tarinkot – Quellenkritische Korrektur zur Struktur von Task Force Attack`](tarinkot-source-critical-correction-task-force-attack-structure.md) – trennt das organische AH-64-Attack-Bataillon von task-organisierten UH-60-/CH-47-Anteilen und korrigiert den Parent auf die 159th CAB.
+- [`Tarinkot – G2-Objektvertrag und Abnahmeliste`](tarinkot-g2-object-contract-acceptance-checklist-2026-08-03.md) – bündelt die noch anzunehmenden technischen Entscheidungen, den FARP-Zonenvertrag und die Gate-Abhängigkeiten vor G4.
 - [`Quellenaufnahme-Audit 28.07.2026`](source-intake-audit-2026-07-28.md) – ordnet die im Afghanistan-Kräfte-, Aviation-, Air-C2-, ORBAT- und RED-Commander-Arbeitsstrang identifizierten Quellen ihren Fachreferenzen, Ausschlussakten oder offenen Prüfständen zu.
 - [`COIN, Governance, Strategie und Afghan-led Transition – Quellenakte 29.07.2026`](source-records/coin-governance-strategy-source-charge-2026-07-29.md) – dokumentiert Quellenklasse, zulässige Nutzung und Ausschlüsse der RAND-, U.S.-Army-CMH-, Gray-, CNN- und Britannica-Charge für Dokument 61.
 - [`Insurgenten-Kontrolle, Intelligence, TTP und COIN-IPB – Quellenakte 29.07.2026`](source-records/insurgent-control-intelligence-ttp-source-charge-2026-07-29.md) – dokumentiert NGIC-, TRISA-, MCIA-, CAC- und CTC-A-Quellen, Verteilungsgrenzen und Designableitungen für Dokument 62.

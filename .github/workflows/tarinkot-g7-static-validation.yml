@@ -1,0 +1,71 @@
+name: Tarinkot G7 static validation
+
+on:
+  push:
+    branches:
+      - agent/tarinkot-object-contract-reconciliation
+    paths:
+      - 'mission/tests/tarinkot-air-operations/src/07-tarinkot-g7-airwing-squadron-payload-foundation.lua'
+      - 'tools/build-tarinkot-air-operations-g7-foundation.ps1'
+      - 'tools/Test-AirOpsLifecycleGuards.ps1'
+      - '.github/workflows/tarinkot-g7-static-validation.yml'
+  pull_request:
+    paths:
+      - 'mission/tests/tarinkot-air-operations/src/07-tarinkot-g7-airwing-squadron-payload-foundation.lua'
+      - 'tools/build-tarinkot-air-operations-g7-foundation.ps1'
+      - 'tools/Test-AirOpsLifecycleGuards.ps1'
+      - '.github/workflows/tarinkot-g7-static-validation.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-guard:
+    name: Build and guard G7 bundle
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Build Tarinkot G7 bundle with lifecycle guard
+        shell: pwsh
+        run: ./tools/build-tarinkot-air-operations-g7-foundation.ps1
+
+      - name: Verify generated telemetry and forbidden legacy markers
+        shell: pwsh
+        run: |
+          $bundle = 'mission/tests/tarinkot-air-operations/dist/OMW_AirOps_Tarinkot_G7_Foundation.lua'
+          if (-not (Test-Path -LiteralPath $bundle -PathType Leaf)) {
+            throw "Generated bundle not found: $bundle"
+          }
+          $text = Get-Content -LiteralPath $bundle -Raw -Encoding UTF8
+          $required = @(
+            'SQUADRON_STOCK_PRESTART',
+            'SQUADRON_ASSET_COUNT_CHANGED',
+            'observerClientsDetected=',
+            'observerClientsAllowed=',
+            'observerClientsBlocking=',
+            'AIRWING_START_CALLED verticalPolicySetBeforeStart=true'
+          )
+          foreach ($marker in $required) {
+            if (-not $text.Contains($marker)) {
+              throw "Required generated marker missing: $marker"
+            }
+          }
+          $forbidden = @(
+            'SQUADRON_ASSET_COUNT_MISMATCH',
+            'ACTIVE_PLAYER_CLIENT_DURING_G7',
+            'activePlayerClientCount = function',
+            'originalActivePlayerClientCount'
+          )
+          foreach ($marker in $forbidden) {
+            if ($text.Contains($marker)) {
+              throw "Forbidden generated marker present: $marker"
+            }
+          }
+
+      - name: Record generated bundle hash
+        shell: pwsh
+        run: |
+          Get-FileHash -Algorithm SHA256 -LiteralPath 'mission/tests/tarinkot-air-operations/dist/OMW_AirOps_Tarinkot_G7_Foundation.lua' |
+            Format-List Algorithm,Hash,Path

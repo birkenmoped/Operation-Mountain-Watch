@@ -15,7 +15,8 @@ supersedes:
   - Kandahar 75th EFS active baseline
   - Jalalabad 24/8/6 inventory
   - player limits above two aircraft per type and base
-source_branch: agent/normalize-salerno-air-orbat
+  - Tarinkot without an active March-to-December-2011 ORBAT decision
+source_branch: agent/tarinkot-object-contract-reconciliation
 validated_in_dcs: false
 document_class: PROJECT_DECISION
 source_commit: PENDING_MERGE
@@ -72,6 +73,7 @@ Diese Regel ersetzt sämtliche älteren Angaben von vier, vier bis acht oder meh
 | 6 | Camp Bastion | MV-22B | keine aktive Umsetzung | `BINDING`: entfällt vollständig |
 | 7 | Camp Bastion | CH-53E | HMH-361 (-) Reinforced, 17 CH-53E | `BINDING` |
 | 8 | FOB Salerno | Army Aviation | 8 AH-64D, 8 OH-58D, 7 UH-60 Assault, 3 UH-60 MEDEVAC, 6 CH-47 | `BINDING`, quellenbasierte OMW-Rekonstruktion |
+| 9 | Tarinkot / Tarin Kowt | Army Aviation | 14 AH-64D, 6 UH-60, 2 CH-47, 0 OH-58D; TF Attack / 3-101, UH-60-Komponente Company offen, B/1-52 CH-47D | `BINDING` nach Merge; quellenbasierte OMW-Rekonstruktion |
 
 Ein automatischer Staffelwechsel anhand eines fortlaufenden Kampagnendatums wird zunächst nicht umgesetzt.
 
@@ -119,6 +121,12 @@ Für Salerno ist dies:
 
 ```text
 TPL_AIR_US_SAL_AH64D_CAS_2SHIP
+```
+
+Für Tarinkot ist dies:
+
+```text
+TPL_AIR_US_TKOT_AH64D_CAS_2SHIP
 ```
 
 Das Template enthält zwei identisch beladene AH-64D. Die Beladung ist im Mission Editor je Luftfahrzeug zu prüfen; ein Payload-Preset allein ersetzt nicht die Kontrolle der tatsächlich gespeicherten Pylonen-, Kanonen-, IAFS- und Kraftstoffwerte.
@@ -265,7 +273,101 @@ Das basisbezogene Objekt- und Missionseditor-Manifest ist [`OMW-AIR-SALERNO-MANI
 
 ---
 
-## 4. Kandahar Airfield – A-10C
+## 4. Tarinkot / Tarin Kowt – Army Aviation
+
+### Verbindliche aktive Arbeitsbaseline
+
+```text
+Historischer Arbeitszeitraum:
+März bis Dezember 2011
+
+Lokaler Aviation-Knoten:
+Task Force Attack / 3-101 Attack Aviation
+
+Übergeordnet:
+Task Force Thunder / 159th Combat Aviation Brigade
+```
+
+Das in der aktuellen MIZ eingetragene Datum `14.01.2011` ist für die Tarinkot-ORBAT und Benennung nicht steuernd. Es wird als technische Missionskulisse behandelt.
+
+### Verbindlicher lokaler OMW-Bestand
+
+```text
+14 AH-64D
+ 6 UH-60
+ 2 CH-47
+ 0 OH-58D
+---------
+22 Luftfahrzeuge
+```
+
+Die Präsenz von AH-64, UH-60 und CH-47 in Tarin Kowt ist für 2011 bestätigt. Die exakten Stückzahlen `14/6/2/0` sind eine quellennahe OMW-Rekonstruktion, gestützt durch zeitgenössische Einheits- und Typenquellen sowie post-periodische Satelliten- und DVIDS-Vergleiche.
+
+### Technische Struktur
+
+```text
+AW_US_TKOT_TF_ATTACK_3_101_AVN
+├── SQ_US_TKOT_AH64D_3_101_AVN
+├── SQ_US_TKOT_UH60_TF_ATTACK
+└── SQ_US_TKOT_CH47_B_1_52_AVN
+```
+
+Organisationsgrenzen:
+
+- 3-101 war ein Attack Helicopter Battalion mit organischen AH-64D-Kompanien;
+- UH-60 waren operativ Task Force Attack zugeordnet, die administrative Company bleibt jedoch ungeklärt;
+- B Company, 1-52 Aviation Regiment ist als lokales CH-47D-Detachment belegt;
+- Task Force Lift / 7-101 führte zusätzlich CH-47-Missionen über Tarin Kowt durch, ersetzt aber nicht die lokale B/1-52-Benennung;
+- keine UH-60-Company von 3-101 wird erfunden;
+- keine OH-58D-SQUADRON und keine permanente Fixed-Wing-SQUADRON werden angelegt.
+
+### DCS-Abbildung
+
+```text
+DCS airdromeId: 9
+Warehouse: WH_AIR_US_TARINKOT
+historischer CH-47-Typ: CH-47D
+DCS-Ersatz: CH-47Fbl1
+```
+
+Der exakte MOOSE-Airbase-Name wird in G5 read-only ermittelt und nicht geraten.
+
+### Bestandsgrenze und Parent-Pool
+
+Tarinkot ist ein vorgeschobener RC-South-Knoten. Der lokale Bestand ist vom Kandahar-/RC-South-Regionalpool abzuziehen:
+
+```text
+Tarinkot 14 AH-64D
+Tarinkot  6 UH-60
+Tarinkot  2 CH-47
+Tarinkot  0 OH-58D
+```
+
+Diese Luftfahrzeuge dürfen nicht gleichzeitig als zusätzlicher Kandahar-Bestand geführt werden.
+
+Statics, Client-Slots und Late-Activation-Seeds sind Repräsentationen desselben lokalen Ledgers. Die maximal vorgesehene gleichzeitige Darstellung ist:
+
+```text
+AH-64: 8 Statics + 2 aktive Clients + 4 aktive KI = 14
+UH-60: 4 Statics + 0 Clients + 2 aktive KI = 6
+CH-47: 0 Statics + 1 aktiver Client + 1 aktive KI = 2
+```
+
+### FARP und Funktionszonen
+
+Ein Tarin-Kowt-FARP mit Hot Refueling und Rapid Turnaround ist für September 2011 offiziell belegt. Dies rechtfertigt die geplante Zone:
+
+```text
+ZONE_AIR_US_TKOT_FARP
+```
+
+Die FARP-Funktion erhöht keinen Luftfahrzeugbestand. Sie wird erst in einem späteren, eigenen DCS-/MOOSE-Test abgenommen.
+
+Das basisbezogene Objektmanifest ist [`OMW-AIR-TKOT-MANIFEST`](tarinkot-air-operations-manifest.md). Die vollständige G2-Abnahmeliste und Zone-/Gate-Matrix steht in [`OMW-DECISION-TARINKOT-G2-OBJECT-CONTRACT-2026-08-03`](evidence/tarinkot-g2-object-contract-acceptance-checklist-2026-08-03.md).
+
+---
+
+## 5. Kandahar Airfield – A-10C
 
 ### Verbindliche aktive ORBAT
 
@@ -291,7 +393,7 @@ Die Auswahl der 107th EFS ist eine bewusste aktive Missionsentscheidung innerhal
 
 ---
 
-## 5. Camp Bastion – HMLA Light Attack / Utility
+## 6. Camp Bastion – HMLA Light Attack / Utility
 
 ### Verbindliche Entscheidung
 
@@ -315,7 +417,7 @@ HMLA-369 bleibt historischer Vorgängerkontext und erzeugt keinen parallelen akt
 
 ---
 
-## 6. Camp Bastion – MV-22B
+## 7. Camp Bastion – MV-22B
 
 ### Verbindliche Entscheidung
 
@@ -329,7 +431,7 @@ Es werden keine Spieler-Slots, KI-SQUADRONs, Templates, Statics, RAT-Flüge oder
 
 ---
 
-## 7. Camp Bastion – Heavy Lift
+## 8. Camp Bastion – Heavy Lift
 
 ### Verbindliche aktive Entscheidung
 
@@ -368,6 +470,8 @@ Noch offen sind nicht die oben festgelegten aktiven Verbände, Bestände und die
 - DCS-Typnamen und MOOSE-Verhalten der KI-Muster;
 - physische Darstellung der UH-1Y;
 - versionsbezogene Prüfung des UH-60L Community Mods;
-- Fallback-Verhalten für F-15E und andere Risikomodule.
+- Fallback-Verhalten für F-15E und andere Risikomodule;
+- Tarinkot-AI-Parking-Allowlisten;
+- Tarinkot-Funktionszonen und deren getrennte Acceptance für MEDEVAC, Transport und FARP.
 
 Diese Punkte werden in den Missionseditor-Arbeitslisten und basisbezogenen Manifesten behandelt. Sie dürfen die hier festgelegte aktive ORBAT nicht stillschweigend verändern.
