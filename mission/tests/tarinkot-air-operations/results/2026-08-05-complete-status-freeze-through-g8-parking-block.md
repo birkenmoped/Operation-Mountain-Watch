@@ -20,7 +20,8 @@ not_authoritative_for:
   - merge or Ready-for-Review approval
 validated_in_dcs: partial
 supersedes: []
-superseded_by: []
+superseded_by:
+  - OMW-TEST-TKOT-G8-MOOSE-PARKING-OVERRIDE-RESEARCH-2026-08-05 for current-next-action authority
 ---
 
 # Vollständiger Status-Freeze: Tarinkot Air Operations bis zum G8-Parking-Block
