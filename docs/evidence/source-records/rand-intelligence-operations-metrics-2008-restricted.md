@@ -12,7 +12,7 @@ not_authoritative_for:
   - DCS or MOOSE technical acceptance
 scenario_period:
 source_branch: docs/afghanistan-force-aviation-source-consolidation
-source_commit: PENDING_MERGE
+source_commit: 763d990fd96a03c6f351ba6d89dd5a84894b48d3
 validated_in_dcs: false
 ---
 

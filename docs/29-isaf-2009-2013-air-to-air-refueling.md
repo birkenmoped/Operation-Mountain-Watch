@@ -16,7 +16,7 @@ supersedes:
   - REFERENCE used as governance document status
 superseded_by:
 source_branch: agent/complete-documentation-authority-migration
-source_commit:
+source_commit: a0fe0ea887d05fa293160b92a6ad48bd00be9d38
 validated_in_dcs: false
 ---
 

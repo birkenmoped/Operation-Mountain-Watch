@@ -15,7 +15,7 @@ project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
 superseded_by:
 source_branch: docs/afghanistan-force-aviation-source-consolidation
-source_commit: PENDING_MERGE
+source_commit: 2dba3be5a1b2c904a4fa1e384c9d5d3f18aa1e03
 validated_in_dcs: false
 ---
 

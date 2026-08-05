@@ -13,7 +13,7 @@ not_authoritative_for:
   - independently verified casualty or enemy-loss totals
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 source_branch: docs/army-history-baloch-kalay-cultural-turn
-source_commit: PENDING_MERGE
+source_commit: 5b606ae4a0d64419ab5fa40ac8d5369a2244e529
 supersedes: []
 superseded_by: []
 scenario_period: 2010-08-01/2011-12-31

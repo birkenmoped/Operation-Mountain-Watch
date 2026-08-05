@@ -12,6 +12,11 @@ not_authoritative_for:
   - exact aircraft or personnel strength where the source does not explicitly state it
   - units or support categories explicitly omitted by the source
 scenario_period: 2010-08-01/2011-12-31
+project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
+supersedes:
+superseded_by:
+source_branch: main
+source_commit: 617eccaf4c43ff5bb52387a30709c38a287cd636
 validated_in_dcs: false
 ---
 

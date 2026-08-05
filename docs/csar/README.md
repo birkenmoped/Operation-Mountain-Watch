@@ -15,7 +15,7 @@ supersedes:
   - unclassified CSAR source index
 superseded_by:
 source_branch: agent/complete-documentation-authority-migration
-source_commit:
+source_commit: ecb825540facc5effce777efa29716ee965f55a3
 validated_in_dcs: false
 ---
 

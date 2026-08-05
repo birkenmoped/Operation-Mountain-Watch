@@ -20,7 +20,7 @@ project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
 superseded_by:
 source_branch: docs/afghan-air-wars-source-integration
-source_commit: PENDING_MERGE
+source_commit: 63b2f0c3be0a097bb9ac5a73694285df4c1f5676
 validated_in_dcs: false
 ---
 

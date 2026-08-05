@@ -15,7 +15,7 @@ scenario_period: 2010-08-01/2011-12-31
 source_period: 2004-01-01/2009-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 source_branch: main
-source_commit: PENDING_CURRENT_COMMIT
+source_commit: 165f0a80ff7d0a71b8ef34c09762f6e012f5fdda
 validated_in_dcs: false
 ---
 

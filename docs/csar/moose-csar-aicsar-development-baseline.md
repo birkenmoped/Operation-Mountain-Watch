@@ -19,7 +19,7 @@ supersedes:
   - informal CSAR and AICSAR design discussion without consolidated baseline
 superseded_by:
 source_branch: main
-source_commit:
+source_commit: 4df2b8616cecf849067059d2c72302b934fc962a
 validated_in_dcs: false
 moose_branch: develop
 moose_commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54

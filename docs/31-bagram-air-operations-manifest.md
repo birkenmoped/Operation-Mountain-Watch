@@ -17,7 +17,7 @@ supersedes:
   - docs/28-bagram-air-operations-manifest.md
 superseded_by:
 source_branch: agent/reconcile-main-documentation-phase1
-source_commit: PENDING_MERGE
+source_commit: 801b88b58bd2fc799535edd2e80fc463bc4c4dc9
 validated_in_dcs: false
 document_class: HISTORICAL_EVIDENCE_AND_ACTIVE_ORBAT
 ---

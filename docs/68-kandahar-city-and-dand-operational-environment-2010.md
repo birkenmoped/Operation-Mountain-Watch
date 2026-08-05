@@ -2,11 +2,16 @@
 document_id: OMW-OE-KANDAHAR-CITY-DAND-2010
 status: BINDING
 document_class: SOURCE_CRITICAL_OPERATIONAL_ENVIRONMENT_REFERENCE
+owning_policy: OMW-GOV-001
 authoritative_for:
   - Kandahar City and Dand 2010 operational-environment modeling
   - local governance, powerbroker, public-perception and development-risk abstractions
 scenario_period: 2010-08-01/2011-12-31
+project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
+supersedes:
+superseded_by:
 source_branch: docs/stability-layeha-route-clearance-cerp-sigacts
+source_commit: 504b5011744fda3593b5813955d8027df4173d13
 validated_in_dcs: false
 ---
 

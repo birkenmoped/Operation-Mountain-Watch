@@ -2,13 +2,18 @@
 document_id: OMW-HIST-ISAF-FORCE-POSTURE-MAPS-ADDITIONAL-SOURCES
 status: BINDING
 document_class: SOURCE_CRITICAL_HISTORICAL_CONTEXT_REFERENCE
+owning_policy: OMW-GOV-001
 authoritative_for:
   - supplied ISAF RC and PRT force-posture map interpretation
   - source-critical use of the 2009 insurgency essay
   - source-critical use of the 2008 RC-East OSINT summary
   - historical sanctions-list context with data minimization
 scenario_period: 2010-08-01/2011-12-31
+project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
+supersedes:
+superseded_by:
 source_branch: docs/stability-layeha-route-clearance-cerp-sigacts
+source_commit: f273b3b8e97d28b2e2b073cb218c31433e732b57
 validated_in_dcs: false
 ---
 
