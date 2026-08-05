@@ -7,6 +7,7 @@ authoritative_for:
   - project-specific MOOSE documentation structure
   - distinction between official MOOSE sources and OMW evidence
   - navigation to AIRWING, SQUADRON and WAREHOUSE lifecycle governance
+  - navigation to WAREHOUSE parking override research
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
@@ -42,6 +43,7 @@ Der vollständige frühere Index bleibt unverändert erhalten:
 - [`PROJECT-CLASS-INDEX.md`](PROJECT-CLASS-INDEX.md) – Projektstatus relevanter Klassen;
 - [`VERIFIED-METHODS.md`](VERIFIED-METHODS.md) – praktisch geprüfte Methoden und Nachweisgrenzen;
 - [`AIRWING-SQUADRON-WAREHOUSE-LIFECYCLE.md`](AIRWING-SQUADRON-WAREHOUSE-LIFECYCLE.md) – verbindliche Lifecycle-Matrix, Prüfzeitpunkte und Test-Guards;
+- [`WAREHOUSE-PARKING-OVERRIDE-RESEARCH.md`](WAREHOUSE-PARKING-OVERRIDE-RESEARCH.md) – vollständige Quellenprüfung der lokalen WAREHOUSE-Parking-Scanwerte, vorhandener APIs und technisch möglicher Overrides;
 - [`AIR-OPERATIONS.md`](AIR-OPERATIONS.md) – AIRBASE, AIRWING, SQUADRON, COMMANDER und AUFTRAG;
 - [`GROUND-OPERATIONS.md`](GROUND-OPERATIONS.md) – geplante Bodengruppen-, Brigade- und Movement-Architektur;
 - [`LOGISTICS-AND-TRANSPORT.md`](LOGISTICS-AND-TRANSPORT.md) – Warehouse, OPSTRANSPORT, CTLD und Carrier/Cargo;

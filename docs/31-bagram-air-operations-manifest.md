@@ -5,27 +5,30 @@ owning_policy: OMW-GOV-001
 authoritative_for:
   - Bagram historical fighter evidence
   - Bagram active fighter ORBAT
-  - Bagram implementation intent
+not_authoritative_for:
+  - current Mission Editor state
+  - player slot policy
+  - templates, statics, parking or Warehouse configuration
+  - payload baselines
+  - DCS or MOOSE runtime acceptance
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
   - docs/28-bagram-air-operations-manifest.md
-superseded_by_for_current_me_state:
-  - OMW-AIR-BAGRAM-ME-BASELINE
-source_branch: docs/bagram-air-operations-manifest
+superseded_by:
+source_branch: agent/reconcile-main-documentation-phase1
+source_commit: PENDING_MERGE
 validated_in_dcs: false
+document_class: HISTORICAL_EVIDENCE_AND_ACTIVE_ORBAT
 ---
 
 # 31 – Bagram Air Operations Manifest
 
 ## 1. Dokumentstatus
 
-Die historische Fighter-ORBAT ist bestätigt. Der konkrete Missionseditorstand wird getrennt in `OMW-AIR-BAGRAM-ME-BASELINE` geführt.
+Dieses Dokument ist ausschließlich verbindlich für die historische Bagram-Fighter-Evidenz und die daraus abgeleitete aktive Fighter-ORBAT. Es enthält keine aktuelle Missionseditor-, Client-, Template-, Static-, Parking-, Warehouse- oder Payload-Baseline.
 
-Dieses Dokument enthält keine konkurrierenden älteren Arbeitsanweisungen mehr. Für Clientzahlen, tatsächlich gesetzte Templates, Statics, Parkpositionen und Warehouse-Objekte gelten:
-
-- `OMW-AIR-PLAYER-SLOT-POLICY`;
-- `OMW-AIR-BAGRAM-ME-BASELINE`.
+Projektweite aktive ORBAT- und Clientobergrenzen stehen in [`OMW-AIR-ACTIVE-ORBAT`](19-active-air-orbat-decisions.md). Konkrete technische Umsetzungen benötigen eine eigene, auf `main` vorhandene und im zentralen Dokumentregister geführte Baseline.
 
 ## 2. Historische Evidenz Ende 2011
 
@@ -91,7 +94,7 @@ AW_US_BAGRAM
 
 Die Werte behaupten keine vollständige USAF-TOE. Sie definieren einen konservativen, quellenbasierten Kampagnenbestand.
 
-## 4. DCS-Abbildung
+## 4. DCS-Abbildung der aktiven Fighter-ORBAT
 
 ### F-15E
 
@@ -109,142 +112,23 @@ historisches Muster: F-16C Block 30
 native DCS-Spielerabbildung: F-16C Block 50
 ```
 
-Der Block 50 ist ein ausdrücklich gekennzeichneter technischer Ersatz. Die Abweichung bleibt in Mission, Dokumentation und Payload-Auswahl sichtbar.
+Der Block 50 ist ein ausdrücklich gekennzeichneter technischer Ersatz für das historisch belegte Block-30-Muster. Diese Festlegung bestimmt nur die Musterabbildung innerhalb der aktiven Fighter-ORBAT; sie legt keine konkrete Client-, Template- oder Payload-Konfiguration fest.
 
-### 4.1 F-16C-CAS-Payloadgrenze
+## 5. Autoritätsgrenze
 
-Die verbindliche Payload-Arbeitsentscheidung ist dokumentiert in:
+Verbindlich aus diesem Dokument sind ausschließlich:
 
-```text
-docs/evidence/bagram-f16c-cas-payload-decision-2026-08-01.md
-```
+- die in Abschnitt 2 dokumentierte historische Evidenz;
+- die aktive Fighter-ORBAT aus Abschnitt 3;
+- die DCS-Musterabbildung aus Abschnitt 4.
 
-Historisches 2011-Sollbild als projektseitige Arbeitsinterpretation:
+Nicht aus diesem Dokument abzuleiten sind:
 
-```text
-2 x GBU-38
-2 x GBU-54
-2 x Wingtip-AIM-120
-Station 2 und 8 clean
-keine AIM-9 im Standard-CAS-Loadout
-```
+- Anzahl, Namen oder Positionen von Client- und KI-Gruppen;
+- Missionseditor-Objektbestand und Statics;
+- ParkingIDs, White-/Blacklists oder Clientausschlüsse;
+- AIRWING-, SQUADRON- oder Warehouse-Konfiguration;
+- Payloads und Außenlasten;
+- DCS-/MOOSE-Laufzeitverhalten oder technische Acceptance.
 
-Die native DCS-F-16C bildet die GBU-54 nicht ab und erlaubt damit keine exakte Reproduktion des historischen Dual-Mode-Loadouts. Die verbindliche Vanilla-DCS-Funktionsannäherung lautet:
-
-```text
-2 x GBU-38 auf BRU-57
-2 x GBU-12 auf TER-9A
-2 x Wingtip-AIM-120
-Station 2 und 8 clean
-```
-
-Diese Konfiguration erhält vier 500-lb-Präzisionswaffen sowie GPS- und Laserangriffsmöglichkeiten. Sie ist ausdrücklich kein historisch exaktes Außenlastbild: Nur zwei statt vier Waffen bleiben GPS/INS-fähig, und die GBU-12 besitzt nicht die Dual-Mode-Flexibilität der GBU-54.
-
-## 5. Verbindliche Clientregel
-
-```text
-maximal 2 Client-Luftfahrzeuge je Muster und Basis
-maximal 2 Clientgruppen je Muster und Basis
-1 Luftfahrzeug je Clientgruppe
-```
-
-Für den Fighter-Knoten:
-
-```text
-CLIENT_US_BGRM_F15E_01
-CLIENT_US_BGRM_F15E_02
-CLIENT_US_BGRM_F16C_01
-CLIENT_US_BGRM_F16C_02
-```
-
-Frühere Gruppen `_03` und `_04` werden nicht angelegt.
-
-## 6. KI-Template-Grundsatz
-
-Verbindliche Fighter-Templates:
-
-```text
-TPL_AIR_US_BGRM_F15E_CAS_2SHIP
-TPL_AIR_US_BGRM_F15E_STRIKE_2SHIP
-TPL_AIR_US_BGRM_F16C_CAS_2SHIP
-```
-
-Nicht anzulegen:
-
-```text
-TPL_AIR_US_BGRM_F16C_ARMED_RECON_2SHIP
-```
-
-Weitere F-16-Rollen werden bei Bedarf über geeignete Payloads und AUFTRAG-Zuweisungen geprüft. Ein zusätzliches Missionseditor-Template wird nicht vorsorglich erzeugt.
-
-Alle Templates sind Authoring-Seeds und kein zusätzlicher Kampagnenbestand.
-
-## 7. SQUADRON-Bestandsmodell
-
-Bei 13 Flugzeugen darf MOOSE nicht unbeabsichtigt einen vierzehnten Airframe erzeugen.
-
-Bevorzugte Modellierung:
-
-```text
-12 Flugzeuge / 6 Two-Ship-Asset-Gruppen
-+ 1 separat geführte logische Reserve
-```
-
-Alternativ dürfen 13 Single-Ship-Asset-Gruppen geprüft werden, wenn AUFTRAG die Paketbildung zuverlässig übernimmt. Die konkrete Wahl benötigt einen MOOSE-First-Test.
-
-## 8. Statics und aktueller Missionseditorstand
-
-Frühere Planwerte von neun F-15E- und sieben F-16-Statics sind keine aktuelle Arbeitsanweisung mehr.
-
-Der tatsächlich gesetzte Stand ist in `OMW-AIR-BAGRAM-ME-BASELINE` dokumentiert. Dort gelten derzeit unter anderem:
-
-```text
-6 F-15E-Statics
-7 F-16-Statics
-weitere Transport-, Tanker- und Rotary-Wing-Statics
-```
-
-Statics sind sichtbare Repräsentationen des logischen Bestands. Sie werden nicht zusätzlich zum AIRWING-Bestand gezählt.
-
-## 9. Zonen und Parking
-
-Nicht allein zur optischen Gruppierung oder Zählung anzulegen:
-
-```text
-ZONE_AIR_US_BGRM_STATIC_F15E
-ZONE_AIR_US_BGRM_STATIC_F16C
-ZONE_AIR_US_BGRM_F15E_AI_RESERVE
-ZONE_AIR_US_BGRM_F16C_AI_RESERVE
-ZONE_AIR_US_BGRM_FIGHTER_LOAD
-ZONE_AIR_US_BGRM_FIGHTER_RECOVERY
-```
-
-Zonen werden erst erstellt, wenn eine konkrete MOOSE-, AUFTRAG-, OPSTRANSPORT-, CSAR- oder Logistikfunktion sie benötigt.
-
-Parking-Regeln:
-
-- Clientpositionen bleiben dauerhaft frei von Statics und dynamischer KI;
-- TerminalIDs werden durch DCS-/MOOSE-Laufzeitdiagnose erfasst;
-- absichtlich durch Statics belegte Nodes werden als Blacklist-Kandidaten dokumentiert;
-- Safe Parking ist zu aktivieren und zu validieren.
-
-## 10. Warehouse und Architektur
-
-```text
-AW_US_BAGRAM
-├── SQ_US_BGRM_F15E_335_EFS
-└── SQ_US_BGRM_F16C_121_EFS
-
-WH_AIR_US_BAGRAM
-```
-
-Transport-, Rescue- und Army-Aviation-Komponenten werden als Erweiterung desselben Bagram-Knotens geführt. Sie dürfen die Fighter-Bestände nicht doppelt zählen.
-
-## 11. Autoritätsregel
-
-- Dieses Dokument: historische Fighter-Evidenz und aktive Fighter-ORBAT.
-- `OMW-AIR-PLAYER-SLOT-POLICY`: projektweite Clientobergrenze und Template-/Zonenkorrekturen.
-- `OMW-AIR-BAGRAM-ME-BASELINE`: tatsächlich gesetzter Missionseditorstand.
-- `OMW-EVIDENCE-BAGRAM-F16C-CAS-PAYLOAD-2026-08-01`: historisches F-16C-CAS-Sollbild, DCS-Grenzen und verbindlicher funktionaler Ersatz.
-
-Bei einem Widerspruch zu älteren Bagram-Planwerten gelten die beiden letztgenannten Baselines für die konkrete Umsetzung.
+Ältere Branchdokumente und nicht auf `main` vorhandene Dateien besitzen für diese Umsetzungsfragen keine Autorität.
