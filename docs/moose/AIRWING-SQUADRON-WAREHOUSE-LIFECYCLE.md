@@ -151,6 +151,8 @@ Startart und Safe-Parking-Konfiguration gesetzt
 Vertikaloption bei Helikopter-AIRWING vor Start gesetzt
 ```
 
+`Safe-Parking-Konfiguration gesetzt` belegt nur den Konfigurationsaufruf. Die spätere vollständige Source-Prüfung zeigte, dass `SetSafeParkingOn/Off()` im gepinnten `Warehouse.lua` lediglich `self.safeparking` schreibt und dieses Feld nicht gelesen wird. Client-Ausschlüsse und tatsächliche Parking-Sicherheit müssen deshalb unabhängig validiert werden. Siehe [`OMW-MOOSE-WAREHOUSE-PARKING-OVERRIDE-RESEARCH`](WAREHOUSE-PARKING-OVERRIDE-RESEARCH.md).
+
 Vor Start ausdrücklich unzulässig:
 
 ```text
