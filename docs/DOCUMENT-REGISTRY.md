@@ -13,7 +13,7 @@ project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
   - registry that listed Document 22 only as a branch reservation
 superseded_by:
-source_branch: agent/consolidate-air-ops-lifecycle-governance
+source_branch: agent/reconcile-main-documentation-phase1
 source_commit: PENDING_MERGE
 validated_in_dcs: false
 ---
@@ -56,6 +56,7 @@ Eine Nummer und eine stabile `document_id` dürfen im aktuellen Bestand jeweils 
 | 28 | `OMW-C2-TAD-COLOR-NETS` | `docs/28-afghanistan-tad-color-nets.md` | `BINDING` | Quellenbasierter Datensatz |
 | 29 | `OMW-AAR-ISAF-ACO` | `docs/29-isaf-2009-2013-air-to-air-refueling.md` | `BINDING` | AAR-/ACO-Referenz |
 | 30 | `OMW-AAR-PART2-FIGURE` | `docs/30-isaf-2009-2013-aar-part2-figure-reference.md` | `BINDING` | Abbildungsreferenz |
+| 31 | `OMW-AIR-BAGRAM-MANIFEST` | `docs/31-bagram-air-operations-manifest.md` | `BINDING` | historische Bagram-Fighter-Evidenz und aktive Fighter-ORBAT |
 | 37 | `OMW-ARCH-CAMPAIGN-DYNAMIC-MISSION` | `docs/37-campaign-architecture-and-dynamic-mission-design.md` | `BINDING` | Kampagnenarchitektur |
 | 38 | `OMW-ME-MASTER-WORKLIST` | `docs/38-mission-editor-master-worklist.md` | `BINDING` | ME-Masterarbeitsliste |
 | 39 | `OMW-REVIEW-TM01-TM02-MOOSE-FIRST` | `docs/39-tm01-tm02-moose-first-code-review.md` | `DRAFT` | Code Review |
@@ -110,7 +111,8 @@ Eine Nummer und eine stabile `document_id` dürfen im aktuellen Bestand jeweils 
 | 18 | 23–25 | nur Draft-PR #18; branchgebundene Air-Ops-Dokumente |
 | 18 | 22 | branchlokale Altversion; durch die kanonische `main`-Fassung von Dokument 22 ersetzt |
 | 18 | 27 | branchlokale Kollision; vor Integration zwingend neu nummerieren |
-| 24 | 31–36 | nur Draft-PR #24; Bagram/Kandahar |
+| 24 | 31 | branchlokale ältere Fassung; die reduzierte `main`-Fassung von Dokument 31 ist autoritativ |
+| 24 | 32–36 | nur Draft-PR #24; Bagram/Kandahar; vor Integration gegen den aktuellen `main`-Bestand und Nummernkollisionen prüfen |
 
 ## 4. Nicht nummerierte aktuelle Dokumente
 
@@ -128,6 +130,7 @@ Eine Nummer und eine stabile `document_id` dürfen im aktuellen Bestand jeweils 
 | `OMW-MOOSE-CLASS-INDEX` | `docs/moose/PROJECT-CLASS-INDEX.md` | `BINDING` |
 | `OMW-MOOSE-VERIFIED-METHODS` | `docs/moose/VERIFIED-METHODS.md` | `BINDING` |
 | `OMW-MOOSE-AIRWING-SQUADRON-WAREHOUSE-LIFECYCLE` | `docs/moose/AIRWING-SQUADRON-WAREHOUSE-LIFECYCLE.md` | `BINDING`; Lifecycle- und Testgrenzen |
+| `OMW-MOOSE-WAREHOUSE-PARKING-OVERRIDE-RESEARCH` | `docs/moose/WAREHOUSE-PARKING-OVERRIDE-RESEARCH.md` | `BINDING`; WAREHOUSE-Parking-Scanwerte, APIs und Override-Grenzen |
 | `OMW-MOOSE-FOG-OF-WAR-RECCE` | `docs/moose/FOG-OF-WAR-RECCE.md` | `PLANNED` |
 | `OMW-TEST-GOVERNANCE` | `mission/tests/GOVERNANCE.md` | `BINDING`; Missions- und Runtime-Testregeln |
 | `OMW-CSAR-INDEX` | `docs/csar/README.md` | `BINDING` |
