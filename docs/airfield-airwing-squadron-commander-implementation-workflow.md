@@ -20,7 +20,7 @@ supersedes:
   - ad-hoc airfield implementation sequences without explicit phase gates
 superseded_by:
 source_branch: agent/normalize-salerno-air-orbat
-source_commit: PENDING_MERGE
+source_commit: 4ce9b9297f8c473ee2a789f14d187fb667d37647
 validated_in_dcs: false
 ---
 

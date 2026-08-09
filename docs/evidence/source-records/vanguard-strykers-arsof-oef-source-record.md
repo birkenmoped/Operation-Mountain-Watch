@@ -4,7 +4,7 @@ status: BINDING
 document_class: SOURCE_RECORD
 owning_policy: OMW-GOV-001
 source_branch: docs/afghanistan-aip-kaia-lop
-source_commit: PENDING_MERGE
+source_commit: 900604f84d79521c762a18a99ea5aa8a221dac1c
 validated_in_dcs: false
 ---
 

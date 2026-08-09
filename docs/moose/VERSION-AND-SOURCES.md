@@ -8,7 +8,7 @@ authoritative_for:
   - documentation source hierarchy
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 source_branch: agent/resolve-document-number-collisions
-source_commit:
+source_commit: 666ef7a4a6fad52cc1aaecc7d0953e4d112dc8ff
 validated_in_dcs: false
 document_class: MOOSE_VERSION_POLICY
 scenario_period:

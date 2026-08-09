@@ -18,7 +18,7 @@ project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes: []
 superseded_by: []
 source_branch: docs/afghanistan-aip-kaia-lop
-source_commit: PENDING_MERGE
+source_commit: ccf5fdaa988ba83c2c6684e477978ec2b259a211
 source_date: 2009-10-20
 validated_in_dcs: false
 ---

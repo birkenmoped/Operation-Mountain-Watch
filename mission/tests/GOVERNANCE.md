@@ -17,7 +17,7 @@ supersedes:
   - informal references to a missing mission/tests/GOVERNANCE.md
 superseded_by:
 source_branch: agent/consolidate-air-ops-lifecycle-governance
-source_commit: PENDING_MERGE
+source_commit: 69b1fe8bb3f660016109cd7e6e75fd6e9fb9cb12
 validated_in_dcs: false
 ---
 

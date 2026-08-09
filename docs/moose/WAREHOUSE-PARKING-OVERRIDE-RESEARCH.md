@@ -14,7 +14,7 @@ not_authoritative_for:
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 source_branch: agent/reconcile-main-documentation-phase1
-source_commit: PENDING_MERGE
+source_commit: 801b88b58bd2fc799535edd2e80fc463bc4c4dc9
 validated_in_dcs: false
 supersedes: []
 superseded_by: []

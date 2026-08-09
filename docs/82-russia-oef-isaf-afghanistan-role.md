@@ -18,7 +18,7 @@ project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
 superseded_by:
 source_branch: agent/document-russia-afghanistan-role
-source_commit: PENDING_MERGE
+source_commit: 0d2518f13f787c79d43c3a15ef3062f33b9fa941
 validated_in_dcs: false
 ---
 

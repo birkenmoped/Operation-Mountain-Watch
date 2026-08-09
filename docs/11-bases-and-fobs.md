@@ -14,7 +14,7 @@ supersedes:
   - vertical-prototype-only base sequence
 superseded_by:
 source_branch: agent/complete-documentation-authority-migration
-source_commit:
+source_commit: 6ba400be6ae0748aeb8722ad53669b7bc2ae9f13
 validated_in_dcs: false
 ---
 
