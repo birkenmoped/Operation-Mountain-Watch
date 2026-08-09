@@ -44,7 +44,7 @@ local config = {
     },
     UH60 = {
       name = "SQ_US_JBAD_UH60_UTILITY_MEDEVAC",
-      template = "TPL_AIR_US_JBAD_UH60_MEDEVAC_LEAD_1SHIP",
+      template = "TPL_AIR_US_JBAD_UH60_MEDEVAC_1SHIP",
       assetGroups = 8,
       grouping = 1,
       parkingIDs = { 10, 8, 1 },
@@ -56,7 +56,7 @@ local config = {
       },
       payloads = {
         {
-          template = "TPL_AIR_US_JBAD_UH60_MEDEVAC_LEAD_1SHIP",
+          template = "TPL_AIR_US_JBAD_UH60_MEDEVAC_1SHIP",
           missionTypes = {
             AUFTRAG.Type.TROOPTRANSPORT,
             AUFTRAG.Type.CARGOTRANSPORT,
@@ -64,7 +64,7 @@ local config = {
           },
         },
         {
-          template = "TPL_AIR_US_JBAD_UH60_MEDEVAC_COVER_1SHIP",
+          template = "TPL_AIR_US_JBAD_UH60_MEDEVAC_1SHIP",
           missionTypes = { AUFTRAG.Type.GROUNDESCORT },
         },
       },
