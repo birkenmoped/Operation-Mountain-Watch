@@ -17,8 +17,8 @@ supersedes:
   - pre-governance Jalalabad manifest with 24/8/6/0 inventory
   - four-client-per-type Jalalabad authoring rule
 superseded_by:
-source_branch: agent/complete-documentation-authority-migration
-source_commit: 666ef7a4a6fad52cc1aaecc7d0953e4d112dc8ff
+source_branch: agent/jalalabad-airops-foundation-cleanup
+source_commit: bf179dda70d32ad0da3b4f465b8b5793e71f6e11
 validated_in_dcs: false
 ---
 
@@ -99,14 +99,13 @@ Für die Kernmission sind nur `0` oder `2` UH-60L-Client-Gruppen zulässig. Eine
 Alle KI-Vorlagen werden als `Late Activation` geführt und nicht als zusätzlicher Bestand gezählt:
 
 ```text
-TPL_AIR_US_JBAD_OH58D_RECON_2SHIP          2 OH-58D
-TPL_AIR_US_JBAD_AH64D_CAS_2SHIP            2 AH-64D
-TPL_AIR_US_JBAD_UH60_MEDEVAC_LEAD_1SHIP    1 UH-60A
-TPL_AIR_US_JBAD_UH60_MEDEVAC_COVER_1SHIP   1 UH-60A
-TPL_AIR_US_JBAD_CH47_HEAVYLIFT_1SHIP       1 CH-47F
+TPL_AIR_US_JBAD_OH58D_RECON_2SHIP       2 OH-58D
+TPL_AIR_US_JBAD_AH64D_CAS_2SHIP         2 AH-64D
+TPL_AIR_US_JBAD_UH60_MEDEVAC_1SHIP      1 UH-60A
+TPL_AIR_US_JBAD_CH47_HEAVYLIFT_1SHIP    1 CH-47F
 ```
 
-MEDEVAC Lead und Cover sind getrennte Ein-Schiff-Templates, werden aber durch die spätere Laufzeitkoordination als gemeinsames 1+1-Paket reserviert und geführt.
+Für UH-60 wird ein gemeinsamer physischer Single-Ship-Seed verwendet. Unterschiedliche spätere MOOSE-Rollen wie MEDEVAC Lead und Cover werden über Payload-/Missionsfähigkeiten abgebildet und erzeugen keine zusätzlichen Mission-Editor-Templates.
 
 ## 5. MOOSE-Struktur
 
