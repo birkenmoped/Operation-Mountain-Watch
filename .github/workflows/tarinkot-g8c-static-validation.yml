@@ -42,10 +42,37 @@ jobs:
           $bundle = 'mission/tests/tarinkot-air-operations/dist/OMW_AirOps_Tarinkot_G8C_UniformRotaryHoverDispatch.lua'
           if (-not (Test-Path -LiteralPath $bundle -PathType Leaf)) { throw "Generated bundle not found: $bundle" }
           $text = Get-Content -LiteralPath $bundle -Raw -Encoding UTF8
-          foreach ($marker in @('TKOT-G7-AIRWING-FOUNDATION-4', 'TKOT-G8C-UNIFORM-ROTARY-HOVER-DISPATCH-1', 'AUFTRAG:NewHOVER', 'AH64_1', 'AH64_2', 'UH60_1', 'UH60_2', 'CH47_1', 'optionPreferVertical=', 'PASS_RUNTIME_TELEMETRY_PENDING_OWNER_VISUAL', 'taxiInference=disabled')) {
+          foreach ($marker in @(
+            'TKOT-G7-AIRWING-FOUNDATION-5',
+            'TKOT-G8C-UNIFORM-ROTARY-HOVER-DISPATCH-2',
+            'ClientTerminalIDs: 21,8,3',
+            'ParkingIDs = { 20, 19 }',
+            'ParkingIDs = { 23, 27, 30 }',
+            'ParkingIDs = { 32, 29, 10 }',
+            'AUFTRAG:NewHOVER',
+            'AH64_1',
+            'AH64_2',
+            'UH60_1',
+            'UH60_2',
+            'CH47_1',
+            'optionPreferVertical=',
+            'PASS_RUNTIME_TELEMETRY_PENDING_OWNER_VISUAL',
+            'taxiInference=disabled'
+          )) {
             if (-not $text.Contains($marker)) { throw "Required generated marker missing: $marker" }
           }
-          foreach ($marker in @('AUFTRAG:NewCAS', 'AUFTRAG:NewLANDATCOORDINATE', 'COMMANDER:New(', 'OPSTRANSPORT:New(', 'SPAWN:', 'FLIGHTGROUP:New(', 'ZONE_RADIUS:New(', 'coalition.addGroup')) {
+          foreach ($marker in @(
+            'ParkingIDs = { 21, 4 }',
+            '[20] = "CLIENT_US_TKOT_AH64D_01"',
+            'AUFTRAG:NewCAS',
+            'AUFTRAG:NewLANDATCOORDINATE',
+            'COMMANDER:New(',
+            'OPSTRANSPORT:New(',
+            'SPAWN:',
+            'FLIGHTGROUP:New(',
+            'ZONE_RADIUS:New(',
+            'coalition.addGroup'
+          )) {
             if ($text.Contains($marker)) { throw "Forbidden generated marker present: $marker" }
           }
           if ([regex]::Matches($text, 'airwing\s*:\s*AddMission\s*\(').Count -ne 1) { throw 'Expected exactly one AIRWING:AddMission path.' }
