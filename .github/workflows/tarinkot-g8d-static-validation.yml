@@ -1,0 +1,80 @@
+name: Tarinkot G8D static validation
+
+on:
+  push:
+    branches:
+      - agent/tarinkot-object-contract-reconciliation
+    paths:
+      - 'mission/tests/tarinkot-air-operations/src/07-tarinkot-g7-airwing-squadron-payload-foundation.lua'
+      - 'mission/tests/tarinkot-air-operations/src/11-tarinkot-g8d-ah64-jalalabad-profile-ab.lua'
+      - 'tools/build-tarinkot-air-operations-g7-foundation.ps1'
+      - 'tools/build-tarinkot-air-operations-g8d-ah64-jalalabad-profile-ab.ps1'
+      - '.github/workflows/tarinkot-g8d-static-validation.yml'
+  pull_request:
+    paths:
+      - 'mission/tests/tarinkot-air-operations/src/07-tarinkot-g7-airwing-squadron-payload-foundation.lua'
+      - 'mission/tests/tarinkot-air-operations/src/11-tarinkot-g8d-ah64-jalalabad-profile-ab.lua'
+      - 'tools/build-tarinkot-air-operations-g7-foundation.ps1'
+      - 'tools/build-tarinkot-air-operations-g8d-ah64-jalalabad-profile-ab.ps1'
+      - '.github/workflows/tarinkot-g8d-static-validation.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-guard:
+    name: Build and guard G8D bundle
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build Tarinkot G8D bundle
+        shell: pwsh
+        run: ./tools/build-tarinkot-air-operations-g8d-ah64-jalalabad-profile-ab.ps1
+
+      - name: Verify generated AH-64 A/B contract
+        shell: pwsh
+        run: |
+          $bundle = 'mission/tests/tarinkot-air-operations/dist/OMW_AirOps_Tarinkot_G8D_AH64_JalalabadProfileAB.lua'
+          if (-not (Test-Path -LiteralPath $bundle -PathType Leaf)) { throw "Generated bundle not found: $bundle" }
+          $text = Get-Content -LiteralPath $bundle -Raw -Encoding UTF8
+          foreach ($marker in @(
+            'TKOT-G7-AIRWING-FOUNDATION-5',
+            'TKOT-G8D-AH64-JBAD-PROFILE-AB-1',
+            '[21] = "CLIENT_US_TKOT_AH64D_01"',
+            'ParkingIDs = { 20, 19 }',
+            'AUFTRAG:NewCAS',
+            'CAS_DISTANCE_METERS = 8000',
+            'ROTOR_ALTITUDE_FEET = 3500',
+            'ROTOR_SPEED_KNOTS = 110',
+            'ENUMS.Formation.RotaryWing.EchelonRight.D300',
+            'SetMissionIngressCoord',
+            'SetMissionEgressCoord',
+            'PASS_RUNTIME_TELEMETRY_PENDING_OWNER_VISUAL',
+            'taxiInference=disabled'
+          )) {
+            if (-not $text.Contains($marker)) { throw "Required generated marker missing: $marker" }
+          }
+          foreach ($marker in @(
+            'ParkingIDs = { 21, 4 }',
+            '[20] = "CLIENT_US_TKOT_AH64D_01"',
+            'AUFTRAG:NewHOVER',
+            'AH64_2',
+            'UH60_1',
+            'UH60_2',
+            'CH47_1',
+            'COMMANDER:New(',
+            'OPSTRANSPORT:New(',
+            'SPAWN:',
+            'FLIGHTGROUP:New(',
+            'coalition.addGroup'
+          )) {
+            if ($text.Contains($marker)) { throw "Forbidden generated marker present: $marker" }
+          }
+          if ([regex]::Matches($text, 'airwing\s*:\s*AddMission\s*\(').Count -ne 1) { throw 'Expected exactly one AIRWING:AddMission path.' }
+          if ([regex]::Matches($text, 'AUFTRAG\s*:\s*NewCAS\s*\(').Count -ne 1) { throw 'Expected exactly one AUFTRAG:NewCAS path.' }
+          if ([regex]::Matches($text, 'SetRequiredAssets\s*\(\s*1\s*,\s*1\s*\)').Count -ne 1) { throw 'Expected exactly one requested MOOSE asset group.' }
+
+      - name: Record generated bundle hash
+        shell: pwsh
+        run: Get-FileHash -Algorithm SHA256 -LiteralPath 'mission/tests/tarinkot-air-operations/dist/OMW_AirOps_Tarinkot_G8D_AH64_JalalabadProfileAB.lua' | Format-List Algorithm,Hash,Path
