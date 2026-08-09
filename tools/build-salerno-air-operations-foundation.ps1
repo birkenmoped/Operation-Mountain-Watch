@@ -9,7 +9,7 @@ $sourceFile = Join-Path $repoRoot 'scripts\air-operations\OMW_AirOps_Salerno_Boo
 $distDir = Join-Path $repoRoot 'mission\tests\salerno-air-operations\dist'
 $outputFile = Join-Path $distDir 'OMW_AirOps_Salerno.lua'
 $lifecycleGuard = Join-Path $repoRoot 'tools\Test-AirOpsLifecycleGuards.ps1'
-$builderVersion = 'SAL-AIR-OPS-FOUNDATION-ONLY-1'
+$builderVersion = 'SAL-AIR-OPS-FOUNDATION-ONLY-2'
 
 if (-not (Test-Path -LiteralPath $sourceFile -PathType Leaf)) {
     throw "Salerno foundation source not found: $sourceFile"
@@ -67,7 +67,7 @@ if (Test-Path -LiteralPath $outputFile -PathType Leaf) {
 }
 
 $commit = (& git -C $repoRoot rev-parse HEAD).Trim()
-$header = "-- AUTO-GENERATED FILE. DO NOT EDIT DIRECTLY.`n-- Builder: tools/build-salerno-air-operations-foundation.ps1`n-- BuilderVersion: $builderVersion`n-- GitCommit: $commit`n-- MOOSE-Pin: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54`n-- Scope: AIRWING/SQUADRON foundation only; Salerno parking remains deferred; no test dispatch.`n-- GeneratedUtc: $([DateTime]::UtcNow.ToString('o'))`n`n"
+$header = "-- AUTO-GENERATED FILE. DO NOT EDIT DIRECTLY.`n-- Builder: tools/build-salerno-air-operations-foundation.ps1`n-- BuilderVersion: $builderVersion`n-- GitCommit: $commit`n-- MOOSE-Pin: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54`n-- Scope: AIRWING/SQUADRON foundation only; Salerno parking remains deferred; no test dispatch.`n`n"
 $content = $header + $source
 
 foreach ($pattern in $forbiddenPatterns) {
