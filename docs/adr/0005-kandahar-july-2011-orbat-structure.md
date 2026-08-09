@@ -1,6 +1,8 @@
 ---
 document_id: OMW-ADR-0005-KANDAHAR-JULY-2011-ORBAT
 status: BINDING_PROJECT_DECISION
+document_class: ADR
+owning_policy: OMW-GOV-001
 authoritative_for:
   - Kandahar AirOps organizational structure
   - Kandahar active July 2011 squadron identities
