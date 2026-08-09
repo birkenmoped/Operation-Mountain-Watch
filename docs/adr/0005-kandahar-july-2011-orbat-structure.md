@@ -13,8 +13,8 @@ supersedes:
   - generic single AIRWING Kandahar structure
 superseded_by:
 source_branch: agent/kandahar-foundation-july-2011-rebuild
-source_commit: PENDING_MERGE
-validated_in_dcs: false
+source_commit: ff0a0868640111f8b67a82201253f0ab6d608d8f
+validated_in_dcs: true
 ---
 
 # ADR 0005 – Kandahar-Struktur aus der Juli-2011-ORBAT
@@ -50,7 +50,7 @@ Die Juli-2011-ORBAT führt `Task Force Attack / 3-101 Attack Aviation` in Tarin 
 
 ## Technische MOOSE-Abbildung
 
-DCS modelliert Kandahar Main und Kandahar Heliport als getrennte native Airbases. Der bereits technisch geprüfte Dual-Airbase-Vertrag wird deshalb beibehalten:
+DCS modelliert Kandahar Main und Kandahar Heliport als getrennte native Airbases. Der technisch bestätigte Dual-Airbase-Vertrag wird deshalb beibehalten:
 
 ```text
 AW_US_KAF_451_AEW
@@ -85,9 +85,31 @@ CH-47 und UH-60 bleiben typreine technische Pools unter dem belegten Parent `TF 
 
 Die 46th ERQS erzeugt keine zehnte Aircraft-SQUADRON, weil die Juli-2011-ORBAT sie als Guardian-Angel-Personal beschreibt.
 
-## Abweichung zur aktuellen main-Dokumentation
+## Reconciliation
 
-Zum Entscheidungszeitpunkt nennt `docs/00-project-governance.md` beziehungsweise `docs/19-active-air-orbat-decisions.md` noch die 107th EFS als aktive Kandahar-A-10C-Einheit. Diese Angabe ist für Kandahar durch diese ausdrückliche Projektinhaberentscheidung fachlich ersetzt und muss vor Merge der Foundation vollständig reconciliiert werden.
+`docs/00-project-governance.md` und `docs/19-active-air-orbat-decisions.md` wurden auf demselben Foundation-Branch auf diese Entscheidung synchronisiert. Die frühere aktive Kandahar-Auswahl der 107th EFS ist damit fachlich ersetzt und bleibt nur historischer Rotationskontext.
+
+## DCS-Nachweis
+
+Die technische Abbildung wurde für den exakt dokumentierten Foundation-Stand in DCS bestätigt:
+
+```text
+Branch: agent/kandahar-foundation-july-2011-rebuild
+Source commit: 578816472c53279290ff6b64296ed8d49982bc72
+MIZ: OMW_Template_v6_Tarinkot(6).miz
+DCS: 2.9.28.26385
+MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+
+Result:
+airwings=2
+squadrons=9
+registeredAirframes=112
+deferredMC12=6
+mainRunning=true
+heliportRunning=true
+```
+
+Der Nachweis validiert die Foundation-Struktur, nicht taktische Dispatch-, Recovery-, Parking-, Persistenz- oder Multiplayer-Funktionen.
 
 ## MOOSE-First-Grenze
 
