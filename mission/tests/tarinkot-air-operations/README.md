@@ -8,13 +8,13 @@ authoritative_for:
   - accepted G5 read-only diagnostics
   - accepted G6 parking mapping and controlled placement
   - accepted G7 AIRWING, SQUADRON and payload foundation
-  - accepted G7 lifecycle and observer-client static guard
-  - current G8 parking block and completed MOOSE override research
-  - airport-level batching and failure-isolation boundary
+  - documented G8-G8D diagnostic history
+  - current branch closure state for Tarinkot AirOps
 not_authoritative_for:
-  - tactical AUFTRAG or vertical-departure acceptance
+  - repository-wide production acceptance
+  - successful AH-64D direct vertical ramp departure at Tarinkot
+  - deterministic return-to-original-parking recovery
   - COMMANDER or OPSTRANSPORT acceptance
-  - return, landing, recovery, loss or persistence acceptance
   - merge approval or Ready-for-Review approval
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
@@ -27,69 +27,49 @@ superseded_by: []
 
 # Tarinkot Air Operations – Testpaket
 
-## 1. Aktueller Gate-Stand
+## 1. Aktueller Stand
+
+Der Tarinkot-AirOps-Arbeitsgang wird für die aktuelle `COMPLETE_FOUNDATION_BUILD_PHASE` mit bekannten Einschränkungen beendet.
 
 ```yaml
 G0_provenance: PASS_BRANCH
 G1_ORBAT_and_evidence: PASS_BRANCH
 G2_object_contract: OWNER_ACCEPTED_BRANCH
 G3_mission_editor: PARTIAL_FUNCTION_ZONES
-G4_MOOSE_source_review: PASS_FOR_LIFECYCLE_BUT_PARKING_OVERRIDE_RESEARCH_COMPLETE
+G4_MOOSE_source_review: PASS_FOR_USED_SCOPE
 G5_read_only_diagnostics: PASS_DCS
 G6A_geometric_dataset: PASS_DCS_SCOPE_TOO_BROAD_FOR_PRODUCTIVE_LISTS
 G6A2_ME_MOOSE_mapping: PASS_DCS
 G6B_first_combined_run: FAIL_VISUAL_WRONG_APRON
 G6B_final_free_spots: PASS_DCS_OWNER_VISUAL_ACCEPTED_DIRECT_SPAWN_ONLY
-G7_airwing_squadron_payload: PASS_DCS_WITH_TELEMETRY_FIELD_CORRECTION
+G7_airwing_squadron_payload: PASS_DCS_FOR_DOCUMENTED_SCOPE
 G7_lifecycle_guard_correction: PASS_STATIC_CI
 central_lifecycle_consolidation: PASS_MAIN
 Tarinkot_main_sync: PASS
-G8_static_implementation: PASS_STATIC_CI
+parking_contract_reconciliation: COMPLETE_BRANCH
 G8_first_runtime_attempt: BLOCKED_MISSING_TARGET_ZONE
 G8_second_runtime_attempt: BLOCKED_MOOSE_WAREHOUSE_PARKING_OBSTACLE_CONFLICT
-G8_vertical_departure: NOT_PROVEN
-G8C_uniform_rotary_hover_dispatch: BLOCKED_LAYOUT_CONTRACT_MISMATCH
-MOOSE_parking_override_research: COMPLETE
-next_action: ALIGN_G7_TO_CURRENT_PARKING_LAYOUT_THEN_BUILD_AND_ONE_BUNDLED_G8C_DCS_RUN
-G9_commander: BLOCKED_BY_G8
-G10_lifecycle_results_handoff: NOT_STARTED
+G8C_first_runtime_with_stale_layout: BLOCKED_LAYOUT_CONTRACT_MISMATCH
+G8C_uniform_rotary_hover_dispatch: FAIL_AH64_DIRECT_VERTICAL_DEPARTURE
+G8D_AH64_Jalalabad_profile_AB: FAIL_AH64_DIRECT_VERTICAL_DEPARTURE
+vertical_option_propagation: CONFIRMED_DCS
+AH64_direct_vertical_ramp_departure_Tarinkot: UNRESOLVED
+return_to_original_parking: UNRESOLVED
+root_cause: UNKNOWN
+MOOSE_parking_override_research: COMPLETE_NO_AUTHORIZED_OVERRIDE
+Tarinkot_AirOps_current_phase: CLOSED_WITH_KNOWN_LIMITATIONS
+next_action: NONE_FOR_CURRENT_FOUNDATION_PHASE
 ```
 
-Vor dem nächsten Build gilt zusätzlich der aktuelle [`Tarinkot-Parkplatzvertrag`](../../../docs/tarinkot-air-operations-parking-layout.md). Bis die eingebettete G7-Quelle diesen Vertrag abbildet, lautet der G8C-Status `BLOCKED_LAYOUT_CONTRACT_MISMATCH`; ein DCS-Lauf ist dann nicht zulässig. Der vorangegangene blockierte Lauf ist in [`2026-08-09-g8c-blocked-layout-contract-mismatch.md`](results/2026-08-09-g8c-blocked-layout-contract-mismatch.md) festgehalten.
+Der vollständige Abschluss- und Erfahrungsbericht ist:
 
-Bis zur Eigentümerentscheidung gilt:
+- [`results/2026-08-09-tarinkot-airops-closure-unresolved-ah64-airbase-behavior.md`](results/2026-08-09-tarinkot-airops-closure-unresolved-ah64-airbase-behavior.md)
 
-```text
-kein DCS-Rerun
-keine MIZ-Mutation
-keine Änderung der Parking-Pools
-kein MOOSE-Override oder MOOSE-Quellpatch
-```
+Frühere blockierte oder fehlgeschlagene Läufe bleiben historische Evidenz und dürfen nicht als aktuelle Ursache oder Lösung interpretiert werden.
 
-Die vorgeschriebene MOOSE-Quellenrecherche ist abgeschlossen:
+## 2. Aktueller Parking-Vertrag
 
-- [`docs/moose/WAREHOUSE-PARKING-OVERRIDE-RESEARCH.md`](../../../docs/moose/WAREHOUSE-PARKING-OVERRIDE-RESEARCH.md)
-- [`results/2026-08-05-g8-moose-parking-override-research-complete.md`](results/2026-08-05-g8-moose-parking-override-research-complete.md)
-
-Sie ergab keinen dokumentierten WAREHOUSE-Setter oder -Hook für die lokalen Scanwerte. Technische Overrides sind möglich, aber nicht autorisiert.
-
-## 2. Akzeptierte Basis
-
-### G5
-
-```text
-Airbase: Tarinkot / ID 9
-Parkingnodes: 33
-Warehouse: WH_AIR_US_TARINKOT
-Clients: 3/3
-AI-Seeds: 3/3
-Statics: 12/12
-Zonen: 1 vorhanden / 10 ausstehend
-Namensduplikate: 0
-Mutationen: 0
-```
-
-Aktueller Client-/KI-Parkplatzvertrag:
+Verbindliche Arbeitszuordnung im Branch:
 
 ```yaml
 clients:
@@ -101,288 +81,262 @@ ai_parking:
   CH47: [32, 29, 10]  # C08-H, C09-H, C10-H
 ```
 
-Die Client-IDs `21`, `8` und `3` sind harte KI-Ausschlüsse. Sie dürfen nie als KI-Pool, KI-Payload oder KI-Preflight-Position erscheinen.
+Die Client-TerminalIDs `21`, `8` und `3` sind harte KI-Ausschlüsse. Der historische AH-64-Pool `21,4` ist für den aktuellen G7/G8-Pfad verworfen.
+
+## 3. Akzeptierte Foundation-Erkenntnisse
+
+### G5
+
+```text
+Airbase: Tarinkot / ID 9
+Parkingnodes: 33
+Warehouse: WH_AIR_US_TARINKOT
+Clients: 3/3
+AI-Seeds: 3/3
+Statics: 12/12
+Namensduplikate: 0
+Mutationen: 0
+```
 
 ### G6
 
-G6A verwendete zunächst einen zu breiten `HelicopterUsable`-Scope und nahm type-104-General-Apron-Positionen auf. Dieser Lauf ist für produktive Pools verworfen.
+G6A zeigte, dass ein zu breiter `HelicopterUsable`-Scope type-104-General-Apron-Positionen einbezieht und deshalb nicht unmittelbar als produktiver Parking-Pool verwendet werden darf.
 
-G6A2 mappte alle 33 Mission-Editor-Positionen auf MOOSE-TerminalIDs:
+G6A2 erzeugte die Mission-Editor-/MOOSE-TerminalID-Abbildung für Tarinkot.
 
-```text
-RESULT G6A2_ME_PARKING_MAP
-status=PASS_MAP
-anchors=30
-mapped=30
-rejected=0
-ambiguous=0
-duplicates=0
-parkingCount=33
-clientReferences=3
-```
-
-Der erste kombinierte G6B-Lauf scheiterte visuell:
+Der erste kombinierte G6B-Lauf scheiterte visuell mit:
 
 ```text
 FAIL_VISUAL_WRONG_APRON
 ```
 
-Der finale type-40-Lauf bestand Runtime- und Eigentümerprüfung:
+Der finale HelicopterOnly-Platzierungslauf bestätigte die kontrollierte direkte Spawn-Platzierung für seinen exakten Testumfang. Dieser Nachweis ist kein Nachweis für AIRWING-Departure oder Recovery.
 
-```text
-RESULT G6B_HELICOPTER_APRON_COMBINED
-status=PASS_RUNTIME_PLACEMENT
-expectedGroups=7
-groupsFound=7
-expectedUnits=8
-unitsFound=8
-placementFailures=0
-familyFailures=0
-spawnCalls=7
-expectedTerminalType=HelicopterOnly
-```
+### G7
 
-Historischer G6B-Platzierungsnachweis (kein aktueller KI-Parking-Vertrag):
-
-```yaml
-AH64:
-  ME: [C04-H, C18-H]
-  TerminalIDs: [21, 4]
-UH60:
-  ME: [C14-H, C12-H, C11-H]
-  TerminalIDs: [30, 27, 23]
-CH47:
-  ME: [C08-H, C09-H, C10-H]
-  TerminalIDs: [32, 29, 10]
-```
-
-G6B ist ausschließlich der Parking-/Platzierungsnachweis. Raw-SPAWN-, direkte UNIT- und standalone-FLIGHTGROUP-Abflugexperimente sind kein Bestandteil des akzeptierten Produktionspfads.
-
-Der aktuelle Arbeitsvertrag ersetzt diese Werte für künftige AIRWING-/SQUADRON-/G8C-Builds. Seine DCS-Laufzeitwirkung ist noch nicht akzeptiert.
-
-## 3. G7 – akzeptierter Foundation-Lauf
-
-Ergebnisbericht:
-
-```text
-results/2026-08-04-g7-airwing-squadron-payload-foundation-pass.md
-```
-
-Akzeptierte Provenienz:
-
-```text
-Source commit: add569fb3231a5563d9c89f865cce7bd764bc0bb
-BuilderVersion: TKOT-G7-AIRWING-FOUNDATION-3
-Bundle SHA-256: 7018f4e388a349f91bc4169e6200226a32c001e3c4afdbd4daf69b538de2dea8
-MIZ SHA-256: 86ba08f46c78a94cdf6eb54f7abe85145bdabe2817e7a2a89f2cec34932866bb
-Internal mission SHA-256: babaaee09f38ecbacb0c564b1686e20ee5b18ccf9b8abd920f32952d4a8f54a8
-DCS: 2.9.28.26385 MT
-MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
-Moose.lua SHA-256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
-DCS log SHA-256: aeacc9fc9270dc033ed49a41eb1b3264880710265386f1d21e0c787a22739e52
-Debrief SHA-256: 8a33b90efdf57f92a95ff2b07d0c016555d79776da3b708367f63ef09a284588
-```
-
-Bestätigter G7-Umfang:
+Der G7-Foundation-Pfad bestätigt für seinen dokumentierten DCS-Stand:
 
 ```text
 AIRWING Running
 3 SQUADRONs
-5 registrierte Warehouse-Assetgruppen
-7 registrierte KI-Luftfahrzeuge
-3 Rollen-Payloads
-3 automatische RELOCATECOHORT-Payloads
-8 akzeptierte HelicopterOnly-ParkingIDs
-0 Missionen
-0 Transporte
-0 Warehouse-Requests
-0 OPSGROUPs
-0 deliberate Spawns
+5 registered Warehouse asset groups
+7 registered AI aircraft
+3 role payloads
+safeParking=true
+verticalPolicy=true
+takeoffCold=true
+0 operational missions in foundation scope
+0 deliberate spawns in foundation scope
 ```
 
-Pre-Start:
+AH-64D bleibt als physischer Two-Ship modelliert:
 
 ```text
-Warehouse-Stock: 2 -> 4 -> 5
-squadron.assets: 0/0/0 als erwarteter Deferred-Zustand
+TPL_AIR_US_TKOT_AH64D_CAS_2SHIP
+units=2
+grouping=2
+registeredGroups=2
+registeredAircraft=4
 ```
 
-Post-Start:
+Die G7-Telemetrie unterscheidet Observer-Clients korrekt in `detected`, `allowed` und `blocking`.
+
+## 4. MOOSE-First-Erkenntnisse
+
+Für den gepinnten Projektstand wurde geprüft und praktisch beobachtet:
 
 ```text
-squadron.assets: 2/2/1
-Warehouse-Stock: 5
-AIRWING: Running
+AIRWING:SetOptionPreferVerticalLanding()
+  -> AIRWING configuration
+  -> propagation during FlightOnMission
+  -> FLIGHTGROUP:SetOptionPreferVertical()
+  -> DCS PREFER_VERTICAL option
 ```
 
-Damit ist die Lifecycle-Grenze praktisch bestätigt:
+G8C und G8D bestätigten bei realen Tarinkot-FlightGroups `optionPreferVertical=true`.
+
+Damit ist nicht mehr offen, ob die Option grundsätzlich propagiert wird. Offen ist, warum DCS bei Tarinkot für den AH-64D trotzdem nach einem kurzen vertikalen Anheben wieder Boden-/Taxi-/Runway-Verhalten wählt.
+
+Die MOOSE-Parking-Override-Recherche ist dokumentiert unter:
+
+- [`docs/moose/WAREHOUSE-PARKING-OVERRIDE-RESEARCH.md`](../../../docs/moose/WAREHOUSE-PARKING-OVERRIDE-RESEARCH.md)
+- [`results/2026-08-05-g8-moose-parking-override-research-complete.md`](results/2026-08-05-g8-moose-parking-override-research-complete.md)
+
+Es existiert keine Freigabe für einen MOOSE-Quellpatch oder einen Native-DCS-Parallelmechanismus.
+
+## 5. G8/G8C – verworfene und blockierte Ansätze
+
+Die G8-Folge dokumentierte mehrere voneinander getrennte Fehlerbilder:
 
 ```text
-AIRWING:AddSquadron()
-  -> Warehouse-Stock registriert
+missing target zone
+-> blocked before useful runtime dispatch
 
-AIRWING:Start() plus Initialisierung
-  -> Assets an COHORT/SQUADRON gebunden
-  -> squadron.assets post-start prüfbar
+warehouse parking obstacle conflict
+-> parking/recruitment problem, not proof about vertical departure
+
+stale AH64 parking IDs 21,4
+-> invalid against current client/AI contract
+
+uniform AUFTRAG:NewHOVER()
+-> optionPreferVertical propagated
+-> AH64 direct ramp departure still failed visually
 ```
 
-## 4. G7-Telemetriekorrektur
+G8C forderte bewusst zwei AH-64-Two-Ships an. Wiederholte `No free parking spot`-Meldungen für `AID-94` betreffen den zweiten Two-Ship bei nur zwei dedizierten AH-64-AI-Spots. Diese Warnungen erklären nicht das falsche Verhalten des bereits gespawnten ersten Two-Ships.
 
-Der Lauf erkannte korrekt:
+## 6. G8D – Jalalabad-Profil als Tarinkot-A/B-Test
+
+G8D beseitigte die Nahbereichsgeometrie als Störvariable und testete exakt einen AH-64D-Two-Ship mit einem langen CAS-Profil:
 
 ```text
-CLIENT_US_TKOT_AH64D_01_UNIT_01
-Player: Neues Rufz.
-observerClientsDetected: 1
-observerClientsAllowed: 1
-observerClientsBlocking: 0
+mission type: CAS
+target distance: 8000 m
+CAS radius: 1500 m
+ingress distance: 3000 m
+egress distance: 5000 m
+altitude: 3500 ft
+speed: 110 kt
+formation: EchelonRight300
+parking IDs: 20,19
+required assets: 1 two-ship group
 ```
 
-Das alte Endmarkerfeld:
+Runtime-Telemetrie:
 
 ```text
-activePlayerClients=0
+group=SQ_US_TKOT_AH64D_3_101_AVN_AID-93
+runtimeUnits=2/2
+missionType=CAS
+optionPreferVertical=true
 ```
 
-ist verworfen. Der Builder-Footer hatte nach der korrekten Detektion den Rückgabewert auf null gesetzt. Dies beeinflusste weder AIRWING, SQUADRONs, Stock, Payloads noch Spawns, war aber eine fehlerhafte Ergebnisdarstellung.
-
-Künftige Bundles dürfen den Detektionswert nicht maskieren. Sie protokollieren getrennt:
+Automatisiertes Ergebnis:
 
 ```text
-observerClientsDetected
-observerClientsAllowed
-observerClientsBlocking
-observerClientUnits
+status=FAIL
+reason=TAKEOFF_TIMEOUT
+airborneUnits=0/2
+assigned=true
+runtimeUnits=2/2
+takeoff=false
+optionPreferVertical=true
 ```
 
-## 5. Korrigierter statischer Builderstand
-
-Builder:
+Die Sichtbeobachtung zeigte nach vollständiger Startbereitschaft weiterhin:
 
 ```text
-tools/build-tarinkot-air-operations-g7-foundation.ps1
+short vertical lift/hover
+-> heading alignment
+-> touchdown
+-> taxi
+-> runway departure procedure
 ```
 
-Builder-Version:
+Damit ist die Hypothese verworfen, dass nur `HOVER` oder ein extrem nahes 35/60-m-Ziel die Ursache sei.
+
+## 7. Vergleich Jalalabad
+
+Jalalabad liefert im selben DCS-/MOOSE-Kontext einen wichtigen Gegenbeleg:
 
 ```text
-TKOT-G7-AIRWING-FOUNDATION-4
+AH-64D physical two-ship
+AUFTRAG CAS
+preferVerticalTakeoffAndLanding=true
+parking pool with dedicated helicopter positions
 ```
 
-Gemeinsamer Guard:
+Dort wurde visuell ein sauberer direkter Ramp-Abflug ohne Taxi zur Startbahn beobachtet.
+
+Deshalb sind folgende Pauschalhypothesen für Tarinkot verworfen:
 
 ```text
-tools/Test-AirOpsLifecycleGuards.ps1
+AH-64D cannot vertically depart under MOOSE
+Two-Ship inherently prevents vertical departure
+CAS inherently forces runway departure
+SetOptionPreferVerticalLanding is missing
+only short target geometry causes the Tarinkot behavior
 ```
 
-CI-Workflow:
+Die Root Cause bleibt unbekannt. Airbase-/Parking-/Taxi-Graph-/Route-spezifisches DCS-Verhalten bleibt eine mögliche, aber nicht bewiesene Erklärung.
+
+## 8. Recovery-/Landing-Grenze
+
+Zurückkehrende Rotary-Gruppen landen in Tarinkot nicht zuverlässig an ihrem ursprünglichen Abstellplatz. Sichtbar waren auch geometrisch unplausible beziehungsweise quer zur erwarteten Ramp-Geometrie liegende Landungen.
+
+`SQUADRON:SetParkingIDs()` wird im Projekt als erlaubter Parking-Pool für die Asset-/Spawn-Seite behandelt. Für den getesteten Stand existiert kein Nachweis, dass diese Methode eine persistente Zuordnung
 
 ```text
-.github/workflows/tarinkot-g7-static-validation.yml
+aircraft -> original terminal -> deterministic return to same terminal
 ```
 
-Akzeptierte statische Prüfung:
+garantiert.
+
+Ein künftiger Ansatz über MOOSE-Lifecycle beziehungsweise `despawnAfterLanding` wäre eine neue Designentscheidung und ist für Tarinkot weder genehmigt noch validiert.
+
+## 9. Wiederaufnahmegrenze
+
+Eine spätere Wiederaufnahme soll nicht wieder bei den bereits verworfenen Hypothesen beginnen. Noch offen und technisch sinnvoll wären insbesondere:
 
 ```text
-GitHub Actions workflow: Tarinkot G7 static validation
-Run ID: 30954380156
-Result: SUCCESS
-Validated head: 940330f5213a8da856bca5c456cd38872b747da7
+Tarinkot versus Jalalabad DCS parking/taxi graph comparison
+Terminal type and taxi-link topology for IDs 20/19 versus 51/26
+generated DCS route/task comparison after AIRWING dispatch
+alternative Tarinkot HelicopterOnly pair as an isolated airbase-geometry test
+public MOOSE recovery/lifecycle APIs for deterministic-looking return behavior
+DCS-engine-only reproduction, only after explicit owner authorization
 ```
 
-Der korrigierte Builder:
+Vor projektspezifischer oder nativer DCS-Logik gilt weiterhin `docs/26-moose-first-development-policy.md`.
 
-- prüft Warehouse-Stock vor Start;
-- prüft `squadron.assets` und Parking-Vererbung nach Start;
-- setzt `AIRWING:SetOptionPreferVerticalLanding()` vor `AIRWING:Start()`;
-- verbietet Observer-Zählwertmaskierung;
-- gibt detected/allowed/blocking getrennt aus;
-- verbietet COMMANDER, AUFTRAG-Instanzen, OPSTRANSPORT und SPAWN im G7-Foundation-Scope.
-
-Builder-Version 4 ist eine statisch akzeptierte Harnesskorrektur. Sie ändert den akzeptierten G7-Funktionsumfang nicht und benötigt keinen erneuten 30-Minuten-DCS-Lauf.
-
-## 6. Vertikaloption und G8-Grenze
-
-G7 setzte in der akzeptierten Reihenfolge:
-
-```lua
-airwing:SetOptionPreferVerticalLanding()
-airwing:Start()
-```
-
-G7 beweist nur den gesetzten AIRWING-Konfigurationszustand. Im nativen MOOSE-Dispatch wird diese Option im `FlightOnMission`-Pfad auf die erzeugte FLIGHTGROUP weitergegeben.
-
-Noch nicht akzeptiert:
+## 10. Zentrale Ergebnisberichte
 
 ```text
-reale FLIGHTGROUP im Tarinkot-Dispatch
-Optionweitergabe im Runtimeereignis
-tatsächliches vertikales Abheben
-kein Taxi- oder Runwayverhalten
+results/2026-08-03-g5-read-only-diagnostics-initial-fail.md
+results/2026-08-03-g5-read-only-diagnostics-retest-pass.md
+results/2026-08-03-g6a-parking-candidate-analysis-pass.md
+results/2026-08-03-g6b-combined-placement-fail-wrong-apron.md
+results/2026-08-04-g6b-final-free-spots-pass-and-departure-scope-correction.md
+results/2026-08-04-g7-airwing-squadron-payload-foundation-pass.md
+results/2026-08-05-g8-moose-parking-override-research-complete.md
+results/2026-08-09-g8c-blocked-layout-contract-mismatch.md
+results/2026-08-09-tarinkot-airops-closure-unresolved-ah64-airbase-behavior.md
 ```
 
-Diese Punkte gehören gemeinsam in einen einzigen isolierten G8-AIRWING-/AUFTRAG-Lauf nach Abschluss der zentralen Konsolidierung.
-
-## 7. G8C – einheitlicher Rotary-Hover-Dispatch
-
-G8C ist ein gebündelter Diagnosetest neben der historischen G8-Parking-Recherche. Alle fünf registrierten Gruppen erhalten denselben öffentlichen MOOSE-Auftrag `AUFTRAG:NewHOVER()`: AH64_1 (2), AH64_2 (2), UH60_1 (1), UH60_2 (1) und CH47_1 (1). Der Test verwendet keine Raw-SPAWN-, Einzel-UNIT- oder standalone-FLIGHTGROUP-Alternative.
-
-Die Positionsdistanz wird nicht als Taxi-Nachweis interpretiert. Ein technischer PASS verlangt fünf Zuweisungen, fünf beobachtete Abhebungen, sieben Runtime-Einheiten und den nativen `optionPreferVertical=true`-Nachweis; „kein Taxiway/Runway“ bleibt alleinige Sichtabnahme. Der vollständige Vertrag steht in [`g8c-uniform-rotary-hover-dispatch-acceptance.md`](expected/g8c-uniform-rotary-hover-dispatch-acceptance.md).
-
-## 8. Testbündelung
-
-Technisch zusammengehörige Flughafenprüfungen werden standardmäßig kombiniert:
-
-```text
-ein Bundle
-eine Mission-Editor-Ersetzung
-ein DCS-Lauf
-Subsystemmarker
-ein Aggregatergebnis
-```
-
-Kleinere Läufe entstehen nur, wenn der kombinierte Log die Fehlerursache nicht isolieren kann.
-
-## 8. Paketstruktur
+## 11. Paketstruktur
 
 ```text
 mission/tests/tarinkot-air-operations/
 ├── README.md
 ├── expected/
-│   ├── g5-read-only-diagnostics-acceptance.md
-│   ├── g6a-parking-candidate-analysis-acceptance.md
-│   ├── g6b-combined-placement-acceptance.md
-│   ├── g6b-controlled-placement-acceptance.md
-│   ├── g6b-helicopter-apron-retest-acceptance.md
-│   └── g7-airwing-squadron-payload-foundation-acceptance.md
 ├── results/
-│   ├── 2026-08-03-g5-read-only-diagnostics-initial-fail.md
-│   ├── 2026-08-03-g5-read-only-diagnostics-retest-pass.md
-│   ├── 2026-08-03-g6a-parking-candidate-analysis-pass.md
-│   ├── 2026-08-03-g6b-combined-placement-fail-wrong-apron.md
-│   ├── 2026-08-04-g6b-final-free-spots-pass-and-departure-scope-correction.md
-│   └── 2026-08-04-g7-airwing-squadron-payload-foundation-pass.md
 ├── src/
-│   ├── 01-tarinkot-g5-read-only-diagnostics.lua
-│   ├── 02-tarinkot-g6a-parking-candidate-analysis.lua
-│   ├── 03-tarinkot-g6b-controlled-placement.lua
-│   ├── 04-tarinkot-g6b-combined-placement.lua
-│   ├── 05-tarinkot-g6b-helicopter-apron-retest.lua
-│   ├── 06-tarinkot-g6a2-me-parking-map.lua
-│   └── 07-tarinkot-g7-airwing-squadron-payload-foundation.lua
+│   ├── 01-... diagnostics
+│   ├── 02-... parking candidate analysis
+│   ├── 03-... controlled placement
+│   ├── 04-... combined placement
+│   ├── 05-... helicopter apron retest
+│   ├── 06-... ME parking map
+│   ├── 07-... G7 foundation
+│   ├── 08-... G8 UH60 vertical dispatch
+│   ├── 10-... G8C uniform rotary hover dispatch
+│   └── 11-... G8D AH64 Jalalabad-profile A/B
 └── dist/
-    └── ausschließlich lokal generierte Bundles
+    └── locally generated bundles only
 ```
 
-## 9. Gate-Wirkung
+## 12. Abschlussstatus
 
 ```yaml
-G7: ACCEPTED_TECHNICAL_BASELINE
-G7_static_guard: PASS_STATIC_CI
-G8_authorization: WITHHELD
-reason:
-  - central lifecycle governance remains Draft PR 55 and is not on main
-  - next MIZ/bundle identity must be established
+foundation: COMPLETE_FOR_CURRENT_PHASE
+parking_contract: RECONCILED_BRANCH
+vertical_option_propagation: CONFIRMED_IN_DCS
+AH64_direct_vertical_ramp_departure_Tarinkot: FAIL_VISUAL_UNRESOLVED
+return_to_original_parking: NOT_PROVEN_AND_VISUALLY_UNSATISFACTORY
+root_cause: UNKNOWN
+native_DCS_override: NOT_AUTHORIZED
+MOOSE_source_patch: NOT_AUTHORIZED
+current_phase_action: CLOSE_TARINKOT_AIROPS_WITH_KNOWN_LIMITATIONS
 ```
 
-PR #53 bleibt Draft. Kein Merge und kein Ready for Review ohne ausdrückliche Freigabe des Projektinhabers.
+PR #53 bleibt Draft. Merge beziehungsweise Ready-for-Review ist von diesem Testpaket-Abschluss nicht automatisch freigegeben.
