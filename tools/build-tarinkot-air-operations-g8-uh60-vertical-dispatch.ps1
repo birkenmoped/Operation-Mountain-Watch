@@ -50,12 +50,15 @@ $requiredG8Patterns = @(
     ':\s*AddRequiredPayload\s*\(',
     'airwing\s*:\s*AddMission\s*\(',
     'OnAfterFlightOnMission',
+    'OnAfterTakeoff',
     'OptionPreferVertical',
     'Unit\.getByName\s*\(',
     ':inAir\s*\(',
     'ZONE_AIR_US_TKOT_ROTARY_STAGING',
     'G8_UH60_NATIVE_VERTICAL_DEPARTURE',
     'PASS_RUNTIME_TELEMETRY_PENDING_OWNER_VISUAL',
+    'FLIGHT_ASSIGNMENT_TIMEOUT_SECONDS\s*=\s*180',
+    'TAKEOFF_TIMEOUT_SECONDS\s*=\s*360',
     'maxGroundDisplacementM=',
     'ownerVisualRequired=true'
 )
@@ -97,7 +100,7 @@ if ($auftragConstructors -ne 1) {
 
 New-Item -ItemType Directory -Path $distDir -Force | Out-Null
 
-$builderVersion = 'TKOT-G8-UH60-VERTICAL-DISPATCH-2'
+$builderVersion = 'TKOT-G8-UH60-VERTICAL-DISPATCH-3'
 $commit = 'UNKNOWN'
 try {
     $commit = (& git -C $repoRoot rev-parse HEAD 2>$null).Trim()
@@ -159,6 +162,9 @@ Write-Host 'Squadron: SQ_US_TKOT_UH60_TF_ATTACK'
 Write-Host 'RequiredAssets: 1'
 Write-Host 'DestinationZone: ZONE_AIR_US_TKOT_ROTARY_STAGING'
 Write-Host 'GroundDisplacementThresholdM: 75'
+Write-Host 'FlightAssignmentTimeoutS: 180'
+Write-Host 'TakeoffTimeoutAfterFlightOnMissionS: 360'
+Write-Host 'TakeoffEvent: FLIGHTGROUP.OnAfterTakeoff'
 Write-Host 'OperationalMissions: 1'
 Write-Host 'Commander: 0'
 Write-Host 'OpsTransport: 0'

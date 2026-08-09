@@ -148,6 +148,8 @@ Eine Nummer und eine stabile `document_id` dürfen im aktuellen Bestand jeweils 
 | `OMW-EVIDENCE-INDEX` | `docs/evidence/README.md` | `BINDING` |
 | `OMW-EVIDENCE-SOURCE-INTAKE-AUDIT-2026-07-28` | `docs/evidence/source-intake-audit-2026-07-28.md` | `BINDING` |
 | `OMW-TEST-JBAD-AIR-OPS-INDEX` | `mission/tests/jalalabad-air-operations/README.md` | `BINDING` |
+| `OMW-TEST-TKOT-G8B-COMBINED-HELICOPTER-DISPATCH-ACCEPTANCE` | `mission/tests/tarinkot-air-operations/expected/g8b-combined-helicopter-dispatch-acceptance.md` | `PLANNED`; gebündelter Dispatch aller registrierten Tarinkot-KI-Hubschraubergruppen |
+| `OMW-TEST-TKOT-G8-UH60-PASS-WITH-HARNESS-LIMITATION-2026-08-09` | `mission/tests/tarinkot-air-operations/results/2026-08-09-g8-uh60-pass-with-harness-limitation.md` | `DRAFT`; G8-UH-60-PASS mit Timeout-Einschränkung |
 
 ## 5. Legacy- und Evidenzregel
 

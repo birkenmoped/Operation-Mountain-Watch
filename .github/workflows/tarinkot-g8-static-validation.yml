@@ -3,22 +3,28 @@ name: Tarinkot G8 static validation
 on:
   push:
     branches:
-      - agent/tarinkot-object-contract-reconciliation
+      - agent/tarinkot-revised-parking-layout
     paths:
       - 'mission/tests/tarinkot-air-operations/src/07-tarinkot-g7-airwing-squadron-payload-foundation.lua'
       - 'mission/tests/tarinkot-air-operations/src/08-tarinkot-g8-uh60-native-vertical-dispatch.lua'
+      - 'mission/tests/tarinkot-air-operations/src/09-tarinkot-g8b-combined-helicopter-dispatch.lua'
       - 'mission/tests/tarinkot-air-operations/expected/g8-uh60-native-vertical-departure-acceptance.md'
+      - 'mission/tests/tarinkot-air-operations/expected/g8b-combined-helicopter-dispatch-acceptance.md'
       - 'tools/build-tarinkot-air-operations-g7-foundation.ps1'
       - 'tools/build-tarinkot-air-operations-g8-uh60-vertical-dispatch.ps1'
+      - 'tools/build-tarinkot-air-operations-g8b-combined-helicopter-dispatch.ps1'
       - 'tools/Test-AirOpsLifecycleGuards.ps1'
       - '.github/workflows/tarinkot-g8-static-validation.yml'
   pull_request:
     paths:
       - 'mission/tests/tarinkot-air-operations/src/07-tarinkot-g7-airwing-squadron-payload-foundation.lua'
       - 'mission/tests/tarinkot-air-operations/src/08-tarinkot-g8-uh60-native-vertical-dispatch.lua'
+      - 'mission/tests/tarinkot-air-operations/src/09-tarinkot-g8b-combined-helicopter-dispatch.lua'
       - 'mission/tests/tarinkot-air-operations/expected/g8-uh60-native-vertical-departure-acceptance.md'
+      - 'mission/tests/tarinkot-air-operations/expected/g8b-combined-helicopter-dispatch-acceptance.md'
       - 'tools/build-tarinkot-air-operations-g7-foundation.ps1'
       - 'tools/build-tarinkot-air-operations-g8-uh60-vertical-dispatch.ps1'
+      - 'tools/build-tarinkot-air-operations-g8b-combined-helicopter-dispatch.ps1'
       - 'tools/Test-AirOpsLifecycleGuards.ps1'
       - '.github/workflows/tarinkot-g8-static-validation.yml'
 
@@ -48,10 +54,13 @@ jobs:
           $text = Get-Content -LiteralPath $bundle -Raw -Encoding UTF8
           $required = @(
             'TKOT-G7-AIRWING-FOUNDATION-5',
-            'TKOT-G8-UH60-VERTICAL-DISPATCH-2',
+            'TKOT-G8-UH60-VERTICAL-DISPATCH-3',
             'AUFTRAG:NewLANDATCOORDINATE',
             'ZONE_AIR_US_TKOT_ROTARY_STAGING',
             'OnAfterFlightOnMission',
+            'OnAfterTakeoff',
+            'FLIGHT_ASSIGNMENT_TIMEOUT_SECONDS = 180',
+            'TAKEOFF_TIMEOUT_SECONDS = 360',
             'optionPreferVertical=',
             'maxGroundDisplacementM=',
             'PASS_RUNTIME_TELEMETRY_PENDING_OWNER_VISUAL',
@@ -87,4 +96,35 @@ jobs:
         shell: pwsh
         run: |
           Get-FileHash -Algorithm SHA256 -LiteralPath 'mission/tests/tarinkot-air-operations/dist/OMW_AirOps_Tarinkot_G8_UH60_VerticalDispatch.lua' |
+            Format-List Algorithm,Hash,Path
+
+      - name: Build Tarinkot G8B combined helicopter bundle
+        shell: pwsh
+        run: ./tools/build-tarinkot-air-operations-g8b-combined-helicopter-dispatch.ps1
+
+      - name: Verify generated combined dispatch contract
+        shell: pwsh
+        run: |
+          $bundle = 'mission/tests/tarinkot-air-operations/dist/OMW_AirOps_Tarinkot_G8B_CombinedHelicopterDispatch.lua'
+          if (-not (Test-Path -LiteralPath $bundle -PathType Leaf)) {
+            throw "Generated G8B bundle not found: $bundle"
+          }
+          $text = Get-Content -LiteralPath $bundle -Raw -Encoding UTF8
+          $required = @(
+            'TKOT-G8B-COMBINED-HELICOPTER-DISPATCH-1',
+            'G8B_COMBINED_HELICOPTER_DISPATCH',
+            'expectedTakeoffGroups=5',
+            'expectedRuntimeUnits=7',
+            'OnAfterTakeoff'
+          )
+          foreach ($marker in $required) {
+            if (-not $text.Contains($marker)) {
+              throw "Required G8B marker missing: $marker"
+            }
+          }
+
+      - name: Record generated G8B bundle hash
+        shell: pwsh
+        run: |
+          Get-FileHash -Algorithm SHA256 -LiteralPath 'mission/tests/tarinkot-air-operations/dist/OMW_AirOps_Tarinkot_G8B_CombinedHelicopterDispatch.lua' |
             Format-List Algorithm,Hash,Path

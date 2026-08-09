@@ -56,7 +56,7 @@ Diese Klassenstatus sind keine Governance-Dokumentstatuswerte.
 | `SQUADRON` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Konstruktion, `Ngroups`, Gruppierung, Capabilities, Payloads und post-start Assetbindung |
 | `WAREHOUSE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | AirOps-Stockregistrierung und post-start Zuordnung; `_FindParkingForAssets()` source-reviewed mit nicht konfigurierbaren lokalen Scanwerten; strategische Logistik und Persistenz offen |
 | `COHORT` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | post-start `AddAsset()` setzt `squadname`, `legion`, `cohort` und `assets` |
-| `FLIGHTGROUP` | `SOURCE_REVIEWED` | `SetOptionPreferVertical()` und AIRWING-Weitergabepfad geprüft; tatsächlicher Tarinkot-Abflug offen |
+| `FLIGHTGROUP` | `SOURCE_REVIEWED` | `SetOptionPreferVertical()`, AIRWING-Weitergabepfad und nativer `OnAfterTakeoff`-FSM-Callback geprüft; G8-Runtime-Acceptance offen |
 | `COMMANDER` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Salerno `New -> AddAirwing -> Start -> CanMission -> AddMission -> Status` bis AUFTRAG `started` |
 | `AUFTRAG` | `IN_USE_PARTIAL` | Capability-/Payloadzuordnung und Salerno CAS-Dispatch; vollständige taktische Ausführung offen |
 | `SCHEDULER` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | geordnete Konstruktion und verzögerte post-start Diagnose |
@@ -99,6 +99,7 @@ Ein Pre-Start-PASS über nichtleere `squadron.assets` ist unzulässig.
 
 - `AIRWING:SetOptionPreferVerticalLanding()` muss vor `AIRWING:Start()` gesetzt werden.
 - Der Quellpfad reicht die Option im nativen `FlightOnMission` an `FLIGHTGROUP:SetOptionPreferVertical()` weiter.
+- `FLIGHTGROUP:OnAfterTakeoff(From, Event, To, airbase)` ist im gepinnten Stand der native FSM-Callback für den Abflugnachweis; G8-3 verwendet ihn als primären Abschlussimpuls.
 - Tatsächlicher vertikaler Abflug bleibt ein eigener DCS-Acceptance-Punkt.
 - `COMMANDER:AddAirwing()` startet den COMMANDER nicht.
 - Der akzeptierte Pfad enthält zwingend `COMMANDER:Start()` und den normalen Status-/Queuezyklus.

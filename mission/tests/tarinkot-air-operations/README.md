@@ -47,12 +47,13 @@ Tarinkot_main_sync: PASS
 G8_previous_static_implementation: PASS_STATIC_CI
 G8_first_runtime_attempt: BLOCKED_MISSING_TARGET_ZONE
 G8_second_runtime_attempt: BLOCKED_MOOSE_WAREHOUSE_PARKING_OBSTACLE_CONFLICT
-G8_vertical_departure: NOT_PROVEN
+G8_third_runtime_attempt: PASS_WITH_HARNESS_TIMEOUT_LIMITATION
+G8_vertical_departure: PASS_DCS_OWNER_VISUAL_ACCEPTED
 MOOSE_parking_override_research: COMPLETE
 revised_ME_layout: OWNER_CONFIRMED
-revised_parking_lua: SOURCE_STATIC_VALIDATION_PASS_BUILDER_VALIDATION_PENDING
-next_action: BUILD_AND_STATIC_VALIDATE_REVISED_G8_BUNDLE
-G9_commander: BLOCKED_BY_G8
+revised_parking_lua: PASS_DCS_OBJECT_CONTRACT
+next_action: BUILD_AND_STATIC_VALIDATE_COMBINED_ALL_REGISTERED_HELICOPTER_DISPATCH
+G9_commander: BLOCKED_BY_G8B
 G10_lifecycle_results_handoff: NOT_STARTED
 ```
 
@@ -312,7 +313,7 @@ Der korrigierte Builder:
 
 Builder-Version 4 ist eine statisch akzeptierte Harnesskorrektur. Sie ändert den akzeptierten G7-Funktionsumfang nicht und benötigt keinen erneuten 30-Minuten-DCS-Lauf.
 
-## 6. Vertikaloption und G8-Grenze
+## 6. Vertikaloption, G8 und gebündelter G8B-Folgetest
 
 G7 setzte in der akzeptierten Reihenfolge:
 
@@ -321,18 +322,22 @@ airwing:SetOptionPreferVerticalLanding()
 airwing:Start()
 ```
 
-G7 beweist nur den gesetzten AIRWING-Konfigurationszustand. Im nativen MOOSE-Dispatch wird diese Option im `FlightOnMission`-Pfad auf die erzeugte FLIGHTGROUP weitergegeben.
+Der G8-2-Lauf bestätigte den nativen `FlightOnMission`-Pfad,
+`optionPreferVertical=true`, vertikalen UH-60-Abflug, Zielflug und Außenlandung.
+Der automatische 240-Sekunden-Timeout war ein False Negative und wird nicht in
+einem weiteren UH-60-Einzellauf wiederholt.
 
-Noch nicht akzeptiert:
+G8B bündelt stattdessen alle fünf registrierten KI-Gruppen in einem Lauf:
 
 ```text
-reale FLIGHTGROUP im Tarinkot-Dispatch
-Optionweitergabe im Runtimeereignis
-tatsächliches vertikales Abheben
-kein Taxi- oder Runwayverhalten
+2 AH-64-Zweiergruppen
+2 UH-60-Einzelgruppen
+1 CH-47-Einzelgruppe
+7 Runtime-Luftfahrzeuge
 ```
 
-Diese Punkte gehören gemeinsam in einen einzigen isolierten G8-AIRWING-/AUFTRAG-Lauf nach Abschluss der zentralen Konsolidierung.
+Einzelläufe sind nur noch zur Isolation eines konkret protokollierten Fehlers
+zulässig.
 
 ## 7. Testbündelung
 
@@ -359,14 +364,17 @@ mission/tests/tarinkot-air-operations/
 │   ├── g6b-combined-placement-acceptance.md
 │   ├── g6b-controlled-placement-acceptance.md
 │   ├── g6b-helicopter-apron-retest-acceptance.md
-│   └── g7-airwing-squadron-payload-foundation-acceptance.md
+│   ├── g7-airwing-squadron-payload-foundation-acceptance.md
+│   ├── g8-uh60-native-vertical-departure-acceptance.md
+│   └── g8b-combined-helicopter-dispatch-acceptance.md
 ├── results/
 │   ├── 2026-08-03-g5-read-only-diagnostics-initial-fail.md
 │   ├── 2026-08-03-g5-read-only-diagnostics-retest-pass.md
 │   ├── 2026-08-03-g6a-parking-candidate-analysis-pass.md
 │   ├── 2026-08-03-g6b-combined-placement-fail-wrong-apron.md
 │   ├── 2026-08-04-g6b-final-free-spots-pass-and-departure-scope-correction.md
-│   └── 2026-08-04-g7-airwing-squadron-payload-foundation-pass.md
+│   ├── 2026-08-04-g7-airwing-squadron-payload-foundation-pass.md
+│   └── 2026-08-09-g8-uh60-pass-with-harness-limitation.md
 ├── src/
 │   ├── 01-tarinkot-g5-read-only-diagnostics.lua
 │   ├── 02-tarinkot-g6a-parking-candidate-analysis.lua
@@ -374,7 +382,9 @@ mission/tests/tarinkot-air-operations/
 │   ├── 04-tarinkot-g6b-combined-placement.lua
 │   ├── 05-tarinkot-g6b-helicopter-apron-retest.lua
 │   ├── 06-tarinkot-g6a2-me-parking-map.lua
-│   └── 07-tarinkot-g7-airwing-squadron-payload-foundation.lua
+│   ├── 07-tarinkot-g7-airwing-squadron-payload-foundation.lua
+│   ├── 08-tarinkot-g8-uh60-native-vertical-dispatch.lua
+│   └── 09-tarinkot-g8b-combined-helicopter-dispatch.lua
 └── dist/
     └── ausschließlich lokal generierte Bundles
 ```
@@ -384,10 +394,10 @@ mission/tests/tarinkot-air-operations/
 ```yaml
 G7: ACCEPTED_TECHNICAL_BASELINE
 G7_static_guard: PASS_STATIC_CI
-G8_authorization: WITHHELD
-reason:
-  - central lifecycle governance remains Draft PR 55 and is not on main
-  - next MIZ/bundle identity must be established
+central_lifecycle_governance: PASS_MAIN
+G8: PASS_WITH_HARNESS_LIMITATION
+G8B_combined_dispatch: IMPLEMENTED_AWAITING_BUILD_AND_DCS
+G9_commander: BLOCKED_BY_G8B
 ```
 
 PR #53 bleibt Draft. Kein Merge und kein Ready for Review ohne ausdrückliche Freigabe des Projektinhabers.

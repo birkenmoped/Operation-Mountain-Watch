@@ -182,6 +182,7 @@ Status der Einzelmethoden:
 |---|---|---|
 | `AIRWING:SetOptionPreferVerticalLanding()` | `VALIDATED_CONFIGURATION_AND_SOURCE_PATH` | vor Start gesetzt; Weitergabepfad quellengeprüft |
 | `FLIGHTGROUP:SetOptionPreferVertical()` | `SOURCE_REVIEWED` | tatsächliche Anwendung in G8 noch telemetrisch zu bestätigen |
+| `FLIGHTGROUP:OnAfterTakeoff(From, Event, To, airbase)` | `SOURCE_REVIEWED` | nativer FSM-Callback im gepinnten Commit; G8-3 nutzt ihn für den Takeoff-Nachweis, DCS-Retest offen |
 | `CONTROLLABLE:OptionPreferVerticalLanding()` | `SOURCE_REVIEWED` | DCS-Option bekannt; tatsächlicher Tarinkot-Abflug noch nicht akzeptiert |
 
 Nicht belegt:
@@ -191,6 +192,21 @@ Nicht belegt:
 - standalone FLIGHTGROUP- oder Raw-SPAWN-Experimente als Produktionspfad.
 
 Diese Punkte gehören in den isolierten nativen G8-AIRWING-/AUFTRAG-Dispatch.
+
+### 6.3 G8-2-Lauf und Takeoff-Callback
+
+Der DCS-Lauf vom 9. August 2026 bestätigte `FlightOnMission` und
+`OptionPreferVertical=true`. Der Harness beendete die Messung jedoch bei 240
+Sekunden ab `AIRWING:AddMission()` mit `TAKEOFF_TIMEOUT`. Der Debrief belegt den
+tatsächlichen UH-60-Takeoff erst bei Missionszeit `311,504 s`, etwa `242,5 s`
+nach `FlightOnMission`, anschließend Landung und AUFTRAG-Success. Das ist kein
+Vertikalabflug-PASS, weil die Positionsmessung vor dem Takeoff beendet war.
+
+Für G8-3 wurde deshalb der im gepinnten MOOSE-Commit
+`73d3ed119cd9e7e3f2cfcabbaa34513d30529b54` vorhandene Callback
+`FLIGHTGROUP:OnAfterTakeoff(From, Event, To, airbase)` quellengeprüft. Der
+Timeout beginnt künftig bei `FlightOnMission`; ein separates
+Zuweisungszeitfenster verhindert unbegrenztes Warten vor der Runtimegruppe.
 
 ## 7. COMMANDER
 

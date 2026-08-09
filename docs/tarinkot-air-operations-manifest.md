@@ -21,7 +21,7 @@ not_authoritative_for:
   - exact 2011 aircraft quantities beyond the documented OMW reconstruction
   - merge approval or Ready-for-Review approval
 scenario_period: 2010-08-01/2011-12-31
-project_phase: TARINKOT_G7_ACCEPTED_G8_BLOCKED
+project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 source_branch: agent/tarinkot-object-contract-reconciliation
 source_commit: PENDING_MERGE
 original_source_mission: OMW_Template_v5_Salerno.miz
@@ -595,9 +595,10 @@ Die statische Prüfung bestand. Diese Harnesskorrektur benötigt keinen erneuten
 | G6B Parking/Placement | `PASS_DCS_OWNER_VISUAL_ACCEPTED` | acht type-40-Positionen angenommen |
 | G7 AIRWING/SQUADRON/Payload | `PASS_DCS_WITH_TELEMETRY_FIELD_CORRECTION` | Idle-Foundation und Lifecycle akzeptiert |
 | G7 statischer Guard | `PASS_CI` | Builder v4 und gemeinsamer Guard bestanden |
-| zentrale Konsolidierung | `DRAFT_PR_55_NOT_ON_MAIN` | G8 bleibt gesperrt |
-| G8 direkter Dispatch/Vertikalstart | `BLOCKED` | erst nach PR #55 und neuer Artefaktkette |
-| G9 COMMANDER | `BLOCKED_BY_G8` | nicht begonnen |
+| zentrale Konsolidierung | `PASS_MAIN` | Governance und Lifecyclebaseline auf `main` |
+| G8 direkter Dispatch/Vertikalstart | `PASS_WITH_LIMITATION` | UH-60 vertikal abgeflogen und außen gelandet; automatischer Timeout finalisierte vor dem realen Takeoff |
+| G8B gebündelter Hubschrauberdispatch | `IMPLEMENTED_AWAITING_BUILD_AND_DCS` | alle fünf registrierten Gruppen und sieben Runtime-Luftfahrzeuge in einem Lauf |
+| G9 COMMANDER | `BLOCKED_BY_G8B` | nicht begonnen |
 | G10 Lifecycle/Handoff | `NOT_STARTED` | nicht begonnen |
 
 ## 14. Verbindliche nächste Grenze
@@ -608,7 +609,8 @@ Vor dem nächsten DCS-Lauf müssen PASS sein:
 central_lifecycle_governance_on_main: true
 canonical_document_22_on_main: true
 mission_test_governance_on_main: true
-tarinkot_builder_v4_static_ci: true
+tarinkot_builder_g7_5_static: true
+tarinkot_builder_g8b_1_static: pending
 observer_policy_non_masking: true
 prestart_poststart_guards: true
 next_miz_hash_known: true
@@ -617,4 +619,4 @@ embedded_moose_hash_known: true
 acceptance_documents_synchronized: true
 ```
 
-Der statische Tarinkot-Teil ist bereits bestanden. Der nächste DCS-Lauf ist nach der Main-Konsolidierung genau ein isolierter G8-AIRWING-/AUFTRAG-Dispatch zur Prüfung der realen Vertikalabflugkette. Kein Merge und kein Ready for Review ohne ausdrückliche Freigabe des Projektinhabers.
+Der statische Tarinkot-Teil, der revidierte Objektvertrag und der G8-UH-60-Vertikalabflug sind im DCS bestanden. Der automatische G8-2-Timeout war ein False Negative; Debrief und Eigentümersichtprüfung bestätigen vertikalen Abflug, Zielflug und Außenlandung. Der nächste DCS-Lauf ist kein weiterer Einzelmustertest, sondern ein gebündelter Dispatch aller fünf registrierten Tarinkot-KI-Gruppen mit getrenntem Zuweisungs- und Takeoff-Zeitfenster sowie nativem `FLIGHTGROUP:OnAfterTakeoff`-Callback. Kein Merge und kein Ready for Review ohne ausdrückliche Freigabe des Projektinhabers.

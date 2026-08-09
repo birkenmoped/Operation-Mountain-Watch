@@ -13,7 +13,7 @@ not_authoritative_for:
   - tactical transport, MEDEVAC or campaign behavior
   - merge or Ready-for-Review authorization
 scenario_period: 2010-08-01/2011-12-31
-project_phase: TARINKOT_G8_NATIVE_VERTICAL_DEPARTURE
+project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 source_branch: agent/tarinkot-revised-parking-layout
 source_commit: PENDING_MERGE
 validated_in_dcs: false
@@ -50,7 +50,7 @@ moose_release: 2.9.18
 moose_commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
 moose_sha256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
 builder: tools/build-tarinkot-air-operations-g8-uh60-vertical-dispatch.ps1
-builder_version: TKOT-G8-UH60-VERTICAL-DISPATCH-2
+builder_version: TKOT-G8-UH60-VERTICAL-DISPATCH-3
 bundle: mission/tests/tarinkot-air-operations/dist/OMW_AirOps_Tarinkot_G8_UH60_VerticalDispatch.lua
 ```
 
@@ -92,7 +92,8 @@ mission_type: LANDATCOORDINATE
 required_assets: 1
 destination_zone: ZONE_AIR_US_TKOT_ROTARY_STAGING
 start_delay_seconds: 35
-takeoff_timeout_seconds: 240
+flight_assignment_timeout_seconds: 180
+takeoff_timeout_after_flight_on_mission_seconds: 360
 max_ground_displacement_before_airborne_m: 75
 ```
 
@@ -140,7 +141,7 @@ Tarinkot G8 builder guards
 Der G8-Builder muss ausgeben:
 
 ```text
-BuilderVersion: TKOT-G8-UH60-VERTICAL-DISPATCH-2
+BuilderVersion: TKOT-G8-UH60-VERTICAL-DISPATCH-3
 EmbeddedFoundation: TKOT-G7-AIRWING-FOUNDATION-5
 LifecycleGuard: PASS via G7 builder
 OperationalMissions: 1
@@ -227,6 +228,20 @@ optionPreferVertical=true
 
 Der Marker ist der technische Nachweis, dass die vor `AIRWING:Start()` gesetzte AIRWING-Policy im nativen `FlightOnMission`-Pfad an die von MOOSE verwaltete FLIGHTGROUP übertragen wurde.
 
+Der Messbeginn für den Abflug-Timeout ist dieser `FlightOnMission`-Callback, nicht
+`AIRWING:AddMission()`. Bleibt die Zuweisung selbst länger als 180 Sekunden aus,
+endet der Lauf getrennt mit `FLIGHT_ASSIGNMENT_TIMEOUT`. Nach der Zuweisung wartet
+der Test höchstens 360 Sekunden auf den nativen MOOSE-FSM-Callback:
+
+```text
+FLIGHTGROUP_TAKEOFF
+TAKEOFF_EVENT source=MOOSE_FLIGHTGROUP_ON_AFTER_TAKEOFF
+```
+
+Das Zwei-Sekunden-Polling misst bis dahin ausschließlich die horizontale Bewegung.
+`DCS_UNIT_IN_AIR_POLL` bleibt als eng begrenzter Nachweisfallback erhalten, falls
+der DCS-Zustand zwischen zwei Schedulerläufen bereits `inAir=true` meldet.
+
 ## 10. Telemetrie-Acceptance
 
 Bis zum ersten `inAir=true` wird die horizontale Verschiebung gegenüber der initialen Runtimeposition gemessen.
@@ -235,6 +250,8 @@ PASS-Telemetrie:
 
 ```text
 flightOnMission=true
+takeoffObserved=true
+takeoffSource=MOOSE_FLIGHTGROUP_ON_AFTER_TAKEOFF oder DCS_UNIT_IN_AIR_POLL
 optionPreferVertical=true
 inAir=true
 maxGroundDisplacementM <= 75
@@ -249,6 +266,7 @@ status=PASS_RUNTIME_TELEMETRY_PENDING_OWNER_VISUAL
 reason=none
 missionAdded=true
 flightOnMission=true
+takeoffObserved=true
 optionPreferVertical=true
 maxGroundDisplacementM<=75
 airborneDistanceM<=75

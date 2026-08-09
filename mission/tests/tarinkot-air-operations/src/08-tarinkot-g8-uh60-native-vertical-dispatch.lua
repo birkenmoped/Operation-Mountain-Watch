@@ -15,7 +15,8 @@ local SQUADRON_KEY = "UH60"
 local MISSION_NAME = "OMW-TKOT-G8-UH60-VERTICAL-DISPATCH"
 local START_DELAY_SECONDS = 35
 local POLL_INTERVAL_SECONDS = 2
-local TAKEOFF_TIMEOUT_SECONDS = 240
+local FLIGHT_ASSIGNMENT_TIMEOUT_SECONDS = 180
+local TAKEOFF_TIMEOUT_SECONDS = 360
 local MAX_GROUND_DISPLACEMENT_METERS = 75
 
 local state = {
@@ -29,7 +30,11 @@ local state = {
   OptionApplied = false,
   FlightOnMissionObserved = false,
   MissionAdded = false,
-  StartAbsTime = nil
+  DispatchStartAbsTime = nil,
+  TakeoffStartAbsTime = nil,
+  TakeoffObserved = false,
+  TakeoffSource = nil,
+  TakeoffElapsed = nil
 }
 
 local function log(message)
@@ -63,9 +68,11 @@ local function finalize(status, reason)
   state.Finalized = true
 
   log(string.format(
-    "RESULT G8_UH60_NATIVE_VERTICAL_DEPARTURE status=%s reason=%s missionAdded=%s flightOnMission=%s optionPreferVertical=%s unit=%s maxGroundDisplacementM=%.1f airborneDistanceM=%.1f taxiThresholdM=%d missionState=%s commanderCreated=0 opsTransportCreated=0 spawnCreated=0 standaloneFlightGroupCreated=0 ownerVisualRequired=true",
+    "RESULT G8_UH60_NATIVE_VERTICAL_DEPARTURE status=%s reason=%s missionAdded=%s flightOnMission=%s takeoffObserved=%s takeoffSource=%s takeoffElapsed=%.1f optionPreferVertical=%s unit=%s maxGroundDisplacementM=%.1f airborneDistanceM=%.1f taxiThresholdM=%d missionState=%s commanderCreated=0 opsTransportCreated=0 spawnCreated=0 standaloneFlightGroupCreated=0 ownerVisualRequired=true",
     tostring(status), tostring(reason or "none"), tostring(state.MissionAdded),
-    tostring(state.FlightOnMissionObserved), tostring(state.OptionApplied),
+    tostring(state.FlightOnMissionObserved), tostring(state.TakeoffObserved),
+    tostring(state.TakeoffSource or "none"), tonumber(state.TakeoffElapsed) or -1,
+    tostring(state.OptionApplied),
     tostring(state.UnitName or "none"), tonumber(state.MaxGroundDisplacement) or -1,
     tonumber(state.AirborneDistance) or -1, MAX_GROUND_DISPLACEMENT_METERS,
     missionStatus(state.Mission)
@@ -110,6 +117,49 @@ local function firstUnitFromFlightGroup(flightGroup)
   return units[1]
 end
 
+local function acceptTakeoff(source)
+  if state.Finalized then return end
+
+  local point = nil
+  local inAir = false
+  if state.UnitName then
+    local dcsUnit = Unit.getByName(state.UnitName)
+    if dcsUnit and dcsUnit:isExist() then
+      point = dcsUnit:getPoint()
+      inAir = dcsUnit:inAir() == true
+    end
+  end
+
+  local displacement = horizontalDistance(point, state.InitialPoint) or 0
+  if displacement > state.MaxGroundDisplacement then
+    state.MaxGroundDisplacement = displacement
+  end
+
+  state.TakeoffObserved = true
+  state.TakeoffSource = source
+  state.TakeoffElapsed = timer.getAbsTime() -
+    (state.TakeoffStartAbsTime or timer.getAbsTime())
+  state.AirborneDistance = displacement
+
+  log(string.format(
+    "TAKEOFF_EVENT source=%s elapsedSinceFlightOnMission=%.1f unit=%s inAir=%s displacementM=%.1f maxGroundDisplacementM=%.1f optionPreferVertical=%s missionState=%s",
+    tostring(source), state.TakeoffElapsed, tostring(state.UnitName or "none"),
+    tostring(inAir), displacement, state.MaxGroundDisplacement,
+    tostring(state.OptionApplied), missionStatus(state.Mission)
+  ))
+
+  local taxiExceeded = state.MaxGroundDisplacement > MAX_GROUND_DISPLACEMENT_METERS or
+    displacement > MAX_GROUND_DISPLACEMENT_METERS
+
+  if not state.OptionApplied then
+    finalize("FAIL", "FLIGHTGROUP_VERTICAL_OPTION_NOT_APPLIED")
+  elseif taxiExceeded then
+    finalize("FAIL", "GROUND_DISPLACEMENT_EXCEEDED_VERTICAL_TAKEOFF_THRESHOLD")
+  else
+    finalize("PASS_RUNTIME_TELEMETRY_PENDING_OWNER_VISUAL", "none")
+  end
+end
+
 local function installAirwingObserver(airwing)
   function airwing:OnAfterFlightOnMission(from, event, to, flightGroup, mission)
     if mission ~= state.Mission then return end
@@ -117,6 +167,18 @@ local function installAirwingObserver(airwing)
     state.FlightGroup = flightGroup
     state.FlightOnMissionObserved = true
     state.OptionApplied = flightGroup and flightGroup.OptionPreferVertical == true or false
+    state.TakeoffStartAbsTime = timer.getAbsTime()
+
+    if flightGroup then
+      function flightGroup:OnAfterTakeoff(takeoffFrom, takeoffEvent, takeoffTo, airbase)
+        log(string.format(
+          "FLIGHTGROUP_TAKEOFF from=%s event=%s to=%s airbase=%s",
+          tostring(takeoffFrom), tostring(takeoffEvent), tostring(takeoffTo),
+          tostring(airbase and airbase:GetName() or "none")
+        ))
+        acceptTakeoff("MOOSE_FLIGHTGROUP_ON_AFTER_TAKEOFF")
+      end
+    end
 
     local unit = firstUnitFromFlightGroup(flightGroup)
     if unit then
@@ -143,7 +205,10 @@ end
 local function pollTakeoff()
   if state.Finalized then return end
 
-  local elapsed = timer.getAbsTime() - (state.StartAbsTime or timer.getAbsTime())
+  local now = timer.getAbsTime()
+  local dispatchElapsed = now - (state.DispatchStartAbsTime or now)
+  local takeoffElapsed = state.TakeoffStartAbsTime and
+    (now - state.TakeoffStartAbsTime) or nil
   local currentMissionState = string.lower(missionStatus(state.Mission))
 
   if state.UnitName then
@@ -161,24 +226,14 @@ local function pollTakeoff()
       end
 
       log(string.format(
-        "TAKEOFF_POLL elapsed=%.1f unit=%s inAir=%s displacementM=%.1f maxGroundDisplacementM=%.1f speedMps=%.1f optionPreferVertical=%s missionState=%s",
-        elapsed, state.UnitName, tostring(inAir), displacement,
+        "TAKEOFF_POLL dispatchElapsed=%.1f takeoffElapsed=%.1f unit=%s inAir=%s displacementM=%.1f maxGroundDisplacementM=%.1f speedMps=%.1f optionPreferVertical=%s missionState=%s",
+        dispatchElapsed, tonumber(takeoffElapsed) or -1, state.UnitName, tostring(inAir), displacement,
         state.MaxGroundDisplacement, speed, tostring(state.OptionApplied),
         missionStatus(state.Mission)
       ))
 
       if inAir then
-        state.AirborneDistance = displacement
-        local taxiExceeded = state.MaxGroundDisplacement > MAX_GROUND_DISPLACEMENT_METERS or
-          displacement > MAX_GROUND_DISPLACEMENT_METERS
-
-        if not state.OptionApplied then
-          finalize("FAIL", "FLIGHTGROUP_VERTICAL_OPTION_NOT_APPLIED")
-        elseif taxiExceeded then
-          finalize("FAIL", "GROUND_DISPLACEMENT_EXCEEDED_VERTICAL_TAKEOFF_THRESHOLD")
-        else
-          finalize("PASS_RUNTIME_TELEMETRY_PENDING_OWNER_VISUAL", "none")
-        end
+        acceptTakeoff("DCS_UNIT_IN_AIR_POLL")
         return
       end
     end
@@ -189,7 +244,13 @@ local function pollTakeoff()
     return
   end
 
-  if elapsed >= TAKEOFF_TIMEOUT_SECONDS then
+  if not state.FlightOnMissionObserved and
+     dispatchElapsed >= FLIGHT_ASSIGNMENT_TIMEOUT_SECONDS then
+    finalize("FAIL", "FLIGHT_ASSIGNMENT_TIMEOUT")
+    return
+  end
+
+  if takeoffElapsed and takeoffElapsed >= TAKEOFF_TIMEOUT_SECONDS then
     finalize("FAIL", "TAKEOFF_TIMEOUT")
     return
   end
@@ -272,7 +333,7 @@ local function startG8()
   attachMissionCallbacks(mission)
 
   state.Mission = mission
-  state.StartAbsTime = timer.getAbsTime()
+  state.DispatchStartAbsTime = timer.getAbsTime()
   installAirwingObserver(airwing)
 
   OMW.AirOps.TarinkotG8 = {
