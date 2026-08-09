@@ -22,8 +22,21 @@ if (-not (Test-Path -LiteralPath $g7Bundle -PathType Leaf)) { throw "G7 foundati
 $g7Text = Get-Content -LiteralPath $g7Bundle -Raw -Encoding UTF8
 $g8cText = Get-Content -LiteralPath $g8cSource -Raw -Encoding UTF8
 
-foreach ($pattern in @('TKOT-G7-AIRWING-FOUNDATION-4', 'SetOptionPreferVerticalLanding')) {
+foreach ($pattern in @(
+    'TKOT-G7-AIRWING-FOUNDATION-5',
+    'SetOptionPreferVerticalLanding',
+    'ClientTerminalIDs: 21,8,3',
+    'ParkingIDs = \{ 20, 19 \}',
+    'ParkingIDs = \{ 23, 27, 30 \}',
+    'ParkingIDs = \{ 32, 29, 10 \}'
+)) {
     if ($g7Text -notmatch $pattern) { throw "Required G7 foundation pattern missing: $pattern" }
+}
+foreach ($forbidden in @(
+    'ParkingIDs = \{ 21, 4 \}',
+    '\[20\] = "CLIENT_US_TKOT_AH64D_01"'
+)) {
+    if ($g7Text -match $forbidden) { throw "Forbidden historical G7 parking pattern present: $forbidden" }
 }
 foreach ($pattern in @('AUFTRAG\s*:\s*NewHOVER\s*\(', 'AUFTRAG\.Type\.HOVER', 'AddMissionCapability\s*\(\s*AUFTRAG\.Type\.HOVER', 'AddPayloadCapability\s*\(\s*payload\s*,\s*AUFTRAG\.Type\.HOVER', 'OnAfterFlightOnMission', 'PASS_RUNTIME_TELEMETRY_PENDING_OWNER_VISUAL', 'AH64_1', 'AH64_2', 'UH60_1', 'UH60_2', 'CH47_1', 'taxiInference=disabled')) {
     if ($g8cText -notmatch $pattern) { throw "Required G8C source pattern missing: $pattern" }
@@ -35,7 +48,7 @@ if ([regex]::Matches($g8cText, 'AUFTRAG\s*:\s*NewHOVER\s*\(').Count -ne 1) { thr
 if ([regex]::Matches($g8cText, 'airwing\s*:\s*AddMission\s*\(').Count -ne 1) { throw 'G8C must contain exactly one loop-based AIRWING:AddMission path.' }
 
 New-Item -ItemType Directory -Path $distDir -Force | Out-Null
-$builderVersion = 'TKOT-G8C-UNIFORM-ROTARY-HOVER-DISPATCH-1'
+$builderVersion = 'TKOT-G8C-UNIFORM-ROTARY-HOVER-DISPATCH-2'
 $commit = (& git -C $repoRoot rev-parse HEAD).Trim()
 $generatedUtc = [DateTime]::UtcNow.ToString('o')
 $header = @"
@@ -46,6 +59,7 @@ $header = @"
 -- GitCommit: $commit
 -- GeneratedUtc: $generatedUtc
 -- Runtime scope: five rotary groups, five HOVER missions, one AIRWING dispatch path.
+-- Parking scope: binding client/AI separation from OMW-AIR-TKOT-PARKING-LAYOUT.
 -- Acceptance: runtime telemetry plus mandatory owner visual confirmation.
 
 local OMW_TKOT_G8C_BUILD = {
@@ -64,7 +78,9 @@ Write-Host "Built: $outputFile"
 Write-Host "SHA256: $hash"
 Write-Host "GitCommit: $commit"
 Write-Host "BuilderVersion: $builderVersion"
-Write-Host 'EmbeddedFoundation: TKOT-G7-AIRWING-FOUNDATION-4'
+Write-Host 'EmbeddedFoundation: TKOT-G7-AIRWING-FOUNDATION-5'
+Write-Host 'ClientTerminalIDs: 21,8,3'
+Write-Host 'ParkingPools: AH64=20,19 UH60=23,27,30 CH47=32,29,10'
 Write-Host 'Gate: G8C_UNIFORM_ROTARY_HOVER_DISPATCH'
 Write-Host 'MissionType: AUFTRAG.Type.HOVER'
 Write-Host 'DispatchGroups: 5'
