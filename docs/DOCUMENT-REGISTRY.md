@@ -148,7 +148,7 @@ Eine Nummer und eine stabile `document_id` dürfen im aktuellen Bestand jeweils 
 | `OMW-EVIDENCE-INDEX` | `docs/evidence/README.md` | `BINDING` |
 | `OMW-EVIDENCE-SOURCE-INTAKE-AUDIT-2026-07-28` | `docs/evidence/source-intake-audit-2026-07-28.md` | `BINDING` |
 | `OMW-TEST-JBAD-AIR-OPS-INDEX` | `mission/tests/jalalabad-air-operations/README.md` | `BINDING` |
-| `OMW-AIR-TKOT-PARKING-LAYOUT` | `docs/tarinkot-air-operations-parking-layout.md` | `DRAFT`; aktueller Tarinkot-Client-/KI-Parkplatzvertrag auf Branch #53, nach Main-Integration als `BINDING` zu führen |
+| `OMW-AIR-TKOT-PARKING-LAYOUT` | `docs/tarinkot-air-operations-parking-layout.md` | `BINDING`; verbindlicher Tarinkot-Client-/KI-Parkplatzvertrag |
 | `OMW-TEST-TKOT-G8C-UNIFORM-ROTARY-HOVER-DISPATCH-ACCEPTANCE` | `mission/tests/tarinkot-air-operations/expected/g8c-uniform-rotary-hover-dispatch-acceptance.md` | `PLANNED`; G8C nativer einheitlicher Rotary-Hover-Test |
 
 ## 5. Legacy- und Evidenzregel

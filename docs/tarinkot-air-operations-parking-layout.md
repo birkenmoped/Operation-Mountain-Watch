@@ -1,11 +1,11 @@
 ---
 document_id: OMW-AIR-TKOT-PARKING-LAYOUT
-status: DRAFT
+status: BINDING
 document_class: AIR_OPERATIONS_PARKING_LAYOUT
 owning_policy: OMW-GOV-001
 authoritative_for:
-  - proposed Tarinkot client and AI helicopter parking separation on this branch
-  - required parking-layout input for future Tarinkot AIRWING, SQUADRON and G8C builds
+  - Tarinkot client and AI helicopter parking separation
+  - required parking-layout input for all future Tarinkot AIRWING, SQUADRON and G8C builds
 not_authoritative_for:
   - historical G6/G7 acceptance provenance
   - a changed Mission Editor layout
@@ -13,7 +13,7 @@ not_authoritative_for:
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 source_branch: agent/tarinkot-object-contract-reconciliation
-source_commit: PENDING_MERGE
+source_commit: 714705e261cd9a329752a2e4345dc6bcbde21c79
 validated_in_dcs: false
 supersedes: []
 superseded_by: []
@@ -25,7 +25,7 @@ superseded_by: []
 
 Dieser Vertrag hält die vom Projektinhaber am 9. August 2026 vorgegebene Trennung von Client- und KI-Helikopterpositionen fest. Er verhindert insbesondere, dass ein Client-Slot in einer AIRWING-/SQUADRON-Prüfung als KI-Pool oder als KI-Preflight-Gate verwendet wird.
 
-Auf diesem Draft-Branch ist der Vertrag eine dokumentierte Arbeitsvorgabe. Repository-weite Verbindlichkeit entsteht erst nach der Übernahme dieses Dokuments nach `main`.
+Dieser Vertrag ist auf `main` verbindlich. Abweichende frühere Branch- oder Testartefakte dürfen ihn nicht stillschweigend überschreiben.
 
 ## 2. Verbindliche Zuordnung
 
