@@ -9,7 +9,7 @@ authoritative_for:
   - accepted G6 parking mapping and controlled placement
   - accepted G7 AIRWING, SQUADRON and payload foundation
   - accepted G7 lifecycle and observer-client static guard
-  - current G8 parking block and completed MOOSE override research
+  - current owner-confirmed revised parking contract and G8 revalidation state
   - airport-level batching and failure-isolation boundary
 not_authoritative_for:
   - tactical AUFTRAG or vertical-departure acceptance
@@ -18,7 +18,7 @@ not_authoritative_for:
   - merge approval or Ready-for-Review approval
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
-source_branch: agent/tarinkot-object-contract-reconciliation
+source_branch: agent/tarinkot-revised-parking-layout
 source_commit: PENDING_MERGE
 validated_in_dcs: partial
 supersedes: []
@@ -44,22 +44,24 @@ G7_airwing_squadron_payload: PASS_DCS_WITH_TELEMETRY_FIELD_CORRECTION
 G7_lifecycle_guard_correction: PASS_STATIC_CI
 central_lifecycle_consolidation: PASS_MAIN
 Tarinkot_main_sync: PASS
-G8_static_implementation: PASS_STATIC_CI
+G8_previous_static_implementation: PASS_STATIC_CI
 G8_first_runtime_attempt: BLOCKED_MISSING_TARGET_ZONE
 G8_second_runtime_attempt: BLOCKED_MOOSE_WAREHOUSE_PARKING_OBSTACLE_CONFLICT
 G8_vertical_departure: NOT_PROVEN
 MOOSE_parking_override_research: COMPLETE
-next_action: OWNER_DECISION
+revised_ME_layout: OWNER_CONFIRMED
+revised_parking_lua: SOURCE_STATIC_VALIDATION_PASS_BUILDER_VALIDATION_PENDING
+next_action: BUILD_AND_STATIC_VALIDATE_REVISED_G8_BUNDLE
 G9_commander: BLOCKED_BY_G8
 G10_lifecycle_results_handoff: NOT_STARTED
 ```
 
-Bis zur Eigentümerentscheidung gilt:
+Die frühere Eigentümerentscheidungssperre für MIZ- und Parking-Pool-Änderungen ist
+durch die bestätigte ME-Änderung und den neuen Parkingvertrag aufgehoben. Weiterhin
+gilt:
 
 ```text
 kein DCS-Rerun
-keine MIZ-Mutation
-keine Änderung der Parking-Pools
 kein MOOSE-Override oder MOOSE-Quellpatch
 ```
 
@@ -70,7 +72,27 @@ Die vorgeschriebene MOOSE-Quellenrecherche ist abgeschlossen:
 
 Sie ergab keinen dokumentierten WAREHOUSE-Setter oder -Hook für die lokalen Scanwerte. Technische Overrides sind möglich, aber nicht autorisiert.
 
+Aktueller, vom Projektinhaber bestätigter Folge-Vertrag:
+
+```yaml
+client_terminal_ids:
+  AH64: [21, 8]       # C04-H, C05-H
+  CH47: [3]           # C07-H
+ai_parking_pools:
+  AH64: [20, 19]      # C01-H, C21-H
+  UH60: [23, 27, 30]  # C11-H, C12-H, C14-H
+  CH47: [32, 29, 10]  # C08-H, C09-H, C10-H
+```
+
+Siehe
+[`results/2026-08-09-owner-confirmed-revised-parking-layout-and-lua-contract.md`](results/2026-08-09-owner-confirmed-revised-parking-layout-and-lua-contract.md).
+Der Vertrag ist implementiert, aber noch nicht im DCS revalidiert.
+
 ## 2. Akzeptierte Basis
+
+Die folgenden G5–G7-Angaben sind historische Acceptance-Evidenz für die frühere
+Missionsgeometrie. Sie werden nicht rückwirkend auf den neuen Parkingvertrag
+umgeschrieben.
 
 ### G5
 

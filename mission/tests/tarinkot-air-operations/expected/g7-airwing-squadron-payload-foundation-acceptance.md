@@ -84,6 +84,25 @@ runtime_retest_required: false
 
 ## 3. Testziel
 
+Der nachfolgend dokumentierte G7-PASS bleibt historische Evidenz für die damalige
+Missionsgeometrie und die damaligen Parking-Pools. Für das vom Projektinhaber am
+9. August 2026 bestätigte neue Layout verwendet der aktuelle Builder v5 folgenden,
+noch in DCS zu revalidierenden Overlay-Vertrag:
+
+```yaml
+builder_version: TKOT-G7-AIRWING-FOUNDATION-5
+hard_client_exclusions: [21, 8, 3]
+parking_pools:
+  AH64: [20, 19]
+  UH60: [23, 27, 30]
+  CH47: [32, 29, 10]
+runtime_status: NOT_YET_REVALIDATED_IN_DCS
+```
+
+Die Änderung verwendet weiterhin ausschließlich `SQUADRON:SetParkingIDs()` und
+ändert weder den akzeptierten MOOSE-Lifecycle noch Bestände, Gruppierung oder
+Payload-Verträge.
+
 Der kombinierte Lauf musste den Tarinkot-Grundknoten ohne operativen Auftrag aufbauen und stabil betreiben:
 
 ```text

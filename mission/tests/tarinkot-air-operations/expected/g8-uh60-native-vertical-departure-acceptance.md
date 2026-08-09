@@ -14,7 +14,7 @@ not_authoritative_for:
   - merge or Ready-for-Review authorization
 scenario_period: 2010-08-01/2011-12-31
 project_phase: TARINKOT_G8_NATIVE_VERTICAL_DEPARTURE
-source_branch: agent/tarinkot-object-contract-reconciliation
+source_branch: agent/tarinkot-revised-parking-layout
 source_commit: PENDING_MERGE
 validated_in_dcs: false
 supersedes: []
@@ -43,14 +43,14 @@ G7 wird im selben Bundle als Struktur-, Lifecycle- und Objektvertragssmoke ausge
 ## 2. Provenienzvertrag
 
 ```yaml
-branch: agent/tarinkot-object-contract-reconciliation
+branch: agent/tarinkot-revised-parking-layout
 main_lifecycle_baseline: cf1b5ff138c6cb5e59e0070f7ba8aef4cfb3823a
 mission: OMW_Template_v6_Tarinkot.miz
 moose_release: 2.9.18
 moose_commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
 moose_sha256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
 builder: tools/build-tarinkot-air-operations-g8-uh60-vertical-dispatch.ps1
-builder_version: TKOT-G8-UH60-VERTICAL-DISPATCH-1
+builder_version: TKOT-G8-UH60-VERTICAL-DISPATCH-2
 bundle: mission/tests/tarinkot-air-operations/dist/OMW_AirOps_Tarinkot_G8_UH60_VerticalDispatch.lua
 ```
 
@@ -140,8 +140,8 @@ Tarinkot G8 builder guards
 Der G8-Builder muss ausgeben:
 
 ```text
-BuilderVersion: TKOT-G8-UH60-VERTICAL-DISPATCH-1
-EmbeddedFoundation: TKOT-G7-AIRWING-FOUNDATION-4
+BuilderVersion: TKOT-G8-UH60-VERTICAL-DISPATCH-2
+EmbeddedFoundation: TKOT-G7-AIRWING-FOUNDATION-5
 LifecycleGuard: PASS via G7 builder
 OperationalMissions: 1
 Commander: 0
@@ -168,10 +168,10 @@ keine F10-Mission und keinen zweiten Auftrag auslösen
 Zulässiger Beobachter:
 
 ```text
-TerminalID 20, 8 oder 3
+TerminalID 21, 8 oder 3
 ```
 
-Er muss als `detected`, `allowed` und `blocking` korrekt protokolliert werden. Für diesen Test ist insbesondere ein AH-64-Beobachter auf TerminalID 20 zulässig, da die UH-60-Pools ausschließlich `30,27,23` verwenden.
+Er muss als `detected`, `allowed` und `blocking` korrekt protokolliert werden. Die AH-64-Clients stehen nach der Eigentümeränderung auf TerminalID `21` (`C04-H`) und `8` (`C05-H`). TerminalID `20` (`C01-H`) ist Bestandteil des neuen KI-AH-64-Pools. Der UH-60-Pool verwendet ausschließlich `23,27,30`.
 
 ## 8. Erwarteter G7-Vorlauf
 

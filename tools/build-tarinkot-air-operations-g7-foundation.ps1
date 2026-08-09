@@ -201,6 +201,10 @@ $requiredPatterns = @(
     'observerClientsDetected=',
     'observerClientsAllowed=',
     'observerClientsBlocking=',
+    '\[21\]\s*=\s*"CLIENT_US_TKOT_AH64D_01"',
+    'ParkingIDs\s*=\s*\{\s*20,\s*19\s*\}',
+    'ParkingIDs\s*=\s*\{\s*23,\s*27,\s*30\s*\}',
+    'ParkingIDs\s*=\s*\{\s*32,\s*29,\s*10\s*\}',
     'verticalPolicySetBeforeStart=true',
     'commanderCreated=0',
     'auftragCreated=0',
@@ -246,7 +250,7 @@ if ($verticalIndex -ge $startIndex) {
 
 New-Item -ItemType Directory -Path $distDir -Force | Out-Null
 
-$builderVersion = 'TKOT-G7-AIRWING-FOUNDATION-4'
+$builderVersion = 'TKOT-G7-AIRWING-FOUNDATION-5'
 $commit = 'UNKNOWN'
 try {
     $commit = (& git -C $repoRoot rev-parse HEAD 2>$null).Trim()
@@ -262,7 +266,7 @@ $header = @"
 -- GitCommit: $commit
 -- GeneratedUtc: $generatedUtc
 -- Gate: G7_AIRWING_SQUADRON_PAYLOAD_FOUNDATION
--- Scope: one AIRWING, three SQUADRONs, G6-accepted parking pools,
+-- Scope: one AIRWING, three SQUADRONs, owner-confirmed revised parking pools,
 -- capabilities, role payloads and stable idle AIRWING start.
 -- Excluded: COMMANDER, AUFTRAG instances, OPSTRANSPORT, SPAWN, functional
 -- zones, tactical dispatch, return/recovery and lifecycle cleanup.
@@ -271,7 +275,7 @@ $header = @"
 -- Asset-link timing: warehouse stock is checked before AIRWING:Start();
 -- squadron.assets and inherited parkingIDs are checked after AIRWING start.
 -- Observer-client policy: detected, allowed and blocking counts remain separate.
--- A confirmed client on hard-excluded terminals 3, 8 or 20 is non-blocking for
+-- A confirmed client on hard-excluded terminals 3, 8 or 21 is non-blocking for
 -- this no-spawn foundation gate and is never hidden from final telemetry.
 
 local OMW_TKOT_G7_BUILD = {
@@ -332,7 +336,7 @@ Write-Host 'RegisteredGroups: 5'
 Write-Host 'RegisteredAircraft: 7'
 Write-Host 'RolePayloads: 3'
 Write-Host 'ExpectedTotalPayloadsIncludingRelocation: 6'
-Write-Host 'ParkingPools: AH64=21,4 UH60=30,27,23 CH47=32,29,10'
+Write-Host 'ParkingPools: AH64=20,19 UH60=23,27,30 CH47=32,29,10'
 Write-Host 'VerticalPolicy: AIRWING:SetOptionPreferVerticalLanding before AIRWING:Start'
 Write-Host 'AssetLinkingPolicy: warehouse stock pre-start; squadron.assets post-start'
 Write-Host 'OperationalMissions: 0'

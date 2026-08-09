@@ -1,8 +1,8 @@
 -- Operation Mountain Watch - Tarinkot G7 AIRWING/SQUADRON/payload foundation.
 --
 -- This is one combined airport-level acceptance bundle. It constructs the
--- Tarinkot AIRWING, registers all three SQUADRONs, applies the G6-accepted
--- parking pools, registers capabilities and payloads, enables the MOOSE
+-- Tarinkot AIRWING, registers all three SQUADRONs, applies the owner-confirmed
+-- revised parking pools, registers capabilities and payloads, enables the MOOSE
 -- vertical-helicopter policy before AIRWING start, and proves a stable idle
 -- node without creating any AUFTRAG, COMMANDER, OPSTRANSPORT or SPAWN object.
 
@@ -29,7 +29,7 @@ local EXPECTED = {
   ClientTerminalIDs = {
     [3] = "CLIENT_US_TKOT_CH47F_01",
     [8] = "CLIENT_US_TKOT_AH64D_02",
-    [20] = "CLIENT_US_TKOT_AH64D_01"
+    [21] = "CLIENT_US_TKOT_AH64D_01"
   },
   ClientUnits = {
     "CLIENT_US_TKOT_AH64D_01_UNIT_01",
@@ -67,7 +67,7 @@ local EXPECTED = {
       LogicalAircraft = 14,
       StaticAircraft = 8,
       ClientAircraft = 2,
-      ParkingIDs = { 21, 4 },
+      ParkingIDs = { 20, 19 },
       MissionTypeNames = { "CAS" }
     },
     {
@@ -81,7 +81,7 @@ local EXPECTED = {
       LogicalAircraft = 6,
       StaticAircraft = 4,
       ClientAircraft = 0,
-      ParkingIDs = { 30, 27, 23 },
+      ParkingIDs = { 23, 27, 30 },
       MissionTypeNames = {
         "TROOPTRANSPORT",
         "CARGOTRANSPORT",
@@ -592,8 +592,8 @@ local function constructFoundation()
     Squadrons = state.Squadrons,
     RolePayloads = state.RolePayloads,
     ParkingPools = {
-      AH64 = { 21, 4 },
-      UH60 = { 30, 27, 23 },
+      AH64 = { 20, 19 },
+      UH60 = { 23, 27, 30 },
       CH47 = { 32, 29, 10 }
     }
   }

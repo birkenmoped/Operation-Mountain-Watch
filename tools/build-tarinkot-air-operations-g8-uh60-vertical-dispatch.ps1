@@ -31,7 +31,7 @@ $g7Text = Get-Content -LiteralPath $g7Bundle -Raw -Encoding UTF8
 $g8Text = Get-Content -LiteralPath $g8Source -Raw -Encoding UTF8
 
 $requiredG7Patterns = @(
-    'TKOT-G7-AIRWING-FOUNDATION-4',
+    'TKOT-G7-AIRWING-FOUNDATION-5',
     'G7_AIRWING_SQUADRON_PAYLOAD_FOUNDATION',
     'observerClientsDetected=',
     'SQUADRON_STOCK_PRESTART',
@@ -97,7 +97,7 @@ if ($auftragConstructors -ne 1) {
 
 New-Item -ItemType Directory -Path $distDir -Force | Out-Null
 
-$builderVersion = 'TKOT-G8-UH60-VERTICAL-DISPATCH-1'
+$builderVersion = 'TKOT-G8-UH60-VERTICAL-DISPATCH-2'
 $commit = 'UNKNOWN'
 try {
     $commit = (& git -C $repoRoot rev-parse HEAD 2>$null).Trim()
@@ -142,7 +142,7 @@ if ($content -match 'activePlayerClientCount\s*=\s*function') {
 if ([regex]::Matches($content, 'airwing\s*:\s*AddMission\s*\(').Count -ne 1) {
     throw 'Generated G8 bundle does not contain exactly one operational mission path.'
 }
-if ($content -notmatch 'TKOT-G7-AIRWING-FOUNDATION-4') {
+if ($content -notmatch 'TKOT-G7-AIRWING-FOUNDATION-5') {
     throw 'Generated G8 bundle does not embed the corrected G7 foundation.'
 }
 
@@ -151,7 +151,7 @@ Write-Host "Built: $outputFile"
 Write-Host "SHA256: $hash"
 Write-Host "GitCommit: $commit"
 Write-Host "BuilderVersion: $builderVersion"
-Write-Host 'EmbeddedFoundation: TKOT-G7-AIRWING-FOUNDATION-4'
+Write-Host 'EmbeddedFoundation: TKOT-G7-AIRWING-FOUNDATION-5'
 Write-Host 'LifecycleGuard: PASS via G7 builder'
 Write-Host 'Gate: G8_UH60_NATIVE_VERTICAL_DEPARTURE'
 Write-Host 'MissionType: AUFTRAG.Type.LANDATCOORDINATE'
