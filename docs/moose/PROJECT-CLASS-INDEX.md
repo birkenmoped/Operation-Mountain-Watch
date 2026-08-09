@@ -58,7 +58,7 @@ Diese Klassenstatus sind keine Governance-Dokumentstatuswerte.
 | `COHORT` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | post-start `AddAsset()` setzt `squadname`, `legion`, `cohort` und `assets` |
 | `FLIGHTGROUP` | `SOURCE_REVIEWED` | `SetOptionPreferVertical()` und AIRWING-Weitergabepfad geprüft; tatsächlicher Tarinkot-Abflug offen |
 | `COMMANDER` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Salerno `New -> AddAirwing -> Start -> CanMission -> AddMission -> Status` bis AUFTRAG `started` |
-| `AUFTRAG` | `IN_USE_PARTIAL` | Capability-/Payloadzuordnung und Salerno CAS-Dispatch; vollständige taktische Ausführung offen |
+| `AUFTRAG` | `IN_USE_PARTIAL` | Capability-/Payloadzuordnung und Salerno CAS-Dispatch; G8C `NewHOVER()` source-reviewed, DCS-Acceptance offen |
 | `SCHEDULER` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | geordnete Konstruktion und verzögerte post-start Diagnose |
 | `GROUP`, `UNIT`, `STATIC`, `ZONE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Template-, Static-, Warehouse- und Zonenvalidierung |
 | `ARMYGROUP`, `BRIGADE`, `OPSGROUP` | `PLANNED` | Bodenoperations- und Bestandsmodell |
@@ -100,6 +100,7 @@ Ein Pre-Start-PASS über nichtleere `squadron.assets` ist unzulässig.
 - `AIRWING:SetOptionPreferVerticalLanding()` muss vor `AIRWING:Start()` gesetzt werden.
 - Der Quellpfad reicht die Option im nativen `FlightOnMission` an `FLIGHTGROUP:SetOptionPreferVertical()` weiter.
 - Tatsächlicher vertikaler Abflug bleibt ein eigener DCS-Acceptance-Punkt.
+- `AUFTRAG:NewHOVER()` sowie die öffentliche HOVER-Capability-Registrierung sind für G8C source-reviewed; sie sind bis zum DCS-Lauf nicht validiert.
 - `COMMANDER:AddAirwing()` startet den COMMANDER nicht.
 - Der akzeptierte Pfad enthält zwingend `COMMANDER:Start()` und den normalen Status-/Queuezyklus.
 

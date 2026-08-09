@@ -1,0 +1,82 @@
+name: Tarinkot G8C static validation
+
+on:
+  push:
+    branches:
+      - agent/tarinkot-object-contract-reconciliation
+    paths:
+      - 'mission/tests/tarinkot-air-operations/src/07-tarinkot-g7-airwing-squadron-payload-foundation.lua'
+      - 'mission/tests/tarinkot-air-operations/src/10-tarinkot-g8c-uniform-rotary-hover-dispatch.lua'
+      - 'mission/tests/tarinkot-air-operations/expected/g8c-uniform-rotary-hover-dispatch-acceptance.md'
+      - 'tools/build-tarinkot-air-operations-g7-foundation.ps1'
+      - 'tools/build-tarinkot-air-operations-g8c-uniform-rotary-hover-dispatch.ps1'
+      - 'tools/Test-AirOpsLifecycleGuards.ps1'
+      - '.github/workflows/tarinkot-g8c-static-validation.yml'
+  pull_request:
+    paths:
+      - 'mission/tests/tarinkot-air-operations/src/07-tarinkot-g7-airwing-squadron-payload-foundation.lua'
+      - 'mission/tests/tarinkot-air-operations/src/10-tarinkot-g8c-uniform-rotary-hover-dispatch.lua'
+      - 'mission/tests/tarinkot-air-operations/expected/g8c-uniform-rotary-hover-dispatch-acceptance.md'
+      - 'tools/build-tarinkot-air-operations-g7-foundation.ps1'
+      - 'tools/build-tarinkot-air-operations-g8c-uniform-rotary-hover-dispatch.ps1'
+      - 'tools/Test-AirOpsLifecycleGuards.ps1'
+      - '.github/workflows/tarinkot-g8c-static-validation.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-guard:
+    name: Build and guard G8C bundle
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build Tarinkot G8C bundle
+        shell: pwsh
+        run: ./tools/build-tarinkot-air-operations-g8c-uniform-rotary-hover-dispatch.ps1
+
+      - name: Verify generated uniform rotary dispatch contract
+        shell: pwsh
+        run: |
+          $bundle = 'mission/tests/tarinkot-air-operations/dist/OMW_AirOps_Tarinkot_G8C_UniformRotaryHoverDispatch.lua'
+          if (-not (Test-Path -LiteralPath $bundle -PathType Leaf)) { throw "Generated bundle not found: $bundle" }
+          $text = Get-Content -LiteralPath $bundle -Raw -Encoding UTF8
+          foreach ($marker in @(
+            'TKOT-G7-AIRWING-FOUNDATION-5',
+            'TKOT-G8C-UNIFORM-ROTARY-HOVER-DISPATCH-2',
+            '[21] = "CLIENT_US_TKOT_AH64D_01"',
+            'ParkingIDs = { 20, 19 }',
+            'ParkingIDs = { 23, 27, 30 }',
+            'ParkingIDs = { 32, 29, 10 }',
+            'AUFTRAG:NewHOVER',
+            'AH64_1',
+            'AH64_2',
+            'UH60_1',
+            'UH60_2',
+            'CH47_1',
+            'optionPreferVertical=',
+            'PASS_RUNTIME_TELEMETRY_PENDING_OWNER_VISUAL',
+            'taxiInference=disabled'
+          )) {
+            if (-not $text.Contains($marker)) { throw "Required generated marker missing: $marker" }
+          }
+          foreach ($marker in @(
+            'ParkingIDs = { 21, 4 }',
+            '[20] = "CLIENT_US_TKOT_AH64D_01"',
+            'AUFTRAG:NewCAS',
+            'AUFTRAG:NewLANDATCOORDINATE',
+            'COMMANDER:New(',
+            'OPSTRANSPORT:New(',
+            'SPAWN:',
+            'FLIGHTGROUP:New(',
+            'ZONE_RADIUS:New(',
+            'coalition.addGroup'
+          )) {
+            if ($text.Contains($marker)) { throw "Forbidden generated marker present: $marker" }
+          }
+          if ([regex]::Matches($text, 'airwing\s*:\s*AddMission\s*\(').Count -ne 1) { throw 'Expected exactly one AIRWING:AddMission path.' }
+
+      - name: Record generated bundle hash
+        shell: pwsh
+        run: Get-FileHash -Algorithm SHA256 -LiteralPath 'mission/tests/tarinkot-air-operations/dist/OMW_AirOps_Tarinkot_G8C_UniformRotaryHoverDispatch.lua' | Format-List Algorithm,Hash,Path
