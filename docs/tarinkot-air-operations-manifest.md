@@ -13,6 +13,7 @@ authoritative_for:
   - accepted G7 AIRWING, SQUADRON, capability and payload foundation
   - accepted Tarinkot G7 static lifecycle and observer-client guard
   - Tarinkot dependency on central AirOps lifecycle and test governance
+  - current Tarinkot client and AI parking-layout contract on this branch
 not_authoritative_for:
   - actual vertical departure
   - tactical AUFTRAG, COMMANDER or OPSTRANSPORT acceptance
@@ -39,7 +40,7 @@ g6_state: PASS_DCS_OWNER_VISUAL_ACCEPTED
 g7_state: PASS_DCS_WITH_TELEMETRY_FIELD_CORRECTION
 g7_static_guard_state: PASS_CI
 g8_state: HISTORICAL_G8_SINGLE_UH60_DISPATCH
-g8c_state: IMPLEMENTED_AWAITING_DCS
+g8c_state: BLOCKED_LAYOUT_CONTRACT_MISMATCH
 supersedes_on_merge:
   - Tarinkot object assumptions from docs/tarinkot-air-operations-baseline PR 40
   - Tarinkot Mission Editor assumptions based on OMW_Template(3).miz
@@ -222,21 +223,21 @@ warehouseUnitId: 1608
 warehouseWrapperCount: 1
 ```
 
-### 7.2 Clients
+### 7.2 Clients und KI-Parkplätze
 
-```text
-CLIENT_US_TKOT_AH64D_01
-Unit: CLIENT_US_TKOT_AH64D_01_UNIT_01
-C01-H / interner Parking-Wert "20" / Runtime-TerminalID 20
+Der aktuelle Arbeitsvertrag ist [`OMW-AIR-TKOT-PARKING-LAYOUT`](tarinkot-air-operations-parking-layout.md). Seine Trennung ist für jede künftige AIRWING-/SQUADRON-Quelle maßgeblich:
 
-CLIENT_US_TKOT_AH64D_02
-C05-H / interner Parking-Wert 8 / Runtime-TerminalID 8
-
-CLIENT_US_TKOT_CH47F_01
-C07-H / interner Parking-Wert 3 / Runtime-TerminalID 3
+```yaml
+clients:
+  AH64: [21, 8]       # C04-H, C05-H
+  CH47: [3]           # C07-H
+ai_parking:
+  AH64: [20, 19]      # C01-H, C21-H
+  UH60: [23, 27, 30]  # C11-H, C12-H, C14-H
+  CH47: [32, 29, 10]  # C08-H, C09-H, C10-H
 ```
 
-Der Stringwert `"20"` wird für Vergleiche numerisch normalisiert; die Mission wird nicht stillschweigend umgeschrieben.
+Die Client-IDs `21`, `8` und `3` sind hart aus KI-Pools und KI-Preflight-Prüfungen ausgeschlossen. Die in historischen G6/G7-Artefakten dokumentierte abweichende Zuordnung bleibt deren historische Evidenz und wird nicht nachträglich umgedeutet.
 
 ### 7.3 KI-Seeds
 
@@ -275,10 +276,10 @@ missing_statics: 0
 ### 8.1 Client-Ausschlüsse
 
 ```yaml
-client_terminal_ids: [3, 8, 20]
+client_terminal_ids: [21, 8, 3]
 ```
 
-Diese Positionen dürfen nicht in einen KI-Pool aufgenommen werden.
+Diese Positionen dürfen nicht in einen KI-Pool aufgenommen werden. Die vollständige Zuordnung steht in [`OMW-AIR-TKOT-PARKING-LAYOUT`](tarinkot-air-operations-parking-layout.md).
 
 ### 8.2 Mapping
 
@@ -306,19 +307,19 @@ FAIL_VISUAL_WRONG_APRON
 
 Diese Positionen sind keine akzeptierte Tarinkot-Hubschrauberplatte.
 
-### 8.4 Akzeptierte Pools
+### 8.4 Historische und aktuelle Pools
+
+Der historische G6B-Platzierungsnachweis verwendete `AH64: [21, 4]`. Er bleibt als exakter DCS-Nachweis unverändert, ist aber kein aktueller KI-Parking-Vertrag.
+
+Der aktuelle Arbeitsvertrag lautet:
 
 ```yaml
-AH64:
-  mission_editor_labels: [C04-H, C18-H]
-  terminal_ids: [21, 4]
-UH60:
-  mission_editor_labels: [C14-H, C12-H, C11-H]
-  terminal_ids: [30, 27, 23]
-CH47:
-  mission_editor_labels: [C08-H, C09-H, C10-H]
-  terminal_ids: [32, 29, 10]
+AH64: [20, 19]
+UH60: [23, 27, 30]
+CH47: [32, 29, 10]
 ```
+
+Die zugehörigen Mission-Editor-Labels und Client-Ausschlüsse sind ausschließlich in [`OMW-AIR-TKOT-PARKING-LAYOUT`](tarinkot-air-operations-parking-layout.md) festgelegt.
 
 Finaler G6B-Lauf:
 
@@ -491,17 +492,19 @@ Safe Parking: On
 Prefer Vertical: On before Start
 ```
 
-### 11.2 SQUADRONs, Capabilities und Parking
+### 11.2 Zielkonfiguration nach Layoutangleichung
+
+Die folgenden ParkingIDs sind die Sollwerte des aktuellen Parkplatzvertrags. Sie sind keine rückwirkende Änderung des historischen G7-Acceptance-Artefakts. Vor einem neuen G8C-Build muss die verwendete G7-Quelle separat auf diese Werte angeglichen und statisch geprüft werden.
 
 ```yaml
 AH64:
   squadron: SQ_US_TKOT_AH64D_3_101_AVN
   capabilities: [CAS]
-  parking_ids: [21, 4]
+  parking_ids: [20, 19]
 UH60:
   squadron: SQ_US_TKOT_UH60_TF_ATTACK
   capabilities: [TROOPTRANSPORT, CARGOTRANSPORT, LANDATCOORDINATE, GROUNDESCORT]
-  parking_ids: [30, 27, 23]
+  parking_ids: [23, 27, 30]
 CH47:
   squadron: SQ_US_TKOT_CH47_B_1_52_AVN
   capabilities: [TROOPTRANSPORT, CARGOTRANSPORT, LANDATCOORDINATE]
@@ -540,17 +543,17 @@ deliberateSpawns=0
 
 Der akzeptierte Builder v3 protokollierte im Endmarker fälschlich `activePlayerClients=0`, nachdem der gleiche Lauf zuvor einen Client erkannt hatte. Dieses einzelne Feld ist verworfen. Die korrekte Semantik lautet `detected=1`, `allowed=1`, `blocking=0`.
 
-### 11.4 Observer-Client
+### 11.4 Observer-Client nach Layoutangleichung
 
-Zulässig war:
+Zulässig ist:
 
 ```text
 CLIENT_US_TKOT_AH64D_01_UNIT_01
-TerminalID 20
+TerminalID 21
 Player Neues Rufz.
 ```
 
-TerminalID 20 ist hart aus sämtlichen KI-Pools ausgeschlossen. G7 erzeugt keine Flugbewegung. Künftige Tests dürfen den tatsächlichen Detektionswert nicht auf null maskieren.
+Die Client-TerminalIDs `21`, `8` und `3` sind hart aus sämtlichen KI-Pools ausgeschlossen. G7 erzeugt keine Flugbewegung. Künftige Tests dürfen den tatsächlichen Detektionswert nicht auf null maskieren.
 
 ## 12. Akzeptierter statischer Folgestand
 
@@ -601,9 +604,13 @@ Die statische Prüfung bestand. Diese Harnesskorrektur benötigt keinen erneuten
 | G9 COMMANDER | `BLOCKED_BY_G8` | nicht begonnen |
 | G10 Lifecycle/Handoff | `NOT_STARTED` | nicht begonnen |
 
-## 14. G8C – nächster gebündelter Runtime-Test
+## 14. G8C – Layoutangleichung vor erneutem Runtime-Test
 
-G8C verwendet die unveränderte G7-Foundation und den bereits gesetzten nativen Vertikalpfad. Alle fünf Gruppen erhalten den selben öffentlichen `AUFTRAG:NewHOVER()`-Typ. Die HOVER-Capability wird ausschließlich per `SQUADRON:AddMissionCapability()` und `AIRWING:AddPayloadCapability()` für die Testlaufzeit ergänzt.
+G8C verwendet die G7-Foundation und den bereits gesetzten nativen Vertikalpfad. Alle fünf Gruppen erhalten den selben öffentlichen `AUFTRAG:NewHOVER()`-Typ. Die HOVER-Capability wird ausschließlich per `SQUADRON:AddMissionCapability()` und `AIRWING:AddPayloadCapability()` für die Testlaufzeit ergänzt.
+
+Vor dem Dispatch muss die eingebettete Foundation den aktuellen [`Parking-Vertrag`](tarinkot-air-operations-parking-layout.md) ausgeben. Ein Bundle mit `AH64: [21, 4]` oder Client-Ausschluss `20` ist `BLOCKED_LAYOUT_CONTRACT_MISMATCH` und darf nicht als G8C-Vertikalstarttest verwendet werden.
+
+Der dokumentierte Lauf vom 9. August 2026 ist genau an dieser Vorbedingung gescheitert; siehe [`OMW-TEST-TKOT-G8C-BLOCKED-LAYOUT-CONTRACT-MISMATCH-2026-08-09`](../mission/tests/tarinkot-air-operations/results/2026-08-09-g8c-blocked-layout-contract-mismatch.md). Er liefert keinen Vertikalstartbefund.
 
 G8C behauptet keine Lösung vor dem DCS-Lauf. Ein Runtime-PASS verlangt fünf Zuweisungen, fünf beobachtete Abhebungen, sieben Runtime-Einheiten und die Option auf jeder realen FLIGHTGROUP; die Sichtabnahme entscheidet allein über keinen Taxiway-/Runway-Einsatz.
 

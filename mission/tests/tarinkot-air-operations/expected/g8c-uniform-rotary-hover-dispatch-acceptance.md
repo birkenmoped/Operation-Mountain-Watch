@@ -48,6 +48,8 @@ Die lokale MOOSE-Dokumentation und der gepinnte Quellcode wurden geprüft. Offiz
 
 ## Runtime-Vertrag
 
+- Die eingebettete G7-Foundation muss den aktuellen [`Tarinkot-Parkplatzvertrag`](../../../../docs/tarinkot-air-operations-parking-layout.md) exakt abbilden: Client-Ausschluss `21,8,3`; KI-Pools `AH64=20,19`, `UH60=23,27,30`, `CH47=32,29,10`.
+- Ein Preflight mit `AH64=21,4` oder Client-Ausschluss `20` endet zwingend als `BLOCKED_LAYOUT_CONTRACT_MISMATCH`. Er ist kein G8C-Runtime- oder Vertikalstartbefund.
 - G7 muss `PASS` melden und der AIRWING muss laufen.
 - `OptionPreferVerticalLanding=true` muss vor dem Dispatch vorhanden sein.
 - Jede Mission besitzt `AUFTRAG.Type.HOVER`, genau eine SQUADRON und genau einen erforderlichen Payload.
@@ -67,6 +69,8 @@ Er wird erst durch die Sichtabnahme ergänzt: alle fünf Gruppen heben jeweils v
 
 ```yaml
 implementation: IMPLEMENTED_AWAITING_DCS
-runtime: NOT_TESTED
+runtime: BLOCKED_LAYOUT_CONTRACT_MISMATCH
 owner_visual_acceptance: NOT_TESTED
 ```
+
+Der blockierte Lauf vom 9. August 2026 ist in [`2026-08-09-g8c-blocked-layout-contract-mismatch.md`](../results/2026-08-09-g8c-blocked-layout-contract-mismatch.md) dokumentiert. Er ersetzt keinen Lauf mit dem aktuellen Parkplatzvertrag.

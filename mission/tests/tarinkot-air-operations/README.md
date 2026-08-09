@@ -48,12 +48,14 @@ G8_static_implementation: PASS_STATIC_CI
 G8_first_runtime_attempt: BLOCKED_MISSING_TARGET_ZONE
 G8_second_runtime_attempt: BLOCKED_MOOSE_WAREHOUSE_PARKING_OBSTACLE_CONFLICT
 G8_vertical_departure: NOT_PROVEN
-G8C_uniform_rotary_hover_dispatch: IMPLEMENTED_AWAITING_DCS
+G8C_uniform_rotary_hover_dispatch: BLOCKED_LAYOUT_CONTRACT_MISMATCH
 MOOSE_parking_override_research: COMPLETE
-next_action: BUILD_AND_ONE_BUNDLED_G8C_DCS_RUN
+next_action: ALIGN_G7_TO_CURRENT_PARKING_LAYOUT_THEN_BUILD_AND_ONE_BUNDLED_G8C_DCS_RUN
 G9_commander: BLOCKED_BY_G8
 G10_lifecycle_results_handoff: NOT_STARTED
 ```
+
+Vor dem nächsten Build gilt zusätzlich der aktuelle [`Tarinkot-Parkplatzvertrag`](../../../docs/tarinkot-air-operations-parking-layout.md). Bis die eingebettete G7-Quelle diesen Vertrag abbildet, lautet der G8C-Status `BLOCKED_LAYOUT_CONTRACT_MISMATCH`; ein DCS-Lauf ist dann nicht zulässig. Der vorangegangene blockierte Lauf ist in [`2026-08-09-g8c-blocked-layout-contract-mismatch.md`](results/2026-08-09-g8c-blocked-layout-contract-mismatch.md) festgehalten.
 
 Bis zur Eigentümerentscheidung gilt:
 
@@ -87,13 +89,19 @@ Namensduplikate: 0
 Mutationen: 0
 ```
 
-Hard Client Exclusions:
+Aktueller Client-/KI-Parkplatzvertrag:
 
-```text
-TerminalID 3
-TerminalID 8
-TerminalID 20
+```yaml
+clients:
+  AH64: [21, 8]       # C04-H, C05-H
+  CH47: [3]           # C07-H
+ai_parking:
+  AH64: [20, 19]      # C01-H, C21-H
+  UH60: [23, 27, 30]  # C11-H, C12-H, C14-H
+  CH47: [32, 29, 10]  # C08-H, C09-H, C10-H
 ```
+
+Die Client-IDs `21`, `8` und `3` sind harte KI-Ausschlüsse. Sie dürfen nie als KI-Pool, KI-Payload oder KI-Preflight-Position erscheinen.
 
 ### G6
 
@@ -134,7 +142,7 @@ spawnCalls=7
 expectedTerminalType=HelicopterOnly
 ```
 
-Akzeptierte operative Pools:
+Historischer G6B-Platzierungsnachweis (kein aktueller KI-Parking-Vertrag):
 
 ```yaml
 AH64:
@@ -149,6 +157,8 @@ CH47:
 ```
 
 G6B ist ausschließlich der Parking-/Platzierungsnachweis. Raw-SPAWN-, direkte UNIT- und standalone-FLIGHTGROUP-Abflugexperimente sind kein Bestandteil des akzeptierten Produktionspfads.
+
+Der aktuelle Arbeitsvertrag ersetzt diese Werte für künftige AIRWING-/SQUADRON-/G8C-Builds. Seine DCS-Laufzeitwirkung ist noch nicht akzeptiert.
 
 ## 3. G7 – akzeptierter Foundation-Lauf
 
