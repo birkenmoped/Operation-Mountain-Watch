@@ -6,6 +6,7 @@ owning_policy: OMW-GOV-001
 authoritative_for:
   - Jalalabad foundation-only bundle cleanup on agent/jalalabad-airops-foundation-cleanup
   - removal of Phase-1 F10 mission-control/test-dispatch logic from the rebuilt Jalalabad bundle
+  - runtime correction of the Jalalabad generic UH-60 Mission Editor seed
 not_authoritative_for:
   - new tactical AUFTRAG acceptance
   - OPSTRANSPORT acceptance
@@ -13,7 +14,7 @@ not_authoritative_for:
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 source_branch: agent/jalalabad-airops-foundation-cleanup
-source_commit: PENDING_MERGE
+source_commit: be924be87d261c5b840910c5f75cd29e879bc387
 validated_in_dcs: false
 supersedes: []
 superseded_by: []
@@ -121,11 +122,36 @@ mission/tests/jalalabad-air-operations/dist/OMW_AirOps_Jalalabad.lua
 
 Der Builder besitzt einen statischen Guard gegen die entfernten F10-/Phase-1-/Dispatch-Muster.
 
-## 6. Noch erforderliche Verifikation
+## 6. Erster DCS-Lauf des Foundation-Bundles
 
-Vor Übernahme des neuen Bundles in die Missionsdatei müssen lokal mindestens Builder und SHA-256 ausgeführt werden. Danach ist im Mission Editor das `DO SCRIPT FILE`-Artefakt durch das neu erzeugte Bundle zu ersetzen und die `.miz` neu zu speichern.
+Der erste Lauf des neuen Foundation-Bundles war **kein PASS**. Der Log zeigte nach erfolgreicher Registrierung der OH-58D- und AH-64D-SQUADRONs:
 
-Ein DCS-Runtime-Test muss anschließend mindestens bestätigen:
+```text
+[OMW][AirOps.JBAD.Foundation] ERROR ... Missing Mission Editor template: TPL_AIR_US_JBAD_UH60_MEDEVAC_LEAD_1SHIP
+```
+
+Root Cause: Die erste Foundation-Fassung hatte die historischen physischen UH-60 Lead-/Cover-Template-Namen wieder eingeführt. Die tatsächlich validierte Jalalabad-Mission verwendet jedoch seit der UH-60-Konsolidierung einen gemeinsamen physischen Seed:
+
+```text
+TPL_AIR_US_JBAD_UH60_MEDEVAC_1SHIP
+```
+
+Beide logischen MOOSE-Payloadrollen werden aus diesem Seed erzeugt. Das entspricht der zuvor dokumentierten und in DCS bestätigten Jalalabad-Konsolidierung.
+
+Korrektur:
+
+```text
+bf179dda70d32ad0da3b4f465b8b5793e71f6e11
+Use generic Jalalabad UH-60 template seed
+```
+
+Das verbindliche Jalalabad-Manifest wurde auf denselben physischen Vier-Template-Stand abgeglichen.
+
+## 7. Noch erforderliche Verifikation
+
+Nach der Korrektur muss der Bundle lokal neu gebaut, im Mission Editor erneut über `DO SCRIPT FILE` zugewiesen, gespeichert und in DCS erneut gestartet werden.
+
+Der Wiederholungslauf muss mindestens bestätigen:
 
 ```text
 AIRWING running
