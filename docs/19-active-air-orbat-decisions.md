@@ -19,7 +19,7 @@ supersedes:
 source_branch: agent/tarinkot-object-contract-reconciliation
 validated_in_dcs: false
 document_class: PROJECT_DECISION
-source_commit: PENDING_MERGE
+source_commit: 4ce9b9297f8c473ee2a789f14d187fb667d37647
 superseded_by:
 ---
 

@@ -10,12 +10,12 @@ not_authoritative_for:
   - merge approval
   - runtime acceptance beyond the cited pull-request evidence
 scenario_period: 2010-08-01/2011-12-31
-project_phase: TARINKOT_MOOSE_SOURCE_REVIEW_COMPLETE
+project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
   - incomplete open-branch list in the documentation index
 superseded_by:
-source_branch: agent/tarinkot-object-contract-reconciliation
-source_commit: PENDING_MERGE
+source_branch: agent/reconcile-main-documentation-phase1
+source_commit: 801b88b58bd2fc799535edd2e80fc463bc4c4dc9
 validated_in_dcs: false
 ---
 
@@ -23,7 +23,7 @@ validated_in_dcs: false
 
 ## 1. Zweck
 
-Dieses Register bildet offene Pull Requests, ihre Abhängigkeiten, Dokumentationspfade und Acceptance-Grenzen ab. Es ersetzt keine Mergefreigabe. Jeder PR bleibt Draft, solange der Projektinhaber keine andere Entscheidung trifft.
+Dieses Register bildet offene Pull Requests, ihre Abhängigkeiten, Dokumentationspfade und Acceptance-Grenzen ab. Es ersetzt keine Mergefreigabe. Draft-, Ready- und Merge-Status werden aus GitHub übernommen; eine Änderung zu Ready for Review oder ein Merge benötigt weiterhin die ausdrückliche Freigabe des Projektinhabers.
 
 ## 2. Aktuelle offene Unterprojekte
 
@@ -47,10 +47,17 @@ Dieses Register bildet offene Pull Requests, ihre Abhängigkeiten, Dokumentation
 | 18 | `feature/jalalabad-air-operations-diagnostics` | `main` | Jalalabad Air Operations | `mission/tests/jalalabad-air-operations/`, Dokumente 22–25 branchlokal | `DRAFT` | `ACCEPTED_TECHNICAL_BASELINE` nur für exakt dokumentierten Stand | 24 | technische Air-Ops-Baseline; nicht gemergt |
 | 22 | `feature/tm01m-moose-native-baseline` | PR 8 | TM01M MOOSE-native Convoys | `mission/tests/tm01-blue-convoy/` | `DRAFT` | Ein- und Fünf-Convoy-PASS; Cleanup-Follow-up offen | offen | bevorzugte MOOSE-native Convoy-Richtung |
 | 24 | `docs/bagram-air-operations-manifest` | PR 18 | Bagram/Kandahar Dokumentation | branchlokale Dokumente 31–36 | `DRAFT` | Dokumentationsabgleich; keine neue DCS-Acceptance | offen | Foundation-Build-Dokumentation |
-| 33 | `agent/complete-documentation-authority-migration` | `main` | Governance-, Status- und Indexmigration | `docs/`, ausgewählte Test-READMEs, Validator | `DRAFT` | Dokumentationsvalidator erfolgreich; keine Runtime-Acceptance | offen | Ziel dieses Registers |
-| 38 | `docs/afghanistan-force-aviation-source-consolidation` | `main` | Konsolidierung Afghanistan-Kräfte, Basen, Aviation, Air C2, Koalitions-ORBAT, RED-Commander-Strategie, ostafghanische Netzwerkoperationen, Campaign Assessment und nichtstaatliche Sicherheitsakteure | Dokumente 50–59; Dokumente 05/09/11/13/18/29/37/45/49; Register, Index, Quellenaufnahme-Audit und externe Quellenakten | `DRAFT`; quellenqualifizierte historische, Air-C2-, RED-Verhaltens- und Assessment-Referenzen | Dokumentationsvalidator erfolgreich auf Head `a3f520e0f15b3ada720e0e81da3f31d478025dd9`, Workflow-Run 104; keine DCS-/MOOSE-Runtime-Acceptance | 40 | Forschungs-, Missionsdesign- und Datenmodellgrundlage; aktive ORBAT bleibt Dokument 19; genau ein RED Commander bleibt verbindliche Grundversion |
-| 40 | `docs/tarinkot-air-operations-baseline` | PR 38 | älterer Tarinkot-Dokumentationsstand auf Basis `OMW_Template(3).miz` | Tarinkot-Manifest, ME-Audit, Satellitenevidenz und Registeränderungen | `HISTORICAL_SUPERSEDED_DRAFT`; weiterhin offen und Draft | keine Runtime-Acceptance; Objektannahmen teilweise veraltet | 53 | nicht mehr als aktive Tarinkot-Source-of-Truth verwenden |
-| 53 | `agent/tarinkot-object-contract-reconciliation` | `main` | aktueller Tarinkot-Objektvertrag, ORBAT-, Evidenz-, FARP- und MOOSE-Konsolidierung | `docs/tarinkot-air-operations-manifest.md`, zentrale Register und Tarinkot-Evidenz | `DRAFT`; kein Merge und kein Ready for Review autorisiert | G0/G1 `PASS_BRANCH`; G2 `OWNER_ACCEPTED_BRANCH`; G3 `PARTIAL`; G4 `PASS_SOURCE_REVIEW`; G5 autorisiert, noch nicht begonnen | G5 read-only diagnostics | aktuelle Tarinkot-Source-of-Truth auf Branch; noch keine Tarinkot-Runtime-Aktivierung |
+| 34 | `agent/document-mq1-mq9-afghanistan` | `main` | MQ-1B-/MQ-9-Einsatzreferenz | `docs/50-mq1-mq9-afghanistan-employment.md`, Register | `DRAFT`; Dokumentnummer 50 kollidiert mit dem aktuellen `main`-Bestand | Dokumentation; keine DCS-Acceptance | offen | vor Integration fachlich prüfen, rebasen und neu nummerieren |
+| 36 | `agent/document-salerno-air-operations` | `main` | frühere Salerno-Air-Ops-Baseline | branchlokale Dokumente 51–53 und Evidenz | `DRAFT`; durch Dokument 81 und den Merge von PR #51 fachlich abgelöst | keine neue Runtime-Acceptance | PR 51 (gemergt) und PR 52 | historischer Vorgänger; nicht als aktuelle Salerno-Baseline integrieren |
+| 37 | `agent/document-ato-asr-aar-buddy-lasing` | `main` | ATO, ASR, Tanker und Buddy Lasing | Dokumente 29, 45 und branchlokale Dokumente 54–56 | `DRAFT`; Nummern und Inhalte überlappen den heutigen `main`-Bestand | Dokumentation; keine DCS-Acceptance | offen | vor selektiver Integration fachlich vergleichen und neu nummerieren |
+| 39 | `docs/haqqani-network-reference` | `main` | Haqqani-Network-Referenz | `docs/insurgency/haqqani-network.md`, Register und Indizes | `DRAFT`; inhaltliche Überlappung mit späteren RED-/Netzwerkdokumenten auf `main` | Dokumentation; keine Runtime-Acceptance | offen | nur nach Dubletten- und Autoritätsprüfung integrieren |
+| 40 | `docs/tarinkot-air-operations-baseline` | `docs/afghanistan-force-aviation-source-consolidation` / PR #38, inzwischen gemergt | Tarinkot-ME- und Air-Ops-Baseline | Tarinkot-Manifest und Evidenz | `DRAFT`; technischer Vorgänger von PR #53 | struktureller ME-Nachweis; keine vollständige Runtime-Acceptance | 53 | nicht unabhängig von PR #53 weiterführen |
+| 41 | `agent/document-shindand-air-operations` | `docs/afghanistan-force-aviation-source-consolidation` / PR #38, inzwischen gemergt | Shindand-Air-Ops-Baseline | Shindand-Manifest, Handoff und Evidenz | `DRAFT`; Basisbranch wurde gemergt, Branch muss vor Integration neu abgeglichen werden | Mission-Editor-Struktur branchgebunden; Runtime nicht gelaufen | offen | offene Shindand-Foundation-Baseline |
+| 45 | `agent/document-ch47-pool-allocation` | `main` | CH-47-Verteilung Bagram/Salerno/Shank | branchlokales Dokument 54 und Evidenz | `DRAFT`; Dokumentnummer 54 kollidiert mit dem aktuellen `main`-Bestand | Dokumentation; keine Runtime-Acceptance | offen | Bestandsentscheidung vor Integration abgleichen und neu nummerieren |
+| 49 | `agent/next-airport-airwing-squadron-handoff` | `main` | frühere Auswahlübergabe für den nächsten Air-Ops-Knoten | Handoff und README | `DRAFT`; Auswahlstand durch nachfolgende Salerno- und Tarinkot-Arbeit überholt | keine Runtime-Acceptance | 51, 52 und 53 | historisches Handoff; keine aktuelle Arbeitsanweisung |
+| 50 | `docs/bagram-air-operations-manifest` | `main` | Sammelintegration des alten Air-Ops-Branches | 150 Dateien aus Bagram, Jalalabad und Kandahar | offen, nicht Draft; stark überholt und mit `main` kollidierend | gemischte branchgebundene Nachweise; keine pauschale `main`-Acceptance | selektive spätere Main-Merges | nicht als Ganzes integrieren; nur datei- und autoritätsbezogen auswerten |
+| 52 | `agent/salerno-read-only-diagnostics` | `docs/bagram-air-operations-manifest` | Salerno AIRWING/SQUADRON und COMMANDER-Runtime | `mission/tests/salerno-air-operations/`, Builder und technische Evidenz | `DRAFT`; kanonische Salerno-Dokumentation wurde über PR #51 nach `main` übernommen | `ACCEPTED_TECHNICAL_BASELINE` für den exakt dokumentierten Stage-18-Stand; Parking-Zuweisung nicht akzeptiert | offen | technische Salerno-Fixtures und Runtime-Historie |
+| 53 | `agent/tarinkot-object-contract-reconciliation` | `main` | Tarinkot-Objektvertrag und nativer G8-Dispatch | `mission/tests/tarinkot-air-operations/` und zugehörige Evidenz | `DRAFT`; Remote-Head `6aa12144` bleibt am dokumentierten G8-Parking-Block eingefroren | G7 branchgebunden akzeptiert; G8 durch WAREHOUSE-Parking blockiert; vertikaler Abflug nicht belegt | offen | aktueller Tarinkot-Technikzweig; kein Override, MIZ-Lauf oder Merge ohne Eigentümerfreigabe |
 
 ## 3. Stackstruktur
 
@@ -61,9 +68,17 @@ main
 │   └── PR 22
 ├── PR 17
 ├── PR 18 → PR 24
-├── PR 33
-├── PR 38 → PR 40 [SUPERSEDED]
-└── PR 53 [CURRENT TARINKOT DRAFT]
+│           ├── PR 50
+│           └── PR 52
+├── PR 34
+├── PR 36
+├── PR 37
+├── PR 39
+├── PR 40
+├── PR 41
+├── PR 45
+├── PR 49
+└── PR 53
 ```
 
 ## 4. Verbindliche Regeln
@@ -71,21 +86,18 @@ main
 1. Ein branchgebundener PASS gilt nur für den dokumentierten Branch-, Commit-, Missions-, DCS- und MOOSE-Stand.
 2. Gestapelte Nachfolger erben das Änderungs- und Verwerfungsrisiko des Parent-Branches.
 3. Ein offener Draft-PR ist keine `main`-Autorität.
-4. `HISTORICAL_TEST_FIXTURE` und `HISTORICAL_SUPERSEDED_DRAFT` dürfen nicht als Produktionsarchitektur oder aktive Objekt-Source-of-Truth verwendet werden.
+4. `HISTORICAL_TEST_FIXTURE` darf nicht als Produktionsarchitektur verwendet werden.
 5. Merge und „Ready for Review“ benötigen weiterhin die ausdrückliche Freigabe des Projektinhabers.
 6. Dieses Register wird bei Öffnen, Schließen, Retargeting, Neubau oder Ablösung eines dokumentationsrelevanten PR aktualisiert.
-7. Für Tarinkot ersetzt PR #53 fachlich PR #40; eine formale Schließung oder ein Merge erfolgt nur auf ausdrückliche Eigentümerfreigabe.
 
-## 5. Synchronisierungsnachweis PR #33
+## 5. Registerabgleich vom 5. August 2026
 
 ```yaml
-base_branch: main
-integrated_main_commit: 56fb6b99cf06d699167dfd17a8c2abf626d7da13
-synchronization_pr: 35
-synchronization_merge_commit: 41d10ee4c866bace086b34263de31912c37000bb
-behind_main_at_sync: 0
-ready_for_review: false
-merged_to_main: false
+main_commit: cf1b5ff138c6cb5e59e0070f7ba8aef4cfb3823a
+open_pull_requests: 29
+pr_33: MERGED
+pr_38: MERGED
+source: GitHub pull-request state
 ```
 
-PR #35 war ein technischer Reverse-PR von `main` in den PR-#33-Branch. Er veränderte `main` nicht und begründet keine Mergefreigabe für PR #33.
+Die 29 offenen PRs sind in Abschnitt 2 vollständig erfasst. Ein offener Zustand bedeutet weder aktuelle fachliche Autorität noch Integrationsreife; die Spalten Governance-Status, Acceptance-Status und Produktionsrelevanz bleiben maßgeblich.

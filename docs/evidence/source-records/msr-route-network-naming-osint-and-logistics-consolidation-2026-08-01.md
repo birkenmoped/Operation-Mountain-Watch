@@ -16,7 +16,7 @@ project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
 superseded_by:
 source_branch: main
-source_commit: PENDING_CURRENT_COMMIT
+source_commit: 6112e37853f2da11daea90c1e01745eb07ba2fa6
 validated_in_dcs: false
 ---
 

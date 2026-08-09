@@ -14,7 +14,7 @@ supersedes:
   - vertical-prototype-only spatial sequencing
 superseded_by:
 source_branch: agent/complete-documentation-authority-migration
-source_commit:
+source_commit: 666ef7a4a6fad52cc1aaecc7d0953e4d112dc8ff
 validated_in_dcs: false
 ---
 

@@ -21,7 +21,7 @@ supersedes:
   - mandatory multi-faction RED architecture from the initial version of this document
 superseded_by:
 source_branch: docs/afghanistan-force-aviation-source-consolidation
-source_commit: PENDING_MERGE
+source_commit: d096ebd2f1c2107b3959c13f95b826754268dfb0
 validated_in_dcs: false
 ---
 

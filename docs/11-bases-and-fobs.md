@@ -13,8 +13,8 @@ project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
   - vertical-prototype-only base sequence
 superseded_by:
-source_branch: agent/tarinkot-object-contract-reconciliation
-source_commit: PENDING_MERGE
+source_branch: agent/complete-documentation-authority-migration
+source_commit: 6ba400be6ae0748aeb8722ad53669b7bc2ae9f13
 validated_in_dcs: false
 ---
 
@@ -158,24 +158,7 @@ Vorgeschobener Aviation- und Zabul-Knoten:
 
 ### Tarinkot / Tarin Kowt
 
-Vorgeschobener, multinational genutzter Army-Aviation- und FARP-Knoten aus dem RC-South-/Kandahar-Regionalverbund.
-
-Für die aktive OMW-Arbeitsbaseline März bis Dezember 2011 sind belegt beziehungsweise entschieden:
-
-- Task Force Attack / 3-101 Attack Aviation als lokaler Aviation-Knoten;
-- Task Force Thunder / 159th Combat Aviation Brigade als übergeordneter Parent;
-- AH-64 Apache, UH-60 Black Hawk und CH-47 Chinook am Standort innerhalb des OMW-Zeitraums;
-- B Company, 1-52 Aviation Regiment als lokales CH-47D-Detachment;
-- eine operative UH-60-Komponente unter Task Force Attack, deren administrative Company weiterhin offen bleibt;
-- ein im September 2011 dokumentierter Forward Arming and Refueling Point mit Hot Refueling und Rapid Turnaround;
-- Camp Holland, Camp Russell und Camp Cole als historisch qualifizierte Teilbereiche des größeren Tarin-Kowt-Komplexes, ohne daraus ungeprüfte Mission-Editor-Grenzen abzuleiten.
-
-Der Standort wird als `LONG_TERM_DETACHMENT` mit zusätzlicher `FARP`-Funktion geführt. Aktive Bestände und SQUADRONs stehen ausschließlich in Dokument 19. Der aktuelle Objektvertrag und die G2-Abnahmeliste stehen in:
-
-- [`OMW-AIR-TKOT-MANIFEST`](tarinkot-air-operations-manifest.md)
-- [`OMW-DECISION-TARINKOT-G2-OBJECT-CONTRACT-2026-08-03`](evidence/tarinkot-g2-object-contract-acceptance-checklist-2026-08-03.md)
-
-Tarinkot-Bestände sind vom RC-South-/Kandahar-Parent-Pool abzuziehen und dürfen nicht doppelt gezählt werden.
+Vorgeschobener Detachment-Standort aus dem Kandahar-Regionalpool. CH-47-Platoon-Präsenz ist 2011 belegt. Andere lokale Luftfahrzeugmuster und exakte Bestände benötigen basisbezogene Quellen und Manifestentscheidungen.
 
 ### Shindand Air Base
 
@@ -196,7 +179,7 @@ FOBs, COPs und Checkpoints besitzen begrenzte Ressourcen, Fähigkeiten und Zufah
 | FOB Shank | `LONG_TERM_DETACHMENT` | kleiner CH-47-Standort | Dokument 50, S05 |
 | FOB Sharana | `ROTATIONAL_DETACHMENT` | CH-47-/Army-Aviation-Knoten | Dokument 50, S05 |
 | FOB Wolverine | `LONG_TERM_DETACHMENT` | OH-58D, später CH-47, Wartung | Dokument 50, S05/S14/S15 |
-| Tarinkot | `LONG_TERM_DETACHMENT` + `FARP` | TF Attack / 3-101, AH-64/UH-60/CH-47, B/1-52 CH-47D-Detachment und Hot-Refuel-Knoten | Dokument 64; Tarinkot-Evidenz und Objektvertrag in PR #53 |
+| Tarinkot | `LONG_TERM_DETACHMENT` | CH-47-Platoon aus Kandahar-Pool | Dokument 50, S05 |
 | Camp Wright | `FARP` | 3-17 CAV Refuel/Rearm | Dokument 50 |
 | FOB Wilson | `FARP` | 2-17 CAV Refuel/Rearm | Dokument 50, S13 |
 | COP Sayed Abad | `MISSION_STAGING` | Talon-Purge-PZ/Aufnahmeraum | Dokument 50, S05 |

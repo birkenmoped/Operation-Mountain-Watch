@@ -13,8 +13,8 @@ project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
   - registry that listed Document 22 only as a branch reservation
 superseded_by:
-source_branch: agent/consolidate-air-ops-lifecycle-governance
-source_commit: PENDING_MERGE
+source_branch: agent/reconcile-main-documentation-phase1
+source_commit: 801b88b58bd2fc799535edd2e80fc463bc4c4dc9
 validated_in_dcs: false
 ---
 
@@ -56,6 +56,7 @@ Eine Nummer und eine stabile `document_id` dürfen im aktuellen Bestand jeweils 
 | 28 | `OMW-C2-TAD-COLOR-NETS` | `docs/28-afghanistan-tad-color-nets.md` | `BINDING` | Quellenbasierter Datensatz |
 | 29 | `OMW-AAR-ISAF-ACO` | `docs/29-isaf-2009-2013-air-to-air-refueling.md` | `BINDING` | AAR-/ACO-Referenz |
 | 30 | `OMW-AAR-PART2-FIGURE` | `docs/30-isaf-2009-2013-aar-part2-figure-reference.md` | `BINDING` | Abbildungsreferenz |
+| 31 | `OMW-AIR-BAGRAM-MANIFEST` | `docs/31-bagram-air-operations-manifest.md` | `BINDING` | historische Bagram-Fighter-Evidenz und aktive Fighter-ORBAT |
 | 37 | `OMW-ARCH-CAMPAIGN-DYNAMIC-MISSION` | `docs/37-campaign-architecture-and-dynamic-mission-design.md` | `BINDING` | Kampagnenarchitektur |
 | 38 | `OMW-ME-MASTER-WORKLIST` | `docs/38-mission-editor-master-worklist.md` | `BINDING` | ME-Masterarbeitsliste |
 | 39 | `OMW-REVIEW-TM01-TM02-MOOSE-FIRST` | `docs/39-tm01-tm02-moose-first-code-review.md` | `DRAFT` | Code Review |
@@ -79,7 +80,7 @@ Eine Nummer und eine stabile `document_id` dürfen im aktuellen Bestand jeweils 
 | 57 | `OMW-RED-KANDAHAR-HELMAND-ENEMY-SYSTEM` | `docs/57-kandahar-helmand-enemy-system-and-red-commander-strategy.md` | `BINDING` | Kandahar-/Helmand-Enemy-System |
 | 58 | `OMW-RED-EASTERN-AFGHANISTAN-NETWORK-OPERATIONS` | `docs/58-eastern-afghanistan-network-operations-and-complex-attack-model.md` | `BINDING` | ostafghanisches Netzwerk- und Complex-Attack-Modell |
 | 59 | `OMW-COIN-ASSESSMENT-TRANSITIONS-NONSTATE-SECURITY` | `docs/59-campaign-assessment-operational-transitions-and-nonstate-security.md` | `BINDING` | Campaign Assessment und nichtstaatliche Sicherheitsakteure |
-| 60 | `OMW-HIST-AFGHANISTAN-AIR-WARS-2009-2011` | `docs/60-afghan-air-wars-2009-2011-airpower-operations-reference.md` | `BINDING` | Airpower-, ORBAT-, ISR- und CSAR-Referenz |
+| 60 | `OMW-HIST-AFGHAN-AIR-WARS-2009-2011` | `docs/60-afghan-air-wars-2009-2011-airpower-operations-reference.md` | `BINDING` | Airpower-, ORBAT-, ISR- und CSAR-Referenz |
 | 61 | `OMW-COIN-GOVERNANCE-STRATEGY-TRANSITION` | `docs/61-coin-governance-strategy-and-afghan-led-transition.md` | `BINDING` | COIN-, Governance- und Transition-Referenz |
 | 62 | `OMW-RED-CONTROL-INTELLIGENCE-TTP-COIN-IPB` | `docs/62-insurgent-control-intelligence-ttp-and-coin-ipb.md` | `BINDING` | RED-Kontrolle, Intelligence, TTP und COIN-IPB |
 | 63 | `OMW-BLUE-NTMA-SFA-ATN-STRATCOM-LOCAL-INFLUENCE` | `docs/63-ntma-sfa-attack-the-network-stratcom-and-local-influence.md` | `BINDING` | NTM-A, SFA, AtN, StratCom und Einflussnetzwerke |
@@ -110,7 +111,8 @@ Eine Nummer und eine stabile `document_id` dürfen im aktuellen Bestand jeweils 
 | 18 | 23–25 | nur Draft-PR #18; branchgebundene Air-Ops-Dokumente |
 | 18 | 22 | branchlokale Altversion; durch die kanonische `main`-Fassung von Dokument 22 ersetzt |
 | 18 | 27 | branchlokale Kollision; vor Integration zwingend neu nummerieren |
-| 24 | 31–36 | nur Draft-PR #24; Bagram/Kandahar |
+| 24 | 31 | branchlokale ältere Fassung; die reduzierte `main`-Fassung von Dokument 31 ist autoritativ |
+| 24 | 32–36 | nur Draft-PR #24; Bagram/Kandahar; vor Integration gegen den aktuellen `main`-Bestand und Nummernkollisionen prüfen |
 
 ## 4. Nicht nummerierte aktuelle Dokumente
 
@@ -128,6 +130,7 @@ Eine Nummer und eine stabile `document_id` dürfen im aktuellen Bestand jeweils 
 | `OMW-MOOSE-CLASS-INDEX` | `docs/moose/PROJECT-CLASS-INDEX.md` | `BINDING` |
 | `OMW-MOOSE-VERIFIED-METHODS` | `docs/moose/VERIFIED-METHODS.md` | `BINDING` |
 | `OMW-MOOSE-AIRWING-SQUADRON-WAREHOUSE-LIFECYCLE` | `docs/moose/AIRWING-SQUADRON-WAREHOUSE-LIFECYCLE.md` | `BINDING`; Lifecycle- und Testgrenzen |
+| `OMW-MOOSE-WAREHOUSE-PARKING-OVERRIDE-RESEARCH` | `docs/moose/WAREHOUSE-PARKING-OVERRIDE-RESEARCH.md` | `BINDING`; WAREHOUSE-Parking-Scanwerte, APIs und Override-Grenzen |
 | `OMW-MOOSE-FOG-OF-WAR-RECCE` | `docs/moose/FOG-OF-WAR-RECCE.md` | `PLANNED` |
 | `OMW-TEST-GOVERNANCE` | `mission/tests/GOVERNANCE.md` | `BINDING`; Missions- und Runtime-Testregeln |
 | `OMW-CSAR-INDEX` | `docs/csar/README.md` | `BINDING` |
@@ -138,8 +141,8 @@ Eine Nummer und eine stabile `document_id` dürfen im aktuellen Bestand jeweils 
 | `OMW-WX-DATASET-DOCUMENTATION` | `docs/data/weather/README.md` | `BINDING` |
 | `OMW-TARGETING-AFGHANISTAN-NSL-DATA-USE` | `docs/targeting/afghanistan-nsl-data-use-policy.md` | `BINDING` |
 | `OMW-TARGETING-AFGHANISTAN-NSL-LEGACY-PATH` | `docs/targeting/afghanistan-no-strike-list.md` | `SUPERSEDED` |
-| `OMW-ADR-0001-USE-MOOSE` | `docs/adr/0001-use-moose.md` | `SUPERSEDED` |
-| `OMW-ADR-0002-USE-MOOSE-CTLD-CSAR` | `docs/adr/0002-use-moose-ctld-and-csar.md` | `SUPERSEDED` |
+| `OMW-ADR-0001-MOOSE-PRIMARY` | `docs/adr/0001-use-moose.md` | `SUPERSEDED` |
+| `OMW-ADR-0002-MOOSE-CTLD-CSAR` | `docs/adr/0002-use-moose-ctld-and-csar.md` | `SUPERSEDED` |
 | `OMW-ADR-0003-ME-GROUP-TEMPLATES` | `docs/adr/0003-use-mission-editor-group-templates.md` | `BINDING` |
 | `OMW-ADR-0004-LOCATION-REGISTRY` | `docs/adr/0004-use-explicit-location-registry.md` | `BINDING` |
 | `OMW-EVIDENCE-INDEX` | `docs/evidence/README.md` | `BINDING` |

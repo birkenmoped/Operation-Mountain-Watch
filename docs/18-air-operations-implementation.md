@@ -12,7 +12,7 @@ supersedes:
   - pre-governance air-operations implementation document with four-client limit
 superseded_by:
 source_branch: agent/resolve-document-number-collisions
-source_commit:
+source_commit: b9247ea7400dfa0d508536bb8ee10cb222ee5892
 validated_in_dcs: false
 document_class: AIR_OPERATIONS_ARCHITECTURE
 ---

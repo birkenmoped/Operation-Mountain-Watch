@@ -11,7 +11,7 @@ supersedes:
   - vertical prototype as current implementation sequence
 superseded_by:
 source_branch: agent/resolve-document-number-collisions
-source_commit:
+source_commit: 666ef7a4a6fad52cc1aaecc7d0953e4d112dc8ff
 validated_in_dcs: false
 document_class: SYSTEM_ARCHITECTURE
 ---

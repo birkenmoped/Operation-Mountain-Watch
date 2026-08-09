@@ -4,8 +4,10 @@ on:
   pull_request:
     paths:
       - "README.md"
+      - "AGENTS.md"
       - "docs/**"
-      - "mission/tests/**/README.md"
+      - "mission/tests/*.md"
+      - "mission/tests/**/*.md"
       - "tools/validate_documentation.py"
       - ".github/workflows/documentation-validation.yml"
   push:
@@ -13,8 +15,10 @@ on:
       - main
     paths:
       - "README.md"
+      - "AGENTS.md"
       - "docs/**"
-      - "mission/tests/**/README.md"
+      - "mission/tests/*.md"
+      - "mission/tests/**/*.md"
       - "tools/validate_documentation.py"
       - ".github/workflows/documentation-validation.yml"
 
@@ -36,7 +40,11 @@ jobs:
         shell: bash
         run: |
           set +e
-          python tools/validate_documentation.py . > documentation-validation.txt 2>&1
+          validator_args=()
+          if [[ "$GITHUB_EVENT_NAME" == "push" && "$GITHUB_REF_NAME" == "main" ]]; then
+            validator_args+=(--main)
+          fi
+          python tools/validate_documentation.py "${validator_args[@]}" . > documentation-validation.txt 2>&1
           result=$?
           cat documentation-validation.txt
           echo "exit_code=$result" >> "$GITHUB_OUTPUT"
@@ -52,9 +60,17 @@ jobs:
         if: always()
         shell: bash
         run: |
+          {
+            printf '%s\n' \
+              README.md \
+              AGENTS.md \
+              tools/validate_documentation.py \
+              .github/workflows/documentation-validation.yml
+            find docs -type f -print
+            find mission/tests -type f -name '*.md' -print
+          } > documentation-files.txt
           tar --exclude=.git -czf documentation-snapshot.tar.gz \
-            README.md docs tools .github/workflows/documentation-validation.yml \
-            mission/tests/jalalabad-air-operations/README.md
+            --files-from=documentation-files.txt
       - name: Upload checked-out documentation snapshot
         if: always()
         uses: actions/upload-artifact@v4

@@ -2,12 +2,17 @@
 document_id: OMW-STAB-PRT-INTERAGENCY-DISTRICT-FRAMEWORK
 status: BINDING
 document_class: SOURCE_CRITICAL_OPERATIONAL_DESIGN_REFERENCE
+owning_policy: OMW-GOV-001
 authoritative_for:
   - PRT and interagency mission-design abstractions
   - district stability continuum and effect modeling
   - governance-development-security interaction
 scenario_period: 2010-08-01/2011-12-31
+project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
+supersedes:
+superseded_by:
 source_branch: docs/stability-layeha-route-clearance-cerp-sigacts
+source_commit: 5f431efb3d5717a89b274c29ded0fb4943feaa26
 validated_in_dcs: false
 ---
 

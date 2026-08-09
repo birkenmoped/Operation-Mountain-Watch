@@ -2,11 +2,16 @@
 document_id: OMW-STAB-CERP-REGIONAL-PROJECTS-2009-2010
 status: BINDING
 document_class: SOURCE_CRITICAL_HISTORICAL_DATA_REFERENCE
+owning_policy: OMW-GOV-001
 authoritative_for:
   - CERP project-volume baseline by Regional Command and province
   - 2009-07-31 to 2010-08-01 development activity context
 scenario_period: 2010-08-01/2011-12-31
+project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
+supersedes:
+superseded_by:
 source_branch: docs/stability-layeha-route-clearance-cerp-sigacts
+source_commit: a6e40cdbea78d5a9f7d7dfa7c9b6aa6709fe03cd
 validated_in_dcs: false
 ---
 

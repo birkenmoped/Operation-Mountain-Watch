@@ -13,7 +13,7 @@ supersedes:
   - class index without consolidated AIRWING lifecycle evidence
 superseded_by:
 source_branch: agent/consolidate-air-ops-lifecycle-governance
-source_commit: PENDING_MERGE
+source_commit: 801b88b58bd2fc799535edd2e80fc463bc4c4dc9
 validated_in_dcs: partial
 ---
 
@@ -51,10 +51,10 @@ Diese Klassenstatus sind keine Governance-Dokumentstatuswerte.
 
 | Klasse | Projektstatus | Geltungsgrenze |
 |---|---|---|
-| `AIRBASE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Auflösung, ID, Parkingdump und airfield-spezifische Kalibrierung; tatsächliche Unitplatzierung separat |
+| `AIRBASE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Auflösung, ID, Parkingdump und airfield-spezifische Kalibrierung; `FindFreeParkingSpotForAircraft()` mit konfigurierbaren Scanparametern source-reviewed, aber nicht in WAREHOUSE verdrahtet |
 | `AIRWING` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Konstruktion, Stockregistrierung, Grundstart und Idle-Foundation; Vertikaloption nur Konfiguration/Quellpfad bis G8 |
 | `SQUADRON` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Konstruktion, `Ngroups`, Gruppierung, Capabilities, Payloads und post-start Assetbindung |
-| `WAREHOUSE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | AirOps-Stockregistrierung und post-start Zuordnung; strategische Logistik und Persistenz offen |
+| `WAREHOUSE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | AirOps-Stockregistrierung und post-start Zuordnung; `_FindParkingForAssets()` source-reviewed mit nicht konfigurierbaren lokalen Scanwerten; strategische Logistik und Persistenz offen |
 | `COHORT` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | post-start `AddAsset()` setzt `squadname`, `legion`, `cohort` und `assets` |
 | `FLIGHTGROUP` | `SOURCE_REVIEWED` | `SetOptionPreferVertical()` und AIRWING-Weitergabepfad geprüft; tatsächlicher Tarinkot-Abflug offen |
 | `COMMANDER` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Salerno `New -> AddAirwing -> Start -> CanMission -> AddMission -> Status` bis AUFTRAG `started` |
@@ -120,3 +120,24 @@ Ein Klassenstatus wird nur angehoben, wenn:
 - Mission, OMW-Commit und relevante Hashes dokumentiert sind;
 - beobachtetes Verhalten und Einschränkungen festgehalten sind;
 - der Nachweis im Methodenregister oder Acceptance-Bericht verlinkt ist.
+
+## 8. WAREHOUSE-Parking-Grenze
+
+Die vollständige Recherche steht in:
+
+- [`OMW-MOOSE-WAREHOUSE-PARKING-OVERRIDE-RESEARCH`](WAREHOUSE-PARKING-OVERRIDE-RESEARCH.md)
+
+Für den gepinnten MOOSE-Stand gilt:
+
+```text
+AIRBASE:FindFreeParkingSpotForAircraft(...)
+  -> öffentliche, parametrierbare Parking-API
+
+WAREHOUSE:_FindParkingForAssets(...)
+  -> separate interne Implementierung
+  -> scanradius/scanunits/scanstatics/scanscenery lokal festgelegt
+  -> verysafe lokal, aber unbenutzt
+  -> kein dokumentierter Setter oder Hook
+```
+
+Ein Runtime-Override bleibt `INTERNAL_RESTRICTED` und benötigt vor Entwurf oder Einsatz eine ausdrückliche Eigentümerfreigabe.

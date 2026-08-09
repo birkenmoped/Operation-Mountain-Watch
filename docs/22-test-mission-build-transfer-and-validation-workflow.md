@@ -20,7 +20,7 @@ supersedes:
   - dead main references to a non-existent docs/22-test-mission-build-transfer-and-validation-workflow.md
 superseded_by:
 source_branch: agent/consolidate-air-ops-lifecycle-governance
-source_commit: PENDING_MERGE
+source_commit: 0b07bae20c35f5c05214e48f5c96d69a028cf2a8
 validated_in_dcs: false
 ---
 

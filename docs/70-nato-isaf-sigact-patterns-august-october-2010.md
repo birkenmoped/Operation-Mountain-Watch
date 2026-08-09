@@ -2,11 +2,16 @@
 document_id: OMW-RED-SIGACT-PATTERNS-2010-08-10
 status: BINDING
 document_class: SOURCE_CRITICAL_HISTORICAL_INCIDENT_REFERENCE
+owning_policy: OMW-GOV-001
 authoritative_for:
   - weekly SIGACT pattern context from 2010-08-29 to 2010-10-24
   - regional threat and incident mission-design baselines
 scenario_period: 2010-08-01/2011-12-31
+project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
+supersedes:
+superseded_by:
 source_branch: docs/stability-layeha-route-clearance-cerp-sigacts
+source_commit: fe0d51b03bd625a4238243c1b8e135e7cad9e248
 validated_in_dcs: false
 ---
 

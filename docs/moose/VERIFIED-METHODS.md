@@ -8,6 +8,7 @@ authoritative_for:
   - AIRWING, SQUADRON and WAREHOUSE lifecycle evidence
   - vertical-helicopter option evidence and limitations
   - COMMANDER start and selection sequence
+  - source-reviewed WAREHOUSE parking method boundaries
   - documented validation scope and limitations
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
@@ -15,7 +16,7 @@ supersedes:
   - method register without lifecycle timing, vertical-option and COMMANDER details
 superseded_by:
 source_branch: agent/consolidate-air-ops-lifecycle-governance
-source_commit: PENDING_MERGE
+source_commit: 801b88b58bd2fc799535edd2e80fc463bc4c4dc9
 validated_in_dcs: partial
 ---
 
@@ -53,6 +54,7 @@ Bei einem anderen `Moose.lua`-Hash ist die Methoden- und Lifecycle-Prüfung zu w
 | `GetName()` / `GetID()` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Identitätsprüfung |
 | `GetParkingSpotsTable()` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Parkingdump und ME-/TerminalID-Kalibrierung |
 | `SetParkingSpotBlacklist()` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | dokumentierte Referenzknoten; tatsächliche Unitplatzierung bleibt separat |
+| `FindFreeParkingSpotForAircraft(group, terminaltype, scanradius, scanunits, scanstatics, scanscenery, verysafe, nspots, parkingdata)` | `SOURCE_REVIEWED` | öffentliche parametrierbare Freiparkroutine; wird von `WAREHOUSE:_FindParkingForAssets()` nicht verwendet |
 
 ## 4. SQUADRON und AIRWING-Lifecycle
 
@@ -118,16 +120,34 @@ Die post-start SQUADRON-Bindung erfolgt über den WAREHOUSE-/LEGION-Pfad und `CO
 | `AIRWING:New()` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Konstruktion mit Warehouse-Anker |
 | `SetAirbase()` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | explizite Airbase-Bindung |
 | `SetTakeoffCold()` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Konfigurationszustand; tatsächlicher Kaltstart separat |
-| `SetSafeParkingOn()` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Konfigurationszustand; tatsächliche Platzierung separat |
+| `SetSafeParkingOn()` | `SOURCE_REVIEWED` | setzt im gepinnten `Warehouse.lua` nur `self.safeparking`; das Feld wird im WAREHOUSE-Pfad nicht gelesen und ändert die Parking-Suche nicht |
 | `AddSquadron()` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Cohort-, Stock- und Relocation-Payload-Registrierung |
 | `NewPayload()` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Rollen-Payloadregistrierung |
 | `GetSquadron()` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | SQUADRON-Auflösung nach Registrierung |
 | `GetOpsGroups()` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Idle-Knoten ohne Runtime-OPSGROUPs |
 | `Start()` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Grundstart und post-start Assetbindung |
 
-## 5. Helikopter-Vertikaloption
+## 5. WAREHOUSE-Parking
 
-### 5.1 `AIRWING:SetOptionPreferVerticalLanding()`
+Vollständiger Quellenbericht:
+
+- [`OMW-MOOSE-WAREHOUSE-PARKING-OVERRIDE-RESEARCH`](WAREHOUSE-PARKING-OVERRIDE-RESEARCH.md)
+
+| Methode/Feld | Status | Belegter Umfang |
+|---|---|---|
+| `WAREHOUSE:_FindParkingForAssets(airbase, assets)` | `SOURCE_REVIEWED` | interne Asset-Parkplatzsuche; kein dokumentierter Hook; lokale Werte `25/true/true/false`; `verysafe=false` lokal, aber unbenutzt |
+| `WAREHOUSE:SetSafeParkingOn/Off()` | `SOURCE_REVIEWED` | schreibt nur `self.safeparking`; im gepinnten und geprüften aktuellen `Warehouse.lua` existiert kein Leser dieses Feldes |
+| `WAREHOUSE:SetAllowSpawnOnClientParking()` | `SOURCE_REVIEWED` | entfernt Client-Templatekoordinaten aus der Hindernisliste; ändert Static-Scan und Überlappungsprüfung nicht; für Tarinkot fachlich gesperrt |
+| `WAREHOUSE:SetParkingIDs()` | `SOURCE_REVIEWED` | begrenzt Warehouse-Kandidaten; ändert Scanparameter und Überlappungsprüfung nicht |
+| `asset.parkingIDs` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | post-start an SQUADRON-Assets gebunden; umgeht Terminal-/BW-Filter, aber nicht Hindernis-/Überlappungsprüfung |
+
+Die offizielle AIRBASE-Methode mit denselben fünf Parametern ist kein indirekter WAREHOUSE-Setter. Ein Ersatz von `_FindParkingForAssets()` bleibt ein interner Runtime-Override und ist nicht autorisiert.
+
+Dieser Abschnitt ist ein Source-Nachweis, kein DCS-Verhaltensnachweis. Der konkrete Tarinkot-Blocker ist noch nicht durch ausgegebenen Hindernisnamen bestätigt.
+
+## 6. Helikopter-Vertikaloption
+
+### 6.1 `AIRWING:SetOptionPreferVerticalLanding()`
 
 Status: `VALIDATED_CONFIGURATION_AND_SOURCE_PATH`
 
@@ -138,7 +158,7 @@ Belegt:
 - Tarinkot G7 setzte sie vor `AIRWING:Start()`;
 - der Idle-Foundation-Test bestätigte nur den Konfigurationszustand, nicht den Abflug.
 
-### 5.2 Weitergabe im nativen Dispatch
+### 6.2 Weitergabe im nativen Dispatch
 
 Der geprüfte AIRWING-Quellpfad übergibt bei `FlightOnMission`:
 
@@ -172,9 +192,9 @@ Nicht belegt:
 
 Diese Punkte gehören in den isolierten nativen G8-AIRWING-/AUFTRAG-Dispatch.
 
-## 6. COMMANDER
+## 7. COMMANDER
 
-### 6.1 Verbindliche Sequenz
+### 7.1 Verbindliche Sequenz
 
 Status: `VALIDATED_FOR_DOCUMENTED_SCOPE` durch Salerno Stage 18.
 
@@ -187,7 +207,7 @@ commander:AddMission(mission)
 commander:Status()
 ```
 
-### 6.2 Methodenwirkung
+### 7.2 Methodenwirkung
 
 | Methode | Status | Belegter Umfang |
 |---|---|---|
@@ -211,13 +231,13 @@ COMMANDER OnDuty
 
 `COMMANDER:AddAirwing()` ohne `COMMANDER:Start()` ist kein gültiger Dispatchaufbau.
 
-## 7. Wrapper und Hilfsklassen
+## 8. Wrapper und Hilfsklassen
 
 - `GROUP`, `UNIT`, `STATIC` und `ZONE`: `VALIDATED_FOR_DOCUMENTED_SCOPE` für Objekt- und Templateprüfung;
 - `_DATABASE`: `INTERNAL_RESTRICTED`, nur Diagnose und Templateprüfung;
 - `SCHEDULER`: `VALIDATED_FOR_DOCUMENTED_SCOPE` für geordnete verzögerte Post-Start-Inspektion.
 
-## 8. Tarinkot G7 – akzeptierter Nachweis
+## 9. Tarinkot G7 – akzeptierter Nachweis
 
 ```text
 Testdatum: 2026-08-04
@@ -243,7 +263,7 @@ Graveyard: empty
 
 Der Endmarker `activePlayerClients=0` ist für diesen Lauf kein gültiger Detektionswert, weil der Harness den Rückgabewert nach protokollierter Erkennung auf null überschrieb. Die Rohmarker `ACTIVE_PLAYER_CLIENT_COUNT=1` bleiben maßgeblich. Künftige Tests müssen `detected`, `allowed` und `blocking` getrennt ausgeben.
 
-## 9. Nicht durch G7 belegt
+## 10. Nicht durch G7 belegt
 
 - nativer AUFTRAG-Dispatch in Tarinkot;
 - tatsächlicher vertikaler Helikopterabflug;
@@ -254,7 +274,7 @@ Der Endmarker `activePlayerClients=0` ist für diesen Lauf kein gültiger Detekt
 - COMMANDER-Auswahl für Tarinkot;
 - Multiplayer- oder Endurance-Acceptance.
 
-## 10. Neue Einträge
+## 11. Neue Einträge
 
 Jeder neue Methodeneintrag enthält:
 

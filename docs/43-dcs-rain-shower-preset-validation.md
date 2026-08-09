@@ -15,7 +15,7 @@ supersedes:
   - unsupported ACCEPTED_TECHNICAL_BASELINE classification
 superseded_by:
 source_branch: agent/complete-documentation-authority-migration
-source_commit: PENDING_MERGE
+source_commit: 666ef7a4a6fad52cc1aaecc7d0953e4d112dc8ff
 validated_in_dcs: partial
 validation_status: VISUALLY_CONFIRMED_WORKING_PROFILE
 ---

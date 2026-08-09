@@ -15,7 +15,7 @@ supersedes:
   - unclassified MOOSE air-operations reference
 superseded_by:
 source_branch: agent/complete-documentation-authority-migration
-source_commit:
+source_commit: 801b88b58bd2fc799535edd2e80fc463bc4c4dc9
 validated_in_dcs: partial
 ---
 
@@ -46,12 +46,14 @@ Aktive ORBAT und Clientgrenzen stehen ausschließlich in Dokument 19. Technische
 - DCS-Flugplatz als MOOSE-Wrapper identifizieren;
 - Name und ID versionsbezogen bestätigen;
 - absichtlich blockierte Parkpositionen aus dem operativen Pool ausschließen.
+- Die öffentliche Methode `FindFreeParkingSpotForAircraft()` besitzt konfigurierbare Scanparameter, ist aber nicht der von WAREHOUSE/AIRWING verwendete Auswahlpfad.
 
 ### AIRWING
 
 - lokaler operativer Ressourcen- und Einsatzmanager;
 - Airbase- und Warehouse-Anbindung;
 - Squadrons, Payloads, Parking und Auftragsausführung.
+- Die geerbte WAREHOUSE-Parkplatzsuche besitzt im gepinnten Stand keine öffentliche Konfiguration für Radius, Unit-, Static- oder Scenery-Scan.
 
 ### SQUADRON
 
@@ -85,3 +87,9 @@ Noch nicht allgemein akzeptiert:
 ## 4. MOOSE-First
 
 Jede zusätzliche eigene Air-Ops-Mechanik benötigt die Prüfung vorhandener MOOSE-Funktionen und die ausdrückliche Projektinhaberfreigabe nach Dokument 26.
+
+Für Parking-Overrides ist diese Prüfung abgeschlossen:
+
+- [`OMW-MOOSE-WAREHOUSE-PARKING-OVERRIDE-RESEARCH`](WAREHOUSE-PARKING-OVERRIDE-RESEARCH.md)
+
+Der Bericht belegt eine parametrierbare AIRBASE-API, aber keinen WAREHOUSE-Setter oder -Hook. Er genehmigt keinen Runtime-Override und keine MOOSE-Quelländerung.

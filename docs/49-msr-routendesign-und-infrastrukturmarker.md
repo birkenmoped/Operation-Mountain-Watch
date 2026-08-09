@@ -15,7 +15,7 @@ supersedes:
   - legacy document title 18 – MSR-Routendesign und Infrastrukturmarker
 superseded_by:
 source_branch: agent/complete-documentation-authority-migration
-source_commit:
+source_commit: b62726692942769c149c3749bfd3e60baf02ae5b
 validated_in_dcs: false
 ---
 
