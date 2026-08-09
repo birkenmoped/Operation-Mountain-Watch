@@ -25,7 +25,7 @@ $g8cText = Get-Content -LiteralPath $g8cSource -Raw -Encoding UTF8
 foreach ($pattern in @(
     'TKOT-G7-AIRWING-FOUNDATION-5',
     'SetOptionPreferVerticalLanding',
-    'ClientTerminalIDs: 21,8,3',
+    '\[21\] = "CLIENT_US_TKOT_AH64D_01"',
     'ParkingIDs = \{ 20, 19 \}',
     'ParkingIDs = \{ 23, 27, 30 \}',
     'ParkingIDs = \{ 32, 29, 10 \}'
