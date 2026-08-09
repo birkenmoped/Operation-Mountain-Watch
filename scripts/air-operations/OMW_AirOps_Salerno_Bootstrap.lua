@@ -15,6 +15,16 @@ local function log(message)
   env.info(TAG .. " " .. tostring(message))
 end
 
+local function countTable(value)
+  local count = 0
+  if type(value) == "table" then
+    for _ in pairs(value) do
+      count = count + 1
+    end
+  end
+  return count
+end
+
 local config = {
   airbaseName = AIRBASE.Afghanistan and AIRBASE.Afghanistan.FOB_Salerno or "FOB Salerno",
   warehouseName = "WH_AIR_US_SALERNO",
@@ -92,7 +102,7 @@ local function createSquadron(airwing, definition)
   return squadron, payload
 end
 
-local function main()
+local function constructFoundation()
   log("BEGIN foundation-only Salerno AIRWING/SQUADRON initialization")
   log("MOOSE commit=" .. MOOSE_COMMIT .. " sha256=" .. MOOSE_SHA256)
 
@@ -129,6 +139,10 @@ local function main()
     representedAircraft = representedAircraft + (definition.assetGroups * definition.grouping)
   end
 
+  -- Lifecycle diagnostic only: pre-start Warehouse stock is observed but not
+  -- used as an acceptance condition or as strategic inventory authority.
+  log("SQUADRON_STOCK_PRESTART airwingStockEntries=" .. tostring(countTable(airwing.stock)))
+
   OMW.AirOps.Salerno = {
     Status = "FOUNDATION_READY",
     Airbase = airbase,
@@ -137,19 +151,32 @@ local function main()
     Payloads = payloads,
     Config = config,
     Scope = "AIRWING_SQUADRON_FOUNDATION_ONLY",
+    RegisteredGroups = registeredGroups,
+    RepresentedAircraft = representedAircraft,
   }
 
   airwing:Start()
   OMW.AirOps.Salerno.Status = "RUNNING"
+end
+
+local function inspectIdleFoundation()
+  local state = OMW and OMW.AirOps and OMW.AirOps.Salerno or nil
+  if not state or not state.Airwing then
+    error("Salerno foundation state is unavailable after AIRWING start")
+  end
 
   log(string.format(
-    "RESULT status=RUNNING airwings=1 squadrons=5 registeredGroups=%d representedAircraft=%d logicalAircraft=32 logicalReserve=1 rolePayloads=5 parkingState=DEFERRED missionsCreated=0 transportsCreated=0 commanderCreated=false f10Controls=false",
-    registeredGroups,
-    representedAircraft
+    "RESULT status=%s airwings=1 squadrons=5 registeredGroups=%d representedAircraft=%d logicalAircraft=32 logicalReserve=1 rolePayloads=5 parkingState=DEFERRED missionsCreated=0 transportsCreated=0 commanderCreated=false f10Controls=false",
+    tostring(state.Status),
+    tonumber(state.RegisteredGroups) or -1,
+    tonumber(state.RepresentedAircraft) or -1
   ))
 end
 
-local ok, err = pcall(main)
+local ok, err = pcall(function()
+  constructFoundation()
+  inspectIdleFoundation()
+end)
 if not ok then
   env.error(TAG .. " ERROR " .. tostring(err), false)
   OMW.AirOps.Salerno = OMW.AirOps.Salerno or {}
