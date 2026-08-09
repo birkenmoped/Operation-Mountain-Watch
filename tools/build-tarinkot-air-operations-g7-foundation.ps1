@@ -18,6 +18,38 @@ foreach ($requiredFile in @($sourceFile, $guardFile)) {
 
 $sourceText = Get-Content -LiteralPath $sourceFile -Raw -Encoding UTF8
 
+# Binding Tarinkot parking-layout reconciliation:
+# The historical G7 source is preserved as test evidence. The generated G7/G8C
+# bundle must use the current binding layout from OMW-AIR-TKOT-PARKING-LAYOUT.
+$parkingReplacements = [ordered]@{
+    '    [20] = "CLIENT_US_TKOT_AH64D_01"' = '    [21] = "CLIENT_US_TKOT_AH64D_01"'
+    '      ParkingIDs = { 21, 4 },' = '      ParkingIDs = { 20, 19 },'
+    '      ParkingIDs = { 30, 27, 23 },' = '      ParkingIDs = { 23, 27, 30 },'
+}
+foreach ($entry in $parkingReplacements.GetEnumerator()) {
+    if (-not $sourceText.Contains($entry.Key)) {
+        throw "Expected historical parking-layout marker not found: $($entry.Key)"
+    }
+    $sourceText = $sourceText.Replace($entry.Key, $entry.Value)
+}
+
+if ($sourceText.Contains('ParkingIDs = { 21, 4 }')) {
+    throw 'Historical AH64 parking pool remained after layout reconciliation.'
+}
+if ($sourceText.Contains('[20] = "CLIENT_US_TKOT_AH64D_01"')) {
+    throw 'Historical AH64 client terminal remained after layout reconciliation.'
+}
+foreach ($marker in @(
+    '[21] = "CLIENT_US_TKOT_AH64D_01"',
+    'ParkingIDs = { 20, 19 }',
+    'ParkingIDs = { 23, 27, 30 }',
+    'ParkingIDs = { 32, 29, 10 }'
+)) {
+    if (-not $sourceText.Contains($marker)) {
+        throw "Binding parking-layout marker missing after reconciliation: $marker"
+    }
+}
+
 # MOOSE 2.9.18 lifecycle correction:
 # AddSquadron registers Warehouse stock synchronously. The WAREHOUSE/LEGION
 # start path subsequently binds those assets to the COHORT/SQUADRON. Therefore
@@ -246,7 +278,7 @@ if ($verticalIndex -ge $startIndex) {
 
 New-Item -ItemType Directory -Path $distDir -Force | Out-Null
 
-$builderVersion = 'TKOT-G7-AIRWING-FOUNDATION-4'
+$builderVersion = 'TKOT-G7-AIRWING-FOUNDATION-5'
 $commit = 'UNKNOWN'
 try {
     $commit = (& git -C $repoRoot rev-parse HEAD 2>$null).Trim()
@@ -262,7 +294,7 @@ $header = @"
 -- GitCommit: $commit
 -- GeneratedUtc: $generatedUtc
 -- Gate: G7_AIRWING_SQUADRON_PAYLOAD_FOUNDATION
--- Scope: one AIRWING, three SQUADRONs, G6-accepted parking pools,
+-- Scope: one AIRWING, three SQUADRONs, binding Tarinkot parking layout,
 -- capabilities, role payloads and stable idle AIRWING start.
 -- Excluded: COMMANDER, AUFTRAG instances, OPSTRANSPORT, SPAWN, functional
 -- zones, tactical dispatch, return/recovery and lifecycle cleanup.
@@ -271,8 +303,7 @@ $header = @"
 -- Asset-link timing: warehouse stock is checked before AIRWING:Start();
 -- squadron.assets and inherited parkingIDs are checked after AIRWING start.
 -- Observer-client policy: detected, allowed and blocking counts remain separate.
--- A confirmed client on hard-excluded terminals 3, 8 or 20 is non-blocking for
--- this no-spawn foundation gate and is never hidden from final telemetry.
+-- Confirmed client terminals 21, 8 and 3 are hard-excluded from AI parking.
 
 local OMW_TKOT_G7_BUILD = {
   Builder = "tools/build-tarinkot-air-operations-g7-foundation.ps1",
@@ -317,6 +348,24 @@ if ($content -notmatch 'observerClientsDetected=%d observerClientsAllowed=%d obs
 if ($content -match 'SQUADRON_ASSET_COUNT_MISMATCH') {
     throw 'Generated bundle still contains the premature pre-start asset violation.'
 }
+foreach ($marker in @(
+    '[21] = "CLIENT_US_TKOT_AH64D_01"',
+    'ParkingIDs = { 20, 19 }',
+    'ParkingIDs = { 23, 27, 30 }',
+    'ParkingIDs = { 32, 29, 10 }'
+)) {
+    if (-not $content.Contains($marker)) {
+        throw "Generated bundle missing binding parking-layout marker: $marker"
+    }
+}
+foreach ($marker in @(
+    '[20] = "CLIENT_US_TKOT_AH64D_01"',
+    'ParkingIDs = { 21, 4 }'
+)) {
+    if ($content.Contains($marker)) {
+        throw "Generated bundle contains forbidden historical parking-layout marker: $marker"
+    }
+}
 
 $hash = (Get-FileHash -LiteralPath $outputFile -Algorithm SHA256).Hash.ToLowerInvariant()
 Write-Host "Built: $outputFile"
@@ -332,7 +381,8 @@ Write-Host 'RegisteredGroups: 5'
 Write-Host 'RegisteredAircraft: 7'
 Write-Host 'RolePayloads: 3'
 Write-Host 'ExpectedTotalPayloadsIncludingRelocation: 6'
-Write-Host 'ParkingPools: AH64=21,4 UH60=30,27,23 CH47=32,29,10'
+Write-Host 'ClientTerminalIDs: 21,8,3'
+Write-Host 'ParkingPools: AH64=20,19 UH60=23,27,30 CH47=32,29,10'
 Write-Host 'VerticalPolicy: AIRWING:SetOptionPreferVerticalLanding before AIRWING:Start'
 Write-Host 'AssetLinkingPolicy: warehouse stock pre-start; squadron.assets post-start'
 Write-Host 'OperationalMissions: 0'
