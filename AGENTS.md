@@ -73,6 +73,9 @@ Before completing a change:
 
 ## Owner handoff for local execution
 
+- The assistant is responsible for reading the authoritative `main` rules, performing the MOOSE-first review, implementing source and builder changes, updating documentation, running all available static checks, reviewing the diff, committing the result, and publishing the working branch before asking the project owner to build or test it locally.
+- The project owner is responsible for project management decisions and explicit approval gates. The project owner also performs only those execution steps that inherently require the owner's local Windows/DCS environment: updating the local Git working copy, generating ignored `dist/` artifacts with the provided builder, editing the owner-held `.miz` when explicitly instructed, and running and visually evaluating DCS tests.
+- Do not ask the project owner to develop Lua, infer builder logic or expected values, repair repository files, or delegate work to Codex, Codex CLI, a sub-agent, or another assumed executor.
 - Do not hand work to an assumed Codex, Codex CLI, sub-agent, or other external executor. The project owner performs explicitly assigned local Windows, PowerShell, Mission Editor, and DCS steps.
 - When a required action must run on the project owner's system, provide a complete, numbered, directly copyable instruction instead of only naming a script, builder, or tool.
 - Follow `docs/22-test-mission-build-transfer-and-validation-workflow.md`, especially the owner-handoff requirements. State the exact repository path, commands, expected branch and commit, expected relevant output, generated artifact path, hash command, files that must remain untracked, and explicit stop conditions.

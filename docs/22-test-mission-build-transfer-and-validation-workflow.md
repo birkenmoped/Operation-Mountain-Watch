@@ -154,6 +154,26 @@ Eine manuelle Ersetzung ist zulässig, solange die Hashprüfung unmittelbar dana
 
 Wenn ein Build-, Hash-, Transfer-, Mission-Editor- oder DCS-Schritt auf dem Windows-System des Projektinhabers ausgeführt werden muss, wird der Auftrag direkt an den Projektinhaber formuliert. Es wird kein Codex, CODEX-CLI, Subagent oder anderer externer Ausführer angenommen oder zwischengeschaltet.
 
+Die feste Arbeitsteilung lautet:
+
+```text
+Entwicklung und Bereitstellung durch den Assistenten:
+- verbindliche Regeln und Dokumentation auf main vollständig prüfen
+- MOOSE-First-Recherche durchführen
+- Source-Lua, Builder, Guards und Dokumentation entwickeln
+- alle verfügbaren statischen Prüfungen ausführen und den Diff prüfen
+- Änderungen committen und den Arbeitsbranch remote bereitstellen
+
+Projektmanagement und lokale Ausführung durch den Projektinhaber:
+- fachliche Entscheidungen und ausdrückliche Freigaben erteilen
+- die lokale Git-Arbeitskopie nach konkreter Anweisung aktualisieren
+- das ignorierte dist/-Bundle mit dem bereitgestellten Builder erzeugen
+- die projektinhabergeführte MIZ nur nach ausdrücklicher Anweisung ändern
+- den bereitgestellten Lua-Stand in DCS testen und visuell bewerten
+```
+
+Der Projektinhaber entwickelt dabei keinen Lua-Code, leitet keine Builderlogik oder Sollwerte selbst her und repariert keine Repository-Dateien. Vor einer lokalen Build-Übergabe muss der Assistent den vollständigen ausführbaren Stand unter einem erreichbaren Remote-Branch und einem exakten Commit bereitgestellt haben.
+
 Die Übergabe muss als nummerierte, unmittelbar kopierbare Schrittfolge mindestens enthalten:
 
 ```text
