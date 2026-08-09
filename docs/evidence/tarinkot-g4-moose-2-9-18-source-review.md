@@ -16,7 +16,7 @@ not_authoritative_for:
   - final lifecycle, loss, return or stranded-state behavior
   - merge approval or Ready-for-Review approval
 scenario_period: 2010-08-01/2011-12-31
-project_phase: TARINKOT_MOOSE_SOURCE_REVIEW
+project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 source_branch: agent/tarinkot-object-contract-reconciliation
 source_commit: PENDING_MERGE
 source_mission: OMW_Template_v5_Salerno.miz
@@ -231,13 +231,24 @@ allowSpawnOnClientSpots = false
 
 Bei der Parkplatzsuche übernimmt MOOSE die Koordinaten aller Client-Templates als Hindernisse. Dadurch werden Client-Positionen auch ohne besetzten Spielerslot bei der Sicherheitsprüfung berücksichtigt.
 
-Zusätzlich aktiviert:
+Die G7-/G8-Konfiguration ruft zusätzlich auf:
 
 ```lua
 SetSafeParkingOn()
 ```
 
-weitere Safe-Parking- und Reservierungslogik für Client- und ankommende Luftfahrzeuge.
+Korrektur aus der vollständigen G8-Parking-Recherche vom 5. August 2026:
+
+```text
+SetSafeParkingOn() setzt self.safeparking=true.
+Warehouse.lua liest dieses Feld im gepinnten Stand jedoch nirgends.
+Der Aufruf aktiviert deshalb im geprüften Quellpfad keine nachweisbare
+zusätzliche Client-, Reservierungs- oder Static-Prüfung.
+```
+
+Die Client-Hindernisse entstehen unabhängig davon allein über `allowSpawnOnClientSpots=false`. Vollständiger Nachweis:
+
+- [`OMW-MOOSE-WAREHOUSE-PARKING-OVERRIDE-RESEARCH`](../moose/WAREHOUSE-PARKING-OVERRIDE-RESEARCH.md)
 
 Für Tarinkot gilt:
 

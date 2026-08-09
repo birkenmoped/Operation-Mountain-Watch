@@ -9,7 +9,7 @@ authoritative_for:
   - accepted G6 parking mapping and controlled placement
   - accepted G7 AIRWING, SQUADRON and payload foundation
   - accepted G7 lifecycle and observer-client static guard
-  - current G8 block and central-consolidation dependency
+  - current G8 parking block and completed MOOSE override research
   - airport-level batching and failure-isolation boundary
 not_authoritative_for:
   - tactical AUFTRAG or vertical-departure acceptance
@@ -17,7 +17,7 @@ not_authoritative_for:
   - return, landing, recovery, loss or persistence acceptance
   - merge approval or Ready-for-Review approval
 scenario_period: 2010-08-01/2011-12-31
-project_phase: TARINKOT_G7_ACCEPTED_G8_BLOCKED
+project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 source_branch: agent/tarinkot-object-contract-reconciliation
 source_commit: PENDING_MERGE
 validated_in_dcs: partial
@@ -33,30 +33,42 @@ superseded_by: []
 G0_provenance: PASS_BRANCH
 G1_ORBAT_and_evidence: PASS_BRANCH
 G2_object_contract: OWNER_ACCEPTED_BRANCH
-G3_mission_editor: PARTIAL_FUNCTION_ZONES_PENDING
-G4_MOOSE_source_review: PASS_SOURCE_REVIEW
+G3_mission_editor: PARTIAL_FUNCTION_ZONES
+G4_MOOSE_source_review: PASS_FOR_LIFECYCLE_BUT_PARKING_OVERRIDE_RESEARCH_COMPLETE
 G5_read_only_diagnostics: PASS_DCS
 G6A_geometric_dataset: PASS_DCS_SCOPE_TOO_BROAD_FOR_PRODUCTIVE_LISTS
 G6A2_ME_MOOSE_mapping: PASS_DCS
 G6B_first_combined_run: FAIL_VISUAL_WRONG_APRON
-G6B_final_free_spots: PASS_DCS_OWNER_VISUAL_ACCEPTED
+G6B_final_free_spots: PASS_DCS_OWNER_VISUAL_ACCEPTED_DIRECT_SPAWN_ONLY
 G7_airwing_squadron_payload: PASS_DCS_WITH_TELEMETRY_FIELD_CORRECTION
 G7_lifecycle_guard_correction: PASS_STATIC_CI
-central_lifecycle_consolidation: DRAFT_PR_55_NOT_ON_MAIN
-G8_direct_dispatch_vertical_departure: BLOCKED_BY_CENTRAL_CONSOLIDATION_AND_NEXT_ARTIFACT_GATE
+central_lifecycle_consolidation: PASS_MAIN
+Tarinkot_main_sync: PASS
+G8_static_implementation: PASS_STATIC_CI
+G8_first_runtime_attempt: BLOCKED_MISSING_TARGET_ZONE
+G8_second_runtime_attempt: BLOCKED_MOOSE_WAREHOUSE_PARKING_OBSTACLE_CONFLICT
+G8_vertical_departure: NOT_PROVEN
+MOOSE_parking_override_research: COMPLETE
+next_action: OWNER_DECISION
 G9_commander: BLOCKED_BY_G8
 G10_lifecycle_results_handoff: NOT_STARTED
 ```
 
-Kein weiterer längerer DCS-Lauf ist zulässig, bevor:
+Bis zur Eigentümerentscheidung gilt:
 
 ```text
-Draft PR #55 als zentrale Projektbaseline geprüft und ausdrücklich für main freigegeben wurde
-README, Acceptance, Manifest, Ergebnisbericht und PR #53 denselben Stand führen
-die nächste MIZ-/Bundle-Hashkette vollständig feststeht
+kein DCS-Rerun
+keine MIZ-Mutation
+keine Änderung der Parking-Pools
+kein MOOSE-Override oder MOOSE-Quellpatch
 ```
 
-Der korrigierte G7-Builder und der gemeinsame Lifecycle-Guard haben die statische GitHub-Actions-Prüfung bereits bestanden.
+Die vorgeschriebene MOOSE-Quellenrecherche ist abgeschlossen:
+
+- [`docs/moose/WAREHOUSE-PARKING-OVERRIDE-RESEARCH.md`](../../../docs/moose/WAREHOUSE-PARKING-OVERRIDE-RESEARCH.md)
+- [`results/2026-08-05-g8-moose-parking-override-research-complete.md`](results/2026-08-05-g8-moose-parking-override-research-complete.md)
+
+Sie ergab keinen dokumentierten WAREHOUSE-Setter oder -Hook für die lokalen Scanwerte. Technische Overrides sind möglich, aber nicht autorisiert.
 
 ## 2. Akzeptierte Basis
 
