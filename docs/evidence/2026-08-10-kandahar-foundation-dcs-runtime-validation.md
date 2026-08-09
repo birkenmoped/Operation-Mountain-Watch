@@ -1,14 +1,25 @@
 ---
 document_id: OMW-EVIDENCE-KANDAHAR-FOUNDATION-DCS-RUNTIME-2026-08-10
 status: ACCEPTED_TECHNICAL_BASELINE
+document_class: TEST_RESULT
+owning_policy: OMW-GOV-001
 authoritative_for:
   - Kandahar foundation DCS runtime acceptance for the exact documented artifact chain
   - Kandahar AIRWING start and SQUADRON registration result
   - Kandahar foundation no-tasking boundary for this exact run
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
+supersedes:
+superseded_by:
 source_branch: agent/kandahar-foundation-july-2011-rebuild
 source_commit: 578816472c53279290ff6b64296ed8d49982bc72
+acceptance_branch: agent/kandahar-foundation-july-2011-rebuild
+acceptance_commit: 578816472c53279290ff6b64296ed8d49982bc72
+acceptance_mission: OMW_Template_v6_Tarinkot(6).miz
+acceptance_mission_sha256: a04ff328e3c1c550db0ada4ea34d6b66739f3f28eb71293f398330a46eacbc63
+dcs_version: 2.9.28.26385
+moose_commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+moose_artifact_sha256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
 validated_in_dcs: true
 ---
 
