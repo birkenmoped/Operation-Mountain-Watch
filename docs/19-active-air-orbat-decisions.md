@@ -13,13 +13,14 @@ project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
   - Bagram 336th EFS active baseline
   - Kandahar 75th EFS active baseline
+  - Kandahar 107th EFS active baseline
   - Jalalabad 24/8/6 inventory
   - player limits above two aircraft per type and base
   - Tarinkot without an active March-to-December-2011 ORBAT decision
-source_branch: agent/tarinkot-object-contract-reconciliation
+source_branch: agent/kandahar-foundation-july-2011-rebuild
 validated_in_dcs: false
 document_class: PROJECT_DECISION
-source_commit: 4ce9b9297f8c473ee2a789f14d187fb667d37647
+source_commit: GIT_HISTORY
 superseded_by:
 ---
 
@@ -68,7 +69,7 @@ Diese Regel ersetzt sämtliche älteren Angaben von vier, vier bis acht oder meh
 | 1 | Bagram | F-15E | 335th Expeditionary Fighter Squadron, 13 F-15E | `BINDING` |
 | 2 | Bagram | F-16C | 121st Expeditionary Fighter Squadron, 13 historische F-16C Block 30; DCS Block 50 als gekennzeichneter Ersatz | `BINDING` |
 | 3 | Jalalabad | Army Aviation | 24 OH-58D, 8 AH-64D, 8 UH-60, 8 CH-47 | `BINDING`, historisch ausreichend bestätigt |
-| 4 | Kandahar | A-10C | 107th Expeditionary Fighter Squadron, 16 A-10C | `BINDING` |
+| 4 | Kandahar | USAF + Army Aviation | 451st AEW mit 74th EFS / 26th ERQS / 361st ERS / 772nd EAS sowie TF Thunder / 159th CAB mit 4-227, 7-17 und 7-101 | `BINDING`; Struktur nach Juli-2011-ORBAT |
 | 5 | Camp Bastion | AH-1W / UH-1Y | HMLA-169 „Vipers“, 10 AH-1W und 5 UH-1Y | `BINDING` |
 | 6 | Camp Bastion | MV-22B | keine aktive Umsetzung | `BINDING`: entfällt vollständig |
 | 7 | Camp Bastion | CH-53E | HMH-361 (-) Reinforced, 17 CH-53E | `BINDING` |
@@ -127,6 +128,12 @@ Für Tarinkot ist dies:
 
 ```text
 TPL_AIR_US_TKOT_AH64D_CAS_2SHIP
+```
+
+Für Kandahar ist dies:
+
+```text
+TPL_AIR_US_KAF_AH64D_CAS_2SHIP
 ```
 
 Das Template enthält zwei identisch beladene AH-64D. Die Beladung ist im Mission Editor je Luftfahrzeug zu prüfen; ein Payload-Preset allein ersetzt nicht die Kontrolle der tatsächlich gespeicherten Pylonen-, Kanonen-, IAFS- und Kraftstoffwerte.
@@ -367,29 +374,85 @@ Das basisbezogene Objektmanifest ist [`OMW-AIR-TKOT-MANIFEST`](tarinkot-air-oper
 
 ---
 
-## 5. Kandahar Airfield – A-10C
+## 5. Kandahar Airfield – 451st AEW und Task Force Thunder
 
-### Verbindliche aktive ORBAT
+### Verbindliche aktive Organisationsstruktur
 
-```text
-Einheit: 107th Expeditionary Fighter Squadron
-Flugplatz: Kandahar Airfield
-Muster: A-10C
-Lokaler ORBAT-Bestand: 16 Luftfahrzeuge
-```
-
-### Geplante technische Struktur
+Für Kandahar ist die Juli-2011-ORBAT die entscheidende Organisationsreferenz. Die aktive OMW-Struktur lautet:
 
 ```text
-AW_US_KANDAHAR
-└── SQ_US_KAF_A10C_107_EFS
+AW_US_KAF_451_AEW
+├── SQ_US_KAF_A10C_74_EFS
+├── SQ_US_KAF_HH60G_26_ERQS
+├── SQ_US_KAF_C130_772_EAS
+├── SQ_US_KAF_MQ1_361_ERS
+└── SQ_US_KAF_MQ9_361_ERS
+
+AW_US_KAF_159_CAB_TF_THUNDER
+├── SQ_US_KAF_AH64_4_227_AVN
+├── SQ_US_KAF_OH58D_7_17_CAV
+├── SQ_US_KAF_CH47_7_101_GSAB
+└── SQ_US_KAF_UH60_7_101_GSAB
 ```
+
+Die 46th Expeditionary Rescue Squadron stellt Guardian-Angel-Personal und erhält keinen eigenen Aircraft-Pool. `Task Force Attack / 3-101 Attack Aviation` bleibt Tarin Kowt zugeordnet; `Task Force Wings / 4-101 Assault Aviation` bleibt FOB Wolverine zugeordnet. Eine zehnte Kandahar-Aircraft-SQUADRON wird daraus nicht erzeugt.
+
+### Verbindliche Kandahar-Bestände
+
+```text
+451st AEW
+16 A-10C   | 74th EFS
+ 6 HH-60G  | 26th ERQS
+12 C-130   | 772nd EAS
+ 4 MQ-1    | 361st ERS
+ 2 MQ-9    | 361st ERS
+ 6 MC-12   | 361st ERS, logisch/historisch; Runtime deferred
+
+TF Thunder / 159th CAB
+ 8 AH-64D  | TF Guns / 4-227
+16 OH-58D  | TF Palehorse / 7-17
+16 CH-47   | TF Lift / 7-101
+32 UH-60   | TF Lift / 7-101
+```
+
+Die neun aktiven MOOSE-SQUADRONs registrieren damit 112 physisch repräsentierte Airframes. Die sechs MC-12 bleiben separat deferred, bis DCS-Repräsentation und technischer SQUADRON-/Template-Vertrag freigegeben sind.
+
+### Tarinkot-Abgrenzung
+
+Tarinkot bleibt ein eigenständiger vorgeschobener RC-South-Knoten mit `14 AH-64D / 6 UH-60 / 2 CH-47 / 0 OH-58D`. Diese Luftfahrzeuge werden nicht zusätzlich in Kandahar gezählt. Für die OMW-Verwaltung ergeben sich damit folgende Regionalwerte:
+
+| Muster | Kandahar | Tarinkot | RC-South-Verwaltungswert |
+|---|---:|---:|---:|
+| AH-64D | 8 | 14 | 22 |
+| OH-58D | 16 | 0 | 16 |
+| CH-47 | 16 | 2 | 18 |
+| UH-60 | 32 | 6 | 38 |
+
+### Technische Acceptance-Grenze
+
+Der Foundation-Lauf auf Branch `agent/kandahar-foundation-july-2011-rebuild`, Source-Commit `578816472c53279290ff6b64296ed8d49982bc72`, MIZ `OMW_Template_v6_Tarinkot(6).miz`, DCS `2.9.28.26385` und gepinnter `Moose.lua` bestätigte für den exakt dokumentierten Stand:
+
+```text
+airwings=2
+squadrons=9
+registeredGroups=76
+registeredAirframes=112
+deferredMC12=6
+rolePayloads=8
+deferredRolePayloads=2
+mainRunning=true
+heliportRunning=true
+missionsCreated=0
+transportsCreated=0
+commanderCreated=false
+f10Controls=false
+```
+
+Dieser PASS validiert die AIRWING-/SQUADRON-Foundation, nicht taktische AUFTRAG-Dispatches, OPSTRANSPORT, COMMANDER, Recovery/RTB, UAV-Return-Parking, Warehouse-Rückgabe, Persistenz, Multiplayer-Endurance oder die physische MC-12-Abbildung.
 
 ### Historischer Rotationskontext
 
-81st, 74th und 75th Expeditionary Fighter Squadron bleiben zeitbezogene Recherche- und Rotationsangaben. Sie werden nicht zusätzlich als parallele aktive A-10C-SQUADRONs umgesetzt.
-
-Die Auswahl der 107th EFS ist eine bewusste aktive Missionsentscheidung innerhalb des Gesamtzeitraums und kein automatisch datumsabhängiger Staffelwechsel.
+75th, 81st und 107th Expeditionary Fighter Squadron bleiben historischer Rotationskontext. Sie erzeugen keine parallelen aktiven Kandahar-A-10C-SQUADRONs, keine zusätzlichen Clients, Templates, Statics oder Bestände.
 
 ---
 
@@ -472,6 +535,8 @@ Noch offen sind nicht die oben festgelegten aktiven Verbände, Bestände und die
 - versionsbezogene Prüfung des UH-60L Community Mods;
 - Fallback-Verhalten für F-15E und andere Risikomodule;
 - Tarinkot-AI-Parking-Allowlisten;
-- Tarinkot-Funktionszonen und deren getrennte Acceptance für MEDEVAC, Transport und FARP.
+- Tarinkot-Funktionszonen und deren getrennte Acceptance für MEDEVAC, Transport und FARP;
+- Kandahar-UAV-Return-Parking und Warehouse-Rückgabe;
+- Kandahar-MC-12-Repräsentation.
 
 Diese Punkte werden in den Missionseditor-Arbeitslisten und basisbezogenen Manifesten behandelt. Sie dürfen die hier festgelegte aktive ORBAT nicht stillschweigend verändern.
