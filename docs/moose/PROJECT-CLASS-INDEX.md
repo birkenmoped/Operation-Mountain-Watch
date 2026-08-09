@@ -12,8 +12,8 @@ project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
   - class index without consolidated AIRWING lifecycle evidence
 superseded_by:
-source_branch: agent/consolidate-air-ops-lifecycle-governance
-source_commit: 801b88b58bd2fc799535edd2e80fc463bc4c4dc9
+source_branch: agent/kandahar-foundation-july-2011-rebuild
+source_commit: GIT_HISTORY
 validated_in_dcs: partial
 ---
 
@@ -51,14 +51,14 @@ Diese Klassenstatus sind keine Governance-Dokumentstatuswerte.
 
 | Klasse | Projektstatus | Geltungsgrenze |
 |---|---|---|
-| `AIRBASE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Auflösung, ID, Parkingdump und airfield-spezifische Kalibrierung; `FindFreeParkingSpotForAircraft()` mit konfigurierbaren Scanparametern source-reviewed, aber nicht in WAREHOUSE verdrahtet |
-| `AIRWING` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Konstruktion, Stockregistrierung, Grundstart und Idle-Foundation; Vertikaloption nur Konfiguration/Quellpfad bis G8 |
-| `SQUADRON` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Konstruktion, `Ngroups`, Gruppierung, Capabilities, Payloads und post-start Assetbindung |
-| `WAREHOUSE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | AirOps-Stockregistrierung und post-start Zuordnung; `_FindParkingForAssets()` source-reviewed mit nicht konfigurierbaren lokalen Scanwerten; strategische Logistik und Persistenz offen |
-| `COHORT` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | post-start `AddAsset()` setzt `squadname`, `legion`, `cohort` und `assets` |
+| `AIRBASE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Auflösung, ID, Parkingdump und airfield-spezifische Kalibrierung; Kandahar Main ID 7 und Kandahar Heliport ID 15 im Foundation-Lauf bestätigt; `FindFreeParkingSpotForAircraft()` mit konfigurierbaren Scanparametern source-reviewed, aber nicht in WAREHOUSE verdrahtet |
+| `AIRWING` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Konstruktion, Stockregistrierung, Grundstart und Idle-Foundation; Kandahar Dual-AIRWING Main/Heliport mit beiden Instanzen `Running` bestätigt; Vertikaloption nur Konfiguration/Quellpfad bis G8 |
+| `SQUADRON` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Konstruktion, `Ngroups`, Gruppierung, Capabilities, Payloads und post-start Assetbindung; Kandahar neun SQUADRONs / 76 Assetgruppen / 112 Airframes bestätigt |
+| `WAREHOUSE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | AirOps-Stockregistrierung und post-start Zuordnung; Kandahar 32 Main- plus 44 Heliport-Assetgruppen vor AIRWING-Start bestätigt; strategische Logistik und Persistenz offen |
+| `COHORT` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | post-start `AddAsset()` setzt `squadname`, `legion`, `cohort` und `assets`; Kandahar Foundation bestätigt die registrierte SQUADRON-/Warehouse-Kette, ohne Recovery-Nachweis |
 | `FLIGHTGROUP` | `SOURCE_REVIEWED` | `SetOptionPreferVertical()` und AIRWING-Weitergabepfad geprüft; tatsächlicher Tarinkot-Abflug offen |
-| `COMMANDER` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Salerno `New -> AddAirwing -> Start -> CanMission -> AddMission -> Status` bis AUFTRAG `started` |
-| `AUFTRAG` | `IN_USE_PARTIAL` | Capability-/Payloadzuordnung und Salerno CAS-Dispatch; G8C `NewHOVER()` source-reviewed, DCS-Acceptance offen |
+| `COMMANDER` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Salerno `New -> AddAirwing -> Start -> CanMission -> AddMission -> Status` bis AUFTRAG `started`; Kandahar Foundation verwendet COMMANDER ausdrücklich nicht |
+| `AUFTRAG` | `IN_USE_PARTIAL` | Capability-/Payloadzuordnung und Salerno CAS-Dispatch; Kandahar registriert Capabilities/Payloads ohne AUFTRAG-Instanzen; G8C `NewHOVER()` source-reviewed, DCS-Acceptance offen |
 | `SCHEDULER` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | geordnete Konstruktion und verzögerte post-start Diagnose |
 | `GROUP`, `UNIT`, `STATIC`, `ZONE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Template-, Static-, Warehouse- und Zonenvalidierung |
 | `ARMYGROUP`, `BRIGADE`, `OPSGROUP` | `PLANNED` | Bodenoperations- und Bestandsmodell |
@@ -95,6 +95,8 @@ AIRWING:Start plus Initialisierung
 
 Ein Pre-Start-PASS über nichtleere `squadron.assets` ist unzulässig.
 
+Der Kandahar-Foundation-Lauf bestätigt zusätzlich, dass zwei getrennte AIRWING-Instanzen mit getrennten Warehouse-Ankern und nativen Airbases innerhalb derselben Mission parallel konstruiert und gestartet werden können. Dieser Nachweis umfasst keine taktische Missionserzeugung und keine Recovery-/Parking-Aussage.
+
 ## 5. Vertikaloption und COMMANDER
 
 - `AIRWING:SetOptionPreferVerticalLanding()` muss vor `AIRWING:Start()` gesetzt werden.
@@ -121,6 +123,17 @@ Ein Klassenstatus wird nur angehoben, wenn:
 - Mission, OMW-Commit und relevante Hashes dokumentiert sind;
 - beobachtetes Verhalten und Einschränkungen festgehalten sind;
 - der Nachweis im Methodenregister oder Acceptance-Bericht verlinkt ist.
+
+Aktueller Kandahar-Nachweis:
+
+```text
+Branch: agent/kandahar-foundation-july-2011-rebuild
+Source-Commit: 578816472c53279290ff6b64296ed8d49982bc72
+MIZ: OMW_Template_v6_Tarinkot(6).miz
+DCS: 2.9.28.26385
+Moose.lua SHA-256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
+Result: 2 AIRWINGs / 9 SQUADRONs / 76 Assetgruppen / 112 Airframes / beide AIRWINGs Running
+```
 
 ## 8. WAREHOUSE-Parking-Grenze
 
