@@ -48,8 +48,9 @@ G8_static_implementation: PASS_STATIC_CI
 G8_first_runtime_attempt: BLOCKED_MISSING_TARGET_ZONE
 G8_second_runtime_attempt: BLOCKED_MOOSE_WAREHOUSE_PARKING_OBSTACLE_CONFLICT
 G8_vertical_departure: NOT_PROVEN
+G8C_uniform_rotary_hover_dispatch: IMPLEMENTED_AWAITING_DCS
 MOOSE_parking_override_research: COMPLETE
-next_action: OWNER_DECISION
+next_action: BUILD_AND_ONE_BUNDLED_G8C_DCS_RUN
 G9_commander: BLOCKED_BY_G8
 G10_lifecycle_results_handoff: NOT_STARTED
 ```
@@ -312,7 +313,13 @@ kein Taxi- oder Runwayverhalten
 
 Diese Punkte gehören gemeinsam in einen einzigen isolierten G8-AIRWING-/AUFTRAG-Lauf nach Abschluss der zentralen Konsolidierung.
 
-## 7. Testbündelung
+## 7. G8C – einheitlicher Rotary-Hover-Dispatch
+
+G8C ist ein gebündelter Diagnosetest neben der historischen G8-Parking-Recherche. Alle fünf registrierten Gruppen erhalten denselben öffentlichen MOOSE-Auftrag `AUFTRAG:NewHOVER()`: AH64_1 (2), AH64_2 (2), UH60_1 (1), UH60_2 (1) und CH47_1 (1). Der Test verwendet keine Raw-SPAWN-, Einzel-UNIT- oder standalone-FLIGHTGROUP-Alternative.
+
+Die Positionsdistanz wird nicht als Taxi-Nachweis interpretiert. Ein technischer PASS verlangt fünf Zuweisungen, fünf beobachtete Abhebungen, sieben Runtime-Einheiten und den nativen `optionPreferVertical=true`-Nachweis; „kein Taxiway/Runway“ bleibt alleinige Sichtabnahme. Der vollständige Vertrag steht in [`g8c-uniform-rotary-hover-dispatch-acceptance.md`](expected/g8c-uniform-rotary-hover-dispatch-acceptance.md).
+
+## 8. Testbündelung
 
 Technisch zusammengehörige Flughafenprüfungen werden standardmäßig kombiniert:
 

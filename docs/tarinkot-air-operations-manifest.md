@@ -21,7 +21,7 @@ not_authoritative_for:
   - exact 2011 aircraft quantities beyond the documented OMW reconstruction
   - merge approval or Ready-for-Review approval
 scenario_period: 2010-08-01/2011-12-31
-project_phase: TARINKOT_G7_ACCEPTED_G8_BLOCKED
+project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 source_branch: agent/tarinkot-object-contract-reconciliation
 source_commit: PENDING_MERGE
 original_source_mission: OMW_Template_v5_Salerno.miz
@@ -38,7 +38,8 @@ g5_state: PASS_DCS
 g6_state: PASS_DCS_OWNER_VISUAL_ACCEPTED
 g7_state: PASS_DCS_WITH_TELEMETRY_FIELD_CORRECTION
 g7_static_guard_state: PASS_CI
-g8_state: BLOCKED_BY_CENTRAL_CONSOLIDATION_AND_NEXT_ARTIFACT_GATE
+g8_state: HISTORICAL_G8_SINGLE_UH60_DISPATCH
+g8c_state: IMPLEMENTED_AWAITING_DCS
 supersedes_on_merge:
   - Tarinkot object assumptions from docs/tarinkot-air-operations-baseline PR 40
   - Tarinkot Mission Editor assumptions based on OMW_Template(3).miz
@@ -600,7 +601,13 @@ Die statische Prüfung bestand. Diese Harnesskorrektur benötigt keinen erneuten
 | G9 COMMANDER | `BLOCKED_BY_G8` | nicht begonnen |
 | G10 Lifecycle/Handoff | `NOT_STARTED` | nicht begonnen |
 
-## 14. Verbindliche nächste Grenze
+## 14. G8C – nächster gebündelter Runtime-Test
+
+G8C verwendet die unveränderte G7-Foundation und den bereits gesetzten nativen Vertikalpfad. Alle fünf Gruppen erhalten den selben öffentlichen `AUFTRAG:NewHOVER()`-Typ. Die HOVER-Capability wird ausschließlich per `SQUADRON:AddMissionCapability()` und `AIRWING:AddPayloadCapability()` für die Testlaufzeit ergänzt.
+
+G8C behauptet keine Lösung vor dem DCS-Lauf. Ein Runtime-PASS verlangt fünf Zuweisungen, fünf beobachtete Abhebungen, sieben Runtime-Einheiten und die Option auf jeder realen FLIGHTGROUP; die Sichtabnahme entscheidet allein über keinen Taxiway-/Runway-Einsatz.
+
+## 15. Verbindliche nächste Grenze
 
 Vor dem nächsten DCS-Lauf müssen PASS sein:
 

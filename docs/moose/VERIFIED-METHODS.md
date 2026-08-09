@@ -192,6 +192,18 @@ Nicht belegt:
 
 Diese Punkte gehören in den isolierten nativen G8-AIRWING-/AUFTRAG-Dispatch.
 
+### 6.3 G8C-HOVER-APIs
+
+Für den noch ungetesteten G8C-Vergleich wurden im gepinnten Quellstand geprüft:
+
+| Methode | Status | Einsatzgrenze |
+|---|---|---|
+| `AUFTRAG:NewHOVER(Coordinate, Altitude, Time, Speed, MissionAlt)` | `SOURCE_REVIEWED` | Rotary-Auftrag; G8C nutzt nur Coordinate, Altitude und Time |
+| `SQUADRON:AddMissionCapability()` | `SOURCE_REVIEWED` | registriert `AUFTRAG.Type.HOVER` je Test-Squadron |
+| `AIRWING:AddPayloadCapability()` | `SOURCE_REVIEWED` | registriert `AUFTRAG.Type.HOVER` je bestehendem Rollenpayload |
+
+Der G8C-Code verwendet keine MOOSE-Interna und keine Mutation von `mission.DCStask`. Die Methoden bleiben bis zum dokumentierten DCS-Lauf `SOURCE_REVIEWED`.
+
 ## 7. COMMANDER
 
 ### 7.1 Verbindliche Sequenz
