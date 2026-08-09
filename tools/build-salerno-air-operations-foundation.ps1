@@ -8,7 +8,15 @@ $repoRoot = Split-Path -Parent $PSScriptRoot
 $sourceFile = Join-Path $repoRoot 'scripts\air-operations\OMW_AirOps_Salerno_Bootstrap.lua'
 $distDir = Join-Path $repoRoot 'mission\tests\salerno-air-operations\dist'
 $outputFile = Join-Path $distDir 'OMW_AirOps_Salerno.lua'
+$lifecycleGuard = Join-Path $repoRoot 'tools\Test-AirOpsLifecycleGuards.ps1'
 $builderVersion = 'SAL-AIR-OPS-FOUNDATION-ONLY-1'
+
+if (-not (Test-Path -LiteralPath $sourceFile -PathType Leaf)) {
+    throw "Salerno foundation source not found: $sourceFile"
+}
+if (-not (Test-Path -LiteralPath $lifecycleGuard -PathType Leaf)) {
+    throw "AirOps lifecycle guard not found: $lifecycleGuard"
+}
 
 $source = Get-Content -LiteralPath $sourceFile -Raw -Encoding UTF8
 
@@ -20,6 +28,8 @@ $requiredMarkers = @(
     'SQ_US_SAL_UH60_MEDEVAC_C_5_159_AVN',
     'SQ_US_SAL_CH47_TF_TIGERSHARK_MEDIUM_LIFT',
     'parkingState = "DEFERRED"',
+    'SQUADRON_STOCK_PRESTART',
+    'airwing.stock',
     'airwing:Start()',
     'missionsCreated=0',
     'transportsCreated=0',
@@ -52,17 +62,35 @@ foreach ($pattern in $forbiddenPatterns) {
 }
 
 New-Item -ItemType Directory -Path $distDir -Force | Out-Null
+if (Test-Path -LiteralPath $outputFile -PathType Leaf) {
+    Remove-Item -LiteralPath $outputFile -Force
+}
 
 $commit = (& git -C $repoRoot rev-parse HEAD).Trim()
 $header = "-- AUTO-GENERATED FILE. DO NOT EDIT DIRECTLY.`n-- Builder: tools/build-salerno-air-operations-foundation.ps1`n-- BuilderVersion: $builderVersion`n-- GitCommit: $commit`n-- MOOSE-Pin: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54`n-- Scope: AIRWING/SQUADRON foundation only; Salerno parking remains deferred; no test dispatch.`n-- GeneratedUtc: $([DateTime]::UtcNow.ToString('o'))`n`n"
 $content = $header + $source
+
+foreach ($pattern in $forbiddenPatterns) {
+    if ($content -match $pattern) {
+        throw "Generated foundation-only bundle contains forbidden pattern: $pattern"
+    }
+}
+
 [System.IO.File]::WriteAllText($outputFile, $content, [System.Text.UTF8Encoding]::new($false))
+
+& $lifecycleGuard `
+    -SourceFile $sourceFile `
+    -GeneratedFile $outputFile `
+    -PreStartFunctionName 'constructFoundation' `
+    -PostStartFunctionName 'inspectIdleFoundation' `
+    -FoundationScope
 
 $hash = (Get-FileHash -LiteralPath $outputFile -Algorithm SHA256).Hash.ToLowerInvariant()
 Write-Host "Built: $outputFile"
 Write-Host "BuilderVersion: $builderVersion"
 Write-Host "Scope: AIRWING_SQUADRON_FOUNDATION_ONLY"
 Write-Host "ParkingState: DEFERRED"
+Write-Host "LifecycleGuard: PASS"
 Write-Host "TestDispatch: ABSENT"
 Write-Host "AUFTRAGInstances: ABSENT"
 Write-Host "OPSTRANSPORTInstances: ABSENT"
