@@ -15,8 +15,8 @@ project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
   - method register without lifecycle timing, vertical-option and COMMANDER details
 superseded_by:
-source_branch: agent/consolidate-air-ops-lifecycle-governance
-source_commit: 801b88b58bd2fc799535edd2e80fc463bc4c4dc9
+source_branch: agent/kandahar-foundation-july-2011-rebuild
+source_commit: GIT_HISTORY
 validated_in_dcs: partial
 ---
 
@@ -51,7 +51,7 @@ Bei einem anderen `Moose.lua`-Hash ist die Methoden- und Lifecycle-Prüfung zu w
 |---|---|---|
 | `AIRBASE:FindByName()` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Airbase-Auflösung in Jalalabad, Bagram, Kandahar, Salerno und Tarinkot |
 | `AIRBASE:FindByID()` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Tarinkot ID 9 |
-| `GetName()` / `GetID()` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Identitätsprüfung |
+| `GetName()` / `GetID()` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Identitätsprüfung; Kandahar Main ID 7 und Kandahar Heliport ID 15 im Foundation-Lauf bestätigt |
 | `GetParkingSpotsTable()` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Parkingdump und ME-/TerminalID-Kalibrierung |
 | `SetParkingSpotBlacklist()` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | dokumentierte Referenzknoten; tatsächliche Unitplatzierung bleibt separat |
 | `FindFreeParkingSpotForAircraft(group, terminaltype, scanradius, scanunits, scanstatics, scanscenery, verysafe, nspots, parkingdata)` | `SOURCE_REVIEWED` | öffentliche parametrierbare Freiparkroutine; wird von `WAREHOUSE:_FindParkingForAssets()` nicht verwendet |
@@ -111,21 +111,23 @@ nach Start und Initialisierung:
   opsGroups = 0
 ```
 
+Kandahar bestätigte zusätzlich den Foundation-Start zweier paralleler AIRWING-Domänen auf zwei nativen Airbases. Beide AIRWINGs erreichten im dokumentierten Lauf `Running`; vor Start waren 32 Warehouse-Assetgruppen auf Kandahar Main und 44 auf Kandahar Heliport registriert.
+
 Die post-start SQUADRON-Bindung erfolgt über den WAREHOUSE-/LEGION-Pfad und `COHORT:AddAsset()`.
 
 ### 4.4 Weitere AIRWING-Methoden
 
 | Methode | Status | Grenze |
 |---|---|---|
-| `AIRWING:New()` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Konstruktion mit Warehouse-Anker |
-| `SetAirbase()` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | explizite Airbase-Bindung |
+| `AIRWING:New()` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Konstruktion mit Warehouse-Anker; Kandahar duale Main-/Heliport-Konstruktion bestätigt |
+| `SetAirbase()` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | explizite Airbase-Bindung; Kandahar Main/Heliport getrennt bestätigt |
 | `SetTakeoffCold()` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Konfigurationszustand; tatsächlicher Kaltstart separat |
 | `SetSafeParkingOn()` | `SOURCE_REVIEWED` | setzt im gepinnten `Warehouse.lua` nur `self.safeparking`; das Feld wird im WAREHOUSE-Pfad nicht gelesen und ändert die Parking-Suche nicht |
-| `AddSquadron()` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Cohort-, Stock- und Relocation-Payload-Registrierung |
-| `NewPayload()` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Rollen-Payloadregistrierung |
+| `AddSquadron()` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Cohort-, Stock- und Relocation-Payload-Registrierung; Kandahar 9 SQUADRONs / 76 Assetgruppen bestätigt |
+| `NewPayload()` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Rollen-Payloadregistrierung; Kandahar acht Rollenpayloads bestätigt, MQ-1/MQ-9 bewusst deferred |
 | `GetSquadron()` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | SQUADRON-Auflösung nach Registrierung |
 | `GetOpsGroups()` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Idle-Knoten ohne Runtime-OPSGROUPs |
-| `Start()` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Grundstart und post-start Assetbindung |
+| `Start()` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Grundstart und post-start Assetbindung; Kandahar beide AIRWINGs Running |
 
 ## 5. WAREHOUSE-Parking
 
@@ -286,7 +288,42 @@ Der Endmarker `activePlayerClients=0` ist für diesen Lauf kein gültiger Detekt
 - COMMANDER-Auswahl für Tarinkot;
 - Multiplayer- oder Endurance-Acceptance.
 
-## 11. Neue Einträge
+## 11. Kandahar Foundation – akzeptierter Nachweis
+
+```text
+Testdatum: 2026-08-09/10
+DCS: 2.9.28.26385 MT
+Branch: agent/kandahar-foundation-july-2011-rebuild
+Source-Commit: 578816472c53279290ff6b64296ed8d49982bc72
+BuilderVersion: KAF-AIR-OPS-FOUNDATION-ONLY-1
+Bundle SHA-256: 315d046fc781d71de66e11557f0bf000ea672332dfbaf09b85771a4660cc36e4
+MIZ: OMW_Template_v6_Tarinkot(6).miz
+MIZ SHA-256: a04ff328e3c1c550db0ada4ea34d6b66739f3f28eb71293f398330a46eacbc63
+DCS log SHA-256: db7c5c3b24439a8505e51e024cf4b9e7e050cdc9bef9bbf6806a5bbe6e93ed76
+Debrief SHA-256: 48a56ae6393f556cd2b0619fb3a56ad8f1291ad05f35f46c8c88603cb6e461ac
+```
+
+Ergebnis:
+
+```text
+2 AIRWINGs Running
+9 SQUADRONs registriert
+76 Warehouse-Assetgruppen
+112 physisch repräsentierte Airframes
+6 MC-12 deferred
+8 Rollenpayloads registriert
+2 ISR-Rollenpayloads bewusst deferred
+0 Missionsinstanzen
+0 Transportinstanzen
+0 COMMANDER
+0 F10-Controls
+```
+
+Für diesen exakten Stand sind damit `AIRWING:New()`, `SetAirbase()`, `SetTakeoffCold()`, `SQUADRON:New()`, `SetGrouping()`, `SetTurnoverTime()`, `AddMissionCapability()`, `AIRWING:AddSquadron()`, `AIRWING:NewPayload()` und `AIRWING:Start()` im Kandahar-Foundation-Kontext praktisch bestätigt.
+
+Nicht belegt sind taktischer AUFTRAG-Dispatch, OPSTRANSPORT, COMMANDER, Recovery/RTB, post-landing UAV-Parking, Warehouse-Rückgabe, Persistenz, Multiplayer-Endurance und MC-12-Physik.
+
+## 12. Neue Einträge
 
 Jeder neue Methodeneintrag enthält:
 

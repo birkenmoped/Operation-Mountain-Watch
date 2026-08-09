@@ -14,6 +14,7 @@ project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
   - less restrictive non-MOOSE approval rules
   - automatic interpretation of draft-branch PASS results as repository-wide truth
+  - Kandahar 107th EFS active governance baseline
 source_branch: agent/reconcile-documentation-authority
 validated_in_dcs: false
 document_class: PROJECT_GOVERNANCE
@@ -162,10 +163,25 @@ DCS-Abbildung: F-16C Block 50 als gekennzeichneter technischer Ersatz
 
 ### Kandahar
 
+Für die organisatorische Kandahar-Struktur ist die Juli-2011-ORBAT die entscheidende Referenz. Die aktive OMW-Abbildung besteht aus zwei getrennten Air-Ops-Domänen:
+
 ```text
-107th Expeditionary Fighter Squadron
-16 A-10C
+451st Air Expeditionary Wing
+├── 74th Expeditionary Fighter Squadron
+│   16 A-10C
+├── 26th Expeditionary Rescue Squadron
+├── 361st Expeditionary Reconnaissance Squadron
+└── 772nd Expeditionary Airlift Squadron
+
+Task Force Thunder / 159th Combat Aviation Brigade
+├── Task Force Guns / 4-227 Attack Aviation
+├── Task Force Palehorse / 7-17 Air Cavalry
+└── Task Force Lift / 7-101 General Support Aviation
 ```
+
+Die 46th Expeditionary Rescue Squadron wird als Guardian-Angel-Personal geführt und erzeugt keinen eigenen Aircraft-Pool. Task Force Attack / 3-101 bleibt Tarin Kowt zugeordnet; Task Force Wings / 4-101 bleibt FOB Wolverine zugeordnet. Frühere aktive Kandahar-Auswahlen der 75th beziehungsweise 107th EFS sind `SUPERSEDED` und bleiben nur historischer Rotationskontext.
+
+Die vollständigen Kandahar-Bestände und technischen SQUADRON-Pools stehen in `OMW-AIR-ACTIVE-ORBAT` sowie im Kandahar-Foundation-Bestandsvertrag.
 
 ### Jalalabad / FOB Fenty
 
