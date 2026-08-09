@@ -1,6 +1,8 @@
 ---
 document_id: OMW-EVIDENCE-KANDAHAR-FOUNDATION-INVENTORY-2026-08-10
 status: BINDING
+document_class: DECISION_EVIDENCE
+owning_policy: OMW-GOV-001
 authoritative_for:
   - Kandahar foundation inventory contract
   - Kandahar registered physical airframe counts
