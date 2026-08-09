@@ -5,6 +5,7 @@ document_class: TEST_ARTIFACT_WORKFLOW
 owning_policy: OMW-GOV-001
 authoritative_for:
   - construction, transfer and identity verification of OMW DCS test bundles
+  - owner-facing handoff of local build, transfer and verification steps
   - MIZ artifact invalidation after save, replacement or transfer
   - required hash chain and test evidence package
   - static preflight before long DCS runs
@@ -19,8 +20,8 @@ supersedes:
   - branch-only Document 22 workflow in Draft PR 18
   - dead main references to a non-existent docs/22-test-mission-build-transfer-and-validation-workflow.md
 superseded_by:
-source_branch: agent/consolidate-air-ops-lifecycle-governance
-source_commit: 0b07bae20c35f5c05214e48f5c96d69a028cf2a8
+source_branch: agent/tarinkot-revised-parking-layout
+source_commit: PENDING_MERGE
 validated_in_dcs: false
 ---
 
@@ -148,6 +149,33 @@ MIZ-interner Bundle-SHA-256
 ```
 
 Eine manuelle Ersetzung ist zulässig, solange die Hashprüfung unmittelbar danach erfolgt. Ein Mission-Editor-Speichern nach der Einbindung erzeugt wiederum einen neuen MIZ-Hash und verlangt die erneute interne Prüfung.
+
+### 8.1 Verbindliche Form der lokalen Arbeitsübergabe
+
+Wenn ein Build-, Hash-, Transfer-, Mission-Editor- oder DCS-Schritt auf dem Windows-System des Projektinhabers ausgeführt werden muss, wird der Auftrag direkt an den Projektinhaber formuliert. Es wird kein Codex, CODEX-CLI, Subagent oder anderer externer Ausführer angenommen oder zwischengeschaltet.
+
+Die Übergabe muss als nummerierte, unmittelbar kopierbare Schrittfolge mindestens enthalten:
+
+```text
+1. exakter lokaler Repository-Pfad und Wechsel in dieses Verzeichnis
+2. Befehle zum Aktualisieren und Prüfen von Branch, HEAD und Arbeitsbaum
+3. exakt erwarteter Branch und vollständiger erwarteter Commit-Hash
+4. Hinweis auf absichtlich untracked bleibende Artefakte, insbesondere dist/
+5. vollständiger PowerShell-Aufruf des freigegebenen Builders
+6. erwartete relevante Builder-, Guard- und Versionsausgabe
+7. exakter Pfad des erzeugten Artefakts
+8. vollständiger Befehl zur SHA-256-Prüfung
+9. eindeutige Stop-Bedingungen bei abweichendem Commit, dirty Arbeitsbaum,
+   Builder-Fail, Guard-Fail, fehlender Datei oder unerwarteter Ausgabe
+10. genaue Angabe, welche vollständigen Ausgaben und Hashes zur Auswertung
+    zurückgegeben werden müssen
+```
+
+Ein Skriptname, ein einzelner Shell-Befehl oder die bloße Aussage, ein Bundle müsse gebaut werden, ist keine ausreichende Arbeitsübergabe. Der Projektinhaber soll weder Builderlogik noch erwartete Sollwerte selbst herleiten und niemals ein generiertes Bundle manuell bearbeiten.
+
+Die Übergabe umfasst nur den aktuell autorisierten und fachlich abgegrenzten Schritt. MIZ-Änderung, Bundle-Einbindung, DCS-Start und Runtime-Test werden erst als eigener Folgeschritt angewiesen, wenn die jeweils vorgelagerten Nachweise ausgewertet und die erforderlichen Freigaben erteilt wurden.
+
+Nach jedem lokalen Schritt liefert der Projektinhaber die vollständige Konsolenausgabe und die angeforderten Hashes zurück. Erst nach deren Prüfung wird der nächste Schritt formuliert.
 
 ## 9. Statische Freigabe vor DCS
 

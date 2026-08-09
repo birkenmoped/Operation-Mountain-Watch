@@ -47,8 +47,8 @@ jobs:
 
           $text = Get-Content -LiteralPath $bundle -Raw -Encoding UTF8
           $required = @(
-            'TKOT-G7-AIRWING-FOUNDATION-4',
-            'TKOT-G8-UH60-VERTICAL-DISPATCH-1',
+            'TKOT-G7-AIRWING-FOUNDATION-5',
+            'TKOT-G8-UH60-VERTICAL-DISPATCH-2',
             'AUFTRAG:NewLANDATCOORDINATE',
             'ZONE_AIR_US_TKOT_ROTARY_STAGING',
             'OnAfterFlightOnMission',

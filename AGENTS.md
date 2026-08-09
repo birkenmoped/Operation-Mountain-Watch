@@ -70,3 +70,11 @@ Before completing a change:
 3. State which behavior still requires an in-game DCS test.
 4. Record test results for pathfinding, multiplayer synchronization, dynamic cargo, or AI behavior when relevant.
 5. Run the documentation validator when documentation, governance, registries, test Markdown, or documentation workflows change.
+
+## Owner handoff for local execution
+
+- Do not hand work to an assumed Codex, Codex CLI, sub-agent, or other external executor. The project owner performs explicitly assigned local Windows, PowerShell, Mission Editor, and DCS steps.
+- When a required action must run on the project owner's system, provide a complete, numbered, directly copyable instruction instead of only naming a script, builder, or tool.
+- Follow `docs/22-test-mission-build-transfer-and-validation-workflow.md`, especially the owner-handoff requirements. State the exact repository path, commands, expected branch and commit, expected relevant output, generated artifact path, hash command, files that must remain untracked, and explicit stop conditions.
+- Give only the currently authorized, bounded local step. Do not combine it with later MIZ mutation or DCS execution unless those actions are also authorized and all preceding gates have passed.
+- Ask the project owner to return the complete command output and hashes. Evaluate that evidence before issuing the next local instruction.
