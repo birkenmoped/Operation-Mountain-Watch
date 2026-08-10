@@ -38,7 +38,7 @@ $requiredMarkers = @(
     'airbase:SetParkingSpotBlacklist(parkingBlacklist)',
     'airwing:SetSafeParkingOn()',
     'pattern=JALALABAD',
-    'airbaseBlacklistAppliedBeforeAirwingCreation = true',
+    'AirbaseBlacklistAppliedBeforeAirwingCreation = true',
     'SafeParkingConfiguredBeforeStart = true',
     'AirwingParkingRestriction = false',
     'logicalAirframes = 20',
