@@ -15,7 +15,7 @@ supersedes:
   - incomplete open-branch list in the documentation index
 superseded_by:
 source_branch: agent/bagram-dual-airwing-foundation-rebuild
-source_commit: PENDING_MERGE
+source_commit: ffdc52c40a9fe83123dc25f369cd81581f293069
 validated_in_dcs: false
 ---
 
@@ -42,7 +42,7 @@ Dieses Register bildet offene Pull Requests, ihre Abhängigkeiten, Dokumentation
 | 13 | `feature/tm02w-red-network-registry` | PR 12 | TM02W1 Network Registry | `mission/tests/tm02-red-network/` | `DRAFT` | W1 DCS-PASS branchgebunden | 14 | Beginn der akzeptierten Produktionsrichtung |
 | 14 | `feature/tm02w2-red-source-cost-selection` | PR 13 | TM02W2 Planner | gleicher Network-Pfad | `DRAFT` | Planner DCS-PASS branchgebunden | 15 | Planungsnachweis |
 | 15 | `feature/tm02w2-red-task-execution` | PR 14 | TM02W2E Task Execution | gleicher Network-Pfad | `DRAFT` | DCS-Test ausstehend | 16 | Ausführungsprototyp |
-| 16 | `feature/tm02w2f-red-initial-network-fill` | PR 15 | TM02W2F Initial Fill | gleicher Network-Pfad | `DRAFT` | DCS-Test ausstehend | offen | aktueller gestapelter RED-Testkopf |
+| 16 | `feature/tm02w2f-red-initial-network-fill` | PR 15 | TM02W2F Initial Fill | gleicher RED-Pfad | `DRAFT` | DCS-Test ausstehend | offen | aktueller gestapelter RED-Testkopf |
 | 17 | `agent/towns-discovery` | `main` | Towns-/Scenery-Discovery | Discovery-Dokumente und Testcode | `HISTORICAL_TEST_FIXTURE` innerhalb Draft-PR | Evidenzsammler; keine Native-DCS-Ausnahme genehmigt | offen | MOOSE-First-Neubewertung erforderlich |
 | 18 | `feature/jalalabad-air-operations-diagnostics` | `main` | Jalalabad Air Operations | `mission/tests/jalalabad-air-operations/`, Dokumente 22–25 branchlokal | `DRAFT` | `ACCEPTED_TECHNICAL_BASELINE` nur für exakt dokumentierten Stand | 24 | technische Air-Ops-Baseline; nicht gemergt |
 | 22 | `feature/tm01m-moose-native-baseline` | PR 8 | TM01M MOOSE-native Convoys | `mission/tests/tm01-blue-convoy/` | `DRAFT` | Ein- und Fünf-Convoy-PASS; Cleanup-Follow-up offen | offen | bevorzugte MOOSE-native Convoy-Richtung |
@@ -57,7 +57,6 @@ Dieses Register bildet offene Pull Requests, ihre Abhängigkeiten, Dokumentation
 | 49 | `agent/next-airport-airwing-squadron-handoff` | `main` | frühere Auswahlübergabe für den nächsten Air-Ops-Knoten | Handoff und README | `DRAFT`; Auswahlstand durch nachfolgende Salerno-, Tarinkot-, Kandahar- und Bagram-Arbeit überholt | keine Runtime-Acceptance | 51, 52, 53, 60, 61 und 63 | historisches Handoff; keine aktuelle Arbeitsanweisung |
 | 50 | `docs/bagram-air-operations-manifest` | `main` | Sammelintegration des alten Air-Ops-Branches | 150 Dateien aus Bagram, Jalalabad und Kandahar | offen, nicht Draft; stark überholt und mit `main` kollidierend | gemischte branchgebundene Nachweise; keine pauschale `main`-Acceptance | selektive spätere Main-Merges | nicht als Ganzes integrieren; nur datei- und autoritätsbezogen auswerten |
 | 52 | `agent/salerno-read-only-diagnostics` | `docs/bagram-air-operations-manifest` | Salerno AIRWING/SQUADRON und COMMANDER-Runtime | `mission/tests/salerno-air-operations/`, Builder und technische Evidenz | `DRAFT`; kanonische Salerno-Foundation wurde inzwischen über PR #60 nach `main` übernommen | `ACCEPTED_TECHNICAL_BASELINE` für den exakt dokumentierten Stage-18-Stand; Parking-Zuweisung nicht akzeptiert | offen | technische Salerno-Fixtures und Runtime-Historie |
-| 63 | `agent/bagram-dual-airwing-foundation-rebuild` | `main` | Bagram duale AIRWING/SQUADRON Foundation | Bagram Manifest/ADR, Foundation Lua/Builder und DCS-Acceptance | `DRAFT`; Eigentümerentscheidung supersediert `AW_US_BAGRAM` | `ACCEPTED_TECHNICAL_BASELINE` für Source-Commit `8401406c...`, MIZ SHA-256 `228a6053...`, DCS 2.9.28.26385 und gepinnten MOOSE-Stand | offen | aktueller Bagram-Foundation-Zweig; Merge/Ready weiterhin genehmigungspflichtig |
 
 ## 3. Stackstruktur
 
@@ -77,11 +76,10 @@ main
 ├── PR 40
 ├── PR 41
 ├── PR 45
-├── PR 49
-└── PR 63
+└── PR 49
 ```
 
-PR #53 (Tarinkot), PR #60 (Salerno Foundation), PR #61 (Kandahar Foundation) und PR #62 (Dokumentationsmetadaten) sind inzwischen nach `main` gemergt und werden nicht mehr als offene Unterprojekte geführt.
+PR #53 (Tarinkot), PR #60 (Salerno Foundation), PR #61 (Kandahar Foundation), PR #62 (Dokumentationsmetadaten) und PR #63 (Bagram duale AIRWING Foundation) sind inzwischen nach `main` gemergt und werden nicht mehr als offene Unterprojekte geführt.
 
 ## 4. Verbindliche Regeln
 
@@ -95,14 +93,14 @@ PR #53 (Tarinkot), PR #60 (Salerno Foundation), PR #61 (Kandahar Foundation) und
 ## 5. Registerabgleich vom 10. August 2026
 
 ```yaml
-main_commit: 8dd18c5fdac8a0f71cf8d9252a199eb1765f7208
-open_pull_requests: 29
+main_commit: 385069e03f758e4ac3fda2113998535f94da9b12
+open_pull_requests: 28
 pr_53: MERGED
 pr_60: MERGED
 pr_61: MERGED
 pr_62: MERGED
-pr_63: OPEN_DRAFT
+pr_63: MERGED
 source: GitHub pull-request state
 ```
 
-Die 29 offenen PRs sind in Abschnitt 2 vollständig erfasst. Ein offener Zustand bedeutet weder aktuelle fachliche Autorität noch Integrationsreife; die Spalten Governance-Status, Acceptance-Status und Produktionsrelevanz bleiben maßgeblich.
+Die 28 offenen PRs sind in Abschnitt 2 vollständig erfasst. Ein offener Zustand bedeutet weder aktuelle fachliche Autorität noch Integrationsreife; die Spalten Governance-Status, Acceptance-Status und Produktionsrelevanz bleiben maßgeblich.
