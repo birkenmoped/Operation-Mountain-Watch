@@ -1,6 +1,6 @@
 ---
 document_id: OMW-TEST-SHINDAND-FINAL-FOUNDATION-ACCEPTANCE
-status: VALIDATED
+status: BINDING
 document_class: MISSION_RUNTIME_ACCEPTANCE
 owning_policy: OMW-GOV-001
 authoritative_for:
@@ -13,6 +13,9 @@ not_authoritative_for:
   - OPSTRANSPORT, COMMANDER, CSAR, MEDEVAC specialization, CampaignState or persistence
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
+supersedes:
+  - OMW-TEST-SHINDAND-FOUNDATION-ACCEPTANCE
+superseded_by: []
 source_branch: agent/shindand-heliport-parking-diagnostic
 source_commit: 584ed674e1d3f642a22c96398c2ebc97b9efcb61
 validated_in_dcs: true
@@ -22,9 +25,9 @@ validated_in_dcs: true
 
 ## 1. Ergebnis
 
-Der Projektinhaber akzeptiert den finalen kombinierten Shindand-Foundation-Lauf als **PASS**.
+Der Projektinhaber akzeptiert den finalen kombinierten Shindand-Foundation-Lauf als **PASS** und die Shindand AIRWING/SQUADRON Foundation für den dokumentierten Umfang als abgeschlossen.
 
-Die Acceptance gilt ausschließlich für den in diesem Dokument beschriebenen Branch-, Commit-, Bundle-, DCS- und MOOSE-Stand sowie für den tatsächlich beobachteten Umfang.
+Die Acceptance gilt ausschließlich für den in diesem Dokument beschriebenen Branch-, Commit-, Bundle-, DCS- und MOOSE-Stand sowie für den tatsächlich beobachteten Umfang. Der Status `BINDING` dokumentiert die ausdrückliche Projektinhaberentscheidung zur Übernahme dieser Foundation-Baseline; er ersetzt keine fehlende technische Einzelprovenienz durch Annahmen.
 
 ## 2. Artefakt- und Runtime-Provenienz
 
@@ -43,7 +46,7 @@ Debrief log SHA-256: 153247efccc18c9a050b9d309ab0c3eed9f3fb15363774fc995a63e55c5
 Mission file reported by debrief: OMW_Template_v7_Shindand.miz
 ```
 
-Ein neuer MIZ-SHA-256 wurde für diesen Lauf nicht separat ermittelt und wird deshalb nicht behauptet.
+Ein neuer MIZ-SHA-256 wurde für diesen Lauf nicht separat ermittelt und wird deshalb nicht behauptet. Aus diesem Grund wird dieser Bericht nicht als `ACCEPTED_TECHNICAL_BASELINE` nach `OMW-GOV-DOCUMENT-METADATA` klassifiziert; die Projektinhaberentscheidung zur Foundation-Baseline bleibt davon getrennt.
 
 ## 3. Foundation-Regression
 
@@ -154,7 +157,7 @@ Parking war im finalen Test ausdrücklich kein Acceptance-Kriterium.
 
 ## 8. Schlussfolgerung
 
-Für den dokumentierten Stand ist die **Shindand AIRWING/SQUADRON Foundation VALIDATED**.
+Für den dokumentierten Umfang ist die **Shindand AIRWING/SQUADRON Foundation abgeschlossen und als Projektbaseline übernommen**.
 
 Bestätigt sind insbesondere die Foundation-Initialisierung, der logische 20-Airframe-Bestand, die drei SQUADRONs, native AIRWING/AUFTRAG-Zuweisung, Cold-Start und operative Abflugfähigkeit aller drei Muster sowie erfolgreiche Ausführung der im Test verwendeten Missionsarten.
 
