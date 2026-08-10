@@ -14,6 +14,13 @@ superseded_by:
 source_branch: agent/campaignstate-storage-sync-foundation
 source_commit: PENDING_MERGE
 validated_in_dcs: true
+acceptance_branch: agent/campaignstate-storage-sync-foundation
+acceptance_commit: 94ce64365e5bd3836030cdfd8a3e5049b2b477a8
+acceptance_mission: OMW_Template_v8_AirOps_rdy.miz
+acceptance_mission_sha256: 1d8824b7849d01e6b63a9d51d819fb8da39cdc85eda2c7426b393cb78bf5cd91
+dcs_version: 2.9.28.26385
+moose_commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+moose_artifact_sha256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
 base_branch: agent/storage-fuel-adapter-foundation
 base_commit: e79ed1ae7bbe62160b3a4dce83e1dd25028ce0fb
 base_status: ACCEPTED_TECHNICAL_BASELINE
