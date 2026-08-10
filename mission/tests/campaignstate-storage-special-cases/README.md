@@ -1,6 +1,6 @@
 ---
 document_id: OMW-TEST-CAMPAIGNSTATE-STORAGE-SPECIAL-CASES-INDEX
-status: PLANNED
+status: ACCEPTED_TECHNICAL_BASELINE
 document_class: TEST_PROJECT_INDEX
 owning_policy: OMW-GOV-001
 authoritative_for:
@@ -14,7 +14,14 @@ supersedes:
 superseded_by:
 source_branch: agent/campaignstate-storage-special-cases
 source_commit: PENDING_MERGE
-validated_in_dcs: false
+validated_in_dcs: true
+acceptance_branch: agent/campaignstate-storage-special-cases
+acceptance_commit: b8f3c8328bfae08033a3f304ad2e9d92b5a3bc83
+acceptance_mission: OMW_Template_v8_AirOps_rdy(4).miz
+acceptance_mission_sha256: 66bcf79696985a9a60c961b1078e7f36915ff5a83cd315f6c049d388981fc730
+dcs_version: 2.9.28.26385 MT
+moose_commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+moose_artifact_sha256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
 base_branch: agent/campaignstate-storage-sync-foundation
 base_commit: 6087e389824a82d01ba735ba8e8f63951840cb08
 base_status: ACCEPTED_TECHNICAL_BASELINE
@@ -127,6 +134,7 @@ Die einzige beabsichtigte Runtime-Mutation ist der temporäre `37 kg`-JETFUEL-Pr
 mission/tests/campaignstate-storage-special-cases/src/01-storage-special-cases.lua
 tools/build-campaignstate-storage-special-cases.ps1
 mission/tests/campaignstate-storage-special-cases/dist/OMW_CampaignState_Storage_Special_Cases_Test.lua
+mission/tests/campaignstate-storage-special-cases/expected/campaignstate-storage-special-cases-acceptance.md
 ```
 
 Builder-Version:
@@ -143,14 +151,63 @@ Commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
 Moose.lua SHA-256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
 ```
 
-## 6. Acceptance-Kriterien
+## 6. DCS-Acceptance
 
-Der DCS-Lauf muss für alle sechs benannten Airbase-Endpunkte eine gültige `AIRBASE`-/`STORAGE`-Auflösung liefern.
+Der kombinierte Lauf vom 2026-08-10 endete mit:
 
-Für jedes Paar muss genau eine `PAIR_RESULT`-Zeile entstehen. Ein belastbarer Abschluss ist erreicht, wenn kein Paar `INCONCLUSIVE` bleibt und jede tatsächlich durchgeführte JETFUEL-Perturbation vollständig wiederhergestellt wurde.
+```text
+RESULT testId=CAMPAIGNSTATE-STORAGE-SPECIAL-CASES-1 status=PASS pairs=3 inconclusive=0 campaignStateMutation=false reverseOverwrite=false persistentMutation=false
+```
 
-Die beobachtete Topologie wird nicht vorweggenommen. Insbesondere wird für Kandahar und Shindand nicht angenommen, dass Main und Heliport getrennte native Warehouses besitzen.
+Bestätigte Topologie:
 
-Für Salerno wird geprüft, dass `FOB Salerno` und `Khost` als getrennte Airbase-Namen auflösbar sind; ob ihre Liquid-Bestände technisch getrennt oder gekoppelt sind, wird ebenfalls aus dem Runtime-Verhalten ermittelt.
+```text
+Kandahar            <-> Kandahar Heliport : INDEPENDENT_BEHAVIOR
+Shindand             <-> Shindand Heliport: INDEPENDENT_BEHAVIOR
+FOB Salerno          <-> Khost             : INDEPENDENT_BEHAVIOR
+```
 
-Ein Status `ACCEPTED_TECHNICAL_BASELINE` ist erst nach dokumentiertem DCS-Lauf mit Branch-, Commit-, Mission-, Bundle-, DCS- und MOOSE-Provenienz zulässig.
+Alle drei `37 kg`-JETFUEL-Proben wurden am jeweiligen Quell-Storage exakt gelesen, beeinflussten den Gegenendpunkt nicht und wurden mit `RESTORE_PASS` vollständig zurückgesetzt.
+
+Für die OMW-Topologie folgt daraus:
+
+```text
+Kandahar            -> eigener Fuel-Storage
+Kandahar Heliport   -> eigener Fuel-Storage
+Shindand Heliport   -> eigener Fuel-Storage; Shindand Main bleibt außerhalb des OMW-AirOps-Fuel-Scopes
+FOB Salerno          -> eigener Fuel-Storage; Khost ist kein Ersatzknoten
+```
+
+Acceptance-Provenienz:
+
+```text
+Source/Builder commit: b8f3c8328bfae08033a3f304ad2e9d92b5a3bc83
+Bundle SHA-256: 3b5a373752419fd1596a387b0af4256c1e99168c20ffa7d4b4b476d3775b4f92
+Mission: OMW_Template_v8_AirOps_rdy(4).miz
+Mission SHA-256: 66bcf79696985a9a60c961b1078e7f36915ff5a83cd315f6c049d388981fc730
+DCS log SHA-256: d096c8f398ba1c2fa1ae62a28b264461429cf35842d3697e1ac16746b661ade9
+Debrief SHA-256: f1b8c867be49bcbc95e5705c726467b3c94567f580fadaa9b62cb4e3b8f4e65e
+DCS: 2.9.28.26385 MT
+MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+Moose.lua SHA-256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
+```
+
+Das eingebettete Testbundle in der hochgeladenen MIZ besitzt denselben SHA-256 wie der zuvor lokal gebaute Bundle-Stand.
+
+Der vollständige Nachweis steht in `expected/campaignstate-storage-special-cases-acceptance.md`.
+
+## 7. Acceptance-Grenze
+
+Der Status `ACCEPTED_TECHNICAL_BASELINE` gilt ausschließlich für die dokumentierte STORAGE-Topologie und das kontrollierte JETFUEL-Aliasing-/Restore-Verhalten dieses exakten Branch-/Commit-/MIZ-/DCS-/MOOSE-Stands.
+
+Nicht belegt bleiben:
+
+```text
+CampaignState multi-node synchronization
+continuous reconciliation
+persistence/restart behavior
+multiplayer reconciliation
+automatic aircraft fuel debit
+weapon/item synchronization
+CTLD or OPSTRANSPORT resource accounting
+```
