@@ -1,16 +1,20 @@
 ---
 document_id: OMW-ARCH-RESOURCE-WAREHOUSE-OWNERSHIP
-status: PLANNED
+status: BINDING_PROJECT_DECISION
 document_class: ARCHITECTURE_CONTRACT
 owning_policy: OMW-GOV-001
 authoritative_for:
-  - planned strategic resource ownership boundary
+  - strategic resource ownership boundary
+  - approved CampaignState fuel resource identifiers and canonical fuel unit
+  - approved AirOps fuel supply-parent topology
+  - approved regional-node fuel stock thresholds and FARP buffers
   - planned CampaignState-to-MOOSE/DCS warehouse synchronization contract
   - planned delivery accounting and idempotency rules
   - source-reviewed MOOSE STORAGE adapter boundary
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
+  - combined FUEL_AVGAS_JP8 working resource label for AirOps fuel accounting
 superseded_by:
 source_branch: agent/resource-warehouse-ownership-contract
 source_commit: PENDING_MERGE
@@ -21,7 +25,7 @@ validated_in_dcs: false
 
 ## 1. Zweck und Entscheidungsgrenze
 
-Dieses Dokument präzisiert die bestehende Logistik- und CampaignState-Architektur für Ressourcen, Warehouse-Repräsentation und Lieferbuchung. Es ersetzt keine bereits bindende Governance und erhebt offene Datenentscheidungen nicht stillschweigend zu Projektentscheidungen.
+Dieses Dokument präzisiert die bestehende Logistik- und CampaignState-Architektur für Ressourcen, Warehouse-Repräsentation und Lieferbuchung. Die in Abschnitt 14 dokumentierten Eigentümerentscheidungen sind verbindliche OMW-Projektentscheidungen. Technische Runtime-Synchronisation, automatische Verbrauchsbuchung und DCS-Acceptance bleiben davon getrennt und sind noch nicht validiert.
 
 Maßgebliche Grundlagen:
 
@@ -136,7 +140,7 @@ Ein späterer Adapter muss Abweichungen protokollieren und nach einem ausdrückl
 
 ### 4.1 Fuel
 
-Der MOOSE-`STORAGE`-Liquidpfad arbeitet in kg. Für den strategischen Fuel-Vertrag ist deshalb folgende Zielrichtung vorgesehen:
+Der MOOSE-`STORAGE`-Liquidpfad arbeitet in kg. Für den strategischen Fuel-Vertrag gilt verbindlich:
 
 ```text
 CampaignState canonical fuel quantity: kg
@@ -144,7 +148,7 @@ operational STORAGE liquid quantity: kg
 planning/reporting display: may use US gal, kg or both
 ```
 
-Die Festlegung von **kg als kanonische CampaignState-Fuel-Einheit ist noch `TBD_OWNER_DECISION`**. Bis zur ausdrücklichen Freigabe bleibt sie eine Architekturvorlage und darf nicht als bindende Datenmigration umgesetzt werden.
+**kg ist die kanonische CampaignState-Fuel-Einheit.** Planungs- und Berichtswerte dürfen zusätzlich in US gal geführt werden, verändern aber nicht die kanonische Eigentumsmenge.
 
 Jede Gallonen-zu-kg-Konvertierung benötigt einen expliziten, ressourcenspezifischen Dichtewert und Provenienz. Keine versteckte globale Magic Number.
 
@@ -154,13 +158,13 @@ Diskrete Waffen und Module werden strategisch grundsätzlich als Stückzahl gef�
 
 ## 5. Fuel-Ressourcen und die AVGAS-/JP-8-Grenze
 
-Dokument 05 führt derzeit die historische Arbeitsbezeichnung `FUEL_AVGAS_JP8`. Die aktuelle Aircraft- und MOOSE-Prüfung zeigt jedoch eine notwendige fachliche Trennung:
+Dokument 05 führt die frühere Arbeitsbezeichnung `FUEL_AVGAS_JP8`. Die aktuelle Aircraft- und MOOSE-Prüfung zeigt jedoch eine notwendige fachliche Trennung:
 
 - MQ-1 benötigt AVGAS;
 - die übrigen hier betrachteten OMW-AirOps-Muster verwenden den JP-8-/Jet-Fuel-Pfad;
 - MOOSE `STORAGE` trennt `JETFUEL` und `GASOLINE` technisch.
 
-Daraus folgt als **noch nicht genehmigte Datenentscheidung** die vorgeschlagene Aufteilung:
+Der Projektinhaber hat deshalb die getrennten strategischen AirOps-Fuel-Ressourcen verbindlich festgelegt:
 
 ```text
 FUEL_JP8
@@ -170,11 +174,11 @@ FUEL_AVGAS
 Status:
 
 ```text
-PROPOSED_RESOURCE_IDS
-TBD_OWNER_DECISION
+APPROVED_RESOURCE_IDS
+BINDING_PROJECT_DECISION
 ```
 
-Bis zur Entscheidung darf kein produktiver Code `FUEL_AVGAS_JP8` stillschweigend in einen der beiden neuen Typen umdeuten.
+`FUEL_AVGAS_JP8` darf für neue AirOps-Ressourcenbuchungen nicht mehr als gemeinsamer strategischer Fuel-Pool verwendet werden. Eine spätere Migration vorhandener Daten muss beide Ressourcen explizit und ohne stille Umdeutung zuordnen.
 
 ## 6. Munitionsressourcen
 
@@ -220,7 +224,7 @@ resourceType
 quantity
 canonicalUnit
 origin
- destination
+destination
 status
 createdAt
 missionDemandId
@@ -350,23 +354,25 @@ Vor produktiver Transport- oder Warehouse-Synchronisation sind mindestens zu pr�
 
 Keine eigene parallele Transport-, Warehouse- oder Persistenzimplementierung ist durch dieses Dokument genehmigt.
 
-## 14. Offene Owner-Entscheidungen
+## 14. Verbindliche Owner-Entscheidungen
 
-Vor einem bindenden Daten-/Runtime-Vertrag sind mindestens zu entscheiden:
+Der Projektinhaber hat am 10.08.2026 folgende Entscheidungen für den Resource-/Warehouse-Vertrag freigegeben:
 
-| Entscheidung | Aktueller Vorschlag | Status |
+| Entscheidung | Verbindlicher Wert | Status |
 |---|---|---|
-| Fuel-Ressourcen trennen | `FUEL_JP8`, `FUEL_AVGAS` | `TBD_OWNER_DECISION` |
-| kanonische strategische Fuel-Einheit | kg | `TBD_OWNER_DECISION` |
-| Salerno Supply Parent | Bagram / Jalalabad / anderer genehmigter Parent | `TBD_OWNER_DECISION` |
-| Tarinkot Supply Parent | Kandahar als starker Kandidat | `TBD_OWNER_DECISION` |
-| Shindand Fuel Parent | Kandahar nur Kandidat; Munitionsroute belegt | `TBD_OWNER_DECISION` |
-| Regional-Node DoS | Target 5 / Reorder 3 / Critical 1,5 Tage | `TBD_OWNER_DECISION` |
-| unmittelbarer FARP-Puffer | Theater/Regional Hub 2 d; Regional Node 1,5 d | `TBD_OWNER_DECISION` |
+| Fuel-Ressourcen trennen | `FUEL_JP8`, `FUEL_AVGAS` | `APPROVED` |
+| kanonische strategische Fuel-Einheit | kg | `APPROVED` |
+| Salerno Supply Parent | Kandahar | `APPROVED_OMW_DESIGN_DECISION` |
+| Tarinkot Supply Parent | Kandahar | `APPROVED_OMW_DESIGN_DECISION` |
+| Shindand Fuel Parent | Kandahar | `APPROVED_OMW_DESIGN_DECISION` |
+| Regional-Node DoS | Target 5 / Reorder 3 / Critical 1,5 Tage | `APPROVED` |
+| unmittelbarer FARP-Puffer | Theater/Regional Hub 2 d; Regional Node 1,5 d | `APPROVED` |
+
+Für die drei Supply-Parent-Entscheidungen gilt: Sie sind OMW-Designentscheidungen. Unterschiedliche historische Evidenzstärken ändern ihre Projektverbindlichkeit nicht und dürfen nicht als Behauptung einer historisch exakt belegten Aviation-Fuel-Route formuliert werden.
 
 ## 15. Acceptance-Grenze
 
-Dieses Dokument ist `PLANNED` und `validated_in_dcs: false`.
+Dieses Dokument ist `BINDING_PROJECT_DECISION` und `validated_in_dcs: false`.
 
 Source-reviewed ist die Existenz und Methodensemantik von MOOSE `STORAGE` im gepinnten Quellstand. Nicht validiert sind:
 
