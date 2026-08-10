@@ -15,7 +15,7 @@ not_authoritative_for:
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 source_branch: agent/shindand-heliport-parking-diagnostic
-source_commit: PENDING_MERGE
+source_commit: b85215f2cb1caacd9fd1ffd1d27fdbee216fb839
 validated_in_dcs: partial
 supersedes: []
 superseded_by: []
