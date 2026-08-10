@@ -84,3 +84,101 @@ Jeder Speicherstand benötigt:
 - Migrationspfad;
 - Integritätsprüfung;
 - reproduzierbare Rekonstruktion der zulässigen Laufzeitobjekte.
+
+## 6. DCS-Runtime-Evidenz: CampaignState -> STORAGE Fuel Mirror
+
+Am 10.08.2026 wurde auf `agent/campaignstate-storage-multinode-sync` der bestehende einseitige Fuel-Mirror-Pfad in einer gemeinsamen Sieben-Knoten-Matrix geprüft:
+
+```text
+CampaignState
+  -> OMW_CampaignStateStorageSync
+  -> OMW_StorageFuelAdapter
+  -> MOOSE STORAGE
+  -> DCS Airbase Warehouse
+```
+
+Getesteter Source-/Builder-Stand:
+
+```text
+Commit: e54b6c4eba126979a57efdbc86f485cde03f69e5
+BuilderVersion: CAMPAIGNSTATE-STORAGE-MULTINODE-1
+Bundle SHA-256: 3de006db91bb2888b5e2dd67662eae39454df9a5d2258d57e5ce9008c9f7ff00
+DCS: 2.9.28.26385 MT
+MOOSE: 2.9.18
+MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+Moose.lua SHA-256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
+Mission filename: OMW_Template_v8_AirOps_rdy.miz
+```
+
+Geprüfte operative STORAGE-Endpunkte:
+
+```text
+Bagram
+Jalalabad
+Kandahar
+Kandahar Heliport
+FOB Salerno
+Tarinkot
+Shindand Heliport
+```
+
+### 6.1 Lauf mit Spieler-Spawn auf Jalalabad
+
+Mit einem OH-58D-Spieler-Spawn auf Jalalabad ergab der Harness:
+
+```text
+nodesExpected=7
+nodesPassed=6
+nodesFailed=1
+status=FAIL
+```
+
+Nur Jalalabad schlug beim exakten `SetLiquid()`-Readback/Restore fehl. Vor Testbeginn lag dort der native JETFUEL-Bestand bereits bei `99666.309997559 kg` statt `100000 kg`. Die übrigen sechs Knoten bestanden vollständig.
+
+Artifact-Hashes:
+
+```text
+DCS log SHA-256: bc21980d05fc08bf9ba91bc53a65d31807705c0b867e9306c29e34c40646cc5a
+Debrief SHA-256: 2f91450a0698ed62a7e690186e40d0b8f0ca2e8659a9f45019e311f06554efd8
+```
+
+Dieser Lauf belegt eine wichtige Runtime-Grenze: native DCS-Fuelbuchungen eines aktiven Luftfahrzeugs können denselben Warehouse-Bestand während eines streng synchronen Mirror-Write/Readback-Fensters verändern.
+
+### 6.2 Wiederholung ohne Spieler-Spawn
+
+Der unmittelbar folgende Lauf ohne Spieler-Spawn ergab:
+
+```text
+nodesExpected=7
+nodesPassed=7
+nodesFailed=0
+status=PASS
+direction=CampaignState-to-STORAGE
+campaignStateMutation=false
+reverseOverwrite=false
+persistence=false
+automaticAircraftDebit=false
+```
+
+Alle sieben Knoten bestanden CampaignState-Snapshot, initialen Plan mit zwei Änderungen, Write/Readback, zweiten Plan mit `changeCount=0`, Idempotenz, fehlende Rückmutation und Restore.
+
+Artifact-Hashes:
+
+```text
+DCS log SHA-256: 9f81fef5d283f1ca6b94b72e55e9b258e6cc8680ae01f016ad92e47aade8071b
+Debrief SHA-256: 35c3eba64237b24e4210e210f58d7313169ee9da82b6a388bab5cebf39e87ab0
+```
+
+### 6.3 Architekturfolgerung
+
+Die strategische Hoheit bleibt unverändert bei `CampaignState`. Der bestätigte Pfad ist ein einseitiger operativer Mirror und kein zweites Ressourcenbuch:
+
+```text
+CampaignState resource stock
+!= MOOSE WAREHOUSE / AIRWING asset stock
+!= MOOSE STORAGE / DCS warehouse liquids/items
+```
+
+Die DCS-Runtime-Evidenz bestätigt den technischen Mirror für alle sieben Knoten unter einem ruhigen Sync-Fenster. Sie genehmigt noch keine automatische Produktionsstrategie für konkurrierenden Verbrauch. Insbesondere bleiben Locking, Retry, Toleranz, Event-Buchung, Transaktionsmodell und Reconciliation gesonderte Architekturentscheidungen.
+
+Der Test darf noch nicht als vollständige `ACCEPTED_TECHNICAL_BASELINE` hochgestuft werden, solange der exakte SHA-256 der tatsächlich ausgeführten `.miz` und der darin eingebettete Bundle-Hash für den 7/7-Lauf nicht nachgewiesen sind. Diese Werte dürfen nicht aus älteren Missionen abgeleitet oder geraten werden.
