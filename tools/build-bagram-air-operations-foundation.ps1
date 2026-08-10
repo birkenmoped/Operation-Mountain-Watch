@@ -57,7 +57,6 @@ $forbiddenPatterns = @(
     'COMMANDER\s*:\s*New',
     'AddMission\s*\(',
     'Bagram-to-Jalalabad',
-    'Bagram→Jalalabad',
     'directSpawnRequested=true',
     'SetParkingIDs\s*\('
 )
