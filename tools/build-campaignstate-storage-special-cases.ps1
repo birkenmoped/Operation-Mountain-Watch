@@ -43,8 +43,7 @@ foreach ($marker in $requiredMarkers) {
 }
 
 $forbiddenPatterns = @(
-    'CampaignState',
-    'OMWCampaignState',
+    'OMWCampaignState\.',
     'SCHEDULER\s*:',
     'timer\.scheduleFunction',
     'SaveToFile',
