@@ -1,3 +1,24 @@
+---
+document_id: OMW-TEST-BAGRAM-AIR-OPERATIONS-INDEX
+status: PLANNED
+document_class: TEST_PROJECT_INDEX
+owning_policy: OMW-GOV-001
+authoritative_for:
+  - Bagram dual-AIRWING foundation test layout
+  - Bagram foundation build and Mission Editor prerequisites
+not_authoritative_for:
+  - DCS runtime acceptance
+  - tactical tasking or parking acceptance
+scenario_period: 2010-08-01/2011-12-31
+project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
+supersedes:
+  - historical single-AIRWING Bagram test index
+superseded_by: []
+source_branch: agent/bagram-dual-airwing-foundation-rebuild
+source_commit: PENDING_MERGE
+validated_in_dcs: false
+---
+
 # Bagram Air Operations Foundation Test
 
 ## Scope
