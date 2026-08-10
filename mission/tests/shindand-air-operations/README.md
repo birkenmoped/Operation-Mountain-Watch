@@ -6,9 +6,10 @@ owning_policy: OMW-GOV-001
 authoritative_for:
   - read-only mapping of Shindand Heliport Mission Editor parking labels to MOOSE TerminalIDs
   - tested Shindand Heliport parking-domain evidence
+  - owner-defined Shindand Heliport parking allocation baseline for the next foundation step
 not_authoritative_for:
   - active Shindand ORBAT
-  - final productive AI parking allowlist or client blacklist
+  - implemented productive AI parking allowlists or client blacklists
   - AIRWING/SQUADRON acceptance
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
@@ -225,7 +226,59 @@ ME 52
 
 Der Test weist ihnen **keine andere Airbase-Domain zu**. Ihre Zuordnung zu `Shindand Airfield` wurde nicht getestet und wird nicht behauptet.
 
-## 7. Artefaktprovenienz
+## 7. Owner-defined Parking Allocation Baseline
+
+Nach Abschluss des read-only Mappingtests hat der Projektinhaber die für den nächsten Shindand-Foundation-Schritt zu verwendenden freien ME-Parkingbereiche festgelegt. Diese Entscheidung ist eine **Design-/Allocation-Baseline** und kein zusätzlicher DCS-Verhaltensnachweis.
+
+### 7.1 Typgebundene AI-freie Plätze
+
+| Muster | ME-Parkplätze | MOOSE TerminalIDs |
+|---|---|---|
+| AH-64D | `01, 02, 05, 07` | `21, 3, 34, 15` |
+| CH-47 | `41, 39, 37` | `30, 10, 23` |
+| UH-60 | `29, 30, 31, 34, 34a` | `41, 18, 13, 20, 19` |
+
+Diese Plätze sind für die jeweilige Musterklasse als AI-freie beziehungsweise musterbezogene Parking-Basis vorgesehen. Die tatsächliche produktive MOOSE-Parking-Konfiguration wird erst im folgenden Foundation-Implementierungsschritt erzeugt und getestet.
+
+### 7.2 Vollständig frei verfügbarer Pool
+
+Der Projektinhaber hat zusätzlich folgende bestätigte Heliport-Parkplätze zur vollständig freien Verwendung freigegeben:
+
+```text
+ME 11-19
+ME 20-27
+```
+
+Die zugehörigen MOOSE TerminalIDs sind:
+
+| ME | TerminalID | ME | TerminalID |
+|---:|---:|---:|---:|
+| 11 | 0 | 20 | 39 |
+| 12 | 16 | 21 | 38 |
+| 13 | 24 | 22 | 5 |
+| 14 | 33 | 23 | 29 |
+| 15 | 14 | 24 | 11 |
+| 16 | 25 | 25 | 26 |
+| 17 | 42 | 26 | 40 |
+| 18 | 27 | 27 | 9 |
+| 19 | 22 |  |  |
+
+Damit umfasst der vollständig freie Pool 17 bestätigte Heliport-Parkplätze.
+
+### 7.3 Abgrenzung
+
+Nicht aus dieser Entscheidung abzuleiten sind:
+
+```text
+- eine Zuordnung der ausgeschlossenen ME 46-52 zu Shindand Airfield
+- ein bereits implementierter AIRWING-/SQUADRON-Parkingpool
+- eine Client-Blacklist
+- eine Aussage über Spawn-, Taxi-, Takeoff- oder Recovery-Verhalten
+```
+
+Diese Punkte bleiben den jeweiligen folgenden Foundation- und DCS-Acceptance-Schritten vorbehalten.
+
+## 8. Artefaktprovenienz
 
 ```text
 Branch: agent/shindand-heliport-parking-diagnostic
@@ -241,8 +294,8 @@ DCS: 2.9.28.26385 MT
 Test date: 2026-08-10
 ```
 
-## 8. Geltungsgrenze
+## 9. Geltungsgrenze
 
 Dieser DCS-Lauf bestätigt die Identität des `Shindand Heliport`, seine 42 von MOOSE gelieferten Parking-Spots sowie die 38 oben aufgeführten ME-Label-zu-TerminalID-Zuordnungen für die dokumentierte Artefaktkette.
 
-Der Lauf legt noch keine produktive AI-Parking-Allowlist, Client-Blacklist oder SQUADRON-Parking-Verteilung fest. Diese werden erst aus dem bestätigten Heliport-Contract und den konkreten Client-/Template-/Static-Anforderungen abgeleitet.
+Die in Abschnitt 7 festgehaltene Parking-Aufteilung ist eine nachgelagerte Eigentümerentscheidung für den nächsten Foundation-Schritt. Sie ist noch keine implementierte oder in DCS validierte Parking-Konfiguration.
