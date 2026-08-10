@@ -30,7 +30,6 @@ $requiredMarkers = @(
     'AIRBASE:FindByName',
     'STORAGE:FindByName',
     'GetStorage',
-    'GetWarehouse',
     'GetLiquidAmount',
     'SetLiquid',
     'RESTORE_PASS',
@@ -52,7 +51,9 @@ $forbiddenPatterns = @(
     'OPSTRANSPORT\s*:',
     'CTLD\s*:',
     '_DATABASE',
-    'world\.searchObjects'
+    'world\.searchObjects',
+    'GetWarehouse',
+    'IsUnlimitedLiquids'
 )
 foreach ($pattern in $forbiddenPatterns) {
     if ($harness -match $pattern) {
