@@ -1,6 +1,6 @@
 ---
 document_id: OMW-TEST-CAMPAIGNSTATE-STORAGE-SYNC-INDEX
-status: PLANNED
+status: ACCEPTED_TECHNICAL_BASELINE
 document_class: TEST_PROJECT_INDEX
 owning_policy: OMW-GOV-001
 authoritative_for:
@@ -13,7 +13,7 @@ supersedes:
 superseded_by:
 source_branch: agent/campaignstate-storage-sync-foundation
 source_commit: PENDING_MERGE
-validated_in_dcs: false
+validated_in_dcs: true
 base_branch: agent/storage-fuel-adapter-foundation
 base_commit: e79ed1ae7bbe62160b3a4dce83e1dd25028ce0fb
 base_status: ACCEPTED_TECHNICAL_BASELINE
@@ -26,15 +26,15 @@ inherited_risk:
 
 ## 1. Ausgangslage
 
-Die Repository-Prüfung hat keinen produktiven CampaignState-Lua-Store ergeben. `CampaignState` ist bislang verbindlich als strategische Domäne dokumentiert, während unter `scripts/logistics/` nur der bereits akzeptierte `OMW_StorageFuelAdapter.lua` existiert.
+Die Repository-Prüfung hat keinen produktiven CampaignState-Lua-Store ergeben. `CampaignState` war verbindlich als strategische Domäne dokumentiert, während unter `scripts/logistics/` der bereits akzeptierte `OMW_StorageFuelAdapter.lua` existierte.
 
-Dieser Folgebranch baut deshalb auf der akzeptierten STORAGE-Fuel-Adapter-Foundation auf und ergänzt nur den kleinsten notwendigen strategischen Read-Pfad sowie einen expliziten one-way Sync-Koordinator.
+Dieser Folgebranch baut auf der akzeptierten STORAGE-Fuel-Adapter-Foundation auf und ergänzt nur den kleinsten notwendigen strategischen Read-Pfad sowie einen expliziten one-way Sync-Koordinator.
 
 ## 2. MOOSE-First-Grenze
 
 MOOSE bleibt für die operative DCS-Warehouse-Abbildung zuständig. Der strategische CampaignState ist projektspezifische Kampagnendomäne und darf gemäß Governance nicht durch MOOSE `WAREHOUSE` oder `STORAGE` ersetzt werden.
 
-Der neue Code implementiert deshalb keine Warehouse-Funktion parallel zu MOOSE. Er liefert lediglich einen autoritativen Snapshot an den bereits validierten `STORAGE`-Adapter.
+Der neue Code implementiert deshalb keine Warehouse-Funktion parallel zu MOOSE. Er liefert lediglich einen autoritativen Snapshot an den bereits DCS-validierten `STORAGE`-Adapter.
 
 ## 3. Source-Pfade
 
@@ -57,7 +57,7 @@ Store:GetResourceKg(nodeId, resourceId)
 Store:GetFuelSnapshot(nodeId)
 ```
 
-Der Fuel-Snapshot entspricht exakt dem bereits akzeptierten Adaptervertrag:
+Der Fuel-Snapshot entspricht exakt dem akzeptierten Adaptervertrag:
 
 ```text
 nodeId
@@ -91,15 +91,30 @@ nodeId: HUB_KANDAHAR
 airbaseName: Kandahar
 resources: FUEL_JP8, FUEL_AVGAS
 canonical unit: kg
+Unlimited Liquids: OFF
+Mission Editor JETFUEL: 100 t
+Mission Editor GASOLINE: 100 t
+Runtime original JETFUEL: 100000 kg
+Runtime original GASOLINE: 100000 kg
 ```
 
-Kandahar muss wie in der akzeptierten Parent-Baseline mit begrenzten Flüssigkeiten betrieben werden.
+## 6. Akzeptierter Runtime-Test
 
-## 6. Runtime-Test
+```text
+Test date: 2026-08-10
+DCS: 2.9.28.26385 MT
+Source/Builder commit: 94ce64365e5bd3836030cdfd8a3e5049b2b477a8
+BuilderVersion: CAMPAIGNSTATE-STORAGE-SYNC-FOUNDATION-1
+MIZ SHA-256: 1d8824b7849d01e6b63a9d51d819fb8da39cdc85eda2c7426b393cb78bf5cd91
+Internal mission SHA-256: a0f6ef17c57d318ff095c81dd098264acb87ea826292ab81bf459d5486b98256
+Embedded bundle SHA-256: 6f2678c853d27f273e73fab51eb39921e7d658d1b6cb3c13f857afdee4f2c4a7
+DCS log SHA-256: 940f548b4ad0fc6a54f9e698e353792db63c412334de22332ccd7f7187cb61da
+Debrief SHA-256: 82d61abb24f1209a0bcd57b14186de172c6b0e29ffd44caf4d300d2d6ac72c95
+```
 
-Der Test liest zunächst die realen Ausgangswerte über den akzeptierten STORAGE-Adapter. Daraus wird ein autoritativer CampaignState-Testzustand mit `+1000 kg` JP-8 und `+500 kg` AVGAS aufgebaut.
+Der Test erzeugte einen autoritativen CampaignState-Testzustand mit `+1000 kg` JP-8 und `+500 kg` AVGAS gegenüber dem gelesenen Kandahar-Ausgangsbestand.
 
-Danach muss gelten:
+Bestätigte Runtime-Kette:
 
 ```text
 CAMPAIGNSTATE_SNAPSHOT_PASS
@@ -111,7 +126,7 @@ RESTORE_PASS
 RESULT testId=CAMPAIGNSTATE-STORAGE-SYNC-FOUNDATION-1 status=PASS
 ```
 
-Der Restore erfolgt ausschließlich zur Testbereinigung über den bereits akzeptierten STORAGE-Adapter.
+Der zweite identische Sync ergab `changeCount=0`. CampaignState blieb unverändert; der DCS-Warehouse-Ausgangsbestand wurde anschließend verifiziert wiederhergestellt. Der Debrief enthielt `graveyard = {}`.
 
 ## 7. Ausgeschlossen
 
@@ -131,9 +146,12 @@ scheduler-based continuous sync
 reverse overwrite from DCS telemetry
 ```
 
-Bis zum dokumentierten DCS-Lauf gilt:
+Aktueller Status:
 
 ```text
-runtime_status: NOT_RUN
-validated_in_dcs: false
+runtime_status: PASS
+status: ACCEPTED_TECHNICAL_BASELINE
+validated_in_dcs: true
 ```
+
+Die Acceptance gilt ausschließlich für die dokumentierte Branch-/Commit-/MIZ-/Bundle-/DCS-/MOOSE-Provenienz.
