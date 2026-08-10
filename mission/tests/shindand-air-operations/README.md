@@ -4,17 +4,17 @@ status: PLANNED
 document_class: MISSION_RUNTIME_TEST
 owning_policy: OMW-GOV-001
 authoritative_for:
-  - planned read-only mapping of Shindand Heliport Mission Editor parking labels to MOOSE TerminalIDs
+  - read-only mapping of Shindand Heliport Mission Editor parking labels to MOOSE TerminalIDs
+  - tested Shindand Heliport parking-domain evidence
 not_authoritative_for:
   - active Shindand ORBAT
-  - final Shindand parking pool
+  - final productive AI parking allowlist or client blacklist
   - AIRWING/SQUADRON acceptance
-  - DCS runtime acceptance before an executed and documented test
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 source_branch: agent/shindand-heliport-parking-diagnostic
 source_commit: PENDING_MERGE
-validated_in_dcs: false
+validated_in_dcs: partial
 supersedes: []
 superseded_by: []
 ---
@@ -27,18 +27,19 @@ Dieser Test bildet die im Mission Editor sichtbaren Parkplatzbezeichnungen des *
 
 Der Test ist ausschließlich read-only. Er erzeugt keine AIRWING-, SQUADRON-, AUFTRAG- oder COMMANDER-Instanzen, aktiviert keine Gruppen, erzeugt keine Spawns und verändert keine Parking-Konfiguration.
 
-Ziel ist insbesondere die Auflösung der bekannten Mission-Editor-Diskrepanz, dass der sichtbare Parkplatz `34` zweimal angeboten wird. Der Projektinhaber hat den zweiten Eintrag ausschließlich für die Diagnose als `34a` benannt.
+Ziel ist insbesondere die Auflösung der Mission-Editor-Diskrepanz, dass der sichtbare Parkplatz `34` zweimal angeboten wird. Der Projektinhaber hat den zweiten Eintrag ausschließlich für die Diagnose als `34a` benannt.
 
-## 2. Aktueller MIZ-Arbeitsstand
+## 2. Getesteter Missionsstand
 
-Vom Projektinhaber bereitgestellte Arbeitsdatei:
+Ausgeführte Mission:
 
 ```text
-OMW_Template_v7_Shindand(1).miz
-SHA-256: c8f646b58a66c57cb15225dc1282e3c6e30f746c0717592d8da29a11ca7ac610
+OMW_Template_v7_Shindand.miz
+MIZ SHA-256: bbfe3073a41322c1d3d247f075e2cda760c4d3e953a3d7ab250dac007fb04037
+internal mission SHA-256: 140c9abb54a6eb4e769652dc51d6e00801c8f6a413eddf14136a1f139706e301
 ```
 
-In dieser MIZ sind 45 Late-Activation-Single-Ship-Gruppen nach folgendem Schema gesetzt:
+Die Mission enthält 45 Late-Activation-Single-Ship-Diagnosegruppen nach dem Schema:
 
 ```text
 DIAG_SHND_HP_ME_<ME-Parkplatzbezeichnung>
@@ -53,7 +54,7 @@ DIAG_SHND_HP_ME_34a
 
 `34a` ist ausschließlich ein OMW-Diagnosealias und niemals als DCS- oder MOOSE-Parking-ID zu interpretieren.
 
-Der AIROPS-Warehouse-Anker wurde auf den eindeutigen Namen geändert:
+Der AIROPS-Warehouse-Anker heißt:
 
 ```text
 WH_AIR_US_SHINDAND_HELIPORT
@@ -78,7 +79,7 @@ Die Bestandsentscheidung ist nicht Gegenstand dieses Tests. Der Test untersucht 
 
 ## 4. MOOSE-First-Prüfung
 
-Gepinnter MOOSE-Stand:
+Gepinnter und im Test tatsächlich eingebetteter MOOSE-Stand:
 
 ```yaml
 release: 2.9.18
@@ -97,23 +98,11 @@ COORDINATE:GetClosestParkingSpot(airbase, terminaltype, free)
 SCHEDULER:New(...)
 ```
 
-`AIRBASE:GetParkingSpotsTable()` liefert im gepinnten Stand unter anderem:
+`AIRBASE:GetParkingSpotsTable()` liefert im gepinnten Stand unter anderem `Coordinate`, `TerminalID`, `TerminalType`, `TOAC`, `Free`, `TerminalID0` und `DistToRwy`.
 
-```text
-Coordinate
-TerminalID
-TerminalType
-TOAC
-Free
-TerminalID0
-DistToRwy
-```
+Die offiziellen MOOSE-Missionsrepositories wurden auf einen unmittelbar passenden Parking-Label-Mapping-Demoeinsatz geprüft; ein gleichartiger Demonstrator wurde nicht gefunden. OMW besitzt auf `main` bereits den read-only Tarinkot-G6A2-Mappingtest als projektspezifisches Vorbild. Die Shindand-Version verwendet zusätzlich die öffentliche MOOSE-Methode `COORDINATE:GetClosestParkingSpot()` für die Zuordnung.
 
-`COORDINATE:GetClosestParkingSpot()` liefert die nächste Parking-Koordinate, `TerminalID`, Abstand und den vollständigen ParkingSpot-Datensatz zurück.
-
-Die offiziellen MOOSE-Missionsrepositories wurden auf einen unmittelbar passenden Parking-Label-Mapping-Demoeinsatz geprüft; ein gleichartiger Demonstrator wurde nicht gefunden. OMW besitzt jedoch auf `main` bereits den read-only Tarinkot-G6A2-Mappingtest als projektspezifisches Vorbild. Die Shindand-Version verwendet zusätzlich die vorhandene öffentliche MOOSE-Methode `COORDINATE:GetClosestParkingSpot()` für die eigentliche Zuordnung.
-
-Der einzige native Missionszugriff ist die read-only-Auswertung von `env.mission`, um die vom Projektinhaber gesetzten Diagnose-Gruppennamen und die dazu gespeicherten Mission-Editor-Koordinaten zu lesen. Es erfolgt keine native Mutation.
+Der einzige native Missionszugriff ist die read-only-Auswertung von `env.mission`, um Diagnose-Gruppennamen und gespeicherte Mission-Editor-Koordinaten zu lesen. Es erfolgt keine native Mutation.
 
 ## 5. Testquelle und Builder
 
@@ -129,78 +118,131 @@ Builder:
 tools/build-shindand-heliport-parking-map.ps1
 ```
 
-Generiertes Bundle:
+Generiertes und getestetes Bundle:
 
 ```text
 mission/tests/shindand-air-operations/dist/OMW_AirOps_Shindand_Heliport_MEParkingMap.lua
+BuilderVersion: SHND-HP-ME-PARKING-MAP-1
+Source commit: 6180bdc21f241d534eb0c4c92f6e95802303efdd
+Bundle SHA-256: 61884006fdd0af75425c796985071d8b47f889b9f863c84afe4f68e51a355066
 ```
 
-Der Builder blockiert mutierende Klassen/Pfade und verlangt die für diesen Test relevanten MOOSE-Aufrufe und Diagnosemarker.
+## 6. DCS-Runtime-Ergebnis vom 10.08.2026
 
-## 6. Erwartete Runtime-Telemetrie
-
-Zuerst wird die native Shindand-Heliport-Domain ausgegeben:
+Umgebung:
 
 ```text
-AIRBASE name=<...> id=<...> parkingCount=<...> enumName=Shindand Heliport
-PARKING_SPOT terminalID=<...> terminalID0=<...> terminalType=<...> ...
+DCS: 2.9.28.26385 MT
+Airbase: Shindand Heliport
+DCS/MOOSE Airbase ID: 14
+MOOSE parking count: 42
+Terminal type of mapped spots: 40
 ```
 
-Danach folgt je Diagnosegruppe:
+Ergebnis des Diagnosebundles:
 
 ```text
-PARKING_MAP
-  meParking=<ME-Label>
-  groupName=<DIAG_SHND_HP_ME_*>
-  missionParkingField=<gespeicherter mission-Wert>
-  mooseTerminalID=<Runtime-TerminalID>
-  terminalID0=<Runtime-TerminalID0>
-  terminalType=<...>
-  distanceM=<Abstand Diagnoseanker zu Parking-Koordinate>
+anchors=45
+mapped=38
+rejected=7
+duplicates=6
+malformed=0
+status=PARTIAL
+reason=UNMAPPED_OR_INVALID_ANCHORS
 ```
 
-Besonders zu prüfen:
+Die sechs gemeldeten `DUPLICATE_TERMINAL`-Marker entstehen ausschließlich dadurch, dass die sieben außerhalb der bestätigten Heliport-Domain liegenden Anker jeweils den geometrisch nächsten Heliport-Terminal als Kandidaten erhalten. Sie sind keine Doppelbelegung innerhalb der 38 akzeptierten Mappings.
+
+### 6.1 Bestätigter Heliport-Parking-Contract
+
+Für diesen exakt getesteten Missions-/MOOSE-/DCS-Stand gelten folgende 38 Zuordnungen als bestätigt:
+
+| ME-Label | MOOSE TerminalID | TerminalID0 |
+|---:|---:|---:|
+| 01 | 21 | 21 |
+| 02 | 3 | 3 |
+| 03 | 1 | 1 |
+| 04 | 32 | 32 |
+| 05 | 34 | 34 |
+| 07 | 15 | 15 |
+| 08 | 35 | 35 |
+| 10 | 31 | 31 |
+| 11 | 0 | 0 |
+| 12 | 16 | 16 |
+| 13 | 24 | 24 |
+| 14 | 33 | 33 |
+| 15 | 14 | 14 |
+| 16 | 25 | 25 |
+| 17 | 42 | 42 |
+| 18 | 27 | 27 |
+| 19 | 22 | 22 |
+| 20 | 39 | 39 |
+| 21 | 38 | 38 |
+| 22 | 5 | 5 |
+| 23 | 29 | 29 |
+| 24 | 11 | 11 |
+| 25 | 26 | 26 |
+| 26 | 40 | 40 |
+| 27 | 9 | 9 |
+| 28 | 17 | 17 |
+| 29 | 41 | 41 |
+| 30 | 18 | 18 |
+| 31 | 13 | 13 |
+| 32 | 37 | 37 |
+| 33 | 4 | 4 |
+| 34 | 20 | 20 |
+| 34a | 19 | -1 |
+| 36 | 2 | 2 |
+| 37 | 23 | 23 |
+| 39 | 10 | 10 |
+| 41 | 30 | 30 |
+| 42 | 7 | 7 |
+
+Alle 38 akzeptierten Diagnoseanker lagen exakt auf der jeweiligen MOOSE-Parking-Koordinate (`distanceM=0.000`).
+
+Der doppelte Mission-Editor-Eintrag `34` ist damit technisch aufgelöst:
 
 ```text
-DIAG_SHND_HP_ME_34
-DIAG_SHND_HP_ME_34a
+ME 34  -> MOOSE TerminalID 20
+ME 34a -> MOOSE TerminalID 19
 ```
 
-Beide müssen auf unterschiedliche reale MOOSE-TerminalIDs abgebildet werden, sofern DCS sie tatsächlich als zwei getrennte Parking-Spots führt.
+Für TerminalID `19` liefert MOOSE in diesem Lauf `TerminalID0=-1`. Für den OMW-Parking-Contract ist deshalb `TerminalID` maßgeblich; `TerminalID0` wird nur als beobachtetes Zusatzfeld dokumentiert.
 
-## 7. Gate-Kriterien
+### 6.2 Aus Heliport-Contract ausgeschlossen
 
-`PASS_MAP` setzt voraus:
+Die folgenden Diagnoseanker lagen deutlich außerhalb der bestätigten Heliport-Parking-Domain und sind deshalb aus dem Heliport-Contract ausgeschlossen:
 
 ```text
-Shindand Heliport über AIRBASE.Afghanistan.Shindand_Heliport aufgelöst
-Parking-Datensatz nicht leer
-45 Diagnoseanker erkannt
-jede Diagnosegruppe ist Late Activation
-jede Diagnosegruppe enthält genau ein Luftfahrzeug
-alle 45 Anker liegen maximal 5 m von einem MOOSE-Parking-Spot entfernt
-keine zwei Diagnoseanker belegen dieselbe MOOSE-TerminalID
+ME 46
+ME 47
+ME 48
+ME 49
+ME 50
+ME 51
+ME 52
 ```
 
-Andere Resultate:
+Der Test weist ihnen **keine andere Airbase-Domain zu**. Ihre Zuordnung zu `Shindand Airfield` wurde nicht getestet und wird nicht behauptet.
+
+## 7. Artefaktprovenienz
 
 ```text
-PARTIAL
--> mindestens ein Anker nicht eindeutig/zulässig zugeordnet oder doppelte TerminalID
-
-FAIL
--> Heliport nicht auflösbar, keine Parking-Daten oder falsche Ankerzahl
+Branch: agent/shindand-heliport-parking-diagnostic
+Source commit: 6180bdc21f241d534eb0c4c92f6e95802303efdd
+BuilderVersion: SHND-HP-ME-PARKING-MAP-1
+Bundle SHA-256: 61884006fdd0af75425c796985071d8b47f889b9f863c84afe4f68e51a355066
+MIZ SHA-256: bbfe3073a41322c1d3d247f075e2cda760c4d3e953a3d7ab250dac007fb04037
+internal mission SHA-256: 140c9abb54a6eb4e769652dc51d6e00801c8f6a413eddf14136a1f139706e301
+embedded Moose.lua SHA-256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
+DCS log SHA-256: cd4cc5e6d79fa0b857b9e32ccb5f2155b6fb42867f3130d763c9816fb7ba8aee
+Debrief SHA-256: 7c98ba7683f8e05126b1ac8854b2ac0a3eb7febce3d08964f196adaa57036c8c
+DCS: 2.9.28.26385 MT
+Test date: 2026-08-10
 ```
 
-Ein `PASS_MAP` validiert ausschließlich die Parking-Zuordnung dieses exakten MIZ-/Bundle-/MOOSE-/DCS-Stands. Er legt noch keine finale Client-Blacklist oder KI-Allowlist fest.
+## 8. Geltungsgrenze
 
-## 8. Noch in DCS zu prüfen
+Dieser DCS-Lauf bestätigt die Identität des `Shindand Heliport`, seine 42 von MOOSE gelieferten Parking-Spots sowie die 38 oben aufgeführten ME-Label-zu-TerminalID-Zuordnungen für die dokumentierte Artefaktkette.
 
-Vor einem DCS-Lauf sind gemäß Test-Governance die reale lokale Build-Ausgabe, Bundle-SHA-256, aktuelle MIZ-SHA-256, eingebetteter Bundle-Hash und eingebetteter Moose.lua-Hash zu erfassen.
-
-Der Teststatus bleibt bis zur realen DCS-Ausführung:
-
-```text
-NOT_RUN
-validated_in_dcs: false
-```
+Der Lauf legt noch keine produktive AI-Parking-Allowlist, Client-Blacklist oder SQUADRON-Parking-Verteilung fest. Diese werden erst aus dem bestätigten Heliport-Contract und den konkreten Client-/Template-/Static-Anforderungen abgeleitet.
