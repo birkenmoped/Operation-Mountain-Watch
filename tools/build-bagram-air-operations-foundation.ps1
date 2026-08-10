@@ -9,7 +9,7 @@ $sourceFile = Join-Path $repoRoot 'scripts\air-operations\OMW_AirOps_Bagram_Boot
 $distDir = Join-Path $repoRoot 'mission\tests\bagram-air-operations\dist'
 $outputFile = Join-Path $distDir 'OMW_AirOps_Bagram.lua'
 $lifecycleGuard = Join-Path $repoRoot 'tools\Test-AirOpsLifecycleGuards.ps1'
-$builderVersion = 'BGRAM-AIR-OPS-DUAL-FOUNDATION-1'
+$builderVersion = 'BGRAM-AIR-OPS-DUAL-FOUNDATION-2'
 
 if (-not (Test-Path -LiteralPath $sourceFile -PathType Leaf)) {
     throw "Bagram foundation source not found: $sourceFile"
@@ -31,6 +31,8 @@ $requiredMarkers = @(
     'SQ_US_BGRM_HH60G_83_ERQS',
     'SQ_US_BGRM_UH60_A_1_169',
     'SQ_US_BGRM_CH47_B_7_158',
+    'TPL_AIR_US_BGRM_HH60G_CSAR_1SHIP',
+    'TPL_AIR_US_BGRM_UH60_UTILITY_1SHIP',
     'logicalAirframes = 75',
     'representedAirframes = 73',
     'logicalReserve = 2',
@@ -58,7 +60,10 @@ $forbiddenPatterns = @(
     'AddMission\s*\(',
     'Bagram-to-Jalalabad',
     'directSpawnRequested=true',
-    'SetParkingIDs\s*\('
+    'SetParkingIDs\s*\(',
+    'HH60G_CSAR_LEAD_1SHIP',
+    'HH60G_CSAR_COVER_1SHIP',
+    'UH60_TRANSPORT_1SHIP'
 )
 foreach ($pattern in $forbiddenPatterns) {
     if ($source -match $pattern) {
@@ -100,7 +105,7 @@ Write-Host "RegisteredGroups: 61"
 Write-Host "RepresentedAirframes: 73"
 Write-Host "LogicalAirframes: 75"
 Write-Host "LogicalReserve: 2"
-Write-Host "RolePayloadsExpected: 9"
+Write-Host "RolePayloadsExpected: 7"
 Write-Host "LifecycleGuard: PASS"
 Write-Host "TestDispatch: ABSENT"
 Write-Host "AUFTRAGInstances: ABSENT"
