@@ -49,10 +49,10 @@ Bei einem anderen `Moose.lua`-Hash ist die Methoden- und Lifecycle-Prüfung zu w
 
 | Methode | Status | Belegter Umfang |
 |---|---|---|
-| `AIRBASE:FindByName()` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Airbase-Auflösung in Jalalabad, Bagram, Kandahar, Salerno und Tarinkot |
+| `AIRBASE:FindByName()` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Airbase-Auflösung in Jalalabad, Bagram, Kandahar, Salerno, Tarinkot und Shindand Heliport |
 | `AIRBASE:FindByID()` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Tarinkot ID 9 |
-| `GetName()` / `GetID()` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Identitätsprüfung; Kandahar Main ID 7 und Kandahar Heliport ID 15 im Foundation-Lauf bestätigt |
-| `GetParkingSpotsTable()` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Parkingdump und ME-/TerminalID-Kalibrierung |
+| `GetName()` / `GetID()` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Identitätsprüfung; Kandahar Main ID 7, Kandahar Heliport ID 15 und Shindand Heliport ID 14 bestätigt |
+| `GetParkingSpotsTable()` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Parkingdump und ME-/TerminalID-Kalibrierung; Shindand Heliport 42 Runtime-Spots, 38 akzeptierte ME-Zuordnungen |
 | `SetParkingSpotBlacklist()` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | dokumentierte Referenzknoten; tatsächliche Unitplatzierung bleibt separat |
 | `FindFreeParkingSpotForAircraft(group, terminaltype, scanradius, scanunits, scanstatics, scanscenery, verysafe, nspots, parkingdata)` | `SOURCE_REVIEWED` | öffentliche parametrierbare Freiparkroutine; wird von `WAREHOUSE:_FindParkingForAssets()` nicht verwendet |
 
@@ -113,21 +113,24 @@ nach Start und Initialisierung:
 
 Kandahar bestätigte zusätzlich den Foundation-Start zweier paralleler AIRWING-Domänen auf zwei nativen Airbases. Beide AIRWINGs erreichten im dokumentierten Lauf `Running`; vor Start waren 32 Warehouse-Assetgruppen auf Kandahar Main und 44 auf Kandahar Heliport registriert.
 
+Shindand bestätigte zusätzlich einen einzelnen Heliport-AIRWING mit drei SQUADRONs und 16 Assetgruppen für 20 logische Luftfahrzeuge. Alle drei SQUADRONs hatten nach Start die erwartete Assetanzahl und die erwarteten `asset.parkingIDs`.
+
 Die post-start SQUADRON-Bindung erfolgt über den WAREHOUSE-/LEGION-Pfad und `COHORT:AddAsset()`.
 
 ### 4.4 Weitere AIRWING-Methoden
 
 | Methode | Status | Grenze |
 |---|---|---|
-| `AIRWING:New()` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Konstruktion mit Warehouse-Anker; Kandahar duale Main-/Heliport-Konstruktion bestätigt |
-| `SetAirbase()` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | explizite Airbase-Bindung; Kandahar Main/Heliport getrennt bestätigt |
+| `AIRWING:New()` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Konstruktion mit Warehouse-Anker; Kandahar duale Main-/Heliport-Konstruktion und Shindand Heliport bestätigt |
+| `SetAirbase()` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | explizite Airbase-Bindung; Kandahar Main/Heliport getrennt und Shindand Heliport bestätigt |
 | `SetTakeoffCold()` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Konfigurationszustand; tatsächlicher Kaltstart separat |
 | `SetSafeParkingOn()` | `SOURCE_REVIEWED` | setzt im gepinnten `Warehouse.lua` nur `self.safeparking`; das Feld wird im WAREHOUSE-Pfad nicht gelesen und ändert die Parking-Suche nicht |
-| `AddSquadron()` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Cohort-, Stock- und Relocation-Payload-Registrierung; Kandahar 9 SQUADRONs / 76 Assetgruppen bestätigt |
-| `NewPayload()` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Rollen-Payloadregistrierung; Kandahar acht Rollenpayloads bestätigt, MQ-1/MQ-9 bewusst deferred |
+| `AddSquadron()` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Cohort-, Stock- und Relocation-Payload-Registrierung; Kandahar 9 SQUADRONs / 76 Assetgruppen, Shindand 3 SQUADRONs / 16 Assetgruppen bestätigt |
+| `NewPayload()` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Rollen-Payloadregistrierung; Kandahar acht Rollenpayloads bestätigt, Shindand drei Rollenpayloads bestätigt |
 | `GetSquadron()` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | SQUADRON-Auflösung nach Registrierung |
 | `GetOpsGroups()` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Idle-Knoten ohne Runtime-OPSGROUPs |
-| `Start()` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Grundstart und post-start Assetbindung; Kandahar beide AIRWINGs Running |
+| `Start()` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Grundstart und post-start Assetbindung; Kandahar beide AIRWINGs und Shindand AIRWING Running |
+| `AddMission()` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Shindand G2 bestätigte direkten nativen AIRWING/AUFTRAG-Dispatch ohne COMMANDER bis `FlightOnMission`; Parking-Compliance blieb dabei FAIL |
 
 ## 5. WAREHOUSE-Parking
 
@@ -141,11 +144,37 @@ Vollständiger Quellenbericht:
 | `WAREHOUSE:SetSafeParkingOn/Off()` | `SOURCE_REVIEWED` | schreibt nur `self.safeparking`; im gepinnten und geprüften aktuellen `Warehouse.lua` existiert kein Leser dieses Feldes |
 | `WAREHOUSE:SetAllowSpawnOnClientParking()` | `SOURCE_REVIEWED` | entfernt Client-Templatekoordinaten aus der Hindernisliste; ändert Static-Scan und Überlappungsprüfung nicht; für Tarinkot fachlich gesperrt |
 | `WAREHOUSE:SetParkingIDs()` | `SOURCE_REVIEWED` | begrenzt Warehouse-Kandidaten; ändert Scanparameter und Überlappungsprüfung nicht |
-| `asset.parkingIDs` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | post-start an SQUADRON-Assets gebunden; umgeht Terminal-/BW-Filter, aber nicht Hindernis-/Überlappungsprüfung |
+| `SQUADRON:SetParkingIDs()` | `VALIDATED_CONFIGURATION_ONLY` | setzt `cohort.parkingIDs`; Shindand Foundation bestätigte Übernahme nach `asset.parkingIDs`, aber G2 widerlegte physische Parking-Compliance als garantierte Wirkung |
+| `asset.parkingIDs` | `VALIDATED_CONFIGURATION_ONLY` | post-start an SQUADRON-Assets gebunden; Source-Pfad prüft diese IDs in `_FindParkingForAssets()`, trotzdem wurde Shindand AH-64 G2 tatsächlich bei TerminalID 41 statt im AH-64-Pool `21,3,34,15` beobachtet |
 
-Die offizielle AIRBASE-Methode mit denselben fünf Parametern ist kein indirekter WAREHOUSE-Setter. Ein Ersatz von `_FindParkingForAssets()` bleibt ein interner Runtime-Override und ist nicht autorisiert.
+### 5.1 Shindand G2 Runtime-Grenze
 
-Dieser Abschnitt ist ein Source-Nachweis, kein DCS-Verhaltensnachweis. Der konkrete Tarinkot-Blocker ist noch nicht durch ausgegebenen Hindernisnamen bestätigt.
+Testdatum 2026-08-10, DCS 2.9.28.26385 MT, Branch `agent/shindand-heliport-parking-diagnostic`, Source/Builder-Commit `27e3877efdc1f76997b00593218e0d6390313ba5`, BuilderVersion `SHND-G2-AH64-DISPATCH-3`.
+
+Runtime:
+
+```text
+SQUADRON_POSTSTART AH-64 parkingIDs=21,3,34,15 parkingSync=true
+FLIGHT_ON_MISSION group=SQ_US_SHND_AH64D_ATTACK_AID-197
+unitType=AH-64D_BLK_II
+state=Parking
+nearest TerminalID=41
+distanceM=1.667
+parkingAllowed=false
+```
+
+`TerminalID 41` gehört im owner-defined Shindand-Vertrag zum UH-60-Pool. Damit ist für diesen exakten DCS-/MOOSE-/MIZ-Stand belegt:
+
+```text
+asset.parkingIDs configuration PASS
+!= physical spawn parking compliance PASS
+```
+
+Der Quellcode von `WAREHOUSE:_FindParkingForAssets()` prüft `asset.parkingIDs` über `_CheckParkingAsset()`. Der Runtime-Widerspruch ist daher als Framework-/DCS-Verhaltensgrenze zu behandeln und nicht durch Annahmen zu überdecken. Ohne weitere Evidenz darf nicht behauptet werden, ob die Abweichung vor, während oder nach der internen Parking-Auswahl entsteht.
+
+Ein Ersatz von `_FindParkingForAssets()`, ein Native-DCS-Spawn oder eine andere Parallelimplementierung bleibt nach MOOSE-First nicht autorisiert, solange der Projektinhaber keine entsprechende Ausnahme freigibt.
+
+Die offizielle AIRBASE-Methode mit denselben fünf Parametern ist kein indirekter WAREHOUSE-Setter.
 
 ## 6. Helikopter-Vertikaloption
 
@@ -157,7 +186,7 @@ Belegt:
 
 - Methode ist im gepinnten MOOSE-Stand vorhanden;
 - sie setzt `AIRWING.OptionPreferVerticalLanding = true`;
-- Tarinkot G7 setzte sie vor `AIRWING:Start()`;
+- Tarinkot G7 und Shindand Foundation setzten sie vor `AIRWING:Start()`;
 - der Idle-Foundation-Test bestätigte nur den Konfigurationszustand, nicht den Abflug.
 
 ### 6.2 Weitergabe im nativen Dispatch
@@ -183,16 +212,16 @@ Status der Einzelmethoden:
 | Methode | Status | Grenze |
 |---|---|---|
 | `AIRWING:SetOptionPreferVerticalLanding()` | `VALIDATED_CONFIGURATION_AND_SOURCE_PATH` | vor Start gesetzt; Weitergabepfad quellengeprüft |
-| `FLIGHTGROUP:SetOptionPreferVertical()` | `SOURCE_REVIEWED` | tatsächliche Anwendung in G8 noch telemetrisch zu bestätigen |
-| `CONTROLLABLE:OptionPreferVerticalLanding()` | `SOURCE_REVIEWED` | DCS-Option bekannt; tatsächlicher Tarinkot-Abflug noch nicht akzeptiert |
+| `FLIGHTGROUP:SetOptionPreferVertical()` | `SOURCE_REVIEWED` | tatsächliche Anwendung noch nicht durch erfolgreichen Abflug-Gate bestätigt |
+| `CONTROLLABLE:OptionPreferVerticalLanding()` | `SOURCE_REVIEWED` | DCS-Option bekannt; tatsächlicher Abflug noch nicht akzeptiert |
 
 Nicht belegt:
 
-- tatsächlicher vertikaler Abflug in Tarinkot;
+- tatsächlicher vertikaler Abflug in Shindand oder Tarinkot;
 - Vermeidung jeder Runway-/Taxi-Nutzung für alle Helikoptertypen;
 - standalone FLIGHTGROUP- oder Raw-SPAWN-Experimente als Produktionspfad.
 
-Diese Punkte gehören in den isolierten nativen G8-AIRWING-/AUFTRAG-Dispatch.
+Shindand G2 erreichte `FlightOnMission`, brach das Acceptance-Gate aber bereits wegen falscher Parking-Position ab; daraus folgt kein Abflugnachweis.
 
 ### 6.3 G8C-HOVER-APIs
 
@@ -245,6 +274,8 @@ COMMANDER OnDuty
 
 `COMMANDER:AddAirwing()` ohne `COMMANDER:Start()` ist kein gültiger Dispatchaufbau.
 
+Shindand G2 bestätigt unabhängig davon, dass ein isolierter Testauftrag direkt über `AIRWING:AddMission()` ohne COMMANDER bis zur AH-64-Zuweisung gelangen kann. Das ist kein Ersatz für die spätere produktive COMMANDER-Architektur.
+
 ## 8. Wrapper und Hilfsklassen
 
 - `GROUP`, `UNIT`, `STATIC` und `ZONE`: `VALIDATED_FOR_DOCUMENTED_SCOPE` für Objekt- und Templateprüfung;
@@ -286,55 +317,32 @@ Der Endmarker `activePlayerClients=0` ist für diesen Lauf kein gültiger Detekt
 - dauerhafte Verlust- und Bestandsbuchung;
 - OPSTRANSPORT;
 - COMMANDER-Auswahl für Tarinkot;
-- Multiplayer- oder Endurance-Acceptance.
 
-## 11. Kandahar Foundation – akzeptierter Nachweis
+## 11. Shindand Foundation und G2
+
+### 11.1 Foundation PASS
 
 ```text
-Testdatum: 2026-08-09/10
+Testdatum: 2026-08-10
 DCS: 2.9.28.26385 MT
-Branch: agent/kandahar-foundation-july-2011-rebuild
-Source-Commit: 578816472c53279290ff6b64296ed8d49982bc72
-BuilderVersion: KAF-AIR-OPS-FOUNDATION-ONLY-1
-Bundle SHA-256: 315d046fc781d71de66e11557f0bf000ea672332dfbaf09b85771a4660cc36e4
-MIZ: OMW_Template_v6_Tarinkot(6).miz
-MIZ SHA-256: a04ff328e3c1c550db0ada4ea34d6b66739f3f28eb71293f398330a46eacbc63
-DCS log SHA-256: db7c5c3b24439a8505e51e024cf4b9e7e050cdc9bef9bbf6806a5bbe6e93ed76
-Debrief SHA-256: 48a56ae6393f556cd2b0619fb3a56ad8f1291ad05f35f46c8c88603cb6e461ac
+Foundation source commit: d24c9d92470192dcee8467f3b24ed31548edd3a3
+BuilderVersion: SHND-AIR-OPS-FOUNDATION-1
+Bundle SHA-256: a7bd8a28ba9e72db2505a4237b6b5ea21465eba1ef09693cf6e6d461f8c6e2ea
 ```
 
-Ergebnis:
+Bestätigt: AIRWING Running, drei SQUADRONs, 16 Assetgruppen / 20 logische Luftfahrzeuge, post-start Assetzahlen und `asset.parkingIDs`-Synchronität.
+
+### 11.2 G2 FAIL – physische Parking-Compliance
 
 ```text
-2 AIRWINGs Running
-9 SQUADRONs registriert
-76 Warehouse-Assetgruppen
-112 physisch repräsentierte Airframes
-6 MC-12 deferred
-8 Rollenpayloads registriert
-2 ISR-Rollenpayloads bewusst deferred
-0 Missionsinstanzen
-0 Transportinstanzen
-0 COMMANDER
-0 F10-Controls
+Testdatum: 2026-08-10
+DCS: 2.9.28.26385 MT
+Source/Builder commit: 27e3877efdc1f76997b00593218e0d6390313ba5
+BuilderVersion: SHND-G2-AH64-DISPATCH-3
+Bundle SHA-256: 787cd3a54cacf7b3a4349bf8554d4124d778fe02607e680dc143474c24d0653f
+MIZ SHA-256: b2dfdf00412e9318fc5635b49b9d6d590034b44d1db88ffbe44263e822471388
+dcs.log SHA-256: eb79bdc846203ce1b707794a7c9936e92b78604dbf6f15ff11b28f3b778efb61
+debrief.log SHA-256: 73f7233d5ec19a8c841cd2e5588f9c1ae69f7da37428dfa062fb21186ecc9b88
 ```
 
-Für diesen exakten Stand sind damit `AIRWING:New()`, `SetAirbase()`, `SetTakeoffCold()`, `SQUADRON:New()`, `SetGrouping()`, `SetTurnoverTime()`, `AddMissionCapability()`, `AIRWING:AddSquadron()`, `AIRWING:NewPayload()` und `AIRWING:Start()` im Kandahar-Foundation-Kontext praktisch bestätigt.
-
-Nicht belegt sind taktischer AUFTRAG-Dispatch, OPSTRANSPORT, COMMANDER, Recovery/RTB, post-landing UAV-Parking, Warehouse-Rückgabe, Persistenz, Multiplayer-Endurance und MC-12-Physik.
-
-## 12. Neue Einträge
-
-Jeder neue Methodeneintrag enthält:
-
-```text
-Methode und Signatur
-MOOSE-Version und Commit
-OMW-Branch und Commit
-Mission und Hash
-Bundle und Hash
-Testbedingung
-beobachtetes Ergebnis
-Nachweisgrenze
-bekannte Einschränkungen
-```
+Der direkte AIRWING/AUFTRAG-Pfad wies `SQ_US_SHND_AH64D_ATTACK_AID-197` zu. Beim `FlightOnMission`-Callback befand sich der AH-64D in `Parking` nahe TerminalID 41 (`distanceM=1.667`), obwohl `asset.parkingIDs=21,3,34,15` bestätigt waren. G2 ist deshalb `FAIL` für physische Parking-Compliance. Vertikalabflug wurde durch dieses Gate nicht akzeptiert.
