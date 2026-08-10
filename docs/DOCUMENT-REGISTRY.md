@@ -14,7 +14,7 @@ supersedes:
   - registry that listed Document 22 only as a branch reservation
 superseded_by:
 source_branch: agent/bagram-dual-airwing-foundation-rebuild
-source_commit: PENDING_MERGE
+source_commit: ffdc52c40a9fe83123dc25f369cd81581f293069
 validated_in_dcs: false
 ---
 
@@ -83,7 +83,7 @@ Eine Nummer und eine stabile `document_id` dürfen im aktuellen Bestand jeweils 
 | 60 | `OMW-HIST-AFGHAN-AIR-WARS-2009-2011` | `docs/60-afghan-air-wars-2009-2011-airpower-operations-reference.md` | `BINDING` | Airpower-, ORBAT-, ISR- und CSAR-Referenz |
 | 61 | `OMW-COIN-GOVERNANCE-STRATEGY-TRANSITION` | `docs/61-coin-governance-strategy-and-afghan-led-transition.md` | `BINDING` | COIN-, Governance- und Transition-Referenz |
 | 62 | `OMW-RED-CONTROL-INTELLIGENCE-TTP-COIN-IPB` | `docs/62-insurgent-control-intelligence-ttp-and-coin-ipb.md` | `BINDING` | RED-Kontrolle, Intelligence, TTP und COIN-IPB |
-| 63 | `OMW-BLUE-NTMA-SFA-ATN-STRATCOM-LOCAL-INFLUENCE` | `docs/63-ntma-sfa-attack-the-network-stratcom-and-local-influence.md` | `BINDING` | NTM-A, SFA, AtN, StratCom und Einflussnetzwerke |
+| 63 | `OMW-BLUE-NTMA-SFA-ATN-STRATCOM-LOCAL-INFLUENCE` | `docs/63-ntma-sfa-attack-the-network-stratcom-and-local-influence.md` | `BINDING` | NTM-A, SFA, AtN und lokale Einflussnetzwerke |
 | 64 | `OMW-HIST-AFGHANISTAN-ORBAT-2011-07` | `docs/64-afghanistan-order-of-battle-july-2011.md` | `BINDING` | vollständiger Juli-2011-ORBAT-Snapshot |
 | 65 | `OMW-STAB-PRT-INTERAGENCY-DISTRICT-FRAMEWORK` | `docs/65-stability-operations-prt-interagency-and-district-framework.md` | `BINDING` | Stability Operations, PRT und District Framework |
 | 66 | `OMW-RED-LAYEHA-COMMAND-DISCIPLINE-SHADOW-JUSTICE` | `docs/66-taliban-layeha-command-discipline-and-shadow-justice.md` | `BINDING` | Taliban-Layeha, Disziplin und Shadow Justice |
