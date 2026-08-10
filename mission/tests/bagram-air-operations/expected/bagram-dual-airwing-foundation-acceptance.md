@@ -17,6 +17,13 @@ supersedes:
 superseded_by: []
 source_branch: agent/bagram-dual-airwing-foundation-rebuild
 source_commit: 8401406c623004d04a40c8dc576df62334ba1477
+acceptance_branch: agent/bagram-dual-airwing-foundation-rebuild
+acceptance_commit: 8401406c623004d04a40c8dc576df62334ba1477
+acceptance_mission: OMW_Template_v6_Tarinkot.miz
+acceptance_mission_sha256: 228a6053e5edb8c48603d2a4e57d55be2b97f2fda6ad2580be5db9c5b35379b4
+dcs_version: 2.9.28.26385
+moose_commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+moose_artifact_sha256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
 validated_in_dcs: true
 ---
 
