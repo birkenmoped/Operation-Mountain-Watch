@@ -13,10 +13,10 @@ not_authoritative_for:
   - G5 or later test acceptance
   - merge approval or Ready-for-Review approval
 scenario_period: 2010-08-01/2011-12-31
-project_phase: TARINKOT_MOOSE_SOURCE_REVIEW_COMPLETE
+project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 decision_date: 2026-08-03
 source_branch: agent/tarinkot-object-contract-reconciliation
-source_commit: PENDING_MERGE
+source_commit: 585f3c46d4ff0a4b167c984d427bcdb356138e69
 accepted_branch_head: 110c3f943f25d45ca2825ed7e788a959fb28c3a2
 accepted_checklist: docs/evidence/tarinkot-g2-object-contract-acceptance-checklist-2026-08-03.md
 source_mission: OMW_Template_v5_Salerno.miz

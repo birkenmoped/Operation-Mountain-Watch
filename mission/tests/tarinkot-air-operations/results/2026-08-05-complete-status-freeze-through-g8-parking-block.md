@@ -1,10 +1,13 @@
 ---
 document_id: OMW-TEST-TKOT-AIR-OPS-STATUS-FREEZE-2026-08-05
-status: FROZEN_SNAPSHOT
+status: HISTORICAL_TEST_FIXTURE
 document_class: TEST_RESULT_AND_DECISION_RECORD
 owning_policy: OMW-GOV-001
 snapshot_time_local: 2026-08-05T11:52:00+02:00
 source_branch: agent/tarinkot-object-contract-reconciliation
+scenario_period: 2010-08-01/2011-12-31
+project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
+source_commit: 0a533fcd7ccec6b71f9d44db675e95cef2eda06b
 source_commit_before_snapshot: 0a533fcd7ccec6b71f9d44db675e95cef2eda06b
 pull_request: 53
 pull_request_state: DRAFT_OPEN_UNMERGED

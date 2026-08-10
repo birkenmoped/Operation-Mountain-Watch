@@ -1,3 +1,30 @@
+---
+document_id: OMW-EVIDENCE-SALERNO-FOUNDATION-RUNTIME-2026-08-09
+status: ACCEPTED_TECHNICAL_BASELINE
+document_class: DCS_ACCEPTANCE_RESULT
+owning_policy: OMW-GOV-001
+authoritative_for:
+  - Salerno AIRWING/SQUADRON foundation runtime validation for the exact documented artifact chain
+  - Salerno foundation-only no-tasking boundary for the exact documented run
+not_authoritative_for:
+  - parking assignment or parking compliance
+  - tactical dispatch, recovery, persistence, COMMANDER or OPSTRANSPORT acceptance
+scenario_period: 2010-08-01/2011-12-31
+project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
+supersedes: []
+superseded_by: []
+source_branch: agent/salerno-airops-foundation-cleanup
+source_commit: d7b54e310aed83c4c2e4d08be81e9f31a9b9a45e
+validated_in_dcs: true
+acceptance_branch: agent/salerno-airops-foundation-cleanup
+acceptance_commit: d7b54e310aed83c4c2e4d08be81e9f31a9b9a45e
+acceptance_mission: OMW_Template_v6_Tarinkot.miz
+acceptance_mission_sha256: f0b0b5ce14643f510ef7581f2122c10777475c2d148daf2e6f2c316c80dd96aa
+dcs_version: 2.9.28.26385
+moose_commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+moose_artifact_sha256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
+---
+
 # FOB Salerno AIRWING/SQUADRON Foundation – Runtime-Validierung 2026-08-09
 
 ## Status

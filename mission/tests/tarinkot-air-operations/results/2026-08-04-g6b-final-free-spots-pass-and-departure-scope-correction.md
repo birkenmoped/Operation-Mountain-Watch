@@ -1,6 +1,6 @@
 ---
 document_id: OMW-TEST-TKOT-G6B-FINAL-FREE-SPOTS-PASS-2026-08-04
-status: DCS_ACCEPTED_BRANCH
+status: HISTORICAL_TEST_FIXTURE
 document_class: TEST_RESULT
 owning_policy: OMW-GOV-001
 authoritative_for:
@@ -14,9 +14,9 @@ not_authoritative_for:
   - return, landing, despawn or warehouse-ledger acceptance
   - merge approval or Ready-for-Review approval
 scenario_period: 2010-08-01/2011-12-31
-project_phase: TARINKOT_G6B_COMPLETE
+project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 source_branch: agent/tarinkot-object-contract-reconciliation
-source_commit: PENDING_MERGE
+source_commit: 585f3c46d4ff0a4b167c984d427bcdb356138e69
 validated_in_dcs: true
 dcs_version: 2.9.28.26385
 source_mission: OMW_Template_v6_Tarinkot.miz

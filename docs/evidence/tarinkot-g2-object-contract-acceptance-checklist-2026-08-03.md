@@ -20,8 +20,8 @@ source_mission_sha256: 203c99ffa6e025a2d9f00dc899439b0167ed9d81981b612f3a8d4fd07
 embedded_moose_sha256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
 validated_in_dcs: false
 decision_state: OWNER_ACCEPTED_BRANCH
-project_phase: TARINKOT_MOOSE_SOURCE_REVIEW_COMPLETE
-source_commit: PENDING_MERGE
+project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
+source_commit: 585f3c46d4ff0a4b167c984d427bcdb356138e69
 supersedes:
   - proposed owner-acceptance state of this checklist
 superseded_by: []

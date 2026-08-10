@@ -12,7 +12,7 @@ not_authoritative_for:
   - AIRWING, SQUADRON, payload, mission, transport or COMMANDER acceptance
   - merge approval or Ready-for-Review approval
 scenario_period: 2010-08-01/2011-12-31
-project_phase: TARINKOT_G5_READ_ONLY_DIAGNOSTICS_COMPLETE
+project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 source_branch: agent/tarinkot-object-contract-reconciliation
 source_commit: 8b2e62878f2421ba894a7abff7c12d526f4cea3d
 validated_in_dcs: true

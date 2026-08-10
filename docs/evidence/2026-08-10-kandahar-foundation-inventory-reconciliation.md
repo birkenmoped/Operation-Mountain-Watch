@@ -13,7 +13,7 @@ supersedes:
   - branch-local Kandahar inventory decision from 2026-08-01 for foundation implementation purposes
 superseded_by:
 source_branch: agent/kandahar-foundation-july-2011-rebuild
-source_commit: PENDING_MERGE
+source_commit: 66b37d31c715882e910305169906400304a826c0
 validated_in_dcs: false
 ---
 

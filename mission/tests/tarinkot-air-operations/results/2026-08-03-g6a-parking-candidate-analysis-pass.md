@@ -14,10 +14,17 @@ not_authoritative_for:
   - AIRWING, SQUADRON, payload, AUFTRAG, COMMANDER or OPSTRANSPORT acceptance
   - merge approval or Ready-for-Review approval
 scenario_period: 2010-08-01/2011-12-31
-project_phase: TARINKOT_G6_PARKING_CALIBRATION
+project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 source_branch: agent/tarinkot-object-contract-reconciliation
 source_commit: a58fdfb82082bb7e9043f314e1c483a9a6ba3775
 validated_in_dcs: true
+acceptance_branch: agent/tarinkot-object-contract-reconciliation
+acceptance_commit: a58fdfb82082bb7e9043f314e1c483a9a6ba3775
+acceptance_mission: OMW_Template_v5_Salerno.miz
+acceptance_mission_sha256: 203c99ffa6e025a2d9f00dc899439b0167ed9d81981b612f3a8d4fd078c458f5
+dcs_version: 2.9.28.26385
+moose_commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+moose_artifact_sha256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
 supersedes: []
 superseded_by: []
 ---

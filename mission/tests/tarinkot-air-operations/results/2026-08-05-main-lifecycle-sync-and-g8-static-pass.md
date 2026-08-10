@@ -1,6 +1,6 @@
 ---
 document_id: OMW-TEST-TKOT-MAIN-SYNC-G8-STATIC-PASS-2026-08-05
-status: ACCEPTED_STATIC_BASELINE
+status: HISTORICAL_TEST_FIXTURE
 document_class: STATIC_VALIDATION_RESULT
 owning_policy: OMW-GOV-001
 authoritative_for:
@@ -16,7 +16,7 @@ not_authoritative_for:
   - COMMANDER, landing, recovery or persistence
   - merge or Ready-for-Review authorization
 scenario_period: 2010-08-01/2011-12-31
-project_phase: TARINKOT_G8_STATIC_PASS_AWAITING_MIZ
+project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 source_branch: agent/tarinkot-object-contract-reconciliation
 source_commit: 713f008dab4b77f3fc3553269d89413981dbc5db
 validated_in_dcs: false

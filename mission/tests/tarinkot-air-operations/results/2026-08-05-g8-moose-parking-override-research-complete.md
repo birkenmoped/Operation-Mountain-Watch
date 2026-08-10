@@ -12,7 +12,7 @@ not_authoritative_for:
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 source_branch: agent/tarinkot-object-contract-reconciliation
-source_commit: PENDING_MERGE
+source_commit: 585f3c46d4ff0a4b167c984d427bcdb356138e69
 validated_in_dcs: false
 supersedes:
   - OMW-TEST-TKOT-AIR-OPS-STATUS-FREEZE-2026-08-05 for current-next-action authority
