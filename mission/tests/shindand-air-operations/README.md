@@ -356,7 +356,7 @@ AW_US_SHINDAND
     TerminalIDs: 30, 10, 23
 ```
 
-Das vorhandene `TPL_AIR_US_SHND_UH60_MEDEVAC_1SHIP` wird nicht als zweite Bestandsquelle registriert. Utility-, Transport-, MEDEVAC-/Escort-nahe Rollen werden über MOOSE-Mission-Capabilities des gemeinsamen UH-60-SQUADRONs modelliert; es entsteht kein doppelter UH-60-Bestand.
+Das vorhandene `TPL_AIR_US_SHND_UH60_MEDEVAC_1SHIP` wird nicht als zweite Bestandsquelle registriert. Der gemeinsame UH-60-SQUADRON nutzt den Utility-Seed für die im Foundation-Code registrierten MOOSE-Capabilities `TROOPTRANSPORT`, `CARGOTRANSPORT`, `LANDATCOORDINATE` und `GROUNDESCORT`. Eine spätere spezifische CSAR-/MEDEVAC-Auftragssemantik ist damit nicht vorweggenommen und bleibt einem eigenen MOOSE-/DCS-Schritt vorbehalten. Es entsteht kein doppelter UH-60-Bestand.
 
 Der Foundation-Code setzt 20–40 Minuten Turnover, Cold Takeoff und die bereits quellen-/projektseitig verifizierte AIRWING-Vertikalpräferenz. `SetSafeParkingOn()` wird bewusst nicht verwendet.
 
@@ -411,4 +411,4 @@ commanderCreated=false
 f10Controls=false
 ```
 
-Nicht Teil dieses Gates sind konkrete AUFTRAG-Ausführung, tatsächlicher Spawn, visueller Parking-Compliance-Nachweis, Taxi/Takeoff, Landung/Recovery, OPSTRANSPORT, COMMANDER oder Persistenz.
+Nicht Teil dieses Gates sind konkrete AUFTRAG-Ausführung, tatsächlicher Spawn, visueller Parking-Compliance-Nachweis, Taxi/Takeoff, Landung/Recovery, spezifische CSAR-/MEDEVAC-Auftragssemantik, OPSTRANSPORT, COMMANDER oder Persistenz.
