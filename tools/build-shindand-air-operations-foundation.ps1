@@ -9,7 +9,7 @@ $sourceFile = Join-Path $repoRoot 'scripts\air-operations\OMW_AirOps_Shindand_Bo
 $distDir = Join-Path $repoRoot 'mission\tests\shindand-air-operations\dist'
 $outputFile = Join-Path $distDir 'OMW_AirOps_Shindand.lua'
 $lifecycleGuard = Join-Path $repoRoot 'tools\Test-AirOpsLifecycleGuards.ps1'
-$builderVersion = 'SHND-AIR-OPS-FOUNDATION-2'
+$builderVersion = 'SHND-AIR-OPS-FOUNDATION-3'
 
 if (-not (Test-Path -LiteralPath $sourceFile -PathType Leaf)) {
     throw "Shindand foundation source not found: $sourceFile"
@@ -63,6 +63,9 @@ foreach ($marker in $requiredMarkers) {
     }
 }
 
+# Scan executable Lua only. Comment text may legitimately document forbidden APIs.
+$executableSource = (($source -split "`r?`n") | Where-Object { $_ -notmatch '^\s*--' }) -join "`n"
+
 $forbiddenPatterns = @(
     'missionCommands',
     'MENU_COALITION',
@@ -80,8 +83,8 @@ $forbiddenPatterns = @(
     'airwing\s*:\s*SetParkingIDs\s*\('
 )
 foreach ($pattern in $forbiddenPatterns) {
-    if ($source -match $pattern) {
-        throw "Foundation-only regression: forbidden pattern found: $pattern"
+    if ($executableSource -match $pattern) {
+        throw "Foundation-only regression: forbidden executable pattern found: $pattern"
     }
 }
 
@@ -104,10 +107,11 @@ if (Test-Path -LiteralPath $outputFile -PathType Leaf) {
 $commit = (& git -C $repoRoot rev-parse HEAD).Trim()
 $header = "-- AUTO-GENERATED FILE. DO NOT EDIT DIRECTLY.`n-- Builder: tools/build-shindand-air-operations-foundation.ps1`n-- BuilderVersion: $builderVersion`n-- GitCommit: $commit`n-- MOOSE-Pin: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54`n-- Scope: Shindand Heliport AIRWING/SQUADRON foundation with Jalalabad-style parking preflight; no task dispatch.`n-- GeneratedUtc: $([DateTime]::UtcNow.ToString('o'))`n`n"
 $content = $header + $source
+$executableContent = (($content -split "`r?`n") | Where-Object { $_ -notmatch '^\s*--' }) -join "`n"
 
 foreach ($pattern in $forbiddenPatterns) {
-    if ($content -match $pattern) {
-        throw "Generated foundation-only bundle contains forbidden pattern: $pattern"
+    if ($executableContent -match $pattern) {
+        throw "Generated foundation-only bundle contains forbidden executable pattern: $pattern"
     }
 }
 
@@ -143,6 +147,7 @@ Write-Host "UH60ParkingTerminalIDs: 41,18,13,20,19"
 Write-Host "CH47ParkingTerminalIDs: 30,10,23"
 Write-Host "SharedFreeParkingTerminalIDs: 0,16,24,33,14,25,42,27,22,39,38,5,29,11,26,40,9"
 Write-Host "LifecycleGuard: PASS"
+Write-Host "ForbiddenExecutablePatternsChecked: $($forbiddenPatterns.Count)"
 Write-Host "TestDispatch: ABSENT"
 Write-Host "AUFTRAGInstances: ABSENT"
 Write-Host "OPSTRANSPORTInstances: ABSENT"
