@@ -19,8 +19,9 @@ supersedes:
   - Jalalabad and Salerno technical-structure name entries in OMW-AIR-ACTIVE-ORBAT that use those generic identifiers
 superseded_by: []
 source_branch: agent/airwing-naming-reconciliation
-source_commit: PENDING_MERGE
-validated_in_dcs: false
+source_commit: 9769df469774069ab6d399d0bd25fdb344319c66
+validated_in_dcs: true
+validation_record: mission/tests/airwing-naming-reconciliation/expected/jalalabad-salerno-airwing-naming-acceptance.md
 ---
 
 # ADR 0007 – AIRWING-Naming für Jalalabad und Salerno vereinheitlichen
@@ -73,10 +74,11 @@ Für Salerno bildet `TF_TIGERSHARK_1_10_AVN` die in der Projektbaseline dokument
 
 Historische Jalalabad- und Salerno-Acceptance-Dateien werden nicht rückwirkend umgeschrieben. Ein DCS-PASS mit `AW_US_JALALABAD` oder `AW_US_SALERNO` bleibt Nachweis genau dieses alten Artefaktstands.
 
-Die neuen Identifier gelten erst nach einem neuen exakt dokumentierten Foundation-Lauf als DCS-validiert. Bis dahin gilt:
+Die neuen Identifier wurden am 10. August 2026 mit den exakt auf Source-Commit `9769df469774069ab6d399d0bd25fdb344319c66` gebauten Foundation-Bundles in DCS 2.9.28.26385 geprüft. Beide AIRWINGs starteten unter den neuen Namen und erreichten ihren Foundation-`RESULT status=RUNNING`-Marker ohne Missionen, Transporte, COMMANDER oder F10-Steuerung.
 
 ```yaml
 naming_decision: BINDING_PROJECT_DECISION
-foundation_runtime_with_new_names: NOT_YET_VALIDATED
+foundation_runtime_with_new_names: VALIDATED
 historical_acceptance_rewritten: false
+validation_record: mission/tests/airwing-naming-reconciliation/expected/jalalabad-salerno-airwing-naming-acceptance.md
 ```
