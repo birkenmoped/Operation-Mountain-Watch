@@ -17,7 +17,7 @@ end
 local config = {
   airbaseName = AIRBASE.Afghanistan and AIRBASE.Afghanistan.Jalalabad or "Jalalabad",
   warehouseName = "WH_AIR_US_JALALABAD",
-  airwingName = "AW_US_JALALABAD",
+  airwingName = "AW_US_JBAD_TF_SHOOTER_6_6_CAV",
   parkingBlacklist = { 23, 35, 37, 49 },
   squadrons = {
     OH58D = {

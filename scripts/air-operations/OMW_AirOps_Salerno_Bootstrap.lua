@@ -28,7 +28,7 @@ end
 local config = {
   airbaseName = AIRBASE.Afghanistan and AIRBASE.Afghanistan.FOB_Salerno or "FOB Salerno",
   warehouseName = "WH_AIR_US_SALERNO",
-  airwingName = "AW_US_SALERNO",
+  airwingName = "AW_US_SAL_TF_TIGERSHARK_1_10_AVN",
   turnoverMin = 20,
   turnoverMax = 40,
   parkingState = "DEFERRED",

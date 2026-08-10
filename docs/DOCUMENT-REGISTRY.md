@@ -13,8 +13,8 @@ project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
   - registry that listed Document 22 only as a branch reservation
 superseded_by:
-source_branch: agent/bagram-dual-airwing-foundation-rebuild
-source_commit: ffdc52c40a9fe83123dc25f369cd81581f293069
+source_branch: agent/airwing-naming-reconciliation
+source_commit: PENDING_MERGE
 validated_in_dcs: false
 ---
 
@@ -147,6 +147,7 @@ Eine Nummer und eine stabile `document_id` dürfen im aktuellen Bestand jeweils 
 | `OMW-ADR-0004-LOCATION-REGISTRY` | `docs/adr/0004-use-explicit-location-registry.md` | `BINDING` |
 | `OMW-ADR-0005-KANDAHAR-JULY-2011-ORBAT` | `docs/adr/0005-kandahar-july-2011-orbat-structure.md` | `BINDING_PROJECT_DECISION`; Kandahar Juli-2011-ORBAT-Struktur |
 | `OMW-ADR-0006-BAGRAM-DUAL-AIRWING` | `docs/adr/0006-bagram-dual-airwing-structure.md` | `BINDING_PROJECT_DECISION`; Bagram USAF-/Army-Aviation-Split |
+| `OMW-ADR-0007-AIRWING-NAMING-RECONCILIATION` | `docs/adr/0007-airwing-naming-reconciliation.md` | `BINDING_PROJECT_DECISION`; Jalalabad-/Salerno-AIRWING-Naming |
 | `OMW-EVIDENCE-INDEX` | `docs/evidence/README.md` | `BINDING` |
 | `OMW-EVIDENCE-SOURCE-INTAKE-AUDIT-2026-07-28` | `docs/evidence/source-intake-audit-2026-07-28.md` | `BINDING` |
 | `OMW-TEST-JBAD-AIR-OPS-INDEX` | `mission/tests/jalalabad-air-operations/README.md` | `BINDING` |

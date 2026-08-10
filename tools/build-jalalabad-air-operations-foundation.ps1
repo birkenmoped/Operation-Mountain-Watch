@@ -8,7 +8,7 @@ $repoRoot = Split-Path -Parent $PSScriptRoot
 $sourceFile = Join-Path $repoRoot 'scripts\air-operations\OMW_AirOps_Jalalabad_Bootstrap.lua'
 $distDir = Join-Path $repoRoot 'mission\tests\jalalabad-air-operations\dist'
 $outputFile = Join-Path $distDir 'OMW_AirOps_Jalalabad.lua'
-$builderVersion = 'JBAD-AIR-OPS-FOUNDATION-ONLY-1'
+$builderVersion = 'JBAD-AIR-OPS-FOUNDATION-ONLY-2'
 
 if (-not (Test-Path -LiteralPath $sourceFile -PathType Leaf)) {
     throw "Jalalabad foundation source not found: $sourceFile"
@@ -17,7 +17,7 @@ if (-not (Test-Path -LiteralPath $sourceFile -PathType Leaf)) {
 $source = Get-Content -LiteralPath $sourceFile -Raw -Encoding UTF8
 
 $requiredMarkers = @(
-    'AW_US_JALALABAD',
+    'AW_US_JBAD_TF_SHOOTER_6_6_CAV',
     'SQ_US_JBAD_OH58D_6_6_CAV',
     'SQ_US_JBAD_AH64D_B_1_10_AVN',
     'SQ_US_JBAD_UH60_UTILITY_MEDEVAC',

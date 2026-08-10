@@ -16,9 +16,10 @@ project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
   - pre-governance Jalalabad manifest with 24/8/6/0 inventory
   - four-client-per-type Jalalabad authoring rule
+  - generic Jalalabad AIRWING name AW_US_JALALABAD
 superseded_by:
-source_branch: agent/jalalabad-airops-foundation-cleanup
-source_commit: bf179dda70d32ad0da3b4f465b8b5793e71f6e11
+source_branch: agent/airwing-naming-reconciliation
+source_commit: PENDING_MERGE
 validated_in_dcs: false
 ---
 
@@ -110,12 +111,14 @@ Für UH-60 wird ein gemeinsamer physischer Single-Ship-Seed verwendet. Unterschi
 ## 5. MOOSE-Struktur
 
 ```text
-AW_US_JALALABAD
+AW_US_JBAD_TF_SHOOTER_6_6_CAV
 ├── SQ_US_JBAD_OH58D_6_6_CAV
 ├── SQ_US_JBAD_AH64D_B_1_10_AVN
 ├── SQ_US_JBAD_UH60_UTILITY_MEDEVAC
 └── SQ_US_JBAD_CH47_HEAVYLIFT
 ```
+
+Der AIRWING-Identifier bildet den aktiven Jalalabad-/FOB-Fenty-Army-Aviation-Knoten nun verbandsbezogen ab und supersediert den früheren generischen technischen Namen `AW_US_JALALABAD`. Die SQUADRON-IDs, Warehouse-, Template-, Parking- und Bestandsverträge bleiben unverändert.
 
 Die produktive Implementierung bleibt MOOSE-first. Jede projektspezifische Ergänzung benötigt das vollständige Ausnahmeverfahren aus Dokument 26.
 
@@ -170,7 +173,7 @@ merged_to_main: false
 status: ACCEPTED_TECHNICAL_BASELINE
 ```
 
-Sie beweist den dort dokumentierten Missions-, Bundle-, DCS- und MOOSE-Stand. Dieses Manifest übernimmt die governance-konformen Sollwerte und Namen, behauptet aber keine neue branchunabhängige DCS-Acceptance.
+Sie beweist den dort dokumentierten Missions-, Bundle-, DCS- und MOOSE-Stand mit dem damaligen AIRWING-Identifier. Dieses Manifest übernimmt die governance-konformen Sollwerte und den neuen verbandsbezogenen AIRWING-Identifier, behauptet aber keine neue branchunabhängige DCS-Acceptance für die Umbenennung.
 
 ## 9. Noch nicht produktiv akzeptiert
 
