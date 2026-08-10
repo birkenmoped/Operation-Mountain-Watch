@@ -1,7 +1,7 @@
 ---
 document_id: OMW-TEST-AIRWING-NAMING-JBAD-SAL-ACCEPTANCE
 status: ACCEPTED_TECHNICAL_BASELINE
-document_class: RUNTIME_ACCEPTANCE
+document_class: DCS_ACCEPTANCE_CONTRACT
 owning_policy: OMW-GOV-001
 authoritative_for:
   - exact DCS runtime acceptance of the normalized Jalalabad and Salerno AIRWING identifiers
@@ -13,8 +13,17 @@ not_authoritative_for:
   - multiplayer or endurance acceptance
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
+supersedes: []
+superseded_by: []
 source_branch: agent/airwing-naming-reconciliation
 source_commit: 9769df469774069ab6d399d0bd25fdb344319c66
+acceptance_branch: agent/airwing-naming-reconciliation
+acceptance_commit: 9769df469774069ab6d399d0bd25fdb344319c66
+acceptance_mission: OMW_Template_v6_Tarinkot(10).miz
+acceptance_mission_sha256: 75e145f8c6bee9f8e5d3bb44ae5a06c72c882093f7e935360bc2b4e92f3cc115
+dcs_version: 2.9.28.26385
+moose_commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+moose_artifact_sha256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
 validated_in_dcs: true
 ---
 
