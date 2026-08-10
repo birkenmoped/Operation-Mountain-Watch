@@ -1,11 +1,11 @@
 ---
 document_id: OMW-TEST-SHINDAND-G2-HELIPAD-SPAWN-ROOT-CAUSE
-status: ACCEPTED_TECHNICAL_BASELINE
+status: HISTORICAL_TEST_FIXTURE
 document_class: TECHNICAL_EVIDENCE
 owning_policy: OMW-GOV-001
 authoritative_for:
-  - source-level root cause of Shindand G2 AH-64 parking non-compliance
-  - limitation of pinned MOOSE WAREHOUSE aircraft spawning on HELIPAD and SHIP airbase categories
+  - historical source-level root cause analysis of Shindand G2 AH-64 parking non-compliance
+  - limitation observed in the pinned MOOSE WAREHOUSE aircraft spawning path for HELIPAD and SHIP airbase categories
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes: []
@@ -131,8 +131,6 @@ unit.parking_id = nil
 unit.parking    = nil
 ```
 
-Der Quellkommentar lautet sinngemäß, dass bei Helipads die Airbase-Position verwendet wird, da die exakte Spawnposition dort nicht sinnvoll sei.
-
 Für normale Airdromes benutzt derselbe Funktionspfad dagegen ausdrücklich:
 
 ```lua
@@ -144,7 +142,7 @@ unit.parking = terminal
 
 ## 5. Root-Cause-Bewertung
 
-Die technische Ursache ist damit für den gepinnten MOOSE-Stand nachgewiesen:
+Die technische Ursache wurde für den gepinnten MOOSE-Stand und den dokumentierten G2-Lauf als historische technische Evidenz festgehalten:
 
 ```text
 SQUADRON:SetParkingIDs()
@@ -158,9 +156,7 @@ SQUADRON:SetParkingIDs()
 -> tatsächlicher HELIPAD-Spawn kann außerhalb des Owner-Pools erfolgen
 ```
 
-Der beobachtete Spawn auf TerminalID `41` ist damit konsistent mit dem Quellpfad.
-
-Status:
+Der beobachtete Spawn auf TerminalID `41` ist mit diesem Quellpfad konsistent.
 
 ```yaml
 root_cause: CONFIRMED_FOR_PINNED_MOOSE_SOURCE_AND_DOCUMENTED_DCS_G2_RUN
@@ -172,41 +168,30 @@ helipad_physical_parking_enforcement: FAIL
 
 ## 6. MOOSE-First-Grenze
 
-`SPAWN:SpawnAtAirbase(..., Parkingdata)` besitzt im selben gepinnten MOOSE-Stand einen öffentlichen expliziten Parking-Pfad und dokumentiert, dass `Parkingdata` den Spawn auf genau diese Spots zwingt. Dieser `SPAWN`-Pfad ist jedoch **nicht** der von AIRWING/WAREHOUSE verwendete Asset-Lifecycle-Pfad.
+`SPAWN:SpawnAtAirbase(..., Parkingdata)` besitzt im selben gepinnten MOOSE-Stand einen öffentlichen expliziten Parking-Pfad. Dieser `SPAWN`-Pfad ist jedoch **nicht** der von AIRWING/WAREHOUSE verwendete Asset-Lifecycle-Pfad.
 
 Eine direkte Umstellung auf `SPAWN` würde daher den AIRWING-/WAREHOUSE-Asset-Lifecycle umgehen und ist keine gleichwertige MOOSE-Konfiguration des bestehenden Produktionspfads.
 
 Ebenso ist ein Override von `WAREHOUSE:_SpawnAssetAircraft()` ein Eingriff in eine interne MOOSE-Methode und gemäß OMW-Governance ohne ausdrückliche Owner-Freigabe nicht zulässig.
 
-## 7. Kleinste verbleibende Lösungsrichtungen
+## 7. Lösungsrichtungen aus der Diagnosephase
 
-Ohne Architekturentscheidung darf noch keine davon produktiv umgesetzt werden:
+Die Diagnosephase betrachtete folgende Richtungen, ohne sie produktiv umzusetzen:
 
 ```text
 A. MOOSE-internen WAREHOUSE-HELIPAD-Spawnpfad überschreiben/patchen
-   -> technisch kleinster Eingriff in den bestehenden AIRWING-Lifecycle
-   -> aber interne Methode / MOOSE-Override
-   -> Owner-Freigabe erforderlich
-
 B. Separaten öffentlichen SPAWN:SpawnAtAirbase(..., Parkingdata)-Pfad verwenden
-   -> explizites Parking öffentlich unterstützt
-   -> würde aber den AIRWING-/WAREHOUSE-Lifecycle parallelisieren oder umgehen
-   -> Owner-Freigabe erforderlich und deutlich größerer Integrationsaufwand
-
-C. Physische typgebundene Parking-Compliance am Shindand Heliport nicht erzwingen
-   -> keine technische Abweichung
-   -> fachliche Parking-Baseline würde auf Konfigurationsabsicht statt physische Garantie reduziert
-   -> Owner-Entscheidung erforderlich
+C. Physische typgebundene Parking-Compliance am Shindand Heliport nicht als Foundation-Acceptance erzwingen
 ```
 
-Keine dieser Richtungen ist durch diesen Bericht freigegeben.
+Für die nun abgeschlossene Shindand AIRWING/SQUADRON Foundation wurde keine MOOSE-Ausnahme implementiert; physische Parking-Compliance ist ausdrücklich kein Foundation-Acceptance-Kriterium.
 
-## 8. Acceptance-Grenze
+## 8. Evidenzgrenze
 
-Dieser Bericht validiert die Root Cause des beobachteten G2-Parking-Fehlers für die dokumentierte Artefaktkette. Nicht validiert sind:
+Dieser Bericht bleibt historische Diagnoseevidenz. Nicht validiert sind:
 
 - ein korrigierter HELIPAD-Spawnpfad;
-- tatsächlicher Start/Abflug nach einem korrigierten Parking-Spawn;
+- physische typgebundene Parking-Enforcement-Garantie;
 - Landing/Recovery;
 - Persistenz;
 - COMMANDER-Integration;
