@@ -31,6 +31,7 @@ Technische Lifecycle-Details:
 
 - [`OMW-MOOSE-AIRWING-SQUADRON-WAREHOUSE-LIFECYCLE`](AIRWING-SQUADRON-WAREHOUSE-LIFECYCLE.md)
 - [`OMW-MOOSE-VERIFIED-METHODS`](VERIFIED-METHODS.md)
+- [`OMW-ARCH-RESOURCE-WAREHOUSE-OWNERSHIP`](../resource-warehouse-ownership-contract.md)
 
 ## 2. Statusbedeutung
 
@@ -55,6 +56,7 @@ Diese Klassenstatus sind keine Governance-Dokumentstatuswerte.
 | `AIRWING` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Konstruktion, Stockregistrierung, Grundstart, SQUADRON-Bindung und direkter AUFTRAG-Dispatch; Kandahar Dual-AIRWING Main/Heliport sowie Shindand Heliport mit finalem Drei-Rollen-Test bestätigt |
 | `SQUADRON` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Konstruktion, `Ngroups`, Gruppierung, Capabilities, Payloads und post-start Assetbindung; Kandahar neun SQUADRONs / 76 Assetgruppen / 112 Airframes sowie Shindand drei SQUADRONs / 16 Assetgruppen / 20 Airframes bestätigt |
 | `WAREHOUSE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | AirOps-Stockregistrierung und post-start Zuordnung; strategische Logistik und Persistenz offen; physische typgebundene HELIPAD-Parking-Garantie nicht belegt |
+| `STORAGE` | `SOURCE_REVIEWED` | Wrapper um DCS-Airbase-Warehouse für Liquids und Items; `FindByName`, Liquid-/Item-Read/Write und Inventory im gepinnten `Moose.lua` geprüft; keine produktive CampaignState-Synchronisation, Persistenz oder DCS-Acceptance belegt |
 | `COHORT` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | post-start `AddAsset()` setzt `squadname`, `legion`, `cohort` und `assets`; Foundation-Läufe bestätigen die registrierte SQUADRON-/Warehouse-Kette, ohne Recovery-Nachweis |
 | `FLIGHTGROUP` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | AIRWING-`FlightOnMission`-Pfad, Cold-Takeoff-Prüfung und `SetOptionPreferVertical()`-Propagation im finalen Shindand-Lauf bestätigt; physisches Abflugprofil bleibt typabhängig |
 | `COMMANDER` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Salerno `New -> AddAirwing -> Start -> CanMission -> AddMission -> Status` bis AUFTRAG `started`; Shindand Foundation verwendet COMMANDER ausdrücklich nicht |
@@ -171,3 +173,24 @@ WAREHOUSE:_FindParkingForAssets(...)
 ```
 
 Ein Runtime-Override bleibt `INTERNAL_RESTRICTED` und benötigt vor Entwurf oder Einsatz eine ausdrückliche Eigentümerfreigabe.
+
+## 9. STORAGE-Grenze
+
+Source-reviewed gegen den gepinnten `Moose.lua`-Stand:
+
+```text
+STORAGE
+  -> Wrapper um das DCS-Warehouse eines Airbases
+  -> Liquids und Items lesen/schreiben
+  -> Liquid-Mengen in kg
+  -> JETFUEL und GASOLINE getrennte Liquid-Typen
+```
+
+Der Klassenstatus `SOURCE_REVIEWED` bedeutet ausdrücklich **nicht**:
+
+- CampaignState-Integration validiert;
+- DCS-Warehouse als strategische Ressourcenhoheit akzeptiert;
+- STORAGE-Persistenz akzeptiert;
+- Multiplayer-/Restart-Reconciliation getestet.
+
+Der geplante Ownership-Vertrag steht in [`OMW-ARCH-RESOURCE-WAREHOUSE-OWNERSHIP`](../resource-warehouse-ownership-contract.md).
