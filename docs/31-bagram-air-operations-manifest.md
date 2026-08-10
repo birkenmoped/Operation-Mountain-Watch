@@ -215,18 +215,20 @@ SQ_US_BGRM_C130_774_EAS
   TPL_AIR_US_BGRM_C130_TRANSPORT_1SHIP
 
 SQ_US_BGRM_HH60G_83_ERQS
-  TPL_AIR_US_BGRM_HH60G_CSAR_LEAD_1SHIP
-  TPL_AIR_US_BGRM_HH60G_CSAR_COVER_1SHIP
+  TPL_AIR_US_BGRM_HH60G_CSAR_1SHIP
 
 SQ_US_BGRM_UH60_A_1_169
-  TPL_AIR_US_BGRM_UH60_TRANSPORT_1SHIP
   TPL_AIR_US_BGRM_UH60_UTILITY_1SHIP
 
 SQ_US_BGRM_CH47_B_7_158
   TPL_AIR_US_BGRM_CH47_TRANSPORT_1SHIP
 ```
 
+Physisch identische Hubschrauber-Konfigurationen erhalten keine separaten rollenbezogenen Mission-Editor-Templates. Lead/Cover beziehungsweise Utility/Transport werden über MOOSE-Mission-Capabilities und späteres Tasking unterschieden. Zusätzliche Templates sind erst erforderlich, wenn sich die reale Mission-Editor-Konfiguration des Assets unterscheidet.
+
 Der frühere `F16`-Template-Identifier wird für den Neubau auf `F16C` normalisiert. Templates sind Authoring-Seeds und kein zusätzlicher Bestand.
+
+Die Foundation registriert damit sieben Role-Payload-Seeds: zwei für F-15E sowie je einen für F-16C, C-130, HH-60G, UH-60 und CH-47.
 
 ## 8. Foundation-Runtime-Grenze
 
@@ -254,6 +256,7 @@ registeredGroups=61
 representedAirframes=73
 logicalAirframes=75
 logicalReserve=2
+rolePayloads=7
 usafRunning=true
 armyRunning=true
 missionsCreated=0
