@@ -8,7 +8,7 @@ $repoRoot = Split-Path -Parent $PSScriptRoot
 $sourceFile = Join-Path $repoRoot 'mission\tests\shindand-air-operations\src\02-shindand-g2-ah64-dispatch.lua'
 $distDir = Join-Path $repoRoot 'mission\tests\shindand-air-operations\dist'
 $outputFile = Join-Path $distDir 'OMW_AirOps_Shindand_G2_AH64_Dispatch.lua'
-$builderVersion = 'SHND-G2-AH64-DISPATCH-2'
+$builderVersion = 'SHND-G2-AH64-DISPATCH-3'
 
 if (-not (Test-Path -LiteralPath $sourceFile -PathType Leaf)) {
     throw "Shindand G2 source not found: $sourceFile"
@@ -46,7 +46,7 @@ $forbiddenPatterns = @(
     'SPAWN\s*:',
     'coalition\s*\.\s*addGroup',
     'mist\s*\.',
-    'CampaignState',
+    '(?<![A-Za-z0-9_])CampaignState\s*(?:[\.:=\[]|\()',
     'SetParkingIDs\s*\(',
     'SetParkingSpotBlacklist\s*\(',
     'SetParkingIDsForType\s*\(',
@@ -54,9 +54,9 @@ $forbiddenPatterns = @(
     'trigger\.action\.markTo'
 )
 
-# Guard executable source, not descriptive comment-only lines. This prevents a
-# documentation sentence such as "No native coalition.addGroup" from tripping
-# the forbidden-code regression check while retaining the code-path guard.
+# Guard executable source, not descriptive comment-only lines. Match
+# CampaignState only when used as an actual symbol/expression, not when the
+# telemetry string reports campaignStateMutation=false.
 $scanSource = [regex]::Replace($source, '(?m)^\s*--.*(?:\r?\n|$)', '')
 foreach ($pattern in $forbiddenPatterns) {
     if ($scanSource -match $pattern) {
