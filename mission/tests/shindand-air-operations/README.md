@@ -151,7 +151,7 @@ status=PARTIAL
 reason=UNMAPPED_OR_INVALID_ANCHORS
 ```
 
-Die sechs gemeldeten `DUPLICATE_TERMINAL`-Marker entstehen ausschließlich dadurch, dass die sieben außerhalb der bestätigten Heliport-Domain liegenden Anker jeweils den geometrisch nächsten Heliport-Terminal als Kandidaten erhalten. Sie sind keine Doppelbelegung innerhalb der 38 akzeptierten Mappings.
+Die sechs gemeldeten `DUPLICATE_TERMINAL`-Marker entstehen ausschließlich dadurch, dass mehrere der sieben außerhalb der bestätigten Heliport-Domain liegenden Anker denselben geometrisch nächsten Heliport-Terminal als Kandidaten erhalten. Sie sind keine Doppelbelegung innerhalb der 38 akzeptierten Mappings.
 
 ### 6.1 Bestätigter Heliport-Parking-Contract
 
