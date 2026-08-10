@@ -9,7 +9,7 @@ authoritative_for:
   - STORAGE fuel adapter foundation scope
 not_authoritative_for:
   - completed transport runtime acceptance
-  - completed STORAGE fuel adapter runtime acceptance
+  - completed CampaignState-to-STORAGE integration acceptance
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
@@ -48,15 +48,15 @@ Der vollständige frühere Methoden- und Klassenstand bleibt erhalten:
 
 ## 2. WAREHOUSE
 
-Die Warehouse-Funktion ist für den dokumentierten Jalalabad-AIRWING-Grundstand teilweise belegt. Nicht allgemein validiert sind begrenzte Munition, Treibstoff, Nachschub, Assetzugang/-abgang, Wiederaufbau und Persistenz.
+Die Warehouse-Funktion ist für den dokumentierten AirOps-Grundstand als Asset-/AIRWING-Bestand belegt. Nicht allgemein validiert sind begrenzte Munition, Treibstoff, Nachschub, Assetzugang/-abgang, Wiederaufbau und Persistenz.
 
 `WAREHOUSE`-Assetstock darf nicht mit CampaignState-Ressourcen oder DCS-Warehouse-Liquids/-Items gleichgesetzt werden.
 
 ## 3. STORAGE
 
-Im gepinnten MOOSE-Stand `2.9.18`, Commit `73d3ed119cd9e7e3f2cfcabbaa34513d30529b54`, ist `STORAGE` source-reviewed als Wrapper um das DCS-Warehouse.
+Im gepinnten MOOSE-Stand `2.9.18`, Commit `73d3ed119cd9e7e3f2cfcabbaa34513d30529b54`, ist `STORAGE` der Wrapper um das native DCS-Airbase-Warehouse.
 
-Geprüfte öffentliche Pfade umfassen:
+Source-reviewed öffentliche Pfade umfassen:
 
 ```text
 STORAGE:FindByName(AirbaseName)
@@ -82,17 +82,17 @@ CampaignState = strategische Wahrheit
 STORAGE       = operativer DCS-Warehouse-Mirror
 ```
 
-`STORAGE` ist damit **nicht** als strategische Ressourcenhoheit oder Persistenzmechanismus freigegeben. Die Save-/Load-Pfade benötigen DCS-Desanitization; OMW ändert `MissionScripting.lua` nicht automatisch.
+`STORAGE` ist **nicht** als strategische Ressourcenhoheit oder CampaignState-Persistenzmechanismus freigegeben. Die MOOSE-STORAGE-Save-/Load-Pfade benötigen DCS-Desanitization; OMW ändert `MissionScripting.lua` nicht automatisch.
 
 ### 3.1 STORAGE-Fuel-Adapter-Foundation
 
-Auf dem Branch `agent/storage-fuel-adapter-foundation` existiert erstmals ein projektspezifischer, absichtlich kleiner Adapter:
+Auf dem Branch `agent/storage-fuel-adapter-foundation` existiert ein projektspezifischer, absichtlich kleiner Adapter:
 
 ```text
 scripts/logistics/OMW_StorageFuelAdapter.lua
 ```
 
-Er bildet ausschließlich die verbindlichen CampaignState-Fuel-IDs auf die source-reviewed MOOSE-Liquid-Typen ab:
+Er bildet ausschließlich die verbindlichen CampaignState-Fuel-IDs auf die MOOSE-Liquid-Typen ab:
 
 ```text
 FUEL_JP8   -> STORAGE.Liquid.JETFUEL
@@ -114,20 +114,53 @@ no CTLD
 no reverse overwrite of CampaignState from DCS telemetry
 ```
 
-`PlanSnapshot()` ist der read/compare-Pfad. `ApplySnapshot()` ist der explizite Mirror-Pfad und prüft den anschließenden `GetLiquidAmount()`-Readback. Die Anwendung desselben Soll-Snapshots soll bei unverändertem Warehouse `changeCount=0` ergeben.
+`PlanSnapshot()` ist der read/compare-Pfad. `ApplySnapshot()` ist der explizite Mirror-Pfad und prüft den anschließenden `GetLiquidAmount()`-Readback. Die Anwendung desselben Soll-Snapshots ergibt bei unverändertem Warehouse `changeCount=0`.
 
-Der geplante DCS-Test steht unter:
+Der DCS-Test ist für exakt den dokumentierten Kandahar-Scope als `ACCEPTED_TECHNICAL_BASELINE` bestätigt:
+
+```text
+Branch: agent/storage-fuel-adapter-foundation
+Acceptance commit: 0e5992f96a37b7400d7859fbcd3e98829f935d68
+BuilderVersion: STORAGE-FUEL-ADAPTER-FOUNDATION-1
+DCS: 2.9.28.26385 MT
+MIZ SHA-256: 54e9bd5d1d841a6c22980e59e07b463aef580032813f3441f1030b221fec66e9
+Bundle SHA-256: 16faa7da140334ddd3a001480e6f2677842b3dcc3cff64626796e039cd0769db
+Moose.lua SHA-256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
+Result: WRITE_READBACK_PASS / IDEMPOTENCY_PASS / RESTORE_PASS / status=PASS
+```
+
+Vollständige Provenienz:
 
 - [`OMW-TEST-STORAGE-FUEL-ADAPTER-INDEX`](../../mission/tests/storage-fuel-adapter/README.md)
 - [`OMW-TEST-STORAGE-FUEL-ADAPTER-FOUNDATION-ACCEPTANCE`](../../mission/tests/storage-fuel-adapter/expected/storage-fuel-adapter-foundation-acceptance.md)
 
-Bis zu diesem DCS-Lauf bleibt die Adapterwirkung **nicht validiert**.
+### 3.2 Limited-/Unlimited-Liquids-Grenze
 
-### 3.2 Unlimited-Prüfung
+Der erste DCS-Lauf mit aktiviertem `Unlimited Liquids` lieferte keinen veränderbaren begrenzten Fuel-Bestand und endete beim Sollwert-Readback mit `FAIL`. Der akzeptierte Lauf verwendete Kandahar mit deaktivierter Unlimited-Option und initial jeweils `100 t` JETFUEL/GASOLINE. `STORAGE:GetLiquidAmount()` las dafür jeweils `100000 kg` zurück.
+
+Damit gilt für den akzeptierten OMW-Mirror-Pfad:
+
+```text
+CampaignState-managed DCS STORAGE fuel node
+-> Unlimited Liquids = OFF
+-> explicit limited initial quantity
+```
+
+Diese Voraussetzung gilt für OMW/CampaignState-verwaltete Fuel-Nodes. Nicht verwaltete Afghanistan-Airports werden dadurch nicht automatisch auf Limited Liquids umgestellt.
 
 Der Foundation-Adapter ruft `STORAGE:IsUnlimitedLiquids()` bewusst nicht auf. Der geprüfte MOOSE-Quellpfad dieser Methode testet Unlimited-Zustände durch temporäres Entfernen und gegebenenfalls Wiederhinzufügen einer Einheit. Für einen read-only Reconciliation-Plan wäre das eine unerwünschte Mutation.
 
-Der Test-Harness erkennt stattdessen nur einen offensichtlichen Unlimited-Sentinel als Stop-Bedingung. Diese Heuristik gehört zum Test und ist keine CampaignState-Regel.
+### 3.3 WAREHOUSE und STORAGE sind keine doppelte Fuel-Hoheit
+
+Die an AirOps-Knoten vorhandenen MOOSE-`WAREHOUSE`-Objekte gehören zum AIRWING-/SQUADRON-Asset-Lifecycle. Das native DCS-Airbase-Warehouse wird über MOOSE `STORAGE` angesprochen.
+
+```text
+MOOSE WAREHOUSE / AIRWING asset stock
+!= MOOSE STORAGE / DCS warehouse liquids
+!= CampaignState strategic fuel quantity
+```
+
+Der akzeptierte STORAGE-Test verändert ausschließlich den nativen DCS-Airbase-Warehouse-Liquidpfad. Er weist keine Fuel-Buchung im AIRWING-`WAREHOUSE` nach und darf nicht als solche interpretiert werden.
 
 ## 4. OPSTRANSPORT
 
@@ -158,13 +191,12 @@ RAT-Verkehr ist rein atmosphärisch. Er verändert keine CampaignState-Bestände
 
 Jeder Transporttyp benötigt eigene Testfälle für Einmalgutschrift, Verlust, Teillieferung, Disconnect, Multiplayer, Persistenz und Missionsneustart.
 
-Für `STORAGE` sind zusätzlich mindestens zu prüfen:
+Für `STORAGE` sind weiterhin zusätzlich zu prüfen:
 
-- Fuel-Read/Write auf einem OMW-Airbase-Warehouse;
-- getrennte JETFUEL-/GASOLINE-Behandlung;
 - Waffen-/Item-Mapping für tatsächlich verwendete OMW-Stores;
-- CampaignState→STORAGE-Synchronisation ohne Rückhoheit;
+- CampaignState→STORAGE-Synchronisation über einen realen CampaignState-Store ohne Rückhoheit;
 - Reconciliation bei abweichendem DCS-Bestand;
-- Mission-Restart ohne Ressourcenverdopplung.
+- Mission-Restart ohne Ressourcenverdopplung;
+- Multiplayer-Verhalten.
 
-Der erste Foundation-Test deckt davon nur Fuel-Read/Write, JETFUEL-/GASOLINE-Trennung, Readback, Idempotenz und Wiederherstellung am Testknoten Kandahar ab. Alle weiteren Punkte bleiben offen.
+Der erste Foundation-Test hat für Kandahar bereits Fuel-Read/Write, JETFUEL-/GASOLINE-Trennung, kg-Abbildung, Readback, Idempotenz und Wiederherstellung bestätigt. Diese Acceptance ist nicht auf andere Knoten oder die offenen Integrationspunkte zu extrapolieren.
