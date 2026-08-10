@@ -48,7 +48,7 @@ registeredGroups=61
 representedAirframes=73
 logicalAirframes=75
 logicalReserve=2
-rolePayloads=9
+rolePayloads=7
 ```
 
 Inventory detail:
@@ -61,6 +61,17 @@ HH-60G  6 logical /  6 represented
 UH-60   10 logical / 10 represented
 CH-47   13 logical / 13 represented
 ```
+
+## Required Mission Editor seeds
+
+The helicopter foundation uses one physical seed per identical aircraft configuration:
+
+```text
+TPL_AIR_US_BGRM_HH60G_CSAR_1SHIP
+TPL_AIR_US_BGRM_UH60_UTILITY_1SHIP
+```
+
+Separate `CSAR_LEAD`, `CSAR_COVER`, or `UH60_TRANSPORT` template duplicates are not required while the underlying Mission Editor aircraft configuration is identical. Role differentiation remains a MOOSE mission-capability/tasking concern and is outside this foundation-only acceptance gate.
 
 ## Required AIRWING state
 
