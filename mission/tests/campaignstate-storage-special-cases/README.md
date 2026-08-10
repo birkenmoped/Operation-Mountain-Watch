@@ -47,27 +47,25 @@ Der Test klärt ausschließlich, ob die jeweils zugehörigen nativen DCS-Warehou
 
 ## 2. MOOSE-First-Pfad
 
-Der Harness verwendet ausschließlich öffentliche, im gepinnten MOOSE-Quellstand vorhandene Methoden:
+Der Harness bleibt auf den bereits für den OMW-STORAGE-Pfad source-reviewed beziehungsweise praktisch bestätigten öffentlichen Methoden:
 
 ```text
 AIRBASE:FindByName()
 AIRBASE:GetStorage()
-AIRBASE:GetWarehouse()
 STORAGE:FindByName()
 STORAGE:GetLiquidAmount()
 STORAGE:SetLiquid()
-STORAGE:IsUnlimitedLiquids()
 STORAGE.Liquid.JETFUEL
 STORAGE.Liquid.GASOLINE
 STORAGE.Liquid.MW50
 STORAGE.Liquid.DIESEL
 ```
 
-Keine `_DATABASE`-Abfrage, kein `world.searchObjects`, keine eigene DCS-Warehouse-Abstraktion und kein CampaignState-Write werden verwendet.
+Keine `_DATABASE`-Abfrage, kein `world.searchObjects`, keine neue Native-DCS-Warehouse-Abstraktion und kein CampaignState-Write werden verwendet.
 
 ## 3. Testprinzip
 
-Jeder Endpunkt wird über `AIRBASE` und `STORAGE` aufgelöst. Der Test protokolliert:
+Jeder Endpunkt wird sowohl über `AIRBASE:GetStorage()` als auch über `STORAGE:FindByName()` aufgelöst. Beide Auflösungen müssen dasselbe MOOSE-STORAGE-Objekt ergeben. Der Test protokolliert:
 
 ```text
 Airbase-Name
@@ -76,20 +74,20 @@ JETFUEL
 GASOLINE
 MW50
 DIESEL
-MOOSE-STORAGE-Wrapper-Identität
-DCS-Warehouse-Objektidentität
+MOOSE-STORAGE-Wrapper-Identität innerhalb des jeweiligen Paars
 ```
 
-Wenn ein Paar nicht bereits dieselbe Wrapper- oder DCS-Warehouse-Identität aufweist, wird ein kontrollierter Black-Box-Aliasing-Test ausgeführt:
+Wenn ein Paar nicht bereits denselben STORAGE-Wrapper verwendet, wird ein kontrollierter Black-Box-Aliasing-Test ausgeführt:
 
 ```text
 1. Ausgangsbestand JETFUEL beider Endpunkte lesen
-2. sofern der Quell-Storage nicht Unlimited Liquids verwendet:
-   Quellbestand temporär um 37 kg erhöhen
+2. Quellbestand temporär um 37 kg erhöhen
 3. Quell- und Gegenendpunkt erneut lesen
-4. Änderung am Gegenendpunkt klassifizieren
-5. Ausgangsbestand sofort wiederherstellen
-6. Wiederherstellung auf beiden Endpunkten verifizieren
+4. wenn der Quellwert den Sollwert nicht annimmt:
+   Quelle als nicht schreibbar behandeln und Gegenrichtung versuchen
+5. andernfalls Änderung am Gegenendpunkt klassifizieren
+6. Ausgangsbestand sofort wiederherstellen
+7. Wiederherstellung auf beiden Endpunkten verifizieren
 ```
 
 Klassifikationen:
@@ -101,7 +99,7 @@ INDEPENDENT_BEHAVIOR
 INCONCLUSIVE
 ```
 
-`INCONCLUSIVE` ist insbesondere möglich, wenn beide Seiten Unlimited Liquids verwenden und deshalb kein kontrollierter Schreib-/Readback-Test möglich ist.
+`INCONCLUSIVE` entsteht, wenn keine der beiden Richtungen einen kontrollierten Sollwert-Readback erlaubt, etwa bei Unlimited Liquids.
 
 ## 4. Schutzgrenzen
 
@@ -147,12 +145,12 @@ Moose.lua SHA-256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a
 
 ## 6. Acceptance-Kriterien
 
-Der DCS-Lauf muss für alle sechs benannten Airbase-Endpunkte eine gültige `AIRBASE`-/`STORAGE`-/DCS-Warehouse-Auflösung liefern.
+Der DCS-Lauf muss für alle sechs benannten Airbase-Endpunkte eine gültige `AIRBASE`-/`STORAGE`-Auflösung liefern.
 
-Für jedes Paar muss genau eine `PAIR_RESULT`-Zeile entstehen. Ein belastbarer Abschluss ist erreicht, wenn kein Paar `INCONCLUSIVE` bleibt und jede durchgeführte JETFUEL-Perturbation vollständig wiederhergestellt wurde.
+Für jedes Paar muss genau eine `PAIR_RESULT`-Zeile entstehen. Ein belastbarer Abschluss ist erreicht, wenn kein Paar `INCONCLUSIVE` bleibt und jede tatsächlich durchgeführte JETFUEL-Perturbation vollständig wiederhergestellt wurde.
 
-Die tatsächlich beobachtete Topologie wird nicht vorweggenommen. Insbesondere wird für Kandahar und Shindand nicht angenommen, dass Main und Heliport getrennte native Warehouses besitzen.
+Die beobachtete Topologie wird nicht vorweggenommen. Insbesondere wird für Kandahar und Shindand nicht angenommen, dass Main und Heliport getrennte native Warehouses besitzen.
 
-Für Salerno wird geprüft, dass `FOB Salerno` und `Khost` als getrennte Airbase-Namen auflösbar sind; ob ihre Warehouses technisch getrennt sind, wird ebenfalls aus dem Runtime-Verhalten ermittelt.
+Für Salerno wird geprüft, dass `FOB Salerno` und `Khost` als getrennte Airbase-Namen auflösbar sind; ob ihre Liquid-Bestände technisch getrennt oder gekoppelt sind, wird ebenfalls aus dem Runtime-Verhalten ermittelt.
 
 Ein Status `ACCEPTED_TECHNICAL_BASELINE` ist erst nach dokumentiertem DCS-Lauf mit Branch-, Commit-, Mission-, Bundle-, DCS- und MOOSE-Provenienz zulässig.
