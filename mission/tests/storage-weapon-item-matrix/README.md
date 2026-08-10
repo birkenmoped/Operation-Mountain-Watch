@@ -1,6 +1,6 @@
 ---
 document_id: OMW-TEST-STORAGE-WEAPON-ITEM-MATRIX-INDEX
-status: PLANNED
+status: ACCEPTED_TECHNICAL_BASELINE
 document_class: TEST_PROJECT_INDEX
 owning_policy: OMW-GOV-001
 authoritative_for:
@@ -13,7 +13,14 @@ supersedes:
 superseded_by:
 source_branch: agent/storage-weapon-item-matrix
 source_commit: PENDING_MERGE
-validated_in_dcs: false
+validated_in_dcs: true
+acceptance_branch: agent/storage-weapon-item-matrix
+acceptance_commit: 19836e4862e0b0a1d6bc1cee987cb9ce308ee3eb
+acceptance_mission: OMW_Template_v8_AirOps_rdy.miz
+acceptance_mission_sha256: 9431918c103359d0207db9b98c1cdb938afc48e55e0b828c21a8eb1a15a39c11
+dcs_version: 2.9.28.26385 MT
+moose_commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+moose_artifact_sha256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
 base_branch: agent/campaignstate-resource-transaction-contract
 base_commit: a1f2c5997f07e164dddc839665cb83c321bfd4ae
 base_status: ACCEPTED_TECHNICAL_BASELINE_CHILD_BRANCH
@@ -146,7 +153,7 @@ Zusätzlich protokolliert der Harness relevante Inventory-Keys anhand enger Stri
 Aggregate PASS:
 
 ```text
-RESULT testId=STORAGE-WEAPON-ITEM-MATRIX-1 status=PASS nodesExpected=7 nodesPassed=7 mutation=false campaignStateMutation=false opstransport=false ctld=false
+RESULT testId=STORAGE-WEAPON-ITEM-MATRIX-1 status=PASS nodesExpected=7 nodesPassed=7 nodesFailed=0 mutation=false campaignStateMutation=false opstransport=false ctld=false
 ```
 
 ## 6. Architekturentscheidung, die dieser Test vorbereitet
@@ -162,7 +169,7 @@ AMMUNITION_50CAL
 
 Der MOOSE-Enum trennt jedoch beispielsweise AH-64-M230- und A-10-GAU-8-30-mm-Items. Deshalb darf `AMMUNITION_30MM` nicht ohne weiteren Owner-Entscheid als austauschbarer Einheitsbestand implementiert werden.
 
-Dieser Test liefert die technische Matrix für die anschließende Resource-ID-/Mapping-Entscheidung. Er trifft diese Entscheidung nicht selbst.
+Der Runtime-Lauf bestätigte zusätzlich, dass relevante Warehouse-Items nicht immer den zunächst vermuteten `gunmounts`-/`shells`-Kandidaten entsprechen. Insbesondere wurden OH-58-M3P-Container-Keys mit Bestand sichtbar, während die geprüften M3P-`gunmounts` und .50-cal-`shells` im selben Warehouse-Pfad `0` lieferten. Daraus wird noch keine produktive Resource-Zuordnung abgeleitet.
 
 ## 7. Source- und Build-Pfade
 
@@ -178,8 +185,33 @@ BuilderVersion:
 STORAGE-WEAPON-ITEM-MATRIX-1
 ```
 
-## 8. DCS-Gate
+## 8. Acceptance
 
-Vor DCS-Ausführung gelten `mission/tests/GOVERNANCE.md` und Dokument 22. Nach Einbettung in die Test-MIZ müssen MIZ-, interner mission-, eingebetteter Bundle- und eingebetteter Moose.lua-Hash für den exakt ausgeführten Stand dokumentiert werden.
+Der Lauf vom 10.08.2026 ist für exakt den dokumentierten Stand `ACCEPTED_TECHNICAL_BASELINE`.
 
-Ein Runtime-PASS wird erst nach Rückgabe der realen DCS-Logs und vollständiger Provenienz als Acceptance bewertet.
+```text
+Source/Builder commit: 19836e4862e0b0a1d6bc1cee987cb9ce308ee3eb
+BuilderVersion: STORAGE-WEAPON-ITEM-MATRIX-1
+DCS: 2.9.28.26385 MT
+Executed MIZ: OMW_Template_v8_AirOps_rdy.miz
+Executed MIZ SHA-256: 9431918c103359d0207db9b98c1cdb938afc48e55e0b828c21a8eb1a15a39c11
+Internal mission SHA-256: 1f186d3116844c9275421623b16d9b3798c8f75ee726ec07f31a67a6fd1ce53c
+Embedded bundle: l10n/DEFAULT/OMW_Storage_Weapon_Item_Matrix_Test.lua
+Embedded bundle SHA-256: 46568c872d29e3542fddc47d781897f75d2f40a057b995e0b4c1437ae0877aa5
+Local build bundle SHA-256: 46568c872d29e3542fddc47d781897f75d2f40a057b995e0b4c1437ae0877aa5
+Embedded Moose.lua SHA-256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
+DCS log SHA-256: 2356ee23e2275ae10e959a196a1f6f62dfe2f7d390ea6ad6f39b757fb19c9361
+Debrief SHA-256: 55cbc63b6244cbaf30b38f64362a29f11742825327a02c1f1ab1f4960752505c
+```
+
+Bestätigter finaler Marker:
+
+```text
+RESULT testId=STORAGE-WEAPON-ITEM-MATRIX-1 status=PASS nodesExpected=7 nodesPassed=7 nodesFailed=0 mutation=false campaignStateMutation=false opstransport=false ctld=false
+```
+
+Vollständiger Acceptance-Bericht:
+
+- [`OMW-TEST-STORAGE-WEAPON-ITEM-MATRIX-ACCEPTANCE`](expected/storage-weapon-item-matrix-acceptance.md)
+
+Die Acceptance umfasst ausschließlich die read-only Weapon-/Item-Matrix. STORAGE-Mutation, CampaignState-Synchronisation, Payload-Verbrauch, OPSTRANSPORT, CTLD, Persistenz und Multiplayer-Reconciliation bleiben separate Gates.
