@@ -1,8 +1,16 @@
 -- Operation Mountain Watch - Shindand Heliport AIRWING/SQUADRON foundation.
 --
--- Scope: one AIRWING, three SQUADRONs, the owner-defined type-specific parking
--- pools, inventory registration, grouping, turnover, cold takeoff, vertical
--- preference, mission capabilities, role payloads and AIRWING start.
+-- Scope: one AIRWING, three SQUADRONs, owner-defined type-specific parking
+-- pools, shared-free AI parking, inventory registration, grouping, turnover,
+-- cold takeoff, vertical preference, mission capabilities, role payloads and AIRWING start.
+--
+-- Parking follows the established Jalalabad pattern:
+--   * AIRBASE blacklist is applied before AIRWING creation/start.
+--   * SQUADRON parking IDs remain type-specific reserved/preferred pools.
+--   * shared-free parking remains globally available and is not added to any
+--     SQUADRON parking list.
+--   * AIRWING safe parking is enabled before start.
+--   * no AIRWING:SetParkingIDs() type restriction is used.
 --
 -- Deliberately excluded: COMMANDER, AUFTRAG instances, OPSTRANSPORT, F10/test
 -- controls, tactical orchestration, recovery, persistence and CampaignState mutation.
@@ -43,6 +51,14 @@ local function parkingIDsEqual(actual, expected)
   return true
 end
 
+local function toSet(values)
+  local result = {}
+  for _, value in ipairs(values or {}) do
+    result[tonumber(value)] = true
+  end
+  return result
+end
+
 local config = {
   turnoverMin = 20,
   turnoverMax = 40,
@@ -52,6 +68,7 @@ local config = {
   airbaseName = AIRBASE.Afghanistan and AIRBASE.Afghanistan.Shindand_Heliport or "Shindand Heliport",
   warehouseName = "WH_AIR_US_SHINDAND_HELIPORT",
   airwingName = "AW_US_SHINDAND",
+  sharedFreeParkingIDs = { 0, 16, 24, 33, 14, 25, 42, 27, 22, 39, 38, 5, 29, 11, 26, 40, 9 },
   squadrons = {
     AH64D = {
       name = "SQ_US_SHND_AH64D_ATTACK",
@@ -109,6 +126,49 @@ local function requireAnchor(name)
   return anchor
 end
 
+local function buildGlobalParkingBlacklist(airbase)
+  local allowed = {}
+  local allowedSet = {}
+
+  local function add(values)
+    for _, value in ipairs(values or {}) do
+      local terminalID = tonumber(value)
+      if terminalID and not allowedSet[terminalID] then
+        allowedSet[terminalID] = true
+        allowed[#allowed + 1] = terminalID
+      end
+    end
+  end
+
+  add(config.sharedFreeParkingIDs)
+  add(config.squadrons.AH64D.parkingIDs)
+  add(config.squadrons.UH60.parkingIDs)
+  add(config.squadrons.CH47.parkingIDs)
+
+  local spots = airbase:GetParkingSpotsTable() or {}
+  local blocked = {}
+  local seen = {}
+  for _, spot in ipairs(spots) do
+    local terminalID = tonumber(spot.TerminalID)
+    if terminalID and not seen[terminalID] then
+      seen[terminalID] = true
+      if not allowedSet[terminalID] then
+        blocked[#blocked + 1] = terminalID
+      end
+    end
+  end
+
+  for _, terminalID in ipairs(allowed) do
+    if not seen[terminalID] then
+      error("Configured Shindand parking TerminalID missing from Heliport table: " .. tostring(terminalID))
+    end
+  end
+
+  table.sort(allowed)
+  table.sort(blocked)
+  return allowed, blocked, #spots
+end
+
 local function createSquadron(airwing, definition)
   local template = requireTemplate(definition.template)
   local representedAircraft = definition.assetGroups * definition.grouping
@@ -156,13 +216,27 @@ local function constructFoundation()
   if airbase:GetName() ~= "Shindand Heliport" then
     error("Resolved unexpected airbase: " .. tostring(airbase:GetName()))
   end
+  if not airbase.GetParkingSpotsTable or not airbase.SetParkingSpotBlacklist then
+    error("Required MOOSE AIRBASE parking APIs are unavailable")
+  end
 
   requireAnchor(config.warehouseName)
+
+  local allowedParkingIDs, parkingBlacklist, parkingNodeCount = buildGlobalParkingBlacklist(airbase)
+  airbase:SetParkingSpotBlacklist(parkingBlacklist)
+  log(string.format(
+    "PARKING_PREFLIGHT pattern=JALALABAD totalNodes=%d allowedTerminalIDs=%d blockedTerminalIDs=%d sharedFreeTerminalIDs=%s airbaseBlacklistApplied=true",
+    parkingNodeCount,
+    #allowedParkingIDs,
+    #parkingBlacklist,
+    table.concat(config.sharedFreeParkingIDs, ",")
+  ))
 
   local airwing = AIRWING:New(config.warehouseName, config.airwingName)
   airwing:SetAirbase(airbase)
   airwing:SetMarker(false)
   airwing:SetTakeoffCold()
+  airwing:SetSafeParkingOn()
 
   if not airwing.SetOptionPreferVerticalLanding then
     error("Pinned MOOSE AIRWING:SetOptionPreferVerticalLanding is unavailable")
@@ -201,6 +275,15 @@ local function constructFoundation()
     Squadrons = squadrons,
     Payloads = payloads,
     Config = config,
+    Parking = {
+      Pattern = "JALALABAD",
+      AllowedTerminalIDs = allowedParkingIDs,
+      BlacklistTerminalIDs = parkingBlacklist,
+      SharedFreeTerminalIDs = config.sharedFreeParkingIDs,
+      AirbaseBlacklistAppliedBeforeAirwingCreation = true,
+      SafeParkingConfiguredBeforeStart = true,
+      AirwingParkingRestriction = false,
+    },
     Scope = "AIRWING_SQUADRON_FOUNDATION_ONLY",
     RegisteredGroups = registeredGroups,
     RepresentedAirframes = representedAircraft,
@@ -215,7 +298,7 @@ end
 
 local function inspectIdleFoundation()
   local state = OMW and OMW.AirOps and OMW.AirOps.Shindand or nil
-  if not state or not state.Airwing or not state.Squadrons then
+  if not state or not state.Airwing or not state.Squadrons or not state.Parking then
     error("Shindand foundation state is unavailable after AIRWING start")
   end
 
@@ -258,12 +341,22 @@ local function inspectIdleFoundation()
     ))
   end
 
+  if state.Airwing.safeparking ~= true then
+    postStartValid = false
+    log("AIRWING_SAFE_PARKING_MISMATCH expected=true actual=" .. tostring(state.Airwing.safeparking))
+  end
+
+  if state.Airwing.parkingIDs ~= nil then
+    postStartValid = false
+    log("AIRWING_PARKING_RESTRICTION_UNEXPECTED")
+  end
+
   if not postStartValid then
-    error("Shindand post-start SQUADRON asset/parking validation failed")
+    error("Shindand post-start SQUADRON/parking validation failed")
   end
 
   log(string.format(
-    "RESULT status=%s airbase=%s airbaseID=%s airwings=1 squadrons=3 registeredGroups=%d representedAirframes=%d logicalAirframes=%d logicalReserve=%d rolePayloads=%d running=%s postStartAssetParkingSync=true missionsCreated=0 transportsCreated=0 commanderCreated=false f10Controls=false",
+    "RESULT status=%s airbase=%s airbaseID=%s airwings=1 squadrons=3 registeredGroups=%d representedAirframes=%d logicalAirframes=%d logicalReserve=%d rolePayloads=%d running=%s postStartAssetParkingSync=true parkingPattern=JALALABAD airbaseBlacklistPreStart=true safeParkingPreStart=true airwingParkingRestriction=false sharedFreeParkingConfigured=true missionsCreated=0 transportsCreated=0 commanderCreated=false f10Controls=false",
     tostring(state.Status),
     tostring(state.Airbase:GetName()),
     tostring(state.Airbase:GetID()),
