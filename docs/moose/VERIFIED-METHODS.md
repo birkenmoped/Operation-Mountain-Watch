@@ -9,14 +9,15 @@ authoritative_for:
   - vertical-helicopter option evidence and limitations
   - COMMANDER start and selection sequence
   - source-reviewed WAREHOUSE parking method boundaries
+  - STORAGE fuel mirror method evidence
   - documented validation scope and limitations
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
   - method register without lifecycle timing, vertical-option and COMMANDER details
 superseded_by:
-source_branch: agent/kandahar-foundation-july-2011-rebuild
-source_commit: GIT_HISTORY
+source_branch: agent/storage-fuel-adapter-foundation
+source_commit: PENDING_MERGE
 validated_in_dcs: partial
 ---
 
@@ -393,3 +394,77 @@ CSAR/MEDEVAC specialization
 CampaignState integration
 persistence
 ```
+
+## 12. STORAGE Fuel Adapter Foundation
+
+### 12.1 Akzeptierter Kandahar-Nachweis
+
+```text
+Testdatum: 2026-08-10
+DCS: 2.9.28.26385 MT
+Branch: agent/storage-fuel-adapter-foundation
+Source/Builder commit: 0e5992f96a37b7400d7859fbcd3e98829f935d68
+BuilderVersion: STORAGE-FUEL-ADAPTER-FOUNDATION-1
+MIZ: OMW_Template_v8_AirOps_rdy.miz
+MIZ SHA-256: 54e9bd5d1d841a6c22980e59e07b463aef580032813f3441f1030b221fec66e9
+Internal mission SHA-256: 27cdcff0ccda6299c07c853c9bdc16897523db8e8d8b6b6dc5d7caa751c570ad
+Embedded bundle SHA-256: 16faa7da140334ddd3a001480e6f2677842b3dcc3cff64626796e039cd0769db
+DCS log SHA-256: 7c14b2718a655b4868d8a4c03078b82f0c75798191a50c91b75f38960c066a50
+Debrief SHA-256: 7969969a5e1a69013fcd5b2fedd68d7c3a90ab70de80b28c7d1c487019153d1e
+```
+
+Testbedingung:
+
+```text
+Kandahar liquids: limited
+Mission Editor JETFUEL: 100 t
+Mission Editor GASOLINE: 100 t
+Runtime JETFUEL: 100000 kg
+Runtime GASOLINE: 100000 kg
+```
+
+Damit ist für diesen Stand die Abbildung `100 t -> 100000 kg` im getesteten ME/DCS/MOOSE-Pfad praktisch bestätigt. Ein CampaignState-verwalteter DCS-`STORAGE`-Fuelknoten muss für diesen Mirror-Pfad begrenzte Flüssigkeiten verwenden; bei aktivem Unlimited-Liquids-Modus war ein exakter `SetLiquid()`-Readback im Vorlauf nicht möglich.
+
+### 12.2 Praktisch bestätigte STORAGE-Methoden
+
+| Methode / Pfad | Status | Belegter Umfang |
+|---|---|---|
+| `STORAGE:FindByName("Kandahar")` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Kandahar-DCS-Warehouse als `STORAGE`-Wrapper aufgelöst |
+| `STORAGE:GetLiquidAmount(STORAGE.Liquid.JETFUEL)` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | begrenzten JETFUEL-Bestand in kg gelesen; 100 t ME -> 100000 kg Runtime |
+| `STORAGE:GetLiquidAmount(STORAGE.Liquid.GASOLINE)` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | begrenzten GASOLINE-Bestand in kg gelesen; 100 t ME -> 100000 kg Runtime |
+| `STORAGE:SetLiquid(STORAGE.Liquid.JETFUEL, amountKg)` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | JP-8-Sollwert geschrieben und exakt per Readback bestätigt |
+| `STORAGE:SetLiquid(STORAGE.Liquid.GASOLINE, amountKg)` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | AVGAS-Sollwert geschrieben und exakt per Readback bestätigt |
+| `FUEL_JP8 -> STORAGE.Liquid.JETFUEL` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | getrennte JP-8-Spiegelung im Foundation-Adapter bestätigt |
+| `FUEL_AVGAS -> STORAGE.Liquid.GASOLINE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | getrennte AVGAS-Spiegelung im Foundation-Adapter bestätigt |
+
+Runtime-Kette:
+
+```text
+PLAN_PASS changes=2
+WRITE_READBACK_PASS
+IDEMPOTENCY_PASS
+RESTORE_PASS
+RESULT testId=STORAGE-FUEL-ADAPTER-FOUNDATION-1 status=PASS
+```
+
+Der zweite identische Soll-Snapshot ergab `changeCount=0`; anschließend wurden beide Ausgangsbestände per Readback bestätigt wiederhergestellt.
+
+### 12.3 Geltungsgrenze
+
+Nicht validiert sind:
+
+```text
+CampaignState persistence
+CampaignState transaction lifecycle
+automatic aircraft fuel consumption
+player or AI refuel accounting
+AAR accounting
+weapon/item synchronization
+multiplayer reconciliation
+mission restart reconciliation
+STORAGE file persistence
+OPSTRANSPORT / CTLD delivery
+reverse overwrite of CampaignState from DCS telemetry
+```
+
+`MOOSE WAREHOUSE`/`AIRWING`-Assetstock und DCS-`STORAGE`-Liquids bleiben getrennte operative Domänen. Der Kandahar-PASS belegt keine gemeinsame oder doppelte Fuel-Hoheit.

@@ -14,7 +14,7 @@ project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
   - incomplete open-branch list in the documentation index
 superseded_by:
-source_branch: agent/airwing-naming-reconciliation
+source_branch: agent/storage-fuel-adapter-foundation
 source_commit: PENDING_MERGE
 validated_in_dcs: false
 ---
@@ -52,12 +52,14 @@ Dieses Register bildet offene Pull Requests, ihre Abhängigkeiten, Dokumentation
 | 37 | `agent/document-ato-asr-aar-buddy-lasing` | `main` | ATO, ASR, Tanker und Buddy Lasing | Dokumente 29, 45 und branchlokale Dokumente 54–56 | `DRAFT`; Nummern und Inhalte überlappen den heutigen `main`-Bestand | Dokumentation; keine DCS-Acceptance | offen | vor selektiver Integration fachlich vergleichen und neu nummerieren |
 | 39 | `docs/haqqani-network-reference` | `main` | Haqqani-Network-Referenz | `docs/insurgency/haqqani-network.md`, Register und Indizes | `DRAFT`; inhaltliche Überlappung mit späteren RED-/Netzwerkdokumenten auf `main` | Dokumentation; keine Runtime-Acceptance | offen | nur nach Dubletten- und Autoritätsprüfung integrieren |
 | 40 | `docs/tarinkot-air-operations-baseline` | `docs/afghanistan-force-aviation-source-consolidation` / PR #38, inzwischen gemergt | Tarinkot-ME- und Air-Ops-Baseline | Tarinkot-Manifest und Evidenz | `DRAFT`; technischer Vorgänger des gemergten PR #53 | struktureller ME-Nachweis; keine vollständige Runtime-Acceptance | PR 53 (gemergt) | nicht unabhängig vom inzwischen auf `main` integrierten Tarinkot-Stand weiterführen |
-| 41 | `agent/document-shindand-air-operations` | `docs/afghanistan-force-aviation-source-consolidation` / PR #38, inzwischen gemergt | Shindand-Air-Ops-Baseline | Shindand-Manifest, Handoff und Evidenz | `DRAFT`; Basisbranch wurde gemergt, Branch muss vor Integration neu abgeglichen werden | Mission-Editor-Struktur branchgebunden; Runtime nicht gelaufen | offen | offene Shindand-Foundation-Baseline |
+| 41 | `agent/document-shindand-air-operations` | `docs/afghanistan-force-aviation-source-consolidation` / PR #38, inzwischen gemergt | Shindand-Air-Ops-Baseline | Shindand-Manifest, Handoff und Evidenz | `DRAFT`; Basisbranch wurde gemergt, Branch muss vor Integration neu abgeglichen werden | Mission-Editor-Struktur branchgebunden; Runtime nicht gelaufen | PR 65 (gemergt) | historische Dokumentationslinie; aktuelle Foundation auf `main` |
 | 45 | `agent/document-ch47-pool-allocation` | `main` | CH-47-Verteilung Bagram/Salerno/Shank | branchlokales Dokument 54 und Evidenz | `DRAFT`; Dokumentnummer 54 kollidiert mit dem aktuellen `main`-Bestand | Dokumentation; keine DCS-Acceptance | offen | Bestandsentscheidung vor Integration abgleichen und neu nummerieren |
-| 49 | `agent/next-airport-airwing-squadron-handoff` | `main` | frühere Auswahlübergabe für den nächsten Air-Ops-Knoten | Handoff und README | `DRAFT`; Auswahlstand durch nachfolgende Salerno-, Tarinkot-, Kandahar- und Bagram-Arbeit überholt | keine Runtime-Acceptance | 51, 52, 53, 60, 61 und 63 | historisches Handoff; keine aktuelle Arbeitsanweisung |
+| 49 | `agent/next-airport-airwing-squadron-handoff` | `main` | frühere Auswahlübergabe für den nächsten Air-Ops-Knoten | Handoff und README | `DRAFT`; Auswahlstand durch nachfolgende Salerno-, Tarinkot-, Kandahar-, Bagram- und Shindand-Arbeit überholt | keine Runtime-Acceptance | 51, 52, 53, 60, 61, 63 und 65 | historisches Handoff; keine aktuelle Arbeitsanweisung |
 | 50 | `docs/bagram-air-operations-manifest` | `main` | Sammelintegration des alten Air-Ops-Branches | 150 Dateien aus Bagram, Jalalabad und Kandahar | offen, nicht Draft; stark überholt und mit `main` kollidierend | gemischte branchgebundene Nachweise; keine pauschale `main`-Acceptance | selektive spätere Main-Merges | nicht als Ganzes integrieren; nur datei- und autoritätsbezogen auswerten |
 | 52 | `agent/salerno-read-only-diagnostics` | `docs/bagram-air-operations-manifest` | Salerno AIRWING/SQUADRON und COMMANDER-Runtime | `mission/tests/salerno-air-operations/`, Builder und technische Evidenz | `DRAFT`; kanonische Salerno-Foundation wurde inzwischen über PR #60 nach `main` übernommen | `ACCEPTED_TECHNICAL_BASELINE` für den exakt dokumentierten Stage-18-Stand; Parking-Zuweisung nicht akzeptiert | offen | technische Salerno-Fixtures und Runtime-Historie |
 | 64 | `agent/airwing-naming-reconciliation` | `main` | Jalalabad-/Salerno-AIRWING-Naming-Reconciliation | ADR 0007, Jalalabad-/Salerno-Manifeste, Foundation Lua und Builder | `DRAFT`; Owner-Naming-Entscheidung dokumentiert | neue Identifier noch nicht DCS-validiert; lokale Build-/Hash-Prüfung ausstehend | offen | Abschluss der 7-AIRWING-Foundation-Namenskonsolidierung |
+| 66 | `agent/resource-warehouse-ownership-contract` | `main` | Resource-/Warehouse-Ownership-Vertrag | `docs/resource-warehouse-ownership-contract.md`, MOOSE-Logistikdokumente | `DRAFT`; Owner-Entscheidungen branchgebunden dokumentiert | Dokumentations-CI PASS; keine STORAGE-Runtime-Acceptance | 67 | verbindliche Designentscheidungen für Fuel-IDs, Einheit, Supply Parents, DoS und FARP-Puffer; repositoryweit erst nach Integration |
+| 67 | `agent/storage-fuel-adapter-foundation` | PR 66 | CampaignState→MOOSE-STORAGE Fuel-Mirror-Foundation | `scripts/logistics/`, `mission/tests/storage-fuel-adapter/`, Builder, MOOSE-Dokumentation | `DRAFT`; MOOSE-first Foundation | `NOT_RUN`; DCS-Read/Write/Idempotenz/Restore ausstehend | offen | kleinster operativer Adapter für `FUEL_JP8`/`FUEL_AVGAS`; keine CampaignState-Rückhoheit oder automatische Verbrauchsbuchung |
 
 ## 3. Stackstruktur
 
@@ -78,10 +80,11 @@ main
 ├── PR 41
 ├── PR 45
 ├── PR 49
-└── PR 64
+├── PR 64
+└── PR 66 → PR 67
 ```
 
-PR #53 (Tarinkot), PR #60 (Salerno Foundation), PR #61 (Kandahar Foundation), PR #62 (Dokumentationsmetadaten) und PR #63 (Bagram duale AIRWING Foundation) sind inzwischen nach `main` gemergt und werden nicht mehr als offene Unterprojekte geführt.
+PR #53 (Tarinkot), PR #60 (Salerno Foundation), PR #61 (Kandahar Foundation), PR #62 (Dokumentationsmetadaten), PR #63 (Bagram duale AIRWING Foundation) und PR #65 (Shindand Foundation) sind inzwischen nach `main` gemergt und werden nicht mehr als offene Unterprojekte geführt.
 
 ## 4. Verbindliche Regeln
 
@@ -95,15 +98,17 @@ PR #53 (Tarinkot), PR #60 (Salerno Foundation), PR #61 (Kandahar Foundation), PR
 ## 5. Registerabgleich vom 10. August 2026
 
 ```yaml
-main_commit: 1c439cf13b3dce95ae22ce5f5e126f4ecfb633ff
-open_pull_requests: 29
+main_commit: 56fccfa44536c3c205c002d16f1af167cba65d51
+open_pull_requests: 31
 pr_53: MERGED
 pr_60: MERGED
 pr_61: MERGED
 pr_62: MERGED
 pr_63: MERGED
-pr_64: OPEN_DRAFT
+pr_65: MERGED
+pr_66: OPEN_DRAFT
+pr_67: OPEN_DRAFT
 source: GitHub pull-request state
 ```
 
-Die 29 offenen PRs sind in Abschnitt 2 vollständig erfasst. Ein offener Zustand bedeutet weder aktuelle fachliche Autorität noch Integrationsreife; die Spalten Governance-Status, Acceptance-Status und Produktionsrelevanz bleiben maßgeblich.
+Die 31 offenen PRs sind in Abschnitt 2 vollständig erfasst. Ein offener Zustand bedeutet weder aktuelle fachliche Autorität noch Integrationsreife; die Spalten Governance-Status, Acceptance-Status und Produktionsrelevanz bleiben maßgeblich.
