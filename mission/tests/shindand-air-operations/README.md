@@ -139,7 +139,7 @@ MOOSE parking count: 42
 Terminal type of mapped spots: 40
 ```
 
-Ergebnis des Diagnosebundles:
+Ergebnis des ausgeführten Diagnosebundles:
 
 ```text
 anchors=45
@@ -151,7 +151,7 @@ status=PARTIAL
 reason=UNMAPPED_OR_INVALID_ANCHORS
 ```
 
-Die sechs gemeldeten `DUPLICATE_TERMINAL`-Marker entstehen ausschließlich dadurch, dass mehrere der sieben außerhalb der bestätigten Heliport-Domain liegenden Anker denselben geometrisch nächsten Heliport-Terminal als Kandidaten erhalten. Sie sind keine Doppelbelegung innerhalb der 38 akzeptierten Mappings.
+Die `duplicates=6` sind Teil der historischen Rohtelemetrie dieses Testbundles. Der Mapper registrierte auch für verworfene, weit entfernte Anker den jeweils geometrisch nächsten Heliport-Terminal und meldete dadurch Wiederholungen. Für den Heliport-Contract maßgeblich sind ausschließlich die 38 Zeilen mit `status=MAPPED`; innerhalb dieser akzeptierten Zuordnungen gibt es keine doppelte `TerminalID`.
 
 ### 6.1 Bestätigter Heliport-Parking-Contract
 
