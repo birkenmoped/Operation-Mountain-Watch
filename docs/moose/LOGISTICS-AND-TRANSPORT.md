@@ -6,15 +6,17 @@ owning_policy: OMW-GOV-001
 authoritative_for:
   - CampaignState and MOOSE logistics responsibility split
   - planned use boundaries for WAREHOUSE, STORAGE, OPSTRANSPORT, CTLD and transport groups
+  - STORAGE fuel adapter foundation scope
 not_authoritative_for:
   - completed transport runtime acceptance
+  - completed STORAGE fuel adapter runtime acceptance
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
   - unclassified MOOSE logistics and transport reference
 superseded_by:
-source_branch: agent/complete-documentation-authority-migration
-source_commit: 666ef7a4a6fad52cc1aaecc7d0953e4d112dc8ff
+source_branch: agent/storage-fuel-adapter-foundation
+source_commit: PENDING_MERGE
 validated_in_dcs: partial
 ---
 
@@ -77,10 +79,55 @@ Projektgrenze:
 
 ```text
 CampaignState = strategische Wahrheit
-STORAGE       = geplanter operativer DCS-Warehouse-Adapter
+STORAGE       = operativer DCS-Warehouse-Mirror
 ```
 
 `STORAGE` ist damit **nicht** als strategische Ressourcenhoheit oder Persistenzmechanismus freigegeben. Die Save-/Load-Pfade benötigen DCS-Desanitization; OMW ändert `MissionScripting.lua` nicht automatisch.
+
+### 3.1 STORAGE-Fuel-Adapter-Foundation
+
+Auf dem Branch `agent/storage-fuel-adapter-foundation` existiert erstmals ein projektspezifischer, absichtlich kleiner Adapter:
+
+```text
+scripts/logistics/OMW_StorageFuelAdapter.lua
+```
+
+Er bildet ausschließlich die verbindlichen CampaignState-Fuel-IDs auf die source-reviewed MOOSE-Liquid-Typen ab:
+
+```text
+FUEL_JP8   -> STORAGE.Liquid.JETFUEL
+FUEL_AVGAS -> STORAGE.Liquid.GASOLINE
+canonical unit: kg
+```
+
+Der Adapter besitzt keine eigene strategische Hoheit. Der Aufrufer übergibt einen autoritativen Snapshot mit `nodeId`, `airbaseName` und `resourcesKg`. Der Adapter kann diesen Snapshot lesen/planen und nur durch einen expliziten Aufruf von `ApplySnapshot()` mit `STORAGE:SetLiquid()` spiegeln.
+
+Foundation-Grenzen:
+
+```text
+no CampaignState mutation
+no automatic aircraft fuel debit
+no scheduler
+no STORAGE file persistence
+no OPSTRANSPORT
+no CTLD
+no reverse overwrite of CampaignState from DCS telemetry
+```
+
+`PlanSnapshot()` ist der read/compare-Pfad. `ApplySnapshot()` ist der explizite Mirror-Pfad und prüft den anschließenden `GetLiquidAmount()`-Readback. Die Anwendung desselben Soll-Snapshots soll bei unverändertem Warehouse `changeCount=0` ergeben.
+
+Der geplante DCS-Test steht unter:
+
+- [`OMW-TEST-STORAGE-FUEL-ADAPTER-INDEX`](../../mission/tests/storage-fuel-adapter/README.md)
+- [`OMW-TEST-STORAGE-FUEL-ADAPTER-FOUNDATION-ACCEPTANCE`](../../mission/tests/storage-fuel-adapter/expected/storage-fuel-adapter-foundation-acceptance.md)
+
+Bis zu diesem DCS-Lauf bleibt die Adapterwirkung **nicht validiert**.
+
+### 3.2 Unlimited-Prüfung
+
+Der Foundation-Adapter ruft `STORAGE:IsUnlimitedLiquids()` bewusst nicht auf. Der geprüfte MOOSE-Quellpfad dieser Methode testet Unlimited-Zustände durch temporäres Entfernen und gegebenenfalls Wiederhinzufügen einer Einheit. Für einen read-only Reconciliation-Plan wäre das eine unerwünschte Mutation.
+
+Der Test-Harness erkennt stattdessen nur einen offensichtlichen Unlimited-Sentinel als Stop-Bedingung. Diese Heuristik gehört zum Test und ist keine CampaignState-Regel.
 
 ## 4. OPSTRANSPORT
 
@@ -94,6 +141,8 @@ Geplant für taktische Truppen- und Frachttransporte zwischen definierten Lade-,
 - Rückmeldung an CargoManifest und CampaignState.
 
 Ein MOOSE-`Delivered`- oder vergleichbares Runtime-Ereignis ist ein operatives Signal. Die strategische Zielgutschrift bleibt an die CampaignState-Prüfung der stabilen Cargo-ID, Zielbedingungen und Einmalgutschrift gebunden.
+
+Der tatsächliche MOOSE-Quellstand enthält außerdem den Storage-Transportpfad über `OPSTRANSPORT:AddCargoStorage(...)`. Dieser Pfad ist für OMW weiterhin nur `PLANNED`; er ist nicht Bestandteil des STORAGE-Fuel-Adapter-Foundation-Tests.
 
 ## 5. CTLD und Dynamic Cargo
 
@@ -117,3 +166,5 @@ Für `STORAGE` sind zusätzlich mindestens zu prüfen:
 - CampaignState→STORAGE-Synchronisation ohne Rückhoheit;
 - Reconciliation bei abweichendem DCS-Bestand;
 - Mission-Restart ohne Ressourcenverdopplung.
+
+Der erste Foundation-Test deckt davon nur Fuel-Read/Write, JETFUEL-/GASOLINE-Trennung, Readback, Idempotenz und Wiederherstellung am Testknoten Kandahar ab. Alle weiteren Punkte bleiben offen.
