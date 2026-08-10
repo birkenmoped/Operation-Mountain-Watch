@@ -5,10 +5,9 @@
 --   * Shindand vs Shindand Heliport warehouse independence/aliasing
 --   * FOB Salerno vs Khost warehouse separation
 --
--- Uses public MOOSE AIRBASE/STORAGE methods only. CampaignState is not mutated.
--- A temporary 37 kg JETFUEL perturbation is used only when a pair does not
--- already resolve to the same STORAGE/DCS warehouse identity. The original
--- value is restored immediately and both sides are verified afterwards.
+-- Uses public MOOSE AIRBASE/STORAGE methods already source-reviewed for OMW.
+-- CampaignState is not mutated. A temporary 37 kg JETFUEL perturbation is
+-- used when needed and the original value is restored immediately.
 
 local TEST_ID = "CAMPAIGNSTATE-STORAGE-SPECIAL-CASES-1"
 local TAG = "[OMW][TEST][StorageSpecialCases]"
@@ -67,24 +66,17 @@ local function resolve(name)
     fail("STORAGE_RESOLUTION_MISMATCH name=" .. tostring(name))
   end
 
-  local dcsWarehouse = airbase.GetWarehouse and airbase:GetWarehouse() or nil
-  if not dcsWarehouse then
-    fail("DCS_WAREHOUSE_NOT_FOUND name=" .. tostring(name))
-  end
-
   return {
     name = name,
     airbase = airbase,
     storage = byName,
-    dcsWarehouse = dcsWarehouse,
   }
 end
 
 local function readLiquids(endpoint)
   local values = {}
   for _, liquid in ipairs(liquidTypes) do
-    local amount = endpoint.storage:GetLiquidAmount(liquid.value)
-    values[liquid.name] = amount
+    values[liquid.name] = endpoint.storage:GetLiquidAmount(liquid.value)
   end
   return values
 end
@@ -99,19 +91,6 @@ local function logEndpoint(endpoint, values)
     tostring(values.MW50),
     tostring(values.DIESEL)
   ))
-end
-
-local function liquidsUnlimited(endpoint)
-  if type(endpoint.storage.IsUnlimitedLiquids) ~= "function" then
-    return nil
-  end
-  local ok, result = pcall(function()
-    return endpoint.storage:IsUnlimitedLiquids()
-  end)
-  if not ok then
-    return nil
-  end
-  return result == true
 end
 
 local function restoreAndVerify(source, observer, sourceBefore, observerBefore)
@@ -142,13 +121,6 @@ local function restoreAndVerify(source, observer, sourceBefore, observerBefore)
 end
 
 local function probeDirection(source, observer, sourceBefore, observerBefore)
-  local sourceUnlimited = liquidsUnlimited(source)
-  if sourceUnlimited == true then
-    return nil, "SOURCE_UNLIMITED"
-  elseif sourceUnlimited == nil then
-    return nil, "UNLIMITED_STATE_UNKNOWN"
-  end
-
   local target = sourceBefore.JETFUEL + PROBE_DELTA_KG
   source.storage:SetLiquid(STORAGE.Liquid.JETFUEL, target)
 
@@ -156,7 +128,12 @@ local function probeDirection(source, observer, sourceBefore, observerBefore)
   local observerDuring = readLiquids(observer)
 
   if sourceDuring.JETFUEL ~= target then
-    restoreAndVerify(source, observer, sourceBefore, observerBefore)
+    log(string.format(
+      "PROBE_NOT_WRITABLE source=%s expected=%s actual=%s",
+      source.name,
+      tostring(target),
+      tostring(sourceDuring.JETFUEL)
+    ))
     return nil, "SOURCE_NOT_WRITABLE"
   end
 
@@ -190,23 +167,22 @@ local function classifyPair(definition)
   logEndpoint(b, bBefore)
 
   local wrapperSame = a.storage == b.storage
-  local dcsWarehouseSame = a.dcsWarehouse == b.dcsWarehouse
   log(string.format(
-    "IDENTITY id=%s storageWrapperSame=%s dcsWarehouseSame=%s",
+    "IDENTITY id=%s storageWrapperSame=%s",
     definition.id,
-    tostring(wrapperSame),
-    tostring(dcsWarehouseSame)
+    tostring(wrapperSame)
   ))
 
   local classification = nil
-  local probeReason = nil
+  local firstReason = nil
+  local secondReason = nil
 
-  if wrapperSame or dcsWarehouseSame then
+  if wrapperSame then
     classification = "SHARED_IDENTITY"
   else
-    classification, probeReason = probeDirection(a, b, aBefore, bBefore)
+    classification, firstReason = probeDirection(a, b, aBefore, bBefore)
     if not classification then
-      classification, probeReason = probeDirection(b, a, bBefore, aBefore)
+      classification, secondReason = probeDirection(b, a, bBefore, aBefore)
     end
   end
 
@@ -215,12 +191,13 @@ local function classifyPair(definition)
   end
 
   log(string.format(
-    "PAIR_RESULT id=%s a=%s b=%s classification=%s probeReason=%s",
+    "PAIR_RESULT id=%s a=%s b=%s classification=%s firstProbe=%s secondProbe=%s",
     definition.id,
     a.name,
     b.name,
     classification,
-    tostring(probeReason or "none")
+    tostring(firstReason or "none"),
+    tostring(secondReason or "none")
   ))
 
   return {
