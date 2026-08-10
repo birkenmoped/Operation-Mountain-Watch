@@ -18,7 +18,7 @@ not_authoritative_for:
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 source_branch: agent/tarinkot-object-contract-reconciliation
-source_commit: PENDING_MERGE
+source_commit: 585f3c46d4ff0a4b167c984d427bcdb356138e69
 source_mission: OMW_Template_v5_Salerno.miz
 source_mission_sha256: 203c99ffa6e025a2d9f00dc899439b0167ed9d81981b612f3a8d4fd078c458f5
 embedded_moose_path: l10n/DEFAULT/Moose.lua

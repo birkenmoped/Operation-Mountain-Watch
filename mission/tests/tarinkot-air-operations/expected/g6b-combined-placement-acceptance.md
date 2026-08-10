@@ -13,9 +13,9 @@ not_authoritative_for:
   - AIRWING, SQUADRON, payload, AUFTRAG, COMMANDER or OPSTRANSPORT acceptance
   - merge approval or Ready-for-Review approval
 scenario_period: 2010-08-01/2011-12-31
-project_phase: TARINKOT_G6_PARKING_CALIBRATION
+project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 source_branch: agent/tarinkot-object-contract-reconciliation
-source_commit: PENDING_MERGE
+source_commit: 585f3c46d4ff0a4b167c984d427bcdb356138e69
 validated_in_dcs: false
 supersedes: []
 superseded_by: []

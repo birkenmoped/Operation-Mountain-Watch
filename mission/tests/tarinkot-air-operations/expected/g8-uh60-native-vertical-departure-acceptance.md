@@ -13,9 +13,9 @@ not_authoritative_for:
   - tactical transport, MEDEVAC or campaign behavior
   - merge or Ready-for-Review authorization
 scenario_period: 2010-08-01/2011-12-31
-project_phase: TARINKOT_G8_NATIVE_VERTICAL_DEPARTURE
+project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 source_branch: agent/tarinkot-object-contract-reconciliation
-source_commit: PENDING_MERGE
+source_commit: 585f3c46d4ff0a4b167c984d427bcdb356138e69
 validated_in_dcs: false
 supersedes: []
 superseded_by: []

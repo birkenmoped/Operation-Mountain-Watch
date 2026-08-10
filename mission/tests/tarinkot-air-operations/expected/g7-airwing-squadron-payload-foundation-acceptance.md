@@ -18,10 +18,17 @@ not_authoritative_for:
   - return, landing, recovery, loss or persistence acceptance
   - merge approval or Ready-for-Review approval
 scenario_period: 2010-08-01/2011-12-31
-project_phase: TARINKOT_G7_ACCEPTED_G8_BLOCKED
+project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 source_branch: agent/tarinkot-object-contract-reconciliation
 source_commit: add569fb3231a5563d9c89f865cce7bd764bc0bb
 validated_in_dcs: true
+acceptance_branch: agent/tarinkot-object-contract-reconciliation
+acceptance_commit: add569fb3231a5563d9c89f865cce7bd764bc0bb
+acceptance_mission: OMW_Template_v6_Tarinkot.miz
+acceptance_mission_sha256: 86ba08f46c78a94cdf6eb54f7abe85145bdabe2817e7a2a89f2cec34932866bb
+dcs_version: 2.9.28.26385 MT
+moose_commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+moose_artifact_sha256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
 supersedes:
   - G7 contract that required all Tarinkot client slots to remain unoccupied
   - pre-start acceptance of nonempty squadron.assets
