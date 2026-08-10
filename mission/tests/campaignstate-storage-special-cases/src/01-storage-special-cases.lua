@@ -134,6 +134,7 @@ local function probeDirection(source, observer, sourceBefore, observerBefore)
       tostring(target),
       tostring(sourceDuring.JETFUEL)
     ))
+    restoreAndVerify(source, observer, sourceBefore, observerBefore)
     return nil, "SOURCE_NOT_WRITABLE"
   end
 
