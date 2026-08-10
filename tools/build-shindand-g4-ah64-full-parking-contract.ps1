@@ -8,7 +8,7 @@ $repoRoot = Split-Path -Parent $PSScriptRoot
 $sourceFile = Join-Path $repoRoot 'mission\tests\shindand-air-operations\src\04-shindand-g4-ah64-full-kandahar-parking-contract.lua'
 $distDir = Join-Path $repoRoot 'mission\tests\shindand-air-operations\dist'
 $outputFile = Join-Path $distDir 'OMW_AirOps_Shindand_G4_AH64_FullParkingContract.lua'
-$builderVersion = 'SHND-G4-AH64-FULL-PARKING-CONTRACT-1'
+$builderVersion = 'SHND-G4-AH64-FULL-PARKING-CONTRACT-2'
 
 if (-not (Test-Path -LiteralPath $sourceFile -PathType Leaf)) {
     throw "Shindand G4 source not found: $sourceFile"
@@ -18,7 +18,6 @@ $source = Get-Content -LiteralPath $sourceFile -Raw -Encoding UTF8
 
 $requiredMarkers = @(
     '[OMW][AirOps.SHND.G4.AH64Parking]',
-    'EXPECTED_PARKING_IDS',
     'ALLOWED_IDS = { 21, 3, 34, 15 }',
     'GetParkingSpotsTable',
     'SetParkingSpotBlacklist',
