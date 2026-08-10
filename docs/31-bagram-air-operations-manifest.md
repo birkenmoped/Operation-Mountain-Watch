@@ -19,7 +19,7 @@ supersedes:
   - single-AIRWING Bagram runtime structure AW_US_BAGRAM
 superseded_by:
 source_branch: agent/bagram-dual-airwing-foundation-rebuild
-source_commit: PENDING_MERGE
+source_commit: ffdc52c40a9fe83123dc25f369cd81581f293069
 validated_in_dcs: false
 document_class: HISTORICAL_EVIDENCE_ACTIVE_ORBAT_AND_FOUNDATION_CONTRACT
 ---
