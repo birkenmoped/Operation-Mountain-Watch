@@ -9,7 +9,7 @@ $sourceFile = Join-Path $repoRoot 'scripts\air-operations\OMW_AirOps_Salerno_Boo
 $distDir = Join-Path $repoRoot 'mission\tests\salerno-air-operations\dist'
 $outputFile = Join-Path $distDir 'OMW_AirOps_Salerno.lua'
 $lifecycleGuard = Join-Path $repoRoot 'tools\Test-AirOpsLifecycleGuards.ps1'
-$builderVersion = 'SAL-AIR-OPS-FOUNDATION-ONLY-2'
+$builderVersion = 'SAL-AIR-OPS-FOUNDATION-ONLY-3'
 
 if (-not (Test-Path -LiteralPath $sourceFile -PathType Leaf)) {
     throw "Salerno foundation source not found: $sourceFile"
@@ -21,7 +21,7 @@ if (-not (Test-Path -LiteralPath $lifecycleGuard -PathType Leaf)) {
 $source = Get-Content -LiteralPath $sourceFile -Raw -Encoding UTF8
 
 $requiredMarkers = @(
-    'AW_US_SALERNO',
+    'AW_US_SAL_TF_TIGERSHARK_1_10_AVN',
     'SQ_US_SAL_AH64D_TF_TIGERSHARK_ATTACK',
     'SQ_US_SAL_OH58D_B_6_6_CAV',
     'SQ_US_SAL_UH60_TF_TIGERSHARK_ASSAULT',
