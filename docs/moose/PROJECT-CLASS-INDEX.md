@@ -57,7 +57,7 @@ Diese Klassenstatus sind keine Governance-Dokumentstatuswerte.
 | `AIRWING` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Konstruktion, Stockregistrierung, Grundstart, SQUADRON-Bindung und direkter AUFTRAG-Dispatch; Kandahar Dual-AIRWING Main/Heliport sowie Shindand Heliport mit finalem Drei-Rollen-Test bestätigt |
 | `SQUADRON` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Konstruktion, `Ngroups`, Gruppierung, Capabilities, Payloads und post-start Assetbindung; Kandahar neun SQUADRONs / 76 Assetgruppen / 112 Airframes sowie Shindand drei SQUADRONs / 16 Assetgruppen / 20 Airframes bestätigt |
 | `WAREHOUSE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | AirOps-Stockregistrierung und post-start Zuordnung; strategische Logistik und Persistenz offen; physische typgebundene HELIPAD-Parking-Garantie nicht belegt |
-| `STORAGE` | `IN_USE_PARTIAL` | Source-reviewed Wrapper um DCS-Airbase-Warehouse; Foundation-Adapter nutzt `FindByName`, `GetLiquidAmount`, `SetLiquid`, `JETFUEL` und `GASOLINE` für einen expliziten CampaignState-Snapshot-Mirror; DCS-Read/Write, Persistenz, Multiplayer und Restart-Reconciliation noch nicht validiert |
+| `STORAGE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Kandahar Limited-Liquids-Foundation bestätigt `FindByName`, getrennte `JETFUEL`/`GASOLINE`-Reads und -Writes, kg-Einheit, Sollwert-Readback, Idempotenz und Restore; CampaignState-Integration, Waffen/Items, Persistenz, Multiplayer und Restart-Reconciliation bleiben offen |
 | `COHORT` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | post-start `AddAsset()` setzt `squadname`, `legion`, `cohort` und `assets`; Foundation-Läufe bestätigen die registrierte SQUADRON-/Warehouse-Kette, ohne Recovery-Nachweis |
 | `FLIGHTGROUP` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | AIRWING-`FlightOnMission`-Pfad, Cold-Takeoff-Prüfung und `SetOptionPreferVertical()`-Propagation im finalen Shindand-Lauf bestätigt; physisches Abflugprofil bleibt typabhängig |
 | `COMMANDER` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Salerno `New -> AddAirwing -> Start -> CanMission -> AddMission -> Status` bis AUFTRAG `started`; Shindand Foundation verwendet COMMANDER ausdrücklich nicht |
@@ -154,6 +154,21 @@ Result: 1 AIRWING / 3 SQUADRONs / 16 Assetgruppen / 20 Airframes / AH-64D CAS su
 Limit: keine validierte physische Außenlandung; Parking kein Foundation-Acceptance-Kriterium
 ```
 
+Aktueller STORAGE-Fuel-Adapter-Nachweis:
+
+```text
+Branch: agent/storage-fuel-adapter-foundation
+Source/Acceptance-Commit: 0e5992f96a37b7400d7859fbcd3e98829f935d68
+BuilderVersion: STORAGE-FUEL-ADAPTER-FOUNDATION-1
+MIZ: OMW_Template_v8_AirOps_rdy.miz
+MIZ SHA-256: 54e9bd5d1d841a6c22980e59e07b463aef580032813f3441f1030b221fec66e9
+Bundle SHA-256: 16faa7da140334ddd3a001480e6f2677842b3dcc3cff64626796e039cd0769db
+DCS: 2.9.28.26385 MT
+Moose.lua SHA-256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
+Condition: Kandahar Limited Liquids; initial JETFUEL/GASOLINE 100000 kg / 100000 kg
+Result: write/readback PASS; JP-8/AVGAS separation PASS; idempotency PASS; restore PASS
+```
+
 ## 8. WAREHOUSE-Parking-Grenze
 
 Die vollständige Recherche steht in:
@@ -177,17 +192,17 @@ Ein Runtime-Override bleibt `INTERNAL_RESTRICTED` und benötigt vor Entwurf oder
 
 ## 9. STORAGE-Grenze
 
-Source-reviewed gegen den gepinnten `Moose.lua`-Stand:
+Source-reviewed gegen den gepinnten `Moose.lua`-Stand und für den Kandahar-Foundation-Scope praktisch bestätigt:
 
 ```text
 STORAGE
   -> Wrapper um das DCS-Warehouse eines Airbases
-  -> Liquids und Items lesen/schreiben
+  -> Liquids lesen/schreiben
   -> Liquid-Mengen in kg
   -> JETFUEL und GASOLINE getrennte Liquid-Typen
 ```
 
-Der Branch `agent/storage-fuel-adapter-foundation` verwendet nun erstmals einen kleinen projektspezifischen STORAGE-Adapter in:
+Der Branch `agent/storage-fuel-adapter-foundation` verwendet einen kleinen projektspezifischen STORAGE-Adapter in:
 
 ```text
 scripts/logistics/OMW_StorageFuelAdapter.lua
@@ -197,19 +212,40 @@ Verwendete öffentliche API:
 
 ```text
 STORAGE:FindByName()
-AIRBASE:FindByName() / AIRBASE:GetStorage() als Fallback
+AIRBASE:FindByName() / AIRBASE:GetStorage() als source-reviewed Fallback
 STORAGE:GetLiquidAmount()
 STORAGE:SetLiquid()
 STORAGE.Liquid.JETFUEL
 STORAGE.Liquid.GASOLINE
 ```
 
-Der Status `IN_USE_PARTIAL` bedeutet hier nur **Quellcodeverwendung auf dem Arbeitsbranch**. Noch nicht belegt sind:
+Für den dokumentierten Kandahar-Lauf sind praktisch bestätigt:
 
-- erfolgreicher DCS-Read/Write;
+```text
+STORAGE:FindByName("Kandahar")
+STORAGE:GetLiquidAmount(JETFUEL)
+STORAGE:GetLiquidAmount(GASOLINE)
+STORAGE:SetLiquid(JETFUEL, amountKg)
+STORAGE:SetLiquid(GASOLINE, amountKg)
+100 t ME liquid -> 100000 kg STORAGE readback
+same desired snapshot -> changeCount=0
+restore original quantities -> verified=true
+```
+
+Technische Voraussetzung des akzeptierten Pfads:
+
+```text
+CampaignState-managed STORAGE fuel node
+-> DCS Unlimited Liquids = OFF
+```
+
+Nicht belegt bleiben:
+
 - CampaignState-Integration über einen realen CampaignState-Store;
 - DCS-Warehouse als strategische Ressourcenhoheit;
+- Waffen-/Item-Mapping;
 - STORAGE-Persistenz;
-- Multiplayer-/Restart-Reconciliation.
+- Multiplayer-/Restart-Reconciliation;
+- automatische Aircraft-Fuel-Abbuchung.
 
-Die Testplanung steht in [`OMW-TEST-STORAGE-FUEL-ADAPTER-INDEX`](../../mission/tests/storage-fuel-adapter/README.md). Praktisch bestätigte Methoden werden erst nach dem dokumentierten DCS-Lauf in `VERIFIED-METHODS.md` ergänzt oder hochgestuft.
+Der Accepted-Technical-Baseline-Nachweis steht in [`OMW-TEST-STORAGE-FUEL-ADAPTER-FOUNDATION-ACCEPTANCE`](../../mission/tests/storage-fuel-adapter/expected/storage-fuel-adapter-foundation-acceptance.md). Die methodenspezifische Evidenz ist im Methodenregister zu führen.
