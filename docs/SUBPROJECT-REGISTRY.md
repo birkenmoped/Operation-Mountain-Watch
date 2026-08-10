@@ -14,8 +14,8 @@ project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
   - incomplete open-branch list in the documentation index
 superseded_by:
-source_branch: agent/kandahar-foundation-july-2011-rebuild
-source_commit: GIT_HISTORY
+source_branch: agent/bagram-dual-airwing-foundation-rebuild
+source_commit: PENDING_MERGE
 validated_in_dcs: false
 ---
 
@@ -54,10 +54,10 @@ Dieses Register bildet offene Pull Requests, ihre Abhängigkeiten, Dokumentation
 | 40 | `docs/tarinkot-air-operations-baseline` | `docs/afghanistan-force-aviation-source-consolidation` / PR #38, inzwischen gemergt | Tarinkot-ME- und Air-Ops-Baseline | Tarinkot-Manifest und Evidenz | `DRAFT`; technischer Vorgänger des gemergten PR #53 | struktureller ME-Nachweis; keine vollständige Runtime-Acceptance | PR 53 (gemergt) | nicht unabhängig vom inzwischen auf `main` integrierten Tarinkot-Stand weiterführen |
 | 41 | `agent/document-shindand-air-operations` | `docs/afghanistan-force-aviation-source-consolidation` / PR #38, inzwischen gemergt | Shindand-Air-Ops-Baseline | Shindand-Manifest, Handoff und Evidenz | `DRAFT`; Basisbranch wurde gemergt, Branch muss vor Integration neu abgeglichen werden | Mission-Editor-Struktur branchgebunden; Runtime nicht gelaufen | offen | offene Shindand-Foundation-Baseline |
 | 45 | `agent/document-ch47-pool-allocation` | `main` | CH-47-Verteilung Bagram/Salerno/Shank | branchlokales Dokument 54 und Evidenz | `DRAFT`; Dokumentnummer 54 kollidiert mit dem aktuellen `main`-Bestand | Dokumentation; keine DCS-Acceptance | offen | Bestandsentscheidung vor Integration abgleichen und neu nummerieren |
-| 49 | `agent/next-airport-airwing-squadron-handoff` | `main` | frühere Auswahlübergabe für den nächsten Air-Ops-Knoten | Handoff und README | `DRAFT`; Auswahlstand durch nachfolgende Salerno- und Tarinkot-Arbeit überholt | keine Runtime-Acceptance | 51, 52, 53, 60 und 61 | historisches Handoff; keine aktuelle Arbeitsanweisung |
+| 49 | `agent/next-airport-airwing-squadron-handoff` | `main` | frühere Auswahlübergabe für den nächsten Air-Ops-Knoten | Handoff und README | `DRAFT`; Auswahlstand durch nachfolgende Salerno-, Tarinkot-, Kandahar- und Bagram-Arbeit überholt | keine Runtime-Acceptance | 51, 52, 53, 60, 61 und 63 | historisches Handoff; keine aktuelle Arbeitsanweisung |
 | 50 | `docs/bagram-air-operations-manifest` | `main` | Sammelintegration des alten Air-Ops-Branches | 150 Dateien aus Bagram, Jalalabad und Kandahar | offen, nicht Draft; stark überholt und mit `main` kollidierend | gemischte branchgebundene Nachweise; keine pauschale `main`-Acceptance | selektive spätere Main-Merges | nicht als Ganzes integrieren; nur datei- und autoritätsbezogen auswerten |
 | 52 | `agent/salerno-read-only-diagnostics` | `docs/bagram-air-operations-manifest` | Salerno AIRWING/SQUADRON und COMMANDER-Runtime | `mission/tests/salerno-air-operations/`, Builder und technische Evidenz | `DRAFT`; kanonische Salerno-Foundation wurde inzwischen über PR #60 nach `main` übernommen | `ACCEPTED_TECHNICAL_BASELINE` für den exakt dokumentierten Stage-18-Stand; Parking-Zuweisung nicht akzeptiert | offen | technische Salerno-Fixtures und Runtime-Historie |
-| 61 | `agent/kandahar-foundation-july-2011-rebuild` | `main` | Kandahar AIRWING/SQUADRON Foundation nach Juli-2011-ORBAT | Kandahar Foundation Lua/Builder, ADR 0005, ORBAT-/Governance-Reconciliation und DCS-Evidenz | `DRAFT`; Eigentümerentscheidung zur Juli-2011-Struktur dokumentiert | `ACCEPTED_TECHNICAL_BASELINE` für Source-Commit `5788164...`, MIZ `OMW_Template_v6_Tarinkot(6).miz`, DCS 2.9.28.26385 und gepinnten MOOSE-Stand | offen | aktueller Kandahar-Foundation-Zweig; Merge/Ready weiterhin genehmigungspflichtig |
+| 63 | `agent/bagram-dual-airwing-foundation-rebuild` | `main` | Bagram duale AIRWING/SQUADRON Foundation | Bagram Manifest/ADR, Foundation Lua/Builder und DCS-Acceptance | `DRAFT`; Eigentümerentscheidung supersediert `AW_US_BAGRAM` | `ACCEPTED_TECHNICAL_BASELINE` für Source-Commit `8401406c...`, MIZ SHA-256 `228a6053...`, DCS 2.9.28.26385 und gepinnten MOOSE-Stand | offen | aktueller Bagram-Foundation-Zweig; Merge/Ready weiterhin genehmigungspflichtig |
 
 ## 3. Stackstruktur
 
@@ -78,10 +78,10 @@ main
 ├── PR 41
 ├── PR 45
 ├── PR 49
-└── PR 61
+└── PR 63
 ```
 
-PR #53 (Tarinkot) und PR #60 (Salerno Foundation) sind inzwischen nach `main` gemergt und werden nicht mehr als offene Unterprojekte geführt.
+PR #53 (Tarinkot), PR #60 (Salerno Foundation), PR #61 (Kandahar Foundation) und PR #62 (Dokumentationsmetadaten) sind inzwischen nach `main` gemergt und werden nicht mehr als offene Unterprojekte geführt.
 
 ## 4. Verbindliche Regeln
 
@@ -95,11 +95,13 @@ PR #53 (Tarinkot) und PR #60 (Salerno Foundation) sind inzwischen nach `main` ge
 ## 5. Registerabgleich vom 10. August 2026
 
 ```yaml
-main_commit: f0bb300ab36ebbec1aa322570a881af1057ce689
+main_commit: 8dd18c5fdac8a0f71cf8d9252a199eb1765f7208
 open_pull_requests: 29
 pr_53: MERGED
 pr_60: MERGED
-pr_61: OPEN_DRAFT
+pr_61: MERGED
+pr_62: MERGED
+pr_63: OPEN_DRAFT
 source: GitHub pull-request state
 ```
 

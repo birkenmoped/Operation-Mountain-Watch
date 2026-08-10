@@ -13,8 +13,8 @@ project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
   - registry that listed Document 22 only as a branch reservation
 superseded_by:
-source_branch: agent/reconcile-main-documentation-phase1
-source_commit: 801b88b58bd2fc799535edd2e80fc463bc4c4dc9
+source_branch: agent/bagram-dual-airwing-foundation-rebuild
+source_commit: PENDING_MERGE
 validated_in_dcs: false
 ---
 
@@ -56,7 +56,7 @@ Eine Nummer und eine stabile `document_id` dürfen im aktuellen Bestand jeweils 
 | 28 | `OMW-C2-TAD-COLOR-NETS` | `docs/28-afghanistan-tad-color-nets.md` | `BINDING` | Quellenbasierter Datensatz |
 | 29 | `OMW-AAR-ISAF-ACO` | `docs/29-isaf-2009-2013-air-to-air-refueling.md` | `BINDING` | AAR-/ACO-Referenz |
 | 30 | `OMW-AAR-PART2-FIGURE` | `docs/30-isaf-2009-2013-aar-part2-figure-reference.md` | `BINDING` | Abbildungsreferenz |
-| 31 | `OMW-AIR-BAGRAM-MANIFEST` | `docs/31-bagram-air-operations-manifest.md` | `BINDING` | historische Bagram-Fighter-Evidenz und aktive Fighter-ORBAT |
+| 31 | `OMW-AIR-BAGRAM-MANIFEST` | `docs/31-bagram-air-operations-manifest.md` | `BINDING` | Bagram aktive Air-ORBAT und dualer AIRWING-Foundation-Vertrag |
 | 37 | `OMW-ARCH-CAMPAIGN-DYNAMIC-MISSION` | `docs/37-campaign-architecture-and-dynamic-mission-design.md` | `BINDING` | Kampagnenarchitektur |
 | 38 | `OMW-ME-MASTER-WORKLIST` | `docs/38-mission-editor-master-worklist.md` | `BINDING` | ME-Masterarbeitsliste |
 | 39 | `OMW-REVIEW-TM01-TM02-MOOSE-FIRST` | `docs/39-tm01-tm02-moose-first-code-review.md` | `DRAFT` | Code Review |
@@ -145,9 +145,13 @@ Eine Nummer und eine stabile `document_id` dürfen im aktuellen Bestand jeweils 
 | `OMW-ADR-0002-MOOSE-CTLD-CSAR` | `docs/adr/0002-use-moose-ctld-and-csar.md` | `SUPERSEDED` |
 | `OMW-ADR-0003-ME-GROUP-TEMPLATES` | `docs/adr/0003-use-mission-editor-group-templates.md` | `BINDING` |
 | `OMW-ADR-0004-LOCATION-REGISTRY` | `docs/adr/0004-use-explicit-location-registry.md` | `BINDING` |
+| `OMW-ADR-0005-KANDAHAR-JULY-2011-ORBAT` | `docs/adr/0005-kandahar-july-2011-orbat-structure.md` | `BINDING_PROJECT_DECISION`; Kandahar Juli-2011-ORBAT-Struktur |
+| `OMW-ADR-0006-BAGRAM-DUAL-AIRWING` | `docs/adr/0006-bagram-dual-airwing-structure.md` | `BINDING_PROJECT_DECISION`; Bagram USAF-/Army-Aviation-Split |
 | `OMW-EVIDENCE-INDEX` | `docs/evidence/README.md` | `BINDING` |
 | `OMW-EVIDENCE-SOURCE-INTAKE-AUDIT-2026-07-28` | `docs/evidence/source-intake-audit-2026-07-28.md` | `BINDING` |
 | `OMW-TEST-JBAD-AIR-OPS-INDEX` | `mission/tests/jalalabad-air-operations/README.md` | `BINDING` |
+| `OMW-TEST-BAGRAM-AIR-OPERATIONS-INDEX` | `mission/tests/bagram-air-operations/README.md` | `PLANNED`; Bagram dual-AIRWING Foundation-Testindex |
+| `OMW-TEST-BAGRAM-DUAL-AIRWING-FOUNDATION-ACCEPTANCE` | `mission/tests/bagram-air-operations/expected/bagram-dual-airwing-foundation-acceptance.md` | `ACCEPTED_TECHNICAL_BASELINE`; exakter DCS-getesteter Foundation-Stand |
 | `OMW-AIR-TKOT-PARKING-LAYOUT` | `docs/tarinkot-air-operations-parking-layout.md` | `BINDING`; verbindlicher Tarinkot-Client-/KI-Parkplatzvertrag |
 | `OMW-TEST-TKOT-G8C-UNIFORM-ROTARY-HOVER-DISPATCH-ACCEPTANCE` | `mission/tests/tarinkot-air-operations/expected/g8c-uniform-rotary-hover-dispatch-acceptance.md` | `PLANNED`; G8C nativer einheitlicher Rotary-Hover-Test |
 

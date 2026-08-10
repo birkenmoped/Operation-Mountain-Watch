@@ -4,31 +4,41 @@ status: BINDING
 owning_policy: OMW-GOV-001
 authoritative_for:
   - Bagram historical fighter evidence
-  - Bagram active fighter ORBAT
+  - Bagram active air ORBAT
+  - Bagram dual-AIRWING foundation structure
+  - Bagram logical aircraft inventories
 not_authoritative_for:
-  - current Mission Editor state
-  - player slot policy
-  - templates, statics, parking or Warehouse configuration
-  - payload baselines
-  - DCS or MOOSE runtime acceptance
+  - current Mission Editor parking state
+  - final client parking IDs
+  - DCS runtime acceptance of the rebuilt dual-AIRWING foundation
+  - tactical tasking, COMMANDER, AUFTRAG or OPSTRANSPORT acceptance
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
   - docs/28-bagram-air-operations-manifest.md
+  - single-AIRWING Bagram runtime structure AW_US_BAGRAM
 superseded_by:
-source_branch: agent/reconcile-main-documentation-phase1
-source_commit: 801b88b58bd2fc799535edd2e80fc463bc4c4dc9
+source_branch: agent/bagram-dual-airwing-foundation-rebuild
+source_commit: PENDING_MERGE
 validated_in_dcs: false
-document_class: HISTORICAL_EVIDENCE_AND_ACTIVE_ORBAT
+document_class: HISTORICAL_EVIDENCE_ACTIVE_ORBAT_AND_FOUNDATION_CONTRACT
 ---
 
 # 31 – Bagram Air Operations Manifest
 
 ## 1. Dokumentstatus
 
-Dieses Dokument ist ausschließlich verbindlich für die historische Bagram-Fighter-Evidenz und die daraus abgeleitete aktive Fighter-ORBAT. Es enthält keine aktuelle Missionseditor-, Client-, Template-, Static-, Parking-, Warehouse- oder Payload-Baseline.
+Dieses Dokument ist verbindlich für die historische Bagram-Fighter-Evidenz, die aktive Bagram-ORBAT und den dualen AIRWING-Foundation-Vertrag.
 
-Projektweite aktive ORBAT- und Clientobergrenzen stehen in [`OMW-AIR-ACTIVE-ORBAT`](19-active-air-orbat-decisions.md). Konkrete technische Umsetzungen benötigen eine eigene, auf `main` vorhandene und im zentralen Dokumentregister geführte Baseline.
+Der frühere technische Sammelknoten
+
+```text
+AW_US_BAGRAM
+```
+
+ist durch ausdrückliche Entscheidung des Projektinhabers vom 10.08.2026 superseded. Die verbindliche Architekturentscheidung ist zusätzlich in [`OMW-ADR-0006-BAGRAM-DUAL-AIRWING`](adr/0006-bagram-dual-airwing-structure.md) dokumentiert.
+
+Konkrete ParkingIDs, Mission-Editor-Positionen und DCS-Runtime-Verhalten benötigen weiterhin eine eigene, exakt dokumentierte Acceptance.
 
 ## 2. Historische Evidenz Ende 2011
 
@@ -68,33 +78,52 @@ Standort: Bagram Airfield
 
 Offizielle USAF-/AFCENT-Belege nennen die 335th EFS im November 2011 in Bagram. Sie operierte gemeinsam mit der 121st EFS. Die frühere aktive Zuordnung zur 336th EFS ist für die OMW-Baseline ersetzt; 336th und 494th EFS bleiben historischer Rotationskontext.
 
-### 2.3 Quellenbasis
+### 2.3 Weitere aktive Bagram-Komponenten
+
+Die ältere Bagram-Fach- und Testdokumentation trennt folgende zusätzlichen Pools:
+
+```text
+774th Expeditionary Airlift Squadron | C-130
+83rd Expeditionary Rescue Squadron   | HH-60G
+A Company, 1-169 GSAB / TF Phoenix   | UH-60 Utility
+B Company, 7-158 Aviation Regiment   | CH-47
+```
+
+USAF Personnel Recovery und Army UH-60 Utility werden ausdrücklich nicht zusammengelegt. Die Army-Komponenten gehören organisatorisch nicht in die USAF-AIRWING-Domäne.
+
+### 2.4 Quellenbasis
 
 - U.S. Air Forces Central, `Coalition Forces 70, Taliban 0`, 14.11.2011;
 - U.S. Air Force, `Close air support protects coalition forces, kills 70 insurgents`, 14.11.2011;
 - 113th Wing, `113th Wing initiates first ANG F-16 deployment to Afghanistan`, 11.10.2011;
 - F-16.net, `Bagram AB Deployment 2011-12`;
+- Juli-2011 Coalition ORBAT;
+- zeitgenössische 10th-CAB-/TF-Phoenix-Publikationen;
 - projektseitig ausgewertete Maxar-/Google-Earth-Satellitenaufnahme `12/2011`.
 
-## 3. Verbindliche aktive Fighter-ORBAT
+## 3. Verbindliche aktive Bagram-ORBAT
 
 ```text
-AW_US_BAGRAM
-├── SQ_US_BGRM_F15E_335_EFS
-│   13 F-15E
-└── SQ_US_BGRM_F16C_121_EFS
-    13 historische F-16C Block 30
-    DCS-Abbildung: F-16C Block 50
+AW_US_BGRM_455_AEW
+├── SQ_US_BGRM_F15E_335_EFS       13 F-15E
+├── SQ_US_BGRM_F16C_121_EFS       13 F-16C
+├── SQ_US_BGRM_C130_774_EAS       20 C-130
+└── SQ_US_BGRM_HH60G_83_ERQS       6 HH-60G
+
+AW_US_BGRM_TF_FALCON_10_CAB
+├── SQ_US_BGRM_UH60_A_1_169       10 UH-60 Utility
+└── SQ_US_BGRM_CH47_B_7_158       13 CH-47
 ```
 
-| Squadron | Historischer Nachweis | OMW-Bestand | Bewertung |
-|---|---:|---:|---|
-| 335th EFS / F-15E | mindestens 13 sichtbar | 13 | konservativer lokaler Bestand |
-| 121st EFS / F-16C Block 30 | 13 Seriennummern, 11 sichtbar | 13 | historisch ausreichend belegt |
+Gesamtbestand:
 
-Die Werte behaupten keine vollständige USAF-TOE. Sie definieren einen konservativen, quellenbasierten Kampagnenbestand.
+```text
+75 logische Luftfahrzeuge
+```
 
-## 4. DCS-Abbildung der aktiven Fighter-ORBAT
+Die Werte sind OMW-Kampagnenbestände und keine Behauptung über eine vollständige USAF-/Army-TOE an einem einzigen Stichtag.
+
+## 4. DCS-Abbildung
 
 ### F-15E
 
@@ -103,7 +132,7 @@ DCS-Spielertyp: F-15E Strike Eagle
 Status: THIRD_PARTY_AT_RISK
 ```
 
-Clientobjekte, Templates und Payloadregistrierungen müssen deaktivierbar bleiben, ohne den AIRWING strukturell neu aufzubauen.
+Clientobjekte, Templates und Payloadregistrierungen müssen deaktivierbar bleiben, ohne den verbleibenden Bagram-Knoten strukturell neu aufzubauen.
 
 ### F-16C
 
@@ -112,23 +141,140 @@ historisches Muster: F-16C Block 30
 native DCS-Spielerabbildung: F-16C Block 50
 ```
 
-Der Block 50 ist ein ausdrücklich gekennzeichneter technischer Ersatz für das historisch belegte Block-30-Muster. Diese Festlegung bestimmt nur die Musterabbildung innerhalb der aktiven Fighter-ORBAT; sie legt keine konkrete Client-, Template- oder Payload-Konfiguration fest.
+Der Block 50 ist ein ausdrücklich gekennzeichneter technischer Ersatz für das historisch belegte Block-30-Muster.
 
-## 5. Autoritätsgrenze
+### HH-60G und CH-47
 
-Verbindlich aus diesem Dokument sind ausschließlich:
+Die im historischen Mission-Editor-Zweig verwendeten DCS-Ersatzmuster bleiben technische Repräsentationen und sind keine historische Typbehauptung. Der finale Mission-Editor-Stand ist vor DCS-Acceptance erneut zu auditieren.
 
-- die in Abschnitt 2 dokumentierte historische Evidenz;
-- die aktive Fighter-ORBAT aus Abschnitt 3;
-- die DCS-Musterabbildung aus Abschnitt 4.
+## 5. Foundation-Warehouse-Vertrag
 
-Nicht aus diesem Dokument abzuleiten sind:
+Der gepinnte MOOSE-Stand erzeugt je `AIRWING:New(warehouseName, airwingName)` eine eigene LEGION/WAREHOUSE-Instanz. Die beiden Bagram-AIRWINGs erhalten deshalb getrennte physische Warehouse-Anker, obwohl beide an derselben DCS-Airbase gebunden werden:
 
-- Anzahl, Namen oder Positionen von Client- und KI-Gruppen;
-- Missionseditor-Objektbestand und Statics;
-- ParkingIDs, White-/Blacklists oder Clientausschlüsse;
-- AIRWING-, SQUADRON- oder Warehouse-Konfiguration;
-- Payloads und Außenlasten;
-- DCS-/MOOSE-Laufzeitverhalten oder technische Acceptance.
+```text
+AW_US_BGRM_455_AEW
+  Airbase: Bagram
+  Warehouse: WH_AIR_US_BAGRAM
 
-Ältere Branchdokumente und nicht auf `main` vorhandene Dateien besitzen für diese Umsetzungsfragen keine Autorität.
+AW_US_BGRM_TF_FALCON_10_CAB
+  Airbase: Bagram
+  Warehouse: WH_AIR_US_BAGRAM_ARMY
+```
+
+`WH_AIR_US_BAGRAM_ARMY` ist im Mission Editor als zusätzlicher Anchor anzulegen. Die Missionsdatei wird nicht automatisiert verändert.
+
+## 6. SQUADRON-Bestandsmodell
+
+Client-Slots, Statics, Late-Activation-Templates und aktive KI sind Repräsentationen desselben logischen Bestands und dürfen ihn nicht erhöhen.
+
+Für die beiden ungeraden Fighterbestände gilt im Foundation-Schritt:
+
+```text
+SQ_US_BGRM_F15E_335_EFS
+  6 Two-Ship-Assetgruppen = 12 repräsentierbare Airframes
+  1 logischer Reserve-Airframe
+
+SQ_US_BGRM_F16C_121_EFS
+  6 Two-Ship-Assetgruppen = 12 repräsentierbare Airframes
+  1 logischer Reserve-Airframe
+```
+
+Die vier 1-Ship-SQUADRONs werden vollständig als MOOSE-Assetgruppen registriert:
+
+```text
+C-130:  20 x 1
+HH-60G:  6 x 1
+UH-60:  10 x 1
+CH-47:  13 x 1
+```
+
+Damit ergeben sich:
+
+```text
+61 Assetgruppen
+73 MOOSE-repräsentierbare Airframes
+75 logische Airframes
+ 2 logische Reserve-Airframes
+```
+
+Eine spätere Materialisierung der Fighter-Reserve benötigt eine eigene CampaignState-/Runtime-Acceptance.
+
+## 7. Verbindliche Foundation-Templates
+
+Der bereinigte Foundation-Vertrag verwendet:
+
+```text
+SQ_US_BGRM_F15E_335_EFS
+  TPL_AIR_US_BGRM_F15E_CAS_2SHIP
+  TPL_AIR_US_BGRM_F15E_STRIKE_2SHIP
+
+SQ_US_BGRM_F16C_121_EFS
+  TPL_AIR_US_BGRM_F16C_CAS_2SHIP
+
+SQ_US_BGRM_C130_774_EAS
+  TPL_AIR_US_BGRM_C130_TRANSPORT_1SHIP
+
+SQ_US_BGRM_HH60G_83_ERQS
+  TPL_AIR_US_BGRM_HH60G_CSAR_1SHIP
+
+SQ_US_BGRM_UH60_A_1_169
+  TPL_AIR_US_BGRM_UH60_UTILITY_1SHIP
+
+SQ_US_BGRM_CH47_B_7_158
+  TPL_AIR_US_BGRM_CH47_TRANSPORT_1SHIP
+```
+
+Physisch identische Hubschrauber-Konfigurationen erhalten keine separaten rollenbezogenen Mission-Editor-Templates. Lead/Cover beziehungsweise Utility/Transport werden über MOOSE-Mission-Capabilities und späteres Tasking unterschieden. Zusätzliche Templates sind erst erforderlich, wenn sich die reale Mission-Editor-Konfiguration des Assets unterscheidet.
+
+Der frühere `F16`-Template-Identifier wird für den Neubau auf `F16C` normalisiert. Templates sind Authoring-Seeds und kein zusätzlicher Bestand.
+
+Die Foundation registriert damit sieben Role-Payload-Seeds: zwei für F-15E sowie je einen für F-16C, C-130, HH-60G, UH-60 und CH-47.
+
+## 8. Foundation-Runtime-Grenze
+
+Der produktionsnahe Foundation-Bundle darf zunächst nur AIRWING-/SQUADRON-Konfiguration, Capabilities, Payloadregistrierung, Warehouse-/Airbase-Bindung, AIRWING-Start und Idle-Diagnose enthalten.
+
+Nicht Bestandteil dieses Schrittes sind:
+
+- Bagram→Jalalabad-Testbewegungen;
+- erzwungene Spawn-/Despawn-Tests;
+- COMMANDER;
+- konkrete AUFTRAG-Instanzen;
+- OPSTRANSPORT-Instanzen;
+- F10-Teststeuerung;
+- Parking-Override;
+- Persistenz oder CampaignState-Mutation.
+
+## 9. Acceptance-Ziel
+
+Der nächste DCS-Foundation-Lauf muss mindestens bestätigen:
+
+```text
+airwings=2
+squadrons=6
+registeredGroups=61
+representedAirframes=73
+logicalAirframes=75
+logicalReserve=2
+rolePayloads=7
+usafRunning=true
+armyRunning=true
+missionsCreated=0
+transportsCreated=0
+commanderCreated=false
+f10Controls=false
+```
+
+Bis zu diesem Lauf bleibt `validated_in_dcs: false`.
+
+## 10. Autoritätsgrenze
+
+Verbindlich aus diesem Dokument sind:
+
+- aktive Bagram-ORBAT;
+- duale AIRWING-Struktur;
+- logische Bestände;
+- Warehouse- und Foundation-Vertrag;
+- Foundation-Template-Namen.
+
+Nicht aus diesem Dokument abzuleiten sind finale ParkingIDs, taktische Missionen, Recovery, Persistenz oder Multiplayer-Endurance.
