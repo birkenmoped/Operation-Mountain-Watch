@@ -59,23 +59,25 @@ local function run()
     },
   }
 
-  local plan = OMWStorageFuelAdapter.PlanSnapshot(desired)
-  requireEqual(plan.changeCount, 2, "initial plan changeCount")
-  log("PLAN_PASS changes=" .. tostring(plan.changeCount))
+  local testOk, testErr = pcall(function()
+    local plan = OMWStorageFuelAdapter.PlanSnapshot(desired)
+    requireEqual(plan.changeCount, 2, "initial plan changeCount")
+    log("PLAN_PASS changes=" .. tostring(plan.changeCount))
 
-  local applied = OMWStorageFuelAdapter.ApplySnapshot(desired)
-  requireEqual(applied.verified, true, "initial apply verified")
-  requireEqual(applied.readbackKg[resourceId.JP8], desired.resourcesKg[resourceId.JP8], "JP8 readback")
-  requireEqual(applied.readbackKg[resourceId.AVGAS], desired.resourcesKg[resourceId.AVGAS], "AVGAS readback")
-  log("WRITE_READBACK_PASS")
+    local applied = OMWStorageFuelAdapter.ApplySnapshot(desired)
+    requireEqual(applied.verified, true, "initial apply verified")
+    requireEqual(applied.readbackKg[resourceId.JP8], desired.resourcesKg[resourceId.JP8], "JP8 readback")
+    requireEqual(applied.readbackKg[resourceId.AVGAS], desired.resourcesKg[resourceId.AVGAS], "AVGAS readback")
+    log("WRITE_READBACK_PASS")
 
-  local idempotentPlan = OMWStorageFuelAdapter.PlanSnapshot(desired)
-  requireEqual(idempotentPlan.changeCount, 0, "idempotent plan changeCount")
+    local idempotentPlan = OMWStorageFuelAdapter.PlanSnapshot(desired)
+    requireEqual(idempotentPlan.changeCount, 0, "idempotent plan changeCount")
 
-  local idempotentApply = OMWStorageFuelAdapter.ApplySnapshot(desired)
-  requireEqual(idempotentApply.verified, true, "idempotent apply verified")
-  requireEqual(idempotentApply.plan.changeCount, 0, "idempotent apply changeCount")
-  log("IDEMPOTENCY_PASS")
+    local idempotentApply = OMWStorageFuelAdapter.ApplySnapshot(desired)
+    requireEqual(idempotentApply.verified, true, "idempotent apply verified")
+    requireEqual(idempotentApply.plan.changeCount, 0, "idempotent apply changeCount")
+    log("IDEMPOTENCY_PASS")
+  end)
 
   local restore = {
     nodeId = NODE_ID,
@@ -86,13 +88,24 @@ local function run()
     },
   }
 
-  local restored = OMWStorageFuelAdapter.ApplySnapshot(restore)
-  requireEqual(restored.verified, true, "restore verified")
+  local restoreOk, restoreErr = pcall(function()
+    local restored = OMWStorageFuelAdapter.ApplySnapshot(restore)
+    requireEqual(restored.verified, true, "restore verified")
 
-  local final = OMWStorageFuelAdapter.ReadNode(NODE_ID, AIRBASE_NAME)
-  requireEqual(final.resourcesKg[resourceId.JP8], originalJP8, "restored JP8")
-  requireEqual(final.resourcesKg[resourceId.AVGAS], originalAVGAS, "restored AVGAS")
+    local final = OMWStorageFuelAdapter.ReadNode(NODE_ID, AIRBASE_NAME)
+    requireEqual(final.resourcesKg[resourceId.JP8], originalJP8, "restored JP8")
+    requireEqual(final.resourcesKg[resourceId.AVGAS], originalAVGAS, "restored AVGAS")
+  end)
+
+  if not restoreOk then
+    fail("RESTORE_FAIL error=" .. tostring(restoreErr) .. " testError=" .. tostring(testErr))
+  end
+
   log("RESTORE_PASS")
+
+  if not testOk then
+    fail("TEST_FAIL_AFTER_RESTORE error=" .. tostring(testErr))
+  end
 
   log(string.format(
     "RESULT testId=%s status=PASS nodeId=%s airbaseName=%s jp8Separated=true avgasSeparated=true canonicalUnit=kg automaticAircraftDebit=false persistence=false campaignStateMutation=false",
