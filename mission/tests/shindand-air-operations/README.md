@@ -7,10 +7,11 @@ authoritative_for:
   - read-only mapping of Shindand Heliport Mission Editor parking labels to MOOSE TerminalIDs
   - tested Shindand Heliport parking-domain evidence
   - owner-defined Shindand Heliport parking allocation baseline for the next foundation step
+  - planned Shindand Heliport AIRWING/SQUADRON foundation gate on this branch
 not_authoritative_for:
-  - active Shindand ORBAT
-  - implemented productive AI parking allowlists or client blacklists
-  - AIRWING/SQUADRON acceptance
+  - project-wide active Shindand ORBAT beyond the documented owner decision
+  - DCS acceptance of the new AIRWING/SQUADRON foundation before execution
+  - COMMANDER, AUFTRAG dispatch, OPSTRANSPORT, recovery or persistence
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 source_branch: agent/shindand-heliport-parking-diagnostic
@@ -26,7 +27,7 @@ superseded_by: []
 
 Dieser Test bildet die im Mission Editor sichtbaren Parkplatzbezeichnungen des **Shindand Heliport** auf die von MOOSE/DCS verwendeten Parking-Datensätze ab.
 
-Der Test ist ausschließlich read-only. Er erzeugt keine AIRWING-, SQUADRON-, AUFTRAG- oder COMMANDER-Instanzen, aktiviert keine Gruppen, erzeugt keine Spawns und verändert keine Parking-Konfiguration.
+Der Mappingtest ist ausschließlich read-only. Er erzeugt keine AIRWING-, SQUADRON-, AUFTRAG- oder COMMANDER-Instanzen, aktiviert keine Gruppen, erzeugt keine Spawns und verändert keine Parking-Konfiguration.
 
 Ziel ist insbesondere die Auflösung der Mission-Editor-Diskrepanz, dass der sichtbare Parkplatz `34` zweimal angeboten wird. Der Projektinhaber hat den zweiten Eintrag ausschließlich für die Diagnose als `34a` benannt.
 
@@ -76,7 +77,7 @@ Shindand Heliport
 -> logischer OMW-Bestand: 8 AH-64D / 8 UH-60 / 4 CH-47
 ```
 
-Die Bestandsentscheidung ist nicht Gegenstand dieses Tests. Der Test untersucht nur die DCS-/MOOSE-Parking-Topologie.
+Die Bestandsentscheidung ist nicht Gegenstand des Mappingtests. Der Mappingtest untersucht nur die DCS-/MOOSE-Parking-Topologie.
 
 ## 4. MOOSE-First-Prüfung
 
@@ -99,13 +100,28 @@ COORDINATE:GetClosestParkingSpot(airbase, terminaltype, free)
 SCHEDULER:New(...)
 ```
 
-`AIRBASE:GetParkingSpotsTable()` liefert im gepinnten Stand unter anderem `Coordinate`, `TerminalID`, `TerminalType`, `TOAC`, `Free`, `TerminalID0` und `DistToRwy`.
+Für den Foundation-Schritt werden ausschließlich bereits im Projektregister belegte MOOSE-Pfade verwendet:
 
-Die offiziellen MOOSE-Missionsrepositories wurden auf einen unmittelbar passenden Parking-Label-Mapping-Demoeinsatz geprüft; ein gleichartiger Demonstrator wurde nicht gefunden. OMW besitzt auf `main` bereits den read-only Tarinkot-G6A2-Mappingtest als projektspezifisches Vorbild. Die Shindand-Version verwendet zusätzlich die öffentliche MOOSE-Methode `COORDINATE:GetClosestParkingSpot()` für die Zuordnung.
+```lua
+AIRWING:New(...)
+AIRWING:SetAirbase(...)
+AIRWING:SetTakeoffCold()
+AIRWING:SetOptionPreferVerticalLanding()
+AIRWING:AddSquadron(...)
+AIRWING:NewPayload(...)
+AIRWING:Start()
+SQUADRON:New(...)
+SQUADRON:SetGrouping(...)
+SQUADRON:SetTurnoverTime(...)
+SQUADRON:SetParkingIDs(...)
+SQUADRON:AddMissionCapability(...)
+```
 
-Der einzige native Missionszugriff ist die read-only-Auswertung von `env.mission`, um Diagnose-Gruppennamen und gespeicherte Mission-Editor-Koordinaten zu lesen. Es erfolgt keine native Mutation.
+`SetSafeParkingOn()` wird nicht als Parking-Enforcement verwendet, weil der gepinnte MOOSE-Quellstand das gesetzte `safeparking`-Feld im geprüften WAREHOUSE-Parkingpfad nicht auswertet.
 
-## 5. Testquelle und Builder
+Der einzige native Missionszugriff des Mappingtests ist die read-only-Auswertung von `env.mission`, um Diagnose-Gruppennamen und gespeicherte Mission-Editor-Koordinaten zu lesen. Der Foundation-Code selbst verwendet dafür keinen nativen Ersatzpfad.
+
+## 5. Mapping-Testquelle und Builder
 
 Source:
 
@@ -238,7 +254,7 @@ Nach Abschluss des read-only Mappingtests hat der Projektinhaber die für den n�
 | CH-47 | `41, 39, 37` | `30, 10, 23` |
 | UH-60 | `29, 30, 31, 34, 34a` | `41, 18, 13, 20, 19` |
 
-Diese Plätze sind für die jeweilige Musterklasse als AI-freie beziehungsweise musterbezogene Parking-Basis vorgesehen. Die tatsächliche produktive MOOSE-Parking-Konfiguration wird erst im folgenden Foundation-Implementierungsschritt erzeugt und getestet.
+Diese TerminalIDs werden im Foundation-Inkrement direkt über `SQUADRON:SetParkingIDs(...)` gesetzt und nach `AIRWING:Start()` an den gebundenen SQUADRON-Assets erneut geprüft.
 
 ### 7.2 Vollständig frei verfügbarer Pool
 
@@ -263,7 +279,7 @@ Die zugehörigen MOOSE TerminalIDs sind:
 | 18 | 27 | 27 | 9 |
 | 19 | 22 |  |  |
 
-Damit umfasst der vollständig freie Pool 17 bestätigte Heliport-Parkplätze.
+Damit umfasst der vollständig freie Pool 17 bestätigte Heliport-Parkplätze. Der Foundation-Code belegt diesen allgemeinen Pool nicht als zusätzlichen typgebundenen SQUADRON-Pool.
 
 ### 7.3 Abgrenzung
 
@@ -271,14 +287,14 @@ Nicht aus dieser Entscheidung abzuleiten sind:
 
 ```text
 - eine Zuordnung der ausgeschlossenen ME 46-52 zu Shindand Airfield
-- ein bereits implementierter AIRWING-/SQUADRON-Parkingpool
 - eine Client-Blacklist
-- eine Aussage über Spawn-, Taxi-, Takeoff- oder Recovery-Verhalten
+- eine Aussage über tatsächliche Spawn-, Taxi-, Takeoff- oder Recovery-Platzierung
+- eine Garantie, dass DCS nach einer Landung denselben Typ-Pool wieder verwendet
 ```
 
-Diese Punkte bleiben den jeweiligen folgenden Foundation- und DCS-Acceptance-Schritten vorbehalten.
+Diese Punkte bleiben den jeweiligen folgenden DCS-Acceptance-Schritten vorbehalten.
 
-## 8. Artefaktprovenienz
+## 8. Artefaktprovenienz des Mappingtests
 
 ```text
 Branch: agent/shindand-heliport-parking-diagnostic
@@ -294,8 +310,105 @@ DCS: 2.9.28.26385 MT
 Test date: 2026-08-10
 ```
 
-## 9. Geltungsgrenze
+## 9. Geltungsgrenze des Mappingtests
 
-Dieser DCS-Lauf bestätigt die Identität des `Shindand Heliport`, seine 42 von MOOSE gelieferten Parking-Spots sowie die 38 oben aufgeführten ME-Label-zu-TerminalID-Zuordnungen für die dokumentierte Artefaktkette.
+Der DCS-Lauf bestätigt die Identität des `Shindand Heliport`, seine 42 von MOOSE gelieferten Parking-Spots sowie die 38 oben aufgeführten ME-Label-zu-TerminalID-Zuordnungen für die dokumentierte Artefaktkette.
 
-Die in Abschnitt 7 festgehaltene Parking-Aufteilung ist eine nachgelagerte Eigentümerentscheidung für den nächsten Foundation-Schritt. Sie ist noch keine implementierte oder in DCS validierte Parking-Konfiguration.
+Die in Abschnitt 7 festgehaltene Parking-Aufteilung ist eine nachgelagerte Eigentümerentscheidung. Ihre Konfiguration im neuen Foundation-Code ist erst nach einem eigenen DCS-Lauf als Runtime-Verhalten akzeptiert.
+
+## 10. Shindand AIRWING/SQUADRON Foundation – nächstes Gate
+
+### 10.1 Source und Builder
+
+```text
+Source:
+scripts/air-operations/OMW_AirOps_Shindand_Bootstrap.lua
+
+Builder:
+tools/build-shindand-air-operations-foundation.ps1
+
+Generated bundle:
+mission/tests/shindand-air-operations/dist/OMW_AirOps_Shindand.lua
+
+BuilderVersion:
+SHND-AIR-OPS-FOUNDATION-1
+```
+
+### 10.2 Foundation-Vertrag
+
+Das Inkrement verwendet nur den separaten nativen Airbase-Knoten `Shindand Heliport` und den Warehouse-Anker `WH_AIR_US_SHINDAND_HELIPORT`.
+
+```text
+AW_US_SHINDAND
+├── SQ_US_SHND_AH64D_ATTACK
+│   8 AH-64D = 4 MOOSE Assetgruppen x 2
+│   Template: TPL_AIR_US_SHND_AH64D_CAS_2SHIP
+│   TerminalIDs: 21, 3, 34, 15
+│
+├── SQ_US_SHND_UH60_UTILITY_MEDEVAC
+│   8 UH-60 = 8 MOOSE Assetgruppen x 1
+│   Template: TPL_AIR_US_SHND_UH60_UTILITY_1SHIP
+│   TerminalIDs: 41, 18, 13, 20, 19
+│
+└── SQ_US_SHND_CH47_HEAVYLIFT
+    4 CH-47 = 4 MOOSE Assetgruppen x 1
+    Template: TPL_AIR_US_SHND_CH47_HEAVYLIFT_1SHIP
+    TerminalIDs: 30, 10, 23
+```
+
+Das vorhandene `TPL_AIR_US_SHND_UH60_MEDEVAC_1SHIP` wird nicht als zweite Bestandsquelle registriert. Utility-, Transport-, MEDEVAC-/Escort-nahe Rollen werden über MOOSE-Mission-Capabilities des gemeinsamen UH-60-SQUADRONs modelliert; es entsteht kein doppelter UH-60-Bestand.
+
+Der Foundation-Code setzt 20–40 Minuten Turnover, Cold Takeoff und die bereits quellen-/projektseitig verifizierte AIRWING-Vertikalpräferenz. `SetSafeParkingOn()` wird bewusst nicht verwendet.
+
+### 10.3 Statisches Gate
+
+Der Builder muss vor einem DCS-Lauf insbesondere bestätigen:
+
+```text
+Airwings: 1
+Squadrons: 3
+RegisteredGroups: 16
+RepresentedAirframes: 20
+LogicalAirframes: 20
+LogicalReserve: 0
+RolePayloadsExpected: 3
+LifecycleGuard: PASS
+TestDispatch: ABSENT
+AUFTRAGInstances: ABSENT
+OPSTRANSPORTInstances: ABSENT
+Commander: ABSENT
+CampaignStateMutation: ABSENT
+```
+
+Der gemeinsame Lifecycle-Guard verlangt außerdem:
+
+```text
+pre-start Warehouse stock evidence
+AIRWING:SetOptionPreferVerticalLanding() before AIRWING:Start()
+post-start SQUADRON asset-count validation
+post-start inherited asset.parkingIDs validation
+foundation-only scope
+```
+
+### 10.4 DCS-Acceptance dieses Gates
+
+Ein Foundation-PASS erfordert auf einer exakt gehashten MIZ mindestens:
+
+```text
+Airbase name = Shindand Heliport
+Airbase ID = 14
+AIRWING Running
+3 SQUADRONs
+16 gebundene Assetgruppen
+20 repräsentierte/logische Luftfahrzeuge
+AH-64D Asset parkingIDs = 21,3,34,15
+UH-60 Asset parkingIDs = 41,18,13,20,19
+CH-47 Asset parkingIDs = 30,10,23
+postStartAssetParkingSync=true
+missionsCreated=0
+transportsCreated=0
+commanderCreated=false
+f10Controls=false
+```
+
+Nicht Teil dieses Gates sind konkrete AUFTRAG-Ausführung, tatsächlicher Spawn, visueller Parking-Compliance-Nachweis, Taxi/Takeoff, Landung/Recovery, OPSTRANSPORT, COMMANDER oder Persistenz.
