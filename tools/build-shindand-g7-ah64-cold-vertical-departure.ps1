@@ -9,7 +9,7 @@ $foundationFile = Join-Path $repoRoot 'mission\tests\shindand-air-operations\dis
 $sourceFile = Join-Path $repoRoot 'mission\tests\shindand-air-operations\src\07-shindand-g7-ah64-cold-vertical-departure.lua'
 $distDir = Join-Path $repoRoot 'mission\tests\shindand-air-operations\dist'
 $outputFile = Join-Path $distDir 'OMW_AirOps_Shindand_G7_AH64_ColdVerticalDeparture.lua'
-$builderVersion = 'SHND-G7-AH64-COLD-VERTICAL-DEPARTURE-1'
+$builderVersion = 'SHND-G7-AH64-COLD-VERTICAL-DEPARTURE-2'
 
 if (-not (Test-Path -LiteralPath $foundationFile -PathType Leaf)) {
     throw "Built Shindand foundation not found: $foundationFile"
@@ -55,6 +55,17 @@ foreach ($marker in $requiredSourceMarkers) {
     }
 }
 
+# Strip Lua comments before executable-pattern checks. This avoids false positives
+# from explanatory scope comments such as "native coalition.addGroup".
+$executableSource = (($source -split "`r?`n") | ForEach-Object {
+    $line = $_
+    $commentIndex = $line.IndexOf('--')
+    if ($commentIndex -ge 0) {
+        $line = $line.Substring(0, $commentIndex)
+    }
+    $line
+}) -join "`n"
+
 $forbiddenPatterns = @(
     'COMMANDER\s*:\s*New',
     'OPSTRANSPORT\s*:\s*New',
@@ -73,8 +84,8 @@ $forbiddenPatterns = @(
     'mist\s*\.'
 )
 foreach ($pattern in $forbiddenPatterns) {
-    if ($source -match $pattern) {
-        throw "G7 scope regression: forbidden pattern found: $pattern"
+    if ($executableSource -match $pattern) {
+        throw "G7 scope regression: forbidden executable pattern found: $pattern"
     }
 }
 
@@ -108,6 +119,6 @@ Write-Host "OPSTRANSPORT: ABSENT"
 Write-Host "DirectSpawn: ABSENT"
 Write-Host "CampaignStateMutation: ABSENT"
 Write-Host "RequiredGuardPatternsChecked: $($requiredSourceMarkers.Count)"
-Write-Host "ForbiddenGuardPatternsChecked: $($forbiddenPatterns.Count)"
+Write-Host "ForbiddenExecutablePatternsChecked: $($forbiddenPatterns.Count)"
 Write-Host "SHA256: $hash"
 Write-Host "GitCommit: $commit"
