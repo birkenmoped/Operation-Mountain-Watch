@@ -15,7 +15,7 @@ supersedes:
   - historical single-AIRWING Bagram test index
 superseded_by: []
 source_branch: agent/bagram-dual-airwing-foundation-rebuild
-source_commit: PENDING_MERGE
+source_commit: ffdc52c40a9fe83123dc25f369cd81581f293069
 validated_in_dcs: false
 ---
 
