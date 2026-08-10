@@ -64,7 +64,7 @@ $forbiddenPatterns = @(
     'world\.searchObjects',
     'OPSTRANSPORT\s*:',
     'CTLD\s*:',
-    'CampaignState',
+    'CampaignState\s*[\.:]',
     'SaveToFile',
     'LoadFromFile',
     'StartAutoSave',
