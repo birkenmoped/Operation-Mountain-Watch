@@ -1,6 +1,6 @@
 ---
 document_id: OMW-TEST-CAMPAIGNSTATE-RESOURCE-TRANSACTION-INDEX
-status: PLANNED
+status: ACCEPTED_TECHNICAL_BASELINE
 document_class: TEST_PROJECT_INDEX
 owning_policy: OMW-GOV-001
 authoritative_for:
@@ -12,8 +12,8 @@ project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
 superseded_by:
 source_branch: agent/campaignstate-resource-transaction-contract
-source_commit: PENDING_MERGE
-validated_in_dcs: false
+source_commit: 04ea3a0b50dfd51483316bc989b14e6d5c4be731
+validated_in_dcs: true
 base_branch: agent/campaignstate-storage-multinode-sync
 base_commit: 552377a6e2743edf2b884027963007227db84324
 base_status: DRAFT_WITH_DCS_RUNTIME_EVIDENCE
@@ -269,13 +269,22 @@ CAMPAIGNSTATE-RESOURCE-TRANSACTION-1
 
 ## 9. Acceptance
 
-Ein technischer PASS benötigt mindestens den finalen Marker:
+Der Lauf vom 10.08.2026 ist für exakt den dokumentierten Stand `ACCEPTED_TECHNICAL_BASELINE`.
 
 ```text
-RESULT testId=CAMPAIGNSTATE-RESOURCE-TRANSACTION-1 status=PASS
+Source/Builder commit: 04ea3a0b50dfd51483316bc989b14e6d5c4be731
+BuilderVersion: CAMPAIGNSTATE-RESOURCE-TRANSACTION-1
+DCS: 2.9.28.26385 MT
+Executed MIZ: OMW_Template_v8_AirOps_rdy(5).miz
+Executed MIZ SHA-256: a1058e7528953ab13ecab385fb1722a7fac6ced6385271a85a9408f4378518cf
+Embedded bundle: l10n/DEFAULT/OMW_CampaignState_Resource_Transaction_Test.lua
+Embedded bundle SHA-256: c054c24df9ddb8a9cc7671c2086e3bd414dbe9f0fba7bee3be998b534dceb4bf
+Local build bundle SHA-256: c054c24df9ddb8a9cc7671c2086e3bd414dbe9f0fba7bee3be998b534dceb4bf
+DCS log SHA-256: d73f5d665c5ec5488fd6f61c336a4e33f1e5fdc09362c57ed27af3c4d12bc862
+Debrief SHA-256: f0303b498e37c87d59ac47f61b000025384d53c45b83a9b1ea9ee4478a3e36a8
 ```
 
-und folgende Teilmarker:
+Bestätigte Teilmarker:
 
 ```text
 LEGACY_FUEL_SNAPSHOT_PASS
@@ -286,4 +295,16 @@ LOSS_NO_DESTINATION_CREDIT_PASS
 RESERVATION_AND_IDENTITY_GUARDS_PASS
 ```
 
-Ein `VALIDATED`- oder `ACCEPTED_TECHNICAL_BASELINE`-Status wird erst nach dokumentiertem Test mit der erforderlichen Provenienz vergeben.
+Finaler Marker:
+
+```text
+RESULT testId=CAMPAIGNSTATE-RESOURCE-TRANSACTION-1 status=PASS transferDelivery=true consumption=true cancellation=true loss=true oneTimeCredit=true oneTimeDebit=true reservationGuard=true transactionIdentity=true persistence=false mooseTransport=false dcsStorageMutation=false
+```
+
+Damit sind für diesen exakten Stand strategische Reservierung, Transfer, Consumption, Cancellation, Loss, Einmalabbuchung, Einmalgutschrift und Transaction-ID-Guards praktisch bestätigt.
+
+Nicht bestätigt sind weiterhin MOOSE-Transportausführung, CTLD, DCS-STORAGE-Mutation, Persistenz, Restart-Reconciliation oder Multiplayer-Synchronisation. Dieser Test hebt daher keinen MOOSE-Methodenstatus an; die im MOOSE-First-Review geprüften OPSTRANSPORT-/STORAGE-/CTLD-Pfade bleiben für ihre spätere operative Integration separat zu validieren.
+
+Vollständiger Acceptance-Bericht:
+
+- [`OMW-TEST-CAMPAIGNSTATE-RESOURCE-TRANSACTION-ACCEPTANCE`](expected/campaignstate-resource-transaction-acceptance.md)
