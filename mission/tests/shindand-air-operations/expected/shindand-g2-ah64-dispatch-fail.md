@@ -1,12 +1,18 @@
 ---
 document_id: OMW-TEST-SHINDAND-G2-AH64-DISPATCH-FAIL
-status: TESTED_FAIL
+status: HISTORICAL_TEST_FIXTURE
 document_class: MISSION_RUNTIME_TEST_RESULT
 owning_policy: OMW-GOV-001
+authoritative_for:
+  - historical Shindand G2 AH-64 AIRWING/AUFTRAG dispatch result
+  - documented physical parking non-compliance observed in the exact G2 artifact chain
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
+supersedes: []
+superseded_by: []
 source_branch: agent/shindand-heliport-parking-diagnostic
-validated_in_dcs: false
+source_commit: 27e3877efdc1f76997b00593218e0d6390313ba5
+validated_in_dcs: true
 ---
 
 # Shindand G2 – AH-64 native AIRWING/AUFTRAG dispatch
@@ -52,7 +58,7 @@ LEGION:onafterNewAsset(...) übernimmt cohort.parkingIDs nach asset.parkingIDs.
 WAREHOUSE:_FindParkingForAssets(...) prüft asset.parkingIDs über _CheckParkingAsset(...).
 ```
 
-Damit ist die Konfigurationskette im Quellcode vorhanden und war im Foundation-Lauf post-start ebenfalls synchron. Der DCS-Lauf zeigt trotzdem, dass die tatsächlich beobachtete AH-64-Position nicht dem owner-defined AH-64-Pool entsprach. Dieses Ergebnis ist als Runtime-Failure zu behandeln; aus dem Source-Contract darf keine tatsächliche Parking-Compliance abgeleitet werden.
+Damit ist die Konfigurationskette im Quellcode vorhanden und war im Foundation-Lauf post-start ebenfalls synchron. Der DCS-Lauf zeigt trotzdem, dass die tatsächlich beobachtete AH-64-Position nicht dem owner-defined AH-64-Pool entsprach. Dieses Ergebnis ist als historische Runtime-Failure-Evidenz zu behandeln; aus dem Source-Contract darf keine tatsächliche Parking-Compliance abgeleitet werden.
 
 ## Artefaktprovenienz
 
@@ -94,6 +100,6 @@ Nicht akzeptiert:
 - persistence
 ```
 
-## Nächste Architekturgrenze
+## Architekturgrenze
 
-Die vorhandene öffentliche MOOSE-Konfiguration `SQUADRON:SetParkingIDs()` darf für Shindand nicht als ausreichend validierte physische Parking-Enforcement-Lösung behandelt werden. Ein interner WAREHOUSE-Override, Native-DCS-Spawn oder andere Parallelimplementierung ist nach OMW-MOOSE-First nicht automatisch zulässig und benötigt eine gesonderte Projektinhaberentscheidung, falls die weitere MOOSE-Prüfung keine öffentliche Framework-Lösung ergibt.
+Die vorhandene öffentliche MOOSE-Konfiguration `SQUADRON:SetParkingIDs()` darf für Shindand nicht als physische Parking-Enforcement-Garantie behandelt werden. Ein interner WAREHOUSE-Override, Native-DCS-Spawn oder andere Parallelimplementierung bleibt nach OMW-MOOSE-First genehmigungspflichtig. Für die abgeschlossene Shindand AIRWING/SQUADRON Foundation ist physische Parking-Compliance ausdrücklich kein Acceptance-Kriterium.
