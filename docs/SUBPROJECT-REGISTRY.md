@@ -14,7 +14,7 @@ project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
   - incomplete open-branch list in the documentation index
 superseded_by:
-source_branch: agent/storage-fuel-adapter-foundation
+source_branch: agent/campaignstate-storage-sync-foundation
 source_commit: PENDING_MERGE
 validated_in_dcs: false
 ---
@@ -59,7 +59,8 @@ Dieses Register bildet offene Pull Requests, ihre Abhängigkeiten, Dokumentation
 | 52 | `agent/salerno-read-only-diagnostics` | `docs/bagram-air-operations-manifest` | Salerno AIRWING/SQUADRON und COMMANDER-Runtime | `mission/tests/salerno-air-operations/`, Builder und technische Evidenz | `DRAFT`; kanonische Salerno-Foundation wurde inzwischen über PR #60 nach `main` übernommen | `ACCEPTED_TECHNICAL_BASELINE` für den exakt dokumentierten Stage-18-Stand; Parking-Zuweisung nicht akzeptiert | offen | technische Salerno-Fixtures und Runtime-Historie |
 | 64 | `agent/airwing-naming-reconciliation` | `main` | Jalalabad-/Salerno-AIRWING-Naming-Reconciliation | ADR 0007, Jalalabad-/Salerno-Manifeste, Foundation Lua und Builder | `DRAFT`; Owner-Naming-Entscheidung dokumentiert | neue Identifier noch nicht DCS-validiert; lokale Build-/Hash-Prüfung ausstehend | offen | Abschluss der 7-AIRWING-Foundation-Namenskonsolidierung |
 | 66 | `agent/resource-warehouse-ownership-contract` | `main` | Resource-/Warehouse-Ownership-Vertrag | `docs/resource-warehouse-ownership-contract.md`, MOOSE-Logistikdokumente | `DRAFT`; Owner-Entscheidungen branchgebunden dokumentiert | Dokumentations-CI PASS; keine STORAGE-Runtime-Acceptance | 67 | verbindliche Designentscheidungen für Fuel-IDs, Einheit, Supply Parents, DoS und FARP-Puffer; repositoryweit erst nach Integration |
-| 67 | `agent/storage-fuel-adapter-foundation` | PR 66 | CampaignState→MOOSE-STORAGE Fuel-Mirror-Foundation | `scripts/logistics/`, `mission/tests/storage-fuel-adapter/`, Builder, MOOSE-Dokumentation | `DRAFT`; MOOSE-first Foundation | `NOT_RUN`; DCS-Read/Write/Idempotenz/Restore ausstehend | offen | kleinster operativer Adapter für `FUEL_JP8`/`FUEL_AVGAS`; keine CampaignState-Rückhoheit oder automatische Verbrauchsbuchung |
+| 67 | `agent/storage-fuel-adapter-foundation` | PR 66 | CampaignState→MOOSE-STORAGE Fuel-Mirror-Foundation | `scripts/logistics/`, `mission/tests/storage-fuel-adapter/`, Builder, MOOSE-Dokumentation | `DRAFT`; MOOSE-first Foundation | `ACCEPTED_TECHNICAL_BASELINE` für den dokumentierten Kandahar-STORAGE-Read/Write/Idempotenz/Restore-Stand | 68 | validierter operativer Adapter für `FUEL_JP8`/`FUEL_AVGAS`; keine CampaignState-Rückhoheit oder automatische Verbrauchsbuchung |
+| 68 | `agent/campaignstate-storage-sync-foundation` | PR 67 | CampaignState→STORAGE one-way Fuel-Synchronisation | `scripts/campaign/`, `scripts/logistics/`, `mission/tests/campaignstate-storage-sync/`, MOOSE-Logistikdokumentation | `DRAFT`; CampaignState bleibt strategische Hoheit | `ACCEPTED_TECHNICAL_BASELINE` für exakt dokumentierten Kandahar-one-way-Sync-Stand | offen | bestätigt CampaignState-Snapshot → STORAGE-Sollwertspiegelung ohne Reverse-Overwrite; Transaktionen/Persistenz/Verbrauch offen |
 
 ## 3. Stackstruktur
 
@@ -81,7 +82,7 @@ main
 ├── PR 45
 ├── PR 49
 ├── PR 64
-└── PR 66 → PR 67
+└── PR 66 → PR 67 → PR 68
 ```
 
 PR #53 (Tarinkot), PR #60 (Salerno Foundation), PR #61 (Kandahar Foundation), PR #62 (Dokumentationsmetadaten), PR #63 (Bagram duale AIRWING Foundation) und PR #65 (Shindand Foundation) sind inzwischen nach `main` gemergt und werden nicht mehr als offene Unterprojekte geführt.
@@ -99,7 +100,7 @@ PR #53 (Tarinkot), PR #60 (Salerno Foundation), PR #61 (Kandahar Foundation), PR
 
 ```yaml
 main_commit: 56fccfa44536c3c205c002d16f1af167cba65d51
-open_pull_requests: 31
+open_pull_requests: 32
 pr_53: MERGED
 pr_60: MERGED
 pr_61: MERGED
@@ -107,8 +108,9 @@ pr_62: MERGED
 pr_63: MERGED
 pr_65: MERGED
 pr_66: OPEN_DRAFT
-pr_67: OPEN_DRAFT
-source: GitHub pull-request state
+pr_67: OPEN_DRAFT_ACCEPTED_TECHNICAL_BASELINE
+pr_68: OPEN_DRAFT_ACCEPTED_TECHNICAL_BASELINE
+source: GitHub pull-request state plus documented branch-bound DCS acceptance
 ```
 
-Die 31 offenen PRs sind in Abschnitt 2 vollständig erfasst. Ein offener Zustand bedeutet weder aktuelle fachliche Autorität noch Integrationsreife; die Spalten Governance-Status, Acceptance-Status und Produktionsrelevanz bleiben maßgeblich.
+Die 32 offenen PRs sind in Abschnitt 2 vollständig erfasst. Ein offener Zustand bedeutet weder aktuelle fachliche Autorität noch Integrationsreife; die Spalten Governance-Status, Acceptance-Status und Produktionsrelevanz bleiben maßgeblich.
