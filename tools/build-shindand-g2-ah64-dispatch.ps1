@@ -8,7 +8,7 @@ $repoRoot = Split-Path -Parent $PSScriptRoot
 $sourceFile = Join-Path $repoRoot 'mission\tests\shindand-air-operations\src\02-shindand-g2-ah64-dispatch.lua'
 $distDir = Join-Path $repoRoot 'mission\tests\shindand-air-operations\dist'
 $outputFile = Join-Path $distDir 'OMW_AirOps_Shindand_G2_AH64_Dispatch.lua'
-$builderVersion = 'SHND-G2-AH64-DISPATCH-1'
+$builderVersion = 'SHND-G2-AH64-DISPATCH-2'
 
 if (-not (Test-Path -LiteralPath $sourceFile -PathType Leaf)) {
     throw "Shindand G2 source not found: $sourceFile"
@@ -53,8 +53,13 @@ $forbiddenPatterns = @(
     'trigger\.action\.setUserFlag',
     'trigger\.action\.markTo'
 )
+
+# Guard executable source, not descriptive comment-only lines. This prevents a
+# documentation sentence such as "No native coalition.addGroup" from tripping
+# the forbidden-code regression check while retaining the code-path guard.
+$scanSource = [regex]::Replace($source, '(?m)^\s*--.*(?:\r?\n|$)', '')
 foreach ($pattern in $forbiddenPatterns) {
-    if ($source -match $pattern) {
+    if ($scanSource -match $pattern) {
         throw "G2 regression: forbidden pattern found: $pattern"
     }
 }
@@ -67,9 +72,9 @@ if (Test-Path -LiteralPath $outputFile -PathType Leaf) {
 $commit = (& git -C $repoRoot rev-parse HEAD).Trim()
 $header = "-- AUTO-GENERATED FILE. DO NOT EDIT DIRECTLY.`n-- Builder: tools/build-shindand-g2-ah64-dispatch.ps1`n-- BuilderVersion: $builderVersion`n-- GitCommit: $commit`n-- MOOSE-Pin: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54`n-- Scope: isolated Shindand AH-64 native AIRWING/AUFTRAG dispatch test.`n-- GeneratedUtc: $([DateTime]::UtcNow.ToString('o'))`n`n"
 $content = $header + $source
-
+$scanContent = [regex]::Replace($content, '(?m)^\s*--.*(?:\r?\n|$)', '')
 foreach ($pattern in $forbiddenPatterns) {
-    if ($content -match $pattern) {
+    if ($scanContent -match $pattern) {
         throw "Generated G2 bundle contains forbidden pattern: $pattern"
     }
 }
