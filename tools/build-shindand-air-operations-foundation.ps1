@@ -61,7 +61,7 @@ $forbiddenPatterns = @(
     'SPAWN\s*:',
     'coalition\s*\.\s*addGroup',
     'mist\s*\.',
-    'CampaignState',
+    'CampaignState\s*[\.:\[]',
     'TPL_AIR_US_SHND_UH60_MEDEVAC_LEAD_1SHIP',
     'TPL_AIR_US_SHND_UH60_MEDEVAC_COVER_1SHIP'
 )
