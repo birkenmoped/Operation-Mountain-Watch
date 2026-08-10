@@ -23,7 +23,7 @@ $source = Get-Content -LiteralPath $sourceFile -Raw -Encoding UTF8
 
 $requiredFoundationMarkers = @(
     'BuilderVersion: SHND-AIR-OPS-FOUNDATION-3',
-    'ParkingPattern: JALALABAD',
+    'Pattern = "JALALABAD"',
     'airwing:SetTakeoffCold()',
     'airwing:SetOptionPreferVerticalLanding()',
     'airwing:Start()'
