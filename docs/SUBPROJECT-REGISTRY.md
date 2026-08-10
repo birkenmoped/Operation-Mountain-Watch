@@ -14,8 +14,8 @@ project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
   - incomplete open-branch list in the documentation index
 superseded_by:
-source_branch: agent/bagram-dual-airwing-foundation-rebuild
-source_commit: ffdc52c40a9fe83123dc25f369cd81581f293069
+source_branch: agent/airwing-naming-reconciliation
+source_commit: PENDING_MERGE
 validated_in_dcs: false
 ---
 
@@ -57,6 +57,7 @@ Dieses Register bildet offene Pull Requests, ihre Abhängigkeiten, Dokumentation
 | 49 | `agent/next-airport-airwing-squadron-handoff` | `main` | frühere Auswahlübergabe für den nächsten Air-Ops-Knoten | Handoff und README | `DRAFT`; Auswahlstand durch nachfolgende Salerno-, Tarinkot-, Kandahar- und Bagram-Arbeit überholt | keine Runtime-Acceptance | 51, 52, 53, 60, 61 und 63 | historisches Handoff; keine aktuelle Arbeitsanweisung |
 | 50 | `docs/bagram-air-operations-manifest` | `main` | Sammelintegration des alten Air-Ops-Branches | 150 Dateien aus Bagram, Jalalabad und Kandahar | offen, nicht Draft; stark überholt und mit `main` kollidierend | gemischte branchgebundene Nachweise; keine pauschale `main`-Acceptance | selektive spätere Main-Merges | nicht als Ganzes integrieren; nur datei- und autoritätsbezogen auswerten |
 | 52 | `agent/salerno-read-only-diagnostics` | `docs/bagram-air-operations-manifest` | Salerno AIRWING/SQUADRON und COMMANDER-Runtime | `mission/tests/salerno-air-operations/`, Builder und technische Evidenz | `DRAFT`; kanonische Salerno-Foundation wurde inzwischen über PR #60 nach `main` übernommen | `ACCEPTED_TECHNICAL_BASELINE` für den exakt dokumentierten Stage-18-Stand; Parking-Zuweisung nicht akzeptiert | offen | technische Salerno-Fixtures und Runtime-Historie |
+| 64 | `agent/airwing-naming-reconciliation` | `main` | Jalalabad-/Salerno-AIRWING-Naming-Reconciliation | ADR 0007, Jalalabad-/Salerno-Manifeste, Foundation Lua und Builder | `DRAFT`; Owner-Naming-Entscheidung dokumentiert | neue Identifier noch nicht DCS-validiert; lokale Build-/Hash-Prüfung ausstehend | offen | Abschluss der 7-AIRWING-Foundation-Namenskonsolidierung |
 
 ## 3. Stackstruktur
 
@@ -76,7 +77,8 @@ main
 ├── PR 40
 ├── PR 41
 ├── PR 45
-└── PR 49
+├── PR 49
+└── PR 64
 ```
 
 PR #53 (Tarinkot), PR #60 (Salerno Foundation), PR #61 (Kandahar Foundation), PR #62 (Dokumentationsmetadaten) und PR #63 (Bagram duale AIRWING Foundation) sind inzwischen nach `main` gemergt und werden nicht mehr als offene Unterprojekte geführt.
@@ -93,14 +95,15 @@ PR #53 (Tarinkot), PR #60 (Salerno Foundation), PR #61 (Kandahar Foundation), PR
 ## 5. Registerabgleich vom 10. August 2026
 
 ```yaml
-main_commit: 385069e03f758e4ac3fda2113998535f94da9b12
-open_pull_requests: 28
+main_commit: 1c439cf13b3dce95ae22ce5f5e126f4ecfb633ff
+open_pull_requests: 29
 pr_53: MERGED
 pr_60: MERGED
 pr_61: MERGED
 pr_62: MERGED
 pr_63: MERGED
+pr_64: OPEN_DRAFT
 source: GitHub pull-request state
 ```
 
-Die 28 offenen PRs sind in Abschnitt 2 vollständig erfasst. Ein offener Zustand bedeutet weder aktuelle fachliche Autorität noch Integrationsreife; die Spalten Governance-Status, Acceptance-Status und Produktionsrelevanz bleiben maßgeblich.
+Die 29 offenen PRs sind in Abschnitt 2 vollständig erfasst. Ein offener Zustand bedeutet weder aktuelle fachliche Autorität noch Integrationsreife; die Spalten Governance-Status, Acceptance-Status und Produktionsrelevanz bleiben maßgeblich.
