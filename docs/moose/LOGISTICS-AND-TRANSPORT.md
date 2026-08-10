@@ -7,15 +7,16 @@ authoritative_for:
   - CampaignState and MOOSE logistics responsibility split
   - planned use boundaries for WAREHOUSE, STORAGE, OPSTRANSPORT, CTLD and transport groups
   - STORAGE fuel adapter foundation scope
+  - accepted CampaignState to STORAGE fuel sync foundation scope
 not_authoritative_for:
   - completed transport runtime acceptance
-  - completed CampaignState-to-STORAGE integration acceptance
+  - completed CampaignState transaction, persistence or reverse-reconciliation acceptance
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
   - unclassified MOOSE logistics and transport reference
 superseded_by:
-source_branch: agent/storage-fuel-adapter-foundation
+source_branch: agent/campaignstate-storage-sync-foundation
 source_commit: PENDING_MERGE
 validated_in_dcs: partial
 ---
@@ -162,6 +163,48 @@ MOOSE WAREHOUSE / AIRWING asset stock
 
 Der akzeptierte STORAGE-Test verändert ausschließlich den nativen DCS-Airbase-Warehouse-Liquidpfad. Er weist keine Fuel-Buchung im AIRWING-`WAREHOUSE` nach und darf nicht als solche interpretiert werden.
 
+### 3.4 CampaignState → STORAGE Sync Foundation
+
+Auf dem Folgebranch `agent/campaignstate-storage-sync-foundation` ist der kleinste one-way Integrationspfad praktisch bestätigt:
+
+```text
+scripts/campaign/OMW_CampaignState.lua
+scripts/logistics/OMW_CampaignStateStorageSync.lua
+scripts/logistics/OMW_StorageFuelAdapter.lua
+```
+
+Der CampaignState-Store liefert ausschließlich einen read-only Fuel-Snapshot. Der Sync-Koordinator liest diesen Snapshot und delegiert Plan/Apply vollständig an den bereits akzeptierten STORAGE-Fuel-Adapter.
+
+```text
+CampaignState
+-> OMW_CampaignStateStorageSync
+-> OMW_StorageFuelAdapter
+-> MOOSE STORAGE
+-> DCS Kandahar warehouse
+```
+
+Der DCS-Lauf vom 10.08.2026 bestätigt für exakt den dokumentierten Stand:
+
+```text
+Branch: agent/campaignstate-storage-sync-foundation
+Source/Builder commit: 94ce64365e5bd3836030cdfd8a3e5049b2b477a8
+BuilderVersion: CAMPAIGNSTATE-STORAGE-SYNC-FOUNDATION-1
+DCS: 2.9.28.26385 MT
+MIZ SHA-256: 1d8824b7849d01e6b63a9d51d819fb8da39cdc85eda2c7426b393cb78bf5cd91
+Internal mission SHA-256: a0f6ef17c57d318ff095c81dd098264acb87ea826292ab81bf459d5486b98256
+Embedded bundle SHA-256: 6f2678c853d27f273e73fab51eb39921e7d658d1b6cb3c13f857afdee4f2c4a7
+DCS log SHA-256: 940f548b4ad0fc6a54f9e698e353792db63c412334de22332ccd7f7187cb61da
+Debrief SHA-256: 82d61abb24f1209a0bcd57b14186de172c6b0e29ffd44caf4d300d2d6ac72c95
+Result: CAMPAIGNSTATE_SNAPSHOT_PASS / SYNC_PLAN_PASS / SYNC_WRITE_READBACK_PASS / SYNC_IDEMPOTENCY_PASS / NO_REVERSE_MUTATION_PASS / RESTORE_PASS / status=PASS
+```
+
+Bestätigt ist damit ausschließlich ein expliziter, one-way Sollwert-Mirror. Nicht bestätigt sind CampaignState-Transaktionen, Reservierungen, Persistenz, kontinuierliche Scheduler-Synchronisation, Aircraft-Verbrauch, Transport oder Reverse-Reconciliation.
+
+Vollständige Provenienz:
+
+- [`OMW-TEST-CAMPAIGNSTATE-STORAGE-SYNC-INDEX`](../../mission/tests/campaignstate-storage-sync/README.md)
+- [`OMW-TEST-CAMPAIGNSTATE-STORAGE-SYNC-FOUNDATION-ACCEPTANCE`](../../mission/tests/campaignstate-storage-sync/expected/campaignstate-storage-sync-foundation-acceptance.md)
+
 ## 4. OPSTRANSPORT
 
 Geplant für taktische Truppen- und Frachttransporte zwischen definierten Lade-, Übergabe- und Entladezonen. Zu prüfen sind:
@@ -175,7 +218,7 @@ Geplant für taktische Truppen- und Frachttransporte zwischen definierten Lade-,
 
 Ein MOOSE-`Delivered`- oder vergleichbares Runtime-Ereignis ist ein operatives Signal. Die strategische Zielgutschrift bleibt an die CampaignState-Prüfung der stabilen Cargo-ID, Zielbedingungen und Einmalgutschrift gebunden.
 
-Der tatsächliche MOOSE-Quellstand enthält außerdem den Storage-Transportpfad über `OPSTRANSPORT:AddCargoStorage(...)`. Dieser Pfad ist für OMW weiterhin nur `PLANNED`; er ist nicht Bestandteil des STORAGE-Fuel-Adapter-Foundation-Tests.
+Der tatsächliche MOOSE-Quellstand enthält außerdem den Storage-Transportpfad über `OPSTRANSPORT:AddCargoStorage(...)`. Dieser Pfad ist für OMW weiterhin nur `PLANNED`; er ist nicht Bestandteil der STORAGE-Fuel- oder CampaignState-Sync-Foundation-Tests.
 
 ## 5. CTLD und Dynamic Cargo
 
@@ -191,12 +234,13 @@ RAT-Verkehr ist rein atmosphärisch. Er verändert keine CampaignState-Bestände
 
 Jeder Transporttyp benötigt eigene Testfälle für Einmalgutschrift, Verlust, Teillieferung, Disconnect, Multiplayer, Persistenz und Missionsneustart.
 
-Für `STORAGE` sind weiterhin zusätzlich zu prüfen:
+Für `STORAGE` bzw. die CampaignState-Integration sind weiterhin zusätzlich zu prüfen:
 
 - Waffen-/Item-Mapping für tatsächlich verwendete OMW-Stores;
-- CampaignState→STORAGE-Synchronisation über einen realen CampaignState-Store ohne Rückhoheit;
+- CampaignState-Transaktions- und Reservierungsmodell;
 - Reconciliation bei abweichendem DCS-Bestand;
 - Mission-Restart ohne Ressourcenverdopplung;
-- Multiplayer-Verhalten.
+- Multiplayer-Verhalten;
+- automatische oder ereignisbasierte Aircraft-Verbrauchsbuchung nur nach eigenem Vertrag.
 
-Der erste Foundation-Test hat für Kandahar bereits Fuel-Read/Write, JETFUEL-/GASOLINE-Trennung, kg-Abbildung, Readback, Idempotenz und Wiederherstellung bestätigt. Diese Acceptance ist nicht auf andere Knoten oder die offenen Integrationspunkte zu extrapolieren.
+Die bisherigen Foundation-Tests haben für Kandahar Fuel-Read/Write, JETFUEL-/GASOLINE-Trennung, kg-Abbildung, Readback, Idempotenz, Wiederherstellung sowie den one-way CampaignState→STORAGE-Sollwertpfad bestätigt. Diese Acceptance ist nicht auf andere Knoten oder die offenen Integrationspunkte zu extrapolieren.
