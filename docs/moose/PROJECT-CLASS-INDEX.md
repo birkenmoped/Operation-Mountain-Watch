@@ -12,7 +12,7 @@ project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
   - class index without consolidated AIRWING lifecycle evidence
 superseded_by:
-source_branch: agent/kandahar-foundation-july-2011-rebuild
+source_branch: agent/blue-commander-foundation
 source_commit: GIT_HISTORY
 validated_in_dcs: partial
 ---
@@ -57,7 +57,7 @@ Diese Klassenstatus sind keine Governance-Dokumentstatuswerte.
 | `WAREHOUSE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | AirOps-Stockregistrierung und post-start Zuordnung; strategische Logistik und Persistenz offen; physische typgebundene HELIPAD-Parking-Garantie nicht belegt |
 | `COHORT` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | post-start `AddAsset()` setzt `squadname`, `legion`, `cohort` und `assets`; Foundation-Läufe bestätigen die registrierte SQUADRON-/Warehouse-Kette, ohne Recovery-Nachweis |
 | `FLIGHTGROUP` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | AIRWING-`FlightOnMission`-Pfad, Cold-Takeoff-Prüfung und `SetOptionPreferVertical()`-Propagation im finalen Shindand-Lauf bestätigt; physisches Abflugprofil bleibt typabhängig |
-| `COMMANDER` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Salerno `New -> AddAirwing -> Start -> CanMission -> AddMission -> Status` bis AUFTRAG `started`; Shindand Foundation verwendet COMMANDER ausdrücklich nicht |
+| `COMMANDER` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Salerno `New -> AddAirwing -> Start -> CanMission -> AddMission -> Status` bis AUFTRAG `started`; zentrale BLUE-Foundation nutzt nur `New -> AddAirwing -> Start`, ist für den 8-AIRWING-Verbund noch DCS-pending |
 | `AUFTRAG` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Salerno CAS sowie Shindand `NewCAS()`, `NewLANDATCOORDINATE()` und `AssignSquadrons()` im nativen AIRWING-Pfad bis Missionserfolg bestätigt; physische Außenlandung bei `LANDATCOORDINATE` nicht beobachtet |
 | `SCHEDULER` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | geordnete Konstruktion und verzögerte post-start Diagnose; finaler Shindand-Kombinationstest bestätigt |
 | `GROUP`, `UNIT`, `STATIC`, `ZONE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Template-, Static-, Warehouse- und Zonenvalidierung |
@@ -108,6 +108,8 @@ Der finale Shindand-Lauf bestätigt für einen Heliport-AIRWING mit drei SQUADRO
 - `AUFTRAG:NewHOVER()` sowie die öffentliche HOVER-Capability-Registrierung sind für G8C source-reviewed; sie sind bis zum DCS-Lauf nicht validiert.
 - `COMMANDER:AddAirwing()` startet den COMMANDER nicht.
 - Der akzeptierte COMMANDER-Pfad enthält zwingend `COMMANDER:Start()` und den normalen Status-/Queuezyklus.
+- Die zentrale BLUE-Foundation registriert explizit acht produktive AIRWING-Exports von Bagram, Jalalabad, Kandahar, Salerno, Shindand und Tarinkot. Sie erzeugt selbst keine AUFTRAG-/OPSTRANSPORT-Instanzen und mutiert keinen CampaignState.
+- Der kombinierte Acht-AIRWING-Betrieb bleibt bis zum dokumentierten DCS-Test `DCS_PENDING`; der bestehende Klassenstatus beruht weiterhin auf den bereits akzeptierten COMMANDER-Einzelpfaden.
 
 ## 6. Fog-of-War- und RECCE-Grenzen
 
@@ -149,6 +151,17 @@ DCS: 2.9.28.26385 MT
 Moose.lua SHA-256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
 Result: 1 AIRWING / 3 SQUADRONs / 16 Assetgruppen / 20 Airframes / AH-64D CAS success / UH-60 und CH-47 LANDATCOORDINATE success
 Limit: keine validierte physische Außenlandung; Parking kein Foundation-Acceptance-Kriterium
+```
+
+Geplanter BLUE-COMMANDER-Nachweis:
+
+```text
+Branch: agent/blue-commander-foundation
+Expected: 8 produktive AIRWINGs registriert / COMMANDER OnDuty
+Generated missions: 0
+Generated transports: 0
+CampaignState mutation: false
+DCS result: PENDING
 ```
 
 ## 8. WAREHOUSE-Parking-Grenze
