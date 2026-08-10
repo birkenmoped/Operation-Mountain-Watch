@@ -123,14 +123,14 @@ Die post-start SQUADRON-Bindung erfolgt über den WAREHOUSE-/LEGION-Pfad und `CO
 |---|---|---|
 | `AIRWING:New()` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Konstruktion mit Warehouse-Anker; Kandahar duale Main-/Heliport-Konstruktion und Shindand Heliport bestätigt |
 | `SetAirbase()` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | explizite Airbase-Bindung; Kandahar Main/Heliport getrennt und Shindand Heliport bestätigt |
-| `SetTakeoffCold()` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Konfigurationszustand; tatsächlicher Kaltstart separat |
+| `SetTakeoffCold()` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Shindand final bestätigte Cold-Takeoff-Konfiguration und anschließenden Engine-Start/Abflug für AH-64D, UH-60 und CH-47 |
 | `SetSafeParkingOn()` | `SOURCE_REVIEWED` | setzt im gepinnten `Warehouse.lua` nur `self.safeparking`; das Feld wird im WAREHOUSE-Pfad nicht gelesen und ändert die Parking-Suche nicht |
 | `AddSquadron()` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Cohort-, Stock- und Relocation-Payload-Registrierung; Kandahar 9 SQUADRONs / 76 Assetgruppen, Shindand 3 SQUADRONs / 16 Assetgruppen bestätigt |
 | `NewPayload()` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Rollen-Payloadregistrierung; Kandahar acht Rollenpayloads bestätigt, Shindand drei Rollenpayloads bestätigt |
 | `GetSquadron()` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | SQUADRON-Auflösung nach Registrierung |
 | `GetOpsGroups()` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Idle-Knoten ohne Runtime-OPSGROUPs |
 | `Start()` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Grundstart und post-start Assetbindung; Kandahar beide AIRWINGs und Shindand AIRWING Running |
-| `AddMission()` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Shindand G2 bestätigte direkten nativen AIRWING/AUFTRAG-Dispatch ohne COMMANDER bis `FlightOnMission`; Parking-Compliance blieb dabei FAIL |
+| `AddMission()` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Shindand final bestätigte direkten nativen AIRWING/AUFTRAG-Dispatch ohne COMMANDER für AH-64 CAS sowie UH-60/CH-47 LANDATCOORDINATE bis Missionserfolg |
 
 ## 5. WAREHOUSE-Parking
 
@@ -170,7 +170,7 @@ asset.parkingIDs configuration PASS
 != physical spawn parking compliance PASS
 ```
 
-Der Quellcode von `WAREHOUSE:_FindParkingForAssets()` prüft `asset.parkingIDs` über `_CheckParkingAsset()`. Der Runtime-Widerspruch ist daher als Framework-/DCS-Verhaltensgrenze zu behandeln und nicht durch Annahmen zu überdecken. Ohne weitere Evidenz darf nicht behauptet werden, ob die Abweichung vor, während oder nach der internen Parking-Auswahl entsteht.
+Der Quellcode von `WAREHOUSE:_FindParkingForAssets()` prüft `asset.parkingIDs` über `_CheckParkingAsset()`. Der Runtime-Widerspruch ist daher als Framework-/DCS-Verhaltensgrenze zu behandeln und nicht durch Annahmen zu überdecken.
 
 Ein Ersatz von `_FindParkingForAssets()`, ein Native-DCS-Spawn oder eine andere Parallelimplementierung bleibt nach MOOSE-First nicht autorisiert, solange der Projektinhaber keine entsprechende Ausnahme freigibt.
 
@@ -180,14 +180,18 @@ Die offizielle AIRBASE-Methode mit denselben fünf Parametern ist kein indirekte
 
 ### 6.1 `AIRWING:SetOptionPreferVerticalLanding()`
 
-Status: `VALIDATED_CONFIGURATION_AND_SOURCE_PATH`
+Status: `VALIDATED_FOR_DOCUMENTED_SCOPE`
 
 Belegt:
 
 - Methode ist im gepinnten MOOSE-Stand vorhanden;
 - sie setzt `AIRWING.OptionPreferVerticalLanding = true`;
 - Tarinkot G7 und Shindand Foundation setzten sie vor `AIRWING:Start()`;
-- der Idle-Foundation-Test bestätigte nur den Konfigurationszustand, nicht den Abflug.
+- der AIRWING-Quellpfad propagiert die Option bei `FlightOnMission` an die zugewiesene FLIGHTGROUP;
+- der finale Shindand-Lauf bestätigte die Propagation für AH-64D, UH-60 und CH-47;
+- der Projektinhaber beobachtete UH-60 und CH-47 mit vertical takeoff; die AH-64D rollten zur Heli-Runway und starteten von dort.
+
+Die Option ist damit nicht als Garantie für einen senkrechten Start jedes Helikoptertyps zu interpretieren.
 
 ### 6.2 Weitergabe im nativen Dispatch
 
@@ -211,17 +215,14 @@ Status der Einzelmethoden:
 
 | Methode | Status | Grenze |
 |---|---|---|
-| `AIRWING:SetOptionPreferVerticalLanding()` | `VALIDATED_CONFIGURATION_AND_SOURCE_PATH` | vor Start gesetzt; Weitergabepfad quellengeprüft |
-| `FLIGHTGROUP:SetOptionPreferVertical()` | `SOURCE_REVIEWED` | tatsächliche Anwendung noch nicht durch erfolgreichen Abflug-Gate bestätigt |
-| `CONTROLLABLE:OptionPreferVerticalLanding()` | `SOURCE_REVIEWED` | DCS-Option bekannt; tatsächlicher Abflug noch nicht akzeptiert |
+| `AIRWING:SetOptionPreferVerticalLanding()` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | vor Start gesetzt; Propagation und Shindand-Abflugverhalten dokumentiert |
+| `FLIGHTGROUP:SetOptionPreferVertical()` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Shindand final bestätigte `OptionPreferVertical=true` an allen drei zugewiesenen FLIGHTGROUPs; physisches Ergebnis typabhängig |
+| `CONTROLLABLE:OptionPreferVerticalLanding()` | `SOURCE_REVIEWED_WITH_RUNTIME_CORRELATION` | DCS-Option im Quellpfad bestätigt; UH-60/CH-47 vertical, AH-64D rolling departure; keine universelle Verhaltensgarantie |
 
 Nicht belegt:
 
-- tatsächlicher vertikaler Abflug in Shindand oder Tarinkot;
 - Vermeidung jeder Runway-/Taxi-Nutzung für alle Helikoptertypen;
 - standalone FLIGHTGROUP- oder Raw-SPAWN-Experimente als Produktionspfad.
-
-Shindand G2 erreichte `FlightOnMission`, brach das Acceptance-Gate aber bereits wegen falscher Parking-Position ab; daraus folgt kein Abflugnachweis.
 
 ### 6.3 G8C-HOVER-APIs
 
@@ -274,13 +275,13 @@ COMMANDER OnDuty
 
 `COMMANDER:AddAirwing()` ohne `COMMANDER:Start()` ist kein gültiger Dispatchaufbau.
 
-Shindand G2 bestätigt unabhängig davon, dass ein isolierter Testauftrag direkt über `AIRWING:AddMission()` ohne COMMANDER bis zur AH-64-Zuweisung gelangen kann. Das ist kein Ersatz für die spätere produktive COMMANDER-Architektur.
+Shindand bestätigt unabhängig davon, dass isolierte Testaufträge direkt über `AIRWING:AddMission()` ohne COMMANDER bis zur Zuweisung und Missionserfüllung gelangen können. Das ist kein Ersatz für eine spätere produktive COMMANDER-Architektur.
 
 ## 8. Wrapper und Hilfsklassen
 
 - `GROUP`, `UNIT`, `STATIC` und `ZONE`: `VALIDATED_FOR_DOCUMENTED_SCOPE` für Objekt- und Templateprüfung;
 - `_DATABASE`: `INTERNAL_RESTRICTED`, nur Diagnose und Templateprüfung;
-- `SCHEDULER`: `VALIDATED_FOR_DOCUMENTED_SCOPE` für geordnete verzögerte Post-Start-Inspektion.
+- `SCHEDULER`: `VALIDATED_FOR_DOCUMENTED_SCOPE` für geordnete verzögerte Post-Start-Inspektion und den finalen Shindand-Kombinationstest.
 
 ## 9. Tarinkot G7 – akzeptierter Nachweis
 
@@ -318,9 +319,9 @@ Der Endmarker `activePlayerClients=0` ist für diesen Lauf kein gültiger Detekt
 - OPSTRANSPORT;
 - COMMANDER-Auswahl für Tarinkot;
 
-## 11. Shindand Foundation und G2
+## 11. Shindand AIRWING/SQUADRON Foundation
 
-### 11.1 Foundation PASS
+### 11.1 Foundation-Initialisierung
 
 ```text
 Testdatum: 2026-08-10
@@ -332,17 +333,63 @@ Bundle SHA-256: a7bd8a28ba9e72db2505a4237b6b5ea21465eba1ef09693cf6e6d461f8c6e2ea
 
 Bestätigt: AIRWING Running, drei SQUADRONs, 16 Assetgruppen / 20 logische Luftfahrzeuge, post-start Assetzahlen und `asset.parkingIDs`-Synchronität.
 
-### 11.2 G2 FAIL – physische Parking-Compliance
+### 11.2 Historische Parking-Grenze
+
+Der G2-Lauf bestätigte den direkten AIRWING/AUFTRAG-Pfad bis zum physischen AH-64-Spawn, aber nicht die physische typgebundene Parking-Compliance. Die späteren Parking-Diagnosen bleiben historische Testfixtures und kein offenes Foundation-Gate.
+
+```text
+G2 Source/Builder commit: 27e3877efdc1f76997b00593218e0d6390313ba5
+BuilderVersion: SHND-G2-AH64-DISPATCH-3
+Bundle SHA-256: 787cd3a54cacf7b3a4349bf8554d4124d778fe02607e680dc143474c24d0653f
+Observed AH-64 nearest TerminalID: 41
+Owner-defined AH-64 pool: 21,3,34,15
+physical type-specific parking: FAIL
+```
+
+### 11.3 Finaler kombinierter Foundation-PASS
 
 ```text
 Testdatum: 2026-08-10
 DCS: 2.9.28.26385 MT
-Source/Builder commit: 27e3877efdc1f76997b00593218e0d6390313ba5
-BuilderVersion: SHND-G2-AH64-DISPATCH-3
-Bundle SHA-256: 787cd3a54cacf7b3a4349bf8554d4124d778fe02607e680dc143474c24d0653f
-MIZ SHA-256: b2dfdf00412e9318fc5635b49b9d6d590034b44d1db88ffbe44263e822471388
-dcs.log SHA-256: eb79bdc846203ce1b707794a7c9936e92b78604dbf6f15ff11b28f3b778efb61
-debrief.log SHA-256: 73f7233d5ec19a8c841cd2e5588f9c1ae69f7da37428dfa062fb21186ecc9b88
+Source commit: 584ed674e1d3f642a22c96398c2ebc97b9efcb61
+BuilderVersion: SHND-FINAL-FOUNDATION-ACCEPTANCE-1
+Bundle SHA-256: 8202dfd353a854ea0a1ce7db3fcadb5bb716ae757b6ac41181dadb2cf7ecba7c
+DCS log SHA-256: 53d65dba5e5dc426558e430bace12403648ed16b5917fbbda1bf1629e912d250
+Debrief SHA-256: 153247efccc18c9a050b9d309ab0c3eed9f3fb15363774fc995a63e55c54ee87
 ```
 
-Der direkte AIRWING/AUFTRAG-Pfad wies `SQ_US_SHND_AH64D_ATTACK_AID-197` zu. Beim `FlightOnMission`-Callback befand sich der AH-64D in `Parking` nahe TerminalID 41 (`distanceM=1.667`), obwohl `asset.parkingIDs=21,3,34,15` bestätigt waren. G2 ist deshalb `FAIL` für physische Parking-Compliance. Vertikalabflug wurde durch dieses Gate nicht akzeptiert.
+Praktisch bestätigt:
+
+| Methode / Pfad | Status | Belegter Shindand-Umfang |
+|---|---|---|
+| `AUFTRAG:NewCAS(...)` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | AH-64D CAS-Mission zugewiesen, gestartet und erfolgreich beendet |
+| `AUFTRAG:NewLANDATCOORDINATE(...)` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | UH-60- und CH-47-Missionen zugewiesen und von MOOSE erfolgreich beendet; physische Außenlandung nicht beobachtet |
+| `AUFTRAG:AssignSquadrons(...)` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | AH-64D, UH-60 und CH-47 jeweils dem vorgesehenen Shindand-SQUADRON zugewiesen |
+| `AIRWING:AddMission(...)` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | direkter MOOSE-Dispatch aller drei Testmissionen ohne COMMANDER |
+| `AIRWING:SetTakeoffCold()` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | alle drei zugewiesenen Flights cold konfiguriert; Engine-Start und Abflug beobachtet |
+| `AIRWING:SetOptionPreferVerticalLanding()` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | an alle drei FLIGHTGROUPs propagiert; UH-60/CH-47 vertical, AH-64D rolling departure |
+| `FLIGHTGROUP:IsTakeoffCold()` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | im `FlightOnMission`-Pfad für alle drei Testflights true |
+| `FLIGHTGROUP:SetOptionPreferVertical()` / `OptionPreferVertical` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Propagation für alle drei Testflights bestätigt |
+
+Runtime-Ergebnis:
+
+```text
+AH-64D: CAS success; rolling/taxi departure accepted
+UH-60: LANDATCOORDINATE success; vertical takeoff observed
+CH-47: LANDATCOORDINATE success; vertical takeoff observed
+```
+
+Der AH-64-CAS-Erfolg trat rund 1,5 Sekunden nach dem Harness-Timeout ein und wurde vom Projektinhaber als Harness-Grenzfall akzeptiert.
+
+Nicht validiert:
+
+```text
+physical type-specific parking enforcement
+physical off-field landing of UH-60 or CH-47
+transport loading/unloading semantics
+OPSTRANSPORT
+COMMANDER for Shindand
+CSAR/MEDEVAC specialization
+CampaignState integration
+persistence
+```
