@@ -12,8 +12,8 @@ project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
   - class index without consolidated AIRWING lifecycle evidence
 superseded_by:
-source_branch: agent/kandahar-foundation-july-2011-rebuild
-source_commit: GIT_HISTORY
+source_branch: agent/storage-fuel-adapter-foundation
+source_commit: PENDING_MERGE
 validated_in_dcs: partial
 ---
 
@@ -32,6 +32,7 @@ Technische Lifecycle-Details:
 - [`OMW-MOOSE-AIRWING-SQUADRON-WAREHOUSE-LIFECYCLE`](AIRWING-SQUADRON-WAREHOUSE-LIFECYCLE.md)
 - [`OMW-MOOSE-VERIFIED-METHODS`](VERIFIED-METHODS.md)
 - [`OMW-ARCH-RESOURCE-WAREHOUSE-OWNERSHIP`](../resource-warehouse-ownership-contract.md)
+- [`OMW-MOOSE-LOGISTICS-TRANSPORT`](LOGISTICS-AND-TRANSPORT.md)
 
 ## 2. Statusbedeutung
 
@@ -56,7 +57,7 @@ Diese Klassenstatus sind keine Governance-Dokumentstatuswerte.
 | `AIRWING` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Konstruktion, Stockregistrierung, Grundstart, SQUADRON-Bindung und direkter AUFTRAG-Dispatch; Kandahar Dual-AIRWING Main/Heliport sowie Shindand Heliport mit finalem Drei-Rollen-Test bestätigt |
 | `SQUADRON` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Konstruktion, `Ngroups`, Gruppierung, Capabilities, Payloads und post-start Assetbindung; Kandahar neun SQUADRONs / 76 Assetgruppen / 112 Airframes sowie Shindand drei SQUADRONs / 16 Assetgruppen / 20 Airframes bestätigt |
 | `WAREHOUSE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | AirOps-Stockregistrierung und post-start Zuordnung; strategische Logistik und Persistenz offen; physische typgebundene HELIPAD-Parking-Garantie nicht belegt |
-| `STORAGE` | `SOURCE_REVIEWED` | Wrapper um DCS-Airbase-Warehouse für Liquids und Items; `FindByName`, Liquid-/Item-Read/Write und Inventory im gepinnten `Moose.lua` geprüft; keine produktive CampaignState-Synchronisation, Persistenz oder DCS-Acceptance belegt |
+| `STORAGE` | `IN_USE_PARTIAL` | Source-reviewed Wrapper um DCS-Airbase-Warehouse; Foundation-Adapter nutzt `FindByName`, `GetLiquidAmount`, `SetLiquid`, `JETFUEL` und `GASOLINE` für einen expliziten CampaignState-Snapshot-Mirror; DCS-Read/Write, Persistenz, Multiplayer und Restart-Reconciliation noch nicht validiert |
 | `COHORT` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | post-start `AddAsset()` setzt `squadname`, `legion`, `cohort` und `assets`; Foundation-Läufe bestätigen die registrierte SQUADRON-/Warehouse-Kette, ohne Recovery-Nachweis |
 | `FLIGHTGROUP` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | AIRWING-`FlightOnMission`-Pfad, Cold-Takeoff-Prüfung und `SetOptionPreferVertical()`-Propagation im finalen Shindand-Lauf bestätigt; physisches Abflugprofil bleibt typabhängig |
 | `COMMANDER` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Salerno `New -> AddAirwing -> Start -> CanMission -> AddMission -> Status` bis AUFTRAG `started`; Shindand Foundation verwendet COMMANDER ausdrücklich nicht |
@@ -64,7 +65,7 @@ Diese Klassenstatus sind keine Governance-Dokumentstatuswerte.
 | `SCHEDULER` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | geordnete Konstruktion und verzögerte post-start Diagnose; finaler Shindand-Kombinationstest bestätigt |
 | `GROUP`, `UNIT`, `STATIC`, `ZONE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Template-, Static-, Warehouse- und Zonenvalidierung |
 | `ARMYGROUP`, `BRIGADE`, `OPSGROUP` | `PLANNED` | Bodenoperations- und Bestandsmodell |
-| `OPSTRANSPORT` | `PLANNED` | taktischer Transport |
+| `OPSTRANSPORT` | `PLANNED` | taktischer Transport einschließlich source-reviewed `AddCargoStorage(...)`; OMW-Runtime-Acceptance ausstehend |
 | `CTLD`, `CSAR`, `AICSAR` | `PLANNED` / teilweise verwendet | separate Acceptance erforderlich |
 | `INTEL` | `PLANNED` | taktisches Lagebild; Laufzeitnachweis im gepinnten Stand fehlt |
 | `INTEL_DLINK` | `CANDIDATE` | Aggregation getrennter Netze; Performance offen |
@@ -186,11 +187,29 @@ STORAGE
   -> JETFUEL und GASOLINE getrennte Liquid-Typen
 ```
 
-Der Klassenstatus `SOURCE_REVIEWED` bedeutet ausdrücklich **nicht**:
+Der Branch `agent/storage-fuel-adapter-foundation` verwendet nun erstmals einen kleinen projektspezifischen STORAGE-Adapter in:
 
-- CampaignState-Integration validiert;
-- DCS-Warehouse als strategische Ressourcenhoheit akzeptiert;
-- STORAGE-Persistenz akzeptiert;
-- Multiplayer-/Restart-Reconciliation getestet.
+```text
+scripts/logistics/OMW_StorageFuelAdapter.lua
+```
 
-Der geplante Ownership-Vertrag steht in [`OMW-ARCH-RESOURCE-WAREHOUSE-OWNERSHIP`](../resource-warehouse-ownership-contract.md).
+Verwendete öffentliche API:
+
+```text
+STORAGE:FindByName()
+AIRBASE:FindByName() / AIRBASE:GetStorage() als Fallback
+STORAGE:GetLiquidAmount()
+STORAGE:SetLiquid()
+STORAGE.Liquid.JETFUEL
+STORAGE.Liquid.GASOLINE
+```
+
+Der Status `IN_USE_PARTIAL` bedeutet hier nur **Quellcodeverwendung auf dem Arbeitsbranch**. Noch nicht belegt sind:
+
+- erfolgreicher DCS-Read/Write;
+- CampaignState-Integration über einen realen CampaignState-Store;
+- DCS-Warehouse als strategische Ressourcenhoheit;
+- STORAGE-Persistenz;
+- Multiplayer-/Restart-Reconciliation.
+
+Die Testplanung steht in [`OMW-TEST-STORAGE-FUEL-ADAPTER-INDEX`](../../mission/tests/storage-fuel-adapter/README.md). Praktisch bestätigte Methoden werden erst nach dem dokumentierten DCS-Lauf in `VERIFIED-METHODS.md` ergänzt oder hochgestuft.
