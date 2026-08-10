@@ -1,13 +1,14 @@
 ---
 document_id: OMW-TEST-SHINDAND-FOUNDATION-ACCEPTANCE
-status: VALIDATED
+status: HISTORICAL_TEST_FIXTURE
 document_class: DCS_ACCEPTANCE_RECORD
 owning_policy: OMW-GOV-001
 authoritative_for:
-  - exact Shindand Heliport AIRWING/SQUADRON foundation runtime result documented below
+  - exact historical Shindand Heliport AIRWING/SQUADRON foundation runtime result documented below
   - post-start SQUADRON asset-count validation for the documented artifact chain
   - post-start inherited SQUADRON parking TerminalID validation for the documented artifact chain
 not_authoritative_for:
+  - current Shindand foundation completion status
   - COMMANDER or tactical dispatch
   - AUFTRAG or OPSTRANSPORT execution
   - actual helicopter spawn, taxi, takeoff, landing or recovery behavior
@@ -15,6 +16,9 @@ not_authoritative_for:
   - any other DCS, MOOSE, mission, source or bundle version
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
+supersedes: []
+superseded_by:
+  - OMW-TEST-SHINDAND-FINAL-FOUNDATION-ACCEPTANCE
 source_branch: agent/shindand-heliport-parking-diagnostic
 source_commit: d24c9d92470192dcee8467f3b24ed31548edd3a3
 validated_in_dcs: true
@@ -25,7 +29,7 @@ validation_date: 2026-08-10
 
 ## 1. Umfang
 
-Dieser Acceptance-Record dokumentiert ausschließlich den ausgeführten Foundation-Lauf für den separaten nativen DCS-/MOOSE-Knoten `Shindand Heliport`.
+Dieser historische Acceptance-Record dokumentiert ausschließlich den ausgeführten Foundation-Lauf für den separaten nativen DCS-/MOOSE-Knoten `Shindand Heliport`. Der spätere finale kombinierte Foundation-Lauf und die Projektinhaberentscheidung in `OMW-TEST-SHINDAND-FINAL-FOUNDATION-ACCEPTANCE` supersedieren diesen Zwischenstand für die aktuelle Foundation-Baseline.
 
 Getestet wurden:
 
@@ -166,7 +170,7 @@ Dieser Fehler tritt im externen Saved-Games-Hook beim DCS-Shutdown auf und liegt
 
 ## 7. Acceptance-Grenze
 
-Status dieses Dokuments:
+Die folgenden Runtime-Aussagen bleiben als historische Testevidenz dieses exakten Laufs erhalten:
 
 ```yaml
 foundation_runtime: VALIDATED
@@ -179,4 +183,4 @@ landing_recovery: NOT_TESTED
 persistence: NOT_TESTED
 ```
 
-`VALIDATED` gilt ausschließlich für die oben dokumentierte DCS-/MOOSE-/MIZ-/Bundle-/Commit-Kette.
+Diese Werte sind Ergebnisfelder, nicht der Governance-Status dieses Dokuments.
