@@ -1,18 +1,21 @@
 ---
 document_id: OMW-TEST-SHINDAND-G3-AH64-CONTROLLED-PARKING-FAIL
-status: VALIDATED
+status: HISTORICAL_TEST_FIXTURE
 document_class: DCS_ACCEPTANCE_RECORD
 owning_policy: OMW-GOV-001
 authoritative_for:
-  - exact Shindand G3 AH-64 controlled-parking runtime result documented below
-  - AIRWING:SetParkingIDs configuration persistence before request
-  - physical terminal attribution for the spawned AH-64 two-ship in this run
+  - historical Shindand G3 AH-64 controlled-parking runtime result documented below
+  - AIRWING:SetParkingIDs configuration persistence before request in that exact run
+  - physical terminal attribution for the spawned AH-64 two-ship in that exact run
 not_authoritative_for:
+  - current Shindand foundation completion status
   - corrected Shindand parking enforcement
   - general behavior of all HELIPAD airbases
   - taxi, takeoff, recovery, persistence or COMMANDER integration
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
+supersedes: []
+superseded_by: []
 source_branch: agent/shindand-heliport-parking-diagnostic
 source_commit: f308d2f540f6f1df05dc06718b59104e58534e01
 validated_in_dcs: true
@@ -105,9 +108,9 @@ expected_unit_count: PASS
 physical_type_specific_parking: FAIL
 ```
 
-Damit ist fuer diesen dokumentierten Shindand-Lauf nachgewiesen, dass `AIRWING:SetParkingIDs({21,3,34,15})` allein die physische DCS-Platzierung am `Shindand Heliport` nicht auf diesen Pool begrenzt.
+Damit ist fuer diesen dokumentierten Shindand-Lauf historisch nachgewiesen, dass `AIRWING:SetParkingIDs({21,3,34,15})` allein die physische DCS-Platzierung am `Shindand Heliport` nicht auf diesen Pool begrenzt.
 
-Dieser Befund widerlegt nicht die bereits dokumentierten Kandahar-Ergebnisse; er zeigt eine Shindand-spezifische Abweichung, die vor einem Architektur- oder Override-Entscheid zunaechst gegen den vollstaendigen Kandahar-Parking-Contract (`AIRBASE:SetParkingSpotBlacklist` + `AIRWING:SetParkingIDs` + nativer Self-Request) isoliert nachgetestet werden muss.
+Dieser Befund widerlegt nicht die dokumentierten Kandahar-Ergebnisse. Fuer die abgeschlossene Shindand AIRWING/SQUADRON Foundation wird physische Parking-Compliance nicht als Acceptance-Kriterium verwendet; G3 bleibt als Diagnoseevidenz erhalten.
 
 ## Nicht als Ursache werten
 
