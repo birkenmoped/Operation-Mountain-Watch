@@ -24,10 +24,11 @@ supersedes:
   - Khost as the presumed DCS airbase binding for airdromeId 23
   - CH-47D as the Mission Editor type for current Salerno CH-47 objects
   - unqualified claims that configured parkingIDs prove realized parking compliance
+  - generic Salerno AIRWING name AW_US_SALERNO for the current foundation
 superseded_by:
-source_branch: agent/normalize-salerno-air-orbat
-source_commit: 4ce9b9297f8c473ee2a789f14d187fb667d37647
-validated_in_dcs: true
+source_branch: agent/airwing-naming-reconciliation
+source_commit: PENDING_MERGE
+validated_in_dcs: false
 acceptance_source_branch: agent/salerno-read-only-diagnostics
 acceptance_source_commit: dba0465afbff14fb719abdeb1f9b06e24ff24717
 acceptance_builder_version: SAL-COMMANDER-SELECTION-18
@@ -61,7 +62,7 @@ Vorrangige projektinterne Quellen sind:
 - [`OMW-HIST-AFGHANISTAN-FORCE-BASING-AVIATION`](50-afghanistan-force-basing-aviation-2010-2011.md);
 - [`OMW-HIST-AFGHANISTAN-ORBAT-2011-07`](64-afghanistan-order-of-battle-july-2011.md).
 
-Technische Acceptance ist ausschließlich für den in der Frontmatter bezeichneten Branch-, Commit-, Missions-, Bundle-, DCS- und MOOSE-Stand gültig. Sie macht die noch offene Parking-, Recovery-, Persistenz- oder Gesamtmissionslogik nicht automatisch produktionsreif.
+Technische Acceptance ist ausschließlich für den in der Frontmatter bezeichneten Branch-, Commit-, Missions-, Bundle-, DCS- und MOOSE-Stand gültig. Sie macht die noch offene Parking-, Recovery-, Persistenz- oder Gesamtmissionslogik nicht automatisch produktionsreif. Der historische Acceptance-Stand verwendet den damaligen AIRWING-Identifier `AW_US_SALERNO`; die aktuelle Naming-Reconciliation benötigt deshalb einen eigenen Foundation-Runtime-Nachweis.
 
 ## 2. Historische Einordnung
 
@@ -172,13 +173,15 @@ salerno_zone_found: true
 ## 6. MOOSE-Objektstruktur
 
 ```text
-AW_US_SALERNO
+AW_US_SAL_TF_TIGERSHARK_1_10_AVN
 ├── SQ_US_SAL_AH64D_TF_TIGERSHARK_ATTACK
 ├── SQ_US_SAL_OH58D_B_6_6_CAV
 ├── SQ_US_SAL_UH60_TF_TIGERSHARK_ASSAULT
 ├── SQ_US_SAL_UH60_MEDEVAC_C_5_159_AVN
 └── SQ_US_SAL_CH47_TF_TIGERSHARK_MEDIUM_LIFT
 ```
+
+Der AIRWING-Identifier bildet den aktiven Salerno-Army-Aviation-Knoten nun verbandsbezogen als TF Tigershark / 1-10 Aviation ab und supersediert den früheren generischen technischen Namen `AW_US_SALERNO`. Die SQUADRON-IDs, Warehouse-, Template-, Parking- und Bestandsverträge bleiben unverändert.
 
 Die Rollenbezeichnungen bleiben dort absichtlich generisch, wo eine exakte historische Company-Zuordnung nicht ausreichend belegt ist. Es werden keine Einheitsnamen erfunden.
 
@@ -667,3 +670,5 @@ additional_salerno_runtime_test_before_next_airfield: NOT_REQUIRED
 next_airfield_work: UNBLOCKED
 pr_merge_state: NOT_DECIDED_BY_THIS_DOCUMENT
 ```
+
+Die beiden `ACCEPTED_TECHNICAL_BASELINE`-Einträge in diesem Abschlussstatus beziehen sich ausschließlich auf die in Abschnitt 19 dokumentierte historische Acceptance mit `AW_US_SALERNO`. Der aktuelle Identifier `AW_US_SAL_TF_TIGERSHARK_1_10_AVN` gilt erst nach einem neuen exakt dokumentierten Foundation-Lauf als DCS-validiert.
