@@ -1,10 +1,16 @@
--- Operation Mountain Watch - Shindand G5 AH-64 shared-free parking acceptance test.
+-- Operation Mountain Watch - Shindand G5 AH-64 Jalalabad-style parking acceptance test.
 --
--- Parking rule under test:
+-- Owner parking rule under test:
 --   * AH-64 reserved pool is exclusive to AH-64.
 --   * UH-60 and CH-47 reserved pools are forbidden to AH-64.
 --   * shared free pool ME 11-19 and 20-27 may be used by any AI helicopter type.
 --   * all other confirmed Shindand Heliport terminals remain unavailable for this gate.
+--
+-- Jalalabad pattern retained:
+--   * SQUADRON parking IDs remain the type-specific preferred/reserved pool.
+--   * AIRBASE blacklist constrains globally forbidden parking for this isolated test.
+--   * AIRWING:SetSafeParkingOn() is configured.
+--   * no AIRWING:SetParkingIDs() type restriction is used.
 --
 -- Public MOOSE path only. No COMMANDER, AUFTRAG, OPSTRANSPORT, direct SPAWN,
 -- native DCS group creation, CampaignState mutation or MOOSE override.
@@ -18,11 +24,12 @@ local EXPECTED_TEMPLATE = "TPL_AIR_US_SHND_AH64D_CAS_2SHIP"
 local AH64_RESERVED_IDS = { 21, 3, 34, 15 }
 local SHARED_FREE_IDS = { 0, 16, 24, 33, 14, 25, 42, 27, 22, 39, 38, 5, 29, 11, 26, 40, 9 }
 local FORBIDDEN_OTHER_TYPE_IDS = { 41, 18, 13, 20, 19, 30, 10, 23 }
+local ALLOWED_IDS = { 21, 3, 34, 15, 0, 16, 24, 33, 14, 25, 42, 27, 22, 39, 38, 5, 29, 11, 26, 40, 9 }
 
 local EXPECTED_ASSET_GROUPS = 1
 local EXPECTED_UNITS = 2
 local MAX_NODE_DISTANCE_M = 12
-local ASSIGNMENT = "OMW_SHND_G5_AH64_SHARED_FREE_PARKING"
+local ASSIGNMENT = "OMW_SHND_G5_AH64_JALALABAD_STYLE_PARKING"
 local START_DELAY_S = 20
 local TIMEOUT_S = 90
 
@@ -44,13 +51,6 @@ local function toSet(values)
   for _, value in ipairs(values or {}) do
     result[tonumber(value)] = true
   end
-  return result
-end
-
-local function concatLists(a, b)
-  local result = {}
-  for _, value in ipairs(a or {}) do result[#result + 1] = value end
-  for _, value in ipairs(b or {}) do result[#result + 1] = value end
   return result
 end
 
@@ -81,10 +81,9 @@ local function getAssignment(airwing, request)
   return ""
 end
 
-local function buildParkingContract(airbase)
-  local allowedIDs = concatLists(AH64_RESERVED_IDS, SHARED_FREE_IDS)
-  local allowedSet = toSet(allowedIDs)
-  local forbiddenOtherTypeSet = toSet(FORBIDDEN_OTHER_TYPE_IDS)
+local function buildBlacklist(airbase)
+  local allowedSet = toSet(ALLOWED_IDS)
+  local forbiddenSet = toSet(FORBIDDEN_OTHER_TYPE_IDS)
   local spots = airbase:GetParkingSpotsTable() or {}
   local seen = {}
   local allIDs = {}
@@ -101,20 +100,20 @@ local function buildParkingContract(airbase)
     end
   end
 
-  for _, terminalID in ipairs(allowedIDs) do
+  for _, terminalID in ipairs(ALLOWED_IDS) do
     if not seen[terminalID] then
       error("Allowed TerminalID missing from Shindand Heliport parking table: " .. tostring(terminalID))
     end
   end
-  for terminalID in pairs(forbiddenOtherTypeSet) do
+  for terminalID in pairs(forbiddenSet) do
     if allowedSet[terminalID] then
-      error("Parking contract overlap with other-type reserved terminal: " .. tostring(terminalID))
+      error("Parking contract overlap with other-type reserved TerminalID: " .. tostring(terminalID))
     end
   end
 
   table.sort(allIDs)
   table.sort(blockedIDs)
-  return allIDs, blockedIDs, allowedIDs
+  return allIDs, blockedIDs
 end
 
 local function finish(spawnedGroups, spawnedUnits, terminalIDs, reservedCount, sharedCount)
@@ -131,7 +130,7 @@ local function finish(spawnedGroups, spawnedUnits, terminalIDs, reservedCount, s
   table.sort(terminalIDs)
   if violations == 0 then
     log(string.format(
-      "RESULT status=PASS_SHARED_FREE_PARKING assetGroups=%d units=%d terminalIDs=%s ah64ReservedUsed=%d sharedFreeUsed=%d otherTypeReservedUsed=0 nativeWarehouseSelfRequest=true commander=false auftrag=false opstransport=false directSpawn=false mooseOverride=false campaignStateMutation=false",
+      "RESULT status=PASS_JALALABAD_STYLE_PARKING assetGroups=%d units=%d terminalIDs=%s ah64ReservedUsed=%d sharedFreeUsed=%d otherTypeReservedUsed=0 squadronParkingPreserved=true airwingParkingRestriction=false safeParkingConfigured=true nativeWarehouseSelfRequest=true commander=false auftrag=false opstransport=false directSpawn=false mooseOverride=false campaignStateMutation=false",
       spawnedGroups,
       spawnedUnits,
       table.concat(terminalIDs, ","),
@@ -140,7 +139,7 @@ local function finish(spawnedGroups, spawnedUnits, terminalIDs, reservedCount, s
     ))
   else
     log(string.format(
-      "RESULT status=FAIL_SHARED_FREE_PARKING violations=%d requestIssued=%s spawnedGroups=%d spawnedUnits=%d terminalIDs=%s ah64ReservedUsed=%d sharedFreeUsed=%d",
+      "RESULT status=FAIL_JALALABAD_STYLE_PARKING violations=%d requestIssued=%s spawnedGroups=%d spawnedUnits=%d terminalIDs=%s ah64ReservedUsed=%d sharedFreeUsed=%d",
       violations,
       tostring(requestIssued),
       spawnedGroups,
@@ -254,25 +253,32 @@ local function run()
   if tostring(squadron.templatename) ~= EXPECTED_TEMPLATE then
     error("Shindand AH-64 template binding mismatch")
   end
+  if not sameNumericSet(squadron.parkingIDs, AH64_RESERVED_IDS) then
+    error("AH-64 SQUADRON parking IDs no longer match owner-reserved pool")
+  end
 
   local airwing = state.Airwing
-  if not state.Airbase.SetParkingSpotBlacklist or not airwing.SetParkingIDs or not airwing.SetSafeParkingOn then
-    error("Required public MOOSE parking-contract methods are unavailable")
+  if not state.Airbase.SetParkingSpotBlacklist or not airwing.SetSafeParkingOn then
+    error("Required public MOOSE Jalalabad-style parking methods are unavailable")
   end
 
-  local allIDs, blockedIDs, allowedIDs = buildParkingContract(state.Airbase)
+  local allIDs, blockedIDs = buildBlacklist(state.Airbase)
   state.Airbase:SetParkingSpotBlacklist(blockedIDs)
-  airwing:SetParkingIDs(allowedIDs)
   airwing:SetSafeParkingOn()
 
-  if not sameNumericSet(airwing.parkingIDs, allowedIDs) then
-    error("AIRWING parking-ID restriction did not persist")
-  end
   if airwing.safeparking ~= true then
     error("AIRWING safe-parking configuration did not persist")
   end
 
-  log(string.format("PARKING_RULE_APPLIED totalNodes=%d allowed=%d blocked=%d ah64Reserved=%d sharedFree=%d forbiddenOtherType=%d", #allIDs, #allowedIDs, #blockedIDs, #AH64_RESERVED_IDS, #SHARED_FREE_IDS, #FORBIDDEN_OTHER_TYPE_IDS))
+  log(string.format(
+    "PARKING_RULE_APPLIED totalNodes=%d allowed=%d blocked=%d ah64Reserved=%d sharedFree=%d forbiddenOtherType=%d squadronParkingPreserved=true airwingParkingRestriction=false safeParkingConfigured=true",
+    #allIDs,
+    #ALLOWED_IDS,
+    #blockedIDs,
+    #AH64_RESERVED_IDS,
+    #SHARED_FREE_IDS,
+    #FORBIDDEN_OTHER_TYPE_IDS
+  ))
 
   local previousSelfRequest = airwing.OnAfterSelfRequest
   function airwing:OnAfterSelfRequest(From, Event, To, groupset, request)
