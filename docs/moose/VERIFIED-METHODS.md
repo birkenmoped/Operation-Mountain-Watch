@@ -30,6 +30,7 @@ Dieses Register führt praktisch geprüfte MOOSE-Aufrufe und den jeweils belegte
 Ergänzende Lifecycle-Autorität:
 
 - [`OMW-MOOSE-AIRWING-SQUADRON-WAREHOUSE-LIFECYCLE`](AIRWING-SQUADRON-WAREHOUSE-LIFECYCLE.md)
+- [`OMW-MOOSE-STORAGE-AIRWING-WEAPON-LIFECYCLE`](STORAGE-AIRWING-WEAPON-LIFECYCLE.md)
 
 Historische Vollfassung:
 
@@ -150,7 +151,7 @@ Vollständiger Quellenbericht:
 
 ### 5.1 Shindand G2 Runtime-Grenze
 
-Testdatum 2026-08-10, DCS 2.9.28.26385 MT, Branch `agent/shindand-heliport-parking-diagnostic`, Source/Builder-Commit `27e3877efdc1f76997b00593218e0d6390313ba5`, BuilderVersion `SHND-G2-AH64-DISPATCH-3`.
+Testdatum 2026-08-10, DCS 2.9.28.26385 MT, Branch `agent/shindand-heliport-parking-diagnostic`, Source/Builder-Commit `27e3877efdc1f76997b00593218e0d6390313ba5`, BuilderVersion `SHND-G2-AH64-DISPATCH-3`, Bundle SHA-256 `787cd3a54cacf7b3a4349bf8554d4124d778fe02607e680dc143474c24d0653f`.
 
 Runtime:
 
@@ -468,3 +469,37 @@ reverse overwrite of CampaignState from DCS telemetry
 ```
 
 `MOOSE WAREHOUSE`/`AIRWING`-Assetstock und DCS-`STORAGE`-Liquids bleiben getrennte operative Domänen. Der Kandahar-PASS belegt keine gemeinsame oder doppelte Fuel-Hoheit.
+
+## 13. STORAGE / AIRWING Weapon Lifecycle
+
+### 13.1 Praktisch bestaetigter V2-Scope
+
+Der gueltige V2-Lauf vom 11.08.2026 bestaetigte fuer den dokumentierten Shindand-AH-64D-Scope:
+
+```text
+STORAGE:GetInventory() three-return contract: PASS
+M151 TwoShip materialization debit: -76
+AGM-114K TwoShip materialization debit: -4
+IAFS ComboPak TwoShip materialization debit: -2
+M151 no-fire native return recredit: +76
+AGM-114K no-fire native return recredit: +4
+IAFS ComboPak native return recredit: 0
+second AH-64 TwoShip materialization after native return: observed
+ReturnToLegion called by test: false
+```
+
+Damit bleiben `STORAGE:GetInventory()`, der native AH-64-Returnpfad und die bekannten M151-/AGM-114K-Deltas fuer diesen exakten V2-Stand praktisch bestaetigt. Die fehlende IAFS-Rueckgabe wird als offene Droptank-/Equipment-Semantik behandelt, nicht als M230-/M789-Verbrauch.
+
+### 13.2 V5 Harness-Precondition-Fail
+
+Der V5-Lauf vom 11.08.2026 brach vor der ersten Lifecycle-Phase ab:
+
+```text
+M151 baseline amount: 100
+V5 required: 152
+result: BASELINE FAIL
+```
+
+Die Ursache war ausschliesslich eine fehlerhafte Harness-Precondition (`expected debit * 2` fuer alle drei AH-64-Stores). Dieser Lauf validiert oder widerlegt keine neue MOOSE-Methode und keine DCS-Lifecycle-Semantik.
+
+V6 korrigiert nur diese Testvoraussetzung: M151 `>=76`, AGM-114K `>=4`, IAFS `>=4`. Die verwendeten MOOSE-Methoden und ihre bisherigen Status bleiben unveraendert; Loss- und F-16-Droptank-Ergebnisse bleiben bis zum dokumentierten V6-DCS-Lauf offen.
