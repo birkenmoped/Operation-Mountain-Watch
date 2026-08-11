@@ -8,7 +8,7 @@ $repoRoot = Split-Path -Parent $PSScriptRoot
 $harnessFile = Join-Path $repoRoot 'mission\tests\storage-airwing-weapon-lifecycle\src\01-storage-airwing-weapon-lifecycle.lua'
 $distDir = Join-Path $repoRoot 'mission\tests\storage-airwing-weapon-lifecycle\dist'
 $outputFile = Join-Path $distDir 'OMW_Storage_Airwing_Weapon_Lifecycle_Test.lua'
-$builderVersion = 'STORAGE-AIRWING-WEAPON-LIFECYCLE-5'
+$builderVersion = 'STORAGE-AIRWING-WEAPON-LIFECYCLE-6'
 $mooseCommit = '73d3ed119cd9e7e3f2cfcabbaa34513d30529b54'
 $mooseSha256 = 'e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915'
 $baseBranch = 'agent/storage-weapon-consumption-correlation'
@@ -21,7 +21,10 @@ if (-not (Test-Path -LiteralPath $harnessFile -PathType Leaf)) {
 $harness = Get-Content -LiteralPath $harnessFile -Raw -Encoding UTF8
 
 $requiredMarkers = @(
-    'STORAGE-AIRWING-WEAPON-LIFECYCLE-5',
+    'STORAGE-AIRWING-WEAPON-LIFECYCLE-6',
+    'BASELINE_MINIMUM_AH64_STOCK',
+    'BASELINE_REQUIREMENT',
+    'minimumM151=76 minimumAgm114k=4 minimumComboPak=4',
     'Bagram',
     'Jalalabad',
     'Kandahar',
@@ -115,6 +118,18 @@ foreach ($marker in $forbiddenF16TankAssumptions) {
     }
 }
 
+# Prevent recurrence of the V5 precondition defect. Recoverable AH-64 stores must
+# not be multiplied by the number of sequential legs; only the observed non-
+# recredited IAFS needs stock for both materializations.
+if ($harness -match 'required\s*\*\s*2') {
+    throw 'AH-64 baseline stock must not multiply all expected debits by two.'
+}
+if ($harness -notmatch '\[ITEM_M151\]\s*=\s*76' -or
+    $harness -notmatch '\[ITEM_AGM114K\]\s*=\s*4' -or
+    $harness -notmatch '\[ITEM_COMBOPAK\]\s*=\s*4') {
+    throw 'AH-64 baseline minimums must be M151=76, AGM-114K=4 and IAFS ComboPak=4.'
+}
+
 # Semantic outcomes must be recorded rather than aborting the whole manual DCS run.
 if ($harness -match 'tankDebitTotal\s*~=\s*4\s*then\s*error') {
     throw 'F-16 tank debit semantic mismatch must not abort the combined gate.'
@@ -154,6 +169,10 @@ Write-Host "BaseCommit: $baseCommit"
 Write-Host "NodesExpected: 7"
 Write-Host "AH64NormalReturnLegsExpected: 1"
 Write-Host "AH64DeliberateLossLegsExpected: 1"
+Write-Host "AH64BaselineMinimumM151: 76"
+Write-Host "AH64BaselineMinimumAGM114K: 4"
+Write-Host "AH64BaselineMinimumIAFSComboPak: 4"
+Write-Host "AH64BaselineSequentialRecreditAware: REQUIRED"
 Write-Host "AH64LossMethod: MOOSE_OPSGROUP_DESTROY_UNITLOST"
 Write-Host "F16ReturnLegsExpected: 1"
 Write-Host "F16TwoShipExpected: 2"
