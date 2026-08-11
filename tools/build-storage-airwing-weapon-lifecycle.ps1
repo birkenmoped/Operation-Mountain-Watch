@@ -8,7 +8,7 @@ $repoRoot = Split-Path -Parent $PSScriptRoot
 $harnessFile = Join-Path $repoRoot 'mission\tests\storage-airwing-weapon-lifecycle\src\01-storage-airwing-weapon-lifecycle.lua'
 $distDir = Join-Path $repoRoot 'mission\tests\storage-airwing-weapon-lifecycle\dist'
 $outputFile = Join-Path $distDir 'OMW_Storage_Airwing_Weapon_Lifecycle_Test.lua'
-$builderVersion = 'STORAGE-AIRWING-WEAPON-LIFECYCLE-2'
+$builderVersion = 'STORAGE-AIRWING-WEAPON-LIFECYCLE-3'
 $mooseCommit = '73d3ed119cd9e7e3f2cfcabbaa34513d30529b54'
 $mooseSha256 = 'e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915'
 $baseBranch = 'agent/storage-weapon-consumption-correlation'
@@ -21,7 +21,7 @@ if (-not (Test-Path -LiteralPath $harnessFile -PathType Leaf)) {
 $harness = Get-Content -LiteralPath $harnessFile -Raw -Encoding UTF8
 
 $requiredMarkers = @(
-    'STORAGE-AIRWING-WEAPON-LIFECYCLE-2',
+    'STORAGE-AIRWING-WEAPON-LIFECYCLE-3',
     'Bagram',
     'Jalalabad',
     'Kandahar',
@@ -43,6 +43,10 @@ $requiredMarkers = @(
     'FIRST_POST_RETURN',
     'SECOND_DISPATCH_REQUEST',
     'SECOND_POST_RETURN',
+    'MESSAGE:New',
+    'HEARTBEAT_INTERVAL_S',
+    'TEST COMPLETE - PASS',
+    'TEST FAILED',
     'returnToLegionCalledByTest=false'
 )
 foreach ($marker in $requiredMarkers) {
@@ -55,6 +59,7 @@ $forbiddenPatterns = @(
     'local\s+inventory\s*=\s*storage:GetInventory\s*\(',
     'inventory\.weapon',
     'inventory\.weapons',
+    'trigger\.action\.outText',
     'STORAGE\s*:\s*SetItem',
     'STORAGE\s*:\s*AddItem',
     'STORAGE\s*:\s*RemoveItem',
@@ -104,7 +109,7 @@ $header = @"
 -- BaseCommit: $baseCommit
 -- MOOSE-Commit: $mooseCommit
 -- Moose.lua-SHA256: $mooseSha256
--- Scope: validated read-only STORAGE observation plus native AIRWING/AUFTRAG no-fire recovery and redispatch lifecycle.
+-- Scope: validated read-only STORAGE observation plus native AIRWING/AUFTRAG no-fire recovery and redispatch lifecycle with MOOSE MESSAGE status.
 
 "@
 
@@ -122,6 +127,10 @@ Write-Host "SortiesExpected: 2"
 Write-Host "NoFireSortiesExpected: 2"
 Write-Host "PollIntervalSeconds: 5"
 Write-Host "SafetyTimeoutSeconds: 1800"
+Write-Host "HeartbeatIntervalSeconds: 120"
+Write-Host "UserVisibleStatus: MOOSE_MESSAGE_REQUIRED"
+Write-Host "CompletionMessage: REQUIRED"
+Write-Host "FailureMessage: REQUIRED"
 Write-Host "GetInventoryContract: THREE_RETURN_VALUES_REQUIRED"
 Write-Host "BaselineWeaponInventoryValidation: REQUIRED"
 Write-Host "FirstDebitControlValidation: REQUIRED"
@@ -130,6 +139,7 @@ Write-Host "ArrivedCallback: REQUIRED_RECOVERY_ANCHOR"
 Write-Host "StorageMutation: ABSENT"
 Write-Host "CampaignStateMutation: ABSENT"
 Write-Host "CustomReturnToLegionCall: ABSENT"
+Write-Host "NativeOutTextCall: ABSENT"
 Write-Host "OPSTRANSPORT: ABSENT"
 Write-Host "CTLD: ABSENT"
 Write-Host "MOOSECommit: $mooseCommit"
