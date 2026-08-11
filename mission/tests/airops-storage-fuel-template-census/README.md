@@ -148,11 +148,52 @@ Tarinkot
 
 Innerhalb einer STORAGE-Lane laeuft immer nur **ein** Template-Fall gleichzeitig, damit Inventory-Deltas eindeutig zugeordnet werden koennen. Verschiedene STORAGE-Lanes duerfen parallel laufen. Dadurch wird der Lauf gegenueber 32 global seriellen Flugzyklen deutlich verkuerzt, ohne Debits desselben Warehouses zu vermischen.
 
-Ein Fall erhaelt bis zu 900 Sekunden fuer Materialisierung und den nativen Return-Lifecycle. Wenn ein noch nicht materialisierter Fall nicht zugewiesen werden kann, wird er per oeffentlichem `AUFTRAG:Cancel()` beendet und die Lane faehrt mit dem naechsten Fall fort. Wenn ein **bereits materialisierter** Fall nicht bis `Arrived` kommt, wird seine Lane blockiert und nicht mit dem naechsten Template kontaminiert. Andere Lanes laufen weiter. Der globale Sicherheitszeitraum betraegt 3600 Sekunden.
+Census V2 trennt die Zeitgrenzen nach Funktion:
+
+```text
+Assignment / FlightOnMission:                 600 s
+vollstaendiger Lifecycle nach Assignment:    3600 s
+Post-Arrived STORAGE settle window:            30 s
+globaler Safety-Timeout:                    28800 s
+```
+
+Die 60-Minuten-Lifecycle-Frist startet **erst nach erfolgreichem `FlightOnMission`**. Damit zaehlen Cold Start, Spool-up, Taxi, Takeoff, Mission, RTB, Approach, Landung und der MOOSE-`Arrived`-Pfad zum realistischen Recovery-Fenster.
+
+Der globale Safety-Timeout betraegt acht Stunden, weil die laengste Lane Bagram sieben physische Templates sequenziell abarbeitet. Ein globales Limit von sechs Stunden waere bei sieben moeglichen 60-Minuten-Case-Fenstern nicht konsistent.
+
+Wenn ein noch nicht materialisierter Fall innerhalb von 600 Sekunden nicht zugewiesen werden kann, wird er per oeffentlichem `AUFTRAG:Cancel()` beendet und die Lane faehrt mit dem naechsten Fall fort. Wenn ein **bereits materialisierter** Fall auch 60 Minuten nach Assignment nicht bis `Arrived` kommt, wird seine Lane weiterhin blockiert und nicht mit dem naechsten Template kontaminiert. Andere Lanes laufen weiter.
+
+Lane-Blocking bleibt damit bewusst erhalten. Geaendert wurde die Definition eines echten Fehlers: normale lange Start-, Taxi-, Missions- und Recovery-Zeiten blockieren die Lane nicht mehr nach 15 Minuten.
 
 Ein einzelnes semantisch unerwartetes Fuel-/Store-Ergebnis beendet den Gesamtlauf nicht.
 
-## 5. Stores
+## 5. Census-1-Lauf vom 11. August 2026
+
+Der erste DCS-Lauf mit `AIROPS-STORAGE-FUEL-TEMPLATE-CENSUS-1` wurde auf DCS `2.9.28.26385` ausgefuehrt. Er endete mit `COMPLETE_WITH_GAPS`, weil alle sieben Lanes am jeweils ersten materialisierten Fall nach dem alten 900-s-Case-Timeout blockiert wurden.
+
+Damit wurden **keine Return-Semantiken** aus Census-1 als abgeschlossen akzeptiert. Der Lauf lieferte jedoch verwertbare Spawn-/Debit-Evidenz fuer die sieben ersten Templates und zeigte unter anderem direkte JETFUEL-Debits bei F-15E, OH-58D, A-10C und AH-64D.
+
+Die V2-Korrektur reagiert ausschliesslich auf den nachgewiesenen Harness-Zeitfehler und erweitert die Timeout-Diagnostik. Sie aendert weder die produktiven Foundations noch STORAGE-/CampaignState-Hoheit oder den nativen AIRWING-Return-Pfad.
+
+## 6. Timeout-Diagnostik
+
+Wenn Assignment, Lifecycle oder globaler Safety-Timeout ausloesen, protokolliert V2 zusaetzlich:
+
+```text
+missionState
+missionSuccessObserved
+flightGroupState
+flightAlive
+landedObserved
+arrivedObserved
+currentFuelKg
+currentFuelUnits
+storageJetFuelKg
+```
+
+`AUFTRAG:GetState()` und `AUFTRAG:IsSuccess()` sowie `FLIGHTGROUP:GetState()` wurden gegen die gepinnte `Moose.lua` source-reviewed. Dadurch kann ein spaeterer Timeout unterscheiden, ob die Mission noch laeuft, bereits erfolgreich beendet ist und nur der Recovery-Pfad noch laeuft, oder ob die FlightGroup in einem anderen Zustand haengt.
+
+## 7. Stores
 
 Pro Fall wird das komplette Weapon-Inventar vor Materialisierung, nach Materialisierung und nach native Return verglichen. Es wird kein Store-Key vorausgesetzt.
 
@@ -167,7 +208,7 @@ STORE_RESULT ... status=NOT_DEBITED|FULL|PARTIAL|NONE|OVER_RECREDIT
 
 Damit werden unter anderem die bereits bekannten IAFS-, F-16-Droptank-, Hellfire- und Hydra-Faelle erneut im breiteren Template-Kontext sichtbar, ohne sie im Census hart zu codieren.
 
-## 6. Fuel
+## 8. Fuel
 
 `STORAGE:GetInventory()` wird weiterhin entsprechend dem gepinnten Drei-Rueckgabe-Vertrag verwendet:
 
@@ -194,13 +235,13 @@ Die Onboard-Telemetrie wird bei Assignment, `Landed` und `Arrived` versucht. Fue
 
 Damit kann nach dem Lauf nicht nur festgestellt werden, ob Fuel voll/teilweise/nicht zurueckgebucht wird. Die STORAGE-Recovery kann auch gegen die unmittelbar vor dem nativen Return beobachtbare Fuelmasse korreliert werden.
 
-Diese Korrelation wird als Evidenz protokolliert; sie ist **kein harter Equality-Assert**, weil externe Tanks und DCS-Fuelmodellierung separat bewertet werden muessen.
+Diese Korrelation wird als Evidenz protokolliert; sie ist **kein harter Equality-Assert**, weil externe Tanks, CFTs und DCS-Fuelmodellierung separat bewertet werden muessen. Insbesondere wird ein `GetFuelMin()`-Wert ueber 100 Prozent bei F-15E nicht ohne weiteren Nachweis als Fehler oder als bestaetigte CFT-Semantik klassifiziert; fuer die Warehouse-Bilanz bleibt die absolute Fuelmasse in kg massgeblich.
 
-## 7. Aircraft inventory
+## 9. Aircraft inventory
 
 Auch die `aircraft`-Rueckgabe von `STORAGE:GetInventory()` wird read-only verglichen. Sie dient als zusaetzliche Lifecycle-Telemetrie, ohne CampaignState-Airframehoheit zu veraendern.
 
-## 8. Nicht Bestandteil
+## 10. Nicht Bestandteil
 
 `Controlled Partial Expenditure + Return` wird in diesem Census weiterhin nicht erzwungen. Der aktuell gepinnte Stand liefert fuer die unterschiedlichen Waffensysteme keinen allgemein deterministischen, source-reviewten Mechanismus, der eine exakt definierte Teilabgabe garantiert.
 
@@ -216,7 +257,7 @@ entspricht die Fuel-Recovery plausibel dem unmittelbar vor Return verbleibenden 
 
 Danach bleiben nur noch gezielte Verbrauchsluecken wie M230/M789, GAU-8/Munition, M3P sowie ein deterministischer Partial-Expenditure-Pfad.
 
-## 9. MOOSE-Stand
+## 11. MOOSE-Stand
 
 ```text
 MOOSE release: 2.9.18
@@ -240,11 +281,14 @@ AUFTRAG:SetTime()
 AUFTRAG:SetDuration()
 AUFTRAG:SetROE()
 AUFTRAG:SetROT()
+AUFTRAG:GetState()
+AUFTRAG:IsSuccess()
 AUFTRAG:Cancel()
 AIRWING:AddMission()
 AIRWING:OnAfterFlightOnMission
 OPSGROUP:GetGroup()
 FLIGHTGROUP:GetFuelMin()
+FLIGHTGROUP:GetState()
 FLIGHTGROUP:OnAfterLanded
 FLIGHTGROUP:OnAfterArrived
 UNIT:GetCurrentFuelKgs()
@@ -252,9 +296,11 @@ SCHEDULER:New()
 MESSAGE:New(...):ToAll()
 ```
 
+V2 fuehrt keine neue MOOSE-Klasse und keinen neuen produktiven MOOSE-Pfad ein. Offizielle Demo-/Testmissionen wurden fuer die reine Timeout-/Diagnostik-Korrektur nicht als zusaetzliche Voraussetzung bewertet; die verwendeten Methoden und Statusabfragen wurden direkt gegen die tatsaechlich gepinnte `Moose.lua` geprueft.
+
 Der Harness verwendet fuer die Census-Logik keine nicht dokumentierten MOOSE-Felder wie `squadron.ngrouping` oder Payload-interne IDs.
 
-## 10. Build
+## 12. Build
 
 Source:
 
@@ -277,10 +323,10 @@ mission/tests/airops-storage-fuel-template-census/dist/OMW_AirOps_Storage_Fuel_T
 BuilderVersion:
 
 ```text
-AIROPS-STORAGE-FUEL-TEMPLATE-CENSUS-1
+AIROPS-STORAGE-FUEL-TEMPLATE-CENSUS-2
 ```
 
-## 11. Acceptance-Grenze
+## 13. Acceptance-Grenze
 
 Ein finales `status=COMPLETE` bedeutet nur, dass alle 32 Template-Faelle strukturell beobachtet wurden. `COMPLETE_WITH_GAPS` bedeutet, dass der Lauf beendet wurde, aber einzelne Faelle oder Lanes nicht vollstaendig beobachtet werden konnten.
 
