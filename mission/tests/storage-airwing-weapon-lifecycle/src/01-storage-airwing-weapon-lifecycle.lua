@@ -3,7 +3,7 @@
 -- OPSGROUP:Destroy() call used to exercise the native aircraft-loss path.
 
 local TAG = "[OMW][StorageAirwingWeaponLifecycle]"
-local TEST_ID = "STORAGE-AIRWING-WEAPON-LIFECYCLE-5"
+local TEST_ID = "STORAGE-AIRWING-WEAPON-LIFECYCLE-6"
 local START_DELAY_S = 20
 local POLL_INTERVAL_S = 5
 local POST_EVENT_OBSERVE_S = 15
@@ -24,6 +24,15 @@ local EXPECTED_AH64_DEBIT = {
   [ITEM_M151] = 76,
   [ITEM_AGM114K] = 4,
   [ITEM_COMBOPAK] = 2,
+}
+
+-- The two AH-64 legs execute sequentially. V2 already demonstrated full no-fire
+-- recredit for M151 and AGM-114K, so those stores only need one TwoShip debit at
+-- baseline. IAFS did not recredit in V2 and therefore needs stock for both legs.
+local BASELINE_MINIMUM_AH64_STOCK = {
+  [ITEM_M151] = 76,
+  [ITEM_AGM114K] = 4,
+  [ITEM_COMBOPAK] = 4,
 }
 
 local NODES = {
@@ -167,17 +176,18 @@ local function captureBaseline()
   end
 
   local shindand = runtime.baseline.SHINDAND_HELIPORT
-  for item, required in pairs(EXPECTED_AH64_DEBIT) do
+  for item, minimum in pairs(BASELINE_MINIMUM_AH64_STOCK) do
     local amount = shindand and shindand[item] or nil
     if type(amount) ~= "number" then error("Required Shindand key missing: " .. tostring(item)) end
-    if amount < required * 2 then
-      error(string.format("Insufficient Shindand stock for control+loss item=%s amount=%s required=%d", item, tostring(amount), required * 2))
+    log(string.format("BASELINE_REQUIREMENT item=%s amount=%s minimum=%d", item, tostring(amount), minimum))
+    if amount < minimum then
+      error(string.format("Insufficient Shindand stock item=%s amount=%s minimum=%d", item, tostring(amount), minimum))
     end
   end
 
   runtime.baselineValidated = true
   runtime.storageObservationValid = true
-  log(string.format("BASELINE_VALIDATED shindandWeaponKeys=%d bagramWeaponKeys=%d m151=%s agm114k=%s comboPak=%s", mapCount(shindand), mapCount(runtime.baseline.BAGRAM), tostring(shindand[ITEM_M151]), tostring(shindand[ITEM_AGM114K]), tostring(shindand[ITEM_COMBOPAK])))
+  log(string.format("BASELINE_VALIDATED shindandWeaponKeys=%d bagramWeaponKeys=%d m151=%s agm114k=%s comboPak=%s minimumM151=76 minimumAgm114k=4 minimumComboPak=4", mapCount(shindand), mapCount(runtime.baseline.BAGRAM), tostring(shindand[ITEM_M151]), tostring(shindand[ITEM_AGM114K]), tostring(shindand[ITEM_COMBOPAK])))
 end
 
 local function logSnapshot(label)
