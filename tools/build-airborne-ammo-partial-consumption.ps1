@@ -21,15 +21,24 @@ if (-not (Test-Path -LiteralPath $sourceFile -PathType Leaf)) {
 $source = Get-Content -LiteralPath $sourceFile -Raw -Encoding UTF8
 
 $requiredMarkers = @(
-    'AIRBORNE-AMMO-PARTIAL-CONSUMPTION-1',
+    'AIRBORNE-AMMO-PARTIAL-CONSUMPTION-2',
     'TPL_TEST_RED_VEHICLE_02_01',
-    'TARGET_DISTANCE_M = 10000',
+    'targetDistanceM = 20000',
+    'targetDistanceM = 12000',
+    'TARGET_BEARING_OFFSETS',
+    'TARGET_DISTANCE_OFFSETS_M',
+    'TARGET_FLAT_RADIUS_M = 35',
+    'TARGET_MAX_STEEPNESS_PERCENT = 8',
+    'GetClosestPointToRoad()',
+    'IsInFlatArea(TARGET_FLAT_RADIUS_M, TARGET_MAX_STEEPNESS_PERCENT)',
     'SPAWN:NewWithAlias',
     'SpawnFromCoordinate',
     'AUFTRAG:NewSTRAFING',
     'ENUMS.WeaponFlag.GunPod + ENUMS.WeaponFlag.BuiltInCannon',
     'AI.Task.WeaponExpend.QUARTER',
     'SetEngageQuantity(2)',
+    'FlightGroup:SetOptionLandingRestrictPair()',
+    'productiveGroupingPreserved=true',
     'FlightGroup:AddMission(strafe)',
     'flightGroup:GetAmmoTot()',
     'local aircraft, liquids, weapons = storage:GetInventory()',
@@ -38,6 +47,8 @@ $requiredMarkers = @(
     'TPL_AIR_US_JBAD_OH58D_RECON_2SHIP',
     'TPL_AIR_US_SHND_AH64D_CAS_2SHIP',
     'NO_GUN_CONSUMPTION',
+    'targetPlacement=ROAD_FLAT_SEARCH',
+    'landingRestrictPair=true',
     'realExpenditure=true'
 )
 
@@ -71,7 +82,9 @@ $forbiddenPatterns = @(
     'os\.',
     'ReturnToLegion\s*\(',
     'SetTeleport\s*\(',
-    'FlightGroup:Destroy\s*\('
+    'FlightGroup:Destroy\s*\(',
+    'SetDespawnAfterLanding\s*\(',
+    'SetDespawnAfterHolding\s*\('
 )
 
 foreach ($pattern in $forbiddenPatterns) {
@@ -95,7 +108,7 @@ $header = @"
 -- BaseCommit: $baseCommit
 -- MOOSE-Commit: $mooseCommit
 -- Moose.lua-SHA256: $mooseSha256
--- Scope: real DCS cannon expenditure against test-local RED target clones; read-only onboard ammo/STORAGE/fuel observation.
+-- Scope: real DCS cannon expenditure against MOOSE-resolved flat-road RED target clones; read-only onboard ammo/STORAGE/fuel observation; MOOSE landing-pair restriction.
 
 "@
 
@@ -111,12 +124,18 @@ Write-Host "BaseCommit: $baseCommit"
 Write-Host "CasesExpected: 3"
 Write-Host "Cases: A10C_GAU8,OH58D_M3P,AH64D_M230"
 Write-Host "TargetTemplate: TPL_TEST_RED_VEHICLE_02_01"
-Write-Host "TargetDistanceMeters: 10000"
+Write-Host "TargetPlacement: MOOSE_ROAD_FLAT_SEARCH"
+Write-Host "A10TargetDistanceMeters: 20000"
+Write-Host "HelicopterTargetDistanceMeters: 12000"
+Write-Host "TargetFlatRadiusMeters: 35"
+Write-Host "TargetMaxSteepnessPercent: 8"
 Write-Host "TargetSpawn: MOOSE_SPAWN_FROM_COORDINATE"
 Write-Host "MissionType: STRAFING"
 Write-Host "WeaponType: GUNPOD_PLUS_BUILTIN_CANNON"
 Write-Host "WeaponExpend: QUARTER"
 Write-Host "EngageQuantity: 2"
+Write-Host "LandingPairPolicy: RESTRICT_PAIR_PER_ASSIGNED_FLIGHTGROUP"
+Write-Host "ProductiveSquadronGrouping: PRESERVED"
 Write-Host "OnboardAmmoObservation: ASSIGNED_AND_LANDED_OR_ARRIVED"
 Write-Host "StorageWeaponObservation: REQUIRED"
 Write-Host "JetFuelObservation: SECONDARY"
@@ -125,6 +144,7 @@ Write-Host "StorageMutation: ABSENT"
 Write-Host "CampaignStateMutation: ABSENT"
 Write-Host "DirectNativeSpawn: ABSENT"
 Write-Host "CustomReturnToLegionCall: ABSENT"
+Write-Host "DespawnRecoveryWorkaround: ABSENT"
 Write-Host "AssignmentTimeoutSeconds: 600"
 Write-Host "LifecycleTimeoutSeconds: 3600"
 Write-Host "GlobalTimeoutSeconds: 7200"
