@@ -8,7 +8,7 @@ $repoRoot = Split-Path -Parent $PSScriptRoot
 $sourceFile = Join-Path $repoRoot 'mission\tests\airborne-ammo-partial-consumption\src\01-airborne-ammo-partial-consumption.lua'
 $distDir = Join-Path $repoRoot 'mission\tests\airborne-ammo-partial-consumption\dist'
 $outputFile = Join-Path $distDir 'OMW_Airborne_Ammo_Partial_Consumption.lua'
-$builderVersion = 'AIRBORNE-AMMO-PARTIAL-CONSUMPTION-1'
+$builderVersion = 'AIRBORNE-AMMO-PARTIAL-CONSUMPTION-2'
 $mooseCommit = '73d3ed119cd9e7e3f2cfcabbaa34513d30529b54'
 $mooseSha256 = 'e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915'
 $baseBranch = 'agent/airops-storage-fuel-template-census'
@@ -31,7 +31,7 @@ $requiredMarkers = @(
     'AI.Task.WeaponExpend.QUARTER',
     'SetEngageQuantity(2)',
     'FlightGroup:AddMission(strafe)',
-    'FlightGroup:GetAmmoTot()',
+    'flightGroup:GetAmmoTot()',
     'local aircraft, liquids, weapons = storage:GetInventory()',
     'STORAGE.Liquid.JETFUEL',
     'TPL_AIR_US_KAF_A10C_CAS_2SHIP',
