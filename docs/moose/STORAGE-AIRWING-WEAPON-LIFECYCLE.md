@@ -4,7 +4,7 @@ status: PLANNED
 document_class: MOOSE_TECHNICAL_NOTE
 owning_policy: OMW-GOV-001
 authoritative_for:
-  - source-reviewed MOOSE lifecycle used by STORAGE-AIRWING-WEAPON-LIFECYCLE-5
+  - source-reviewed MOOSE lifecycle used by STORAGE-AIRWING-WEAPON-LIFECYCLE-6
   - normal AIRWING return versus deliberate OPSGROUP aircraft-loss path
   - exact STORAGE:GetInventory return contract
   - F-16 droptank runtime correlation
@@ -44,7 +44,7 @@ Der korrekte Aufruf ist deshalb:
 local aircraft, liquids, weapons = storage:GetInventory()
 ```
 
-V1 verletzte diesen Vertrag und ist als STORAGE-Evidenz verworfen. V5 erzwingt drei Tabellen und nichtleere Weapon-Inventories an allen sieben Endpunkten.
+V1 verletzte diesen Vertrag und ist als STORAGE-Evidenz verworfen. V6 erzwingt drei Tabellen und nichtleere Weapon-Inventories an allen sieben Endpunkten.
 
 ## 3. Normaler AIRWING-Return
 
@@ -70,9 +70,33 @@ native return:
   IAFS_ComboPak_100       0
 ```
 
-V5 wiederholt **nur einen** normalen AH-64-Kontrollreturn, um den aktuellen Lauf gegen diesen bekannten Debit zu verankern; eine zweite identische No-Fire-Wiederholung wird nicht erneut bezahlt.
+V6 wiederholt **nur einen** normalen AH-64-Kontrollreturn, um den aktuellen Lauf gegen diesen bekannten Debit zu verankern; die zweite AH-64-Materialisierung dient dem Loss-Pfad.
 
-## 4. Deliberater Aircraft-Loss: MOOSE-first
+## 4. V5 Precondition-Fail und V6-Korrektur
+
+V5 brach vor der ersten Lifecycle-Phase ab, weil der Baseline-Guard pauschal `EXPECTED_AH64_DEBIT * 2` verlangte. Bei realem Shindand-Bestand `M151=100` fuehrte das zu `required=152`.
+
+Diese Voraussetzung war fachlich falsch: beide AH-64-Legs laufen sequenziell und V2 hatte bereits den vollstaendigen No-Fire-Recredit fuer M151 und AGM-114K belegt. Nur IAFS wurde nicht recreditiert.
+
+V6 trennt deshalb Debit-Erwartung und Baseline-Mindestbestand:
+
+```text
+EXPECTED_AH64_DEBIT per TwoShip:
+  M151                 76
+  AGM-114K              4
+  IAFS_ComboPak_100     2
+
+BASELINE_MINIMUM_AH64_STOCK:
+  M151                 76
+  AGM-114K              4
+  IAFS_ComboPak_100     4
+```
+
+Der Builder enthaelt zusaetzlich eine statische Regression-Sperre gegen eine erneute pauschale `required * 2`-Logik und prueft die drei Mindestwerte.
+
+Der V5-Abbruch ist damit ausschliesslich ein Harness-Precondition-Fail und kein DCS-/MOOSE-Lifecycle-Ergebnis.
+
+## 5. Deliberater Aircraft-Loss: MOOSE-first
 
 Der gepinnte `OPSGROUP` stellt einen oeffentlichen Loss-Pfad bereit:
 
@@ -107,7 +131,7 @@ legion present
 -> legion:AssetDead(asset, request)
 ```
 
-V5 verwendet deshalb fuer den Loss-Teil **`FlightGroup:Destroy()`**, nicht native `Unit.destroy()`, nicht `GROUP:Destroy()` und keine selbst erfundene Loss-FSM.
+V6 verwendet deshalb fuer den Loss-Teil **`FlightGroup:Destroy()`**, nicht native `Unit.destroy()`, nicht `GROUP:Destroy()` und keine selbst erfundene Loss-FSM.
 
 Der Test misst davor und danach ueber die geerbte oeffentliche `COHORT:CountAssets()`-Methode der SQUADRON:
 
@@ -120,7 +144,7 @@ squadron:CountAssets()     -- all cohort assets
 
 Auch die STORAGE-Waffen nach dem Loss werden klassifiziert (`NONE`, `PARTIAL`, `FULL`). Damit zeigt derselbe Lauf, ob DCS nach einem verlorenen Asset dennoch Material zurueckbucht.
 
-## 5. F-16C Droptank-Korrelation
+## 6. F-16C Droptank-Korrelation
 
 Die Bagram-Foundation liefert:
 
@@ -132,7 +156,7 @@ TPL_AIR_US_BGRM_F16C_CAS_2SHIP
 
 `AUFTRAG:AssignSquadrons({ bagram.Squadrons.F16C })` beschraenkt die Testmission auf diese SQUADRON. `AUFTRAG:SetROE(ENUMS.ROE.WeaponHold)` verhindert beabsichtigten Waffenverbrauch.
 
-Obwohl der gepinnte Enum-Bestand mehrere F-16-/Fuel-Tank-Keys enthaelt, wird **kein** konkreter Key vorausgesetzt. V5 bildet unmittelbar vor und nach der Materialisierung das Bagram-Weapon-Inventar ab und sucht positive Debits unter:
+Obwohl der gepinnte Enum-Bestand mehrere F-16-/Fuel-Tank-Keys enthaelt, wird **kein** konkreter Key vorausgesetzt. V6 bildet unmittelbar vor und nach der Materialisierung das Bagram-Weapon-Inventar ab und sucht positive Debits unter:
 
 ```text
 weapons.droptanks.
@@ -144,7 +168,7 @@ Nach Eigentuemerangabe traegt jedes Flugzeug des OMW-F-16-TwoShip-Templates zwei
 4 tank items
 ```
 
-Ein anderer beobachteter Wert wird als `tankDebitExpectedMatched=false` protokolliert, beendet aber nicht den restlichen Return-Test. Das verhindert einen unnoetigen weiteren manuellen DCS-Lauf nur wegen einer unerwarteten DCS-Key-/Mengensemantik.
+Ein anderer beobachteter Wert wird als `tankDebitExpectedMatched=false` protokolliert, beendet aber nicht den restlichen Return-Test.
 
 Return-Klassen:
 
@@ -155,7 +179,7 @@ PARTIAL
 NOT_OBSERVED
 ```
 
-## 6. Weitere verwendete MOOSE-Pfade
+## 7. Weitere verwendete MOOSE-Pfade
 
 Source-reviewed im gepinnten Stand:
 
@@ -180,8 +204,8 @@ MESSAGE:New(...):ToAll()
 
 `Landed` bleibt optionale Telemetrie. Ein realistischer Anlass-/Taxi-/Takeoff-/Flugablauf ist fuer die Materialization/Return/Loss-Warehousefrage kein Acceptance-Kriterium.
 
-## 7. Grenzen
+## 8. Grenzen
 
-V5 testet nicht spekulativ `Controlled Partial Expenditure`. Zwar existieren DCS-/MOOSE-Angriffstasks und WeaponExpend-Parameter, aber auf diesem Branch ist noch kein deterministischer Zielpfad belegt, der fuer den AH-64 exakt eine definierte AGM-/Rocket-Abgabe garantiert. Dieser Punkt wird mit spaeteren Waffenverbrauchs-Mappings gebuendelt statt durch einen fragilen Angriff in diesen Lauf eingebaut.
+V6 testet nicht spekulativ `Controlled Partial Expenditure`. Zwar existieren DCS-/MOOSE-Angriffstasks und WeaponExpend-Parameter, aber auf diesem Branch ist noch kein deterministischer Zielpfad belegt, der fuer den AH-64 exakt eine definierte AGM-/Rocket-Abgabe garantiert. Dieser Punkt wird mit spaeteren Waffenverbrauchs-Mappings gebuendelt statt durch einen fragilen Angriff in diesen Lauf eingebaut.
 
 Eine fehlende Tank-Rueckgabe autorisiert weiterhin **keine** produktive Fake-Recredit-Logik. Eine solche Mutation waere ein eigener, explizit zu genehmigender Adapter-Scope.
