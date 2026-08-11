@@ -1,6 +1,6 @@
 ---
 document_id: OMW-MOOSE-AIRBORNE-AMMO-PARTIAL-CONSUMPTION
-status: TECHNICAL_DRAFT
+status: PLANNED
 document_class: MOOSE_TECHNICAL_NOTE
 owning_policy: OMW-GOV-MOOSE-FIRST
 authoritative_for:
@@ -9,6 +9,8 @@ authoritative_for:
   - test-local landing-pair restriction boundary
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
+supersedes:
+superseded_by:
 source_branch: agent/airborne-ammo-partial-consumption
 source_commit: PENDING_MERGE
 validated_in_dcs: false
