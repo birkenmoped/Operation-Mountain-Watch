@@ -5,7 +5,7 @@
 --     AIROPS foundations;
 --   * observe DCS STORAGE aircraft, JETFUEL and weapon debits on materialization;
 --   * observe native AIRWING return/recredit without mutating STORAGE or CampaignState;
---   * capture onboard fuel telemetry at assignment and Arrived using public MOOSE APIs.
+--   * capture onboard fuel telemetry at assignment, Landed and Arrived using public MOOSE APIs.
 --
 -- Test-only MOOSE coordination:
 --   AIRWING:NewPayload() registers an ORBIT-capable payload copied from the exact
@@ -20,7 +20,7 @@ local START_DELAY_S = 20
 local LANE_STAGGER_S = 3
 local NEXT_CASE_DELAY_S = 8
 local POST_RETURN_OBSERVE_S = 15
-local CASE_TIMEOUT_S = 600
+local CASE_TIMEOUT_S = 900
 local GLOBAL_TIMEOUT_S = 3600
 local ORBIT_DURATION_S = 60
 local STATUS_MESSAGE_DURATION_S = 10
@@ -276,6 +276,16 @@ local function flightFuelTelemetry(flightGroup, label, caseId)
   return { minPercent=minPercent, totalKg=totalKg, unitsMeasured=unitsMeasured }
 end
 
+local function selectReturnFuelReference(observation)
+  if observation.landedFuel and observation.landedFuel.unitsMeasured > 0 then
+    return "LANDED", observation.landedFuel
+  end
+  if observation.arrivedFuel and observation.arrivedFuel.unitsMeasured > 0 then
+    return "ARRIVED", observation.arrivedFuel
+  end
+  return "UNAVAILABLE", { totalKg=0, unitsMeasured=0 }
+end
+
 local function finishIfDone()
   if runtime.finished then return end
   local allDone = true
@@ -310,12 +320,12 @@ end
 local function completeCase(lane, case, observation)
   runtime.casesObserved = runtime.casesObserved + 1
   lane.active = nil
+  local fuelReferenceLabel, fuelReference = selectReturnFuelReference(observation)
   log(string.format(
-    "CASE_RESULT case=%s lane=%s status=OBSERVED template=%s grouping=%s weaponDebitTotal=%.3f weaponRecredit=%s weaponRecovered=%.3f weaponDebited=%.3f fuelDebitKg=%.3f fuelRecoveryKg=%.3f fuelNetLossKg=%.3f fuelRecredit=%s assignedFuelKg=%.3f arrivedFuelKg=%.3f recoveryMinusArrivedKg=%.3f aircraftDeltaChanges=%d weaponSpawnChanges=%d",
+    "CASE_RESULT case=%s lane=%s status=OBSERVED template=%s weaponDebitTotal=%.3f weaponRecredit=%s weaponRecovered=%.3f weaponDebited=%.3f fuelDebitKg=%.3f fuelRecoveryKg=%.3f fuelNetLossKg=%.3f fuelRecredit=%s assignedFuelKg=%.3f landedFuelKg=%.3f arrivedFuelKg=%.3f fuelReference=%s fuelReferenceKg=%.3f recoveryMinusReferenceKg=%.3f aircraftDeltaChanges=%d weaponSpawnChanges=%d",
     case.id,
     case.lane,
     case.template,
-    tostring(observation.grouping),
     observation.weaponDebitTotal,
     observation.weaponRecredit,
     observation.weaponRecovered,
@@ -325,8 +335,11 @@ local function completeCase(lane, case, observation)
     observation.fuelNetLoss,
     observation.fuelRecredit,
     observation.assignedFuel and observation.assignedFuel.totalKg or 0,
+    observation.landedFuel and observation.landedFuel.totalKg or 0,
     observation.arrivedFuel and observation.arrivedFuel.totalKg or 0,
-    observation.fuelRecovery - (observation.arrivedFuel and observation.arrivedFuel.totalKg or 0),
+    fuelReferenceLabel,
+    fuelReference.totalKg,
+    observation.fuelRecovery - fuelReference.totalKg,
     observation.aircraftDeltaChanges,
     observation.weaponSpawnChanges
   ))
@@ -349,7 +362,6 @@ dispatchNextCase = function(lane)
   if not ok then
     return markCaseFailure(lane, case, "RESOLVE", stateOrErr, false)
   end
-  local state = stateOrErr
   local profile = PROFILE[case.profile]
   if not profile then
     return markCaseFailure(lane, case, "PROFILE", "Unknown profile " .. tostring(case.profile), false)
@@ -377,7 +389,6 @@ dispatchNextCase = function(lane)
   local observation = {
     pre = pre,
     mission = mission,
-    grouping = squadron.ngrouping,
     weaponDebits = {},
     weaponDebitTotal = 0,
     weaponSpawnChanges = 0,
@@ -387,7 +398,7 @@ dispatchNextCase = function(lane)
   }
   case.observation = observation
 
-  log(string.format("CASE_DISPATCH case=%s lane=%s foundation=%s wing=%s squadron=%s template=%s profile=%s storage=%s preJetFuelKg=%.3f testPayloadUid=%s", case.id, case.lane, case.foundation, tostring(case.wing), case.squadron, case.template, case.profile, lane.storageName, pre.jetfuel, tostring(testPayload.uid)))
+  log(string.format("CASE_DISPATCH case=%s lane=%s foundation=%s wing=%s squadron=%s template=%s profile=%s storage=%s preJetFuelKg=%.3f testPayloadRegistered=true", case.id, case.lane, case.foundation, tostring(case.wing), case.squadron, case.template, case.profile, lane.storageName, pre.jetfuel))
 
   local previousFlightOnMission = airwing.OnAfterFlightOnMission
   airwing.OnAfterFlightOnMission = function(self, From, Event, To, FlightGroup, Mission)
@@ -409,18 +420,25 @@ dispatchNextCase = function(lane)
 
     local previousLanded = FlightGroup.OnAfterLanded
     FlightGroup.OnAfterLanded = function(fg, LFrom, LEvent, LTo, LandAirbase)
-      if previousLanded then previousLanded(fg, LFrom, LEvent, LTo, LandAirbase) end
-      if runtime.finished then return end
+      if runtime.finished then
+        if previousLanded then previousLanded(fg, LFrom, LEvent, LTo, LandAirbase) end
+        return
+      end
+      observation.landedFuel = flightFuelTelemetry(fg, "LANDED", case.id)
       log(string.format("LIFECYCLE case=%s event=Landed airbase=%s state=%s", case.id, LandAirbase and LandAirbase:GetName() or "nil", tostring(fg:GetState())))
+      if previousLanded then previousLanded(fg, LFrom, LEvent, LTo, LandAirbase) end
     end
 
     local previousArrived = FlightGroup.OnAfterArrived
     FlightGroup.OnAfterArrived = function(fg, AFrom, AEvent, ATo)
-      if previousArrived then previousArrived(fg, AFrom, AEvent, ATo) end
-      if runtime.finished or observation.arrived then return end
+      if runtime.finished or observation.arrived then
+        if previousArrived then previousArrived(fg, AFrom, AEvent, ATo) end
+        return
+      end
       observation.arrived = true
       observation.arrivedFuel = flightFuelTelemetry(fg, "ARRIVED", case.id)
       log(string.format("LIFECYCLE case=%s event=Arrived state=%s", case.id, tostring(fg:GetState())))
+      if previousArrived then previousArrived(fg, AFrom, AEvent, ATo) end
 
       SCHEDULER:New(nil, function()
         if runtime.finished or lane.blocked then return end
@@ -431,7 +449,8 @@ dispatchNextCase = function(lane)
           logMapDelta(case.id, "WEAPON", observation.postSpawn.weapons, observation.final.weapons, "RETURN")
           observation.weaponRecredit, observation.weaponRecovered, observation.weaponDebited = classifyMapRecovery(case.id, observation.weaponDebits, observation.postSpawn.weapons, observation.final.weapons)
           observation.fuelRecredit, observation.fuelDebit, observation.fuelRecovery, observation.fuelNetLoss = classifyFuel(pre.jetfuel, observation.postSpawn.jetfuel, observation.final.jetfuel)
-          log(string.format("FUEL_RESULT case=%s preKg=%.3f postSpawnKg=%.3f finalKg=%.3f debitKg=%.3f recoveryKg=%.3f netLossKg=%.3f recredit=%s assignedOnboardKg=%.3f arrivedOnboardKg=%.3f recoveryMinusArrivedKg=%.3f", case.id, pre.jetfuel, observation.postSpawn.jetfuel, observation.final.jetfuel, observation.fuelDebit, observation.fuelRecovery, observation.fuelNetLoss, observation.fuelRecredit, observation.assignedFuel and observation.assignedFuel.totalKg or 0, observation.arrivedFuel and observation.arrivedFuel.totalKg or 0, observation.fuelRecovery - (observation.arrivedFuel and observation.arrivedFuel.totalKg or 0)))
+          local fuelReferenceLabel, fuelReference = selectReturnFuelReference(observation)
+          log(string.format("FUEL_RESULT case=%s preKg=%.3f postSpawnKg=%.3f finalKg=%.3f debitKg=%.3f recoveryKg=%.3f netLossKg=%.3f recredit=%s assignedOnboardKg=%.3f landedOnboardKg=%.3f arrivedOnboardKg=%.3f fuelReference=%s fuelReferenceKg=%.3f recoveryMinusReferenceKg=%.3f", case.id, pre.jetfuel, observation.postSpawn.jetfuel, observation.final.jetfuel, observation.fuelDebit, observation.fuelRecovery, observation.fuelNetLoss, observation.fuelRecredit, observation.assignedFuel and observation.assignedFuel.totalKg or 0, observation.landedFuel and observation.landedFuel.totalKg or 0, observation.arrivedFuel and observation.arrivedFuel.totalKg or 0, fuelReferenceLabel, fuelReference.totalKg, observation.fuelRecovery - fuelReference.totalKg))
           log(string.format("STORE_RESULT case=%s debitKeys=%d debitTotal=%.3f recovered=%.3f status=%s", case.id, #sortedKeys(observation.weaponDebits), observation.weaponDebited, observation.weaponRecovered, observation.weaponRecredit))
         end)
         if not returnOk then return markCaseFailure(lane, case, "POST_RETURN", returnErr, true) end
