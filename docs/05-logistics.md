@@ -36,11 +36,10 @@ Maßgebliche Grundlagen:
 - [`OMW-GOV-MOOSE-FIRST`](26-moose-first-development-policy.md)
 - [`MOOSE-Logistik und Transport`](moose/LOGISTICS-AND-TRANSPORT.md)
 - [`OMW-HIST-AFGHANISTAN-FORCE-BASING-AVIATION`](50-afghanistan-force-basing-aviation-2010-2011.md)
-- [`OMW-HIST-ARMY-AVIATION-COIN-INTELLIGENCE-METRICS`](52-army-aviation-vignettes-and-coin-intelligence-metrics.md)
 - [`OMW-EVIDENCE-NDN-CSIS-2010`](evidence/source-records/northern-distribution-network-csis-2010-source-record.md)
 - [`OMW-EVIDENCE-SDN-PAKISTAN-GLOC`](evidence/source-records/southern-distribution-network-pakistan-gloc-source-record.md)
 
-Dokument 50 ist die quellenqualifizierte historische Referenz für Kräfte-, Basierungs- und Aviation-Sustainment-Fragen. Dokument 52 ergänzt missionsbezogene Army-Aviation-Einsatzmuster. Die NDN- und SDN-Quellenakten dokumentieren strategische Zuführungskorridore und deren Grenzen. Dieses Dokument bleibt für das technische und strategische Logistikmodell autoritativ.
+Dokument 50 ist die quellenqualifizierte historische Referenz für Kräfte-, Basierungs- und Aviation-Sustainment-Fragen. Die NDN- und SDN-Quellenakten dokumentieren strategische Zuführungskorridore und deren Grenzen. Dieses Dokument bleibt für das technische und strategische Logistikmodell autoritativ.
 
 ## 2. Transportarten
 
@@ -166,13 +165,29 @@ Die endgültigen Ressourcennamen und Mengen benötigen eine eigene Datenentschei
 
 ### 6.3 M-ATV und geschützte Mobilität
 
-Bis Ende September 2010 waren laut offizieller Army-Quelle mehr als 5.000 M-ATV nach Afghanistan geliefert. Damit sind M-ATV/MRAP als häufige Fahrzeuge für Patrouillen, Route Security, Convoy Escort, QRF, EOD-/Route-Clearance-Sicherung und Bewegungen zwischen FOBs und COPs historisch gerechtfertigt.
+Bis Ende September 2010 waren laut offizieller Army-Quelle mehr als 5.000 M-ATV nach Afghanistan geliefert. Damit sind M-ATV/MRAP als häufige Fahrzeuge für:
+
+- Patrouillen;
+- Route Security;
+- Convoy Escort;
+- QRF;
+- EOD-/Route-Clearance-Sicherung;
+- Bewegungen zwischen FOBs und COPs
+
+historisch gerechtfertigt.
 
 Die Zahl ist theaterweit und bestimmt keine lokale Sollstärke. Quelle: Dokument 50, S02.
 
 ### 6.4 CH-47-Sustainment-Muster
 
-Die CH-47-Studie belegt getrennte Infiltration, Nachversorgung und Exfiltration, vier Chinooks pro Nacht allein für Nachschub während Dragon Strike, mehrere Turns pro Luftfahrzeug, mehrere PZs/HLZs, Versorgung eingesetzter Kräfte über 48–72 Stunden beziehungsweise zwei bis fünf Tage sowie starke Belastung kleiner vorgeschobener Detachments.
+Die CH-47-Studie belegt:
+
+- getrennte Infiltration, Nachversorgung und Exfiltration;
+- vier Chinooks pro Nacht allein für Nachschub während Dragon Strike;
+- mehrere Turns pro Luftfahrzeug;
+- mehrere PZs/HLZs;
+- Versorgung eingesetzter Kräfte über 48–72 Stunden beziehungsweise zwei bis fünf Tage;
+- starke Belastung kleiner vorgeschobener Detachments.
 
 Für die technische Umsetzung gilt:
 
@@ -186,7 +201,12 @@ Quelle: Dokument 50, S05.
 
 ### 6.5 Maintenance und Mission Readiness
 
-Army-Quellen beschreiben hohen Verschleiß durch hohes OPTEMPO, Wüsten- und Gebirgsbedingungen, begrenzte Depotinstandsetzung im Theater und schneller als geplant alternde Flugzeug- und Fahrzeugflotten.
+Army-Quellen beschreiben hohen Verschleiß durch:
+
+- hohes OPTEMPO;
+- Wüsten- und Gebirgsbedingungen;
+- begrenzte Depotinstandsetzung im Theater;
+- schneller als geplant alternde Flugzeug- und Fahrzeugflotten.
 
 Bis 31.07.2011 wurden Army-weit mehr als 290 Starr- und Drehflügler durch ein spezielles Inspektions-/Reparaturprogramm wieder gefechtsbereit gemacht. Diese Zahl ist kein Afghanistan-Bestand, belegt aber die Größenordnung der Reparaturlast.
 
@@ -217,7 +237,12 @@ Quelle: Dokument 50, S03.
 
 ### 6.6 Rapid Equipping und lokale Varianten
 
-Die Rapid Equipping Force brachte im FY2011 Army-weit mehr als 221 Ausrüstungstypen und 34.245 Einzelgegenstände zu eingesetzten Verbänden. Daraus folgt, dass lokale Sonderausstattung plausibel ist, gleichartige Einheiten unterschiedliche Sensor-, Kommunikations- oder Schutzstände besitzen können und Sonderausstattung quellen- oder missionsbegründet bleiben muss.
+Die Rapid Equipping Force brachte im FY2011 Army-weit mehr als 221 Ausrüstungstypen und 34.245 Einzelgegenstände zu eingesetzten Verbänden. Daraus folgt:
+
+- lokale Sonderausstattung ist plausibel;
+- gleichartige Einheiten können unterschiedliche Sensor-, Kommunikations- oder Schutzstände besitzen;
+- Sonderausstattung muss quellen- oder missionsbegründet sein;
+- sie darf nicht als unbeschränkte Beschaffungsmöglichkeit dienen.
 
 Quelle: Dokument 50, S03.
 
@@ -252,6 +277,15 @@ Für September 2009 nennt die Quelle etwa 30 Prozent der damaligen NDN-Sendungen
 
 Die Quelle belegt damit einen realen strategischen Gütereingang nach Afghanistan, aber nicht die anschließende straßen- oder schienengenaue Verteilung zu einzelnen US-/ISAF-Basen. Insbesondere bestimmt sie keine lokale MSR-Bezeichnung und keine DCS-`PATHLINE`.
 
+Strategische Risiken des NDN:
+
+- politische Abhängigkeit von Russland und zentralasiatischen Transitstaaten;
+- Korruption, Transitgebühren sowie komplizierte Zoll- und Grenzverfahren;
+- Grenzschließungen und zwischenstaatliche Spannungen;
+- regionale Konflikte im Kaukasus;
+- mögliche Angriffe auf Bahn-, Hafen- oder Straßeninfrastruktur;
+- Nutzung wachsender Abhängigkeit als politischer Hebel.
+
 Für OMW gilt daher verbindlich:
 
 1. strategische Theaterzuführung und innerafghanische Verteilung sind getrennte Logistikstufen;
@@ -259,7 +293,21 @@ Für OMW gilt daher verbindlich:
 3. Fracht muss nach dem Eingang in Afghanistan weiterhin über regionale Hubs, Straßenkonvois, Fixed Wing oder Rotary Wing verteilt werden;
 4. eine strategische Transitstörung kann Theaterreserven verzögern, auch wenn lokale MSRs offen sind;
 5. eine lokale MSR-Sperrung kann Versorgung am Ziel verhindern, obwohl der strategische GLOC offen ist;
-6. NDN-Quellen dürfen nicht zur Festlegung lokaler Routenlinien verwendet werden.
+6. NDN-Quellen dürfen nicht zur Festlegung von `MSR EAST-E3` oder anderer lokaler Routenlinien verwendet werden.
+
+Die Quelle beschreibt auch infrastrukturell plausible Iran-Korridore über Chabahar–Zaranj–Delaram, Dogharoun–Herat und Khaf–Herat. Für 2009/2010 bewertet sie eine reguläre US-/NATO-Nutzung aufgrund iranischer Politik, gegenseitigen Misstrauens und US-Sanktionen jedoch als nicht praktikabel. Der direkte China-Wakhan-Zugang wird wegen Gelände, einspuriger unbefestigter Straße und langer Wintersperre als ungeeignet für bedeutende Transportmengen eingeordnet.
+
+Eine spätere CampaignState-Erweiterung darf strategische Ebenen getrennt führen, beispielsweise:
+
+```text
+THEATER_GLOC
+AFGHAN_ENTRY_NODE
+STRATEGIC_HUB
+REGIONAL_HUB
+FOB_COP_DESTINATION
+```
+
+Mögliche GLOC-Zustände wie `OPEN`, `DEGRADED`, `DISRUPTED` und `CLOSED` sind OMW-Designvorschläge, keine Terminologie der historischen Quelle. Umsetzung und Werte benötigen eine eigene Architekturentscheidung, MOOSE-First-Prüfung und Acceptance.
 
 Quelle: [`OMW-EVIDENCE-NDN-CSIS-2010`](evidence/source-records/northern-distribution-network-csis-2010-source-record.md).
 
@@ -294,34 +342,76 @@ Torkham crossing → Bagram logistics hub
 Chaman crossing  → Kandahar logistics hub
 ```
 
+Genannte ungefähre Distanzen:
+
+```text
+Karachi → Bagram:   1.210 miles
+Karachi → Kandahar:   690 miles
+```
+
 Über Pakistan wurden sowohl Unit Equipment als auch Sustainment Materiel transportiert, darunter Fahrzeuge, Lebensmittel, Wasser, Baumaterial, Ersatzteile und Kraftstoff. Hochpriorisierte und sensitive Güter wurden häufiger per Lufttransport bewegt.
 
-Für OMW gilt verbindlich: Torkham und Chaman sind strategische Entry Nodes, keine automatischen lokalen Warehouse-Gutschriften; Bagram und Kandahar sind strategische Hubs, von denen die innerafghanische Verteilung getrennt modelliert wird.
+Für Mai bis November 2009 nennt GAO mehr als 21.500 TEU über die Pakistan-Surface-Routes gegenüber mehr als 4.700 TEU über das damals noch weniger ausgereifte NDN. Diese Werte belegen die damalige Größenordnung, sind aber keine OMW-Lieferfrequenz oder Bestandsvorgabe.
+
+Historische Verwundbarkeiten:
+
+- vollständige Abhängigkeit von privaten Transportauftragnehmern innerhalb Pakistans;
+- keine US-Militärtransporteinheiten und keine US-militärische Ladungssicherung auf diesen Strecken;
+- Angriffe auf Lkw, Terminals und Grenzstaus;
+- Diebstahl beziehungsweise Pilferage;
+- begrenzte RFID- und Positionssichtbarkeit;
+- politisch bedingte Grenzschließungen;
+- Rückstaus in Karachi und an den Grenzübergängen;
+- für Chaman dokumentierte Begrenzung auf insgesamt 100 Lkw pro Tag im GAO-Prüfzeitraum.
+
+Nach dem Eingang an einem afghanischen Logistikhub wurde Fracht weiter zu FOBs und COPs verteilt. GAO beschreibt dafür überwiegend Host-Nation-Contractor-Trucks, ergänzend US-Militär-Lkw und Lufttransport für hochpriorisierte oder sensitive Güter.
+
+Für OMW gilt verbindlich:
+
+1. `Southern Distribution Network / SDN` bezeichnet ausschließlich die Pakistan-GLOC;
+2. der NDN-Kaukasuskorridor heißt bevorzugt `NDN CAUCASUS / POTI ROUTE`, nicht pauschal `Southern Distribution Network`;
+3. Torkham und Chaman sind strategische Entry Nodes, keine automatischen lokalen Warehouse-Gutschriften;
+4. Bagram und Kandahar sind strategische Hubs, von denen die innerafghanische Verteilung getrennt modelliert wird;
+5. die typische Zuordnung Torkham–Bagram entscheidet nicht die konkrete Linienführung von `MSR EAST-E3` zwischen Kabul und Bagram;
+6. die bereitgestellte SDN-Karte ist schematisch und darf nicht als DCS-`PATHLINE` digitalisiert werden.
+
+Zulässige strategische Korridorobjekte:
+
+```text
+GLOC_SDN_TORKHAM
+GLOC_SDN_CHAMAN
+ENTRY_TORKHAM
+ENTRY_WEESH_CHAMAN
+HUB_BAGRAM
+HUB_KANDAHAR
+```
+
+Mögliche Statusfelder wie `borderStatus`, `portBacklog`, `truckAvailability`, `contractorSecurity`, `cargoVisibility`, `transitDelay`, `attackDisruption` und `pilferageRisk` sind OMW-Designvorschläge. Konkrete Werte benötigen eine eigene Datenentscheidung und technische Acceptance.
 
 Quelle: [`OMW-EVIDENCE-SDN-PAKISTAN-GLOC`](evidence/source-records/southern-distribution-network-pakistan-gloc-source-record.md).
 
 ### 6.9 Quantitative Aviation-Nutzungs- und Fuel-Throughput-Benchmarks
 
-Für die laufende Bestands- und Days-of-Supply-Planung werden historische Einsatz- und Durchsatzwerte ausdrücklich als **Plausibilitäts- und Kalibrierungsdaten** geführt. Sie sind keine automatische Warehouse-Sollmenge und dürfen nicht ohne Scope-Prüfung auf einzelne Flugplätze oder Muster heruntergerechnet werden.
+Die laufende AirOps-Ressourcenplanung benötigt neben Typdaten auch historische Einsatz- und Durchsatzwerte. Diese Werte werden ausschließlich als **Plausibilitäts- und Kalibrierungsdaten** geführt; sie sind keine automatische Warehouse-Sollmenge.
 
-| Quelle / Scope | Belegter Wert | Zulässige Verwendung | Nicht zulässige Ableitung |
+| Quelle / Scope | Belegter Wert | Zulässige Verwendung | Unzulässige Ableitung |
 |---|---|---|---|
 | 10th CAB / Task Force Falcon, Afghanistan 2011 | 127.075 Flugstunden in 31.362 Missionen; 1.279 Air Assaults; 2.823 MEDEVAC-Missionen; 298 Phase Inspections; 5.270 Patienten; 18.703.777 US-gal gepumpter Kraftstoff | Brigadeweite OPTEMPO-, Maintenance- und Fuel-Throughput-Plausibilisierung | kein Bagram-only-Verbrauch, kein Verbrauch pro Muster oder Sortie |
-| 6-6 CAV / Task Force Six Shooters, N2KL 2011 | 40-Hubschrauber-Flotte; >30.000 Flugstunden; 13 Battalion-, 30 Company- und >100 SOF-Air-Assaults; >50.000 Passagiere; >1.200 Sling Loads / >7 Mio. lb Cargo; >700 MEDEVAC-Patienten; 60 Hoist-Missionen | regionaler Aviation-Hub-/Task-Force-OPTEMPO und Cargo-/MissionDemand-Kalibrierung | keine Annahme, dass alle 40 Luftfahrzeuge gleichzeitig in Jalalabad standen; keine Fuelmenge ohne separate Quelle |
+| 6-6 CAV / Task Force Six Shooters, N2KL 2011 | 40-Hubschrauber-Flotte; >30.000 Flugstunden; 13 Battalion-, 30 Company- und >100 SOF-Air-Assaults; >50.000 Passagiere; >1.200 Sling Loads / >7 Mio. lb Cargo; >700 MEDEVAC-Patienten; 60 Hoist-Missionen | regionaler Task-Force-OPTEMPO und Cargo-/MissionDemand-Kalibrierung | keine Annahme, dass alle 40 Luftfahrzeuge gleichzeitig in Jalalabad standen; keine Fuelmenge ohne separate Quelle |
 | TF Ready / 5-158 AVN, RC-West 2011 | gestaffelter 60-Tage-Aufbau; Maintenance Company unterstützte 40 Luftfahrzeuge und führte acht Phase Inspections durch | Shindand-/RC-West-Readiness-, Deployment- und Ersatzteil-/Maintenance-Plausibilisierung | 40 Luftfahrzeuge sind kein Shindand-Bestand und keine Musteraufteilung |
 | TF Spearhead / RC-West, Jun–Sep 2011 | >1.000.000 US-gal Kraftstoff in weniger als vier Monaten an US-, Koalitions- und zivile Luftfahrtkunden ausgegeben | regionaler Rotary-Wing-Fuel-Throughput-Check | kein Shindand-only-Verbrauch; Millionengrenze wurde am Camp Victory erreicht |
-| Kandahar Mustang Ramp FARP, 2011 | 50.000-US-gal-JP-8-Bladder-Quelle, sechs Fueling Points, ca. 10.000–15.000 US-gal/Tag bei voller Kapazität | lokaler FARP-Puffer-/Durchsatz-Benchmark; zeigt Größenordnung mehrtägiger Forward-Fuel-Puffer | keine Gleichsetzung mit gesamtem Kandahar-Airfield-Verbrauch oder strategischer Reserve |
+| Kandahar Mustang Ramp FARP, 2011 | 50.000-US-gal-JP-8-Bladder-Quelle, sechs Fueling Points, ca. 10.000–15.000 US-gal/Tag bei voller Kapazität | lokaler FARP-Puffer-/Durchsatz-Benchmark | keine Gleichsetzung mit gesamtem Kandahar-Airfield-Verbrauch oder strategischer Reserve |
 | FOB Salerno FARP, Nov 2011 | Hot-/Cold-Refuel-Betrieb und „thousands of gallons“ Kraftstoff im unmittelbaren FARP-Bereich | Nachweis realer lokaler Fuel-Puffer und FARP-Betrieb | keine exakte Stock- oder Tagesverbrauchszahl |
 | Army cargo helicopters / CH-47 in Afghanistan, Sep 2010 | 60–80 Flugstunden pro Monat gegenüber 20–25 Stunden in CONUS | per-aircraft Heavy-Lift-Utilization-Plausibilität | keine automatische Sortie- oder Fuelrate ohne Missionsprofil und Verbrauchsmodell |
 | C/3-10 AVN Mountain Dustoff, bis Jul 2011 | >2.300 Missionen und >3.500 transportierte Patienten seit Herbst 2010 | MEDEVAC-MissionDemand-/OPTEMPO-Plausibilität | kein per-aircraft Wert ohne belegten Aircraft-Denominator |
-| A/1-169 AVN, Afghanistan 2011 | >5.000 Flugstunden; nahezu sieben Missionen pro Tag über zehn Monate | UH-60-Utility-OPTEMPO-Plausibilität für Bagram-/RC-East-Kontext | keine allgemeine UH-60-Flottenrate und kein lokaler Fuelverbrauch ohne weitere Daten |
+| A/1-169 AVN, Afghanistan 2011 | >5.000 Flugstunden; nahezu sieben Missionen pro Tag über zehn Monate | UH-60-Utility-OPTEMPO-Plausibilität im RC-East-/Bagram-Kontext | keine allgemeine UH-60-Flottenrate und kein lokaler Fuelverbrauch ohne weitere Daten |
 
-Für das aktuelle Ressourcenmodell folgt daraus:
+Für das aktuelle Ressourcenmodell gilt daraus:
 
 1. `aircraft fuel capacity` ist nicht mit `sortie fuel consumption` gleichzusetzen.
 2. Ein belastbarer Mindestbestand benötigt je Muster/Einheit einen nachvollziehbaren Einsatzsatz oder Flugstundenansatz **und** einen belastbaren Verbrauch pro Flugstunde beziehungsweise Missionsprofil.
-3. Brigade- oder Task-Force-Gesamtwerte dürfen nur top-down zur Plausibilisierung eines errechneten OMW-Gesamtbedarfs genutzt werden.
-4. Standortbezogene FARP-Durchsatzwerte sind für lokale Puffer geeignet, aber nicht automatisch für strategische Hauptlager.
+3. Brigade- oder Task-Force-Gesamtwerte dienen nur top-down zur Plausibilisierung eines errechneten OMW-Gesamtbedarfs.
+4. Standortbezogene FARP-Durchsatzwerte eignen sich für lokale Puffer, aber nicht automatisch für strategische Hauptlager.
 5. Split-based Detachments und vorgeschobene FARPs benötigen eigene Puffer; ihr Verbrauch bleibt Teil des Parent-Pools und darf theaterweit nicht doppelt gezählt werden.
 6. Maintenance-/Phase-Inspection-Daten sind neben Fuel und Munition für Ersatzteil- und Aircraft-Availability-Modelle relevant.
 7. Historische Verbrauchswerte und OMW-Designentscheidungen bleiben getrennt. Eine Bestandszahl wird erst verbindlich, wenn sie im zuständigen Ressourcen-/Warehouse-Vertrag ausdrücklich beschlossen ist.
