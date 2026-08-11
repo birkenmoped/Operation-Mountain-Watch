@@ -8,11 +8,12 @@ authoritative_for:
   - normal AIRWING return versus deliberate OPSGROUP aircraft-loss path
   - exact STORAGE:GetInventory return contract
   - F-16 droptank runtime correlation
+  - MOOSE-first coordination for the AIROPS-wide STORAGE/fuel template census
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
 superseded_by:
-source_branch: agent/storage-airwing-weapon-lifecycle
+source_branch: agent/airops-storage-fuel-template-census
 source_commit: PENDING_MERGE
 validated_in_dcs: false
 ---
@@ -209,3 +210,35 @@ MESSAGE:New(...):ToAll()
 V6 testet nicht spekulativ `Controlled Partial Expenditure`. Zwar existieren DCS-/MOOSE-Angriffstasks und WeaponExpend-Parameter, aber auf diesem Branch ist noch kein deterministischer Zielpfad belegt, der fuer den AH-64 exakt eine definierte AGM-/Rocket-Abgabe garantiert. Dieser Punkt wird mit spaeteren Waffenverbrauchs-Mappings gebuendelt statt durch einen fragilen Angriff in diesen Lauf eingebaut.
 
 Eine fehlende Tank-Rueckgabe autorisiert weiterhin **keine** produktive Fake-Recredit-Logik. Eine solche Mutation waere ein eigener, explizit zu genehmigender Adapter-Scope.
+
+## 9. Folgetest: AIROPS-wide STORAGE/Fuel Template Census
+
+Der Folgetest `AIROPS-STORAGE-FUEL-TEMPLATE-CENSUS-1` erweitert die Beobachtung auf alle derzeit produktiven physischen AI-Templates der Foundations Bagram, Jalalabad, Kandahar, Salerno, Shindand und Tarinkot.
+
+Die MOOSE-first-Pruefung ergab, dass `AUFTRAG:NewALERT5()` fuer diesen Zweck **nicht** als generischer Materialisierungsmechanismus verwendet werden darf: der Recruit-Pfad verwendet `Mission.type == ALERT5` fuer die Cohort-Capability-Pruefung, waehrend die aktuellen OMW-SQUADRONs keine ALERT5-Capability deklarieren.
+
+Statt die produktiven SQUADRON-Capabilities testbedingt zu veraendern, nutzt der Census:
+
+```text
+exaktes physisches ME-Template
+-> AIRWING:NewPayload(template, -1, { AUFTRAG.Type.ORBIT }, 100)
+-> AUFTRAG:NewORBIT(...)
+-> AUFTRAG:AssignSquadrons({ squadron })
+-> AUFTRAG:AddRequiredPayload(testPayload)
+-> AIRWING:AddMission(mission)
+-> native Arrived / ReturnToLegion
+```
+
+`AIRWING:NewPayload()` akzeptiert im gepinnten Source auch einen `GROUP`-Wrapper, verwendet daraus die erste Unit und kopiert mit `GetTemplatePayload()` die Pylonenbelegung. ORBIT wird von `AIRWING:NewPayload()` ohnehin als Payload-Capability ergaenzt. `SQUADRON:New()` stellt fuer SQUADRONs standardmaessig ORBIT-Capability bereit. Damit bleibt die Testkoordination vollstaendig innerhalb oeffentlicher MOOSE-Pfade.
+
+Fuer Fuel werden neben `liquids[STORAGE.Liquid.JETFUEL]` in kg zusaetzlich folgende oeffentliche MOOSE-Methoden beobachtet:
+
+```text
+FLIGHTGROUP:GetFuelMin()
+OPSGROUP:GetGroup()
+UNIT:GetCurrentFuelKgs()
+```
+
+Der Census laesst je DCS-STORAGE-Endpunkt nur einen Fall gleichzeitig laufen. Die sieben STORAGE-Lanes duerfen parallel laufen. Dadurch bleiben Deltas pro Warehouse eindeutig, waehrend der Gesamtaufwand gegenueber einer global seriellen 32-Faelle-Ausfuehrung begrenzt wird.
+
+Die testlokalen ORBIT-Payload-Registrierungen sind keine produktive Payload-Baseline. STORAGE und CampaignState werden durch den Harness nicht geschrieben. `Controlled Partial Expenditure` bleibt weiterhin ein spaeterer gezielter Scope, weil kein allgemein deterministischer Verbrauchspfad fuer alle Waffensysteme nachgewiesen ist.
