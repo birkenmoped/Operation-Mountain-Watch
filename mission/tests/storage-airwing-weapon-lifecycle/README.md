@@ -27,7 +27,7 @@ inherited_risk:
 
 ## 1. Aktueller Gate
 
-`STORAGE-AIRWING-WEAPON-LIFECYCLE-5` buendelt drei zusammenhaengende Fragen in **einen** manuellen DCS-Lauf:
+`STORAGE-AIRWING-WEAPON-LIFECYCLE-6` buendelt drei zusammenhaengende Fragen in **einen** manuellen DCS-Lauf:
 
 ```text
 7 STORAGE baselines
@@ -83,7 +83,23 @@ Nach zwei TwoShips standen M151 und AGM-114K wieder auf Baseline, IAFS dagegen n
 
 Der Mission Editor bezeichnet das verwendete IAFS als internen 100-Gal-Treibstofftank. Der gepinnte MOOSE-Enum fuehrt `IAFS_ComboPak_100` unter `weapons.droptanks`. Das beobachtete `-1` pro AH-64 wird daher nicht als M230-/M789-Rundenverbrauch interpretiert.
 
-## 3. Warum V5 den Loss-Pfad mitnimmt
+### V5 Harness-Precondition-Fail
+
+Der V5-Lauf vom 11.08.2026 erreichte keine Lifecycle-Phase. Die Baseline-Pruefung verlangte faelschlich fuer **alle** bekannten AH-64-Stores den zweifachen TwoShip-Debit und brach deshalb bei `M151 amount=100 required=152` ab.
+
+Das war ein Testharness-Fehler, kein DCS-/MOOSE-Ergebnis. Die beiden AH-64-Legs laufen sequenziell und V2 hatte bereits gezeigt, dass M151 und AGM-114K nach dem normalen No-Fire-Return vollstaendig recreditiert werden. Nur IAFS wurde nicht recreditiert.
+
+V6 verwendet deshalb item-spezifische Mindestbestaende:
+
+```text
+M151 minimum:              76
+AGM-114K minimum:           4
+IAFS_ComboPak_100 minimum:  4
+```
+
+Der Builder blockiert zusaetzlich eine erneute pauschale `required * 2`-Precondition und prueft diese drei Mindestwerte statisch.
+
+## 3. Warum V6 den Loss-Pfad mitnimmt
 
 Ein weiterer isolierter DCS-Lauf nur fuer Aircraft Loss waere vermeidbarer Testaufwand. Der gepinnte MOOSE-Stand stellt mit `OPSGROUP:Destroy()` einen oeffentlichen Pfad bereit, der bei Aircraft-Gruppen fuer jede aktuelle Unit ein `UnitLost`-Event erzeugt und anschliessend die Unit entfernt.
 
@@ -96,7 +112,7 @@ all elements destroyed
 -> legion:AssetDead(asset, request)
 ```
 
-ist damit fuer den gezielten Loss-Test der passende MOOSE-first-Pfad. V5 misst vor und nach dem Loss mit `SQUADRON:CountAssets()` / `CountAssets(true)`, ob die Assetgruppe aus dem Cohortbestand verschwindet.
+ist damit fuer den gezielten Loss-Test der passende MOOSE-first-Pfad. V6 misst vor und nach dem Loss mit `SQUADRON:CountAssets()` / `CountAssets(true)`, ob die Assetgruppe aus dem Cohortbestand verschwindet.
 
 Das **beobachtete Ergebnis** wird als `CONFIRMED` oder `NOT_CONFIRMED` protokolliert. Eine unerwartete Semantik beendet den restlichen manuellen DCS-Lauf nicht vorzeitig.
 
@@ -117,7 +133,7 @@ Nach Projektinhaberangabe traegt jedes Flugzeug dieses Templates zwei externe Ta
 2 F-16 x 2 tanks = 4 tank items expected
 ```
 
-V5 hardcodiert **keinen** konkreten F-16-Warehouse-Key. Der reale Key wird aus allen positiven Bagram-Debits mit Prefix
+V6 hardcodiert **keinen** konkreten F-16-Warehouse-Key. Der reale Key wird aus allen positiven Bagram-Debits mit Prefix
 
 ```text
 weapons.droptanks.
@@ -125,7 +141,7 @@ weapons.droptanks.
 
 direkt nach Materialisierung ermittelt.
 
-Ein Debit ungleich `4` ist jetzt bewusst **kein Early-Abort**. `tankDebitExpectedMatched=false` wird protokolliert und der Return-Pfad trotzdem bis zum Ende beobachtet. Damit kostet eine unerwartete DCS-Key-/Mengensemantik keinen weiteren 30-Minuten-Lauf nur deshalb, weil der Test vor der Rueckgabe abgebrochen hat.
+Ein Debit ungleich `4` ist bewusst **kein Early-Abort**. `tankDebitExpectedMatched=false` wird protokolliert und der Return-Pfad trotzdem bis zum Ende beobachtet.
 
 Recredit-Klassen:
 
@@ -133,7 +149,7 @@ Recredit-Klassen:
 FULL
 NONE
 PARTIAL
-NOT_OBSERVED   -- wenn gar kein droptank debit sichtbar war
+NOT_OBSERVED
 ```
 
 Keine dieser Klassen implementiert automatisch eine produktive Tankregel. Ob Tanks spaeter unbegrenzt gefuehrt, nicht strategisch gespiegelt oder durch einen genehmigten Adapter korrigiert werden, bleibt eine Eigentuemerentscheidung nach der realen Evidenz.
@@ -146,7 +162,7 @@ MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
 Moose.lua SHA-256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
 ```
 
-Source-reviewed fuer V5:
+Source-reviewed fuer V6:
 
 ```text
 STORAGE:GetInventory() -> aircraft, liquids, weapons
@@ -177,6 +193,7 @@ Foundation fehlt
 STORAGE wrapper fehlt/inkonsistent
 GetInventory contract ungueltig
 Weapon inventory leer
+item-spezifischer AH-64 Mindestbestand nicht vorhanden
 bekannter AH-64 control debit nicht reproduzierbar
 Lua/runtime exception
 Safety timeout
@@ -197,9 +214,7 @@ Ein realistischer Anlass-/Taxi-/Takeoff-/Flugablauf ist fuer diesen Warehouse-Ma
 
 ## 7. Noch nicht Bestandteil
 
-`Controlled Partial Expenditure + Return` bleibt offen. Es wird **nicht** spekulativ in V5 eingebaut, weil auf diesem Branch noch kein deterministischer, source-reviewter Ziel-/Task-Pfad vorliegt, der exakt eine definierte AGM-/Rocket-Abgabe des AH-64 garantiert. Ein unzuverlaessiger Angriff wuerde den manuellen Lauf eher entwerten als Testzeit sparen.
-
-Dieser Scope soll spaeter mit den ohnehin notwendigen Waffenverbrauchs-Mappings gebuendelt werden, statt dafuer einen weiteren isolierten Vorabtest zu bauen.
+`Controlled Partial Expenditure + Return` bleibt offen. Es wird **nicht** spekulativ in V6 eingebaut, weil auf diesem Branch noch kein deterministischer, source-reviewter Ziel-/Task-Pfad vorliegt, der exakt eine definierte AGM-/Rocket-Abgabe des AH-64 garantiert.
 
 Weiter offen:
 
@@ -222,5 +237,5 @@ mission/tests/storage-airwing-weapon-lifecycle/dist/OMW_Storage_Airwing_Weapon_L
 BuilderVersion:
 
 ```text
-STORAGE-AIRWING-WEAPON-LIFECYCLE-5
+STORAGE-AIRWING-WEAPON-LIFECYCLE-6
 ```
