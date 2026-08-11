@@ -8,7 +8,7 @@ $repoRoot = Split-Path -Parent $PSScriptRoot
 $sourceFile = Join-Path $repoRoot 'mission\tests\airops-storage-fuel-template-census\src\01-airops-storage-fuel-template-census.lua'
 $distDir = Join-Path $repoRoot 'mission\tests\airops-storage-fuel-template-census\dist'
 $outputFile = Join-Path $distDir 'OMW_AirOps_Storage_Fuel_Template_Census.lua'
-$builderVersion = 'AIROPS-STORAGE-FUEL-TEMPLATE-CENSUS-1'
+$builderVersion = 'AIROPS-STORAGE-FUEL-TEMPLATE-CENSUS-2'
 $mooseCommit = '73d3ed119cd9e7e3f2cfcabbaa34513d30529b54'
 $mooseSha256 = 'e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915'
 $baseBranch = 'agent/storage-airwing-weapon-lifecycle'
@@ -21,7 +21,7 @@ if (-not (Test-Path -LiteralPath $sourceFile -PathType Leaf)) {
 $source = Get-Content -LiteralPath $sourceFile -Raw -Encoding UTF8
 
 $requiredMarkers = @(
-    'AIROPS-STORAGE-FUEL-TEMPLATE-CENSUS-1',
+    'AIROPS-STORAGE-FUEL-TEMPLATE-CENSUS-2',
     'local aircraft, liquids, weapons = storage:GetInventory()',
     'STORAGE.Liquid.JETFUEL',
     'AIRWING:NewPayload',
@@ -34,6 +34,12 @@ $requiredMarkers = @(
     'unit:GetCurrentFuelKgs()',
     'flightFuelTelemetry(fg, "LANDED", case.id)',
     'selectReturnFuelReference',
+    'logTimeoutDiagnostics',
+    'mission:IsSuccess()',
+    'ASSIGN_TIMEOUT_S = 600',
+    'LIFECYCLE_TIMEOUT_S = 3600',
+    'GLOBAL_TIMEOUT_S = 21600',
+    'POST_RETURN_OBSERVE_S = 30',
     'parallel_by_storage_lane',
     'partialExpenditure=false',
     'storageMutation=false',
@@ -115,8 +121,6 @@ foreach ($pattern in $forbiddenPatterns) {
     }
 }
 
-# The census must use ORBIT-capable test payloads copied from exact ME templates.
-# It must not alter SQUADRON mission capabilities merely to make a test mission recruitable.
 if ($source -match 'squadron:AddMissionCapability') {
     throw 'Census must not mutate production SQUADRON mission capabilities.'
 }
@@ -171,8 +175,11 @@ Write-Host "DirectSpawn: ABSENT"
 Write-Host "CustomReturnToLegionCall: ABSENT"
 Write-Host "OPSTRANSPORT: ABSENT"
 Write-Host "CTLD: ABSENT"
-Write-Host "CaseTimeoutSeconds: 900"
-Write-Host "GlobalTimeoutSeconds: 3600"
+Write-Host "AssignmentTimeoutSeconds: 600"
+Write-Host "LifecycleTimeoutAfterAssignmentSeconds: 3600"
+Write-Host "PostReturnObserveSeconds: 30"
+Write-Host "GlobalTimeoutSeconds: 21600"
+Write-Host "TimeoutDiagnostics: MISSION_FLIGHT_LANDED_ARRIVED_FUEL"
 Write-Host "MOOSECommit: $mooseCommit"
 Write-Host "MooseLuaSHA256: $mooseSha256"
 Write-Host "SHA256: $hash"
