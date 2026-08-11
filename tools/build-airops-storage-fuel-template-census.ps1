@@ -32,6 +32,8 @@ $requiredMarkers = @(
     'ENUMS.ROT.NoReaction',
     'flightGroup:GetFuelMin()',
     'unit:GetCurrentFuelKgs()',
+    'flightFuelTelemetry(fg, "LANDED", case.id)',
+    'selectReturnFuelReference',
     'parallel_by_storage_lane',
     'partialExpenditure=false',
     'storageMutation=false',
@@ -102,7 +104,9 @@ $forbiddenPatterns = @(
     'os\.',
     'SetTeleport\s*\(',
     'ReturnToLegion\s*\(',
-    'FlightGroup:Destroy\s*\('
+    'FlightGroup:Destroy\s*\(',
+    'squadron\.ngrouping',
+    'testPayload\.uid'
 )
 
 foreach ($pattern in $forbiddenPatterns) {
@@ -159,7 +163,7 @@ Write-Host "AircraftInventoryObservation: REQUIRED"
 Write-Host "JetFuelObservation: REQUIRED"
 Write-Host "WeaponInventoryObservation: REQUIRED"
 Write-Host "OnboardFuelMinPercent: REQUIRED"
-Write-Host "OnboardFuelKg: REQUIRED"
+Write-Host "OnboardFuelKg: ASSIGNMENT_AND_LANDED_OR_ARRIVED"
 Write-Host "PartialExpenditure: NOT_INCLUDED"
 Write-Host "StorageMutation: ABSENT"
 Write-Host "CampaignStateMutation: ABSENT"
@@ -167,7 +171,7 @@ Write-Host "DirectSpawn: ABSENT"
 Write-Host "CustomReturnToLegionCall: ABSENT"
 Write-Host "OPSTRANSPORT: ABSENT"
 Write-Host "CTLD: ABSENT"
-Write-Host "CaseTimeoutSeconds: 600"
+Write-Host "CaseTimeoutSeconds: 900"
 Write-Host "GlobalTimeoutSeconds: 3600"
 Write-Host "MOOSECommit: $mooseCommit"
 Write-Host "MooseLuaSHA256: $mooseSha256"
