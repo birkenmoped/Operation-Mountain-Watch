@@ -4,9 +4,10 @@ status: PLANNED
 document_class: MOOSE_TECHNICAL_NOTE
 owning_policy: OMW-GOV-001
 authoritative_for:
-  - source-reviewed MOOSE lifecycle used by STORAGE-AIRWING-WEAPON-LIFECYCLE-3
-  - distinction between Landed, Arrived, ReturnToLegion and STORAGE weapon telemetry
+  - source-reviewed MOOSE lifecycle used by STORAGE-AIRWING-WEAPON-LIFECYCLE-4
+  - distinction between Landed, Arrived, ReturnToLegion and STORAGE weapon/droptank telemetry
   - exact STORAGE:GetInventory return contract for the lifecycle gate
+  - MOOSE squadron-restricted AUFTRAG dispatch for AH-64D and F-16C comparison
   - MOOSE MESSAGE status output for manual DCS lifecycle testing
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
@@ -44,36 +45,30 @@ Damit sind drei Rueckgabewerte zu behandeln:
 local aircraft, liquids, weapons = storage:GetInventory()
 ```
 
-Eine Interpretation als einzelne Tabelle mit `inventory.weapon` oder `inventory.weapons` ist fuer diesen MOOSE-Stand falsch.
-
-Der verworfene V1-Lifecycle-Harness machte genau diesen Fehler und verlor dadurch die Weapon-Tabelle. Der DCS-Lauf vom 2026-08-11 mit `weaponKeys=0` ist deshalb keine STORAGE-Recredit-Evidenz. V2 erzwingt die korrekte Signatur sowohl im Lua-Harness als auch durch statische Builder-Checks und validiert vor dem ersten Dispatch nichtleere Weapon-Inventories sowie die drei bekannten Shindand-AH-64-Keys. V3 behaelt diese Schutzmechanismen unveraendert bei.
+Eine Interpretation als einzelne Tabelle mit `inventory.weapon` oder `inventory.weapons` ist fuer diesen MOOSE-Stand falsch. Der V1-Lifecycle-Harness machte genau diesen Fehler; V2 und alle Nachfolger erzwingen deshalb den Drei-Rueckgabewert-Vertrag und nichtleere Weapon-Inventories.
 
 ## 3. Source-reviewed Lifecycle
 
-### FLIGHTGROUP Landed
+### 3.1 FLIGHTGROUP Landed
 
 `FLIGHTGROUP:onafterLanded(From, Event, To, airbase)` protokolliert die Landung und aktualisiert bei vorhandenem FLIGHTCONTROL dessen Status. Dieser Callback fuehrt selbst keine OMW-STORAGE-Buchung aus.
 
-Der erste V1-DCS-Lauf des Lifecycle-Gates lieferte fuer beide Sorties keinen User-`OnAfterLanded`-Callback. Deshalb bleibt `Landed` in V3 zusaetzliche Telemetrie und darf fuer diesen Gate nicht als zwingender Recovery-Anker vorausgesetzt werden.
+Im realen AH-64-Lifecycle wurde der benutzerdefinierte `OnAfterLanded`-Callback nicht verlaesslich beobachtet. `Landed` bleibt deshalb zusaetzliche Telemetrie und ist kein PASS-Anker dieses Warehouse-Gates.
 
-### FLIGHTGROUP Arrived
+### 3.2 FLIGHTGROUP Arrived und nativer ReturnToLegion-Pfad
 
-`FLIGHTGROUP:onafterArrived(From, Event, To)` behandelt das vollstaendige Ankommen. Fuer AI-Fluege mit zugeordnetem AIRWING und ohne Pickup-/Transportzustand gilt im gepinnten Source-Pfad:
+`FLIGHTGROUP:onafterArrived(From, Event, To)` behandelt das vollstaendige Ankommen. Fuer AI-Fluege mit zugeordnetem AIRWING und ohne Pickup-/Transportzustand fuehrt der gepinnte Source-Pfad zu:
 
 ```text
 GetAirwing()
 -> ReturnToLegion(1)
 ```
 
-Der V1-DCS-Lauf beobachtete `Arrived` fuer beide AH-64D-Sorties sowie einen erfolgreichen zweiten Dispatch nach dem ersten Return. Diese Teilergebnisse sind informativ fuer den AIRWING-/FLIGHTGROUP-Lifecycle, validieren wegen der defekten STORAGE-Auswertung aber keine Recredit-Semantik.
+Der Test beobachtet diesen Lifecycle und ruft `ReturnToLegion()` nicht selbst auf. Fuer die konkrete Warehouse-Fragestellung ist ein realistisch langer Anlass-/Taxi-/Flugablauf kein Acceptance-Kriterium; relevant sind reale AIRWING-Materialisierung, DCS-Warehouse-Debit und der native MOOSE-Return-Pfad.
 
-### Helicopter Element-Landing
+### 3.3 Read-only STORAGE-Telemetrie
 
-`FLIGHTGROUP:onafterElementLanded(...)` setzt das Element auf `LANDED`. Fuer Helikopter kann der Elementstatus unmittelbar in Richtung `ARRIVED` fortschreiten. Ist `despawnAfterLanding` aktiv und gehoert die Gruppe zu einer LEGION, verwendet MOOSE ebenfalls den nativen Return-to-Legion-Pfad. Der Test setzt `SetDespawnAfterLanding()` nicht selbst und veraendert die Foundation-Konfiguration nicht.
-
-### Read-only Weapon Telemetry
-
-Der Test liest ausschliesslich ueber:
+V4 liest ausschliesslich ueber:
 
 ```text
 AIRBASE:FindByName()
@@ -82,9 +77,11 @@ STORAGE:FindByName()
 STORAGE:GetInventory() -> aircraft, liquids, weapons
 ```
 
-und beobachtet Aenderungen der DCS-Warehouse-Weapon-Keys. Er ruft keine STORAGE-Mutationsmethode auf.
+und beobachtet die resultierenden DCS-Warehouse-Weapon-/Equipment-Keys. Keine STORAGE-Mutationsmethode wird aufgerufen.
 
-V3 verlangt als Kontrollsignal nach der ersten Shindand-2-Ship-AH-64D-Materialisierung exakt den bereits akzeptierten Parent-Befund:
+## 4. AH-64D Kontrollpfad
+
+Der gueltige Lauf vom 11.08.2026 bestaetigte fuer einen Shindand-AH-64D-TwoShip bei Materialisierung:
 
 ```text
 weapons.nurs.HYDRA_70_M151: -76
@@ -92,50 +89,153 @@ weapons.missiles.AGM_114K: -4
 weapons.droptanks.{IAFS_ComboPak_100}: -2
 ```
 
-Fehlt dieser Delta oder ist die Weapon-Tabelle leer, darf der Harness nicht PASS melden.
+und beim nativen Return:
 
-### AIRWING Wiederverwendung
+```text
+HYDRA_70_M151: +76
+AGM_114K: +4
+IAFS_ComboPak_100: no recredit observed
+```
 
-Die zweite Sortie wird erneut ueber:
+V4 behaelt den ersten Debit als Fail-Fast-Kontrollsignal bei und beobachtet zwei AH-64-TwoShips, bevor der F-16-Vergleich beginnt.
+
+Der MOOSE-Enum klassifiziert `IAFS_ComboPak_100` unter `weapons.droptanks`. Das ist nur eine Key-/Kategorieevidenz; Ursache und beabsichtigte DCS-Rueckgabesemantik werden daraus nicht abgeleitet.
+
+## 5. F-16C Droptank-Vergleich
+
+### 5.1 Verbindlicher Bagram-Foundation-Pfad
+
+Die Branch-Foundation stellt fuer den Vergleich bereit:
+
+```text
+OMW.AirOps.Bagram.Airwings.USAF
+  -> AW_US_BGRM_455_AEW
+
+OMW.AirOps.Bagram.Squadrons.F16C
+  -> SQ_US_BGRM_F16C_121_EFS
+  -> TPL_AIR_US_BGRM_F16C_CAS_2SHIP
+  -> Grouping 2
+```
+
+Ein MOOSE-Asset dieser SQUADRON materialisiert damit den OMW-F-16-TwoShip-Seed.
+
+### 5.2 AUFTRAG:AssignSquadrons
+
+Im gepinnten `Moose.lua` ist die oeffentliche Methode vorhanden:
+
+```lua
+function AUFTRAG:AssignSquadrons(Squadrons)
+  for _, _squad in pairs(Squadrons) do
+    local squadron = _squad
+    self:AssignCohort(squadron)
+  end
+  return self
+end
+```
+
+Der Parameter muss eine Tabelle sein, auch bei nur einer SQUADRON. V4 verwendet daher:
+
+```lua
+mission:AssignSquadrons({ shindand.Squadrons.AH64D })
+mission:AssignSquadrons({ bagram.Squadrons.F16C })
+```
+
+Damit werden fuer die jeweilige Testmission nur die angegebenen SQUADRONs betrachtet; es ist keine eigene Dispatch- oder Auswahl-FSM erforderlich.
+
+### 5.3 AUFTRAG:SetROE
+
+Der gepinnte Source stellt bereit:
+
+```lua
+function AUFTRAG:SetROE(roe)
+  self.optionROE = roe
+  return self
+end
+```
+
+V4 setzt fuer die Testmissionen:
+
+```lua
+mission:SetROE(ENUMS.ROE.WeaponHold)
+```
+
+um die Materialisierungs-/Return-Beobachtung ohne beabsichtigten Waffenverbrauch durchzufuehren.
+
+### 5.4 Keine Vorannahme des konkreten F-16-Tank-Keys
+
+Der gepinnte Enum-Bestand enthaelt unter anderem:
+
+```text
+weapons.droptanks.fuel_tank_370gal
+weapons.droptanks.F-16-PTB-N2
+```
+
+Die Existenz dieser Enums beweist nicht, welchen Key DCS fuer das konkrete OMW-F-16-Template abbucht. V4 hardcodiert deshalb keinen Tank-Key. Direkt vor dem F-16-Dispatch wird der komplette Bagram-Weapon-Bestand gespeichert; direkt nach Materialisierung werden alle positiven Debits unter
+
+```text
+weapons.droptanks.
+```
+
+ermittelt und mit den tatsaechlichen Keys protokolliert.
+
+Nach Projektinhaberangabe traegt jedes Flugzeug des OMW-F-16-TwoShip-Templates zwei externe Tanks. Der Gate erwartet daher fuer den TwoShip eine Droptank-Debit-Summe von exakt `4`. Ein anderes Ergebnis wird als nicht bestaetigte Template-/Warehouse-Semantik behandelt und beendet den Gate mit FAIL, statt einen Key oder Mengenumrechnungsfaktor zu erfinden.
+
+## 6. F-16 Return-Klassifikation
+
+Nach `Arrived` und dem nativen Return-Fenster wird fuer jeden beim Spawn entdeckten Droptank-Key berechnet:
+
+```text
+pre-dispatch
+post-materialization
+debit
+post-return
+recovered
+```
+
+Gesamtstatus:
+
+```text
+FULL    recovered == debited
+NONE    recovered == 0
+PARTIAL 0 < recovered < debited
+```
+
+`FULL`, `NONE` und `PARTIAL` sind zulaessige **Beobachtungsergebnisse**. Die Klassifikation entscheidet nicht selbst ueber Harness-PASS; PASS verlangt, dass der Vergleich vollstaendig und mit validem `-4`-Kontrolldebit durchlaufen wurde.
+
+Eine fehlende Tank-Rueckgabe autorisiert keine automatische OMW-Recredit-Korrektur. Eine produktive Mutation oder Parallelbuchung waere ein eigener, durch Governance und Projektinhaberfreigabe zu entscheidender Adapter-Scope.
+
+## 7. AIRWING Wiederverwendung und Missionserzeugung
+
+Die Lifecycle-Legs werden ueber vorhandene MOOSE-Funktionen angefordert:
 
 ```text
 AUFTRAG:NewCAS()
+AUFTRAG:AssignSquadrons()
+AUFTRAG:SetROE()
 AIRWING:AddMission()
 AIRWING:OnAfterFlightOnMission
+FLIGHTGROUP:OnAfterArrived
 ```
 
-angefordert. `AIRWING:CountAssets()` und `AIRWING:CountAssetsOnMission()` dienen nur der Lifecycle-Telemetrie. OMW fuegt kein Asset manuell zurueck.
+Keine Gruppe wird durch OMW direkt gespawnt, zerstoert oder manuell zum AIRWING zurueckgebucht.
 
-### No-fire Plausibilisierung
+## 8. Ammo-Telemetrie
 
-`FLIGHTGROUP:GetAmmoTot()` ist im gepinnten Source vorhanden. V3 protokolliert die Summen fuer `MissilesAG`, `Rockets`, `Bombs` und `Guns` bei Assignment und Arrived; `Landed` bleibt optional. Assignment und Arrived muessen fuer jede Sortie uebereinstimmen, sonst kann der Gate keinen PASS liefern.
+`FLIGHTGROUP:GetAmmoTot()` ist im gepinnten Source vorhanden. V4 protokolliert `MissilesAG`, `Rockets`, `Bombs` und `Guns` bei Assignment und Arrived; Landed bleibt optional. Die Werte muessen je Lifecycle-Leg unveraendert bleiben, damit der Gate die jeweilige Strecke als no-fire klassifiziert.
 
-### MOOSE MESSAGE fuer Teststatus
+Diese Summen sind keine Einzelkey- oder Rundenzuordnung. Insbesondere folgt daraus weiterhin **keine** direkte M230/M789-STORAGE-Spiegelung.
 
-Der gepinnte `Moose.lua` stellt die oeffentliche Kette bereit:
+## 9. MOOSE MESSAGE fuer Teststatus
+
+Der gepinnte `Moose.lua` stellt bereit:
 
 ```lua
 MESSAGE:New(text, duration, category):ToAll()
 ```
 
-`MESSAGE:ToAll()` sendet die Nachricht an alle Spieler. V3 verwendet diesen MOOSE-Pfad fuer Start-, Phasen-, Heartbeat-, PASS- und FAIL-Meldungen. Ein direkter OMW-Aufruf von `trigger.action.outText` ist nicht erforderlich und wird durch den Builder fuer diesen Harness ausgeschlossen.
+V4 verwendet diesen MOOSE-Pfad fuer Start-, Phasen-, Heartbeat-, PASS- und FAIL-Meldungen. Ein direkter `trigger.action.outText`-Aufruf ist im Harness nicht erforderlich und wird durch den Builder ausgeschlossen.
 
-Benutzersichtbare Abschlusssemantik:
-
-```text
-TEST COMPLETE - PASS
--> Test kann beendet werden; Logs sichern
-
-TEST FAILED
--> Test kann beendet werden; Logs sichern
-
-keine Abschlussmeldung
--> Lauf noch aktiv oder unvollstaendig
-```
-
-Alle 120 Sekunden wird waehrend eines laufenden Gates ein MOOSE-MESSAGE-Heartbeat mit Phase und verstrichener Laufzeit ausgegeben. Das Safety-Timeout liegt bei 1800 Sekunden ab `TEST_BEGIN`.
-
-## 4. V3 Fail-Fast-Grenzen
+## 10. V4 Fail-Fast-Grenzen
 
 Vor einem gueltigen PASS muessen mindestens gelten:
 
@@ -143,24 +243,26 @@ Vor einem gueltigen PASS muessen mindestens gelten:
 GetInventory() three-return contract valid
 all seven weapon inventories non-empty
 required Shindand keys numeric and sufficiently stocked
-first known external-store debit exactly validated
-first and second Arrived observed
-both no-fire comparisons true
+first AH-64 debit exactly -76 / -4 / -2
+two AH-64 assignments and Arrived events observed
+both AH-64 legs no-fire by GetAmmoTot comparison
+Bagram F-16C mission restricted to SQ_US_BGRM_F16C_121_EFS
+F-16 droptank debit discovered from runtime inventory delta
+droptank debit total exactly 4
+F-16 Arrived/native return observed
+F-16 no-fire by GetAmmoTot comparison
+F-16 recredit classified FULL/NONE/PARTIAL
 final STORAGE read succeeds
 ```
 
-Damit kann insbesondere der V1-Fehlermodus `weaponKeys=0` nicht erneut als PASS durchlaufen.
+## 11. Noch nicht validiert
 
-## 5. Noch nicht validiert
-
-Bis zum korrigierten V3-DCS-Lauf bleiben folgende Punkte offen:
+Bis zum V4-DCS-Lauf bleiben insbesondere offen:
 
 ```text
-Zeitpunkt einer moeglichen STORAGE-Rueckgutschrift
-volle / teilweise / keine Recredit-Semantik
-zweite STORAGE-Abbuchung nach Recovery
-finaler Warehouse-Zustand nach zwei no-fire Roundtrips
-MOOSE-MESSAGE-Ausgabe im konkreten Testlauf
+welcher konkrete DCS STORAGE key vom OMW-F-16-Template fuer die externen Tanks verwendet wird
+ob vier externe F-16-Tanks beim nativen AIRWING-Return voll, teilweise oder gar nicht zurueckgebucht werden
+ob der AH-64-IAFS-Befund damit als systemspezifischer oder allgemeinerer droptank-Sonderfall einzuordnen ist
 ```
 
-Erst ein dokumentierter V3-DCS-Lauf darf diese Punkte auf `VALIDATED_FOR_DOCUMENTED_SCOPE` anheben.
+Controlled Partial Expenditure, absichtlicher Aircraft Loss, M230/M789, GAU-8 und M3P bleiben nachgelagerte, moeglichst gebuendelt zu testende Scopes.
