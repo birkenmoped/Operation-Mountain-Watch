@@ -8,6 +8,8 @@ authoritative_for:
   - read-only STORAGE correlation after real DCS weapon expenditure
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
+supersedes:
+superseded_by:
 source_branch: agent/airborne-ammo-partial-consumption
 source_commit: PENDING_MERGE
 validated_in_dcs: false
