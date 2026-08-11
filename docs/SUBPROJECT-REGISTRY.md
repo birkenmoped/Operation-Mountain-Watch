@@ -14,7 +14,7 @@ project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
   - incomplete open-branch list in the documentation index
 superseded_by:
-source_branch: agent/campaignstate-storage-sync-foundation
+source_branch: agent/airops-storage-fuel-template-census
 source_commit: PENDING_MERGE
 validated_in_dcs: false
 ---
@@ -57,10 +57,17 @@ Dieses Register bildet offene Pull Requests, ihre Abhängigkeiten, Dokumentation
 | 49 | `agent/next-airport-airwing-squadron-handoff` | `main` | frühere Auswahlübergabe für den nächsten Air-Ops-Knoten | Handoff und README | `DRAFT`; Auswahlstand durch nachfolgende Salerno-, Tarinkot-, Kandahar-, Bagram- und Shindand-Arbeit überholt | keine Runtime-Acceptance | 51, 52, 53, 60, 61, 63 und 65 | historisches Handoff; keine aktuelle Arbeitsanweisung |
 | 50 | `docs/bagram-air-operations-manifest` | `main` | Sammelintegration des alten Air-Ops-Branches | 150 Dateien aus Bagram, Jalalabad und Kandahar | offen, nicht Draft; stark überholt und mit `main` kollidierend | gemischte branchgebundene Nachweise; keine pauschale `main`-Acceptance | selektive spätere Main-Merges | nicht als Ganzes integrieren; nur datei- und autoritätsbezogen auswerten |
 | 52 | `agent/salerno-read-only-diagnostics` | `docs/bagram-air-operations-manifest` | Salerno AIRWING/SQUADRON und COMMANDER-Runtime | `mission/tests/salerno-air-operations/`, Builder und technische Evidenz | `DRAFT`; kanonische Salerno-Foundation wurde inzwischen über PR #60 nach `main` übernommen | `ACCEPTED_TECHNICAL_BASELINE` für den exakt dokumentierten Stage-18-Stand; Parking-Zuweisung nicht akzeptiert | offen | technische Salerno-Fixtures und Runtime-Historie |
-| 64 | `agent/airwing-naming-reconciliation` | `main` | Jalalabad-/Salerno-AIRWING-Naming-Reconciliation | ADR 0007, Jalalabad-/Salerno-Manifeste, Foundation Lua und Builder | `DRAFT`; Owner-Naming-Entscheidung dokumentiert | neue Identifier noch nicht DCS-validiert; lokale Build-/Hash-Prüfung ausstehend | offen | Abschluss der 7-AIRWING-Foundation-Namenskonsolidierung |
 | 66 | `agent/resource-warehouse-ownership-contract` | `main` | Resource-/Warehouse-Ownership-Vertrag | `docs/resource-warehouse-ownership-contract.md`, MOOSE-Logistikdokumente | `DRAFT`; Owner-Entscheidungen branchgebunden dokumentiert | Dokumentations-CI PASS; keine STORAGE-Runtime-Acceptance | 67 | verbindliche Designentscheidungen für Fuel-IDs, Einheit, Supply Parents, DoS und FARP-Puffer; repositoryweit erst nach Integration |
 | 67 | `agent/storage-fuel-adapter-foundation` | PR 66 | CampaignState→MOOSE-STORAGE Fuel-Mirror-Foundation | `scripts/logistics/`, `mission/tests/storage-fuel-adapter/`, Builder, MOOSE-Dokumentation | `DRAFT`; MOOSE-first Foundation | `ACCEPTED_TECHNICAL_BASELINE` für den dokumentierten Kandahar-STORAGE-Read/Write/Idempotenz/Restore-Stand | 68 | validierter operativer Adapter für `FUEL_JP8`/`FUEL_AVGAS`; keine CampaignState-Rückhoheit oder automatische Verbrauchsbuchung |
-| 68 | `agent/campaignstate-storage-sync-foundation` | PR 67 | CampaignState→STORAGE one-way Fuel-Synchronisation | `scripts/campaign/`, `scripts/logistics/`, `mission/tests/campaignstate-storage-sync/`, MOOSE-Logistikdokumentation | `DRAFT`; CampaignState bleibt strategische Hoheit | `ACCEPTED_TECHNICAL_BASELINE` für exakt dokumentierten Kandahar-one-way-Sync-Stand | offen | bestätigt CampaignState-Snapshot → STORAGE-Sollwertspiegelung ohne Reverse-Overwrite; Transaktionen/Persistenz/Verbrauch offen |
+| 68 | `agent/campaignstate-storage-sync-foundation` | PR 67 | CampaignState→STORAGE one-way Fuel-Synchronisation | `scripts/campaign/`, `scripts/logistics/`, `mission/tests/campaignstate-storage-sync/`, MOOSE-Logistikdokumentation | `DRAFT`; CampaignState bleibt strategische Hoheit | `ACCEPTED_TECHNICAL_BASELINE` für exakt dokumentierten Kandahar-one-way-Sync-Stand | 69-Familie | bestätigt CampaignState-Snapshot → STORAGE-Sollwertspiegelung ohne Reverse-Overwrite; Transaktionen/Persistenz/Verbrauch offen |
+| 69 | `agent/campaignstate-storage-multinode-sync` | `agent/campaignstate-storage-special-cases` | sieben Knoten CampaignState→STORAGE Matrix | `mission/tests/campaignstate-storage-multinode-sync/`, Fuel-Sync-Dokumentation | `DRAFT` | 7/7 DCS-Runtime-PASS vorhanden; formale Acceptance-Provenienz wegen fehlendem exakten MIZ-/Embedded-Bundle-Hash nicht geschlossen | 70 | Multi-Node-Sync-Evidenz; keine automatische Aircraft-Fuel-Buchung |
+| 70 | `agent/campaignstate-resource-transaction-contract` | PR 69 | CampaignState Resource Transaction Contract | `scripts/campaign/`, `mission/tests/campaignstate-resource-transactions/` | `DRAFT` | DCS-PASS für dokumentierten Transaktionsscope; Dokumentationsvalidator meldet offene Acceptance-Metadaten | 71 | strategische Reservation/Transfer/Consumption-Logik; kein MOOSE-Transport |
+| 71 | `agent/storage-weapon-item-matrix` | PR 70 | STORAGE Weapon Item Matrix | `mission/tests/storage-weapon-item-matrix/`, MOOSE-Dokumentation | `DRAFT` | read-only 7/7 DCS-PASS für dokumentierten Scope | 72 | Item-/Enum-Evidenz; keine strategische Zuordnung allein aus Enum-Präsenz |
+| 72 | `agent/ammunition-resource-id-split` | PR 71 | strategische Ammunition Resource-ID-Aufteilung | Resource-/Mapping-Dokumentation | `DRAFT`; Owner-Entscheidung branchgebunden dokumentiert | Dokumentation; keine eigene DCS-Acceptance | 73 | trennt M230, GAU-8 und M3P strategisch |
+| 73 | `agent/ammunition-exact-item-mapping` | PR 72 | Exact ammunition item mapping boundaries | Mapping-Dokumentation | `DRAFT` | Mapping-Grenze dokumentiert; Verbrauchskorrelation folgt | 74 | blockiert geratenen Direct-Mirror für M230/GAU-8/M3P |
+| 74 | `agent/storage-weapon-consumption-correlation` | PR 73 | AH-64D STORAGE weapon consumption correlation | `mission/tests/storage-weapon-consumption-correlation/` | `DRAFT` | DCS-PASS: M151/AGM-114K/IAFS Materialisierungsdebit; M230/M789 weiterhin ohne Direct-Mirror | 75 | belastbare External-Store-Debit-Evidenz |
+| 75 | `agent/storage-airwing-weapon-lifecycle` | PR 74 | normaler Return, Aircraft Loss und F-16-Droptank-Lifecycle | `mission/tests/storage-airwing-weapon-lifecycle/`, `docs/moose/` | `DRAFT` | V6 DCS-Test strukturell PASS; AH-64 IAFS ohne Recredit, F-16 370-gal-Tank FULL; formale Acceptance-Promotion bleibt an vollständige Provenienz gebunden | 76 | Lifecycle-Evidenz für Stores und Asset Loss; Liquid-JETFUEL im V6 nicht gemessen |
+| 76 | `agent/airops-storage-fuel-template-census` | PR 75 | AIROPS-wide Stores/Fuel Template Census | `mission/tests/airops-storage-fuel-template-census/`, `docs/moose/`, Builder | `DRAFT`; MOOSE-first Testdesign | DCS-Test ausstehend | offen | 32 physische AI-Templates / 7 STORAGE-Lanes; Aircraft/JETFUEL/Weapons + Onboard-Fuel, keine Partial-Expenditure-Mutation |
 
 ## 3. Stackstruktur
 
@@ -81,11 +88,11 @@ main
 ├── PR 41
 ├── PR 45
 ├── PR 49
-├── PR 64
-└── PR 66 → PR 67 → PR 68
+├── PR 66 → PR 67 → PR 68
+└── PR 69 → PR 70 → PR 71 → PR 72 → PR 73 → PR 74 → PR 75 → PR 76
 ```
 
-PR #53 (Tarinkot), PR #60 (Salerno Foundation), PR #61 (Kandahar Foundation), PR #62 (Dokumentationsmetadaten), PR #63 (Bagram duale AIRWING Foundation) und PR #65 (Shindand Foundation) sind inzwischen nach `main` gemergt und werden nicht mehr als offene Unterprojekte geführt.
+PR #53 (Tarinkot), PR #60 (Salerno Foundation), PR #61 (Kandahar Foundation), PR #62 (Dokumentationsmetadaten), PR #63 (Bagram duale AIRWING Foundation), PR #64 (Jalalabad-/Salerno-AIRWING-Naming-Reconciliation) und PR #65 (Shindand Foundation) sind nach `main` gemergt und werden nicht mehr als offene Unterprojekte geführt.
 
 ## 4. Verbindliche Regeln
 
@@ -96,21 +103,20 @@ PR #53 (Tarinkot), PR #60 (Salerno Foundation), PR #61 (Kandahar Foundation), PR
 5. Merge und „Ready for Review“ benötigen weiterhin die ausdrückliche Freigabe des Projektinhabers.
 6. Dieses Register wird bei Öffnen, Schließen, Retargeting, Neubau oder Ablösung eines dokumentationsrelevanten PR aktualisiert.
 
-## 5. Registerabgleich vom 10. August 2026
+## 5. Registerabgleich vom 11. August 2026
 
 ```yaml
-main_commit: 56fccfa44536c3c205c002d16f1af167cba65d51
-open_pull_requests: 32
-pr_53: MERGED
-pr_60: MERGED
-pr_61: MERGED
-pr_62: MERGED
-pr_63: MERGED
-pr_65: MERGED
-pr_66: OPEN_DRAFT
-pr_67: OPEN_DRAFT_ACCEPTED_TECHNICAL_BASELINE
-pr_68: OPEN_DRAFT_ACCEPTED_TECHNICAL_BASELINE
-source: GitHub pull-request state plus documented branch-bound DCS acceptance
+open_pull_requests: 39
+pr_64: MERGED
+pr_69: OPEN_DRAFT_RUNTIME_7_OF_7_PROVENANCE_INCOMPLETE
+pr_70: OPEN_DRAFT_DCS_PASS_DOCUMENT_METADATA_ERRORS
+pr_71: OPEN_DRAFT_READ_ONLY_DCS_PASS
+pr_72: OPEN_DRAFT_OWNER_DECISION
+pr_73: OPEN_DRAFT_MAPPING_BOUNDARY
+pr_74: OPEN_DRAFT_DCS_PASS
+pr_75: OPEN_DRAFT_V6_DCS_PASS
+pr_76: OPEN_DRAFT_DCS_NOT_RUN
+source: GitHub pull-request state plus documented branch-bound DCS evidence
 ```
 
-Die 32 offenen PRs sind in Abschnitt 2 vollständig erfasst. Ein offener Zustand bedeutet weder aktuelle fachliche Autorität noch Integrationsreife; die Spalten Governance-Status, Acceptance-Status und Produktionsrelevanz bleiben maßgeblich.
+Ein offener Zustand bedeutet weder aktuelle fachliche Autorität noch Integrationsreife; die Spalten Governance-Status, Acceptance-Status und Produktionsrelevanz bleiben maßgeblich.
