@@ -7,6 +7,7 @@ authoritative_for:
   - read-only STORAGE/AIRWING weapon lifecycle correlation scope
   - Shindand AH-64D no-fire recovery and second-sortie redebit protocol
   - interpretation boundary for landing, arrival, ReturnToLegion and warehouse recredit evidence
+  - user-visible DCS test progress and completion protocol
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
@@ -26,7 +27,7 @@ inherited_risk:
 
 ## 1. Ziel
 
-`STORAGE-AIRWING-WEAPON-LIFECYCLE-2` erweitert den akzeptierten AH-64D External-Store-Debit-Nachweis zu einem zusammenhängenden MOOSE-first Lifecycle-Gate.
+`STORAGE-AIRWING-WEAPON-LIFECYCLE-3` erweitert den akzeptierten AH-64D External-Store-Debit-Nachweis zu einem zusammenhängenden MOOSE-first Lifecycle-Gate.
 
 Ein einzelner DCS-Lauf soll beantworten:
 
@@ -65,7 +66,7 @@ both sorties retained 4 AGM / 76 rockets in GetAmmoTot telemetry
 Landed user callback was not observed in either sortie
 ```
 
-V2 behebt nicht nur den direkten API-Fehler, sondern fuegt Fail-Fast-Kontrollen hinzu, damit ein leerer oder falsch gelesener Weapon-Bestand keinen PASS mehr erzeugen kann.
+V2 behebt den API-Fehler und fuegt Fail-Fast-Kontrollen hinzu. V3 behaelt diese technischen Schutzmechanismen unveraendert bei und ergaenzt eine benutzersichtbare Fortschritts- und Abschlussanzeige, damit ein manueller DCS-Lauf nicht mehr nach einer geschaetzten Wartezeit beendet werden muss.
 
 ## 3. MOOSE-First
 
@@ -91,7 +92,10 @@ FLIGHTGROUP internal onafterArrived -> ReturnToLegion(1) for AI AIRWING assets
 STORAGE:FindByName()
 SCHEDULER:New()
 AUFTRAG:NewCAS()
+MESSAGE:New(...):ToAll()
 ```
+
+`MESSAGE:New(...):ToAll()` ist im gepinnten `Moose.lua` als oeffentliche MOOSE-Ausgabe fuer alle Spieler vorhanden. V3 verwendet deshalb keinen direkten `trigger.action.outText`-Aufruf fuer Teststatusmeldungen.
 
 Der gepinnte `Moose.lua` fuehrt bei einem AI-`FLIGHTGROUP` mit zugeordnetem AIRWING und ohne Pickup-/Transportzustand im nativen `onafterArrived`-Pfad `ReturnToLegion(1)` aus. Der Test beobachtet diesen Lifecycle nur; er ruft `ReturnToLegion()` nicht selbst auf.
 
@@ -105,7 +109,7 @@ Der gepinnte `Moose.lua` fuehrt bei einem AI-`FLIGHTGROUP` mit zugeordnetem AIRW
 
 ## 5. Fail-Fast STORAGE-Kontrollen
 
-V2 akzeptiert die STORAGE-Beobachtung nur, wenn alle folgenden Bedingungen vor dem ersten Dispatch erfuellt sind:
+V3 akzeptiert die STORAGE-Beobachtung nur, wenn alle folgenden Bedingungen vor dem ersten Dispatch erfuellt sind:
 
 ```text
 all seven AIRBASE/STORAGE wrappers resolve
@@ -160,7 +164,35 @@ FINAL
 
 Fuer jede zugewiesene FLIGHTGROUP werden MOOSE-Ammo-Summen (`MissilesAG`, `Rockets`, `Bombs`, `Guns`) bei Assignment und Arrived sowie optional bei Landed protokolliert. Assignment und Arrived muessen fuer beide Sorties identische Ammo-Summen liefern, sonst ist die no-fire-Bedingung nicht erfuellt.
 
-## 7. Landed versus Arrived
+## 7. Benutzersichtbarer Teststatus
+
+V3 zeigt ueber MOOSE `MESSAGE` klare DCS-On-Screen-Meldungen. Der Benutzer muss die Testdauer nicht schaetzen.
+
+Pflichtmeldungen:
+
+```text
+TEST STARTED
+STORAGE baseline validated
+Sortie 1 assigned / known debit validated
+Sortie 1 ARRIVED
+Sortie 1 return observation complete / Sortie 2 countdown
+Sortie 2 assigned
+Sortie 2 ARRIVED
+TEST COMPLETE - PASS
+```
+
+Bei einem Fehler erscheint stattdessen:
+
+```text
+STORAGE/AIRWING TEST FAILED
+Stage: <stage>
+Phase: <phase>
+You may stop the mission and send dcs.log + debrief.
+```
+
+Solange der Test laeuft, erscheint alle 120 Sekunden ein Heartbeat mit aktueller Phase und verstrichener Laufzeit. Das Safety-Timeout bleibt bei 1800 Sekunden ab `TEST_BEGIN`. Der Test darf beendet werden, sobald `TEST COMPLETE - PASS` oder `TEST FAILED` angezeigt wird. Ohne eine dieser Abschlussmeldungen gilt der Lauf als nicht abgeschlossen.
+
+## 8. Landed versus Arrived
 
 Der verworfene V1-Lauf zeigte in beiden Sorties:
 
@@ -169,9 +201,9 @@ Landed user callback: not observed
 Arrived user callback: observed
 ```
 
-Daher ist `Landed` in V2 zusaetzliche Telemetrie, aber kein PASS-Kriterium. `Arrived` ist der fuer diesen konkreten MOOSE-/DCS-Pfad erforderliche Recovery-Anker. Das entspricht dem source-reviewed internen MOOSE-Pfad, in dem `onafterArrived` fuer AI-AIRWING-Assets `ReturnToLegion(1)` ausloest.
+Daher ist `Landed` in V3 zusaetzliche Telemetrie, aber kein PASS-Kriterium. `Arrived` ist der fuer diesen konkreten MOOSE-/DCS-Pfad erforderliche Recovery-Anker. Das entspricht dem source-reviewed internen MOOSE-Pfad, in dem `onafterArrived` fuer AI-AIRWING-Assets `ReturnToLegion(1)` ausloest.
 
-## 8. PASS-Semantik
+## 9. PASS-Semantik
 
 Harness-PASS bedeutet ausschliesslich:
 
@@ -196,7 +228,7 @@ no custom ReturnToLegion call
 
 Die konkrete Recredit-Semantik wird erst nach Auswertung der validen Deltas als DCS-Laufzeitbefund akzeptiert. Der Harness nimmt nicht vorweg, ob die Gutschrift bei Landing, Arrived/ReturnToLegion, spaeter, teilweise oder gar nicht erfolgt.
 
-## 9. Nicht Teil dieses Gates
+## 10. Nicht Teil dieses Gates
 
 ```text
 controlled partial weapon expenditure
@@ -212,7 +244,7 @@ restart/multiplayer reconciliation
 parking acceptance
 ```
 
-## 10. Build
+## 11. Build
 
 ```text
 mission/tests/storage-airwing-weapon-lifecycle/src/01-storage-airwing-weapon-lifecycle.lua
@@ -223,7 +255,7 @@ mission/tests/storage-airwing-weapon-lifecycle/dist/OMW_Storage_Airwing_Weapon_L
 BuilderVersion:
 
 ```text
-STORAGE-AIRWING-WEAPON-LIFECYCLE-2
+STORAGE-AIRWING-WEAPON-LIFECYCLE-3
 ```
 
-Der Builder prueft zusaetzlich statisch, dass der Harness die drei `GetInventory()`-Rueckgabewerte explizit entgegennimmt und verbietet die fehlerhafte V1-Form `local inventory = storage:GetInventory()` sowie Zugriffe auf `inventory.weapon`/`inventory.weapons`.
+Der Builder prueft statisch die drei `GetInventory()`-Rueckgabewerte, verbietet die fehlerhafte V1-Form `local inventory = storage:GetInventory()` sowie Zugriffe auf `inventory.weapon`/`inventory.weapons` und verlangt die MOOSE-`MESSAGE`-Status-, Heartbeat-, Abschluss- und Fehlermarker. Direkte `trigger.action.outText`-Aufrufe sind im Harness verboten.
