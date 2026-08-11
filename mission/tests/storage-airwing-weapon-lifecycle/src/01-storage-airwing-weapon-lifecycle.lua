@@ -2,7 +2,7 @@
 -- Read-only STORAGE observer plus two native AIRWING/AUFTRAG AH-64D CAS sorties.
 
 local TAG = "[OMW][StorageAirwingWeaponLifecycle]"
-local TEST_ID = "STORAGE-AIRWING-WEAPON-LIFECYCLE-2"
+local TEST_ID = "STORAGE-AIRWING-WEAPON-LIFECYCLE-3"
 local EXPECTED_AIRBASE = "Shindand Heliport"
 local EXPECTED_SQUADRON = "SQ_US_SHND_AH64D_ATTACK"
 local TARGET_DISTANCE_M = 10000
@@ -17,6 +17,9 @@ local POST_RETURN_OBSERVE_S = 15
 local SECOND_DISPATCH_DELAY_S = 20
 local FINAL_OBSERVE_S = 15
 local SAFETY_TIMEOUT_S = 1800
+local HEARTBEAT_INTERVAL_S = 120
+local STATUS_MESSAGE_DURATION_S = 12
+local FINAL_MESSAGE_DURATION_S = 30
 
 local ITEM_M151 = "weapons.nurs.HYDRA_70_M151"
 local ITEM_AGM114K = "weapons.missiles.AGM_114K"
@@ -51,7 +54,8 @@ local runtime = {
   baselineValidated = false,
   firstDebitValidated = false,
   storageObservationValid = false,
-  startedAt = timer.getTime(),
+  startedAt = 0,
+  nextHeartbeatAt = nil,
 }
 
 local function log(message)
@@ -60,6 +64,10 @@ end
 
 local function fail(message)
   env.error(TAG .. " FAIL " .. tostring(message), false)
+end
+
+local function notify(message, duration)
+  MESSAGE:New(tostring(message), duration or STATUS_MESSAGE_DURATION_S, "OMW Test"):ToAll()
 end
 
 local function failResult(stage, message)
@@ -82,6 +90,10 @@ local function failResult(stage, message)
     runtime.deltaCount,
     tostring(message)
   ))
+  notify(string.format(
+    "STORAGE/AIRWING TEST FAILED\nStage: %s\nPhase: %s\nYou may stop the mission and send dcs.log + debrief.",
+    tostring(stage), tostring(runtime.phase)
+  ), FINAL_MESSAGE_DURATION_S)
 end
 
 local function copyMap(source)
@@ -265,6 +277,7 @@ local function finishPass()
     "RESULT testId=%s status=PASS nodesExpected=7 nodesReady=7 baselineValidated=true firstDebitValidated=true storageObservationValid=true firstAssigned=true firstLanded=%s firstArrived=true secondAssigned=true secondLanded=%s secondArrived=true firstNoFire=true secondNoFire=true deltasObserved=%d mutation=false campaignStateMutation=false returnToLegionCalledByTest=false opstransport=false ctld=false",
     TEST_ID, tostring(runtime.first.landed == true), tostring(runtime.second.landed == true), runtime.deltaCount
   ))
+  notify("STORAGE/AIRWING TEST COMPLETE - PASS\nBoth AH-64 sorties and final STORAGE observation are complete.\nYou may stop the mission and send dcs.log + debrief.", FINAL_MESSAGE_DURATION_S)
 end
 
 local function bindFlightLifecycle(state, flightGroup, mission, sortie)
@@ -283,6 +296,12 @@ local function bindFlightLifecycle(state, flightGroup, mission, sortie)
   if not ok then
     failResult("ASSIGNMENT_STORAGE", err)
     return
+  end
+
+  if sortie == 1 then
+    notify("OMW lifecycle test: Sortie 1 assigned and known STORAGE debit validated.\nWaiting for no-fire return/recovery.")
+  else
+    notify("OMW lifecycle test: Sortie 2 assigned.\nWaiting for no-fire return/recovery.")
   end
 
   local previousLanded = flightGroup.OnAfterLanded
@@ -319,6 +338,7 @@ local function bindFlightLifecycle(state, flightGroup, mission, sortie)
     end
 
     if sortie == 1 then
+      notify("OMW lifecycle test: Sortie 1 ARRIVED.\nObserving native return/recredit before Sortie 2.")
       SCHEDULER:New(nil, function()
         if runtime.finished then return end
         runtime.phase = "FIRST_POST_RETURN"
@@ -331,6 +351,7 @@ local function bindFlightLifecycle(state, flightGroup, mission, sortie)
           return
         end
         log(string.format("AIRWING_STATE label=FIRST_POST_RETURN totalAssets=%s assetsOnMission=%s landedObserved=%s", tostring(state.Airwing:CountAssets()), tostring(select(1, state.Airwing:CountAssetsOnMission())), tostring(slot.landed == true)))
+        notify(string.format("OMW lifecycle test: Sortie 1 return observation complete.\nSortie 2 dispatches in %d seconds.", SECOND_DISPATCH_DELAY_S))
         if not runtime.secondDispatchScheduled then
           runtime.secondDispatchScheduled = true
           SCHEDULER:New(nil, function()
@@ -339,6 +360,7 @@ local function bindFlightLifecycle(state, flightGroup, mission, sortie)
         end
       end, {}, POST_RETURN_OBSERVE_S)
     else
+      notify("OMW lifecycle test: Sortie 2 ARRIVED.\nFinal STORAGE observation is running.")
       SCHEDULER:New(nil, function()
         if runtime.finished then return end
         runtime.phase = "SECOND_POST_RETURN"
@@ -388,7 +410,7 @@ end
 
 local function run()
   if not OMW or not OMW.AirOps or not OMW.AirOps.Shindand then error("Shindand foundation state not loaded") end
-  if not AIRBASE or not STORAGE or not AIRWING or not AUFTRAG or not ZONE_RADIUS or not SCHEDULER then error("Required pinned MOOSE classes unavailable") end
+  if not AIRBASE or not STORAGE or not AIRWING or not AUFTRAG or not ZONE_RADIUS or not SCHEDULER or not MESSAGE then error("Required pinned MOOSE classes unavailable") end
 
   local state = OMW.AirOps.Shindand
   if state.Status ~= "RUNNING" then error("Shindand foundation is not RUNNING: " .. tostring(state.Status)) end
@@ -396,11 +418,16 @@ local function run()
   local squadron = state.Squadrons and state.Squadrons.AH64D or nil
   if not squadron or squadron.name ~= EXPECTED_SQUADRON then error("Unexpected AH-64D squadron") end
 
-  log("TEST_BEGIN testId=" .. TEST_ID .. " scope=NO_FIRE_RETURN_RECREDIT_REDISPATCH readOnlyStorage=true")
+  runtime.startedAt = timer.getTime()
+  runtime.nextHeartbeatAt = runtime.startedAt + HEARTBEAT_INTERVAL_S
+  log("TEST_BEGIN testId=" .. TEST_ID .. " scope=NO_FIRE_RETURN_RECREDIT_REDISPATCH readOnlyStorage=true userVisibleStatus=true")
+  notify("STORAGE/AIRWING WEAPON LIFECYCLE TEST STARTED\nTwo no-fire AH-64 sorties run automatically.\nMaximum safety timeout: 30 minutes.\nWait for TEST COMPLETE or TEST FAILED.", 20)
+
   resolveStorages()
   runtime.phase = "BASELINE"
   captureBaseline()
   logInventorySnapshot("BASELINE")
+  notify("OMW lifecycle test: STORAGE baseline validated.\nDispatching Sortie 1.")
 
   SCHEDULER:New(nil, function()
     if runtime.finished then return false end
@@ -409,7 +436,18 @@ local function run()
       failResult("POLL_STORAGE", err)
       return false
     end
-    if timer.getTime() - runtime.startedAt >= SAFETY_TIMEOUT_S then
+
+    local now = timer.getTime()
+    if runtime.nextHeartbeatAt and now >= runtime.nextHeartbeatAt then
+      local elapsedMinutes = math.floor((now - runtime.startedAt) / 60)
+      notify(string.format(
+        "OMW lifecycle test RUNNING\nPhase: %s\nElapsed: %d min\nWait for TEST COMPLETE or TEST FAILED.",
+        tostring(runtime.phase), elapsedMinutes
+      ))
+      runtime.nextHeartbeatAt = now + HEARTBEAT_INTERVAL_S
+    end
+
+    if now - runtime.startedAt >= SAFETY_TIMEOUT_S then
       failResult("TIMEOUT", "Safety timeout exceeded")
       return false
     end
