@@ -38,7 +38,7 @@ $requiredMarkers = @(
     'mission:IsSuccess()',
     'ASSIGN_TIMEOUT_S = 600',
     'LIFECYCLE_TIMEOUT_S = 3600',
-    'GLOBAL_TIMEOUT_S = 21600',
+    'GLOBAL_TIMEOUT_S = 28800',
     'POST_RETURN_OBSERVE_S = 30',
     'parallel_by_storage_lane',
     'partialExpenditure=false',
@@ -178,7 +178,7 @@ Write-Host "CTLD: ABSENT"
 Write-Host "AssignmentTimeoutSeconds: 600"
 Write-Host "LifecycleTimeoutAfterAssignmentSeconds: 3600"
 Write-Host "PostReturnObserveSeconds: 30"
-Write-Host "GlobalTimeoutSeconds: 21600"
+Write-Host "GlobalTimeoutSeconds: 28800"
 Write-Host "TimeoutDiagnostics: MISSION_FLIGHT_LANDED_ARRIVED_FUEL"
 Write-Host "MOOSECommit: $mooseCommit"
 Write-Host "MooseLuaSHA256: $mooseSha256"
