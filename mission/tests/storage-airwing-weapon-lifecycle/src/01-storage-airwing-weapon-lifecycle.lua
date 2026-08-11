@@ -103,8 +103,6 @@ local function mapCount(source)
 end
 
 local function readWeapons(storage, nodeId)
-  -- Pinned MOOSE 2.9.18 STORAGE:GetInventory() returns three values:
-  -- aircraft, liquids, weapons. Do not collapse this into one table.
   local aircraft, liquids, weapons = storage:GetInventory()
   if type(aircraft) ~= "table" or type(liquids) ~= "table" or type(weapons) ~= "table" then
     error(string.format(
@@ -118,17 +116,11 @@ end
 local function resolveStorages()
   for _, node in ipairs(NODES) do
     local airbase = AIRBASE:FindByName(node.airbase)
-    if not airbase then
-      error("AIRBASE unresolved: " .. node.airbase)
-    end
+    if not airbase then error("AIRBASE unresolved: " .. node.airbase) end
     local storageA = airbase:GetStorage()
     local storageB = STORAGE:FindByName(node.airbase)
-    if not storageA or not storageB then
-      error("STORAGE unresolved: " .. node.airbase)
-    end
-    if storageA ~= storageB then
-      error("STORAGE wrapper identity mismatch: " .. node.airbase)
-    end
+    if not storageA or not storageB then error("STORAGE unresolved: " .. node.airbase) end
+    if storageA ~= storageB then error("STORAGE wrapper identity mismatch: " .. node.airbase) end
     runtime.storages[node.id] = storageA
     log(string.format("NODE_READY nodeId=%s airbase=%s", node.id, node.airbase))
   end
@@ -138,24 +130,17 @@ local function captureBaseline()
   for _, node in ipairs(NODES) do
     local inventory = readWeapons(runtime.storages[node.id], node.id)
     local count = mapCount(inventory)
-    if count <= 0 then
-      error("Weapon inventory unexpectedly empty at baseline nodeId=" .. tostring(node.id))
-    end
+    if count <= 0 then error("Weapon inventory unexpectedly empty at baseline nodeId=" .. tostring(node.id)) end
     runtime.baseline[node.id] = inventory
     runtime.lastInventory[node.id] = copyMap(inventory)
     log(string.format("BASELINE_CAPTURED nodeId=%s weaponKeys=%d", node.id, count))
   end
 
   local shindand = runtime.baseline.SHINDAND_HELIPORT
-  if not shindand then
-    error("Shindand baseline missing")
-  end
-
+  if not shindand then error("Shindand baseline missing") end
   for item, required in pairs(EXPECTED_FIRST_DEBIT) do
     local amount = shindand[item]
-    if type(amount) ~= "number" then
-      error("Required Shindand baseline weapon key missing: " .. tostring(item))
-    end
+    if type(amount) ~= "number" then error("Required Shindand baseline weapon key missing: " .. tostring(item)) end
     if amount < required then
       error(string.format("Insufficient Shindand baseline item=%s amount=%s required=%s", item, tostring(amount), tostring(required)))
     end
@@ -165,10 +150,7 @@ local function captureBaseline()
   runtime.storageObservationValid = true
   log(string.format(
     "BASELINE_VALIDATED nodeId=SHINDAND_HELIPORT weaponKeys=%d m151=%s agm114k=%s comboPak=%s",
-    mapCount(shindand),
-    tostring(shindand[ITEM_M151]),
-    tostring(shindand[ITEM_AGM114K]),
-    tostring(shindand[ITEM_COMBOPAK])
+    mapCount(shindand), tostring(shindand[ITEM_M151]), tostring(shindand[ITEM_AGM114K]), tostring(shindand[ITEM_COMBOPAK])
   ))
 end
 
@@ -177,21 +159,13 @@ local function logInventorySnapshot(label)
     local inventory = readWeapons(runtime.storages[node.id], node.id)
     log(string.format(
       "SNAPSHOT label=%s nodeId=%s m151=%s agm114k=%s comboPak=%s weaponKeys=%d",
-      label,
-      node.id,
-      tostring(inventory[ITEM_M151]),
-      tostring(inventory[ITEM_AGM114K]),
-      tostring(inventory[ITEM_COMBOPAK]),
-      mapCount(inventory)
+      label, node.id, tostring(inventory[ITEM_M151]), tostring(inventory[ITEM_AGM114K]), tostring(inventory[ITEM_COMBOPAK]), mapCount(inventory)
     ))
   end
 end
 
 local function pollDeltas()
-  if not runtime.storageObservationValid then
-    error("STORAGE observation is not valid")
-  end
-
+  if not runtime.storageObservationValid then error("STORAGE observation is not valid") end
   for _, node in ipairs(NODES) do
     local current = readWeapons(runtime.storages[node.id], node.id)
     local previous = runtime.lastInventory[node.id] or {}
@@ -205,13 +179,7 @@ local function pollDeltas()
         runtime.deltaCount = runtime.deltaCount + 1
         log(string.format(
           "WEAPON_DELTA phase=%s nodeId=%s item=%s before=%s after=%s delta=%s elapsed=%.1f",
-          runtime.phase,
-          node.id,
-          key,
-          tostring(before),
-          tostring(after),
-          tostring(after - before),
-          timer.getTime() - runtime.startedAt
+          runtime.phase, node.id, key, tostring(before), tostring(after), tostring(after - before), timer.getTime() - runtime.startedAt
         ))
       end
     end
@@ -225,24 +193,14 @@ local function validateFirstDebit()
   for item, expectedDebit in pairs(EXPECTED_FIRST_DEBIT) do
     local before = tonumber(baseline[item])
     local after = tonumber(current[item])
-    if not before or not after then
-      error("First-debit validation missing numeric value for item=" .. tostring(item))
-    end
+    if not before or not after then error("First-debit validation missing numeric value for item=" .. tostring(item)) end
     local actualDebit = before - after
     if actualDebit ~= expectedDebit then
-      error(string.format(
-        "First-debit control mismatch item=%s expectedDebit=%d actualDebit=%d before=%s after=%s",
-        item, expectedDebit, actualDebit, tostring(before), tostring(after)
-      ))
+      error(string.format("First-debit control mismatch item=%s expectedDebit=%d actualDebit=%d before=%s after=%s", item, expectedDebit, actualDebit, tostring(before), tostring(after)))
     end
   end
   runtime.firstDebitValidated = true
-  log(string.format(
-    "FIRST_DEBIT_VALIDATED m151=-%d agm114k=-%d comboPak=-%d",
-    EXPECTED_FIRST_DEBIT[ITEM_M151],
-    EXPECTED_FIRST_DEBIT[ITEM_AGM114K],
-    EXPECTED_FIRST_DEBIT[ITEM_COMBOPAK]
-  ))
+  log(string.format("FIRST_DEBIT_VALIDATED m151=-%d agm114k=-%d comboPak=-%d", EXPECTED_FIRST_DEBIT[ITEM_M151], EXPECTED_FIRST_DEBIT[ITEM_AGM114K], EXPECTED_FIRST_DEBIT[ITEM_COMBOPAK]))
 end
 
 local function ammoSummary(flightGroup, label, sortie)
@@ -257,19 +215,13 @@ local function ammoSummary(flightGroup, label, sortie)
     bombs = tonumber(ammo.Bombs) or 0,
     guns = tonumber(ammo.Guns) or 0,
   }
-  log(string.format(
-    "AMMO_SNAPSHOT sortie=%d label=%s missilesAG=%d rockets=%d bombs=%d guns=%d",
-    sortie, label, summary.missilesAG, summary.rockets, summary.bombs, summary.guns
-  ))
+  log(string.format("AMMO_SNAPSHOT sortie=%d label=%s missilesAG=%d rockets=%d bombs=%d guns=%d", sortie, label, summary.missilesAG, summary.rockets, summary.bombs, summary.guns))
   return summary
 end
 
 local function ammoEqual(a, b)
   if not a or not b then return false end
-  return a.missilesAG == b.missilesAG
-    and a.rockets == b.rockets
-    and a.bombs == b.bombs
-    and a.guns == b.guns
+  return a.missilesAG == b.missilesAG and a.rockets == b.rockets and a.bombs == b.bombs and a.guns == b.guns
 end
 
 local function buildMission(state, sortie)
@@ -287,18 +239,11 @@ local dispatchSortie
 
 local function finishPass()
   if runtime.finished then return end
-
   local firstNoFire = ammoEqual(runtime.first.assignedAmmo, runtime.first.arrivedAmmo)
   local secondNoFire = ammoEqual(runtime.second.assignedAmmo, runtime.second.arrivedAmmo)
-  local lifecycleComplete = runtime.baselineValidated
-    and runtime.storageObservationValid
-    and runtime.firstDebitValidated
-    and runtime.first.assigned
-    and runtime.first.arrived
-    and runtime.second.assigned
-    and runtime.second.arrived
-    and firstNoFire
-    and secondNoFire
+  local lifecycleComplete = runtime.baselineValidated and runtime.storageObservationValid and runtime.firstDebitValidated
+    and runtime.first.assigned and runtime.first.arrived and runtime.second.assigned and runtime.second.arrived
+    and firstNoFire and secondNoFire
 
   if not lifecycleComplete then
     failResult("FINAL_ASSERT", "Required lifecycle or no-fire invariant not satisfied")
@@ -318,10 +263,7 @@ local function finishPass()
   runtime.finished = true
   log(string.format(
     "RESULT testId=%s status=PASS nodesExpected=7 nodesReady=7 baselineValidated=true firstDebitValidated=true storageObservationValid=true firstAssigned=true firstLanded=%s firstArrived=true secondAssigned=true secondLanded=%s secondArrived=true firstNoFire=true secondNoFire=true deltasObserved=%d mutation=false campaignStateMutation=false returnToLegionCalledByTest=false opstransport=false ctld=false",
-    TEST_ID,
-    tostring(runtime.first.landed == true),
-    tostring(runtime.second.landed == true),
-    runtime.deltaCount
+    TEST_ID, tostring(runtime.first.landed == true), tostring(runtime.second.landed == true), runtime.deltaCount
   ))
 end
 
@@ -335,9 +277,7 @@ local function bindFlightLifecycle(state, flightGroup, mission, sortie)
 
   local ok, err = pcall(function()
     pollDeltas()
-    if sortie == 1 then
-      validateFirstDebit()
-    end
+    if sortie == 1 then validateFirstDebit() end
     logInventorySnapshot(runtime.phase)
   end)
   if not ok then
@@ -347,9 +287,7 @@ local function bindFlightLifecycle(state, flightGroup, mission, sortie)
 
   local previousLanded = flightGroup.OnAfterLanded
   flightGroup.OnAfterLanded = function(self, From, Event, To, Airbase)
-    if previousLanded then
-      previousLanded(self, From, Event, To, Airbase)
-    end
+    if previousLanded then previousLanded(self, From, Event, To, Airbase) end
     if runtime.finished then return end
     slot.landed = true
     slot.landedAmmo = ammoSummary(self, "LANDED", sortie)
@@ -359,16 +297,12 @@ local function bindFlightLifecycle(state, flightGroup, mission, sortie)
       pollDeltas()
       logInventorySnapshot(runtime.phase)
     end)
-    if not landedOk then
-      failResult("LANDED_STORAGE", landedErr)
-    end
+    if not landedOk then failResult("LANDED_STORAGE", landedErr) end
   end
 
   local previousArrived = flightGroup.OnAfterArrived
   flightGroup.OnAfterArrived = function(self, From, Event, To)
-    if previousArrived then
-      previousArrived(self, From, Event, To)
-    end
+    if previousArrived then previousArrived(self, From, Event, To) end
     if runtime.finished then return end
     slot.arrived = true
     slot.arrivedAmmo = ammoSummary(self, "ARRIVED", sortie)
@@ -396,18 +330,11 @@ local function bindFlightLifecycle(state, flightGroup, mission, sortie)
           failResult("FIRST_POST_RETURN_STORAGE", postErr)
           return
         end
-        log(string.format(
-          "AIRWING_STATE label=FIRST_POST_RETURN totalAssets=%s assetsOnMission=%s landedObserved=%s",
-          tostring(state.Airwing:CountAssets()),
-          tostring(select(1, state.Airwing:CountAssetsOnMission())),
-          tostring(slot.landed == true)
-        ))
+        log(string.format("AIRWING_STATE label=FIRST_POST_RETURN totalAssets=%s assetsOnMission=%s landedObserved=%s", tostring(state.Airwing:CountAssets()), tostring(select(1, state.Airwing:CountAssetsOnMission())), tostring(slot.landed == true)))
         if not runtime.secondDispatchScheduled then
           runtime.secondDispatchScheduled = true
           SCHEDULER:New(nil, function()
-            if not runtime.finished then
-              dispatchSortie(state, 2)
-            end
+            if not runtime.finished then dispatchSortie(state, 2) end
           end, {}, SECOND_DISPATCH_DELAY_S)
         end
       end, {}, POST_RETURN_OBSERVE_S)
@@ -423,12 +350,7 @@ local function bindFlightLifecycle(state, flightGroup, mission, sortie)
           failResult("SECOND_POST_RETURN_STORAGE", postErr)
           return
         end
-        log(string.format(
-          "AIRWING_STATE label=SECOND_POST_RETURN totalAssets=%s assetsOnMission=%s landedObserved=%s",
-          tostring(state.Airwing:CountAssets()),
-          tostring(select(1, state.Airwing:CountAssetsOnMission())),
-          tostring(slot.landed == true)
-        ))
+        log(string.format("AIRWING_STATE label=SECOND_POST_RETURN totalAssets=%s assetsOnMission=%s landedObserved=%s", tostring(state.Airwing:CountAssets()), tostring(select(1, state.Airwing:CountAssetsOnMission())), tostring(slot.landed == true)))
         SCHEDULER:New(nil, finishPass, {}, FINAL_OBSERVE_S)
       end, {}, POST_RETURN_OBSERVE_S)
     end
@@ -442,9 +364,7 @@ dispatchSortie = function(state, sortie)
   local previousCallback = state.Airwing.OnAfterFlightOnMission
 
   state.Airwing.OnAfterFlightOnMission = function(self, From, Event, To, FlightGroup, Mission)
-    if previousCallback then
-      previousCallback(self, From, Event, To, FlightGroup, Mission)
-    end
+    if previousCallback then previousCallback(self, From, Event, To, FlightGroup, Mission) end
     if runtime.finished or Mission ~= mission then return end
     if assigned then
       failResult("DISPATCH", "duplicate FlightOnMission for sortie=" .. tostring(sortie))
@@ -457,14 +377,7 @@ dispatchSortie = function(state, sortie)
     end
     local group = FlightGroup:GetGroup()
     local leader = group and group:GetUnit(1) or nil
-    log(string.format(
-      "FLIGHT_ON_MISSION sortie=%d group=%s missionType=%s unitType=%s state=%s",
-      sortie,
-      tostring(FlightGroup:GetName()),
-      tostring(Mission:GetType()),
-      tostring(leader and leader:GetTypeName() or "nil"),
-      tostring(FlightGroup:GetState())
-    ))
+    log(string.format("FLIGHT_ON_MISSION sortie=%d group=%s missionType=%s unitType=%s state=%s", sortie, tostring(FlightGroup:GetName()), tostring(Mission:GetType()), tostring(leader and leader:GetTypeName() or "nil"), tostring(FlightGroup:GetState())))
     bindFlightLifecycle(state, FlightGroup, mission, sortie)
   end
 
@@ -474,24 +387,14 @@ dispatchSortie = function(state, sortie)
 end
 
 local function run()
-  if not OMW or not OMW.AirOps or not OMW.AirOps.Shindand then
-    error("Shindand foundation state not loaded")
-  end
-  if not AIRBASE or not STORAGE or not AIRWING or not AUFTRAG or not ZONE_RADIUS or not SCHEDULER then
-    error("Required pinned MOOSE classes unavailable")
-  end
+  if not OMW or not OMW.AirOps or not OMW.AirOps.Shindand then error("Shindand foundation state not loaded") end
+  if not AIRBASE or not STORAGE or not AIRWING or not AUFTRAG or not ZONE_RADIUS or not SCHEDULER then error("Required pinned MOOSE classes unavailable") end
 
   local state = OMW.AirOps.Shindand
-  if state.Status ~= "RUNNING" then
-    error("Shindand foundation is not RUNNING: " .. tostring(state.Status))
-  end
-  if not state.Airbase or state.Airbase:GetName() ~= EXPECTED_AIRBASE then
-    error("Unexpected Shindand airbase")
-  end
+  if state.Status ~= "RUNNING" then error("Shindand foundation is not RUNNING: " .. tostring(state.Status)) end
+  if not state.Airbase or state.Airbase:GetName() ~= EXPECTED_AIRBASE then error("Unexpected Shindand airbase") end
   local squadron = state.Squadrons and state.Squadrons.AH64D or nil
-  if not squadron or squadron.name ~= EXPECTED_SQUADRON then
-    error("Unexpected AH-64D squadron")
-  end
+  if not squadron or squadron.name ~= EXPECTED_SQUADRON then error("Unexpected AH-64D squadron") end
 
   log("TEST_BEGIN testId=" .. TEST_ID .. " scope=NO_FIRE_RETURN_RECREDIT_REDISPATCH readOnlyStorage=true")
   resolveStorages()
@@ -518,7 +421,5 @@ end
 
 SCHEDULER:New(nil, function()
   local ok, err = pcall(run)
-  if not ok then
-    failResult("HARNESS", err)
-  end
+  if not ok then failResult("HARNESS", err) end
 end, {}, START_DELAY_S)
