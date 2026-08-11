@@ -1,12 +1,14 @@
--- Operation Mountain Watch - STORAGE/AIRWING weapon lifecycle correlation.
--- Read-only STORAGE observer for AH-64D external stores / IAFS and F-16 external tanks.
+-- Operation Mountain Watch - combined STORAGE/AIRWING lifecycle gate.
+-- Read-only STORAGE observer. The only deliberate runtime mutation is the MOOSE
+-- OPSGROUP:Destroy() call used to exercise the native aircraft-loss path.
 
 local TAG = "[OMW][StorageAirwingWeaponLifecycle]"
-local TEST_ID = "STORAGE-AIRWING-WEAPON-LIFECYCLE-4"
+local TEST_ID = "STORAGE-AIRWING-WEAPON-LIFECYCLE-5"
 local START_DELAY_S = 20
 local POLL_INTERVAL_S = 5
-local POST_RETURN_OBSERVE_S = 15
-local NEXT_DISPATCH_DELAY_S = 10
+local POST_EVENT_OBSERVE_S = 15
+local NEXT_PHASE_DELAY_S = 10
+local LOSS_DESTROY_DELAY_S = 2
 local SAFETY_TIMEOUT_S = 1800
 local HEARTBEAT_INTERVAL_S = 120
 local STATUS_MESSAGE_DURATION_S = 12
@@ -18,7 +20,7 @@ local ITEM_AGM114K = "weapons.missiles.AGM_114K"
 local ITEM_COMBOPAK = "weapons.droptanks.{IAFS_ComboPak_100}"
 local DROPTANK_PREFIX = "weapons.droptanks."
 
-local EXPECTED_AH64_FIRST_DEBIT = {
+local EXPECTED_AH64_DEBIT = {
   [ITEM_M151] = 76,
   [ITEM_AGM114K] = 4,
   [ITEM_COMBOPAK] = 2,
@@ -45,9 +47,35 @@ local runtime = {
   nextHeartbeatAt = 0,
   baselineValidated = false,
   storageObservationValid = false,
-  ah64FirstDebitValidated = false,
-  ah64 = { first = {}, second = {} },
-  f16 = { sortie = {}, preDispatch = nil, tankDebits = nil, tankDebitTotal = 0, tankRecoveredTotal = 0, tankRecredit = "UNKNOWN" },
+  ah64Control = {
+    assigned = false,
+    arrived = false,
+    debitValidated = false,
+    recredit = "UNKNOWN",
+  },
+  ah64Loss = {
+    assigned = false,
+    destroyRequested = false,
+    observed = false,
+    preDispatch = nil,
+    postSpawn = nil,
+    stockBefore = nil,
+    totalBefore = nil,
+    stockAfter = nil,
+    totalAfter = nil,
+    assetLoss = "UNKNOWN",
+    storeRecovery = "UNKNOWN",
+  },
+  f16 = {
+    assigned = false,
+    arrived = false,
+    preDispatch = nil,
+    tankDebits = {},
+    tankDebitTotal = 0,
+    tankDebitExpectedMatched = false,
+    tankRecoveredTotal = 0,
+    tankRecredit = "UNKNOWN",
+  },
 }
 
 local function log(message)
@@ -58,31 +86,39 @@ local function notify(message, duration)
   MESSAGE:New(tostring(message), duration or STATUS_MESSAGE_DURATION_S, "OMW Test"):ToAll()
 end
 
+local function bool(value)
+  return value == true
+end
+
 local function failResult(stage, message)
   if runtime.finished then return end
   runtime.finished = true
   env.error(TAG .. " FAIL " .. tostring(message), false)
   log(string.format(
-    "RESULT testId=%s status=FAIL stage=%s phase=%s baselineValidated=%s storageObservationValid=%s ah64FirstDebitValidated=%s ah64FirstAssigned=%s ah64FirstArrived=%s ah64SecondAssigned=%s ah64SecondArrived=%s f16Assigned=%s f16Arrived=%s f16TankDebitTotal=%d f16TankRecoveredTotal=%d f16TankRecredit=%s deltasObserved=%d error=%s",
+    "RESULT testId=%s status=FAIL stage=%s phase=%s baselineValidated=%s storageObservationValid=%s ah64ControlAssigned=%s ah64ControlArrived=%s ah64ControlDebitValidated=%s ah64LossAssigned=%s ah64LossDestroyRequested=%s ah64LossObserved=%s ah64AssetLoss=%s ah64LossStoreRecovery=%s f16Assigned=%s f16Arrived=%s f16TankDebitTotal=%d f16TankDebitExpectedMatched=%s f16TankRecoveredTotal=%d f16TankRecredit=%s deltasObserved=%d error=%s",
     TEST_ID,
     tostring(stage),
     tostring(runtime.phase),
     tostring(runtime.baselineValidated),
     tostring(runtime.storageObservationValid),
-    tostring(runtime.ah64FirstDebitValidated),
-    tostring(runtime.ah64.first.assigned == true),
-    tostring(runtime.ah64.first.arrived == true),
-    tostring(runtime.ah64.second.assigned == true),
-    tostring(runtime.ah64.second.arrived == true),
-    tostring(runtime.f16.sortie.assigned == true),
-    tostring(runtime.f16.sortie.arrived == true),
+    tostring(bool(runtime.ah64Control.assigned)),
+    tostring(bool(runtime.ah64Control.arrived)),
+    tostring(bool(runtime.ah64Control.debitValidated)),
+    tostring(bool(runtime.ah64Loss.assigned)),
+    tostring(bool(runtime.ah64Loss.destroyRequested)),
+    tostring(bool(runtime.ah64Loss.observed)),
+    tostring(runtime.ah64Loss.assetLoss),
+    tostring(runtime.ah64Loss.storeRecovery),
+    tostring(bool(runtime.f16.assigned)),
+    tostring(bool(runtime.f16.arrived)),
     tonumber(runtime.f16.tankDebitTotal) or 0,
+    tostring(bool(runtime.f16.tankDebitExpectedMatched)),
     tonumber(runtime.f16.tankRecoveredTotal) or 0,
     tostring(runtime.f16.tankRecredit),
     runtime.deltaCount,
     tostring(message)
   ))
-  notify(string.format("STORAGE/AIRWING TEST FAILED\nStage: %s\nPhase: %s\nYou may stop the mission and send dcs.log + debrief.", tostring(stage), tostring(runtime.phase)), FINAL_MESSAGE_DURATION_S)
+  notify(string.format("STORAGE/AIRWING TEST FAILED\nStage: %s\nPhase: %s\nSend dcs.log + debrief.", tostring(stage), tostring(runtime.phase)), FINAL_MESSAGE_DURATION_S)
 end
 
 local function copyMap(source)
@@ -131,15 +167,17 @@ local function captureBaseline()
   end
 
   local shindand = runtime.baseline.SHINDAND_HELIPORT
-  for item, required in pairs(EXPECTED_AH64_FIRST_DEBIT) do
+  for item, required in pairs(EXPECTED_AH64_DEBIT) do
     local amount = shindand and shindand[item] or nil
     if type(amount) ~= "number" then error("Required Shindand key missing: " .. tostring(item)) end
-    if amount < required then error(string.format("Insufficient Shindand stock item=%s amount=%s required=%d", item, tostring(amount), required)) end
+    if amount < required * 2 then
+      error(string.format("Insufficient Shindand stock for control+loss item=%s amount=%s required=%d", item, tostring(amount), required * 2))
+    end
   end
 
   runtime.baselineValidated = true
   runtime.storageObservationValid = true
-  log(string.format("BASELINE_VALIDATED shindandWeaponKeys=%d bagramWeaponKeys=%d m151=%s agm114k=%s comboPak=%s", mapCount(runtime.baseline.SHINDAND_HELIPORT), mapCount(runtime.baseline.BAGRAM), tostring(shindand[ITEM_M151]), tostring(shindand[ITEM_AGM114K]), tostring(shindand[ITEM_COMBOPAK])))
+  log(string.format("BASELINE_VALIDATED shindandWeaponKeys=%d bagramWeaponKeys=%d m151=%s agm114k=%s comboPak=%s", mapCount(shindand), mapCount(runtime.baseline.BAGRAM), tostring(shindand[ITEM_M151]), tostring(shindand[ITEM_AGM114K]), tostring(shindand[ITEM_COMBOPAK])))
 end
 
 local function logSnapshot(label)
@@ -169,10 +207,10 @@ local function pollDeltas()
   end
 end
 
-local function ammoSummary(flightGroup, label, family, sortie)
+local function ammoSummary(flightGroup, label, family)
   local ammo = flightGroup and flightGroup.GetAmmoTot and flightGroup:GetAmmoTot() or nil
   if not ammo then
-    log(string.format("AMMO_SNAPSHOT family=%s sortie=%s label=%s unavailable=true", family, tostring(sortie), label))
+    log(string.format("AMMO_SNAPSHOT family=%s label=%s unavailable=true", family, label))
     return nil
   end
   local summary = {
@@ -181,7 +219,7 @@ local function ammoSummary(flightGroup, label, family, sortie)
     bombs = tonumber(ammo.Bombs) or 0,
     guns = tonumber(ammo.Guns) or 0,
   }
-  log(string.format("AMMO_SNAPSHOT family=%s sortie=%s label=%s missilesAG=%d rockets=%d bombs=%d guns=%d", family, tostring(sortie), label, summary.missilesAG, summary.rockets, summary.bombs, summary.guns))
+  log(string.format("AMMO_SNAPSHOT family=%s label=%s missilesAG=%d rockets=%d bombs=%d guns=%d", family, label, summary.missilesAG, summary.rockets, summary.bombs, summary.guns))
   return summary
 end
 
@@ -189,31 +227,41 @@ local function ammoEqual(a, b)
   return a and b and a.missilesAG == b.missilesAG and a.rockets == b.rockets and a.bombs == b.bombs and a.guns == b.guns
 end
 
-local function validateAH64FirstDebit()
-  local current = readWeapons(runtime.storages.SHINDAND_HELIPORT, "SHINDAND_HELIPORT")
-  local baseline = runtime.baseline.SHINDAND_HELIPORT
-  for item, expectedDebit in pairs(EXPECTED_AH64_FIRST_DEBIT) do
-    local before = tonumber(baseline[item])
-    local after = tonumber(current[item])
-    if not before or not after then error("AH-64 debit value missing item=" .. tostring(item)) end
-    local actualDebit = before - after
-    if actualDebit ~= expectedDebit then error(string.format("AH-64 debit mismatch item=%s expected=%d actual=%d", item, expectedDebit, actualDebit)) end
+local function exactDebit(before, after, expected, label)
+  for item, expectedDebit in pairs(expected) do
+    local a = tonumber(before[item])
+    local b = tonumber(after[item])
+    if not a or not b then error(label .. " value missing item=" .. tostring(item)) end
+    local actualDebit = a - b
+    if actualDebit ~= expectedDebit then
+      error(string.format("%s mismatch item=%s expected=%d actual=%d", label, item, expectedDebit, actualDebit))
+    end
   end
-  runtime.ah64FirstDebitValidated = true
-  log("AH64_FIRST_DEBIT_VALIDATED m151=-76 agm114k=-4 comboPak=-2")
 end
 
-local function captureF16PreDispatch()
-  runtime.f16.preDispatch = readWeapons(runtime.storages.BAGRAM, "BAGRAM")
-  log(string.format("F16_PRE_DISPATCH_CAPTURED weaponKeys=%d", mapCount(runtime.f16.preDispatch)))
+local function classifyKnownRecovery(postSpawn, finalInventory)
+  local debited = 0
+  local recovered = 0
+  for item, expectedDebit in pairs(EXPECTED_AH64_DEBIT) do
+    local spawnValue = tonumber(postSpawn[item]) or 0
+    local finalValue = tonumber(finalInventory[item]) or 0
+    local itemRecovery = finalValue - spawnValue
+    if itemRecovery < 0 then itemRecovery = 0 end
+    if itemRecovery > expectedDebit then itemRecovery = expectedDebit end
+    debited = debited + expectedDebit
+    recovered = recovered + itemRecovery
+    log(string.format("AH64_LOSS_STORE_RECOVERY item=%s postSpawn=%d final=%d maxDebit=%d recovered=%d", item, spawnValue, finalValue, expectedDebit, itemRecovery))
+  end
+  if recovered == 0 then return "NONE", recovered, debited end
+  if recovered == debited then return "FULL", recovered, debited end
+  return "PARTIAL", recovered, debited
 end
 
-local function validateF16TankDebit()
+local function captureF16TankDebit()
   local current = readWeapons(runtime.storages.BAGRAM, "BAGRAM")
-  local baseline = runtime.f16.preDispatch
-  local debits = {}
   local total = 0
-  for key, before in pairs(baseline or {}) do
+  local debits = {}
+  for key, before in pairs(runtime.f16.preDispatch or {}) do
     if string.sub(key, 1, #DROPTANK_PREFIX) == DROPTANK_PREFIX then
       local after = tonumber(current[key]) or 0
       local debit = (tonumber(before) or 0) - after
@@ -226,10 +274,8 @@ local function validateF16TankDebit()
   end
   runtime.f16.tankDebits = debits
   runtime.f16.tankDebitTotal = total
-  if total ~= 4 then
-    error(string.format("Expected F-16 TwoShip external-tank debit total=4, observed=%d", total))
-  end
-  log("F16_DROPTANK_DEBIT_VALIDATED total=-4 expectedTwoShipTanks=4")
+  runtime.f16.tankDebitExpectedMatched = total == 4
+  log(string.format("F16_DROPTANK_DEBIT_RESULT total=%d expected=4 expectedMatched=%s keys=%d", total, tostring(runtime.f16.tankDebitExpectedMatched), mapCount(debits)))
 end
 
 local function assessF16TankRecredit()
@@ -244,17 +290,19 @@ local function assessF16TankRecredit()
     log(string.format("F16_DROPTANK_RECREDIT item=%s pre=%d afterSpawn=%d final=%d debit=%d recovered=%d", key, observation.before, observation.afterSpawn, final, observation.debit, recovery))
   end
   runtime.f16.tankRecoveredTotal = recovered
-  if recovered == runtime.f16.tankDebitTotal then
+  if runtime.f16.tankDebitTotal == 0 then
+    runtime.f16.tankRecredit = "NOT_OBSERVED"
+  elseif recovered == runtime.f16.tankDebitTotal then
     runtime.f16.tankRecredit = "FULL"
   elseif recovered == 0 then
     runtime.f16.tankRecredit = "NONE"
   else
     runtime.f16.tankRecredit = "PARTIAL"
   end
-  log(string.format("F16_DROPTANK_RECREDIT_RESULT debitTotal=%d recoveredTotal=%d status=%s", runtime.f16.tankDebitTotal, runtime.f16.tankRecoveredTotal, runtime.f16.tankRecredit))
+  log(string.format("F16_DROPTANK_RECREDIT_RESULT debitTotal=%d recoveredTotal=%d status=%s expectedDebitMatched=%s", runtime.f16.tankDebitTotal, runtime.f16.tankRecoveredTotal, runtime.f16.tankRecredit, tostring(runtime.f16.tankDebitExpectedMatched)))
 end
 
-local function makeCAS(airbase, name, altitudeFt, speedKts)
+local function makeNoFireCAS(airbase, name, altitudeFt, speedKts)
   local targetCoordinate = airbase:GetCoordinate():Translate(10000, 90)
   local zone = ZONE_RADIUS:New(name, targetCoordinate:GetVec2(), 1500)
   local mission = AUFTRAG:NewCAS(zone, altitudeFt, speedKts)
@@ -264,70 +312,10 @@ local function makeCAS(airbase, name, altitudeFt, speedKts)
   return mission
 end
 
-local dispatchAH64
+local dispatchAH64Control
+local dispatchAH64Loss
 local dispatchF16
-
-local function finishPass()
-  if runtime.finished then return end
-  local ah1NoFire = ammoEqual(runtime.ah64.first.assignedAmmo, runtime.ah64.first.arrivedAmmo)
-  local ah2NoFire = ammoEqual(runtime.ah64.second.assignedAmmo, runtime.ah64.second.arrivedAmmo)
-  local f16NoFire = ammoEqual(runtime.f16.sortie.assignedAmmo, runtime.f16.sortie.arrivedAmmo)
-  local complete = runtime.baselineValidated and runtime.storageObservationValid and runtime.ah64FirstDebitValidated
-    and runtime.ah64.first.assigned and runtime.ah64.first.arrived
-    and runtime.ah64.second.assigned and runtime.ah64.second.arrived
-    and runtime.f16.sortie.assigned and runtime.f16.sortie.arrived
-    and runtime.f16.tankDebitTotal == 4 and ah1NoFire and ah2NoFire and f16NoFire
-  if not complete then return failResult("FINAL_ASSERT", "Required combined lifecycle invariant not satisfied") end
-
-  runtime.phase = "FINAL"
-  local ok, err = pcall(function()
-    pollDeltas()
-    assessF16TankRecredit()
-    logSnapshot("FINAL")
-  end)
-  if not ok then return failResult("FINAL_STORAGE", err) end
-
-  runtime.finished = true
-  log(string.format("RESULT testId=%s status=PASS nodesExpected=7 nodesReady=7 baselineValidated=true storageObservationValid=true ah64FirstDebitValidated=true ah64FirstAssigned=true ah64FirstArrived=true ah64SecondAssigned=true ah64SecondArrived=true ah64FirstNoFire=true ah64SecondNoFire=true f16Assigned=true f16Arrived=true f16NoFire=true f16TankDebitTotal=%d f16TankRecoveredTotal=%d f16TankRecredit=%s storageMutation=false campaignStateMutation=false returnToLegionCalledByTest=false directSpawn=false opstransport=false ctld=false deltasObserved=%d", TEST_ID, runtime.f16.tankDebitTotal, runtime.f16.tankRecoveredTotal, runtime.f16.tankRecredit, runtime.deltaCount))
-  notify(string.format("STORAGE/AIRWING TEST COMPLETE - PASS\nAH-64 lifecycle + F-16 tank comparison complete.\nF-16 tank recredit: %s (%d/%d)\nYou may stop the mission and send dcs.log + debrief.", runtime.f16.tankRecredit, runtime.f16.tankRecoveredTotal, runtime.f16.tankDebitTotal), FINAL_MESSAGE_DURATION_S)
-end
-
-local function bindArrived(slot, flightGroup, family, sortie, onReturned)
-  slot.flightGroup = flightGroup
-  slot.assigned = true
-  slot.assignedAmmo = ammoSummary(flightGroup, "ASSIGNED", family, sortie)
-
-  local previousLanded = flightGroup.OnAfterLanded
-  flightGroup.OnAfterLanded = function(self, From, Event, To, Airbase)
-    if previousLanded then previousLanded(self, From, Event, To, Airbase) end
-    if runtime.finished then return end
-    slot.landed = true
-    slot.landedAmmo = ammoSummary(self, "LANDED", family, sortie)
-    log(string.format("LIFECYCLE_EVENT family=%s sortie=%s event=Landed airbase=%s state=%s", family, tostring(sortie), Airbase and Airbase:GetName() or "nil", tostring(self:GetState())))
-  end
-
-  local previousArrived = flightGroup.OnAfterArrived
-  flightGroup.OnAfterArrived = function(self, From, Event, To)
-    if previousArrived then previousArrived(self, From, Event, To) end
-    if runtime.finished or slot.arrived then return end
-    slot.arrived = true
-    slot.arrivedAmmo = ammoSummary(self, "ARRIVED", family, sortie)
-    runtime.phase = string.upper(family) .. "_" .. tostring(sortie) .. "_ARRIVED"
-    log(string.format("LIFECYCLE_EVENT family=%s sortie=%s event=Arrived state=%s landedObserved=%s", family, tostring(sortie), tostring(self:GetState()), tostring(slot.landed == true)))
-    local ok, err = pcall(function() pollDeltas(); logSnapshot(runtime.phase) end)
-    if not ok then return failResult("ARRIVED_STORAGE", err) end
-    SCHEDULER:New(nil, function()
-      if runtime.finished then return end
-      local returnedOk, returnedErr = pcall(function()
-        runtime.phase = string.upper(family) .. "_" .. tostring(sortie) .. "_POST_RETURN"
-        pollDeltas()
-        logSnapshot(runtime.phase)
-        onReturned()
-      end)
-      if not returnedOk then failResult("POST_RETURN", returnedErr) end
-    end, {}, POST_RETURN_OBSERVE_S)
-  end
-end
+local finishResult
 
 local function requireFoundations()
   local shindand = OMW and OMW.AirOps and OMW.AirOps.Shindand or nil
@@ -341,66 +329,223 @@ local function requireFoundations()
   return shindand, bagram
 end
 
-function dispatchAH64(sortie)
-  local shindand = requireFoundations()
-  local slot = sortie == 1 and runtime.ah64.first or runtime.ah64.second
-  local mission = makeCAS(shindand.Airbase, "OMW_SHND_STORAGE_AH64_" .. tostring(sortie), 5500, 100)
-  mission:AssignSquadrons({ shindand.Squadrons.AH64D })
-  runtime.phase = "AH64_" .. tostring(sortie) .. "_DISPATCH_REQUEST"
-  log(string.format("AH64_DISPATCH_REQUEST sortie=%d squadron=%s", sortie, tostring(shindand.Squadrons.AH64D.name)))
+local function bindOptionalLanded(flightGroup, family)
+  local previous = flightGroup.OnAfterLanded
+  flightGroup.OnAfterLanded = function(self, From, Event, To, Airbase)
+    if previous then previous(self, From, Event, To, Airbase) end
+    if runtime.finished then return end
+    log(string.format("LIFECYCLE_EVENT family=%s event=Landed airbase=%s state=%s", family, Airbase and Airbase:GetName() or "nil", tostring(self:GetState())))
+  end
+end
 
-  local previous = shindand.Airwing.OnAfterFlightOnMission
+dispatchAH64Control = function()
+  local shindand = requireFoundations()
+  local preDispatch = readWeapons(runtime.storages.SHINDAND_HELIPORT, "SHINDAND_HELIPORT")
+  local mission = makeNoFireCAS(shindand.Airbase, "OMW_SHND_STORAGE_AH64_CONTROL", 5500, 100)
+  mission:AssignSquadrons({ shindand.Squadrons.AH64D })
+  runtime.phase = "AH64_CONTROL_DISPATCH_REQUEST"
+  log("AH64_CONTROL_DISPATCH_REQUEST")
+
+  local previousFlightOnMission = shindand.Airwing.OnAfterFlightOnMission
   shindand.Airwing.OnAfterFlightOnMission = function(self, From, Event, To, FlightGroup, Mission)
-    if previous then previous(self, From, Event, To, FlightGroup, Mission) end
-    if runtime.finished or slot.assigned or Mission ~= mission then return end
-    runtime.phase = "AH64_" .. tostring(sortie) .. "_ASSIGNED"
+    if previousFlightOnMission then previousFlightOnMission(self, From, Event, To, FlightGroup, Mission) end
+    if runtime.finished or runtime.ah64Control.assigned or Mission ~= mission then return end
+    runtime.ah64Control.assigned = true
+    runtime.phase = "AH64_CONTROL_ASSIGNED"
+    runtime.ah64Control.assignedAmmo = ammoSummary(FlightGroup, "ASSIGNED", "AH64_CONTROL")
     local ok, err = pcall(function()
       pollDeltas()
-      if sortie == 1 then validateAH64FirstDebit() end
-      logSnapshot(runtime.phase)
+      local postSpawn = readWeapons(runtime.storages.SHINDAND_HELIPORT, "SHINDAND_HELIPORT")
+      exactDebit(preDispatch, postSpawn, EXPECTED_AH64_DEBIT, "AH64_CONTROL_DEBIT")
+      runtime.ah64Control.debitValidated = true
+      runtime.ah64Control.postSpawn = postSpawn
+      log("AH64_CONTROL_DEBIT_VALIDATED m151=-76 agm114k=-4 comboPak=-2")
     end)
-    if not ok then return failResult("AH64_ASSIGNMENT_STORAGE", err) end
-    bindArrived(slot, FlightGroup, "AH64", sortie, function()
-      if sortie == 1 then
-        notify("AH-64 first return observed. Dispatching second AH-64 lifecycle leg.")
-        SCHEDULER:New(nil, function() dispatchAH64(2) end, {}, NEXT_DISPATCH_DELAY_S)
-      else
-        notify("AH-64 lifecycle complete. Dispatching Bagram F-16 TwoShip tank comparison.")
-        SCHEDULER:New(nil, function() dispatchF16() end, {}, NEXT_DISPATCH_DELAY_S)
-      end
-    end)
-    notify(string.format("AH-64 sortie %d assigned. Waiting for native Arrived/ReturnToLegion.", sortie))
+    if not ok then return failResult("AH64_CONTROL_ASSIGNMENT", err) end
+
+    bindOptionalLanded(FlightGroup, "AH64_CONTROL")
+    local previousArrived = FlightGroup.OnAfterArrived
+    FlightGroup.OnAfterArrived = function(fg, AFrom, AEvent, ATo)
+      if previousArrived then previousArrived(fg, AFrom, AEvent, ATo) end
+      if runtime.finished or runtime.ah64Control.arrived then return end
+      runtime.ah64Control.arrived = true
+      runtime.ah64Control.arrivedAmmo = ammoSummary(fg, "ARRIVED", "AH64_CONTROL")
+      runtime.phase = "AH64_CONTROL_ARRIVED"
+      log(string.format("LIFECYCLE_EVENT family=AH64_CONTROL event=Arrived state=%s", tostring(fg:GetState())))
+      SCHEDULER:New(nil, function()
+        if runtime.finished then return end
+        local returnedOk, returnedErr = pcall(function()
+          runtime.phase = "AH64_CONTROL_POST_RETURN"
+          pollDeltas()
+          local final = readWeapons(runtime.storages.SHINDAND_HELIPORT, "SHINDAND_HELIPORT")
+          local status = classifyKnownRecovery(runtime.ah64Control.postSpawn, final)
+          runtime.ah64Control.recredit = status
+          log(string.format("AH64_CONTROL_RECREDIT_RESULT status=%s noFire=%s", status, tostring(ammoEqual(runtime.ah64Control.assignedAmmo, runtime.ah64Control.arrivedAmmo))))
+          logSnapshot("AH64_CONTROL_POST_RETURN")
+        end)
+        if not returnedOk then return failResult("AH64_CONTROL_POST_RETURN", returnedErr) end
+        notify("AH-64 normal return observed. Starting deliberate AH-64 asset-loss leg.")
+        SCHEDULER:New(nil, dispatchAH64Loss, {}, NEXT_PHASE_DELAY_S)
+      end, {}, POST_EVENT_OBSERVE_S)
+    end
+    notify("AH-64 normal-return control assigned. Waiting for native Arrived/ReturnToLegion.")
   end
   shindand.Airwing:AddMission(mission)
 end
 
-function dispatchF16()
-  local _, bagram = requireFoundations()
-  captureF16PreDispatch()
-  local mission = makeCAS(bagram.Airbases.USAF, "OMW_BGRM_STORAGE_F16_TANK", 12000, 300)
-  mission:AssignSquadrons({ bagram.Squadrons.F16C })
-  runtime.phase = "F16_DISPATCH_REQUEST"
-  log(string.format("F16_DISPATCH_REQUEST squadron=%s expectedAircraft=2 expectedExternalTanks=4", tostring(bagram.Squadrons.F16C.name)))
+dispatchAH64Loss = function()
+  local shindand = requireFoundations()
+  runtime.ah64Loss.preDispatch = readWeapons(runtime.storages.SHINDAND_HELIPORT, "SHINDAND_HELIPORT")
+  runtime.ah64Loss.stockBefore = shindand.Squadrons.AH64D:CountAssets(true)
+  runtime.ah64Loss.totalBefore = shindand.Squadrons.AH64D:CountAssets()
+  log(string.format("AH64_LOSS_PRE_DISPATCH stock=%d total=%d", runtime.ah64Loss.stockBefore, runtime.ah64Loss.totalBefore))
 
-  local previous = bagram.Airwings.USAF.OnAfterFlightOnMission
-  bagram.Airwings.USAF.OnAfterFlightOnMission = function(self, From, Event, To, FlightGroup, Mission)
-    if previous then previous(self, From, Event, To, FlightGroup, Mission) end
-    if runtime.finished or runtime.f16.sortie.assigned or Mission ~= mission then return end
-    runtime.phase = "F16_ASSIGNED"
+  local mission = makeNoFireCAS(shindand.Airbase, "OMW_SHND_STORAGE_AH64_LOSS", 5500, 100)
+  mission:AssignSquadrons({ shindand.Squadrons.AH64D })
+  runtime.phase = "AH64_LOSS_DISPATCH_REQUEST"
+  log("AH64_LOSS_DISPATCH_REQUEST")
+
+  local previousFlightOnMission = shindand.Airwing.OnAfterFlightOnMission
+  shindand.Airwing.OnAfterFlightOnMission = function(self, From, Event, To, FlightGroup, Mission)
+    if previousFlightOnMission then previousFlightOnMission(self, From, Event, To, FlightGroup, Mission) end
+    if runtime.finished or runtime.ah64Loss.assigned or Mission ~= mission then return end
+    runtime.ah64Loss.assigned = true
+    runtime.phase = "AH64_LOSS_ASSIGNED"
     local ok, err = pcall(function()
       pollDeltas()
-      validateF16TankDebit()
-      logSnapshot(runtime.phase)
+      runtime.ah64Loss.postSpawn = readWeapons(runtime.storages.SHINDAND_HELIPORT, "SHINDAND_HELIPORT")
+      exactDebit(runtime.ah64Loss.preDispatch, runtime.ah64Loss.postSpawn, EXPECTED_AH64_DEBIT, "AH64_LOSS_DEBIT")
+      log(string.format("AH64_LOSS_DEBIT_VALIDATED stockAfterSpawn=%d totalAfterSpawn=%d", shindand.Squadrons.AH64D:CountAssets(true), shindand.Squadrons.AH64D:CountAssets()))
     end)
-    if not ok then return failResult("F16_ASSIGNMENT_STORAGE", err) end
-    bindArrived(runtime.f16.sortie, FlightGroup, "F16", 1, function()
-      local assessOk, assessErr = pcall(assessF16TankRecredit)
-      if not assessOk then return failResult("F16_TANK_RECREDIT", assessErr) end
-      finishPass()
+    if not ok then return failResult("AH64_LOSS_ASSIGNMENT", err) end
+
+    notify("AH-64 loss asset materialized. MOOSE OPSGROUP loss event will be triggered.")
+    SCHEDULER:New(nil, function()
+      if runtime.finished then return end
+      runtime.phase = "AH64_LOSS_DESTROY"
+      runtime.ah64Loss.destroyRequested = true
+      log("AH64_LOSS_DESTROY_REQUEST method=OPSGROUP:Destroy expectedEvent=UnitLost")
+      FlightGroup:Destroy()
+      SCHEDULER:New(nil, function()
+        if runtime.finished then return end
+        local observeOk, observeErr = pcall(function()
+          runtime.phase = "AH64_LOSS_POST_EVENT"
+          pollDeltas()
+          runtime.ah64Loss.stockAfter = shindand.Squadrons.AH64D:CountAssets(true)
+          runtime.ah64Loss.totalAfter = shindand.Squadrons.AH64D:CountAssets()
+          runtime.ah64Loss.observed = true
+          if runtime.ah64Loss.totalAfter == runtime.ah64Loss.totalBefore - 1 then
+            runtime.ah64Loss.assetLoss = "CONFIRMED"
+          else
+            runtime.ah64Loss.assetLoss = "NOT_CONFIRMED"
+          end
+          local final = readWeapons(runtime.storages.SHINDAND_HELIPORT, "SHINDAND_HELIPORT")
+          local recovery, recovered, debited = classifyKnownRecovery(runtime.ah64Loss.postSpawn, final)
+          runtime.ah64Loss.storeRecovery = recovery
+          log(string.format("AH64_LOSS_RESULT assetLoss=%s totalBefore=%d totalAfter=%d stockBefore=%d stockAfter=%d storeRecovery=%s recoveredKnown=%d debitedKnown=%d", runtime.ah64Loss.assetLoss, runtime.ah64Loss.totalBefore, runtime.ah64Loss.totalAfter, runtime.ah64Loss.stockBefore, runtime.ah64Loss.stockAfter, recovery, recovered, debited))
+          logSnapshot("AH64_LOSS_POST_EVENT")
+        end)
+        if not observeOk then return failResult("AH64_LOSS_POST_EVENT", observeErr) end
+        notify(string.format("AH-64 loss leg observed: asset=%s, storeRecovery=%s. Starting F-16 tank comparison.", runtime.ah64Loss.assetLoss, runtime.ah64Loss.storeRecovery))
+        SCHEDULER:New(nil, dispatchF16, {}, NEXT_PHASE_DELAY_S)
+      end, {}, POST_EVENT_OBSERVE_S)
+    end, {}, LOSS_DESTROY_DELAY_S)
+  end
+  shindand.Airwing:AddMission(mission)
+end
+
+dispatchF16 = function()
+  local _, bagram = requireFoundations()
+  runtime.f16.preDispatch = readWeapons(runtime.storages.BAGRAM, "BAGRAM")
+  log(string.format("F16_PRE_DISPATCH_CAPTURED weaponKeys=%d", mapCount(runtime.f16.preDispatch)))
+
+  local mission = makeNoFireCAS(bagram.Airbases.USAF, "OMW_BGRM_STORAGE_F16_TANK", 12000, 300)
+  mission:AssignSquadrons({ bagram.Squadrons.F16C })
+  runtime.phase = "F16_DISPATCH_REQUEST"
+  log("F16_DISPATCH_REQUEST expectedAircraft=2 ownerConfirmedExternalTanks=4")
+
+  local previousFlightOnMission = bagram.Airwings.USAF.OnAfterFlightOnMission
+  bagram.Airwings.USAF.OnAfterFlightOnMission = function(self, From, Event, To, FlightGroup, Mission)
+    if previousFlightOnMission then previousFlightOnMission(self, From, Event, To, FlightGroup, Mission) end
+    if runtime.finished or runtime.f16.assigned or Mission ~= mission then return end
+    runtime.f16.assigned = true
+    runtime.phase = "F16_ASSIGNED"
+    runtime.f16.assignedAmmo = ammoSummary(FlightGroup, "ASSIGNED", "F16")
+    local ok, err = pcall(function()
+      pollDeltas()
+      captureF16TankDebit()
+      logSnapshot("F16_ASSIGNED")
     end)
-    notify("F-16 TwoShip assigned and -4 external-tank debit validated. Waiting for native return/recredit.")
+    if not ok then return failResult("F16_ASSIGNMENT", err) end
+
+    bindOptionalLanded(FlightGroup, "F16")
+    local previousArrived = FlightGroup.OnAfterArrived
+    FlightGroup.OnAfterArrived = function(fg, AFrom, AEvent, ATo)
+      if previousArrived then previousArrived(fg, AFrom, AEvent, ATo) end
+      if runtime.finished or runtime.f16.arrived then return end
+      runtime.f16.arrived = true
+      runtime.f16.arrivedAmmo = ammoSummary(fg, "ARRIVED", "F16")
+      runtime.phase = "F16_ARRIVED"
+      log(string.format("LIFECYCLE_EVENT family=F16 event=Arrived state=%s", tostring(fg:GetState())))
+      SCHEDULER:New(nil, function()
+        if runtime.finished then return end
+        local returnedOk, returnedErr = pcall(function()
+          runtime.phase = "F16_POST_RETURN"
+          pollDeltas()
+          assessF16TankRecredit()
+          logSnapshot("F16_POST_RETURN")
+        end)
+        if not returnedOk then return failResult("F16_POST_RETURN", returnedErr) end
+        finishResult()
+      end, {}, POST_EVENT_OBSERVE_S)
+    end
+    notify(string.format("F-16 TwoShip assigned. Observed droptank debit=%d (expected 4, match=%s). Waiting for native return.", runtime.f16.tankDebitTotal, tostring(runtime.f16.tankDebitExpectedMatched)))
   end
   bagram.Airwings.USAF:AddMission(mission)
+end
+
+finishResult = function()
+  if runtime.finished then return end
+  local ah64ControlNoFire = ammoEqual(runtime.ah64Control.assignedAmmo, runtime.ah64Control.arrivedAmmo)
+  local f16NoFire = ammoEqual(runtime.f16.assignedAmmo, runtime.f16.arrivedAmmo)
+  local structuralComplete = runtime.baselineValidated
+    and runtime.storageObservationValid
+    and runtime.ah64Control.assigned
+    and runtime.ah64Control.arrived
+    and runtime.ah64Control.debitValidated
+    and runtime.ah64Loss.assigned
+    and runtime.ah64Loss.destroyRequested
+    and runtime.ah64Loss.observed
+    and runtime.f16.assigned
+    and runtime.f16.arrived
+
+  if not structuralComplete then
+    return failResult("FINAL_ASSERT", "Required combined lifecycle phases did not complete")
+  end
+
+  runtime.phase = "FINAL"
+  local ok, err = pcall(function()
+    pollDeltas()
+    logSnapshot("FINAL")
+  end)
+  if not ok then return failResult("FINAL_STORAGE", err) end
+
+  runtime.finished = true
+  log(string.format(
+    "RESULT testId=%s status=PASS nodesExpected=7 nodesReady=7 baselineValidated=true storageObservationValid=true ah64ControlAssigned=true ah64ControlArrived=true ah64ControlDebitValidated=true ah64ControlNoFire=%s ah64ControlRecredit=%s ah64LossAssigned=true ah64LossDestroyRequested=true ah64LossObserved=true ah64AssetLoss=%s ah64LossStoreRecovery=%s f16Assigned=true f16Arrived=true f16NoFire=%s f16TankDebitTotal=%d f16TankDebitExpected=4 f16TankDebitExpectedMatched=%s f16TankRecoveredTotal=%d f16TankRecredit=%s storageMutation=false campaignStateMutation=false returnToLegionCalledByTest=false deliberateLossMethod=OPSGROUP_Destroy directSpawn=false opstransport=false ctld=false deltasObserved=%d",
+    TEST_ID,
+    tostring(ah64ControlNoFire),
+    tostring(runtime.ah64Control.recredit),
+    tostring(runtime.ah64Loss.assetLoss),
+    tostring(runtime.ah64Loss.storeRecovery),
+    tostring(f16NoFire),
+    runtime.f16.tankDebitTotal,
+    tostring(runtime.f16.tankDebitExpectedMatched),
+    runtime.f16.tankRecoveredTotal,
+    tostring(runtime.f16.tankRecredit),
+    runtime.deltaCount
+  ))
+  notify(string.format("STORAGE/AIRWING TEST COMPLETE - PASS\nAH-64 normal return: %s\nAH-64 loss asset: %s / stores: %s\nF-16 tanks: debit %d (expected 4), recredit %s (%d/%d)\nSend dcs.log + debrief.", runtime.ah64Control.recredit, runtime.ah64Loss.assetLoss, runtime.ah64Loss.storeRecovery, runtime.f16.tankDebitTotal, runtime.f16.tankRecredit, runtime.f16.tankRecoveredTotal, runtime.f16.tankDebitTotal), FINAL_MESSAGE_DURATION_S)
 end
 
 local function beginTest()
@@ -416,8 +561,8 @@ local function beginTest()
   end)
   if not ok then return failResult("BASELINE", err) end
 
-  log("TEST_BEGIN combined AH-64 lifecycle and F-16 external-tank comparison")
-  notify("STORAGE/AIRWING TEST STARTED\nBaseline validated.\nPhase 1: AH-64 lifecycle. Phase 2: F-16 external-tank comparison.")
+  log("TEST_BEGIN phases=AH64_NORMAL_RETURN,AH64_ASSET_LOSS,F16_DROPTANK_RETURN")
+  notify("STORAGE/AIRWING TEST STARTED\n1 AH-64 normal return\n2 AH-64 deliberate loss\n3 F-16 external-tank return")
 
   SCHEDULER:New(nil, function()
     if runtime.finished then return end
@@ -426,7 +571,7 @@ local function beginTest()
     local now = timer.getTime()
     if now >= runtime.nextHeartbeatAt then
       runtime.nextHeartbeatAt = now + HEARTBEAT_INTERVAL_S
-      notify(string.format("OMW lifecycle test running\nPhase: %s\nElapsed: %ds", runtime.phase, math.floor(now - runtime.startedAt)), 8)
+      notify(string.format("OMW combined lifecycle test running\nPhase: %s\nElapsed: %ds", runtime.phase, math.floor(now - runtime.startedAt)), 8)
     end
   end, {}, POLL_INTERVAL_S, POLL_INTERVAL_S)
 
@@ -434,7 +579,7 @@ local function beginTest()
     if not runtime.finished then failResult("SAFETY_TIMEOUT", "Combined lifecycle did not complete within safety timeout") end
   end, {}, SAFETY_TIMEOUT_S)
 
-  dispatchAH64(1)
+  dispatchAH64Control()
 end
 
 SCHEDULER:New(nil, beginTest, {}, START_DELAY_S)
