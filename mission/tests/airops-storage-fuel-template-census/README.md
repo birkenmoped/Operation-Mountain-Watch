@@ -36,8 +36,8 @@ DCS STORAGE JETFUEL liquid inventory
 DCS STORAGE weapon inventory
 AIRWING materialization
 onboard fuel at assignment
-native mission lifecycle / Arrived / ReturnToLegion
-onboard fuel at Arrived
+native mission lifecycle / Landed / Arrived / ReturnToLegion
+onboard fuel at Landed und, soweit noch messbar, Arrived
 post-return STORAGE recredit
 ```
 
@@ -53,7 +53,7 @@ Der gepinnte MOOSE-Stand bietet eine kleinere MOOSE-first-Loesung:
 - `AIRWING:NewPayload()` kann den Payload eines exakten Mission-Editor-Templates registrieren und fuegt ORBIT als Payload-Capability hinzu;
 - `AUFTRAG:NewORBIT()` erzeugt einen echten AIRWING-Lifecycle;
 - `AUFTRAG:AddRequiredPayload()` pinnt fuer den Test genau den aus dem physischen Template kopierten Payload;
-- `AUFTRAG:AssignSquadrons()` beschraenkt den Auftrag auf die zuständige SQUADRON.
+- `AUFTRAG:AssignSquadrons()` beschraenkt den Auftrag auf die zustaendige SQUADRON.
 
 Damit muessen fuer den Census **keine produktiven SQUADRON-Capabilities veraendert** werden. `ALERT5` wird absichtlich nicht verwendet, weil der source-reviewte Recruit-Pfad `Mission.type == ALERT5` gegen die Cohort-Capabilities prueft und die aktuellen OMW-SQUADRONs keine ALERT5-Capability deklarieren.
 
@@ -148,7 +148,9 @@ Tarinkot
 
 Innerhalb einer STORAGE-Lane laeuft immer nur **ein** Template-Fall gleichzeitig, damit Inventory-Deltas eindeutig zugeordnet werden koennen. Verschiedene STORAGE-Lanes duerfen parallel laufen. Dadurch wird der Lauf gegenueber 32 global seriellen Flugzyklen deutlich verkuerzt, ohne Debits desselben Warehouses zu vermischen.
 
-Wenn ein bereits materialisierter Fall nicht bis `Arrived` kommt, wird seine Lane blockiert und nicht mit dem naechsten Template kontaminiert. Andere Lanes laufen weiter. Ein einzelnes semantisch unerwartetes Ergebnis beendet den Gesamtlauf nicht.
+Ein Fall erhaelt bis zu 900 Sekunden fuer Materialisierung und den nativen Return-Lifecycle. Wenn ein noch nicht materialisierter Fall nicht zugewiesen werden kann, wird er per oeffentlichem `AUFTRAG:Cancel()` beendet und die Lane faehrt mit dem naechsten Fall fort. Wenn ein **bereits materialisierter** Fall nicht bis `Arrived` kommt, wird seine Lane blockiert und nicht mit dem naechsten Template kontaminiert. Andere Lanes laufen weiter. Der globale Sicherheitszeitraum betraegt 3600 Sekunden.
+
+Ein einzelnes semantisch unerwartetes Fuel-/Store-Ergebnis beendet den Gesamtlauf nicht.
 
 ## 5. Stores
 
@@ -188,7 +190,9 @@ FLIGHTGROUP:GetFuelMin()       -- relative Mindestfuelmenge der Gruppe in Prozen
 UNIT:GetCurrentFuelKgs()       -- aktuelle Fuelmasse je lebender Unit
 ```
 
-Damit kann nach dem Lauf nicht nur festgestellt werden, ob Fuel voll/teilweise/nicht zurueckgebucht wird. Die STORAGE-Recovery kann auch gegen die am `Arrived`-Zeitpunkt noch im Flugzeug beobachtete Fuelmasse korreliert werden.
+Die Onboard-Telemetrie wird bei Assignment, `Landed` und `Arrived` versucht. Fuer die Korrelation mit der spaeteren STORAGE-Recovery wird bevorzugt der letzte brauchbare `Landed`-Wert verwendet; falls dort keine lebenden Units messbar waren, wird ein noch verfuegbarer `Arrived`-Wert verwendet. Ist beides nicht mehr messbar, bleibt die Referenz `UNAVAILABLE`, ohne den restlichen Census abzubrechen.
+
+Damit kann nach dem Lauf nicht nur festgestellt werden, ob Fuel voll/teilweise/nicht zurueckgebucht wird. Die STORAGE-Recovery kann auch gegen die unmittelbar vor dem nativen Return beobachtbare Fuelmasse korreliert werden.
 
 Diese Korrelation wird als Evidenz protokolliert; sie ist **kein harter Equality-Assert**, weil externe Tanks und DCS-Fuelmodellierung separat bewertet werden muessen.
 
@@ -207,7 +211,7 @@ welches Template bucht welche Stores?
 wie viel JETFUEL wird bei Materialisierung gebucht?
 welche Stores kommen bei No-Fire-Return zurueck?
 welcher Fuelbestand kommt nach dem Flug zurueck?
-entspricht die Fuel-Recovery plausibel dem am Arrived-Zeitpunkt verbleibenden Fuel?
+entspricht die Fuel-Recovery plausibel dem unmittelbar vor Return verbleibenden Onboard-Fuel?
 ```
 
 Danach bleiben nur noch gezielte Verbrauchsluecken wie M230/M789, GAU-8/Munition, M3P sowie ein deterministischer Partial-Expenditure-Pfad.
@@ -236,6 +240,7 @@ AUFTRAG:SetTime()
 AUFTRAG:SetDuration()
 AUFTRAG:SetROE()
 AUFTRAG:SetROT()
+AUFTRAG:Cancel()
 AIRWING:AddMission()
 AIRWING:OnAfterFlightOnMission
 OPSGROUP:GetGroup()
@@ -246,6 +251,8 @@ UNIT:GetCurrentFuelKgs()
 SCHEDULER:New()
 MESSAGE:New(...):ToAll()
 ```
+
+Der Harness verwendet fuer die Census-Logik keine nicht dokumentierten MOOSE-Felder wie `squadron.ngrouping` oder Payload-interne IDs.
 
 ## 10. Build
 
