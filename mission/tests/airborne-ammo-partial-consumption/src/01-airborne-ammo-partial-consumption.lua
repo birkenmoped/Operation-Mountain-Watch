@@ -2,7 +2,7 @@
 -- MOOSE-first. Real DCS expenditure; read-only STORAGE observation.
 
 local TAG = "[OMW][AirborneAmmoPartialConsumption]"
-local TEST_ID = "AIRBORNE-AMMO-PARTIAL-CONSUMPTION-1"
+local TEST_ID = "AIRBORNE-AMMO-PARTIAL-CONSUMPTION-2"
 local START_DELAY_S = 20
 local LANE_STAGGER_S = 5
 local POST_RETURN_OBSERVE_S = 30
@@ -10,7 +10,10 @@ local ASSIGN_TIMEOUT_S = 600
 local LIFECYCLE_TIMEOUT_S = 3600
 local GLOBAL_TIMEOUT_S = 7200
 local ORBIT_DURATION_S = 30
-local TARGET_DISTANCE_M = 10000
+local TARGET_BEARING_OFFSETS = { 0, 30, -30, 60, -60, 90, -90, 120, -120, 180 }
+local TARGET_DISTANCE_OFFSETS_M = { 0, 2000, -2000, 4000, -4000 }
+local TARGET_FLAT_RADIUS_M = 35
+local TARGET_MAX_STEEPNESS_PERCENT = 8
 local STRAFE_ALTITUDE_FT = 1200
 local STRAFE_LENGTH_M = 500
 local TARGET_TEMPLATE = "TPL_TEST_RED_VEHICLE_02_01"
@@ -25,6 +28,7 @@ local CASES = {
     template = "TPL_AIR_US_KAF_A10C_CAS_2SHIP",
     storageName = "Kandahar",
     targetBearing = 45,
+    targetDistanceM = 20000,
   },
   {
     id = "JBAD_OH58D_M3P",
@@ -33,6 +37,7 @@ local CASES = {
     template = "TPL_AIR_US_JBAD_OH58D_RECON_2SHIP",
     storageName = "Jalalabad",
     targetBearing = 135,
+    targetDistanceM = 12000,
   },
   {
     id = "SHND_AH64D_M230",
@@ -41,6 +46,7 @@ local CASES = {
     template = "TPL_AIR_US_SHND_AH64D_CAS_2SHIP",
     storageName = "Shindand Heliport",
     targetBearing = 225,
+    targetDistanceM = 12000,
   },
 }
 
@@ -144,6 +150,43 @@ local function resolveFoundation(case)
   return airwing, squadron, airbase, template, storage
 end
 
+local function resolveTargetCoordinate(airbase, case)
+  local origin = airbase:GetCoordinate()
+  if not origin then
+    error("AIRBASE coordinate unavailable case=" .. case.id)
+  end
+
+  for _, distanceOffset in ipairs(TARGET_DISTANCE_OFFSETS_M) do
+    local distanceM = case.targetDistanceM + distanceOffset
+    if distanceM > 1000 then
+      for _, bearingOffset in ipairs(TARGET_BEARING_OFFSETS) do
+        local bearing = (case.targetBearing + bearingOffset) % 360
+        local candidate = origin:Translate(distanceM, bearing)
+        local roadCoord = candidate and candidate:GetClosestPointToRoad() or nil
+        if roadCoord then
+          local flat, steepness = roadCoord:IsInFlatArea(TARGET_FLAT_RADIUS_M, TARGET_MAX_STEEPNESS_PERCENT)
+          if flat then
+            log(string.format(
+              "TARGET_RESOLVED case=%s placement=ROAD_FLAT_SEARCH preferredDistanceM=%d actualDistanceM=%d preferredBearing=%d actualBearing=%d flatRadiusM=%d maxSteepnessPercent=%d measuredSteepness=%s",
+              case.id,
+              case.targetDistanceM,
+              distanceM,
+              case.targetBearing,
+              bearing,
+              TARGET_FLAT_RADIUS_M,
+              TARGET_MAX_STEEPNESS_PERCENT,
+              tostring(steepness)
+            ))
+            return roadCoord, distanceM, bearing, steepness
+          end
+        end
+      end
+    end
+  end
+
+  error("No flat road target coordinate found within bounded MOOSE search case=" .. case.id)
+end
+
 local function ammoSnapshot(flightGroup, label, caseId)
   local ammo = flightGroup:GetAmmoTot()
   local result = {
@@ -184,7 +227,7 @@ local function finishIfDone()
 
   runtime.finished = true
   local status = runtime.failed == 0 and runtime.observed == #CASES and "COMPLETE" or "COMPLETE_WITH_GAPS"
-  log(string.format("RESULT testId=%s status=%s casesTotal=%d casesObserved=%d casesFailed=%d targetTemplate=%s targetDistanceM=%d realExpenditure=true storageMutation=false campaignStateMutation=false", TEST_ID, status, #CASES, runtime.observed, runtime.failed, TARGET_TEMPLATE, TARGET_DISTANCE_M))
+  log(string.format("RESULT testId=%s status=%s casesTotal=%d casesObserved=%d casesFailed=%d targetTemplate=%s targetPlacement=ROAD_FLAT_SEARCH landingRestrictPair=true realExpenditure=true storageMutation=false campaignStateMutation=false", TEST_ID, status, #CASES, runtime.observed, runtime.failed, TARGET_TEMPLATE))
   notify(string.format("AIRBORNE AMMO TEST COMPLETE\n%s\nObserved %d/%d; failures %d\nSend dcs.log + debrief.", status, runtime.observed, #CASES, runtime.failed), 30)
 end
 
@@ -226,18 +269,24 @@ local function runCase(case)
   local readOk, readErr = pcall(function() state.pre = readInventory(storage, case.id) end)
   if not readOk then return failCase(case, state, "PRE_INVENTORY", readErr) end
 
-  local targetCoord = airbase:GetCoordinate():Translate(TARGET_DISTANCE_M, case.targetBearing)
+  local targetOk, targetCoord, actualTargetDistanceM, actualTargetBearing, measuredSteepness = pcall(resolveTargetCoordinate, airbase, case)
+  if not targetOk then return failCase(case, state, "TARGET_RESOLVE", targetCoord) end
+  state.targetCoord = targetCoord
+  state.actualTargetDistanceM = actualTargetDistanceM
+  state.actualTargetBearing = actualTargetBearing
+  state.targetSteepness = measuredSteepness
+
   local spawner = SPAWN:NewWithAlias(TARGET_TEMPLATE, "OMW_TEST_TARGET_" .. case.id)
   spawner:InitDelayOff()
   state.targetGroup = spawner:SpawnFromCoordinate(targetCoord)
   if not state.targetGroup then return failCase(case, state, "TARGET_SPAWN", "SpawnFromCoordinate returned nil") end
 
-  log(string.format("TARGET_SPAWN case=%s template=%s spawned=%s distanceM=%d bearing=%d", case.id, TARGET_TEMPLATE, state.targetGroup:GetName(), TARGET_DISTANCE_M, case.targetBearing))
+  log(string.format("TARGET_SPAWN case=%s template=%s spawned=%s placement=ROAD_FLAT_SEARCH distanceM=%d bearing=%d steepness=%s", case.id, TARGET_TEMPLATE, state.targetGroup:GetName(), actualTargetDistanceM, actualTargetBearing, tostring(measuredSteepness)))
 
   local testPayload = airwing:NewPayload(template, -1, { AUFTRAG.Type.ORBIT }, 100)
   if not testPayload then return failCase(case, state, "PAYLOAD", "AIRWING:NewPayload returned nil") end
 
-  local orbitCoord = airbase:GetCoordinate():Translate(6000, case.targetBearing)
+  local orbitCoord = airbase:GetCoordinate():Translate(math.min(8000, math.floor(actualTargetDistanceM * 0.6)), actualTargetBearing)
   local orbit = AUFTRAG:NewORBIT(orbitCoord, 5000, 150)
   orbit:SetRequiredAssets(1, 1)
   orbit:AssignSquadrons({ squadron })
@@ -248,7 +297,7 @@ local function runCase(case)
   orbit:SetROT(ENUMS.ROT.NoReaction)
   state.orbit = orbit
 
-  log(string.format("CASE_DISPATCH case=%s template=%s storage=%s preJetFuelKg=%.3f", case.id, case.template, case.storageName, state.pre.jetfuel))
+  log(string.format("CASE_DISPATCH case=%s template=%s storage=%s preJetFuelKg=%.3f targetDistanceM=%d targetBearing=%d", case.id, case.template, case.storageName, state.pre.jetfuel, actualTargetDistanceM, actualTargetBearing))
 
   local previousFlightOnMission = airwing.OnAfterFlightOnMission
   airwing.OnAfterFlightOnMission = function(self, From, Event, To, FlightGroup, Mission)
@@ -258,6 +307,12 @@ local function runCase(case)
     state.flightGroup = FlightGroup
 
     local assignedOk, assignedErr = pcall(function()
+      if not FlightGroup.SetOptionLandingRestrictPair then
+        error("Pinned FLIGHTGROUP:SetOptionLandingRestrictPair is unavailable")
+      end
+      FlightGroup:SetOptionLandingRestrictPair()
+      log(string.format("LANDING_OPTION case=%s restrictPair=true productiveGroupingPreserved=true", case.id))
+
       state.assignedAmmo = ammoSnapshot(FlightGroup, "ASSIGNED", case.id)
       state.postSpawn = readInventory(storage, case.id)
       logMapDelta(case.id, "AIRCRAFT", state.pre.aircraft, state.postSpawn.aircraft, "SPAWN")
@@ -339,7 +394,7 @@ local function beginTest()
     return
   end
 
-  log(string.format("TEST_BEGIN testId=%s cases=%d targetTemplate=%s targetDistanceM=%d weaponType=%d expend=QUARTER engageQuantity=2 realExpenditure=true", TEST_ID, #CASES, TARGET_TEMPLATE, TARGET_DISTANCE_M, GUN_WEAPON_TYPE))
+  log(string.format("TEST_BEGIN testId=%s cases=%d targetTemplate=%s targetPlacement=ROAD_FLAT_SEARCH landingRestrictPair=true weaponType=%d expend=QUARTER engageQuantity=2 realExpenditure=true", TEST_ID, #CASES, TARGET_TEMPLATE, GUN_WEAPON_TYPE))
   notify("AIRBORNE AMMO PARTIAL-CONSUMPTION TEST STARTED\nA-10C / OH-58D / AH-64D", 30)
 
   for index, case in ipairs(CASES) do
