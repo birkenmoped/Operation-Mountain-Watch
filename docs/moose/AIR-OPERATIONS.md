@@ -93,3 +93,32 @@ Für Parking-Overrides ist diese Prüfung abgeschlossen:
 - [`OMW-MOOSE-WAREHOUSE-PARKING-OVERRIDE-RESEARCH`](WAREHOUSE-PARKING-OVERRIDE-RESEARCH.md)
 
 Der Bericht belegt eine parametrierbare AIRBASE-API, aber keinen WAREHOUSE-Setter oder -Hook. Er genehmigt keinen Runtime-Override und keine MOOSE-Quelländerung.
+
+## 5. Genereller Hinweis zu Two-Ship-Recovery und Parking
+
+Produktive `SQUADRON:SetParkingIDs(...)`-Pools, AIRBASE-White-/Blacklists und WAREHOUSE-Parkingprüfung steuern beziehungsweise begrenzen die **Materialisierung** von Assets. Daraus darf keine Garantie für eine individuelle Return-Parking-ID jedes Elements einer Mehrfachgruppe abgeleitet werden.
+
+Für OMW ist deshalb zwischen zwei Problemklassen zu unterscheiden:
+
+```text
+Materialisierung / Spawn
+  -> SQUADRON-/WAREHOUSE-Parking-Pool
+  -> belegte Spawn-Parking-Grenzen
+
+Recovery / Landung / Rollen zum Stand
+  -> bestehender FLIGHTGROUP und DCS-AI-Lifecycle
+  -> keine aus SetParkingIDs abgeleitete Einzelplatz-Garantie
+```
+
+In DCS-Läufen des Branches `agent/airborne-ammo-partial-consumption` wurde bei produktiven Two-Ships beobachtet, dass gleichzeitige beziehungsweise paarweise Recovery problematisch sein kann: Helikopter-Wingmen kreisten über dem Bereich des Lead, und A-10C konnten nach der Landung in belegte beziehungsweise statische Bereiche rollen. Diese branchgebundene Beobachtung ist **kein** allgemeiner DCS-Acceptance-Nachweis und ersetzt keine missionsspezifische Parking-Prüfung.
+
+Der gepinnte MOOSE-Stand stellt mit `FLIGHTGROUP:SetOptionLandingRestrictPair()` einen öffentlichen, kleinen Eingriff bereit, der DCS anweist, die Gruppe nicht als Paar landen zu lassen. Der gezielte Ammo-V2-Test zeigte damit für AH-64D und OH-58D praktisch brauchbare `Landed -> Arrived`-Recovery; daraus folgt weiterhin **keine** Garantie bestimmter oder unterschiedlicher Parking-IDs. Für A-10C blieb `Arrived` in den bisherigen Läufen nicht zuverlässig erreichbar.
+
+Projektregel für zukünftige Two-Ship-Tests und AirOps-Entwicklung:
+
+1. Spawn-Parking und Return-Parking nicht gleichsetzen.
+2. Keine individuelle Return-Parking-Zuweisung erfinden, solange MOOSE/DCS dafür keinen belegten öffentlichen Pfad bereitstellt.
+3. Bei einem testblockierenden Pair-Recovery-Konflikt zuerst den öffentlichen MOOSE-Landing-Pfad prüfen; testlokale `SetOptionLandingRestrictPair()`-Nutzung ist einem Parking-Override oder Despawn-Workaround vorzuziehen.
+4. Produktive Gruppierung nicht nur zur Testvereinfachung ändern. `Grouping=2` bleibt ein echtes Two-Ship-Asset.
+5. `SetDespawnAfterLanding()`, `SetDespawnAfterHolding()` oder direkte testseitige `ReturnToLegion()`-Aufrufe dürfen nicht verwendet werden, wenn der reale Return-/Warehouse-Lifecycle Gegenstand des Tests ist.
+6. Physische Parking-, Taxi- und Recovery-Wirkung bleibt airbase-, aircraft-, mission- und DCS-versionsabhängig und ist separat in DCS zu beobachten.
