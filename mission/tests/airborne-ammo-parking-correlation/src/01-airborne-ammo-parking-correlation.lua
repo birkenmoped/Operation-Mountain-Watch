@@ -8,7 +8,7 @@ local LANE_STAGGER_S = 5
 local POST_RETURN_OBSERVE_S = 30
 local ASSIGN_TIMEOUT_S = 600
 local LIFECYCLE_TIMEOUT_S = 3600
-local GLOBAL_TIMEOUT_S = 7200
+local GLOBAL_TIMEOUT_S = 14400
 local ORBIT_DURATION_S = 30
 local TARGET_BEARING_OFFSETS = { 0, 30, -30, 60, -60, 90, -90, 120, -120, 180 }
 local TARGET_DISTANCE_OFFSETS_M = { 0, 2000, -2000, 4000, -4000 }
@@ -96,6 +96,20 @@ local CASES = {
   },
 }
 
+local CASE_BY_ID = {}
+for _, case in ipairs(CASES) do
+  CASE_BY_ID[case.id] = case
+end
+
+-- Cases sharing one STORAGE node are serialized so inventory deltas remain attributable.
+-- Independent STORAGE lanes may execute in parallel.
+local STORAGE_LANES = {
+  { name = "Kandahar", caseIds = { "KAF_A10C_GAU8" } },
+  { name = "Bagram", caseIds = { "BGRM_F16C_M61", "BGRM_F15E_M61" } },
+  { name = "Jalalabad", caseIds = { "JBAD_UH60_GUNS", "JBAD_CH47_GUNS", "JBAD_OH58D_M3P" } },
+  { name = "Shindand Heliport", caseIds = { "SHND_AH64D_M230" } },
+}
+
 local PARKING_NODES = {
   {
     node = "Kandahar",
@@ -110,6 +124,7 @@ local PARKING_NODES = {
 
 local runtime = {
   finished = false,
+  stopScheduling = false,
   observed = 0,
   failed = 0,
   cases = {},
@@ -330,8 +345,16 @@ local function finishIfDone()
   if done < #CASES then return end
   runtime.finished = true
   local status = runtime.failed == 0 and runtime.observed == #CASES and "COMPLETE" or "COMPLETE_WITH_GAPS"
-  log(string.format("RESULT testId=%s status=%s casesTotal=%d casesObserved=%d casesFailed=%d parkingGroups=%d parkingMapped=%d parkingExactIdMatches=%d parkingFailed=%d targetTemplate=%s targetPlacement=ROAD_FLAT_SEARCH landingRestrictPair=true realExpenditure=true storageMutation=false campaignStateMutation=false", TEST_ID, status, #CASES, runtime.observed, runtime.failed, runtime.parking.groups, runtime.parking.mapped, runtime.parking.exactIdMatches, runtime.parking.failed, TARGET_TEMPLATE))
+  log(string.format("RESULT testId=%s status=%s casesTotal=%d casesObserved=%d casesFailed=%d parkingGroups=%d parkingMapped=%d parkingExactIdMatches=%d parkingFailed=%d targetTemplate=%s targetPlacement=ROAD_FLAT_SEARCH landingRestrictPair=true realExpenditure=true storageLaneSerialization=true storageMutation=false campaignStateMutation=false", TEST_ID, status, #CASES, runtime.observed, runtime.failed, runtime.parking.groups, runtime.parking.mapped, runtime.parking.exactIdMatches, runtime.parking.failed, TARGET_TEMPLATE))
   notify(string.format("AIRBORNE AMMO/PARKING TEST COMPLETE\n%s\nObserved %d/%d; failures %d\nParking mapped %d/%d; gaps %d\nSend dcs.log + debrief.", status, runtime.observed, #CASES, runtime.failed, runtime.parking.mapped, runtime.parking.groups, runtime.parking.failed), 30)
+end
+
+local function continueLane(state)
+  local onDone = state.onDone
+  state.onDone = nil
+  if onDone and not runtime.finished and not runtime.stopScheduling then
+    SCHEDULER:New(nil, onDone, {}, LANE_STAGGER_S)
+  end
 end
 
 local function failCase(case, state, stage, message)
@@ -339,6 +362,7 @@ local function failCase(case, state, stage, message)
   state.done = true
   runtime.failed = runtime.failed + 1
   log(string.format("CASE_RESULT case=%s role=%s status=ERROR stage=%s error=%s", case.id, case.evidenceRole, tostring(stage), tostring(message)))
+  continueLane(state)
   finishIfDone()
 end
 
@@ -351,11 +375,12 @@ local function completeCase(case, state)
   local gunConsumption = (consumed.Guns or 0) + (consumed.Cannons or 0)
   local gunStatus = gunConsumption > 0 and "CONSUMED" or "NO_GUN_CONSUMPTION"
   log(string.format("CASE_RESULT case=%s role=%s status=OBSERVED gunStatus=%s consumedTotal=%d consumedShells=%d consumedGuns=%d consumedCannons=%d consumedRockets=%d consumedBombs=%d consumedMissiles=%d jetFuelDebitKg=%.3f jetFuelRecoveryKg=%.3f", case.id, case.evidenceRole, gunStatus, consumed.Total, consumed.Shells, consumed.Guns, consumed.Cannons, consumed.Rockets, consumed.Bombs, consumed.Missiles, state.pre.jetfuel - state.postSpawn.jetfuel, state.final.jetfuel - state.postSpawn.jetfuel))
+  continueLane(state)
   finishIfDone()
 end
 
-local function runCase(case)
-  local state = { done=false, assigned=false, arrived=false }
+local function runCase(case, onDone)
+  local state = { done=false, assigned=false, arrived=false, onDone=onDone }
   runtime.cases[case.id] = state
   local ok, airwing, squadron, airbase, template, storage = pcall(resolveFoundation, case)
   if not ok then return failCase(case, state, "RESOLVE", airwing) end
@@ -454,6 +479,21 @@ local function runCase(case)
   end, {}, ASSIGN_TIMEOUT_S)
 end
 
+local function runLane(lane, caseIndex)
+  if runtime.finished or runtime.stopScheduling then return end
+  local caseId = lane.caseIds[caseIndex]
+  if not caseId then return end
+  local case = CASE_BY_ID[caseId]
+  if not case then
+    runtime.stopScheduling = true
+    error("Unknown case in STORAGE lane: " .. tostring(caseId))
+  end
+  log(string.format("LANE_DISPATCH lane=%s position=%d/%d case=%s storageLaneSerialization=true", lane.name, caseIndex, #lane.caseIds, case.id))
+  runCase(case, function()
+    runLane(lane, caseIndex + 1)
+  end)
+end
+
 local function beginTest()
   local targetSeed = GROUP:FindByName(TARGET_TEMPLATE)
   if not targetSeed then
@@ -467,17 +507,25 @@ local function beginTest()
     runtime.parking.failed = runtime.parking.failed + 1
     log(string.format("PARKING_CORRELATION_RESULT status=ERROR error=%s", tostring(parkingErr)))
   end
-  log(string.format("TEST_BEGIN testId=%s cases=%d targetTemplate=%s targetPlacement=ROAD_FLAT_SEARCH landingRestrictPair=true weaponType=%d expend=QUARTER engageQuantity=2 realExpenditure=true parkingCorrelation=true", TEST_ID, #CASES, TARGET_TEMPLATE, GUN_WEAPON_TYPE))
+  log(string.format("TEST_BEGIN testId=%s cases=%d storageLanes=%d targetTemplate=%s targetPlacement=ROAD_FLAT_SEARCH landingRestrictPair=true weaponType=%d expend=QUARTER engageQuantity=2 realExpenditure=true parkingCorrelation=true storageLaneSerialization=true", TEST_ID, #CASES, #STORAGE_LANES, TARGET_TEMPLATE, GUN_WEAPON_TYPE))
   notify("AIRBORNE AMMO/PARKING TEST STARTED\nA-10C / F-16C / F-15E / UH-60 / CH-47\nOH-58D / AH-64D regression", 30)
-  for index, case in ipairs(CASES) do
-    SCHEDULER:New(nil, runCase, {case}, (index - 1) * LANE_STAGGER_S)
+  for index, lane in ipairs(STORAGE_LANES) do
+    SCHEDULER:New(nil, runLane, {lane, 1}, (index - 1) * LANE_STAGGER_S)
   end
   SCHEDULER:New(nil, function()
     if runtime.finished then return end
+    runtime.stopScheduling = true
     for _, case in ipairs(CASES) do
       local state = runtime.cases[case.id]
-      if state and not state.done then failCase(case, state, "GLOBAL_TIMEOUT", "Global safety timeout reached") end
+      if state and not state.done then
+        failCase(case, state, "GLOBAL_TIMEOUT", "Global safety timeout reached")
+      elseif not state then
+        state = { done=false, assigned=false, arrived=false, onDone=nil }
+        runtime.cases[case.id] = state
+        failCase(case, state, "GLOBAL_TIMEOUT", "Case did not start before global safety timeout")
+      end
     end
+    finishIfDone()
   end, {}, GLOBAL_TIMEOUT_S)
 end
 
