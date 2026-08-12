@@ -45,4 +45,8 @@ The machine-readable project baseline is:
 
 - `docs/data/kandahar-me-parking-to-moose-terminalid.csv`
 
-After this extension the CSV contains 391 mappings total: 311 Kandahar Main entries and 80 Kandahar Heliport entries. Of these, the original 376 mappings are runtime-correlated evidence; the 15 Lima Ramp mappings are static derivations from the same validated parking-number relationship.
+Occupied CLIENT positions from the same source mission are documented separately in:
+
+- `docs/data/kandahar-client-parking-evidence.md`
+
+The combined CSV now contains 401 mappings total: 315 Kandahar Main entries and 86 Kandahar Heliport entries. Of these, the original 376 mappings are runtime-correlated evidence; the 15 Lima Ramp mappings and 10 occupied CLIENT mappings are static derivations from the same validated parking-number relationship.
