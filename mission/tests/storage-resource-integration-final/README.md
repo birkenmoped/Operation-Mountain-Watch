@@ -1,6 +1,6 @@
 ---
 document_id: OMW-TEST-STORAGE-RESOURCE-INTEGRATION-FINAL
-status: PLANNED
+status: ACCEPTED_TECHNICAL_BASELINE
 document_class: TEST_PROJECT_INDEX
 owning_policy: OMW-GOV-001
 authoritative_for:
@@ -12,8 +12,16 @@ project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
 superseded_by:
 source_branch: agent/storage-resource-integration-final
-source_commit: PENDING_MERGE
-validated_in_dcs: false
+source_commit: 70ce4c7900927728b3e415a3929ee4b155fe71d0
+validated_in_dcs: true
+acceptance_branch: agent/storage-resource-integration-final
+acceptance_commit: 70ce4c7900927728b3e415a3929ee4b155fe71d0
+acceptance_mission: OMW_Template_v8_AirOps_rdy.miz
+acceptance_mission_sha256: cf80b3edc4e500716e1704da2409df3123f43e78f75c343651b991360f5174ae
+dcs_version: 2.9.28.26385 MT
+moose_release: 2.9.18
+moose_commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+moose_lua_sha256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
 base_branch: agent/storage-client-fuel-exchange
 base_commit: 6a9332aae2334efbcace4226147eb6d0a83dd5a6
 base_status: DRAFT_WITH_ACCEPTED_CHILD_SCOPES
@@ -219,18 +227,66 @@ STORAGE-RESOURCE-INTEGRATION-FINAL-1
 
 Der Builder verbietet mutierende STORAGE-Pfade, Native-DCS-Fallbacks, direkten `_DATABASE`-Zugriff, eigenen ReturnToLegion-Aufruf und direkten Zugriff des Harness auf CampaignState-Interna.
 
-## 9. Acceptance-Grenze
+## 9. Acceptance 2026-08-12
 
-Vor dem DCS-Lauf ist dieser Gate `PLANNED`. Ein PASS bestätigt ausschließlich:
+Der Owner-Lauf ist für exakt den folgenden Stand `ACCEPTED_TECHNICAL_BASELINE`:
 
 ```text
-manifest load
-public MOOSE STORAGE read paths used by the observer
-complete fuel-resource comparison at Bagram and Shindand Heliport
-variant-scoped weapon telemetry
-read-only drift detection
-pure delta measurement
-absence of observer-driven CampaignState/STORAGE mutation
+Source/Builder commit: 70ce4c7900927728b3e415a3929ee4b155fe71d0
+BuilderVersion: STORAGE-RESOURCE-INTEGRATION-FINAL-1
+DCS: 2.9.28.26385 MT
+Executed mission path from debrief: OMW_Template_v8_AirOps_rdy.miz
+Owner-supplied executed artifact: OMW_Template_v8_AirOps_rdy(6).miz
+Executed artifact SHA-256: cf80b3edc4e500716e1704da2409df3123f43e78f75c343651b991360f5174ae
+Internal mission SHA-256: acf4b381fc683e52dccd8addea70acaa01f67abb47f587d9ff2cc284cf8a2b4c
+Embedded bundle: l10n/DEFAULT/OMW_Storage_Resource_Integration_Final.lua
+Embedded bundle SHA-256: d814c2f63b5d3959efe5cf1d4e7f36a22712afc2d3d2c716a536194d0c565a07
+Local build bundle SHA-256: d814c2f63b5d3959efe5cf1d4e7f36a22712afc2d3d2c716a536194d0c565a07
+Embedded Moose.lua SHA-256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
+dcs.log SHA-256: 7d04e32e50ef969fddbd8b911a5c030c1aca0f7c8483018d1be2ea5d675922d7
+debrief.log SHA-256: 0e731c97c2f0a8cd4e9361ba85797285ebaedc0af91cb4acce4e11130681ab68
 ```
 
-Er wiederholt oder erweitert nicht automatisch die bereits bestehenden physischen Lifecycle-Acceptances und validiert keine Persistenz, kein Restart-Reconciliation und kein Multiplayer-Fehlerverhalten.
+Beobachtete Runtimewerte:
+
+```text
+Bagram:
+  JETFUEL 538018.328 kg
+  GASOLINE 100000.000 kg
+  F-16 370-gal tank item count 100
+
+Shindand Heliport:
+  JETFUEL 100000.000 kg
+  GASOLINE 100000.000 kg
+  AGM-114K item count 100
+  HYDRA_70_M151 item count 100
+  IAFS_ComboPak_100 item count 100
+```
+
+Alle erwarteten Marker wurden genau einmal beobachtet:
+
+```text
+BASELINE_RECONCILIATION_PASS nodes=2 resourcesPerNode=2
+DRIFT_GUARD_PASS resourceId=FUEL_JP8 delta=-100.000 campaignStateMutation=false
+DELTA_MEASUREMENT_PASS jp8Delta=-125 agm114kDelta=-4
+MAPPING_SCOPE_PASS completeResource=FUEL_JP8,FUEL_AVGAS variantOnly=AGM_114K,HYDRA_70_M151 technicalNonStrategic=IAFS
+RESULT status=PASS storageMutation=false campaignStateMutationByObserver=false schedulerBounded=true nativeDcs=false
+```
+
+Damit ist für diesen exakten Stand praktisch bestätigt:
+
+```text
+manifest load PASS
+public MOOSE STORAGE read path PASS
+Bagram + Shindand Heliport fuel-resource comparison PASS
+variant-scoped weapon telemetry PASS
+read-only drift detection PASS
+pure delta measurement PASS
+observer-driven CampaignState mutation ABSENT
+observer-driven STORAGE mutation ABSENT
+native DCS fallback ABSENT
+```
+
+Der nach Missionsende protokollierte Fehler aus `Saved Games/DCS.openbeta/Scripts/Hooks/bhHook.lua` tritt erst nach `Dispatcher Stop` auf und gehört nicht zum OMW-Testbundle.
+
+Nicht validiert werden dadurch Persistenz, Restart-Reconciliation, Multiplayer-Fehlerverhalten oder zusätzliche Weapon-Familien-Mappings. Die bereits geerbten physischen Lifecycle-Acceptances werden nicht erweitert, sondern weiterhin nur in ihrem jeweiligen dokumentierten Scope verwendet.
