@@ -9,6 +9,7 @@ local ForcedLandingObserver = {}
 ForcedLandingObserver.__index = ForcedLandingObserver
 
 local TAG = "[OMW][ForcedLandingObserver]"
+local CLIENT_RETURN_PARKING_DISTANCE_METERS = 5
 
 local function fail(message)
   error(TAG .. " " .. tostring(message), 2)
@@ -65,18 +66,27 @@ local function getFuelFraction(unit)
   return fuel
 end
 
-local function placeMatchesRecoveryNode(placeName, recoveryNodes)
-  if type(placeName) ~= "string" or placeName == "" then
-    return false
-  end
+local function isAtRecoveryParking(unit, recoveryNodes)
+  local unitCoordinate = unit:GetCoordinate()
 
   for _, node in ipairs(recoveryNodes) do
-    if node.recoveryCapable == true and node.airbaseName == placeName then
-      return true
+    if node.recoveryCapable == true then
+      local airbase = AIRBASE:FindByName(node.airbaseName)
+      if airbase then
+        local parkingSpots = airbase:GetParkingSpotsTable() or {}
+        for _, parkingSpot in pairs(parkingSpots) do
+          if parkingSpot.Coordinate then
+            local distance = unitCoordinate:Get2DDistance(parkingSpot.Coordinate)
+            if distance <= CLIENT_RETURN_PARKING_DISTANCE_METERS then
+              return true, node, parkingSpot, distance
+            end
+          end
+        end
+      end
     end
   end
 
-  return false
+  return false, nil, nil, nil
 end
 
 function ForcedLandingObserver.New(policy, config)
@@ -176,14 +186,19 @@ function ForcedLandingObserver:_GetTracked(eventData)
   return self.trackedByGroupName[eventData.IniGroupName]
 end
 
-function ForcedLandingObserver:_ResolveLandingSemantics(tracked)
+function ForcedLandingObserver:_ResolveLandingSemantics(tracked, unit)
   if tracked.mode == "FLIGHTGROUP" then
-    return isPlannedLanding(tracked.flightGroup), tracked.flightGroup:IsArrived(), missionType(tracked.flightGroup)
+    return isPlannedLanding(tracked.flightGroup), tracked.flightGroup:IsArrived(), missionType(tracked.flightGroup), nil
   end
 
   if tracked.mode == "CLIENT_GROUP" then
-    local expectedReturn = placeMatchesRecoveryNode(tracked.landPlaceName, self.recoveryNodes)
-    return false, expectedReturn, nil
+    local expectedReturn, node, parkingSpot, parkingDistance = isAtRecoveryParking(unit, self.recoveryNodes)
+    return false, expectedReturn, nil, {
+      returnNodeId = node and node.nodeId or nil,
+      returnAirbaseName = node and node.airbaseName or nil,
+      returnParkingTerminalId = parkingSpot and (parkingSpot.TerminalID or parkingSpot.Term_Index) or nil,
+      returnParkingDistanceMeters = parkingDistance,
+    }
   end
 
   fail("unknown tracking mode=" .. tostring(tracked.mode))
@@ -199,11 +214,12 @@ function ForcedLandingObserver:_OnLand(eventData)
   tracked.landPlaceName = eventData.PlaceName
   tracked.landFuelFraction = getFuelFraction(eventData.IniUnit)
 
-  local plannedLanding, expectedReturn, currentMissionType = self:_ResolveLandingSemantics(tracked)
+  local plannedLanding, expectedReturn, currentMissionType, clientReturn = self:_ResolveLandingSemantics(tracked, eventData.IniUnit)
   tracked.landMissionType = currentMissionType
+  tracked.clientReturn = clientReturn
 
   env.info(string.format(
-    "%s LAND_CANDIDATE mode=%s group=%s unit=%s place=%s planned=%s expectedReturn=%s fuelFraction=%s",
+    "%s LAND_CANDIDATE mode=%s group=%s unit=%s place=%s planned=%s expectedReturn=%s returnParkingDistanceM=%s fuelFraction=%s",
     TAG,
     tostring(tracked.mode),
     tostring(eventData.IniGroupName),
@@ -211,6 +227,7 @@ function ForcedLandingObserver:_OnLand(eventData)
     tostring(eventData.PlaceName),
     tostring(plannedLanding),
     tostring(expectedReturn),
+    tostring(clientReturn and clientReturn.returnParkingDistanceMeters or nil),
     tostring(tracked.landFuelFraction)
   ))
 end
@@ -225,7 +242,7 @@ function ForcedLandingObserver:_OnEngineShutdown(eventData)
     return
   end
 
-  local plannedLanding, expectedReturn, currentMissionType = self:_ResolveLandingSemantics(tracked)
+  local plannedLanding, expectedReturn, currentMissionType, clientReturn = self:_ResolveLandingSemantics(tracked, eventData.IniUnit)
   local nearest = nearestRecoveryNode(eventData.IniUnit, self.recoveryNodes)
   local distance = nearest and nearest.distanceMeters or math.huge
   local recoveryCapable = nearest and nearest.recoveryCapable or false
@@ -254,6 +271,10 @@ function ForcedLandingObserver:_OnEngineShutdown(eventData)
     nearestRecoveryAirbaseName = nearest and nearest.airbaseName or nil,
     distanceToRecoveryMeters = nearest and nearest.distanceMeters or nil,
     recoveryCapable = recoveryCapable,
+    returnNodeId = clientReturn and clientReturn.returnNodeId or nil,
+    returnAirbaseName = clientReturn and clientReturn.returnAirbaseName or nil,
+    returnParkingTerminalId = clientReturn and clientReturn.returnParkingTerminalId or nil,
+    returnParkingDistanceMeters = clientReturn and clientReturn.returnParkingDistanceMeters or nil,
     classification = classification,
     metadata = tracked.metadata,
   }
@@ -261,7 +282,7 @@ function ForcedLandingObserver:_OnEngineShutdown(eventData)
   self.observations[#self.observations + 1] = observation
 
   env.info(string.format(
-    "%s CLASSIFIED mode=%s group=%s unit=%s classification=%s planned=%s expectedReturn=%s lowFuel=%s recoveryNode=%s distanceM=%s",
+    "%s CLASSIFIED mode=%s group=%s unit=%s classification=%s planned=%s expectedReturn=%s lowFuel=%s recoveryNode=%s distanceM=%s returnParkingDistanceM=%s",
     TAG,
     tostring(observation.trackingMode),
     tostring(observation.groupName),
@@ -271,7 +292,8 @@ function ForcedLandingObserver:_OnEngineShutdown(eventData)
     tostring(observation.expectedReturn),
     tostring(observation.lowFuelSignal),
     tostring(observation.nearestRecoveryNodeId),
-    tostring(observation.distanceToRecoveryMeters)
+    tostring(observation.distanceToRecoveryMeters),
+    tostring(observation.returnParkingDistanceMeters)
   ))
 end
 
