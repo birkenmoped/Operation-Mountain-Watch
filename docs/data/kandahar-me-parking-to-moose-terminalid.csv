@@ -86,6 +86,21 @@ Kandahar,K03,107
 Kandahar,K04,260
 Kandahar,K05,299
 Kandahar,K06,194
+Kandahar,L01-H,66
+Kandahar,L02-H,190
+Kandahar,L03-H,111
+Kandahar,L04-H,158
+Kandahar,L05-H,73
+Kandahar,L06-H,14
+Kandahar,L07-H,60
+Kandahar,L08-H,274
+Kandahar,L09-H,145
+Kandahar,L10-H,191
+Kandahar,L11-H,168
+Kandahar,L12-H,125
+Kandahar,L13-H,148
+Kandahar,L14-H,176
+Kandahar,L15-H,21
 Kandahar,M01,75
 Kandahar,M02,58
 Kandahar,M03,212
@@ -159,6 +174,8 @@ Kandahar,Q04-H,12
 Kandahar,Q05-H,137
 Kandahar,Q06-H,150
 Kandahar,Q07-H,70
+Kandahar,S01,294
+Kandahar,S02,92
 Kandahar,S03,201
 Kandahar,S04,174
 Kandahar,S05,156
@@ -291,25 +308,13 @@ Kandahar,Z15,20
 Kandahar,Z16,69
 Kandahar,Z17,91
 Kandahar,Z18,43
+Kandahar,Z19,287
+Kandahar,Z20,282
 Kandahar,Z21,278
 Kandahar,Z22,63
 Kandahar,Z23,313
 Kandahar,Z24,51
-Kandahar,L01-H,66
-Kandahar,L02-H,190
-Kandahar,L03-H,111
-Kandahar,L04-H,158
-Kandahar,L05-H,73
-Kandahar,L06-H,14
-Kandahar,L07-H,60
-Kandahar,L08-H,274
-Kandahar,L09-H,145
-Kandahar,L10-H,191
-Kandahar,L11-H,168
-Kandahar,L12-H,125
-Kandahar,L13-H,148
-Kandahar,L14-H,176
-Kandahar,L15-H,21
+Kandahar Heliport,MST01-H,80
 Kandahar Heliport,MST02-H,79
 Kandahar Heliport,MST03-H,73
 Kandahar Heliport,MST04-H,39
@@ -319,6 +324,7 @@ Kandahar Heliport,MST07-H,28
 Kandahar Heliport,MST08-H,34
 Kandahar Heliport,MST09-H,62
 Kandahar Heliport,MST10-H,57
+Kandahar Heliport,MST11-H,23
 Kandahar Heliport,MST12-H,85
 Kandahar Heliport,MST13-H,78
 Kandahar Heliport,MST14-H,51
@@ -337,6 +343,7 @@ Kandahar Heliport,MST26-H,29
 Kandahar Heliport,MST27-H,43
 Kandahar Heliport,MST28-H,7
 Kandahar Heliport,MST29-H,53
+Kandahar Heliport,MST30-H,19
 Kandahar Heliport,MST31-H,86
 Kandahar Heliport,MST32-H,83
 Kandahar Heliport,MST33-H,87
@@ -344,6 +351,7 @@ Kandahar Heliport,MST34-H,20
 Kandahar Heliport,MST35-H,55
 Kandahar Heliport,MST36-H,49
 Kandahar Heliport,MST37-H,74
+Kandahar Heliport,MST38-H,30
 Kandahar Heliport,MST39-H,64
 Kandahar Heliport,MST40-H,71
 Kandahar Heliport,MST41-H,67
@@ -380,12 +388,14 @@ Kandahar Heliport,MST71-H,16
 Kandahar Heliport,MST72-H,14
 Kandahar Heliport,MST73-H,26
 Kandahar Heliport,MST74-H,65
+Kandahar Heliport,MST75-H,4
 Kandahar Heliport,MST76-H,25
 Kandahar Heliport,MST77-H,18
 Kandahar Heliport,MST78-H,81
 Kandahar Heliport,MST79-H,58
 Kandahar Heliport,MST80-H,38
 Kandahar Heliport,MST81-H,45
+Kandahar Heliport,MST82-H,47
 Kandahar Heliport,MST83-H,2
 Kandahar Heliport,MST84-H,70
 Kandahar Heliport,MST85-H,5
