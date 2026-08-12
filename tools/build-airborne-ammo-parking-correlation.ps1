@@ -43,6 +43,10 @@ $requiredMarkers = @(
     'exactIdMatch',
     'PARKING_MAP',
     'PARKING_CORRELATION_RESULT',
+    'STORAGE_LANES',
+    'LANE_DISPATCH',
+    'storageLaneSerialization=true',
+    'GLOBAL_TIMEOUT_S = 14400',
     'AUFTRAG:NewSTRAFING',
     'FlightGroup:SetOptionLandingRestrictPair()',
     'flightGroup:GetAmmoTot()',
@@ -69,6 +73,18 @@ foreach ($caseId in $caseIds) {
     $count = ([regex]::Matches($source, 'id = "' + [regex]::Escape($caseId) + '"')).Count
     if ($count -ne 1) {
         throw "Expected exactly one case id $caseId, found $count"
+    }
+}
+
+$laneContracts = @(
+    '{ name = "Kandahar", caseIds = { "KAF_A10C_GAU8" } }',
+    '{ name = "Bagram", caseIds = { "BGRM_F16C_M61", "BGRM_F15E_M61" } }',
+    '{ name = "Jalalabad", caseIds = { "JBAD_UH60_GUNS", "JBAD_CH47_GUNS", "JBAD_OH58D_M3P" } }',
+    '{ name = "Shindand Heliport", caseIds = { "SHND_AH64D_M230" } }'
+)
+foreach ($laneContract in $laneContracts) {
+    if (-not $source.Contains($laneContract)) {
+        throw "Source is missing serialized STORAGE lane contract: $laneContract"
     }
 }
 
@@ -116,7 +132,7 @@ $header = @"
 -- BaseCommit: $baseCommit
 -- MOOSE-Commit: $mooseCommit
 -- Moose.lua-SHA256: $mooseSha256
--- Scope: real DCS onboard gun expenditure and native AIRWING return correlation for seven cases plus read-only Kandahar ME parking/MOOSE TerminalID correlation.
+-- Scope: real DCS onboard gun expenditure and native AIRWING return correlation for seven cases plus read-only Kandahar ME parking/MOOSE TerminalID correlation; same-STORAGE cases serialized.
 -- Exclusions: no STORAGE mutation; no CampaignState mutation; no native DCS spawning; no custom return/despawn/parking controller.
 
 "@
@@ -132,6 +148,10 @@ Write-Host "BaseBranch: $baseBranch"
 Write-Host "BaseCommit: $baseCommit"
 Write-Host "CasesExpected: 7"
 Write-Host "Cases: A10C_GAU8,F16C_M61,F15E_M61,UH60_GUNS,CH47_GUNS,OH58D_M3P,AH64D_M230"
+Write-Host "StorageLanes: 4"
+Write-Host "StorageLaneSerialization: REQUIRED"
+Write-Host "BagramLaneOrder: F16C_M61,F15E_M61"
+Write-Host "JalalabadLaneOrder: UH60_GUNS,CH47_GUNS,OH58D_M3P"
 Write-Host "A10Role: GATE"
 Write-Host "F16F15UH60CH47Role: DISCOVERY"
 Write-Host "OH58AH64Role: REGRESSION"
@@ -152,6 +172,9 @@ Write-Host "StorageMutation: ABSENT"
 Write-Host "CampaignStateMutation: ABSENT"
 Write-Host "DirectNativeSpawn: ABSENT"
 Write-Host "CustomReturnToLegionCall: ABSENT"
+Write-Host "AssignmentTimeoutSeconds: 600"
+Write-Host "LifecycleTimeoutSeconds: 3600"
+Write-Host "GlobalTimeoutSeconds: 14400"
 Write-Host "MOOSECommit: $mooseCommit"
 Write-Host "MooseLuaSHA256: $mooseSha256"
 Write-Host "SHA256: $hash"
