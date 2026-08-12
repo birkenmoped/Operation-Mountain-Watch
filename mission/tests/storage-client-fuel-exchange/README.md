@@ -1,6 +1,6 @@
 ---
 document_id: OMW-TEST-STORAGE-CLIENT-FUEL-EXCHANGE
-status: PLANNED
+status: ACCEPTED_TECHNICAL_BASELINE
 document_class: TEST_PROJECT_INDEX
 owning_policy: OMW-GOV-001
 authoritative_for:
@@ -11,7 +11,14 @@ supersedes:
 superseded_by:
 source_branch: agent/storage-client-fuel-exchange
 source_commit: PENDING_MERGE
-validated_in_dcs: false
+validated_in_dcs: true
+acceptance_branch: agent/storage-client-fuel-exchange
+acceptance_commit: 2b0dd9229708c2c159076c55e9fda5218d4bfc84
+acceptance_mission: OMW_Template_v8_AirOps_rdy.miz
+acceptance_mission_sha256: 118efea7a8bdd1e3b02fd8a6f2f4ac8c4557dc12a654738cd7421103bfff3a4c
+dcs_version: 2.9.28.26385 MT
+moose_commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+moose_artifact_sha256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
 ---
 
 # STORAGE Client Fuel Exchange
@@ -59,46 +66,78 @@ MESSAGE:New(...):ToAll()
 
 `STORAGE:GetLiquidAmount()` liefert fuer Liquids kg. `UNIT:GetCurrentFuelKgs()` wird read-only fuer die physische Aircraft-Fuel-Telemetrie genutzt. Polling erfolgt alle zwei Sekunden und nur Aenderungen werden detailliert geloggt.
 
-## Testablauf
-
-Keine Triebwerksstarts, kein Taxi und kein Flug erforderlich. Nach `READY` und `CLIENT_BOUND` im Bagram-F-16-Client ueber das Ground-Crew-Bewaffnungs-/Fuel-Fenster nacheinander ungefaehr folgende Werte einstellen und jede Aenderung vollstaendig abschliessen lassen:
+## Akzeptierter DCS-Lauf 2026-08-12
 
 ```text
-100 % -> 50 % -> 80 % -> 30 % -> 100 %
+Acceptance branch: agent/storage-client-fuel-exchange
+Acceptance/source commit: 2b0dd9229708c2c159076c55e9fda5218d4bfc84
+BuilderVersion: STORAGE-CLIENT-FUEL-EXCHANGE-1
+DCS: 2.9.28.26385 MT
+Mission path in debrief: OMW_Template_v8_AirOps_rdy.miz
+Owner-supplied executed mission artifact uploaded as: OMW_Template_v8_AirOps_rdy(5).miz
+MIZ SHA-256: 118efea7a8bdd1e3b02fd8a6f2f4ac8c4557dc12a654738cd7421103bfff3a4c
+Internal mission SHA-256: 406ed8b914aba3b546026abdf70bd6b626142a536d298e768fa1077140368371
+Embedded/local fuel-test bundle SHA-256: 60a94fb5d453be5f1292ddda66c0f81c44591ccecc9adbcd2ea1de110d3b45f8
+Embedded Moose.lua SHA-256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
+DCS log SHA-256: 27ee2f2a7cdfe2e61e189b46e829bb79d6ca4888b7e217b45313b0a73edfa705
+Debrief SHA-256: 66da0c308cfd3ec06abd47da1421327fdb03a859f17c0a8c1074842a1ec82938
 ```
 
-Der exakte Prozentwert ist weniger wichtig als mehrere klare Reduktions- und Erhoehungsschritte.
+Der Harness meldete `READY` und band `CLIENT_US_BGRM_F16_01_UNIT_01` als F-16C_50-Client. Initial wurden `534769.328 kg` Bagram-JETFUEL und `3247.721 kg` physischer Aircraft-Fuel erfasst.
 
-## Zu beantwortende Fragen
+Die vier beabsichtigten Ground-Crew-Schritte wurden praktisch beobachtet. Die Prozentwerte ergeben sich nur aus dem initialen Fuel-Mass-Wert als 100-%-Referenz und dienen der Zuordnung zu den eingestellten Zielwerten:
 
-1. Erhoeht eine Fuel-Reduktion am Client den Bagram-JETFUEL-Bestand?
-2. Reduziert eine Fuel-Erhoehung am Client den Bagram-JETFUEL-Bestand?
-3. Korrelieren STORAGE-Delta und physisches Aircraft-Fuel-Delta mengenmaessig?
-4. Ist die Semantik bei wiederholtem Ab- und Auftanken konsistent?
+| Schritt | Aircraft Fuel | Aircraft Delta | Bagram JETFUEL | STORAGE Delta | Befund |
+|---|---:|---:|---:|---:|---|
+| Start | 3247.721 kg | - | 534769.328 kg | - | Baseline |
+| ca. 50 % | 1627.721 kg | -1620 kg | 536389.328 kg | +1620 kg | Fuel-Reduktion vollstaendig an STORAGE zurueckgebucht |
+| ca. 80 % | 2595.721 kg | +968 kg | 535421.328 kg | -968 kg | Fuel-Erhoehung vollstaendig aus STORAGE abgebucht |
+| ca. 30 % | 977.721 kg | -1618 kg | 537039.328 kg | +1618 kg | zweite Fuel-Reduktion vollstaendig zurueckgebucht |
+| ca. 100 % | 3245.721 kg | +2268 kg | 534771.328 kg | -2268 kg | zweite Fuel-Erhoehung vollstaendig aus STORAGE abgebucht |
 
-## Erwartete Logmarker
+Der finale Zustand liegt 2 kg unter der initialen Aircraft-Fuel-Masse und entsprechend 2 kg ueber dem initialen STORAGE-Bestand. Damit bleibt die kombinierte Fuel-Masse ueber den gesamten Ablauf erhalten. Die laufenden Poll-Deltas lagen ueberwiegend bei exakt `+40/-40 kg` bzw. `-40/+40 kg`; auch kleinere Abschlussdeltas blieben gegenlaeufig. Einzelne Poll-Paare von `-42/+40`, `-40/+42`, `-40/+38` wurden in den unmittelbar folgenden Samples ausgeglichen und aendern die Endpunktbilanz nicht.
+
+## Akzeptierter Befund
 
 ```text
-READY
-CLIENT_BOUND
-SNAPSHOT ... storageJetFuelKg=... aircraftFuelKg=...
-DELTA ... storageJetFuelKg=... aircraftFuelKg=... combinedDeltaKg=...
-RESULT ... status=OBSERVATION_COMPLETE
+client fuel reduction -> Bagram STORAGE JETFUEL increase: PASS
+client fuel increase -> Bagram STORAGE JETFUEL decrease: PASS
+quantitative mass correlation across completed exchange steps: PASS
+repeated decrease/increase semantics: PASS
+STORAGE mutation by harness: false
+CampaignState mutation by harness: false
+custom/native refuel workaround: not required by this gate
 ```
 
-Der Harness klassifiziert keinen semantischen PASS/FAIL automatisch. Die Bewertung erfolgt nach dem realen DCS-Lauf anhand der beobachteten Delta-Sequenz.
+Architekturfolge fuer den dokumentierten Bagram-F-16-Scope:
+
+```text
+do not reimplement client refuel
+
+DCS ground-crew fuel exchange
+-> native DCS/STORAGE liquid transaction
+-> later CampaignState observation/reconciliation
+-> strategic commit by CampaignState
+```
+
+Der Test belegt die native DCS/STORAGE-Exchange-Semantik fuer den dokumentierten Bagram-F-16-Client-Stand. Er belegt nicht automatisch andere Flugzeugtypen, Unlimited-Liquid-Warehouses, AAR, laufenden Engine-Fuel-Verbrauch oder produktive CampaignState-Reconciliation.
+
+## Harness-Ende
+
+Die Mission wurde nach Abschluss der beobachteten Zielsequenz manuell beendet. Der letzte Fuel-Snapshot erfolgte um 20:15:37, DCS `Dispatcher Stop` um 20:15:49. Der 1800-s-Safety-Timeout wurde daher nicht erreicht und der Harness emittierte keinen finalen `RESULT ... OBSERVATION_COMPLETE`-Marker. Dies ist als Testablaufgrenze dokumentiert; die benoetigten mehrfachen Debit-/Return-Sequenzen und die quantitative Endpunktkorrelation waren vor Missionsende vollstaendig beobachtet.
 
 ## Grenzen
 
-Nicht Teil dieses Gates:
+Nicht Teil dieser Acceptance:
 
-- Weapon rearm;
+- Weapon rearm; dieser Scope ist separat in `OMW-TEST-STORAGE-CLIENT-REARM-EXCHANGE` dokumentiert;
 - Flug-/Engine-Fuel-Verbrauch;
 - AIRWING-Fuel-Lifecycle;
-- CampaignState-Mutation oder Reconciliation;
-- STORAGE-Mutation;
-- Persistenz;
-- eigener/native Refuel-Workaround.
+- AAR-Fuel-Accounting;
+- CampaignState-Mutation oder produktive Reconciliation;
+- Persistenz und Restart-Reconciliation;
+- andere Aircraft-Typen oder Airbases als der dokumentierte Bagram-F-16-Scope;
+- Unlimited-Liquid-Semantik.
 
 ## Build
 
@@ -112,4 +151,4 @@ Erzeugtes Bundle:
 mission/tests/storage-client-fuel-exchange/dist/OMW_Storage_Client_Fuel_Exchange_Test.lua
 ```
 
-Ein DCS-Lauf ist vor jeder `VALIDATED`- oder Acceptance-Einstufung erforderlich.
+Der akzeptierte Runtime-Nachweis gehoert zum Bundle aus Commit `2b0dd9229708c2c159076c55e9fda5218d4bfc84` mit SHA-256 `60a94fb5d453be5f1292ddda66c0f81c44591ccecc9adbcd2ea1de110d3b45f8`. Ein spaeterer Neubau ist ein neues Artefakt und erbt diesen Hash nicht automatisch.
