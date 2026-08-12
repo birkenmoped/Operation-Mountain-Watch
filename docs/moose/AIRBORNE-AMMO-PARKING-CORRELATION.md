@@ -139,6 +139,31 @@ status
 
 Zusätzlich werden `PARKING_NODE_RESULT` und `PARKING_CORRELATION_RESULT` geschrieben.
 
+## STORAGE-Lane-Serialisierung
+
+STORAGE-Deltas dürfen nicht durch zwei gleichzeitig laufende Fälle desselben Warehouses vermischt werden. Deshalb laufen nur unabhängige STORAGE-Nodes parallel; Fälle innerhalb desselben Nodes werden strikt nacheinander gestartet.
+
+```text
+Kandahar:
+  A-10C / GAU-8
+
+Bagram:
+  F-16C / M61
+  -> danach F-15E / M61
+
+Jalalabad:
+  UH-60 / Bordwaffen
+  -> danach CH-47 / Bordwaffen
+  -> danach OH-58D / M3P
+
+Shindand Heliport:
+  AH-64D / M230
+```
+
+Der nächste Fall einer Lane wird erst nach `CASE_RESULT` des vorherigen Falls gestartet. Independent Lanes dürfen gleichzeitig laufen. Damit bleiben `pre -> postSpawn -> final`-Deltas pro STORAGE-Node einem Fall zuordenbar.
+
+Der globale Safety-Timeout beträgt wegen der serialisierten Bagram-/Jalalabad-Lanes 14.400 Sekunden; die individuellen Assignment-/Lifecycle-Timeouts bleiben 600 beziehungsweise 3.600 Sekunden.
+
 ## Architekturgrenzen
 
 Die Korrelation ist Diagnose, kein Parking-Controller.
