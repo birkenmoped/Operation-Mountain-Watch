@@ -7,14 +7,15 @@ authoritative_for:
   - CampaignState strategic authority
   - persistent strategic entity identity
   - separation of strategic state from DCS and MOOSE representations
+  - aircraft total-loss, forced-landing, recovery and repair state semantics
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
   - prototype-only resource scope wording
 superseded_by:
-source_branch: agent/complete-documentation-authority-migration
-source_commit: 666ef7a4a6fad52cc1aaecc7d0953e4d112dc8ff
-validated_in_dcs: false
+source_branch: main
+source_commit: 13275a8f365cc8f5eeaf9847db5d20debea0b3fd
+validated_in_dcs: partial
 ---
 
 # 04 – CampaignState
@@ -182,3 +183,84 @@ CampaignState resource stock
 Die DCS-Runtime-Evidenz bestätigt den technischen Mirror für alle sieben Knoten unter einem ruhigen Sync-Fenster. Sie genehmigt noch keine automatische Produktionsstrategie für konkurrierenden Verbrauch. Insbesondere bleiben Locking, Retry, Toleranz, Event-Buchung, Transaktionsmodell und Reconciliation gesonderte Architekturentscheidungen.
 
 Der Test darf noch nicht als vollständige `ACCEPTED_TECHNICAL_BASELINE` hochgestuft werden, solange der exakte SHA-256 der tatsächlich ausgeführten `.miz` und der darin eingebettete Bundle-Hash für den 7/7-Lauf nicht nachgewiesen sind. Diese Werte dürfen nicht aus älteren Missionen abgeleitet oder geraten werden.
+
+## 7. Aircraft-Loss, Forced Landing, Recovery und Repair
+
+Der Projektinhaber hat am 12.08.2026 folgende CampaignState-Semantik festgelegt.
+
+### 7.1 Physischer Totalverlust
+
+Ein physisch zerstörtes Luftfahrzeug gilt als Totalverlust:
+
+```text
+PHYSICAL_TOTAL_LOSS
+-> aircraft lost
+-> remaining onboard fuel lost
+-> remaining onboard weapons/stores lost
+-> no strategic recredit
+```
+
+Technische Grundlage ist der DCS-Lauf `STORAGE-PHYSICAL-LOSS-RECOVERY-1` auf Branch `agent/storage-physical-loss-recovery`, Commit `5f40fb1e4e97049a6a9c6db57bfa087da7d5df99`. Ein AH-64D-TwoShip wurde über den öffentlichen MOOSE-Pfad `UNIT:Explode(1500)` physisch zerstört. Das Debrief führte zwei AH-64D im Graveyard; danach wurden weder zwei Aircraft-Items, 2280 kg JETFUEL noch M151, AGM-114K oder IAFS recreditiert.
+
+```text
+Bundle SHA-256: 3236db339aff985eb493c81d87d72089744d06c123bef56e6e4eb4ffb33a5587
+MIZ SHA-256: 11e4651368be6cbcfd2f9d200621fe62e9a9da93d9776ca4b04269425a896ba4
+dcs.log SHA-256: 7e0a835ee2ca3061d22ae9f68ef923f47dda48c0cef50fa86dd876f1bbf9362b
+debrief.log SHA-256: 803fa74793e53df44fbe4b55a636a5a354ca3ba4e06f750b20b6c03b51c3c22a
+```
+
+Der frühere `OPSGROUP:Destroy()`-Pfad bleibt ein technischer UnitLost-/Despawn-Lifecycle und darf nicht als physischer Totalverlust interpretiert werden.
+
+### 7.2 Forced-Landing-Klassifikation
+
+`Landed` oder `airbase == nil` allein ist kein Verlustsignal. Geplante Außenlandungen, insbesondere Transport- und `LANDATCOORDINATE`-Aufträge, müssen ausgeschlossen werden.
+
+Vorgesehene Domain-Klassifikation:
+
+```text
+planned off-field landing / planned transport landing
+-> NORMAL
+
+unexpected landing at or within 5 km of recovery-capable friendly aviation infrastructure
+-> RECOVERABLE_FORCED_LANDING
+
+unexpected landing outside that envelope
+-> OFF_FIELD_UNRECOVERABLE candidate
+```
+
+Recovery-capable sind nur ausdrücklich als solche geführte freundliche Airbases, Heliports und FARPs mit realistisch ausreichender Aviation-/Bergungsinfrastruktur. Ein gewöhnliches FOB/COP ohne entsprechende Strukturen genügt nicht.
+
+Sehr niedriger Fuel-Stand ist ein zusätzliches starkes Evidenzsignal. Für die spätere Implementierung ist `<= 5 %` verbleibender Fuel als Forced-Landing-Indikator vorgesehen, aber nicht als alleiniger Trigger. Ejection-/Crew-Verhalten ist bei DCS-Helicoptern nicht einheitlich und darf ebenfalls nicht allein entscheiden.
+
+### 7.3 Recovery V1
+
+```text
+RECOVERABLE_FORCED_LANDING
+-> RECOVERY_IN_PROGRESS
+-> fixed recovery delay: 30 minutes
+-> no aircraft/fuel/store credit during recovery
+-> recovery complete:
+   remaining fuel and remaining stores are credited immediately
+   physical aircraft representation is removed as recovered
+   aircraft -> RECOVERED_AWAITING_REPAIR
+-> fixed repair lock: 6 hours
+-> repair complete -> AVAILABLE
+```
+
+Es werden keine eigenen Schadensstufen, Repair-Prozente oder DCS-Health-to-Repair-Konvertierungen eingeführt.
+
+### 7.4 Nicht bergbare Außenlandung
+
+```text
+OFF_FIELD_UNRECOVERABLE
+-> aircraft, remaining fuel and remaining stores lost
+-> surviving crew should use existing MOOSE CSAR/AICSAR capabilities where applicable
+-> avoid duplicate survivor creation when native ejection already produced a case
+-> delayed aircraft destruction target: 5-10 minutes after confirmed unrecoverable landing
+```
+
+Die konkrete Forced-Landing-Erkennung, CSAR-Kopplung und verzögerte Zerstörung sind noch nicht implementiert oder DCS-validiert.
+
+### 7.5 Spätere Gameplay-Erweiterung
+
+Eine umkämpfte Recovery-Site mit optionalem Sicherungsauftrag von maximal etwa 30 Minuten bleibt als spätere V2-Erweiterung vorgesehen. Die aktuelle Foundation-V1 verwendet zunächst nur die abstrakte Recovery-Zeit und die anschließende Repair-Sperre.
