@@ -1,7 +1,7 @@
 -- Operation Mountain Watch - CampaignState resource and transaction foundation.
 --
 -- CampaignState is the strategic authority for the resources stored here.
--- This module deliberately has no MOOSE or DCS dependency, no persistence,
+-- This module deliberately has no MOOSE or DCS dependency, no filesystem I/O,
 -- no scheduler, and no physical transport implementation. MOOSE remains the
 -- operational framework for transport and STORAGE representation.
 
@@ -36,6 +36,14 @@ CampaignState.TransactionStatus = {
   LOST = "LOST",
   CANCELLED = "CANCELLED",
 }
+
+CampaignState.AircraftRecoveryStatus = {
+  RECOVERY_IN_PROGRESS = "RECOVERY_IN_PROGRESS",
+  RECOVERED_AWAITING_REPAIR = "RECOVERED_AWAITING_REPAIR",
+  AVAILABLE = "AVAILABLE",
+}
+
+CampaignState.SnapshotVersion = "CAMPAIGNSTATE-SNAPSHOT-1"
 
 local function fail(message)
   error(TAG .. " " .. tostring(message), 2)
@@ -72,6 +80,15 @@ local function copyResources(resources)
     result[resourceId] = copyResourceEntry(entry)
   end
   return result
+end
+
+local function sortedKeys(map)
+  local keys = {}
+  for key in pairs(map) do
+    keys[#keys + 1] = key
+  end
+  table.sort(keys)
+  return keys
 end
 
 local function normalizeNodeResources(node)
@@ -164,6 +181,35 @@ local function copyTransaction(transaction)
   }
 end
 
+local function copyCredit(credit)
+  if not credit then
+    return nil
+  end
+  return {
+    creditId = credit.creditId,
+    nodeId = credit.nodeId,
+    resourceId = credit.resourceId,
+    quantity = credit.quantity,
+    canonicalUnit = credit.canonicalUnit,
+    reason = credit.reason,
+    entityId = credit.entityId,
+  }
+end
+
+local function copyAircraftRecovery(recovery)
+  if not recovery then
+    return nil
+  end
+  return {
+    entityId = recovery.entityId,
+    recoveryNodeId = recovery.recoveryNodeId,
+    status = recovery.status,
+    recoveryStartedAt = recovery.recoveryStartedAt,
+    recoveryCompleteAt = recovery.recoveryCompleteAt,
+    repairCompleteAt = recovery.repairCompleteAt,
+  }
+end
+
 local function specsEqual(a, b)
   return a.transactionId == b.transactionId
     and a.reservationId == b.reservationId
@@ -176,6 +222,16 @@ local function specsEqual(a, b)
     and a.canonicalUnit == b.canonicalUnit
     and a.originNodeId == b.originNodeId
     and a.destinationNodeId == b.destinationNodeId
+end
+
+local function creditsEqual(a, b)
+  return a.creditId == b.creditId
+    and a.nodeId == b.nodeId
+    and a.resourceId == b.resourceId
+    and a.quantity == b.quantity
+    and a.canonicalUnit == b.canonicalUnit
+    and a.reason == b.reason
+    and a.entityId == b.entityId
 end
 
 local function getNode(store, nodeId)
@@ -302,7 +358,54 @@ function CampaignState.New(initialState)
     nodesById = nodesById,
     reservedByNode = {},
     transactionsById = {},
+    creditsById = {},
+    aircraftRecoveryById = {},
   }, Store)
+end
+
+function CampaignState.Restore(snapshot)
+  if type(snapshot) ~= "table" then
+    fail("snapshot must be a table")
+  end
+  if snapshot.snapshotVersion ~= CampaignState.SnapshotVersion then
+    fail("unsupported snapshotVersion=" .. tostring(snapshot.snapshotVersion))
+  end
+
+  local store = CampaignState.New({
+    schemaVersion = snapshot.stateSchemaVersion,
+    nodes = snapshot.nodes,
+  })
+
+  for _, transaction in ipairs(snapshot.transactions or {}) do
+    local transactionId = requireNonEmptyString(transaction.transactionId, "transactionId")
+    if store.transactionsById[transactionId] then
+      fail("duplicate snapshot transactionId=" .. tostring(transactionId))
+    end
+    store.transactionsById[transactionId] = copyTransaction(transaction)
+    if transaction.originDebited ~= true
+        and (transaction.status == CampaignState.TransactionStatus.RESERVED
+          or transaction.status == CampaignState.TransactionStatus.LOADING) then
+      adjustReserved(store, transaction.originNodeId, transaction.resourceId, transaction.quantity)
+    end
+  end
+
+  for _, credit in ipairs(snapshot.resourceCredits or {}) do
+    local creditId = requireNonEmptyString(credit.creditId, "creditId")
+    if store.creditsById[creditId] then
+      fail("duplicate snapshot creditId=" .. tostring(creditId))
+    end
+    store.creditsById[creditId] = copyCredit(credit)
+  end
+
+  for _, recovery in ipairs(snapshot.aircraftRecovery or {}) do
+    local entityId = requireNonEmptyString(recovery.entityId, "entityId")
+    if store.aircraftRecoveryById[entityId] then
+      fail("duplicate snapshot aircraft entityId=" .. tostring(entityId))
+    end
+    store.aircraftRecoveryById[entityId] = copyAircraftRecovery(recovery)
+  end
+
+  return store
 end
 
 function Store:GetResource(nodeId, resourceId)
@@ -505,6 +608,182 @@ end
 
 function Store:GetTransaction(transactionId)
   return copyTransaction(getTransaction(self, transactionId))
+end
+
+function Store:CreditResourceOnce(spec)
+  if type(spec) ~= "table" then
+    fail("resource credit spec must be a table")
+  end
+
+  local creditId = requireNonEmptyString(spec.creditId, "creditId")
+  local nodeId = requireNonEmptyString(spec.nodeId, "nodeId")
+  local resourceId = requireNonEmptyString(spec.resourceId, "resourceId")
+  local resource = getResource(self, nodeId, resourceId)
+  local canonicalUnit = spec.canonicalUnit or resource.unit
+
+  if canonicalUnit ~= resource.unit then
+    fail("resource credit canonical unit mismatch creditId=" .. tostring(creditId))
+  end
+  if not isFinitePositive(spec.quantity) then
+    fail("resource credit quantity must be positive finite")
+  end
+
+  local candidate = {
+    creditId = creditId,
+    nodeId = nodeId,
+    resourceId = resourceId,
+    quantity = spec.quantity,
+    canonicalUnit = canonicalUnit,
+    reason = spec.reason,
+    entityId = spec.entityId,
+  }
+
+  local existing = self.creditsById[creditId]
+  if existing then
+    if creditsEqual(existing, candidate) then
+      return copyCredit(existing), false
+    end
+    fail("creditId already exists with different specification=" .. tostring(creditId))
+  end
+
+  resource.quantity = resource.quantity + spec.quantity
+  self.creditsById[creditId] = candidate
+  return copyCredit(candidate), true
+end
+
+function Store:GetResourceCredit(creditId)
+  return copyCredit(self.creditsById[creditId])
+end
+
+function Store:BeginAircraftRecovery(spec)
+  if type(spec) ~= "table" then
+    fail("aircraft recovery spec must be a table")
+  end
+
+  local entityId = requireNonEmptyString(spec.entityId, "entityId")
+  local recoveryNodeId = requireNonEmptyString(spec.recoveryNodeId, "recoveryNodeId")
+  getNode(self, recoveryNodeId)
+
+  if not isFiniteNonNegative(spec.recoveryStartedAt)
+      or not isFiniteNonNegative(spec.recoveryCompleteAt)
+      or not isFiniteNonNegative(spec.repairCompleteAt) then
+    fail("aircraft recovery times must be non-negative finite")
+  end
+  if spec.recoveryCompleteAt < spec.recoveryStartedAt then
+    fail("recoveryCompleteAt precedes recoveryStartedAt entityId=" .. tostring(entityId))
+  end
+  if spec.repairCompleteAt < spec.recoveryCompleteAt then
+    fail("repairCompleteAt precedes recoveryCompleteAt entityId=" .. tostring(entityId))
+  end
+
+  local candidate = {
+    entityId = entityId,
+    recoveryNodeId = recoveryNodeId,
+    status = CampaignState.AircraftRecoveryStatus.RECOVERY_IN_PROGRESS,
+    recoveryStartedAt = spec.recoveryStartedAt,
+    recoveryCompleteAt = spec.recoveryCompleteAt,
+    repairCompleteAt = spec.repairCompleteAt,
+  }
+
+  local existing = self.aircraftRecoveryById[entityId]
+  if existing then
+    if existing.recoveryNodeId == candidate.recoveryNodeId
+        and existing.recoveryStartedAt == candidate.recoveryStartedAt
+        and existing.recoveryCompleteAt == candidate.recoveryCompleteAt
+        and existing.repairCompleteAt == candidate.repairCompleteAt then
+      return copyAircraftRecovery(existing), false
+    end
+    fail("aircraft recovery already exists with different specification entityId=" .. tostring(entityId))
+  end
+
+  self.aircraftRecoveryById[entityId] = candidate
+  return copyAircraftRecovery(candidate), true
+end
+
+function Store:CompleteAircraftRecovery(entityId, now)
+  entityId = requireNonEmptyString(entityId, "entityId")
+  if not isFiniteNonNegative(now) then
+    fail("now must be non-negative finite")
+  end
+
+  local recovery = self.aircraftRecoveryById[entityId]
+  if not recovery then
+    fail("unknown aircraft recovery entityId=" .. tostring(entityId))
+  end
+  if recovery.status == CampaignState.AircraftRecoveryStatus.RECOVERED_AWAITING_REPAIR
+      or recovery.status == CampaignState.AircraftRecoveryStatus.AVAILABLE then
+    return copyAircraftRecovery(recovery), false
+  end
+  if now < recovery.recoveryCompleteAt then
+    fail("aircraft recovery not yet complete entityId=" .. tostring(entityId))
+  end
+
+  recovery.status = CampaignState.AircraftRecoveryStatus.RECOVERED_AWAITING_REPAIR
+  return copyAircraftRecovery(recovery), true
+end
+
+function Store:CompleteAircraftRepair(entityId, now)
+  entityId = requireNonEmptyString(entityId, "entityId")
+  if not isFiniteNonNegative(now) then
+    fail("now must be non-negative finite")
+  end
+
+  local recovery = self.aircraftRecoveryById[entityId]
+  if not recovery then
+    fail("unknown aircraft recovery entityId=" .. tostring(entityId))
+  end
+  if recovery.status == CampaignState.AircraftRecoveryStatus.AVAILABLE then
+    return copyAircraftRecovery(recovery), false
+  end
+  if recovery.status ~= CampaignState.AircraftRecoveryStatus.RECOVERED_AWAITING_REPAIR then
+    fail("aircraft repair requires recovered state entityId=" .. tostring(entityId))
+  end
+  if now < recovery.repairCompleteAt then
+    fail("aircraft repair lock not yet complete entityId=" .. tostring(entityId))
+  end
+
+  recovery.status = CampaignState.AircraftRecoveryStatus.AVAILABLE
+  return copyAircraftRecovery(recovery), true
+end
+
+function Store:GetAircraftRecovery(entityId)
+  return copyAircraftRecovery(self.aircraftRecoveryById[entityId])
+end
+
+function Store:ExportSnapshot()
+  local nodes = {}
+  for _, nodeId in ipairs(sortedKeys(self.nodesById)) do
+    local node = self.nodesById[nodeId]
+    nodes[#nodes + 1] = {
+      nodeId = node.nodeId,
+      airbaseName = node.airbaseName,
+      resources = copyResources(node.resources),
+    }
+  end
+
+  local transactions = {}
+  for _, transactionId in ipairs(sortedKeys(self.transactionsById)) do
+    transactions[#transactions + 1] = copyTransaction(self.transactionsById[transactionId])
+  end
+
+  local resourceCredits = {}
+  for _, creditId in ipairs(sortedKeys(self.creditsById)) do
+    resourceCredits[#resourceCredits + 1] = copyCredit(self.creditsById[creditId])
+  end
+
+  local aircraftRecovery = {}
+  for _, entityId in ipairs(sortedKeys(self.aircraftRecoveryById)) do
+    aircraftRecovery[#aircraftRecovery + 1] = copyAircraftRecovery(self.aircraftRecoveryById[entityId])
+  end
+
+  return {
+    snapshotVersion = CampaignState.SnapshotVersion,
+    stateSchemaVersion = self.schemaVersion,
+    nodes = nodes,
+    transactions = transactions,
+    resourceCredits = resourceCredits,
+    aircraftRecovery = aircraftRecovery,
+  }
 end
 
 return CampaignState
