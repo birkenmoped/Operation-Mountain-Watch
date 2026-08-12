@@ -206,5 +206,5 @@ Bundle:
 mission/tests/storage-forced-landing-recovery-v1/dist/OMW_Forced_Landing_Recovery_V1_Gate.lua
 
 BuilderVersion:
-FORCED-LANDING-RECOVERY-V1-GATE-1
+FORCED-LANDING-RECOVERY-V1-GATE-2
 ```
