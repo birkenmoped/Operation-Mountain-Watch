@@ -1,6 +1,6 @@
 ---
 document_id: OMW-MOOSE-STORAGE-RESOURCE-RECONCILIATION
-status: PLANNED
+status: ACCEPTED_TECHNICAL_BASELINE
 document_class: MOOSE_TECHNICAL_NOTE
 owning_policy: OMW-GOV-MOOSE-FIRST
 authoritative_for:
@@ -12,8 +12,16 @@ project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
 superseded_by:
 source_branch: agent/storage-resource-integration-final
-source_commit: PENDING_MERGE
-validated_in_dcs: false
+source_commit: 70ce4c7900927728b3e415a3929ee4b155fe71d0
+validated_in_dcs: true
+acceptance_branch: agent/storage-resource-integration-final
+acceptance_commit: 70ce4c7900927728b3e415a3929ee4b155fe71d0
+acceptance_mission: OMW_Template_v8_AirOps_rdy.miz
+acceptance_mission_sha256: cf80b3edc4e500716e1704da2409df3123f43e78f75c343651b991360f5174ae
+dcs_version: 2.9.28.26385 MT
+moose_release: 2.9.18
+moose_commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+moose_lua_sha256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
 ---
 
 # MOOSE STORAGE Resource Reconciliation
@@ -169,26 +177,50 @@ Observer:MeasureDelta(beforeSnapshot, afterSnapshot)
 
 `CompareNode()` berücksichtigt nur Manifest-Einträge mit `reconciliationEligible=true`. Variantenspezifische Waffenitems werden weiterhin in `ReadNode().variants` sichtbar, aber nicht stillschweigend dem vollständigen strategischen Familienbestand gleichgesetzt.
 
-## 8. DCS-Acceptance
+## 8. DCS-Acceptance 2026-08-12
 
-Geplanter Test:
+Test:
 
 ```text
 STORAGE-RESOURCE-INTEGRATION-FINAL-1
+Source/Builder commit: 70ce4c7900927728b3e415a3929ee4b155fe71d0
+DCS: 2.9.28.26385 MT
+Executed mission path from debrief: OMW_Template_v8_AirOps_rdy.miz
+Owner-supplied artifact SHA-256: cf80b3edc4e500716e1704da2409df3123f43e78f75c343651b991360f5174ae
+Internal mission SHA-256: acf4b381fc683e52dccd8addea70acaa01f67abb47f587d9ff2cc284cf8a2b4c
+Embedded bundle SHA-256: d814c2f63b5d3959efe5cf1d4e7f36a22712afc2d3d2c716a536194d0c565a07
+Embedded Moose.lua SHA-256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
+dcs.log SHA-256: 7d04e32e50ef969fddbd8b911a5c030c1aca0f7c8483018d1be2ea5d675922d7
+debrief.log SHA-256: 0e731c97c2f0a8cd4e9361ba85797285ebaedc0af91cb4acce4e11130681ab68
 ```
 
-Er prüft read-only:
+Beobachtete Marker:
 
 ```text
-Bagram JETFUEL/GASOLINE
-Shindand Heliport JETFUEL/GASOLINE
-AGM-114K / M151 / IAFS variant visibility
-baseline MATCH
-intentional isolated CampaignState mismatch -> DRIFT
-no reverse overwrite
-pure delta measurement
+OBSERVED node=Bagram jp8Kg=538018.328 avgasKg=100000.000 f16TankCount=100.000
+OBSERVED node=ShindandHeliport jp8Kg=100000.000 avgasKg=100000.000 agm114k=100.000 m151=100.000 iafs=100.000
+BASELINE_RECONCILIATION_PASS nodes=2 resourcesPerNode=2
+DRIFT_GUARD_PASS resourceId=FUEL_JP8 delta=-100.000 campaignStateMutation=false
+DELTA_MEASUREMENT_PASS jp8Delta=-125 agm114kDelta=-4
+MAPPING_SCOPE_PASS completeResource=FUEL_JP8,FUEL_AVGAS variantOnly=AGM_114K,HYDRA_70_M151 technicalNonStrategic=IAFS
+RESULT status=PASS storageMutation=false campaignStateMutationByObserver=false schedulerBounded=true nativeDcs=false
+```
+
+Damit ist der Observer für genau diesen Scope DCS-validiert:
+
+```text
+STORAGE:FindByName / AIRBASE:GetStorage resolution path works for tested nodes
+STORAGE:GetLiquidAmount works for JETFUEL/GASOLINE at tested nodes
+STORAGE:GetItemAmount works for tested variant telemetry
+baseline CampaignState comparison works
+intentional isolated strategic mismatch is detected as DRIFT
+observer does not reverse-overwrite CampaignState
+observer does not mutate STORAGE
+pure delta calculation works
 ```
 
 Der Test führt keine neue physische Verbrauchs-, Rearm-, Refuel-, Return- oder Loss-Sequenz aus. Diese Grundlagen werden aus ihren jeweiligen dokumentierten Acceptance-Ständen geerbt.
 
-Bis zum DCS-Lauf bleibt der neue Observer-Scope `PLANNED` beziehungsweise source-reviewed; er ist nicht `VALIDATED`.
+Der nach `Dispatcher Stop` protokollierte `bhHook.lua`-Fehler stammt aus dem externen Saved-Games-Hook und ist kein Fehler des OMW-Testbundles.
+
+Nicht validiert sind Persistenz, Restart-Reconciliation, Multiplayer-Fehlerverhalten oder zusätzliche Weapon-Familien-Mappings.
