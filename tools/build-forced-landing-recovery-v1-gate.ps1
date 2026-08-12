@@ -10,7 +10,7 @@ $observerFile = Join-Path $repoRoot 'scripts\logistics\OMW_ForcedLandingObserver
 $harnessFile = Join-Path $repoRoot 'mission\tests\storage-forced-landing-recovery-v1\src\01-forced-landing-recovery-v1-gate.lua'
 $distDir = Join-Path $repoRoot 'mission\tests\storage-forced-landing-recovery-v1\dist'
 $outputFile = Join-Path $distDir 'OMW_Forced_Landing_Recovery_V1_Gate.lua'
-$builderVersion = 'FORCED-LANDING-RECOVERY-V1-GATE-1'
+$builderVersion = 'FORCED-LANDING-RECOVERY-V1-GATE-2'
 $mooseCommit = '73d3ed119cd9e7e3f2cfcabbaa34513d30529b54'
 $mooseSha256 = 'e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915'
 
@@ -33,6 +33,8 @@ $requiredMarkers = @(
     'RECOVERY_RADIUS_METERS = 5000',
     'RECOVERY_DURATION_SECONDS = 30 * 60',
     'REPAIR_LOCK_SECONDS = 6 * 60 * 60',
+    'CLIENT_RETURN_PARKING_DISTANCE_METERS = 5',
+    'AIRBASE:GetParkingSpotsTable()',
     'CLIENT_US_SHND_AH64D_01',
     'RECOVERABLE_RUNTIME_PASS',
     'POLICY_TIMING_PASS',
@@ -97,6 +99,7 @@ Write-Host "Scope: FORCED_LANDING_RECOVERY_V1_GATE"
 Write-Host "ClientGroup: CLIENT_US_SHND_AH64D_01"
 Write-Host "RecoveryNode: Shindand Heliport"
 Write-Host "RecoveryRadiusMeters: 5000"
+Write-Host "ClientReturnParkingDistanceMeters: 5"
 Write-Host "RecoveryDurationSeconds: 1800"
 Write-Host "RepairLockSeconds: 21600"
 Write-Host "CampaignStateMutation: ABSENT"
