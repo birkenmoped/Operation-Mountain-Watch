@@ -23,7 +23,7 @@ $harness = Get-Content -LiteralPath $harnessFile -Raw -Encoding UTF8
 $requiredMarkers = @(
     'STORAGE-CLIENT-REARM-EXCHANGE-1',
     'AIRBASE:FindByName',
-    'AIRBASE:GetStorage',
+    'airbase:GetStorage()',
     'STORAGE:FindByName',
     'STORAGE:GetInventory()',
     'SET_CLIENT:New()',
