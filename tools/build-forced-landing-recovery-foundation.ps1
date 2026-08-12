@@ -9,7 +9,7 @@ $policyFile = Join-Path $repoRoot 'scripts\logistics\OMW_ForcedLandingRecoveryPo
 $observerFile = Join-Path $repoRoot 'scripts\logistics\OMW_ForcedLandingObserver.lua'
 $distDir = Join-Path $repoRoot 'mission\tests\storage-forced-landing-recovery-v1\dist'
 $outputFile = Join-Path $distDir 'OMW_Forced_Landing_Recovery_Foundation.lua'
-$builderVersion = 'FORCED-LANDING-RECOVERY-V1-FOUNDATION-1'
+$builderVersion = 'FORCED-LANDING-RECOVERY-V1-FOUNDATION-2'
 $mooseCommit = '73d3ed119cd9e7e3f2cfcabbaa34513d30529b54'
 $mooseSha256 = 'e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915'
 
@@ -47,8 +47,11 @@ $requiredObserverMarkers = @(
     'FLIGHTGROUP',
     'AUFTRAG.Type.LANDATCOORDINATE',
     'AIRBASE:FindByName',
+    'AIRBASE:GetParkingSpotsTable()',
+    'CLIENT_RETURN_PARKING_DISTANCE_METERS = 5',
     'Get2DDistance',
     'function ForcedLandingObserver:TrackFlight',
+    'function ForcedLandingObserver:TrackClientGroup',
     'function ForcedLandingObserver:GetObservations'
 )
 foreach ($marker in $requiredObserverMarkers) {
@@ -106,6 +109,7 @@ Write-Host "Built: $outputFile"
 Write-Host "BuilderVersion: $builderVersion"
 Write-Host "Scope: FORCED_LANDING_RECOVERY_V1_FOUNDATION"
 Write-Host "RecoveryRadiusMeters: 5000"
+Write-Host "ClientReturnParkingDistanceMeters: 5"
 Write-Host "RecoveryDurationSeconds: 1800"
 Write-Host "RepairLockSeconds: 21600"
 Write-Host "LowFuelSignalFraction: 0.05"
