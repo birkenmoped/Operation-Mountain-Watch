@@ -42,6 +42,19 @@ Operation Mountain Watch is a dynamic multiplayer COIN campaign for DCS World on
 - Preserve legacy source records and archived handoffs as historical evidence; they do not regain current authority through detail or age.
 - Run `python3 tools/validate_documentation.py .` for documentation changes and review every warning as well as every error.
 
+## Code and local-command handoff
+
+- Present Lua source that the project owner must copy or inspect in fenced `lua` code blocks.
+- Present every local Windows command sequence in fenced `powershell` code blocks. Do not use plain-text command fragments for owner handoff.
+- On the project owner's Windows development machine, direct invocation such as `& .\tools\script.ps1` is blocked by the local PowerShell execution policy. Invoke repository `.ps1` builders through a child PowerShell process with an explicit process-local bypass, for example:
+
+```powershell
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\tools\build-example.ps1
+```
+
+- Do not ask the owner to change the machine-wide or user-wide PowerShell execution policy for OMW builds.
+- After ChatGPT publishes the remote commit, owner handoff remains limited to numbered PowerShell steps for `git pull`, the official builder, and independent hash verification. The real console output and hashes returned by the owner are the only accepted local-build evidence.
+
 ## Lua conventions
 
 - Avoid global variables; modules return tables.
