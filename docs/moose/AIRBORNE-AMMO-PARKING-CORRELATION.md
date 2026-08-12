@@ -12,29 +12,14 @@ supersedes:
 superseded_by:
 source_branch: agent/airborne-ammo-parking-correlation
 source_commit: PENDING_MERGE
-validated_in_dcs: false
+validated_in_dcs: partial
 ---
 
 # MOOSE Airborne Ammo und Kandahar Parking Correlation
 
 ## Zweck
 
-Der Test `AIRBORNE-AMMO-PARKING-CORRELATION-3` bündelt zwei technisch zusammengehörige Diagnoseblöcke in einem DCS-Lauf:
-
-```text
-A-10C / GAU-8        = Lifecycle-Gate
-F-16C / M61          = Discovery
-F-15E / M61          = Discovery
-UH-60 / Bordwaffen   = Discovery
-CH-47 / Bordwaffen   = Discovery
-OH-58D / M3P         = Regression
-AH-64D / M230        = Regression
-
-Kandahar Main        = ME-Parkplatzkennung -> MOOSE TerminalID
-Kandahar Heliport    = ME-Parkplatzkennung -> MOOSE TerminalID
-```
-
-Der Ammo-Pfad baut auf dem bereits source-reviewten V2-Harness auf. Die Parking-Korrelation ist read-only und verändert weder Parking-Pools noch WAREHOUSE-/AIRWING-Konfiguration.
+Der Test `AIRBORNE-AMMO-PARKING-CORRELATION-3` bündelt Bordwaffen-/Lifecycle-Telemetrie mit einer vollständigen Kandahar-Parking-Korrelation. Die Parking-Korrelation ist read-only und verändert weder Parking-Pools noch WAREHOUSE-/AIRWING-Konfiguration.
 
 ## Gepinnter MOOSE-Stand
 
@@ -44,9 +29,7 @@ MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
 Moose.lua SHA-256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
 ```
 
-## Source-reviewed Parking-APIs
-
-Der gepinnte Source bestätigt die für den neuen Pfad verwendeten öffentlichen Methoden:
+## Verwendeter Parking-Pfad
 
 ```text
 SET_GROUP:New()
@@ -57,62 +40,16 @@ GROUP:GetTemplate()
 AIRBASE:GetParkingSpotsTable(termtype)
 ```
 
-`GROUP:GetTemplate()` liefert eine Kopie des Mission-Editor-Gruppentemplates. Der Harness liest daraus ausschließlich die erste Unit der vorbereiteten Kandahar-Markergruppe:
+`GROUP:GetTemplate()` liefert das Mission-Editor-Gruppentemplate; der Harness liest `unit.x`, `unit.y`, `unit.parking_id` und `unit.parking`. `AIRBASE:GetParkingSpotsTable()` liefert unter anderem `TerminalID`, `TerminalID0`, `TerminalType` und `Vec3`. Im gepinnten Source wird `TerminalID` aus DCS `Term_Index` aufgebaut.
 
-```text
-unit.x
-unit.y
-unit.parking_id
-unit.parking
-```
-
-Der Harness greift nicht direkt auf `_DATABASE` zu.
-
-`AIRBASE:GetParkingSpotsTable()` liefert im gepinnten Stand Parking-Einträge mit unter anderem:
-
-```text
-TerminalID
-TerminalID0
-TerminalType
-Vec3
-Coordinate
-```
-
-Im MOOSE-Initialisierungspfad gilt:
-
-```text
-TerminalID  <- DCS Term_Index
-TerminalID0 <- DCS Term_Index_0
-```
-
-Damit beweist die Existenz eines numerischen `.miz parking`-Werts allein noch nicht seine Gleichheit mit `TerminalID`. Genau diese Gleichheit wird im DCS-Lauf korreliert.
-
-## Marker-Selektion
-
-Die aktuelle Arbeits-MIZ verwendet:
+Marker:
 
 ```text
 KANDAHAR_<ME-Parkplatz-Kennung>
 KANDAHAR_HP_<ME-Parkplatz-Kennung>
 ```
 
-Da `FilterPrefixes()` im gepinnten MOOSE-Source intern eine Pattern-Suche verwendet, prüft der Harness den echten String-Anfang zusätzlich selbst. Für den Main-Airfield-Lauf wird `KANDAHAR_HP_` ausdrücklich ausgeschlossen.
-
-## Korrelationslogik
-
-Für jede vorbereitete Markergruppe:
-
-```text
-1. Mission-Editor-Template über GROUP:GetTemplate() lesen.
-2. ME-Kennung aus unit.parking_id lesen.
-3. numerisches .miz-parking aus unit.parking lesen.
-4. MOOSE-Parkingtabelle des korrekten AIRBASE-Nodes lesen.
-5. räumlich nächsten Parking-Spot anhand Template-x/y und spot.Vec3.x/z bestimmen.
-6. .miz parking gegen MOOSE TerminalID vergleichen.
-7. Positionsabstand zusätzlich prüfen.
-```
-
-Ein `MATCH` erfordert:
+Ein Match verlangt:
 
 ```text
 mizParking == mooseTerminalID
@@ -120,28 +57,7 @@ und
 distanceM <= 5
 ```
 
-Pro Marker wird ausgegeben:
-
-```text
-PARKING_MAP
-node
-markerGroup
-meParkingId
-mizParking
-mooseTerminalID
-terminalID0
-terminalType
-distanceM
-exactIdMatch
-positionMatch
-status
-```
-
-Zusätzlich werden `PARKING_NODE_RESULT` und `PARKING_CORRELATION_RESULT` geschrieben.
-
 ## STORAGE-Lane-Serialisierung
-
-STORAGE-Deltas dürfen nicht durch zwei gleichzeitig laufende Fälle desselben Warehouses vermischt werden. Deshalb laufen nur unabhängige STORAGE-Nodes parallel; Fälle innerhalb desselben Nodes werden strikt nacheinander gestartet.
 
 ```text
 Kandahar:
@@ -149,24 +65,106 @@ Kandahar:
 
 Bagram:
   F-16C / M61
-  -> danach F-15E / M61
+  -> F-15E / M61
 
 Jalalabad:
   UH-60 / Bordwaffen
-  -> danach CH-47 / Bordwaffen
-  -> danach OH-58D / M3P
+  -> CH-47 / Bordwaffen
+  -> OH-58D / M3P
 
 Shindand Heliport:
   AH-64D / M230
 ```
 
-Der nächste Fall einer Lane wird erst nach `CASE_RESULT` des vorherigen Falls gestartet. Independent Lanes dürfen gleichzeitig laufen. Damit bleiben `pre -> postSpawn -> final`-Deltas pro STORAGE-Node einem Fall zuordenbar.
+Fälle desselben STORAGE-Nodes laufen nacheinander; unabhängige Nodes dürfen parallel laufen.
 
-Der globale Safety-Timeout beträgt wegen der serialisierten Bagram-/Jalalabad-Lanes 14.400 Sekunden; die individuellen Assignment-/Lifecycle-Timeouts bleiben 600 beziehungsweise 3.600 Sekunden.
+## Runtime-Nachweis 12.08.2026
+
+```text
+Branch: agent/airborne-ammo-parking-correlation
+Source commit: 5ad6d2c535c2e6796a677fd18975be794533ab8b
+BuilderVersion: AIRBORNE-AMMO-PARKING-CORRELATION-3
+Bundle SHA-256: cb650dd8bab448de39eb1a26f4bc856964f375600df51a5587fcf02c521a65fd
+MIZ: OMW_Template_v8_AirOps_rdy.miz
+MIZ SHA-256: 8f345af681276bc8634128b023873be4473df459deb2f6f9b230f3cbd901c84d
+DCS: 2.9.28.26385 MT
+MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+Moose.lua SHA-256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
+dcs.log SHA-256: a0473859853a2786c188b3cf3c3095e570806c20b6cb49216e9befe0ac6df7b8
+debrief.log SHA-256: 5b083460b339b78aa6d8d1754e60c81d10c3f7e84f56f9f74eedece6fc31eca3
+```
+
+Harness:
+
+```text
+status=COMPLETE_WITH_GAPS
+casesTotal=7
+casesObserved=6
+casesFailed=1
+parkingGroups=376
+parkingMapped=376
+parkingExactIdMatches=376
+parkingFailed=0
+```
+
+Parking-Ergebnis:
+
+```text
+Kandahar Main:     296/296 exact matches
+Kandahar Heliport:  80/80 exact matches
+Total:             376/376 exact matches
+```
+
+Damit ist für die exakt getestete Kette praktisch bestätigt:
+
+```text
+ME parking_id -> .miz unit.parking -> MOOSE TerminalID
+.miz unit.parking == MOOSE TerminalID
+```
+
+Die vollständige Mapping-Baseline liegt auf `main` unter `docs/data/kandahar-me-parking-to-moose-terminalid.csv`.
+
+Bekannte ME-Namensanomalie: `AAF05` wurde als `KANDAHAR_AAF05KANDAHAR_AAF01` gefunden; `.miz parking=29` und `TerminalID=29` stimmen dennoch eindeutig überein.
+
+## Bordwaffen-/Lifecycle-Ergebnis
+
+```text
+A-10C / GAU-8:
+  2300 -> 1764; real consumption 536; debrief 536
+  beide Flugzeuge visuell normal gestartet, angegriffen, gelandet, geparkt und engines off
+  MOOSE Arrived/despawn blieb aus
+
+F-16C / M61:
+  real consumption 762; debrief 762; normal return
+
+F-15E / M61:
+  real consumption 804; debrief 804; normal return
+
+UH-60A:
+  GetAmmoTot = 0; keine beobachtete Zielbekämpfung
+
+CH-47F:
+  guns=800; PORT/STBD M60D container debit/recredit beobachtet
+  keine reale M60D-Abgabe beobachtet
+
+AH-64D / M230:
+  regression consumption 87; normal return
+
+OH-58D / M3P:
+  Lauf durch Baumkollision eines Elements kontaminiert
+  debrief real expenditure 64
+  Gruppendelta nicht als Round-Verbrauch verwendbar
+```
+
+## Projektentscheidungen
+
+Der Projektinhaber schließt den **A-10/GAU-8-Gate für die aktuelle Warehouse-Ressourcenfrage**. Die reale Schussabgabe ist durch Onboard-Telemetrie und Debrief bestätigt; der physische Return beider A-10 wurde visuell bis Parking und Engine shutdown beobachtet. Das fehlende MOOSE-`Arrived` beziehungsweise der ausgebliebene Despawn bleibt als DCS/MOOSE-Lifecycle-Anomalie offen und gilt ausdrücklich nicht als technisch repariert.
+
+UH-60-/CH-47-Zielartenverhalten wird vorerst nicht weiter untersucht. Aus den CH-47-M60D-Containern wird keine Rundenzahl-Conversion abgeleitet.
+
+Der aktuelle OH-58-Lauf wird wegen der beobachteten Baumkollision und Notlandung eines Elements nicht zur Neubewertung der früheren sauberen M3P-Evidenz verwendet.
 
 ## Architekturgrenzen
-
-Die Korrelation ist Diagnose, kein Parking-Controller.
 
 Nicht verwendet werden:
 
@@ -179,44 +177,4 @@ _DATABASE direct access
 world.searchObjects
 ```
 
-Das Ergebnis darf nur für die exakt getestete MIZ-/DCS-/MOOSE-Kette als Runtime-Nachweis behandelt werden. Erst ein vollständiger positiver Kandahar-Lauf rechtfertigt die projektspezifische Schlussfolgerung, dass die vorbereiteten `.miz parking`-Werte in diesem Stand 1:1 den MOOSE-`TerminalID`s entsprechen.
-
-## Ammo-Erweiterung
-
-Die neuen F-16C-, F-15E-, UH-60- und CH-47-Fälle übernehmen den bereits source-reviewten Pfad:
-
-```text
-AIRWING:NewPayload()
-AUFTRAG:NewORBIT()
-AIRWING:AddMission()
-FLIGHTGROUP:SetOptionLandingRestrictPair()
-FLIGHTGROUP:GetAmmoTot()
-AUFTRAG:NewSTRAFING()
-OPSGROUP:AddMission()
-STORAGE:GetInventory()
-```
-
-Es werden keine vorab angenommenen Rundenzahlen als CampaignState-Ressourcen gebucht. Maßgeblich sind reale `GetAmmoTot()`-Deltas, DCS-Debrief-`ammo_consumption` und beobachtete STORAGE-Deltas.
-
-Der A-10 bleibt das strenge Gate. F-16C, F-15E, UH-60 und CH-47 sind im ersten Lauf Discovery-Fälle. OH-58D und AH-64D bleiben Regression.
-
-## DCS-Acceptance
-
-Vor einem positiven Runtime-Nachweis bleibt dieses Dokument `PLANNED` und `validated_in_dcs: false`.
-
-Erforderliche Provenienz entspricht `OMW-TEST-MISSION-BUILD-TRANSFER-VALIDATION`:
-
-```text
-Branch
-Source-Commit
-Builder-Version
-Bundle-SHA-256
-MIZ-Dateiname
-MIZ-SHA-256
-interner mission-SHA-256
-DCS-Version
-MOOSE-Commit
-Moose.lua-SHA-256
-DCS-Log-SHA-256
-Debrief-SHA-256
-```
+Die Kandahar-Korrelation ist an die getestete MIZ-/DCS-/MOOSE-Kette gebunden. Andere Airbases oder geänderte Karten-/DCS-Stände benötigen eigene Korrelation.
