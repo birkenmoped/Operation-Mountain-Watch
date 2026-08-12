@@ -36,7 +36,6 @@ normal expected AIRWING return
 unexpected landing <= 5 km zu recovery-capable friendly aviation node
 -> RECOVERABLE_FORCED_LANDING
 -> RECOVERY_IN_PROGRESS 30 min
--> bis dahin keine Resource-Gutschrift
 -> danach verbleibender Fuel/Stores strategisch gutschreiben
 -> Aircraft RECOVERED_AWAITING_REPAIR
 -> 6 h Repair-Lock
@@ -47,7 +46,7 @@ unexpected landing außerhalb recovery-capable envelope
 -> Aircraft/Fuel/Stores strategisch verloren
 ```
 
-`<= 5 %` Fuel bleibt ein starkes Zusatzsignal, ist aber ausdrücklich kein alleiniger Forced-Landing-Trigger.
+`<= 5 %` Fuel bleibt ein Zusatzsignal und ist kein alleiniger Trigger.
 
 ## 3. Gepinnter MOOSE-Stand
 
@@ -62,23 +61,14 @@ Moose.lua SHA-256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a
 Im tatsächlich verwendeten `Moose.lua` ist für `FLIGHTGROUP` belegt:
 
 ```text
-EVENTS.Land
--> FLIGHTGROUP:OnEventLanding(...)
--> ElementLanded(...)
-
-EVENTS.EngineShutdown
--> FLIGHTGROUP:OnEventEngineShutdown(...)
--> nur bei lebender Unit, on-ground und erkanntem Parking:
-   ElementArrived(...)
-
-FLIGHTGROUP:onafterArrived(...)
--> AI + AIRWING asset + kein pickup/transport
--> ReturnToLegion(1)
+EVENTS.Land -> ElementLanded(...)
+EVENTS.EngineShutdown -> nur bei lebender Unit, on-ground und erkanntem Parking ElementArrived(...)
+FLIGHTGROUP:onafterArrived(...) -> AI + AIRWING asset + kein pickup/transport -> ReturnToLegion(1)
 ```
 
-Wichtig ist die vorhandene MOOSE-Grenze: Ein normales AIRWING-Return wird erst über `Arrived`/Parking zurück in die Legion gegeben. Ein Off-field-Landing ohne erkanntes Parking wird durch `EngineShutdown` nicht automatisch zu `Arrived`.
+Ein normales AIRWING-Return wird damit über `Arrived`/Parking erkannt. Ein Off-field-Landing ohne Parking wird durch `EngineShutdown` nicht automatisch zu `Arrived`.
 
-Ebenfalls source-reviewed:
+Source-reviewed sind außerdem:
 
 ```text
 FLIGHTGROUP:IsLandingAt()
@@ -86,64 +76,79 @@ FLIGHTGROUP:IsLandedAt()
 FLIGHTGROUP:IsPickingup()
 FLIGHTGROUP:IsTransporting()
 FLIGHTGROUP:GetMissionCurrent()
+FLIGHTGROUP:GetParkingSpot(element, maxdist, airbase)
 AUFTRAG.Type.LANDATCOORDINATE
 EVENTHANDLER:New()
-BASE:HandleEvent(EVENTS.Land)
-BASE:HandleEvent(EVENTS.EngineShutdown)
+EVENTS.Land
+EVENTS.EngineShutdown
 UNIT:IsAlive()
 UNIT:InAir()
 UNIT:GetFuel()
 UNIT:GetCoordinate()
 AIRBASE:FindByName()
 AIRBASE:GetCoordinate()
+AIRBASE:GetParkingSpotsTable()
 COORDINATE:Get2DDistance()
 ```
 
-Damit ist keine Native-DCS-Event-Parallelimplementierung notwendig.
+`FLIGHTGROUP:GetParkingSpot(element, maxdist, airbase)` dokumentiert 5 m als Default-Distanzschwelle. Für Client-Gruppen ohne FLIGHTGROUP-`Arrived` wird diese vorhandene MOOSE-Grenze read-only über `AIRBASE:GetParkingSpotsTable()` verwendet.
 
-## 5. Neue OMW-Komponenten
+## 5. OMW-Komponenten
 
 ```text
 scripts/logistics/OMW_ForcedLandingRecoveryPolicy.lua
 scripts/logistics/OMW_ForcedLandingObserver.lua
 ```
 
-### Policy
+Der Observer mutiert weder CampaignState noch STORAGE noch AIRWING/WAREHOUSE noch physische DCS-Objekte.
 
-Pure Campaign-Domain-Logik ohne MOOSE/DCS-Abhängigkeit. Sie kodiert ausschließlich die beschlossenen Klassifikationen, 5-km-Grenze, 30-min-Recovery und 6-h-Repair-Lock.
-
-### Observer
-
-Der Observer verwendet `EVENTHANDLER` und öffentliche MOOSE-Wrapper. Er beobachtet ausschließlich explizit mit `TrackFlight()` registrierte `FLIGHTGROUP`s.
+AIRWING-AI:
 
 ```text
-Land
--> candidate telemetry
-
-EngineShutdown after Land
--> planned LANDATCOORDINATE / LandingAt / pickup / transport erkennen
--> vorhandenes FLIGHTGROUP Arrived als expected normal return erkennen
--> nearest configured recovery-capable aviation node bestimmen
--> Policy klassifizieren
+planned LANDATCOORDINATE / LandingAt / pickup / transport -> NORMAL_PLANNED_LANDING
+FLIGHTGROUP Arrived -> NORMAL_EXPECTED_RETURN
+sonst -> nearest recovery node / 5-km Policy
 ```
 
-Der Observer verändert weder CampaignState noch STORAGE noch AIRWING/WAREHOUSE noch physische DCS-Objekte.
-
-## 6. Wichtige Grenze
-
-Die Source-Prüfung reicht aus, um die verwendbaren MOOSE-Signale und die geplante Klassifikationslogik festzulegen. Sie beweist noch nicht, dass jeder reale DCS-Forced-Landing-Fall zuverlässig eine für diesen Pfad ausreichende `Land -> EngineShutdown`-Sequenz erzeugt.
-
-Deshalb ist genau **ein** gebündelter Runtime-Gate erforderlich, bevor die automatische CampaignState-Recovery-Buchung aktiviert werden darf. Der Gate muss insbesondere prüfen:
+Client:
 
 ```text
-normal AIRWING return -> NORMAL_EXPECTED_RETURN
-planned LANDATCOORDINATE -> NORMAL_PLANNED_LANDING
-unexpected off-field landing with engine shutdown -> forced-landing classification
-5-km recovery envelope
-no premature CampaignState/STORAGE mutation
+Land + EngineShutdown
+-> recovery-capable AIRBASE resolve
+-> <= 5 m zu Parking-Spot => NORMAL_EXPECTED_RETURN evidence
+-> sonst kein expected-return evidence
+-> nearest recovery node / 5-km Policy
 ```
 
-Bereits bestätigte Materialization-, Rearm-, Refuel-, normal-return- und total-loss-Warehouse-Semantik wird dabei nicht erneut getestet.
+## 6. Runtime-Befund 12.08.2026
+
+Der erste DCS-Gate lieferte einen verwertbaren FAIL:
+
+```text
+CLIENT_US_SHND_AH64D_01
+place=Shindand Heliport
+distanceM=2223.6182540257
+classification=NORMAL_EXPECTED_RETURN
+RESULT status=FAIL reason=CLASSIFICATION
+```
+
+Damit ist für den getesteten Stand belegt:
+
+```text
+PlaceName == recovery-node airbase name
+!= physical return to that airbase/parking
+```
+
+Die absichtlich off-field ausgeführte Landung lag 2223,6 m vom Node-Zentrum entfernt. `Land` und `EngineShutdown` wurden korrekt beobachtet; falsch war ausschließlich die bisherige OMW-Annahme, `PlaceName` könne für Clients als Return-Beweis dienen.
+
+Korrektur:
+
+```text
+PlaceName wird nur noch Telemetrie.
+Client expected return wird über die source-reviewed 5-m-Parking-Grenze bestimmt.
+```
+
+Der Gate bleibt `PLANNED` / `validated_in_dcs: false`, bis der korrigierte Lauf `RECOVERABLE_FORCED_LANDING` bestätigt.
 
 ## 7. Nicht Teil dieses Scopes
 
