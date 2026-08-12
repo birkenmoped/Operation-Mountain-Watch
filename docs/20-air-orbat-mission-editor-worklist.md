@@ -12,7 +12,7 @@ supersedes:
   - Jalalabad-first vertical-prototype implementation sequence
 superseded_by:
 source_branch: agent/resolve-document-number-collisions
-source_commit: 666ef7a4a6fad52cc1aaecc7d0953e4d112dc8ff
+source_commit: GIT_HISTORY
 validated_in_dcs: false
 document_class: MISSION_EDITOR_WORKLIST
 ---
@@ -152,7 +152,65 @@ Die verwendete MOOSE-Version wird mit Commit und Dateihash festgeschrieben.
 6. Parkpositionen und Blacklists dokumentieren.
 7. Rollwege, Startflächen und Sicherheitsabstände freihalten.
 
-### 6.3 Client-Gruppen
+### 6.3 Kandahar – validierte ME-Parkplatz-/MOOSE-TerminalID-Baseline
+
+Für Kandahar Main und Kandahar Heliport liegt seit dem DCS-Lauf vom 12.08.2026 eine vollständige Runtime-Korrelation der vorbereiteten Mission-Editor-Parkmarker gegen MOOSE vor.
+
+Testprovenienz:
+
+```text
+Test branch: agent/airborne-ammo-parking-correlation
+Source commit: 5ad6d2c535c2e6796a677fd18975be794533ab8b
+BuilderVersion: AIRBORNE-AMMO-PARKING-CORRELATION-3
+Bundle SHA-256: cb650dd8bab448de39eb1a26f4bc856964f375600df51a5587fcf02c521a65fd
+MIZ: OMW_Template_v8_AirOps_rdy.miz
+MIZ SHA-256: 8f345af681276bc8634128b023873be4473df459deb2f6f9b230f3cbd901c84d
+DCS: 2.9.28.26385 MT
+MOOSE release: 2.9.18
+MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+Moose.lua SHA-256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
+dcs.log SHA-256: a0473859853a2786c188b3cf3c3095e570806c20b6cb49216e9befe0ac6df7b8
+debrief.log SHA-256: 5b083460b339b78aa6d8d1754e60c81d10c3f7e84f56f9f74eedece6fc31eca3
+```
+
+Runtime-Ergebnis:
+
+```text
+Kandahar Main:
+  296 marker groups
+  296 mapped
+  296 exact .miz parking == MOOSE TerminalID matches
+  0 failures
+
+Kandahar Heliport:
+  80 marker groups
+  80 mapped
+  80 exact .miz parking == MOOSE TerminalID matches
+  0 failures
+
+Total:
+  376 / 376 exact matches
+```
+
+Damit gilt **für diese exakt getestete MIZ-/DCS-/MOOSE-Kette**:
+
+```text
+ME parking_id
+-> .miz unit.parking
+-> MOOSE AIRBASE:GetParkingSpotsTable().TerminalID
+
+.miz unit.parking == MOOSE TerminalID
+```
+
+Die vollständige Zuordnung wird als maschinenlesbare Projektbaseline geführt unter:
+
+- [`docs/data/kandahar-me-parking-to-moose-terminalid.csv`](data/kandahar-me-parking-to-moose-terminalid.csv)
+
+Die CSV enthält alle 296 Kandahar-Main- und alle 80 Kandahar-Heliport-Zuordnungen. Für die Pflege dieser Kandahar-Baseline darf die `.miz` deshalb statisch ausgewertet werden, solange die Missionslinie auf diesem validierten Stand beruht. Nach Änderungen an DCS-Version, Afghanistan-Kartenstand, Airbase-/Parking-Schema oder einer relevanten Neuplatzierung ist die Runtime-Korrelation erneut zu prüfen; der Nachweis wird nicht ungeprüft auf andere Airbases übertragen.
+
+Bekannte ME-Namensanomalie: Der Marker für `AAF05` ist im getesteten Missionsstand als `KANDAHAR_AAF05KANDAHAR_AAF01` benannt. Seine fachliche Zuordnung ist dennoch eindeutig und wurde mit `.miz parking=29`, `MOOSE TerminalID=29` und Positionskorrelation bestätigt. Die Namensanomalie ist bei einer späteren ME-Bereinigung zu korrigieren, ohne daraus einen Parking-Mapping-Fehler abzuleiten.
+
+### 6.4 Client-Gruppen
 
 Die Zahl der Client-Luftfahrzeuge wird ausschließlich aus Dokument 19 übernommen und nicht in dieser Arbeitsliste dupliziert.
 
@@ -164,7 +222,7 @@ Verbindliche technische Regeln:
 - Multicrew-Sitze zählen nicht als zusätzliche Luftfahrzeuge;
 - Modabhängigkeiten müssen sichtbar und deaktivierbar sein.
 
-### 6.4 KI-Templates
+### 6.5 KI-Templates
 
 KI-Templates werden grundsätzlich als `Late Activation` angelegt.
 
@@ -178,7 +236,7 @@ Zu dokumentieren sind:
 - zulässige Parking-IDs und Blacklists;
 - lokale und globale KI-Grenzen aus Dokument 18.
 
-### 6.5 Statics
+### 6.6 Statics
 
 - Statics sind Teil des logischen Bestands und kein zusätzlicher Bestand;
 - Staticflächen werden von operativen Spawn- und Parkpositionen getrennt;
@@ -186,7 +244,7 @@ Zu dokumentieren sind:
 - Zerstörung muss eindeutig erkannt und dem CampaignState gemeldet werden;
 - sichtbare Zielzahlen stammen aus dem zuständigen Manifest und dürfen Dokument 19 nicht widersprechen.
 
-### 6.6 Zonen
+### 6.7 Zonen
 
 Zonen werden funktionsbezogen benannt und dokumentiert. Typische Bereiche:
 
