@@ -66,12 +66,15 @@ function ForcedLandingRecoveryPolicy.ClassifyLanding(context)
     return ForcedLandingRecoveryPolicy.Classification.INDETERMINATE
   end
 
-  if not finiteNonNegative(context.distanceToRecoveryMeters) then
-    fail("distanceToRecoveryMeters must be non-negative finite for unexpected landing")
+  if context.recoveryCapable ~= true then
+    return ForcedLandingRecoveryPolicy.Classification.OFF_FIELD_UNRECOVERABLE
   end
 
-  if context.recoveryCapable == true
-      and context.distanceToRecoveryMeters <= ForcedLandingRecoveryPolicy.RECOVERY_RADIUS_METERS then
+  if not finiteNonNegative(context.distanceToRecoveryMeters) then
+    fail("distanceToRecoveryMeters must be non-negative finite for recovery-capable landing")
+  end
+
+  if context.distanceToRecoveryMeters <= ForcedLandingRecoveryPolicy.RECOVERY_RADIUS_METERS then
     return ForcedLandingRecoveryPolicy.Classification.RECOVERABLE_FORCED_LANDING
   end
 
