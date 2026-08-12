@@ -1,6 +1,6 @@
 ---
 document_id: OMW-TEST-STORAGE-CLIENT-REARM-EXCHANGE
-status: PLANNED
+status: ACCEPTED_TECHNICAL_BASELINE
 document_class: TEST_PROJECT_INDEX
 owning_policy: OMW-GOV-001
 authoritative_for:
@@ -12,13 +12,15 @@ supersedes:
 superseded_by:
 source_branch: agent/storage-client-rearm-exchange
 source_commit: PENDING_MERGE
-validated_in_dcs: false
-base_branch: agent/storage-physical-loss-recovery
-base_commit: 8ee3d28de07e418c77b3ab6c343f90f1498909de
-base_status: ACCEPTED_TECHNICAL_BASELINE
-merged_to_main: false
-inherited_risk:
-  - parent branch remains unmerged
+validated_in_dcs: true
+acceptance_branch: agent/storage-client-rearm-exchange
+acceptance_commit: f4e5352eba4afb51c365768641c6a456a065b929
+acceptance_mission: OMW_Template_v8_AirOps_rdy.miz
+acceptance_mission_sha256: 76735e0ba85634a2f84716b38debab7add411851896cb14b1ba5f23cb7b47181
+dcs_version: 2.9.28.26385
+moose_commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+moose_artifact_sha256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
+acceptance_bundle_sha256: 291b8ade7cc59e363f73995dea4f73863aa96068bfe0ee85153a6b6c097dcf62
 ---
 
 # STORAGE Client Rearm Exchange
@@ -92,7 +94,7 @@ WEAPON_REARM_EVENT ...        # falls DCS das Event liefert
 RESULT ... status=OBSERVATION_COMPLETE
 ```
 
-Der Test klassifiziert den Warehouse-Rearm noch nicht automatisch als PASS/FAIL. Die eigentliche Auswertung erfolgt anhand der beobachteten Sequenz aus Player-Rearm-Schritten, STORAGE-Deltas und Aircraft-Ammo-Deltas.
+Der Test klassifiziert den Warehouse-Rearm nicht automatisch als PASS/FAIL. Die eigentliche Auswertung erfolgt anhand der beobachteten Sequenz aus Player-Rearm-Schritten, STORAGE-Deltas und Aircraft-Ammo-Deltas.
 
 ## 5. Entscheidungsziel fuer CampaignState
 
@@ -142,7 +144,7 @@ Fuel-only refuel exchange
 DCS- oder MOOSE-Workaround
 ```
 
-Ein DCS-Lauf ist erforderlich, bevor irgendeine Aussage ueber das tatsaechliche Client-Rearm-/Warehouse-Verhalten als `VALIDATED` oder `ACCEPTED_TECHNICAL_BASELINE` gefuehrt werden darf.
+Die Acceptance gilt nur fuer den dokumentierten Bagram-F-16-Client-, DCS-, MOOSE-, MIZ- und Bundle-Stand. Sie ist keine pauschale Garantie fuer andere Flugzeugtypen, Airbases oder DCS-Versionen.
 
 ## 8. Build
 
@@ -163,3 +165,95 @@ Bundle:
 ```text
 mission/tests/storage-client-rearm-exchange/dist/OMW_Storage_Client_Rearm_Exchange_Test.lua
 ```
+
+Verifizierter Build fuer den Acceptance-Lauf:
+
+```text
+Git commit: f4e5352eba4afb51c365768641c6a456a065b929
+Bundle SHA-256: 291b8ade7cc59e363f73995dea4f73863aa96068bfe0ee85153a6b6c097dcf62
+```
+
+Das in der getesteten MIZ eingebettete Bundle hatte denselben SHA-256. Das eingebettete `Moose.lua` hatte den gepinnten SHA-256 `e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915`.
+
+## 9. DCS-Acceptance 2026-08-12
+
+Runtime:
+
+```text
+DCS 2.9.28.26385 MT
+branch agent/storage-client-rearm-exchange
+commit f4e5352eba4afb51c365768641c6a456a065b929
+client CLIENT_US_BGRM_F16_01_UNIT_01
+node Bagram
+mission OMW_Template_v8_AirOps_rdy.miz
+mission SHA-256 76735e0ba85634a2f84716b38debab7add411851896cb14b1ba5f23cb7b47181
+bundle SHA-256 291b8ade7cc59e363f73995dea4f73863aa96068bfe0ee85153a6b6c097dcf62
+Moose.lua SHA-256 e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
+```
+
+Evidenzdateien des Laufs:
+
+```text
+dcs(20260812-193934).log
+SHA-256 5a10483e5be5ffab37e28121b283de7967af20870da1ad4f657b583f63816f7a
+
+debrief(20260812-193934).log
+SHA-256 7bd42031d08a9084c54bb1967dfa22cc490f793992e5412b0d4f79bbc06b0d59
+```
+
+Der Lauf bestaetigte wiederholt:
+
+```text
+new store mounted      -> STORAGE debit
+store removed          -> STORAGE recredit
+aircraft ammo          -> spiegelbildliche Delta-Korrelation fuer Waffen
+370-gal external tanks -> debit und vollstaendige Rueckgabe beobachtet
+AN/AAQ-33              -> debit und Rueckgabe beobachtet
+AAQ-28 LITENING        -> debit und Rueckgabe beobachtet
+ALQ-184                 -> debit und Rueckgabe beobachtet
+LAU-88                  -> debit und Rueckgabe beobachtet
+EVENTS.WeaponRearm      -> vom Client geliefert
+```
+
+Konkrete korrelierte Beispiele:
+
+```text
+GBU-12   STORAGE 100 -> 98, AIRCRAFT_AMMO 0 -> 2
+GBU-38   STORAGE 100 -> 98, AIRCRAFT_AMMO 0 -> 2
+AIM-120C STORAGE 100 -> 98, AIRCRAFT_AMMO 0 -> 2
+
+spaeter:
+GBU-12   STORAGE 98 -> 100
+GBU-38   STORAGE 98 -> 100
+AIM-120C STORAGE 98 -> 100
+
+Mk-82    STORAGE 94 -> 100, AIRCRAFT_AMMO 6 -> 0
+370-gal tanks STORAGE 98 -> 100
+AN/AAQ-33 STORAGE 99 -> 100
+```
+
+Sieben `WEAPON_REARM_EVENT`-Meldungen wurden im Lauf erfasst. Die Mission wurde vor Ablauf des 3600-s-Safety-Timeouts beendet; deshalb wurde kein abschliessender Harness-`RESULT`-Marker geschrieben. Die fuer das Entscheidungsziel erforderlichen Rearm-Debit-/Return-Sequenzen waren zu diesem Zeitpunkt jedoch bereits mehrfach vollstaendig beobachtet.
+
+## 10. Acceptance-Entscheidung
+
+Fuer den exakt dokumentierten Bagram-F-16-Client-Scope gilt:
+
+```text
+DCS native client rearm exchange: VALIDATED_FOR_DOCUMENTED_SCOPE
+removed stores -> warehouse return: PASS
+new stores -> warehouse debit: PASS
+reusable external stores -> observable debit/return: PASS
+EVENTS.WeaponRearm delivery -> PASS
+```
+
+Damit gilt fuer OMW:
+
+```text
+do not reimplement client rearm
+```
+
+Eine eigene Rearm-Mechanik oder parallele STORE-Buchungslogik ist fuer diesen belegten Scope nicht erforderlich. Der spaetere produktive `CampaignState`-Adapter soll den nativen DCS/STORAGE-Vorgang beobachten, gegen den strategischen Ledger reconciliieren und die strategische Transaktion idempotent committen.
+
+## 11. Naechster Gate
+
+Der naechste offene Runtime-Gate im Ressourcenblock ist **Client Refuel**. Dabei ist zuerst zu pruefen, ob der native DCS/STORAGE-Fuel-Exchange analog ausreichend beobachtbar und korrekt ist. Eine separate Fuel-Rearm-/Refuel-Logik darf nicht vor dem Runtime-Nachweis gebaut werden.
