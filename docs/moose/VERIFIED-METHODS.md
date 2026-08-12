@@ -52,9 +52,47 @@ Bei einem anderen `Moose.lua`-Hash ist die Methoden- und Lifecycle-Prüfung zu w
 | `AIRBASE:FindByName()` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Airbase-Auflösung in Jalalabad, Bagram, Kandahar, Salerno, Tarinkot und Shindand Heliport |
 | `AIRBASE:FindByID()` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Tarinkot ID 9 |
 | `GetName()` / `GetID()` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Identitätsprüfung; Kandahar Main ID 7, Kandahar Heliport ID 15 und Shindand Heliport ID 14 bestätigt |
-| `GetParkingSpotsTable()` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Parkingdump und ME-/TerminalID-Kalibrierung; Shindand Heliport 42 Runtime-Spots, 38 akzeptierte ME-Zuordnungen |
+| `GetParkingSpotsTable()` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Parkingdump und ME-/TerminalID-Kalibrierung; Kandahar Main 296/296 und Kandahar Heliport 80/80 exakte `.miz parking == TerminalID`-Matches im Lauf vom 12.08.2026; Shindand Heliport 42 Runtime-Spots, 38 akzeptierte ME-Zuordnungen |
 | `SetParkingSpotBlacklist()` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | dokumentierte Referenzknoten; tatsächliche Unitplatzierung bleibt separat |
 | `FindFreeParkingSpotForAircraft(group, terminaltype, scanradius, scanunits, scanstatics, scanscenery, verysafe, nspots, parkingdata)` | `SOURCE_REVIEWED` | öffentliche parametrierbare Freiparkroutine; wird von `WAREHOUSE:_FindParkingForAssets()` nicht verwendet |
+
+### 3.1 Kandahar ME-Parkplatz zu `TerminalID`
+
+Der Lauf `AIRBORNE-AMMO-PARKING-CORRELATION-3` bestätigte für die exakt getestete Kandahar-Missionslinie die vollständige Korrelation zwischen Mission-Editor-Kennung, dem in der `.miz` gespeicherten numerischen `unit.parking` und der von `AIRBASE:GetParkingSpotsTable()` gelieferten MOOSE-`TerminalID`.
+
+```text
+Testdatum: 2026-08-12
+Branch: agent/airborne-ammo-parking-correlation
+Source commit: 5ad6d2c535c2e6796a677fd18975be794533ab8b
+BuilderVersion: AIRBORNE-AMMO-PARKING-CORRELATION-3
+Bundle SHA-256: cb650dd8bab448de39eb1a26f4bc856964f375600df51a5587fcf02c521a65fd
+MIZ: OMW_Template_v8_AirOps_rdy.miz
+MIZ SHA-256: 8f345af681276bc8634128b023873be4473df459deb2f6f9b230f3cbd901c84d
+DCS: 2.9.28.26385 MT
+MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+Moose.lua SHA-256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
+dcs.log SHA-256: a0473859853a2786c188b3cf3c3095e570806c20b6cb49216e9befe0ac6df7b8
+debrief.log SHA-256: 5b083460b339b78aa6d8d1754e60c81d10c3f7e84f56f9f74eedece6fc31eca3
+```
+
+Runtime:
+
+```text
+Kandahar Main:     296 / 296 exact matches, 0 failures
+Kandahar Heliport:  80 /  80 exact matches, 0 failures
+Total:             376 / 376 exact matches
+```
+
+Für diesen Stand ist damit praktisch belegt:
+
+```text
+ME parking_id -> .miz unit.parking -> MOOSE TerminalID
+.miz unit.parking == MOOSE TerminalID
+```
+
+Die vollständige 376-Zeilen-Zuordnung steht in [`docs/data/kandahar-me-parking-to-moose-terminalid.csv`](../data/kandahar-me-parking-to-moose-terminalid.csv). Dieser Nachweis ist airbase-, MIZ-, DCS- und MOOSE-gebunden und wird nicht pauschal auf andere Basen oder Versionen übertragen.
+
+Bekannte Datenanomalie ohne Mapping-Auswirkung: Der AAF05-Marker hieß im getesteten Missionsstand `KANDAHAR_AAF05KANDAHAR_AAF01`; die Korrelation blieb mit ME-ID `AAF05`, `.miz parking=29` und `TerminalID=29` eindeutig.
 
 ## 4. SQUADRON und AIRWING-Lifecycle
 
