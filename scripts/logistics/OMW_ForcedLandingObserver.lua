@@ -2,8 +2,8 @@
 --
 -- The observer is deliberately read-only. It does not mutate CampaignState,
 -- STORAGE, AIRWING, WAREHOUSE or physical DCS objects. It observes tracked
--- FLIGHTGROUP lifecycle signals and delegates classification to the pure
--- ForcedLandingRecoveryPolicy module.
+-- FLIGHTGROUP lifecycle signals and tracked client GROUP signals and delegates
+-- classification to the pure ForcedLandingRecoveryPolicy module.
 
 local ForcedLandingObserver = {}
 ForcedLandingObserver.__index = ForcedLandingObserver
@@ -65,6 +65,20 @@ local function getFuelFraction(unit)
   return fuel
 end
 
+local function placeMatchesRecoveryNode(placeName, recoveryNodes)
+  if type(placeName) ~= "string" or placeName == "" then
+    return false
+  end
+
+  for _, node in ipairs(recoveryNodes) do
+    if node.recoveryCapable == true and node.airbaseName == placeName then
+      return true
+    end
+  end
+
+  return false
+end
+
 function ForcedLandingObserver.New(policy, config)
   requireTable(policy, "policy")
   config = requireTable(config, "config")
@@ -105,7 +119,25 @@ function ForcedLandingObserver:TrackFlight(flightGroup, metadata)
 
   local groupName = group:GetName()
   self.trackedByGroupName[groupName] = {
+    mode = "FLIGHTGROUP",
     flightGroup = flightGroup,
+    group = group,
+    metadata = metadata or {},
+    landed = false,
+  }
+
+  return groupName
+end
+
+function ForcedLandingObserver:TrackClientGroup(group, metadata)
+  if type(group) ~= "table" or type(group.GetName) ~= "function" then
+    fail("TrackClientGroup requires MOOSE GROUP")
+  end
+
+  local groupName = group:GetName()
+  self.trackedByGroupName[groupName] = {
+    mode = "CLIENT_GROUP",
+    group = group,
     metadata = metadata or {},
     landed = false,
   }
@@ -127,11 +159,34 @@ function ForcedLandingObserver:UntrackFlight(flightGroup)
   return existed
 end
 
+function ForcedLandingObserver:UntrackGroup(group)
+  if type(group) ~= "table" or type(group.GetName) ~= "function" then
+    return false
+  end
+  local groupName = group:GetName()
+  local existed = self.trackedByGroupName[groupName] ~= nil
+  self.trackedByGroupName[groupName] = nil
+  return existed
+end
+
 function ForcedLandingObserver:_GetTracked(eventData)
   if not eventData or not eventData.IniGroupName then
     return nil
   end
   return self.trackedByGroupName[eventData.IniGroupName]
+end
+
+function ForcedLandingObserver:_ResolveLandingSemantics(tracked)
+  if tracked.mode == "FLIGHTGROUP" then
+    return isPlannedLanding(tracked.flightGroup), tracked.flightGroup:IsArrived(), missionType(tracked.flightGroup)
+  end
+
+  if tracked.mode == "CLIENT_GROUP" then
+    local expectedReturn = placeMatchesRecoveryNode(tracked.landPlaceName, self.recoveryNodes)
+    return false, expectedReturn, nil
+  end
+
+  fail("unknown tracking mode=" .. tostring(tracked.mode))
 end
 
 function ForcedLandingObserver:_OnLand(eventData)
@@ -143,17 +198,19 @@ function ForcedLandingObserver:_OnLand(eventData)
   tracked.landed = true
   tracked.landPlaceName = eventData.PlaceName
   tracked.landFuelFraction = getFuelFraction(eventData.IniUnit)
-  tracked.landMissionType = missionType(tracked.flightGroup)
+
+  local plannedLanding, expectedReturn, currentMissionType = self:_ResolveLandingSemantics(tracked)
+  tracked.landMissionType = currentMissionType
 
   env.info(string.format(
-    "%s LAND_CANDIDATE group=%s unit=%s place=%s planned=%s arrived=%s landedAt=%s fuelFraction=%s",
+    "%s LAND_CANDIDATE mode=%s group=%s unit=%s place=%s planned=%s expectedReturn=%s fuelFraction=%s",
     TAG,
+    tostring(tracked.mode),
     tostring(eventData.IniGroupName),
     tostring(eventData.IniUnitName),
     tostring(eventData.PlaceName),
-    tostring(isPlannedLanding(tracked.flightGroup)),
-    tostring(tracked.flightGroup:IsArrived()),
-    tostring(tracked.flightGroup:IsLandedAt()),
+    tostring(plannedLanding),
+    tostring(expectedReturn),
     tostring(tracked.landFuelFraction)
   ))
 end
@@ -168,9 +225,7 @@ function ForcedLandingObserver:_OnEngineShutdown(eventData)
     return
   end
 
-  local flightGroup = tracked.flightGroup
-  local plannedLanding = isPlannedLanding(flightGroup)
-  local expectedReturn = flightGroup:IsArrived()
+  local plannedLanding, expectedReturn, currentMissionType = self:_ResolveLandingSemantics(tracked)
   local nearest = nearestRecoveryNode(eventData.IniUnit, self.recoveryNodes)
   local distance = nearest and nearest.distanceMeters or math.huge
   local recoveryCapable = nearest and nearest.recoveryCapable or false
@@ -186,10 +241,11 @@ function ForcedLandingObserver:_OnEngineShutdown(eventData)
 
   local classification = self.policy.ClassifyLanding(context)
   local observation = {
+    trackingMode = tracked.mode,
     groupName = eventData.IniGroupName,
     unitName = eventData.IniUnitName,
     placeName = eventData.PlaceName or tracked.landPlaceName,
-    missionType = missionType(flightGroup),
+    missionType = currentMissionType,
     plannedLanding = plannedLanding,
     expectedReturn = expectedReturn,
     lowFuelSignal = self.policy.IsLowFuelSignal(context.fuelFraction),
@@ -205,8 +261,9 @@ function ForcedLandingObserver:_OnEngineShutdown(eventData)
   self.observations[#self.observations + 1] = observation
 
   env.info(string.format(
-    "%s CLASSIFIED group=%s unit=%s classification=%s planned=%s expectedReturn=%s lowFuel=%s recoveryNode=%s distanceM=%s",
+    "%s CLASSIFIED mode=%s group=%s unit=%s classification=%s planned=%s expectedReturn=%s lowFuel=%s recoveryNode=%s distanceM=%s",
     TAG,
+    tostring(observation.trackingMode),
     tostring(observation.groupName),
     tostring(observation.unitName),
     tostring(observation.classification),
