@@ -133,21 +133,22 @@ local function run()
   assertTrue(shindandMatch.driftCount == 0 and shindandMatch.matchCount == 2, "Shindand baseline reconciliation must match")
   log("BASELINE_RECONCILIATION_PASS nodes=2 resourcesPerNode=2")
 
+  local driftResources = copyResources(bagram)
+  driftResources[OMWAirOpsResourceManifest.ResourceId.JP8].quantity =
+    driftResources[OMWAirOpsResourceManifest.ResourceId.JP8].quantity + 100
+
   local driftCampaignState = OMWCampaignState.New({
     schemaVersion = "STORAGE-RESOURCE-INTEGRATION-FINAL-DRIFT-1",
     nodes = {
       {
         nodeId = bagram.nodeId,
         airbaseName = bagram.airbaseName,
-        resources = copyResources(bagram),
+        resources = driftResources,
       },
     },
   })
 
-  local jp8Before = driftCampaignState:GetResourceKg(bagram.nodeId, OMWAirOpsResourceManifest.ResourceId.JP8)
-  driftCampaignState.nodesById[bagram.nodeId].resources[OMWAirOpsResourceManifest.ResourceId.JP8].quantity = jp8Before + 100
   local strategicBeforeCompare = driftCampaignState:GetResourceKg(bagram.nodeId, OMWAirOpsResourceManifest.ResourceId.JP8)
-
   local driftComparison = observer:CompareNode(driftCampaignState, bagram.nodeId, bagram.airbaseName, tolerances)
   local jp8Drift = findComparison(driftComparison, OMWAirOpsResourceManifest.ResourceId.JP8)
   assertTrue(jp8Drift ~= nil and jp8Drift.status == OMWStorageResourceObserver.Status.DRIFT, "Expected JP8 drift not detected")
