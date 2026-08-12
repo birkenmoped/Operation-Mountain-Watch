@@ -164,13 +164,17 @@ local function bindClient(client)
 end
 
 local eventHandler = EVENTHANDLER:New()
-eventHandler:HandleEvent(EVENTS.WeaponRearm, function(_, eventData)
-  local iniName = eventData and eventData.IniUnitName or nil
-  if iniName and runtime.activeClientName and iniName == runtime.activeClientName then
-    runtime.weaponRearmEvents = runtime.weaponRearmEvents + 1
-    log(string.format("WEAPON_REARM_EVENT unit=%s count=%d", iniName, runtime.weaponRearmEvents))
-  end
-end)
+if EVENTS.WeaponRearm and EVENTS.WeaponRearm >= 0 then
+  eventHandler:HandleEvent(EVENTS.WeaponRearm, function(_, eventData)
+    local iniName = eventData and eventData.IniUnitName or nil
+    if iniName and runtime.activeClientName and iniName == runtime.activeClientName then
+      runtime.weaponRearmEvents = runtime.weaponRearmEvents + 1
+      log(string.format("WEAPON_REARM_EVENT unit=%s count=%d", iniName, runtime.weaponRearmEvents))
+    end
+  end)
+else
+  log("WEAPON_REARM_EVENT_UNAVAILABLE fallback=STORAGE_AND_AMMO_POLLING")
+end
 
 local function finish(reason)
   if runtime.finished then return end
