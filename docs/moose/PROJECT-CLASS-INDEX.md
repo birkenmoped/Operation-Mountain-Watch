@@ -51,7 +51,7 @@ Diese Klassenstatus sind keine Governance-Dokumentstatuswerte.
 
 | Klasse | Projektstatus | Geltungsgrenze |
 |---|---|---|
-| `AIRBASE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Auflösung, ID, Parkingdump und airfield-spezifische Kalibrierung; Kandahar Main ID 7, Kandahar Heliport ID 15 und Shindand Heliport ID 14 bestätigt; `FindFreeParkingSpotForAircraft()` mit konfigurierbaren Scanparametern source-reviewed, aber nicht in WAREHOUSE verdrahtet |
+| `AIRBASE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Auflösung, ID, Parkingdump und airfield-spezifische Kalibrierung; Kandahar Main ID 7 und Kandahar Heliport ID 15 bestätigt; 12.08.2026 zusätzlich 296/296 Main- und 80/80 Heliport-Marker mit exakter `.miz parking == MOOSE TerminalID`-Korrelation; Shindand Heliport ID 14 bestätigt; `FindFreeParkingSpotForAircraft()` mit konfigurierbaren Scanparametern source-reviewed, aber nicht in WAREHOUSE verdrahtet |
 | `AIRWING` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Konstruktion, Stockregistrierung, Grundstart, SQUADRON-Bindung und direkter AUFTRAG-Dispatch; Kandahar Dual-AIRWING Main/Heliport sowie Shindand Heliport mit finalem Drei-Rollen-Test bestätigt |
 | `SQUADRON` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Konstruktion, `Ngroups`, Gruppierung, Capabilities, Payloads und post-start Assetbindung; Kandahar neun SQUADRONs / 76 Assetgruppen / 112 Airframes sowie Shindand drei SQUADRONs / 16 Assetgruppen / 20 Airframes bestätigt |
 | `WAREHOUSE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | AirOps-Stockregistrierung und post-start Zuordnung; strategische Logistik und Persistenz offen; physische typgebundene HELIPAD-Parking-Garantie nicht belegt |
@@ -127,7 +127,7 @@ Ein Klassenstatus wird nur angehoben, wenn:
 - beobachtetes Verhalten und Einschränkungen festgehalten sind;
 - der Nachweis im Methodenregister oder Acceptance-Bericht verlinkt ist.
 
-Aktueller Kandahar-Nachweis:
+Aktueller Kandahar-Foundation-Nachweis:
 
 ```text
 Branch: agent/kandahar-foundation-july-2011-rebuild
@@ -136,6 +136,23 @@ MIZ: OMW_Template_v6_Tarinkot(6).miz
 DCS: 2.9.28.26385
 Moose.lua SHA-256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
 Result: 2 AIRWINGs / 9 SQUADRONs / 76 Assetgruppen / 112 Airframes / beide AIRWINGs Running
+```
+
+Aktueller Kandahar-Parking-Nachweis:
+
+```text
+Testdatum: 2026-08-12
+Branch: agent/airborne-ammo-parking-correlation
+Source-Commit: 5ad6d2c535c2e6796a677fd18975be794533ab8b
+BuilderVersion: AIRBORNE-AMMO-PARKING-CORRELATION-3
+Bundle SHA-256: cb650dd8bab448de39eb1a26f4bc856964f375600df51a5587fcf02c521a65fd
+MIZ: OMW_Template_v8_AirOps_rdy.miz
+MIZ SHA-256: 8f345af681276bc8634128b023873be4473df459deb2f6f9b230f3cbd901c84d
+DCS: 2.9.28.26385 MT
+MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+Moose.lua SHA-256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
+Result: Kandahar Main 296/296; Kandahar Heliport 80/80; total 376/376 exact .miz parking == MOOSE TerminalID matches
+Mapping: docs/data/kandahar-me-parking-to-moose-terminalid.csv
 ```
 
 Aktueller Shindand-Nachweis:
