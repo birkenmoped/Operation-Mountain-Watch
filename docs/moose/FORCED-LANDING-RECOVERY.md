@@ -1,6 +1,6 @@
 ---
 document_id: OMW-MOOSE-FORCED-LANDING-RECOVERY
-status: PLANNED
+status: ACCEPTED_TECHNICAL_BASELINE
 document_class: MOOSE_TECHNICAL_NOTE
 owning_policy: OMW-GOV-MOOSE-FIRST
 authoritative_for:
@@ -12,15 +12,15 @@ project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
 superseded_by:
 source_branch: agent/storage-forced-landing-recovery-v1
-source_commit: PENDING_MERGE
-validated_in_dcs: false
+source_commit: 76998ae9c802c915d099a30207ec902dd54f1edc
+validated_in_dcs: true
 ---
 
 # Forced Landing / Recovery V1 – MOOSE-Grenze
 
 ## 1. Zweck
 
-Diese Notiz setzt die bereits beschlossenen Forced-Landing-/Recovery-Regeln in die kleinste MOOSE-First-Implementierungsgrenze um. Sie gehört zum Aircraft-/Resource-Lifecycle, nicht zum CSAR-Scope.
+Diese Notiz setzt die beschlossenen Forced-Landing-/Recovery-Regeln in eine MOOSE-First-Implementierungsgrenze um. Sie gehört zum Aircraft-/Resource-Lifecycle, nicht zum CSAR-Scope.
 
 ## 2. Verbindliche Domain-Regeln
 
@@ -91,7 +91,7 @@ AIRBASE:GetParkingSpotsTable()
 COORDINATE:Get2DDistance()
 ```
 
-`FLIGHTGROUP:GetParkingSpot(element, maxdist, airbase)` dokumentiert 5 m als Default-Distanzschwelle. Für Client-Gruppen ohne FLIGHTGROUP-`Arrived` wird diese vorhandene MOOSE-Grenze read-only über `AIRBASE:GetParkingSpotsTable()` verwendet.
+`FLIGHTGROUP:GetParkingSpot(element, maxdist, airbase)` dokumentiert 5 m als Default-Distanzschwelle. Für Client-Gruppen ohne FLIGHTGROUP-`Arrived` enthält der aktuelle Branch deshalb zusätzlich eine read-only Parking-Prüfung über `AIRBASE:GetParkingSpotsTable()`.
 
 ## 5. OMW-Komponenten
 
@@ -114,15 +114,23 @@ Client:
 
 ```text
 Land + EngineShutdown
--> recovery-capable AIRBASE resolve
--> <= 5 m zu Parking-Spot => NORMAL_EXPECTED_RETURN evidence
--> sonst kein expected-return evidence
 -> nearest recovery node / 5-km Policy
 ```
 
-## 6. Runtime-Befund 12.08.2026
+Für den später korrigierten Branch-Stand gilt zusätzlich:
 
-Der erste DCS-Gate lieferte einen verwertbaren FAIL:
+```text
+<= 5 m zu Parking-Spot eines recovery-capable Nodes
+-> NORMAL_EXPECTED_RETURN evidence
+```
+
+Diese Parking-Korrektur ist source-reviewed, wurde aber nicht separat mit dem final akzeptierten Gate-1-Runtime-Artefakt validiert.
+
+## 6. Runtime-Evidenz und Acceptance
+
+### 6.1 PlaceName-Grenze
+
+Der erste DCS-Lauf lieferte:
 
 ```text
 CLIENT_US_SHND_AH64D_01
@@ -139,16 +147,54 @@ PlaceName == recovery-node airbase name
 != physical return to that airbase/parking
 ```
 
-Die absichtlich off-field ausgeführte Landung lag 2223,6 m vom Node-Zentrum entfernt. `Land` und `EngineShutdown` wurden korrekt beobachtet; falsch war ausschließlich die bisherige OMW-Annahme, `PlaceName` könne für Clients als Return-Beweis dienen.
+Land und EngineShutdown wurden korrekt beobachtet. Die fehlerhafte PlaceName-Annahme wurde anschließend aus der Branch-Implementierung entfernt und durch die source-reviewed Parking-Distanzprüfung ersetzt.
 
-Korrektur:
+### 6.2 Recovery-Grenze
+
+Weitere reale DCS-Läufe mit dem vom Projektinhaber verwendeten Gate-1-Artefakt belegten beide Seiten der 5-km-Grenze:
 
 ```text
-PlaceName wird nur noch Telemetrie.
-Client expected return wird über die source-reviewed 5-m-Parking-Grenze bestimmt.
+4782.4415407502 m
+-> expectedReturn=false
+-> recoveryCapable=true
+-> RECOVERABLE_FORCED_LANDING
+-> RECOVERABLE_RUNTIME_PASS
+-> RESULT status=PASS
+
+5432.5138283616 m
+-> expectedReturn=false
+-> recoveryCapable=true
+-> OFF_FIELD_UNRECOVERABLE
 ```
 
-Der Gate bleibt `PLANNED` / `validated_in_dcs: false`, bis der korrigierte Lauf `RECOVERABLE_FORCED_LANDING` bestätigt.
+Der positive Lauf verwendete:
+
+```text
+DCS: 2.9.28.26385 MT
+Mission: OMW_Template_v8_AirOps_rdy.miz
+MIZ SHA-256: dbe72aa0627b01e25491d89418a24bfb4a07a6228a2613d4332fee41bfe1eb1a
+internal mission SHA-256: b5fcab7d428811f97c06beea2355a213608fdbc8788073ae618556edd94305e3
+embedded Gate SHA-256: 0b99504ca01c6e543d82c022fa41fa3940e65413da9dfa43d10a94048ef9eabc
+embedded BuilderVersion: FORCED-LANDING-RECOVERY-V1-GATE-1
+embedded GitCommit: 76998ae9c802c915d099a30207ec902dd54f1edc
+embedded Moose.lua SHA-256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
+dcs.log SHA-256: 5598b58bc22ecc6cdb30d2a59dfeea2027cc290e0b0b0b5d24850dcc6cb58c11
+debrief.log SHA-256: 7ba77812600f3b7737ba0d4e5fe10ffa7785f1519d369b0d6fb7a887fd8afe3c
+```
+
+Der Projektinhaber hat am 13.08.2026 ausdrücklich entschieden, diese Testreihe als erfolgreich abgenommen zu werten.
+
+Damit ist für den dokumentierten Scope technisch akzeptiert:
+
+```text
+Land/EngineShutdown observation
+5-km recovery classification
+RECOVERABLE_FORCED_LANDING inside envelope
+OFF_FIELD_UNRECOVERABLE outside envelope
+deterministic 1800-s recovery / 21600-s repair-lock policy logic
+```
+
+Nicht separat runtime-validiert ist die nach Versuch 1 implementierte Parking-Korrektur des späteren Gate-2-Standes. Diese Einschränkung bleibt Teil der Acceptance.
 
 ## 7. Nicht Teil dieses Scopes
 
@@ -160,4 +206,7 @@ recovery convoy simulation
 artificial DCS damage/repair percentages
 native DCS event fallback
 custom AIRWING return controller
+productive CampaignState settlement
+productive STORAGE settlement
+productive repair-lock scheduler/persistence
 ```
