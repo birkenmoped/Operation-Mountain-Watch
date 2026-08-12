@@ -11,12 +11,13 @@ authoritative_for:
   - planned CampaignState-to-MOOSE/DCS warehouse synchronization contract
   - planned delivery accounting and idempotency rules
   - source-reviewed MOOSE STORAGE adapter boundary
+  - consolidated Warehouse/AirOps lifecycle evaluation after materialization, return, client rearm, client refuel and physical-loss testing
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
   - combined FUEL_AVGAS_JP8 working resource label for AirOps fuel accounting
 superseded_by:
-source_branch: agent/resource-warehouse-ownership-contract
+source_branch: agent/storage-client-fuel-exchange
 source_commit: PENDING_MERGE
 validated_in_dcs: false
 ---
@@ -25,7 +26,7 @@ validated_in_dcs: false
 
 ## 1. Zweck und Entscheidungsgrenze
 
-Dieses Dokument präzisiert die bestehende Logistik- und CampaignState-Architektur für Ressourcen, Warehouse-Repräsentation und Lieferbuchung. Die in Abschnitt 14 dokumentierten Eigentümerentscheidungen sind verbindliche OMW-Projektentscheidungen. Technische Runtime-Synchronisation, automatische Verbrauchsbuchung und DCS-Acceptance bleiben davon getrennt und sind noch nicht validiert.
+Dieses Dokument präzisiert die bestehende Logistik- und CampaignState-Architektur für Ressourcen, Warehouse-Repräsentation und Lieferbuchung. Die in Abschnitt 14 dokumentierten Eigentümerentscheidungen sind verbindliche OMW-Projektentscheidungen. Technische Runtime-Synchronisation, automatische Verbrauchsbuchung und DCS-Acceptance bleiben davon getrennt und sind noch nicht als vollständige Produktionsintegration validiert.
 
 Maßgebliche Grundlagen:
 
@@ -111,7 +112,7 @@ STORAGE.Liquid.DIESEL   = 3
 
 Liquid-Mengen werden in diesem MOOSE-/DCS-Pfad in **kg** geführt.
 
-Für OMW ist `STORAGE` deshalb ein geeigneter Kandidat für einen späteren operativen DCS-Warehouse-Adapter. Der Source-Review beweist noch keine produktive Synchronisation, keine Multiplayer-Korrektheit und keine DCS-Acceptance.
+Für OMW ist `STORAGE` damit der geeignete MOOSE-Wrapper für den operativen DCS-Warehouse-Mirror. Der Wrapper selbst besitzt kein strategisches CampaignState-Ressourcen-FSM und keine eigenständige OMW-Ressourcenhoheit.
 
 ## 3. Synchronisationsrichtung
 
@@ -134,7 +135,7 @@ DCS warehouse changed
 -> overwrite CampaignState without a recognized campaign transaction
 ```
 
-Ein späterer Adapter muss Abweichungen protokollieren und nach einem ausdrücklich definierten Reconciliation-Verfahren behandeln.
+Der Mehrknoten-Fuel-Mirror-Test hat zusätzlich praktisch gezeigt, dass ein laufender DCS-Aircraft-Verbrauch denselben `STORAGE`-Bestand während eines synchronen `SetLiquid()`-Write/Readback-Fensters verändern kann. Daraus folgt für die Produktionsrichtung: kein permanentes oder hochfrequentes CampaignState-`SetLiquid()`/`SetItem()`-Überschreiben während aktiver Operationen. Ein späterer Adapter muss operative DCS-Buchungen respektieren, Abweichungen protokollieren und nach einem ausdrücklich definierten Reconciliation-Verfahren behandeln.
 
 ## 4. Einheitenvertrag
 
@@ -234,6 +235,8 @@ creditedAtDestination
 
 `resourceTransactionId` ist ein Implementierungsdetail des geplanten Vertrags und noch kein freigegebenes persistentes Schemafeld. Die funktionale Anforderung der Idempotenz ist dagegen bereits durch die bindende Einmal-Gutschrift aus Dokument 05 vorgegeben.
 
+Für den AirOps-Warehouse-Lifecycle ist daraus **kein universeller Shadow-Transaction-Manager** abzuleiten, der jede physische STORAGE-Teiländerung parallel nachbaut. Nach der konsolidierten MOOSE-First-Auswertung in Abschnitt 15 ist zuerst die vorhandene AIRWING-/WAREHOUSE-/FLIGHTGROUP-Lifecycle-Semantik zu verwenden; OMW ergänzt nur die strategisch notwendige CampaignState-Grenze und Reconciliation.
+
 ## 8. Buchungssemantik einer Lieferung
 
 ### 8.1 Reservierung am Ursprung
@@ -294,20 +297,25 @@ Mindestens folgende Invarianten gelten:
 
 ## 10. Fuel-Verbrauch durch Aircraft
 
-Die aktuelle Verbrauchsrecherche liefert Planungswerte und Szenarien, aber noch keinen produktiven Runtime-Verbrauchsvertrag. Vor einer automatischen Fuel-Abbuchung ist gesondert zu entscheiden:
+Die frühere Foundation-Frage, ob DCS/STORAGE Aircraft-Fuel physisch selbst abbucht beziehungsweise bei Ground-Crew-Änderungen zurückbucht, ist für den dokumentierten Testscope beantwortet:
 
-- Buchung bei Start, Engine Start, Takeoff oder tatsächlicher Betankung;
-- Umgang mit Recovery Fuel;
-- AAR-Trennung bei F-15E/F-16C/HH-60G;
-- Player- versus AI-Aircraft;
-- Disconnect, Slot-Wechsel und Abbruch;
-- DCS-Warehouse-Telemetrie versus CampaignState-Sollbestand.
+- AI-Materialisierung erzeugt beobachtbare JETFUEL-Debits im operativen STORAGE;
+- physischer Totalverlust erzeugt keinen JETFUEL-Recredit;
+- der Bagram-F-16-Client-Ground-Crew-Test bestätigte wiederholte Fuel-Reduktion und Fuel-Erhöhung mit gegenläufigem STORAGE-JETFUEL-Delta im Verhältnis 1:1 kg;
+- ein permanenter CampaignState-Mirror-Write kann mit nativem DCS-Fuel-Verbrauch konkurrieren.
 
-Daher gilt für diese Foundation:
+Damit ist ein eigener Fuel-Verbrauchssimulator oder eigener Client-Refuel-Pfad nicht erforderlich und nach MOOSE-First nicht vorgesehen.
 
-```text
-NO_AUTOMATIC_AIRCRAFT_FUEL_DEBIT_YET
-```
+Weiter offen für die **produktive CampaignState-Integration**, nicht für einen erneuten Grundlagenbeweis, bleiben:
+
+- strategische Freigabe/Verfügbarkeitsprüfung vor geplanter AI-Materialisierung;
+- CampaignState-Übernahme des validierten Nettoergebnisses;
+- AAR-spezifische Abgrenzung, falls später strategisch benötigt;
+- Disconnect/Slot-Wechsel/Abbruch für Clients;
+- Reconciliation bei unerklärtem Drift;
+- Persistenz/Restart.
+
+Die frühere Markierung `NO_AUTOMATIC_AIRCRAFT_FUEL_DEBIT_YET` bedeutet daher ab diesem Stand nicht mehr „DCS-Fuelbuchung ungeklärt“, sondern ausschließlich „produktive CampaignState-Buchungsintegration noch nicht implementiert/abgenommen“.
 
 ## 11. AIRWING-Payload und strategische Munition
 
@@ -317,15 +325,15 @@ Geplanter Ablauf für eine spätere Integration:
 
 ```text
 CampaignState strategic weapon stock
--> mission demand / reservation
+-> mission demand / availability decision
 -> AIRWING mission eligibility and payload availability
--> physical mission execution
--> confirmed expenditure / return semantics
--> CampaignState transaction
--> operational mirror reconciliation
+-> physical mission execution through MOOSE/DCS
+-> observed STORAGE / lifecycle result
+-> validated CampaignState state transition
+-> operational mirror reconciliation only where needed
 ```
 
-Vor dieser Integration müssen DCS-/MOOSE-Weapon-IDs und Rückgabe-/Verbrauchsereignisse musterweise geprüft werden.
+Die Grundlagenfrage der nativen DCS/STORAGE-Rückgabe muss nicht für bereits dokumentierte Fälle erneut getestet werden. Maßgeblich bleiben die jeweiligen Acceptance-Grenzen für AH-64D-Stores, F-16-Droptanks, Client-Rearm, interne Guns und physische Totalverluste.
 
 ## 12. Persistenz
 
@@ -342,17 +350,17 @@ Eine spätere CampaignState-Persistenz verwendet ausschließlich den vorgesehene
 
 ## 13. MOOSE-First-Implementierungsgrenze
 
-Vor produktiver Transport- oder Warehouse-Synchronisation sind mindestens zu prüfen:
+Vor produktiver Warehouse-/CampaignState-Synchronisation gilt nun die folgende Reihenfolge:
 
-1. konkrete `STORAGE`-Methoden gegen die tatsächlich verwendete `Moose.lua`;
-2. DCS-Warehouse-Verhalten für Fuel und verwendete Waffen;
-3. CTLD- und/oder `OPSTRANSPORT`-Pfad je Transportart;
-4. Event/FSM-Semantik für Loading, Unloading, Delivered und Verlust;
-5. Multiplayer- und Restart-Verhalten;
-6. idempotente CampaignState-Commit-Grenze;
-7. DCS-Test mit dokumentierter Mission, Bundle, DCS- und MOOSE-Provenienz.
+1. bereits validierte DCS/STORAGE-Grundlagen nicht erneut testen;
+2. vorhandene MOOSE-AIRWING-/WAREHOUSE-/FLIGHTGROUP-Lifecycle-Punkte verwenden;
+3. STORAGE ausschließlich über öffentliche MOOSE-Wrapper lesen beziehungsweise für ausdrücklich notwendige Mirror-Operationen schreiben;
+4. CampaignState nur um die strategische Verfügbarkeits-, Ergebnis- und Reconciliation-Grenze ergänzen;
+5. keine parallelen Spawn-, Return-, Rearm-, Refuel- oder Fuel-Verbrauchssysteme entwickeln;
+6. erst die verbleibende konkrete Lücke identifizieren, bevor eigener Adaptercode erweitert wird;
+7. den fertigen produktiven Adapter anschließend in einem gebündelten Integrationslauf prüfen.
 
-Keine eigene parallele Transport-, Warehouse- oder Persistenzimplementierung ist durch dieses Dokument genehmigt.
+Keine eigene parallele Transport-, Warehouse-, Aircraft-Lifecycle-, Client-Rearm-, Client-Refuel- oder Persistenzimplementierung ist durch dieses Dokument genehmigt.
 
 ## 14. Verbindliche Owner-Entscheidungen
 
@@ -370,17 +378,150 @@ Der Projektinhaber hat am 10.08.2026 folgende Entscheidungen für den Resource-/
 
 Für die drei Supply-Parent-Entscheidungen gilt: Sie sind OMW-Designentscheidungen. Unterschiedliche historische Evidenzstärken ändern ihre Projektverbindlichkeit nicht und dürfen nicht als Behauptung einer historisch exakt belegten Aviation-Fuel-Route formuliert werden.
 
-## 15. Acceptance-Grenze
+## 15. Konsolidierte Warehouse-/AirOps-Auswertung vom 12.08.2026
 
-Dieses Dokument ist `BINDING_PROJECT_DECISION` und `validated_in_dcs: false`.
+### 15.1 Bereits belegte Grundlagen – kein erneuter Grundlagen-Test
 
-Source-reviewed ist die Existenz und Methodensemantik von MOOSE `STORAGE` im gepinnten Quellstand. Nicht validiert sind:
+Für den jeweils exakt dokumentierten DCS-/MOOSE-/Branch-/Missions-Scope liegen bereits praktische Nachweise vor für:
 
-- produktive CampaignState-`STORAGE`-Synchronisation;
-- strategische Fuel-/Weapon-Abbuchung;
-- DCS-Warehouse-Reconciliation;
-- Transport-Delivery-Commit;
-- Persistenz;
-- Multiplayer-Fehlerfälle.
+```text
+STORAGE limited-liquid read/write
+CampaignState -> STORAGE fuel mirror under a quiet sync window
+seven AirOps STORAGE nodes under a quiet sync window
+AI materialization debit
+AI normal return/recredit for documented store classes
+physical total loss without aircraft/fuel/store recredit
+F-16 client weapon rearm/exchange
+F-16 client fuel exchange
+F-16 external tank return
+AH-64D M151 / AGM-114K lifecycle
+AH-64D IAFS special behavior
+AH-64D M230 expenditure observation
+F-16 M61 expenditure observation
+F-15E M61 expenditure observation
+OH-58D M3P documented behavior
+CH-47 M60D container debit/recredit without round conversion
+Kandahar ME parking -> MOOSE TerminalID correlation 376/376
+```
 
-`VALIDATED` oder eine technische Baseline darf erst nach einem exakt dokumentierten DCS-Test gesetzt werden.
+Diese Punkte dürfen in der weiteren Warehouse-Arbeit nicht erneut als ungelöste Grundlagenfragen behandelt werden. Neue Tests sind nur erforderlich, wenn ein anderer Scope, eine neue Implementierung oder eine konkrete offene Semantik geprüft werden muss.
+
+### 15.2 Source-reviewed MOOSE-Lifecycle im gepinnten `Moose.lua`
+
+Gegen den tatsächlich verwendeten MOOSE-Stand wurden folgende vorhandene Frameworkpfade bestätigt:
+
+```text
+AIRWING:onafterFlightOnMission(From, Event, To, FlightGroup, Mission)
+WAREHOUSE:onafterAssetSpawned(...)
+WAREHOUSE:onafterAssetDead(...)
+WAREHOUSE:onafterArrived(...)
+WAREHOUSE:onafterDelivered(...)
+FLIGHTGROUP:onafterArrived(From, Event, To)
+OPSGROUP:ReturnToLegion(Delay)
+STORAGE:GetInventory(...)
+STORAGE:GetLiquidAmount(Type)
+EVENTS.WeaponRearm
+EVENTS.Refueling
+EVENTS.RefuelingStop
+```
+
+Für normale AI-AIRWING-Flüge ist im gepinnten Source insbesondere folgende Kette vorhanden:
+
+```text
+FLIGHTGROUP:onafterArrived
+-> if AI and Airwing asset and not pickup/transport
+-> ReturnToLegion(1)
+-> OPSGROUP:ReturnToLegion
+-> legion:AddAsset(group, 1)
+```
+
+Daraus folgt nach MOOSE-First:
+
+- kein eigener normaler AI-Aircraft-Return-Mechanismus;
+- kein eigener AIRWING-Materialisierungs-/Spawn-Controller, solange vorhandene AIRWING-/WAREHOUSE-Lifecycle-Punkte ausreichen;
+- kein eigener Client-Rearm-Pfad;
+- kein eigener Client-Refuel-Pfad;
+- kein eigener Fuel-Verbrauchssimulator;
+- kein eigener Weapon-Return-Simulator für bereits nativ belegte Storeklassen.
+
+`EVENTS.Refueling` und `EVENTS.RefuelingStop` sind im Source vorhanden. Ihre Existenz beweist jedoch **nicht**, dass sie Ground-Crew-Refuel für den benötigten OMW-Scope zuverlässig markieren. Da der Ground-Crew-Fuel-Exchange bereits durch bounded STORAGE-/Aircraft-Beobachtung praktisch 1:1 belegt wurde, ist kein zusätzlicher DCS-Test nur zur Erzwingung dieser Events erforderlich.
+
+### 15.3 Produktionsrichtung – kleinster MOOSE-First-Adapter
+
+Die konsolidierte technische Richtung ist:
+
+```text
+CampaignState
+= strategic authority, availability, reservation where strategically required,
+  validated result and persistence
+
+MOOSE AIRWING / WAREHOUSE / FLIGHTGROUP
+= operational aircraft lifecycle
+
+MOOSE STORAGE / DCS warehouse
+= physical runtime fuel/item inventory and native debit/return behavior
+
+OMW adapter
+= minimal lifecycle-bound observation, mapping and reconciliation boundary
+```
+
+Der Adapter soll **nicht** jede physische Teiländerung in einem zweiten Shadow-Ledger nachbauen. Er soll an bereits vorhandenen MOOSE-Lifecycle-Grenzen beziehungsweise bei bestätigten Client-Änderungen den relevanten STORAGE-Zustand lesen, bekannte Resource-IDs zuordnen, ein strategisch zulässiges Nettoergebnis an CampaignState übergeben und unerklärte Abweichungen als Reconciliation-Fehler behandeln.
+
+Ein unerklärter STORAGE-Drift darf CampaignState niemals stillschweigend überschreiben.
+
+### 15.4 Nächste technische Arbeit vor einem neuen DCS-Lauf
+
+Vor einer weiteren Testmission sind zuerst ohne DCS-Lauf abzuschließen:
+
+```text
+A. final Resource/Store mapping
+   CampaignState Resource ID
+   <-> STORAGE liquid/item
+   <-> canonical unit
+   <-> strategic classification
+   <-> documented return/loss semantics
+
+B. minimal CampaignState <-> STORAGE/AIRWING adapter
+   use existing MOOSE lifecycle callbacks/events first
+   no duplicate physical lifecycle implementation
+
+C. reconciliation policy
+   expected/recognized lifecycle result
+   observed STORAGE state
+   tolerated timing/rounding where applicable
+   unexplained drift -> log/fault, never blind reverse overwrite
+```
+
+Erst danach ist ein einzelner gebündelter Integrationslauf vorgesehen. Dieser soll nicht die bereits bestätigten DCS-Grundlagen neu beweisen, sondern nur die produktive OMW-Korrelation prüfen, mindestens für:
+
+```text
+AI materialization
+AI normal return
+client weapon exchange
+client fuel exchange
+physical total loss
+CampaignState result correlation
+idempotency/duplicate protection
+unexplained drift protection
+```
+
+### 15.5 Nicht Teil dieses Warehouse-Zyklus
+
+CSAR ist kein Bestandteil dieses Warehouse-/Resource-Testzyklus und wird aus dieser TODO-/Acceptance-Kette ausdrücklich herausgehalten. Eine spätere personelle/CSAR-Integration besitzt einen eigenen fachlichen Scope.
+
+Forced-Landing-/Recovery-Detection baut später auf dem abgeschlossenen Ressourcenvertrag auf. Die bereits beschlossenen Domain-Regeln für Recovery-Zeit, Resource-Recredit und Repair-Lock müssen nicht im Warehouse-Grundlagentest erneut entschieden werden.
+
+## 16. Acceptance-Grenze
+
+Dieses Dokument ist `BINDING_PROJECT_DECISION` und `validated_in_dcs: false` für die **vollständige produktive CampaignState-/STORAGE-Integration**.
+
+Bereits praktisch beziehungsweise source-reviewed belegt sind die in Abschnitt 15 genannten Einzelpfade innerhalb ihrer jeweils dokumentierten Provenienz. Nicht validiert bleiben als zusammenhängende Produktionsintegration:
+
+- finaler produktiver CampaignState-`STORAGE`-/AIRWING-Adapter;
+- vollständige strategische Fuel-/Weapon-Nettoergebnisbuchung;
+- DCS-Warehouse-Reconciliation bei Drift;
+- idempotente produktive CampaignState-Korrelation über alle vorgesehenen AirOps-Fälle;
+- Persistenz/Restart;
+- Multiplayer-Fehlerfälle außerhalb der bereits getesteten Einzelpfade.
+
+`VALIDATED` oder eine technische Baseline für die **Gesamtintegration** darf erst nach Implementierung und einem exakt dokumentierten gebündelten DCS-Acceptance-Lauf gesetzt werden.
