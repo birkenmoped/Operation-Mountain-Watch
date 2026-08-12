@@ -39,6 +39,29 @@ AH-64D / M230        = Regression
 
 Alle Ammo-Fälle verwenden reale DCS-Waffenabgabe, `FLIGHTGROUP:GetAmmoTot()`, read-only `STORAGE:GetInventory()` und den nativen `Landed -> Arrived -> AIRWING return`-Pfad. Es werden keine Munitionsdekremente simuliert und keine STORAGE-/CampaignState-Bestände verändert.
 
+## STORAGE-Lanes
+
+Fälle, die denselben physischen STORAGE-Node verwenden, laufen strikt nacheinander. Dadurch bleiben die Inventory-Deltas pro Fall eindeutig zuordenbar.
+
+```text
+Kandahar:
+  A-10C / GAU-8
+
+Bagram:
+  F-16C / M61
+  -> F-15E / M61
+
+Jalalabad:
+  UH-60 / Bordwaffen
+  -> CH-47 / Bordwaffen
+  -> OH-58D / M3P
+
+Shindand Heliport:
+  AH-64D / M230
+```
+
+Nur voneinander unabhängige STORAGE-Lanes dürfen parallel laufen. Der globale Safety-Timeout beträgt deshalb 14.400 Sekunden; der einzelne Lifecycle-Timeout bleibt 3.600 Sekunden.
+
 ## Kandahar Parking Correlation
 
 Die aktuelle Arbeits-MIZ enthält vorbereitete Late-Activation-Gruppen mit folgenden Namenspräfixen:
@@ -145,6 +168,6 @@ BuilderVersion:
 AIRBORNE-AMMO-PARKING-CORRELATION-3
 ```
 
-Der Builder prüft die sieben Case-IDs, die Parking-Correlation-Marker sowie verbotene mutierende STORAGE-, CampaignState-, native Spawn-, Return- und Despawn-Pfade.
+Der Builder prüft die sieben Case-IDs, die Parking-Correlation-Marker, die serialisierten STORAGE-Lane-Verträge sowie verbotene mutierende STORAGE-, CampaignState-, native Spawn-, Return- und Despawn-Pfade.
 
 `VALIDATED` oder `ACCEPTED_TECHNICAL_BASELINE` ist erst nach realem DCS-Lauf mit vollständiger Provenienz zulässig.
