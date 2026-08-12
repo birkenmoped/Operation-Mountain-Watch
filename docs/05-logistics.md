@@ -9,14 +9,15 @@ authoritative_for:
   - one-time cargo credit and loss semantics
   - separation of theater-level supply ingress from inner-Afghan distribution
   - separation of the Pakistan Southern Distribution Network from Northern Distribution Network corridors
+  - aircraft forced-landing recovery timing and repair release policy
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
   - prototype-only logistics wording
 superseded_by:
 source_branch: main
-source_commit: c3762527fa92f38eee3860642128d6b2bb7f561f
-validated_in_dcs: false
+source_commit: e83980045891f67f4a22aaea30c499fdac9b2e4d
+validated_in_dcs: partial
 ---
 
 # 05 – Logistik
@@ -418,3 +419,45 @@ Jeder Transportpfad benötigt eigene Tests für:
 - FARP-Refuel-/Rearm-Übergabe;
 - AOG-/Maintenance-Zustände, falls umgesetzt;
 - verwendete DCS- und MOOSE-Version.
+
+## 9. Aircraft-Recovery V1
+
+Für recoverable Forced Landings gilt verbindlich:
+
+```text
+Recovery-fähige Infrastruktur:
+- freundlicher Airbase
+- freundlicher Heliport
+- freundliches FARP mit ausreichender Aviation-/Bergungsfunktion
+
+Nicht ausreichend:
+- gewöhnliches FOB/COP ohne Airfield-/Helipad-/FARP-Strukturen
+```
+
+Die Recovery-Grenze beträgt maximal 5 km um den recovery-fähigen Standort. Eine Landung innerhalb dieses Radius ist nur dann ein Recovery-Kandidat, wenn sie zuvor als ungeplant/forced klassifiziert wurde. Geplante Außenlandungen und Transportlandungen bleiben normale Missionen.
+
+V1 bildet die Bergung abstrakt ab:
+
+```text
+RECOVERY_IN_PROGRESS = 30 minutes
+```
+
+Während dieser Zeit bleiben Aircraft, Fuel und Stores gebunden und werden nicht gutgeschrieben. Nach erfolgreichem Ablauf der Recovery-Zeit:
+
+```text
+remaining fuel -> immediate strategic recredit
+remaining stores -> immediate strategic recredit
+aircraft -> RECOVERED_AWAITING_REPAIR
+```
+
+Die physische Aircraft-Repräsentation wird dann als geborgen aus der Welt entfernt. Für das Aircraft selbst gilt anschließend eine feste Repair-Sperrzeit von:
+
+```text
+6 hours
+```
+
+Erst danach wird das Asset wieder `AVAILABLE`. Es gibt keine künstlichen Schadensstufen oder Repair-Prozentklassen.
+
+Nicht recoverable Forced Landings führen zum Totalverlust von Aircraft, Fuel und Stores. Das Luftfahrzeug soll nach bestätigter Klassifikation mit 5 bis 10 Minuten Verzögerung physisch zerstört werden. Überlebende Crew soll soweit möglich über vorhandene MOOSE-CSAR/AICSAR-Funktionalität abgebildet werden; native Ejection-Fälle dürfen nicht doppelt erzeugt werden.
+
+Eine spätere V2 kann die abstrakte Recovery durch einen optionalen, maximal etwa 30-minütigen Sicherungsauftrag an der Recovery-Site ergänzen. Diese Gameplay-Erweiterung ist derzeit nicht Bestandteil der Foundation-V1.
