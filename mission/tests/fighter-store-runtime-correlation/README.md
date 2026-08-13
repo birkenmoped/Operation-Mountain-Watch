@@ -1,10 +1,10 @@
 # Fighter Store Runtime Correlation
 
-Status: `PLANNED_RUNTIME_GATE`
+Status: `ACCEPTED_TECHNICAL_BASELINE`
 
 ## Ziel
 
-Dieser Test schließt ausschließlich die drei nach der finalisierten Initial-Stock-Entscheidung noch offenen technischen Fighter-Store-Mappings:
+Dieser Test schließt die drei nach der finalisierten Initial-Stock-Entscheidung verbliebenen technischen Fighter-Store-Mappings:
 
 ```text
 F-15E STRIKE GBU-31(V)1/B -> exact STORAGE item
@@ -12,146 +12,97 @@ F-15E STRIKE GBU-31(V)3/B -> exact STORAGE item
 F-16 deployment AIM-9     -> exact DCS/MOOSE STORAGE item
 ```
 
-Die strategischen Initialmengen sind bereits abgeschlossen und werden durch diesen Test nicht neu berechnet.
+Die strategischen Initialmengen werden durch diesen Test nicht neu berechnet.
 
 ## Basis
 
 ```text
 Base branch: agent/warehouse-resource-final-acceptance
 Base commit: 1c74146641bc8ca21e0f39240754391cf7ce28b7
+Source/Builder commit: d95a15275f148cba02a9a2728dfbf825c274e366
+BuilderVersion: FIGHTER-STORE-RUNTIME-CORRELATION-1
 MOOSE release: 2.9.18
 MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
 Moose.lua SHA-256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
+Bundle SHA-256: c8a19305c6c15b222233283612c0f2780b156c1e49f2c8fc1d2287a26d4e776b
+Executed MIZ SHA-256: 4ede299ae1bee8d030c9d1109ce7b827b4441da374976f2e261f7676e265e7de
+Internal mission SHA-256: 0f38447dade1934d63baa8e08ac536edd7865f47897f734450a8575594a19a2c
+dcs.log SHA-256: ec0238a8211d5804b1d1152190497b5e46ee8af45946e723abbe629efa22683f
+debrief.log SHA-256: 89bca4398de33df36dffdbe67dca27b0e19a6ba330b02e5b0d927b28824f2fc5
+DCS: 2.9.28.26385 MT
 ```
 
 ## MOOSE-First
 
-Der Gate führt keine neue Warehouse- oder Aircraft-Lifecycle-Implementierung ein. Er kombiniert ausschließlich bereits im Projekt verwendete und source-/runtime-geprüfte Pfade:
+Der Gate implementiert keine eigene Warehouse-, Spawn-, Return- oder Rearm-Mechanik. F-15E STRIKE wird über die bestehende Bagram-AIRWING/SQUADRON-Foundation materialisiert. F-16 AIM-9 wird über den normalen DCS-Ground-Crew-Rearm beobachtet. STORAGE und CampaignState bleiben read-only.
+
+## Akzeptiertes Ergebnis
+
+### F-15E STRIKE
 
 ```text
-AIRBASE:FindByName()
-AIRBASE:GetStorage()
-STORAGE:FindByName()
-STORAGE:GetInventory()
-AIRWING:NewPayload()
-AUFTRAG:NewORBIT()
-AUFTRAG:SetRequiredAssets()
-AUFTRAG:AssignSquadrons()
-AUFTRAG:AddRequiredPayload()
-AUFTRAG:SetTime()
-AUFTRAG:SetDuration()
-AUFTRAG:SetROE()
-AUFTRAG:SetROT()
-AIRWING:AddMission()
-AIRWING.OnAfterFlightOnMission
-SET_CLIENT
-CLIENT/UNIT:GetAmmo()
-EVENTS.WeaponRearm
-SCHEDULER
-MESSAGE
+weapons.bombs.GBU_31       100 -> 98  delta -2
+weapons.bombs.GBU_31_V_3B  100 -> 98  delta -2
 ```
 
-F-15E wird über die bestehende produktive Bagram-AIRWING/SQUADRON-Foundation materialisiert. Für F-16 wird bewusst der bereits akzeptierte native Ground-Crew-Rearm-Pfad verwendet. Es gibt keine direkte DCS-Warehouse-Mutation und keinen projektspezifischen Spawn-/Return-/Rearm-Controller.
-
-## Phase 1 – F-15E STRIKE
-
-Verwendetes Mission-Editor-Template:
+Harness:
 
 ```text
-TPL_AIR_US_BGRM_F15E_STRIKE_2SHIP
+F15_STRIKE_MAPPING_PASS
+gbu31v1Item=weapons.bombs.GBU_31
+gbu31v1Delta=-2.000
+gbu31v3Item=weapons.bombs.GBU_31_V_3B
+gbu31v3Delta=-2.000
+grouping=2
 ```
 
-Der Test registriert das konkrete STRIKE-Template nur testlokal als ORBIT-Payload und lässt genau eine Two-Ship-Assetgruppe über den vorhandenen Bagram-F-15E-SQUADRON-Pfad materialisieren. Die Mission ist `WeaponHold` / `NoReaction`.
-
-Zu prüfende Kandidaten aus dem gepinnten `Moose.lua` und dem Mission-Editor-Payload:
+### F-16 Deployment AIM-9
 
 ```text
-GBU-31(V)1/B -> weapons.bombs.GBU_31
-GBU-31(V)3/B -> weapons.bombs.GBU_31_V_3B
+weapons.missiles.AIM_9  98 -> 97 -> 96
+cumulative STORAGE delta = -2
+
+AIM_9 aircraft ammo  0 -> 1 -> 2
+cumulative aircraft delta = +2
 ```
 
-Da das Template je Aircraft genau eine Bombe jeder Variante trägt und `Grouping=2` gilt, erwartet der Gate:
+Harness:
 
 ```text
-weapons.bombs.GBU_31      delta = -2
-weapons.bombs.GBU_31_V_3B delta = -2
+F16_AIM9_MAPPING_PASS
+storageItem=weapons.missiles.AIM_9
+storageDelta=-2.000
+aircraftAmmoType=AIM_9
+aircraftAmmoDelta=2.000
 ```
 
-Nur wenn beide Deltas beobachtet werden, wird Phase 2 freigegeben.
-
-## Phase 2 – F-16 AIM-9
-
-Nach erfolgreicher F-15E-Korrelation meldet der Gate:
+### Gesamtresultat
 
 ```text
-F16_PHASE_READY
+RESULT testId=FIGHTER-STORE-RUNTIME-CORRELATION-1
+status=PASS
+reason=F15_STRIKE_AND_F16_AIM9_CORRELATED
+f15StrikeMapping=true
+f16Aim9Mapping=true
+storageMutation=false
+campaignStateMutation=false
+nativeDcs=false
 ```
 
-Dann:
-
-1. einen Bagram-F-16-Client betreten;
-2. über das normale DCS-Ground-Crew-Rearm **genau einen AIM-9M auf Station 2 und genau einen AIM-9M auf Station 8 hinzufügen**;
-3. alle anderen Stores unverändert lassen;
-4. auf Abschluss des Rearm warten.
-
-Der Gate nimmt beim Binden des Clients eine feste STORAGE-/Aircraft-Baseline und beobachtet anschließend mit 2-Sekunden-Intervall. Nach 15 Sekunden ohne weitere Änderung wird die kumulative Differenz ausgewertet.
-
-Ein automatischer `PASS` für diese Phase setzt voraus:
+## Finales Mapping
 
 ```text
-exactly one STORAGE weapon key decreases by 2
-AND
-exactly one aircraft ammo descriptor increases by 2
+AMMUNITION_GBU31_V1 -> weapons.bombs.GBU_31
+AMMUNITION_GBU31_V3 -> weapons.bombs.GBU_31_V_3B
+AMMUNITION_AIM9     -> weapons.missiles.AIM_9
 ```
 
-Der konkrete STORAGE-Key wird als
+## Acceptance-Grenze
+
+Dieser Lauf validiert die drei konkreten Runtime-Mappings für die dokumentierte Provenienz. Er validiert keine zukünftige schreibende CampaignState-to-STORAGE-Initialisierung und keinen neuen strategischen Equipment-Reservation-/Result-Adapter.
+
+Ausführliche Acceptance-Evidenz:
 
 ```text
-F16_AIM9_MAPPING_PASS storageItem=...
-```
-
-protokolliert. Bei mehreren gleichzeitig veränderten Stores endet der Test als `COMPLETE_WITH_GAPS`; die Rohdeltas bleiben für die Logauswertung vollständig erhalten.
-
-## Grenzen
-
-Der Gate verändert nicht:
-
-```text
-CampaignState
-STORAGE quantities through Set/Add/Remove methods
-productive AIRWING/SQUADRON configuration
-Mission Editor templates
-initial stock decisions
-external-tank policy
-```
-
-Der F-15E-ORBIT bleibt während der F-16-Phase bewusst aktiv, damit kein F-15E-Normalreturn dieselbe Bagram-STORAGE-Beobachtungsphase mit Recredits überlagert.
-
-## Builder
-
-```powershell
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\tools\build-fighter-store-runtime-correlation.ps1
-```
-
-Ausgabe:
-
-```text
-mission/tests/fighter-store-runtime-correlation/dist/OMW_Fighter_Store_Runtime_Correlation.lua
-```
-
-## Acceptance
-
-`VALIDATED` oder `ACCEPTED_TECHNICAL_BASELINE` ist erst nach Rückgabe der real ausgeführten Mission mit vollständiger Provenienz zulässig:
-
-```text
-source/builder commit
-BuilderVersion
-bundle SHA-256
-executed MIZ SHA-256
-DCS version
-MOOSE commit / Moose.lua SHA-256
-dcs.log SHA-256
-debrief.log SHA-256
-observed F15_STRIKE_MAPPING_PASS
-observed F16_AIM9_MAPPING_PASS or documented COMPLETE_WITH_GAPS
+docs/evidence/fighter-store-runtime-correlation-acceptance-2026-08-13.md
 ```
