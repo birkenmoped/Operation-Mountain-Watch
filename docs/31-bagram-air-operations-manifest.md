@@ -7,19 +7,21 @@ authoritative_for:
   - Bagram active air ORBAT
   - Bagram dual-AIRWING foundation structure
   - Bagram logical aircraft inventories
+  - Bagram F-15E CAS and STRIKE role-seed authoring baseline
 not_authoritative_for:
   - current Mission Editor parking state
   - final client parking IDs
   - DCS runtime acceptance of the rebuilt dual-AIRWING foundation
   - tactical tasking, COMMANDER, AUFTRAG or OPSTRANSPORT acceptance
+  - final saved F-15E store and fuze configuration until .miz audit
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
   - docs/28-bagram-air-operations-manifest.md
   - single-AIRWING Bagram runtime structure AW_US_BAGRAM
 superseded_by:
-source_branch: agent/bagram-dual-airwing-foundation-rebuild
-source_commit: ffdc52c40a9fe83123dc25f369cd81581f293069
+source_branch: agent/bagram-f15e-payload-baseline
+source_commit: PENDING_MERGE
 validated_in_dcs: false
 document_class: HISTORICAL_EVIDENCE_ACTIVE_ORBAT_AND_FOUNDATION_CONTRACT
 ---
@@ -230,6 +232,35 @@ Der frühere `F16`-Template-Identifier wird für den Neubau auf `F16C` normalisi
 
 Die Foundation registriert damit sieben Role-Payload-Seeds: zwei für F-15E sowie je einen für F-16C, C-130, HH-60G, UH-60 und CH-47.
 
+### 7.1 F-15E CAS-/STRIKE-Role-Seeds
+
+Die beiden F-15E-Templates gehören zur selben logischen `SQ_US_BGRM_F15E_335_EFS` und bilden unterschiedliche Mission-Editor-Authoring-Seeds derselben Staffel ab. Sie erhöhen den logischen Flugzeugbestand nicht.
+
+```text
+TPL_AIR_US_BGRM_F15E_CAS_2SHIP
+  Mission Editor task: CAS
+  role: CAS payload seed
+
+TPL_AIR_US_BGRM_F15E_STRIKE_2SHIP
+  Mission Editor task: Ground Attack / Bodenangriff
+  MOOSE mission type: AUFTRAG.Type.STRIKE
+  role: STRIKE payload seed
+```
+
+Für den gepinnten MOOSE-Stand `2.9.18` / Commit `73d3ed119cd9e7e3f2cfcabbaa34513d30529b54` ist die Zuordnung im tatsächlich verwendeten `Moose.lua` eindeutig:
+
+```text
+AUFTRAG.Type.STRIKE
+-> ENUMS.MissionTask.GROUNDATTACK
+-> DCS/ME Ground Attack / Bodenangriff
+```
+
+`Pinpoint Strike / Präzisionsangriff` ist ein eigener DCS-Mission-Task, aber nicht die von `AUFTRAG.Type.STRIKE` verwendete Zuordnung dieses gepinnten MOOSE-Stands.
+
+Der DCS-Foundation-Lauf vom 10.08.2026 bestätigte für den exakt dokumentierten Acceptance-Stand sieben Role-Payload-Registrierungen; taktische CAS-/STRIKE-Ausführung wurde dort ausdrücklich nicht getestet. Der Fighter-Store-Runtime-Korrelationstest vom 13.08.2026 bestätigte zusätzlich die materielle Registrierung des vorhandenen STRIKE-Two-Ships im dokumentierten STORAGE-Testscope.
+
+Die im aktuellen Mission-Editor-Arbeitsstand gewählten konkreten Store-, Pod- und Zündereinstellungen werden erst nach einem Audit der final gespeicherten `.miz` als verbindliche Detailbaseline in `main` übernommen. Draft-Branch- oder Chatwerte ersetzen diesen `.miz`-Nachweis nicht.
+
 ## 8. Foundation-Runtime-Grenze
 
 Der produktionsnahe Foundation-Bundle darf zunächst nur AIRWING-/SQUADRON-Konfiguration, Capabilities, Payloadregistrierung, Warehouse-/Airbase-Bindung, AIRWING-Start und Idle-Diagnose enthalten.
@@ -275,6 +306,7 @@ Verbindlich aus diesem Dokument sind:
 - duale AIRWING-Struktur;
 - logische Bestände;
 - Warehouse- und Foundation-Vertrag;
-- Foundation-Template-Namen.
+- Foundation-Template-Namen;
+- F-15E CAS-/STRIKE-Role-Seed- und Task-Zuordnung nach Abschnitt 7.1.
 
-Nicht aus diesem Dokument abzuleiten sind finale ParkingIDs, taktische Missionen, Recovery, Persistenz oder Multiplayer-Endurance.
+Nicht aus diesem Dokument abzuleiten sind finale ParkingIDs, taktische Missionen, Recovery, Persistenz, Multiplayer-Endurance oder nicht durch `.miz`-Audit bestätigte Store-, Pod- oder Zündereinstellungen.
