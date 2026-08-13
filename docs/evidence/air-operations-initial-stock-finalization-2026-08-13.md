@@ -224,7 +224,7 @@ Diese Entscheidung genehmigt noch keinen neuen parallelen Aircraft-/Payload-Life
 Die finalisierte Planungsmatrix wird durch folgende Artefakte repräsentiert:
 
 ```text
-OMW_AirOps_Logistics_Planning_v20.xlsx (planning workbook artifact; SHA-256 441e7b15a43fdf6a0c956a60fdcda8b4c42b525a1383607447c53725e8f7ae9b)
+OMW_AirOps_Logistics_Planning_v20.xlsx (planning workbook artifact; SHA-256 346f2f8547133b62f7f3980a324c08432897b8cc7a2d22eda90c4fe359cf6b46)
 data/logistics/air-operations-initial-store-stock-v20.csv
 ```
 

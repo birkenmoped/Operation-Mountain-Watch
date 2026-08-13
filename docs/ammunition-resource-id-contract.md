@@ -208,7 +208,7 @@ Die finalisierte Node-/Resource-Matrix ist in folgenden Artefakten dokumentiert:
 ```text
 data/logistics/air-operations-initial-store-stock-v20.csv
 docs/evidence/air-operations-initial-stock-finalization-2026-08-13.md
-OMW_AirOps_Logistics_Planning_v20.xlsx (planning workbook artifact, SHA-256 441e7b15a43fdf6a0c956a60fdcda8b4c42b525a1383607447c53725e8f7ae9b)
+OMW_AirOps_Logistics_Planning_v20.xlsx (planning workbook artifact, SHA-256 346f2f8547133b62f7f3980a324c08432897b8cc7a2d22eda90c4fe359cf6b46)
 ```
 
 Der fachliche Initial-Stock-Entscheidungsblock ist `CLOSED`. Die noch offenen Runtime-Mapping-Gates blockieren die strategischen Initialmengen nicht.
