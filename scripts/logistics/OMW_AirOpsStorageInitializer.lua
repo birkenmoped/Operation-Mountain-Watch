@@ -1,15 +1,39 @@
 -- Operation Mountain Watch - selective CampaignState to MOOSE STORAGE item initializer.
 --
 -- CampaignState remains the strategic authority. This adapter performs a one-shot
--- operational initialization of directly validated DCS/MOOSE STORAGE item mirrors.
--- It deliberately skips resources without one unambiguous validated item mapping.
+-- operational initialization of validated DCS/MOOSE STORAGE item mirrors.
 -- Fuel remains handled by OMW_StorageFuelAdapter / OMW_CampaignStateStorageSync.
 
 local StorageInitializer = {}
 
 local TAG = "[OMW][Logistics.AirOpsStorageInitializer]"
 
-StorageInitializer.SchemaVersion = "OMW-AIROPS-STORAGE-INITIALIZER-1"
+StorageInitializer.SchemaVersion = "OMW-AIROPS-STORAGE-INITIALIZER-2"
+
+-- One strategic 70 mm resource is used across OMW, but the current approved
+-- payloads use different physical DCS items at different nodes. The node split is
+-- deterministic from the approved AirOps payload baseline and therefore does not
+-- duplicate one strategic quantity into multiple STORAGE items at the same node.
+StorageInitializer.NodeResourceItemOverride = {
+  JALALABAD = {
+    AMMUNITION_ROCKETS_70MM = "weapons.nurs.HYDRA_70_M151",
+  },
+  KANDAHAR_HELI = {
+    AMMUNITION_ROCKETS_70MM = "weapons.nurs.HYDRA_70_M151",
+  },
+  KANDAHAR_MAIN = {
+    AMMUNITION_ROCKETS_70MM = "weapons.nurs.HYDRA_70_M156",
+  },
+  SALERNO = {
+    AMMUNITION_ROCKETS_70MM = "weapons.nurs.HYDRA_70_M151",
+  },
+  SHINDAND_HELI = {
+    AMMUNITION_ROCKETS_70MM = "weapons.nurs.HYDRA_70_M151",
+  },
+  TARINKOT = {
+    AMMUNITION_ROCKETS_70MM = "weapons.nurs.HYDRA_70_M151",
+  },
+}
 
 local function log(message)
   if env and env.info then
@@ -164,6 +188,18 @@ local function readItemAmount(storage, itemName, nodeId, resourceId)
   return amount
 end
 
+local function resolveItemMapping(nodeId, resourceId, mappings)
+  local nodeOverride = StorageInitializer.NodeResourceItemOverride[nodeId]
+  if nodeOverride and nodeOverride[resourceId] then
+    return {
+      eligible = true,
+      storageItemName = nodeOverride[resourceId],
+      mappingScope = "VALIDATED_NODE_PAYLOAD_VARIANT",
+    }
+  end
+  return mappings[resourceId]
+end
+
 function StorageInitializer.BuildValidatedItemMappings(resourceManifest)
   return buildValidatedItemMappings(resourceManifest)
 end
@@ -198,7 +234,7 @@ function StorageInitializer.Plan(campaignContext, resourceManifest)
 
     local metadataByResource = campaignContext.metadataByNode[nodeId]
     for _, resourceId in ipairs(sortedKeys(metadataByResource)) do
-      local mapping = mappings[resourceId]
+      local mapping = resolveItemMapping(nodeId, resourceId, mappings)
       if not mapping then
         plan.skipped[#plan.skipped + 1] = {
           nodeId = nodeId,
@@ -262,6 +298,7 @@ function StorageInitializer.Plan(campaignContext, resourceManifest)
             desired = resource.quantity,
             observed = observed,
             delta = delta,
+            mappingScope = mapping.mappingScope,
           }
         end
       end
@@ -326,6 +363,7 @@ function StorageInitializer.Apply(campaignContext, resourceManifest)
       desired = entry.desired,
       actual = actual,
       verified = entryVerified,
+      mappingScope = entry.mappingScope,
     }
   end
 
