@@ -9,7 +9,7 @@ $sourceFile = Join-Path $repoRoot 'scripts\air-operations\OMW_AirOps_Kandahar_Bo
 $distDir = Join-Path $repoRoot 'mission\tests\kandahar-air-operations\dist'
 $outputFile = Join-Path $distDir 'OMW_AirOps_Kandahar.lua'
 $lifecycleGuard = Join-Path $repoRoot 'tools\Test-AirOpsLifecycleGuards.ps1'
-$builderVersion = 'KAF-AIR-OPS-FOUNDATION-ONLY-1'
+$builderVersion = 'KAF-AIR-OPS-FOUNDATION-ONLY-2'
 
 if (-not (Test-Path -LiteralPath $sourceFile -PathType Leaf)) {
     throw "Kandahar foundation source not found: $sourceFile"
@@ -35,6 +35,13 @@ $requiredMarkers = @(
     'registeredAirframes = 112',
     'deferredMC12 = 6',
     'deferredRolePayloads = 2',
+    'expectedParkingSpots = 315',
+    'expectedParkingSpots = 86',
+    'expectedBlacklistSpots = 246',
+    'airbase:SetParkingSpotWhitelist',
+    'airbase:SetParkingSpotBlacklist',
+    'squadron:SetParkingIDs',
+    'PARKING_POLICY',
     'SQUADRON_STOCK_PRESTART',
     'mainAirwing:Start()',
     'heliportAirwing:Start()',
@@ -74,7 +81,7 @@ if (Test-Path -LiteralPath $outputFile -PathType Leaf) {
 }
 
 $commit = (& git -C $repoRoot rev-parse HEAD).Trim()
-$header = "-- AUTO-GENERATED FILE. DO NOT EDIT DIRECTLY.`n-- Builder: tools/build-kandahar-air-operations-foundation.ps1`n-- BuilderVersion: $builderVersion`n-- GitCommit: $commit`n-- MOOSE-Pin: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54`n-- Scope: Kandahar dual-AIRWING/SQUADRON foundation only; no test dispatch.`n`n"
+$header = "-- AUTO-GENERATED FILE. DO NOT EDIT DIRECTLY.`n-- Builder: tools/build-kandahar-air-operations-foundation.ps1`n-- BuilderVersion: $builderVersion`n-- GitCommit: $commit`n-- MOOSE-Pin: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54`n-- Scope: Kandahar dual-AIRWING/SQUADRON foundation with parking allocation; no test dispatch.`n`n"
 $content = $header + $source
 
 foreach ($pattern in $forbiddenPatterns) {
@@ -102,6 +109,9 @@ Write-Host "RegisteredAirframes: 112"
 Write-Host "DeferredMC12: 6"
 Write-Host "RolePayloadsExpected: 8"
 Write-Host "DeferredRolePayloads: 2"
+Write-Host "ParkingAllocation: CONFIGURED"
+Write-Host "KandaharMainParking: 315 total / 69 whitelist / 246 blacklist"
+Write-Host "KandaharHeliportParking: 86 total / 86 whitelist / 0 blacklist"
 Write-Host "LifecycleGuard: PASS"
 Write-Host "TestDispatch: ABSENT"
 Write-Host "AUFTRAGInstances: ABSENT"
