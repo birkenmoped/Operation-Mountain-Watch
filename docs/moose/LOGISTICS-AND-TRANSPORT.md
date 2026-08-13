@@ -5,7 +5,7 @@ document_class: TECHNICAL_ARCHITECTURE_REFERENCE
 owning_policy: OMW-GOV-001
 authoritative_for:
   - CampaignState and MOOSE logistics responsibility split
-  - planned use boundaries for WAREHOUSE, OPSTRANSPORT, CTLD and transport groups
+  - planned use boundaries for WAREHOUSE, STORAGE, OPSTRANSPORT, CTLD and transport groups
 not_authoritative_for:
   - completed transport runtime acceptance
 scenario_period: 2010-08-01/2011-12-31
@@ -31,6 +31,7 @@ CampaignState
 
 MOOSE / DCS
 ├── WAREHOUSE, AIRWING und BRIGADE als operative Bestandsabbildung
+├── STORAGE als DCS-Warehouse-Wrapper für Liquids und Items
 ├── OPSTRANSPORT als Transportauftrag
 ├── FLIGHTGROUP und ARMYGROUP als Carrier oder Cargo
 ├── CTLD als Spielerlogistik
@@ -41,12 +42,47 @@ MOOSE / DCS
 Der vollständige frühere Methoden- und Klassenstand bleibt erhalten:
 
 - [`Legacy-MOOSE-Logistik und Transport`](../evidence/source-records/legacy-moose-logistics-and-transport.md)
+- [`Resource-/Warehouse-Ownership-Vertrag`](../resource-warehouse-ownership-contract.md)
 
 ## 2. WAREHOUSE
 
 Die Warehouse-Funktion ist für den dokumentierten Jalalabad-AIRWING-Grundstand teilweise belegt. Nicht allgemein validiert sind begrenzte Munition, Treibstoff, Nachschub, Assetzugang/-abgang, Wiederaufbau und Persistenz.
 
-## 3. OPSTRANSPORT
+`WAREHOUSE`-Assetstock darf nicht mit CampaignState-Ressourcen oder DCS-Warehouse-Liquids/-Items gleichgesetzt werden.
+
+## 3. STORAGE
+
+Im gepinnten MOOSE-Stand `2.9.18`, Commit `73d3ed119cd9e7e3f2cfcabbaa34513d30529b54`, ist `STORAGE` source-reviewed als Wrapper um das DCS-Warehouse.
+
+Geprüfte öffentliche Pfade umfassen:
+
+```text
+STORAGE:FindByName(AirbaseName)
+AIRBASE:GetStorage()
+STORAGE:AddItem / SetItem / RemoveItem / GetItemAmount
+STORAGE:AddLiquid / SetLiquid / RemoveLiquid / GetLiquidAmount
+STORAGE:GetInventory()
+```
+
+Für Liquids führt der Quellstand getrennte Typen, darunter:
+
+```text
+STORAGE.Liquid.JETFUEL
+STORAGE.Liquid.GASOLINE
+```
+
+Liquid-Mengen werden im geprüften Pfad in kg geführt.
+
+Projektgrenze:
+
+```text
+CampaignState = strategische Wahrheit
+STORAGE       = geplanter operativer DCS-Warehouse-Adapter
+```
+
+`STORAGE` ist damit **nicht** als strategische Ressourcenhoheit oder Persistenzmechanismus freigegeben. Die Save-/Load-Pfade benötigen DCS-Desanitization; OMW ändert `MissionScripting.lua` nicht automatisch.
+
+## 4. OPSTRANSPORT
 
 Geplant für taktische Truppen- und Frachttransporte zwischen definierten Lade-, Übergabe- und Entladezonen. Zu prüfen sind:
 
@@ -57,14 +93,27 @@ Geplant für taktische Truppen- und Frachttransporte zwischen definierten Lade-,
 - Verlust, Abbruch und zerstörte Assets;
 - Rückmeldung an CargoManifest und CampaignState.
 
-## 4. CTLD und Dynamic Cargo
+Ein MOOSE-`Delivered`- oder vergleichbares Runtime-Ereignis ist ein operatives Signal. Die strategische Zielgutschrift bleibt an die CampaignState-Prüfung der stabilen Cargo-ID, Zielbedingungen und Einmalgutschrift gebunden.
+
+## 5. CTLD und Dynamic Cargo
 
 MOOSE CTLD sowie native DCS-Frachtfunktionen werden vorrangig geprüft. Ein Adapter darf nur die nachgewiesene Lücke schließen und benötigt Eigentümerfreigabe.
 
-## 5. RAT
+CTLD-/Dynamic-Cargo-Objekte besitzen keine eigene strategische Ressourcenhoheit und dürfen bei Umschlag keine neue Ressource erzeugen.
+
+## 6. RAT
 
 RAT-Verkehr ist rein atmosphärisch. Er verändert keine CampaignState-Bestände und transportiert keine strategischen Ressourcen.
 
-## 6. Acceptance-Grenze
+## 7. Acceptance-Grenze
 
 Jeder Transporttyp benötigt eigene Testfälle für Einmalgutschrift, Verlust, Teillieferung, Disconnect, Multiplayer, Persistenz und Missionsneustart.
+
+Für `STORAGE` sind zusätzlich mindestens zu prüfen:
+
+- Fuel-Read/Write auf einem OMW-Airbase-Warehouse;
+- getrennte JETFUEL-/GASOLINE-Behandlung;
+- Waffen-/Item-Mapping für tatsächlich verwendete OMW-Stores;
+- CampaignState→STORAGE-Synchronisation ohne Rückhoheit;
+- Reconciliation bei abweichendem DCS-Bestand;
+- Mission-Restart ohne Ressourcenverdopplung.
