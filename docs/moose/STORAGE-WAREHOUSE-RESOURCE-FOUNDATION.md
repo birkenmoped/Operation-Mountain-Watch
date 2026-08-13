@@ -159,6 +159,8 @@ M230 und GAU-8 besitzen im dokumentierten STORAGE-Pfad keinen belastbaren direkt
 
 OH-58 M3P zeigt einen Containerpfad, aber keine genehmigte Container-zu-Round-Konversion. CH-47 M60D ist ebenfalls Container-/Telemetry-Sonderfall. Diese Grenzen sind absichtlich Teil der finalen Architektur und kein offener Testauftrag.
 
+Wichtig: Das bedeutet **nicht**, dass diese strategischen Ressourcen keinen Bestand besitzen. Ihre Mengen liegen in `CampaignState`/`OMW_AirOpsInitialStock.lua`; lediglich ein direkter DCS-STORAGE-Round-Mirror ist nicht belastbar vorhanden. Die spätere Missionsreservation und Ergebnisbuchung verwendet deshalb CampaignState und die bestätigte Ammo-/Debrief-Telemetrie, statt einen nicht existierenden STORAGE-Key zu erfinden.
+
 ## 9. Physical loss / Recovery
 
 Forced-Landing- und Recovery-Module nutzen MOOSE-Wrapper/Event-/Coordinate-Pfade zur Beobachtung und halten CampaignState als strategische Buchungsinstanz. Settlement wird über stabile IDs idempotent ausgeführt; ein Restore darf keine doppelte Gutschrift erzeugen.
@@ -167,7 +169,7 @@ Die Foundation aktiviert keinen parallelen MOOSE-WAREHOUSE-Return-Mechanismus un
 
 ## 10. Selektive Initialisierung der Item-Mirrors
 
-Nach Abschluss der strategischen Stock-Planung wird `scripts/logistics/OMW_AirOpsStorageInitializer.lua` als einmaliger Initialisierungsadapter verwendet. Er liest die autoritative aktuelle Menge aus dem vom AirOps-Initializer erzeugten `CampaignState` und schreibt nur dann in MOOSE `STORAGE`, wenn für die Resource-ID genau **ein** validierter direkter Item-Key ableitbar ist.
+Nach Abschluss der strategischen Stock-Planung wird `scripts/logistics/OMW_AirOpsStorageInitializer.lua` als einmaliger Initialisierungsadapter verwendet. Er liest die autoritative aktuelle Menge aus dem vom AirOps-Initializer erzeugten `CampaignState` und schreibt nur validierte operative MOOSE-STORAGE-Items.
 
 Der geprüfte MOOSE-Quellstand bestätigt dafür die öffentlichen Methoden:
 
@@ -181,7 +183,6 @@ STORAGE:SetItem(itemName, amount)
 
 Der Adapter ist fail-closed:
 
-- mehrere validierte Item-Keys für dieselbe strategische Resource-ID werden nicht automatisch verteilt;
 - fehlende direkte Item-Mappings werden nicht erfunden;
 - `TELEMETRY_ONLY`, `STORE_WITHOUT_ROUND_CONVERSION` und nicht gemappte Countermeasure-Ressourcen werden nicht geschrieben;
 - `TECHNICAL_NON_STRATEGIC`-Items besitzen keinen strategischen Initialbestand und werden nicht aus CampaignState materialisiert;
@@ -189,7 +190,29 @@ Der Adapter ist fail-closed:
 - nach `SetItem()` erfolgt ein direkter `GetItemAmount()`-Readback;
 - es gibt keinen Scheduler und keine fortlaufende Sollwertüberschreibung des nativen DCS-Verbrauchs.
 
-`AMMUNITION_ROCKETS_70MM` bleibt absichtlich **nicht** automatisch schreibbar, solange dieselbe strategische Resource-ID auf die validierten DCS-Items `HYDRA_70_M151` und `HYDRA_70_M156` verteilt werden müsste. Dafür existiert im geschlossenen Stock-Vertrag keine genehmigte Startverteilungsregel je DCS-Untertyp.
+### 10.1 70-mm-Raketen
+
+Die strategische Resource-ID `AMMUNITION_ROCKETS_70MM` besitzt sehr wohl verbindliche Bestände. Die zwei validierten physischen DCS-Items gehören in der aktuellen OMW-Payload-Baseline jedoch zu unterschiedlichen AirOps-Knoten. Dadurch ist keine willkürliche globale Aufteilung erforderlich.
+
+Der Initializer verwendet deshalb eine node-spezifische, aus den genehmigten Payloads abgeleitete Abbildung:
+
+```text
+JALALABAD      -> weapons.nurs.HYDRA_70_M151
+KANDAHAR_HELI  -> weapons.nurs.HYDRA_70_M151
+SALERNO        -> weapons.nurs.HYDRA_70_M151
+SHINDAND_HELI  -> weapons.nurs.HYDRA_70_M151
+TARINKOT       -> weapons.nurs.HYDRA_70_M151
+
+KANDAHAR_MAIN  -> weapons.nurs.HYDRA_70_M156
+```
+
+Damit wird pro Node genau **ein** physischer 70-mm-Item-Mirror aus dem dortigen strategischen `AMMUNITION_ROCKETS_70MM`-Bestand initialisiert. Es wird kein Bestand verdoppelt und kein strategischer Pool auf zwei DCS-Items am selben Node kopiert.
+
+### 10.2 Countermeasures und technische Items
+
+`FLARES_CHAFF` besitzt einen strategischen Planbestand, derzeit aber keinen belastbaren direkten DCS-STORAGE-Item-Vertrag. Der Bestand fehlt also nicht; nur die operative DCS-Mirror-Abbildung ist noch nicht vorhanden.
+
+F-16/F-15E-Außentanks und AH-64-IAFS sind dagegen ausdrücklich `TECHNICAL_NON_STRATEGIC`. Für sie existiert absichtlich **kein** CampaignState-Strategiebestand. Ihre notwendige operative DCS-Verfügbarkeit ist eine technische Warehouse-Konfiguration und darf nicht als strategische Ressource gebucht oder künstlich zurückgeschrieben werden.
 
 Fuel bleibt außerhalb dieses Item-Adapters und wird weiterhin über `OMW_StorageFuelAdapter.lua` / `OMW_CampaignStateStorageSync.lua` behandelt.
 
