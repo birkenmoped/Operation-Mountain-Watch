@@ -276,9 +276,15 @@ Nicht Bestandteil dieses Schrittes sind:
 - Parking-Override;
 - Persistenz oder CampaignState-Mutation.
 
-## 9. Acceptance-Ziel
+## 9. Aktueller Foundation-Acceptance-Stand
 
-Der nächste DCS-Foundation-Lauf muss mindestens bestätigen:
+Der Bagram-Dual-AIRWING-Foundation-Lauf vom 10.08.2026 ist für den exakt dokumentierten Branch-, Commit-, Missions-, Bundle-, DCS- und MOOSE-Stand als `ACCEPTED_TECHNICAL_BASELINE` festgehalten. Die Acceptance liegt unter:
+
+```text
+mission/tests/bagram-air-operations/expected/bagram-dual-airwing-foundation-acceptance.md
+```
+
+Bestätigt wurden:
 
 ```text
 airwings=2
@@ -296,7 +302,7 @@ commanderCreated=false
 f10Controls=false
 ```
 
-Bis zu diesem Lauf bleibt `validated_in_dcs: false`.
+Diese Acceptance validiert nicht automatisch taktische CAS-/STRIKE-Ausführung, Parking-Compliance, Recovery, Loss Accounting, CampaignState-Persistenz oder Multiplayer-Endurance.
 
 ## 10. Autoritätsgrenze
 
