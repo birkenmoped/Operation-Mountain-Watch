@@ -12,7 +12,7 @@ project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes: []
 superseded_by:
 source_branch: main
-source_commit: PENDING_MERGE
+source_commit: f42bbd7a19d1358c7034b7c1272de78f76f0a3d7
 validated_in_dcs: false
 document_class: HISTORICAL_SOURCE_REVIEW
 ---
