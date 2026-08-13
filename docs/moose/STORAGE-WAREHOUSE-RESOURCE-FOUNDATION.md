@@ -9,13 +9,14 @@ authoritative_for:
   - AIRWING/WAREHOUSE versus CampaignState ownership boundary
   - client fuel/rearm and AI store lifecycle observations
   - direct-mirror limitations for gun ammunition
+  - selective initial CampaignState to STORAGE item mirroring
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
   - branch-local Warehouse MOOSE topic summaries for the same closed foundation scope
 superseded_by:
-source_branch: agent/fighter-store-runtime-correlation
-source_commit: e1b2456f89c0baec52661a03826a9efbc44ca027
+source_branch: agent/air-ops-initial-stock-runtime-data
+source_commit: PENDING_MERGE
 validated_in_dcs: partial
 ---
 
@@ -41,6 +42,7 @@ STORAGE:FindByName()
 STORAGE:GetInventory()
 STORAGE:GetItemAmount()
 STORAGE:GetLiquidAmount()
+STORAGE:IsLimitedWeapons()
 STORAGE:SetItem()
 STORAGE:AddItem()
 STORAGE:RemoveItem()
@@ -162,3 +164,33 @@ OH-58 M3P zeigt einen Containerpfad, aber keine genehmigte Container-zu-Round-Ko
 Forced-Landing- und Recovery-Module nutzen MOOSE-Wrapper/Event-/Coordinate-Pfade zur Beobachtung und halten CampaignState als strategische Buchungsinstanz. Settlement wird über stabile IDs idempotent ausgeführt; ein Restore darf keine doppelte Gutschrift erzeugen.
 
 Die Foundation aktiviert keinen parallelen MOOSE-WAREHOUSE-Return-Mechanismus und keine nicht genehmigte Native-DCS-Produktionslogik.
+
+## 10. Selektive Initialisierung der Item-Mirrors
+
+Nach Abschluss der strategischen Stock-Planung wird `scripts/logistics/OMW_AirOpsStorageInitializer.lua` als einmaliger Initialisierungsadapter verwendet. Er liest die autoritative aktuelle Menge aus dem vom AirOps-Initializer erzeugten `CampaignState` und schreibt nur dann in MOOSE `STORAGE`, wenn für die Resource-ID genau **ein** validierter direkter Item-Key ableitbar ist.
+
+Der geprüfte MOOSE-Quellstand bestätigt dafür die öffentlichen Methoden:
+
+```text
+STORAGE:FindByName(airbaseName)
+AIRBASE:GetStorage()
+STORAGE:IsLimitedWeapons()
+STORAGE:GetItemAmount(itemName)
+STORAGE:SetItem(itemName, amount)
+```
+
+Der Adapter ist fail-closed:
+
+- mehrere validierte Item-Keys für dieselbe strategische Resource-ID werden nicht automatisch verteilt;
+- fehlende direkte Item-Mappings werden nicht erfunden;
+- `TELEMETRY_ONLY`, `STORE_WITHOUT_ROUND_CONVERSION` und nicht gemappte Countermeasure-Ressourcen werden nicht geschrieben;
+- `TECHNICAL_NON_STRATEGIC`-Items besitzen keinen strategischen Initialbestand und werden nicht aus CampaignState materialisiert;
+- ein operatives Warehouse mit nicht limitierten Weapons blockiert die schreibende Initialisierung statt einen Erfolg vorzutäuschen;
+- nach `SetItem()` erfolgt ein direkter `GetItemAmount()`-Readback;
+- es gibt keinen Scheduler und keine fortlaufende Sollwertüberschreibung des nativen DCS-Verbrauchs.
+
+`AMMUNITION_ROCKETS_70MM` bleibt absichtlich **nicht** automatisch schreibbar, solange dieselbe strategische Resource-ID auf die validierten DCS-Items `HYDRA_70_M151` und `HYDRA_70_M156` verteilt werden müsste. Dafür existiert im geschlossenen Stock-Vertrag keine genehmigte Startverteilungsregel je DCS-Untertyp.
+
+Fuel bleibt außerhalb dieses Item-Adapters und wird weiterhin über `OMW_StorageFuelAdapter.lua` / `OMW_CampaignStateStorageSync.lua` behandelt.
+
+Statusgrenze dieses neuen Adapters: Quellcode/API gegen den gepinnten MOOSE-Stand geprüft; DCS-Write-/Readback-Acceptance für die produktive Missionsintegration noch ausstehend. Deshalb wird dieser neue Schreibpfad durch die bestehende ältere STORAGE-Acceptance nicht automatisch als `VALIDATED` eingestuft.
