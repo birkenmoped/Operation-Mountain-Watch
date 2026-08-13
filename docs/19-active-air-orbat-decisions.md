@@ -8,6 +8,7 @@ authoritative_for:
   - local aircraft inventory
   - player aircraft limits
   - project-wide active AH-64D CAS payload baseline
+  - project-wide active OH-58D reconnaissance and escort payload baseline
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
@@ -139,6 +140,70 @@ TPL_AIR_US_KAF_AH64D_CAS_2SHIP
 Das Template enthält zwei identisch beladene AH-64D. Die Beladung ist im Mission Editor je Luftfahrzeug zu prüfen; ein Payload-Preset allein ersetzt nicht die Kontrolle der tatsächlich gespeicherten Pylonen-, Kanonen-, IAFS- und Kraftstoffwerte.
 
 Die Konfiguration ist eine verbindliche Mission-Editor-Baseline. `validated_in_dcs: false` bleibt bestehen, bis Spawn, Start, Auftrag, Waffenverfügbarkeit, Rückkehr und AIRWING-/SQUADRON-Nutzung auf einem exakt dokumentierten Missions-, DCS- und MOOSE-Stand reproduzierbar geprüft wurden.
+
+## Projektweite OH-58D-RECON/ESCORT-Payload-Baseline
+
+Für aktive OMW-OH-58D wird als reguläre RECON/AFAC- und Escort-Grundbeladung genau die Kombination aus M151-HE-Raketen und M3P-.50-cal-Maschinengewehr verwendet. Diese Festlegung ist eine OMW-Missionsdesignentscheidung innerhalb des historischen Rahmens und keine Behauptung, dass jeder reale OH-58D-Einsatz in Afghanistan identisch beladen war.
+
+### Historische Evidenz
+
+Für den Zeitraum ist ausreichend belegt:
+
+- Ein U.S.-Army-Bericht vom 19.05.2011 bezeichnet die vom OH-58D verschossene M151 HE ausdrücklich als die übliche `10-pounder`-Rakete: <https://www.army.mil/article/56830/4_6_acs_conducts_annual_gunnery_qualifications>.
+- Ein U.S.-Army-Bericht vom 06.03.2011 dokumentiert den FARP von Task Force Thunder auf Kandahar Airfield. Troop E, 7th Squadron, 17th Cavalry Regiment versorgte dort OH-58D mit Kraftstoff, `.50-cals` und Raketen in den Rocket Pods: <https://www.army.mil/article/52876/safety_teamwork_aid_in_farp_success>.
+- Die U.S. Army dokumentierte 2009 die Einführung des M3P als `machine gun of choice` für OH-58D-Einheiten in Irak und Afghanistan; 2010 wurde der M3P als primäres Kiowa-Waffensystem beschrieben: <https://www.army.mil/article/20656/kiowa_warrior_gains_firepower> und <https://www.army.mil/article/48189/aviation_support_gets_lift_with_shop>.
+- Hellfire gehörte im Zeitraum zur OH-58D-Waffenfamilie und wurde in der zeitgenössischen Ausbildung verwendet. Die ausgewerteten Primärquellen belegen jedoch keine universelle Hellfire-Mitführung auf jedem Afghanistan-Einsatz.
+
+Damit ist `M151 HE + M3P` für OMW die am besten belegte allgemeine Bewaffnungsbaseline. Eine routinemäßige M229-Standardbeladung in Kandahar oder für alle OMW-OH-58D ist durch die bisher ausgewerteten Primärquellen nicht belegt.
+
+### Verbindliche OMW-Standardbeladung
+
+| System | Verbindliche Konfiguration |
+|---|---|
+| DCS-Preset | `H10 Rockets, Gun` |
+| Hydra 70 | 1 × M260 mit 7 × M151 HE (`H10`) |
+| Bordwaffe | M3P .50 cal; beobachtetes DCS-Preset mit 500 Schuss |
+
+`H10` bezeichnet in der DCS-Presetbezeichnung die 10-pound-class M151-HE-Gefechtskopfvariante und nicht zehn Raketen. Der M260 führt sieben 2.75-inch/Hydra-70-Raketen.
+
+### Alternative Bewaffnung und Ausschlüsse
+
+- `H17 Rockets, Gun` / M229 HE bleibt eine DCS-verfügbare schwerere HE-Alternative, ist aber **nicht** die reguläre OMW-Standardbeladung. Eine routinemäßige historische Nutzung als Kandahar-Standard ist bislang nicht nachgewiesen.
+- `Hellfire, Gun` beziehungsweise Hellfire-Kombinationen bleiben auftragsabhängige Präzisionsalternativen. Sie werden nicht als allgemeine RECON/AFAC-Standardbeladung festgelegt.
+- Stinger-Konfigurationen gehören nicht zur regulären Afghanistan-OMW-Beladung.
+- APKWS wird für den OMW-Zeitraum ausdrücklich ausgeschlossen. NAVAIR dokumentiert Produktionsbeginn 2011, aber Initial Operational Capability erst am 27.03.2012 auf AH-1W und UH-1Y; damit liegt die operative Einführung außerhalb des verbindlichen Szenarioendes 31.12.2011: <https://www.navair.navy.mil/product/APKWS> und <https://www.navair.navy.mil/node/18941>.
+
+### Kraftstoff- und Gewichtsgrenze
+
+Der am 01.08.2026 bereitgestellte Mission-Editor-Screenshot für `OMW_Template_v4_Kandahar.miz` zeigt für `H10 Rockets, Gun` bei 100 Prozent internem Kraftstoff:
+
+```text
+Empty weight equipped: 4184 lb
+Weapons:                558 lb
+Fuel at 100 percent:    736 lb
+Total:                  5478 lb
+Displayed maximum:      5200 lb
+```
+
+Damit liegt diese konkrete Editor-Konfiguration 278 lb über dem angezeigten Maximum. Daraus wird **keine** historische oder technische 60-Prozent-Standardkraftstoffregel abgeleitet. Ein Wert um 60 Prozent kann rechnerisch unter das angezeigte Maximalgewicht führen, ist aber noch kein Hot-and-high-, Hover-, Takeoff-, Endurance- oder DCS-Runtime-Nachweis.
+
+Bis zu einem reproduzierbaren DCS-Test gilt deshalb:
+
+```text
+OH-58D standard payload: H10 Rockets, Gun
+binding fuel percentage: not yet defined
+100 percent fuel with this observed configuration: not permitted as template baseline
+```
+
+Der endgültige Kraftstoff-Arbeitswert muss separat anhand des tatsächlich gespeicherten DCS-Templates und der Afghanistan-Hot-and-high-Bedingungen festgelegt werden.
+
+### Template- und Runtime-Grenze
+
+Diese Baseline gilt projektweit für reguläre OH-58D-RECON/AFAC- und Escort-Templates in Jalalabad, Salerno und Kandahar, soweit das jeweilige Basenmanifest solche Templates vorsieht. Exakte Gruppennamen bleiben Eigentum des jeweiligen Basenmanifests und werden hier nicht neu erfunden.
+
+Die Payloadentscheidung erzeugt keine zusätzlichen Airframes, SQUADRONs oder Warehouse-Bestände. Sie legt auch noch keine STORAGE-Mengen fest; M151, M3P-Munition, M260-Adapter und auftragsabhängige Alternativwaffen sind im Warehouse-/STORAGE-Vertrag separat zu bilanzieren.
+
+`validated_in_dcs: false` bleibt bestehen. Die historische Quellenlage und der beobachtete Mission-Editor-Stand sind dokumentiert; Spawn, Start, Hot-and-high-Leistung, Waffenverfügbarkeit, MOOSE-Payloadregistrierung, Warehouse-Abbuchung/Rückgabe und RTB müssen auf dem tatsächlich verwendeten DCS-/MOOSE-/Missionsstand separat validiert werden.
 
 ---
 
@@ -523,12 +588,13 @@ HMH-363, HMH-362 und CH-53D bleiben historischer Kontext und erzeugen keinen par
 
 ## Verbleibende technische Detailentscheidungen
 
-Noch offen sind nicht die oben festgelegten aktiven Verbände, Bestände und die AH-64D-CAS-Payload-Baseline, sondern unter anderem:
+Noch offen sind nicht die oben festgelegten aktiven Verbände, Bestände sowie die AH-64D- und OH-58D-Payload-Baselines, sondern unter anderem:
 
 - genaue Zahl und Platzierung gepoolter Statics je Muster;
 - historisch passende oder verfügbare Liveries;
 - konkrete Client- und KI-Parkpositionen;
-- weitere Payload- und Rollen-Templates außerhalb der festgelegten AH-64D-CAS-Baseline;
+- weitere Payload- und Rollen-Templates außerhalb der festgelegten AH-64D-CAS- und OH-58D-RECON/ESCORT-Baselines;
+- OH-58D-Kraftstoffarbeitswert und Hot-and-high-Acceptance für `H10 Rockets, Gun`;
 - technische Verwendbarkeit karteneigener Warehouse-Gebäude;
 - DCS-Typnamen und MOOSE-Verhalten der KI-Muster;
 - physische Darstellung der UH-1Y;

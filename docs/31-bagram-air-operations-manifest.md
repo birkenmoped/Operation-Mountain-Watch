@@ -7,6 +7,7 @@ authoritative_for:
   - Bagram active air ORBAT
   - Bagram dual-AIRWING foundation structure
   - Bagram logical aircraft inventories
+  - Bagram F-15E CAS and STRIKE payload authoring baseline
 not_authoritative_for:
   - current Mission Editor parking state
   - final client parking IDs
@@ -18,8 +19,8 @@ supersedes:
   - docs/28-bagram-air-operations-manifest.md
   - single-AIRWING Bagram runtime structure AW_US_BAGRAM
 superseded_by:
-source_branch: agent/bagram-dual-airwing-foundation-rebuild
-source_commit: ffdc52c40a9fe83123dc25f369cd81581f293069
+source_branch: agent/bagram-f15e-payload-main-reconciliation
+source_commit: bab797c89395228fedf9103053176f754b5b7c99
 validated_in_dcs: false
 document_class: HISTORICAL_EVIDENCE_ACTIVE_ORBAT_AND_FOUNDATION_CONTRACT
 ---
@@ -134,6 +135,70 @@ Status: THIRD_PARTY_AT_RISK
 
 Clientobjekte, Templates und Payloadregistrierungen müssen deaktivierbar bleiben, ohne den verbleibenden Bagram-Knoten strukturell neu aufzubauen.
 
+#### F-15E-CAS-/STRIKE-Payloadbaseline
+
+Dieser Abschnitt ist die verbindliche Mission-Editor-Authoring-Baseline für die beiden F-15E-Seeds. Beide gehören zur selben logischen `SQ_US_BGRM_F15E_335_EFS` und erhöhen den Flugzeugbestand nicht.
+
+CAS pro Luftfahrzeug:
+
+```text
+Template: TPL_AIR_US_BGRM_F15E_CAS_2SHIP
+Mission Editor task: CAS
+Payload working name: OMW Standard CAS
+
+3 x GBU-38
+3 x GBU-54(V)1/B
+1 x AIM-120C
+1 x AIM-9
+2 x F-15E external fuel tank
+1 x AN/AAQ-13 LANTIRN navigation pod
+1 x AN/AAQ-14 LANTIRN targeting pod
+internal M61A1
+```
+
+Die `3 + 3`-Mischung ist eine OMW-Missionsdesignentscheidung für einen symmetrischen flexiblen 500-lb-Präzisionsmix. Sie wird nicht als Behauptung dokumentiert, dass jede reale Bagram-F-15E jede CAS-Sortie exakt so flog. Eine zuvor diskutierte GBU-12-/GBU-38-Mischung gehört nicht zur Standardbaseline, weil die verfügbaren F-15E-CFT-Authoring-Optionen keine entsprechende symmetrische Drei-zu-Drei-Konfiguration mit GBU-12 bereitstellen.
+
+STRIKE pro Luftfahrzeug:
+
+```text
+Template: TPL_AIR_US_BGRM_F15E_STRIKE_2SHIP
+Mission Editor task: Ground Attack / Bodenangriff
+MOOSE mission type: AUFTRAG.Type.STRIKE
+Payload working name: OMW Standard STRIKE
+
+1 x GBU-31(V)1/B
+1 x GBU-31(V)3/B
+1 x AIM-120C
+1 x AIM-9
+2 x F-15E external fuel tank
+1 x AN/AAQ-13 LANTIRN navigation pod
+1 x AN/AAQ-14 LANTIRN targeting pod
+internal M61A1
+```
+
+Der Two-Ship führt damit insgesamt zwei GBU-31(V)1/B und zwei GBU-31(V)3/B. Der Mix bildet einen vorbereiteten schweren Präzisionsangriff mit General-Purpose- und Penetrator-JDAM-Anteil ab. Er bleibt den projektweiten Targeting-, ROE- und No-Strike-Regeln untergeordnet.
+
+Für den gepinnten MOOSE-Stand `2.9.18` / Commit `73d3ed119cd9e7e3f2cfcabbaa34513d30529b54` gilt im tatsächlich verwendeten `Moose.lua`:
+
+```text
+AUFTRAG.Type.STRIKE
+-> ENUMS.MissionTask.GROUNDATTACK
+-> DCS/ME Ground Attack / Bodenangriff
+```
+
+`Pinpoint Strike / Präzisionsangriff` ist ein eigener DCS-Mission-Task, aber nicht die von `AUFTRAG.Type.STRIKE` verwendete Zuordnung dieses MOOSE-Stands.
+
+Der Fighter-Store-Runtime-Korrelationstest vom 13.08.2026 beobachtete beim materialisierten STRIKE-Two-Ship:
+
+```text
+weapons.bombs.GBU_31       100 -> 98  delta -2
+weapons.bombs.GBU_31_V_3B  100 -> 98  delta -2
+```
+
+Damit ist die `1 + 1`-STRIKE-Beladung je Luftfahrzeug für den exakt dokumentierten STORAGE-Teststand materiell korreliert. Dieser Test validiert nicht automatisch Zielwahl, Waffenwirkung oder taktische STRIKE-Ausführung.
+
+Noch offen bleiben der Audit der final gespeicherten aktuellen `.miz` für sämtliche Pylon-/Rack-/Pod-CLSIDs, die vollständige CAS-Seed-Korrelation sowie die taktische CAS-/STRIKE-Acceptance. Zündereinstellungen werden erst nach Audit der tatsächlich gespeicherten `.miz` als verbindliche Baseline dokumentiert.
+
 ### F-16C
 
 ```text
@@ -142,6 +207,39 @@ native DCS-Spielerabbildung: F-16C Block 50
 ```
 
 Der Block 50 ist ein ausdrücklich gekennzeichneter technischer Ersatz für das historisch belegte Block-30-Muster.
+
+#### F-16C-CAS-Payloadbaseline
+
+Die verbindliche Payloadentscheidung ist in [`OMW-AIR-BAGRAM-F16C-CAS-PAYLOAD`](evidence/bagram-f16c-cas-payload-decision-2026-08-13.md) dokumentiert.
+
+Historisches 2011-Sollbild als OMW-Arbeitsinterpretation:
+
+```text
+2 x GBU-38
+2 x GBU-54
+2 x 370-gal external fuel tank
+2 x wingtip AIM-120
+Station 2 and 8 clean
+Targeting pod
+internal M61A1
+```
+
+Die GBU-54 ist auf der aktuellen OMW-DCS-F-16C-Abbildung nicht verfügbar. Der verbindliche Vanilla-DCS-Funktionsersatz für `TPL_AIR_US_BGRM_F16C_CAS_2SHIP` lautet deshalb:
+
+```text
+Station 1: 1 x AIM-120
+Station 2: clean
+Station 3: BRU-57 with 2 x GBU-38
+Station 4: 370-gal external fuel tank
+Station 5R: targeting pod
+Station 6: 370-gal external fuel tank
+Station 7: TER-9A with 2 x GBU-12
+Station 8: clean
+Station 9: 1 x AIM-120
+Internal: M61A1
+```
+
+Die GBU-12 ist dabei ausschließlich ein funktionaler Ersatz für die Laseroption der realen GBU-54 und darf nicht als historisch identische Außenlast beschrieben werden. Zusätzliche AIM-9 auf Station 2 und 8 gehören nicht zum Standard-CAS-Loadout. Die genaue AIM-120-Untervariante, der Targeting-Pod, alle CLSIDs sowie die sichtbare Clean-Darstellung der Stationen 2 und 8 bleiben Gegenstand des finalen `.miz`-Audits und der DCS-Acceptance.
 
 ### HH-60G und CH-47
 
@@ -228,6 +326,8 @@ Physisch identische Hubschrauber-Konfigurationen erhalten keine separaten rollen
 
 Der frühere `F16`-Template-Identifier wird für den Neubau auf `F16C` normalisiert. Templates sind Authoring-Seeds und kein zusätzlicher Bestand.
 
+Für `TPL_AIR_US_BGRM_F16C_CAS_2SHIP` gilt zusätzlich der Payloadvertrag aus [`OMW-AIR-BAGRAM-F16C-CAS-PAYLOAD`](evidence/bagram-f16c-cas-payload-decision-2026-08-13.md). Für die beiden F-15E-Seeds ist Abschnitt 4 dieses Dokuments die autoritative Payload-Authoring-Baseline.
+
 Die Foundation registriert damit sieben Role-Payload-Seeds: zwei für F-15E sowie je einen für F-16C, C-130, HH-60G, UH-60 und CH-47.
 
 ## 8. Foundation-Runtime-Grenze
@@ -245,9 +345,15 @@ Nicht Bestandteil dieses Schrittes sind:
 - Parking-Override;
 - Persistenz oder CampaignState-Mutation.
 
-## 9. Acceptance-Ziel
+## 9. Aktueller Foundation-Acceptance-Stand
 
-Der nächste DCS-Foundation-Lauf muss mindestens bestätigen:
+Der DCS-Lauf vom 10.08.2026 ist für den exakt dokumentierten Branch-, Commit-, Missions-, Bundle-, DCS- und MOOSE-Stand als `ACCEPTED_TECHNICAL_BASELINE` festgehalten:
+
+```text
+mission/tests/bagram-air-operations/expected/bagram-dual-airwing-foundation-acceptance.md
+```
+
+Bestätigt wurden:
 
 ```text
 airwings=2
@@ -265,7 +371,9 @@ commanderCreated=false
 f10Controls=false
 ```
 
-Bis zu diesem Lauf bleibt `validated_in_dcs: false`.
+Diese Acceptance validiert nicht automatisch taktische CAS-/STRIKE-Ausführung, Parking-Compliance, Recovery, Loss Accounting, CampaignState-Persistenz oder Multiplayer-Endurance.
+
+Für die F-15E-STRIKE-Stores liegt zusätzlich die separate Fighter-Store-Runtime-Korrelation vom 13.08.2026 vor. Sie bestätigt die exakten GBU-31(V)1/B-/GBU-31(V)3/B-STORAGE-Mappings für ihren dokumentierten Scope, nicht die vollständige taktische STRIKE-Acceptance.
 
 ## 10. Autoritätsgrenze
 
@@ -275,6 +383,10 @@ Verbindlich aus diesem Dokument sind:
 - duale AIRWING-Struktur;
 - logische Bestände;
 - Warehouse- und Foundation-Vertrag;
-- Foundation-Template-Namen.
+- Foundation-Template-Namen;
+- F-15E-CAS-/STRIKE-Authoring-Baseline nach Abschnitt 4;
+- Verweis auf den verbindlichen F-16C-Payloadvertrag.
+
+Die konkrete F-16C-Payloadinterpretation, DCS-Abbildung und Acceptance-Grenze ist in [`OMW-AIR-BAGRAM-F16C-CAS-PAYLOAD`](evidence/bagram-f16c-cas-payload-decision-2026-08-13.md) autoritativ dokumentiert.
 
 Nicht aus diesem Dokument abzuleiten sind finale ParkingIDs, taktische Missionen, Recovery, Persistenz oder Multiplayer-Endurance.

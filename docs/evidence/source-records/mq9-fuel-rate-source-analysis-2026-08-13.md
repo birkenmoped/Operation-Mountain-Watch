@@ -22,7 +22,7 @@ validated_in_dcs: false
 
 ## Quellenbasis
 
-Die bestehende OMW-Referenz nennt für MQ-9 eine Fuel Capacity von 4,000 lb / 602 US gal. Dave Sloggett, *Drone Warfare: The Development of Unmanned Aerial Conflict*, Pen & Sword Aviation, 2014, S. 107, nennt fuer die dort beschriebenen britischen MQ-9 in Afghanistan bis zu 18 h Endurance bei voller Waffenbeladung und nahe 30 h in unbewaffneter Konfiguration.
+Die bestehende OMW-Referenz nennt fuer MQ-9 eine Fuel Capacity von 4,000 lb / 602 US gal. Dave Sloggett, *Drone Warfare: The Development of Unmanned Aerial Conflict*, Pen & Sword Aviation, 2014, S. 107, nennt fuer die dort beschriebenen britischen MQ-9 in Afghanistan bis zu 18 h Endurance bei voller Waffenbeladung und nahe 30 h in unbewaffneter Konfiguration.
 
 Reg Austin, *Unmanned Aircraft Systems: UAVS Design, Development and Deployment*, Wiley, 2010, S. 53-54, stuetzt die technische Interpretation, dass externe Payloads den Widerstand erhoehen und Reichweite sowie Endurance reduzieren.
 

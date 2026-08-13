@@ -15,7 +15,7 @@ supersedes:
   - incomplete open-branch list in the documentation index
 superseded_by:
 source_branch: agent/warehouse-main-reconciliation
-source_commit: PENDING_MERGE
+source_commit: 3b4d2470639409e9a82ceed0fee85aa0627c0b3c
 validated_in_dcs: false
 ---
 
@@ -57,9 +57,8 @@ Dieses Register bildet offene Pull Requests, ihre Abhängigkeiten, Dokumentation
 | 49 | `agent/next-airport-airwing-squadron-handoff` | `main` | frühere Air-Ops-Auswahlübergabe | Handoff/README | `DRAFT`; durch spätere Airfield-Arbeit überholt | keine Runtime-Acceptance | 51, 52, 53, 60, 61, 63, 65 | historisches Handoff |
 | 50 | `docs/bagram-air-operations-manifest` | `main` | alter Air-Ops-Sammelbranch | umfangreiche historische Air-Ops-Dateien | offen; stark überholt und kollidierend | gemischte branchgebundene Nachweise | selektive Main-Merges | nicht als Ganzes integrieren |
 | 52 | `agent/salerno-read-only-diagnostics` | alter Air-Ops-Stack | Salerno COMMANDER-/Runtime-Historie | Tests/Builder/Evidenz | `DRAFT`; kanonische Foundation auf `main` | `ACCEPTED_TECHNICAL_BASELINE` für dokumentierten Stage-18-Stand | offen | technische Fixture-/Runtime-Historie |
-| 66–84 | Warehouse-/CampaignState-/STORAGE-Stack | PR 66 startete von `main`; danach gestapelt | Resource ownership, Fuel/Weapon STORAGE, CampaignState transactions, loss/recovery, final fighter mapping | `scripts/campaign/`, `scripts/logistics/`, Warehouse-Testfixtures und branchgebundene Detaildokumentation | offene Draft-Historie; keine pauschale Main-Autorität | mehrere exakt dokumentierte DCS-Acceptance-Stände; finaler Fighter-Gate PASS | 85 | nicht als 214-Commit-Stack direkt integrieren; PR 85 ist der saubere Main-Reconciliation-Pfad |
-| 85 | `agent/warehouse-main-reconciliation` | `main` | saubere Warehouse-/Resource-Main-Integration | finale v20-Matrix, konsolidierte Abschlussdoku, CampaignState/Storage-Module, MOOSE-Summary, Fighter-Acceptance | `DRAFT`; Mergefreigabe ausstehend | übernimmt exakt dokumentierte Acceptance-Evidenz; kein neuer DCS-Test | 86 | vorgesehener Main-Integrationspfad für den abgeschlossenen Warehouse-Foundation-Scope |
-| 86 | `agent/air-ops-initial-stock-runtime-data` | `main` nach PR 85 | AirOps Initial Stock Runtime, CampaignState-Initialisierung und zentraler Warehouse-Bootstrap | `scripts/logistics/`, `mission/tests/air-ops-warehouse-bootstrap/`, MOOSE-STORAGE-Dokumentation | `DRAFT`; keine Merge-/Ready-Freigabe | `ACCEPTED_TECHNICAL_BASELINE` für Warehouse-Bootstrap auf Commit `2502516fe130b908e500117142399b3e2ca74007`; separate Onboard-Ammo-Acceptance offen | offen | Warehouse-Bootstrap technisch akzeptiert; verbleibende PR-Scope-Grenzen separat behandeln |
+| 66–84 | Warehouse-/CampaignState-/STORAGE-Stack | PR 66 startete von `main`; danach gestapelt | Resource ownership, Fuel/Weapon STORAGE, CampaignState transactions, loss/recovery, final fighter mapping | `scripts/campaign/`, `scripts/logistics/`, Warehouse-Testfixtures und branchgebundene Detaildokumentation | offene Draft-Historie; keine pauschale Main-Autorität | mehrere exakt dokumentierte DCS-Acceptance-Stände; finaler Fighter-Gate PASS | 85 | nicht als 214-Commit-Stack direkt integrieren; PR 85 war der saubere Main-Reconciliation-Pfad |
+| 86 | `agent/air-ops-initial-stock-runtime-data` | `main` nach gemergtem PR 85 | AirOps Initial Stock Runtime, CampaignState-Initialisierung und zentraler Warehouse-Bootstrap | `scripts/logistics/`, `mission/tests/air-ops-warehouse-bootstrap/`, MOOSE-STORAGE-Dokumentation | `DRAFT`; aktuell nicht mergebar gegen `main` | `ACCEPTED_TECHNICAL_BASELINE` für Warehouse-Bootstrap auf Commit `2502516fe130b908e500117142399b3e2ca74007`; separate Onboard-Ammo-Acceptance offen | offen | Warehouse-Bootstrap technisch akzeptiert; vor Integration Reconciliation gegen aktuellen `main` erforderlich |
 
 ## 3. Stackstruktur
 
@@ -81,11 +80,13 @@ main
 ├── PR 45
 ├── PR 49
 └── PR 66 → ... → PR 84
-                    └── PR 85 (clean reconciliation from current main)
-                        └── PR 86 (AirOps initial-stock runtime and accepted Warehouse bootstrap)
+                    └── PR 85 (merged clean Warehouse reconciliation)
+
+main
+└── PR 86 (AirOps initial-stock runtime and accepted Warehouse bootstrap; reconciliation required)
 ```
 
-PR #53 (Tarinkot), PR #60 (Salerno Foundation), PR #61 (Kandahar Foundation), PR #62 (Dokumentationsmetadaten), PR #63 (Bagram duale AIRWING Foundation), PR #64 (AIRWING-Naming-Reconciliation) und PR #65 (Shindand Foundation) sind nach `main` gemergt und werden nicht mehr als offene aktuelle Foundation-Unterprojekte geführt.
+PR #53 (Tarinkot), PR #60 (Salerno Foundation), PR #61 (Kandahar Foundation), PR #62 (Dokumentationsmetadaten), PR #63 (Bagram duale AIRWING Foundation), PR #64 (AIRWING-Naming-Reconciliation), PR #65 (Shindand Foundation) und PR #85 (Warehouse Main Reconciliation) sind nach `main` gemergt und werden nicht mehr als offene aktuelle Foundation-Unterprojekte geführt.
 
 ## 4. Verbindliche Regeln
 
@@ -101,12 +102,15 @@ PR #53 (Tarinkot), PR #60 (Salerno Foundation), PR #61 (Kandahar Foundation), PR
 ```yaml
 warehouse_source_stack: PR_66_THROUGH_PR_84_OPEN_DRAFT_HISTORY
 warehouse_clean_integration_pr: 85
-warehouse_clean_integration_branch: agent/warehouse-main-reconciliation
-warehouse_clean_integration_status: OPEN_DRAFT
+warehouse_clean_integration_status: MERGED
+warehouse_clean_integration_merge_commit: 3b4d2470639409e9a82ceed0fee85aa0627c0b3c
 warehouse_runtime_pr: 86
 warehouse_runtime_branch: agent/air-ops-initial-stock-runtime-data
+warehouse_runtime_status: OPEN_DRAFT_NOT_MERGEABLE
 warehouse_bootstrap_acceptance_commit: 2502516fe130b908e500117142399b3e2ca74007
 warehouse_bootstrap_acceptance_status: ACCEPTED_TECHNICAL_BASELINE
+warehouse_runtime_main_at_merge_assessment: 3223db1f7eb130ae2070a926b6f476e6a010f515
+warehouse_runtime_branch_relation: DIVERGED
 warehouse_foundation_decision_block: CLOSED
 warehouse_additional_bootstrap_dcs_test_required: false
 source: GitHub pull-request state plus documented exact-provenance DCS evidence

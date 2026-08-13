@@ -13,8 +13,8 @@ project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
   - registry that listed Document 22 only as a branch reservation
 superseded_by:
-source_branch: agent/warehouse-main-reconciliation
-source_commit: PENDING_MERGE
+source_branch: main
+source_commit: GIT_HISTORY
 validated_in_dcs: false
 ---
 
@@ -103,6 +103,8 @@ Eine Nummer und eine stabile `document_id` dürfen im aktuellen Bestand jeweils 
 | 80 | `OMW-COIN-CULTURAL-TURN-HUMAN-TERRAIN-CRITICISM` | `docs/80-cultural-turn-human-terrain-and-coin-criticism.md` | `BINDING` | Cultural Turn, Human Terrain und quellenkritische COIN-Referenz |
 | 81 | `OMW-AIR-SALERNO-MANIFEST` | `docs/81-salerno-air-operations-manifest.md` | `BINDING` | Salerno-ME-Baseline und Objektvertrag |
 | 82 | `OMW-HIST-RUSSIA-OEF-ISAF-AFGHANISTAN` | `docs/82-russia-oef-isaf-afghanistan-role.md` | `BINDING` | russische Rolle, Kooperation, Konkurrenz und Evidenzgrenzen in OEF/ISAF |
+| 83 | `OMW-HIST-A10-SOF-VEHICLE-SOURCE-REVIEW` | `docs/83-a10-sof-and-special-operations-vehicle-source-review.md` | `BINDING` | A-10-, SOF- und Special-Operations-Vehicle-Quellenreview |
+| 84 | `OMW-HIST-AIR-SOF-INTEL-METRICS-SOURCE-REVIEW` | `docs/84-av8b-f14-takur-ghar-and-intelligence-metrics-source-review.md` | `BINDING` | AV-8B-, F-14-, Takur-Ghar- sowie Intelligence-/Metrics-Quellenreview |
 
 ## 3. Reservierte Nummern auf offenen Branches
 
@@ -135,6 +137,7 @@ Eine Nummer und eine stabile `document_id` dürfen im aktuellen Bestand jeweils 
 | `OMW-MOOSE-STORAGE-WAREHOUSE-RESOURCE-FOUNDATION` | `docs/moose/STORAGE-WAREHOUSE-RESOURCE-FOUNDATION.md` | `BINDING`; MOOSE STORAGE/Warehouse Resource Foundation |
 | `OMW-WAREHOUSE-RESOURCE-FOUNDATION-COMPLETE` | `docs/warehouse-resource-foundation-complete.md` | `BINDING_PROJECT_DECISION`; konsolidierter Warehouse-/Resource-Abschlussstand |
 | `OMW-ACC-FIGHTER-STORE-RUNTIME-CORRELATION-2026-08-13` | `docs/evidence/fighter-store-runtime-correlation-acceptance-2026-08-13.md` | `ACCEPTED_TECHNICAL_BASELINE`; finale Fighter-Store-Mapping-Acceptance |
+| `OMW-DECISION-KANDAHAR-A10C-CAS-LOADOUT-2026-08-01` | `docs/evidence/kandahar-a10c-cas-loadout-decision-2026-08-01.md` | `BINDING_PROJECT_DECISION`; Kandahar A-10C II CAS-Stationen, Payload und Evidenzgrenze |
 | `OMW-TEST-GOVERNANCE` | `mission/tests/GOVERNANCE.md` | `BINDING`; Missions- und Runtime-Testregeln |
 | `OMW-TEST-AIROPS-WAREHOUSE-BOOTSTRAP-INDEX` | `mission/tests/air-ops-warehouse-bootstrap/README.md` | `BINDING`; AirOps-Warehouse-Bootstrap-Testindex |
 | `OMW-TEST-AIROPS-WAREHOUSE-BOOTSTRAP-ACCEPTANCE` | `mission/tests/air-ops-warehouse-bootstrap/expected/air-ops-warehouse-bootstrap-acceptance-2026-08-13.md` | `ACCEPTED_TECHNICAL_BASELINE`; exakter DCS-getesteter Warehouse-Bootstrap-Stand |
