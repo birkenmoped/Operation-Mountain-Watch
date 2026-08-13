@@ -57,6 +57,10 @@ AUFTRAG:NewORBIT()
 AUFTRAG:NewSTRAFING()
 COORDINATE:GetClosestPointToRoad()
 COORDINATE:IsInFlatArea()
+USERFLAG:New()
+USERFLAG:Set()
+USERFLAG:Get()
+SCHEDULER:New()
 ```
 
 Die Verwendung bedeutet nicht, dass jede Methode für jede Resource-Klasse oder jede Mission allgemein validiert ist. Es gilt immer der dokumentierte Scope.
@@ -88,6 +92,26 @@ FUEL_AVGAS -> STORAGE.Liquid.GASOLINE
 Die CampaignState->STORAGE-Foundation ist einseitig: CampaignState liefert den autoritativen Sollwert; der Adapter plant/anwendet und prüft die operative Darstellung. Ein hochfrequenter Scheduler, der laufend DCS-Verbrauch überschreibt, ist nicht zulässig.
 
 Der Bagram-F-16-Client-Test bestätigte native 1:1 Fuel-Massentransfers zwischen Aircraft und STORAGE beim Bodencrew-Refuel/Defuel. Konsequenz: Client-Refuel wird nicht parallel neu implementiert.
+
+Der zentrale AirOps-Warehouse-Bootstrap-Acceptance-Lauf vom 13.08.2026 bestätigte zusätzlich den produktionsnahen Fuel-Mirror für Kandahar im NEW-/RESTORE-Pfad. DCS repräsentierte den angeforderten AVGAS-Wert `20270.13583056 kg` als `20270.13671875 kg`. Der produktive Adapter verwendet deshalb für Plan, Write-Entscheidung, Readback und Idempotenz eine einheitliche Toleranz von `0.5 kg`. Diese Toleranz verändert den CampaignState-Sollwert nicht; Abweichungen über `0.5 kg` bleiben fail-closed.
+
+Acceptance-Provenienz:
+
+```text
+Branch: agent/air-ops-initial-stock-runtime-data
+Acceptance commit: 2502516fe130b908e500117142399b3e2ca74007
+BuilderVersion/TestId: AIROPS-WAREHOUSE-BOOTSTRAP-ACCEPTANCE-1
+Bundle SHA-256: 025855c07896ee396b545ae2b131c2f4181e6eed88c412580288d644f4d311ac
+MIZ SHA-256: dd25f68a7361c36fa121a581022a9535f55372ad1f32a7992d4013e9c6f0c0d8
+DCS: 2.9.28.26385 MT
+MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+Moose.lua SHA-256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
+Result: PASS
+```
+
+Vollständiger Acceptance-Bericht:
+
+- [`OMW-TEST-AIROPS-WAREHOUSE-BOOTSTRAP-ACCEPTANCE`](../../mission/tests/air-ops-warehouse-bootstrap/expected/air-ops-warehouse-bootstrap-acceptance-2026-08-13.md)
 
 ## 5. Client Rearm
 
@@ -216,7 +240,7 @@ F-16/F-15E-Außentanks und AH-64-IAFS sind dagegen ausdrücklich `TECHNICAL_NON_
 
 Fuel bleibt außerhalb dieses Item-Adapters und wird weiterhin über `OMW_StorageFuelAdapter.lua` / `OMW_CampaignStateStorageSync.lua` behandelt.
 
-Statusgrenze dieses neuen Adapters: Quellcode/API gegen den gepinnten MOOSE-Stand geprüft; DCS-Write-/Readback-Acceptance für die produktive Missionsintegration noch ausstehend. Deshalb wird dieser neue Schreibpfad durch die bestehende ältere STORAGE-Acceptance nicht automatisch als `VALIDATED` eingestuft.
+Der zentrale AirOps-Warehouse-Bootstrap-Acceptance-Lauf vom 13.08.2026 hat den selektiven Item-Write-/Readback-Pfad gemeinsam mit Fuel und Technical Availability im zentralen NEW-/RESTORE-Gate DCS-validiert. Der dokumentierte Lauf meldete `strategicChanges=27`, anschließend verifizierten Apply/Readback und beim RESTORE `strategicChanges=0`.
 
 ### 10.3 Technische Availability-Initialisierung
 
@@ -253,4 +277,17 @@ Der Adapter ist one-shot und fail-closed:
 - es gibt keine CampaignState-Buchung, keine Consumption und keine Return-Gutschrift;
 - es gibt keinen Scheduler und keine automatische Wiederauffüllung nach Missionsbeginn.
 
-Die 1000-Stück-Baseline ist `BINDING`; der tatsächliche STORAGE-Write-/Readback-Pfad bleibt bis zu einem dokumentierten DCS-Lauf nicht `VALIDATED`.
+Der zentrale Acceptance-Lauf vom 13.08.2026 hat diesen technischen Write-/Readback-Pfad im gemeinsamen Bootstrap-Gate DCS-validiert. Der Lauf meldete `technicalChanges=7`, verifizierte die Anwendung und bestätigte beim RESTORE `technicalChanges=0`.
+
+## 11. READY-Gate mit `USERFLAG`
+
+Für die zentrale AirOps-Warehouse-Acceptance wird der öffentliche MOOSE-Wrapper `USERFLAG` verwendet:
+
+```lua
+local readyFlag = USERFLAG:New("OMW_WAREHOUSE_READY")
+readyFlag:Set(0)
+-- NEW + readback + RESTORE
+readyFlag:Set(1)
+```
+
+Der DCS-Lauf vom 13.08.2026 bestätigte `USERFLAG:New()`, `Set()` und `Get()` im dokumentierten MOOSE-Stand sowie den gespeicherten DCS-Flagzustand `OMW_WAREHOUSE_READY = 1`. Alle sechs AirOps-Trigger waren zusätzlich zur Zeitbedingung auf dieses Flag gegatet. Damit bleibt der Startpfad bei einem Bootstrap-Fehler fail-closed.
