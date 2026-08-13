@@ -13,7 +13,7 @@ project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
   - registry that listed Document 22 only as a branch reservation
 superseded_by:
-source_branch: agent/warehouse-main-reconciliation
+source_branch: agent/bagram-f15e-payload-main-reconciliation
 source_commit: PENDING_MERGE
 validated_in_dcs: false
 ---
@@ -55,7 +55,7 @@ Eine Nummer und eine stabile `document_id` dürfen im aktuellen Bestand jeweils 
 | 27 | `OMW-C2-JTAC-CALLSIGNS` | `docs/27-oef-jtac-callsign-reference.md` | `BINDING` | Quellenreferenz |
 | 28 | `OMW-C2-TAD-COLOR-NETS` | `docs/28-afghanistan-tad-color-nets.md` | `BINDING` | Quellenbasierter Datensatz |
 | 29 | `OMW-AAR-ISAF-ACO` | `docs/29-isaf-2009-2013-air-to-air-refueling.md` | `BINDING` | AAR-/ACO-Referenz |
-| 30 | `OMW-AAR-PART2-FIGURE` | `docs/30-isaf-2009-2013-aar-part2-figure-reference.md` | `BINDING` | Abbildungsreferenz |
+| 30 | `OMW-AAR-PART2-FIGURE` | `docs/30-isaf-aar-part2-figure-reference.md` | `BINDING` | Abbildungsreferenz |
 | 31 | `OMW-AIR-BAGRAM-MANIFEST` | `docs/31-bagram-air-operations-manifest.md` | `BINDING` | Bagram aktive Air-ORBAT und dualer AIRWING-Foundation-Vertrag |
 | 37 | `OMW-ARCH-CAMPAIGN-DYNAMIC-MISSION` | `docs/37-campaign-architecture-and-dynamic-mission-design.md` | `BINDING` | Kampagnenarchitektur |
 | 38 | `OMW-ME-MASTER-WORKLIST` | `docs/38-mission-editor-master-worklist.md` | `BINDING` | ME-Masterarbeitsliste |
@@ -121,7 +121,7 @@ Eine Nummer und eine stabile `document_id` dürfen im aktuellen Bestand jeweils 
 | `OMW-GOV-DOCUMENTATION-INDEX` | `docs/README.md` | `BINDING`; Themenindex |
 | `OMW-GOV-DOCUMENT-METADATA` | `docs/DOCUMENT-METADATA-POLICY.md` | `BINDING`; Metadaten/Provenienz |
 | `OMW-GOV-SUBPROJECT-REGISTRY` | `docs/SUBPROJECT-REGISTRY.md` | `BINDING`; offene Unterprojekte |
-| `OMW-AIR-AIRFIELD-IMPLEMENTATION-WORKFLOW` | `docs/airfield-airwing-squadron-commander-implementation-workflow.md` | `BINDING`; allgemeiner Airfield-AIRWING-Workflow |
+| `OMW-AIR-AIRFIELD-IMPLEMENTATION-WFLOW` | `docs/airfield-airwing-squadron-commander-implementation-workflow.md` | `BINDING`; allgemeiner Airfield-AIRWING-Workflow |
 | `OMW-HANDOFF-TEMPLATE-AIRFIELD-AIRWING-COMMANDER` | `docs/handoffs/TEMPLATE-airfield-airwing-squadron-commander-chat-handoff.md` | `BINDING`; Chat-Handoff-Vorlage |
 | `OMW-AIR-US-ORBAT-RESEARCH` | `docs/us-air-orbat-2010-2011.md` | `BINDING`; historische Forschung |
 | `OMW-GOV-SOURCE-USE` | `docs/sources/graveyard-of-empires.md` | `BINDING_PROJECT_DECISION` |
@@ -134,6 +134,8 @@ Eine Nummer und eine stabile `document_id` dürfen im aktuellen Bestand jeweils 
 | `OMW-MOOSE-FOG-OF-WAR-RECCE` | `docs/moose/FOG-OF-WAR-RECCE.md` | `PLANNED` |
 | `OMW-MOOSE-STORAGE-WAREHOUSE-RESOURCE-FOUNDATION` | `docs/moose/STORAGE-WAREHOUSE-RESOURCE-FOUNDATION.md` | `BINDING`; MOOSE STORAGE/Warehouse Resource Foundation |
 | `OMW-WAREHOUSE-RESOURCE-FOUNDATION-COMPLETE` | `docs/warehouse-resource-foundation-complete.md` | `BINDING_PROJECT_DECISION`; konsolidierter Warehouse-/Resource-Abschlussstand |
+| `OMW-AIR-BAGRAM-F15E-CAS-STRIKE-PAYLOAD` | `docs/evidence/bagram-f15e-cas-strike-payload-decision-2026-08-13.md` | `BINDING`; Bagram F-15E CAS-/STRIKE-Authoring-Payloadvertrag |
+| `OMW-AIR-BAGRAM-F16C-CAS-PAYLOAD` | `docs/evidence/bagram-f16c-cas-payload-decision-2026-08-13.md` | `BINDING`; Bagram F-16C CAS-Payloadvertrag |
 | `OMW-ACC-FIGHTER-STORE-RUNTIME-CORRELATION-2026-08-13` | `docs/evidence/fighter-store-runtime-correlation-acceptance-2026-08-13.md` | `ACCEPTED_TECHNICAL_BASELINE`; finale Fighter-Store-Mapping-Acceptance |
 | `OMW-TEST-GOVERNANCE` | `mission/tests/GOVERNANCE.md` | `BINDING`; Missions- und Runtime-Testregeln |
 | `OMW-CSAR-INDEX` | `docs/csar/README.md` | `BINDING` |
