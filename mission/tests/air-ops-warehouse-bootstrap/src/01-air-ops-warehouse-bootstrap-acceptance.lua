@@ -2,11 +2,14 @@
 
 local TEST_ID = "AIROPS-WAREHOUSE-BOOTSTRAP-ACCEPTANCE-1"
 local TAG = "[OMW-TEST][" .. TEST_ID .. "]"
-local START_DELAY_SECONDS = 10
+local START_DELAY_SECONDS = 1
 local FUEL_TOLERANCE_KG = 0.5
 local KANDAHAR_NODE_ID = "KANDAHAR_MAIN"
 local KANDAHAR_AIRBASE = "Kandahar"
 local EXPECTED_AVGAS_KG = 20270.13583056
+local READY_FLAG_NAME = "OMW_WAREHOUSE_READY"
+
+local readyFlag = USERFLAG:New(READY_FLAG_NAME)
 
 local function log(message)
   env.info(TAG .. " " .. tostring(message), false)
@@ -87,7 +90,8 @@ local function assertPlan(plan, phase)
 end
 
 local function run()
-  log("START mode=NEW_AND_RESTORE campaignStateAuthority=true closedStockRecalculation=false")
+  readyFlag:Set(0)
+  log("START mode=NEW_AND_RESTORE campaignStateAuthority=true closedStockRecalculation=false readyFlag=0")
 
   local observedBefore = OMWStorageFuelAdapter.ReadNode(KANDAHAR_NODE_ID, KANDAHAR_AIRBASE)
   local existingJp8Kg = observedBefore.resourcesKg.FUEL_JP8
@@ -131,10 +135,17 @@ local function run()
   expect(restoreResult.status == "READY", "RESTORE bootstrap did not reach READY")
   expect(restoreResult.airOpsStartAllowed == true, "RESTORE bootstrap did not open AirOps start gate")
   log("RESTORE_PASS strategicChanges=0 fuelChanges=0 technicalChanges=0 initialReset=false status=READY")
+
+  readyFlag:Set(1)
+  expect(readyFlag:Get() == 1, "Warehouse READY flag did not set")
+  log("AIR_OPS_START_GATE_PASS flag=OMW_WAREHOUSE_READY value=1")
   log("RESULT status=PASS campaignStateAuthority=true strategicItemMirror=true fuelMirror=true avgassupplement=true technicalAvailability=true reverseOverwrite=false productionScheduler=false newRestore=true airOpsStartGate=READY")
 end
 
 SCHEDULER:New(nil, function()
   local ok, err = pcall(run)
-  if not ok then env.error(TAG .. " RESULT status=FAIL error=" .. tostring(err), false) end
+  if not ok then
+    readyFlag:Set(0)
+    env.error(TAG .. " RESULT status=FAIL readyFlag=0 error=" .. tostring(err), false)
+  end
 end, {}, START_DELAY_SECONDS)
