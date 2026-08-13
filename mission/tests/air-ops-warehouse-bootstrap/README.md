@@ -189,3 +189,22 @@ NEW bootstrap: DCS VALIDATED
 RESTORE/idempotence: DCS VALIDATED
 Acceptance: ACCEPTED_TECHNICAL_BASELINE
 ```
+
+## Repository-Integrationsstand vom 13.08.2026
+
+Der Acceptance-Nachweis bleibt an Commit `2502516fe130b908e500117142399b3e2ca74007` gebunden. Die nachfolgenden Commits auf diesem Branch dokumentieren den bestandenen Lauf und aendern dessen technische Provenienz nicht.
+
+GitHub-Stand zum Dokumentationszeitpunkt:
+
+```text
+PR: #86
+Branch: agent/air-ops-initial-stock-runtime-data
+PR status: OPEN / DRAFT / NOT MERGED
+Accepted technical baseline: commit 2502516fe130b908e500117142399b3e2ca74007
+PR #85: MERGED to main as 3b4d2470639409e9a82ceed0fee85aa0627c0b3c
+Current main at merge assessment: 3223db1f7eb130ae2070a926b6f476e6a010f515
+Branch relationship to current main: DIVERGED
+GitHub mergeable: false
+```
+
+Damit ist der Warehouse-Bootstrap technisch akzeptiert, aber PR #86 kann in seinem aktuellen Git-Zustand nicht direkt nach `main` gemergt werden. Vor einer Mergefreigabe muss der Branch gegen den aktuellen `main` reconciliert werden; dabei duerfen die exakte Acceptance-Provenienz und die abgeschlossenen Warehouse-Entscheidungen nicht stillschweigend veraendert werden.
