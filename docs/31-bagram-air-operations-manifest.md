@@ -18,8 +18,8 @@ supersedes:
   - docs/28-bagram-air-operations-manifest.md
   - single-AIRWING Bagram runtime structure AW_US_BAGRAM
 superseded_by:
-source_branch: agent/bagram-dual-airwing-foundation-rebuild
-source_commit: ffdc52c40a9fe83123dc25f369cd81581f293069
+source_branch: agent/bagram-f16c-cas-payload-main-reconciliation
+source_commit: PENDING_MERGE
 validated_in_dcs: false
 document_class: HISTORICAL_EVIDENCE_ACTIVE_ORBAT_AND_FOUNDATION_CONTRACT
 ---
@@ -143,6 +143,39 @@ native DCS-Spielerabbildung: F-16C Block 50
 
 Der Block 50 ist ein ausdrücklich gekennzeichneter technischer Ersatz für das historisch belegte Block-30-Muster.
 
+#### F-16C-CAS-Payloadbaseline
+
+Die verbindliche Payloadentscheidung ist in [`OMW-AIR-BAGRAM-F16C-CAS-PAYLOAD`](evidence/bagram-f16c-cas-payload-decision-2026-08-13.md) dokumentiert.
+
+Historisches 2011-Sollbild als OMW-Arbeitsinterpretation:
+
+```text
+2 x GBU-38
+2 x GBU-54
+2 x 370-gal external fuel tank
+2 x wingtip AIM-120
+Station 2 and 8 clean
+Targeting pod
+internal M61A1
+```
+
+Die GBU-54 ist auf der aktuellen OMW-DCS-F-16C-Abbildung nicht verfügbar. Der verbindliche Vanilla-DCS-Funktionsersatz für `TPL_AIR_US_BGRM_F16C_CAS_2SHIP` lautet deshalb:
+
+```text
+Station 1: 1 x AIM-120
+Station 2: clean
+Station 3: BRU-57 with 2 x GBU-38
+Station 4: 370-gal external fuel tank
+Station 5R: targeting pod
+Station 6: 370-gal external fuel tank
+Station 7: TER-9A with 2 x GBU-12
+Station 8: clean
+Station 9: 1 x AIM-120
+Internal: M61A1
+```
+
+Die GBU-12 ist dabei ausschließlich ein funktionaler Ersatz für die Laseroption der realen GBU-54 und darf nicht als historisch identische Außenlast beschrieben werden. Zusätzliche AIM-9 auf Station 2 und 8 gehören nicht zum Standard-CAS-Loadout. Die genaue AIM-120-Untervariante, der Targeting-Pod, alle CLSIDs sowie die sichtbare Clean-Darstellung der Stationen 2 und 8 bleiben Gegenstand des finalen `.miz`-Audits und der DCS-Acceptance.
+
 ### HH-60G und CH-47
 
 Die im historischen Mission-Editor-Zweig verwendeten DCS-Ersatzmuster bleiben technische Repräsentationen und sind keine historische Typbehauptung. Der finale Mission-Editor-Stand ist vor DCS-Acceptance erneut zu auditieren.
@@ -228,6 +261,8 @@ Physisch identische Hubschrauber-Konfigurationen erhalten keine separaten rollen
 
 Der frühere `F16`-Template-Identifier wird für den Neubau auf `F16C` normalisiert. Templates sind Authoring-Seeds und kein zusätzlicher Bestand.
 
+Für `TPL_AIR_US_BGRM_F16C_CAS_2SHIP` gilt zusätzlich der Payloadvertrag aus [`OMW-AIR-BAGRAM-F16C-CAS-PAYLOAD`](evidence/bagram-f16c-cas-payload-decision-2026-08-13.md).
+
 Die Foundation registriert damit sieben Role-Payload-Seeds: zwei für F-15E sowie je einen für F-16C, C-130, HH-60G, UH-60 und CH-47.
 
 ## 8. Foundation-Runtime-Grenze
@@ -275,6 +310,9 @@ Verbindlich aus diesem Dokument sind:
 - duale AIRWING-Struktur;
 - logische Bestände;
 - Warehouse- und Foundation-Vertrag;
-- Foundation-Template-Namen.
+- Foundation-Template-Namen;
+- Verweis auf den verbindlichen F-16C-CAS-Payloadvertrag.
+
+Die konkrete historische Payloadinterpretation, der Vanilla-DCS-Funktionsersatz und dessen Acceptance-Grenzen sind in [`OMW-AIR-BAGRAM-F16C-CAS-PAYLOAD`](evidence/bagram-f16c-cas-payload-decision-2026-08-13.md) autoritativ dokumentiert.
 
 Nicht aus diesem Dokument abzuleiten sind finale ParkingIDs, taktische Missionen, Recovery, Persistenz oder Multiplayer-Endurance.
