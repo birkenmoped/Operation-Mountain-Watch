@@ -137,11 +137,15 @@ Clientobjekte, Templates und Payloadregistrierungen müssen deaktivierbar bleibe
 
 #### F-15E-CAS-/STRIKE-Payloadbaseline
 
-Die verbindliche Authoring-Entscheidung ist in [`OMW-AIR-BAGRAM-F15E-CAS-STRIKE-PAYLOAD`](evidence/bagram-f15e-cas-strike-payload-decision-2026-08-13.md) dokumentiert.
+Dieser Abschnitt ist die verbindliche Mission-Editor-Authoring-Baseline für die beiden F-15E-Seeds. Beide gehören zur selben logischen `SQ_US_BGRM_F15E_335_EFS` und erhöhen den Flugzeugbestand nicht.
 
 CAS pro Luftfahrzeug:
 
 ```text
+Template: TPL_AIR_US_BGRM_F15E_CAS_2SHIP
+Mission Editor task: CAS
+Payload working name: OMW Standard CAS
+
 3 x GBU-38
 3 x GBU-54(V)1/B
 1 x AIM-120C
@@ -152,9 +156,16 @@ CAS pro Luftfahrzeug:
 internal M61A1
 ```
 
+Die `3 + 3`-Mischung ist eine OMW-Missionsdesignentscheidung für einen symmetrischen flexiblen 500-lb-Präzisionsmix. Sie wird nicht als Behauptung dokumentiert, dass jede reale Bagram-F-15E jede CAS-Sortie exakt so flog. Eine zuvor diskutierte GBU-12-/GBU-38-Mischung gehört nicht zur Standardbaseline, weil die verfügbaren F-15E-CFT-Authoring-Optionen keine entsprechende symmetrische Drei-zu-Drei-Konfiguration mit GBU-12 bereitstellen.
+
 STRIKE pro Luftfahrzeug:
 
 ```text
+Template: TPL_AIR_US_BGRM_F15E_STRIKE_2SHIP
+Mission Editor task: Ground Attack / Bodenangriff
+MOOSE mission type: AUFTRAG.Type.STRIKE
+Payload working name: OMW Standard STRIKE
+
 1 x GBU-31(V)1/B
 1 x GBU-31(V)3/B
 1 x AIM-120C
@@ -165,9 +176,28 @@ STRIKE pro Luftfahrzeug:
 internal M61A1
 ```
 
-Der STRIKE-Seed verwendet `Ground Attack / Bodenangriff`; der gepinnte MOOSE-Stand ordnet `AUFTRAG.Type.STRIKE` `ENUMS.MissionTask.GROUNDATTACK` zu. `Pinpoint Strike / Präzisionsangriff` ist nicht die MOOSE-Zuordnung für diesen Auftragstyp.
+Der Two-Ship führt damit insgesamt zwei GBU-31(V)1/B und zwei GBU-31(V)3/B. Der Mix bildet einen vorbereiteten schweren Präzisionsangriff mit General-Purpose- und Penetrator-JDAM-Anteil ab. Er bleibt den projektweiten Targeting-, ROE- und No-Strike-Regeln untergeordnet.
 
-Die Detailentscheidung ist eine Mission-Editor-Authoring-Baseline. Zündereinstellungen werden erst nach Audit der final gespeicherten `.miz` verbindlich dokumentiert.
+Für den gepinnten MOOSE-Stand `2.9.18` / Commit `73d3ed119cd9e7e3f2cfcabbaa34513d30529b54` gilt im tatsächlich verwendeten `Moose.lua`:
+
+```text
+AUFTRAG.Type.STRIKE
+-> ENUMS.MissionTask.GROUNDATTACK
+-> DCS/ME Ground Attack / Bodenangriff
+```
+
+`Pinpoint Strike / Präzisionsangriff` ist ein eigener DCS-Mission-Task, aber nicht die von `AUFTRAG.Type.STRIKE` verwendete Zuordnung dieses MOOSE-Stands.
+
+Der Fighter-Store-Runtime-Korrelationstest vom 13.08.2026 beobachtete beim materialisierten STRIKE-Two-Ship:
+
+```text
+weapons.bombs.GBU_31       100 -> 98  delta -2
+weapons.bombs.GBU_31_V_3B  100 -> 98  delta -2
+```
+
+Damit ist die `1 + 1`-STRIKE-Beladung je Luftfahrzeug für den exakt dokumentierten STORAGE-Teststand materiell korreliert. Dieser Test validiert nicht automatisch Zielwahl, Waffenwirkung oder taktische STRIKE-Ausführung.
+
+Noch offen bleiben der Audit der final gespeicherten aktuellen `.miz` für sämtliche Pylon-/Rack-/Pod-CLSIDs, die vollständige CAS-Seed-Korrelation sowie die taktische CAS-/STRIKE-Acceptance. Zündereinstellungen werden erst nach Audit der tatsächlich gespeicherten `.miz` als verbindliche Baseline dokumentiert.
 
 ### F-16C
 
@@ -296,10 +326,7 @@ Physisch identische Hubschrauber-Konfigurationen erhalten keine separaten rollen
 
 Der frühere `F16`-Template-Identifier wird für den Neubau auf `F16C` normalisiert. Templates sind Authoring-Seeds und kein zusätzlicher Bestand.
 
-Für die Fighter-Seeds gelten zusätzlich die Payloadverträge:
-
-- [`OMW-AIR-BAGRAM-F15E-CAS-STRIKE-PAYLOAD`](evidence/bagram-f15e-cas-strike-payload-decision-2026-08-13.md);
-- [`OMW-AIR-BAGRAM-F16C-CAS-PAYLOAD`](evidence/bagram-f16c-cas-payload-decision-2026-08-13.md).
+Für `TPL_AIR_US_BGRM_F16C_CAS_2SHIP` gilt zusätzlich der Payloadvertrag aus [`OMW-AIR-BAGRAM-F16C-CAS-PAYLOAD`](evidence/bagram-f16c-cas-payload-decision-2026-08-13.md). Für die beiden F-15E-Seeds ist Abschnitt 4 dieses Dokuments die autoritative Payload-Authoring-Baseline.
 
 Die Foundation registriert damit sieben Role-Payload-Seeds: zwei für F-15E sowie je einen für F-16C, C-130, HH-60G, UH-60 und CH-47.
 
@@ -357,8 +384,9 @@ Verbindlich aus diesem Dokument sind:
 - logische Bestände;
 - Warehouse- und Foundation-Vertrag;
 - Foundation-Template-Namen;
-- Verweise auf die verbindlichen F-15E- und F-16C-Payloadverträge.
+- F-15E-CAS-/STRIKE-Authoring-Baseline nach Abschnitt 4;
+- Verweis auf den verbindlichen F-16C-Payloadvertrag.
 
-Die konkreten Payloadinterpretationen, DCS-Abbildungen und deren Acceptance-Grenzen sind in den jeweiligen Payloadentscheidungen autoritativ dokumentiert.
+Die konkrete F-16C-Payloadinterpretation, DCS-Abbildung und Acceptance-Grenze ist in [`OMW-AIR-BAGRAM-F16C-CAS-PAYLOAD`](evidence/bagram-f16c-cas-payload-decision-2026-08-13.md) autoritativ dokumentiert.
 
 Nicht aus diesem Dokument abzuleiten sind finale ParkingIDs, taktische Missionen, Recovery, Persistenz oder Multiplayer-Endurance.
