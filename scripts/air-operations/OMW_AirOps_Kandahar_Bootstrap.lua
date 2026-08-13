@@ -2,7 +2,7 @@
 --
 -- Scope: dual AIRWING, nine SQUADRONs, inventory registration, grouping,
 -- turnover, takeoff configuration, mission capabilities, approved role payloads,
--- and AIRWING start.
+-- parking allocation, and AIRWING start.
 --
 -- Deliberately excluded: COMMANDER, AUFTRAG instances, OPSTRANSPORT, F10/test
 -- controls, tactical mission orchestration, recovery, persistence and dispatch.
@@ -38,11 +38,27 @@ local config = {
     airbaseName = AIRBASE.Afghanistan and AIRBASE.Afghanistan.Kandahar or "Kandahar",
     warehouseName = "WH_AIR_US_KANDAHAR",
     airwingName = "AW_US_KAF_451_AEW",
+    expectedParkingSpots = 315,
+    expectedBlacklistSpots = 246,
+    parkingWhitelist = {
+      189, 303, 202, 224, 46, 291, 129, 143, 27, 54, 263,
+      309, 232, 107, 260, 299, 194, 294, 92, 201, 174, 156, 124, 238, 280, 28, 16, 40, 136, 281, 314, 25, 229,
+      66, 190, 111, 158, 73, 14, 60, 274, 145, 191, 168, 125,
+      247, 177, 8, 11, 141, 59, 109, 88, 237, 266, 49, 268, 270, 179, 20, 69, 91, 43, 287, 282, 278, 63, 313, 51,
+    },
   },
   heliport = {
     airbaseName = AIRBASE.Afghanistan and AIRBASE.Afghanistan.Kandahar_Heliport or "Kandahar Heliport",
     warehouseName = "WH_AIR_US_KANDAHAR_HELI",
     airwingName = "AW_US_KAF_159_CAB_TF_THUNDER",
+    expectedParkingSpots = 86,
+    expectedBlacklistSpots = 0,
+    parkingWhitelist = {
+      80, 79, 73, 39, 3, 24, 28, 34, 62, 57, 23, 85, 78, 51, 33, 35, 10, 63, 0,
+      13, 12, 75, 54, 76, 69, 29, 43, 7, 53, 19, 86, 83, 87, 20, 55, 49, 74, 30, 64, 71, 67, 59, 11, 50, 36,
+      60, 52, 9, 22, 31, 21, 61, 42, 72, 41, 84, 8, 32, 15, 46, 56, 27, 66, 82, 17, 1, 6, 37, 68, 40, 16, 14, 26, 65,
+      4, 25, 18, 81, 58, 38, 45, 47, 2, 70, 5, 48,
+    },
   },
   squadrons = {
     A10C = {
@@ -52,6 +68,7 @@ local config = {
       assetGroups = 8,
       grouping = 2,
       logicalAircraft = 16,
+      parkingIDs = { 247, 177, 8, 11, 141, 59, 109, 88, 237, 266, 49, 268, 270, 179, 20, 69, 91, 43, 287, 282, 278, 63, 313, 51 },
       missionTypes = { AUFTRAG.Type.CAS, AUFTRAG.Type.CASENHANCED },
       payloadTemplates = { "TPL_AIR_US_KAF_A10C_CAS_2SHIP" },
     },
@@ -62,6 +79,7 @@ local config = {
       assetGroups = 6,
       grouping = 1,
       logicalAircraft = 6,
+      parkingIDs = { 66, 190, 111, 158, 73, 14, 60, 274, 145, 191, 168, 125 },
       missionTypes = { AUFTRAG.Type.RESCUEHELO, AUFTRAG.Type.CARGOTRANSPORT },
       payloadTemplates = { "TPL_AIR_US_KAF_HH60G_CSAR_1SHIP" },
     },
@@ -72,6 +90,7 @@ local config = {
       assetGroups = 12,
       grouping = 1,
       logicalAircraft = 12,
+      parkingIDs = { 309, 232, 107, 260, 299, 194, 294, 92, 201, 174, 156, 124, 238, 280, 28, 16, 40, 136, 281, 314, 25, 229 },
       missionTypes = { AUFTRAG.Type.TROOPTRANSPORT, AUFTRAG.Type.CARGOTRANSPORT },
       payloadTemplates = { "TPL_AIR_US_KAF_C130_TRANSPORT_1SHIP" },
     },
@@ -82,6 +101,7 @@ local config = {
       assetGroups = 4,
       grouping = 1,
       logicalAircraft = 4,
+      parkingIDs = { 189, 303, 202, 224, 46, 291, 129, 143, 27, 54, 263 },
       missionTypes = { AUFTRAG.Type.RECON },
       payloadTemplates = {},
       payloadState = "DEFERRED_ISR_PAYLOAD_RECONCILIATION",
@@ -93,6 +113,7 @@ local config = {
       assetGroups = 2,
       grouping = 1,
       logicalAircraft = 2,
+      parkingIDs = { 189, 303, 202, 224, 46, 291, 129, 143, 27, 54, 263 },
       missionTypes = { AUFTRAG.Type.RECON },
       payloadTemplates = {},
       payloadState = "DEFERRED_ISR_PAYLOAD_RECONCILIATION",
@@ -104,6 +125,7 @@ local config = {
       assetGroups = 4,
       grouping = 2,
       logicalAircraft = 8,
+      parkingIDs = { 13, 12, 75, 54, 76, 69, 29, 43, 7, 53, 19, 86, 83, 87, 20, 55, 49, 74, 30, 64, 71, 67, 59, 11, 50, 36 },
       missionTypes = { AUFTRAG.Type.CAS, AUFTRAG.Type.CASENHANCED, AUFTRAG.Type.ESCORT },
       payloadTemplates = { "TPL_AIR_US_KAF_AH64D_CAS_2SHIP" },
     },
@@ -114,6 +136,7 @@ local config = {
       assetGroups = 8,
       grouping = 2,
       logicalAircraft = 16,
+      parkingIDs = { 80, 79, 73, 39, 3, 24, 28, 34, 62, 57, 23, 85, 78, 51, 33, 35, 10, 63, 0 },
       missionTypes = { AUFTRAG.Type.RECON, AUFTRAG.Type.FACA, AUFTRAG.Type.ESCORT },
       payloadTemplates = { "TPL_AIR_US_KAF_OH58D_RECON_2SHIP" },
     },
@@ -124,6 +147,7 @@ local config = {
       assetGroups = 16,
       grouping = 1,
       logicalAircraft = 16,
+      parkingIDs = { 4, 25, 18, 81, 58, 38, 45, 47, 2, 70, 5, 48 },
       missionTypes = { AUFTRAG.Type.TROOPTRANSPORT, AUFTRAG.Type.CARGOTRANSPORT },
       payloadTemplates = { "TPL_AIR_US_KAF_CH47_TRANSPORT_1SHIP" },
     },
@@ -134,6 +158,7 @@ local config = {
       assetGroups = 16,
       grouping = 2,
       logicalAircraft = 32,
+      parkingIDs = { 60, 52, 9, 22, 31, 21, 61, 42, 72, 41, 84, 8, 32, 15, 46, 56, 27, 66, 82, 17, 1, 6, 37, 68, 40, 16, 14, 26, 65 },
       missionTypes = { AUFTRAG.Type.TROOPTRANSPORT, AUFTRAG.Type.CARGOTRANSPORT, AUFTRAG.Type.RESCUEHELO },
       payloadTemplates = {
         "TPL_AIR_US_KAF_UH60_TRANSPORT_2SHIP",
@@ -160,12 +185,68 @@ local function requireAnchor(name)
   return anchor
 end
 
+local function applyParkingPolicy(airbase, definition)
+  local allowed = {}
+  for _, terminalID in ipairs(definition.parkingWhitelist) do
+    if allowed[terminalID] then
+      error("Duplicate parking whitelist TerminalID " .. tostring(terminalID) .. " at " .. tostring(definition.airbaseName))
+    end
+    allowed[terminalID] = true
+  end
+
+  local parkingSpots = airbase:GetParkingSpotsTable()
+  if #parkingSpots ~= definition.expectedParkingSpots then
+    error(string.format(
+      "Parking schema mismatch at %s: expected=%d actual=%d",
+      tostring(definition.airbaseName),
+      definition.expectedParkingSpots,
+      #parkingSpots
+    ))
+  end
+
+  local present = {}
+  local blacklist = {}
+  for _, parkingSpot in ipairs(parkingSpots) do
+    present[parkingSpot.TerminalID] = true
+    if not allowed[parkingSpot.TerminalID] then
+      blacklist[#blacklist + 1] = parkingSpot.TerminalID
+    end
+  end
+
+  for _, terminalID in ipairs(definition.parkingWhitelist) do
+    if not present[terminalID] then
+      error("Configured parking TerminalID not present at " .. tostring(definition.airbaseName) .. ": " .. tostring(terminalID))
+    end
+  end
+
+  if #blacklist ~= definition.expectedBlacklistSpots then
+    error(string.format(
+      "Parking blacklist size mismatch at %s: expected=%d actual=%d",
+      tostring(definition.airbaseName),
+      definition.expectedBlacklistSpots,
+      #blacklist
+    ))
+  end
+
+  airbase:SetParkingSpotWhitelist(definition.parkingWhitelist)
+  airbase:SetParkingSpotBlacklist(blacklist)
+
+  log(string.format(
+    "PARKING_POLICY airbase=%s total=%d whitelist=%d blacklist=%d",
+    tostring(definition.airbaseName),
+    #parkingSpots,
+    #definition.parkingWhitelist,
+    #blacklist
+  ))
+end
+
 local function createAirwing(definition)
   local airbase = AIRBASE:FindByName(definition.airbaseName)
   if not airbase then
     error("Airbase not found: " .. tostring(definition.airbaseName))
   end
 
+  applyParkingPolicy(airbase, definition)
   requireAnchor(definition.warehouseName)
 
   local airwing = AIRWING:New(definition.warehouseName, definition.airwingName)
@@ -183,6 +264,7 @@ local function createSquadron(airwing, definition)
 
   local squadron = SQUADRON:New(definition.template, definition.assetGroups, definition.name)
   squadron:SetGrouping(definition.grouping)
+  squadron:SetParkingIDs(definition.parkingIDs)
   squadron:SetTurnoverTime(config.turnoverMin, config.turnoverMax)
   squadron:AddMissionCapability(definition.missionTypes)
   airwing:AddSquadron(squadron)
@@ -194,13 +276,14 @@ local function createSquadron(airwing, definition)
   end
 
   log(string.format(
-    "SQUADRON_REGISTERED name=%s wing=%s template=%s assetGroups=%d grouping=%d logicalAircraft=%d payloads=%d payloadState=%s",
+    "SQUADRON_REGISTERED name=%s wing=%s template=%s assetGroups=%d grouping=%d logicalAircraft=%d parkingIDs=%d payloads=%d payloadState=%s",
     definition.name,
     definition.wing,
     definition.template,
     definition.assetGroups,
     definition.grouping,
     definition.logicalAircraft,
+    #definition.parkingIDs,
     #payloads,
     tostring(definition.payloadState or "REGISTERED")
   ))
