@@ -51,13 +51,13 @@ Diese Klassenstatus sind keine Governance-Dokumentstatuswerte.
 
 | Klasse | Projektstatus | Geltungsgrenze |
 |---|---|---|
-| `AIRBASE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Auflösung, ID, Parkingdump und airfield-spezifische Kalibrierung; Kandahar Main ID 7 und Kandahar Heliport ID 15 bestätigt; 12.08.2026 zusätzlich 296/296 Main- und 80/80 Heliport-Marker mit exakter `.miz parking == MOOSE TerminalID`-Korrelation; Shindand Heliport ID 14 bestätigt; `FindFreeParkingSpotForAircraft()` mit konfigurierbaren Scanparametern source-reviewed, aber nicht in WAREHOUSE verdrahtet |
+| `AIRBASE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Auflösung, ID, Parkingdump und airfield-spezifische Kalibrierung; Kandahar Main ID 7 und Kandahar Heliport ID 15 bestätigt; 12.08.2026 zusätzlich 296/296 Main- und 80/80 Heliport-Marker mit exakter `.miz parking == MOOSE TerminalID`-Korrelation; `SetParkingSpotWhitelist()`/`SetParkingSpotBlacklist()` für Kandahar source-reviewed und branchseitig konfiguriert, Runtime-Acceptance offen; Shindand Heliport ID 14 bestätigt; `FindFreeParkingSpotForAircraft()` mit konfigurierbaren Scanparametern source-reviewed, aber nicht in WAREHOUSE verdrahtet |
 | `AIRWING` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Konstruktion, Stockregistrierung, Grundstart, SQUADRON-Bindung und direkter AUFTRAG-Dispatch; Kandahar Dual-AIRWING Main/Heliport sowie Shindand Heliport mit finalem Drei-Rollen-Test bestätigt |
-| `SQUADRON` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Konstruktion, `Ngroups`, Gruppierung, Capabilities, Payloads und post-start Assetbindung; Kandahar neun SQUADRONs / 76 Assetgruppen / 112 Airframes sowie Shindand drei SQUADRONs / 16 Assetgruppen / 20 Airframes bestätigt |
+| `SQUADRON` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Konstruktion, `Ngroups`, Gruppierung, Capabilities, Payloads und post-start Assetbindung; Kandahar neun SQUADRONs / 76 Assetgruppen / 112 Airframes sowie Shindand drei SQUADRONs / 16 Assetgruppen / 20 Airframes bestätigt; Kandahar typgebundene `SetParkingIDs()`-Pools branchseitig konfiguriert, physische Compliance noch nicht DCS-validiert |
 | `WAREHOUSE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | AirOps-Stockregistrierung und post-start Zuordnung; strategische Logistik und Persistenz offen; physische typgebundene HELIPAD-Parking-Garantie nicht belegt |
 | `COHORT` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | post-start `AddAsset()` setzt `squadname`, `legion`, `cohort` und `assets`; Foundation-Läufe bestätigen die registrierte SQUADRON-/Warehouse-Kette, ohne Recovery-Nachweis |
 | `FLIGHTGROUP` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | AIRWING-`FlightOnMission`-Pfad, Cold-Takeoff-Prüfung und `SetOptionPreferVertical()`-Propagation im finalen Shindand-Lauf bestätigt; physisches Abflugprofil bleibt typabhängig |
-| `COMMANDER` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Salerno `New -> AddAirwing -> Start -> CanMission -> AddMission -> Status` bis AUFTRAG `started`; Shindand Foundation verwendet COMMANDER ausdrücklich nicht |
+| `COMMANDER` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Salerno `New -> AddAirwing -> Start -> CanMission -> AddMission/Status` bis AUFTRAG `started`; Shindand Foundation verwendet COMMANDER ausdrücklich nicht |
 | `AUFTRAG` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Salerno CAS sowie Shindand `NewCAS()`, `NewLANDATCOORDINATE()` und `AssignSquadrons()` im nativen AIRWING-Pfad bis Missionserfolg bestätigt; physische Außenlandung bei `LANDATCOORDINATE` nicht beobachtet |
 | `SCHEDULER` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | geordnete Konstruktion und verzögerte post-start Diagnose; finaler Shindand-Kombinationstest bestätigt |
 | `GROUP`, `UNIT`, `STATIC`, `ZONE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Template-, Static-, Warehouse- und Zonenvalidierung |
@@ -188,3 +188,17 @@ WAREHOUSE:_FindParkingForAssets(...)
 ```
 
 Ein Runtime-Override bleibt `INTERNAL_RESTRICTED` und benötigt vor Entwurf oder Einsatz eine ausdrückliche Eigentümerfreigabe.
+
+### 8.1 Kandahar Parking Allocation
+
+Auf `agent/kandahar-parking-allocation` wird der owner-defined Parking-Vertrag mit ausschließlich öffentlichen MOOSE-APIs abgebildet:
+
+```text
+AIRBASE:SetParkingSpotWhitelist(...)
+AIRBASE:SetParkingSpotBlacklist(...)
+SQUADRON:SetParkingIDs(...)
+```
+
+Kandahar Main verwendet 315 bekannte Parking-Spots mit 69 freigegebenen und 246 geblacklisteten TerminalIDs. Die 69 freigegebenen Spots sind typgebunden: A-10C 24, C-130 22, MQ-1/MQ-9 gemeinsam 11 und 26th-ERQS-HH/UH-60-MEDEVAC-Ersatz 12 auf Lima `L01-H` bis `L12-H`. Lima `L13-H` bis `L15-H` bleiben geblacklistet.
+
+Kandahar Heliport verwendet alle 86 bekannten `HelicopterOnly`-Spots als typgebundene SQUADRON-Pools: OH-58 19, AH-64 26, UH-60/Blackhawk 29 und CH-47/CH-53-Familie 12. Die Konfiguration ist source-reviewed, aber die physische Parking-Compliance des WAREHOUSE/AIRWING-Spawnpfads bleibt bis zum DCS-Test ausdrücklich unvalidiert. Der bekannte Shindand-G2-Befund (`asset.parkingIDs` korrekt, physischer Spawn außerhalb des Pools) bleibt als relevante Framework-/DCS-Grenze bestehen.
