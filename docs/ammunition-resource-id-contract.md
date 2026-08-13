@@ -19,11 +19,11 @@ supersedes:
   - AMMUNITION_GBU31_PEN planning label
   - AMMUNITION_ILLUMINATION planning label for the OMW LUU-2B path
 superseded_by:
-source_branch: agent/warehouse-resource-final-acceptance
+source_branch: agent/fighter-store-runtime-correlation
 source_commit: PENDING_MERGE
-validated_in_dcs: false
-base_branch: agent/storage-weapon-item-matrix
-base_commit: acb8955c6256bcaf1107227ec5869151d3cb4542
+validated_in_dcs: partial
+base_branch: agent/warehouse-resource-final-acceptance
+base_commit: 1c74146641bc8ca21e0f39240754391cf7ce28b7
 base_status: ACCEPTED_TECHNICAL_BASELINE_CHILD_BRANCH
 merged_to_main: false
 ---
@@ -144,23 +144,35 @@ BAGRAM / AMMUNITION_AIM120 = 52 warehouse
 BAGRAM / AMMUNITION_AIM9   = 26 warehouse
 ```
 
-Fitted und Warehouse Inventory bilden gemeinsam einen endlichen Theaterbestand. Der F-16-Deployment-AIM-9-Item-Key bleibt bis zum Runtime-Gate unaufgelöst.
+Fitted und Warehouse Inventory bilden gemeinsam einen endlichen Theaterbestand.
+
+Der DCS-Lauf `FIGHTER-STORE-RUNTIME-CORRELATION-1` hat für den getesteten F-16-Deployment-AIM-9-Pfad bestätigt:
+
+```text
+AMMUNITION_AIM9
+-> weapons.missiles.AIM_9
+status = RUNTIME_MAPPING_VALIDATED
+```
+
+Der konkrete Lauf ist in `docs/evidence/fighter-store-runtime-correlation-acceptance-2026-08-13.md` dokumentiert.
 
 ## 5. Fixed-Wing Mapping-Grenze
 
-Bereits praktisch beobachtete konkrete Stores dürfen payload-/variantenspezifisch auf die dokumentierten DCS/MOOSE-Items abgebildet werden. Für die F-15E-STRIKE-Varianten gilt ausdrücklich:
+Für die F-15E-STRIKE-Varianten ist durch denselben DCS-Lauf bestätigt:
 
 ```text
 AMMUNITION_GBU31_V1
-candidate = weapons.bombs.GBU_31
-status = UNVALIDATED_RUNTIME_MAPPING
+-> weapons.bombs.GBU_31
+status = RUNTIME_MAPPING_VALIDATED
 
 AMMUNITION_GBU31_V3
-candidate = weapons.bombs.GBU_31_V_3B
-status = UNVALIDATED_RUNTIME_MAPPING
+-> weapons.bombs.GBU_31_V_3B
+status = RUNTIME_MAPPING_VALIDATED
 ```
 
-Die strategischen Bestände sind trotzdem finalisiert. Eine Source-/Enum-Fundstelle allein wird nicht als DCS-Runtime-Acceptance ausgegeben.
+Beobachtet wurde bei Materialisierung des vorhandenen F-15E-STRIKE-Two-Ships jeweils exakt `-2` pro Store-Key.
+
+Damit sind die zuvor offenen Fighter-Store-Mapping-Gates geschlossen. Die strategischen Bestände bleiben unverändert.
 
 ## 6. Strategisches Mission Equipment
 
@@ -199,7 +211,7 @@ AIRWING payload
   -> operative Missions-/Payload-Verfügbarkeit
 ```
 
-Ein Adapter darf eine strategische Resource ID nur auf belegte oder ausdrücklich als unvalidiert gekennzeichnete Item-Varianten abbilden. Ein DCS-Item darf nicht stillschweigend mehrere strategisch getrennte Ressourcen zusammenfassen.
+Ein Adapter darf eine strategische Resource ID nur auf praktisch belegte oder ausdrücklich als technisch nicht direkt spiegelbar gekennzeichnete Item-Varianten abbilden. Ein DCS-Item darf nicht stillschweigend mehrere strategisch getrennte Ressourcen zusammenfassen.
 
 ## 9. Initial-Stock-Abschluss
 
@@ -208,21 +220,34 @@ Die finalisierte Node-/Resource-Matrix ist in folgenden Artefakten dokumentiert:
 ```text
 data/logistics/air-operations-initial-store-stock-v20.csv
 docs/evidence/air-operations-initial-stock-finalization-2026-08-13.md
-OMW_AirOps_Logistics_Planning_v20.xlsx (planning workbook artifact, SHA-256 346f2f8547133b62f7f3980a324c08432897b8cc7a2d22eda90c4fe359cf6b46)
+OMW_AirOps_Logistics_Planning_v20.xlsx
 ```
 
-Der fachliche Initial-Stock-Entscheidungsblock ist `CLOSED`. Die noch offenen Runtime-Mapping-Gates blockieren die strategischen Initialmengen nicht.
+Der fachliche Initial-Stock-Entscheidungsblock ist `CLOSED`. Die letzten Fighter-Store-Runtime-Mappings sind ebenfalls `CLOSED`.
 
-## 10. Weiterhin technische Folgearbeit
+## 10. Warehouse-/Resource-Foundation-Abschluss
 
-Noch nicht automatisch freigegeben sind:
+Für den aktuellen Foundation-Scope sind abgeschlossen:
 
 ```text
-CampaignState-to-STORAGE mutation for newly added resource families
-strategic equipment reservation/result adapter implementation
-F-15E STRIKE exact GBU-31 runtime correlation
-F-16 deployment AIM-9 exact runtime correlation
-combined DCS initialization/acceptance of the final stock matrix
+strategic resource ownership
+fuel resource contract
+initial/target/reorder/critical stock planning
+node-level store aggregation
+fighter A/A finite deployment inventory
+fixed-wing exact GBU-31 mappings
+F-16 deployment AIM-9 exact mapping
+external-tank classification
+strategic AAQ equipment stock policy
+selected gun/store mirror exceptions
+loss/return/recovery semantics
+read-only reconciliation contract
 ```
 
-Eine produktive Implementierung muss MOOSE-first bleiben und die bereits akzeptierten AIRWING-/WAREHOUSE-/FLIGHTGROUP-/STORAGE-Lifecycle-Pfade verwenden.
+Status:
+
+```text
+WAREHOUSE_RESOURCE_FOUNDATION = CLOSED
+```
+
+Nicht als bereits DCS-validiert auszugeben sind zukünftige produktive Implementierungen, insbesondere ein schreibender CampaignState-to-STORAGE-Initialisierungsadapter oder ein strategischer Equipment-Reservation-/Result-Adapter. Diese sind eigenständige Implementierungsarbeit und öffnen die verabschiedeten Warehouse-Bestände nicht erneut.

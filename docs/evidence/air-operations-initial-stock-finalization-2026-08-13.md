@@ -9,6 +9,7 @@ authoritative_for:
   - fixed-wing strategic ammunition resource identifiers
   - Bagram fighter external-tank classification
   - strategic mission-equipment resource classification and stock thresholds
+  - warehouse/resource foundation closure status
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
@@ -17,26 +18,38 @@ supersedes:
   - generic AMMUNITION_GBU31 / AMMUNITION_GBU31_PEN planning labels
   - generic AMMUNITION_ILLUMINATION planning label for the OMW LUU-2B path
 superseded_by:
-source_branch: agent/warehouse-resource-final-acceptance
+source_branch: agent/fighter-store-runtime-correlation
 source_commit: PENDING_MERGE
-validated_in_dcs: false
+validated_in_dcs: partial
 ---
 
 # AirOps Initial-Stock Finalization – 13.08.2026
 
 ## 1. Abschlussstatus
 
-Der Projektinhaber hat am 13.08.2026 die noch offenen Entscheidungen der AirOps-Initial-Stock-Planung abgeschlossen. Die strategische Initial-Stock-Matrix ist damit für den dokumentierten Foundation-Scope fachlich abgeschlossen.
+Der Projektinhaber hat am 13.08.2026 die AirOps-Initial-Stock-Planung und die dazu gehörenden Warehouse-/Resource-Entscheidungen abgeschlossen.
 
-Nicht blockierende technische Restgates bleiben:
+Die zuvor noch offenen Fighter-Mapping-Gates wurden im Lauf `FIGHTER-STORE-RUNTIME-CORRELATION-1` technisch geschlossen:
 
 ```text
-F-15E STRIKE GBU-31(V)1/B exact STORAGE runtime correlation
-F-15E STRIKE GBU-31(V)3/B exact STORAGE runtime correlation
-F-16 deployment AIM-9 exact DCS/MOOSE item correlation
+F-15E STRIKE GBU-31(V)1/B -> weapons.bombs.GBU_31
+F-15E STRIKE GBU-31(V)3/B -> weapons.bombs.GBU_31_V_3B
+F-16 deployment AIM-9     -> weapons.missiles.AIM_9
 ```
 
-Diese drei Mapping-Gates dürfen die beschlossenen strategischen Initialmengen nicht erneut öffnen. `VALIDATED` bleibt für die konkrete DCS-Warehouse-Initialisierung bis zu einem dokumentierten DCS-Lauf unzulässig.
+Der DCS-Nachweis steht in:
+
+```text
+docs/evidence/fighter-store-runtime-correlation-acceptance-2026-08-13.md
+```
+
+Damit gilt für den dokumentierten Foundation-Scope:
+
+```text
+INITIAL_STOCK_DECISION_BLOCK = CLOSED
+FIGHTER_STORE_MAPPING_BLOCK = CLOSED
+WAREHOUSE_RESOURCE_FOUNDATION = CLOSED
+```
 
 ## 2. Strategische Node-Aggregation
 
@@ -59,8 +72,6 @@ Bedarf aller zulässigen Aircraft-/Payload-Profile desselben Stores am Node
 -> Initial/Target/Reorder/Critical festschreiben
 ```
 
-Damit ist eine per Profil vorgenommene Pack-Rundung mit anschließender Addition für gemeinsam genutzte physische Stores nicht zulässig.
-
 MOOSE `WAREHOUSE`-/AIRWING-Instanzen verwalten weiterhin Aircraft-/Asset-Lifecycle. Sie begründen keine separaten strategischen Munitionslager. CampaignState bleibt die strategische Ressourcenhoheit.
 
 ## 3. Fixed-Wing-Munitions-IDs
@@ -68,6 +79,7 @@ MOOSE `WAREHOUSE`-/AIRWING-Instanzen verwalten weiterhin Aircraft-/Asset-Lifecyc
 Für die abgedeckten Fixed-Wing-Stores gelten verbindlich:
 
 ```text
+AMMUNITION_GBU12
 AMMUNITION_GBU38
 AMMUNITION_GBU54
 AMMUNITION_GBU31_V1
@@ -86,27 +98,28 @@ AMMUNITION_ILLUMINATION
 
 werden für neue AirOps-Buchungen nicht mehr verwendet.
 
-`AMMUNITION_GBU31_V1` und `AMMUNITION_GBU31_V3` bleiben auch strategisch getrennte physische Ressourcen.
+`AMMUNITION_GBU31_V1` und `AMMUNITION_GBU31_V3` bleiben strategisch getrennte physische Ressourcen.
 
-## 4. F-15E STRIKE Mapping-Grenze
+## 4. F-15E STRIKE Runtime-Mapping
 
-Die strategischen GBU-31-Bestände sind final. Die technisch plausiblen Kandidaten bleiben bis zum gezielten Runtime-Gate ausdrücklich unvalidiert:
+Der Lauf `FIGHTER-STORE-RUNTIME-CORRELATION-1` beobachtete bei Materialisierung des vorhandenen F-15E-STRIKE-Two-Ships:
 
 ```text
-AMMUNITION_GBU31_V1
-candidate STORAGE key = weapons.bombs.GBU_31
-mapping status = UNVALIDATED_RUNTIME_MAPPING
-
-AMMUNITION_GBU31_V3
-candidate STORAGE key = weapons.bombs.GBU_31_V_3B
-mapping status = UNVALIDATED_RUNTIME_MAPPING
+weapons.bombs.GBU_31       100 -> 98  delta -2
+weapons.bombs.GBU_31_V_3B  100 -> 98  delta -2
 ```
 
-Die Existenz der Keys im gepinnten `Moose.lua` und ihre Übereinstimmung mit dem Mission-Editor-Payload ersetzen keinen DCS-Runtime-Nachweis.
+Damit gilt:
+
+```text
+AMMUNITION_GBU31_V1 -> weapons.bombs.GBU_31
+AMMUNITION_GBU31_V3 -> weapons.bombs.GBU_31_V_3B
+mapping status = RUNTIME_MAPPING_VALIDATED
+```
 
 ## 5. Bagram Fighter A/A
 
-Der Vertrag `OMW-LOG-BAGRAM-FIGHTER-AA-DEPLOYMENT-STOCK` bleibt unverändert maßgeblich:
+Der Vertrag `OMW-LOG-BAGRAM-FIGHTER-AA-DEPLOYMENT-STOCK` bleibt maßgeblich:
 
 ```text
 BAGRAM / AMMUNITION_AIM120 initial warehouse stock = 52
@@ -122,12 +135,11 @@ AMMUNITION_AIM9   = 52 total theater inventory
 
 `WAREHOUSE + FITTED` bilden jeweils ein endliches strategisches Theaterinventar. Verschossene oder mit einem Totalverlust des Aircraft verlorene Raketen reduzieren den Bestand dauerhaft. Normale Rückgabe oder Umlagerung verändert nur den Ort. Normaler automatischer Off-Map-Nachschub ist `NONE`.
 
-Für den F-16-Deployment-AIM-9-Pfad gilt weiterhin:
+Für den F-16-Deployment-AIM-9-Pfad ist jetzt technisch bestätigt:
 
 ```text
-strategic initial warehouse stock = FINAL
-DCS/MOOSE item = UNRESOLVED_F16_DEPLOYMENT_ITEM
-runtime mapping = UNVALIDATED
+AMMUNITION_AIM9 -> weapons.missiles.AIM_9
+mapping status = RUNTIME_MAPPING_VALIDATED
 ```
 
 ## 6. Externe F-15E-/F-16-Tanks
@@ -148,8 +160,6 @@ DCS/MOOSE STORAGE = operational technical availability only
 no artificial AI normal-return recredit
 ```
 
-Der bekannte Runtime-Befund `spawn debit / no AI normal-return recredit` wird nicht durch eine parallele OMW-Rückbuchungslogik kompensiert.
-
 ## 7. Strategisches Mission Equipment
 
 Folgende Pods werden als strategische, rückgabefähige Equipment-Ressourcen geführt:
@@ -161,7 +171,7 @@ EQUIPMENT_AAQ33
 EQUIPMENT_AAQ28
 ```
 
-Physische Mappings im aktuellen dokumentierten Scope:
+Mappings:
 
 ```text
 EQUIPMENT_AAQ13 -> weapons.containers.F-15E_AAQ-13_LANTIRN
@@ -180,8 +190,6 @@ Reorder = ceil(Target * 0.80)
 Critical = ceil(Target * 0.60)
 ```
 
-Daraus folgen für den aktuellen ORBAT-Scope:
-
 | Node | Resource | Initial | Target | Reorder | Critical |
 |---|---|---:|---:|---:|---:|
 | Bagram | `EQUIPMENT_AAQ13` | 16 | 16 | 13 | 10 |
@@ -189,11 +197,9 @@ Daraus folgen für den aktuellen ORBAT-Scope:
 | Bagram | `EQUIPMENT_AAQ33` | 16 | 16 | 13 | 10 |
 | Kandahar Main | `EQUIPMENT_AAQ28` | 20 | 20 | 16 | 12 |
 
-Equipment ist nodeweit gepoolt. Aircraft-/Payload-Zulässigkeit wird separat gemappt und erzeugt keinen Aircraft-Type- oder Squadron-eigenen Bestand.
+Equipment ist nodeweit gepoolt. Aircraft-/Payload-Zulässigkeit wird separat gemappt.
 
 ## 8. Mission-Equipment-Lifecycle
-
-Für die strategische Domain gilt:
 
 ```text
 normal return
@@ -206,42 +212,57 @@ maintenance damage states
 -> not modeled; CampaignState uses AVAILABLE / LOST only
 
 authorized aircraft redeployment
--> fitted equipment moves to the destination node with the aircraft
+-> fitted equipment moves to destination node with aircraft
 
 replacement
 -> normal configured logistics parent chain
 -> no direct magical refill at forward nodes
 ```
 
-Die 20-Prozent-Reserve ist Teil des dauerhaften Sollbestands und kein einmaliger Startbonus.
+Die 20-Prozent-Reserve ist Teil des dauerhaften Sollbestands.
 
 Strategisches Mission Equipment ist eine harte Mission-/Payload-Verfügbarkeitsgrenze. Beim verbindlichen Mission-Commit wird die erforderliche Equipment-Menge strategisch reserviert. Cancel vor Issue/Materialisierung gibt die Reservation frei; normaler Return stellt das Equipment wieder zur Verfügung; Totalverlust wandelt die gebundene Menge in strategischen Verlust um.
 
-Diese Entscheidung genehmigt noch keinen neuen parallelen Aircraft-/Payload-Lifecycle. Eine produktive Implementierung muss die vorhandenen MOOSE-AIRWING-/WAREHOUSE-/FLIGHTGROUP-Pfade verwenden und nur die CampaignState-Reservation/Ergebnisgrenze ergänzen.
+Diese Entscheidung genehmigt keinen parallelen Aircraft-/Payload-Lifecycle. Eine produktive Implementierung muss die vorhandenen MOOSE-AIRWING-/WAREHOUSE-/FLIGHTGROUP-Pfade verwenden und nur die CampaignState-Reservation/Ergebnisgrenze ergänzen.
 
 ## 9. Verbindliche Datenartefakte
 
-Die finalisierte Planungsmatrix wird durch folgende Artefakte repräsentiert:
-
 ```text
-OMW_AirOps_Logistics_Planning_v20.xlsx (planning workbook artifact; SHA-256 346f2f8547133b62f7f3980a324c08432897b8cc7a2d22eda90c4fe359cf6b46)
+OMW_AirOps_Logistics_Planning_v20.xlsx
 data/logistics/air-operations-initial-store-stock-v20.csv
+scripts/logistics/OMW_AirOpsResourceManifest.lua
 ```
 
-Das CSV ist die im Repository geführte maschinenlesbare Node-/Resource-Sicht für Initial/Target/Reorder/Critical. Das separat erzeugte Workbook bewahrt die Herleitung nach Aircraft-/Payload-Profil, Deployment-Stores, Countermeasures, Pack-/Pair-Regeln und Evidenz.
+Das CSV ist die maschinenlesbare Node-/Resource-Sicht für Initial/Target/Reorder/Critical. Das Workbook bewahrt die Herleitung nach Aircraft-/Payload-Profil, Deployment-Stores, Countermeasures, Pack-/Pair-Regeln und Evidenz.
 
-## 10. Acceptance-Grenze
+## 10. Warehouse-/Resource-Foundation-Abschluss
 
-Mit dieser Entscheidung ist der fachliche Initial-Stock-Entscheidungsblock `CLOSED`.
-
-Noch nicht DCS-validiert sind:
+Für den aktuellen Foundation-Scope sind damit abgeschlossen:
 
 ```text
-physical initialization of all final DCS warehouse items
-F-15E STRIKE GBU-31(V)1 runtime key correlation
-F-15E STRIKE GBU-31(V)3 runtime key correlation
-F-16 deployment AIM-9 runtime key correlation
-strategic mission-equipment reservation/result integration with AIRWING lifecycle
+CampaignState resource authority
+STORAGE operational mirror boundary
+fuel resource semantics
+AI materialization observations
+normal return semantics
+client fuel/rearm behavior
+selected weapon/store lifecycle mappings
+physical loss semantics
+forced-landing/recovery settlement semantics
+restart/idempotency boundary
+read-only reconciliation
+initial/target/reorder/critical stock matrix
+supply-parent topology
+fixed-wing store mappings
+fighter finite A/A inventory
+external-tank exception policy
+strategic mission-equipment stock policy
 ```
 
-Diese technischen Gates sind Folgeschritte. Sie ändern die hier freigegebenen strategischen Initialmengen nur dann, wenn der Projektinhaber aufgrund neuer Evidenz ausdrücklich eine neue Stock-Entscheidung trifft.
+Status:
+
+```text
+WAREHOUSE_RESOURCE_FOUNDATION = CLOSED
+```
+
+Nicht als bereits DCS-validiert auszugeben sind zukünftige produktive Implementierungen eines schreibenden CampaignState-to-STORAGE-Initialisierungsadapters oder eines strategischen Equipment-Reservation-/Result-Adapters. Diese sind separate Implementierungsarbeit und **kein offener Warehouse-Planungs- oder Mapping-Testblock**. Sie dürfen die verabschiedeten Initialbestände nicht stillschweigend neu öffnen.
