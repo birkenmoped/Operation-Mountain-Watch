@@ -16,7 +16,7 @@ supersedes:
   - earlier unqualified proposal of a historically exact GBU-12 and GBU-38 mix
 superseded_by:
 source_branch: agent/bagram-f16c-cas-payload-main-reconciliation
-source_commit: PENDING_MERGE
+source_commit: 06ffb7a1d351d85d3afed3ae842b0ce414c9cb0c
 validated_in_dcs: false
 ---
 
