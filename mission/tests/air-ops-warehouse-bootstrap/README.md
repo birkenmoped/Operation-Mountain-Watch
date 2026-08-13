@@ -15,14 +15,10 @@ AIROPS-WAREHOUSE-BOOTSTRAP-ACCEPTANCE-1
 ```text
 mission/tests/air-ops-warehouse-bootstrap/src/01-air-ops-warehouse-bootstrap-acceptance.lua
 tools/build-air-ops-warehouse-bootstrap.ps1
-mission/tests/air-ops-warehouse-bootstrap/dist/OMW_AirOps_Warehouse_Bootstrap_Acceptance.lua
+mission/tests/air-ops-warehouse-bootstrap/dist/OMW_AirOps_Warehouse_Bootstrap.lua
 ```
 
 `dist/` wird ausschliesslich durch den Builder erzeugt.
-
-## Produktive Module
-
-Der Builder bettet CampaignState, ResourceManifest, InitialStock, AVGAS-Supplement, CampaignState-Initializer, STORAGE-Initializer, Technical-Availability, Fuel-Adapter, Fuel-Sync und Warehouse-Bootstrap ein.
 
 ## Fuel-Grenze
 
@@ -48,9 +44,9 @@ RESTORE_PASS
 RESULT status=PASS
 ```
 
-`NEW_APPLY_PASS` verlangt verifizierte strategische Item-, Fuel- und Technical-Availability-Readbacks sowie `status=READY`. AVGAS muss auf den freigegebenen Wert geschrieben werden; der erhaltene Kandahar-JP-8-Wert darf sich nicht aendern.
+`NEW_APPLY_PASS` verlangt verifizierte strategische Item-, Fuel- und Technical-Availability-Readbacks sowie `status=READY`. AVGAS wird auf den freigegebenen Wert gesetzt; der erhaltene Kandahar-JP-8-Wert darf sich nicht aendern.
 
-`RESTORE_PASS` verlangt anschliessend:
+`RESTORE_PASS` verlangt:
 
 ```text
 strategicChanges=0
@@ -62,14 +58,14 @@ status=READY
 
 ## MIZ-Einbindung
 
-Gemass `docs/22-test-mission-build-transfer-and-validation-workflow.md`:
+Gemaess `docs/22-test-mission-build-transfer-and-validation-workflow.md`:
 
 ```text
 1. Moose.lua
-2. OMW_AirOps_Warehouse_Bootstrap_Acceptance.lua
+2. OMW_AirOps_Warehouse_Bootstrap.lua
 ```
 
-Das Acceptance-Bundle enthaelt alle fuer dieses Gate benoetigten OMW-Module. Vor dem DCS-Lauf muessen Branch/Commit, BuilderVersion, GeneratedUtc, Bundle-Hash, MIZ-Hash, interner mission-Hash, eingebetteter Bundle-Hash, eingebetteter Moose.lua-Hash und der Objektvertrag der sieben AirOps-STORAGE-Endpunkte feststehen.
+Vor dem DCS-Lauf muessen Branch/Commit, BuilderVersion, GeneratedUtc, Bundle-Hash, MIZ-Hash, interner mission-Hash, eingebetteter Bundle-Hash, eingebetteter Moose.lua-Hash und der Objektvertrag der sieben AirOps-STORAGE-Endpunkte feststehen.
 
 ## Status
 
