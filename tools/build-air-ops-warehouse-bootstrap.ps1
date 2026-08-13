@@ -18,7 +18,7 @@ $fuelSyncFile = Join-Path $repoRoot 'scripts\logistics\OMW_CampaignStateStorageS
 $bootstrapFile = Join-Path $repoRoot 'scripts\logistics\OMW_AirOpsWarehouseBootstrap.lua'
 $harnessFile = Join-Path $repoRoot 'mission\tests\air-ops-warehouse-bootstrap\src\01-air-ops-warehouse-bootstrap-acceptance.lua'
 $distDir = Join-Path $repoRoot 'mission\tests\air-ops-warehouse-bootstrap\dist'
-$outputFile = Join-Path $distDir 'OMW_AirOps_Warehouse_Bootstrap_Acceptance.lua'
+$outputFile = Join-Path $distDir 'OMW_AirOps_Warehouse_Bootstrap.lua'
 
 $builderVersion = 'AIROPS-WAREHOUSE-BOOTSTRAP-ACCEPTANCE-1'
 $testId = 'AIROPS-WAREHOUSE-BOOTSTRAP-ACCEPTANCE-1'
@@ -105,7 +105,7 @@ foreach ($pattern in $bootstrapForbiddenPatterns) {
   }
 }
 
-if ($bootstrap -match 'CampaignState%s*:%s*New' -or $bootstrap -match 'CampaignState%s*:%s*Restore') {
+if ($bootstrap -match 'CampaignState\s*[:.]\s*New' -or $bootstrap -match 'CampaignState\s*[:.]\s*Restore') {
   throw 'Productive Warehouse bootstrap must not own CampaignState NEW/RESTORE lifecycle'
 }
 
