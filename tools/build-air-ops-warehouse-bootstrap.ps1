@@ -77,6 +77,7 @@ $requiredMarkers = @(
   'FUEL_AVGAS',
   'STORAGE.Liquid.JETFUEL',
   'STORAGE.Liquid.GASOLINE',
+  'StorageFuelAdapter.ReadbackToleranceKg = 0.5',
   'OMW-AIROPS-WAREHOUSE-BOOTSTRAP-1',
   'AIROPS-WAREHOUSE-BOOTSTRAP-ACCEPTANCE-1',
   'USERFLAG:New(READY_FLAG_NAME)',
@@ -163,6 +164,7 @@ Write-Host "AVGASSupplement: PRESENT"
 Write-Host "JP8ClosedBaseline: PRESERVE_EXISTING_TEST_FIXTURE_ONLY"
 Write-Host "StrategicItemMirror: PREFLIGHT_APPLY_READBACK"
 Write-Host "FuelMirror: PREFLIGHT_APPLY_READBACK"
+Write-Host "FuelReadbackToleranceKg: 0.5"
 Write-Host "TechnicalAvailability: PREFLIGHT_APPLY_READBACK"
 Write-Host "NewRestore: REQUIRED"
 Write-Host "ReverseOverwrite: ABSENT"
