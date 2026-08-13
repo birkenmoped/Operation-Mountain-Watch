@@ -19,7 +19,7 @@ supersedes:
   - single-AIRWING Bagram runtime structure AW_US_BAGRAM
 superseded_by:
 source_branch: agent/bagram-f16c-cas-payload-main-reconciliation
-source_commit: PENDING_MERGE
+source_commit: 06ffb7a1d351d85d3afed3ae842b0ce414c9cb0c
 validated_in_dcs: false
 document_class: HISTORICAL_EVIDENCE_ACTIVE_ORBAT_AND_FOUNDATION_CONTRACT
 ---
