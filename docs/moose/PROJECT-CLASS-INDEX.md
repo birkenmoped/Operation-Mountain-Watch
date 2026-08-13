@@ -12,8 +12,8 @@ project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
   - class index without consolidated AIRWING lifecycle evidence
 superseded_by:
-source_branch: agent/kandahar-foundation-july-2011-rebuild
-source_commit: GIT_HISTORY
+source_branch: agent/airborne-ammo-parking-correlation
+source_commit: PENDING_MERGE
 validated_in_dcs: partial
 ---
 
@@ -30,7 +30,12 @@ Der vollständige frühere Klassenindex bleibt unverändert erhalten:
 Technische Lifecycle-Details:
 
 - [`OMW-MOOSE-AIRWING-SQUADRON-WAREHOUSE-LIFECYCLE`](AIRWING-SQUADRON-WAREHOUSE-LIFECYCLE.md)
+- [`OMW-MOOSE-STORAGE-AIRWING-WEAPON-LIFECYCLE`](STORAGE-AIRWING-WEAPON-LIFECYCLE.md)
+- [`OMW-MOOSE-AIRBORNE-AMMO-PARTIAL-CONSUMPTION`](AIRBORNE-AMMO-PARTIAL-CONSUMPTION.md)
+- [`OMW-MOOSE-AIRBORNE-AMMO-PARKING-CORRELATION`](AIRBORNE-AMMO-PARKING-CORRELATION.md)
 - [`OMW-MOOSE-VERIFIED-METHODS`](VERIFIED-METHODS.md)
+- [`OMW-ARCH-RESOURCE-WAREHOUSE-OWNERSHIP`](../resource-warehouse-ownership-contract.md)
+- [`OMW-MOOSE-LOGISTICS-TRANSPORT`](LOGISTICS-AND-TRANSPORT.md)
 
 ## 2. Statusbedeutung
 
@@ -51,18 +56,24 @@ Diese Klassenstatus sind keine Governance-Dokumentstatuswerte.
 
 | Klasse | Projektstatus | Geltungsgrenze |
 |---|---|---|
-| `AIRBASE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Auflösung, ID, Parkingdump und airfield-spezifische Kalibrierung; Kandahar Main ID 7 und Kandahar Heliport ID 15 bestätigt; 12.08.2026 zusätzlich 296/296 Main- und 80/80 Heliport-Marker mit exakter `.miz parking == MOOSE TerminalID`-Korrelation; Shindand Heliport ID 14 bestätigt; `FindFreeParkingSpotForAircraft()` mit konfigurierbaren Scanparametern source-reviewed, aber nicht in WAREHOUSE verdrahtet |
-| `AIRWING` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Konstruktion, Stockregistrierung, Grundstart, SQUADRON-Bindung und direkter AUFTRAG-Dispatch; Kandahar Dual-AIRWING Main/Heliport sowie Shindand Heliport mit finalem Drei-Rollen-Test bestätigt |
-| `SQUADRON` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Konstruktion, `Ngroups`, Gruppierung, Capabilities, Payloads und post-start Assetbindung; Kandahar neun SQUADRONs / 76 Assetgruppen / 112 Airframes sowie Shindand drei SQUADRONs / 16 Assetgruppen / 20 Airframes bestätigt |
+| `AIRBASE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Auflösung, ID, Parkingdump und airfield-spezifische Kalibrierung; Kandahar Main ID 7, Kandahar Heliport ID 15 und Shindand Heliport ID 14 bestätigt; `GetParkingSpotsTable()` ist für die neue read-only Kandahar-ME-zu-TerminalID-Korrelation source-reviewed; `FindFreeParkingSpotForAircraft()` mit konfigurierbaren Scanparametern source-reviewed, aber nicht in WAREHOUSE verdrahtet |
+| `AIRWING` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Konstruktion, Stockregistrierung, Grundstart, SQUADRON-Bindung und direkter AUFTRAG-Dispatch; Kandahar Dual-AIRWING Main/Heliport sowie Shindand Heliport bestätigt; AH-64D-V2 beobachtete nativen `Arrived -> ReturnToLegion`-Return und erneute Assetverwendung; V6 bestätigte zusätzlich Loss- und F-16-Tankpfad; `NewPayload()` mit exaktem ME-Template ist für den Census source-reviewed |
+| `SQUADRON` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Konstruktion, `Ngroups`, Gruppierung, Capabilities, Payloads und post-start Assetbindung; Kandahar neun SQUADRONs / 76 Assetgruppen / 112 Airframes sowie Shindand drei SQUADRONs / 16 Assetgruppen / 20 Airframes bestätigt; V6 bestätigte `CountAssets()` für Loss-Telemetrie; ORBIT-Capability aus `SQUADRON:New()` für Census source-reviewed; `SetGrouping(2)` plus `SetRequiredAssets(1,1)` bleibt eine Two-Ship-Assetgruppe, nicht ein einzelnes Luftfahrzeug |
 | `WAREHOUSE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | AirOps-Stockregistrierung und post-start Zuordnung; strategische Logistik und Persistenz offen; physische typgebundene HELIPAD-Parking-Garantie nicht belegt |
-| `COHORT` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | post-start `AddAsset()` setzt `squadname`, `legion`, `cohort` und `assets`; Foundation-Läufe bestätigen die registrierte SQUADRON-/Warehouse-Kette, ohne Recovery-Nachweis |
-| `FLIGHTGROUP` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | AIRWING-`FlightOnMission`-Pfad, Cold-Takeoff-Prüfung und `SetOptionPreferVertical()`-Propagation im finalen Shindand-Lauf bestätigt; physisches Abflugprofil bleibt typabhängig |
+| `STORAGE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Limited-Liquid- und Weapon-Inventory-Lesepfade bestätigt; AH-64D M151/AGM-114K/IAFS Debit sowie M151/AGM-114K No-Fire-Recredit beobachtet; V6 bestätigte IAFS-No-Recredit und vollständigen F-16-370-gal-Tank-Recredit; Census erweitert read-only auf Aircraft/JETFUEL/Weapons aller AIROPS-Lanes |
+| `COHORT` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | post-start `AddAsset()` setzt `squadname`, `legion`, `cohort` und `assets`; Foundation-Läufe bestätigen die registrierte SQUADRON-/Warehouse-Kette; V2 bestätigte erneute AH-64D-Assetverwendung nach nativer Recovery; V6 bestätigte Assetgruppenverlust via Loss-Pfad |
+| `FLIGHTGROUP` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | AIRWING-`FlightOnMission`-Pfad, Cold-Takeoff und Vertikaloption bestätigt; `GetAmmoTot`, `OnAfterArrived` und nativer `onafterArrived -> ReturnToLegion(1)`-Pfad praktisch beobachtet; `GetFuelMin()` ist für Census-Telemetrie source-reviewed; `SetOptionLandingRestrictPair()` ist für den Ammo-V2/V3-Harness source-reviewed, seine physische Recovery-Wirkung bleibt typabhängig DCS-offen |
+| `COORDINATE` | `SOURCE_REVIEWED` | `GetClosestPointToRoad()` und `IsInFlatArea(radius, maxSteepnessPercent)` werden im Ammo-V2/V3-Harness für einen bounded, fail-closed RED-Zielplatzierungs-Suchlauf verwendet |
 | `COMMANDER` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Salerno `New -> AddAirwing -> Start -> CanMission -> AddMission -> Status` bis AUFTRAG `started`; Shindand Foundation verwendet COMMANDER ausdrücklich nicht |
-| `AUFTRAG` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Salerno CAS sowie Shindand `NewCAS()`, `NewLANDATCOORDINATE()` und `AssignSquadrons()` im nativen AIRWING-Pfad bis Missionserfolg bestätigt; physische Außenlandung bei `LANDATCOORDINATE` nicht beobachtet |
-| `SCHEDULER` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | geordnete Konstruktion und verzögerte post-start Diagnose; finaler Shindand-Kombinationstest bestätigt |
-| `GROUP`, `UNIT`, `STATIC`, `ZONE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Template-, Static-, Warehouse- und Zonenvalidierung |
-| `ARMYGROUP`, `BRIGADE`, `OPSGROUP` | `PLANNED` | Bodenoperations- und Bestandsmodell |
-| `OPSTRANSPORT` | `PLANNED` | taktischer Transport |
+| `AUFTRAG` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Salerno CAS sowie Shindand `NewCAS()`, `NewLANDATCOORDINATE()` und `AssignSquadrons()` im nativen AIRWING-Pfad bis Missionserfolg bestätigt; V6 nutzt `AssignSquadrons(table)`/`SetROE(WeaponHold)`; Census verwendet source-reviewed `NewORBIT()`, `AddRequiredPayload()`, `SetDuration()`, `SetROT()` und `Cancel()`; `SetRequiredAssets()` zählt Assetgruppen |
+| `SCHEDULER` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | geordnete Konstruktion und verzögerte post-start Diagnose; V6 bounded Telemetrie; Census und Ammo-Harness nutzen bounded Case-/Global-Timeouts und Lane-Staggering |
+| `SET_GROUP` | `SOURCE_REVIEWED` | V3-Parking-Korrelation verwendet `FilterPrefixes()`, geerbtes `FilterOnce()` und `ForEachGroup()` ausschließlich read-only zur Auswahl vorbereiteter Kandahar-ME-Markergruppen; wegen der Source-Semantik von `FilterPrefixes()` wird der echte Stringanfang zusätzlich geprüft; DCS-Nachweis ausstehend |
+| `GROUP` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Template-, Warehouse- und Zonenvalidierung; exakte physische ME-Templates werden über `GROUP:FindByName()` an `AIRWING:NewPayload()` übergeben; `GROUP:GetTemplate()` ist für die read-only Parking-Korrelation source-reviewed, damit Late-Activation-ME-Position sowie `parking_id`/`parking` ohne direkten `_DATABASE`-Zugriff gelesen werden können |
+| `UNIT` | `SOURCE_REVIEWED` | bestehende Template-/Unit-Nutzung validiert; `GetCurrentFuelKgs()` wird im Census ausschließlich read-only für Onboard-Fuel-Korrelation verwendet und bleibt bis DCS-Lauf source-reviewed |
+| `STATIC`, `ZONE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Static-, Warehouse- und Zonenvalidierung |
+| `ARMYGROUP`, `BRIGADE` | `PLANNED` | Bodenoperations- und Bestandsmodell |
+| `OPSGROUP` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | V6 bestätigte den öffentlichen `Destroy()`/`DestroyUnit()`-Loss-Pfad inklusive Assetgruppenverlust; `GetGroup()` wird für Census-Fuel-Telemetrie source-reviewed verwendet |
+| `OPSTRANSPORT` | `PLANNED` | taktischer Transport einschließlich source-reviewed `AddCargoStorage(...)`; OMW-Runtime-Acceptance ausstehend |
 | `CTLD`, `CSAR`, `AICSAR` | `PLANNED` / teilweise verwendet | separate Acceptance erforderlich |
 | `INTEL` | `PLANNED` | taktisches Lagebild; Laufzeitnachweis im gepinnten Stand fehlt |
 | `INTEL_DLINK` | `CANDIDATE` | Aggregation getrennter Netze; Performance offen |
@@ -127,7 +138,7 @@ Ein Klassenstatus wird nur angehoben, wenn:
 - beobachtetes Verhalten und Einschränkungen festgehalten sind;
 - der Nachweis im Methodenregister oder Acceptance-Bericht verlinkt ist.
 
-Aktueller Kandahar-Foundation-Nachweis:
+Aktueller Kandahar-Nachweis:
 
 ```text
 Branch: agent/kandahar-foundation-july-2011-rebuild
@@ -136,23 +147,6 @@ MIZ: OMW_Template_v6_Tarinkot(6).miz
 DCS: 2.9.28.26385
 Moose.lua SHA-256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
 Result: 2 AIRWINGs / 9 SQUADRONs / 76 Assetgruppen / 112 Airframes / beide AIRWINGs Running
-```
-
-Aktueller Kandahar-Parking-Nachweis:
-
-```text
-Testdatum: 2026-08-12
-Branch: agent/airborne-ammo-parking-correlation
-Source-Commit: 5ad6d2c535c2e6796a677fd18975be794533ab8b
-BuilderVersion: AIRBORNE-AMMO-PARKING-CORRELATION-3
-Bundle SHA-256: cb650dd8bab448de39eb1a26f4bc856964f375600df51a5587fcf02c521a65fd
-MIZ: OMW_Template_v8_AirOps_rdy.miz
-MIZ SHA-256: 8f345af681276bc8634128b023873be4473df459deb2f6f9b230f3cbd901c84d
-DCS: 2.9.28.26385 MT
-MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
-Moose.lua SHA-256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
-Result: Kandahar Main 296/296; Kandahar Heliport 80/80; total 376/376 exact .miz parking == MOOSE TerminalID matches
-Mapping: docs/data/kandahar-me-parking-to-moose-terminalid.csv
 ```
 
 Aktueller Shindand-Nachweis:
@@ -166,6 +160,21 @@ DCS: 2.9.28.26385 MT
 Moose.lua SHA-256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
 Result: 1 AIRWING / 3 SQUADRONs / 16 Assetgruppen / 20 Airframes / AH-64D CAS success / UH-60 und CH-47 LANDATCOORDINATE success
 Limit: keine validierte physische Außenlandung; Parking kein Foundation-Acceptance-Kriterium
+```
+
+Aktueller STORAGE-Fuel-Adapter-Nachweis:
+
+```text
+Branch: agent/storage-fuel-adapter-foundation
+Source/Acceptance-Commit: 0e5992f96a37b7400d7859fbcd3e98829f935d68
+BuilderVersion: STORAGE-FUEL-ADAPTER-FOUNDATION-1
+MIZ: OMW_Template_v8_AirOps_rdy.miz
+MIZ SHA-256: 54e9bd5d1d841a6c22980e59e07b463aef580032813f3441f1030b221fec66e9
+Bundle SHA-256: 16faa7da140334ddd3a001480e6f2677842b3dcc3cff64626796e039cd0769db
+DCS: 2.9.28.26385 MT
+Moose.lua SHA-256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
+Condition: Kandahar Limited Liquids; initial JETFUEL/GASOLINE 100000 kg / 100000 kg
+Result: write/readback PASS; JP-8/AVGAS separation PASS; idempotency PASS; restore PASS
 ```
 
 ## 8. WAREHOUSE-Parking-Grenze
@@ -188,3 +197,148 @@ WAREHOUSE:_FindParkingForAssets(...)
 ```
 
 Ein Runtime-Override bleibt `INTERNAL_RESTRICTED` und benötigt vor Entwurf oder Einsatz eine ausdrückliche Eigentümerfreigabe.
+
+## 9. STORAGE-Grenze
+
+Source-reviewed gegen den gepinnten `Moose.lua`-Stand und für den Kandahar-Foundation-Scope praktisch bestätigt:
+
+```text
+STORAGE
+  -> Wrapper um das DCS-Warehouse eines Airbases
+  -> Liquids lesen/schreiben
+  -> Liquid-Mengen in kg
+  -> JETFUEL und GASOLINE getrennte Liquid-Typen
+```
+
+Der Branch `agent/storage-fuel-adapter-foundation` verwendet einen kleinen projektspezifischen STORAGE-Adapter in:
+
+```text
+scripts/logistics/OMW_StorageFuelAdapter.lua
+```
+
+Verwendete öffentliche API:
+
+```text
+STORAGE:FindByName()
+AIRBASE:FindByName() / AIRBASE:GetStorage() als source-reviewed Fallback
+STORAGE:GetLiquidAmount()
+STORAGE:SetLiquid()
+STORAGE.Liquid.JETFUEL
+STORAGE.Liquid.GASOLINE
+```
+
+Für den dokumentierten Kandahar-Lauf sind praktisch bestätigt:
+
+```text
+STORAGE:FindByName("Kandahar")
+STORAGE:GetLiquidAmount(JETFUEL)
+STORAGE:GetLiquidAmount(GASOLINE)
+STORAGE:SetLiquid(JETFUEL, amountKg)
+STORAGE:SetLiquid(GASOLINE, amountKg)
+100 t ME liquid -> 100000 kg STORAGE readback
+same desired snapshot -> changeCount=0
+restore original quantities -> verified=true
+```
+
+Technische Voraussetzung des akzeptierten Pfads:
+
+```text
+CampaignState-managed STORAGE fuel node
+-> DCS Unlimited Liquids = OFF
+```
+
+Nicht belegt bleiben:
+
+- CampaignState-Integration über einen realen CampaignState-Store;
+- DCS-Warehouse als strategische Ressourcenhoheit;
+- STORAGE-Persistenz;
+- Multiplayer-/Restart-Reconciliation;
+- automatische Aircraft-Fuel-Abbuchung und Return-Semantik über alle AIROPS-Templates.
+
+Der Accepted-Technical-Baseline-Nachweis steht in [`OMW-TEST-STORAGE-FUEL-ADAPTER-FOUNDATION-ACCEPTANCE`](../../mission/tests/storage-fuel-adapter/expected/storage-fuel-adapter-foundation-acceptance.md). Die methodenspezifische Evidenz ist im Methodenregister zu führen.
+
+## 10. Weapon-Return-, Loss- und Droptank-Lifecycle
+
+Der gueltige AH-64D-V2-Lauf bestaetigte fuer den dokumentierten Scope die korrekte `STORAGE:GetInventory()`-Auswertung, den bekannten TwoShip-Debit, M151-/AGM-114K-Recredit nach nativer Recovery sowie erneute AIRWING-Assetverwendung. IAFS wurde dabei pro AH-64 als `weapons.droptanks`-Item abgebucht und nach dem normalen Return nicht gutgeschrieben.
+
+Der V5-Lauf vom 11.08.2026 brach bereits in der Baseline-Pruefung ab, weil der Harness pauschal den doppelten TwoShip-Bestand aller drei Stores verlangte. Dieser Lauf ist nur ein Harness-Precondition-Fail und liefert keine neue Lifecycle-Evidenz.
+
+Der V6-Lauf vom 11.08.2026 auf `agent/storage-airwing-weapon-lifecycle` bestätigte für den exakten getesteten Stand:
+
+```text
+AH-64D normal return:
+  M151 -76 / +76
+  AGM-114K -4 / +4
+  IAFS -2 / +0
+
+AH-64D deliberate loss:
+  Assetgruppenbestand 4 -> 3
+  M151 -76 / +76
+  AGM-114K -4 / +4
+  IAFS -2 / +0
+
+F-16C TwoShip:
+  weapons.droptanks.fuel_tank_370gal -4 / +4
+```
+
+Damit ist der fehlende IAFS-Recredit im getesteten Stand kein allgemeines `weapons.droptanks.*`-Verhalten. V6 beobachtete jedoch keine Liquid-JETFUEL-Deltas; diese Lücke wird mit dem AIROPS-Census adressiert.
+
+## 11. AIROPS STORAGE/Fuel Template Census
+
+`AIROPS-STORAGE-FUEL-TEMPLATE-CENSUS-1` ist für 32 unterschiedliche physische AI-Templates über sieben getrennte DCS-STORAGE-Lanes geplant. Die neuen API-Nutzungen sind gegen den gepinnten Source geprüft, aber vor dem DCS-Lauf nicht als praktisch validiert zu interpretieren.
+
+Source-reviewed:
+
+```text
+AIRWING:NewPayload(GROUP|UNIT|string, Npayloads, MissionTypes, Performance)
+AUFTRAG:NewORBIT(Coordinate, Altitude, Speed, Heading, Leg)
+AUFTRAG:AddRequiredPayload(Payload)
+AUFTRAG:AssignSquadrons({ SQUADRON })
+AUFTRAG:SetRequiredAssets()
+AUFTRAG:SetTime()
+AUFTRAG:SetDuration()
+AUFTRAG:SetROE()
+AUFTRAG:SetROT()
+AUFTRAG:Cancel()
+FLIGHTGROUP:GetFuelMin()
+OPSGROUP:GetGroup()
+UNIT:GetCurrentFuelKgs()
+STORAGE:GetInventory() -> aircraft, liquids, weapons
+STORAGE.Liquid.JETFUEL
+```
+
+Der Census registriert testlokal einen ORBIT-faehigen Payload aus dem exakten physischen Mission-Editor-Template und pinnt ihn über `AddRequiredPayload()`. Die produktiven SQUADRON-Capabilities werden nicht verändert. `ALERT5` wird nicht als generischer Materialisierungsmechanismus verwendet, weil der gepinnte Recruit-Pfad die Cohort-Capability gegen `Mission.type == ALERT5` prüft und die aktuellen OMW-SQUADRONs diese Capability nicht deklarieren.
+
+Pro STORAGE-Lane ist nur ein Fall gleichzeitig aktiv; die sieben unabhängigen Lanes dürfen parallel laufen. Dadurch bleiben Inventory-Deltas innerhalb eines Warehouses eindeutig zuordenbar. Der Harness beobachtet Aircraft, JETFUEL und Weapons vor Spawn, nach Materialisierung und nach native Return sowie Onboard-Fuel über `GetFuelMin()` und `GetCurrentFuelKgs()`.
+
+`Controlled Partial Expenditure` bleibt außerhalb dieses Census, bis für die betreffenden Waffensysteme ein deterministischer, source-reviewter Verbrauchspfad vorliegt.
+
+## 12. Airborne Ammo V2: Zielplatzierung und Pair-Recovery
+
+Für `AIRBORNE-AMMO-PARTIAL-CONSUMPTION-2` sind zusätzlich source-reviewed:
+
+```text
+COORDINATE:GetClosestPointToRoad()
+COORDINATE:IsInFlatArea(radius, maxSteepnessPercent)
+FLIGHTGROUP:SetOptionLandingRestrictPair()
+```
+
+Der Harness sucht pro Fall bounded nach einem flachen Road-Kandidaten und bricht ohne geeigneten Punkt fail-closed ab. Die produktive SQUADRON-Gruppierung bleibt unangetastet. Da `SetRequiredAssets()` Assetgruppen zaehlt, bleibt ein `Grouping=2`-Asset ein reales Two-Ship.
+
+Auf dem zugewiesenen Test-FLIGHTGROUP wird `SetOptionLandingRestrictPair()` gesetzt. Das ist eine oeffentliche MOOSE-/DCS-Landing-Option und kein Parking-Override. Ob sie die beobachteten A-10-/Helikopter-Recovery-Konflikte praktisch verhindert und welche finalen Parking-IDs DCS waehlt, bleibt bis zum DCS-Lauf offen. Despawn-after-landing/holding wird fuer diesen Test bewusst nicht als Workaround verwendet.
+
+## 13. Airborne Ammo V3 und Kandahar Parking Correlation
+
+Für `AIRBORNE-AMMO-PARKING-CORRELATION-3` sind zusätzlich source-reviewed:
+
+```text
+SET_GROUP:FilterPrefixes()
+SET_BASE:FilterOnce()
+SET_GROUP:ForEachGroup()
+GROUP:GetTemplate()
+AIRBASE:GetParkingSpotsTable()
+```
+
+Der Parking-Block liest vorbereitete Late-Activation-Markergruppen nur read-only und korreliert `parking_id` und `.miz parking` gegen den räumlich nächsten MOOSE-Parking-Eintrag. Ein positiver Match verlangt `.miz parking == TerminalID` und höchstens 5 m Positionsabweichung. Die Methode verändert weder WAREHOUSE-Parking noch SQUADRON-Parkingpools.
+
+Der Ammo-Block erweitert den bestehenden V2-Lifecycle um F-16C/M61, F-15E/M61, UH-60-Bordwaffen und CH-47-Bordwaffen als Discovery-Fälle. A-10C/GAU-8 bleibt das Gate; OH-58D/M3P und AH-64D/M230 bleiben Regression. `VALIDATED` bleibt bis zum dokumentierten DCS-Lauf gesperrt.

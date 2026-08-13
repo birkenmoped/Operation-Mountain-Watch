@@ -9,14 +9,15 @@ authoritative_for:
   - vertical-helicopter option evidence and limitations
   - COMMANDER start and selection sequence
   - source-reviewed WAREHOUSE parking method boundaries
+  - STORAGE fuel mirror method evidence
   - documented validation scope and limitations
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
   - method register without lifecycle timing, vertical-option and COMMANDER details
 superseded_by:
-source_branch: agent/kandahar-foundation-july-2011-rebuild
-source_commit: GIT_HISTORY
+source_branch: agent/storage-fuel-adapter-foundation
+source_commit: PENDING_MERGE
 validated_in_dcs: partial
 ---
 
@@ -29,6 +30,7 @@ Dieses Register führt praktisch geprüfte MOOSE-Aufrufe und den jeweils belegte
 Ergänzende Lifecycle-Autorität:
 
 - [`OMW-MOOSE-AIRWING-SQUADRON-WAREHOUSE-LIFECYCLE`](AIRWING-SQUADRON-WAREHOUSE-LIFECYCLE.md)
+- [`OMW-MOOSE-STORAGE-AIRWING-WEAPON-LIFECYCLE`](STORAGE-AIRWING-WEAPON-LIFECYCLE.md)
 
 Historische Vollfassung:
 
@@ -52,47 +54,9 @@ Bei einem anderen `Moose.lua`-Hash ist die Methoden- und Lifecycle-Prüfung zu w
 | `AIRBASE:FindByName()` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Airbase-Auflösung in Jalalabad, Bagram, Kandahar, Salerno, Tarinkot und Shindand Heliport |
 | `AIRBASE:FindByID()` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Tarinkot ID 9 |
 | `GetName()` / `GetID()` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Identitätsprüfung; Kandahar Main ID 7, Kandahar Heliport ID 15 und Shindand Heliport ID 14 bestätigt |
-| `GetParkingSpotsTable()` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Parkingdump und ME-/TerminalID-Kalibrierung; Kandahar Main 296/296 und Kandahar Heliport 80/80 exakte `.miz parking == TerminalID`-Matches im Lauf vom 12.08.2026; Shindand Heliport 42 Runtime-Spots, 38 akzeptierte ME-Zuordnungen |
+| `GetParkingSpotsTable()` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Parkingdump und ME-/TerminalID-Kalibrierung; Shindand Heliport 42 Runtime-Spots, 38 akzeptierte ME-Zuordnungen |
 | `SetParkingSpotBlacklist()` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | dokumentierte Referenzknoten; tatsächliche Unitplatzierung bleibt separat |
 | `FindFreeParkingSpotForAircraft(group, terminaltype, scanradius, scanunits, scanstatics, scanscenery, verysafe, nspots, parkingdata)` | `SOURCE_REVIEWED` | öffentliche parametrierbare Freiparkroutine; wird von `WAREHOUSE:_FindParkingForAssets()` nicht verwendet |
-
-### 3.1 Kandahar ME-Parkplatz zu `TerminalID`
-
-Der Lauf `AIRBORNE-AMMO-PARKING-CORRELATION-3` bestätigte für die exakt getestete Kandahar-Missionslinie die vollständige Korrelation zwischen Mission-Editor-Kennung, dem in der `.miz` gespeicherten numerischen `unit.parking` und der von `AIRBASE:GetParkingSpotsTable()` gelieferten MOOSE-`TerminalID`.
-
-```text
-Testdatum: 2026-08-12
-Branch: agent/airborne-ammo-parking-correlation
-Source commit: 5ad6d2c535c2e6796a677fd18975be794533ab8b
-BuilderVersion: AIRBORNE-AMMO-PARKING-CORRELATION-3
-Bundle SHA-256: cb650dd8bab448de39eb1a26f4bc856964f375600df51a5587fcf02c521a65fd
-MIZ: OMW_Template_v8_AirOps_rdy.miz
-MIZ SHA-256: 8f345af681276bc8634128b023873be4473df459deb2f6f9b230f3cbd901c84d
-DCS: 2.9.28.26385 MT
-MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
-Moose.lua SHA-256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
-dcs.log SHA-256: a0473859853a2786c188b3cf3c3095e570806c20b6cb49216e9befe0ac6df7b8
-debrief.log SHA-256: 5b083460b339b78aa6d8d1754e60c81d10c3f7e84f56f9f74eedece6fc31eca3
-```
-
-Runtime:
-
-```text
-Kandahar Main:     296 / 296 exact matches, 0 failures
-Kandahar Heliport:  80 /  80 exact matches, 0 failures
-Total:             376 / 376 exact matches
-```
-
-Für diesen Stand ist damit praktisch belegt:
-
-```text
-ME parking_id -> .miz unit.parking -> MOOSE TerminalID
-.miz unit.parking == MOOSE TerminalID
-```
-
-Die vollständige 376-Zeilen-Zuordnung steht in [`docs/data/kandahar-me-parking-to-moose-terminalid.csv`](../data/kandahar-me-parking-to-moose-terminalid.csv). Dieser Nachweis ist airbase-, MIZ-, DCS- und MOOSE-gebunden und wird nicht pauschal auf andere Basen oder Versionen übertragen.
-
-Bekannte Datenanomalie ohne Mapping-Auswirkung: Der AAF05-Marker hieß im getesteten Missionsstand `KANDAHAR_AAF05KANDAHAR_AAF01`; die Korrelation blieb mit ME-ID `AAF05`, `.miz parking=29` und `TerminalID=29` eindeutig.
 
 ## 4. SQUADRON und AIRWING-Lifecycle
 
@@ -187,7 +151,7 @@ Vollständiger Quellenbericht:
 
 ### 5.1 Shindand G2 Runtime-Grenze
 
-Testdatum 2026-08-10, DCS 2.9.28.26385 MT, Branch `agent/shindand-heliport-parking-diagnostic`, Source/Builder-Commit `27e3877efdc1f76997b00593218e0d6390313ba5`, BuilderVersion `SHND-G2-AH64-DISPATCH-3`.
+Testdatum 2026-08-10, DCS 2.9.28.26385 MT, Branch `agent/shindand-heliport-parking-diagnostic`, Source/Builder-Commit `27e3877efdc1f76997b00593218e0d6390313ba5`, BuilderVersion `SHND-G2-AH64-DISPATCH-3`, Bundle SHA-256 `787cd3a54cacf7b3a4349bf8554d4124d778fe02607e680dc143474c24d0653f`.
 
 Runtime:
 
@@ -431,3 +395,111 @@ CSAR/MEDEVAC specialization
 CampaignState integration
 persistence
 ```
+
+## 12. STORAGE Fuel Adapter Foundation
+
+### 12.1 Akzeptierter Kandahar-Nachweis
+
+```text
+Testdatum: 2026-08-10
+DCS: 2.9.28.26385 MT
+Branch: agent/storage-fuel-adapter-foundation
+Source/Builder commit: 0e5992f96a37b7400d7859fbcd3e98829f935d68
+BuilderVersion: STORAGE-FUEL-ADAPTER-FOUNDATION-1
+MIZ: OMW_Template_v8_AirOps_rdy.miz
+MIZ SHA-256: 54e9bd5d1d841a6c22980e59e07b463aef580032813f3441f1030b221fec66e9
+Internal mission SHA-256: 27cdcff0ccda6299c07c853c9bdc16897523db8e8d8b6b6dc5d7caa751c570ad
+Embedded bundle SHA-256: 16faa7da140334ddd3a001480e6f2677842b3dcc3cff64626796e039cd0769db
+DCS log SHA-256: 7c14b2718a655b4868d8a4c03078b82f0c75798191a50c91b75f38960c066a50
+Debrief SHA-256: 7969969a5e1a69013fcd5b2fedd68d7c3a90ab70de80b28c7d1c487019153d1e
+```
+
+Testbedingung:
+
+```text
+Kandahar liquids: limited
+Mission Editor JETFUEL: 100 t
+Mission Editor GASOLINE: 100 t
+Runtime JETFUEL: 100000 kg
+Runtime GASOLINE: 100000 kg
+```
+
+Damit ist für diesen Stand die Abbildung `100 t -> 100000 kg` im getesteten ME/DCS/MOOSE-Pfad praktisch bestätigt. Ein CampaignState-verwalteter DCS-`STORAGE`-Fuelknoten muss für diesen Mirror-Pfad begrenzte Flüssigkeiten verwenden; bei aktivem Unlimited-Liquids-Modus war ein exakter `SetLiquid()`-Readback im Vorlauf nicht möglich.
+
+### 12.2 Praktisch bestätigte STORAGE-Methoden
+
+| Methode / Pfad | Status | Belegter Umfang |
+|---|---|---|
+| `STORAGE:FindByName("Kandahar")` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Kandahar-DCS-Warehouse als `STORAGE`-Wrapper aufgelöst |
+| `STORAGE:GetLiquidAmount(STORAGE.Liquid.JETFUEL)` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | begrenzten JETFUEL-Bestand in kg gelesen; 100 t ME -> 100000 kg Runtime |
+| `STORAGE:GetLiquidAmount(STORAGE.Liquid.GASOLINE)` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | begrenzten GASOLINE-Bestand in kg gelesen; 100 t ME -> 100000 kg Runtime |
+| `STORAGE:SetLiquid(STORAGE.Liquid.JETFUEL, amountKg)` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | JP-8-Sollwert geschrieben und exakt per Readback bestätigt |
+| `STORAGE:SetLiquid(STORAGE.Liquid.GASOLINE, amountKg)` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | AVGAS-Sollwert geschrieben und exakt per Readback bestätigt |
+| `FUEL_JP8 -> STORAGE.Liquid.JETFUEL` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | getrennte JP-8-Spiegelung im Foundation-Adapter bestätigt |
+| `FUEL_AVGAS -> STORAGE.Liquid.GASOLINE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | getrennte AVGAS-Spiegelung im Foundation-Adapter bestätigt |
+
+Runtime-Kette:
+
+```text
+PLAN_PASS changes=2
+WRITE_READBACK_PASS
+IDEMPOTENCY_PASS
+RESTORE_PASS
+RESULT testId=STORAGE-FUEL-ADAPTER-FOUNDATION-1 status=PASS
+```
+
+Der zweite identische Soll-Snapshot ergab `changeCount=0`; anschließend wurden beide Ausgangsbestände per Readback bestätigt wiederhergestellt.
+
+### 12.3 Geltungsgrenze
+
+Nicht validiert sind:
+
+```text
+CampaignState persistence
+CampaignState transaction lifecycle
+automatic aircraft fuel consumption
+player or AI refuel accounting
+AAR accounting
+weapon/item synchronization
+multiplayer reconciliation
+mission restart reconciliation
+STORAGE file persistence
+OPSTRANSPORT / CTLD delivery
+reverse overwrite of CampaignState from DCS telemetry
+```
+
+`MOOSE WAREHOUSE`/`AIRWING`-Assetstock und DCS-`STORAGE`-Liquids bleiben getrennte operative Domänen. Der Kandahar-PASS belegt keine gemeinsame oder doppelte Fuel-Hoheit.
+
+## 13. STORAGE / AIRWING Weapon Lifecycle
+
+### 13.1 Praktisch bestaetigter V2-Scope
+
+Der gueltige V2-Lauf vom 11.08.2026 bestaetigte fuer den dokumentierten Shindand-AH-64D-Scope:
+
+```text
+STORAGE:GetInventory() three-return contract: PASS
+M151 TwoShip materialization debit: -76
+AGM-114K TwoShip materialization debit: -4
+IAFS ComboPak TwoShip materialization debit: -2
+M151 no-fire native return recredit: +76
+AGM-114K no-fire native return recredit: +4
+IAFS ComboPak native return recredit: 0
+second AH-64 TwoShip materialization after native return: observed
+ReturnToLegion called by test: false
+```
+
+Damit bleiben `STORAGE:GetInventory()`, der native AH-64-Returnpfad und die bekannten M151-/AGM-114K-Deltas fuer diesen exakten V2-Stand praktisch bestaetigt. Die fehlende IAFS-Rueckgabe wird als offene Droptank-/Equipment-Semantik behandelt, nicht als M230-/M789-Verbrauch.
+
+### 13.2 V5 Harness-Precondition-Fail
+
+Der V5-Lauf vom 11.08.2026 brach vor der ersten Lifecycle-Phase ab:
+
+```text
+M151 baseline amount: 100
+V5 required: 152
+result: BASELINE FAIL
+```
+
+Die Ursache war ausschliesslich eine fehlerhafte Harness-Precondition (`expected debit * 2` fuer alle drei AH-64-Stores). Dieser Lauf validiert oder widerlegt keine neue MOOSE-Methode und keine DCS-Lifecycle-Semantik.
+
+V6 korrigiert nur diese Testvoraussetzung: M151 `>=76`, AGM-114K `>=4`, IAFS `>=4`. Die verwendeten MOOSE-Methoden und ihre bisherigen Status bleiben unveraendert; Loss- und F-16-Droptank-Ergebnisse bleiben bis zum dokumentierten V6-DCS-Lauf offen.
