@@ -1,3 +1,20 @@
+---
+document_id: OMW-DATA-KANDAHAR-LIMA-RAMP-PARKING-EVIDENCE
+status: BINDING
+document_class: DATASET_DOCUMENTATION
+owning_policy: OMW-GOV-001
+authoritative_for:
+  - Kandahar Lima Ramp parking static derivation for the documented source mission
+  - extension of the validated Kandahar ME parking to MOOSE TerminalID dataset
+scenario_period: 2010-08-01/2011-12-31
+project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
+supersedes:
+superseded_by:
+source_branch: main
+source_commit: GIT_HISTORY
+validated_in_dcs: partial
+---
+
 # Kandahar Lima Ramp – ME parking_id to MOOSE TerminalID
 
 ## Status
