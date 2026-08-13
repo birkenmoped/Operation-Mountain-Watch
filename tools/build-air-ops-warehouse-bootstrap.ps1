@@ -79,6 +79,11 @@ $requiredMarkers = @(
   'STORAGE.Liquid.GASOLINE',
   'OMW-AIROPS-WAREHOUSE-BOOTSTRAP-1',
   'AIROPS-WAREHOUSE-BOOTSTRAP-ACCEPTANCE-1',
+  'USERFLAG:New(READY_FLAG_NAME)',
+  'READY_FLAG_NAME = "OMW_WAREHOUSE_READY"',
+  'readyFlag:Set(0)',
+  'readyFlag:Set(1)',
+  'AIR_OPS_START_GATE_PASS',
   'NEW_PREFLIGHT_PASS',
   'NEW_APPLY_PASS',
   'RESTORE_PASS',
@@ -162,7 +167,8 @@ Write-Host "TechnicalAvailability: PREFLIGHT_APPLY_READBACK"
 Write-Host "NewRestore: REQUIRED"
 Write-Host "ReverseOverwrite: ABSENT"
 Write-Host "ProductiveScheduler: ABSENT"
-Write-Host "AirOpsStartGate: READY_ONLY"
+Write-Host "AirOpsReadyFlag: OMW_WAREHOUSE_READY"
+Write-Host "AirOpsStartGate: READY_FLAG_ONLY"
 Write-Host "MOOSECommit: $mooseCommit"
 Write-Host "MooseLuaSHA256: $mooseSha256"
 Write-Host "SHA256: $hash"
