@@ -2,13 +2,13 @@
 --
 -- This module is project-domain glue only. It does not access MOOSE or DCS and
 -- does not mutate STORAGE. The caller injects the CampaignState module and the
--- approved OMW_AirOpsInitialStock data module.
+-- approved OMW initial-stock data modules.
 
 local Initializer = {}
 
 local TAG = "[OMW][Logistics.AirOpsCampaignStateInitializer]"
 
-Initializer.SchemaVersion = "OMW-AIROPS-CAMPAIGNSTATE-INITIALIZER-1"
+Initializer.SchemaVersion = "OMW-AIROPS-CAMPAIGNSTATE-INITIALIZER-2"
 
 Initializer.NodeAirbaseName = {
   BAGRAM = "Bagram",
@@ -38,6 +38,19 @@ local function requireNonNegativeNumber(value, label)
   return value
 end
 
+local function normalizeUnit(row)
+  local unit = row.unit or "count"
+  if unit ~= "count" and unit ~= "kg" then
+    fail(string.format(
+      "unsupported resource unit nodeId=%s resourceId=%s unit=%s",
+      tostring(row.nodeId),
+      tostring(row.resourceId),
+      tostring(unit)
+    ))
+  end
+  return unit
+end
+
 local function copyThresholds(row)
   return {
     target = row.target,
@@ -46,9 +59,9 @@ local function copyThresholds(row)
   }
 end
 
-local function validateRow(row, index)
+local function validateRow(row, index, sourceLabel)
   if type(row) ~= "table" then
-    fail("row must be a table index=" .. tostring(index))
+    fail(string.format("row must be a table source=%s index=%s", tostring(sourceLabel), tostring(index)))
   end
 
   requireNonEmptyString(row.nodeId, "row.nodeId")
@@ -60,6 +73,7 @@ local function validateRow(row, index)
   requireNonNegativeNumber(row.target, "row.target")
   requireNonNegativeNumber(row.reorder, "row.reorder")
   requireNonNegativeNumber(row.critical, "row.critical")
+  normalizeUnit(row)
 
   if not Initializer.NodeAirbaseName[row.nodeId] then
     fail("unknown AirOps nodeId=" .. tostring(row.nodeId))
@@ -94,27 +108,17 @@ local function sortedKeys(map)
   return keys
 end
 
-function Initializer.BuildInitialState(initialStock)
-  if type(initialStock) ~= "table" then
-    fail("initialStock module must be a table")
-  end
-  if type(initialStock.Rows) ~= "table" then
-    fail("initialStock.Rows must be a table")
-  end
-
-  local nodesById = {}
-  local metadataByNode = {}
-  local seen = {}
-
-  for index, row in ipairs(initialStock.Rows) do
-    validateRow(row, index)
+local function appendRows(rows, sourceLabel, nodesById, metadataByNode, seen)
+  for index, row in ipairs(rows) do
+    validateRow(row, index, sourceLabel)
 
     local uniqueKey = row.nodeId .. "\0" .. row.resourceId
     if seen[uniqueKey] then
       fail(string.format(
-        "duplicate Node + Resource ID nodeId=%s resourceId=%s",
+        "duplicate Node + Resource ID nodeId=%s resourceId=%s source=%s",
         tostring(row.nodeId),
-        tostring(row.resourceId)
+        tostring(row.resourceId),
+        tostring(sourceLabel)
       ))
     end
     seen[uniqueKey] = true
@@ -132,19 +136,45 @@ function Initializer.BuildInitialState(initialStock)
 
     node.resources[row.resourceId] = {
       quantity = row.initial,
-      unit = "count",
+      unit = normalizeUnit(row),
     }
 
     metadataByNode[row.nodeId][row.resourceId] = {
       resourceClass = row.resourceClass,
+      unit = normalizeUnit(row),
       thresholds = copyThresholds(row),
       supplyParent = row.supplyParent,
       mappingStatus = row.mappingStatus,
     }
   end
+end
+
+local function validateStockModule(stockModule, label)
+  if type(stockModule) ~= "table" then
+    fail(label .. " module must be a table")
+  end
+  if type(stockModule.Rows) ~= "table" then
+    fail(label .. ".Rows must be a table")
+  end
+end
+
+function Initializer.BuildInitialState(initialStock, additionalStock)
+  validateStockModule(initialStock, "initialStock")
+  if additionalStock ~= nil then
+    validateStockModule(additionalStock, "additionalStock")
+  end
+
+  local nodesById = {}
+  local metadataByNode = {}
+  local seen = {}
+
+  appendRows(initialStock.Rows, "initialStock", nodesById, metadataByNode, seen)
+  if additionalStock ~= nil then
+    appendRows(additionalStock.Rows, "additionalStock", nodesById, metadataByNode, seen)
+  end
 
   if next(nodesById) == nil then
-    fail("initialStock.Rows contains no resources")
+    fail("initial-stock data contains no resources")
   end
 
   local nodes = {}
@@ -158,12 +188,12 @@ function Initializer.BuildInitialState(initialStock)
   }, metadataByNode
 end
 
-function Initializer.CreateStore(campaignStateModule, initialStock)
+function Initializer.CreateStore(campaignStateModule, initialStock, additionalStock)
   if type(campaignStateModule) ~= "table" or type(campaignStateModule.New) ~= "function" then
     fail("CampaignState module with New() is required")
   end
 
-  local initialState, metadataByNode = Initializer.BuildInitialState(initialStock)
+  local initialState, metadataByNode = Initializer.BuildInitialState(initialStock, additionalStock)
   local store = campaignStateModule.New(initialState)
 
   return {
@@ -171,6 +201,7 @@ function Initializer.CreateStore(campaignStateModule, initialStock)
     initialState = initialState,
     metadataByNode = metadataByNode,
     initialStockSchemaVersion = initialStock.SchemaVersion,
+    additionalStockSchemaVersion = additionalStock and additionalStock.SchemaVersion or nil,
     initializerSchemaVersion = Initializer.SchemaVersion,
   }
 end
