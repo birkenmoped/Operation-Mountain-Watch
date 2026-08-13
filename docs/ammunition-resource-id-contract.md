@@ -6,6 +6,7 @@ owning_policy: OMW-GOV-001
 authoritative_for:
   - strategic CampaignState ammunition resource identifiers
   - separation of M230, GAU-8 and OH-58 M3P ammunition ownership
+  - Bagram fighter AIM-120 and AIM-9 strategic resource identifiers
   - migration boundary for superseded generic ammunition identifiers
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
@@ -26,7 +27,7 @@ merged_to_main: false
 
 ## 1. Owner-Entscheidung
 
-Der Projektinhaber hat am 11.08.2026 entschieden, die zuvor generisch gefuehrten 30-mm- und .50-cal-Munitionsressourcen fuer die betroffenen AirOps-Waffensysteme getrennt zu fuehren.
+Der Projektinhaber hat am 11.08.2026 entschieden, die zuvor generisch gefuehrten 30-mm- und .50-cal-Munitionsressourcen fuer die betroffenen AirOps-Waffensysteme getrennt zu fuehren. Am 13.08.2026 wurde die bereits in der AirOps-Logistikplanung gefuehrte endliche Bagram-Fighter-A/A-Deployment-Stock-Regel bestaetigt; dafuer werden AIM-120 und AIM-9 als getrennte strategische Ressourcen gefuehrt.
 
 Verbindliche strategische Resource IDs:
 
@@ -34,6 +35,8 @@ Verbindliche strategische Resource IDs:
 AMMUNITION_30MM_M230
 AMMUNITION_30MM_GAU8
 AMMUNITION_50CAL_M3P
+AMMUNITION_AIM120
+AMMUNITION_AIM9
 ```
 
 Die bestehenden Familien bleiben zusaetzlich bestehen, soweit sie fachlich bereits eindeutig sind:
@@ -58,9 +61,24 @@ AMMUNITION_30MM_GAU8
 
 AMMUNITION_50CAL_M3P
   -> strategischer CampaignState-Bestand fuer den OH-58/M3P-.50-cal-Pfad
+
+AMMUNITION_AIM120
+  -> endlicher strategischer CampaignState-Bestand der Bagram-Fighter-AIM-120-Familie
+
+AMMUNITION_AIM9
+  -> endlicher strategischer CampaignState-Bestand der Bagram-Fighter-AIM-9-Familie
 ```
 
-Diese Ressourcen sind **nicht gegeneinander austauschbar**. Eine Mission darf Bestand einer Resource ID nicht als Ersatz fuer eine andere Resource ID verwenden, auch wenn Kaliberbezeichnungen teilweise uebereinstimmen.
+Diese Ressourcen sind nicht gegeneinander austauschbar. Eine Mission darf Bestand einer Resource ID nicht als Ersatz fuer eine andere Resource ID verwenden, auch wenn Kaliber- oder Waffenfamilienbezeichnungen teilweise verwandt sind.
+
+Fuer `AMMUNITION_AIM120` und `AMMUNITION_AIM9` gilt zusaetzlich der spezielle Vertrag aus `docs/bagram-fighter-deployment-ammunition-stock-policy.md`:
+
+```text
+initial stock source = deployment inventory only
+normal campaign resupply = none
+DoS stock sizing = not applicable
+reserve-factor stock sizing = not applicable
+```
 
 ## 3. Superseded Generic IDs
 
@@ -85,7 +103,9 @@ Der akzeptierte read-only Test `STORAGE-WEAPON-ITEM-MATRIX-1` hat fuer den exakt
 - fuer den OH-58-M3P-Pfad sind zusaetzliche Container-/Store-Keys sichtbar;
 - dieser Runtime-Befund rechtfertigt keine Zusammenfassung zu einem gemeinsamen strategischen Kaliberpool.
 
-Die technische Acceptance des Mapping-Tests bleibt auf dessen exakten Source-/MIZ-/Bundle-/MOOSE-/DCS-Stand begrenzt. Die hier festgelegten Resource IDs sind eine separate Owner-Entscheidung.
+Der Lauf `AIRBORNE-AMMO-PARKING-CORRELATION-3` hat fuer die aktuellen Bagram-CAS-Templates ausserdem die konkreten operativen Store-Keys `weapons.missiles.AIM_120C` und `weapons.missiles.AIM_9` beobachtet. Dieser Befund belegt die getesteten Payload-Varianten, aber keine universelle Variantenkonvertierung und keine F-16-Deployment-AIM-9-Zuordnung.
+
+Die technische Acceptance der Mapping-Tests bleibt auf deren exakten Source-/MIZ-/Bundle-/MOOSE-/DCS-Stand begrenzt. Die strategischen Resource IDs und die Deployment-Stock-Mengen sind separate Owner-Entscheidungen.
 
 ## 5. MOOSE-First und Mapping-Grenze
 
@@ -104,27 +124,23 @@ AIRWING payload
 
 Ein spaeterer Adapter darf eine strategische Resource ID auf mehrere technisch passende DCS/MOOSE-Item-IDs abbilden, wenn dieser Mapping-Vertrag explizit dokumentiert und getestet ist. Umgekehrt darf ein DCS-Item nicht stillschweigend mehrere strategisch getrennte Ressourcen zusammenfassen.
 
-## 6. Noch nicht entschieden
+## 6. Noch nicht entschieden beziehungsweise noch nicht technisch freigegeben
 
-Diese Entscheidung legt **nicht** fest:
+Die Resource-ID-Entscheidung selbst legt nicht automatisch fest:
 
 ```text
-konkrete DCS/MOOSE item mapping lists je Resource ID
-initial stock quantities
-Target/Reorder/Critical thresholds
-mission-level consumption quantities
-return/cancel semantics fuer ungenutzte Munition
-AIRWING payload debit semantics
+vollstaendige DCS/MOOSE item mapping lists je Resource ID
 CampaignState-to-STORAGE mutation
+AIRWING payload debit implementation
 OPSTRANSPORT/CTLD resupply execution
 persistence/restart/multiplayer reconciliation
 ```
 
-Diese Punkte werden in den folgenden Resource-Manifest- und Multi-Resource-Warehouse-Arbeitsschritten separat bestimmt und getestet.
+Fuer die Bagram-Fighter-A/A-Ressourcen sind Initialbestand und Resupply-Policy dagegen jetzt separat in `docs/bagram-fighter-deployment-ammunition-stock-policy.md` verbindlich festgelegt.
 
 ## 7. Implementierungsfolge
 
-Verbindliche naechste Reihenfolge:
+Verbindliche Reihenfolge:
 
 ```text
 owner-approved strategic Resource IDs
@@ -137,4 +153,4 @@ owner-approved strategic Resource IDs
 -> combined DCS acceptance
 ```
 
-Keine generische Kaliber-Austauschlogik darf in der Zwischenzeit implementiert werden.
+Keine generische Kaliber- oder Missile-Family-Austauschlogik darf in der Zwischenzeit implementiert werden.
