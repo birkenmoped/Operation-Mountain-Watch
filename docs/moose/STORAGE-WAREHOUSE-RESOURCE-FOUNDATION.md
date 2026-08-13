@@ -240,7 +240,9 @@ F16_370GAL_TANK        -> weapons.droptanks.fuel_tank_370gal
 F15E_EXTERNAL_TANK     -> weapons.droptanks.F-15E_Drop_Tank
 ```
 
-Die gewünschte operative Menge wird dem Adapter explizit je Node und technischem Manifest-Key übergeben. Der Adapter leitet **keine** Menge aus CampaignState, strategischen Stocks oder einer erfundenen Reserveformel ab. Damit bleibt die noch festzulegende produktive Availability-Konfiguration eine separate technische Konfiguration und eröffnet die abgeschlossene strategische Stockplanung nicht erneut.
+Die produktive technische Availability-Baseline ist jetzt owner-seitig festgelegt und liegt in `scripts/logistics/OMW_AirOpsTechnicalAvailability.lua`. Pro relevantem Node und Store werden 1000 Stück einmalig als operative Anfangsverfügbarkeit gesetzt. Die genaue Node-Zuordnung und die strategische Abgrenzung sind zusätzlich in `docs/moose/STORAGE-TECHNICAL-AVAILABILITY.md` dokumentiert.
+
+Der Adapter leitet weiterhin **keine** Menge aus CampaignState oder strategischen Stocks ab. Die 1000 Stück sind eine separate technische Missionskonfiguration und eröffnen die abgeschlossene strategische Stockplanung nicht erneut.
 
 Der Adapter ist one-shot und fail-closed:
 
@@ -251,4 +253,4 @@ Der Adapter ist one-shot und fail-closed:
 - es gibt keine CampaignState-Buchung, keine Consumption und keine Return-Gutschrift;
 - es gibt keinen Scheduler und keine automatische Wiederauffüllung nach Missionsbeginn.
 
-Die produktiven Mengen selbst sind in diesem Stand absichtlich **nicht** erfunden. Sie müssen vor dem zentralen Bootstrap aus einer ausdrücklichen OMW-Availability-Konfiguration stammen. Der neue Adapter ist quellseitig geprüft, aber bis zur DCS-Write-/Readback-Acceptance nicht `VALIDATED`.
+Die 1000-Stück-Baseline ist `BINDING`; der tatsächliche STORAGE-Write-/Readback-Pfad bleibt bis zu einem dokumentierten DCS-Lauf nicht `VALIDATED`.
