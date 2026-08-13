@@ -131,3 +131,29 @@ resource ownership contract = CLOSED
 fighter exact item mapping = CLOSED
 warehouse/resource foundation decision block = CLOSED
 ```
+
+## 6. Lokale Abschlussverifikation
+
+Der Projektinhaber hat den veröffentlichten Branch-Stand lokal per Fast-Forward übernommen und den resultierenden HEAD sowie die zentralen Abschlussartefakte unabhängig mit PowerShell verifiziert.
+
+```text
+Local verified HEAD:
+ac9ea1e2ad8926df603229a54ab59ef7eea1fd2a
+
+fighter-store-runtime-correlation-acceptance-2026-08-13.md
+SHA-256: 2A861EA76E1122F9ECECADF7F4D80955737E752E9A9FA8187518C691624B3E60
+
+ammunition-item-mapping-contract.md
+SHA-256: B13F6C90DFD532395B294D237A2D672A3895B8E7E65BA7E8301845E648049250
+
+ammunition-resource-id-contract.md
+SHA-256: 0AC2DF53224DA0084261CE3BEB06015156E9924D3F1D018455A7D48770E73117
+
+air-operations-initial-stock-finalization-2026-08-13.md
+SHA-256: 58393448B8E67F37BDB8D720943520E4FA1BCA7C142D7F6EA3EBF62B2A5A0162
+
+air-operations-initial-store-stock-v20.csv
+SHA-256: F64E52731AA611186054566C48F195E8D7B4CADABDE6911BE19EBD74521BF69A
+```
+
+Diese Werte stammen aus der realen lokalen Konsolenausgabe des Projektinhabers. Sie sind die lokale Verifikationsgrundlage für den Abschlussstand dieses Branches.
