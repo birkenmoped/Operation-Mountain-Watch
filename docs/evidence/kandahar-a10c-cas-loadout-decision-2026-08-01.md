@@ -13,7 +13,7 @@ supersedes:
   - undocumented Kandahar A-10C CAS payload assumptions
 superseded_by:
 source_branch: agent/kandahar-a10c-cas-loadout-reconciliation
-source_commit: PENDING_MERGE
+source_commit: 8eeb10b43dcf7f72cc6b77ccdcef52e1ec955873
 validated_in_dcs: false
 decision_date: 2026-08-01
 reconciled_on: 2026-08-13
