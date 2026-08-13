@@ -217,3 +217,38 @@ F-16/F-15E-Außentanks und AH-64-IAFS sind dagegen ausdrücklich `TECHNICAL_NON_
 Fuel bleibt außerhalb dieses Item-Adapters und wird weiterhin über `OMW_StorageFuelAdapter.lua` / `OMW_CampaignStateStorageSync.lua` behandelt.
 
 Statusgrenze dieses neuen Adapters: Quellcode/API gegen den gepinnten MOOSE-Stand geprüft; DCS-Write-/Readback-Acceptance für die produktive Missionsintegration noch ausstehend. Deshalb wird dieser neue Schreibpfad durch die bestehende ältere STORAGE-Acceptance nicht automatisch als `VALIDATED` eingestuft.
+
+### 10.3 Technische Availability-Initialisierung
+
+`scripts/logistics/OMW_AirOpsTechnicalAvailabilityInitializer.lua` trennt die operativen `TECHNICAL_NON_STRATEGIC`-Items jetzt auch im Runtime-Pfad ausdrücklich von CampaignState.
+
+Der Adapter verwendet ausschließlich die bereits für STORAGE geprüften öffentlichen MOOSE-Pfade:
+
+```text
+STORAGE:FindByName(airbaseName)
+AIRBASE:GetStorage()
+STORAGE:IsLimitedWeapons()
+STORAGE:GetItemAmount(itemName)
+STORAGE:SetItem(itemName, amount)
+```
+
+Zulässig sind ausschließlich Manifest-Einträge der Klasse `TECHNICAL_NON_STRATEGIC` mit direktem `ITEM`-Mapping und ohne `resourceId`. Der aktuelle Manifest-Scope umfasst:
+
+```text
+AH64_IAFS_COMBOPAK_100 -> weapons.droptanks.{IAFS_ComboPak_100}
+F16_370GAL_TANK        -> weapons.droptanks.fuel_tank_370gal
+F15E_EXTERNAL_TANK     -> weapons.droptanks.F-15E_Drop_Tank
+```
+
+Die gewünschte operative Menge wird dem Adapter explizit je Node und technischem Manifest-Key übergeben. Der Adapter leitet **keine** Menge aus CampaignState, strategischen Stocks oder einer erfundenen Reserveformel ab. Damit bleibt die noch festzulegende produktive Availability-Konfiguration eine separate technische Konfiguration und eröffnet die abgeschlossene strategische Stockplanung nicht erneut.
+
+Der Adapter ist one-shot und fail-closed:
+
+- unbekannte oder nicht technische Keys werden abgewiesen;
+- negative, nicht-ganzzahlige oder nicht-endliche Mengen werden abgewiesen;
+- nicht limitierte Weapon-Warehouses blockieren die Anwendung;
+- jeder Schreibvorgang wird unmittelbar mit `GetItemAmount()` gelesen und geprüft;
+- es gibt keine CampaignState-Buchung, keine Consumption und keine Return-Gutschrift;
+- es gibt keinen Scheduler und keine automatische Wiederauffüllung nach Missionsbeginn.
+
+Die produktiven Mengen selbst sind in diesem Stand absichtlich **nicht** erfunden. Sie müssen vor dem zentralen Bootstrap aus einer ausdrücklichen OMW-Availability-Konfiguration stammen. Der neue Adapter ist quellseitig geprüft, aber bis zur DCS-Write-/Readback-Acceptance nicht `VALIDATED`.
