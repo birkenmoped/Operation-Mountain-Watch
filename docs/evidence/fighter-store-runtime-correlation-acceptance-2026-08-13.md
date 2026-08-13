@@ -123,7 +123,7 @@ Damit sind die letzten drei offenen Fighter-Store-Runtime-Mappings des Warehouse
 
 Dieser Lauf validiert exakt die oben genannten Store-Korrelationen für die dokumentierte Provenienz. Er validiert nicht automatisch eine zukünftige schreibende CampaignState-to-STORAGE-Initialisierung oder einen neuen Reservation-/Result-Adapter. Solche Implementierungen bleiben separate produktive Entwicklungsarbeit und dürfen nicht als bereits DCS-validiert bezeichnet werden.
 
-Für den abgeschlossenen Foundation-Scope gilt jedoch:
+Für den abgeschlossenen Foundation-Scope gilt:
 
 ```text
 strategic initial-stock planning = CLOSED
