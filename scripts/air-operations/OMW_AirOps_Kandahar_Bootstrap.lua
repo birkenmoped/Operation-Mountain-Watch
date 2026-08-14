@@ -38,8 +38,8 @@ local config = {
     airbaseName = AIRBASE.Afghanistan and AIRBASE.Afghanistan.Kandahar or "Kandahar",
     warehouseName = "WH_AIR_US_KANDAHAR",
     airwingName = "AW_US_KAF_451_AEW",
-    expectedParkingSpots = 315,
-    expectedBlacklistSpots = 246,
+    expectedParkingSpots = 316,
+    expectedBlacklistSpots = 247,
     parkingWhitelist = {
       189, 303, 202, 224, 46, 291, 129, 143, 27, 54, 263,
       309, 232, 107, 260, 299, 194, 294, 92, 201, 174, 156, 124, 238, 280, 28, 16, 40, 136, 281, 314, 25, 229,
