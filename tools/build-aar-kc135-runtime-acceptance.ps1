@@ -9,8 +9,8 @@ $sourceFile = Join-Path $repoRoot 'mission\tests\aar-kc135-runtime\src\01-aar-kc
 $distDir = Join-Path $repoRoot 'mission\tests\aar-kc135-runtime\dist'
 $outputFile = Join-Path $distDir 'OMW_AAR_KC135_Runtime_Acceptance.lua'
 
-$builderVersion = 'AAR-KC135-RUNTIME-ACCEPTANCE-3'
-$testId = 'AAR-KC135-RUNTIME-ACCEPTANCE-3'
+$builderVersion = 'AAR-KC135-RUNTIME-ACCEPTANCE-4'
+$testId = 'AAR-KC135-RUNTIME-ACCEPTANCE-4'
 $mooseCommit = '73d3ed119cd9e7e3f2cfcabbaa34513d30529b54'
 $mooseSha256 = 'e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915'
 
@@ -21,12 +21,16 @@ if (-not (Test-Path -LiteralPath $sourceFile -PathType Leaf)) {
 $source = Get-Content -LiteralPath $sourceFile -Raw -Encoding UTF8
 
 $requiredMarkers = @(
-  'AAR-KC135-RUNTIME-ACCEPTANCE-3',
+  'AAR-KC135-RUNTIME-ACCEPTANCE-4',
   'OMW_AAR_KC135_CLANCY',
   'OMW_AAR_KC135_NELSON',
   'TPL_AIR_US_BGRM_F16C_CAS_2SHIP',
   'SQ_US_BGRM_F16C_121_EFS',
-  'SPAWN:New(spec.template):SpawnFromCoordinate(gateCoord)',
+  'gateCoord:HeadingTo(trackCoord)',
+  'spawner:InitHeading(spawnHeadingDeg)',
+  'spawner:SpawnFromCoordinate(gateCoord)',
+  'speedKt = 220',
+  'tacanBand = "Y"',
   'FLIGHTGROUP:New(group)',
   'AUFTRAG:NewTANKER(',
   'Unit.RefuelingSystem.BOOM_AND_RECEPTACLE',
@@ -41,6 +45,7 @@ $requiredMarkers = @(
   'mission:AssignSquadrons({ squadron })',
   'mission:AddRequiredPayload(payload)',
   'mission:SetRequiredAssets(1, 1)',
+  'receiver.mission:CountOpsGroups()',
   'receiver.flightGroup:Refuel(clancy.trackCoord)',
   'function FlightGroup:OnAfterRefueled',
   'AI_BOOM_REFUEL_ORDER_PASS',
@@ -86,7 +91,7 @@ $header = @"
 -- GitCommit: $commit
 -- GeneratedUtc: $generatedUtc
 -- Gate/Test-ID: $testId
--- Scope: two KC-135 Boom exemplars in different gate domains; relocated gate candidates; manual radio/TACAN exemplars; existing Bagram F-16C AIRWING/SQUADRON receiver through the MOOSE FLIGHTGROUP refuel FSM; post-refuel FuelLow/Cancel/Egress/Despawn gate verification.
+-- Scope: two KC-135 Boom exemplars in different gate domains; relocated gate candidates; spawn heading toward each track; Y-band A/A TACAN correction; A-10-compatible Clancy orbit speed; manual radio/TACAN exemplars; existing Bagram F-16C AIRWING/SQUADRON receiver through the MOOSE FLIGHTGROUP refuel FSM; post-refuel FuelLow/Cancel/Egress/Despawn gate verification.
 -- Active tanker templates: OMW_AAR_KC135_CLANCY, OMW_AAR_KC135_NELSON.
 -- AI receiver template: TPL_AIR_US_BGRM_F16C_CAS_2SHIP via existing SQ_US_BGRM_F16C_121_EFS; no new Mission Editor template and no MIZ mutation.
 -- Production policy: same gate/domain materializations require at least 60 seconds separation; different gate domains may materialize simultaneously; maxConcurrentSupportMissions remains 2.
@@ -107,6 +112,9 @@ Write-Host "DifferentGateDomainsMaySpawnSimultaneously: true"
 Write-Host "SameGateMinimumSpawnSeparationSec: 60"
 Write-Host "SouthGateCandidate: 28.90264890,64.61166667"
 Write-Host "NorthEastGateCandidate: 37.64268794,70.96231552"
+Write-Host "SpawnHeadingTowardTrack: true"
+Write-Host "RuntimeTacan: CLANCY=60Y,NELSON=47Y"
+Write-Host "TankerOrbitSpeedKt: CLANCY=220,NELSON=300"
 Write-Host "ManualRadioTacanExemplars: CLANCY,NELSON"
 Write-Host "AIBoomReceiverTemplate: TPL_AIR_US_BGRM_F16C_CAS_2SHIP"
 Write-Host "AcceleratedFuelLowAfterAiBoomRefueled: true"
