@@ -1,4 +1,4 @@
-local TEST_ID = "AAR-PRODUCTION-INTEGRATION-2"
+local TEST_ID = "AAR-PRODUCTION-INTEGRATION-3"
 local TAG = "[OMW][" .. TEST_ID .. "]"
 local STATUS_INTERVAL_SEC = 10
 local TRANSIT_OBSERVATION_SEC = 60
@@ -27,6 +27,17 @@ local function getTrackDistanceNm(runtime)
     return nil
   end
   return distanceM / 1852
+end
+
+local function getSpawnedFuelPct(runtime)
+  if not runtime or not runtime.group then
+    return nil
+  end
+  local fuelFraction = runtime.group:GetFuelMin()
+  if type(fuelFraction) ~= "number" then
+    return nil
+  end
+  return fuelFraction * 100
 end
 
 if not OMW or not OMW.AAR then
@@ -115,7 +126,27 @@ function TestStrategicAdapter:OnMaterialized(selection, runtime)
     ))
   end
 
-  local fuelPct = runtime.flightGroup:GetFuelMin()
+  local actualCallsign = runtime.group and runtime.group:GetCallsign() or nil
+  if actualCallsign ~= expected.expectedCallsign then
+    recordFailure(string.format(
+      "CALLSIGN_IDENTITY demand=%s area=%s expected=%s actual=%s group=%s",
+      selection.missionDemandId,
+      selection.area,
+      expected.expectedCallsign,
+      tostring(actualCallsign),
+      tostring(groupName)
+    ))
+  else
+    log(string.format(
+      "CALLSIGN_IDENTITY_PASS demand=%s area=%s callsign=%s group=%s",
+      selection.missionDemandId,
+      selection.area,
+      actualCallsign,
+      groupName
+    ))
+  end
+
+  local fuelPct = getSpawnedFuelPct(runtime)
   if type(fuelPct) ~= "number" or math.abs(fuelPct - expected.expectedInitialFuelPct) > FUEL_TOLERANCE_PCT then
     recordFailure(string.format(
       "SEED_FUEL demand=%s expectedPct=%.1f actualPct=%s tolerancePct=%.1f",
@@ -180,6 +211,7 @@ local DEMANDS = {
     expectedArea = "NELSON",
     expectedSource = "MANAS",
     expectedTemplate = "OMW_AAR_KC135_NELSON",
+    expectedCallsign = "Texaco11",
     expectedInitialFuelPct = 96,
   },
   {
@@ -191,6 +223,7 @@ local DEMANDS = {
     expectedArea = "KRUSTY",
     expectedSource = "AL_UDEID",
     expectedTemplate = "OMW_AAR_KC135_KRUSTY",
+    expectedCallsign = "Arco21",
     expectedInitialFuelPct = 90,
   },
   {
@@ -202,6 +235,7 @@ local DEMANDS = {
     expectedArea = "PATTY",
     expectedSource = "MANAS",
     expectedTemplate = "OMW_AAR_KC135_PATTY",
+    expectedCallsign = "Texaco21",
     expectedInitialFuelPct = 96,
   },
   {
@@ -213,6 +247,7 @@ local DEMANDS = {
     expectedArea = "MILHOUSE",
     expectedSource = "AL_UDEID",
     expectedTemplate = "OMW_AAR_KC135_MILHOUSE",
+    expectedCallsign = "Shell21",
     expectedInitialFuelPct = 90,
   },
   {
@@ -224,6 +259,7 @@ local DEMANDS = {
     expectedArea = "MOE",
     expectedSource = "MANAS",
     expectedTemplate = "OMW_AAR_KC135_MOE",
+    expectedCallsign = "Texaco41",
     expectedInitialFuelPct = 96,
   },
   {
@@ -235,6 +271,7 @@ local DEMANDS = {
     expectedArea = "LISA",
     expectedSource = "MANAS",
     expectedTemplate = "OMW_AAR_KC135_LISA",
+    expectedCallsign = "Texaco31",
     expectedInitialFuelPct = 96,
   },
 }
@@ -263,13 +300,14 @@ for _, demand in ipairs(DEMANDS) do
   end
   EXPECTED[demand.expectedArea .. ":" .. demand.receiverProfile] = demand
   log(string.format(
-    "POLICY_PASS demand=%s area=%s profile=%s source=%s transit=%s template=%s",
+    "POLICY_PASS demand=%s area=%s profile=%s source=%s transit=%s template=%s callsign=%s",
     demand.missionDemandId,
     selection.area,
     selection.receiverProfile,
     selection.sourceDomain,
     selection.transitProfile,
-    demand.expectedTemplate
+    demand.expectedTemplate,
+    demand.expectedCallsign
   ))
 end
 
