@@ -26,6 +26,8 @@ $requiredMarkers = @(
   'OMW_AAR_KC135_NELSON',
   'TPL_AIR_US_BGRM_F16C_CAS_2SHIP',
   'SQ_US_BGRM_F16C_121_EFS',
+  'RECEIVER_MISSION_RANGE_NM = 250',
+  'mission:SetMissionRange(RECEIVER_MISSION_RANGE_NM)',
   'gateCoord:HeadingTo(trackCoord)',
   'spawner:InitHeading(spawnHeadingDeg)',
   'spawner:SpawnFromCoordinate(gateCoord)',
@@ -91,7 +93,7 @@ $header = @"
 -- GitCommit: $commit
 -- GeneratedUtc: $generatedUtc
 -- Gate/Test-ID: $testId
--- Scope: two KC-135 Boom exemplars in different gate domains; relocated gate candidates; spawn heading toward each track; Y-band A/A TACAN correction; A-10-compatible Clancy orbit speed; manual radio/TACAN exemplars; existing Bagram F-16C AIRWING/SQUADRON receiver through the MOOSE FLIGHTGROUP refuel FSM; post-refuel FuelLow/Cancel/Egress/Despawn gate verification.
+-- Scope: two KC-135 Boom exemplars in different gate domains; relocated gate candidates; spawn heading toward each track; Y-band A/A TACAN correction; A-10-compatible Clancy orbit speed; explicit 250-NM MOOSE receiver mission-range override for the existing Bagram F-16C; manual radio/TACAN exemplars; existing Bagram F-16C AIRWING/SQUADRON receiver through the MOOSE FLIGHTGROUP refuel FSM; post-refuel FuelLow/Cancel/Egress/Despawn gate verification.
 -- Active tanker templates: OMW_AAR_KC135_CLANCY, OMW_AAR_KC135_NELSON.
 -- AI receiver template: TPL_AIR_US_BGRM_F16C_CAS_2SHIP via existing SQ_US_BGRM_F16C_121_EFS; no new Mission Editor template and no MIZ mutation.
 -- Production policy: same gate/domain materializations require at least 60 seconds separation; different gate domains may materialize simultaneously; maxConcurrentSupportMissions remains 2.
@@ -115,6 +117,7 @@ Write-Host "NorthEastGateCandidate: 37.64268794,70.96231552"
 Write-Host "SpawnHeadingTowardTrack: true"
 Write-Host "RuntimeTacan: CLANCY=60Y,NELSON=47Y"
 Write-Host "TankerOrbitSpeedKt: CLANCY=220,NELSON=300"
+Write-Host "ReceiverMissionRangeNm: 250"
 Write-Host "ManualRadioTacanExemplars: CLANCY,NELSON"
 Write-Host "AIBoomReceiverTemplate: TPL_AIR_US_BGRM_F16C_CAS_2SHIP"
 Write-Host "AcceleratedFuelLowAfterAiBoomRefueled: true"
