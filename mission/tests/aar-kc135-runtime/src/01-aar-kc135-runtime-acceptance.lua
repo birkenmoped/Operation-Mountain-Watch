@@ -10,7 +10,7 @@ local function fail(message)
 end
 
 local TANKERS = {
-  {
+  CLANCY = {
     area = "CLANCY",
     template = "OMW_AAR_KC135_CLANCY",
     gate = { lat = 29.9818333333, lon = 64.6116666667 },
@@ -26,7 +26,7 @@ local TANKERS = {
     expectedFuelPct = 90,
     testFuelLowPct = 89,
   },
-  {
+  HOMER = {
     area = "HOMER",
     template = "OMW_AAR_KC135_HOMER",
     gate = { lat = 29.9818333333, lon = 64.6116666667 },
@@ -42,7 +42,7 @@ local TANKERS = {
     expectedFuelPct = 90,
     testFuelLowPct = 89,
   },
-  {
+  NELSON = {
     area = "NELSON",
     template = "OMW_AAR_KC135_NELSON",
     gate = { lat = 38.1211666667, lon = 70.3600000000 },
@@ -60,7 +60,9 @@ local TANKERS = {
   },
 }
 
+local STATUS_ORDER = { "CLANCY", "HOMER", "NELSON" }
 local runtime = {}
+local startArea
 
 local function getFuelPct(flightGroup)
   if not flightGroup then
@@ -117,7 +119,15 @@ local function configureTanker(spec)
       spec.testFuelLowPct
     ))
     mission:Cancel()
-    runtime[spec.area].egressOrdered = true
+    local state = runtime[spec.area]
+    if state then
+      state.egressOrdered = true
+    end
+
+    if spec.area == "CLANCY" and not runtime.HOMER then
+      log("STAGE_TRANSITION from=CLANCY to=HOMER reason=CLANCY_FUEL_LOW")
+      startArea("HOMER")
+    end
   end
 
   flightGroup:AddMission(mission)
@@ -161,51 +171,79 @@ local function configureTanker(spec)
   }
 end
 
-log("START activeAreas=CLANCY,HOMER,NELSON inactivePrepared=KRUSTY,PATTY")
-
-for _, spec in ipairs(TANKERS) do
-  runtime[spec.area] = configureTanker(spec)
+startArea = function(area)
+  if runtime[area] then
+    fail(string.format("DUPLICATE_START area=%s", area))
+    return runtime[area]
+  end
+  local spec = TANKERS[area]
+  if not spec then
+    fail(string.format("UNKNOWN_AREA area=%s", tostring(area)))
+    return nil
+  end
+  local state = configureTanker(spec)
+  runtime[area] = state
+  if state then
+    log(string.format("START_AREA_PASS area=%s", area))
+  end
+  return state
 end
 
-SCHEDULER:New(nil, function()
-  local active = 0
-  local executing = 0
-  local egressOrdered = 0
+log("START initialConcurrent=CLANCY,NELSON staged=HOMER preparedInactive=KRUSTY,PATTY maxConcurrentSupportMissions=2")
 
-  for _, spec in ipairs(TANKERS) do
-    local state = runtime[spec.area]
-    if state and state.group and state.group:IsAlive() then
-      active = active + 1
-      local fuelPct = getFuelPct(state.flightGroup) or -1
-      local missionExecuting = state.mission:IsExecuting()
-      if missionExecuting then
-        executing = executing + 1
-        if not state.executingLogged then
-          state.executingLogged = true
-          log(string.format("TANKER_EXECUTING_PASS area=%s fuelPct=%.2f", spec.area, fuelPct))
+startArea("CLANCY")
+startArea("NELSON")
+
+SCHEDULER:New(nil, function()
+  local activeAircraft = 0
+  local executingMissions = 0
+  local egressOrdered = 0
+  local started = 0
+
+  for _, area in ipairs(STATUS_ORDER) do
+    local state = runtime[area]
+    if state then
+      started = started + 1
+      if state.group and state.group:IsAlive() then
+        activeAircraft = activeAircraft + 1
+        local fuelPct = getFuelPct(state.flightGroup) or -1
+        local missionExecuting = state.mission:IsExecuting()
+        if missionExecuting then
+          executingMissions = executingMissions + 1
+          if not state.executingLogged then
+            state.executingLogged = true
+            log(string.format("TANKER_EXECUTING_PASS area=%s fuelPct=%.2f", area, fuelPct))
+          end
         end
+        if state.egressOrdered then
+          egressOrdered = egressOrdered + 1
+        end
+        log(string.format(
+          "STATUS area=%s alive=true fuelPct=%.2f missionStatus=%s egressOrdered=%s",
+          area,
+          fuelPct,
+          tostring(state.mission.status),
+          tostring(state.egressOrdered)
+        ))
+      else
+        fail(string.format("GROUP_NOT_ALIVE area=%s", area))
       end
-      if state.egressOrdered then
-        egressOrdered = egressOrdered + 1
-      end
-      log(string.format(
-        "STATUS area=%s alive=true fuelPct=%.2f missionStatus=%s egressOrdered=%s",
-        spec.area,
-        fuelPct,
-        tostring(state.mission.status),
-        tostring(state.egressOrdered)
-      ))
     else
-      fail(string.format("GROUP_NOT_ALIVE area=%s", spec.area))
+      log(string.format("STATUS area=%s started=false", area))
     end
   end
 
+  if executingMissions > 2 then
+    fail(string.format("SUPPORT_CONCURRENCY executingMissions=%d limit=2", executingMissions))
+  end
+
   log(string.format(
-    "SUMMARY active=%d executing=%d egressOrdered=%d expectedActive=3",
-    active,
-    executing,
+    "SUMMARY started=%d activeAircraft=%d executingMissions=%d egressOrdered=%d supportMissionLimit=2",
+    started,
+    activeAircraft,
+    executingMissions,
     egressOrdered
   ))
 end, {}, 10, 30)
 
-log("HARNESS_READY expectedInitialFuel=CLANCY:90,HOMER:90,NELSON:96 acceleratedFuelLow=CLANCY:89,HOMER:89,NELSON:95")
+log("HARNESS_READY initial=CLANCY,NELSON stagedAfterClancyFuelLow=HOMER expectedInitialFuel=CLANCY:90,HOMER:90,NELSON:96 acceleratedFuelLow=CLANCY:89,HOMER:89,NELSON:95")
