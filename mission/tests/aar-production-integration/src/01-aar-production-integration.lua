@@ -1,7 +1,10 @@
-local TEST_ID = "AAR-PRODUCTION-INTEGRATION-1"
+local TEST_ID = "AAR-PRODUCTION-INTEGRATION-2"
 local TAG = "[OMW][" .. TEST_ID .. "]"
 local STATUS_INTERVAL_SEC = 10
-local TIMEOUT_SEC = 900
+local TRANSIT_OBSERVATION_SEC = 60
+local MIN_TRACK_PROGRESS_NM = 2
+local TIMEOUT_SEC = 420
+local FUEL_TOLERANCE_PCT = 1.5
 
 local function log(message)
   env.info(TAG .. " " .. tostring(message))
@@ -9,6 +12,21 @@ end
 
 local function fail(message)
   env.error(TAG .. " FAIL " .. tostring(message))
+end
+
+local function getTrackDistanceNm(runtime)
+  if not runtime or not runtime.flightGroup or not runtime.trackCoord then
+    return nil
+  end
+  local coordinate = runtime.flightGroup:GetCoordinate()
+  if not coordinate then
+    return nil
+  end
+  local distanceM = coordinate:Get2DDistance(runtime.trackCoord)
+  if type(distanceM) ~= "number" then
+    return nil
+  end
+  return distanceM / 1852
 end
 
 if not OMW or not OMW.AAR then
@@ -19,6 +37,16 @@ local strategicEvents = {
   materialized = 0,
   handoffs = 0,
 }
+
+local EXPECTED_BY_ID = {}
+local observations = {}
+local lastMaterializedAtBySource = {}
+local failed = false
+
+local function recordFailure(message)
+  failed = true
+  fail(message)
+end
 
 local TestStrategicAdapter = {}
 
@@ -35,13 +63,97 @@ end
 
 function TestStrategicAdapter:OnMaterialized(selection, runtime)
   strategicEvents.materialized = strategicEvents.materialized + 1
+
+  local expected = EXPECTED_BY_ID[selection.missionDemandId]
+  if not expected then
+    recordFailure("unexpected materialization demand=" .. tostring(selection.missionDemandId))
+    return
+  end
+
+  local timestamp = timer.getAbsTime()
+  local previousTimestamp = lastMaterializedAtBySource[selection.sourceDomain]
+  if previousTimestamp then
+    local deltaSec = timestamp - previousTimestamp
+    if deltaSec + 0.1 < OMW.AAR.GetConfig().sourceSpawnIntervalSec then
+      recordFailure(string.format(
+        "SOURCE_SPACING demand=%s source=%s deltaSec=%.1f requiredSec=%d",
+        selection.missionDemandId,
+        selection.sourceDomain,
+        deltaSec,
+        OMW.AAR.GetConfig().sourceSpawnIntervalSec
+      ))
+    else
+      log(string.format(
+        "SOURCE_SPACING_PASS demand=%s source=%s deltaSec=%.1f requiredSec=%d",
+        selection.missionDemandId,
+        selection.sourceDomain,
+        deltaSec,
+        OMW.AAR.GetConfig().sourceSpawnIntervalSec
+      ))
+    end
+  end
+  lastMaterializedAtBySource[selection.sourceDomain] = timestamp
+
+  local groupName = runtime.group and runtime.group:GetName() or ""
+  local templatePass = runtime.template == expected.expectedTemplate
+      and groupName:sub(1, #expected.expectedTemplate) == expected.expectedTemplate
+  if not templatePass then
+    recordFailure(string.format(
+      "TEMPLATE_IDENTITY demand=%s expectedTemplate=%s actualTemplate=%s group=%s",
+      selection.missionDemandId,
+      expected.expectedTemplate,
+      tostring(runtime.template),
+      tostring(groupName)
+    ))
+  else
+    log(string.format(
+      "TEMPLATE_IDENTITY_PASS demand=%s area=%s template=%s group=%s",
+      selection.missionDemandId,
+      selection.area,
+      runtime.template,
+      groupName
+    ))
+  end
+
+  local fuelPct = runtime.flightGroup:GetFuelMin()
+  if type(fuelPct) ~= "number" or math.abs(fuelPct - expected.expectedInitialFuelPct) > FUEL_TOLERANCE_PCT then
+    recordFailure(string.format(
+      "SEED_FUEL demand=%s expectedPct=%.1f actualPct=%s tolerancePct=%.1f",
+      selection.missionDemandId,
+      expected.expectedInitialFuelPct,
+      tostring(fuelPct),
+      FUEL_TOLERANCE_PCT
+    ))
+  else
+    log(string.format(
+      "SEED_FUEL_PASS demand=%s area=%s fuelPct=%.2f expectedPct=%.1f tolerancePct=%.1f",
+      selection.missionDemandId,
+      selection.area,
+      fuelPct,
+      expected.expectedInitialFuelPct,
+      FUEL_TOLERANCE_PCT
+    ))
+  end
+
+  local initialTrackDistanceNm = getTrackDistanceNm(runtime)
+  if not initialTrackDistanceNm then
+    recordFailure("initial track distance unavailable demand=" .. selection.missionDemandId)
+  end
+
+  observations[selection.missionDemandId] = {
+    materializedAt = timestamp,
+    initialTrackDistanceNm = initialTrackDistanceNm,
+    transitPass = false,
+  }
+
   log(string.format(
-    "STRATEGIC_MATERIALIZED demand=%s area=%s profile=%s group=%s count=%d testAdapter=true",
+    "STRATEGIC_MATERIALIZED demand=%s area=%s profile=%s group=%s count=%d testAdapter=true initialTrackDistanceNm=%.2f",
     selection.missionDemandId,
     selection.area,
     selection.receiverProfile,
-    runtime.group:GetName(),
-    strategicEvents.materialized
+    groupName,
+    strategicEvents.materialized,
+    initialTrackDistanceNm or -1
   ))
 end
 
@@ -67,6 +179,8 @@ local DEMANDS = {
     priority = "TEST",
     expectedArea = "NELSON",
     expectedSource = "MANAS",
+    expectedTemplate = "OMW_AAR_KC135_NELSON",
+    expectedInitialFuelPct = 96,
   },
   {
     missionDemandId = "AAR-TEST-KRUSTY",
@@ -76,6 +190,8 @@ local DEMANDS = {
     priority = "TEST",
     expectedArea = "KRUSTY",
     expectedSource = "AL_UDEID",
+    expectedTemplate = "OMW_AAR_KC135_KRUSTY",
+    expectedInitialFuelPct = 90,
   },
   {
     missionDemandId = "AAR-TEST-PATTY",
@@ -85,6 +201,8 @@ local DEMANDS = {
     priority = "TEST",
     expectedArea = "PATTY",
     expectedSource = "MANAS",
+    expectedTemplate = "OMW_AAR_KC135_PATTY",
+    expectedInitialFuelPct = 96,
   },
   {
     missionDemandId = "AAR-TEST-MILHOUSE",
@@ -94,6 +212,8 @@ local DEMANDS = {
     priority = "TEST",
     expectedArea = "MILHOUSE",
     expectedSource = "AL_UDEID",
+    expectedTemplate = "OMW_AAR_KC135_MILHOUSE",
+    expectedInitialFuelPct = 90,
   },
   {
     missionDemandId = "AAR-TEST-MOE",
@@ -103,6 +223,8 @@ local DEMANDS = {
     priority = "TEST",
     expectedArea = "MOE",
     expectedSource = "MANAS",
+    expectedTemplate = "OMW_AAR_KC135_MOE",
+    expectedInitialFuelPct = 96,
   },
   {
     missionDemandId = "AAR-TEST-LISA",
@@ -112,11 +234,14 @@ local DEMANDS = {
     priority = "TEST",
     expectedArea = "LISA",
     expectedSource = "MANAS",
+    expectedTemplate = "OMW_AAR_KC135_LISA",
+    expectedInitialFuelPct = 96,
   },
 }
 
 local EXPECTED = {}
 for _, demand in ipairs(DEMANDS) do
+  EXPECTED_BY_ID[demand.missionDemandId] = demand
   local selection, reason = OMW.AAR.SelectArea(demand)
   if not selection then
     error(TAG .. " selection failed demand=" .. demand.missionDemandId .. " reason=" .. tostring(reason))
@@ -138,12 +263,13 @@ for _, demand in ipairs(DEMANDS) do
   end
   EXPECTED[demand.expectedArea .. ":" .. demand.receiverProfile] = demand
   log(string.format(
-    "POLICY_PASS demand=%s area=%s profile=%s source=%s transit=%s",
+    "POLICY_PASS demand=%s area=%s profile=%s source=%s transit=%s template=%s",
     demand.missionDemandId,
     selection.area,
     selection.receiverProfile,
     selection.sourceDomain,
-    selection.transitProfile
+    selection.transitProfile,
+    demand.expectedTemplate
   ))
 end
 
@@ -156,7 +282,6 @@ for _, demand in ipairs(DEMANDS) do
 end
 
 local startedAt = timer.getAbsTime()
-local executingLogged = {}
 local completed = false
 
 SCHEDULER:New(nil, function()
@@ -164,43 +289,69 @@ SCHEDULER:New(nil, function()
     return
   end
 
-  local executingCount = 0
   local activeCount = 0
+  local transitPassCount = 0
 
-  for key, demand in pairs(EXPECTED) do
+  for _, demand in pairs(EXPECTED) do
     local runtime = OMW.AAR.GetActive(demand.expectedArea, demand.receiverProfile)
     if runtime and runtime.flightGroup and runtime.flightGroup:IsAlive() then
       activeCount = activeCount + 1
-      if runtime.mission and runtime.mission:IsExecuting() then
-        executingCount = executingCount + 1
-        if not executingLogged[key] then
-          executingLogged[key] = true
-          local fuelPct = runtime.flightGroup:GetFuelMin()
+      local observation = observations[demand.missionDemandId]
+      if observation and not observation.transitPass
+          and timer.getAbsTime() - observation.materializedAt >= TRANSIT_OBSERVATION_SEC then
+        local currentTrackDistanceNm = getTrackDistanceNm(runtime)
+        if currentTrackDistanceNm
+            and observation.initialTrackDistanceNm
+            and currentTrackDistanceNm <= observation.initialTrackDistanceNm - MIN_TRACK_PROGRESS_NM then
+          observation.transitPass = true
           log(string.format(
-            "EXECUTING_PASS demand=%s area=%s profile=%s source=%s group=%s fuelPct=%.2f ingressFL=%d trackAltFt=%d egressFL=%d",
+            "TRANSIT_PROGRESS_PASS demand=%s area=%s profile=%s template=%s initialTrackDistanceNm=%.2f currentTrackDistanceNm=%.2f progressNm=%.2f observationSec=%d",
             demand.missionDemandId,
             demand.expectedArea,
             demand.receiverProfile,
-            demand.expectedSource,
-            runtime.group:GetName(),
-            fuelPct or -1,
-            runtime.transit.ingressFt / 100,
-            runtime.profile.altitudeFt,
-            runtime.transit.egressFt / 100
+            demand.expectedTemplate,
+            observation.initialTrackDistanceNm,
+            currentTrackDistanceNm,
+            observation.initialTrackDistanceNm - currentTrackDistanceNm,
+            TRANSIT_OBSERVATION_SEC
           ))
+        elseif currentTrackDistanceNm then
+          recordFailure(string.format(
+            "TRANSIT_PROGRESS demand=%s area=%s initialTrackDistanceNm=%.2f currentTrackDistanceNm=%.2f requiredProgressNm=%.1f",
+            demand.missionDemandId,
+            demand.expectedArea,
+            observation.initialTrackDistanceNm or -1,
+            currentTrackDistanceNm,
+            MIN_TRACK_PROGRESS_NM
+          ))
+          observation.transitPass = false
         end
+      end
+      if observation and observation.transitPass then
+        transitPassCount = transitPassCount + 1
       end
     end
   end
 
-  if executingCount == #DEMANDS then
+  if failed then
+    completed = true
+    fail(string.format(
+      "INTEGRATION_FAIL active=%d materialized=%d transitPass=%d",
+      activeCount,
+      strategicEvents.materialized,
+      transitPassCount
+    ))
+    return
+  end
+
+  if strategicEvents.materialized == #DEMANDS and transitPassCount == #DEMANDS then
     completed = true
     log(string.format(
-      "INTEGRATION_PASS demands=%d active=%d executing=%d materialized=%d sourceSpacingSec=%d artificialFuelLow=false",
+      "INTEGRATION_PASS demands=%d active=%d materialized=%d transitProgress=%d sourceSpacingSec=%d artificialFuelLow=false fullTrackArrivalRequired=false",
       #DEMANDS,
       activeCount,
-      executingCount,
       strategicEvents.materialized,
+      transitPassCount,
       OMW.AAR.GetConfig().sourceSpawnIntervalSec
     ))
     return
@@ -209,18 +360,20 @@ SCHEDULER:New(nil, function()
   if timer.getAbsTime() - startedAt > TIMEOUT_SEC then
     completed = true
     fail(string.format(
-      "TIMEOUT expected=%d active=%d executing=%d materialized=%d",
+      "TIMEOUT expected=%d active=%d materialized=%d transitPass=%d",
       #DEMANDS,
       activeCount,
-      executingCount,
-      strategicEvents.materialized
+      strategicEvents.materialized,
+      transitPassCount
     ))
   end
 end, {}, STATUS_INTERVAL_SEC, STATUS_INTERVAL_SEC)
 
 log(string.format(
-  "HARNESS_READY demands=%d sourceSpawnIntervalSec=%d timeoutSec=%d artificialFuelLow=false expectedNorthSpacing=true expectedSouthSpacing=true",
+  "HARNESS_READY demands=%d sourceSpawnIntervalSec=%d transitObservationSec=%d minTrackProgressNm=%.1f timeoutSec=%d artificialFuelLow=false fullTrackArrivalRequired=false",
   #DEMANDS,
   OMW.AAR.GetConfig().sourceSpawnIntervalSec,
+  TRANSIT_OBSERVATION_SEC,
+  MIN_TRACK_PROGRESS_NM,
   TIMEOUT_SEC
 ))
