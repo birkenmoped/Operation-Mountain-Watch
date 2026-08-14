@@ -222,15 +222,17 @@ local function materialize(selection)
     return existing
   end
 
-  local gateCoord = COORDINATE:NewFromLLDD(gate.lat, gate.lon)
-  gateCoord:SetAltitude(UTILS.FeetToMeters(transit.ingressFt), true)
+  local spawnCoord = COORDINATE:NewFromLLDD(gate.lat, gate.lon)
+  spawnCoord:SetAltitude(UTILS.FeetToMeters(transit.ingressFt), true)
+  local ingressCoord = COORDINATE:NewFromLLDD(gate.lat, gate.lon)
+  local egressCoord = COORDINATE:NewFromLLDD(gate.lat, gate.lon)
   local trackCoord = COORDINATE:NewFromLLDD(areaSpec.lat, areaSpec.lon)
-  local spawnHeadingDeg = gateCoord:HeadingTo(trackCoord)
+  local spawnHeadingDeg = spawnCoord:HeadingTo(trackCoord)
 
   local spawner = SPAWN:New(template)
   spawner:InitHeading(spawnHeadingDeg)
   spawner:InitSpeedKnots(TRANSIT_SPEED_KT)
-  local group = spawner:SpawnFromCoordinate(gateCoord)
+  local group = spawner:SpawnFromCoordinate(spawnCoord)
   if not group then
     fail("failed to materialize tanker template=" .. tostring(template))
   end
@@ -250,8 +252,8 @@ local function materialize(selection)
   )
   mission:SetRadio(areaSpec.frequencyMHz, 0)
   mission:SetTACAN(areaSpec.tacanChannel, areaSpec.tacanIdent, nil, "Y")
-  mission:SetMissionIngressCoord(gateCoord, transit.ingressFt, TRANSIT_SPEED_KT)
-  mission:SetMissionEgressCoord(gateCoord, transit.egressFt, TRANSIT_SPEED_KT)
+  mission:SetMissionIngressCoord(ingressCoord, transit.ingressFt, TRANSIT_SPEED_KT)
+  mission:SetMissionEgressCoord(egressCoord, transit.egressFt, TRANSIT_SPEED_KT)
 
   flightGroup:SetFuelLowRTB(false)
   flightGroup:SetFuelLowThreshold(areaSpec.fuelLowPct)
@@ -264,7 +266,8 @@ local function materialize(selection)
     group = group,
     flightGroup = flightGroup,
     mission = mission,
-    gateCoord = gateCoord,
+    ingressCoord = ingressCoord,
+    egressCoord = egressCoord,
     trackCoord = trackCoord,
     egressOrdered = false,
     handoffComplete = false,
@@ -344,7 +347,7 @@ end
 local function monitorHandoffs()
   for key, runtime in pairs(state.activeByKey) do
     if runtime.egressOrdered and not runtime.handoffComplete then
-      local distanceNm = getDistanceNm(runtime.flightGroup, runtime.gateCoord)
+      local distanceNm = getDistanceNm(runtime.flightGroup, runtime.egressCoord)
       if distanceNm and distanceNm <= HANDOFF_RADIUS_NM then
         runtime.handoffComplete = true
         log(string.format(
