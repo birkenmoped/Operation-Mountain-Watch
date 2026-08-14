@@ -94,6 +94,7 @@ local state = {
   queue = {},
   activeByKey = {},
   lastSpawnAtBySource = {},
+  spawnersBySource = {},
   dispatcher = nil,
   handoffMonitor = nil,
 }
@@ -206,6 +207,15 @@ local function getDistanceNm(flightGroup, coordinate)
   return current:Get2DDistance(coordinate) / 1852
 end
 
+local function getSpawner(sourceDomain, template)
+  local spawner = state.spawnersBySource[sourceDomain]
+  if not spawner then
+    spawner = SPAWN:New(template)
+    state.spawnersBySource[sourceDomain] = spawner
+  end
+  return spawner
+end
+
 local function materialize(selection)
   requireMoose()
   local areaSpec = AREAS[selection.area]
@@ -229,7 +239,7 @@ local function materialize(selection)
   local trackCoord = COORDINATE:NewFromLLDD(areaSpec.lat, areaSpec.lon)
   local spawnHeadingDeg = spawnCoord:HeadingTo(trackCoord)
 
-  local spawner = SPAWN:New(template)
+  local spawner = getSpawner(areaSpec.sourceDomain, template)
   spawner:InitHeading(spawnHeadingDeg)
   spawner:InitSpeedKnots(TRANSIT_SPEED_KT)
   local group = spawner:SpawnFromCoordinate(spawnCoord)
