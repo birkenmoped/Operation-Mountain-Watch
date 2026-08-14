@@ -26,14 +26,16 @@ validated_in_dcs: false
 
 Der Test prueft in einem gemeinsamen DCS-Lauf mehrere AAR-Funktionen statt einzelner Tippelschritte:
 
-- drei gleichzeitige KC-135 Boom-Tanker aus Mission-Editor-Seed-Templates;
+- drei KC-135 Boom-Tanker aus Mission-Editor-Seed-Templates im selben Testlauf;
+- maximal zwei gleichzeitig laufende Supportmissionen entsprechend `OMW-AIR-IMPLEMENTATION`;
 - Uebernahme der im Template gesetzten 90/96-%-Fuelwerte beim MOOSE-SPAWN;
 - `SPAWN -> FLIGHTGROUP -> AUFTRAG:TANKER` im gepinnten MOOSE-Stand;
 - unterschiedliche AAR-Areas, Frequenzen, TACAN-Kanaele und Callsigns;
 - Transit vom OMW-Ingress-Gate zur AAR-Area;
 - Racetrack-Auftrag;
 - beschleunigter `FuelLow`-Test ohne eigenen Fuel-Polling-Controller;
-- Abbruch des Tankerauftrags bei `FuelLow` und Nutzung des AUFTRAG-Egress-Waypoints.
+- Abbruch des Tankerauftrags bei `FuelLow` und Nutzung des AUFTRAG-Egress-Waypoints;
+- gestaffelte Aktivierung von Homer nach dem Clancy-FuelLow-Ereignis, sodass die globale Supportmissionsgrenze nicht ueberschritten wird.
 
 Der Test veraendert keine `.miz` automatisch. Der Projektinhaber bindet das erzeugte Bundle manuell in die Testmission ein.
 
@@ -82,6 +84,18 @@ AUFTRAG:Cancel()
 
 Der Harness nutzt MOOSE `SCHEDULER` nur fuer 30-sekuendiges Acceptance-Logging. Er implementiert keinen eigenen Fuel-Controller und keinen Native-DCS-Eventhandler.
 
+## Governance-Grenze fuer Supportmissions-Concurrency
+
+`docs/18-air-operations-implementation.md` setzt missionsweit:
+
+```text
+maxConcurrentSupportMissions = 2
+maxAircraftPerSupportMission = 2
+maxConcurrentSupportAircraft = 4
+```
+
+Der Acceptance-Harness haelt diese Grenze ein. Initial laufen gleichzeitig nur `CLANCY` und `NELSON`. Sobald `CLANCY` den beschleunigten `FuelLow`-Schwellwert erreicht, wird dessen Tankerauftrag abgebrochen und auf den Missions-Egress uebergeleitet. Erst danach wird `HOMER` als neuer Tankerauftrag gestartet. Damit werden im selben DCS-Lauf drei Tankerpfade geprueft, ohne drei gleichzeitige Supportmissionen zu erzeugen.
+
 ## Mission-Editor-Vertrag
 
 Die hochgeladene Owner-Mission vom 14.08.2026 enthaelt folgende Late-Activation-Templates mit leeren Advanced-Waypoint-Tasks:
@@ -98,15 +112,22 @@ Die Template-Gruppe behaelt DCS `task = Refueling`; die automatisch erzeugten We
 
 ## Aktiver Testblock
 
-Im ersten Lauf werden gleichzeitig aktiviert:
+Der gemeinsame Lauf startet gestaffelt:
 
 ```text
+INITIAL CONCURRENT:
 CLANCY
-HOMER
 NELSON
+
+AFTER CLANCY FUELLOW/CANCEL:
+HOMER
+
+PREPARED BUT INACTIVE:
+KRUSTY
+PATTY
 ```
 
-Krusty und Patty bleiben vorbereitet, aber in diesem Lauf inaktiv. Homer/Krusty bleiben damit weiterhin Alternativen.
+Homer/Krusty bleiben weiterhin Alternativen; Krusty wird in diesem Acceptance-Lauf nicht aktiviert.
 
 ### Testwerte
 
@@ -136,17 +157,23 @@ N38.1211666667 E70.3600000000
 
 ```text
 START
+START_AREA_PASS area=CLANCY
+START_AREA_PASS area=NELSON
 SPAWN_PASS area=CLANCY
-SPAWN_PASS area=HOMER
 SPAWN_PASS area=NELSON
 MISSION_CONFIG_PASS area=CLANCY
-MISSION_CONFIG_PASS area=HOMER
 MISSION_CONFIG_PASS area=NELSON
 HARNESS_READY
-TANKER_EXECUTING_PASS area=...
+TANKER_EXECUTING_PASS area=CLANCY
+TANKER_EXECUTING_PASS area=NELSON
 STATUS area=...
-SUMMARY active=3 ...
-FUEL_LOW_PASS area=... action=CANCEL_TO_EGRESS
+SUMMARY ... supportMissionLimit=2
+FUEL_LOW_PASS area=CLANCY action=CANCEL_TO_EGRESS
+STAGE_TRANSITION from=CLANCY to=HOMER reason=CLANCY_FUEL_LOW
+START_AREA_PASS area=HOMER
+SPAWN_PASS area=HOMER
+MISSION_CONFIG_PASS area=HOMER
+TANKER_EXECUTING_PASS area=HOMER
 ```
 
 Der Fuel-Readback ist in Prozent der tatsaechlichen DCS-Einheit. Als Template-Referenz gelten 90700 kg = 100 %, 81630 kg = 90 % und 87072 kg = 96 %.
@@ -155,15 +182,17 @@ Der Fuel-Readback ist in Prozent der tatsaechlichen DCS-Einheit. Als Template-Re
 
 Ein erfolgreicher gemeinsamer Lauf muss mindestens zeigen:
 
-1. alle drei aktiven Templates werden genau einmal als KC-135 gespawnt;
-2. Fuel-Readback liegt unmittelbar nach Spawn plausibel bei 90/90/96 % und wird nicht auf 100 % zurueckgesetzt;
-3. alle drei `AUFTRAG:TANKER` erreichen `EXECUTING`;
-4. Clancy, Homer und Nelson halten getrennte Tankermissionen ohne gegenseitige Ueberschreibung;
-5. Funk und TACAN sind im Cockpit eines geeigneten Receivers praktisch pruefbar;
-6. Boom-Refueling ist mit mindestens einem aktuellen OMW-Boom-Receiver praktisch pruefbar;
-7. der beschleunigte FuelLow-Event tritt pro Tanker bei der Testschwelle auf;
-8. automatisches MOOSE-FuelLow-RTB ist deaktiviert und der aktuelle Tankerauftrag wird stattdessen abgebrochen;
-9. der vorhandene AUFTRAG-Egress-Waypoint fuehrt den Tanker aus dem Track in Richtung zugewiesenem Gate;
-10. keine Behauptung ueber simulierte Off-map-Recovery wird aus diesem Lauf abgeleitet.
+1. Clancy und Nelson werden initial genau einmal als KC-135 gespawnt;
+2. Fuel-Readback liegt unmittelbar nach Spawn plausibel bei 90/96 % und wird nicht auf 100 % zurueckgesetzt;
+3. beide initialen `AUFTRAG:TANKER` erreichen `EXECUTING`;
+4. Funk und TACAN sind fuer Clancy und Nelson im Cockpit eines geeigneten Receivers praktisch pruefbar;
+5. Boom-Refueling ist mit mindestens einem aktuellen OMW-Boom-Receiver praktisch pruefbar;
+6. Clancy erreicht den beschleunigten FuelLow-Schwellwert, automatisches MOOSE-FuelLow-RTB bleibt deaktiviert und der Tankerauftrag wird stattdessen abgebrochen;
+7. der vorhandene AUFTRAG-Egress-Waypoint fuehrt Clancy aus dem Track in Richtung zugewiesenem Gate;
+8. Homer wird erst nach dem Clancy-FuelLow/CANCEL-Ereignis gestartet und erreicht ebenfalls `EXECUTING`;
+9. Homer uebernimmt seinen 90-%-Seed-Fuelwert sowie eigene Funk-/TACAN-Konfiguration;
+10. zu keinem Zeitpunkt meldet der Harness mehr als zwei gleichzeitig `EXECUTING` befindliche Supportmissionen;
+11. Nelson und Homer erreichen ihre beschleunigten FuelLow-Schwellwerte und erhalten jeweils den CANCEL-to-Egress-Pfad;
+12. keine Behauptung ueber simulierte Off-map-Recovery wird aus diesem Lauf abgeleitet.
 
 `VALIDATED` darf erst nach dokumentiertem Owner-DCS-Lauf mit Branch, Commit, MIZ-Hash, Bundle-Hash, DCS-Version und gepinntem MOOSE-Hash gesetzt werden.
