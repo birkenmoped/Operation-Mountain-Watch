@@ -1,0 +1,20 @@
+number,area,block,tanker_capacity,route_true_deg,boom_callsign,mprs_callsign,tacan,safety_altitude_ft,runtime_scope,tanker_type,refueling_system,external_origin,origin_confidence,ingress_gate,initial_fuel_pct,initial_fuel_lb,estimated_fuel_at_track_lb,rtb_trigger_pct,rtb_trigger_lb,planning_status,notes
+1,Barney,FL200-FL250,1,209.132,Gray 2,Purple 4,41X,5300,STRATEGIC_RESERVE,,,,,,,,,,,RESERVE,Geometry retained; no current tanker assignment
+2,Bart,FL200-FL250,1,264.872,Maroon 10,Cherry 9,46X,5100,STRATEGIC_RESERVE,,,,,,,,,,,RESERVE,Geometry retained; no current tanker assignment
+3,Carl,FL200-FL250,1,204.416,Carmine 14,Coral 5,45X,4300,STRATEGIC_RESERVE,,,,,,,,,,,RESERVE,Geometry retained; no current tanker assignment
+4,Clancy,FL200-FL250,1,225.276,Turquoise 5,Peach 13,60X,10800,KANDAHAR_RC_EAST_ACCESS,KC-135,BOOM,AL_UDEID,CORROBORATED_INFERENCE,OMW_TANKER_GATE_S,90,180400,176300,26,51500,PLANNING_ESTIMATE,Southwest-Asia source model; origin is an OMW planning inference and not a direct 2011 sortie claim
+5,Homer,FL180-FL280,2,317.573,Green 7,Lemon 17,54X;55X,10900,RC_EAST_SOUTH,KC-135,BOOM,AL_UDEID,CORROBORATED_INFERENCE,OMW_TANKER_GATE_S,90,180400,173800,27,54100,PLANNING_ESTIMATE,Alternative with Krusty; not automatically concurrent
+6,Krusty,FL180-FL280,2,212.350,Aqua 4,Tan 7,42X;43X,11600,RC_EAST_SOUTH,KC-135,BOOM,AL_UDEID,CORROBORATED_INFERENCE,OMW_TANKER_GATE_S,90,180400,174200,27,53800,PLANNING_ESTIMATE,Alternative with Homer; not automatically concurrent
+7,Lenny,FL180-FL280,2,243.776,White 16,Khaki 14,56X;57X,9500,STRATEGIC_RESERVE,,,,,,,,,,,RESERVE,Geometry retained; no current tanker assignment
+8,Lisa,FL180-FL280,2,4.269,Teal 5,Zinc 8,50X;51X,6500,STRATEGIC_RESERVE,,,,,,,,,,,RESERVE,Geometry retained; no current tanker assignment
+9,Maggie,FL200-FL250,1,263.247,Brass 2,Crimson 16,40X,12300,STRATEGIC_RESERVE,,,,,,,,,,,RESERVE,Geometry retained; no current tanker assignment
+10,Marge,FL150-FL200,1,38.639,Iron 6,Salmon 13,44X,6500,STRATEGIC_RESERVE,,,,,,,,,,,RESERVE,Geometry retained; no current tanker assignment
+11,Milhouse,FL180-FL280,2,63.607,Brass 15,Green 9,58X;59X,11600,STRATEGIC_RESERVE,,,,,,,,,,,RESERVE,Geometry retained; no current tanker assignment
+12,Moe,FL230-FL280,1,304.682,Lemon 10,Peach 4,52X,14700,STRATEGIC_RESERVE,,,,,,,,,,,RESERVE,Geometry retained; no current tanker assignment
+13,Montgomery,FL200-FL250,1,329.863,Cherry 2,Coral 15,53X,3300,STRATEGIC_RESERVE,,,,,,,,,,,RESERVE,Geometry retained; no current tanker assignment
+14,Ned,FL200-FL250,1,243.927,Carmine 19,Purple 7,49X,5700,STRATEGIC_RESERVE,,,,,,,,,,,RESERVE,Geometry retained; no current tanker assignment
+15,Nelson,FL250-FL300,1,10.428,Tan 18,Iron 17,47X,23500,RC_EAST_NORTH_ADJACENT,KC-135,BOOM,MANAS,VERIFIED_OPERATIONAL_SOURCE,OMW_TANKER_GATE_NE,96,191000,188200,20,40000,PLANNING_ESTIMATE,Northern source model; fuel values are OMW planning estimates pending final gate corridor and DCS validation
+16,Patty,FL230-FL280,1,89.662,Crimson 12,Brass 9,48X,15800,RC_EAST_EASTERN_PRIMARY,KC-135,BOOM,MANAS,VERIFIED_OPERATIONAL_SOURCE,OMW_TANKER_GATE_NE,96,191000,186000,21,42000,PLANNING_ESTIMATE,Northern source model; fuel values are OMW planning estimates pending final gate corridor and DCS validation
+17,Selma,8000-13000 ft,1 / HAAR,270.000,N/A,White 1,61X,6100,HAAR_DISABLED_PENDING_MOD,,,,,,,,,,,DISABLED,HAAR geometry retained; helicopter/tanker mod not currently part of OMW
+18,Seymour,10000 ft-FL160,1 / HAAR,225.000,N/A,Zinc 12,62X,10000,HAAR_DISABLED_PENDING_MOD,,,,,,,,,,,DISABLED,HAAR geometry retained; helicopter/tanker mod not currently part of OMW
+19,Smithers,5000-10000 ft,1 / HAAR,95.000,N/A,White 10,63X,2000,HAAR_DISABLED_PENDING_MOD,,,,,,,,,,,DISABLED,HAAR geometry retained; helicopter/tanker mod not currently part of OMW
