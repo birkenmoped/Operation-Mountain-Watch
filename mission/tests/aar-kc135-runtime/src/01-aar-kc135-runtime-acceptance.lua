@@ -1,4 +1,4 @@
-local TEST_ID = "AAR-KC135-RUNTIME-ACCEPTANCE-4"
+local TEST_ID = "AAR-KC135-RUNTIME-ACCEPTANCE-5"
 local LOG_PREFIX = "[OMW][" .. TEST_ID .. "] "
 local STATUS_INTERVAL_SEC = 15
 local SAFE_FUEL_LOW_PCT = 20
@@ -6,6 +6,7 @@ local ACCELERATED_FUEL_LOW_PCT = 99
 local EGRESS_GATE_RADIUS_NM = 10
 local RECEIVER_TIMEOUT_SEC = 1800
 local RECEIVER_MISSION_RANGE_NM = 250
+local POST_REFUEL_DWELL_SEC = 60
 local RECEIVER_TEMPLATE = "TPL_AIR_US_BGRM_F16C_CAS_2SHIP"
 local RECEIVER_SQUADRON = "SQ_US_BGRM_F16C_121_EFS"
 
@@ -37,7 +38,7 @@ local TANKERS = {
   NELSON = {
     area = "NELSON",
     template = "OMW_AAR_KC135_NELSON",
-    gate = { lat = 37.64268794, lon = 70.96231552 },
+    gate = { lat = 38.83163, lon = 70.95271 },
     track = { lat = 36.37666667, lon = 71.01833333 },
     altitudeFt = 27500,
     speedKt = 300,
@@ -48,7 +49,7 @@ local TANKERS = {
     tacanBand = "Y",
     tacanIdent = "NEL",
     expectedFuelPct = 96,
-    gateDomain = "NORTH_EAST",
+    gateDomain = "NORTH_EGPAN",
   },
 }
 
@@ -63,7 +64,9 @@ local receiver = {
   refuelOrderedAt = nil,
   fuelBeforePct = nil,
   refueled = false,
+  refueledAt = nil,
   fuelAfterPct = nil,
+  postRefuelDwellLogged = false,
 }
 
 local function getFuelPct(flightGroup)
@@ -230,12 +233,14 @@ local function configureExistingBagramReceiver()
           previousOnAfterRefueled(self, RefuelFrom, RefuelEvent, RefuelTo)
         end
         receiver.refueled = true
+        receiver.refueledAt = timer.getAbsTime()
         receiver.fuelAfterPct = getFuelPct(self)
         log(string.format(
-          "AI_BOOM_REFUELED_PASS group=%s fuelBeforePct=%.2f fuelAfterPct=%.2f",
+          "AI_BOOM_REFUELED_PASS group=%s fuelBeforePct=%.2f fuelAfterPct=%.2f postRefuelDwellSec=%d",
           self:GetName(),
           receiver.fuelBeforePct or -1,
-          receiver.fuelAfterPct or -1
+          receiver.fuelAfterPct or -1,
+          POST_REFUEL_DWELL_SEC
         ))
       end
     end
@@ -256,7 +261,7 @@ for _, area in ipairs(ACTIVE_TANKERS) do
   runtime[area] = configureTanker(TANKERS[area])
 end
 
-log("START simultaneousDifferentGateDomains=CLANCY,NELSON sameGateMinimumSpawnSeparationSec=60 productionSupportMissionLimit=2 runtimeTacanBand=Y clancyA10CompatibleSpeedKt=220 receiverMissionRangeNm=250")
+log("START simultaneousDifferentGateDomains=CLANCY,NELSON sameGateMinimumSpawnSeparationSec=60 productionSupportMissionLimit=2 runtimeTacanBand=Y clancyA10CompatibleSpeedKt=220 receiverMissionRangeNm=250 nelsonGateReference=50km_NNE_EGPAN postRefuelDwellSec=60")
 
 local receiverFoundationResolved = false
 SCHEDULER:New(nil, function()
@@ -328,18 +333,30 @@ SCHEDULER:New(nil, function()
     receiver.refuelOrderedAt = nil
   end
 
-  if receiver.refueled and not acceleratedFuelLowArmed then
-    acceleratedFuelLowArmed = true
-    for _, area in ipairs(ACTIVE_TANKERS) do
-      local state = runtime[area]
-      if state and state.flightGroup then
-        state.flightGroup:SetFuelLowThreshold(ACCELERATED_FUEL_LOW_PCT)
+  if receiver.refueled and receiver.refueledAt and not acceleratedFuelLowArmed then
+    local dwellElapsedSec = now - receiver.refueledAt
+    if dwellElapsedSec >= POST_REFUEL_DWELL_SEC then
+      if not receiver.postRefuelDwellLogged then
+        receiver.postRefuelDwellLogged = true
+        log(string.format(
+          "POST_REFUEL_DWELL_PASS elapsedSec=%.1f requiredSec=%d",
+          dwellElapsedSec,
+          POST_REFUEL_DWELL_SEC
+        ))
       end
+      acceleratedFuelLowArmed = true
+      for _, area in ipairs(ACTIVE_TANKERS) do
+        local state = runtime[area]
+        if state and state.flightGroup then
+          state.flightGroup:SetFuelLowThreshold(ACCELERATED_FUEL_LOW_PCT)
+        end
+      end
+      log(string.format(
+        "ACCELERATED_FUEL_LOW_ARMED thresholdPct=%d afterAiBoomRefueled=true postRefuelDwellSec=%d",
+        ACCELERATED_FUEL_LOW_PCT,
+        POST_REFUEL_DWELL_SEC
+      ))
     end
-    log(string.format(
-      "ACCELERATED_FUEL_LOW_ARMED thresholdPct=%d afterAiBoomRefueled=true",
-      ACCELERATED_FUEL_LOW_PCT
-    ))
   end
 
   log(string.format(
@@ -357,4 +374,4 @@ SCHEDULER:New(nil, function()
   ))
 end, {}, 10, STATUS_INTERVAL_SEC)
 
-log("HARNESS_READY activeTankers=CLANCY,NELSON manualRadioTacanExemplars=2 runtimeTacanBand=Y clancySpeedKt=220 nelsonSpeedKt=300 spawnHeadingTowardTrack=true receiverMissionRangeNm=250 aiBoomReceiverTemplate=TPL_AIR_US_BGRM_F16C_CAS_2SHIP acceleratedFuelLowAfterAiBoomRefueled=true egressGateRadiusNm=10 newMissionEditorTemplates=0 mizMutation=false")
+log("HARNESS_READY activeTankers=CLANCY,NELSON manualRadioTacanExemplars=2 runtimeTacanBand=Y clancySpeedKt=220 nelsonSpeedKt=300 spawnHeadingTowardTrack=true receiverMissionRangeNm=250 nelsonGateReference=50km_NNE_EGPAN postRefuelDwellSec=60 aiBoomReceiverTemplate=TPL_AIR_US_BGRM_F16C_CAS_2SHIP acceleratedFuelLowAfterAiBoomRefueled=true egressGateRadiusNm=10 newMissionEditorTemplates=0 mizMutation=false")
