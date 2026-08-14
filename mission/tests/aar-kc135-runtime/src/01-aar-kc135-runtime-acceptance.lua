@@ -1,4 +1,4 @@
-local TEST_ID = "AAR-KC135-RUNTIME-ACCEPTANCE-3"
+local TEST_ID = "AAR-KC135-RUNTIME-ACCEPTANCE-4"
 local LOG_PREFIX = "[OMW][" .. TEST_ID .. "] "
 local STATUS_INTERVAL_SEC = 15
 local SAFE_FUEL_LOW_PCT = 20
@@ -23,12 +23,12 @@ local TANKERS = {
     gate = { lat = 28.90264890, lon = 64.61166667 },
     track = { lat = 31.75441342, lon = 66.82695501 },
     altitudeFt = 22500,
-    speedKt = 300,
+    speedKt = 220,
     headingDeg = 225.276,
     legNm = 35,
     frequencyMHz = 241.600,
     tacanChannel = 60,
-    tacanBand = "X",
+    tacanBand = "Y",
     tacanIdent = "CLA",
     expectedFuelPct = 90,
     gateDomain = "SOUTH",
@@ -44,7 +44,7 @@ local TANKERS = {
     legNm = 35,
     frequencyMHz = 384.400,
     tacanChannel = 47,
-    tacanBand = "X",
+    tacanBand = "Y",
     tacanIdent = "NEL",
     expectedFuelPct = 96,
     gateDomain = "NORTH_EAST",
@@ -97,8 +97,11 @@ local function configureTanker(spec)
   local altitudeM = UTILS.FeetToMeters(spec.altitudeFt)
   local gateCoord = COORDINATE:NewFromLLDD(spec.gate.lat, spec.gate.lon, altitudeM)
   local trackCoord = COORDINATE:NewFromLLDD(spec.track.lat, spec.track.lon, altitudeM)
+  local spawnHeadingDeg = gateCoord:HeadingTo(trackCoord)
 
-  local group = SPAWN:New(spec.template):SpawnFromCoordinate(gateCoord)
+  local spawner = SPAWN:New(spec.template)
+  spawner:InitHeading(spawnHeadingDeg)
+  local group = spawner:SpawnFromCoordinate(gateCoord)
   if not group then
     fail(string.format("SPAWN area=%s template=%s", spec.area, spec.template))
     return nil
@@ -143,12 +146,14 @@ local function configureTanker(spec)
   flightGroup:AddMission(mission)
 
   log(string.format(
-    "TANKER_START_PASS area=%s gateDomain=%s group=%s gateLat=%.8f gateLon=%.8f radioMHz=%.3f modulation=AM tacan=%d%s ident=%s",
+    "TANKER_START_PASS area=%s gateDomain=%s group=%s gateLat=%.8f gateLon=%.8f spawnHeadingDeg=%.3f speedKt=%d radioMHz=%.3f modulation=AM tacan=%d%s ident=%s",
     spec.area,
     spec.gateDomain,
     group:GetName(),
     spec.gate.lat,
     spec.gate.lon,
+    spawnHeadingDeg,
+    spec.speedKt,
     spec.frequencyMHz,
     spec.tacanChannel,
     spec.tacanBand,
@@ -162,6 +167,7 @@ local function configureTanker(spec)
     mission = mission,
     gateCoord = gateCoord,
     trackCoord = trackCoord,
+    spawnHeadingDeg = spawnHeadingDeg,
     executingLogged = false,
     seedFuelLogged = false,
     egressOrdered = false,
@@ -247,7 +253,7 @@ for _, area in ipairs(ACTIVE_TANKERS) do
   runtime[area] = configureTanker(TANKERS[area])
 end
 
-log("START simultaneousDifferentGateDomains=CLANCY,NELSON sameGateMinimumSpawnSeparationSec=60 productionSupportMissionLimit=2")
+log("START simultaneousDifferentGateDomains=CLANCY,NELSON sameGateMinimumSpawnSeparationSec=60 productionSupportMissionLimit=2 runtimeTacanBand=Y clancyA10CompatibleSpeedKt=220")
 
 local receiverFoundationResolved = false
 SCHEDULER:New(nil, function()
@@ -275,10 +281,11 @@ SCHEDULER:New(nil, function()
         if state.mission:IsExecuting() and not state.executingLogged then
           state.executingLogged = true
           log(string.format(
-            "TANKER_EXECUTING_PASS area=%s fuelPct=%.2f distanceTrackNm=%.2f",
+            "TANKER_EXECUTING_PASS area=%s fuelPct=%.2f distanceTrackNm=%.2f speedKt=%d",
             area,
             fuelPct or -1,
-            distanceTrackNm
+            distanceTrackNm,
+            state.spec.speedKt
           ))
         end
         if state.egressOrdered and not state.egressGatePassed and distanceGateNm >= 0 and distanceGateNm <= EGRESS_GATE_RADIUS_NM then
@@ -333,10 +340,11 @@ SCHEDULER:New(nil, function()
   end
 
   log(string.format(
-    "SUMMARY clancyExecuting=%s nelsonExecuting=%s receiverAssigned=%s receiverAirborne=%s refuelOrdered=%s refueled=%s fuelLowArmed=%s clancyEgress=%s nelsonEgress=%s",
+    "SUMMARY clancyExecuting=%s nelsonExecuting=%s receiverAssigned=%s receiverMissionOpsGroups=%d receiverAirborne=%s refuelOrdered=%s refueled=%s fuelLowArmed=%s clancyEgress=%s nelsonEgress=%s",
     tostring(runtime.CLANCY and runtime.CLANCY.mission:IsExecuting() or false),
     tostring(runtime.NELSON and runtime.NELSON.mission:IsExecuting() or false),
     tostring(receiver.flightGroup ~= nil),
+    receiver.mission and receiver.mission:CountOpsGroups() or 0,
     tostring(receiver.flightGroup and receiver.flightGroup:IsAirborne() or false),
     tostring(receiver.refuelOrdered),
     tostring(receiver.refueled),
@@ -346,4 +354,4 @@ SCHEDULER:New(nil, function()
   ))
 end, {}, 10, STATUS_INTERVAL_SEC)
 
-log("HARNESS_READY activeTankers=CLANCY,NELSON manualRadioTacanExemplars=2 aiBoomReceiverTemplate=TPL_AIR_US_BGRM_F16C_CAS_2SHIP acceleratedFuelLowAfterAiBoomRefueled=true egressGateRadiusNm=10 newMissionEditorTemplates=0 mizMutation=false")
+log("HARNESS_READY activeTankers=CLANCY,NELSON manualRadioTacanExemplars=2 runtimeTacanBand=Y clancySpeedKt=220 nelsonSpeedKt=300 spawnHeadingTowardTrack=true aiBoomReceiverTemplate=TPL_AIR_US_BGRM_F16C_CAS_2SHIP acceleratedFuelLowAfterAiBoomRefueled=true egressGateRadiusNm=10 newMissionEditorTemplates=0 mizMutation=false")
