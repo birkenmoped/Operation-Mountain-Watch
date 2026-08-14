@@ -90,8 +90,12 @@ Produktive Planungsdaten:
 
 - `data/air-operations/aar/omw-2011-aar-areas.csv`
 - `data/air-operations/aar/omw-2011-aar-areas.geojson`
+- `data/air-operations/aar/omw-2011-aar-runtime-scope.csv`
+- `data/air-operations/aar/omw-2011-aar-tanker-planning.csv`
 
-Die CSV bewahrt die ursprünglichen Graveyard-Control-Points und `Route(T)`-Werte in eigenen `source_*`-Feldern und stellt die korrigierten OMW-Werte daneben. Dadurch bleibt die Quellenabweichung vollständig nachvollziehbar.
+Die CSV `omw-2011-aar-areas.csv` bewahrt die ursprünglichen Graveyard-Control-Points und `Route(T)`-Werte in eigenen `source_*`-Feldern und stellt die korrigierten OMW-Werte daneben. Dadurch bleibt die Quellenabweichung vollständig nachvollziehbar.
+
+`omw-2011-aar-tanker-planning.csv` führt ergänzend die tabellarischen AAR-Parameter, aufgelösten Color-Net-Frequenzen, TACAN-Zuweisungen und die aktuelle Runtime-Planung zusammen. Projektzugewiesene Callsigns, Modulationen, Origins und Fuel-/RTB-Werte sind dort ausdrücklich von quellenbasierten Feldern getrennt und als Planungsdaten gekennzeichnet.
 
 ### 4.1 Korrekturregeln
 
@@ -128,6 +132,7 @@ Für den aktuellen OMW-Kampagnenschwerpunkt gilt:
 Maschinenlesbare Runtime-Scope-Planung:
 
 - `data/air-operations/aar/omw-2011-aar-runtime-scope.csv`
+- `data/air-operations/aar/omw-2011-aar-tanker-planning.csv`
 
 Aktueller erster Boom-Scope:
 
@@ -137,7 +142,19 @@ Aktueller erster Boom-Scope:
 | Homer | `RC_EAST_SOUTH` | südlicher RC-East-/Paktika-Ghazni-seitiger Kandidat; Alternative zu Krusty |
 | Krusty | `RC_EAST_SOUTH` | südlicher RC-East-/Paktika-Ghazni-seitiger Kandidat; Alternative zu Homer |
 | Nelson | `RC_EAST_NORTH_ADJACENT` | nördlicher RC-East-/Nuristan-angrenzender Kandidat |
-| Patty | `RC_EAST_EASTERN_PRIMARY` | primärer östlicher RC-East-/Kunar-Nangarhar-seitiger Kandidat |
+| Patty | `RC_EAST_EASTERN_PRIMARY` | primärer östlicher RC-East-/Kunar-Nangarhar-seitiger AAR-Kandidat |
+
+Aktuelle projektseitige Tankerzuordnung für diesen Boom-Scope:
+
+| Area | Tanker | Origin-Modell | Callsign | BOOM-Net | TACAN | Initial Fuel | RTB Trigger |
+|---|---|---|---|---|---|---:|---:|
+| Clancy | KC-135 | Al Udeid / `CORROBORATED_INFERENCE` | Shell 1 | Turquoise 5 / 241.600 MHz AM | 60X | 90 % | 26 % |
+| Homer | KC-135 | Al Udeid / `CORROBORATED_INFERENCE` | Arco 1 | Green 7 / 376.000 MHz AM | 54X / 55X | 90 % | 27 % |
+| Krusty | KC-135 | Al Udeid / `CORROBORATED_INFERENCE` | Arco 1 | Aqua 4 / 258.300 MHz AM | 42X / 43X | 90 % | 27 % |
+| Nelson | KC-135 | Manas / `VERIFIED_OPERATIONAL_SOURCE` | Texaco 1 | Tan 18 / 384.400 MHz AM | 47X | 96 % | 20 % |
+| Patty | KC-135 | Manas / `VERIFIED_OPERATIONAL_SOURCE` | Texaco 2 | Crimson 12 / 237.300 MHz AM | 48X | 96 % | 21 % |
+
+Die Callsigns und AM-Modulationen in dieser Tabelle sind **OMW-Projektzuweisungen**, keine Behauptung historischer ATO-Callsigns oder Frequenzen. Homer und Krusty teilen bewusst `Arco 1`, weil sie derzeit Alternativen derselben südlichen Funktionsgruppe sind und nicht automatisch gleichzeitig aktiviert werden.
 
 Alle übrigen Fixed-Wing-Areas bleiben `STRATEGIC_RESERVE`. Insbesondere Lenny und Milhouse werden trotz relativer Nähe zu Kandahar beziehungsweise Zentralafghanistan zunächst nicht in den bevorzugten Kandahar-RC-East-Korridor aufgenommen, weil Clancy sowie Homer/Krusty die direktere östliche Zuführung abdecken.
 
@@ -191,9 +208,10 @@ historical_claim: false
 
 - Übertragung der korrigierten WGS84-Geometrie in Mission Editor / DCS und visueller Abgleich;
 - Tankerturns und Trackhaltung im verwendeten DCS-/MOOSE-Stand;
-- Boom-/Drogue-/BDA-Eignung je Receiver;
+- Boom-Eignung der aktuell ausgewählten Tracks; Drogue/HAAR erst bei Aktivierung dieser Runtime-Domänen;
 - geplante Offload- und ARCT-Logik;
 - Multiplayer-, TACAN- und Funkverhalten;
+- Initial-Fuel-, Track-Exit- und RTB-Schwellen im tatsächlichen DCS-KC-135-Verbrauch;
 - Performance bei mehreren gleichzeitig aktiven Tankern;
 - parallele Nutzung nahe beieinander liegender Tracks, insbesondere Homer/Krusty;
 - dokumentierte DCS-, MOOSE-, Mission- und Bundle-Version.
