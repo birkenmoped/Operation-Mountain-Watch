@@ -1,0 +1,20 @@
+number,area,geometry_class,runtime_scope,runtime_eligible_now,refueling_system_now,selection_group,notes
+1,Barney,HA,STRATEGIC_RESERVE,false,NONE,RESERVE,Geometry retained; outside current RC-East/Kandahar-support scope
+2,Bart,HA,STRATEGIC_RESERVE,false,NONE,RESERVE,Geometry retained; outside current RC-East/Kandahar-support scope
+3,Carl,HA,STRATEGIC_RESERVE,false,NONE,RESERVE,Geometry retained; outside current RC-East/Kandahar-support scope
+4,Clancy,HA,KANDAHAR_RC_EAST_ACCESS,true,BOOM,KAF_ACCESS,Primary Kandahar-side access/top-off candidate for traffic toward RC-East
+5,Homer,HA,RC_EAST_SOUTH,true,BOOM,RC_EAST_SOUTH_ALT,Southern RC-East/Paktika-Ghazni-side candidate; alternate with Krusty
+6,Krusty,HA,RC_EAST_SOUTH,true,BOOM,RC_EAST_SOUTH_ALT,Southern RC-East/Paktika-Ghazni-side candidate; alternate with Homer
+7,Lenny,HA,STRATEGIC_RESERVE,false,NONE,RESERVE,Near Kandahar but west of the preferred RC-East access axis; retain as reserve
+8,Lisa,HA,STRATEGIC_RESERVE,false,NONE,RESERVE,Geometry retained; western theater
+9,Maggie,HA,STRATEGIC_RESERVE,false,NONE,RESERVE,Geometry retained; outside current RC-East/Kandahar-support scope
+10,Marge,HA,STRATEGIC_RESERVE,false,NONE,RESERVE,Geometry retained; western/northwestern theater
+11,Milhouse,HA,STRATEGIC_RESERVE,false,NONE,RESERVE,Geometry retained; not on preferred Kandahar-to-RC-East support axis
+12,Moe,HA,STRATEGIC_RESERVE,false,NONE,RESERVE,Geometry retained; west of current RC-East operational focus
+13,Montgomery,HA,STRATEGIC_RESERVE,false,NONE,RESERVE,Geometry retained; northern theater
+14,Ned,HA,STRATEGIC_RESERVE,false,NONE,RESERVE,Geometry retained; north of Bagram and outside current operational focus
+15,Nelson,HA,RC_EAST_NORTH_ADJACENT,true,BOOM,RC_EAST_NORTH,Northern RC-East/Nuristan-adjacent support candidate
+16,Patty,HA,RC_EAST_EASTERN_PRIMARY,true,BOOM,RC_EAST_EAST,Primary eastern RC-East/Kunar-Nangarhar-side AAR candidate
+17,Selma,LA,HAAR_DISABLED_PENDING_MOD,false,NONE,HAAR,HAAR geometry retained; helicopter/tanker mod not currently part of OMW
+18,Seymour,LA,HAAR_DISABLED_PENDING_MOD,false,NONE,HAAR,HAAR geometry retained; helicopter/tanker mod not currently part of OMW
+19,Smithers,LA,HAAR_DISABLED_PENDING_MOD,false,NONE,HAAR,HAAR geometry retained; helicopter/tanker mod not currently part of OMW
