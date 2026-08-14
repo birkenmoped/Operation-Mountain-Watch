@@ -5,7 +5,7 @@ document_class: TEST_PROJECT_INDEX
 owning_policy: OMW-GOV-001
 authoritative_for:
   - AAR MissionDemand production-integration test scope
-  - six-core-area dispatch and source-spacing acceptance
+  - six-core-area dispatch, area-template identity, source spacing and high-transit progress acceptance
 not_authoritative_for:
   - DCS runtime acceptance before owner-run test
   - CampaignState strategic inventory implementation
@@ -27,38 +27,49 @@ Dieser Test prüft ausschließlich die noch offene produktive Integration oberha
 ```text
 MissionDemand
 -> OMW Area-/FAST-/SLOW-Auswahl
+-> area-spezifisches Mission-Editor-KC-135-Template
 -> External Source Domain
 -> MOOSE-Materialisierung am External Gate
 -> High-Transit-Profil
--> AUFTRAG:NewTANKER
--> Mission EXECUTING
+-> nachweisbare Bewegung in Richtung Track
 ```
 
-Spawn, Racetrack, TACAN Y, Radio, Boom-AAR, FuelLow, Cancel, Egress und Off-map-Handoff werden nicht erneut als allgemeine Mechanik getestet; dafür bleibt Acceptance-6 maßgeblich.
+Spawn-Mechanik, Racetrack, TACAN Y, Radio, Boom-AAR, FuelLow, Cancel, Egress und Off-map-Handoff wurden bereits separat im KC-135-Runtime-Acceptance-Pfad geprüft und werden hier nicht künstlich erneut beschleunigt.
+
+## Korrektur gegenüber Integration-1
+
+Der erste Owner-Lauf zeigte zwei Fehler im Testentwurf:
+
+1. alle MANAS-Demands verwendeten `OMW_AAR_KC135_PATTY`, alle AL-UDEID-Demands `OMW_AAR_KC135_KRUSTY`; dadurch wurden Callsign und Gruppenidentität des falschen Seed-Templates geerbt;
+2. der Harness verlangte `AUFTRAG:IsExecuting()` innerhalb von 900 s. Bei realen Gate->Track-Distanzen von mehreren hundert NM ist das kein sinnvoller fokussierter Integrationstest, weil `EXECUTING` erst am eigentlichen Tanker-Missionsabschnitt erwartet werden kann.
+
+Integration-2 verwendet deshalb für jede Core-Area ein eigenes Mission-Editor-Template und prüft statt vollständiger Track-Ankunft die korrekte Materialisierung sowie messbaren High-Transit-Fortschritt.
 
 ## Sechs Test-Demands
 
 ```text
 FAST / NORTHEAST / SUPPORT       -> NELSON / MANAS
 SLOW / SOUTHEAST / RECOVERY      -> KRUSTY / AL_UDEID
-SLOW / EAST / SUPPORT             -> PATTY / MANAS
-SLOW / SOUTH_CENTRAL / RECOVERY   -> MILHOUSE / AL_UDEID
-FAST / CENTRAL / SUPPORT          -> MOE / MANAS
-SLOW / WEST / SUPPORT             -> LISA / MANAS
+SLOW / EAST / SUPPORT            -> PATTY / MANAS
+SLOW / SOUTH_CENTRAL / RECOVERY  -> MILHOUSE / AL_UDEID
+FAST / CENTRAL / SUPPORT         -> MOE / MANAS
+SLOW / WEST / SUPPORT            -> LISA / MANAS
 ```
 
 Damit werden beide FLEX-Areas mit je einem konkreten Receiver-Profil geprüft: `MOE FAST`, `LISA SLOW`.
 
-## Materialisierung
-
-Es werden nur bereits in Acceptance-6 bestätigte Seed-Templates wiederverwendet:
+## Area-spezifische Templates
 
 ```text
-MANAS    -> OMW_AAR_KC135_PATTY  -> 96 % Seed
-AL_UDEID -> OMW_AAR_KC135_KRUSTY -> 90 % Seed
+NELSON    -> OMW_AAR_KC135_NELSON    -> MANAS    -> 96 % Seed
+PATTY     -> OMW_AAR_KC135_PATTY     -> MANAS    -> 96 % Seed
+LISA      -> OMW_AAR_KC135_LISA      -> MANAS    -> 96 % Seed
+MOE       -> OMW_AAR_KC135_MOE       -> MANAS    -> 96 % Seed
+KRUSTY    -> OMW_AAR_KC135_KRUSTY    -> AL_UDEID -> 90 % Seed
+MILHOUSE  -> OMW_AAR_KC135_MILHOUSE  -> AL_UDEID -> 90 % Seed
 ```
 
-Ein MOOSE-`SPAWN`-Objekt wird je Source Domain wiederverwendet, damit gleichzeitig bzw. nacheinander materialisierte Klone eindeutige Gruppennamen erhalten. Neue Mission-Editor-Tanker-Templates sind nicht erforderlich.
+Die drei neuen Templates `LISA`, `MOE` und `MILHOUSE` werden durch den Projektinhaber im Mission Editor angelegt. Die `.miz` wird nicht automatisiert verändert.
 
 ## Spawn-Staffelung
 
@@ -70,7 +81,20 @@ AL_UDEID: mindestens 60 s zwischen zwei Materialisierungen
 MANAS und AL_UDEID dürfen gleichzeitig materialisieren
 ```
 
-Damit wird die bereits beobachtete unplausible gleichzeitige Mehrfachmaterialisierung auf derselben Seite verhindert.
+Der Harness misst die tatsächliche Simulationszeit zwischen Materialisierungen derselben Source Domain.
+
+## Transit-Acceptance
+
+Nach jeder Materialisierung speichert der Harness die anfängliche 2D-Distanz zum zugewiesenen Track. Nach mindestens 60 s muss die Distanz um mindestens 2 NM abgenommen haben.
+
+```text
+initialTrackDistanceNm
+-> >= 60 s High-Transit
+-> currentTrackDistanceNm <= initialTrackDistanceNm - 2 NM
+-> TRANSIT_PROGRESS_PASS
+```
+
+Damit wird geprüft, dass die area-spezifische Mission tatsächlich in Richtung des richtigen Tracks geroutet wird. Eine vollständige Gate->Track-Ankunft ist für diesen fokussierten Test ausdrücklich nicht erforderlich.
 
 ## FuelLow
 
@@ -99,15 +123,19 @@ OnHandoff
 
 Im Test wird dafür ausdrücklich ein `testAdapter=true` verwendet, der alle sechs Demands zulässt. Das ist kein Ersatz für CampaignState. Die produktive CampaignState-Bindung wird separat an diese Schnittstelle angeschlossen; der Controller selbst übernimmt keine strategische Ressourcenhoheit.
 
-## Erwarteter Abschlussmarker
+## Erwartete Kernmarker
 
 ```text
 POLICY_PASS x6
 SUBMIT_PASS x6
-STRATEGIC_MATERIALIZED x6
-EXECUTING_PASS x6
-INTEGRATION_PASS demands=6 ... artificialFuelLow=false
+TEMPLATE_IDENTITY_PASS x6
+SEED_FUEL_PASS x6
+SOURCE_SPACING_PASS x4
+TRANSIT_PROGRESS_PASS x6
+INTEGRATION_PASS ... artificialFuelLow=false fullTrackArrivalRequired=false
 ```
+
+`SOURCE_SPACING_PASS x4` ergibt sich aus drei Folge-Materialisierungen im MANAS-Pool und einer Folge-Materialisierung im AL-UDEID-Pool.
 
 ## Source / Builder / Dist
 
@@ -118,4 +146,4 @@ tools/build-aar-production-integration.ps1
 mission/tests/aar-production-integration/dist/OMW_AAR_Production_Integration.lua
 ```
 
-`dist/` ist ausschließlich builder-generiert. Die `.miz` wird nicht automatisiert verändert.
+`dist/` ist ausschließlich builder-generiert.
