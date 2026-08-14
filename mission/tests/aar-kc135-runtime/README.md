@@ -4,14 +4,14 @@ status: PLANNED
 document_class: TEST_PROJECT_INDEX
 owning_policy: OMW-GOV-001
 authoritative_for:
-  - KC-135 multi-tanker AAR runtime acceptance test layout
+  - KC-135 AAR runtime acceptance test layout
   - exact active template set and expected test markers
   - source-reviewed MOOSE paths used by the acceptance harness
 not_authoritative_for:
   - DCS runtime acceptance before an owner-run test
-  - final ingress-gate airspace clearance
+  - final ingress-/egress-gate map-edge clearance
   - historical tanker callsign authenticity
-  - production support-concurrency limits
+  - production support-concurrency limits beyond the binding AirOps baseline
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes: []
@@ -21,48 +21,167 @@ source_commit: GIT_HISTORY
 validated_in_dcs: false
 ---
 
-# KC-135 Multi-Tanker Runtime Acceptance
+# KC-135 AAR Runtime Acceptance
 
-## Ziel
+## 1. Acceptance-2 – owner-run evidence 2026-08-14
 
-`AAR-KC135-RUNTIME-ACCEPTANCE-2` ist der kombinierte Retest nach dem methodisch ungeeigneten ersten FuelLow-Lauf. Er prueft in einem DCS-Lauf:
+`AAR-KC135-RUNTIME-ACCEPTANCE-2` used all five prepared KC-135 templates as an explicitly authorized stress-test exception. The productive limit remained `maxConcurrentSupportMissions = 2`.
 
-- alle fuenf vorbereiteten KC-135-Boom-Tanker gleichzeitig: `CLANCY`, `HOMER`, `KRUSTY`, `NELSON`, `PATTY`;
-- Uebernahme der 90/96-%-Seed-Fuelwerte nach abgeschlossener FLIGHTGROUP-Initialisierung;
-- `SPAWN -> FLIGHTGROUP -> AUFTRAG:TANKER` im gepinnten MOOSE-Stand;
-- Transit zu allen fuenf AAR-Areas;
-- `AUFTRAG:TANKER` muss bei allen fuenf `EXECUTING` erreichen;
-- mindestens 180 Sekunden gemeinsame `EXECUTING`-Zeit aller fuenf Tanker vor dem FuelLow-Test;
-- gleichzeitige Laufzeit-/Performancebeobachtung mit fuenf Tankern;
-- fuenf unterschiedliche Funk-/TACAN-Konfigurationen und Racetrack-Geometrien;
-- erst nach dem gemeinsamen Racetrack-Dwell wird `FuelLow` kuenstlich auf 99 Prozent geschaltet;
-- `FuelLow -> AUFTRAG:Cancel() -> Mission Egress`;
-- Distanz zum Egress-Gate und kontrollierte physische Entfernung am Gate als Test fuer den spaeteren Off-map-Handoff;
-- Fuelwerte bei Track-Entry und am Gate als Evidenz fuer die spaetere CampaignState-/Off-map-Fuelbilanz.
+Observed/logged for the exact owner-run DCS 2.9.28.26385 test stand:
 
-Der Harness veraendert keine `.miz` automatisch.
+- all five KC-135 spawned;
+- delayed seed-fuel readback was plausible at approximately 90/90/90/96/96 percent;
+- all five `AUFTRAG:TANKER` missions reached `EXECUTING`;
+- the required 180-second simultaneous `EXECUTING` dwell completed before accelerated FuelLow was armed;
+- all five produced the expected `FuelLow -> AUFTRAG:Cancel() -> Egress` path;
+- all five reached their assigned gate within the 10-NM handoff radius and were removed by MOOSE `OPSGROUP:Despawn(1, true)`;
+- the project owner visually confirmed that the tankers flew racetrack patterns.
 
-## Test-ID
+The same test exposed two production-design findings rather than MOOSE failures:
 
-```text
-AAR-KC135-RUNTIME-ACCEPTANCE-2
-```
+1. the south gate is too close to the normal visible mission area and must move substantially farther south;
+2. near-simultaneous materialization of several tankers from the same gate/domain is unsuitable for production.
 
-## Owner-Freigabe fuer diesen Test
+The exact log/debrief SHA-256 values were not supplied with this observation set. Therefore this document does not promote the whole AAR subsystem to `VALIDATED`.
 
-Am 14.08.2026 hat der Projektinhaber fuer diesen Retest ausdruecklich verlangt, alle vorbereiteten Tanker gleichzeitig zu testen. Diese Freigabe gilt **nur fuer den isolierten Acceptance-/Stress-Test**.
+## 2. Owner decisions after Acceptance-2
 
-Die produktive Baseline aus `OMW-AIR-IMPLEMENTATION` bleibt unveraendert:
+Binding design input for the next runtime test:
 
 ```text
-maxConcurrentSupportMissions = 2
-maxAircraftPerSupportMission = 2
-maxConcurrentSupportAircraft = 4
+same gate/domain minimum materialization separation: 60 s
+simultaneous materialization from different gate domains: allowed
+new Mission Editor tanker/receiver templates: not allowed/needed
+manual radio/TACAN checks: one or at most two representative tankers
+Boom refueling check: AI receiver required
 ```
 
-Der Fuenf-Tanker-Lauf ist damit eine dokumentierte Testausnahme und **keine** stillschweigende Anhebung der produktiven Concurrency-Grenze.
+Gate relocation candidates for Acceptance-3:
 
-## Source / Builder / Dist
+```text
+OMW_TANKER_GATE_S
+old: N29.9818333333 E64.6116666667
+candidate: N28.90264890 E64.61166667
+approximate displacement: 120 km south
+
+OMW_TANKER_GATE_NE
+old: N38.1211666667 E70.3600000000
+candidate: N37.64268794 E70.96231552
+approximate displacement: 75 km southeast
+```
+
+These are **candidate test coordinates**, not yet BINDING/VALIDATED map-edge positions. Acceptance-3 must prove that DCS can spawn, route and hand off aircraft there without visible materialization in the normal player area.
+
+## 3. Acceptance-3 scope
+
+Test ID:
+
+```text
+AAR-KC135-RUNTIME-ACCEPTANCE-3
+```
+
+Active tanker exemplars:
+
+| Area | Existing template | Gate domain | Radio | TACAN |
+|---|---|---|---:|---|
+| Clancy | `OMW_AAR_KC135_CLANCY` | SOUTH | 241.600 AM | 60X / CLA |
+| Nelson | `OMW_AAR_KC135_NELSON` | NORTH_EAST | 384.400 AM | 47X / NEL |
+
+Clancy and Nelson may materialize simultaneously because they use different gate domains. Acceptance-3 does **not** start Homer, Krusty or Patty and therefore no longer reproduces the five-aircraft stress exception.
+
+Manual owner observation is limited to the two representative tanker assignments above. Radio/TACAN behavior of the other prepared tanker configurations remains configuration-equivalent but is not claimed as individually DCS-tested from these two observations.
+
+## 4. Existing AI Boom receiver – no new `.miz` template
+
+Acceptance-3 reuses the existing Bagram foundation:
+
+```text
+AW_US_BGRM_455_AEW
+-> SQ_US_BGRM_F16C_121_EFS
+-> TPL_AIR_US_BGRM_F16C_CAS_2SHIP
+```
+
+No new Mission Editor receiver group is introduced and the harness does not mutate the `.miz`.
+
+The receiver is recruited through the existing Bagram AIRWING/SQUADRON and its registered F-16C CAS payload. The test creates only an `AUFTRAG:NewCAS()` runtime mission restricted to the existing F-16C squadron/payload. Once the resulting `FLIGHTGROUP` is airborne and Clancy is executing its tanker mission, the test invokes the source-reviewed MOOSE `FLIGHTGROUP:Refuel()` FSM path. `OnAfterRefueled` plus fuel telemetry provides the positive AI Boom-refueling marker.
+
+Only after `AI_BOOM_REFUELED_PASS` does Acceptance-3 arm the 99-percent accelerated FuelLow threshold for the two tanker exemplars. This reuses the Acceptance-2 MOOSE `FuelLow -> Cancel -> Mission Egress -> <=10 NM -> Despawn` path to verify the **relocated** gate candidates in both directions.
+
+## 5. MOOSE-first source review
+
+Pinned runtime:
+
+```text
+MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+Moose.lua SHA-256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
+```
+
+Relevant public paths verified in the actual pinned `Moose.lua`:
+
+```text
+SPAWN:New(...):SpawnFromCoordinate(...)
+FLIGHTGROUP:New(...)
+AUFTRAG:NewTANKER(...)
+AUFTRAG:SetRadio(...)
+AUFTRAG:SetTACAN(...)
+AUFTRAG:SetMissionEgressCoord(...)
+AUFTRAG:Cancel()
+AUFTRAG:NewCAS(...)
+AUFTRAG:AssignSquadrons({...})
+AUFTRAG:AddRequiredPayload(...)
+AUFTRAG:SetRequiredAssets(min,max)
+AIRWING:AddMission(...)
+AIRWING:OnAfterFlightOnMission(...)
+FLIGHTGROUP:IsAirborne()
+FLIGHTGROUP:Refuel(...)
+FLIGHTGROUP:OnAfterRefueled(...)
+FLIGHTGROUP:GetFuelMin()
+FLIGHTGROUP:SetFuelLowThreshold(...)
+FLIGHTGROUP:OnAfterFuelLow(...)
+OPSGROUP:Despawn(delay,noEventRemoveUnit)
+SCHEDULER
+```
+
+`FLIGHTGROUP` explicitly defines the FSM transitions `Refuel -> Going4Fuel` and `Refueled -> Cruising`. Its refuel handler uses the DCS refueling task internally. OMW therefore does not implement a parallel native-DCS receiver controller.
+
+## 6. Expected Acceptance-3 markers
+
+```text
+TANKER_START_PASS area=CLANCY ...
+TANKER_START_PASS area=NELSON ...
+SEED_FUEL_PASS area=CLANCY ...
+SEED_FUEL_PASS area=NELSON ...
+TANKER_EXECUTING_PASS area=CLANCY ...
+TANKER_EXECUTING_PASS area=NELSON ...
+RECEIVER_MISSION_ADDED_PASS template=TPL_AIR_US_BGRM_F16C_CAS_2SHIP ...
+RECEIVER_ASSIGNED_PASS ...
+AI_BOOM_REFUEL_ORDER_PASS ... tankerArea=CLANCY ...
+AI_BOOM_REFUELED_PASS ... fuelBeforePct=... fuelAfterPct=...
+ACCELERATED_FUEL_LOW_ARMED thresholdPct=99 afterAiBoomRefueled=true
+FUEL_LOW_PASS area=CLANCY ... action=CANCEL_TO_EGRESS
+FUEL_LOW_PASS area=NELSON ... action=CANCEL_TO_EGRESS
+EGRESS_GATE_PASS area=CLANCY ... action=DESPAWN_OFFMAP_HANDOFF
+EGRESS_GATE_PASS area=NELSON ... action=DESPAWN_OFFMAP_HANDOFF
+HARNESS_READY ... newMissionEditorTemplates=0 mizMutation=false
+```
+
+## 7. Acceptance-3 criteria
+
+A useful owner run must establish:
+
+1. Clancy and Nelson spawn at the relocated candidate gates and reach their racetracks;
+2. their materialization/despawn locations are no longer objectionably visible from the normal player mission area;
+3. one south and one north/east tanker can coexist without requiring same-domain staggering;
+4. Clancy 241.600 AM / 60X and Nelson 384.400 AM / 47X are practically checked as representative radio/TACAN assignments;
+5. the existing Bagram F-16C asset is recruited through its existing AIRWING/SQUADRON/payload path;
+6. MOOSE orders that receiver into the refueling FSM and DCS completes the Boom-refueling task;
+7. `AI_BOOM_REFUELED_PASS` is accompanied by plausible fuel telemetry;
+8. after the AI Boom proof, both tankers execute `FuelLow -> Cancel -> Egress` and reach the relocated gate candidates within 10 NM before MOOSE despawn;
+9. no new Mission Editor template, no MIST/native event handler and no `.miz` mutation are required.
+
+The productive same-domain 60-second materialization separation is a runtime scheduling requirement for later mission activation logic. Acceptance-3 documents the rule but does not manufacture multiple same-domain tankers merely to retest the already observed clustering problem.
+
+## 8. Source / Builder / Dist
 
 ```text
 mission/tests/aar-kc135-runtime/src/01-aar-kc135-runtime-acceptance.lua
@@ -70,136 +189,4 @@ tools/build-aar-kc135-runtime-acceptance.ps1
 mission/tests/aar-kc135-runtime/dist/OMW_AAR_KC135_Runtime_Acceptance.lua
 ```
 
-`dist/` wird ausschliesslich durch den Builder erzeugt.
-
-## MOOSE-First-Nachweis
-
-Gepinnter MOOSE-Stand:
-
-```text
-MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
-Moose.lua SHA-256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
-```
-
-Im tatsaechlich verwendeten `Moose.lua` source-reviewed und fuer diesen Retest verwendet:
-
-```text
-SPAWN:New(template)
-SPAWN:SpawnFromCoordinate(coordinate)
-FLIGHTGROUP:New(group)
-OPSGROUP:AddMission(mission)
-AUFTRAG:NewTANKER(...)
-AUFTRAG:SetRadio(...)
-AUFTRAG:SetTACAN(...)
-AUFTRAG:SetMissionEgressCoord(...)
-AUFTRAG:IsExecuting()
-AUFTRAG:Cancel()
-FLIGHTGROUP:GetFuelMin()
-FLIGHTGROUP:SetFuelLowThreshold(...)
-FLIGHTGROUP:SetFuelLowRTB(false)
-FLIGHTGROUP:OnAfterFuelLow(...)
-FLIGHTGROUP:GetCoordinate()
-COORDINATE:Get2DDistance(...)
-OPSGROUP:Despawn(delay, noEventRemoveUnit)
-SCHEDULER
-```
-
-Der Scheduler laeuft nur alle 30 Sekunden. Er dient Acceptance-Telemetrie, dem einmaligen Umschalten der FuelLow-Schwelle nach nachgewiesenem Racetrack-Dwell und der Erkennung des Egress-Gate-Handoffs. Es gibt keinen eigenen Fuel-Controller und keinen Native-DCS-Eventhandler.
-
-`OPSGROUP:Despawn(1, true)` wird im Retest nur nach Erreichen eines 10-NM-Radius um das zugewiesene Egress-Gate verwendet. `NoEventRemoveUnit=true` verhindert, dass die Testentfernung als normaler Warehouse-/Legion-Ruecklauf interpretiert wird. Eine produktive CampaignState-Abrechnung wird in diesem Test noch nicht geschrieben.
-
-## Mission-Editor-Vertrag
-
-| Area | Template | Callsign | Radio | Fuel | Datalink | STN |
-|---|---|---|---:|---:|---|---|
-| Clancy | `OMW_AAR_KC135_CLANCY` | Shell 1-1 | 241.600 AM | 90 % / 81630 kg | SH11 | 04461 |
-| Homer | `OMW_AAR_KC135_HOMER` | Arco 1-1 | 376.000 AM | 90 % / 81630 kg | AC11 | 04462 |
-| Krusty | `OMW_AAR_KC135_KRUSTY` | Arco 2-1 | 258.300 AM | 90 % / 81630 kg | AC21 | 04463 |
-| Nelson | `OMW_AAR_KC135_NELSON` | Texaco 1-1 | 384.400 AM | 96 % / 87072 kg | TX11 | 04464 |
-| Patty | `OMW_AAR_KC135_PATTY` | Texaco 2-1 | 237.300 AM | 96 % / 87072 kg | TX21 | 04465 |
-
-Alle Templates bleiben Late Activation, `task = Refueling`, ohne ME-Tanker-/TACAN-/Orbit-Waypointaktionen. Die Runtime-Mission kommt aus MOOSE.
-
-## Testwerte
-
-| Area | Track | Altitude | Speed | Heading | Leg | Radio | TACAN | Seed Fuel |
-|---|---|---:|---:|---:|---:|---:|---|---:|
-| Clancy | N31.75441342 E66.82695501 | FL225 | 300 kt | 225.276 T | 35 NM | 241.600 AM | 60X / CLA | 90 % |
-| Homer | N32.93833333 E68.22333333 | FL230 | 300 kt | 317.573 T | 35 NM | 376.000 AM | 54X / HOM | 90 % |
-| Krusty | N32.65123012 E68.15946309 | FL260 | 300 kt | 212.350 T | 35 NM | 258.300 AM | 42X / KRU | 90 % |
-| Nelson | N36.37666667 E71.01833333 | FL275 | 300 kt | 10.428 T | 35 NM | 384.400 AM | 47X / NEL | 96 % |
-| Patty | N34.97134133 E71.47789605 | FL255 | 300 kt | 89.662 T | 35 NM | 237.300 AM | 48X / PAT | 96 % |
-
-Homer und Krusty werden fuer den Stress-/Acceptance-Lauf bewusst gleichzeitig geflogen und vertikal getrennt. Das hebt ihre produktive Rolle als Alternativen nicht auf.
-
-### Ingress / Egress
-
-```text
-CLANCY / HOMER / KRUSTY:
-OMW_TANKER_GATE_S
-N29.9818333333 E64.6116666667
-
-NELSON / PATTY:
-OMW_TANKER_GATE_NE
-N38.1211666667 E70.3600000000
-```
-
-`OMW_TANKER_GATE_NE` bleibt Candidate mit offener Airway-/Map-edge-Pruefung. Ein erfolgreicher technischer Egress macht den Gate-Punkt nicht automatisch `BINDING` oder `VALIDATED`.
-
-## FuelLow-Sequenz
-
-Der Fehler aus Acceptance-1 wird explizit verhindert:
-
-```text
-Spawn
--> FuelLow threshold 20 % waehrend Transit
--> alle fuenf AUFTRAG:TANKER muessen EXECUTING erreichen
--> alle fuenf muessen 180 s gleichzeitig EXECUTING bleiben
--> erst dann FuelLow threshold 99 %
--> MOOSE FuelLow Event
--> AUFTRAG:Cancel()
--> Egress-Gate
--> bei <= 10 NM: EGRESS_GATE_PASS + MOOSE Despawn
-```
-
-Damit kann `FuelLow` den eigentlichen Tanker-/Racetrack-Test nicht mehr vorzeitig abbrechen.
-
-## Erwartete Logmarker
-
-```text
-START simultaneous=CLANCY,HOMER,KRUSTY,NELSON,PATTY
-START_AREA_PASS area=<ALL FIVE>
-SPAWN_PASS area=<ALL FIVE> ... seedReadback=DEFERRED
-SEED_FUEL_PASS area=<ALL FIVE>
-MISSION_CONFIG_PASS area=<ALL FIVE>
-TANKER_EXECUTING_PASS area=<ALL FIVE>
-ALL_TANKERS_EXECUTING_PASS count=5 dwellRequiredSec=180
-ACCELERATED_FUEL_LOW_ARMED thresholdPct=99
-FUEL_LOW_PASS area=<ALL FIVE> action=CANCEL_TO_EGRESS
-EGRESS_GATE_PASS area=<ALL FIVE> action=DESPAWN_OFFMAP_HANDOFF
-SUMMARY ...
-```
-
-## Acceptance-Kriterien
-
-Ein erfolgreicher gemeinsamer Lauf muss mindestens zeigen:
-
-1. alle fuenf KC-135 werden genau einmal gespawnt;
-2. der verzoegerte Fuel-Readback zeigt plausibel 90/90/90/96/96 Prozent und keinen `inf`-PASS;
-3. alle fuenf `AUFTRAG:TANKER` erreichen `EXECUTING`;
-4. alle fuenf bleiben mindestens 180 Sekunden gleichzeitig `EXECUTING`, bevor FuelLow kuenstlich beschleunigt wird;
-5. die Racetrack-Darstellung wird optisch fuer alle fuenf bestaetigt; insbesondere Homer/Krusty duerfen sich trotz gleicher regionaler Rolle nicht gefaehrlich annaehren;
-6. fuenf gleichzeitige Tanker erzeugen keine unvertretbaren DCS-/MOOSE-Fehler oder Performanceprobleme im isolierten Test;
-7. Funk und TACAN sind mit ihren projektierten Zuordnungen praktisch pruefbar;
-8. Boom-Refueling ist mit mindestens einem aktuellen OMW-Boom-Receiver praktisch pruefbar;
-9. nach dem Dwell loest die 99-%-Testschwelle bei allen fuenf `FuelLow` aus;
-10. `Cancel()` fuehrt alle fuenf aus ihrem AAR-Auftrag in Richtung des zugewiesenen Egress-Gates;
-11. der Harness bestaetigt den Gate-Eintritt innerhalb von 10 NM und entfernt die Gruppe danach kontrolliert mit MOOSE `Despawn`;
-12. Track-Entry-, FuelLow- und Gate-Fuelwerte sowie die Laufzeiten stehen fuer die folgende Off-map-/CampaignState-Bilanzierung zur Verfuegung;
-13. keine produktive Anhebung der Support-Concurrency wird aus diesem Test abgeleitet.
-
-## Befund aus Acceptance-1
-
-Der erste Owner-Lauf am 14.08.2026 mit DCS `2.9.28.26385` zeigte belastbar Spawn, 90/96-%-Fueluebernahme nach Initialisierung, `FuelLow`-Events und die damalige Staging-Logik. Der Test setzte die FuelLow-Schwelle jedoch bereits waehrend des Transits nur einen Prozentpunkt unter den Seed-Wert. Dadurch wurden die Auftraege vor `EXECUTING` abgebrochen. Die Punkte `EXECUTING`, Racetrack und aktiver Tankerbetrieb sind aus diesem Lauf deshalb **INVALID als Negativnachweis** und werden mit Acceptance-2 neu getestet.
-
-`VALIDATED` darf erst nach dokumentiertem Owner-DCS-Lauf mit Branch, Commit, MIZ-Hash, Bundle-Hash, DCS-Version und gepinntem MOOSE-Hash gesetzt werden.
+`dist/` is builder-generated only.

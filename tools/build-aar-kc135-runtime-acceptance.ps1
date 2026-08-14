@@ -9,8 +9,8 @@ $sourceFile = Join-Path $repoRoot 'mission\tests\aar-kc135-runtime\src\01-aar-kc
 $distDir = Join-Path $repoRoot 'mission\tests\aar-kc135-runtime\dist'
 $outputFile = Join-Path $distDir 'OMW_AAR_KC135_Runtime_Acceptance.lua'
 
-$builderVersion = 'AAR-KC135-RUNTIME-ACCEPTANCE-2'
-$testId = 'AAR-KC135-RUNTIME-ACCEPTANCE-2'
+$builderVersion = 'AAR-KC135-RUNTIME-ACCEPTANCE-3'
+$testId = 'AAR-KC135-RUNTIME-ACCEPTANCE-3'
 $mooseCommit = '73d3ed119cd9e7e3f2cfcabbaa34513d30529b54'
 $mooseSha256 = 'e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915'
 
@@ -21,14 +21,12 @@ if (-not (Test-Path -LiteralPath $sourceFile -PathType Leaf)) {
 $source = Get-Content -LiteralPath $sourceFile -Raw -Encoding UTF8
 
 $requiredMarkers = @(
-  'AAR-KC135-RUNTIME-ACCEPTANCE-2',
+  'AAR-KC135-RUNTIME-ACCEPTANCE-3',
   'OMW_AAR_KC135_CLANCY',
-  'OMW_AAR_KC135_HOMER',
-  'OMW_AAR_KC135_KRUSTY',
   'OMW_AAR_KC135_NELSON',
-  'OMW_AAR_KC135_PATTY',
-  'SPAWN:New(spec.template)',
-  'SpawnFromCoordinate(gateCoord)',
+  'TPL_AIR_US_BGRM_F16C_CAS_2SHIP',
+  'SQ_US_BGRM_F16C_121_EFS',
+  'SPAWN:New(spec.template):SpawnFromCoordinate(gateCoord)',
   'FLIGHTGROUP:New(group)',
   'AUFTRAG:NewTANKER(',
   'Unit.RefuelingSystem.BOOM_AND_RECEPTACLE',
@@ -36,15 +34,19 @@ $requiredMarkers = @(
   'mission:SetTACAN(',
   'mission:SetMissionEgressCoord(',
   'flightGroup:SetFuelLowThreshold(SAFE_FUEL_LOW_PCT)',
-  'flightGroup:SetFuelLowRTB(false)',
   'function flightGroup:OnAfterFuelLow',
   'mission:Cancel()',
-  'ALL_TANKERS_EXECUTING_PASS',
+  'state.flightGroup:Despawn(1, true)',
+  'AUFTRAG:NewCAS(',
+  'mission:AssignSquadrons({ squadron })',
+  'mission:AddRequiredPayload(payload)',
+  'mission:SetRequiredAssets(1, 1)',
+  'receiver.flightGroup:Refuel(clancy.trackCoord)',
+  'function FlightGroup:OnAfterRefueled',
+  'AI_BOOM_REFUEL_ORDER_PASS',
+  'AI_BOOM_REFUELED_PASS',
   'ACCELERATED_FUEL_LOW_ARMED',
   'EGRESS_GATE_PASS',
-  'state.flightGroup:Despawn(1, true)',
-  'SEED_FUEL_PASS',
-  'TANKER_EXECUTING_PASS',
   'HARNESS_READY'
 )
 foreach ($marker in $requiredMarkers) {
@@ -84,9 +86,10 @@ $header = @"
 -- GitCommit: $commit
 -- GeneratedUtc: $generatedUtc
 -- Gate/Test-ID: $testId
--- Scope: five simultaneous KC-135 Boom tankers in a test-only concurrency exception; delayed FuelLow after all five reach EXECUTING and dwell; egress-gate observation; MOOSE Despawn off-map handoff.
--- Active templates: OMW_AAR_KC135_CLANCY, OMW_AAR_KC135_HOMER, OMW_AAR_KC135_KRUSTY, OMW_AAR_KC135_NELSON, OMW_AAR_KC135_PATTY.
--- Production maxConcurrentSupportMissions remains 2; this harness is not a production concurrency baseline.
+-- Scope: two KC-135 Boom exemplars in different gate domains; relocated gate candidates; manual radio/TACAN exemplars; existing Bagram F-16C AIRWING/SQUADRON receiver through the MOOSE FLIGHTGROUP refuel FSM; post-refuel FuelLow/Cancel/Egress/Despawn gate verification.
+-- Active tanker templates: OMW_AAR_KC135_CLANCY, OMW_AAR_KC135_NELSON.
+-- AI receiver template: TPL_AIR_US_BGRM_F16C_CAS_2SHIP via existing SQ_US_BGRM_F16C_121_EFS; no new Mission Editor template and no MIZ mutation.
+-- Production policy: same gate/domain materializations require at least 60 seconds separation; different gate domains may materialize simultaneously; maxConcurrentSupportMissions remains 2.
 -- MOOSE-Commit: $mooseCommit
 -- Moose.lua-SHA256: $mooseSha256
 
@@ -99,14 +102,17 @@ Write-Host "Built: $outputFile"
 Write-Host "BuilderVersion: $builderVersion"
 Write-Host "TestId: $testId"
 Write-Host "GeneratedUtc: $generatedUtc"
-Write-Host "SimultaneousTankers: CLANCY,HOMER,KRUSTY,NELSON,PATTY"
-Write-Host "TestOnlyConcurrencyException: true"
-Write-Host "ProductionMaxConcurrentSupportMissions: 2"
-Write-Host "InitialFuelExpectedPct: CLANCY=90,HOMER=90,KRUSTY=90,NELSON=96,PATTY=96"
-Write-Host "SafeFuelLowPctBeforeAllExecuting: 20"
-Write-Host "AllExecutingDwellSec: 180"
-Write-Host "AcceleratedFuelLowPctAfterDwell: 99"
+Write-Host "ActiveTankers: CLANCY,NELSON"
+Write-Host "DifferentGateDomainsMaySpawnSimultaneously: true"
+Write-Host "SameGateMinimumSpawnSeparationSec: 60"
+Write-Host "SouthGateCandidate: 28.90264890,64.61166667"
+Write-Host "NorthEastGateCandidate: 37.64268794,70.96231552"
+Write-Host "ManualRadioTacanExemplars: CLANCY,NELSON"
+Write-Host "AIBoomReceiverTemplate: TPL_AIR_US_BGRM_F16C_CAS_2SHIP"
+Write-Host "AcceleratedFuelLowAfterAiBoomRefueled: true"
 Write-Host "EgressGateRadiusNm: 10"
+Write-Host "NewMissionEditorTemplates: 0"
+Write-Host "MizMutation: false"
 Write-Host "MOOSECommit: $mooseCommit"
 Write-Host "MooseLuaSHA256: $mooseSha256"
 Write-Host "SHA256: $hash"

@@ -1,11 +1,12 @@
-local TEST_ID = "AAR-KC135-RUNTIME-ACCEPTANCE-2"
+local TEST_ID = "AAR-KC135-RUNTIME-ACCEPTANCE-3"
 local LOG_PREFIX = "[OMW][" .. TEST_ID .. "] "
-local STATUS_INTERVAL_SEC = 30
-local EXECUTING_DWELL_SEC = 180
+local STATUS_INTERVAL_SEC = 15
 local SAFE_FUEL_LOW_PCT = 20
 local ACCELERATED_FUEL_LOW_PCT = 99
 local EGRESS_GATE_RADIUS_NM = 10
-local EXPECTED_TANKER_COUNT = 5
+local RECEIVER_TIMEOUT_SEC = 1800
+local RECEIVER_TEMPLATE = "TPL_AIR_US_BGRM_F16C_CAS_2SHIP"
+local RECEIVER_SQUADRON = "SQ_US_BGRM_F16C_121_EFS"
 
 local function log(message)
   env.info(LOG_PREFIX .. message)
@@ -19,7 +20,7 @@ local TANKERS = {
   CLANCY = {
     area = "CLANCY",
     template = "OMW_AAR_KC135_CLANCY",
-    gate = { lat = 29.9818333333, lon = 64.6116666667 },
+    gate = { lat = 28.90264890, lon = 64.61166667 },
     track = { lat = 31.75441342, lon = 66.82695501 },
     altitudeFt = 22500,
     speedKt = 300,
@@ -30,41 +31,12 @@ local TANKERS = {
     tacanBand = "X",
     tacanIdent = "CLA",
     expectedFuelPct = 90,
-  },
-  HOMER = {
-    area = "HOMER",
-    template = "OMW_AAR_KC135_HOMER",
-    gate = { lat = 29.9818333333, lon = 64.6116666667 },
-    track = { lat = 32.93833333, lon = 68.22333333 },
-    altitudeFt = 23000,
-    speedKt = 300,
-    headingDeg = 317.573,
-    legNm = 35,
-    frequencyMHz = 376.000,
-    tacanChannel = 54,
-    tacanBand = "X",
-    tacanIdent = "HOM",
-    expectedFuelPct = 90,
-  },
-  KRUSTY = {
-    area = "KRUSTY",
-    template = "OMW_AAR_KC135_KRUSTY",
-    gate = { lat = 29.9818333333, lon = 64.6116666667 },
-    track = { lat = 32.65123012, lon = 68.15946309 },
-    altitudeFt = 26000,
-    speedKt = 300,
-    headingDeg = 212.350,
-    legNm = 35,
-    frequencyMHz = 258.300,
-    tacanChannel = 42,
-    tacanBand = "X",
-    tacanIdent = "KRU",
-    expectedFuelPct = 90,
+    gateDomain = "SOUTH",
   },
   NELSON = {
     area = "NELSON",
     template = "OMW_AAR_KC135_NELSON",
-    gate = { lat = 38.1211666667, lon = 70.3600000000 },
+    gate = { lat = 37.64268794, lon = 70.96231552 },
     track = { lat = 36.37666667, lon = 71.01833333 },
     altitudeFt = 27500,
     speedKt = 300,
@@ -75,28 +47,23 @@ local TANKERS = {
     tacanBand = "X",
     tacanIdent = "NEL",
     expectedFuelPct = 96,
-  },
-  PATTY = {
-    area = "PATTY",
-    template = "OMW_AAR_KC135_PATTY",
-    gate = { lat = 38.1211666667, lon = 70.3600000000 },
-    track = { lat = 34.97134133, lon = 71.47789605 },
-    altitudeFt = 25500,
-    speedKt = 300,
-    headingDeg = 89.662,
-    legNm = 35,
-    frequencyMHz = 237.300,
-    tacanChannel = 48,
-    tacanBand = "X",
-    tacanIdent = "PAT",
-    expectedFuelPct = 96,
+    gateDomain = "NORTH_EAST",
   },
 }
 
-local STATUS_ORDER = { "CLANCY", "HOMER", "KRUSTY", "NELSON", "PATTY" }
+local ACTIVE_TANKERS = { "CLANCY", "NELSON" }
 local runtime = {}
-local allExecutingSince = nil
 local acceleratedFuelLowArmed = false
+local receiver = {
+  mission = nil,
+  flightGroup = nil,
+  assignedAt = nil,
+  refuelOrdered = false,
+  refuelOrderedAt = nil,
+  fuelBeforePct = nil,
+  refueled = false,
+  fuelAfterPct = nil,
+}
 
 local function getFuelPct(flightGroup)
   if not flightGroup then
@@ -131,8 +98,7 @@ local function configureTanker(spec)
   local gateCoord = COORDINATE:NewFromLLDD(spec.gate.lat, spec.gate.lon, altitudeM)
   local trackCoord = COORDINATE:NewFromLLDD(spec.track.lat, spec.track.lon, altitudeM)
 
-  local spawner = SPAWN:New(spec.template)
-  local group = spawner:SpawnFromCoordinate(gateCoord)
+  local group = SPAWN:New(spec.template):SpawnFromCoordinate(gateCoord)
   if not group then
     fail(string.format("SPAWN area=%s template=%s", spec.area, spec.template))
     return nil
@@ -162,7 +128,7 @@ local function configureTanker(spec)
   function flightGroup:OnAfterFuelLow(From, Event, To)
     local fuelPct = getFuelPct(self) or -1
     log(string.format(
-      "FUEL_LOW_PASS area=%s fuelPct=%.2f thresholdPct=%.2f action=CANCEL_TO_EGRESS",
+      "FUEL_LOW_PASS area=%s fuelPct=%.2f thresholdPct=%d action=CANCEL_TO_EGRESS",
       spec.area,
       fuelPct,
       ACCELERATED_FUEL_LOW_PCT
@@ -171,33 +137,22 @@ local function configureTanker(spec)
     local state = runtime[spec.area]
     if state then
       state.egressOrdered = true
-      state.fuelLowFuelPct = fuelPct
-      state.fuelLowTime = timer.getAbsTime()
     end
   end
 
   flightGroup:AddMission(mission)
 
   log(string.format(
-    "SPAWN_PASS area=%s group=%s expectedFuelPct=%.2f seedReadback=DEFERRED",
+    "TANKER_START_PASS area=%s gateDomain=%s group=%s gateLat=%.8f gateLon=%.8f radioMHz=%.3f modulation=AM tacan=%d%s ident=%s",
     spec.area,
+    spec.gateDomain,
     group:GetName(),
-    spec.expectedFuelPct
-  ))
-  log(string.format(
-    "MISSION_CONFIG_PASS area=%s altitudeFt=%d speedKt=%d headingDeg=%.3f legNm=%.1f radioMHz=%.3f modulation=AM tacan=%d%s ident=%s egressGate=%.6f,%.6f initialFuelLowThresholdPct=%d",
-    spec.area,
-    spec.altitudeFt,
-    spec.speedKt,
-    spec.headingDeg,
-    spec.legNm,
+    spec.gate.lat,
+    spec.gate.lon,
     spec.frequencyMHz,
     spec.tacanChannel,
     spec.tacanBand,
-    spec.tacanIdent,
-    spec.gate.lat,
-    spec.gate.lon,
-    SAFE_FUEL_LOW_PCT
+    spec.tacanIdent
   ))
 
   return {
@@ -207,154 +162,188 @@ local function configureTanker(spec)
     mission = mission,
     gateCoord = gateCoord,
     trackCoord = trackCoord,
-    seedFuelChecked = false,
     executingLogged = false,
-    executingTime = nil,
-    trackEntryFuelPct = nil,
+    seedFuelLogged = false,
     egressOrdered = false,
     egressGatePassed = false,
     despawnedAtGate = false,
   }
 end
 
-local function startArea(area)
-  if runtime[area] then
-    fail(string.format("DUPLICATE_START area=%s", area))
-    return runtime[area]
+local function configureExistingBagramReceiver()
+  local bagram = OMW and OMW.AirOps and OMW.AirOps.Bagram or nil
+  if not bagram or bagram.Status ~= "RUNNING" then
+    return false
   end
-  local spec = TANKERS[area]
-  if not spec then
-    fail(string.format("UNKNOWN_AREA area=%s", tostring(area)))
-    return nil
+
+  local airwing = bagram.Airwings and bagram.Airwings.USAF or nil
+  local squadron = bagram.Squadrons and bagram.Squadrons.F16C or nil
+  local payload = bagram.Payloads and bagram.Payloads.F16C and bagram.Payloads.F16C[1] or nil
+  if not airwing or not squadron or not payload then
+    fail("BAGRAM_RECEIVER_FOUNDATION_MISSING")
+    return true
   end
-  local state = configureTanker(spec)
-  runtime[area] = state
-  if state then
-    log(string.format("START_AREA_PASS area=%s", area))
+
+  local clancy = runtime.CLANCY
+  if not clancy then
+    fail("CLANCY_RUNTIME_MISSING_FOR_RECEIVER")
+    return true
   end
-  return state
+
+  local casZone = ZONE_RADIUS:New("OMW_AAR_RECEIVER_CAS_ZONE", clancy.trackCoord:GetVec2(), UTILS.NMToMeters(20))
+  local mission = AUFTRAG:NewCAS(casZone, 22000, 300, clancy.trackCoord, 225, 20, {})
+  mission:SetROE(ENUMS.ROE.WeaponHold)
+  mission:SetROT(ENUMS.ROT.NoReaction)
+  mission:SetRequiredAssets(1, 1)
+  mission:AssignSquadrons({ squadron })
+  mission:AddRequiredPayload(payload)
+  mission:SetDuration(RECEIVER_TIMEOUT_SEC)
+
+  local previousOnAfterFlightOnMission = airwing.OnAfterFlightOnMission
+  function airwing:OnAfterFlightOnMission(From, Event, To, FlightGroup, Mission)
+    if previousOnAfterFlightOnMission then
+      previousOnAfterFlightOnMission(self, From, Event, To, FlightGroup, Mission)
+    end
+    if Mission == mission and not receiver.flightGroup then
+      receiver.flightGroup = FlightGroup
+      receiver.assignedAt = timer.getAbsTime()
+      receiver.fuelBeforePct = getFuelPct(FlightGroup)
+      log(string.format(
+        "RECEIVER_ASSIGNED_PASS template=%s squadron=%s group=%s fuelPct=%.2f",
+        RECEIVER_TEMPLATE,
+        RECEIVER_SQUADRON,
+        FlightGroup:GetName(),
+        receiver.fuelBeforePct or -1
+      ))
+
+      local previousOnAfterRefueled = FlightGroup.OnAfterRefueled
+      function FlightGroup:OnAfterRefueled(RefuelFrom, RefuelEvent, RefuelTo)
+        if previousOnAfterRefueled then
+          previousOnAfterRefueled(self, RefuelFrom, RefuelEvent, RefuelTo)
+        end
+        receiver.refueled = true
+        receiver.fuelAfterPct = getFuelPct(self)
+        log(string.format(
+          "AI_BOOM_REFUELED_PASS group=%s fuelBeforePct=%.2f fuelAfterPct=%.2f",
+          self:GetName(),
+          receiver.fuelBeforePct or -1,
+          receiver.fuelAfterPct or -1
+        ))
+      end
+    end
+  end
+
+  receiver.mission = mission
+  airwing:AddMission(mission)
+  log(string.format(
+    "RECEIVER_MISSION_ADDED_PASS template=%s squadron=%s existingBagramFoundation=true",
+    RECEIVER_TEMPLATE,
+    RECEIVER_SQUADRON
+  ))
+  return true
 end
 
-log("START simultaneous=CLANCY,HOMER,KRUSTY,NELSON,PATTY testOnlyConcurrencyException=true productionSupportMissionLimitUnchanged=2")
-for _, area in ipairs(STATUS_ORDER) do
-  startArea(area)
+for _, area in ipairs(ACTIVE_TANKERS) do
+  runtime[area] = configureTanker(TANKERS[area])
 end
 
+log("START simultaneousDifferentGateDomains=CLANCY,NELSON sameGateMinimumSpawnSeparationSec=60 productionSupportMissionLimit=2")
+
+local receiverFoundationResolved = false
 SCHEDULER:New(nil, function()
-  local activeAircraft = 0
-  local executingMissions = 0
-  local egressOrdered = 0
-  local egressGatePassed = 0
-  local now = timer.getAbsTime()
+  if not receiverFoundationResolved then
+    receiverFoundationResolved = configureExistingBagramReceiver()
+  end
 
-  for _, area in ipairs(STATUS_ORDER) do
+  local now = timer.getAbsTime()
+  for _, area in ipairs(ACTIVE_TANKERS) do
     local state = runtime[area]
     if state then
       if state.group and state.group:IsAlive() then
-        activeAircraft = activeAircraft + 1
         local fuelPct = getFuelPct(state.flightGroup)
-        local fuelForLog = fuelPct or -1
-        local missionExecuting = state.mission:IsExecuting()
         local distanceTrackNm = getDistanceNm(state.flightGroup, state.trackCoord) or -1
         local distanceGateNm = getDistanceNm(state.flightGroup, state.gateCoord) or -1
-
-        if not state.seedFuelChecked and fuelPct then
-          state.seedFuelChecked = true
-          local deltaPct = fuelPct - state.spec.expectedFuelPct
+        if fuelPct and not state.seedFuelLogged then
+          state.seedFuelLogged = true
           log(string.format(
-            "SEED_FUEL_PASS area=%s fuelPct=%.2f expectedFuelPct=%.2f deltaPct=%.2f",
+            "SEED_FUEL_PASS area=%s fuelPct=%.2f expectedFuelPct=%.2f",
             area,
             fuelPct,
-            state.spec.expectedFuelPct,
-            deltaPct
+            state.spec.expectedFuelPct
           ))
         end
-
-        if missionExecuting then
-          executingMissions = executingMissions + 1
-          if not state.executingLogged then
-            state.executingLogged = true
-            state.executingTime = now
-            state.trackEntryFuelPct = fuelPct
-            log(string.format(
-              "TANKER_EXECUTING_PASS area=%s fuelPct=%.2f distanceTrackNm=%.2f",
-              area,
-              fuelForLog,
-              distanceTrackNm
-            ))
-          end
+        if state.mission:IsExecuting() and not state.executingLogged then
+          state.executingLogged = true
+          log(string.format(
+            "TANKER_EXECUTING_PASS area=%s fuelPct=%.2f distanceTrackNm=%.2f",
+            area,
+            fuelPct or -1,
+            distanceTrackNm
+          ))
         end
-
-        if state.egressOrdered then
-          egressOrdered = egressOrdered + 1
-          if not state.egressGatePassed and distanceGateNm >= 0 and distanceGateNm <= EGRESS_GATE_RADIUS_NM then
-            state.egressGatePassed = true
-            egressGatePassed = egressGatePassed + 1
-            log(string.format(
-              "EGRESS_GATE_PASS area=%s distanceGateNm=%.2f fuelPct=%.2f action=DESPAWN_OFFMAP_HANDOFF",
-              area,
-              distanceGateNm,
-              fuelForLog
-            ))
-            state.flightGroup:Despawn(1, true)
-            state.despawnedAtGate = true
-          elseif state.egressGatePassed then
-            egressGatePassed = egressGatePassed + 1
-          end
+        if state.egressOrdered and not state.egressGatePassed and distanceGateNm >= 0 and distanceGateNm <= EGRESS_GATE_RADIUS_NM then
+          state.egressGatePassed = true
+          log(string.format(
+            "EGRESS_GATE_PASS area=%s distanceGateNm=%.2f fuelPct=%.2f action=DESPAWN_OFFMAP_HANDOFF",
+            area,
+            distanceGateNm,
+            fuelPct or -1
+          ))
+          state.flightGroup:Despawn(1, true)
+          state.despawnedAtGate = true
         end
-
-        log(string.format(
-          "STATUS area=%s alive=true fuelPct=%.2f missionStatus=%s executing=%s distanceTrackNm=%.2f distanceGateNm=%.2f egressOrdered=%s egressGatePassed=%s",
-          area,
-          fuelForLog,
-          tostring(state.mission.status),
-          tostring(missionExecuting),
-          distanceTrackNm,
-          distanceGateNm,
-          tostring(state.egressOrdered),
-          tostring(state.egressGatePassed)
-        ))
       elseif not state.despawnedAtGate then
         fail(string.format("GROUP_NOT_ALIVE area=%s", area))
       end
     end
   end
 
-  if not acceleratedFuelLowArmed then
-    if executingMissions == EXPECTED_TANKER_COUNT then
-      if not allExecutingSince then
-        allExecutingSince = now
-        log(string.format("ALL_TANKERS_EXECUTING_PASS count=%d dwellRequiredSec=%d", executingMissions, EXECUTING_DWELL_SEC))
-      end
-      local dwellSec = now - allExecutingSince
-      if dwellSec >= EXECUTING_DWELL_SEC then
-        acceleratedFuelLowArmed = true
-        for _, area in ipairs(STATUS_ORDER) do
-          local state = runtime[area]
-          if state and state.flightGroup then
-            state.flightGroup:SetFuelLowThreshold(ACCELERATED_FUEL_LOW_PCT)
-          end
-        end
-        log(string.format(
-          "ACCELERATED_FUEL_LOW_ARMED thresholdPct=%d afterAllExecutingDwellSec=%.0f",
-          ACCELERATED_FUEL_LOW_PCT,
-          dwellSec
-        ))
-      end
-    else
-      allExecutingSince = nil
+  local clancy = runtime.CLANCY
+  if receiver.flightGroup and clancy and clancy.mission:IsExecuting() and not receiver.refuelOrdered then
+    if receiver.flightGroup:IsAirborne() then
+      receiver.fuelBeforePct = getFuelPct(receiver.flightGroup) or receiver.fuelBeforePct
+      receiver.refuelOrdered = true
+      receiver.refuelOrderedAt = now
+      receiver.flightGroup:Refuel(clancy.trackCoord)
+      log(string.format(
+        "AI_BOOM_REFUEL_ORDER_PASS group=%s tankerArea=CLANCY fuelBeforePct=%.2f",
+        receiver.flightGroup:GetName(),
+        receiver.fuelBeforePct or -1
+      ))
     end
   end
 
+  if receiver.refuelOrdered and not receiver.refueled and receiver.refuelOrderedAt and now - receiver.refuelOrderedAt > RECEIVER_TIMEOUT_SEC then
+    fail(string.format("AI_BOOM_REFUEL_TIMEOUT group=%s", receiver.flightGroup and receiver.flightGroup:GetName() or "unknown"))
+    receiver.refuelOrderedAt = nil
+  end
+
+  if receiver.refueled and not acceleratedFuelLowArmed then
+    acceleratedFuelLowArmed = true
+    for _, area in ipairs(ACTIVE_TANKERS) do
+      local state = runtime[area]
+      if state and state.flightGroup then
+        state.flightGroup:SetFuelLowThreshold(ACCELERATED_FUEL_LOW_PCT)
+      end
+    end
+    log(string.format(
+      "ACCELERATED_FUEL_LOW_ARMED thresholdPct=%d afterAiBoomRefueled=true",
+      ACCELERATED_FUEL_LOW_PCT
+    ))
+  end
+
   log(string.format(
-    "SUMMARY activeAircraft=%d executingMissions=%d egressOrdered=%d egressGatePassed=%d expectedTankers=%d testOnlyConcurrencyException=true productionSupportMissionLimit=2 fuelLowArmed=%s",
-    activeAircraft,
-    executingMissions,
-    egressOrdered,
-    egressGatePassed,
-    EXPECTED_TANKER_COUNT,
-    tostring(acceleratedFuelLowArmed)
+    "SUMMARY clancyExecuting=%s nelsonExecuting=%s receiverAssigned=%s receiverAirborne=%s refuelOrdered=%s refueled=%s fuelLowArmed=%s clancyEgress=%s nelsonEgress=%s",
+    tostring(runtime.CLANCY and runtime.CLANCY.mission:IsExecuting() or false),
+    tostring(runtime.NELSON and runtime.NELSON.mission:IsExecuting() or false),
+    tostring(receiver.flightGroup ~= nil),
+    tostring(receiver.flightGroup and receiver.flightGroup:IsAirborne() or false),
+    tostring(receiver.refuelOrdered),
+    tostring(receiver.refueled),
+    tostring(acceleratedFuelLowArmed),
+    tostring(runtime.CLANCY and runtime.CLANCY.egressGatePassed or false),
+    tostring(runtime.NELSON and runtime.NELSON.egressGatePassed or false)
   ))
 end, {}, 10, STATUS_INTERVAL_SEC)
 
-log("HARNESS_READY simultaneous=CLANCY,HOMER,KRUSTY,NELSON,PATTY seedFuel=90,90,90,96,96 safeFuelLowPct=20 acceleratedFuelLowPct=99 armAfterAllExecutingDwellSec=180 egressGateRadiusNm=10")
+log("HARNESS_READY activeTankers=CLANCY,NELSON manualRadioTacanExemplars=2 aiBoomReceiverTemplate=TPL_AIR_US_BGRM_F16C_CAS_2SHIP acceleratedFuelLowAfterAiBoomRefueled=true egressGateRadiusNm=10 newMissionEditorTemplates=0 mizMutation=false")
