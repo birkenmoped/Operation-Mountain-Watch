@@ -82,7 +82,17 @@ Active exemplars:
 
 The source/planning TACAN values are not overwritten by this test. Acceptance-4 explicitly separates the DCS-runtime Y-band beacon configuration from those source fields.
 
-Clancy's 220 KIAS is a targeted A-10-compatible acceptance value. It is supported by a period-adjacent official USAF type reference describing KC-135 refueling of A-10s at approximately 220 knots. It is not automatically generalized to every OMW tanker/receiver pairing. Nelson remains at 300 KIAS for this fast-jet/northern exemplar until a complete receiver-oriented speed matrix is established.
+Clancy's 220 KIAS is a targeted A-10-compatible acceptance value. It is not automatically generalized to every OMW tanker/receiver pairing. Nelson remains at 300 KIAS for this fast-jet/northern exemplar until a complete receiver-oriented speed matrix is established.
+
+OMW additionally requires that one AAR area can support two independent Boom tankers when mixed receiver demand exists:
+
+```text
+SLOW tanker -> lower orbit -> A-10 / slow-receiver focus
+FAST tanker -> upper orbit -> F-15 / F-16 / fast-receiver focus
+minimum vertical separation between independent SLOW and FAST tanker orbits = 3,000 ft
+```
+
+Acceptance-4 does not yet run such a same-area pair; Clancy and Nelson remain separate-area exemplars. The 3,000-ft rule is a production-planning constraint and is not replaced by MOOSE's internal 1,000-ft `CheckTANKER()` patrol-slot increment.
 
 ## 4. MOOSE-first runtime corrections
 
@@ -106,12 +116,16 @@ FLIGHTGROUP:New(...)
 AUFTRAG:SetMissionEgressCoord(...)
 AUFTRAG:Cancel()
 AUFTRAG:NewCAS(...)
+AUFTRAG:SetMissionRange(...)
 AUFTRAG:AssignSquadrons({...})
 AUFTRAG:AddRequiredPayload(...)
 AUFTRAG:SetRequiredAssets(min,max)
 AUFTRAG:CountOpsGroups()
+COHORT:CanMission(...)
 AIRWING:AddMission(...)
 AIRWING:OnAfterFlightOnMission(...)
+AIRWING:CheckTANKER()
+AIRWING:GetTankerForFlight(...)
 FLIGHTGROUP:IsAirborne()
 FLIGHTGROUP:Refuel(...)
 FLIGHTGROUP:OnAfterRefueled(...)
@@ -135,6 +149,8 @@ local group = spawner:SpawnFromCoordinate(gateCoord)
 
 This changes the initial facing only. Racetrack orientation remains the `AUFTRAG:NewTANKER()` heading.
 
+`AIRWING:GetTankerForFlight()` filters by compatible refueling system and then chooses by distance. It does not provide a built-in SLOW-/FAST-receiver classification. Therefore later same-area dual-tanker selection needs its own MOOSE-first acceptance rather than assuming automatic A-10/F-16 routing.
+
 ## 5. Existing AI Boom receiver
 
 The existing Bagram foundation remains the only receiver asset path:
@@ -147,7 +163,15 @@ AW_US_BGRM_455_AEW
 
 No new Mission Editor receiver group is introduced and the harness does not mutate the `.miz`.
 
-Acceptance-4 does not guess at the cause of the Acceptance-3 non-assignment. It adds `AUFTRAG:CountOpsGroups()` to the summary as `receiverMissionOpsGroups`, so the next run distinguishes a mission merely being queued from an OPSGROUP actually being assigned before the `AIRWING:OnAfterFlightOnMission` callback.
+Acceptance-3 proved only that the receiver mission entered the AIRWING queue. The pinned `COHORT:CanMission()` source checks mission type and target range before a cohort can execute the mission. The Bagram F-16C foundation does not apply a project-specific mission-range override, while the Clancy track is approximately 227 NM from the documented Bagram reference coordinate. Acceptance-4 therefore applies an explicit test-only MOOSE override:
+
+```lua
+mission:SetMissionRange(250)
+```
+
+This does not mutate the productive F-16C SQUADRON. The next owner-run DCS test must establish whether the F-16C is then actually recruited/materialized.
+
+`AUFTRAG:CountOpsGroups()` remains in the summary as `receiverMissionOpsGroups`, distinguishing a queued mission from actual OPSGROUP assignment before the `AIRWING:OnAfterFlightOnMission` callback.
 
 ## 6. Expected Acceptance-4 markers
 
@@ -158,7 +182,7 @@ SEED_FUEL_PASS area=CLANCY ...
 SEED_FUEL_PASS area=NELSON ...
 TANKER_EXECUTING_PASS area=CLANCY ... speedKt=220
 TANKER_EXECUTING_PASS area=NELSON ... speedKt=300
-RECEIVER_MISSION_ADDED_PASS ...
+RECEIVER_MISSION_ADDED_PASS ... missionRangeNm=250
 SUMMARY ... receiverMissionOpsGroups=...
 RECEIVER_ASSIGNED_PASS ...
 AI_BOOM_REFUEL_ORDER_PASS ... tankerArea=CLANCY ...
@@ -168,7 +192,7 @@ FUEL_LOW_PASS area=CLANCY ... action=CANCEL_TO_EGRESS
 FUEL_LOW_PASS area=NELSON ... action=CANCEL_TO_EGRESS
 EGRESS_GATE_PASS area=CLANCY ... action=DESPAWN_OFFMAP_HANDOFF
 EGRESS_GATE_PASS area=NELSON ... action=DESPAWN_OFFMAP_HANDOFF
-HARNESS_READY ... runtimeTacanBand=Y clancySpeedKt=220 nelsonSpeedKt=300 spawnHeadingTowardTrack=true ...
+HARNESS_READY ... runtimeTacanBand=Y clancySpeedKt=220 nelsonSpeedKt=300 spawnHeadingTowardTrack=true receiverMissionRangeNm=250 ...
 ```
 
 ## 7. Acceptance-4 criteria
@@ -181,10 +205,11 @@ A useful owner run must establish:
 4. Clancy can fly the 220-KIAS tanker track as the A-10-compatible exemplar without breaking the tanker mission;
 5. Nelson remains functional at 300 KIAS;
 6. both reach `AUFTRAG:TANKER -> EXECUTING` and fly their racetracks;
-7. the receiver telemetry shows whether the Bagram F-16C receives an OPSGROUP assignment;
-8. if assigned and airborne, the MOOSE refuel FSM is ordered and DCS completes Boom refueling;
-9. only after Boom proof do the tankers execute accelerated `FuelLow -> Cancel -> Egress -> <=10 NM -> Despawn`;
-10. no new Mission Editor template, MIST/native event handler or automated `.miz` mutation is introduced.
+7. the explicit 250-NM mission-range override permits or disproves the suspected range gate for the existing Bagram F-16C;
+8. the receiver telemetry shows whether the Bagram F-16C receives an OPSGROUP assignment;
+9. if assigned and airborne, the MOOSE refuel FSM is ordered and DCS completes Boom refueling;
+10. only after Boom proof do the tankers execute accelerated `FuelLow -> Cancel -> Egress -> <=10 NM -> Despawn`;
+11. no new Mission Editor template, MIST/native event handler or automated `.miz` mutation is introduced.
 
 ## 8. Source / Builder / Dist
 
