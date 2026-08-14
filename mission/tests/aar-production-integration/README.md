@@ -5,7 +5,7 @@ document_class: TEST_PROJECT_INDEX
 owning_policy: OMW-GOV-001
 authoritative_for:
   - AAR MissionDemand production-integration test scope
-  - six-core-area dispatch, area-template identity, source spacing and high-transit progress acceptance
+  - six-core-area dispatch, area-template/callsign identity, source spacing and high-transit progress acceptance
 not_authoritative_for:
   - DCS runtime acceptance before owner-run test
   - CampaignState strategic inventory implementation
@@ -28,6 +28,7 @@ Dieser Test prüft ausschließlich die noch offene produktive Integration oberha
 MissionDemand
 -> OMW Area-/FAST-/SLOW-Auswahl
 -> area-spezifisches Mission-Editor-KC-135-Template
+-> korrekter DCS-Rufname des Area-Templates
 -> External Source Domain
 -> MOOSE-Materialisierung am External Gate
 -> High-Transit-Profil
@@ -36,14 +37,25 @@ MissionDemand
 
 Spawn-Mechanik, Racetrack, TACAN Y, Radio, Boom-AAR, FuelLow, Cancel, Egress und Off-map-Handoff wurden bereits separat im KC-135-Runtime-Acceptance-Pfad geprüft und werden hier nicht künstlich erneut beschleunigt.
 
-## Korrektur gegenüber Integration-1
+## Korrekturen aus den Owner-Läufen
+
+### Integration-1
 
 Der erste Owner-Lauf zeigte zwei Fehler im Testentwurf:
 
 1. alle MANAS-Demands verwendeten `OMW_AAR_KC135_PATTY`, alle AL-UDEID-Demands `OMW_AAR_KC135_KRUSTY`; dadurch wurden Callsign und Gruppenidentität des falschen Seed-Templates geerbt;
-2. der Harness verlangte `AUFTRAG:IsExecuting()` innerhalb von 900 s. Bei realen Gate->Track-Distanzen von mehreren hundert NM ist das kein sinnvoller fokussierter Integrationstest, weil `EXECUTING` erst am eigentlichen Tanker-Missionsabschnitt erwartet werden kann.
+2. der Harness verlangte `AUFTRAG:IsExecuting()` innerhalb von 900 s. Bei realen Gate->Track-Distanzen von mehreren hundert NM ist das kein sinnvoller fokussierter Integrationstest.
 
-Integration-2 verwendet deshalb für jede Core-Area ein eigenes Mission-Editor-Template und prüft statt vollständiger Track-Ankunft die korrekte Materialisierung sowie messbaren High-Transit-Fortschritt.
+Integration-2 stellte deshalb auf sechs area-spezifische Mission-Editor-Templates und Transit-Fortschritt um.
+
+### Integration-2
+
+Der zweite Owner-Lauf bestätigte die area-spezifischen Gruppen-/Template-Namen, zeigte aber zwei weitere konkrete Fehler:
+
+1. MOOSE `SPAWN` setzte ohne explizites `SPAWN:InitCallSign(...)` die BLUE-Einheitenrufnamen neu; dadurch erschienen insbesondere die MANAS-Tanker trotz korrekter Templates als `Texaco11`;
+2. der Harness las unmittelbar nach Materialisierung `FLIGHTGROUP:GetFuelMin()`. Zu diesem Zeitpunkt können die `FLIGHTGROUP`-Elemente noch nicht vollständig initialisiert sein, wodurch `math.huge * 100` als `inf` zurückgegeben werden kann.
+
+Integration-3 verwendet deshalb den im gepinnten MOOSE-Stand vorhandenen `SPAWN:InitCallSign(...)`-Pfad und liest den unmittelbar nach Spawn verfügbaren Fuel-Zustand über `GROUP:GetFuelMin()` aus. Zusätzlich wird der reale DCS-Rufname mit `GROUP:GetCallsign()` explizit geprüft.
 
 ## Sechs Test-Demands
 
@@ -58,18 +70,18 @@ SLOW / WEST / SUPPORT            -> LISA / MANAS
 
 Damit werden beide FLEX-Areas mit je einem konkreten Receiver-Profil geprüft: `MOE FAST`, `LISA SLOW`.
 
-## Area-spezifische Templates
+## Area-spezifische Templates und Rufnamen
 
 ```text
-NELSON    -> OMW_AAR_KC135_NELSON    -> MANAS    -> 96 % Seed
-PATTY     -> OMW_AAR_KC135_PATTY     -> MANAS    -> 96 % Seed
-LISA      -> OMW_AAR_KC135_LISA      -> MANAS    -> 96 % Seed
-MOE       -> OMW_AAR_KC135_MOE       -> MANAS    -> 96 % Seed
-KRUSTY    -> OMW_AAR_KC135_KRUSTY    -> AL_UDEID -> 90 % Seed
-MILHOUSE  -> OMW_AAR_KC135_MILHOUSE  -> AL_UDEID -> 90 % Seed
+NELSON    -> OMW_AAR_KC135_NELSON    -> Texaco 1-1 -> MANAS    -> 96 % Seed
+PATTY     -> OMW_AAR_KC135_PATTY     -> Texaco 2-1 -> MANAS    -> 96 % Seed
+LISA      -> OMW_AAR_KC135_LISA      -> Texaco 3-1 -> MANAS    -> 96 % Seed
+MOE       -> OMW_AAR_KC135_MOE       -> Texaco 4-1 -> MANAS    -> 96 % Seed
+KRUSTY    -> OMW_AAR_KC135_KRUSTY    -> Arco   2-1 -> AL_UDEID -> 90 % Seed
+MILHOUSE  -> OMW_AAR_KC135_MILHOUSE  -> Shell  2-1 -> AL_UDEID -> 90 % Seed
 ```
 
-Die drei neuen Templates `LISA`, `MOE` und `MILHOUSE` werden durch den Projektinhaber im Mission Editor angelegt. Die `.miz` wird nicht automatisiert verändert.
+Die `.miz` wird nicht automatisiert verändert.
 
 ## Spawn-Staffelung
 
@@ -94,7 +106,7 @@ initialTrackDistanceNm
 -> TRANSIT_PROGRESS_PASS
 ```
 
-Damit wird geprüft, dass die area-spezifische Mission tatsächlich in Richtung des richtigen Tracks geroutet wird. Eine vollständige Gate->Track-Ankunft ist für diesen fokussierten Test ausdrücklich nicht erforderlich.
+Eine vollständige Gate->Track-Ankunft ist für diesen fokussierten Test ausdrücklich nicht erforderlich.
 
 ## FuelLow
 
@@ -123,12 +135,13 @@ OnHandoff
 
 Im Test wird dafür ausdrücklich ein `testAdapter=true` verwendet, der alle sechs Demands zulässt. Das ist kein Ersatz für CampaignState. Die produktive CampaignState-Bindung wird separat an diese Schnittstelle angeschlossen; der Controller selbst übernimmt keine strategische Ressourcenhoheit.
 
-## Erwartete Kernmarker
+## Erwartete Kernmarker Integration-3
 
 ```text
 POLICY_PASS x6
 SUBMIT_PASS x6
 TEMPLATE_IDENTITY_PASS x6
+CALLSIGN_IDENTITY_PASS x6
 SEED_FUEL_PASS x6
 SOURCE_SPACING_PASS x4
 TRANSIT_PROGRESS_PASS x6
