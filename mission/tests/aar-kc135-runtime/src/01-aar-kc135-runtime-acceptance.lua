@@ -5,9 +5,9 @@ local SAFE_FUEL_LOW_PCT = 20
 local ACCELERATED_FUEL_LOW_PCT = 99
 local EGRESS_GATE_RADIUS_NM = 10
 local RECEIVER_TIMEOUT_SEC = 1800
+local C130_OPTIONAL_TIMEOUT_SEC = 600
 local RECEIVER_MISSION_RANGE_NM = 250
 local POST_REFUEL_DWELL_SEC = 60
-local DUAL_TANKER_SPAWN_STAGGER_SEC = 60
 local MIN_VERTICAL_SEPARATION_FT = 3000
 
 local function log(message)
@@ -35,6 +35,8 @@ local TANKERS = {
     tacanBand = "Y",
     tacanIdent = "CLA",
     expectedFuelPct = 90,
+    spawnDelaySec = 0,
+    gateDomain = "SOUTH",
   },
   FAST = {
     key = "FAST",
@@ -52,13 +54,74 @@ local TANKERS = {
     tacanBand = "Y",
     tacanIdent = "TX2",
     expectedFuelPct = 96,
+    spawnDelaySec = 60,
+    gateDomain = "SOUTH",
+  },
+  HOMER = {
+    key = "HOMER",
+    profile = "FAST_JET",
+    area = "HOMER",
+    template = "OMW_AAR_KC135_HOMER",
+    gate = { lat = 28.90264890, lon = 64.61166667 },
+    track = { lat = 32.93833333, lon = 68.22333333 },
+    altitudeFt = 23000,
+    speedKt = 300,
+    headingDeg = 317.573,
+    legNm = 35,
+    frequencyMHz = 376.000,
+    tacanChannel = 54,
+    tacanBand = "Y",
+    tacanIdent = "HOM",
+    expectedFuelPct = 90,
+    spawnDelaySec = 120,
+    gateDomain = "SOUTH",
+  },
+  KRUSTY = {
+    key = "KRUSTY",
+    profile = "FAST_JET",
+    area = "KRUSTY",
+    template = "OMW_AAR_KC135_KRUSTY",
+    gate = { lat = 28.90264890, lon = 64.61166667 },
+    track = { lat = 32.65123012, lon = 68.15946309 },
+    altitudeFt = 26000,
+    speedKt = 300,
+    headingDeg = 212.350,
+    legNm = 35,
+    frequencyMHz = 258.300,
+    tacanChannel = 42,
+    tacanBand = "Y",
+    tacanIdent = "KRU",
+    expectedFuelPct = 90,
+    spawnDelaySec = 180,
+    gateDomain = "SOUTH",
+  },
+  NELSON = {
+    key = "NELSON",
+    profile = "FAST_JET",
+    area = "NELSON",
+    template = "OMW_AAR_KC135_NELSON",
+    gate = { lat = 38.83163, lon = 70.95271 },
+    track = { lat = 36.37666667, lon = 71.01833333 },
+    altitudeFt = 27500,
+    speedKt = 300,
+    headingDeg = 10.428,
+    legNm = 35,
+    frequencyMHz = 384.400,
+    tacanChannel = 47,
+    tacanBand = "Y",
+    tacanIdent = "NEL",
+    expectedFuelPct = 96,
+    spawnDelaySec = 0,
+    gateDomain = "NORTH_EGPAN",
   },
 }
 
-local TANKER_KEYS = { "SLOW", "FAST" }
+local TANKER_KEYS = { "SLOW", "FAST", "HOMER", "KRUSTY", "NELSON" }
+local MANDATORY_RECEIVER_KEYS = { "A10", "F15E", "F16" }
 local runtime = {}
+local allFiveTankersExecutingLogged = false
+local mandatoryReceiversRefueledAt = nil
 local acceleratedFuelLowArmed = false
-local bothReceiversRefueledAt = nil
 
 local RECEIVERS = {
   A10 = {
@@ -69,16 +132,15 @@ local RECEIVERS = {
     intendedTankerKey = "SLOW",
     missionAltitudeFt = 22000,
     missionSpeedKt = 220,
-    mission = nil,
-    flightGroup = nil,
-    assignedAt = nil,
-    refuelOrdered = false,
-    refuelOrderedAt = nil,
-    fuelBeforePct = nil,
-    refueled = false,
-    refueledAt = nil,
-    fuelAfterPct = nil,
-    proximityPass = false,
+  },
+  F15E = {
+    key = "F15E",
+    profile = "FAST_JET",
+    template = "TPL_AIR_US_BGRM_F15E_CAS_2SHIP",
+    squadronName = "SQ_US_BGRM_F15E_335_EFS",
+    intendedTankerKey = "FAST",
+    missionAltitudeFt = 25000,
+    missionSpeedKt = 300,
   },
   F16 = {
     key = "F16",
@@ -88,17 +150,37 @@ local RECEIVERS = {
     intendedTankerKey = "FAST",
     missionAltitudeFt = 25000,
     missionSpeedKt = 300,
-    mission = nil,
-    flightGroup = nil,
-    assignedAt = nil,
-    refuelOrdered = false,
-    refuelOrderedAt = nil,
-    fuelBeforePct = nil,
-    refueled = false,
-    refueledAt = nil,
-    fuelAfterPct = nil,
-    proximityPass = false,
   },
+}
+
+for _, receiverSpec in pairs(RECEIVERS) do
+  receiverSpec.mission = nil
+  receiverSpec.flightGroup = nil
+  receiverSpec.assignedAt = nil
+  receiverSpec.refuelOrdered = false
+  receiverSpec.refuelOrderedAt = nil
+  receiverSpec.fuelBeforePct = nil
+  receiverSpec.refueled = false
+  receiverSpec.refueledAt = nil
+  receiverSpec.fuelAfterPct = nil
+  receiverSpec.proximityPass = false
+end
+
+local OPTIONAL_C130 = {
+  key = "C130J",
+  template = "TPL_AIR_US_BGRM_C130_TRANSPORT_1SHIP",
+  intendedTankerKey = "FAST",
+  spawn = { lat = 31.98000000, lon = 67.32000000 },
+  altitudeFt = 25000,
+  flightGroup = nil,
+  group = nil,
+  refuelOrdered = false,
+  refuelOrderedAt = nil,
+  refueled = false,
+  refueledAt = nil,
+  fuelBeforePct = nil,
+  fuelAfterPct = nil,
+  concluded = false,
 }
 
 local function getFuelPct(flightGroup)
@@ -199,10 +281,11 @@ local function configureTanker(spec)
   flightGroup:AddMission(mission)
 
   log(string.format(
-    "TANKER_START_PASS tankerProfile=%s receiverFocus=%s area=%s group=%s gateLat=%.8f gateLon=%.8f spawnHeadingDeg=%.3f altitudeFt=%d speedKt=%d radioMHz=%.3f modulation=AM tacan=%d%s ident=%s",
+    "TANKER_START_PASS tankerProfile=%s receiverFocus=%s area=%s gateDomain=%s group=%s gateLat=%.8f gateLon=%.8f spawnHeadingDeg=%.3f altitudeFt=%d speedKt=%d radioMHz=%.3f modulation=AM tacan=%d%s ident=%s spawnDelaySec=%d",
     spec.key,
     spec.profile,
     spec.area,
+    spec.gateDomain,
     group:GetName(),
     spec.gate.lat,
     spec.gate.lon,
@@ -212,7 +295,8 @@ local function configureTanker(spec)
     spec.frequencyMHz,
     spec.tacanChannel,
     spec.tacanBand,
-    spec.tacanIdent
+    spec.tacanIdent,
+    spec.spawnDelaySec
   ))
 
   return {
@@ -229,6 +313,26 @@ local function configureTanker(spec)
     egressGatePassed = false,
     despawnedAtGate = false,
   }
+end
+
+local function startTanker(tankerKey)
+  if runtime[tankerKey] then
+    return
+  end
+  runtime[tankerKey] = configureTanker(TANKERS[tankerKey])
+end
+
+local function scheduleTankers()
+  for _, tankerKey in ipairs(TANKER_KEYS) do
+    local delay = TANKERS[tankerKey].spawnDelaySec
+    if delay <= 0 then
+      startTanker(tankerKey)
+    else
+      SCHEDULER:New(nil, function()
+        startTanker(tankerKey)
+      end, {}, delay)
+    end
+  end
 end
 
 local function logReceiverProximity(receiverSpec)
@@ -349,25 +453,87 @@ local function configureExistingReceivers()
     return false
   end
 
-  local f16Airwing = bagram.Airwings and bagram.Airwings.USAF or nil
+  local bagramAirwing = bagram.Airwings and bagram.Airwings.USAF or nil
+  local f15Squadron = bagram.Squadrons and bagram.Squadrons.F15E or nil
+  local f15Payload = bagram.Payloads and bagram.Payloads.F15E and bagram.Payloads.F15E[1] or nil
   local f16Squadron = bagram.Squadrons and bagram.Squadrons.F16C or nil
   local f16Payload = bagram.Payloads and bagram.Payloads.F16C and bagram.Payloads.F16C[1] or nil
-  local a10Airwing = kandahar.Airwings and kandahar.Airwings.Main or nil
+  local kandaharAirwing = kandahar.Airwings and kandahar.Airwings.Main or nil
   local a10Squadron = kandahar.Squadrons and kandahar.Squadrons.A10C or nil
   local a10Payload = kandahar.Payloads and kandahar.Payloads.A10C and kandahar.Payloads.A10C[1] or nil
 
-  if not f16Airwing or not f16Squadron or not f16Payload then
+  if not bagramAirwing or not f15Squadron or not f15Payload then
+    fail("BAGRAM_F15E_RECEIVER_FOUNDATION_MISSING")
+    return true
+  end
+  if not f16Squadron or not f16Payload then
     fail("BAGRAM_F16_RECEIVER_FOUNDATION_MISSING")
     return true
   end
-  if not a10Airwing or not a10Squadron or not a10Payload then
+  if not kandaharAirwing or not a10Squadron or not a10Payload then
     fail("KANDAHAR_A10_RECEIVER_FOUNDATION_MISSING")
     return true
   end
 
-  addReceiverMission(RECEIVERS.A10, a10Airwing, a10Squadron, a10Payload, runtime.SLOW)
-  addReceiverMission(RECEIVERS.F16, f16Airwing, f16Squadron, f16Payload, runtime.FAST)
+  addReceiverMission(RECEIVERS.A10, kandaharAirwing, a10Squadron, a10Payload, runtime.SLOW)
+  addReceiverMission(RECEIVERS.F15E, bagramAirwing, f15Squadron, f15Payload, runtime.FAST)
+  addReceiverMission(RECEIVERS.F16, bagramAirwing, f16Squadron, f16Payload, runtime.FAST)
   return true
+end
+
+local function configureOptionalC130Receiver()
+  if OPTIONAL_C130.flightGroup or not runtime.FAST then
+    return
+  end
+
+  local altitudeM = UTILS.FeetToMeters(OPTIONAL_C130.altitudeFt)
+  local spawnCoord = COORDINATE:NewFromLLDD(OPTIONAL_C130.spawn.lat, OPTIONAL_C130.spawn.lon, altitudeM)
+  local spawnHeadingDeg = spawnCoord:HeadingTo(runtime.FAST.trackCoord)
+  local spawner = SPAWN:New(OPTIONAL_C130.template)
+  spawner:InitHeading(spawnHeadingDeg)
+  local group = spawner:SpawnFromCoordinate(spawnCoord)
+  if not group then
+    log("OPTIONAL_C130_AAR_RESULT status=NOT_TESTED reason=SPAWN_FAILED blocking=false")
+    OPTIONAL_C130.concluded = true
+    return
+  end
+
+  local flightGroup = FLIGHTGROUP:New(group)
+  if not flightGroup then
+    log("OPTIONAL_C130_AAR_RESULT status=NOT_TESTED reason=FLIGHTGROUP_FAILED blocking=false")
+    OPTIONAL_C130.concluded = true
+    return
+  end
+
+  OPTIONAL_C130.group = group
+  OPTIONAL_C130.flightGroup = flightGroup
+  OPTIONAL_C130.fuelBeforePct = getFuelPct(flightGroup)
+
+  local previousOnAfterRefueled = flightGroup.OnAfterRefueled
+  function flightGroup:OnAfterRefueled(RefuelFrom, RefuelEvent, RefuelTo)
+    if previousOnAfterRefueled then
+      previousOnAfterRefueled(self, RefuelFrom, RefuelEvent, RefuelTo)
+    end
+    OPTIONAL_C130.refueled = true
+    OPTIONAL_C130.refueledAt = timer.getAbsTime()
+    OPTIONAL_C130.fuelAfterPct = getFuelPct(self)
+    OPTIONAL_C130.concluded = true
+    log(string.format(
+      "OPTIONAL_C130_AAR_PASS group=%s intendedTanker=FAST fuelBeforePct=%.2f fuelAfterPct=%.2f blocking=false",
+      self:GetName(),
+      OPTIONAL_C130.fuelBeforePct or -1,
+      OPTIONAL_C130.fuelAfterPct or -1
+    ))
+  end
+
+  log(string.format(
+    "OPTIONAL_C130_SPAWN_PASS template=%s group=%s spawnLat=%.8f spawnLon=%.8f altitudeFt=%d intendedTanker=FAST blocking=false",
+    OPTIONAL_C130.template,
+    group:GetName(),
+    OPTIONAL_C130.spawn.lat,
+    OPTIONAL_C130.spawn.lon,
+    OPTIONAL_C130.altitudeFt
+  ))
 end
 
 local verticalSeparationFt = TANKERS.FAST.altitudeFt - TANKERS.SLOW.altitudeFt
@@ -375,34 +541,17 @@ if verticalSeparationFt < MIN_VERTICAL_SEPARATION_FT then
   error(string.format("FAST/SLOW vertical separation below minimum: %d ft", verticalSeparationFt))
 end
 
-runtime.SLOW = configureTanker(TANKERS.SLOW)
-SCHEDULER:New(nil, function()
-  if not runtime.FAST then
-    runtime.FAST = configureTanker(TANKERS.FAST)
-    if runtime.FAST then
-      log(string.format(
-        "DUAL_TANKER_STACK_PASS area=CLANCY slowAltitudeFt=%d fastAltitudeFt=%d separationFt=%d minimumFt=%d slowSpeedKt=%d fastSpeedKt=%d spawnStaggerSec=%d",
-        TANKERS.SLOW.altitudeFt,
-        TANKERS.FAST.altitudeFt,
-        verticalSeparationFt,
-        MIN_VERTICAL_SEPARATION_FT,
-        TANKERS.SLOW.speedKt,
-        TANKERS.FAST.speedKt,
-        DUAL_TANKER_SPAWN_STAGGER_SEC
-      ))
-    end
-  end
-end, {}, DUAL_TANKER_SPAWN_STAGGER_SEC)
+scheduleTankers()
 
 log(string.format(
-  "START sameAreaDualTanker=true area=CLANCY slowProfile=A10_SLOW slowAltitudeFt=%d slowSpeedKt=%d fastProfile=FAST_JET fastAltitudeFt=%d fastSpeedKt=%d verticalSeparationFt=%d minimumVerticalSeparationFt=%d spawnStaggerSec=%d receiverMissionRangeNm=%d postRefuelDwellSec=%d",
+  "START fiveTankerStressException=true tankerCount=%d sameAreaDualTanker=true area=CLANCY slowAltitudeFt=%d slowSpeedKt=%d fastAltitudeFt=%d fastSpeedKt=%d verticalSeparationFt=%d minimumVerticalSeparationFt=%d receiverMissionRangeNm=%d postRefuelDwellSec=%d optionalC130=true",
+  #TANKER_KEYS,
   TANKERS.SLOW.altitudeFt,
   TANKERS.SLOW.speedKt,
   TANKERS.FAST.altitudeFt,
   TANKERS.FAST.speedKt,
   verticalSeparationFt,
   MIN_VERTICAL_SEPARATION_FT,
-  DUAL_TANKER_SPAWN_STAGGER_SEC,
   RECEIVER_MISSION_RANGE_NM,
   POST_REFUEL_DWELL_SEC
 ))
@@ -414,6 +563,7 @@ SCHEDULER:New(nil, function()
   end
 
   local now = timer.getAbsTime()
+  local executingCount = 0
   for _, tankerKey in ipairs(TANKER_KEYS) do
     local state = runtime[tankerKey]
     if state then
@@ -431,17 +581,20 @@ SCHEDULER:New(nil, function()
             state.spec.expectedFuelPct
           ))
         end
-        if state.mission:IsExecuting() and not state.executingLogged then
-          state.executingLogged = true
-          log(string.format(
-            "TANKER_EXECUTING_PASS tankerProfile=%s area=%s fuelPct=%.2f distanceTrackNm=%.2f altitudeFt=%d speedKt=%d",
-            tankerKey,
-            state.spec.area,
-            fuelPct or -1,
-            distanceTrackNm,
-            state.spec.altitudeFt,
-            state.spec.speedKt
-          ))
+        if state.mission:IsExecuting() then
+          executingCount = executingCount + 1
+          if not state.executingLogged then
+            state.executingLogged = true
+            log(string.format(
+              "TANKER_EXECUTING_PASS tankerProfile=%s area=%s fuelPct=%.2f distanceTrackNm=%.2f altitudeFt=%d speedKt=%d",
+              tankerKey,
+              state.spec.area,
+              fuelPct or -1,
+              distanceTrackNm,
+              state.spec.altitudeFt,
+              state.spec.speedKt
+            ))
+          end
         end
         if state.egressOrdered and not state.egressGatePassed and distanceGateNm >= 0 and distanceGateNm <= EGRESS_GATE_RADIUS_NM then
           state.egressGatePassed = true
@@ -461,12 +614,21 @@ SCHEDULER:New(nil, function()
     end
   end
 
-  local bothTankersExecuting = runtime.SLOW and runtime.FAST
-    and runtime.SLOW.mission:IsExecuting()
-    and runtime.FAST.mission:IsExecuting()
+  local allFiveTankersExecuting = executingCount == #TANKER_KEYS
+  if allFiveTankersExecuting and not allFiveTankersExecutingLogged then
+    allFiveTankersExecutingLogged = true
+    log(string.format(
+      "FIVE_TANKER_EXECUTING_PASS count=%d sameAreaDualTanker=true separationFt=%d slowAltitudeFt=%d fastAltitudeFt=%d",
+      executingCount,
+      verticalSeparationFt,
+      TANKERS.SLOW.altitudeFt,
+      TANKERS.FAST.altitudeFt
+    ))
+    configureOptionalC130Receiver()
+  end
 
-  if bothTankersExecuting then
-    for _, receiverKey in ipairs({ "A10", "F16" }) do
+  if allFiveTankersExecuting then
+    for _, receiverKey in ipairs(MANDATORY_RECEIVER_KEYS) do
       local receiverSpec = RECEIVERS[receiverKey]
       local targetTanker = runtime[receiverSpec.intendedTankerKey]
       if receiverSpec.flightGroup and not receiverSpec.refuelOrdered and receiverSpec.flightGroup:IsAirborne() then
@@ -485,9 +647,31 @@ SCHEDULER:New(nil, function()
         ))
       end
     end
+
+    if OPTIONAL_C130.flightGroup and not OPTIONAL_C130.refuelOrdered and OPTIONAL_C130.flightGroup:IsAirborne() then
+      OPTIONAL_C130.fuelBeforePct = getFuelPct(OPTIONAL_C130.flightGroup) or OPTIONAL_C130.fuelBeforePct
+      OPTIONAL_C130.refuelOrdered = true
+      OPTIONAL_C130.refuelOrderedAt = now
+      local ok, err = pcall(function()
+        OPTIONAL_C130.flightGroup:Refuel(runtime.FAST.trackCoord)
+      end)
+      if ok then
+        log(string.format(
+          "OPTIONAL_C130_REFUEL_ORDER_PASS group=%s intendedTanker=FAST fuelBeforePct=%.2f blocking=false",
+          OPTIONAL_C130.flightGroup:GetName(),
+          OPTIONAL_C130.fuelBeforePct or -1
+        ))
+      else
+        OPTIONAL_C130.concluded = true
+        log(string.format(
+          "OPTIONAL_C130_AAR_RESULT status=NOT_CONFIRMED reason=REFUEL_ORDER_ERROR detail=%s blocking=false",
+          tostring(err)
+        ))
+      end
+    end
   end
 
-  for _, receiverKey in ipairs({ "A10", "F16" }) do
+  for _, receiverKey in ipairs(MANDATORY_RECEIVER_KEYS) do
     local receiverSpec = RECEIVERS[receiverKey]
     if receiverSpec.refuelOrdered and not receiverSpec.refueled and receiverSpec.refuelOrderedAt
       and now - receiverSpec.refuelOrderedAt > RECEIVER_TIMEOUT_SEC then
@@ -496,21 +680,42 @@ SCHEDULER:New(nil, function()
     end
   end
 
-  if RECEIVERS.A10.refueled and RECEIVERS.F16.refueled and not bothReceiversRefueledAt then
-    bothReceiversRefueledAt = math.max(RECEIVERS.A10.refueledAt or now, RECEIVERS.F16.refueledAt or now)
+  if OPTIONAL_C130.refuelOrdered and not OPTIONAL_C130.refueled and not OPTIONAL_C130.concluded
+    and OPTIONAL_C130.refuelOrderedAt and now - OPTIONAL_C130.refuelOrderedAt > C130_OPTIONAL_TIMEOUT_SEC then
+    OPTIONAL_C130.concluded = true
     log(string.format(
-      "DUAL_RECEIVER_REFUEL_PASS a10ProximityPass=%s f16ProximityPass=%s postRefuelDwellSec=%d",
+      "OPTIONAL_C130_AAR_RESULT status=NOT_CONFIRMED reason=TIMEOUT timeoutSec=%d blocking=false",
+      C130_OPTIONAL_TIMEOUT_SEC
+    ))
+  end
+
+  local allMandatoryRefueled = true
+  local latestRefueledAt = 0
+  for _, receiverKey in ipairs(MANDATORY_RECEIVER_KEYS) do
+    local receiverSpec = RECEIVERS[receiverKey]
+    if not receiverSpec.refueled then
+      allMandatoryRefueled = false
+      break
+    end
+    latestRefueledAt = math.max(latestRefueledAt, receiverSpec.refueledAt or 0)
+  end
+
+  if allMandatoryRefueled and not mandatoryReceiversRefueledAt then
+    mandatoryReceiversRefueledAt = latestRefueledAt
+    log(string.format(
+      "RECEIVER_MATRIX_REFUEL_PASS mandatoryReceivers=A10,F15E,F16 a10Mapping=%s f15eMapping=%s f16Mapping=%s postRefuelDwellSec=%d",
       tostring(RECEIVERS.A10.proximityPass),
+      tostring(RECEIVERS.F15E.proximityPass),
       tostring(RECEIVERS.F16.proximityPass),
       POST_REFUEL_DWELL_SEC
     ))
   end
 
-  if bothReceiversRefueledAt and not acceleratedFuelLowArmed then
-    local dwellElapsedSec = now - bothReceiversRefueledAt
+  if mandatoryReceiversRefueledAt and OPTIONAL_C130.concluded and not acceleratedFuelLowArmed then
+    local dwellElapsedSec = now - mandatoryReceiversRefueledAt
     if dwellElapsedSec >= POST_REFUEL_DWELL_SEC then
       log(string.format(
-        "POST_REFUEL_DWELL_PASS elapsedSec=%.1f requiredSec=%d startsAfterBothReceivers=true",
+        "POST_REFUEL_DWELL_PASS elapsedSec=%.1f requiredSec=%d startsAfterMandatoryReceiverMatrix=true optionalC130Concluded=true",
         dwellElapsedSec,
         POST_REFUEL_DWELL_SEC
       ))
@@ -522,31 +727,33 @@ SCHEDULER:New(nil, function()
         end
       end
       log(string.format(
-        "ACCELERATED_FUEL_LOW_ARMED thresholdPct=%d afterBothReceiversRefueled=true postRefuelDwellSec=%d",
+        "ACCELERATED_FUEL_LOW_ARMED thresholdPct=%d afterMandatoryReceiverMatrix=true postRefuelDwellSec=%d tankerCount=%d",
         ACCELERATED_FUEL_LOW_PCT,
-        POST_REFUEL_DWELL_SEC
+        POST_REFUEL_DWELL_SEC,
+        #TANKER_KEYS
       ))
     end
   end
 
   log(string.format(
-    "SUMMARY slowExecuting=%s fastExecuting=%s a10Assigned=%s a10Airborne=%s a10RefuelOrdered=%s a10Refueled=%s a10Mapping=%s f16Assigned=%s f16Airborne=%s f16RefuelOrdered=%s f16Refueled=%s f16Mapping=%s fuelLowArmed=%s slowEgress=%s fastEgress=%s",
-    tostring(runtime.SLOW and runtime.SLOW.mission:IsExecuting() or false),
-    tostring(runtime.FAST and runtime.FAST.mission:IsExecuting() or false),
+    "SUMMARY tankerExecutingCount=%d allFiveExecuting=%s a10Assigned=%s a10Refueled=%s a10Mapping=%s f15eAssigned=%s f15eRefueled=%s f15eMapping=%s f16Assigned=%s f16Refueled=%s f16Mapping=%s c130Spawned=%s c130RefuelOrdered=%s c130Refueled=%s c130Concluded=%s fuelLowArmed=%s",
+    executingCount,
+    tostring(allFiveTankersExecuting),
     tostring(RECEIVERS.A10.flightGroup ~= nil),
-    tostring(RECEIVERS.A10.flightGroup and RECEIVERS.A10.flightGroup:IsAirborne() or false),
-    tostring(RECEIVERS.A10.refuelOrdered),
     tostring(RECEIVERS.A10.refueled),
     tostring(RECEIVERS.A10.proximityPass),
+    tostring(RECEIVERS.F15E.flightGroup ~= nil),
+    tostring(RECEIVERS.F15E.refueled),
+    tostring(RECEIVERS.F15E.proximityPass),
     tostring(RECEIVERS.F16.flightGroup ~= nil),
-    tostring(RECEIVERS.F16.flightGroup and RECEIVERS.F16.flightGroup:IsAirborne() or false),
-    tostring(RECEIVERS.F16.refuelOrdered),
     tostring(RECEIVERS.F16.refueled),
     tostring(RECEIVERS.F16.proximityPass),
-    tostring(acceleratedFuelLowArmed),
-    tostring(runtime.SLOW and runtime.SLOW.egressGatePassed or false),
-    tostring(runtime.FAST and runtime.FAST.egressGatePassed or false)
+    tostring(OPTIONAL_C130.flightGroup ~= nil),
+    tostring(OPTIONAL_C130.refuelOrdered),
+    tostring(OPTIONAL_C130.refueled),
+    tostring(OPTIONAL_C130.concluded),
+    tostring(acceleratedFuelLowArmed)
   ))
 end, {}, 10, STATUS_INTERVAL_SEC)
 
-log("HARNESS_READY acceptance=6 sameAreaDualTanker=CLANCY slowTemplate=OMW_AAR_KC135_CLANCY slowAltitudeFt=22000 slowSpeedKt=220 slowTacan=60Y_CLA fastTemplate=OMW_AAR_KC135_PATTY fastAltitudeFt=25000 fastSpeedKt=300 fastTacan=48Y_TX2 verticalSeparationFt=3000 a10ReceiverTemplate=TPL_AIR_US_KAF_A10C_CAS_2SHIP a10IntendedTanker=SLOW f16ReceiverTemplate=TPL_AIR_US_BGRM_F16C_CAS_2SHIP f16IntendedTanker=FAST donorEvidence=3D_PROXIMITY_INFERENCE postRefuelDwellSec=60 newMissionEditorTemplates=0 mizMutation=false")
+log("HARNESS_READY acceptance=6 tankerCount=5 tankerTemplates=CLANCY,PATTY,HOMER,KRUSTY,NELSON fiveTankerStressException=true sameAreaDualTanker=CLANCY slowAltitudeFt=22000 slowSpeedKt=220 fastAltitudeFt=25000 fastSpeedKt=300 verticalSeparationFt=3000 mandatoryReceivers=A10,F15E,F16 a10IntendedTanker=SLOW f15eIntendedTanker=FAST f16IntendedTanker=FAST optionalC130Template=TPL_AIR_US_BGRM_C130_TRANSPORT_1SHIP optionalC130Blocking=false donorEvidence=3D_PROXIMITY_INFERENCE postRefuelDwellSec=60 newMissionEditorTemplates=0 mizMutation=false")

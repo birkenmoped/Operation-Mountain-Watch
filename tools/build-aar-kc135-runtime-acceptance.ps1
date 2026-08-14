@@ -24,18 +24,22 @@ $requiredMarkers = @(
   'AAR-KC135-RUNTIME-ACCEPTANCE-6',
   'OMW_AAR_KC135_CLANCY',
   'OMW_AAR_KC135_PATTY',
+  'OMW_AAR_KC135_HOMER',
+  'OMW_AAR_KC135_KRUSTY',
+  'OMW_AAR_KC135_NELSON',
   'TPL_AIR_US_KAF_A10C_CAS_2SHIP',
   'SQ_US_KAF_A10C_74_EFS',
+  'TPL_AIR_US_BGRM_F15E_CAS_2SHIP',
+  'SQ_US_BGRM_F15E_335_EFS',
   'TPL_AIR_US_BGRM_F16C_CAS_2SHIP',
   'SQ_US_BGRM_F16C_121_EFS',
+  'TPL_AIR_US_BGRM_C130_TRANSPORT_1SHIP',
   'MIN_VERTICAL_SEPARATION_FT = 3000',
-  'DUAL_TANKER_SPAWN_STAGGER_SEC = 60',
+  'C130_OPTIONAL_TIMEOUT_SEC = 600',
   'altitudeFt = 22000',
   'altitudeFt = 25000',
   'speedKt = 220',
   'speedKt = 300',
-  'tacanChannel = 60',
-  'tacanChannel = 48',
   'tacanBand = "Y"',
   'RECEIVER_MISSION_RANGE_NM = 250',
   'POST_REFUEL_DWELL_SEC = 60',
@@ -58,11 +62,13 @@ $requiredMarkers = @(
   'mission:AddRequiredPayload(payload)',
   'mission:SetRequiredAssets(1, 1)',
   'receiverSpec.flightGroup:Refuel(targetTanker.trackCoord)',
+  'OPTIONAL_C130.flightGroup:Refuel(runtime.FAST.trackCoord)',
   'function FlightGroup:OnAfterRefueled',
   'Get3DDistance(',
   'RECEIVER_TANKER_PROXIMITY_',
-  'DUAL_TANKER_STACK_PASS',
-  'DUAL_RECEIVER_REFUEL_PASS',
+  'FIVE_TANKER_EXECUTING_PASS',
+  'RECEIVER_MATRIX_REFUEL_PASS',
+  'OPTIONAL_C130_AAR_',
   'AI_BOOM_REFUEL_ORDER_PASS',
   'AI_BOOM_REFUELED_PASS',
   'POST_REFUEL_DWELL_PASS',
@@ -107,9 +113,10 @@ $header = @"
 -- GitCommit: $commit
 -- GeneratedUtc: $generatedUtc
 -- Gate/Test-ID: $testId
--- Scope: one combined same-area dual-KC-135 Boom acceptance in CLANCY; A-10 -> SLOW lower tanker at FL220/220 KIAS; F-16 -> FAST upper tanker at FL250/300 KIAS; 3000-ft vertical separation; 60-second acceptance-only spawn stagger; 3D proximity inference after Refueled; 60-second post-both-receivers dwell before accelerated FuelLow/Egress.
--- Tanker templates: OMW_AAR_KC135_CLANCY (SLOW), OMW_AAR_KC135_PATTY (FAST).
--- Receiver templates: TPL_AIR_US_KAF_A10C_CAS_2SHIP via existing Kandahar foundation; TPL_AIR_US_BGRM_F16C_CAS_2SHIP via existing Bagram foundation.
+-- Scope: combined five-KC-135 acceptance stress exception plus same-area CLANCY FAST/SLOW pair; A-10 -> SLOW FL220/220 KIAS; F-15E and F-16C -> FAST FL250/300 KIAS; 3000-ft vertical separation; optional non-blocking C-130J-30 AAR probe using the existing Bagram C-130 template; 60-second post-mandatory-receiver dwell before accelerated FuelLow/Egress.
+-- Tanker templates: OMW_AAR_KC135_CLANCY, OMW_AAR_KC135_PATTY, OMW_AAR_KC135_HOMER, OMW_AAR_KC135_KRUSTY, OMW_AAR_KC135_NELSON.
+-- Mandatory receiver templates: TPL_AIR_US_KAF_A10C_CAS_2SHIP, TPL_AIR_US_BGRM_F15E_CAS_2SHIP, TPL_AIR_US_BGRM_F16C_CAS_2SHIP.
+-- Optional receiver probe: TPL_AIR_US_BGRM_C130_TRANSPORT_1SHIP; non-blocking because receiver AAR capability is under test.
 -- No new Mission Editor templates and no automated MIZ mutation.
 -- MOOSE-Commit: $mooseCommit
 -- Moose.lua-SHA256: $mooseSha256
@@ -123,14 +130,19 @@ Write-Host "Built: $outputFile"
 Write-Host "BuilderVersion: $builderVersion"
 Write-Host "TestId: $testId"
 Write-Host "GeneratedUtc: $generatedUtc"
-Write-Host "AARArea: CLANCY"
+Write-Host "ActiveTankers: SLOW,FAST,HOMER,KRUSTY,NELSON"
+Write-Host "FiveTankerStressException: true"
 Write-Host "SlowTanker: template=OMW_AAR_KC135_CLANCY altitudeFt=22000 speedKt=220 radio=241.600AM tacan=60Y/CLA"
 Write-Host "FastTanker: template=OMW_AAR_KC135_PATTY altitudeFt=25000 speedKt=300 radio=237.300AM tacan=48Y/TX2"
+Write-Host "HomerTanker: template=OMW_AAR_KC135_HOMER altitudeFt=23000 speedKt=300 radio=376.000AM tacan=54Y/HOM"
+Write-Host "KrustyTanker: template=OMW_AAR_KC135_KRUSTY altitudeFt=26000 speedKt=300 radio=258.300AM tacan=42Y/KRU"
+Write-Host "NelsonTanker: template=OMW_AAR_KC135_NELSON altitudeFt=27500 speedKt=300 radio=384.400AM tacan=47Y/NEL"
 Write-Host "VerticalSeparationFt: 3000"
 Write-Host "MinimumVerticalSeparationFt: 3000"
-Write-Host "DualTankerSpawnStaggerSec: 60"
 Write-Host "A10Receiver: TPL_AIR_US_KAF_A10C_CAS_2SHIP -> SLOW"
+Write-Host "F15EReceiver: TPL_AIR_US_BGRM_F15E_CAS_2SHIP -> FAST"
 Write-Host "F16Receiver: TPL_AIR_US_BGRM_F16C_CAS_2SHIP -> FAST"
+Write-Host "OptionalC130Receiver: TPL_AIR_US_BGRM_C130_TRANSPORT_1SHIP -> FAST (non-blocking)"
 Write-Host "ReceiverMissionRangeNm: 250"
 Write-Host "DonorEvidence: 3D_PROXIMITY_INFERENCE_NOT_DONOR_ID"
 Write-Host "PostRefuelDwellSec: 60"
