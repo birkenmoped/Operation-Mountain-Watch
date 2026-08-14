@@ -91,9 +91,36 @@ Der tatsächlich verwendete `Moose.lua` enthält die für die OMW-Tankerfoundati
 - `COMMANDER:AddTankerZone(...)` ist vorhanden, erzeugt jedoch ein eigenes zonenbasiertes Tanker-Management. Für OMW bleibt offen, ob dieses automatische Zonenmodell gegenüber den bereits festgelegten AAR-Areas und dem CampaignState-/MissionDemand-gesteuerten Aktivierungsmodell verwendet werden soll.
 - `CALLSIGN.Tanker` enthält im gepinnten Quellstand mindestens `Texaco`, `Arco`, `Shell`, `Navy_One`, `Mauler` und `Bloodhound`. Für den aktuellen KC-135-Plan werden zunächst DCS-native Projektzuweisungen aus `Texaco`, `Arco` und `Shell` verwendet; sie sind keine historischen Callsign-Behauptungen.
 
+### 5.1 Fuel-Überwachung und RTB
+
+Der gepinnte Quellstand enthält bereits die wesentlichen öffentlichen FLIGHTGROUP-Funktionen für eine fuel-gesteuerte Rückzugsentscheidung:
+
+- `FLIGHTGROUP:GetFuelMin()` liefert den relativen Fuelbestand des Gruppenmitglieds mit dem niedrigsten Fuelwert in Prozent.
+- `FLIGHTGROUP:SetFuelLowThreshold(percent)` setzt eine prozentuale Low-Fuel-Schwelle und löst das MOOSE-Event `FuelLow` aus.
+- `FLIGHTGROUP:SetFuelLowRTB(true)` veranlasst bei `FuelLow` den normalen MOOSE-RTB-Pfad zur Destination-/Home-Airbase.
+- `FLIGHTGROUP:IsFuelLow()` und `IsFuelCritical()` stellen den FSM-Zustand lesbar bereit.
+
+Damit muss OMW **keinen eigenen Fuel-Polling- oder Schwellenmechanismus** parallel zu MOOSE bauen. Der normale `SetFuelLowRTB()`-Pfad ist für externe Tanker jedoch nicht direkt das gewünschte Endmodell: Manas beziehungsweise Al Udeid liegen außerhalb der DCS-Afghanistan-Kartenmission. Der OMW-Lifecycle soll den Tanker deshalb bei Erreichen der planungsabhängigen Schwelle zunächst aus der AAR-Area zu seinem festgelegten Egress-Gate führen und dort kontrolliert aus der physischen Simulation entfernen; der restliche Heimflug wird off-map simuliert. Der passende öffentliche MOOSE-Routing-/Mission-Ende-Pfad für diesen Gate-Egress ist noch separat source-review-pflichtig.
+
+Die aktuellen Schwellen von 20–27 Prozent sind area- und originabhängige OMW-Planungswerte. Sie dürfen über `SetFuelLowThreshold()` genutzt werden, sobald das tatsächliche DCS-KC-135-Fuelverhalten den Planungsansatz bestätigt hat.
+
+### 5.2 Initial Fuel beim Air-Spawn
+
+Der gepinnte `SPAWN`-Quellstand zeigt, dass Air-Spawns aus dem Mission-Editor-/Spawn-Template erzeugt werden und dass das DCS-Unit-Template den Fuelbestand als `payload.fuel` trägt. Im geprüften öffentlichen SPAWN-API-Pfad wurde **kein separater `SPAWN:InitFuel(percent)`-Setter nachgewiesen**.
+
+Daraus folgt noch keine Freigabe für eine direkte Template-Manipulation. Vor Implementierung ist zu klären, wie der produktive AIRWING-/WAREHOUSE-Assetpfad den im Seed-Template gespeicherten Fuelwert beim Air-Spawn übernimmt und ob die benötigten zwei Initialzustände von aktuell 96 Prozent (Manas/NE) beziehungsweise 90 Prozent (Southwest Asia/S) ohne parallele native DCS-Spawnlogik abgebildet werden können.
+
+Bis dieser Pfad geklärt und in DCS geprüft ist, bleiben `initial_fuel_pct` und `initial_fuel_lb` **Planungsdaten** und keine behauptete Runtime-Garantie.
+
+### 5.3 Offizielle MOOSE-Demos
+
+Die offizielle MOOSE-Demonstrationssammlung `MOOSE_MISSIONS_UNPACKED` wurde für den Tankerpfad geprüft. Sie enthält einen eigenen Bereich `OPS - Recovery Tanker`; dieser demonstriert MOOSE-Spawning, Funk, TACAN, Callsign und fuel-gesteuertes RTB/Respawn für den carrierbezogenen `RECOVERYTANKER`.
+
+`RECOVERYTANKER` ist für den landbasierten OMW-Theater-Tanker **keine Zielarchitektur**, weil OMW bereits AIRWING/AUFTRAG und externe Origins/Gates verwendet. Die Demo ist nur zusätzlicher Framework-Nachweis für die vorhandenen MOOSE-Muster. Eine gezielte Suche in der offiziellen Demo-Sammlung hat bislang keinen gleichwertigen landbasierten OMW-artigen `AIRWING + AUFTRAG:NewTANKER + external gate`-Beispielpfad ergeben; deshalb wird daraus keine Runtime-Validierung abgeleitet.
+
 Für den aktuellen OMW-Runtime-Scope sind in `data/air-operations/aar/omw-2011-aar-tanker-planning.csv` die aktiven Boom-Netze mit `AM` als **Projektzuweisung** eingetragen. Das beweist noch nicht das tatsächliche DCS-Funk-/TACAN-Verhalten; Multiplayer-, Empfänger-, Frequenz- und TACAN-Verhalten bleiben Acceptance-Punkte.
 
-Der MOOSE-First-Befund spricht damit gegen eine eigene parallele Orbit-, Funk- oder TACAN-Implementierung. Eigene OMW-Logik soll sich auf die noch projektspezifischen Teile beschränken: Auswahl der AAR-Area, External-Origin-/Gate-Modell, initialer Fuelzustand, CampaignState-/MissionDemand-Entscheidung sowie der sichere RTB-/Egress-Zeitpunkt.
+Der MOOSE-First-Befund spricht damit gegen eine eigene parallele Orbit-, Funk-, TACAN- oder Fuel-Schwellenimplementierung. Eigene OMW-Logik soll sich auf die noch projektspezifischen Teile beschränken: Auswahl der AAR-Area, External-Origin-/Gate-Modell, initialer Fuelzustand, CampaignState-/MissionDemand-Entscheidung sowie der sichere Egress-Zeitpunkt und die off-map Recovery-Bilanz.
 
 ## 6. Acceptance-Bedarf
 
@@ -105,5 +132,8 @@ Der MOOSE-First-Befund spricht damit gegen eine eigene parallele Orbit-, Funk- o
 - NSL-, ROE- und C2-Abbruch;
 - BDA und CampaignState-Rückmeldung;
 - AAR-Orbits, Tankerzuweisung und Funk/TACAN;
-- AAR-Initialfuel, Track-Exit-/RTB-Schwelle und off-map Origin/Gate-Modell;
+- AIRWING-/WAREHOUSE-Übernahme des geplanten Initial-Fuelwerts beim Air-Spawn;
+- `GetFuelMin()`-/`FuelLow`-Verhalten des KC-135 unter tatsächlichem Offload;
+- Track-Exit-/Egress-Verhalten bei area-spezifischer Fuel-Schwelle;
+- off-map Origin-/Recovery-Bilanz;
 - Multiplayer-, Persistenz- und Missionsneustarttests.
