@@ -1,85 +1,111 @@
 ---
 document_id: OMW-MOOSE-AAR-RUNTIME-ACCEPTANCE-3
-status: PLANNED
-document_class: TECHNICAL_ACCEPTANCE_PLAN
+status: HISTORICAL_TEST_FIXTURE
+document_class: TECHNICAL_ACCEPTANCE_RESULT
 owning_policy: OMW-GOV-001
 authoritative_for:
-  - MOOSE-first design of AAR-KC135-RUNTIME-ACCEPTANCE-3
-  - existing Bagram F-16C AI Boom receiver path for this acceptance
-  - owner-approved gate relocation candidates and materialization spacing rule
+  - observed runtime findings of AAR-KC135-RUNTIME-ACCEPTANCE-3
+  - existing Bagram F-16C AI Boom receiver attempt in this acceptance
+  - owner-observed TACAN and spawn-heading defects in this acceptance
 not_authoritative_for:
-  - DCS runtime acceptance before the owner-run test
   - final production MissionDemand/CampaignState activation logic
-  - final gate/map-edge clearance before DCS observation
+  - corrected A/A TACAN band for successor acceptance
+  - corrected tanker materialization heading for successor acceptance
+  - final tanker speed matrix
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes: []
-superseded_by: []
+superseded_by:
+  - OMW-MOOSE-AAR-RUNTIME-ACCEPTANCE-4
 source_branch: agent/aar-rc-east-runtime-scope
-source_commit: GIT_HISTORY
+source_commit: 1a4fc11b7a1ac9c8b8195a0bc390efba91e064ed
 validated_in_dcs: false
 ---
 
-# AAR Runtime Acceptance-3 – MOOSE-first Plan
+# AAR Runtime Acceptance-3 – Ergebnis
 
-## 1. Ausgangslage
+## 1. Teststand
 
-Der Owner-Lauf von `AAR-KC135-RUNTIME-ACCEPTANCE-2` am 14.08.2026 bestätigte für den getesteten Fünf-Tanker-Stressstand plausible 90/96-%-Seed-Fuelwerte, `AUFTRAG:TANKER -> EXECUTING` für alle fünf, den vorgesehenen 180-s-Dwell, `FuelLow -> AUFTRAG:Cancel() -> Egress`, Gate-Eintritt innerhalb 10 NM sowie `OPSGROUP:Despawn(1, true)`. Die Racetrack-Flüge wurden visuell bestätigt.
-
-Der Lauf war weiterhin eine Testausnahme. Die produktive Baseline bleibt:
+Der Owner-Lauf am 14.08.2026 wurde mit folgendem dokumentierten Quellstand vorbereitet:
 
 ```text
-maxConcurrentSupportMissions = 2
-maxAircraftPerSupportMission = 2
-maxConcurrentSupportAircraft = 4
+Branch: agent/aar-rc-east-runtime-scope
+Commit: 1a4fc11b7a1ac9c8b8195a0bc390efba91e064ed
+Test-ID: AAR-KC135-RUNTIME-ACCEPTANCE-3
+MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+Moose.lua SHA-256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
+DCS: 2.9.28.26385 MT
 ```
 
-Aus der visuellen Beobachtung folgen zusätzlich:
+Der Lauf verwendete die bereits genehmigten verlegten Gate-Kandidaten:
 
 ```text
-same gate/domain minimum materialization separation = 60 s
-different gate domains may materialize simultaneously
+OMW_TANKER_GATE_S  = N28.90264890 E64.61166667
+OMW_TANKER_GATE_NE = N37.64268794 E70.96231552
 ```
 
-## 2. Gate-Kandidaten für Acceptance-3
+Clancy und Nelson materialisierten gleichzeitig, weil sie verschiedenen Gate-Domänen angehören. Die produktive Regel von mindestens 60 Sekunden Abstand innerhalb derselben Gate-/Runtime-Domäne blieb unverändert.
+
+## 2. Bestätigte Teilbefunde
+
+Die Logauswertung bestätigt für den Acceptance-3-Lauf:
+
+- `TANKER_START_PASS` für Clancy und Nelson an den verlegten Gate-Kandidaten;
+- plausible verzögerte Seed-Fuel-Werte für 90 % beziehungsweise 96 %;
+- Nelson erreichte `AUFTRAG:TANKER -> EXECUTING`;
+- Clancy erreichte `AUFTRAG:TANKER -> EXECUTING`;
+- der vorhandene Bagram-F-16C-AIRWING-/SQUADRON-Pfad war vorhanden und die Testmission wurde mit `RECEIVER_MISSION_ADDED_PASS` in den AIRWING gegeben;
+- Texaco 1-1 antwortete bei der manuellen Prüfung auf 384.400 MHz AM.
+
+Diese Befunde sind nur für den exakt getesteten Acceptance-3-Stand belastbar.
+
+## 3. TACAN – Acceptance-3 fehlgeschlagen
+
+Acceptance-3 konfigurierte die Air-to-Air-Tankerbeacons explizit als:
 
 ```text
-OMW_TANKER_GATE_S
-old: N29.9818333333 E64.6116666667
-candidate: N28.90264890 E64.61166667
-approximate displacement: 120 km south
-
-OMW_TANKER_GATE_NE
-old: N38.1211666667 E70.3600000000
-candidate: N37.64268794 E70.96231552
-approximate displacement: 75 km southeast
+CLANCY 60X / CLA
+NELSON 47X / NEL
 ```
 
-Diese Koordinaten sind Testkandidaten. Sie werden erst durch den DCS-Lauf auf Spawn-/Ingress-/Egress-Nutzbarkeit und Sichtbarkeit geprüft.
+Der Projektinhaber konnte Texaco 1-1 auf 384.400 MHz ansprechen, erhielt jedoch auf 47X keinen TACAN-Ausschlag und kein nutzbares Tanker-TACAN.
 
-## 3. Repräsentative Tanker
+Die anschließende MOOSE-First-Quellprüfung des tatsächlich gepinnten `Moose.lua` zeigt:
 
-Acceptance-3 verwendet nur zwei bereits vorhandene Mission-Editor-Templates:
+- `AUFTRAG:SetTACAN(Channel, Morse, UnitName, Band)` dokumentiert für Aircraft den Y-Band-Pfad als Standard;
+- die MOOSE-`RECOVERYTANKER`-Dokumentation des gleichen Quellstands erklärt ausdrücklich, dass Air-to-Air-Tanker-TACAN im Y-Band betrieben werden soll und X für diesen Pfad nicht funktioniert;
+- `BEACON:AATACAN()` dokumentiert ebenfalls Y als Air-to-Air-TACAN-Band.
+
+Damit ist 47X/60X als DCS-Runtime-Konfiguration für die OMW-KC-135 nicht weiterzuverwenden. Die ursprünglichen X-Kanalwerte bleiben als Quellen-/Planungsdaten erhalten; der DCS-Runtime-Pfad wird davon getrennt.
+
+## 4. Materialisierungsheading – Acceptance-3 fehlerhaft
+
+Der Acceptance-3-Harness spawnte die Tanker mit:
+
+```lua
+SPAWN:New(spec.template):SpawnFromCoordinate(gateCoord)
+```
+
+Damit wurde kein Runtime-Heading gesetzt. Der Projektinhaber beobachtete insbesondere Texaco 1-1 am Nordost-Gate mit nördlicher Anfangsausrichtung, obwohl der Track südlich des Gate-Kandidaten liegt.
+
+Im gepinnten MOOSE-Stand sind `COORDINATE:HeadingTo()` und `SPAWN:InitHeading()` vorhanden. Der Nachfolger setzt deshalb die Anfangsausrichtung aus Gate -> Track vor `SpawnFromCoordinate()`.
+
+## 5. Tankergeschwindigkeit – Acceptance-3 nicht geeignet für A-10
+
+Acceptance-3 setzte beide Tanker pauschal auf:
 
 ```text
-CLANCY / OMW_AAR_KC135_CLANCY
-Shell 1
-241.600 AM
-TACAN 60X / CLA
-Gate domain SOUTH
-
-NELSON / OMW_AAR_KC135_NELSON
-Texaco 1
-384.400 AM
-TACAN 47X / NEL
-Gate domain NORTH_EAST
+CLANCY 300 KIAS
+NELSON 300 KIAS
 ```
 
-Clancy und Nelson dürfen gleichzeitig materialisieren, weil sie unterschiedlichen Gate-Domänen angehören. Homer, Krusty und Patty werden in diesem fokussierten Lauf nicht gestartet.
+`AUFTRAG:NewTANKER()` dokumentiert den Speed-Parameter im gepinnten MOOSE-Stand als indicated airspeed in knots am gesetzten Orbit-Level.
 
-## 4. Bestehender AI-Boom-Receiver
+Für A-10/KC-135 existiert eine periodennahe offizielle USAF-Typreferenz: Bei einer A-10-Refueling-Mission im Jahr 2008 hielt die KC-135 ungefähr 220 kt, um die A-10 sicher zu betanken. Für OMW wird daraus kein universeller KC-135-Speed abgeleitet. Für den Kandahar/RC-East-Zugang Clancy wird im Nachfolger jedoch 220 KIAS als gezielter A-10-kompatibler Acceptance-Wert verwendet. Nelson bleibt zunächst bei 300 KIAS als Fast-Jet-/Nord-Exemplar, bis eine vollständige receiverbezogene Speed-Matrix fachlich festgelegt und in DCS geprüft ist.
 
-Es wird kein neues Mission-Editor-Template angelegt. Der vorhandene Bagram-Pfad wird wiederverwendet:
+## 6. AI-Boom-Receiver – noch nicht nachgewiesen
+
+Die Testmission für den vorhandenen Bagram-Pfad wurde erfolgreich in den AIRWING gegeben:
 
 ```text
 AW_US_BGRM_455_AEW
@@ -87,62 +113,31 @@ AW_US_BGRM_455_AEW
 -> TPL_AIR_US_BGRM_F16C_CAS_2SHIP
 ```
 
-Das bestehende F-16C-CAS-Payload wird über den laufenden Bagram-AIRWING-/SQUADRON-Pfad rekrutiert. Ein Test-`AUFTRAG:NewCAS()` mit `WeaponHold` / `NoReaction` materialisiert den vorhandenen Assetpfad ohne künstliches Ziel.
-
-## 5. Gepinnter MOOSE-Stand
+Im beobachteten Lauf blieb der Harness jedoch bei:
 
 ```text
-MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
-Moose.lua SHA-256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
+receiverAssigned=false
+receiverAirborne=false
+refuelOrdered=false
+refueled=false
+fuelLowArmed=false
 ```
 
-Zusätzlich zum bereits source-reviewten Tanker-/Fuel-/Egress-Pfad sind für Acceptance-3 im tatsächlich verwendeten `Moose.lua` geprüft:
+Damit wurde kein F-16C für diesen Acceptance-Auftrag materialisiert beziehungsweise an den Harness übergeben. Die Ursache ist durch Acceptance-3 nicht belegt und wird nicht geraten. Der Boom-Transfer bleibt offen. Acceptance-4 ergänzt deshalb zumindest die öffentliche MOOSE-Telemetrie `AUFTRAG:CountOpsGroups()` zur besseren Trennung zwischen Missionsqueue und tatsächlich zugeordneten OPSGROUPs; eine weitergehende Receiver-Architekturänderung erfolgt erst nach belastbarer Ursachenanalyse.
 
-- `AUFTRAG:NewCAS(ZoneCAS, Altitude, Speed, Coordinate, Heading, Leg, TargetTypes)`;
-- `AUFTRAG:AssignSquadrons({squadron})`;
-- `AUFTRAG:AddRequiredPayload(payload)`;
-- `AUFTRAG:SetRequiredAssets(NassetsMin, NassetsMax)`;
-- `AIRWING:AddMission(mission)` und der öffentliche `OnAfterFlightOnMission`-Callback;
-- `FLIGHTGROUP:IsAirborne()`;
-- `FLIGHTGROUP:Refuel(Coordinate)`;
-- FSM `Refuel -> Going4Fuel -> Refueled`;
-- `FLIGHTGROUP:OnAfterRefueled(...)`.
-
-Der MOOSE-Refuel-Handler erzeugt den DCS-Refueling-Task intern. OMW implementiert keinen parallelen Native-DCS-Receivercontroller.
-
-## 6. Acceptance-Sequenz
+## 7. Bewertung
 
 ```text
-CLANCY + NELSON spawn at relocated candidate gates
--> both AUFTRAG:TANKER reach EXECUTING
--> existing Bagram F-16C is recruited through AIRWING/SQUADRON/payload
--> once airborne and Clancy is EXECUTING: FLIGHTGROUP:Refuel(Clancy track coordinate)
--> positive OnAfterRefueled / AI_BOOM_REFUELED_PASS
--> arm tanker FuelLow 99% only after AI Boom proof
--> FuelLow -> AUFTRAG:Cancel() -> Mission Egress
--> <=10 NM relocated gate -> EGRESS_GATE_PASS -> OPSGROUP:Despawn(1, true)
+Relocated tanker gates / materialization: PARTIAL PASS
+Tanker mission -> EXECUTING: PASS for CLANCY and NELSON
+NELSON radio 384.400 AM: MANUAL PASS
+NELSON TACAN 47X: MANUAL FAIL
+Spawn initial heading toward track: FAIL
+Uniform 300 KIAS suitability for A-10: REJECTED FOR CLANCY
+AI F-16 assignment: NOT PROVEN
+AI Boom refueling: NOT TESTED
+Post-refuel FuelLow/Egress in this run: NOT REACHED
+Overall Acceptance-3: NOT ACCEPTED
 ```
 
-Damit prüft derselbe fokussierte Lauf Boom-Refueling sowie die verlegten Gate-Kandidaten beim Ein- und Ausflug.
-
-## 7. Manuelle Beobachtung
-
-Der Projektinhaber prüft exemplarisch höchstens die zwei aktiven Tanker:
-
-- Clancy: Funk 241.600 AM und TACAN 60X;
-- Nelson: Funk 384.400 AM und TACAN 47X;
-- Spawn-/Despawn-Sichtbarkeit der beiden neuen Gate-Kandidaten.
-
-Der Boom-Transfer wird durch den KI-F-16C ausgeführt und über MOOSE-/DCS-Lifecycle und Fueltelemetrie nachgewiesen.
-
-## 8. Grenzen
-
-Nicht Teil dieses Acceptance-Harness sind:
-
-- produktive MissionDemand-/CampaignState-Auswahl;
-- produktive Implementierung des 60-s-Same-Domain-Staggerings;
-- Tanker-Initial-Fuelübernahme über produktiven AIRWING-/WAREHOUSE-Assetpfad;
-- endgültige Off-map-/CampaignState-Fuelbilanz;
-- Persistenz und Missionsneustart.
-
-`VALIDATED` bleibt an einen exakt dokumentierten Owner-DCS-Lauf mit Branch, Commit, MIZ-/Bundle-/MOOSE-Hashes und beobachtetem Ergebnis gebunden.
+Acceptance-3 ist deshalb kein `VALIDATED`-Stand. Die Korrekturen werden in `OMW-MOOSE-AAR-RUNTIME-ACCEPTANCE-4` isoliert weitergeführt.
