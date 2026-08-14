@@ -24,14 +24,6 @@ local GATES = {
   AL_UDEID = { lat = 28.90264890, lon = 64.61166667 },
 }
 
--- Existing accepted Mission Editor seed templates. Their configured fuel states
--- provide the established source-domain materialization seeds (MANAS 96%,
--- AL UDEID 90%). No new ME tanker template is required for an AAR area.
-local SOURCE_TEMPLATES = {
-  MANAS = "OMW_AAR_KC135_PATTY",
-  AL_UDEID = "OMW_AAR_KC135_KRUSTY",
-}
-
 local TRANSIT = {
   MANAS_WEST_HIGH = { ingressFt = 34000, egressFt = 33000 },
   MANAS_EAST_HIGH = { ingressFt = 33000, egressFt = 34000 },
@@ -40,51 +32,57 @@ local TRANSIT = {
 
 local AREAS = {
   LISA = {
+    template = "OMW_AAR_KC135_LISA",
     lat = 33.66624916, lon = 61.81294477, headingDeg = 4.269,
     sourceDomain = "MANAS", transitProfile = "MANAS_WEST_HIGH",
     frequencyMHz = 235.900, tacanChannel = 50, tacanIdent = "LIS",
-    fuelLowPct = 24,
+    fuelLowPct = 24, initialFuelPct = 96,
     profiles = {
       SLOW = { altitudeFt = 22000, speedKt = 220 },
       FAST = { altitudeFt = 25000, speedKt = 300 },
     },
   },
   MOE = {
+    template = "OMW_AAR_KC135_MOE",
     lat = 35.07603944, lon = 65.32603438, headingDeg = 304.682,
     sourceDomain = "MANAS", transitProfile = "MANAS_WEST_HIGH",
     frequencyMHz = 243.400, tacanChannel = 52, tacanIdent = "MOE",
-    fuelLowPct = 22,
+    fuelLowPct = 22, initialFuelPct = 96,
     profiles = {
       SLOW = { altitudeFt = 24000, speedKt = 220 },
       FAST = { altitudeFt = 27000, speedKt = 300 },
     },
   },
   MILHOUSE = {
+    template = "OMW_AAR_KC135_MILHOUSE",
     lat = 33.44219603, lon = 65.46466360, headingDeg = 63.607,
     sourceDomain = "AL_UDEID", transitProfile = "AL_UDEID_NORTH_HIGH",
     frequencyMHz = 272.600, tacanChannel = 58, tacanIdent = "MIL",
-    fuelLowPct = 27,
+    fuelLowPct = 27, initialFuelPct = 90,
     profiles = { SLOW = { altitudeFt = 22000, speedKt = 220 } },
   },
   KRUSTY = {
+    template = "OMW_AAR_KC135_KRUSTY",
     lat = 32.65123012, lon = 68.15946309, headingDeg = 212.350,
     sourceDomain = "AL_UDEID", transitProfile = "AL_UDEID_NORTH_HIGH",
     frequencyMHz = 258.300, tacanChannel = 42, tacanIdent = "KRU",
-    fuelLowPct = 27,
+    fuelLowPct = 27, initialFuelPct = 90,
     profiles = { SLOW = { altitudeFt = 22000, speedKt = 220 } },
   },
   PATTY = {
+    template = "OMW_AAR_KC135_PATTY",
     lat = 34.97134133, lon = 71.47789605, headingDeg = 89.662,
     sourceDomain = "MANAS", transitProfile = "MANAS_EAST_HIGH",
     frequencyMHz = 237.300, tacanChannel = 48, tacanIdent = "PAT",
-    fuelLowPct = 21,
+    fuelLowPct = 21, initialFuelPct = 96,
     profiles = { SLOW = { altitudeFt = 24000, speedKt = 220 } },
   },
   NELSON = {
+    template = "OMW_AAR_KC135_NELSON",
     lat = 36.37666667, lon = 71.01833333, headingDeg = 10.428,
     sourceDomain = "MANAS", transitProfile = "MANAS_EAST_HIGH",
     frequencyMHz = 384.400, tacanChannel = 47, tacanIdent = "NEL",
-    fuelLowPct = 20,
+    fuelLowPct = 20, initialFuelPct = 96,
     profiles = { FAST = { altitudeFt = 27500, speedKt = 300 } },
   },
 }
@@ -94,7 +92,7 @@ local state = {
   queue = {},
   activeByKey = {},
   lastSpawnAtBySource = {},
-  spawnersBySource = {},
+  spawnersByArea = {},
   dispatcher = nil,
   handoffMonitor = nil,
 }
@@ -207,11 +205,11 @@ local function getDistanceNm(flightGroup, coordinate)
   return current:Get2DDistance(coordinate) / 1852
 end
 
-local function getSpawner(sourceDomain, template)
-  local spawner = state.spawnersBySource[sourceDomain]
+local function getSpawner(area, template)
+  local spawner = state.spawnersByArea[area]
   if not spawner then
     spawner = SPAWN:New(template)
-    state.spawnersBySource[sourceDomain] = spawner
+    state.spawnersByArea[area] = spawner
   end
   return spawner
 end
@@ -222,7 +220,7 @@ local function materialize(selection)
   local profile = areaSpec.profiles[selection.receiverProfile]
   local transit = TRANSIT[areaSpec.transitProfile]
   local gate = GATES[areaSpec.sourceDomain]
-  local template = SOURCE_TEMPLATES[areaSpec.sourceDomain]
+  local template = areaSpec.template
   local key = activeKey(selection)
 
   local existing = state.activeByKey[key]
@@ -239,7 +237,7 @@ local function materialize(selection)
   local trackCoord = COORDINATE:NewFromLLDD(areaSpec.lat, areaSpec.lon)
   local spawnHeadingDeg = spawnCoord:HeadingTo(trackCoord)
 
-  local spawner = getSpawner(areaSpec.sourceDomain, template)
+  local spawner = getSpawner(selection.area, template)
   spawner:InitHeading(spawnHeadingDeg)
   spawner:InitSpeedKnots(TRANSIT_SPEED_KT)
   local group = spawner:SpawnFromCoordinate(spawnCoord)
@@ -273,6 +271,8 @@ local function materialize(selection)
     areaSpec = areaSpec,
     profile = profile,
     transit = transit,
+    template = template,
+    initialFuelPct = areaSpec.initialFuelPct,
     group = group,
     flightGroup = flightGroup,
     mission = mission,
@@ -300,7 +300,7 @@ local function materialize(selection)
   state.strategicAdapter:OnMaterialized(selection, runtime)
 
   log(string.format(
-    "MATERIALIZED demand=%s area=%s profile=%s source=%s template=%s group=%s ingressFL=%d trackAltFt=%d trackSpeedKt=%d egressFL=%d radioMHz=%.3f tacan=%dY fuelLowPct=%d",
+    "MATERIALIZED demand=%s area=%s profile=%s source=%s template=%s group=%s ingressFL=%d trackAltFt=%d trackSpeedKt=%d egressFL=%d radioMHz=%.3f tacan=%dY fuelLowPct=%d expectedInitialFuelPct=%d",
     selection.missionDemandId,
     selection.area,
     selection.receiverProfile,
@@ -313,7 +313,8 @@ local function materialize(selection)
     transit.egressFt / 100,
     areaSpec.frequencyMHz,
     areaSpec.tacanChannel,
-    areaSpec.fuelLowPct
+    areaSpec.fuelLowPct,
+    areaSpec.initialFuelPct
   ))
 
   return runtime
