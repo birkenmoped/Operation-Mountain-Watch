@@ -7,6 +7,7 @@ owning_policy: OMW-GOV-001
 authoritative_for:
   - OMW AAR-area and ACO mission-design reference for Afghanistan 2009-2013
   - source-derived tanker-area geometry and planning constraints
+  - OMW 2011-compatible corrected AAR production-planning geometry
 not_authoritative_for:
   - historical operational ACO authenticity
   - DCS runtime acceptance
@@ -15,8 +16,8 @@ project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
   - REFERENCE used as governance document status
 superseded_by:
-source_branch: agent/complete-documentation-authority-migration
-source_commit: a0fe0ea887d05fa293160b92a6ad48bd00be9d38
+source_branch: agent/aar-2011-airspace-correction
+source_commit: GIT_HISTORY
 validated_in_dcs: false
 ---
 
@@ -34,7 +35,7 @@ Das allgemeine Datenmodell für ATO-/ACO-/SPINS-Produkte, Tanker-Receiver-Zuordn
 
 - [`OMW-AIR-TASKING-AIRSPACE-CAS-REQUESTS`](54-air-tasking-airspace-control-cas-requests-and-mission-data.md).
 
-Dokument 29 bleibt für die bereits erfasste ISAF-2009–2013-AAR-Geometrie autoritativ. Dokument 54 qualifiziert zusätzliche Callsign-, Höhen- und ROZ-Hypothesen und definiert die technische Datenstruktur.
+Die Graveyard-of-Empires-Daten bleiben die Quellenreferenz für Benennung, Höhenblöcke, Tankerrollen, TACAN, Frequenzreferenzen und das grundsätzliche Lagebild der AAR Areas. Die daraus extrahierte Geometrie ist jedoch **nicht** die produktive OMW-Geometrie, sobald sie mit dem für OMW maßgeblichen 2011er AIP-Luftraum kollidiert.
 
 ## 2. Quellenstatus
 
@@ -43,7 +44,7 @@ source_author: Graveyard of Empires
 patreon_parts_available: 3/3
 pdf_table: evaluated
 kmz_geometry: extracted
-combatflite_cf: present_but_full_analysis_pending
+combatflite_cf: technically_evaluated
 source_status: SOURCE_CAPTURE_COMPLETE
 ```
 
@@ -71,7 +72,47 @@ Zusätzliche Quellenklassifizierung aus Dokument 54:
 - pauschale Webannahmen wie FL200–FL290, mindestens 10.000 ft AGL oder 15 Minuten Entfernung zum Arbeitsgebiet werden nicht ohne Primärquelle und Test als Standard festgelegt.
 - frühe OEF-Trackvorschläge 2001/2002 werden nicht auf 2010/2011 rückprojiziert.
 
-## 4. Datenfelder
+## 4. Eigentümerentscheidung: 2011-kompatible OMW-Geometrie
+
+Am **14.08.2026** hat der Projektinhaber entschieden, die aus Graveyard of Empires übernommenen AAR-Tracks dort zu korrigieren, wo sie mit den für OMW maßgeblichen Airways oder Class-C-/Class-D-Lufträumen kollidieren. Eine weitere Detailanalyse, welcher einzelne Teil eines fehlerhaften Racetracks den Konflikt verursacht, ist für diese Entscheidung nicht erforderlich.
+
+Damit gilt verbindlich:
+
+1. Graveyard of Empires bleibt Quellenbasis für das ungefähre Lagebild und die AAR-Planungsparameter.
+2. Die ursprünglichen `isaf-2009-2013-*`-Dateien bleiben als Source-Derived-Evidence erhalten und werden nicht zur produktiven Track-Geometrie erhoben.
+3. Für OMW wird eine **eigene, 2011-AIP-kompatible Geometrie** geführt.
+4. AAR-Tracks werden so verschoben, dass die geplante Racetrack-/Refuelling-Linie außerhalb der 2011er Airways sowie außerhalb der relevanten Class-C-/Class-D-Lufträume liegt.
+5. Die Lage wird nur so weit verändert, wie zur Konfliktfreiheit erforderlich; die bekannte ungefähre Area-Lage, 35-NM-Leg-Grundform und die übrigen AAR-Parameter bleiben soweit möglich erhalten.
+6. Die korrigierte Geometrie ist eine **OMW-Designentscheidung**, kein Anspruch auf einen historisch originalen ACO-Track.
+
+Produktive Planungsdaten:
+
+- `data/air-operations/aar/omw-2011-aar-areas.csv`
+- `data/air-operations/aar/omw-2011-aar-areas.geojson`
+
+Die CSV bewahrt die ursprünglichen Graveyard-Control-Points und `Route(T)`-Werte in eigenen `source_*`-Feldern und stellt die korrigierten OMW-Werte daneben. Dadurch bleibt die Quellenabweichung vollständig nachvollziehbar.
+
+### 4.1 Korrekturregeln
+
+Für die aktuelle Foundation-Geometrie wurden die 2011er AIP-Airways als 20-NM-Korridore mit 10 NM seitlichem Schutzraum je Seite behandelt. Die OMW-Geometrie erhält zusätzlich einen kleinen Designabstand außerhalb dieser Airway-Grenze. Class-C-/Class-D-Lufträume werden lateral gemieden. Die Prüfung erfolgt bewusst konservativ horizontal; eine lediglich vertikale Trennung wird nicht genutzt, um einen Track weiterhin direkt in einer Airway-Achse zu belassen.
+
+Die drei HAAR-Areas werden als geradlinige Refuelling-Segmente behandelt. Sie werden ebenfalls außerhalb der genannten Airways und Class-C-/Class-D-Lufträume geführt.
+
+### 4.2 Ergebnisstatus
+
+Alle 19 Areas besitzen jetzt einen OMW-korrigierten WGS84-Control-Point und eine korrigierte Route/Refuelling-Linie. Bereiche ohne notwendigen Konflikt behalten ihre Position; konfliktbehaftete Bereiche wurden verlagert. Die größten Verlagerungen betreffen insbesondere Barney, Krusty und Patty, weil die Source-Geometrie in stark belegte Airway-Strukturen fiel.
+
+Status der neuen Daten:
+
+```yaml
+geometry_status: OMW_2011_AIP_CORRECTED
+validated_in_dcs: false
+historical_claim: false
+```
+
+Die Geometrie ist damit für die weitere OMW-Missionsplanung verbindlich, aber noch **nicht** als DCS-Runtime-Verhalten validiert.
+
+## 5. Datenfelder
 
 Jede AAR-Zuordnung führt mindestens:
 
@@ -102,27 +143,27 @@ example_only: true
 historical_claim: false
 ```
 
-## 5. Technische Zielartefakte
+## 6. Technische Zielartefakte
 
 - maschinenlesbares AAR-Area-Register;
 - Mission-Editor-Zonen und Orbitpunkte;
-- Tanker-Templates und `AUFTRAG`-/RAT-Konfiguration;
+- Tanker-Templates und `AUFTRAG`-Konfiguration;
 - Kneeboard- und Briefingtabellen;
 - Request-/Mission-/Receiver-Verknüpfung;
 - ARCT- und Offload-Planung;
 - Konfliktprüfung gegen Flugplätze, zivile Routen, Trainingsräume, ROZ und Missionsziele;
 - separate Divert- und Personnel-Recovery-Angaben.
 
-## 6. Noch erforderliche Validierung
+`RAT` ist kein Bestandteil des operativen Tanker-Lifecycles. Externe Tanker werden als missionsgebundene Support-Assets geplant; der MOOSE-Lifecycle wird gesondert über `SPAWN`/`FLIGHTGROUP`/`AUFTRAG:TANKER` weitergeführt.
 
-- vollständige technische Auswertung der `.cf`-Datei;
-- Geometrieabgleich KMZ, DCS und Mission Editor;
-- historische Bestätigung von Callsigns, Tracks und Höhen je Datum;
-- Prüfung der einschlägigen ATP-56-Ausgabe für 2010/2011;
-- Tankerturns und Trackhaltung;
+## 7. Noch erforderliche Validierung
+
+- Übertragung der korrigierten WGS84-Geometrie in Mission Editor / DCS und visueller Abgleich;
+- Tankerturns und Trackhaltung im verwendeten DCS-/MOOSE-Stand;
 - Boom-/Drogue-/BDA-Eignung je Receiver;
 - geplante Offload- und ARCT-Logik;
-- Konfliktprüfung mit Airspace Control Measures;
 - Multiplayer-, TACAN- und Funkverhalten;
 - Performance bei mehreren gleichzeitig aktiven Tankern;
 - dokumentierte DCS-, MOOSE-, Mission- und Bundle-Version.
+
+Nicht mehr offen ist die Entscheidung, die konfliktbehaftete Graveyard-Geometrie unverändert zu übernehmen: **sie wird für OMW nicht verwendet.**
