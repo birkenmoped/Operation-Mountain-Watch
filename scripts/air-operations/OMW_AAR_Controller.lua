@@ -33,6 +33,7 @@ local TRANSIT = {
 local AREAS = {
   LISA = {
     template = "OMW_AAR_KC135_LISA",
+    callsignId = CALLSIGN.Tanker.Texaco, callsignName = "Texaco", callsignMinor = 3, callsignMajor = 1,
     lat = 33.66624916, lon = 61.81294477, headingDeg = 4.269,
     sourceDomain = "MANAS", transitProfile = "MANAS_WEST_HIGH",
     frequencyMHz = 235.900, tacanChannel = 50, tacanIdent = "LIS",
@@ -44,6 +45,7 @@ local AREAS = {
   },
   MOE = {
     template = "OMW_AAR_KC135_MOE",
+    callsignId = CALLSIGN.Tanker.Texaco, callsignName = "Texaco", callsignMinor = 4, callsignMajor = 1,
     lat = 35.07603944, lon = 65.32603438, headingDeg = 304.682,
     sourceDomain = "MANAS", transitProfile = "MANAS_WEST_HIGH",
     frequencyMHz = 243.400, tacanChannel = 52, tacanIdent = "MOE",
@@ -55,6 +57,7 @@ local AREAS = {
   },
   MILHOUSE = {
     template = "OMW_AAR_KC135_MILHOUSE",
+    callsignId = CALLSIGN.Tanker.Shell, callsignName = "Shell", callsignMinor = 2, callsignMajor = 1,
     lat = 33.44219603, lon = 65.46466360, headingDeg = 63.607,
     sourceDomain = "AL_UDEID", transitProfile = "AL_UDEID_NORTH_HIGH",
     frequencyMHz = 272.600, tacanChannel = 58, tacanIdent = "MIL",
@@ -63,6 +66,7 @@ local AREAS = {
   },
   KRUSTY = {
     template = "OMW_AAR_KC135_KRUSTY",
+    callsignId = CALLSIGN.Tanker.Arco, callsignName = "Arco", callsignMinor = 2, callsignMajor = 1,
     lat = 32.65123012, lon = 68.15946309, headingDeg = 212.350,
     sourceDomain = "AL_UDEID", transitProfile = "AL_UDEID_NORTH_HIGH",
     frequencyMHz = 258.300, tacanChannel = 42, tacanIdent = "KRU",
@@ -71,6 +75,7 @@ local AREAS = {
   },
   PATTY = {
     template = "OMW_AAR_KC135_PATTY",
+    callsignId = CALLSIGN.Tanker.Texaco, callsignName = "Texaco", callsignMinor = 2, callsignMajor = 1,
     lat = 34.97134133, lon = 71.47789605, headingDeg = 89.662,
     sourceDomain = "MANAS", transitProfile = "MANAS_EAST_HIGH",
     frequencyMHz = 237.300, tacanChannel = 48, tacanIdent = "PAT",
@@ -79,6 +84,7 @@ local AREAS = {
   },
   NELSON = {
     template = "OMW_AAR_KC135_NELSON",
+    callsignId = CALLSIGN.Tanker.Texaco, callsignName = "Texaco", callsignMinor = 1, callsignMajor = 1,
     lat = 36.37666667, lon = 71.01833333, headingDeg = 10.428,
     sourceDomain = "MANAS", transitProfile = "MANAS_EAST_HIGH",
     frequencyMHz = 384.400, tacanChannel = 47, tacanIdent = "NEL",
@@ -119,6 +125,9 @@ end
 local function requireMoose()
   if not SPAWN or not FLIGHTGROUP or not AUFTRAG or not COORDINATE or not SCHEDULER or not UTILS then
     fail("required MOOSE classes are unavailable")
+  end
+  if not CALLSIGN or not CALLSIGN.Tanker then
+    fail("required MOOSE tanker callsign enumerator is unavailable")
   end
   if not Unit or not Unit.RefuelingSystem or Unit.RefuelingSystem.BOOM_AND_RECEPTACLE == nil then
     fail("DCS refueling-system enum is unavailable")
@@ -205,10 +214,11 @@ local function getDistanceNm(flightGroup, coordinate)
   return current:Get2DDistance(coordinate) / 1852
 end
 
-local function getSpawner(area, template)
+local function getSpawner(area, areaSpec)
   local spawner = state.spawnersByArea[area]
   if not spawner then
-    spawner = SPAWN:New(template)
+    spawner = SPAWN:New(areaSpec.template)
+    spawner:InitCallSign(areaSpec.callsignId, areaSpec.callsignName, areaSpec.callsignMinor, areaSpec.callsignMajor)
     state.spawnersByArea[area] = spawner
   end
   return spawner
@@ -237,7 +247,7 @@ local function materialize(selection)
   local trackCoord = COORDINATE:NewFromLLDD(areaSpec.lat, areaSpec.lon)
   local spawnHeadingDeg = spawnCoord:HeadingTo(trackCoord)
 
-  local spawner = getSpawner(selection.area, template)
+  local spawner = getSpawner(selection.area, areaSpec)
   spawner:InitHeading(spawnHeadingDeg)
   spawner:InitSpeedKnots(TRANSIT_SPEED_KT)
   local group = spawner:SpawnFromCoordinate(spawnCoord)
@@ -300,13 +310,16 @@ local function materialize(selection)
   state.strategicAdapter:OnMaterialized(selection, runtime)
 
   log(string.format(
-    "MATERIALIZED demand=%s area=%s profile=%s source=%s template=%s group=%s ingressFL=%d trackAltFt=%d trackSpeedKt=%d egressFL=%d radioMHz=%.3f tacan=%dY fuelLowPct=%d expectedInitialFuelPct=%d",
+    "MATERIALIZED demand=%s area=%s profile=%s source=%s template=%s group=%s callsign=%s%d%d ingressFL=%d trackAltFt=%d trackSpeedKt=%d egressFL=%d radioMHz=%.3f tacan=%dY fuelLowPct=%d expectedInitialFuelPct=%d",
     selection.missionDemandId,
     selection.area,
     selection.receiverProfile,
     selection.sourceDomain,
     template,
     group:GetName(),
+    areaSpec.callsignName,
+    areaSpec.callsignMinor,
+    areaSpec.callsignMajor,
     transit.ingressFt / 100,
     profile.altitudeFt,
     profile.speedKt,
