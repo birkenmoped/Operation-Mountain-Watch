@@ -10,8 +10,8 @@ $testFile = Join-Path $repoRoot 'mission\tests\aar-production-integration\src\01
 $distDir = Join-Path $repoRoot 'mission\tests\aar-production-integration\dist'
 $outputFile = Join-Path $distDir 'OMW_AAR_Production_Integration.lua'
 
-$builderVersion = 'AAR-PRODUCTION-INTEGRATION-1'
-$testId = 'AAR-PRODUCTION-INTEGRATION-1'
+$builderVersion = 'AAR-PRODUCTION-INTEGRATION-2'
+$testId = 'AAR-PRODUCTION-INTEGRATION-2'
 $mooseCommit = '73d3ed119cd9e7e3f2cfcabbaa34513d30529b54'
 $mooseSha256 = 'e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915'
 
@@ -25,9 +25,14 @@ $controller = Get-Content -LiteralPath $controllerFile -Raw -Encoding UTF8
 $test = Get-Content -LiteralPath $testFile -Raw -Encoding UTF8
 
 $requiredControllerMarkers = @(
+  'OMW_AAR_KC135_NELSON',
   'OMW_AAR_KC135_PATTY',
+  'OMW_AAR_KC135_LISA',
+  'OMW_AAR_KC135_MOE',
   'OMW_AAR_KC135_KRUSTY',
+  'OMW_AAR_KC135_MILHOUSE',
   'SOURCE_SPAWN_INTERVAL_SEC = 60',
+  'spawnersByArea',
   'AUFTRAG:NewTANKER(',
   'mission:SetMissionIngressCoord(',
   'mission:SetMissionEgressCoord(',
@@ -48,7 +53,7 @@ foreach ($marker in $requiredControllerMarkers) {
 }
 
 $requiredTestMarkers = @(
-  'AAR-PRODUCTION-INTEGRATION-1',
+  'AAR-PRODUCTION-INTEGRATION-2',
   'AAR-TEST-NELSON',
   'AAR-TEST-KRUSTY',
   'AAR-TEST-PATTY',
@@ -56,9 +61,13 @@ $requiredTestMarkers = @(
   'AAR-TEST-MOE',
   'AAR-TEST-LISA',
   'POLICY_PASS',
-  'EXECUTING_PASS',
+  'TEMPLATE_IDENTITY_PASS',
+  'SEED_FUEL_PASS',
+  'SOURCE_SPACING_PASS',
+  'TRANSIT_PROGRESS_PASS',
   'INTEGRATION_PASS',
-  'artificialFuelLow=false'
+  'artificialFuelLow=false',
+  'fullTrackArrivalRequired=false'
 )
 foreach ($marker in $requiredTestMarkers) {
   if (-not $test.Contains($marker)) {
@@ -99,11 +108,12 @@ $header = @"
 -- GitCommit: $commit
 -- GeneratedUtc: $generatedUtc
 -- Gate/Test-ID: $testId
--- Scope: MissionDemand -> six operational AAR areas -> MOOSE tanker materialization and mission execution.
--- Existing accepted seed templates only: OMW_AAR_KC135_PATTY (MANAS 96%), OMW_AAR_KC135_KRUSTY (AL UDEID 90%).
+-- Scope: MissionDemand -> six operational AAR areas -> area-specific MOOSE tanker materialization -> high-transit progress.
+-- Area-specific Mission Editor templates are required for all six operational core areas.
 -- Source-domain materialization spacing: minimum 60 seconds; MANAS and AL UDEID may materialize concurrently.
 -- Production FuelLow thresholds are retained; no artificial/accelerated FuelLow trigger is used.
--- No Mission Editor template addition and no automated MIZ mutation.
+-- Full gate-to-track arrival is not required by this focused integration test; generic tanker mission execution was already accepted separately.
+-- No automated MIZ mutation.
 -- MOOSE-Commit: $mooseCommit
 -- Moose.lua-SHA256: $mooseSha256
 
@@ -125,6 +135,7 @@ Write-Host "TestSourceSHA256: $testHash"
 Write-Host "BundleSHA256: $hash"
 Write-Host "SourceSpawnIntervalSec: 60"
 Write-Host "ArtificialFuelLow: false"
+Write-Host "FullTrackArrivalRequired: false"
 Write-Host "MizMutation: false"
 Write-Host "MOOSECommit: $mooseCommit"
 Write-Host "MooseLuaSHA256: $mooseSha256"
