@@ -26,8 +26,9 @@ if ([string]::Equals($inputPath, $outputPath, [System.StringComparison]::Ordinal
 }
 
 $rows = @(Import-Csv -LiteralPath $fixPath)
-if ($rows.Count -eq 0) {
-    throw "Navigation fix register is empty: $fixPath"
+$expectedFixCount = 90
+if ($rows.Count -ne $expectedFixCount) {
+    throw "Navigation fix register must contain exactly $expectedFixCount canonical 2011 AIP fixes; found $($rows.Count)."
 }
 
 $headers = @($rows[0].PSObject.Properties.Name)
