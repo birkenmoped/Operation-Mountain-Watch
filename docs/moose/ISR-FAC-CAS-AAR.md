@@ -87,6 +87,9 @@ Im tatsächlich verwendeten `Moose.lua` source-reviewed:
 - `AUFTRAG:SetMissionEgressCoord(...)`;
 - `AIRWING:AddMission(...)`;
 - `AIRWING:GetTankerForFlight(...)`;
+- `SPAWN:InitCallSign(ID, Name, Minor, Major)` für BLUE-AIR-Einzelgruppen;
+- `GROUP:GetCallsign()`;
+- `GROUP:GetFuelMin()`;
 - `FLIGHTGROUP:Refuel(Coordinate)`;
 - `FLIGHTGROUP:GetFuelMin()`;
 - `FLIGHTGROUP:SetFuelLowThreshold(...)`;
@@ -94,6 +97,10 @@ Im tatsächlich verwendeten `Moose.lua` source-reviewed:
 - `COORDINATE:Get2DDistance(...)`;
 - `COORDINATE:Get3DDistance(...)`;
 - `OPSGROUP:Despawn(...)`.
+
+Für `SPAWN` ist relevant, dass ein BLUE-AIR-Spawn ohne explizites `InitCallSign(...)` die Callsign-Felder des vorbereiteten Spawn-Templates neu setzen kann. Die produktive AAR-Materialisierung setzt deshalb den area-spezifischen Rufnamen vor dem Spawn ausdrücklich über MOOSE. Für die unmittelbar nach Materialisierung benötigte Seed-Fuel-Prüfung wird `GROUP:GetFuelMin()` verwendet; `FLIGHTGROUP:GetFuelMin()` kann vor vollständiger Elementinitialisierung noch keinen belastbaren Wert liefern.
+
+Diese neuen Pfade sind source-reviewed. Ihr produktiver Integration-3-Nachweis in DCS steht noch aus und darf bis dahin nicht als `VALIDATED` geführt werden.
 
 ## 6. Receiver-zu-Tanker-Auswahl
 
@@ -199,9 +206,6 @@ Das ist Integrations-/Regressionstest, kein weiterer AAR-Grundlagentest.
 
 ## 10. Noch offene produktive Integration
 
-- MissionDemand-Felder und Area-/FAST-/SLOW-Mapping;
-- sechs Core-Areas gemäß Dokument 29;
-- hohe Ingress-/Egress-Transitprofile mit ausreichender Terrainreserve;
-- produktive Low-Fuel-/Bingo-Reserve je Origin/Area;
+- erfolgreicher Integration-3-Lauf für area-spezifische Template-/Callsign-/Seed-Fuel-Identität, Source-Spacing und High-Transit-Fortschritt;
 - CampaignState-/Off-map-Recovery-Abrechnung;
 - Multiplayer-/Persistenzprüfung erst zusammen mit der produktiven Integration.
