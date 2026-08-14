@@ -9,7 +9,7 @@ $sourceFile = Join-Path $repoRoot 'scripts\air-operations\OMW_AirOps_Kandahar_Bo
 $distDir = Join-Path $repoRoot 'mission\tests\kandahar-air-operations\dist'
 $outputFile = Join-Path $distDir 'OMW_AirOps_Kandahar.lua'
 $lifecycleGuard = Join-Path $repoRoot 'tools\Test-AirOpsLifecycleGuards.ps1'
-$builderVersion = 'KAF-AIR-OPS-FOUNDATION-ONLY-2'
+$builderVersion = 'KAF-AIR-OPS-FOUNDATION-ONLY-3'
 
 if (-not (Test-Path -LiteralPath $sourceFile -PathType Leaf)) {
     throw "Kandahar foundation source not found: $sourceFile"
@@ -35,9 +35,9 @@ $requiredMarkers = @(
     'registeredAirframes = 112',
     'deferredMC12 = 6',
     'deferredRolePayloads = 2',
-    'expectedParkingSpots = 315',
+    'expectedParkingSpots = 316',
     'expectedParkingSpots = 86',
-    'expectedBlacklistSpots = 246',
+    'expectedBlacklistSpots = 247',
     'airbase:SetParkingSpotWhitelist',
     'airbase:SetParkingSpotBlacklist',
     'squadron:SetParkingIDs',
@@ -110,7 +110,7 @@ Write-Host "DeferredMC12: 6"
 Write-Host "RolePayloadsExpected: 8"
 Write-Host "DeferredRolePayloads: 2"
 Write-Host "ParkingAllocation: CONFIGURED"
-Write-Host "KandaharMainParking: 315 total / 69 whitelist / 246 blacklist"
+Write-Host "KandaharMainParking: 316 total / 69 whitelist / 247 blacklist"
 Write-Host "KandaharHeliportParking: 86 total / 86 whitelist / 0 blacklist"
 Write-Host "LifecycleGuard: PASS"
 Write-Host "TestDispatch: ABSENT"
