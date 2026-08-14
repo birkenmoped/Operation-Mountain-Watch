@@ -10,8 +10,8 @@ $testFile = Join-Path $repoRoot 'mission\tests\aar-production-integration\src\01
 $distDir = Join-Path $repoRoot 'mission\tests\aar-production-integration\dist'
 $outputFile = Join-Path $distDir 'OMW_AAR_Production_Integration.lua'
 
-$builderVersion = 'AAR-PRODUCTION-INTEGRATION-2'
-$testId = 'AAR-PRODUCTION-INTEGRATION-2'
+$builderVersion = 'AAR-PRODUCTION-INTEGRATION-3'
+$testId = 'AAR-PRODUCTION-INTEGRATION-3'
 $mooseCommit = '73d3ed119cd9e7e3f2cfcabbaa34513d30529b54'
 $mooseSha256 = 'e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915'
 
@@ -33,6 +33,10 @@ $requiredControllerMarkers = @(
   'OMW_AAR_KC135_MILHOUSE',
   'SOURCE_SPAWN_INTERVAL_SEC = 60',
   'spawnersByArea',
+  'spawner:InitCallSign(',
+  'CALLSIGN.Tanker.Texaco',
+  'CALLSIGN.Tanker.Arco',
+  'CALLSIGN.Tanker.Shell',
   'AUFTRAG:NewTANKER(',
   'mission:SetMissionIngressCoord(',
   'mission:SetMissionEgressCoord(',
@@ -53,7 +57,7 @@ foreach ($marker in $requiredControllerMarkers) {
 }
 
 $requiredTestMarkers = @(
-  'AAR-PRODUCTION-INTEGRATION-2',
+  'AAR-PRODUCTION-INTEGRATION-3',
   'AAR-TEST-NELSON',
   'AAR-TEST-KRUSTY',
   'AAR-TEST-PATTY',
@@ -62,7 +66,10 @@ $requiredTestMarkers = @(
   'AAR-TEST-LISA',
   'POLICY_PASS',
   'TEMPLATE_IDENTITY_PASS',
+  'CALLSIGN_IDENTITY_PASS',
   'SEED_FUEL_PASS',
+  'runtime.group:GetFuelMin()',
+  'runtime.group:GetCallsign()',
   'SOURCE_SPACING_PASS',
   'TRANSIT_PROGRESS_PASS',
   'INTEGRATION_PASS',
@@ -108,7 +115,7 @@ $header = @"
 -- GitCommit: $commit
 -- GeneratedUtc: $generatedUtc
 -- Gate/Test-ID: $testId
--- Scope: MissionDemand -> six operational AAR areas -> area-specific MOOSE tanker materialization -> high-transit progress.
+-- Scope: MissionDemand -> six operational AAR areas -> area-specific MOOSE tanker materialization -> callsign/fuel identity -> high-transit progress.
 -- Area-specific Mission Editor templates are required for all six operational core areas.
 -- Source-domain materialization spacing: minimum 60 seconds; MANAS and AL UDEID may materialize concurrently.
 -- Production FuelLow thresholds are retained; no artificial/accelerated FuelLow trigger is used.
