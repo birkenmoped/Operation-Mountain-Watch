@@ -51,7 +51,7 @@ Diese Klassenstatus sind keine Governance-Dokumentstatuswerte.
 
 | Klasse | Projektstatus | Geltungsgrenze |
 |---|---|---|
-| `AIRBASE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Auflösung, ID, Parkingdump und airfield-spezifische Kalibrierung; Kandahar Main ID 7 und Kandahar Heliport ID 15 bestätigt; 12.08.2026 zusätzlich 296/296 Main- und 80/80 Heliport-Marker mit exakter `.miz parking == MOOSE TerminalID`-Korrelation; `SetParkingSpotWhitelist()`/`SetParkingSpotBlacklist()` für Kandahar source-reviewed und branchseitig konfiguriert, Runtime-Acceptance offen; Shindand Heliport ID 14 bestätigt; `FindFreeParkingSpotForAircraft()` mit konfigurierbaren Scanparametern source-reviewed, aber nicht in WAREHOUSE verdrahtet |
+| `AIRBASE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Auflösung, ID, Parkingdump und airfield-spezifische Kalibrierung; Kandahar Main ID 7 und Kandahar Heliport ID 15 bestätigt; 12.08.2026 zusätzlich 296/296 Main- und 80/80 Heliport-Marker mit exakter `.miz parking == MOOSE TerminalID`-Korrelation; `SetParkingSpotWhitelist()`/`SetParkingSpotBlacklist()` für Kandahar source-reviewed und branchseitig konfiguriert; erster Runtime-Lauf 14.08.2026 bestätigte für Kandahar Main 316 Runtime-Parkings statt 315 Klassifikationszeilen und brach vor AIRWING-Konstruktion kontrolliert ab; physische Parking-Compliance weiter offen; Shindand Heliport ID 14 bestätigt; `FindFreeParkingSpotForAircraft()` mit konfigurierbaren Scanparametern source-reviewed, aber nicht in WAREHOUSE verdrahtet |
 | `AIRWING` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Konstruktion, Stockregistrierung, Grundstart, SQUADRON-Bindung und direkter AUFTRAG-Dispatch; Kandahar Dual-AIRWING Main/Heliport sowie Shindand Heliport mit finalem Drei-Rollen-Test bestätigt |
 | `SQUADRON` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Konstruktion, `Ngroups`, Gruppierung, Capabilities, Payloads und post-start Assetbindung; Kandahar neun SQUADRONs / 76 Assetgruppen / 112 Airframes sowie Shindand drei SQUADRONs / 16 Assetgruppen / 20 Airframes bestätigt; Kandahar typgebundene `SetParkingIDs()`-Pools branchseitig konfiguriert, physische Compliance noch nicht DCS-validiert |
 | `WAREHOUSE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | AirOps-Stockregistrierung und post-start Zuordnung; strategische Logistik und Persistenz offen; physische typgebundene HELIPAD-Parking-Garantie nicht belegt |
@@ -155,6 +155,24 @@ Result: Kandahar Main 296/296; Kandahar Heliport 80/80; total 376/376 exact .miz
 Mapping: docs/data/kandahar-me-parking-to-moose-terminalid.csv
 ```
 
+Erster Kandahar-Parking-Allocation-Runtimelauf:
+
+```text
+Testdatum: 2026-08-14
+Branch: agent/kandahar-parking-allocation
+Source-Commit: 1d96458c5598639485ce46d8d50ff399ff052b60
+BuilderVersion: KAF-AIR-OPS-FOUNDATION-ONLY-2
+Bundle SHA-256: 6e941f1436112055836e47b2acad1c5ba4e5cbcd5426cf2d6884a07fe87f25e2
+MIZ: OMW_Template_v8_AirOps_rdy(20260814-060742).miz
+MIZ SHA-256: 67ee9c695380c47489791741d73cfaba4fc54e1a7d85e0a09310993bdc2b4c05
+DCS: 2.9.28.26385 MT
+MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+Moose.lua SHA-256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
+Result: FAIL before AIRWING construction; Kandahar Main runtime Parking=316, configured schema expected=315
+```
+
+Der Fail ist ein kontrollierter Schema-Guard und kein Nachweis physischer Parking-Compliance. Die owner-defined Klassifikation enthält 315 Kandahar-Main-Zeilen; der exakte zusätzliche Runtime-TerminalID wurde in diesem Lauf nicht identifiziert. Die korrigierte Branch-Policy hält die 69 explizit freigegebenen TerminalIDs unverändert und behandelt jeden übrigen Runtime-Spot fail-closed als Blacklist. Für 316 Runtime-Spots ergibt das 247 geblacklistete Main-Spots. Eine konkrete Benennung oder Typzuordnung des zusätzlichen Spots wird ohne separaten Nachweis nicht behauptet.
+
 Aktueller Shindand-Nachweis:
 
 ```text
@@ -199,6 +217,6 @@ AIRBASE:SetParkingSpotBlacklist(...)
 SQUADRON:SetParkingIDs(...)
 ```
 
-Kandahar Main verwendet 315 bekannte Parking-Spots mit 69 freigegebenen und 246 geblacklisteten TerminalIDs. Die 69 freigegebenen Spots sind typgebunden: A-10C 24, C-130 22, MQ-1/MQ-9 gemeinsam 11 und 26th-ERQS-HH/UH-60-MEDEVAC-Ersatz 12 auf Lima `L01-H` bis `L12-H`. Lima `L13-H` bis `L15-H` bleiben geblacklistet.
+Kandahar Main besitzt im DCS-Runtimelauf vom 14.08.2026 316 von MOOSE gelieferte Parking-Spots. Die owner-defined Klassifikation enthält 315 benannte Main-Positionen. Der Runtime-Vertrag gibt weiterhin genau 69 TerminalIDs frei und blacklisted fail-closed alle übrigen Runtime-Spots; damit ergeben sich 247 geblacklistete TerminalIDs. Die 69 freigegebenen Spots sind typgebunden: A-10C 24, C-130 22, MQ-1/MQ-9 gemeinsam 11 und 26th-ERQS-HH/UH-60-MEDEVAC-Ersatz 12 auf Lima `L01-H` bis `L12-H`. Lima `L13-H` bis `L15-H` bleiben geblacklistet. Der zusätzliche Runtime-Spot bleibt bis zu einer separaten Identifikation bewusst ohne erfundene ME-Bezeichnung oder Typzuordnung und ist durch die fail-closed Policy gesperrt.
 
 Kandahar Heliport verwendet alle 86 bekannten `HelicopterOnly`-Spots als typgebundene SQUADRON-Pools: OH-58 19, AH-64 26, UH-60/Blackhawk 29 und CH-47/CH-53-Familie 12. Die Konfiguration ist source-reviewed, aber die physische Parking-Compliance des WAREHOUSE/AIRWING-Spawnpfads bleibt bis zum DCS-Test ausdrücklich unvalidiert. Der bekannte Shindand-G2-Befund (`asset.parkingIDs` korrekt, physischer Spawn außerhalb des Pools) bleibt als relevante Framework-/DCS-Grenze bestehen.
