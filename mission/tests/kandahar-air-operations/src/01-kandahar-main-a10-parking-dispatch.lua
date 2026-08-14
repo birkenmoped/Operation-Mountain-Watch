@@ -8,7 +8,7 @@
 -- Scope: exactly one A-10C CAS AUFTRAG assigned to the 74th EFS SQUADRON,
 -- native AIRWING dispatch, and physical spawn parking attribution for every unit
 -- in the spawned group. No COMMANDER, OPSTRANSPORT, F10 controls, direct SPAWN,
--- native coalition.addGroup, CampaignState mutation, recovery, or persistence.
+-- native DCS group creation, CampaignState mutation, recovery, or persistence.
 
 local TAG = "[OMW][AirOps.KAF.Parking.A10]"
 local EXPECTED_AIRBASE = "Kandahar"
