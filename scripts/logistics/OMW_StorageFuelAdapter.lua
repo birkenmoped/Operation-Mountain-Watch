@@ -8,6 +8,8 @@ local StorageFuelAdapter = {}
 
 local TAG = "[OMW][Logistics.StorageFuelAdapter]"
 
+StorageFuelAdapter.ReadbackToleranceKg = 0.5
+
 StorageFuelAdapter.ResourceId = {
   JP8 = "FUEL_JP8",
   AVGAS = "FUEL_AVGAS",
@@ -28,6 +30,10 @@ local function isFiniteNonNegative(value)
     and value == value
     and value >= 0
     and value < math.huge
+end
+
+local function withinReadbackTolerance(actualKg, desiredKg)
+  return math.abs(actualKg - desiredKg) <= StorageFuelAdapter.ReadbackToleranceKg
 end
 
 local function requireMooseStorageApi()
@@ -175,7 +181,8 @@ function StorageFuelAdapter.PlanSnapshot(snapshot)
     if desiredKg ~= nil then
       local observedKg = readAmount(storage, mapping[resourceId], snapshot.nodeId, resourceId)
       local deltaKg = desiredKg - observedKg
-      if deltaKg ~= 0 then
+      local needsWrite = not withinReadbackTolerance(observedKg, desiredKg)
+      if needsWrite then
         plan.changeCount = plan.changeCount + 1
       end
       plan.entries[#plan.entries + 1] = {
@@ -184,16 +191,18 @@ function StorageFuelAdapter.PlanSnapshot(snapshot)
         desiredKg = desiredKg,
         observedKg = observedKg,
         deltaKg = deltaKg,
+        needsWrite = needsWrite,
       }
     end
   end
 
   log(string.format(
-    "PLAN nodeId=%s airbaseName=%s entries=%d changes=%d",
+    "PLAN nodeId=%s airbaseName=%s entries=%d changes=%d toleranceKg=%.3f",
     tostring(plan.nodeId),
     tostring(plan.airbaseName),
     #plan.entries,
-    plan.changeCount
+    plan.changeCount,
+    StorageFuelAdapter.ReadbackToleranceKg
   ))
 
   return plan
@@ -204,7 +213,7 @@ function StorageFuelAdapter.ApplySnapshot(snapshot)
   local storage = resolveStorage(snapshot.airbaseName)
 
   for _, entry in ipairs(plan.entries) do
-    if entry.deltaKg ~= 0 then
+    if entry.needsWrite then
       local ok, result = pcall(function()
         return storage:SetLiquid(entry.liquidType, entry.desiredKg)
       end)
@@ -225,17 +234,27 @@ function StorageFuelAdapter.ApplySnapshot(snapshot)
   for _, entry in ipairs(plan.entries) do
     local actualKg = readAmount(storage, entry.liquidType, snapshot.nodeId, entry.resourceId)
     readback[entry.resourceId] = actualKg
-    if actualKg ~= entry.desiredKg then
+    if not withinReadbackTolerance(actualKg, entry.desiredKg) then
       verified = false
+      log(string.format(
+        "READBACK_MISMATCH nodeId=%s resourceId=%s desiredKg=%.9f actualKg=%.9f deltaKg=%.9f toleranceKg=%.3f",
+        tostring(snapshot.nodeId),
+        tostring(entry.resourceId),
+        entry.desiredKg,
+        actualKg,
+        actualKg - entry.desiredKg,
+        StorageFuelAdapter.ReadbackToleranceKg
+      ))
     end
   end
 
   log(string.format(
-    "APPLY nodeId=%s airbaseName=%s changes=%d verified=%s",
+    "APPLY nodeId=%s airbaseName=%s changes=%d verified=%s toleranceKg=%.3f",
     tostring(snapshot.nodeId),
     tostring(snapshot.airbaseName),
     plan.changeCount,
-    tostring(verified)
+    tostring(verified),
+    StorageFuelAdapter.ReadbackToleranceKg
   ))
 
   return {

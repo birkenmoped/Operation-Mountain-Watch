@@ -139,6 +139,8 @@ Eine Nummer und eine stabile `document_id` dürfen im aktuellen Bestand jeweils 
 | `OMW-ACC-FIGHTER-STORE-RUNTIME-CORRELATION-2026-08-13` | `docs/evidence/fighter-store-runtime-correlation-acceptance-2026-08-13.md` | `ACCEPTED_TECHNICAL_BASELINE`; finale Fighter-Store-Mapping-Acceptance |
 | `OMW-DECISION-KANDAHAR-A10C-CAS-LOADOUT-2026-08-01` | `docs/evidence/kandahar-a10c-cas-loadout-decision-2026-08-01.md` | `BINDING_PROJECT_DECISION`; Kandahar A-10C II CAS-Stationen, Payload und Evidenzgrenze |
 | `OMW-TEST-GOVERNANCE` | `mission/tests/GOVERNANCE.md` | `BINDING`; Missions- und Runtime-Testregeln |
+| `OMW-TEST-AIROPS-WAREHOUSE-BOOTSTRAP-INDEX` | `mission/tests/air-ops-warehouse-bootstrap/README.md` | `BINDING`; AirOps-Warehouse-Bootstrap-Testindex |
+| `OMW-TEST-AIROPS-WAREHOUSE-BOOTSTRAP-ACCEPTANCE` | `mission/tests/air-ops-warehouse-bootstrap/expected/air-ops-warehouse-bootstrap-acceptance-2026-08-13.md` | `ACCEPTED_TECHNICAL_BASELINE`; exakter DCS-getesteter Warehouse-Bootstrap-Stand |
 | `OMW-CSAR-INDEX` | `docs/csar/README.md` | `BINDING` |
 | `OMW-CSAR-SOURCE-NOTES-1-8` | `docs/csar/source-notes-1-8.md` | `BINDING` |
 | `OMW-CSAR-AFGHANISTAN-2010-FACILITIES` | `docs/csar/afghanistan-2010-facilities-and-coverage.md` | `BINDING` |
