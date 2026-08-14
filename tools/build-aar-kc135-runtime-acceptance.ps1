@@ -37,6 +37,9 @@ $requiredMarkers = @(
   'flightGroup:SetFuelLowRTB(false)',
   'function flightGroup:OnAfterFuelLow',
   'mission:Cancel()',
+  'STAGE_TRANSITION from=CLANCY to=HOMER',
+  'SUPPORT_CONCURRENCY',
+  'supportMissionLimit=2',
   'FUEL_LOW_PASS',
   'TANKER_EXECUTING_PASS',
   'HARNESS_READY'
@@ -78,8 +81,9 @@ $header = @"
 -- GitCommit: $commit
 -- GeneratedUtc: $generatedUtc
 -- Gate/Test-ID: $testId
--- Scope: three simultaneous KC-135 Boom tankers; template fuel preservation; AUFTRAG:TANKER; radio; TACAN; accelerated FuelLow; mission egress.
--- Active templates: OMW_AAR_KC135_CLANCY, OMW_AAR_KC135_HOMER, OMW_AAR_KC135_NELSON.
+-- Scope: staged KC-135 Boom tanker acceptance with max two concurrent support missions; template fuel preservation; AUFTRAG:TANKER; radio; TACAN; accelerated FuelLow; mission egress.
+-- Initial concurrent templates: OMW_AAR_KC135_CLANCY, OMW_AAR_KC135_NELSON.
+-- Staged template after CLANCY FuelLow: OMW_AAR_KC135_HOMER.
 -- Prepared but inactive templates: OMW_AAR_KC135_KRUSTY, OMW_AAR_KC135_PATTY.
 -- MOOSE-Commit: $mooseCommit
 -- Moose.lua-SHA256: $mooseSha256
@@ -93,8 +97,11 @@ Write-Host "Built: $outputFile"
 Write-Host "BuilderVersion: $builderVersion"
 Write-Host "TestId: $testId"
 Write-Host "GeneratedUtc: $generatedUtc"
-Write-Host "ActiveTankers: CLANCY,HOMER,NELSON"
+Write-Host "InitialConcurrentTankers: CLANCY,NELSON"
+Write-Host "StagedTanker: HOMER_AFTER_CLANCY_FUEL_LOW"
 Write-Host "PreparedInactiveTankers: KRUSTY,PATTY"
+Write-Host "MaxConcurrentSupportMissions: 2"
+Write-Host "MaxConcurrentSupportAircraft: 4"
 Write-Host "InitialFuelExpectedPct: CLANCY=90,HOMER=90,NELSON=96"
 Write-Host "AcceleratedFuelLowPct: CLANCY=89,HOMER=89,NELSON=95"
 Write-Host "MOOSECommit: $mooseCommit"
