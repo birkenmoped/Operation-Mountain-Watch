@@ -12,7 +12,7 @@ project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
   - class index without consolidated AIRWING lifecycle evidence
 superseded_by:
-source_branch: agent/kandahar-foundation-july-2011-rebuild
+source_branch: agent/aar-rc-east-runtime-scope
 source_commit: GIT_HISTORY
 validated_in_dcs: partial
 ---
@@ -53,14 +53,14 @@ Diese Klassenstatus sind keine Governance-Dokumentstatuswerte.
 | Klasse | Projektstatus | Geltungsgrenze |
 |---|---|---|
 | `AIRBASE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Auflösung, ID, Parkingdump und airfield-spezifische Kalibrierung; Kandahar Main ID 7 und Kandahar Heliport ID 15 bestätigt; 12.08.2026 zusätzlich 296/296 Main- und 80/80 Heliport-Marker mit exakter `.miz parking == MOOSE TerminalID`-Korrelation; Shindand Heliport ID 14 bestätigt; `FindFreeParkingSpotForAircraft()` mit konfigurierbaren Scanparametern source-reviewed, aber nicht in WAREHOUSE verdrahtet |
-| `AIRWING` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Konstruktion, Stockregistrierung, Grundstart, SQUADRON-Bindung und direkter AUFTRAG-Dispatch; Kandahar Dual-AIRWING Main/Heliport sowie Shindand Heliport mit finalem Drei-Rollen-Test bestätigt |
+| `AIRWING` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Konstruktion, Stockregistrierung, Grundstart, SQUADRON-Bindung und direkter AUFTRAG-Dispatch; Kandahar Dual-AIRWING Main/Heliport sowie Shindand Heliport mit finalem Drei-Rollen-Test bestätigt; Tanker-Selektion nach Boom/Probe in `CheckTANKER()` und kompatible Tankersuche in `GetTankerForFlight()` für den gepinnten Stand zusätzlich source-reviewed, aber noch nicht als OMW-AAR-Lauf validiert |
 | `SQUADRON` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Konstruktion, `Ngroups`, Gruppierung, Capabilities, Payloads und post-start Assetbindung; Kandahar neun SQUADRONs / 76 Assetgruppen / 112 Airframes sowie Shindand drei SQUADRONs / 16 Assetgruppen / 20 Airframes bestätigt |
 | `WAREHOUSE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | AirOps-Stockregistrierung und post-start Zuordnung; strategische Logistik und Persistenz offen; physische typgebundene HELIPAD-Parking-Garantie nicht belegt |
 | `STORAGE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | CampaignState->DCS-Warehouse Item-/Liquid-Mirror, Technical Availability sowie native Ground-Crew-/Materialization-Transaktionen für dokumentierte Pfade; zentraler Warehouse-Bootstrap NEW/RESTORE am 13.08.2026 mit Item-, Fuel- und Technical-Readback sowie 0.5-kg Fuel-Toleranz bestätigt; keine strategische Rückautorität |
 | `COHORT` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | post-start `AddAsset()` setzt `squadname`, `legion`, `cohort` und `assets`; Foundation-Läufe bestätigen die registrierte SQUADRON-/Warehouse-Kette, ohne Recovery-Nachweis |
 | `FLIGHTGROUP` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | AIRWING-`FlightOnMission`-Pfad, Cold-Takeoff-Prüfung und `SetOptionPreferVertical()`-Propagation im finalen Shindand-Lauf bestätigt; physisches Abflugprofil bleibt typabhängig |
-| `COMMANDER` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Salerno `New -> AddAirwing -> Start -> CanMission -> AddMission -> Status` bis AUFTRAG `started`; Shindand Foundation verwendet COMMANDER ausdrücklich nicht |
-| `AUFTRAG` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Salerno CAS sowie Shindand `NewCAS()`, `NewLANDATCOORDINATE()` und `AssignSquadrons()` im nativen AIRWING-Pfad bis Missionserfolg bestätigt; physische Außenlandung bei `LANDATCOORDINATE` nicht beobachtet |
+| `COMMANDER` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Salerno `New -> AddAirwing -> Start -> CanMission -> AddMission -> Status` bis AUFTRAG `started`; Shindand Foundation verwendet COMMANDER ausdrücklich nicht; `AddTankerZone(...)` ist im gepinnten Stand source-reviewed, aber für OMW nicht ausgewählt oder DCS-validiert |
+| `AUFTRAG` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Salerno CAS sowie Shindand `NewCAS()`, `NewLANDATCOORDINATE()` und `AssignSquadrons()` im nativen AIRWING-Pfad bis Missionserfolg bestätigt; physische Außenlandung bei `LANDATCOORDINATE` nicht beobachtet; `NewTANKER()`, `SetRadio()` und `SetTACAN()` sind im gepinnten Stand source-reviewed, jedoch noch nicht als OMW-Tanker-Lauf DCS-validiert |
 | `SCHEDULER` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | geordnete Konstruktion und verzögerte post-start Diagnose; finaler Shindand-Kombinationstest sowie 1-s-Delay im Warehouse-Acceptance-Harness bestätigt |
 | `USERFLAG` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Warehouse-Acceptance-Harness setzt `OMW_WAREHOUSE_READY` fail-closed 0->1; `New()`, `Set()` und `Get()` im gepinnten MOOSE-Stand und DCS-Debriefzustand `1` am 13.08.2026 bestätigt |
 | `GROUP`, `UNIT`, `STATIC`, `ZONE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Template-, Static-, Warehouse- und Zonenvalidierung |
@@ -120,7 +120,13 @@ Der finale Shindand-Lauf bestätigt für einen Heliport-AIRWING mit drei SQUADRO
 - Direkte Zonen- oder Datenbankscans dürfen das Fog-of-War-Modell nicht umgehen.
 - `CHIEF` bleibt für die aktuelle Produktionsarchitektur `NOT_USED`.
 
-## 7. Nachweisregel
+## 7. AAR-Source-Review-Grenze
+
+Für den aktuellen AAR-Planungsstand sind `AUFTRAG:NewTANKER()`, `AUFTRAG:SetRadio()`, `AUFTRAG:SetTACAN()`, `AIRWING:CheckTANKER()`, `AIRWING:GetTankerForFlight()` und `COMMANDER:AddTankerZone()` im tatsächlich gepinnten `Moose.lua` geprüft. Der Source-Review bestätigt API-Verfügbarkeit und Signaturen, nicht das reale DCS-Verhalten von KC-135-Orbit, Funk, TACAN, Fuel, Offload oder RTB. Diese Pfade bleiben für AAR deshalb `SOURCE_REVIEWED` innerhalb der bereits grundsätzlich validierten Klassen.
+
+Die fachliche AAR-Architektur und offenen Acceptance-Punkte stehen in [`OMW-MOOSE-ISR-FAC-CAS-AAR`](ISR-FAC-CAS-AAR.md).
+
+## 8. Nachweisregel
 
 Ein Klassenstatus wird nur angehoben, wenn:
 
@@ -142,7 +148,6 @@ MIZ: OMW_Template_v8_AirOps_rdy.miz
 MIZ SHA-256: dd25f68a7361c36fa121a581022a9535f55372ad1f32a7992d4013e9c6f0c0d8
 DCS: 2.9.28.26385 MT
 MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
-Moose.lua SHA-256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
 Result: strategic item/fuel/technical NEW+RESTORE PASS; OMW_WAREHOUSE_READY=1; AirOps gated startup PASS
 ```
 
@@ -191,7 +196,7 @@ Result: 1 AIRWING / 3 SQUADRONs / 16 Assetgruppen / 20 Airframes / AH-64D CAS su
 Limit: keine validierte physische Außenlandung; Parking kein Foundation-Acceptance-Kriterium
 ```
 
-## 8. WAREHOUSE-Parking-Grenze
+## 9. WAREHOUSE-Parking-Grenze
 
 Die vollständige Recherche steht in:
 
