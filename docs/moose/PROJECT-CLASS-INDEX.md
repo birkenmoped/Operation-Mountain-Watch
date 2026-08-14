@@ -12,7 +12,7 @@ project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
   - class index without consolidated AIRWING lifecycle evidence
 superseded_by:
-source_branch: agent/kandahar-foundation-july-2011-rebuild
+source_branch: agent/aar-rc-east-runtime-scope
 source_commit: GIT_HISTORY
 validated_in_dcs: partial
 ---
@@ -53,18 +53,18 @@ Diese Klassenstatus sind keine Governance-Dokumentstatuswerte.
 | Klasse | Projektstatus | Geltungsgrenze |
 |---|---|---|
 | `AIRBASE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Auflösung, ID, Parkingdump und airfield-spezifische Kalibrierung; Kandahar Main ID 7 und Kandahar Heliport ID 15 bestätigt; 12.08.2026 zusätzlich 296/296 Main- und 80/80 Heliport-Marker mit exakter `.miz parking == MOOSE TerminalID`-Korrelation; Shindand Heliport ID 14 bestätigt; `FindFreeParkingSpotForAircraft()` mit konfigurierbaren Scanparametern source-reviewed, aber nicht in WAREHOUSE verdrahtet |
-| `AIRWING` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Konstruktion, Stockregistrierung, Grundstart, SQUADRON-Bindung und direkter AUFTRAG-Dispatch; Kandahar Dual-AIRWING Main/Heliport sowie Shindand Heliport mit finalem Drei-Rollen-Test bestätigt |
+| `AIRWING` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Konstruktion, Stockregistrierung, Grundstart, SQUADRON-Bindung und direkter AUFTRAG-Dispatch; Kandahar Dual-AIRWING Main/Heliport sowie Shindand Heliport mit finalem Drei-Rollen-Test bestätigt; Tanker-Selektion nach Boom/Probe in `CheckTANKER()` und kompatible Tankersuche in `GetTankerForFlight()` für den gepinnten Stand zusätzlich source-reviewed; `CheckTANKER()` erlaubt mehrere belegte Patrolslots mit internem 1.000-ft-Inkrement, das jedoch nicht die OMW-Mindeststaffelung unabhängiger FAST-/SLOW-Tanker ersetzt |
 | `SQUADRON` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Konstruktion, `Ngroups`, Gruppierung, Capabilities, Payloads und post-start Assetbindung; Kandahar neun SQUADRONs / 76 Assetgruppen / 112 Airframes sowie Shindand drei SQUADRONs / 16 Assetgruppen / 20 Airframes bestätigt |
 | `WAREHOUSE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | AirOps-Stockregistrierung und post-start Zuordnung; strategische Logistik und Persistenz offen; physische typgebundene HELIPAD-Parking-Garantie nicht belegt |
 | `STORAGE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | CampaignState->DCS-Warehouse Item-/Liquid-Mirror, Technical Availability sowie native Ground-Crew-/Materialization-Transaktionen für dokumentierte Pfade; zentraler Warehouse-Bootstrap NEW/RESTORE am 13.08.2026 mit Item-, Fuel- und Technical-Readback sowie 0.5-kg Fuel-Toleranz bestätigt; keine strategische Rückautorität |
-| `COHORT` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | post-start `AddAsset()` setzt `squadname`, `legion`, `cohort` und `assets`; Foundation-Läufe bestätigen die registrierte SQUADRON-/Warehouse-Kette, ohne Recovery-Nachweis |
-| `FLIGHTGROUP` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | AIRWING-`FlightOnMission`-Pfad, Cold-Takeoff-Prüfung und `SetOptionPreferVertical()`-Propagation im finalen Shindand-Lauf bestätigt; physisches Abflugprofil bleibt typabhängig |
-| `COMMANDER` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Salerno `New -> AddAirwing -> Start -> CanMission -> AddMission -> Status` bis AUFTRAG `started`; Shindand Foundation verwendet COMMANDER ausdrücklich nicht |
-| `AUFTRAG` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Salerno CAS sowie Shindand `NewCAS()`, `NewLANDATCOORDINATE()` und `AssignSquadrons()` im nativen AIRWING-Pfad bis Missionserfolg bestätigt; physische Außenlandung bei `LANDATCOORDINATE` nicht beobachtet |
+| `COHORT` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | post-start `AddAsset()` setzt `squadname`, `legion`, `cohort` und `assets`; Foundation-Läufe bestätigen die registrierte SQUADRON-/Warehouse-Kette; `CanMission()` inklusive Missionstyp-/Range-Prüfung für den AAR-Receiverpfad source-reviewed; Acceptance-4/5 bestätigten den test-only 250-NM-Missionsrange-Pfad praktisch für den Bagram-F-16 |
+| `FLIGHTGROUP` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | AIRWING-`FlightOnMission`-Pfad, Cold-Takeoff-Prüfung und `SetOptionPreferVertical()`-Propagation im finalen Shindand-Lauf bestätigt; AAR source-reviewed für `GetFuelMin()`, `SetFuelLowThreshold()`, `SetFuelLowRTB(false)`, FuelLow-Callback, aktuelle Gruppenkoordinate sowie `IsAirborne() -> Refuel() -> Going4Fuel -> Refueled`; Acceptance-4/5 bestätigten F-16-Boom-AAR mit plausibler Fuel-Zunahme praktisch; A-10 und same-area FAST/SLOW bleiben Acceptance-6-pflichtig |
+| `COMMANDER` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Salerno `New -> AddAirwing -> Start -> CanMission -> AddMission -> Status` bis AUFTRAG `started`; Shindand Foundation verwendet COMMANDER ausdrücklich nicht; `AddTankerZone(...)` ist im gepinnten Stand source-reviewed, aber für OMW nicht ausgewählt oder DCS-validiert |
+| `AUFTRAG` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Salerno CAS sowie Shindand `NewCAS()`, `NewLANDATCOORDINATE()` und `AssignSquadrons()` im nativen AIRWING-Pfad bis Missionserfolg bestätigt; physische Außenlandung bei `LANDATCOORDINATE` nicht beobachtet; AAR-`NewTANKER()`, `SetRadio()`, `SetTACAN()`, `SetMissionEgressCoord()`, `IsExecuting()`, `Cancel()` und test-only `SetMissionRange()` wurden source-reviewed; Acceptance-4/5 bestätigten den dokumentierten F-16-/Tanker-Kernpfad praktisch, same-area FAST/SLOW bleibt Acceptance-6-pflichtig |
 | `SCHEDULER` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | geordnete Konstruktion und verzögerte post-start Diagnose; finaler Shindand-Kombinationstest sowie 1-s-Delay im Warehouse-Acceptance-Harness bestätigt |
 | `USERFLAG` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Warehouse-Acceptance-Harness setzt `OMW_WAREHOUSE_READY` fail-closed 0->1; `New()`, `Set()` und `Get()` im gepinnten MOOSE-Stand und DCS-Debriefzustand `1` am 13.08.2026 bestätigt |
 | `GROUP`, `UNIT`, `STATIC`, `ZONE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Template-, Static-, Warehouse- und Zonenvalidierung |
-| `ARMYGROUP`, `BRIGADE`, `OPSGROUP` | `PLANNED` | Bodenoperations- und Bestandsmodell |
+| `ARMYGROUP`, `BRIGADE`, `OPSGROUP` | `PLANNED` | Bodenoperations- und Bestandsmodell; für AAR ist `OPSGROUP:Despawn(Delay, NoEventRemoveUnit)` source-reviewed und in Acceptance-2/4/5 als kontrollierter Off-map-Handoff nach Egress-Gate-Eintritt praktisch verwendet worden; vollständige Produktionsintegration bleibt offen |
 | `OPSTRANSPORT` | `PLANNED` | taktischer Transport |
 | `CTLD`, `CSAR`, `AICSAR` | `PLANNED` / teilweise verwendet | separate Acceptance erforderlich |
 | `INTEL` | `PLANNED` | taktisches Lagebild; Laufzeitnachweis im gepinnten Stand fehlt |
@@ -120,7 +120,29 @@ Der finale Shindand-Lauf bestätigt für einen Heliport-AIRWING mit drei SQUADRO
 - Direkte Zonen- oder Datenbankscans dürfen das Fog-of-War-Modell nicht umgehen.
 - `CHIEF` bleibt für die aktuelle Produktionsarchitektur `NOT_USED`.
 
-## 7. Nachweisregel
+## 7. AAR-Source-Review-Grenze
+
+Für den aktuellen AAR-Planungs- und Acceptance-Stand sind `AUFTRAG:NewTANKER()`, `AUFTRAG:SetRadio()`, `AUFTRAG:SetTACAN()`, `AUFTRAG:SetMissionEgressCoord()`, `AUFTRAG:IsExecuting()`, `AUFTRAG:Cancel()`, `FLIGHTGROUP:GetFuelMin()`, `FLIGHTGROUP:SetFuelLowThreshold()`, `FLIGHTGROUP:SetFuelLowRTB(false)`, der FuelLow-Callback, die Gruppenkoordinate, `COORDINATE:Get2DDistance()`, `COORDINATE:Get3DDistance()`, `OPSGROUP:Despawn(Delay, NoEventRemoveUnit)`, `AIRWING:CheckTANKER()`, `AIRWING:GetTankerForFlight()` und `COMMANDER:AddTankerZone()` im tatsächlich gepinnten `Moose.lua` geprüft. Für den Receiverpfad sind zusätzlich `AUFTRAG:NewCAS()`, `AUFTRAG:SetMissionRange()`, `AUFTRAG:AssignSquadrons()`, `AUFTRAG:AddRequiredPayload()`, `AUFTRAG:SetRequiredAssets()`, `AUFTRAG:CountOpsGroups()`, `COHORT:CanMission()`, `AIRWING:AddMission()`, `AIRWING:OnAfterFlightOnMission`, `FLIGHTGROUP:IsAirborne()`, `FLIGHTGROUP:Refuel()` sowie der `Refuel -> Going4Fuel -> Refueled`-FSM-Pfad einschließlich `OnAfterRefueled` source-reviewed. Der Source-Review bestätigt API-Verfügbarkeit und Signaturen, nicht automatisch das reale DCS-Verhalten.
+
+`COORDINATE:Get3DDistance(TargetCoordinate)` ist für Acceptance-6 zusätzlich source-reviewed und wird ausschließlich zur räumlichen Plausibilisierung der Receiver-zu-Tanker-Zuordnung nach `Refueled` verwendet. Ein räumlich nächster Tanker ist keine von DCS/MOOSE gelieferte Donor-ID; die Owner-Sichtprüfung bleibt deshalb Teil des Acceptance-Nachweises.
+
+`COHORT:CanMission()` prüft im gepinnten Stand die Target-Distanz gegen `max(COHORT engageRange, Mission engageRange)`. Acceptance-4/5 bestätigten, dass der test-only `SetMissionRange(250)`-Override den bestehenden Bagram-F-16C für den Clancy-Pfad materialisieren ließ; die produktive SQUADRON-Reichweite wurde nicht verändert.
+
+`AIRWING:CheckTANKER()` zeigt, dass MOOSE mehrere Tanker an demselben Patrolpunkt technisch vorsehen kann, verwendet intern jedoch nur ein 1.000-ft-Inkrement je belegtem Slot. OMW legt für zwei **unabhängige** Tanker im selben AAR-Gebiet eine strengere Planungsregel fest: SLOW-Tanker unten, FAST-Tanker oben und mindestens 3.000 ft vertikale Tanker-zu-Tanker-Staffelung. `AIRWING:GetTankerForFlight()` unterscheidet bei gleichem Refueling-System nicht automatisch nach SLOW-/FAST-Receiverprofil, sondern wählt nach Distanz; die receiverbezogene Zuordnung wird deshalb in Acceptance-6 praktisch geprüft.
+
+`AAR-KC135-RUNTIME-ACCEPTANCE-2` bestätigte im Owner-Lauf vom 14.08.2026 alle fünf Tanker bis `EXECUTING`, den 180-s-Dwell, FuelLow/Cancel/Egress und den 10-NM-Off-map-Handoff; die Racetracks wurden visuell bestätigt. Der Fünf-Tanker-Lauf bleibt eine Testausnahme.
+
+`AAR-KC135-RUNTIME-ACCEPTANCE-3` ist nach dem Owner-Lauf `HISTORICAL_TEST_FIXTURE`: 47X-TACAN schlug praktisch fehl, Nelson materialisierte mit falscher Anfangsausrichtung, 300 KIAS wurde für Clancy/A-10 verworfen und der Bagram-F-16C wurde nicht zugewiesen.
+
+`AAR-KC135-RUNTIME-ACCEPTANCE-4` bestätigte die Y-Band-TACAN-Korrektur 60Y/CLA und 47Y/NEL im F-16-Cockpit, korrigierte die Materialisierungsrichtung, verwendete Clancy 220 KIAS und ließ den bestehenden Bagram-F-16C mit dem test-only 250-NM-Missionsrange tatsächlich materialisieren und Boom-AAR durchführen.
+
+`AAR-KC135-RUNTIME-ACCEPTANCE-5` bestätigte den Nelson-Gatepunkt `N38.83163 E70.95271` außerhalb des sichtbaren Bereichs, den korrigierten Post-Refuel-Dwell und den anschließenden Egress/Off-map-Handoff im dokumentierten DCS-Stand.
+
+`AAR-KC135-RUNTIME-ACCEPTANCE-6` plant nun einen einzigen kombinierten Same-area-Test in Clancy: vorhandener A-10C-2-Ship aus Kandahar -> SLOW KC-135 FL220/220 KIAS, vorhandener F-16C-2-Ship aus Bagram -> FAST KC-135 FL250/300 KIAS, exakt 3.000 ft Tanker-Staffelung und instrumentierte 3D-Proximity-Inferenz nach `Refueled`. Es wird kein neues ME-Template erzeugt und keine `.miz` automatisiert verändert.
+
+Die fachliche AAR-Architektur und offenen Acceptance-Punkte stehen in [`OMW-MOOSE-ISR-FAC-CAS-AAR`](ISR-FAC-CAS-AAR.md).
+
+## 8. Nachweisregel
 
 Ein Klassenstatus wird nur angehoben, wenn:
 
@@ -142,7 +164,6 @@ MIZ: OMW_Template_v8_AirOps_rdy.miz
 MIZ SHA-256: dd25f68a7361c36fa121a581022a9535f55372ad1f32a7992d4013e9c6f0c0d8
 DCS: 2.9.28.26385 MT
 MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
-Moose.lua SHA-256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
 Result: strategic item/fuel/technical NEW+RESTORE PASS; OMW_WAREHOUSE_READY=1; AirOps gated startup PASS
 ```
 
@@ -191,7 +212,7 @@ Result: 1 AIRWING / 3 SQUADRONs / 16 Assetgruppen / 20 Airframes / AH-64D CAS su
 Limit: keine validierte physische Außenlandung; Parking kein Foundation-Acceptance-Kriterium
 ```
 
-## 8. WAREHOUSE-Parking-Grenze
+## 9. WAREHOUSE-Parking-Grenze
 
 Die vollständige Recherche steht in:
 
