@@ -9,207 +9,155 @@ authoritative_for:
   - source-reviewed MOOSE paths used by the acceptance harness
 not_authoritative_for:
   - DCS runtime acceptance before an owner-run test
-  - final ingress-/egress-gate map-edge clearance
+  - final all-area FAST/SLOW matrix
   - historical tanker callsign authenticity
-  - production support-concurrency limits beyond the binding AirOps baseline
+  - production MissionDemand/CampaignState activation logic
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes: []
 superseded_by: []
 source_branch: agent/aar-rc-east-runtime-scope
 source_commit: GIT_HISTORY
-validated_in_dcs: false
+validated_in_dcs: partial
 ---
 
 # KC-135 AAR Runtime Acceptance
 
-## 1. Acceptance-2 – owner-run evidence 2026-08-14
-
-`AAR-KC135-RUNTIME-ACCEPTANCE-2` used all five prepared KC-135 templates as an explicitly authorized stress-test exception. The productive limit remained `maxConcurrentSupportMissions = 2`.
-
-Observed/logged for the exact owner-run DCS 2.9.28.26385 test stand:
-
-- all five KC-135 spawned;
-- delayed seed-fuel readback was plausible at approximately 90/90/90/96/96 percent;
-- all five `AUFTRAG:TANKER` missions reached `EXECUTING`;
-- the required 180-second simultaneous `EXECUTING` dwell completed before accelerated FuelLow was armed;
-- all five produced the expected `FuelLow -> AUFTRAG:Cancel() -> Egress` path;
-- all five reached their assigned gate within the 10-NM handoff radius and were removed by MOOSE `OPSGROUP:Despawn(1, true)`;
-- the project owner visually confirmed racetrack patterns.
-
-The same run established the need for farther-out gates and at least 60 seconds between materializations inside one gate/runtime domain. Different gate domains may materialize simultaneously.
-
-## 2. Acceptance-3 – observed partial failure
-
-`AAR-KC135-RUNTIME-ACCEPTANCE-3` narrowed the test to Clancy and Nelson and used the relocated gate candidates:
-
-```text
-OMW_TANKER_GATE_S  = N28.90264890 E64.61166667
-OMW_TANKER_GATE_NE = N37.64268794 E70.96231552
-```
-
-Confirmed in the owner-run DCS 2.9.28.26385 log:
-
-- both tanker seeds started at the relocated candidates;
-- both produced plausible delayed 90/96-percent fuel readback;
-- both reached `AUFTRAG:TANKER -> EXECUTING`;
-- the existing Bagram F-16C receiver mission was added to the AIRWING;
-- Nelson/Texaco 1-1 answered on 384.400 MHz AM.
-
-Observed failures/limits:
-
-- Nelson 47X produced no usable TACAN indication in the F-16;
-- Nelson materialized facing north although its track lies south of the gate;
-- both tankers used 300 KIAS; this is not accepted as a universal receiver-compatible value, especially for A-10 service;
-- the Bagram F-16C mission was added but no receiver was assigned/materialized in the observed run, so Boom refueling and post-refuel FuelLow/Egress were not reached.
-
-Acceptance-3 is therefore recorded as `HISTORICAL_TEST_FIXTURE`, not `VALIDATED`. Detailed findings are in `docs/moose/AAR-RUNTIME-ACCEPTANCE-3.md`.
-
-## 3. Acceptance-4 scope
-
-Test ID:
-
-```text
-AAR-KC135-RUNTIME-ACCEPTANCE-4
-```
-
-Active exemplars:
-
-| Area | Existing template | Gate domain | Orbit speed | Radio | DCS runtime TACAN |
-|---|---|---|---:|---:|---|
-| Clancy | `OMW_AAR_KC135_CLANCY` | SOUTH | 220 KIAS | 241.600 AM | 60Y / CLA |
-| Nelson | `OMW_AAR_KC135_NELSON` | NORTH_EAST | 300 KIAS | 384.400 AM | 47Y / NEL |
-
-The source/planning TACAN values are not overwritten by this test. Acceptance-4 explicitly separates the DCS-runtime Y-band beacon configuration from those source fields.
-
-Clancy's 220 KIAS is a targeted A-10-compatible acceptance value. It is not automatically generalized to every OMW tanker/receiver pairing. Nelson remains at 300 KIAS for this fast-jet/northern exemplar until a complete receiver-oriented speed matrix is established.
-
-OMW additionally requires that one AAR area can support two independent Boom tankers when mixed receiver demand exists:
-
-```text
-SLOW tanker -> lower orbit -> A-10 / slow-receiver focus
-FAST tanker -> upper orbit -> F-15 / F-16 / fast-receiver focus
-minimum vertical separation between independent SLOW and FAST tanker orbits = 3,000 ft
-```
-
-Acceptance-4 does not yet run such a same-area pair; Clancy and Nelson remain separate-area exemplars. The 3,000-ft rule is a production-planning constraint and is not replaced by MOOSE's internal 1,000-ft `CheckTANKER()` patrol-slot increment.
-
-## 4. MOOSE-first runtime corrections
-
-Pinned runtime:
+## 1. Gepinnter MOOSE-Stand
 
 ```text
 MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
 Moose.lua SHA-256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
 ```
 
-Relevant public paths verified in the actual pinned `Moose.lua` now include:
+Der Acceptance-Pfad bleibt MOOSE-first. Verwendet werden insbesondere `SPAWN`, `FLIGHTGROUP`, `AUFTRAG`, `AIRWING`, `SQUADRON`, `COORDINATE` und `SCHEDULER`. Kein MIST, kein nativer Event-Handler und keine automatisierte `.miz`-Mutation.
+
+## 2. Bisherige Acceptance-Ergebnisse
+
+### Acceptance-2
+
+Owner-run Stress-Test mit fünf vorbereiteten KC-135. Alle erreichten `EXECUTING`, 180-s-Dwell, FuelLow/Cancel/Egress und <=10-NM-Off-map-Handoff. Fünf gleichzeitige Tanker bleiben eine Testausnahme; die Produktionsgrenze bleibt zwei Supportmissionen.
+
+### Acceptance-3
+
+Historisches Testfixture mit Teilfehlern: 47X ohne nutzbaren F-16-TACAN-Empfang, Nelson falsche Anfangsausrichtung, 300 KIAS für Clancy/A-10 ungeeignet, Bagram-F-16 nicht materialisiert.
+
+### Acceptance-4
+
+Korrigierte Y-Band-TACAN-Konfiguration, Spawn-Heading Gate->Track, Clancy 220 KIAS, Nelson 300 KIAS und test-only F-16-MissionRange 250 NM. Owner bestätigte 60Y/CLA und 47Y/NEL im F-16-Cockpit sowie beide F-16 am Boom. Fuel-Telemetrie zeigte plausible positive AAR-Wirkung.
+
+### Acceptance-5
+
+Owner-run am 14.08.2026, DCS 2.9.28.26385 MT. Nelson-Gate `N38.83163 E70.95271` (~50 km NNE EGPAN) materialisierte außerhalb des sichtbaren Bereichs. Der 60-s-Post-Refuel-Dwell wurde mit rund 74,9 s erreicht. Beide Tanker erreichten danach den kontrollierten Egress/Off-map-Handoff. Detailprovenienz: `docs/moose/AAR-RUNTIME-ACCEPTANCE-5.md`.
+
+## 3. Acceptance-6 – kombinierter FAST/SLOW-Test
+
+Der Projektinhaber hat entschieden, die verbliebenen Funktionsnachweise in **einem** Test zu kombinieren:
 
 ```text
-AUFTRAG:NewTANKER(...)
-AUFTRAG:SetRadio(...)
-AUFTRAG:SetTACAN(...)
-COORDINATE:HeadingTo(...)
-SPAWN:InitHeading(...)
-SPAWN:SpawnFromCoordinate(...)
-FLIGHTGROUP:New(...)
-AUFTRAG:SetMissionEgressCoord(...)
-AUFTRAG:Cancel()
-AUFTRAG:NewCAS(...)
-AUFTRAG:SetMissionRange(...)
-AUFTRAG:AssignSquadrons({...})
-AUFTRAG:AddRequiredPayload(...)
-AUFTRAG:SetRequiredAssets(min,max)
-AUFTRAG:CountOpsGroups()
-COHORT:CanMission(...)
-AIRWING:AddMission(...)
-AIRWING:OnAfterFlightOnMission(...)
-AIRWING:CheckTANKER()
-AIRWING:GetTankerForFlight(...)
-FLIGHTGROUP:IsAirborne()
-FLIGHTGROUP:Refuel(...)
-FLIGHTGROUP:OnAfterRefueled(...)
-FLIGHTGROUP:GetFuelMin()
-FLIGHTGROUP:SetFuelLowThreshold(...)
-FLIGHTGROUP:OnAfterFuelLow(...)
-OPSGROUP:Despawn(delay,noEventRemoveUnit)
-SCHEDULER
+A-10 -> SLOW KC-135
+F-16 -> FAST KC-135
+FAST + SLOW gleichzeitig im selben AAR-Gebiet
+FAST oben / SLOW unten
+minimum vertical separation = 3,000 ft
 ```
 
-The pinned MOOSE source documents Y as the aircraft/Air-to-Air tanker TACAN path. Acceptance-4 therefore uses 60Y and 47Y instead of forcing X.
+AAR-Gebiet:
 
-For airborne materialization the harness uses only MOOSE public APIs:
-
-```lua
-local spawnHeadingDeg = gateCoord:HeadingTo(trackCoord)
-local spawner = SPAWN:New(spec.template)
-spawner:InitHeading(spawnHeadingDeg)
-local group = spawner:SpawnFromCoordinate(gateCoord)
+```text
+CLANCY
+Gate: N28.90264890 E64.61166667
+Track: N31.75441342 E66.82695501
+Heading: 225.276 deg
+Leg: 35 NM
 ```
 
-This changes the initial facing only. Racetrack orientation remains the `AUFTRAG:NewTANKER()` heading.
+Tanker:
 
-`AIRWING:GetTankerForFlight()` filters by compatible refueling system and then chooses by distance. It does not provide a built-in SLOW-/FAST-receiver classification. Therefore later same-area dual-tanker selection needs its own MOOSE-first acceptance rather than assuming automatic A-10/F-16 routing.
+| Profil | Existing template | Höhe | Speed | Radio | Runtime TACAN |
+|---|---|---:|---:|---:|---|
+| SLOW | `OMW_AAR_KC135_CLANCY` | FL220 | 220 KIAS | 241.600 AM | 60Y / CLA |
+| FAST | `OMW_AAR_KC135_PATTY` | FL250 | 300 KIAS | 237.300 AM | 48Y / TX2 |
 
-## 5. Existing AI Boom receiver
+`TX2` ist ein Acceptance-Ident. Die Patty-Planungsquelle führt Texaco 2, 237.300 AM und 48X; die runtime-seitige Y-Band-Korrektur folgt dem bereits praktisch bestätigten DCS-A/A-TACAN-Pfad aus Acceptance-4.
 
-The existing Bagram foundation remains the only receiver asset path:
+Die beiden Tanker werden am identischen südlichen Gate für diesen Acceptance-Lauf 60 Sekunden versetzt materialisiert, damit keine gleichzeitige physische Co-Location beim Spawn entsteht. Diese 60 Sekunden sind Acceptance-Sicherheitslogik und werden nicht stillschweigend als neue allgemeine Produktionsregel deklariert.
+
+## 4. Vorhandene Receiver-Foundations
+
+A-10:
+
+```text
+AW_US_KAF_451_AEW
+-> SQ_US_KAF_A10C_74_EFS
+-> TPL_AIR_US_KAF_A10C_CAS_2SHIP
+-> intended tanker SLOW / FL220 / 220 kt
+```
+
+F-16:
 
 ```text
 AW_US_BGRM_455_AEW
 -> SQ_US_BGRM_F16C_121_EFS
 -> TPL_AIR_US_BGRM_F16C_CAS_2SHIP
+-> intended tanker FAST / FL250 / 300 kt
 ```
 
-No new Mission Editor receiver group is introduced and the harness does not mutate the `.miz`.
+Beide Test-AUFTRAG-Missionen erhalten `SetMissionRange(250)`; die produktiven SQUADRON-Baselines bleiben unverändert.
 
-Acceptance-3 proved only that the receiver mission entered the AIRWING queue. The pinned `COHORT:CanMission()` source checks mission type and target range before a cohort can execute the mission. The Bagram F-16C foundation does not apply a project-specific mission-range override, while the Clancy track is approximately 227 NM from the documented Bagram reference coordinate. Acceptance-4 therefore applies an explicit test-only MOOSE override:
+## 5. MOOSE-Grenze der Receiver-Zuordnung
 
-```lua
-mission:SetMissionRange(250)
-```
+Der gepinnte `FLIGHTGROUP:Refuel(Coordinate)`-Pfad routet zum übergebenen Refuel-Waypoint und verwendet anschließend den nativen `TaskRefueling()`. Dieser bindet keine konkrete Tanker-ID, sondern refuelt beim nächstgelegenen kompatiblen Tanker.
 
-This does not mutate the productive F-16C SQUADRON. The next owner-run DCS test must establish whether the F-16C is then actually recruited/materialized.
-
-`AUFTRAG:CountOpsGroups()` remains in the summary as `receiverMissionOpsGroups`, distinguishing a queued mission from actual OPSGROUP assignment before the `AIRWING:OnAfterFlightOnMission` callback.
-
-## 6. Expected Acceptance-4 markers
+Acceptance-6 nutzt deshalb die vertikal getrennten Zielkoordinaten und misst nach `OnAfterRefueled` zusätzlich mit `COORDINATE:Get3DDistance()` die 3D-Distanz des Receivers zu beiden Tankern.
 
 ```text
-TANKER_START_PASS area=CLANCY ... spawnHeadingDeg=... speedKt=220 ... tacan=60Y ...
-TANKER_START_PASS area=NELSON ... spawnHeadingDeg=... speedKt=300 ... tacan=47Y ...
-SEED_FUEL_PASS area=CLANCY ...
-SEED_FUEL_PASS area=NELSON ...
-TANKER_EXECUTING_PASS area=CLANCY ... speedKt=220
-TANKER_EXECUTING_PASS area=NELSON ... speedKt=300
-RECEIVER_MISSION_ADDED_PASS ... missionRangeNm=250
-SUMMARY ... receiverMissionOpsGroups=...
-RECEIVER_ASSIGNED_PASS ...
-AI_BOOM_REFUEL_ORDER_PASS ... tankerArea=CLANCY ...
-AI_BOOM_REFUELED_PASS ... fuelBeforePct=... fuelAfterPct=...
-ACCELERATED_FUEL_LOW_ARMED thresholdPct=99 afterAiBoomRefueled=true
-FUEL_LOW_PASS area=CLANCY ... action=CANCEL_TO_EGRESS
-FUEL_LOW_PASS area=NELSON ... action=CANCEL_TO_EGRESS
-EGRESS_GATE_PASS area=CLANCY ... action=DESPAWN_OFFMAP_HANDOFF
-EGRESS_GATE_PASS area=NELSON ... action=DESPAWN_OFFMAP_HANDOFF
-HARNESS_READY ... runtimeTacanBand=Y clancySpeedKt=220 nelsonSpeedKt=300 spawnHeadingTowardTrack=true receiverMissionRangeNm=250 ...
+RECEIVER_TANKER_PROXIMITY_PASS
 ```
 
-## 7. Acceptance-4 criteria
+ist ausdrücklich nur eine räumliche Inferenz und **keine** von DCS/MOOSE gelieferte Donor-ID. Die Owner-Sichtprüfung bleibt Teil des Zuordnungsnachweises.
 
-A useful owner run must establish:
+## 6. Abschlussbedingung
 
-1. Clancy and Nelson materialize at the relocated candidate gates with plausible initial heading toward their own tracks;
-2. their materialization/despawn locations are not objectionably visible from the normal player mission area;
-3. Clancy 241.600 AM / 60Y and Nelson 384.400 AM / 47Y provide usable representative radio/TACAN service;
-4. Clancy can fly the 220-KIAS tanker track as the A-10-compatible exemplar without breaking the tanker mission;
-5. Nelson remains functional at 300 KIAS;
-6. both reach `AUFTRAG:TANKER -> EXECUTING` and fly their racetracks;
-7. the explicit 250-NM mission-range override permits or disproves the suspected range gate for the existing Bagram F-16C;
-8. the receiver telemetry shows whether the Bagram F-16C receives an OPSGROUP assignment;
-9. if assigned and airborne, the MOOSE refuel FSM is ordered and DCS completes Boom refueling;
-10. only after Boom proof do the tankers execute accelerated `FuelLow -> Cancel -> Egress -> <=10 NM -> Despawn`;
-11. no new Mission Editor template, MIST/native event handler or automated `.miz` mutation is introduced.
+Der künstliche 99-%-FuelLow wird erst aktiviert, wenn **A-10 und F-16** beide den `Refueled`-Pfad abgeschlossen haben und danach mindestens 60 Sekunden vergangen sind.
+
+```text
+A10 Refueled + F16 Refueled
+-> DUAL_RECEIVER_REFUEL_PASS
+-> 60 s dwell
+-> FuelLow 99%
+-> Cancel
+-> Egress
+-> <=10 NM gate
+-> Despawn off-map handoff
+```
+
+## 7. Erwartete Acceptance-6-Marker
+
+```text
+TANKER_START_PASS tankerProfile=SLOW ... altitudeFt=22000 speedKt=220
+TANKER_START_PASS tankerProfile=FAST ... altitudeFt=25000 speedKt=300
+DUAL_TANKER_STACK_PASS ... separationFt=3000 minimumFt=3000
+TANKER_EXECUTING_PASS tankerProfile=SLOW
+TANKER_EXECUTING_PASS tankerProfile=FAST
+RECEIVER_MISSION_ADDED_PASS receiver=A10 ... intendedTanker=SLOW
+RECEIVER_MISSION_ADDED_PASS receiver=F16 ... intendedTanker=FAST
+RECEIVER_ASSIGNED_PASS receiver=A10
+RECEIVER_ASSIGNED_PASS receiver=F16
+AI_BOOM_REFUEL_ORDER_PASS receiver=A10 ... intendedTanker=SLOW
+AI_BOOM_REFUEL_ORDER_PASS receiver=F16 ... intendedTanker=FAST
+AI_BOOM_REFUELED_PASS receiver=A10
+AI_BOOM_REFUELED_PASS receiver=F16
+RECEIVER_TANKER_PROXIMITY_PASS receiver=A10 ... nearestTanker=SLOW
+RECEIVER_TANKER_PROXIMITY_PASS receiver=F16 ... nearestTanker=FAST
+DUAL_RECEIVER_REFUEL_PASS
+POST_REFUEL_DWELL_PASS ... startsAfterBothReceivers=true
+ACCELERATED_FUEL_LOW_ARMED ... afterBothReceiversRefueled=true
+FUEL_LOW_PASS tankerProfile=SLOW
+FUEL_LOW_PASS tankerProfile=FAST
+EGRESS_GATE_PASS tankerProfile=SLOW
+EGRESS_GATE_PASS tankerProfile=FAST
+```
 
 ## 8. Source / Builder / Dist
 
@@ -219,4 +167,4 @@ tools/build-aar-kc135-runtime-acceptance.ps1
 mission/tests/aar-kc135-runtime/dist/OMW_AAR_KC135_Runtime_Acceptance.lua
 ```
 
-`dist/` is builder-generated only.
+`dist/` ist builder-generated only.

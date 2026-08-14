@@ -9,8 +9,8 @@ $sourceFile = Join-Path $repoRoot 'mission\tests\aar-kc135-runtime\src\01-aar-kc
 $distDir = Join-Path $repoRoot 'mission\tests\aar-kc135-runtime\dist'
 $outputFile = Join-Path $distDir 'OMW_AAR_KC135_Runtime_Acceptance.lua'
 
-$builderVersion = 'AAR-KC135-RUNTIME-ACCEPTANCE-5'
-$testId = 'AAR-KC135-RUNTIME-ACCEPTANCE-5'
+$builderVersion = 'AAR-KC135-RUNTIME-ACCEPTANCE-6'
+$testId = 'AAR-KC135-RUNTIME-ACCEPTANCE-6'
 $mooseCommit = '73d3ed119cd9e7e3f2cfcabbaa34513d30529b54'
 $mooseSha256 = 'e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915'
 
@@ -21,20 +21,28 @@ if (-not (Test-Path -LiteralPath $sourceFile -PathType Leaf)) {
 $source = Get-Content -LiteralPath $sourceFile -Raw -Encoding UTF8
 
 $requiredMarkers = @(
-  'AAR-KC135-RUNTIME-ACCEPTANCE-5',
+  'AAR-KC135-RUNTIME-ACCEPTANCE-6',
   'OMW_AAR_KC135_CLANCY',
-  'OMW_AAR_KC135_NELSON',
+  'OMW_AAR_KC135_PATTY',
+  'TPL_AIR_US_KAF_A10C_CAS_2SHIP',
+  'SQ_US_KAF_A10C_74_EFS',
   'TPL_AIR_US_BGRM_F16C_CAS_2SHIP',
   'SQ_US_BGRM_F16C_121_EFS',
+  'MIN_VERTICAL_SEPARATION_FT = 3000',
+  'DUAL_TANKER_SPAWN_STAGGER_SEC = 60',
+  'altitudeFt = 22000',
+  'altitudeFt = 25000',
+  'speedKt = 220',
+  'speedKt = 300',
+  'tacanChannel = 60',
+  'tacanChannel = 48',
+  'tacanBand = "Y"',
   'RECEIVER_MISSION_RANGE_NM = 250',
   'POST_REFUEL_DWELL_SEC = 60',
   'mission:SetMissionRange(RECEIVER_MISSION_RANGE_NM)',
-  'gate = { lat = 38.83163, lon = 70.95271 }',
   'gateCoord:HeadingTo(trackCoord)',
   'spawner:InitHeading(spawnHeadingDeg)',
   'spawner:SpawnFromCoordinate(gateCoord)',
-  'speedKt = 220',
-  'tacanBand = "Y"',
   'FLIGHTGROUP:New(group)',
   'AUFTRAG:NewTANKER(',
   'Unit.RefuelingSystem.BOOM_AND_RECEPTACLE',
@@ -49,9 +57,12 @@ $requiredMarkers = @(
   'mission:AssignSquadrons({ squadron })',
   'mission:AddRequiredPayload(payload)',
   'mission:SetRequiredAssets(1, 1)',
-  'receiver.mission:CountOpsGroups()',
-  'receiver.flightGroup:Refuel(clancy.trackCoord)',
+  'receiverSpec.flightGroup:Refuel(targetTanker.trackCoord)',
   'function FlightGroup:OnAfterRefueled',
+  'Get3DDistance(',
+  'RECEIVER_TANKER_PROXIMITY_',
+  'DUAL_TANKER_STACK_PASS',
+  'DUAL_RECEIVER_REFUEL_PASS',
   'AI_BOOM_REFUEL_ORDER_PASS',
   'AI_BOOM_REFUELED_PASS',
   'POST_REFUEL_DWELL_PASS',
@@ -96,10 +107,10 @@ $header = @"
 -- GitCommit: $commit
 -- GeneratedUtc: $generatedUtc
 -- Gate/Test-ID: $testId
--- Scope: two KC-135 Boom exemplars in different gate domains; Nelson materialization approximately 50 km NNE of EGPAN in Tajikistan; spawn heading toward each track; DCS-runtime Y-band A/A TACAN; Clancy 220-KIAS SLOW exemplar and Nelson 300-KIAS FAST exemplar; explicit 250-NM MOOSE receiver mission-range override for the existing Bagram F-16C; 60-second post-refuel dwell before accelerated FuelLow; FuelLow/Cancel/Egress/Despawn gate verification.
--- Active tanker templates: OMW_AAR_KC135_CLANCY, OMW_AAR_KC135_NELSON.
--- AI receiver template: TPL_AIR_US_BGRM_F16C_CAS_2SHIP via existing SQ_US_BGRM_F16C_121_EFS; no new Mission Editor template and no MIZ mutation.
--- Production policy: same gate/domain materializations require at least 60 seconds separation; different gate domains may materialize simultaneously; maxConcurrentSupportMissions remains 2.
+-- Scope: one combined same-area dual-KC-135 Boom acceptance in CLANCY; A-10 -> SLOW lower tanker at FL220/220 KIAS; F-16 -> FAST upper tanker at FL250/300 KIAS; 3000-ft vertical separation; 60-second acceptance-only spawn stagger; 3D proximity inference after Refueled; 60-second post-both-receivers dwell before accelerated FuelLow/Egress.
+-- Tanker templates: OMW_AAR_KC135_CLANCY (SLOW), OMW_AAR_KC135_PATTY (FAST).
+-- Receiver templates: TPL_AIR_US_KAF_A10C_CAS_2SHIP via existing Kandahar foundation; TPL_AIR_US_BGRM_F16C_CAS_2SHIP via existing Bagram foundation.
+-- No new Mission Editor templates and no automated MIZ mutation.
 -- MOOSE-Commit: $mooseCommit
 -- Moose.lua-SHA256: $mooseSha256
 
@@ -112,20 +123,17 @@ Write-Host "Built: $outputFile"
 Write-Host "BuilderVersion: $builderVersion"
 Write-Host "TestId: $testId"
 Write-Host "GeneratedUtc: $generatedUtc"
-Write-Host "ActiveTankers: CLANCY,NELSON"
-Write-Host "DifferentGateDomainsMaySpawnSimultaneously: true"
-Write-Host "SameGateMinimumSpawnSeparationSec: 60"
-Write-Host "SouthGateCandidate: 28.90264890,64.61166667"
-Write-Host "NelsonGateCandidate: 38.83163,70.95271"
-Write-Host "NelsonGateReference: approximately 50 km NNE of EGPAN"
-Write-Host "SpawnHeadingTowardTrack: true"
-Write-Host "RuntimeTacan: CLANCY=60Y,NELSON=47Y"
-Write-Host "TankerOrbitSpeedKt: CLANCY=220,NELSON=300"
+Write-Host "AARArea: CLANCY"
+Write-Host "SlowTanker: template=OMW_AAR_KC135_CLANCY altitudeFt=22000 speedKt=220 radio=241.600AM tacan=60Y/CLA"
+Write-Host "FastTanker: template=OMW_AAR_KC135_PATTY altitudeFt=25000 speedKt=300 radio=237.300AM tacan=48Y/TX2"
+Write-Host "VerticalSeparationFt: 3000"
+Write-Host "MinimumVerticalSeparationFt: 3000"
+Write-Host "DualTankerSpawnStaggerSec: 60"
+Write-Host "A10Receiver: TPL_AIR_US_KAF_A10C_CAS_2SHIP -> SLOW"
+Write-Host "F16Receiver: TPL_AIR_US_BGRM_F16C_CAS_2SHIP -> FAST"
 Write-Host "ReceiverMissionRangeNm: 250"
+Write-Host "DonorEvidence: 3D_PROXIMITY_INFERENCE_NOT_DONOR_ID"
 Write-Host "PostRefuelDwellSec: 60"
-Write-Host "ManualRadioTacanExemplars: CLANCY,NELSON"
-Write-Host "AIBoomReceiverTemplate: TPL_AIR_US_BGRM_F16C_CAS_2SHIP"
-Write-Host "AcceleratedFuelLowAfterAiBoomRefueled: true"
 Write-Host "EgressGateRadiusNm: 10"
 Write-Host "NewMissionEditorTemplates: 0"
 Write-Host "MizMutation: false"
