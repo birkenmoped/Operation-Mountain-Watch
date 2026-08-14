@@ -122,6 +122,25 @@ Für den aktuellen OMW-Runtime-Scope sind in `data/air-operations/aar/omw-2011-a
 
 Der MOOSE-First-Befund spricht damit gegen eine eigene parallele Orbit-, Funk-, TACAN- oder Fuel-Schwellenimplementierung. Eigene OMW-Logik soll sich auf die noch projektspezifischen Teile beschränken: Auswahl der AAR-Area, External-Origin-/Gate-Modell, initialer Fuelzustand, CampaignState-/MissionDemand-Entscheidung sowie der sichere Egress-Zeitpunkt und die off-map Recovery-Bilanz.
 
+### 5.4 Acceptance-Concurrency
+
+Die verbindliche Air-Ops-Architektur setzt missionsweit:
+
+```text
+maxConcurrentSupportMissions = 2
+maxAircraftPerSupportMission = 2
+maxConcurrentSupportAircraft = 4
+```
+
+Der AAR-Acceptance-Harness prueft deshalb drei Tankerpfade gestaffelt in einem DCS-Lauf statt drei gleichzeitige Tankermissionen zu starten:
+
+```text
+initial: CLANCY + NELSON
+CLANCY FuelLow/CANCEL -> HOMER start
+```
+
+Damit bleiben maximal zwei Tanker-`AUFTRAG` gleichzeitig ausfuehrend. Ein bereits abgebrochener Clancy-Auftrag darf waehrend des Egress noch ein physisch aktives Flugzeug hinterlassen; mit Nelson und dem danach gestarteten Homer bleiben dabei maximal drei Supportluftfahrzeuge physisch vorhanden und damit unter der globalen Vier-Luftfahrzeug-Obergrenze. Dieses Verhalten ist noch im Owner-DCS-Test zu bestaetigen.
+
 ## 6. Acceptance-Bedarf
 
 - Kontaktentstehung, Trackverlust und Wiedererkennung;
@@ -135,5 +154,6 @@ Der MOOSE-First-Befund spricht damit gegen eine eigene parallele Orbit-, Funk-, 
 - AIRWING-/WAREHOUSE-Übernahme des geplanten Initial-Fuelwerts beim Air-Spawn;
 - `GetFuelMin()`-/`FuelLow`-Verhalten des KC-135 unter tatsächlichem Offload;
 - Track-Exit-/Egress-Verhalten bei area-spezifischer Fuel-Schwelle;
+- gestaffelte Clancy/Nelson/Homer-Aktivierung innerhalb der Support-Concurrency-Grenze;
 - off-map Origin-/Recovery-Bilanz;
 - Multiplayer-, Persistenz- und Missionsneustarttests.
