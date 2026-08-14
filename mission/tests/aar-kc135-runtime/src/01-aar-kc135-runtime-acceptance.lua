@@ -5,6 +5,7 @@ local SAFE_FUEL_LOW_PCT = 20
 local ACCELERATED_FUEL_LOW_PCT = 99
 local EGRESS_GATE_RADIUS_NM = 10
 local RECEIVER_TIMEOUT_SEC = 1800
+local RECEIVER_MISSION_RANGE_NM = 250
 local RECEIVER_TEMPLATE = "TPL_AIR_US_BGRM_F16C_CAS_2SHIP"
 local RECEIVER_SQUADRON = "SQ_US_BGRM_F16C_121_EFS"
 
@@ -198,6 +199,7 @@ local function configureExistingBagramReceiver()
 
   local casZone = ZONE_RADIUS:New("OMW_AAR_RECEIVER_CAS_ZONE", clancy.trackCoord:GetVec2(), UTILS.NMToMeters(20))
   local mission = AUFTRAG:NewCAS(casZone, 22000, 300, clancy.trackCoord, 225, 20, {})
+  mission:SetMissionRange(RECEIVER_MISSION_RANGE_NM)
   mission:SetROE(ENUMS.ROE.WeaponHold)
   mission:SetROT(ENUMS.ROT.NoReaction)
   mission:SetRequiredAssets(1, 1)
@@ -242,9 +244,10 @@ local function configureExistingBagramReceiver()
   receiver.mission = mission
   airwing:AddMission(mission)
   log(string.format(
-    "RECEIVER_MISSION_ADDED_PASS template=%s squadron=%s existingBagramFoundation=true",
+    "RECEIVER_MISSION_ADDED_PASS template=%s squadron=%s existingBagramFoundation=true missionRangeNm=%d",
     RECEIVER_TEMPLATE,
-    RECEIVER_SQUADRON
+    RECEIVER_SQUADRON,
+    RECEIVER_MISSION_RANGE_NM
   ))
   return true
 end
@@ -253,7 +256,7 @@ for _, area in ipairs(ACTIVE_TANKERS) do
   runtime[area] = configureTanker(TANKERS[area])
 end
 
-log("START simultaneousDifferentGateDomains=CLANCY,NELSON sameGateMinimumSpawnSeparationSec=60 productionSupportMissionLimit=2 runtimeTacanBand=Y clancyA10CompatibleSpeedKt=220")
+log("START simultaneousDifferentGateDomains=CLANCY,NELSON sameGateMinimumSpawnSeparationSec=60 productionSupportMissionLimit=2 runtimeTacanBand=Y clancyA10CompatibleSpeedKt=220 receiverMissionRangeNm=250")
 
 local receiverFoundationResolved = false
 SCHEDULER:New(nil, function()
@@ -354,4 +357,4 @@ SCHEDULER:New(nil, function()
   ))
 end, {}, 10, STATUS_INTERVAL_SEC)
 
-log("HARNESS_READY activeTankers=CLANCY,NELSON manualRadioTacanExemplars=2 runtimeTacanBand=Y clancySpeedKt=220 nelsonSpeedKt=300 spawnHeadingTowardTrack=true aiBoomReceiverTemplate=TPL_AIR_US_BGRM_F16C_CAS_2SHIP acceleratedFuelLowAfterAiBoomRefueled=true egressGateRadiusNm=10 newMissionEditorTemplates=0 mizMutation=false")
+log("HARNESS_READY activeTankers=CLANCY,NELSON manualRadioTacanExemplars=2 runtimeTacanBand=Y clancySpeedKt=220 nelsonSpeedKt=300 spawnHeadingTowardTrack=true receiverMissionRangeNm=250 aiBoomReceiverTemplate=TPL_AIR_US_BGRM_F16C_CAS_2SHIP acceleratedFuelLowAfterAiBoomRefueled=true egressGateRadiusNm=10 newMissionEditorTemplates=0 mizMutation=false")
