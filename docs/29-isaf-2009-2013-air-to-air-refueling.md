@@ -8,6 +8,7 @@ authoritative_for:
   - OMW AAR-area and ACO mission-design reference for Afghanistan 2009-2013
   - source-derived tanker-area geometry and planning constraints
   - OMW 2011-compatible corrected AAR production-planning geometry
+  - current OMW AAR runtime-scope planning
 not_authoritative_for:
   - historical operational ACO authenticity
   - DCS runtime acceptance
@@ -16,7 +17,7 @@ project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
   - REFERENCE used as governance document status
 superseded_by:
-source_branch: agent/aar-2011-airspace-correction
+source_branch: agent/aar-rc-east-runtime-scope
 source_commit: GIT_HISTORY
 validated_in_dcs: false
 ---
@@ -112,6 +113,36 @@ historical_claim: false
 
 Die Geometrie ist damit für die weitere OMW-Missionsplanung verbindlich, aber noch **nicht** als DCS-Runtime-Verhalten validiert.
 
+### 4.3 Eigentümerentscheidung: aktueller Runtime-Scope RC-East
+
+Die 19 AAR-Areas bilden die verfügbare AAR-Infrastruktur. Sie bedeuten ausdrücklich **nicht**, dass 19 Tanker gleichzeitig aktiv sind. Die Geometrien bleiben vollständig verfügbar; die Belegung mit Tankern ist ein davon getrennter Runtime-Zustand.
+
+Für den aktuellen OMW-Kampagnenschwerpunkt gilt:
+
+1. Das eigentliche Einsatzgebiet ist RC-East mit dem in Dokument 10 beschriebenen Schwerpunkt Jalalabad/Fenty, Laghman, Kabul River Valley, Kunar River Valley, Pech Valley und Nuristan-Zugänge.
+2. Zusätzlich werden AAR-Möglichkeiten auf der relevanten Kandahar-zu-RC-East-Zuführung berücksichtigt, weil aktive Jets teilweise aus Kandahar kommen und vor beziehungsweise während längerer On-Station-Zeiten Treibstoffunterstützung benötigen können.
+3. Der aktuelle Fixed-Wing-Receiverbestand benötigt Boom-AAR. MPRS-/Drogue-Tanker werden deshalb im derzeitigen Runtime-Scope nicht aktiviert.
+4. Die drei HAAR-Geometrien bleiben erhalten, werden aber erst aktiviert, wenn der dafür vorgesehene Helicopter-/Tanker-Mod tatsächlich Bestandteil der OMW-Mission ist.
+5. Ein Runtime-Tanker wird nur bei tatsächlichem operativem Bedarf einem geeigneten Track zugeordnet. Mehrere nahe oder funktional gleichartige Tracks sind Alternativen und nicht automatisch gleichzeitig zu belegen.
+
+Maschinenlesbare Runtime-Scope-Planung:
+
+- `data/air-operations/aar/omw-2011-aar-runtime-scope.csv`
+
+Aktueller erster Boom-Scope:
+
+| Area | Runtime-Klasse | Rolle |
+|---|---|---|
+| Clancy | `KANDAHAR_RC_EAST_ACCESS` | Kandahar-seitiger Access-/Top-off-Kandidat Richtung RC-East |
+| Homer | `RC_EAST_SOUTH` | südlicher RC-East-/Paktika-Ghazni-seitiger Kandidat; Alternative zu Krusty |
+| Krusty | `RC_EAST_SOUTH` | südlicher RC-East-/Paktika-Ghazni-seitiger Kandidat; Alternative zu Homer |
+| Nelson | `RC_EAST_NORTH_ADJACENT` | nördlicher RC-East-/Nuristan-angrenzender Kandidat |
+| Patty | `RC_EAST_EASTERN_PRIMARY` | primärer östlicher RC-East-/Kunar-Nangarhar-seitiger Kandidat |
+
+Alle übrigen Fixed-Wing-Areas bleiben `STRATEGIC_RESERVE`. Insbesondere Lenny und Milhouse werden trotz relativer Nähe zu Kandahar beziehungsweise Zentralafghanistan zunächst nicht in den bevorzugten Kandahar-RC-East-Korridor aufgenommen, weil Clancy sowie Homer/Krusty die direktere östliche Zuführung abdecken.
+
+Homer und Krusty liegen räumlich eng beieinander und werden deshalb in der Runtime-Planung als Alternativen derselben südlichen Funktionsgruppe behandelt. Ob beide gleichzeitig sicher nutzbar wären, ist **nicht** validiert und muss vor einer parallelen Aktivierung in DCS geprüft werden.
+
 ## 5. Datenfelder
 
 Jede AAR-Zuordnung führt mindestens:
@@ -164,6 +195,7 @@ historical_claim: false
 - geplante Offload- und ARCT-Logik;
 - Multiplayer-, TACAN- und Funkverhalten;
 - Performance bei mehreren gleichzeitig aktiven Tankern;
+- parallele Nutzung nahe beieinander liegender Tracks, insbesondere Homer/Krusty;
 - dokumentierte DCS-, MOOSE-, Mission- und Bundle-Version.
 
 Nicht mehr offen ist die Entscheidung, die konfliktbehaftete Graveyard-Geometrie unverändert zu übernehmen: **sie wird für OMW nicht verwendet.**
