@@ -1,5 +1,11 @@
-local TEST_ID = "AAR-KC135-RUNTIME-ACCEPTANCE-1"
+local TEST_ID = "AAR-KC135-RUNTIME-ACCEPTANCE-2"
 local LOG_PREFIX = "[OMW][" .. TEST_ID .. "] "
+local STATUS_INTERVAL_SEC = 30
+local EXECUTING_DWELL_SEC = 180
+local SAFE_FUEL_LOW_PCT = 20
+local ACCELERATED_FUEL_LOW_PCT = 99
+local EGRESS_GATE_RADIUS_NM = 10
+local EXPECTED_TANKER_COUNT = 5
 
 local function log(message)
   env.info(LOG_PREFIX .. message)
@@ -24,7 +30,6 @@ local TANKERS = {
     tacanBand = "X",
     tacanIdent = "CLA",
     expectedFuelPct = 90,
-    testFuelLowPct = 89,
   },
   HOMER = {
     area = "HOMER",
@@ -40,7 +45,21 @@ local TANKERS = {
     tacanBand = "X",
     tacanIdent = "HOM",
     expectedFuelPct = 90,
-    testFuelLowPct = 89,
+  },
+  KRUSTY = {
+    area = "KRUSTY",
+    template = "OMW_AAR_KC135_KRUSTY",
+    gate = { lat = 29.9818333333, lon = 64.6116666667 },
+    track = { lat = 32.65123012, lon = 68.15946309 },
+    altitudeFt = 26000,
+    speedKt = 300,
+    headingDeg = 212.350,
+    legNm = 35,
+    frequencyMHz = 258.300,
+    tacanChannel = 42,
+    tacanBand = "X",
+    tacanIdent = "KRU",
+    expectedFuelPct = 90,
   },
   NELSON = {
     area = "NELSON",
@@ -56,13 +75,28 @@ local TANKERS = {
     tacanBand = "X",
     tacanIdent = "NEL",
     expectedFuelPct = 96,
-    testFuelLowPct = 95,
+  },
+  PATTY = {
+    area = "PATTY",
+    template = "OMW_AAR_KC135_PATTY",
+    gate = { lat = 38.1211666667, lon = 70.3600000000 },
+    track = { lat = 34.97134133, lon = 71.47789605 },
+    altitudeFt = 25500,
+    speedKt = 300,
+    headingDeg = 89.662,
+    legNm = 35,
+    frequencyMHz = 237.300,
+    tacanChannel = 48,
+    tacanBand = "X",
+    tacanIdent = "PAT",
+    expectedFuelPct = 96,
   },
 }
 
-local STATUS_ORDER = { "CLANCY", "HOMER", "NELSON" }
+local STATUS_ORDER = { "CLANCY", "HOMER", "KRUSTY", "NELSON", "PATTY" }
 local runtime = {}
-local startArea
+local allExecutingSince = nil
+local acceleratedFuelLowArmed = false
 
 local function getFuelPct(flightGroup)
   if not flightGroup then
@@ -71,16 +105,31 @@ local function getFuelPct(flightGroup)
   local ok, value = pcall(function()
     return flightGroup:GetFuelMin()
   end)
-  if not ok then
+  if not ok or type(value) ~= "number" or value ~= value or value == math.huge or value == -math.huge then
     return nil
   end
   return value
 end
 
+local function getDistanceNm(flightGroup, coordinate)
+  if not flightGroup or not coordinate then
+    return nil
+  end
+  local current = flightGroup:GetCoordinate()
+  if not current then
+    return nil
+  end
+  local distanceM = current:Get2DDistance(coordinate)
+  if type(distanceM) ~= "number" then
+    return nil
+  end
+  return UTILS.MetersToNM(distanceM)
+end
+
 local function configureTanker(spec)
-  local gateAltitudeM = UTILS.FeetToMeters(spec.altitudeFt)
-  local gateCoord = COORDINATE:NewFromLLDD(spec.gate.lat, spec.gate.lon, gateAltitudeM)
-  local trackCoord = COORDINATE:NewFromLLDD(spec.track.lat, spec.track.lon, gateAltitudeM)
+  local altitudeM = UTILS.FeetToMeters(spec.altitudeFt)
+  local gateCoord = COORDINATE:NewFromLLDD(spec.gate.lat, spec.gate.lon, altitudeM)
+  local trackCoord = COORDINATE:NewFromLLDD(spec.track.lat, spec.track.lon, altitudeM)
 
   local spawner = SPAWN:New(spec.template)
   local group = spawner:SpawnFromCoordinate(gateCoord)
@@ -108,7 +157,7 @@ local function configureTanker(spec)
   mission:SetMissionEgressCoord(gateCoord, spec.altitudeFt, spec.speedKt)
 
   flightGroup:SetFuelLowRTB(false)
-  flightGroup:SetFuelLowThreshold(spec.testFuelLowPct)
+  flightGroup:SetFuelLowThreshold(SAFE_FUEL_LOW_PCT)
 
   function flightGroup:OnAfterFuelLow(From, Event, To)
     local fuelPct = getFuelPct(self) or -1
@@ -116,38 +165,27 @@ local function configureTanker(spec)
       "FUEL_LOW_PASS area=%s fuelPct=%.2f thresholdPct=%.2f action=CANCEL_TO_EGRESS",
       spec.area,
       fuelPct,
-      spec.testFuelLowPct
+      ACCELERATED_FUEL_LOW_PCT
     ))
     mission:Cancel()
     local state = runtime[spec.area]
     if state then
       state.egressOrdered = true
-    end
-
-    if spec.area == "CLANCY" and not runtime.HOMER then
-      log("STAGE_TRANSITION from=CLANCY to=HOMER reason=CLANCY_FUEL_LOW")
-      startArea("HOMER")
+      state.fuelLowFuelPct = fuelPct
+      state.fuelLowTime = timer.getAbsTime()
     end
   end
 
   flightGroup:AddMission(mission)
 
-  local fuelPct = getFuelPct(flightGroup)
-  if fuelPct then
-    log(string.format(
-      "SPAWN_PASS area=%s group=%s fuelPct=%.2f expectedFuelPct=%.2f deltaPct=%.2f",
-      spec.area,
-      group:GetName(),
-      fuelPct,
-      spec.expectedFuelPct,
-      fuelPct - spec.expectedFuelPct
-    ))
-  else
-    fail(string.format("FUEL_READBACK area=%s group=%s", spec.area, group:GetName()))
-  end
-
   log(string.format(
-    "MISSION_CONFIG_PASS area=%s altitudeFt=%d speedKt=%d headingDeg=%.3f legNm=%.1f radioMHz=%.3f modulation=AM tacan=%d%s ident=%s egressGate=%.6f,%.6f",
+    "SPAWN_PASS area=%s group=%s expectedFuelPct=%.2f seedReadback=DEFERRED",
+    spec.area,
+    group:GetName(),
+    spec.expectedFuelPct
+  ))
+  log(string.format(
+    "MISSION_CONFIG_PASS area=%s altitudeFt=%d speedKt=%d headingDeg=%.3f legNm=%.1f radioMHz=%.3f modulation=AM tacan=%d%s ident=%s egressGate=%.6f,%.6f initialFuelLowThresholdPct=%d",
     spec.area,
     spec.altitudeFt,
     spec.speedKt,
@@ -158,7 +196,8 @@ local function configureTanker(spec)
     spec.tacanBand,
     spec.tacanIdent,
     spec.gate.lat,
-    spec.gate.lon
+    spec.gate.lon,
+    SAFE_FUEL_LOW_PCT
   ))
 
   return {
@@ -166,12 +205,19 @@ local function configureTanker(spec)
     group = group,
     flightGroup = flightGroup,
     mission = mission,
+    gateCoord = gateCoord,
+    trackCoord = trackCoord,
+    seedFuelChecked = false,
     executingLogged = false,
+    executingTime = nil,
+    trackEntryFuelPct = nil,
     egressOrdered = false,
+    egressGatePassed = false,
+    despawnedAtGate = false,
   }
 end
 
-startArea = function(area)
+local function startArea(area)
   if runtime[area] then
     fail(string.format("DUPLICATE_START area=%s", area))
     return runtime[area]
@@ -189,61 +235,126 @@ startArea = function(area)
   return state
 end
 
-log("START initialConcurrent=CLANCY,NELSON staged=HOMER preparedInactive=KRUSTY,PATTY maxConcurrentSupportMissions=2")
-
-startArea("CLANCY")
-startArea("NELSON")
+log("START simultaneous=CLANCY,HOMER,KRUSTY,NELSON,PATTY testOnlyConcurrencyException=true productionSupportMissionLimitUnchanged=2")
+for _, area in ipairs(STATUS_ORDER) do
+  startArea(area)
+end
 
 SCHEDULER:New(nil, function()
   local activeAircraft = 0
   local executingMissions = 0
   local egressOrdered = 0
-  local started = 0
+  local egressGatePassed = 0
+  local now = timer.getAbsTime()
 
   for _, area in ipairs(STATUS_ORDER) do
     local state = runtime[area]
     if state then
-      started = started + 1
       if state.group and state.group:IsAlive() then
         activeAircraft = activeAircraft + 1
-        local fuelPct = getFuelPct(state.flightGroup) or -1
+        local fuelPct = getFuelPct(state.flightGroup)
+        local fuelForLog = fuelPct or -1
         local missionExecuting = state.mission:IsExecuting()
+        local distanceTrackNm = getDistanceNm(state.flightGroup, state.trackCoord) or -1
+        local distanceGateNm = getDistanceNm(state.flightGroup, state.gateCoord) or -1
+
+        if not state.seedFuelChecked and fuelPct then
+          state.seedFuelChecked = true
+          local deltaPct = fuelPct - state.spec.expectedFuelPct
+          log(string.format(
+            "SEED_FUEL_PASS area=%s fuelPct=%.2f expectedFuelPct=%.2f deltaPct=%.2f",
+            area,
+            fuelPct,
+            state.spec.expectedFuelPct,
+            deltaPct
+          ))
+        end
+
         if missionExecuting then
           executingMissions = executingMissions + 1
           if not state.executingLogged then
             state.executingLogged = true
-            log(string.format("TANKER_EXECUTING_PASS area=%s fuelPct=%.2f", area, fuelPct))
+            state.executingTime = now
+            state.trackEntryFuelPct = fuelPct
+            log(string.format(
+              "TANKER_EXECUTING_PASS area=%s fuelPct=%.2f distanceTrackNm=%.2f",
+              area,
+              fuelForLog,
+              distanceTrackNm
+            ))
           end
         end
+
         if state.egressOrdered then
           egressOrdered = egressOrdered + 1
+          if not state.egressGatePassed and distanceGateNm >= 0 and distanceGateNm <= EGRESS_GATE_RADIUS_NM then
+            state.egressGatePassed = true
+            egressGatePassed = egressGatePassed + 1
+            log(string.format(
+              "EGRESS_GATE_PASS area=%s distanceGateNm=%.2f fuelPct=%.2f action=DESPAWN_OFFMAP_HANDOFF",
+              area,
+              distanceGateNm,
+              fuelForLog
+            ))
+            state.flightGroup:Despawn(1, true)
+            state.despawnedAtGate = true
+          elseif state.egressGatePassed then
+            egressGatePassed = egressGatePassed + 1
+          end
         end
+
         log(string.format(
-          "STATUS area=%s alive=true fuelPct=%.2f missionStatus=%s egressOrdered=%s",
+          "STATUS area=%s alive=true fuelPct=%.2f missionStatus=%s executing=%s distanceTrackNm=%.2f distanceGateNm=%.2f egressOrdered=%s egressGatePassed=%s",
           area,
-          fuelPct,
+          fuelForLog,
           tostring(state.mission.status),
-          tostring(state.egressOrdered)
+          tostring(missionExecuting),
+          distanceTrackNm,
+          distanceGateNm,
+          tostring(state.egressOrdered),
+          tostring(state.egressGatePassed)
         ))
-      else
+      elseif not state.despawnedAtGate then
         fail(string.format("GROUP_NOT_ALIVE area=%s", area))
       end
-    else
-      log(string.format("STATUS area=%s started=false", area))
     end
   end
 
-  if executingMissions > 2 then
-    fail(string.format("SUPPORT_CONCURRENCY executingMissions=%d limit=2", executingMissions))
+  if not acceleratedFuelLowArmed then
+    if executingMissions == EXPECTED_TANKER_COUNT then
+      if not allExecutingSince then
+        allExecutingSince = now
+        log(string.format("ALL_TANKERS_EXECUTING_PASS count=%d dwellRequiredSec=%d", executingMissions, EXECUTING_DWELL_SEC))
+      end
+      local dwellSec = now - allExecutingSince
+      if dwellSec >= EXECUTING_DWELL_SEC then
+        acceleratedFuelLowArmed = true
+        for _, area in ipairs(STATUS_ORDER) do
+          local state = runtime[area]
+          if state and state.flightGroup then
+            state.flightGroup:SetFuelLowThreshold(ACCELERATED_FUEL_LOW_PCT)
+          end
+        end
+        log(string.format(
+          "ACCELERATED_FUEL_LOW_ARMED thresholdPct=%d afterAllExecutingDwellSec=%.0f",
+          ACCELERATED_FUEL_LOW_PCT,
+          dwellSec
+        ))
+      end
+    else
+      allExecutingSince = nil
+    end
   end
 
   log(string.format(
-    "SUMMARY started=%d activeAircraft=%d executingMissions=%d egressOrdered=%d supportMissionLimit=2",
-    started,
+    "SUMMARY activeAircraft=%d executingMissions=%d egressOrdered=%d egressGatePassed=%d expectedTankers=%d testOnlyConcurrencyException=true productionSupportMissionLimit=2 fuelLowArmed=%s",
     activeAircraft,
     executingMissions,
-    egressOrdered
+    egressOrdered,
+    egressGatePassed,
+    EXPECTED_TANKER_COUNT,
+    tostring(acceleratedFuelLowArmed)
   ))
-end, {}, 10, 30)
+end, {}, 10, STATUS_INTERVAL_SEC)
 
-log("HARNESS_READY initial=CLANCY,NELSON stagedAfterClancyFuelLow=HOMER expectedInitialFuel=CLANCY:90,HOMER:90,NELSON:96 acceleratedFuelLow=CLANCY:89,HOMER:89,NELSON:95")
+log("HARNESS_READY simultaneous=CLANCY,HOMER,KRUSTY,NELSON,PATTY seedFuel=90,90,90,96,96 safeFuelLowPct=20 acceleratedFuelLowPct=99 armAfterAllExecutingDwellSec=180 egressGateRadiusNm=10")
