@@ -1,0 +1,13 @@
+field_name,direction,required,type,allowed_values,owner,semantics
+mission_demand_id,INPUT,YES,string,,MissionDemand,"Stable demand identifier used for logging and lifecycle correlation."
+receiver_profile,INPUT,YES,enum,"FAST;SLOW",MissionDemand,"Receiver performance profile requested by the supported mission. FLEX is an area capability, not an incoming receiver profile."
+operations_area,INPUT,YES,enum,"WEST;CENTRAL;SOUTH_CENTRAL;SOUTHEAST;EAST;NORTHEAST",MissionDemand,"Operational area used by the deterministic AAR routing policy."
+support_mode,INPUT,YES,enum,"SUPPORT;RECOVERY",MissionDemand,"Distinguishes normal support from recovery/top-off demand. Policy rows may match ANY where both are intentionally accepted."
+priority,INPUT,YES,string,,MissionDemand,"Preserved from the parent mission/request. The AAR area policy does not invent or renumber mission priority."
+requested_fallback_area,INPUT,NO,string,"Lisa;Moe;Milhouse;Krusty;Patty;Nelson",MissionDemand,"Optional explicit fallback requested by higher-level planning. Blank means no fallback. Compatibility must be checked before use."
+policy_id,OUTPUT,YES,string,,AAR_POLICY,"Matched row from omw-2011-aar-demand-policy.csv."
+selected_area,OUTPUT,YES,string,"Lisa;Moe;Milhouse;Krusty;Patty;Nelson",AAR_POLICY,"Primary AAR area selected by policy."
+selected_profile,OUTPUT,YES,enum,"FAST;SLOW",AAR_POLICY,"Resolved tanker profile. For FLEX areas this equals the incoming receiver_profile."
+source_domain,OUTPUT,YES,enum,"MANAS;AL_UDEID",AAR_POLICY,"External source domain attached to the selected operational core area."
+transit_profile,OUTPUT,YES,string,"MANAS_WEST_HIGH;MANAS_EAST_HIGH;AL_UDEID_NORTH_HIGH",AAR_POLICY,"High-transit profile attached to the selected area."
+fallback_area,OUTPUT,NO,string,"Lisa;Moe;Milhouse;Krusty;Patty;Nelson",AAR_POLICY,"Only populated from an explicit compatible requested_fallback_area. The policy provides no implicit fallback."
