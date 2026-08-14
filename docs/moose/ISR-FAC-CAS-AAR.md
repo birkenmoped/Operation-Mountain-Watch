@@ -100,17 +100,23 @@ Der gepinnte Quellstand enthält bereits die wesentlichen öffentlichen FLIGHTGR
 - `FLIGHTGROUP:SetFuelLowRTB(true)` veranlasst bei `FuelLow` den normalen MOOSE-RTB-Pfad zur Destination-/Home-Airbase.
 - `FLIGHTGROUP:IsFuelLow()` und `IsFuelCritical()` stellen den FSM-Zustand lesbar bereit.
 
-Damit muss OMW **keinen eigenen Fuel-Polling- oder Schwellenmechanismus** parallel zu MOOSE bauen. Der normale `SetFuelLowRTB()`-Pfad ist für externe Tanker jedoch nicht direkt das gewünschte Endmodell: Manas beziehungsweise Al Udeid liegen außerhalb der DCS-Afghanistan-Kartenmission. Der OMW-Lifecycle soll den Tanker deshalb bei Erreichen der planungsabhängigen Schwelle zunächst aus der AAR-Area zu seinem festgelegten Egress-Gate führen und dort kontrolliert aus der physischen Simulation entfernen; der restliche Heimflug wird off-map simuliert. Der passende öffentliche MOOSE-Routing-/Mission-Ende-Pfad für diesen Gate-Egress ist noch separat source-review-pflichtig.
+Damit muss OMW **keinen eigenen Fuel-Polling- oder Schwellenmechanismus** parallel zu MOOSE bauen. Der normale `SetFuelLowRTB()`-Pfad ist für externe Tanker jedoch nicht direkt das gewünschte Endmodell: Manas beziehungsweise Al Udeid liegen außerhalb der DCS-Afghanistan-Kartenmission. Der OMW-Lifecycle soll den Tanker deshalb bei Erreichen der planungsabhängigen Schwelle zunächst aus der AAR-Area zu seinem festgelegten Egress-Gate führen und dort kontrolliert aus der physischen Simulation entfernen; der restliche Heimflug wird off-map simuliert.
 
-Die aktuellen Schwellen von 20–27 Prozent sind area- und originabhängige OMW-Planungswerte. Sie dürfen über `SetFuelLowThreshold()` genutzt werden, sobald das tatsächliche DCS-KC-135-Fuelverhalten den Planungsansatz bestätigt hat.
+Für diesen Gate-Egress sind im gepinnten Quellstand zusätzlich source-reviewed:
+
+- `FLIGHTGROUP:GetCoordinate()` beziehungsweise der geerbte OPSGROUP-Koordinatenpfad für die aktuelle Gruppenposition;
+- `COORDINATE:Get2DDistance(...)` für die Distanz zum Egress-Gate;
+- `OPSGROUP:Despawn(Delay, NoEventRemoveUnit)` für die physische Entfernung nach bestätigtem Gate-Eintritt. Mit `NoEventRemoveUnit=true` werden dabei keine normalen `Remove Unit`-Events erzeugt; damit wird im isolierten Acceptance-Harness kein Warehouse-/Legion-Rücklauf vorgetäuscht.
+
+Die aktuellen produktiven Schwellen von 20–27 Prozent sind area- und originabhängige OMW-Planungswerte. Sie dürfen über `SetFuelLowThreshold()` genutzt werden, sobald das tatsächliche DCS-KC-135-Fuelverhalten den Planungsansatz bestätigt hat.
 
 ### 5.2 Initial Fuel beim Air-Spawn
 
 Der gepinnte `SPAWN`-Quellstand zeigt, dass Air-Spawns aus dem Mission-Editor-/Spawn-Template erzeugt werden und dass das DCS-Unit-Template den Fuelbestand als `payload.fuel` trägt. Im geprüften öffentlichen SPAWN-API-Pfad wurde **kein separater `SPAWN:InitFuel(percent)`-Setter nachgewiesen**.
 
-Daraus folgt noch keine Freigabe für eine direkte Template-Manipulation. Vor Implementierung ist zu klären, wie der produktive AIRWING-/WAREHOUSE-Assetpfad den im Seed-Template gespeicherten Fuelwert beim Air-Spawn übernimmt und ob die benötigten zwei Initialzustände von aktuell 96 Prozent (Manas/NE) beziehungsweise 90 Prozent (Southwest Asia/S) ohne parallele native DCS-Spawnlogik abgebildet werden können.
+Der erste AAR-Runtime-Lauf am 14.08.2026 zeigte nach abgeschlossener FLIGHTGROUP-Initialisierung plausible 90-/96-Prozent-Werte; ein unmittelbar nach `FLIGHTGROUP:New()` vorgenommener Readback lieferte dagegen `inf`. Das ist für die Seed-Fuel-Bewertung ein Timingproblem des Acceptance-Harness. `AAR-KC135-RUNTIME-ACCEPTANCE-2` verschiebt den positiven Seed-Fuel-Nachweis deshalb in die zyklische MOOSE-Telemetrie und akzeptiert keinen nichtendlichen Wert als PASS.
 
-Bis dieser Pfad geklärt und in DCS geprüft ist, bleiben `initial_fuel_pct` und `initial_fuel_lb` **Planungsdaten** und keine behauptete Runtime-Garantie.
+Der produktive AIRWING-/WAREHOUSE-Assetpfad für diese Seed-Fuelwerte bleibt gesondert zu validieren. Die bisherigen SPAWN-Ergebnisse ersetzen diese Prüfung nicht.
 
 ### 5.3 Offizielle MOOSE-Demos
 
@@ -122,7 +128,7 @@ Für den aktuellen OMW-Runtime-Scope sind in `data/air-operations/aar/omw-2011-a
 
 Der MOOSE-First-Befund spricht damit gegen eine eigene parallele Orbit-, Funk-, TACAN- oder Fuel-Schwellenimplementierung. Eigene OMW-Logik soll sich auf die noch projektspezifischen Teile beschränken: Auswahl der AAR-Area, External-Origin-/Gate-Modell, initialer Fuelzustand, CampaignState-/MissionDemand-Entscheidung sowie der sichere Egress-Zeitpunkt und die off-map Recovery-Bilanz.
 
-### 5.4 Acceptance-Concurrency
+### 5.4 Acceptance-Concurrency und Retest
 
 Die verbindliche Air-Ops-Architektur setzt missionsweit:
 
@@ -132,14 +138,13 @@ maxAircraftPerSupportMission = 2
 maxConcurrentSupportAircraft = 4
 ```
 
-Der AAR-Acceptance-Harness prueft deshalb drei Tankerpfade gestaffelt in einem DCS-Lauf statt drei gleichzeitige Tankermissionen zu starten:
+Der erste AAR-Acceptance-Lauf vom 14.08.2026 verwendete nur Clancy/Nelson gleichzeitig und schaltete Homer später zu. Seine beschleunigten FuelLow-Schwellen lagen jedoch bereits während des Transits nur einen Prozentpunkt unter dem Seed-Fuel. Dadurch wurden die Aufträge vor `EXECUTING` abgebrochen; die fehlenden Racetracks sind daher **kein negativer MOOSE-Nachweis**, sondern eine ungültige Testbedingung für diesen Teil der Acceptance.
 
-```text
-initial: CLANCY + NELSON
-CLANCY FuelLow/CANCEL -> HOMER start
-```
+Für `AAR-KC135-RUNTIME-ACCEPTANCE-2` hat der Projektinhaber am 14.08.2026 ausdrücklich einen **isolierten Test mit allen fünf vorbereiteten Tankern gleichzeitig** freigegeben. Diese Freigabe ist eine Testausnahme für Concurrency-/Performance- und AAR-Lifecycle-Evidenz. Sie ändert die produktive Grenze von zwei Supportmissionen nicht.
 
-Damit bleiben maximal zwei Tanker-`AUFTRAG` gleichzeitig ausfuehrend. Ein bereits abgebrochener Clancy-Auftrag darf waehrend des Egress noch ein physisch aktives Flugzeug hinterlassen; mit Nelson und dem danach gestarteten Homer bleiben dabei maximal drei Supportluftfahrzeuge physisch vorhanden und damit unter der globalen Vier-Luftfahrzeug-Obergrenze. Dieses Verhalten ist noch im Owner-DCS-Test zu bestaetigen.
+Der Retest hält FuelLow während des Transits auf 20 Prozent, verlangt zunächst `EXECUTING` für alle fünf Tanker und anschließend 180 Sekunden gemeinsame `EXECUTING`-Zeit. Erst danach wird für den Acceptance-Zweck die Schwelle auf 99 Prozent angehoben. Nach `FuelLow -> AUFTRAG:Cancel()` wird die Distanz zum zugewiesenen Egress-Gate beobachtet; innerhalb von 10 NM erfolgt der testweise `OPSGROUP:Despawn(1, true)` als physischer Off-map-Handoff. CampaignState wird dabei noch nicht verändert.
+
+Die dabei geloggten Fuelwerte an Track-Entry, FuelLow und Egress-Gate sowie die Zeitstempel sollen die nächste belastbare Grundlage für die spätere Off-map-/CampaignState-Fuelbilanz liefern.
 
 ## 6. Acceptance-Bedarf
 
@@ -154,6 +159,7 @@ Damit bleiben maximal zwei Tanker-`AUFTRAG` gleichzeitig ausfuehrend. Ein bereit
 - AIRWING-/WAREHOUSE-Übernahme des geplanten Initial-Fuelwerts beim Air-Spawn;
 - `GetFuelMin()`-/`FuelLow`-Verhalten des KC-135 unter tatsächlichem Offload;
 - Track-Exit-/Egress-Verhalten bei area-spezifischer Fuel-Schwelle;
-- gestaffelte Clancy/Nelson/Homer-Aktivierung innerhalb der Support-Concurrency-Grenze;
-- off-map Origin-/Recovery-Bilanz;
+- kontrollierter physischer Off-map-Handoff am Egress-Gate;
+- Five-tanker Concurrency-/Performancebefund als isolierte Testevidenz, nicht als Produktionsgrenze;
+- off-map Origin-/Recovery-Bilanz und spätere CampaignState-Abrechnung;
 - Multiplayer-, Persistenz- und Missionsneustarttests.
