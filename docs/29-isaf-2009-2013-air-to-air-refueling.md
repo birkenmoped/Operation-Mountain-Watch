@@ -10,8 +10,8 @@ authoritative_for:
   - OMW 2011-compatible corrected AAR production-planning geometry
   - OMW operational AAR core-area roles and source-domain decisions
   - current production-facing FAST/SLOW and external-origin rules
-  - OMW off-map KC-135 strategic design stock
-  - AAR production integration status and remaining work
+  - OMW off-map KC-135 strategic design stock and lifecycle semantics
+  - AAR production integration status and remaining acceptance work
 not_authoritative_for:
   - historical operational ACO authenticity
   - undocumented DCS behavior outside the recorded acceptance scope
@@ -27,66 +27,43 @@ validated_in_dcs: partial
 
 # 29 – ISAF 2009–2013: Air-to-Air Refuelling und OMW-AAR-Baseline
 
-## 1. Einordnung
+## 1. Einordnung und Evidenzgrenze
 
-Dieses Dokument ist die verbindliche AAR-Planungs- und Designreferenz für **Operation Mountain Watch**. Es verbindet:
+Dieses Dokument ist die verbindliche AAR-Planungs- und Designreferenz für **Operation Mountain Watch**. Es konsolidiert die OMW-Entscheidungen zu Geometrie, Core-Areas, FAST/SLOW, External Origins, Tankeridentität, Relief, CampaignState und dem nächsten gemeinsamen Acceptance-Scope.
 
-- die ursprüngliche ACO-/AAR-Quellenaufnahme;
-- die für OMW korrigierte 2011-AIP-kompatible Geometrie;
-- den geprüften MOOSE-/DCS-Runtimepfad;
-- die aktuellen Eigentümerentscheidungen zu Kern-AAR-Areas, FAST/SLOW-Rollen und External Origins;
-- die strategischen Off-map-KC-135-Designbestände;
-- den aktuellen Stand der produktiven AAR-Integration und die noch offenen Arbeiten.
-
-Der vollständige frühere Quellen-, Tabellen-, KMZ- und CombatFlite-Auswertungstext bleibt erhalten:
+Der vollständige frühere Quellen-, Tabellen-, KMZ- und CombatFlite-Auswertungstext bleibt als Source-Evidence erhalten:
 
 - [`Legacy-AAR-/ACO-Quellenfassung`](evidence/source-records/legacy-29-isaf-aar-aco-source-capture.md)
 
-Ergänzende fachliche Grundlagen:
+Ergänzend gelten:
 
 - [`OMW-AIR-TASKING-AIRSPACE-CAS-REQUESTS`](54-air-tasking-airspace-control-cas-requests-and-mission-data.md)
 - [`OMW-AIR-AFGHANISTAN-AIP-2008`](72-afghanistan-aip-2008-airspace-aerodromes-and-flight-procedures.md)
 - [`OMW-MOOSE-ISR-FAC-CAS-AAR`](moose/ISR-FAC-CAS-AAR.md)
+- [`OMW-ARCH-CAMPAIGN-STATE`](04-campaign-state.md)
 
-## 2. Quellenstatus und Evidenzgrenzen
+AIP-Reporting-Points und Airways belegen die veröffentlichte Airspace-Struktur. Sie beweisen nicht, dass konkrete historische KC-135-Sorties exakt diesen Routen folgten. OMW-Callsigns, Tracks und Designbestände sind Projektentscheidungen, soweit nicht ausdrücklich anders gekennzeichnet.
 
-```yaml
-source_author: Graveyard of Empires
-patreon_parts_available: 3/3
-pdf_table: evaluated
-kmz_geometry: extracted
-combatflite_cf: technically_evaluated
-source_status: SOURCE_CAPTURE_COMPLETE
+## 2. Verbindliche OMW-Geometrie
+
+Die produktive Geometrie ist auf den für OMW maßgeblichen 2011er AIP-Luftraum abgestimmt:
+
+```text
+data/air-operations/aar/omw-2011-aar-areas.csv
+data/air-operations/aar/omw-2011-aar-areas.geojson
 ```
-
-Die Graveyard-of-Empires-Daten bleiben Quellenreferenz für Benennung, Höhenblöcke, Netze, TACAN und das grundsätzliche Lagebild. Die daraus extrahierte Geometrie ist jedoch nicht die produktive OMW-Geometrie, sobald sie mit dem für OMW maßgeblichen 2011er AIP-Luftraum kollidiert.
-
-AIP-Reporting-Points und Airways belegen die veröffentlichte Airspace-Struktur. Sie beweisen nicht, dass eine konkrete historische KC-135-Sortie exakt diesen zivilen Airway flog. Ebenso sind die OMW-Tanker-Callsigns Projektzuweisungen und keine historischen Sortie-Behauptungen.
-
-## 3. Verbindliche OMW-Geometrie
-
-Am 14.08.2026 entschied der Projektinhaber, konfliktbehaftete Source-Tracks so zu korrigieren, dass die geplante Refuelling-Linie außerhalb der maßgeblichen 2011-Airways sowie relevanter Class-C-/Class-D-Lufträume liegt.
 
 Verbindlich:
 
-1. alle 19 Areas bleiben als Geometrien erhalten;
-2. die 35-NM-Grundform bleibt soweit möglich erhalten;
-3. die produktive Geometrie steht in:
-   - `data/air-operations/aar/omw-2011-aar-areas.csv`
-   - `data/air-operations/aar/omw-2011-aar-areas.geojson`;
-4. die ursprünglichen `isaf-2009-2013-*`-Daten bleiben Source-Evidence;
-5. die drei LA/HAAR-Areas bleiben deaktiviert, solange kein genehmigter passender Tanker-/Mod-Pfad existiert.
+- alle 19 Areas bleiben als Geometrien erhalten;
+- die 35-NM-Grundform bleibt soweit möglich erhalten;
+- die produktive Geometrie vermeidet die dokumentierten Konflikte mit relevanten Airways und Class-C-/Class-D-Lufträumen;
+- die ursprünglichen `isaf-2009-2013-*`-Daten bleiben Source-Evidence;
+- die drei LA/HAAR-Areas bleiben deaktiviert, solange kein genehmigter passender Tanker-/Mod-Pfad existiert.
 
-```yaml
-geometry_status: OMW_2011_AIP_CORRECTED
-historical_claim: false
-```
+## 3. Operatives AAR-Kernnetz
 
-## 4. Aktuelles operatives AAR-Kernnetz
-
-Die produktive Kernstruktur wird auf sechs Areas konzentriert. Die übrigen HA-Areas bleiben strategische Reserve-/Alternativgeometrien.
-
-| Region | Area | Rolle | Receiver-Profil | Primäre Source Domain |
+| Region | Area | Rolle | Receiver-Profil | Source Domain |
 |---|---|---|---|---|
 | WEST | `LISA` | RC-West / Shindand | FLEX | `MANAS` |
 | CENTRAL | `MOE` | Swing / Reserve / Central Support | FLEX | `MANAS` |
@@ -95,21 +72,19 @@ Die produktive Kernstruktur wird auf sechs Areas konzentriert. Die übrigen HA-A
 | EAST | `PATTY` | primärer A-10-/RC-East-Support | SLOW | `MANAS` |
 | NORTHEAST | `NELSON` | primärer Fast-Jet-Support | FAST | `MANAS` |
 
-Maschinenlesbare Fassung:
+Maschinenlesbar:
 
 - `data/air-operations/aar/omw-2011-aar-operational-core.csv`
 
-### 4.1 FAST/SLOW
-
-Verbindliche Rollenentscheidung:
+Verbindliche Rollen:
 
 ```text
-NELSON -> FAST -> F-15E / F-16C
-PATTY  -> SLOW -> A-10C
-MILHOUSE -> SLOW -> A-10 Recovery / Kandahar Return
-KRUSTY   -> SLOW -> A-10 Recovery East / Southeast
-MOE      -> FLEX / Swing
-LISA     -> FLEX / RC-West
+NELSON    -> FAST -> F-15E / F-16C
+PATTY     -> SLOW -> A-10C
+MILHOUSE  -> SLOW -> A-10 Recovery / Kandahar Return
+KRUSTY    -> SLOW -> A-10 Recovery East / Southeast
+MOE       -> FLEX / Swing
+LISA      -> FLEX / RC-West
 ```
 
 Für zwei unabhängige Tanker im selben AAR-Gebiet gilt weiterhin:
@@ -120,53 +95,54 @@ FAST oben
 mindestens 3,000 ft vertikale Tanker-zu-Tanker-Staffelung
 ```
 
-Die Acceptance-6-Konfiguration `FL220 / 220 KIAS` SLOW und `FL250 / 300 KIAS` FAST war ein erfolgreicher technischer Same-area-Test, wird aber nicht pauschal auf jede Area übertragen. Die endgültige Trackhöhe bleibt innerhalb des jeweiligen veröffentlichten Blocks area-spezifisch.
+## 4. Produktive Station-Identitäten
 
-### 4.2 Produktive Station-Identitäten
+| Area | Station-Callsign | Radio | TACAN | Initial Fuel | FuelLow |
+|---|---|---:|---|---:|---:|
+| `NELSON` | `Texaco 1-1` | 384.400 AM | 47Y `NEL` | 96 % | 20 % |
+| `PATTY` | `Texaco 2-1` | 237.300 AM | 48Y `PAT` | 96 % | 21 % |
+| `LISA` | `Texaco 3-1` | 235.900 AM | 50Y `LIS` | 96 % | 24 % |
+| `MOE` | `Texaco 4-1` | 243.400 AM | 52Y `MOE` | 96 % | 22 % |
+| `KRUSTY` | `Arco 2-1` | 258.300 AM | 42Y `KRU` | 90 % | 27 % |
+| `MILHOUSE` | `Shell 2-1` | 272.600 AM | 58Y `MIL` | 90 % | 27 % |
 
-| Area | Station-Callsign | Radio | TACAN |
-|---|---|---:|---|
-| `NELSON` | `Texaco 1-1` | 384.400 AM | 47Y `NEL` |
-| `PATTY` | `Texaco 2-1` | 237.300 AM | 48Y `PAT` |
-| `LISA` | `Texaco 3-1` | 235.900 AM | 50Y `LIS` |
-| `MOE` | `Texaco 4-1` | 243.400 AM | 52Y `MOE` |
-| `KRUSTY` | `Arco 2-1` | 258.300 AM | 42Y `KRU` |
-| `MILHOUSE` | `Shell 2-1` | 272.600 AM | 58Y `MIL` |
+Der produktive Controller trennt physische Transitidentität und veröffentlichte Station-Identität:
 
-Der aktuelle Produktionscontroller trennt **physische Tankeridentität im Transit** von der **operativen Station-Identität**. Jeder materialisierte Tanker erhält zunächst einen reservierten Transit-Rufnamen aus den Nummern 5–9 und eine eindeutige Link-16-STN-Basis. Funk und TACAN sind dabei ausgeschaltet.
+```text
+TRANSIT
+- reservierter Transit-Callsign
+- eindeutige STN je physischer Tankerrepräsentation
+- Station-Radio OFF
+- Station-TACAN OFF
 
-Erst beim Erreichen des Track-Entry-Radius wird die Station-Identität über die source-geprüften MOOSE-Pfade `OPSGROUP:SwitchCallsign(...)`, `SwitchRadio(...)` und `SwitchTACAN(...)` aktiviert. Vor Egress wird sie über `TurnOffRadio()`, `TurnOffTACAN()` und Rückschaltung auf den Transit-Rufnamen wieder entfernt. Damit besitzt während des geplanten Handover-Fensters nur der aktuelle Station Owner die veröffentlichte Station-Identität.
+ON STATION
+- area-spezifischer Station-Callsign
+- area-spezifische Frequenz
+- area-spezifischer Y-TACAN
 
-Diese neue Identity-Handover-Logik ist **source-reviewed und implementiert, aber noch nicht in DCS validiert**. Die ältere Integration-3 bestätigt nur den vorherigen area-spezifischen Callsign-Pfad.
+EGRESS
+- Station-Radio OFF
+- Station-TACAN OFF
+- zurück auf Transit-Callsign
+```
+
+Die dazu verwendeten MOOSE-Methoden sind source-reviewed; der konkrete neue Identity-Handover ist noch nicht in DCS validiert.
 
 ## 5. External Origins und Transit
 
-Eigentümerentscheidung:
-
 ```text
-SOUTH / AL UDEID:
-- MILHOUSE
-- KRUSTY
-
-NORTH / MANAS:
+MANAS:
 - LISA
 - MOE
 - PATTY
 - NELSON
+
+AL_UDEID:
+- MILHOUSE
+- KRUSTY
 ```
 
-Die frühere Annahme, fast alle aktiven Tanker über einen einzigen südlichen Gatepunkt zu führen, ist verworfen. Die AIP zeigt mehrere veröffentlichte Kabul-FIR-Entry-/Exit-Punkte aus Pakistan, Tajikistan, Uzbekistan und Turkmenistan.
-
-Planungsdaten:
-
-- `data/air-operations/aar/omw-2011-aar-origin-comparison.csv`
-- `data/air-operations/aar/omw-2011-aar-entry-gate-analysis.csv`
-
-Wichtig: Die Distanzanalyse ist ein Planungswerkzeug. Die aktuelle Source-Domain-Entscheidung des Projektinhabers hat Vorrang vor einer rein geometrischen Minimaldistanz.
-
-### 5.1 Externe Gates und High-Transit-Profile
-
-Produktiv verwendet:
+Gates und High-Transit-Profile:
 
 ```text
 MANAS gate:
@@ -188,76 +164,97 @@ ingress FL330
 egress  FL340
 ```
 
-Verbindliches Prinzip:
+Produktiver Pfad:
 
 ```text
 External Gate
--> hoher, kraftstoffeffizienter Transit
--> Sinkflug auf area-spezifische Trackhöhe
--> AAR-Racetrack
--> realer FuelLow/Bingo-Punkt
--> Egress
--> hoher Rücktransit
+-> high transit
+-> track entry
+-> AAR station
+-> scheduled/FuelLow/demand-end transition
+-> high egress
 -> External Gate
--> kontrollierter Off-map-Handoff
+-> controlled off-map handoff
 ```
 
-### 5.2 Strategische Off-map-KC-135-Designbestände
+Source-domain Materialisierung:
 
-Der Projektinhaber hat am 15.08.2026 folgende **OMW-Designbestände** festgelegt:
+```text
+MANAS: mindestens 60 s zwischen zwei Materialisierungen
+AL_UDEID: mindestens 60 s zwischen zwei Materialisierungen
+MANAS und AL_UDEID dürfen parallel materialisieren
+```
+
+## 6. Strategische Off-map-KC-135-Pools
+
+OMW-Designbestände:
 
 ```text
 OFFMAP_MANAS
-AIRCRAFT_KC135 = 16
+AIRCRAFT_KC135 = 16 count
 
 OFFMAP_AL_UDEID
-AIRCRAFT_KC135 = 40
+AIRCRAFT_KC135 = 40 count
 ```
 
-Diese Werte sind **keine Behauptung einer historisch exakt zugewiesenen Flugzeugstärke**. Die exakte historische Assigned Strength ist nicht belegt. Die Werte sind bewusst plausible, spielbare OMW-Kompositbestände.
+Diese Werte sind keine Behauptung einer historisch exakt zugewiesenen Aircraft Strength. Dokumentierte Google-Earth-Auswertungen zeigten für MANAS 11 sichtbare KC-135 (06/2010), 13 (03/2011), 9 (07/2011), 8 (07/2012) und für AL UDEID ungefähr 27 (07/2010) beziehungsweise 33 (08/2011). Die OMW-Werte 16/40 sind bewusst plausible Komposit-Designbestände.
 
-Für `MANAS` liegen mehrere vom Projektinhaber ausgewertete Google-Earth-Satelliten-Snapshots vor:
+MANAS und AL UDEID besitzen auf der DCS-Afghanistan-Karte keine nutzbare DCS-Airbase. Es werden deshalb **keine** künstlichen DCS-Airbases, MOOSE WAREHOUSEs oder AIRWINGs für diese Pools erzeugt.
+
+Der strategische Vertrag ist count-basiert:
 
 ```text
-06/2010: 11 sichtbare KC-135
-03/2011: 13 sichtbare KC-135
-07/2011:  9 sichtbare KC-135
-07/2012:  8 sichtbare KC-135
+AVAILABLE count
+-> materialization consumes 1 AIRCRAFT_KC135
+-> COMMITTED is represented by the consumed CampaignState transaction
+
+confirmed off-map handoff
+-> exact-once +1 AIRCRAFT_KC135
+-> immediately AVAILABLE
+
+aircraft loss
+-> no AIRCRAFT_KC135 recredit
+-> exact-once +1 AIRCRAFT_KC135_LOST audit counter
 ```
 
-Der sichtbare Ramp-Bestand ist eine Momentaufnahme und bildet nicht gleichzeitig fliegende, gewartete, rotierende oder außerhalb des Bildausschnitts befindliche Maschinen ab. `16` ist deshalb eine plausible OMW-Designstärke oberhalb des direkt sichtbaren Maximums von 13.
+Es gibt keine strategischen Tail Numbers, kein Template-Inventar und **keinen regulären Turnaround-Timer**.
 
-Für `AL_UDEID` liegen folgende ausgewertete Snapshots vor:
+`AIRCRAFT_KC135_LOST` ist nur ein persistenter kumulativer Audit-Zähler. Er ist niemals Verfügbarkeits- oder Materialisierungsquelle.
+
+## 7. CampaignState- und Runtime-Verdrahtung
+
+Produktive Module:
 
 ```text
-07/2010: ca. 27 sichtbare KC-135
-08/2011: ca. 33 sichtbare KC-135
+scripts/logistics/OMW_AARStrategicStock.lua
+scripts/logistics/OMW_AirOpsCampaignStateInitializer.lua
+scripts/air-operations/OMW_AAR_CampaignStateAdapter.lua
+scripts/air-operations/OMW_AAR_RuntimeIntegration.lua
+scripts/air-operations/OMW_AAR_Controller.lua
 ```
 
-Zusätzlich sind auf den Bildern weitere große Spezial-/Tanker-ähnliche Muster sichtbar, deren genaue Rolle aus der Satellitendraufsicht nicht sicher bestimmt wird und die deshalb nicht in den KC-135-Zählwert eingehen. `40` ist als strategischer OMW-Designbestand angesichts des beobachteten Ramp-Bestands und des regionalen Großknotencharakters plausibel.
-
-### 5.3 Keine künstliche MOOSE-Airbase für Off-map-Pools
-
-`MANAS` und `AL_UDEID` liegen außerhalb der DCS-Afghanistan-Karte und besitzen dort keine nutzbare DCS-Airbase. Daher werden für diese strategischen Pools **keine künstlichen DCS-Airbases, MOOSE-WAREHOUSE-Instanzen oder AIRWINGs** erzeugt.
-
-Verbindliche Abstraktion:
+Verbindlicher Pfad:
 
 ```text
-CampaignState Off-map count pool
--> OMW AAR CampaignState adapter
--> MOOSE SPAWN at external gate
--> FLIGHTGROUP
--> AUFTRAG
--> mission / relief lifecycle
--> external gate / confirmed off-map handoff
--> CampaignState exact-once recredit
+single authoritative CampaignState store
+-> OMW_AAR_CampaignStateAdapter
+-> OMW_AAR_Controller
+-> MOOSE SPAWN / FLIGHTGROUP / AUFTRAG
 ```
 
-Der aktuelle strategische Vertrag ist bewusst **count-basiert**. Es gibt keine per-tail Aircraft-Entität, kein strategisches Template-Inventar und keinen regulären Turnaround-Timer. Materialisierung verbraucht genau eine `AIRCRAFT_KC135`; nur ein bestätigter Off-map-Handoff schreibt genau eine Einheit zurück. Ohne bestätigten Handoff erfolgt keine Recreditierung.
+`OMW_AAR_RuntimeIntegration.Attach(...)` erzeugt keinen zweiten Store. Der Caller stellt den bereits über NEW oder RESTORE aufgebauten CampaignState-Store bereit. Bei RESTORE führt der Adapter die AAR-Reconciliation aus und wird danach in den Controller injiziert.
 
-MOOSE bleibt für den physischen Tanker-Lifecycle zuständig. CampaignState bleibt alleinige strategische Ressourcenautorität.
+Adaptervertrag:
 
-## 6. MOOSE-First-Runtimepfad
+```text
+CanMaterialize(selection)
+OnMaterialized(selection, runtime)
+OnHandoff(selection, runtime)
+OnLost(selection, runtime, reason)
+ReconcileRestore()
+```
+
+## 8. MOOSE-First-Runtimepfad
 
 Gepinnter Stand:
 
@@ -267,93 +264,126 @@ MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
 Moose.lua SHA-256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
 ```
 
-Source-reviewed und im aktuellen Produktionscontroller verwendete Pfade umfassen insbesondere:
-
-- `AUFTRAG:NewTANKER(...)`
-- `AUFTRAG:SetMissionIngressCoord(...)`
-- `AUFTRAG:SetMissionEgressCoord(...)`
-- `AUFTRAG:Cancel()`
-- `SPAWN:InitCallSign(...)`
-- `SPAWN:InitSTN(...)`
-- `GROUP:GetCallsign()`
-- `GROUP:GetFuelMin()`
-- `FLIGHTGROUP:GetFuelMin()`
-- `FLIGHTGROUP:SetFuelLowThreshold(...)`
-- `FLIGHTGROUP:SetFuelLowRTB(false)`
-- `OPSGROUP:SwitchCallsign(...)`
-- `OPSGROUP:SwitchRadio(...)`
-- `OPSGROUP:TurnOffRadio()`
-- `OPSGROUP:SwitchTACAN(...)`
-- `OPSGROUP:TurnOffTACAN()`
-- `COORDINATE:Get2DDistance(...)`
-- `COORDINATE:Get3DDistance(...)`
-- `OPSGROUP:Despawn(...)`
-
-Die stationbezogenen `Switch*`-/`TurnOff*`-Pfade sind im gepinnten `Moose.lua` source-reviewed. Ihr neuer produktiver Einsatz für Transit-/Station-Identity-Handover besitzt noch keinen DCS-Nachweis und darf bis dahin nicht als `VALIDATED` bezeichnet werden.
-
-### 6.1 Tankerauswahl – wichtige Framework-Grenze
-
-Der gepinnte MOOSE-Quellstand wählt in `AIRWING:GetTankerForFlight(flightgroup)` unter kompatiblen Tankern nach Refuelling-System und anschließend nach 2D-Distanz. Eine OMW-spezifische FAST/SLOW-Klasse wird dort nicht ausgewertet.
-
-`FLIGHTGROUP:Refuel(Coordinate)` routet den Receiver zu einem Refuel-Waypoint und erzeugt anschließend `TaskRefueling()`. Der Pfad bindet keine konkrete Tanker-ID; DCS refuelt am nächstgelegenen kompatiblen Tanker.
-
-Daraus folgt für OMW:
+Source-reviewed und im produktiven Scope relevant:
 
 ```text
-MissionDemand / OMW-Planung
--> passende AAR-Area wählen
--> FAST/SLOW-Profil bestimmen
--> benötigten Tanker in dieser Area materialisieren
--> Receiver zum passenden Refuel-Waypoint schicken
+AUFTRAG:NewTANKER(...)
+AUFTRAG:SetMissionIngressCoord(...)
+AUFTRAG:SetMissionEgressCoord(...)
+AUFTRAG:Cancel()
+
+SPAWN:InitCallSign(...)
+SPAWN:InitSTN(...)
+
+FLIGHTGROUP:SetFuelLowThreshold(...)
+FLIGHTGROUP:SetFuelLowRTB(false)
+FLIGHTGROUP FuelLow callback
+FLIGHTGROUP Dead / onafterDead
+OnAfterDead callback override
+
+OPSGROUP:SwitchCallsign(...)
+OPSGROUP:SwitchRadio(...)
+OPSGROUP:TurnOffRadio()
+OPSGROUP:SwitchTACAN(...)
+OPSGROUP:TurnOffTACAN()
+OPSGROUP:Despawn(...)
+
+COORDINATE:Get2DDistance(...)
+COORDINATE:Get3DDistance(...)
+SCHEDULER:New(...)
 ```
 
-Der COMMANDER darf die strategische Rollenentscheidung nicht stillschweigend ersetzen. Die Steuerung erfolgt oberhalb des nativen Near-Tanker-Verhaltens durch Area-/Profilwahl und räumliche Trennung.
+Die MOOSE-Details und Evidenzgrenzen stehen in [`OMW-MOOSE-ISR-FAC-CAS-AAR`](moose/ISR-FAC-CAS-AAR.md) und [`OMW-MOOSE-CLASS-INDEX`](moose/PROJECT-CLASS-INDEX.md). Neue Relief-/Identity-/Dead-Pfade bleiben bis zum DCS-Nachweis `SOURCE_REVIEWED`.
 
-### 6.2 Relief-Lifecycle
+## 9. Relief-, FuelLow- und Demand-End-Lifecycle
 
-Der aktuelle Controller nutzt keine eigene Tankerflugmechanik, sondern koordiniert MOOSE-Primitiven als kleine Station-Orchestrierungsschicht:
+Nominal:
 
 ```text
 ACTIVE
--> 3 h nominal station cycle
--> RELIEF_INBOUND queued early enough for approximately 5 min ETA at handover
--> outgoing station identity removed + AUFTRAG Cancel/Egress
--> relief reaches track-entry radius
--> relief receives station identity
--> actual takeover time starts the next 3 h cycle
+-> 3 h station cycle from actual takeover
+-> RELIEF_INBOUND launched for approximately 5 min ETA at handover
+-> outgoing station identity OFF + AUFTRAG Cancel/Egress
+-> relief reaches track entry
+-> station identity ON for relief
+-> next 3 h cycle
 ```
 
-Pro Station sind höchstens ein `ACTIVE` und ein `RELIEF_INBOUND` vorgesehen. `FuelLow` fungiert als Fallback: ein bereits geplanter Relief wird weiterverwendet; andernfalls wird genau ein Emergency Relief angefordert. Ein zweiter paralleler Relief derselben Station wird nicht erzeugt.
+FuelLow:
 
-Diese Relief-/Handover-Orchestrierung ist implementiert und MOOSE-first source-reviewed, aber noch nicht im DCS-Lauf bestätigt.
+```text
+ACTIVE FuelLow
+-> use existing relief OR queue exactly one emergency relief
+-> outgoing Cancel/Egress
+-> no duplicate relief
+```
 
-## 7. FuelLow, Initial Fuel, Bingo und Egress
+MissionDemand-Ende – Eigentümerentscheidung A:
 
-Produktive Initial-Fuel- und FuelLow-Werte:
+```text
+last demand COMPLETE / CANCELLED / ABORTED
+-> close station immediately
+-> remove queued relief
+-> ACTIVE Egress
+-> RELIEF_INBOUND Egress
+-> no further relief cycle
+```
 
-| Area | Source | Initial Fuel | FuelLow |
-|---|---|---:|---:|
-| `LISA` | MANAS | 96 % | 24 % |
-| `MOE` | MANAS | 96 % | 22 % |
-| `MILHOUSE` | AL_UDEID | 90 % | 27 % |
-| `KRUSTY` | AL_UDEID | 90 % | 27 % |
-| `PATTY` | MANAS | 96 % | 21 % |
-| `NELSON` | MANAS | 96 % | 20 % |
+Existiert noch ein anderer aktiver Demand für dieselbe Area-/Profil-Station, bleibt die Station aktiv.
 
-Für den produktiven Betrieb gilt:
+## 10. Aircraft Loss
 
-1. keine künstlich beschleunigten Acceptance-FuelLow-Schwellen;
-2. `FLIGHTGROUP:SetFuelLowRTB(false)` verhindert den ungeeigneten Standard-RTB zu einer DCS-Homebase;
-3. die area-spezifische `SetFuelLowThreshold(...)`-Schwelle löst den projektspezifischen Egress-/Relief-Lifecycle aus;
-4. `FuelLow -> ensure one relief -> Cancel -> Egress -> External Gate -> Off-map-Handoff` bleibt der produktive Ablauf;
-5. verbleibender Onboard-Fuel wird nicht als eigene strategische Ressourcenhoheit geführt;
-6. CampaignState führt ausschließlich die count-basierte strategische KC-135-Verfügbarkeit; bestätigter Handoff recreditiert exakt einmal.
+Der gepinnte MOOSE-Stand besitzt den `FLIGHTGROUP`-`Dead`-/`onafterDead`-FSM-Pfad. Der aktuelle Controller nutzt einen `OnAfterDead`-Callback für den AAR-Loss-Vertrag:
 
-## 8. Runtime-Acceptance – belegter Stand
+```text
+FLIGHTGROUP Dead
+-> OnAfterDead
+-> strategic adapter OnLost
+-> no AIRCRAFT_KC135 recredit
+-> AIRCRAFT_KC135_LOST +1 exactly once
+-> runtime and transit-identity cleanup
+-> replacement only if station demand remains
+```
 
-Acceptance-2 bis Acceptance-6 haben den Tankermechanikpfad schrittweise belastbar gemacht.
+Das ist MOOSE-first source-reviewed. Der konkrete AAR-Loss-Pfad ist noch nicht DCS-validiert.
 
-### 8.1 Acceptance-6 Provenienz
+## 11. Snapshot / Restore
+
+CampaignState persistiert Ressourcenstände, Transaktionen und idempotente Resource-Credits. Der Adapter reconciled AAR-Commitments bei Restore vor neuer Materialisierung:
+
+```text
+consumed commitment + loss credit
+-> permanent loss remains
+
+consumed commitment + handoff/restart credit
+-> already resolved
+
+consumed commitment without handoff/loss/restart credit
+-> previous transient DCS representation no longer exists after restart
+-> exact-once AIRCRAFT_KC135 restart credit
+```
+
+Die Restore-Recreditierung ist **kein historischer oder physischer Handoff-Nachweis**. Sie ist die deterministische Auflösung einer nicht mehr existierenden transienten DCS-Repräsentation im count-basierten No-tail-Modell.
+
+Grenze: Wird ein Tanker zerstört und fällt der Server aus, bevor das Dead-/Loss-Ereignis in einen Snapshot gelangt, kann Restore diesen nicht persistierten Verlust nicht nachträglich beweisen.
+
+## 12. Operative Concurrency
+
+Unabhängig vom strategischen Gesamtbestand gilt produktiv:
+
+```text
+maxConcurrentSupportMissions = 2
+maxAircraftPerSupportMission = 2
+maxConcurrentSupportAircraft = 4
+```
+
+Der Controller setzt diese Grenzen vor Materialisierung durch. Ein Relief gehört zum vorhandenen Station-/Support-Mission-Slot. Physisch noch vorhandene Egress-Tanker zählen bis Handoff oder Loss gegen das globale Aircraft-Limit.
+
+`16/40` bleibt strategischer Bestand und ist **kein Spawnlimit**.
+
+## 13. Belegter DCS-Stand
+
+### 13.1 Acceptance-6
 
 ```text
 Testdatum: 2026-08-14
@@ -366,215 +396,72 @@ Mission SHA-256: 39da8370753e3ece055f0fd9f9dcc5dbeed2aa2eebe4540756931944f200963
 DCS: 2.9.28.26385 MT
 MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
 Moose.lua SHA-256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
-dcs.log SHA-256: 8463b2ba50c53403002db2645fd0a3870e9e2d4a357c823f59df8ccb0f4eb58b
-debrief.log SHA-256: 5741958a9812d3148a62e37b5a9f36d5692e9c35a6ac6e8c47b214b826843800
 ```
 
-Belegt für diesen exakten Stand:
+Belegt:
 
-- fünf KC-135 gleichzeitig als Stress-Test-Ausnahme;
-- alle fünf Tankermissionen `EXECUTING`;
-- SLOW/FAST im selben Bereich mit 3.000 ft Staffelung;
+- fünf KC-135 gleichzeitig als isolierte Stress-Test-Ausnahme;
+- Tankermissionen `EXECUTING`;
+- Same-area SLOW/FAST mit 3.000 ft Staffelung;
 - Boom-AAR mit A-10C, F-15E und F-16C;
-- plausible positive Fuel-Zunahme der Receiver;
-- FuelLow -> Cancel -> Egress -> <=10 NM Gate -> Off-map-Handoff;
+- FuelLow -> Cancel -> Egress -> Gate -> Off-map-Handoff;
 - Y-Band-TACAN-Grundpfad.
 
-### 8.2 Production Integration-3 / 3R1
+### 13.2 Production Integration-3 / 3R1
 
-Aktiver Branch:
+Integration-3 auf Commit `4a6bef1c8a5b8f67606762e10c516610f970e491` beobachtete:
 
-```text
-agent/aar-runtime-finalization
-```
+- sechs MissionDemand-Mappings;
+- sechs area-spezifische Templates;
+- damalige area-spezifische Callsigns;
+- vier Same-source-Folgeabstände von `60.0 s`;
+- parallele MANAS-/AL-UDEID-Materialisierung.
 
-Owner-run Integration-3 auf Commit:
+Die beiden False Negatives des Harness betrafen Callsign-Darstellung und einen zu frühen Fuel-Read. `3R1` korrigiert diese Harnessfehler und wurde auf Eigentümerentscheidung nicht allein deshalb erneut in DCS ausgeführt.
 
-```text
-4a6bef1c8a5b8f67606762e10c516610f970e491
-```
+### 13.3 Owner-lokale Source-/Build-Checkpoints
 
-Praktisch beobachtet:
+Die auf dem Branch dokumentierten Owner-Checkpoints bis einschließlich `354fbbcdfcef7102eb1e9fe7207f97ef473cdc2f` bestätigen reale Pull-/Build-/Hash-Stände, jedoch **nicht** DCS-Verhalten der danach implementierten finalen Produktionsintegration.
 
-- alle sechs MissionDemand-Mappings/Submissions;
-- alle sechs area-spezifischen Templates;
-- korrekte operative Callsigns in DCS/Controller-Logs;
-- alle vier erforderlichen Same-source-Abstände mit 60.0 s;
-- parallele Materialisierung aus MANAS und AL_UDEID.
+## 14. Keine unnötigen Wiederholungstests
 
-Integration-3 enthielt zwei Harness-only False-Negatives:
-
-- Callsign-Vergleich `Texaco21` gegen formatierte MOOSE/DCS-Rückgabe `Texaco2-1`;
-- unmittelbarer `GROUP:GetFuelMin()`-Read konnte vor plausibler Unit-Initialisierung Sentinel `65535` liefern.
-
-Der korrigierte Harness `AAR-PRODUCTION-INTEGRATION-3R1` normalisiert Callsign-Trenner und verschiebt die Fuel-Prüfung bis zu einem plausiblen `0..1`-Wert. Der Projektinhaber hat entschieden, **keinen weiteren DCS-Lauf allein wegen dieser Harness-Korrekturen durchzuführen**.
-
-Früher lokal verifizierter 3R1-Buildstand:
-
-```text
-Git commit: 65be64ed9f8f3b8cd38e2e4493d08892c0d01822
-BuilderVersion/TestId: AAR-PRODUCTION-INTEGRATION-3R1
-ControllerSHA256: a937b67874dded3bb31ffcb4e7ea60d186ffde21f1e43bcccac4cf43f9e2da97
-TestSourceSHA256: 2b5b195ef4b32dac12a4158b4f1e9aee23c18d85c847e480b3637f93e47a7b5d
-BundleSHA256: 4a5cb783bc592557d7b6dfb9cec5751a1762c04eb1d9d1bbad427feb67d81b54
-BuilderSHA256: BAD7395D1720ACAB9A8BD414ED57B8FEBBCDFB47B301BB92D76230C3064C77BC
-CallsignNormalization: true
-DeferredFuelRead: true
-ArtificialFuelLow: false
-FullTrackArrivalRequired: false
-MizMutation: false
-```
-
-### 8.3 Owner-lokaler CampaignState-Source-Checkpoint
-
-Am 15.08.2026 wurde nach Pull des Commits `7c244d49f5070b490784c2659be51f5c1739bb55` der neue CampaignState-Stock-/Adapter-Stand lokal geprüft. Das ist **kein DCS-Acceptance-Lauf**, sondern ein realer Source-/Build-/Hash-Nachweis.
-
-```text
-Git commit: 7c244d49f5070b490784c2659be51f5c1739bb55
-BuilderVersion/TestId: AAR-PRODUCTION-INTEGRATION-3R1
-ControllerSHA256: 0CFE2F12F5584606EA55E605D2CDC2D4F46FA458EAC2806406F1F5A0C4AE5D89
-TestSourceSHA256: 2b5b195ef4b32dac12a4158b4f1e9aee23c18d85c847e480b3637f93e47a7b5d
-BundleSHA256: 279CE58F94BBBA5AACFA2B3DEF2688E4DF9966CBD163C9393D14FEAE2DC85266
-CampaignStateAdapterSHA256: B35D9630B17C7A8C0D9ADA2332C98BE064A5AD091479ABAB3537D1F786F43771
-AARStrategicStockSHA256: 577D946520F2FC75B21E7920921F756AA6D979925CC11E8EFF1B16543A34986D
-AirOpsCampaignStateInitializerSHA256: 6FF1BF960F655A477DF84E5887B21715696A34B2B8E9CD74D49FEAA62B659C92
-CampaignStateDocSHA256: 606DECF6E6B47A851A189D6BD8A55C2A54067D6935C57A64FB1AFD3ECB077050
-MOOSECommit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
-MooseLuaSHA256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
-```
-
-Die geprüften AAR-CampaignState-Dateien waren unverändert zu `HEAD`; der bestehende 3R1-Builder lief erfolgreich. `git status --short` enthielt nur untracked generierte/testbezogene Artefakte und keine getrackte Source-Abweichung.
-
-## 9. Was nicht erneut getestet werden muss
-
-Für den gepinnten DCS-/MOOSE-Stand ist kein weiterer isolierter Test erforderlich für:
+Für denselben gepinnten DCS-/MOOSE-Stand müssen nicht erneut isoliert bewiesen werden:
 
 - KC-135 Spawn/Heading/Transit als Grundmechanik;
-- Racetrack und `EXECUTING`;
-- Funk/TACAN-Grundpfad;
-- Boom-AAR mit A-10C, F-15E und F-16C;
-- FAST/SLOW-Geschwindigkeitsunterschied;
-- 3.000-ft-Same-area-Staffelung;
-- Five-tanker-Stressverhalten;
+- Racetrack/EXECUTING;
+- Boom-AAR A-10C/F-15E/F-16C;
+- Y-Band-TACAN-Grundpfad;
+- FAST/SLOW-Grundmechanik und 3.000-ft-Same-area-Staffelung;
 - FuelLow/Cancel/Egress/Off-map-Handoff als Grundmechanik;
-- Integration-3R1-Harness-Korrekturen allein.
+- reine 3R1-Harness-Korrekturen.
 
-Noch **nicht** durch diese früheren Läufe bestätigt sind insbesondere der 3-h-Relief-Zyklus, die neue Transit-/Station-Identity-Umschaltung und die CampaignState-Consume-/Recredit-Kopplung.
+## 15. Nächster gemeinsamer Acceptance-Scope
 
-## 10. Aktuelle To-do-Liste bis zum produktiven Abschluss
+Der nächste DCS-Lauf ist gemäß Governance genehmigungspflichtig. Er soll die **neuen** produktiven Änderungen zusammenhängend prüfen:
 
-### Ziel A – Area-/Profilsteuerung und produktiver Tanker-Lifecycle
+1. CampaignState erkennt die unabhängigen MANAS-/AL-UDEID-Pools;
+2. Materialisierung konsumiert exakt eine KC-135;
+3. 2/2/4-Concurrency begrenzt die physische Materialisierung;
+4. Transit-/Station-Identity-Handover funktioniert ohne unzulässige Doppelidentität;
+5. Scheduled/FuelLow Relief erzeugt höchstens einen inbound Relief je Station;
+6. `COMPLETE`/`CANCELLED`/`ABORTED` schließt die letzte Demand-Station sofort;
+7. erfolgreicher Handoff recreditiert exakt einmal;
+8. `FLIGHTGROUP Dead` erzeugt `OnLost`, keinen Aircraft-Recredit und einen Loss-Audit;
+9. Restore-Reconciliation erzeugt keine Doppelcredits und erhält dokumentierte Losses;
+10. MANAS und AL UDEID bleiben strategisch unabhängig.
 
-**Implementiert:**
+Erst nach realem DCS-Nachweis werden die konkret bestätigten neuen Methoden/Pfade in `docs/moose/VERIFIED-METHODS.md` als praktisch bestätigt ergänzt.
 
-- Mapping auf `LISA/MOE/MILHOUSE/KRUSTY/PATTY/NELSON`;
-- sechs area-spezifische Mission-Editor-Templates;
-- High-Transit-Profile und Source-Gates;
-- Source-domain Spawnspacing 60 s;
-- produktive Initial-Fuel- und FuelLow-Werte;
-- nominaler 3-h-Station-Cycle;
-- maximal ein `ACTIVE` plus ein `RELIEF_INBOUND` je Station;
-- FuelLow-Fallback ohne doppelten Relief;
-- Transit-/Station-Identity-Trennung über öffentliche MOOSE-Methoden.
-
-**Noch zu tun:**
-
-1. MissionDemand-Ende/Cancel in die Stationslogik integrieren, damit nach beendetem Bedarf keine endlose Relief-Kette weiterläuft;
-2. finalen Receiver-Refuel-Waypoint-/MissionDemand-Anschluss in die übergeordnete Produktionssteuerung integrieren;
-3. neue Relief-/Identity-Logik erst nach genehmigtem DCS-Lauf als praktisch bestätigt einstufen.
-
-### Ziel B – CampaignState-Off-map-KC-135-Ressourcenvertrag
-
-**Implementiert und owner-lokal source/build-verifiziert:**
+## 16. Architekturgrenze
 
 ```text
-OFFMAP_MANAS    AIRCRAFT_KC135 = 16 count
-OFFMAP_AL_UDEID AIRCRAFT_KC135 = 40 count
+MissionDemand
+-> OMW AAR Controller
+-> operational concurrency
+-> CampaignState strategic adapter
+-> MOOSE physical tanker lifecycle
+-> observed runtime result
+-> CampaignState exact-once settlement
 ```
 
-- keine künstliche DCS-Airbase;
-- kein MOOSE WAREHOUSE für die Off-map-Pools;
-- kein AIRWING für MANAS/AL_UDEID;
-- Initializer-Schema v3 akzeptiert die beiden logischen Off-map-Knoten und mehrere zusätzliche Stockmodule;
-- `OMW_AAR_CampaignStateAdapter.lua` bindet die Controller-Grenze `CanMaterialize`, `OnMaterialized`, `OnHandoff`;
-- Materialisierung reserviert und konsumiert exakt eine KC-135-count-Ressource;
-- bestätigter Handoff recreditiert exakt einmal über eine runtime-stabile Credit-ID;
-- kein bestätigter Handoff bedeutet keine Recreditierung.
-
-### Ziel C – Verlust, Abbruch und Persistenz
-
-Der count-basierte Vertrag besitzt bewusst **keinen regulären Turnaround** und keine per-tail Aircraft-Recovery-Semantik. Die vorhandene Forced-Landing-Recovery bleibt davon getrennt.
-
-**Noch zu tun:**
-
-1. explizite Aircraft-Loss-Klassifikation/Logging ergänzen, ohne den fail-safe Grundsatz `no confirmed handoff -> no recredit` aufzuweichen;
-2. Mission abort mit erfolgreichem Off-map-Handoff als normale Rückkehr behandeln; ohne Handoff keine automatische Rückbuchung;
-3. Snapshot/Restore-Reconciliation definieren und prüfen, insbesondere für Saves während noch physische Tanker in der Luft sind;
-4. sicherstellen, dass Runtime-/Credit-IDs nach Restore keine doppelte Recreditierung erlauben.
-
-### Ziel D – Concurrency
-
-Produktiv bleibt unabhängig vom strategischen Gesamtbestand:
-
-```text
-maxConcurrentSupportMissions = 2
-maxAircraftPerSupportMission = 2
-maxConcurrentSupportAircraft = 4
-```
-
-Der strategische Pool `16/40` ist **kein Spawnlimit** und keine zweite operative Concurrency-Autorität. Die übergeordnete Produktionssteuerung muss die vorhandenen Limits weiter durchsetzen.
-
-### Ziel E – nächste DCS-Integration
-
-Kein weiterer Lauf für 3R1.
-
-Ein neuer DCS-Lauf benötigt gemäß Governance die ausdrückliche Eigentümerfreigabe. Sobald der produktive Scope dafür vollständig ist, muss er mindestens prüfen:
-
-1. verfügbare Off-map-count-Ressource wird korrekt erkannt;
-2. Materialisierung reduziert die strategische Verfügbarkeit genau einmal;
-3. 3-h-Relief-/Handover-Pfad erzeugt maximal einen Relief und wechselt die Station-Identität kontrolliert;
-4. operative Concurrency bleibt eingehalten;
-5. erfolgreicher Off-map-Handoff recreditiert genau eine KC-135;
-6. kein bestätigter Handoff erzeugt keine unzulässige Recreditierung;
-7. MANAS und AL_UDEID bleiben voneinander unabhängige Pools;
-8. Multiplayer/Persistenz-Reconciliation, soweit im Teststand aktiviert.
-
-### Ziel F – Dokumentation und Main-Integration
-
-Vor Abschluss müssen mindestens konsistent aktualisiert sein:
-
-- dieses Dokument `docs/29-isaf-2009-2013-air-to-air-refueling.md`;
-- `docs/04-campaign-state.md` für Off-map-Pools und count-basierte Tanker-Verfügbarkeit;
-- `docs/moose/PROJECT-CLASS-INDEX.md` für neu verwendete/relevante MOOSE-Pfade;
-- `docs/moose/ISR-FAC-CAS-AAR.md`;
-- `docs/moose/VERIFIED-METHODS.md` erst für neue Methoden, die tatsächlich im DCS-Lauf bestätigt wurden;
-- `mission/tests/aar-production-integration/README.md` vor dem nächsten Acceptance-Stand;
-- `docs/DOCUMENT-REGISTRY.md` und `docs/SUBPROJECT-REGISTRY.md`, soweit Status/PR/Abhängigkeiten betroffen sind.
-
-Branch-Arbeit bleibt auf:
-
-```text
-agent/aar-runtime-finalization
-PR #101
-```
-
-Die branch-spezifischen Inhalte werden **nicht durch einen parallelen Direkt-Commit auf `main` dupliziert**. Nach produktiver Integration und dokumentierter Acceptance wird PR #101 nach `main` integriert; anschließend wird `source_commit: PENDING_MERGE` durch den realen Integrations-Commit ersetzt und die Main-Register-/Dokumentationsreconciliation durchgeführt. Damit liegt derselbe fachliche Stand ohne divergierende Doppelpflege sowohl im Branch-Verlauf als auch auf `main` vor.
-
-## 11. Architekturgrenze CampaignState
-
-`CampaignState` bleibt strategische Autorität für Verfügbarkeit und Ressourcen. DCS-/MOOSE-Tanker sind temporäre physische Repräsentationen.
-
-```text
-CampaignState Off-map count pool / MissionDemand
--> AAR-Bedarf
--> Area + Profil + Source Domain
--> strategic adapter checks availability
--> MOOSE SPAWN / FLIGHTGROUP / AUFTRAG materializes tanker
--> CampaignState consumes 1 AIRCRAFT_KC135
--> Tanker / Relief arbeitet bis planned handover oder FuelLow
--> Egress / External Gate / confirmed Off-map-Handoff
--> CampaignState exact-once credit of 1 AIRCRAFT_KC135
--> erneut strategisch verfügbar
-```
-
-MOOSE Warehouse, AIRWING, DCS Warehouse und Tanker-Fuelzustand dürfen keine parallele strategische Ressourcenhoheit für die Off-map-KC-135-Pools aufbauen.
+MOOSE Warehouse, AIRWING, DCS Warehouse, SPAWN und Tanker-Fuelzustand besitzen keine parallele strategische Ressourcenhoheit für die Off-map-KC-135-Pools.
