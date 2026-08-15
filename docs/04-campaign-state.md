@@ -267,16 +267,16 @@ OnMaterialized
 
 Die `runtimeId` ist ausschließlich technische Korrelations-/Exactly-once-ID, keine strategische Tail Number.
 
-### 8.2 Successful Handoff und Abort
+### 8.2 Successful Handoff
 
 ```text
-successful mission + confirmed external-gate handoff
-OR
-abort / demand end + confirmed external-gate handoff
+confirmed external-gate handoff
 -> CreditResourceOnce 1 AIRCRAFT_KC135
 -> creditId = AAR-KC135-HANDOFF:<runtimeId>
 -> immediately available again
 ```
+
+MissionDemand-Ende löst im aktuellen Continuous-Core-Modell **keinen** AAR-Handoff aus. Handoff-Recredit erfolgt ausschließlich für einen tatsächlich egressenden physischen Tanker, beispielsweise nach Scheduled Relief oder FuelLow.
 
 Ohne bestätigten Handoff gibt es keine normale Handoff-Recreditierung.
 
@@ -293,15 +293,15 @@ FLIGHTGROUP Dead
 -> creditId = AAR-KC135-LOSS:<runtimeId>
 ```
 
-Damit sinkt der überlebende strategische Pool permanent um die bereits konsumierte KC-135. Der Loss-Audit wächst genau einmal.
+Damit sinkt der überlebende strategische Pool permanent um die bereits konsumierte KC-135. Der Loss-Audit wächst genau einmal. Solange die kontinuierliche Core-Abdeckung für den betroffenen Track gilt, wird anschließend eine Ersatzrepräsentation materialisiert, sofern strategischer Bestand verfügbar ist.
 
-Dieser neue AAR-Loss-Pfad ist implementiert und source-reviewed, aber noch nicht DCS-validiert.
+Dieser neue Continuous-Core-Loss-/Replacement-Pfad ist implementiert und source-reviewed, aber noch nicht DCS-validiert.
 
 ## 9. AAR-Restore-Reconciliation
 
 `OMW_AAR_RuntimeIntegration.Attach(...)` erhält den bereits erzeugten oder wiederhergestellten CampaignState-Store. Es erzeugt **keine zweite CampaignState-Instanz**.
 
-Bei `restored=true` ruft es vor der Controller-Bindung `Adapter:ReconcileRestore()` auf.
+Bei `restored=true` ruft es vor der Controller-Bindung `Adapter:ReconcileRestore()` auf. Nach der Adapterbindung startet der Controller die kontinuierliche sechs-Track-Core-Abdeckung.
 
 Reconciliation für konsumierte AAR-Commitments:
 
@@ -334,25 +334,21 @@ physical loss
 
 Ohne per-tail persistente Runtime-Identität kann dieser Fall nicht nachträglich beweissicher unterschieden werden. OMW führt für den beschlossenen AAR-Scope bewusst kein per-tail-Modell ein.
 
-## 10. Demand-Ende
+## 10. MissionDemand-Ende
 
-Der AAR-Controller führt aktive Demands je Area-/Profil-Station. Für `COMPLETE`, `CANCELLED` und `ABORTED` gilt die Eigentümerentscheidung:
+MissionDemand ist **nicht** Eigentümer der kontinuierlichen AAR-Core-Abdeckung.
+
+Für `COMPLETE`, `CANCELLED` und `ABORTED` gilt aktuell:
 
 ```text
-if another demand remains on the same station
--> station remains active
-
-if the last demand ends
--> only that station closes immediately
--> queued relief removed for that station
--> ACTIVE Cancel/Egress
--> RELIEF_INBOUND Cancel/Egress
--> no further relief generation for that station
+MissionDemand ends
+-> demand ownership removed from the matched core track
+-> continuous core track remains active
+-> no demand-end egress
+-> no demand-end handoff/recredit
 ```
 
-Unabhängige AAR-Tracks werden durch das Ende eines anderen Tracks nicht übernommen, geschlossen oder blockiert.
-
-Ein Abort mit später bestätigtem External-Gate-Handoff wird strategisch wie eine reguläre Rückkehr recreditiert. Ohne Handoff und ohne bestätigtes Loss-Event erfolgt keine normale Settlement-Aktion, bis ein definierter Abschluss oder Restore-Reconciliation vorliegt.
+Eine spätere genehmigte ATO-/Zeitfensterlogik darf die Core-Verfügbarkeit oberhalb des Tanker-Lifecycles steuern. Diese spätere Steuerung ist nicht Bestandteil des aktuellen Acceptance-Scopes.
 
 ## 11. Operative AAR-Concurrency
 
@@ -363,13 +359,13 @@ Die für bestimmte AI-Unterstützungsmissionen bekannte `2/2/4`-Begrenzung gilt 
 Produktiv gilt bis auf weiteres:
 
 ```text
-6 Core-Tracks dürfen gleichzeitig aktiv sein:
-LISA
-MOE
-MILHOUSE
-KRUSTY
-PATTY
-NELSON
+6 Core-Tracks gleichzeitig aktiv:
+LISA      FAST
+MOE       FAST
+MILHOUSE  SLOW
+KRUSTY    SLOW
+PATTY     SLOW
+NELSON    FAST
 
 kein globales AAR-Mission-Limit = 2
 kein globales AAR-Aircraft-Limit = 4
@@ -411,15 +407,27 @@ parallel SPAWN inventory authority
 
 Ältere Owner-lokale Source-/Build-Checkpoints bestätigen die jeweils dokumentierten Git-/Build-/Hash-Stände, aber kein DCS-Verhalten nachfolgender Änderungen.
 
-`AAR-PRODUCTION-FINAL-ACCEPTANCE-1` ist kein akzeptierter Finalstand. Die Versuche deckten einen RuntimeIntegration-Aufruffehler, die unzulässige Übertragung der AI-Unterstützungsregel `2/2/4` auf AAR und einen expliziten `SPAWN:InitSTN(...)`-Kollisionspfad auf.
+`AAR-PRODUCTION-FINAL-ACCEPTANCE-1` und die Zwischenfassung Acceptance-2 sind kein akzeptierter Finalstand. Die Versuche beziehungsweise Zwischenstände deckten einen RuntimeIntegration-Aufruffehler, die unzulässige Übertragung der AI-Unterstützungsregel `2/2/4` auf AAR, einen expliziten `SPAWN:InitSTN(...)`-Kollisionspfad und die noch nicht final festgelegten FLEX-Core-Profile auf.
 
-Der korrigierte, bereits vom Projektinhaber genehmigte gemeinsame Abschlusslauf ist:
+Der korrigierte gemeinsame Abschlusslauf ist:
 
 ```text
-AAR-PRODUCTION-FINAL-ACCEPTANCE-2
+AAR-PRODUCTION-FINAL-ACCEPTANCE-3
 ```
 
-Er prüft insbesondere sechs gleichzeitig aktive Core-Tracks, maximal Active+Relief je Track, bis zu zwölf physische Tanker bei gleichzeitigem Relief aller sechs Tracks, MOOSE-gesteuerten STN-Readback, exact-once Settlement, Demand-Ende, Loss und Restore-Reconciliation.
+Er prüft insbesondere:
+
+- automatischen Start der sechs Core-Tracks;
+- `LISA=FAST`, `MOE=FAST`, `MILHOUSE/KRUSTY/PATTY=SLOW`, `NELSON=FAST`;
+- vier MANAS- und zwei AL_UDEID-Initialmaterialisierungen mit mindestens 60 s Same-source-Abstand und unabhängigen Source Domains;
+- MissionDemand-Attach ohne zusätzliche Materialisierung;
+- bis zu zwölf physische Tanker bei gleichzeitigem Relief aller sechs Tracks;
+- MOOSE-gemanagten STN-Readback;
+- exact-once Handoff-Settlement;
+- Demand-Ende ohne Core-Shutdown;
+- FuelLow-Relief;
+- Loss ohne Recredit plus Ersatzmaterialisierung;
+- Restore-Reconciliation.
 
 Die konkrete gemeinsame Acceptance-Matrix steht in:
 
