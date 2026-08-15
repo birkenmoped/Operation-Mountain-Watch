@@ -3,7 +3,7 @@
 -- MOOSE-first boundary:
 --   * OMW selects the operational AAR area/profile from MissionDemand.
 --   * MOOSE SPAWN/FLIGHTGROUP/AUFTRAG/SCHEDULER execute the physical lifecycle.
---   * OMW only orchestrates station ownership, relief timing, identity handover and bounded concurrency.
+--   * OMW only orchestrates station ownership, relief timing, identity handover and per-track concurrency.
 --   * CampaignState remains the strategic availability authority through the injected adapter.
 
 OMW = OMW or {}
@@ -21,9 +21,8 @@ local TRANSIT_SPEED_KT = 300
 local LEG_NM = 35
 local STATION_CYCLE_SEC = 3 * 60 * 60
 local RELIEF_HANDOVER_ETA_SEC = 5 * 60
-local MAX_CONCURRENT_SUPPORT_MISSIONS = 2
-local MAX_AIRCRAFT_PER_SUPPORT_MISSION = 2
-local MAX_CONCURRENT_SUPPORT_AIRCRAFT = 4
+local CORE_TRACK_COUNT = 6
+local MAX_AIRCRAFT_PER_TRACK = 2
 
 local GATES = {
   MANAS = { lat = 38.83163, lon = 70.95271 },
@@ -93,22 +92,24 @@ local AREAS = {
   },
 }
 
+-- Transit callsigns are OMW-owned identities. Link-16 STN allocation is left to the
+-- pinned MOOSE SPAWN implementation, which resolves template STN collisions internally.
 local TRANSIT_CALLSIGNS = {
-  { id = CALLSIGN.Tanker.Texaco, name = "Texaco", number = 5, stn = 50000 },
-  { id = CALLSIGN.Tanker.Texaco, name = "Texaco", number = 6, stn = 50001 },
-  { id = CALLSIGN.Tanker.Texaco, name = "Texaco", number = 7, stn = 50002 },
-  { id = CALLSIGN.Tanker.Texaco, name = "Texaco", number = 8, stn = 50003 },
-  { id = CALLSIGN.Tanker.Texaco, name = "Texaco", number = 9, stn = 50004 },
-  { id = CALLSIGN.Tanker.Arco, name = "Arco", number = 5, stn = 50005 },
-  { id = CALLSIGN.Tanker.Arco, name = "Arco", number = 6, stn = 50006 },
-  { id = CALLSIGN.Tanker.Arco, name = "Arco", number = 7, stn = 50007 },
-  { id = CALLSIGN.Tanker.Arco, name = "Arco", number = 8, stn = 50010 },
-  { id = CALLSIGN.Tanker.Arco, name = "Arco", number = 9, stn = 50011 },
-  { id = CALLSIGN.Tanker.Shell, name = "Shell", number = 5, stn = 50012 },
-  { id = CALLSIGN.Tanker.Shell, name = "Shell", number = 6, stn = 50013 },
-  { id = CALLSIGN.Tanker.Shell, name = "Shell", number = 7, stn = 50014 },
-  { id = CALLSIGN.Tanker.Shell, name = "Shell", number = 8, stn = 50015 },
-  { id = CALLSIGN.Tanker.Shell, name = "Shell", number = 9, stn = 50016 },
+  { id = CALLSIGN.Tanker.Texaco, name = "Texaco", number = 5 },
+  { id = CALLSIGN.Tanker.Texaco, name = "Texaco", number = 6 },
+  { id = CALLSIGN.Tanker.Texaco, name = "Texaco", number = 7 },
+  { id = CALLSIGN.Tanker.Texaco, name = "Texaco", number = 8 },
+  { id = CALLSIGN.Tanker.Texaco, name = "Texaco", number = 9 },
+  { id = CALLSIGN.Tanker.Arco, name = "Arco", number = 5 },
+  { id = CALLSIGN.Tanker.Arco, name = "Arco", number = 6 },
+  { id = CALLSIGN.Tanker.Arco, name = "Arco", number = 7 },
+  { id = CALLSIGN.Tanker.Arco, name = "Arco", number = 8 },
+  { id = CALLSIGN.Tanker.Arco, name = "Arco", number = 9 },
+  { id = CALLSIGN.Tanker.Shell, name = "Shell", number = 5 },
+  { id = CALLSIGN.Tanker.Shell, name = "Shell", number = 6 },
+  { id = CALLSIGN.Tanker.Shell, name = "Shell", number = 7 },
+  { id = CALLSIGN.Tanker.Shell, name = "Shell", number = 8 },
+  { id = CALLSIGN.Tanker.Shell, name = "Shell", number = 9 },
 }
 
 local state = {
@@ -202,7 +203,7 @@ local function getOrCreateStation(selection)
       demandsById = {},
       closed = false,
       closedReason = nil,
-      missionSlotClaimed = false,
+      coverageClaimed = false,
       activeRuntime = nil,
       activeQueued = false,
       reliefRuntime = nil,
@@ -230,7 +231,7 @@ local function countPhysicalRuntimes()
   return count
 end
 
-local function countStationRuntimes(stationKey)
+local function countTrackRuntimes(stationKey)
   local count = 0
   for _, runtime in pairs(state.runtimesById) do
     if not runtime.handoffComplete and not runtime.lossHandled and activeKey(runtime.selection) == stationKey then
@@ -240,24 +241,17 @@ local function countStationRuntimes(stationKey)
   return count
 end
 
-local function countMissionSlots()
+local function countActiveTracks()
   local count = 0
   for _, station in pairs(state.stationsByKey) do
-    if station.missionSlotClaimed then count = count + 1 end
+    if station.coverageClaimed then count = count + 1 end
   end
   return count
 end
 
-local function canMaterializeOperationally(request, station)
-  if countPhysicalRuntimes() >= MAX_CONCURRENT_SUPPORT_AIRCRAFT then
-    return false, "MAX_CONCURRENT_SUPPORT_AIRCRAFT"
-  end
-  if countStationRuntimes(station.key) >= MAX_AIRCRAFT_PER_SUPPORT_MISSION then
-    return false, "MAX_AIRCRAFT_PER_SUPPORT_MISSION"
-  end
-  if request.role ~= "RELIEF" and not station.missionSlotClaimed
-      and countMissionSlots() >= MAX_CONCURRENT_SUPPORT_MISSIONS then
-    return false, "MAX_CONCURRENT_SUPPORT_MISSIONS"
+local function canMaterializeOperationally(station)
+  if countTrackRuntimes(station.key) >= MAX_AIRCRAFT_PER_TRACK then
+    return false, "MAX_AIRCRAFT_PER_TRACK"
   end
   return true
 end
@@ -277,7 +271,7 @@ local function allocateTransitCallsign(runtimeId)
   for index, slot in ipairs(TRANSIT_CALLSIGNS) do
     if not state.transitCallsignInUse[index] then
       state.transitCallsignInUse[index] = runtimeId
-      return { index = index, id = slot.id, name = slot.name, number = slot.number, stn = slot.stn }
+      return { index = index, id = slot.id, name = slot.name, number = slot.number, stn = nil }
     end
   end
   fail("no free transit tanker callsign slot")
@@ -359,7 +353,7 @@ end
 local function closeStation(station, terminalStatus)
   station.closed = true
   station.closedReason = terminalStatus
-  station.missionSlotClaimed = false
+  station.coverageClaimed = false
   station.nextPlannedHandoverAt = nil
   station.reliefLaunchAt = nil
   station.handoverArmed = true
@@ -412,7 +406,7 @@ local function promoteReliefOnTrack(station, relief, reason, timestamp)
   station.reliefQueued = false
   station.reliefReason = nil
   station.activeRuntime = relief
-  station.missionSlotClaimed = true
+  station.coverageClaimed = true
   relief.role = "ACTIVE"
   relief.reliefReason = reason
   activateStationIdentity(relief)
@@ -484,7 +478,6 @@ local function materialize(request)
 
   local spawner = getSpawner(selection.area, areaSpec)
   spawner:InitCallSign(transitCallsign.id, transitCallsign.name, transitCallsign.number, 1)
-  spawner:InitSTN(transitCallsign.stn)
   spawner:InitHeading(spawnCoord:HeadingTo(trackCoord))
   spawner:InitSpeedKnots(TRANSIT_SPEED_KT)
   local group = spawner:SpawnFromCoordinate(spawnCoord)
@@ -492,6 +485,14 @@ local function materialize(request)
     releaseTransitCallsign({ runtimeId = runtimeId, transitCallsign = transitCallsign })
     fail("failed to materialize tanker template=" .. tostring(areaSpec.template))
   end
+
+  local spawnedUnit = group:GetUnit(1)
+  local spawnedStn = spawnedUnit and spawnedUnit:GetSTN() or nil
+  if not spawnedStn or tostring(spawnedStn) == "" then
+    releaseTransitCallsign({ runtimeId = runtimeId, transitCallsign = transitCallsign })
+    fail("spawned tanker has no Link-16 STN template=" .. tostring(areaSpec.template))
+  end
+  transitCallsign.stn = tostring(spawnedStn)
 
   local flightGroup = FLIGHTGROUP:New(group)
   if not flightGroup then fail("failed to create FLIGHTGROUP group=" .. tostring(group:GetName())) end
@@ -509,7 +510,7 @@ local function materialize(request)
     template = areaSpec.template, role = role, reliefReason = request.reliefReason, initialFuelPct = areaSpec.initialFuelPct,
     group = group, flightGroup = flightGroup, mission = mission, ingressCoord = ingressCoord, egressCoord = egressCoord,
     trackCoord = trackCoord, gateDistanceNm = gateDistanceNm, transitCallsign = transitCallsign,
-    stationIdentityActive = false, onStationAt = nil, egressOrdered = false, egressReason = nil,
+    stationIdentityActive = false, onStationAt = nil, materializedAt = now(), egressOrdered = false, egressReason = nil,
     handoffComplete = false, lossHandled = false,
   }
 
@@ -550,14 +551,14 @@ local function materialize(request)
   else
     station.activeRuntime = runtime
     station.activeQueued = false
-    station.missionSlotClaimed = true
+    station.coverageClaimed = true
   end
   state.strategicAdapter:OnMaterialized(selection, runtime)
 
-  log(string.format("MATERIALIZED runtime=%s role=%s demand=%s area=%s profile=%s source=%s group=%s transitCallsign=%s%d stn=%05d missions=%d aircraft=%d",
+  log(string.format("MATERIALIZED runtime=%s role=%s demand=%s area=%s profile=%s source=%s group=%s transitCallsign=%s%d stn=%s activeTracks=%d aircraft=%d",
     runtime.runtimeId, runtime.role, selection.missionDemandId, selection.area, selection.receiverProfile,
     selection.sourceDomain, group:GetName(), transitCallsign.name, transitCallsign.number, transitCallsign.stn,
-    countMissionSlots(), countPhysicalRuntimes()))
+    countActiveTracks(), countPhysicalRuntimes()))
   return runtime
 end
 
@@ -601,7 +602,7 @@ local function processQueue()
       log(string.format("QUEUE_DROPPED demand=%s role=%s station=%s reason=STATION_CLOSED",
         request.selection.missionDemandId, tostring(request.role), station.key))
     else
-      local operational, operationalReason = canMaterializeOperationally(request, station)
+      local operational, operationalReason = canMaterializeOperationally(station)
       if not operational then
         remaining[#remaining + 1] = request
       else
@@ -773,8 +774,10 @@ function Controller.GetStation(area, receiverProfile)
 end
 
 function Controller.GetRuntimeCounts()
+  local activeTracks = countActiveTracks()
   return {
-    supportMissions = countMissionSlots(),
+    activeTracks = activeTracks,
+    supportMissions = activeTracks, -- compatibility alias; no global AAR mission cap is applied.
     supportAircraft = countPhysicalRuntimes(),
     queued = #state.queue,
   }
@@ -784,10 +787,10 @@ function Controller.GetConfig()
   return {
     mooseCommit = MOOSE_COMMIT, mooseSha256 = MOOSE_SHA256, sourceSpawnIntervalSec = SOURCE_SPAWN_INTERVAL_SEC,
     handoffRadiusNm = HANDOFF_RADIUS_NM, trackEntryRadiusNm = TRACK_ENTRY_RADIUS_NM, stationCycleSec = STATION_CYCLE_SEC,
-    reliefHandoverEtaSec = RELIEF_HANDOVER_ETA_SEC, transitSpeedKt = TRANSIT_SPEED_KT, transitStnSlots = #TRANSIT_CALLSIGNS,
-    maxConcurrentSupportMissions = MAX_CONCURRENT_SUPPORT_MISSIONS,
-    maxAircraftPerSupportMission = MAX_AIRCRAFT_PER_SUPPORT_MISSION,
-    maxConcurrentSupportAircraft = MAX_CONCURRENT_SUPPORT_AIRCRAFT,
+    reliefHandoverEtaSec = RELIEF_HANDOVER_ETA_SEC, transitSpeedKt = TRANSIT_SPEED_KT,
+    transitCallsignSlots = #TRANSIT_CALLSIGNS, continuousCoreTrackCount = CORE_TRACK_COUNT,
+    maxAircraftPerTrack = MAX_AIRCRAFT_PER_TRACK, globalAarMissionLimit = false, globalAarAircraftLimit = false,
+    mooseManagedSpawnStn = true,
   }
 end
 
