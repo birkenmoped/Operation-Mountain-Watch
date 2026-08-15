@@ -16,7 +16,7 @@ project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes: []
 superseded_by: []
 source_branch: agent/air-ops-initial-stock-runtime-data
-source_commit: PENDING_MERGE
+source_commit: f4c3cf8d88bae32ead0975d07689702237eae19b
 validated_in_dcs: true
 ---
 
