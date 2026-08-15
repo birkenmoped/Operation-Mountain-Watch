@@ -693,10 +693,7 @@ local function monitorStations()
           local reason = station.reliefReason or relief.reliefReason or "SCHEDULED"
           if etaSec and etaSec <= RELIEF_HANDOVER_ETA_SEC and not station.handoverArmed then
             station.handoverArmed = true
-            if active and not active.egressOrdered and not active.lossHandled then
-              cancelToEgress(active, reason == "FUEL_LOW" and "FUEL_LOW_RELIEF" or "SCHEDULED_RELIEF")
-            end
-            log(string.format("RELIEF_FINAL_INGRESS runtime=%s area=%s reason=%s etaSec=%.0f distanceNm=%.1f",
+            log(string.format("RELIEF_HANDOVER_ARMED runtime=%s area=%s reason=%s etaSec=%.0f distanceNm=%.1f",
               relief.runtimeId, relief.selection.area, tostring(reason), etaSec, distanceNm or -1))
           end
           if distanceNm and distanceNm <= TRACK_ENTRY_RADIUS_NM then
