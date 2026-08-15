@@ -6,9 +6,10 @@ owning_policy: OMW-GOV-001
 authoritative_for:
   - AAR MissionDemand production-integration test scope
   - six-core-area dispatch, area-template/callsign identity, source spacing and high-transit progress acceptance
+  - next combined production-finalization acceptance scope
 not_authoritative_for:
   - repository-wide DCS runtime acceptance without complete acceptance provenance
-  - CampaignState strategic inventory implementation
+  - CampaignState strategic inventory authority
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes: []
@@ -22,42 +23,14 @@ validated_in_dcs: partial
 
 ## Ziel
 
-Dieser Test prüft ausschließlich die produktive Integration oberhalb der bereits abgeschlossenen allgemeinen KC-135-Acceptance:
+Der Testpfad trennt zwei Stufen:
 
-```text
-MissionDemand
--> OMW Area-/FAST-/SLOW-Auswahl
--> area-spezifisches Mission-Editor-KC-135-Template
--> korrekter DCS-Rufname des Area-Templates
--> External Source Domain
--> MOOSE-Materialisierung am External Gate
--> High-Transit-Profil
--> nachweisbare Bewegung in Richtung Track
-```
+1. den bereits ausgeführten `AAR-PRODUCTION-INTEGRATION-3` / korrigierten `3R1`-Harness für Mapping, Templates, Callsign, Source-Spacing und Transit;
+2. den nächsten **gemeinsamen** produktiven Integrations-/Acceptance-Scope für Relief, Identity, CampaignState, Demand-Ende, Loss, Restore und Concurrency.
 
-Spawn-Mechanik, Racetrack, TACAN Y, Radio, Boom-AAR, FuelLow, Cancel, Egress und Off-map-Handoff wurden bereits separat im KC-135-Runtime-Acceptance-Pfad geprüft und werden hier nicht künstlich erneut beschleunigt.
+Die allgemeine KC-135-Grundmechanik wurde bereits separat über Acceptance-2 bis -6 geprüft und wird nicht künstlich erneut beschleunigt.
 
-## Korrekturen aus den Owner-Läufen
-
-### Integration-1
-
-Der erste Owner-Lauf zeigte zwei Fehler im Testentwurf:
-
-1. alle MANAS-Demands verwendeten `OMW_AAR_KC135_PATTY`, alle AL-UDEID-Demands `OMW_AAR_KC135_KRUSTY`; dadurch wurden Callsign und Gruppenidentität des falschen Seed-Templates geerbt;
-2. der Harness verlangte `AUFTRAG:IsExecuting()` innerhalb von 900 s. Bei realen Gate->Track-Distanzen von mehreren hundert NM ist das kein sinnvoller fokussierter Integrationstest.
-
-Integration-2 stellte deshalb auf sechs area-spezifische Mission-Editor-Templates und Transit-Fortschritt um.
-
-### Integration-2
-
-Der zweite Owner-Lauf bestätigte die area-spezifischen Gruppen-/Template-Namen, zeigte aber zwei weitere konkrete Fehler:
-
-1. MOOSE `SPAWN` setzte ohne explizites `SPAWN:InitCallSign(...)` die BLUE-Einheitenrufnamen neu; dadurch erschienen insbesondere die MANAS-Tanker trotz korrekter Templates als `Texaco11`;
-2. der Harness las unmittelbar nach Materialisierung `FLIGHTGROUP:GetFuelMin()`. Zu diesem Zeitpunkt können die `FLIGHTGROUP`-Elemente noch nicht vollständig initialisiert sein, wodurch `math.huge * 100` als `inf` zurückgegeben werden kann.
-
-Integration-3 stellte den produktiven Controller deshalb auf den im gepinnten MOOSE-Stand vorhandenen `SPAWN:InitCallSign(...)`-Pfad um und prüfte den realen DCS-Rufnamen mit `GROUP:GetCallsign()`.
-
-### Integration-3 – Owner-DCS-Lauf 14./15.08.2026
+## Integration-3 – Owner-DCS-Lauf 14./15.08.2026
 
 Bekannter Laufstand:
 
@@ -73,42 +46,127 @@ MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
 Moose.lua SHA-256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
 ```
 
-Der Lauf belegt praktisch für den getesteten Stand:
+Praktisch beobachtet:
 
-- sechs `POLICY_PASS` und sechs erfolgreiche `SubmitDemand`-Aufrufe;
-- sechs area-spezifische Mission-Editor-Templates wurden tatsächlich materialisiert;
-- die produktive `SPAWN:InitCallSign(...)`-Korrektur erzeugte sichtbar und im Controller-Log die vorgesehenen Rufnamen `Texaco11`, `Texaco21`, `Texaco31`, `Texaco41`, `Arco21`, `Shell21`;
-- die vier erforderlichen Folge-Materialisierungen derselben Source Domain hielten jeweils 60.0 s Abstand;
-- MANAS und AL UDEID konnten parallel materialisieren.
+- sechs MissionDemand-Mappings/Submissions;
+- sechs area-spezifische Mission-Editor-Templates;
+- damalige area-spezifische Callsigns sichtbar und im Controller-Log korrekt;
+- vier erforderliche Same-source-Folgeabstände mit jeweils `60.0 s`;
+- parallele MANAS-/AL-UDEID-Materialisierung.
 
-Der Harness selbst erzeugte zwei **False Negatives**, die keine beobachteten Produktivfehler darstellen:
+Zwei Harness-only False Negatives betrafen die Callsign-Darstellung (`Texaco2-1` vs. `Texaco21`) und einen zu frühen `GROUP:GetFuelMin()`-Read mit Sentinel `65535`. `AAR-PRODUCTION-INTEGRATION-3R1` korrigiert ausschließlich diese Harnessfehler und wurde auf Eigentümerentscheidung nicht allein deswegen erneut in DCS ausgeführt.
 
-1. `GROUP:GetCallsign()` lieferte die DCS/MOOSE-Darstellung mit Trenner (`Texaco2-1`), während der Harness gegen die kompakte OMW-Darstellung (`Texaco21`) verglich;
-2. `GROUP:GetFuelMin()` wurde weiterhin zu früh ausgewertet und lieferte den Sentinel `65535`, den der Harness irrtümlich als `6553500 %` behandelte.
+## Aktueller produktiver Controller-Scope
 
-Weil `failed=true` dadurch bereits unmittelbar nach den Materialisierungen gesetzt wurde, wurde der quantitative `TRANSIT_PROGRESS_PASS`-Teil dieses Harness-Laufs nicht mehr bis zur 60-s-Auswertung fortgeführt. Aus diesem Lauf wird deshalb **kein** formaler Transit-PASS und kein Seed-Fuel-Runtime-PASS abgeleitet.
-
-Der Projektinhaber hat entschieden, dass wegen dieser ausschließlich im Harness liegenden Fehler **kein weiterer DCS-Lauf nur für die Harness-Korrektur** durchgeführt wird. Die nächste DCS-Prüfung erfolgt erst mit neuer produktiver Lifecycle-/CampaignState-Integration oder einem anderen governance-seitig erforderlichen Regressionstrigger.
-
-Die vollständige `ACCEPTED_TECHNICAL_BASELINE`-Provenienz ist für diesen Lauf noch nicht hergestellt, solange insbesondere Missions- und Log-Hashes nicht im Projekt dokumentiert sind. Der Stand bleibt deshalb `validated_in_dcs: partial`.
-
-### Integration-3R1 – korrigierter Harness, nicht erneut in DCS ausgeführt
-
-Der Harness wurde nach dem Owner-Lauf ausschließlich diagnostisch korrigiert:
+Der produktive Stand umfasst inzwischen zusätzlich:
 
 ```text
-AAR-PRODUCTION-INTEGRATION-3R1
+MissionDemand
+-> Area / Profile / Source selection
+-> bounded operational concurrency
+-> CampaignState CanMaterialize
+-> MOOSE SPAWN / FLIGHTGROUP / AUFTRAG
+-> CampaignState consume 1 AIRCRAFT_KC135
+-> transit identity
+-> station identity
+-> 3 h scheduled relief OR FuelLow relief
+-> Demand COMPLETE/CANCELLED/ABORTED -> immediate station close/Egress
+-> External Gate
+-> exact-once handoff recredit
 ```
 
-Änderungen:
+Bei Verlust:
 
-- Callsign-Vergleich normalisiert ausschließlich Leerzeichen und `-`, sodass `Texaco2-1` und `Texaco21` dieselbe operative Identität darstellen;
-- `GROUP:GetFuelMin()` wird erst bewertet, wenn ein plausibler Fuel-Fraction-Wert im Bereich `0..1` vorliegt;
-- bis dahin bleibt die Fuel-Prüfung pending und erzeugt keinen False Negative.
+```text
+FLIGHTGROUP Dead
+-> OnAfterDead
+-> strategic OnLost
+-> no AIRCRAFT_KC135 recredit
+-> AIRCRAFT_KC135_LOST +1 exactly once
+```
 
-Diese Harness-Korrektur verändert den produktiven `OMW_AAR_Controller.lua` nicht und erhält ausdrücklich **keinen eigenen DCS-VALIDATED-Status**.
+Bei Restore:
 
-## Sechs Test-Demands
+```text
+recorded loss -> preserve loss
+resolved handoff/restart credit -> no duplicate credit
+unresolved consumed in-flight commitment -> exact-once restart reconciliation
+```
+
+Die Restore-Regel bildet keine Tail-Identität nach. Sie löst nur das strategische count-basierte Commitment, dessen physische DCS-Repräsentation nach Mission-/Serverrestart nicht mehr existiert.
+
+## Strategische Produktionsgrenze
+
+Der Controller verlangt einen strategischen Adapter mit:
+
+```text
+CanMaterialize(selection)
+OnMaterialized(selection, runtime)
+OnHandoff(selection, runtime)
+OnLost(selection, runtime, reason)
+```
+
+Produktiv wird diese Grenze über folgende Module an **denselben** CampaignState-Store gebunden:
+
+```text
+scripts/logistics/OMW_AARStrategicStock.lua
+scripts/logistics/OMW_AirOpsCampaignStateInitializer.lua
+scripts/air-operations/OMW_AAR_CampaignStateAdapter.lua
+scripts/air-operations/OMW_AAR_RuntimeIntegration.lua
+scripts/air-operations/OMW_AAR_Controller.lua
+```
+
+Es gibt kein zweites Bestandsbuch in MOOSE WAREHOUSE, AIRWING, DCS Warehouse oder SPAWN.
+
+## Strategische Ressourcen
+
+```text
+OFFMAP_MANAS
+AIRCRAFT_KC135 = 16 count
+AIRCRAFT_KC135_LOST = 0 count initial audit
+
+OFFMAP_AL_UDEID
+AIRCRAFT_KC135 = 40 count
+AIRCRAFT_KC135_LOST = 0 count initial audit
+```
+
+`AIRCRAFT_KC135_LOST` ist nur ein persistenter kumulativer Loss-Audit und keine Verfügbarkeitsquelle.
+
+## Operative Concurrency
+
+Produktiv:
+
+```text
+maxConcurrentSupportMissions = 2
+maxAircraftPerSupportMission = 2
+maxConcurrentSupportAircraft = 4
+```
+
+Der strategische Bestand `16/40` ist kein Spawnlimit. Physisch noch vorhandene Egress-Tanker zählen bis zum Handoff/Loss gegen das globale Aircraft-Limit.
+
+## Station Identity
+
+```text
+TRANSIT
+- reservierter Transit-Callsign
+- eindeutige STN
+- Station-Radio OFF
+- Station-TACAN OFF
+
+ON STATION
+- area-spezifischer Station-Callsign
+- area-spezifische Frequenz
+- area-spezifischer Y-TACAN
+
+EGRESS
+- Station-Radio OFF
+- Station-TACAN OFF
+- zurück auf Transit-Callsign
+```
+
+Der neue Identity-Handover ist source-reviewed, aber noch nicht DCS-validiert.
+
+## Sechs Core-Areas
 
 ```text
 FAST / NORTHEAST / SUPPORT       -> NELSON / MANAS
@@ -119,94 +177,48 @@ FAST / CENTRAL / SUPPORT         -> MOE / MANAS
 SLOW / WEST / SUPPORT            -> LISA / MANAS
 ```
 
-Damit werden beide FLEX-Areas mit je einem konkreten Receiver-Profil geprüft: `MOE FAST`, `LISA SLOW`.
+## Nächster gemeinsamer Acceptance-Scope
 
-## Area-spezifische Templates und Rufnamen
+Ein neuer DCS-Lauf ist nur nach ausdrücklicher Eigentümerfreigabe vorgesehen. Er soll die **neuen produktiven Änderungen gemeinsam** prüfen und nicht erneut in Kleintests zerlegen:
 
-```text
-NELSON    -> OMW_AAR_KC135_NELSON    -> Texaco 1-1 -> MANAS    -> 96 % Seed
-PATTY     -> OMW_AAR_KC135_PATTY     -> Texaco 2-1 -> MANAS    -> 96 % Seed
-LISA      -> OMW_AAR_KC135_LISA      -> Texaco 3-1 -> MANAS    -> 96 % Seed
-MOE       -> OMW_AAR_KC135_MOE       -> Texaco 4-1 -> MANAS    -> 96 % Seed
-KRUSTY    -> OMW_AAR_KC135_KRUSTY    -> Arco   2-1 -> AL_UDEID -> 90 % Seed
-MILHOUSE  -> OMW_AAR_KC135_MILHOUSE  -> Shell  2-1 -> AL_UDEID -> 90 % Seed
-```
+1. CampaignState Off-map-Pools werden korrekt erkannt;
+2. Materialisierung konsumiert genau eine KC-135;
+3. 2/2/4-Concurrency blockiert zusätzliche Materialisierung, ohne den strategischen Pool als Concurrency-Autorität zu missbrauchen;
+4. Transit-Identity und Station-Identity überlappen nicht unzulässig;
+5. 3-h-Relief beziehungsweise testzeitlich kontrolliert ausgelöster äquivalenter Relief-Pfad erzeugt maximal einen `RELIEF_INBOUND`;
+6. FuelLow verwendet vorhandenen Relief oder erzeugt genau einen Ersatz;
+7. `COMPLETE`/`CANCELLED`/`ABORTED` schließt die letzte Demand-Station sofort und erzeugt keine weitere Ablösung;
+8. erfolgreicher External-Gate-Handoff recreditiert exakt einmal;
+9. `FLIGHTGROUP Dead` erzeugt `OnLost`, keinen Aircraft-Recredit und einen persistenten Loss-Audit;
+10. Restore-Reconciliation erzeugt keine Doppelcredits und erhält bereits dokumentierte Losses;
+11. MANAS und AL UDEID bleiben unabhängige Pools.
 
-Die `.miz` wird nicht automatisiert verändert.
+Der konkrete DCS-Test-Harness darf erst nach Owner-Freigabe für den neuen Testscope umgesetzt/ausgeführt werden, soweit die Governance dies verlangt.
 
-## Spawn-Staffelung
+## Source-Gates ohne DCS
 
-Produktive Regel:
-
-```text
-MANAS:    mindestens 60 s zwischen zwei Materialisierungen
-AL_UDEID: mindestens 60 s zwischen zwei Materialisierungen
-MANAS und AL UDEID dürfen gleichzeitig materialisieren
-```
-
-Der Owner-Lauf von Integration-3 bestätigte die vier erforderlichen Folgeabstände mit jeweils `deltaSec=60.0`.
-
-## Transit-Acceptance
-
-Der Harness speichert nach jeder Materialisierung die anfängliche 2D-Distanz zum zugewiesenen Track. Nach mindestens 60 s muss die Distanz um mindestens 2 NM abgenommen haben.
+Für den aktuellen Produktionsstand existieren zwei lokale Source-/Build-Gates:
 
 ```text
-initialTrackDistanceNm
--> >= 60 s High-Transit
--> currentTrackDistanceNm <= initialTrackDistanceNm - 2 NM
--> TRANSIT_PROGRESS_PASS
+tools/build-aar-production-integration.ps1
+tools/validate-aar-production-finalization.ps1
 ```
 
-Eine vollständige Gate->Track-Ankunft ist für diesen fokussierten Test ausdrücklich nicht erforderlich. Integration-3 erreichte wegen der beiden frühen Harness-False-Negatives keine formale 60-s-Transit-Auswertung; dieser Punkt wird nicht rückwirkend als PASS behauptet.
+`build-aar-production-integration.ps1` bleibt ein Regression-/Bundle-Builder für 3R1 und ist **kein** Nachweis der neuen Runtime-Funktionalität.
 
-## FuelLow
-
-Der Test verwendet ausschließlich die produktiven Schwellen:
-
-```text
-LISA      24 %
-MOE       22 %
-MILHOUSE  27 %
-KRUSTY    27 %
-PATTY     21 %
-NELSON    20 %
-```
-
-Es gibt keine 99-%- oder sonstige beschleunigte FuelLow-Schaltung.
-
-## Strategische Grenze
-
-Der produktive Controller verlangt vor `SubmitDemand` einen strategischen Adapter mit:
-
-```text
-CanMaterialize
-OnMaterialized
-OnHandoff
-```
-
-Im Test wird dafür ausdrücklich ein `testAdapter=true` verwendet, der alle sechs Demands zulässt. Das ist kein Ersatz für CampaignState. Die produktive CampaignState-Bindung wird separat an diese Schnittstelle angeschlossen; der Controller selbst übernimmt keine strategische Ressourcenhoheit.
-
-## Erwartete Kernmarker bei einem zukünftigen 3R1-Regressionslauf
-
-```text
-POLICY_PASS x6
-SUBMIT_PASS x6
-TEMPLATE_IDENTITY_PASS x6
-CALLSIGN_IDENTITY_PASS x6
-SEED_FUEL_PASS x6
-SOURCE_SPACING_PASS x4
-TRANSIT_PROGRESS_PASS x6
-INTEGRATION_PASS ... artificialFuelLow=false fullTrackArrivalRequired=false
-```
-
-Ein solcher erneuter Lauf ist **nicht** allein wegen der Harness-Korrektur vorgesehen.
+`validate-aar-production-finalization.ps1` prüft die statischen Vertragsmarker für Demand-Ende, Loss, Restore, Concurrency, CampaignState-Adapter, Stock und Runtime-Integration. Auch dieser Source-Gate ersetzt keinen DCS-Test.
 
 ## Source / Builder / Dist
 
 ```text
 scripts/air-operations/OMW_AAR_Controller.lua
+scripts/air-operations/OMW_AAR_CampaignStateAdapter.lua
+scripts/air-operations/OMW_AAR_RuntimeIntegration.lua
+scripts/logistics/OMW_AARStrategicStock.lua
+scripts/logistics/OMW_AirOpsCampaignStateInitializer.lua
 mission/tests/aar-production-integration/src/01-aar-production-integration.lua
 tools/build-aar-production-integration.ps1
+tools/validate-aar-production-finalization.ps1
 mission/tests/aar-production-integration/dist/OMW_AAR_Production_Integration.lua
 ```
 
