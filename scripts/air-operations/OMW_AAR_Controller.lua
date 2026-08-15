@@ -3,9 +3,8 @@
 -- MOOSE-first boundary:
 --   * OMW selects the operational AAR area/profile from MissionDemand.
 --   * MOOSE SPAWN/FLIGHTGROUP/AUFTRAG/SCHEDULER execute the physical lifecycle.
---   * OMW only orchestrates station ownership, scheduled relief and the FuelLow fallback.
---   * Strategic availability remains external and must be supplied by CampaignState
---     through SetStrategicAdapter before SubmitDemand is used.
+--   * OMW only orchestrates station ownership, relief timing and identity handover.
+--   * CampaignState remains the strategic availability authority through the injected adapter.
 
 OMW = OMW or {}
 
@@ -22,6 +21,7 @@ local TRANSIT_SPEED_KT = 300
 local LEG_NM = 35
 local STATION_CYCLE_SEC = 3 * 60 * 60
 local RELIEF_HANDOVER_ETA_SEC = 5 * 60
+local STN_START_OCTAL = 50000
 
 local GATES = {
   MANAS = { lat = 38.83163, lon = 70.95271 },
@@ -42,10 +42,7 @@ local AREAS = {
     sourceDomain = "MANAS", transitProfile = "MANAS_WEST_HIGH",
     frequencyMHz = 235.900, tacanChannel = 50, tacanIdent = "LIS",
     fuelLowPct = 24, initialFuelPct = 96,
-    profiles = {
-      SLOW = { altitudeFt = 22000, speedKt = 220 },
-      FAST = { altitudeFt = 25000, speedKt = 300 },
-    },
+    profiles = { SLOW = { altitudeFt = 22000, speedKt = 220 }, FAST = { altitudeFt = 25000, speedKt = 300 } },
   },
   MOE = {
     template = "OMW_AAR_KC135_MOE",
@@ -54,10 +51,7 @@ local AREAS = {
     sourceDomain = "MANAS", transitProfile = "MANAS_WEST_HIGH",
     frequencyMHz = 243.400, tacanChannel = 52, tacanIdent = "MOE",
     fuelLowPct = 22, initialFuelPct = 96,
-    profiles = {
-      SLOW = { altitudeFt = 24000, speedKt = 220 },
-      FAST = { altitudeFt = 27000, speedKt = 300 },
-    },
+    profiles = { SLOW = { altitudeFt = 24000, speedKt = 220 }, FAST = { altitudeFt = 27000, speedKt = 300 } },
   },
   MILHOUSE = {
     template = "OMW_AAR_KC135_MILHOUSE",
@@ -97,6 +91,24 @@ local AREAS = {
   },
 }
 
+local TRANSIT_CALLSIGNS = {
+  { id = CALLSIGN.Tanker.Texaco, name = "Texaco", number = 5 },
+  { id = CALLSIGN.Tanker.Texaco, name = "Texaco", number = 6 },
+  { id = CALLSIGN.Tanker.Texaco, name = "Texaco", number = 7 },
+  { id = CALLSIGN.Tanker.Texaco, name = "Texaco", number = 8 },
+  { id = CALLSIGN.Tanker.Texaco, name = "Texaco", number = 9 },
+  { id = CALLSIGN.Tanker.Arco, name = "Arco", number = 5 },
+  { id = CALLSIGN.Tanker.Arco, name = "Arco", number = 6 },
+  { id = CALLSIGN.Tanker.Arco, name = "Arco", number = 7 },
+  { id = CALLSIGN.Tanker.Arco, name = "Arco", number = 8 },
+  { id = CALLSIGN.Tanker.Arco, name = "Arco", number = 9 },
+  { id = CALLSIGN.Tanker.Shell, name = "Shell", number = 5 },
+  { id = CALLSIGN.Tanker.Shell, name = "Shell", number = 6 },
+  { id = CALLSIGN.Tanker.Shell, name = "Shell", number = 7 },
+  { id = CALLSIGN.Tanker.Shell, name = "Shell", number = 8 },
+  { id = CALLSIGN.Tanker.Shell, name = "Shell", number = 9 },
+}
+
 local state = {
   strategicAdapter = nil,
   queue = {},
@@ -104,6 +116,7 @@ local state = {
   runtimesById = {},
   lastSpawnAtBySource = {},
   spawnersByArea = {},
+  transitCallsignInUse = {},
   dispatcher = nil,
   stationMonitor = nil,
   nextRuntimeId = 0,
@@ -111,41 +124,27 @@ local state = {
 
 local ensureRelief
 
-local function log(message)
-  env.info(TAG .. " " .. tostring(message))
-end
-
-local function fail(message)
-  error(TAG .. " " .. tostring(message), 2)
-end
+local function log(message) env.info(TAG .. " " .. tostring(message)) end
+local function fail(message) error(TAG .. " " .. tostring(message), 2) end
+local function now() return timer.getAbsTime() end
 
 local function requireString(value, label)
-  if type(value) ~= "string" or value == "" then
-    fail(label .. " requires non-empty string")
-  end
+  if type(value) ~= "string" or value == "" then fail(label .. " requires non-empty string") end
   return value
-end
-
-local function now()
-  return timer.getAbsTime()
 end
 
 local function requireMoose()
   if not SPAWN or not FLIGHTGROUP or not AUFTRAG or not COORDINATE or not SCHEDULER or not UTILS then
     fail("required MOOSE classes are unavailable")
   end
-  if not CALLSIGN or not CALLSIGN.Tanker then
-    fail("required MOOSE tanker callsign enumerator is unavailable")
-  end
+  if not CALLSIGN or not CALLSIGN.Tanker then fail("required MOOSE tanker callsign enumerator is unavailable") end
   if not Unit or not Unit.RefuelingSystem or Unit.RefuelingSystem.BOOM_AND_RECEPTACLE == nil then
     fail("DCS refueling-system enum is unavailable")
   end
 end
 
 local function normalizeDemand(demand)
-  if type(demand) ~= "table" then
-    fail("MissionDemand must be a table")
-  end
+  if type(demand) ~= "table" then fail("MissionDemand must be a table") end
   return {
     missionDemandId = requireString(demand.missionDemandId, "missionDemandId"),
     receiverProfile = requireString(demand.receiverProfile, "receiverProfile"):upper(),
@@ -158,194 +157,145 @@ end
 function Controller.SelectArea(demand)
   local d = normalizeDemand(demand)
   local area
-
-  if d.operationsArea == "EAST" and d.supportMode == "SUPPORT" and d.receiverProfile == "SLOW" then
-    area = "PATTY"
-  elseif d.operationsArea == "SOUTH_CENTRAL" and d.supportMode == "RECOVERY" and d.receiverProfile == "SLOW" then
-    area = "MILHOUSE"
-  elseif d.operationsArea == "SOUTHEAST" and d.supportMode == "RECOVERY" and d.receiverProfile == "SLOW" then
-    area = "KRUSTY"
-  elseif d.operationsArea == "NORTHEAST" and d.supportMode == "SUPPORT" and d.receiverProfile == "FAST" then
-    area = "NELSON"
-  elseif d.operationsArea == "CENTRAL" then
-    area = "MOE"
-  elseif d.operationsArea == "WEST" then
-    area = "LISA"
+  if d.operationsArea == "EAST" and d.supportMode == "SUPPORT" and d.receiverProfile == "SLOW" then area = "PATTY"
+  elseif d.operationsArea == "SOUTH_CENTRAL" and d.supportMode == "RECOVERY" and d.receiverProfile == "SLOW" then area = "MILHOUSE"
+  elseif d.operationsArea == "SOUTHEAST" and d.supportMode == "RECOVERY" and d.receiverProfile == "SLOW" then area = "KRUSTY"
+  elseif d.operationsArea == "NORTHEAST" and d.supportMode == "SUPPORT" and d.receiverProfile == "FAST" then area = "NELSON"
+  elseif d.operationsArea == "CENTRAL" then area = "MOE"
+  elseif d.operationsArea == "WEST" then area = "LISA"
   else
-    return nil, string.format(
-      "NO_AAR_POLICY receiverProfile=%s operationsArea=%s supportMode=%s",
-      d.receiverProfile, d.operationsArea, d.supportMode
-    )
+    return nil, string.format("NO_AAR_POLICY receiverProfile=%s operationsArea=%s supportMode=%s", d.receiverProfile, d.operationsArea, d.supportMode)
   end
-
   local areaSpec = AREAS[area]
-  local profile = areaSpec.profiles[d.receiverProfile]
-  if not profile then
+  if not areaSpec.profiles[d.receiverProfile] then
     return nil, string.format("AREA_PROFILE_UNAVAILABLE area=%s receiverProfile=%s", area, d.receiverProfile)
   end
-
   return {
-    missionDemandId = d.missionDemandId,
-    receiverProfile = d.receiverProfile,
-    operationsArea = d.operationsArea,
-    supportMode = d.supportMode,
-    priority = d.priority,
-    area = area,
-    sourceDomain = areaSpec.sourceDomain,
+    missionDemandId = d.missionDemandId, receiverProfile = d.receiverProfile, operationsArea = d.operationsArea,
+    supportMode = d.supportMode, priority = d.priority, area = area, sourceDomain = areaSpec.sourceDomain,
     transitProfile = areaSpec.transitProfile,
   }
 end
 
 function Controller.SetStrategicAdapter(adapter)
-  if type(adapter) ~= "table"
-      or type(adapter.CanMaterialize) ~= "function"
-      or type(adapter.OnMaterialized) ~= "function"
-      or type(adapter.OnHandoff) ~= "function" then
+  if type(adapter) ~= "table" or type(adapter.CanMaterialize) ~= "function"
+      or type(adapter.OnMaterialized) ~= "function" or type(adapter.OnHandoff) ~= "function" then
     fail("strategic adapter requires CanMaterialize, OnMaterialized and OnHandoff")
   end
   state.strategicAdapter = adapter
   return Controller
 end
 
-local function activeKey(selection)
-  return selection.area .. ":" .. selection.receiverProfile
-end
+local function activeKey(selection) return selection.area .. ":" .. selection.receiverProfile end
 
 local function getOrCreateStation(selection)
   local key = activeKey(selection)
   local station = state.stationsByKey[key]
   if not station then
-    station = {
-      key = key,
-      selection = selection,
-      activeRuntime = nil,
-      activeQueued = false,
-      reliefRuntime = nil,
-      reliefQueued = false,
-      reliefReason = nil,
-      nextPlannedHandoverAt = nil,
-      reliefLaunchAt = nil,
-    }
+    station = { key = key, selection = selection, activeRuntime = nil, activeQueued = false, reliefRuntime = nil,
+      reliefQueued = false, reliefReason = nil, handoverArmed = false, nextPlannedHandoverAt = nil, reliefLaunchAt = nil }
     state.stationsByKey[key] = station
   end
   return station
 end
 
 local function getDistanceNm(flightGroup, coordinate)
-  if not flightGroup or not flightGroup:IsAlive() then
-    return nil
-  end
+  if not flightGroup or not flightGroup:IsAlive() then return nil end
   local current = flightGroup:GetCoordinate()
-  if not current then
-    return nil
-  end
-  return current:Get2DDistance(coordinate) / 1852
+  return current and current:Get2DDistance(coordinate) / 1852 or nil
 end
 
 local function estimateEtaSec(flightGroup, coordinate)
   local distanceNm = getDistanceNm(flightGroup, coordinate)
-  if not distanceNm then
-    return nil, nil
+  return distanceNm and (distanceNm / TRANSIT_SPEED_KT) * 3600 or nil, distanceNm
+end
+
+local function allocateTransitCallsign(runtimeId)
+  for index, slot in ipairs(TRANSIT_CALLSIGNS) do
+    if not state.transitCallsignInUse[index] then
+      state.transitCallsignInUse[index] = runtimeId
+      return { index = index, id = slot.id, name = slot.name, number = slot.number }
+    end
   end
-  return (distanceNm / TRANSIT_SPEED_KT) * 3600, distanceNm
+  fail("no free transit tanker callsign slot")
+end
+
+local function releaseTransitCallsign(runtime)
+  local transit = runtime and runtime.transitCallsign
+  if transit and state.transitCallsignInUse[transit.index] == runtime.runtimeId then
+    state.transitCallsignInUse[transit.index] = nil
+  end
 end
 
 local function getSpawner(area, areaSpec)
   local spawner = state.spawnersByArea[area]
   if not spawner then
     spawner = SPAWN:New(areaSpec.template)
-    spawner:InitCallSign(areaSpec.callsignId, areaSpec.callsignName, areaSpec.callsignMinor, areaSpec.callsignMajor)
     state.spawnersByArea[area] = spawner
   end
   return spawner
 end
 
-local function cancelToEgress(runtime, reason)
-  if runtime.egressOrdered then
-    return false
-  end
-  runtime.egressOrdered = true
-  runtime.egressReason = reason
-  runtime.mission:Cancel()
-  log(string.format(
-    "EGRESS_ORDERED runtime=%s demand=%s area=%s profile=%s reason=%s",
-    runtime.runtimeId,
-    runtime.selection.missionDemandId,
-    runtime.selection.area,
-    runtime.selection.receiverProfile,
-    tostring(reason)
-  ))
-  return true
+local function deactivateStationIdentity(runtime)
+  if not runtime or not runtime.stationIdentityActive then return end
+  runtime.flightGroup:TurnOffRadio()
+  runtime.flightGroup:TurnOffTACAN()
+  runtime.flightGroup:SwitchCallsign(runtime.transitCallsign.id, runtime.transitCallsign.number)
+  runtime.stationIdentityActive = false
+  log(string.format("STATION_IDENTITY_OFF runtime=%s area=%s transitCallsign=%s%d", runtime.runtimeId,
+    runtime.selection.area, runtime.transitCallsign.name, runtime.transitCallsign.number))
 end
 
 local function activateStationIdentity(runtime)
-  if runtime.stationIdentityActive then
-    return
-  end
+  if runtime.stationIdentityActive then return end
   local areaSpec = runtime.areaSpec
+  runtime.flightGroup:SwitchCallsign(areaSpec.callsignId, areaSpec.callsignMinor)
   runtime.flightGroup:SwitchRadio(areaSpec.frequencyMHz, 0)
   runtime.flightGroup:SwitchTACAN(areaSpec.tacanChannel, areaSpec.tacanIdent, nil, "Y")
   runtime.stationIdentityActive = true
-  log(string.format(
-    "STATION_IDENTITY_ACTIVE runtime=%s area=%s radioMHz=%.3f tacan=%dY ident=%s",
-    runtime.runtimeId,
-    runtime.selection.area,
-    areaSpec.frequencyMHz,
-    areaSpec.tacanChannel,
-    areaSpec.tacanIdent
-  ))
+  log(string.format("STATION_IDENTITY_ON runtime=%s area=%s callsign=%s%d-1 radioMHz=%.3f tacan=%dY ident=%s",
+    runtime.runtimeId, runtime.selection.area, areaSpec.callsignName, areaSpec.callsignMinor,
+    areaSpec.frequencyMHz, areaSpec.tacanChannel, areaSpec.tacanIdent))
+end
+
+local function cancelToEgress(runtime, reason)
+  if not runtime or runtime.egressOrdered then return false end
+  deactivateStationIdentity(runtime)
+  runtime.egressOrdered = true
+  runtime.egressReason = reason
+  runtime.mission:Cancel()
+  log(string.format("EGRESS_ORDERED runtime=%s demand=%s area=%s profile=%s reason=%s", runtime.runtimeId,
+    runtime.selection.missionDemandId, runtime.selection.area, runtime.selection.receiverProfile, tostring(reason)))
+  return true
 end
 
 local function scheduleCycle(station, runtime, timestamp)
-  local gateDistanceNm = runtime.gateDistanceNm
-  local transitSec = (gateDistanceNm / TRANSIT_SPEED_KT) * 3600
-  local leadFromHandoverSec = math.max(0, transitSec - RELIEF_HANDOVER_ETA_SEC)
-
+  local transitSec = (runtime.gateDistanceNm / TRANSIT_SPEED_KT) * 3600
   runtime.onStationAt = timestamp
   station.nextPlannedHandoverAt = timestamp + STATION_CYCLE_SEC
-  station.reliefLaunchAt = station.nextPlannedHandoverAt - leadFromHandoverSec
-
-  log(string.format(
-    "ON_STATION runtime=%s area=%s profile=%s cycleSec=%d gateDistanceNm=%.1f reliefLaunchInSec=%.0f plannedHandoverInSec=%d",
-    runtime.runtimeId,
-    runtime.selection.area,
-    runtime.selection.receiverProfile,
-    STATION_CYCLE_SEC,
-    gateDistanceNm,
-    station.reliefLaunchAt - timestamp,
-    STATION_CYCLE_SEC
-  ))
+  station.reliefLaunchAt = station.nextPlannedHandoverAt - math.max(0, transitSec - RELIEF_HANDOVER_ETA_SEC)
+  station.handoverArmed = false
+  log(string.format("ON_STATION runtime=%s area=%s profile=%s cycleSec=%d reliefLaunchInSec=%.0f",
+    runtime.runtimeId, runtime.selection.area, runtime.selection.receiverProfile, STATION_CYCLE_SEC,
+    station.reliefLaunchAt - timestamp))
 end
 
-local function promoteRelief(station, relief, reason)
+local function promoteReliefOnTrack(station, relief, reason, timestamp)
   local outgoing = station.activeRuntime
-  if outgoing == relief then
-    return
+  if outgoing and outgoing ~= relief and not outgoing.egressOrdered then
+    cancelToEgress(outgoing, reason == "FUEL_LOW" and "FUEL_LOW_RELIEF" or "SCHEDULED_RELIEF")
   end
-
   station.reliefRuntime = nil
   station.reliefQueued = false
   station.reliefReason = nil
-  station.nextPlannedHandoverAt = nil
-  station.reliefLaunchAt = nil
-
+  station.activeRuntime = relief
   relief.role = "ACTIVE"
   relief.reliefReason = reason
   activateStationIdentity(relief)
-  station.activeRuntime = relief
-
-  if outgoing and outgoing ~= relief then
-    cancelToEgress(outgoing, reason == "FUEL_LOW" and "FUEL_LOW_RELIEF" or "SCHEDULED_RELIEF")
-  end
-
-  log(string.format(
-    "RELIEF_PROMOTED runtime=%s area=%s profile=%s reason=%s outgoingRuntime=%s",
-    relief.runtimeId,
-    relief.selection.area,
-    relief.selection.receiverProfile,
-    tostring(reason),
-    outgoing and outgoing.runtimeId or "NONE"
-  ))
+  scheduleCycle(station, relief, timestamp)
+  log(string.format("RELIEF_ON_STATION runtime=%s area=%s profile=%s reason=%s outgoingRuntime=%s",
+    relief.runtimeId, relief.selection.area, relief.selection.receiverProfile, tostring(reason),
+    outgoing and outgoing.runtimeId or "NONE"))
 end
 
 local function materialize(request)
@@ -356,147 +306,86 @@ local function materialize(request)
   local profile = areaSpec.profiles[selection.receiverProfile]
   local transit = TRANSIT[areaSpec.transitProfile]
   local gate = GATES[areaSpec.sourceDomain]
-  local template = areaSpec.template
   local station = getOrCreateStation(selection)
+
+  state.nextRuntimeId = state.nextRuntimeId + 1
+  local runtimeId = string.format("AAR-%04d", state.nextRuntimeId)
+  local transitCallsign = allocateTransitCallsign(runtimeId)
 
   local spawnCoord = COORDINATE:NewFromLLDD(gate.lat, gate.lon)
   spawnCoord:SetAltitude(UTILS.FeetToMeters(transit.ingressFt), true)
   local ingressCoord = COORDINATE:NewFromLLDD(gate.lat, gate.lon)
   local egressCoord = COORDINATE:NewFromLLDD(gate.lat, gate.lon)
   local trackCoord = COORDINATE:NewFromLLDD(areaSpec.lat, areaSpec.lon)
-  local spawnHeadingDeg = spawnCoord:HeadingTo(trackCoord)
   local gateDistanceNm = spawnCoord:Get2DDistance(trackCoord) / 1852
 
   local spawner = getSpawner(selection.area, areaSpec)
-  spawner:InitHeading(spawnHeadingDeg)
+  spawner:InitCallSign(transitCallsign.id, transitCallsign.name, transitCallsign.number, 1)
+  spawner:InitSTN(STN_START_OCTAL)
+  spawner:InitHeading(spawnCoord:HeadingTo(trackCoord))
   spawner:InitSpeedKnots(TRANSIT_SPEED_KT)
   local group = spawner:SpawnFromCoordinate(spawnCoord)
   if not group then
-    fail("failed to materialize tanker template=" .. tostring(template))
+    releaseTransitCallsign({ runtimeId = runtimeId, transitCallsign = transitCallsign })
+    fail("failed to materialize tanker template=" .. tostring(areaSpec.template))
   end
 
   local flightGroup = FLIGHTGROUP:New(group)
-  if not flightGroup then
-    fail("failed to create FLIGHTGROUP group=" .. tostring(group:GetName()))
-  end
+  if not flightGroup then fail("failed to create FLIGHTGROUP group=" .. tostring(group:GetName())) end
 
-  local mission = AUFTRAG:NewTANKER(
-    trackCoord,
-    profile.altitudeFt,
-    profile.speedKt,
-    areaSpec.headingDeg,
-    LEG_NM,
-    Unit.RefuelingSystem.BOOM_AND_RECEPTACLE
-  )
-
-  if role == "ACTIVE" then
-    mission:SetRadio(areaSpec.frequencyMHz, 0)
-    mission:SetTACAN(areaSpec.tacanChannel, areaSpec.tacanIdent, nil, "Y")
-  end
-
+  local mission = AUFTRAG:NewTANKER(trackCoord, profile.altitudeFt, profile.speedKt, areaSpec.headingDeg, LEG_NM,
+    Unit.RefuelingSystem.BOOM_AND_RECEPTACLE)
   mission:SetMissionIngressCoord(ingressCoord, transit.ingressFt, TRANSIT_SPEED_KT)
   mission:SetMissionEgressCoord(egressCoord, transit.egressFt, TRANSIT_SPEED_KT)
 
   flightGroup:SetFuelLowRTB(false)
   flightGroup:SetFuelLowThreshold(areaSpec.fuelLowPct)
 
-  state.nextRuntimeId = state.nextRuntimeId + 1
   local runtime = {
-    runtimeId = string.format("AAR-%04d", state.nextRuntimeId),
-    selection = selection,
-    areaSpec = areaSpec,
-    profile = profile,
-    transit = transit,
-    template = template,
-    role = role,
-    reliefReason = request.reliefReason,
-    initialFuelPct = areaSpec.initialFuelPct,
-    group = group,
-    flightGroup = flightGroup,
-    mission = mission,
-    ingressCoord = ingressCoord,
-    egressCoord = egressCoord,
-    trackCoord = trackCoord,
-    gateDistanceNm = gateDistanceNm,
-    stationIdentityActive = role == "ACTIVE",
-    onStationAt = nil,
-    egressOrdered = false,
-    egressReason = nil,
-    handoffComplete = false,
+    runtimeId = runtimeId, selection = selection, areaSpec = areaSpec, profile = profile, transit = transit,
+    template = areaSpec.template, role = role, reliefReason = request.reliefReason, initialFuelPct = areaSpec.initialFuelPct,
+    group = group, flightGroup = flightGroup, mission = mission, ingressCoord = ingressCoord, egressCoord = egressCoord,
+    trackCoord = trackCoord, gateDistanceNm = gateDistanceNm, transitCallsign = transitCallsign,
+    stationIdentityActive = false, onStationAt = nil, egressOrdered = false, egressReason = nil, handoffComplete = false,
   }
 
   function flightGroup:OnAfterFuelLow(From, Event, To)
-    if runtime.egressOrdered then
-      return
-    end
-
-    log(string.format(
-      "FUEL_LOW runtime=%s demand=%s area=%s profile=%s thresholdPct=%d action=ENSURE_RELIEF_AND_EGRESS",
-      runtime.runtimeId,
-      selection.missionDemandId,
-      selection.area,
-      selection.receiverProfile,
-      areaSpec.fuelLowPct
-    ))
-
+    if runtime.egressOrdered then return end
+    log(string.format("FUEL_LOW runtime=%s demand=%s area=%s profile=%s thresholdPct=%d action=ENSURE_RELIEF_AND_EGRESS",
+      runtime.runtimeId, selection.missionDemandId, selection.area, selection.receiverProfile, areaSpec.fuelLowPct))
     if station.activeRuntime == runtime then
       station.nextPlannedHandoverAt = nil
       station.reliefLaunchAt = nil
+      station.handoverArmed = true
       ensureRelief(station, "FUEL_LOW")
     elseif station.reliefRuntime == runtime then
       station.reliefRuntime = nil
       station.reliefQueued = false
       station.reliefReason = nil
-      if station.activeRuntime and station.activeRuntime.flightGroup and station.activeRuntime.flightGroup:IsAlive() then
-        ensureRelief(station, "FUEL_LOW")
-      end
+      ensureRelief(station, "FUEL_LOW")
     end
     cancelToEgress(runtime, "FUEL_LOW")
   end
 
   flightGroup:AddMission(mission)
-  if role == "RELIEF" then
-    flightGroup:TurnOffRadio()
-    flightGroup:TurnOffTACAN()
-  end
-  state.runtimesById[runtime.runtimeId] = runtime
+  flightGroup:TurnOffRadio()
+  flightGroup:TurnOffTACAN()
+  flightGroup:SwitchCallsign(transitCallsign.id, transitCallsign.number)
 
+  state.runtimesById[runtime.runtimeId] = runtime
   if role == "RELIEF" then
     station.reliefRuntime = runtime
     station.reliefQueued = false
     station.reliefReason = request.reliefReason or "SCHEDULED"
   else
-    station.activeQueued = false
     station.activeRuntime = runtime
+    station.activeQueued = false
   end
-
   state.strategicAdapter:OnMaterialized(selection, runtime)
 
-  log(string.format(
-    "MATERIALIZED runtime=%s role=%s reliefReason=%s demand=%s area=%s profile=%s source=%s template=%s group=%s callsign=%s%d%d ingressFL=%d trackAltFt=%d trackSpeedKt=%d egressFL=%d radioMHz=%.3f tacan=%dY fuelLowPct=%d expectedInitialFuelPct=%d gateDistanceNm=%.1f",
-    runtime.runtimeId,
-    runtime.role,
-    tostring(runtime.reliefReason),
-    selection.missionDemandId,
-    selection.area,
-    selection.receiverProfile,
-    selection.sourceDomain,
-    template,
-    group:GetName(),
-    areaSpec.callsignName,
-    areaSpec.callsignMinor,
-    areaSpec.callsignMajor,
-    transit.ingressFt / 100,
-    profile.altitudeFt,
-    profile.speedKt,
-    transit.egressFt / 100,
-    areaSpec.frequencyMHz,
-    areaSpec.tacanChannel,
-    areaSpec.fuelLowPct,
-    areaSpec.initialFuelPct,
-    gateDistanceNm
-  ))
-
+  log(string.format("MATERIALIZED runtime=%s role=%s demand=%s area=%s profile=%s source=%s group=%s transitCallsign=%s%d stnStart=%05d",
+    runtime.runtimeId, runtime.role, selection.missionDemandId, selection.area, selection.receiverProfile,
+    selection.sourceDomain, group:GetName(), transitCallsign.name, transitCallsign.number, STN_START_OCTAL))
   return runtime
 end
 
@@ -506,61 +395,35 @@ local function canSpawnSource(sourceDomain, timestamp)
 end
 
 local function queueMaterialization(selection, role, reliefReason)
-  state.queue[#state.queue + 1] = {
-    selection = selection,
-    role = role,
-    reliefReason = reliefReason,
-  }
+  state.queue[#state.queue + 1] = { selection = selection, role = role, reliefReason = reliefReason }
 end
 
 ensureRelief = function(station, reason)
   if station.reliefRuntime and station.reliefRuntime.flightGroup and station.reliefRuntime.flightGroup:IsAlive() then
-    if reason == "FUEL_LOW" and station.reliefReason ~= "FUEL_LOW" then
-      station.reliefReason = "FUEL_LOW"
-      station.reliefRuntime.reliefReason = "FUEL_LOW"
-      log(string.format(
-        "RELIEF_PROMOTED_TO_URGENT runtime=%s area=%s profile=%s",
-        station.reliefRuntime.runtimeId,
-        station.selection.area,
-        station.selection.receiverProfile
-      ))
-    end
+    if reason == "FUEL_LOW" then station.reliefReason = "FUEL_LOW"; station.reliefRuntime.reliefReason = "FUEL_LOW" end
     return station.reliefRuntime, false
   end
-
   if station.reliefQueued then
     if reason == "FUEL_LOW" then
       station.reliefReason = "FUEL_LOW"
       for _, request in ipairs(state.queue) do
-        if request.role == "RELIEF" and activeKey(request.selection) == station.key then
-          request.reliefReason = "FUEL_LOW"
-        end
+        if request.role == "RELIEF" and activeKey(request.selection) == station.key then request.reliefReason = "FUEL_LOW" end
       end
     end
     return nil, false
   end
-
   station.reliefQueued = true
   station.reliefReason = reason
   queueMaterialization(station.selection, "RELIEF", reason)
-  log(string.format(
-    "RELIEF_QUEUED area=%s profile=%s reason=%s",
-    station.selection.area,
-    station.selection.receiverProfile,
-    tostring(reason)
-  ))
+  log(string.format("RELIEF_QUEUED area=%s profile=%s reason=%s", station.selection.area,
+    station.selection.receiverProfile, tostring(reason)))
   return nil, true
 end
 
 local function processQueue()
-  if #state.queue == 0 then
-    return
-  end
-
+  if #state.queue == 0 then return end
   local timestamp = now()
-  local spawnedSource = {}
-  local remaining = {}
-
+  local spawnedSource, remaining = {}, {}
   for _, request in ipairs(state.queue) do
     local source = request.selection.sourceDomain
     if not spawnedSource[source] and canSpawnSource(source, timestamp) then
@@ -570,54 +433,47 @@ local function processQueue()
         state.lastSpawnAtBySource[source] = timestamp
         spawnedSource[source] = true
       else
-        log(string.format("DEFERRED demand=%s role=%s source=%s reason=%s",
-          request.selection.missionDemandId,
-          tostring(request.role),
-          source,
-          tostring(reason or "STRATEGIC_UNAVAILABLE")))
+        log(string.format("DEFERRED demand=%s role=%s source=%s reason=%s", request.selection.missionDemandId,
+          tostring(request.role), source, tostring(reason or "STRATEGIC_UNAVAILABLE")))
         remaining[#remaining + 1] = request
       end
     else
       remaining[#remaining + 1] = request
     end
   end
-
   state.queue = remaining
 end
 
 local function monitorStations()
   local timestamp = now()
-
   for _, station in pairs(state.stationsByKey) do
     local active = station.activeRuntime
-
     if active and active.flightGroup and active.flightGroup:IsAlive() and not active.onStationAt and not active.egressOrdered then
       local distanceNm = getDistanceNm(active.flightGroup, active.trackCoord)
       if distanceNm and distanceNm <= TRACK_ENTRY_RADIUS_NM then
+        activateStationIdentity(active)
         scheduleCycle(station, active, timestamp)
       end
     end
 
-    if active and active.onStationAt and not active.egressOrdered
-        and station.reliefLaunchAt and timestamp >= station.reliefLaunchAt then
+    if active and active.onStationAt and not active.egressOrdered and station.reliefLaunchAt and timestamp >= station.reliefLaunchAt then
       ensureRelief(station, "SCHEDULED")
     end
 
     local relief = station.reliefRuntime
     if relief and relief.flightGroup and relief.flightGroup:IsAlive() and not relief.egressOrdered then
       local etaSec, distanceNm = estimateEtaSec(relief.flightGroup, relief.trackCoord)
-      if etaSec and etaSec <= RELIEF_HANDOVER_ETA_SEC then
-        local reason = station.reliefReason or relief.reliefReason or "SCHEDULED"
-        log(string.format(
-          "RELIEF_HANDOVER_TRIGGER runtime=%s area=%s profile=%s reason=%s etaSec=%.0f distanceNm=%.1f",
-          relief.runtimeId,
-          relief.selection.area,
-          relief.selection.receiverProfile,
-          tostring(reason),
-          etaSec,
-          distanceNm
-        ))
-        promoteRelief(station, relief, reason)
+      local reason = station.reliefReason or relief.reliefReason or "SCHEDULED"
+      if etaSec and etaSec <= RELIEF_HANDOVER_ETA_SEC and not station.handoverArmed then
+        station.handoverArmed = true
+        if active and not active.egressOrdered then
+          cancelToEgress(active, reason == "FUEL_LOW" and "FUEL_LOW_RELIEF" or "SCHEDULED_RELIEF")
+        end
+        log(string.format("RELIEF_FINAL_INGRESS runtime=%s area=%s reason=%s etaSec=%.0f distanceNm=%.1f",
+          relief.runtimeId, relief.selection.area, tostring(reason), etaSec, distanceNm or -1))
+      end
+      if distanceNm and distanceNm <= TRACK_ENTRY_RADIUS_NM then
+        promoteReliefOnTrack(station, relief, reason, timestamp)
       end
     end
   end
@@ -627,27 +483,18 @@ local function monitorStations()
       local distanceNm = getDistanceNm(runtime.flightGroup, runtime.egressCoord)
       if distanceNm and distanceNm <= HANDOFF_RADIUS_NM then
         runtime.handoffComplete = true
-        log(string.format(
-          "OFFMAP_HANDOFF runtime=%s demand=%s area=%s profile=%s distanceGateNm=%.2f action=DESPAWN",
-          runtime.runtimeId,
-          runtime.selection.missionDemandId,
-          runtime.selection.area,
-          runtime.selection.receiverProfile,
-          distanceNm
-        ))
+        deactivateStationIdentity(runtime)
         runtime.flightGroup:Despawn(1, true)
         state.strategicAdapter:OnHandoff(runtime.selection, runtime)
+        releaseTransitCallsign(runtime)
         state.runtimesById[runtimeId] = nil
-
         local station = state.stationsByKey[activeKey(runtime.selection)]
         if station then
-          if station.activeRuntime == runtime then
-            station.activeRuntime = nil
-          end
-          if station.reliefRuntime == runtime then
-            station.reliefRuntime = nil
-          end
+          if station.activeRuntime == runtime then station.activeRuntime = nil end
+          if station.reliefRuntime == runtime then station.reliefRuntime = nil end
         end
+        log(string.format("OFFMAP_HANDOFF runtime=%s demand=%s area=%s distanceGateNm=%.2f action=DESPAWN",
+          runtime.runtimeId, runtime.selection.missionDemandId, runtime.selection.area, distanceNm))
       end
     end
   end
@@ -655,59 +502,34 @@ end
 
 local function ensureSchedulers()
   requireMoose()
-  if not state.dispatcher then
-    state.dispatcher = SCHEDULER:New(nil, processQueue, {}, 0, DISPATCH_INTERVAL_SEC)
-  end
-  if not state.stationMonitor then
-    state.stationMonitor = SCHEDULER:New(nil, monitorStations, {}, DISPATCH_INTERVAL_SEC, DISPATCH_INTERVAL_SEC)
-  end
+  if not state.dispatcher then state.dispatcher = SCHEDULER:New(nil, processQueue, {}, 0, DISPATCH_INTERVAL_SEC) end
+  if not state.stationMonitor then state.stationMonitor = SCHEDULER:New(nil, monitorStations, {}, DISPATCH_INTERVAL_SEC, DISPATCH_INTERVAL_SEC) end
 end
 
 function Controller.SubmitDemand(demand)
-  if not state.strategicAdapter then
-    fail("SetStrategicAdapter must be called before SubmitDemand")
-  end
-
+  if not state.strategicAdapter then fail("SetStrategicAdapter must be called before SubmitDemand") end
   local selection, reason = Controller.SelectArea(demand)
   if not selection then
     log("REJECTED demand=" .. tostring(demand and demand.missionDemandId) .. " reason=" .. tostring(reason))
     return nil, reason
   end
-
   local station = getOrCreateStation(selection)
   station.selection = selection
-
   local existing = station.activeRuntime
   if existing and existing.flightGroup and existing.flightGroup:IsAlive() then
-    log(string.format("DEMAND_SATISFIED_BY_ACTIVE demand=%s area=%s profile=%s runtime=%s group=%s",
-      selection.missionDemandId, selection.area, selection.receiverProfile, existing.runtimeId, existing.group:GetName()))
     ensureSchedulers()
     return existing, "ACTIVE_REUSED"
   end
-
   if station.reliefRuntime and station.reliefRuntime.flightGroup and station.reliefRuntime.flightGroup:IsAlive() then
-    log(string.format("DEMAND_SATISFIED_BY_RELIEF demand=%s area=%s profile=%s runtime=%s",
-      selection.missionDemandId, selection.area, selection.receiverProfile, station.reliefRuntime.runtimeId))
     ensureSchedulers()
     return station.reliefRuntime, "RELIEF_INBOUND"
   end
-
-  if station.activeQueued then
-    ensureSchedulers()
-    return selection, "ACTIVE_QUEUED"
-  end
-
+  if station.activeQueued then ensureSchedulers(); return selection, "ACTIVE_QUEUED" end
   station.activeQueued = true
   queueMaterialization(selection, "ACTIVE", nil)
   ensureSchedulers()
-  log(string.format(
-    "QUEUED demand=%s role=ACTIVE area=%s profile=%s source=%s priority=%s",
-    selection.missionDemandId,
-    selection.area,
-    selection.receiverProfile,
-    selection.sourceDomain,
-    tostring(selection.priority)
-  ))
+  log(string.format("QUEUED demand=%s role=ACTIVE area=%s profile=%s source=%s priority=%s", selection.missionDemandId,
+    selection.area, selection.receiverProfile, selection.sourceDomain, tostring(selection.priority)))
   return selection, "QUEUED"
 end
 
@@ -722,18 +544,12 @@ end
 
 function Controller.GetConfig()
   return {
-    mooseCommit = MOOSE_COMMIT,
-    mooseSha256 = MOOSE_SHA256,
-    sourceSpawnIntervalSec = SOURCE_SPAWN_INTERVAL_SEC,
-    handoffRadiusNm = HANDOFF_RADIUS_NM,
-    trackEntryRadiusNm = TRACK_ENTRY_RADIUS_NM,
-    stationCycleSec = STATION_CYCLE_SEC,
-    reliefHandoverEtaSec = RELIEF_HANDOVER_ETA_SEC,
-    transitSpeedKt = TRANSIT_SPEED_KT,
+    mooseCommit = MOOSE_COMMIT, mooseSha256 = MOOSE_SHA256, sourceSpawnIntervalSec = SOURCE_SPAWN_INTERVAL_SEC,
+    handoffRadiusNm = HANDOFF_RADIUS_NM, trackEntryRadiusNm = TRACK_ENTRY_RADIUS_NM, stationCycleSec = STATION_CYCLE_SEC,
+    reliefHandoverEtaSec = RELIEF_HANDOVER_ETA_SEC, transitSpeedKt = TRANSIT_SPEED_KT, stnStartOctal = STN_START_OCTAL,
   }
 end
 
 OMW.AAR = Controller
 log("LOADED MOOSE commit=" .. MOOSE_COMMIT .. " sha256=" .. MOOSE_SHA256)
-
 return Controller
