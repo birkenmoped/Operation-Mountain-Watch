@@ -15,7 +15,7 @@ project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes: []
 superseded_by: []
 source_branch: agent/aar-runtime-finalization
-source_commit: PENDING_MERGE
+source_commit: 5d292e949f231063a3c640556d4b4741b1fa9bc5
 validated_in_dcs: true
 acceptance_branch: agent/aar-runtime-finalization
 acceptance_commit: 5e7dbec37f53155f39c63c25590cf6b4e35814ca
