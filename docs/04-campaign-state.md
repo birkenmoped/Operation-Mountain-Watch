@@ -260,6 +260,12 @@ OFF_FIELD_UNRECOVERABLE
 -> delayed aircraft destruction target: 5-10 minutes after confirmed unrecoverable landing
 ```
 
+Die konkrete Forced-Landing-Erkennung, CSAR-Kopplung und verzögerte Zerstörung sind noch nicht implementiert oder DCS-validiert.
+
+### 7.5 Spätere Gameplay-Erweiterung
+
+Eine umkämpfte Recovery-Site mit optionalem Sicherungsauftrag von maximal etwa 30 Minuten bleibt als spätere V2-Erweiterung vorgesehen. Die aktuelle Foundation-V1 verwendet zunächst nur die abstrakte Recovery-Zeit und die anschließende Repair-Sperre.
+
 ## 8. AAR-Off-map-KC-135-Pools
 
 ### 8.1 Eigentümerentscheidung
