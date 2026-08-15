@@ -1,31 +1,38 @@
 ---
 document_id: OMW-TEST-AAR-PRODUCTION-ACCEPTANCE-5
-status: PLANNED
+status: ACCEPTED_TECHNICAL_BASELINE
 document_class: ACCEPTANCE_TEST
 owning_policy: OMW-GOV-001
 authoritative_for:
   - AAR-PRODUCTION-FINAL-ACCEPTANCE-5 test scope
   - natural FIR and real-track transit expectations for the final AAR acceptance run
-  - observed Acceptance-5 partial runtime evidence and rejected scheduled-handover semantics
+  - accepted AAR production runtime behavior for the exact documented provenance
 not_authoritative_for:
-  - repository-wide DCS runtime acceptance without complete acceptance provenance
-  - CampaignState strategic inventory authority
+  - repository-wide normative authority before merge to main
+  - CampaignState strategic inventory authority outside the documented AAR integration contract
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes: []
 superseded_by: []
 source_branch: agent/aar-runtime-finalization
 source_commit: PENDING_MERGE
-validated_in_dcs: partial
+validated_in_dcs: true
+acceptance_branch: agent/aar-runtime-finalization
+acceptance_commit: 5e7dbec37f53155f39c63c25590cf6b4e35814ca
+acceptance_mission: OMW_Template_v9_AirOps_rdy.miz
+acceptance_mission_sha256: c9e3978a4bbb35ebbfe5ae362021b5f8870129d6c8b06b58147424dde71a94e3
+dcs_version: 2.9.28.26385 MT
+moose_commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+moose_artifact_sha256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
 ---
 
 # AAR Production Final Acceptance 5
 
 ## Zweck
 
-`AAR-PRODUCTION-FINAL-ACCEPTANCE-5` ersetzte Acceptance-4 als nächsten gemeinsamen DCS-Abschlusslauf. Acceptance-4 hatte positive Teilbeobachtungen geliefert, war aber kein Final-PASS.
+`AAR-PRODUCTION-FINAL-ACCEPTANCE-5` ist der kombinierte technische Abschlusslauf für die aktuelle OMW-AAR-Produktionsintegration. Der Test prüft natürliche FIR- und Track-Transits, Scheduled Relief, FuelLow, Reserve-Lifecycle, Verlust/Replacement und CampaignState-Accounting gemeinsam.
 
-Acceptance-5 beseitigte insbesondere die frühere Testbeschleunigung, bei der nach natürlichem FIR-Einflug der controller-beobachtete `runtime.trackCoord` auf die aktuelle Flugzeugposition verschoben wurde. Acceptance-5 verändert `runtime.trackCoord` nicht und teleportiert keine physischen Tanker.
+Acceptance-5 verändert `runtime.trackCoord` nicht, teleportiert keine physischen Tanker und mutiert keine `.miz` automatisiert.
 
 ## Produktive Baseline
 
@@ -45,26 +52,15 @@ LISA      FAST   MANAS      PINAX   Texaco
 MOE       FAST   MANAS      PINAX   Texaco
 ```
 
-Lower-/Upper-Airway-Routing bleibt ausdrücklich späterer Scope.
+Lower-/Upper-Airway-Routing bleibt ausdrücklich späterer optionaler Scope.
 
-## Physischer Relief-Grundsatz
+## Verbindliche Handover-Semantik
 
-Ein Relief-Tanker entsteht ausschließlich am zugeordneten externen Spawnpunkt und fliegt physisch über den FIR-Fix zum realen AAR-Track.
-
-Dadurch existieren während des Relief-Transits notwendigerweise zeitweise zwei physische Sorties desselben Tracks, zum Beispiel:
-
-```text
-Shell2-1  MILHOUSE ACTIVE / station owner
-Shell3-1  MILHOUSE RELIEF / inbound
-```
-
-Das ist keine doppelte Stationsbesetzung. Während des Inbound-Transits darf ausschließlich der aktuelle ACTIVE-Tanker Track-Radio/TACAN besitzen.
-
-Nach Auswertung des realen Acceptance-5-Laufs gilt die präzisierte Scheduled-Relief-Regel:
+Scheduled Relief:
 
 ```text
 RELIEF ETA <= 5 min
--> Handover nur ARMEN / vorbereiten
+-> Handover nur ARMEN
 -> outgoing bleibt ACTIVE und behält Station-Radio/TACAN
 -> relief bleibt RELIEF / inbound
 
@@ -73,9 +69,9 @@ RELIEF erreicht den realen Track / die enge Handover-Geometrie
 -> erst jetzt outgoing Cancel/Egress
 ```
 
-Das 5-Minuten-Gate ist damit **kein** Station-Owner-Wechsel und **kein** Egress-Gate für den planmäßig abzulösenden Tanker.
+Das 5-Minuten-Gate ist kein Station-Owner-Wechsel und kein Egress-Gate.
 
-FuelLow ist ausdrücklich anders:
+FuelLow bleibt davon getrennt:
 
 ```text
 ACTIVE FuelLow
@@ -85,110 +81,113 @@ ACTIVE FuelLow
 -> Ersatz übernimmt nach natürlicher Track-Ankunft
 ```
 
-Beim FuelLow-Pfad gibt es bewusst kein 5-Minuten-Handover-Gate; Schutz des Tankers vor Treibstoffmangel hat Vorrang vor lückenloser Stationsabdeckung.
+## Acceptance-Ablauf
 
-## Testbeschleunigung
-
-Der Scheduled-Relief-Test beschleunigte ausschließlich den Zeitpunkt, ab dem MILHOUSE eine Ablösung anfordert. Vorher verblieb der Initialtanker mindestens 60 Simulationssekunden allein auf Station.
-
-Nicht beschleunigt beziehungsweise nicht manipuliert wurden:
-
-```text
-physical aircraft position
-FIR ingress passage
-track coordinate
-relief transit from external spawn to track
-track-entry geometry
-FIR egress passage
-external handoff route
-```
-
-Der Harness besitzt keinen `forceControlledTrackEntry`-Pfad mehr.
-
-## Acceptance-Ablauf des ausgeführten Stands
-
-1. CampaignState Restore/Reconciliation und Pools 16/40 prüfen.
+1. CampaignState Restore/Reconciliation und Pools MANAS 16 / AL_UDEID 40 prüfen.
 2. Nur die vier STANDARD-Tracks materialisieren; LISA/MOE bleiben ohne Demand absent.
 3. Mindestens 60 s Same-source-Abstand prüfen; MANAS und AL_UDEID bleiben voneinander unabhängig.
 4. Natürlichen FIR-Ingress der vier STANDARD-Tanker über EGPAN beziehungsweise DAVER abwarten.
 5. Natürliche Ankunft an den tatsächlichen vier AAR-Tracks abwarten.
 6. STANDARD-MissionDemand attach/end prüfen, ohne Track-Shutdown.
-7. Einen Scheduled Relief auf MILHOUSE auslösen; Shell-Familie und unterschiedliche `n-1`-Gruppennummer prüfen.
-8. Relief fliegt natürlich über DAVER zum realen MILHOUSE-Track. Während des Transits: zwei physische MILHOUSE-Sorties, aber nur ein Station Owner.
-9. MILHOUSE-Handover, DAVER-Egress, externen Handoff, Despawn und exact-once Recredit des outgoing Tankers prüfen.
-10. FuelLow-Relief separat auf NELSON prüfen; Replacement fliegt natürlich über EGPAN zum realen Track.
+7. Scheduled Relief auf MILHOUSE auslösen; Shell-Familie und unterschiedliche `n-1`-Gruppennummer prüfen.
+8. Zwischen 5-Minuten-Gate und realer Relief-Ankunft outgoing ACTIVE/Station Owner halten; jeder vorzeitige Owner-Wechsel oder Egress ist FAIL.
+9. Erst bei realer Track-Ankunft MILHOUSE-Handover durchführen; danach DAVER-Egress, External Handoff, Despawn und exact-once Recredit prüfen.
+10. FuelLow-Relief separat auf NELSON mit Immediate Egress prüfen; Replacement fliegt natürlich über EGPAN zum realen Track.
 11. LISA und MOE per Demand starten, natürlichen PINAX-Ingress und natürliche Track-Ankunft prüfen.
-12. Letzten Reserve-Demand beenden; PINAX-Egress und externen Handoff beider Reserve-Tanker prüfen.
+12. Letzten Reserve-Demand beenden; PINAX-Egress und External Handoff beider Reserve-Tanker prüfen.
 13. PATTY-Verlust mit MOOSE `UNIT:Explode()` injizieren; kein Recredit, Loss-Audit +1 und natürliche Replacement-Sortie prüfen.
 14. Finalzustand: vier STANDARD-Tanker aktiv, LISA/MOE absent, MANAS 13 mit Loss-Audit 1, AL_UDEID 38.
 
-## Realer Owner-DCS-Lauf 15.08.2026
+## Verworfener Vorlauf vom 15.08.2026
 
-Ausgeführter Branch-/Build-Stand:
-
-```text
-Branch: agent/aar-runtime-finalization
-Commit: 877f0c15c0b46dc8d08f39f7cdcde36e065563b5
-Builder/Test-ID: AAR-PRODUCTION-FINAL-ACCEPTANCE-5
-Bundle SHA-256: b04ad66bc7525c65c89c5946eda5d598af7570235a2d7b2750c17cb86919f6e6
-Harness SHA-256: a2a7311a87537dae203f38f1683006b71ed026e6d7aab7d49d2f031f913e0b43
-CycleControl SHA-256: 34ab413eb726ac6ab8c388fba43f262a41d56a378c137b362ea407dd462a422b
-Controller SHA-256: 53af372b26aaf4f8afce5e27e3b7c70de52ad5a0606fc97705ac2b9f3bb6790c
-RuntimeIntegration SHA-256: 598aa378d95f9dcde9aa982222d40070006c3c892ffa66668576c64ff07aa91b
-Mission file observed by DCS: OMW_Template_v9_AirOps_rdy.miz
-DCS: 2.9.28.26385 MT
-MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
-Moose.lua SHA-256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
-```
-
-Kein Mission-SHA-256 wurde für diesen Lauf als reale Owner-Ausgabe dokumentiert. Der Lauf kann daher unabhängig vom Harness-Ergebnis nicht als vollständige `ACCEPTED_TECHNICAL_BASELINE` hochgestuft werden.
-
-### Positiv beobachtet
-
-- vier STANDARD-Tracks wurden automatisch betrieben; LISA/MOE blieben bis zum Demand Reserve;
-- natürliche FIR-Ingress-/Egress-Passage funktionierte über EGPAN, DAVER und PINAX;
-- External Spawn/Handoff blieb vom FIR-Fix getrennt;
-- stabile Callsign-Familien und separate `n-1`-Gruppen funktionierten (`MILHOUSE`: `Shell2-1` / `Shell3-1`);
-- während des MILHOUSE-Relief-Transits existierten zwei physische MILHOUSE-Sorties, aber zunächst nur ein Station Owner;
-- NELSON FuelLow -> unmittelbarer Egress -> Replacement funktionierte; dieser Immediate-Egress-Pfad bleibt ausdrücklich gewollt;
-- LISA/MOE Demand-Lifecycle inklusive PINAX-Egress und External Handoff funktionierte;
-- PATTY-Verlust wurde absichtlich mit MOOSE `UNIT:Explode()` injiziert; `FLIGHTGROUP Dead/OnAfterDead`, kein Recredit, Loss-Audit und natürliche Replacement-Sortie wurden beobachtet;
-- der Harness erreichte formal `RESULT PASS`.
-
-### Relevanter Fehler trotz formalem Harness-PASS
-
-Der Scheduled MILHOUSE Relief zeigte:
+Der frühere Lauf auf Commit `877f0c15c0b46dc8d08f39f7cdcde36e065563b5` erreichte formal `RESULT PASS`, war aber **nicht akzeptabel**:
 
 ```text
 RELIEF_FINAL_INGRESS etaSec=297 distanceNm=24.7
--> outgoing Shell2-1 STATION_IDENTITY_OFF + EGRESS_ORDERED
--> wenige Sekunden später Shell3-1 STATION_IDENTITY_ON
+-> outgoing bereits STATION_IDENTITY_OFF + EGRESS_ORDERED
+-> relief wenige Sekunden später Station Owner
 ```
 
-Damit wurde der outgoing Tanker bereits beim circa 5-Minuten-/24,7-NM-Gate vom Track geschickt, bevor der Relief-Tanker den realen Track erreicht hatte. Der Harness prüfte daher eine falsche Handover-Semantik und konnte trotz sichtbarer Versorgungslücke `RESULT PASS` melden.
+Zusätzlich fehlte ein vollständiger Mission-SHA-256. Dieser Vorlauf bleibt historische Fehler- und Regressionsevidenz, ist aber keine Acceptance-Baseline.
 
-**Folge:** Acceptance-5 ist kein final akzeptierter Produktions-PASS. Die positiven Teilbeobachtungen bleiben gültige Evidenz für genau die beobachteten Mechaniken; der Scheduled-Relief-Handover muss korrigiert und erneut getestet werden.
+## Akzeptierter Owner-DCS-Lauf vom 15.08.2026
 
-## Aktueller Zielzustand und Restarbeit
-
-Ziel ist eine produktionsreife MOOSE-first AAR-Struktur mit vier bis auf weiteres kontinuierlichen STANDARD-Tracks, zwei demand-gesteuerten RESERVE-Tracks, natürlichem FIR-Routing, sauberem Scheduled Relief, sicherem FuelLow-Egress, CampaignState-exact-once-Accounting und ohne sichtbare Teleports/Off-map-Transitions.
-
-Bis dahin noch erforderlich:
-
-1. Scheduled-Relief-Controller korrigieren: `<=5 min` nur als Handover-Arming; outgoing bleibt ACTIVE.
-2. Station-Owner-Wechsel erst bei realer Track-Ankunft beziehungsweise enger, explizit definierter Handover-Geometrie auslösen.
-3. Outgoing Scheduled Tanker erst nach tatsächlicher Relief-Übernahme auf `Cancel/Egress` schicken.
-4. FuelLow-Pfad unverändert getrennt halten: Immediate Egress, kein 5-Minuten-Warten.
-5. Acceptance-Harness so ändern, dass er die kontinuierliche Station-Besetzung zwischen 5-Minuten-Gate und realer Relief-Ankunft explizit prüft und einen vorzeitigen Owner-Wechsel als FAIL wertet.
-6. Regressionen für Callsign-Familie, FIR Ingress/Egress, External Handoff, Reserve-Lifecycle, Loss/Replacement und CampaignState-Accounting beibehalten.
-7. neuen Owner-DCS-Lauf mit vollständiger Mission-/Bundle-/DCS-/MOOSE-Provenienz ausführen.
-8. erst nach diesem realen PASS `VERIFIED-METHODS.md`, Acceptance-Status und PR-Readiness entsprechend hochstufen.
-9. Lower-/Upper-Airway-Routing bleibt optionaler späterer Ausbau und blockiert den AAR-Abschluss nicht.
-
-## DCS-Status
+### Vollständige Provenienz
 
 ```text
-VALIDATED: partial
-FINAL ACCEPTANCE: no
-NEXT DCS TEST REQUIRED: yes, after scheduled-relief handover correction
+Branch: agent/aar-runtime-finalization
+Commit: 5e7dbec37f53155f39c63c25590cf6b4e35814ca
+Builder/Test-ID: AAR-PRODUCTION-FINAL-ACCEPTANCE-5
+Mission file observed by DCS: OMW_Template_v9_AirOps_rdy.miz
+Mission SHA-256: c9e3978a4bbb35ebbfe5ae362021b5f8870129d6c8b06b58147424dde71a94e3
+Bundle SHA-256: f33b0a5a6212d9a1103dfa2e0ab677777142ca771a2f5007a3ab1c7fee594cbf
+Harness SHA-256: 7fbe327a45d89cdc90ff7847854f5b2487f7a39a45c1fd03a98806a51ffebccb
+CycleControl SHA-256: 34ab413eb726ac6ab8c388fba43f262a41d56a378c137b362ea407dd462a422b
+Controller SHA-256: 8457772aad8bee8b14ac617b347e246c9281e485b212d2d06751ca3e303db9b4
+RuntimeIntegration SHA-256: 598aa378d95f9dcde9aa982222d40070006c3c892ffa66668576c64ff07aa91b
+DCS: 2.9.28.26385 MT
+MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+Moose.lua SHA-256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
+dcs.log SHA-256: 3c4b5b74f91b9d94e272a1f02f1df839bbe6b3a2362fa03338916e4fc8b4a060
+debrief.log SHA-256: ba78783fce55d045735e76e9ddab4e23a2237fa93eabf90fed56bd58770873a0
 ```
+
+Die vom Projektinhaber hochgeladene Testmission wurde nach dem Lauf geprüft. Das eingebettete Acceptance-Bundle entsprach dem dokumentierten Build-Hash und enthielt den dokumentierten Git-Commit. Die eingebettete `Moose.lua` entsprach dem dokumentierten MOOSE-Commit und SHA-256.
+
+### Runtime-Ergebnis
+
+Der Harness protokollierte den geforderten Armed-Hold-Zustand:
+
+```text
+SCHEDULED_RELIEF_ARMED_HOLD_PASS area=MILHOUSE outgoingStillActive=true reliefStillInbound=true
+```
+
+Damit blieb der bisherige MILHOUSE-Tanker nach Erreichen des 5-Minuten-Gates ACTIVE und Station Owner. Erst bei tatsächlicher Relief-Ankunft erfolgten Station-Identity-Transfer und outgoing Egress.
+
+Weitere positive Marker:
+
+```text
+AAR_POLICY_BASELINE_PASS
+RESTORE_RECONCILIATION_PASS
+POOL_BASELINE_PASS
+STANDARD_TRACKS_4_PASS
+FIR_INGRESS_STANDARD_PASS
+NATURAL_STANDARD_TRACK_ENTRY_PASS
+STANDARD_DEMAND_END_PASS
+RELIEF_TRANSIT_OVERLAP_PASS
+SINGLE_SCHEDULED_RELIEF_PASS area=MILHOUSE armedHold=true
+FUEL_LOW_RELIEF_PASS
+RESERVE_NATURAL_INGRESS_AND_TRACK_PASS
+RESERVE_DEMAND_LIFECYCLE_PASS
+AIRCRAFT_LOSS_PASS
+FINAL_STEADY_STATE_PASS
+RESULT PASS
+```
+
+Belegt sind für exakt diesen Branch-/Commit-/Mission-/Bundle-/DCS-/MOOSE-Stand:
+
+- vier kontinuierliche STANDARD-Tracks;
+- zwei demand-gesteuerte RESERVE-Tracks;
+- Callsign-Familien und getrennte `n-1`-Sorties;
+- MOOSE-gemanagte STN-Auslesung;
+- mindestens 60 s Same-source-Materialisierung;
+- natürliche FIR-Passage über EGPAN, DAVER und PINAX;
+- External Spawn/Handoff getrennt von FIR-Ingress/Egress;
+- Scheduled Relief ohne vorzeitige Stationsfreigabe;
+- Radio/TACAN-Transfer erst bei realer Relief-Übernahme;
+- FuelLow als Immediate-Egress-Pfad;
+- Reserve-Shutdown nach Ende des letzten Demands;
+- PATTY Loss/Replacement über MOOSE `UNIT:Explode()` und FLIGHTGROUP Dead/OnAfterDead;
+- CampaignState exact-once Recredit beziehungsweise Loss-Audit;
+- finaler Steady State ohne verbliebenen Reserve-/Relief-Restbestand.
+
+## Acceptance-Status
+
+```text
+VALIDATED: true
+FINAL ACCEPTANCE: PASS
+ACCEPTED_TECHNICAL_BASELINE: yes, exact documented provenance only
+NEXT DCS TEST REQUIRED FOR THIS SCOPE: no
+```
+
+Diese Acceptance verleiht dem ungemergten Branch keine repositoryweite normative Autorität. Projektweite Wirkung entsteht gemäß `OMW-GOV-001` erst nach Merge nach `main` oder einer ausdrücklichen Governance-Entscheidung.
