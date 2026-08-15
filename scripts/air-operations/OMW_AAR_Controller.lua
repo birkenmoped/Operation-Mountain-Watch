@@ -21,7 +21,6 @@ local TRANSIT_SPEED_KT = 300
 local LEG_NM = 35
 local STATION_CYCLE_SEC = 3 * 60 * 60
 local RELIEF_HANDOVER_ETA_SEC = 5 * 60
-local STN_START_OCTAL = 50000
 local MAX_CONCURRENT_SUPPORT_MISSIONS = 2
 local MAX_AIRCRAFT_PER_SUPPORT_MISSION = 2
 local MAX_CONCURRENT_SUPPORT_AIRCRAFT = 4
@@ -95,21 +94,21 @@ local AREAS = {
 }
 
 local TRANSIT_CALLSIGNS = {
-  { id = CALLSIGN.Tanker.Texaco, name = "Texaco", number = 5 },
-  { id = CALLSIGN.Tanker.Texaco, name = "Texaco", number = 6 },
-  { id = CALLSIGN.Tanker.Texaco, name = "Texaco", number = 7 },
-  { id = CALLSIGN.Tanker.Texaco, name = "Texaco", number = 8 },
-  { id = CALLSIGN.Tanker.Texaco, name = "Texaco", number = 9 },
-  { id = CALLSIGN.Tanker.Arco, name = "Arco", number = 5 },
-  { id = CALLSIGN.Tanker.Arco, name = "Arco", number = 6 },
-  { id = CALLSIGN.Tanker.Arco, name = "Arco", number = 7 },
-  { id = CALLSIGN.Tanker.Arco, name = "Arco", number = 8 },
-  { id = CALLSIGN.Tanker.Arco, name = "Arco", number = 9 },
-  { id = CALLSIGN.Tanker.Shell, name = "Shell", number = 5 },
-  { id = CALLSIGN.Tanker.Shell, name = "Shell", number = 6 },
-  { id = CALLSIGN.Tanker.Shell, name = "Shell", number = 7 },
-  { id = CALLSIGN.Tanker.Shell, name = "Shell", number = 8 },
-  { id = CALLSIGN.Tanker.Shell, name = "Shell", number = 9 },
+  { id = CALLSIGN.Tanker.Texaco, name = "Texaco", number = 5, stn = 50000 },
+  { id = CALLSIGN.Tanker.Texaco, name = "Texaco", number = 6, stn = 50001 },
+  { id = CALLSIGN.Tanker.Texaco, name = "Texaco", number = 7, stn = 50002 },
+  { id = CALLSIGN.Tanker.Texaco, name = "Texaco", number = 8, stn = 50003 },
+  { id = CALLSIGN.Tanker.Texaco, name = "Texaco", number = 9, stn = 50004 },
+  { id = CALLSIGN.Tanker.Arco, name = "Arco", number = 5, stn = 50005 },
+  { id = CALLSIGN.Tanker.Arco, name = "Arco", number = 6, stn = 50006 },
+  { id = CALLSIGN.Tanker.Arco, name = "Arco", number = 7, stn = 50007 },
+  { id = CALLSIGN.Tanker.Arco, name = "Arco", number = 8, stn = 50010 },
+  { id = CALLSIGN.Tanker.Arco, name = "Arco", number = 9, stn = 50011 },
+  { id = CALLSIGN.Tanker.Shell, name = "Shell", number = 5, stn = 50012 },
+  { id = CALLSIGN.Tanker.Shell, name = "Shell", number = 6, stn = 50013 },
+  { id = CALLSIGN.Tanker.Shell, name = "Shell", number = 7, stn = 50014 },
+  { id = CALLSIGN.Tanker.Shell, name = "Shell", number = 8, stn = 50015 },
+  { id = CALLSIGN.Tanker.Shell, name = "Shell", number = 9, stn = 50016 },
 }
 
 local state = {
@@ -278,7 +277,7 @@ local function allocateTransitCallsign(runtimeId)
   for index, slot in ipairs(TRANSIT_CALLSIGNS) do
     if not state.transitCallsignInUse[index] then
       state.transitCallsignInUse[index] = runtimeId
-      return { index = index, id = slot.id, name = slot.name, number = slot.number }
+      return { index = index, id = slot.id, name = slot.name, number = slot.number, stn = slot.stn }
     end
   end
   fail("no free transit tanker callsign slot")
@@ -485,7 +484,7 @@ local function materialize(request)
 
   local spawner = getSpawner(selection.area, areaSpec)
   spawner:InitCallSign(transitCallsign.id, transitCallsign.name, transitCallsign.number, 1)
-  spawner:InitSTN(STN_START_OCTAL)
+  spawner:InitSTN(transitCallsign.stn)
   spawner:InitHeading(spawnCoord:HeadingTo(trackCoord))
   spawner:InitSpeedKnots(TRANSIT_SPEED_KT)
   local group = spawner:SpawnFromCoordinate(spawnCoord)
@@ -555,9 +554,9 @@ local function materialize(request)
   end
   state.strategicAdapter:OnMaterialized(selection, runtime)
 
-  log(string.format("MATERIALIZED runtime=%s role=%s demand=%s area=%s profile=%s source=%s group=%s transitCallsign=%s%d stnStart=%05d missions=%d aircraft=%d",
+  log(string.format("MATERIALIZED runtime=%s role=%s demand=%s area=%s profile=%s source=%s group=%s transitCallsign=%s%d stn=%05d missions=%d aircraft=%d",
     runtime.runtimeId, runtime.role, selection.missionDemandId, selection.area, selection.receiverProfile,
-    selection.sourceDomain, group:GetName(), transitCallsign.name, transitCallsign.number, STN_START_OCTAL,
+    selection.sourceDomain, group:GetName(), transitCallsign.name, transitCallsign.number, transitCallsign.stn,
     countMissionSlots(), countPhysicalRuntimes()))
   return runtime
 end
@@ -785,7 +784,7 @@ function Controller.GetConfig()
   return {
     mooseCommit = MOOSE_COMMIT, mooseSha256 = MOOSE_SHA256, sourceSpawnIntervalSec = SOURCE_SPAWN_INTERVAL_SEC,
     handoffRadiusNm = HANDOFF_RADIUS_NM, trackEntryRadiusNm = TRACK_ENTRY_RADIUS_NM, stationCycleSec = STATION_CYCLE_SEC,
-    reliefHandoverEtaSec = RELIEF_HANDOVER_ETA_SEC, transitSpeedKt = TRANSIT_SPEED_KT, stnStartOctal = STN_START_OCTAL,
+    reliefHandoverEtaSec = RELIEF_HANDOVER_ETA_SEC, transitSpeedKt = TRANSIT_SPEED_KT, transitStnSlots = #TRANSIT_CALLSIGNS,
     maxConcurrentSupportMissions = MAX_CONCURRENT_SUPPORT_MISSIONS,
     maxAircraftPerSupportMission = MAX_AIRCRAFT_PER_SUPPORT_MISSION,
     maxConcurrentSupportAircraft = MAX_CONCURRENT_SUPPORT_AIRCRAFT,

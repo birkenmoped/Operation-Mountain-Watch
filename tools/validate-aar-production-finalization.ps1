@@ -33,6 +33,9 @@ $requirements = @(
   @{ File = 'Controller'; Marker = 'state.strategicAdapter:OnLost(' },
   @{ File = 'Controller'; Marker = 'function Controller.EndDemand' },
   @{ File = 'Controller'; Marker = 'function Controller.GetRuntimeCounts' },
+  @{ File = 'Controller'; Marker = 'stn = 50000' },
+  @{ File = 'Controller'; Marker = 'stn = 50016' },
+  @{ File = 'Controller'; Marker = 'spawner:InitSTN(transitCallsign.stn)' },
   @{ File = 'Adapter'; Marker = 'function Adapter:OnLost' },
   @{ File = 'Adapter'; Marker = 'function Adapter:ReconcileRestore' },
   @{ File = 'Adapter'; Marker = 'AAR_RESTART_RECONCILIATION' },
@@ -53,6 +56,10 @@ foreach ($requirement in $requirements) {
   if (-not $content[$requirement.File].Contains($requirement.Marker)) {
     throw "Missing required marker in $($requirement.File): $($requirement.Marker)"
   }
+}
+
+if ($content.Controller.Contains('spawner:InitSTN(STN_START_OCTAL)') -or $content.Controller.Contains('local STN_START_OCTAL')) {
+  throw 'AAR controller still uses a shared STN seed. Every simultaneously present tanker must have an explicit unique Link-16 STN.'
 }
 
 $forbiddenPatterns = @(
@@ -83,6 +90,7 @@ Write-Host 'CampaignStateAuthority: true'
 Write-Host 'StrategicTurnaroundTimer: false'
 Write-Host 'LossRecredit: false'
 Write-Host 'RestoreReconciliation: true'
+Write-Host 'UniqueTransitSTN: true'
 Write-Host 'MaxConcurrentSupportMissions: 2'
 Write-Host 'MaxAircraftPerSupportMission: 2'
 Write-Host 'MaxConcurrentSupportAircraft: 4'
