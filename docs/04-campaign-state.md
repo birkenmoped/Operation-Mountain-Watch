@@ -268,9 +268,9 @@ Eine umkämpfte Recovery-Site mit optionalem Sicherungsauftrag von maximal etwa 
 
 ## 8. AAR-Off-map-KC-135-Pools
 
-### 8.1 Eigentümerentscheidung
+### 8.1 Eigentümerentscheidung und Bestand
 
-Am 15.08.2026 wurden für OMW folgende strategische Designbestände festgelegt:
+Für OMW gelten folgende strategische Designbestände:
 
 ```text
 OFFMAP_MANAS
@@ -282,43 +282,54 @@ AIRCRAFT_KC135 = 40
 
 Die Zahlen sind plausible OMW-Kompositbestände und keine Behauptung einer historisch exakt zugewiesenen Stärke. Die historische Evidenz und die ausgewerteten Satelliten-Snapshots sind in [`OMW-AAR-ISAF-ACO`](29-isaf-2009-2013-air-to-air-refueling.md) dokumentiert.
 
-### 8.2 Strategische Autorität
+Die AAR-Pools werden bewusst **count-basiert** geführt. Es gibt für diesen Scope keine strategischen Tail Numbers, keine individuelle KC-135-Entity-Verwaltung und keine per-Template-Bestandsführung.
 
-Diese Pools sind reine CampaignState-Domänenobjekte. Sie werden nicht als DCS-Airbase, MOOSE WAREHOUSE oder AIRWING modelliert, weil MANAS und AL_UDEID außerhalb der Afghanistan-Karte liegen und dort keine passende DCS-Airbase existiert.
+### 8.2 Strategische Autorität und Off-map-Knoten
 
-```text
-CampaignState Off-map Pool
--> strategic AAR adapter
--> MOOSE SPAWN at external gate
--> FLIGHTGROUP
--> AUFTRAG
--> off-map handoff
--> CampaignState turnaround / availability
-```
+Die Pools sind reine CampaignState-Domänenressourcen. Sie werden nicht als DCS-Airbase, MOOSE WAREHOUSE oder AIRWING modelliert.
 
-Die physische MOOSE-Repräsentation darf den strategischen Pool weder selbst erhöhen noch als zweites Bestandsbuch führen.
-
-### 8.3 Resource Contract
-
-Vorgesehene Ressource:
-
-```text
-resourceId: AIRCRAFT_KC135
-unit: count
-```
-
-Knoten:
+Der Initializer `OMW_AirOpsCampaignStateInitializer` führt dafür die logischen Knoten:
 
 ```text
 OFFMAP_MANAS
 OFFMAP_AL_UDEID
 ```
 
-Vor der Implementierung ist zu prüfen, wie diese Off-map-Knoten am kleinsten in den bestehenden Initializer aufgenommen werden, ohne sie fälschlich als DCS-Airbase zu behandeln.
+Da `OMW_CampaignState.lua` im aktuellen Schema für jeden Resource-Node noch ein nichtleeres Feld `airbaseName` verlangt, verwendet der Initializer dort ausdrücklich gekennzeichnete **logische Labels**. Diese Labels sind keine DCS-Airbase-Namen und dürfen niemals an `AIRBASE`, `WAREHOUSE`, `AIRWING` oder andere DCS-/MOOSE-Airbasepfade übergeben werden.
 
-### 8.4 Verfügbarkeitsgrenze zum AAR-Controller
+```text
+CampaignState Off-map Pool
+-> OMW AAR CampaignState Adapter
+-> MOOSE SPAWN at external gate
+-> FLIGHTGROUP
+-> AUFTRAG
+-> mission / relief lifecycle
+-> external gate / off-map handoff
+-> immediate CampaignState recredit
+```
 
-Der AAR-Controller besitzt bereits die strategische Adaptergrenze:
+### 8.3 Resource Contract
+
+Produktiv implementierte Ressource:
+
+```text
+resourceId: AIRCRAFT_KC135
+unit: count
+resourceClass: AIRCRAFT_POOL_STRATEGIC
+```
+
+Initialwerte:
+
+```text
+OFFMAP_MANAS    = 16
+OFFMAP_AL_UDEID = 40
+```
+
+Die Daten liegen in `scripts/logistics/OMW_AARStrategicStock.lua`. Der Initializer kann diesen Stock gemeinsam mit weiteren zusätzlichen Stock-Modulen in denselben CampaignState-Startzustand komponieren.
+
+### 8.4 Adaptervertrag
+
+Der Controller verwendet die bestehende Grenze:
 
 ```text
 CanMaterialize(selection)
@@ -326,24 +337,71 @@ OnMaterialized(selection, runtime)
 OnHandoff(selection, runtime)
 ```
 
-Der produktive Adapter muss mindestens sicherstellen:
+`scripts/air-operations/OMW_AAR_CampaignStateAdapter.lua` bindet diese Grenze an die vorhandene generische CampaignState-Transaktions-API.
 
-1. `CanMaterialize` lässt einen Tanker nur bei strategischer Verfügbarkeit zu;
-2. `OnMaterialized` bindet/verbraucht die Verfügbarkeit genau einmal;
-3. `OnHandoff` startet den festgelegten Turnaround statt sofortiger Wiederverfügbarkeit;
-4. Verlust/Abbruch darf nicht zu unzulässiger Recreditierung führen;
-5. MANAS und AL_UDEID bleiben unabhängige Pools;
-6. Snapshot/Restore erhält die strategische Verfügbarkeit reproduzierbar.
+Verbindliche Semantik:
 
-### 8.5 Offene Turnaround-Entscheidung
+```text
+CanMaterialize
+-> prüft available AIRCRAFT_KC135 im zugeordneten Off-map-Pool
 
-Die bestehende CampaignState-Aircraft-Recovery-Semantik (`RECOVERY_IN_PROGRESS -> RECOVERED_AWAITING_REPAIR -> AVAILABLE`) wurde für physische Recovery/Repair entwickelt. Sie darf nicht stillschweigend mit einem regulären Off-map-AAR-Turnaround gleichgesetzt werden.
+OnMaterialized
+-> reserviert genau 1 AIRCRAFT_KC135
+-> konsumiert die Reservierung unmittelbar
+-> transactionId = AAR-KC135-COMMIT:<runtimeId>
 
-Vor produktiver Implementierung sind deshalb noch festzulegen:
+successful off-map handoff
+-> CreditResourceOnce genau 1 AIRCRAFT_KC135
+-> creditId = AAR-KC135-HANDOFF:<runtimeId>
+-> Maschine ist sofort wieder als Poolkapazität verfügbar
+```
 
-- ob die bestehende Recovery-Semantik wiederverwendet oder ein klar getrennter regulärer Turnaround-/Availability-Zustand benötigt wird;
-- Turnaround-Dauer;
-- Zeitpunkt der erneuten strategischen Verfügbarkeit;
-- Behandlung von erfolgreichem Handoff, Mission abort und Aircraft loss.
+Die Runtime-ID dient ausschließlich Transaktionskorrelation und Exactly-once-Buchung. Sie ist **keine strategische Tail Number**.
 
-Der nächste DCS-AAR-Integrationslauf ist erst nach dieser neuen produktiven CampaignState-/Lifecycle-Integration erforderlich. Der korrigierte Integration-3R1-Harness allein löst keinen weiteren DCS-Lauf aus.
+### 8.5 Kein regulärer AAR-Turnaround-Timer
+
+Für diese Off-map-Pools gilt ausdrücklich **kein** separater regulärer Turnaround-/Repair-Timer:
+
+```text
+materialized tanker
+-> available count - 1
+
+successful return through external gate
+-> available count + 1 immediately
+```
+
+Die in Abschnitt 7 beschriebene Forced-Landing-Recovery-/Repair-Semantik bleibt davon getrennt. Sie darf nicht auf reguläre Off-map-AAR-Rückkehr übertragen werden.
+
+Damit kann bei ausreichendem Poolbestand ein zurückgekehrter Tanker unmittelbar wieder als abstrakte Poolkapazität für eine spätere Ablösung zur Verfügung stehen.
+
+### 8.6 Verlust und Abbruch
+
+Ein Tanker wird nur bei bestätigtem Off-map-Handoff recreditiert. Erreicht eine physische Tankerrepräsentation den Handoff nicht, erfolgt über `OnHandoff` keine Rückbuchung.
+
+```text
+successful mission / abort with confirmed off-map handoff
+-> immediate recredit
+
+aircraft loss / no confirmed handoff
+-> no recredit
+```
+
+Ein expliziter produktiver Aircraft-loss-Callback des AAR-Controllers ist in diesem Stand noch nicht integriert. Bis dahin ist die strategische Kerneigenschaft dennoch fail-safe: Ohne erfolgreichen Handoff bleibt die beim Materialisieren konsumierte Einheit aus dem verfügbaren Pool entfernt. Die eindeutige Verlustklassifikation und das zugehörige Logging müssen vor vollständiger Runtime-Acceptance ergänzt beziehungsweise geprüft werden.
+
+### 8.7 Persistenz und Reconciliation
+
+CampaignState persistiert Ressourcenstände, Transaktionen und idempotente Resource-Credits in `ExportSnapshot()`/`Restore()`. Dadurch sind sowohl konsumierte KC-135-Commitments als auch bereits erfolgte Handoff-Credits grundsätzlich Bestandteil des persistierten strategischen Zustands.
+
+Noch nicht DCS-validiert beziehungsweise abschließend reconciled ist der Neustartfall, in dem ein Snapshot während einer noch existierenden physischen AAR-Repräsentation entsteht. Vor produktiver Acceptance muss deshalb geprüft werden, dass Restore und physische Rekonstruktion weder Doppelmaterialisierung noch Doppelcredit erzeugen.
+
+### 8.8 Trennung von operativer Concurrency und strategischem Bestand
+
+Der strategische Bestand `16/40` ist kein Spawnlimit. Die operative AAR-Concurrency bleibt eine separate Missionsregel:
+
+```text
+maxConcurrentSupportMissions = 2
+maxAircraftPerSupportMission = 2
+maxConcurrentSupportAircraft = 4
+```
+
+Der CampaignState-Adapter besitzt diese Missionsregel nicht ein zweites Mal. Er entscheidet ausschließlich, ob aus dem jeweiligen strategischen Pool noch mindestens eine KC-135 verfügbar ist.
