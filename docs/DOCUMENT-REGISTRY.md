@@ -105,6 +105,7 @@ Eine Nummer und eine stabile `document_id` dürfen im aktuellen Bestand jeweils 
 | 82 | `OMW-HIST-RUSSIA-OEF-ISAF-AFGHANISTAN` | `docs/82-russia-oef-isaf-afghanistan-role.md` | `BINDING` | russische Rolle, Kooperation, Konkurrenz und Evidenzgrenzen in OEF/ISAF |
 | 83 | `OMW-HIST-A10-SOF-VEHICLE-SOURCE-REVIEW` | `docs/83-a10-sof-and-special-operations-vehicle-source-review.md` | `BINDING` | A-10-, SOF- und Special-Operations-Vehicle-Quellenreview |
 | 84 | `OMW-HIST-AIR-SOF-INTEL-METRICS-SOURCE-REVIEW` | `docs/84-av8b-f14-takur-ghar-and-intelligence-metrics-source-review.md` | `BINDING` | AV-8B-, F-14-, Takur-Ghar- sowie Intelligence-/Metrics-Quellenreview |
+| 85 | `OMW-HIST-PREDATOR-REAPER-AFGHANISTAN-SOURCE-REVIEW` | `docs/85-predator-reaper-afghanistan-source-review.md` | `BINDING` | MQ-1-/MQ-9-, Afghanistan-, Bewaffnungs-, Endurance- und RPA-Betriebsquellenreview |
 
 ## 3. Reservierte Nummern auf offenen Branches
 
@@ -138,32 +139,3 @@ Eine Nummer und eine stabile `document_id` dürfen im aktuellen Bestand jeweils 
 | `OMW-WAREHOUSE-RESOURCE-FOUNDATION-COMPLETE` | `docs/warehouse-resource-foundation-complete.md` | `BINDING_PROJECT_DECISION`; konsolidierter Warehouse-/Resource-Abschlussstand |
 | `OMW-ACC-FIGHTER-STORE-RUNTIME-CORRELATION-2026-08-13` | `docs/evidence/fighter-store-runtime-correlation-acceptance-2026-08-13.md` | `ACCEPTED_TECHNICAL_BASELINE`; finale Fighter-Store-Mapping-Acceptance |
 | `OMW-DECISION-KANDAHAR-A10C-CAS-LOADOUT-2026-08-01` | `docs/evidence/kandahar-a10c-cas-loadout-decision-2026-08-01.md` | `BINDING_PROJECT_DECISION`; Kandahar A-10C II CAS-Stationen, Payload und Evidenzgrenze |
-| `OMW-TEST-GOVERNANCE` | `mission/tests/GOVERNANCE.md` | `BINDING`; Missions- und Runtime-Testregeln |
-| `OMW-TEST-AIROPS-WAREHOUSE-BOOTSTRAP-INDEX` | `mission/tests/air-ops-warehouse-bootstrap/README.md` | `BINDING`; AirOps-Warehouse-Bootstrap-Testindex |
-| `OMW-TEST-AIROPS-WAREHOUSE-BOOTSTRAP-ACCEPTANCE` | `mission/tests/air-ops-warehouse-bootstrap/expected/air-ops-warehouse-bootstrap-acceptance-2026-08-13.md` | `ACCEPTED_TECHNICAL_BASELINE`; exakter DCS-getesteter Warehouse-Bootstrap-Stand |
-| `OMW-CSAR-INDEX` | `docs/csar/README.md` | `BINDING` |
-| `OMW-CSAR-SOURCE-NOTES-1-8` | `docs/csar/source-notes-1-8.md` | `BINDING` |
-| `OMW-CSAR-AFGHANISTAN-2010-FACILITIES` | `docs/csar/afghanistan-2010-facilities-and-coverage.md` | `BINDING` |
-| `OMW-CSAR-MISSION-DESIGN-REQUIREMENTS` | `docs/csar/mission-design-requirements.md` | `PLANNED` |
-| `OMW-CSAR-MOOSE-AICSAR-DEVELOPMENT-BASELINE` | `docs/csar/moose-csar-aicsar-development-baseline.md` | `PLANNED` |
-| `OMW-WX-DATASET-DOCUMENTATION` | `docs/data/weather/README.md` | `BINDING` |
-| `OMW-TARGETING-AFGHANISTAN-NSL-DATA-USE` | `docs/targeting/afghanistan-nsl-data-use-policy.md` | `BINDING` |
-| `OMW-TARGETING-AFGHANISTAN-NSL-LEGACY-PATH` | `docs/targeting/afghanistan-no-strike-list.md` | `SUPERSEDED` |
-| `OMW-ADR-0001-MOOSE-PRIMARY` | `docs/adr/0001-use-moose.md` | `SUPERSEDED` |
-| `OMW-ADR-0002-MOOSE-CTLD-CSAR` | `docs/adr/0002-use-moose-ctld-and-csar.md` | `SUPERSEDED` |
-| `OMW-ADR-0003-ME-GROUP-TEMPLATES` | `docs/adr/0003-use-mission-editor-group-templates.md` | `BINDING` |
-| `OMW-ADR-0004-LOCATION-REGISTRY` | `docs/adr/0004-use-explicit-location-registry.md` | `BINDING` |
-| `OMW-ADR-0005-KANDAHAR-JULY-2011-ORBAT` | `docs/adr/0005-kandahar-july-2011-orbat-structure.md` | `BINDING_PROJECT_DECISION`; Kandahar Juli-2011-ORBAT-Struktur |
-| `OMW-ADR-0006-BAGRAM-DUAL-AIRWING` | `docs/adr/0006-bagram-dual-airwing-structure.md` | `BINDING_PROJECT_DECISION`; Bagram USAF-/Army-Aviation-Split |
-| `OMW-ADR-0007-AIRWING-NAMING-RECONCILIATION` | `docs/adr/0007-airwing-naming-reconciliation.md` | `BINDING_PROJECT_DECISION`; Jalalabad-/Salerno-AIRWING-Naming |
-| `OMW-EVIDENCE-INDEX` | `docs/evidence/README.md` | `BINDING` |
-| `OMW-EVIDENCE-SOURCE-INTAKE-AUDIT-2026-07-28` | `docs/evidence/source-intake-audit-2026-07-28.md` | `BINDING` |
-| `OMW-TEST-JBAD-AIR-OPS-INDEX` | `mission/tests/jalalabad-air-operations/README.md` | `BINDING` |
-| `OMW-TEST-BAGRAM-AIR-OPERATIONS-INDEX` | `mission/tests/bagram-air-operations/README.md` | `PLANNED`; Bagram dual-AIRWING Foundation-Testindex |
-| `OMW-TEST-BAGRAM-DUAL-AIRWING-FOUNDATION-ACCEPTANCE` | `mission/tests/bagram-air-operations/expected/bagram-dual-airwing-foundation-acceptance.md` | `ACCEPTED_TECHNICAL_BASELINE`; exakter DCS-getesteter Foundation-Stand |
-| `OMW-AIR-TKOT-PARKING-LAYOUT` | `docs/tarinkot-air-operations-parking-layout.md` | `BINDING`; verbindlicher Tarinkot-Client-/KI-Parkplatzvertrag |
-| `OMW-TEST-TKOT-G8C-UNIFORM-ROTARY-HOVER-DISPATCH-ACCEPTANCE` | `mission/tests/tarinkot-air-operations/expected/g8c-uniform-rotary-hover-dispatch-acceptance.md` | `PLANNED`; G8C nativer einheitlicher Rotary-Hover-Test |
-
-## 5. Legacy- und Evidenzregel
-
-Dateien unter `docs/evidence/source-records/` bewahren frühere Vollfassungen. Ihre alten Titelnummern und Aussagen sind keine aktuelle Nummern-, Status- oder Governance-Vergabe.
