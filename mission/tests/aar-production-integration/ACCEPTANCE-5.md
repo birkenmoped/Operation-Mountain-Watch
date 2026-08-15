@@ -1,8 +1,18 @@
 ---
 document_id: OMW-TEST-AAR-PRODUCTION-ACCEPTANCE-5
-status: WORKING
+status: PLANNED
 document_class: ACCEPTANCE_TEST
 owning_policy: OMW-GOV-001
+authoritative_for:
+  - AAR-PRODUCTION-FINAL-ACCEPTANCE-5 test scope
+  - natural FIR and real-track transit expectations for the final AAR acceptance run
+not_authoritative_for:
+  - repository-wide DCS runtime acceptance without complete acceptance provenance
+  - CampaignState strategic inventory authority
+scenario_period: 2010-08-01/2011-12-31
+project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
+supersedes: []
+superseded_by: []
 source_branch: agent/aar-runtime-finalization
 source_commit: PENDING_MERGE
 validated_in_dcs: false
