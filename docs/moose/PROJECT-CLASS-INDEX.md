@@ -12,8 +12,8 @@ project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
   - class index without consolidated AIRWING lifecycle evidence
 superseded_by:
-source_branch: agent/aar-runtime-finalization
-source_commit: PENDING_MERGE
+source_branch: main
+source_commit: 2e9cbe6104f2e23bc3031821459e1f16309a946b
 validated_in_dcs: partial
 ---
 
@@ -55,14 +55,14 @@ REJECTED_FOR_PROJECT_USE
 | `WAREHOUSE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | AirOps-Stock-/Asset-Lifecycle; kein WAREHOUSE für externe MANAS-/AL_UDEID-AAR-count-Pools |
 | `STORAGE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | CampaignState->DCS-Warehouse Mirror/Telemetry; keine strategische Rückautorität |
 | `COHORT` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Asset-/Mission-Capability-Pfade für dokumentierte AirOps-Foundations |
-| `FLIGHTGROUP` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | FuelLow, Dead/onafterDead, GetCoordinate und Mission-Lifecycle source-reviewed; `AddWaypoint(...)` ist für den neuen FIR-Egress->External-Handoff-Pfad SOURCE_REVIEWED und bis Acceptance-4 nicht praktisch bestätigt |
+| `FLIGHTGROUP` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | AAR FuelLow, Dead/OnAfterDead, GetCoordinate und `AddWaypoint(...)` für FIR-Egress -> External Handoff im Acceptance-5 praktisch bestätigt; Geltung nur für dokumentierten Scope |
 | `COMMANDER` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | dokumentierter COMMANDER-Lifecycle; nicht Quelle der externen OMW-AAR-Pools |
-| `AUFTRAG` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | AAR `NewTANKER`, Ingress/Egress und Cancel source-reviewed; Acceptance-6 bestätigte Grundmechanik, neue FIR-Fix-Trennung noch offen |
-| `SPAWN` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | area-spezifische AAR-Templates und stabile sortie Callsign-Familie; keine erzwungene `InitSTN()`, STN-Readback über `UNIT:GetSTN()` |
-| `SCHEDULER` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Source-Queue und Station-Monitoring |
+| `AUFTRAG` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | AAR `NewTANKER`, Mission-Ingress/-Egress und `Cancel()` im Acceptance-5 für natürlichen FIR-/Track-/Relief-Lifecycle praktisch bestätigt |
+| `SPAWN` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | area-spezifische AAR-Templates und stabile Sortie-Callsign-Familie; keine erzwungene `InitSTN()`, STN-Readback über `UNIT:GetSTN()` |
+| `SCHEDULER` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Source-Queue, Station-Monitoring und Acceptance-Koordination im dokumentierten AAR-Scope |
 | `USERFLAG` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Warehouse-Acceptance-Readiness-Pfade |
-| `GROUP`, `UNIT`, `STATIC`, `ZONE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Template-/Static-/Warehouse-/Zonenvalidierung; `UNIT:GetSTN()` SOURCE_REVIEWED für AAR, `UNIT:Explode()` test-only SOURCE_REVIEWED bis Acceptance-Nachweis |
-| `ARMYGROUP`, `BRIGADE`, `OPSGROUP` | `PLANNED` | Bodenoperationsscope; für AAR sind Despawn sowie Radio-/TACAN-Switch source-reviewed und teilweise früher praktisch beobachtet |
+| `GROUP`, `UNIT`, `STATIC`, `ZONE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Template-/Static-/Warehouse-/Zonenvalidierung; AAR `UNIT:GetSTN()` und test-only `UNIT:Explode()` im Acceptance-5 praktisch bestätigt |
+| `ARMYGROUP`, `BRIGADE`, `OPSGROUP` | `PLANNED` / teilweise validiert | Bodenoperationsscope bleibt geplant; für AAR sind Despawn sowie Radio-/TACAN-Switch im dokumentierten Acceptance-Scope praktisch korreliert |
 | `OPSTRANSPORT` | `PLANNED` | taktischer Transport |
 | `CTLD`, `CSAR`, `AICSAR` | `PLANNED` / teilweise verwendet | separate Acceptance erforderlich |
 | `INTEL` | `PLANNED` | taktisches Lagebild; Laufzeitnachweis offen |
@@ -74,7 +74,7 @@ REJECTED_FOR_PROJECT_USE
 | `_DATABASE` | `INTERNAL_RESTRICTED` | nur Diagnose/Validierung; aktueller AAR-Produktionspfad verwendet `_DATABASE` nicht |
 | `CHIEF` | `REJECTED_FOR_PROJECT_USE` | aktuelle Produktionsarchitektur `NOT_USED` |
 
-## 4. AAR-Source-Review-Grenze
+## 4. AAR – gepinnter und akzeptierter MOOSE-Scope
 
 Gepinnter Stand:
 
@@ -84,7 +84,7 @@ MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
 Moose.lua SHA-256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
 ```
 
-Für den aktuellen AAR-Produktionsstand sind im tatsächlich gepinnten `Moose.lua` geprüft:
+Für den aktuellen AAR-Produktionsstand sind im tatsächlich gepinnten `Moose.lua` geprüft und im `AAR-PRODUCTION-FINAL-ACCEPTANCE-5` für den dokumentierten Einsatz praktisch bestätigt:
 
 ```text
 AUFTRAG:NewTANKER(...)
@@ -117,11 +117,11 @@ COORDINATE:Get2DDistance(...)
 SCHEDULER:New(...)
 ```
 
-`FLIGHTGROUP:AddWaypoint(...)` nimmt für Flightgroups Speed in Knoten und optionale Höhe in Fuß und aktualisiert standardmäßig die Route. Im aktuellen AAR-Branch wird diese öffentliche Methode erst nach physischer Passage des FIR-Egress-Fixes verwendet, um den External-Handoff-Punkt anzufügen. API-Verfügbarkeit ist source-reviewed; reales DCS-Verhalten dieses neuen Pfads bleibt bis Acceptance-4 offen.
+`FLIGHTGROUP:AddWaypoint(...)` wird nach physischer Passage des FIR-Egress-Fixes verwendet, um den getrennten External-Handoff-Punkt anzufügen. Dieser zweistufige Egress-/Handoff-Pfad wurde im Acceptance-5 praktisch bestätigt.
 
-`OPSGROUP:SwitchCallsign(...)` ist im gepinnten MOOSE weiterhin verfügbar, wird im korrigierten AAR-Produktionspfad aber **nicht mehr** für einen Wechsel zwischen Transit- und Track-Callsign verwendet. Der physische Tanker behält seine Callsign-Familie vom Spawn bis Despawn.
+`OPSGROUP:SwitchCallsign(...)` ist im gepinnten MOOSE weiterhin verfügbar, wird im korrigierten AAR-Produktionspfad aber **nicht** für einen Wechsel zwischen Transit- und Track-Callsign verwendet. Der physische Tanker behält seine Callsign-Familie vom Spawn bis Despawn.
 
-## 5. Aktueller AAR-Produktionsscope
+## 5. Akzeptierter AAR-Produktionsscope
 
 ```text
 STANDARD / kontinuierlich:
@@ -148,23 +148,35 @@ LISA/MOE        -> PINAX
 
 External Spawn != FIR Ingress
 FIR Egress != External Handoff/Despawn
-Airways-Routing = später / nicht in Acceptance-4
+Airways-Routing = später / nicht Teil der Acceptance-5
 ```
 
-Source-reviewed und noch nicht als praktisch bestätigt gelten insbesondere:
+Praktisch bestätigt sind für den exakt dokumentierten Acceptance-5-Stand insbesondere:
 
 - automatischer Start ausschließlich der vier STANDARD-Tracks;
 - demand-gesteuerter LISA-/MOE-Reserve-Lifecycle;
 - stabile Callsign-Familie und eindeutige `n-1`-Gruppennummer bei Relief;
-- FIR-Ingress über EGPAN/DAVER/PINAX;
+- natürliche FIR-Ingress-/Egress-Passage über EGPAN/DAVER/PINAX;
 - zweistufiger Egress `SetMissionEgressCoord(FIR fix)` -> `FLIGHTGROUP:AddWaypoint(external handoff)`;
-- nominaler 3-h-Station-/Relief-Zyklus;
-- FuelLow-Relief ohne Doppelmaterialisierung;
+- Scheduled Relief: `ETA <= 5 min` nur Handover-Arming, outgoing bleibt ACTIVE bis realer Relief-Ankunft;
+- Radio/TACAN-Transfer erst bei realem Station-Owner-Wechsel;
+- FuelLow Immediate Egress mit natürlichem Replacement;
 - CampaignState exact-once Settlement;
 - Dead -> OnAfterDead -> OnLost ohne Aircraft-Recredit plus Ersatz bei weiter benötigtem Track;
 - Restore-Reconciliation.
 
-Diese Punkte dürfen erst nach dokumentiertem `AAR-PRODUCTION-FINAL-ACCEPTANCE-4` in `VERIFIED-METHODS.md` als praktisch bestätigt ergänzt werden.
+Acceptance-Provenienz:
+
+```text
+Acceptance commit: 5e7dbec37f53155f39c63c25590cf6b4e35814ca
+Mission: OMW_Template_v9_AirOps_rdy.miz
+Mission SHA-256: c9e3978a4bbb35ebbfe5ae362021b5f8870129d6c8b06b58147424dde71a94e3
+Bundle SHA-256: f33b0a5a6212d9a1103dfa2e0ab677777142ca771a2f5007a3ab1c7fee594cbf
+DCS: 2.9.28.26385 MT
+MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+Moose.lua SHA-256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
+Result: PASS
+```
 
 ## 6. Architekturgrenze
 
