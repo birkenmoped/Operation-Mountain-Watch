@@ -13,7 +13,7 @@ supersedes:
   - quantity-open wording in section 10.3 of OMW-MOOSE-STORAGE-WAREHOUSE-RESOURCE-FOUNDATION
 superseded_by:
 source_branch: agent/air-ops-initial-stock-runtime-data
-source_commit: PENDING_MERGE
+source_commit: 9ba4e149846805669e9d1032053c7145632f2a0b
 validated_in_dcs: false
 ---
 
