@@ -9,10 +9,12 @@ $sourceDir = Join-Path $repoRoot 'mission\tests\aar-fuel-telemetry\src'
 $distDir = Join-Path $repoRoot 'mission\tests\aar-fuel-telemetry\dist'
 $outputFile = Join-Path $distDir 'OMW_AAR_Fuel_Telemetry.lua'
 
-$builderVersion = 'AAR-FUEL-TELEMETRY-1'
-$testId = 'AAR-FUEL-TELEMETRY-1'
+$builderVersion = 'AAR-FUEL-TELEMETRY-2'
+$testId = 'AAR-FUEL-TELEMETRY-2'
 $mooseCommit = '73d3ed119cd9e7e3f2cfcabbaa34513d30529b54'
 $mooseSha256 = 'e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915'
+$candidateSpawnSpeedKt = 480
+$productionTransitRouteSpeedKt = 300
 
 $files = [ordered]@{
   CampaignState = Join-Path $repoRoot 'scripts\campaign\OMW_CampaignState.lua'
@@ -44,6 +46,8 @@ $requirements = @(
   @{ File = 'Controller'; Marker = 'function Controller.GetActive' },
   @{ File = 'Controller'; Marker = 'spawnToFirNm = spawnToFirNm' },
   @{ File = 'Controller'; Marker = 'firToTrackNm = firToTrackNm' },
+  @{ File = 'Controller'; Marker = 'local TRANSIT_SPEED_KT = 300' },
+  @{ File = 'Controller'; Marker = 'spawner:InitSpeedKnots(TRANSIT_SPEED_KT)' },
   @{ File = 'Harness'; Marker = 'AAR-FUEL-TELEMETRY-1' },
   @{ File = 'Harness'; Marker = 'recordSpawn(record, runtime)' },
   @{ File = 'Harness'; Marker = 'fuelLowExcluded=true' },
@@ -83,6 +87,23 @@ foreach ($entry in $content.GetEnumerator()) {
   }
 }
 
+# Test-only transformation: preserve the production route and tanker-track speeds, but materialize
+# the in-air KC-135 with a cruise-energy initial velocity. The previous 300-kt spawn velocity
+# produced an observed low-energy state around 172 KIAS near FL330 before the aircraft accelerated.
+# The production controller source is not modified by this builder.
+$controllerCandidate = $content.Controller.Replace(
+  'spawner:InitSpeedKnots(TRANSIT_SPEED_KT)',
+  "spawner:InitSpeedKnots($candidateSpawnSpeedKt)"
+)
+if ($controllerCandidate -eq $content.Controller) {
+  throw 'Failed to apply candidate KC-135 spawn-speed transformation'
+}
+
+$harnessCandidate = $content.Harness.Replace('AAR-FUEL-TELEMETRY-1', $testId)
+if ($harnessCandidate -eq $content.Harness) {
+  throw 'Failed to update AAR fuel telemetry test ID'
+}
+
 New-Item -ItemType Directory -Path $distDir -Force | Out-Null
 if (Test-Path -LiteralPath $outputFile -PathType Leaf) {
   Remove-Item -LiteralPath $outputFile -Force
@@ -98,8 +119,11 @@ $header = @"
 -- GitCommit: $commit
 -- GeneratedUtc: $generatedUtc
 -- Gate/Test-ID: $testId
--- Scope: read-only fuel telemetry for the first natural sortie to all six AAR tracks.
+-- Scope: read-only fuel telemetry for the first natural sortie to all six AAR tracks plus branch-local spawn-speed candidate evaluation.
 -- Samples: fuel at first observed spawn, FIR ingress radius, and track-entry radius.
+-- CandidateSpawnSpeedKt: $candidateSpawnSpeedKt
+-- ProductionTransitRouteSpeedKt: $productionTransitRouteSpeedKt
+-- CandidateScope: only SPAWN:InitSpeedKnots is changed in the generated test bundle; ingress/egress route speed and track speeds remain production values.
 -- FuelLow is intentionally excluded because the current threshold is itself subject to recalibration.
 -- Four STANDARD tracks start through the production RuntimeIntegration; LISA and MOE are opened by explicit reserve demands.
 -- The harness does not change production initial fuel values, FuelLow values, routes, track coordinates, relief timing or resource ownership.
@@ -115,8 +139,8 @@ $bundle += "local OMW_AAR_TEST_StrategicStock = (function()`n" + $content.Strate
 $bundle += "local OMW_AAR_TEST_Initializer = (function()`n" + $content.Initializer + "`nend)()`n"
 $bundle += "local OMW_AAR_TEST_Adapter = (function()`n" + $content.Adapter + "`nend)()`n"
 $bundle += "local OMW_AAR_TEST_RuntimeIntegration = (function()`n" + $content.RuntimeIntegration + "`nend)()`n"
-$bundle += "local OMW_AAR_TEST_Controller = (function()`n" + $content.Controller + "`nend)()`n"
-$bundle += $content.Harness + "`n"
+$bundle += "local OMW_AAR_TEST_Controller = (function()`n" + $controllerCandidate + "`nend)()`n"
+$bundle += $harnessCandidate + "`n"
 
 [System.IO.File]::WriteAllText($outputFile, $bundle, [System.Text.UTF8Encoding]::new($false))
 
@@ -126,6 +150,9 @@ Write-Host "TestId: $testId"
 Write-Host "GeneratedUtc: $generatedUtc"
 Write-Host 'FuelPoints: SPAWN,INGRESS,TRACK'
 Write-Host 'FuelLowIncluded: false'
+Write-Host "CandidateSpawnSpeedKt: $candidateSpawnSpeedKt"
+Write-Host "ProductionTransitRouteSpeedKt: $productionTransitRouteSpeedKt"
+Write-Host 'CandidateScope: SPAWN_INITIAL_SPEED_ONLY'
 Write-Host 'StandardTracks: 4'
 Write-Host 'ReserveTracks: 2'
 Write-Host 'PollSeconds: 1'
