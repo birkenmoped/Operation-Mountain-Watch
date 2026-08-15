@@ -45,7 +45,7 @@ $requirements = @(
   @{ File = 'Controller'; Marker = 'spawnToFirNm = spawnToFirNm' },
   @{ File = 'Controller'; Marker = 'firToTrackNm = firToTrackNm' },
   @{ File = 'Harness'; Marker = 'AAR-FUEL-TELEMETRY-1' },
-  @{ File = 'Harness'; Marker = 'point=SPAWN' },
+  @{ File = 'Harness'; Marker = 'recordSpawn(record, runtime)' },
   @{ File = 'Harness'; Marker = 'fuelLowExcluded=true' },
   @{ File = 'Harness'; Marker = 'RESULT PASS allTracks=6' },
   @{ File = 'Harness'; Marker = 'unit:GetFuel()' },
