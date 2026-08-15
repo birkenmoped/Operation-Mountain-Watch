@@ -6,7 +6,7 @@ owning_policy: OMW-GOV-001
 authoritative_for:
   - AAR MissionDemand production-integration test scope
   - six-core-area dispatch, area-template/callsign identity, source spacing and high-transit progress acceptance
-  - next combined production-finalization acceptance scope
+  - combined production-finalization acceptance scope
 not_authoritative_for:
   - repository-wide DCS runtime acceptance without complete acceptance provenance
   - CampaignState strategic inventory authority
@@ -23,42 +23,31 @@ validated_in_dcs: partial
 
 ## Ziel
 
-Der Testpfad trennt zwei Stufen:
+Der Testpfad trennt drei Evidenzstufen:
 
-1. den bereits ausgeführten `AAR-PRODUCTION-INTEGRATION-3` / korrigierten `3R1`-Harness für Mapping, Templates, Callsign, Source-Spacing und Transit;
-2. den nächsten **gemeinsamen** produktiven Integrations-/Acceptance-Scope für Relief, Identity, CampaignState, Demand-Ende, Loss, Restore und Concurrency.
+1. die bereits ausgeführten KC-135-Runtime-Acceptance-Läufe für die allgemeine Tankermechanik;
+2. `AAR-PRODUCTION-INTEGRATION-3` beziehungsweise den korrigierten `3R1`-Harness für Mapping, Templates, Callsign, Source-Spacing und Transit;
+3. den vom Projektinhaber am **15.08.2026 ausdrücklich freigegebenen** gemeinsamen produktiven Final-Acceptance-Scope `AAR-PRODUCTION-FINAL-ACCEPTANCE-1`.
 
-Die allgemeine KC-135-Grundmechanik wurde bereits separat über Acceptance-2 bis -6 geprüft und wird nicht künstlich erneut beschleunigt.
+Der Final-Acceptance-Test bündelt die noch offenen produktiven Änderungen in einem technischen Bereich, einem Bundle und einem DCS-Lauf. Getrennte Folgeläufe sind nur zur Fehlerisolierung vorgesehen.
 
-## Integration-3 – Owner-DCS-Lauf 14./15.08.2026
+## Bereits vorhandene DCS-Evidenz
 
-Bekannter Laufstand:
+`AAR-KC135-RUNTIME-ACCEPTANCE-6` bestätigt für den dokumentierten DCS-/MOOSE-Stand die allgemeine KC-135-Mechanik einschließlich Boom-AAR für A-10C/F-15E/F-16C, FAST/SLOW, 3.000-ft-Staffelung, FuelLow -> Cancel -> Egress -> Gate -> Handoff und Y-Band-TACAN.
 
-```text
-Branch: agent/aar-runtime-finalization
-Commit: 4a6bef1c8a5b8f67606762e10c516610f970e491
-BuilderVersion/TestId: AAR-PRODUCTION-INTEGRATION-3
-Bundle SHA-256: 39fb3ecf80f6552d3478a8d83122eb69c83449bb3787731007c956fbdb6b49d1
-Controller SHA-256: a937b67874dded3bb31ffcb4e7ea60d186ffde21f1e43bcccac4cf43f9e2da97
-DCS: 2.9.28.26385 MT
-Mission: OMW_Template_v9_AirOps_rdy.miz
-MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
-Moose.lua SHA-256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
-```
-
-Praktisch beobachtet:
+`AAR-PRODUCTION-INTEGRATION-3` beobachtete praktisch:
 
 - sechs MissionDemand-Mappings/Submissions;
 - sechs area-spezifische Mission-Editor-Templates;
-- damalige area-spezifische Callsigns sichtbar und im Controller-Log korrekt;
+- damalige area-spezifische Callsigns;
 - vier erforderliche Same-source-Folgeabstände mit jeweils `60.0 s`;
 - parallele MANAS-/AL-UDEID-Materialisierung.
 
-Zwei Harness-only False Negatives betrafen die Callsign-Darstellung (`Texaco2-1` vs. `Texaco21`) und einen zu frühen `GROUP:GetFuelMin()`-Read mit Sentinel `65535`. `AAR-PRODUCTION-INTEGRATION-3R1` korrigiert ausschließlich diese Harnessfehler und wurde auf Eigentümerentscheidung nicht allein deswegen erneut in DCS ausgeführt.
+Die 3R1-Korrektur behebt nur zwei Harness-False-Negatives und wurde auf Eigentümerentscheidung nicht separat erneut in DCS ausgeführt.
 
-## Aktueller produktiver Controller-Scope
+## Produktiver Finalisierungsscope
 
-Der produktive Stand umfasst inzwischen zusätzlich:
+Der aktuelle Produktionspfad ist:
 
 ```text
 MissionDemand
@@ -93,31 +82,6 @@ resolved handoff/restart credit -> no duplicate credit
 unresolved consumed in-flight commitment -> exact-once restart reconciliation
 ```
 
-Die Restore-Regel bildet keine Tail-Identität nach. Sie löst nur das strategische count-basierte Commitment, dessen physische DCS-Repräsentation nach Mission-/Serverrestart nicht mehr existiert.
-
-## Strategische Produktionsgrenze
-
-Der Controller verlangt einen strategischen Adapter mit:
-
-```text
-CanMaterialize(selection)
-OnMaterialized(selection, runtime)
-OnHandoff(selection, runtime)
-OnLost(selection, runtime, reason)
-```
-
-Produktiv wird diese Grenze über folgende Module an **denselben** CampaignState-Store gebunden:
-
-```text
-scripts/logistics/OMW_AARStrategicStock.lua
-scripts/logistics/OMW_AirOpsCampaignStateInitializer.lua
-scripts/air-operations/OMW_AAR_CampaignStateAdapter.lua
-scripts/air-operations/OMW_AAR_RuntimeIntegration.lua
-scripts/air-operations/OMW_AAR_Controller.lua
-```
-
-Es gibt kein zweites Bestandsbuch in MOOSE WAREHOUSE, AIRWING, DCS Warehouse oder SPAWN.
-
 ## Strategische Ressourcen
 
 ```text
@@ -130,11 +94,9 @@ AIRCRAFT_KC135 = 40 count
 AIRCRAFT_KC135_LOST = 0 count initial audit
 ```
 
-`AIRCRAFT_KC135_LOST` ist nur ein persistenter kumulativer Loss-Audit und keine Verfügbarkeitsquelle.
+`AIRCRAFT_KC135_LOST` ist ein persistenter kumulativer Audit-Zähler und keine Verfügbarkeitsquelle. Es gibt kein zweites strategisches Bestandsbuch in MOOSE WAREHOUSE, AIRWING, DCS Warehouse oder SPAWN.
 
 ## Operative Concurrency
-
-Produktiv:
 
 ```text
 maxConcurrentSupportMissions = 2
@@ -142,14 +104,14 @@ maxAircraftPerSupportMission = 2
 maxConcurrentSupportAircraft = 4
 ```
 
-Der strategische Bestand `16/40` ist kein Spawnlimit. Physisch noch vorhandene Egress-Tanker zählen bis zum Handoff/Loss gegen das globale Aircraft-Limit.
+Physisch noch vorhandene Egress-Tanker zählen bis Handoff oder Loss gegen das globale Aircraft-Limit.
 
-## Station Identity
+## Transit- und Stationsidentität
 
 ```text
 TRANSIT
 - reservierter Transit-Callsign
-- eindeutige STN
+- explizit eindeutige Link-16 STN
 - Station-Radio OFF
 - Station-TACAN OFF
 
@@ -164,62 +126,121 @@ EGRESS
 - zurück auf Transit-Callsign
 ```
 
-Der neue Identity-Handover ist source-reviewed, aber noch nicht DCS-validiert.
+## Final-Acceptance-1 – genehmigter Scope
 
-## Sechs Core-Areas
+Owner-Freigabe: **15.08.2026 im Projektchat ausdrücklich erteilt.**
 
-```text
-FAST / NORTHEAST / SUPPORT       -> NELSON / MANAS
-SLOW / SOUTHEAST / RECOVERY      -> KRUSTY / AL_UDEID
-SLOW / EAST / SUPPORT            -> PATTY / MANAS
-SLOW / SOUTH_CENTRAL / RECOVERY  -> MILHOUSE / AL_UDEID
-FAST / CENTRAL / SUPPORT         -> MOE / MANAS
-SLOW / WEST / SUPPORT            -> LISA / MANAS
-```
+Der kombinierte Harness prüft:
 
-## Nächster gemeinsamer Acceptance-Scope
+1. `OFFMAP_MANAS=16` und `OFFMAP_AL_UDEID=40`;
+2. exakt eine CampaignState-KC-135-Buchung pro materialisiertem Tanker;
+3. `2 Missionen / 2 Aircraft je Mission / 4 Aircraft global`;
+4. unabhängige parallele MANAS-/AL-UDEID-Materialisierung;
+5. eindeutige Transit-Callsigns und explizite eindeutige STNs;
+6. Track-only Stationsidentität über den produktiven `SwitchCallsign`-/Radio-/TACAN-Pfad;
+7. Scheduled-Relief mit maximal einem `RELIEF_INBOUND`;
+8. FuelLow-Relief mit Wiederverwendung eines bereits inbound befindlichen Reliefs;
+9. `COMPLETE`, `CANCELLED` und `ABORTED` mit sofortigem Station-Close/Egress beim letzten Demand;
+10. erfolgreichen External-Gate-Handoff mit exakt einmaligem Recredit;
+11. physischen Testverlust über die öffentliche MOOSE-Methode `UNIT:Explode()` -> `FLIGHTGROUP Dead/OnAfterDead` -> `OnLost`, ohne Aircraft-Recredit und mit Loss-Audit +1;
+12. CampaignState Snapshot/Restore-Reconciliation für unresolved commitments und persistierte Losses ohne Doppelcredit.
 
-Ein neuer DCS-Lauf ist nur nach ausdrücklicher Eigentümerfreigabe vorgesehen. Er soll die **neuen produktiven Änderungen gemeinsam** prüfen und nicht erneut in Kleintests zerlegen:
+## Testbeschleunigung und Geltungsgrenze
 
-1. CampaignState Off-map-Pools werden korrekt erkannt;
-2. Materialisierung konsumiert genau eine KC-135;
-3. 2/2/4-Concurrency blockiert zusätzliche Materialisierung, ohne den strategischen Pool als Concurrency-Autorität zu missbrauchen;
-4. Transit-Identity und Station-Identity überlappen nicht unzulässig;
-5. 3-h-Relief beziehungsweise testzeitlich kontrolliert ausgelöster äquivalenter Relief-Pfad erzeugt maximal einen `RELIEF_INBOUND`;
-6. FuelLow verwendet vorhandenen Relief oder erzeugt genau einen Ersatz;
-7. `COMPLETE`/`CANCELLED`/`ABORTED` schließt die letzte Demand-Station sofort und erzeugt keine weitere Ablösung;
-8. erfolgreicher External-Gate-Handoff recreditiert exakt einmal;
-9. `FLIGHTGROUP Dead` erzeugt `OnLost`, keinen Aircraft-Recredit und einen persistenten Loss-Audit;
-10. Restore-Reconciliation erzeugt keine Doppelcredits und erhält bereits dokumentierte Losses;
-11. MANAS und AL UDEID bleiben unabhängige Pools.
-
-Der konkrete DCS-Test-Harness darf erst nach Owner-Freigabe für den neuen Testscope umgesetzt/ausgeführt werden, soweit die Governance dies verlangt.
-
-## Source-Gates ohne DCS
-
-Für den aktuellen Produktionsstand existieren zwei lokale Source-/Build-Gates:
+Der Final-Acceptance-Harness darf die drei Stunden Stationszeit nicht real abwarten. Er beschleunigt ausschließlich **Testzustände**, nicht die physische DCS-Position:
 
 ```text
-tools/build-aar-production-integration.ps1
-tools/validate-aar-production-finalization.ps1
+controlledTrackEntry = true
+controlledReliefTiming = true
+physicalTeleport = false
 ```
 
-`build-aar-production-integration.ps1` bleibt ein Regression-/Bundle-Builder für 3R1 und ist **kein** Nachweis der neuen Runtime-Funktionalität.
+Für den Track-Entry wird die vom Controller ausgewertete Test-Track-Koordinate auf die aktuelle reale Flugzeugkoordinate gesetzt. Das Flugzeug selbst wird nicht verschoben. Für Scheduled Relief wird nur der produktive `reliefLaunchAt`-Zeitpunkt im Harness auf den aktuellen Testzeitpunkt gesetzt. Danach durchläuft der Controller seinen normalen Relief-/Identity-Pfad.
 
-`validate-aar-production-finalization.ps1` prüft die statischen Vertragsmarker für Demand-Ende, Loss, Restore, Concurrency, CampaignState-Adapter, Stock und Runtime-Integration. Auch dieser Source-Gate ersetzt keinen DCS-Test.
+Damit validiert dieser Lauf nicht die natürliche dreistündige Wartezeit oder die vollständige reale Gate-to-Track-Flugzeit. Die bereits vorhandene Integration-3/3R1-Evidenz deckt Transitfortschritt ab; Acceptance-6 deckt die allgemeine Tanker-/Egress-/Handoff-Mechanik ab.
+
+## Loss-Injection – MOOSE-first
+
+Für den gezielten Testverlust wird **keine native DCS-Event-Parallelimplementierung** eingeführt. Verwendet wird:
+
+```lua
+unit:Explode(LOSS_EXPLOSION_POWER)
+```
+
+`UNIT:Explode(power, delay)` ist im tatsächlich gepinnten `Moose.lua` vorhanden. Der Test verwendet es ausschließlich zur kontrollierten Zerstörung des dafür ausgewählten Testtankers. Der produktive Loss-Pfad selbst bleibt `FLIGHTGROUP Dead/OnAfterDead -> OMW Adapter`.
+
+## Restore-Grenze
+
+Restore wird im selben DCS-Lauf deterministisch über
+
+```text
+CampaignState ExportSnapshot
+-> CampaignState.Restore
+-> OMW_AAR_RuntimeIntegration.Attach(restored=true)
+```
+
+geprüft. Das ist **kein physischer DCS-Serverrestart**. Ein realer Serverrestart ist für die count-basierte Reconciliation nicht erforderlich, um Idempotenz und Settlement des gespeicherten CampaignState-Snapshots zu prüfen; diese Einschränkung bleibt im Ergebnisbericht ausdrücklich erhalten.
 
 ## Source / Builder / Dist
 
 ```text
-scripts/air-operations/OMW_AAR_Controller.lua
-scripts/air-operations/OMW_AAR_CampaignStateAdapter.lua
-scripts/air-operations/OMW_AAR_RuntimeIntegration.lua
+scripts/campaign/OMW_CampaignState.lua
 scripts/logistics/OMW_AARStrategicStock.lua
 scripts/logistics/OMW_AirOpsCampaignStateInitializer.lua
+scripts/air-operations/OMW_AAR_CampaignStateAdapter.lua
+scripts/air-operations/OMW_AAR_RuntimeIntegration.lua
+scripts/air-operations/OMW_AAR_Controller.lua
 mission/tests/aar-production-integration/src/01-aar-production-integration.lua
+mission/tests/aar-production-integration/src/02-aar-production-final-acceptance.lua
 tools/build-aar-production-integration.ps1
+tools/build-aar-production-final-acceptance.ps1
 tools/validate-aar-production-finalization.ps1
 mission/tests/aar-production-integration/dist/OMW_AAR_Production_Integration.lua
+mission/tests/aar-production-integration/dist/OMW_AAR_Production_Final_Acceptance.lua
 ```
 
-`dist/` ist ausschließlich builder-generiert.
+`dist/` ist ausschließlich builder-generiert. Der Builder mutiert keine `.miz`.
+
+## Pflichtmarker des Final-Acceptance-Laufs
+
+```text
+RESTORE_RECONCILIATION_PASS
+POOL_BASELINE_PASS
+SOURCE_INDEPENDENCE_PASS
+CONCURRENCY_MISSION_LIMIT_PASS
+ABORT_HANDOFF_PASS
+STATION_IDENTITY_PASS
+CONCURRENCY_2_2_4_PASS
+CONCURRENCY_GLOBAL_LIMIT_PASS
+FUEL_LOW_RELIEF_PASS
+FUEL_LOW_HANDOVER_PASS
+SCHEDULED_RELIEF_PASS
+LOSS_INJECTION_ARMED
+AIRCRAFT_LOSS_PASS
+DEMAND_END_PASS
+FINAL_SETTLEMENT_PASS
+RESULT PASS
+```
+
+Ein fehlender Pflichtmarker oder ein Lua-/Scheduler-/Runtime-Fehler verhindert `PASS`.
+
+## Preflight vor DCS
+
+Vor der DCS-Ausführung müssen gemäß `OMW-TEST-MISSION-BUILD-TRANSFER-VALIDATION` mindestens vorliegen:
+
+```text
+exakter Branch und Commit
+BuilderVersion
+lokaler Bundle-SHA-256
+MIZ-SHA-256
+interner mission-SHA-256
+eingebetteter Bundle-SHA-256 == lokaler Bundle-SHA-256
+eingebetteter Moose.lua-SHA-256 == gepinnter Moose.lua-SHA-256
+Objektvertragssmoke für die sechs AAR-Templates
+```
+
+Jedes Speichern oder Neuverpacken der `.miz` invalidiert die vorherige MIZ-Hashkette.
+
+## Ergebnisstatus
+
+Bis zum real ausgeführten Final-Acceptance-Lauf bleiben Relief-/Identity-, CampaignState-Loss-/Restore- und Concurrency-Pfade **source-reviewed / nicht DCS-validiert**. `VERIFIED-METHODS.md` wird für diese neuen Pfade erst nach realer DCS-Evidenz aktualisiert.
