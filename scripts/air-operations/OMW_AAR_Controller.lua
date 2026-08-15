@@ -1,7 +1,8 @@
 -- Operation Mountain Watch - production AAR demand and tanker lifecycle controller.
 --
 -- MOOSE-first boundary:
---   * OMW selects the operational AAR area/profile from MissionDemand.
+--   * OMW maintains the approved continuous six-track AAR core baseline.
+--   * MissionDemand attaches to a compatible already-operated core track; it does not create or close that track.
 --   * MOOSE SPAWN/FLIGHTGROUP/AUFTRAG/SCHEDULER execute the physical lifecycle.
 --   * OMW only orchestrates station ownership, relief timing, identity handover and per-track concurrency.
 --   * CampaignState remains the strategic availability authority through the injected adapter.
@@ -40,7 +41,7 @@ local AREAS = {
     template = "OMW_AAR_KC135_LISA",
     callsignId = CALLSIGN.Tanker.Texaco, callsignName = "Texaco", callsignMinor = 3, callsignMajor = 1,
     lat = 33.66624916, lon = 61.81294477, headingDeg = 4.269,
-    sourceDomain = "MANAS", transitProfile = "MANAS_WEST_HIGH",
+    sourceDomain = "MANAS", transitProfile = "MANAS_WEST_HIGH", coreProfile = "FAST",
     frequencyMHz = 235.900, tacanChannel = 50, tacanIdent = "LIS",
     fuelLowPct = 24, initialFuelPct = 96,
     profiles = { SLOW = { altitudeFt = 22000, speedKt = 220 }, FAST = { altitudeFt = 25000, speedKt = 300 } },
@@ -49,7 +50,7 @@ local AREAS = {
     template = "OMW_AAR_KC135_MOE",
     callsignId = CALLSIGN.Tanker.Texaco, callsignName = "Texaco", callsignMinor = 4, callsignMajor = 1,
     lat = 35.07603944, lon = 65.32603438, headingDeg = 304.682,
-    sourceDomain = "MANAS", transitProfile = "MANAS_WEST_HIGH",
+    sourceDomain = "MANAS", transitProfile = "MANAS_WEST_HIGH", coreProfile = "FAST",
     frequencyMHz = 243.400, tacanChannel = 52, tacanIdent = "MOE",
     fuelLowPct = 22, initialFuelPct = 96,
     profiles = { SLOW = { altitudeFt = 24000, speedKt = 220 }, FAST = { altitudeFt = 27000, speedKt = 300 } },
@@ -58,7 +59,7 @@ local AREAS = {
     template = "OMW_AAR_KC135_MILHOUSE",
     callsignId = CALLSIGN.Tanker.Shell, callsignName = "Shell", callsignMinor = 2, callsignMajor = 1,
     lat = 33.44219603, lon = 65.46466360, headingDeg = 63.607,
-    sourceDomain = "AL_UDEID", transitProfile = "AL_UDEID_NORTH_HIGH",
+    sourceDomain = "AL_UDEID", transitProfile = "AL_UDEID_NORTH_HIGH", coreProfile = "SLOW",
     frequencyMHz = 272.600, tacanChannel = 58, tacanIdent = "MIL",
     fuelLowPct = 27, initialFuelPct = 90,
     profiles = { SLOW = { altitudeFt = 22000, speedKt = 220 } },
@@ -67,7 +68,7 @@ local AREAS = {
     template = "OMW_AAR_KC135_KRUSTY",
     callsignId = CALLSIGN.Tanker.Arco, callsignName = "Arco", callsignMinor = 2, callsignMajor = 1,
     lat = 32.65123012, lon = 68.15946309, headingDeg = 212.350,
-    sourceDomain = "AL_UDEID", transitProfile = "AL_UDEID_NORTH_HIGH",
+    sourceDomain = "AL_UDEID", transitProfile = "AL_UDEID_NORTH_HIGH", coreProfile = "SLOW",
     frequencyMHz = 258.300, tacanChannel = 42, tacanIdent = "KRU",
     fuelLowPct = 27, initialFuelPct = 90,
     profiles = { SLOW = { altitudeFt = 22000, speedKt = 220 } },
@@ -76,7 +77,7 @@ local AREAS = {
     template = "OMW_AAR_KC135_PATTY",
     callsignId = CALLSIGN.Tanker.Texaco, callsignName = "Texaco", callsignMinor = 2, callsignMajor = 1,
     lat = 34.97134133, lon = 71.47789605, headingDeg = 89.662,
-    sourceDomain = "MANAS", transitProfile = "MANAS_EAST_HIGH",
+    sourceDomain = "MANAS", transitProfile = "MANAS_EAST_HIGH", coreProfile = "SLOW",
     frequencyMHz = 237.300, tacanChannel = 48, tacanIdent = "PAT",
     fuelLowPct = 21, initialFuelPct = 96,
     profiles = { SLOW = { altitudeFt = 24000, speedKt = 220 } },
@@ -85,12 +86,15 @@ local AREAS = {
     template = "OMW_AAR_KC135_NELSON",
     callsignId = CALLSIGN.Tanker.Texaco, callsignName = "Texaco", callsignMinor = 1, callsignMajor = 1,
     lat = 36.37666667, lon = 71.01833333, headingDeg = 10.428,
-    sourceDomain = "MANAS", transitProfile = "MANAS_EAST_HIGH",
+    sourceDomain = "MANAS", transitProfile = "MANAS_EAST_HIGH", coreProfile = "FAST",
     frequencyMHz = 384.400, tacanChannel = 47, tacanIdent = "NEL",
     fuelLowPct = 20, initialFuelPct = 96,
     profiles = { FAST = { altitudeFt = 27500, speedKt = 300 } },
   },
 }
+
+-- Interleave source domains so both off-map source queues can start independently.
+local CORE_AREA_ORDER = { "NELSON", "KRUSTY", "PATTY", "MILHOUSE", "LISA", "MOE" }
 
 -- Transit callsigns are OMW-owned identities. Link-16 STN allocation is left to the
 -- pinned MOOSE SPAWN implementation, which resolves template STN collisions internally.
@@ -123,6 +127,7 @@ local state = {
   dispatcher = nil,
   stationMonitor = nil,
   nextRuntimeId = 0,
+  continuousCoreStarted = false,
 }
 
 local ensureRelief
@@ -158,6 +163,25 @@ local function normalizeDemand(demand)
   }
 end
 
+local function coreSelection(area)
+  local areaSpec = AREAS[area]
+  if not areaSpec then fail("unknown core AAR area=" .. tostring(area)) end
+  local profile = areaSpec.coreProfile
+  if not areaSpec.profiles[profile] then fail("missing core profile for area=" .. tostring(area)) end
+  return {
+    missionDemandId = "AAR-CORE-" .. area,
+    receiverProfile = profile,
+    requestedReceiverProfile = profile,
+    operationsArea = "CORE",
+    supportMode = "CONTINUOUS",
+    priority = "CORE_CONTINUOUS",
+    area = area,
+    sourceDomain = areaSpec.sourceDomain,
+    transitProfile = areaSpec.transitProfile,
+    continuousCore = true,
+  }
+end
+
 function Controller.SelectArea(demand)
   local d = normalizeDemand(demand)
   local area
@@ -170,14 +194,25 @@ function Controller.SelectArea(demand)
   else
     return nil, string.format("NO_AAR_POLICY receiverProfile=%s operationsArea=%s supportMode=%s", d.receiverProfile, d.operationsArea, d.supportMode)
   end
+
   local areaSpec = AREAS[area]
-  if not areaSpec.profiles[d.receiverProfile] then
-    return nil, string.format("AREA_PROFILE_UNAVAILABLE area=%s receiverProfile=%s", area, d.receiverProfile)
+  local trackProfile = areaSpec.coreProfile
+  if d.receiverProfile ~= trackProfile then
+    return nil, string.format("CORE_TRACK_PROFILE_MISMATCH area=%s requested=%s coreProfile=%s",
+      area, d.receiverProfile, trackProfile)
   end
+
   return {
-    missionDemandId = d.missionDemandId, receiverProfile = d.receiverProfile, operationsArea = d.operationsArea,
-    supportMode = d.supportMode, priority = d.priority, area = area, sourceDomain = areaSpec.sourceDomain,
+    missionDemandId = d.missionDemandId,
+    receiverProfile = trackProfile,
+    requestedReceiverProfile = d.receiverProfile,
+    operationsArea = d.operationsArea,
+    supportMode = d.supportMode,
+    priority = d.priority,
+    area = area,
+    sourceDomain = areaSpec.sourceDomain,
     transitProfile = areaSpec.transitProfile,
+    continuousCore = true,
   }
 end
 
@@ -201,6 +236,7 @@ local function getOrCreateStation(selection)
       key = key,
       selection = selection,
       demandsById = {},
+      continuousCore = selection.continuousCore == true,
       closed = false,
       closedReason = nil,
       coverageClaimed = false,
@@ -216,11 +252,6 @@ local function getOrCreateStation(selection)
     state.stationsByKey[key] = station
   end
   return station
-end
-
-local function firstDemandSelection(station)
-  for _, selection in pairs(station.demandsById) do return selection end
-  return nil
 end
 
 local function countPhysicalRuntimes()
@@ -326,45 +357,6 @@ local function cancelToEgress(runtime, reason)
   return true
 end
 
-local function clearQueuedForStation(station, replacementSelection)
-  local remaining = {}
-  local removed = 0
-  for _, request in ipairs(state.queue) do
-    if activeKey(request.selection) == station.key then
-      if replacementSelection then
-        request.selection = replacementSelection
-        remaining[#remaining + 1] = request
-      else
-        removed = removed + 1
-      end
-    else
-      remaining[#remaining + 1] = request
-    end
-  end
-  state.queue = remaining
-  if not replacementSelection then
-    station.activeQueued = false
-    station.reliefQueued = false
-    station.reliefReason = nil
-  end
-  return removed
-end
-
-local function closeStation(station, terminalStatus)
-  station.closed = true
-  station.closedReason = terminalStatus
-  station.coverageClaimed = false
-  station.nextPlannedHandoverAt = nil
-  station.reliefLaunchAt = nil
-  station.handoverArmed = true
-  local removed = clearQueuedForStation(station, nil)
-  local activeEgress = cancelToEgress(station.activeRuntime, "DEMAND_" .. terminalStatus)
-  local reliefEgress = cancelToEgress(station.reliefRuntime, "DEMAND_" .. terminalStatus)
-  log(string.format("STATION_CLOSED area=%s profile=%s status=%s queuedRemoved=%d activeEgress=%s reliefEgress=%s",
-    station.selection.area, station.selection.receiverProfile, terminalStatus, removed,
-    tostring(activeEgress), tostring(reliefEgress)))
-end
-
 local function queueMaterialization(selection, role, reliefReason)
   state.queue[#state.queue + 1] = { selection = selection, role = role, reliefReason = reliefReason }
 end
@@ -382,7 +374,7 @@ local function scheduleCycle(station, runtime, timestamp)
   local transitSec = (runtime.gateDistanceNm / TRANSIT_SPEED_KT) * 3600
   runtime.onStationAt = timestamp
   if station.closed then
-    cancelToEgress(runtime, "DEMAND_" .. tostring(station.closedReason or "ENDED"))
+    cancelToEgress(runtime, "TRACK_DISABLED")
     return
   end
   station.nextPlannedHandoverAt = timestamp + STATION_CYCLE_SEC
@@ -395,7 +387,7 @@ end
 
 local function promoteReliefOnTrack(station, relief, reason, timestamp)
   if station.closed then
-    cancelToEgress(relief, "DEMAND_" .. tostring(station.closedReason or "ENDED"))
+    cancelToEgress(relief, "TRACK_DISABLED")
     return
   end
   local outgoing = station.activeRuntime
@@ -463,7 +455,7 @@ local function materialize(request)
   local gate = GATES[areaSpec.sourceDomain]
   local station = getOrCreateStation(selection)
 
-  if station.closed then fail("refusing materialization for closed station=" .. station.key) end
+  if station.closed then fail("refusing materialization for disabled core track=" .. station.key) end
 
   state.nextRuntimeId = state.nextRuntimeId + 1
   local runtimeId = string.format("AAR-%04d", state.nextRuntimeId)
@@ -531,7 +523,7 @@ local function materialize(request)
         ensureRelief(station, "FUEL_LOW")
       end
     end
-    cancelToEgress(runtime, station.closed and ("DEMAND_" .. tostring(station.closedReason or "ENDED")) or "FUEL_LOW")
+    cancelToEgress(runtime, station.closed and "TRACK_DISABLED" or "FUEL_LOW")
   end
 
   function flightGroup:OnAfterDead(From, Event, To)
@@ -599,7 +591,7 @@ local function processQueue()
     local station = state.stationsByKey[activeKey(request.selection)]
     if station and station.closed then
       if request.role == "RELIEF" then station.reliefQueued = false else station.activeQueued = false end
-      log(string.format("QUEUE_DROPPED demand=%s role=%s station=%s reason=STATION_CLOSED",
+      log(string.format("QUEUE_DROPPED demand=%s role=%s station=%s reason=TRACK_DISABLED",
         request.selection.missionDemandId, tostring(request.role), station.key))
     else
       local operational, operationalReason = canMaterializeOperationally(station)
@@ -699,6 +691,27 @@ local function ensureSchedulers()
   end
 end
 
+function Controller.StartContinuousCoreCoverage()
+  if not state.strategicAdapter then fail("SetStrategicAdapter must be called before StartContinuousCoreCoverage") end
+  for _, area in ipairs(CORE_AREA_ORDER) do
+    local selection = coreSelection(area)
+    local station = getOrCreateStation(selection)
+    station.selection = selection
+    station.continuousCore = true
+    station.closed = false
+    station.closedReason = nil
+    if not station.activeRuntime and not station.reliefRuntime and not station.activeQueued then
+      station.activeQueued = true
+      queueMaterialization(selection, "ACTIVE", "CORE_START")
+      log(string.format("CORE_TRACK_QUEUED area=%s profile=%s source=%s",
+        selection.area, selection.receiverProfile, selection.sourceDomain))
+    end
+  end
+  state.continuousCoreStarted = true
+  ensureSchedulers()
+  return Controller
+end
+
 function Controller.SubmitDemand(demand)
   if not state.strategicAdapter then fail("SetStrategicAdapter must be called before SubmitDemand") end
   local selection, reason = Controller.SelectArea(demand)
@@ -706,17 +719,21 @@ function Controller.SubmitDemand(demand)
     log("REJECTED demand=" .. tostring(demand and demand.missionDemandId) .. " reason=" .. tostring(reason))
     return nil, reason
   end
-  local station = getOrCreateStation(selection)
-  station.demandsById[selection.missionDemandId] = selection
-  station.selection = selection
+
+  local core = coreSelection(selection.area)
+  local station = getOrCreateStation(core)
+  station.selection = core
+  station.continuousCore = true
   station.closed = false
   station.closedReason = nil
-  clearQueuedForStation(station, selection)
+  station.demandsById[selection.missionDemandId] = selection
 
   local existing = station.activeRuntime
   if existing and existing.flightGroup and existing.flightGroup:IsAlive()
       and not existing.egressOrdered and not existing.lossHandled then
     ensureSchedulers()
+    log(string.format("DEMAND_ATTACHED demand=%s area=%s profile=%s action=ACTIVE_REUSED",
+      selection.missionDemandId, selection.area, selection.receiverProfile))
     return existing, "ACTIVE_REUSED"
   end
   if station.reliefRuntime and station.reliefRuntime.flightGroup and station.reliefRuntime.flightGroup:IsAlive()
@@ -724,13 +741,12 @@ function Controller.SubmitDemand(demand)
     ensureSchedulers()
     return station.reliefRuntime, "RELIEF_INBOUND"
   end
-  if station.activeQueued then ensureSchedulers(); return selection, "ACTIVE_QUEUED" end
-  station.activeQueued = true
-  queueMaterialization(selection, "ACTIVE", nil)
+  if not station.activeQueued then
+    station.activeQueued = true
+    queueMaterialization(core, "ACTIVE", "CORE_RECOVERY")
+  end
   ensureSchedulers()
-  log(string.format("QUEUED demand=%s role=ACTIVE area=%s profile=%s source=%s priority=%s", selection.missionDemandId,
-    selection.area, selection.receiverProfile, selection.sourceDomain, tostring(selection.priority)))
-  return selection, "QUEUED"
+  return core, "CORE_TRACK_QUEUED"
 end
 
 function Controller.EndDemand(demand, terminalStatus)
@@ -745,32 +761,31 @@ function Controller.EndDemand(demand, terminalStatus)
     return nil, reason
   end
 
-  local station = state.stationsByKey[activeKey(selection)]
+  local station = state.stationsByKey[activeKey(coreSelection(selection.area))]
   if not station then return nil, "NO_STATION" end
 
   station.demandsById[selection.missionDemandId] = nil
-  local replacementSelection = firstDemandSelection(station)
-  if replacementSelection then
-    station.selection = replacementSelection
-    clearQueuedForStation(station, replacementSelection)
-    log(string.format("DEMAND_ENDED demand=%s status=%s area=%s profile=%s stationAction=RETAIN_ACTIVE_DEMANDS",
-      selection.missionDemandId, terminalStatus, selection.area, selection.receiverProfile))
-    return station, "STATION_RETAINED"
-  end
-
-  station.selection = selection
-  closeStation(station, terminalStatus)
+  log(string.format("DEMAND_ENDED demand=%s status=%s area=%s profile=%s stationAction=RETAIN_CONTINUOUS_CORE",
+    selection.missionDemandId, terminalStatus, selection.area, selection.receiverProfile))
   ensureSchedulers()
-  return station, "STATION_CLOSED"
+  return station, "CORE_TRACK_RETAINED"
+end
+
+local function resolveTrackKey(area, receiverProfile)
+  local areaName = tostring(area):upper()
+  local areaSpec = AREAS[areaName]
+  if not areaSpec then return areaName .. ":" .. tostring(receiverProfile):upper() end
+  local profile = receiverProfile and tostring(receiverProfile):upper() or areaSpec.coreProfile
+  return areaName .. ":" .. profile
 end
 
 function Controller.GetActive(area, receiverProfile)
-  local station = state.stationsByKey[tostring(area):upper() .. ":" .. tostring(receiverProfile):upper()]
+  local station = state.stationsByKey[resolveTrackKey(area, receiverProfile)]
   return station and station.activeRuntime or nil
 end
 
 function Controller.GetStation(area, receiverProfile)
-  return state.stationsByKey[tostring(area):upper() .. ":" .. tostring(receiverProfile):upper()]
+  return state.stationsByKey[resolveTrackKey(area, receiverProfile)]
 end
 
 function Controller.GetRuntimeCounts()
@@ -785,12 +800,29 @@ end
 
 function Controller.GetConfig()
   return {
-    mooseCommit = MOOSE_COMMIT, mooseSha256 = MOOSE_SHA256, sourceSpawnIntervalSec = SOURCE_SPAWN_INTERVAL_SEC,
-    handoffRadiusNm = HANDOFF_RADIUS_NM, trackEntryRadiusNm = TRACK_ENTRY_RADIUS_NM, stationCycleSec = STATION_CYCLE_SEC,
-    reliefHandoverEtaSec = RELIEF_HANDOVER_ETA_SEC, transitSpeedKt = TRANSIT_SPEED_KT,
-    transitCallsignSlots = #TRANSIT_CALLSIGNS, continuousCoreTrackCount = CORE_TRACK_COUNT,
-    maxAircraftPerTrack = MAX_AIRCRAFT_PER_TRACK, globalAarMissionLimit = false, globalAarAircraftLimit = false,
+    mooseCommit = MOOSE_COMMIT,
+    mooseSha256 = MOOSE_SHA256,
+    sourceSpawnIntervalSec = SOURCE_SPAWN_INTERVAL_SEC,
+    handoffRadiusNm = HANDOFF_RADIUS_NM,
+    trackEntryRadiusNm = TRACK_ENTRY_RADIUS_NM,
+    stationCycleSec = STATION_CYCLE_SEC,
+    reliefHandoverEtaSec = RELIEF_HANDOVER_ETA_SEC,
+    transitSpeedKt = TRANSIT_SPEED_KT,
+    transitCallsignSlots = #TRANSIT_CALLSIGNS,
+    continuousCoreTrackCount = CORE_TRACK_COUNT,
+    continuousAvailabilityPolicy = true,
+    maxAircraftPerTrack = MAX_AIRCRAFT_PER_TRACK,
+    globalAarMissionLimit = false,
+    globalAarAircraftLimit = false,
     mooseManagedSpawnStn = true,
+    coreProfiles = {
+      LISA = AREAS.LISA.coreProfile,
+      MOE = AREAS.MOE.coreProfile,
+      MILHOUSE = AREAS.MILHOUSE.coreProfile,
+      KRUSTY = AREAS.KRUSTY.coreProfile,
+      PATTY = AREAS.PATTY.coreProfile,
+      NELSON = AREAS.NELSON.coreProfile,
+    },
   }
 end
 
