@@ -10,8 +10,8 @@ $testFile = Join-Path $repoRoot 'mission\tests\aar-production-integration\src\01
 $distDir = Join-Path $repoRoot 'mission\tests\aar-production-integration\dist'
 $outputFile = Join-Path $distDir 'OMW_AAR_Production_Integration.lua'
 
-$builderVersion = 'AAR-PRODUCTION-INTEGRATION-3'
-$testId = 'AAR-PRODUCTION-INTEGRATION-3'
+$builderVersion = 'AAR-PRODUCTION-INTEGRATION-3R1'
+$testId = 'AAR-PRODUCTION-INTEGRATION-3R1'
 $mooseCommit = '73d3ed119cd9e7e3f2cfcabbaa34513d30529b54'
 $mooseSha256 = 'e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915'
 
@@ -57,7 +57,7 @@ foreach ($marker in $requiredControllerMarkers) {
 }
 
 $requiredTestMarkers = @(
-  'AAR-PRODUCTION-INTEGRATION-3',
+  'AAR-PRODUCTION-INTEGRATION-3R1',
   'AAR-TEST-NELSON',
   'AAR-TEST-KRUSTY',
   'AAR-TEST-PATTY',
@@ -67,12 +67,16 @@ $requiredTestMarkers = @(
   'POLICY_PASS',
   'TEMPLATE_IDENTITY_PASS',
   'CALLSIGN_IDENTITY_PASS',
+  'normalizeCallsign(',
   'SEED_FUEL_PASS',
   'runtime.group:GetFuelMin()',
+  'fuelFraction < 0 or fuelFraction > 1',
   'runtime.group:GetCallsign()',
   'SOURCE_SPACING_PASS',
   'TRANSIT_PROGRESS_PASS',
   'INTEGRATION_PASS',
+  'callsignNormalization=true',
+  'deferredFuelRead=true',
   'artificialFuelLow=false',
   'fullTrackArrivalRequired=false'
 )
@@ -118,6 +122,8 @@ $header = @"
 -- Scope: MissionDemand -> six operational AAR areas -> area-specific MOOSE tanker materialization -> callsign/fuel identity -> high-transit progress.
 -- Area-specific Mission Editor templates are required for all six operational core areas.
 -- Source-domain materialization spacing: minimum 60 seconds; MANAS and AL UDEID may materialize concurrently.
+-- Callsign comparison normalizes DCS/MOOSE display separators only; production callsign assignment remains unchanged.
+-- Seed-fuel verification is deferred until GROUP:GetFuelMin() returns a plausible 0..1 fraction.
 -- Production FuelLow thresholds are retained; no artificial/accelerated FuelLow trigger is used.
 -- Full gate-to-track arrival is not required by this focused integration test; generic tanker mission execution was already accepted separately.
 -- No automated MIZ mutation.
@@ -141,6 +147,8 @@ Write-Host "ControllerSHA256: $controllerHash"
 Write-Host "TestSourceSHA256: $testHash"
 Write-Host "BundleSHA256: $hash"
 Write-Host "SourceSpawnIntervalSec: 60"
+Write-Host "CallsignNormalization: true"
+Write-Host "DeferredFuelRead: true"
 Write-Host "ArtificialFuelLow: false"
 Write-Host "FullTrackArrivalRequired: false"
 Write-Host "MizMutation: false"
