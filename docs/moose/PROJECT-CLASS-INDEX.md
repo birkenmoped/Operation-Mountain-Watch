@@ -59,7 +59,7 @@ Diese Klassenstatus sind keine Governance-Dokumentstatuswerte.
 | `WAREHOUSE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | AirOps-Stockregistrierung und post-start Zuordnung; strategische Logistik und Persistenz offen; physische typgebundene HELIPAD-Parking-Garantie nicht belegt. Kein WAREHOUSE für die externen AAR-count-Pools. |
 | `STORAGE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | CampaignState->DCS-Warehouse Item-/Liquid-Mirror, Technical Availability sowie native Ground-Crew-/Materialization-Transaktionen für dokumentierte Pfade; zentraler Warehouse-Bootstrap NEW/RESTORE am 13.08.2026 mit Item-, Fuel- und Technical-Readback sowie 0.5-kg Fuel-Toleranz bestätigt; keine strategische Rückautorität |
 | `COHORT` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | post-start `AddAsset()` setzt `squadname`, `legion`, `cohort` und `assets`; Foundation-Läufe bestätigen die registrierte SQUADRON-/Warehouse-Kette; `CanMission()` inklusive Missionstyp-/Range-Prüfung für den AAR-Receiverpfad source-reviewed; Acceptance-4/5 bestätigten den test-only 250-NM-Missionsrange-Pfad praktisch für den Bagram-F-16 |
-| `FLIGHTGROUP` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | AIRWING-`FlightOnMission`-Pfad, Cold-Takeoff-Prüfung und `SetOptionPreferVertical()`-Propagation im finalen Shindand-Lauf bestätigt; AAR source-reviewed für `GetFuelMin()`, `SetFuelLowThreshold()`, `SetFuelLowRTB(false)`, FuelLow-Callback, aktuelle Gruppenkoordinate sowie `IsAirborne() -> Refuel() -> Going4Fuel -> Refueled`; Acceptance-6 bestätigte A-10C/F-15E/F-16C-Boom-AAR und FuelLow/Cancel/Egress-Grundmechanik. Die neue Relief-/Identity-Orchestrierung verwendet FLIGHTGROUP weiter als MOOSE-Lifecycle-Träger, ist aber noch nicht DCS-validiert. |
+| `FLIGHTGROUP` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | AIRWING-`FlightOnMission`-Pfad, Cold-Takeoff-Prüfung und `SetOptionPreferVertical()`-Propagation im finalen Shindand-Lauf bestätigt; AAR source-reviewed für `GetFuelMin()`, `SetFuelLowThreshold()`, `SetFuelLowRTB(false)`, FuelLow-Callback, `Dead`/`onafterDead`-FSM-Pfad, aktuelle Gruppenkoordinate sowie `IsAirborne() -> Refuel() -> Going4Fuel -> Refueled`; Acceptance-6 bestätigte A-10C/F-15E/F-16C-Boom-AAR und FuelLow/Cancel/Egress-Grundmechanik. Der aktuelle Controller nutzt `OnAfterDead` zur exakt einmaligen strategischen Loss-Klassifikation; dieser neue Einsatz ist SOURCE_REVIEWED, aber noch nicht DCS-validiert. |
 | `COMMANDER` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Salerno `New -> AddAirwing -> Start -> CanMission -> AddMission -> Status` bis AUFTRAG `started`; Shindand Foundation verwendet COMMANDER ausdrücklich nicht; `AddTankerZone(...)` ist source-reviewed, aber für den externen OMW-AAR-Pool nicht ausgewählt oder DCS-validiert |
 | `AUFTRAG` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Salerno CAS sowie Shindand `NewCAS()`, `NewLANDATCOORDINATE()` und `AssignSquadrons()` im nativen AIRWING-Pfad bis Missionserfolg bestätigt; AAR-`NewTANKER()`, `SetRadio()`, `SetTACAN()`, `SetMissionIngressCoord()`, `SetMissionEgressCoord()`, `IsExecuting()`, `Cancel()` und test-only `SetMissionRange()` source-reviewed. Acceptance-6 bestätigte den Tanker-/Cancel-/Egress-Grundpfad; der neue 3-h-Relief-Zyklus bleibt DCS-offen. |
 | `SPAWN` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | AAR-Materialisierung aus area-spezifischen Templates; `InitCallSign(...)` praktisch in Integration-3 für den damaligen Callsign-Pfad beobachtet. Aktuell werden `InitCallSign(...)` und source-reviewed `InitSTN(...)` für die physische Transitidentität verwendet; der neue Transit-/Station-Handover ist noch nicht DCS-validiert. |
@@ -144,6 +144,8 @@ FLIGHTGROUP:GetFuelMin()
 FLIGHTGROUP:SetFuelLowThreshold(...)
 FLIGHTGROUP:SetFuelLowRTB(false)
 FuelLow callback
+FLIGHTGROUP Dead/onafterDead FSM event
+OnAfterDead callback override
 FLIGHTGROUP:GetCoordinate()
 FLIGHTGROUP:IsAirborne()
 FLIGHTGROUP:Refuel(...)
@@ -168,7 +170,7 @@ Der Source-Review bestätigt API-Verfügbarkeit und Signaturen, nicht automatisc
 
 `AIRWING:GetTankerForFlight()` unterscheidet bei gleichem Refueling-System nicht automatisch nach OMW-SLOW-/FAST-Receiverprofil, sondern wählt nach Distanz. `AIRWING:CheckTANKER()` kann mehrere Tanker am Patrolpunkt verwalten, verwendet intern aber nur ein 1.000-ft-Inkrement. OMW behält deshalb die strengere Planungsregel von mindestens 3.000 ft für unabhängige Same-area-SLOW/FAST-Tanker bei.
 
-Der aktuelle externe AAR-Controller nutzt AIRWING/COMMANDER nicht als Tankerquelle, weil MANAS und AL UDEID off-map liegen und CampaignState die strategische Ressourcenhoheit besitzt. Die kleine OMW-Orchestrierung verwaltet nur Station Ownership, Relief Timing und Identity Handover; Spawn, FLIGHTGROUP, Tankermission, FuelLow, Cancel, Funk/TACAN und Despawn verbleiben bei MOOSE.
+Der aktuelle externe AAR-Controller nutzt AIRWING/COMMANDER nicht als Tankerquelle, weil MANAS und AL UDEID off-map liegen und CampaignState die strategische Ressourcenhoheit besitzt. Die kleine OMW-Orchestrierung verwaltet nur Station Ownership, Relief Timing, Demand-Ende, bounded Concurrency und Identity Handover; Spawn, FLIGHTGROUP, Tankermission, FuelLow, Dead-FSM, Cancel, Funk/TACAN und Despawn verbleiben bei MOOSE.
 
 ### 7.1 Praktisch bestätigte AAR-Grenzen
 
@@ -182,19 +184,21 @@ Der aktuelle externe AAR-Controller nutzt AIRWING/COMMANDER nicht als Tankerquel
 
 `AAR-PRODUCTION-INTEGRATION-3` bestätigte sechs MissionDemand-Mappings, sechs Templates, damalige area-spezifische Callsigns, 60-s-Same-source-Abstände und parallele MANAS-/AL_UDEID-Materialisierung. Die 3R1-Korrektur behebt nur Harness-False-Negatives und wurde auf Eigentümerentscheidung nicht separat erneut in DCS ausgeführt.
 
-### 7.2 Noch nicht DCS-validierter Produktionsscope
+### 7.2 Implementierter, noch nicht DCS-validierter Produktionsscope
 
-Noch **nicht** als praktisch bestätigt gelten:
+Source-reviewed und implementiert, aber noch **nicht** als praktisch bestätigt gelten:
 
 - nominaler 3-h-Station-/Relief-Zyklus;
 - FuelLow-Relief ohne Doppelmaterialisierung;
 - Transit-/Station-Callsign-Handover;
 - `SwitchRadio`/`TurnOffRadio` im neuen Station-Handover;
 - `SwitchTACAN`/`TurnOffTACAN` im neuen Station-Handover;
-- CampaignState `AIRCRAFT_KC135` Consume/Recredit-Kopplung;
-- MissionDemand-Ende/Cancel der Stationslogik;
-- Aircraft-Loss-/No-Handoff-Klassifikation;
-- Snapshot/Restore-Reconciliation während physische Tanker in der Luft sind.
+- CampaignState `AIRCRAFT_KC135` Consume/Exact-once-Recredit-Kopplung;
+- `COMPLETE`/`CANCELLED`/`ABORTED` -> sofortiges Station-Close/Egress, sofern kein weiterer Demand dieselbe Station benötigt;
+- FLIGHTGROUP-`Dead` -> `OnAfterDead` -> strategischer `OnLost` ohne Aircraft-Recredit;
+- persistenter Loss-Audit über `AIRCRAFT_KC135_LOST`;
+- Restore-Reconciliation für beim Snapshot konsumierte, aber nicht als Handoff/Loss aufgelöste AAR-Commitments;
+- operative Grenzen `2 Support-Missionen / 2 Aircraft je Mission / 4 Support-Aircraft` im Controller.
 
 Diese Punkte dürfen erst nach einem genehmigten, dokumentierten DCS-Lauf in `VERIFIED-METHODS.md` beziehungsweise Acceptance-Dokumenten als praktisch bestätigt ergänzt werden.
 
