@@ -42,7 +42,7 @@ $requirements = @(
   @{ File = 'Adapter'; Marker = 'AIRCRAFT_KC135_LOST' },
   @{ File = 'RuntimeIntegration'; Marker = 'function Integration.Attach' },
   @{ File = 'RuntimeIntegration'; Marker = 'adapter:ReconcileRestore()' },
-  @{ File = 'RuntimeIntegration'; Marker = 'controller:SetStrategicAdapter(adapter)' },
+  @{ File = 'RuntimeIntegration'; Marker = 'controller.SetStrategicAdapter(adapter)' },
   @{ File = 'StrategicStock'; Marker = 'OMW-AAR-STRATEGIC-STOCK-2' },
   @{ File = 'StrategicStock'; Marker = 'AIRCRAFT_KC135_LOST' },
   @{ File = 'StrategicStock'; Marker = 'initial = 16' },
