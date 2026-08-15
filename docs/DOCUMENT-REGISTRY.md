@@ -107,6 +107,7 @@ Eine Nummer und eine stabile `document_id` dürfen im aktuellen Bestand jeweils 
 | 84 | `OMW-HIST-AIR-SOF-INTEL-METRICS-SOURCE-REVIEW` | `docs/84-av8b-f14-takur-ghar-and-intelligence-metrics-source-review.md` | `BINDING` | AV-8B-, F-14-, Takur-Ghar- sowie Intelligence-/Metrics-Quellenreview |
 | 85 | `OMW-HIST-PREDATOR-REAPER-AFGHANISTAN-SOURCE-REVIEW` | `docs/85-predator-reaper-afghanistan-source-review.md` | `BINDING` | MQ-1-/MQ-9-, Afghanistan-, Bewaffnungs-, Endurance- und RPA-Betriebsquellenreview |
 | 86 | `OMW-HIST-KC135-AFGHANISTAN-2011-SOURCE-REVIEW` | `docs/86-kc135-afghanistan-2011-source-review.md` | `BINDING` | KC-135-, Afghanistan-2011-, Fuel-, Einheiten- und AAR-Betriebsquellenreview |
+| 87 | `OMW-HIST-AFGHANISTAN-CSAR-KANDAHAR-SOURCE-REVIEW` | `docs/87-afghanistan-csar-and-kandahar-airfield-source-review.md` | `BINDING` | Afghanistan-2011-CSAR-, Rescue-, Kandahar- und Airfield-Quellenreview |
 
 ## 3. Reservierte Nummern auf offenen Branches
 
