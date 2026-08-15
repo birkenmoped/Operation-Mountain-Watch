@@ -175,6 +175,7 @@ local observed = {
   milhouseOutgoing = nil,
   milhouseRelief = nil,
   milhouseReliefTriggerAt = nil,
+  milhouseHandoverArmedObserved = false,
   nelsonOutgoing = nil,
   nelsonRelief = nil,
   lisa = nil,
@@ -330,20 +331,39 @@ SCHEDULER:New(nil, function()
 
   elseif phase == 6 then
     local ms = getStation("MILHOUSE", "SLOW")
-    if ms and observed.milhouseRelief and ms.activeRuntime == observed.milhouseRelief
-        and observed.milhouseRelief.stationIdentityActive and observed.milhouseOutgoing.handoffComplete then
-      assertTrue(observed.milhouseOutgoing.firEgressPassed, "MILHOUSE outgoing did not pass DAVER egress")
-      assertTrue(observed.milhouseOutgoing.externalHandoffRouted, "MILHOUSE outgoing not routed to external handoff")
-      assertEqual(OMW.AAR.GetRuntimeCounts().supportAircraft, 4, "postScheduled.supportAircraft")
-      assertPool(adapter, "AL_UDEID", 38, 0, "postScheduled.AL_UDEID")
-      assertRuntimeIdentity(ms.activeRuntime, "Shell", "MILHOUSE.newActive")
-      log("SINGLE_SCHEDULED_RELIEF_PASS area=MILHOUSE naturalTrackHandover=true sameFamily=Shell DAVER_egress=true externalHandoff=true exactRecredit=true")
+    if ms and observed.milhouseRelief then
+      if not observed.milhouseRelief.onStationAt then
+        assertTrue(ms.activeRuntime == observed.milhouseOutgoing,
+          "MILHOUSE station owner changed before relief reached track")
+        assertTrue(observed.milhouseOutgoing.stationIdentityActive,
+          "MILHOUSE outgoing lost station identity before relief reached track")
+        assertTrue(not observed.milhouseOutgoing.egressOrdered,
+          "MILHOUSE outgoing received egress before relief reached track")
+        assertTrue(not observed.milhouseRelief.stationIdentityActive,
+          "MILHOUSE relief received station identity before reaching track")
+        if ms.handoverArmed and not observed.milhouseHandoverArmedObserved then
+          observed.milhouseHandoverArmedObserved = true
+          log("SCHEDULED_RELIEF_ARMED_HOLD_PASS area=MILHOUSE outgoingStillActive=true reliefStillInbound=true")
+        end
+      end
 
-      local ns = getStation("NELSON", "FAST")
-      observed.nelsonOutgoing = ns.activeRuntime
-      ns.activeRuntime.flightGroup:FuelLow()
-      assertTrue(ns.activeRuntime.egressOrdered, "NELSON FuelLow did not order egress")
-      setPhase(7, "NELSON_FUELLOW_RELIEF")
+      if ms.activeRuntime == observed.milhouseRelief
+          and observed.milhouseRelief.stationIdentityActive and observed.milhouseOutgoing.handoffComplete then
+        assertTrue(observed.milhouseHandoverArmedObserved,
+          "MILHOUSE handover completed without observing armed hold state")
+        assertTrue(observed.milhouseOutgoing.firEgressPassed, "MILHOUSE outgoing did not pass DAVER egress")
+        assertTrue(observed.milhouseOutgoing.externalHandoffRouted, "MILHOUSE outgoing not routed to external handoff")
+        assertEqual(OMW.AAR.GetRuntimeCounts().supportAircraft, 4, "postScheduled.supportAircraft")
+        assertPool(adapter, "AL_UDEID", 38, 0, "postScheduled.AL_UDEID")
+        assertRuntimeIdentity(ms.activeRuntime, "Shell", "MILHOUSE.newActive")
+        log("SINGLE_SCHEDULED_RELIEF_PASS area=MILHOUSE armedHold=true naturalTrackHandover=true sameFamily=Shell DAVER_egress=true externalHandoff=true exactRecredit=true")
+
+        local ns = getStation("NELSON", "FAST")
+        observed.nelsonOutgoing = ns.activeRuntime
+        ns.activeRuntime.flightGroup:FuelLow()
+        assertTrue(ns.activeRuntime.egressOrdered, "NELSON FuelLow did not order egress")
+        setPhase(7, "NELSON_FUELLOW_RELIEF")
+      end
     end
 
   elseif phase == 7 then
