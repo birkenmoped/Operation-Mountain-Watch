@@ -12,8 +12,8 @@ project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
   - class index without consolidated AIRWING lifecycle evidence
 superseded_by:
-source_branch: main
-source_commit: 2e9cbe6104f2e23bc3031821459e1f16309a946b
+source_branch: agent/aar-fuel-telemetry-calibration
+source_commit: PENDING_MERGE
 validated_in_dcs: partial
 ---
 
@@ -61,7 +61,7 @@ REJECTED_FOR_PROJECT_USE
 | `SPAWN` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | area-spezifische AAR-Templates und stabile Sortie-Callsign-Familie; keine erzwungene `InitSTN()`, STN-Readback über `UNIT:GetSTN()` |
 | `SCHEDULER` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Source-Queue, Station-Monitoring und Acceptance-Koordination im dokumentierten AAR-Scope |
 | `USERFLAG` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Warehouse-Acceptance-Readiness-Pfade |
-| `GROUP`, `UNIT`, `STATIC`, `ZONE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Template-/Static-/Warehouse-/Zonenvalidierung; AAR `UNIT:GetSTN()` und test-only `UNIT:Explode()` im Acceptance-5 praktisch bestätigt |
+| `GROUP`, `UNIT`, `STATIC`, `ZONE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Template-/Static-/Warehouse-/Zonenvalidierung; AAR `UNIT:GetSTN()` und test-only `UNIT:Explode()` praktisch bestätigt. `UNIT:GetFuel()`, `UNIT:GetCurrentFuelKgs()` und `UNIT:GetFuelMassMax()` sind für den neuen Fuel-Telemetry-Test source-verifiziert, aber noch nicht durch diesen Test in DCS validiert. |
 | `ARMYGROUP`, `BRIGADE`, `OPSGROUP` | `PLANNED` / teilweise validiert | Bodenoperationsscope bleibt geplant; für AAR sind Despawn sowie Radio-/TACAN-Switch im dokumentierten Acceptance-Scope praktisch korreliert |
 | `OPSTRANSPORT` | `PLANNED` | taktischer Transport |
 | `CTLD`, `CSAR`, `AICSAR` | `PLANNED` / teilweise verwendet | separate Acceptance erforderlich |
@@ -116,6 +116,16 @@ OPSGROUP:Despawn(...)
 COORDINATE:Get2DDistance(...)
 SCHEDULER:New(...)
 ```
+
+Für `AAR-FUEL-TELEMETRY-1` zusätzlich source-verifiziert, aber noch nicht als DCS-validiert eingestuft:
+
+```text
+UNIT:GetFuel()
+UNIT:GetCurrentFuelKgs()
+UNIT:GetFuelMassMax()
+```
+
+Der gepinnte `Moose.lua` implementiert `UNIT:GetFuel()` als öffentlichen Wrapper über `DCS Unit:getFuel()` und liefert den relativen Fuelwert; bei externen Tanks kann der Wert größer als `1.0` sein. Der Telemetrie-Harness klemmt diesen Wert deshalb nicht. `UNIT:GetCurrentFuelKgs()` und `UNIT:GetFuelMassMax()` werden nur als ergänzende Massentelemetrie protokolliert. Die produktive AAR-FuelLow-Logik bleibt bis zur Auswertung unverändert.
 
 `FLIGHTGROUP:AddWaypoint(...)` wird nach physischer Passage des FIR-Egress-Fixes verwendet, um den getrennten External-Handoff-Punkt anzufügen. Dieser zweistufige Egress-/Handoff-Pfad wurde im Acceptance-5 praktisch bestätigt.
 
