@@ -1,8 +1,8 @@
-local TEST_ID = "AAR-PRODUCTION-FINAL-ACCEPTANCE-1"
+local TEST_ID = "AAR-PRODUCTION-FINAL-ACCEPTANCE-2"
 local TAG = "[OMW][" .. TEST_ID .. "]"
 local POLL_SEC = 5
-local TIMEOUT_SEC = 900
-local SOURCE_SPACING_TOLERANCE_SEC = 2
+local TIMEOUT_SEC = 1800
+local SOURCE_SPACING_TOLERANCE_SEC = 1
 local LOSS_EXPLOSION_POWER = 1000
 
 local function log(message)
@@ -72,8 +72,8 @@ local function runRestoreReconciliationChecks()
   local snapshot = store:ExportSnapshot()
   local restoredStore = OMW_AAR_TEST_CampaignState.Restore(snapshot)
   local captureController = { adapter = nil }
-  function captureController:SetStrategicAdapter(value)
-    self.adapter = value
+  function captureController.SetStrategicAdapter(value)
+    captureController.adapter = value
   end
 
   local attached = OMW_AAR_TEST_RuntimeIntegration.Attach({
@@ -106,8 +106,11 @@ local function runRestoreReconciliationChecks()
 
   local lossSnapshot = lossStore:ExportSnapshot()
   local restoredLossStore = OMW_AAR_TEST_CampaignState.Restore(lossSnapshot)
-  local lossCapture = {}
-  function lossCapture:SetStrategicAdapter(value) self.adapter = value end
+  local lossCapture = { adapter = nil }
+  function lossCapture.SetStrategicAdapter(value)
+    lossCapture.adapter = value
+  end
+
   local attachedLoss = OMW_AAR_TEST_RuntimeIntegration.Attach({
     store = restoredLossStore,
     campaignState = OMW_AAR_TEST_CampaignState,
@@ -129,6 +132,14 @@ assertTrue(OMW_AAR_TEST_Adapter ~= nil, "AAR CampaignState adapter test module u
 assertTrue(OMW_AAR_TEST_RuntimeIntegration ~= nil, "AAR RuntimeIntegration test module unavailable")
 assertTrue(OMW and OMW.AAR, "production AAR controller unavailable")
 
+local config = OMW.AAR.GetConfig()
+assertEqual(config.continuousCoreTrackCount, 6, "config.continuousCoreTrackCount")
+assertEqual(config.maxAircraftPerTrack, 2, "config.maxAircraftPerTrack")
+assertEqual(config.globalAarMissionLimit, false, "config.globalAarMissionLimit")
+assertEqual(config.globalAarAircraftLimit, false, "config.globalAarAircraftLimit")
+assertEqual(config.mooseManagedSpawnStn, true, "config.mooseManagedSpawnStn")
+log("AAR_POLICY_BASELINE_PASS coreTracks=6 globalMissionLimit=false globalAircraftLimit=false maxAircraftPerTrack=2 continuousAvailabilityPolicy=true")
+
 runRestoreReconciliationChecks()
 
 local liveStore = buildStore()
@@ -147,17 +158,26 @@ log("POOL_BASELINE_PASS MANAS=16 AL_UDEID=40")
 
 local D = {
   NELSON = makeDemand("AAR-FINAL-NELSON", "FAST", "NORTHEAST", "SUPPORT"),
-  KRUSTY = makeDemand("AAR-FINAL-KRUSTY", "SLOW", "SOUTHEAST", "RECOVERY"),
   PATTY = makeDemand("AAR-FINAL-PATTY", "SLOW", "EAST", "SUPPORT"),
+  LISA = makeDemand("AAR-FINAL-LISA", "SLOW", "WEST", "SUPPORT"),
   MOE = makeDemand("AAR-FINAL-MOE", "FAST", "CENTRAL", "SUPPORT"),
+  KRUSTY = makeDemand("AAR-FINAL-KRUSTY", "SLOW", "SOUTHEAST", "RECOVERY"),
+  MILHOUSE = makeDemand("AAR-FINAL-MILHOUSE", "SLOW", "SOUTH_CENTRAL", "RECOVERY"),
+}
+
+local CORE = {
+  { area = "NELSON", profile = "FAST", source = "MANAS", callsign = "Texaco11", demand = D.NELSON },
+  { area = "PATTY", profile = "SLOW", source = "MANAS", callsign = "Texaco21", demand = D.PATTY },
+  { area = "LISA", profile = "SLOW", source = "MANAS", callsign = "Texaco31", demand = D.LISA },
+  { area = "MOE", profile = "FAST", source = "MANAS", callsign = "Texaco41", demand = D.MOE },
+  { area = "KRUSTY", profile = "SLOW", source = "AL_UDEID", callsign = "Arco21", demand = D.KRUSTY },
+  { area = "MILHOUSE", profile = "SLOW", source = "AL_UDEID", callsign = "Shell21", demand = D.MILHOUSE },
 }
 
 local phase = 1
 local phaseStartedAt = timer.getAbsTime()
 local startedAt = phaseStartedAt
 local observed = {
-  initialSpawnAt = {},
-  initialRuntimeId = {},
   nelsonReliefId = nil,
   pattyReliefId = nil,
   pattyLossPoolBefore = nil,
@@ -177,9 +197,43 @@ local function getStation(area, profile)
   return OMW.AAR.GetStation(area, profile)
 end
 
-local function runtimeIdentityKey(runtime)
-  if not runtime or not runtime.transitCallsign then return nil end
-  return string.format("%s:%d:%05d", runtime.transitCallsign.name, runtime.transitCallsign.number, runtime.transitCallsign.stn)
+local function elapsedPhase()
+  return timer.getAbsTime() - phaseStartedAt
+end
+
+local function currentCoreRuntimes(includeRelief)
+  local runtimes = {}
+  for _, spec in ipairs(CORE) do
+    local station = getStation(spec.area, spec.profile)
+    if station then
+      if station.activeRuntime then runtimes[#runtimes + 1] = station.activeRuntime end
+      if includeRelief and station.reliefRuntime then runtimes[#runtimes + 1] = station.reliefRuntime end
+    end
+  end
+  return runtimes
+end
+
+local function allCoreActive()
+  for _, spec in ipairs(CORE) do
+    if not getRuntime(spec.area, spec.profile) then return false end
+  end
+  return true
+end
+
+local function allCoreStationIdentityActive()
+  for _, spec in ipairs(CORE) do
+    local runtime = getRuntime(spec.area, spec.profile)
+    if not runtime or not runtime.stationIdentityActive then return false end
+  end
+  return true
+end
+
+local function allCoreReliefMaterialized()
+  for _, spec in ipairs(CORE) do
+    local station = getStation(spec.area, spec.profile)
+    if not station or not station.activeRuntime or not station.reliefRuntime then return false end
+  end
+  return true
 end
 
 local function assertUniqueRuntimeIdentities(runtimes, label)
@@ -191,11 +245,13 @@ local function assertUniqueRuntimeIdentities(runtimes, label)
       count = count + 1
       local transit = runtime.transitCallsign
       assertTrue(transit ~= nil, label .. " missing transit identity")
+      assertTrue(transit.stn ~= nil and tostring(transit.stn) ~= "", label .. " missing MOOSE-assigned STN")
       local callsignKey = transit.name .. tostring(transit.number)
+      local stnKey = tostring(transit.stn)
       assertTrue(not seenCallsign[callsignKey], label .. " duplicate transit callsign=" .. callsignKey)
-      assertTrue(not seenStn[transit.stn], label .. " duplicate STN=" .. tostring(transit.stn))
+      assertTrue(not seenStn[stnKey], label .. " duplicate STN=" .. stnKey)
       seenCallsign[callsignKey] = true
-      seenStn[transit.stn] = true
+      seenStn[stnKey] = true
     end
   end
   return count
@@ -213,13 +269,30 @@ local function verifyStationCallsign(runtime, expected, label)
   assertEqual(normalizeCallsign(actual), normalizeCallsign(expected), label)
 end
 
-local function elapsedPhase() return timer.getAbsTime() - phaseStartedAt end
+local function verifySourceSpacing(source)
+  local times = {}
+  for _, spec in ipairs(CORE) do
+    if spec.source == source then
+      local runtime = getRuntime(spec.area, spec.profile)
+      assertTrue(runtime and runtime.materializedAt, source .. " runtime missing materializedAt for " .. spec.area)
+      times[#times + 1] = runtime.materializedAt
+    end
+  end
+  table.sort(times)
+  for index = 2, #times do
+    local delta = times[index] - times[index - 1]
+    assertTrue(delta >= (60 - SOURCE_SPACING_TOLERANCE_SEC),
+      string.format("%s source spacing below 60 seconds delta=%.3f", source, delta))
+  end
+  return times
+end
 
-local submit1, status1 = OMW.AAR.SubmitDemand(D.NELSON)
-assertTrue(submit1 ~= nil, "NELSON submit failed status=" .. tostring(status1))
-local submit2, status2 = OMW.AAR.SubmitDemand(D.KRUSTY)
-assertTrue(submit2 ~= nil, "KRUSTY submit failed status=" .. tostring(status2))
-log("PHASE_01 INITIAL_PARALLEL_SUBMIT NELSON=" .. tostring(status1) .. " KRUSTY=" .. tostring(status2))
+for _, spec in ipairs(CORE) do
+  local result, status = OMW.AAR.SubmitDemand(spec.demand)
+  assertTrue(result ~= nil, spec.area .. " submit failed status=" .. tostring(status))
+  log(string.format("CORE_TRACK_SUBMITTED area=%s profile=%s source=%s status=%s", spec.area, spec.profile, spec.source, tostring(status)))
+end
+log("PHASE_01 SIX_CORE_TRACKS_SUBMITTED")
 
 SCHEDULER:New(nil, function()
   if timer.getAbsTime() - startedAt > TIMEOUT_SEC then
@@ -227,128 +300,94 @@ SCHEDULER:New(nil, function()
   end
 
   if phase == 1 then
-    local nelson = getRuntime("NELSON", "FAST")
-    local krusty = getRuntime("KRUSTY", "SLOW")
-    if nelson and krusty then
-      observed.initialSpawnAt.NELSON = observed.initialSpawnAt.NELSON or timer.getAbsTime()
-      observed.initialSpawnAt.KRUSTY = observed.initialSpawnAt.KRUSTY or timer.getAbsTime()
-      observed.initialRuntimeId.NELSON = nelson.runtimeId
-      observed.initialRuntimeId.KRUSTY = krusty.runtimeId
+    if allCoreActive() then
       local counts = OMW.AAR.GetRuntimeCounts()
-      assertEqual(counts.supportMissions, 2, "initial.supportMissions")
-      assertEqual(counts.supportAircraft, 2, "initial.supportAircraft")
-      assertPool(adapter, "MANAS", 15, 0, "initial.MANAS")
-      assertPool(adapter, "AL_UDEID", 39, 0, "initial.AL_UDEID")
-      assertUniqueRuntimeIdentities({ nelson, krusty }, "initialIdentity")
-      verifyStationCallsign(nelson, nelson.transitCallsign.name .. nelson.transitCallsign.number .. "1", "NELSON transit callsign")
-      verifyStationCallsign(krusty, krusty.transitCallsign.name .. krusty.transitCallsign.number .. "1", "KRUSTY transit callsign")
-      local delta = math.abs(observed.initialSpawnAt.NELSON - observed.initialSpawnAt.KRUSTY)
-      assertTrue(delta <= POLL_SEC + SOURCE_SPACING_TOLERANCE_SEC,
-        "MANAS/AL_UDEID initial materialization did not occur in parallel deltaSec=" .. tostring(delta))
-      log(string.format("SOURCE_INDEPENDENCE_PASS deltaSec=%.1f missions=2 aircraft=2", delta))
+      assertEqual(counts.activeTracks, 6, "core.activeTracks")
+      assertEqual(counts.supportAircraft, 6, "core.supportAircraft")
+      assertPool(adapter, "MANAS", 12, 0, "core.MANAS")
+      assertPool(adapter, "AL_UDEID", 38, 0, "core.AL_UDEID")
+      assertEqual(assertUniqueRuntimeIdentities(currentCoreRuntimes(false), "sixCoreIdentity"), 6, "sixCoreIdentity.count")
 
-      local result3, status3 = OMW.AAR.SubmitDemand(D.PATTY)
-      assertTrue(result3 ~= nil, "PATTY submit failed")
-      log("THIRD_MISSION_SUBMITTED status=" .. tostring(status3))
-      setPhase(2, "MISSION_CONCURRENCY_BLOCK")
+      local manasTimes = verifySourceSpacing("MANAS")
+      local alTimes = verifySourceSpacing("AL_UDEID")
+      local sourceDelta = math.abs(manasTimes[1] - alTimes[1])
+      assertTrue(sourceDelta <= POLL_SEC + SOURCE_SPACING_TOLERANCE_SEC,
+        "MANAS/AL_UDEID first materialization was not independent deltaSec=" .. tostring(sourceDelta))
+
+      log(string.format("SOURCE_INDEPENDENCE_PASS deltaSec=%.1f MANAS_spawns=4 AL_UDEID_spawns=2 sameSourceMinSpacingSec=60", sourceDelta))
+      log("CORE_TRACKS_6_SIMULTANEOUS_PASS activeTracks=6 aircraft=6 noGlobalAarMissionLimit=true")
+
+      for _, spec in ipairs(CORE) do
+        forceControlledTrackEntry(getRuntime(spec.area, spec.profile))
+      end
+      setPhase(2, "SIX_TRACK_STATION_IDENTITY")
     end
 
   elseif phase == 2 then
-    if elapsedPhase() >= 15 then
-      local counts = OMW.AAR.GetRuntimeCounts()
-      assertEqual(counts.supportMissions, 2, "missionLimit.supportMissions")
-      assertEqual(counts.supportAircraft, 2, "missionLimit.supportAircraft")
-      assertTrue(getRuntime("PATTY", "SLOW") == nil, "PATTY materialized despite 2-mission limit")
-      assertTrue(counts.queued >= 1, "third mission was not retained in queue")
-      log("CONCURRENCY_MISSION_LIMIT_PASS maxMissions=2 thirdDemandQueued=true")
-
-      local _, endStatus = OMW.AAR.EndDemand(D.KRUSTY, "ABORTED")
-      assertEqual(endStatus, "STATION_CLOSED", "KRUSTY abort status")
-      setPhase(3, "ABORT_HANDOFF_AND_PATTY_RELEASE")
+    if allCoreStationIdentityActive() then
+      for _, spec in ipairs(CORE) do
+        verifyStationCallsign(getRuntime(spec.area, spec.profile), spec.callsign, spec.area .. " station callsign")
+        local station = getStation(spec.area, spec.profile)
+        station.reliefLaunchAt = timer.getAbsTime()
+        station.nextPlannedHandoverAt = timer.getAbsTime() + 300
+      end
+      log("STATION_IDENTITY_PASS sixTracks=true callsignSwitch=true radioTacanCommands=productionPath")
+      setPhase(3, "SIX_TRACK_RELIEF_MATERIALIZATION")
     end
 
   elseif phase == 3 then
-    local krusty = getRuntime("KRUSTY", "SLOW")
-    local patty = getRuntime("PATTY", "SLOW")
-    local al = pool(adapter, "AL_UDEID")
-    if not krusty and al.quantity == 40 and patty then
-      assertEqual(al.lost, 0, "abort AL_UDEID lost")
-      log("ABORT_HANDOFF_PASS status=ABORTED gateHandoff=true exactRecredit=true")
+    if allCoreReliefMaterialized() then
+      local counts = OMW.AAR.GetRuntimeCounts()
+      assertEqual(counts.activeTracks, 6, "relief.activeTracks")
+      assertEqual(counts.supportAircraft, 12, "relief.supportAircraft")
+      assertPool(adapter, "MANAS", 8, 0, "relief.MANAS")
+      assertPool(adapter, "AL_UDEID", 36, 0, "relief.AL_UDEID")
+      assertEqual(assertUniqueRuntimeIdentities(currentCoreRuntimes(true), "twelveAircraftIdentity"), 12, "twelveAircraftIdentity.count")
 
-      forceControlledTrackEntry(getRuntime("NELSON", "FAST"))
-      forceControlledTrackEntry(patty)
-      setPhase(4, "CONTROLLED_TRACK_ENTRY")
+      for _, spec in ipairs(CORE) do
+        local station = getStation(spec.area, spec.profile)
+        assertTrue(station.activeRuntime ~= station.reliefRuntime, spec.area .. " active and relief runtime unexpectedly identical")
+      end
+
+      log("RELIEF_6_TRACKS_12_AIRCRAFT_PASS activeTracks=6 aircraft=12 maxPerTrack=2 uniqueTransitCallsign=true uniqueMooseAssignedStn=true")
+
+      local _, abortStatus = OMW.AAR.EndDemand(D.KRUSTY, "ABORTED")
+      assertEqual(abortStatus, "STATION_CLOSED", "KRUSTY abort status")
+      setPhase(4, "KRUSTY_ABORT_NATURAL_HANDOFF")
     end
 
   elseif phase == 4 then
-    local nelson = getRuntime("NELSON", "FAST")
-    local patty = getRuntime("PATTY", "SLOW")
-    local ns = getStation("NELSON", "FAST")
-    local ps = getStation("PATTY", "SLOW")
-    if nelson and patty and nelson.stationIdentityActive and patty.stationIdentityActive then
-      verifyStationCallsign(nelson, "Texaco11", "NELSON station callsign")
-      verifyStationCallsign(patty, "Texaco21", "PATTY station callsign")
-      log("STATION_IDENTITY_PASS controlledTrackEntry=true callsignSwitch=true radioTacanCommands=productionPath")
+    local ks = getStation("KRUSTY", "SLOW")
+    local al = pool(adapter, "AL_UDEID")
+    if ks and ks.closed and not ks.activeRuntime and not ks.reliefRuntime and al.quantity == 38 then
+      assertEqual(al.lost, 0, "KRUSTY abort lost")
+      log("ABORT_HANDOFF_PASS area=KRUSTY activeAndReliefRecredited=true exactOnce=true")
 
-      ns.reliefLaunchAt = timer.getAbsTime()
-      ps.reliefLaunchAt = timer.getAbsTime()
-      ns.nextPlannedHandoverAt = timer.getAbsTime() + 300
-      ps.nextPlannedHandoverAt = timer.getAbsTime() + 300
-      setPhase(5, "SCHEDULED_RELIEF_QUEUE")
+      local ns = getStation("NELSON", "FAST")
+      assertTrue(ns and ns.activeRuntime and ns.reliefRuntime, "NELSON active/relief missing before FuelLow")
+      observed.nelsonReliefId = ns.reliefRuntime.runtimeId
+      ns.activeRuntime.flightGroup:FuelLow()
+      assertEqual(ns.reliefRuntime.runtimeId, observed.nelsonReliefId, "NELSON FuelLow reused existing relief")
+      assertTrue(ns.activeRuntime.egressOrdered, "NELSON FuelLow did not order outgoing egress")
+      forceControlledTrackEntry(ns.reliefRuntime)
+      setPhase(5, "NELSON_FUELLOW_RELIEF")
     end
 
   elseif phase == 5 then
     local ns = getStation("NELSON", "FAST")
-    local ps = getStation("PATTY", "SLOW")
-    if ns and ps and ns.reliefRuntime and ps.reliefRuntime then
-      observed.nelsonReliefId = ns.reliefRuntime.runtimeId
-      observed.pattyReliefId = ps.reliefRuntime.runtimeId
-      local counts = OMW.AAR.GetRuntimeCounts()
-      assertEqual(counts.supportMissions, 2, "relief.supportMissions")
-      assertEqual(counts.supportAircraft, 4, "relief.supportAircraft")
-      assertUniqueRuntimeIdentities({ ns.activeRuntime, ns.reliefRuntime, ps.activeRuntime, ps.reliefRuntime }, "fourAircraftIdentity")
-      log("CONCURRENCY_2_2_4_PASS missions=2 aircraftPerMission=2 aircraftGlobal=4 uniqueTransitIdentity=true")
-
-      local result4, status4 = OMW.AAR.SubmitDemand(D.MOE)
-      assertTrue(result4 ~= nil, "MOE submit failed")
-      log("FOURTH_MISSION_SUBMITTED status=" .. tostring(status4))
-      setPhase(6, "GLOBAL_LIMIT_AND_FUELLOW")
-    end
-
-  elseif phase == 6 then
-    if elapsedPhase() >= 15 then
-      local counts = OMW.AAR.GetRuntimeCounts()
-      assertEqual(counts.supportMissions, 2, "globalLimit.supportMissions")
-      assertEqual(counts.supportAircraft, 4, "globalLimit.supportAircraft")
-      assertTrue(getRuntime("MOE", "FAST") == nil, "MOE materialized despite 2/2/4 limits")
-      log("CONCURRENCY_GLOBAL_LIMIT_PASS fourthMissionQueued=true aircraft=4")
-
-      local ns = getStation("NELSON", "FAST")
-      assertTrue(ns and ns.activeRuntime and ns.reliefRuntime, "NELSON active/relief missing before FuelLow")
-      local reliefId = ns.reliefRuntime.runtimeId
-      ns.activeRuntime.flightGroup:FuelLow()
-      assertEqual(ns.reliefRuntime.runtimeId, reliefId, "FuelLow reused relief")
-      assertTrue(ns.activeRuntime.egressOrdered, "FuelLow did not order outgoing egress")
-      log("FUEL_LOW_RELIEF_PASS existingReliefReused=true duplicateRelief=false outgoingEgress=true")
-
-      forceControlledTrackEntry(ns.reliefRuntime)
-      setPhase(7, "FUELLOW_RELIEF_HANDOVER")
-    end
-
-  elseif phase == 7 then
-    local ns = getStation("NELSON", "FAST")
     if ns and ns.activeRuntime and ns.activeRuntime.runtimeId == observed.nelsonReliefId
         and ns.activeRuntime.stationIdentityActive then
       verifyStationCallsign(ns.activeRuntime, "Texaco11", "NELSON relief station callsign")
-      log("FUEL_LOW_HANDOVER_PASS reliefPromoted=true stationIdentityTransferred=true")
+      log("FUEL_LOW_RELIEF_PASS existingReliefReused=true duplicateRelief=false outgoingEgress=true reliefPromoted=true")
 
       local ps = getStation("PATTY", "SLOW")
       assertTrue(ps and ps.reliefRuntime, "PATTY scheduled relief missing")
+      observed.pattyReliefId = ps.reliefRuntime.runtimeId
       forceControlledTrackEntry(ps.reliefRuntime)
-      setPhase(8, "SCHEDULED_RELIEF_HANDOVER")
+      setPhase(6, "PATTY_SCHEDULED_RELIEF")
     end
 
-  elseif phase == 8 then
+  elseif phase == 6 then
     local ps = getStation("PATTY", "SLOW")
     if ps and ps.activeRuntime and ps.activeRuntime.runtimeId == observed.pattyReliefId
         and ps.activeRuntime.stationIdentityActive then
@@ -360,44 +399,49 @@ SCHEDULER:New(nil, function()
       local unit = ps.activeRuntime.group and ps.activeRuntime.group:GetUnit(1) or nil
       assertTrue(unit and unit:IsAlive(), "PATTY loss target unit unavailable")
       unit:Explode(LOSS_EXPLOSION_POWER)
-      log("LOSS_INJECTION_ARMED method=MOOSE_UNIT_EXPLODE powerKgTNT=" .. tostring(LOSS_EXPLOSION_POWER))
-      setPhase(9, "AIRCRAFT_LOSS")
+      log("LOSS_INJECTION_ARMED area=PATTY method=MOOSE_UNIT_EXPLODE powerKgTNT=" .. tostring(LOSS_EXPLOSION_POWER))
+      setPhase(7, "PATTY_AIRCRAFT_LOSS")
     end
 
-  elseif phase == 9 then
+  elseif phase == 7 then
     local manas = pool(adapter, "MANAS")
     if manas.lost == 1 then
       assertEqual(manas.quantity, observed.pattyLossPoolBefore, "loss no aircraft recredit")
-      log("AIRCRAFT_LOSS_PASS deadCallback=true aircraftRecredit=false lossAudit=1")
+      log("AIRCRAFT_LOSS_PASS area=PATTY deadCallback=true aircraftRecredit=false lossAudit=1")
+
       local _, cancelStatus = OMW.AAR.EndDemand(D.PATTY, "CANCELLED")
       assertEqual(cancelStatus, "STATION_CLOSED", "PATTY cancel status")
       local _, completeStatus = OMW.AAR.EndDemand(D.MOE, "COMPLETE")
       assertEqual(completeStatus, "STATION_CLOSED", "MOE complete status")
       local _, abortStatus = OMW.AAR.EndDemand(D.NELSON, "ABORTED")
-      assertEqual(abortStatus, "STATION_CLOSED", "NELSON final abort status")
-      log("DEMAND_END_PASS complete=true cancelled=true aborted=true immediateClose=true")
-      setPhase(10, "FINAL_SETTLEMENT")
+      assertEqual(abortStatus, "STATION_CLOSED", "NELSON abort status")
+      local _, lisaStatus = OMW.AAR.EndDemand(D.LISA, "COMPLETE")
+      assertEqual(lisaStatus, "STATION_CLOSED", "LISA complete status")
+      local _, milhouseStatus = OMW.AAR.EndDemand(D.MILHOUSE, "COMPLETE")
+      assertEqual(milhouseStatus, "STATION_CLOSED", "MILHOUSE complete status")
+      log("DEMAND_END_PASS complete=true cancelled=true aborted=true immediateClose=true independentTracks=true")
+      setPhase(8, "FINAL_SETTLEMENT")
     end
 
-  elseif phase == 10 then
+  elseif phase == 8 then
     local counts = OMW.AAR.GetRuntimeCounts()
     local manas = pool(adapter, "MANAS")
     local al = pool(adapter, "AL_UDEID")
     if counts.supportAircraft == 0 then
-      assertEqual(counts.supportMissions, 0, "final supportMissions")
+      assertEqual(counts.activeTracks, 0, "final activeTracks")
       assertEqual(manas.quantity, 15, "final MANAS surviving pool")
       assertEqual(manas.lost, 1, "final MANAS loss audit")
       assertEqual(al.quantity, 40, "final AL_UDEID pool")
       assertEqual(al.lost, 0, "final AL_UDEID loss audit")
-      log("FINAL_SETTLEMENT_PASS MANAS_available=15 MANAS_lost=1 AL_UDEID_available=40 AL_UDEID_lost=0 activeAircraft=0")
-      log("RESULT PASS controlledTrackEntry=true controlledReliefTiming=true naturalGateTransit=false physicalLossInjection=MOOSE_UNIT_EXPLODE restoreServerRestartEmulatedBySnapshotRestore=true")
+      log("FINAL_SETTLEMENT_PASS MANAS_available=15 MANAS_lost=1 AL_UDEID_available=40 AL_UDEID_lost=0 activeTracks=0 activeAircraft=0")
+      log("RESULT PASS coreTracksSimultaneous=6 maxPhysicalDuringRelief=12 globalAarMissionLimit=false globalAarAircraftLimit=false maxAircraftPerTrack=2 mooseManagedStn=true controlledTrackEntry=true controlledReliefTiming=true physicalLossInjection=MOOSE_UNIT_EXPLODE restoreServerRestartEmulatedBySnapshotRestore=true")
       phase = 99
     end
   end
 end, {}, POLL_SEC, POLL_SEC)
 
 log(string.format(
-  "HARNESS_READY testId=%s timeoutSec=%d controlledTrackEntry=true controlledReliefTiming=true lossMethod=MOOSE_UNIT_EXPLODE",
+  "HARNESS_READY testId=%s timeoutSec=%d coreTracks=6 expectedMaxPhysicalDuringRelief=12 controlledTrackEntry=true controlledReliefTiming=true lossMethod=MOOSE_UNIT_EXPLODE",
   TEST_ID,
   TIMEOUT_SEC
 ))
