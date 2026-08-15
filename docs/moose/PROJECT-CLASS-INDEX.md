@@ -62,10 +62,10 @@ Diese Klassenstatus sind keine Governance-Dokumentstatuswerte.
 | `FLIGHTGROUP` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | AIRWING-`FlightOnMission`-Pfad, Cold-Takeoff-Prüfung und `SetOptionPreferVertical()`-Propagation im finalen Shindand-Lauf bestätigt; AAR source-reviewed für `GetFuelMin()`, `SetFuelLowThreshold()`, `SetFuelLowRTB(false)`, FuelLow-Callback, `Dead`/`onafterDead`-FSM-Pfad, aktuelle Gruppenkoordinate sowie `IsAirborne() -> Refuel() -> Going4Fuel -> Refueled`; Acceptance-6 bestätigte A-10C/F-15E/F-16C-Boom-AAR und FuelLow/Cancel/Egress-Grundmechanik. Der aktuelle Controller nutzt `OnAfterDead` zur exakt einmaligen strategischen Loss-Klassifikation; dieser neue Einsatz ist SOURCE_REVIEWED, aber noch nicht DCS-validiert. |
 | `COMMANDER` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Salerno `New -> AddAirwing -> Start -> CanMission -> AddMission -> Status` bis AUFTRAG `started`; Shindand Foundation verwendet COMMANDER ausdrücklich nicht; `AddTankerZone(...)` ist source-reviewed, aber für den externen OMW-AAR-Pool nicht ausgewählt oder DCS-validiert |
 | `AUFTRAG` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Salerno CAS sowie Shindand `NewCAS()`, `NewLANDATCOORDINATE()` und `AssignSquadrons()` im nativen AIRWING-Pfad bis Missionserfolg bestätigt; AAR-`NewTANKER()`, `SetRadio()`, `SetTACAN()`, `SetMissionIngressCoord()`, `SetMissionEgressCoord()`, `IsExecuting()`, `Cancel()` und test-only `SetMissionRange()` source-reviewed. Acceptance-6 bestätigte den Tanker-/Cancel-/Egress-Grundpfad; der neue 3-h-Relief-Zyklus bleibt DCS-offen. |
-| `SPAWN` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | AAR-Materialisierung aus area-spezifischen Templates; `InitCallSign(...)` praktisch in Integration-3 für den damaligen Callsign-Pfad beobachtet. Aktuell werden `InitCallSign(...)` und source-reviewed `InitSTN(...)` für die physische Transitidentität verwendet; der neue Transit-/Station-Handover ist noch nicht DCS-validiert. |
+| `SPAWN` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | AAR-Materialisierung aus area-spezifischen Templates; `InitCallSign(...)` praktisch in Integration-3 für den damaligen Callsign-Pfad beobachtet. Für Link-16 setzt OMW keine feste `InitSTN(...)` mehr: der gepinnte SPAWN-Pfad übernimmt die Template-STN und löst belegte STNs intern über seine eigene STN-Verwaltung; OMW greift nicht auf `_DATABASE` zu. Dieser korrigierte Pfad ist source-reviewed und für Acceptance-2 vorgesehen. |
 | `SCHEDULER` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | geordnete Konstruktion und verzögerte post-start Diagnose; finaler Shindand-Kombinationstest sowie 1-s-Delay im Warehouse-Acceptance-Harness bestätigt. Der AAR-Controller verwendet MOOSE `SCHEDULER` für Dispatch und Station-Monitoring; der konkrete neue Relief-Lifecycle ist noch nicht DCS-validiert. |
 | `USERFLAG` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Warehouse-Acceptance-Harness setzt `OMW_WAREHOUSE_READY` fail-closed 0->1; `New()`, `Set()` und `Get()` im gepinnten MOOSE-Stand und DCS-Debriefzustand `1` am 13.08.2026 bestätigt |
-| `GROUP`, `UNIT`, `STATIC`, `ZONE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Template-, Static-, Warehouse- und Zonenvalidierung |
+| `GROUP`, `UNIT`, `STATIC`, `ZONE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Template-, Static-, Warehouse- und Zonenvalidierung; `UNIT:GetSTN()` ist für den korrigierten AAR-Pfad source-reviewed und liest nach SPAWN die tatsächlich materialisierte STN als Runtime-Telemetrie aus. |
 | `ARMYGROUP`, `BRIGADE`, `OPSGROUP` | `PLANNED` | Bodenoperations- und Bestandsmodell. Für AAR ist `OPSGROUP:Despawn(Delay, NoEventRemoveUnit)` source-reviewed und in früheren Acceptance-Läufen als kontrollierter Off-map-Handoff praktisch verwendet worden. `SwitchCallsign`, `SwitchRadio`, `TurnOffRadio`, `SwitchTACAN` und `TurnOffTACAN` sind source-reviewed und im aktuellen Produktionscontroller für Transit-/Station-Identity-Handover verwendet, aber für diesen neuen Einsatz noch nicht DCS-validiert. |
 | `OPSTRANSPORT` | `PLANNED` | taktischer Transport |
 | `CTLD`, `CSAR`, `AICSAR` | `PLANNED` / teilweise verwendet | separate Acceptance erforderlich |
@@ -75,7 +75,7 @@ Diese Klassenstatus sind keine Governance-Dokumentstatuswerte.
 | `TARS` | `CANDIDATE` | verzögerte Foto-/IMINT-Aufklärung; Verfügbarkeit offen |
 | `DETECTION_*` | `PLANNED`, eingeschränkt | nur Spezialfälle; kein paralleles strategisches Lagebild neben `INTEL` |
 | `Core.Astar`, `PATHLINE`, `MOVEMENT` | `PLANNED` | Routing und Bewegungsbegrenzung |
-| `_DATABASE` | `INTERNAL_RESTRICTED` | nur Diagnose und Templateprüfung |
+| `_DATABASE` | `INTERNAL_RESTRICTED` | nur Diagnose und Templateprüfung; der produktive AAR-STN-Pfad ruft `_DATABASE` nicht auf. |
 | `CHIEF` | `REJECTED_FOR_PROJECT_USE` | aktuelle Produktionsarchitektur `NOT_USED` |
 
 ## 4. AIRWING-Lifecycle-Grenzen
@@ -138,7 +138,8 @@ AUFTRAG:IsExecuting()
 AUFTRAG:Cancel()
 
 SPAWN:InitCallSign(...)
-SPAWN:InitSTN(...)
+SPAWN template-STN collision handling when no InitSTN override is forced
+UNIT:GetSTN()
 
 FLIGHTGROUP:GetFuelMin()
 FLIGHTGROUP:SetFuelLowThreshold(...)
@@ -166,11 +167,11 @@ AIRWING:GetTankerForFlight()
 COMMANDER:AddTankerZone(...)
 ```
 
-Der Source-Review bestätigt API-Verfügbarkeit und Signaturen, nicht automatisch das reale DCS-Verhalten.
+Der Source-Review bestätigt API-Verfügbarkeit und Signaturen, nicht automatisch das reale DCS-Verhalten. Für STN gilt zusätzlich: OMW lässt die kollisionsauflösende Verwaltung im gepinnten MOOSE-SPAWN-Pfad und liest anschließend nur die tatsächlich materialisierte STN über `UNIT:GetSTN()` aus.
 
 `AIRWING:GetTankerForFlight()` unterscheidet bei gleichem Refueling-System nicht automatisch nach OMW-SLOW-/FAST-Receiverprofil, sondern wählt nach Distanz. `AIRWING:CheckTANKER()` kann mehrere Tanker am Patrolpunkt verwalten, verwendet intern aber nur ein 1.000-ft-Inkrement. OMW behält deshalb die strengere Planungsregel von mindestens 3.000 ft für unabhängige Same-area-SLOW/FAST-Tanker bei.
 
-Der aktuelle externe AAR-Controller nutzt AIRWING/COMMANDER nicht als Tankerquelle, weil MANAS und AL UDEID off-map liegen und CampaignState die strategische Ressourcenhoheit besitzt. Die kleine OMW-Orchestrierung verwaltet nur Station Ownership, Relief Timing, Demand-Ende, bounded Concurrency und Identity Handover; Spawn, FLIGHTGROUP, Tankermission, FuelLow, Dead-FSM, Cancel, Funk/TACAN und Despawn verbleiben bei MOOSE.
+Der aktuelle externe AAR-Controller nutzt AIRWING/COMMANDER nicht als Tankerquelle, weil MANAS und AL UDEID off-map liegen und CampaignState die strategische Ressourcenhoheit besitzt. Die kleine OMW-Orchestrierung verwaltet nur Station Ownership, Relief Timing, Demand-Ende, **per-track Concurrency** und Identity Handover; Spawn, FLIGHTGROUP, Tankermission, FuelLow, Dead-FSM, Cancel, Funk/TACAN und Despawn verbleiben bei MOOSE. Die AI-Unterstützungsregel `2/2/4` gilt nicht für das AAR-Kernnetz.
 
 ### 7.1 Praktisch bestätigte AAR-Grenzen
 
@@ -182,7 +183,9 @@ Der aktuelle externe AAR-Controller nutzt AIRWING/COMMANDER nicht als Tankerquel
 
 `AAR-KC135-RUNTIME-ACCEPTANCE-6` bestätigte A-10C-, F-15E- und F-16C-Boom-AAR, Same-area SLOW/FAST mit 3.000 ft Tanker-Staffelung sowie den FuelLow/Cancel/Egress/Off-map-Handoff-Grundpfad.
 
-`AAR-PRODUCTION-INTEGRATION-3` bestätigte sechs MissionDemand-Mappings, sechs Templates, damalige area-spezifische Callsigns, 60-s-Same-source-Abstände und parallele MANAS-/AL_UDEID-Materialisierung. Die 3R1-Korrektur behebt nur Harness-False-Negatives und wurde auf Eigentümerentscheidung nicht separat erneut in DCS ausgeführt.
+`AAR-PRODUCTION-INTEGRATION-3` bestätigte sechs MissionDemand-Mappings, sechs Templates, damalige area-spezifische Callsigns, 60-s-Same-source-Abstände und parallele MANAS-/AL-UDEID-Materialisierung. Die 3R1-Korrektur behebt nur Harness-False-Negatives und wurde auf Eigentümerentscheidung nicht separat erneut in DCS ausgeführt.
+
+Die beiden Läufe von `AAR-PRODUCTION-FINAL-ACCEPTANCE-1` sind **kein** finaler PASS. Sie belegten nur tatsächlich beobachtete Teilpfade und deckten nacheinander einen RuntimeIntegration-Aufruffehler, die falsche AAR-Übertragung der `2/2/4`-Grenze sowie den expliziten `SPAWN:InitSTN()`-Kollisionspfad auf. Der korrigierte gemeinsame Lauf ist `AAR-PRODUCTION-FINAL-ACCEPTANCE-2`.
 
 ### 7.2 Implementierter, noch nicht DCS-validierter Produktionsscope
 
@@ -198,7 +201,10 @@ Source-reviewed und implementiert, aber noch **nicht** als praktisch bestätigt 
 - FLIGHTGROUP-`Dead` -> `OnAfterDead` -> strategischer `OnLost` ohne Aircraft-Recredit;
 - persistenter Loss-Audit über `AIRCRAFT_KC135_LOST`;
 - Restore-Reconciliation für beim Snapshot konsumierte, aber nicht als Handoff/Loss aufgelöste AAR-Commitments;
-- operative Grenzen `2 Support-Missionen / 2 Aircraft je Mission / 4 Support-Aircraft` im Controller.
+- sechs gleichzeitig betreibbare Core-Tracks ohne globales AAR-Missions-/Aircraft-Limit; maximal `1 ACTIVE + 1 RELIEF` je Track, damit bis zu 12 physische KC-135 bei gleichzeitigem Relief aller sechs Tracks;
+- MOOSE-gesteuerte STN-Kollisionsauflösung beim SPAWN mit öffentlichem `UNIT:GetSTN()`-Readback im OMW-Runtimeobjekt.
+
+Die kontinuierliche Verfügbarkeit der sechs Core-Tracks ist bis auf weiteres eine OMW-Betriebsentscheidung und **kein** historischer Nachweis einer 24/7-CAS- oder 24/7-AAR-Abdeckung.
 
 Diese Punkte dürfen erst nach einem genehmigten, dokumentierten DCS-Lauf in `VERIFIED-METHODS.md` beziehungsweise Acceptance-Dokumenten als praktisch bestätigt ergänzt werden.
 
