@@ -19,7 +19,7 @@ supersedes:
   - generic Jalalabad AIRWING name AW_US_JALALABAD
 superseded_by:
 source_branch: agent/airwing-naming-reconciliation
-source_commit: PENDING_MERGE
+source_commit: b5345112f78e744018da59ebe45281dd12f8e3f8
 validated_in_dcs: false
 ---
 
