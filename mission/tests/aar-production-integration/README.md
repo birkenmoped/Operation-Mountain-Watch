@@ -20,13 +20,70 @@ validated_in_dcs: partial
 
 # AAR Production Integration
 
-## Final-Acceptance-1
+## Final-Acceptance-2
 
-Owner-Freigabe: **15.08.2026 im Projektchat ausdrücklich erteilt.**
+Owner-Freigabe: **15.08.2026 im Projektchat ausdrücklich erteilt.** Der Scope wurde nach der Eigentümerkorrektur zur AAR-Concurrency berichtigt: Die für AI-Unterstützungsmissionen bekannte 2/2/4-Begrenzung gilt **nicht** für das AAR-Kernnetz.
 
-`AAR-PRODUCTION-FINAL-ACCEPTANCE-1` bündelt die noch offenen produktiven AAR-Prüfungen in einem technischen Bereich und einem Bundle.
+`AAR-PRODUCTION-FINAL-ACCEPTANCE-2` ersetzt den fehlerhaften Final-Acceptance-1-Scope. Final-Acceptance-1 ist kein akzeptierter technischer Nachweis: Ein Lauf scheiterte an der RuntimeIntegration-Aufrufart; der nachfolgende Lauf zeigte zusätzlich die unzulässige Übertragung der globalen 2/2/4-Grenze auf AAR und einen `SPAWN:InitSTN(...)`-Kollisionspfad.
 
-Geprüft werden CampaignState 16/40, exact-once Materialization/Handoff, 2/2/4-Concurrency, unabhängige MANAS-/AL-UDEID-Materialisierung, eindeutige Transit-Callsigns/STNs, Track-only Stationsidentität, Scheduled- und FuelLow-Relief, `COMPLETE`/`CANCELLED`/`ABORTED`, Loss ohne Recredit mit Audit +1 sowie Snapshot/Restore-Reconciliation ohne Doppelcredit.
+## Aktuelle AAR-Betriebsentscheidung
+
+Bis eine spätere historisch/operativ belastbare ATO-/Zeitfensterregel festgelegt wird, behandelt OMW die sechs ausgewählten Core-Tracks als kontinuierlich verfügbar:
+
+```text
+LISA
+MOE
+MILHOUSE
+KRUSTY
+PATTY
+NELSON
+```
+
+Das ist eine **vorläufige OMW-Betriebsentscheidung**, keine Behauptung historisch nachgewiesener 24/7-CAS- oder 24/7-AAR-Abdeckung und kein 24-Stunden-Endurance-Test.
+
+Produktiv gilt für AAR:
+
+```text
+6 Core-Tracks dürfen gleichzeitig aktiv sein
+kein globales AAR-Mission-Limit = 2
+kein globales AAR-Aircraft-Limit = 4
+pro Track maximal:
+  1 ACTIVE
+  1 RELIEF
+=> bei gleichzeitigem Relief aller sechs Tracks bis zu 12 physische KC-135
+```
+
+Die weiterhin gültigen Grenzen sind der CampaignState-Bestand, mindestens 60 s Materialisierungsabstand innerhalb derselben Source Domain, maximal ein Relief je Track und eindeutige physische Transitidentität.
+
+## MOOSE-first STN-Korrektur
+
+Der Controller setzt keine feste STN mehr mit `SPAWN:InitSTN(...)`.
+
+Im gepinnten `Moose.lua` prüft SPAWN bei vorhandener Template-STN selbst auf Kollisionen und verwendet intern seine STN-Verwaltung, wenn die Template-STN bereits belegt ist. OMW greift nicht auf `_DATABASE` zu. Nach dem Spawn liest OMW ausschließlich über die öffentliche Wrapper-Methode
+
+```lua
+unit:GetSTN()
+```
+
+die tatsächlich von MOOSE materialisierte STN aus und speichert sie als Runtime-Telemetrie für Eindeutigkeitsprüfung und Logging.
+
+## Acceptance-2 Scope
+
+Der kombinierte Lauf prüft:
+
+1. CampaignState-Pools MANAS 16 / AL_UDEID 40;
+2. alle sechs Core-Tracks gleichzeitig aktiv;
+3. vier MANAS- und zwei AL_UDEID-Materialisierungen mit >=60 s Same-source-Abstand und parallelen Source Domains;
+4. keine globale 2-Missionen-/4-Aircraft-Sperre für AAR;
+5. eindeutige Transit-Callsigns und tatsächlich von MOOSE materialisierte STNs;
+6. Track-only Station-Callsign/Radio/TACAN;
+7. sechs gleichzeitige Reliefs: 6 ACTIVE + 6 RELIEF = 12 physische KC-135;
+8. FuelLow verwendet einen bereits vorhandenen Relief ohne Doppelmaterialisierung;
+9. Scheduled Relief und Identity-Handover;
+10. `COMPLETE` / `CANCELLED` / `ABORTED` schließen nur den jeweiligen Track, wenn dort kein weiterer Demand verbleibt;
+11. natürlicher Egress zum External Gate und exact-once Recredit;
+12. MOOSE `UNIT:Explode()` -> FLIGHTGROUP Dead/OnAfterDead -> kein Aircraft-Recredit + Loss-Audit;
+13. CampaignState Snapshot/Restore-Reconciliation ohne Doppelcredit.
 
 ## Testbeschleunigung
 
@@ -34,11 +91,12 @@ Geprüft werden CampaignState 16/40, exact-once Materialization/Handoff, 2/2/4-C
 controlledTrackEntry = true
 controlledReliefTiming = true
 physicalTeleport = false
+naturalGateTransitRequired = true
 ```
 
-Der Harness verschiebt kein Flugzeug. Für Track-Entry wird nur die vom Controller ausgewertete Track-Koordinate auf die aktuelle reale Flugzeugkoordinate gesetzt. Für Scheduled Relief wird nur `reliefLaunchAt` auf den aktuellen Testzeitpunkt gesetzt; danach läuft der produktive Relief-/Identity-Pfad.
+Der Harness verschiebt kein Flugzeug. Für Track-Entry wird nur die vom Controller ausgewertete Track-Koordinate auf die aktuelle reale Flugzeugkoordinate gesetzt. Für Scheduled Relief wird nur `reliefLaunchAt` auf den aktuellen Testzeitpunkt gesetzt. Egress und Off-map-Handoff werden **nicht** künstlich an die aktuelle Position verlegt; der Handoff bleibt an den produktiven External Gates.
 
-Der Lauf validiert deshalb nicht die natürliche dreistündige Wartezeit oder die vollständige Gate-to-Track-Flugzeit. Frühere AAR-Acceptance-/Integrationsevidenz deckt allgemeine Tankermechanik und Transitfortschritt ab.
+Der Lauf validiert deshalb nicht die natürliche dreistündige Wartezeit oder eine reale 24-Stunden-Verfügbarkeit. Er validiert den produktiven Relief-/Egress-/Settlement-Pfad unter kontrollierter Zeitverkürzung.
 
 ## MOOSE-first Loss-Injection
 
@@ -68,19 +126,18 @@ mission/tests/aar-production-integration/dist/OMW_AAR_Production_Final_Acceptanc
 
 Der Builder bindet die aktuellen Produktionsmodule für CampaignState, StrategicStock, Initializer, Adapter, RuntimeIntegration und Controller ein. `dist/` ist builder-generiert; keine automatische `.miz`-Mutation.
 
-## Pflichtmarker
+## Pflichtmarker Acceptance-2
 
 ```text
+AAR_POLICY_BASELINE_PASS
 RESTORE_RECONCILIATION_PASS
 POOL_BASELINE_PASS
 SOURCE_INDEPENDENCE_PASS
-CONCURRENCY_MISSION_LIMIT_PASS
-ABORT_HANDOFF_PASS
+CORE_TRACKS_6_SIMULTANEOUS_PASS
 STATION_IDENTITY_PASS
-CONCURRENCY_2_2_4_PASS
-CONCURRENCY_GLOBAL_LIMIT_PASS
+RELIEF_6_TRACKS_12_AIRCRAFT_PASS
+ABORT_HANDOFF_PASS
 FUEL_LOW_RELIEF_PASS
-FUEL_LOW_HANDOVER_PASS
 SCHEDULED_RELIEF_PASS
 LOSS_INJECTION_ARMED
 AIRCRAFT_LOSS_PASS
@@ -89,6 +146,6 @@ FINAL_SETTLEMENT_PASS
 RESULT PASS
 ```
 
-Vor DCS müssen exakter Branch/Commit, BuilderVersion, Bundle-SHA-256, MIZ-SHA-256, interner mission-SHA-256, identischer eingebetteter Bundle-Hash, gepinnter eingebetteter Moose.lua-Hash und Objektvertragssmoke vorliegen. Jedes Speichern/Neuverpacken der `.miz` invalidiert die vorherige Hashkette.
+Vor DCS müssen exakter Branch/Commit, BuilderVersion, Bundle-SHA-256, MIZ-SHA-256, interner mission-SHA-256, identischer eingebetteter Bundle-Hash und gepinnter eingebetteter Moose.lua-Hash vorliegen. Jedes Speichern der `.miz` im Mission Editor erzeugt einen neuen Missionsstand und invalidiert die vorherige Hashkette.
 
-Bis zum realen Final-Acceptance-Lauf bleiben die neuen Pfade source-reviewed / nicht DCS-validiert. `VERIFIED-METHODS.md` wird erst nach realer DCS-Evidenz erweitert.
+Bis zum realen Final-Acceptance-2-Lauf bleiben die neu korrigierten sechs-Track-/Relief-/STN-/Loss-Pfade source-reviewed / nicht DCS-validiert. `VERIFIED-METHODS.md` wird erst nach realer DCS-Evidenz erweitert.
