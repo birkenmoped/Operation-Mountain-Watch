@@ -5,7 +5,6 @@ document_class: TEST_PROJECT_INDEX
 owning_policy: OMW-GOV-001
 authoritative_for:
   - AAR MissionDemand production-integration test scope
-  - six-core-area dispatch, area-template/callsign identity, source spacing and high-transit progress acceptance
   - combined production-finalization acceptance scope
 not_authoritative_for:
   - repository-wide DCS runtime acceptance without complete acceptance provenance
@@ -25,24 +24,11 @@ validated_in_dcs: partial
 
 Owner-Freigabe: **15.08.2026 im Projektchat ausdrücklich erteilt.**
 
-`AAR-PRODUCTION-FINAL-ACCEPTANCE-1` bündelt die noch offenen produktiven AAR-Prüfungen in einem technischen Bereich und einem Bundle. Getrennte Folgeläufe dienen nur der Fehlerisolierung.
+`AAR-PRODUCTION-FINAL-ACCEPTANCE-1` bündelt die noch offenen produktiven AAR-Prüfungen in einem technischen Bereich und einem Bundle.
 
-Der Harness prüft:
+Geprüft werden CampaignState 16/40, exact-once Materialization/Handoff, 2/2/4-Concurrency, unabhängige MANAS-/AL-UDEID-Materialisierung, eindeutige Transit-Callsigns/STNs, Track-only Stationsidentität, Scheduled- und FuelLow-Relief, `COMPLETE`/`CANCELLED`/`ABORTED`, Loss ohne Recredit mit Audit +1 sowie Snapshot/Restore-Reconciliation ohne Doppelcredit.
 
-1. `OFFMAP_MANAS=16` und `OFFMAP_AL_UDEID=40`;
-2. exakt eine CampaignState-KC-135-Buchung pro materialisiertem Tanker;
-3. `2 Missionen / 2 Aircraft je Mission / 4 Aircraft global`;
-4. unabhängige parallele MANAS-/AL-UDEID-Materialisierung;
-5. eindeutige Transit-Callsigns und explizite eindeutige STNs;
-6. Track-only Stationsidentität über den produktiven Callsign-/Radio-/TACAN-Pfad;
-7. Scheduled-Relief mit maximal einem `RELIEF_INBOUND`;
-8. FuelLow-Relief mit Wiederverwendung eines bereits inbound befindlichen Reliefs;
-9. `COMPLETE`, `CANCELLED` und `ABORTED` mit sofortigem Station-Close/Egress beim letzten Demand;
-10. External-Gate-Handoff mit exakt einmaligem Recredit;
-11. Testverlust über die öffentliche MOOSE-Methode `UNIT:Explode()` -> `FLIGHTGROUP Dead/OnAfterDead` -> `OnLost`, ohne Aircraft-Recredit und mit Loss-Audit +1;
-12. CampaignState Snapshot/Restore-Reconciliation für unresolved commitments und persistierte Losses ohne Doppelcredit.
-
-## Testbeschleunigung und Grenzen
+## Testbeschleunigung
 
 ```text
 controlledTrackEntry = true
@@ -50,9 +36,9 @@ controlledReliefTiming = true
 physicalTeleport = false
 ```
 
-Der Harness verändert keine physische Flugzeugposition. Für Track-Entry wird nur die vom Controller ausgewertete Test-Track-Koordinate auf die aktuelle reale Flugzeugkoordinate gesetzt. Für Scheduled Relief wird nur `reliefLaunchAt` auf den aktuellen Testzeitpunkt gesetzt; anschließend läuft der normale produktive Relief-/Identity-Pfad.
+Der Harness verschiebt kein Flugzeug. Für Track-Entry wird nur die vom Controller ausgewertete Track-Koordinate auf die aktuelle reale Flugzeugkoordinate gesetzt. Für Scheduled Relief wird nur `reliefLaunchAt` auf den aktuellen Testzeitpunkt gesetzt; danach läuft der produktive Relief-/Identity-Pfad.
 
-Der Lauf validiert deshalb nicht die natürliche dreistündige Wartezeit oder die vollständige Gate-to-Track-Flugzeit. Bereits vorhandene AAR-Integration-/Acceptance-Evidenz deckt Transitfortschritt und die allgemeine Tanker-/Egress-/Handoff-Mechanik ab.
+Der Lauf validiert deshalb nicht die natürliche dreistündige Wartezeit oder die vollständige Gate-to-Track-Flugzeit. Frühere AAR-Acceptance-/Integrationsevidenz deckt allgemeine Tankermechanik und Transitfortschritt ab.
 
 ## MOOSE-first Loss-Injection
 
@@ -60,7 +46,7 @@ Der Lauf validiert deshalb nicht die natürliche dreistündige Wartezeit oder di
 unit:Explode(LOSS_EXPLOSION_POWER)
 ```
 
-`UNIT:Explode(power, delay)` ist im gepinnten `Moose.lua` vorhanden. Es wird ausschließlich zur kontrollierten Zerstörung des ausgewählten Testtankers verwendet. Der produktive Loss-Pfad bleibt `FLIGHTGROUP Dead/OnAfterDead -> OMW Adapter`.
+`UNIT:Explode(power, delay)` ist im gepinnten `Moose.lua` source-reviewed. Es dient nur zur kontrollierten Zerstörung des Testtankers. Der produktive Loss-Pfad bleibt `FLIGHTGROUP Dead/OnAfterDead -> OMW Adapter`.
 
 ## Restore-Grenze
 
@@ -70,7 +56,7 @@ CampaignState ExportSnapshot
 -> OMW_AAR_RuntimeIntegration.Attach(restored=true)
 ```
 
-Dies prüft Snapshot-/Restore-Settlement und Idempotenz im selben DCS-Lauf; es ist kein physischer Serverrestart. Diese Einschränkung bleibt Teil des Ergebnisses.
+Das prüft Settlement/Idempotenz eines gespeicherten Snapshots im DCS-Lauf, ist aber kein physischer Serverrestart.
 
 ## Dateien
 
@@ -80,7 +66,7 @@ tools/build-aar-production-final-acceptance.ps1
 mission/tests/aar-production-integration/dist/OMW_AAR_Production_Final_Acceptance.lua
 ```
 
-Der Builder bindet die aktuellen Produktionsmodule für CampaignState, StrategicStock, Initializer, Adapter, RuntimeIntegration und Controller ein. `dist/` ist builder-generiert; keine automatisierte `.miz`-Mutation.
+Der Builder bindet die aktuellen Produktionsmodule für CampaignState, StrategicStock, Initializer, Adapter, RuntimeIntegration und Controller ein. `dist/` ist builder-generiert; keine automatische `.miz`-Mutation.
 
 ## Pflichtmarker
 
@@ -103,10 +89,6 @@ FINAL_SETTLEMENT_PASS
 RESULT PASS
 ```
 
-Ein fehlender Pflichtmarker oder ein Lua-/Scheduler-/Runtime-Fehler verhindert `PASS`.
+Vor DCS müssen exakter Branch/Commit, BuilderVersion, Bundle-SHA-256, MIZ-SHA-256, interner mission-SHA-256, identischer eingebetteter Bundle-Hash, gepinnter eingebetteter Moose.lua-Hash und Objektvertragssmoke vorliegen. Jedes Speichern/Neuverpacken der `.miz` invalidiert die vorherige Hashkette.
 
-## Preflight
-
-Vor DCS müssen gemäß `OMW-TEST-MISSION-BUILD-TRANSFER-VALIDATION` exakter Branch/Commit, BuilderVersion, Bundle-SHA-256, MIZ-SHA-256, interner mission-SHA-256, identischer eingebetteter Bundle-Hash, gepinnter eingebetteter Moose.lua-Hash und Objektvertragssmoke vorliegen. Jedes Speichern oder Neuverpacken der `.miz` invalidiert die vorherige Hashkette.
-
-Bis zum realen Final-Acceptance-Lauf bleiben die neuen Relief-/Identity-, CampaignState-Loss-/Restore- und Concurrency-Pfade **source-reviewed / nicht DCS-validiert**. `VERIFIED-METHODS.md` wird erst nach realer DCS-Evidenz erweitert.
+Bis zum realen Final-Acceptance-Lauf bleiben die neuen Pfade source-reviewed / nicht DCS-validiert. `VERIFIED-METHODS.md` wird erst nach realer DCS-Evidenz erweitert.
