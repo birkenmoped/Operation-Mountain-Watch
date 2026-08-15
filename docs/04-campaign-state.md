@@ -343,30 +343,48 @@ if another demand remains on the same station
 -> station remains active
 
 if the last demand ends
--> station closes immediately
--> queued relief removed
+-> only that station closes immediately
+-> queued relief removed for that station
 -> ACTIVE Cancel/Egress
 -> RELIEF_INBOUND Cancel/Egress
--> no further relief generation
+-> no further relief generation for that station
 ```
+
+Unabhängige AAR-Tracks werden durch das Ende eines anderen Tracks nicht übernommen, geschlossen oder blockiert.
 
 Ein Abort mit später bestätigtem External-Gate-Handoff wird strategisch wie eine reguläre Rückkehr recreditiert. Ohne Handoff und ohne bestätigtes Loss-Event erfolgt keine normale Settlement-Aktion, bis ein definierter Abschluss oder Restore-Reconciliation vorliegt.
 
-## 11. Operative Concurrency
+## 11. Operative AAR-Concurrency
 
-Strategischer Stock und operative Concurrency bleiben getrennte Verantwortungen.
+Strategischer Stock und operative AAR-Concurrency bleiben getrennte Verantwortungen.
 
-Produktive Limits:
+Die für bestimmte AI-Unterstützungsmissionen bekannte `2/2/4`-Begrenzung gilt **nicht** für das AAR-Kernnetz.
+
+Produktiv gilt bis auf weiteres:
 
 ```text
-maxConcurrentSupportMissions = 2
-maxAircraftPerSupportMission = 2
-maxConcurrentSupportAircraft = 4
+6 Core-Tracks dürfen gleichzeitig aktiv sein:
+LISA
+MOE
+MILHOUSE
+KRUSTY
+PATTY
+NELSON
+
+kein globales AAR-Mission-Limit = 2
+kein globales AAR-Aircraft-Limit = 4
+
+pro Track maximal:
+1 ACTIVE
+1 RELIEF
+
+bei gleichzeitigem Relief aller sechs Tracks:
+bis zu 12 physische KC-135
 ```
 
-Der AAR-Controller prüft diese Limits vor physischer Materialisierung. Der CampaignState-Adapter prüft **nur** strategische Verfügbarkeit.
+Der AAR-Controller beschränkt damit nur die physische Doppelbesetzung **desselben Tracks** auf Active+Relief. Der CampaignState-Adapter prüft ausschließlich strategische Verfügbarkeit. Der 60-s-Materialisierungsabstand innerhalb derselben Source Domain bleibt eine separate Spawn-/Sichtbarkeitsregel; MANAS und AL_UDEID dürfen parallel materialisieren.
 
-Ein Relief gehört zum bereits belegten Station-/Support-Mission-Slot. Ein physisch noch vorhandener Egress-Tanker zählt bis Handoff/Loss gegen das globale Aircraft-Limit.
+Die kontinuierliche Verfügbarkeit aller sechs Tracks ist eine vorläufige OMW-Betriebsentscheidung bis zu einer späteren genehmigten ATO-/Zeitfensterregel. Sie ist kein historischer 24/7-CAS-/AAR-Nachweis.
 
 ## 12. Produktionskomposition
 
@@ -389,11 +407,19 @@ parallel DCS Warehouse stock
 parallel SPAWN inventory authority
 ```
 
-## 13. Verifikationstatus
+## 13. Verifikationsstatus
 
-Owner-lokale Source-/Build-Checkpoints bis `354fbbcdfcef7102eb1e9fe7207f97ef473cdc2f` bestätigen die jeweils dokumentierten Git-/Build-/Hash-Stände.
+Ältere Owner-lokale Source-/Build-Checkpoints bestätigen die jeweils dokumentierten Git-/Build-/Hash-Stände, aber kein DCS-Verhalten nachfolgender Änderungen.
 
-Die danach zusammengeführte Produktionsfinalisierung – Loss, Restore-Reconciliation, RuntimeIntegration und 2/2/4-Concurrency – ist **noch nicht DCS-validiert**. Ein neuer DCS-Integrationslauf benötigt gemäß Governance die ausdrückliche Eigentümerfreigabe.
+`AAR-PRODUCTION-FINAL-ACCEPTANCE-1` ist kein akzeptierter Finalstand. Die Versuche deckten einen RuntimeIntegration-Aufruffehler, die unzulässige Übertragung der AI-Unterstützungsregel `2/2/4` auf AAR und einen expliziten `SPAWN:InitSTN(...)`-Kollisionspfad auf.
+
+Der korrigierte, bereits vom Projektinhaber genehmigte gemeinsame Abschlusslauf ist:
+
+```text
+AAR-PRODUCTION-FINAL-ACCEPTANCE-2
+```
+
+Er prüft insbesondere sechs gleichzeitig aktive Core-Tracks, maximal Active+Relief je Track, bis zu zwölf physische Tanker bei gleichzeitigem Relief aller sechs Tracks, MOOSE-gesteuerten STN-Readback, exact-once Settlement, Demand-Ende, Loss und Restore-Reconciliation.
 
 Die konkrete gemeinsame Acceptance-Matrix steht in:
 
