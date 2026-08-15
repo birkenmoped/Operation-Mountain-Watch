@@ -470,7 +470,8 @@ end
 
 ensureRelief = function(station, reason)
   if station.closed then return nil, false end
-  if station.reliefRuntime and station.reliefRuntime.flightGroup and station.reliefRuntime.flightGroup:IsAlive() then
+  if station.reliefRuntime and station.reliefRuntime.flightGroup and station.reliefRuntime.flightGroup:IsAlive()
+      and not station.reliefRuntime.egressOrdered then
     if reason == "FUEL_LOW" then station.reliefReason = "FUEL_LOW"; station.reliefRuntime.reliefReason = "FUEL_LOW" end
     return station.reliefRuntime, false
   end
