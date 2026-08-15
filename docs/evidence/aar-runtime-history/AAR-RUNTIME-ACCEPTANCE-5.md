@@ -1,9 +1,10 @@
 ---
 document_id: OMW-MOOSE-AAR-RUNTIME-ACCEPTANCE-5
-status: DCS_TESTED_PASS_WITH_LIMITATIONS
-document_class: TECHNICAL_ACCEPTANCE_RESULT
+status: HISTORICAL_TEST_FIXTURE
+document_class: TECHNICAL_ACCEPTANCE_REPORT
 owning_policy: OMW-GOV-001
 authoritative_for:
+  - owner-run Acceptance-5 AAR runtime evidence
   - Nelson northern ingress/egress gate candidate based on EGPAN approach
   - post-refuel dwell correction before accelerated FuelLow
   - repeat proof of owner-run AI Boom path after Acceptance-4
@@ -15,10 +16,11 @@ scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
   - OMW-MOOSE-AAR-RUNTIME-ACCEPTANCE-4
-superseded_by: []
+superseded_by:
+  - OMW-MOOSE-AAR-RUNTIME-ACCEPTANCE-6
 source_branch: agent/aar-rc-east-runtime-scope
 source_commit: 6d4d326ab7b05f63fe8ac458e108d2dc6aea089a
-validated_in_dcs: true
+validated_in_dcs: partial
 ---
 
 # AAR Runtime Acceptance-5 – EGPAN Gate + Post-Refuel-Dwell
@@ -247,7 +249,7 @@ Nelson off-map handoff gate <= 10 NM:
 PASS
 ```
 
-Acceptance-5 ist damit für den dokumentierten Einzel-/Zwei-Area-Kernpfad `DCS_TESTED_PASS_WITH_LIMITATIONS`.
+Acceptance-5 bleibt als `HISTORICAL_TEST_FIXTURE` mit dokumentiertem PASS-with-limitations-Ergebnis erhalten. Seine Runtime-Evidenz gilt nur für den exakt dokumentierten Branch-/Commit-/Missions-/DCS-/MOOSE-Stand und wird durch spätere produktive AAR-Entscheidungen nicht automatisch verallgemeinert.
 
 ## 8. Grenzen und offene Folgearbeit
 
@@ -261,4 +263,4 @@ Acceptance-5 validiert weiterhin **nicht**:
 - produktive MissionDemand-/CampaignState-Aktivierungslogik
 ```
 
-Diese Punkte bleiben die nächste AAR-Folgearbeit. Insbesondere darf der erfolgreiche 220-KIAS-Clancy-Tankerbetrieb mit F-16 nicht als A-10-AAR-Validierung umgedeutet werden; der A-10-Receiverfall muss separat praktisch geprüft werden.
+Diese Punkte waren zum Zeitpunkt von Acceptance-5 die nächste AAR-Folgearbeit. Spätere Acceptance- und Produktionsdokumente sind für den aktuellen Stand maßgeblich.

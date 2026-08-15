@@ -9,6 +9,7 @@ authoritative_for:
   - vertical-helicopter option evidence and limitations
   - COMMANDER start and selection sequence
   - source-reviewed WAREHOUSE parking method boundaries
+  - AAR runtime method evidence for the exact documented acceptance provenance
   - documented validation scope and limitations
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
@@ -431,3 +432,64 @@ CSAR/MEDEVAC specialization
 CampaignState integration
 persistence
 ```
+
+## 12. AAR Production Final Acceptance 5
+
+### 12.1 Provenienz
+
+```text
+Testdatum: 2026-08-15
+Branch: agent/aar-runtime-finalization
+Acceptance commit: 5e7dbec37f53155f39c63c25590cf6b4e35814ca
+Builder/Test-ID: AAR-PRODUCTION-FINAL-ACCEPTANCE-5
+Mission: OMW_Template_v9_AirOps_rdy.miz
+Mission SHA-256: c9e3978a4bbb35ebbfe5ae362021b5f8870129d6c8b06b58147424dde71a94e3
+Bundle SHA-256: f33b0a5a6212d9a1103dfa2e0ab677777142ca771a2f5007a3ab1c7fee594cbf
+DCS: 2.9.28.26385 MT
+MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+Moose.lua SHA-256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
+dcs.log SHA-256: 3c4b5b74f91b9d94e272a1f02f1df839bbe6b3a2362fa03338916e4fc8b4a060
+debrief.log SHA-256: ba78783fce55d045735e76e9ddab4e23a2237fa93eabf90fed56bd58770873a0
+Result: PASS
+```
+
+### 12.2 Praktisch bestätigte MOOSE-Methoden und Pfade
+
+| Methode / Pfad | Status | Belegter AAR-Umfang |
+|---|---|---|
+| `AUFTRAG:NewTANKER(...)` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | produktive KC-135-Missionen für vier STANDARD- und zwei RESERVE-Tracks materialisiert und bis zum Track-Lifecycle geführt |
+| `AUFTRAG:SetMissionIngressCoord(...)` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | natürliche FIR-Ingress-Passage über EGPAN, DAVER und PINAX im dokumentierten Acceptance-Lauf |
+| `AUFTRAG:SetMissionEgressCoord(...)` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | outgoing Tanker passierten den vorgesehenen FIR-Egress-Fix vor dem External Handoff |
+| `AUFTRAG:Cancel()` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Scheduled Relief: Cancel/Egress erst bei realer Relief-Übernahme; FuelLow: Immediate-Egress-Pfad blieb getrennt und funktionierte |
+| `FLIGHTGROUP:AddWaypoint(...)` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Weiterführung nach FIR-Egress zum getrennten External-Handoff-Punkt vor Recredit/Despawn |
+| `FLIGHTGROUP:FuelLow()` / FuelLow-FSM-Pfad | `VALIDATED_FOR_DOCUMENTED_SCOPE` | NELSON FuelLow löste sofortigen Station-Release/Egress und genau einen natürlichen Replacement-Lifecycle aus |
+| `UNIT:GetSTN()` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | MOOSE-gemanagte STN wurde nach Materialisierung gelesen; OMW setzte keine eigene `SPAWN:InitSTN()`-Parallellogik |
+| `UNIT:Explode(...)` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | gezielte PATTY-Testverlustinjektion; realer FLIGHTGROUP Dead/OnAfterDead-Pfad, kein Recredit, Loss-Audit und natürlicher Ersatz wurden bestätigt |
+
+### 12.3 Belegte Koordinationssemantik
+
+Der Lauf bestätigte zusätzlich die projektspezifische Koordination um die MOOSE-Lifecycle-Methoden:
+
+```text
+Scheduled Relief ETA <= 5 min
+-> nur handover armed
+-> outgoing bleibt ACTIVE und behält Radio/TACAN
+-> relief bleibt inbound
+
+reale Track-Ankunft / enge Handover-Geometrie
+-> relief wird Station Owner
+-> Radio/TACAN wechseln
+-> outgoing AUFTRAG:Cancel() / Egress
+```
+
+Der Harness protokollierte ausdrücklich:
+
+```text
+SCHEDULED_RELIEF_ARMED_HOLD_PASS area=MILHOUSE outgoingStillActive=true reliefStillInbound=true
+SINGLE_SCHEDULED_RELIEF_PASS area=MILHOUSE armedHold=true naturalTrackHandover=true
+RESULT PASS
+```
+
+FuelLow ist davon bewusst getrennt und bleibt Immediate Egress. Der Acceptance-Lauf bestätigte außerdem vier STANDARD-Tracks, zwei demand-gesteuerte RESERVE-Tracks, mindestens 60 s Same-source-Spacing, natürliche EGPAN/DAVER/PINAX-Transits, External Handoff, Reserve-Shutdown, Loss/Replacement und CampaignState exact-once Accounting.
+
+Grenze: Die Validierung gilt ausschließlich für den oben dokumentierten Branch-/Commit-/Mission-/Bundle-/DCS-/MOOSE-Stand. Lower-/Upper-Airway-Routing war nicht Teil dieses Tests.

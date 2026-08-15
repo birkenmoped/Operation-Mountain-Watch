@@ -1,7 +1,0 @@
-policy_id,receiver_profile_match,operations_area_match,support_mode_match,selected_area,area_profile,source_domain,transit_profile,fallback_mode,priority_handling,status,notes
-A10_EAST_SUPPORT,SLOW,EAST,SUPPORT,Patty,SLOW,MANAS,MANAS_EAST_HIGH,EXPLICIT_ONLY,PRESERVE_DEMAND,PLANNING_BASELINE,"A-10/slow-receiver support in RC-East selects PATTY. No implicit cross-area fallback is allowed."
-A10_KANDAHAR_RETURN,SLOW,SOUTH_CENTRAL,RECOVERY,Milhouse,SLOW,AL_UDEID,AL_UDEID_NORTH_HIGH,EXPLICIT_ONLY,PRESERVE_DEMAND,PLANNING_BASELINE,"A-10 recovery/top-off on Kandahar return selects MILHOUSE. No implicit cross-area fallback is allowed."
-A10_SOUTHEAST_RECOVERY,SLOW,SOUTHEAST,RECOVERY,Krusty,SLOW,AL_UDEID,AL_UDEID_NORTH_HIGH,EXPLICIT_ONLY,PRESERVE_DEMAND,PLANNING_BASELINE,"A-10 recovery east / Paktika / Sharana / southeast selects KRUSTY. No implicit cross-area fallback is allowed."
-FAST_RC_EAST_NORTHEAST,FAST,NORTHEAST,SUPPORT,Nelson,FAST,MANAS,MANAS_EAST_HIGH,EXPLICIT_ONLY,PRESERVE_DEMAND,PLANNING_BASELINE,"Fast-jet support for northeast/RC-East selects NELSON."
-CENTRAL_SWING,ANY,CENTRAL,ANY,Moe,FLEX,MANAS,MANAS_WEST_HIGH,EXPLICIT_ONLY,PRESERVE_DEMAND,PLANNING_BASELINE,"Central swing/overflow/reserve selects MOE. Runtime FAST/SLOW profile follows the incoming MissionDemand receiver_profile."
-RC_WEST,ANY,WEST,ANY,Lisa,FLEX,MANAS,MANAS_WEST_HIGH,EXPLICIT_ONLY,PRESERVE_DEMAND,PLANNING_BASELINE,"RC-West/Shindand selects LISA. Runtime FAST/SLOW profile follows the incoming MissionDemand receiver_profile."

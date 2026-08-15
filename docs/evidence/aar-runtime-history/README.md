@@ -1,3 +1,22 @@
+---
+document_id: OMW-EVIDENCE-AAR-RUNTIME-HISTORY
+status: HISTORICAL_TEST_FIXTURE
+document_class: EVIDENCE_INDEX
+owning_policy: OMW-GOV-001
+authoritative_for:
+  - index and scope boundary for preserved AAR runtime branch-history artifacts
+not_authoritative_for:
+  - current AAR architecture
+  - current production acceptance status
+scenario_period: 2010-08-01/2011-12-31
+project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
+supersedes:
+superseded_by:
+source_branch: agent/aar-runtime-finalization
+source_commit: PENDING_MERGE
+validated_in_dcs: false
+---
+
 # AAR runtime branch history
 
 This directory preserves the historical planning and acceptance artifacts from `agent/aar-rc-east-runtime-scope` during its reconciliation into `main`.
