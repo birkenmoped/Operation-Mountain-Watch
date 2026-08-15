@@ -27,7 +27,7 @@ supersedes:
   - generic Salerno AIRWING name AW_US_SALERNO for the current foundation
 superseded_by:
 source_branch: agent/airwing-naming-reconciliation
-source_commit: PENDING_MERGE
+source_commit: 45eb437f1a6f153747b15a88c67d4ef16163a157
 validated_in_dcs: false
 acceptance_source_branch: agent/salerno-read-only-diagnostics
 acceptance_source_commit: dba0465afbff14fb719abdeb1f9b06e24ff24717
@@ -459,7 +459,7 @@ Die Dateien `06b`, `06c` und `06d` bleiben als experimentelle beziehungsweise hi
 
 ### 14.1 Read-only Diagnose
 
-Zunächst wurden ausschließlich Airbase, Warehouse, Clients, Templates, Statics, Zonen und Parkingnodes geprüft. Dieser Schritt bestätigte die Objektbasis und verhinderte, dass sofort mutierende AIRWING- oder Spawnlogik auf unbestätigten Namen aufbaute.
+Zunächst wurden ausschließlich Airbase, Warehouse, Clients, Templates, Statics, Zonen und Parkingnodes geprüft. Dieser Schritt bestätigte die Objektbasis und verhinderte, dass sofort mutierende AIRWING- oder Spawnlogik auf unbestätigten Namen auvbaute.
 
 ### 14.2 Parking-Kalibrierung
 
@@ -577,7 +577,7 @@ theater_wide_production_commander: NOT_IMPLEMENTED
 ## 17. Verbindliche technische Lehren für weitere Flugplätze
 
 1. **MOOSE-first ist eine Ausführungsregel, keine nachträgliche Dokumentationsaufgabe.** Vor Codeänderungen müssen Projektdokumentation, exakte MOOSE-Version, Quellcode und passende Demos geprüft werden.
-2. **Mission-Editor-Parkinglabels sind keine MOOSE-TerminalIDs.** Jeder Flugplatz benötigt eine eigene Kalibrierung oder Runtime-Ermittlung.
+2. **Mission-Editor-Parkinglabels sind kein MOOOSE-TerminalIDs.** Jeder Flugplatz benötigt eine eigene Kalibrierung oder Runtime-Ermittlung.
 3. **Konfiguration ist nicht Realisierung.** SQUADRON- und Assettabellen, Allow-/Blacklists und PASS-Marker beweisen keine tatsächliche Unitposition.
 4. **Registrierte Assets können SQUADRON-Werte kopieren.** Werden Parkingwerte nach Registrierung geändert, müssen vorhandene Assets bei Bedarf nachweislich synchronisiert werden.
 5. **Multi-Unit-Spawns brauchen Unit-Telemetrie.** Gruppenname, Asset-UID, konfigurierte IDs, Unitkoordinaten und nächster TerminalID müssen getrennt protokolliert werden.
