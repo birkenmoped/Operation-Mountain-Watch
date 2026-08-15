@@ -26,16 +26,16 @@ foreach ($entry in $files.GetEnumerator()) {
 }
 
 $requirements = @(
-  @{ File = 'Controller'; Marker = 'MAX_CONCURRENT_SUPPORT_MISSIONS = 2' },
-  @{ File = 'Controller'; Marker = 'MAX_AIRCRAFT_PER_SUPPORT_MISSION = 2' },
-  @{ File = 'Controller'; Marker = 'MAX_CONCURRENT_SUPPORT_AIRCRAFT = 4' },
+  @{ File = 'Controller'; Marker = 'CORE_TRACK_COUNT = 6' },
+  @{ File = 'Controller'; Marker = 'MAX_AIRCRAFT_PER_TRACK = 2' },
   @{ File = 'Controller'; Marker = 'function flightGroup:OnAfterDead' },
   @{ File = 'Controller'; Marker = 'state.strategicAdapter:OnLost(' },
   @{ File = 'Controller'; Marker = 'function Controller.EndDemand' },
   @{ File = 'Controller'; Marker = 'function Controller.GetRuntimeCounts' },
-  @{ File = 'Controller'; Marker = 'stn = 50000' },
-  @{ File = 'Controller'; Marker = 'stn = 50016' },
-  @{ File = 'Controller'; Marker = 'spawner:InitSTN(transitCallsign.stn)' },
+  @{ File = 'Controller'; Marker = 'spawnedUnit:GetSTN()' },
+  @{ File = 'Controller'; Marker = 'globalAarMissionLimit = false' },
+  @{ File = 'Controller'; Marker = 'globalAarAircraftLimit = false' },
+  @{ File = 'Controller'; Marker = 'mooseManagedSpawnStn = true' },
   @{ File = 'Adapter'; Marker = 'function Adapter:OnLost' },
   @{ File = 'Adapter'; Marker = 'function Adapter:ReconcileRestore' },
   @{ File = 'Adapter'; Marker = 'AAR_RESTART_RECONCILIATION' },
@@ -58,8 +58,18 @@ foreach ($requirement in $requirements) {
   }
 }
 
-if ($content.Controller.Contains('spawner:InitSTN(STN_START_OCTAL)') -or $content.Controller.Contains('local STN_START_OCTAL')) {
-  throw 'AAR controller still uses a shared STN seed. Every simultaneously present tanker must have an explicit unique Link-16 STN.'
+$forbiddenControllerMarkers = @(
+  'MAX_CONCURRENT_SUPPORT_MISSIONS',
+  'MAX_CONCURRENT_SUPPORT_AIRCRAFT',
+  'MAX_AIRCRAFT_PER_SUPPORT_MISSION',
+  'spawner:InitSTN(',
+  'local STN_START_OCTAL'
+)
+
+foreach ($marker in $forbiddenControllerMarkers) {
+  if ($content.Controller.Contains($marker)) {
+    throw "AAR controller still contains obsolete global/constrained AAR marker: $marker"
+  }
 }
 
 $forbiddenPatterns = @(
@@ -90,10 +100,12 @@ Write-Host 'CampaignStateAuthority: true'
 Write-Host 'StrategicTurnaroundTimer: false'
 Write-Host 'LossRecredit: false'
 Write-Host 'RestoreReconciliation: true'
-Write-Host 'UniqueTransitSTN: true'
-Write-Host 'MaxConcurrentSupportMissions: 2'
-Write-Host 'MaxAircraftPerSupportMission: 2'
-Write-Host 'MaxConcurrentSupportAircraft: 4'
+Write-Host 'ContinuousCoreTracks: 6'
+Write-Host 'GlobalAarMissionLimit: false'
+Write-Host 'GlobalAarAircraftLimit: false'
+Write-Host 'MaxAircraftPerTrack: 2'
+Write-Host 'ExpectedMaxPhysicalDuringAllTrackRelief: 12'
+Write-Host 'MooseManagedSpawnSTN: true'
 
 foreach ($entry in $files.GetEnumerator()) {
   $hash = (Get-FileHash -LiteralPath $entry.Value -Algorithm SHA256).Hash.ToLowerInvariant()
