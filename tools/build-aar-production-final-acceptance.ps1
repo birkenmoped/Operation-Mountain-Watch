@@ -9,8 +9,8 @@ $sourceDir = Join-Path $repoRoot 'mission\tests\aar-production-integration\src'
 $distDir = Join-Path $repoRoot 'mission\tests\aar-production-integration\dist'
 $outputFile = Join-Path $distDir 'OMW_AAR_Production_Final_Acceptance.lua'
 
-$builderVersion = 'AAR-PRODUCTION-FINAL-ACCEPTANCE-2'
-$testId = 'AAR-PRODUCTION-FINAL-ACCEPTANCE-2'
+$builderVersion = 'AAR-PRODUCTION-FINAL-ACCEPTANCE-3'
+$testId = 'AAR-PRODUCTION-FINAL-ACCEPTANCE-3'
 $mooseCommit = '73d3ed119cd9e7e3f2cfcabbaa34513d30529b54'
 $mooseSha256 = 'e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915'
 
@@ -44,27 +44,31 @@ $requirements = @(
   @{ File = 'Adapter'; Marker = 'function Adapter:OnHandoff' },
   @{ File = 'Adapter'; Marker = 'function Adapter:OnLost' },
   @{ File = 'Adapter'; Marker = 'function Adapter:ReconcileRestore' },
-  @{ File = 'RuntimeIntegration'; Marker = 'function Integration.Attach' },
+  @{ File = 'RuntimeIntegration'; Marker = 'controller.StartContinuousCoreCoverage()' },
   @{ File = 'Controller'; Marker = 'CORE_TRACK_COUNT = 6' },
   @{ File = 'Controller'; Marker = 'MAX_AIRCRAFT_PER_TRACK = 2' },
+  @{ File = 'Controller'; Marker = 'coreProfile = "FAST"' },
+  @{ File = 'Controller'; Marker = 'function Controller.StartContinuousCoreCoverage()' },
+  @{ File = 'Controller'; Marker = 'CORE_TRACK_RETAINED' },
   @{ File = 'Controller'; Marker = 'spawnedUnit:GetSTN()' },
   @{ File = 'Controller'; Marker = 'globalAarMissionLimit = false' },
   @{ File = 'Controller'; Marker = 'globalAarAircraftLimit = false' },
   @{ File = 'Controller'; Marker = 'function flightGroup:OnAfterDead' },
-  @{ File = 'Harness'; Marker = 'AAR-PRODUCTION-FINAL-ACCEPTANCE-2' },
+  @{ File = 'Harness'; Marker = 'AAR-PRODUCTION-FINAL-ACCEPTANCE-3' },
   @{ File = 'Harness'; Marker = 'AAR_POLICY_BASELINE_PASS' },
   @{ File = 'Harness'; Marker = 'RESTORE_RECONCILIATION_PASS' },
   @{ File = 'Harness'; Marker = 'POOL_BASELINE_PASS' },
   @{ File = 'Harness'; Marker = 'SOURCE_INDEPENDENCE_PASS' },
   @{ File = 'Harness'; Marker = 'CORE_TRACKS_6_SIMULTANEOUS_PASS' },
+  @{ File = 'Harness'; Marker = 'MISSION_DEMAND_ATTACH_PASS' },
   @{ File = 'Harness'; Marker = 'RELIEF_6_TRACKS_12_AIRCRAFT_PASS' },
   @{ File = 'Harness'; Marker = 'STATION_IDENTITY_PASS' },
+  @{ File = 'Harness'; Marker = 'SCHEDULED_HANDOFF_SETTLEMENT_PASS' },
   @{ File = 'Harness'; Marker = 'FUEL_LOW_RELIEF_PASS' },
-  @{ File = 'Harness'; Marker = 'SCHEDULED_RELIEF_PASS' },
   @{ File = 'Harness'; Marker = 'unit:Explode(LOSS_EXPLOSION_POWER)' },
   @{ File = 'Harness'; Marker = 'AIRCRAFT_LOSS_PASS' },
   @{ File = 'Harness'; Marker = 'DEMAND_END_PASS' },
-  @{ File = 'Harness'; Marker = 'FINAL_SETTLEMENT_PASS' },
+  @{ File = 'Harness'; Marker = 'FINAL_STEADY_STATE_PASS' },
   @{ File = 'Harness'; Marker = 'RESULT PASS' }
 )
 
@@ -83,7 +87,10 @@ $forbiddenPatterns = @(
   'MIST',
   'io\.',
   'lfs\.',
-  'os\.execute'
+  'os\.execute',
+  'MAX_CONCURRENT_SUPPORT_MISSIONS',
+  'MAX_CONCURRENT_SUPPORT_AIRCRAFT',
+  'spawner:InitSTN\('
 )
 
 foreach ($entry in $content.GetEnumerator()) {
@@ -108,9 +115,10 @@ $header = @"
 -- GitCommit: $commit
 -- GeneratedUtc: $generatedUtc
 -- Gate/Test-ID: $testId
--- Scope: combined AAR production acceptance for six simultaneous core tracks, source spacing, CampaignState pools/accounting, per-track active+relief lifecycle, transit/station identity, scheduled/FuelLow relief, demand end, handoff, loss and restore reconciliation.
+-- Scope: final combined AAR production acceptance for continuous six-track coverage, LISA/MOE FAST, source spacing, CampaignState pools/accounting, per-track active+relief lifecycle, transit/station identity, scheduled/FuelLow relief, MissionDemand attachment/end without core shutdown, handoff, loss replacement and restore reconciliation.
 -- Current availability policy: the six selected core tracks are treated as continuously available until a later ATO/time-window policy is approved; this test does not claim historical 24/7 coverage or perform a 24-hour endurance run.
 -- Test acceleration: track-entry coordinates and scheduled-relief timestamps are controlled by the harness; no physical aircraft is teleported.
+-- Egress settlement: outgoing tankers must still reach the productive external gate before handoff/recredit.
 -- Loss injection: public MOOSE UNIT:Explode() is used only on the designated test tanker to exercise the real FLIGHTGROUP Dead/OnAfterDead path.
 -- Restore: CampaignState snapshot/Restore is exercised in-process; this is not a physical DCS server restart.
 -- No automated MIZ mutation.
@@ -135,6 +143,9 @@ Write-Host "BuilderVersion: $builderVersion"
 Write-Host "TestId: $testId"
 Write-Host "GeneratedUtc: $generatedUtc"
 Write-Host "CoreTracks: 6"
+Write-Host "LISAProfile: FAST"
+Write-Host "MOEProfile: FAST"
+Write-Host "ContinuousAvailabilityPolicy: true"
 Write-Host "GlobalAarMissionLimit: false"
 Write-Host "GlobalAarAircraftLimit: false"
 Write-Host "MaxAircraftPerTrack: 2"
@@ -143,7 +154,8 @@ Write-Host "MooseManagedSpawnSTN: true"
 Write-Host "ControlledTrackEntry: true"
 Write-Host "ControlledReliefTiming: true"
 Write-Host "PhysicalTeleport: false"
-Write-Host "NaturalGateTransitRequired: true"
+Write-Host "NaturalIngressGateTransitRequired: false"
+Write-Host "NaturalEgressGateHandoffRequired: true"
 Write-Host "LossInjection: MOOSE UNIT:Explode"
 Write-Host "RestoreMode: in-process CampaignState Snapshot/Restore"
 Write-Host "MizMutation: false"
