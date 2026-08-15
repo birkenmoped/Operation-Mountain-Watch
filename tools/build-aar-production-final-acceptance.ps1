@@ -9,8 +9,8 @@ $sourceDir = Join-Path $repoRoot 'mission\tests\aar-production-integration\src'
 $distDir = Join-Path $repoRoot 'mission\tests\aar-production-integration\dist'
 $outputFile = Join-Path $distDir 'OMW_AAR_Production_Final_Acceptance.lua'
 
-$builderVersion = 'AAR-PRODUCTION-FINAL-ACCEPTANCE-4'
-$testId = 'AAR-PRODUCTION-FINAL-ACCEPTANCE-4'
+$builderVersion = 'AAR-PRODUCTION-FINAL-ACCEPTANCE-5'
+$testId = 'AAR-PRODUCTION-FINAL-ACCEPTANCE-5'
 $mooseCommit = '73d3ed119cd9e7e3f2cfcabbaa34513d30529b54'
 $mooseSha256 = 'e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915'
 
@@ -21,7 +21,7 @@ $files = [ordered]@{
   Adapter = Join-Path $repoRoot 'scripts\air-operations\OMW_AAR_CampaignStateAdapter.lua'
   RuntimeIntegration = Join-Path $repoRoot 'scripts\air-operations\OMW_AAR_RuntimeIntegration.lua'
   Controller = Join-Path $repoRoot 'scripts\air-operations\OMW_AAR_Controller.lua'
-  Harness = Join-Path $sourceDir '02-aar-production-final-acceptance.lua'
+  Harness = Join-Path $sourceDir '03-aar-production-final-acceptance-5.lua'
 }
 
 foreach ($entry in $files.GetEnumerator()) {
@@ -55,15 +55,17 @@ $requirements = @(
   @{ File = 'Controller'; Marker = 'runtime.flightGroup:AddWaypoint(runtime.externalHandoffCoord' },
   @{ File = 'Controller'; Marker = 'spawnedUnit:GetSTN()' },
   @{ File = 'Controller'; Marker = 'function flightGroup:OnAfterDead' },
-  @{ File = 'Harness'; Marker = 'AAR-PRODUCTION-FINAL-ACCEPTANCE-4' },
+  @{ File = 'Harness'; Marker = 'AAR-PRODUCTION-FINAL-ACCEPTANCE-5' },
   @{ File = 'Harness'; Marker = 'AAR_POLICY_BASELINE_PASS' },
   @{ File = 'Harness'; Marker = 'RESTORE_RECONCILIATION_PASS' },
   @{ File = 'Harness'; Marker = 'POOL_BASELINE_PASS' },
   @{ File = 'Harness'; Marker = 'STANDARD_TRACKS_4_PASS' },
   @{ File = 'Harness'; Marker = 'FIR_INGRESS_STANDARD_PASS' },
-  @{ File = 'Harness'; Marker = 'STABLE_CALLSIGN_AND_STATION_IDENTITY_PASS' },
+  @{ File = 'Harness'; Marker = 'NATURAL_STANDARD_TRACK_ENTRY_PASS' },
+  @{ File = 'Harness'; Marker = 'RELIEF_TRANSIT_OVERLAP_PASS' },
   @{ File = 'Harness'; Marker = 'SINGLE_SCHEDULED_RELIEF_PASS' },
   @{ File = 'Harness'; Marker = 'FUEL_LOW_RELIEF_PASS' },
+  @{ File = 'Harness'; Marker = 'RESERVE_NATURAL_INGRESS_AND_TRACK_PASS' },
   @{ File = 'Harness'; Marker = 'RESERVE_DEMAND_LIFECYCLE_PASS' },
   @{ File = 'Harness'; Marker = 'unit:Explode(LOSS_EXPLOSION_POWER)' },
   @{ File = 'Harness'; Marker = 'AIRCRAFT_LOSS_PASS' },
@@ -90,6 +92,8 @@ $forbiddenPatterns = @(
   'MAX_CONCURRENT_SUPPORT_MISSIONS',
   'MAX_CONCURRENT_SUPPORT_AIRCRAFT',
   'spawner:InitSTN\(',
+  'forceControlledTrackEntry',
+  'runtime\.trackCoord\s*=',
   'CORE_TRACKS_6_SIMULTANEOUS_PASS',
   'RELIEF_6_TRACKS_12_AIRCRAFT_PASS'
 )
@@ -114,13 +118,15 @@ $header = @"
 -- GitCommit: $commit
 -- GeneratedUtc: $generatedUtc
 -- Gate/Test-ID: $testId
--- Scope: final combined AAR production acceptance for four standard tracks, two demand-driven FAST reserve tracks, stable callsign families, source spacing, CampaignState pools/accounting, FIR-fix ingress/egress, one scheduled relief, FuelLow relief, reserve start/stop, loss replacement and restore reconciliation.
+-- Scope: final combined AAR production acceptance for four standard tracks, two demand-driven FAST reserve tracks, stable callsign families, source spacing, CampaignState pools/accounting, natural FIR-fix ingress, natural track entry, one scheduled relief, FuelLow relief, reserve start/stop, loss replacement and restore reconciliation.
 -- FIR routing: NELSON/PATTY via EGPAN, KRUSTY/MILHOUSE via DAVER, LISA/MOE via PINAX. External spawn/handoff remains separate. Full ATS-airway routing is deferred.
--- Test acceleration: track-entry monitoring is controlled only after the physical tanker naturally passes its configured FIR ingress fix; no physical aircraft is teleported.
--- Scheduled relief: only one standard track is accelerated at a time; no six-track simultaneous relief stress state.
+-- Track routing: physical tankers must reach their configured production AAR track naturally; the harness does not rewrite runtime.trackCoord and does not teleport aircraft.
+-- Scheduled relief: only MILHOUSE is accelerated, and only by advancing the relief launch time after a short station dwell. The relief then flies naturally from the external spawn through DAVER to the real MILHOUSE track. During that transit two MILHOUSE-assigned physical sorties are expected, but only the outgoing tanker owns station radio/TACAN until final relief ingress.
+-- FuelLow relief: NELSON replacement also flies naturally through EGPAN to the real NELSON track.
 -- Egress settlement: outgoing tankers must pass their FIR egress fix and then reach the external handoff point before recredit/despawn.
 -- Loss injection: public MOOSE UNIT:Explode() is used only on the designated test tanker to exercise the real FLIGHTGROUP Dead/OnAfterDead path.
 -- Restore: CampaignState snapshot/Restore is exercised in-process; this is not a physical DCS server restart.
+-- Timeout: 12 simulation hours to permit natural physical transit through all combined acceptance phases.
 -- No automated MIZ mutation.
 -- MOOSE-Commit: $mooseCommit
 -- Moose.lua-SHA256: $mooseSha256
@@ -152,14 +158,20 @@ Write-Host 'StableSortieCallsign: true'
 Write-Host 'FIRFixRouting: true'
 Write-Host 'AirwaysRouting: false'
 Write-Host 'SingleScheduledRelief: true'
+Write-Host 'ScheduledReliefLaunchAccelerationOnly: true'
+Write-Host 'NaturalStandardTrackEntryRequired: true'
+Write-Host 'NaturalReliefTrackEntryRequired: true'
+Write-Host 'ControlledTrackEntryAfterFIR: false'
+Write-Host 'RuntimeTrackCoordMutation: false'
+Write-Host 'PhysicalTeleport: false'
+Write-Host 'NaturalFIRIngressRequired: true'
+Write-Host 'NaturalFIREgressAndExternalHandoffRequired: true'
+Write-Host 'ReliefTransitPhysicalOverlapExpected: true'
+Write-Host 'ReliefTransitStationOwners: 1'
 Write-Host 'GlobalAarMissionLimit: false'
 Write-Host 'GlobalAarAircraftLimit: false'
 Write-Host 'MaxAircraftPerTrack: 2'
 Write-Host 'MooseManagedSpawnSTN: true'
-Write-Host 'ControlledTrackEntryAfterFIR: true'
-Write-Host 'PhysicalTeleport: false'
-Write-Host 'NaturalFIRIngressRequired: true'
-Write-Host 'NaturalFIREgressAndExternalHandoffRequired: true'
 Write-Host 'LossInjection: MOOSE UNIT:Explode'
 Write-Host 'RestoreMode: in-process CampaignState Snapshot/Restore'
 Write-Host 'MizMutation: false'
