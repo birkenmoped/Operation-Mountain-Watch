@@ -44,9 +44,13 @@ function Integration.Attach(spec)
   end
 
   -- OMW.AAR exposes SetStrategicAdapter as a module function, not an instance method.
-  -- Passing controller as an implicit ':' receiver shifts the adapter argument and
-  -- causes the controller to validate itself instead of the CampaignState adapter.
   controller.SetStrategicAdapter(adapter)
+
+  -- Continuous core coverage is a controller capability. Minimal capture controllers
+  -- used by pure restore checks intentionally omit it and therefore do not start DCS activity.
+  if type(controller.StartContinuousCoreCoverage) == "function" then
+    controller.StartContinuousCoreCoverage()
+  end
 
   return {
     store = store,
