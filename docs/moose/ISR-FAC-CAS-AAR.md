@@ -14,8 +14,8 @@ project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
   - earlier AAR section without current runtime evidence
 superseded_by:
-source_branch: agent/aar-runtime-finalization
-source_commit: PENDING_MERGE
+source_branch: main
+source_commit: 2e9cbe6104f2e23bc3031821459e1f16309a946b
 validated_in_dcs: partial
 ---
 
@@ -25,9 +25,10 @@ validated_in_dcs: partial
 
 ```text
 PLANNED – vollständige ISR/FAC/CAS-Kette noch nicht akzeptiert
-AAR – ältere Kernmechanik für dokumentierte DCS-/MOOSE-Stände teilweise praktisch bestätigt
-AAR production finalization – Standard/Reserve/FIR-Fix/Loss/FuelLow teilweise praktisch bestätigt; Scheduled-Relief-Handover noch zu korrigieren
+AAR production finalization – ACCEPTED_TECHNICAL_BASELINE für den exakt dokumentierten Acceptance-5-Stand
 ```
+
+Der Dokumentstatus bleibt `PLANNED`, weil die übergreifende ISR-/FAC-/CAS-Architektur nicht vollständig akzeptiert ist. Der AAR-Unterbereich besitzt dagegen eine eigene, vollständig dokumentierte technische Acceptance.
 
 Fachliche Grundlagen:
 
@@ -75,7 +76,7 @@ MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
 Moose.lua SHA-256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
 ```
 
-Im tatsächlich verwendeten `Moose.lua` source-reviewed:
+Im tatsächlich verwendeten `Moose.lua` geprüft und für den dokumentierten Acceptance-5-Scope praktisch bestätigt:
 
 - `AUFTRAG:NewTANKER(...)`;
 - `AUFTRAG:SetMissionIngressCoord(...)`;
@@ -92,11 +93,12 @@ Im tatsächlich verwendeten `Moose.lua` source-reviewed:
 - `FLIGHTGROUP:AddWaypoint(Coordinate, Speed, AfterWaypointWithID, Altitude, Updateroute)`;
 - `OPSGROUP:SwitchRadio(...)`, `TurnOffRadio()`, `SwitchTACAN(...)`, `TurnOffTACAN()`, `Despawn(...)`;
 - `COORDINATE:Get2DDistance(...)`;
-- `SCHEDULER:New(...)`.
+- `SCHEDULER:New(...)`;
+- `UNIT:Explode(...)` ausschließlich als Testverlustinjektion.
 
-`FLIGHTGROUP:AddWaypoint(...)` verwendet für Fluggruppen Speed in Knoten und optionale Höhe in Fuß. Der aktuelle AAR-Controller nutzt diese öffentliche Methode nach physischer Passage des FIR-Egress-Fixes, um den separaten External-Handoff-Punkt anzufügen. Acceptance-5 hat diesen zweistufigen Egress-/Handoff-Pfad für die beobachteten Tanker praktisch bestätigt; der Gesamt-AAR-Pfad bleibt wegen des Scheduled-Relief-Handoverfehlers nur partiell validiert.
+`FLIGHTGROUP:AddWaypoint(...)` wird nach physischer Passage des FIR-Egress-Fixes verwendet, um den separaten External-Handoff-Punkt anzufügen. Acceptance-5 bestätigte diesen zweistufigen Egress-/Handoff-Pfad praktisch.
 
-`OPSGROUP:SwitchCallsign(...)` bleibt im MOOSE verfügbar, ist aber nicht mehr Teil des korrigierten AAR-Identity-Lifecycles. Ein physischer Tanker behält seine Callsign-Familie vom Spawn bis Despawn.
+`OPSGROUP:SwitchCallsign(...)` bleibt im MOOSE verfügbar, ist aber nicht Teil des korrigierten AAR-Identity-Lifecycles. Ein physischer Tanker behält seine Callsign-Familie vom Spawn bis Despawn.
 
 ## 5. AAR-Netz: STANDARD und RESERVE
 
@@ -112,7 +114,7 @@ LISA       FAST   MANAS      PINAX   Texaco
 MOE        FAST   MANAS      PINAX   Texaco
 ```
 
-Die kontinuierliche STANDARD-Verfügbarkeit ist eine vorläufige OMW-Betriebsentscheidung, kein historischer 24/7-Nachweis. Eine spätere ATO-/Zeitfensterlogik darf diese Verfügbarkeit oberhalb des Tanker-Lifecycles steuern.
+Die kontinuierliche STANDARD-Verfügbarkeit ist eine OMW-Betriebsentscheidung, kein historischer 24/7-Nachweis. Eine spätere ATO-/Zeitfensterlogik darf diese Verfügbarkeit oberhalb des Tanker-Lifecycles steuern.
 
 ## 6. MissionDemand
 
@@ -165,7 +167,7 @@ Radio + TACAN ON nur bei Stationsbesitz
 Radio + TACAN OFF bei Transit/Relief-inbound/Egress
 ```
 
-Acceptance-5 bestätigte praktisch, dass die Callsign-Familie im MILHOUSE-Relief als `Shell2-1` -> `Shell3-1` stabil bleibt. Die frühere Vermischung von Transit- und Stations-Callsign-Familien ist verworfen.
+Acceptance-5 bestätigte unter anderem den MILHOUSE-Relief mit stabiler Shell-Familie und getrennten `n-1`-Sorties.
 
 ## 8. FIR- und External-Routing
 
@@ -199,13 +201,13 @@ FLIGHTGROUP:AddWaypoint(externalHandoff) after FIR-egress passage
 OPSGROUP:Despawn(...) only at external handoff
 ```
 
-Acceptance-5 bestätigte natürliche FIR-Passage über EGPAN, DAVER und PINAX sowie den anschließenden externen Handoff für die beobachteten Pfade. Vollständiges Lower-/Upper-Airway-Routing bleibt ausdrücklich späterer Scope.
+Acceptance-5 bestätigte natürliche FIR-Passage über EGPAN, DAVER und PINAX sowie den anschließenden External Handoff. Vollständiges Lower-/Upper-Airway-Routing bleibt ausdrücklich späterer optionaler Scope.
 
 ## 9. Relief / FuelLow
 
 ### 9.1 Scheduled Relief
 
-Zielsemantik:
+Akzeptierte Semantik:
 
 ```text
 ACTIVE
@@ -222,17 +224,16 @@ ACTIVE
 -> external handoff/recredit/despawn
 ```
 
-Acceptance-5 deckte einen Controllerfehler auf: `RELIEF_FINAL_INGRESS etaSec=297 distanceNm=24.7` schaltete den outgoing MILHOUSE bereits ab und ordnete Egress an; wenige Sekunden später wurde der inbound Relief als Station Owner aktiviert. Damit wurde das 5-Minuten-Gate fälschlich als Handover selbst statt nur als Handover-Arming behandelt.
+Der frühere Acceptance-5-Vorlauf auf Commit `877f0c15c0b46dc8d08f39f7cdcde36e065563b5` deckte einen Controllerfehler auf: Das 5-Minuten-Gate wurde fälschlich als Handover selbst behandelt. Dieser Lauf bleibt verworfene Regressionsevidenz.
 
-Die nächste Implementierung muss deshalb zwischen mindestens zwei Zuständen unterscheiden:
+Die Korrektur auf Acceptance-Commit `5e7dbec37f53155f39c63c25590cf6b4e35814ca` trennt `HANDOVER_ARMED` vom tatsächlichen Track-Handover. Im finalen Owner-Lauf wurde ausdrücklich protokolliert:
 
 ```text
-RELIEF_INBOUND
-HANDOVER_ARMED
-HANDOVER_COMPLETE / ACTIVE
+SCHEDULED_RELIEF_ARMED_HOLD_PASS area=MILHOUSE outgoingStillActive=true reliefStillInbound=true
+SINGLE_SCHEDULED_RELIEF_PASS area=MILHOUSE armedHold=true naturalTrackHandover=true
 ```
 
-Der genaue technische Mechanismus ist weiterhin MOOSE-first umzusetzen; es darf keine parallele Native-DCS-Routing-/Lifecycle-Implementierung eingeführt werden.
+Damit ist die Scheduled-Relief-Semantik für den dokumentierten Acceptance-Stand praktisch bestätigt.
 
 ### 9.2 FuelLow
 
@@ -247,7 +248,7 @@ ACTIVE FuelLow
 -> replacement becomes station owner after natural track arrival
 ```
 
-Der Immediate-Egress ist gewollt, weil der Tanker sonst im ungünstigsten Fall durch Treibstoffmangel verloren gehen könnte. Acceptance-5 bestätigte diesen NELSON-FuelLow-Pfad praktisch.
+Acceptance-5 bestätigte diesen NELSON-FuelLow-Pfad praktisch.
 
 ## 10. Loss und CampaignState
 
@@ -285,16 +286,34 @@ MANAS und AL_UDEID parallel möglich
 
 ## 12. Evidence / Acceptance
 
-Arbeitsbranch:
+Final akzeptierter Owner-DCS-Lauf:
 
 ```text
-agent/aar-runtime-finalization
+Test: AAR-PRODUCTION-FINAL-ACCEPTANCE-5
+Branch: agent/aar-runtime-finalization
+Acceptance commit: 5e7dbec37f53155f39c63c25590cf6b4e35814ca
+Mission: OMW_Template_v9_AirOps_rdy.miz
+Mission SHA-256: c9e3978a4bbb35ebbfe5ae362021b5f8870129d6c8b06b58147424dde71a94e3
+Bundle SHA-256: f33b0a5a6212d9a1103dfa2e0ab677777142ca771a2f5007a3ab1c7fee594cbf
+DCS: 2.9.28.26385 MT
+MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+Moose.lua SHA-256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
+Result: PASS
 ```
 
-Acceptance-4 blieb Teil-Evidenz, weil der Harness noch eine Track-Koordinaten-Manipulation zur Beschleunigung verwendete.
+Der Lauf bestätigte insbesondere:
 
-Acceptance-5 lief am 15.08.2026 auf Commit `877f0c15c0b46dc8d08f39f7cdcde36e065563b5` mit DCS `2.9.28.26385 MT` und dem gepinnten MOOSE-Stand. Positiv beobachtet wurden insbesondere natürliche FIR-Fix-Passage, Standard/Reserve-Lifecycle, stabile Callsign-Familien, FuelLow Immediate-Egress, Reserve-Handoff und PATTY-Loss/Replacement.
+- vier STANDARD- und zwei demand-gesteuerte RESERVE-Tracks;
+- mindestens 60 s Same-source-Spacing;
+- natürliche EGPAN-/DAVER-/PINAX-Transits;
+- stabile Callsign-Familien und STN-Readback;
+- Scheduled Relief mit Armed-Hold bis zur realen Relief-Ankunft;
+- Radio/TACAN-Transfer erst bei tatsächlicher Übernahme;
+- FuelLow Immediate Egress;
+- External Handoff;
+- Reserve-Shutdown;
+- PATTY Loss/Replacement;
+- CampaignState exact-once Accounting;
+- `FINAL_STEADY_STATE_PASS` und `RESULT PASS`.
 
-Der Harness loggte formal `RESULT PASS`, dieser Pass wird aber **nicht** als final akzeptiert: Die Scheduled-Relief-Semantik war falsch, weil der outgoing MILHOUSE bereits beim 5-Minuten-Gate und vor realer Relief-Track-Ankunft Egress erhielt. Außerdem fehlt für diesen Lauf ein dokumentierter realer Mission-SHA-256 als vollständige Acceptance-Provenienz.
-
-Bis zur Korrektur bleibt der AAR-Produktionspfad `PLANNED` / `validated_in_dcs: partial`. `VERIFIED-METHODS.md` wird nur für tatsächlich belastbar bestätigte Methoden und erst mit vollständiger Provenienz hochgestuft.
+Der AAR-Unterbereich ist damit für diese exakte Provenienz `ACCEPTED_TECHNICAL_BASELINE`. Die vollständige ISR/FAC/CAS-Kette bleibt weiterhin `PLANNED`.
