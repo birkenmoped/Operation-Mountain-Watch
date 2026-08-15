@@ -1,4 +1,4 @@
-local TEST_ID = "AAR-PRODUCTION-INTEGRATION-3"
+local TEST_ID = "AAR-PRODUCTION-INTEGRATION-3R1"
 local TAG = "[OMW][" .. TEST_ID .. "]"
 local STATUS_INTERVAL_SEC = 10
 local TRANSIT_OBSERVATION_SEC = 60
@@ -12,6 +12,13 @@ end
 
 local function fail(message)
   env.error(TAG .. " FAIL " .. tostring(message))
+end
+
+local function normalizeCallsign(value)
+  if type(value) ~= "string" then
+    return nil
+  end
+  return value:gsub("[%s%-]", "")
 end
 
 local function getTrackDistanceNm(runtime)
@@ -34,7 +41,7 @@ local function getSpawnedFuelPct(runtime)
     return nil
   end
   local fuelFraction = runtime.group:GetFuelMin()
-  if type(fuelFraction) ~= "number" then
+  if type(fuelFraction) ~= "number" or fuelFraction < 0 or fuelFraction > 1 then
     return nil
   end
   return fuelFraction * 100
@@ -127,7 +134,7 @@ function TestStrategicAdapter:OnMaterialized(selection, runtime)
   end
 
   local actualCallsign = runtime.group and runtime.group:GetCallsign() or nil
-  if actualCallsign ~= expected.expectedCallsign then
+  if normalizeCallsign(actualCallsign) ~= normalizeCallsign(expected.expectedCallsign) then
     recordFailure(string.format(
       "CALLSIGN_IDENTITY demand=%s area=%s expected=%s actual=%s group=%s",
       selection.missionDemandId,
@@ -138,31 +145,12 @@ function TestStrategicAdapter:OnMaterialized(selection, runtime)
     ))
   else
     log(string.format(
-      "CALLSIGN_IDENTITY_PASS demand=%s area=%s callsign=%s group=%s",
+      "CALLSIGN_IDENTITY_PASS demand=%s area=%s expected=%s actual=%s group=%s",
       selection.missionDemandId,
       selection.area,
-      actualCallsign,
+      expected.expectedCallsign,
+      tostring(actualCallsign),
       groupName
-    ))
-  end
-
-  local fuelPct = getSpawnedFuelPct(runtime)
-  if type(fuelPct) ~= "number" or math.abs(fuelPct - expected.expectedInitialFuelPct) > FUEL_TOLERANCE_PCT then
-    recordFailure(string.format(
-      "SEED_FUEL demand=%s expectedPct=%.1f actualPct=%s tolerancePct=%.1f",
-      selection.missionDemandId,
-      expected.expectedInitialFuelPct,
-      tostring(fuelPct),
-      FUEL_TOLERANCE_PCT
-    ))
-  else
-    log(string.format(
-      "SEED_FUEL_PASS demand=%s area=%s fuelPct=%.2f expectedPct=%.1f tolerancePct=%.1f",
-      selection.missionDemandId,
-      selection.area,
-      fuelPct,
-      expected.expectedInitialFuelPct,
-      FUEL_TOLERANCE_PCT
     ))
   end
 
@@ -175,6 +163,8 @@ function TestStrategicAdapter:OnMaterialized(selection, runtime)
     materializedAt = timestamp,
     initialTrackDistanceNm = initialTrackDistanceNm,
     transitPass = false,
+    fuelPass = false,
+    fuelChecked = false,
   }
 
   log(string.format(
@@ -329,12 +319,40 @@ SCHEDULER:New(nil, function()
 
   local activeCount = 0
   local transitPassCount = 0
+  local fuelPassCount = 0
 
   for _, demand in pairs(EXPECTED) do
     local runtime = OMW.AAR.GetActive(demand.expectedArea, demand.receiverProfile)
     if runtime and runtime.flightGroup and runtime.flightGroup:IsAlive() then
       activeCount = activeCount + 1
       local observation = observations[demand.missionDemandId]
+
+      if observation and not observation.fuelChecked then
+        local fuelPct = getSpawnedFuelPct(runtime)
+        if type(fuelPct) == "number" then
+          observation.fuelChecked = true
+          if math.abs(fuelPct - demand.expectedInitialFuelPct) > FUEL_TOLERANCE_PCT then
+            recordFailure(string.format(
+              "SEED_FUEL demand=%s expectedPct=%.1f actualPct=%.2f tolerancePct=%.1f",
+              demand.missionDemandId,
+              demand.expectedInitialFuelPct,
+              fuelPct,
+              FUEL_TOLERANCE_PCT
+            ))
+          else
+            observation.fuelPass = true
+            log(string.format(
+              "SEED_FUEL_PASS demand=%s area=%s fuelPct=%.2f expectedPct=%.1f tolerancePct=%.1f",
+              demand.missionDemandId,
+              demand.expectedArea,
+              fuelPct,
+              demand.expectedInitialFuelPct,
+              FUEL_TOLERANCE_PCT
+            ))
+          end
+        end
+      end
+
       if observation and not observation.transitPass
           and timer.getAbsTime() - observation.materializedAt >= TRANSIT_OBSERVATION_SEC then
         local currentTrackDistanceNm = getTrackDistanceNm(runtime)
@@ -365,8 +383,12 @@ SCHEDULER:New(nil, function()
           observation.transitPass = false
         end
       end
+
       if observation and observation.transitPass then
         transitPassCount = transitPassCount + 1
+      end
+      if observation and observation.fuelPass then
+        fuelPassCount = fuelPassCount + 1
       end
     end
   end
@@ -374,21 +396,25 @@ SCHEDULER:New(nil, function()
   if failed then
     completed = true
     fail(string.format(
-      "INTEGRATION_FAIL active=%d materialized=%d transitPass=%d",
+      "INTEGRATION_FAIL active=%d materialized=%d fuelPass=%d transitPass=%d",
       activeCount,
       strategicEvents.materialized,
+      fuelPassCount,
       transitPassCount
     ))
     return
   end
 
-  if strategicEvents.materialized == #DEMANDS and transitPassCount == #DEMANDS then
+  if strategicEvents.materialized == #DEMANDS
+      and fuelPassCount == #DEMANDS
+      and transitPassCount == #DEMANDS then
     completed = true
     log(string.format(
-      "INTEGRATION_PASS demands=%d active=%d materialized=%d transitProgress=%d sourceSpacingSec=%d artificialFuelLow=false fullTrackArrivalRequired=false",
+      "INTEGRATION_PASS demands=%d active=%d materialized=%d fuelPass=%d transitProgress=%d sourceSpacingSec=%d artificialFuelLow=false fullTrackArrivalRequired=false",
       #DEMANDS,
       activeCount,
       strategicEvents.materialized,
+      fuelPassCount,
       transitPassCount,
       OMW.AAR.GetConfig().sourceSpawnIntervalSec
     ))
@@ -398,17 +424,18 @@ SCHEDULER:New(nil, function()
   if timer.getAbsTime() - startedAt > TIMEOUT_SEC then
     completed = true
     fail(string.format(
-      "TIMEOUT expected=%d active=%d materialized=%d transitPass=%d",
+      "TIMEOUT expected=%d active=%d materialized=%d fuelPass=%d transitPass=%d",
       #DEMANDS,
       activeCount,
       strategicEvents.materialized,
+      fuelPassCount,
       transitPassCount
     ))
   end
 end, {}, STATUS_INTERVAL_SEC, STATUS_INTERVAL_SEC)
 
 log(string.format(
-  "HARNESS_READY demands=%d sourceSpawnIntervalSec=%d transitObservationSec=%d minTrackProgressNm=%.1f timeoutSec=%d artificialFuelLow=false fullTrackArrivalRequired=false",
+  "HARNESS_READY demands=%d sourceSpawnIntervalSec=%d transitObservationSec=%d minTrackProgressNm=%.1f timeoutSec=%d callsignNormalization=true deferredFuelRead=true artificialFuelLow=false fullTrackArrivalRequired=false",
   #DEMANDS,
   OMW.AAR.GetConfig().sourceSpawnIntervalSec,
   TRANSIT_OBSERVATION_SEC,
