@@ -3,7 +3,7 @@
 -- MOOSE-first boundary:
 --   * OMW selects the operational AAR area/profile from MissionDemand.
 --   * MOOSE SPAWN/FLIGHTGROUP/AUFTRAG/SCHEDULER execute the physical lifecycle.
---   * OMW only orchestrates station ownership, relief timing and identity handover.
+--   * OMW only orchestrates station ownership, relief timing, identity handover and bounded concurrency.
 --   * CampaignState remains the strategic availability authority through the injected adapter.
 
 OMW = OMW or {}
@@ -22,6 +22,9 @@ local LEG_NM = 35
 local STATION_CYCLE_SEC = 3 * 60 * 60
 local RELIEF_HANDOVER_ETA_SEC = 5 * 60
 local STN_START_OCTAL = 50000
+local MAX_CONCURRENT_SUPPORT_MISSIONS = 2
+local MAX_AIRCRAFT_PER_SUPPORT_MISSION = 2
+local MAX_CONCURRENT_SUPPORT_AIRCRAFT = 4
 
 local GATES = {
   MANAS = { lat = 38.83163, lon = 70.95271 },
@@ -123,6 +126,7 @@ local state = {
 }
 
 local ensureRelief
+local handleRuntimeLoss
 
 local function log(message) env.info(TAG .. " " .. tostring(message)) end
 local function fail(message) error(TAG .. " " .. tostring(message), 2) end
@@ -179,8 +183,9 @@ end
 
 function Controller.SetStrategicAdapter(adapter)
   if type(adapter) ~= "table" or type(adapter.CanMaterialize) ~= "function"
-      or type(adapter.OnMaterialized) ~= "function" or type(adapter.OnHandoff) ~= "function" then
-    fail("strategic adapter requires CanMaterialize, OnMaterialized and OnHandoff")
+      or type(adapter.OnMaterialized) ~= "function" or type(adapter.OnHandoff) ~= "function"
+      or type(adapter.OnLost) ~= "function" then
+    fail("strategic adapter requires CanMaterialize, OnMaterialized, OnHandoff and OnLost")
   end
   state.strategicAdapter = adapter
   return Controller
@@ -198,6 +203,7 @@ local function getOrCreateStation(selection)
       demandsById = {},
       closed = false,
       closedReason = nil,
+      missionSlotClaimed = false,
       activeRuntime = nil,
       activeQueued = false,
       reliefRuntime = nil,
@@ -215,6 +221,46 @@ end
 local function firstDemandSelection(station)
   for _, selection in pairs(station.demandsById) do return selection end
   return nil
+end
+
+local function countPhysicalRuntimes()
+  local count = 0
+  for _, runtime in pairs(state.runtimesById) do
+    if not runtime.handoffComplete and not runtime.lossHandled then count = count + 1 end
+  end
+  return count
+end
+
+local function countStationRuntimes(stationKey)
+  local count = 0
+  for _, runtime in pairs(state.runtimesById) do
+    if not runtime.handoffComplete and not runtime.lossHandled and activeKey(runtime.selection) == stationKey then
+      count = count + 1
+    end
+  end
+  return count
+end
+
+local function countMissionSlots()
+  local count = 0
+  for _, station in pairs(state.stationsByKey) do
+    if station.missionSlotClaimed then count = count + 1 end
+  end
+  return count
+end
+
+local function canMaterializeOperationally(request, station)
+  if countPhysicalRuntimes() >= MAX_CONCURRENT_SUPPORT_AIRCRAFT then
+    return false, "MAX_CONCURRENT_SUPPORT_AIRCRAFT"
+  end
+  if countStationRuntimes(station.key) >= MAX_AIRCRAFT_PER_SUPPORT_MISSION then
+    return false, "MAX_AIRCRAFT_PER_SUPPORT_MISSION"
+  end
+  if request.role ~= "RELIEF" and not station.missionSlotClaimed
+      and countMissionSlots() >= MAX_CONCURRENT_SUPPORT_MISSIONS then
+    return false, "MAX_CONCURRENT_SUPPORT_MISSIONS"
+  end
+  return true
 end
 
 local function getDistanceNm(flightGroup, coordinate)
@@ -277,7 +323,7 @@ local function activateStationIdentity(runtime)
 end
 
 local function cancelToEgress(runtime, reason)
-  if not runtime or runtime.egressOrdered then return false end
+  if not runtime or runtime.egressOrdered or runtime.lossHandled then return false end
   deactivateStationIdentity(runtime)
   runtime.egressOrdered = true
   runtime.egressReason = reason
@@ -314,6 +360,7 @@ end
 local function closeStation(station, terminalStatus)
   station.closed = true
   station.closedReason = terminalStatus
+  station.missionSlotClaimed = false
   station.nextPlannedHandoverAt = nil
   station.reliefLaunchAt = nil
   station.handoverArmed = true
@@ -323,6 +370,19 @@ local function closeStation(station, terminalStatus)
   log(string.format("STATION_CLOSED area=%s profile=%s status=%s queuedRemoved=%d activeEgress=%s reliefEgress=%s",
     station.selection.area, station.selection.receiverProfile, terminalStatus, removed,
     tostring(activeEgress), tostring(reliefEgress)))
+end
+
+local function queueMaterialization(selection, role, reliefReason)
+  state.queue[#state.queue + 1] = { selection = selection, role = role, reliefReason = reliefReason }
+end
+
+local function queueActiveReplacement(station, reason)
+  if station.closed or station.activeQueued then return false end
+  station.activeQueued = true
+  queueMaterialization(station.selection, "ACTIVE", reason)
+  log(string.format("ACTIVE_REPLACEMENT_QUEUED area=%s profile=%s reason=%s",
+    station.selection.area, station.selection.receiverProfile, tostring(reason)))
+  return true
 end
 
 local function scheduleCycle(station, runtime, timestamp)
@@ -353,6 +413,7 @@ local function promoteReliefOnTrack(station, relief, reason, timestamp)
   station.reliefQueued = false
   station.reliefReason = nil
   station.activeRuntime = relief
+  station.missionSlotClaimed = true
   relief.role = "ACTIVE"
   relief.reliefReason = reason
   activateStationIdentity(relief)
@@ -360,6 +421,43 @@ local function promoteReliefOnTrack(station, relief, reason, timestamp)
   log(string.format("RELIEF_ON_STATION runtime=%s area=%s profile=%s reason=%s outgoingRuntime=%s",
     relief.runtimeId, relief.selection.area, relief.selection.receiverProfile, tostring(reason),
     outgoing and outgoing.runtimeId or "NONE"))
+end
+
+handleRuntimeLoss = function(runtime, reason)
+  if not runtime or runtime.lossHandled or runtime.handoffComplete then return false end
+  runtime.lossHandled = true
+  runtime.stationIdentityActive = false
+  local station = state.stationsByKey[activeKey(runtime.selection)]
+
+  state.strategicAdapter:OnLost(runtime.selection, runtime, reason or "DEAD")
+  releaseTransitCallsign(runtime)
+  state.runtimesById[runtime.runtimeId] = nil
+
+  if station then
+    if station.activeRuntime == runtime then station.activeRuntime = nil end
+    if station.reliefRuntime == runtime then
+      station.reliefRuntime = nil
+      station.reliefQueued = false
+      station.reliefReason = nil
+    end
+
+    if not station.closed then
+      local active = station.activeRuntime
+      local relief = station.reliefRuntime
+      if active and active.flightGroup and active.flightGroup:IsAlive() and not active.egressOrdered then
+        if not relief then ensureRelief(station, "LOSS_REPLACEMENT") end
+      elseif relief and relief.flightGroup and relief.flightGroup:IsAlive() and not relief.egressOrdered then
+        -- Existing inbound relief can become the next active tanker; no duplicate materialization.
+      else
+        queueActiveReplacement(station, "AIRCRAFT_LOSS")
+      end
+    end
+  end
+
+  log(string.format("AIRCRAFT_LOST runtime=%s demand=%s area=%s profile=%s reason=%s action=NO_RECREDIT",
+    runtime.runtimeId, runtime.selection.missionDemandId, runtime.selection.area,
+    runtime.selection.receiverProfile, tostring(reason or "DEAD")))
+  return true
 end
 
 local function materialize(request)
@@ -372,9 +470,7 @@ local function materialize(request)
   local gate = GATES[areaSpec.sourceDomain]
   local station = getOrCreateStation(selection)
 
-  if station.closed then
-    fail("refusing materialization for closed station=" .. station.key)
-  end
+  if station.closed then fail("refusing materialization for closed station=" .. station.key) end
 
   state.nextRuntimeId = state.nextRuntimeId + 1
   local runtimeId = string.format("AAR-%04d", state.nextRuntimeId)
@@ -414,11 +510,12 @@ local function materialize(request)
     template = areaSpec.template, role = role, reliefReason = request.reliefReason, initialFuelPct = areaSpec.initialFuelPct,
     group = group, flightGroup = flightGroup, mission = mission, ingressCoord = ingressCoord, egressCoord = egressCoord,
     trackCoord = trackCoord, gateDistanceNm = gateDistanceNm, transitCallsign = transitCallsign,
-    stationIdentityActive = false, onStationAt = nil, egressOrdered = false, egressReason = nil, handoffComplete = false,
+    stationIdentityActive = false, onStationAt = nil, egressOrdered = false, egressReason = nil,
+    handoffComplete = false, lossHandled = false,
   }
 
   function flightGroup:OnAfterFuelLow(From, Event, To)
-    if runtime.egressOrdered then return end
+    if runtime.egressOrdered or runtime.lossHandled then return end
     log(string.format("FUEL_LOW runtime=%s demand=%s area=%s profile=%s thresholdPct=%d action=ENSURE_RELIEF_AND_EGRESS",
       runtime.runtimeId, selection.missionDemandId, selection.area, selection.receiverProfile, areaSpec.fuelLowPct))
     if not station.closed then
@@ -437,6 +534,10 @@ local function materialize(request)
     cancelToEgress(runtime, station.closed and ("DEMAND_" .. tostring(station.closedReason or "ENDED")) or "FUEL_LOW")
   end
 
+  function flightGroup:OnAfterDead(From, Event, To)
+    handleRuntimeLoss(runtime, "MOOSE_FLIGHTGROUP_DEAD")
+  end
+
   flightGroup:AddMission(mission)
   flightGroup:TurnOffRadio()
   flightGroup:TurnOffTACAN()
@@ -450,12 +551,14 @@ local function materialize(request)
   else
     station.activeRuntime = runtime
     station.activeQueued = false
+    station.missionSlotClaimed = true
   end
   state.strategicAdapter:OnMaterialized(selection, runtime)
 
-  log(string.format("MATERIALIZED runtime=%s role=%s demand=%s area=%s profile=%s source=%s group=%s transitCallsign=%s%d stnStart=%05d",
+  log(string.format("MATERIALIZED runtime=%s role=%s demand=%s area=%s profile=%s source=%s group=%s transitCallsign=%s%d stnStart=%05d missions=%d aircraft=%d",
     runtime.runtimeId, runtime.role, selection.missionDemandId, selection.area, selection.receiverProfile,
-    selection.sourceDomain, group:GetName(), transitCallsign.name, transitCallsign.number, STN_START_OCTAL))
+    selection.sourceDomain, group:GetName(), transitCallsign.name, transitCallsign.number, STN_START_OCTAL,
+    countMissionSlots(), countPhysicalRuntimes()))
   return runtime
 end
 
@@ -464,14 +567,10 @@ local function canSpawnSource(sourceDomain, timestamp)
   return last == nil or (timestamp - last) >= SOURCE_SPAWN_INTERVAL_SEC
 end
 
-local function queueMaterialization(selection, role, reliefReason)
-  state.queue[#state.queue + 1] = { selection = selection, role = role, reliefReason = reliefReason }
-end
-
 ensureRelief = function(station, reason)
   if station.closed then return nil, false end
   if station.reliefRuntime and station.reliefRuntime.flightGroup and station.reliefRuntime.flightGroup:IsAlive()
-      and not station.reliefRuntime.egressOrdered then
+      and not station.reliefRuntime.egressOrdered and not station.reliefRuntime.lossHandled then
     if reason == "FUEL_LOW" then station.reliefReason = "FUEL_LOW"; station.reliefRuntime.reliefReason = "FUEL_LOW" end
     return station.reliefRuntime, false
   end
@@ -503,20 +602,29 @@ local function processQueue()
       log(string.format("QUEUE_DROPPED demand=%s role=%s station=%s reason=STATION_CLOSED",
         request.selection.missionDemandId, tostring(request.role), station.key))
     else
-      local source = request.selection.sourceDomain
-      if not spawnedSource[source] and canSpawnSource(source, timestamp) then
-        local allowed, reason = state.strategicAdapter:CanMaterialize(request.selection)
-        if allowed then
-          materialize(request)
-          state.lastSpawnAtBySource[source] = timestamp
-          spawnedSource[source] = true
+      local operational, operationalReason = canMaterializeOperationally(request, station)
+      if not operational then
+        remaining[#remaining + 1] = request
+      else
+        local source = request.selection.sourceDomain
+        if not spawnedSource[source] and canSpawnSource(source, timestamp) then
+          local allowed, reason = state.strategicAdapter:CanMaterialize(request.selection)
+          if allowed then
+            materialize(request)
+            state.lastSpawnAtBySource[source] = timestamp
+            spawnedSource[source] = true
+          else
+            log(string.format("DEFERRED demand=%s role=%s source=%s reason=%s", request.selection.missionDemandId,
+              tostring(request.role), source, tostring(reason or "STRATEGIC_UNAVAILABLE")))
+            remaining[#remaining + 1] = request
+          end
         else
-          log(string.format("DEFERRED demand=%s role=%s source=%s reason=%s", request.selection.missionDemandId,
-            tostring(request.role), source, tostring(reason or "STRATEGIC_UNAVAILABLE")))
           remaining[#remaining + 1] = request
         end
-      else
-        remaining[#remaining + 1] = request
+      end
+      if not operational and operationalReason then
+        log(string.format("DEFERRED demand=%s role=%s station=%s reason=%s",
+          request.selection.missionDemandId, tostring(request.role), station.key, operationalReason))
       end
     end
   end
@@ -528,7 +636,8 @@ local function monitorStations()
   for _, station in pairs(state.stationsByKey) do
     if not station.closed then
       local active = station.activeRuntime
-      if active and active.flightGroup and active.flightGroup:IsAlive() and not active.onStationAt and not active.egressOrdered then
+      if active and active.flightGroup and active.flightGroup:IsAlive() and not active.onStationAt
+          and not active.egressOrdered and not active.lossHandled then
         local distanceNm = getDistanceNm(active.flightGroup, active.trackCoord)
         if distanceNm and distanceNm <= TRACK_ENTRY_RADIUS_NM then
           activateStationIdentity(active)
@@ -536,17 +645,18 @@ local function monitorStations()
         end
       end
 
-      if active and active.onStationAt and not active.egressOrdered and station.reliefLaunchAt and timestamp >= station.reliefLaunchAt then
+      if active and active.onStationAt and not active.egressOrdered and not active.lossHandled
+          and station.reliefLaunchAt and timestamp >= station.reliefLaunchAt then
         ensureRelief(station, "SCHEDULED")
       end
 
       local relief = station.reliefRuntime
-      if relief and relief.flightGroup and relief.flightGroup:IsAlive() and not relief.egressOrdered then
+      if relief and relief.flightGroup and relief.flightGroup:IsAlive() and not relief.egressOrdered and not relief.lossHandled then
         local etaSec, distanceNm = estimateEtaSec(relief.flightGroup, relief.trackCoord)
         local reason = station.reliefReason or relief.reliefReason or "SCHEDULED"
         if etaSec and etaSec <= RELIEF_HANDOVER_ETA_SEC and not station.handoverArmed then
           station.handoverArmed = true
-          if active and not active.egressOrdered then
+          if active and not active.egressOrdered and not active.lossHandled then
             cancelToEgress(active, reason == "FUEL_LOW" and "FUEL_LOW_RELIEF" or "SCHEDULED_RELIEF")
           end
           log(string.format("RELIEF_FINAL_INGRESS runtime=%s area=%s reason=%s etaSec=%.0f distanceNm=%.1f",
@@ -560,13 +670,13 @@ local function monitorStations()
   end
 
   for runtimeId, runtime in pairs(state.runtimesById) do
-    if runtime.egressOrdered and not runtime.handoffComplete then
+    if runtime.egressOrdered and not runtime.handoffComplete and not runtime.lossHandled then
       local distanceNm = getDistanceNm(runtime.flightGroup, runtime.egressCoord)
       if distanceNm and distanceNm <= HANDOFF_RADIUS_NM then
         runtime.handoffComplete = true
         deactivateStationIdentity(runtime)
-        runtime.flightGroup:Despawn(1, true)
         state.strategicAdapter:OnHandoff(runtime.selection, runtime)
+        runtime.flightGroup:Despawn(1, true)
         releaseTransitCallsign(runtime)
         state.runtimesById[runtimeId] = nil
         local station = state.stationsByKey[activeKey(runtime.selection)]
@@ -584,7 +694,9 @@ end
 local function ensureSchedulers()
   requireMoose()
   if not state.dispatcher then state.dispatcher = SCHEDULER:New(nil, processQueue, {}, 0, DISPATCH_INTERVAL_SEC) end
-  if not state.stationMonitor then state.stationMonitor = SCHEDULER:New(nil, monitorStations, {}, DISPATCH_INTERVAL_SEC, DISPATCH_INTERVAL_SEC) end
+  if not state.stationMonitor then
+    state.stationMonitor = SCHEDULER:New(nil, monitorStations, {}, DISPATCH_INTERVAL_SEC, DISPATCH_INTERVAL_SEC)
+  end
 end
 
 function Controller.SubmitDemand(demand)
@@ -602,12 +714,13 @@ function Controller.SubmitDemand(demand)
   clearQueuedForStation(station, selection)
 
   local existing = station.activeRuntime
-  if existing and existing.flightGroup and existing.flightGroup:IsAlive() and not existing.egressOrdered then
+  if existing and existing.flightGroup and existing.flightGroup:IsAlive()
+      and not existing.egressOrdered and not existing.lossHandled then
     ensureSchedulers()
     return existing, "ACTIVE_REUSED"
   end
   if station.reliefRuntime and station.reliefRuntime.flightGroup and station.reliefRuntime.flightGroup:IsAlive()
-      and not station.reliefRuntime.egressOrdered then
+      and not station.reliefRuntime.egressOrdered and not station.reliefRuntime.lossHandled then
     ensureSchedulers()
     return station.reliefRuntime, "RELIEF_INBOUND"
   end
@@ -660,11 +773,22 @@ function Controller.GetStation(area, receiverProfile)
   return state.stationsByKey[tostring(area):upper() .. ":" .. tostring(receiverProfile):upper()]
 end
 
+function Controller.GetRuntimeCounts()
+  return {
+    supportMissions = countMissionSlots(),
+    supportAircraft = countPhysicalRuntimes(),
+    queued = #state.queue,
+  }
+end
+
 function Controller.GetConfig()
   return {
     mooseCommit = MOOSE_COMMIT, mooseSha256 = MOOSE_SHA256, sourceSpawnIntervalSec = SOURCE_SPAWN_INTERVAL_SEC,
     handoffRadiusNm = HANDOFF_RADIUS_NM, trackEntryRadiusNm = TRACK_ENTRY_RADIUS_NM, stationCycleSec = STATION_CYCLE_SEC,
     reliefHandoverEtaSec = RELIEF_HANDOVER_ETA_SEC, transitSpeedKt = TRANSIT_SPEED_KT, stnStartOctal = STN_START_OCTAL,
+    maxConcurrentSupportMissions = MAX_CONCURRENT_SUPPORT_MISSIONS,
+    maxAircraftPerSupportMission = MAX_AIRCRAFT_PER_SUPPORT_MISSION,
+    maxConcurrentSupportAircraft = MAX_CONCURRENT_SUPPORT_AIRCRAFT,
   }
 end
 
