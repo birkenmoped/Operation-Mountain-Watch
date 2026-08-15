@@ -1,3 +1,22 @@
+---
+document_id: OMW-EVIDENCE-AAR-CORE-FUEL-ESTIMATION-2026-08-14
+status: HISTORICAL_TEST_FIXTURE
+document_class: EVIDENCE_NOTE
+owning_policy: OMW-GOV-001
+authoritative_for:
+  - reconstructed OMW planning estimate for LISA, MOE and MILHOUSE initial fuel and FuelLow continuation
+not_authoritative_for:
+  - historical KC-135 performance formula
+  - DCS runtime validation
+scenario_period: 2010-08-01/2011-12-31
+project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
+supersedes:
+superseded_by:
+source_branch: agent/aar-runtime-finalization
+source_commit: PENDING_MERGE
+validated_in_dcs: false
+---
+
 # AAR Core Fuel Planning Estimation – 14.08.2026
 
 Diese Evidence-Notiz dokumentiert die vom Projektinhaber freigegebene Fortführung der bestehenden OMW-KC-135-Planungslogik für die drei bisher offenen Core-Areas `LISA`, `MOE` und `MILHOUSE`. Die bereits vorhandenen Werte für `KRUSTY`, `PATTY` und `NELSON` werden ausdrücklich nicht neu berechnet oder aufgerollt.
