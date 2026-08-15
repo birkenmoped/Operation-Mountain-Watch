@@ -21,7 +21,7 @@ supersedes:
   - earlier AAR planning without consolidated runtime evidence and operational source-domain decisions
 superseded_by:
 source_branch: main
-source_commit: 413b26377c0175abffde72aad03ea55f1d3e80d3
+source_commit: b0af0093dd276aa07b8e011543e8a00435e518f8
 validated_in_dcs: partial
 ---
 
