@@ -8,8 +8,12 @@ local Initializer = {}
 
 local TAG = "[OMW][Logistics.AirOpsCampaignStateInitializer]"
 
-Initializer.SchemaVersion = "OMW-AIROPS-CAMPAIGNSTATE-INITIALIZER-2"
+Initializer.SchemaVersion = "OMW-AIROPS-CAMPAIGNSTATE-INITIALIZER-3"
 
+-- These are CampaignState node labels. OFFMAP_* entries are intentionally not
+-- DCS airbase names and must never be passed to AIRBASE, WAREHOUSE or AIRWING.
+-- The legacy field name is retained because CampaignState currently requires a
+-- non-empty airbaseName for every resource node.
 Initializer.NodeAirbaseName = {
   BAGRAM = "Bagram",
   JALALABAD = "Jalalabad",
@@ -18,6 +22,8 @@ Initializer.NodeAirbaseName = {
   SALERNO = "FOB Salerno",
   SHINDAND_HELI = "Shindand Heliport",
   TARINKOT = "Tarinkot",
+  OFFMAP_MANAS = "OFF-MAP LOGICAL NODE - MANAS",
+  OFFMAP_AL_UDEID = "OFF-MAP LOGICAL NODE - AL UDEID",
 }
 
 local function fail(message)
@@ -158,20 +164,52 @@ local function validateStockModule(stockModule, label)
   end
 end
 
+local function appendAdditionalStocks(additionalStock, nodesById, metadataByNode, seen)
+  if additionalStock == nil then
+    return
+  end
+
+  if type(additionalStock) == "table" and type(additionalStock.Rows) == "table" then
+    validateStockModule(additionalStock, "additionalStock")
+    appendRows(additionalStock.Rows, "additionalStock", nodesById, metadataByNode, seen)
+    return
+  end
+
+  if type(additionalStock) ~= "table" then
+    fail("additionalStock must be a stock module or an array of stock modules")
+  end
+
+  for index, stockModule in ipairs(additionalStock) do
+    local label = string.format("additionalStock[%d]", index)
+    validateStockModule(stockModule, label)
+    appendRows(stockModule.Rows, label, nodesById, metadataByNode, seen)
+  end
+end
+
+local function collectAdditionalSchemaVersions(additionalStock)
+  if additionalStock == nil then
+    return {}
+  end
+  if type(additionalStock) == "table" and type(additionalStock.Rows) == "table" then
+    return { additionalStock.SchemaVersion }
+  end
+
+  local versions = {}
+  for _, stockModule in ipairs(additionalStock) do
+    versions[#versions + 1] = stockModule.SchemaVersion
+  end
+  return versions
+end
+
 function Initializer.BuildInitialState(initialStock, additionalStock)
   validateStockModule(initialStock, "initialStock")
-  if additionalStock ~= nil then
-    validateStockModule(additionalStock, "additionalStock")
-  end
 
   local nodesById = {}
   local metadataByNode = {}
   local seen = {}
 
   appendRows(initialStock.Rows, "initialStock", nodesById, metadataByNode, seen)
-  if additionalStock ~= nil then
-    appendRows(additionalStock.Rows, "additionalStock", nodesById, metadataByNode, seen)
-  end
+  appendAdditionalStocks(additionalStock, nodesById, metadataByNode, seen)
 
   if next(nodesById) == nil then
     fail("initial-stock data contains no resources")
@@ -195,13 +233,15 @@ function Initializer.CreateStore(campaignStateModule, initialStock, additionalSt
 
   local initialState, metadataByNode = Initializer.BuildInitialState(initialStock, additionalStock)
   local store = campaignStateModule.New(initialState)
+  local additionalSchemaVersions = collectAdditionalSchemaVersions(additionalStock)
 
   return {
     store = store,
     initialState = initialState,
     metadataByNode = metadataByNode,
     initialStockSchemaVersion = initialStock.SchemaVersion,
-    additionalStockSchemaVersion = additionalStock and additionalStock.SchemaVersion or nil,
+    additionalStockSchemaVersion = #additionalSchemaVersions == 1 and additionalSchemaVersions[1] or nil,
+    additionalStockSchemaVersions = additionalSchemaVersions,
     initializerSchemaVersion = Initializer.SchemaVersion,
   }
 end
