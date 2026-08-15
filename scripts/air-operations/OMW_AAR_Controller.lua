@@ -192,11 +192,29 @@ local function getOrCreateStation(selection)
   local key = activeKey(selection)
   local station = state.stationsByKey[key]
   if not station then
-    station = { key = key, selection = selection, activeRuntime = nil, activeQueued = false, reliefRuntime = nil,
-      reliefQueued = false, reliefReason = nil, handoverArmed = false, nextPlannedHandoverAt = nil, reliefLaunchAt = nil }
+    station = {
+      key = key,
+      selection = selection,
+      demandsById = {},
+      closed = false,
+      closedReason = nil,
+      activeRuntime = nil,
+      activeQueued = false,
+      reliefRuntime = nil,
+      reliefQueued = false,
+      reliefReason = nil,
+      handoverArmed = false,
+      nextPlannedHandoverAt = nil,
+      reliefLaunchAt = nil,
+    }
     state.stationsByKey[key] = station
   end
   return station
+end
+
+local function firstDemandSelection(station)
+  for _, selection in pairs(station.demandsById) do return selection end
+  return nil
 end
 
 local function getDistanceNm(flightGroup, coordinate)
@@ -269,9 +287,51 @@ local function cancelToEgress(runtime, reason)
   return true
 end
 
+local function clearQueuedForStation(station, replacementSelection)
+  local remaining = {}
+  local removed = 0
+  for _, request in ipairs(state.queue) do
+    if activeKey(request.selection) == station.key then
+      if replacementSelection then
+        request.selection = replacementSelection
+        remaining[#remaining + 1] = request
+      else
+        removed = removed + 1
+      end
+    else
+      remaining[#remaining + 1] = request
+    end
+  end
+  state.queue = remaining
+  if not replacementSelection then
+    station.activeQueued = false
+    station.reliefQueued = false
+    station.reliefReason = nil
+  end
+  return removed
+end
+
+local function closeStation(station, terminalStatus)
+  station.closed = true
+  station.closedReason = terminalStatus
+  station.nextPlannedHandoverAt = nil
+  station.reliefLaunchAt = nil
+  station.handoverArmed = true
+  local removed = clearQueuedForStation(station, nil)
+  local activeEgress = cancelToEgress(station.activeRuntime, "DEMAND_" .. terminalStatus)
+  local reliefEgress = cancelToEgress(station.reliefRuntime, "DEMAND_" .. terminalStatus)
+  log(string.format("STATION_CLOSED area=%s profile=%s status=%s queuedRemoved=%d activeEgress=%s reliefEgress=%s",
+    station.selection.area, station.selection.receiverProfile, terminalStatus, removed,
+    tostring(activeEgress), tostring(reliefEgress)))
+end
+
 local function scheduleCycle(station, runtime, timestamp)
   local transitSec = (runtime.gateDistanceNm / TRANSIT_SPEED_KT) * 3600
   runtime.onStationAt = timestamp
+  if station.closed then
+    cancelToEgress(runtime, "DEMAND_" .. tostring(station.closedReason or "ENDED"))
+    return
+  end
   station.nextPlannedHandoverAt = timestamp + STATION_CYCLE_SEC
   station.reliefLaunchAt = station.nextPlannedHandoverAt - math.max(0, transitSec - RELIEF_HANDOVER_ETA_SEC)
   station.handoverArmed = false
@@ -281,6 +341,10 @@ local function scheduleCycle(station, runtime, timestamp)
 end
 
 local function promoteReliefOnTrack(station, relief, reason, timestamp)
+  if station.closed then
+    cancelToEgress(relief, "DEMAND_" .. tostring(station.closedReason or "ENDED"))
+    return
+  end
   local outgoing = station.activeRuntime
   if outgoing and outgoing ~= relief and not outgoing.egressOrdered then
     cancelToEgress(outgoing, reason == "FUEL_LOW" and "FUEL_LOW_RELIEF" or "SCHEDULED_RELIEF")
@@ -307,6 +371,10 @@ local function materialize(request)
   local transit = TRANSIT[areaSpec.transitProfile]
   local gate = GATES[areaSpec.sourceDomain]
   local station = getOrCreateStation(selection)
+
+  if station.closed then
+    fail("refusing materialization for closed station=" .. station.key)
+  end
 
   state.nextRuntimeId = state.nextRuntimeId + 1
   local runtimeId = string.format("AAR-%04d", state.nextRuntimeId)
@@ -353,18 +421,20 @@ local function materialize(request)
     if runtime.egressOrdered then return end
     log(string.format("FUEL_LOW runtime=%s demand=%s area=%s profile=%s thresholdPct=%d action=ENSURE_RELIEF_AND_EGRESS",
       runtime.runtimeId, selection.missionDemandId, selection.area, selection.receiverProfile, areaSpec.fuelLowPct))
-    if station.activeRuntime == runtime then
-      station.nextPlannedHandoverAt = nil
-      station.reliefLaunchAt = nil
-      station.handoverArmed = true
-      ensureRelief(station, "FUEL_LOW")
-    elseif station.reliefRuntime == runtime then
-      station.reliefRuntime = nil
-      station.reliefQueued = false
-      station.reliefReason = nil
-      ensureRelief(station, "FUEL_LOW")
+    if not station.closed then
+      if station.activeRuntime == runtime then
+        station.nextPlannedHandoverAt = nil
+        station.reliefLaunchAt = nil
+        station.handoverArmed = true
+        ensureRelief(station, "FUEL_LOW")
+      elseif station.reliefRuntime == runtime then
+        station.reliefRuntime = nil
+        station.reliefQueued = false
+        station.reliefReason = nil
+        ensureRelief(station, "FUEL_LOW")
+      end
     end
-    cancelToEgress(runtime, "FUEL_LOW")
+    cancelToEgress(runtime, station.closed and ("DEMAND_" .. tostring(station.closedReason or "ENDED")) or "FUEL_LOW")
   end
 
   flightGroup:AddMission(mission)
@@ -399,6 +469,7 @@ local function queueMaterialization(selection, role, reliefReason)
 end
 
 ensureRelief = function(station, reason)
+  if station.closed then return nil, false end
   if station.reliefRuntime and station.reliefRuntime.flightGroup and station.reliefRuntime.flightGroup:IsAlive() then
     if reason == "FUEL_LOW" then station.reliefReason = "FUEL_LOW"; station.reliefRuntime.reliefReason = "FUEL_LOW" end
     return station.reliefRuntime, false
@@ -425,20 +496,27 @@ local function processQueue()
   local timestamp = now()
   local spawnedSource, remaining = {}, {}
   for _, request in ipairs(state.queue) do
-    local source = request.selection.sourceDomain
-    if not spawnedSource[source] and canSpawnSource(source, timestamp) then
-      local allowed, reason = state.strategicAdapter:CanMaterialize(request.selection)
-      if allowed then
-        materialize(request)
-        state.lastSpawnAtBySource[source] = timestamp
-        spawnedSource[source] = true
+    local station = state.stationsByKey[activeKey(request.selection)]
+    if station and station.closed then
+      if request.role == "RELIEF" then station.reliefQueued = false else station.activeQueued = false end
+      log(string.format("QUEUE_DROPPED demand=%s role=%s station=%s reason=STATION_CLOSED",
+        request.selection.missionDemandId, tostring(request.role), station.key))
+    else
+      local source = request.selection.sourceDomain
+      if not spawnedSource[source] and canSpawnSource(source, timestamp) then
+        local allowed, reason = state.strategicAdapter:CanMaterialize(request.selection)
+        if allowed then
+          materialize(request)
+          state.lastSpawnAtBySource[source] = timestamp
+          spawnedSource[source] = true
+        else
+          log(string.format("DEFERRED demand=%s role=%s source=%s reason=%s", request.selection.missionDemandId,
+            tostring(request.role), source, tostring(reason or "STRATEGIC_UNAVAILABLE")))
+          remaining[#remaining + 1] = request
+        end
       else
-        log(string.format("DEFERRED demand=%s role=%s source=%s reason=%s", request.selection.missionDemandId,
-          tostring(request.role), source, tostring(reason or "STRATEGIC_UNAVAILABLE")))
         remaining[#remaining + 1] = request
       end
-    else
-      remaining[#remaining + 1] = request
     end
   end
   state.queue = remaining
@@ -447,33 +525,35 @@ end
 local function monitorStations()
   local timestamp = now()
   for _, station in pairs(state.stationsByKey) do
-    local active = station.activeRuntime
-    if active and active.flightGroup and active.flightGroup:IsAlive() and not active.onStationAt and not active.egressOrdered then
-      local distanceNm = getDistanceNm(active.flightGroup, active.trackCoord)
-      if distanceNm and distanceNm <= TRACK_ENTRY_RADIUS_NM then
-        activateStationIdentity(active)
-        scheduleCycle(station, active, timestamp)
-      end
-    end
-
-    if active and active.onStationAt and not active.egressOrdered and station.reliefLaunchAt and timestamp >= station.reliefLaunchAt then
-      ensureRelief(station, "SCHEDULED")
-    end
-
-    local relief = station.reliefRuntime
-    if relief and relief.flightGroup and relief.flightGroup:IsAlive() and not relief.egressOrdered then
-      local etaSec, distanceNm = estimateEtaSec(relief.flightGroup, relief.trackCoord)
-      local reason = station.reliefReason or relief.reliefReason or "SCHEDULED"
-      if etaSec and etaSec <= RELIEF_HANDOVER_ETA_SEC and not station.handoverArmed then
-        station.handoverArmed = true
-        if active and not active.egressOrdered then
-          cancelToEgress(active, reason == "FUEL_LOW" and "FUEL_LOW_RELIEF" or "SCHEDULED_RELIEF")
+    if not station.closed then
+      local active = station.activeRuntime
+      if active and active.flightGroup and active.flightGroup:IsAlive() and not active.onStationAt and not active.egressOrdered then
+        local distanceNm = getDistanceNm(active.flightGroup, active.trackCoord)
+        if distanceNm and distanceNm <= TRACK_ENTRY_RADIUS_NM then
+          activateStationIdentity(active)
+          scheduleCycle(station, active, timestamp)
         end
-        log(string.format("RELIEF_FINAL_INGRESS runtime=%s area=%s reason=%s etaSec=%.0f distanceNm=%.1f",
-          relief.runtimeId, relief.selection.area, tostring(reason), etaSec, distanceNm or -1))
       end
-      if distanceNm and distanceNm <= TRACK_ENTRY_RADIUS_NM then
-        promoteReliefOnTrack(station, relief, reason, timestamp)
+
+      if active and active.onStationAt and not active.egressOrdered and station.reliefLaunchAt and timestamp >= station.reliefLaunchAt then
+        ensureRelief(station, "SCHEDULED")
+      end
+
+      local relief = station.reliefRuntime
+      if relief and relief.flightGroup and relief.flightGroup:IsAlive() and not relief.egressOrdered then
+        local etaSec, distanceNm = estimateEtaSec(relief.flightGroup, relief.trackCoord)
+        local reason = station.reliefReason or relief.reliefReason or "SCHEDULED"
+        if etaSec and etaSec <= RELIEF_HANDOVER_ETA_SEC and not station.handoverArmed then
+          station.handoverArmed = true
+          if active and not active.egressOrdered then
+            cancelToEgress(active, reason == "FUEL_LOW" and "FUEL_LOW_RELIEF" or "SCHEDULED_RELIEF")
+          end
+          log(string.format("RELIEF_FINAL_INGRESS runtime=%s area=%s reason=%s etaSec=%.0f distanceNm=%.1f",
+            relief.runtimeId, relief.selection.area, tostring(reason), etaSec, distanceNm or -1))
+        end
+        if distanceNm and distanceNm <= TRACK_ENTRY_RADIUS_NM then
+          promoteReliefOnTrack(station, relief, reason, timestamp)
+        end
       end
     end
   end
@@ -514,13 +594,19 @@ function Controller.SubmitDemand(demand)
     return nil, reason
   end
   local station = getOrCreateStation(selection)
+  station.demandsById[selection.missionDemandId] = selection
   station.selection = selection
+  station.closed = false
+  station.closedReason = nil
+  clearQueuedForStation(station, selection)
+
   local existing = station.activeRuntime
-  if existing and existing.flightGroup and existing.flightGroup:IsAlive() then
+  if existing and existing.flightGroup and existing.flightGroup:IsAlive() and not existing.egressOrdered then
     ensureSchedulers()
     return existing, "ACTIVE_REUSED"
   end
-  if station.reliefRuntime and station.reliefRuntime.flightGroup and station.reliefRuntime.flightGroup:IsAlive() then
+  if station.reliefRuntime and station.reliefRuntime.flightGroup and station.reliefRuntime.flightGroup:IsAlive()
+      and not station.reliefRuntime.egressOrdered then
     ensureSchedulers()
     return station.reliefRuntime, "RELIEF_INBOUND"
   end
@@ -531,6 +617,37 @@ function Controller.SubmitDemand(demand)
   log(string.format("QUEUED demand=%s role=ACTIVE area=%s profile=%s source=%s priority=%s", selection.missionDemandId,
     selection.area, selection.receiverProfile, selection.sourceDomain, tostring(selection.priority)))
   return selection, "QUEUED"
+end
+
+function Controller.EndDemand(demand, terminalStatus)
+  terminalStatus = requireString(terminalStatus, "terminalStatus"):upper()
+  if terminalStatus ~= "COMPLETE" and terminalStatus ~= "CANCELLED" and terminalStatus ~= "ABORTED" then
+    fail("terminalStatus must be COMPLETE, CANCELLED or ABORTED")
+  end
+
+  local selection, reason = Controller.SelectArea(demand)
+  if not selection then
+    log("END_DEMAND_REJECTED demand=" .. tostring(demand and demand.missionDemandId) .. " reason=" .. tostring(reason))
+    return nil, reason
+  end
+
+  local station = state.stationsByKey[activeKey(selection)]
+  if not station then return nil, "NO_STATION" end
+
+  station.demandsById[selection.missionDemandId] = nil
+  local replacementSelection = firstDemandSelection(station)
+  if replacementSelection then
+    station.selection = replacementSelection
+    clearQueuedForStation(station, replacementSelection)
+    log(string.format("DEMAND_ENDED demand=%s status=%s area=%s profile=%s stationAction=RETAIN_ACTIVE_DEMANDS",
+      selection.missionDemandId, terminalStatus, selection.area, selection.receiverProfile))
+    return station, "STATION_RETAINED"
+  end
+
+  station.selection = selection
+  closeStation(station, terminalStatus)
+  ensureSchedulers()
+  return station, "STATION_CLOSED"
 end
 
 function Controller.GetActive(area, receiverProfile)
