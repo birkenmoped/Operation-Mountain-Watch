@@ -98,9 +98,13 @@ Im tatsächlich verwendeten `Moose.lua` source-reviewed:
 - `COORDINATE:Get3DDistance(...)`;
 - `OPSGROUP:Despawn(...)`.
 
-Für `SPAWN` ist relevant, dass ein BLUE-AIR-Spawn ohne explizites `InitCallSign(...)` die Callsign-Felder des vorbereiteten Spawn-Templates neu setzen kann. Die produktive AAR-Materialisierung setzt deshalb den area-spezifischen Rufnamen vor dem Spawn ausdrücklich über MOOSE. Für die unmittelbar nach Materialisierung benötigte Seed-Fuel-Prüfung wird `GROUP:GetFuelMin()` verwendet; `FLIGHTGROUP:GetFuelMin()` kann vor vollständiger Elementinitialisierung noch keinen belastbaren Wert liefern.
+Für `SPAWN` ist relevant, dass ein BLUE-AIR-Spawn ohne explizites `InitCallSign(...)` die Callsign-Felder des vorbereiteten Spawn-Templates neu setzen kann. Die produktive AAR-Materialisierung setzt deshalb den area-spezifischen Rufnamen vor dem Spawn ausdrücklich über MOOSE.
 
-Diese neuen Pfade sind source-reviewed. Ihr produktiver Integration-3-Nachweis in DCS steht noch aus und darf bis dahin nicht als `VALIDATED` geführt werden.
+Der Owner-Lauf `AAR-PRODUCTION-INTEGRATION-3` vom 14./15.08.2026 zeigte praktisch, dass die produktive `InitCallSign(...)`-Korrektur die vorgesehenen Rufnamen `Texaco11`, `Texaco21`, `Texaco31`, `Texaco41`, `Arco21` und `Shell21` erzeugt. Der Harness verglich dabei jedoch fälschlich die kompakte OMW-Darstellung mit der von `GROUP:GetCallsign()` zurückgegebenen DCS/MOOSE-Darstellung mit Trenner, z. B. `Texaco21` gegen `Texaco2-1`.
+
+Für `GROUP:GetFuelMin()` zeigte derselbe Lauf eine weitere Timing-Grenze: unmittelbar im Materialisierungs-Callback kann die Methode den Sentinel `65535` liefern, solange noch kein belastbarer lebender Unit-Fuelwert ausgewertet werden konnte. Der korrigierte Harness `AAR-PRODUCTION-INTEGRATION-3R1` bewertet Fuel deshalb erst, wenn ein plausibler Fraction-Wert `0..1` vorliegt. Dieser Harness-only-Fix verändert den produktiven Controller nicht und wurde auf ausdrückliche Entscheidung des Projektinhabers nicht erneut isoliert in DCS ausgeführt.
+
+Die Runtime-Beobachtung ist dokumentiert, besitzt aber wegen noch fehlender vollständiger Missions-/Log-Hash-Provenienz keinen eigenständigen `ACCEPTED_TECHNICAL_BASELINE`-Status.
 
 ## 6. Receiver-zu-Tanker-Auswahl
 
@@ -151,7 +155,7 @@ realer produktiver Low-Fuel-/Bingo-Schwellwert
 
 Die in Acceptance-1 bis -6 verwendeten beschleunigten Schwellen bis 99 % waren ausschließlich Testmechanik. Sie dürfen nicht in produktiven Code übernommen werden.
 
-Die endgültige produktive Schwelle wird aus benötigter Egress-/Off-map-Reserve abgeleitet. Bis diese Berechnung abgeschlossen ist, wird kein neuer künstlicher Schwellenwert erfunden.
+Die produktiven Schwellen sind für die sechs Core-Areas festgelegt und im AAR-Controller hinterlegt. Die bereits separat validierte FuelLow/Cancel/Egress/Handoff-Mechanik wird nicht erneut isoliert getestet.
 
 ## 8. Acceptance-6 – bestätigter AAR-Kernpfad
 
@@ -191,21 +195,71 @@ maxAircraftPerSupportMission = 2
 maxConcurrentSupportAircraft = 4
 ```
 
-## 9. Keine weiteren isolierten AAR-Mechaniktests
+## 9. Integration-3 – produktive Dispatch-/Identitätsbeobachtung
 
-Für denselben gepinnten DCS-/MOOSE-Stand besteht kein zusätzlicher allgemeiner Acceptance-Bedarf für Spawn, Orbit, Boom-AAR, FAST/SLOW, Funk/TACAN, Five-tanker-Stress oder Egress-Mechanik.
+Bekannter Owner-Lauf:
+
+```text
+Testdatum: 2026-08-14/15
+Branch: agent/aar-runtime-finalization
+Commit: 4a6bef1c8a5b8f67606762e10c516610f970e491
+BuilderVersion/TestId: AAR-PRODUCTION-INTEGRATION-3
+Bundle SHA-256: 39fb3ecf80f6552d3478a8d83122eb69c83449bb3787731007c956fbdb6b49d1
+Controller SHA-256: a937b67874dded3bb31ffcb4e7ea60d186ffde21f1e43bcccac4cf43f9e2da97
+Mission: OMW_Template_v9_AirOps_rdy.miz
+DCS: 2.9.28.26385 MT
+MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+Moose.lua SHA-256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
+```
+
+Praktisch beobachtet:
+
+- sechs MissionDemand-Mappings erfolgreich;
+- sechs area-spezifische KC-135-Templates materialisiert;
+- area-spezifische DCS-Rufnamen sichtbar und im Controller-Log korrekt;
+- Source-Domain-Staffelung mit vier Folgeabständen von jeweils `60.0 s`;
+- parallele Materialisierung aus MANAS und AL UDEID zulässig.
+
+Nicht als PASS aus diesem Lauf abgeleitet:
+
+- Seed-Fuel-Runtime-Prüfung, weil der Harness den `65535`-Sentinel als Fuelwert interpretierte;
+- quantitativer `TRANSIT_PROGRESS_PASS`, weil der Harness nach den frühen False Negatives bereits auf `failed=true` stand;
+- vollständige `ACCEPTED_TECHNICAL_BASELINE`, solange Missions- und Log-Hashes für genau diesen Lauf nicht dokumentiert sind.
+
+Der korrigierte Harness `AAR-PRODUCTION-INTEGRATION-3R1` normalisiert Callsign-Trenner und verschiebt die Fuel-Auswertung bis zu einem plausiblen `0..1`-Wert. Für diese reine Testkorrektur ist kein weiterer DCS-Lauf vorgesehen.
+
+## 10. Keine weiteren isolierten AAR-Mechaniktests
+
+Für denselben gepinnten DCS-/MOOSE-Stand besteht kein zusätzlicher allgemeiner Acceptance-Bedarf für Spawn, Orbit, Boom-AAR, FAST/SLOW, Funk/TACAN, Five-tanker-Stress, Callsign-Erhalt oder Egress-Mechanik.
 
 Erneute DCS-Prüfung wird erst erforderlich, wenn:
 
-- produktive MissionDemand-/COMMANDER-Integration erstmals ausgeführt wird;
-- relevante Lifecycle-Logik geändert wird;
+- neue produktive CampaignState-/Lifecycle-Integration erstmals ausgeführt wird;
+- relevante produktive Lifecycle-Logik geändert wird;
 - MOOSE/DCS-Version oder Missionsbaseline wechselt;
 - neue Receiver-/Tanker-Systeme hinzukommen.
 
 Das ist Integrations-/Regressionstest, kein weiterer AAR-Grundlagentest.
 
-## 10. Noch offene produktive Integration
+## 11. Noch offene produktive Integration
 
-- erfolgreicher Integration-3-Lauf für area-spezifische Template-/Callsign-/Seed-Fuel-Identität, Source-Spacing und High-Transit-Fortschritt;
-- CampaignState-/Off-map-Recovery-Abrechnung;
-- Multiplayer-/Persistenzprüfung erst zusammen mit der produktiven Integration.
+```text
+MissionDemand
+-> AAR Controller
+-> CampaignState Ressourcen-/Verfügbarkeitsprüfung
+-> Materialisierung
+-> Mission
+-> Off-map-Handoff
+-> Recovery / Turnaround
+-> erneute strategische Verfügbarkeit
+```
+
+Offen sind damit insbesondere:
+
+- CampaignState-Bindung an `CanMaterialize`, `OnMaterialized` und `OnHandoff`;
+- eindeutiger strategischer KC-135-Ressourcen-/Entity-Vertrag ohne doppelte Ressourcenhoheit;
+- Reserve-/Consume-/Recovery-/Turnaround-Semantik;
+- Persistenz der strategischen AAR-Verfügbarkeit;
+- Multiplayer-/Persistenzprüfung zusammen mit dieser produktiven Integration.
+
+Die nächste echte DCS-AAR-Prüfung ist an diese neue produktive Lifecycle-Integration zu koppeln, nicht an die bereits korrigierten Harness-False-Negatives.
