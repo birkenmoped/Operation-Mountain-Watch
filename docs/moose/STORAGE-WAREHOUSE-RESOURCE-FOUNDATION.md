@@ -16,7 +16,7 @@ supersedes:
   - branch-local Warehouse MOOSE topic summaries for the same closed foundation scope
 superseded_by:
 source_branch: agent/air-ops-initial-stock-runtime-data
-source_commit: PENDING_MERGE
+source_commit: 9e1184781b8bf37687e92eb16464a8902042924e
 validated_in_dcs: partial
 ---
 
