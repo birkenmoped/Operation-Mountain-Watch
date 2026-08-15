@@ -43,7 +43,10 @@ function Integration.Attach(spec)
     reconciliation = adapter:ReconcileRestore()
   end
 
-  controller:SetStrategicAdapter(adapter)
+  -- OMW.AAR exposes SetStrategicAdapter as a module function, not an instance method.
+  -- Passing controller as an implicit ':' receiver shifts the adapter argument and
+  -- causes the controller to validate itself instead of the CampaignState adapter.
+  controller.SetStrategicAdapter(adapter)
 
   return {
     store = store,
