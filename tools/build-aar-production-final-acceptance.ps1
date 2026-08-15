@@ -9,8 +9,8 @@ $sourceDir = Join-Path $repoRoot 'mission\tests\aar-production-integration\src'
 $distDir = Join-Path $repoRoot 'mission\tests\aar-production-integration\dist'
 $outputFile = Join-Path $distDir 'OMW_AAR_Production_Final_Acceptance.lua'
 
-$builderVersion = 'AAR-PRODUCTION-FINAL-ACCEPTANCE-1'
-$testId = 'AAR-PRODUCTION-FINAL-ACCEPTANCE-1'
+$builderVersion = 'AAR-PRODUCTION-FINAL-ACCEPTANCE-2'
+$testId = 'AAR-PRODUCTION-FINAL-ACCEPTANCE-2'
 $mooseCommit = '73d3ed119cd9e7e3f2cfcabbaa34513d30529b54'
 $mooseSha256 = 'e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915'
 
@@ -45,16 +45,19 @@ $requirements = @(
   @{ File = 'Adapter'; Marker = 'function Adapter:OnLost' },
   @{ File = 'Adapter'; Marker = 'function Adapter:ReconcileRestore' },
   @{ File = 'RuntimeIntegration'; Marker = 'function Integration.Attach' },
-  @{ File = 'Controller'; Marker = 'MAX_CONCURRENT_SUPPORT_MISSIONS = 2' },
-  @{ File = 'Controller'; Marker = 'MAX_AIRCRAFT_PER_SUPPORT_MISSION = 2' },
-  @{ File = 'Controller'; Marker = 'MAX_CONCURRENT_SUPPORT_AIRCRAFT = 4' },
-  @{ File = 'Controller'; Marker = 'spawner:InitSTN(transitCallsign.stn)' },
+  @{ File = 'Controller'; Marker = 'CORE_TRACK_COUNT = 6' },
+  @{ File = 'Controller'; Marker = 'MAX_AIRCRAFT_PER_TRACK = 2' },
+  @{ File = 'Controller'; Marker = 'spawnedUnit:GetSTN()' },
+  @{ File = 'Controller'; Marker = 'globalAarMissionLimit = false' },
+  @{ File = 'Controller'; Marker = 'globalAarAircraftLimit = false' },
   @{ File = 'Controller'; Marker = 'function flightGroup:OnAfterDead' },
-  @{ File = 'Harness'; Marker = 'AAR-PRODUCTION-FINAL-ACCEPTANCE-1' },
+  @{ File = 'Harness'; Marker = 'AAR-PRODUCTION-FINAL-ACCEPTANCE-2' },
+  @{ File = 'Harness'; Marker = 'AAR_POLICY_BASELINE_PASS' },
   @{ File = 'Harness'; Marker = 'RESTORE_RECONCILIATION_PASS' },
   @{ File = 'Harness'; Marker = 'POOL_BASELINE_PASS' },
   @{ File = 'Harness'; Marker = 'SOURCE_INDEPENDENCE_PASS' },
-  @{ File = 'Harness'; Marker = 'CONCURRENCY_2_2_4_PASS' },
+  @{ File = 'Harness'; Marker = 'CORE_TRACKS_6_SIMULTANEOUS_PASS' },
+  @{ File = 'Harness'; Marker = 'RELIEF_6_TRACKS_12_AIRCRAFT_PASS' },
   @{ File = 'Harness'; Marker = 'STATION_IDENTITY_PASS' },
   @{ File = 'Harness'; Marker = 'FUEL_LOW_RELIEF_PASS' },
   @{ File = 'Harness'; Marker = 'SCHEDULED_RELIEF_PASS' },
@@ -105,7 +108,8 @@ $header = @"
 -- GitCommit: $commit
 -- GeneratedUtc: $generatedUtc
 -- Gate/Test-ID: $testId
--- Scope: combined AAR production acceptance for CampaignState pools/accounting, 2/2/4 concurrency, transit/station identity, scheduled/FuelLow relief, demand end, handoff, loss and restore reconciliation.
+-- Scope: combined AAR production acceptance for six simultaneous core tracks, source spacing, CampaignState pools/accounting, per-track active+relief lifecycle, transit/station identity, scheduled/FuelLow relief, demand end, handoff, loss and restore reconciliation.
+-- Current availability policy: the six selected core tracks are treated as continuously available until a later ATO/time-window policy is approved; this test does not claim historical 24/7 coverage or perform a 24-hour endurance run.
 -- Test acceleration: track-entry coordinates and scheduled-relief timestamps are controlled by the harness; no physical aircraft is teleported.
 -- Loss injection: public MOOSE UNIT:Explode() is used only on the designated test tanker to exercise the real FLIGHTGROUP Dead/OnAfterDead path.
 -- Restore: CampaignState snapshot/Restore is exercised in-process; this is not a physical DCS server restart.
@@ -130,10 +134,16 @@ Write-Host "Built: $outputFile"
 Write-Host "BuilderVersion: $builderVersion"
 Write-Host "TestId: $testId"
 Write-Host "GeneratedUtc: $generatedUtc"
+Write-Host "CoreTracks: 6"
+Write-Host "GlobalAarMissionLimit: false"
+Write-Host "GlobalAarAircraftLimit: false"
+Write-Host "MaxAircraftPerTrack: 2"
+Write-Host "ExpectedMaxPhysicalDuringAllTrackRelief: 12"
+Write-Host "MooseManagedSpawnSTN: true"
 Write-Host "ControlledTrackEntry: true"
 Write-Host "ControlledReliefTiming: true"
 Write-Host "PhysicalTeleport: false"
-Write-Host "NaturalGateTransitRequired: false"
+Write-Host "NaturalGateTransitRequired: true"
 Write-Host "LossInjection: MOOSE UNIT:Explode"
 Write-Host "RestoreMode: in-process CampaignState Snapshot/Restore"
 Write-Host "MizMutation: false"
