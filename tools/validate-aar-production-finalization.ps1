@@ -26,23 +26,29 @@ foreach ($entry in $files.GetEnumerator()) {
 }
 
 $requirements = @(
-  @{ File = 'Controller'; Marker = 'CORE_TRACK_COUNT = 6' },
+  @{ File = 'Controller'; Marker = 'STANDARD_TRACK_COUNT = 4' },
+  @{ File = 'Controller'; Marker = 'RESERVE_TRACK_COUNT = 2' },
   @{ File = 'Controller'; Marker = 'MAX_AIRCRAFT_PER_TRACK = 2' },
-  @{ File = 'Controller'; Marker = 'LISA = {' },
-  @{ File = 'Controller'; Marker = 'MOE = {' },
-  @{ File = 'Controller'; Marker = 'coreProfile = "FAST"' },
+  @{ File = 'Controller'; Marker = 'availability = "RESERVE"' },
+  @{ File = 'Controller'; Marker = 'availability = "STANDARD"' },
+  @{ File = 'Controller'; Marker = 'firFix = "EGPAN"' },
+  @{ File = 'Controller'; Marker = 'firFix = "PINAX"' },
+  @{ File = 'Controller'; Marker = 'firFix = "DAVER"' },
+  @{ File = 'Controller'; Marker = 'local EXTERNAL_POINTS = {' },
+  @{ File = 'Controller'; Marker = 'local FIR_FIXES = {' },
+  @{ File = 'Controller'; Marker = 'runtime.flightGroup:AddWaypoint(runtime.externalHandoffCoord' },
+  @{ File = 'Controller'; Marker = 'FIR_INGRESS_PASSED' },
+  @{ File = 'Controller'; Marker = 'FIR_EGRESS_PASSED' },
   @{ File = 'Controller'; Marker = 'function Controller.StartContinuousCoreCoverage()' },
-  @{ File = 'Controller'; Marker = 'CORE_TRACK_RETAINED' },
-  @{ File = 'Controller'; Marker = 'stationAction=RETAIN_CONTINUOUS_CORE' },
+  @{ File = 'Controller'; Marker = 'RESERVE_TRACK_EGRESS' },
+  @{ File = 'Controller'; Marker = 'stationAction=RETAIN_STANDARD_TRACK' },
   @{ File = 'Controller'; Marker = 'function flightGroup:OnAfterDead' },
   @{ File = 'Controller'; Marker = 'state.strategicAdapter:OnLost(' },
-  @{ File = 'Controller'; Marker = 'function Controller.EndDemand' },
-  @{ File = 'Controller'; Marker = 'function Controller.GetRuntimeCounts' },
   @{ File = 'Controller'; Marker = 'spawnedUnit:GetSTN()' },
-  @{ File = 'Controller'; Marker = 'continuousAvailabilityPolicy = true' },
+  @{ File = 'Controller'; Marker = 'stableSortieCallsign = true' },
+  @{ File = 'Controller'; Marker = 'airwaysRoutingEnabled = false' },
   @{ File = 'Controller'; Marker = 'globalAarMissionLimit = false' },
   @{ File = 'Controller'; Marker = 'globalAarAircraftLimit = false' },
-  @{ File = 'Controller'; Marker = 'mooseManagedSpawnStn = true' },
   @{ File = 'Adapter'; Marker = 'function Adapter:OnLost' },
   @{ File = 'Adapter'; Marker = 'function Adapter:ReconcileRestore' },
   @{ File = 'Adapter'; Marker = 'AAR_RESTART_RECONCILIATION' },
@@ -52,10 +58,8 @@ $requirements = @(
   @{ File = 'RuntimeIntegration'; Marker = 'controller.SetStrategicAdapter(adapter)' },
   @{ File = 'RuntimeIntegration'; Marker = 'controller.StartContinuousCoreCoverage()' },
   @{ File = 'StrategicStock'; Marker = 'OMW-AAR-STRATEGIC-STOCK-2' },
-  @{ File = 'StrategicStock'; Marker = 'AIRCRAFT_KC135_LOST' },
   @{ File = 'StrategicStock'; Marker = 'initial = 16' },
   @{ File = 'StrategicStock'; Marker = 'initial = 40' },
-  @{ File = 'CampaignStateInitializer'; Marker = 'OMW-AIROPS-CAMPAIGNSTATE-INITIALIZER-3' },
   @{ File = 'CampaignStateInitializer'; Marker = 'OFFMAP_MANAS' },
   @{ File = 'CampaignStateInitializer'; Marker = 'OFFMAP_AL_UDEID' }
 )
@@ -66,20 +70,23 @@ foreach ($requirement in $requirements) {
   }
 }
 
-if ($content.Controller -notmatch 'LISA\s*=\s*\{[\s\S]*?coreProfile\s*=\s*"FAST"') {
-  throw 'LISA continuous core profile is not FAST.'
+if ($content.Controller -notmatch 'LISA\s*=\s*\{[\s\S]*?availability\s*=\s*"RESERVE"[\s\S]*?coreProfile\s*=\s*"FAST"') {
+  throw 'LISA is not FAST RESERVE.'
 }
-if ($content.Controller -notmatch 'MOE\s*=\s*\{[\s\S]*?coreProfile\s*=\s*"FAST"') {
-  throw 'MOE continuous core profile is not FAST.'
+if ($content.Controller -notmatch 'MOE\s*=\s*\{[\s\S]*?availability\s*=\s*"RESERVE"[\s\S]*?coreProfile\s*=\s*"FAST"') {
+  throw 'MOE is not FAST RESERVE.'
 }
 
 $forbiddenControllerMarkers = @(
+  'CORE_TRACK_COUNT = 6',
   'MAX_CONCURRENT_SUPPORT_MISSIONS',
   'MAX_CONCURRENT_SUPPORT_AIRCRAFT',
   'MAX_AIRCRAFT_PER_SUPPORT_MISSION',
   'spawner:InitSTN(',
   'local STN_START_OCTAL',
-  'return station, "STATION_CLOSED"'
+  'SwitchCallsign(',
+  'local TRANSIT_CALLSIGNS',
+  'CORE_TRACKS_6_SIMULTANEOUS_PASS'
 )
 
 foreach ($marker in $forbiddenControllerMarkers) {
@@ -116,14 +123,21 @@ Write-Host 'CampaignStateAuthority: true'
 Write-Host 'StrategicTurnaroundTimer: false'
 Write-Host 'LossRecredit: false'
 Write-Host 'RestoreReconciliation: true'
-Write-Host 'ContinuousCoreTracks: 6'
+Write-Host 'StandardTracks: 4'
+Write-Host 'ReserveTracks: 2'
 Write-Host 'LISAProfile: FAST'
+Write-Host 'LISAAvailability: RESERVE'
 Write-Host 'MOEProfile: FAST'
-Write-Host 'MissionDemandClosesCoreTrack: false'
+Write-Host 'MOEAvailability: RESERVE'
+Write-Host 'StableSortieCallsign: true'
+Write-Host 'FIRFixRouting: true'
+Write-Host 'ExternalSpawnHandoffSeparated: true'
+Write-Host 'AirwaysRouting: false'
+Write-Host 'MissionDemandClosesStandardTrack: false'
+Write-Host 'MissionDemandClosesReserveAfterLastDemand: true'
 Write-Host 'GlobalAarMissionLimit: false'
 Write-Host 'GlobalAarAircraftLimit: false'
 Write-Host 'MaxAircraftPerTrack: 2'
-Write-Host 'ExpectedMaxPhysicalDuringAllTrackRelief: 12'
 Write-Host 'MooseManagedSpawnSTN: true'
 
 foreach ($entry in $files.GetEnumerator()) {

@@ -49,23 +49,23 @@ REJECTED_FOR_PROJECT_USE
 
 | Klasse | Projektstatus | Geltungsgrenze |
 |---|---|---|
-| `AIRBASE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Auflösung, ID, Parkingdump und airfield-spezifische Kalibrierung; aktuelle Kandahar-/Shindand-Nachweise siehe Fach- und Acceptance-Dokumente |
+| `AIRBASE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Auflösung, ID, Parkingdump und airfield-spezifische Kalibrierung |
 | `AIRWING` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Konstruktion, Stockregistrierung, SQUADRON-Bindung und direkter AUFTRAG-Dispatch; externe OMW-AAR-Pools verwenden bewusst kein AIRWING |
-| `SQUADRON` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Foundation-Bestände und post-start Assetbindung für dokumentierte AirOps-Knoten |
+| `SQUADRON` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Foundation-Bestände und post-start Assetbindung |
 | `WAREHOUSE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | AirOps-Stock-/Asset-Lifecycle; kein WAREHOUSE für externe MANAS-/AL_UDEID-AAR-count-Pools |
 | `STORAGE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | CampaignState->DCS-Warehouse Mirror/Telemetry; keine strategische Rückautorität |
 | `COHORT` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Asset-/Mission-Capability-Pfade für dokumentierte AirOps-Foundations |
-| `FLIGHTGROUP` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | AAR source-reviewed für FuelLow, Dead/onafterDead, GetCoordinate und Mission-Lifecycle; Acceptance-6 bestätigte Boom-AAR und FuelLow/Cancel/Egress-Grundmechanik. Der aktuelle Continuous-Core-Controller nutzt `OnAfterDead` zur Loss-Klassifikation; dieser konkrete Einsatz bleibt bis Final-Acceptance-3 SOURCE_REVIEWED |
-| `COMMANDER` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | dokumentierter COMMANDER-Lifecycle; nicht als Quelle der externen OMW-AAR-Pools verwendet |
-| `AUFTRAG` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | AAR `NewTANKER`, Ingress/Egress, Cancel source-reviewed; Acceptance-6 bestätigte Tanker-/Cancel-/Egress-Grundpfad; Continuous-Core-/Relief-Einsatz noch DCS-offen |
-| `SPAWN` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | area-spezifische AAR-Templates und Transit-Callsigns. OMW erzwingt keine `InitSTN()` mehr; die gepinnte SPAWN-Implementierung verwaltet Template-STN-Kollisionen, danach liest OMW die materialisierte STN über `UNIT:GetSTN()` |
-| `SCHEDULER` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | geordnete Konstruktion und verzögerte Diagnose bestätigt; aktueller AAR-Controller verwendet MOOSE `SCHEDULER` für Source-Queue und Station-Monitoring |
+| `FLIGHTGROUP` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | FuelLow, Dead/onafterDead, GetCoordinate und Mission-Lifecycle source-reviewed; `AddWaypoint(...)` ist für den neuen FIR-Egress->External-Handoff-Pfad SOURCE_REVIEWED und bis Acceptance-4 nicht praktisch bestätigt |
+| `COMMANDER` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | dokumentierter COMMANDER-Lifecycle; nicht Quelle der externen OMW-AAR-Pools |
+| `AUFTRAG` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | AAR `NewTANKER`, Ingress/Egress und Cancel source-reviewed; Acceptance-6 bestätigte Grundmechanik, neue FIR-Fix-Trennung noch offen |
+| `SPAWN` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | area-spezifische AAR-Templates und stabile sortie Callsign-Familie; keine erzwungene `InitSTN()`, STN-Readback über `UNIT:GetSTN()` |
+| `SCHEDULER` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Source-Queue und Station-Monitoring |
 | `USERFLAG` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Warehouse-Acceptance-Readiness-Pfade |
-| `GROUP`, `UNIT`, `STATIC`, `ZONE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Template-/Static-/Warehouse-/Zonenvalidierung. Für AAR ist `UNIT:GetSTN()` SOURCE_REVIEWED; `UNIT:Explode()` bleibt test-only SOURCE_REVIEWED bis zum Acceptance-Nachweis |
-| `ARMYGROUP`, `BRIGADE`, `OPSGROUP` | `PLANNED` | Bodenoperationsscope; für AAR sind Despawn, Callsign-/Radio-/TACAN-Switch source-reviewed und teilweise in früheren Acceptance-Läufen praktisch beobachtet |
+| `GROUP`, `UNIT`, `STATIC`, `ZONE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Template-/Static-/Warehouse-/Zonenvalidierung; `UNIT:GetSTN()` SOURCE_REVIEWED für AAR, `UNIT:Explode()` test-only SOURCE_REVIEWED bis Acceptance-Nachweis |
+| `ARMYGROUP`, `BRIGADE`, `OPSGROUP` | `PLANNED` | Bodenoperationsscope; für AAR sind Despawn sowie Radio-/TACAN-Switch source-reviewed und teilweise früher praktisch beobachtet |
 | `OPSTRANSPORT` | `PLANNED` | taktischer Transport |
 | `CTLD`, `CSAR`, `AICSAR` | `PLANNED` / teilweise verwendet | separate Acceptance erforderlich |
-| `INTEL` | `PLANNED` | taktisches Lagebild; Laufzeitnachweis im gepinnten Stand offen |
+| `INTEL` | `PLANNED` | taktisches Lagebild; Laufzeitnachweis offen |
 | `INTEL_DLINK` | `CANDIDATE` | Aggregation getrennter Netze; Performance offen |
 | `PLAYERRECCE` | `CANDIDATE` | spielergeführte Aufklärung; Multiplayerprüfung offen |
 | `TARS` | `CANDIDATE` | verzögerte Foto-/IMINT-Aufklärung; Verfügbarkeit offen |
@@ -74,50 +74,39 @@ REJECTED_FOR_PROJECT_USE
 | `_DATABASE` | `INTERNAL_RESTRICTED` | nur Diagnose/Validierung; aktueller AAR-Produktionspfad verwendet `_DATABASE` nicht |
 | `CHIEF` | `REJECTED_FOR_PROJECT_USE` | aktuelle Produktionsarchitektur `NOT_USED` |
 
-## 4. AIRWING-Lifecycle-Grenzen
+## 4. AAR-Source-Review-Grenze
+
+Gepinnter Stand:
 
 ```text
-SQUADRON:New
--> Konfiguration vorhanden
-
-AIRWING:AddSquadron
--> Cohort registriert
--> Warehouse-Stock synchron erhöht
-
-AIRWING:Start plus Initialisierung
--> Warehouse-Assets werden COHORT/SQUADRON zugeordnet
+MOOSE release: 2.9.18
+MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+Moose.lua SHA-256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
 ```
 
-Ein Pre-Start-PASS über nichtleere `squadron.assets` ist unzulässig. Die externen AAR-Pools MANAS und AL UDEID sind eine andere Architekturklasse: keine DCS-Airbase, kein WAREHOUSE/AIRWING und keine SQUADRON. CampaignState hält dort nur `AIRCRAFT_KC135` als `count`; die physische Mission wird direkt über SPAWN -> FLIGHTGROUP -> AUFTRAG materialisiert.
-
-## 5. AAR-Source-Review-Grenze
-
-Für den aktuellen AAR-Produktionsstand sind im tatsächlich gepinnten `Moose.lua` insbesondere folgende Pfade geprüft:
+Für den aktuellen AAR-Produktionsstand sind im tatsächlich gepinnten `Moose.lua` geprüft:
 
 ```text
 AUFTRAG:NewTANKER(...)
-AUFTRAG:SetRadio(...)
-AUFTRAG:SetTACAN(...)
 AUFTRAG:SetMissionIngressCoord(...)
 AUFTRAG:SetMissionEgressCoord(...)
-AUFTRAG:IsExecuting()
 AUFTRAG:Cancel()
 
 SPAWN:InitCallSign(...)
 SPAWN template-STN collision handling
 UNIT:GetSTN()
+UNIT:Explode(...) [test-only]
+GROUP:GetCallsign()
 
 FLIGHTGROUP:GetFuelMin()
 FLIGHTGROUP:SetFuelLowThreshold(...)
 FLIGHTGROUP:SetFuelLowRTB(false)
-FuelLow callback
+FLIGHTGROUP FuelLow callback
 FLIGHTGROUP Dead/onafterDead FSM event
 OnAfterDead callback override
 FLIGHTGROUP:GetCoordinate()
-FLIGHTGROUP:IsAirborne()
-FLIGHTGROUP:Refuel(...)
+FLIGHTGROUP:AddWaypoint(Coordinate, Speed, AfterWaypointWithID, Altitude, Updateroute)
 
-OPSGROUP:SwitchCallsign(...)
 OPSGROUP:SwitchRadio(...)
 OPSGROUP:TurnOffRadio()
 OPSGROUP:SwitchTACAN(...)
@@ -125,43 +114,61 @@ OPSGROUP:TurnOffTACAN()
 OPSGROUP:Despawn(...)
 
 COORDINATE:Get2DDistance(...)
-COORDINATE:Get3DDistance(...)
 SCHEDULER:New(...)
 ```
 
-Der Source-Review bestätigt API-Verfügbarkeit und Signaturen, nicht automatisch das reale DCS-Verhalten.
+`FLIGHTGROUP:AddWaypoint(...)` nimmt für Flightgroups Speed in Knoten und optionale Höhe in Fuß und aktualisiert standardmäßig die Route. Im aktuellen AAR-Branch wird diese öffentliche Methode erst nach physischer Passage des FIR-Egress-Fixes verwendet, um den External-Handoff-Punkt anzufügen. API-Verfügbarkeit ist source-reviewed; reales DCS-Verhalten dieses neuen Pfads bleibt bis Acceptance-4 offen.
 
-## 6. Aktueller AAR-Produktionsscope
+`OPSGROUP:SwitchCallsign(...)` ist im gepinnten MOOSE weiterhin verfügbar, wird im korrigierten AAR-Produktionspfad aber **nicht mehr** für einen Wechsel zwischen Transit- und Track-Callsign verwendet. Der physische Tanker behält seine Callsign-Familie vom Spawn bis Despawn.
+
+## 5. Aktueller AAR-Produktionsscope
 
 ```text
-6 kontinuierliche Core-Tracks:
-LISA FAST
-MOE FAST
+STANDARD / kontinuierlich:
+NELSON FAST
+PATTY SLOW
 MILHOUSE SLOW
 KRUSTY SLOW
-PATTY SLOW
-NELSON FAST
+
+RESERVE / MissionDemand:
+LISA FAST
+MOE FAST
 
 kein globales 2/2/4-AAR-Limit
 pro Track max. 1 ACTIVE + 1 RELIEF
-bei gleichzeitigem Relief aller Tracks max. 12 physische KC-135
-MissionDemand attach/end beeinflusst nicht die kontinuierliche Track-Verfügbarkeit
+Callsign-Familie bleibt pro Sortie stabil
+```
+
+FIR-Fix-Routing:
+
+```text
+NELSON/PATTY    -> EGPAN
+KRUSTY/MILHOUSE -> DAVER
+LISA/MOE        -> PINAX
+
+External Spawn != FIR Ingress
+FIR Egress != External Handoff/Despawn
+Airways-Routing = später / nicht in Acceptance-4
 ```
 
 Source-reviewed und noch nicht als praktisch bestätigt gelten insbesondere:
 
-- automatischer Continuous-Core-Start nach RuntimeIntegration-Attach;
+- automatischer Start ausschließlich der vier STANDARD-Tracks;
+- demand-gesteuerter LISA-/MOE-Reserve-Lifecycle;
+- stabile Callsign-Familie und eindeutige `n-1`-Gruppennummer bei Relief;
+- FIR-Ingress über EGPAN/DAVER/PINAX;
+- zweistufiger Egress `SetMissionEgressCoord(FIR fix)` -> `FLIGHTGROUP:AddWaypoint(external handoff)`;
 - nominaler 3-h-Station-/Relief-Zyklus;
 - FuelLow-Relief ohne Doppelmaterialisierung;
-- Transit-/Station-Callsign-/Radio-/TACAN-Handover im aktuellen Produktionscontroller;
-- CampaignState Consume/Exact-once-Recredit-Kopplung für den Continuous-Core-Betrieb;
-- MissionDemand-Ende ohne Core-Track-Shutdown;
-- FLIGHTGROUP-Dead -> OnAfterDead -> strategischer OnLost ohne Aircraft-Recredit;
-- Ersatzmaterialisierung nach Loss bei weiter erforderlicher Core-Abdeckung;
-- Restore-Reconciliation für nicht aufgelöste AAR-Commitments;
-- MOOSE-gemanagte Spawn-STN plus `UNIT:GetSTN()`-Readback bei bis zu 12 gleichzeitigen Tankern.
+- CampaignState exact-once Settlement;
+- Dead -> OnAfterDead -> OnLost ohne Aircraft-Recredit plus Ersatz bei weiter benötigtem Track;
+- Restore-Reconciliation.
 
-Diese Punkte dürfen erst nach dem dokumentierten `AAR-PRODUCTION-FINAL-ACCEPTANCE-3`-Lauf in `VERIFIED-METHODS.md` als praktisch bestätigt ergänzt werden.
+Diese Punkte dürfen erst nach dokumentiertem `AAR-PRODUCTION-FINAL-ACCEPTANCE-4` in `VERIFIED-METHODS.md` als praktisch bestätigt ergänzt werden.
+
+## 6. Architekturgrenze
+
+Die externen AAR-Pools MANAS und AL UDEID sind keine DCS-Airbase-/WAREHOUSE-/AIRWING-/SQUADRON-Bestände. CampaignState hält `AIRCRAFT_KC135` als count; SPAWN -> FLIGHTGROUP -> AUFTRAG materialisiert nur die physische Repräsentation.
 
 ## 7. Nachweisregel
 

@@ -37,19 +37,7 @@ Historische Grundlage:
 
 ## 2. Kernobjekte und Repräsentationsregel
 
-Mindestens vorgesehen:
-
-- `AirbaseState`;
-- `FOBState`;
-- `RedNetworkState` und `RedSiteState`;
-- `StrategicEntity`;
-- `CargoManifest`;
-- `MissionDemand`;
-- `CSARIncident`;
-- `IntelligenceRecord`;
-- `SettlementSupportState`.
-
-Verbindliche Grenze:
+Mindestens vorgesehen sind `AirbaseState`, `FOBState`, `RedNetworkState`, `RedSiteState`, `StrategicEntity`, `CargoManifest`, `MissionDemand`, `CSARIncident`, `IntelligenceRecord` und `SettlementSupportState`.
 
 ```text
 CampaignState entity/resource
@@ -61,33 +49,11 @@ CampaignState entity/resource
 
 Laufzeitnamen, MOOSE-Wrapper, DCS-Gruppen und Scheduler sind keine persistenten Primärschlüssel.
 
-## 3. Ressourcen
+## 3. Ressourcen und Persistenz
 
-Strategisch getrennt werden Ressourcen nur, wenn ihre Menge oder Verfügbarkeit spielerische beziehungsweise kampagnenrelevante Wirkung besitzt. Dazu gehören insbesondere:
+Strategisch getrennt werden Ressourcen nur, wenn ihre Menge oder Verfügbarkeit spielerische beziehungsweise kampagnenrelevante Wirkung besitzt. `CampaignState` darf nicht durch parallele Bestände in CTLD, MOOSE WAREHOUSE/AIRWING oder DCS Warehouses ersetzt werden.
 
-- Personal;
-- Fahrzeuge und Luftfahrzeuge;
-- Munition;
-- Treibstoff;
-- Baumaterial und Versorgungsgüter;
-- Cargo-Manifeste;
-- Bereitschaft, Schaden und Verluste.
-
-`CampaignState` darf nicht durch parallele Bestände in CTLD, MOOSE WAREHOUSE/AIRWING oder DCS Warehouses ersetzt werden.
-
-## 4. Persistenz
-
-Gespeichert werden strategische IDs und Domänendaten, nicht flüchtige Controller-/Wrapper-Zustände.
-
-Jeder Speicherstand benötigt:
-
-- Schema-Version;
-- Kampagnen- und Missionskennung;
-- Migrationspfad;
-- Integritätsprüfung;
-- reproduzierbare Rekonstruktion beziehungsweise Reconciliation zulässiger Runtime-Objekte.
-
-Der aktuelle generische Store persistiert insbesondere:
+Der generische Store persistiert insbesondere:
 
 ```text
 resource quantities
@@ -98,9 +64,9 @@ aircraft-recovery records
 
 über `ExportSnapshot()` und `Restore()`.
 
-## 5. CampaignState -> STORAGE
+## 4. CampaignState -> STORAGE
 
-Die dokumentierten AirOps-Tests bestätigen den einseitigen Mirror:
+Für die jeweils dokumentierten AirOps-Stände gilt der einseitige Mirror:
 
 ```text
 CampaignState
@@ -109,13 +75,9 @@ CampaignState
 -> DCS Airbase Warehouse
 ```
 
-für den jeweils exakt dokumentierten Teststand. `CampaignState` bleibt dabei strategische Autorität; der DCS-/STORAGE-Readback wird nicht zur unabhängigen Rückautorität.
+`CampaignState` bleibt strategische Autorität; STORAGE-/DCS-Readback wird nicht zur unabhängigen Rückautorität.
 
-Der erfolgreiche ruhige Sieben-Knoten-Lauf vom 10.08.2026 bestätigte Bagram, Jalalabad, Kandahar, Kandahar Heliport, FOB Salerno, Tarinkot und Shindand Heliport für den dokumentierten Mirror-Scope. Ein vorheriger Lauf mit aktivem Spieler-Spawn zeigte zugleich, dass native DCS-Fuelbuchungen ein streng synchrones Write/Readback-Fenster verändern können. Diese Evidenz genehmigt keine zweite strategische Ressourcenhoheit.
-
-## 6. Aircraft-Loss, Forced Landing, Recovery und Repair
-
-### 6.1 Physischer Totalverlust
+## 5. Aircraft-Loss, Forced Landing, Recovery und Repair
 
 Für physisch zerstörte reguläre Campaign-Aircraft gilt:
 
@@ -127,30 +89,7 @@ PHYSICAL_TOTAL_LOSS
 -> no strategic recredit
 ```
 
-Die technische Grundlage ist der dokumentierte `STORAGE-PHYSICAL-LOSS-RECOVERY-1`-Owner-Lauf. `OPSGROUP:Destroy()` beziehungsweise bloßes Despawn ist nicht automatisch mit physischem Totalverlust gleichzusetzen.
-
-### 6.2 Forced-Landing-Klassifikation
-
-`Landed` oder `airbase == nil` allein ist kein Verlustsignal. Geplante Außenlandungen müssen ausgeschlossen werden.
-
-Vorgesehene Domain-Klassifikation:
-
-```text
-planned off-field landing / planned transport landing
--> NORMAL
-
-unexpected landing at or within 5 km of recovery-capable friendly aviation infrastructure
--> RECOVERABLE_FORCED_LANDING
-
-unexpected landing outside that envelope
--> OFF_FIELD_UNRECOVERABLE candidate
-```
-
-Sehr niedriger Fuel-Stand (`<= 5 %`) ist nur ein zusätzliches Evidenzsignal, kein alleiniger Trigger.
-
-### 6.3 Recovery V1
-
-Für die bereits definierte **Forced-Landing-Recovery** gilt weiterhin:
+Geplante Außenlandungen müssen von Forced-Landing-Kandidaten getrennt bleiben. Die dokumentierte Recovery-V1-Semantik bleibt:
 
 ```text
 RECOVERABLE_FORCED_LANDING
@@ -165,19 +104,7 @@ RECOVERABLE_FORCED_LANDING
 
 Diese 30-min-/6-h-Semantik gehört ausschließlich zum physischen Recovery-/Repair-Modell und **nicht** zum regulären Off-map-AAR-Lifecycle.
 
-### 6.4 Nicht bergbare Außenlandung
-
-```text
-OFF_FIELD_UNRECOVERABLE
--> aircraft, remaining fuel and remaining stores lost
--> CSAR/AICSAR only where applicable and without duplicate survivor creation
-```
-
-Die konkrete Forced-Landing-Erkennung und CSAR-Kopplung sind gesonderter Scope.
-
-## 7. AAR-Off-map-KC-135-Pools
-
-### 7.1 Eigentümerentscheidung
+## 6. AAR-Off-map-KC-135-Pools
 
 Verbindliche OMW-Designbestände:
 
@@ -189,31 +116,9 @@ OFFMAP_AL_UDEID
 AIRCRAFT_KC135 = 40 count
 ```
 
-Diese Pools sind bewusst count-basiert. Es gibt in diesem Scope:
+Die Pools sind count-basiert. Es gibt in diesem Scope keine strategischen Tail Numbers, keine individuelle KC-135-Entity-Verwaltung, keine strategische per-Template-Bestandsführung und keinen regulären Turnaround-Timer.
 
-```text
-keine strategischen Tail Numbers
-keine individuelle KC-135-Entity-Verwaltung
-keine strategische per-Template-Bestandsführung
-keinen regulären Turnaround-Timer
-```
-
-Die historische Plausibilisierung steht in [`OMW-AAR-ISAF-ACO`](29-isaf-2009-2013-air-to-air-refueling.md).
-
-### 7.2 Off-map-Knoten
-
-Die Knoten sind reine CampaignState-Domänenressourcen:
-
-```text
-OFFMAP_MANAS
-OFFMAP_AL_UDEID
-```
-
-Sie sind keine DCS-Airbases und besitzen kein MOOSE WAREHOUSE/AIRWING.
-
-`OMW_AirOpsCampaignStateInitializer` verwendet wegen des aktuellen generischen Node-Schemas ausdrücklich gekennzeichnete logische `airbaseName`-Labels. Diese Labels dürfen niemals an DCS-/MOOSE-Airbase-, WAREHOUSE- oder AIRWING-APIs übergeben werden.
-
-### 7.3 Ressourcenvertrag
+Die Knoten `OFFMAP_MANAS` und `OFFMAP_AL_UDEID` sind reine CampaignState-Domänenressourcen, keine DCS-Airbases und keine MOOSE WAREHOUSE/AIRWING-Knoten.
 
 Verfügbarkeitsressource:
 
@@ -232,11 +137,9 @@ resourceClass: AIRCRAFT_LOSS_AUDIT
 initial: 0 per source node
 ```
 
-`AIRCRAFT_KC135_LOST` ist ein **kumulativer Audit-Zähler**. Er ist keine Verfügbarkeitsquelle und wird von `CanMaterialize()` nicht ausgewertet.
+`AIRCRAFT_KC135_LOST` ist nur kumulativer Audit-Zähler und keine Verfügbarkeitsquelle.
 
-Die Daten liegen in `scripts/logistics/OMW_AARStrategicStock.lua`.
-
-## 8. AAR-Adaptervertrag
+## 7. AAR-Adaptervertrag
 
 Produktive Grenze:
 
@@ -248,12 +151,7 @@ OnLost(selection, runtime, reason)
 ReconcileRestore()
 ```
 
-Implementierung:
-
-- `scripts/air-operations/OMW_AAR_CampaignStateAdapter.lua`
-- `scripts/air-operations/OMW_AAR_RuntimeIntegration.lua`
-
-### 8.1 Materialisierung
+Materialisierung:
 
 ```text
 CanMaterialize
@@ -265,24 +163,18 @@ OnMaterialized
 -> transactionId = AAR-KC135-COMMIT:<runtimeId>
 ```
 
-Die `runtimeId` ist ausschließlich technische Korrelations-/Exactly-once-ID, keine strategische Tail Number.
-
-### 8.2 Successful Handoff
+Successful Handoff:
 
 ```text
-confirmed external-gate handoff
+confirmed external handoff
 -> CreditResourceOnce 1 AIRCRAFT_KC135
 -> creditId = AAR-KC135-HANDOFF:<runtimeId>
 -> immediately available again
 ```
 
-MissionDemand-Ende löst im aktuellen Continuous-Core-Modell **keinen** AAR-Handoff aus. Handoff-Recredit erfolgt ausschließlich für einen tatsächlich egressenden physischen Tanker, beispielsweise nach Scheduled Relief oder FuelLow.
+Ein Handoff-Credit setzt einen tatsächlich egressenden physischen Tanker und bestätigten External-Handoff voraus.
 
-Ohne bestätigten Handoff gibt es keine normale Handoff-Recreditierung.
-
-### 8.3 Aircraft Loss
-
-Der produktive AAR-Controller verwendet den source-reviewed MOOSE-`FLIGHTGROUP`-`Dead`-/`OnAfterDead`-Pfad:
+Aircraft Loss:
 
 ```text
 FLIGHTGROUP Dead
@@ -293,17 +185,13 @@ FLIGHTGROUP Dead
 -> creditId = AAR-KC135-LOSS:<runtimeId>
 ```
 
-Damit sinkt der überlebende strategische Pool permanent um die bereits konsumierte KC-135. Der Loss-Audit wächst genau einmal. Solange die kontinuierliche Core-Abdeckung für den betroffenen Track gilt, wird anschließend eine Ersatzrepräsentation materialisiert, sofern strategischer Bestand verfügbar ist.
+Ein Ersatz wird nur materialisiert, wenn der betroffene Track nach seinem Verfügbarkeitsmodell weiterhin benötigt/offen ist.
 
-Dieser neue Continuous-Core-Loss-/Replacement-Pfad ist implementiert und source-reviewed, aber noch nicht DCS-validiert.
+## 8. AAR-Restore-Reconciliation
 
-## 9. AAR-Restore-Reconciliation
+`OMW_AAR_RuntimeIntegration.Attach(...)` erhält den bereits erzeugten oder wiederhergestellten einzigen CampaignState-Store. Bei `restored=true` erfolgt `Adapter:ReconcileRestore()` vor neuer AAR-Materialisierung.
 
-`OMW_AAR_RuntimeIntegration.Attach(...)` erhält den bereits erzeugten oder wiederhergestellten CampaignState-Store. Es erzeugt **keine zweite CampaignState-Instanz**.
-
-Bei `restored=true` ruft es vor der Controller-Bindung `Adapter:ReconcileRestore()` auf. Nach der Adapterbindung startet der Controller die kontinuierliche sechs-Track-Core-Abdeckung.
-
-Reconciliation für konsumierte AAR-Commitments:
+Danach startet der Controller **nur die vier STANDARD-Tracks**. Die RESERVE-Tracks `LISA` und `MOE` bleiben ohne MissionDemand unbesetzt.
 
 ```text
 loss credit exists
@@ -321,66 +209,84 @@ no handoff/loss/restart credit exists
 -> reason = AAR_RESTART_RECONCILIATION
 ```
 
-Das dritte Ergebnis behauptet **keinen physischen Handoff**. Es ist die deterministische strategische Reconciliation des count-basierten No-tail-Modells nach Mission-/Serverrestart.
+Das letzte Ergebnis behauptet keinen physischen Handoff, sondern reconciled ein flüchtiges Runtime-Commitment im count-basierten No-tail-Modell.
 
-Grenze:
+## 9. MissionDemand und AAR-Verfügbarkeit
+
+Die AAR-Betriebsbaseline trennt STANDARD und RESERVE:
 
 ```text
-physical loss
--> server failure before Dead/OnLost was persisted
--> snapshot contains no proof of that loss
--> restore cannot reconstruct an unpersisted physical fact
+STANDARD / bis auf weiteres kontinuierlich:
+NELSON FAST
+PATTY SLOW
+MILHOUSE SLOW
+KRUSTY SLOW
+
+RESERVE / nur bei passendem MissionDemand:
+LISA FAST
+MOE FAST
 ```
 
-Ohne per-tail persistente Runtime-Identität kann dieser Fall nicht nachträglich beweissicher unterschieden werden. OMW führt für den beschlossenen AAR-Scope bewusst kein per-tail-Modell ein.
-
-## 10. MissionDemand-Ende
-
-MissionDemand ist **nicht** Eigentümer der kontinuierlichen AAR-Core-Abdeckung.
-
-Für `COMPLETE`, `CANCELLED` und `ABORTED` gilt aktuell:
+Für STANDARD gilt:
 
 ```text
-MissionDemand ends
--> demand ownership removed from the matched core track
--> continuous core track remains active
+MissionDemand COMPLETE / CANCELLED / ABORTED
+-> Demand ownership ends
+-> Standard-Track remains active
 -> no demand-end egress
--> no demand-end handoff/recredit
 ```
 
-Eine spätere genehmigte ATO-/Zeitfensterlogik darf die Core-Verfügbarkeit oberhalb des Tanker-Lifecycles steuern. Diese spätere Steuerung ist nicht Bestandteil des aktuellen Acceptance-Scopes.
-
-## 11. Operative AAR-Concurrency
-
-Strategischer Stock und operative AAR-Concurrency bleiben getrennte Verantwortungen.
-
-Die für bestimmte AI-Unterstützungsmissionen bekannte `2/2/4`-Begrenzung gilt **nicht** für das AAR-Kernnetz.
-
-Produktiv gilt bis auf weiteres:
+Für RESERVE gilt:
 
 ```text
-6 Core-Tracks gleichzeitig aktiv:
-LISA      FAST
-MOE       FAST
-MILHOUSE  SLOW
-KRUSTY    SLOW
-PATTY     SLOW
-NELSON    FAST
+first matching demand
+-> open/materialize reserve track
 
+last matching demand ends
+-> stop further relief generation
+-> ACTIVE/RELIEF egress
+-> confirmed external handoff
+-> reserve track unoccupied
+```
+
+Die kontinuierliche STANDARD-Verfügbarkeit ist eine vorläufige OMW-Betriebsentscheidung, kein historischer Nachweis einer 24/7-CAS-/AAR-Abdeckung. Eine spätere genehmigte ATO-/Zeitfensterlogik darf sie ersetzen.
+
+## 10. Operative AAR-Concurrency
+
+Die AI-Unterstützungsregel `2/2/4` gilt **nicht** für AAR.
+
+```text
+steady state STANDARD = 4 physische KC-135
+RESERVE = +1 je geöffnetem Reserve-Track
+pro Track maximal 1 ACTIVE + 1 RELIEF
 kein globales AAR-Mission-Limit = 2
 kein globales AAR-Aircraft-Limit = 4
-
-pro Track maximal:
-1 ACTIVE
-1 RELIEF
-
-bei gleichzeitigem Relief aller sechs Tracks:
-bis zu 12 physische KC-135
 ```
 
-Der AAR-Controller beschränkt damit nur die physische Doppelbesetzung **desselben Tracks** auf Active+Relief. Der CampaignState-Adapter prüft ausschließlich strategische Verfügbarkeit. Der 60-s-Materialisierungsabstand innerhalb derselben Source Domain bleibt eine separate Spawn-/Sichtbarkeitsregel; MANAS und AL_UDEID dürfen parallel materialisieren.
+Der 60-s-Materialisierungsabstand gilt innerhalb derselben Source Domain; MANAS und AL UDEID dürfen parallel materialisieren.
 
-Die kontinuierliche Verfügbarkeit aller sechs Tracks ist eine vorläufige OMW-Betriebsentscheidung bis zu einer späteren genehmigten ATO-/Zeitfensterregel. Sie ist kein historischer 24/7-CAS-/AAR-Nachweis.
+## 11. FIR- und External-Handoff-Grenze
+
+Strategisches Settlement bleibt an den technischen External-Handoff gekoppelt, nicht an den FIR-Grenzübertritt.
+
+```text
+external spawn
+-> FIR ingress fix
+-> AAR track
+-> FIR egress fix
+-> external handoff
+-> strategic recredit + despawn
+```
+
+Aktuelle Zuordnung:
+
+```text
+NELSON/PATTY    -> EGPAN
+KRUSTY/MILHOUSE -> DAVER
+LISA/MOE        -> PINAX
+```
+
+Vollständiges ATS-Airway-Routing ist späterer Scope.
 
 ## 12. Produktionskomposition
 
@@ -394,42 +300,19 @@ CampaignState NEW/RESTORE
 -> MOOSE SPAWN / FLIGHTGROUP / AUFTRAG
 ```
 
-Nicht zulässig für dieselbe Off-map-KC-135-Verfügbarkeit:
-
-```text
-parallel MOOSE WAREHOUSE stock
-parallel AIRWING stock
-parallel DCS Warehouse stock
-parallel SPAWN inventory authority
-```
+Nicht zulässig für dieselbe Off-map-KC-135-Verfügbarkeit sind parallele MOOSE-WAREHOUSE-/AIRWING-/DCS-Warehouse-/SPAWN-Inventarautoritäten.
 
 ## 13. Verifikationsstatus
 
-Ältere Owner-lokale Source-/Build-Checkpoints bestätigen die jeweils dokumentierten Git-/Build-/Hash-Stände, aber kein DCS-Verhalten nachfolgender Änderungen.
-
-`AAR-PRODUCTION-FINAL-ACCEPTANCE-1` und die Zwischenfassung Acceptance-2 sind kein akzeptierter Finalstand. Die Versuche beziehungsweise Zwischenstände deckten einen RuntimeIntegration-Aufruffehler, die unzulässige Übertragung der AI-Unterstützungsregel `2/2/4` auf AAR, einen expliziten `SPAWN:InitSTN(...)`-Kollisionspfad und die noch nicht final festgelegten FLEX-Core-Profile auf.
-
-Der korrigierte gemeinsame Abschlusslauf ist:
+Acceptance-1/2/3 sind keine final akzeptierten Produktionsbaselines. Der korrigierte nächste gemeinsame Abschlusslauf ist:
 
 ```text
-AAR-PRODUCTION-FINAL-ACCEPTANCE-3
+AAR-PRODUCTION-FINAL-ACCEPTANCE-4
 ```
 
-Er prüft insbesondere:
+Er prüft die vier STANDARD-Tracks, demand-getriebene LISA/MOE-RESERVE, stabile Callsign-Familien, FIR-Fix-Routing, External-Handoff-Settlement, Scheduled/FuelLow-Relief, Loss und Restore-Reconciliation. Der neue Pfad bleibt bis zum realen dokumentierten DCS-PASS `SOURCE_REVIEWED` / `PLANNED`.
 
-- automatischen Start der sechs Core-Tracks;
-- `LISA=FAST`, `MOE=FAST`, `MILHOUSE/KRUSTY/PATTY=SLOW`, `NELSON=FAST`;
-- vier MANAS- und zwei AL_UDEID-Initialmaterialisierungen mit mindestens 60 s Same-source-Abstand und unabhängigen Source Domains;
-- MissionDemand-Attach ohne zusätzliche Materialisierung;
-- bis zu zwölf physische Tanker bei gleichzeitigem Relief aller sechs Tracks;
-- MOOSE-gemanagten STN-Readback;
-- exact-once Handoff-Settlement;
-- Demand-Ende ohne Core-Shutdown;
-- FuelLow-Relief;
-- Loss ohne Recredit plus Ersatzmaterialisierung;
-- Restore-Reconciliation.
-
-Die konkrete gemeinsame Acceptance-Matrix steht in:
+Die konkrete Acceptance-Matrix steht in:
 
 - [`OMW-AAR-ISAF-ACO`](29-isaf-2009-2013-air-to-air-refueling.md)
 - [`OMW-TEST-AAR-PRODUCTION-INTEGRATION`](../mission/tests/aar-production-integration/README.md)

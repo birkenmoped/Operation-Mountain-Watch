@@ -9,8 +9,8 @@ $sourceDir = Join-Path $repoRoot 'mission\tests\aar-production-integration\src'
 $distDir = Join-Path $repoRoot 'mission\tests\aar-production-integration\dist'
 $outputFile = Join-Path $distDir 'OMW_AAR_Production_Final_Acceptance.lua'
 
-$builderVersion = 'AAR-PRODUCTION-FINAL-ACCEPTANCE-3'
-$testId = 'AAR-PRODUCTION-FINAL-ACCEPTANCE-3'
+$builderVersion = 'AAR-PRODUCTION-FINAL-ACCEPTANCE-4'
+$testId = 'AAR-PRODUCTION-FINAL-ACCEPTANCE-4'
 $mooseCommit = '73d3ed119cd9e7e3f2cfcabbaa34513d30529b54'
 $mooseSha256 = 'e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915'
 
@@ -45,29 +45,28 @@ $requirements = @(
   @{ File = 'Adapter'; Marker = 'function Adapter:OnLost' },
   @{ File = 'Adapter'; Marker = 'function Adapter:ReconcileRestore' },
   @{ File = 'RuntimeIntegration'; Marker = 'controller.StartContinuousCoreCoverage()' },
-  @{ File = 'Controller'; Marker = 'CORE_TRACK_COUNT = 6' },
+  @{ File = 'Controller'; Marker = 'STANDARD_TRACK_COUNT = 4' },
+  @{ File = 'Controller'; Marker = 'RESERVE_TRACK_COUNT = 2' },
   @{ File = 'Controller'; Marker = 'MAX_AIRCRAFT_PER_TRACK = 2' },
-  @{ File = 'Controller'; Marker = 'coreProfile = "FAST"' },
-  @{ File = 'Controller'; Marker = 'function Controller.StartContinuousCoreCoverage()' },
-  @{ File = 'Controller'; Marker = 'CORE_TRACK_RETAINED' },
+  @{ File = 'Controller'; Marker = 'stableSortieCallsign = true' },
+  @{ File = 'Controller'; Marker = 'firFixRoutingEnabled = true' },
+  @{ File = 'Controller'; Marker = 'airwaysRoutingEnabled = false' },
+  @{ File = 'Controller'; Marker = 'RESERVE_TRACK_EGRESS' },
+  @{ File = 'Controller'; Marker = 'runtime.flightGroup:AddWaypoint(runtime.externalHandoffCoord' },
   @{ File = 'Controller'; Marker = 'spawnedUnit:GetSTN()' },
-  @{ File = 'Controller'; Marker = 'globalAarMissionLimit = false' },
-  @{ File = 'Controller'; Marker = 'globalAarAircraftLimit = false' },
   @{ File = 'Controller'; Marker = 'function flightGroup:OnAfterDead' },
-  @{ File = 'Harness'; Marker = 'AAR-PRODUCTION-FINAL-ACCEPTANCE-3' },
+  @{ File = 'Harness'; Marker = 'AAR-PRODUCTION-FINAL-ACCEPTANCE-4' },
   @{ File = 'Harness'; Marker = 'AAR_POLICY_BASELINE_PASS' },
   @{ File = 'Harness'; Marker = 'RESTORE_RECONCILIATION_PASS' },
   @{ File = 'Harness'; Marker = 'POOL_BASELINE_PASS' },
-  @{ File = 'Harness'; Marker = 'SOURCE_INDEPENDENCE_PASS' },
-  @{ File = 'Harness'; Marker = 'CORE_TRACKS_6_SIMULTANEOUS_PASS' },
-  @{ File = 'Harness'; Marker = 'MISSION_DEMAND_ATTACH_PASS' },
-  @{ File = 'Harness'; Marker = 'RELIEF_6_TRACKS_12_AIRCRAFT_PASS' },
-  @{ File = 'Harness'; Marker = 'STATION_IDENTITY_PASS' },
-  @{ File = 'Harness'; Marker = 'SCHEDULED_HANDOFF_SETTLEMENT_PASS' },
+  @{ File = 'Harness'; Marker = 'STANDARD_TRACKS_4_PASS' },
+  @{ File = 'Harness'; Marker = 'FIR_INGRESS_STANDARD_PASS' },
+  @{ File = 'Harness'; Marker = 'STABLE_CALLSIGN_AND_STATION_IDENTITY_PASS' },
+  @{ File = 'Harness'; Marker = 'SINGLE_SCHEDULED_RELIEF_PASS' },
   @{ File = 'Harness'; Marker = 'FUEL_LOW_RELIEF_PASS' },
+  @{ File = 'Harness'; Marker = 'RESERVE_DEMAND_LIFECYCLE_PASS' },
   @{ File = 'Harness'; Marker = 'unit:Explode(LOSS_EXPLOSION_POWER)' },
   @{ File = 'Harness'; Marker = 'AIRCRAFT_LOSS_PASS' },
-  @{ File = 'Harness'; Marker = 'DEMAND_END_PASS' },
   @{ File = 'Harness'; Marker = 'FINAL_STEADY_STATE_PASS' },
   @{ File = 'Harness'; Marker = 'RESULT PASS' }
 )
@@ -90,7 +89,9 @@ $forbiddenPatterns = @(
   'os\.execute',
   'MAX_CONCURRENT_SUPPORT_MISSIONS',
   'MAX_CONCURRENT_SUPPORT_AIRCRAFT',
-  'spawner:InitSTN\('
+  'spawner:InitSTN\(',
+  'CORE_TRACKS_6_SIMULTANEOUS_PASS',
+  'RELIEF_6_TRACKS_12_AIRCRAFT_PASS'
 )
 
 foreach ($entry in $content.GetEnumerator()) {
@@ -102,9 +103,7 @@ foreach ($entry in $content.GetEnumerator()) {
 }
 
 New-Item -ItemType Directory -Path $distDir -Force | Out-Null
-if (Test-Path -LiteralPath $outputFile -PathType Leaf) {
-  Remove-Item -LiteralPath $outputFile -Force
-}
+if (Test-Path -LiteralPath $outputFile -PathType Leaf) { Remove-Item -LiteralPath $outputFile -Force }
 
 $commit = (& git -C $repoRoot rev-parse HEAD).Trim()
 $generatedUtc = (Get-Date).ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ssZ')
@@ -115,10 +114,11 @@ $header = @"
 -- GitCommit: $commit
 -- GeneratedUtc: $generatedUtc
 -- Gate/Test-ID: $testId
--- Scope: final combined AAR production acceptance for continuous six-track coverage, LISA/MOE FAST, source spacing, CampaignState pools/accounting, per-track active+relief lifecycle, transit/station identity, scheduled/FuelLow relief, MissionDemand attachment/end without core shutdown, handoff, loss replacement and restore reconciliation.
--- Current availability policy: the six selected core tracks are treated as continuously available until a later ATO/time-window policy is approved; this test does not claim historical 24/7 coverage or perform a 24-hour endurance run.
--- Test acceleration: track-entry coordinates and scheduled-relief timestamps are controlled by the harness; no physical aircraft is teleported.
--- Egress settlement: outgoing tankers must still reach the productive external gate before handoff/recredit.
+-- Scope: final combined AAR production acceptance for four standard tracks, two demand-driven FAST reserve tracks, stable callsign families, source spacing, CampaignState pools/accounting, FIR-fix ingress/egress, one scheduled relief, FuelLow relief, reserve start/stop, loss replacement and restore reconciliation.
+-- FIR routing: NELSON/PATTY via EGPAN, KRUSTY/MILHOUSE via DAVER, LISA/MOE via PINAX. External spawn/handoff remains separate. Full ATS-airway routing is deferred.
+-- Test acceleration: track-entry monitoring is controlled only after the physical tanker naturally passes its configured FIR ingress fix; no physical aircraft is teleported.
+-- Scheduled relief: only one standard track is accelerated at a time; no six-track simultaneous relief stress state.
+-- Egress settlement: outgoing tankers must pass their FIR egress fix and then reach the external handoff point before recredit/despawn.
 -- Loss injection: public MOOSE UNIT:Explode() is used only on the designated test tanker to exercise the real FLIGHTGROUP Dead/OnAfterDead path.
 -- Restore: CampaignState snapshot/Restore is exercised in-process; this is not a physical DCS server restart.
 -- No automated MIZ mutation.
@@ -142,23 +142,27 @@ Write-Host "Built: $outputFile"
 Write-Host "BuilderVersion: $builderVersion"
 Write-Host "TestId: $testId"
 Write-Host "GeneratedUtc: $generatedUtc"
-Write-Host "CoreTracks: 6"
-Write-Host "LISAProfile: FAST"
-Write-Host "MOEProfile: FAST"
-Write-Host "ContinuousAvailabilityPolicy: true"
-Write-Host "GlobalAarMissionLimit: false"
-Write-Host "GlobalAarAircraftLimit: false"
-Write-Host "MaxAircraftPerTrack: 2"
-Write-Host "ExpectedMaxPhysicalDuringAllTrackRelief: 12"
-Write-Host "MooseManagedSpawnSTN: true"
-Write-Host "ControlledTrackEntry: true"
-Write-Host "ControlledReliefTiming: true"
-Write-Host "PhysicalTeleport: false"
-Write-Host "NaturalIngressGateTransitRequired: false"
-Write-Host "NaturalEgressGateHandoffRequired: true"
-Write-Host "LossInjection: MOOSE UNIT:Explode"
-Write-Host "RestoreMode: in-process CampaignState Snapshot/Restore"
-Write-Host "MizMutation: false"
+Write-Host 'StandardTracks: 4'
+Write-Host 'ReserveTracks: 2'
+Write-Host 'LISAProfile: FAST'
+Write-Host 'LISAAvailability: RESERVE'
+Write-Host 'MOEProfile: FAST'
+Write-Host 'MOEAvailability: RESERVE'
+Write-Host 'StableSortieCallsign: true'
+Write-Host 'FIRFixRouting: true'
+Write-Host 'AirwaysRouting: false'
+Write-Host 'SingleScheduledRelief: true'
+Write-Host 'GlobalAarMissionLimit: false'
+Write-Host 'GlobalAarAircraftLimit: false'
+Write-Host 'MaxAircraftPerTrack: 2'
+Write-Host 'MooseManagedSpawnSTN: true'
+Write-Host 'ControlledTrackEntryAfterFIR: true'
+Write-Host 'PhysicalTeleport: false'
+Write-Host 'NaturalFIRIngressRequired: true'
+Write-Host 'NaturalFIREgressAndExternalHandoffRequired: true'
+Write-Host 'LossInjection: MOOSE UNIT:Explode'
+Write-Host 'RestoreMode: in-process CampaignState Snapshot/Restore'
+Write-Host 'MizMutation: false'
 Write-Host "MOOSECommit: $mooseCommit"
 Write-Host "MooseLuaSHA256: $mooseSha256"
 Write-Host "GitCommit: $commit"

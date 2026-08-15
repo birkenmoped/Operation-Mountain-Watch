@@ -1,10 +1,9 @@
 -- Operation Mountain Watch - production AAR demand and tanker lifecycle controller.
 --
 -- MOOSE-first boundary:
---   * OMW maintains the approved continuous six-track AAR core baseline.
---   * MissionDemand attaches to a compatible already-operated core track; it does not create or close that track.
+--   * OMW maintains four standard AAR tracks and two demand-driven reserve tracks.
 --   * MOOSE SPAWN/FLIGHTGROUP/AUFTRAG/SCHEDULER execute the physical lifecycle.
---   * OMW only orchestrates station ownership, relief timing, identity handover and per-track concurrency.
+--   * OMW orchestrates track ownership, relief timing, stable sortie identity and FIR/off-map routing.
 --   * CampaignState remains the strategic availability authority through the injected adapter.
 
 OMW = OMW or {}
@@ -16,18 +15,29 @@ local MOOSE_COMMIT = "73d3ed119cd9e7e3f2cfcabbaa34513d30529b54"
 local MOOSE_SHA256 = "e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915"
 local SOURCE_SPAWN_INTERVAL_SEC = 60
 local HANDOFF_RADIUS_NM = 10
+local FIR_FIX_RADIUS_NM = 5
 local TRACK_ENTRY_RADIUS_NM = 5
 local DISPATCH_INTERVAL_SEC = 5
 local TRANSIT_SPEED_KT = 300
 local LEG_NM = 35
 local STATION_CYCLE_SEC = 3 * 60 * 60
 local RELIEF_HANDOVER_ETA_SEC = 5 * 60
-local CORE_TRACK_COUNT = 6
+local STANDARD_TRACK_COUNT = 4
+local RESERVE_TRACK_COUNT = 2
 local MAX_AIRCRAFT_PER_TRACK = 2
 
-local GATES = {
+-- Technical off-map physical lifecycle points. These are deliberately not FIR entry/exit fixes.
+local EXTERNAL_POINTS = {
   MANAS = { lat = 38.83163, lon = 70.95271 },
   AL_UDEID = { lat = 28.90264890, lon = 64.61166667 },
+}
+
+-- Kabul FIR entry/exit fixes. Full ATS-airway routing is intentionally deferred.
+-- DAVER uses the project/M375 route-table coordinate; the 2011 ENR 1.10 table contains a conflicting entry.
+local FIR_FIXES = {
+  EGPAN = { lat = 38.41666667, lon = 70.73333333 },
+  PINAX = { lat = 37.25000000, lon = 69.10000000 },
+  DAVER = { lat = 29.57166667, lon = 64.67666667 },
 }
 
 local TRANSIT = {
@@ -39,82 +49,68 @@ local TRANSIT = {
 local AREAS = {
   LISA = {
     template = "OMW_AAR_KC135_LISA",
-    callsignId = CALLSIGN.Tanker.Texaco, callsignName = "Texaco", callsignMinor = 3, callsignMajor = 1,
+    callsignId = CALLSIGN.Tanker.Texaco, callsignName = "Texaco", callsignNumber = 3,
     lat = 33.66624916, lon = 61.81294477, headingDeg = 4.269,
-    sourceDomain = "MANAS", transitProfile = "MANAS_WEST_HIGH", coreProfile = "FAST",
+    sourceDomain = "MANAS", transitProfile = "MANAS_WEST_HIGH", firFix = "PINAX",
+    availability = "RESERVE", coreProfile = "FAST",
     frequencyMHz = 235.900, tacanChannel = 50, tacanIdent = "LIS",
     fuelLowPct = 24, initialFuelPct = 96,
     profiles = { SLOW = { altitudeFt = 22000, speedKt = 220 }, FAST = { altitudeFt = 25000, speedKt = 300 } },
   },
   MOE = {
     template = "OMW_AAR_KC135_MOE",
-    callsignId = CALLSIGN.Tanker.Texaco, callsignName = "Texaco", callsignMinor = 4, callsignMajor = 1,
+    callsignId = CALLSIGN.Tanker.Texaco, callsignName = "Texaco", callsignNumber = 4,
     lat = 35.07603944, lon = 65.32603438, headingDeg = 304.682,
-    sourceDomain = "MANAS", transitProfile = "MANAS_WEST_HIGH", coreProfile = "FAST",
+    sourceDomain = "MANAS", transitProfile = "MANAS_WEST_HIGH", firFix = "PINAX",
+    availability = "RESERVE", coreProfile = "FAST",
     frequencyMHz = 243.400, tacanChannel = 52, tacanIdent = "MOE",
     fuelLowPct = 22, initialFuelPct = 96,
     profiles = { SLOW = { altitudeFt = 24000, speedKt = 220 }, FAST = { altitudeFt = 27000, speedKt = 300 } },
   },
   MILHOUSE = {
     template = "OMW_AAR_KC135_MILHOUSE",
-    callsignId = CALLSIGN.Tanker.Shell, callsignName = "Shell", callsignMinor = 2, callsignMajor = 1,
+    callsignId = CALLSIGN.Tanker.Shell, callsignName = "Shell", callsignNumber = 2,
     lat = 33.44219603, lon = 65.46466360, headingDeg = 63.607,
-    sourceDomain = "AL_UDEID", transitProfile = "AL_UDEID_NORTH_HIGH", coreProfile = "SLOW",
+    sourceDomain = "AL_UDEID", transitProfile = "AL_UDEID_NORTH_HIGH", firFix = "DAVER",
+    availability = "STANDARD", coreProfile = "SLOW",
     frequencyMHz = 272.600, tacanChannel = 58, tacanIdent = "MIL",
     fuelLowPct = 27, initialFuelPct = 90,
     profiles = { SLOW = { altitudeFt = 22000, speedKt = 220 } },
   },
   KRUSTY = {
     template = "OMW_AAR_KC135_KRUSTY",
-    callsignId = CALLSIGN.Tanker.Arco, callsignName = "Arco", callsignMinor = 2, callsignMajor = 1,
+    callsignId = CALLSIGN.Tanker.Arco, callsignName = "Arco", callsignNumber = 2,
     lat = 32.65123012, lon = 68.15946309, headingDeg = 212.350,
-    sourceDomain = "AL_UDEID", transitProfile = "AL_UDEID_NORTH_HIGH", coreProfile = "SLOW",
+    sourceDomain = "AL_UDEID", transitProfile = "AL_UDEID_NORTH_HIGH", firFix = "DAVER",
+    availability = "STANDARD", coreProfile = "SLOW",
     frequencyMHz = 258.300, tacanChannel = 42, tacanIdent = "KRU",
     fuelLowPct = 27, initialFuelPct = 90,
     profiles = { SLOW = { altitudeFt = 22000, speedKt = 220 } },
   },
   PATTY = {
     template = "OMW_AAR_KC135_PATTY",
-    callsignId = CALLSIGN.Tanker.Texaco, callsignName = "Texaco", callsignMinor = 2, callsignMajor = 1,
+    callsignId = CALLSIGN.Tanker.Texaco, callsignName = "Texaco", callsignNumber = 2,
     lat = 34.97134133, lon = 71.47789605, headingDeg = 89.662,
-    sourceDomain = "MANAS", transitProfile = "MANAS_EAST_HIGH", coreProfile = "SLOW",
+    sourceDomain = "MANAS", transitProfile = "MANAS_EAST_HIGH", firFix = "EGPAN",
+    availability = "STANDARD", coreProfile = "SLOW",
     frequencyMHz = 237.300, tacanChannel = 48, tacanIdent = "PAT",
     fuelLowPct = 21, initialFuelPct = 96,
     profiles = { SLOW = { altitudeFt = 24000, speedKt = 220 } },
   },
   NELSON = {
     template = "OMW_AAR_KC135_NELSON",
-    callsignId = CALLSIGN.Tanker.Texaco, callsignName = "Texaco", callsignMinor = 1, callsignMajor = 1,
+    callsignId = CALLSIGN.Tanker.Texaco, callsignName = "Texaco", callsignNumber = 1,
     lat = 36.37666667, lon = 71.01833333, headingDeg = 10.428,
-    sourceDomain = "MANAS", transitProfile = "MANAS_EAST_HIGH", coreProfile = "FAST",
+    sourceDomain = "MANAS", transitProfile = "MANAS_EAST_HIGH", firFix = "EGPAN",
+    availability = "STANDARD", coreProfile = "FAST",
     frequencyMHz = 384.400, tacanChannel = 47, tacanIdent = "NEL",
     fuelLowPct = 20, initialFuelPct = 96,
     profiles = { FAST = { altitudeFt = 27500, speedKt = 300 } },
   },
 }
 
--- Interleave source domains so both off-map source queues can start independently.
-local CORE_AREA_ORDER = { "NELSON", "KRUSTY", "PATTY", "MILHOUSE", "LISA", "MOE" }
-
--- Transit callsigns are OMW-owned identities. Link-16 STN allocation is left to the
--- pinned MOOSE SPAWN implementation, which resolves template STN collisions internally.
-local TRANSIT_CALLSIGNS = {
-  { id = CALLSIGN.Tanker.Texaco, name = "Texaco", number = 5 },
-  { id = CALLSIGN.Tanker.Texaco, name = "Texaco", number = 6 },
-  { id = CALLSIGN.Tanker.Texaco, name = "Texaco", number = 7 },
-  { id = CALLSIGN.Tanker.Texaco, name = "Texaco", number = 8 },
-  { id = CALLSIGN.Tanker.Texaco, name = "Texaco", number = 9 },
-  { id = CALLSIGN.Tanker.Arco, name = "Arco", number = 5 },
-  { id = CALLSIGN.Tanker.Arco, name = "Arco", number = 6 },
-  { id = CALLSIGN.Tanker.Arco, name = "Arco", number = 7 },
-  { id = CALLSIGN.Tanker.Arco, name = "Arco", number = 8 },
-  { id = CALLSIGN.Tanker.Arco, name = "Arco", number = 9 },
-  { id = CALLSIGN.Tanker.Shell, name = "Shell", number = 5 },
-  { id = CALLSIGN.Tanker.Shell, name = "Shell", number = 6 },
-  { id = CALLSIGN.Tanker.Shell, name = "Shell", number = 7 },
-  { id = CALLSIGN.Tanker.Shell, name = "Shell", number = 8 },
-  { id = CALLSIGN.Tanker.Shell, name = "Shell", number = 9 },
-}
+-- Interleave source domains so MANAS and AL_UDEID may start independently while each source keeps 60 s spacing.
+local STANDARD_AREA_ORDER = { "NELSON", "KRUSTY", "PATTY", "MILHOUSE" }
 
 local state = {
   strategicAdapter = nil,
@@ -123,7 +119,7 @@ local state = {
   runtimesById = {},
   lastSpawnAtBySource = {},
   spawnersByArea = {},
-  transitCallsignInUse = {},
+  callsignInUse = {},
   dispatcher = nil,
   stationMonitor = nil,
   nextRuntimeId = 0,
@@ -163,22 +159,25 @@ local function normalizeDemand(demand)
   }
 end
 
-local function coreSelection(area)
+local function trackSelection(area, missionDemandId)
   local areaSpec = AREAS[area]
-  if not areaSpec then fail("unknown core AAR area=" .. tostring(area)) end
+  if not areaSpec then fail("unknown AAR area=" .. tostring(area)) end
   local profile = areaSpec.coreProfile
-  if not areaSpec.profiles[profile] then fail("missing core profile for area=" .. tostring(area)) end
+  if not areaSpec.profiles[profile] then fail("missing profile for area=" .. tostring(area)) end
+  local continuous = areaSpec.availability == "STANDARD"
   return {
-    missionDemandId = "AAR-CORE-" .. area,
+    missionDemandId = missionDemandId or (continuous and ("AAR-CORE-" .. area) or ("AAR-RESERVE-" .. area)),
     receiverProfile = profile,
     requestedReceiverProfile = profile,
-    operationsArea = "CORE",
-    supportMode = "CONTINUOUS",
-    priority = "CORE_CONTINUOUS",
+    operationsArea = continuous and "CORE" or "RESERVE",
+    supportMode = continuous and "CONTINUOUS" or "DEMAND",
+    priority = continuous and "CORE_CONTINUOUS" or "RESERVE_DEMAND",
     area = area,
     sourceDomain = areaSpec.sourceDomain,
     transitProfile = areaSpec.transitProfile,
-    continuousCore = true,
+    firFix = areaSpec.firFix,
+    continuousCore = continuous,
+    availability = areaSpec.availability,
   }
 end
 
@@ -198,22 +197,15 @@ function Controller.SelectArea(demand)
   local areaSpec = AREAS[area]
   local trackProfile = areaSpec.coreProfile
   if d.receiverProfile ~= trackProfile then
-    return nil, string.format("CORE_TRACK_PROFILE_MISMATCH area=%s requested=%s coreProfile=%s",
-      area, d.receiverProfile, trackProfile)
+    return nil, string.format("TRACK_PROFILE_MISMATCH area=%s requested=%s trackProfile=%s", area, d.receiverProfile, trackProfile)
   end
 
-  return {
-    missionDemandId = d.missionDemandId,
-    receiverProfile = trackProfile,
-    requestedReceiverProfile = d.receiverProfile,
-    operationsArea = d.operationsArea,
-    supportMode = d.supportMode,
-    priority = d.priority,
-    area = area,
-    sourceDomain = areaSpec.sourceDomain,
-    transitProfile = areaSpec.transitProfile,
-    continuousCore = true,
-  }
+  local selection = trackSelection(area, d.missionDemandId)
+  selection.requestedReceiverProfile = d.receiverProfile
+  selection.operationsArea = d.operationsArea
+  selection.supportMode = d.supportMode
+  selection.priority = d.priority
+  return selection
 end
 
 function Controller.SetStrategicAdapter(adapter)
@@ -275,8 +267,14 @@ end
 local function countActiveTracks()
   local count = 0
   for _, station in pairs(state.stationsByKey) do
-    if station.coverageClaimed then count = count + 1 end
+    if station.coverageClaimed and not station.closed then count = count + 1 end
   end
+  return count
+end
+
+local function countDemands(station)
+  local count = 0
+  for _ in pairs(station.demandsById) do count = count + 1 end
   return count
 end
 
@@ -298,20 +296,27 @@ local function estimateEtaSec(flightGroup, coordinate)
   return distanceNm and (distanceNm / TRANSIT_SPEED_KT) * 3600 or nil, distanceNm
 end
 
-local function allocateTransitCallsign(runtimeId)
-  for index, slot in ipairs(TRANSIT_CALLSIGNS) do
-    if not state.transitCallsignInUse[index] then
-      state.transitCallsignInUse[index] = runtimeId
-      return { index = index, id = slot.id, name = slot.name, number = slot.number, stn = nil }
-    end
-  end
-  fail("no free transit tanker callsign slot")
+local function callsignKey(name, number)
+  return tostring(name) .. ":" .. tostring(number)
 end
 
-local function releaseTransitCallsign(runtime)
-  local transit = runtime and runtime.transitCallsign
-  if transit and state.transitCallsignInUse[transit.index] == runtime.runtimeId then
-    state.transitCallsignInUse[transit.index] = nil
+local function allocateSortieCallsign(areaSpec, runtimeId)
+  local preferred = areaSpec.callsignNumber
+  for offset = 0, 8 do
+    local number = ((preferred - 1 + offset) % 9) + 1
+    local key = callsignKey(areaSpec.callsignName, number)
+    if not state.callsignInUse[key] then
+      state.callsignInUse[key] = runtimeId
+      return { key = key, id = areaSpec.callsignId, name = areaSpec.callsignName, number = number, stn = nil }
+    end
+  end
+  fail("no free tanker callsign in family=" .. tostring(areaSpec.callsignName))
+end
+
+local function releaseSortieCallsign(runtime)
+  local callsign = runtime and runtime.sortieCallsign
+  if callsign and state.callsignInUse[callsign.key] == runtime.runtimeId then
+    state.callsignInUse[callsign.key] = nil
   end
 end
 
@@ -328,21 +333,19 @@ local function deactivateStationIdentity(runtime)
   if not runtime or not runtime.stationIdentityActive then return end
   runtime.flightGroup:TurnOffRadio()
   runtime.flightGroup:TurnOffTACAN()
-  runtime.flightGroup:SwitchCallsign(runtime.transitCallsign.id, runtime.transitCallsign.number)
   runtime.stationIdentityActive = false
-  log(string.format("STATION_IDENTITY_OFF runtime=%s area=%s transitCallsign=%s%d", runtime.runtimeId,
-    runtime.selection.area, runtime.transitCallsign.name, runtime.transitCallsign.number))
+  log(string.format("STATION_IDENTITY_OFF runtime=%s area=%s callsign=%s%d-1", runtime.runtimeId,
+    runtime.selection.area, runtime.sortieCallsign.name, runtime.sortieCallsign.number))
 end
 
 local function activateStationIdentity(runtime)
   if runtime.stationIdentityActive then return end
   local areaSpec = runtime.areaSpec
-  runtime.flightGroup:SwitchCallsign(areaSpec.callsignId, areaSpec.callsignMinor)
   runtime.flightGroup:SwitchRadio(areaSpec.frequencyMHz, 0)
   runtime.flightGroup:SwitchTACAN(areaSpec.tacanChannel, areaSpec.tacanIdent, nil, "Y")
   runtime.stationIdentityActive = true
   log(string.format("STATION_IDENTITY_ON runtime=%s area=%s callsign=%s%d-1 radioMHz=%.3f tacan=%dY ident=%s",
-    runtime.runtimeId, runtime.selection.area, areaSpec.callsignName, areaSpec.callsignMinor,
+    runtime.runtimeId, runtime.selection.area, runtime.sortieCallsign.name, runtime.sortieCallsign.number,
     areaSpec.frequencyMHz, areaSpec.tacanChannel, areaSpec.tacanIdent))
 end
 
@@ -352,13 +355,26 @@ local function cancelToEgress(runtime, reason)
   runtime.egressOrdered = true
   runtime.egressReason = reason
   runtime.mission:Cancel()
-  log(string.format("EGRESS_ORDERED runtime=%s demand=%s area=%s profile=%s reason=%s", runtime.runtimeId,
-    runtime.selection.missionDemandId, runtime.selection.area, runtime.selection.receiverProfile, tostring(reason)))
+  log(string.format("EGRESS_ORDERED runtime=%s demand=%s area=%s profile=%s firFix=%s reason=%s",
+    runtime.runtimeId, runtime.selection.missionDemandId, runtime.selection.area,
+    runtime.selection.receiverProfile, runtime.firFixName, tostring(reason)))
   return true
 end
 
 local function queueMaterialization(selection, role, reliefReason)
   state.queue[#state.queue + 1] = { selection = selection, role = role, reliefReason = reliefReason }
+end
+
+local function removeQueuedForStation(station)
+  local remaining = {}
+  for _, request in ipairs(state.queue) do
+    if activeKey(request.selection) == station.key then
+      if request.role == "RELIEF" then station.reliefQueued = false else station.activeQueued = false end
+    else
+      remaining[#remaining + 1] = request
+    end
+  end
+  state.queue = remaining
 end
 
 local function queueActiveReplacement(station, reason)
@@ -371,7 +387,7 @@ local function queueActiveReplacement(station, reason)
 end
 
 local function scheduleCycle(station, runtime, timestamp)
-  local transitSec = (runtime.gateDistanceNm / TRANSIT_SPEED_KT) * 3600
+  local transitSec = (runtime.routeDistanceNm / TRANSIT_SPEED_KT) * 3600
   runtime.onStationAt = timestamp
   if station.closed then
     cancelToEgress(runtime, "TRACK_DISABLED")
@@ -403,8 +419,9 @@ local function promoteReliefOnTrack(station, relief, reason, timestamp)
   relief.reliefReason = reason
   activateStationIdentity(relief)
   scheduleCycle(station, relief, timestamp)
-  log(string.format("RELIEF_ON_STATION runtime=%s area=%s profile=%s reason=%s outgoingRuntime=%s",
-    relief.runtimeId, relief.selection.area, relief.selection.receiverProfile, tostring(reason),
+  log(string.format("RELIEF_ON_STATION runtime=%s area=%s profile=%s callsign=%s%d-1 reason=%s outgoingRuntime=%s",
+    relief.runtimeId, relief.selection.area, relief.selection.receiverProfile,
+    relief.sortieCallsign.name, relief.sortieCallsign.number, tostring(reason),
     outgoing and outgoing.runtimeId or "NONE"))
 end
 
@@ -415,7 +432,7 @@ handleRuntimeLoss = function(runtime, reason)
   local station = state.stationsByKey[activeKey(runtime.selection)]
 
   state.strategicAdapter:OnLost(runtime.selection, runtime, reason or "DEAD")
-  releaseTransitCallsign(runtime)
+  releaseSortieCallsign(runtime)
   state.runtimesById[runtime.runtimeId] = nil
 
   if station then
@@ -452,47 +469,52 @@ local function materialize(request)
   local areaSpec = AREAS[selection.area]
   local profile = areaSpec.profiles[selection.receiverProfile]
   local transit = TRANSIT[areaSpec.transitProfile]
-  local gate = GATES[areaSpec.sourceDomain]
+  local externalPoint = EXTERNAL_POINTS[areaSpec.sourceDomain]
+  local firFix = FIR_FIXES[areaSpec.firFix]
   local station = getOrCreateStation(selection)
 
-  if station.closed then fail("refusing materialization for disabled core track=" .. station.key) end
+  if station.closed then fail("refusing materialization for disabled track=" .. station.key) end
 
   state.nextRuntimeId = state.nextRuntimeId + 1
   local runtimeId = string.format("AAR-%04d", state.nextRuntimeId)
-  local transitCallsign = allocateTransitCallsign(runtimeId)
+  local sortieCallsign = allocateSortieCallsign(areaSpec, runtimeId)
 
-  local spawnCoord = COORDINATE:NewFromLLDD(gate.lat, gate.lon)
+  local spawnCoord = COORDINATE:NewFromLLDD(externalPoint.lat, externalPoint.lon)
   spawnCoord:SetAltitude(UTILS.FeetToMeters(transit.ingressFt), true)
-  local ingressCoord = COORDINATE:NewFromLLDD(gate.lat, gate.lon)
-  local egressCoord = COORDINATE:NewFromLLDD(gate.lat, gate.lon)
+  local firIngressCoord = COORDINATE:NewFromLLDD(firFix.lat, firFix.lon)
+  local firEgressCoord = COORDINATE:NewFromLLDD(firFix.lat, firFix.lon)
+  local externalHandoffCoord = COORDINATE:NewFromLLDD(externalPoint.lat, externalPoint.lon)
+  externalHandoffCoord:SetAltitude(UTILS.FeetToMeters(transit.egressFt), true)
   local trackCoord = COORDINATE:NewFromLLDD(areaSpec.lat, areaSpec.lon)
-  local gateDistanceNm = spawnCoord:Get2DDistance(trackCoord) / 1852
+  local spawnToFirNm = spawnCoord:Get2DDistance(firIngressCoord) / 1852
+  local firToTrackNm = firIngressCoord:Get2DDistance(trackCoord) / 1852
+  local routeDistanceNm = spawnToFirNm + firToTrackNm
 
   local spawner = getSpawner(selection.area, areaSpec)
-  spawner:InitCallSign(transitCallsign.id, transitCallsign.name, transitCallsign.number, 1)
-  spawner:InitHeading(spawnCoord:HeadingTo(trackCoord))
+  spawner:InitCallSign(sortieCallsign.id, sortieCallsign.name, sortieCallsign.number, 1)
+  spawner:InitHeading(spawnCoord:HeadingTo(firIngressCoord))
   spawner:InitSpeedKnots(TRANSIT_SPEED_KT)
   local group = spawner:SpawnFromCoordinate(spawnCoord)
   if not group then
-    releaseTransitCallsign({ runtimeId = runtimeId, transitCallsign = transitCallsign })
+    releaseSortieCallsign({ runtimeId = runtimeId, sortieCallsign = sortieCallsign })
     fail("failed to materialize tanker template=" .. tostring(areaSpec.template))
   end
 
   local spawnedUnit = group:GetUnit(1)
   local spawnedStn = spawnedUnit and spawnedUnit:GetSTN() or nil
   if not spawnedStn or tostring(spawnedStn) == "" then
-    releaseTransitCallsign({ runtimeId = runtimeId, transitCallsign = transitCallsign })
+    releaseSortieCallsign({ runtimeId = runtimeId, sortieCallsign = sortieCallsign })
     fail("spawned tanker has no Link-16 STN template=" .. tostring(areaSpec.template))
   end
-  transitCallsign.stn = tostring(spawnedStn)
+  sortieCallsign.stn = tostring(spawnedStn)
 
   local flightGroup = FLIGHTGROUP:New(group)
   if not flightGroup then fail("failed to create FLIGHTGROUP group=" .. tostring(group:GetName())) end
 
   local mission = AUFTRAG:NewTANKER(trackCoord, profile.altitudeFt, profile.speedKt, areaSpec.headingDeg, LEG_NM,
     Unit.RefuelingSystem.BOOM_AND_RECEPTACLE)
-  mission:SetMissionIngressCoord(ingressCoord, transit.ingressFt, TRANSIT_SPEED_KT)
-  mission:SetMissionEgressCoord(egressCoord, transit.egressFt, TRANSIT_SPEED_KT)
+  mission:SetMissionIngressCoord(firIngressCoord, transit.ingressFt, TRANSIT_SPEED_KT)
+  mission:SetMissionEgressCoord(firEgressCoord, transit.egressFt, TRANSIT_SPEED_KT)
 
   flightGroup:SetFuelLowRTB(false)
   flightGroup:SetFuelLowThreshold(areaSpec.fuelLowPct)
@@ -500,10 +522,14 @@ local function materialize(request)
   local runtime = {
     runtimeId = runtimeId, selection = selection, areaSpec = areaSpec, profile = profile, transit = transit,
     template = areaSpec.template, role = role, reliefReason = request.reliefReason, initialFuelPct = areaSpec.initialFuelPct,
-    group = group, flightGroup = flightGroup, mission = mission, ingressCoord = ingressCoord, egressCoord = egressCoord,
-    trackCoord = trackCoord, gateDistanceNm = gateDistanceNm, transitCallsign = transitCallsign,
-    stationIdentityActive = false, onStationAt = nil, materializedAt = now(), egressOrdered = false, egressReason = nil,
-    handoffComplete = false, lossHandled = false,
+    group = group, flightGroup = flightGroup, mission = mission,
+    spawnCoord = spawnCoord, firFixName = areaSpec.firFix, firIngressCoord = firIngressCoord, firEgressCoord = firEgressCoord,
+    externalHandoffCoord = externalHandoffCoord, trackCoord = trackCoord,
+    spawnToFirNm = spawnToFirNm, firToTrackNm = firToTrackNm, routeDistanceNm = routeDistanceNm,
+    sortieCallsign = sortieCallsign, transitCallsign = sortieCallsign,
+    firIngressPassed = false, firIngressPassedAt = nil, firEgressPassed = false, firEgressPassedAt = nil,
+    externalHandoffRouted = false, stationIdentityActive = false, onStationAt = nil, materializedAt = now(),
+    egressOrdered = false, egressReason = nil, handoffComplete = false, lossHandled = false,
   }
 
   function flightGroup:OnAfterFuelLow(From, Event, To)
@@ -533,7 +559,6 @@ local function materialize(request)
   flightGroup:AddMission(mission)
   flightGroup:TurnOffRadio()
   flightGroup:TurnOffTACAN()
-  flightGroup:SwitchCallsign(transitCallsign.id, transitCallsign.number)
 
   state.runtimesById[runtime.runtimeId] = runtime
   if role == "RELIEF" then
@@ -547,10 +572,10 @@ local function materialize(request)
   end
   state.strategicAdapter:OnMaterialized(selection, runtime)
 
-  log(string.format("MATERIALIZED runtime=%s role=%s demand=%s area=%s profile=%s source=%s group=%s transitCallsign=%s%d stn=%s activeTracks=%d aircraft=%d",
+  log(string.format("MATERIALIZED runtime=%s role=%s demand=%s area=%s profile=%s availability=%s source=%s firFix=%s group=%s callsign=%s%d-1 stn=%s activeTracks=%d aircraft=%d",
     runtime.runtimeId, runtime.role, selection.missionDemandId, selection.area, selection.receiverProfile,
-    selection.sourceDomain, group:GetName(), transitCallsign.name, transitCallsign.number, transitCallsign.stn,
-    countActiveTracks(), countPhysicalRuntimes()))
+    areaSpec.availability, selection.sourceDomain, areaSpec.firFix, group:GetName(),
+    sortieCallsign.name, sortieCallsign.number, sortieCallsign.stn, countActiveTracks(), countPhysicalRuntimes()))
   return runtime
 end
 
@@ -628,12 +653,22 @@ local function monitorStations()
   for _, station in pairs(state.stationsByKey) do
     if not station.closed then
       local active = station.activeRuntime
-      if active and active.flightGroup and active.flightGroup:IsAlive() and not active.onStationAt
-          and not active.egressOrdered and not active.lossHandled then
-        local distanceNm = getDistanceNm(active.flightGroup, active.trackCoord)
-        if distanceNm and distanceNm <= TRACK_ENTRY_RADIUS_NM then
-          activateStationIdentity(active)
-          scheduleCycle(station, active, timestamp)
+      if active and active.flightGroup and active.flightGroup:IsAlive() and not active.egressOrdered and not active.lossHandled then
+        if not active.firIngressPassed then
+          local firDistanceNm = getDistanceNm(active.flightGroup, active.firIngressCoord)
+          if firDistanceNm and firDistanceNm <= FIR_FIX_RADIUS_NM then
+            active.firIngressPassed = true
+            active.firIngressPassedAt = timestamp
+            log(string.format("FIR_INGRESS_PASSED runtime=%s area=%s fix=%s distanceNm=%.2f",
+              active.runtimeId, active.selection.area, active.firFixName, firDistanceNm))
+          end
+        end
+        if active.firIngressPassed and not active.onStationAt then
+          local distanceNm = getDistanceNm(active.flightGroup, active.trackCoord)
+          if distanceNm and distanceNm <= TRACK_ENTRY_RADIUS_NM then
+            activateStationIdentity(active)
+            scheduleCycle(station, active, timestamp)
+          end
         end
       end
 
@@ -644,40 +679,63 @@ local function monitorStations()
 
       local relief = station.reliefRuntime
       if relief and relief.flightGroup and relief.flightGroup:IsAlive() and not relief.egressOrdered and not relief.lossHandled then
-        local etaSec, distanceNm = estimateEtaSec(relief.flightGroup, relief.trackCoord)
-        local reason = station.reliefReason or relief.reliefReason or "SCHEDULED"
-        if etaSec and etaSec <= RELIEF_HANDOVER_ETA_SEC and not station.handoverArmed then
-          station.handoverArmed = true
-          if active and not active.egressOrdered and not active.lossHandled then
-            cancelToEgress(active, reason == "FUEL_LOW" and "FUEL_LOW_RELIEF" or "SCHEDULED_RELIEF")
+        if not relief.firIngressPassed then
+          local firDistanceNm = getDistanceNm(relief.flightGroup, relief.firIngressCoord)
+          if firDistanceNm and firDistanceNm <= FIR_FIX_RADIUS_NM then
+            relief.firIngressPassed = true
+            relief.firIngressPassedAt = timestamp
+            log(string.format("FIR_INGRESS_PASSED runtime=%s area=%s role=RELIEF fix=%s distanceNm=%.2f",
+              relief.runtimeId, relief.selection.area, relief.firFixName, firDistanceNm))
           end
-          log(string.format("RELIEF_FINAL_INGRESS runtime=%s area=%s reason=%s etaSec=%.0f distanceNm=%.1f",
-            relief.runtimeId, relief.selection.area, tostring(reason), etaSec, distanceNm or -1))
         end
-        if distanceNm and distanceNm <= TRACK_ENTRY_RADIUS_NM then
-          promoteReliefOnTrack(station, relief, reason, timestamp)
+        if relief.firIngressPassed then
+          local etaSec, distanceNm = estimateEtaSec(relief.flightGroup, relief.trackCoord)
+          local reason = station.reliefReason or relief.reliefReason or "SCHEDULED"
+          if etaSec and etaSec <= RELIEF_HANDOVER_ETA_SEC and not station.handoverArmed then
+            station.handoverArmed = true
+            if active and not active.egressOrdered and not active.lossHandled then
+              cancelToEgress(active, reason == "FUEL_LOW" and "FUEL_LOW_RELIEF" or "SCHEDULED_RELIEF")
+            end
+            log(string.format("RELIEF_FINAL_INGRESS runtime=%s area=%s reason=%s etaSec=%.0f distanceNm=%.1f",
+              relief.runtimeId, relief.selection.area, tostring(reason), etaSec, distanceNm or -1))
+          end
+          if distanceNm and distanceNm <= TRACK_ENTRY_RADIUS_NM then
+            promoteReliefOnTrack(station, relief, reason, timestamp)
+          end
         end
       end
     end
   end
 
   for runtimeId, runtime in pairs(state.runtimesById) do
-    if runtime.egressOrdered and not runtime.handoffComplete and not runtime.lossHandled then
-      local distanceNm = getDistanceNm(runtime.flightGroup, runtime.egressCoord)
-      if distanceNm and distanceNm <= HANDOFF_RADIUS_NM then
-        runtime.handoffComplete = true
-        deactivateStationIdentity(runtime)
-        state.strategicAdapter:OnHandoff(runtime.selection, runtime)
-        runtime.flightGroup:Despawn(1, true)
-        releaseTransitCallsign(runtime)
-        state.runtimesById[runtimeId] = nil
-        local station = state.stationsByKey[activeKey(runtime.selection)]
-        if station then
-          if station.activeRuntime == runtime then station.activeRuntime = nil end
-          if station.reliefRuntime == runtime then station.reliefRuntime = nil end
+    if runtime.egressOrdered and not runtime.handoffComplete and not runtime.lossHandled and runtime.flightGroup:IsAlive() then
+      if not runtime.firEgressPassed then
+        local firDistanceNm = getDistanceNm(runtime.flightGroup, runtime.firEgressCoord)
+        if firDistanceNm and firDistanceNm <= FIR_FIX_RADIUS_NM then
+          runtime.firEgressPassed = true
+          runtime.firEgressPassedAt = timestamp
+          runtime.flightGroup:AddWaypoint(runtime.externalHandoffCoord, TRANSIT_SPEED_KT, nil, runtime.transit.egressFt)
+          runtime.externalHandoffRouted = true
+          log(string.format("FIR_EGRESS_PASSED runtime=%s area=%s fix=%s distanceNm=%.2f action=ROUTE_EXTERNAL_HANDOFF",
+            runtime.runtimeId, runtime.selection.area, runtime.firFixName, firDistanceNm))
         end
-        log(string.format("OFFMAP_HANDOFF runtime=%s demand=%s area=%s distanceGateNm=%.2f action=DESPAWN",
-          runtime.runtimeId, runtime.selection.missionDemandId, runtime.selection.area, distanceNm))
+      else
+        local distanceNm = getDistanceNm(runtime.flightGroup, runtime.externalHandoffCoord)
+        if distanceNm and distanceNm <= HANDOFF_RADIUS_NM then
+          runtime.handoffComplete = true
+          deactivateStationIdentity(runtime)
+          state.strategicAdapter:OnHandoff(runtime.selection, runtime)
+          runtime.flightGroup:Despawn(1, true)
+          releaseSortieCallsign(runtime)
+          state.runtimesById[runtimeId] = nil
+          local station = state.stationsByKey[activeKey(runtime.selection)]
+          if station then
+            if station.activeRuntime == runtime then station.activeRuntime = nil end
+            if station.reliefRuntime == runtime then station.reliefRuntime = nil end
+          end
+          log(string.format("OFFMAP_HANDOFF runtime=%s demand=%s area=%s distanceExternalNm=%.2f action=DESPAWN",
+            runtime.runtimeId, runtime.selection.missionDemandId, runtime.selection.area, distanceNm))
+        end
       end
     end
   end
@@ -693,8 +751,8 @@ end
 
 function Controller.StartContinuousCoreCoverage()
   if not state.strategicAdapter then fail("SetStrategicAdapter must be called before StartContinuousCoreCoverage") end
-  for _, area in ipairs(CORE_AREA_ORDER) do
-    local selection = coreSelection(area)
+  for _, area in ipairs(STANDARD_AREA_ORDER) do
+    local selection = trackSelection(area)
     local station = getOrCreateStation(selection)
     station.selection = selection
     station.continuousCore = true
@@ -703,8 +761,8 @@ function Controller.StartContinuousCoreCoverage()
     if not station.activeRuntime and not station.reliefRuntime and not station.activeQueued then
       station.activeQueued = true
       queueMaterialization(selection, "ACTIVE", "CORE_START")
-      log(string.format("CORE_TRACK_QUEUED area=%s profile=%s source=%s",
-        selection.area, selection.receiverProfile, selection.sourceDomain))
+      log(string.format("STANDARD_TRACK_QUEUED area=%s profile=%s source=%s firFix=%s",
+        selection.area, selection.receiverProfile, selection.sourceDomain, selection.firFix))
     end
   end
   state.continuousCoreStarted = true
@@ -720,10 +778,10 @@ function Controller.SubmitDemand(demand)
     return nil, reason
   end
 
-  local core = coreSelection(selection.area)
-  local station = getOrCreateStation(core)
-  station.selection = core
-  station.continuousCore = true
+  local track = trackSelection(selection.area, selection.missionDemandId)
+  local station = getOrCreateStation(track)
+  station.selection = track
+  station.continuousCore = track.continuousCore == true
   station.closed = false
   station.closedReason = nil
   station.demandsById[selection.missionDemandId] = selection
@@ -732,8 +790,8 @@ function Controller.SubmitDemand(demand)
   if existing and existing.flightGroup and existing.flightGroup:IsAlive()
       and not existing.egressOrdered and not existing.lossHandled then
     ensureSchedulers()
-    log(string.format("DEMAND_ATTACHED demand=%s area=%s profile=%s action=ACTIVE_REUSED",
-      selection.missionDemandId, selection.area, selection.receiverProfile))
+    log(string.format("DEMAND_ATTACHED demand=%s area=%s profile=%s availability=%s action=ACTIVE_REUSED",
+      selection.missionDemandId, selection.area, selection.receiverProfile, track.availability))
     return existing, "ACTIVE_REUSED"
   end
   if station.reliefRuntime and station.reliefRuntime.flightGroup and station.reliefRuntime.flightGroup:IsAlive()
@@ -743,10 +801,12 @@ function Controller.SubmitDemand(demand)
   end
   if not station.activeQueued then
     station.activeQueued = true
-    queueMaterialization(core, "ACTIVE", "CORE_RECOVERY")
+    queueMaterialization(track, "ACTIVE", track.continuousCore and "CORE_RECOVERY" or "RESERVE_DEMAND")
+    log(string.format("TRACK_QUEUED demand=%s area=%s profile=%s availability=%s",
+      selection.missionDemandId, selection.area, selection.receiverProfile, track.availability))
   end
   ensureSchedulers()
-  return core, "CORE_TRACK_QUEUED"
+  return track, track.continuousCore and "CORE_TRACK_QUEUED" or "RESERVE_TRACK_QUEUED"
 end
 
 function Controller.EndDemand(demand, terminalStatus)
@@ -761,14 +821,37 @@ function Controller.EndDemand(demand, terminalStatus)
     return nil, reason
   end
 
-  local station = state.stationsByKey[activeKey(coreSelection(selection.area))]
+  local track = trackSelection(selection.area, selection.missionDemandId)
+  local station = state.stationsByKey[activeKey(track)]
   if not station then return nil, "NO_STATION" end
 
   station.demandsById[selection.missionDemandId] = nil
-  log(string.format("DEMAND_ENDED demand=%s status=%s area=%s profile=%s stationAction=RETAIN_CONTINUOUS_CORE",
+  if station.continuousCore then
+    log(string.format("DEMAND_ENDED demand=%s status=%s area=%s profile=%s stationAction=RETAIN_STANDARD_TRACK",
+      selection.missionDemandId, terminalStatus, selection.area, selection.receiverProfile))
+    ensureSchedulers()
+    return station, "CORE_TRACK_RETAINED"
+  end
+
+  if countDemands(station) > 0 then
+    log(string.format("DEMAND_ENDED demand=%s status=%s area=%s profile=%s stationAction=RETAIN_RESERVE_OTHER_DEMAND",
+      selection.missionDemandId, terminalStatus, selection.area, selection.receiverProfile))
+    return station, "RESERVE_TRACK_RETAINED"
+  end
+
+  station.closed = true
+  station.closedReason = "RESERVE_DEMAND_ENDED"
+  station.coverageClaimed = false
+  station.nextPlannedHandoverAt = nil
+  station.reliefLaunchAt = nil
+  station.handoverArmed = false
+  removeQueuedForStation(station)
+  if station.activeRuntime then cancelToEgress(station.activeRuntime, "RESERVE_DEMAND_ENDED") end
+  if station.reliefRuntime then cancelToEgress(station.reliefRuntime, "RESERVE_DEMAND_ENDED") end
+  log(string.format("DEMAND_ENDED demand=%s status=%s area=%s profile=%s stationAction=RESERVE_EGRESS",
     selection.missionDemandId, terminalStatus, selection.area, selection.receiverProfile))
   ensureSchedulers()
-  return station, "CORE_TRACK_RETAINED"
+  return station, "RESERVE_TRACK_EGRESS"
 end
 
 local function resolveTrackKey(area, receiverProfile)
@@ -792,7 +875,7 @@ function Controller.GetRuntimeCounts()
   local activeTracks = countActiveTracks()
   return {
     activeTracks = activeTracks,
-    supportMissions = activeTracks, -- compatibility alias; no global AAR mission cap is applied.
+    supportMissions = activeTracks,
     supportAircraft = countPhysicalRuntimes(),
     queued = #state.queue,
   }
@@ -804,17 +887,24 @@ function Controller.GetConfig()
     mooseSha256 = MOOSE_SHA256,
     sourceSpawnIntervalSec = SOURCE_SPAWN_INTERVAL_SEC,
     handoffRadiusNm = HANDOFF_RADIUS_NM,
+    firFixRadiusNm = FIR_FIX_RADIUS_NM,
     trackEntryRadiusNm = TRACK_ENTRY_RADIUS_NM,
     stationCycleSec = STATION_CYCLE_SEC,
     reliefHandoverEtaSec = RELIEF_HANDOVER_ETA_SEC,
     transitSpeedKt = TRANSIT_SPEED_KT,
-    transitCallsignSlots = #TRANSIT_CALLSIGNS,
-    continuousCoreTrackCount = CORE_TRACK_COUNT,
+    standardTrackCount = STANDARD_TRACK_COUNT,
+    reserveTrackCount = RESERVE_TRACK_COUNT,
+    continuousCoreTrackCount = STANDARD_TRACK_COUNT,
     continuousAvailabilityPolicy = true,
+    reserveDemandDriven = true,
     maxAircraftPerTrack = MAX_AIRCRAFT_PER_TRACK,
     globalAarMissionLimit = false,
     globalAarAircraftLimit = false,
     mooseManagedSpawnStn = true,
+    stableSortieCallsign = true,
+    firFixRoutingEnabled = true,
+    externalSpawnHandoffSeparated = true,
+    airwaysRoutingEnabled = false,
     coreProfiles = {
       LISA = AREAS.LISA.coreProfile,
       MOE = AREAS.MOE.coreProfile,
@@ -822,6 +912,30 @@ function Controller.GetConfig()
       KRUSTY = AREAS.KRUSTY.coreProfile,
       PATTY = AREAS.PATTY.coreProfile,
       NELSON = AREAS.NELSON.coreProfile,
+    },
+    availabilityByArea = {
+      LISA = AREAS.LISA.availability,
+      MOE = AREAS.MOE.availability,
+      MILHOUSE = AREAS.MILHOUSE.availability,
+      KRUSTY = AREAS.KRUSTY.availability,
+      PATTY = AREAS.PATTY.availability,
+      NELSON = AREAS.NELSON.availability,
+    },
+    firFixByArea = {
+      LISA = AREAS.LISA.firFix,
+      MOE = AREAS.MOE.firFix,
+      MILHOUSE = AREAS.MILHOUSE.firFix,
+      KRUSTY = AREAS.KRUSTY.firFix,
+      PATTY = AREAS.PATTY.firFix,
+      NELSON = AREAS.NELSON.firFix,
+    },
+    callsignFamilyByArea = {
+      LISA = AREAS.LISA.callsignName,
+      MOE = AREAS.MOE.callsignName,
+      MILHOUSE = AREAS.MILHOUSE.callsignName,
+      KRUSTY = AREAS.KRUSTY.callsignName,
+      PATTY = AREAS.PATTY.callsignName,
+      NELSON = AREAS.NELSON.callsignName,
     },
   }
 end

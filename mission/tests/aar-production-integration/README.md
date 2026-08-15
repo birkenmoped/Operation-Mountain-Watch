@@ -20,108 +20,124 @@ validated_in_dcs: partial
 
 # AAR Production Integration
 
-## Final-Acceptance-3
+## Final-Acceptance-4
 
-Owner-Freigabe: **15.08.2026 im Projektchat ausdrücklich erteilt.** Der Scope wurde nach zwei Eigentümerkorrekturen finalisiert:
+Der Projektinhaber hat den korrigierten Produktionsscope am 15.08.2026 freigegeben. `AAR-PRODUCTION-FINAL-ACCEPTANCE-4` ersetzt Acceptance-1/2/3 als geplanten Abschlusslauf. Frühere positive Beobachtungen bleiben nur Evidenz für das im jeweiligen Stand tatsächlich beobachtete Verhalten.
 
-- die 2/2/4-Begrenzung für AI-Unterstützungsmissionen gilt **nicht** für AAR;
-- die sechs ausgewählten AAR-Core-Tracks werden bis auf Weiteres kontinuierlich betrieben;
-- `LISA` und `MOE` werden im aktuellen Core-Betrieb als `FAST` geflogen.
+## Betriebsbaseline
 
-`AAR-PRODUCTION-FINAL-ACCEPTANCE-3` ersetzt die nicht akzeptierten Acceptance-1/2-Scopefassungen. Frühere positive Beobachtungen bleiben nur Evidenz für das jeweils tatsächlich beobachtete Verhalten.
-
-## Aktuelle AAR-Betriebsentscheidung
-
-Bis eine spätere historisch/operativ belastbare ATO-/Zeitfensterregel festgelegt wird, behandelt OMW die sechs Core-Tracks als kontinuierlich verfügbar:
+Bis eine spätere ATO-/Zeitfensterregel beschlossen wird:
 
 ```text
-LISA      FAST
-MOE       FAST
-MILHOUSE  SLOW
-KRUSTY    SLOW
-PATTY     SLOW
-NELSON    FAST
+STANDARD / kontinuierlich:
+NELSON     FAST   MANAS      EGPAN   Texaco
+PATTY      SLOW   MANAS      EGPAN   Texaco
+MILHOUSE   SLOW   AL_UDEID   DAVER   Shell
+KRUSTY     SLOW   AL_UDEID   DAVER   Arco
+
+RESERVE / nur bei MissionDemand:
+LISA       FAST   MANAS      PINAX   Texaco
+MOE        FAST   MANAS      PINAX   Texaco
 ```
 
-Das ist eine **vorläufige OMW-Betriebsentscheidung**, keine Behauptung historisch nachgewiesener 24/7-CAS- oder 24/7-AAR-Abdeckung und kein 24-Stunden-Endurance-Test.
+Die kontinuierliche Standardabdeckung ist eine vorläufige OMW-Betriebsentscheidung, kein historischer Nachweis einer 24/7-CAS- oder AAR-Abdeckung.
 
-Produktiv gilt:
+`LISA` und `MOE` werden nicht automatisch materialisiert. Der erste passende Demand öffnet den Reserve-Track; nach Ende des letzten zugehörigen Demands wird kein weiterer Relief erzeugt und vorhandene Tanker gehen auf Egress.
+
+## Sortie- und Track-Identität
+
+Ein physischer KC-135 behält seine Callsign-Familie während der gesamten Sortie. Jeder Tanker ist eine eigene 1-Ship-Gruppe und verwendet deshalb `n-1`, nicht `x-2` als zweiten Tanker derselben Gruppe.
 
 ```text
-6 Core-Tracks gleichzeitig aktiv
-kein globales AAR-Mission-Limit = 2
-kein globales AAR-Aircraft-Limit = 4
-pro Track maximal:
-  1 ACTIVE
-  1 RELIEF
-=> bei gleichzeitigem Relief aller sechs Tracks bis zu 12 physische KC-135
+NELSON/PATTY/LISA/MOE -> Texaco n-1
+KRUSTY                 -> Arco n-1
+MILHOUSE               -> Shell n-1
 ```
 
-MissionDemand nutzt einen kompatiblen bereits betriebenen Core-Track. Ein `COMPLETE`, `CANCELLED` oder `ABORTED` beendet den Demand, **nicht** den kontinuierlichen Core-Track.
+Bei Relief bleibt die Callsign-Familie identisch; die neue 1-Ship-Gruppe erhält eine andere freie Gruppennummer. Radio und TACAN sind die Track-Identität und werden nur während Stationsbesitz aktiviert. Der Callsign selbst wird beim Track-Entry/Egress nicht mehr zwischen verschiedenen Familien umgeschaltet.
 
-Die weiterhin gültigen Grenzen sind der CampaignState-Bestand, mindestens 60 s Materialisierungsabstand innerhalb derselben Source Domain, maximal ein Relief je Track und eindeutige physische Transitidentität.
+Link-16-STN bleibt MOOSE-gemanagt. OMW erzwingt keine `SPAWN:InitSTN(...)`; nach Materialisierung wird die tatsächlich gesetzte STN über `UNIT:GetSTN()` gelesen.
 
-## MOOSE-first STN-Korrektur
+## Spawn, FIR und Handoff
 
-Der Controller setzt keine feste STN mehr mit `SPAWN:InitSTN(...)`.
+Die Begriffe sind getrennt:
 
-Im gepinnten `Moose.lua` verwaltet SPAWN Template-STN-Kollisionen selbst. OMW greift nicht auf `_DATABASE` zu. Nach dem Spawn liest OMW ausschließlich über die öffentliche Wrapper-Methode
-
-```lua
-unit:GetSTN()
+```text
+external spawn
+-> FIR ingress fix
+-> AAR track
+-> FIR egress fix
+-> external handoff
+-> despawn
 ```
 
-die tatsächlich materialisierte STN aus und speichert sie als Runtime-Telemetrie für Eindeutigkeitsprüfung und Logging.
+Zuordnung:
 
-## Acceptance-3 Scope
+```text
+NELSON/PATTY    -> EGPAN
+KRUSTY/MILHOUSE -> DAVER
+LISA/MOE        -> PINAX
+```
+
+Die technischen External Points für MANAS und AL UDEID bleiben außerhalb der Kabul FIR. `AUFTRAG:SetMissionIngressCoord(...)` und `SetMissionEgressCoord(...)` verwenden die FIR-Fixes. Nach Erreichen des Egress-Fixes wird über `FLIGHTGROUP:AddWaypoint(...)` zum externen Handoff-Punkt weitergeroutet; erst dort erfolgt exact-once Recredit und Despawn.
+
+Vollständiges Lower-/Upper-Airway-Routing ist **nicht** Bestandteil dieses Scopes und bleibt als späterer Ausbau offen.
+
+DAVER-Hinweis: Für den aktuellen Produktionspfad wird die im Projekt bereits verwendete M375-/Navfix-Koordinate `N29°34'18" E64°40'36"` verwendet. Die 2011er ENR-1.10-Tabelle enthält dazu eine widersprüchliche DAVER-Koordinate; diese Quelleninkonsistenz wird separat reconciled und nicht stillschweigend als geklärt dargestellt.
+
+## Concurrency und Spacing
+
+Für AAR gilt keine globale AI-Support-`2/2/4`-Grenze.
+
+```text
+normaler Standardzustand: 4 physische KC-135
+Reserve bei Bedarf: +1 je geöffnetem Reserve-Track
+pro Track maximal: 1 ACTIVE + 1 RELIEF
+```
+
+Acceptance-4 erzeugt bewusst **keinen** künstlichen simultanen Relief aller Tracks. Scheduled Relief wird an genau einem Standard-Track geprüft; FuelLow-Relief separat an einem zweiten Track.
+
+Materialisierung:
+
+```text
+MANAS: mindestens 60 s zwischen zwei Materialisierungen
+AL_UDEID: mindestens 60 s zwischen zwei Materialisierungen
+MANAS und AL_UDEID dürfen parallel materialisieren
+```
+
+## Acceptance-4 Scope
 
 Der kombinierte Lauf prüft:
 
-1. CampaignState-Pools MANAS 16 / AL_UDEID 40;
-2. automatischer Start aller sechs Core-Tracks ohne MissionDemand als Starttrigger;
-3. `LISA=FAST`, `MOE=FAST`, `MILHOUSE/KRUSTY/PATTY=SLOW`, `NELSON=FAST`;
-4. vier MANAS- und zwei AL_UDEID-Materialisierungen mit >=60 s Same-source-Abstand und unabhängigen Source Domains;
-5. MissionDemand-Attach an laufende Core-Tracks ohne zusätzliches Aircraft;
-6. eindeutige Transit-Callsigns und tatsächlich von MOOSE materialisierte STNs;
-7. Track-only Station-Callsign/Radio/TACAN;
-8. sechs gleichzeitige Reliefs: 6 ACTIVE + 6 RELIEF = 12 physische KC-135;
-9. Scheduled Relief aller sechs Tracks und natural External-Gate-Handoff mit exact-once Recredit;
-10. `COMPLETE` / `CANCELLED` / `ABORTED` lassen den jeweiligen Core-Track weiterlaufen und erzeugen keinen Demand-End-Egress;
-11. FuelLow erzeugt höchstens einen Relief, Egress des alten Tankers und Wiederherstellung der Core-Abdeckung;
-12. MOOSE `UNIT:Explode()` -> FLIGHTGROUP Dead/OnAfterDead -> kein Aircraft-Recredit + Loss-Audit + Ersatzmaterialisierung für den weiter benötigten Core-Track;
-13. CampaignState Snapshot/Restore-Reconciliation ohne Doppelcredit.
+1. CampaignState-Pools MANAS 16 / AL_UDEID 40 und Restore-Reconciliation;
+2. automatischen Start ausschließlich der vier Standard-Tracks;
+3. `LISA` und `MOE` bleiben ohne Demand unbesetzt;
+4. Same-source-Spacing >=60 s und unabhängige Source Domains;
+5. natürliche Passage der FIR-Ingress-Fixes vor kontrollierter Track-Entry-Beschleunigung;
+6. stabile Callsign-Familie vom Spawn bis Handoff, eindeutige `n-1`-Gruppennummern und MOOSE-STN;
+7. Track-Radio/TACAN nur beim Stationsbesitz;
+8. genau einen Scheduled Relief inklusive gleicher Callsign-Familie, FIR-Egress und External-Handoff/Recredit;
+9. FuelLow-Relief auf einem anderen Standard-Track ohne Doppelrelief;
+10. Standard-Demand-Ende ohne Track-Shutdown;
+11. LISA- und MOE-Reserve-Start durch Demand, PINAX-Ingress, End-of-last-demand-Egress via PINAX und Rückkehr auf vier Standard-Tracks;
+12. MOOSE `UNIT:Explode()` -> FLIGHTGROUP Dead/OnAfterDead -> kein Aircraft-Recredit + Loss-Audit + Ersatzmaterialisierung;
+13. finaler Zustand: vier Standard-Tracks aktiv, LISA/MOE aus, kein Relief-Restbestand.
 
-## Testbeschleunigung
+## Testbeschleunigung und Evidenzgrenze
 
 ```text
-controlledTrackEntry = true
-controlledReliefTiming = true
+naturalFirIngressRequired = true
+controlledTrackEntryAfterFir = true
+singleScheduledRelief = true
 physicalTeleport = false
-naturalIngressGateTransitRequired = false
-naturalEgressGateHandoffRequired = true
+naturalFirEgressAndExternalHandoffRequired = true
+airwaysRouting = false
+restoreMode = in-process CampaignState Snapshot/Restore
 ```
 
-Der Harness verschiebt kein Flugzeug. Für Track-Entry wird nur die vom Controller ausgewertete Track-Koordinate auf die aktuelle reale Flugzeugkoordinate gesetzt. Für Scheduled Relief wird nur `reliefLaunchAt` auf den aktuellen Testzeitpunkt gesetzt. Egress und Off-map-Handoff werden **nicht** künstlich an die aktuelle Position verlegt; der Handoff bleibt an den produktiven External Gates.
+Der Harness verschiebt kein Flugzeug. Erst nachdem ein Tanker den produktiv konfigurierten FIR-Ingress-Fix physisch erreicht hat, wird ausschließlich die vom Controller für Track-Entry ausgewertete Runtime-Koordinate auf die aktuelle reale Flugzeugposition gesetzt. Dadurch wird nicht die natürliche Fix-Passage, aber die restliche echte Fix-to-track-Flugzeit verkürzt.
 
-Der Lauf validiert deshalb nicht die natürliche dreistündige Wartezeit, die vollständige Gate-to-Track-Flugzeit oder reale 24-Stunden-Verfügbarkeit. Er validiert den produktiven Lifecycle unter kontrollierter Zeitverkürzung.
-
-## MOOSE-first Loss-Injection
-
-```lua
-unit:Explode(LOSS_EXPLOSION_POWER)
-```
-
-`UNIT:Explode(power, delay)` ist im gepinnten `Moose.lua` source-reviewed. Es dient nur zur kontrollierten Zerstörung des Testtankers. Der produktive Loss-Pfad bleibt `FLIGHTGROUP Dead/OnAfterDead -> OMW Adapter`.
-
-## Restore-Grenze
-
-```text
-CampaignState ExportSnapshot
--> CampaignState.Restore
--> OMW_AAR_RuntimeIntegration.Attach(restored=true)
-```
-
-Das prüft Settlement/Idempotenz eines gespeicherten Snapshots im DCS-Lauf, ist aber kein physischer Serverrestart.
+Egress-Fix, External-Handoff und strategisches Settlement werden nicht auf die aktuelle Position verschoben.
 
 ## Dateien
 
@@ -131,29 +147,26 @@ tools/build-aar-production-final-acceptance.ps1
 mission/tests/aar-production-integration/dist/OMW_AAR_Production_Final_Acceptance.lua
 ```
 
-Der Builder bindet die aktuellen Produktionsmodule für CampaignState, StrategicStock, Initializer, Adapter, RuntimeIntegration und Controller ein. `dist/` ist builder-generiert; keine automatische `.miz`-Mutation.
+`dist/` ist builder-generiert; keine automatische `.miz`-Mutation.
 
-## Pflichtmarker Acceptance-3
+## Pflichtmarker Acceptance-4
 
 ```text
 AAR_POLICY_BASELINE_PASS
 RESTORE_RECONCILIATION_PASS
 POOL_BASELINE_PASS
-SOURCE_INDEPENDENCE_PASS
-CORE_TRACKS_6_SIMULTANEOUS_PASS
-MISSION_DEMAND_ATTACH_PASS
-STATION_IDENTITY_PASS
-RELIEF_6_TRACKS_12_AIRCRAFT_PASS
-SCHEDULED_RELIEF_PASS
-SCHEDULED_HANDOFF_SETTLEMENT_PASS
-DEMAND_END_PASS
+STANDARD_TRACKS_4_PASS
+FIR_INGRESS_STANDARD_PASS
+STABLE_CALLSIGN_AND_STATION_IDENTITY_PASS
+STANDARD_DEMAND_END_PASS
+SINGLE_SCHEDULED_RELIEF_PASS
 FUEL_LOW_RELIEF_PASS
+RESERVE_FIR_INGRESS_PASS
+RESERVE_DEMAND_LIFECYCLE_PASS
 LOSS_INJECTION_ARMED
 AIRCRAFT_LOSS_PASS
 FINAL_STEADY_STATE_PASS
 RESULT PASS
 ```
 
-Vor DCS müssen exakter Branch/Commit, BuilderVersion, Bundle-SHA-256, MIZ-SHA-256, interner mission-SHA-256, identischer eingebetteter Bundle-Hash und gepinnter eingebetteter Moose.lua-Hash vorliegen. Jedes Speichern der `.miz` im Mission Editor erzeugt einen neuen Missionsstand und invalidiert die vorherige Hashkette.
-
-Bis zum realen Final-Acceptance-3-Lauf bleiben die neu korrigierten Continuous-Core-/Relief-/STN-/Demand-End-/Loss-Pfade source-reviewed / nicht DCS-validiert. `VERIFIED-METHODS.md` wird erst nach realer DCS-Evidenz erweitert.
+Bis zum realen Acceptance-4-Lauf bleiben die neu korrigierten Standard/Reserve-, stabile-Callsign- und FIR-Fix-Routingpfade `SOURCE_REVIEWED` beziehungsweise `PLANNED`; sie dürfen nicht als `VALIDATED` bezeichnet werden.

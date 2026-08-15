@@ -46,8 +46,9 @@ function Integration.Attach(spec)
   -- OMW.AAR exposes SetStrategicAdapter as a module function, not an instance method.
   controller.SetStrategicAdapter(adapter)
 
-  -- Continuous core coverage is a controller capability. Minimal capture controllers
-  -- used by pure restore checks intentionally omit it and therefore do not start DCS activity.
+  -- The controller starts only the current STANDARD AAR baseline. Demand-driven reserve
+  -- tracks remain dormant until SubmitDemand opens them. Minimal capture controllers used
+  -- by pure restore checks intentionally omit this capability and therefore start no DCS activity.
   if type(controller.StartContinuousCoreCoverage) == "function" then
     controller.StartContinuousCoreCoverage()
   end
