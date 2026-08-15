@@ -14,8 +14,8 @@ project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
   - prototype-only resource scope wording
 superseded_by:
-source_branch: agent/aar-runtime-finalization
-source_commit: PENDING_MERGE
+source_branch: main
+source_commit: 2e9cbe6104f2e23bc3031821459e1f16309a946b
 validated_in_dcs: partial
 ---
 
@@ -282,7 +282,7 @@ Ohne bestätigten External-Handoff gibt es keine normale Handoff-Recreditierung.
 
 ### 8.3 Aircraft Loss
 
-Der produktive AAR-Controller verwendet den source-reviewed MOOSE-`FLIGHTGROUP`-`Dead`-/`OnAfterDead`-Pfad:
+Der produktive AAR-Controller verwendet den in `AAR-PRODUCTION-FINAL-ACCEPTANCE-5` validierten MOOSE-`FLIGHTGROUP`-`Dead`-/`OnAfterDead`-Pfad:
 
 ```text
 FLIGHTGROUP Dead
@@ -294,8 +294,6 @@ FLIGHTGROUP Dead
 ```
 
 Damit sinkt der überlebende strategische Pool permanent um die bereits konsumierte KC-135. Der Loss-Audit wächst genau einmal. Ein Ersatz wird nur materialisiert, wenn der Track nach seinem Verfügbarkeitsmodell weiterhin benötigt beziehungsweise offen ist.
-
-Der korrigierte Standard/Reserve-Loss-/Replacement-Pfad ist implementiert und source-reviewed, aber noch nicht DCS-validiert.
 
 ## 9. AAR-Restore-Reconciliation
 
@@ -444,31 +442,23 @@ parallel SPAWN inventory authority
 
 ## 14. Verifikationsstatus
 
-Ältere Owner-lokale Source-/Build-Checkpoints bestätigen die jeweils dokumentierten Git-/Build-/Hash-Stände, aber kein DCS-Verhalten nachfolgender Änderungen.
-
-`AAR-PRODUCTION-FINAL-ACCEPTANCE-1`, Acceptance-2 und Acceptance-3 sind keine final akzeptierten Produktionsbaselines. Sie deckten RuntimeIntegration-, AAR-`2/2/4`-, STN-, Continuous-Core-, Callsign- und Testdesignfehler auf.
-
-Der korrigierte gemeinsame Abschlusslauf ist:
+Der kombinierte AAR-Abschlusslauf `AAR-PRODUCTION-FINAL-ACCEPTANCE-5` ist für den exakt dokumentierten Stand akzeptiert:
 
 ```text
-AAR-PRODUCTION-FINAL-ACCEPTANCE-4
+Acceptance commit: 5e7dbec37f53155f39c63c25590cf6b4e35814ca
+Mission SHA-256: c9e3978a4bbb35ebbfe5ae362021b5f8870129d6c8b06b58147424dde71a94e3
+Bundle SHA-256: f33b0a5a6212d9a1103dfa2e0ab677777142ca771a2f5007a3ab1c7fee594cbf
+DCS: 2.9.28.26385 MT
+MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+Moose.lua SHA-256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
+Result: PASS
 ```
 
-Er prüft insbesondere:
+Damit sind für diesen Acceptance-Scope insbesondere Restore-Reconciliation, exact-once Handoff-Recredit, Loss ohne Recredit plus Loss-Audit, Standard-/Reserve-Lifecycle, Scheduled Relief und FuelLow praktisch bestätigt.
 
-- automatischen Start ausschließlich der vier STANDARD-Tracks;
-- `LISA=FAST` und `MOE=FAST` als demand-getriebene RESERVE;
-- Same-source-Abstand und unabhängige Source Domains;
-- stabile Callsign-Familie je physischer Sortie;
-- FIR-Ingress/-Egress über EGPAN, DAVER und PINAX;
-- getrennten External-Handoff mit exact-once Recredit;
-- genau einen Scheduled Relief und einen separaten FuelLow-Relief;
-- Standard-Demand-Ende ohne Shutdown und Reserve-Ende nach letztem Demand;
-- Loss ohne Recredit plus Ersatz nur bei weiter benötigtem Track;
-- Restore-Reconciliation.
-
-Die konkrete gemeinsame Acceptance-Matrix steht in:
+Die vollständige Acceptance-Matrix und Provenienz stehen in:
 
 - [`OMW-AAR-ISAF-ACO`](29-isaf-2009-2013-air-to-air-refueling.md)
 - [`OMW-TEST-AAR-PRODUCTION-INTEGRATION`](../mission/tests/aar-production-integration/README.md)
+- [`OMW-TEST-AAR-PRODUCTION-ACCEPTANCE-5`](../mission/tests/aar-production-integration/ACCEPTANCE-5.md)
 - [`OMW-MOOSE-ISR-FAC-CAS-AAR`](moose/ISR-FAC-CAS-AAR.md)
