@@ -28,11 +28,18 @@ foreach ($entry in $files.GetEnumerator()) {
 $requirements = @(
   @{ File = 'Controller'; Marker = 'CORE_TRACK_COUNT = 6' },
   @{ File = 'Controller'; Marker = 'MAX_AIRCRAFT_PER_TRACK = 2' },
+  @{ File = 'Controller'; Marker = 'LISA = {' },
+  @{ File = 'Controller'; Marker = 'MOE = {' },
+  @{ File = 'Controller'; Marker = 'coreProfile = "FAST"' },
+  @{ File = 'Controller'; Marker = 'function Controller.StartContinuousCoreCoverage()' },
+  @{ File = 'Controller'; Marker = 'CORE_TRACK_RETAINED' },
+  @{ File = 'Controller'; Marker = 'stationAction=RETAIN_CONTINUOUS_CORE' },
   @{ File = 'Controller'; Marker = 'function flightGroup:OnAfterDead' },
   @{ File = 'Controller'; Marker = 'state.strategicAdapter:OnLost(' },
   @{ File = 'Controller'; Marker = 'function Controller.EndDemand' },
   @{ File = 'Controller'; Marker = 'function Controller.GetRuntimeCounts' },
   @{ File = 'Controller'; Marker = 'spawnedUnit:GetSTN()' },
+  @{ File = 'Controller'; Marker = 'continuousAvailabilityPolicy = true' },
   @{ File = 'Controller'; Marker = 'globalAarMissionLimit = false' },
   @{ File = 'Controller'; Marker = 'globalAarAircraftLimit = false' },
   @{ File = 'Controller'; Marker = 'mooseManagedSpawnStn = true' },
@@ -43,6 +50,7 @@ $requirements = @(
   @{ File = 'RuntimeIntegration'; Marker = 'function Integration.Attach' },
   @{ File = 'RuntimeIntegration'; Marker = 'adapter:ReconcileRestore()' },
   @{ File = 'RuntimeIntegration'; Marker = 'controller.SetStrategicAdapter(adapter)' },
+  @{ File = 'RuntimeIntegration'; Marker = 'controller.StartContinuousCoreCoverage()' },
   @{ File = 'StrategicStock'; Marker = 'OMW-AAR-STRATEGIC-STOCK-2' },
   @{ File = 'StrategicStock'; Marker = 'AIRCRAFT_KC135_LOST' },
   @{ File = 'StrategicStock'; Marker = 'initial = 16' },
@@ -58,17 +66,25 @@ foreach ($requirement in $requirements) {
   }
 }
 
+if ($content.Controller -notmatch 'LISA\s*=\s*\{[\s\S]*?coreProfile\s*=\s*"FAST"') {
+  throw 'LISA continuous core profile is not FAST.'
+}
+if ($content.Controller -notmatch 'MOE\s*=\s*\{[\s\S]*?coreProfile\s*=\s*"FAST"') {
+  throw 'MOE continuous core profile is not FAST.'
+}
+
 $forbiddenControllerMarkers = @(
   'MAX_CONCURRENT_SUPPORT_MISSIONS',
   'MAX_CONCURRENT_SUPPORT_AIRCRAFT',
   'MAX_AIRCRAFT_PER_SUPPORT_MISSION',
   'spawner:InitSTN(',
-  'local STN_START_OCTAL'
+  'local STN_START_OCTAL',
+  'return station, "STATION_CLOSED"'
 )
 
 foreach ($marker in $forbiddenControllerMarkers) {
   if ($content.Controller.Contains($marker)) {
-    throw "AAR controller still contains obsolete global/constrained AAR marker: $marker"
+    throw "AAR controller still contains obsolete AAR marker: $marker"
   }
 }
 
@@ -101,6 +117,9 @@ Write-Host 'StrategicTurnaroundTimer: false'
 Write-Host 'LossRecredit: false'
 Write-Host 'RestoreReconciliation: true'
 Write-Host 'ContinuousCoreTracks: 6'
+Write-Host 'LISAProfile: FAST'
+Write-Host 'MOEProfile: FAST'
+Write-Host 'MissionDemandClosesCoreTrack: false'
 Write-Host 'GlobalAarMissionLimit: false'
 Write-Host 'GlobalAarAircraftLimit: false'
 Write-Host 'MaxAircraftPerTrack: 2'
