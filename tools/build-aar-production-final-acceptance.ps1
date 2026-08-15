@@ -22,6 +22,7 @@ $files = [ordered]@{
   RuntimeIntegration = Join-Path $repoRoot 'scripts\air-operations\OMW_AAR_RuntimeIntegration.lua'
   Controller = Join-Path $repoRoot 'scripts\air-operations\OMW_AAR_Controller.lua'
   Harness = Join-Path $sourceDir '03-aar-production-final-acceptance-5.lua'
+  CycleControl = Join-Path $sourceDir '04-aar-production-final-acceptance-5-cycle-control.lua'
 }
 
 foreach ($entry in $files.GetEnumerator()) {
@@ -70,7 +71,9 @@ $requirements = @(
   @{ File = 'Harness'; Marker = 'unit:Explode(LOSS_EXPLOSION_POWER)' },
   @{ File = 'Harness'; Marker = 'AIRCRAFT_LOSS_PASS' },
   @{ File = 'Harness'; Marker = 'FINAL_STEADY_STATE_PASS' },
-  @{ File = 'Harness'; Marker = 'RESULT PASS' }
+  @{ File = 'Harness'; Marker = 'RESULT PASS' },
+  @{ File = 'CycleControl'; Marker = 'HOLD_BACKGROUND_SCHEDULED_RELIEF' },
+  @{ File = 'CycleControl'; Marker = 'TEST_ISOLATION' }
 )
 
 foreach ($requirement in $requirements) {
@@ -122,6 +125,7 @@ $header = @"
 -- FIR routing: NELSON/PATTY via EGPAN, KRUSTY/MILHOUSE via DAVER, LISA/MOE via PINAX. External spawn/handoff remains separate. Full ATS-airway routing is deferred.
 -- Track routing: physical tankers must reach their configured production AAR track naturally; the harness does not rewrite runtime.trackCoord and does not teleport aircraft.
 -- Scheduled relief: only MILHOUSE is accelerated, and only by advancing the relief launch time after a short station dwell. The relief then flies naturally from the external spawn through DAVER to the real MILHOUSE track. During that transit two MILHOUSE-assigned physical sorties are expected, but only the outgoing tanker owns station radio/TACAN until final relief ingress.
+-- Test isolation: background scheduled relief cycles are held beyond the test window so the combined acceptance exercises only the explicitly selected MILHOUSE scheduled relief and NELSON FuelLow relief. This changes test timing only, not physical routing or production controller constants.
 -- FuelLow relief: NELSON replacement also flies naturally through EGPAN to the real NELSON track.
 -- Egress settlement: outgoing tankers must pass their FIR egress fix and then reach the external handoff point before recredit/despawn.
 -- Loss injection: public MOOSE UNIT:Explode() is used only on the designated test tanker to exercise the real FLIGHTGROUP Dead/OnAfterDead path.
@@ -140,7 +144,8 @@ $bundle += "local OMW_AAR_TEST_Initializer = (function()`n" + $content.Initializ
 $bundle += "local OMW_AAR_TEST_Adapter = (function()`n" + $content.Adapter + "`nend)()`n"
 $bundle += "local OMW_AAR_TEST_RuntimeIntegration = (function()`n" + $content.RuntimeIntegration + "`nend)()`n"
 $bundle += "local OMW_AAR_TEST_Controller = (function()`n" + $content.Controller + "`nend)()`n"
-$bundle += $content.Harness
+$bundle += $content.Harness + "`n"
+$bundle += $content.CycleControl
 
 [System.IO.File]::WriteAllText($outputFile, $bundle, [System.Text.UTF8Encoding]::new($false))
 
@@ -158,6 +163,7 @@ Write-Host 'StableSortieCallsign: true'
 Write-Host 'FIRFixRouting: true'
 Write-Host 'AirwaysRouting: false'
 Write-Host 'SingleScheduledRelief: true'
+Write-Host 'BackgroundScheduledReliefIsolation: true'
 Write-Host 'ScheduledReliefLaunchAccelerationOnly: true'
 Write-Host 'NaturalStandardTrackEntryRequired: true'
 Write-Host 'NaturalReliefTrackEntryRequired: true'
