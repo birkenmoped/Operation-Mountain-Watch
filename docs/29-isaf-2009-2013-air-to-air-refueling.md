@@ -20,8 +20,8 @@ project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
   - earlier AAR planning without consolidated runtime evidence and operational source-domain decisions
 superseded_by:
-source_branch: agent/aar-runtime-finalization
-source_commit: PENDING_MERGE
+source_branch: main
+source_commit: b0af0093dd276aa07b8e011543e8a00435e518f8
 validated_in_dcs: partial
 ---
 
@@ -154,7 +154,7 @@ PINAX: N37°15'00" E69°06'00"
 DAVER: N29°34'18" E64°40'36"
 ```
 
-DAVER-Evidenzgrenze: Die 2011er AIP enthält zwischen ENR-Route-/Navfix-Daten und ENR 1.10 eine widersprüchliche DAVER-Koordinate. OMW verwendet für diesen Branch die bereits projektseitig verwendete M375-/Navfix-Koordinate `N29°34'18" E64°40'36"`. Die Quelleninkonsistenz bleibt ausdrücklich offen und wird nicht als historisch aufgelöst behauptet.
+DAVER-Evidenzgrenze: Die 2011er AIP enthält zwischen ENR-Route-/Navfix-Daten und ENR 1.10 eine widersprüchliche DAVER-Koordinate. OMW verwendet für diesen Stand die bereits projektseitig verwendete M375-/Navfix-Koordinate `N29°34'18" E64°40'36"`. Die Quelleninkonsistenz bleibt ausdrücklich offen und wird nicht als historisch aufgelöst behauptet.
 
 ### 5.1 Airways
 
@@ -199,7 +199,7 @@ SCHEDULER:New(...)
 
 `SetMissionIngressCoord(...)` führt die Materialisierung über den FIR-Ingress-Fix zum Tankerauftrag. `SetMissionEgressCoord(...)` führt nach Cancel zum FIR-Egress-Fix. Nach physischer Passage dieses Fixes ergänzt OMW über das öffentliche `FLIGHTGROUP:AddWaypoint(...)` den Weg zum External-Handoff-Punkt.
 
-Acceptance-5 hat die natürliche FIR-Passage und den anschließenden External-Handoff für die beobachteten Pfade praktisch bestätigt. Diese Evidenz gilt nur für den exakten Acceptance-5-Stand und hebt den Gesamtpfad wegen des verbliebenen Scheduled-Relief-Fehlers nicht zur final akzeptierten Produktionsbaseline an.
+Acceptance-5 auf dem Arbeitsbranch `agent/aar-runtime-finalization` hat die natürliche FIR-Passage und den anschließenden External-Handoff für die beobachteten Pfade praktisch bestätigt. Diese Evidenz gilt nur für den exakten Acceptance-5-Stand und hebt den Gesamtpfad wegen des verbliebenen Scheduled-Relief-Fehlers nicht zur final akzeptierten Produktionsbaseline an.
 
 ## 7. Relief und FuelLow
 
@@ -221,7 +221,7 @@ Verbindlicher Zielablauf:
 -> wieder 1 ACTIVE
 ```
 
-Acceptance-5 zeigte, dass der aktuelle Controller das 5-Minuten-Gate noch falsch behandelt: Bei `etaSec=297` und `distanceNm=24.7` wurde der outgoing MILHOUSE-Tanker bereits auf Egress geschickt und der Relief wenige Sekunden später als Station Owner aktiviert. Dieser Ablauf ist **nicht** akzeptiert, obwohl der Harness formal `RESULT PASS` erreichte.
+Acceptance-5 zeigte, dass der Controller auf Commit `877f0c15c0b46dc8d08f39f7cdcde36e065563b5` das 5-Minuten-Gate noch falsch behandelt: Bei `etaSec=297` und `distanceNm=24.7` wurde der outgoing MILHOUSE-Tanker bereits auf Egress geschickt und der Relief wenige Sekunden später als Station Owner aktiviert. Dieser Ablauf ist **nicht** akzeptiert, obwohl der Harness formal `RESULT PASS` erreichte.
 
 ### 7.2 FuelLow
 
@@ -347,7 +347,7 @@ Acceptance-4 bestätigte unter anderem vier STANDARD-Tracks, Reserve-Semantik, s
 ### Acceptance-5 – realer Owner-DCS-Lauf 15.08.2026
 
 ```text
-Branch: agent/aar-runtime-finalization
+Arbeitsbranch: agent/aar-runtime-finalization
 Commit: 877f0c15c0b46dc8d08f39f7cdcde36e065563b5
 Test-ID: AAR-PRODUCTION-FINAL-ACCEPTANCE-5
 Bundle SHA-256: b04ad66bc7525c65c89c5946eda5d598af7570235a2d7b2750c17cb86919f6e6
