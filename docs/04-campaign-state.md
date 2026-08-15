@@ -8,13 +8,14 @@ authoritative_for:
   - persistent strategic entity identity
   - separation of strategic state from DCS and MOOSE representations
   - aircraft total-loss, forced-landing, recovery and repair state semantics
+  - AAR off-map KC-135 strategic pool semantics
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
   - prototype-only resource scope wording
 superseded_by:
-source_branch: main
-source_commit: 13275a8f365cc8f5eeaf9847db5d20debea0b3fd
+source_branch: agent/aar-runtime-finalization
+source_commit: PENDING_MERGE
 validated_in_dcs: partial
 ---
 
@@ -259,8 +260,84 @@ OFF_FIELD_UNRECOVERABLE
 -> delayed aircraft destruction target: 5-10 minutes after confirmed unrecoverable landing
 ```
 
-Die konkrete Forced-Landing-Erkennung, CSAR-Kopplung und verzögerte Zerstörung sind noch nicht implementiert oder DCS-validiert.
+## 8. AAR-Off-map-KC-135-Pools
 
-### 7.5 Spätere Gameplay-Erweiterung
+### 8.1 Eigentümerentscheidung
 
-Eine umkämpfte Recovery-Site mit optionalem Sicherungsauftrag von maximal etwa 30 Minuten bleibt als spätere V2-Erweiterung vorgesehen. Die aktuelle Foundation-V1 verwendet zunächst nur die abstrakte Recovery-Zeit und die anschließende Repair-Sperre.
+Am 15.08.2026 wurden für OMW folgende strategische Designbestände festgelegt:
+
+```text
+OFFMAP_MANAS
+AIRCRAFT_KC135 = 16
+
+OFFMAP_AL_UDEID
+AIRCRAFT_KC135 = 40
+```
+
+Die Zahlen sind plausible OMW-Kompositbestände und keine Behauptung einer historisch exakt zugewiesenen Stärke. Die historische Evidenz und die ausgewerteten Satelliten-Snapshots sind in [`OMW-AAR-ISAF-ACO`](29-isaf-2009-2013-air-to-air-refueling.md) dokumentiert.
+
+### 8.2 Strategische Autorität
+
+Diese Pools sind reine CampaignState-Domänenobjekte. Sie werden nicht als DCS-Airbase, MOOSE WAREHOUSE oder AIRWING modelliert, weil MANAS und AL_UDEID außerhalb der Afghanistan-Karte liegen und dort keine passende DCS-Airbase existiert.
+
+```text
+CampaignState Off-map Pool
+-> strategic AAR adapter
+-> MOOSE SPAWN at external gate
+-> FLIGHTGROUP
+-> AUFTRAG
+-> off-map handoff
+-> CampaignState turnaround / availability
+```
+
+Die physische MOOSE-Repräsentation darf den strategischen Pool weder selbst erhöhen noch als zweites Bestandsbuch führen.
+
+### 8.3 Resource Contract
+
+Vorgesehene Ressource:
+
+```text
+resourceId: AIRCRAFT_KC135
+unit: count
+```
+
+Knoten:
+
+```text
+OFFMAP_MANAS
+OFFMAP_AL_UDEID
+```
+
+Vor der Implementierung ist zu prüfen, wie diese Off-map-Knoten am kleinsten in den bestehenden Initializer aufgenommen werden, ohne sie fälschlich als DCS-Airbase zu behandeln.
+
+### 8.4 Verfügbarkeitsgrenze zum AAR-Controller
+
+Der AAR-Controller besitzt bereits die strategische Adaptergrenze:
+
+```text
+CanMaterialize(selection)
+OnMaterialized(selection, runtime)
+OnHandoff(selection, runtime)
+```
+
+Der produktive Adapter muss mindestens sicherstellen:
+
+1. `CanMaterialize` lässt einen Tanker nur bei strategischer Verfügbarkeit zu;
+2. `OnMaterialized` bindet/verbraucht die Verfügbarkeit genau einmal;
+3. `OnHandoff` startet den festgelegten Turnaround statt sofortiger Wiederverfügbarkeit;
+4. Verlust/Abbruch darf nicht zu unzulässiger Recreditierung führen;
+5. MANAS und AL_UDEID bleiben unabhängige Pools;
+6. Snapshot/Restore erhält die strategische Verfügbarkeit reproduzierbar.
+
+### 8.5 Offene Turnaround-Entscheidung
+
+Die bestehende CampaignState-Aircraft-Recovery-Semantik (`RECOVERY_IN_PROGRESS -> RECOVERED_AWAITING_REPAIR -> AVAILABLE`) wurde für physische Recovery/Repair entwickelt. Sie darf nicht stillschweigend mit einem regulären Off-map-AAR-Turnaround gleichgesetzt werden.
+
+Vor produktiver Implementierung sind deshalb noch festzulegen:
+
+- ob die bestehende Recovery-Semantik wiederverwendet oder ein klar getrennter regulärer Turnaround-/Availability-Zustand benötigt wird;
+- Turnaround-Dauer;
+- Zeitpunkt der erneuten strategischen Verfügbarkeit;
+- Behandlung von erfolgreichem Handoff, Mission abort und Aircraft loss.
+
+Der nächste DCS-AAR-Integrationslauf ist erst nach dieser neuen produktiven CampaignState-/Lifecycle-Integration erforderlich. Der korrigierte Integration-3R1-Harness allein löst keinen weiteren DCS-Lauf aus.
