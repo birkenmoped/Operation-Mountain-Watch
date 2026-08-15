@@ -7,7 +7,7 @@ authoritative_for:
   - AAR MissionDemand production-integration test scope
   - six-core-area dispatch, area-template/callsign identity, source spacing and high-transit progress acceptance
 not_authoritative_for:
-  - DCS runtime acceptance before owner-run test
+  - repository-wide DCS runtime acceptance without complete acceptance provenance
   - CampaignState strategic inventory implementation
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
@@ -15,14 +15,14 @@ supersedes: []
 superseded_by: []
 source_branch: agent/aar-runtime-finalization
 source_commit: PENDING_MERGE
-validated_in_dcs: false
+validated_in_dcs: partial
 ---
 
 # AAR Production Integration
 
 ## Ziel
 
-Dieser Test prüft ausschließlich die noch offene produktive Integration oberhalb der bereits abgeschlossenen allgemeinen KC-135-Acceptance:
+Dieser Test prüft ausschließlich die produktive Integration oberhalb der bereits abgeschlossenen allgemeinen KC-135-Acceptance:
 
 ```text
 MissionDemand
@@ -55,7 +55,58 @@ Der zweite Owner-Lauf bestätigte die area-spezifischen Gruppen-/Template-Namen,
 1. MOOSE `SPAWN` setzte ohne explizites `SPAWN:InitCallSign(...)` die BLUE-Einheitenrufnamen neu; dadurch erschienen insbesondere die MANAS-Tanker trotz korrekter Templates als `Texaco11`;
 2. der Harness las unmittelbar nach Materialisierung `FLIGHTGROUP:GetFuelMin()`. Zu diesem Zeitpunkt können die `FLIGHTGROUP`-Elemente noch nicht vollständig initialisiert sein, wodurch `math.huge * 100` als `inf` zurückgegeben werden kann.
 
-Integration-3 verwendet deshalb den im gepinnten MOOSE-Stand vorhandenen `SPAWN:InitCallSign(...)`-Pfad und liest den unmittelbar nach Spawn verfügbaren Fuel-Zustand über `GROUP:GetFuelMin()` aus. Zusätzlich wird der reale DCS-Rufname mit `GROUP:GetCallsign()` explizit geprüft.
+Integration-3 stellte den produktiven Controller deshalb auf den im gepinnten MOOSE-Stand vorhandenen `SPAWN:InitCallSign(...)`-Pfad um und prüfte den realen DCS-Rufnamen mit `GROUP:GetCallsign()`.
+
+### Integration-3 – Owner-DCS-Lauf 14./15.08.2026
+
+Bekannter Laufstand:
+
+```text
+Branch: agent/aar-runtime-finalization
+Commit: 4a6bef1c8a5b8f67606762e10c516610f970e491
+BuilderVersion/TestId: AAR-PRODUCTION-INTEGRATION-3
+Bundle SHA-256: 39fb3ecf80f6552d3478a8d83122eb69c83449bb3787731007c956fbdb6b49d1
+Controller SHA-256: a937b67874dded3bb31ffcb4e7ea60d186ffde21f1e43bcccac4cf43f9e2da97
+DCS: 2.9.28.26385 MT
+Mission: OMW_Template_v9_AirOps_rdy.miz
+MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+Moose.lua SHA-256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
+```
+
+Der Lauf belegt praktisch für den getesteten Stand:
+
+- sechs `POLICY_PASS` und sechs erfolgreiche `SubmitDemand`-Aufrufe;
+- sechs area-spezifische Mission-Editor-Templates wurden tatsächlich materialisiert;
+- die produktive `SPAWN:InitCallSign(...)`-Korrektur erzeugte sichtbar und im Controller-Log die vorgesehenen Rufnamen `Texaco11`, `Texaco21`, `Texaco31`, `Texaco41`, `Arco21`, `Shell21`;
+- die vier erforderlichen Folge-Materialisierungen derselben Source Domain hielten jeweils 60.0 s Abstand;
+- MANAS und AL UDEID konnten parallel materialisieren.
+
+Der Harness selbst erzeugte zwei **False Negatives**, die keine beobachteten Produktivfehler darstellen:
+
+1. `GROUP:GetCallsign()` lieferte die DCS/MOOSE-Darstellung mit Trenner (`Texaco2-1`), während der Harness gegen die kompakte OMW-Darstellung (`Texaco21`) verglich;
+2. `GROUP:GetFuelMin()` wurde weiterhin zu früh ausgewertet und lieferte den Sentinel `65535`, den der Harness irrtümlich als `6553500 %` behandelte.
+
+Weil `failed=true` dadurch bereits unmittelbar nach den Materialisierungen gesetzt wurde, wurde der quantitative `TRANSIT_PROGRESS_PASS`-Teil dieses Harness-Laufs nicht mehr bis zur 60-s-Auswertung fortgeführt. Aus diesem Lauf wird deshalb **kein** formaler Transit-PASS und kein Seed-Fuel-Runtime-PASS abgeleitet.
+
+Der Projektinhaber hat entschieden, dass wegen dieser ausschließlich im Harness liegenden Fehler **kein weiterer DCS-Lauf nur für die Harness-Korrektur** durchgeführt wird. Die nächste DCS-Prüfung erfolgt erst mit neuer produktiver Lifecycle-/CampaignState-Integration oder einem anderen governance-seitig erforderlichen Regressionstrigger.
+
+Die vollständige `ACCEPTED_TECHNICAL_BASELINE`-Provenienz ist für diesen Lauf noch nicht hergestellt, solange insbesondere Missions- und Log-Hashes nicht im Projekt dokumentiert sind. Der Stand bleibt deshalb `validated_in_dcs: partial`.
+
+### Integration-3R1 – korrigierter Harness, nicht erneut in DCS ausgeführt
+
+Der Harness wurde nach dem Owner-Lauf ausschließlich diagnostisch korrigiert:
+
+```text
+AAR-PRODUCTION-INTEGRATION-3R1
+```
+
+Änderungen:
+
+- Callsign-Vergleich normalisiert ausschließlich Leerzeichen und `-`, sodass `Texaco2-1` und `Texaco21` dieselbe operative Identität darstellen;
+- `GROUP:GetFuelMin()` wird erst bewertet, wenn ein plausibler Fuel-Fraction-Wert im Bereich `0..1` vorliegt;
+- bis dahin bleibt die Fuel-Prüfung pending und erzeugt keinen False Negative.
+
+Diese Harness-Korrektur verändert den produktiven `OMW_AAR_Controller.lua` nicht und erhält ausdrücklich **keinen eigenen DCS-VALIDATED-Status**.
 
 ## Sechs Test-Demands
 
@@ -90,14 +141,14 @@ Produktive Regel:
 ```text
 MANAS:    mindestens 60 s zwischen zwei Materialisierungen
 AL_UDEID: mindestens 60 s zwischen zwei Materialisierungen
-MANAS und AL_UDEID dürfen gleichzeitig materialisieren
+MANAS und AL UDEID dürfen gleichzeitig materialisieren
 ```
 
-Der Harness misst die tatsächliche Simulationszeit zwischen Materialisierungen derselben Source Domain.
+Der Owner-Lauf von Integration-3 bestätigte die vier erforderlichen Folgeabstände mit jeweils `deltaSec=60.0`.
 
 ## Transit-Acceptance
 
-Nach jeder Materialisierung speichert der Harness die anfängliche 2D-Distanz zum zugewiesenen Track. Nach mindestens 60 s muss die Distanz um mindestens 2 NM abgenommen haben.
+Der Harness speichert nach jeder Materialisierung die anfängliche 2D-Distanz zum zugewiesenen Track. Nach mindestens 60 s muss die Distanz um mindestens 2 NM abgenommen haben.
 
 ```text
 initialTrackDistanceNm
@@ -106,7 +157,7 @@ initialTrackDistanceNm
 -> TRANSIT_PROGRESS_PASS
 ```
 
-Eine vollständige Gate->Track-Ankunft ist für diesen fokussierten Test ausdrücklich nicht erforderlich.
+Eine vollständige Gate->Track-Ankunft ist für diesen fokussierten Test ausdrücklich nicht erforderlich. Integration-3 erreichte wegen der beiden frühen Harness-False-Negatives keine formale 60-s-Transit-Auswertung; dieser Punkt wird nicht rückwirkend als PASS behauptet.
 
 ## FuelLow
 
@@ -135,7 +186,7 @@ OnHandoff
 
 Im Test wird dafür ausdrücklich ein `testAdapter=true` verwendet, der alle sechs Demands zulässt. Das ist kein Ersatz für CampaignState. Die produktive CampaignState-Bindung wird separat an diese Schnittstelle angeschlossen; der Controller selbst übernimmt keine strategische Ressourcenhoheit.
 
-## Erwartete Kernmarker Integration-3
+## Erwartete Kernmarker bei einem zukünftigen 3R1-Regressionslauf
 
 ```text
 POLICY_PASS x6
@@ -148,7 +199,7 @@ TRANSIT_PROGRESS_PASS x6
 INTEGRATION_PASS ... artificialFuelLow=false fullTrackArrivalRequired=false
 ```
 
-`SOURCE_SPACING_PASS x4` ergibt sich aus drei Folge-Materialisierungen im MANAS-Pool und einer Folge-Materialisierung im AL-UDEID-Pool.
+Ein solcher erneuter Lauf ist **nicht** allein wegen der Harness-Korrektur vorgesehen.
 
 ## Source / Builder / Dist
 
