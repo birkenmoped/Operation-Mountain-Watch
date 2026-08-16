@@ -8,7 +8,7 @@ $repoRoot = Split-Path -Parent $PSScriptRoot
 $distDir = Join-Path $repoRoot 'mission\runtime\logistics'
 $outputFile = Join-Path $distDir 'OMW_AirOps_Warehouse_Base.lua'
 
-$builderVersion = 'OMW-AIROPS-WAREHOUSE-BASE-1'
+$builderVersion = 'OMW-AIROPS-WAREHOUSE-BASE-2'
 $mooseCommit = '73d3ed119cd9e7e3f2cfcabbaa34513d30529b54'
 $mooseSha256 = 'e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915'
 
@@ -16,6 +16,7 @@ $files = [ordered]@{
   CampaignState = Join-Path $repoRoot 'scripts\campaign\OMW_CampaignState.lua'
   ResourceManifest = Join-Path $repoRoot 'scripts\logistics\OMW_AirOpsResourceManifest.lua'
   InitialStock = Join-Path $repoRoot 'scripts\logistics\OMW_AirOpsInitialStock.lua'
+  InitialJP8Stock = Join-Path $repoRoot 'scripts\logistics\OMW_AirOpsInitialJP8Stock.lua'
   FuelSupplement = Join-Path $repoRoot 'scripts\logistics\OMW_AirOpsInitialFuelSupplement.lua'
   AARStrategicStock = Join-Path $repoRoot 'scripts\logistics\OMW_AARStrategicStock.lua'
   CampaignStateInitializer = Join-Path $repoRoot 'scripts\logistics\OMW_AirOpsCampaignStateInitializer.lua'
@@ -44,6 +45,15 @@ $requiredMarkers = @(
   @{ File = 'CampaignState'; Marker = 'function CampaignState.Restore(snapshot)' },
   @{ File = 'ResourceManifest'; Marker = 'function AirOpsResourceManifest.GetEntries()' },
   @{ File = 'InitialStock'; Marker = 'OMW-AIROPS-INITIAL-STOCK-1' },
+  @{ File = 'InitialJP8Stock'; Marker = 'OMW-AIROPS-INITIAL-JP8-STOCK-1' },
+  @{ File = 'InitialJP8Stock'; Marker = 'v0.3-RELEASE' },
+  @{ File = 'InitialJP8Stock'; Marker = 'initial = 5000000' },
+  @{ File = 'InitialJP8Stock'; Marker = 'initial = 3500000' },
+  @{ File = 'InitialJP8Stock'; Marker = 'initial = 575000' },
+  @{ File = 'InitialJP8Stock'; Marker = 'initial = 180000' },
+  @{ File = 'InitialJP8Stock'; Marker = 'initial = 1200000' },
+  @{ File = 'InitialJP8Stock'; Marker = 'initial = 950000' },
+  @{ File = 'InitialJP8Stock'; Marker = 'initial = 450000' },
   @{ File = 'FuelSupplement'; Marker = 'OMW-AIROPS-INITIAL-FUEL-SUPPLEMENT-1' },
   @{ File = 'AARStrategicStock'; Marker = 'OMW-AAR-STRATEGIC-STOCK-2' },
   @{ File = 'AARStrategicStock'; Marker = 'OFFMAP_MANAS' },
@@ -55,8 +65,9 @@ $requiredMarkers = @(
   @{ File = 'StorageFuelAdapter'; Marker = 'STORAGE.Liquid.JETFUEL' },
   @{ File = 'StorageFuelAdapter'; Marker = 'STORAGE.Liquid.GASOLINE' },
   @{ File = 'CampaignStateStorageSync'; Marker = 'function CampaignStateStorageSync.New' },
+  @{ File = 'CampaignStateStorageSync'; Marker = 'resourceIdsByNode' },
   @{ File = 'WarehouseBootstrap'; Marker = 'OMW-AIROPS-WAREHOUSE-BOOTSTRAP-1' },
-  @{ File = 'WarehouseProduction'; Marker = 'OMW-AIROPS-WAREHOUSE-PRODUCTION-1' },
+  @{ File = 'WarehouseProduction'; Marker = 'OMW-AIROPS-WAREHOUSE-PRODUCTION-2' },
   @{ File = 'WarehouseProduction'; Marker = 'READY_FLAG_NAME = "OMW_WAREHOUSE_READY"' },
   @{ File = 'WarehouseProduction'; Marker = 'readyFlag:Set(0)' },
   @{ File = 'WarehouseProduction'; Marker = 'readyFlag:Set(1)' },
@@ -117,6 +128,7 @@ $header = @"
 -- Scope: permanent OMW AirOps Warehouse production base.
 -- CampaignState: sole strategic resource authority; single OMW.AirOps.CampaignContext.
 -- STORAGE: one-shot physical/technical mirror with existing readback contracts.
+-- JP-8 baseline: owner-approved OMW v0.3-RELEASE strategic design values.
 -- Ready gate: OMW_WAREHOUSE_READY is fail-closed and opens only after verified bootstrap completion.
 -- Acceptance/test mechanisms: absent.
 -- No automated MIZ mutation.
@@ -129,6 +141,7 @@ $bundle = $header
 $bundle += "local OMW_WAREHOUSE_BASE_CampaignState = (function()`n" + $content.CampaignState + "`nend)()`n"
 $bundle += "local OMW_WAREHOUSE_BASE_ResourceManifest = (function()`n" + $content.ResourceManifest + "`nend)()`n"
 $bundle += "local OMW_WAREHOUSE_BASE_InitialStock = (function()`n" + $content.InitialStock + "`nend)()`n"
+$bundle += "local OMW_WAREHOUSE_BASE_InitialJP8Stock = (function()`n" + $content.InitialJP8Stock + "`nend)()`n"
 $bundle += "local OMW_WAREHOUSE_BASE_FuelSupplement = (function()`n" + $content.FuelSupplement + "`nend)()`n"
 $bundle += "local OMW_WAREHOUSE_BASE_AARStrategicStock = (function()`n" + $content.AARStrategicStock + "`nend)()`n"
 $bundle += "local OMW_WAREHOUSE_BASE_CampaignStateInitializer = (function()`n" + $content.CampaignStateInitializer + "`nend)()`n"
@@ -144,6 +157,7 @@ OMW_WAREHOUSE_BASE_Production.Start({
   campaignState = OMW_WAREHOUSE_BASE_CampaignState,
   resourceManifest = OMW_WAREHOUSE_BASE_ResourceManifest,
   initialStock = OMW_WAREHOUSE_BASE_InitialStock,
+  initialJP8Stock = OMW_WAREHOUSE_BASE_InitialJP8Stock,
   fuelSupplement = OMW_WAREHOUSE_BASE_FuelSupplement,
   aarStrategicStock = OMW_WAREHOUSE_BASE_AARStrategicStock,
   campaignStateInitializer = OMW_WAREHOUSE_BASE_CampaignStateInitializer,
@@ -169,8 +183,9 @@ Write-Host "BuilderVersion: $builderVersion"
 Write-Host 'DeterministicBundleForCommit: true'
 Write-Host 'Scope: PRODUCTION_WAREHOUSE_BASE'
 Write-Host 'CampaignStateAuthority: OMW.AirOps.CampaignContext'
-Write-Host 'CampaignStateAdditionalStocks: OMW_AirOpsInitialFuelSupplement,OMW_AARStrategicStock'
-Write-Host 'FuelNodeIds: KANDAHAR_MAIN'
+Write-Host 'CampaignStateAdditionalStocks: OMW_AirOpsInitialJP8Stock,OMW_AirOpsInitialFuelSupplement,OMW_AARStrategicStock'
+Write-Host 'JP8BaselineRelease: v0.3-RELEASE'
+Write-Host 'FuelNodeIds: BAGRAM,JALALABAD,KANDAHAR_MAIN,KANDAHAR_HELI,SALERNO,SHINDAND_HELI,TARINKOT'
 Write-Host 'FuelReadbackToleranceKg: 0.5'
 Write-Host 'ReverseOverwrite: false'
 Write-Host 'ProductionScheduler: false'
