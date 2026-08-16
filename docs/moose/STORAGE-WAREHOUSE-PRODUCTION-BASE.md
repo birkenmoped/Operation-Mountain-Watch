@@ -36,6 +36,10 @@ Builder:
 tools/build-air-ops-warehouse-production-base.ps1
 ```
 
+Der vollständige fachliche JP-8-Entscheidungs-, Zahlen- und Quellenstand liegt in:
+
+- [`AirOps JP-8 Baseline v0.3-RELEASE`](../air-ops-jp8-baseline-v03.md)
+
 Der historische Acceptance-Builder bleibt ausschließlich Testinfrastruktur:
 
 ```text
@@ -115,18 +119,13 @@ Gesamt-Initial-/Targetbestand:
 11,855,000 kg FUEL_JP8
 ```
 
-Datengenese:
-
-- Bagram: historisch gemessene Infrastruktur-/Throughput-Anker; strategischer Bestand bleibt OMW-Designwert.
-- Kandahar Heli / Mustang Ramp: historisch dokumentierte Ausgabegröße und 50,000-gal-Bladder-Typ; strategischer Bestand bleibt OMW-Designwert.
-- Kandahar Main, Jalalabad, Salerno, Tarinkot und Shindand: tägliche Sizing-Werte beziehungsweise Reichweiten sind prozedurale OMW-Interpolationen und keine historischen Messdaten.
-- Historische Kapazitäten werden als Sizing-Evidence dokumentiert, aber nicht als neue CampaignState-Eigenschaft eingeführt.
-
 Die maschinenlesbare Quelle ist:
 
 ```text
 scripts/logistics/OMW_AirOpsInitialJP8Stock.lua
 ```
+
+Historische Kapazitäten, Throughput-Anker, DoS-Herleitung, verworfene Werte und Primärquellen werden ausschließlich quellenkritisch im JP-8-Baseline-Dokument geführt. Physische `storageCapacityKg` oder `issueCapacityKgPerDay` werden nicht als neue CampaignState-Eigenschaften eingeführt.
 
 ## 5. Warehouse-/STORAGE-Vertrag
 
@@ -212,7 +211,16 @@ BuilderVersion:
 OMW-AIROPS-WAREHOUSE-BASE-2
 ```
 
-Der Builder schreibt keinen aktuellen Build-Zeitstempel. Er prüft erforderliche Source-Dateien und Marker, verbotene Acceptance-/Native-Marker, Scheduler-Freiheit sowie die gepinnte MOOSE-Provenienz und gibt SHA-256 für jede Source-Datei sowie das Bundle aus. Zwei Builds desselben Commits müssen denselben Bundle-SHA-256 ergeben.
+Owner-run Buildnachweis für Branch-Head `635cd87d8946dad0fc0e6ad3b89bb1fbc7b86c22`:
+
+```text
+InitialJP8StockSHA256: a49465ab24fed33df975651f8ba79735449228fde6064d74e87c541f31018dca
+BundleSHA256 build 1: 15a87820de91cb220516fd5aded343c76ffbc09263559e730f65e0161eeeb42a
+BundleSHA256 build 2: 15a87820de91cb220516fd5aded343c76ffbc09263559e730f65e0161eeeb42a
+Deterministic: true
+```
+
+Der Builder schreibt keinen aktuellen Build-Zeitstempel. Er prüft erforderliche Source-Dateien und Marker, verbotene Acceptance-/Native-Marker, Scheduler-Freiheit sowie die gepinnte MOOSE-Provenienz und gibt SHA-256 für jede Source-Datei sowie das Bundle aus.
 
 ## 9. MOOSE-First
 
@@ -242,29 +250,48 @@ USERFLAG:Get()
 
 Die JP-8-Datenbaseline und node-spezifische Fuel-Auswahl sind OMW-Domain-/Adapterlogik. Es wird keine MOOSE-Funktion parallel neu implementiert.
 
-## 10. Verifikationsgrenze
+## 10. DCS-Smoke 16.08.2026
 
-Die erste Production-Base-Version scheiterte im realen Smoke-Test fail-closed, weil `KANDAHAR_MAIN/FUEL_JP8` im produktiven CampaignState fehlte. `OMW_WAREHOUSE_READY` blieb korrekt `0`; AAR und AIR-OPS starteten nicht. Dieser Befund ist keine erfolgreiche DCS-Validation.
-
-Nach Einbindung von `v0.3-RELEASE` ist erneut erforderlich:
+Das vom Projektinhaber gelieferte `dcs.log` enthält zwei unterschiedliche Warehouse-Läufe. Der frühere Lauf enthält den bereits bekannten Altstandfehler:
 
 ```text
-Production-Builder erfolgreich
-zwei Builds desselben Commits mit identischem SHA-256
-keine Acceptance-/Testmarker im Bundle
-realer kleiner DCS-Smoke-Test:
-  alle sieben JP-8-Mirrors verifiziert
-  Kandahar AVGAS verifiziert
-  Warehouse READY
-  -> AAR Production Base
-  -> AIR-OPS Foundations
-  -> keine Lua-/Bootstrap-Fehler
+START_FAILED ... fuel resource unavailable nodeId=KANDAHAR_MAIN resourceId=FUEL_JP8
 ```
 
-Bis zu diesem dokumentierten Lauf gilt:
+Der spätere Lauf zeigt dagegen für den neuen v0.3-Pfad:
 
 ```text
-validated_in_dcs: false
+AirOpsStorageInitializer PLAN blockers=0
+AirOpsStorageInitializer APPLY verified=true
+
+StorageFuelAdapter APPLY verified=true:
+  BAGRAM          entries=1
+  JALALABAD       entries=1
+  KANDAHAR_HELI   entries=1
+  KANDAHAR_MAIN   entries=2
+  SALERNO         entries=1
+  SHINDAND_HELI   entries=1
+  TARINKOT        entries=1
+
+AirOpsTechnicalAvailabilityInitializer APPLY verified=true
+AirOpsWarehouseProduction READY mode=NEW campaignContextCreated=true
+campaignStateAuthority=true reverseOverwrite=false scheduler=false readyFlag=1
+```
+
+Nach READY wurde der AAR-Controller geladen und danach liefen die Bagram-, Kandahar-, Jalalabad-, Salerno-, Tarinkot- und Shindand-Foundations an. Für den späteren Lauf ist kein OMW-Lua-/Warehouse-/Fuel-Bootstrapfehler im gelieferten Log erkennbar.
+
+Die Runtime-Funktion ist damit positiv beobachtet. Die formale Acceptance-Provenienz bleibt jedoch noch offen, weil das `debrief.log` den ausgeführten Missionspfad als `OMW_Template_v11_AirOps_rdy.miz` ausweist, während das separat read-only geprüfte aktuelle Upload-Artefakt `OMW_Template_v11_AirOps_rdy(2).miz` mit SHA-256 `e10cf353b09944c872a15cd6d1253722caea3e46ec9d754fb698234b60e8f71c` vorliegt. Bis diese Identität explizit bestätigt ist, bleibt `validated_in_dcs: false` und der PR darf nicht als vollständig akzeptiert markiert werden.
+
+## 11. Merge-Grenze
+
+Vor `Ready for Review`/Merge müssen weiterhin erfüllt sein:
+
+```text
+1. Dokumentationsstand und Links auf dem finalen Branch-Head prüfen.
+2. Documentation validator bewerten; bestehende main-fremde AAR-Fehler nicht Issue #105 zurechnen.
+3. Diff gegen main vollständig prüfen.
+4. Exakten ausgeführten MIZ-Hash/Artefaktbezug des positiven Smoke-Laufs bestätigen.
+5. Erst danach validated_in_dcs / Acceptance-Provenienz finalisieren.
 ```
 
 Eine `.miz` wird durch ChatGPT oder den Builder nicht automatisch verändert.
