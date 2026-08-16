@@ -56,15 +56,15 @@ REJECTED_FOR_PROJECT_USE
 | `WAREHOUSE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | AirOps-Stock-/Asset-Lifecycle; kein WAREHOUSE für externe MANAS-/AL_UDEID-AAR-count-Pools |
 | `STORAGE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | CampaignState->DCS-Warehouse Mirror/Telemetry; keine strategische Rückautorität |
 | `COHORT` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Asset-/Mission-Capability-Pfade für dokumentierte AirOps-Foundations |
-| `FLIGHTGROUP` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | AAR FuelLow, Dead/OnAfterDead, GetCoordinate und `AddWaypoint(...)` für FIR-Egress -> External Handoff praktisch bestätigt; Candidate-4-Late-Approach über public waypoint getters + `AddWaypoint(...)` ist `SOURCE_REVIEWED` und DCS-offen |
+| `FLIGHTGROUP` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | AAR FuelLow, Dead/OnAfterDead, GetCoordinate und `AddWaypoint(...)` für FIR-Egress -> External Handoff praktisch bestätigt; Candidate-4-Late-Approach über public waypoint getters + `AddWaypoint(...)` ist im realen DCS-Lauf fehlgeschlagen und nicht validiert |
 | `COMMANDER` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | dokumentierter COMMANDER-Lifecycle; nicht Quelle der externen OMW-AAR-Pools |
-| `AUFTRAG` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | AAR `NewTANKER`, Mission-Ingress/-Egress und `Cancel()` praktisch bestätigt; Candidate 4 bewahrt `SetMissionIngressCoord(FIR fix)` und nutzt zusätzlich `GetGroupWaypointIndex(...)` sowie `SetMissionAltitude(...)` als `SOURCE_REVIEWED` |
+| `AUFTRAG` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | AAR `NewTANKER`, Mission-Ingress/-Egress und `Cancel()` praktisch bestätigt; Candidate 4 bestätigte erneut `SetMissionIngressCoord(FIR fix)`, während die Annahme einer zum geplanten Adapterzeitpunkt verfügbaren `GetGroupWaypointIndex(...)`-UID im DCS-Lauf scheiterte; `SetMissionAltitude(...)` bleibt branch-lokaler Kandidat |
 | `SPAWN` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | area-spezifische AAR-Templates, stabile Sortie-Callsign-Familie und branch-lokal bestätigter 480-kt-In-Air-Spawnzustand; keine erzwungene `InitSTN()`, STN-Readback über `UNIT:GetSTN()` |
-| `SCHEDULER` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Source-Queue, Station-Monitoring und Acceptance-Koordination; einmaliges `BASE/FLIGHTGROUP:ScheduleOnce(...)` nach MOOSE-Routeaufbau ist für Candidate 4 `SOURCE_REVIEWED` und DCS-offen |
+| `SCHEDULER` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Source-Queue, Station-Monitoring und Acceptance-Koordination; das einmalige `ScheduleOnce(...)` für Candidate-4-Late-Approach führte am gewählten Zeitpunkt zu keiner verfügbaren Mission-Waypoint-UID und ist für diesen Zweck nicht validiert |
 | `USERFLAG` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Warehouse-Acceptance-Readiness-Pfade |
-| `GROUP`, `UNIT`, `STATIC`, `ZONE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Template-/Static-/Warehouse-/Zonenvalidierung; AAR `UNIT:GetSTN()` und test-only `UNIT:Explode()` praktisch bestätigt. `UNIT:GetFuel()`, `UNIT:GetCurrentFuelKgs()` und `UNIT:GetFuelMassMax()` wurden im dokumentierten AAR-Fuel-Telemetry-Lauf praktisch verwendet; die Fuel-Neuberechnung bleibt eine getrennte Designentscheidung. |
-| `COORDINATE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` / teilweise `SOURCE_REVIEWED` | `Get2DDistance(...)` im AAR-Scope praktisch verwendet; `GetIntermediateCoordinate(..., distanceMeters)` für den 60-NM-LRC-Approach ist source-verifiziert und noch nicht als kombinierter Routingpfad DCS-validiert |
-| `ARMYGROUP`, `BRIGADE`, `OPSGROUP` | `PLANNED` / teilweise validiert | Bodenoperationsscope bleibt geplant; für AAR sind Despawn sowie Radio-/TACAN-Switch praktisch korreliert; `GetWaypointIndex(uid)`, `GetWaypointID(index)` und `GetWaypointCoordinate(index)` sind für Candidate 4 source-verifiziert |
+| `GROUP`, `UNIT`, `STATIC`, `ZONE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Template-/Static-/Warehouse-/Zonenvalidierung; AAR `UNIT:GetSTN()` und test-only `UNIT:Explode()` praktisch bestätigt. `UNIT:GetFuel()`, `UNIT:GetCurrentFuelKgs()` und `UNIT:GetFuelMassMax()` wurden in realen AAR-Fuel-Telemetry-Läufen praktisch verwendet. |
+| `COORDINATE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` / teilweise `SOURCE_REVIEWED` | `Get2DDistance(...)` im AAR-Scope praktisch verwendet; `GetIntermediateCoordinate(..., distanceMeters)` für den 60-NM-LRC-Approach ist source-verifiziert, aber der kombinierte Late-Approach-Routingpfad ist DCS-fehlgeschlagen und nicht validiert |
+| `ARMYGROUP`, `BRIGADE`, `OPSGROUP` | `PLANNED` / teilweise validiert | Bodenoperationsscope bleibt geplant; für AAR sind Despawn sowie Radio-/TACAN-Switch praktisch korreliert; `GetWaypointIndex(uid)`, `GetWaypointID(index)` und `GetWaypointCoordinate(index)` sind source-verifiziert, aber der Candidate-4-Late-Approach-Pfad ist DCS-fehlgeschlagen |
 | `OPSTRANSPORT` | `PLANNED` | taktischer Transport |
 | `CTLD`, `CSAR`, `AICSAR` | `PLANNED` / teilweise verwendet | separate Acceptance erforderlich |
 | `INTEL` | `PLANNED` | taktisches Lagebild; Laufzeitnachweis offen |
@@ -119,7 +119,7 @@ COORDINATE:Get2DDistance(...)
 SCHEDULER:New(...)
 ```
 
-Für die AAR-Fuel-Telemetrie wurden außerdem im realen DCS-Lauf verwendet:
+Für die AAR-Fuel-Telemetrie wurden außerdem in realen DCS-Läufen verwendet:
 
 ```text
 UNIT:GetFuel()
@@ -137,7 +137,17 @@ Der gepinnte `Moose.lua` implementiert `UNIT:GetFuel()` als öffentlichen Wrappe
 
 `AAR-FUEL-TELEMETRY-3` hat den FIR-Ingress-Vertrag verletzt, indem `SetMissionIngressCoord(...)` auf den Late-Approach verschoben und der FIR-Fix anschließend per delayed `AddWaypoint` nachgerüstet wurde. Der reale DCS-Lauf zeigte keine zuverlässige PINAX-/DAVER-Passage. Dieser Ansatz ist verworfen.
 
-Für `AAR-FUEL-TELEMETRY-4` sind zusätzlich im gepinnten `Moose.lua` source-verifiziert, aber als Kombination noch **nicht** DCS-validiert:
+`AAR-FUEL-TELEMETRY-4` stellte `SetMissionIngressCoord(EGPAN/PINAX/DAVER, ...)` wieder her. Der reale DCS-Lauf bestätigte die tatsächliche Passage aller drei zugeordneten FIR-Fixes für die sechs operativen Tracks.
+
+Der zusätzliche Late-Approach-Adapter schlug jedoch für die Candidate-4-Runtimes fehl mit:
+
+```text
+LRC late-approach injection has no MOOSE mission waypoint UID
+```
+
+Damit ist die Annahme widerlegt, dass die Mission-Waypoint-UID am gewählten `ScheduleOnce`-Zeitpunkt über `AUFTRAG:GetGroupWaypointIndex(opsgroup)` bereits zuverlässig verfügbar ist.
+
+Die dafür source-verifizierten Methoden bleiben öffentliche APIs, aber die getestete Kombination ist **nicht** DCS-validiert:
 
 ```text
 AUFTRAG:SetMissionAltitude(...)
@@ -151,9 +161,9 @@ BASE/FLIGHTGROUP:ScheduleOnce(...)
 COORDINATE:GetIntermediateCoordinate(...)
 ```
 
-Candidate 4 lässt `AUFTRAG:SetMissionIngressCoord(EGPAN/PINAX/DAVER, ...)` unverändert. Nach dem MOOSE-Routeaufbau wird die Mission-Waypoint-UID über `GetGroupWaypointIndex(...)` aufgelöst, der unmittelbar vorhergehende Wegpunkt geometrisch gegen den konfigurierten FIR-Fix geprüft und erst danach der 60-NM-Late-Approach eingefügt. Bei einer Abweichung > 0,5 NM bricht der Test ab, statt den Routingvertrag stillschweigend zu verändern.
+Der 60-NM-Late-Approach ist nach Eigentümerklärung ein optionales Routingexperiment und keine akzeptierte Produktionsanforderung. Ein natürlicher MOOSE/DCS-Sinkflug vom FIR-Ingress zum Track kann ausreichen. Das für FuelLow wichtigere offene Verhalten ist der Outbound-Climb und der Rückweg.
 
-Details und DCS-Akzeptanzgrenze stehen in [`OMW-MOOSE-AAR-LRC-TRANSIT`](AAR-LRC-TRANSIT.md).
+Details stehen in [`OMW-MOOSE-AAR-LRC-TRANSIT`](AAR-LRC-TRANSIT.md) sowie im branch-lokalen Test-/Kalibrierungsprotokoll `mission/tests/aar-fuel-telemetry/POST-MERGE-FINDINGS.md`.
 
 ## 5. Akzeptierter AAR-Produktionsscope
 
@@ -218,4 +228,4 @@ Die externen AAR-Pools MANAS und AL UDEID sind keine DCS-Airbase-/WAREHOUSE-/AIR
 
 ## 7. Nachweisregel
 
-Ein Klassenstatus wird nur angehoben, wenn MOOSE-Version/Commit, OMW-Source, Mission, Hashes, beobachtetes Verhalten und Einschränkungen dokumentiert sind. `VALIDATED` wird nicht aus Source-Review abgeleitet.
+Ein Klassenstatus wird nur angehoben, wenn MOOSE-Version/Commit, OMW-Source, Mission, Hashes, beobachtetes Verhalten und Einschränkungen dokumentiert sind. `VALIDATED` wird nicht aus Source-Review abgeleitet. Ein Telemetrie-`RESULT PASS` beweist keine separate Routing-Akzeptanz.
