@@ -6,6 +6,7 @@ owning_policy: OMW-GOV-001
 authoritative_for:
   - source-reviewed MOOSE methods used by the branch-local AAR LRC transit candidate
   - evidence boundary for late AAR-track approach routing
+  - explicit record of failed Candidate-3/Candidate-4 assumptions
 not_authoritative_for:
   - production AAR LRC routing before documented DCS acceptance
   - exact KC-135R performance data
@@ -13,7 +14,7 @@ scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 source_branch: agent/aar-fuel-telemetry-calibration
 source_commit: PENDING_MERGE
-validated_in_dcs: false
+validated_in_dcs: partial
 ---
 
 # MOOSE – AAR LRC Transit Candidate
@@ -26,23 +27,74 @@ MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
 Moose.lua SHA-256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
 ```
 
-## Verbindliche Korrektur nach Candidate 3
+## Akzeptierter Primärvertrag bleibt unangetastet
 
-Der in `AAR-FUEL-TELEMETRY-3` getestete Ansatz, `AUFTRAG:SetMissionIngressCoord(...)` vom veröffentlichten FIR-Fix auf einen 60-NM-Late-Approach zu verschieben und den FIR-Fix anschließend per verzögertem `FLIGHTGROUP:AddWaypoint(...)` vor die Mission einzufügen, ist verworfen.
+Der produktiv akzeptierte AAR-Routingvertrag bleibt:
 
-Der reale DCS-Lauf zeigte zwar die gewünschten LRC-Höhen und die korrigierte Track-Höhe, aber keine zuverlässige Passage von PINAX/DAVER. Damit wurde ein zuvor akzeptierter Vertrag unnötig ersetzt.
+```text
+External Spawn
+-> AUFTRAG:SetMissionIngressCoord(EGPAN/PINAX/DAVER)
+-> AAR track
+-> AUFTRAG:SetMissionEgressCoord(EGPAN/PINAX/DAVER)
+-> physical FIR egress passage
+-> FLIGHTGROUP:AddWaypoint(external handoff)
+```
 
-Candidate 4 stellt deshalb den akzeptierten Primärmechanismus wieder her:
+Branch-lokale LRC-Experimente dürfen diesen Primärvertrag nicht stillschweigend ersetzen.
+
+## Candidate 3 – verworfene Annahme
+
+Candidate 3 verschob `SetMissionIngressCoord(...)` vom veröffentlichten FIR-Fix auf einen berechneten 60-NM-Late-Approach und versuchte den FIR-Fix anschließend per verzögertem `FLIGHTGROUP:AddWaypoint(...)` nach `AddMission(...)` wieder vor die Mission einzufügen.
+
+Der reale DCS-Lauf zeigte keine zuverlässige PINAX-/DAVER-Passage. Damit wurde ein bereits akzeptierter Vertrag unnötig ersetzt.
+
+Entscheidung:
+
+```text
+SetMissionIngressCoord(late approach)
++ delayed AddWaypoint(FIR fix after current UID)
+= REJECTED
+```
+
+Diese Kombination wird nicht in `VERIFIED-METHODS.md` als praktisch bestätigt eingetragen.
+
+## Candidate 4 – korrigierter Primärvertrag, fehlgeschlagener Adapter
+
+Candidate 4 stellte wieder her:
 
 ```text
 AUFTRAG:SetMissionIngressCoord(EGPAN/PINAX/DAVER, ...)
 ```
 
-Der 60-NM-Late-Approach wird nur noch **nach** dem von MOOSE erzeugten FIR-Ingress-Waypoint ergänzt.
+Der reale DCS-Lauf bestätigte die tatsächliche FIR-Passage für alle sechs operativen Tracks:
 
-## Source-verifizierte Methoden
+```text
+NELSON/PATTY    -> EGPAN
+LISA/MOE        -> PINAX
+KRUSTY/MILHOUSE -> DAVER
+```
 
-Der korrigierte branch-lokale Kandidat verwendet nur öffentliche, im gepinnten `Moose.lua` vorhandene Pfade:
+Der Versuch, nach dem MOOSE-Routeaufbau zusätzlich einen 60-NM-Late-Approach einzufügen, schlug dagegen fehl mit:
+
+```text
+LRC late-approach injection has no MOOSE mission waypoint UID
+```
+
+Die source-reviewte Annahme, dass `AUFTRAG:GetGroupWaypointIndex(opsgroup)` am gewählten `ScheduleOnce`-Zeitpunkt bereits eine verwendbare Mission-Waypoint-UID liefert, wurde damit im realen DCS-Lauf widerlegt.
+
+Bewertung:
+
+```text
+SetMissionIngressCoord(FIR fix): praktisch erneut bestätigt
+Candidate-4 mission-waypoint UID timing assumption: disproved in DCS
+Candidate-4 late-approach insertion: failed
+```
+
+Ein bloßes Vergrößern des Timers wäre kein belastbarer Fix und soll nicht als Trial-and-Error-Produktionsweg verwendet werden.
+
+## Source-verifizierte öffentliche Methoden
+
+Die Kandidaten verwendeten nur öffentliche, im gepinnten `Moose.lua` vorhandene Pfade:
 
 ```text
 SPAWN:InitSpeedKnots(SpeedKnots)
@@ -60,40 +112,7 @@ COORDINATE:GetIntermediateCoordinate(ToCoordinate, Fraction)
 COORDINATE:Get2DDistance(TargetCoordinate)
 ```
 
-`SPAWN:InitSpeedKnots(...)` wandelt knots über `UTILS.KnotsToMps(...)` für die physische In-Air-Materialisierung um. Der vorangegangene DCS-Test bestätigte `480 kt` branch-lokal als plausiblen Spawn-Energiezustand; dies ist keine Aussage über den AUFTRAG-/Waypoint-Speed-Parameter.
-
-`AUFTRAG:SetMissionIngressCoord(...)` und `SetMissionEgressCoord(...)` erwarten Höhe in feet und Speed in knots.
-
-## RouteToMission-Vertrag im gepinnten MOOSE
-
-Der relevante `OPSGROUP:RouteToMission(...)`-Pfad baut für einen FLIGHTGROUP mit gesetztem Mission-Ingress die Wegpunkte in dieser Reihenfolge auf:
-
-```text
-optional holding waypoint
--> mission ingress waypoint
--> mission waypoint
--> optional mission egress waypoint
-```
-
-Beim Erzeugen des Mission-Waypoints speichert MOOSE dessen UID über:
-
-```text
-mission:SetGroupWaypointIndex(self, waypoint.uid)
-```
-
-Die öffentliche Methode `AUFTRAG:GetGroupWaypointIndex(opsgroup)` liefert diese UID zurück. Mit `OPSGROUP:GetWaypointIndex(uid)` kann deren aktuelle Position in der MOOSE-Waypoint-Liste bestimmt werden. Der unmittelbar vorherige Wegpunkt ist im hier verwendeten RouteToMission-Pfad der gesetzte Mission-Ingress.
-
-Candidate 4 verwendet genau diesen source-verifizierten Vertrag und prüft zusätzlich die Geometrie, bevor die Route verändert wird:
-
-```text
-mission waypoint UID auflösen
--> mission waypoint index bestimmen
--> vorherigen waypoint als ingress candidate bestimmen
--> dessen Koordinate gegen runtime.firIngressCoord prüfen
--> nur bei <= 0.5 NM Abweichung Late-Approach danach einfügen
-```
-
-Schlägt diese Prüfung fehl, wird die Route nicht stillschweigend verändert, sondern der Test bricht mit einem eindeutigen Fehler ab.
+`SPAWN:InitSpeedKnots(...)` ist von der AUFTRAG-/Waypoint-Geschwindigkeit getrennt. Der branch-lokale DCS-Test zeigte `480 kt` als plausiblen In-Air-Materialisierungszustand; der MOOSE-Route-Speed blieb `300 kt`.
 
 ## Relevantes NewORBIT-Verhalten
 
@@ -104,58 +123,70 @@ missionAltitude = orbitAltitude * 0.9
 missionFraction = 0.9
 ```
 
-`AUFTRAG:NewTANKER(...)` verwendet den ORBIT-RACETRACK-Pfad. Die früher beobachteten Anflughöhen korrelierten damit:
+Die zuvor beobachteten Werte korrelierten damit exakt:
 
 ```text
 NELSON: 27,500 ft * 0.9 = 24,750 ft
 PATTY:  24,000 ft * 0.9 = 21,600 ft
 ```
 
-Der Kandidat verwendet deshalb weiterhin:
+Der branch-lokale Kandidat verwendet deshalb:
 
 ```lua
 mission:SetMissionAltitude(profile.altitudeFt)
 ```
 
-Dadurch bleibt MOOSE für die Missionserzeugung zuständig, während der projektseitig unerwünschte 90%-Höhenwert am Missions-Waypoint auf die reale Track-Höhe gesetzt wird.
+Damit bleibt MOOSE für die Missionserzeugung zuständig, während der projektseitig unerwünschte 90-Prozent-Missionswaypoint auf die reale Track-Höhe gesetzt wird.
 
-## Late Track Approach
+## 60-NM-Late-Approach – technische und fachliche Grenze
 
-Der späte Approach-Punkt wird mit `COORDINATE:GetIntermediateCoordinate(...)` 60 NM vom Track in Richtung FIR-Fix erzeugt. Er bleibt auf der jeweiligen LRC-Ingress-Höhe.
+Der 60-NM-Punkt ist kein neuer FIR-Fix und kein gemeinsamer Nord-/Süd-Waypoint. Er ist lediglich ein berechneter Punkt pro Track auf der Linie FIR-Fix -> Track.
 
-Die Sollreihenfolge lautet nun:
-
-```text
-current / spawn @ directional LRC
--> AUFTRAG FIR ingress @ directional LRC
--> inserted 60-NM late approach @ directional LRC
--> AUFTRAG mission waypoint @ exact track altitude
--> tanker orbit
-```
-
-Outbound bleibt der bereits akzeptierte Mechanismus unangetastet:
+Ursprünglicher Zweck:
 
 ```text
-AUFTRAG Cancel
--> SetMissionEgressCoord(FIR fix)
--> physische FIR-Passage
--> FLIGHTGROUP:AddWaypoint(external handoff)
--> off-map settlement / despawn
+FIR ingress at directional LRC altitude
+-> remain at LRC altitude
+-> approximately 60 NM before track
+-> descent
+-> exact track altitude
 ```
 
-## Noch nicht validiert
+Nach dem realen Candidate-4-Lauf und der Eigentümerklärung gilt:
 
-Source-reviewed, aber als Kombination noch in DCS zu bestätigen:
+- der Punkt ist nicht erforderlich, um die Fuel-Telemetrie `INGRESS -> TRACK` auszuwerten;
+- ein natürlicher MOOSE/DCS-Sinkflug zum Track kann fachlich ausreichend sein;
+- der 60-NM-Punkt ist daher ein optionales Routingexperiment und keine akzeptierte Produktionsanforderung;
+- das wichtigere offene FuelLow-Thema ist der Outbound-Climb von Track-Höhe auf das directional return LRC level sowie der weitere Rückweg.
+
+Es besteht daher kein Auftrag, den Candidate-4-Adapter durch bloßes Timer-Tuning weiterzuverfolgen.
+
+## Fuel- und FuelLow-relevante MOOSE-Grenze
+
+Die Fuel-Telemetrie verwendet praktisch bestätigte öffentliche UNIT-Wrapper:
 
 ```text
-AddMission
--> MOOSE RouteToMission builds FIR ingress -> mission waypoint
--> resolve mission waypoint UID through public AUFTRAG API
--> verify preceding waypoint equals configured FIR fix
--> insert late approach after FIR fix
--> preserve FIR passage
--> exact mission waypoint altitude
--> normal tanker task execution
+UNIT:GetFuel()
+UNIT:GetCurrentFuelKgs()
+UNIT:GetFuelMassMax()
 ```
 
-Candidate 3 ist für den Inbound-Routingansatz ausdrücklich fehlgeschlagen und wird nicht in `VERIFIED-METHODS.md` als praktisch bestätigt eingetragen. Candidate 4 darf erst nach dokumentiertem DCS-PASS als produktive Baseline übernommen werden.
+`FLIGHTGROUP:SetFuelLowThreshold(...)`, `SetFuelLowRTB(false)` und der FuelLow-Callback bleiben Teil des bereits akzeptierten AAR-Lifecycles. Neu zu kalibrieren ist der projektseitige Schwellenwert, nicht der MOOSE-Mechanismus.
+
+Die aktuell bevorzugte nächste Messung erfordert keine neue Routingarchitektur:
+
+```text
+TRACK departure fuel
+FIR EGRESS fuel
+EXTERNAL HANDOFF fuel
+```
+
+Damit kann der reale Outbound-Climb-/Return-Verbrauch bestimmt werden, bevor die neuen FuelLow-Schwellen produktiv übernommen werden.
+
+## Nachweisgrenze
+
+Candidate 3 ist für den Inbound-Routingansatz fehlgeschlagen.
+
+Candidate 4 hat den FIR-Ingress wieder korrekt hergestellt, aber der zusätzliche Late-Approach-Adapter ist fehlgeschlagen. Ein Telemetrie-`RESULT PASS` beweist nur vollständige SPAWN/INGRESS/TRACK-Fuel-Samples und darf nicht als LRC-Routing-PASS interpretiert werden.
+
+Keine der fehlgeschlagenen Kombinationen wird als `VALIDATED` oder praktisch bestätigt in `VERIFIED-METHODS.md` eingetragen.
