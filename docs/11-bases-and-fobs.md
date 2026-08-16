@@ -5,16 +5,18 @@ document_class: BASE_AND_FOB_MODEL
 owning_policy: OMW-GOV-001
 authoritative_for:
   - planned campaign functions and common metadata of bases, FOBs, COPs and checkpoints
+  - planned Kunar and Nuristan ground-site reconciliation for existing mission templates
 not_authoritative_for:
   - active air ORBAT
   - final Mission Editor object state
+  - final ground-force ORBAT or exact personnel strengths
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
   - vertical-prototype-only base sequence
 superseded_by:
-source_branch: agent/complete-documentation-authority-migration
-source_commit: 6ba400be6ae0748aeb8722ad53669b7bc2ae9f13
+source_branch: agent/kunar-ground-site-reconciliation
+source_commit: PENDING_MERGE
 validated_in_dcs: false
 ---
 
@@ -35,6 +37,10 @@ Aktive Luftfahrzeugbestände und Staffeln stehen ausschließlich in:
 Die vollständige historische Evidenz, Quellenklassifizierung und Abgrenzung von Stationierung, Detachment, FARP, Transit und einmaliger Nutzung steht in:
 
 - [`OMW-HIST-AFGHANISTAN-FORCE-BASING-AVIATION`](50-afghanistan-force-basing-aviation-2010-2011.md)
+
+Der Juli-2011-ORBAT-Snapshot für Koalitionskampfkräfte steht in:
+
+- [`OMW-HIST-AFGHANISTAN-ORBAT-2011-07`](64-afghanistan-order-of-battle-july-2011.md)
 
 Konkrete Missionseditorzustände stehen in den basisbezogenen Manifesten und Acceptance-Berichten.
 
@@ -191,8 +197,146 @@ FOBs, COPs und Checkpoints besitzen begrenzte Ressourcen, Fähigkeiten und Zufah
 | Patrol Base Dakota | `GROUND_BASE_ONLY` | Marjah Hold-/Build-Basis | Dokument 50, S01 |
 | FOB Kunduz | `GROUND_BASE_ONLY` | 1-87 Infantry / RC-North | Dokument 50, S01 |
 | FOB Pul-e-Khumri | `GROUND_BASE_ONLY` | 1-87 Infantry / RC-North | Dokument 50, S01 |
+| FOB Bostick / früher FOB Naray | `GROUND_BASE_ONLY` | Juli 2011: TF Wolfhound / 2-27 Infantry, northern Kunar; 2010 zusätzlich nachgewiesene Cavalry- und Field-Artillery-Präsenz | Dokument 64; DVIDS 294427; DVIDS Story 52264 |
 
 Diese Tabelle klassifiziert historische Funktionen. Sie ist keine Mission-Editor-Abnahme und legt keine aktiven Flugzeugzahlen fest.
+
+### 4.1 Kunar-/Nuristan-Reconciliation der vorhandenen User-Templates
+
+Die folgende Arbeitsbaseline erfasst die im Projekt bereits als DCS-User-Templates vorhandenen Kunar-/Nuristan-Stellungen sowie **FOB Bostick**, dessen manueller Aufbau durch den Projektinhaber am 16.08.2026 begonnen wurde. Ein Eintrag in dieser Tabelle genehmigt keine `.miz`-Änderung und keine konkrete Garnisonsstärke.
+
+Statussemantik:
+
+```text
+ACTIVE
+  im OMW-Zeitraum als aktive BLUE-Stellung belegt
+
+PARTIAL
+  innerhalb 01.08.2010–31.12.2011 aktiver und geschlossener/übergebener Zustand belegt
+
+CLOSED_BEFORE_OMW
+  vor 01.08.2010 als US-/Koalitionsstellung geschlossen
+
+PROVISIONAL
+  Existenz/Lage gestützt, exakte Belegung im OMW-Zeitraum noch offen
+
+UNVERIFIED
+  Template vorhanden, historische Identität oder Datierung noch nicht ausreichend bestätigt
+```
+
+| Standort / Template | Provinz / Raum | Reconciliation 01.08.2010–31.12.2011 | Arbeitsstatus für OMW | Bemerkung |
+|---|---|---|---|---|
+| FOB Fortress | Kunar, Chawkay/Chowkay | Aktivität im Zeitraum gestützt | `ACTIVE` | größerer Ground-Standort; konkrete 2011er Garnison und indirektes Feuer noch zu präzisieren |
+| FOB Joyce | Kunar, Chawkay | Juli 2011 TF Cacti / 2-35 Infantry laut Dokument 64; 2010 ebenfalls aktive Nutzung belegt | `ACTIVE` | regionaler Ground-Hub für southern Kunar |
+| COP Honaker-Miracle | Kunar, Pech Valley | 2010/2011 aktive US-Stellung belegt | `ACTIVE` | lokaler Hold-/Patrol-Knoten |
+| OP JoJo | Kunar, oberhalb Honaker-Miracle | OEF Base Tracker führt `OP Jojo` als `Outpost`; Lage unterstützt Overwatch-Beziehung | `PROVISIONAL` | Existenz/Lage gestützt; konkrete Besetzungsdaten 2010/11 noch offen |
+| Firebase California | Kunar, Pech Valley | historische Existenz bestätigt; OMW-Zeitraum noch nicht ausreichend datiert | `PROVISIONAL` | keine konkrete Artillerie-/Mörserzuweisung ohne weiteren Nachweis |
+| COP Michigan | Kunar, Pech Valley | Aug. 2010 aktiv; Ende März 2011 als US-Stellung geschlossen | `PARTIAL` | nach Schließung keine aktive US-Garnison; dokumentierte `mortar section` während Aktivzeit |
+| Korengal Outpost / KOP | Kunar, Korengal Valley | US-Räumung im April 2010 | `CLOSED_BEFORE_OMW` | physische verlassene Stellung kann als historisches Terrainobjekt bestehen bleiben |
+| OP 1, Korengal | Kunar, Korengal Valley | Bestandteil des früheren Korengal-Netzes; mit KOP vor OMW aufgegeben | `CLOSED_BEFORE_OMW` | historische Bezeichnung in Army-Studien gestützt |
+| OP 2, Korengal | Kunar, Korengal Valley | Template vorhanden; kanonischer historischer Name bislang nicht bestätigt | `UNVERIFIED` | nicht als historisch benannter OP festschreiben, bis Identität geklärt ist |
+| Firebase / OP Restrepo | Kunar, Korengal Valley | mit Korengal-Komplex vor OMW aufgegeben | `CLOSED_BEFORE_OMW` | historische Stellung bestätigt |
+| Falcon Base / Bari Kot | Kunar, Nari/Naray border area | Basisexistenz 2010 gestützt; Spezial-/Partner-Force-Charakter | `ACTIVE` | als `SPECIAL_SITE`, nicht automatisch regulärer US-Army-FOB modellieren |
+| OP Stallion | northern Kunar / Bostick sector | historische Existenz gestützt; genaue 2010/11-Belegung offen | `PROVISIONAL` | Parent-Beziehung zu Bostick noch nicht als historische Tatsache festschreiben |
+| OP Clydesdale | northern Kunar / Bostick sector | Template/historische Sekundärhinweise vorhanden; 2010/11-Belegung offen | `PROVISIONAL` | weitere Primärquelle erforderlich |
+| OP Mace | Kunar/Nuristan border sector | bis 21.12.2010 US-betrieben, danach ANA-Übernahme | `PARTIAL` | BLUE bleibt bestehen; Control/Owner wechselt US -> ANA |
+| COP Keating / Kamdesh | Nuristan, Kamdesh | Schließung bereits Oktober 2009 angeordnet und nach Battle of Kamdesh aufgegeben | `CLOSED_BEFORE_OMW` | kein aktiver US-COP im OMW-Zeitraum |
+| OP Fritsche | Nuristan, Kamdesh | gemeinsam mit Keating vor OMW geschlossen | `CLOSED_BEFORE_OMW` | Army belegt platoon-sized OP und 120-mm-Mortar-Fire-Support für 2009 |
+| FOB Bostick / früher FOB Naray | Kunar, Naray/Nari | 2010 und Juli 2011 klar aktiv | `ACTIVE` | wird zusätzlich zum ursprünglichen User-Template-Bestand manuell durch den Projektinhaber aufgebaut |
+
+### 4.2 FOB Bostick – Ground-Foundation-Arbeitsstand
+
+FOB Bostick wird ab diesem Stand ausdrücklich in die Ground-Foundation aufgenommen. Der Standort hieß zuvor FOB Naray und liegt im Naray/Nari-Sektor von northern Kunar.
+
+#### 4.2.1 Juli-2011-Referenz
+
+Dokument 64 bestätigt für Juli 2011:
+
+```text
+TF Bronco / 3rd BCT, 25th Infantry Division
+└── TF Wolfhound / 2-27 Infantry
+    └── FOB Bostick, Naray
+        └── operating in northern Kunar
+```
+
+Diese Zuordnung ist für den Juli-2011-Snapshot belastbar. Sie wird nicht automatisch als vollständige lokale Personal- oder Fahrzeugstärke interpretiert.
+
+#### 4.2.2 Direkt belegte 2010er Präsenz
+
+DVIDS Photo ID 294427 vom 17.06.2010 belegt auf FOB Bostick:
+
+```text
+Charlie Troop
+1st Squadron, 32nd Cavalry Regiment
+Task Force Bandit
+```
+
+Damit ist die aktive Nutzung durch `1-32 Cavalry` im OMW-Zeitraum unmittelbar nachgewiesen.
+
+DVIDS Story 52264 vom 01.07.2010 beschreibt `Bravo Battery, 3rd Battalion, 321st Field Artillery Regiment` mit verteilten Platoons unter anderem auf FOB Bostick. Die Quelle nennt für diese Battery ausdrücklich den Einsatz des **M777** und Excalibur-Fähigkeit.
+
+```text
+B/3-321 Field Artillery
+└── platoon element at FOB Bostick
+    └── M777 155-mm towed artillery capability documented for the battery
+```
+
+Die Quelle bestätigt damit Artilleriepräsenz und M777-Fähigkeit. Sie wird nicht als Beweis für eine konkrete Zahl gleichzeitig auf Bostick stehender Geschütze interpretiert.
+
+#### 4.2.3 Sekundäre Rotationsliste
+
+Die vom Projektinhaber bereitgestellte Alchetron-Zusammenstellung `Forward Operating Base Bostick` enthält eine umfangreichere Einheiten-/Zeitraumliste als die einzelne DVIDS-Fotocaption und bleibt deshalb als **sekundärer Research Index** erhalten. Sie darf Primärquellen nicht überschreiben. Im Projektgespräch wurden daraus insbesondere folgende für den OMW-Zeitraum relevante Rotationen identifiziert:
+
+```text
+2010-2011
+1st Squadron, 32nd Cavalry Regiment
+
+March 2011-2012
+2nd Battalion, 27th Infantry Regiment
+
+2011-2012
+1st Battalion, 377th Field Artillery Regiment
+```
+
+Diese Sekundärangaben werden für die Suche nach Primärquellen verwendet. Die Juli-2011-Zuordnung `2-27 Infantry -> FOB Bostick` ist unabhängig durch Dokument 64 bestätigt. Detailangaben zu Unterkompanien, exakten Stärken und der lokalen 2011er Artilleriegliederung bleiben zu verifizieren.
+
+#### 4.2.4 DCS-Artillerieabbildung
+
+Historisch nachgewiesen ist 2010 eine **M777-155-mm-Feldartilleriefähigkeit** im Bostick-Detachment-Kontext. DCS stellt im aktuell diskutierten BLUE-Bestand keinen M777 bereit. Verfügbare Kandidaten sind unter anderem:
+
+```text
+2B11 mortar
+L118 Light Gun
+M109 Paladin
+M270 MLRS
+```
+
+Für Bostick gilt deshalb vorläufig:
+
+```text
+historical_system = M777
+exact_DCS_equivalent = NONE
+proxy_decision = OPEN
+```
+
+`L118` ist aufgrund der gezogenen/light-artillery-Charakteristik ein möglicher technischer Proxy, bildet aber weder Kaliber noch Reichweite des M777 korrekt ab. `M109` bildet die 155-mm-Klasse besser ab, wäre jedoch als selbstfahrende Kettenhaubitze physisch und logistisch eine deutlich andere Darstellung. Eine endgültige Proxy-Entscheidung ist eine Missionsdesignentscheidung des Projektinhabers und wird nicht durch dieses Dokument vorweggenommen.
+
+### 4.3 Quellen für die Kunar-/Nuristan-Reconciliation
+
+Primäre beziehungsweise projektinterne starke Referenzen:
+
+- [`OMW-HIST-AFGHANISTAN-ORBAT-2011-07`](64-afghanistan-order-of-battle-july-2011.md) – Juli-2011-ORBAT mit `TF Wolfhound / 2-27 Infantry -> FOB Bostick` und `TF Cacti / 2-35 Infantry -> FOB Joyce`.
+- U.S. Army, Staff Sergeant Ty Michael Carter Medal of Honor battlescape: <https://www.army.mil/medalofhonor/carter/> – COP Keating, OP Fritsche, Nuristan, OP-Größe und 120-mm-Mortar-Fire-Support; Schließungsentscheidung Oktober 2009.
+- DVIDS Photo ID 294427, *Cavalry Soldiers Maintain Their Zero at FOB Bostick*, 17.06.2010: <https://www.dvidshub.net/image/294427/cavalry-soldiers-maintain-their-zero-fob-bostick> – `C/1-32 Cavalry`, TF Bandit, FOB Bostick.
+- DVIDS Story 52264, *Top Chi reaches out, touches insurgent forces*, 01.07.2010: <https://www.dvidshub.net/news/52264/top-chi-reaches-out-touches-insurgent-forces> – `B/3-321 Field Artillery`, Platoon-Verteilung einschließlich FOB Bostick, M777-/Excalibur-Kontext.
+- OEF Base Tracker / ArcGIS: <https://experience.arcgis.com/experience/11ea962acdac4706a172d72f5de85781/> – geographischer Datensatz unter anderem für `OP Jojo`; Datensatz dient als Geolokations-/Namenshinweis, nicht allein als Beleg für 2010/11-Belegung.
+
+Vom Projektinhaber bereitgestellte ergänzende Sekundärquellen für Bostick:
+
+- Alchetron, *Forward Operating Base Bostick*: <https://alchetron.com/Forward-Operating-Base-Bostick> – aggregierte Einheiten-/Rotationsliste; als Research Index zu behandeln und gegen Primärquellen zu prüfen.
+- Alamy-Fotoseite zu Soldaten von Bravo Company/Battery, 3rd Battalion, 321st Field Artillery: <https://www.alamy.com/stock-photo-us-soldiers-from-bravo-company-3rd-battalion-321st-field-artillery-129496238.html> – ergänzender Bild-/Caption-Hinweis; Primärnachweis wird bevorzugt aus DVIDS/DoD abgeleitet.
+
+Für `Firebase California`, `OP Stallion`, `OP Clydesdale`, `OP 2` und die exakten Besetzungsdaten von `OP JoJo` bleibt die Reconciliation ausdrücklich offen. Diese Punkte dürfen nicht aus Template-Namen oder geografischer Plausibilität allein als aktive 2011er OMW-Garnisonen abgeleitet werden.
 
 ## 5. Stationierungskriterien
 
