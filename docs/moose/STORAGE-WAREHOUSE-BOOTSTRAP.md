@@ -225,14 +225,40 @@ Moose.lua SHA-256 e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a9
 
 Die Production-Orchestrierung verwendet weiterhin die bereits geprüften MOOSE-STORAGE- und USERFLAG-Pfade. Die neue JP-8-Datenbaseline und die node-spezifische Auswahl der zu spiegelnden Fuel-Ressource sind OMW-Domain-/Adapterlogik und implementieren keine MOOSE-Funktion parallel neu.
 
-## 9. Abschlussgrenze
+## 9. Verifikations- und Abschlussgrenze
 
-Die zugrunde liegende Warehouse-/STORAGE-Architektur besitzt historische Acceptance-Evidenz für den exakt getesteten Stand. Die neue JP-8-Baseline und das dauerhafte Production-Packaging benötigen einen neuen dokumentierten Smoke-Test.
+Die zugrunde liegende Warehouse-/STORAGE-Architektur besitzt historische Acceptance-Evidenz für den exakt getesteten Acceptance-Stand.
 
-Bis dahin:
+Für die produktive JP-8-v0.3-Komposition wurde am 16.08.2026 zusätzlich ein realer DCS-Smoke beobachtet. Der erfolgreiche Lauf zeigte:
+
+```text
+alle sieben JP-8-Nodes: APPLY verified=true
+KANDAHAR_MAIN zusätzlich AVGAS: verified=true
+strategische Item-Mirrors: verified=true
+TECHNICAL_NON_STRATEGIC Availability: verified=true
+OMW_WAREHOUSE_READY = 1
+AAR Production Base danach gestartet
+alle sechs AIR-OPS Foundations danach RUNNING
+kein OMW Warehouse-/Fuel-Bootstrapfehler im erfolgreichen Lauf
+```
+
+Der im selben `dcs.log` vorhandene frühere `KANDAHAR_MAIN/FUEL_JP8 unavailable`-Fehler gehört zum vorherigen Produktionsstand und ist als fail-closed Diagnoseevidenz zu erhalten.
+
+Die formale DCS-Acceptance bleibt trotzdem noch offen: Das gelieferte `debrief.log` nennt als ausgeführten Pfad `OMW_Template_v11_AirOps_rdy.miz`, während das separat geprüfte aktuelle Upload-Artefakt `OMW_Template_v11_AirOps_rdy(2).miz` heißt. Zusätzlich erzeugt der Production-Builder einen commitgebundenen Header; Dokumentationscommits nach dem getesteten Source-Head ändern daher den reproduzierbaren Bundle-Hash, obwohl die Runtime-Quellen unverändert sein können.
+
+Deshalb bleibt bis zur finalen, exakt dokumentierten Provenienzprüfung:
 
 ```text
 validated_in_dcs: false
+```
+
+Für die Merge-Vorbereitung ist auf dem finalen Branch-Stand noch erforderlich:
+
+```text
+finalen Branch-Head lokal pullen
+Production Base erneut deterministisch bauen und SHA-256 erfassen
+exakte ausgeführte MIZ und ihren SHA-256 dokumentieren
+kleinen finalen DCS-Smoke des daraus gebauten Bundles durchführen
 ```
 
 Mission-Editor-Reihenfolge:
