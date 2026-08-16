@@ -1,10 +1,15 @@
 ---
 document_id: OMW-AIROPS-AAR-PRODUCTION-BASE-BUILD-20260816
-status: ACCEPTED_TECHNICAL_EVIDENCE
+status: HISTORICAL_TEST_FIXTURE
 document_class: BUILD_EVIDENCE
 owning_policy: OMW-GOV-001
+authoritative_for:
+  - owner-run deterministic AAR production-base build and hash evidence for the documented pre-merge commits
+  - distinction between source/build verification and DCS runtime acceptance
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
+supersedes:
+superseded_by:
 source_branch: agent/aar-fuel-telemetry-calibration
 source_commit: d1677afb0e754e0b901c0319714148471f1c6936
 validated_in_dcs: false
