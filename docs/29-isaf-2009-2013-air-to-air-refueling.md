@@ -9,7 +9,7 @@ authoritative_for:
   - source-derived tanker-area geometry and planning constraints
   - OMW 2011-compatible corrected AAR production-planning geometry
   - OMW operational AAR standard/reserve roles and source-domain decisions
-  - current production-facing FAST/SLOW, callsign-family and FIR-entry/exit rules
+  - current production-facing FAST/SLOW, callsign-family, FIR-entry/exit, transit and fuel rules
   - OMW off-map KC-135 strategic design stock and lifecycle semantics
   - AAR production integration status and remaining acceptance work
 not_authoritative_for:
@@ -21,7 +21,7 @@ supersedes:
   - earlier AAR planning without consolidated runtime evidence and operational source-domain decisions
 superseded_by:
 source_branch: main
-source_commit: b0af0093dd276aa07b8e011543e8a00435e518f8
+source_commit: PENDING_MERGE
 validated_in_dcs: partial
 ---
 
@@ -38,9 +38,10 @@ Ergänzend gelten:
 - [`OMW-AIR-TASKING-AIRSPACE-CAS-REQUESTS`](54-air-tasking-airspace-control-cas-requests-and-mission-data.md)
 - [`OMW-AIR-AFGHANISTAN-AIP-2008`](72-afghanistan-aip-2008-airspace-aerodromes-and-flight-procedures.md)
 - [`OMW-MOOSE-ISR-FAC-CAS-AAR`](moose/ISR-FAC-CAS-AAR.md)
+- [`OMW-MOOSE-AAR-LRC-TRANSIT`](moose/AAR-LRC-TRANSIT.md)
 - [`OMW-ARCH-CAMPAIGN-STATE`](04-campaign-state.md)
 
-AIP-Reporting-Points und Airways belegen die veröffentlichte Airspace-Struktur. Sie beweisen nicht, dass konkrete historische KC-135-Sorties exakt diesen Routen folgten. OMW-Callsigns, Tracks, Verfügbarkeitsregeln und Designbestände sind Projektentscheidungen, soweit nicht ausdrücklich anders gekennzeichnet.
+AIP-Reporting-Points und Airways belegen die veröffentlichte Airspace-Struktur. Sie beweisen nicht, dass konkrete historische KC-135-Sorties exakt diesen Routen folgten. OMW-Callsigns, Tracks, Verfügbarkeitsregeln, Transitwerte, Fuel-Schwellen und Designbestände sind Projektentscheidungen, soweit nicht ausdrücklich anders gekennzeichnet.
 
 ## 2. Verbindliche Track-Geometrie
 
@@ -51,7 +52,7 @@ data/air-operations/aar/omw-2011-aar-areas.csv
 data/air-operations/aar/omw-2011-aar-areas.geojson
 ```
 
-Alle 19 Areas bleiben als Geometrien erhalten. Die sechs hier behandelten operativen Areas sind Track-/Area-Namen, keine Tankernamen. Die KC-135-Templates tragen die Area im Namen nur zur eindeutigen Zuordnung von Initial Fuel und Track-Konfiguration; ein Template bleibt an seine Area gebunden.
+Alle 19 Areas bleiben als Geometrien erhalten. Die sechs operativen Areas sind Track-/Area-Namen, keine Tankernamen. KC-135-Templates tragen die Area im Namen zur eindeutigen Konfiguration und bleiben an ihre Area gebunden.
 
 ## 3. Operatives AAR-Netz
 
@@ -68,15 +69,11 @@ Maschinenlesbar:
 
 - `data/air-operations/aar/omw-2011-aar-operational-core.csv`
 
-### 3.1 Aktuelle Verfügbarkeitsentscheidung
+Bis eine belastbare ATO-/Zeitfensterregel entwickelt und genehmigt ist, laufen die vier STANDARD-Tracks kontinuierlich. `LISA` und `MOE` sind RESERVE und werden nur bei passendem MissionDemand materialisiert. Das Ende des letzten zugehörigen Demands ordnet Egress an.
 
-Bis eine belastbare ATO-/Zeitfensterregel entwickelt und genehmigt ist, laufen die vier STANDARD-Tracks kontinuierlich. Das ist eine vorläufige OMW-Betriebsentscheidung und **kein** historischer Nachweis einer 24/7-CAS- oder 24/7-AAR-Abdeckung.
+## 4. Tankeridentität und kalibrierte Fuel-Werte
 
-`LISA` und `MOE` sind RESERVE. Sie werden nur bei passendem MissionDemand materialisiert. Ende des letzten zugehörigen Demands beendet den Reserve-Track operativ und ordnet Egress an.
-
-## 4. Tankeridentität
-
-Ein physischer Tanker behält seine Callsign-Familie und konkrete `n-1`-Gruppenidentität während seiner gesamten Sortie. Ein Relief-Tanker ist eine neue 1-Ship-Gruppe derselben Familie und erhält eine andere freie Gruppennummer.
+Ein physischer Tanker behält seine Callsign-Familie und konkrete `n-1`-Gruppenidentität während seiner gesamten Sortie. Relief ist eine neue 1-Ship-Gruppe derselben Familie mit anderer freier Gruppennummer.
 
 ```text
 NELSON/PATTY/LISA/MOE -> Texaco n-1
@@ -84,24 +81,24 @@ KRUSTY                 -> Arco n-1
 MILHOUSE               -> Shell n-1
 ```
 
-Ein `Shell`-Tanker wird weder auf Station noch bei Relief zu `Texaco`; ein `Arco`-Tanker bleibt `Arco`.
-
-Track-Identität besteht aus Area, Funkfrequenz und TACAN. Radio/TACAN werden nur beim Stationsbesitz aktiviert und vor Egress deaktiviert. Der Callsign selbst wird beim Track-Entry/Egress nicht mehr zwischen verschiedenen Familien umgeschaltet.
+Track-Identität besteht aus Area, Funkfrequenz und TACAN. Radio/TACAN werden nur beim Stationsbesitz aktiviert und vor Egress deaktiviert.
 
 | Area | Frequenz | TACAN | Initial Fuel | FuelLow |
 |---|---:|---|---:|---:|
-| `NELSON` | 384.400 AM | 47Y `NEL` | 96 % | 20 % |
-| `PATTY` | 237.300 AM | 48Y `PAT` | 96 % | 21 % |
-| `LISA` | 235.900 AM | 50Y `LIS` | 96 % | 24 % |
-| `MOE` | 243.400 AM | 52Y `MOE` | 96 % | 22 % |
-| `KRUSTY` | 258.300 AM | 42Y `KRU` | 90 % | 27 % |
-| `MILHOUSE` | 272.600 AM | 58Y `MIL` | 90 % | 27 % |
+| `NELSON` | 384.400 AM | 47Y `NEL` | 91.4067 % | 24 % |
+| `PATTY` | 237.300 AM | 48Y `PAT` | 91.4067 % | 26 % |
+| `LISA` | 235.900 AM | 50Y `LIS` | 91.4067 % | 35 % |
+| `MOE` | 243.400 AM | 52Y `MOE` | 91.4067 % | 31 % |
+| `KRUSTY` | 258.300 AM | 42Y `KRU` | 79.4558 % | 36 % |
+| `MILHOUSE` | 272.600 AM | 58Y `MIL` | 79.4558 % | 36 % |
+
+Die Initial-Fuel-Werte bilden den virtuellen Flug von MANAS beziehungsweise AL_UDEID bis zum jeweiligen External Spawn ab. Im gepinnten MOOSE-Stand ist keine öffentliche `SPAWN:InitFuel(...)`-Methode nachgewiesen. Der Controller führt die Werte daher als verbindlichen Konfigurationsvertrag/Metadatum; die physische Fuel-Menge der KC-135-Templates muss im Mission Editor entsprechend gesetzt werden.
+
+FuelLow wurde aus real gemessenem `TRACK_DEPARTURE -> EXTERNAL_HANDOFF`-Verbrauch, virtuellem `EXTERNAL_HANDOFF -> Source Base`-Verbrauch und einer 45-Minuten-Reserve berechnet. Der geplante Landing-Fuel-Floor von 13,000 lb wird dabei nicht unterschritten. Die Triggerwerte sind konservativ auf volle Prozent aufgerundet.
 
 Für Link-16 erzwingt OMW keine `SPAWN:InitSTN(...)`. Die gepinnte MOOSE-SPAWN-Implementierung verwaltet Template-STN-Kollisionen; OMW liest die materialisierte STN über `UNIT:GetSTN()` nur als Runtime-Telemetrie/Identitätsprüfung.
 
 ## 5. External Spawn/Handoff versus FIR Ingress/Egress
-
-Die Begriffe sind verbindlich getrennt:
 
 ```text
 EXTERNAL SPAWN
@@ -139,14 +136,14 @@ KRUSTY / MILHOUSE -> DAVER
 LISA / MOE        -> PINAX
 ```
 
-External Points bleiben:
+External Points:
 
 ```text
-MANAS external point:     N38.83163 E70.95271
-AL_UDEID external point:  N28.90264890 E64.61166667
+MANAS:     N38.83163 E70.95271
+AL_UDEID:  N28.90264890 E64.61166667
 ```
 
-FIR-Fixes im aktuellen Controller:
+FIR-Fixes:
 
 ```text
 EGPAN: N38°25'00" E70°44'00"
@@ -154,15 +151,13 @@ PINAX: N37°15'00" E69°06'00"
 DAVER: N29°34'18" E64°40'36"
 ```
 
-DAVER-Evidenzgrenze: Die 2011er AIP enthält zwischen ENR-Route-/Navfix-Daten und ENR 1.10 eine widersprüchliche DAVER-Koordinate. OMW verwendet für diesen Stand die bereits projektseitig verwendete M375-/Navfix-Koordinate `N29°34'18" E64°40'36"`. Die Quelleninkonsistenz bleibt ausdrücklich offen und wird nicht als historisch aufgelöst behauptet.
+DAVER-Evidenzgrenze: Die 2011er AIP enthält zwischen ENR-Route-/Navfix-Daten und ENR 1.10 eine widersprüchliche DAVER-Koordinate. OMW verwendet die projektseitig etablierte M375-/Navfix-Koordinate. Die Quelleninkonsistenz bleibt offen.
 
-### 5.1 Airways
+Vollständiges Lower-/Upper-Airway-Routing zwischen FIR-Fix und Track bleibt optional/später und blockiert die aktuelle AAR-Baseline nicht.
 
-Vollständiges Lower-/Upper-Airway-Routing zwischen FIR-Fix und Track ist **optional/später**. Der aktuelle Produktionsscope erzwingt nur den korrekten FIR Entry/Exit Fix. Eine spätere Airways-Erweiterung muss die tatsächlichen 2011er Routen, Höhenbänder und Track-Abzweige separat prüfen.
+## 6. Kalibrierter Transitvertrag
 
-## 6. MOOSE-first Routing
-
-Gepinnter Stand:
+Gepinnter MOOSE-Stand:
 
 ```text
 MOOSE release: 2.9.18
@@ -170,15 +165,48 @@ MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
 Moose.lua SHA-256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
 ```
 
-Produktiv relevant und source-reviewed:
+Produktiver Geschwindigkeitsvertrag:
+
+```text
+SPAWN:InitSpeedKnots(480) = initiale In-Air-Materialisierung
+route speed 300 kt        = Transit-Routenkommando
+track speed               = area-/profile-spezifischer Missionswert
+```
+
+Directional LRC:
+
+```text
+MANAS -> Afghanistan:      FL340
+Afghanistan -> MANAS:      FL350
+AL_UDEID -> Afghanistan:   FL350
+Afghanistan -> AL_UDEID:   FL340
+```
+
+Kein routinemäßiger weight-/fuel-basierter Step-Climb.
+
+Die Track-Höhe wird nach source-reviewtem MOOSE-Verhalten explizit gesetzt:
+
+```lua
+mission:SetMissionAltitude(profile.altitudeFt)
+```
+
+Damit wird das für den ORBIT-Pfad beobachtete 90-Prozent-Default nicht als OMW-Track-Höhe übernommen.
+
+Der optionale 60-NM-Late-Approach ist **nicht** Produktionsanforderung und wird nicht implementiert. Candidate 3 ersetzte den akzeptierten FIR-Ingress unzulässig und ist verworfen; Candidate 4 stellte den FIR-Vertrag wieder her, der zusätzliche UID-basierte Late-Approach-Adapter scheiterte jedoch im realen DCS-Lauf.
+
+## 7. MOOSE-first Routing und Fuel-Lifecycle
+
+Produktiv relevant und im gepinnten Source geprüft:
 
 ```text
 AUFTRAG:NewTANKER(...)
 AUFTRAG:SetMissionIngressCoord(...)
+AUFTRAG:SetMissionAltitude(...)
 AUFTRAG:SetMissionEgressCoord(...)
 AUFTRAG:Cancel()
 
 SPAWN:InitCallSign(...)
+SPAWN:InitSpeedKnots(...)
 UNIT:GetSTN()
 
 FLIGHTGROUP:AddWaypoint(...)
@@ -197,76 +225,32 @@ COORDINATE:Get2DDistance(...)
 SCHEDULER:New(...)
 ```
 
-`SetMissionIngressCoord(...)` führt die Materialisierung über den FIR-Ingress-Fix zum Tankerauftrag. `SetMissionEgressCoord(...)` führt nach Cancel zum FIR-Egress-Fix. Nach physischer Passage dieses Fixes ergänzt OMW über das öffentliche `FLIGHTGROUP:AddWaypoint(...)` den Weg zum External-Handoff-Punkt.
+`SetMissionIngressCoord(...)` führt über den FIR-Ingress-Fix zum Auftrag. `SetMissionEgressCoord(...)` führt nach Cancel zum FIR-Egress-Fix. Nach physischer Passage ergänzt OMW über `FLIGHTGROUP:AddWaypoint(...)` den External-Handoff-Punkt.
 
-Acceptance-5 auf dem Arbeitsbranch `agent/aar-runtime-finalization` hat die natürliche FIR-Passage und den anschließenden External-Handoff für die beobachteten Pfade praktisch bestätigt. Diese Evidenz gilt nur für den exakten Acceptance-5-Stand und hebt den Gesamtpfad wegen des verbliebenen Scheduled-Relief-Fehlers nicht zur final akzeptierten Produktionsbaseline an.
+## 8. Relief und MissionDemand
 
-## 7. Relief und FuelLow
-
-### 7.1 Scheduled Relief
-
-Verbindlicher Zielablauf:
+Scheduled Relief:
 
 ```text
 1 ACTIVE
--> nach geplantem Zyklus genau 1 RELIEF
--> Relief gleiche Callsign-Familie, andere n-1-Gruppennummer
--> Relief fliegt natürlich External Spawn -> FIR Fix -> Track
--> ETA <= 5 min armt nur den Handover
--> outgoing bleibt ACTIVE und behält Radio/TACAN
--> erst bei realer Track-Ankunft / enger Handover-Geometrie übernimmt Relief
--> dann outgoing Radio/TACAN OFF + Cancel/Egress
--> outgoing passiert FIR Egress Fix
--> External Handoff / recredit / despawn
--> wieder 1 ACTIVE
+-> genau 1 RELIEF
+-> gleiche Callsign-Familie, andere n-1-Gruppennummer
+-> natürliche Route External Spawn -> FIR Fix -> Track
+-> ETA <= 5 min armt nur Handover
+-> outgoing bleibt ACTIVE bis reale Track-Ankunft
+-> erst dann Station Owner wechseln, Radio/TACAN übertragen und outgoing Cancel/Egress
 ```
 
-Acceptance-5 zeigte, dass der Controller auf Commit `877f0c15c0b46dc8d08f39f7cdcde36e065563b5` das 5-Minuten-Gate noch falsch behandelt: Bei `etaSec=297` und `distanceNm=24.7` wurde der outgoing MILHOUSE-Tanker bereits auf Egress geschickt und der Relief wenige Sekunden später als Station Owner aktiviert. Dieser Ablauf ist **nicht** akzeptiert, obwohl der Harness formal `RESULT PASS` erreichte.
-
-### 7.2 FuelLow
-
-FuelLow bleibt bewusst von Scheduled Relief getrennt:
+FuelLow bleibt bewusst getrennt:
 
 ```text
 ACTIVE FuelLow
 -> vorhandenen Relief wiederverwenden oder genau einen Emergency-Relief erzeugen
 -> outgoing verlässt Station sofort und geht auf Egress
--> kein Warten auf ein 5-Minuten-Gate
--> vorübergehende Track-Lücke ist zulässig
--> Ersatz übernimmt denselben Track nach natürlicher Ankunft
+-> kein Warten auf Handover-Gate
 ```
 
-Diese Trennung ist beabsichtigt: Beim FuelLow-Pfad hat der Schutz des Tankers vor Treibstoffmangel Vorrang vor lückenloser Stationsabdeckung.
-
-## 8. MissionDemand
-
-STANDARD:
-
-```text
-MissionDemand attach
--> vorhandenen Standard-Track nutzen
-
-COMPLETE / CANCELLED / ABORTED
--> Demand endet
--> Standard-Track bleibt aktiv
-```
-
-RESERVE:
-
-```text
-erster passender Demand
--> Reserve-Track öffnen und materialisieren
-
-weitere passende Demands
--> denselben Reserve-Track nutzen
-
-letzter Demand endet
--> keine weitere Relief-Erzeugung
--> ACTIVE/RELIEF egress
--> FIR Egress Fix
--> External Handoff
--> Track wieder unbesetzt
-```
+STANDARD-Demand-Ende schließt den kontinuierlichen Track nicht. RESERVE schließt nach Ende des letzten Demands und ordnet vorhandenen ACTIVE/RELIEF auf Egress.
 
 ## 9. Strategische Pools und CampaignState
 
@@ -278,7 +262,7 @@ OFFMAP_AL_UDEID
 AIRCRAFT_KC135 = 40 count
 ```
 
-CampaignState bleibt alleinige strategische Ressourcenautorität. MOOSE SPAWN/FLIGHTGROUP/AUFTRAG sind nur physische Repräsentationen.
+CampaignState bleibt alleinige strategische Ressourcenautorität. MOOSE SPAWN/FLIGHTGROUP/AUFTRAG sind physische Repräsentationen.
 
 ```text
 materialization
@@ -296,15 +280,11 @@ Kein per-tail-Inventar, kein regulärer strategischer Turnaround-Timer und keine
 
 ## 10. Concurrency und Source Spacing
 
-Für AAR gilt **keine** globale `2/2/4`-Grenze aus AI-Unterstützungsmissionen.
-
 ```text
 Standard steady state: 4 Tanker
 Reserve: +1 Tanker je geöffnetem Reserve-Track
 pro Track maximal: 1 ACTIVE + 1 RELIEF
 ```
-
-Source Domain:
 
 ```text
 MANAS: mindestens 60 s zwischen zwei Materialisierungen
@@ -312,108 +292,74 @@ AL_UDEID: mindestens 60 s zwischen zwei Materialisierungen
 MANAS und AL_UDEID dürfen parallel materialisieren
 ```
 
-## 11. Aircraft Loss und Restore
+Für AAR gilt keine globale `2/2/4`-Grenze aus anderen AI-Unterstützungsmissionen.
 
-Loss:
+## 11. DCS-Evidenz
 
-```text
-FLIGHTGROUP Dead
--> OnAfterDead
--> Adapter OnLost
--> kein Aircraft-Recredit
--> Loss-Audit +1 exactly once
--> Ersatz nur, wenn der Track weiterhin benötigt/offen ist
-```
+### 11.1 Production Final Acceptance
 
-Acceptance-5 injizierte den PATTY-Verlust absichtlich mit MOOSE `UNIT:Explode()`. Der beobachtete Pfad `Dead/OnAfterDead -> kein Recredit -> Loss-Audit -> natürlicher PATTY-Replacement über EGPAN` ist für diesen exakten Lauf positiv belegt.
+Der dokumentierte Acceptance-Stand auf `agent/aar-runtime-finalization` bestätigte die Produktionsarchitektur einschließlich vier STANDARD-/zwei RESERVE-Tracks, Scheduled-Relief-Handover erst bei Track-Ankunft, FuelLow Immediate Egress, FIR-Fixes, External Handoff, Loss/Replacement und CampaignState exact-once Accounting. Die genaue Provenienz steht in `docs/moose/VERIFIED-METHODS.md`.
 
-Restore:
+### 11.2 AAR Fuel Telemetry Candidate 5 – 16.08.2026
 
 ```text
-CampaignState ExportSnapshot/Restore
--> persistierte Verluste bleiben erhalten
--> unresolved consumed AAR commitment wird genau einmal reconciled
--> bereits aufgelöste Commitments werden nicht doppelt credited
-```
-
-Ein in-process Snapshot/Restore-Test ist kein physischer Serverrestart.
-
-## 12. Letzte Tests und Ergebnisse
-
-### Acceptance-4
-
-Acceptance-4 bestätigte unter anderem vier STANDARD-Tracks, Reserve-Semantik, stabile Callsign-Familien und FIR-Fixes, verwendete aber noch eine Track-Koordinaten-Manipulation zur Testbeschleunigung. Deshalb blieb der Lauf nur Teil-Evidenz.
-
-### Acceptance-5 – realer Owner-DCS-Lauf 15.08.2026
-
-```text
-Arbeitsbranch: agent/aar-runtime-finalization
-Commit: 877f0c15c0b46dc8d08f39f7cdcde36e065563b5
-Test-ID: AAR-PRODUCTION-FINAL-ACCEPTANCE-5
-Bundle SHA-256: b04ad66bc7525c65c89c5946eda5d598af7570235a2d7b2750c17cb86919f6e6
-Controller SHA-256: 53af372b26aaf4f8afce5e27e3b7c70de52ad5a0606fc97705ac2b9f3bb6790c
-RuntimeIntegration SHA-256: 598aa378d95f9dcde9aa982222d40070006c3c892ffa66668576c64ff07aa91b
-Mission observed by DCS: OMW_Template_v9_AirOps_rdy.miz
+Branch: agent/aar-fuel-telemetry-calibration
+Source commit: 40965420d4c6dea7a6b0fa27b4e3cd80d2a2b26a
+Builder/Test-ID: AAR-FUEL-TELEMETRY-5
+Mission: OMW_Template_v10_AirOps_rdy.miz
+Mission SHA-256: 9dbff62a28e858d6eaf85d9037399dd591dd64edeccbe39bc74ecc63c43b6ca3
+Bundle SHA-256: dd2386bd5bb2b0d2f89ac4e225a2e76ab171df1008f1d46eda16a9757c592a94
 DCS: 2.9.28.26385 MT
 MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
 Moose.lua SHA-256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
+Result: PASS
 ```
 
-Kein Mission-SHA-256 wurde für diesen Lauf als reale Owner-Ausgabe dokumentiert; damit ist keine vollständige Acceptance-Provenienz gegeben.
-
-Positiv beobachtet:
-
-- vier STANDARD-Tracks kontinuierlich; LISA/MOE nur auf Demand;
-- natürliche EGPAN-/DAVER-/PINAX-Ingress- und Egress-Passage;
-- External Spawn/Handoff getrennt von FIR Entry/Exit;
-- Callsign-Familien stabil und `n-1`-Relief korrekt;
-- MILHOUSE Relief physisch über DAVER mit zunächst nur einem Station Owner;
-- NELSON FuelLow Immediate-Egress und Replacement;
-- LISA/MOE Reserve-Lifecycle inklusive External Handoff;
-- absichtlicher PATTY-Loss und natürlicher Replacement;
-- Harness formal `RESULT PASS`.
-
-Nicht akzeptiert:
-
-- Scheduled MILHOUSE Handover wechselte den Stationsbesitz bereits am 5-Minuten-Gate (`etaSec=297`, `distanceNm=24.7`) statt erst bei realer Track-Ankunft.
-
-Daher gilt Acceptance-5 **nicht** als finaler Produktions-PASS. Die positiven Teilmechaniken bleiben Evidenz für diesen exakten Stand.
-
-## 13. Aktuelle To-do-Liste bis zum Ziel
-
-### Ziel
-
-Eine produktionsreife, MOOSE-first AAR-Struktur für OMW mit:
+Endmarker:
 
 ```text
-4 STANDARD-Tracks bis auf weiteres kontinuierlich
-2 RESERVE-Tracks nur auf MissionDemand
-stabile Callsign-Familien und eindeutige n-1-Sorties
-External Spawn/Handoff getrennt von FIR Ingress/Egress
-EGPAN / DAVER / PINAX als reale FIR-Fixes
-Scheduled Relief ohne Versorgungslücke
-FuelLow mit sicherem Immediate Egress
-CampaignState exact-once consume/recredit/loss
-keine sichtbaren Teleports/Spawns/Despawns
-Airways optional/später
+RESULT PASS allTracks=6 samplesPerTrack=6
+points=SPAWN,INGRESS,TRACK,TRACK_DEPARTURE,FIR_EGRESS,EXTERNAL_HANDOFF
+fuelLowExcluded=true
 ```
 
-### Aktueller Arbeitsbranch
+Der Lauf bestätigt die sechs vollständigen Messpfade bis External Handoff und liefert die Outbound-Basis für die genehmigten FuelLow-Werte. Er bestätigt noch nicht die **anschließend promovierte Produktionsquelle**; dafür ist ein neuer Production-Acceptance-Lauf erforderlich.
+
+## 12. Aktueller Produktionskandidat und verbleibendes Gate
+
+Vom Projektinhaber am 16.08.2026 genehmigte Promotion:
 
 ```text
-agent/aar-runtime-finalization
+Spawn initialization: 480 kt
+Transit route:         300 kt
+
+MANAS -> Afghanistan:      FL340
+Afghanistan -> MANAS:      FL350
+AL_UDEID -> Afghanistan:   FL350
+Afghanistan -> AL_UDEID:   FL340
+
+Exact track mission altitude: enabled
+60-NM late approach: not required / not implemented
+
+Initial Fuel:
+MANAS:     91.4067 %
+AL_UDEID:  79.4558 %
+
+FuelLow:
+NELSON:    24 %
+PATTY:     26 %
+LISA:      35 %
+MOE:       31 %
+MILHOUSE:  36 %
+KRUSTY:    36 %
 ```
 
-PR #101 bleibt Draft und ist nicht mergebereit, solange der Scheduled-Relief-Handover nicht korrigiert und erneut akzeptiert ist.
+Vor finaler Produktionsfreigabe verbleibt:
 
-### Noch zu erledigen
-
-1. Scheduled-Relief-Controller korrigieren: 5-Minuten-Gate nur als `handover armed` behandeln.
-2. Outgoing ACTIVE bis zur realen Track-Ankunft beziehungsweise eng definierten Handover-Geometrie des Reliefs auf Station halten.
-3. Erst bei tatsächlicher Übernahme Radio/TACAN auf den Relief übertragen und danach outgoing `Cancel/Egress` auslösen.
-4. FuelLow-Pfad bewusst unverändert lassen: Immediate Egress ohne 5-Minuten-Warten.
-5. Acceptance-Harness korrigieren: vorzeitiges Abschalten des outgoing oder vorzeitiger Station-Owner-Wechsel zwischen 5-Minuten-Gate und Track-Ankunft muss FAIL sein.
-6. Regressionen beibehalten: vier STANDARD / zwei RESERVE, Callsign-Familien, STN-Readback, 60-s-Source-Spacing, EGPAN/DAVER/PINAX, External Handoff, Reserve-Stop, PATTY-Loss/Replacement, CampaignState exact-once.
-7. neuen Owner-DCS-Lauf mit vollständiger Mission-, Bundle-, Commit-, DCS- und MOOSE-Provenienz durchführen.
-8. nur bei realem PASS `VERIFIED-METHODS.md` und Acceptance-Status hochstufen; danach PR #101 erst nach ausdrücklicher Owner-Freigabe Ready/Merge.
-9. Lower-/Upper-Airway-Routing als separaten optionalen Folgeausbau behandeln; es blockiert den aktuellen AAR-Abschluss nicht.
+```text
+1. lokaler Build und Hash-Prüfung des promovierten Remote-Commits;
+2. Mission-Editor-Anpassung der sechs KC-135-Template-Fuelwerte durch den Projektinhaber;
+3. neuer DCS-Lauf mit vollständiger Commit-/Mission-/Bundle-/DCS-/MOOSE-Provenienz;
+4. Regression der bestehenden AAR-Lifecycle-Gates;
+5. erst danach Status des promovierten Produktionsstands auf VALIDATED anheben.
+```

@@ -18,6 +18,7 @@ local HANDOFF_RADIUS_NM = 10
 local FIR_FIX_RADIUS_NM = 5
 local TRACK_ENTRY_RADIUS_NM = 5
 local DISPATCH_INTERVAL_SEC = 5
+local SPAWN_INITIAL_SPEED_KT = 480
 local TRANSIT_SPEED_KT = 300
 local LEG_NM = 35
 local STATION_CYCLE_SEC = 3 * 60 * 60
@@ -41,9 +42,9 @@ local FIR_FIXES = {
 }
 
 local TRANSIT = {
-  MANAS_WEST_HIGH = { ingressFt = 34000, egressFt = 33000 },
-  MANAS_EAST_HIGH = { ingressFt = 33000, egressFt = 34000 },
-  AL_UDEID_NORTH_HIGH = { ingressFt = 33000, egressFt = 34000 },
+  MANAS_WEST_HIGH = { ingressFt = 34000, egressFt = 35000 },
+  MANAS_EAST_HIGH = { ingressFt = 34000, egressFt = 35000 },
+  AL_UDEID_NORTH_HIGH = { ingressFt = 35000, egressFt = 34000 },
 }
 
 local AREAS = {
@@ -54,7 +55,7 @@ local AREAS = {
     sourceDomain = "MANAS", transitProfile = "MANAS_WEST_HIGH", firFix = "PINAX",
     availability = "RESERVE", coreProfile = "FAST",
     frequencyMHz = 235.900, tacanChannel = 50, tacanIdent = "LIS",
-    fuelLowPct = 24, initialFuelPct = 96,
+    fuelLowPct = 35, initialFuelPct = 91.4067,
     profiles = { SLOW = { altitudeFt = 22000, speedKt = 220 }, FAST = { altitudeFt = 25000, speedKt = 300 } },
   },
   MOE = {
@@ -64,7 +65,7 @@ local AREAS = {
     sourceDomain = "MANAS", transitProfile = "MANAS_WEST_HIGH", firFix = "PINAX",
     availability = "RESERVE", coreProfile = "FAST",
     frequencyMHz = 243.400, tacanChannel = 52, tacanIdent = "MOE",
-    fuelLowPct = 22, initialFuelPct = 96,
+    fuelLowPct = 31, initialFuelPct = 91.4067,
     profiles = { SLOW = { altitudeFt = 24000, speedKt = 220 }, FAST = { altitudeFt = 27000, speedKt = 300 } },
   },
   MILHOUSE = {
@@ -74,7 +75,7 @@ local AREAS = {
     sourceDomain = "AL_UDEID", transitProfile = "AL_UDEID_NORTH_HIGH", firFix = "DAVER",
     availability = "STANDARD", coreProfile = "SLOW",
     frequencyMHz = 272.600, tacanChannel = 58, tacanIdent = "MIL",
-    fuelLowPct = 27, initialFuelPct = 90,
+    fuelLowPct = 36, initialFuelPct = 79.4558,
     profiles = { SLOW = { altitudeFt = 22000, speedKt = 220 } },
   },
   KRUSTY = {
@@ -84,7 +85,7 @@ local AREAS = {
     sourceDomain = "AL_UDEID", transitProfile = "AL_UDEID_NORTH_HIGH", firFix = "DAVER",
     availability = "STANDARD", coreProfile = "SLOW",
     frequencyMHz = 258.300, tacanChannel = 42, tacanIdent = "KRU",
-    fuelLowPct = 27, initialFuelPct = 90,
+    fuelLowPct = 36, initialFuelPct = 79.4558,
     profiles = { SLOW = { altitudeFt = 22000, speedKt = 220 } },
   },
   PATTY = {
@@ -94,7 +95,7 @@ local AREAS = {
     sourceDomain = "MANAS", transitProfile = "MANAS_EAST_HIGH", firFix = "EGPAN",
     availability = "STANDARD", coreProfile = "SLOW",
     frequencyMHz = 237.300, tacanChannel = 48, tacanIdent = "PAT",
-    fuelLowPct = 21, initialFuelPct = 96,
+    fuelLowPct = 26, initialFuelPct = 91.4067,
     profiles = { SLOW = { altitudeFt = 24000, speedKt = 220 } },
   },
   NELSON = {
@@ -104,7 +105,7 @@ local AREAS = {
     sourceDomain = "MANAS", transitProfile = "MANAS_EAST_HIGH", firFix = "EGPAN",
     availability = "STANDARD", coreProfile = "FAST",
     frequencyMHz = 384.400, tacanChannel = 47, tacanIdent = "NEL",
-    fuelLowPct = 20, initialFuelPct = 96,
+    fuelLowPct = 24, initialFuelPct = 91.4067,
     profiles = { FAST = { altitudeFt = 27500, speedKt = 300 } },
   },
 }
@@ -493,7 +494,7 @@ local function materialize(request)
   local spawner = getSpawner(selection.area, areaSpec)
   spawner:InitCallSign(sortieCallsign.id, sortieCallsign.name, sortieCallsign.number, 1)
   spawner:InitHeading(spawnCoord:HeadingTo(firIngressCoord))
-  spawner:InitSpeedKnots(TRANSIT_SPEED_KT)
+  spawner:InitSpeedKnots(SPAWN_INITIAL_SPEED_KT)
   local group = spawner:SpawnFromCoordinate(spawnCoord)
   if not group then
     releaseSortieCallsign({ runtimeId = runtimeId, sortieCallsign = sortieCallsign })
@@ -513,6 +514,7 @@ local function materialize(request)
 
   local mission = AUFTRAG:NewTANKER(trackCoord, profile.altitudeFt, profile.speedKt, areaSpec.headingDeg, LEG_NM,
     Unit.RefuelingSystem.BOOM_AND_RECEPTACLE)
+  mission:SetMissionAltitude(profile.altitudeFt)
   mission:SetMissionIngressCoord(firIngressCoord, transit.ingressFt, TRANSIT_SPEED_KT)
   mission:SetMissionEgressCoord(firEgressCoord, transit.egressFt, TRANSIT_SPEED_KT)
 
@@ -888,6 +890,7 @@ function Controller.GetConfig()
     trackEntryRadiusNm = TRACK_ENTRY_RADIUS_NM,
     stationCycleSec = STATION_CYCLE_SEC,
     reliefHandoverEtaSec = RELIEF_HANDOVER_ETA_SEC,
+    spawnInitialSpeedKt = SPAWN_INITIAL_SPEED_KT,
     transitSpeedKt = TRANSIT_SPEED_KT,
     standardTrackCount = STANDARD_TRACK_COUNT,
     reserveTrackCount = RESERVE_TRACK_COUNT,
@@ -933,6 +936,22 @@ function Controller.GetConfig()
       KRUSTY = AREAS.KRUSTY.callsignName,
       PATTY = AREAS.PATTY.callsignName,
       NELSON = AREAS.NELSON.callsignName,
+    },
+    initialFuelPctByArea = {
+      LISA = AREAS.LISA.initialFuelPct,
+      MOE = AREAS.MOE.initialFuelPct,
+      MILHOUSE = AREAS.MILHOUSE.initialFuelPct,
+      KRUSTY = AREAS.KRUSTY.initialFuelPct,
+      PATTY = AREAS.PATTY.initialFuelPct,
+      NELSON = AREAS.NELSON.initialFuelPct,
+    },
+    fuelLowPctByArea = {
+      LISA = AREAS.LISA.fuelLowPct,
+      MOE = AREAS.MOE.fuelLowPct,
+      MILHOUSE = AREAS.MILHOUSE.fuelLowPct,
+      KRUSTY = AREAS.KRUSTY.fuelLowPct,
+      PATTY = AREAS.PATTY.fuelLowPct,
+      NELSON = AREAS.NELSON.fuelLowPct,
     },
   }
 end

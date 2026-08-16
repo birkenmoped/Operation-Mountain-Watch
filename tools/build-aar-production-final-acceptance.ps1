@@ -9,8 +9,9 @@ $sourceDir = Join-Path $repoRoot 'mission\tests\aar-production-integration\src'
 $distDir = Join-Path $repoRoot 'mission\tests\aar-production-integration\dist'
 $outputFile = Join-Path $distDir 'OMW_AAR_Production_Final_Acceptance.lua'
 
-$builderVersion = 'AAR-PRODUCTION-FINAL-ACCEPTANCE-5'
-$testId = 'AAR-PRODUCTION-FINAL-ACCEPTANCE-5'
+$builderVersion = 'AAR-PRODUCTION-FINAL-ACCEPTANCE-6'
+$testId = 'AAR-PRODUCTION-FINAL-ACCEPTANCE-6'
+$priorTestId = 'AAR-PRODUCTION-FINAL-ACCEPTANCE-5'
 $mooseCommit = '73d3ed119cd9e7e3f2cfcabbaa34513d30529b54'
 $mooseSha256 = 'e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915'
 
@@ -49,6 +50,9 @@ $requirements = @(
   @{ File = 'Controller'; Marker = 'STANDARD_TRACK_COUNT = 4' },
   @{ File = 'Controller'; Marker = 'RESERVE_TRACK_COUNT = 2' },
   @{ File = 'Controller'; Marker = 'MAX_AIRCRAFT_PER_TRACK = 2' },
+  @{ File = 'Controller'; Marker = 'SPAWN_INITIAL_SPEED_KT = 480' },
+  @{ File = 'Controller'; Marker = 'TRANSIT_SPEED_KT = 300' },
+  @{ File = 'Controller'; Marker = 'mission:SetMissionAltitude(profile.altitudeFt)' },
   @{ File = 'Controller'; Marker = 'stableSortieCallsign = true' },
   @{ File = 'Controller'; Marker = 'firFixRoutingEnabled = true' },
   @{ File = 'Controller'; Marker = 'airwaysRoutingEnabled = false' },
@@ -56,7 +60,7 @@ $requirements = @(
   @{ File = 'Controller'; Marker = 'runtime.flightGroup:AddWaypoint(runtime.externalHandoffCoord' },
   @{ File = 'Controller'; Marker = 'spawnedUnit:GetSTN()' },
   @{ File = 'Controller'; Marker = 'function flightGroup:OnAfterDead' },
-  @{ File = 'Harness'; Marker = 'AAR-PRODUCTION-FINAL-ACCEPTANCE-5' },
+  @{ File = 'Harness'; Marker = $priorTestId },
   @{ File = 'Harness'; Marker = 'AAR_POLICY_BASELINE_PASS' },
   @{ File = 'Harness'; Marker = 'RESTORE_RECONCILIATION_PASS' },
   @{ File = 'Harness'; Marker = 'POOL_BASELINE_PASS' },
@@ -121,7 +125,9 @@ $header = @"
 -- GitCommit: $commit
 -- GeneratedUtc: $generatedUtc
 -- Gate/Test-ID: $testId
--- Scope: final combined AAR production acceptance for four standard tracks, two demand-driven FAST reserve tracks, stable callsign families, source spacing, CampaignState pools/accounting, natural FIR-fix ingress, natural track entry, one scheduled relief, FuelLow relief, reserve start/stop, loss replacement and restore reconciliation.
+-- Scope: final combined AAR production acceptance for the owner-approved LRC/fuel calibration plus four standard tracks, two demand-driven FAST reserve tracks, stable callsign families, source spacing, CampaignState pools/accounting, natural FIR-fix ingress, natural track entry, one scheduled relief, FuelLow relief, reserve start/stop, loss replacement and restore reconciliation.
+-- Calibration: spawn 480 kt; route 300 kt; MANAS in/out FL340/FL350; AL_UDEID in/out FL350/FL340; exact track mission altitude; FuelLow NELSON/PATTY/LISA/MOE/MILHOUSE/KRUSTY 24/26/35/31/36/36 percent.
+-- Initial-fuel contract: MANAS 91.4067 percent; AL_UDEID 79.4558 percent. Physical template fuel remains Mission Editor configuration; no MOOSE InitFuel API is assumed.
 -- FIR routing: NELSON/PATTY via EGPAN, KRUSTY/MILHOUSE via DAVER, LISA/MOE via PINAX. External spawn/handoff remains separate. Full ATS-airway routing is deferred.
 -- Track routing: physical tankers must reach their configured production AAR track naturally; the harness does not rewrite runtime.trackCoord and does not teleport aircraft.
 -- Scheduled relief: only MILHOUSE is accelerated, and only by advancing the relief launch time after a short station dwell. The relief then flies naturally from the external spawn through DAVER to the real MILHOUSE track. During that transit two MILHOUSE-assigned physical sorties are expected, but only the outgoing tanker owns station radio/TACAN until final relief ingress.
@@ -137,6 +143,9 @@ $header = @"
 
 "@
 
+$harness = $content.Harness.Replace($priorTestId, $testId)
+$cycleControl = $content.CycleControl.Replace($priorTestId, $testId)
+
 $bundle = $header
 $bundle += "local OMW_AAR_TEST_CampaignState = (function()`n" + $content.CampaignState + "`nend)()`n"
 $bundle += "local OMW_AAR_TEST_StrategicStock = (function()`n" + $content.StrategicStock + "`nend)()`n"
@@ -144,8 +153,8 @@ $bundle += "local OMW_AAR_TEST_Initializer = (function()`n" + $content.Initializ
 $bundle += "local OMW_AAR_TEST_Adapter = (function()`n" + $content.Adapter + "`nend)()`n"
 $bundle += "local OMW_AAR_TEST_RuntimeIntegration = (function()`n" + $content.RuntimeIntegration + "`nend)()`n"
 $bundle += "local OMW_AAR_TEST_Controller = (function()`n" + $content.Controller + "`nend)()`n"
-$bundle += $content.Harness + "`n"
-$bundle += $content.CycleControl
+$bundle += $harness + "`n"
+$bundle += $cycleControl
 
 [System.IO.File]::WriteAllText($outputFile, $bundle, [System.Text.UTF8Encoding]::new($false))
 
@@ -155,6 +164,21 @@ Write-Host "TestId: $testId"
 Write-Host "GeneratedUtc: $generatedUtc"
 Write-Host 'StandardTracks: 4'
 Write-Host 'ReserveTracks: 2'
+Write-Host 'SpawnInitialSpeedKt: 480'
+Write-Host 'TransitRouteSpeedKt: 300'
+Write-Host 'ManasIngressFt: 34000'
+Write-Host 'ManasEgressFt: 35000'
+Write-Host 'AlUdeidIngressFt: 35000'
+Write-Host 'AlUdeidEgressFt: 34000'
+Write-Host 'MissionAltitudeMode: EXACT_TRACK_ALTITUDE'
+Write-Host 'InitialFuelManasPct: 91.4067'
+Write-Host 'InitialFuelAlUdeidPct: 79.4558'
+Write-Host 'FuelLowNelsonPct: 24'
+Write-Host 'FuelLowPattyPct: 26'
+Write-Host 'FuelLowLisaPct: 35'
+Write-Host 'FuelLowMoePct: 31'
+Write-Host 'FuelLowMilhousePct: 36'
+Write-Host 'FuelLowKrustyPct: 36'
 Write-Host 'LISAProfile: FAST'
 Write-Host 'LISAAvailability: RESERVE'
 Write-Host 'MOEProfile: FAST'

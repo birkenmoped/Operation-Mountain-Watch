@@ -56,15 +56,15 @@ REJECTED_FOR_PROJECT_USE
 | `WAREHOUSE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | AirOps-Stock-/Asset-Lifecycle; kein WAREHOUSE für externe MANAS-/AL_UDEID-AAR-count-Pools |
 | `STORAGE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | CampaignState->DCS-Warehouse Mirror/Telemetry; keine strategische Rückautorität |
 | `COHORT` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Asset-/Mission-Capability-Pfade für dokumentierte AirOps-Foundations |
-| `FLIGHTGROUP` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | AAR FuelLow, Dead/OnAfterDead, GetCoordinate und `AddWaypoint(...)` für FIR-Egress -> External Handoff praktisch bestätigt; Candidate-4-Late-Approach über public waypoint getters + `AddWaypoint(...)` ist im realen DCS-Lauf fehlgeschlagen und nicht validiert |
+| `FLIGHTGROUP` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | AAR FuelLow, Dead/OnAfterDead, GetCoordinate und `AddWaypoint(...)` für FIR-Egress -> External Handoff praktisch bestätigt; Candidate-4-Late-Approach über public waypoint getters + `AddWaypoint(...)` ist fehlgeschlagen und nicht validiert |
 | `COMMANDER` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | dokumentierter COMMANDER-Lifecycle; nicht Quelle der externen OMW-AAR-Pools |
-| `AUFTRAG` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | AAR `NewTANKER`, Mission-Ingress/-Egress und `Cancel()` praktisch bestätigt; Candidate 4 bestätigte erneut `SetMissionIngressCoord(FIR fix)`, während die Annahme einer zum geplanten Adapterzeitpunkt verfügbaren `GetGroupWaypointIndex(...)`-UID im DCS-Lauf scheiterte; `SetMissionAltitude(...)` bleibt branch-lokaler Kandidat |
-| `SPAWN` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | area-spezifische AAR-Templates, stabile Sortie-Callsign-Familie und branch-lokal bestätigter 480-kt-In-Air-Spawnzustand; keine erzwungene `InitSTN()`, STN-Readback über `UNIT:GetSTN()` |
-| `SCHEDULER` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Source-Queue, Station-Monitoring und Acceptance-Koordination; das einmalige `ScheduleOnce(...)` für Candidate-4-Late-Approach führte am gewählten Zeitpunkt zu keiner verfügbaren Mission-Waypoint-UID und ist für diesen Zweck nicht validiert |
+| `AUFTRAG` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | AAR `NewTANKER`, Mission-Ingress/-Egress, `Cancel()` sowie `SetMissionAltitude(...)` für den Candidate-5-Exact-Track-Altitude-Scope praktisch bestätigt; Candidate-4-UID-Late-Approach bleibt nicht validiert |
+| `SPAWN` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | area-spezifische AAR-Templates, stabile Sortie-Callsign-Familie und Candidate-5-480-kt-In-Air-Materialisierung praktisch bestätigt; keine erzwungene `InitSTN()`, keine nachgewiesene `InitFuel()`-API |
+| `SCHEDULER` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Source-Queue, Station-Monitoring und Acceptance-Koordination; Candidate-4-UID-Timing für Late-Approach nicht validiert |
 | `USERFLAG` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Warehouse-Acceptance-Readiness-Pfade |
-| `GROUP`, `UNIT`, `STATIC`, `ZONE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Template-/Static-/Warehouse-/Zonenvalidierung; AAR `UNIT:GetSTN()` und test-only `UNIT:Explode()` praktisch bestätigt. `UNIT:GetFuel()`, `UNIT:GetCurrentFuelKgs()` und `UNIT:GetFuelMassMax()` wurden in realen AAR-Fuel-Telemetry-Läufen praktisch verwendet. |
-| `COORDINATE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` / teilweise `SOURCE_REVIEWED` | `Get2DDistance(...)` im AAR-Scope praktisch verwendet; `GetIntermediateCoordinate(..., distanceMeters)` für den 60-NM-LRC-Approach ist source-verifiziert, aber der kombinierte Late-Approach-Routingpfad ist DCS-fehlgeschlagen und nicht validiert |
-| `ARMYGROUP`, `BRIGADE`, `OPSGROUP` | `PLANNED` / teilweise validiert | Bodenoperationsscope bleibt geplant; für AAR sind Despawn sowie Radio-/TACAN-Switch praktisch korreliert; `GetWaypointIndex(uid)`, `GetWaypointID(index)` und `GetWaypointCoordinate(index)` sind source-verifiziert, aber der Candidate-4-Late-Approach-Pfad ist DCS-fehlgeschlagen |
+| `GROUP`, `UNIT`, `STATIC`, `ZONE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Template-/Static-/Warehouse-/Zonenvalidierung; AAR `UNIT:GetSTN()` und test-only `UNIT:Explode()` bestätigt. `UNIT:GetFuel()`, `UNIT:GetCurrentFuelKgs()` und `UNIT:GetFuelMassMax()` wurden in realen AAR-Fuel-Telemetry-Läufen verwendet. |
+| `COORDINATE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` / teilweise `SOURCE_REVIEWED` | `Get2DDistance(...)` im AAR-Scope praktisch verwendet; Late-Approach-Kombination bleibt nicht validiert |
+| `ARMYGROUP`, `BRIGADE`, `OPSGROUP` | `PLANNED` / teilweise validiert | Bodenoperationsscope bleibt geplant; für AAR sind Despawn sowie Radio-/TACAN-Switch praktisch korreliert; Candidate-4-Waypoint-getter-Kombination nicht validiert |
 | `OPSTRANSPORT` | `PLANNED` | taktischer Transport |
 | `CTLD`, `CSAR`, `AICSAR` | `PLANNED` / teilweise verwendet | separate Acceptance erforderlich |
 | `INTEL` | `PLANNED` | taktisches Lagebild; Laufzeitnachweis offen |
@@ -78,23 +78,23 @@ REJECTED_FOR_PROJECT_USE
 
 ## 4. AAR – gepinnter und akzeptierter MOOSE-Scope
 
-Gepinnter Stand:
-
 ```text
 MOOSE release: 2.9.18
 MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
 Moose.lua SHA-256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
 ```
 
-Für den akzeptierten AAR-Produktionsstand sind im tatsächlich gepinnten `Moose.lua` geprüft und für den dokumentierten Einsatz praktisch bestätigt:
+Für den AAR-Scope sind im tatsächlich gepinnten `Moose.lua` geprüft und für den jeweils dokumentierten Einsatz praktisch bestätigt:
 
 ```text
 AUFTRAG:NewTANKER(...)
 AUFTRAG:SetMissionIngressCoord(...)
+AUFTRAG:SetMissionAltitude(...)
 AUFTRAG:SetMissionEgressCoord(...)
 AUFTRAG:Cancel()
 
 SPAWN:InitCallSign(...)
+SPAWN:InitSpeedKnots(...)
 SPAWN template-STN collision handling
 UNIT:GetSTN()
 UNIT:Explode(...) [test-only]
@@ -117,53 +117,40 @@ OPSGROUP:Despawn(...)
 
 COORDINATE:Get2DDistance(...)
 SCHEDULER:New(...)
-```
 
-Für die AAR-Fuel-Telemetrie wurden außerdem in realen DCS-Läufen verwendet:
-
-```text
 UNIT:GetFuel()
 UNIT:GetCurrentFuelKgs()
 UNIT:GetFuelMassMax()
 ```
 
-Der gepinnte `Moose.lua` implementiert `UNIT:GetFuel()` als öffentlichen Wrapper über `DCS Unit:getFuel()` und liefert den relativen Fuelwert; bei externen Tanks kann der Wert größer als `1.0` sein. Der Telemetrie-Harness klemmt diesen Wert deshalb nicht. `UNIT:GetCurrentFuelKgs()` und `UNIT:GetFuelMassMax()` werden nur als ergänzende Massentelemetrie protokolliert.
+`UNIT:GetFuel()` liefert den relativen Fuelwert; externe Tanks können Werte größer als `1.0` ergeben. Die Telemetrie klemmt diesen Wert nicht.
 
-`FLIGHTGROUP:AddWaypoint(...)` wird im akzeptierten Produktionspfad nach physischer Passage des FIR-Egress-Fixes verwendet, um den getrennten External-Handoff-Punkt anzufügen.
+`FLIGHTGROUP:AddWaypoint(...)` wird im akzeptierten Produktionspfad nach physischer FIR-Egress-Passage verwendet, um den getrennten External-Handoff-Punkt anzufügen.
 
-`OPSGROUP:SwitchCallsign(...)` ist im gepinnten MOOSE weiterhin verfügbar, wird im korrigierten AAR-Produktionspfad aber **nicht** für einen Wechsel zwischen Transit- und Track-Callsign verwendet. Der physische Tanker behält seine Callsign-Familie vom Spawn bis Despawn.
+`OPSGROUP:SwitchCallsign(...)` ist verfügbar, wird im korrigierten AAR-Produktionspfad aber nicht zum Wechsel zwischen Transit- und Track-Callsign verwendet.
 
-### 4.1 Branch-lokaler LRC-Kandidat
+Im gepinnten `Moose.lua` wurde keine öffentliche `SPAWN:InitFuel(...)`-Methode nachgewiesen. Die physische Initial-Fuel-Menge bleibt deshalb Template-/Mission-Editor-Konfiguration und wird nicht durch eine erfundene MOOSE- oder Native-DCS-Parallellogik gesetzt.
 
-`AAR-FUEL-TELEMETRY-3` hat den FIR-Ingress-Vertrag verletzt, indem `SetMissionIngressCoord(...)` auf den Late-Approach verschoben und der FIR-Fix anschließend per delayed `AddWaypoint` nachgerüstet wurde. Der reale DCS-Lauf zeigte keine zuverlässige PINAX-/DAVER-Passage. Dieser Ansatz ist verworfen.
+### 4.1 LRC-/Fuel-Kalibrierung
 
-`AAR-FUEL-TELEMETRY-4` stellte `SetMissionIngressCoord(EGPAN/PINAX/DAVER, ...)` wieder her. Der reale DCS-Lauf bestätigte die tatsächliche Passage aller drei zugeordneten FIR-Fixes für die sechs operativen Tracks.
+Candidate 3 ersetzte den FIR-Ingress durch einen Late-Approach und wurde nach realer Routingregression verworfen.
 
-Der zusätzliche Late-Approach-Adapter schlug jedoch für die Candidate-4-Runtimes fehl mit:
+Candidate 4 stellte `SetMissionIngressCoord(EGPAN/PINAX/DAVER, ...)` wieder her und bestätigte die sechs zugeordneten FIR-Passagen. Der zusätzliche UID-basierte Late-Approach scheiterte und ist nicht validiert.
 
-```text
-LRC late-approach injection has no MOOSE mission waypoint UID
-```
-
-Damit ist die Annahme widerlegt, dass die Mission-Waypoint-UID am gewählten `ScheduleOnce`-Zeitpunkt über `AUFTRAG:GetGroupWaypointIndex(opsgroup)` bereits zuverlässig verfügbar ist.
-
-Die dafür source-verifizierten Methoden bleiben öffentliche APIs, aber die getestete Kombination ist **nicht** DCS-validiert:
+Candidate 5 verwendete dagegen ohne Late-Approach:
 
 ```text
-AUFTRAG:SetMissionAltitude(...)
-AUFTRAG:GetGroupWaypointIndex(opsgroup)
-FLIGHTGROUP:AddMission(...)
-OPSGROUP:GetWaypointIndex(uid)
-OPSGROUP:GetWaypointID(index)
-OPSGROUP:GetWaypointCoordinate(index)
-FLIGHTGROUP:AddWaypoint(...)
-BASE/FLIGHTGROUP:ScheduleOnce(...)
-COORDINATE:GetIntermediateCoordinate(...)
+SPAWN:InitSpeedKnots(480)
+route speed 300 kt
+directional FL340/FL350
+AUFTRAG:SetMissionAltitude(profile.altitudeFt)
+accepted FIR ingress/egress
+existing External Handoff lifecycle
 ```
 
-Der 60-NM-Late-Approach ist nach Eigentümerklärung ein optionales Routingexperiment und keine akzeptierte Produktionsanforderung. Ein natürlicher MOOSE/DCS-Sinkflug vom FIR-Ingress zum Track kann ausreichen. Das für FuelLow wichtigere offene Verhalten ist der Outbound-Climb und der Rückweg.
+Der dokumentierte DCS-Lauf vom 16.08.2026 erreichte für alle sechs Tracks `SPAWN, INGRESS, TRACK, TRACK_DEPARTURE, FIR_EGRESS, EXTERNAL_HANDOFF` und endete mit `RESULT PASS`. Damit sind `SPAWN:InitSpeedKnots(480)` und `AUFTRAG:SetMissionAltitude(...)` für diesen exakten Calibration-Scope praktisch bestätigt. Die anschließend promovierte Produktionsquelle benötigt weiterhin einen eigenen DCS-Acceptance-Lauf.
 
-Details stehen in [`OMW-MOOSE-AAR-LRC-TRANSIT`](AAR-LRC-TRANSIT.md) sowie im branch-lokalen Test-/Kalibrierungsprotokoll `mission/tests/aar-fuel-telemetry/POST-MERGE-FINDINGS.md`.
+Details: [`OMW-MOOSE-AAR-LRC-TRANSIT`](AAR-LRC-TRANSIT.md).
 
 ## 5. Akzeptierter AAR-Produktionsscope
 
@@ -195,31 +182,19 @@ FIR Egress != External Handoff/Despawn
 Airways-Routing = später / nicht Teil der akzeptierten Baseline
 ```
 
-Praktisch bestätigt sind für den exakt dokumentierten AAR-Acceptance-Stand insbesondere:
+Praktisch bestätigt sind für den exakt dokumentierten Production-Final-Acceptance-Stand insbesondere Scheduled Relief, Radio/TACAN-Transfer, FuelLow Immediate Egress, CampaignState exact-once Settlement, Loss/Replacement und Restore-Reconciliation. Dessen genaue Provenienz steht in `VERIFIED-METHODS.md`.
 
-- automatischer Start ausschließlich der vier STANDARD-Tracks;
-- demand-gesteuerter LISA-/MOE-Reserve-Lifecycle;
-- stabile Callsign-Familie und eindeutige `n-1`-Gruppennummer bei Relief;
-- natürliche FIR-Ingress-/Egress-Passage über EGPAN/DAVER/PINAX;
-- zweistufiger Egress `SetMissionEgressCoord(FIR fix)` -> `FLIGHTGROUP:AddWaypoint(external handoff)`;
-- Scheduled Relief: `ETA <= 5 min` nur Handover-Arming, outgoing bleibt ACTIVE bis realer Relief-Ankunft;
-- Radio/TACAN-Transfer erst bei realem Station-Owner-Wechsel;
-- FuelLow Immediate Egress mit natürlichem Replacement;
-- CampaignState exact-once Settlement;
-- Dead -> OnAfterDead -> OnLost ohne Aircraft-Recredit plus Ersatz bei weiter benötigtem Track;
-- Restore-Reconciliation.
-
-Acceptance-Provenienz:
+Für die neu promovierte LRC-/Fuel-Konfiguration gelten zusätzlich als **Production Candidate, DCS acceptance pending**:
 
 ```text
-Acceptance commit: 5e7dbec37f53155f39c63c25590cf6b4e35814ca
-Mission: OMW_Template_v9_AirOps_rdy.miz
-Mission SHA-256: c9e3978a4bbb35ebbfe5ae362021b5f8870129d6c8b06b58147424dde71a94e3
-Bundle SHA-256: f33b0a5a6212d9a1103dfa2e0ab677777142ca771a2f5007a3ab1c7fee594cbf
-DCS: 2.9.28.26385 MT
-MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
-Moose.lua SHA-256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
-Result: PASS
+spawn initial speed = 480 kt
+route speed = 300 kt
+MANAS inbound/outbound = FL340/FL350
+AL_UDEID inbound/outbound = FL350/FL340
+exact track mission altitude = enabled
+initial fuel contract MANAS = 91.4067 %
+initial fuel contract AL_UDEID = 79.4558 %
+FuelLow NELSON/PATTY/LISA/MOE/MILHOUSE/KRUSTY = 24/26/35/31/36/36 %
 ```
 
 ## 6. Architekturgrenze
@@ -228,4 +203,4 @@ Die externen AAR-Pools MANAS und AL UDEID sind keine DCS-Airbase-/WAREHOUSE-/AIR
 
 ## 7. Nachweisregel
 
-Ein Klassenstatus wird nur angehoben, wenn MOOSE-Version/Commit, OMW-Source, Mission, Hashes, beobachtetes Verhalten und Einschränkungen dokumentiert sind. `VALIDATED` wird nicht aus Source-Review abgeleitet. Ein Telemetrie-`RESULT PASS` beweist keine separate Routing-Akzeptanz.
+Ein Klassenstatus wird nur angehoben, wenn MOOSE-Version/Commit, OMW-Source, Mission, Hashes, beobachtetes Verhalten und Einschränkungen dokumentiert sind. `VALIDATED` wird nicht aus Source-Review abgeleitet. Ein Calibration-PASS validiert nicht automatisch die anschließend geänderte Produktionsquelle.

@@ -5,9 +5,9 @@ document_class: WORKLIST
 owning_policy: OMW-GOV-001
 authoritative_for:
   - branch-local worklist for the current AAR fuel, speed and LRC transit recalibration workstream
-  - current target state, completed findings and remaining validation steps
+  - current target state, completed findings and remaining production-acceptance steps
 not_authoritative_for:
-  - production AAR values before owner-approved promotion and DCS acceptance
+  - final production validation before the promoted source is rebuilt and retested in DCS
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 source_branch: agent/aar-fuel-telemetry-calibration
@@ -17,135 +17,87 @@ validated_in_dcs: partial
 
 # AAR Fuel / Speed / LRC Recalibration – To-do
 
-## 1. Branch / Workstream ID
+## 1. Workstream
 
 ```text
 Branch: agent/aar-fuel-telemetry-calibration
 Workstream ID: OMW-TEST-AAR-FUEL-CALIBRATION-TODO
-Branch head before creation of this worklist:
-0a89404743bacd634fa832b8e28447e0b519ebfe
+Calibration source commit: 40965420d4c6dea7a6b0fa27b4e3cd80d2a2b26a
 ```
 
-The branch remains a test/calibration branch. Production AAR Lua and `.miz` files are not to be silently changed from this worklist.
+Die `.miz` wird in diesem Workstream nicht durch ChatGPT verändert. Mission-Editor-Änderungen bleiben beim Projektinhaber.
 
-## 2. Goal of the current work
+## 2. Genehmigter Zielzustand
 
-The goal is to convert the accepted AAR runtime into a technically and operationally better calibrated KC-135 implementation without changing the accepted strategic/resource architecture.
-
-Target state:
+Vom Projektinhaber am 16.08.2026 genehmigt:
 
 ```text
-- physically plausible in-air KC-135 materialization;
-- clear separation of IAS/KIAS, TAS and GS semantics;
-- stable MOOSE route-speed semantics;
-- directional LRC transit levels based on the Afghanistan odd/even IFR rule;
-- exact AAR track altitude instead of the MOOSE NewORBIT 90-percent mission-altitude default;
-- preserved mandatory FIR routing through EGPAN / PINAX / DAVER;
-- initial fuel derived from measured DCS consumption and the virtual source-base -> External Spawn leg;
-- FuelLow derived from complete recovery requirements rather than a convenience threshold;
-- AFMAN-based 45-minute reserve and planned-landing minimum included in FuelLow planning;
-- direct outbound telemetry for track departure -> FIR egress -> External Handoff before final FuelLow promotion;
-- no unapproved replacement of already accepted routing contracts;
-- final production changes only after owner approval and documented DCS validation.
+SPAWN initial speed: 480 kt
+Transit route speed: 300 kt
+
+MANAS -> Afghanistan:      FL340
+Afghanistan -> MANAS:      FL350
+AL_UDEID -> Afghanistan:   FL350
+Afghanistan -> AL_UDEID:   FL340
+
+Exact track mission altitude: enabled
+60-NM late approach: not required / not implemented
+
+Initial Fuel:
+MANAS:     91.4067 %
+AL_UDEID:  79.4558 %
+
+FuelLow:
+NELSON:    24 %
+PATTY:     26 %
+LISA:      35 %
+MOE:       31 %
+MILHOUSE:  36 %
+KRUSTY:    36 %
 ```
 
-The accepted CampaignState/off-map stock lifecycle, callsign-family rules, standard/reserve track roles and FIR/External separation remain unchanged by this workstream.
+Unverändert bleiben CampaignState/off-map stock lifecycle, Callsign-Familien, STANDARD/RESERVE-Rollen, MissionDemand-Semantik und FIR/External-Trennung.
 
-## 3. Current state – completed / established
+## 3. Abgeschlossene Kalibrierung
 
-### 3.1 Speed semantics and in-air spawn
-
-Established from the branch-local DCS tests:
-
-```text
-IAS / KIAS = indicated aerodynamic airspeed
-TAS        = true airspeed relative to the air mass
-GS         = ground speed, including wind effect
-```
-
-Current candidate contract:
+### 3.1 Speed
 
 ```text
 SPAWN:InitSpeedKnots(480)
-= initial physical in-air materialization only
+= initialer In-Air-Materialisierungszustand
 
-MOOSE route speed = 300 kt
-= transit route command
-
-Track speed
-= existing area/profile-specific mission value
+MOOSE route speed 300 kt
+= Transit-Routenkommando
 ```
 
-The earlier 300-kt in-air materialization created an implausibly low-energy KC-135 state at high altitude. The 480-kt spawn initialization produced a plausible DCS energy state. `480 kt` must not be interpreted as `480 KIAS` or a permanent 480-kt GS command.
+Der 480-kt-Kandidat zeigte im DCS-Lauf einen plausiblen Materialisierungszustand; der frühere 300-kt-Spawnzustand war in großer Höhe zu energiearm.
 
-Status:
+### 3.2 Directional LRC
 
 ```text
-480-kt in-air materialization: branch-local DCS evidence positive
-300-kt transit route command: retained
-production promotion: pending
+MANAS inbound:      FL340
+MANAS outbound:     FL350
+AL_UDEID inbound:   FL350
+AL_UDEID outbound:  FL340
 ```
 
-### 3.2 Directional LRC cruise levels
+Kein routinemäßiger fuel-/weight-basierter Step-Climb.
 
-OMW uses the Afghanistan/ICAO semi-circular IFR rule by magnetic track:
+### 3.3 Exact Track Altitude
+
+Pinned MOOSE source review:
 
 ```text
-000-179 deg magnetic -> odd flight level
-180-359 deg magnetic -> even flight level
+AUFTRAG:NewORBIT default missionAltitude = orbitAltitude * 0.9
 ```
 
-Current fixed directional LRC planning values:
-
-```text
-MANAS -> Afghanistan:      FL340  even
-Afghanistan -> MANAS:      FL350  odd
-AL_UDEID -> Afghanistan:   FL350  odd
-Afghanistan -> AL_UDEID:   FL340  even
-```
-
-Owner decision:
-
-```text
-No routine weight/fuel-based step climb.
-Use one planned directional LRC level per transit direction.
-```
-
-Status:
-
-```text
-FL340/FL350 concept: branch-local DCS evidence positive
-production promotion: pending
-```
-
-### 3.3 Exact mission/track altitude
-
-Pinned MOOSE source review found:
-
-```text
-AUFTRAG:NewORBIT default:
-missionAltitude = orbitAltitude * 0.9
-missionFraction = 0.9
-```
-
-This explained the previously observed values such as NELSON 24,750 ft for a 27,500-ft track and PATTY 21,600 ft for a 24,000-ft track.
-
-Current branch-local correction candidate:
+Genehmigter Korrekturpfad:
 
 ```lua
 mission:SetMissionAltitude(profile.altitudeFt)
 ```
 
-Status:
-
-```text
-exact track-altitude behavior: visually positive in DCS
-production promotion: pending
-```
-
-### 3.4 FIR ingress contract restored
-
-Mandatory routing remains:
+### 3.4 FIR-Vertrag
 
 ```text
 NELSON / PATTY    -> EGPAN
@@ -153,354 +105,164 @@ LISA / MOE        -> PINAX
 KRUSTY / MILHOUSE -> DAVER
 ```
 
-Candidate 3 wrongly replaced the accepted MOOSE mission ingress with a calculated late-approach point and attempted to add the FIR fix afterward. This caused real DCS FIR-routing regressions and was an unapproved architecture change.
+Candidate 3, der den FIR-Ingress durch einen Late-Approach ersetzte, bleibt verworfen. Candidate 4 stellte die reale FIR-Passage wieder her. Der zusätzliche UID-basierte 60-NM-Adapter scheiterte und ist nicht Produktionsanforderung.
 
-Candidate 4 restored:
+## 4. Fuel-Basis
 
-```text
-AUFTRAG:SetMissionIngressCoord(EGPAN/PINAX/DAVER)
-```
-
-The real Candidate-4 DCS run confirmed passage of all three required FIR fixes for the six tracks.
-
-Status:
-
-```text
-Candidate-3 routing approach: REJECTED
-FIR ingress restoration in Candidate 4: PASS for observed run
-accepted FIR contract: preserve
-```
-
-### 3.5 Optional 60-NM late-approach experiment
-
-The 60-NM point was only intended as a per-track transition point between FIR ingress and track to delay descent from LRC altitude.
-
-Candidate 4 failed to insert it because the assumed MOOSE mission-waypoint UID was not available at the chosen adapter timing.
-
-Owner clarification:
-
-```text
-- the 60-NM point is not required for fuel calibration;
-- it is not a new northern/southern FIR point;
-- a plausible natural MOOSE/DCS descent is acceptable;
-- the point is an optional experiment, not a production requirement;
-- no timer-tuning trial-and-error is required to pursue it.
-```
-
-Status:
-
-```text
-60-NM late-approach: optional / not required for target state
-Candidate-4 adapter: FAILED
-```
-
-### 3.6 Test-4 fuel calibration basis
-
-For the current recalculation, only Test 4 is the calculation basis. Test 1/2 remain comparison/sensitivity evidence only.
-
-Agreed metric:
-
-```text
-fuel at FIR INGRESS
--
-fuel at TRACK
-=
-INGRESS -> TRACK burn
-```
-
-The absolute SPAWN starting percentage is irrelevant to this segment-consumption comparison.
-
-Observed maximum DCS KC-135 fuel mass:
+KC-135 DCS max fuel:
 
 ```text
 90,700 kg
 ```
 
-Test-4 measured values:
-
-| Track | Source | FIR->Track | Burn | Time | kg/NM | kg/h |
-|---|---|---:|---:|---:|---:|---:|
-| NELSON | MANAS | 123.698 NM | 3.8939 % | 1101.100 s | 28.55 | 11,547 |
-| PATTY | MANAS | 210.823 NM | 6.3108 % | 2151.149 s | 27.15 | 9,579 |
-| LISA | MANAS | 416.794 NM | 11.3373 % | 4018.014 s | 24.67 | 9,213 |
-| MOE | MANAS | 225.206 NM | 6.4283 % | 2049.047 s | 25.89 | 10,244 |
-| MILHOUSE | AL_UDEID | 235.241 NM | 6.3600 % | 2572.570 s | 24.52 | 8,072 |
-| KRUSTY | AL_UDEID | 257.455 NM | 7.2062 % | 2930.928 s | 25.39 | 8,028 |
-
-Distance-weighted domain rates:
+Test-4-Domainraten:
 
 ```text
 MANAS:     25.98 kg/NM
 AL_UDEID:  24.97 kg/NM
 ```
 
-Status:
+Virtual source-base -> External Spawn:
 
 ```text
-Test-4 inbound fuel basis: usable for recalculation
-not a complete outbound/FuelLow validation
+MANAS:      300.005 NM -> initial fuel 91.4067 %
+AL_UDEID:   746.241 NM -> initial fuel 79.4558 %
 ```
 
-### 3.7 Initial-fuel recalculation
+Im gepinnten `Moose.lua` wurde keine öffentliche `SPAWN:InitFuel(...)`-Methode nachgewiesen. `initialFuelPct` im Controller ist deshalb der projektseitige Vertrag/Metadatum; die physische Template-Menge muss im Mission Editor gesetzt werden.
 
-External points remain:
+## 5. Candidate 5 – Outbound Telemetry PASS
 
 ```text
-MANAS external point:     N38.83163 E70.95271
-AL_UDEID external point:  N28.90264890 E64.61166667
+Testdatum: 2026-08-16
+Source commit: 40965420d4c6dea7a6b0fa27b4e3cd80d2a2b26a
+Builder/Test-ID: AAR-FUEL-TELEMETRY-5
+Mission: OMW_Template_v10_AirOps_rdy.miz
+Mission SHA-256: 9dbff62a28e858d6eaf85d9037399dd591dd64edeccbe39bc74ecc63c43b6ca3
+Bundle SHA-256: dd2386bd5bb2b0d2f89ac4e225a2e76ab171df1008f1d46eda16a9757c592a94
+DCS: 2.9.28.26385 MT
+MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+Moose.lua SHA-256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
+Result: PASS
 ```
-
-Planning distances:
 
 ```text
-Manas International -> MANAS External Spawn: 300.005 NM
-Al Udeid AB -> AL_UDEID External Spawn:      746.241 NM
+RESULT PASS allTracks=6 samplesPerTrack=6
+points=SPAWN,INGRESS,TRACK,TRACK_DEPARTURE,FIR_EGRESS,EXTERNAL_HANDOFF
+fuelLowExcluded=true
 ```
 
-Using only Test-4 domain rates:
+Gemessener `TRACK_DEPARTURE -> EXTERNAL_HANDOFF`-Burn:
 
-```text
-MANAS initial-fuel candidate:     91.4067 %
-AL_UDEID initial-fuel candidate:  79.4558 %
-```
+| Area | Burn |
+|---|---:|
+| NELSON | 5.6753 % |
+| PATTY | 9.0161 % |
+| LISA | 17.7909 % |
+| MOE | 13.4644 % |
+| MILHOUSE | 8.1344 % |
+| KRUSTY | 8.5073 % |
 
-These represent the estimated remaining fuel after the virtual source-base -> External Spawn flight.
+## 6. Final FuelLow calculation
 
-Status:
-
-```text
-calculation complete
-production/template adoption pending owner approval and final validation
-```
-
-### 3.8 FuelLow doctrine and current candidates
-
-OMW adopts AFMAN 11-2KC-135 Volume 3 (2019) as the best available KC-135 operational baseline for the 2010-2011 campaign period until a better period-specific source is found.
-
-Planning requirements adopted:
-
-```text
-- 45-minute reserve for alternate/diversion planning;
-- planned landing fuel not below 13,000 lb;
-- 9,200 lb retained as minimum/emergency operational boundary.
-```
-
-The 45-minute reserve currently exceeds the 13,000-lb floor for all six Test-4 measured flow rates and is therefore the controlling reserve term in the present candidate calculation.
-
-Current branch-local FuelLow candidates:
-
-```text
-NELSON:    24 %
-PATTY:     25 %
-LISA:      33 %
-MOE:       29 %
-MILHOUSE:  37 %
-KRUSTY:    39 %
-```
-
-These are not final because the actual outbound climb/return fuel consumption has not yet been directly measured.
-
-## 4. Remaining steps to target state
-
-### Step 1 – Freeze the accepted inbound routing contract
-
-Do not alter:
-
-```text
-External Spawn
--> EGPAN / PINAX / DAVER
--> AAR track
-```
-
-Do not reintroduce Candidate-3-style ingress replacement. The optional 60-NM point is not required for the next test.
-
-### Step 2 – Prepare the next telemetry build for outbound measurement
-
-Extend the branch-local telemetry only as necessary to record, per sortie:
-
-```text
-TRACK departure fuel
-FIR EGRESS fuel
-EXTERNAL HANDOFF fuel
-```
-
-Required supporting telemetry should include at least:
-
-```text
-fuel percent
-fuel kg
-elapsed time
-relevant distance
-track/source identity
-```
-
-The test must preserve:
-
-```text
-480-kt spawn initialization
-300-kt transit route speed
-FL340/FL350 directional LRC levels
-exact mission/track altitude
-accepted FIR ingress/egress routing
-existing external handoff lifecycle
-```
-
-No `.miz` mutation by ChatGPT. The generated test Lua path and exact Mission Editor replacement step must be handed to the owner.
-
-### Step 3 – DCS outbound validation run
-
-Run the controlled DCS test and capture real evidence for all six tracks where practicable:
-
-```text
-track departure
-climb toward return LRC level
-FIR egress passage
-external handoff
-```
-
-Acceptance questions:
-
-```text
-- does the tanker climb naturally from track altitude to the correct return LRC level?
-- are return levels directional and correct: MANAS return FL350, AL_UDEID return FL340?
-- is EGPAN/PINAX/DAVER still passed on egress?
-- is External Handoff reached naturally?
-- what is actual TRACK -> FIR EGRESS fuel burn?
-- what is actual TRACK -> External Handoff fuel burn?
-- how large is the real climb penalty compared with the inbound/descent proxy?
-```
-
-### Step 4 – Final FuelLow calculation
-
-Use the measured outbound data, not a guessed mirrored inbound rate, to calculate each track's recovery requirement:
+Planungsregel:
 
 ```text
 FuelLow =
-actual/derived track -> recovery requirement
-+ AFMAN 45-minute reserve
-with planned landing fuel >= 13,000 lb
+measured TRACK_DEPARTURE -> EXTERNAL_HANDOFF
++ virtual EXTERNAL_HANDOFF -> source base
++ 45-minute reserve
+
+planned landing fuel >= 13,000 lb
 ```
 
-The virtual External Handoff -> source-base continuation must remain included in recovery planning.
+Die 45-Minuten-Reserve ist in allen sechs Fällen größer als der 13,000-lb-Floor und kontrolliert die Berechnung.
 
-Compare the result with the current candidates:
+| Area | Raw FuelLow | Approved integer trigger |
+|---|---:|---:|
+| NELSON | 23.8168 % | 24 % |
+| PATTY | 25.5303 % | 26 % |
+| LISA | 34.0025 % | 35 % |
+| MOE | 30.5285 % | 31 % |
+| MILHOUSE | 35.3534 % | 36 % |
+| KRUSTY | 35.6899 % | 36 % |
+
+Die Integer-Trigger werden konservativ aufgerundet.
+
+## 7. Production promotion status
+
+Owner approval: **GRANTED 2026-08-16**.
+
+Die kleinste Produktionsänderung ist auf diesem Branch umzusetzen:
 
 ```text
-NELSON 24
-PATTY 25
-LISA 33
-MOE 29
-MILHOUSE 37
-KRUSTY 39
+OMW_AAR_Controller.lua
+- separate SPAWN_INITIAL_SPEED_KT = 480
+- TRANSIT_SPEED_KT bleibt 300
+- directional FL340/FL350
+- mission:SetMissionAltitude(profile.altitudeFt)
+- approved initialFuelPct contracts
+- approved per-area FuelLow thresholds
 ```
 
-Revise only where the new measured outbound evidence requires it.
+Keine neue Native-DCS-Routing- oder Fuel-Setter-Logik. Kein 60-NM-Adapter. Keine `.miz`-Mutation durch ChatGPT.
 
-### Step 5 – Confirm final initial-fuel values
+## 8. Remaining gates
 
-Reconfirm whether the Test-4 domain rates remain the accepted basis for virtual source-base -> External Spawn fuel.
-
-Current candidates:
+### Step A – Source/build gate
 
 ```text
-MANAS:     91.4067 %
-AL_UDEID:  79.4558 %
+- complete diff review
+- production validator must assert calibrated constants and per-area values
+- verify pinned MOOSE provenance
+- documentation validator for changed docs
+- remote commit/publish
 ```
 
-If the final approved transit configuration remains the same as Test 4 for the relevant calibration segment, no recalculation from older tests is required.
+### Step B – Owner local verification
 
-### Step 6 – Owner decision for production promotion
-
-Before production modification, obtain explicit owner approval for the final package:
-
-```text
-- 480-kt SPAWN initialization;
-- 300-kt route-speed retention;
-- FL340/FL350 directional LRC levels;
-- exact track mission altitude;
-- final MANAS/AL_UDEID initial-fuel values;
-- final per-track FuelLow values;
-- no mandatory 60-NM late-approach point unless separately approved.
-```
-
-### Step 7 – Production implementation
-
-After approval, make the smallest necessary production changes in the AAR controller/configuration and relevant template/build path.
-
-Preserve:
-
-```text
-CampaignState authority
-strategic off-map pool semantics
-FIR routing
-callsign family identity
-standard/reserve roles
-relief lifecycle
-external handoff exact-once settlement
-```
-
-No `.miz` mutation by ChatGPT. Any required Mission Editor/template change must be specified to the owner after the source/build work is committed and pushed.
-
-### Step 8 – Documentation / MOOSE register update
-
-Update the binding AAR documentation and MOOSE project records with the final accepted values and exact evidence boundary.
-
-At minimum review/update as applicable:
-
-```text
-docs/29-isaf-2009-2013-air-to-air-refueling.md
-docs/moose/AAR-LRC-TRANSIT.md
-docs/moose/PROJECT-CLASS-INDEX.md
-docs/moose/VERIFIED-METHODS.md
-mission/tests/aar-fuel-telemetry/POST-MERGE-FINDINGS.md
-this worklist
-```
-
-Only methods/behaviors with real documented DCS evidence may be promoted to validated status.
-
-### Step 9 – Diff, syntax, documentation validation and remote commit
-
-Before handoff:
-
-```text
-- review complete diff;
-- run available Lua/build checks;
-- run documentation validator;
-- verify no unintended `.miz` or production-scope changes;
-- verify pinned MOOSE provenance;
-- commit and push to the intended remote branch.
-```
-
-### Step 10 – Local owner verification
-
-After the remote commit, provide the owner only the necessary numbered PowerShell steps for:
+Nach Remote-Publish nur:
 
 ```text
 git pull
-build
+production source/build validation
 hash verification
 ```
 
-Real local console output and hashes become the evidence for the next step.
+Nur reale Owner-Ausgabe ist Evidenz.
 
-### Step 11 – Final DCS acceptance and merge readiness
+### Step C – Mission Editor
 
-The workstream reaches its target only after the final production candidate has documented real DCS evidence for the affected scope.
-
-Required end state:
+Nach bestandenem lokalen Source/Build-Gate setzt der Projektinhaber die physischen KC-135-Template-Fuelwerte:
 
 ```text
-- correct 480-kt materialization behavior;
-- correct 300-kt route behavior;
-- correct directional FL340/FL350 transit;
-- correct exact track altitude;
-- mandatory FIR ingress/egress preserved;
-- initial fuel matches approved Test-4-derived source-domain model;
-- FuelLow covers measured recovery plus adopted AFMAN reserve requirements;
-- relief and strategic settlement regressions absent;
-- complete mission/bundle/DCS/MOOSE provenance recorded;
-- documentation updated;
-- owner approves merge/readiness decision.
+MANAS templates:
+NELSON / PATTY / LISA / MOE -> 91.4067 %
+
+AL_UDEID templates:
+MILHOUSE / KRUSTY -> 79.4558 %
 ```
 
-`VALIDATED` is only assigned to the exact scope proven by the documented DCS run.
+Die `.miz` wird danach separat gehasht.
+
+### Step D – Final DCS production acceptance
+
+Der promovierte Produktionsstand muss mit vollständiger Provenienz getestet werden. Zu regressieren sind mindestens:
+
+```text
+480-kt materialization
+300-kt route command
+directional FL340/FL350
+exact track altitude
+EGPAN/PINAX/DAVER ingress and egress
+External Handoff
+FuelLow trigger/recovery behavior
+Scheduled Relief handover semantics
+STANDARD/RESERVE lifecycle
+Callsign family identity
+60-s source spacing
+CampaignState exact-once settlement
+loss/replacement and restore behavior
+```
+
+Erst danach darf der promovierte Produktionsstand als `VALIDATED` bezeichnet und die Merge-/Readiness-Entscheidung getroffen werden.

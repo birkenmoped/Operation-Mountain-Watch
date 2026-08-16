@@ -29,6 +29,13 @@ $requirements = @(
   @{ File = 'Controller'; Marker = 'STANDARD_TRACK_COUNT = 4' },
   @{ File = 'Controller'; Marker = 'RESERVE_TRACK_COUNT = 2' },
   @{ File = 'Controller'; Marker = 'MAX_AIRCRAFT_PER_TRACK = 2' },
+  @{ File = 'Controller'; Marker = 'SPAWN_INITIAL_SPEED_KT = 480' },
+  @{ File = 'Controller'; Marker = 'TRANSIT_SPEED_KT = 300' },
+  @{ File = 'Controller'; Marker = 'MANAS_WEST_HIGH = { ingressFt = 34000, egressFt = 35000 }' },
+  @{ File = 'Controller'; Marker = 'MANAS_EAST_HIGH = { ingressFt = 34000, egressFt = 35000 }' },
+  @{ File = 'Controller'; Marker = 'AL_UDEID_NORTH_HIGH = { ingressFt = 35000, egressFt = 34000 }' },
+  @{ File = 'Controller'; Marker = 'spawner:InitSpeedKnots(SPAWN_INITIAL_SPEED_KT)' },
+  @{ File = 'Controller'; Marker = 'mission:SetMissionAltitude(profile.altitudeFt)' },
   @{ File = 'Controller'; Marker = 'availability = "RESERVE"' },
   @{ File = 'Controller'; Marker = 'availability = "STANDARD"' },
   @{ File = 'Controller'; Marker = 'firFix = "EGPAN"' },
@@ -70,12 +77,12 @@ foreach ($requirement in $requirements) {
   }
 }
 
-if ($content.Controller -notmatch 'LISA\s*=\s*\{[\s\S]*?availability\s*=\s*"RESERVE"[\s\S]*?coreProfile\s*=\s*"FAST"') {
-  throw 'LISA is not FAST RESERVE.'
-}
-if ($content.Controller -notmatch 'MOE\s*=\s*\{[\s\S]*?availability\s*=\s*"RESERVE"[\s\S]*?coreProfile\s*=\s*"FAST"') {
-  throw 'MOE is not FAST RESERVE.'
-}
+if ($content.Controller -notmatch 'LISA\s*=\s*\{[\s\S]*?availability\s*=\s*"RESERVE"[\s\S]*?fuelLowPct\s*=\s*35,\s*initialFuelPct\s*=\s*91\.4067') { throw 'LISA calibrated fuel contract mismatch.' }
+if ($content.Controller -notmatch 'MOE\s*=\s*\{[\s\S]*?availability\s*=\s*"RESERVE"[\s\S]*?fuelLowPct\s*=\s*31,\s*initialFuelPct\s*=\s*91\.4067') { throw 'MOE calibrated fuel contract mismatch.' }
+if ($content.Controller -notmatch 'MILHOUSE\s*=\s*\{[\s\S]*?fuelLowPct\s*=\s*36,\s*initialFuelPct\s*=\s*79\.4558') { throw 'MILHOUSE calibrated fuel contract mismatch.' }
+if ($content.Controller -notmatch 'KRUSTY\s*=\s*\{[\s\S]*?fuelLowPct\s*=\s*36,\s*initialFuelPct\s*=\s*79\.4558') { throw 'KRUSTY calibrated fuel contract mismatch.' }
+if ($content.Controller -notmatch 'PATTY\s*=\s*\{[\s\S]*?fuelLowPct\s*=\s*26,\s*initialFuelPct\s*=\s*91\.4067') { throw 'PATTY calibrated fuel contract mismatch.' }
+if ($content.Controller -notmatch 'NELSON\s*=\s*\{[\s\S]*?fuelLowPct\s*=\s*24,\s*initialFuelPct\s*=\s*91\.4067') { throw 'NELSON calibrated fuel contract mismatch.' }
 
 $forbiddenControllerMarkers = @(
   'CORE_TRACK_COUNT = 6',
@@ -86,12 +93,15 @@ $forbiddenControllerMarkers = @(
   'local STN_START_OCTAL',
   'SwitchCallsign(',
   'local TRANSIT_CALLSIGNS',
-  'CORE_TRACKS_6_SIMULTANEOUS_PASS'
+  'CORE_TRACKS_6_SIMULTANEOUS_PASS',
+  'TestForceEgress',
+  'lateApproach',
+  '60_NM'
 )
 
 foreach ($marker in $forbiddenControllerMarkers) {
   if ($content.Controller.Contains($marker)) {
-    throw "AAR controller still contains obsolete AAR marker: $marker"
+    throw "AAR controller still contains obsolete/test AAR marker: $marker"
   }
 }
 
@@ -139,6 +149,21 @@ Write-Host 'GlobalAarMissionLimit: false'
 Write-Host 'GlobalAarAircraftLimit: false'
 Write-Host 'MaxAircraftPerTrack: 2'
 Write-Host 'MooseManagedSpawnSTN: true'
+Write-Host 'SpawnInitialSpeedKt: 480'
+Write-Host 'TransitRouteSpeedKt: 300'
+Write-Host 'ManasIngressFt: 34000'
+Write-Host 'ManasEgressFt: 35000'
+Write-Host 'AlUdeidIngressFt: 35000'
+Write-Host 'AlUdeidEgressFt: 34000'
+Write-Host 'MissionAltitudeMode: EXACT_TRACK_ALTITUDE'
+Write-Host 'InitialFuelManasPct: 91.4067'
+Write-Host 'InitialFuelAlUdeidPct: 79.4558'
+Write-Host 'FuelLowNelsonPct: 24'
+Write-Host 'FuelLowPattyPct: 26'
+Write-Host 'FuelLowLisaPct: 35'
+Write-Host 'FuelLowMoePct: 31'
+Write-Host 'FuelLowMilhousePct: 36'
+Write-Host 'FuelLowKrustyPct: 36'
 
 foreach ($entry in $files.GetEnumerator()) {
   $hash = (Get-FileHash -LiteralPath $entry.Value -Algorithm SHA256).Hash.ToLowerInvariant()
