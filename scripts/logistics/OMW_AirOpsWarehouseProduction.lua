@@ -8,9 +8,26 @@ local Production = {}
 
 local TAG = "[OMW][Logistics.AirOpsWarehouseProduction]"
 local READY_FLAG_NAME = "OMW_WAREHOUSE_READY"
-local FUEL_NODE_IDS = { "KANDAHAR_MAIN" }
+local FUEL_NODE_IDS = {
+  "BAGRAM",
+  "JALALABAD",
+  "KANDAHAR_MAIN",
+  "KANDAHAR_HELI",
+  "SALERNO",
+  "SHINDAND_HELI",
+  "TARINKOT",
+}
+local FUEL_RESOURCE_IDS_BY_NODE = {
+  BAGRAM = { "FUEL_JP8" },
+  JALALABAD = { "FUEL_JP8" },
+  KANDAHAR_MAIN = { "FUEL_JP8", "FUEL_AVGAS" },
+  KANDAHAR_HELI = { "FUEL_JP8" },
+  SALERNO = { "FUEL_JP8" },
+  SHINDAND_HELI = { "FUEL_JP8" },
+  TARINKOT = { "FUEL_JP8" },
+}
 
-Production.SchemaVersion = "OMW-AIROPS-WAREHOUSE-PRODUCTION-1"
+Production.SchemaVersion = "OMW-AIROPS-WAREHOUSE-PRODUCTION-2"
 
 local function fail(message)
   error(TAG .. " " .. tostring(message), 2)
@@ -55,17 +72,18 @@ local function createCampaignContext(spec)
   local campaignState = requireTable(spec.campaignState, "spec.campaignState")
   local initializer = requireTable(spec.campaignStateInitializer, "spec.campaignStateInitializer")
   local initialStock = requireTable(spec.initialStock, "spec.initialStock")
+  local initialJP8Stock = requireTable(spec.initialJP8Stock, "spec.initialJP8Stock")
   local fuelSupplement = requireTable(spec.fuelSupplement, "spec.fuelSupplement")
   local aarStrategicStock = requireTable(spec.aarStrategicStock, "spec.aarStrategicStock")
   requireFunction(initializer, "CreateStore", "spec.campaignStateInitializer")
 
   -- The Warehouse base starts before the AAR base. Therefore the single NEW
-  -- CampaignState context must already contain the approved off-map AAR pools so
-  -- the later AAR base can reuse the same store instead of creating a second one.
+  -- CampaignState context contains the approved on-map JP-8 baseline, Kandahar
+  -- AVGAS supplement and off-map AAR pools before any physical mirror is applied.
   local created = initializer.CreateStore(
     campaignState,
     initialStock,
-    { fuelSupplement, aarStrategicStock }
+    { initialJP8Stock, fuelSupplement, aarStrategicStock }
   )
 
   return {
@@ -106,7 +124,9 @@ end
 local function buildWarehouseSpec(spec, campaignContext)
   local fuelSyncModule = requireTable(spec.fuelSyncModule, "spec.fuelSyncModule")
   local fuelAdapter = requireTable(spec.fuelAdapter, "spec.fuelAdapter")
+  local initializer = requireTable(spec.campaignStateInitializer, "spec.campaignStateInitializer")
   requireFunction(fuelSyncModule, "New", "spec.fuelSyncModule")
+  requireTable(initializer.NodeAirbaseName, "spec.campaignStateInitializer.NodeAirbaseName")
 
   local mode = campaignContext.restored == true
     and spec.warehouseBootstrap.Mode.RESTORE
@@ -115,7 +135,10 @@ local function buildWarehouseSpec(spec, campaignContext)
   return {
     mode = mode,
     campaignContext = campaignContext,
-    fuelSync = fuelSyncModule.New(campaignContext.store, fuelAdapter),
+    fuelSync = fuelSyncModule.New(campaignContext.store, fuelAdapter, {
+      resourceIdsByNode = FUEL_RESOURCE_IDS_BY_NODE,
+      airbaseNameByNode = initializer.NodeAirbaseName,
+    }),
     fuelNodeIds = FUEL_NODE_IDS,
     dependencies = {
       storageInitializer = requireTable(spec.storageInitializer, "spec.storageInitializer"),
