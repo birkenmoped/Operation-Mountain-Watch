@@ -10,8 +10,10 @@ authoritative_for:
   - MissionDemand-facing AAR service facade
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
+supersedes:
+superseded_by:
 source_branch: agent/aar-fuel-telemetry-calibration
-source_commit: PENDING_MERGE
+source_commit: 248f722fdbf6b0914c458f745f89c05f9821077c
 validated_in_dcs: partial
 ---
 
