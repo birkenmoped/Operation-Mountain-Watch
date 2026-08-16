@@ -27,6 +27,54 @@ MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
 Moose.lua SHA-256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
 ```
 
+## Geschwindigkeitsvertrag: Spawn, IAS/TAS/GS und Route
+
+Die AAR-Tests haben gezeigt, dass MOOSE-/DCS-Speedwerte nicht ohne Bedeutungsprüfung mit beobachteter IAS oder Groundspeed gleichgesetzt werden dürfen.
+
+Für OMW werden die Begriffe getrennt:
+
+```text
+IAS / KIAS = angezeigte aerodynamische Geschwindigkeit
+TAS        = wahre Geschwindigkeit relativ zur Luftmasse
+GS         = Geschwindigkeit über Grund, einschließlich Windeinfluss
+```
+
+Der gepinnte MOOSE-Pfad `SPAWN:InitSpeedKnots(...)` setzt den initialen In-Air-Materialisierungszustand. Der branch-lokale DCS-Test zeigte, dass die frühere Verwendung von `300 kt` hierfür in großer Höhe einen zu energiearmen KC-135-Zustand mit niedriger IAS und hohem AoA erzeugte. `480 kt` als Spawn-Initialisierung lieferte dagegen einen plausiblen Materialisierungszustand.
+
+Der aktuelle Vertrag lautet daher:
+
+```text
+SPAWN:InitSpeedKnots(480) = nur initiale In-Air-Materialisierung
+MOOSE route speed 300 kt  = Transit-Routenkommando
+track speed               = area-/profile-spezifischer bestehender Missionswert
+```
+
+`480 kt` ist weder als `480 KIAS` noch als dauerhafter `480 kt GS` zu interpretieren. Ebenso ist der `300 kt`-Route-Speed nicht als `300 KIAS` zu lesen. IAS, TAS und GS können in großer Höhe erheblich voneinander abweichen; Groundspeed wird zusätzlich durch Wind verändert.
+
+Diese Trennung ist Teil der AAR-Testbaseline. Eine spätere Änderung eines dieser Werte darf nicht stillschweigend auf die anderen Geschwindigkeitsbegriffe übertragen werden.
+
+## LRC-Reisehöhen und Odd/Even-Regel
+
+OMW verwendet für den branch-lokalen LRC-Kandidaten feste geplante Reiseflughöhen statt routinemäßiger fuel-/weight-basierter Step-Climbs.
+
+Die Afghanistan-AIP-/ICAO-Halbkreisregel wird nach magnetischem Track angewendet:
+
+```text
+000-179 deg magnetic -> odd flight level
+180-359 deg magnetic -> even flight level
+```
+
+Daraus ist für die tatsächlichen OMW-Source-Domain-Richtungen festgelegt:
+
+```text
+MANAS -> Afghanistan:      FL340  (even)
+Afghanistan -> MANAS:      FL350  (odd)
+AL_UDEID -> Afghanistan:   FL350  (odd)
+Afghanistan -> AL_UDEID:   FL340  (even)
+```
+
+Diese Werte sind OMW-Planungswerte für LRC-Transit und keine Behauptung einer veröffentlichten KC-135R-Optimum-Altitude-Tabelle. Ein routinemäßiger Step-Climb ist ausdrücklich nicht Teil des Designs.
+
 ## Akzeptierter Primärvertrag bleibt unangetastet
 
 Der produktiv akzeptierte AAR-Routingvertrag bleibt:
