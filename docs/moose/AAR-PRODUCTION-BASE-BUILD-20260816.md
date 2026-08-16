@@ -6,7 +6,7 @@ owning_policy: OMW-GOV-001
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 source_branch: agent/aar-fuel-telemetry-calibration
-source_commit: 065212b6b31ab907b2d6cde75c78e8009cf05ebd
+source_commit: 56eab193575ccb0cd6ee7118a22e8ce62dea65f5
 validated_in_dcs: false
 ---
 
@@ -14,26 +14,52 @@ validated_in_dcs: false
 
 ## 1. Zweck
 
-Dieser Datensatz hält ausschließlich die reale lokale Build-/Hash-Ausgabe des produktiven AAR-Grundgerüsts fest. Er ist kein neuer DCS-Acceptance-Lauf. Die zugrunde liegende Controller-/Routing-/Fuel-Logik wurde mit Acceptance 7 für dessen dokumentierten Scope in DCS bestätigt; dieser Build weist nach, dass daraus ein testfreies Produktionsbundle erzeugt werden kann.
+Dieser Datensatz hält die realen lokalen Build-/Hash-Ausgaben des produktiven AAR-Grundgerüsts fest. Er ist kein neuer DCS-Acceptance-Lauf. Die zugrunde liegende Controller-/Routing-/Fuel-Logik wurde mit Acceptance 7 für dessen dokumentierten Scope in DCS bestätigt. Dieser Buildnachweis belegt, dass daraus ein testfreies Produktionsbundle erzeugt werden kann.
 
-## 2. Git-/Build-Provenienz
+## 2. Erster lokaler Produktionsbuild
 
 ```text
 Branch: agent/aar-fuel-telemetry-calibration
 Git commit: 065212b6b31ab907b2d6cde75c78e8009cf05ebd
-Builder: tools/build-aar-production-base.ps1
 BuilderVersion: OMW-AIROPS-AAR-BASE-1
 GeneratedUtc: 2026-08-16T12:09:25Z
 Output: mission/runtime/air-operations/OMW_AAR_Base.lua
+BundleSHA256: 39a1094580db00537f2eba26c7c393d12876bf5ec5c7e7235bca0289909e3c05
 MizMutation: false
 ```
 
-## 3. Source Gate
+Der Source-Gate meldete PASS. Dieser Hash wurde zunächst irrtümlich als für denselben Quellstand reproduzierbar behandelt.
 
-Die reale Build-Ausgabe meldete:
+## 3. Rebuild auf dokumentiertem Branch-Head
+
+Nach Synchronisierung auf Commit `882f5c0a5ca3ff97b045d38d55942158487b1021` wurde die Base erneut lokal gebaut. Die reale Ausgabe war:
 
 ```text
 AAR production finalization source gate: PASS
+GitCommit: 882f5c0a5ca3ff97b045d38d55942158487b1021
+BuilderVersion: OMW-AIROPS-AAR-BASE-1
+GeneratedUtc: 2026-08-16T12:10:28Z
+BundleSHA256: 9508cab33be4a941af16bcbcc928c1bf31d7f66220f7c924034c933d88bc3668
+```
+
+Der anschließend verwendete Vergleich gegen den früheren Hash `39a109...` schlug erwartungsgemäß fehl. Die Ursache war kein Unterschied der AAR-Quellmodule, sondern der Builder selbst: `GeneratedUtc` wurde mit der aktuellen Uhrzeit in den Bundle-Header geschrieben. Damit änderte sich der SHA-256 bei jedem Build und ein fester Hashvergleich über mehrere Builds war technisch ungültig.
+
+## 4. Korrektur: deterministisches Bundle pro Commit
+
+Der Builder wurde deshalb auf `OMW-AIROPS-AAR-BASE-2` geändert. Der Laufzeit-Zeitstempel wurde aus dem generierten Bundle entfernt und durch den stabilen Git-Commit-Zeitstempel ersetzt:
+
+```text
+GitCommit
+SourceCommitUtc
+```
+
+`SourceCommitUtc` wird aus dem Commit selbst gelesen. Damit muss ein erneuter Build desselben Commits mit denselben Quelldateien byte-identisch sein.
+
+Die reale lokale Verifikation dieses korrigierten Builders ist nach Pull von Commit `56eab193575ccb0cd6ee7118a22e8ce62dea65f5` noch ausstehend. Bis dahin wird kein neuer Bundle-SHA als akzeptiert behauptet.
+
+## 5. Bestätigter Source-Gate-/Produktionsumfang aus den realen Builds
+
+```text
 CampaignStateAuthority: true
 StrategicTurnaroundTimer: false
 LossRecredit: false
@@ -54,10 +80,7 @@ ExternalSpawnHandoffSeparated: true
 AirwaysRouting: false
 MissionDemandClosesStandardTrack: false
 MissionDemandClosesReserveAfterLastDemand: true
-GlobalAarMissionLimit: false
-GlobalAarAircraftLimit: false
 MaxAircraftPerTrack: 2
-MooseManagedSpawnSTN: true
 SpawnInitialSpeedKt: 480
 TransitRouteSpeedKt: 300
 ManasIngressFt: 34000
@@ -75,14 +98,10 @@ FuelLowMilhousePct: 36
 FuelLowKrustyPct: 36
 ```
 
-## 4. Produktionsumfang
-
-Der Builder meldete für das erzeugte Bundle:
+Produktionsumfang:
 
 ```text
 Scope: PRODUCTION_AAR_BASE
-StandardTracks: 4
-ReserveTracks: 2
 ContinuousCoverage: NELSON,PATTY,MILHOUSE,KRUSTY
 ReserveDemandOnly: LISA,MOE
 StationCycleSec: 10800
@@ -96,18 +115,17 @@ AcceleratedRelief: false
 AcceptanceHarness: false
 MissionDemandFacade: OMW.AirOps.AAR.SubmitDemand/EndDemand
 CampaignStateAuthority: OMW.AirOps.CampaignContext
+MizMutation: false
 ```
 
-Damit ist der beabsichtigte Produktionsvertrag im Builder nachgewiesen: vier kontinuierliche STANDARD-Tracks, zwei MissionDemand-gesteuerte RESERVE-Tracks, normaler 3-h-Zyklus, reale FuelLow- und Loss-Replacement-Pfade sowie keine Acceptance-spezifischen künstlichen Trigger.
-
-## 5. MOOSE-Provenienz
+## 6. MOOSE-Provenienz
 
 ```text
 MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
 Moose.lua SHA-256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
 ```
 
-## 6. Reale SHA-256-Werte
+## 7. Reale Source-SHA-256-Werte des Builds auf 882f5c0
 
 ```text
 CampaignStateSHA256:
@@ -133,12 +151,9 @@ ControllerSHA256:
 
 BootstrapSHA256:
 3441d2b771976702aa71fd2e5fce1d699c8969a71cb8f9749ea343beb27e1f19
-
-BundleSHA256:
-39a1094580db00537f2eba26c7c393d12876bf5ec5c7e7235bca0289909e3c05
 ```
 
-## 7. Acceptance-Grenze
+## 8. Acceptance-Grenze
 
 ```text
 Source/build gate: PASS
@@ -148,6 +163,7 @@ Artificial FuelLow: NO
 Artificial Loss: NO
 Accelerated Relief: NO
 MIZ mutation: NO
+Deterministic builder correction: COMMITTED, LOCAL REBUILD PENDING
 New DCS validation of production wrapper: NOT YET PERFORMED
 ```
 
