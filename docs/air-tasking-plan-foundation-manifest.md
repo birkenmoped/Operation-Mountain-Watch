@@ -69,7 +69,8 @@ Wesentliche Abhängigkeiten:
 - aktuelle AIRWING-/SQUADRON-/Warehouse-Foundations;
 - aktuelle AAR-Baseline nach Abschluss ihrer Finalisierung;
 - `OMW-AIR-TASKING-PLAN-PHASE0-COMMAND-AUTHORITY` – branch-lokale Authority-Grenzen;
-- `OMW-AIR-TASKING-PLAN-PHASE0-MOOSE-COMMAND-MODEL-DECISION` – MOOSE-zentrierte C2-Designentscheidung.
+- `OMW-AIR-TASKING-PLAN-PHASE0-MOOSE-COMMAND-MODEL-DECISION` – MOOSE-zentrierte C2-Designentscheidung;
+- `OMW-AIR-TASKING-PLAN-PHASE0-VIEW-AUTHORITY` – branch-lokale View-/Briefing-Autoritätsgrenze.
 
 Die AAR-Finalisierung ist inzwischen auf `main` integriert. Die konkrete AAR-Runtime-Anbindung bleibt dennoch bis Phase 3 gesperrt; bis dahin werden ausschließlich die Foundation-Verträge und die MOOSE-First-Verifikation abgeschlossen.
 
@@ -107,7 +108,7 @@ Alle Autoritätsgrenzen und Schnittstellen festlegen, bevor Runtime-Code entsteh
 - [x] stabile ID-Konventionen für Request-, Mission- und Support-Beziehungen definieren;
 - [x] MissionDemand-Origin/Consumer-Grenze über Command-/Tasking-/Request-Authority und CampaignState-Kanonisierung festlegen;
 - [x] MOOSE-zentriertes Command-Modell als Projektentscheidung für diesen Foundation-Branch festlegen: historisch plausibel, Authority-Grenzen sichtbar, keine 1:1-NATO-C2-Simulation;
-- [ ] festlegen, welche Daten ausschließlich Views/Briefingdaten sind und keine Ressourcenautorität besitzen;
+- [x] festlegen, welche Daten ausschließlich Views/Briefingdaten sind und keine Ressourcenautorität besitzen;
 - [x] Branch gegen den nach AAR-Finalisierung aktuellen `main`-Stand reconciliieren; konkrete AAR-Runtime-Anbindung bleibt Phase 3.
 
 ## Gate 0
@@ -118,8 +119,20 @@ PASS wenn:
 - Request/Mission/Support-IDs eindeutig definiert sind;
 - Persistenzgrenze dokumentiert ist;
 - MissionDemand-Origin und Authority-Grenzen eindeutig definiert sind;
+- Views/Briefingprodukte keine eigene Ressourcen-, MissionDemand- oder Tasking-Autorität besitzen;
 - keine direkte Runtime-Implementierung eine ungeklärte Architekturentscheidung vorwegnimmt.
 ```
+
+Branch-lokale Gate-Bewertung:
+
+```text
+GATE 0: PASS
+scope: architecture/contracts only
+runtime_validation: not applicable yet
+validated_in_dcs: false
+```
+
+Die noch offenen Detailfragen zu konkreten Command Nodes, Capability-Zuordnungen, MOOSE-Topologie, Priorisierung und Retasking sind bewusst den folgenden Domain-/MOOSE-/Runtime-Phasen zugeordnet und blockieren Gate 0 nicht.
 
 ---
 
@@ -521,14 +534,14 @@ Der Branch soll nicht:
 # 6. Empfohlene Arbeitsreihenfolge ab jetzt
 
 ```text
-1. verbleibende Phase-0-View-/Briefing-Autoritätsgrenze abschließen
-2. Gate 0 prüfen
-3. Phase 1 Datenvertrag finalisieren
-4. Phase 2 MOOSE-First Capability Verification durchführen
+1. Phase 1 Domain Data Model abschließen
+2. Gate 1 prüfen
+3. Phase 2 MOOSE-First Capability Verification durchführen
+4. Gate 2 prüfen
 5. Phase 3 AAR Vertical Slice implementieren und testen
 6. Phase 4 Player Views
 7. Phase 5 Ground Alert / CAS
 8. Phase 6 Dynamic Planning / Retasking / Persistence
 ```
 
-Die Foundation ist jetzt gegen den AAR-finalisierten `main`-Stand reconciliert. Produktiver AAR-Adaptercode bleibt bis zum Abschluss von Phase 0 bis 2 gesperrt.
+Phase 0 ist auf diesem Foundation-Branch als Architektur-/Contract-Gate abgeschlossen. Produktiver Adapter- oder Runtime-Code bleibt bis zum Abschluss von Phase 1 und Phase 2 gesperrt.
