@@ -14,27 +14,24 @@ scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 source_branch: agent/aar-fuel-telemetry-calibration
 source_commit: PENDING_MERGE
-validated_in_dcs: false
+validated_in_dcs: partial
 ---
 
 # AAR LRC Transit Candidate
 
 ## Ziel
 
-Der vierte AAR-Telemetrie-Build verbindet die bereits in DCS bestätigte In-Air-Spawninitialisierung mit der rekonstruierten LRC-Transitplanung, ohne den akzeptierten FIR-Ingress-Vertrag zu ersetzen. Der Kandidat bleibt branch-lokal und verändert die produktive Controller-Datei nicht.
+Die branch-lokale AAR-Telemetrie verbindet den in DCS plausibilisierten In-Air-Spawnzustand mit einer rekonstruierten LRC-Transitplanung, ohne den akzeptierten FIR-Ingress-Vertrag zu ersetzen. Die produktive Controller-Datei bleibt unverändert.
+
+Der vollständige post-merge Erkenntnis-, Fehler- und Kalibrierungsstand steht in:
+
+- [`POST-MERGE-FINDINGS.md`](POST-MERGE-FINDINGS.md)
 
 ## Evidenzgrenze
 
-Die reale KC-135-Betriebsdoktrin fordert für Transit zum und vom AAR-Einsatz Long Range Cruise und optimum altitude. Das öffentlich verfügbare `T.O. 1C-135(K)R(I)-1` verweist für die eigentlichen KC-135R/T-Performance-Daten auf das nicht vorliegende Performance-Appendix `T.O. 1C-135(K)R-1-1`. Die konkreten OMW-Cruise-Level sind deshalb `RECONSTRUCTED_PLANNING_ESTIMATE`, nicht als offizielle KC-135R-Optimum-Altitude-Tabelle auszugeben.
+Die reale KC-135-Betriebsdoktrin fordert für Transit zum und vom AAR-Einsatz Long Range Cruise und optimum altitude. Das öffentlich verfügbare Material enthält keine vollständige KC-135R/T-Optimum-Altitude-Tabelle. Die konkreten OMW-Cruise-Level sind deshalb `RECONSTRUCTED_PLANNING_ESTIMATE`.
 
-Die historische Afghanistan-AIP-Baseline verwendet die ICAO-Richtungssystematik für IFR-Cruising-Levels. Für OMW wird ein benachbartes LRC-Level-Paar um die konservative Planungsmitte FL345 verwendet:
-
-```text
-magnetic track 000-179 deg -> odd  -> FL350
-magnetic track 180-359 deg -> even -> FL340
-```
-
-Für die vorhandenen Source-Domain-Pfade ergibt sich:
+Die Afghanistan-AIP-Baseline verwendet die ICAO-Richtungssystematik für IFR-Cruising-Levels. OMW verwendet derzeit:
 
 ```text
 MANAS -> Afghanistan:      FL340
@@ -58,18 +55,29 @@ exakte Track-Höhe:          sichtbar wirksam
 FIR-Ingress-Vertrag:        FEHLGESCHLAGEN
 ```
 
-Insbesondere LISA/MOE flogen nicht über PINAX und die südlichen Pfade hielten DAVER nicht zuverlässig ein. Der Ansatz
+Insbesondere LISA/MOE flogen nicht über PINAX und die südlichen Pfade hielten DAVER nicht zuverlässig ein.
+
+Entscheidung:
 
 ```text
 SetMissionIngressCoord(late approach)
-+ delayed AddWaypoint(FIR fix after current UID)
++ delayed AddWaypoint(FIR fix)
+= REJECTED
 ```
 
-ist damit verworfen und darf nicht als Produktionsgrundlage verwendet werden.
+Der Ansatz darf nicht als Produktionsgrundlage verwendet werden. Zusätzlich war das Verschieben eines bereits akzeptierten FIR-Ingress-Vertrags ohne ausdrückliche Eigentümerentscheidung eine unzulässige Architekturänderung.
 
-## Candidate 4 – korrigierter Ansatz
+## Candidate 4 – korrigierter Ansatz und reales Ergebnis
 
-Unverändert bleiben:
+Candidate 4 stellte den akzeptierten Primärmechanismus wieder her:
+
+```text
+SetMissionIngressCoord(EGPAN/PINAX/DAVER)
+```
+
+Der 60-NM-Late-Approach sollte erst danach in den von MOOSE erzeugten Pfad eingefügt werden.
+
+Unverändert blieben:
 
 ```text
 In-air spawn initial speed:      480 kt
@@ -83,19 +91,71 @@ track altitude / KIAS:           unverändert
 initial fuel / FuelLow:          unverändert
 ```
 
-Entscheidend korrigiert wird ausschließlich der Ingress-Aufbau:
+### Reales DCS-Ergebnis
+
+Mission:
 
 ```text
-SetMissionIngressCoord(EGPAN/PINAX/DAVER) bleibt erhalten
--> MOOSE baut FIR ingress -> mission waypoint
--> Adapter prüft die von MOOSE erzeugte Reihenfolge
--> late track approach wird NACH dem FIR waypoint eingefügt
--> mission waypoint bleibt auf exakter Track-Höhe
+OMW_Template_v10_AirOps_rdy.miz
+DCS 2.9.28.26385 MT
+AAR-FUEL-TELEMETRY-4
 ```
 
-Damit bleibt der akzeptierte FIR-Ingress-Vertrag Primärmechanismus. Der 60-NM-Punkt ergänzt ihn lediglich zwischen FIR-Fix und Tanker-Missionswaypoint.
+Positiv bestätigt wurde die tatsächliche FIR-Ingress-Passage:
 
-## MOOSE-first Umsetzung
+```text
+NELSON/PATTY    -> EGPAN
+LISA/MOE        -> PINAX
+KRUSTY/MILHOUSE -> DAVER
+```
+
+Damit ist die Candidate-3-Regression am FIR-Ingress korrigiert.
+
+Der Late-Approach-Adapter selbst schlug jedoch fehl:
+
+```text
+LRC late-approach injection has no MOOSE mission waypoint UID
+```
+
+Der 60-NM-Punkt wurde daher nicht eingefügt.
+
+Bewertung:
+
+```text
+FIR ingress restoration: PASS for observed run
+60-NM late-approach insertion: FAIL
+Candidate-4 overall LRC route: NOT ACCEPTED
+```
+
+Der Telemetrie-Harness meldete zwar:
+
+```text
+RESULT PASS allTracks=6 samplesPerTrack=3 points=SPAWN,INGRESS,TRACK fuelLowExcluded=true
+```
+
+Dieser PASS beweist ausschließlich die vollständige Fuel-Telemetrie. Er ist ausdrücklich kein Routing-PASS.
+
+## 60-NM-Late-Approach – Bedeutungsgrenze
+
+Der 60-NM-Punkt ist weder ein neuer FIR-Fix noch ein zusätzlicher gemeinsamer Nord-/Süd-Punkt. Er ist nur ein berechneter Punkt pro Track:
+
+```text
+External Spawn
+-> FIR Ingress
+-> LRC cruise
+-> ca. 60 NM vor dem individuellen Track
+-> descent
+-> track
+```
+
+Nach Eigentümerklärung gilt:
+
+- der Punkt ist für die Fuel-Kalibrierung nicht erforderlich;
+- ein natürlicher MOOSE/DCS-Sinkflug vom FIR-Ingress zum Track ist akzeptabel, wenn das Flugverhalten plausibel ist;
+- der Punkt bleibt ein optionaler Routingversuch und ist keine produktive Anforderung;
+- für FuelLow ist der Outbound-Climb und der vollständige Rückflug wichtiger als dieser Inbound-Übergabepunkt.
+
+## MOOSE-first Stand
 
 Gepinnter Stand:
 
@@ -105,7 +165,7 @@ MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
 Moose.lua SHA-256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
 ```
 
-Candidate 4 verwendet ausschließlich öffentliche, im gepinnten `Moose.lua` vorhandene Pfade:
+Für Candidate 4 waren ausschließlich öffentliche MOOSE-Pfade source-verifiziert:
 
 ```text
 SPAWN:InitSpeedKnots(...)
@@ -123,95 +183,70 @@ COORDINATE:GetIntermediateCoordinate(...)
 COORDINATE:Get2DDistance(...)
 ```
 
-Der gepinnte MOOSE-Quellpfad `OPSGROUP:RouteToMission(...)` erzeugt für FLIGHTGROUP bei gesetztem Mission-Ingress die Reihenfolge:
+Der reale DCS-Lauf widerlegte jedoch die Annahme, dass die Mission-Waypoint-UID am gewählten Adapterzeitpunkt verfügbar ist. Dieser kombinierte Pfad ist daher nicht validiert.
 
-```text
-ingress waypoint
--> mission waypoint
--> optional egress waypoint
-```
-
-und speichert die UID des Mission-Waypoints über `mission:SetGroupWaypointIndex(...)`. Candidate 4 löst diese UID über `AUFTRAG:GetGroupWaypointIndex(flightGroup)` auf, bestimmt den direkt vorhergehenden Wegpunkt und prüft dessen Koordinate gegen den konfigurierten FIR-Fix. Nur wenn diese Prüfung innerhalb 0,5 NM besteht, wird der 60-NM-Late-Approach direkt nach diesem FIR-Waypoint eingefügt.
-
-Damit hängt die Korrektur nicht mehr von `GetWaypointCurrentUID()` beziehungsweise dem zufälligen Zustand des zuletzt passierten Waypoints ab.
-
-Der Mission-Waypoint wird weiterhin mit
+Die exakte Mission-Waypoint-Höhe wird weiterhin branch-lokal mit
 
 ```lua
 mission:SetMissionAltitude(profile.altitudeFt)
 ```
 
-auf die tatsächliche Track-Höhe gesetzt. Hintergrund ist das source-verifizierte `NewORBIT`-Default `missionAltitude = orbitAltitude * 0.9`.
+gesetzt, weil `AUFTRAG:NewORBIT` im gepinnten Stand standardmäßig `missionAltitude = orbitAltitude * 0.9` verwendet.
 
-Sollpfad inbound:
+## Fuel-Telemetrie aus Test 4
 
-```text
-External Spawn @ directional LRC
--> AUFTRAG FIR ingress: EGPAN / PINAX / DAVER @ directional LRC
--> inserted late track approach @ directional LRC
--> descent to exact track altitude
--> AAR racetrack
-```
-
-Sollpfad outbound bleibt unverändert:
+Für die aktuelle Verbrauchskalibrierung wird ausschließlich Test 4 verwendet. Die älteren Tests dienen nur dem Vergleich.
 
 ```text
-AAR racetrack
--> AUFTRAG Cancel
--> published FIR egress fix @ opposite-direction LRC
--> existing External Handoff waypoint
--> despawn / strategic settlement
+Maximum DCS KC-135 fuel mass: 90,700 kg
 ```
 
-## Build
+| Track | FIR->Track | Burn INGRESS->TRACK | Time |
+|---|---:|---:|---:|
+| NELSON | 123.698 NM | 3.8939 % | 1101.100 s |
+| PATTY | 210.823 NM | 6.3108 % | 2151.149 s |
+| LISA | 416.794 NM | 11.3373 % | 4018.014 s |
+| MOE | 225.206 NM | 6.4283 % | 2049.047 s |
+| MILHOUSE | 235.241 NM | 6.3600 % | 2572.570 s |
+| KRUSTY | 257.455 NM | 7.2062 % | 2930.928 s |
 
-```powershell
-cd P:\DCS-DEV\Operation-Mountain-Watch
-git switch agent/aar-fuel-telemetry-calibration
-git pull --ff-only origin agent/aar-fuel-telemetry-calibration
-.\tools\build-aar-fuel-telemetry.ps1
-```
-
-Erzeugt:
+Distanzgewichtete Test-4-Raten:
 
 ```text
-mission\tests\aar-fuel-telemetry\dist\OMW_AAR_Fuel_Telemetry.lua
+MANAS:     25.98 kg/NM
+AL_UDEID:  24.97 kg/NM
 ```
 
-Erwartete Builder-Marker:
+Aktuelle branch-lokale Initial-Fuel-Kandidaten daraus:
 
 ```text
-BuilderVersion: AAR-FUEL-TELEMETRY-4
-TestId: AAR-FUEL-TELEMETRY-4
-CandidateSpawnSpeedKt: 480
-ProductionTransitRouteSpeedKt: 300
-CandidateManasIngressFt: 34000
-CandidateManasEgressFt: 35000
-CandidateAlUdeidIngressFt: 35000
-CandidateAlUdeidEgressFt: 34000
-CandidateTrackApproachNm: 60
-CandidateMissionAltitudeMode: EXACT_TRACK_ALTITUDE
-CandidateIngressContract: PRESERVED_MOOSE_FIR_INGRESS
-CandidateFirRouting: MOOSE_FIR_INGRESS_THEN_LATE_APPROACH
-CandidateScope: SPAWN_SPEED_AND_LRC_ROUTE
-MizMutation: false
+MANAS:     91.4067 %
+AL_UDEID:  79.4558 %
 ```
 
-## DCS-Akzeptanzgrenze
-
-Vor produktiver Übernahme muss ein realer DCS-Lauf mindestens bestätigen:
+Aktuelle branch-lokale FuelLow-Kandidaten unter Einbeziehung der übernommenen AFMAN-Reserveplanung:
 
 ```text
-- alle sechs Tanker materialisieren fehlerfrei;
-- 480-kt-Spawnzustand bleibt stabil;
-- tatsächliche Passage von EGPAN/PINAX/DAVER innerhalb der bestehenden 5-NM-Grenze;
-- LRC_LATE_APPROACH_INSERTED wird für jede Sortie erst nach erfolgreicher MOOSE-FIR-Waypoint-Auflösung erzeugt;
-- Tanker halten directional LRC altitude bis zum late track approach;
-- anschließend natürlicher Sinkflug ohne beobachtbaren Teleport;
-- alle sechs erreichen ihren Racetrack auf korrekter Track-Höhe und Track-KIAS;
-- Cancel/Egress führt unverändert auf den FIR-Fix mit dem gegenüberliegenden directional LRC level;
-- External Handoff / Settlement bleibt regressionsfrei;
-- Fuel-Telemetrie liefert erneut SPAWN, INGRESS und TRACK für alle sechs Tracks.
+NELSON:    24 %
+PATTY:     25 %
+LISA:      33 %
+MOE:       29 %
+MILHOUSE:  37 %
+KRUSTY:    39 %
 ```
 
-`VALIDATED` ist erst nach dokumentiertem DCS-Test mit realer Mission-, Bundle-, DCS- und MOOSE-Provenienz zulässig. ChatGPT mutiert keine `.miz`-Datei.
+Diese Werte sind noch keine produktive Baseline.
+
+## Nächste Akzeptanzgrenze
+
+Vor finaler FuelLow-Übernahme ist direkte Outbound-Telemetrie besonders wertvoll:
+
+```text
+TRACK departure fuel
+FIR EGRESS fuel
+EXTERNAL HANDOFF fuel
+```
+
+Damit kann der reale DCS-Climb-/Outbound-Verbrauch gemessen werden. Eine erneute Veränderung des akzeptierten FIR-Ingress-Vertrags ist dafür nicht erforderlich.
+
+`VALIDATED` bleibt an vollständige DCS-Provenienz und den tatsächlich geprüften Scope gebunden. ChatGPT mutiert keine `.miz`-Datei.
