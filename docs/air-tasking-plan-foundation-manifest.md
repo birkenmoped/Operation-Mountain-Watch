@@ -71,7 +71,8 @@ Wesentliche Abhängigkeiten:
 - `OMW-AIR-TASKING-PLAN-PHASE0-COMMAND-AUTHORITY` – branch-lokale Authority-Grenzen;
 - `OMW-AIR-TASKING-PLAN-PHASE0-MOOSE-COMMAND-MODEL-DECISION` – MOOSE-zentrierte C2-Designentscheidung;
 - `OMW-AIR-TASKING-PLAN-PHASE0-VIEW-AUTHORITY` – branch-lokale View-/Briefing-Autoritätsgrenze;
-- `OMW-AIR-TASKING-PLAN-PHASE1-DOMAIN-DATA-CONTRACT` – branch-lokaler Phase-1-Kerndatenvertrag.
+- `OMW-AIR-TASKING-PLAN-PHASE1-DOMAIN-DATA-CONTRACT` – branch-lokaler Phase-1-Kerndatenvertrag;
+- `OMW-AIR-TASKING-PLAN-PHASE1-MISSION-TYPE-FIELDS` – branch-lokale missionstypabhängige Feldprofile.
 
 Die AAR-Finalisierung ist inzwischen auf `main` integriert. Die konkrete AAR-Runtime-Anbindung bleibt dennoch bis Phase 3 gesperrt; bis dahin werden ausschließlich die Foundation-Verträge und die MOOSE-First-Verifikation abgeschlossen.
 
@@ -151,8 +152,10 @@ Vorgesehene Kernfelder:
 
 ```text
 request_id
-request_type
-requesting_entity_id
+mission_demand_id
+support_type
+request_timing
+requesting_entity_id / requesting_command_node_id
 priority
 created_at
 required_effect_or_task
@@ -162,6 +165,15 @@ status
 assigned_mission_ids
 ```
 
+Dabei gilt:
+
+```text
+support_type = CAS | AAR | ISR | CSAR | AIRLIFT | ESCORT | OTHER
+request_timing = PREPLANNED | IMMEDIATE | EMERGENCY
+```
+
+Capability und zeitliche Bearbeitungsklasse werden getrennt modelliert.
+
 ### `AIR_TASKING_MISSION`
 
 Vorgesehene Kernfelder:
@@ -170,6 +182,7 @@ Vorgesehene Kernfelder:
 mission_id
 mission_type
 request_ids
+mission_demand_ids
 status
 planned_start
 planned_stop
@@ -182,12 +195,13 @@ aircraft_type
 aircraft_count
 callsign
 mission_area_id
-altitude_or_block
+target_reference
 control_agency_id
 report_in_point_id
-support_mission_ids
+support_relationship_ids
+resource_reservation_refs
 player_or_ai_assignment
-moose_mission_binding
+execution_attempt_ids
 result
 ```
 
@@ -207,7 +221,7 @@ provides read-only data for player-facing views
 ## To-do
 
 - [x] konkrete Lua-Datenverträge beziehungsweise Modulschnittstellen entwerfen;
-- [ ] Pflicht-/Optionalfelder je Missionstyp festlegen;
+- [x] Pflicht-/Optionalfelder je Missionstyp festlegen;
 - [ ] Statusautomaten für Request und Mission getrennt definieren;
 - [ ] erlaubte Statusübergänge dokumentieren;
 - [ ] Cancellation-/Failure-Semantik definieren;
@@ -215,6 +229,19 @@ provides read-only data for player-facing views
 - [ ] Player-/AI-Assignment als Planungsattribut definieren, nicht als zweite Aircraft-Resource-Tabelle;
 - [ ] Serialisierbarkeit der persistenten Teilmenge festlegen;
 - [ ] Datenvalidierungsregeln und Fehlerlogging mit stabilen IDs festlegen.
+
+Aktuell profilierte Missionstypen:
+
+```text
+CAS
+AAR
+ISR
+CSAR
+AIRLIFT
+ESCORT
+```
+
+Noch nicht profilierte Missionstypen dürfen als `DRAFT`-Forschungs-/Planungsdatensatz existieren, aber nicht bis zur Execution-Planung fortschreiten, bevor ein Feldprofil definiert ist.
 
 ## Gate 1
 
