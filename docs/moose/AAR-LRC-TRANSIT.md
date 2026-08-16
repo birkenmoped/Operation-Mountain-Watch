@@ -13,8 +13,17 @@ not_authoritative_for:
   - exact KC-135R performance data outside the documented OMW calibration model
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
+supersedes:
+superseded_by:
 source_branch: agent/aar-fuel-telemetry-calibration
 source_commit: 7d55a1383cbf3f52ea776d7354b37dbe5a920466
+acceptance_branch: agent/aar-fuel-telemetry-calibration
+acceptance_commit: 7d55a1383cbf3f52ea776d7354b37dbe5a920466
+acceptance_mission: OMW_Template_v10_AirOps_rdy(5).miz
+acceptance_mission_sha256: 16d0a9b26a648c2dbcbd727b41afc93a28648620f8e2f8c357a770751e48cca5
+dcs_version: 2.9.28.26385 MT
+moose_commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+moose_artifact_sha256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
 validated_in_dcs: true
 ---
 

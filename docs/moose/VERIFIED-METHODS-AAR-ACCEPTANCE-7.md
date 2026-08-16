@@ -8,6 +8,8 @@ authoritative_for:
   - exact provenance and validation boundary of the corrected FIR/late-approach routing path
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
+supersedes:
+superseded_by:
 source_branch: agent/aar-fuel-telemetry-calibration
 source_commit: 7d55a1383cbf3f52ea776d7354b37dbe5a920466
 validated_in_dcs: true
