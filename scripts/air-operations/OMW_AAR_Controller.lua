@@ -18,7 +18,9 @@ local HANDOFF_RADIUS_NM = 10
 local FIR_FIX_RADIUS_NM = 5
 local TRACK_ENTRY_RADIUS_NM = 5
 local DISPATCH_INTERVAL_SEC = 5
+local SPAWN_INITIAL_SPEED_KT = 480
 local TRANSIT_SPEED_KT = 300
+local LATE_APPROACH_NM = 60
 local LEG_NM = 35
 local STATION_CYCLE_SEC = 3 * 60 * 60
 local RELIEF_HANDOVER_ETA_SEC = 5 * 60
@@ -26,14 +28,11 @@ local STANDARD_TRACK_COUNT = 4
 local RESERVE_TRACK_COUNT = 2
 local MAX_AIRCRAFT_PER_TRACK = 2
 
--- Technical off-map physical lifecycle points. These are deliberately not FIR entry/exit fixes.
 local EXTERNAL_POINTS = {
   MANAS = { lat = 38.83163, lon = 70.95271 },
   AL_UDEID = { lat = 28.90264890, lon = 64.61166667 },
 }
 
--- Kabul FIR entry/exit fixes. Full ATS-airway routing is intentionally deferred.
--- DAVER uses the project/M375 route-table coordinate; the 2011 ENR 1.10 table contains a conflicting entry.
 local FIR_FIXES = {
   EGPAN = { lat = 38.41666667, lon = 70.73333333 },
   PINAX = { lat = 37.25000000, lon = 69.10000000 },
@@ -41,9 +40,9 @@ local FIR_FIXES = {
 }
 
 local TRANSIT = {
-  MANAS_WEST_HIGH = { ingressFt = 34000, egressFt = 33000 },
-  MANAS_EAST_HIGH = { ingressFt = 33000, egressFt = 34000 },
-  AL_UDEID_NORTH_HIGH = { ingressFt = 33000, egressFt = 34000 },
+  MANAS_WEST_HIGH = { ingressFt = 34000, egressFt = 35000 },
+  MANAS_EAST_HIGH = { ingressFt = 34000, egressFt = 35000 },
+  AL_UDEID_NORTH_HIGH = { ingressFt = 35000, egressFt = 34000 },
 }
 
 local AREAS = {
@@ -51,10 +50,10 @@ local AREAS = {
     template = "OMW_AAR_KC135_LISA",
     callsignId = CALLSIGN.Tanker.Texaco, callsignName = "Texaco", callsignNumber = 3,
     lat = 33.66624916, lon = 61.81294477, headingDeg = 4.269,
-    sourceDomain = "MANAS", transitProfile = "MANAS_WEST_HIGH", firFix = "PINAX",
+    sourceDomain = "AL_UDEID", transitProfile = "AL_UDEID_NORTH_HIGH", firFix = "DAVER",
     availability = "RESERVE", coreProfile = "FAST",
     frequencyMHz = 235.900, tacanChannel = 50, tacanIdent = "LIS",
-    fuelLowPct = 24, initialFuelPct = 96,
+    fuelLowPct = 38, initialFuelPct = 79.4558,
     profiles = { SLOW = { altitudeFt = 22000, speedKt = 220 }, FAST = { altitudeFt = 25000, speedKt = 300 } },
   },
   MOE = {
@@ -64,7 +63,7 @@ local AREAS = {
     sourceDomain = "MANAS", transitProfile = "MANAS_WEST_HIGH", firFix = "PINAX",
     availability = "RESERVE", coreProfile = "FAST",
     frequencyMHz = 243.400, tacanChannel = 52, tacanIdent = "MOE",
-    fuelLowPct = 22, initialFuelPct = 96,
+    fuelLowPct = 31, initialFuelPct = 91.4067,
     profiles = { SLOW = { altitudeFt = 24000, speedKt = 220 }, FAST = { altitudeFt = 27000, speedKt = 300 } },
   },
   MILHOUSE = {
@@ -74,7 +73,7 @@ local AREAS = {
     sourceDomain = "AL_UDEID", transitProfile = "AL_UDEID_NORTH_HIGH", firFix = "DAVER",
     availability = "STANDARD", coreProfile = "SLOW",
     frequencyMHz = 272.600, tacanChannel = 58, tacanIdent = "MIL",
-    fuelLowPct = 27, initialFuelPct = 90,
+    fuelLowPct = 36, initialFuelPct = 79.4558,
     profiles = { SLOW = { altitudeFt = 22000, speedKt = 220 } },
   },
   KRUSTY = {
@@ -84,7 +83,7 @@ local AREAS = {
     sourceDomain = "AL_UDEID", transitProfile = "AL_UDEID_NORTH_HIGH", firFix = "DAVER",
     availability = "STANDARD", coreProfile = "SLOW",
     frequencyMHz = 258.300, tacanChannel = 42, tacanIdent = "KRU",
-    fuelLowPct = 27, initialFuelPct = 90,
+    fuelLowPct = 36, initialFuelPct = 79.4558,
     profiles = { SLOW = { altitudeFt = 22000, speedKt = 220 } },
   },
   PATTY = {
@@ -94,7 +93,7 @@ local AREAS = {
     sourceDomain = "MANAS", transitProfile = "MANAS_EAST_HIGH", firFix = "EGPAN",
     availability = "STANDARD", coreProfile = "SLOW",
     frequencyMHz = 237.300, tacanChannel = 48, tacanIdent = "PAT",
-    fuelLowPct = 21, initialFuelPct = 96,
+    fuelLowPct = 26, initialFuelPct = 91.4067,
     profiles = { SLOW = { altitudeFt = 24000, speedKt = 220 } },
   },
   NELSON = {
@@ -104,12 +103,11 @@ local AREAS = {
     sourceDomain = "MANAS", transitProfile = "MANAS_EAST_HIGH", firFix = "EGPAN",
     availability = "STANDARD", coreProfile = "FAST",
     frequencyMHz = 384.400, tacanChannel = 47, tacanIdent = "NEL",
-    fuelLowPct = 20, initialFuelPct = 96,
+    fuelLowPct = 24, initialFuelPct = 91.4067,
     profiles = { FAST = { altitudeFt = 27500, speedKt = 300 } },
   },
 }
 
--- Interleave source domains so MANAS and AL_UDEID may start independently while each source keeps 60 s spacing.
 local STANDARD_AREA_ORDER = { "NELSON", "KRUSTY", "PATTY", "MILHOUSE" }
 
 local state = {
@@ -354,6 +352,12 @@ local function cancelToEgress(runtime, reason)
   deactivateStationIdentity(runtime)
   runtime.egressOrdered = true
   runtime.egressReason = reason
+  if not runtime.missionAdded then
+    runtime.missionAdded = true
+    runtime.missionAddedAt = now()
+    runtime.flightGroup:AddMission(runtime.mission)
+    log(string.format("MISSION_ADDED runtime=%s area=%s reason=PRETRACK_EGRESS", runtime.runtimeId, runtime.selection.area))
+  end
   runtime.mission:Cancel()
   log(string.format("EGRESS_ORDERED runtime=%s demand=%s area=%s profile=%s firFix=%s reason=%s",
     runtime.runtimeId, runtime.selection.missionDemandId, runtime.selection.area,
@@ -449,7 +453,6 @@ handleRuntimeLoss = function(runtime, reason)
       if active and active.flightGroup and active.flightGroup:IsAlive() and not active.egressOrdered then
         if not relief then ensureRelief(station, "LOSS_REPLACEMENT") end
       elseif relief and relief.flightGroup and relief.flightGroup:IsAlive() and not relief.egressOrdered then
-        -- Existing inbound relief can become the next active tanker; no duplicate materialization.
       else
         queueActiveReplacement(station, "AIRCRAFT_LOSS")
       end
@@ -482,18 +485,26 @@ local function materialize(request)
   local spawnCoord = COORDINATE:NewFromLLDD(externalPoint.lat, externalPoint.lon)
   spawnCoord:SetAltitude(UTILS.FeetToMeters(transit.ingressFt), true)
   local firIngressCoord = COORDINATE:NewFromLLDD(firFix.lat, firFix.lon)
+  firIngressCoord:SetAltitude(UTILS.FeetToMeters(transit.ingressFt), true)
   local firEgressCoord = COORDINATE:NewFromLLDD(firFix.lat, firFix.lon)
   local externalHandoffCoord = COORDINATE:NewFromLLDD(externalPoint.lat, externalPoint.lon)
   externalHandoffCoord:SetAltitude(UTILS.FeetToMeters(transit.egressFt), true)
   local trackCoord = COORDINATE:NewFromLLDD(areaSpec.lat, areaSpec.lon)
   local spawnToFirNm = spawnCoord:Get2DDistance(firIngressCoord) / 1852
   local firToTrackNm = firIngressCoord:Get2DDistance(trackCoord) / 1852
+  if firToTrackNm <= LATE_APPROACH_NM then
+    fail(string.format("FIR-to-track distance %.1f NM must exceed late-approach distance %.1f NM area=%s",
+      firToTrackNm, LATE_APPROACH_NM, selection.area))
+  end
+  local lateApproachCoord = trackCoord:GetIntermediateCoordinate(firIngressCoord, LATE_APPROACH_NM / firToTrackNm)
+  lateApproachCoord:SetAltitude(UTILS.FeetToMeters(transit.ingressFt), true)
+  local firToLateApproachNm = firIngressCoord:Get2DDistance(lateApproachCoord) / 1852
   local routeDistanceNm = spawnToFirNm + firToTrackNm
 
   local spawner = getSpawner(selection.area, areaSpec)
   spawner:InitCallSign(sortieCallsign.id, sortieCallsign.name, sortieCallsign.number, 1)
   spawner:InitHeading(spawnCoord:HeadingTo(firIngressCoord))
-  spawner:InitSpeedKnots(TRANSIT_SPEED_KT)
+  spawner:InitSpeedKnots(SPAWN_INITIAL_SPEED_KT)
   local group = spawner:SpawnFromCoordinate(spawnCoord)
   if not group then
     releaseSortieCallsign({ runtimeId = runtimeId, sortieCallsign = sortieCallsign })
@@ -513,7 +524,7 @@ local function materialize(request)
 
   local mission = AUFTRAG:NewTANKER(trackCoord, profile.altitudeFt, profile.speedKt, areaSpec.headingDeg, LEG_NM,
     Unit.RefuelingSystem.BOOM_AND_RECEPTACLE)
-  mission:SetMissionIngressCoord(firIngressCoord, transit.ingressFt, TRANSIT_SPEED_KT)
+  mission:SetMissionAltitude(profile.altitudeFt)
   mission:SetMissionEgressCoord(firEgressCoord, transit.egressFt, TRANSIT_SPEED_KT)
 
   flightGroup:SetFuelLowRTB(false)
@@ -524,17 +535,23 @@ local function materialize(request)
     template = areaSpec.template, role = role, reliefReason = request.reliefReason, initialFuelPct = areaSpec.initialFuelPct,
     group = group, flightGroup = flightGroup, mission = mission,
     spawnCoord = spawnCoord, firFixName = areaSpec.firFix, firIngressCoord = firIngressCoord, firEgressCoord = firEgressCoord,
+    lateApproachCoord = lateApproachCoord, lateApproachNm = LATE_APPROACH_NM,
     externalHandoffCoord = externalHandoffCoord, trackCoord = trackCoord,
-    spawnToFirNm = spawnToFirNm, firToTrackNm = firToTrackNm, routeDistanceNm = routeDistanceNm,
+    spawnToFirNm = spawnToFirNm, firToTrackNm = firToTrackNm, firToLateApproachNm = firToLateApproachNm,
+    routeDistanceNm = routeDistanceNm,
     sortieCallsign = sortieCallsign, transitCallsign = sortieCallsign,
-    firIngressPassed = false, firIngressPassedAt = nil, firEgressPassed = false, firEgressPassedAt = nil,
+    firIngressWaypointUid = nil, lateApproachWaypointUid = nil,
+    firIngressPassed = false, firIngressPassedAt = nil,
+    lateApproachPassed = false, lateApproachPassedAt = nil,
+    missionAdded = false, missionAddedAt = nil,
+    firEgressPassed = false, firEgressPassedAt = nil,
     externalHandoffRouted = false, stationIdentityActive = false, onStationAt = nil, materializedAt = now(),
     egressOrdered = false, egressReason = nil, handoffComplete = false, lossHandled = false,
   }
 
   function flightGroup:OnAfterFuelLow(From, Event, To)
     if runtime.egressOrdered or runtime.lossHandled then return end
-    log(string.format("FUEL_LOW runtime=%s demand=%s area=%s profile=%s thresholdPct=%d action=ENSURE_RELIEF_AND_EGRESS",
+    log(string.format("FUEL_LOW runtime=%s demand=%s area=%s profile=%s thresholdPct=%.4f action=ENSURE_RELIEF_AND_EGRESS",
       runtime.runtimeId, selection.missionDemandId, selection.area, selection.receiverProfile, areaSpec.fuelLowPct))
     if not station.closed then
       if station.activeRuntime == runtime then
@@ -556,7 +573,36 @@ local function materialize(request)
     handleRuntimeLoss(runtime, "MOOSE_FLIGHTGROUP_DEAD")
   end
 
-  flightGroup:AddMission(mission)
+  function flightGroup:OnAfterPassingWaypoint(From, Event, To, Waypoint)
+    if not Waypoint or runtime.egressOrdered or runtime.lossHandled then return end
+    if Waypoint.uid == runtime.firIngressWaypointUid and not runtime.firIngressPassed then
+      runtime.firIngressPassed = true
+      runtime.firIngressPassedAt = now()
+      local distanceNm = getDistanceNm(runtime.flightGroup, runtime.firIngressCoord) or -1
+      log(string.format("FIR_INGRESS_PASSED runtime=%s area=%s role=%s fix=%s waypointUid=%d distanceNm=%.2f",
+        runtime.runtimeId, runtime.selection.area, runtime.role, runtime.firFixName, Waypoint.uid, distanceNm))
+      return
+    end
+    if Waypoint.uid == runtime.lateApproachWaypointUid and not runtime.lateApproachPassed then
+      if not runtime.firIngressPassed then
+        fail(string.format("late approach reached before FIR ingress runtime=%s area=%s", runtime.runtimeId, runtime.selection.area))
+      end
+      runtime.lateApproachPassed = true
+      runtime.lateApproachPassedAt = now()
+      if not runtime.missionAdded then
+        runtime.missionAdded = true
+        runtime.missionAddedAt = runtime.lateApproachPassedAt
+        runtime.flightGroup:AddMission(runtime.mission)
+      end
+      log(string.format("LATE_APPROACH_PASSED runtime=%s area=%s role=%s waypointUid=%d distanceToTrackNm=%.1f action=ADD_TANKER_MISSION",
+        runtime.runtimeId, runtime.selection.area, runtime.role, Waypoint.uid, runtime.lateApproachNm))
+    end
+  end
+
+  local firWaypoint = flightGroup:AddWaypoint(firIngressCoord, TRANSIT_SPEED_KT, nil, transit.ingressFt, false)
+  local lateWaypoint = flightGroup:AddWaypoint(lateApproachCoord, TRANSIT_SPEED_KT, firWaypoint.uid, transit.ingressFt, true)
+  runtime.firIngressWaypointUid = firWaypoint.uid
+  runtime.lateApproachWaypointUid = lateWaypoint.uid
   flightGroup:TurnOffRadio()
   flightGroup:TurnOffTACAN()
 
@@ -572,10 +618,11 @@ local function materialize(request)
   end
   state.strategicAdapter:OnMaterialized(selection, runtime)
 
-  log(string.format("MATERIALIZED runtime=%s role=%s demand=%s area=%s profile=%s availability=%s source=%s firFix=%s group=%s callsign=%s%d-1 stn=%s activeTracks=%d aircraft=%d",
+  log(string.format("MATERIALIZED runtime=%s role=%s demand=%s area=%s profile=%s availability=%s source=%s firFix=%s firWaypointUid=%d lateApproachWaypointUid=%d lateApproachNm=%.1f firToLateApproachNm=%.1f group=%s callsign=%s%d-1 stn=%s activeTracks=%d aircraft=%d",
     runtime.runtimeId, runtime.role, selection.missionDemandId, selection.area, selection.receiverProfile,
-    areaSpec.availability, selection.sourceDomain, areaSpec.firFix, group:GetName(),
-    sortieCallsign.name, sortieCallsign.number, sortieCallsign.stn, countActiveTracks(), countPhysicalRuntimes()))
+    areaSpec.availability, selection.sourceDomain, areaSpec.firFix, runtime.firIngressWaypointUid, runtime.lateApproachWaypointUid,
+    LATE_APPROACH_NM, firToLateApproachNm, group:GetName(), sortieCallsign.name, sortieCallsign.number, sortieCallsign.stn,
+    countActiveTracks(), countPhysicalRuntimes()))
   return runtime
 end
 
@@ -654,16 +701,7 @@ local function monitorStations()
     if not station.closed then
       local active = station.activeRuntime
       if active and active.flightGroup and active.flightGroup:IsAlive() and not active.egressOrdered and not active.lossHandled then
-        if not active.firIngressPassed then
-          local firDistanceNm = getDistanceNm(active.flightGroup, active.firIngressCoord)
-          if firDistanceNm and firDistanceNm <= FIR_FIX_RADIUS_NM then
-            active.firIngressPassed = true
-            active.firIngressPassedAt = timestamp
-            log(string.format("FIR_INGRESS_PASSED runtime=%s area=%s fix=%s distanceNm=%.2f",
-              active.runtimeId, active.selection.area, active.firFixName, firDistanceNm))
-          end
-        end
-        if active.firIngressPassed and not active.onStationAt then
+        if active.firIngressPassed and active.lateApproachPassed and active.missionAdded and not active.onStationAt then
           local distanceNm = getDistanceNm(active.flightGroup, active.trackCoord)
           if distanceNm and distanceNm <= TRACK_ENTRY_RADIUS_NM then
             activateStationIdentity(active)
@@ -679,16 +717,7 @@ local function monitorStations()
 
       local relief = station.reliefRuntime
       if relief and relief.flightGroup and relief.flightGroup:IsAlive() and not relief.egressOrdered and not relief.lossHandled then
-        if not relief.firIngressPassed then
-          local firDistanceNm = getDistanceNm(relief.flightGroup, relief.firIngressCoord)
-          if firDistanceNm and firDistanceNm <= FIR_FIX_RADIUS_NM then
-            relief.firIngressPassed = true
-            relief.firIngressPassedAt = timestamp
-            log(string.format("FIR_INGRESS_PASSED runtime=%s area=%s role=RELIEF fix=%s distanceNm=%.2f",
-              relief.runtimeId, relief.selection.area, relief.firFixName, firDistanceNm))
-          end
-        end
-        if relief.firIngressPassed then
+        if relief.firIngressPassed and relief.lateApproachPassed and relief.missionAdded then
           local etaSec, distanceNm = estimateEtaSec(relief.flightGroup, relief.trackCoord)
           local reason = station.reliefReason or relief.reliefReason or "SCHEDULED"
           if etaSec and etaSec <= RELIEF_HANDOVER_ETA_SEC and not station.handoverArmed then
@@ -886,8 +915,10 @@ function Controller.GetConfig()
     handoffRadiusNm = HANDOFF_RADIUS_NM,
     firFixRadiusNm = FIR_FIX_RADIUS_NM,
     trackEntryRadiusNm = TRACK_ENTRY_RADIUS_NM,
+    lateApproachNm = LATE_APPROACH_NM,
     stationCycleSec = STATION_CYCLE_SEC,
     reliefHandoverEtaSec = RELIEF_HANDOVER_ETA_SEC,
+    spawnInitialSpeedKt = SPAWN_INITIAL_SPEED_KT,
     transitSpeedKt = TRANSIT_SPEED_KT,
     standardTrackCount = STANDARD_TRACK_COUNT,
     reserveTrackCount = RESERVE_TRACK_COUNT,
@@ -900,6 +931,7 @@ function Controller.GetConfig()
     mooseManagedSpawnStn = true,
     stableSortieCallsign = true,
     firFixRoutingEnabled = true,
+    lateApproachRoutingMode = "FIR_THEN_LATE_APPROACH_THEN_AUFTRAG",
     externalSpawnHandoffSeparated = true,
     airwaysRoutingEnabled = false,
     coreProfiles = {
@@ -918,6 +950,14 @@ function Controller.GetConfig()
       PATTY = AREAS.PATTY.availability,
       NELSON = AREAS.NELSON.availability,
     },
+    sourceDomainByArea = {
+      LISA = AREAS.LISA.sourceDomain,
+      MOE = AREAS.MOE.sourceDomain,
+      MILHOUSE = AREAS.MILHOUSE.sourceDomain,
+      KRUSTY = AREAS.KRUSTY.sourceDomain,
+      PATTY = AREAS.PATTY.sourceDomain,
+      NELSON = AREAS.NELSON.sourceDomain,
+    },
     firFixByArea = {
       LISA = AREAS.LISA.firFix,
       MOE = AREAS.MOE.firFix,
@@ -933,6 +973,30 @@ function Controller.GetConfig()
       KRUSTY = AREAS.KRUSTY.callsignName,
       PATTY = AREAS.PATTY.callsignName,
       NELSON = AREAS.NELSON.callsignName,
+    },
+    initialFuelPctByArea = {
+      LISA = AREAS.LISA.initialFuelPct,
+      MOE = AREAS.MOE.initialFuelPct,
+      MILHOUSE = AREAS.MILHOUSE.initialFuelPct,
+      KRUSTY = AREAS.KRUSTY.initialFuelPct,
+      PATTY = AREAS.PATTY.initialFuelPct,
+      NELSON = AREAS.NELSON.initialFuelPct,
+    },
+    fuelLowPctByArea = {
+      LISA = AREAS.LISA.fuelLowPct,
+      MOE = AREAS.MOE.fuelLowPct,
+      MILHOUSE = AREAS.MILHOUSE.fuelLowPct,
+      KRUSTY = AREAS.KRUSTY.fuelLowPct,
+      PATTY = AREAS.PATTY.fuelLowPct,
+      NELSON = AREAS.NELSON.fuelLowPct,
+    },
+    transitByArea = {
+      LISA = TRANSIT[AREAS.LISA.transitProfile],
+      MOE = TRANSIT[AREAS.MOE.transitProfile],
+      MILHOUSE = TRANSIT[AREAS.MILHOUSE.transitProfile],
+      KRUSTY = TRANSIT[AREAS.KRUSTY.transitProfile],
+      PATTY = TRANSIT[AREAS.PATTY.transitProfile],
+      NELSON = TRANSIT[AREAS.NELSON.transitProfile],
     },
   }
 end
