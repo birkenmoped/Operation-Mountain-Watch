@@ -42,7 +42,7 @@ foreach ($entry in $files.GetEnumerator()) {
 $requiredMarkers = @(
   @{ File = 'CampaignState'; Marker = 'function CampaignState.New(initialState)' },
   @{ File = 'CampaignState'; Marker = 'function CampaignState.Restore(snapshot)' },
-  @{ File = 'ResourceManifest'; Marker = 'OMW-AIROPS-RESOURCE-MANIFEST' },
+  @{ File = 'ResourceManifest'; Marker = 'function AirOpsResourceManifest.GetEntries()' },
   @{ File = 'InitialStock'; Marker = 'OMW-AIROPS-INITIAL-STOCK-1' },
   @{ File = 'FuelSupplement'; Marker = 'OMW-AIROPS-INITIAL-FUEL-SUPPLEMENT-1' },
   @{ File = 'AARStrategicStock'; Marker = 'OMW-AAR-STRATEGIC-STOCK-2' },
