@@ -30,20 +30,25 @@ Zielarchitektur:
 ```text
 CampaignState
     ↓
-MissionDemand / AIR_SUPPORT_REQUEST
-    ↓
-AIR_TASKING_PLAN
-    ↓
-OMW Tasking Adapter
-    ↓
-MOOSE COMMANDER / AIRWING / SQUADRON / AUFTRAG
-    ↓
-FLIGHTGROUP / DCS
-    ↓
-mission result / request result / CampaignState effect
+MissionDemand
+    ├── direct tasking within verified command/tasking authority
+    │       ↓
+    │   MOOSE execution
+    │
+    └── AIR_SUPPORT_REQUEST across an authority boundary
+            ↓
+        AIR_TASKING_PLAN
+            ↓
+        OMW Tasking Adapter
+            ↓
+        MOOSE COMMANDER / AIRWING / BRIGADE / SQUADRON / PLATOON / AUFTRAG
+            ↓
+        FLIGHTGROUP / ARMYGROUP / DCS
+            ↓
+        mission result / request result / CampaignState effect
 ```
 
-Die Foundation darf keine zweite Ressourcenhoheit neben CampaignState, MOOSE STORAGE/Warehouse oder den bestehenden Air-Ops-Verträgen erzeugen.
+Die Foundation darf keine zweite Ressourcenhoheit neben CampaignState, MOOSE STORAGE/Warehouse oder den bestehenden Air-Ops-Verträgen erzeugen. Die reale NATO-/ISAF-C2-Struktur dient als historische Plausibilitätsvorlage; OMW bildet sie nicht 1:1 nach. MOOSE bleibt bevorzugter Mechanismus für Asset-Auswahl, Mission Assignment und physische Ausführung.
 
 ## 2. Branch-Basis und Abhängigkeiten
 
@@ -62,7 +67,9 @@ Wesentliche Abhängigkeiten:
 - `OMW-ARCH-CAMPAIGN-STATE` – strategische Zustands-/Ressourcenautorität;
 - `OMW-AIR-IMPLEMENTATION` – technische Air-Ops-Grundstruktur;
 - aktuelle AIRWING-/SQUADRON-/Warehouse-Foundations;
-- aktuelle AAR-Baseline nach Abschluss ihrer Finalisierung.
+- aktuelle AAR-Baseline nach Abschluss ihrer Finalisierung;
+- `OMW-AIR-TASKING-PLAN-PHASE0-COMMAND-AUTHORITY` – branch-lokale Authority-Grenzen;
+- `OMW-AIR-TASKING-PLAN-PHASE0-MOOSE-COMMAND-MODEL-DECISION` – MOOSE-zentrierte C2-Designentscheidung.
 
 Die AAR-Finalisierung ist inzwischen auf `main` integriert. Die konkrete AAR-Runtime-Anbindung bleibt dennoch bis Phase 3 gesperrt; bis dahin werden ausschließlich die Foundation-Verträge und die MOOSE-First-Verifikation abgeschlossen.
 
@@ -97,8 +104,9 @@ Alle Autoritätsgrenzen und Schnittstellen festlegen, bevor Runtime-Code entsteh
 - [x] aktuellen Stand von Dokument 54 gegen Dokument 88 prüfen und Überschneidungen/Abgrenzungen dokumentieren;
 - [x] `CampaignState`-Vertrag für Air-Support-Requests, Missionsreservierungen und Ergebnisrückmeldung festlegen;
 - [x] festlegen, welche Air-Tasking-Daten persistent und welche nur Runtime-Daten sind;
-- [ ] stabile ID-Konventionen für Request-, Mission- und Support-Beziehungen definieren;
-- [ ] festlegen, welche vorhandenen Module `MissionDemand` erzeugen beziehungsweise konsumieren dürfen;
+- [x] stabile ID-Konventionen für Request-, Mission- und Support-Beziehungen definieren;
+- [x] MissionDemand-Origin/Consumer-Grenze über Command-/Tasking-/Request-Authority und CampaignState-Kanonisierung festlegen;
+- [x] MOOSE-zentriertes Command-Modell als Projektentscheidung für diesen Foundation-Branch festlegen: historisch plausibel, Authority-Grenzen sichtbar, keine 1:1-NATO-C2-Simulation;
 - [ ] festlegen, welche Daten ausschließlich Views/Briefingdaten sind und keine Ressourcenautorität besitzen;
 - [x] Branch gegen den nach AAR-Finalisierung aktuellen `main`-Stand reconciliieren; konkrete AAR-Runtime-Anbindung bleibt Phase 3.
 
@@ -109,6 +117,7 @@ PASS wenn:
 - Ressourcenautorität eindeutig bleibt;
 - Request/Mission/Support-IDs eindeutig definiert sind;
 - Persistenzgrenze dokumentiert ist;
+- MissionDemand-Origin und Authority-Grenzen eindeutig definiert sind;
 - keine direkte Runtime-Implementierung eine ungeklärte Architekturentscheidung vorwegnimmt.
 ```
 
@@ -225,27 +234,34 @@ MOOSE documentation for pinned version
 
 Mindestens:
 
+- `CHIEF`;
 - `COMMANDER`;
 - `AIRWING`;
+- `BRIGADE`;
 - `SQUADRON`;
+- `PLATOON`;
 - `AUFTRAG`;
 - `FLIGHTGROUP`;
+- `ARMYGROUP`;
 - relevante OPS-/FSM-Events für Mission Assignment, Start, Execution und Completion;
 - vorhandene Missionstypen für AAR und später CAS/Alert-nahe Abläufe;
-- Mechanismen zur Missionsannahme, Verfügbarkeit und Statusbeobachtung.
+- Mechanismen zur Missionsannahme, Verfügbarkeit und Statusbeobachtung;
+- Möglichkeiten und Grenzen für zugewiesene, gebundene und externe Support-Assets ohne parallele OMW-Dispatcher-Engine.
 
 **Keine Methodensignatur wird aus Erinnerung übernommen.** Jede produktiv genutzte Methode muss gegen die tatsächlich gepinnte `Moose.lua` bestätigt werden.
 
 ## To-do
 
 - [ ] pinned MOOSE branch/commit/hash aus `docs/moose/VERSION-AND-SOURCES.md` übernehmen;
+- [ ] `CHIEF`-relevante APIs und Verantwortungsgrenzen prüfen;
 - [ ] `COMMANDER`-relevante APIs prüfen;
-- [ ] `AIRWING`-relevante APIs prüfen;
-- [ ] `SQUADRON`-relevante APIs prüfen;
+- [ ] `AIRWING`-/`BRIGADE`-relevante APIs prüfen;
+- [ ] `SQUADRON`-/`PLATOON`-relevante APIs prüfen;
 - [ ] `AUFTRAG`-Konstruktion und Missionstypen prüfen;
 - [ ] Mission Assignment/Lifecycle/FSM-Callbacks prüfen;
-- [ ] `FLIGHTGROUP`-Status-/Lifecycle-Anbindung prüfen;
+- [ ] `FLIGHTGROUP`-/`ARMYGROUP`-Status-/Lifecycle-Anbindung prüfen;
 - [ ] offizielle Beispiele für die tatsächlich benötigten Kombinationen prüfen;
+- [ ] prüfen, welche Authority-/Allocation-Fälle MOOSE nativ oder durch Konfiguration/Kombination ausreichend trägt;
 - [ ] dokumentieren, welche Daten im OMW-Plan bleiben und welche an MOOSE übergeben werden;
 - [ ] `docs/moose/PROJECT-CLASS-INDEX.md` aktualisieren;
 - [ ] passendes MOOSE-Themendokument aktualisieren oder neu anlegen;
@@ -258,6 +274,7 @@ PASS wenn:
 - jede geplante MOOSE-Verwendung quellengeprüft ist;
 - Adaptergrenze explizit ist;
 - keine MOOSE-Funktion unnötig nachgebaut wird;
+- keine parallele OMW-Command-/Asset-Dispatcher-Engine entsteht;
 - eventuelle echte Framework-Lücken dokumentiert sind.
 ```
 
@@ -495,7 +512,8 @@ Der Branch soll nicht:
 - einen realen NATO-/USMTF-ATO-Workflow vollständig simulieren;
 - historische Beispielcodes aus Sekundärquellen als OMW-Wahrheit übernehmen;
 - `CampaignState` als Ressourcenautorität ersetzen;
-- MOOSE `AUFTRAG`, `AIRWING`, `SQUADRON`, `COMMANDER` oder `FLIGHTGROUP` nachbauen;
+- MOOSE `CHIEF`, `COMMANDER`, `AIRWING`, `BRIGADE`, `SQUADRON`, `PLATOON`, `AUFTRAG`, `FLIGHTGROUP` oder `ARMYGROUP` nachbauen;
+- eine parallele OMW-Command-/Asset-Dispatcher-Engine neben MOOSE einführen;
 - die inzwischen auf `main` integrierte AAR-Baseline vor Phase 3 erneut umbauen;
 - alle Missionsarten gleichzeitig implementieren;
 - Spieler mit Roh-ATO-Nachrichten als primärem Interface belasten.
@@ -503,13 +521,14 @@ Der Branch soll nicht:
 # 6. Empfohlene Arbeitsreihenfolge ab jetzt
 
 ```text
-1. Phase 0 abschließen
-2. Phase 1 Datenvertrag finalisieren
-3. Phase 2 MOOSE-First API-Verifikation durchführen
-4. Phase 3 AAR Vertical Slice implementieren und testen
-5. Phase 4 Player Views
-6. Phase 5 Ground Alert / CAS
-7. Phase 6 Dynamic Planning / Retasking / Persistence
+1. verbleibende Phase-0-View-/Briefing-Autoritätsgrenze abschließen
+2. Gate 0 prüfen
+3. Phase 1 Datenvertrag finalisieren
+4. Phase 2 MOOSE-First Capability Verification durchführen
+5. Phase 3 AAR Vertical Slice implementieren und testen
+6. Phase 4 Player Views
+7. Phase 5 Ground Alert / CAS
+8. Phase 6 Dynamic Planning / Retasking / Persistence
 ```
 
 Die Foundation ist jetzt gegen den AAR-finalisierten `main`-Stand reconciliert. Produktiver AAR-Adaptercode bleibt bis zum Abschluss von Phase 0 bis 2 gesperrt.
