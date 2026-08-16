@@ -29,6 +29,22 @@ $requirements = @(
   @{ File = 'Controller'; Marker = 'STANDARD_TRACK_COUNT = 4' },
   @{ File = 'Controller'; Marker = 'RESERVE_TRACK_COUNT = 2' },
   @{ File = 'Controller'; Marker = 'MAX_AIRCRAFT_PER_TRACK = 2' },
+  @{ File = 'Controller'; Marker = 'SPAWN_INITIAL_SPEED_KT = 480' },
+  @{ File = 'Controller'; Marker = 'TRANSIT_SPEED_KT = 300' },
+  @{ File = 'Controller'; Marker = 'LATE_APPROACH_NM = 60' },
+  @{ File = 'Controller'; Marker = 'MANAS_WEST_HIGH = { ingressFt = 34000, egressFt = 35000 }' },
+  @{ File = 'Controller'; Marker = 'MANAS_EAST_HIGH = { ingressFt = 34000, egressFt = 35000 }' },
+  @{ File = 'Controller'; Marker = 'AL_UDEID_NORTH_HIGH = { ingressFt = 35000, egressFt = 34000 }' },
+  @{ File = 'Controller'; Marker = 'spawner:InitSpeedKnots(SPAWN_INITIAL_SPEED_KT)' },
+  @{ File = 'Controller'; Marker = 'mission:SetMissionAltitude(profile.altitudeFt)' },
+  @{ File = 'Controller'; Marker = 'mission:SetMissionEgressCoord(firEgressCoord, transit.egressFt, TRANSIT_SPEED_KT)' },
+  @{ File = 'Controller'; Marker = 'function flightGroup:OnAfterPassingWaypoint' },
+  @{ File = 'Controller'; Marker = 'local firWaypoint = flightGroup:AddWaypoint(firIngressCoord, TRANSIT_SPEED_KT, nil, transit.ingressFt, false)' },
+  @{ File = 'Controller'; Marker = 'local lateWaypoint = flightGroup:AddWaypoint(lateApproachCoord, TRANSIT_SPEED_KT, firWaypoint.uid, transit.ingressFt, true)' },
+  @{ File = 'Controller'; Marker = 'runtime.firIngressWaypointUid = firWaypoint.uid' },
+  @{ File = 'Controller'; Marker = 'runtime.lateApproachWaypointUid = lateWaypoint.uid' },
+  @{ File = 'Controller'; Marker = 'runtime.flightGroup:AddMission(runtime.mission)' },
+  @{ File = 'Controller'; Marker = 'lateApproachRoutingMode = "FIR_THEN_LATE_APPROACH_THEN_AUFTRAG"' },
   @{ File = 'Controller'; Marker = 'availability = "RESERVE"' },
   @{ File = 'Controller'; Marker = 'availability = "STANDARD"' },
   @{ File = 'Controller'; Marker = 'firFix = "EGPAN"' },
@@ -38,6 +54,7 @@ $requirements = @(
   @{ File = 'Controller'; Marker = 'local FIR_FIXES = {' },
   @{ File = 'Controller'; Marker = 'runtime.flightGroup:AddWaypoint(runtime.externalHandoffCoord' },
   @{ File = 'Controller'; Marker = 'FIR_INGRESS_PASSED' },
+  @{ File = 'Controller'; Marker = 'LATE_APPROACH_PASSED' },
   @{ File = 'Controller'; Marker = 'FIR_EGRESS_PASSED' },
   @{ File = 'Controller'; Marker = 'function Controller.StartContinuousCoreCoverage()' },
   @{ File = 'Controller'; Marker = 'RESERVE_TRACK_EGRESS' },
@@ -70,12 +87,15 @@ foreach ($requirement in $requirements) {
   }
 }
 
-if ($content.Controller -notmatch 'LISA\s*=\s*\{[\s\S]*?availability\s*=\s*"RESERVE"[\s\S]*?coreProfile\s*=\s*"FAST"') {
-  throw 'LISA is not FAST RESERVE.'
+if ($content.Controller.Contains('mission:SetMissionIngressCoord(lateApproachCoord')) {
+  throw 'Late approach must not be installed as AUFTRAG ingress; it would allow AUFTRAG route replacement to bypass the FIR waypoint.'
 }
-if ($content.Controller -notmatch 'MOE\s*=\s*\{[\s\S]*?availability\s*=\s*"RESERVE"[\s\S]*?coreProfile\s*=\s*"FAST"') {
-  throw 'MOE is not FAST RESERVE.'
-}
+if ($content.Controller -notmatch 'LISA\s*=\s*\{[\s\S]*?sourceDomain\s*=\s*"AL_UDEID"[\s\S]*?transitProfile\s*=\s*"AL_UDEID_NORTH_HIGH"[\s\S]*?firFix\s*=\s*"DAVER"[\s\S]*?availability\s*=\s*"RESERVE"[\s\S]*?fuelLowPct\s*=\s*38,\s*initialFuelPct\s*=\s*79\.4558') { throw 'LISA south-domain fuel/routing contract mismatch.' }
+if ($content.Controller -notmatch 'MOE\s*=\s*\{[\s\S]*?availability\s*=\s*"RESERVE"[\s\S]*?fuelLowPct\s*=\s*31,\s*initialFuelPct\s*=\s*91\.4067') { throw 'MOE calibrated fuel contract mismatch.' }
+if ($content.Controller -notmatch 'MILHOUSE\s*=\s*\{[\s\S]*?fuelLowPct\s*=\s*36,\s*initialFuelPct\s*=\s*79\.4558') { throw 'MILHOUSE calibrated fuel contract mismatch.' }
+if ($content.Controller -notmatch 'KRUSTY\s*=\s*\{[\s\S]*?fuelLowPct\s*=\s*36,\s*initialFuelPct\s*=\s*79\.4558') { throw 'KRUSTY calibrated fuel contract mismatch.' }
+if ($content.Controller -notmatch 'PATTY\s*=\s*\{[\s\S]*?fuelLowPct\s*=\s*26,\s*initialFuelPct\s*=\s*91\.4067') { throw 'PATTY calibrated fuel contract mismatch.' }
+if ($content.Controller -notmatch 'NELSON\s*=\s*\{[\s\S]*?fuelLowPct\s*=\s*24,\s*initialFuelPct\s*=\s*91\.4067') { throw 'NELSON calibrated fuel contract mismatch.' }
 
 $forbiddenControllerMarkers = @(
   'CORE_TRACK_COUNT = 6',
@@ -86,12 +106,13 @@ $forbiddenControllerMarkers = @(
   'local STN_START_OCTAL',
   'SwitchCallsign(',
   'local TRANSIT_CALLSIGNS',
-  'CORE_TRACKS_6_SIMULTANEOUS_PASS'
+  'CORE_TRACKS_6_SIMULTANEOUS_PASS',
+  'TestForceEgress'
 )
 
 foreach ($marker in $forbiddenControllerMarkers) {
   if ($content.Controller.Contains($marker)) {
-    throw "AAR controller still contains obsolete AAR marker: $marker"
+    throw "AAR controller still contains obsolete/test AAR marker: $marker"
   }
 }
 
@@ -127,10 +148,14 @@ Write-Host 'StandardTracks: 4'
 Write-Host 'ReserveTracks: 2'
 Write-Host 'LISAProfile: FAST'
 Write-Host 'LISAAvailability: RESERVE'
+Write-Host 'LISASourceDomain: AL_UDEID'
+Write-Host 'LISAFIRFix: DAVER'
 Write-Host 'MOEProfile: FAST'
 Write-Host 'MOEAvailability: RESERVE'
 Write-Host 'StableSortieCallsign: true'
 Write-Host 'FIRFixRouting: true'
+Write-Host 'LateApproachNm: 60'
+Write-Host 'LateApproachMode: FIR_THEN_LATE_APPROACH_THEN_AUFTRAG'
 Write-Host 'ExternalSpawnHandoffSeparated: true'
 Write-Host 'AirwaysRouting: false'
 Write-Host 'MissionDemandClosesStandardTrack: false'
@@ -139,6 +164,21 @@ Write-Host 'GlobalAarMissionLimit: false'
 Write-Host 'GlobalAarAircraftLimit: false'
 Write-Host 'MaxAircraftPerTrack: 2'
 Write-Host 'MooseManagedSpawnSTN: true'
+Write-Host 'SpawnInitialSpeedKt: 480'
+Write-Host 'TransitRouteSpeedKt: 300'
+Write-Host 'ManasIngressFt: 34000'
+Write-Host 'ManasEgressFt: 35000'
+Write-Host 'AlUdeidIngressFt: 35000'
+Write-Host 'AlUdeidEgressFt: 34000'
+Write-Host 'MissionAltitudeMode: EXACT_TRACK_ALTITUDE'
+Write-Host 'InitialFuelManasPct: 91.4067'
+Write-Host 'InitialFuelAlUdeidPct: 79.4558'
+Write-Host 'FuelLowNelsonPct: 24'
+Write-Host 'FuelLowPattyPct: 26'
+Write-Host 'FuelLowLisaPct: 38'
+Write-Host 'FuelLowMoePct: 31'
+Write-Host 'FuelLowMilhousePct: 36'
+Write-Host 'FuelLowKrustyPct: 36'
 
 foreach ($entry in $files.GetEnumerator()) {
   $hash = (Get-FileHash -LiteralPath $entry.Value -Algorithm SHA256).Hash.ToLowerInvariant()
