@@ -1,6 +1,6 @@
 ---
 document_id: OMW-AIROPS-WAREHOUSE-PRODUCTION-BASE
-status: PLANNED
+status: ACCEPTED_TECHNICAL_BASELINE
 document_class: RUNTIME_INTEGRATION_BASELINE
 owning_policy: OMW-GOV-001
 authoritative_for:
@@ -15,7 +15,14 @@ supersedes:
 superseded_by:
 source_branch: agent/warehouse-production-base
 source_commit: PENDING_MERGE
-validated_in_dcs: false
+acceptance_branch: agent/warehouse-production-base
+acceptance_commit: e869bc6a31ccaf3d85ff0a5d43d3db861cbf31f3
+acceptance_mission: OMW_Template_v11_AirOps_rdy(3).miz
+acceptance_mission_sha256: 6de39607c5cfb058331e7eb0fefe4c18972fcbf7cba416d36b6cd6a676c76dfb
+dcs_version: 2.9.28.26385 MT
+moose_commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+moose_artifact_sha256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
+validated_in_dcs: true
 ---
 
 # STORAGE / Warehouse Production Base
@@ -211,12 +218,12 @@ BuilderVersion:
 OMW-AIROPS-WAREHOUSE-BASE-2
 ```
 
-Owner-run Buildnachweis für Branch-Head `635cd87d8946dad0fc0e6ad3b89bb1fbc7b86c22`:
+Finaler Owner-run Buildnachweis für den getesteten Runtime-Commit `e869bc6a31ccaf3d85ff0a5d43d3db861cbf31f3`:
 
 ```text
 InitialJP8StockSHA256: a49465ab24fed33df975651f8ba79735449228fde6064d74e87c541f31018dca
-BundleSHA256 build 1: 15a87820de91cb220516fd5aded343c76ffbc09263559e730f65e0161eeeb42a
-BundleSHA256 build 2: 15a87820de91cb220516fd5aded343c76ffbc09263559e730f65e0161eeeb42a
+BundleSHA256 build 1: fa95807247811fbfb5efb64dcfe8a9c8dd28718ef159b58bd389406e89e59934
+BundleSHA256 build 2: fa95807247811fbfb5efb64dcfe8a9c8dd28718ef159b58bd389406e89e59934
 Deterministic: true
 ```
 
@@ -250,19 +257,27 @@ USERFLAG:Get()
 
 Die JP-8-Datenbaseline und node-spezifische Fuel-Auswahl sind OMW-Domain-/Adapterlogik. Es wird keine MOOSE-Funktion parallel neu implementiert.
 
-## 10. DCS-Smoke 16.08.2026
+## 10. DCS-Acceptance 16.08.2026
 
-Das vom Projektinhaber gelieferte `dcs.log` enthält zwei unterschiedliche Warehouse-Läufe. Der frühere Lauf enthält den bereits bekannten Altstandfehler:
+Der Projektinhaber führte den finalen Acceptance-Kandidaten nach der read-only Prüfung des Upload-Artefakts aus. Das Upload-Artefakt und der ausgeführte Missionspfad werden gemeinsam als Acceptance-Provenienz dokumentiert:
 
 ```text
-START_FAILED ... fuel resource unavailable nodeId=KANDAHAR_MAIN resourceId=FUEL_JP8
+Acceptance branch: agent/warehouse-production-base
+Acceptance commit: e869bc6a31ccaf3d85ff0a5d43d3db861cbf31f3
+Acceptance mission artifact: OMW_Template_v11_AirOps_rdy(3).miz
+Acceptance mission SHA256: 6de39607c5cfb058331e7eb0fefe4c18972fcbf7cba416d36b6cd6a676c76dfb
+Debrief executed path: C:\Users\Sven\Saved Games\DCS.openbeta\Missions\OMW_Template_v11_AirOps_rdy.miz
+Bundle SHA256: fa95807247811fbfb5efb64dcfe8a9c8dd28718ef159b58bd389406e89e59934
+DCS: 2.9.28.26385 MT
+MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+Moose.lua SHA256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
 ```
 
-Der spätere Lauf zeigt dagegen für den neuen v0.3-Pfad:
+Der finale Lauf ab `15:06:38` zeigt:
 
 ```text
-AirOpsStorageInitializer PLAN blockers=0
-AirOpsStorageInitializer APPLY verified=true
+AirOpsStorageInitializer PLAN entries=27 skipped=28 blockers=0 changes=27
+AirOpsStorageInitializer APPLY entries=27 changes=27 verified=true
 
 StorageFuelAdapter APPLY verified=true:
   BAGRAM          entries=1
@@ -273,25 +288,35 @@ StorageFuelAdapter APPLY verified=true:
   SHINDAND_HELI   entries=1
   TARINKOT        entries=1
 
-AirOpsTechnicalAvailabilityInitializer APPLY verified=true
+AirOpsTechnicalAvailabilityInitializer PLAN entries=7 blockers=0 changes=7
+AirOpsTechnicalAvailabilityInitializer APPLY entries=7 changes=7 verified=true
 AirOpsWarehouseProduction READY mode=NEW campaignContextCreated=true
 campaignStateAuthority=true reverseOverwrite=false scheduler=false readyFlag=1
 ```
 
-Nach READY wurde der AAR-Controller geladen und danach liefen die Bagram-, Kandahar-, Jalalabad-, Salerno-, Tarinkot- und Shindand-Foundations an. Für den späteren Lauf ist kein OMW-Lua-/Warehouse-/Fuel-Bootstrapfehler im gelieferten Log erkennbar.
+Nach dem READY-Gate wurde der produktive AAR-Controller mit dem gepinnten MOOSE-Stand geladen und die Standard-Tracks wurden erzeugt. Danach erreichten die AirOps-Foundations Bagram, Kandahar, Jalalabad, Salerno, Tarinkot und Shindand jeweils `status=RUNNING`.
 
-Die Runtime-Funktion ist damit positiv beobachtet. Die formale Acceptance-Provenienz bleibt jedoch noch offen, weil das `debrief.log` den ausgeführten Missionspfad als `OMW_Template_v11_AirOps_rdy.miz` ausweist, während das separat read-only geprüfte aktuelle Upload-Artefakt `OMW_Template_v11_AirOps_rdy(2).miz` mit SHA-256 `e10cf353b09944c872a15cd6d1253722caea3e46ec9d754fb698234b60e8f71c` vorliegt. Bis diese Identität explizit bestätigt ist, bleibt `validated_in_dcs: false` und der PR darf nicht als vollständig akzeptiert markiert werden.
+Das zusammengeführte `dcs.log` enthält weiterhin einen früheren Lauf um `13:08` mit dem bekannten Altstandfehler:
+
+```text
+START_FAILED ... fuel resource unavailable nodeId=KANDAHAR_MAIN resourceId=FUEL_JP8
+```
+
+Dieser Eintrag gehört nicht zum finalen Acceptance-Lauf. Im finalen Lauf ab `15:06` ist kein OMW-Lua-, Warehouse- oder Fuel-Bootstrapfehler erkennbar.
+
+DCS-/Modulwarnungen wie `INVALID ATC`, `Corrupt damage model`, fehlende Texturen oder sonstige nicht-OMW-Warehouse-Meldungen bleiben außerhalb des Issue-#105-Acceptance-Scope und werden durch diesen PASS nicht als behoben oder validiert dargestellt.
+
+**Acceptance-Ergebnis: PASS.** Der exakt oben dokumentierte Runtime-Stand ist `ACCEPTED_TECHNICAL_BASELINE`.
 
 ## 11. Merge-Grenze
 
-Vor `Ready for Review`/Merge müssen weiterhin erfüllt sein:
+Für den Issue-#105-Runtime-Scope sind die technischen Acceptance-Gates erfüllt. Vor dem Merge bleiben nur Repository-/PR-Prüfungen:
 
 ```text
-1. Dokumentationsstand und Links auf dem finalen Branch-Head prüfen.
-2. Documentation validator bewerten; bestehende main-fremde AAR-Fehler nicht Issue #105 zurechnen.
-3. Diff gegen main vollständig prüfen.
-4. Exakten ausgeführten MIZ-Hash/Artefaktbezug des positiven Smoke-Laufs bestätigen.
-5. Erst danach validated_in_dcs / Acceptance-Provenienz finalisieren.
+1. Documentation validator bewerten; bestehende main-fremde AAR-Fehler nicht Issue #105 zurechnen.
+2. Vollständigen PR-Diff gegen main prüfen.
+3. Prüfen, dass die Acceptance-Dokumentationsänderung keine Runtime-Datei verändert.
+4. PR erst nach expliziter Owner-Freigabe mergen.
 ```
 
 Eine `.miz` wird durch ChatGPT oder den Builder nicht automatisch verändert.
