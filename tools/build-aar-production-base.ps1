@@ -8,7 +8,7 @@ $repoRoot = Split-Path -Parent $PSScriptRoot
 $distDir = Join-Path $repoRoot 'mission\runtime\air-operations'
 $outputFile = Join-Path $distDir 'OMW_AAR_Base.lua'
 
-$builderVersion = 'OMW-AIROPS-AAR-BASE-1'
+$builderVersion = 'OMW-AIROPS-AAR-BASE-2'
 $mooseCommit = '73d3ed119cd9e7e3f2cfcabbaa34513d30529b54'
 $mooseSha256 = 'e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915'
 
@@ -102,14 +102,17 @@ if (Test-Path -LiteralPath $outputFile -PathType Leaf) {
 }
 
 $commit = (& git -C $repoRoot rev-parse HEAD).Trim()
-$generatedUtc = (Get-Date).ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ssZ')
+$sourceCommitUtc = (& git -C $repoRoot show -s --format=%cI HEAD).Trim()
+if ([string]::IsNullOrWhiteSpace($sourceCommitUtc)) {
+  throw 'Unable to determine source commit timestamp.'
+}
 
 $header = @"
 -- AUTO-GENERATED FILE. DO NOT EDIT DIRECTLY.
 -- Builder: tools/build-aar-production-base.ps1
 -- BuilderVersion: $builderVersion
 -- GitCommit: $commit
--- GeneratedUtc: $generatedUtc
+-- SourceCommitUtc: $sourceCommitUtc
 -- Scope: permanent OMW AirOps AAR production base.
 -- STANDARD: NELSON, PATTY, MILHOUSE, KRUSTY continuous coverage.
 -- RESERVE: LISA, MOE demand-driven only.
@@ -153,7 +156,8 @@ foreach ($pattern in $forbiddenPatterns) {
 
 Write-Host "Built: $outputFile"
 Write-Host "BuilderVersion: $builderVersion"
-Write-Host "GeneratedUtc: $generatedUtc"
+Write-Host "SourceCommitUtc: $sourceCommitUtc"
+Write-Host 'DeterministicBundleForCommit: true'
 Write-Host 'Scope: PRODUCTION_AAR_BASE'
 Write-Host 'StandardTracks: 4'
 Write-Host 'ReserveTracks: 2'
