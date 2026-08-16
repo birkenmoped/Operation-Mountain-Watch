@@ -55,8 +55,11 @@ $requirements = @(
   @{ File = 'Controller'; Marker = 'TRANSIT_SPEED_KT = 300' },
   @{ File = 'Controller'; Marker = 'LATE_APPROACH_NM = 60' },
   @{ File = 'Controller'; Marker = 'mission:SetMissionAltitude(profile.altitudeFt)' },
-  @{ File = 'Controller'; Marker = 'mission:SetMissionIngressCoord(lateApproachCoord, transit.ingressFt, TRANSIT_SPEED_KT)' },
-  @{ File = 'Controller'; Marker = 'flightGroup:AddWaypoint(firIngressCoord, TRANSIT_SPEED_KT, nil, transit.ingressFt, false)' },
+  @{ File = 'Controller'; Marker = 'mission:SetMissionEgressCoord(firEgressCoord, transit.egressFt, TRANSIT_SPEED_KT)' },
+  @{ File = 'Controller'; Marker = 'function flightGroup:OnAfterPassingWaypoint' },
+  @{ File = 'Controller'; Marker = 'local firWaypoint = flightGroup:AddWaypoint(firIngressCoord, TRANSIT_SPEED_KT, nil, transit.ingressFt, false)' },
+  @{ File = 'Controller'; Marker = 'local lateWaypoint = flightGroup:AddWaypoint(lateApproachCoord, TRANSIT_SPEED_KT, firWaypoint.uid, transit.ingressFt, true)' },
+  @{ File = 'Controller'; Marker = 'lateApproachRoutingMode = "FIR_THEN_LATE_APPROACH_THEN_AUFTRAG"' },
   @{ File = 'Controller'; Marker = 'stableSortieCallsign = true' },
   @{ File = 'Controller'; Marker = 'firFixRoutingEnabled = true' },
   @{ File = 'Controller'; Marker = 'airwaysRoutingEnabled = false' },
@@ -82,9 +85,11 @@ $requirements = @(
   @{ File = 'Harness'; Marker = 'RESULT PASS' },
   @{ File = 'CycleControl'; Marker = 'HOLD_BACKGROUND_SCHEDULED_RELIEF' },
   @{ File = 'CycleControl'; Marker = 'TEST_ISOLATION' },
+  @{ File = 'LateApproach'; Marker = 'INGRESS_ORDER_PASS' },
   @{ File = 'LateApproach'; Marker = 'HIGH_HOLD_PASS' },
   @{ File = 'LateApproach'; Marker = 'TRACK_ALTITUDE_PASS' },
   @{ File = 'LateApproach'; Marker = 'LATE_APPROACH_PASS' },
+  @{ File = 'LateApproach'; Marker = 'FIR_THEN_LATE_APPROACH_THEN_AUFTRAG' },
   @{ File = 'LateApproach'; Marker = 'config.sourceDomainByArea.LISA' },
   @{ File = 'LateApproach'; Marker = 'config.firFixByArea.LISA' }
 )
@@ -111,7 +116,8 @@ $forbiddenPatterns = @(
   'forceControlledTrackEntry',
   'runtime\.trackCoord\s*=',
   'CORE_TRACKS_6_SIMULTANEOUS_PASS',
-  'RELIEF_6_TRACKS_12_AIRCRAFT_PASS'
+  'RELIEF_6_TRACKS_12_AIRCRAFT_PASS',
+  'mission:SetMissionIngressCoord\(lateApproachCoord'
 )
 
 foreach ($entry in $content.GetEnumerator()) {
@@ -134,17 +140,18 @@ $header = @"
 -- GitCommit: $commit
 -- GeneratedUtc: $generatedUtc
 -- Gate/Test-ID: $testId
--- Scope: final combined AAR production acceptance for the owner-approved LRC/fuel calibration, LISA south-domain correction and 60-NM late approach plus four standard tracks, two demand-driven FAST reserve tracks, stable callsign families, source spacing, CampaignState pools/accounting, natural FIR-fix ingress, natural track entry, one scheduled relief, FuelLow relief, reserve start/stop, loss replacement and restore reconciliation.
+-- Scope: final combined AAR production acceptance for the owner-approved LRC/fuel calibration, LISA south-domain correction and 60-NM late approach plus four standard tracks, two demand-driven FAST reserve tracks, stable callsign families, source spacing, CampaignState pools/accounting, exact FIR-before-late-approach sequencing, natural track entry, one scheduled relief, FuelLow relief, reserve start/stop, loss replacement and restore reconciliation.
 -- Calibration: spawn 480 kt; route 300 kt; MANAS in/out FL340/FL350; AL_UDEID in/out FL350/FL340; exact track mission altitude; 60-NM late approach; FuelLow NELSON/PATTY/LISA/MOE/MILHOUSE/KRUSTY 24/26/38/31/36/36 percent.
--- Initial-fuel contract: MANAS 91.4067 percent; AL_UDEID 79.4558 percent. LISA now belongs to AL_UDEID and therefore uses the southern initial-fuel contract. Physical template fuel remains Mission Editor configuration; no MOOSE InitFuel API is assumed.
+-- Initial-fuel contract: MANAS 91.4067 percent; AL_UDEID 79.4558 percent. LISA belongs to AL_UDEID and therefore uses the southern initial-fuel contract. Physical template fuel remains Mission Editor configuration; no MOOSE InitFuel API is assumed.
 -- FIR routing: NELSON/PATTY via EGPAN, MOE via PINAX, LISA/KRUSTY/MILHOUSE via DAVER. External spawn/handoff remains separate. Full ATS-airway routing is deferred.
--- Late approach: the real FIR fix remains an explicit public MOOSE FLIGHTGROUP waypoint at inbound LRC altitude. AUFTRAG ingress is the point 60 NM before the actual AAR track; descent to exact track altitude occurs on the final mission leg.
+-- Inbound routing: SPAWN -> explicit public FLIGHTGROUP FIR waypoint -> explicit public FLIGHTGROUP 60-NM late-approach waypoint -> AUFTRAG tanker mission/track. AUFTRAG is not added until the MOOSE PassingWaypoint event confirms the late-approach waypoint; this prevents AUFTRAG route creation from bypassing the FIR point.
+-- Altitude routing: FIR and late-approach waypoints stay at directional inbound LRC altitude. Descent to exact track altitude begins only after late-approach when AUFTRAG is added.
 -- Track routing: physical tankers must reach their configured production AAR track naturally; the harness does not rewrite runtime.trackCoord and does not teleport aircraft.
 -- Scheduled relief: only MILHOUSE is accelerated, and only by advancing the relief launch time after a short station dwell. The relief then flies naturally from the external spawn through DAVER and the 60-NM late approach to the real MILHOUSE track. During that transit two MILHOUSE-assigned physical sorties are expected, but only the outgoing tanker owns station radio/TACAN until final relief ingress.
 -- Test isolation: background scheduled relief cycles are held beyond the test window so the combined acceptance exercises only the explicitly selected MILHOUSE scheduled relief and NELSON FuelLow relief. This changes test timing only, not physical routing or production controller constants.
 -- FuelLow relief: NELSON replacement also flies naturally through EGPAN and the 60-NM late approach to the real NELSON track.
 -- Reserve routing: LISA is demand-driven from AL_UDEID via DAVER; MOE remains demand-driven from MANAS via PINAX. Neither reserve track auto-starts.
--- Egress settlement: outgoing tankers must pass their FIR egress fix and then reach the external handoff point before recredit/despawn.
+-- Egress settlement: outgoing tankers use the existing AUFTRAG egress path to the FIR egress fix and then the external handoff point before recredit/despawn.
 -- Loss injection: public MOOSE UNIT:Explode() is used only on the designated test tanker to exercise the real FLIGHTGROUP Dead/OnAfterDead path.
 -- Restore: CampaignState snapshot/Restore is exercised in-process; this is not a physical DCS server restart.
 -- Timeout: 12 simulation hours to permit natural physical transit through all combined acceptance phases.
@@ -184,7 +191,7 @@ Write-Host 'ReserveTracks: 2'
 Write-Host 'SpawnInitialSpeedKt: 480'
 Write-Host 'TransitRouteSpeedKt: 300'
 Write-Host 'LateApproachNm: 60'
-Write-Host 'LateApproachMode: FIR_WAYPOINT_THEN_AUFTRAG_INGRESS'
+Write-Host 'LateApproachMode: FIR_THEN_LATE_APPROACH_THEN_AUFTRAG'
 Write-Host 'ManasIngressFt: 34000'
 Write-Host 'ManasEgressFt: 35000'
 Write-Host 'AlUdeidIngressFt: 35000'
@@ -212,6 +219,7 @@ Write-Host 'BackgroundScheduledReliefIsolation: true'
 Write-Host 'ScheduledReliefLaunchAccelerationOnly: true'
 Write-Host 'NaturalStandardTrackEntryRequired: true'
 Write-Host 'NaturalReliefTrackEntryRequired: true'
+Write-Host 'ExactFIRBeforeLateApproachRequired: true'
 Write-Host 'LateApproachHighHoldRequired: true'
 Write-Host 'ControlledTrackEntryAfterFIR: false'
 Write-Host 'RuntimeTrackCoordMutation: false'

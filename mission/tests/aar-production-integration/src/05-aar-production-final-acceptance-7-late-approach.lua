@@ -28,6 +28,7 @@ end
 
 local config = OMW.AAR.GetConfig()
 assertEqual(config.lateApproachNm, 60, "config.lateApproachNm")
+assertEqual(config.lateApproachRoutingMode, "FIR_THEN_LATE_APPROACH_THEN_AUFTRAG", "config.lateApproachRoutingMode")
 assertEqual(config.sourceDomainByArea.LISA, "AL_UDEID", "config.sourceDomain.LISA")
 assertEqual(config.firFixByArea.LISA, "DAVER", "config.firFix.LISA")
 assertEqual(config.initialFuelPctByArea.LISA, 79.4558, "config.initialFuelPct.LISA")
@@ -43,7 +44,7 @@ local targets = {
 
 local observed = {}
 for area in pairs(targets) do
-  observed[area] = { highHold = false, trackAltitude = false, runtimeId = nil }
+  observed[area] = { ingressOrder = false, highHold = false, trackAltitude = false, runtimeId = nil }
 end
 
 local startedAt = timer.getAbsTime()
@@ -67,10 +68,28 @@ local function inspectRuntime(area, runtime)
   assertEqual(runtime.firFixName, spec.firFix, area .. ".firFix")
   assertEqual(runtime.lateApproachNm, 60, area .. ".lateApproachNm")
   assertTrue(runtime.lateApproachCoord ~= nil, area .. " lateApproachCoord missing")
+  assertTrue(runtime.firIngressWaypointUid ~= nil, area .. " firIngressWaypointUid missing")
+  assertTrue(runtime.lateApproachWaypointUid ~= nil, area .. " lateApproachWaypointUid missing")
+  assertTrue(runtime.firIngressWaypointUid ~= runtime.lateApproachWaypointUid, area .. " ingress and late approach waypoint UID collision")
 
   local lateDistanceNm = runtime.lateApproachCoord:Get2DDistance(runtime.trackCoord) / 1852
   assertTrue(math.abs(lateDistanceNm - 60) <= 0.25,
     string.format("%s late approach geometry invalid distanceNm=%.3f", area, lateDistanceNm))
+
+  if runtime.lateApproachPassed and not state.ingressOrder then
+    assertTrue(runtime.firIngressPassed, area .. " late approach passed without FIR ingress")
+    assertTrue(runtime.firIngressPassedAt ~= nil and runtime.lateApproachPassedAt ~= nil,
+      area .. " ingress sequencing timestamps missing")
+    assertTrue(runtime.firIngressPassedAt <= runtime.lateApproachPassedAt,
+      area .. " FIR ingress timestamp is later than late approach")
+    assertTrue(runtime.missionAdded and runtime.missionAddedAt ~= nil,
+      area .. " AUFTRAG was not added at late approach")
+    assertTrue(runtime.missionAddedAt >= runtime.lateApproachPassedAt,
+      area .. " AUFTRAG was added before late approach")
+    state.ingressOrder = true
+    log(string.format("INGRESS_ORDER_PASS area=%s runtime=%s firFix=%s firUid=%d lateUid=%d sequence=FIR_THEN_LATE_APPROACH_THEN_AUFTRAG",
+      area, runtime.runtimeId, runtime.firFixName, runtime.firIngressWaypointUid, runtime.lateApproachWaypointUid))
+  end
 
   local distanceNm = distanceToTrackNm(runtime)
   local altFt = altitudeFt(runtime)
@@ -88,7 +107,7 @@ local function inspectRuntime(area, runtime)
       area, runtime.runtimeId, distanceNm, altFt, runtime.transit.ingressFt))
   end
 
-  if state.highHold and not state.trackAltitude and runtime.onStationAt then
+  if state.ingressOrder and state.highHold and not state.trackAltitude and runtime.onStationAt then
     local delta = math.abs(altFt - runtime.profile.altitudeFt)
     assertTrue(delta <= TRACK_ALT_TOLERANCE_FT,
       string.format("%s track altitude mismatch altitudeFt=%.0f expectedTrackFt=%d deltaFt=%.0f",
@@ -101,20 +120,20 @@ end
 
 local function complete()
   for area in pairs(targets) do
-    if not observed[area].highHold or not observed[area].trackAltitude then return false end
+    if not observed[area].ingressOrder or not observed[area].highHold or not observed[area].trackAltitude then return false end
   end
   return true
 end
 
-log("CONFIG_PASS lateApproachNm=60 LISA_source=AL_UDEID LISA_firFix=DAVER LISA_initialFuelPct=79.4558 LISA_fuelLowPct=38")
+log("CONFIG_PASS lateApproachNm=60 routingMode=FIR_THEN_LATE_APPROACH_THEN_AUFTRAG LISA_source=AL_UDEID LISA_firFix=DAVER LISA_initialFuelPct=79.4558 LISA_fuelLowPct=38")
 
 SCHEDULER:New(nil, function()
   if timer.getAbsTime() - startedAt > TIMEOUT_SEC then
     local missing = {}
     for area, state in pairs(observed) do
-      if not state.highHold or not state.trackAltitude then
-        missing[#missing + 1] = string.format("%s(highHold=%s,trackAltitude=%s)", area,
-          tostring(state.highHold), tostring(state.trackAltitude))
+      if not state.ingressOrder or not state.highHold or not state.trackAltitude then
+        missing[#missing + 1] = string.format("%s(ingressOrder=%s,highHold=%s,trackAltitude=%s)", area,
+          tostring(state.ingressOrder), tostring(state.highHold), tostring(state.trackAltitude))
       end
     end
     fail("TIMEOUT missing=" .. table.concat(missing, ","))
@@ -129,7 +148,7 @@ SCHEDULER:New(nil, function()
   end
 
   if complete() then
-    log("LATE_APPROACH_PASS areas=NELSON,PATTY,KRUSTY,MILHOUSE,LISA highHoldBefore60Nm=true exactTrackAltitude=true LISA_southDomain=true")
+    log("LATE_APPROACH_PASS areas=NELSON,PATTY,KRUSTY,MILHOUSE,LISA firBeforeLateApproach=true highHoldBefore60Nm=true exactTrackAltitude=true LISA_southDomain=true")
     log("RESULT PASS")
     return false
   end

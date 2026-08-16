@@ -122,7 +122,7 @@ EXTERNAL HANDOFF / DESPAWN
 = technischer Abschluss außerhalb der Kabul FIR
 ```
 
-Finaler Candidate-Pfad:
+Verbindlicher Candidate-Pfad:
 
 ```text
 External Spawn
@@ -165,7 +165,7 @@ DAVER-Evidenzgrenze: Die 2011er AIP enthält zwischen ENR-Route-/Navfix-Daten un
 
 Vollständiges Lower-/Upper-Airway-Routing zwischen FIR-Fix und Track bleibt optional/später.
 
-## 6. Kalibrierter Transitvertrag
+## 6. Kalibrierter Transitvertrag und Inbound-Routing
 
 Gepinnter MOOSE-Stand:
 
@@ -196,15 +196,19 @@ Die Track-Höhe wird explizit gesetzt:
 mission:SetMissionAltitude(profile.altitudeFt)
 ```
 
-Der 60-NM-Late-Approach verwendet ausschließlich öffentliche, im gepinnten `Moose.lua` geprüfte MOOSE-Funktionen:
+Der 60-NM-Late-Approach verwendet ausschließlich öffentliche, im gepinnten `Moose.lua` geprüfte MOOSE-Funktionen/FSMs:
 
 ```text
 COORDINATE:GetIntermediateCoordinate(...)
 FLIGHTGROUP:AddWaypoint(...)
-AUFTRAG:SetMissionIngressCoord(...)
+FLIGHTGROUP / OPSGROUP PassingWaypoint
+FLIGHTGROUP OnAfterPassingWaypoint(...)
+FLIGHTGROUP:AddMission(...)
 ```
 
-Der reale FIR-Fix bleibt ein expliziter `FLIGHTGROUP`-Wegpunkt auf LRC-Höhe. Erst der AUFTRAG-Ingress liegt 60 NM vor dem Track. Damit wird weder der FIR-Fix ersetzt noch ein UID-/Timer-Hack verwendet.
+Die Reihenfolge wird technisch erzwungen: Der FIR-Fix und danach der 60-NM-Punkt werden zuerst als echte FLIGHTGROUP-Wegpunkte auf inbound LRC-Höhe geroutet. Erst wenn MOOSE über `OnAfterPassingWaypoint` die Passage des 60-NM-Wegpunkts meldet, wird der Tanker-AUFTRAG hinzugefügt. `AUFTRAG:SetMissionIngressCoord(...)` wird für diesen Inbound-Pfad nicht verwendet.
+
+Damit wird der im ersten Acceptance-7-Lauf beobachtete Fehler beseitigt, bei dem ein bereits hinzugefügter AUFTRAG den vorgeschalteten FIR-Wegpunkt in der tatsächlich geflogenen Route umging.
 
 ## 7. MOOSE-first Routing und Fuel-Lifecycle
 
@@ -212,7 +216,6 @@ Produktiv relevant und im gepinnten Source geprüft:
 
 ```text
 AUFTRAG:NewTANKER(...)
-AUFTRAG:SetMissionIngressCoord(...)
 AUFTRAG:SetMissionAltitude(...)
 AUFTRAG:SetMissionEgressCoord(...)
 AUFTRAG:Cancel()
@@ -222,6 +225,9 @@ SPAWN:InitSpeedKnots(...)
 UNIT:GetSTN()
 
 FLIGHTGROUP:AddWaypoint(...)
+FLIGHTGROUP:AddMission(...)
+FLIGHTGROUP / OPSGROUP PassingWaypoint
+FLIGHTGROUP OnAfterPassingWaypoint(...)
 FLIGHTGROUP:SetFuelLowThreshold(...)
 FLIGHTGROUP:SetFuelLowRTB(false)
 FLIGHTGROUP FuelLow
@@ -326,9 +332,36 @@ Der Acceptance-6-Lauf bestätigte den Produktions-Lifecycle, die kalibrierten Sp
 
 Außerdem war LISA in Acceptance 6 weiterhin `MANAS / PINAX`. Beide Restpunkte werden im Acceptance-7-Candidate gemeinsam korrigiert.
 
-## 12. Finaler Acceptance-7-Candidate
+### 11.4 Acceptance 7 Commit `00ed8e3` – abgebrochen
 
-Vom Projektinhaber am 16.08.2026 ausdrücklich genehmigt:
+Der erste Acceptance-7-Lauf am 16.08.2026 bestätigte, dass der 60-NM-Höhenübergang grundsätzlich funktionierte. Gleichzeitig wurde visuell festgestellt, dass die vorgeschalteten FIR-Ingress-Punkte erneut umgangen wurden. Der Lauf wurde deshalb ausdrücklich abgebrochen und ist **kein** PASS.
+
+Die Ursache liegt im Aufbau `AddWaypoint(FIR) -> AddMission(AUFTRAG mit Late-Approach-Ingress)`: Die AUFTRAG-Routenerzeugung konnte den vorher angefügten FIR-Wegpunkt in der tatsächlich geflogenen Route umgehen. Der korrigierte Candidate verschiebt `AddMission` deshalb hinter die physisch bestätigte Passage des Late-Approach-Wegpunkts.
+
+## 12. Korrigierter finaler Acceptance-7-Candidate
+
+Vom Projektinhaber am 16.08.2026 ausdrücklich gefordert:
+
+```text
+Hinflug:
+SPAWNPUNKT
+-> INGRESS-PUNKT
+-> 60-NM-LATE-APPROACH-PUNKT
+-> TRACK-START-PUNKT
+
+Inbound LRC-/Transferhöhe:
+fest bis einschließlich 60-NM-LATE-APPROACH
+
+Rückflug:
+ABBRUCHPUNKT auf TRACK
+-> EGRESS-PUNKT
+-> DESPAWN-PUNKT
+
+Outbound LRC-/Transferhöhe:
+ab Missionsabbruch / Verlassen der Mission
+```
+
+Weitere Candidate-Werte:
 
 ```text
 Spawn initialization: 480 kt
@@ -362,12 +395,13 @@ Der letzte Abnahmelauf muss neben den bestehenden Lifecycle-Gates ausdrücklich 
 ```text
 - LISA und MOE starten nicht automatisch;
 - LISA wird durch MissionDemand aus AL_UDEID über DAVER materialisiert;
-- reale FIR-Passage bleibt erhalten;
-- Tanker halten die LRC-Höhe bis in den Bereich vor dem 60-NM-Late-Approach;
-- der 60-NM-Punkt liegt geometrisch 60 NM vor dem Track;
+- FIR-Passage erfolgt als echter MOOSE-Waypoint vor dem Late-Approach;
+- FIR PassingWaypoint-Zeitpunkt <= Late-Approach PassingWaypoint-Zeitpunkt;
+- AUFTRAG wird nicht vor Late-Approach-Passage hinzugefügt;
+- Tanker halten die LRC-Höhe bis zum 60-NM-Late-Approach;
 - danach erfolgt der Übergang auf die exakte Track-Höhe;
 - Egress steigt weiterhin auf die outbound LRC-Höhe;
 - Scheduled Relief, FuelLow Relief, Loss/Replacement und CampaignState-Settlement regressieren nicht.
 ```
 
-Erst nach realem Acceptance-7-PASS wird das endgültige Missions-AAR-Grundgerüst erstellt. Dieses enthält **keine test-only Verlustinjektion und keine künstliche FuelLow-Auslösung**. Die vier STANDARD-Tracks werden kontinuierlich erhalten; `LISA` und `MOE` bleiben standardmäßig inaktiv und werden ausschließlich über den produktiven MissionDemand-Vertrag geöffnet.
+Erst nach realem korrigiertem Acceptance-7-PASS wird das endgültige Missions-AAR-Grundgerüst erstellt. Dieses enthält **keine test-only Verlustinjektion und keine künstliche FuelLow-Auslösung**. Die vier STANDARD-Tracks werden kontinuierlich erhalten; `LISA` und `MOE` bleiben standardmäßig inaktiv und werden ausschließlich über den produktiven MissionDemand-Vertrag geöffnet.

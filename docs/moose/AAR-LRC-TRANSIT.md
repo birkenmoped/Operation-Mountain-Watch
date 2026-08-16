@@ -6,7 +6,7 @@ owning_policy: OMW-GOV-001
 authoritative_for:
   - source-reviewed MOOSE methods used by the AAR LRC transit calibration
   - DCS evidence boundary for calibrated spawn, transit, track-altitude and fuel behavior
-  - explicit record of failed Candidate-3/Candidate-4 assumptions
+  - explicit record of failed Candidate-3/Candidate-4/initial-Acceptance-7 assumptions
 not_authoritative_for:
   - final production acceptance before the current controller candidate is retested in DCS
   - exact KC-135R performance data outside the documented OMW calibration model
@@ -50,26 +50,77 @@ Afghanistan -> AL_UDEID:   FL340
 
 Kein routinemäßiger fuel-/weight-basierter Step-Climb.
 
-## FIR, 60-NM Late Approach und External Handoff
+## Verbindliche Inbound-Sequenz
 
-Der finale Candidate trennt die reale FIR-Passage vom AUFTRAG-Ingress:
+Owner-Bestätigung 16.08.2026:
+
+```text
+SPAWNPUNKT
+-> INGRESS-PUNKT
+-> 60-NM-LATE-APPROACH-PUNKT
+-> TRACK-START-PUNKT
+```
+
+Die festgelegte inbound LRC-/Transferhöhe wird vom Spawn bis einschließlich 60-NM-Late-Approach gehalten. Erst nach dessen Passage darf die Transition auf die exakte Track-Höhe beginnen.
+
+Der erste Acceptance-7-Ansatz auf Commit `00ed8e33e05d1c88295a44ae4bda34f18e90f4ca` war technisch falsch aufgebaut:
+
+```text
+FLIGHTGROUP:AddWaypoint(FIR fix)
+-> AUFTRAG:SetMissionIngressCoord(60-NM point)
+-> FLIGHTGROUP:AddMission(AUFTRAG)
+```
+
+Im realen DCS-Lauf vom 16.08.2026 funktionierte zwar der 60-NM-Höhenübergang, die Tanker ignorierten jedoch erneut die vorgeschalteten FIR-Ingress-Punkte. Der Lauf wurde deshalb abgebrochen. Dieser Stand ist nicht akzeptiert und darf nicht als funktionierendes FIR-Routing dokumentiert werden.
+
+## Korrigierter MOOSE-first-Pfad
+
+Der gepinnte MOOSE-Source bestätigt:
+
+```text
+FLIGHTGROUP:AddWaypoint(Coordinate, Speed, AfterWaypointWithID, Altitude, Updateroute)
+-> gibt die erzeugte Waypoint-Tabelle mit uid zurück
+
+OPSGROUP / FLIGHTGROUP PassingWaypoint FSM
+-> OnAfterPassingWaypoint(..., Waypoint)
+-> Waypoint.uid ist verfügbar
+
+FLIGHTGROUP:AddMission(AUFTRAG)
+-> weist den Auftrag dem Flug erst zu diesem Zeitpunkt zu
+```
+
+Daraus wird der neue Candidate strikt gestuft:
 
 ```text
 External Spawn
--> public FLIGHTGROUP:AddWaypoint(FIR fix, inbound LRC altitude)
--> AUFTRAG:SetMissionIngressCoord(60-NM late-approach point, inbound LRC altitude)
--> mission waypoint / exact AAR track altitude
+-> FLIGHTGROUP:AddWaypoint(FIR fix, inbound LRC altitude)
+-> FLIGHTGROUP:AddWaypoint(60-NM late approach, inbound LRC altitude)
+-> OnAfterPassingWaypoint confirms FIR waypoint UID
+-> OnAfterPassingWaypoint confirms late-approach waypoint UID
+-> only now FLIGHTGROUP:AddMission(tanker AUFTRAG)
+-> descent / exact AAR track altitude
 -> AAR track
--> AUFTRAG:SetMissionEgressCoord(FIR fix, outbound LRC altitude)
--> physical FIR egress passage
--> FLIGHTGROUP:AddWaypoint(external handoff, outbound LRC altitude)
 ```
 
-Der Late-Approach-Punkt liegt entlang der geraden FIR-Fix->Track-Geometrie exakt 60 NM vor dem Track und wird mit der öffentlichen Methode `COORDINATE:GetIntermediateCoordinate(...)` berechnet. Der reale FIR-Fix bleibt ausdrücklich als eigener MOOSE-FLIGHTGROUP-Wegpunkt erhalten.
+`AUFTRAG:SetMissionIngressCoord(...)` wird im korrigierten Inbound-Pfad bewusst nicht verwendet. Der AUFTRAG wird erst nach bestätigter Passage des Late-Approach-Wegpunkts hinzugefügt. Damit kann die AUFTRAG-Routenerzeugung den FIR-Wegpunkt nicht vor dessen physischer Passage ersetzen.
 
-Damit wird der in Candidate 3 verworfene Ansatz **nicht** wiederholt: Candidate 3 ersetzte den FIR-Ingress durch den Late-Approach. Candidate 4 stellte den FIR-Fix wieder her, scheiterte aber mit einem UID-/Timing-basierten nachträglichen Adapter. Der finale Candidate verwendet weder Timer-Tuning noch undokumentierte MOOSE-Interna.
+Der Late-Approach-Punkt liegt entlang der geraden FIR-Fix->Track-Geometrie exakt 60 NM vor dem Track und wird mit `COORDINATE:GetIntermediateCoordinate(...)` berechnet.
 
-Dieser neue Pfad ist source-reviewed, aber bis zum vorgesehenen Acceptance-7-Lauf **nicht DCS-validiert**.
+Dieser Pfad verwendet ausschließlich öffentliche MOOSE-Methoden/FSM-Callbacks; kein Timer-Tuning, keine Teleports und keine nicht dokumentierten MOOSE-Interna.
+
+## Rückflug / Egress
+
+Der bereits funktionierende Rückflugvertrag bleibt unverändert:
+
+```text
+ABBRUCHPUNKT auf TRACK
+-> AUFTRAG:SetMissionEgressCoord(FIR egress fix, outbound LRC altitude)
+-> physical FIR egress passage
+-> FLIGHTGROUP:AddWaypoint(external handoff, outbound LRC altitude)
+-> external handoff / despawn
+```
+
+Die outbound LRC-/Transferhöhe gilt ab Missionsabbruch beziehungsweise Verlassen der Tankermission. An diesem funktionierenden Pfad wird für die Ingress-Korrektur nichts konzeptionell geändert.
 
 ## LISA South Domain
 
@@ -85,9 +136,7 @@ Initial Fuel contract: 79.4558 %
 FuelLow candidate: 38 %
 ```
 
-Die Verschiebung erfolgt wegen der deutlich kürzeren sichtbaren Reserve-Reaktionsstrecke DAVER->LISA, nicht wegen eines besseren Fuelstands am Track. Der neue FuelLow-Wert ist konservativ aus südlichem Return-Vertrag, 45-Minuten-Reserve und der für die südliche LISA-Geometrie abgeschätzten Rückflugkomponente abgeleitet und bleibt bis zum finalen DCS-Acceptance ein Kandidatenwert.
-
-MOE bleibt `MANAS / PINAX`.
+Die Verschiebung erfolgt wegen der deutlich kürzeren sichtbaren Reserve-Reaktionsstrecke DAVER->LISA, nicht wegen eines besseren Fuelstands am Track. MOE bleibt `MANAS / PINAX`.
 
 ## Exact Track Altitude
 
@@ -102,12 +151,13 @@ mission:SetMissionAltitude(profile.altitudeFt)
 ```text
 SPAWN:InitSpeedKnots(SpeedKnots)
 AUFTRAG:NewTANKER(...)
-AUFTRAG:SetMissionIngressCoord(Coordinate, Altitude, Speed)
 AUFTRAG:SetMissionAltitude(Altitude)
 AUFTRAG:SetMissionEgressCoord(Coordinate, Altitude, Speed)
 AUFTRAG:Cancel()
 FLIGHTGROUP:AddMission(Mission)
 FLIGHTGROUP:AddWaypoint(Coordinate, Speed, AfterWaypointWithID, Altitude, Updateroute)
+FLIGHTGROUP / OPSGROUP PassingWaypoint FSM
+FLIGHTGROUP OnAfterPassingWaypoint callback override
 FLIGHTGROUP:SetFuelLowThreshold(...)
 FLIGHTGROUP:SetFuelLowRTB(false)
 COORDINATE:GetIntermediateCoordinate(ToCoordinate, Fraction)
@@ -191,11 +241,14 @@ LISA verwendet nach der Source-Domain-Umstellung den AL_UDEID-Wert. `initialFuel
 
 ## Acceptance-7-Gate
 
-Der letzte geplante Abnahmelauf muss mindestens bestätigen:
+Der korrigierte letzte Abnahmelauf muss mindestens bestätigen:
 
 ```text
 4 STANDARD tracks initially active
 LISA/MOE initially inactive
+physical order SPAWN -> FIR -> 60-NM late approach -> track
+FIR waypoint event before late-approach waypoint event
+AUFTRAG added no earlier than late-approach passage
 LISA demand -> AL_UDEID -> DAVER -> 60-NM late approach -> LISA track
 MOE demand -> MANAS -> PINAX
 high LRC altitude maintained until the late-approach segment
@@ -203,7 +256,7 @@ exact track altitude
 scheduled MILHOUSE relief
 NELSON FuelLow relief
 PATTY loss/replacement
-natural FIR ingress/egress
+natural FIR egress
 external handoff and exact-once CampaignState settlement
 final steady state = 4 STANDARD / 0 RESERVE
 ```
@@ -217,8 +270,9 @@ Candidate 3 late-ingress approach: REJECTED
 Candidate 4 FIR restoration: PASS for observed FIR passage
 Candidate 4 UID late-approach adapter: FAILED / not validated
 Candidate 5 outbound telemetry: PASS
-Acceptance 6 lifecycle/calibrated production run: PASS for documented lifecycle scope; visual early-descent finding remains open
-Acceptance 7 LISA south-domain + 60-NM late approach: DCS ACCEPTANCE PENDING
+Acceptance 6 lifecycle/calibrated production run: PASS for documented lifecycle scope; visual early-descent finding remained open
+Acceptance 7 commit 00ed8e3: ABORTED / FIR ingress bypassed; 60-NM altitude transition observed working
+Corrected staged Acceptance 7: SOURCE_REVIEWED / DCS ACCEPTANCE PENDING
 ```
 
-`VALIDATED` für den neuen Late-Approach-/LISA-Stand wird erst nach dem dokumentierten Acceptance-7-DCS-Lauf vergeben.
+`VALIDATED` für den neuen Late-Approach-/LISA-Stand wird erst nach dem dokumentierten korrigierten Acceptance-7-DCS-Lauf vergeben.

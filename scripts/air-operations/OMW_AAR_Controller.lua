@@ -28,14 +28,11 @@ local STANDARD_TRACK_COUNT = 4
 local RESERVE_TRACK_COUNT = 2
 local MAX_AIRCRAFT_PER_TRACK = 2
 
--- Technical off-map physical lifecycle points. These are deliberately not FIR entry/exit fixes.
 local EXTERNAL_POINTS = {
   MANAS = { lat = 38.83163, lon = 70.95271 },
   AL_UDEID = { lat = 28.90264890, lon = 64.61166667 },
 }
 
--- Kabul FIR entry/exit fixes. Full ATS-airway routing is intentionally deferred.
--- DAVER uses the project/M375 route-table coordinate; the 2011 ENR 1.10 table contains a conflicting entry.
 local FIR_FIXES = {
   EGPAN = { lat = 38.41666667, lon = 70.73333333 },
   PINAX = { lat = 37.25000000, lon = 69.10000000 },
@@ -111,7 +108,6 @@ local AREAS = {
   },
 }
 
--- Interleave source domains so MANAS and AL_UDEID may start independently while each source keeps 60 s spacing.
 local STANDARD_AREA_ORDER = { "NELSON", "KRUSTY", "PATTY", "MILHOUSE" }
 
 local state = {
@@ -356,6 +352,12 @@ local function cancelToEgress(runtime, reason)
   deactivateStationIdentity(runtime)
   runtime.egressOrdered = true
   runtime.egressReason = reason
+  if not runtime.missionAdded then
+    runtime.missionAdded = true
+    runtime.missionAddedAt = now()
+    runtime.flightGroup:AddMission(runtime.mission)
+    log(string.format("MISSION_ADDED runtime=%s area=%s reason=PRETRACK_EGRESS", runtime.runtimeId, runtime.selection.area))
+  end
   runtime.mission:Cancel()
   log(string.format("EGRESS_ORDERED runtime=%s demand=%s area=%s profile=%s firFix=%s reason=%s",
     runtime.runtimeId, runtime.selection.missionDemandId, runtime.selection.area,
@@ -451,7 +453,6 @@ handleRuntimeLoss = function(runtime, reason)
       if active and active.flightGroup and active.flightGroup:IsAlive() and not active.egressOrdered then
         if not relief then ensureRelief(station, "LOSS_REPLACEMENT") end
       elseif relief and relief.flightGroup and relief.flightGroup:IsAlive() and not relief.egressOrdered then
-        -- Existing inbound relief can become the next active tanker; no duplicate materialization.
       else
         queueActiveReplacement(station, "AIRCRAFT_LOSS")
       end
@@ -484,6 +485,7 @@ local function materialize(request)
   local spawnCoord = COORDINATE:NewFromLLDD(externalPoint.lat, externalPoint.lon)
   spawnCoord:SetAltitude(UTILS.FeetToMeters(transit.ingressFt), true)
   local firIngressCoord = COORDINATE:NewFromLLDD(firFix.lat, firFix.lon)
+  firIngressCoord:SetAltitude(UTILS.FeetToMeters(transit.ingressFt), true)
   local firEgressCoord = COORDINATE:NewFromLLDD(firFix.lat, firFix.lon)
   local externalHandoffCoord = COORDINATE:NewFromLLDD(externalPoint.lat, externalPoint.lon)
   externalHandoffCoord:SetAltitude(UTILS.FeetToMeters(transit.egressFt), true)
@@ -523,7 +525,6 @@ local function materialize(request)
   local mission = AUFTRAG:NewTANKER(trackCoord, profile.altitudeFt, profile.speedKt, areaSpec.headingDeg, LEG_NM,
     Unit.RefuelingSystem.BOOM_AND_RECEPTACLE)
   mission:SetMissionAltitude(profile.altitudeFt)
-  mission:SetMissionIngressCoord(lateApproachCoord, transit.ingressFt, TRANSIT_SPEED_KT)
   mission:SetMissionEgressCoord(firEgressCoord, transit.egressFt, TRANSIT_SPEED_KT)
 
   flightGroup:SetFuelLowRTB(false)
@@ -539,7 +540,11 @@ local function materialize(request)
     spawnToFirNm = spawnToFirNm, firToTrackNm = firToTrackNm, firToLateApproachNm = firToLateApproachNm,
     routeDistanceNm = routeDistanceNm,
     sortieCallsign = sortieCallsign, transitCallsign = sortieCallsign,
-    firIngressPassed = false, firIngressPassedAt = nil, firEgressPassed = false, firEgressPassedAt = nil,
+    firIngressWaypointUid = nil, lateApproachWaypointUid = nil,
+    firIngressPassed = false, firIngressPassedAt = nil,
+    lateApproachPassed = false, lateApproachPassedAt = nil,
+    missionAdded = false, missionAddedAt = nil,
+    firEgressPassed = false, firEgressPassedAt = nil,
     externalHandoffRouted = false, stationIdentityActive = false, onStationAt = nil, materializedAt = now(),
     egressOrdered = false, egressReason = nil, handoffComplete = false, lossHandled = false,
   }
@@ -568,10 +573,36 @@ local function materialize(request)
     handleRuntimeLoss(runtime, "MOOSE_FLIGHTGROUP_DEAD")
   end
 
-  -- Public MOOSE routing only: preserve the real FIR crossing as an explicit FLIGHTGROUP waypoint,
-  -- then let AUFTRAG own the 60-NM ingress point and the tanker mission waypoint/track altitude.
-  flightGroup:AddWaypoint(firIngressCoord, TRANSIT_SPEED_KT, nil, transit.ingressFt, false)
-  flightGroup:AddMission(mission)
+  function flightGroup:OnAfterPassingWaypoint(From, Event, To, Waypoint)
+    if not Waypoint or runtime.egressOrdered or runtime.lossHandled then return end
+    if Waypoint.uid == runtime.firIngressWaypointUid and not runtime.firIngressPassed then
+      runtime.firIngressPassed = true
+      runtime.firIngressPassedAt = now()
+      local distanceNm = getDistanceNm(runtime.flightGroup, runtime.firIngressCoord) or -1
+      log(string.format("FIR_INGRESS_PASSED runtime=%s area=%s role=%s fix=%s waypointUid=%d distanceNm=%.2f",
+        runtime.runtimeId, runtime.selection.area, runtime.role, runtime.firFixName, Waypoint.uid, distanceNm))
+      return
+    end
+    if Waypoint.uid == runtime.lateApproachWaypointUid and not runtime.lateApproachPassed then
+      if not runtime.firIngressPassed then
+        fail(string.format("late approach reached before FIR ingress runtime=%s area=%s", runtime.runtimeId, runtime.selection.area))
+      end
+      runtime.lateApproachPassed = true
+      runtime.lateApproachPassedAt = now()
+      if not runtime.missionAdded then
+        runtime.missionAdded = true
+        runtime.missionAddedAt = runtime.lateApproachPassedAt
+        runtime.flightGroup:AddMission(runtime.mission)
+      end
+      log(string.format("LATE_APPROACH_PASSED runtime=%s area=%s role=%s waypointUid=%d distanceToTrackNm=%.1f action=ADD_TANKER_MISSION",
+        runtime.runtimeId, runtime.selection.area, runtime.role, Waypoint.uid, runtime.lateApproachNm))
+    end
+  end
+
+  local firWaypoint = flightGroup:AddWaypoint(firIngressCoord, TRANSIT_SPEED_KT, nil, transit.ingressFt, false)
+  local lateWaypoint = flightGroup:AddWaypoint(lateApproachCoord, TRANSIT_SPEED_KT, firWaypoint.uid, transit.ingressFt, true)
+  runtime.firIngressWaypointUid = firWaypoint.uid
+  runtime.lateApproachWaypointUid = lateWaypoint.uid
   flightGroup:TurnOffRadio()
   flightGroup:TurnOffTACAN()
 
@@ -587,10 +618,11 @@ local function materialize(request)
   end
   state.strategicAdapter:OnMaterialized(selection, runtime)
 
-  log(string.format("MATERIALIZED runtime=%s role=%s demand=%s area=%s profile=%s availability=%s source=%s firFix=%s lateApproachNm=%.1f firToLateApproachNm=%.1f group=%s callsign=%s%d-1 stn=%s activeTracks=%d aircraft=%d",
+  log(string.format("MATERIALIZED runtime=%s role=%s demand=%s area=%s profile=%s availability=%s source=%s firFix=%s firWaypointUid=%d lateApproachWaypointUid=%d lateApproachNm=%.1f firToLateApproachNm=%.1f group=%s callsign=%s%d-1 stn=%s activeTracks=%d aircraft=%d",
     runtime.runtimeId, runtime.role, selection.missionDemandId, selection.area, selection.receiverProfile,
-    areaSpec.availability, selection.sourceDomain, areaSpec.firFix, LATE_APPROACH_NM, firToLateApproachNm, group:GetName(),
-    sortieCallsign.name, sortieCallsign.number, sortieCallsign.stn, countActiveTracks(), countPhysicalRuntimes()))
+    areaSpec.availability, selection.sourceDomain, areaSpec.firFix, runtime.firIngressWaypointUid, runtime.lateApproachWaypointUid,
+    LATE_APPROACH_NM, firToLateApproachNm, group:GetName(), sortieCallsign.name, sortieCallsign.number, sortieCallsign.stn,
+    countActiveTracks(), countPhysicalRuntimes()))
   return runtime
 end
 
@@ -669,16 +701,7 @@ local function monitorStations()
     if not station.closed then
       local active = station.activeRuntime
       if active and active.flightGroup and active.flightGroup:IsAlive() and not active.egressOrdered and not active.lossHandled then
-        if not active.firIngressPassed then
-          local firDistanceNm = getDistanceNm(active.flightGroup, active.firIngressCoord)
-          if firDistanceNm and firDistanceNm <= FIR_FIX_RADIUS_NM then
-            active.firIngressPassed = true
-            active.firIngressPassedAt = timestamp
-            log(string.format("FIR_INGRESS_PASSED runtime=%s area=%s fix=%s distanceNm=%.2f",
-              active.runtimeId, active.selection.area, active.firFixName, firDistanceNm))
-          end
-        end
-        if active.firIngressPassed and not active.onStationAt then
+        if active.firIngressPassed and active.lateApproachPassed and active.missionAdded and not active.onStationAt then
           local distanceNm = getDistanceNm(active.flightGroup, active.trackCoord)
           if distanceNm and distanceNm <= TRACK_ENTRY_RADIUS_NM then
             activateStationIdentity(active)
@@ -694,16 +717,7 @@ local function monitorStations()
 
       local relief = station.reliefRuntime
       if relief and relief.flightGroup and relief.flightGroup:IsAlive() and not relief.egressOrdered and not relief.lossHandled then
-        if not relief.firIngressPassed then
-          local firDistanceNm = getDistanceNm(relief.flightGroup, relief.firIngressCoord)
-          if firDistanceNm and firDistanceNm <= FIR_FIX_RADIUS_NM then
-            relief.firIngressPassed = true
-            relief.firIngressPassedAt = timestamp
-            log(string.format("FIR_INGRESS_PASSED runtime=%s area=%s role=RELIEF fix=%s distanceNm=%.2f",
-              relief.runtimeId, relief.selection.area, relief.firFixName, firDistanceNm))
-          end
-        end
-        if relief.firIngressPassed then
+        if relief.firIngressPassed and relief.lateApproachPassed and relief.missionAdded then
           local etaSec, distanceNm = estimateEtaSec(relief.flightGroup, relief.trackCoord)
           local reason = station.reliefReason or relief.reliefReason or "SCHEDULED"
           if etaSec and etaSec <= RELIEF_HANDOVER_ETA_SEC and not station.handoverArmed then
@@ -917,6 +931,7 @@ function Controller.GetConfig()
     mooseManagedSpawnStn = true,
     stableSortieCallsign = true,
     firFixRoutingEnabled = true,
+    lateApproachRoutingMode = "FIR_THEN_LATE_APPROACH_THEN_AUFTRAG",
     externalSpawnHandoffSeparated = true,
     airwaysRoutingEnabled = false,
     coreProfiles = {
