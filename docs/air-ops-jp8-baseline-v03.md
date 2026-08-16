@@ -15,7 +15,14 @@ supersedes:
 superseded_by:
 source_branch: agent/warehouse-production-base
 source_commit: PENDING_MERGE
-validated_in_dcs: false
+acceptance_branch: agent/warehouse-production-base
+acceptance_commit: e869bc6a31ccaf3d85ff0a5d43d3db861cbf31f3
+acceptance_mission: OMW_Template_v11_AirOps_rdy(3).miz
+acceptance_mission_sha256: 6de39607c5cfb058331e7eb0fefe4c18972fcbf7cba416d36b6cd6a676c76dfb
+dcs_version: 2.9.28.26385 MT
+moose_commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+moose_artifact_sha256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
+validated_in_dcs: true
 ---
 
 # AirOps JP-8 Baseline v0.3-RELEASE
@@ -201,7 +208,7 @@ Die Projektkosten werden nicht proportional in Gallonenkapazität umgerechnet. `
 Primärquellen:
 
 - U.S. Army / USACE, *New rotary wing apron at Shindand complete*, 23.08.2011: https://www.army.mil/article/63965/new_rotary_wing_apron_at_shindand_complete
-- U.S. Army, *TF Spearhead 'will pump you up'...with fuel*, 08.10.2011: https://www.army.mil/article/66977/tf_spearhead_will_pump_you_up_with_fuel
+- U.S. Army, *TF Spearhead 'will pump you up'...with fuel*, 08.10.2011: https://www.army.mil/article/66977/tf_spearhead-will-pump-you-up-with-fuel
 
 Bestätigt sind die 2011er Aviation-Erweiterung, `fuels operations` als Ausbaukomponente sowie operativer Petroleum-Support. Eine konkrete historische Tankkapazität ist nicht belegt. `450,000 kg` ist deshalb `PROJECT_DESIGN_VALUE_OPERATIONAL_INTERPOLATED`.
 
@@ -254,19 +261,32 @@ SourceDecision = OMW owner decision 2026-08-16
 
 Der Warehouse-Produktionspfad materialisiert die sieben JP-8-Ressourcen einseitig aus CampaignState nach MOOSE/DCS STORAGE. Kandahar Main führt zusätzlich den bereits genehmigten MQ-1-AVGAS-Bestand aus `OMW_AirOpsInitialFuelSupplement.lua`.
 
-## 8. Verifikationsstand 16.08.2026
+## 8. DCS-Verifikation 16.08.2026
 
-Lokaler deterministischer Build auf Branch-Head `635cd87d8946dad0fc0e6ad3b89bb1fbc7b86c22`:
+Finaler deterministischer Owner-run Build auf dem getesteten Runtime-Commit `e869bc6a31ccaf3d85ff0a5d43d3db861cbf31f3`:
 
 ```text
 BuilderVersion: OMW-AIROPS-WAREHOUSE-BASE-2
 InitialJP8StockSHA256: a49465ab24fed33df975651f8ba79735449228fde6064d74e87c541f31018dca
-BundleSHA256 build 1: 15a87820de91cb220516fd5aded343c76ffbc09263559e730f65e0161eeeb42a
-BundleSHA256 build 2: 15a87820de91cb220516fd5aded343c76ffbc09263559e730f65e0161eeeb42a
+BundleSHA256 build 1: fa95807247811fbfb5efb64dcfe8a9c8dd28718ef159b58bd389406e89e59934
+BundleSHA256 build 2: fa95807247811fbfb5efb64dcfe8a9c8dd28718ef159b58bd389406e89e59934
 Deterministic: true
 ```
 
-Im späteren DCS-Lauf desselben Logfiles wurde beobachtet:
+Acceptance-Provenienz:
+
+```text
+Branch: agent/warehouse-production-base
+Runtime commit: e869bc6a31ccaf3d85ff0a5d43d3db861cbf31f3
+Mission artifact: OMW_Template_v11_AirOps_rdy(3).miz
+Mission SHA256: 6de39607c5cfb058331e7eb0fefe4c18972fcbf7cba416d36b6cd6a676c76dfb
+Debrief executed path: C:\Users\Sven\Saved Games\DCS.openbeta\Missions\OMW_Template_v11_AirOps_rdy.miz
+DCS: 2.9.28.26385 MT
+MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+Moose.lua SHA256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
+```
+
+Der finale DCS-Lauf ab `15:06:38` bestätigt:
 
 ```text
 StorageInitializer PLAN blockers=0
@@ -282,9 +302,11 @@ StorageFuelAdapter APPLY verified=true for:
 TechnicalAvailabilityInitializer APPLY verified=true
 AirOpsWarehouseProduction READY mode=NEW readyFlag=1
 AAR production controller loaded afterwards
-Bagram/Kandahar/Jalalabad/Salerno/Tarinkot/Shindand foundations started afterwards
+Bagram/Kandahar/Jalalabad/Salerno/Tarinkot/Shindand foundations reached RUNNING afterwards
 ```
 
-Das gleiche `dcs.log` enthält außerdem einen **früheren** Lauf mit dem bekannten fail-closed Fehler `KANDAHAR_MAIN/FUEL_JP8 unavailable`. Dieser frühere Eintrag gehört zum alten Produktionsstand und wird nicht als aktueller Fehler des späteren erfolgreichen Laufs interpretiert.
+Das zusammengeführte `dcs.log` enthält außerdem einen **früheren** Lauf um `13:08` mit dem bekannten fail-closed Fehler `KANDAHAR_MAIN/FUEL_JP8 unavailable`. Dieser frühere Eintrag gehört zum alten Produktionsstand und wird nicht als Fehler des finalen Acceptance-Laufs interpretiert.
 
-Provenienzgrenze: Das `debrief.log` nennt als ausgeführten Pfad `OMW_Template_v11_AirOps_rdy.miz`, während das für den aktuellen Bundle-Stand separat read-only geprüfte Upload-Artefakt `OMW_Template_v11_AirOps_rdy(2).miz` heißt und SHA-256 `e10cf353b09944c872a15cd6d1253722caea3e46ec9d754fb698234b60e8f71c` besitzt. Solange diese Pfad-/Artefaktidentität nicht explizit aufgelöst ist, wird trotz erfolgreichem Runtime-Verhalten noch kein vollständiges `validated_in_dcs: true` für den Merge-Stand behauptet.
+Im finalen Lauf ist kein OMW-Lua-, Warehouse- oder Fuel-Bootstrapfehler erkennbar. Unabhängige DCS-/Modulwarnungen wie `INVALID ATC`, `Corrupt damage model` oder fehlende Texturen liegen außerhalb des Issue-#105-Scope und werden durch diesen Test nicht als behoben dargestellt.
+
+**Verifikationsergebnis: PASS.** `validated_in_dcs: true` gilt ausschließlich für die oben dokumentierte Branch-/Commit-/Mission-/Bundle-/DCS-/MOOSE-Provenienz.
