@@ -31,6 +31,7 @@ Technische Lifecycle-Details:
 - [`OMW-MOOSE-VERIFIED-METHODS`](VERIFIED-METHODS.md)
 - [`OMW-MOOSE-STORAGE-WAREHOUSE-RESOURCE-FOUNDATION`](STORAGE-WAREHOUSE-RESOURCE-FOUNDATION.md)
 - [`OMW-MOOSE-ISR-FAC-CAS-AAR`](ISR-FAC-CAS-AAR.md)
+- [`OMW-MOOSE-AAR-LRC-TRANSIT`](AAR-LRC-TRANSIT.md)
 
 ## 2. Statusbedeutung
 
@@ -55,14 +56,15 @@ REJECTED_FOR_PROJECT_USE
 | `WAREHOUSE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | AirOps-Stock-/Asset-Lifecycle; kein WAREHOUSE für externe MANAS-/AL_UDEID-AAR-count-Pools |
 | `STORAGE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | CampaignState->DCS-Warehouse Mirror/Telemetry; keine strategische Rückautorität |
 | `COHORT` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Asset-/Mission-Capability-Pfade für dokumentierte AirOps-Foundations |
-| `FLIGHTGROUP` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | AAR FuelLow, Dead/OnAfterDead, GetCoordinate und `AddWaypoint(...)` für FIR-Egress -> External Handoff im Acceptance-5 praktisch bestätigt; Geltung nur für dokumentierten Scope |
+| `FLIGHTGROUP` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | AAR FuelLow, Dead/OnAfterDead, GetCoordinate und `AddWaypoint(...)` für FIR-Egress -> External Handoff praktisch bestätigt; `AddMission -> delayed AddWaypoint after current UID` für den neuen LRC-Inbound-Pfad ist nur `SOURCE_REVIEWED` und DCS-offen |
 | `COMMANDER` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | dokumentierter COMMANDER-Lifecycle; nicht Quelle der externen OMW-AAR-Pools |
-| `AUFTRAG` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | AAR `NewTANKER`, Mission-Ingress/-Egress und `Cancel()` im Acceptance-5 für natürlichen FIR-/Track-/Relief-Lifecycle praktisch bestätigt |
-| `SPAWN` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | area-spezifische AAR-Templates und stabile Sortie-Callsign-Familie; keine erzwungene `InitSTN()`, STN-Readback über `UNIT:GetSTN()` |
-| `SCHEDULER` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Source-Queue, Station-Monitoring und Acceptance-Koordination im dokumentierten AAR-Scope |
+| `AUFTRAG` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | AAR `NewTANKER`, Mission-Ingress/-Egress und `Cancel()` praktisch bestätigt; `SetMissionAltitude(...)` zur Korrektur des NewORBIT-90%-Mission-Waypoints ist für den LRC-Kandidaten `SOURCE_REVIEWED` und noch nicht DCS-validiert |
+| `SPAWN` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | area-spezifische AAR-Templates, stabile Sortie-Callsign-Familie und branch-lokal bestätigter 480-kt-In-Air-Spawnzustand; keine erzwungene `InitSTN()`, STN-Readback über `UNIT:GetSTN()` |
+| `SCHEDULER` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Source-Queue, Station-Monitoring und Acceptance-Koordination; einmaliges `BASE/FLIGHTGROUP:ScheduleOnce(...)` zur LRC-FIR-Waypoint-Injektion ist `SOURCE_REVIEWED` und DCS-offen |
 | `USERFLAG` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Warehouse-Acceptance-Readiness-Pfade |
-| `GROUP`, `UNIT`, `STATIC`, `ZONE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Template-/Static-/Warehouse-/Zonenvalidierung; AAR `UNIT:GetSTN()` und test-only `UNIT:Explode()` praktisch bestätigt. `UNIT:GetFuel()`, `UNIT:GetCurrentFuelKgs()` und `UNIT:GetFuelMassMax()` sind für den neuen Fuel-Telemetry-Test source-verifiziert, aber noch nicht durch diesen Test in DCS validiert. |
-| `ARMYGROUP`, `BRIGADE`, `OPSGROUP` | `PLANNED` / teilweise validiert | Bodenoperationsscope bleibt geplant; für AAR sind Despawn sowie Radio-/TACAN-Switch im dokumentierten Acceptance-Scope praktisch korreliert |
+| `GROUP`, `UNIT`, `STATIC`, `ZONE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Template-/Static-/Warehouse-/Zonenvalidierung; AAR `UNIT:GetSTN()` und test-only `UNIT:Explode()` praktisch bestätigt. `UNIT:GetFuel()`, `UNIT:GetCurrentFuelKgs()` und `UNIT:GetFuelMassMax()` wurden im dokumentierten AAR-Fuel-Telemetry-Lauf praktisch verwendet; die Fuel-Neuberechnung bleibt eine getrennte Designentscheidung. |
+| `COORDINATE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` / teilweise `SOURCE_REVIEWED` | `Get2DDistance(...)` im AAR-Scope praktisch verwendet; `GetIntermediateCoordinate(..., distanceMeters)` für den 60-NM-LRC-Approach ist source-verifiziert und noch nicht als kombinierter Routingpfad DCS-validiert |
+| `ARMYGROUP`, `BRIGADE`, `OPSGROUP` | `PLANNED` / teilweise validiert | Bodenoperationsscope bleibt geplant; für AAR sind Despawn sowie Radio-/TACAN-Switch praktisch korreliert; `GetWaypointCurrentUID()` ist für den LRC-Kandidaten source-verifiziert |
 | `OPSTRANSPORT` | `PLANNED` | taktischer Transport |
 | `CTLD`, `CSAR`, `AICSAR` | `PLANNED` / teilweise verwendet | separate Acceptance erforderlich |
 | `INTEL` | `PLANNED` | taktisches Lagebild; Laufzeitnachweis offen |
@@ -84,7 +86,7 @@ MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
 Moose.lua SHA-256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
 ```
 
-Für den aktuellen AAR-Produktionsstand sind im tatsächlich gepinnten `Moose.lua` geprüft und im `AAR-PRODUCTION-FINAL-ACCEPTANCE-5` für den dokumentierten Einsatz praktisch bestätigt:
+Für den akzeptierten AAR-Produktionsstand sind im tatsächlich gepinnten `Moose.lua` geprüft und für den dokumentierten Einsatz praktisch bestätigt:
 
 ```text
 AUFTRAG:NewTANKER(...)
@@ -117,7 +119,7 @@ COORDINATE:Get2DDistance(...)
 SCHEDULER:New(...)
 ```
 
-Für `AAR-FUEL-TELEMETRY-1` zusätzlich source-verifiziert, aber noch nicht als DCS-validiert eingestuft:
+Für die AAR-Fuel-Telemetrie wurden außerdem im realen DCS-Lauf verwendet:
 
 ```text
 UNIT:GetFuel()
@@ -125,11 +127,26 @@ UNIT:GetCurrentFuelKgs()
 UNIT:GetFuelMassMax()
 ```
 
-Der gepinnte `Moose.lua` implementiert `UNIT:GetFuel()` als öffentlichen Wrapper über `DCS Unit:getFuel()` und liefert den relativen Fuelwert; bei externen Tanks kann der Wert größer als `1.0` sein. Der Telemetrie-Harness klemmt diesen Wert deshalb nicht. `UNIT:GetCurrentFuelKgs()` und `UNIT:GetFuelMassMax()` werden nur als ergänzende Massentelemetrie protokolliert. Die produktive AAR-FuelLow-Logik bleibt bis zur Auswertung unverändert.
+Der gepinnte `Moose.lua` implementiert `UNIT:GetFuel()` als öffentlichen Wrapper über `DCS Unit:getFuel()` und liefert den relativen Fuelwert; bei externen Tanks kann der Wert größer als `1.0` sein. Der Telemetrie-Harness klemmt diesen Wert deshalb nicht. `UNIT:GetCurrentFuelKgs()` und `UNIT:GetFuelMassMax()` werden nur als ergänzende Massentelemetrie protokolliert.
 
-`FLIGHTGROUP:AddWaypoint(...)` wird nach physischer Passage des FIR-Egress-Fixes verwendet, um den getrennten External-Handoff-Punkt anzufügen. Dieser zweistufige Egress-/Handoff-Pfad wurde im Acceptance-5 praktisch bestätigt.
+`FLIGHTGROUP:AddWaypoint(...)` wird im akzeptierten Produktionspfad nach physischer Passage des FIR-Egress-Fixes verwendet, um den getrennten External-Handoff-Punkt anzufügen.
 
 `OPSGROUP:SwitchCallsign(...)` ist im gepinnten MOOSE weiterhin verfügbar, wird im korrigierten AAR-Produktionspfad aber **nicht** für einen Wechsel zwischen Transit- und Track-Callsign verwendet. Der physische Tanker behält seine Callsign-Familie vom Spawn bis Despawn.
+
+### 4.1 Branch-lokaler LRC-Kandidat
+
+Für `AAR-FUEL-TELEMETRY-3` sind zusätzlich im gepinnten `Moose.lua` source-verifiziert, aber als Kombination noch **nicht** DCS-validiert:
+
+```text
+AUFTRAG:SetMissionAltitude(...)
+FLIGHTGROUP:AddMission(...)
+FLIGHTGROUP:GetWaypointCurrentUID()
+FLIGHTGROUP:AddWaypoint(...)
+BASE/FLIGHTGROUP:ScheduleOnce(...)
+COORDINATE:GetIntermediateCoordinate(...)
+```
+
+Der Kandidat hält den publizierten FIR-Fix als expliziten MOOSE-Waypoint, verwendet einen 60-NM-Late-Ingress auf LRC-Höhe und setzt den Mission-Waypoint explizit auf die Track-Höhe. Hintergrund ist das source-verifizierte `NewORBIT`-Default `missionAltitude = orbitAltitude * 0.9`, das exakt mit den zuvor beobachteten NELSON-/PATTY-Anflughöhen korrelierte. Details und DCS-Akzeptanzgrenze stehen in [`OMW-MOOSE-AAR-LRC-TRANSIT`](AAR-LRC-TRANSIT.md).
 
 ## 5. Akzeptierter AAR-Produktionsscope
 
@@ -158,10 +175,10 @@ LISA/MOE        -> PINAX
 
 External Spawn != FIR Ingress
 FIR Egress != External Handoff/Despawn
-Airways-Routing = später / nicht Teil der Acceptance-5
+Airways-Routing = später / nicht Teil der akzeptierten Baseline
 ```
 
-Praktisch bestätigt sind für den exakt dokumentierten Acceptance-5-Stand insbesondere:
+Praktisch bestätigt sind für den exakt dokumentierten AAR-Acceptance-Stand insbesondere:
 
 - automatischer Start ausschließlich der vier STANDARD-Tracks;
 - demand-gesteuerter LISA-/MOE-Reserve-Lifecycle;
