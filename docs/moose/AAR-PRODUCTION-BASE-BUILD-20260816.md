@@ -6,7 +6,7 @@ owning_policy: OMW-GOV-001
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 source_branch: agent/aar-fuel-telemetry-calibration
-source_commit: 8a8e2422a6770b5185ad815f7ad94df3f3c3e363
+source_commit: d1677afb0e754e0b901c0319714148471f1c6936
 validated_in_dcs: false
 ---
 
@@ -54,6 +54,8 @@ Build 1 bytes == Build 2 bytes
 
 ## 4. Reale lokale Determinismus-Verifikation
 
+### 4.1 Erster V2-Nachweis
+
 Der Projektbesitzer synchronisierte auf:
 
 ```text
@@ -63,7 +65,7 @@ SourceCommitUtc: 2026-08-16T14:11:42+02:00
 DeterministicBundleForCommit: true
 ```
 
-Anschließend wurde das produktive Bundle zweimal nacheinander gebaut. Beide Builds meldeten denselben SHA-256:
+Zwei unmittelbar aufeinanderfolgende Builds ergaben:
 
 ```text
 FirstBundleSHA256:
@@ -75,7 +77,39 @@ SecondBundleSHA256:
 DeterministicBundle: PASS
 ```
 
-Damit ist die Produktions-Base für den exakt dokumentierten Commit reproduzierbar gebaut.
+### 4.2 Finaler Pre-Merge-Nachweis
+
+Nach Dokumentationsfortschreibung wurde der Branch auf Commit `d1677afb0e754e0b901c0319714148471f1c6936` synchronisiert und der Produktionsbuild erneut zweimal ausgeführt.
+
+```text
+GitCommit: d1677afb0e754e0b901c0319714148471f1c6936
+BuilderVersion: OMW-AIROPS-AAR-BASE-2
+SourceCommitUtc: 2026-08-16T14:13:37+02:00
+DeterministicBundleForCommit: true
+```
+
+Beide Builds ergaben byte-identisch:
+
+```text
+FirstBundleSHA256:
+5c3a56e7bf53b214e75de4843963bc6a41b8cd7cbc350aa3ee7353737f84ce08
+
+SecondBundleSHA256:
+5c3a56e7bf53b214e75de4843963bc6a41b8cd7cbc350aa3ee7353737f84ce08
+
+DeterministicBundle: PASS
+```
+
+Der Source-Gate meldete in beiden Läufen PASS. Damit ist die Production Base für den final geprüften Pre-Merge-Commit deterministisch reproduzierbar.
+
+Der lokale Branchvergleich gegen `origin/main` ergab:
+
+```text
+git rev-list --left-right --count origin/main...HEAD
+0       6
+```
+
+Damit war der geprüfte Branch gegenüber dem zu diesem Zeitpunkt lokal bekannten `origin/main` nicht hinterher und sechs Commits voraus.
 
 ## 5. Bestätigter Source-Gate-/Produktionsumfang
 
@@ -153,7 +187,7 @@ MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
 Moose.lua SHA-256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
 ```
 
-## 7. Reale Source-SHA-256-Werte
+## 7. Reale Source-SHA-256-Werte des finalen Pre-Merge-Builds
 
 ```text
 CampaignStateSHA256:
@@ -180,8 +214,8 @@ ControllerSHA256:
 BootstrapSHA256:
 3441d2b771976702aa71fd2e5fce1d699c8969a71cb8f9749ea343beb27e1f19
 
-Accepted deterministic production bundle SHA256:
-3273d24363d5ddaa11bd3d9f91f17778919d4a04d9ca4447ea3d3766ac10e595
+Accepted deterministic production bundle SHA256 for commit d1677afb0e754e0b901c0319714148471f1c6936:
+5c3a56e7bf53b214e75de4843963bc6a41b8cd7cbc350aa3ee7353737f84ce08
 ```
 
 ## 8. Acceptance-Grenze
