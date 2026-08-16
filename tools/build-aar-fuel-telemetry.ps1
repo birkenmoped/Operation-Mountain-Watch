@@ -9,14 +9,14 @@ $sourceDir = Join-Path $repoRoot 'mission\tests\aar-fuel-telemetry\src'
 $distDir = Join-Path $repoRoot 'mission\tests\aar-fuel-telemetry\dist'
 $outputFile = Join-Path $distDir 'OMW_AAR_Fuel_Telemetry.lua'
 
-$builderVersion = 'AAR-FUEL-TELEMETRY-3'
-$testId = 'AAR-FUEL-TELEMETRY-3'
+$builderVersion = 'AAR-FUEL-TELEMETRY-4'
+$testId = 'AAR-FUEL-TELEMETRY-4'
 $mooseCommit = '73d3ed119cd9e7e3f2cfcabbaa34513d30529b54'
 $mooseSha256 = 'e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915'
 $candidateSpawnSpeedKt = 480
 $productionTransitRouteSpeedKt = 300
 $trackApproachNm = 60
-$lrcRouteInjectionDelaySec = 5
+$lrcRouteBuildDelaySec = 5
 
 $files = [ordered]@{
   CampaignState = Join-Path $repoRoot 'scripts\campaign\OMW_CampaignState.lua'
@@ -108,15 +108,16 @@ function Replace-ExactOnce {
 }
 
 # Branch-local candidate only. The production controller source is deliberately not modified here.
-# Test 3 keeps the DCS-confirmed 480-kt in-air materialization state, adds the agreed directional
-# LRC cruise levels, preserves the published FIR fix, and moves the AUFTRAG ingress close to the
-# tanker track so the aircraft remains at cruise altitude for most of the transit.
+# Test 4 restores the accepted FIR-ingress contract exactly: AUFTRAG owns EGPAN/PINAX/DAVER via
+# SetMissionIngressCoord(). After MOOSE has built ingress -> mission waypoint, the adapter validates
+# that route structure through public APIs and inserts only the late LRC track-approach waypoint
+# between the MOOSE FIR ingress and the MOOSE mission waypoint.
 $controllerCandidate = $content.Controller
 
 $controllerCandidate = Replace-ExactOnce -Text $controllerCandidate -Old 'local LEG_NM = 35' -New @"
 local LEG_NM = 35
 local TRACK_APPROACH_NM = $trackApproachNm
-local LRC_ROUTE_INJECTION_DELAY_SEC = $lrcRouteInjectionDelaySec
+local LRC_ROUTE_BUILD_DELAY_SEC = $lrcRouteBuildDelaySec
 "@ -Label 'LRC constants'
 
 $controllerCandidate = Replace-ExactOnce -Text $controllerCandidate `
@@ -151,12 +152,13 @@ $controllerCandidate = Replace-ExactOnce -Text $controllerCandidate `
   trackApproachCoord:SetAltitude(UTILS.FeetToMeters(transit.ingressFt), true)
 "@ -Label 'late track-approach coordinate'
 
+# Preserve the accepted MOOSE FIR-ingress contract. Only correct the mission waypoint altitude.
 $controllerCandidate = Replace-ExactOnce -Text $controllerCandidate `
   -Old '  mission:SetMissionIngressCoord(firIngressCoord, transit.ingressFt, TRANSIT_SPEED_KT)' `
   -New @"
-  mission:SetMissionIngressCoord(trackApproachCoord, transit.ingressFt, TRANSIT_SPEED_KT)
+  mission:SetMissionIngressCoord(firIngressCoord, transit.ingressFt, TRANSIT_SPEED_KT)
   mission:SetMissionAltitude(profile.altitudeFt)
-"@ -Label 'late mission ingress and exact mission waypoint altitude'
+"@ -Label 'preserved FIR mission ingress and exact mission waypoint altitude'
 
 $controllerCandidate = Replace-ExactOnce -Text $controllerCandidate `
   -Old '    externalHandoffCoord = externalHandoffCoord, trackCoord = trackCoord,' `
@@ -165,55 +167,83 @@ $controllerCandidate = Replace-ExactOnce -Text $controllerCandidate `
 
 $controllerCandidate = Replace-ExactOnce -Text $controllerCandidate `
   -Old '    externalHandoffRouted = false, stationIdentityActive = false, onStationAt = nil, materializedAt = now(),' `
-  -New '    externalHandoffRouted = false, firTransitWaypointInjected = false, stationIdentityActive = false, onStationAt = nil, materializedAt = now(),' `
-  -Label 'runtime FIR injection state'
+  -New '    externalHandoffRouted = false, lateApproachWaypointInjected = false, stationIdentityActive = false, onStationAt = nil, materializedAt = now(),' `
+  -Label 'runtime late-approach injection state'
 
 $injectHelper = @'
-local function injectLrcFirWaypoint(runtime)
-  if not runtime or runtime.lossHandled or runtime.egressOrdered or runtime.firTransitWaypointInjected then return end
+local function injectLateTrackApproachWaypoint(runtime)
+  if not runtime or runtime.lossHandled or runtime.egressOrdered or runtime.lateApproachWaypointInjected then return end
   local flightGroup = runtime.flightGroup
+  local mission = runtime.mission
   if not flightGroup or not flightGroup:IsAlive() then
-    log(string.format("LRC_FIR_WAYPOINT_SKIPPED runtime=%s reason=FLIGHT_NOT_ALIVE",
+    log(string.format("LRC_LATE_APPROACH_SKIPPED runtime=%s reason=FLIGHT_NOT_ALIVE",
       runtime and tostring(runtime.runtimeId) or "UNKNOWN"))
     return
   end
+  if not mission then
+    fail("LRC late-approach injection has no mission runtime=" .. tostring(runtime.runtimeId))
+  end
 
-  local currentUid = flightGroup:GetWaypointCurrentUID()
-  if not currentUid then
-    fail("LRC FIR waypoint injection has no current waypoint runtime=" .. tostring(runtime.runtimeId))
+  -- MOOSE RouteToMission() builds FLIGHTGROUP air routes in this order when an ingress exists:
+  -- ingress waypoint -> mission waypoint -> optional egress waypoint. Resolve that structure through
+  -- public getters instead of relying on the last-passed/current waypoint.
+  local missionWaypointUid = mission:GetGroupWaypointIndex(flightGroup)
+  if not missionWaypointUid then
+    fail("LRC late-approach injection has no MOOSE mission waypoint UID runtime=" .. tostring(runtime.runtimeId))
+  end
+
+  local missionWaypointIndex = flightGroup:GetWaypointIndex(missionWaypointUid)
+  if not missionWaypointIndex or missionWaypointIndex <= 1 then
+    fail(string.format("LRC late-approach injection cannot resolve mission waypoint runtime=%s uid=%s index=%s",
+      tostring(runtime.runtimeId), tostring(missionWaypointUid), tostring(missionWaypointIndex)))
+  end
+
+  local ingressWaypointIndex = missionWaypointIndex - 1
+  local ingressWaypointUid = flightGroup:GetWaypointID(ingressWaypointIndex)
+  local ingressWaypointCoord = flightGroup:GetWaypointCoordinate(ingressWaypointIndex)
+  if not ingressWaypointUid or not ingressWaypointCoord then
+    fail(string.format("LRC late-approach injection cannot resolve MOOSE ingress waypoint runtime=%s missionIndex=%d",
+      tostring(runtime.runtimeId), missionWaypointIndex))
+  end
+
+  -- Do not modify the route unless the preceding MOOSE waypoint is the configured published FIR fix.
+  local ingressDeltaNm = ingressWaypointCoord:Get2DDistance(runtime.firIngressCoord) / 1852
+  if ingressDeltaNm > 0.5 then
+    fail(string.format("LRC late-approach FIR contract mismatch runtime=%s area=%s fix=%s deltaNm=%.3f",
+      tostring(runtime.runtimeId), tostring(runtime.selection.area), tostring(runtime.firFixName), ingressDeltaNm))
   end
 
   local waypoint = flightGroup:AddWaypoint(
-    runtime.firIngressCoord,
+    runtime.trackApproachCoord,
     TRANSIT_SPEED_KT,
-    currentUid,
+    ingressWaypointUid,
     runtime.transit.ingressFt,
     true
   )
   if not waypoint then
-    fail("LRC FIR waypoint injection failed runtime=" .. tostring(runtime.runtimeId))
+    fail("LRC late-approach waypoint insertion failed runtime=" .. tostring(runtime.runtimeId))
   end
 
-  runtime.firTransitWaypoint = waypoint
-  runtime.firTransitWaypointInjected = true
+  runtime.lateApproachWaypoint = waypoint
+  runtime.lateApproachWaypointInjected = true
   log(string.format(
-    "LRC_FIR_WAYPOINT_INJECTED runtime=%s area=%s firFix=%s ingressFt=%d approachNm=%.1f waypointUid=%s",
-    runtime.runtimeId, runtime.selection.area, runtime.firFixName, runtime.transit.ingressFt,
-    TRACK_APPROACH_NM, tostring(waypoint.uid)))
+    "LRC_LATE_APPROACH_INSERTED runtime=%s area=%s firFix=%s ingressDeltaNm=%.3f approachNm=%.1f ingressUid=%s approachUid=%s missionUid=%s",
+    runtime.runtimeId, runtime.selection.area, runtime.firFixName, ingressDeltaNm, TRACK_APPROACH_NM,
+    tostring(ingressWaypointUid), tostring(waypoint.uid), tostring(missionWaypointUid)))
 end
 
 '@
 $controllerCandidate = Replace-ExactOnce -Text $controllerCandidate `
   -Old 'local function materialize(request)' `
   -New ($injectHelper + 'local function materialize(request)') `
-  -Label 'LRC FIR waypoint injection helper'
+  -Label 'late track-approach waypoint injection helper'
 
 $controllerCandidate = Replace-ExactOnce -Text $controllerCandidate `
   -Old '  flightGroup:AddMission(mission)' `
   -New @"
   flightGroup:AddMission(mission)
-  flightGroup:ScheduleOnce(LRC_ROUTE_INJECTION_DELAY_SEC, injectLrcFirWaypoint, runtime)
-"@ -Label 'scheduled FIR waypoint injection'
+  flightGroup:ScheduleOnce(LRC_ROUTE_BUILD_DELAY_SEC, injectLateTrackApproachWaypoint, runtime)
+"@ -Label 'scheduled late track-approach insertion'
 
 $harnessCandidate = Replace-ExactOnce -Text $content.Harness -Old 'AAR-FUEL-TELEMETRY-1' -New $testId -Label 'AAR telemetry test ID'
 
@@ -237,7 +267,8 @@ $header = @"
 -- ProductionTransitRouteSpeedKt: $productionTransitRouteSpeedKt
 -- CandidateTransitLevels: MANAS inbound FL340 / outbound FL350; AL_UDEID inbound FL350 / outbound FL340.
 -- CandidateTrackApproachNm: $trackApproachNm
--- CandidateRouting: retain the published FIR fix at LRC altitude, then use a late AUFTRAG ingress at LRC altitude before descending to exact track altitude.
+-- CandidateIngressContract: preserve AUFTRAG:SetMissionIngressCoord(EGPAN/PINAX/DAVER) exactly as the accepted production path.
+-- CandidateRouting: after MOOSE builds FIR ingress -> mission waypoint, validate the FIR waypoint and insert only the late track approach after it.
 -- CandidateMissionAltitude: AUFTRAG:SetMissionAltitude(track altitude) suppresses the default ORBIT 90-percent mission-waypoint altitude.
 -- CandidateScope: generated test bundle only; production controller source, production fuel and FuelLow remain unchanged.
 -- FuelLow is intentionally excluded from telemetry because the threshold remains subject to recalibration.
@@ -272,7 +303,8 @@ Write-Host 'CandidateAlUdeidIngressFt: 35000'
 Write-Host 'CandidateAlUdeidEgressFt: 34000'
 Write-Host "CandidateTrackApproachNm: $trackApproachNm"
 Write-Host 'CandidateMissionAltitudeMode: EXACT_TRACK_ALTITUDE'
-Write-Host 'CandidateFirRouting: EXPLICIT_FIR_WAYPOINT_THEN_LATE_MISSION_INGRESS'
+Write-Host 'CandidateIngressContract: PRESERVED_MOOSE_FIR_INGRESS'
+Write-Host 'CandidateFirRouting: MOOSE_FIR_INGRESS_THEN_LATE_APPROACH'
 Write-Host 'CandidateScope: SPAWN_SPEED_AND_LRC_ROUTE'
 Write-Host 'StandardTracks: 4'
 Write-Host 'ReserveTracks: 2'
