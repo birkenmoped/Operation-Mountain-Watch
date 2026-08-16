@@ -82,13 +82,24 @@ Alle persistenten Beziehungen verwenden stabile IDs und niemals Lua-Tabellenrefe
 
 Ein Air Support Request repräsentiert Luftunterstützungsbedarf über eine Authority-Grenze hinweg.
 
+Capability und zeitliche Bearbeitungsklasse werden getrennt modelliert:
+
+```text
+support_type
+= welche Luftunterstützung wird benötigt
+
+request_timing
+= PREPLANNED | IMMEDIATE | EMERGENCY
+```
+
 Konzeptioneller Lua-Datensatz:
 
 ```lua
 local request = {
   request_id = "ASR-000001",
   mission_demand_id = "MD-000001",
-  request_type = "CAS",
+  support_type = "CAS",
+  request_timing = "IMMEDIATE",
   requesting_entity_id = "...",
   requesting_command_node_id = "...",
   supporting_authority_ref = "...",
@@ -116,7 +127,8 @@ local request = {
 ```text
 request_id
 mission_demand_id
-request_type
+support_type
+request_timing
 requesting_entity_id or requesting_command_node_id
 priority
 created_at
@@ -146,6 +158,8 @@ created_by
 ```
 
 `supporting_authority_ref` darf in Phase 1 noch abstrakt bleiben, weil die konkrete MOOSE-/Command-Topologie erst in Phase 2 geprüft wird.
+
+`request_timing = EMERGENCY` erzeugt keine automatische Waffenfreigabe, keine automatische Ressourcenzuweisung und keine Umgehung von CampaignState- oder Authority-Grenzen.
 
 ### 4.3 Nicht zulässig
 
@@ -479,6 +493,7 @@ Die spätere Lua-Implementierung muss mindestens fail-closed prüfen:
 - stable ID present and class prefix valid
 - referenced MissionDemand exists before support/tasking creation
 - referenced ASR/ATM/REL IDs exist when relation is committed
+- AIR_SUPPORT_REQUEST support_type and request_timing are independently valid
 - no self-referencing support relationship
 - provider_mission_id != consumer_mission_id
 - no duplicate IDs
