@@ -31,16 +31,80 @@ Der vollständige post-merge Erkenntnis-, Fehler- und Kalibrierungsstand steht i
 
 Die reale KC-135-Betriebsdoktrin fordert für Transit zum und vom AAR-Einsatz Long Range Cruise und optimum altitude. Das öffentlich verfügbare Material enthält keine vollständige KC-135R/T-Optimum-Altitude-Tabelle. Die konkreten OMW-Cruise-Level sind deshalb `RECONSTRUCTED_PLANNING_ESTIMATE`.
 
-Die Afghanistan-AIP-Baseline verwendet die ICAO-Richtungssystematik für IFR-Cruising-Levels. OMW verwendet derzeit:
+## Geschwindigkeitssemantik und korrigierte Tankerwerte
+
+Die Tests haben gezeigt, dass drei verschiedene Geschwindigkeitsbegriffe strikt getrennt werden müssen:
 
 ```text
-MANAS -> Afghanistan:      FL340
-Afghanistan -> MANAS:      FL350
-AL_UDEID -> Afghanistan:   FL350
-Afghanistan -> AL_UDEID:   FL340
+IAS / KIAS
+= angezeigte aerodynamische Geschwindigkeit; maßgeblich für den beobachteten Energie-/AoA-Zustand des Flugzeugs
+
+TAS
+= wahre Geschwindigkeit relativ zur Luftmasse; bei großer Höhe deutlich höher als IAS
+
+GS
+= Geschwindigkeit über Grund; zusätzlich vom Wind beeinflusst
 ```
 
-Kein routinemäßiger Step-Climb wird verwendet.
+Für OMW darf deshalb weder eine F10-Groundspeed-Anzeige noch die beobachtete IAS numerisch direkt mit einem MOOSE-Speedparameter gleichgesetzt werden.
+
+Die ursprüngliche In-Air-Materialisierung mit `300 kt` verwendete denselben Zahlenwert wie die MOOSE-Transitroute. In großer Höhe führte dies in DCS zu einem zu energiearmen KC-135-Spawnzustand mit zu niedriger IAS und auffällig hohem AoA. Der branch-lokale Test mit
+
+```text
+SPAWN:InitSpeedKnots(480)
+```
+
+lieferte dagegen einen plausiblen In-Air-Energiezustand und wurde deshalb als neuer Materialisierungskandidat festgelegt.
+
+Wichtig ist die Bedeutungsgrenze:
+
+```text
+480 kt = ausschließlich SPAWN-Initialisierung / initiale Fluggeschwindigkeit bei Materialisierung
+300 kt = MOOSE-/DCS-Route-Speed-Command für den Transit
+```
+
+`480 kt` ist ausdrücklich **kein** 480-KIAS-Sollwert und **kein** dauerhafter 480-kt-Groundspeed-Auftrag. Der Wert wird nur benutzt, damit die KC-135 beim Materialisieren in großer Höhe mit einem realistischen Energiezustand startet. Danach übernimmt das normale DCS/MOOSE-Routing.
+
+Der Route-Speed-Wert `300 kt` wird als DCS/MOOSE-Transitgeschwindigkeit beibehalten. Für die Flugbeobachtung gilt: IAS, TAS und GS dürfen nur unter Beachtung ihrer jeweiligen Bedeutung und Einheiten verglichen werden. Insbesondere ist eine niedrigere IAS bei FL340/FL350 trotz deutlich höherer wahrer Luftgeschwindigkeit normal und kein Hinweis darauf, dass der Tanker mit nur diesem IAS-Zahlenwert als Route-Speed kommandiert wird.
+
+Damit lautet der aktuelle Geschwindigkeitsvertrag:
+
+```text
+In-air materialization: 480 kt via SPAWN:InitSpeedKnots(...)
+Transit route command:  300 kt
+Track speed:             bestehendes area-/profile-spezifisches KIAS-/Missionprofil unverändert
+```
+
+Eine Änderung des Spawnwerts darf nicht stillschweigend als Änderung der Transit- oder Track-Geschwindigkeit behandelt werden und umgekehrt.
+
+## LRC transit altitude planning
+
+Die Afghanistan-AIP-Baseline verwendet die ICAO-Richtungssystematik für IFR-Cruising-Levels. Maßgeblich ist die Halbkreisregel nach magnetischem Track:
+
+```text
+magnetic track 000-179 deg -> odd flight level
+magnetic track 180-359 deg -> even flight level
+```
+
+OMW verwendet für die Tanker-Transits das benachbarte LRC-Level-Paar FL340/FL350. Daraus folgt für die tatsächlichen Source-Domain-Richtungen:
+
+```text
+MANAS -> Afghanistan:      FL340  (even)
+Afghanistan -> MANAS:      FL350  (odd)
+AL_UDEID -> Afghanistan:   FL350  (odd)
+Afghanistan -> AL_UDEID:   FL340  (even)
+```
+
+Diese Cruise-Level ersetzen die früheren niedrigeren bzw. inkonsistenten Transit-Höhen für den branch-lokalen LRC-Kandidaten. Sie sind als feste geplante Reisehöhen zu verstehen, nicht als dynamische Gewichts-/Fuel-Step-Climb-Logik.
+
+OMW owner decision:
+
+```text
+No routine weight-based step climb.
+Use one planned directional LRC level for each transit direction.
+```
+
+Der Tanker soll die jeweilige Reisehöhe im Transit halten und anschließend natürlich zur Track-Höhe wechseln. Ein routinemäßiger fuel-burn-getriebener Step-Climb ist ausdrücklich nicht Teil des Designs.
 
 ## Candidate 3 – verworfener Routingansatz
 
