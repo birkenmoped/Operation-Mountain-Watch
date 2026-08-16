@@ -20,6 +20,7 @@ local TRACK_ENTRY_RADIUS_NM = 5
 local DISPATCH_INTERVAL_SEC = 5
 local SPAWN_INITIAL_SPEED_KT = 480
 local TRANSIT_SPEED_KT = 300
+local LATE_APPROACH_NM = 60
 local LEG_NM = 35
 local STATION_CYCLE_SEC = 3 * 60 * 60
 local RELIEF_HANDOVER_ETA_SEC = 5 * 60
@@ -52,10 +53,10 @@ local AREAS = {
     template = "OMW_AAR_KC135_LISA",
     callsignId = CALLSIGN.Tanker.Texaco, callsignName = "Texaco", callsignNumber = 3,
     lat = 33.66624916, lon = 61.81294477, headingDeg = 4.269,
-    sourceDomain = "MANAS", transitProfile = "MANAS_WEST_HIGH", firFix = "PINAX",
+    sourceDomain = "AL_UDEID", transitProfile = "AL_UDEID_NORTH_HIGH", firFix = "DAVER",
     availability = "RESERVE", coreProfile = "FAST",
     frequencyMHz = 235.900, tacanChannel = 50, tacanIdent = "LIS",
-    fuelLowPct = 35, initialFuelPct = 91.4067,
+    fuelLowPct = 38, initialFuelPct = 79.4558,
     profiles = { SLOW = { altitudeFt = 22000, speedKt = 220 }, FAST = { altitudeFt = 25000, speedKt = 300 } },
   },
   MOE = {
@@ -489,6 +490,13 @@ local function materialize(request)
   local trackCoord = COORDINATE:NewFromLLDD(areaSpec.lat, areaSpec.lon)
   local spawnToFirNm = spawnCoord:Get2DDistance(firIngressCoord) / 1852
   local firToTrackNm = firIngressCoord:Get2DDistance(trackCoord) / 1852
+  if firToTrackNm <= LATE_APPROACH_NM then
+    fail(string.format("FIR-to-track distance %.1f NM must exceed late-approach distance %.1f NM area=%s",
+      firToTrackNm, LATE_APPROACH_NM, selection.area))
+  end
+  local lateApproachCoord = trackCoord:GetIntermediateCoordinate(firIngressCoord, LATE_APPROACH_NM / firToTrackNm)
+  lateApproachCoord:SetAltitude(UTILS.FeetToMeters(transit.ingressFt), true)
+  local firToLateApproachNm = firIngressCoord:Get2DDistance(lateApproachCoord) / 1852
   local routeDistanceNm = spawnToFirNm + firToTrackNm
 
   local spawner = getSpawner(selection.area, areaSpec)
@@ -515,7 +523,7 @@ local function materialize(request)
   local mission = AUFTRAG:NewTANKER(trackCoord, profile.altitudeFt, profile.speedKt, areaSpec.headingDeg, LEG_NM,
     Unit.RefuelingSystem.BOOM_AND_RECEPTACLE)
   mission:SetMissionAltitude(profile.altitudeFt)
-  mission:SetMissionIngressCoord(firIngressCoord, transit.ingressFt, TRANSIT_SPEED_KT)
+  mission:SetMissionIngressCoord(lateApproachCoord, transit.ingressFt, TRANSIT_SPEED_KT)
   mission:SetMissionEgressCoord(firEgressCoord, transit.egressFt, TRANSIT_SPEED_KT)
 
   flightGroup:SetFuelLowRTB(false)
@@ -526,8 +534,10 @@ local function materialize(request)
     template = areaSpec.template, role = role, reliefReason = request.reliefReason, initialFuelPct = areaSpec.initialFuelPct,
     group = group, flightGroup = flightGroup, mission = mission,
     spawnCoord = spawnCoord, firFixName = areaSpec.firFix, firIngressCoord = firIngressCoord, firEgressCoord = firEgressCoord,
+    lateApproachCoord = lateApproachCoord, lateApproachNm = LATE_APPROACH_NM,
     externalHandoffCoord = externalHandoffCoord, trackCoord = trackCoord,
-    spawnToFirNm = spawnToFirNm, firToTrackNm = firToTrackNm, routeDistanceNm = routeDistanceNm,
+    spawnToFirNm = spawnToFirNm, firToTrackNm = firToTrackNm, firToLateApproachNm = firToLateApproachNm,
+    routeDistanceNm = routeDistanceNm,
     sortieCallsign = sortieCallsign, transitCallsign = sortieCallsign,
     firIngressPassed = false, firIngressPassedAt = nil, firEgressPassed = false, firEgressPassedAt = nil,
     externalHandoffRouted = false, stationIdentityActive = false, onStationAt = nil, materializedAt = now(),
@@ -536,7 +546,7 @@ local function materialize(request)
 
   function flightGroup:OnAfterFuelLow(From, Event, To)
     if runtime.egressOrdered or runtime.lossHandled then return end
-    log(string.format("FUEL_LOW runtime=%s demand=%s area=%s profile=%s thresholdPct=%d action=ENSURE_RELIEF_AND_EGRESS",
+    log(string.format("FUEL_LOW runtime=%s demand=%s area=%s profile=%s thresholdPct=%.4f action=ENSURE_RELIEF_AND_EGRESS",
       runtime.runtimeId, selection.missionDemandId, selection.area, selection.receiverProfile, areaSpec.fuelLowPct))
     if not station.closed then
       if station.activeRuntime == runtime then
@@ -558,6 +568,9 @@ local function materialize(request)
     handleRuntimeLoss(runtime, "MOOSE_FLIGHTGROUP_DEAD")
   end
 
+  -- Public MOOSE routing only: preserve the real FIR crossing as an explicit FLIGHTGROUP waypoint,
+  -- then let AUFTRAG own the 60-NM ingress point and the tanker mission waypoint/track altitude.
+  flightGroup:AddWaypoint(firIngressCoord, TRANSIT_SPEED_KT, nil, transit.ingressFt, false)
   flightGroup:AddMission(mission)
   flightGroup:TurnOffRadio()
   flightGroup:TurnOffTACAN()
@@ -574,9 +587,9 @@ local function materialize(request)
   end
   state.strategicAdapter:OnMaterialized(selection, runtime)
 
-  log(string.format("MATERIALIZED runtime=%s role=%s demand=%s area=%s profile=%s availability=%s source=%s firFix=%s group=%s callsign=%s%d-1 stn=%s activeTracks=%d aircraft=%d",
+  log(string.format("MATERIALIZED runtime=%s role=%s demand=%s area=%s profile=%s availability=%s source=%s firFix=%s lateApproachNm=%.1f firToLateApproachNm=%.1f group=%s callsign=%s%d-1 stn=%s activeTracks=%d aircraft=%d",
     runtime.runtimeId, runtime.role, selection.missionDemandId, selection.area, selection.receiverProfile,
-    areaSpec.availability, selection.sourceDomain, areaSpec.firFix, group:GetName(),
+    areaSpec.availability, selection.sourceDomain, areaSpec.firFix, LATE_APPROACH_NM, firToLateApproachNm, group:GetName(),
     sortieCallsign.name, sortieCallsign.number, sortieCallsign.stn, countActiveTracks(), countPhysicalRuntimes()))
   return runtime
 end
@@ -888,6 +901,7 @@ function Controller.GetConfig()
     handoffRadiusNm = HANDOFF_RADIUS_NM,
     firFixRadiusNm = FIR_FIX_RADIUS_NM,
     trackEntryRadiusNm = TRACK_ENTRY_RADIUS_NM,
+    lateApproachNm = LATE_APPROACH_NM,
     stationCycleSec = STATION_CYCLE_SEC,
     reliefHandoverEtaSec = RELIEF_HANDOVER_ETA_SEC,
     spawnInitialSpeedKt = SPAWN_INITIAL_SPEED_KT,
@@ -921,6 +935,14 @@ function Controller.GetConfig()
       PATTY = AREAS.PATTY.availability,
       NELSON = AREAS.NELSON.availability,
     },
+    sourceDomainByArea = {
+      LISA = AREAS.LISA.sourceDomain,
+      MOE = AREAS.MOE.sourceDomain,
+      MILHOUSE = AREAS.MILHOUSE.sourceDomain,
+      KRUSTY = AREAS.KRUSTY.sourceDomain,
+      PATTY = AREAS.PATTY.sourceDomain,
+      NELSON = AREAS.NELSON.sourceDomain,
+    },
     firFixByArea = {
       LISA = AREAS.LISA.firFix,
       MOE = AREAS.MOE.firFix,
@@ -952,6 +974,14 @@ function Controller.GetConfig()
       KRUSTY = AREAS.KRUSTY.fuelLowPct,
       PATTY = AREAS.PATTY.fuelLowPct,
       NELSON = AREAS.NELSON.fuelLowPct,
+    },
+    transitByArea = {
+      LISA = TRANSIT[AREAS.LISA.transitProfile],
+      MOE = TRANSIT[AREAS.MOE.transitProfile],
+      MILHOUSE = TRANSIT[AREAS.MILHOUSE.transitProfile],
+      KRUSTY = TRANSIT[AREAS.KRUSTY.transitProfile],
+      PATTY = TRANSIT[AREAS.PATTY.transitProfile],
+      NELSON = TRANSIT[AREAS.NELSON.transitProfile],
     },
   }
 end

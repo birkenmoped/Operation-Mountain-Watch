@@ -31,11 +31,14 @@ $requirements = @(
   @{ File = 'Controller'; Marker = 'MAX_AIRCRAFT_PER_TRACK = 2' },
   @{ File = 'Controller'; Marker = 'SPAWN_INITIAL_SPEED_KT = 480' },
   @{ File = 'Controller'; Marker = 'TRANSIT_SPEED_KT = 300' },
+  @{ File = 'Controller'; Marker = 'LATE_APPROACH_NM = 60' },
   @{ File = 'Controller'; Marker = 'MANAS_WEST_HIGH = { ingressFt = 34000, egressFt = 35000 }' },
   @{ File = 'Controller'; Marker = 'MANAS_EAST_HIGH = { ingressFt = 34000, egressFt = 35000 }' },
   @{ File = 'Controller'; Marker = 'AL_UDEID_NORTH_HIGH = { ingressFt = 35000, egressFt = 34000 }' },
   @{ File = 'Controller'; Marker = 'spawner:InitSpeedKnots(SPAWN_INITIAL_SPEED_KT)' },
   @{ File = 'Controller'; Marker = 'mission:SetMissionAltitude(profile.altitudeFt)' },
+  @{ File = 'Controller'; Marker = 'mission:SetMissionIngressCoord(lateApproachCoord, transit.ingressFt, TRANSIT_SPEED_KT)' },
+  @{ File = 'Controller'; Marker = 'flightGroup:AddWaypoint(firIngressCoord, TRANSIT_SPEED_KT, nil, transit.ingressFt, false)' },
   @{ File = 'Controller'; Marker = 'availability = "RESERVE"' },
   @{ File = 'Controller'; Marker = 'availability = "STANDARD"' },
   @{ File = 'Controller'; Marker = 'firFix = "EGPAN"' },
@@ -77,7 +80,7 @@ foreach ($requirement in $requirements) {
   }
 }
 
-if ($content.Controller -notmatch 'LISA\s*=\s*\{[\s\S]*?availability\s*=\s*"RESERVE"[\s\S]*?fuelLowPct\s*=\s*35,\s*initialFuelPct\s*=\s*91\.4067') { throw 'LISA calibrated fuel contract mismatch.' }
+if ($content.Controller -notmatch 'LISA\s*=\s*\{[\s\S]*?sourceDomain\s*=\s*"AL_UDEID"[\s\S]*?transitProfile\s*=\s*"AL_UDEID_NORTH_HIGH"[\s\S]*?firFix\s*=\s*"DAVER"[\s\S]*?availability\s*=\s*"RESERVE"[\s\S]*?fuelLowPct\s*=\s*38,\s*initialFuelPct\s*=\s*79\.4558') { throw 'LISA south-domain fuel/routing contract mismatch.' }
 if ($content.Controller -notmatch 'MOE\s*=\s*\{[\s\S]*?availability\s*=\s*"RESERVE"[\s\S]*?fuelLowPct\s*=\s*31,\s*initialFuelPct\s*=\s*91\.4067') { throw 'MOE calibrated fuel contract mismatch.' }
 if ($content.Controller -notmatch 'MILHOUSE\s*=\s*\{[\s\S]*?fuelLowPct\s*=\s*36,\s*initialFuelPct\s*=\s*79\.4558') { throw 'MILHOUSE calibrated fuel contract mismatch.' }
 if ($content.Controller -notmatch 'KRUSTY\s*=\s*\{[\s\S]*?fuelLowPct\s*=\s*36,\s*initialFuelPct\s*=\s*79\.4558') { throw 'KRUSTY calibrated fuel contract mismatch.' }
@@ -94,9 +97,7 @@ $forbiddenControllerMarkers = @(
   'SwitchCallsign(',
   'local TRANSIT_CALLSIGNS',
   'CORE_TRACKS_6_SIMULTANEOUS_PASS',
-  'TestForceEgress',
-  'lateApproach',
-  '60_NM'
+  'TestForceEgress'
 )
 
 foreach ($marker in $forbiddenControllerMarkers) {
@@ -137,10 +138,14 @@ Write-Host 'StandardTracks: 4'
 Write-Host 'ReserveTracks: 2'
 Write-Host 'LISAProfile: FAST'
 Write-Host 'LISAAvailability: RESERVE'
+Write-Host 'LISASourceDomain: AL_UDEID'
+Write-Host 'LISAFIRFix: DAVER'
 Write-Host 'MOEProfile: FAST'
 Write-Host 'MOEAvailability: RESERVE'
 Write-Host 'StableSortieCallsign: true'
 Write-Host 'FIRFixRouting: true'
+Write-Host 'LateApproachNm: 60'
+Write-Host 'LateApproachMode: FIR_WAYPOINT_THEN_AUFTRAG_INGRESS'
 Write-Host 'ExternalSpawnHandoffSeparated: true'
 Write-Host 'AirwaysRouting: false'
 Write-Host 'MissionDemandClosesStandardTrack: false'
@@ -160,7 +165,7 @@ Write-Host 'InitialFuelManasPct: 91.4067'
 Write-Host 'InitialFuelAlUdeidPct: 79.4558'
 Write-Host 'FuelLowNelsonPct: 24'
 Write-Host 'FuelLowPattyPct: 26'
-Write-Host 'FuelLowLisaPct: 35'
+Write-Host 'FuelLowLisaPct: 38'
 Write-Host 'FuelLowMoePct: 31'
 Write-Host 'FuelLowMilhousePct: 36'
 Write-Host 'FuelLowKrustyPct: 36'

@@ -8,7 +8,7 @@ authoritative_for:
   - DCS evidence boundary for calibrated spawn, transit, track-altitude and fuel behavior
   - explicit record of failed Candidate-3/Candidate-4 assumptions
 not_authoritative_for:
-  - final production acceptance before the promoted controller is retested in DCS
+  - final production acceptance before the current controller candidate is retested in DCS
   - exact KC-135R performance data outside the documented OMW calibration model
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
@@ -29,14 +29,6 @@ Moose.lua SHA-256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a
 
 ## Geschwindigkeitsvertrag
 
-Die AAR-Tests zeigen, dass MOOSE-/DCS-Speedwerte nicht ohne Bedeutungsprüfung mit beobachteter IAS oder Groundspeed gleichgesetzt werden dürfen.
-
-```text
-IAS / KIAS = angezeigte aerodynamische Geschwindigkeit
-TAS        = wahre Geschwindigkeit relativ zur Luftmasse
-GS         = Geschwindigkeit über Grund, einschließlich Windeinfluss
-```
-
 Für OMW gilt nach der Kalibrierung:
 
 ```text
@@ -45,18 +37,9 @@ MOOSE route speed 300 kt  = Transit-Routenkommando
 track speed               = area-/profile-spezifischer Missionswert
 ```
 
-`480 kt` ist weder als `480 KIAS` noch als permanenter `480 kt GS`-Befehl zu interpretieren. Der frühere `300 kt`-Spawnzustand war in großer Höhe zu energiearm; der 480-kt-Kandidat zeigte im realen DCS-Lauf einen plausiblen Materialisierungszustand.
+`480 kt` ist weder als permanenter KIAS- noch als Groundspeed-Befehl zu interpretieren. Der 480-kt-Kandidat zeigte im realen DCS-Lauf einen plausiblen Materialisierungszustand.
 
 ## Directional LRC
-
-OMW verwendet feste geplante LRC-Reiseflughöhen und keinen routinemäßigen fuel-/weight-basierten Step-Climb.
-
-```text
-000-179 deg magnetic -> odd flight level
-180-359 deg magnetic -> even flight level
-```
-
-Daraus gilt:
 
 ```text
 MANAS -> Afghanistan:      FL340
@@ -65,38 +48,56 @@ AL_UDEID -> Afghanistan:   FL350
 Afghanistan -> AL_UDEID:   FL340
 ```
 
-Das sind OMW-Planungswerte, keine Behauptung einer historischen KC-135R-Optimum-Altitude-Tabelle.
+Kein routinemäßiger fuel-/weight-basierter Step-Climb.
 
-## Primärvertrag FIR und External Handoff
+## FIR, 60-NM Late Approach und External Handoff
 
-Der produktive Routingvertrag bleibt unverändert:
+Der finale Candidate trennt die reale FIR-Passage vom AUFTRAG-Ingress:
 
 ```text
 External Spawn
--> AUFTRAG:SetMissionIngressCoord(EGPAN/PINAX/DAVER)
+-> public FLIGHTGROUP:AddWaypoint(FIR fix, inbound LRC altitude)
+-> AUFTRAG:SetMissionIngressCoord(60-NM late-approach point, inbound LRC altitude)
+-> mission waypoint / exact AAR track altitude
 -> AAR track
--> AUFTRAG:SetMissionEgressCoord(EGPAN/PINAX/DAVER)
+-> AUFTRAG:SetMissionEgressCoord(FIR fix, outbound LRC altitude)
 -> physical FIR egress passage
--> FLIGHTGROUP:AddWaypoint(external handoff)
+-> FLIGHTGROUP:AddWaypoint(external handoff, outbound LRC altitude)
 ```
 
-Candidate 3 ersetzte den FIR-Ingress unzulässig durch einen berechneten 60-NM-Late-Approach. Der reale DCS-Lauf zeigte keine zuverlässige PINAX-/DAVER-Passage. Dieser Ansatz ist verworfen.
+Der Late-Approach-Punkt liegt entlang der geraden FIR-Fix->Track-Geometrie exakt 60 NM vor dem Track und wird mit der öffentlichen Methode `COORDINATE:GetIntermediateCoordinate(...)` berechnet. Der reale FIR-Fix bleibt ausdrücklich als eigener MOOSE-FLIGHTGROUP-Wegpunkt erhalten.
 
-Candidate 4 stellte den FIR-Ingress über EGPAN/PINAX/DAVER wieder her und bestätigte die Passage aller drei Fixes. Der zusätzliche Late-Approach-Adapter scheiterte dagegen, weil am gewählten Zeitpunkt keine verwendbare MOOSE-Mission-Waypoint-UID verfügbar war. Timer-Tuning ist kein akzeptierter Produktionsweg.
+Damit wird der in Candidate 3 verworfene Ansatz **nicht** wiederholt: Candidate 3 ersetzte den FIR-Ingress durch den Late-Approach. Candidate 4 stellte den FIR-Fix wieder her, scheiterte aber mit einem UID-/Timing-basierten nachträglichen Adapter. Der finale Candidate verwendet weder Timer-Tuning noch undokumentierte MOOSE-Interna.
 
-Der 60-NM-Late-Approach ist nach Owner-Entscheidung optional und für die Produktionskalibrierung nicht erforderlich.
+Dieser neue Pfad ist source-reviewed, aber bis zum vorgesehenen Acceptance-7-Lauf **nicht DCS-validiert**.
+
+## LISA South Domain
+
+Owner-Entscheidung 16.08.2026:
+
+```text
+LISA:
+Profile: FAST
+Availability: RESERVE
+Source Domain: AL_UDEID
+FIR Fix: DAVER
+Initial Fuel contract: 79.4558 %
+FuelLow candidate: 38 %
+```
+
+Die Verschiebung erfolgt wegen der deutlich kürzeren sichtbaren Reserve-Reaktionsstrecke DAVER->LISA, nicht wegen eines besseren Fuelstands am Track. Der neue FuelLow-Wert ist konservativ aus südlichem Return-Vertrag, 45-Minuten-Reserve und der für die südliche LISA-Geometrie abgeschätzten Rückflugkomponente abgeleitet und bleibt bis zum finalen DCS-Acceptance ein Kandidatenwert.
+
+MOE bleibt `MANAS / PINAX`.
 
 ## Exact Track Altitude
 
-Der gepinnte MOOSE-Source-Review zeigt für den von `NewTANKER` genutzten ORBIT-Pfad ein Default-Missionshöhenverhalten von 90 Prozent der Orbit-Höhe. OMW setzt deshalb die gewünschte Track-Höhe explizit über die vorhandene öffentliche MOOSE-Methode:
+Der gepinnte MOOSE-Source-Review zeigt für den von `NewTANKER` genutzten ORBIT-Pfad ein Default-Missionshöhenverhalten von 90 Prozent der Orbit-Höhe. OMW setzt deshalb die gewünschte Track-Höhe explizit:
 
 ```lua
 mission:SetMissionAltitude(profile.altitudeFt)
 ```
 
-Candidate 5 verwendete diesen Pfad zusammen mit den bestehenden MOOSE-Ingress-/Egress-Methoden. Die sechs Track-Lifecycles liefen vollständig bis External Handoff durch.
-
-## Source-verifizierte und verwendete MOOSE-Methoden
+## Source-verifizierte MOOSE-Methoden
 
 ```text
 SPAWN:InitSpeedKnots(SpeedKnots)
@@ -109,17 +110,16 @@ FLIGHTGROUP:AddMission(Mission)
 FLIGHTGROUP:AddWaypoint(Coordinate, Speed, AfterWaypointWithID, Altitude, Updateroute)
 FLIGHTGROUP:SetFuelLowThreshold(...)
 FLIGHTGROUP:SetFuelLowRTB(false)
+COORDINATE:GetIntermediateCoordinate(ToCoordinate, Fraction)
 COORDINATE:Get2DDistance(TargetCoordinate)
 UNIT:GetFuel()
 UNIT:GetCurrentFuelKgs()
 UNIT:GetFuelMassMax()
 ```
 
-Im gepinnten `Moose.lua` wurde **keine** öffentliche `SPAWN:InitFuel(...)`-Methode nachgewiesen. OMW erfindet daher keinen Fuel-Setter. Die produktive Lua führt den genehmigten Initial-Fuel-Wert als Vertrag/Metadatum; der physische Tankinhalt des KC-135-Templates muss im Mission Editor eingestellt werden.
+Im gepinnten `Moose.lua` wurde keine öffentliche `SPAWN:InitFuel(...)`-Methode nachgewiesen. Die physische Template-Fuel-Menge bleibt Mission-Editor-Konfiguration.
 
 ## Candidate 5 – Outbound Fuel Telemetry
-
-Dokumentierter Owner-DCS-Lauf:
 
 ```text
 Testdatum: 2026-08-16
@@ -130,20 +130,10 @@ Mission: OMW_Template_v10_AirOps_rdy.miz
 Mission SHA-256: 9dbff62a28e858d6eaf85d9037399dd591dd64edeccbe39bc74ecc63c43b6ca3
 Bundle SHA-256: dd2386bd5bb2b0d2f89ac4e225a2e76ab171df1008f1d46eda16a9757c592a94
 DCS: 2.9.28.26385 MT
-MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
-Moose.lua SHA-256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
 Result: PASS
 ```
 
-Harness-Endzustand:
-
-```text
-RESULT PASS allTracks=6 samplesPerTrack=6
-points=SPAWN,INGRESS,TRACK,TRACK_DEPARTURE,FIR_EGRESS,EXTERNAL_HANDOFF
-fuelLowExcluded=true
-```
-
-Gemessener `TRACK_DEPARTURE -> EXTERNAL_HANDOFF`-Verbrauch:
+Gemessener `TRACK_DEPARTURE -> EXTERNAL_HANDOFF`-Verbrauch des damaligen Routingstands:
 
 | Area | Burn |
 |---|---:|
@@ -154,22 +144,22 @@ Gemessener `TRACK_DEPARTURE -> EXTERNAL_HANDOFF`-Verbrauch:
 | MILHOUSE | 8.1344 % |
 | KRUSTY | 8.5073 % |
 
-Der Lauf bestätigt für diesen exakten Candidate-5-Stand die natürliche FIR-Egress-Passage und den External Handoff aller sechs Tracks unter dem directional LRC-/Exact-Altitude-Kandidaten. Er ist noch **keine** finale Production-Acceptance des anschließend promovierten Controllers.
+Der damalige LISA-Wert gehört zur früheren MANAS/PINAX-Geometrie und darf nicht als Messwert für die neue AL_UDEID/DAVER-Zuordnung ausgegeben werden.
 
-## FuelLow-Kalibrierung
+## FuelLow-Basis
 
-Berechnungsmodell:
+Planungsmodell:
 
 ```text
 FuelLow =
-real gemessener TRACK_DEPARTURE -> EXTERNAL_HANDOFF burn
-+ virtueller EXTERNAL_HANDOFF -> source-base burn
+TRACK_DEPARTURE -> EXTERNAL_HANDOFF burn
++ virtual EXTERNAL_HANDOFF -> source-base burn
 + 45-minute reserve
 
 planned landing fuel >= 13,000 lb
 ```
 
-Test-4-Domainbasis für den virtuellen Off-map-Restflug:
+Domainbasis:
 
 ```text
 KC-135 max fuel: 90,700 kg
@@ -177,38 +167,58 @@ MANAS:     25.98 kg/NM over 300.005 NM -> 8.5933 %
 AL_UDEID:  24.97 kg/NM over 746.241 NM -> 20.5443 %
 ```
 
-Die 45-Minuten-Reserve ist für alle sechs Tracks größer als der 13,000-lb-Planungsfloor und kontrolliert daher die aktuelle Berechnung.
+Aktueller Candidate:
 
-| Area | Raw FuelLow | genehmigter Trigger |
-|---|---:|---:|
-| NELSON | 23.8168 % | 24 % |
-| PATTY | 25.5303 % | 26 % |
-| LISA | 34.0025 % | 35 % |
-| MOE | 30.5285 % | 31 % |
-| MILHOUSE | 35.3534 % | 36 % |
-| KRUSTY | 35.6899 % | 36 % |
+| Area | FuelLow |
+|---|---:|
+| NELSON | 24 % |
+| PATTY | 26 % |
+| LISA | 38 % |
+| MOE | 31 % |
+| MILHOUSE | 36 % |
+| KRUSTY | 36 % |
 
-Die Ganzzahlwerte werden konservativ aufgerundet, damit der operative Trigger die berechnete Recovery-Anforderung nicht unterschreitet.
+Für NELSON/PATTY/MOE/MILHOUSE/KRUSTY stammen die Schwellen aus der dokumentierten Candidate-5-Kalibrierung. LISA=38 % ist die konservative Neuberechnung für die neue südliche Source Domain und muss im Acceptance-7-Lauf zusammen mit dem neuen Routing regressiert werden.
 
 ## Initial Fuel
-
-Aus der Test-4-Domainrate und dem virtuellen Source-Base -> External-Spawn-Flug sind genehmigt:
 
 ```text
 MANAS:     91.4067 %
 AL_UDEID:  79.4558 %
 ```
 
-Wichtig: Candidate 5 zeigte zugleich, dass `initialFuelPct` im bisherigen Controller nur Metadatum war; die physische Spawnmenge stammte aus dem `.miz`-Template. Die Promotion dieser Werte in Lua dokumentiert daher den Vertrag, ersetzt aber keine Mission-Editor-Änderung.
+LISA verwendet nach der Source-Domain-Umstellung den AL_UDEID-Wert. `initialFuelPct` im Controller ist Vertrag/Metadatum; der physische Tankinhalt stammt aus dem `.miz`-Template.
+
+## Acceptance-7-Gate
+
+Der letzte geplante Abnahmelauf muss mindestens bestätigen:
+
+```text
+4 STANDARD tracks initially active
+LISA/MOE initially inactive
+LISA demand -> AL_UDEID -> DAVER -> 60-NM late approach -> LISA track
+MOE demand -> MANAS -> PINAX
+high LRC altitude maintained until the late-approach segment
+exact track altitude
+scheduled MILHOUSE relief
+NELSON FuelLow relief
+PATTY loss/replacement
+natural FIR ingress/egress
+external handoff and exact-once CampaignState settlement
+final steady state = 4 STANDARD / 0 RESERVE
+```
+
+Test-only Loss/FuelLow-Injektionen bleiben ausschließlich im Acceptance-Harness. Das anschließend zu erstellende Missionsgrundgerüst enthält keine künstliche Verlust- oder FuelLow-Auslösung.
 
 ## Nachweisgrenze
 
 ```text
 Candidate 3 late-ingress approach: REJECTED
 Candidate 4 FIR restoration: PASS for observed FIR passage
-Candidate 4 late-approach UID adapter: FAILED / not validated
-Candidate 5 outbound telemetry: PASS for six-point fuel/lifecycle measurement
-Production-promoted calibration: DCS acceptance still pending
+Candidate 4 UID late-approach adapter: FAILED / not validated
+Candidate 5 outbound telemetry: PASS
+Acceptance 6 lifecycle/calibrated production run: PASS for documented lifecycle scope; visual early-descent finding remains open
+Acceptance 7 LISA south-domain + 60-NM late approach: DCS ACCEPTANCE PENDING
 ```
 
-`VALIDATED` für den Produktionsstand wird erst nach einem DCS-Lauf der promovierten Produktionsquelle mit vollständiger Commit-/Mission-/Bundle-/DCS-/MOOSE-Provenienz vergeben.
+`VALIDATED` für den neuen Late-Approach-/LISA-Stand wird erst nach dem dokumentierten Acceptance-7-DCS-Lauf vergeben.

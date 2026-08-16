@@ -62,7 +62,7 @@ Alle 19 Areas bleiben als Geometrien erhalten. Die sechs operativen Areas sind T
 | `PATTY` | primärer A-10-/RC-East-Support | SLOW | MANAS | STANDARD | EGPAN | Texaco |
 | `MILHOUSE` | A-10 Recovery / Kandahar Return | SLOW | AL_UDEID | STANDARD | DAVER | Shell |
 | `KRUSTY` | A-10 Recovery East / Southeast | SLOW | AL_UDEID | STANDARD | DAVER | Arco |
-| `LISA` | RC-West / Shindand | FAST | MANAS | RESERVE | PINAX | Texaco |
+| `LISA` | RC-West / Shindand | FAST | AL_UDEID | RESERVE | DAVER | Texaco |
 | `MOE` | Swing / Reserve / Central Support | FAST | MANAS | RESERVE | PINAX | Texaco |
 
 Maschinenlesbar:
@@ -71,7 +71,9 @@ Maschinenlesbar:
 
 Bis eine belastbare ATO-/Zeitfensterregel entwickelt und genehmigt ist, laufen die vier STANDARD-Tracks kontinuierlich. `LISA` und `MOE` sind RESERVE und werden nur bei passendem MissionDemand materialisiert. Das Ende des letzten zugehörigen Demands ordnet Egress an.
 
-## 4. Tankeridentität und kalibrierte Fuel-Werte
+Die LISA-Zuordnung `AL_UDEID / DAVER` ist eine ausdrückliche OMW-Designentscheidung vom 16.08.2026. Ausschlaggebend ist die deutlich kürzere sichtbare Reserve-Reaktionsstrecke DAVER->LISA gegenüber PINAX->LISA. Der erwartete Fuelstand am Track ist dabei niedriger als aus MANAS; die Entscheidung wird deshalb nicht als Fuel-Optimierung begründet.
+
+## 4. Tankeridentität und Fuel-Vertrag
 
 Ein physischer Tanker behält seine Callsign-Familie und konkrete `n-1`-Gruppenidentität während seiner gesamten Sortie. Relief ist eine neue 1-Ship-Gruppe derselben Familie mit anderer freier Gruppennummer.
 
@@ -87,18 +89,18 @@ Track-Identität besteht aus Area, Funkfrequenz und TACAN. Radio/TACAN werden nu
 |---|---:|---|---:|---:|
 | `NELSON` | 384.400 AM | 47Y `NEL` | 91.4067 % | 24 % |
 | `PATTY` | 237.300 AM | 48Y `PAT` | 91.4067 % | 26 % |
-| `LISA` | 235.900 AM | 50Y `LIS` | 91.4067 % | 35 % |
+| `LISA` | 235.900 AM | 50Y `LIS` | 79.4558 % | 38 % |
 | `MOE` | 243.400 AM | 52Y `MOE` | 91.4067 % | 31 % |
 | `KRUSTY` | 258.300 AM | 42Y `KRU` | 79.4558 % | 36 % |
 | `MILHOUSE` | 272.600 AM | 58Y `MIL` | 79.4558 % | 36 % |
 
-Die Initial-Fuel-Werte bilden den virtuellen Flug von MANAS beziehungsweise AL_UDEID bis zum jeweiligen External Spawn ab. Im gepinnten MOOSE-Stand ist keine öffentliche `SPAWN:InitFuel(...)`-Methode nachgewiesen. Der Controller führt die Werte daher als verbindlichen Konfigurationsvertrag/Metadatum; die physische Fuel-Menge der KC-135-Templates muss im Mission Editor entsprechend gesetzt werden.
+Die Initial-Fuel-Werte bilden den virtuellen Flug von MANAS beziehungsweise AL_UDEID bis zum jeweiligen External Spawn ab. Im gepinnten MOOSE-Stand ist keine öffentliche `SPAWN:InitFuel(...)`-Methode nachgewiesen. Der Controller führt die Werte daher als Konfigurationsvertrag/Metadatum; die physische Fuel-Menge der KC-135-Templates wird im Mission Editor gesetzt.
 
-FuelLow wurde aus real gemessenem `TRACK_DEPARTURE -> EXTERNAL_HANDOFF`-Verbrauch, virtuellem `EXTERNAL_HANDOFF -> Source Base`-Verbrauch und einer 45-Minuten-Reserve berechnet. Der geplante Landing-Fuel-Floor von 13,000 lb wird dabei nicht unterschritten. Die Triggerwerte sind konservativ auf volle Prozent aufgerundet.
+Für NELSON/PATTY/MOE/KRUSTY/MILHOUSE basiert FuelLow auf der dokumentierten Candidate-5-Messung plus virtuellem Rückflug und 45-Minuten-Reserve. LISA=38 % ist die konservative Neuberechnung für die neue südliche Source Domain und bleibt bis Acceptance 7 ein DCS-zu-validierender Candidate-Wert.
 
-Für Link-16 erzwingt OMW keine `SPAWN:InitSTN(...)`. Die gepinnte MOOSE-SPAWN-Implementierung verwaltet Template-STN-Kollisionen; OMW liest die materialisierte STN über `UNIT:GetSTN()` nur als Runtime-Telemetrie/Identitätsprüfung.
+Für Link-16 erzwingt OMW keine `SPAWN:InitSTN(...)`. OMW liest die materialisierte STN über `UNIT:GetSTN()` nur als Runtime-Telemetrie/Identitätsprüfung.
 
-## 5. External Spawn/Handoff versus FIR Ingress/Egress
+## 5. External Spawn, FIR und 60-NM Late Approach
 
 ```text
 EXTERNAL SPAWN
@@ -106,6 +108,9 @@ EXTERNAL SPAWN
 
 FIR INGRESS FIX
 = veröffentlichter Eintritt in die Kabul FIR
+
+60-NM LATE APPROACH
+= Punkt entlang FIR-Fix -> Track, exakt 60 NM vor dem Track
 
 TRACK
 = AAR Area / Racetrack
@@ -117,13 +122,17 @@ EXTERNAL HANDOFF / DESPAWN
 = technischer Abschluss außerhalb der Kabul FIR
 ```
 
-Produktiver Pfad:
+Finaler Candidate-Pfad:
 
 ```text
 External Spawn
--> FIR Ingress Fix
+-> FIR Ingress Fix @ inbound LRC altitude
+-> 60-NM Late Approach @ inbound LRC altitude
+-> descent on final inbound leg
+-> exact AAR Track altitude
 -> AAR Track
--> FIR Egress Fix
+-> climb toward outbound LRC altitude
+-> FIR Egress Fix @ outbound LRC altitude
 -> External Handoff
 -> Despawn / exact-once strategic settlement
 ```
@@ -131,9 +140,10 @@ External Spawn
 Zuordnung:
 
 ```text
-NELSON / PATTY    -> EGPAN
-KRUSTY / MILHOUSE -> DAVER
-LISA / MOE        -> PINAX
+NELSON / PATTY    -> MANAS / EGPAN
+MOE               -> MANAS / PINAX
+LISA              -> AL_UDEID / DAVER
+KRUSTY / MILHOUSE -> AL_UDEID / DAVER
 ```
 
 External Points:
@@ -153,7 +163,7 @@ DAVER: N29°34'18" E64°40'36"
 
 DAVER-Evidenzgrenze: Die 2011er AIP enthält zwischen ENR-Route-/Navfix-Daten und ENR 1.10 eine widersprüchliche DAVER-Koordinate. OMW verwendet die projektseitig etablierte M375-/Navfix-Koordinate. Die Quelleninkonsistenz bleibt offen.
 
-Vollständiges Lower-/Upper-Airway-Routing zwischen FIR-Fix und Track bleibt optional/später und blockiert die aktuelle AAR-Baseline nicht.
+Vollständiges Lower-/Upper-Airway-Routing zwischen FIR-Fix und Track bleibt optional/später.
 
 ## 6. Kalibrierter Transitvertrag
 
@@ -164,8 +174,6 @@ MOOSE release: 2.9.18
 MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
 Moose.lua SHA-256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
 ```
-
-Produktiver Geschwindigkeitsvertrag:
 
 ```text
 SPAWN:InitSpeedKnots(480) = initiale In-Air-Materialisierung
@@ -182,17 +190,21 @@ AL_UDEID -> Afghanistan:   FL350
 Afghanistan -> AL_UDEID:   FL340
 ```
 
-Kein routinemäßiger weight-/fuel-basierter Step-Climb.
-
-Die Track-Höhe wird nach source-reviewtem MOOSE-Verhalten explizit gesetzt:
+Die Track-Höhe wird explizit gesetzt:
 
 ```lua
 mission:SetMissionAltitude(profile.altitudeFt)
 ```
 
-Damit wird das für den ORBIT-Pfad beobachtete 90-Prozent-Default nicht als OMW-Track-Höhe übernommen.
+Der 60-NM-Late-Approach verwendet ausschließlich öffentliche, im gepinnten `Moose.lua` geprüfte MOOSE-Funktionen:
 
-Der optionale 60-NM-Late-Approach ist **nicht** Produktionsanforderung und wird nicht implementiert. Candidate 3 ersetzte den akzeptierten FIR-Ingress unzulässig und ist verworfen; Candidate 4 stellte den FIR-Vertrag wieder her, der zusätzliche UID-basierte Late-Approach-Adapter scheiterte jedoch im realen DCS-Lauf.
+```text
+COORDINATE:GetIntermediateCoordinate(...)
+FLIGHTGROUP:AddWaypoint(...)
+AUFTRAG:SetMissionIngressCoord(...)
+```
+
+Der reale FIR-Fix bleibt ein expliziter `FLIGHTGROUP`-Wegpunkt auf LRC-Höhe. Erst der AUFTRAG-Ingress liegt 60 NM vor dem Track. Damit wird weder der FIR-Fix ersetzt noch ein UID-/Timer-Hack verwendet.
 
 ## 7. MOOSE-first Routing und Fuel-Lifecycle
 
@@ -221,11 +233,10 @@ OPSGROUP:SwitchTACAN(...)
 OPSGROUP:TurnOffTACAN()
 OPSGROUP:Despawn(...)
 
+COORDINATE:GetIntermediateCoordinate(...)
 COORDINATE:Get2DDistance(...)
 SCHEDULER:New(...)
 ```
-
-`SetMissionIngressCoord(...)` führt über den FIR-Ingress-Fix zum Auftrag. `SetMissionEgressCoord(...)` führt nach Cancel zum FIR-Egress-Fix. Nach physischer Passage ergänzt OMW über `FLIGHTGROUP:AddWaypoint(...)` den External-Handoff-Punkt.
 
 ## 8. Relief und MissionDemand
 
@@ -235,19 +246,19 @@ Scheduled Relief:
 1 ACTIVE
 -> genau 1 RELIEF
 -> gleiche Callsign-Familie, andere n-1-Gruppennummer
--> natürliche Route External Spawn -> FIR Fix -> Track
+-> natürliche Route External Spawn -> FIR Fix -> 60-NM Late Approach -> Track
 -> ETA <= 5 min armt nur Handover
 -> outgoing bleibt ACTIVE bis reale Track-Ankunft
 -> erst dann Station Owner wechseln, Radio/TACAN übertragen und outgoing Cancel/Egress
 ```
 
-FuelLow bleibt bewusst getrennt:
+FuelLow:
 
 ```text
 ACTIVE FuelLow
 -> vorhandenen Relief wiederverwenden oder genau einen Emergency-Relief erzeugen
 -> outgoing verlässt Station sofort und geht auf Egress
--> kein Warten auf Handover-Gate
+-> Ersatz übernimmt erst nach natürlicher Track-Ankunft
 ```
 
 STANDARD-Demand-Ende schließt den kontinuierlichen Track nicht. RESERVE schließt nach Ende des letzten Demands und ordnet vorhandenen ACTIVE/RELIEF auf Egress.
@@ -276,29 +287,23 @@ aircraft loss
 -> exact-once +1 AIRCRAFT_KC135_LOST audit counter
 ```
 
-Kein per-tail-Inventar, kein regulärer strategischer Turnaround-Timer und keine parallele Ressourcenhoheit in WAREHOUSE/AIRWING/DCS Warehouse/SPAWN.
-
 ## 10. Concurrency und Source Spacing
 
 ```text
 Standard steady state: 4 Tanker
 Reserve: +1 Tanker je geöffnetem Reserve-Track
 pro Track maximal: 1 ACTIVE + 1 RELIEF
-```
 
-```text
 MANAS: mindestens 60 s zwischen zwei Materialisierungen
 AL_UDEID: mindestens 60 s zwischen zwei Materialisierungen
 MANAS und AL_UDEID dürfen parallel materialisieren
 ```
 
-Für AAR gilt keine globale `2/2/4`-Grenze aus anderen AI-Unterstützungsmissionen.
-
 ## 11. DCS-Evidenz
 
-### 11.1 Production Final Acceptance
+### 11.1 Frühere Production Final Acceptance
 
-Der dokumentierte Acceptance-Stand auf `agent/aar-runtime-finalization` bestätigte die Produktionsarchitektur einschließlich vier STANDARD-/zwei RESERVE-Tracks, Scheduled-Relief-Handover erst bei Track-Ankunft, FuelLow Immediate Egress, FIR-Fixes, External Handoff, Loss/Replacement und CampaignState exact-once Accounting. Die genaue Provenienz steht in `docs/moose/VERIFIED-METHODS.md`.
+Der dokumentierte Acceptance-Stand auf `agent/aar-runtime-finalization` bestätigte vier STANDARD-/zwei RESERVE-Tracks, Scheduled Relief, FuelLow Immediate Egress, FIR-Fixes, External Handoff, Loss/Replacement und CampaignState exact-once Accounting. Die genaue Provenienz steht in `docs/moose/VERIFIED-METHODS.md`.
 
 ### 11.2 AAR Fuel Telemetry Candidate 5 – 16.08.2026
 
@@ -315,19 +320,15 @@ Moose.lua SHA-256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a
 Result: PASS
 ```
 
-Endmarker:
+### 11.3 Acceptance 6 – Beobachtete Restlücke
 
-```text
-RESULT PASS allTracks=6 samplesPerTrack=6
-points=SPAWN,INGRESS,TRACK,TRACK_DEPARTURE,FIR_EGRESS,EXTERNAL_HANDOFF
-fuelLowExcluded=true
-```
+Der Acceptance-6-Lauf bestätigte den Produktions-Lifecycle, die kalibrierten Speed-/FL-/FuelLow-Werte sowie Egress/External-Handoff. Dabei wurde visuell festgestellt, dass die Tanker nach dem FIR-Ingress bereits auf Track-Höhe sanken. Diese Eigenschaft war vom Acceptance-6-Harness nicht geprüft und bleibt deshalb keine akzeptierte Zielwirkung.
 
-Der Lauf bestätigt die sechs vollständigen Messpfade bis External Handoff und liefert die Outbound-Basis für die genehmigten FuelLow-Werte. Er bestätigt noch nicht die **anschließend promovierte Produktionsquelle**; dafür ist ein neuer Production-Acceptance-Lauf erforderlich.
+Außerdem war LISA in Acceptance 6 weiterhin `MANAS / PINAX`. Beide Restpunkte werden im Acceptance-7-Candidate gemeinsam korrigiert.
 
-## 12. Aktueller Produktionskandidat und verbleibendes Gate
+## 12. Finaler Acceptance-7-Candidate
 
-Vom Projektinhaber am 16.08.2026 genehmigte Promotion:
+Vom Projektinhaber am 16.08.2026 ausdrücklich genehmigt:
 
 ```text
 Spawn initialization: 480 kt
@@ -338,28 +339,35 @@ Afghanistan -> MANAS:      FL350
 AL_UDEID -> Afghanistan:   FL350
 Afghanistan -> AL_UDEID:   FL340
 
+60-NM late approach: enabled
 Exact track mission altitude: enabled
-60-NM late approach: not required / not implemented
 
-Initial Fuel:
-MANAS:     91.4067 %
-AL_UDEID:  79.4558 %
+LISA:
+Source = AL_UDEID
+FIR Fix = DAVER
+Availability = RESERVE
+Initial Fuel = 79.4558 %
+FuelLow = 38 %
 
-FuelLow:
+Other FuelLow:
 NELSON:    24 %
 PATTY:     26 %
-LISA:      35 %
 MOE:       31 %
 MILHOUSE:  36 %
 KRUSTY:    36 %
 ```
 
-Vor finaler Produktionsfreigabe verbleibt:
+Der letzte Abnahmelauf muss neben den bestehenden Lifecycle-Gates ausdrücklich nachweisen:
 
 ```text
-1. lokaler Build und Hash-Prüfung des promovierten Remote-Commits;
-2. Mission-Editor-Anpassung der sechs KC-135-Template-Fuelwerte durch den Projektinhaber;
-3. neuer DCS-Lauf mit vollständiger Commit-/Mission-/Bundle-/DCS-/MOOSE-Provenienz;
-4. Regression der bestehenden AAR-Lifecycle-Gates;
-5. erst danach Status des promovierten Produktionsstands auf VALIDATED anheben.
+- LISA und MOE starten nicht automatisch;
+- LISA wird durch MissionDemand aus AL_UDEID über DAVER materialisiert;
+- reale FIR-Passage bleibt erhalten;
+- Tanker halten die LRC-Höhe bis in den Bereich vor dem 60-NM-Late-Approach;
+- der 60-NM-Punkt liegt geometrisch 60 NM vor dem Track;
+- danach erfolgt der Übergang auf die exakte Track-Höhe;
+- Egress steigt weiterhin auf die outbound LRC-Höhe;
+- Scheduled Relief, FuelLow Relief, Loss/Replacement und CampaignState-Settlement regressieren nicht.
 ```
+
+Erst nach realem Acceptance-7-PASS wird das endgültige Missions-AAR-Grundgerüst erstellt. Dieses enthält **keine test-only Verlustinjektion und keine künstliche FuelLow-Auslösung**. Die vier STANDARD-Tracks werden kontinuierlich erhalten; `LISA` und `MOE` bleiben standardmäßig inaktiv und werden ausschließlich über den produktiven MissionDemand-Vertrag geöffnet.
