@@ -14,7 +14,7 @@ supersedes:
   - exploratory JP-8 sizing values used during Issue #105 analysis
 superseded_by:
 source_branch: agent/warehouse-production-base
-source_commit: PENDING_MERGE
+source_commit: 581b6f18eca14be77f53983682739bbdb8865f54
 acceptance_branch: agent/warehouse-production-base
 acceptance_commit: e869bc6a31ccaf3d85ff0a5d43d3db861cbf31f3
 acceptance_mission: OMW_Template_v11_AirOps_rdy(3).miz
