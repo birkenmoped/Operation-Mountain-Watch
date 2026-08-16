@@ -96,7 +96,7 @@ Alle Autoritätsgrenzen und Schnittstellen festlegen, bevor Runtime-Code entsteh
 - [x] ATO Examples 1–3 als `EXAMPLE_ONLY`-Quellen erfassen;
 - [x] aktuellen Stand von Dokument 54 gegen Dokument 88 prüfen und Überschneidungen/Abgrenzungen dokumentieren;
 - [x] `CampaignState`-Vertrag für Air-Support-Requests, Missionsreservierungen und Ergebnisrückmeldung festlegen;
-- [ ] festlegen, welche Air-Tasking-Daten persistent und welche nur Runtime-Daten sind;
+- [x] festlegen, welche Air-Tasking-Daten persistent und welche nur Runtime-Daten sind;
 - [ ] stabile ID-Konventionen für Request-, Mission- und Support-Beziehungen definieren;
 - [ ] festlegen, welche vorhandenen Module `MissionDemand` erzeugen beziehungsweise konsumieren dürfen;
 - [ ] festlegen, welche Daten ausschließlich Views/Briefingdaten sind und keine Ressourcenautorität besitzen;
