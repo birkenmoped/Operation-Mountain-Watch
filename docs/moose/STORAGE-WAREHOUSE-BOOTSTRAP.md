@@ -8,8 +8,7 @@ authoritative_for:
   - ordering between authoritative CampaignState, STORAGE mirrors and AirOps start
   - NEW and RESTORE Warehouse bootstrap semantics
 not_authoritative_for:
-  - strategic stock recalculation
-  - replacement of the closed JP-8 baseline
+  - future strategic stock recalculation beyond approved baselines
   - DCS runtime acceptance before a documented run
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
@@ -24,7 +23,7 @@ validated_in_dcs: false
 
 ## 1. Zweck
 
-Dieser Baustein schließt die bisher getrennten Warehouse-/Resource-Initialisierer zu einem zentralen, einmaligen Startpfad zusammen. Er berechnet keine Bestände neu und eröffnet keine abgeschlossene Fuel- oder Store-Entscheidung erneut.
+Dieser Baustein schließt die Warehouse-/Resource-Initialisierer zu einem zentralen, einmaligen Startpfad zusammen. Er berechnet keine Bestände zur Laufzeit neu. Freigegebene Initialdaten werden von CampaignState übernommen und einmalig nach MOOSE/DCS STORAGE gespiegelt.
 
 Produktiver Vertrag:
 
@@ -49,7 +48,7 @@ WarehouseBootstrap status=READY
 AirOps AIRWING-Start darf folgen
 ```
 
-## 2. Implementierung
+## 2. Implementierung und Packaging-Grenze
 
 Zentraler Koordinator:
 
@@ -57,19 +56,7 @@ Zentraler Koordinator:
 scripts/logistics/OMW_AirOpsWarehouseBootstrap.lua
 ```
 
-Builder:
-
-```text
-tools/build-air-ops-warehouse-bootstrap.ps1
-```
-
-Generiertes Artefakt:
-
-```text
-mission/tests/air-ops-warehouse-bootstrap/dist/OMW_AirOps_Warehouse_Bootstrap.lua
-```
-
-Der Koordinator verwendet ausschließlich die bereits vorhandenen OMW-Adapter:
+Verwendete OMW-Adapter:
 
 ```text
 OMW_AirOpsStorageInitializer
@@ -82,15 +69,53 @@ OMW_AirOpsTechnicalAvailability
 
 Es wird keine neue MOOSE-Klasse und keine neue MOOSE-Methode eingeführt.
 
+Historische Acceptance-Infrastruktur:
+
+```text
+tools/build-air-ops-warehouse-bootstrap.ps1
+-> mission/tests/air-ops-warehouse-bootstrap/dist/OMW_AirOps_Warehouse_Bootstrap.lua
+```
+
+Produktives Packaging:
+
+```text
+tools/build-air-ops-warehouse-production-base.ps1
+-> mission/runtime/logistics/OMW_AirOps_Warehouse_Base.lua
+```
+
+Details: `docs/moose/STORAGE-WAREHOUSE-PRODUCTION-BASE.md`.
+
 ## 3. Strategische Datenbasis
 
-Nicht-Fuel-Initialbestände bleiben in:
+Nicht-Fuel-Initialbestände:
 
 ```text
 scripts/logistics/OMW_AirOpsInitialStock.lua
 ```
 
-Die neu ergänzte MQ-1-AVGAS-Baseline bleibt in:
+Owner-approved JP-8-Baseline `v0.3-RELEASE` vom 16.08.2026:
+
+```text
+scripts/logistics/OMW_AirOpsInitialJP8Stock.lua
+```
+
+Verbindliche JP-8-Werte:
+
+| Node | Initial/Target kg | Reorder kg | Critical kg | Supply Parent |
+|---|---:|---:|---:|---|
+| BAGRAM | 5,000,000 | 2,140,000 | 750,000 | OFF_MAP |
+| KANDAHAR_MAIN | 3,500,000 | 1,500,000 | 525,000 | OFF_MAP |
+| JALALABAD | 575,000 | 320,000 | 120,000 | BAGRAM |
+| KANDAHAR_HELI | 180,000 | 90,000 | 45,000 | KANDAHAR_MAIN |
+| SALERNO | 1,200,000 | 640,000 | 240,000 | KANDAHAR_MAIN |
+| TARINKOT | 950,000 | 540,000 | 202,500 | KANDAHAR_MAIN |
+| SHINDAND_HELI | 450,000 | 195,000 | 65,000 | KANDAHAR_MAIN |
+
+Gesamt-Initial-/Targetbestand: `11,855,000 kg FUEL_JP8`.
+
+Die Werte sind `PROJECT_DESIGN_VALUE` und je Node in der Datenquelle nach Evidenzklasse differenziert. Historische Kapazitäts-/Durchsatzdaten dienen als Sizing-Evidenz; sie werden nicht als eigene CampaignState-Property eingeführt.
+
+MQ-1-AVGAS-Baseline:
 
 ```text
 scripts/logistics/OMW_AirOpsInitialFuelSupplement.lua
@@ -104,11 +129,13 @@ Reorder         4,000 US gal = 12,065.557042 kg
 Critical        2,000 US gal =  6,032.778521 kg
 ```
 
-Der abgeschlossene JP-8-Bestand wird ausdrücklich **nicht** in diesem Branch neu berechnet oder dupliziert. Der Bootstrap konsumiert den bereits autoritativ aufgebauten beziehungsweise wiederhergestellten CampaignState. Damit bedeutet „nicht erneut in PR #86 definiert“ nicht „im Projekt fehlend“.
+Der künstliche historische `100000 kg`-JP-8-Preservation-Wert bleibt ausschließlich Test-Fixture und ist kein Bestandteil der Produktion.
+
+Für den normalen Start vor der AAR Production Base enthält derselbe `OMW.AirOps.CampaignContext` zusätzlich `OMW_AARStrategicStock`. Diese Off-map-Ressourcen bleiben CampaignState-only und werden nicht nach STORAGE gespiegelt.
 
 ## 4. Fuel-Vertrag
 
-Der bestehende Pfad bleibt unverändert:
+Pfad:
 
 ```text
 CampaignState
@@ -125,30 +152,34 @@ FUEL_JP8   -> STORAGE.Liquid.JETFUEL
 FUEL_AVGAS -> STORAGE.Liquid.GASOLINE
 ```
 
-Der zentrale Bootstrap erhält explizit die Fuel-Node-IDs, für die der autoritative CampaignState einen vollständigen Fuel-Snapshot besitzt. Er erzeugt keine Ersatzwerte und keinen 100000-kg-Fallback.
+Die Production Base spiegelt JP-8 an allen sieben produktiven AirOps-Fuel-Nodes. `KANDAHAR_MAIN` spiegelt zusätzlich die genehmigte AVGAS-Ressource. Andere Nodes erhalten keinen künstlichen AVGAS-Nullbestand.
+
+Dafür kann `OMW_CampaignStateStorageSync` node-spezifisch eine Teilmenge der im CampaignState vorhandenen Fuel-Ressourcen spiegeln. Die Quelle bleibt ausschließlich `CampaignState:GetResource(...)`; der Adapter importiert keine STORAGE-Werte zurück in CampaignState. Ohne node-spezifische Konfiguration bleibt der bestehende vollständige `GetFuelSnapshot(...)`-Pfad kompatibel.
+
+Die bestehende Fuel-Readback-Toleranz bleibt `0.5 kg`.
 
 ## 5. NEW und RESTORE
 
-`NEW` bedeutet:
+`NEW`:
 
 ```text
-CampaignState wurde aus den freigegebenen Initialdaten aufgebaut
+CampaignState aus freigegebenen Initialdaten aufbauen
 -> WarehouseBootstrap spiegelt diesen Zustand einmalig nach STORAGE
 ```
 
-`RESTORE` bedeutet:
+`RESTORE`:
 
 ```text
-CampaignState wurde aus einem Snapshot wiederhergestellt
+CampaignState aus Snapshot wiederherstellen
 -> WarehouseBootstrap spiegelt den wiederhergestellten Zustand einmalig nach STORAGE
--> Initialwerte werden nicht erneut über den Restore geschrieben
+-> Initialwerte werden nicht erneut über Restore geschrieben
 ```
 
-Der Koordinator selbst ruft weder `CampaignState.New()` noch `CampaignState.Restore()` auf. Dadurch bleibt die Zustandsentscheidung beim CampaignState-Lifecycle und es entsteht keine zweite Ressourcenhoheit.
+`OMW_AirOpsWarehouseBootstrap` ruft weder `CampaignState.New()` noch `CampaignState.Restore()` auf. Die Production-Orchestrierung erzeugt genau einen NEW-Context, wenn noch keiner existiert, oder verwendet einen bereitgestellten NEW-/RESTORE-Kontext wieder.
 
 ## 6. Preflight und Fail-closed
 
-Vor der ersten Mutation werden alle drei Bereiche geplant:
+Vor der ersten Mutation werden geplant:
 
 ```text
 strategische direkte Item-Mirrors
@@ -156,14 +187,22 @@ Fuel-Mirrors
 TECHNICAL_NON_STRATEGIC Availability
 ```
 
-Bekannte Blocker der vorhandenen Adapter bleiben wirksam, insbesondere nicht limitierte Weapon-Warehouses und fehlende/inkompatible Resource-Snapshots.
+Bekannte Blocker bleiben wirksam. Nach Apply erfolgen direkte Readbacks. `READY` wird nur zurückgegeben, wenn Item-, Fuel- und Technical-Writes verifiziert sind.
 
-Nach dem Preflight verwenden die bestehenden Adapter weiterhin ihre eigene Validierung und direkten Readbacks. `READY` wird nur zurückgegeben, wenn strategische Item-, Fuel- und technische Writes als `verified=true` zurückkehren.
+Produktives Userflag:
+
+```text
+OMW_WAREHOUSE_READY = 0
+-> Bootstrap erfolgreich und verifiziert
+-> OMW_WAREHOUSE_READY = 1
+```
+
+Bei Fehlern bleibt beziehungsweise wird das Flag `0`.
 
 ## 7. Ausdrücklich nicht implementiert
 
 ```text
-kein Scheduler
+kein produktiver Scheduler
 kein periodisches Zurücksetzen auf Initialwerte
 kein STORAGE -> CampaignState Reverse-Overwrite
 keine eigene Ground-Crew-Rearm-/Refuel-Logik
@@ -171,6 +210,7 @@ keine erfundene M230-/GAU-8-/M3P-Storage-Konversion
 keine automatische Fuel-Neuberechnung
 keine automatische Persistenz
 keine AIRWING-Missionserzeugung
+kein Acceptance-Harness im Production-Bundle
 ```
 
 ## 8. MOOSE-First
@@ -183,20 +223,52 @@ commit 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
 Moose.lua SHA-256 e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
 ```
 
-Der Koordinator fügt nur eine kleine OMW-Orchestrierungsschicht um bereits geprüfte MOOSE-STORAGE-Adapter hinzu. Er implementiert keine MOOSE-Funktion parallel neu.
+Die Production-Orchestrierung verwendet weiterhin die bereits geprüften MOOSE-STORAGE- und USERFLAG-Pfade. Die neue JP-8-Datenbaseline und die node-spezifische Auswahl der zu spiegelnden Fuel-Ressource sind OMW-Domain-/Adapterlogik und implementieren keine MOOSE-Funktion parallel neu.
 
-## 9. Abschlussgrenze
+## 9. Verifikations- und Abschlussgrenze
 
-Mit diesem Baustein ist die **Code-Architektur für die zentrale Initial-Warehouse-Stock-Initialisierung zusammengesetzt**. Für `VALIDATED` fehlt anschließend noch der dokumentierte Build-/Hash-/DCS-Nachweis des exakt erzeugten Bundles und der tatsächlich verwendeten MIZ.
+Die zugrunde liegende Warehouse-/STORAGE-Architektur besitzt historische Acceptance-Evidenz für den exakt getesteten Acceptance-Stand.
 
-Die Mission-Editor-Einbindung muss die Reihenfolge sicherstellen:
+Für die produktive JP-8-v0.3-Komposition wurde am 16.08.2026 zusätzlich ein realer DCS-Smoke beobachtet. Der erfolgreiche Lauf zeigte:
+
+```text
+alle sieben JP-8-Nodes: APPLY verified=true
+KANDAHAR_MAIN zusätzlich AVGAS: verified=true
+strategische Item-Mirrors: verified=true
+TECHNICAL_NON_STRATEGIC Availability: verified=true
+OMW_WAREHOUSE_READY = 1
+AAR Production Base danach gestartet
+alle sechs AIR-OPS Foundations danach RUNNING
+kein OMW Warehouse-/Fuel-Bootstrapfehler im erfolgreichen Lauf
+```
+
+Der im selben `dcs.log` vorhandene frühere `KANDAHAR_MAIN/FUEL_JP8 unavailable`-Fehler gehört zum vorherigen Produktionsstand und ist als fail-closed Diagnoseevidenz zu erhalten.
+
+Die formale DCS-Acceptance bleibt trotzdem noch offen: Das gelieferte `debrief.log` nennt als ausgeführten Pfad `OMW_Template_v11_AirOps_rdy.miz`, während das separat geprüfte aktuelle Upload-Artefakt `OMW_Template_v11_AirOps_rdy(2).miz` heißt. Zusätzlich erzeugt der Production-Builder einen commitgebundenen Header; Dokumentationscommits nach dem getesteten Source-Head ändern daher den reproduzierbaren Bundle-Hash, obwohl die Runtime-Quellen unverändert sein können.
+
+Deshalb bleibt bis zur finalen, exakt dokumentierten Provenienzprüfung:
+
+```text
+validated_in_dcs: false
+```
+
+Für die Merge-Vorbereitung ist auf dem finalen Branch-Stand noch erforderlich:
+
+```text
+finalen Branch-Head lokal pullen
+Production Base erneut deterministisch bauen und SHA-256 erfassen
+exakte ausgeführte MIZ und ihren SHA-256 dokumentieren
+kleinen finalen DCS-Smoke des daraus gebauten Bundles durchführen
+```
+
+Mission-Editor-Reihenfolge:
 
 ```text
 Moose.lua
--> CampaignState und Logistics-Module
--> CampaignState NEW/RESTORE bereit
--> OMW_AirOpsWarehouseBootstrap.Apply(...)
--> nur bei status=READY: AirOps Foundations starten
+-> OMW_AirOps_Warehouse_Base.lua
+-> OMW_WAREHOUSE_READY == 1
+-> OMW_AAR_Base.lua
+-> AIR-OPS Foundations
 ```
 
-Eine `.miz` wird durch diesen Commit nicht automatisch verändert.
+Eine `.miz` wird durch diesen Entwicklungsblock nicht automatisch verändert.
