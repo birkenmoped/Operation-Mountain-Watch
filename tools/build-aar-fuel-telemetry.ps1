@@ -9,14 +9,12 @@ $sourceDir = Join-Path $repoRoot 'mission\tests\aar-fuel-telemetry\src'
 $distDir = Join-Path $repoRoot 'mission\tests\aar-fuel-telemetry\dist'
 $outputFile = Join-Path $distDir 'OMW_AAR_Fuel_Telemetry.lua'
 
-$builderVersion = 'AAR-FUEL-TELEMETRY-4'
-$testId = 'AAR-FUEL-TELEMETRY-4'
+$builderVersion = 'AAR-FUEL-TELEMETRY-5'
+$testId = 'AAR-FUEL-TELEMETRY-5'
 $mooseCommit = '73d3ed119cd9e7e3f2cfcabbaa34513d30529b54'
 $mooseSha256 = 'e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915'
 $candidateSpawnSpeedKt = 480
 $productionTransitRouteSpeedKt = 300
-$trackApproachNm = 60
-$lrcRouteBuildDelaySec = 5
 
 $files = [ordered]@{
   CampaignState = Join-Path $repoRoot 'scripts\campaign\OMW_CampaignState.lua'
@@ -46,17 +44,17 @@ $requirements = @(
   @{ File = 'Controller'; Marker = 'STANDARD_TRACK_COUNT = 4' },
   @{ File = 'Controller'; Marker = 'RESERVE_TRACK_COUNT = 2' },
   @{ File = 'Controller'; Marker = 'function Controller.GetActive' },
-  @{ File = 'Controller'; Marker = 'spawnToFirNm = spawnToFirNm' },
-  @{ File = 'Controller'; Marker = 'firToTrackNm = firToTrackNm' },
   @{ File = 'Controller'; Marker = 'local TRANSIT_SPEED_KT = 300' },
-  @{ File = 'Controller'; Marker = 'local LEG_NM = 35' },
   @{ File = 'Controller'; Marker = 'spawner:InitSpeedKnots(TRANSIT_SPEED_KT)' },
   @{ File = 'Controller'; Marker = 'mission:SetMissionIngressCoord(firIngressCoord, transit.ingressFt, TRANSIT_SPEED_KT)' },
-  @{ File = 'Controller'; Marker = 'flightGroup:AddMission(mission)' },
+  @{ File = 'Controller'; Marker = 'mission:SetMissionEgressCoord(firEgressCoord, transit.egressFt, TRANSIT_SPEED_KT)' },
+  @{ File = 'Controller'; Marker = 'local function cancelToEgress(runtime, reason)' },
   @{ File = 'Harness'; Marker = 'AAR-FUEL-TELEMETRY-1' },
-  @{ File = 'Harness'; Marker = 'recordSpawn(record, runtime)' },
+  @{ File = 'Harness'; Marker = 'TRACK_DEPARTURE' },
+  @{ File = 'Harness'; Marker = 'FIR_EGRESS' },
+  @{ File = 'Harness'; Marker = 'EXTERNAL_HANDOFF' },
+  @{ File = 'Harness'; Marker = 'TestForceEgress' },
   @{ File = 'Harness'; Marker = 'fuelLowExcluded=true' },
-  @{ File = 'Harness'; Marker = 'RESULT PASS allTracks=6' },
   @{ File = 'Harness'; Marker = 'unit:GetFuel()' },
   @{ File = 'Harness'; Marker = 'unit:GetCurrentFuelKgs()' },
   @{ File = 'Harness'; Marker = 'Get2DDistance' }
@@ -107,18 +105,12 @@ function Replace-ExactOnce {
   return $Text.Replace($Old, $New)
 }
 
-# Branch-local candidate only. The production controller source is deliberately not modified here.
-# Test 4 restores the accepted FIR-ingress contract exactly: AUFTRAG owns EGPAN/PINAX/DAVER via
-# SetMissionIngressCoord(). After MOOSE has built ingress -> mission waypoint, the adapter validates
-# that route structure through public APIs and inserts only the late LRC track-approach waypoint
-# between the MOOSE FIR ingress and the MOOSE mission waypoint.
+# Branch-local test candidate only. The production controller source is not modified.
+# Candidate 5 deliberately drops the failed optional 60-NM late-approach experiment.
+# It preserves the accepted MOOSE FIR ingress/egress contract, applies the already tested
+# spawn/LRC/mission-altitude candidates, and exposes one diagnostic-only egress hook that
+# delegates to the controller's existing cancelToEgress() lifecycle path.
 $controllerCandidate = $content.Controller
-
-$controllerCandidate = Replace-ExactOnce -Text $controllerCandidate -Old 'local LEG_NM = 35' -New @"
-local LEG_NM = 35
-local TRACK_APPROACH_NM = $trackApproachNm
-local LRC_ROUTE_BUILD_DELAY_SEC = $lrcRouteBuildDelaySec
-"@ -Label 'LRC constants'
 
 $controllerCandidate = Replace-ExactOnce -Text $controllerCandidate `
   -Old '  MANAS_WEST_HIGH = { ingressFt = 34000, egressFt = 33000 },' `
@@ -139,111 +131,30 @@ $controllerCandidate = Replace-ExactOnce -Text $controllerCandidate `
   -Label 'candidate KC-135 spawn speed'
 
 $controllerCandidate = Replace-ExactOnce -Text $controllerCandidate `
-  -Old '  local trackCoord = COORDINATE:NewFromLLDD(areaSpec.lat, areaSpec.lon)' `
-  -New @"
-  local trackCoord = COORDINATE:NewFromLLDD(areaSpec.lat, areaSpec.lon)
-  local firToTrackMeters = firIngressCoord:Get2DDistance(trackCoord)
-  local trackApproachMeters = UTILS.NMToMeters(TRACK_APPROACH_NM)
-  if firToTrackMeters <= trackApproachMeters then
-    fail(string.format("LRC track approach exceeds FIR-to-track leg area=%s firFix=%s firToTrackNm=%.1f approachNm=%.1f",
-      selection.area, areaSpec.firFix, firToTrackMeters / 1852, TRACK_APPROACH_NM))
-  end
-  local trackApproachCoord = trackCoord:GetIntermediateCoordinate(firIngressCoord, trackApproachMeters)
-  trackApproachCoord:SetAltitude(UTILS.FeetToMeters(transit.ingressFt), true)
-"@ -Label 'late track-approach coordinate'
-
-# Preserve the accepted MOOSE FIR-ingress contract. Only correct the mission waypoint altitude.
-$controllerCandidate = Replace-ExactOnce -Text $controllerCandidate `
   -Old '  mission:SetMissionIngressCoord(firIngressCoord, transit.ingressFt, TRANSIT_SPEED_KT)' `
   -New @"
   mission:SetMissionIngressCoord(firIngressCoord, transit.ingressFt, TRANSIT_SPEED_KT)
   mission:SetMissionAltitude(profile.altitudeFt)
-"@ -Label 'preserved FIR mission ingress and exact mission waypoint altitude'
+"@ -Label 'preserved FIR ingress and exact mission altitude'
 
-$controllerCandidate = Replace-ExactOnce -Text $controllerCandidate `
-  -Old '    externalHandoffCoord = externalHandoffCoord, trackCoord = trackCoord,' `
-  -New '    externalHandoffCoord = externalHandoffCoord, trackCoord = trackCoord, trackApproachCoord = trackApproachCoord,' `
-  -Label 'runtime track approach coordinate'
-
-$controllerCandidate = Replace-ExactOnce -Text $controllerCandidate `
-  -Old '    externalHandoffRouted = false, stationIdentityActive = false, onStationAt = nil, materializedAt = now(),' `
-  -New '    externalHandoffRouted = false, lateApproachWaypointInjected = false, stationIdentityActive = false, onStationAt = nil, materializedAt = now(),' `
-  -Label 'runtime late-approach injection state'
-
-$injectHelper = @'
-local function injectLateTrackApproachWaypoint(runtime)
-  if not runtime or runtime.lossHandled or runtime.egressOrdered or runtime.lateApproachWaypointInjected then return end
-  local flightGroup = runtime.flightGroup
-  local mission = runtime.mission
-  if not flightGroup or not flightGroup:IsAlive() then
-    log(string.format("LRC_LATE_APPROACH_SKIPPED runtime=%s reason=FLIGHT_NOT_ALIVE",
-      runtime and tostring(runtime.runtimeId) or "UNKNOWN"))
-    return
-  end
-  if not mission then
-    fail("LRC late-approach injection has no mission runtime=" .. tostring(runtime.runtimeId))
-  end
-
-  -- MOOSE RouteToMission() builds FLIGHTGROUP air routes in this order when an ingress exists:
-  -- ingress waypoint -> mission waypoint -> optional egress waypoint. Resolve that structure through
-  -- public getters instead of relying on the last-passed/current waypoint.
-  local missionWaypointUid = mission:GetGroupWaypointIndex(flightGroup)
-  if not missionWaypointUid then
-    fail("LRC late-approach injection has no MOOSE mission waypoint UID runtime=" .. tostring(runtime.runtimeId))
-  end
-
-  local missionWaypointIndex = flightGroup:GetWaypointIndex(missionWaypointUid)
-  if not missionWaypointIndex or missionWaypointIndex <= 1 then
-    fail(string.format("LRC late-approach injection cannot resolve mission waypoint runtime=%s uid=%s index=%s",
-      tostring(runtime.runtimeId), tostring(missionWaypointUid), tostring(missionWaypointIndex)))
-  end
-
-  local ingressWaypointIndex = missionWaypointIndex - 1
-  local ingressWaypointUid = flightGroup:GetWaypointID(ingressWaypointIndex)
-  local ingressWaypointCoord = flightGroup:GetWaypointCoordinate(ingressWaypointIndex)
-  if not ingressWaypointUid or not ingressWaypointCoord then
-    fail(string.format("LRC late-approach injection cannot resolve MOOSE ingress waypoint runtime=%s missionIndex=%d",
-      tostring(runtime.runtimeId), missionWaypointIndex))
-  end
-
-  -- Do not modify the route unless the preceding MOOSE waypoint is the configured published FIR fix.
-  local ingressDeltaNm = ingressWaypointCoord:Get2DDistance(runtime.firIngressCoord) / 1852
-  if ingressDeltaNm > 0.5 then
-    fail(string.format("LRC late-approach FIR contract mismatch runtime=%s area=%s fix=%s deltaNm=%.3f",
-      tostring(runtime.runtimeId), tostring(runtime.selection.area), tostring(runtime.firFixName), ingressDeltaNm))
-  end
-
-  local waypoint = flightGroup:AddWaypoint(
-    runtime.trackApproachCoord,
-    TRANSIT_SPEED_KT,
-    ingressWaypointUid,
-    runtime.transit.ingressFt,
-    true
-  )
-  if not waypoint then
-    fail("LRC late-approach waypoint insertion failed runtime=" .. tostring(runtime.runtimeId))
-  end
-
-  runtime.lateApproachWaypoint = waypoint
-  runtime.lateApproachWaypointInjected = true
-  log(string.format(
-    "LRC_LATE_APPROACH_INSERTED runtime=%s area=%s firFix=%s ingressDeltaNm=%.3f approachNm=%.1f ingressUid=%s approachUid=%s missionUid=%s",
-    runtime.runtimeId, runtime.selection.area, runtime.firFixName, ingressDeltaNm, TRACK_APPROACH_NM,
-    tostring(ingressWaypointUid), tostring(waypoint.uid), tostring(missionWaypointUid)))
+$testEgressHook = @'
+function Controller.TestForceEgress(area, receiverProfile, reason)
+  local station = state.stationsByKey[resolveTrackKey(area, receiverProfile)]
+  if not station then return false, "NO_STATION" end
+  local runtime = station.activeRuntime
+  if not runtime then return false, "NO_ACTIVE_RUNTIME" end
+  if runtime.lossHandled then return false, "RUNTIME_LOST" end
+  if runtime.handoffComplete then return false, "HANDOFF_COMPLETE" end
+  if runtime.egressOrdered then return false, "EGRESS_ALREADY_ORDERED" end
+  local ordered = cancelToEgress(runtime, reason or "TEST_FORCE_EGRESS")
+  return ordered == true, ordered and "EGRESS_ORDERED" or "EGRESS_NOT_ORDERED"
 end
 
 '@
 $controllerCandidate = Replace-ExactOnce -Text $controllerCandidate `
-  -Old 'local function materialize(request)' `
-  -New ($injectHelper + 'local function materialize(request)') `
-  -Label 'late track-approach waypoint injection helper'
-
-$controllerCandidate = Replace-ExactOnce -Text $controllerCandidate `
-  -Old '  flightGroup:AddMission(mission)' `
-  -New @"
-  flightGroup:AddMission(mission)
-  flightGroup:ScheduleOnce(LRC_ROUTE_BUILD_DELAY_SEC, injectLateTrackApproachWaypoint, runtime)
-"@ -Label 'scheduled late track-approach insertion'
+  -Old 'function Controller.GetActive(area, receiverProfile)' `
+  -New ($testEgressHook + 'function Controller.GetActive(area, receiverProfile)') `
+  -Label 'branch-local telemetry egress hook'
 
 $harnessCandidate = Replace-ExactOnce -Text $content.Harness -Old 'AAR-FUEL-TELEMETRY-1' -New $testId -Label 'AAR telemetry test ID'
 
@@ -262,14 +173,14 @@ $header = @"
 -- GitCommit: $commit
 -- GeneratedUtc: $generatedUtc
 -- Gate/Test-ID: $testId
--- Scope: branch-local KC-135 LRC transit candidate plus SPAWN/INGRESS/TRACK fuel telemetry for all six AAR tracks.
+-- Scope: branch-local KC-135 inbound/outbound fuel telemetry for all six AAR tracks.
 -- CandidateSpawnSpeedKt: $candidateSpawnSpeedKt
 -- ProductionTransitRouteSpeedKt: $productionTransitRouteSpeedKt
 -- CandidateTransitLevels: MANAS inbound FL340 / outbound FL350; AL_UDEID inbound FL350 / outbound FL340.
--- CandidateTrackApproachNm: $trackApproachNm
--- CandidateIngressContract: preserve AUFTRAG:SetMissionIngressCoord(EGPAN/PINAX/DAVER) exactly as the accepted production path.
--- CandidateRouting: after MOOSE builds FIR ingress -> mission waypoint, validate the FIR waypoint and insert only the late track approach after it.
--- CandidateMissionAltitude: AUFTRAG:SetMissionAltitude(track altitude) suppresses the default ORBIT 90-percent mission-waypoint altitude.
+-- CandidateIngressEgressContract: preserve AUFTRAG FIR routing through EGPAN/PINAX/DAVER.
+-- CandidateMissionAltitude: AUFTRAG:SetMissionAltitude(track altitude).
+-- Optional60NmApproach: disabled; Candidate-4 experiment is not required for fuel calibration.
+-- DiagnosticEgressHook: generated bundle only; delegates to existing controller cancelToEgress lifecycle.
 -- CandidateScope: generated test bundle only; production controller source, production fuel and FuelLow remain unchanged.
 -- FuelLow is intentionally excluded from telemetry because the threshold remains subject to recalibration.
 -- No automated MIZ mutation.
@@ -293,7 +204,7 @@ Write-Host "Built: $outputFile"
 Write-Host "BuilderVersion: $builderVersion"
 Write-Host "TestId: $testId"
 Write-Host "GeneratedUtc: $generatedUtc"
-Write-Host 'FuelPoints: SPAWN,INGRESS,TRACK'
+Write-Host 'FuelPoints: SPAWN,INGRESS,TRACK,TRACK_DEPARTURE,FIR_EGRESS,EXTERNAL_HANDOFF'
 Write-Host 'FuelLowIncluded: false'
 Write-Host "CandidateSpawnSpeedKt: $candidateSpawnSpeedKt"
 Write-Host "ProductionTransitRouteSpeedKt: $productionTransitRouteSpeedKt"
@@ -301,11 +212,11 @@ Write-Host 'CandidateManasIngressFt: 34000'
 Write-Host 'CandidateManasEgressFt: 35000'
 Write-Host 'CandidateAlUdeidIngressFt: 35000'
 Write-Host 'CandidateAlUdeidEgressFt: 34000'
-Write-Host "CandidateTrackApproachNm: $trackApproachNm"
 Write-Host 'CandidateMissionAltitudeMode: EXACT_TRACK_ALTITUDE'
-Write-Host 'CandidateIngressContract: PRESERVED_MOOSE_FIR_INGRESS'
-Write-Host 'CandidateFirRouting: MOOSE_FIR_INGRESS_THEN_LATE_APPROACH'
-Write-Host 'CandidateScope: SPAWN_SPEED_AND_LRC_ROUTE'
+Write-Host 'CandidateIngressEgressContract: PRESERVED_MOOSE_FIR_ROUTING'
+Write-Host 'Optional60NmApproach: DISABLED'
+Write-Host 'DiagnosticEgressHook: EXISTING_CONTROLLER_LIFECYCLE'
+Write-Host 'CandidateScope: OUTBOUND_FUEL_TELEMETRY'
 Write-Host 'StandardTracks: 4'
 Write-Host 'ReserveTracks: 2'
 Write-Host 'PollSeconds: 1'
