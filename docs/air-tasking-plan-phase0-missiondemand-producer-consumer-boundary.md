@@ -4,10 +4,11 @@ status: DRAFT
 document_class: ARCHITECTURE_RECONCILIATION
 owning_policy: OMW-GOV-001
 authoritative_for:
-  - branch-local Phase 0 analysis of MissionDemand producer and consumer boundaries
-  - identification of the owner decision still required before assigning producer authority
+  - branch-local Phase 0 MissionDemand producer and consumer boundary
+  - reconciliation of MissionDemand origin with delegated command and support authority
 not_authoritative_for:
-  - repository-wide assignment of new MissionDemand producer authority
+  - repository-wide assignment of concrete OMW command nodes
+  - exact historical OPCON, TACOM or TACON reconstruction
   - MOOSE method signatures or runtime behavior
   - DCS runtime acceptance
 scenario_period: 2010-08-01/2011-12-31
@@ -23,31 +24,42 @@ validated_in_dcs: false
 
 ## 1. Zweck
 
-Dieses Dokument untersucht den offenen Phase-0-Punkt:
+Dieses Dokument schließt die ursprüngliche zu enge Producer-Frage mit dem auf diesem Branch entwickelten Command-Authority-Modell zusammen.
+
+Die frühere Auswahl zwischen
 
 ```text
-festlegen, welche vorhandenen Module MissionDemand erzeugen beziehungsweise konsumieren dürfen
+A = one central producer
+B = distributed domain producers
+C = hybrid producer
 ```
 
-Dabei wird ausdrücklich zwischen bereits verbindlich dokumentierten Rollen und einer noch nicht getroffenen Projektentscheidung über die tatsächliche Erzeugerautorität unterschieden.
+wird **nicht** als OMW-Zielarchitektur übernommen.
 
-Geprüfte Baselines:
+Sie hat die reale und für OMW relevante Trennung zwischen:
 
-- `OMW-GOV-001`;
-- `OMW-GOV-MOOSE-FIRST`;
-- `OMW-ARCH-SYSTEM`;
-- `OMW-ARCH-CAMPAIGN-DYNAMIC-MISSION`;
-- `OMW-AIR-TASKING-PLAN-FOUNDATION`;
-- Phase-0-Reconciliation, CampaignState-Contract, Persistence-Boundary und Stable-ID-Convention auf diesem Branch.
+```text
+command authority
+tasking authority
+request authority
+allocation
+tactical control
+```
+
+nicht ausreichend abgebildet.
+
+Maßgeblicher branch-lokaler Ergänzungsvertrag:
+
+- `OMW-AIR-TASKING-PLAN-PHASE0-COMMAND-AUTHORITY`.
 
 ## 2. Bereits verbindlich festgelegt
 
-Dokument 37 legt fest:
+Aus `OMW-ARCH-CAMPAIGN-DYNAMIC-MISSION` gilt weiterhin:
 
 ```text
 CampaignState
 = strategische Wahrheit
-= enthält MissionDemand-Objekte
+= persistiert MissionDemand
 
 MissionDemand
 = einheitliche kampagnenweite Auftragsautorität
@@ -56,216 +68,212 @@ player tasks and AI AUFTRAG objects
 = arbeiten auf demselben Bedarf
 ```
 
-Dokument 03 ordnet außerdem folgende Komponenten ein:
-
-```text
-CampaignState
-EntityManager
-VirtualizationManager
-LogisticsManager
-RedDirector
-CSARCampaignManager
-MissionGenerator
-PersistenceManager
-```
-
-Dabei ist ausdrücklich dokumentiert:
-
-```text
-MissionGenerator
-= erzeugt spielbare Aufträge aus dem aktuellen Kampagnenzustand
-
-PersistenceManager
-= speichert ausschließlich strategischen Zustand
-```
-
-Diese Aussagen beantworten jedoch noch nicht vollständig, **welches Modul neue MissionDemand-Objekte anlegen darf**.
-
-## 3. Sicher ableitbare Consumer-Grenze
-
-Aus der bestehenden Architektur lässt sich ohne neue Projektentscheidung ableiten:
-
-### 3.1 CampaignState
-
-`CampaignState` speichert und autorisiert MissionDemand-Zustand, ist damit aber nicht automatisch fachlicher Erzeuger jedes neuen Bedarfs.
-
-```text
-CampaignState
-= store / authority
-!= automatically producer of every demand
-```
-
-### 3.2 MissionGenerator
-
-Der dokumentierte `MissionGenerator` erzeugt spielbare Aufträge **aus** dem Kampagnenzustand. Damit ist er mindestens als Consumer von Kampagnenbedarf beziehungsweise MissionDemand einzuordnen.
-
-Er darf aus dieser Beschreibung nicht stillschweigend zum alleinigen MissionDemand-Erzeuger erklärt werden.
-
-### 3.3 Player-Tasking und KI-Ausführung
-
-Dokument 37 legt fest, dass Spieleraufträge und KI-`AUFTRAG`-Objekte auf demselben MissionDemand arbeiten.
-
-Damit sind spätere:
-
-```text
-player task adapters
-MOOSE tasking adapters
-AIR_TASKING_PLAN / AIR_TASKING_MISSION planning
-```
-
-Consumer beziehungsweise Planner auf Basis eines bestehenden Bedarfs. Sie dürfen nicht allein durch ihre Ausführungslogik einen zweiten parallelen Bedarf erzeugen.
-
-### 3.4 PersistenceManager
-
-Der `PersistenceManager` ist ausschließlich Transport-/Speichermechanismus für strategischen Zustand und besitzt keine fachliche Producer-Autorität.
-
-## 4. Nicht aus der Baseline ableitbar
-
-Die vorhandenen BINDING-Dokumente definieren **nicht eindeutig**, ob neue MissionDemand-Objekte zentral durch genau ein Modul oder dezentral durch mehrere fachliche Domänenmodule erzeugt werden sollen.
-
-Insbesondere ist nicht verbindlich entschieden, ob folgende Komponenten selbst MissionDemand erzeugen dürfen:
-
-```text
-MissionGenerator
-RedDirector
-LogisticsManager
-CSARCampaignManager
-future BLUE operational director / Air Tasking planner
-other future campaign-domain managers
-```
-
-Eine solche Producer-Zuweisung würde bestimmen:
-
-- wo fachliche Duplikatvermeidung erfolgt;
-- wer Priorität und Ablaufdatum eines Bedarfs setzt;
-- wer Erfolgskriterien und Failure Consequences definiert;
-- wie mehrere Domänen denselben Kampagnenbedarf korrelieren;
-- ob Air Tasking Requests aus einem zentral erzeugten MissionDemand entstehen oder selbst neue MissionDemand anlegen dürfen.
-
-Das ist eine echte Architekturentscheidung und wird in diesem Branch nicht stillschweigend getroffen.
-
-## 5. Technisch notwendige Mindestregel unabhängig von der Entscheidung
-
-Unabhängig vom später gewählten Producer-Modell gilt:
+Damit bleibt zwingend:
 
 ```text
 1 logical campaign need
 = exactly 1 authoritative MissionDemand
 ```
 
-Nicht zulässig:
+Ein Player Task, MOOSE `AUFTRAG`, `AIR_SUPPORT_REQUEST` oder `AIR_TASKING_MISSION` darf keinen zweiten parallelen MissionDemand für denselben Bedarf erzeugen.
+
+## 3. Korrektur der früheren Producer-Betrachtung
+
+Die frühere Branch-Fassung führte beispielhaft auch `RedDirector` unter möglichen MissionDemand-Produzenten auf.
+
+Das war für den hier untersuchten **BLUE Air-Tasking-/Support-Pfad fachlich falsch eingeordnet**.
+
+Für die BLUE Command-/Support-Architektur gilt:
 
 ```text
-MissionGenerator creates MD-000041
-AirTaskingPlanner creates MD-000042
-for the same underlying campaign need
+RedDirector
+= RED campaign behavior domain
+!= BLUE MissionDemand authority
+!= BLUE Air Support Request authority
+!= BLUE Air Tasking authority
 ```
 
-Ebenfalls nicht zulässig:
+RED-Aktionen können die Kampagnenlage beeinflussen. Eine daraus entstehende BLUE-Bedarfsentscheidung gehört jedoch in die BLUE-/Campaign-Command-Domäne und nicht in den `RedDirector`.
+
+## 4. MissionDemand-Origin statt globaler Producer
+
+Die Foundation behandelt die Erzeugung eines MissionDemand nun als **autorisierten Origin innerhalb eines Command-/Responsibility-Scope**.
 
 ```text
-AIR_SUPPORT_REQUEST
-= second MissionDemand authority
+Command / domain node
+    ↓
+detects or determines required effect
+    ↓
+authority / responsibility scope valid?
+    ↓
+duplicate / correlation check
+    ↓
+CampaignState registers canonical MissionDemand
 ```
 
-Der Air-Tasking-Pfad bleibt:
+Damit gilt:
+
+```text
+origin of demand
+!= strategic ownership of assets
+!= permission to task every capability required by the demand
+```
+
+Ein Command Node kann also einen gültigen MissionDemand erzeugen, obwohl er die für dessen Erfüllung benötigten Air Assets nicht selbst tasken darf.
+
+## 5. Direkter Tasking-Pfad
+
+Besitzt der originierende Command Node geeignete Kräfte unter eigener beziehungsweise ausdrücklich delegierter Tasking Authority:
+
+```text
+MissionDemand
+    ↓
+authority check
+    ↓
+asset available and taskable
+    ↓
+direct tasking path
+```
+
+Ein externer Air Support Request ist dafür nicht automatisch erforderlich.
+
+Beispielhafte spätere Anwendungsfälle können lokale Bodenkräfte oder tatsächlich einem Command Node zugewiesene Capabilities sein. Die konkrete OMW-Zuordnung wird erst nach Festlegung der Command Nodes getroffen.
+
+## 6. Support-Pfad über Authority-Grenze
+
+Liegt die benötigte Capability außerhalb der Tasking Authority des Requesters:
+
+```text
+MissionDemand
+    ↓
+external capability required
+    ↓
+Support Request
+    ↓
+Supporting Authority
+    ↓
+allocation / tasking
+```
+
+Für Luftunterstützung:
 
 ```text
 MissionDemand
     ↓
 AIR_SUPPORT_REQUEST
+    ↓
+Air Support Authority
     ↓
 AIR_TASKING_MISSION / AIR_TASKING_PLAN
+    ↓
+verified MOOSE execution
 ```
 
-Ein `AIR_SUPPORT_REQUEST` darf einen bestehenden MissionDemand normalisieren oder spezifizieren, aber nicht ohne ausdrücklich genehmigten Producer-Vertrag eine zweite Kampagnenbedarfswahrheit schaffen.
+`AIR_SUPPORT_REQUEST` ist damit keine zweite MissionDemand-Autorität und kein obligatorischer Zwischenschritt jedes MissionDemand. Es repräsentiert den Luftunterstützungsbedarf **über eine Authority-Grenze hinweg**.
 
-## 6. Entscheidungspunkt für den Projektinhaber
+## 7. Consumer-Grenze
 
-Für den Abschluss dieses Phase-0-Punkts ist eine Projektentscheidung erforderlich.
-
-### Variante A – zentraler MissionDemand Producer
+### 7.1 CampaignState
 
 ```text
-Campaign event / domain signal
-    ↓
-central MissionDemand service / generator
-    ↓
-MissionDemand
-    ↓
-domain consumers / Air Tasking / player / AI
+CampaignState
+= canonical store / authority for MissionDemand identity and state
 ```
 
-Eigenschaften:
+CampaignState muss nicht selbst die fachliche Ursache jedes Bedarfs erkennen.
 
-- eine zentrale Duplikat- und ID-Grenze;
-- Priorisierung und Lifecycle an einer Stelle;
-- Fachmodule melden Bedarf, erzeugen ihn aber nicht selbst;
-- stärkere zentrale Kopplung.
+### 7.2 MissionGenerator
 
-### Variante B – autorisierte Domain Producer
+Der dokumentierte `MissionGenerator` erzeugt spielbare Aufträge aus Kampagnenzustand.
+
+Damit bleibt er mindestens Consumer/Planner von MissionDemand beziehungsweise Kampagnenbedarf. Seine genaue Rolle bei der späteren technischen Registrierung eines autorisierten MissionDemand wird erst im Domain Model festgelegt und darf nicht aus dem alten Namen `MissionGenerator` abgeleitet werden.
+
+### 7.3 Air Tasking
 
 ```text
-RedDirector / Logistics / CSAR / other approved domain modules
-    ↓
-create canonical MissionDemand through one shared CampaignState contract
-    ↓
-MissionDemand
-    ↓
-consumers
+AIR_SUPPORT_REQUEST
+AIR_TASKING_PLAN
+AIR_TASKING_MISSION
 ```
 
-Eigenschaften:
+sind Planungs-/Supportobjekte auf Basis eines autorisierten Bedarfs und besitzen keine parallele strategische Ressourcen- oder MissionDemand-Hoheit.
 
-- Fachmodul besitzt die semantische Erzeugung seines Bedarfs;
-- CampaignState bleibt gemeinsame Autorität und ID-/Duplicate-Grenze;
-- Producer müssen explizit registriert beziehungsweise freigegeben sein;
-- höhere Anforderungen an Duplicate-/Correlation-Regeln zwischen Domänen.
-
-### Variante C – Hybrid
+### 7.4 Player- und AI-Ausführung
 
 ```text
-domain modules propose demand
-    ↓
-central MissionDemand authority validates / deduplicates / creates
-    ↓
-MissionDemand
+player task adapter
+MOOSE COMMANDER / AIRWING / BRIGADE / AUFTRAG
+FLIGHTGROUP / ARMYGROUP / DCS
 ```
 
-Eigenschaften:
+sind Consumer beziehungsweise Execution-Repräsentationen.
 
-- fachliche Erkennung bleibt in den Domänen;
-- tatsächliche Erzeugung und Lifecycle-Autorität bleiben zentral;
-- etwas mehr Koordinationslogik, aber klare Single-Writer-Grenze.
+### 7.5 PersistenceManager
 
-## 7. Empfehlung aus technischer Sicht
+`PersistenceManager` bleibt Speicher-/Transportmechanismus und besitzt keine fachliche Origin- oder Tasking Authority.
 
-Keine der drei Varianten wird hier verbindlich ausgewählt.
+## 8. Request Path ist nicht Command Path
 
-Für OMW ist aus Sicht der bereits festgelegten Architektur **Variante C** besonders konsistent mit:
+Ein Command Node kann innerhalb eines später festgelegten Request Scope Unterstützung direkt bei der zuständigen Supporting Authority anfordern, ohne dass dadurch jede Zwischenstufe der organisatorischen Führungskette zu einem technischen Freigabeschritt werden muss.
 
 ```text
-CampaignState as strategic authority
-+ domain-specific campaign logic
-+ one canonical MissionDemand per need
-+ no duplicate player/AI execution
+requesting node
+    ↓
+authorized support channel
+    ↓
+supporting authority
 ```
 
-Das ist jedoch lediglich eine technische Empfehlung. Die Auswahl ist eine Architekturentscheidung des Projektinhabers.
+Die eigene Führungskette kann trotzdem Prioritäten, Constraints, Reservations oder Override-Regeln vorgeben.
 
-## 8. Phase-0-Status
+Die genauen Eskalations- und Override-Regeln bleiben offen.
+
+## 9. Höheres Tasking bindet lokale Disposition
+
+Ein Asset, das durch höher priorisiertes Tasking oder eine CampaignState-Reservation bereits gebunden ist, darf nicht durch einen lokalen MissionDemand stillschweigend erneut disponiert werden.
 
 ```text
-DONE:
-- existing producer/consumer evidence reviewed
-- safe consumer roles classified
-- duplicate-authority prohibition documented
-- owner decision isolated
-
-BLOCKED ON OWNER DECISION:
-- canonical MissionDemand producer model: A, B or C
+higher-priority tasking / reservation
+    ↓
+asset committed
+    ↓
+local direct-tasking unavailable
 ```
 
-Der Manifest-Punkt bleibt bis zu dieser Entscheidung offen.
+Eine spätere Retasking-Entscheidung benötigt eine eigene Authority-Regel.
 
-Kein Runtime-Code wurde geändert. Kein DCS-Test ist für diese Architektur-Reconciliation erforderlich. `validated_in_dcs` bleibt `false`.
+## 10. Was Phase 0 damit festlegen kann
+
+Ohne die vollständige OMW-Kommandotopologie vorwegzunehmen gilt branch-lokal:
+
+```text
+1. MissionDemand has one canonical CampaignState identity.
+2. Demand may originate at different authorized BLUE command/domain nodes.
+3. Origin authority is limited by responsibility scope.
+4. Direct tasking requires actual tasking authority over a suitable asset.
+5. External air capability requires an Air Support Request to the supporting authority.
+6. Request authority does not imply command or ownership of the requested asset.
+7. Air Tasking and MOOSE remain consumers/execution layers, not MissionDemand authorities.
+```
+
+## 11. Noch offene Projektentscheidungen
+
+Nicht festgelegt sind:
+
+- vollständige OMW-Liste von Command Nodes;
+- welche Basis-/FOB-/COP-/taktischen Ebenen eigene MissionDemand-Origin-Authority erhalten;
+- welche Capabilities welcher Ebene direkt unterstehen;
+- welche Capabilities regional beziehungsweise zeitlich alloziert werden können;
+- welche Capabilities ausschließlich über höhere Supporting Authorities angefordert werden;
+- Override-, Escalation- und Retasking-Regeln;
+- konkrete MOOSE-`CHIEF`-/`COMMANDER`-/`AIRWING`-/`BRIGADE`-Topologie.
+
+Diese Punkte werden nicht stillschweigend entschieden.
+
+## 12. Phase-0-Status
+
+Der alte A/B/C-Entscheidungspunkt ist damit verworfen.
+
+Der Producer-/Consumer-Punkt ist fachlich auf die Command-Authority-Frage zurückgeführt und besitzt jetzt einen belastbaren Branch-Vertrag. Die konkrete Command-Node-Ausprägung bleibt Aufgabe des folgenden Domain Models und der MOOSE-First-Prüfung.
+
+Kein Runtime-Code wurde geändert. Kein DCS-Test ist für diese Reconciliation erforderlich. `validated_in_dcs` bleibt `false`.
