@@ -106,7 +106,19 @@ BLUE COMMANDER
 
 Jalalabad/Fenty ist der regionale übergeordnete Hub. Für Juli 2011 ist `TF Bronco / 3rd BCT, 25th Infantry Division` der maßgebliche Higher-HQ-Kontext. `TF Steel / 3-7 Field Artillery` ist im Juli-2011-ORBAT für Jalalabad belegt.
 
-Der Node benötigt in der späteren Ground-Foundation mindestens die Rollen lokale Sicherung, QRF/Reserve, Logistik und regionalen Fire-Support-Bezug. Die konkrete PLATOON-/Template-Struktur ist noch offen.
+Für den unmittelbaren Juli-2011-Kontext ist inzwischen zusätzlich ein konkretes Ground-/Security-Element belegt:
+
+```text
+HHC, 3rd Brigade Special Troops Battalion
+└── Military Police Platoon
+    └── Jalalabad security-partnership mission, 2011-06-11
+```
+
+Das MP Platoon ist damit ein belastbarer Kandidat für die lokale Security-Rollenbasis des Ground Nodes. Die Quelle beweist jedoch nicht, dass es die gesamte Base Defense oder einen eigenständigen Ground-QRF-Auftrag auf FOB Fenty stellte.
+
+Eine DVIDS-Story vom 18.07.2011 belegt zusätzlich einen QRF-Call im Tactical Operations Center von `Task Force Shooter` auf Fenty zur Unterstützung von TF Bronco. Das ist für die aktuelle Ground-Foundation als Aviation-QRF-Kontext zu behandeln und nicht automatisch als Ground-QRF-Formation.
+
+Der Node benötigt in der späteren Ground-Foundation mindestens die Rollen lokale Sicherung, QRF/Reserve, Logistik und regionalen Fire-Support-Bezug. Die exakte Ground-QRF-Formation und konkrete PLATOON-/Template-Struktur bleiben offen.
 
 ### 3.2 Joyce-Komplex
 
@@ -128,6 +140,21 @@ FOB Joyce
 ```
 
 FOB Joyce ist als aktiver regionaler Ground- und Logistikknoten vorgesehen. Für 2011 sind CH-47-/Sling-Load-Resupply und Fuel-Handling gestützt. Honaker-Miracle ist als aktiver COP belegt; für 2011 ist dort ein eigener Fuel Point dokumentiert. Für den 30.07.2011 sind zwei M777A2 von Battery C / 3-321 Field Artillery am COP Honaker-Miracle belegt.
+
+Für die Company-/Platoon-Reconciliation ist zusätzlich belegt:
+
+```text
+B Company / 2-35 Infantry
+  -> directly on FOB Joyce during fuel-blivet resupply, 2011-09-13
+
+1st Platoon, B Company / 2-35 Infantry
+  -> operating near FOB Joyce / Sarkani District, 2011-09-18
+
+C Company / 2-35 Infantry
+  -> operating in Pech River Valley during Operation Diamond Head, 2011-07-29
+```
+
+Damit ist B Company im Joyce-Komplex stark gestützt. Die September-Belege werden aber nicht in eine unbelegte Aussage umgewandelt, dass die vollständige Company bereits im Juli dauerhaft auf FOB Joyce stand. C Company ist Ende Juli im TF-Cacti-Raum belegt, nicht eindeutig als Joyce-Garnison.
 
 OP JoJo bleibt historisch hinsichtlich der konkreten 2010/11-Besetzung offen. Als Installation ist seine Lage oberhalb von Honaker-Miracle gestützt. Eine aktive OMW-Besetzung darf erst nach Owner-Entscheidung beziehungsweise ausreichender Evidenz festgeschrieben werden.
 
@@ -157,14 +184,14 @@ Zusätzliche bestätigte beziehungsweise stark gestützte Wright-Capabilities im
 - direkte Angriffe auf den Standort und verwundbare Fuel-/Vehicle-Infrastruktur;
 - Incinerators und dauerhafte Support-Infrastruktur.
 
-Offen bleibt die exakte M777-Battery-/Platoon-Zuordnung auf Wright im Juli 2011. Historische M777-Fähigkeit darf deshalb nicht stillschweigend als exakt identische Juli-2011-Stationierung interpretiert werden.
+Der erneute Primärquellenabgleich bestätigt für 2010 `Bravo Battery / 3-321 Field Artillery`, darunter `2nd Platoon`, mit M777 auf Wright. Eine belastbare offizielle Quelle für die **exakte Juli-2011-Battery-/Platoon-Zuordnung** auf Wright wurde im aktuellen Review nicht gefunden. Historische M777-Fähigkeit darf deshalb nicht stillschweigend als identische Juli-2011-Stationierung interpretiert werden.
 
 ### 3.4 Bostick-Komplex
 
 Juli-2011-Baseline:
 
 ```text
-TF Wolfhound
+TF Wolfhound / TF No Fear
 2nd Battalion, 27th Infantry Regiment
 FOB Bostick / Naray
 northern Kunar
@@ -182,6 +209,10 @@ FOB Bostick
 FOB Bostick wird manuell durch den Projektinhaber aufgebaut.
 
 `OP Mustang` ist als realer Standort und als aktiv besetzte Stellung im Februar 2011 durch C Troop / 1-32 Cavalry / TF Bandit bestätigt. `OP Clydesdale` ist durch DoD-POEMS als realer Standort bestätigt. `OP Stallion` ist durch OEF Base Tracker beziehungsweise ergänzende historische Hinweise gestützt.
+
+Für Mai 2011 ist `2-27 Infantry / Task Force No Fear` direkt auf FOB Bostick einschließlich des Battalion Commanders belegt; im August 2011 ist TF No Fear erneut im Bostick-/Naray-Raum belegt. Das stützt Bostick als Battalion-/Task-Force-Knoten über die Juli-Baseline hinweg.
+
+Company-seitig ist die Abgrenzung wichtig: `Alpha Company / 2-27 Infantry` ist am 01.05.2011 ausdrücklich am `Combat Outpost Pirtle King` genannt. Daraus wird **keine** Alpha-Company-Garnison für FOB Bostick abgeleitet. Die exakte im Juli dauerhaft auf Bostick stationierte Maneuver-Company bleibt offen.
 
 Für OMW werden Mustang, Clydesdale und Stallion als funktionale Overwatch-Kette des Bostick-Komplexes geplant:
 
@@ -284,9 +315,11 @@ Der Source-Review des tatsächlich eingebetteten MOOSE-Stands bestätigt jetzt k
 - `ARMYGROUP` bildet die physisch agierende Ground Group;
 - mobile `ARMYGROUP`-RTZ-Pfade routen per Waypoint in die Return Zone;
 - **immobile** `ARMYGROUP`s außerhalb der Return Zone werden im RTZ-Pfad per `Teleport(...)` versetzt; dieser Pfad ist für sichtbare OMW-Bereiche ausgeschlossen;
+- `ARMYGROUP:Returned` gibt gebundene Gruppen via `self.legion:__AddAsset(...)` an LEGION/WAREHOUSE zurück;
+- `WAREHOUSE:onafterAddAsset(...)` entfernt eine noch lebende zurückgegebene OPSGROUP über `Despawn(...)` oder andernfalls `group:Destroy()`; der Return-/Despawn-Punkt muss deshalb außerhalb beobachtbarer Bereiche liegen oder durch einen anderen vorhandenen MOOSE-Lifecycle ersetzt werden;
 - `BRIGADE:LoadBackAssetInPosition(...)` verwendet `SPAWN:SpawnFromCoordinate(Position)` und ist damit kein unsichtbarer Reconstitution-Mechanismus für beobachtbare Feldverbände;
 - `OPSTRANSPORT:AddPathTransport(...)` kann einen vorgegebenen Mission-Editor-Pfad aus einer PathGroup verwenden;
-- `OPSTRANSPORT`-Cargo-/Disembark-Pfade bleiben DCS-testpflichtig.
+- der normale `OPSGROUP:onafterUnload(...)`-Pfad materialisiert Cargo am Ziel über `_Respawn(...)`; Embark-/Unload-/Disembark-Verhalten bleibt daher DCS-testpflichtig.
 
 Die offiziellen MOOSE-Mission-Repositories wurden nach den aktuellen Klassennamen durchsucht. Für `BRIGADE`, `ARMYGROUP` und `OPSTRANSPORT` wurde im aktuellen Review kein direkter Klassenverwendungs-Treffer gefunden. Der geprüfte Ground-Warehouse-Demo `WHS-020 - Self Propelled Ground Troops` verwendet direkte WAREHOUSE-Transfers und belegt nicht die aktuelle Ground-OPS-Hierarchie.
 
@@ -317,6 +350,7 @@ Die physische Ausgestaltung wird vom Projektinhaber im Mission Editor beziehungs
 Wichtige bereits ausgewertete Referenzen:
 
 - `OMW-HIST-AFGHANISTAN-ORBAT-2011-07` für die Juli-2011-Kampfverbände;
+- [`OMW-EVIDENCE-ARMY-GROUND-2011-07-UNIT-RECONCILIATION`](../../docs/evidence/2026-08-18-army-ground-july-2011-unit-reconciliation.md) für die aktuelle Jalalabad-/Joyce-/Bostick-/Wright-Company-/Platoon-Reconciliation;
 - DoD `Wright and vicinity, Afghanistan (2003-2014)` POEMS für reale Standortnamen und Infrastrukturhinweise;
 - U.S. Army Combat Studies Institute, `Vanguard of Valor: Small Unit Actions in Afghanistan` für Kunar-/Nuristan-Operations-, OP-, QRF-, Logistik- und Fire-Support-Kontext;
 - DVIDS-Primärquellen zu Bostick, Joyce, Honaker-Miracle und Wright;
@@ -347,10 +381,16 @@ Sekundärquellen dienen als Research Index und überschreiben keine Primärquell
 - [x] Joyce: TF Cacti / 2-35 Infantry als Juli-2011-Baseline.
 - [x] Jalalabad: TF Bronco Higher-HQ-Kontext und TF Steel / 3-7 FA berücksichtigt.
 - [x] Wright: 1-14th Illinois ADT / SECFOR als konkret belegter Juli-2011-Ground-Ansatz.
-- [ ] Jalalabad/Fenty Ground-/Security-/QRF-Teilverbände auf Juli-2011-Stand weiter präzisieren.
-- [ ] Joyce/Honaker konkrete Company-/Platoon-Zuordnungen soweit belastbar präzisieren.
-- [ ] Bostick konkrete Company-/Platoon-Zuordnungen für Juli 2011 soweit belastbar präzisieren.
-- [ ] Wright exakte Juli-2011-Artilleriezuordnung prüfen; 2010er M777-Nachweis nicht automatisch übertragen.
+- [x] Jalalabad: HHC / 3rd BSTB Military Police Platoon als konkretes Juni-2011-Security-Element im unmittelbaren Juli-Kontext belegt.
+- [ ] Jalalabad: exakte Ground-QRF-/Base-Defense-Formation auf Juli-2011-Stand weiter präzisieren; TF-Shooter-QRF-Beleg ist Aviation-QRF-Kontext.
+- [x] Joyce/Honaker: C/3-321 FA mit zwei M777A2 am 30.07.2011 auf Honaker-Miracle belegt.
+- [x] Joyce: B Company / 2-35 auf FOB Joyce und 1st Platoon B Company im Joyce-/Sarkani-Raum im September 2011 belegt; als juli-nahe Rollenstütze dokumentiert.
+- [ ] Joyce: exakte Juli-2011-Company-Verteilung zwischen Joyce, Honaker und weiteren TF-Cacti-Stellungen weiter präzisieren.
+- [x] Bostick: 2-27 Infantry / TF No Fear im Mai und August 2011 direkt am Bostick-/Naray-Knoten belegt; Battalion-Node damit stark gestützt.
+- [x] Bostick: Alpha Company / 2-27 am COP Pirtle King belegt und deshalb ausdrücklich **nicht** als automatische Bostick-Garnisonskompanie behandelt.
+- [ ] Bostick: exakte dauerhaft auf FOB Bostick stehende Maneuver-Company/-Platoons für Juli 2011 weiter präzisieren.
+- [x] Wright: 2010er B/3-321 FA / 2nd Platoon / M777-Nachweis erneut bestätigt und zeitlich abgegrenzt.
+- [ ] Wright: exakte Juli-2011-Artilleriezuordnung bleibt offen; 2010er M777-Nachweis nicht automatisch übertragen.
 - [ ] verfügbare DCS-Ground-Unit-Typen gegen historische Rollen und notwendige technische Proxies abgleichen.
 
 ### Phase C – MOOSE-Architektur
@@ -360,9 +400,11 @@ Sekundärquellen dienen als Research Index und überschreiben keine Primärquell
 - [x] OPs als abhängige Installationen ohne eigene strategische Ressourcenhoheit festgelegt.
 - [ ] offizielle MOOSE-Demos/Tests für BRIGADE/PLATOON/ARMYGROUP/OPSTRANSPORT vollständig gegen gepinnten Stand prüfen; aktueller Search-/WHS-020-Review liefert keinen direkten Referenztest für die Kandidatenhierarchie.
 - [x] Mission-Capability-/Range-Selektion je PLATOON im gepinnten Source verifiziert; DCS-Selektionsnachweis bleibt offen.
-- [ ] Verhalten dauerhaft im Feld stehender Assets, Rückkehr, Reinforcement und Reconstitution vollständig verifizieren.
-- [x] bekannte source-seitige Teleport-/Materialisierungspfade identifiziert: immobile `ARMYGROUP` RTZ sowie `BRIGADE:LoadBackAssetInPosition(...)`; beide für beobachtbare OMW-Nutzung ausgeschlossen.
-- [ ] übrige Despawn-/Return-/Reconstitution-Grenzen im vollständigen Lifecycle und in DCS prüfen.
+- [x] ARMYGROUP-Return-Pfad source-seitig bis `WAREHOUSE:onafterAddAsset(...)` verfolgt: Returned -> AddAsset -> physische Gruppe wird über Despawn/Destroy entfernt.
+- [x] bekannte source-seitige Teleport-/Materialisierungspfade identifiziert: immobile `ARMYGROUP` RTZ, `BRIGADE:LoadBackAssetInPosition(...)` und normaler coordinate-based OPSGROUP-Unload via `_Respawn(...)`.
+- [ ] persistent-field-Lifecycle prüfen: vorhandene MOOSE-Pfade suchen, die Feldgruppen ohne beobachtbares Return-Despawn dauerhaft physisch halten können.
+- [ ] konkrete nicht beobachtbare Return-/Despawn-Grenzen für mobile Assets erst nach Mission-Editor-Road-/Withdrawal-Ankern festlegen und in DCS prüfen.
+- [ ] OPSTRANSPORT Embark/Load/Unload/Disembark einschließlich `_Respawn(...)` in DCS prüfen.
 - [ ] entscheiden, ob vier Ground Nodes exakt vier MOOSE-BRIGADEs werden.
 - [ ] konkrete PLATOON-Rollen pro Node festlegen, mindestens Infantry/Patrol, QRF, OP Security, Logistics und Fire Support soweit lokal benötigt.
 - [x] `docs/moose/PROJECT-CLASS-INDEX.md` und `docs/moose/GROUND-OPERATIONS.md` im selben Entwicklungsstand aktualisiert.
@@ -419,8 +461,11 @@ Source-seitig zusätzlich geklärt, aber noch nicht als DCS-Runtime akzeptiert:
 - Mission.engageRange can enlarge cohort range
 - mobile ARMYGROUP RTZ uses physical waypoint routing
 - immobile ARMYGROUP RTZ can teleport to the return zone
+- ARMYGROUP Returned hands the asset to LEGION/WAREHOUSE
+- WAREHOUSE AddAsset removes the returned physical group through Despawn/Destroy
 - BRIGADE:LoadBackAssetInPosition materializes through SpawnFromCoordinate
 - OPSTRANSPORT can use predefined PathGroup routes
+- normal OPSGROUP coordinate unload re-materializes cargo through _Respawn
 ```
 
 Noch nicht beschlossen:
@@ -430,6 +475,8 @@ Noch nicht beschlossen:
 - exact PLATOON composition
 - exact DCS ground templates and strengths
 - exact July-2011 Wright artillery detachment
+- exact July-2011 Jalalabad ground QRF/base-defense formation
+- exact July-2011 Joyce and Bostick company distribution
 - final artillery proxy decisions where DCS lacks the historical system
 - runtime implementation details and acceptance criteria
 ```
