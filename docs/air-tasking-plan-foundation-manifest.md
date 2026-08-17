@@ -77,7 +77,9 @@ Wesentliche Abhängigkeiten:
 - `OMW-AIR-TASKING-PLAN-PHASE1-CANCELLATION-FAILURE-SETTLEMENT` – branch-lokale Cancellation-/Failure-/Settlement-Grenze;
 - `OMW-AIR-TASKING-PLAN-PHASE1-SUPPORT-RELATIONSHIP` – branch-lokale Support-Beziehungs-, Richtungs- und Zyklusregeln;
 - `OMW-AIR-TASKING-PLAN-PHASE1-PLAYER-AI-ASSIGNMENT` – branch-lokale Player-/AI-Assignment-Grenze ohne Ressourcenhoheit;
-- `OMW-AIR-TASKING-PLAN-PHASE1-SNAPSHOT-SERIALIZATION` – branch-lokaler Snapshot-/Serialisierungsvertrag.
+- `OMW-AIR-TASKING-PLAN-PHASE1-SNAPSHOT-SERIALIZATION` – branch-lokaler Snapshot-/Serialisierungsvertrag;
+- `OMW-AIR-TASKING-PLAN-PHASE1-VALIDATION-LOGGING` – branch-lokale Validierungs- und Logging-Regeln;
+- `OMW-AIR-TASKING-PLAN-PHASE1-GATE-ASSESSMENT` – branch-lokale Gate-1-Gesamtbewertung.
 
 Die AAR-Finalisierung ist inzwischen auf `main` integriert. Die konkrete AAR-Runtime-Anbindung bleibt dennoch bis Phase 3 gesperrt; bis dahin werden ausschließlich die Foundation-Verträge und die MOOSE-First-Verifikation abgeschlossen.
 
@@ -233,7 +235,7 @@ provides read-only data for player-facing views
 - [x] Support-Beziehungen bidirektional nachvollziehbar machen, ohne zyklische Ressourcenhoheit zu erzeugen;
 - [x] Player-/AI-Assignment als Planungsattribut definieren, nicht als zweite Aircraft-Resource-Tabelle;
 - [x] Serialisierbarkeit der persistenten Teilmenge festlegen;
-- [ ] Datenvalidierungsregeln und Fehlerlogging mit stabilen IDs festlegen.
+- [x] Datenvalidierungsregeln und Fehlerlogging mit stabilen IDs festlegen.
 
 Aktuell profilierte Missionstypen:
 
@@ -257,6 +259,17 @@ PASS wenn:
 - CampaignState-Autorität nicht dupliziert wird;
 - Request- und Mission-Lifecycle getrennt testbar sind.
 ```
+
+Branch-lokale Gate-Bewertung:
+
+```text
+GATE 1: PASS
+scope: domain architecture/contracts only
+runtime_validation: not applicable yet
+validated_in_dcs: false
+```
+
+Die Gesamtbewertung ist in `OMW-AIR-TASKING-PLAN-PHASE1-GATE-ASSESSMENT` dokumentiert. Damit ist Phase 1 branch-lokal abgeschlossen. Produktiver Adapter- oder Runtime-Code bleibt weiterhin bis zum Abschluss von Phase 2 gesperrt.
 
 ---
 
@@ -567,14 +580,12 @@ Der Branch soll nicht:
 # 6. Empfohlene Arbeitsreihenfolge ab jetzt
 
 ```text
-1. Phase 1 Domain Data Model abschließen
-2. Gate 1 prüfen
-3. Phase 2 MOOSE-First Capability Verification durchführen
-4. Gate 2 prüfen
-5. Phase 3 AAR Vertical Slice implementieren und testen
-6. Phase 4 Player Views
-7. Phase 5 Ground Alert / CAS
-8. Phase 6 Dynamic Planning / Retasking / Persistence
+1. Phase 2 MOOSE-First Capability Verification durchführen
+2. Gate 2 prüfen
+3. Phase 3 AAR Vertical Slice implementieren und testen
+4. Phase 4 Player Views
+5. Phase 5 Ground Alert / CAS
+6. Phase 6 Dynamic Planning / Retasking / Persistence
 ```
 
-Phase 0 ist auf diesem Foundation-Branch als Architektur-/Contract-Gate abgeschlossen. Produktiver Adapter- oder Runtime-Code bleibt bis zum Abschluss von Phase 1 und Phase 2 gesperrt.
+Phase 0 und Phase 1 sind auf diesem Foundation-Branch als Architektur-/Contract-Gates abgeschlossen. Produktiver Adapter- oder Runtime-Code bleibt bis zum Abschluss von Phase 2 gesperrt.
