@@ -76,7 +76,8 @@ Wesentliche Abhängigkeiten:
 - `OMW-AIR-TASKING-PLAN-PHASE1-STATUS-LIFECYCLE` – branch-lokale Request-/Mission-Statusautomaten und Transitionen;
 - `OMW-AIR-TASKING-PLAN-PHASE1-CANCELLATION-FAILURE-SETTLEMENT` – branch-lokale Cancellation-/Failure-/Settlement-Grenze;
 - `OMW-AIR-TASKING-PLAN-PHASE1-SUPPORT-RELATIONSHIP` – branch-lokale Support-Beziehungs-, Richtungs- und Zyklusregeln;
-- `OMW-AIR-TASKING-PLAN-PHASE1-PLAYER-AI-ASSIGNMENT` – branch-lokale Player-/AI-Assignment-Grenze ohne Ressourcenhoheit.
+- `OMW-AIR-TASKING-PLAN-PHASE1-PLAYER-AI-ASSIGNMENT` – branch-lokale Player-/AI-Assignment-Grenze ohne Ressourcenhoheit;
+- `OMW-AIR-TASKING-PLAN-PHASE1-SNAPSHOT-SERIALIZATION` – branch-lokaler Snapshot-/Serialisierungsvertrag.
 
 Die AAR-Finalisierung ist inzwischen auf `main` integriert. Die konkrete AAR-Runtime-Anbindung bleibt dennoch bis Phase 3 gesperrt; bis dahin werden ausschließlich die Foundation-Verträge und die MOOSE-First-Verifikation abgeschlossen.
 
@@ -231,7 +232,7 @@ provides read-only data for player-facing views
 - [x] Cancellation-/Failure-Semantik definieren;
 - [x] Support-Beziehungen bidirektional nachvollziehbar machen, ohne zyklische Ressourcenhoheit zu erzeugen;
 - [x] Player-/AI-Assignment als Planungsattribut definieren, nicht als zweite Aircraft-Resource-Tabelle;
-- [ ] Serialisierbarkeit der persistenten Teilmenge festlegen;
+- [x] Serialisierbarkeit der persistenten Teilmenge festlegen;
 - [ ] Datenvalidierungsregeln und Fehlerlogging mit stabilen IDs festlegen.
 
 Aktuell profilierte Missionstypen:
