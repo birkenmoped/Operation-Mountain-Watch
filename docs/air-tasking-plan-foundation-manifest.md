@@ -79,7 +79,9 @@ Wesentliche Abhängigkeiten:
 - `OMW-AIR-TASKING-PLAN-PHASE1-PLAYER-AI-ASSIGNMENT` – branch-lokale Player-/AI-Assignment-Grenze ohne Ressourcenhoheit;
 - `OMW-AIR-TASKING-PLAN-PHASE1-SNAPSHOT-SERIALIZATION` – branch-lokaler Snapshot-/Serialisierungsvertrag;
 - `OMW-AIR-TASKING-PLAN-PHASE1-VALIDATION-LOGGING` – branch-lokale Validierungs- und Logging-Regeln;
-- `OMW-AIR-TASKING-PLAN-PHASE1-GATE-ASSESSMENT` – branch-lokale Gate-1-Gesamtbewertung.
+- `OMW-AIR-TASKING-PLAN-PHASE1-GATE-ASSESSMENT` – branch-lokale Gate-1-Gesamtbewertung;
+- `OMW-AIR-TASKING-PLAN-PHASE2-MOOSE-VERSION-BASELINE` – branch-lokale gepinnte MOOSE-Verifikationsbaseline;
+- `OMW-AIR-TASKING-PLAN-PHASE2-CHIEF-VERIFICATION` – branch-lokale CHIEF-Quellprüfung und Authority-Grenze.
 
 Die AAR-Finalisierung ist inzwischen auf `main` integriert. Die konkrete AAR-Runtime-Anbindung bleibt dennoch bis Phase 3 gesperrt; bis dahin werden ausschließlich die Foundation-Verträge und die MOOSE-First-Verifikation abgeschlossen.
 
@@ -311,8 +313,8 @@ Mindestens:
 
 ## To-do
 
-- [ ] pinned MOOSE branch/commit/hash aus `docs/moose/VERSION-AND-SOURCES.md` übernehmen;
-- [ ] `CHIEF`-relevante APIs und Verantwortungsgrenzen prüfen;
+- [x] pinned MOOSE branch/commit/hash aus `docs/moose/VERSION-AND-SOURCES.md` übernehmen;
+- [x] `CHIEF`-relevante APIs und Verantwortungsgrenzen prüfen;
 - [ ] `COMMANDER`-relevante APIs prüfen;
 - [ ] `AIRWING`-/`BRIGADE`-relevante APIs prüfen;
 - [ ] `SQUADRON`-/`PLATOON`-relevante APIs prüfen;
@@ -322,9 +324,9 @@ Mindestens:
 - [ ] offizielle Beispiele für die tatsächlich benötigten Kombinationen prüfen;
 - [ ] prüfen, welche Authority-/Allocation-Fälle MOOSE nativ oder durch Konfiguration/Kombination ausreichend trägt;
 - [ ] dokumentieren, welche Daten im OMW-Plan bleiben und welche an MOOSE übergeben werden;
-- [ ] `docs/moose/PROJECT-CLASS-INDEX.md` aktualisieren;
-- [ ] passendes MOOSE-Themendokument aktualisieren oder neu anlegen;
-- [ ] noch **keine** Methode als `VALIDATED` markieren, solange kein dokumentierter DCS-Test existiert.
+- [x] `docs/moose/PROJECT-CLASS-INDEX.md` aktualisieren;
+- [x] passendes MOOSE-Themendokument aktualisieren oder neu anlegen;
+- [x] noch **keine** Methode als `VALIDATED` markieren, solange kein dokumentierter DCS-Test existiert.
 
 ## Gate 2
 
