@@ -15,7 +15,7 @@ project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
 superseded_by:
 source_branch: agent/army-ground-foundation-reconciliation
-source_commit: 35d9f7402fbd22372a68f377016453213693871a
+source_commit: PENDING_MERGE
 validated_in_dcs: false
 ---
 
@@ -250,6 +250,15 @@ Diese Regel schließt für den Korengal-Komplex eine aktive OMW-Besetzung aus, w
 
 Der gepinnte OMW-MOOSE-Stand enthält die vorgesehenen Ground-OPS-Klassen `COMMANDER`, `BRIGADE`, `PLATOON`, `ARMYGROUP` und `OPSTRANSPORT`.
 
+Der aktuelle Missionsstand bestätigt dieselbe MOOSE-Provenienz:
+
+```text
+Mission: OMW_Template_v12_groundworks(1).miz
+Mission SHA-256: 3c634370d43d57ed4788c55d991c903441cdfa57709581af61debb4105f9a078
+Embedded Moose.lua SHA-256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
+MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+```
+
 Aktuelles Kandidatenmodell:
 
 ```text
@@ -266,14 +275,22 @@ COMMANDER
 
 Eine MOOSE `BRIGADE` wird nicht automatisch mit einer realen historischen Brigade gleichgesetzt. Die aktuelle Arbeitshypothese ist eine BRIGADE je operativ kohärentem Ground Node, nicht je OP und nicht eine einzige BRIGADE für ganz RC-East.
 
-MOOSE-Quellprüfung hat bereits gezeigt:
+Der Source-Review des tatsächlich eingebetteten MOOSE-Stands bestätigt jetzt konkret:
 
-- `BRIGADE` verwaltet `PLATOON`-/Asset-Pools über ein WAREHOUSE-/LEGION-Modell;
-- `PLATOON`/`COHORT` kann Mission Capabilities und Mission Range begrenzen;
+- `BRIGADE:AddPlatoon(...)` bindet `PLATOON`-Assets an den LEGION-/WAREHOUSE-Pool der Brigade;
+- `PLATOON` erbt die Rollen-/Range-Selektion von `COHORT`;
+- Ground-`COHORT`s erhalten standardmäßig 75 NM Mission Range;
+- `COHORT:CanMission(...)` prüft Mission Capability und Target Distance; eine `Mission.engageRange` kann die Cohort-Range erweitern;
 - `ARMYGROUP` bildet die physisch agierende Ground Group;
-- Assets derselben Brigade können grundsätzlich im Feld geführt werden;
-- bestimmte Return-/RTZ-Pfade können bei nicht mobilen Gruppen Teleport-Verhalten enthalten und sind deshalb für OMW nicht ungeprüft zulässig;
-- `OPSTRANSPORT` ist als taktischer Transportbaustein zu prüfen.
+- mobile `ARMYGROUP`-RTZ-Pfade routen per Waypoint in die Return Zone;
+- **immobile** `ARMYGROUP`s außerhalb der Return Zone werden im RTZ-Pfad per `Teleport(...)` versetzt; dieser Pfad ist für sichtbare OMW-Bereiche ausgeschlossen;
+- `BRIGADE:LoadBackAssetInPosition(...)` verwendet `SPAWN:SpawnFromCoordinate(Position)` und ist damit kein unsichtbarer Reconstitution-Mechanismus für beobachtbare Feldverbände;
+- `OPSTRANSPORT:AddPathTransport(...)` kann einen vorgegebenen Mission-Editor-Pfad aus einer PathGroup verwenden;
+- `OPSTRANSPORT`-Cargo-/Disembark-Pfade bleiben DCS-testpflichtig.
+
+Die offiziellen MOOSE-Mission-Repositories wurden nach den aktuellen Klassennamen durchsucht. Für `BRIGADE`, `ARMYGROUP` und `OPSTRANSPORT` wurde im aktuellen Review kein direkter Klassenverwendungs-Treffer gefunden. Der geprüfte Ground-Warehouse-Demo `WHS-020 - Self Propelled Ground Troops` verwendet direkte WAREHOUSE-Transfers und belegt nicht die aktuelle Ground-OPS-Hierarchie.
+
+Details und Ausschlüsse stehen in [`OMW-MOOSE-GROUND-OPERATIONS`](../../docs/moose/GROUND-OPERATIONS.md).
 
 Noch nicht entschieden ist, ob die vier Ground Nodes technisch tatsächlich exakt vier MOOSE-BRIGADEs werden.
 
@@ -341,13 +358,14 @@ Sekundärquellen dienen als Research Index und überschreiben keine Primärquell
 - [x] `COMMANDER -> BRIGADE -> PLATOON -> ARMYGROUP` als zentrale Ground-OPS-Kandidatenhierarchie identifiziert.
 - [x] BRIGADE nicht automatisch mit realer historischer Brigade gleichgesetzt.
 - [x] OPs als abhängige Installationen ohne eigene strategische Ressourcenhoheit festgelegt.
-- [ ] offizielle MOOSE-Demos/Tests für BRIGADE/PLATOON/ARMYGROUP/OPSTRANSPORT vollständig gegen gepinnten Stand prüfen.
-- [ ] Mission-Capability-/Range-Selektion je PLATOON verifizieren.
-- [ ] Verhalten dauerhaft im Feld stehender Assets, Rückkehr, Reinforcement und Reconstitution verifizieren.
-- [ ] Teleport-/Despawn-Pfade identifizieren und für sichtbare OMW-Bereiche ausschließen.
+- [ ] offizielle MOOSE-Demos/Tests für BRIGADE/PLATOON/ARMYGROUP/OPSTRANSPORT vollständig gegen gepinnten Stand prüfen; aktueller Search-/WHS-020-Review liefert keinen direkten Referenztest für die Kandidatenhierarchie.
+- [x] Mission-Capability-/Range-Selektion je PLATOON im gepinnten Source verifiziert; DCS-Selektionsnachweis bleibt offen.
+- [ ] Verhalten dauerhaft im Feld stehender Assets, Rückkehr, Reinforcement und Reconstitution vollständig verifizieren.
+- [x] bekannte source-seitige Teleport-/Materialisierungspfade identifiziert: immobile `ARMYGROUP` RTZ sowie `BRIGADE:LoadBackAssetInPosition(...)`; beide für beobachtbare OMW-Nutzung ausgeschlossen.
+- [ ] übrige Despawn-/Return-/Reconstitution-Grenzen im vollständigen Lifecycle und in DCS prüfen.
 - [ ] entscheiden, ob vier Ground Nodes exakt vier MOOSE-BRIGADEs werden.
 - [ ] konkrete PLATOON-Rollen pro Node festlegen, mindestens Infantry/Patrol, QRF, OP Security, Logistics und Fire Support soweit lokal benötigt.
-- [ ] `docs/moose/PROJECT-CLASS-INDEX.md` und passende Ground-OPS-Themendokumentation im selben Entwicklungsstand aktualisieren.
+- [x] `docs/moose/PROJECT-CLASS-INDEX.md` und `docs/moose/GROUND-OPERATIONS.md` im selben Entwicklungsstand aktualisiert.
 
 ### Phase D – CampaignState und Ressourcenvertrag
 
@@ -391,6 +409,18 @@ Bereits beschlossen:
 - CampaignState remains strategic resource authority
 - active OPs consume parent-node personnel/resources
 - active attackable installations require credible physical representation
+```
+
+Source-seitig zusätzlich geklärt, aber noch nicht als DCS-Runtime akzeptiert:
+
+```text
+- ground COHORT default mission range = 75 NM
+- PLATOON role filtering can use COHORT mission capabilities and range
+- Mission.engageRange can enlarge cohort range
+- mobile ARMYGROUP RTZ uses physical waypoint routing
+- immobile ARMYGROUP RTZ can teleport to the return zone
+- BRIGADE:LoadBackAssetInPosition materializes through SpawnFromCoordinate
+- OPSTRANSPORT can use predefined PathGroup routes
 ```
 
 Noch nicht beschlossen:

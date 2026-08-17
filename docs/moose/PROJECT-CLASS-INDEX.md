@@ -12,8 +12,8 @@ project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
   - class index without consolidated AIRWING lifecycle evidence
 superseded_by:
-source_branch: agent/aar-fuel-telemetry-calibration
-source_commit: 7d55a1383cbf3f52ea776d7354b37dbe5a920466
+source_branch: agent/army-ground-foundation-reconciliation
+source_commit: PENDING_MERGE
 validated_in_dcs: partial
 ---
 
@@ -33,6 +33,7 @@ Technische Lifecycle-Details:
 - [`OMW-MOOSE-STORAGE-WAREHOUSE-RESOURCE-FOUNDATION`](STORAGE-WAREHOUSE-RESOURCE-FOUNDATION.md)
 - [`OMW-MOOSE-ISR-FAC-CAS-AAR`](ISR-FAC-CAS-AAR.md)
 - [`OMW-MOOSE-AAR-LRC-TRANSIT`](AAR-LRC-TRANSIT.md)
+- [`OMW-MOOSE-GROUND-OPERATIONS`](GROUND-OPERATIONS.md)
 
 ## 2. Statusbedeutung
 
@@ -47,6 +48,8 @@ INTERNAL_RESTRICTED
 REJECTED_FOR_PROJECT_USE
 ```
 
+`SOURCE_REVIEWED` bedeutet ausschließlich, dass Dokumentation beziehungsweise tatsächlich gepinnter Source für den beschriebenen Pfad geprüft wurden. Der Status enthält **keinen** DCS-Laufzeitnachweis.
+
 ## 3. Aktuell besonders relevante Klassen
 
 | Klasse | Projektstatus | Geltungsgrenze |
@@ -56,17 +59,20 @@ REJECTED_FOR_PROJECT_USE
 | `SQUADRON` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Foundation-Bestände und post-start Assetbindung |
 | `WAREHOUSE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | AirOps-Stock-/Asset-Lifecycle; kein WAREHOUSE für externe MANAS-/AL_UDEID-AAR-count-Pools |
 | `STORAGE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | CampaignState->DCS-Warehouse Mirror/Telemetry; keine strategische Rückautorität |
-| `COHORT` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Asset-/Mission-Capability-Pfade für dokumentierte AirOps-Foundations |
+| `COHORT` | `VALIDATED_FOR_DOCUMENTED_SCOPE` + `SOURCE_REVIEWED` | AirOps-Lifecycle praktisch bestätigt; Ground-Review bestätigt `AddMissionCapability`, `SetMissionRange`, `CanMission` und 75-NM-Ground-Default source-seitig |
 | `FLIGHTGROUP` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | AAR FuelLow, Dead/OnAfterDead, GetCoordinate, `AddWaypoint(...)`, `AddMission(...)` und `OnAfterPassingWaypoint(...)`; Acceptance 7 bestätigte FIR -> 60-NM -> AUFTRAG sowie Egress -> External Handoff |
-| `COMMANDER` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | dokumentierter COMMANDER-Lifecycle; nicht Quelle der externen OMW-AAR-Pools |
+| `COMMANDER` | `VALIDATED_FOR_DOCUMENTED_SCOPE` + `SOURCE_REVIEWED` | dokumentierter COMMANDER-Lifecycle; Ground-Review bestätigt `AddBrigade(...)` und `AddOpsTransport(...)` source-seitig; MissionDemand bleibt OMW-Tasking-Autorität |
 | `AUFTRAG` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | AAR `NewTANKER`, `SetMissionAltitude`, Mission-Egress und `Cancel()` praktisch bestätigt; finaler Inbound fügt AUFTRAG erst nach Passage des 60-NM-Wegpunkts hinzu |
 | `SPAWN` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | area-spezifische AAR-Templates, stabile Sortie-Callsign-Familie und 480-kt-In-Air-Materialisierung praktisch bestätigt; keine erzwungene `InitSTN()`, keine nachgewiesene `InitFuel()`-API |
 | `SCHEDULER` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Source-Queue, Station-Monitoring und Acceptance-Koordination; kein Timer-basierter Late-Approach |
 | `USERFLAG` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Warehouse-Acceptance-Readiness-Pfade |
 | `GROUP`, `UNIT`, `STATIC`, `ZONE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Template-/Static-/Warehouse-/Zonenvalidierung; AAR `UNIT:GetSTN()` und test-only `UNIT:Explode()` bestätigt. `UNIT:GetFuel()`, `UNIT:GetCurrentFuelKgs()` und `UNIT:GetFuelMassMax()` wurden in realen AAR-Fuel-Telemetry-Läufen verwendet. |
 | `COORDINATE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | `Get2DDistance(...)` praktisch verwendet; `GetIntermediateCoordinate(...)` und `HeadingTo(...)` im Acceptance-7-AAR-Pfad praktisch bestätigt |
-| `ARMYGROUP`, `BRIGADE`, `OPSGROUP` | `PLANNED` / teilweise validiert | Bodenoperationsscope bleibt geplant; für AAR sind Despawn, Radio-/TACAN-Switch und PassingWaypoint-FSM im dokumentierten Scope praktisch bestätigt |
-| `OPSTRANSPORT` | `PLANNED` | taktischer Transport |
+| `BRIGADE` | `SOURCE_REVIEWED` | `AddPlatoon`, Asset-Pool-/LEGION-Bindung, Retreat/Rearm/Refuel-Zonen und `LoadBackAssetInPosition` geprüft; Ground-Runtime-Acceptance offen |
+| `PLATOON` | `SOURCE_REVIEWED` | erbt Ground-Rollen-/Range-Selektion von COHORT; konkrete OMW-Rollenmatrix und DCS-Selektion offen |
+| `ARMYGROUP` | `SOURCE_REVIEWED` | Routing/RTZ/Returned/Rearm/Retreat source-geprüft; immobile RTZ kann teleportieren und ist für sichtbare OMW-Nutzung ausgeschlossen; DCS-Acceptance offen |
+| `OPSGROUP` | `VALIDATED_FOR_DOCUMENTED_SCOPE` + `SOURCE_REVIEWED` | AAR-Despawn/Radio/TACAN/PassingWaypoint praktisch bestätigt; Ground-Cargo Board/Load-Pfade source-geprüft, Ground-Acceptance offen |
+| `OPSTRANSPORT` | `SOURCE_REVIEWED` | Constructor, Cargo/Carrier-Zonen, `AddPathTransport`, Disembark- und Carrier-Verträge geprüft; taktischer OMW-Transport benötigt eigenen DCS-Test |
 | `CTLD`, `CSAR`, `AICSAR` | `PLANNED` / teilweise verwendet | separate Acceptance erforderlich |
 | `INTEL` | `PLANNED` | taktisches Lagebild; Laufzeitnachweis offen |
 | `INTEL_DLINK` | `CANDIDATE` | Aggregation getrennter Netze; Performance offen |
@@ -77,7 +83,78 @@ REJECTED_FOR_PROJECT_USE
 | `_DATABASE` | `INTERNAL_RESTRICTED` | nur Diagnose/Validierung; aktueller AAR-Produktionspfad verwendet `_DATABASE` nicht |
 | `CHIEF` | `REJECTED_FOR_PROJECT_USE` | aktuelle Produktionsarchitektur `NOT_USED` |
 
-## 4. AAR – gepinnter und Acceptance-7-validierter MOOSE-Scope
+## 4. ARMY Ground Foundation – Source-Review 18.08.2026
+
+### 4.1 Geprüfter Mission-/MOOSE-Stand
+
+```text
+Mission artifact: OMW_Template_v12_groundworks(1).miz
+Mission SHA-256: 3c634370d43d57ed4788c55d991c903441cdfa57709581af61debb4105f9a078
+Embedded Moose.lua: l10n/DEFAULT/Moose.lua
+MOOSE release: 2.9.18
+MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+Moose.lua SHA-256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
+```
+
+Die aktuelle `.miz` wurde ausschließlich gelesen. Der eingebettete `Moose.lua`-Hash stimmt mit dem bereits gepinnten Projektartefakt überein.
+
+### 4.2 Source-verifizierte Ground-Pfade
+
+```text
+COMMANDER:AddBrigade(...)
+COMMANDER:AddOpsTransport(...)
+
+BRIGADE:AddPlatoon(...)
+BRIGADE:AddAssetToPlatoon(...)
+BRIGADE:AddRetreatZone(...)
+BRIGADE:AddRearmingZone(...)
+BRIGADE:AddRefuellingZone(...)
+BRIGADE:LoadBackAssetInPosition(...)
+
+PLATOON:New(...)
+COHORT:AddMissionCapability(...)
+COHORT:SetMissionRange(...)
+COHORT:CanMission(...)
+
+ARMYGROUP:AddWaypoint(...)
+ARMYGROUP RTZ / Returned / Rearm / Retreat FSM paths
+
+OPSTRANSPORT:New(...)
+OPSTRANSPORT:SetEmbarkZone(...)
+OPSTRANSPORT:SetDisembarkZone(...)
+OPSTRANSPORT:SetDisembarkActivation(...)
+OPSTRANSPORT:AddPathTransport(...)
+OPSTRANSPORT:SetRequiredCarriers(...)
+OPSTRANSPORT:SetTime(...)
+OPSTRANSPORT:SetPriority(...)
+```
+
+Wichtige Grenzen aus dem Source-Review:
+
+```text
+- COHORT sets 75 NM default mission range for ground templates.
+- COHORT:CanMission checks mission type and target distance.
+- Mission.engageRange can enlarge the effective cohort range.
+- BRIGADE:LoadBackAssetInPosition uses SPAWN:SpawnFromCoordinate(Position).
+- ARMYGROUP RTZ teleports an immobile group that is outside its return zone.
+- mobile ARMYGROUP RTZ uses a physical waypoint toward the return zone.
+- OPSTRANSPORT can consume a predefined route from a late-activated PathGroup.
+- Ground cargo/disembark lifecycle still requires DCS observation before production use.
+```
+
+For OMW this means that `LoadBackAssetInPosition` and immobile `RTZ` are not approved for player-observable reconstitution/return. This is a restriction on use of MOOSE behavior, not an approval for a custom replacement.
+
+### 4.3 Official example review
+
+The official MOOSE mission repositories were searched for `BRIGADE`, `ARMYGROUP`, `OPSTRANSPORT` and `PLATOON`. No direct current-class use was found for the first three names. `PLATOON` keyword hits include older Warehouse examples; the reviewed `WHS-020 - Self Propelled Ground Troops` example transfers ground assets with `WAREHOUSE` directly and does not demonstrate the current OMW candidate hierarchy.
+
+Therefore no official demo is being treated as runtime proof for `COMMANDER -> BRIGADE -> PLATOON -> ARMYGROUP` or the OMW `OPSTRANSPORT` use case. A project-specific DCS test remains mandatory.
+
+Full details:
+
+- [`OMW-MOOSE-GROUND-OPERATIONS`](GROUND-OPERATIONS.md)
+
+## 5. AAR – gepinnter und Acceptance-7-validierter MOOSE-Scope
 
 ```text
 MOOSE release: 2.9.18
@@ -157,7 +234,7 @@ SPAWN
 
 Im gepinnten `Moose.lua` wurde keine öffentliche `SPAWN:InitFuel(...)`-Methode nachgewiesen. Physische Initial-Fuel-Mengen bleiben Template-/Mission-Editor-Konfiguration.
 
-### 4.1 LRC-/Fuel-Kalibrierung und Fehlerhistorie
+### 5.1 LRC-/Fuel-Kalibrierung und Fehlerhistorie
 
 ```text
 Candidate 3:
@@ -193,7 +270,7 @@ Details und Rechnungen:
 - [`OMW-MOOSE-VERIFIED-METHODS-AAR-ACCEPTANCE-7`](VERIFIED-METHODS-AAR-ACCEPTANCE-7.md)
 - [`AAR Production Final Acceptance 7`](../../mission/tests/aar-production-integration/ACCEPTANCE-7.md)
 
-## 5. AAR-Produktionsscope
+## 6. AAR-Produktionsscope
 
 ```text
 STANDARD / kontinuierlich:
@@ -246,12 +323,14 @@ CampaignState exact-once settlement
 final steady state = 4 STANDARD / 0 RESERVE
 ```
 
-## 6. Architekturgrenze
+## 7. Architekturgrenze
 
 Die externen AAR-Pools MANAS und AL UDEID sind keine DCS-Airbase-/WAREHOUSE-/AIRWING-/SQUADRON-Bestände. CampaignState hält `AIRCRAFT_KC135` als count; SPAWN -> FLIGHTGROUP -> AUFTRAG materialisiert nur die physische Repräsentation.
 
 Test-only Artificial FuelLow, `UNIT:Explode()`-Loss-Injection, Acceptance-Zeitbeschleunigung und in-process Restore gehören nicht in das endgültige Missionsgrundgerüst.
 
-## 7. Nachweisregel
+## 8. Nachweisregel
 
 Ein Klassenstatus wird nur angehoben, wenn MOOSE-Version/Commit, OMW-Source, Mission, Hashes, beobachtetes Verhalten und Einschränkungen dokumentiert sind. `VALIDATED_FOR_DOCUMENTED_SCOPE` für den neuen AAR-Routingpfad gilt ausschließlich für die oben dokumentierte Acceptance-7-Provenienz und darf nicht pauschal auf andere MOOSE-/DCS-/Missionsstände übertragen werden.
+
+`SOURCE_REVIEWED` für die Ground-OPS-Klassen bedeutet ausdrücklich **nicht** `VALIDATED_FOR_DOCUMENTED_SCOPE`. Die ARMY Ground Foundation benötigt ihre eigenen dokumentierten DCS-Tests.
