@@ -34,6 +34,7 @@ Technische Lifecycle-Details:
 - [`OMW-MOOSE-ISR-FAC-CAS-AAR`](ISR-FAC-CAS-AAR.md)
 - [`OMW-MOOSE-AAR-LRC-TRANSIT`](AAR-LRC-TRANSIT.md)
 - [`OMW-AIR-TASKING-PLAN-PHASE2-CHIEF-VERIFICATION`](../air-tasking-plan-phase2-chief-capability-verification.md)
+- [`OMW-AIR-TASKING-PLAN-PHASE2-COMMANDER-VERIFICATION`](../air-tasking-plan-phase2-commander-capability-verification.md)
 
 ## 2. Statusbedeutung
 
@@ -59,7 +60,7 @@ REJECTED_FOR_PROJECT_USE
 | `STORAGE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | CampaignState->DCS-Warehouse Mirror/Telemetry; keine strategische Rückautorität |
 | `COHORT` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Asset-/Mission-Capability-Pfade für dokumentierte AirOps-Foundations |
 | `FLIGHTGROUP` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | AAR FuelLow, Dead/OnAfterDead, GetCoordinate, `AddWaypoint(...)`, `AddMission(...)` und `OnAfterPassingWaypoint(...)`; Acceptance 7 bestätigte FIR -> 60-NM -> AUFTRAG sowie Egress -> External Handoff |
-| `COMMANDER` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | dokumentierter COMMANDER-Lifecycle; nicht Quelle der externen OMW-AAR-Pools |
+| `COMMANDER` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | bestehender OMW-Lifecycle praktisch bestätigt; Air-Tasking-Phase-2 am Commit `73d3ed119cd9e7e3f2cfcabbaa34513d30529b54` source-geprüft für `New`, LEGION-Anbindung, `CanMission`, Mission Queue, native Asset-Rekrutierung, `MissionAssign`, `MissionCancel` und `OpsOnMission`; vorgesehener MOOSE-C2-/Mission-Assignment-Layer unterhalb CampaignState/Air Tasking, nicht strategische Ressourcenautorität |
 | `AUFTRAG` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | AAR `NewTANKER`, `SetMissionAltitude`, Mission-Egress und `Cancel()` praktisch bestätigt; finaler Inbound fügt AUFTRAG erst nach Passage des 60-NM-Wegpunkts hinzu |
 | `SPAWN` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | area-spezifische AAR-Templates, stabile Sortie-Callsign-Familie und 480-kt-In-Air-Materialisierung praktisch bestätigt; keine erzwungene `InitSTN()`, keine nachgewiesene `InitFuel()`-API |
 | `SCHEDULER` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Source-Queue, Station-Monitoring und Acceptance-Koordination; kein Timer-basierter Late-Approach |
