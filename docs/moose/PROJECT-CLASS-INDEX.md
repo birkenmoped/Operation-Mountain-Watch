@@ -33,6 +33,7 @@ Technische Lifecycle-Details:
 - [`OMW-MOOSE-STORAGE-WAREHOUSE-RESOURCE-FOUNDATION`](STORAGE-WAREHOUSE-RESOURCE-FOUNDATION.md)
 - [`OMW-MOOSE-ISR-FAC-CAS-AAR`](ISR-FAC-CAS-AAR.md)
 - [`OMW-MOOSE-AAR-LRC-TRANSIT`](AAR-LRC-TRANSIT.md)
+- [`OMW-AIR-TASKING-PLAN-PHASE2-CHIEF-VERIFICATION`](../air-tasking-plan-phase2-chief-capability-verification.md)
 
 ## 2. Statusbedeutung
 
@@ -75,7 +76,7 @@ REJECTED_FOR_PROJECT_USE
 | `DETECTION_*` | `PLANNED` | Spezialfälle; kein paralleles strategisches Lagebild neben `INTEL` |
 | `Core.Astar`, `PATHLINE`, `MOVEMENT` | `PLANNED` | Routing und Bewegungsbegrenzung |
 | `_DATABASE` | `INTERNAL_RESTRICTED` | nur Diagnose/Validierung; aktueller AAR-Produktionspfad verwendet `_DATABASE` nicht |
-| `CHIEF` | `REJECTED_FOR_PROJECT_USE` | aktuelle Produktionsarchitektur `NOT_USED` |
+| `CHIEF` | `REJECTED_FOR_PROJECT_USE` | Air-Tasking-Phase-2 am Commit `73d3ed119cd9e7e3f2cfcabbaa34513d30529b54` source-geprüft: erzeugt eigenen `COMMANDER`, erweitert `INTEL` und trägt Strategy/DEFCON/Target-/Strategic-Zone-/ResponseOnTarget-Semantik; für OMW wegen Überschneidung mit CampaignState/MissionDemand/Air-Tasking-Autorität `NOT_USED`, ohne eigene CHIEF-Nachbildung |
 
 ## 4. AAR – gepinnter und Acceptance-7-validierter MOOSE-Scope
 
