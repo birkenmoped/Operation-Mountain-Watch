@@ -24,111 +24,87 @@ validated_in_dcs: false
 
 ## 1. Referenzstand
 
-Dokumentierter Branch-Stand:
-
 ```text
 branch: agent/air-tasking-plan-foundation
-branch_head: 7065d687dfdfef1af098275778b082f5e888799d
-main_head_at_assessment: 08f679926e5ac059e9853f54ffa7bb634063eaa4
-merge_base: d9150f96fac5b546fe515c89fd139851c6e9829b
-branch_vs_main: 40 commits ahead / 3 commits behind
+phase 0: PASS
+phase 1: PASS
+phase 2: PASS
+phase 3: NOT STARTED
+validated_in_dcs for Phase 2: false
 ```
 
-Die drei neueren `main`-Commits nach dem Merge-Base betreffen die Kunar-Ground-Site-/FOB-Bostick-Reconciliation. Der Foundation-Branch muss vor einem Merge dennoch gegen den aktuellen `main`-Stand reconciliiert und vollständig diff-geprüft werden.
+Die frühere vermeintliche lokale/remote Divergenz ist geklärt: `e6e0bdeea991f51745c05ed214bf4176e5abbd11` gehörte zum separaten Branch `agent/army-ground-foundation-reconciliation`. Der lokale Air-Tasking-Branch wurde anschließend sauber per Fast-Forward auf den damaligen Remote-Handover-Head `bfcd3e13248f528a697cd01cca6acebc0e0c9e8e` synchronisiert. Die Divergenz-Sperre ist damit aufgehoben.
 
-## 2. Gesamtstatus nach Phasen
+Vor einem Merge nach `main` bleibt dennoch eine erneute Reconciliation gegen den dann aktuellen `main`-Stand erforderlich.
+
+## 2. Gesamtstatus
 
 ```text
 PHASE 0  Governance / Reconciliation / Contracts          PASS
 PHASE 1  Domain Data Model                               PASS
-PHASE 2  MOOSE-First Capability Verification            IN PROGRESS
-PHASE 3  First Vertical Integration – AAR                BLOCKED BY GATE 2
+PHASE 2  MOOSE-First Capability Verification            PASS
+PHASE 3  First Vertical Integration – AAR                NOT STARTED
 PHASE 4  Player-Facing Mission Products                  NOT STARTED
 PHASE 5  Ground Alert / CAS Request Lifecycle            NOT STARTED
 PHASE 6  Dynamic Planning / Retasking / Persistence      NOT STARTED
 ```
 
-`PASS` für Phase 0 und Phase 1 ist branch-lokal und dokumentiert ausschließlich Architektur-/Datenverträge. Es ist kein DCS-Runtime-Nachweis.
+Die PASS-Werte für Phase 0 bis 2 sind branch-lokal. Phase 2 ist Source-/Official-Example-/Architekturverifikation und **kein** neuer DCS-Runtime-Nachweis.
 
-## 3. Phase 0 – abgeschlossen
+## 3. Tatsächlich geprüfte MOOSE-Baseline
 
-Gemäß `OMW-AIR-TASKING-PLAN-FOUNDATION-MANIFEST` sind sämtliche Phase-0-Punkte geschlossen.
-
-Ergebnis:
+Die aktuelle vom Projektinhaber bereitgestellte Mission wurde direkt geprüft:
 
 ```text
-- CampaignState bleibt strategische Zustands-/Ressourcenautorität.
-- MissionDemand-Origin/Consumer- und Command-/Tasking-/Request-Authority-Grenzen sind definiert.
-- Request-, Mission-, Plan-, Relationship- und Execution-IDs sind stabil getrennt.
-- Persistenter Domainzustand ist von MOOSE-/DCS-Runtimeobjekten getrennt.
-- Player Views/Briefingprodukte besitzen keine eigene Ressourcen- oder Tasking-Autorität.
-- MOOSE-zentriertes Command-Modell ist festgelegt; CHIEF darf keine zweite strategische Autorität bilden.
-```
-
-Gate 0:
-
-```text
-PASS
-scope: architecture/contracts only
-validated_in_dcs: false
-```
-
-## 4. Phase 1 – abgeschlossen
-
-Alle im Manifest definierten Phase-1-Punkte sind geschlossen:
-
-```text
-[x] konkrete Datenverträge / Modulschnittstellen
-[x] Pflicht-/Optionalfelder je Missionstyp
-[x] getrennte Request-/Mission-Statusautomaten
-[x] erlaubte Statusübergänge
-[x] Cancellation-/Failure-Semantik
-[x] Support-Beziehungen und Zyklusregeln
-[x] Player-/AI-Assignment ohne zweite Aircraft-Ressourcentabelle
-[x] Snapshot-/Serialisierungsvertrag
-[x] Datenvalidierung und Logging mit stabilen IDs
-```
-
-Gate 1:
-
-```text
-PASS
-scope: domain architecture/contracts only
-validated_in_dcs: false
-```
-
-Damit ist das DCS-/MOOSE-unabhängige Air-Tasking-Domänenmodell branch-lokal vollständig spezifiziert.
-
-## 5. Phase 2 – aktueller Arbeitsstand
-
-Verbindliche MOOSE-Verifikationsbaseline:
-
-```text
-MOOSE branch/context: develop
+mission artifact: OMW_Template_v12_groundworks.miz
+mission SHA-256: 3c634370d43d57ed4788c55d991c903441cdfa57709581af61debb4105f9a078
+embedded source: l10n/DEFAULT/Moose.lua
+MOOSE context: develop
 MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
 Moose.lua SHA-256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
 ```
 
-Manifeststatus:
+Damit entspricht die tatsächlich in der aktuellen `.miz` enthaltene `Moose.lua` exakt der Phase-2-Baseline.
+
+## 4. Phase 0 / 1
+
+Unverändert abgeschlossen:
 
 ```text
-[x] pinned MOOSE branch/commit/hash übernehmen
-[x] CHIEF APIs / Verantwortungsgrenzen prüfen
-[x] COMMANDER APIs prüfen
-[x] AIRWING / BRIGADE APIs prüfen
-[ ] SQUADRON / PLATOON APIs prüfen
-[ ] AUFTRAG-Konstruktion und Missionstypen prüfen
-[ ] Mission Assignment / Lifecycle / FSM-Callbacks prüfen
-[ ] FLIGHTGROUP / ARMYGROUP Status-/Lifecycle-Anbindung prüfen
-[ ] offizielle Beispiele für tatsächlich benötigte Kombinationen prüfen
-[ ] Authority-/Allocation-Fälle gegen native MOOSE-Fähigkeiten prüfen
-[ ] OMW-Planungsdaten vs. an MOOSE übergebene Daten abschließend dokumentieren
-[x] PROJECT-CLASS-INDEX fortlaufend aktualisieren
-[x] passende MOOSE-Themendokumente fortlaufend pflegen
-[x] keine neue Methode ohne DCS-Test als VALIDATED markieren
+CampaignState
+= strategische Zustands-/Ressourcenautorität
+
+MissionDemand
+= autoritative kampagnenweite Bedarfsidentität
+
+Air Tasking Domain
+= Request-/Mission-/Planungs-/Authority-/Persistenzmodell
+
+MOOSE
+= operative Capability-/Asset-/Missionsausführung innerhalb der OMW-Grenzen
 ```
 
-Aktuell source-geprüfte C2-/LEGION-Grenze:
+Stabile Request-, Mission-, Relationship- und Execution-IDs bleiben von DCS-/MOOSE-Runtimeobjekten getrennt.
+
+## 5. Phase 2 – abgeschlossene Prüfungen
+
+```text
+[x] pinned MOOSE branch/commit/hash
+[x] CHIEF APIs / Verantwortungsgrenzen
+[x] COMMANDER APIs
+[x] AIRWING / BRIGADE APIs
+[x] SQUADRON / PLATOON APIs
+[x] AUFTRAG-Konstruktion und Missionstypen
+[x] Mission Assignment / Lifecycle / FSM-Callbacks
+[x] FLIGHTGROUP / ARMYGROUP / OPSGROUP Status-/Lifecycle-Anbindung
+[x] offizielle Beispiele für tatsächlich benötigte Kombinationen
+[x] Authority-/Allocation-Fälle gegen native MOOSE-Fähigkeiten
+[x] finale OMW-Planungsdaten-vs.-MOOSE-Adaptergrenze
+[x] PROJECT-CLASS-INDEX / thematische MOOSE-Dokumentation nachpflegen
+[x] keine source-only Methode als neu DCS-VALIDATED markieren
+```
+
+### C2-/Execution-Pfad
 
 ```text
 CampaignState / MissionDemand
@@ -143,107 +119,119 @@ AIRWING / BRIGADE
         ↓
 SQUADRON / PLATOON
         ↓
+AUFTRAG
+        ↓
 FLIGHTGROUP / ARMYGROUP
         ↓
 DCS
 ```
 
-`CHIEF` bleibt für den OMW-Air-Tasking-Pfad `REJECTED_FOR_PROJECT_USE`, weil seine Strategy-/INTEL-/Target-/Response-Semantik strategische Verantwortungen von CampaignState/MissionDemand überlappen würde. Es wird keine eigene CHIEF-Nachbildung entwickelt.
+`CHIEF` bleibt für diesen Pfad `REJECTED_FOR_PROJECT_USE`.
 
-`COMMANDER` ist der vorgesehene operative MOOSE-C2-/Mission-Assignment-Layer. `AIRWING` und `BRIGADE` sind aktive LEGION-Layer mit eigener Mission Queue und Asset-/Cohort-Verwaltung. Ihre autonomen Missionsgeneratoren und Ressourcen-Seiteneffekte dürfen den autoritativen OMW-MissionDemand-/CampaignState-Pfad nicht umgehen.
+## 6. Wesentliche Phase-2-Ergebnisse
 
-## 6. Gate-2-Restarbeit
-
-Gate 2 bleibt ausdrücklich offen.
-
-Vor `PASS` müssen noch nachgewiesen beziehungsweise abschließend dokumentiert werden:
+### AUFTRAG-Mapping
 
 ```text
-SQUADRON / PLATOON
-→ Capability- und Asset-Grenzen
-
-AUFTRAG
-→ benötigte Konstruktoren / Missionstypen
-→ Parameter und Rückgaben
-→ missionspezifische Preconditions
-
-Mission Lifecycle
-→ Assignment
-→ Start / Execution
-→ Completion / Failure / Cancellation
-→ geeignete FSM-Events / Callbacks
-
-FLIGHTGROUP / ARMYGROUP
-→ physische Runtime-Korrelation
-→ Statusbeobachtung
-→ Lifecycle-Rückmeldung
-
-Official MOOSE examples
-→ tatsächlich benötigte Klassenkombinationen verifizieren
-
-Authority / Allocation
-→ festlegen, welche Fälle COMMANDER/LEGION/COHORT nativ tragen
-→ nur verbleibende Domain-Korrelation im kleinen OMW-Adapter behalten
-
-Adapter boundary
-→ endgültig festlegen, welche Air-Tasking-Felder Domain-Wahrheit bleiben
-→ exakt festlegen, welche Daten in AUFTRAG/MOOSE übersetzt werden
+AAR     -> NewTANKER
+CAS     -> NewCAS / NewCASENHANCED
+ISR     -> NewRECON for physical recon execution
+CSAR    -> dedicated MOOSE CSAR/AICSAR path; NewRESCUEHELO is carrier-specific
+AIRLIFT -> NewTROOPTRANSPORT / NewCARGOTRANSPORT / NewFREIGHTTRANSPORT by cargo semantics
+ESCORT  -> NewESCORT
 ```
 
-Erst danach kann Gate 2 bewertet werden.
-
-## 7. Merge-Readiness
-
-### Aktueller Stand
+Am tatsächlich eingebetteten MOOSE-Stand gilt ausdrücklich:
 
 ```text
-MERGE TO MAIN NOW: NOT RECOMMENDED
+AUFTRAG:NewOPSTRANSPORT(...)
+= implementation commented out
+= not callable
+= MUST NOT USE
 ```
 
-Begründung:
+### Lifecycle
 
-1. Der Branch ist aktuell drei Commits hinter `main` und muss vor Integration reconciliiert werden.
-2. Phase 2 ist noch nicht abgeschlossen; damit ist die MOOSE-Adaptergrenze noch nicht vollständig verifiziert.
-3. Gate 2 ist offen und Phase 3 ist laut Manifest weiterhin gesperrt.
-4. Mehrere branch-lokale Dokumente verwenden korrekt `source_commit: PENDING_MERGE`; vor beziehungsweise im Integrationsschritt müssen ihre Provenienz und die Dokumentregister-Regeln für `main` bereinigt werden.
-5. Ein Merge jetzt würde eine nur teilweise verifizierte MOOSE-Foundation auf `main` heben und unmittelbar danach weitere grundlegende Phase-2-Änderungen erfordern.
+MOOSE stellt native Assignment-, Queue-, `OpsOnMission`-, `FlightOnMission`-, `ArmyOnMission`-, AUFTRAG- und OPSGROUP-Lifecycle-Hooks bereit.
 
-### Empfohlener Merge-Checkpoint
-
-Der fachlich saubere Integrationspunkt ist:
+Wichtige Semantik:
 
 ```text
-complete Phase 2
-→ Gate 2 PASS
-→ reconcile branch with current main
-→ full diff / documentation / registry / provenance review
-→ documentation validator
-→ owner merge decision
-→ merge Foundation milestone to main
-→ begin Phase 3 AAR vertical integration from current main
+MOOSE DONE != OMW mission success
+MOOSE cancellation != CampaignState settlement
+MOOSE runtime UID != OMW mission_id
 ```
 
-Damit werden Phase 0, Phase 1 und die vollständige MOOSE-First-Verifikation als ein konsistenter Foundation-Meilenstein integriert, bevor produktiver Air-Tasking-Adaptercode entsteht.
-
-## 8. Unveränderte Sperren
-
-Bis Gate 2 abgeschlossen ist:
+### Authority / Allocation
 
 ```text
-NO productive Air Tasking adapter runtime
-NO Phase-3 AAR integration
-NO parallel OMW command/asset dispatcher
-NO CHIEF replacement
-NO new strategic resource authority outside CampaignState
-NO VALIDATED claim without documented DCS evidence
+OMW / CampaignState
+= strategic authority / availability / reservation / settlement / persistence
+
+MOOSE
+= operational capability / recruitment / assignment / physical execution
 ```
 
-## 9. Nächster To-do-Punkt
+Eine parallele OMW-Command-/Capability-/Asset-Dispatcher-Engine ist weder erforderlich noch zulässig.
 
-Der nächste Manifestpunkt ist unverändert:
+## 7. Offizielle MOOSE-Beispiele
+
+Auf `FlightControl-Master/MOOSE_MISSIONS_UNPACKED`, Branch `develop`, wurden die benötigten Kombinationen bestätigt:
 
 ```text
-SQUADRON / PLATOON relevant APIs verify
+OPS - Airwing/Airwing - 010 - Fighter Wing
+SQUADRON -> AIRWING -> AUFTRAG -> FLIGHTGROUP
+
+OPS - Brigade/Brigade - 010 - Patrol Mission
+PLATOON -> BRIGADE -> AUFTRAG -> ARMYGROUP
+
+OPS - Commander/Commander - 020 - Bombing with Airwings
+COMMANDER -> multiple AIRWINGs -> AUFTRAG -> OPSGROUP
 ```
 
-Danach folgen `AUFTRAG`, Mission Assignment/Lifecycle/FSM, `FLIGHTGROUP`/`ARMYGROUP`, offizielle Kombinationen, Authority-/Allocation-Abgleich und die finale Adaptergrenze.
+## 8. Gate 2
+
+```text
+GATE 2: PASS
+scope: MOOSE-first source / official-example / architecture verification
+validated_in_dcs: false
+```
+
+Es wurde keine Framework-Lücke gefunden, die für diesen Foundation-Scope eine produktive Nicht-MOOSE- oder Native-DCS-Parallelimplementierung rechtfertigt.
+
+## 9. Merge-Readiness
+
+```text
+MERGE TO MAIN NOW: NOT YET RECOMMENDED
+```
+
+Nicht mehr wegen eines offenen Gate 2, sondern weil vor Integration noch erforderlich sind:
+
+```text
+current-main reconciliation
+full branch diff review
+document metadata / registry / provenance review
+documentation validator
+owner merge decision
+```
+
+`source_commit: PENDING_MERGE` ist auf diesem ungemergten Branch zulässig, darf aber nicht unverändert auf `main` verbleiben.
+
+## 10. Nächster fachlicher Schritt
+
+```text
+PHASE 3 – First Vertical Integration: AAR
+```
+
+Vor produktivem Adaptercode ist zunächst die aktuelle AAR-Schnittstelle gegen die verbindliche `main`-Baseline zu prüfen. Danach ist nur die kleinste notwendige Air-Tasking-Korrelationsschicht um den bestehenden AAR-Adapter zu implementieren.
+
+Unverändert verboten:
+
+```text
+replace existing AAR strategic adapter
+recompute AAR MissionDemand / Area / Profile logic in Air Tasking
+create a second tanker inventory
+bypass CampaignState exact-once settlement
+persist MOOSE/DCS runtime objects as campaign truth
+claim new DCS validation without a documented DCS test
+```
