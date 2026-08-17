@@ -162,7 +162,31 @@ DO NOT USE automatic RTZ for immobile field assets outside their return zone.
 
 Für mobile Gruppen ist der Source-Pfad grundsätzlich physisch geroutet. Wegen DCS-Ground-Pathfinding ist er trotzdem erst nach einem Test mit den konkreten OMW-Road- und Withdrawal-Ankern zulässig.
 
-Beim `Returned`-Event ruft `ARMYGROUP` bei gebundener Legion `self.legion:__AddAsset(10, self.group, 1)` auf. Ob und wann die physische Gruppe dabei verschwindet, wie Schäden übernommen werden und wie eine spätere Re-Materialisierung aussieht, muss im vollständigen LEGION/WAREHOUSE-Lifecycle und anschließend in DCS geprüft werden. Aus dem Source-Ausschnitt allein wird **keine** OMW-Reconstitution-Freigabe abgeleitet.
+Der vollständige Return-Pfad ist inzwischen source-seitig eindeutiger:
+
+```text
+ARMYGROUP:onafterReturned(...)
+-> self.legion:__AddAsset(10, self.group, 1)
+-> WAREHOUSE:onafterAddAsset(...)
+-> returned asset marked spawned=false/requested=false
+-> current physical group is removed
+```
+
+`WAREHOUSE:onafterAddAsset(...)` dokumentiert ausdrücklich, dass eine noch lebende Gruppe beim Hinzufügen zum Warehouse-Stock zerstört wird. Für eine bekannte OPSGROUP ruft der Source `opsgroup:Despawn(0, true)` und anschließend `opsgroup:__Stop(-0.01)` auf; andernfalls folgt `group:Destroy()`.
+
+Damit ist für OMW nicht mehr nur ein abstraktes Despawn-Risiko bekannt: **`Returned` führt im normalen LEGION/WAREHOUSE-Rückgabepfad nach der verzögerten AddAsset-Verarbeitung zur Entfernung der physischen Gruppe.** Der Return-Punkt ist deshalb eine harte Visual-Boundary-Frage.
+
+Produktive Konsequenz:
+
+```text
+RETURNED_TO_WAREHOUSE
+requires either:
+- a player-non-observable return/despawn boundary
+OR
+- a different MOOSE lifecycle that leaves the field group physical
+```
+
+Die zweite Variante darf nicht durch eigene Parallel-Logik improvisiert werden. Zuerst ist zu prüfen, ob MOOSE den benötigten persistent-field-Lifecycle über vorhandene Mission/FSM-/Assetpfade abbildet. Erst wenn das nicht möglich ist, wäre eine Ausnahmeentscheidung des Projektinhabers erforderlich.
 
 ### 4.5 `OPSTRANSPORT` und `OPSGROUP` Cargo
 
@@ -173,6 +197,8 @@ OPSTRANSPORT:New(CargoGroups, PickupZone, DeployZone)
 OPSTRANSPORT:SetEmbarkZone(...)
 OPSTRANSPORT:SetDisembarkZone(...)
 OPSTRANSPORT:SetDisembarkActivation(...)
+OPSTRANSPORT:SetDisembarkCarriers(...)
+OPSTRANSPORT:SetDisembarkInUtero(...)
 OPSTRANSPORT:AddPathTransport(PathGroup, Reversed, Radius, TransportZoneCombo)
 OPSTRANSPORT:SetRequiredCarriers(...)
 OPSTRANSPORT:SetTime(...)
@@ -181,7 +207,19 @@ OPSTRANSPORT:SetPriority(...)
 
 `AddPathTransport` liest die Mission-Editor-Wegpunkte einer angegebenen Gruppe und filtert den Pfad über deren Group Category. Damit ist die Funktion für OMW prinzipiell interessant, weil vorab validierte Ground-Routen als explizite Transportpfade vorgegeben werden können, statt beliebiges dynamisches Pathfinding zu verlangen.
 
-Der Cargo-Lifecycle ist nicht rein abstrakt: mobile Ground-Cargo-Gruppen können zum Carrier fahren und boarden. Gleichzeitig enthält der Source direkte Load-/Unload-/Disembark-Pfade sowie eine `DisembarkActivation`-Option. Diese Pfade müssen mit realen OMW-Carriern und Cargo-Gruppen in DCS geprüft werden, bevor sie für sichtbare OP-Resupply- oder Reinforcement-Abläufe freigegeben werden.
+Der Cargo-Lifecycle ist nicht rein abstrakt. Der gepinnte Source zeigt beim Unload konkret:
+
+```text
+OPSGROUP:onafterUnload(...)
+-> cargo status becomes NOTCARGO
+-> template is copied
+-> unit coordinates are rewritten around the unload coordinate
+-> OpsGroup:_Respawn(0, Template)
+```
+
+`SetDisembarkActivation(false)` kann die Gruppe dabei als late activated anlegen. `SetDisembarkInUtero(...)` und `SetDisembarkCarriers(...)` bieten weitere Transferpfade, ändern aber nichts daran, dass der normale coordinate-based Unload eine physische Re-Materialisierung über `_Respawn(...)` enthält.
+
+Das ist nicht automatisch ein sichtbarer Teleport: während des Transports ist die Gruppe Cargo, und ein Entladen am Carrier kann visuell plausibel sein. Für OMW muss aber in DCS verifiziert werden, **wo**, **wann** und **wie** die Gruppe beim Embark/Load und Unload/Disembark verschwindet beziehungsweise erscheint. Insbesondere für OP-Reinforcement in Sichtweite von Spielern ist der Source allein kein Acceptance-Nachweis.
 
 `OPSTRANSPORT` ist deshalb weiterhin `PLANNED`, nicht `VALIDATED`.
 
@@ -210,8 +248,8 @@ Bis zur expliziten Acceptance sind mindestens folgende Pfade ausgeschlossen:
 1. BRIGADE:LoadBackAssetInPosition(...) in player-observable areas
 2. ARMYGROUP RTZ for immobile groups when outside the return zone
 3. automatic reconstitution by arbitrary SpawnFromCoordinate positions
-4. return/despawn/re-add cycles whose visual boundary is not controlled
-5. OPSTRANSPORT disembark/materialization in visible areas without DCS verification
+4. ARMYGROUP Returned -> WAREHOUSE AddAsset at a player-observable return boundary
+5. OPSTRANSPORT coordinate unload/materialization in visible areas without DCS verification
 6. arbitrary Ground-AI routes without validated road/assembly/withdrawal anchors
 ```
 
@@ -233,9 +271,12 @@ PLATOON/COHORT
 
 ARMYGROUP
 -> executes physical ground movement and mission FSM
+-> Returned normally hands the group back to LEGION/WAREHOUSE
+-> Warehouse AddAsset removes the physical returned group
 
 OPSTRANSPORT
 -> can coordinate cargo/carrier transport and predefined transport paths
+-> normal coordinate unload re-materializes cargo through OPSGROUP:_Respawn
 ```
 
 Noch **nicht** belastbar entschieden ist:
@@ -244,7 +285,7 @@ Noch **nicht** belastbar entschieden ist:
 - exactly four OMW Ground Nodes = exactly four MOOSE BRIGADEs
 - exact PLATOON role matrix and group strengths
 - persistent-field/reconstitution contract
-- exact return/despawn boundary
+- exact hidden return/despawn boundaries
 - production OPSTRANSPORT workflow for OP reinforcement/resupply
 ```
 
@@ -256,11 +297,11 @@ Vor produktiver Runtime-Implementierung sind mindestens erforderlich:
 
 1. einen minimalen BRIGADE/PLATOON-Selektionsversuch mit zwei unterschiedlich begrenzten Rollen bauen;
 2. Mission Capability und Range einschließlich eines AUFTRAG mit eigener `engageRange` prüfen;
-3. mobile ARMYGROUP-Rückkehr auf einer validierten Route prüfen;
-4. immobile RTZ bewusst **nicht** verwenden und einen OMW-konformen alternativen Lifecycle entwerfen;
-5. Returned -> LEGION/WAREHOUSE-Lifecycle einschließlich sichtbarer Gruppengrenzen testen;
+3. mobile ARMYGROUP-Rückkehr auf einer validierten Route bis zu einer **nicht beobachtbaren** Return Zone prüfen;
+4. verifizieren, dass `Returned -> __AddAsset -> WAREHOUSE:onafterAddAsset` dort wie im Source erwartet zur physischen Gruppenentfernung führt;
+5. immobile RTZ bewusst **nicht** verwenden und den vorhandenen MOOSE-Lifecycle auf eine OMW-konforme Alternative prüfen;
 6. OPSTRANSPORT mit einem Ground-Carrier und vorgegebenem `AddPathTransport`-Pfad prüfen;
-7. Embark/Load/Unload/Disembark auf sichtbare Teleports, Despawns und Multiplayer-Synchronität beobachten;
+7. Embark/Load/Unload/Disembark einschließlich `_Respawn(...)` auf sichtbare Sprünge, Aktivierungszustand und Multiplayer-Synchronität beobachten;
 8. erst danach die konkrete Node-/PLATOON-Topologie festlegen und Runtime-Code produzieren.
 
 ## 9. Architekturgrenze
