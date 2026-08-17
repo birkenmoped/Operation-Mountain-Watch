@@ -12,8 +12,8 @@ project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
   - class index without consolidated AIRWING lifecycle evidence
 superseded_by:
-source_branch: agent/aar-fuel-telemetry-calibration
-source_commit: 7d55a1383cbf3f52ea776d7354b37dbe5a920466
+source_branch: agent/air-tasking-plan-foundation
+source_commit: PENDING_MERGE
 validated_in_dcs: partial
 ---
 
@@ -33,9 +33,18 @@ Technische Lifecycle-Details:
 - [`OMW-MOOSE-STORAGE-WAREHOUSE-RESOURCE-FOUNDATION`](STORAGE-WAREHOUSE-RESOURCE-FOUNDATION.md)
 - [`OMW-MOOSE-ISR-FAC-CAS-AAR`](ISR-FAC-CAS-AAR.md)
 - [`OMW-MOOSE-AAR-LRC-TRANSIT`](AAR-LRC-TRANSIT.md)
+- [`OMW-MOOSE-AIR-TASKING-C2-LIFECYCLE`](AIR-TASKING-C2-LIFECYCLE.md)
 - [`OMW-AIR-TASKING-PLAN-PHASE2-CHIEF-VERIFICATION`](../air-tasking-plan-phase2-chief-capability-verification.md)
 - [`OMW-AIR-TASKING-PLAN-PHASE2-COMMANDER-VERIFICATION`](../air-tasking-plan-phase2-commander-capability-verification.md)
 - [`OMW-AIR-TASKING-PLAN-PHASE2-AIRWING-BRIGADE-VERIFICATION`](../air-tasking-plan-phase2-airwing-brigade-capability-verification.md)
+- [`OMW-AIR-TASKING-PLAN-PHASE2-SQUADRON-PLATOON-VERIFICATION`](../air-tasking-plan-phase2-squadron-platoon-capability-verification.md)
+- [`OMW-AIR-TASKING-PLAN-PHASE2-AUFTRAG-CONSTRUCTION-VERIFICATION`](../air-tasking-plan-phase2-auftrag-construction-verification.md)
+- [`OMW-AIR-TASKING-PLAN-PHASE2-MISSION-LIFECYCLE-VERIFICATION`](../air-tasking-plan-phase2-mission-lifecycle-verification.md)
+- [`OMW-AIR-TASKING-PLAN-PHASE2-OPSGROUP-INTEGRATION-VERIFICATION`](../air-tasking-plan-phase2-opsgroup-integration-verification.md)
+- [`OMW-AIR-TASKING-PLAN-PHASE2-OFFICIAL-EXAMPLES-VERIFICATION`](../air-tasking-plan-phase2-official-examples-verification.md)
+- [`OMW-AIR-TASKING-PLAN-PHASE2-AUTHORITY-ALLOCATION-VERIFICATION`](../air-tasking-plan-phase2-authority-allocation-verification.md)
+- [`OMW-AIR-TASKING-PLAN-PHASE2-ADAPTER-BOUNDARY`](../air-tasking-plan-phase2-adapter-boundary.md)
+- [`OMW-AIR-TASKING-PLAN-PHASE2-GATE-ASSESSMENT`](../air-tasking-plan-phase2-gate-assessment.md)
 
 ## 2. Statusbedeutung
 
@@ -55,23 +64,25 @@ REJECTED_FOR_PROJECT_USE
 | Klasse | Projektstatus | Geltungsgrenze |
 |---|---|---|
 | `AIRBASE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Auflösung, ID, Parkingdump und airfield-spezifische Kalibrierung |
-| `AIRWING` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Bestehender OMW-Scope: Konstruktion, Stockregistrierung, SQUADRON-Bindung und direkter AUFTRAG-Dispatch. Air-Tasking-Phase-2 zusätzlich source-geprüft: LEGION-Layer unter COMMANDER, `AddSquadron`, Payload-/Mission-Queue, `FlightOnMission` sowie autonome CAP/TANKER/AWACS/RECON/RESCUEHELO-Erzeugung. `AddSquadron` kann bei limitiertem DCS STORAGE Aircraft/Fuel ergänzen; dies bleibt Integrationsgrenze zu CampaignState. Externe OMW-AAR-Pools verwenden bewusst kein AIRWING. |
-| `SQUADRON` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Foundation-Bestände und post-start Assetbindung |
+| `AIRWING` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Bestehender OMW-Scope praktisch bestätigt; Air-Tasking zusätzlich source-geprüft als LEGION-Layer unter COMMANDER mit SQUADRON-/Payload-/Mission-Queue und `FlightOnMission`. Ressourcen-Seiteneffekte bleiben Grenze zu CampaignState. |
+| `SQUADRON` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Foundation-Bestände praktisch bestätigt; Air-Tasking zusätzlich source-/demo-geprüft für COHORT-Capability, Performance und AIRWING-Bindung. |
+| `PLATOON` | `SOURCE_REVIEWED` | Air-Tasking source-/demo-geprüft für COHORT-Capability, BRIGADE-Bindung und `ArmyOnMission`; keine neue Ground-DCS-Acceptance. |
 | `WAREHOUSE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | AirOps-Stock-/Asset-Lifecycle; kein WAREHOUSE für externe MANAS-/AL_UDEID-AAR-count-Pools |
 | `STORAGE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | CampaignState->DCS-Warehouse Mirror/Telemetry; keine strategische Rückautorität |
-| `COHORT` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Asset-/Mission-Capability-Pfade für dokumentierte AirOps-Foundations |
-| `FLIGHTGROUP` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | AAR FuelLow, Dead/OnAfterDead, GetCoordinate, `AddWaypoint(...)`, `AddMission(...)` und `OnAfterPassingWaypoint(...)`; Acceptance 7 bestätigte FIR -> 60-NM -> AUFTRAG sowie Egress -> External Handoff |
-| `COMMANDER` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | bestehender OMW-Lifecycle praktisch bestätigt; Air-Tasking-Phase-2 am Commit `73d3ed119cd9e7e3f2cfcabbaa34513d30529b54` source-geprüft für `New`, LEGION-Anbindung, `CanMission`, Mission Queue, native Asset-Rekrutierung, `MissionAssign`, `MissionCancel` und `OpsOnMission`; vorgesehener MOOSE-C2-/Mission-Assignment-Layer unterhalb CampaignState/Air Tasking, nicht strategische Ressourcenautorität |
-| `AUFTRAG` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | AAR `NewTANKER`, `SetMissionAltitude`, Mission-Egress und `Cancel()` praktisch bestätigt; finaler Inbound fügt AUFTRAG erst nach Passage des 60-NM-Wegpunkts hinzu |
+| `COHORT` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Bestehende Capability-Pfade praktisch bestätigt; Air-Tasking zusätzlich source-geprüft für `AddMissionCapability(MissionTypes, Performance)` als native Capability-/Performance-Grenze. |
+| `FLIGHTGROUP` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Praktisch bestätigt im dokumentierten AAR-Scope; Air-Tasking zusätzlich source-geprüft über OPSGROUP für MissionStart/Execute/Cancel/Done und `FlightOnMission`, ohne den praktischen Scope auf andere Missionstypen zu erweitern. |
+| `COMMANDER` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Bestehender OMW-Lifecycle praktisch bestätigt; Air-Tasking source-/demo-geprüft für LEGION-Anbindung, `CanMission`, native Rekrutierung, Assignment, Cancellation und `OpsOnMission`; keine strategische Ressourcenautorität. |
+| `AUFTRAG` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Praktisch bestätigt bleibt der AAR-Scope. Air-Tasking zusätzlich source-geprüft für CAS, RECON, ESCORT, TROOP/CARGO/FREIGHT transport, Zeit-/Priority-/Repeat-/RequiredAssets-Parameter und FSM. `NewRESCUEHELO` ist kein generisches CSAR; `NewOPSTRANSPORT` ist im gepinnten Stand auskommentiert/nicht aufrufbar. |
 | `SPAWN` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | area-spezifische AAR-Templates, stabile Sortie-Callsign-Familie und 480-kt-In-Air-Materialisierung praktisch bestätigt; keine erzwungene `InitSTN()`, keine nachgewiesene `InitFuel()`-API |
 | `SCHEDULER` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Source-Queue, Station-Monitoring und Acceptance-Koordination; kein Timer-basierter Late-Approach |
 | `USERFLAG` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Warehouse-Acceptance-Readiness-Pfade |
 | `GROUP`, `UNIT`, `STATIC`, `ZONE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Template-/Static-/Warehouse-/Zonenvalidierung; AAR `UNIT:GetSTN()` und test-only `UNIT:Explode()` bestätigt. `UNIT:GetFuel()`, `UNIT:GetCurrentFuelKgs()` und `UNIT:GetFuelMassMax()` wurden in realen AAR-Fuel-Telemetry-Läufen verwendet. |
 | `COORDINATE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | `Get2DDistance(...)` praktisch verwendet; `GetIntermediateCoordinate(...)` und `HeadingTo(...)` im Acceptance-7-AAR-Pfad praktisch bestätigt |
-| `BRIGADE` | `SOURCE_REVIEWED` | Air-Tasking-Phase-2 am gepinnten Commit source-geprüft: LEGION-Layer unter COMMANDER, `New`, `AddPlatoon`, Mission Queue, `ArmyOnMission`, Retreat-/Rearming-/Refuelling-Zonen. Statusloop kann selbst AMMOSUPPLY/FUELSUPPLY-AUFTRAG erzeugen; keine neue OMW-DCS-Acceptance behauptet. |
-| `ARMYGROUP`, `OPSGROUP` | `PLANNED` / teilweise validiert | Bodenoperationsscope bleibt geplant; für AAR sind Despawn, Radio-/TACAN-Switch und PassingWaypoint-FSM im dokumentierten Scope praktisch bestätigt |
-| `OPSTRANSPORT` | `PLANNED` | taktischer Transport |
-| `CTLD`, `CSAR`, `AICSAR` | `PLANNED` / teilweise verwendet | separate Acceptance erforderlich |
+| `BRIGADE` | `SOURCE_REVIEWED` | Air-Tasking source-/demo-geprüft als LEGION-Layer mit PLATOON, Mission Queue und `ArmyOnMission`; autonome Supply-AUFTRAG bleiben Integrationsgrenze. |
+| `OPSGROUP` | `SOURCE_REVIEWED` / teilweise validiert | Air-Tasking source-geprüft für Mission Queue/current mission sowie MissionStart/Execute/Cancel/Done. Praktische AAR-Nachweise behalten ihren exakten Scope. |
+| `ARMYGROUP` | `SOURCE_REVIEWED` | Air-Tasking source-/demo-geprüft als BRIGADE-Runtimegruppe über OPSGROUP; Ground-Runtime-/Pathfinding-Acceptance offen. |
+| `OPSTRANSPORT` | `PLANNED` | taktischer Transport als eigene MOOSE-Klasse; nicht mit dem nicht aufrufbaren `AUFTRAG:NewOPSTRANSPORT(...)` verwechseln. |
+| `CTLD`, `CSAR`, `AICSAR` | `PLANNED` / teilweise verwendet | Separate Acceptance erforderlich. Air-Tasking bestätigt die dedizierte MOOSE-CSAR/AICSAR-Familie als generischen CSAR-Pfad, nicht `NewRESCUEHELO`. |
 | `INTEL` | `PLANNED` | taktisches Lagebild; Laufzeitnachweis offen |
 | `INTEL_DLINK` | `CANDIDATE` | Aggregation getrennter Netze; Performance offen |
 | `PLAYERRECCE` | `CANDIDATE` | spielergeführte Aufklärung; Multiplayerprüfung offen |
@@ -79,7 +90,7 @@ REJECTED_FOR_PROJECT_USE
 | `DETECTION_*` | `PLANNED` | Spezialfälle; kein paralleles strategisches Lagebild neben `INTEL` |
 | `Core.Astar`, `PATHLINE`, `MOVEMENT` | `PLANNED` | Routing und Bewegungsbegrenzung |
 | `_DATABASE` | `INTERNAL_RESTRICTED` | nur Diagnose/Validierung; aktueller AAR-Produktionspfad verwendet `_DATABASE` nicht |
-| `CHIEF` | `REJECTED_FOR_PROJECT_USE` | Air-Tasking-Phase-2 am Commit `73d3ed119cd9e7e3f2cfcabbaa34513d30529b54` source-geprüft: erzeugt eigenen `COMMANDER`, erweitert `INTEL` und trägt Strategy/DEFCON/Target-/Strategic-Zone-/ResponseOnTarget-Semantik; für OMW wegen Überschneidung mit CampaignState/MissionDemand/Air-Tasking-Autorität `NOT_USED`, ohne eigene CHIEF-Nachbildung |
+| `CHIEF` | `REJECTED_FOR_PROJECT_USE` | Air-Tasking source-geprüft: eigener COMMANDER plus INTEL-/Strategy-/Response-Semantik würde CampaignState/MissionDemand/Air-Tasking-Autorität überlappen; keine CHIEF-Nachbildung. |
 
 ## 4. AAR – gepinnter und Acceptance-7-validierter MOOSE-Scope
 
@@ -258,4 +269,6 @@ Test-only Artificial FuelLow, `UNIT:Explode()`-Loss-Injection, Acceptance-Zeitbe
 
 ## 7. Nachweisregel
 
-Ein Klassenstatus wird nur angehoben, wenn MOOSE-Version/Commit, OMW-Source, Mission, Hashes, beobachtetes Verhalten und Einschränkungen dokumentiert sind. `VALIDATED_FOR_DOCUMENTED_SCOPE` für den neuen AAR-Routingpfad gilt ausschließlich für die oben dokumentierte Acceptance-7-Provenienz und darf nicht pauschal auf andere MOOSE-/DCS-/Missionsstände übertragen werden.
+Ein Klassenstatus wird nur angehoben, wenn MOOSE-Version/Commit, OMW-Source, Mission, Hashes, beobachtetes Verhalten und Einschränkungen dokumentiert sind. `VALIDATED_FOR_DOCUMENTED_SCOPE` für den AAR-Routingpfad gilt ausschließlich für die oben dokumentierte Acceptance-7-Provenienz und darf nicht pauschal auf andere MOOSE-/DCS-/Missionsstände übertragen werden.
+
+Die Air-Tasking-Phase-2-Erweiterungen in diesem Index sind, soweit nicht ausdrücklich anders gekennzeichnet, **source-/official-example-geprüft und nicht neu in DCS validiert**.
