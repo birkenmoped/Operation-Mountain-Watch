@@ -35,6 +35,7 @@ Technische Lifecycle-Details:
 - [`OMW-MOOSE-AAR-LRC-TRANSIT`](AAR-LRC-TRANSIT.md)
 - [`OMW-AIR-TASKING-PLAN-PHASE2-CHIEF-VERIFICATION`](../air-tasking-plan-phase2-chief-capability-verification.md)
 - [`OMW-AIR-TASKING-PLAN-PHASE2-COMMANDER-VERIFICATION`](../air-tasking-plan-phase2-commander-capability-verification.md)
+- [`OMW-AIR-TASKING-PLAN-PHASE2-AIRWING-BRIGADE-VERIFICATION`](../air-tasking-plan-phase2-airwing-brigade-capability-verification.md)
 
 ## 2. Statusbedeutung
 
@@ -54,7 +55,7 @@ REJECTED_FOR_PROJECT_USE
 | Klasse | Projektstatus | Geltungsgrenze |
 |---|---|---|
 | `AIRBASE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Auflösung, ID, Parkingdump und airfield-spezifische Kalibrierung |
-| `AIRWING` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Konstruktion, Stockregistrierung, SQUADRON-Bindung und direkter AUFTRAG-Dispatch; externe OMW-AAR-Pools verwenden bewusst kein AIRWING |
+| `AIRWING` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Bestehender OMW-Scope: Konstruktion, Stockregistrierung, SQUADRON-Bindung und direkter AUFTRAG-Dispatch. Air-Tasking-Phase-2 zusätzlich source-geprüft: LEGION-Layer unter COMMANDER, `AddSquadron`, Payload-/Mission-Queue, `FlightOnMission` sowie autonome CAP/TANKER/AWACS/RECON/RESCUEHELO-Erzeugung. `AddSquadron` kann bei limitiertem DCS STORAGE Aircraft/Fuel ergänzen; dies bleibt Integrationsgrenze zu CampaignState. Externe OMW-AAR-Pools verwenden bewusst kein AIRWING. |
 | `SQUADRON` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Foundation-Bestände und post-start Assetbindung |
 | `WAREHOUSE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | AirOps-Stock-/Asset-Lifecycle; kein WAREHOUSE für externe MANAS-/AL_UDEID-AAR-count-Pools |
 | `STORAGE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | CampaignState->DCS-Warehouse Mirror/Telemetry; keine strategische Rückautorität |
@@ -67,7 +68,8 @@ REJECTED_FOR_PROJECT_USE
 | `USERFLAG` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Warehouse-Acceptance-Readiness-Pfade |
 | `GROUP`, `UNIT`, `STATIC`, `ZONE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Template-/Static-/Warehouse-/Zonenvalidierung; AAR `UNIT:GetSTN()` und test-only `UNIT:Explode()` bestätigt. `UNIT:GetFuel()`, `UNIT:GetCurrentFuelKgs()` und `UNIT:GetFuelMassMax()` wurden in realen AAR-Fuel-Telemetry-Läufen verwendet. |
 | `COORDINATE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | `Get2DDistance(...)` praktisch verwendet; `GetIntermediateCoordinate(...)` und `HeadingTo(...)` im Acceptance-7-AAR-Pfad praktisch bestätigt |
-| `ARMYGROUP`, `BRIGADE`, `OPSGROUP` | `PLANNED` / teilweise validiert | Bodenoperationsscope bleibt geplant; für AAR sind Despawn, Radio-/TACAN-Switch und PassingWaypoint-FSM im dokumentierten Scope praktisch bestätigt |
+| `BRIGADE` | `SOURCE_REVIEWED` | Air-Tasking-Phase-2 am gepinnten Commit source-geprüft: LEGION-Layer unter COMMANDER, `New`, `AddPlatoon`, Mission Queue, `ArmyOnMission`, Retreat-/Rearming-/Refuelling-Zonen. Statusloop kann selbst AMMOSUPPLY/FUELSUPPLY-AUFTRAG erzeugen; keine neue OMW-DCS-Acceptance behauptet. |
+| `ARMYGROUP`, `OPSGROUP` | `PLANNED` / teilweise validiert | Bodenoperationsscope bleibt geplant; für AAR sind Despawn, Radio-/TACAN-Switch und PassingWaypoint-FSM im dokumentierten Scope praktisch bestätigt |
 | `OPSTRANSPORT` | `PLANNED` | taktischer Transport |
 | `CTLD`, `CSAR`, `AICSAR` | `PLANNED` / teilweise verwendet | separate Acceptance erforderlich |
 | `INTEL` | `PLANNED` | taktisches Lagebild; Laufzeitnachweis offen |
