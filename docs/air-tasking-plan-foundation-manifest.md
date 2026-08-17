@@ -82,7 +82,8 @@ Wesentliche Abhängigkeiten:
 - `OMW-AIR-TASKING-PLAN-PHASE1-GATE-ASSESSMENT` – branch-lokale Gate-1-Gesamtbewertung;
 - `OMW-AIR-TASKING-PLAN-PHASE2-MOOSE-VERSION-BASELINE` – branch-lokale gepinnte MOOSE-Verifikationsbaseline;
 - `OMW-AIR-TASKING-PLAN-PHASE2-CHIEF-VERIFICATION` – branch-lokale CHIEF-Quellprüfung und Authority-Grenze;
-- `OMW-AIR-TASKING-PLAN-PHASE2-COMMANDER-VERIFICATION` – branch-lokale COMMANDER-Quellprüfung, Asset-Rekrutierung und operative C2-Grenze.
+- `OMW-AIR-TASKING-PLAN-PHASE2-COMMANDER-VERIFICATION` – branch-lokale COMMANDER-Quellprüfung, Asset-Rekrutierung und operative C2-Grenze;
+- `OMW-AIR-TASKING-PLAN-PHASE2-AIRWING-BRIGADE-VERIFICATION` – branch-lokale LEGION-Quellprüfung für AIRWING/BRIGADE, autonome Missionsgeneratoren und Ressourcen-Seiteneffekte.
 
 Die AAR-Finalisierung ist inzwischen auf `main` integriert. Die konkrete AAR-Runtime-Anbindung bleibt dennoch bis Phase 3 gesperrt; bis dahin werden ausschließlich die Foundation-Verträge und die MOOSE-First-Verifikation abgeschlossen.
 
@@ -317,7 +318,7 @@ Mindestens:
 - [x] pinned MOOSE branch/commit/hash aus `docs/moose/VERSION-AND-SOURCES.md` übernehmen;
 - [x] `CHIEF`-relevante APIs und Verantwortungsgrenzen prüfen;
 - [x] `COMMANDER`-relevante APIs prüfen;
-- [ ] `AIRWING`-/`BRIGADE`-relevante APIs prüfen;
+- [x] `AIRWING`-/`BRIGADE`-relevante APIs prüfen;
 - [ ] `SQUADRON`-/`PLATOON`-relevante APIs prüfen;
 - [ ] `AUFTRAG`-Konstruktion und Missionstypen prüfen;
 - [ ] Mission Assignment/Lifecycle/FSM-Callbacks prüfen;
