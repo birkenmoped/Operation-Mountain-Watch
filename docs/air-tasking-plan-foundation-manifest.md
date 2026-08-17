@@ -72,7 +72,9 @@ Wesentliche Abhängigkeiten:
 - `OMW-AIR-TASKING-PLAN-PHASE0-MOOSE-COMMAND-MODEL-DECISION` – MOOSE-zentrierte C2-Designentscheidung;
 - `OMW-AIR-TASKING-PLAN-PHASE0-VIEW-AUTHORITY` – branch-lokale View-/Briefing-Autoritätsgrenze;
 - `OMW-AIR-TASKING-PLAN-PHASE1-DOMAIN-DATA-CONTRACT` – branch-lokaler Phase-1-Kerndatenvertrag;
-- `OMW-AIR-TASKING-PLAN-PHASE1-MISSION-TYPE-FIELDS` – branch-lokale missionstypabhängige Feldprofile.
+- `OMW-AIR-TASKING-PLAN-PHASE1-MISSION-TYPE-FIELDS` – branch-lokale missionstypabhängige Feldprofile;
+- `OMW-AIR-TASKING-PLAN-PHASE1-STATUS-LIFECYCLE` – branch-lokale Request-/Mission-Statusautomaten und Transitionen;
+- `OMW-AIR-TASKING-PLAN-PHASE1-CANCELLATION-FAILURE-SETTLEMENT` – branch-lokale Cancellation-/Failure-/Settlement-Grenze.
 
 Die AAR-Finalisierung ist inzwischen auf `main` integriert. Die konkrete AAR-Runtime-Anbindung bleibt dennoch bis Phase 3 gesperrt; bis dahin werden ausschließlich die Foundation-Verträge und die MOOSE-First-Verifikation abgeschlossen.
 
@@ -222,9 +224,9 @@ provides read-only data for player-facing views
 
 - [x] konkrete Lua-Datenverträge beziehungsweise Modulschnittstellen entwerfen;
 - [x] Pflicht-/Optionalfelder je Missionstyp festlegen;
-- [ ] Statusautomaten für Request und Mission getrennt definieren;
-- [ ] erlaubte Statusübergänge dokumentieren;
-- [ ] Cancellation-/Failure-Semantik definieren;
+- [x] Statusautomaten für Request und Mission getrennt definieren;
+- [x] erlaubte Statusübergänge dokumentieren;
+- [x] Cancellation-/Failure-Semantik definieren;
 - [ ] Support-Beziehungen bidirektional nachvollziehbar machen, ohne zyklische Ressourcenhoheit zu erzeugen;
 - [ ] Player-/AI-Assignment als Planungsattribut definieren, nicht als zweite Aircraft-Resource-Tabelle;
 - [ ] Serialisierbarkeit der persistenten Teilmenge festlegen;
