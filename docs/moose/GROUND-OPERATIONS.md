@@ -138,7 +138,7 @@ PLATOON role
 
 Die konkrete Rollenmatrix pro Node bleibt offen und benötigt anschließend DCS-Selektionsnachweise.
 
-### 4.4 `ARMYGROUP`
+### 4.4 `ARMYGROUP` und Return-/Persistent-Field-Lifecycle
 
 `ARMYGROUP` ist die operative physische Ground-Gruppe. Source-verifiziert sind unter anderem Routing-/Waypoint-, Mission-, Rearm-, Retreat-, RTZ- und Returned-FSM-Pfade.
 
@@ -162,7 +162,7 @@ DO NOT USE automatic RTZ for immobile field assets outside their return zone.
 
 Für mobile Gruppen ist der Source-Pfad grundsätzlich physisch geroutet. Wegen DCS-Ground-Pathfinding ist er trotzdem erst nach einem Test mit den konkreten OMW-Road- und Withdrawal-Ankern zulässig.
 
-Der vollständige Return-Pfad ist inzwischen source-seitig eindeutiger:
+Der vollständige normale Return-Pfad ist source-seitig eindeutig:
 
 ```text
 ARMYGROUP:onafterReturned(...)
@@ -176,17 +176,45 @@ ARMYGROUP:onafterReturned(...)
 
 Damit ist für OMW nicht mehr nur ein abstraktes Despawn-Risiko bekannt: **`Returned` führt im normalen LEGION/WAREHOUSE-Rückgabepfad nach der verzögerten AddAsset-Verarbeitung zur Entfernung der physischen Gruppe.** Der Return-Punkt ist deshalb eine harte Visual-Boundary-Frage.
 
+Zusätzlich ist jetzt ein vorhandener MOOSE-Pfad für **physisch im Feld verbleibende** Ground-Assets source-verifiziert:
+
+```lua
+AUFTRAG:SetReturnToLegion(false)
+```
+
+Die öffentliche Methode setzt `mission.legionReturn=false`. Beim Ende der Mission übernimmt `OPSGROUP:onafterMissionDone(...)` diesen Wert über `self:SetReturnToLegion(Mission.legionReturn)`. Wenn die Gruppe einer Legion angehört, nicht zur Legion zurückkehren soll und nach dem Mission-Cleanup nur noch ein Wegpunkt vorhanden ist, erzeugt MOOSE einen neuen Wegpunkt an der **aktuellen Position**, entfernt den alten Wegpunkt und lässt die Ground-/Naval-Group dort halten. Der Source-Kommentar beschreibt den Fall ausdrücklich als Gruppe, die nach Missionsende **nicht** zurückkehrt, sondern dort bleibt, wo ihre letzte Mission endet.
+
+Für OMW ist damit ein eigener Parallel-Lifecycle für diesen Grundfall **nicht erforderlich**. Der Kandidatenvertrag lautet:
+
+```text
+mission needs physical field persistence
+-> AUFTRAG:SetReturnToLegion(false)
+-> mission completes
+-> ARMYGROUP remains physical at current position
+-> no Returned -> Warehouse AddAsset path at mission end
+```
+
+Grenzen:
+
+- Source-Review beweist noch kein DCS-Verhalten mit den konkreten OMW-Gruppen und Missionstypen.
+- Der Mechanismus löst nicht automatisch Reconstitution nach Missionsneustart, Verlustersatz oder späteren gezielten Rückzug.
+- Ein späterer Auftrag kann weiterhin einen Return auslösen, wenn dessen Lifecycle entsprechend konfiguriert ist.
+- Für mobile Rückverlegung in den Bestand bleibt der physische Weg bis zu einer nicht beobachtbaren Return Zone plus anschließender Warehouse-Rückgabe der bevorzugte MOOSE-first-Kandidat.
+- Für dauerhaft stationäre OP-/FOB-Defense-Gruppen ist `SetReturnToLegion(false)` jetzt der primäre MOOSE-first-Testkandidat vor jeder Eigenentwicklung.
+
 Produktive Konsequenz:
 
 ```text
-RETURNED_TO_WAREHOUSE
-requires either:
-- a player-non-observable return/despawn boundary
-OR
-- a different MOOSE lifecycle that leaves the field group physical
-```
+FIELD_PERSISTENCE
+-> test AUFTRAG:SetReturnToLegion(false) first
 
-Die zweite Variante darf nicht durch eigene Parallel-Logik improvisiert werden. Zuerst ist zu prüfen, ob MOOSE den benötigten persistent-field-Lifecycle über vorhandene Mission/FSM-/Assetpfade abbildet. Erst wenn das nicht möglich ist, wäre eine Ausnahmeentscheidung des Projektinhabers erforderlich.
+RETURNED_TO_WAREHOUSE
+-> route mobile group physically to a player-non-observable return boundary
+-> then allow Returned -> Warehouse AddAsset
+
+IMMOBILE_RETURN
+-> automatic RTZ path remains excluded outside the return zone
+```
 
 ### 4.5 `OPSTRANSPORT` und `OPSGROUP` Cargo
 
@@ -253,6 +281,8 @@ Bis zur expliziten Acceptance sind mindestens folgende Pfade ausgeschlossen:
 6. arbitrary Ground-AI routes without validated road/assembly/withdrawal anchors
 ```
 
+`AUFTRAG:SetReturnToLegion(false)` ist **nicht** in dieser Ausschlussliste: der gepinnte Source enthält genau diesen öffentlichen Ground-/Naval-Persistenzpfad. Er bleibt jedoch bis zum OMW-DCS-Test `SOURCE_REVIEWED`, nicht `VALIDATED`.
+
 Diese Ausschlüsse sind keine Nicht-MOOSE-Ausnahme. Sie begrenzen lediglich MOOSE-Funktionen, deren konkreter Source-Pfad mit OMW-Governance kollidieren kann.
 
 ## 7. Aktueller Architekturstand
@@ -269,8 +299,12 @@ BRIGADE
 PLATOON/COHORT
 -> can restrict mission type and mission range
 
+AUFTRAG
+-> SetReturnToLegion(false) can keep army/navy mission assets in the field after mission completion
+
 ARMYGROUP
 -> executes physical ground movement and mission FSM
+-> can remain at its current position after mission completion when legionReturn=false
 -> Returned normally hands the group back to LEGION/WAREHOUSE
 -> Warehouse AddAsset removes the physical returned group
 
@@ -284,7 +318,7 @@ Noch **nicht** belastbar entschieden ist:
 ```text
 - exactly four OMW Ground Nodes = exactly four MOOSE BRIGADEs
 - exact PLATOON role matrix and group strengths
-- persistent-field/reconstitution contract
+- restart/reconstitution contract for persistent field groups
 - exact hidden return/despawn boundaries
 - production OPSTRANSPORT workflow for OP reinforcement/resupply
 ```
@@ -297,12 +331,14 @@ Vor produktiver Runtime-Implementierung sind mindestens erforderlich:
 
 1. einen minimalen BRIGADE/PLATOON-Selektionsversuch mit zwei unterschiedlich begrenzten Rollen bauen;
 2. Mission Capability und Range einschließlich eines AUFTRAG mit eigener `engageRange` prüfen;
-3. mobile ARMYGROUP-Rückkehr auf einer validierten Route bis zu einer **nicht beobachtbaren** Return Zone prüfen;
-4. verifizieren, dass `Returned -> __AddAsset -> WAREHOUSE:onafterAddAsset` dort wie im Source erwartet zur physischen Gruppenentfernung führt;
-5. immobile RTZ bewusst **nicht** verwenden und den vorhandenen MOOSE-Lifecycle auf eine OMW-konforme Alternative prüfen;
-6. OPSTRANSPORT mit einem Ground-Carrier und vorgegebenem `AddPathTransport`-Pfad prüfen;
-7. Embark/Load/Unload/Disembark einschließlich `_Respawn(...)` auf sichtbare Sprünge, Aktivierungszustand und Multiplayer-Synchronität beobachten;
-8. erst danach die konkrete Node-/PLATOON-Topologie festlegen und Runtime-Code produzieren.
+3. eine Ground-Mission mit `AUFTRAG:SetReturnToLegion(false)` beenden und verifizieren, dass die ARMYGROUP physisch an der aktuellen Position bestehen bleibt;
+4. anschließend derselben Feldgruppe einen Folgeauftrag geben und prüfen, dass keine unbeabsichtigte Re-Materialisierung oder Warehouse-Dublette entsteht;
+5. mobile ARMYGROUP-Rückkehr auf einer validierten Route bis zu einer **nicht beobachtbaren** Return Zone prüfen und dort `Returned -> __AddAsset -> WAREHOUSE:onafterAddAsset` beobachten;
+6. immobile RTZ bewusst **nicht** verwenden;
+7. OPSTRANSPORT mit einem Ground-Carrier und vorgegebenem `AddPathTransport`-Pfad prüfen;
+8. Embark/Load/Unload/Disembark einschließlich `_Respawn(...)` auf sichtbare Sprünge, Aktivierungszustand und Multiplayer-Synchronität beobachten;
+9. Restart/Reconstitution für im Feld verbleibende Gruppen separat definieren und testen;
+10. erst danach die konkrete Node-/PLATOON-Topologie festlegen und Runtime-Code produzieren.
 
 ## 9. Architekturgrenze
 
