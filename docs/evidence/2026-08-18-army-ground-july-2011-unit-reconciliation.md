@@ -6,6 +6,7 @@ owning_policy: OMW-GOV-001
 authoritative_for:
   - source-qualified July-2011-near unit evidence for the active ARMY Ground Foundation nodes
   - explicit limits on company and platoon attribution at Jalalabad, Joyce, Bostick and Wright
+  - evidence-qualified inputs for later OMW ground-vehicle quantity reconstruction
 not_authoritative_for:
   - final OMW ground-force ORBAT strengths
   - final MOOSE BRIGADE or PLATOON topology
@@ -203,3 +204,159 @@ GROUND_NODE_WRIGHT
 ```
 
 Daraus dürfen im nächsten Schritt Rollen-**Kandidaten** für PLATOON-Pools abgeleitet werden. Eine endgültige PLATOON-Struktur, Gruppengröße, DCS-Fahrzeugausstattung oder Artillerie-Proxyentscheidung bleibt eine separate OMW-Designentscheidung und benötigt anschließend MOOSE-/DCS-Tests.
+
+## 7. Fahrzeug- und Logistik-Evidenz für die OMW-Rekonstruktion
+
+### 7.1 Evidenzregel
+
+Da für Juli 2011 keine vollständigen lokalen Property-Book-/Motorpool-Listen vorliegen, werden spätere OMW-Fahrzeugmengen nicht als historische Inventarwerte ausgegeben. Die Rekonstruktion darf jedoch belastbare Mindestmengen, dokumentierte Standortfunktionen, Formationserfordernisse, Verlust-/Recovery-Meldungen und wiederkehrende Logistikmuster kombinieren.
+
+Für die spätere Mengenentscheidung gelten vier Klassen:
+
+```text
+CONFIRMED_MINIMUM
+  directly counted / explicitly reported at the site or in a site-bound event
+
+STRONGLY_SUPPORTED
+  repeated direct evidence for the capability or vehicle family, but no exact local total
+
+INFERRED_RANGE
+  bounded reconstruction from formation, role, site capacity and operational demand
+
+OMW_DESIGN_VALUE
+  explicit project quantity selected from the supported range
+```
+
+### 7.2 Jalalabad / FOB Fenty
+
+DVIDS Story 68119 dokumentiert am 31.03./02.04.2011 den laufenden Cargo-Umschlag auf Jalalabad Airfield/FOB Fenty durch das 339th Movement Control Team. Material wird laufend per Lufttransport angenommen, im Yard umgeschlagen und an Frontverbände weitergegeben.
+
+DVIDS Story 61418 dokumentiert am 17.11.2010 Combat Logistics Patrols zwischen FOB Connolly und FOB Fenty. Genannt werden MRAP gun trucks, heavy up-armored LMTV und ein acht Fahrzeuge umfassender Rücklauf vom Fenty-Supply-Yard. Diese acht Fahrzeuge sind **kein Fenty-Eigentumsbestand**, belegen aber die Größe und Art des am Hub regelmäßig abgefertigten Ground-Logistics-Verkehrs.
+
+Quellen:
+
+- DVIDS Story 68119, *Soldiers keep supplies moving in Afghanistan*, 02.04.2011: <https://www.dvidshub.net/news/68119/soldiers-keep-supplies-moving-afghanistan>
+- DVIDS Story 61418, *A day in the life of an Army truck driver*, 05.12.2010: <https://www.dvidshub.net/news/61418/day-life-army-truck-driver>
+
+Evidenzstatus:
+
+```text
+Fenty major regional supply/distribution hub: CONFIRMED
+MRAP gun-truck / up-armored LMTV logistics traffic: CONFIRMED
+large local/throughput vehicle population: STRONGLY_SUPPORTED
+exact July-2011 organic ground-vehicle inventory: OPEN
+```
+
+### 7.3 FOB Joyce
+
+Die September-2011 Fuel-Blivet-/CH-47-Resupply-Serie bestätigt, dass Joyce selbst Material/Fuel für Weitertransport handhabte. Frühere Operationsdaten im Projektkorpus zeigen zusätzlich wiederholt von Joyce ausgehende QRF-, EOD-/C-IED- und Recovery-Aktivität mit MRAP-/Wrecker-Bezug. Diese älteren Daten werden nur als Capability-Evidenz verwendet und nicht als Juli-2011-Stückzahl fortgeschrieben.
+
+Quelle für 2011:
+
+- DVIDS Image 464973, *Resupply operation*, 13.09.2011: <https://www.dvidshub.net/image/464973/resupply-operation>
+
+Ergänzende Projektbibliothek:
+
+- `OMW_Afghanistan_ALL_MSR_and_Named_Route_Evidence_v4.kml`, ältere Joyce-bezogene SIGACT-/Recovery-Einträge.
+
+Evidenzstatus:
+
+```text
+protected tactical mobility at/from Joyce: STRONGLY_SUPPORTED
+local recovery / support capability: SUPPORTED_BY_EARLIER_OPERATIONAL_RECORDS
+local logistics/resupply handling: CONFIRMED
+exact July-2011 M-ATV / MRAP / FMTV totals: OPEN
+```
+
+### 7.4 FOB Wright
+
+DVIDS Image 460349 bestätigt am 27.07.2011 das Security Force Platoon der 1-14th Illinois ADT und ausdrücklich mehrere Security-Rollen auf FOB Wright. Der 2010er M777-Nachweis bleibt separat bestehen. Zusätzlich zeigt die Langzeit-Evidenz für Wright einen substanziellen geschützten Fahrzeugbetrieb; spätere 2012er DVIDS-Berichte dokumentieren sogar eine lokale MRAP-Instandsetzungsfunktion, werden aber **nicht** als Juli-2011-Stückzahlnachweis verwendet.
+
+Quellen:
+
+- DVIDS Image 460349, *1-14th Illinois ADT focused on Kunar mission*, 27.07.2011: <https://www.dvidshub.net/image/460349/1-14th-illinois-adt-focused-kunar-mission>
+- DVIDS Story 89343, *Keeping the wheels rolling, civilians play a key role*, 03.06.2012: <https://www.dvidshub.net/news/89343/keeping-wheels-rolling-civilians-play-key-role>
+
+Ergänzende Projektbibliothek:
+
+- `OMW_Afghanistan_ALL_MSR_and_Named_Route_Evidence_v4.kml`, ältere Wright-/ABAD-Konvoi- und Recovery-Einträge.
+
+Evidenzstatus:
+
+```text
+protected mobility requirement: STRONGLY_SUPPORTED
+multiple local security roles: CONFIRMED for July 2011
+substantial vehicle-support capability over the site lifetime: STRONGLY_SUPPORTED
+exact July-2011 vehicle pool: OPEN
+```
+
+### 7.5 FOB Bostick
+
+Neben dem direkt belegten Battalion-/Task-Force-Knoten liefert der Projektkorpus starke ältere Operational-Evidence für lokale Recovery- und Support-Fähigkeiten auf Bostick: QRF-Ausfahrten, Water Truck, Flatbed, HEMTT Wrecker sowie Recovery-Unterstützung werden in Bostick-gebundenen SIGACTs ausdrücklich genannt. Ein älterer Bostick-SP-Report nennt für eine konkrete Combat-/Overwatch-Bewegung `5 US vic` plus `2 ETT vic`; das ist eine **Missionsmindestmenge**, kein Gesamtinventar.
+
+Für April 2011 dokumentiert *Eye of the Falcon* außerdem Charlie Company / 277th Aviation Support Battalion auf FOB Bostick bei Kommunikationsarbeiten; daraus wird keine eigenständige Fahrzeugzahl abgeleitet.
+
+Quellen/Projektkorpus:
+
+- DVIDS Story 70185, *Wolfhound soldiers continue World War II tradition, help Japanese orphans*, 01.05.2011: <https://www.dvidshub.net/news/70185/wolfhound-soldiers-continue-world-war-ii-tradition-help-japanese-orphans>
+- DVIDS Story 76198, *TF No Fear lends a helping hand during Ramadan*, 19.08.2011: <https://www.dvidshub.net/news/76198/tf-no-fear-lends-helping-hand-during-ramadan>
+- Project library `pdf_8886.pdf`, *Eye of the Falcon*, May 2011, Bostick communications support on 21/24 April 2011.
+- Project library `OMW_Afghanistan_MSR_Master_Evidence_v3.kml`, older Bostick QRF/recovery/support reports.
+
+Evidenzstatus:
+
+```text
+battalion/task-force ground node: STRONGLY_SUPPORTED
+protected tactical mobility: STRONGLY_SUPPORTED
+local QRF / recovery / water / flatbed / wrecker capability: CONFIRMED in earlier operational records
+single documented older mission with >= 5 US vehicles: CONFIRMED_MINIMUM for that mission only
+exact July-2011 organic total: OPEN
+```
+
+### 7.6 Honaker-Miracle
+
+Für Honaker-Miracle ist die stärkste direkte Juli-Evidenz weiterhin:
+
+```text
+2 x M777A2 on 2011-07-30
+```
+
+Ältere Projekt-SIGACTs zeigen, dass mehrere MRAPs und ein Wrecker Honaker-Miracle als Rücklauf-/Recovery-Punkt nutzten. Das beweist Fahrzeugzugang und temporäre Fahrzeugpräsenz, aber keinen dauerhaft dort gehaltenen Motorpool.
+
+Ergänzende Projektbibliothek:
+
+- `OMW_Afghanistan_ALL_MSR_and_Named_Route_Evidence_v4.kml`, ältere Honaker-Miracle Recovery-/MRAP-Einträge.
+
+Evidenzstatus:
+
+```text
+2 x M777A2: CONFIRMED_MINIMUM for July 2011
+wheeled vehicle access/presence: CONFIRMED historically
+permanent July-2011 wheeled motorpool: NOT_ESTABLISHED
+```
+
+### 7.7 Rekonstruktionskorridore – noch keine finale OMW-Mengenentscheidung
+
+Aus dem aktuellen Evidence Set lassen sich bereits konservative Korridore für die spätere OMW-Designentscheidung bilden. Diese Werte sind **keine historischen Bestandsbehauptungen** und werden in diesem Evidenzdokument nicht als finaler CampaignState-Bestand autorisiert.
+
+```text
+HONAKER-MIRACLE
+  fixed artillery: 2 x M777A2 confirmed
+  permanent wheeled pool candidate: 0-2
+
+JOYCE
+  organic/locally available wheeled pool candidate: 16-24
+
+WRIGHT
+  organic/locally available wheeled pool candidate: 18-26
+
+BOSTICK
+  organic/locally available wheeled pool candidate: 22-30
+
+JALALABAD / FENTY
+  strategic/local pool: substantially larger than forward FOBs
+  physically represented OMW motor-pool candidate: 40-50
+  strategic CampaignState inventory may be larger than the physical representation
+```
+
+Die Korridore werden aus der Kombination von Standortrolle, bestätigter Formation, QRF-/Patrol-/Logistikbedarf, dokumentierten Fahrzeugfamilien beziehungsweise Recovery-Fähigkeiten und der relativen Größe der Installationen gebildet. Vor einer finalen `OMW_DESIGN_VALUE`-Festlegung sollen weitere visuelle Bildserien und verlust-/wartungsbezogene Quellen geprüft werden.
