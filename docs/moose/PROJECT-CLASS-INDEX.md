@@ -57,21 +57,21 @@ REJECTED_FOR_PROJECT_USE
 | `AIRBASE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Auflösung, ID, Parkingdump und airfield-spezifische Kalibrierung |
 | `AIRWING` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Konstruktion, Stockregistrierung, SQUADRON-Bindung und direkter AUFTRAG-Dispatch; externe OMW-AAR-Pools verwenden bewusst kein AIRWING |
 | `SQUADRON` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Foundation-Bestände und post-start Assetbindung |
-| `WAREHOUSE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | AirOps-Stock-/Asset-Lifecycle; kein WAREHOUSE für externe MANAS-/AL_UDEID-AAR-count-Pools |
+| `WAREHOUSE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` + `SOURCE_REVIEWED` | AirOps-Stock-/Asset-Lifecycle praktisch bestätigt; Ground Acceptance 1 verwendet source-geprüft `SetSpawnZone(...)` für die ACCESS-Zone, Ground-DCS-Acceptance offen |
 | `STORAGE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | CampaignState->DCS-Warehouse Mirror/Telemetry; keine strategische Rückautorität |
-| `COHORT` | `VALIDATED_FOR_DOCUMENTED_SCOPE` + `SOURCE_REVIEWED` | AirOps-Lifecycle praktisch bestätigt; Ground-Review bestätigt `AddMissionCapability`, `SetMissionRange`, `CanMission` und 75-NM-Ground-Default source-seitig |
+| `COHORT` | `VALIDATED_FOR_DOCUMENTED_SCOPE` + `SOURCE_REVIEWED` | AirOps-Lifecycle praktisch bestätigt; Ground-Review bestätigt `AddMissionCapability`, `SetMissionRange`, `CanMission`, `CountAssets` und 75-NM-Ground-Default source-seitig |
 | `FLIGHTGROUP` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | AAR FuelLow, Dead/OnAfterDead, GetCoordinate, `AddWaypoint(...)`, `AddMission(...)` und `OnAfterPassingWaypoint(...)`; Acceptance 7 bestätigte FIR -> 60-NM -> AUFTRAG sowie Egress -> External Handoff |
 | `COMMANDER` | `VALIDATED_FOR_DOCUMENTED_SCOPE` + `SOURCE_REVIEWED` | dokumentierter COMMANDER-Lifecycle; Ground-Review bestätigt `AddBrigade(...)` und `AddOpsTransport(...)` source-seitig; MissionDemand bleibt OMW-Tasking-Autorität |
-| `AUFTRAG` | `VALIDATED_FOR_DOCUMENTED_SCOPE` + `SOURCE_REVIEWED` | AAR `NewTANKER`, `SetMissionAltitude`, Mission-Egress und `Cancel()` praktisch bestätigt; Ground-Review bestätigt `SetReturnToLegion(false)` source-seitig als vorhandenen Persistent-Field-Pfad für Army/Naval Assets; Ground-DCS-Acceptance offen |
-| `SPAWN` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | area-spezifische AAR-Templates, stabile Sortie-Callsign-Familie und 480-kt-In-Air-Materialisierung praktisch bestätigt; keine erzwungene `InitSTN()`, keine nachgewiesene `InitFuel()`-API |
-| `SCHEDULER` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Source-Queue, Station-Monitoring und Acceptance-Koordination; kein Timer-basierter Late-Approach |
+| `AUFTRAG` | `VALIDATED_FOR_DOCUMENTED_SCOPE` + `SOURCE_REVIEWED` | AAR-Methoden praktisch bestätigt; Ground-Review bestätigt `NewPATROLZONE`, `SetReturnToLegion(false)` und den FSM-generierten `__Cancel(...)`-Pfad; Ground-DCS-Acceptance offen |
+| `SPAWN` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | area-spezifische AAR-Templates und externe Materialisierung praktisch bestätigt; Ground Acceptance 1 verwendet keinen direkten SPAWN-Pfad |
+| `SCHEDULER` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | allgemeine OMW-Nutzung praktisch bestätigt; Ground Acceptance 1 verwendet nur One-shot-Koordination, kein hochfrequentes Polling |
 | `USERFLAG` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Warehouse-Acceptance-Readiness-Pfade |
-| `GROUP`, `UNIT`, `STATIC`, `ZONE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Template-/Static-/Warehouse-/Zonenvalidierung; AAR `UNIT:GetSTN()` und test-only `UNIT:Explode()` bestätigt. `UNIT:GetFuel()`, `UNIT:GetCurrentFuelKgs()` und `UNIT:GetFuelMassMax()` wurden in realen AAR-Fuel-Telemetry-Läufen verwendet. |
-| `COORDINATE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | `Get2DDistance(...)` praktisch verwendet; `GetIntermediateCoordinate(...)` und `HeadingTo(...)` im Acceptance-7-AAR-Pfad praktisch bestätigt |
-| `BRIGADE` | `SOURCE_REVIEWED` | `AddPlatoon`, Asset-Pool-/LEGION-Bindung, Retreat/Rearm/Refuel-Zonen und `LoadBackAssetInPosition` geprüft; Ground-Runtime-Acceptance offen |
-| `PLATOON` | `SOURCE_REVIEWED` | erbt Ground-Rollen-/Range-Selektion von COHORT; konkrete OMW-Rollenmatrix und DCS-Selektion offen |
-| `ARMYGROUP` | `SOURCE_REVIEWED` | Routing/RTZ/Returned/Rearm/Retreat source-geprüft; `MissionDone` mit `legionReturn=false` kann die physische Gruppe an ihrer aktuellen Position halten; immobile RTZ kann teleportieren; DCS-Acceptance offen |
-| `OPSGROUP` | `VALIDATED_FOR_DOCUMENTED_SCOPE` + `SOURCE_REVIEWED` | AAR-Despawn/Radio/TACAN/PassingWaypoint praktisch bestätigt; Ground-Review bestätigt MissionDone-/Return- und Cargo Board/Load-Pfade source-seitig; Ground-Acceptance offen |
+| `GROUP`, `UNIT`, `STATIC`, `ZONE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Wrapper-/Objektauflösung in dokumentierten Scopes; Acceptance-1-v13-Objektvertrag read-only bestätigt, Ground-Runtime offen |
+| `COORDINATE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | `Get2DDistance(...)`, `GetIntermediateCoordinate(...)` und `HeadingTo(...)` im dokumentierten AirOps-Scope |
+| `BRIGADE` | `SOURCE_REVIEWED` | `New`, `AddPlatoon`, Asset-Pool-/LEGION-Bindung und Callbackpfade geprüft; Acceptance-1-Harness gestaged, noch nicht DCS-validiert |
+| `PLATOON` | `SOURCE_REVIEWED` | `New`, Capability-Filter und post-start `CountAssets` für Acceptance 1 source-geprüft; DCS-Selektion offen |
+| `ARMYGROUP` | `SOURCE_REVIEWED` | Routing/RTZ/Returned/Rearm/Retreat und MissionDone-Persistenzpfad geprüft; Same-group follow-up ist Acceptance-1-Ziel, noch nicht DCS-validiert |
+| `OPSGROUP` | `VALIDATED_FOR_DOCUMENTED_SCOPE` + `SOURCE_REVIEWED` | AirOps-Methoden praktisch bestätigt; Ground-Review bestätigt MissionDone-/Return- und Cargo-Pfade source-seitig; Ground-Acceptance offen |
 | `OPSTRANSPORT` | `SOURCE_REVIEWED` | Constructor, Cargo/Carrier-Zonen, `AddPathTransport`, Disembark- und Carrier-Verträge geprüft; taktischer OMW-Transport benötigt eigenen DCS-Test |
 | `CTLD`, `CSAR`, `AICSAR` | `PLANNED` / teilweise verwendet | separate Acceptance erforderlich |
 | `INTEL` | `PLANNED` | taktisches Lagebild; Laufzeitnachweis offen |
@@ -80,23 +80,27 @@ REJECTED_FOR_PROJECT_USE
 | `TARS` | `CANDIDATE` | verzögerte Foto-/IMINT-Aufklärung; Verfügbarkeit offen |
 | `DETECTION_*` | `PLANNED` | Spezialfälle; kein paralleles strategisches Lagebild neben `INTEL` |
 | `Core.Astar`, `PATHLINE`, `MOVEMENT` | `PLANNED` | Routing und Bewegungsbegrenzung |
-| `_DATABASE` | `INTERNAL_RESTRICTED` | nur Diagnose/Validierung; aktueller AAR-Produktionspfad verwendet `_DATABASE` nicht |
+| `_DATABASE` | `INTERNAL_RESTRICTED` | nur Diagnose/Validierung; aktueller AAR- und Ground-Acceptance-1-Pfad verwendet `_DATABASE` nicht |
 | `CHIEF` | `REJECTED_FOR_PROJECT_USE` | aktuelle Produktionsarchitektur `NOT_USED` |
 
-## 4. ARMY Ground Foundation – Source-Review 18.08.2026
+## 4. ARMY Ground Foundation – Source-Review und Acceptance-1-Staging 18.08.2026
 
-### 4.1 Geprüfter Mission-/MOOSE-Stand
+### 4.1 Geprüfter MOOSE-Stand
 
 ```text
-Mission artifact: OMW_Template_v12_groundworks(1).miz
-Mission SHA-256: 3c634370d43d57ed4788c55d991c903441cdfa57709581af61debb4105f9a078
-Embedded Moose.lua: l10n/DEFAULT/Moose.lua
 MOOSE release: 2.9.18
 MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
 Moose.lua SHA-256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
 ```
 
-Die aktuelle `.miz` wurde ausschließlich gelesen. Der eingebettete `Moose.lua`-Hash stimmt mit dem bereits gepinnten Projektartefakt überein.
+Owner-erstellte Acceptance-1-Mission, read-only geprüft:
+
+```text
+Mission artifact: OMW_Template_v13_ground_test.miz
+Mission SHA-256: 6d12a55affc971de1de4d5e463c956fcb2e08a0d2de478ff13419747a825e7e8
+internal mission SHA-256: 22d13cb7b0da0a6fb9ddc02bf9b99c4da50d2c96b31bdc6a353616a4188c6b80
+embedded Moose.lua SHA-256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
+```
 
 ### 4.2 Source-verifizierte Ground-Pfade
 
@@ -104,61 +108,56 @@ Die aktuelle `.miz` wurde ausschließlich gelesen. Der eingebettete `Moose.lua`-
 COMMANDER:AddBrigade(...)
 COMMANDER:AddOpsTransport(...)
 
+BRIGADE:New(...)
 BRIGADE:AddPlatoon(...)
 BRIGADE:AddAssetToPlatoon(...)
-BRIGADE:AddRetreatZone(...)
-BRIGADE:AddRearmingZone(...)
-BRIGADE:AddRefuellingZone(...)
-BRIGADE:LoadBackAssetInPosition(...)
+WAREHOUSE:SetSpawnZone(...)
 
 PLATOON:New(...)
 COHORT:AddMissionCapability(...)
 COHORT:SetMissionRange(...)
 COHORT:CanMission(...)
+COHORT:CountAssets(...)
 
+AUFTRAG:NewPATROLZONE(...)
 AUFTRAG:SetReturnToLegion(false)
+AUFTRAG:__Cancel(...)
 
-ARMYGROUP:AddWaypoint(...)
-ARMYGROUP RTZ / Returned / Rearm / Retreat FSM paths
+ARMYGROUP mission / RTZ / Returned paths
 OPSGROUP:onafterMissionDone(...) legionReturn=false hold-in-place path
 
-OPSTRANSPORT:New(...)
-OPSTRANSPORT:SetEmbarkZone(...)
-OPSTRANSPORT:SetDisembarkZone(...)
-OPSTRANSPORT:SetDisembarkActivation(...)
-OPSTRANSPORT:AddPathTransport(...)
-OPSTRANSPORT:SetRequiredCarriers(...)
-OPSTRANSPORT:SetTime(...)
-OPSTRANSPORT:SetPriority(...)
+OPSTRANSPORT constructors/path/disembark methods
 ```
 
-Wichtige Grenzen aus dem Source-Review:
+Acceptance-1-Harness und Builder sind auf dem Branch vorhanden:
 
 ```text
-- COHORT sets 75 NM default mission range for ground templates.
-- COHORT:CanMission checks mission type and target distance.
-- Mission.engageRange can enlarge the effective cohort range.
-- AUFTRAG:SetReturnToLegion(false) sets mission.legionReturn=false for army/navy assets.
-- OPSGROUP:onafterMissionDone applies mission.legionReturn and, for a legionReturn=false ground group with only the final waypoint left, creates a waypoint at the current coordinate so the group remains physical in place instead of returning to the legion.
-- BRIGADE:LoadBackAssetInPosition uses SPAWN:SpawnFromCoordinate(Position).
-- ARMYGROUP RTZ teleports an immobile group that is outside its return zone.
-- mobile ARMYGROUP RTZ uses a physical waypoint toward the return zone.
-- ARMYGROUP Returned hands the group back to LEGION/WAREHOUSE; WAREHOUSE AddAsset removes the returned physical group through Despawn/Destroy.
-- OPSTRANSPORT can consume a predefined route from a late-activated PathGroup.
-- Ground cargo/disembark lifecycle still requires DCS observation before production use.
+mission/tests/army-ground-foundation/src/01-army-ground-acceptance-1.lua
+tools/build-army-ground-acceptance-1.ps1
+BuilderVersion: ARMY-GROUND-ACCEPTANCE-1-1
 ```
 
-For OMW this means that `SetReturnToLegion(false)` is the first MOOSE-first candidate for field-persistent Ground assets after mission completion. `LoadBackAssetInPosition` and immobile `RTZ` remain unapproved for player-observable reconstitution/return. This is a restriction on use of MOOSE behavior, not an approval for a custom replacement.
+Der Harness plant genau einen Joyce-BRIGADE-/PLATOON-PATROLZONE-Pfad und prüft `MissionDone -> physical stay -> same ARMYGROUP follow-up` sowie Dublettenfreiheit. Das ist **STAGED / SOURCE_REVIEWED**, kein Runtime-PASS.
+
+Wichtige Grenzen bleiben:
+
+```text
+- SetReturnToLegion(false) ist noch nicht im Ground-Scope DCS-validiert.
+- WAREHOUSE:SetSpawnZone(...) ist für die Joyce-ACCESS-Zone source-geprüft, aber DCS-Pathfinding/Materialisierung offen.
+- BRIGADE:LoadBackAssetInPosition nutzt SpawnFromCoordinate und bleibt für beobachtbare Reconstitution ausgeschlossen.
+- immobile ARMYGROUP RTZ kann teleportieren und bleibt im sichtbaren OMW-Bereich ausgeschlossen.
+- Returned -> WAREHOUSE AddAsset entfernt die physische Gruppe; Return-Handoff benötigt eigenen Test.
+- OPSTRANSPORT coordinate unload materialisiert per _Respawn und benötigt eigenen Test.
+```
 
 ### 4.3 Official example review
 
-The official MOOSE mission repositories were searched for `BRIGADE`, `ARMYGROUP`, `OPSTRANSPORT` and `PLATOON`. No direct current-class use was found for the first three names. `PLATOON` keyword hits include older Warehouse examples; the reviewed `WHS-020 - Self Propelled Ground Troops` example transfers ground assets with `WAREHOUSE` directly and does not demonstrate the current OMW candidate hierarchy.
+Die offiziellen MOOSE-Mission-Repositories wurden für BRIGADE, ARMYGROUP, OPSTRANSPORT und PLATOON durchsucht. Kein direkter aktueller Klassenverwendungsbeleg für die komplette OMW-Kombination wurde gefunden. `WHS-020 - Self Propelled Ground Troops` verwendet WAREHOUSE direkt und ist kein Acceptance-Beweis für `BRIGADE -> PLATOON -> ARMYGROUP`.
 
-Therefore no official demo is being treated as runtime proof for `COMMANDER -> BRIGADE -> PLATOON -> ARMYGROUP` or the OMW `OPSTRANSPORT` use case. A project-specific DCS test remains mandatory.
-
-Full details:
+Details:
 
 - [`OMW-MOOSE-GROUND-OPERATIONS`](GROUND-OPERATIONS.md)
+- [`Ground Acceptance 1`](../../mission/tests/army-ground-foundation/ACCEPTANCE-1.md)
 
 ## 5. AAR – gepinnter und Acceptance-7-validierter MOOSE-Scope
 
@@ -224,53 +223,9 @@ UNIT:GetCurrentFuelKgs()
 UNIT:GetFuelMassMax()
 ```
 
-`FLIGHTGROUP:AddWaypoint(...)` plus `OnAfterPassingWaypoint(...)` ist jetzt für die strikt gestufte Inbound-Folge praktisch bestätigt:
+`FLIGHTGROUP:AddWaypoint(...)` plus `OnAfterPassingWaypoint(...)` ist für die dokumentierte AAR-Acceptance-7-Provenienz praktisch bestätigt. Der dortige Routing-/Fuel-/Lifecycle-PASS wird nicht auf Ground-OPS übertragen.
 
-```text
-SPAWN
--> FIR waypoint at inbound LRC altitude
--> 60-NM late-approach waypoint at inbound LRC altitude
--> PassingWaypoint FIR
--> PassingWaypoint 60 NM
--> FLIGHTGROUP:AddMission(AUFTRAG)
--> exact track altitude
-```
-
-`COORDINATE:GetIntermediateCoordinate(...)` berechnet den 60-NM-Punkt; Acceptance 7 bestätigte die 60.0-NM-Geometrie. `AUFTRAG:SetMissionIngressCoord(lateApproachCoord, ...)` ist für diesen finalen Inbound-Pfad verworfen, weil der erste Acceptance-7-Lauf zeigte, dass ein früh hinzugefügter AUFTRAG den FIR-Wegpunkt umgehen konnte.
-
-Im gepinnten `Moose.lua` wurde keine öffentliche `SPAWN:InitFuel(...)`-Methode nachgewiesen. Physische Initial-Fuel-Mengen bleiben Template-/Mission-Editor-Konfiguration.
-
-### 5.1 LRC-/Fuel-Kalibrierung und Fehlerhistorie
-
-```text
-Candidate 3:
-REJECTED — FIR-Ingress durch Late-Approach ersetzt.
-
-Candidate 4:
-FIR restoration observed PASS; UID late-approach adapter FAILED.
-
-Candidate 5:
-Outbound six-point fuel telemetry PASS.
-
-Acceptance 6:
-Lifecycle/calibration PASS for documented scope; early inbound descent remained open.
-
-Acceptance 7 commit 00ed8e3:
-ABORTED — 60-NM altitude behavior worked but FIR waypoint was bypassed.
-
-Corrected Acceptance 7 commit 7d55a13:
-PASS — exact FIR-before-60NM-before-AUFTRAG order, high-hold, track altitude, LISA south-domain and lifecycle.
-```
-
-LISA accepted contract:
-
-```text
-AL_UDEID / DAVER
-initialFuelPct = 79.4558
-FuelLow = 38
-```
-
-Details und Rechnungen:
+Details:
 
 - [`OMW-MOOSE-AAR-LRC-TRANSIT`](AAR-LRC-TRANSIT.md)
 - [`OMW-MOOSE-VERIFIED-METHODS-AAR-ACCEPTANCE-7`](VERIFIED-METHODS-AAR-ACCEPTANCE-7.md)
@@ -288,55 +243,22 @@ KRUSTY SLOW
 RESERVE / MissionDemand:
 LISA FAST
 MOE FAST
-
-kein globales 2/2/4-AAR-Limit
-pro Track max. 1 ACTIVE + 1 RELIEF
-Callsign-Familie bleibt pro Sortie stabil
 ```
 
-FIR-/Source-Routing:
-
-```text
-NELSON/PATTY    -> MANAS / EGPAN
-MOE             -> MANAS / PINAX
-LISA            -> AL_UDEID / DAVER
-KRUSTY/MILHOUSE -> AL_UDEID / DAVER
-
-External Spawn != FIR Ingress
-FIR Ingress != 60-NM Late Approach
-FIR Egress != External Handoff/Despawn
-Airways-Routing = später / nicht Teil der Baseline
-```
-
-Acceptance 7 bestätigte für die exakte Provenienz:
-
-```text
-spawn initial speed = 480 kt
-route speed = 300 kt
-MANAS inbound/outbound = FL340/FL350
-AL_UDEID inbound/outbound = FL350/FL340
-inbound order = SPAWN -> FIR -> 60-NM late approach -> AUFTRAG/track
-exact track mission altitude
-initial fuel MANAS = 91.4067 %
-initial fuel AL_UDEID = 79.4558 %
-FuelLow NELSON/PATTY/LISA/MOE/MILHOUSE/KRUSTY = 24/26/38/31/36/36 %
-LISA = AL_UDEID / DAVER
-Scheduled Relief
-FuelLow Immediate Egress + Relief
-Reserve MissionDemand lifecycle
-Loss/Replacement
-CampaignState exact-once settlement
-final steady state = 4 STANDARD / 0 RESERVE
-```
+Die vollständigen AAR-Verträge und Accepted-Provenienz bleiben in den zuständigen AAR-Dokumenten. Diese Ground-Aktualisierung ändert daran nichts.
 
 ## 7. Architekturgrenze
 
-Die externen AAR-Pools MANAS und AL UDEID sind keine DCS-Airbase-/WAREHOUSE-/AIRWING-/SQUADRON-Bestände. CampaignState hält `AIRCRAFT_KC135` als count; SPAWN -> FLIGHTGROUP -> AUFTRAG materialisiert nur die physische Repräsentation.
+Die externen AAR-Pools und die Ground-OPS-Domäne bleiben getrennte Ressourcen-/Materialisierungsmodelle. Für Ground gilt insbesondere:
 
-Test-only Artificial FuelLow, `UNIT:Explode()`-Loss-Injection, Acceptance-Zeitbeschleunigung und in-process Restore gehören nicht in das endgültige Missionsgrundgerüst.
+```text
+CampaignState = strategic authority
+MOOSE BRIGADE / PLATOON / WAREHOUSE = operational mirror/selection
+DCS GROUP / UNIT / STATIC = physical representation
+```
 
 ## 8. Nachweisregel
 
-Ein Klassenstatus wird nur angehoben, wenn MOOSE-Version/Commit, OMW-Source, Mission, Hashes, beobachtetes Verhalten und Einschränkungen dokumentiert sind. `VALIDATED_FOR_DOCUMENTED_SCOPE` für den neuen AAR-Routingpfad gilt ausschließlich für die oben dokumentierte Acceptance-7-Provenienz und darf nicht pauschal auf andere MOOSE-/DCS-/Missionsstände übertragen werden.
+Ein Klassenstatus wird nur angehoben, wenn MOOSE-Version/Commit, OMW-Source, Mission, Hashes, beobachtetes Verhalten und Einschränkungen dokumentiert sind.
 
-`SOURCE_REVIEWED` für die Ground-OPS-Klassen und den Ground-Pfad `AUFTRAG:SetReturnToLegion(false)` bedeutet ausdrücklich **nicht** `VALIDATED_FOR_DOCUMENTED_SCOPE`. Die ARMY Ground Foundation benötigt ihre eigenen dokumentierten DCS-Tests.
+`SOURCE_REVIEWED` für Ground-OPS und Acceptance-1-Staging bedeutet ausdrücklich **nicht** `VALIDATED_FOR_DOCUMENTED_SCOPE`. Der Status wird erst nach dem realen DCS-Lauf mit vollständiger Hashprovenienz neu bewertet.
