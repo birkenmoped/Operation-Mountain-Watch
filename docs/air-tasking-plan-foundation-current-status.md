@@ -33,9 +33,7 @@ phase 3: IN PROGRESS
 validated_in_dcs for Phase 3: false
 ```
 
-Die frühere vermeintliche lokale/remote Divergenz ist geklärt. Der Branch wurde seitdem mehrfach sauber per Fast-Forward lokal synchronisiert. Die bekannten lokalen untracked Build-/Testartefakte bleiben unangetastet.
-
-Vor einem Merge nach `main` bleibt eine erneute Reconciliation gegen den dann aktuellen `main`-Stand erforderlich.
+Die lokale/remote Branch-Synchronisation ist geklärt. Bekannte lokale untracked Build-/Testartefakte bleiben unangetastet. Vor einem Merge nach `main` bleibt eine erneute Reconciliation gegen den dann aktuellen `main`-Stand erforderlich.
 
 ## 2. Gesamtstatus
 
@@ -49,22 +47,26 @@ PHASE 5  Ground Alert / CAS Request Lifecycle            NOT STARTED
 PHASE 6  Dynamic Planning / Retasking / Persistence      NOT STARTED
 ```
 
-Die PASS-Werte für Phase 0 bis 2 sind branch-lokal. Phase 3 hat inzwischen produktiven Adapter-/Bootstrap-Code, Build-Evidenz und einen vorbereiteten DCS-Acceptance-Pfad, aber noch keinen DCS-Runtime-PASS.
+Die PASS-Werte für Phase 0 bis 2 sind branch-lokal. Phase 3 hat Adapter-/Bootstrap-Code, Build-Evidenz und einen vorbereiteten DCS-Acceptance-Pfad, aber noch keinen DCS-Runtime-PASS.
 
-## 3. Tatsächlich geprüfte MOOSE-Baseline
+## 3. Tatsächlich geprüfte MOOSE-/Missionsbaseline
 
-Die aktuelle vom Projektinhaber bereitgestellte Mission wurde direkt geprüft:
+Die vom Projektinhaber am 18.08.2026 bereitgestellte aktuelle Mission wurde ausschließlich lesend geprüft:
 
 ```text
-mission artifact: OMW_Template_v12_groundworks.miz
+mission artifact: OMW_Template_v12_groundworks(2).miz
 mission SHA-256: 3c634370d43d57ed4788c55d991c903441cdfa57709581af61debb4105f9a078
 embedded source: l10n/DEFAULT/Moose.lua
 MOOSE context: develop
 MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
 Moose.lua SHA-256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
+existing AAR resource: l10n/DEFAULT/OMW_AAR_Base.lua
+existing resource key: ResKey_Action_235
+trigger comment: LOAD_AAR_BASE
+trigger precondition: time > 5 and OMW_WAREHOUSE_READY == 1
 ```
 
-Damit entspricht die tatsächlich in der aktuellen `.miz` enthaltene `Moose.lua` exakt der Phase-2-Baseline.
+`l10n/DEFAULT/mapResource` ordnet `ResKey_Action_235` bereits `OMW_AAR_Base.lua` zu. Diese Prüfung dient ausschließlich der Vorbereitung des manuellen Mission-Editor-Einfügens; ChatGPT verändert keine `.miz`-Datei.
 
 ## 4. Phase 0 / 1
 
@@ -123,9 +125,11 @@ scripts/air-operations/OMW_AirTasking_AARBridge.lua
 scripts/air-operations/OMW_AirTasking_AARBootstrap.lua
 tools/build-air-tasking-aar-vertical-base.ps1
 tools/build-air-tasking-aar-vertical-acceptance.ps1
-tools/build-air-tasking-aar-vertical-miz.ps1
+tools/build-air-tasking-aar-vertical-test-lua.ps1
 mission/tests/air-tasking-aar-vertical/
 ```
+
+Der zuvor angelegte `.miz`-Mutationsbuilder wurde entfernt. Der zulässige lokale Workflow erzeugt ausschließlich die Lua-Datei `OMW_AAR_Base.lua`, die der Projektinhaber anschließend selbst im DCS Mission Editor in die bestehende Mission einfügt.
 
 Vertikaler Pfad:
 
@@ -168,28 +172,24 @@ Der vorgeschaltete AAR-Produktionsgate meldete `PASS`. Dies ist Build-/Source-Ga
 
 ## 8. Offene Phase-3-Grenze
 
-Der nächste reale Schritt ist der lokale Acceptance-`.miz`-Build und danach der DCS-Vertical-Test.
-
-Wichtig:
+Der nächste reale Schritt ist der lokale Build der einzufügenden Lua-Datei und danach die manuelle Einfügung durch den Projektinhaber in die bestehende `.miz`.
 
 ```text
 ChatGPT mutiert keine .miz-Datei.
-Der Projektinhaber führt den lokalen Builder aus.
-Der InputMiz-Pfad wird vom Projektinhaber explizit angegeben.
-Es gibt keine automatische lokale Missionssuche und keine Annahme eines Speicherorts.
-Die Quellmission wird nicht in-place verändert.
+ChatGPT erzeugt keinen .miz-Builder.
+Der Projektinhaber führt den lokalen Lua-Builder aus.
+Der Projektinhaber fügt OMW_AAR_Base.lua selbst im Mission Editor in die bestehende Ressource ResKey_Action_235 ein.
+Die Quellmission bleibt bis zu dieser manuellen Aktion unverändert.
 ```
-
-Der erste `.miz`-Buildversuch wurde nicht ausgeführt, weil kein expliziter lokaler Quellpfad vorlag. Das ist weder PASS noch FAIL des Builders oder des DCS-Tests.
 
 Vor dem DCS-Lauf müssen mindestens vorliegen:
 
 ```text
-InputMissionSHA256
+GitCommit
 AcceptanceBundleSHA256
-EmbeddedAARBaseSHA256
-MooseLuaSHA256
-OutputMissionSHA256
+InsertLuaSHA256
+Mission SHA-256 nach manueller Mission-Editor-Aktualisierung
+Moose.lua SHA-256 der getesteten Mission
 ```
 
 ## 9. DCS-Acceptance-Ziel
