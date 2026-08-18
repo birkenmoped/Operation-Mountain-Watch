@@ -1,6 +1,8 @@
--- Operation Mountain Watch - Air Tasking -> AAR vertical DCS acceptance harness.
+-- Operation Mountain Watch - additive Air Tasking -> existing AAR vertical DCS acceptance harness.
 --
 -- Test-only scope:
+--   * wait for the accepted OMW.AirOps.AAR facade to be RUNNING;
+--   * attach Air Tasking without recreating/replacing the AAR base;
 --   * wait for the accepted four STANDARD AAR tracks to reach a stable baseline;
 --   * submit one approved WEST/FAST MissionDemand through the Air Tasking bridge;
 --   * verify LISA reserve materialization, stable ASR/ATM/EXE correlation and natural track arrival;
@@ -9,9 +11,10 @@
 --
 -- This harness does not alter AAR routing, fuel, relief, CampaignState accounting or MOOSE internals.
 
-local TEST_ID = "AIR-TASKING-AAR-VERTICAL-1"
+local TEST_ID = "AIR-TASKING-AAR-VERTICAL-2"
 local TAG = "[OMW][TEST][AirTaskingAARVertical]"
 local POLL_SEC = 5
+local ATTACH_POLL_SEC = 1
 local TIMEOUT_SEC = 4 * 60 * 60
 local DEMAND_ID = "MD-000001"
 local REQUEST_ID = "ASR-000001"
@@ -24,7 +27,9 @@ local observedExecuting = false
 local observedOnStation = false
 local endRequested = false
 local baselineAlUdeidAvailable = nil
-local scheduler = nil
+local testScheduler = nil
+local attachScheduler = nil
+local vertical = nil
 
 local function log(message)
   env.info(TAG .. " " .. tostring(message))
@@ -50,25 +55,9 @@ local function nextExecutionId()
   return string.format("EXE-%06d", executionSerial)
 end
 
-if not OMW or not OMW.AirTasking or not OMW.AirTasking.AARVerticalBase then
-  fail("OMW.AirTasking.AARVerticalBase is unavailable")
-end
 if not SCHEDULER then fail("MOOSE SCHEDULER is unavailable") end
-
-local vertical = OMW.AirTasking.AARVerticalBase.Start({
-  nextExecutionId = nextExecutionId,
-  logger = function(message) env.info(message) end,
-})
-
-assertTrue(vertical and vertical.Status == "RUNNING", "vertical facade did not start")
-assertTrue(vertical.AAR and vertical.AAR.Status == "RUNNING", "accepted AAR facade did not start")
-assertEqual(vertical.AAR.Config.standardTrackCount, 4, "standardTrackCount")
-assertEqual(vertical.AAR.Config.reserveTrackCount, 2, "reserveTrackCount")
-assertEqual(vertical.AAR.Config.availabilityByArea.LISA, "RESERVE", "LISA availability")
-assertEqual(vertical.AAR.Config.sourceDomainByArea.LISA, "AL_UDEID", "LISA source")
-assertEqual(vertical.AAR.Config.firFixByArea.LISA, "DAVER", "LISA FIR fix")
-
-log("START testId=" .. TEST_ID)
+if not OMW_AIR_TASKING_TEST_Bridge then fail("Air Tasking bridge module is unavailable") end
+if not OMW_AIR_TASKING_TEST_Bootstrap then fail("Air Tasking bootstrap module is unavailable") end
 
 local function standardBaselineReady()
   local counts = vertical.AAR.GetRuntimeCounts()
@@ -139,10 +128,10 @@ local function finalPass()
     DEMAND_ID, REQUEST_ID, MISSION_ID, tostring(attempts[#attempts].execution_attempt_id)))
   log(string.format("SETTLEMENT_PASS source=AL_UDEID available=%s", tostring(pool.available)))
   log("RESULT PASS testId=" .. TEST_ID)
-  if scheduler then scheduler:Stop() end
+  if testScheduler then testScheduler:Stop() end
 end
 
-local function poll()
+local function pollTest()
   local elapsed = timer.getAbsTime() - startedAt
   if elapsed > TIMEOUT_SEC then fail("timeout after " .. tostring(elapsed) .. " sec") end
 
@@ -190,4 +179,33 @@ local function poll()
   end
 end
 
-scheduler = SCHEDULER:New(nil, poll, {}, POLL_SEC, POLL_SEC)
+local function attachWhenReady()
+  local elapsed = timer.getAbsTime() - startedAt
+  if elapsed > TIMEOUT_SEC then fail("timeout waiting for existing AAR base") end
+
+  local aar = OMW and OMW.AirOps and OMW.AirOps.AAR or nil
+  if not aar or aar.Status ~= "RUNNING" then return end
+
+  vertical = OMW_AIR_TASKING_TEST_Bootstrap.Start({
+    bridgeModule = OMW_AIR_TASKING_TEST_Bridge,
+    aarFacade = aar,
+    nextExecutionId = nextExecutionId,
+    logger = function(message) env.info(message) end,
+  })
+
+  assertTrue(vertical and vertical.Status == "RUNNING", "Air Tasking facade did not attach")
+  assertTrue(vertical.AAR == aar, "Air Tasking did not retain the existing AAR facade instance")
+  assertEqual(vertical.Scope, "AIR_TASKING_AAR_ADDITIVE", "Air Tasking scope")
+  assertEqual(vertical.AAR.Config.standardTrackCount, 4, "standardTrackCount")
+  assertEqual(vertical.AAR.Config.reserveTrackCount, 2, "reserveTrackCount")
+  assertEqual(vertical.AAR.Config.availabilityByArea.LISA, "RESERVE", "LISA availability")
+  assertEqual(vertical.AAR.Config.sourceDomainByArea.LISA, "AL_UDEID", "LISA source")
+  assertEqual(vertical.AAR.Config.firFixByArea.LISA, "DAVER", "LISA FIR fix")
+
+  log("EXISTING_AAR_ATTACH_PASS sameFacade=true adapterRecreated=false testId=" .. TEST_ID)
+  if attachScheduler then attachScheduler:Stop() end
+  testScheduler = SCHEDULER:New(nil, pollTest, {}, POLL_SEC, POLL_SEC)
+end
+
+log("WAITING_FOR_EXISTING_AAR_BASE testId=" .. TEST_ID)
+attachScheduler = SCHEDULER:New(nil, attachWhenReady, {}, 0, ATTACH_POLL_SEC)
