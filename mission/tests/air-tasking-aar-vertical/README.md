@@ -200,6 +200,7 @@ Testquellen:
 ```text
 mission/tests/air-tasking-aar-vertical/src/01-air-tasking-aar-vertical-acceptance.lua
 tools/build-air-tasking-aar-vertical-acceptance.ps1
+tools/build-air-tasking-aar-vertical-miz.ps1
 ```
 
 Der Acceptance-Harness wartet zuerst auf vier natuerlich aktive STANDARD-Tracks. Erst danach wird der LISA-Bedarf eingereicht. `EndAAR(COMPLETE)` wird erst nach natuerlicher LISA-On-Station-Bestaetigung angefordert. Es gibt keinen kuenstlichen FuelLow, keinen kuenstlichen Verlust, keinen Teleport und kein Umschreiben der AAR-Route.
@@ -217,8 +218,26 @@ SETTLEMENT_PASS
 RESULT PASS
 ```
 
-## 6. Evidence boundary
+## 6. Lokale Missions-Build-Grenze
 
-Der lokale Vertical-Base-/Acceptance-Build fuer Commit `3aea46a1cbfa1f62136bd932f0f48e67d332d680` ist bestaetigt. Der DCS-Vertical-Acceptance-Lauf ist noch nicht erfolgt.
+ChatGPT mutiert keine `.miz`-Datei. Der lokale Missions-Build wird ausschliesslich durch den Projektinhaber mit `tools/build-air-tasking-aar-vertical-miz.ps1` ausgefuehrt.
+
+Der Builder akzeptiert einen **explizit vom Projektinhaber angegebenen** `-InputMiz`-Pfad und erzeugt daraus eine separate Acceptance-Testmission. Es gibt keine automatische Suche nach Missionsdateien, keine Annahme eines lokalen Speicherorts und keine in-place-Aenderung der Quellmission.
+
+Beim ersten lokalen Versuch am 18.08.2026 wurde kein `.miz`-Build ausgefuehrt, weil `OMW_Template_v12_groundworks.miz` nicht im Repository-Verzeichnis lag und kein expliziter lokaler Quellpfad vorlag. Dieser Versuch ist weder PASS noch FAIL fuer den Builder oder den DCS-Test.
+
+Vor dem DCS-Lauf muessen aus dem realen lokalen Builderlauf mindestens vorliegen:
+
+```text
+InputMissionSHA256
+AcceptanceBundleSHA256
+EmbeddedAARBaseSHA256
+MooseLuaSHA256
+OutputMissionSHA256
+```
+
+## 7. Evidence boundary
+
+Der lokale Vertical-Base-/Acceptance-Build fuer Commit `3aea46a1cbfa1f62136bd932f0f48e67d332d680` ist bestaetigt. Der lokale Acceptance-`.miz`-Build und der DCS-Vertical-Acceptance-Lauf sind noch nicht erfolgt.
 
 Gate 3 darf erst nach einem realen DCS-Lauf mit dokumentierter Mission, Missions-Hash, Bundle-Hash, Branch/Commit, DCS-Version, eingebetteter MOOSE-Version/Hash sowie den erforderlichen Logs auf PASS gesetzt werden.
