@@ -312,11 +312,13 @@ Der Source-Review des tatsächlich eingebetteten MOOSE-Stands bestätigt jetzt k
 - `PLATOON` erbt die Rollen-/Range-Selektion von `COHORT`;
 - Ground-`COHORT`s erhalten standardmäßig 75 NM Mission Range;
 - `COHORT:CanMission(...)` prüft Mission Capability und Target Distance; eine `Mission.engageRange` kann die Cohort-Range erweitern;
+- `AUFTRAG:SetReturnToLegion(false)` ist ein öffentlicher Ground-/Naval-Pfad, der die Rückgabe nach Missionsende unterbindet;
+- `OPSGROUP:onafterMissionDone(...)` hält eine solche Ground-Group an ihrer aktuellen Position, statt sie automatisch zur Legion zurückzugeben;
 - `ARMYGROUP` bildet die physisch agierende Ground Group;
 - mobile `ARMYGROUP`-RTZ-Pfade routen per Waypoint in die Return Zone;
 - **immobile** `ARMYGROUP`s außerhalb der Return Zone werden im RTZ-Pfad per `Teleport(...)` versetzt; dieser Pfad ist für sichtbare OMW-Bereiche ausgeschlossen;
 - `ARMYGROUP:Returned` gibt gebundene Gruppen via `self.legion:__AddAsset(...)` an LEGION/WAREHOUSE zurück;
-- `WAREHOUSE:onafterAddAsset(...)` entfernt eine noch lebende zurückgegebene OPSGROUP über `Despawn(...)` oder andernfalls `group:Destroy()`; der Return-/Despawn-Punkt muss deshalb außerhalb beobachtbarer Bereiche liegen oder durch einen anderen vorhandenen MOOSE-Lifecycle ersetzt werden;
+- `WAREHOUSE:onafterAddAsset(...)` entfernt eine noch lebende zurückgegebene OPSGROUP über `Despawn(...)` oder andernfalls `group:Destroy()`; der Return-/Despawn-Punkt muss deshalb außerhalb beobachtbarer Bereiche liegen;
 - `BRIGADE:LoadBackAssetInPosition(...)` verwendet `SPAWN:SpawnFromCoordinate(Position)` und ist damit kein unsichtbarer Reconstitution-Mechanismus für beobachtbare Feldverbände;
 - `OPSTRANSPORT:AddPathTransport(...)` kann einen vorgegebenen Mission-Editor-Pfad aus einer PathGroup verwenden;
 - der normale `OPSGROUP:onafterUnload(...)`-Pfad materialisiert Cargo am Ziel über `_Respawn(...)`; Embark-/Unload-/Disembark-Verhalten bleibt daher DCS-testpflichtig.
@@ -401,8 +403,11 @@ Sekundärquellen dienen als Research Index und überschreiben keine Primärquell
 - [ ] offizielle MOOSE-Demos/Tests für BRIGADE/PLATOON/ARMYGROUP/OPSTRANSPORT vollständig gegen gepinnten Stand prüfen; aktueller Search-/WHS-020-Review liefert keinen direkten Referenztest für die Kandidatenhierarchie.
 - [x] Mission-Capability-/Range-Selektion je PLATOON im gepinnten Source verifiziert; DCS-Selektionsnachweis bleibt offen.
 - [x] ARMYGROUP-Return-Pfad source-seitig bis `WAREHOUSE:onafterAddAsset(...)` verfolgt: Returned -> AddAsset -> physische Gruppe wird über Despawn/Destroy entfernt.
+- [x] `AUFTRAG:SetReturnToLegion(false)` als vorhandenen MOOSE-Pfad für physisch im Feld verbleibende Ground-/Naval-Assets source-verifiziert.
+- [x] `OPSGROUP:onafterMissionDone(...)` source-seitig verifiziert: bei `legionReturn=false` wird die Ground-Group an ihrer aktuellen Position gehalten und nicht automatisch über Returned an das Warehouse zurückgegeben.
 - [x] bekannte source-seitige Teleport-/Materialisierungspfade identifiziert: immobile `ARMYGROUP` RTZ, `BRIGADE:LoadBackAssetInPosition(...)` und normaler coordinate-based OPSGROUP-Unload via `_Respawn(...)`.
-- [ ] persistent-field-Lifecycle prüfen: vorhandene MOOSE-Pfade suchen, die Feldgruppen ohne beobachtbares Return-Despawn dauerhaft physisch halten können.
+- [ ] `SetReturnToLegion(false)` in DCS mit einer Ground-Mission verifizieren: Mission Ende -> Gruppe bleibt physisch -> Folgeauftrag ohne Dublette/Re-Materialisierung.
+- [ ] Restart/Reconstitution für persistent im Feld verbleibende Gruppen separat definieren und prüfen; `LoadBackAssetInPosition(...)` ist dafür in beobachtbaren Bereichen nicht freigegeben.
 - [ ] konkrete nicht beobachtbare Return-/Despawn-Grenzen für mobile Assets erst nach Mission-Editor-Road-/Withdrawal-Ankern festlegen und in DCS prüfen.
 - [ ] OPSTRANSPORT Embark/Load/Unload/Disembark einschließlich `_Respawn(...)` in DCS prüfen.
 - [ ] entscheiden, ob vier Ground Nodes exakt vier MOOSE-BRIGADEs werden.
@@ -459,6 +464,8 @@ Source-seitig zusätzlich geklärt, aber noch nicht als DCS-Runtime akzeptiert:
 - ground COHORT default mission range = 75 NM
 - PLATOON role filtering can use COHORT mission capabilities and range
 - Mission.engageRange can enlarge cohort range
+- AUFTRAG:SetReturnToLegion(false) disables automatic legion return for ground/navy mission assets
+- OPSGROUP MissionDone keeps a legionReturn=false ground group at its current position
 - mobile ARMYGROUP RTZ uses physical waypoint routing
 - immobile ARMYGROUP RTZ can teleport to the return zone
 - ARMYGROUP Returned hands the asset to LEGION/WAREHOUSE
@@ -478,5 +485,6 @@ Noch nicht beschlossen:
 - exact July-2011 Jalalabad ground QRF/base-defense formation
 - exact July-2011 Joyce and Bostick company distribution
 - final artillery proxy decisions where DCS lacks the historical system
+- restart/reconstitution contract for persistent field groups
 - runtime implementation details and acceptance criteria
 ```
