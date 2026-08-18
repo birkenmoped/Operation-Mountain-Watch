@@ -5,14 +5,14 @@ document_class: DOMAIN_CONTRACT
 owning_policy: OMW-GOV-001
 authoritative_for:
   - working naming scheme for reusable BLUE ground templates, MOOSE ground pools, warehouse mirrors and access zones
-  - source-qualified candidate mapping from approved OMW vehicle families to DCS type names already observed in the current mission artifact
+  - source-qualified mapping from approved OMW vehicle families to DCS type names for the current Ground Foundation
+  - technical proxy decision for the Honaker-Miracle M777A2 representation
   - separation between strategic installation IDs, operational nodes, reusable templates and runtime groups
 not_authoritative_for:
   - final Mission Editor object placement
-  - final DCS proxy approval for historically unavailable systems
-  - final MOOSE BRIGADE or PLATOON topology
-  - final physical group sizes
   - DCS runtime acceptance
+  - historical equivalence of technical proxies
+  - final CampaignState resource quantities beyond the separate vehicle baseline
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
@@ -24,11 +24,11 @@ validated_in_dcs: false
 
 # ARMY Ground Foundation – Template Naming and DCS Type Mapping
 
-## 1. Purpose
+## 1. Zweck
 
-This document fixes the working naming boundary for Ground Foundation assets before Mission Editor templates and MOOSE ground pools are multiplied across the Jalalabad/Kunar network.
+Dieses Dokument legt Naming, Access-Zonen und die aktuelle DCS-Type-/Proxy-Baseline der BLUE Ground Foundation fest.
 
-The identity layers remain separate:
+Die Identitätsebenen bleiben strikt getrennt:
 
 ```text
 CampaignState installation
@@ -38,19 +38,15 @@ CampaignState installation
 != runtime DCS group / ARMYGROUP
 ```
 
-A vehicle family can therefore be reused at several installations without encoding the site name into the generic template.
+## 2. Naming
 
-## 2. Stable naming scheme
-
-### 2.1 Strategic installation IDs
-
-Existing schema:
+### 2.1 Strategische Installationen
 
 ```text
 BLUE_GROUND_<CLASS>_<NAME>
 ```
 
-Examples:
+Beispiele:
 
 ```text
 BLUE_GROUND_HUB_JALALABAD_FENTY
@@ -61,15 +57,7 @@ BLUE_GROUND_FOB_BOSTICK
 BLUE_GROUND_OP_MUSTANG
 ```
 
-These are CampaignState identities and must never be derived from DCS group names.
-
-### 2.2 Ground Node IDs
-
-```text
-GROUND_NODE_<NAME>
-```
-
-Current scope:
+### 2.2 Ground Nodes
 
 ```text
 GROUND_NODE_JALALABAD
@@ -78,73 +66,44 @@ GROUND_NODE_WRIGHT
 GROUND_NODE_BOSTICK
 ```
 
-### 2.3 MOOSE operational objects
-
-Working naming pattern:
+### 2.3 MOOSE-Objekte
 
 ```text
 WH_BLUE_GND_<NODE>
 BDE_BLUE_GND_<NODE>
-PLT_BLUE_GND_<NODE>_<ROLE>
+PLT_BLUE_GND_<NODE>_<ROLE>[_<VARIANT>]
 ```
 
-Examples:
+Die vier aktuellen operativen BRIGADE-Namen sind:
 
 ```text
-WH_BLUE_GND_BOSTICK
+BDE_BLUE_GND_JALALABAD
+BDE_BLUE_GND_JOYCE
+BDE_BLUE_GND_WRIGHT
 BDE_BLUE_GND_BOSTICK
-PLT_BLUE_GND_BOSTICK_PATROL
-PLT_BLUE_GND_BOSTICK_QRF
-PLT_BLUE_GND_BOSTICK_LOGISTICS
-PLT_BLUE_GND_BOSTICK_FIRE_SUPPORT
 ```
 
-`BDE_` remains an operational MOOSE-node name and does not assert a historical brigade formation.
+`BDE_` ist eine MOOSE-Operationsdomäne und keine historische Brigadebehauptung.
 
 ### 2.4 Reusable Mission Editor templates
 
-The existing project template rule remains:
+Projektbaseline:
 
 ```text
 TPL_<COALITION>_<ROLE>_<VARIANT>
 ```
 
-For Ground Foundation templates the working specialization is:
+Ground-Spezialisierung:
 
 ```text
 TPL_BLUE_GND_<ROLE>_<VARIANT>
 ```
 
-Site names are not encoded into generic reusable templates unless site geometry itself makes the template non-reusable.
+`#` wird in projektdefinierten Template-/Aliasnamen nicht verwendet.
 
-Examples:
+## 3. ACCESS-Zonen
 
-```text
-TPL_BLUE_GND_PATROL_MATV_4
-TPL_BLUE_GND_PATROL_MRAP_4
-TPL_BLUE_GND_QRF_MIXED_4
-TPL_BLUE_GND_LOG_M1083_2
-TPL_BLUE_GND_SECURITY_INF_LIGHT
-TPL_BLUE_GND_REINFORCEMENT_INF_LIGHT
-```
-
-The character `#` is not used in project-owned template or alias names because MOOSE uses suffixing conventions of its own.
-
-### 2.5 Runtime names
-
-Runtime DCS group names and MOOSE aliases are transient implementation identifiers. They must correlate to stable CampaignState IDs and reservation/mission IDs but never replace them as persistent keys.
-
-## 3. Ground access-zone naming
-
-The previous multi-zone concept (`SPAWN`, `ASSEMBLY`, `RETURN`) is intentionally collapsed.
-
-Per root Ground Node, the normal working model uses one operational handoff/access zone:
-
-```text
-ZON_BLUE_GND_<NODE>_ACCESS
-```
-
-Current expected set:
+Pro Root Ground Node gilt grundsätzlich eine gemeinsame operative Access-/Handoff-Zone:
 
 ```text
 ZON_BLUE_GND_JALALABAD_ACCESS
@@ -153,131 +112,52 @@ ZON_BLUE_GND_WRIGHT_ACCESS
 ZON_BLUE_GND_BOSTICK_ACCESS
 ```
 
-The same access zone may serve as:
+Sie darf als Materialisierungs-, Abfahrts-, Ankunfts-, Return-/Handoff- und Transfergrenze dienen.
+
+Regeln:
 
 ```text
-mobile ground asset materialization point
-return / handoff boundary
-convoy departure point
-convoy arrival point
-reinforcement departure/arrival point
-supply transfer handoff
+- outside active FOB/COP geometry
+- preferably on or directly beside a verified usable road
+- no default separate SPAWN / ASSEMBLY / RETURN zones
+- no observable spawn/despawn transition
 ```
 
-The zone is to be positioned outside the active installation, preferably immediately on or beside a verified usable road so DCS ground AI is not required to navigate through FOB internal geometry.
-
-A separate assembly zone is not required by default.
-
-## 4. Dependent OP boundary
-
-Dependent OPs do not receive normal independent ground access zones, warehouses or materialization points.
+Abhängige OPs erhalten keine eigene Standard-ACCESS-Zone, kein Warehouse und keinen eigenen strategischen Stock.
 
 ```text
-OP
--> no independent warehouse
--> no independent strategic stock
--> no standard spawn zone
--> no AIR sustainment
--> ROAD / FOOT / ROAD_FOOT only
+OP access modes:
+ROAD
+FOOT
+ROAD_FOOT
+
+AIR = FORBIDDEN for normal OP sustainment
 ```
 
-Routine rotation, food, water and ammunition are abstracted with the OP personnel occupancy. Explicit replenishment is limited to personnel losses/understrength state and always originates from the direct parent.
-
-The parent chain may not be skipped.
-
-Example:
+## 4. Materialisierungsklassen
 
 ```text
-JALALABAD
--> BOSTICK
--> MUSTANG
+FIXED INSTALLATION DEFENSE
+-> physical at mission start
+-> no demand-time respawn into exact defensive positions
+
+FIXED FIRE SUPPORT
+-> physical at mission start
+-> fire mission dynamic, weapon not spawned on demand
+
+MOBILE OPERATIONAL ASSETS
+-> CampaignState reservation first
+-> materialize at root-node ACCESS boundary
+-> validated road/route required
+
+REINFORCEMENT / LOGISTICS TRANSPORT
+-> same ACCESS/handoff model
+-> strategic ownership changes only by explicit CampaignState settlement
 ```
 
-not:
+## 5. Tatsächlich im aktuellen Missionsartefakt beobachtete Typnamen
 
-```text
-JALALABAD -> MUSTANG
-```
-
-## 5. Materialization classes
-
-Ground assets are separated into four planned materialization classes.
-
-### 5.1 Fixed installation defense
-
-Examples:
-
-```text
-gate/security positions
-selected perimeter infantry
-selected tower/bunker positions
-```
-
-Rules:
-
-```text
-physical at mission start
-no demand-time spawn into an occupied FOB/COP/OP
-no same-session magic replacement into exact fixed positions
-losses settle to CampaignState
-reconstitution is a separate campaign/restart process
-```
-
-### 5.2 Fixed fire support
-
-Confirmed example:
-
-```text
-COP Honaker-Miracle
-2 x M777A2 on 2011-07-30
-```
-
-Rules:
-
-```text
-physical at mission start where the artillery presence is approved
-fire mission generated dynamically
-weapon itself does not spawn merely because a fire mission exists
-destroyed weapon is not automatically regenerated in place
-```
-
-### 5.3 Mobile operational assets
-
-Examples:
-
-```text
-patrol
-QRF
-mobile security
-local logistics
-```
-
-Rules:
-
-```text
-CampaignState reservation first
-operational/MOOSE materialization second
-materialize at root-node ACCESS zone outside installation
-route from a verified road anchor / validated route
-no arbitrary spawn inside active FOB/COP geometry
-```
-
-### 5.4 Reinforcement and logistics transport
-
-Examples:
-
-```text
-personnel replacement
-vehicle transfer
-supply convoy
-recovery/support mission
-```
-
-These use the same root-node access/handoff concept. Arrival at an installation does not by itself transfer strategic vehicle ownership; CampaignState settlement remains explicit.
-
-## 6. DCS type names already observed in the current mission artifact
-
-Read-only inspection of the current mission artifact established the following relevant DCS unit type names as actually present in that mission environment:
+Read-only inspection der aktuellen Mission hat folgende relevante Typnamen bestätigt:
 
 ```text
 CHAP_MATV
@@ -292,89 +172,166 @@ M 818
 MLRS FDDM
 ```
 
-This list proves only that these type names occur in the current mission. It is not a complete catalog of the user's installed DCS/mod environment.
+`CHAP_*` bleibt eine Mod-/Content-Abhängigkeit.
 
-`CHAP_*` entries imply a mod/content dependency and must retain that dependency in later template metadata.
+Diese Liste ist kein vollständiger Installed-DCS-Katalog.
 
-## 7. Working vehicle-family to DCS-type candidate mapping
+## 6. Gepinnter MOOSE-Source als zusätzlicher Type-Name-Nachweis
 
-The following mapping is approved only as a working candidate because each DCS type name is already observed in the current mission artifact.
+Im tatsächlich verwendeten `Moose.lua`-Stand
 
-| OMW vehicle family | Candidate DCS type | Mapping status | Boundary |
+```text
+MOOSE 2.9.18
+commit 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+SHA-256 e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
+```
+
+ist in der CTLD-Hercules-Typentabelle der DCS-Typname
+
+```text
+M978 HEMTT Tanker
+```
+
+enthalten. Das stützt den exakten Type-String für die Foundation-Planung. Die tatsächliche Verfügbarkeit und das Verhalten in der OMW-Mission bleiben DCS-testpflichtig.
+
+## 7. Beschlossene Foundation-Mappings
+
+| OMW family / role | DCS type | Foundation status | Grenze |
 |---|---|---|---|
-| protected light mobility / M-ATV class | `CHAP_MATV` | `SOURCE_CONFIRMED_TYPE / CANDIDATE_MAPPING` | mod dependency; DCS runtime/template acceptance still required |
-| protected MRAP / MaxxPro class | `MaxxPro_MRAP` | `SOURCE_CONFIRMED_TYPE / CANDIDATE_MAPPING` | exact variant/configuration still template-specific |
-| medium logistics / FMTV-M1083 class | `CHAP_M1083` | `SOURCE_CONFIRMED_TYPE / CANDIDATE_MAPPING` | mod dependency; cargo/transport semantics still separate |
-| utility / HMMWV class | `Hummer` | `SOURCE_CONFIRMED_TYPE / CANDIDATE_MAPPING` | exact HMMWV variant and armament must be selected per role |
+| M-ATV class | `CHAP_MATV` | `PLANNED_MAPPING` | im aktuellen Missionsartefakt beobachtet; Mod-Abhängigkeit |
+| MaxxPro/MRAP class | `MaxxPro_MRAP` | `PLANNED_MAPPING` | im aktuellen Missionsartefakt beobachtet |
+| FMTV/M1083 class | `CHAP_M1083` | `PLANNED_MAPPING` | im aktuellen Missionsartefakt beobachtet; Mod-Abhängigkeit |
+| utility/HMMWV class | `Hummer` | `PLANNED_MAPPING` | im aktuellen Missionsartefakt beobachtet |
+| Fenty fuel-support | `M978 HEMTT Tanker` | `PLANNED_MAPPING` | Type-String im gepinnten MOOSE-Source; OMW-Mission-Test offen |
+| Wright engineer/route-support security | `MaxxPro_MRAP` | `PLANNED_ABSTRACTION` | kein Buffalo/Husky-Proxy erfunden; bildet geschützte Engineer-/Route-Support-Begleitung ab, keine Mine-Clearance-Funktion |
+| Bostick recovery/support | `CHAP_M1083` | `PLANNED_ABSTRACTION` | Support-/Recovery-Repräsentation; kein DCS-Towing behauptet |
+| Honaker-Miracle M777A2 technical proxy | `L118_Unit` | `PLANNED_PROXY` | 2 x L118 repräsentieren 2 x historisch belegte M777A2; keine historische Gleichsetzung |
 
-No other DCS vehicle type is inferred from these mappings.
+Damit sind die zuvor offenen Foundation-Type-Slots geschlossen, ohne nicht nachgewiesene Spezialfahrzeuge zu erfinden.
 
-## 8. Artillery/proxy boundary
-
-The current mission contains `L118_Unit`, but this does **not** make it a historically equivalent M777A2.
-
-```text
-historical system: M777A2
-observed DCS type: L118_Unit
-```
-
-Therefore:
+## 8. Reusable Template Baseline
 
 ```text
-L118_Unit != automatically approved M777 proxy
+TPL_BLUE_GND_PATROL_MATV_4
+  4 x CHAP_MATV
+
+TPL_BLUE_GND_PATROL_MRAP_4
+  4 x MaxxPro_MRAP
+
+TPL_BLUE_GND_QRF_MIXED_4
+  2 x CHAP_MATV
+  2 x MaxxPro_MRAP
+
+TPL_BLUE_GND_SECURITY_MRAP_2
+  2 x MaxxPro_MRAP
+
+TPL_BLUE_GND_ENGINEER_SUPPORT_MRAP_2
+  2 x MaxxPro_MRAP
+
+TPL_BLUE_GND_LOG_M1083_2
+  2 x CHAP_M1083
+
+TPL_BLUE_GND_FUEL_M978_2
+  2 x M978 HEMTT Tanker
+
+TPL_BLUE_GND_UTILITY_HMMWV_2
+  2 x Hummer
+
+TPL_BLUE_GND_OP_REINFORCEMENT_MRAP_3
+  3 x MaxxPro_MRAP
+
+TPL_BLUE_GND_FIRE_SUPPORT_L118_PROXY_2
+  2 x L118_Unit
 ```
 
-A proxy decision requires explicit owner approval after comparison of role, range, ammunition behavior, visual impact and DCS/MOOSE fire-mission behavior.
+Die konkrete Node-Multiplikation und PLATOON-Zuordnung steht in `OMW-ARMY-GROUND-ROLE-PLATOON-BASELINE`.
 
-The same rule applies to any later mortar, recovery, engineer or route-clearance proxy.
+## 9. Artilleriegrenze
 
-## 9. Current vehicle-baseline application
-
-The working quantities from `OMW-ARMY-GROUND-VEHICLE-BASELINE` can now be expressed as template-family demand without pretending that every vehicle must be visible or active simultaneously.
+Historische Evidenz:
 
 ```text
-JOYCE 20
-  8  -> M-ATV family -> CHAP_MATV candidate
-  6  -> MaxxPro family -> MaxxPro_MRAP candidate
-  4  -> M1083/FMTV family -> CHAP_M1083 candidate
-  2  -> HMMWV/utility family -> Hummer candidate
-
-WRIGHT 22
-  8  -> M-ATV family -> CHAP_MATV candidate
-  6  -> MaxxPro family -> MaxxPro_MRAP candidate
-  4  -> M1083/FMTV family -> CHAP_M1083 candidate
-  2  -> HMMWV/utility family -> Hummer candidate
-  2  -> engineer/route-support -> TYPE OPEN
-
-BOSTICK 26
-  10 -> M-ATV family -> CHAP_MATV candidate
-  8  -> MaxxPro family -> MaxxPro_MRAP candidate
-  5  -> M1083/FMTV family -> CHAP_M1083 candidate
-  2  -> HMMWV/utility family -> Hummer candidate
-  1  -> recovery/support -> TYPE OPEN
-
-FENTY 48
-  16 -> M-ATV family -> CHAP_MATV candidate
-  14 -> MaxxPro family -> MaxxPro_MRAP candidate
-  10 -> M1083/FMTV family -> CHAP_M1083 candidate
-  4  -> HMMWV/utility family -> Hummer candidate
-  4  -> heavy logistics/fuel-support -> TYPE OPEN
+COP Honaker-Miracle
+30.07.2011
+2 x M777A2
+C Battery / 3-321 FA
 ```
 
-The open allocations remain deliberately open instead of being silently mapped to an available but historically/functionally inappropriate DCS type.
-
-## 10. Immediate next verification gates
-
-Before Mission Editor build instructions are issued:
+Technische Foundation-Abbildung:
 
 ```text
-1. decide/verify Wright engineer and route-support vehicle families
-2. decide/verify Bostick recovery/support vehicle family
-3. decide/verify Fenty heavy logistics/fuel-support vehicle families
-4. decide the M777A2 DCS proxy or approved abstraction
-5. define reusable group compositions and roles from the approved family pool
-6. verify road-side ACCESS-zone positions in the Mission Editor
-7. DCS-test spawn, pathfinding, tasking, return and visibility behavior
+2 x L118_Unit
 ```
 
-No item above is `VALIDATED` by this design document.
+Dabei gilt zwingend:
+
+```text
+L118_Unit != M777A2 historically
+```
+
+Der Proxy ist eine OMW-Designentscheidung, um die belegte feste 155-mm-Fire-Support-Funktion technisch abbilden zu können, solange kein besser bestätigter/geeigneter M777A2-Typ im tatsächlich verwendeten DCS-/Mod-Stand verfügbar ist.
+
+Vor `VALIDATED` müssen mindestens Reichweite, Fire-at-Point-Verhalten, Munition, Sichtwirkung und MOOSE-`AUFTRAG:NewARTY(...)` in DCS geprüft werden.
+
+## 10. Wright- und Bostick-Spezialrollen
+
+### Wright
+
+Es wird **kein** Buffalo-/Husky-/Cougar-DCS-Typ erfunden oder stillschweigend vorausgesetzt.
+
+Die Foundation bildet die Rolle zunächst als geschützte Engineer-/Route-Support-Security ab:
+
+```text
+2 x TPL_BLUE_GND_ENGINEER_SUPPORT_MRAP_2
+= 4 x MaxxPro_MRAP
+```
+
+Das simuliert keine Minensuch- oder Räummechanik.
+
+### Bostick
+
+Die Recovery-Funktion bleibt fachlich erhalten, aber DCS-Towing wird nicht behauptet.
+
+```text
+LOGISTICS / RECOVERY SUPPORT
+-> CHAP_M1083 family
+```
+
+Eine spätere nachgewiesene Wrecker-Mod-/DCS-Lösung kann diese Abstraktion ersetzen, ohne den CampaignState-Ressourcenvertrag zu ändern.
+
+## 11. Fenty heavy logistics / fuel support
+
+Die frühere vier Fahrzeuge umfassende offene Heavy-Logistics/Fuel-Allokation wird für die Foundation wie folgt geschlossen:
+
+```text
+2 x M978 HEMTT Tanker
+2 x additional CHAP_M1083 logistics vehicles
+```
+
+Zusammen mit der übrigen Fenty-Baseline ergibt sich damit:
+
+```text
+16 CHAP_MATV
+14 MaxxPro_MRAP
+12 CHAP_M1083
+2  M978 HEMTT Tanker
+4  Hummer
+= 48 wheeled vehicles
+```
+
+## 12. Acceptance-Grenze
+
+Alle Mappings in diesem Dokument sind Foundation-Planung, nicht DCS-Abnahme.
+
+Offen bleiben insbesondere:
+
+```text
+- Mission Editor template creation by the project owner
+- M978 availability/behavior in the actual mission
+- L118 proxy ballistic/range/ARTY behavior
+- road-side ACCESS-zone positions
+- pathfinding, tasking, return and visibility behavior
+- mod dependency verification for CHAP_* types
+```
+
+`VALIDATED` ist erst nach dokumentiertem DCS-Test zulässig.
