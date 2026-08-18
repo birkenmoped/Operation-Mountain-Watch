@@ -5,8 +5,8 @@ document_class: TEST_PROJECT_INDEX
 owning_policy: OMW-GOV-001
 authoritative_for:
   - branch-local test scope for the first Air Tasking to AAR vertical integration
-  - expected pure-Lua bridge behavior before DCS integration
-  - exact local vertical-base build evidence for the documented commit
+  - additive attachment contract to the already running accepted AAR base
+  - expected DCS acceptance sequence before Gate 3
 not_authoritative_for:
   - DCS runtime acceptance
   - Acceptance-7 replacement
@@ -22,159 +22,79 @@ validated_in_dcs: false
 
 # Air Tasking AAR Vertical Integration Test
 
-## 1. Scope
+## 1. Architekturgrenze
 
-Dieses Testprojekt prueft ausschliesslich die neue Domain-/Korrelationsschicht
+Der Test ist strikt additiv:
 
 ```text
-MissionDemand
--> approved AIR_SUPPORT_REQUEST
--> AIR_TASKING_MISSION
--> existing OMW AAR Controller
--> existing OMW AAR CampaignState adapter
--> stable EXECUTION_ATTEMPT correlation
+existing OMW_AAR_Base.lua
+-> existing OMW.AirOps.AAR facade RUNNING
+-> additive OMW_AirTasking_AARBootstrap
+-> OMW_AirTasking_AARBridge
+-> existing Controller.SelectArea / SubmitDemand / EndDemand
+-> existing CampaignState strategic adapter
+-> existing MOOSE AAR execution
 ```
 
-Die Pure-Lua-Fixture erzeugt keine DCS-Gruppe und ruft keine MOOSE-API auf. MOOSE-/AAR-Laufzeitverhalten bleibt durch die bestehende Acceptance-7-Provenienz begrenzt und muss fuer Gate 3 zusaetzlich in DCS als kompletter Vertical Slice getestet werden.
+Die bestehende `OMW_AAR_Base.lua`, der AAR-Controller, der CampaignState-Adapter und die bestehende Mission-Editor-Ladekette werden nicht ersetzt, neu gebaut oder in das Air-Tasking-Testbundle eingebettet.
 
-## 2. Production module under test
+## 2. Production modules under test
 
 ```text
 scripts/air-operations/OMW_AirTasking_AARBridge.lua
 scripts/air-operations/OMW_AirTasking_AARBootstrap.lua
 ```
 
-Die Bridge:
+Der Bootstrap verlangt eine bereits laufende `OMW.AirOps.AAR`-Facade. Er erzeugt keinen zweiten AAR-Stack. Die bestehende `StrategicAdapter`-Instanz bleibt identisch; ihre öffentlichen Settlement-Callbacks werden additiv beobachtet und rufen immer zuerst den bestehenden Callback auf.
+
+Die Bridge bleibt auf ASR-/ATM-/EXE-Korrelation begrenzt. Area-/Profile-Auswahl, Tanker-Lifecycle und Ressourcenabrechnung bleiben beim bestehenden AAR-/CampaignState-Pfad.
+
+## 3. DCS Acceptance
+
+Test-ID:
 
 ```text
-- requires externally supplied stable ASR-/ATM-/EXE-IDs;
-- requires requestStatus=APPROVED instead of auto-approving authority decisions;
-- calls the existing Controller.SelectArea(...) policy;
-- calls the existing Controller.SubmitDemand(...) / EndDemand(...) path;
-- decorates the existing AAR CampaignState adapter instead of replacing it;
-- creates no tanker inventory and performs no resource settlement itself;
-- maps AAR runtime materialization/handoff/loss to EXE correlation;
-- never persists the AAR runtimeId or any MOOSE/DCS object.
+AIR-TASKING-AAR-VERTICAL-2
 ```
 
-## 3. Pure-Lua fixture
+Testquelle:
 
 ```text
-mission/tests/air-tasking-aar-vertical/test_bridge.lua
+mission/tests/air-tasking-aar-vertical/src/01-air-tasking-aar-vertical-acceptance.lua
 ```
 
-The fixture uses fake controller/adapter boundaries only and covers:
+Builder:
 
 ```text
-1. approved WEST/FAST AAR request
-2. reserve track queued
-3. materialization -> EXE STARTED -> ATM/ASR EXECUTING
-4. explicit COMPLETE -> controller EndDemand(COMPLETE)
-5. handoff -> EXE ENDED -> ATM COMPLETED -> ASR FULFILLED
-6. exported snapshot omits runtime_id
-7. tanker loss -> EXE FAILED
-8. accepted AAR replacement lifecycle -> new EXE PENDING
-9. replacement materialization reuses the pending EXE
-10. cancellation during execution -> controller ABORTED -> final ATM/ASR ABORTED after handoff
+tools/build-air-tasking-aar-additive-test.ps1
 ```
 
-Expected terminal output when executed with a compatible Lua interpreter:
+Ausgabedatei:
 
 ```text
-AIR_TASKING_AAR_BRIDGE_TEST_PASS
+mission/tests/air-tasking-aar-vertical/dist/OMW_AirTasking_AAR_Vertical_Test.lua
 ```
 
-Diese Fixture ist weiterhin nicht als ausgefuehrter Test markiert, weil fuer den dokumentierten Remote-Schritt kein Lua-/luac-Interpreter als belastbare Testumgebung vorlag.
+Diese Lua-Datei wird vom Projektinhaber als **zusätzliche** Mission-Editor-`DO SCRIPT FILE`-Aktion eingefügt. Die bestehende `OMW_AAR_Base.lua` bleibt unverändert.
 
-## 4. Lokal bestaetigter Vertical-Base-Build
-
-Der Projektinhaber hat den Builder lokal auf dem exakten Branch-Stand ausgefuehrt.
+Der Test wartet selbst auf:
 
 ```text
-Testdatum: 2026-08-18
-Branch: agent/air-tasking-plan-foundation
-Commit: 1fc0c83527387e01e8838be96b8046d026421ea0
-Builder: tools/build-air-tasking-aar-vertical-base.ps1
-BuilderVersion: OMW-AIR-TASKING-AAR-VERTICAL-BASE-1
-Result: PASS
+OMW.AirOps.AAR.Status == RUNNING
 ```
 
-Der vorgeschaltete AAR-Produktionsgate meldete dabei:
+Danach:
 
 ```text
-AAR production finalization source gate: PASS
-MizMutation: false
-CampaignStateAuthority: true
-RestoreReconciliation: true
-StandardTracks: 4
-ReserveTracks: 2
-LISAProfile: FAST
-LISAAvailability: RESERVE
-LISASourceDomain: AL_UDEID
-LISAFIRFix: DAVER
-LateApproachMode: FIR_THEN_LATE_APPROACH_THEN_AUFTRAG
-MissionDemandClosesStandardTrack: false
-MissionDemandClosesReserveAfterLastDemand: true
-MaxAircraftPerTrack: 2
-```
-
-Reale lokale SHA-256-Evidenz:
-
-```text
-MOOSE commit:
-73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
-
-Moose.lua:
-e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
-
-CampaignState:
-576b622c593dcaf43f0a5c1a0fa0682de24381bd7ace2d8477e3c072d7963c7e
-
-InitialStock:
-cf3c85b82b2e9531d277a185f496d6dca77a0c0d0b5c810d59e139740fb6b718
-
-AARStrategicStock:
-5221959a21c03f6d40de326d210cd6bf58b0b862b84f1112225ff6b9f561cdf1
-
-CampaignStateInitializer:
-6ff1bf960f655a477df84e5887b21715696a34b2b8e9cd74d49feaa62b659c92
-
-BaseAdapter:
-80f5ccc25a2112ca42727c4e20edf5e7e630804a664d4cd661f435af80729d63
-
-RuntimeIntegration:
-598aa378d95f9dcde9aa982222d40070006c3c892ffa66668576c64ff07aa91b
-
-Controller:
-547f0336b954b116e43e8a09ca0f001d893ea81d2394025891be5ff078388438
-
-AARBootstrap:
-3441d2b771976702aa71fd2e5fce1d699c8969a71cb8f9749ea343beb27e1f19
-
-AirTaskingBridge:
-f582f8646f86dc1ccc0264abdb4dcd4271f225ca2bc6bd4ff8f3705ab1ec782a
-
-AirTaskingBootstrap:
-615e3a39157a0059d010218b61474ee1763332da690ce7ab9d01da648ed3da5e
-
-Vertical Base Bundle:
-1444dcd71b4ce475cd21e004e83460796c9fcd122c6724d59f0aea73b911e384
-```
-
-`Get-FileHash` bestaetigte denselben Bundle-Hash unabhaengig vom Builder-Output. Dieser Nachweis ist ein lokaler deterministischer Build-Nachweis, **kein DCS-Runtime-PASS**.
-
-## 5. DCS Vertical Acceptance
-
-Der naechste reale Testfall verwendet genau einen Reserve-Bedarf:
-
-```text
-MD-000001
+existing AAR facade
+-> additive Air Tasking attach
+-> four STANDARD tracks on station
+-> MD-000001
 -> ASR-000001 APPROVED
 -> ATM-000001 AAR
 -> WEST / FAST / SUPPORT
--> existing Controller.SelectArea(...)
 -> LISA / AL_UDEID / DAVER
--> EXE-* runtime correlation
+-> EXE-* correlation
 -> natural FIR ingress
 -> natural 60-NM late approach
 -> natural LISA track arrival
@@ -186,18 +106,11 @@ MD-000001
 -> ASR FULFILLED
 ```
 
-Testquellen:
+Erwartete Schluessellogs:
 
 ```text
-mission/tests/air-tasking-aar-vertical/src/01-air-tasking-aar-vertical-acceptance.lua
-tools/build-air-tasking-aar-vertical-acceptance.ps1
-```
-
-Der Acceptance-Harness wartet zuerst auf vier natuerlich aktive STANDARD-Tracks. Erst danach wird der LISA-Bedarf eingereicht. `EndAAR(COMPLETE)` wird erst nach natuerlicher LISA-On-Station-Bestaetigung angefordert. Es gibt keinen kuenstlichen FuelLow, keinen kuenstlichen Verlust, keinen Teleport und kein Umschreiben der AAR-Route.
-
-Erwartete Schluessel-Logs:
-
-```text
+WAITING_FOR_EXISTING_AAR_BASE
+EXISTING_AAR_ATTACH_PASS
 STANDARD_BASELINE_PASS
 DEMAND_SUBMITTED
 EXECUTION_STARTED_PASS
@@ -208,8 +121,39 @@ SETTLEMENT_PASS
 RESULT PASS
 ```
 
-## 6. Evidence boundary
+## 4. Sicherheitsgrenzen des Builders
 
-Der lokale Vertical-Base-Build ist bestaetigt. Der DCS-Vertical-Acceptance-Lauf ist noch nicht erfolgt.
+Der additive Builder prueft unter anderem, dass das Testbundle **keine** bestehende AAR-Production-Base einbettet. Verbotene Marker umfassen die bisherigen kombinierten AAR-Test-/Base-Symbole und die alten nicht-additiven Builderpfade.
 
-Gate 3 darf erst nach einem realen DCS-Lauf mit dokumentierter Mission, Missions-Hash, Bundle-Hash, Branch/Commit, DCS-Version, eingebetteter MOOSE-Version/Hash sowie den erforderlichen Logs auf PASS gesetzt werden.
+```text
+MizMutation: false
+ExistingAARBaseEmbedded: false
+ExistingAARBaseRecreated: false
+ExistingAARAdapterRecreated: false
+MissionEditorAdditionalScriptRequired: true
+```
+
+Die frueheren kombinierten Builder
+
+```text
+tools/build-air-tasking-aar-vertical-base.ps1
+tools/build-air-tasking-aar-vertical-acceptance.ps1
+```
+
+wurden entfernt, damit sie nicht versehentlich erneut als Integrationsweg verwendet werden.
+
+## 5. Evidence boundary
+
+Es liegt noch kein DCS-Runtime-PASS fuer diesen additiven Pfad vor. Gate 3 bleibt offen.
+
+Ein Gate-3-PASS erfordert mindestens:
+
+```text
+branch / commit
+built additive Lua hash
+Mission SHA-256 nach manueller Einfuegung
+DCS version
+embedded MOOSE commit / Moose.lua hash
+required correlation / settlement logs
+RESULT PASS
+```
