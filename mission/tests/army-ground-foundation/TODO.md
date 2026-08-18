@@ -20,11 +20,9 @@ validated_in_dcs: false
 
 # ARMY Ground Foundation – Arbeitsstand und To-do
 
-## 1. Ziel
+## 1. Ziel und Scope
 
-Für Jalalabad/Kunar wird eine belastbare BLUE-Ground-Foundation aufgebaut, die historische Installationen, Juli-2011-Einheitenbaseline, CampaignState-Ressourcenhoheit und eine MOOSE-first Runtime-Struktur zusammenführt.
-
-Aktueller Operationsraum:
+Aktiver Ground-Foundation-Raum:
 
 ```text
 Jalalabad / FOB Fenty
@@ -34,8 +32,6 @@ FOB Bostick / OP Mustang / OP Clydesdale / OP Stallion
 ```
 
 Salerno/Khost und Camp Fiaz sind für diesen Arbeitsstrang nicht Teil des aktiven Ground-Spielfelds.
-
-## 2. Historische und Domain-Baselines
 
 Verbindlicher Recherche-/Kampagnenzeitraum:
 
@@ -49,7 +45,7 @@ Aktive Ground-ORBAT-Arbeitsbaseline:
 JULY 2011
 ```
 
-Aktueller belastbarer Formation-/Standortstand:
+## 2. Historische und operative Baseline
 
 ```text
 Jalalabad / Fenty
@@ -73,17 +69,6 @@ Bostick
 ```
 
 Exakte Juli-2011-Company-/Platoon-Verteilungen bleiben dort offen, wo die Quellen sie nicht tragen.
-
-## 3. Ground-Node- und Support-Hierarchie
-
-Root Ground Nodes:
-
-```text
-GROUND_NODE_JALALABAD
-GROUND_NODE_JOYCE
-GROUND_NODE_WRIGHT
-GROUND_NODE_BOSTICK
-```
 
 Support-Hierarchie:
 
@@ -111,9 +96,7 @@ PAKISTAN
 
 Keine reguläre Pakistan->Jalalabad-Luftbrücke ohne belastbare Evidenz einer wiederkehrenden/etablierten Luftversorgungsbeziehung.
 
-OPs besitzen keinen unabhängigen strategischen Stock, kein Warehouse und keine normale AIR-Sustainment-Kette. Explizite OP-Auffüllung ist PERSONNEL-only und erfolgt über den direkten Parent.
-
-## 4. Working Vehicle Baseline
+## 3. Working Vehicle Baseline
 
 ```text
 Jalalabad / Fenty   48 wheeled vehicles
@@ -137,12 +120,7 @@ Bostick recovery     -> CHAP_M1083 abstraction; no DCS towing claim
 Honaker M777A2       -> L118_Unit PLANNED_PROXY, 2 pieces
 ```
 
-Details:
-
-- [`OMW-ARMY-GROUND-VEHICLE-BASELINE`](../../../docs/ground/ARMY-GROUND-VEHICLE-BASELINE.md)
-- [`OMW-ARMY-GROUND-TEMPLATE-NAMING-TYPE-MAPPING`](../../../docs/ground/ARMY-GROUND-TEMPLATE-NAMING-AND-DCS-TYPE-MAPPING.md)
-
-## 5. MOOSE-first geplante Topologie
+## 4. MOOSE-first Planned Topology
 
 Gepinnter Source:
 
@@ -168,52 +146,166 @@ BRIGADE
 -> physical DCS GROUP
 ```
 
-Damit ist für den aktuellen Foundation-Scope **eine operative MOOSE-BRIGADE je Root Ground Node** geplant. Das ist keine historische Brigadeabbildung.
+Eine operative MOOSE-BRIGADE je Root Ground Node. Keine historische Brigadeabbildung. Abhängige COPs/OPs erhalten keine eigene BRIGADE.
 
-Abhängige COPs/OPs erhalten keine eigene BRIGADE.
+## 5. CampaignState Working Quantities
 
-Konkrete Rollen-/Template-/Ngroups-Zuordnungen stehen in:
-
-- [`OMW-ARMY-GROUND-ROLE-PLATOON-BASELINE`](../../../docs/ground/ARMY-GROUND-ROLE-AND-PLATOON-BASELINE.md)
-
-Source-verifiziert sind insbesondere:
+Neue Working Baseline:
 
 ```text
-COMMANDER:AddBrigade(...)
-BRIGADE:New(...)
-BRIGADE:AddPlatoon(...)
-PLATOON:New(...)
-COHORT:AddMissionCapability(...)
-COHORT:SetMissionRange(...)
-COHORT:CanMission(...)
-AUFTRAG:SetReturnToLegion(false)
-AUFTRAG:NewARTY(...)
+GROUND_NODE_JALALABAD
+  PERSONNEL 480
+  VEHICLE    48
+  SUPPLY    120
+  AMMO      100
+  FUEL      120
+
+GROUND_NODE_JOYCE
+  PERSONNEL 180
+  VEHICLE    20
+  SUPPLY     48
+  AMMO       44
+  FUEL       40
+
+GROUND_NODE_WRIGHT
+  PERSONNEL 120
+  VEHICLE    22
+  SUPPLY     36
+  AMMO       30
+  FUEL       36
+
+GROUND_NODE_BOSTICK
+  PERSONNEL 220
+  VEHICLE    26
+  SUPPLY     56
+  AMMO       52
+  FUEL       48
 ```
 
-DCS-Selektions-/Lifecycle-Acceptance bleibt offen.
+Dependent Personnel Commitments:
 
-## 6. Phasenstatus
+```text
+Honaker-Miracle   40 from Joyce
+Mustang           12 from Bostick
+Clydesdale        12 from Bostick
+Stallion          12 from Bostick
+JoJo               0 active; 12 candidate while activation remains PROVISIONAL
+```
+
+`SUPPLY`, `AMMO` und `FUEL` werden als normalized logistics units geführt, nicht als unbelegte historische Tonnen-/Literangaben.
+
+Readiness thresholds:
+
+```text
+AVAILABLE     >= 60%
+CONSTRAINED   >= 35% and < 60%
+CRITICAL      > 0% and < 35%
+UNAVAILABLE   = 0% or required action minimum cannot be met
+```
+
+Protected local defense reserves:
+
+```text
+Jalalabad  PERSONNEL 120 | VEHICLE 10 | AMMO 25 | FUEL 20
+Joyce      PERSONNEL  48 | VEHICLE  4 | AMMO 12 | FUEL  8
+Wright     PERSONNEL  36 | VEHICLE  4 | AMMO 10 | FUEL  8
+Bostick    PERSONNEL  60 | VEHICLE  5 | AMMO 14 | FUEL 10
+```
+
+Working action costs:
+
+```text
+Motorized Patrol
+  PERSONNEL 12 | VEHICLE 4 | SUPPLY 1 | AMMO 2 | FUEL 2
+
+Ground QRF
+  PERSONNEL 16 | VEHICLE 4 | SUPPLY 1 | AMMO 3 | FUEL 3
+
+Local Logistics / Resupply
+  PERSONNEL 6 | VEHICLE 2 | FUEL 2 + payload resources
+
+Honaker Fire Mission
+  AMMO 2
+  no additional vehicle or personnel materialization
+```
+
+Details:
+
+- [`OMW-ARMY-GROUND-RESOURCE-QUANTITY-SETTLEMENT`](../../../docs/ground/ARMY-GROUND-RESOURCE-QUANTITY-AND-SETTLEMENT-BASELINE.md)
+- [`OMW-ARMY-GROUND-RESOURCE-READINESS-CONTRACT`](../../../docs/ground/ARMY-GROUND-RESOURCE-READINESS-CONTRACT.md)
+
+## 6. Settlement- und Autoritätsvertrag
+
+Installation damage -> CampaignState:
+
+```text
+DCS event
+-> stable representation correlation
+-> classify strategic effect
+-> idempotent settlement record
+-> CampaignState mutation exactly once
+-> readiness recalculation
+```
+
+Settlement classes:
+
+```text
+DAMAGE_INFRASTRUCTURE
+LOSS_PERSONNEL
+LOSS_VEHICLE
+LOSS_FIRE_SUPPORT_SYSTEM
+LOSS_SUPPLY
+LOSS_AMMO
+LOSS_FUEL
+NO_STRATEGIC_SETTLEMENT
+```
+
+CampaignState remains sole authority:
+
+```text
+CampaignState
+= strategic truth
+
+MOOSE WAREHOUSE / BRIGADE / PLATOON
+= operational mirror / selection layer
+
+DCS Warehouse / group / static / cargo
+= physical representation / telemetry
+```
+
+Explicitly forbidden:
+
+```text
+MOOSE AddAsset -> automatic strategic credit
+MOOSE Returned -> automatic strategic credit
+MOOSE Warehouse count -> overwrite CampaignState
+DCS Despawn -> strategic return
+DCS Destroy -> unclassified strategic debit
+CTLD delivery -> automatic strategic credit
+```
+
+Mirror divergence produces reconciliation/error telemetry, not an automatic balancing transaction.
+
+## 7. Phasenstatus
 
 ### Phase A – Standortnetz und historische Baseline
 
 - [x] Recherchezeitraum und Juli-2011-Ground-Baseline festgelegt.
 - [x] vier Root Ground Nodes festgelegt.
 - [x] Wright und Bostick im Scope.
-- [x] Camp Fiaz, Salerno/Khost für diesen Ground-Foundation-Scope ausgeschlossen.
 - [x] Bostick-OP-Kette Mustang/Clydesdale/Stallion als OMW-Planung festgelegt.
 - [ ] vollständige angekündigte Standortliste später gegen den aktuellen Scope prüfen.
 - [ ] prüfen, ob ein weiterer gameplay-relevanter FOB im aktuellen Raum fehlt.
 
 ### Phase B – Einheiten, Fahrzeugbaseline und technische Typen
 
-- [x] Jalalabad, Joyce, Wright und Bostick historische Rollenbasis reconciled.
-- [x] Honaker: 2 x M777A2 am 30.07.2011 belegt.
-- [x] Working Vehicle Baseline für Fenty/Joyce/Wright/Bostick festgelegt.
-- [x] M-ATV/MaxxPro/M1083/HMMWV Foundation-Mappings festgelegt.
-- [x] Wright Engineer-/Route-Support ohne erfundenen Buffalo-/Husky-Proxy geschlossen.
-- [x] Bostick Recovery-Support ohne erfundenes Wrecker-DCS-Modell geschlossen.
+- [x] historische Rollenbasis reconciled.
+- [x] Working Vehicle Baseline festgelegt.
+- [x] Foundation-Mappings festgelegt.
+- [x] Wright Engineer-/Route-Support ohne erfundene spezielle Mine-Clearance-Funktion geschlossen.
+- [x] Bostick Recovery-Support ohne erfundene DCS-Towing-Funktion geschlossen.
 - [x] Fenty Fuel-Support mit `M978 HEMTT Tanker` als Planned Mapping geschlossen.
-- [x] Honaker M777A2 mit `L118_Unit` als explizitem Planned Technical Proxy geschlossen.
+- [x] Honaker M777A2 mit `L118_Unit` als Planned Technical Proxy geschlossen.
 - [ ] Jalalabad exakte Ground-QRF-/Base-Defense-Formation weiter recherchieren.
 - [ ] Joyce exakte Juli-2011-Company-Verteilung weiter recherchieren.
 - [ ] Bostick exakte Juli-2011-Maneuver-Company/-Platoons weiter recherchieren.
@@ -225,10 +317,8 @@ DCS-Selektions-/Lifecycle-Acceptance bleibt offen.
 - [x] vier operative MOOSE-BRIGADEs als Planned Foundation-Topologie festgelegt.
 - [x] konkrete Fahrzeug-Rollenallokation pro Node festgelegt.
 - [x] konkrete PLATOON-Namen, Templates und `Ngroups` pro Node festgelegt.
-- [x] Utility-/Command-Fahrzeuge bewusst nicht automatisch zu Missions-PLATOONs gemacht.
+- [x] Utility-/Command-Fahrzeuge nicht automatisch zu Missions-PLATOONs gemacht.
 - [x] Honaker Fixed Fire Support von dynamischer Warehouse-Materialisierung getrennt.
-- [x] `SetReturnToLegion(false)` Source-Review für Ground field persistence abgeschlossen.
-- [x] sichtbare Teleport-/Respawn-/Returned->Warehouse-Risikopfade identifiziert.
 - [ ] DCS-Test: PLATOON Mission-Capability-/Asset-Selektion.
 - [ ] DCS-Test: `SetReturnToLegion(false)` Mission-Ende -> physical stay -> Folgeauftrag.
 - [ ] DCS-Test: mobile Return-/Handoff-Grenze und Warehouse-Rückgabe.
@@ -240,11 +330,13 @@ DCS-Selektions-/Lifecycle-Acceptance bleibt offen.
 - [x] stabile Installation-IDs und Parent-Beziehungen definiert.
 - [x] PERSONNEL/VEHICLE/SUPPLY/AMMO/FUEL Resource-Class-Verträge definiert.
 - [x] OP-PERSONNEL-Reservation und direkter Parent-Nachschub definiert.
-- [x] Readiness-/Nachschubverlust-Semantik definiert.
-- [ ] exakte CampaignState-Ressourcenmengen pro Node festlegen.
-- [ ] numerische Readiness-Schwellen festlegen.
-- [ ] Installationsangriff -> physischer Schaden -> CampaignState-Settlement definieren.
-- [ ] CampaignState <-> MOOSE WAREHOUSE Anti-Doppelautoritätsvertrag für Runtime explizit schließen.
+- [x] Working CampaignState-Ressourcenmengen pro Node festgelegt.
+- [x] Protected Defense Reserves und Working Action Costs festgelegt.
+- [x] numerische Readiness-Schwellen festgelegt.
+- [x] Installationsangriff -> physischer Schaden -> CampaignState-Settlement definiert.
+- [x] CampaignState <-> MOOSE WAREHOUSE Anti-Doppelautoritätsvertrag explizit geschlossen.
+- [ ] Runtime-Adapter und exactly-once settlement technisch implementieren und testen.
+- [ ] reale Readiness-/Action-Cost-Werte nach DCS-Acceptance bei Bedarf kalibrieren.
 
 ### Phase E – Mission Editor Foundation
 
@@ -262,18 +354,19 @@ DCS-Selektions-/Lifecycle-Acceptance bleibt offen.
 - [ ] Patrol/QRF/Logistics/OP-Reinforcement testen.
 - [ ] Ground-AI-Pathfinding und Return/Recovery-Verhalten testen.
 - [ ] M978 und L118-Proxy technisch testen.
+- [ ] Settlement/duplicate-event resistance testen.
 - [ ] Multiplayer-/Spawn-/Despawn-Sichtbarkeit testen.
 - [ ] erst nach dokumentiertem DCS-Test `VALIDATED` setzen.
 
-## 7. Nächster Arbeitsblock
+## 8. Nächster Arbeitsblock
 
-Nach Abschluss der bisherigen Punkte 1–3 ist der nächste geplante Designblock:
+Die rein fachliche Phase-D-Baseline ist jetzt vollständig genug für den nächsten technischen Foundation-Block:
 
 ```text
-CampaignState exact quantities
--> readiness thresholds
--> installation damage settlement
--> CampaignState / MOOSE Warehouse anti-double-authority runtime contract
+Restart/Reconstitution contract
+-> ACCESS-zone / road-anchor Mission Editor contract
+-> smallest MOOSE-first runtime adapter design
+-> local build / DCS acceptance preparation
 ```
 
-Mission-Editor- und DCS-Acceptance-Arbeit bleibt davon getrennt und erfordert reale lokale Builds/Tests.
+Mission-Editor-Änderungen bleiben ausschließlich beim Projektinhaber. ChatGPT verändert keine `.miz`.
