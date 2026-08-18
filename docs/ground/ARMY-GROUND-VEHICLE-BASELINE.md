@@ -7,12 +7,12 @@ authoritative_for:
   - working OMW design quantities for physically represented ground vehicles at the current Jalalabad/Kunar Ground Foundation nodes
   - evidence-to-design reconstruction method used where exact July-2011 local inventories are unavailable
   - separation between historical minimum evidence, inferred quantity range and explicit OMW design value
+  - current family-level composition after role allocation and Foundation type decisions
 not_authoritative_for:
   - exact historical July-2011 property-book inventories
-  - final DCS type/proxy mapping
-  - final MOOSE BRIGADE or PLATOON topology
   - final Mission Editor object state
-  - DCS runtime acceptance
+  - accepted DCS runtime behavior
+  - final CampaignState personnel, ammo, fuel or supply quantities
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
@@ -24,11 +24,11 @@ validated_in_dcs: false
 
 # ARMY Ground Foundation – Working Vehicle Baseline
 
-## 1. Purpose
+## 1. Zweck
 
-Exact July-2011 vehicle property-book inventories for FOB Fenty/Jalalabad, FOB Joyce, FOB Wright and FOB Bostick are not available in the current evidence base. OMW nevertheless requires concrete physical and strategic vehicle quantities.
+Für FOB Fenty/Jalalabad, FOB Joyce, FOB Wright und FOB Bostick liegen keine vollständigen lokalen Juli-2011-Property-Book-Listen vor. OMW benötigt dennoch konkrete Mengen.
 
-The project therefore uses an explicit reconstruction method instead of treating unknown values as zero and instead of presenting estimates as historical fact.
+Daher gilt:
 
 ```text
 historical evidence
@@ -39,9 +39,9 @@ historical evidence
 -> explicit OMW design value
 ```
 
-The selected `OMW_DESIGN_VALUE` is a campaign-design decision. It is not an assertion that a historical property book contained exactly that quantity on a particular day.
+`OMW_DESIGN_VALUE` ist eine bewusste Kampagnendesignentscheidung und keine Behauptung eines historisch exakt gezählten Tagesbestands.
 
-## 2. Evidence classes
+## 2. Evidenzklassen
 
 ```text
 CONFIRMED_MINIMUM
@@ -57,80 +57,43 @@ OMW_DESIGN_VALUE
   explicit working project quantity selected inside the supported range
 ```
 
-Older OMW-period or pre-OMW evidence may support a capability or lower bound only where the document explicitly says so. It does not silently become a July-2011 inventory.
+Ältere In-Period- oder Pre-Period-Evidenz darf Capability und Größenordnung stützen, wird aber nicht stillschweigend als Juli-2011-Inventar fortgeschrieben.
 
-## 3. Reconstruction inputs
+## 3. Rekonstruktionsanker
 
-### 3.1 Jalalabad / FOB Fenty
+### Jalalabad / FOB Fenty
 
-Supported characteristics:
+Gestützt sind regionaler Brigade-/HQ- und Logistikhub, kontinuierlicher Cargo-Umschlag und erheblicher militärischer Ground-Logistics-Verkehr. Durchfahrende Konvois werden nicht als lokaler organischer Bestand gezählt.
 
-- regional brigade/HQ and logistics hub;
-- continuous cargo reception, yard handling and onward distribution documented in spring 2011;
-- MRAP gun-truck and up-armored medium-truck logistics traffic documented on Fenty-bound logistics patrols;
-- vehicle throughput is substantially larger than a local infantry FOB;
-- transient convoy vehicles are excluded from the working organic/representative fleet.
+### FOB Joyce
 
-### 3.2 FOB Joyce
+Gestützt sind TF-Cacti-/2-35-Kontext, lokale Patrol/QRF-Anforderung, Fuel-/Resupply-Handling sowie ältere site-bound MRAP-, EOD-/CIED- und Recovery-Aktivität.
 
-Supported characteristics:
+### FOB Wright
 
-- TF Cacti / 2-35 Infantry regional ground node;
-- local patrol/QRF requirement;
-- fuel-blivet and onward-resupply handling documented in 2011;
-- older site-bound SIGACT evidence demonstrates recurring MRAP patrol, EOD/CIED and vehicle-recovery activity;
-- older patrol evidence includes a four-MRAP patrol and a Joyce-origin EOD/vehicle-recovery team. These records support capability and scale, not July-2011 ownership of the exact vehicles.
+Gestützt sind Juli-2011-SECFOR, PRT-/Security-/FARP-/Support-Rolle, erhebliche protected-vehicle activity und ältere konkrete Recovery-/MRAP-Schadensereignisse. Die 2010er M777-Evidenz wird nicht als Juli-2011-Artilleriebestand fortgeschrieben.
 
-### 3.3 FOB Wright
+### FOB Bostick
 
-Supported characteristics:
+Gestützt sind Battalion-/Task-Force-Node, lokale Patrol/QRF- und OP-Support-Anforderung sowie ältere Bostick-origin Recovery-/Support-Aktivität mit Wrecker-/Truck-Bezug.
 
-- July-2011 1-14th Illinois ADT Security Force Platoon;
-- PRT/security/FARP/support role;
-- substantial protected-vehicle activity across the OMW period;
-- older site-bound evidence documents QRF/recovery activity and a convoy associated with Wright in which three MRAPs and one wrecker were damaged;
-- the November-2010 attack evidence establishes a substantial protected-vehicle presence but is not converted 1:1 into July-2011 stock;
-- historical M777 capability is confirmed for 2010; exact July-2011 artillery assignment remains open.
+### COP Honaker-Miracle
 
-### 3.4 FOB Bostick
+Direkt bestätigt sind am 30.07.2011 zwei M777A2 von C Battery / 3-321 FA. Ein eigener permanenter Juli-2011-Motorpool ist nicht belegt.
 
-Supported characteristics:
+## 4. Working Quantity Baseline
 
-- TF No Fear / 2-27 Infantry battalion/task-force node;
-- local patrol/QRF and support requirement for the northern Kunar sector;
-- 2011 support personnel from C/277th Aviation Support Battalion are documented at the site;
-- older site-bound SIGACT evidence explicitly documents Bostick-origin QRF/recovery activity using a water truck, flatbed/recovery capability, HEMTT wrecker and crane support;
-- separate older evidence includes a five-US-vehicle plus two-ETT-vehicle site-bound element and MRAP recovery back to Bostick.
-
-These records demonstrate that recovery and support vehicles were part of the local operational ecosystem; they do not establish an exact July-2011 property-book count.
-
-### 3.5 COP Honaker-Miracle
-
-Supported characteristics:
-
-- two M777A2 of C Battery / 3-321 Field Artillery are directly documented on 30 July 2011;
-- vehicles demonstrably reached the COP for operations/recovery/resupply, but no permanent July-2011 wheeled motor pool is established;
-- the working baseline therefore does not invent a permanent wheeled fleet merely to populate the COP.
-
-## 4. Working quantity baseline
-
-The following quantities are the current OMW working values for the Ground Foundation. They intentionally remain conservative and are lower than many broad TO&E-based estimates.
-
-| Installation | Inferred wheeled range | OMW working wheeled value | Fixed artillery | Evidence/design status |
+| Installation | Inferred wheeled range | OMW working wheeled value | Fixed artillery | Status |
 |---|---:|---:|---:|---|
 | Jalalabad / FOB Fenty | 40–55 | **48** | separate fire-support contract | `OMW_DESIGN_VALUE` |
-| FOB Joyce | 16–24 | **20** | none assigned at Joyce by this contract | `OMW_DESIGN_VALUE` |
-| FOB Wright | 18–26 | **22** | July assignment still open | `OMW_DESIGN_VALUE` |
-| FOB Bostick | 22–30 | **26** | July assignment still open | `OMW_DESIGN_VALUE` |
+| FOB Joyce | 16–24 | **20** | none at Joyce by this contract | `OMW_DESIGN_VALUE` |
+| FOB Wright | 18–26 | **22** | July assignment open | `OMW_DESIGN_VALUE` |
+| FOB Bostick | 22–30 | **26** | July assignment open | `OMW_DESIGN_VALUE` |
 | COP Honaker-Miracle | 0–2 permanent wheeled | **0** | **2 x M777A2** | wheeled `OMW_DESIGN_VALUE`; artillery `CONFIRMED_MINIMUM` |
 
-These values are not final DCS object counts. A strategic vehicle pool may be larger than the simultaneously physical representation, especially at Jalalabad/Fenty.
+## 5. Beschlossene Fahrzeugfamilien pro Node
 
-## 5. Working vehicle-family composition
-
-Until a stronger July-2011 local type census is available, the working composition uses vehicle families that are historically plausible for the role and already relevant to the current mission/tooling. Exact DCS type/proxy mapping remains a separate acceptance step.
-
-### 5.1 FOB Joyce – 20 wheeled vehicles
+### 5.1 Joyce – 20
 
 ```text
 8  protected light mobility / M-ATV class
@@ -141,66 +104,144 @@ Until a stronger July-2011 local type census is available, the working compositi
 20 total
 ```
 
-### 5.2 FOB Wright – 22 wheeled vehicles
+Foundation-Mapping:
+
+```text
+8  CHAP_MATV
+6  MaxxPro_MRAP
+4  CHAP_M1083
+2  Hummer
+```
+
+### 5.2 Wright – 22
+
+Die zuvor offenen zwei Engineer-/Route-Support-Slots werden nicht mit einem erfundenen Buffalo-/Husky-Typ belegt. Für die Foundation werden sie in die geschützte MRAP-Familie integriert.
 
 ```text
 8  protected light mobility / M-ATV class
-6  protected MRAP / MaxxPro class
+8  protected MRAP / MaxxPro class
 4  medium logistics / FMTV-M1083 class
 2  utility / HMMWV class
-2  protected engineer / route-support allocation
 --
 22 total
 ```
 
-The two engineer/route-support vehicles are a functional allocation only. Specific Buffalo/Husky/Cougar mapping is not approved by this document and requires a stronger site/type evidence review plus DCS availability confirmation.
+Foundation-Mapping:
 
-### 5.3 FOB Bostick – 26 wheeled vehicles
+```text
+8  CHAP_MATV
+8  MaxxPro_MRAP
+4  CHAP_M1083
+2  Hummer
+```
+
+Davon sind vier MaxxPro als `ENGINEER / ROUTE SUPPORT SECURITY` reserviert. Das ist keine DCS-Mine-Clearing-Funktion.
+
+### 5.3 Bostick – 26
+
+Die zuvor offene Recovery-/Support-Position wird für die Foundation mit der M1083-Familie abgebildet. Die strategische Recovery-Rolle bleibt erhalten; DCS-Towing wird nicht behauptet.
 
 ```text
 10 protected light mobility / M-ATV class
 8  protected MRAP / MaxxPro class
-5  medium logistics / FMTV-M1083 class
-1  recovery/support allocation
+6  medium logistics / FMTV-M1083 class
 2  utility / HMMWV class
 --
 26 total
 ```
 
-The recovery allocation reflects the repeatedly documented local recovery requirement. It is not yet a final DCS HEMTT-wrecker proxy decision.
+Foundation-Mapping:
 
-### 5.4 Jalalabad / FOB Fenty – 48 physically represented wheeled vehicles
+```text
+10 CHAP_MATV
+8  MaxxPro_MRAP
+6  CHAP_M1083
+2  Hummer
+```
+
+### 5.4 Jalalabad / FOB Fenty – 48
+
+Die frühere offene Heavy-Logistics/Fuel-Allokation wird geteilt in zusätzliche M1083-Logistik und M978-Fuel-Support.
 
 ```text
 16 protected light mobility / M-ATV class
 14 protected MRAP / MaxxPro class
-10 medium logistics / FMTV-M1083 class
-4  heavy logistics / fuel-support allocation
+12 medium logistics / FMTV-M1083 class
+2  M978 HEMTT fuel-support
 4  utility / HMMWV class
 --
 48 total
 ```
 
-`48` is the planned physically represented operational fleet, not the total strategic theater stock associated with Jalalabad. Additional stock may remain virtual in `CampaignState` and may be materialized only when required by a valid mission/resource reservation.
+Foundation-Mapping:
+
+```text
+16 CHAP_MATV
+14 MaxxPro_MRAP
+12 CHAP_M1083
+2  M978 HEMTT Tanker
+4  Hummer
+```
+
+`M978 HEMTT Tanker` ist im gepinnten MOOSE-Source als exakter DCS-Type-String enthalten; die tatsächliche OMW-Mission-Verfügbarkeit und das Verhalten sind noch DCS-testpflichtig.
 
 ### 5.5 COP Honaker-Miracle
 
 ```text
-0  permanent wheeled vehicles in the working baseline
-2  M777A2 fixed artillery pieces
+0 permanent wheeled vehicles in the working baseline
+2 M777A2 fixed artillery pieces historically confirmed
 ```
 
-Transient vehicles arriving from Joyce or another valid parent flow do not become Honaker-owned strategic stock merely by entering the COP.
+Technische Foundation-Abbildung:
 
-## 6. HMMWV boundary
+```text
+2 x L118_Unit as PLANNED_PROXY
+```
 
-The current evidence does not support a blanket statement that HMMWV were absent or categorically prohibited at all of these installations in July 2011. OMW therefore retains a small utility/HMMWV allocation at major FOBs while keeping external high-threat patrol roles centered on protected MRAP/M-ATV-class mobility.
+`L118_Unit` wird nicht als historisch identisches M777A2-System dargestellt. Der Proxy benötigt DCS-Acceptance.
 
-This is a design reconstruction, not a claim that the listed HMMWV quantities are historically counted values.
+## 6. Rollenallokation
 
-## 7. Strategic versus physical quantity
+Die gleiche strategische Fahrzeugmenge wird nicht mehrfach für verschiedene Rollen gezählt. Die aktuelle Rollenaufteilung steht verbindlich für diesen Planned-Stand in `OMW-ARMY-GROUND-ROLE-PLATOON-BASELINE`.
 
-The working values above primarily describe the maximum local fleet that the Ground Foundation must be able to represent and consume strategically. They do not require every vehicle to be active as a DCS group at mission start.
+Kurzfassung:
+
+```text
+JALALABAD
+  patrol/mobile security
+  QRF
+  local security reserve
+  logistics
+  fuel support
+  utility/command
+
+JOYCE
+  patrol
+  QRF
+  local security
+  logistics
+  utility/command
+
+WRIGHT
+  patrol/SECFOR
+  QRF
+  engineer/route-support security
+  logistics
+  utility/command
+
+BOSTICK
+  patrol
+  QRF
+  OP reinforcement/mobile security
+  logistics/recovery support
+  utility/command
+```
+
+## 7. HMMWV-Grenze
+
+Die aktuelle Evidenz trägt keine pauschale Aussage, dass HMMWV auf diesen Installationen im Juli 2011 vollständig ausgeschlossen waren. OMW behält daher kleine Utility-/Command-Anteile, während externe Hochrisiko-Patrol-/QRF-Rollen auf MRAP-/M-ATV-Klassen konzentriert werden.
+
+## 8. Strategisch versus physisch
 
 ```text
 CampaignState VEHICLE stock
@@ -209,7 +250,7 @@ CampaignState VEHICLE stock
 != MOOSE Warehouse asset count
 ```
 
-The later runtime contract may divide a node's vehicle allocation into:
+Ein Node-Bestand kann in der späteren Runtime aufgeteilt werden in:
 
 ```text
 fixed/local physical representation
@@ -219,38 +260,31 @@ maintenance/unavailable fraction
 virtual strategic reserve
 ```
 
-No category may create additional strategic vehicles outside `CampaignState`.
+Keine Kategorie darf zusätzliche strategische Fahrzeuge außerhalb `CampaignState` erzeugen.
 
-## 8. Relationship to transient convoys
+## 9. Transiente Konvois
 
-A convoy arriving from a parent or theater logistics flow is not automatically added to the destination node's organic fleet.
+Ein ankommender Parent-/Theater-Konvoi wird nicht automatisch Teil des lokalen organischen Fahrzeugpools.
 
 ```text
 transient transport vehicle
 -> remains bound to transfer / parent contract
 -> delivers cargo
--> returns or is reassigned by explicit settlement
+-> returns or is explicitly reassigned
 ```
 
-Only an explicit CampaignState transfer can move a vehicle from one node's strategic pool to another.
+Nur ein explizites CampaignState-Settlement ändert strategische Fahrzeugzugehörigkeit.
 
-## 9. Open verification items
-
-Before final Mission Editor/template acceptance:
-
-- verify the strongest available April–December 2011 visual evidence for M-ATV, MaxxPro, FMTV and HMMWV at Joyce, Wright and Bostick;
-- verify whether Wright warrants specific Buffalo/Husky/Cougar route-clearance templates in the July-2011 design baseline;
-- verify the best DCS proxy/type for recovery/wrecker capability at Bostick;
-- keep Wright and Bostick July-2011 artillery assignments open unless stronger evidence is found;
-- map approved historical vehicle families only to DCS type names confirmed in the actually used DCS/mod environment;
-- DCS-test road-spawn, pathfinding, mission execution and return behavior before any `VALIDATED` status.
-
-## 10. Current decision boundary
-
-The values in this document are the current working reconstruction for further Ground Foundation design. They can be revised by stronger evidence or an explicit owner design decision without rewriting historical evidence records.
+## 10. Offene Acceptance-Punkte
 
 ```text
-historical evidence remains historical evidence
-OMW_DESIGN_VALUE remains a project design decision
-DCS runtime acceptance remains a separate test gate
+- Mission Editor template creation and placement
+- M978 HEMTT Tanker availability/behavior in the actual OMW mission
+- L118 proxy range/fire behavior for the Honaker M777A2 role
+- road-side ACCESS zones and validated routes
+- PLATOON selection/tasking behavior
+- spawn/return visibility boundary
+- CampaignState <-> MOOSE Warehouse runtime settlement
 ```
+
+Kein Punkt dieses Dokuments ist `VALIDATED` ohne dokumentierten DCS-Test.
