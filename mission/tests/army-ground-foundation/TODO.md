@@ -68,8 +68,6 @@ Bostick
   TF No Fear / 2-27 Infantry
 ```
 
-Exakte Juli-2011-Company-/Platoon-Verteilungen bleiben dort offen, wo die Quellen sie nicht tragen.
-
 Support-Hierarchie:
 
 ```text
@@ -85,16 +83,7 @@ BAGRAM
       -> STALLION
 ```
 
-Pakistan-Zufluss:
-
-```text
-PAKISTAN
--> TORKHAM
--> ROAD CONVOY
--> JALALABAD
-```
-
-Keine reguläre Pakistan->Jalalabad-Luftbrücke ohne belastbare Evidenz einer wiederkehrenden/etablierten Luftversorgungsbeziehung.
+Pakistan-Zufluss bleibt ROAD-only via Torkham zum Jalalabad-Hub.
 
 ## 3. Working Vehicle Baseline
 
@@ -115,8 +104,8 @@ MaxxPro/MRAP class   -> MaxxPro_MRAP
 FMTV/M1083 class     -> CHAP_M1083
 utility/HMMWV        -> Hummer
 Fenty fuel support   -> M978 HEMTT Tanker
-Wright engineer      -> MaxxPro_MRAP abstraction; no fake Buffalo/Husky capability
-Bostick recovery     -> CHAP_M1083 abstraction; no DCS towing claim
+Wright engineer      -> MaxxPro_MRAP abstraction
+Bostick recovery     -> CHAP_M1083 abstraction
 Honaker M777A2       -> L118_Unit PLANNED_PROXY, 2 pieces
 ```
 
@@ -150,36 +139,11 @@ Eine operative MOOSE-BRIGADE je Root Ground Node. Keine historische Brigadeabbil
 
 ## 5. CampaignState Working Quantities
 
-Neue Working Baseline:
-
 ```text
-GROUND_NODE_JALALABAD
-  PERSONNEL 480
-  VEHICLE    48
-  SUPPLY    120
-  AMMO      100
-  FUEL      120
-
-GROUND_NODE_JOYCE
-  PERSONNEL 180
-  VEHICLE    20
-  SUPPLY     48
-  AMMO       44
-  FUEL       40
-
-GROUND_NODE_WRIGHT
-  PERSONNEL 120
-  VEHICLE    22
-  SUPPLY     36
-  AMMO       30
-  FUEL       36
-
-GROUND_NODE_BOSTICK
-  PERSONNEL 220
-  VEHICLE    26
-  SUPPLY     56
-  AMMO       52
-  FUEL       48
+GROUND_NODE_JALALABAD  PERSONNEL 480 | VEHICLE 48 | SUPPLY 120 | AMMO 100 | FUEL 120
+GROUND_NODE_JOYCE      PERSONNEL 180 | VEHICLE 20 | SUPPLY  48 | AMMO  44 | FUEL  40
+GROUND_NODE_WRIGHT     PERSONNEL 120 | VEHICLE 22 | SUPPLY  36 | AMMO  30 | FUEL  36
+GROUND_NODE_BOSTICK    PERSONNEL 220 | VEHICLE 26 | SUPPLY  56 | AMMO  52 | FUEL  48
 ```
 
 Dependent Personnel Commitments:
@@ -189,10 +153,8 @@ Honaker-Miracle   40 from Joyce
 Mustang           12 from Bostick
 Clydesdale        12 from Bostick
 Stallion          12 from Bostick
-JoJo               0 active; 12 candidate while activation remains PROVISIONAL
+JoJo               0 active; 12 candidate while PROVISIONAL
 ```
-
-`SUPPLY`, `AMMO` und `FUEL` werden als normalized logistics units geführt, nicht als unbelegte historische Tonnen-/Literangaben.
 
 Readiness thresholds:
 
@@ -212,31 +174,7 @@ Wright     PERSONNEL  36 | VEHICLE  4 | AMMO 10 | FUEL  8
 Bostick    PERSONNEL  60 | VEHICLE  5 | AMMO 14 | FUEL 10
 ```
 
-Working action costs:
-
-```text
-Motorized Patrol
-  PERSONNEL 12 | VEHICLE 4 | SUPPLY 1 | AMMO 2 | FUEL 2
-
-Ground QRF
-  PERSONNEL 16 | VEHICLE 4 | SUPPLY 1 | AMMO 3 | FUEL 3
-
-Local Logistics / Resupply
-  PERSONNEL 6 | VEHICLE 2 | FUEL 2 + payload resources
-
-Honaker Fire Mission
-  AMMO 2
-  no additional vehicle or personnel materialization
-```
-
-Details:
-
-- [`OMW-ARMY-GROUND-RESOURCE-QUANTITY-SETTLEMENT`](../../../docs/ground/ARMY-GROUND-RESOURCE-QUANTITY-AND-SETTLEMENT-BASELINE.md)
-- [`OMW-ARMY-GROUND-RESOURCE-READINESS-CONTRACT`](../../../docs/ground/ARMY-GROUND-RESOURCE-READINESS-CONTRACT.md)
-
 ## 6. Settlement- und Autoritätsvertrag
-
-Installation damage -> CampaignState:
 
 ```text
 DCS event
@@ -247,46 +185,38 @@ DCS event
 -> readiness recalculation
 ```
 
-Settlement classes:
+CampaignState remains sole authority. MOOSE WAREHOUSE / BRIGADE / PLATOON are operational mirrors only; DCS objects are physical representation/telemetry only.
+
+## 7. Restart / Reconstitution / ACCESS boundary
+
+Vertrag:
+
+- [`OMW-ARMY-GROUND-RECONSTITUTION-ACCESS-CONTRACT`](../../../docs/ground/ARMY-GROUND-RECONSTITUTION-ACCESS-CONTRACT.md)
+
+Getrennte Fälle:
 
 ```text
-DAMAGE_INFRASTRUCTURE
-LOSS_PERSONNEL
-LOSS_VEHICLE
-LOSS_FIRE_SUPPORT_SYSTEM
-LOSS_SUPPLY
-LOSS_AMMO
-LOSS_FUEL
-NO_STRATEGIC_SETTLEMENT
+FIXED MISSION-START ASSET
+LIVE-SESSION FIELD-PERSISTENT ASSET
+CROSS-SESSION RECONSTITUTION
 ```
 
-CampaignState remains sole authority:
+Für live-session field persistence ist `AUFTRAG:SetReturnToLegion(false)` der primäre MOOSE-first Testpfad.
+
+Cross-session reconstitution bleibt nicht akzeptiert, bis Identität, Dublettenfreiheit und nicht beobachtbare Materialisierung in DCS geprüft sind. `BRIGADE:LoadBackAssetInPosition(...)` ist daher kein automatisch freigegebener Produktionspfad.
+
+Root-node ACCESS zones:
 
 ```text
-CampaignState
-= strategic truth
-
-MOOSE WAREHOUSE / BRIGADE / PLATOON
-= operational mirror / selection layer
-
-DCS Warehouse / group / static / cargo
-= physical representation / telemetry
+ZON_BLUE_GND_JALALABAD_ACCESS
+ZON_BLUE_GND_JOYCE_ACCESS
+ZON_BLUE_GND_WRIGHT_ACCESS
+ZON_BLUE_GND_BOSTICK_ACCESS
 ```
 
-Explicitly forbidden:
+Regel: außerhalb der Installation, road-side, genügend Platz, möglichst nicht beobachtbar, gemeinsamer Materialization-/Return-/Handoff-Bereich.
 
-```text
-MOOSE AddAsset -> automatic strategic credit
-MOOSE Returned -> automatic strategic credit
-MOOSE Warehouse count -> overwrite CampaignState
-DCS Despawn -> strategic return
-DCS Destroy -> unclassified strategic debit
-CTLD delivery -> automatic strategic credit
-```
-
-Mirror divergence produces reconciliation/error telemetry, not an automatic balancing transaction.
-
-## 7. Phasenstatus
+## 8. Phasenstatus
 
 ### Phase A – Standortnetz und historische Baseline
 
@@ -302,10 +232,10 @@ Mirror divergence produces reconciliation/error telemetry, not an automatic bala
 - [x] historische Rollenbasis reconciled.
 - [x] Working Vehicle Baseline festgelegt.
 - [x] Foundation-Mappings festgelegt.
-- [x] Wright Engineer-/Route-Support ohne erfundene spezielle Mine-Clearance-Funktion geschlossen.
-- [x] Bostick Recovery-Support ohne erfundene DCS-Towing-Funktion geschlossen.
-- [x] Fenty Fuel-Support mit `M978 HEMTT Tanker` als Planned Mapping geschlossen.
-- [x] Honaker M777A2 mit `L118_Unit` als Planned Technical Proxy geschlossen.
+- [x] Wright Engineer-/Route-Support geschlossen.
+- [x] Bostick Recovery-Support geschlossen.
+- [x] Fenty Fuel-Support mit `M978 HEMTT Tanker` Planned Mapping geschlossen.
+- [x] Honaker M777A2 mit `L118_Unit` Planned Technical Proxy geschlossen.
 - [ ] Jalalabad exakte Ground-QRF-/Base-Defense-Formation weiter recherchieren.
 - [ ] Joyce exakte Juli-2011-Company-Verteilung weiter recherchieren.
 - [ ] Bostick exakte Juli-2011-Maneuver-Company/-Platoons weiter recherchieren.
@@ -319,11 +249,12 @@ Mirror divergence produces reconciliation/error telemetry, not an automatic bala
 - [x] konkrete PLATOON-Namen, Templates und `Ngroups` pro Node festgelegt.
 - [x] Utility-/Command-Fahrzeuge nicht automatisch zu Missions-PLATOONs gemacht.
 - [x] Honaker Fixed Fire Support von dynamischer Warehouse-Materialisierung getrennt.
+- [x] Restart/Reconstitution-Vertrag definiert; Runtime-Acceptance offen.
+- [x] ACCESS-/Road-/Return-Handoff-Vertrag definiert; konkrete ME-Positionen offen.
 - [ ] DCS-Test: PLATOON Mission-Capability-/Asset-Selektion.
 - [ ] DCS-Test: `SetReturnToLegion(false)` Mission-Ende -> physical stay -> Folgeauftrag.
 - [ ] DCS-Test: mobile Return-/Handoff-Grenze und Warehouse-Rückgabe.
 - [ ] DCS-Test: OPSTRANSPORT Embark/Unload/Disembark vor produktiver Nutzung.
-- [ ] Restart/Reconstitution-Vertrag für persistent im Feld verbleibende Gruppen definieren.
 
 ### Phase D – CampaignState und Ressourcenvertrag
 
@@ -336,7 +267,6 @@ Mirror divergence produces reconciliation/error telemetry, not an automatic bala
 - [x] Installationsangriff -> physischer Schaden -> CampaignState-Settlement definiert.
 - [x] CampaignState <-> MOOSE WAREHOUSE Anti-Doppelautoritätsvertrag explizit geschlossen.
 - [ ] Runtime-Adapter und exactly-once settlement technisch implementieren und testen.
-- [ ] reale Readiness-/Action-Cost-Werte nach DCS-Acceptance bei Bedarf kalibrieren.
 
 ### Phase E – Mission Editor Foundation
 
@@ -346,27 +276,41 @@ Mirror divergence produces reconciliation/error telemetry, not an automatic bala
 - [ ] `ZON_BLUE_GND_<NODE>_ACCESS` je Root Node platzieren.
 - [ ] Road Anchors / validierte Routen / Return-Handoff-Grenzen festlegen.
 - [ ] geplante Ground-Templates im Mission Editor erzeugen.
+- [ ] Acceptance-1-Prerequisites auf Joyce erzeugen: `WH_BLUE_GND_JOYCE`, `TPL_BLUE_GND_PATROL_MATV_4`, `ZON_BLUE_GND_JOYCE_ACCESS`, `ZON_BLUE_GND_JOYCE_PATROL_TEST_01`.
 
 ### Phase F – Runtime und Acceptance
 
-- [ ] kleinste MOOSE-first Runtime-Foundation implementieren.
+- [x] Acceptance-1-Testplan erstellt: [`OMW-TEST-ARMY-GROUND-ACCEPTANCE-1`](ACCEPTANCE-1.md).
+- [ ] nach Vorliegen der Acceptance-1-ME-Prerequisites kleinste Test-Runtime implementieren.
 - [ ] Lua-Syntax/Tests und Dokumentationsvalidator ausführen.
-- [ ] Patrol/QRF/Logistics/OP-Reinforcement testen.
+- [ ] Acceptance 1 real in DCS ausführen.
+- [ ] danach Patrol/QRF/Logistics/OP-Reinforcement stufenweise testen.
 - [ ] Ground-AI-Pathfinding und Return/Recovery-Verhalten testen.
 - [ ] M978 und L118-Proxy technisch testen.
 - [ ] Settlement/duplicate-event resistance testen.
 - [ ] Multiplayer-/Spawn-/Despawn-Sichtbarkeit testen.
 - [ ] erst nach dokumentiertem DCS-Test `VALIDATED` setzen.
 
-## 8. Nächster Arbeitsblock
+## 9. Nächster konkreter Gate
 
-Die rein fachliche Phase-D-Baseline ist jetzt vollständig genug für den nächsten technischen Foundation-Block:
+Die Architekturvorbereitung für den ersten Ground-Runtime-Test ist jetzt abgeschlossen.
+
+Der nächste Schritt ist eine Owner-Mission-Editor-Änderung für Joyce:
 
 ```text
-Restart/Reconstitution contract
--> ACCESS-zone / road-anchor Mission Editor contract
--> smallest MOOSE-first runtime adapter design
--> local build / DCS acceptance preparation
+WH_BLUE_GND_JOYCE
+TPL_BLUE_GND_PATROL_MATV_4
+ZON_BLUE_GND_JOYCE_ACCESS
+ZON_BLUE_GND_JOYCE_PATROL_TEST_01
 ```
 
-Mission-Editor-Änderungen bleiben ausschließlich beim Projektinhaber. ChatGPT verändert keine `.miz`.
+Danach:
+
+```text
+owner returns exact mission artifact/hash
+-> ChatGPT builds smallest Acceptance-1 runtime on the remote branch
+-> owner pulls/builds/hashes locally
+-> real DCS Acceptance 1
+```
+
+ChatGPT verändert keine `.miz`.
