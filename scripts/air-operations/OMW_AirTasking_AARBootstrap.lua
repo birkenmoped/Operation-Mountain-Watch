@@ -1,15 +1,17 @@
--- Operation Mountain Watch - Air Tasking composition wrapper for the accepted AAR production bootstrap.
+-- Operation Mountain Watch - additive Air Tasking attachment to the accepted AAR base.
 --
--- This module does not replace the accepted AAR controller, runtime integration,
--- CampaignState adapter, or bootstrap. It creates the Air Tasking correlation
--- bridge first, decorates the existing AAR adapter, and then delegates startup
--- to the accepted AAR production bootstrap.
+-- Architecture boundary:
+--   * OMW.AirOps.AAR must already be RUNNING.
+--   * The accepted AAR base/controller/adapter are not recreated or replaced.
+--   * Air Tasking observes the existing strategic adapter instance by wrapping its
+--     public settlement callbacks and always delegates to the original callback first.
+--   * CampaignState remains the strategic resource authority.
 
 local Bootstrap = {}
 
 local TAG = "[OMW][AirTasking.AARBootstrap]"
 
-Bootstrap.SchemaVersion = "OMW-AIR-TASKING-AAR-BOOTSTRAP-1"
+Bootstrap.SchemaVersion = "OMW-AIR-TASKING-AAR-BOOTSTRAP-2"
 
 local function fail(message)
   error(TAG .. " " .. tostring(message), 2)
@@ -28,6 +30,50 @@ local function log(message)
   if env and type(env.info) == "function" then env.info(TAG .. " " .. tostring(message)) end
 end
 
+local function validateRunningAAR(aar)
+  requireTable(aar, "spec.aarFacade")
+  if aar.Status ~= "RUNNING" then fail("spec.aarFacade must already be RUNNING") end
+  requireTable(aar.Controller, "spec.aarFacade.Controller")
+  requireTable(aar.StrategicAdapter, "spec.aarFacade.StrategicAdapter")
+  requireFunction(aar.Controller, "SelectArea", "spec.aarFacade.Controller")
+  requireFunction(aar.Controller, "SubmitDemand", "spec.aarFacade.Controller")
+  requireFunction(aar.Controller, "EndDemand", "spec.aarFacade.Controller")
+  requireFunction(aar.StrategicAdapter, "OnMaterialized", "spec.aarFacade.StrategicAdapter")
+  requireFunction(aar.StrategicAdapter, "OnHandoff", "spec.aarFacade.StrategicAdapter")
+  requireFunction(aar.StrategicAdapter, "OnLost", "spec.aarFacade.StrategicAdapter")
+  return aar
+end
+
+local function attachObserver(bridge, adapter)
+  if adapter.__OMW_AIR_TASKING_AAR_OBSERVER_ATTACHED == true then
+    fail("AAR strategic adapter already has an Air Tasking observer")
+  end
+
+  local onMaterialized = adapter.OnMaterialized
+  local onHandoff = adapter.OnHandoff
+  local onLost = adapter.OnLost
+
+  adapter.OnMaterialized = function(self, selection, runtime)
+    local result = onMaterialized(self, selection, runtime)
+    bridge:_OnMaterialized(selection, runtime, result)
+    return result
+  end
+
+  adapter.OnHandoff = function(self, selection, runtime)
+    local result = onHandoff(self, selection, runtime)
+    bridge:_OnHandoff(selection, runtime)
+    return result
+  end
+
+  adapter.OnLost = function(self, selection, runtime, reason)
+    local result = onLost(self, selection, runtime, reason)
+    bridge:_OnLost(selection, runtime, reason)
+    return result
+  end
+
+  adapter.__OMW_AIR_TASKING_AAR_OBSERVER_ATTACHED = true
+end
+
 function Bootstrap.Start(spec)
   spec = requireTable(spec, "spec")
 
@@ -40,38 +86,32 @@ function Bootstrap.Start(spec)
   end
 
   local bridgeModule = requireTable(spec.bridgeModule, "spec.bridgeModule")
-  local aarBootstrap = requireTable(spec.aarBootstrap, "spec.aarBootstrap")
-  local controller = requireTable(spec.controller, "spec.controller")
-  local baseAdapterModule = requireTable(spec.baseAdapterModule, "spec.baseAdapterModule")
+  local aar = validateRunningAAR(spec.aarFacade)
   requireFunction(bridgeModule, "New", "spec.bridgeModule")
-  requireFunction(aarBootstrap, "Start", "spec.aarBootstrap")
-  requireFunction(baseAdapterModule, "New", "spec.baseAdapterModule")
   if type(spec.nextExecutionId) ~= "function" then fail("spec.nextExecutionId must be a function") end
 
+  -- Bridge.New currently supports the pre-bootstrap decorator path as well.  For
+  -- additive attachment we provide a non-executed adapter-module sentinel; the
+  -- running adapter instance is observed directly below and is never recreated.
+  local unusedAdapterModule = {
+    New = function()
+      fail("additive attachment must not create a replacement AAR adapter")
+    end,
+  }
+
   local bridge = bridgeModule.New({
-    controller = controller,
-    baseAdapterModule = baseAdapterModule,
+    controller = aar.Controller,
+    baseAdapterModule = unusedAdapterModule,
     nextExecutionId = spec.nextExecutionId,
     logger = spec.logger,
   })
 
-  local wrappedAdapterModule = bridge:GetAdapterModule()
-
-  local aar = aarBootstrap.Start({
-    campaignState = spec.campaignState,
-    initialStock = spec.initialStock,
-    aarStrategicStock = spec.aarStrategicStock,
-    campaignStateInitializer = spec.campaignStateInitializer,
-    campaignContext = spec.campaignContext,
-    adapterModule = wrappedAdapterModule,
-    runtimeIntegration = spec.runtimeIntegration,
-    controller = controller,
-  })
+  attachObserver(bridge, aar.StrategicAdapter)
 
   local facade = {
     Status = "RUNNING",
     SchemaVersion = Bootstrap.SchemaVersion,
-    Scope = "AIR_TASKING_AAR_VERTICAL",
+    Scope = "AIR_TASKING_AAR_ADDITIVE",
     AAR = aar,
     Bridge = bridge,
   }
@@ -102,7 +142,7 @@ function Bootstrap.Start(spec)
 
   OMW.AirTasking.AAR = facade
 
-  log("RUNNING scope=AIR_TASKING_AAR_VERTICAL acceptedAARBootstrap=true decoratedAdapter=true")
+  log("RUNNING scope=AIR_TASKING_AAR_ADDITIVE existingAARBase=true adapterRecreated=false")
   return facade
 end
 
