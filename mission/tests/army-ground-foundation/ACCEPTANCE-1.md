@@ -5,6 +5,7 @@ document_class: ACCEPTANCE_TEST_PLAN
 owning_policy: OMW-GOV-001
 authoritative_for:
   - planned scope and pass/fail criteria for the first ARMY Ground Foundation DCS runtime test
+  - object-contract preflight for OMW_Template_v13_ground_test.miz
 not_authoritative_for:
   - accepted runtime behavior before real DCS execution
   - final multi-node ground architecture
@@ -22,7 +23,7 @@ superseded_by:
 
 ## 1. Ziel
 
-Der erste DCS-Laufzeit-Test soll ausschließlich den kleinsten MOOSE-first Ground-Lifecycle prüfen, der für die weitere Architektur kritisch ist.
+Der erste DCS-Laufzeit-Test prüft ausschließlich den kleinsten MOOSE-first Ground-Lifecycle, der für die weitere Architektur kritisch ist.
 
 ```text
 one Ground Node
@@ -63,19 +64,25 @@ Source-geprüfte APIs für den Test:
 
 ```lua
 BRIGADE:New(WarehouseName, BrigadeName)
-PLATOON:New(TemplateGroupName, Ngroups, PlatoonName)
 BRIGADE:AddPlatoon(Platoon)
-COHORT:AddMissionCapability(...)
+WAREHOUSE:SetSpawnZone(zone, maxdist)
+PLATOON:New(TemplateGroupName, Ngroups, PlatoonName)
+COHORT:AddMissionCapability(MissionTypes, Performance)
+COHORT:CountAssets(InStock, MissionTypes, Attributes)
 LEGION:AddMission(Mission)
 AUFTRAG:NewPATROLZONE(Zone, Speed, Altitude, Formation)
 AUFTRAG:SetReturnToLegion(false)
+AUFTRAG:__Cancel(delay)
+SCHEDULER:New(MasterObject, SchedulerFunction, SchedulerArguments, Start, Repeat, RandomizeFactor, Stop)
 ```
 
-`BRIGADE` erbt `LEGION:AddMission(...)`.
+`BRIGADE` erbt `WAREHOUSE:SetSpawnZone(...)` und `LEGION:AddMission(...)`. `AUFTRAG:__Cancel(...)` ist der vom AUFTRAG-FSM erzeugte verzögerte `Cancel`-Eventpfad; `onafterCancel(...)` leitet die Abbruchanforderung an LEGION/OPSGROUP weiter und wartet auf `MissionDone`.
+
+Die tatsächlich verwendete `Moose.lua` ist für diese Signaturen maßgeblich. Der aktuelle MOOSE-Demo-Review liefert weiterhin keinen direkten Referenztest für die konkrete OMW-Kombination `BRIGADE -> PLATOON -> ARMYGROUP`; Acceptance 1 bleibt deshalb erforderlich.
 
 ## 4. Required Mission Editor objects
 
-The owner-created test mission must contain exactly named prerequisites:
+Die Owner-erstellte Testmission muss exakt enthalten:
 
 ```text
 WH_BLUE_GND_JOYCE
@@ -92,7 +99,56 @@ ZON_BLUE_GND_JOYCE_PATROL_TEST_01
   reachable patrol target zone
 ```
 
-No `.miz` mutation is performed by ChatGPT.
+ChatGPT mutiert keine `.miz`.
+
+### 4.1 Read-only object-contract preflight – v13
+
+Vom Projektinhaber bereitgestelltes Artefakt:
+
+```text
+Mission artifact: OMW_Template_v13_ground_test.miz
+MIZ SHA-256: 6d12a55affc971de1de4d5e463c956fcb2e08a0d2de478ff13419747a825e7e8
+internal mission SHA-256: 22d13cb7b0da0a6fb9ddc02bf9b99c4da50d2c96b31bdc6a353616a4188c6b80
+embedded Moose.lua SHA-256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
+embedded MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+```
+
+Read-only inspection confirms:
+
+```text
+WH_BLUE_GND_JOYCE
+  category: STATIC
+  DCS type: HESCO_generator
+  x=119063.74810988
+  y=443069.84287213
+
+TPL_BLUE_GND_PATROL_MATV_4
+  lateActivation=true
+  4 units
+  each type=CHAP_MATV
+  skill=High
+
+ZON_BLUE_GND_JOYCE_ACCESS
+  center x=118891.33372138
+  center y=442576.88110835
+  radius=152.4 m
+
+ZON_BLUE_GND_JOYCE_PATROL_TEST_01
+  center x=113940.01874642
+  center y=434531.02338035
+  radius=182.88 m
+```
+
+Geometric preflight:
+
+```text
+representative template position -> ACCESS center: ~638 m
+ACCESS center -> PATROL_TEST_01 center: ~9.45 km
+```
+
+Damit ist der **strukturelle ME-Objektvertrag** für Acceptance 1 erfüllt. Die Geometrie beweist ausdrücklich **nicht**, dass DCS Ground AI die Strecke zuverlässig auf Straße beziehungsweise Gelände fährt; genau das ist Teil des realen DCS-Laufs.
+
+Jedes erneute Speichern oder Verändern der `.miz` invalidiert diese Hash-/Objektvertragszuordnung und verlangt den erneuten Smoke gemäß `OMW-TEST-MISSION-BUILD-TRANSFER-VALIDATION`.
 
 ## 5. Planned runtime objects
 
@@ -105,7 +161,25 @@ PLT_BLUE_GND_JOYCE_PATROL
   mission capability: PATROLZONE
 ```
 
-Acceptance 1 deliberately uses one asset group even though the production role baseline may contain additional Joyce assets.
+Acceptance 1 verwendet bewusst nur eine Assetgruppe, obwohl die Production-Rollenbaseline zusätzliche Joyce-Assets vorsieht.
+
+Runtime source/build contract:
+
+```text
+source:
+mission/tests/army-ground-foundation/src/01-army-ground-acceptance-1.lua
+
+builder:
+tools/build-army-ground-acceptance-1.ps1
+
+bundle:
+mission/tests/army-ground-foundation/dist/OMW_Army_Ground_Acceptance_1.lua
+
+BuilderVersion / Test-ID:
+ARMY-GROUND-ACCEPTANCE-1-1
+```
+
+Der Builder verändert keine `.miz`.
 
 ## 6. Mission sequence
 
@@ -116,10 +190,11 @@ Expected:
 ```text
 warehouse host resolved
 BRIGADE constructed
+ACCESS zone assigned as WAREHOUSE spawn zone
 PLATOON constructed
 PLATOON added to BRIGADE
 BRIGADE started
-one PATROLZONE-capable asset available
+one PATROLZONE-capable asset available after start
 ```
 
 Failure of any required Mission Editor object lookup is an immediate test FAIL.
@@ -132,11 +207,13 @@ Create a ground PATROLZONE AUFTRAG against:
 ZON_BLUE_GND_JOYCE_PATROL_TEST_01
 ```
 
-The mission must use:
+The mission uses:
 
 ```text
 SetReturnToLegion(false)
 ```
+
+The acceptance harness schedules `AUFTRAG:__Cancel(...)` after the first ARMYGROUP is on mission. This exercises the normal AUFTRAG/LEGION/OPSGROUP cancellation-to-`MissionDone` path instead of directly deleting or respawning the group.
 
 Expected:
 
@@ -149,24 +226,24 @@ vehicle group moves toward / operates in patrol zone
 
 ### Phase C – mission completion
 
-The first mission must be ended through its normal AUFTRAG lifecycle/test completion path.
-
 Expected:
 
 ```text
 MissionDone occurs
 physical ARMYGROUP remains alive and present
 no Returned -> Warehouse physical removal occurs
+acceptance bookkeeping remains FIELD_DEPLOYED / COMMITTED
 asset is not credited as newly available strategic stock
 ```
 
 ### Phase D – follow-up assignment
 
-A second simple ground mission is assigned to the same operational asset after the first mission is complete.
+A second PATROLZONE mission is queued after MissionDone.
 
 Expected:
 
 ```text
+same ARMYGROUP object/name is selected
 same physical group remains usable
 no additional physical group is spawned for the same asset
 follow-up mission begins on the existing group
@@ -176,7 +253,7 @@ follow-up mission begins on the existing group
 
 The first runtime test does not implement the complete CampaignState adapter yet.
 
-It must nevertheless preserve the invariant in its test bookkeeping:
+It preserves the invariant in local test bookkeeping:
 
 ```text
 before physical materialization:
@@ -187,13 +264,13 @@ after MissionDone with SetReturnToLegion(false):
   NOT AVAILABLE
 ```
 
-No MOOSE Warehouse count or Returned event may be treated as strategic credit.
+No MOOSE Warehouse count or Returned event is treated as strategic credit.
 
 The later production adapter will implement the authoritative CampaignState mutation path.
 
 ## 8. Required log evidence
 
-The runtime test must emit deterministic log lines with at least:
+The runtime test emits deterministic markers including:
 
 ```text
 OMW_GND_A1 START
@@ -202,6 +279,7 @@ OMW_GND_A1 BRIGADE_STARTED
 OMW_GND_A1 PLATOON_READY
 OMW_GND_A1 MISSION1_QUEUED
 OMW_GND_A1 GROUP_MATERIALIZED <group-name>
+OMW_GND_A1 MISSION1_CANCEL_SCHEDULED
 OMW_GND_A1 MISSION1_DONE
 OMW_GND_A1 GROUP_STILL_ALIVE <group-name>
 OMW_GND_A1 MISSION2_QUEUED
@@ -209,13 +287,13 @@ OMW_GND_A1 SAME_GROUP_REUSED <group-name>
 OMW_GND_A1 PASS
 ```
 
-Any unexpected second materialization for the same asset must log:
+Any unexpected second materialization for the same asset logs:
 
 ```text
 OMW_GND_A1 FAIL DUPLICATE_GROUP
 ```
 
-Any visible/automatic removal after MissionDone must log FAIL when detectable from the test harness.
+Any automatic removal after MissionDone must log FAIL when detectable from the test harness.
 
 ## 9. PASS criteria
 
@@ -223,8 +301,9 @@ All must be true:
 
 ```text
 [ ] exact required ME objects resolved
+[ ] embedded Moose.lua hash/commit matches pinned acceptance basis
 [ ] BRIGADE starts successfully
-[ ] PLATOON asset is available
+[ ] PLATOON reports exactly one in-stock PATROLZONE-capable asset after start
 [ ] first PATROLZONE mission selects/materializes exactly one group
 [ ] group moves/executes without immediate pathfinding failure
 [ ] MissionDone with SetReturnToLegion(false) does not remove the group
@@ -249,7 +328,7 @@ initial route cannot leave the ACCESS/road area in a reproducible manner
 runtime Lua error
 ```
 
-A pathfinding FAIL does not automatically disprove the entire BRIGADE/PLATOON architecture; it must be classified separately as route/terrain failure if the lifecycle up to that point is correct.
+A pathfinding FAIL does not automatically disprove the entire BRIGADE/PLATOON architecture; it is classified separately as route/terrain failure if the lifecycle up to that point is correct.
 
 ## 11. Explicitly out of scope
 
@@ -276,9 +355,12 @@ The test result may only be recorded after the owner returns the real local outp
 ```text
 branch
 source commit
+BuilderVersion/Test-ID
 mission filename
 mission SHA-256
+internal mission SHA-256
 runtime/test bundle SHA-256
+embedded runtime/test bundle SHA-256
 DCS version
 Moose.lua SHA-256 / commit
 relevant dcs.log excerpt
