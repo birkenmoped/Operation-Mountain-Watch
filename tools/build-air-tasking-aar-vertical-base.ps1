@@ -72,7 +72,7 @@ $forbiddenPatterns = @(
 foreach ($entry in @('Controller', 'AARBootstrap', 'AirTaskingBridge', 'AirTaskingBootstrap')) {
   foreach ($pattern in $forbiddenPatterns) {
     if ($content[$entry] -match $pattern) {
-      throw "Forbidden marker in $entry: $pattern"
+      throw "Forbidden marker in ${entry}: $pattern"
     }
   }
 }
