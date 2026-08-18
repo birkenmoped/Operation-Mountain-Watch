@@ -2,16 +2,18 @@
 --
 -- Architecture boundary:
 --   * OMW.AirOps.AAR must already be RUNNING.
---   * The accepted AAR base/controller/adapter are not recreated or replaced.
---   * Air Tasking observes the existing strategic adapter instance by wrapping its
---     public settlement callbacks and always delegates to the original callback first.
+--   * The accepted AAR base/controller/adapter are not recreated, replaced or mutated.
+--   * Air Tasking observes runtimes exposed by the existing controller through its
+--     public GetStation(...) interface.
+--   * MOOSE SCHEDULER provides the bounded observation cadence.
 --   * CampaignState remains the strategic resource authority.
 
 local Bootstrap = {}
 
 local TAG = "[OMW][AirTasking.AARBootstrap]"
+local OBSERVER_INTERVAL_SEC = 5
 
-Bootstrap.SchemaVersion = "OMW-AIR-TASKING-AAR-BOOTSTRAP-2"
+Bootstrap.SchemaVersion = "OMW-AIR-TASKING-AAR-BOOTSTRAP-3"
 
 local function fail(message)
   error(TAG .. " " .. tostring(message), 2)
@@ -38,40 +40,74 @@ local function validateRunningAAR(aar)
   requireFunction(aar.Controller, "SelectArea", "spec.aarFacade.Controller")
   requireFunction(aar.Controller, "SubmitDemand", "spec.aarFacade.Controller")
   requireFunction(aar.Controller, "EndDemand", "spec.aarFacade.Controller")
-  requireFunction(aar.StrategicAdapter, "OnMaterialized", "spec.aarFacade.StrategicAdapter")
-  requireFunction(aar.StrategicAdapter, "OnHandoff", "spec.aarFacade.StrategicAdapter")
-  requireFunction(aar.StrategicAdapter, "OnLost", "spec.aarFacade.StrategicAdapter")
+  requireFunction(aar.Controller, "GetStation", "spec.aarFacade.Controller")
   return aar
 end
 
-local function attachObserver(bridge, adapter)
-  if adapter.__OMW_AIR_TASKING_AAR_OBSERVER_ATTACHED == true then
-    fail("AAR strategic adapter already has an Air Tasking observer")
+local function createObserver(bridge, aar)
+  if not SCHEDULER then fail("MOOSE SCHEDULER is unavailable") end
+
+  local watchedByMissionId = {}
+  local observedByRuntimeId = {}
+  local scheduler = nil
+
+  local function observeRuntime(record, runtime)
+    if not runtime or type(runtime.runtimeId) ~= "string" then return end
+
+    if not observedByRuntimeId[runtime.runtimeId] then
+      observedByRuntimeId[runtime.runtimeId] = {
+        runtime = runtime,
+        record = record,
+        terminalObserved = false,
+      }
+      -- This is an Air-Tasking-internal companion call. It does not invoke or
+      -- replace the strategic adapter; it only correlates the already existing
+      -- physical runtime with the stable ATM/EXE domain record.
+      bridge:_OnMaterialized(record.selection, runtime, nil)
+      log(string.format("RUNTIME_OBSERVED mission=%s runtime=%s area=%s",
+        tostring(record.mission.mission_id), tostring(runtime.runtimeId), tostring(record.selection.area)))
+    end
   end
 
-  local onMaterialized = adapter.OnMaterialized
-  local onHandoff = adapter.OnHandoff
-  local onLost = adapter.OnLost
+  local function poll()
+    for _, record in pairs(watchedByMissionId) do
+      local selection = record.selection
+      local station = aar.Controller.GetStation(selection.area, selection.receiverProfile)
+      if station then
+        observeRuntime(record, station.activeRuntime)
+        observeRuntime(record, station.reliefRuntime)
+      end
+    end
 
-  adapter.OnMaterialized = function(self, selection, runtime)
-    local result = onMaterialized(self, selection, runtime)
-    bridge:_OnMaterialized(selection, runtime, result)
-    return result
+    for runtimeId, item in pairs(observedByRuntimeId) do
+      if not item.terminalObserved then
+        local runtime = item.runtime
+        if runtime.lossHandled == true then
+          item.terminalObserved = true
+          bridge:_OnLost(item.record.selection, runtime, "OBSERVED_CONTROLLER_LOSS")
+          observedByRuntimeId[runtimeId] = nil
+          log("RUNTIME_TERMINAL_OBSERVED runtime=" .. tostring(runtimeId) .. " result=LOSS")
+        elseif runtime.handoffComplete == true then
+          item.terminalObserved = true
+          bridge:_OnHandoff(item.record.selection, runtime)
+          observedByRuntimeId[runtimeId] = nil
+          log("RUNTIME_TERMINAL_OBSERVED runtime=" .. tostring(runtimeId) .. " result=HANDOFF")
+        end
+      end
+    end
   end
 
-  adapter.OnHandoff = function(self, selection, runtime)
-    local result = onHandoff(self, selection, runtime)
-    bridge:_OnHandoff(selection, runtime)
-    return result
-  end
+  scheduler = SCHEDULER:New(nil, poll, {}, 1, OBSERVER_INTERVAL_SEC)
 
-  adapter.OnLost = function(self, selection, runtime, reason)
-    local result = onLost(self, selection, runtime, reason)
-    bridge:_OnLost(selection, runtime, reason)
-    return result
-  end
-
-  adapter.__OMW_AIR_TASKING_AAR_OBSERVER_ATTACHED = true
+  return {
+    Watch = function(record)
+      watchedByMissionId[record.mission.mission_id] = record
+      return record
+    end,
+    Stop = function()
+      if scheduler then scheduler:Stop() end
+    end,
+  }
 end
 
 function Bootstrap.Start(spec)
@@ -90,9 +126,9 @@ function Bootstrap.Start(spec)
   requireFunction(bridgeModule, "New", "spec.bridgeModule")
   if type(spec.nextExecutionId) ~= "function" then fail("spec.nextExecutionId must be a function") end
 
-  -- Bridge.New currently supports the pre-bootstrap decorator path as well.  For
-  -- additive attachment we provide a non-executed adapter-module sentinel; the
-  -- running adapter instance is observed directly below and is never recreated.
+  -- Bridge.New still accepts an adapter-module dependency from the earlier
+  -- pre-bootstrap composition path. In additive mode this sentinel must never
+  -- execute; the existing AAR adapter instance is neither replaced nor mutated.
   local unusedAdapterModule = {
     New = function()
       fail("additive attachment must not create a replacement AAR adapter")
@@ -106,7 +142,7 @@ function Bootstrap.Start(spec)
     logger = spec.logger,
   })
 
-  attachObserver(bridge, aar.StrategicAdapter)
+  local observer = createObserver(bridge, aar)
 
   local facade = {
     Status = "RUNNING",
@@ -114,10 +150,13 @@ function Bootstrap.Start(spec)
     Scope = "AIR_TASKING_AAR_ADDITIVE",
     AAR = aar,
     Bridge = bridge,
+    Observer = observer,
   }
 
   function facade.SubmitApprovedAAR(requestSpec)
-    return bridge:SubmitApprovedAAR(requestSpec)
+    local record, reason = bridge:SubmitApprovedAAR(requestSpec)
+    if record then observer.Watch(record) end
+    return record, reason
   end
 
   function facade.EndAAR(missionId, outcome)
@@ -140,9 +179,15 @@ function Bootstrap.Start(spec)
     return bridge:ExportSnapshot()
   end
 
+  function facade.StopObserver()
+    observer.Stop()
+  end
+
   OMW.AirTasking.AAR = facade
 
-  log("RUNNING scope=AIR_TASKING_AAR_ADDITIVE existingAARBase=true adapterRecreated=false")
+  log(string.format(
+    "RUNNING scope=AIR_TASKING_AAR_ADDITIVE existingAARBase=true adapterRecreated=false adapterMutated=false observerIntervalSec=%d",
+    OBSERVER_INTERVAL_SEC))
   return facade
 end
 
