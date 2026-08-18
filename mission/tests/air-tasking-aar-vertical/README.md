@@ -6,7 +6,7 @@ owning_policy: OMW-GOV-001
 authoritative_for:
   - branch-local test scope for the first Air Tasking to AAR vertical integration
   - expected pure-Lua bridge behavior before DCS integration
-  - exact local vertical-base and acceptance-bundle build evidence for the documented commit
+  - exact local vertical-base build evidence for the documented commit
 not_authoritative_for:
   - DCS runtime acceptance
   - Acceptance-7 replacement
@@ -86,23 +86,20 @@ AIR_TASKING_AAR_BRIDGE_TEST_PASS
 
 Diese Fixture ist weiterhin nicht als ausgefuehrter Test markiert, weil fuer den dokumentierten Remote-Schritt kein Lua-/luac-Interpreter als belastbare Testumgebung vorlag.
 
-## 4. Lokal bestaetigter Vertical-/Acceptance-Build
+## 4. Lokal bestaetigter Vertical-Base-Build
 
-Der Projektinhaber hat den Vertical-Base- und Acceptance-Builder lokal auf dem exakten Branch-Stand ausgefuehrt.
+Der Projektinhaber hat den Builder lokal auf dem exakten Branch-Stand ausgefuehrt.
 
 ```text
 Testdatum: 2026-08-18
 Branch: agent/air-tasking-plan-foundation
-Commit: 3aea46a1cbfa1f62136bd932f0f48e67d332d680
-Base Builder: tools/build-air-tasking-aar-vertical-base.ps1
-Base BuilderVersion: OMW-AIR-TASKING-AAR-VERTICAL-BASE-1
-Acceptance Builder: tools/build-air-tasking-aar-vertical-acceptance.ps1
-Acceptance BuilderVersion: OMW-AIR-TASKING-AAR-VERTICAL-ACCEPTANCE-1
-Acceptance TestId: AIR-TASKING-AAR-VERTICAL-1
+Commit: 1fc0c83527387e01e8838be96b8046d026421ea0
+Builder: tools/build-air-tasking-aar-vertical-base.ps1
+BuilderVersion: OMW-AIR-TASKING-AAR-VERTICAL-BASE-1
 Result: PASS
 ```
 
-Der vorgeschaltete AAR-Produktionsgate meldete dabei unter anderem:
+Der vorgeschaltete AAR-Produktionsgate meldete dabei:
 
 ```text
 AAR production finalization source gate: PASS
@@ -121,7 +118,7 @@ MissionDemandClosesReserveAfterLastDemand: true
 MaxAircraftPerTrack: 2
 ```
 
-Reale lokale SHA-256-Evidenz am Commit `3aea46a1cbfa1f62136bd932f0f48e67d332d680`:
+Reale lokale SHA-256-Evidenz:
 
 ```text
 MOOSE commit:
@@ -161,16 +158,10 @@ AirTaskingBootstrap:
 615e3a39157a0059d010218b61474ee1763332da690ce7ab9d01da648ed3da5e
 
 Vertical Base Bundle:
-87ba3dcae93c242090502d6176ff6e0308ada7392e6e78578862fadf55c4a17a
-
-Acceptance Harness:
-fa6432d20aa17cd3af3aa006f4030f6dbbe6d6c9d585e6fbd81e645de6e32006
-
-Acceptance Bundle:
-42bb4846be27ae2cff4d6f2634ebca6ff7d0628de7541071bb38ff2d940e7079
+1444dcd71b4ce475cd21e004e83460796c9fcd122c6724d59f0aea73b911e384
 ```
 
-`Get-FileHash` bestaetigte sowohl den Vertical-Base-Hash als auch den Acceptance-Bundle-Hash unabhaengig vom Builder-Output. Dieser Nachweis ist ein lokaler deterministischer Build-Nachweis, **kein DCS-Runtime-PASS**.
+`Get-FileHash` bestaetigte denselben Bundle-Hash unabhaengig vom Builder-Output. Dieser Nachweis ist ein lokaler deterministischer Build-Nachweis, **kein DCS-Runtime-PASS**.
 
 ## 5. DCS Vertical Acceptance
 
@@ -200,7 +191,6 @@ Testquellen:
 ```text
 mission/tests/air-tasking-aar-vertical/src/01-air-tasking-aar-vertical-acceptance.lua
 tools/build-air-tasking-aar-vertical-acceptance.ps1
-tools/build-air-tasking-aar-vertical-miz.ps1
 ```
 
 Der Acceptance-Harness wartet zuerst auf vier natuerlich aktive STANDARD-Tracks. Erst danach wird der LISA-Bedarf eingereicht. `EndAAR(COMPLETE)` wird erst nach natuerlicher LISA-On-Station-Bestaetigung angefordert. Es gibt keinen kuenstlichen FuelLow, keinen kuenstlichen Verlust, keinen Teleport und kein Umschreiben der AAR-Route.
@@ -218,26 +208,8 @@ SETTLEMENT_PASS
 RESULT PASS
 ```
 
-## 6. Lokale Missions-Build-Grenze
+## 6. Evidence boundary
 
-ChatGPT mutiert keine `.miz`-Datei. Der lokale Missions-Build wird ausschliesslich durch den Projektinhaber mit `tools/build-air-tasking-aar-vertical-miz.ps1` ausgefuehrt.
-
-Der Builder akzeptiert einen **explizit vom Projektinhaber angegebenen** `-InputMiz`-Pfad und erzeugt daraus eine separate Acceptance-Testmission. Es gibt keine automatische Suche nach Missionsdateien, keine Annahme eines lokalen Speicherorts und keine in-place-Aenderung der Quellmission.
-
-Beim ersten lokalen Versuch am 18.08.2026 wurde kein `.miz`-Build ausgefuehrt, weil `OMW_Template_v12_groundworks.miz` nicht im Repository-Verzeichnis lag und kein expliziter lokaler Quellpfad vorlag. Dieser Versuch ist weder PASS noch FAIL fuer den Builder oder den DCS-Test.
-
-Vor dem DCS-Lauf muessen aus dem realen lokalen Builderlauf mindestens vorliegen:
-
-```text
-InputMissionSHA256
-AcceptanceBundleSHA256
-EmbeddedAARBaseSHA256
-MooseLuaSHA256
-OutputMissionSHA256
-```
-
-## 7. Evidence boundary
-
-Der lokale Vertical-Base-/Acceptance-Build fuer Commit `3aea46a1cbfa1f62136bd932f0f48e67d332d680` ist bestaetigt. Der lokale Acceptance-`.miz`-Build und der DCS-Vertical-Acceptance-Lauf sind noch nicht erfolgt.
+Der lokale Vertical-Base-Build ist bestaetigt. Der DCS-Vertical-Acceptance-Lauf ist noch nicht erfolgt.
 
 Gate 3 darf erst nach einem realen DCS-Lauf mit dokumentierter Mission, Missions-Hash, Bundle-Hash, Branch/Commit, DCS-Version, eingebetteter MOOSE-Version/Hash sowie den erforderlichen Logs auf PASS gesetzt werden.
