@@ -62,7 +62,7 @@ REJECTED_FOR_PROJECT_USE
 | `COHORT` | `VALIDATED_FOR_DOCUMENTED_SCOPE` + `SOURCE_REVIEWED` | AirOps-Lifecycle praktisch bestätigt; Ground-Review bestätigt `AddMissionCapability`, `SetMissionRange`, `CanMission` und 75-NM-Ground-Default source-seitig |
 | `FLIGHTGROUP` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | AAR FuelLow, Dead/OnAfterDead, GetCoordinate, `AddWaypoint(...)`, `AddMission(...)` und `OnAfterPassingWaypoint(...)`; Acceptance 7 bestätigte FIR -> 60-NM -> AUFTRAG sowie Egress -> External Handoff |
 | `COMMANDER` | `VALIDATED_FOR_DOCUMENTED_SCOPE` + `SOURCE_REVIEWED` | dokumentierter COMMANDER-Lifecycle; Ground-Review bestätigt `AddBrigade(...)` und `AddOpsTransport(...)` source-seitig; MissionDemand bleibt OMW-Tasking-Autorität |
-| `AUFTRAG` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | AAR `NewTANKER`, `SetMissionAltitude`, Mission-Egress und `Cancel()` praktisch bestätigt; finaler Inbound fügt AUFTRAG erst nach Passage des 60-NM-Wegpunkts hinzu |
+| `AUFTRAG` | `VALIDATED_FOR_DOCUMENTED_SCOPE` + `SOURCE_REVIEWED` | AAR `NewTANKER`, `SetMissionAltitude`, Mission-Egress und `Cancel()` praktisch bestätigt; Ground-Review bestätigt `SetReturnToLegion(false)` source-seitig als vorhandenen Persistent-Field-Pfad für Army/Naval Assets; Ground-DCS-Acceptance offen |
 | `SPAWN` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | area-spezifische AAR-Templates, stabile Sortie-Callsign-Familie und 480-kt-In-Air-Materialisierung praktisch bestätigt; keine erzwungene `InitSTN()`, keine nachgewiesene `InitFuel()`-API |
 | `SCHEDULER` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Source-Queue, Station-Monitoring und Acceptance-Koordination; kein Timer-basierter Late-Approach |
 | `USERFLAG` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Warehouse-Acceptance-Readiness-Pfade |
@@ -70,8 +70,8 @@ REJECTED_FOR_PROJECT_USE
 | `COORDINATE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | `Get2DDistance(...)` praktisch verwendet; `GetIntermediateCoordinate(...)` und `HeadingTo(...)` im Acceptance-7-AAR-Pfad praktisch bestätigt |
 | `BRIGADE` | `SOURCE_REVIEWED` | `AddPlatoon`, Asset-Pool-/LEGION-Bindung, Retreat/Rearm/Refuel-Zonen und `LoadBackAssetInPosition` geprüft; Ground-Runtime-Acceptance offen |
 | `PLATOON` | `SOURCE_REVIEWED` | erbt Ground-Rollen-/Range-Selektion von COHORT; konkrete OMW-Rollenmatrix und DCS-Selektion offen |
-| `ARMYGROUP` | `SOURCE_REVIEWED` | Routing/RTZ/Returned/Rearm/Retreat source-geprüft; immobile RTZ kann teleportieren und ist für sichtbare OMW-Nutzung ausgeschlossen; DCS-Acceptance offen |
-| `OPSGROUP` | `VALIDATED_FOR_DOCUMENTED_SCOPE` + `SOURCE_REVIEWED` | AAR-Despawn/Radio/TACAN/PassingWaypoint praktisch bestätigt; Ground-Cargo Board/Load-Pfade source-geprüft, Ground-Acceptance offen |
+| `ARMYGROUP` | `SOURCE_REVIEWED` | Routing/RTZ/Returned/Rearm/Retreat source-geprüft; `MissionDone` mit `legionReturn=false` kann die physische Gruppe an ihrer aktuellen Position halten; immobile RTZ kann teleportieren; DCS-Acceptance offen |
+| `OPSGROUP` | `VALIDATED_FOR_DOCUMENTED_SCOPE` + `SOURCE_REVIEWED` | AAR-Despawn/Radio/TACAN/PassingWaypoint praktisch bestätigt; Ground-Review bestätigt MissionDone-/Return- und Cargo Board/Load-Pfade source-seitig; Ground-Acceptance offen |
 | `OPSTRANSPORT` | `SOURCE_REVIEWED` | Constructor, Cargo/Carrier-Zonen, `AddPathTransport`, Disembark- und Carrier-Verträge geprüft; taktischer OMW-Transport benötigt eigenen DCS-Test |
 | `CTLD`, `CSAR`, `AICSAR` | `PLANNED` / teilweise verwendet | separate Acceptance erforderlich |
 | `INTEL` | `PLANNED` | taktisches Lagebild; Laufzeitnachweis offen |
@@ -116,8 +116,11 @@ COHORT:AddMissionCapability(...)
 COHORT:SetMissionRange(...)
 COHORT:CanMission(...)
 
+AUFTRAG:SetReturnToLegion(false)
+
 ARMYGROUP:AddWaypoint(...)
 ARMYGROUP RTZ / Returned / Rearm / Retreat FSM paths
+OPSGROUP:onafterMissionDone(...) legionReturn=false hold-in-place path
 
 OPSTRANSPORT:New(...)
 OPSTRANSPORT:SetEmbarkZone(...)
@@ -135,14 +138,17 @@ Wichtige Grenzen aus dem Source-Review:
 - COHORT sets 75 NM default mission range for ground templates.
 - COHORT:CanMission checks mission type and target distance.
 - Mission.engageRange can enlarge the effective cohort range.
+- AUFTRAG:SetReturnToLegion(false) sets mission.legionReturn=false for army/navy assets.
+- OPSGROUP:onafterMissionDone applies mission.legionReturn and, for a legionReturn=false ground group with only the final waypoint left, creates a waypoint at the current coordinate so the group remains physical in place instead of returning to the legion.
 - BRIGADE:LoadBackAssetInPosition uses SPAWN:SpawnFromCoordinate(Position).
 - ARMYGROUP RTZ teleports an immobile group that is outside its return zone.
 - mobile ARMYGROUP RTZ uses a physical waypoint toward the return zone.
+- ARMYGROUP Returned hands the group back to LEGION/WAREHOUSE; WAREHOUSE AddAsset removes the returned physical group through Despawn/Destroy.
 - OPSTRANSPORT can consume a predefined route from a late-activated PathGroup.
 - Ground cargo/disembark lifecycle still requires DCS observation before production use.
 ```
 
-For OMW this means that `LoadBackAssetInPosition` and immobile `RTZ` are not approved for player-observable reconstitution/return. This is a restriction on use of MOOSE behavior, not an approval for a custom replacement.
+For OMW this means that `SetReturnToLegion(false)` is the first MOOSE-first candidate for field-persistent Ground assets after mission completion. `LoadBackAssetInPosition` and immobile `RTZ` remain unapproved for player-observable reconstitution/return. This is a restriction on use of MOOSE behavior, not an approval for a custom replacement.
 
 ### 4.3 Official example review
 
@@ -333,4 +339,4 @@ Test-only Artificial FuelLow, `UNIT:Explode()`-Loss-Injection, Acceptance-Zeitbe
 
 Ein Klassenstatus wird nur angehoben, wenn MOOSE-Version/Commit, OMW-Source, Mission, Hashes, beobachtetes Verhalten und Einschränkungen dokumentiert sind. `VALIDATED_FOR_DOCUMENTED_SCOPE` für den neuen AAR-Routingpfad gilt ausschließlich für die oben dokumentierte Acceptance-7-Provenienz und darf nicht pauschal auf andere MOOSE-/DCS-/Missionsstände übertragen werden.
 
-`SOURCE_REVIEWED` für die Ground-OPS-Klassen bedeutet ausdrücklich **nicht** `VALIDATED_FOR_DOCUMENTED_SCOPE`. Die ARMY Ground Foundation benötigt ihre eigenen dokumentierten DCS-Tests.
+`SOURCE_REVIEWED` für die Ground-OPS-Klassen und den Ground-Pfad `AUFTRAG:SetReturnToLegion(false)` bedeutet ausdrücklich **nicht** `VALIDATED_FOR_DOCUMENTED_SCOPE`. Die ARMY Ground Foundation benötigt ihre eigenen dokumentierten DCS-Tests.
