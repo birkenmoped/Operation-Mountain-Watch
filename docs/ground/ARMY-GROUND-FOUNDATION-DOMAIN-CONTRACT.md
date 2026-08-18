@@ -6,6 +6,7 @@ owning_policy: OMW-GOV-001
 authoritative_for:
   - planned stable CampaignState identities for the current ARMY Ground Foundation installation scope
   - planned parent-child relationships between current FOB, COP and OP campaign objects
+  - planned parent-bound resource reservation semantics for dependent ground installations
   - separation of installation identity from historical formation, MOOSE pool and physical DCS group identity
 not_authoritative_for:
   - final ground-force ORBAT strengths
@@ -26,7 +27,7 @@ validated_in_dcs: false
 
 ## 1. Zweck und Grenze
 
-Dieses Dokument definiert die erste stabile Identitäts- und Parent-Baseline für die aktuelle BLUE ARMY Ground Foundation im Jalalabad-/Kunar-Raum.
+Dieses Dokument definiert die erste stabile Identitäts-, Parent- und Ressourcenbindungs-Baseline für die aktuelle BLUE ARMY Ground Foundation im Jalalabad-/Kunar-Raum.
 
 Es setzt die verbindlichen Architekturgrenzen aus `OMW-ARCH-CAMPAIGN-STATE` und `OMW-ARCH-CAMPAIGN-DYNAMIC-MISSION` um:
 
@@ -152,7 +153,131 @@ Aktueller belastbarer Juli-2011-/juli-naher Arbeitsstand:
 
 Nicht ausreichend geklärte Company-/Platoon-Verteilungen bleiben offene Research-Attribute und werden nicht durch ID-Namen vorweggenommen.
 
-## 6. Vorgesehene CampaignState-Felder
+## 6. Parent-bound Occupancy und Ressourcenbindung
+
+### 6.1 Grundsatz
+
+Die physische Besetzung eines abhängigen OP/COP ist keine zusätzliche Ressource. Sie ist eine **Reservierung aus dem Parent-Vertrag**.
+
+```text
+parent available resource
+-> reserve for child occupancy
+-> materialize child garrison / support representation
+-> reservation remains bound while child is occupied
+-> release only after confirmed withdrawal / transfer / loss settlement
+```
+
+Damit gilt insbesondere:
+
+```text
+parent personnel available
+= parent personnel total
+- parent local commitments
+- child occupancy reservations
+- active patrol/QRF/mission reservations
+- unresolved loss/recovery reservations
+```
+
+Die Formel beschreibt die Domain-Semantik. Konkrete Mengen und Schwellen sind noch nicht beschlossen.
+
+### 6.2 Reservation identity
+
+Eine Child-Besetzung benötigt eine stabile, idempotente Reservation-ID, die nicht aus einem DCS-Gruppennamen abgeleitet wird.
+
+Vorgesehenes Schema:
+
+```text
+GROUND-OCCUPANCY:<childInstallationId>:<resourceClass>
+```
+
+Beispiele:
+
+```text
+GROUND-OCCUPANCY:BLUE_GROUND_OP_MUSTANG:PERSONNEL
+GROUND-OCCUPANCY:BLUE_GROUND_OP_MUSTANG:VEHICLE
+GROUND-OCCUPANCY:BLUE_GROUND_COP_HONAKER_MIRACLE:AMMO
+```
+
+Ob eine Installation für eine Resource Class tatsächlich eine Reservation benötigt, hängt vom später genehmigten Ressourcenvertrag ab. Das Schema erzeugt **keine** Mengenentscheidung.
+
+### 6.3 Occupancy lifecycle
+
+Vorgesehene Zustände:
+
+```text
+UNRESERVED
+RESERVED
+MATERIALIZED
+ACTIVE
+WITHDRAWING
+RELEASE_PENDING
+LOST
+RELEASED
+```
+
+Semantik:
+
+```text
+UNRESERVED
+-> no parent resource committed
+
+RESERVED
+-> CampaignState quantity committed to child
+-> physical group may not yet exist
+
+MATERIALIZED / ACTIVE
+-> child representation exists
+-> reservation remains active
+
+WITHDRAWING
+-> physical withdrawal/transport in progress
+-> reservation remains active
+
+RELEASE_PENDING
+-> physical handoff/return completed
+-> settlement still pending
+
+LOST
+-> reserved resource is settled as loss
+-> no automatic recredit
+
+RELEASED
+-> surviving reserved resource returned to parent availability exactly once
+```
+
+Ein bloßes DCS-Despawn darf weder `RELEASED` noch `LOST` implizieren. Die strategische Settlement-Entscheidung benötigt ein bestätigtes Domain-Ereignis.
+
+### 6.4 OP reinforcement
+
+Verstärkung eines abhängigen OP folgt demselben Parent-Vertrag:
+
+```text
+MissionDemand / reinforcement request
+-> CampaignState checks parent availability
+-> reserve parent resource
+-> MOOSE materializes / transports operational representation
+-> success: reservation becomes child occupancy commitment
+-> failure/loss: settle against parent reservation
+-> abort before commitment: release reservation exactly once
+```
+
+`OPSTRANSPORT`, `ARMYGROUP`, CTLD oder andere MOOSE-Objekte führen später nur die operative Darstellung aus. Sie dürfen die strategische Reservation nicht selbst erzeugen oder erhöhen.
+
+### 6.5 Versorgungsgüter
+
+Supply/Ammo/Fuel können später lokal als physische oder Warehouse-nahe Darstellung existieren. Für den strategischen Vertrag gilt trotzdem:
+
+```text
+parent strategic quantity
+-> explicit transfer reservation
+-> physical transport
+-> confirmed delivery
+-> child-local strategic allocation / parent decrement
+```
+
+Eine MOOSE-WAREHOUSE- oder DCS-Warehouse-Buchung ist dabei Mirror beziehungsweise operative Abbildung und keine unabhängige strategische Gutschrift.
+
+## 7. Vorgesehene CampaignState-Felder
 
 Für eine spätere Implementierung soll ein Ground-Installation-State mindestens folgende Identitäts- und Beziehungsfelder besitzen:
 
@@ -165,6 +290,7 @@ groundNodeId: GROUND_NODE_BOSTICK
 activationState: ACTIVE
 historicalFormationAssignments: []
 resourceContractId: null
+occupancyReservations: []
 missionEditorAnchorId: null
 runtimeRepresentationIds: []
 ```
@@ -180,13 +306,30 @@ groundNodeId: GROUND_NODE_BOSTICK
 activationState: PLANNED_ACTIVE
 historicalFormationAssignments: []
 resourceContractId: null
+occupancyReservations: []
 missionEditorAnchorId: null
 runtimeRepresentationIds: []
 ```
 
+Eine Reservation benötigt mindestens:
+
+```yaml
+reservationId: GROUND-OCCUPANCY:BLUE_GROUND_OP_MUSTANG:PERSONNEL
+parentInstallationId: BLUE_GROUND_FOB_BOSTICK
+childInstallationId: BLUE_GROUND_OP_MUSTANG
+resourceClass: PERSONNEL
+quantity: null
+state: RESERVED
+missionDemandId: null
+runtimeCorrelationIds: []
+settlementId: null
+```
+
+`quantity: null` bedeutet hier ausschließlich: die Domain-Struktur ist definiert, die tatsächliche OMW-Menge noch nicht.
+
 `groundNodeId` bleibt eine operative Domain-Zuordnung und ist **keine** Festlegung, dass exakt eine gleichnamige MOOSE-`BRIGADE` existieren muss.
 
-## 7. Runtime-Repräsentationsgrenze
+## 8. Runtime-Repräsentationsgrenze
 
 Eine Installation kann gleichzeitig oder nacheinander durch mehrere physische Objekte dargestellt werden:
 
@@ -202,7 +345,16 @@ Diese Repräsentationen dürfen verändert, zerstört, ersetzt oder neu material
 
 Umgekehrt darf ein DCS-Gruppenname niemals die persistente Installationsidentität bestimmen.
 
-## 8. Noch offene Domain-Entscheidungen
+MOOSE-seitig gilt für die spätere Runtime zusätzlich:
+
+```text
+MOOSE asset available
+!= CampaignState strategic resource available
+```
+
+Ein PLATOON-/BRIGADE-/WAREHOUSE-Asset darf nur materialisiert oder für eine Child-Besetzung gebunden werden, wenn die zugehörige CampaignState-Reservation bereits erfolgreich besteht.
+
+## 9. Noch offene Domain-Entscheidungen
 
 Dieses Dokument entscheidet ausdrücklich noch nicht:
 
@@ -210,6 +362,7 @@ Dieses Dokument entscheidet ausdrücklich noch nicht:
 - exact MOOSE BRIGADE count and boundaries
 - exact PLATOON roles and asset counts
 - exact personnel / vehicle / ammo / fuel / supply quantities
+- exact readiness thresholds and resource costs
 - exact July-2011 Jalalabad ground QRF/base-defense formation
 - exact July-2011 Joyce company distribution
 - exact July-2011 Bostick maneuver company distribution
@@ -219,15 +372,16 @@ Dieses Dokument entscheidet ausdrücklich noch nicht:
 - runtime persistence/reconstitution acceptance
 ```
 
-## 9. Nächster Domain-Schritt
+## 10. Nächster Domain-Schritt
 
-Nach dieser Identitätsbaseline kann Phase D ohne Namensabhängigkeiten fortgesetzt werden:
+Nach dieser Identitäts- und Reservation-Baseline kann Phase D ohne Namensabhängigkeiten fortgesetzt werden:
 
 ```text
 stable installation IDs
 -> parent relationships
--> resource contracts per root Ground Node
--> child occupancy/resource reservations
+-> parent-bound occupancy reservations
+-> resource categories/contracts per root Ground Node
+-> readiness/mission effects
 -> MissionDemand / MOOSE materialization adapters
 -> DCS acceptance
 ```
