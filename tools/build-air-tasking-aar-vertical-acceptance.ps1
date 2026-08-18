@@ -34,7 +34,7 @@ $harness = Get-Content -LiteralPath $harnessFile -Raw -Encoding UTF8
 $requiredMarkers = @(
   'Scope: Air Tasking -> accepted AAR vertical integration base.',
   'function OMW.AirTasking.AARVerticalBase.Start(spec)',
-  'StableExecutionIdProviderRequired: true',
+  'nextExecutionId function is required',
   'local TEST_ID = "AIR-TASKING-AAR-VERTICAL-1"',
   'STANDARD_BASELINE_PASS',
   'EXECUTION_STARTED_PASS',
