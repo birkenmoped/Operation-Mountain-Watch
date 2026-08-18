@@ -26,31 +26,28 @@ validated_in_dcs: false
 ## 1. Status
 
 ```text
-PLANNED – Source-Review erweitert; vollständige Bodenoperationsarchitektur noch nicht technisch akzeptiert
+PLANNED – Source-Review erweitert; Ground Acceptance 1 vorbereitet, noch nicht in DCS ausgeführt
 ```
 
 Der vollständige frühere Prüf- und Klassenentwurf bleibt erhalten:
 
 - [`Legacy-MOOSE-Ground-Operations`](../evidence/source-records/legacy-moose-ground-operations.md)
 
-Diese Datei dokumentiert nur den für die aktuelle ARMY Ground Foundation geprüften MOOSE-Stand. Source-Review ist kein DCS-Runtime-Nachweis.
+Source-Review ist kein DCS-Runtime-Nachweis.
 
 ## 2. Geprüfte MOOSE-Provenienz
 
-Für diesen Review ist die vom Projektinhaber am 18.08.2026 bereitgestellte aktuelle Mission maßgeblich:
+Für den Ground-Review und Acceptance 1 gilt:
 
 ```text
-Mission artifact: OMW_Template_v12_groundworks(1).miz
-Mission SHA-256: 3c634370d43d57ed4788c55d991c903441cdfa57709581af61debb4105f9a078
-Embedded file: l10n/DEFAULT/Moose.lua
-Moose.lua SHA-256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
+MOOSE release: 2.9.18
 MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
-MOOSE build marker: 2026-06-14T16:11:05+02:00-73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+Moose.lua SHA-256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
 ```
 
-Der eingebettete Hash stimmt mit dem bereits im Projekt gepinnten MOOSE-2.9.18-Artefakt überein. Die `.miz` wurde ausschließlich gelesen; sie wurde durch ChatGPT nicht verändert.
+Der eingebettete Hash der Owner-erstellten Testmission `OMW_Template_v13_ground_test.miz` stimmt mit diesem gepinnten Artefakt überein. Die `.miz` wurde ausschließlich gelesen.
 
-## 3. Aktuelle Ground-OPS-Kandidatenhierarchie
+## 3. Ground-OPS-Hierarchie
 
 ```text
 COMMANDER
@@ -64,15 +61,13 @@ COMMANDER
                             +-- physical DCS GROUP
 ```
 
-Diese Hierarchie bleibt ein technisches Kandidatenmodell. Eine MOOSE-`BRIGADE` ist keine automatische Abbildung einer historischen Brigade, und die vier OMW-Ground-Nodes Jalalabad, Joyce, Wright und Bostick sind noch nicht verbindlich als exakt vier `BRIGADE`-Instanzen festgelegt.
-
-`CampaignState` bleibt die strategische Ressourcenautorität. `BRIGADE`/WAREHOUSE, `PLATOON` und `ARMYGROUP` dürfen nur die operative Materialisierung und MOOSE-interne Assetverwaltung übernehmen; daraus darf keine zweite strategische Personal-, Fahrzeug-, Ammo-, Fuel- oder Supply-Wahrheit entstehen.
+Für die aktuelle Foundation ist eine operative MOOSE-`BRIGADE` je Root Ground Node geplant. Eine MOOSE-`BRIGADE` ist keine historische Brigadeformation. `CampaignState` bleibt strategische Ressourcenautorität; BRIGADE/WAREHOUSE, PLATOON und ARMYGROUP sind operative Auswahl- und Repräsentationsschichten.
 
 ## 4. Source-verifizierte Klassen und Verträge
 
 ### 4.1 `COMMANDER`
 
-Der gepinnte MOOSE-Stand enthält den öffentlichen Pfad:
+Source-verifiziert:
 
 ```lua
 COMMANDER:AddBrigade(Brigade)
@@ -80,9 +75,9 @@ COMMANDER:AddMission(Mission)
 COMMANDER:AddOpsTransport(Transport)
 ```
 
-`AddBrigade` delegiert auf `AddLegion` und bindet die `BRIGADE` an den `COMMANDER`. Damit kann dieselbe COMMANDER-Ebene grundsätzlich AIRWINGs und BRIGADEs verwalten. Für OMW bleibt `MissionDemand` die fachliche Tasking-Autorität; `COMMANDER` ist Ausführungs-/Selektionsschicht, keine strategische Entscheidungsinstanz.
+`AddBrigade` delegiert auf `AddLegion`. Für OMW bleibt `MissionDemand` die fachliche Tasking-Autorität; `COMMANDER` ist Ausführungs-/Selektionsschicht.
 
-### 4.2 `BRIGADE`
+### 4.2 `BRIGADE` / `WAREHOUSE`
 
 Source-verifiziert:
 
@@ -94,129 +89,79 @@ BRIGADE:AddRetreatZone(RetreatZone)
 BRIGADE:AddRearmingZone(RearmingZone)
 BRIGADE:AddRefuellingZone(RefuellingZone)
 BRIGADE:LoadBackAssetInPosition(Templatename, Position)
+WAREHOUSE:SetSpawnZone(Zone, MaxDist)
 ```
 
-`AddPlatoon` fügt den `PLATOON` als Cohort der Brigade hinzu, registriert dessen Assetgruppen im LEGION-/WAREHOUSE-Pool, setzt die Brigade am Platoon und startet den Platoon-FSM bei Bedarf.
+`BRIGADE:New(...)` verwendet einen benannten `UNIT`- oder `STATIC`-Host als Warehouse-Repräsentation. `AddPlatoon` registriert die PLATOON-Assetgruppen im LEGION-/WAREHOUSE-Pool und bindet den PLATOON an die Brigade.
 
-`LoadBackAssetInPosition(...)` ist für OMW ein **expliziter Risikopfad**: die Funktion ist als Persistenz-/Mission-Restart-Helfer dokumentiert und materialisiert eine gespeicherte Ground-Gruppe über `SPAWN:NewWithAlias(...):SpawnFromCoordinate(Position)`. Sie darf daher nicht als transparente Reconstitution eines beobachtbaren Feldverbandes verwendet werden. Ein späterer Einsatz wäre nur an einem kontrollierten, für Spieler nicht beobachtbaren Materialisierungspunkt zulässig und müsste separat akzeptiert werden.
+`WAREHOUSE:SetSpawnZone(...)` ist im tatsächlich verwendeten Source vorhanden und setzt die Spawnzone des Warehouse. Acceptance 1 verwendet diese Methode, um `ZON_BLUE_GND_JOYCE_ACCESS` als kontrollierte Materialisierungszone vorzugeben. Diese Ground-Verwendung ist bis zum DCS-Lauf nur `SOURCE_REVIEWED`.
 
-### 4.3 `PLATOON` und `COHORT`
+`LoadBackAssetInPosition(...)` bleibt ein Risikopfad: die Funktion materialisiert eine gespeicherte Ground-Gruppe über `SPAWN:SpawnFromCoordinate(Position)` und ist nicht als transparente Reconstitution in beobachtbaren Bereichen freigegeben.
 
-`PLATOON` erbt im gepinnten Stand von `COHORT`:
+### 4.3 `PLATOON` / `COHORT`
+
+Source-verifiziert:
 
 ```lua
 PLATOON:New(TemplateGroupName, Ngroups, PlatoonName)
 COHORT:AddMissionCapability(MissionTypes, Performance)
 COHORT:SetMissionRange(Range)
 COHORT:CanMission(Mission)
+COHORT:CountAssets(InStock, MissionTypes, Attributes)
 ```
 
-Der Konstruktor setzt Ground-Kategorie und fügt `AUFTRAG.Type.NOTHING` als Grundfähigkeit hinzu. Die eigentliche rollenbezogene Selektion stammt weitgehend aus `COHORT`.
+Ground-COHORTs erhalten standardmäßig 75 NM Mission Range. `CanMission(...)` prüft Duty, Mission Capability und Target Distance; eine `Mission.engageRange` kann die effektive Range erweitern.
 
-Für Ground-Templates setzt `COHORT:New(...)` standardmäßig:
+Acceptance 1 verwendet `CountAssets(true, AUFTRAG.Type.PATROLZONE)` erst nach BRIGADE-Start als positives Asset-Gate. Das ist source-seitig plausibel, aber noch nicht Ground-DCS-validiert.
 
-```text
-mission range = 75 NM
+### 4.4 `AUFTRAG`, `ARMYGROUP` und MissionDone
+
+Source-verifiziert:
+
+```lua
+AUFTRAG:NewPATROLZONE(Zone, Speed, Altitude, Formation)
+AUFTRAG:SetReturnToLegion(false)
+AUFTRAG:__Cancel(Delay)
 ```
 
-`CanMission(...)` prüft source-verifiziert mindestens:
+`NewPATROLZONE(...)` ist für Ground-Gruppen vorgesehen. `SetReturnToLegion(false)` setzt `mission.legionReturn=false`. Beim MissionDone-Pfad übernimmt OPSGROUP diesen Wert; für eine Ground-Group, die nicht zur Legion zurückkehren soll, hält der Source-Pfad die Gruppe an ihrer aktuellen Position, statt `Returned -> WAREHOUSE AddAsset` auszulösen.
 
-1. Cohort ist `OnDuty`;
-2. Missionsart ist in den Mission Capabilities enthalten;
-3. Zielentfernung liegt innerhalb der Engage Range.
+Acceptance 1 verwendet den vom AUFTRAG-FSM erzeugten verzögerten `__Cancel(...)`-Eventpfad, um Mission 1 über den normalen Cancel-/MissionDone-Lifecycle zu beenden. Es wird weder eine native DCS-Löschung noch eine eigene Parallel-Missionssteuerung eingeführt.
 
-Eine auf der Mission gesetzte `Mission.engageRange` kann die Cohort-Range erweitern, weil der Source-Pfad `math.max(self.engageRange, Mission.engageRange)` verwendet. Deshalb darf eine OMW-Rollenbegrenzung nicht ausschließlich auf `PLATOON:SetMissionRange(...)` vertrauen, wenn Missionen selbst eine größere Engage Range erhalten.
-
-Folgerung für den späteren OMW-Vertrag:
-
-```text
-PLATOON role
-= mission capability filter
-+ bounded mission range
-+ MissionDemand target/domain constraints
-```
-
-Die konkrete Rollenmatrix pro Node bleibt offen und benötigt anschließend DCS-Selektionsnachweise.
-
-### 4.4 `ARMYGROUP` und Return-/Persistent-Field-Lifecycle
-
-`ARMYGROUP` ist die operative physische Ground-Gruppe. Source-verifiziert sind unter anderem Routing-/Waypoint-, Mission-, Rearm-, Retreat-, RTZ- und Returned-FSM-Pfade.
-
-Besonders relevant ist `RTZ`:
-
-```text
-mobile ARMYGROUP outside return zone
--> waypoint to random coordinate in return zone
--> physical route
-
-non-mobile ARMYGROUP outside return zone
--> Teleport(zone:GetCoordinate(), 0, true)
--> RTZ retrigger
-```
-
-Der zweite Pfad widerspricht der OMW-Regel gegen beobachtbare Teleports. Für die produktive ARMY Ground Foundation gilt daher:
-
-```text
-DO NOT USE automatic RTZ for immobile field assets outside their return zone.
-```
-
-Für mobile Gruppen ist der Source-Pfad grundsätzlich physisch geroutet. Wegen DCS-Ground-Pathfinding ist er trotzdem erst nach einem Test mit den konkreten OMW-Road- und Withdrawal-Ankern zulässig.
-
-Der vollständige normale Return-Pfad ist source-seitig eindeutig:
+Der normale Return-Pfad bleibt separat:
 
 ```text
 ARMYGROUP:onafterReturned(...)
--> self.legion:__AddAsset(10, self.group, 1)
--> WAREHOUSE:onafterAddAsset(...)
--> returned asset marked spawned=false/requested=false
--> current physical group is removed
+-> LEGION/WAREHOUSE AddAsset
+-> physical group removed through Despawn/Destroy
 ```
 
-`WAREHOUSE:onafterAddAsset(...)` dokumentiert ausdrücklich, dass eine noch lebende Gruppe beim Hinzufügen zum Warehouse-Stock zerstört wird. Für eine bekannte OPSGROUP ruft der Source `opsgroup:Despawn(0, true)` und anschließend `opsgroup:__Stop(-0.01)` auf; andernfalls folgt `group:Destroy()`.
+Deshalb darf ein produktiver Return erst an einer nicht beobachtbaren Handoff-Grenze erfolgen.
 
-Damit ist für OMW nicht mehr nur ein abstraktes Despawn-Risiko bekannt: **`Returned` führt im normalen LEGION/WAREHOUSE-Rückgabepfad nach der verzögerten AddAsset-Verarbeitung zur Entfernung der physischen Gruppe.** Der Return-Punkt ist deshalb eine harte Visual-Boundary-Frage.
-
-Zusätzlich ist jetzt ein vorhandener MOOSE-Pfad für **physisch im Feld verbleibende** Ground-Assets source-verifiziert:
-
-```lua
-AUFTRAG:SetReturnToLegion(false)
-```
-
-Die öffentliche Methode setzt `mission.legionReturn=false`. Beim Ende der Mission übernimmt `OPSGROUP:onafterMissionDone(...)` diesen Wert über `self:SetReturnToLegion(Mission.legionReturn)`. Wenn die Gruppe einer Legion angehört, nicht zur Legion zurückkehren soll und nach dem Mission-Cleanup nur noch ein Wegpunkt vorhanden ist, erzeugt MOOSE einen neuen Wegpunkt an der **aktuellen Position**, entfernt den alten Wegpunkt und lässt die Ground-/Naval-Group dort halten. Der Source-Kommentar beschreibt den Fall ausdrücklich als Gruppe, die nach Missionsende **nicht** zurückkehrt, sondern dort bleibt, wo ihre letzte Mission endet.
-
-Für OMW ist damit ein eigener Parallel-Lifecycle für diesen Grundfall **nicht erforderlich**. Der Kandidatenvertrag lautet:
+`ARMYGROUP` RTZ bleibt differenziert:
 
 ```text
-mission needs physical field persistence
--> AUFTRAG:SetReturnToLegion(false)
--> mission completes
--> ARMYGROUP remains physical at current position
--> no Returned -> Warehouse AddAsset path at mission end
+mobile ARMYGROUP
+-> physical waypoint routing
+
+immobile ARMYGROUP outside return zone
+-> Teleport(...)
 ```
 
-Grenzen:
+Der immobile Teleport-Pfad ist für beobachtbare OMW-Bereiche ausgeschlossen.
 
-- Source-Review beweist noch kein DCS-Verhalten mit den konkreten OMW-Gruppen und Missionstypen.
-- Der Mechanismus löst nicht automatisch Reconstitution nach Missionsneustart, Verlustersatz oder späteren gezielten Rückzug.
-- Ein späterer Auftrag kann weiterhin einen Return auslösen, wenn dessen Lifecycle entsprechend konfiguriert ist.
-- Für mobile Rückverlegung in den Bestand bleibt der physische Weg bis zu einer nicht beobachtbaren Return Zone plus anschließender Warehouse-Rückgabe der bevorzugte MOOSE-first-Kandidat.
-- Für dauerhaft stationäre OP-/FOB-Defense-Gruppen ist `SetReturnToLegion(false)` jetzt der primäre MOOSE-first-Testkandidat vor jeder Eigenentwicklung.
+### 4.5 `SCHEDULER`
 
-Produktive Konsequenz:
+Acceptance 1 verwendet `SCHEDULER:New(...)` ausschließlich als kleine One-shot-Testkoordination für:
 
 ```text
-FIELD_PERSISTENCE
--> test AUFTRAG:SetReturnToLegion(false) first
-
-RETURNED_TO_WAREHOUSE
--> route mobile group physically to a player-non-observable return boundary
--> then allow Returned -> Warehouse AddAsset
-
-IMMOBILE_RETURN
--> automatic RTZ path remains excluded outside the return zone
+post-start asset gate
+MissionDone -> follow-up mission delay
 ```
 
-### 4.5 `OPSTRANSPORT` und `OPSGROUP` Cargo
+Kein Frame-Scan und kein hochfrequenter Polling-Scheduler wird eingeführt. Die allgemeine MOOSE-SCHEDULER-Nutzung ist in anderen OMW-Scopes praktisch bestätigt; die konkrete Ground-Acceptance bleibt bis zum Testlauf unvalidiert.
+
+### 4.6 `OPSTRANSPORT` und Cargo
 
 Source-verifiziert:
 
@@ -233,115 +178,102 @@ OPSTRANSPORT:SetTime(...)
 OPSTRANSPORT:SetPriority(...)
 ```
 
-`AddPathTransport` liest die Mission-Editor-Wegpunkte einer angegebenen Gruppe und filtert den Pfad über deren Group Category. Damit ist die Funktion für OMW prinzipiell interessant, weil vorab validierte Ground-Routen als explizite Transportpfade vorgegeben werden können, statt beliebiges dynamisches Pathfinding zu verlangen.
-
-Der Cargo-Lifecycle ist nicht rein abstrakt. Der gepinnte Source zeigt beim Unload konkret:
-
-```text
-OPSGROUP:onafterUnload(...)
--> cargo status becomes NOTCARGO
--> template is copied
--> unit coordinates are rewritten around the unload coordinate
--> OpsGroup:_Respawn(0, Template)
-```
-
-`SetDisembarkActivation(false)` kann die Gruppe dabei als late activated anlegen. `SetDisembarkInUtero(...)` und `SetDisembarkCarriers(...)` bieten weitere Transferpfade, ändern aber nichts daran, dass der normale coordinate-based Unload eine physische Re-Materialisierung über `_Respawn(...)` enthält.
-
-Das ist nicht automatisch ein sichtbarer Teleport: während des Transports ist die Gruppe Cargo, und ein Entladen am Carrier kann visuell plausibel sein. Für OMW muss aber in DCS verifiziert werden, **wo**, **wann** und **wie** die Gruppe beim Embark/Load und Unload/Disembark verschwindet beziehungsweise erscheint. Insbesondere für OP-Reinforcement in Sichtweite von Spielern ist der Source allein kein Acceptance-Nachweis.
-
-`OPSTRANSPORT` ist deshalb weiterhin `PLANNED`, nicht `VALIDATED`.
+`AddPathTransport` kann einen vordefinierten Mission-Editor-Pfad verwenden. Der normale coordinate-based Unload materialisiert Cargo über `OPSGROUP:_Respawn(...)`; der konkrete OP-Reinforcement-Einsatz bleibt deshalb DCS-testpflichtig und ist nicht Teil von Acceptance 1.
 
 ## 5. Offizielle MOOSE-Demos und Tests
 
-Die offiziellen Repositories `FlightControl-Master/MOOSE_MISSIONS` und `FlightControl-Master/MOOSE_MISSIONS_UNPACKED` wurden für die aktuellen Ground-OPS-Klassennamen durchsucht.
+Die offiziellen MOOSE-Missionsrepositories wurden nach `BRIGADE`, `ARMYGROUP`, `OPSTRANSPORT` und `PLATOON` durchsucht. Für BRIGADE, ARMYGROUP und OPSTRANSPORT wurde im aktuellen Review kein direkter aktueller Klassenverwendungs-Treffer gefunden. Der geprüfte `WHS-020 - Self Propelled Ground Troops`-Demo verwendet WAREHOUSE direkt und beweist nicht die OMW-Hierarchie.
 
-Ergebnis des aktuellen Reviews:
+Das Fehlen eines gefundenen Beispiels ist kein Beweis, dass es historisch nie eines gab. Maßgeblich bleibt der tatsächlich verwendete Source; die OMW-Kombination benötigt einen eigenen DCS-Test.
 
-```text
-BRIGADE        no direct class-use hit found
-ARMYGROUP      no direct class-use hit found
-OPSTRANSPORT   no direct class-use hit found
-PLATOON        keyword hits exist, but reviewed Warehouse example uses WAREHOUSE assets directly
-```
+## 6. OMW-Ausschlüsse
 
-Als relevante Ground-Transport-Referenz wurde `WHS-020 - Self Propelled Ground Troops` geprüft. Das Beispiel zeigt Ground-Asset-Transfers zwischen zwei MOOSE-WAREHOUSE-Instanzen, verwendet jedoch nicht die aktuelle `COMMANDER -> BRIGADE -> PLATOON -> ARMYGROUP`-Hierarchie und ist deshalb kein Acceptance-Beweis für die OMW-Ground-OPS-Architektur.
-
-Das Fehlen eines gefundenen direkten Beispiels ist **kein** Beweis, dass es in sämtlichen historischen Demo-Ständen keines gibt. Für den gepinnten OMW-Stand bleibt der tatsächlich eingebettete Source maßgeblich; die projektspezifische Kombination benötigt einen eigenen reproduzierbaren DCS-Test.
-
-## 6. OMW-Ausschlüsse aus dem Source-Review
-
-Bis zur expliziten Acceptance sind mindestens folgende Pfade ausgeschlossen:
+Bis zur expliziten Acceptance sind ausgeschlossen:
 
 ```text
 1. BRIGADE:LoadBackAssetInPosition(...) in player-observable areas
 2. ARMYGROUP RTZ for immobile groups when outside the return zone
-3. automatic reconstitution by arbitrary SpawnFromCoordinate positions
-4. ARMYGROUP Returned -> WAREHOUSE AddAsset at a player-observable return boundary
+3. arbitrary SpawnFromCoordinate reconstitution
+4. Returned -> WAREHOUSE AddAsset at a player-observable return boundary
 5. OPSTRANSPORT coordinate unload/materialization in visible areas without DCS verification
-6. arbitrary Ground-AI routes without validated road/assembly/withdrawal anchors
+6. arbitrary Ground-AI routes without validated road/withdrawal anchors
 ```
 
-`AUFTRAG:SetReturnToLegion(false)` ist **nicht** in dieser Ausschlussliste: der gepinnte Source enthält genau diesen öffentlichen Ground-/Naval-Persistenzpfad. Er bleibt jedoch bis zum OMW-DCS-Test `SOURCE_REVIEWED`, nicht `VALIDATED`.
+`AUFTRAG:SetReturnToLegion(false)` ist nicht ausgeschlossen, sondern der primäre MOOSE-first-Acceptance-Kandidat für live-session field persistence. Der Status bleibt vor dem realen DCS-Lauf `SOURCE_REVIEWED`.
 
-Diese Ausschlüsse sind keine Nicht-MOOSE-Ausnahme. Sie begrenzen lediglich MOOSE-Funktionen, deren konkreter Source-Pfad mit OMW-Governance kollidieren kann.
+## 7. Acceptance 1 – gestagter Teststand
 
-## 7. Aktueller Architekturstand
-
-Nach dem Source-Review ist folgende Aussage belastbar:
+Owner-Testmission:
 
 ```text
-COMMANDER
--> can own multiple BRIGADE legions
-
-BRIGADE
--> owns operational PLATOON/asset pools
-
-PLATOON/COHORT
--> can restrict mission type and mission range
-
-AUFTRAG
--> SetReturnToLegion(false) can keep army/navy mission assets in the field after mission completion
-
-ARMYGROUP
--> executes physical ground movement and mission FSM
--> can remain at its current position after mission completion when legionReturn=false
--> Returned normally hands the group back to LEGION/WAREHOUSE
--> Warehouse AddAsset removes the physical returned group
-
-OPSTRANSPORT
--> can coordinate cargo/carrier transport and predefined transport paths
--> normal coordinate unload re-materializes cargo through OPSGROUP:_Respawn
+OMW_Template_v13_ground_test.miz
+MIZ SHA-256: 6d12a55affc971de1de4d5e463c956fcb2e08a0d2de478ff13419747a825e7e8
+internal mission SHA-256: 22d13cb7b0da0a6fb9ddc02bf9b99c4da50d2c96b31bdc6a353616a4188c6b80
+embedded Moose.lua SHA-256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
 ```
 
-Noch **nicht** belastbar entschieden ist:
+Read-only bestätigt:
 
 ```text
-- exactly four OMW Ground Nodes = exactly four MOOSE BRIGADEs
-- exact PLATOON role matrix and group strengths
-- restart/reconstitution contract for persistent field groups
-- exact hidden return/despawn boundaries
-- production OPSTRANSPORT workflow for OP reinforcement/resupply
+WH_BLUE_GND_JOYCE
+  STATIC / HESCO_generator
+
+TPL_BLUE_GND_PATROL_MATV_4
+  late activated
+  4 x CHAP_MATV
+
+ZON_BLUE_GND_JOYCE_ACCESS
+  radius 152.4 m
+
+ZON_BLUE_GND_JOYCE_PATROL_TEST_01
+  radius 182.88 m
+
+ACCESS -> PATROL_TEST_01
+  ~9.45 km center distance
 ```
 
-Diese Punkte hängen teilweise von Owner-Entscheidungen und teilweise von DCS-Laufzeitverhalten ab.
+Staged runtime:
 
-## 8. Nächste Acceptance-Schritte
+```text
+mission/tests/army-ground-foundation/src/01-army-ground-acceptance-1.lua
+tools/build-army-ground-acceptance-1.ps1
+BuilderVersion: ARMY-GROUND-ACCEPTANCE-1-1
+```
 
-Vor produktiver Runtime-Implementierung sind mindestens erforderlich:
+Der Harness prüft:
 
-1. einen minimalen BRIGADE/PLATOON-Selektionsversuch mit zwei unterschiedlich begrenzten Rollen bauen;
-2. Mission Capability und Range einschließlich eines AUFTRAG mit eigener `engageRange` prüfen;
-3. eine Ground-Mission mit `AUFTRAG:SetReturnToLegion(false)` beenden und verifizieren, dass die ARMYGROUP physisch an der aktuellen Position bestehen bleibt;
-4. anschließend derselben Feldgruppe einen Folgeauftrag geben und prüfen, dass keine unbeabsichtigte Re-Materialisierung oder Warehouse-Dublette entsteht;
-5. mobile ARMYGROUP-Rückkehr auf einer validierten Route bis zu einer **nicht beobachtbaren** Return Zone prüfen und dort `Returned -> __AddAsset -> WAREHOUSE:onafterAddAsset` beobachten;
-6. immobile RTZ bewusst **nicht** verwenden;
-7. OPSTRANSPORT mit einem Ground-Carrier und vorgegebenem `AddPathTransport`-Pfad prüfen;
-8. Embark/Load/Unload/Disembark einschließlich `_Respawn(...)` auf sichtbare Sprünge, Aktivierungszustand und Multiplayer-Synchronität beobachten;
-9. Restart/Reconstitution für im Feld verbleibende Gruppen separat definieren und testen;
-10. erst danach die konkrete Node-/PLATOON-Topologie festlegen und Runtime-Code produzieren.
+```text
+BRIGADE start
+-> one post-start PATROLZONE-capable PLATOON asset
+-> PATROLZONE mission 1
+-> SetReturnToLegion(false)
+-> AUFTRAG __Cancel
+-> MissionDone
+-> ARMYGROUP still alive
+-> PATROLZONE mission 2
+-> same ARMYGROUP reused
+-> no duplicate materialization
+```
+
+Die Testmission-Geometrie ist nur ein Struktur-PASS. Road-/Terrain-Pathfinding, tatsächliches MissionDone-Verhalten und Same-Group-Reuse sind **nicht** validiert, bis der reale DCS-Lauf mit vollständiger Hashprovenienz vorliegt.
+
+## 8. Acceptance-Reihenfolge nach Acceptance 1
+
+Wenn Acceptance 1 bestanden ist, folgt schrittweise:
+
+```text
+1. PLATOON capability/range selection refinement
+2. mobile return/handoff to a non-observable Warehouse boundary
+3. QRF
+4. logistics/resupply
+5. OPSTRANSPORT / OP reinforcement if retained
+6. Honaker artillery
+7. restart/reconstitution
+8. multi-node / multiplayer integration
+```
 
 ## 9. Architekturgrenze
 
-CampaignState entscheidet über strategischen Bestand, verfügbare Ressourcen, Auftragsfreigabe und strategische Folgen. MOOSE führt die operative Auswahl, physische Gruppen und deren FSM aus.
+CampaignState entscheidet über strategischen Bestand, Ressourcenreservierung und strategische Folgen. MOOSE führt operative Auswahl, Materialisierung, Mission und FSM aus.
 
-Eigene Watchguard-, Routing-, Scheduler-, Transport- oder Reconstitution-Logik darf erst nach dokumentierter MOOSE-Lücke und ausdrücklicher Projektinhaberfreigabe produktiv werden.
+Eigene Watchguard-, Routing-, Transport- oder Reconstitution-Logik darf erst nach dokumentierter MOOSE-Lücke und ausdrücklicher Projektinhaberfreigabe produktiv werden.
