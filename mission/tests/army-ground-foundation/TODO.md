@@ -31,19 +31,8 @@ FOB Wright / Asadabad
 FOB Bostick / OP Mustang / OP Clydesdale / OP Stallion
 ```
 
-Salerno/Khost und Camp Fiaz sind für diesen Arbeitsstrang nicht Teil des aktiven Ground-Spielfelds.
-
-Verbindlicher Recherche-/Kampagnenzeitraum:
-
-```text
-01.08.2010–31.12.2011
-```
-
-Aktive Ground-ORBAT-Arbeitsbaseline:
-
-```text
-JULY 2011
-```
+Verbindlicher Recherche-/Kampagnenzeitraum: `01.08.2010–31.12.2011`.
+Aktive Ground-ORBAT-Arbeitsbaseline: `JULY 2011`.
 
 ## 2. Historische und operative Baseline
 
@@ -165,15 +154,6 @@ CRITICAL      > 0% and < 35%
 UNAVAILABLE   = 0% or required action minimum cannot be met
 ```
 
-Protected local defense reserves:
-
-```text
-Jalalabad  PERSONNEL 120 | VEHICLE 10 | AMMO 25 | FUEL 20
-Joyce      PERSONNEL  48 | VEHICLE  4 | AMMO 12 | FUEL  8
-Wright     PERSONNEL  36 | VEHICLE  4 | AMMO 10 | FUEL  8
-Bostick    PERSONNEL  60 | VEHICLE  5 | AMMO 14 | FUEL 10
-```
-
 ## 6. Settlement- und Autoritätsvertrag
 
 ```text
@@ -201,20 +181,7 @@ LIVE-SESSION FIELD-PERSISTENT ASSET
 CROSS-SESSION RECONSTITUTION
 ```
 
-Für live-session field persistence ist `AUFTRAG:SetReturnToLegion(false)` der primäre MOOSE-first Testpfad.
-
-Cross-session reconstitution bleibt nicht akzeptiert, bis Identität, Dublettenfreiheit und nicht beobachtbare Materialisierung in DCS geprüft sind. `BRIGADE:LoadBackAssetInPosition(...)` ist daher kein automatisch freigegebener Produktionspfad.
-
-Root-node ACCESS zones:
-
-```text
-ZON_BLUE_GND_JALALABAD_ACCESS
-ZON_BLUE_GND_JOYCE_ACCESS
-ZON_BLUE_GND_WRIGHT_ACCESS
-ZON_BLUE_GND_BOSTICK_ACCESS
-```
-
-Regel: außerhalb der Installation, road-side, genügend Platz, möglichst nicht beobachtbar, gemeinsamer Materialization-/Return-/Handoff-Bereich.
+Für live-session field persistence ist `AUFTRAG:SetReturnToLegion(false)` der primäre MOOSE-first Testpfad. Cross-session reconstitution bleibt nicht akzeptiert.
 
 ## 8. Phasenstatus
 
@@ -247,10 +214,9 @@ Regel: außerhalb der Installation, road-side, genügend Platz, möglichst nicht
 - [x] vier operative MOOSE-BRIGADEs als Planned Foundation-Topologie festgelegt.
 - [x] konkrete Fahrzeug-Rollenallokation pro Node festgelegt.
 - [x] konkrete PLATOON-Namen, Templates und `Ngroups` pro Node festgelegt.
-- [x] Utility-/Command-Fahrzeuge nicht automatisch zu Missions-PLATOONs gemacht.
-- [x] Honaker Fixed Fire Support von dynamischer Warehouse-Materialisierung getrennt.
 - [x] Restart/Reconstitution-Vertrag definiert; Runtime-Acceptance offen.
-- [x] ACCESS-/Road-/Return-Handoff-Vertrag definiert; konkrete ME-Positionen offen.
+- [x] ACCESS-/Road-/Return-Handoff-Vertrag definiert.
+- [x] `WAREHOUSE:SetSpawnZone`, `COHORT:CountAssets`, `AUFTRAG:__Cancel` für Acceptance 1 gegen gepinnten Source geprüft.
 - [ ] DCS-Test: PLATOON Mission-Capability-/Asset-Selektion.
 - [ ] DCS-Test: `SetReturnToLegion(false)` Mission-Ende -> physical stay -> Folgeauftrag.
 - [ ] DCS-Test: mobile Return-/Handoff-Grenze und Warehouse-Rückgabe.
@@ -270,47 +236,57 @@ Regel: außerhalb der Installation, road-side, genügend Platz, möglichst nicht
 
 ### Phase E – Mission Editor Foundation
 
-- [ ] Projektinhaber erstellt/finalisiert die benötigten physischen Templates und Installationen in der `.miz`.
+- [ ] Projektinhaber erstellt/finalisiert die vollständigen physischen Templates und Installationen in der Production-`.miz`.
 - [ ] Wright-Aufbau abschließen.
 - [ ] Bostick-Aufbau abschließen.
-- [ ] `ZON_BLUE_GND_<NODE>_ACCESS` je Root Node platzieren.
-- [ ] Road Anchors / validierte Routen / Return-Handoff-Grenzen festlegen.
-- [ ] geplante Ground-Templates im Mission Editor erzeugen.
-- [ ] Acceptance-1-Prerequisites auf Joyce erzeugen: `WH_BLUE_GND_JOYCE`, `TPL_BLUE_GND_PATROL_MATV_4`, `ZON_BLUE_GND_JOYCE_ACCESS`, `ZON_BLUE_GND_JOYCE_PATROL_TEST_01`.
+- [ ] Root-Node ACCESS-Zonen und validierte Routen für den Production-Scope vervollständigen.
+- [x] Acceptance-1-Prerequisites auf Joyce in `OMW_Template_v13_ground_test.miz` erstellt.
+- [x] Read-only Objektvertrag gegen exakten v13-Hash geprüft: Warehouse host, 4x CHAP_MATV late-activated template, ACCESS zone und PATROL_TEST_01 vorhanden.
+- [ ] Acceptance-1-Testbundle nach lokalem Build in die Owner-MIZ einbinden und MIZ-/Embedded-Hashkette neu prüfen.
 
 ### Phase F – Runtime und Acceptance
 
 - [x] Acceptance-1-Testplan erstellt: [`OMW-TEST-ARMY-GROUND-ACCEPTANCE-1`](ACCEPTANCE-1.md).
-- [ ] nach Vorliegen der Acceptance-1-ME-Prerequisites kleinste Test-Runtime implementieren.
-- [ ] Lua-Syntax/Tests und Dokumentationsvalidator ausführen.
+- [x] kleinste Acceptance-1-Test-Runtime implementiert: `src/01-army-ground-acceptance-1.lua`.
+- [x] deterministischer PowerShell-Builder erstellt: `tools/build-army-ground-acceptance-1.ps1`.
+- [x] MOOSE-first Source-Review für die im Harness verwendeten Ground-Pfade aktualisiert.
+- [ ] lokaler Builder-Lauf und Bundle-SHA-256 erfassen.
+- [ ] Dokumentationsvalidator/Lua-Syntaxprüfung im lokalen Repository ausführen, soweit Werkzeuge vorhanden.
+- [ ] Bundle in Test-MIZ nach Moose.lua einbinden; finalen MIZ-, internal-mission-, embedded-Bundle- und embedded-Moose-Hash erfassen.
 - [ ] Acceptance 1 real in DCS ausführen.
+- [ ] dcs.log-Marker und visuelle Beobachtung zu Pathfinding, MissionDone, Persistenz und Dublettenfreiheit auswerten.
 - [ ] danach Patrol/QRF/Logistics/OP-Reinforcement stufenweise testen.
-- [ ] Ground-AI-Pathfinding und Return/Recovery-Verhalten testen.
-- [ ] M978 und L118-Proxy technisch testen.
-- [ ] Settlement/duplicate-event resistance testen.
-- [ ] Multiplayer-/Spawn-/Despawn-Sichtbarkeit testen.
-- [ ] erst nach dokumentiertem DCS-Test `VALIDATED` setzen.
+- [ ] erst nach dokumentiertem DCS-Test betroffene Ground-Methoden/Klassen als `VALIDATED` markieren.
 
-## 9. Nächster konkreter Gate
+## 9. Aktueller Gate
 
-Die Architekturvorbereitung für den ersten Ground-Runtime-Test ist jetzt abgeschlossen.
-
-Der nächste Schritt ist eine Owner-Mission-Editor-Änderung für Joyce:
+Die Owner-Testmission und der Remote-Testcode liegen jetzt vor.
 
 ```text
-WH_BLUE_GND_JOYCE
-TPL_BLUE_GND_PATROL_MATV_4
-ZON_BLUE_GND_JOYCE_ACCESS
-ZON_BLUE_GND_JOYCE_PATROL_TEST_01
+Owner mission:
+OMW_Template_v13_ground_test.miz
+pre-embed MIZ SHA-256:
+6d12a55affc971de1de4d5e463c956fcb2e08a0d2de478ff13419747a825e7e8
+
+remote source:
+mission/tests/army-ground-foundation/src/01-army-ground-acceptance-1.lua
+
+builder:
+tools/build-army-ground-acceptance-1.ps1
+
+BuilderVersion:
+ARMY-GROUND-ACCEPTANCE-1-1
 ```
 
-Danach:
+Nächster Gate:
 
 ```text
-owner returns exact mission artifact/hash
--> ChatGPT builds smallest Acceptance-1 runtime on the remote branch
--> owner pulls/builds/hashes locally
+owner git pull
+-> local builder / hash
+-> owner embeds generated bundle in test .miz after Moose.lua
+-> re-hash final MIZ and embedded resources
 -> real DCS Acceptance 1
+-> return real console/log/hash evidence
 ```
 
 ChatGPT verändert keine `.miz`.
