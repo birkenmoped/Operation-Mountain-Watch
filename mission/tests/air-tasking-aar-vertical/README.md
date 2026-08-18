@@ -6,7 +6,7 @@ owning_policy: OMW-GOV-001
 authoritative_for:
   - branch-local test scope for the first Air Tasking to AAR vertical integration
   - expected pure-Lua bridge behavior before DCS integration
-  - exact local vertical-base build evidence for the documented commit
+  - exact local vertical-base and acceptance-bundle build evidence for the documented commit
 not_authoritative_for:
   - DCS runtime acceptance
   - Acceptance-7 replacement
@@ -86,20 +86,23 @@ AIR_TASKING_AAR_BRIDGE_TEST_PASS
 
 Diese Fixture ist weiterhin nicht als ausgefuehrter Test markiert, weil fuer den dokumentierten Remote-Schritt kein Lua-/luac-Interpreter als belastbare Testumgebung vorlag.
 
-## 4. Lokal bestaetigter Vertical-Base-Build
+## 4. Lokal bestaetigter Vertical-/Acceptance-Build
 
-Der Projektinhaber hat den Builder lokal auf dem exakten Branch-Stand ausgefuehrt.
+Der Projektinhaber hat den Vertical-Base- und Acceptance-Builder lokal auf dem exakten Branch-Stand ausgefuehrt.
 
 ```text
 Testdatum: 2026-08-18
 Branch: agent/air-tasking-plan-foundation
-Commit: 1fc0c83527387e01e8838be96b8046d026421ea0
-Builder: tools/build-air-tasking-aar-vertical-base.ps1
-BuilderVersion: OMW-AIR-TASKING-AAR-VERTICAL-BASE-1
+Commit: 3aea46a1cbfa1f62136bd932f0f48e67d332d680
+Base Builder: tools/build-air-tasking-aar-vertical-base.ps1
+Base BuilderVersion: OMW-AIR-TASKING-AAR-VERTICAL-BASE-1
+Acceptance Builder: tools/build-air-tasking-aar-vertical-acceptance.ps1
+Acceptance BuilderVersion: OMW-AIR-TASKING-AAR-VERTICAL-ACCEPTANCE-1
+Acceptance TestId: AIR-TASKING-AAR-VERTICAL-1
 Result: PASS
 ```
 
-Der vorgeschaltete AAR-Produktionsgate meldete dabei:
+Der vorgeschaltete AAR-Produktionsgate meldete dabei unter anderem:
 
 ```text
 AAR production finalization source gate: PASS
@@ -118,7 +121,7 @@ MissionDemandClosesReserveAfterLastDemand: true
 MaxAircraftPerTrack: 2
 ```
 
-Reale lokale SHA-256-Evidenz:
+Reale lokale SHA-256-Evidenz am Commit `3aea46a1cbfa1f62136bd932f0f48e67d332d680`:
 
 ```text
 MOOSE commit:
@@ -158,10 +161,16 @@ AirTaskingBootstrap:
 615e3a39157a0059d010218b61474ee1763332da690ce7ab9d01da648ed3da5e
 
 Vertical Base Bundle:
-1444dcd71b4ce475cd21e004e83460796c9fcd122c6724d59f0aea73b911e384
+87ba3dcae93c242090502d6176ff6e0308ada7392e6e78578862fadf55c4a17a
+
+Acceptance Harness:
+fa6432d20aa17cd3af3aa006f4030f6dbbe6d6c9d585e6fbd81e645de6e32006
+
+Acceptance Bundle:
+42bb4846be27ae2cff4d6f2634ebca6ff7d0628de7541071bb38ff2d940e7079
 ```
 
-`Get-FileHash` bestaetigte denselben Bundle-Hash unabhaengig vom Builder-Output. Dieser Nachweis ist ein lokaler deterministischer Build-Nachweis, **kein DCS-Runtime-PASS**.
+`Get-FileHash` bestaetigte sowohl den Vertical-Base-Hash als auch den Acceptance-Bundle-Hash unabhaengig vom Builder-Output. Dieser Nachweis ist ein lokaler deterministischer Build-Nachweis, **kein DCS-Runtime-PASS**.
 
 ## 5. DCS Vertical Acceptance
 
@@ -210,6 +219,6 @@ RESULT PASS
 
 ## 6. Evidence boundary
 
-Der lokale Vertical-Base-Build ist bestaetigt. Der DCS-Vertical-Acceptance-Lauf ist noch nicht erfolgt.
+Der lokale Vertical-Base-/Acceptance-Build fuer Commit `3aea46a1cbfa1f62136bd932f0f48e67d332d680` ist bestaetigt. Der DCS-Vertical-Acceptance-Lauf ist noch nicht erfolgt.
 
 Gate 3 darf erst nach einem realen DCS-Lauf mit dokumentierter Mission, Missions-Hash, Bundle-Hash, Branch/Commit, DCS-Version, eingebetteter MOOSE-Version/Hash sowie den erforderlichen Logs auf PASS gesetzt werden.
