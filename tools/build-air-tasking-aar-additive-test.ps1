@@ -11,7 +11,7 @@ $harnessFile = Join-Path $repoRoot 'mission\tests\air-tasking-aar-vertical\src\0
 $distDir = Join-Path $repoRoot 'mission\tests\air-tasking-aar-vertical\dist'
 $outputFile = Join-Path $distDir 'OMW_AirTasking_AAR_Vertical_Test.lua'
 
-$builderVersion = 'OMW-AIR-TASKING-AAR-ADDITIVE-TEST-1'
+$builderVersion = 'OMW-AIR-TASKING-AAR-ADDITIVE-TEST-2'
 $testId = 'AIR-TASKING-AAR-VERTICAL-2'
 $mooseCommit = '73d3ed119cd9e7e3f2cfcabbaa34513d30529b54'
 $mooseSha256 = 'e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915'
@@ -27,10 +27,11 @@ $bootstrap = Get-Content -LiteralPath $bootstrapFile -Raw -Encoding UTF8
 $harness = Get-Content -LiteralPath $harnessFile -Raw -Encoding UTF8
 
 $requiredMarkers = @(
-  @{ Text = $bootstrap; Marker = 'OMW-AIR-TASKING-AAR-BOOTSTRAP-2' },
+  @{ Text = $bootstrap; Marker = 'OMW-AIR-TASKING-AAR-BOOTSTRAP-3' },
   @{ Text = $bootstrap; Marker = 'spec.aarFacade must already be RUNNING' },
-  @{ Text = $bootstrap; Marker = 'AIR_TASKING_AAR_ADDITIVE' },
-  @{ Text = $bootstrap; Marker = 'adapterRecreated=false' },
+  @{ Text = $bootstrap; Marker = 'GetStation' },
+  @{ Text = $bootstrap; Marker = 'MOOSE SCHEDULER is unavailable' },
+  @{ Text = $bootstrap; Marker = 'adapterRecreated=false adapterMutated=false' },
   @{ Text = $bridge; Marker = 'function Bridge:SubmitApprovedAAR' },
   @{ Text = $bridge; Marker = 'function Bridge:EndAAR' },
   @{ Text = $harness; Marker = 'AIR-TASKING-AAR-VERTICAL-2' },
@@ -62,7 +63,11 @@ $forbiddenPatterns = @(
   'MIST',
   'UNIT:Explode',
   'TestForceEgress',
-  'runtime\.trackCoord\s*='
+  'runtime\.trackCoord\s*=',
+  'adapter\.OnMaterialized\s*=',
+  'adapter\.OnHandoff\s*=',
+  'adapter\.OnLost\s*=',
+  'SetStrategicAdapter\s*\('
 )
 
 foreach ($pattern in $forbiddenPatterns) {
@@ -90,8 +95,9 @@ $header = @"
 -- SourceCommitUtc: $sourceCommitUtc
 -- TestId: $testId
 -- Scope: additive Air Tasking attachment to an already running accepted AAR base.
--- Existing AAR base/controller/adapter are not embedded, recreated or replaced.
+-- Existing AAR base/controller/adapter are not embedded, recreated, replaced or mutated.
 -- The test waits for OMW.AirOps.AAR.Status == RUNNING before attaching.
+-- Air Tasking observes controller-exposed runtime state with MOOSE SCHEDULER at bounded cadence.
 -- No automated MIZ mutation.
 -- MOOSE-Commit: $mooseCommit
 -- Moose.lua-SHA256: $mooseSha256
@@ -119,6 +125,9 @@ Write-Host 'MizMutation: false'
 Write-Host 'ExistingAARBaseEmbedded: false'
 Write-Host 'ExistingAARBaseRecreated: false'
 Write-Host 'ExistingAARAdapterRecreated: false'
+Write-Host 'ExistingAARAdapterMutated: false'
+Write-Host 'RuntimeObservation: CONTROLLER_GETSTATION_PLUS_MOOSE_SCHEDULER'
+Write-Host 'ObserverIntervalSec: 5'
 Write-Host 'WaitsForExistingAARFacade: true'
 Write-Host 'MissionEditorAdditionalScriptRequired: true'
 Write-Host 'InsertFileName: OMW_AirTasking_AAR_Vertical_Test.lua'
