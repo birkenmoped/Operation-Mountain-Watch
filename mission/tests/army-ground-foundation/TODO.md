@@ -353,7 +353,8 @@ Wichtige bereits ausgewertete Referenzen:
 
 - `OMW-HIST-AFGHANISTAN-ORBAT-2011-07` für die Juli-2011-Kampfverbände;
 - [`OMW-EVIDENCE-ARMY-GROUND-2011-07-UNIT-RECONCILIATION`](../../docs/evidence/2026-08-18-army-ground-july-2011-unit-reconciliation.md) für die aktuelle Jalalabad-/Joyce-/Bostick-/Wright-Company-/Platoon-Reconciliation;
-- [`OMW-ARMY-GROUND-DOMAIN-CONTRACT`](../../docs/ground/ARMY-GROUND-FOUNDATION-DOMAIN-CONTRACT.md) für stabile Installations-IDs, Parent-Beziehungen, Formation-Assignments und Parent-bound Occupancy Reservations der aktuellen Ground-Foundation;
+- [`OMW-ARMY-GROUND-DOMAIN-CONTRACT`](../../docs/ground/ARMY-GROUND-FOUNDATION-DOMAIN-CONTRACT.md) für stabile Installations-IDs, Parent-Beziehungen und Formation-Assignments der aktuellen Ground-Foundation;
+- [`OMW-ARMY-GROUND-RESOURCE-READINESS-CONTRACT`](../../docs/ground/ARMY-GROUND-RESOURCE-READINESS-CONTRACT.md) für Resource-Class-Verträge und Readiness-/Nachschubverlust-Semantik der aktuellen Ground Nodes;
 - DoD `Wright and vicinity, Afghanistan (2003-2014)` POEMS für reale Standortnamen und Infrastrukturhinweise;
 - U.S. Army Combat Studies Institute, `Vanguard of Valor: Small Unit Actions in Afghanistan` für Kunar-/Nuristan-Operations-, OP-, QRF-, Logistik- und Fire-Support-Kontext;
 - DVIDS-Primärquellen zu Bostick, Joyce, Honaker-Miracle und Wright;
@@ -419,15 +420,16 @@ Sekundärquellen dienen als Research Index und überschreiben keine Primärquell
 
 - [x] stabile Installation-IDs für den aktuellen Ground-Foundation-Scope definiert; `OP JoJo` besitzt nur eine reservierte Identität und bleibt hinsichtlich Aktivierung provisional.
 - [x] Parent-Beziehungen und aktuell belastbare Formation Assignments ohne Ableitung unbelegter Company-/Platoon-Stärken abgebildet.
-- [ ] Personnel/Vehicle/Supply/Ammo/Fuel-Verträge je Ground Node definieren.
-- [x] OP-/abhängige COP-Besatzung als idempotente Ressourcenreservierung des Parent-Nodes modelliert; Mengen bleiben bewusst offen.
-- [ ] Nachschubverlust -> Readiness/Patrol/QRF/Defense-Auswirkungen definieren.
+- [x] Personnel/Vehicle/Supply/Ammo/Fuel-Verträge je Root Ground Node auf Resource-Class-/Capability-Ebene definiert; exakte Mengen und numerische Schwellen bleiben Owner-Gates.
+- [x] OP-/abhängige COP-Besatzung als Ressourcenbindung des Parent-Nodes modelliert; Release/Loss nur über bestätigtes CampaignState-Settlement.
+- [x] Nachschubverlust -> Readiness/Patrol/QRF/Defense-/Child-Support-/Fire-Support-Auswirkungen auf Contract-Ebene definiert; numerische Schwellen bleiben offen.
 - [ ] Installationsangriff -> physischer Schaden -> CampaignState-Settlement definieren.
 - [ ] keine doppelte Ressourcenhoheit zwischen CampaignState und MOOSE WAREHOUSE zulassen.
 
-Domain-Baseline:
+Domain-Baselines:
 
 - [`OMW-ARMY-GROUND-DOMAIN-CONTRACT`](../../docs/ground/ARMY-GROUND-FOUNDATION-DOMAIN-CONTRACT.md)
+- [`OMW-ARMY-GROUND-RESOURCE-READINESS-CONTRACT`](../../docs/ground/ARMY-GROUND-RESOURCE-READINESS-CONTRACT.md)
 
 ### Phase E – Mission Editor Foundation
 
@@ -462,7 +464,6 @@ Bereits beschlossen:
 - active OPs consume parent-node personnel/resources
 - active attackable installations require credible physical representation
 - strategic installation identity is independent of formation, MOOSE pool and DCS group names
-- dependent OP/COP occupancy reserves parent resources and does not create a second resource pool
 ```
 
 Source-seitig zusätzlich geklärt, aber noch nicht als DCS-Runtime akzeptiert:
@@ -494,5 +495,6 @@ Noch nicht beschlossen:
 - final artillery proxy decisions where DCS lacks the historical system
 - restart/reconstitution contract for persistent field groups
 - exact ground-node resource quantities and readiness thresholds
+- exact Patrol/QRF/Child-Occupancy/Fire-Support action costs
 - runtime implementation details and acceptance criteria
 ```
