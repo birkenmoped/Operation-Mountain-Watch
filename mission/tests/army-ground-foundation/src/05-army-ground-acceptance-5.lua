@@ -37,6 +37,11 @@ local sites = {
   },
 }
 
+-- Forward declarations are required because the CampaignState adapter is defined
+-- before the shared A5 helpers and must not bind MOOSE's global log table.
+local log
+local fail
+
 local TEST_NODE_ID = "TEST_BLUE_GROUND_FENTY"
 local TEST_RESOURCE_ID = "TEST_VEHICLE_WHEELED"
 local TEST_RESOURCE_QUANTITY = 4
@@ -151,11 +156,11 @@ local global = {
   armyGroupOwners = {},
 }
 
-local function log(message)
+log = function(message)
   env.info(TAG .. " " .. tostring(message), false)
 end
 
-local function fail(site, reason)
+fail = function(site, reason)
   if site then
     site.failed = true
   end
