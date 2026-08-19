@@ -174,7 +174,7 @@ remaining observation after MissionDone: about 3:47 hours
 observed: no Returned, no Warehouse AddAsset, no runtime pass
 ```
 
-The former two-second delay issued `RTZ(...)` before the associated `AUFTRAG` had completed its evaluator path. The correction keeps the same public `ARMYGROUP:RTZ(...)` lifecycle and the same single Fenty ACCESS marker, but waits 30 mission seconds before RTZ and proves the `Returning` FSM state with one progress checkpoint. A one-shot 900-second mission-time timeout converts a missing return into an explicit failure; it is not a strategic or production timeout.
+The log shows the `AUFTRAG` evaluator output after the former two-second RTZ issue; the log alone does not prove the exact internal overwrite point. The correction therefore removes that observable ordering overlap: it keeps the same public `ARMYGROUP:RTZ(...)` lifecycle and the same single Fenty ACCESS marker, waits 30 mission seconds before RTZ, and proves the `Returning` FSM state with one progress checkpoint. A one-shot 900-second mission-time timeout converts a missing return into an explicit failure; it is not a strategic or production timeout.
 
 This correction is `DCS_PENDING`; it does not claim that the return succeeds until the revised bundle is embedded and executed in DCS.
 
