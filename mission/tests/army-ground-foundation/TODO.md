@@ -307,3 +307,17 @@ remote branch pull
 ```
 
 Kein lokaler Build, Hash oder DCS-Verhalten wird bis dahin angenommen oder simuliert.
+
+## Addendum 2026-08-19 – freigegebene Road-aligned-Warehouse-Ausnahme
+
+Der Projektinhaber hat am 19.08.2026 die eng begrenzte interne MOOSE-Ausnahme freigegeben:
+
+~~~text
+TM01M-Straßenpositions-/Heading-Berechnung
+-> pro BRIGADE-Instanz Adapter an WAREHOUSE:_SpawnAssetGroundNaval(...)
+-> unveränderte WAREHOUSE-Assetreservation und BRIGADE-/PLATOON-/ARMYGROUP-/AUFTRAG-Lifecycle
+~~~
+
+Sie ersetzt weder `BRIGADE:AddMission(...)` noch Warehouse-Materialisierung und schafft keine strategische Ressourcenautorität. Gültig nur mit dem gepinnten MOOSE-Stand und bis zum DCS-Regressionstest als `SOURCE_REVIEWED_EXCEPTION_APPROVED_DCS_PENDING`.
+
+Zusätzlich im Acceptance-3-Lauf prüfen: vier M-ATV je Domain road-aligned, Marschreihenfolge und Fahrtrichtung; keine Static-/Scenery-Kollision am Materialisierungspunkt; weiterhin genau eine Warehouse-Materialisierung und derselbe ARMYGROUP über Mission 1/2.
