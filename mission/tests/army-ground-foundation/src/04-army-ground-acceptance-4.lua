@@ -3,13 +3,18 @@
 -- Reuses the owner-approved, version-pinned Acceptance-3 road-aligned Warehouse
 -- materialization adapter. The return itself uses public ARMYGROUP:RTZ(...).
 
-local TEST_ID = "ARMY-GROUND-ACCEPTANCE-4-1"
+local TEST_ID = "ARMY-GROUND-ACCEPTANCE-4-2"
 local TAG = "OMW_GND_A4"
 local TEMPLATE_NAME = "TPL_BLUE_GND_PATROL_MATV_4"
 
 local POST_START_DELAY_SEC = 5
 local APPROACH_HOLD_SEC = 10
-local RETURN_DELAY_SEC = 2
+-- The AUFTRAG evaluator continues after the group MissionDone callback.
+-- Keep the public RTZ event outside that completion window so its route is not
+-- superseded by the finishing mission lifecycle.
+local RETURN_SETTLEMENT_DELAY_SEC = 30
+local RETURN_PROGRESS_CHECK_DELAY_SEC = 5
+local RETURN_PROGRESS_TIMEOUT_SEC = 900
 local WAREHOUSE_RETURN_DELAY_SEC = 10
 local POST_RETURN_VERIFY_DELAY_SEC = WAREHOUSE_RETURN_DELAY_SEC + 5
 local APPROACH_STANDOFF_M = 1500
@@ -275,6 +280,8 @@ local function prepareSite(site, templateGroup)
   site.returnedCount = 0
   site.addAssetCount = 0
   site.returnIssued = false
+  site.rtzCount = 0
+  site.returnProgressObserved = false
   site.passed = false
   site.firstArmyGroup = nil
   site.firstArmyGroupName = nil
@@ -383,10 +390,38 @@ local function issueReturn(site)
   end
   site.returnIssued = true
   armyGroup:RTZ(site.accessZoneObject, ENUMS.Formation.Vehicle.OnRoad)
-  log("RETURN_TO_HANDOFF_QUEUED site=" .. site.id
+  if not armyGroup:IsReturning() then
+    fail(site, "RETURN_RTZ_NOT_ACCEPTED state=" .. tostring(armyGroup:GetState()))
+    return
+  end
+  log("RETURN_RTZ_ISSUED site=" .. site.id
     .. " group=" .. site.firstArmyGroupName
     .. " zone=" .. site.accessZone
-    .. " formation=OnRoad")
+    .. " formation=OnRoad"
+    .. " state=" .. tostring(armyGroup:GetState()))
+
+  SCHEDULER:New(nil, function()
+    if global.failed or site.failed or site.returnedCount > 0 then
+      return
+    end
+    if not armyGroup:IsReturning() then
+      fail(site, "RETURN_STATE_LOST state=" .. tostring(armyGroup:GetState()))
+      return
+    end
+    site.returnProgressObserved = true
+    log("RETURN_IN_PROGRESS site=" .. site.id
+      .. " group=" .. site.firstArmyGroupName
+      .. " state=" .. tostring(armyGroup:GetState()))
+  end, {}, RETURN_PROGRESS_CHECK_DELAY_SEC)
+
+  SCHEDULER:New(nil, function()
+    if global.failed or site.failed or site.returnedCount > 0 then
+      return
+    end
+    fail(site, "RETURN_TIMEOUT seconds=" .. tostring(RETURN_PROGRESS_TIMEOUT_SEC)
+      .. " state=" .. tostring(armyGroup:GetState())
+      .. " progressObserved=" .. tostring(site.returnProgressObserved))
+  end, {}, RETURN_PROGRESS_TIMEOUT_SEC)
 end
 
 local function attachArmyGroupCallbacks(site, armyGroup)
@@ -421,8 +456,33 @@ local function attachArmyGroupCallbacks(site, armyGroup)
       fail(site, "GROUP_REMOVED_AFTER_MISSION1")
       return
     end
-    log("MISSION1_DONE site=" .. site.id .. " physicalGroupRetained=true")
-    SCHEDULER:New(nil, function() issueReturn(site) end, {}, RETURN_DELAY_SEC)
+    log("MISSION1_DONE site=" .. site.id
+      .. " physicalGroupRetained=true"
+      .. " returnSettlementDelaySec=" .. tostring(RETURN_SETTLEMENT_DELAY_SEC))
+    SCHEDULER:New(nil, function() issueReturn(site) end, {}, RETURN_SETTLEMENT_DELAY_SEC)
+  end
+
+  function armyGroup:OnAfterRTZ(From, Event, To, Zone, Formation)
+    if global.failed or site.failed then
+      return
+    end
+    if Zone ~= site.accessZoneObject then
+      fail(site, "RETURN_RTZ_UNEXPECTED_ZONE")
+      return
+    end
+    if Formation ~= ENUMS.Formation.Vehicle.OnRoad then
+      fail(site, "RETURN_RTZ_UNEXPECTED_FORMATION")
+      return
+    end
+    site.rtzCount = site.rtzCount + 1
+    if site.rtzCount ~= 1 then
+      fail(site, "DUPLICATE_RTZ count=" .. tostring(site.rtzCount))
+      return
+    end
+    log("RETURN_RTZ_ACTIVE site=" .. site.id
+      .. " group=" .. site.firstArmyGroupName
+      .. " zone=" .. site.accessZone
+      .. " formation=OnRoad")
   end
 
   function armyGroup:OnAfterReturned(From, Event, To)
