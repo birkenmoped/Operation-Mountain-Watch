@@ -275,3 +275,10 @@ Status: INTERNAL_RESTRICTED / SOURCE_REVIEWED_EXCEPTION_APPROVED_DCS_PENDING
 ~~~
 
 `WAREHOUSE:SetSpawnZone(...)` genügt nicht für exakt road-aligned Einzelaufstellung. Der freigegebene Adapter übernimmt ausschließlich TM01M-Positionen/Headings in die vom Warehouse bereitete Spawn-Templatekopie. Assetreservation, Queue, `__AssetSpawned`, `OnAfterAssetSpawned`, `OnAfterArmyOnMission` und `ARMYGROUP`-/`AUFTRAG`-Lifecycle dürfen dadurch nicht umgangen werden. Ein DCS-Regressionstest muss sowohl sichtbare Straßenaufstellung als auch alle bisherigen sechs Domain-Lifecycle-Kriterien erneut belegen.
+
+## Addendum 2026-08-19 – Acceptance 4 return-handoff scope
+
+| Klasse | Status | Verwendung/Grenze |
+|---|---|---|
+| `ARMYGROUP` | `SOURCE_REVIEWED / DCS_PENDING` | Acceptance 4 nutzt den öffentlichen mobilen `RTZ(Zone, OnRoad)`-Pfad; keine Teleportverwendung |
+| `WAREHOUSE` / `LEGION` | `SOURCE_REVIEWED / DCS_PENDING` | `Returned -> __AddAsset(10) -> AddAsset -> physical group removal` wird als Fenty-Gate geprüft; operative Rückgabe ist keine strategische Ressourcenbuchung |
