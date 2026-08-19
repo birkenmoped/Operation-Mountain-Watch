@@ -36,7 +36,7 @@ Acceptance 4 prüft **ausschließlich** den Fenty-Rückgabe-Handoff einer durch 
 WAREHOUSE/BRIGADE materialization
 -> ARMOREDGUARD road approach
 -> MissionDone with physical group retained
--> public ARMYGROUP:RTZ(return handoff zone, OnRoad)
+-> public ARMYGROUP:RTZ(existing Fenty ACCESS zone, OnRoad)
 -> ARMYGROUP Returned
 -> existing MOOSE LEGION:__AddAsset(10, group, 1)
 -> WAREHOUSE AddAsset
@@ -103,24 +103,19 @@ TM01M-derived absolute unit positions/headings
 
 Sie betrifft nicht den Rückgabeweg. Der Rückgabeweg verwendet ausschließlich die öffentliche MOOSE-`ARMYGROUP:RTZ(...)`-API. Assetreservation, Request Queue, `OnAfterAssetSpawned`, `OnAfterArmyOnMission`, `AUFTRAG` und `ARMYGROUP` werden nicht umgangen.
 
-## 5. Owner Mission-Editor object contract
+## 5. Mission-Editor object contract
 
-Der Owner erstellt bzw. positioniert den folgenden Marker. ChatGPT verändert keine `.miz`.
+Acceptance 4 verwendet **keinen neuen Rückgabe-Marker**. Der bereits vorhandene Marker bleibt für Materialisierung, Start und Ankunft identisch:
 
 ```text
-ZON_BLUE_GND_FENTY_RETURN_HANDOFF_01
+ZON_BLUE_GND_FENTY_ACCESS
 ```
 
-Anforderungen:
+MOOSE erhält diese bestehende Zone sowohl über `WAREHOUSE:SetSpawnZone(...)` als auch über `ARMYGROUP:RTZ(..., OnRoad)`. ChatGPT verändert keine `.miz`.
 
-- benannte Triggerzone, die nach MOOSE als `ZONE:FindByName(...)` verfügbar ist;
-- auf bzw. unmittelbar an einem validen Straßenabschnitt für die Rückfahrt;
-- klein genug, dass MOOSE' zufälliger RTZ-Zielpunkt innerhalb der Zone noch durch denselben sicheren Rückgabeabschnitt abgedeckt ist;
-- außerhalb jeder für Spieler vernünftig beobachtbaren Rückgabe-/Despawn-Sichtlinie;
-- frei von Static-, Scenery- und Gebäudeüberlappung für die vier M-ATV;
-- keine neue permanente Fahrzeugmenge und keine zusätzliche Trigger-/Skriptlogik.
+Der Owner prüft ausschließlich, dass der vorhandene ACCESS-Marker weiterhin den road-aligned Spawn, die Rückkehr und die nicht beobachtbare physische Entfernung der vier M-ATV sicher abdeckt. Es entsteht weder eine neue permanente Fahrzeugmenge noch zusätzliche Trigger-/Skriptlogik.
 
-Vor DCS ist der gesamte geänderte MIZ-Stand erneut nach dem verbindlichen Artefaktworkflow zu hashen und gegen diesen Objektvertrag zu prüfen.
+Vor DCS ist der MIZ-Stand nach dem verbindlichen Artefaktworkflow zu hashen und gegen den bestehenden Objektvertrag zu prüfen.
 
 ## 6. Runtime-Kriterien
 
