@@ -422,3 +422,28 @@ tools/build-army-ground-acceptance-5.ps1
 A5 definiert weder einen Produktionsfahrzeugbestand noch ändert es `.miz`, den
 Fenty-48er-Bestand, einen bestehenden globalen CampaignState-Store oder die offenen
 Verlust-/Teilverlust-/Restart-Fragen. Der Owner bindet das gebaute Bundle manuell ein.
+
+
+## Addendum 2026-08-20 – Acceptance 6: ein kombinierter DCS-Gate
+
+Der nächste DCS-Lauf bündelt die offenen Rückgabe-/Verlustfälle:
+
+~~~text
+FENTY:  4 aus -> 4 zurück -> CampaignState-Testcredit 4
+JOYCE:  4 aus -> 3 zurück -> CampaignState-Testcredit 3
+WRIGHT: 4 aus -> 3 zurück, ein Rückkehrer beschädigt -> Testcredit 3
+~~~
+
+Der Test bleibt vollständig isoliert und ändert weder die Produktionsbaseline noch
+.miz. Zur Schadens- und Verlustinjektion verwendet er ausschließlich vorhandene
+MOOSE-Wrapper (UNIT:Destroy(false), UNIT:SetLife(50)); deren konkretes Zusammenspiel
+mit mobilem Ground-Return ist DCS-pending. Wartung/Reparatur ist ausgeschlossen:
+Alle Rückkehrer sind unmittelbar wieder verfügbar.
+
+Testplan: OMW-TEST-ARMY-GROUND-ACCEPTANCE-6, ACCEPTANCE-6.md
+
+Builder:
+
+~~~text
+tools/build-army-ground-acceptance-6.ps1
+~~~
