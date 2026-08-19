@@ -228,7 +228,7 @@ Zeitbeschleunigung darf verwendet werden, muss für die Provenienz angegeben wer
 Global:
 
 ```text
-OMW_GND_A3 START testId=ARMY-GROUND-ACCEPTANCE-3-1 sites=6
+OMW_GND_A3 START testId=ARMY-GROUND-ACCEPTANCE-3-2 sites=6
 OMW_GND_A3 RUNTIME_PASS_VISUAL_PENDING sites=6 passed=6
 ```
 
@@ -304,3 +304,29 @@ Moose.lua SHA-256 / commit
 relevant dcs.log markers
 owner visual observations
 ```
+
+## Addendum 2026-08-19 – Acceptance 3-2: road-aligned Warehouse-Spawn-Ausnahme
+
+Die öffentliche, gepinnte MOOSE-`WAREHOUSE`-API nimmt keine individuellen absoluten Unitpositionen oder Headings entgegen. Im tatsächlichen Source wählt `WAREHOUSE:_SpawnAssetGroundNaval(...)` sonst eine zufällige Koordinate in der Spawnzone und verschiebt das Template relativ dazu.
+
+Der Projektinhaber hat am **19.08.2026** die kleinstmögliche Ausnahme ausdrücklich genehmigt:
+
+~~~text
+pro BRIGADE-Instanz lokaler Adapter an WAREHOUSE:_SpawnAssetGroundNaval(...)
+TM01M-Positions-/Heading-Berechnung wiederverwenden
+keine direkte SPAWN-Materialisierung
+keine Änderung von Assetreservation, Warehouse-Request, AssetSpawned-/ArmyOnMission-Callbacks,
+ARMYGROUP-/AUFTRAG-Lifecycle oder CampaignState-Autorität
+~~~
+
+Der Adapter ist auf Ground-Assets der sechs Acceptance-3-Instanzen beschränkt. Er setzt die TM01M-berechneten Straßenpositionen (18 m Abstand, 20 m hinterer Freiraum, 10-m-Heading-Sample, höchstens 30 m Road-Snap) in die vom ursprünglichen Warehouse bereits vorbereitete Spawn-Templatekopie und führt danach genau einen internen DCS-Spawn aus. Andere Kategorien fallen in die originale MOOSE-Methode zurück.
+
+Status: `SOURCE_REVIEWED_EXCEPTION_APPROVED_DCS_PENDING`. Das ist weder eine allgemeine MOOSE-API noch eine Produktionsbaseline. Der DCS-Regressionstest muss zusätzlich zum bisherigen Lifecycle die road-aligned Aufstellung, Marschreihenfolge/Fahrtrichtung, fehlende Scenery-/Static-Kollisionen sowie unveränderte einmalige Warehouse-Materialisierung und denselben ARMYGROUP über Mission 1/2 belegen.
+
+Zusätzliche erwartete Marker:
+
+~~~text
+OMW_GND_A3 ROAD_ALIGNED_WAREHOUSE_SPAWN site=<SITE> units=4 leadDistanceM=74 maximumSnapM=<30
+~~~
+
+Zusätzlicher FAIL: privater Spawnadapter fehlt/ist unvereinbar, Road-Projektion liegt außerhalb ACCESS, Road-Snap > 30 m, Abstand < 8 m oder die sichtbare Aufstellung kollidiert mit Geometrie.
