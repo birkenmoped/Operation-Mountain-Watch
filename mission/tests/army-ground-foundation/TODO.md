@@ -335,3 +335,34 @@ Result: PASS / owner visual acceptance
 ~~~
 
 Sechs road-aligned Warehouse-Materialisierungen, dieselben ARMYGROUPs über Mission 1/2 und sechs stabile Zielhalte wurden real bestätigt. Die offene Arbeit bleibt auf Produktionsintegration, Ressourcenverträge, Rückgabe/Reconstitution und die ausdrücklich ausgeschlossenen Funktionsbereiche begrenzt.
+
+## Addendum 2026-08-19 – Acceptance 4 freigegeben und DCS-pending
+
+Der Projektinhaber hat die Entwicklung des Fenty-spezifischen Rückgabe-/Warehouse-Handoff-Gates freigegeben. Acceptance 4 verwendet keine neue Convoy- oder Ressourcenarchitektur:
+
+```text
+Acceptance-3-2 road-aligned Warehouse materialization
+-> ARMOREDGUARD / On Road / 27 kt
+-> MissionDone with SetReturnToLegion(false)
+-> public ARMYGROUP:RTZ(return handoff zone, OnRoad)
+-> Returned
+-> MOOSE LEGION:__AddAsset(10, group, 1)
+-> physical group removal after Warehouse AddAsset
+```
+
+Offen vor dem lokalen Build-/DCS-Gate:
+
+```text
+owner creates and validates:
+ZON_BLUE_GND_FENTY_RETURN_HANDOFF_01
+
+then:
+build Acceptance 4
+-> record actual bundle SHA-256
+-> owner embeds the bundle in the current .miz
+-> record final MIZ/internal mission/embedded resource hashes
+-> one real Fenty DCS return-handoff run
+-> assess logs and visual observations
+```
+
+Kein CampaignState-Settlement, keine Produktionsgutschrift, keine Reconstitution und keine .miz-Änderung durch ChatGPT sind Teil dieses Gates.
