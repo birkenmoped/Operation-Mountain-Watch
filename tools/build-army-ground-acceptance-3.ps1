@@ -9,8 +9,8 @@ $sourceFile = Join-Path $repoRoot 'mission\tests\army-ground-foundation\src\03-a
 $distDir = Join-Path $repoRoot 'mission\tests\army-ground-foundation\dist'
 $outputFile = Join-Path $distDir 'OMW_Army_Ground_Acceptance_3.lua'
 
-$builderVersion = 'ARMY-GROUND-ACCEPTANCE-3-1'
-$testId = 'ARMY-GROUND-ACCEPTANCE-3-1'
+$builderVersion = 'ARMY-GROUND-ACCEPTANCE-3-2'
+$testId = 'ARMY-GROUND-ACCEPTANCE-3-2'
 $mooseCommit = '73d3ed119cd9e7e3f2cfcabbaa34513d30529b54'
 $mooseSha256 = 'e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915'
 
@@ -21,7 +21,7 @@ if (-not (Test-Path -LiteralPath $sourceFile -PathType Leaf)) {
 $source = Get-Content -LiteralPath $sourceFile -Raw -Encoding UTF8
 
 $requiredMarkers = @(
-  'ARMY-GROUND-ACCEPTANCE-3-1',
+  'ARMY-GROUND-ACCEPTANCE-3-2',
   'WH_BLUE_GND_FENTY',
   'WH_BLUE_GND_FORTRESS',
   'WH_BLUE_GND_JOYCE',
@@ -65,7 +65,14 @@ $requiredMarkers = @(
   'SITE_RUNTIME_PASS',
   'RUNTIME_PASS_VISUAL_PENDING',
   'GROUP_CROSS_SITE_COLLISION',
-  'DUPLICATE_GROUP'
+  'DUPLICATE_GROUP',
+  'ROAD_ALIGNED_WAREHOUSE_SPAWN',
+  '_SpawnAssetGroundNaval',
+  '_SpawnAssetPrepareTemplate',
+  'GetPathOnRoad',
+  'GetInitialSize',
+  'ROAD_SPAWN_VEHICLE_SPACING_M = 18',
+  'ROAD_SPAWN_MAX_SNAP_M = 30'
 )
 foreach ($marker in $requiredMarkers) {
   if (-not $source.Contains($marker)) {
@@ -77,7 +84,6 @@ $forbiddenPatterns = @(
   'MissionScripting\.lua',
   'world\.addEventHandler',
   'timer\.scheduleFunction',
-  '_DATABASE',
   'mist\.',
   'MIST',
   'io\.',
@@ -94,6 +100,15 @@ foreach ($pattern in $forbiddenPatterns) {
   }
 }
 
+$privateSpawnMatches = [regex]::Matches($source, '_DATABASE:Spawn\(template\)')
+if ($privateSpawnMatches.Count -ne 1) {
+  throw "Ground Acceptance source must contain exactly one approved private warehouse spawn call; found: $($privateSpawnMatches.Count)"
+}
+
+if ($source -notmatch 'site\.brigade\._SpawnAssetGroundNaval\s*=\s*function') {
+  throw 'Ground Acceptance source is missing the approved per-site warehouse spawn adapter.'
+}
+
 New-Item -ItemType Directory -Path $distDir -Force | Out-Null
 if (Test-Path -LiteralPath $outputFile -PathType Leaf) {
   Remove-Item -LiteralPath $outputFile -Force
@@ -108,7 +123,8 @@ $header = @"
 -- GitCommit: $commit
 -- GeneratedUtc: $generatedUtc
 -- Gate/Test-ID: $testId
--- Scope: six concurrent Kunar/Jalalabad mounted ground domains; ARMOREDGUARD On Road 27 kt approach; same-group Vee 8 kt tactical leg; stable observation halt; SetReturnToLegion(false).
+-- Scope: six concurrent Kunar/Jalalabad mounted ground domains; TM01M-derived road-aligned per-unit Warehouse spawn adapter; ARMOREDGUARD On Road 27 kt approach; same-group Vee 8 kt tactical leg; stable observation halt; SetReturnToLegion(false).
+-- Approved exception: per-site override of WAREHOUSE:_SpawnAssetGroundNaval and one _DATABASE:Spawn call only, preserving the existing BRIGADE/Warehouse request, asset, callback and ARMYGROUP lifecycle. MOOSE public WAREHOUSE API has no individual absolute-position/heading spawn hook.
 -- Exclusions: no final Fortress/Honaker property-book quantity; no full CampaignState adapter; no restart/reconstitution; no Returned->Warehouse acceptance; no OPSTRANSPORT; no QRF; no artillery; no combat-loss settlement; no MIZ mutation.
 -- MOOSE-Commit: $mooseCommit
 -- Moose.lua-SHA256: $mooseSha256
@@ -130,6 +146,8 @@ Write-Host "ApproachStandoffM: 1500"
 Write-Host "MinimumTacticalLegM: 1050"
 Write-Host "HoldStabilitySec: 20"
 Write-Host "ReturnToLegion: false"
+Write-Host "RoadAlignedWarehouseSpawn: TM01M-derived absolute unit positions; 18 m spacing; 30 m maximum road snap"
+Write-Host "ApprovedPrivateWarehouseException: true"
 Write-Host "CampaignStateAuthority: PRESERVED_TEST_BOOKKEEPING_ONLY"
 Write-Host "FortressHonakerAllocation: TEST_ONLY_NO_PRODUCTION_QUANTITY"
 Write-Host "VisualAcceptanceRequired: true"
