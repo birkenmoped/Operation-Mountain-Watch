@@ -521,3 +521,14 @@ Result: PASS / owner visual acceptance
 | `ARMYGROUP:RTZ(Zone, ENUMS.Formation.Vehicle.OnRoad)` | `SOURCE_REVIEWED / DCS_PENDING` | mobiler Group-Pfad fügt einen temporären Ground-Waypoint in die bestehende Fenty-ACCESS-Zone ein; die Zielkoordinate ist innerhalb dieser Zone zufällig |
 | `ARMYGROUP:onafterReturned -> LEGION:__AddAsset(10, group, 1)` | `SOURCE_REVIEWED / DCS_PENDING` | Rückgabe an das bestehende operative Warehouse nach zehn Sekunden; kein CampaignState-Settlement |
 | `WAREHOUSE:onafterAddAsset` für bekannte, lebende Gruppe | `SOURCE_REVIEWED / DCS_PENDING` | stellt den Assetbestand wieder her und despawnt/stoppt die physische OPSGROUP; Sichtbarkeit muss in DCS am Owner-Handoff-Marker geprüft werden |
+
+## Addendum 2026-08-19 – Acceptance-4-2 Ground-return runtime evidence
+
+| Methode / Callback | Status | Exakt bestätigter Umfang |
+|---|---|---|
+| ARMYGROUP:RTZ(Zone, ENUMS.Formation.Vehicle.OnRoad) | VALIDATED_FOR_DOCUMENTED_SCOPE | Mobiler Fenty-ARMYGROUP fährt über den öffentlichen RTZ-Pfad zur bestehenden ZON_BLUE_GND_FENTY_ACCESS; kein immobiler Teleportpfad verwendet. |
+| ARMYGROUP:OnAfterRTZ(...) | VALIDATED_FOR_DOCUMENTED_SCOPE | RTZ-Auslösung, Zielzone und OnRoad-Formation im Acceptance-4-2-Harness protokolliert; FSM wechselte zu Returning. |
+| ARMYGROUP:OnAfterReturned(...) | VALIDATED_FOR_DOCUMENTED_SCOPE | Nach Ankunft wurde genau ein Returned-Handoff bestätigt. |
+| LEGION:__AddAsset(10, group, 1) / Warehouse AddAsset | VALIDATED_FOR_DOCUMENTED_SCOPE | Ein Rückgabe-Handoff stellte den operativen Warehouse-Assetbestand wieder her und entfernte anschließend die temporäre physische DCS-Gruppe. Keine strategische CampaignState-Buchung. |
+
+Provenienz und Einschränkungen: [Acceptance 4 runtime evidence](../../mission/tests/army-ground-foundation/results/2026-08-19-acceptance-4-runtime.md). Gültig nur für MOOSE commit 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54, die zitierte Mission und den mobilen Fenty-Scope.
