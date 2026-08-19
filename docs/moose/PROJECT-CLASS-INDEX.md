@@ -262,3 +262,16 @@ DCS GROUP / UNIT / STATIC = physical representation
 Ein Klassenstatus wird nur angehoben, wenn MOOSE-Version/Commit, OMW-Source, Mission, Hashes, beobachtetes Verhalten und Einschränkungen dokumentiert sind.
 
 `SOURCE_REVIEWED` für Ground-OPS und Acceptance-1-Staging bedeutet ausdrücklich **nicht** `VALIDATED_FOR_DOCUMENTED_SCOPE`. Der Status wird erst nach dem realen DCS-Lauf mit vollständiger Hashprovenienz neu bewertet.
+
+## Addendum 2026-08-19 – `WAREHOUSE` / `_DATABASE` interne Acceptance-3-2-Ausnahme
+
+~~~text
+Owner approval: 2026-08-19
+Pinned MOOSE: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+Moose.lua SHA-256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
+Internal symbols: WAREHOUSE:_SpawnAssetGroundNaval(...), WAREHOUSE:_SpawnAssetPrepareTemplate(...), _DATABASE:Spawn(template)
+Scope: sechs Acceptance-3-BRIGADE-Instanzen
+Status: INTERNAL_RESTRICTED / SOURCE_REVIEWED_EXCEPTION_APPROVED_DCS_PENDING
+~~~
+
+`WAREHOUSE:SetSpawnZone(...)` genügt nicht für exakt road-aligned Einzelaufstellung. Der freigegebene Adapter übernimmt ausschließlich TM01M-Positionen/Headings in die vom Warehouse bereitete Spawn-Templatekopie. Assetreservation, Queue, `__AssetSpawned`, `OnAfterAssetSpawned`, `OnAfterArmyOnMission` und `ARMYGROUP`-/`AUFTRAG`-Lifecycle dürfen dadurch nicht umgangen werden. Ein DCS-Regressionstest muss sowohl sichtbare Straßenaufstellung als auch alle bisherigen sechs Domain-Lifecycle-Kriterien erneut belegen.
