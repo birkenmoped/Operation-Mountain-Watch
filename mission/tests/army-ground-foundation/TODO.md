@@ -368,3 +368,21 @@ build Acceptance 4
 ```
 
 Kein CampaignState-Settlement, keine Produktionsgutschrift, keine Reconstitution und keine .miz-Änderung durch ChatGPT sind Teil dieses Gates.
+## Addendum 2026-08-19 – Acceptance 4 technisch akzeptiert
+
+Acceptance 4-2 bestätigt für den exakt dokumentierten Fenty-Stand den öffentlichen mobilen MOOSE-Rückgabepfad:
+
+~~~text
+MissionDone
+-> 30-second AUFTRAG settlement delay
+-> ARMYGROUP:RTZ(ZON_BLUE_GND_FENTY_ACCESS, OnRoad)
+-> Returned
+-> LEGION/Warehouse AddAsset
+-> controlled physical DCS-group removal
+~~~
+
+Die tatsächliche MIZ-Provenienz, das Bundle und der Runtime-Nachweis stehen in:
+
+- [Acceptance 4 runtime evidence](results/2026-08-19-acceptance-4-runtime.md)
+
+Damit sind für diesen exakten Teststand Road-aligned Materialisierung, ein einzelner Spawn, öffentlicher mobiler RTZ, Warehouse-Rückgabe und die nach Ankunft sichtbar beobachtete kontrollierte Entfernung der temporären DCS-Gruppe bestätigt. Offen bleiben bewusst CampaignState-Settlement, Produktionsgutschrift, Verlustbehandlung, Reconstitution und Multi-Site-Return.
