@@ -1,6 +1,6 @@
 ---
 document_id: OMW-TEST-ARMY-GROUND-ACCEPTANCE-4
-status: PLANNED
+status: ACCEPTED_TECHNICAL_BASELINE
 document_class: DCS_RUNTIME_ACCEPTANCE
 owning_policy: OMW-GOV-001
 authoritative_for:
@@ -16,8 +16,8 @@ project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
 superseded_by:
 source_branch: agent/army-ground-foundation-reconciliation
-source_commit: PENDING_DCS_BUILD
-validated_in_dcs: false
+source_commit: ec66a29ddbd234d07f28d174a7725e4331cc31a6
+validated_in_dcs: true
 base_branch: agent/army-ground-foundation-reconciliation
 base_commit: beef12f97a9c53970729270bb7b8b74cdd73f036
 base_status: ACCEPTED_TECHNICAL_BASELINE
@@ -176,7 +176,7 @@ observed: no Returned, no Warehouse AddAsset, no runtime pass
 
 The log shows the `AUFTRAG` evaluator output after the former two-second RTZ issue; the log alone does not prove the exact internal overwrite point. The correction therefore removes that observable ordering overlap: it keeps the same public `ARMYGROUP:RTZ(...)` lifecycle and the same single Fenty ACCESS marker, waits 30 mission seconds before RTZ, and proves the `Returning` FSM state with one progress checkpoint. A one-shot 900-second mission-time timeout converts a missing return into an explicit failure; it is not a strategic or production timeout.
 
-This correction is `DCS_PENDING`; it does not claim that the return succeeds until the revised bundle is embedded and executed in DCS.
+The correction was executed with the documented ARMY-GROUND-ACCEPTANCE-4-2 bundle. The exact DCS result and final MIZ provenance are recorded in the linked runtime-evidence report.
 
 ## 8. Nicht Teil dieses Gates
 
@@ -191,3 +191,11 @@ This correction is `DCS_PENDING`; it does not claim that the return succeeds unt
 - .miz modification by ChatGPT
 - merge or Ready-for-Review
 ```
+
+## 9. Acceptance 4 – realer DCS-Nachweis
+
+Acceptance 4-2 ist für den folgenden, exakt begrenzten Stand technisch akzeptiert. Der zugehörige Ergebnisbericht ist:
+
+- [Runtime evidence 2026-08-19](results/2026-08-19-acceptance-4-runtime.md)
+
+Die Acceptance bestätigt ausschließlich den mobilen Fenty-Rückgabe-/Warehouse-Handoff. Sie erteilt keine CampaignState-Gutschrift und keine Produktions- oder Reconstitution-Freigabe.
