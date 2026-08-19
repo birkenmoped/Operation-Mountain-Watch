@@ -144,5 +144,6 @@ Eine Nummer und eine stabile `document_id` dürfen im aktuellen Bestand jeweils 
 | `OMW-ACC-FIGHTER-STORE-RUNTIME-CORRELATION-2026-08-13` | `docs/evidence/fighter-store-runtime-correlation-acceptance-2026-08-13.md` | `ACCEPTED_TECHNICAL_BASELINE`; finale Fighter-Store-Mapping-Acceptance |
 | `OMW-DECISION-KANDAHAR-A10C-CAS-LOADOUT-2026-08-01` | `docs/evidence/kandahar-a10c-cas-loadout-decision-2026-08-01.md` | `BINDING_PROJECT_DECISION`; Kandahar A-10C II CAS-Stationen, Payload und Evidenzgrenze |
 | `OMW-TEST-ARMY-GROUND-ACCEPTANCE-4` | `mission/tests/army-ground-foundation/ACCEPTANCE-4.md` | `ACCEPTED_TECHNICAL_BASELINE`; Fenty MOOSE return-handoff runtime gate |
+| `OMW-TEST-ARMY-GROUND-ACCEPTANCE-5` | `mission/tests/army-ground-foundation/ACCEPTANCE-5.md` | `DCS_PENDING`; isolated Fenty four-out/four-back CampaignState normal-return gate |
 | `OMW-RESULT-ARMY-GROUND-ACCEPTANCE-4-RUNTIME-20260819` | `mission/tests/army-ground-foundation/results/2026-08-19-acceptance-4-runtime.md` | `ACCEPTED_TECHNICAL_BASELINE`; exact Fenty return-handoff runtime evidence |
 | `OMW-PLAN-ARMY-GROUND-RETURN-SETTLEMENT` | `docs/ground/ARMY-GROUND-RETURN-SETTLEMENT-DECISION-PREPARATION.md` | `PLANNED`; owner-decision inputs for Ground strategic return settlement |
