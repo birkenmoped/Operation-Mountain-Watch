@@ -33,7 +33,7 @@ $requiredMarkers = @(
   'TEST_VEHICLE_WHEELED',
   'CampaignState.New',
   'ReserveResource',
-  'Consume(TEST_RUNTIME_ID)',
+  'Consume(site.runtimeId)',
   'CreditResourceOnce',
   'CAMPAIGNSTATE_DEPLOYMENT_COMMITTED',
   'CAMPAIGNSTATE_RETURN_CREDIT',
