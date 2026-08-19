@@ -28,7 +28,6 @@ $requiredMarkers = @(
   'TPL_BLUE_GND_PATROL_MATV_4',
   'ZON_BLUE_GND_FENTY_ACCESS',
   'ZON_BLUE_GND_FENTY_PATROL_TEST_01',
-  'ZON_BLUE_GND_FENTY_RETURN_HANDOFF_01',
   'BRIGADE:New(',
   ':SetSpawnZone(',
   'PLATOON:New(',
@@ -38,7 +37,7 @@ $requiredMarkers = @(
   'SetMissionSpeed(ROAD_SPEED_KNOTS)',
   'SetReturnToLegion(false)',
   ':__Cancel(APPROACH_HOLD_SEC)',
-  ':RTZ(site.returnZoneObject, ENUMS.Formation.Vehicle.OnRoad)',
+  ':RTZ(site.accessZoneObject, ENUMS.Formation.Vehicle.OnRoad)',
   'OnAfterReturned',
   'OnAfterAddAsset',
   'WAREHOUSE_ADD_ASSET',
@@ -102,7 +101,7 @@ $header = @"
 -- GitCommit: $commit
 -- GeneratedUtc: $generatedUtc
 -- Gate/Test-ID: $testId
--- Scope: one Fenty road-aligned BRIGADE/Warehouse materialization; ARMOREDGUARD On Road 27 kt; MissionDone physical retention; public ARMYGROUP:RTZ to a non-observable owner-defined handoff zone; Returned -> delayed Warehouse AddAsset -> physical group removal.
+-- Scope: one Fenty road-aligned BRIGADE/Warehouse materialization; ARMOREDGUARD On Road 27 kt; MissionDone physical retention; public ARMYGROUP:RTZ to the existing Fenty ACCESS zone; Returned -> delayed Warehouse AddAsset -> physical group removal.
 -- Approved exception: unchanged, per-BRIGADE road-aligned Warehouse spawn adapter from Acceptance 3-2. It preserves the Warehouse request, asset reservation, callbacks and ARMYGROUP/AUFTRAG lifecycle. No new private return adapter is used.
 -- Exclusions: no CampaignState settlement; no production resource credit; no restart/reconstitution; no cross-session state; no OPSTRANSPORT; no QRF; no artillery; no combat-loss settlement; no MIZ mutation.
 -- MOOSE-Commit: $mooseCommit
@@ -121,7 +120,7 @@ Write-Host "Site: FENTY"
 Write-Host "Template: TPL_BLUE_GND_PATROL_MATV_4"
 Write-Host "Outbound: ARMOREDGUARD / On Road / 27 kt"
 Write-Host "MissionDone: physical group retained"
-Write-Host "Return: ARMYGROUP:RTZ / On Road / owner return handoff zone"
+Write-Host "Return: ARMYGROUP:RTZ / On Road / existing Fenty ACCESS zone"
 Write-Host "WarehouseReturn: Returned -> __AddAsset(10) -> physical group removal"
 Write-Host "RoadAlignedWarehouseSpawn: reused Acceptance-3-2 adapter; 18 m spacing; 30 m maximum road snap"
 Write-Host "ApprovedPrivateWarehouseException: unchanged existing adapter only"
