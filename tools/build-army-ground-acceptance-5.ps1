@@ -142,7 +142,7 @@ $header = @"
 
 "@
 
-$embeddedCampaignState = "local CampaignState = (function()``n" + $campaignStateSource + "``nend)()``n``n"
+$embeddedCampaignState = "local CampaignState = (function()`n" + $campaignStateSource + "`nend)()`n`n"
 [System.IO.File]::WriteAllText($outputFile, $header + $embeddedCampaignState + $source, [System.Text.UTF8Encoding]::new($false))
 $hash = (Get-FileHash -LiteralPath $outputFile -Algorithm SHA256).Hash.ToLowerInvariant()
 
