@@ -337,3 +337,24 @@ Result: PASS / owner visual acceptance
 ~~~
 
 Für genau diesen Scope bestätigt: ARMYGROUP:RTZ(existing Fenty ACCESS zone, OnRoad) führte über den Returning-FSM-Zustand zu Returned; anschließend wurde der normale LEGION:__AddAsset(10, group, 1)-/Warehouse-Handoff ausgeführt. Die vier M-ATV fuhren bis zur bestehenden Fenty-ACCESS-Zone und die temporäre DCS-Gruppe wurde erst danach kontrolliert entfernt; diese sichtbare Entfernung ist erwartetes Warehouse-Verhalten. Kein Teleport wurde während Materialisierung, Anfahrt oder Rückfahrt akzeptiert. CampaignState blieb unverändert.
+
+
+## Addendum 2026-08-20 – Acceptance 6 planned partial-loss/damage gate
+
+~~~text
+MOOSE methods examined in pinned source:
+GROUP:GetSize()
+GROUP:GetUnits()
+UNIT:Destroy(false)     -- inherited POSITIONABLE method
+UNIT:SetLife(Percent)
+~~~
+
+Acceptance 6 uses these existing MOOSE wrappers only as test fixtures after a normal
+MissionDone and before the existing public ARMYGROUP:RTZ(..., OnRoad) path. It must
+prove that a three-unit mobile return remains operable, reaches the usual
+Returned -> Warehouse AddAsset handoff, and can be reconciled into the isolated
+CampaignState store by returning-unit count. The concrete runtime use is
+SOURCE_REVIEWED / DCS_PENDING, not validated.
+
+No maintenance, repair delay, workshop capacity, new DCS spawning or private return
+adapter is introduced. MaintenanceTime remains at the MOOSE default of zero.
