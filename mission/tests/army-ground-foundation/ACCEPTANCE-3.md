@@ -1,6 +1,6 @@
 ---
 document_id: OMW-TEST-ARMY-GROUND-ACCEPTANCE-3
-status: PLANNED
+status: ACCEPTED_TECHNICAL_BASELINE
 document_class: ACCEPTANCE_TEST_PLAN
 owning_policy: OMW-GOV-001
 authoritative_for:
@@ -9,12 +9,12 @@ authoritative_for:
 not_authoritative_for:
   - final production vehicle quantities for Fortress or Honaker-Miracle
   - final Mission Editor geometry
-  - accepted runtime behavior before real DCS execution
+  - production behavior beyond the exactly documented Acceptance-3 runtime scope
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 source_branch: agent/army-ground-foundation-reconciliation
 source_commit: PENDING_MERGE
-validated_in_dcs: false
+validated_in_dcs: true
 supersedes:
 superseded_by:
 ---
@@ -330,3 +330,26 @@ OMW_GND_A3 ROAD_ALIGNED_WAREHOUSE_SPAWN site=<SITE> units=4 leadDistanceM=74 max
 ~~~
 
 Zusätzlicher FAIL: privater Spawnadapter fehlt/ist unvereinbar, Road-Projektion liegt außerhalb ACCESS, Road-Snap > 30 m, Abstand < 8 m oder die sichtbare Aufstellung kollidiert mit Geometrie.
+## 14. DCS-Ergebnis – 19.08.2026
+
+**Ergebnis: PASS für den exakt folgenden branchgebundenen technischen Stand.**
+
+~~~text
+Branch: agent/army-ground-foundation-reconciliation
+Tested source commit: 9b4997bf024efe0fab18b4d18552117cd8eeee21
+BuilderVersion/Test-ID: ARMY-GROUND-ACCEPTANCE-3-2
+Bundle SHA-256: 1f3879c1245483ba69cb8a5cc76ea1af4f46cdd01d7c9778440f2a2c6d08ef00
+Mission artifact: OMW_Template_v13_ground_test(10).miz
+MIZ SHA-256: a6ce41bc9d7ab0f352f567322401e238dcd2057c548b4ddba44fe9f32f4577cd
+internal mission SHA-256: 2888b04265516f6aa1698f54cf08d3df987d8e7c7f3335e0594da46deba8a3b4
+embedded bundle SHA-256: 1f3879c1245483ba69cb8a5cc76ea1af4f46cdd01d7c9778440f2a2c6d08ef00
+MOOSE: 2.9.18 / 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+Moose.lua SHA-256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
+DCS: 2.9.28.26385 MT / Windows 10.0.26200
+~~~
+
+Die reale Laufzeit zeigte sechs `ROAD_ALIGNED_WAREHOUSE_SPAWN`-Marker mit jeweils vier M-ATV, `leadDistanceM=74` und maximal `4 m` Road-Snap. Alle sechs Domains materialisierten genau einmal, führten Mission 1 aus, behielten mit `SetReturnToLegion(false)` ihre physische Gruppe, verwendeten für Mission 2 denselben ARMYGROUP und endeten mit `SITE_RUNTIME_PASS`. Der globale Marker lautet `RUNTIME_PASS_VISUAL_PENDING sites=6 passed=6`.
+
+Der Projektinhaber bestätigte die visuelle Abnahme des erfolgreichen Laufs als **„Perfekt“**. Damit ist für diesen Artefaktstand zusätzlich bestätigt: road-aligned Aufstellung, Marschreihenfolge/Fahrtrichtung und keine sichtbare Scenery-/Static-Kollision.
+
+Die Akzeptanz gilt nur für den oben genannten Branch, Commit, Bundle, MIZ, MOOSE- und DCS-Stand. Sie ändert weder CampaignState-Autorität noch permanente Fahrzeugmengen von Fortress oder Honaker und autorisiert keinen Merge.
