@@ -9,9 +9,9 @@ local TEMPLATE_NAME = "TPL_BLUE_GND_PATROL_MATV_4"
 
 local POST_START_DELAY_SEC = 5
 local APPROACH_HOLD_SEC = 10
--- The AUFTRAG evaluator continues after the group MissionDone callback.
--- Keep the public RTZ event outside that completion window so its route is not
--- superseded by the finishing mission lifecycle.
+-- The run log shows AUFTRAG evaluation after the former two-second RTZ issue.
+-- Keep the public RTZ event outside that observed completion window; the exact
+-- internal overwrite point remains DCS-pending.
 local RETURN_SETTLEMENT_DELAY_SEC = 30
 local RETURN_PROGRESS_CHECK_DELAY_SEC = 5
 local RETURN_PROGRESS_TIMEOUT_SEC = 900
