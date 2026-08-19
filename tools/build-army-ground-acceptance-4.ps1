@@ -9,8 +9,8 @@ $sourceFile = Join-Path $repoRoot 'mission\tests\army-ground-foundation\src\04-a
 $distDir = Join-Path $repoRoot 'mission\tests\army-ground-foundation\dist'
 $outputFile = Join-Path $distDir 'OMW_Army_Ground_Acceptance_4.lua'
 
-$builderVersion = 'ARMY-GROUND-ACCEPTANCE-4-1'
-$testId = 'ARMY-GROUND-ACCEPTANCE-4-1'
+$builderVersion = 'ARMY-GROUND-ACCEPTANCE-4-2'
+$testId = 'ARMY-GROUND-ACCEPTANCE-4-2'
 $mooseCommit = '73d3ed119cd9e7e3f2cfcabbaa34513d30529b54'
 $mooseSha256 = 'e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915'
 
@@ -21,7 +21,7 @@ if (-not (Test-Path -LiteralPath $sourceFile -PathType Leaf)) {
 $source = Get-Content -LiteralPath $sourceFile -Raw -Encoding UTF8
 
 $requiredMarkers = @(
-  'ARMY-GROUND-ACCEPTANCE-4-1',
+  'ARMY-GROUND-ACCEPTANCE-4-2',
   'WH_BLUE_GND_FENTY',
   'BDE_BLUE_GND_JALALABAD_RETURN_ACCEPTANCE',
   'PLT_BLUE_GND_JALALABAD_RETURN_MATV',
@@ -38,6 +38,12 @@ $requiredMarkers = @(
   'SetReturnToLegion(false)',
   ':__Cancel(APPROACH_HOLD_SEC)',
   ':RTZ(site.accessZoneObject, ENUMS.Formation.Vehicle.OnRoad)',
+  'RETURN_SETTLEMENT_DELAY_SEC = 30',
+  'RETURN_RTZ_ISSUED',
+  'RETURN_RTZ_ACTIVE',
+  'RETURN_IN_PROGRESS',
+  'RETURN_TIMEOUT',
+  'OnAfterRTZ',
   'OnAfterReturned',
   'OnAfterAddAsset',
   'WAREHOUSE_ADD_ASSET',
@@ -101,7 +107,7 @@ $header = @"
 -- GitCommit: $commit
 -- GeneratedUtc: $generatedUtc
 -- Gate/Test-ID: $testId
--- Scope: one Fenty road-aligned BRIGADE/Warehouse materialization; ARMOREDGUARD On Road 27 kt; MissionDone physical retention; public ARMYGROUP:RTZ to the existing Fenty ACCESS zone; Returned -> delayed Warehouse AddAsset -> physical group removal.
+-- Scope: one Fenty road-aligned BRIGADE/Warehouse materialization; ARMOREDGUARD On Road 27 kt; MissionDone physical retention; public ARMYGROUP:RTZ to the existing Fenty ACCESS zone only after the 30-second AUFTRAG settlement delay; RTZ state/progress/timeout diagnostics; Returned -> delayed Warehouse AddAsset -> physical group removal.
 -- Approved exception: unchanged, per-BRIGADE road-aligned Warehouse spawn adapter from Acceptance 3-2. It preserves the Warehouse request, asset reservation, callbacks and ARMYGROUP/AUFTRAG lifecycle. No new private return adapter is used.
 -- Exclusions: no CampaignState settlement; no production resource credit; no restart/reconstitution; no cross-session state; no OPSTRANSPORT; no QRF; no artillery; no combat-loss settlement; no MIZ mutation.
 -- MOOSE-Commit: $mooseCommit
@@ -119,8 +125,8 @@ Write-Host "GeneratedUtc: $generatedUtc"
 Write-Host "Site: FENTY"
 Write-Host "Template: TPL_BLUE_GND_PATROL_MATV_4"
 Write-Host "Outbound: ARMOREDGUARD / On Road / 27 kt"
-Write-Host "MissionDone: physical group retained"
-Write-Host "Return: ARMYGROUP:RTZ / On Road / existing Fenty ACCESS zone"
+Write-Host "MissionDone: physical group retained; RTZ after 30 s AUFTRAG settlement"
+Write-Host "Return: ARMYGROUP:RTZ / On Road / existing Fenty ACCESS zone; state/progress diagnostics; timeout 900 s"
 Write-Host "WarehouseReturn: Returned -> __AddAsset(10) -> physical group removal"
 Write-Host "RoadAlignedWarehouseSpawn: reused Acceptance-3-2 adapter; 18 m spacing; 30 m maximum road snap"
 Write-Host "ApprovedPrivateWarehouseException: unchanged existing adapter only"
