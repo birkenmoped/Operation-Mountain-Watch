@@ -394,3 +394,31 @@ Die A4-2-Rückgabe ist operativ akzeptiert, aber noch keine strategische Buchung
 - [`OMW-PLAN-ARMY-GROUND-RETURN-SETTLEMENT`](../../../docs/ground/ARMY-GROUND-RETURN-SETTLEMENT-DECISION-PREPARATION.md)
 
 Bis zu einer expliziten Eigentümerentscheidung bleiben Ground-CampaignState-Credit, Verlustbehandlung und Restart-Reconciliation unverändert offen.
+
+
+## Addendum 2026-08-19 – Acceptance 5 freigegeben und DCS-pending
+
+Acceptance 5 ist der absichtlich enge nächste Gate nach A4-2:
+
+```text
+isolierter Test-Store (nicht Produktion): 4
+-> ReserveResource / Consume vor der bestehenden MOOSE-Materialisierung
+-> unveränderter Fenty BRIGADE/PLATOON/WAREHOUSE-/RTZ-Return
+-> bestätigtes Returned + Warehouse AddAsset + physische Gruppenentfernung
+-> CreditResourceOnce: 4
+-> derselbe Credit erneut: idempotenter No-op
+```
+
+Testplan:
+
+- [`OMW-TEST-ARMY-GROUND-ACCEPTANCE-5`](ACCEPTANCE-5.md)
+
+Builder:
+
+```text
+tools/build-army-ground-acceptance-5.ps1
+```
+
+A5 definiert weder einen Produktionsfahrzeugbestand noch ändert es `.miz`, den
+Fenty-48er-Bestand, einen bestehenden globalen CampaignState-Store oder die offenen
+Verlust-/Teilverlust-/Restart-Fragen. Der Owner bindet das gebaute Bundle manuell ein.
