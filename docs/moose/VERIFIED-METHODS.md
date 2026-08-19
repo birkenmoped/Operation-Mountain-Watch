@@ -493,3 +493,23 @@ RESULT PASS
 FuelLow ist davon bewusst getrennt und bleibt Immediate Egress. Der Acceptance-Lauf bestätigte außerdem vier STANDARD-Tracks, zwei demand-gesteuerte RESERVE-Tracks, mindestens 60 s Same-source-Spacing, natürliche EGPAN/DAVER/PINAX-Transits, External Handoff, Reserve-Shutdown, Loss/Replacement und CampaignState exact-once Accounting.
 
 Grenze: Die Validierung gilt ausschließlich für den oben dokumentierten Branch-/Commit-/Mission-/Bundle-/DCS-/MOOSE-Stand. Lower-/Upper-Airway-Routing war nicht Teil dieses Tests.
+
+## Addendum 2026-08-19 – Ground Acceptance 3-2
+
+~~~text
+MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+Moose.lua SHA-256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
+OMW source: mission/tests/army-ground-foundation/src/03-army-ground-acceptance-3.lua
+Tested commit: 9b4997bf024efe0fab18b4d18552117cd8eeee21
+Bundle SHA-256: 1f3879c1245483ba69cb8a5cc76ea1af4f46cdd01d7c9778440f2a2c6d08ef00
+Mission: OMW_Template_v13_ground_test(10).miz
+DCS: 2.9.28.26385 MT
+Result: PASS / owner visual acceptance
+~~~
+
+| Methode/Pfad | Status | Bestätigter Scope und Grenze |
+|---|---|---|
+| `WAREHOUSE:SetSpawnZone(...)` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | sechs Ground-Hosts mit ACCESS-Zone; Fenty-Host wurde im Mission Editor so positioniert, dass die MOOSE-Host–Zone-Distanzgrenze erfüllt ist |
+| `WAREHOUSE:_SpawnAssetGroundNaval(...)` + `_SpawnAssetPrepareTemplate(...)` + `_DATABASE:Spawn(template)` | `VALIDATED_FOR_DOCUMENTED_SCOPE / INTERNAL_RESTRICTED` | ausschließlich die freigegebene per-BRIGADE Acceptance-3-2-Ausnahme; road-aligned 4-Unit Spawn, 74 m Marschraum, Road-Snap <= 4 m; keine allgemeine öffentliche API oder Produktionsfreigabe |
+| `BRIGADE:New`, `BRIGADE:AddPlatoon`, `PLATOON:New`, `COHORT:AddMissionCapability`, `COHORT:CountAssets` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | parallele sechs-Domain-Auswahl und genau eine Materialisierung pro Site |
+| `AUFTRAG:NewARMOREDGUARD`, `SetMissionSpeed`, `SetReturnToLegion(false)`, `__Cancel(...)` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | On-Road 27 kt -> MissionDone physical stay -> same ARMYGROUP Vee 8 kt -> stable halt, sechs Sites |
