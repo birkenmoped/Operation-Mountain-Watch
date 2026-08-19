@@ -267,7 +267,7 @@ local function installRoadAlignedWarehouseSpawnAdapter(site)
     if not asset or asset.category ~= Group.Category.GROUND then
       return originalSpawn(self, alias, asset, request, spawnzone, lateactivated)
     end
-    if type(asset.template) ~= "table" or type(asset.template.units) ~= "table"
+    if type(asset.template) ~= "table" or type(asset.template.units) ~= "table" then
       fail(site, "WAREHOUSE_TEMPLATE_UNAVAILABLE")
       return nil
     end
