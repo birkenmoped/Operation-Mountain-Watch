@@ -294,3 +294,16 @@ Status: SOURCE_REVIEWED_EXCEPTION_APPROVED_DCS_PENDING
 ~~~
 
 Der interne Eingriff ist versionsgebunden und darf außerhalb dieses Acceptance-Scopes nicht wiederverwendet werden. Der eigene DCS-Regressionstest muss road-aligned sichtbaren Spawn ohne Geometriekollision und die unveränderten Warehouse-/Callback-/same-ARMYGROUP-Kriterien belegen.
+## Addendum 2026-08-19 – Acceptance-3-2-DCS-Nachweis
+
+Die genehmigte interne Warehouse-Spawn-Ausnahme wurde real in DCS 2.9.28.26385 MT geprüft:
+
+~~~text
+Tested source commit: 9b4997bf024efe0fab18b4d18552117cd8eeee21
+Bundle SHA-256: 1f3879c1245483ba69cb8a5cc76ea1af4f46cdd01d7c9778440f2a2c6d08ef00
+MIZ SHA-256: a6ce41bc9d7ab0f352f567322401e238dcd2057c548b4ddba44fe9f32f4577cd
+MOOSE SHA-256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
+Result: six sites PASS; owner visual acceptance
+~~~
+
+Bestätigt sind exakt für diesen Scope: die per-BRIGADE Adapterausführung vor der Warehouse-Materialisierung, vier Unitpositionen auf der Straße je Site, 74 m Marschraum, maximal 4 m Road-Snap, einmalige Assetmaterialisierung, `OnAfterAssetSpawned`-/`OnAfterArmyOnMission`-gestützter Lifecycle, `SetReturnToLegion(false)`, same-ARMYGROUP Mission 1/2 und stabiler Zielhalt. Die Ausnahme bleibt intern, versionsgebunden und nicht produktionsverallgemeinert.
