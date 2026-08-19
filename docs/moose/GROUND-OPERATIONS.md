@@ -277,3 +277,20 @@ Wenn Acceptance 1 bestanden ist, folgt schrittweise:
 CampaignState entscheidet über strategischen Bestand, Ressourcenreservierung und strategische Folgen. MOOSE führt operative Auswahl, Materialisierung, Mission und FSM aus.
 
 Eigene Watchguard-, Routing-, Transport- oder Reconstitution-Logik darf erst nach dokumentierter MOOSE-Lücke und ausdrücklicher Projektinhaberfreigabe produktiv werden.
+
+## Addendum 2026-08-19 – interne Warehouse-Spawn-Ausnahme für Acceptance 3-2
+
+Die öffentliche `WAREHOUSE`-API wurde für die gewünschte Einzelaufstellung geprüft: `SetSpawnZone(...)` begrenzt eine Zone, übernimmt jedoch keine individuellen Unitpositionen oder Headings. Im gepinnten Source erzeugt `_SpawnAssetGroundNaval(...)` eine Templatekopie, wählt `spawnzone:GetRandomCoordinate()` und verschiebt die Einheiten.
+
+Der Projektinhaber hat für Acceptance 3-2 ausdrücklich eine einzige interne Erweiterung freigegeben. Sie übernimmt die vorhandene TM01M-Straßenpositions-/Heading-Berechnung und überschreibt nur pro BRIGADE-Instanz den Ground-Spawn-Schritt. Sie setzt absolute Werte in die durch `_SpawnAssetPrepareTemplate(...)` bereitete Kopie und ruft `_DATABASE:Spawn(template)` genau einmal auf.
+
+~~~text
+MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+Moose.lua SHA-256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
+Scope: Acceptance 3-2; sechs test-only Ground-Domains
+Unverändert: Assetreservation, Request queue, __AssetSpawned, OnAfterAssetSpawned, OnAfterArmyOnMission, BRIGADE/PLATOON/ARMYGROUP/AUFTRAG, CampaignState
+Guard rails: 18 m Abstand; 20 m Freiraum; 10-m Heading-Sample; Road-Snap <= 30 m; alle Positionen in ACCESS
+Status: SOURCE_REVIEWED_EXCEPTION_APPROVED_DCS_PENDING
+~~~
+
+Der interne Eingriff ist versionsgebunden und darf außerhalb dieses Acceptance-Scopes nicht wiederverwendet werden. Der eigene DCS-Regressionstest muss road-aligned sichtbaren Spawn ohne Geometriekollision und die unveränderten Warehouse-/Callback-/same-ARMYGROUP-Kriterien belegen.
