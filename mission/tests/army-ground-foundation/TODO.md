@@ -386,3 +386,11 @@ Die tatsächliche MIZ-Provenienz, das Bundle und der Runtime-Nachweis stehen in:
 - [Acceptance 4 runtime evidence](results/2026-08-19-acceptance-4-runtime.md)
 
 Damit sind für diesen exakten Teststand Road-aligned Materialisierung, ein einzelner Spawn, öffentlicher mobiler RTZ, Warehouse-Rückgabe und die nach Ankunft sichtbar beobachtete kontrollierte Entfernung der temporären DCS-Gruppe bestätigt. Offen bleiben bewusst CampaignState-Settlement, Produktionsgutschrift, Verlustbehandlung, Reconstitution und Multi-Site-Return.
+
+## Addendum 2026-08-19 – Vorbereitung Ground-CampaignState-Rückgabe
+
+Die A4-2-Rückgabe ist operativ akzeptiert, aber noch keine strategische Buchung. Die vor Implementierung erforderlichen Entscheidungen und der geplante Acceptance-Scope stehen in:
+
+- [`OMW-PLAN-ARMY-GROUND-RETURN-SETTLEMENT`](../../../docs/ground/ARMY-GROUND-RETURN-SETTLEMENT-DECISION-PREPARATION.md)
+
+Bis zu einer expliziten Eigentümerentscheidung bleiben Ground-CampaignState-Credit, Verlustbehandlung und Restart-Reconciliation unverändert offen.
