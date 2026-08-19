@@ -321,3 +321,17 @@ TM01M-Straßenpositions-/Heading-Berechnung
 Sie ersetzt weder `BRIGADE:AddMission(...)` noch Warehouse-Materialisierung und schafft keine strategische Ressourcenautorität. Gültig nur mit dem gepinnten MOOSE-Stand und bis zum DCS-Regressionstest als `SOURCE_REVIEWED_EXCEPTION_APPROVED_DCS_PENDING`.
 
 Zusätzlich im Acceptance-3-Lauf prüfen: vier M-ATV je Domain road-aligned, Marschreihenfolge und Fahrtrichtung; keine Static-/Scenery-Kollision am Materialisierungspunkt; weiterhin genau eine Warehouse-Materialisierung und derselbe ARMYGROUP über Mission 1/2.
+## Addendum 2026-08-19 – Acceptance 3 technisch akzeptiert
+
+Acceptance 3-2 ist für den genau dokumentierten Branch-/Artefaktstand technisch akzeptiert:
+
+~~~text
+Source commit: 9b4997bf024efe0fab18b4d18552117cd8eeee21
+Bundle SHA-256: 1f3879c1245483ba69cb8a5cc76ea1af4f46cdd01d7c9778440f2a2c6d08ef00
+MIZ: OMW_Template_v13_ground_test(10).miz
+MIZ SHA-256: a6ce41bc9d7ab0f352f567322401e238dcd2057c548b4ddba44fe9f32f4577cd
+DCS: 2.9.28.26385 MT
+Result: PASS / owner visual acceptance
+~~~
+
+Sechs road-aligned Warehouse-Materialisierungen, dieselben ARMYGROUPs über Mission 1/2 und sechs stabile Zielhalte wurden real bestätigt. Die offene Arbeit bleibt auf Produktionsintegration, Ressourcenverträge, Rückgabe/Reconstitution und die ausdrücklich ausgeschlossenen Funktionsbereiche begrenzt.
