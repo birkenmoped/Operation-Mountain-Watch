@@ -114,7 +114,7 @@ ZON_BLUE_GND_FENTY_ACCESS
 
 MOOSE erhält diese bestehende Zone sowohl über `WAREHOUSE:SetSpawnZone(...)` als auch über `ARMYGROUP:RTZ(..., OnRoad)`. ChatGPT verändert keine `.miz`.
 
-Der Owner prüft ausschließlich, dass der vorhandene ACCESS-Marker weiterhin den road-aligned Spawn, die Rückkehr und die nicht beobachtbare physische Entfernung der vier M-ATV sicher abdeckt. Es entsteht weder eine neue permanente Fahrzeugmenge noch zusätzliche Trigger-/Skriptlogik.
+Der Owner prüft ausschließlich, dass der vorhandene ACCESS-Marker weiterhin den road-aligned Spawn sowie die Rückkehr der vier M-ATV abdeckt. Nach `Returned -> AddAsset` ist die physische Entfernung der temporären DCS-Gruppe erwartetes MOOSE-Warehouse-Verhalten. Es entsteht weder eine neue permanente Fahrzeugmenge noch zusätzliche Trigger-/Skriptlogik.
 
 Vor DCS ist der MIZ-Stand nach dem verbindlichen Artefaktworkflow zu hashen und gegen den bestehenden Objektvertrag zu prüfen.
 
@@ -141,8 +141,8 @@ Zusätzlich visuell:
 - vier M-ATV materialisieren road-aligned in Marschreihenfolge ohne Kollision;
 - der RTZ-FSM wechselt nach dem Settlement-Delay nach `Returning` und bleibt dort bis zur Rückgabe;
 - die Gruppe fährt normal zur Rückgabezone;
-- es gibt keinen sichtbaren Teleporter;
-- die Gruppe wird erst am nicht beobachtbaren Handoff-Ort entfernt;
+- es gibt keinen Teleport während Materialisierung, Anfahrt oder Rückfahrt;
+- die temporäre DCS-Gruppe wird erst nach Ankunft und `Returned -> AddAsset` kontrolliert entfernt; diese Entfernung darf im Acceptance-Test sichtbar beobachtet werden;
 - kein Doppelspawn und keine zweite Rückgabe.
 
 ## 7. Builder und Artefaktkette
