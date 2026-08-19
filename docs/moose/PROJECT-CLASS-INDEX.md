@@ -280,5 +280,5 @@ Status: INTERNAL_RESTRICTED / SOURCE_REVIEWED_EXCEPTION_APPROVED_DCS_PENDING
 
 | Klasse | Status | Verwendung/Grenze |
 |---|---|---|
-| `ARMYGROUP` | `SOURCE_REVIEWED / DCS_PENDING` | Acceptance 4 nutzt den öffentlichen mobilen `RTZ(existing Fenty ACCESS zone, OnRoad)`-Pfad; keine Teleportverwendung |
-| `WAREHOUSE` / `LEGION` | `SOURCE_REVIEWED / DCS_PENDING` | `Returned -> __AddAsset(10) -> AddAsset -> physical group removal` wird als Fenty-Gate geprüft; operative Rückgabe ist keine strategische Ressourcenbuchung |
+| `ARMYGROUP` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Acceptance 4-2 bestätigt den öffentlichen mobilen `RTZ(existing Fenty ACCESS zone, OnRoad)`-Pfad einschließlich `Returning` und `Returned`; kein Teleportpfad verwendet |
+| `WAREHOUSE` / `LEGION` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Acceptance 4-2 bestätigt `Returned -> __AddAsset(10) -> AddAsset -> physical group removal` für Fenty; operative Rückgabe ist keine strategische Ressourcenbuchung |
