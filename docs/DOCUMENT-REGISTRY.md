@@ -143,4 +143,4 @@ Eine Nummer und eine stabile `document_id` dürfen im aktuellen Bestand jeweils 
 | `OMW-WAREHOUSE-RESOURCE-FOUNDATION-COMPLETE` | `docs/warehouse-resource-foundation-complete.md` | `BINDING_PROJECT_DECISION`; konsolidierter Warehouse-/Resource-Abschlussstand |
 | `OMW-ACC-FIGHTER-STORE-RUNTIME-CORRELATION-2026-08-13` | `docs/evidence/fighter-store-runtime-correlation-acceptance-2026-08-13.md` | `ACCEPTED_TECHNICAL_BASELINE`; finale Fighter-Store-Mapping-Acceptance |
 | `OMW-DECISION-KANDAHAR-A10C-CAS-LOADOUT-2026-08-01` | `docs/evidence/kandahar-a10c-cas-loadout-decision-2026-08-01.md` | `BINDING_PROJECT_DECISION`; Kandahar A-10C II CAS-Stationen, Payload und Evidenzgrenze |
-| `OMW-TEST-ARMY-GROUND-ACCEPTANCE-4` | `mission/tests/army-ground-foundation/ACCEPTANCE-4.md` | `PLANNED`; Fenty MOOSE return-handoff runtime gate |
+| `OMW-TEST-ARMY-GROUND-ACCEPTANCE-4` | `mission/tests/army-ground-foundation/ACCEPTANCE-4.md` | `ACCEPTED_TECHNICAL_BASELINE`; Fenty MOOSE return-handoff runtime gate |
