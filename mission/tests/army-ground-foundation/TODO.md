@@ -353,8 +353,10 @@ Acceptance-3-2 road-aligned Warehouse materialization
 Offen vor dem lokalen Build-/DCS-Gate:
 
 ```text
-owner creates and validates:
-ZON_BLUE_GND_FENTY_RETURN_HANDOFF_01
+owner validates the existing:
+ZON_BLUE_GND_FENTY_ACCESS
+
+The same ACCESS marker is the Warehouse spawn, start and return/handoff area; no second FOB/Warehouse marker is introduced.
 
 then:
 build Acceptance 4
