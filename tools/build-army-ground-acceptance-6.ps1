@@ -154,9 +154,9 @@ $header = @"
 -- GitCommit: $commit
 -- GeneratedUtc: $generatedUtc
 -- Gate/Test-ID: $testId
--- Scope: isolated test-only Fenty strategic settlement: 4 test vehicles reserve/consume before the existing BRIGADE/Warehouse materialization, then exactly one credit of 4 only after the confirmed Returned -> Warehouse AddAsset -> physical group removal handoff.
+-- Scope: isolated three-site settlement: Fenty 4 out/4 back; Joyce 4 out/3 back; Wright 4 out/3 back with one damaged returner. Each scenario reserves/consumes 4 before the unchanged BRIGADE/Warehouse materialization, then credits exactly its verified returning count only after Returned -> Warehouse AddAsset -> physical group removal.
 -- Approved exception: unchanged, per-BRIGADE road-aligned Warehouse spawn adapter from Acceptance 3-2. It preserves the Warehouse request, asset reservation, callbacks and ARMYGROUP/AUFTRAG lifecycle. No new private return adapter is used.
--- Exclusions: no production CampaignState node/resource credit; no baseline mutation; no loss/partial-loss/damage/restart/reconstitution; no cross-session state; no OPSTRANSPORT; no QRF; no artillery; no MIZ mutation.
+-- Exclusions: no production CampaignState node/resource credit; no baseline mutation; no restart/reconstitution; no cross-session state; no OPSTRANSPORT; no QRF; no artillery; no MIZ mutation. Test-only MOOSE loss/damage injection is included.
 -- MOOSE-Commit: $mooseCommit
 -- Moose.lua-SHA256: $mooseSha256
 
