@@ -1,7 +1,10 @@
 -- Operation Mountain Watch - ARMY Ground Foundation Acceptance 3 harness.
 -- Scope: six concurrent BRIGADE domains using the Acceptance 2 ARMOREDGUARD lifecycle.
+-- Approved exception (owner authorization 2026-08-19): a per-site override of
+-- the pinned MOOSE internal WAREHOUSE spawn step accepts TM01M-derived absolute
+-- positions/headings while retaining the BRIGADE/Warehouse lifecycle.
 
-local TEST_ID = "ARMY-GROUND-ACCEPTANCE-3-1"
+local TEST_ID = "ARMY-GROUND-ACCEPTANCE-3-2"
 local TAG = "OMW_GND_A3"
 local TEMPLATE_NAME = "TPL_BLUE_GND_PATROL_MATV_4"
 
@@ -15,6 +18,11 @@ local HOLD_MAX_MOVEMENT_M = 75
 local TARGET_MAX_DISTANCE_M = 250
 local ROAD_SPEED_KNOTS = 27
 local TACTICAL_SPEED_KNOTS = 8
+local ROAD_SPAWN_VEHICLE_SPACING_M = 18
+local ROAD_SPAWN_REAR_CLEARANCE_M = 20
+local ROAD_SPAWN_HEADING_SAMPLE_M = 10
+local ROAD_SPAWN_MAX_SNAP_M = 30
+local ROAD_SPAWN_MIN_SEPARATION_M = 8
 
 local sites = {
   {
@@ -106,6 +114,204 @@ local function maybeGlobalPass()
   end
 end
 
+local function copyVec2(vec2)
+  return { x = vec2.x, y = vec2.y }
+end
+
+local function distance2d(left, right)
+  local dx = right.x - left.x
+  local dy = right.y - left.y
+  return math.sqrt(dx * dx + dy * dy)
+end
+
+local function interpolateVec2(left, right, fraction)
+  return {
+    x = left.x + (right.x - left.x) * fraction,
+    y = left.y + (right.y - left.y) * fraction,
+  }
+end
+
+local function headingDegrees(fromVec2, toVec2)
+  local north = toVec2.x - fromVec2.x
+  local east = toVec2.y - fromVec2.y
+  local heading = math.deg(math.atan2(east, north))
+  if heading < 0 then
+    heading = heading + 360
+  end
+  return heading
+end
+
+local function compileDistances(routePoints)
+  local totalDistance = 0
+  routePoints[1].distance = 0
+  for index = 2, #routePoints do
+    totalDistance = totalDistance + distance2d(routePoints[index - 1].vec2, routePoints[index].vec2)
+    routePoints[index].distance = totalDistance
+  end
+  return totalDistance
+end
+
+local function pointAtDistance(routePoints, totalDistance, requestedDistance)
+  local distance = math.max(0, math.min(requestedDistance, totalDistance))
+  if distance == 0 then
+    return copyVec2(routePoints[1].vec2)
+  end
+  if distance == totalDistance then
+    return copyVec2(routePoints[#routePoints].vec2)
+  end
+  for index = 2, #routePoints do
+    local right = routePoints[index]
+    if distance <= right.distance then
+      local left = routePoints[index - 1]
+      local span = right.distance - left.distance
+      local fraction = span > 0 and (distance - left.distance) / span or 0
+      return interpolateVec2(left.vec2, right.vec2, fraction)
+    end
+  end
+  return copyVec2(routePoints[#routePoints].vec2)
+end
+
+local function headingAtDistance(routePoints, totalDistance, distance)
+  local offset = math.max(1, ROAD_SPAWN_HEADING_SAMPLE_M)
+  local fromDistance = math.max(0, distance - offset)
+  local toDistance = math.min(totalDistance, distance + offset)
+  if toDistance <= fromDistance then
+    return 0
+  end
+  return headingDegrees(
+    pointAtDistance(routePoints, totalDistance, fromDistance),
+    pointAtDistance(routePoints, totalDistance, toDistance)
+  )
+end
+
+local function buildRoadSpawnPositions(site, templateGroup)
+  local startRoad = site.accessZoneObject:GetCoordinate():GetClosestPointToRoad(false)
+  if not startRoad then
+    return nil, nil, "ACCESS_ROAD_NOT_FOUND"
+  end
+  if site.accessZoneObject:IsVec2InZone(startRoad:GetVec2()) ~= true then
+    return nil, nil, "ACCESS_ROAD_OUTSIDE_ZONE"
+  end
+
+  local roadPath, roadLength, gotRoadPath = startRoad:GetPathOnRoad(site.approachCoord, true, false, false, false)
+  if gotRoadPath ~= true or type(roadPath) ~= "table" or #roadPath < 2 then
+    return nil, nil, "ACCESS_TO_APPROACH_ROAD_PATH_UNAVAILABLE"
+  end
+
+  local routePoints = {}
+  for _, coordinate in ipairs(roadPath) do
+    routePoints[#routePoints + 1] = { vec2 = coordinate:GetVec2() }
+  end
+  local totalDistance = compileDistances(routePoints)
+  if totalDistance <= 0 then
+    return nil, nil, "ACCESS_TO_APPROACH_ROAD_PATH_EMPTY"
+  end
+
+  local count = templateGroup:GetInitialSize()
+  if type(count) ~= "number" or count < 1 then
+    return nil, nil, "TEMPLATE_UNIT_COUNT_INVALID"
+  end
+  local leadDistance = ROAD_SPAWN_REAR_CLEARANCE_M + (count - 1) * ROAD_SPAWN_VEHICLE_SPACING_M
+  if leadDistance >= totalDistance then
+    return nil, nil, "ACCESS_TO_APPROACH_ROAD_PATH_TOO_SHORT"
+  end
+
+  local positions = {}
+  local maximumSnap = 0
+  for index = 1, count do
+    local routeDistance = leadDistance - (index - 1) * ROAD_SPAWN_VEHICLE_SPACING_M
+    local rawVec2 = pointAtDistance(routePoints, totalDistance, routeDistance)
+    local rawCoordinate = COORDINATE:NewFromVec2(rawVec2)
+    local roadCoordinate = rawCoordinate:GetClosestPointToRoad(false)
+    if not roadCoordinate then
+      return nil, nil, "SPAWN_ROAD_PROJECTION_UNAVAILABLE unit=" .. tostring(index)
+    end
+    local snapDistance = rawCoordinate:Get2DDistance(roadCoordinate)
+    maximumSnap = math.max(maximumSnap, snapDistance)
+    if snapDistance > ROAD_SPAWN_MAX_SNAP_M then
+      return nil, nil, "SPAWN_ROAD_SNAP_TOO_LARGE unit=" .. tostring(index) .. " distanceM=" .. tostring(roundMeters(snapDistance))
+    end
+    if site.accessZoneObject:IsVec2InZone(roadCoordinate:GetVec2()) ~= true then
+      return nil, nil, "SPAWN_POSITION_OUTSIDE_ACCESS unit=" .. tostring(index)
+    end
+    positions[index] = {
+      x = roadCoordinate.x,
+      y = roadCoordinate.z,
+      alt = roadCoordinate.y,
+      heading = headingAtDistance(routePoints, totalDistance, routeDistance),
+    }
+    if index > 1 and distance2d(positions[index - 1], positions[index]) < ROAD_SPAWN_MIN_SEPARATION_M then
+      return nil, nil, "SPAWN_VEHICLE_SEPARATION_TOO_SMALL unit=" .. tostring(index)
+    end
+  end
+
+  return positions, {
+    leadDistance = leadDistance,
+    maximumSnap = maximumSnap,
+    roadLength = roadLength or totalDistance,
+  }
+end
+
+local function installRoadAlignedWarehouseSpawnAdapter(site)
+  local originalSpawn = site.brigade._SpawnAssetGroundNaval
+  if type(originalSpawn) ~= "function" then
+    fail(site, "WAREHOUSE_PRIVATE_SPAWN_UNAVAILABLE")
+    return false
+  end
+  if site.brigade.ValidateAndRepositionGroundUnits == true then
+    fail(site, "WAREHOUSE_REPOSITIONING_CONFLICT")
+    return false
+  end
+
+  site.brigade._SpawnAssetGroundNaval = function(self, alias, asset, request, spawnzone, lateactivated)
+    if not asset or asset.category ~= Group.Category.GROUND then
+      return originalSpawn(self, alias, asset, request, spawnzone, lateactivated)
+    end
+    if type(asset.template) ~= "table" or type(asset.template.units) ~= "table"
+      fail(site, "WAREHOUSE_TEMPLATE_UNAVAILABLE")
+      return nil
+    end
+    if #asset.template.units ~= #site.roadSpawnPositions then
+      fail(site, "WAREHOUSE_TEMPLATE_POSITION_COUNT_MISMATCH expected=" .. tostring(#site.roadSpawnPositions) .. " actual=" .. tostring(#asset.template.units))
+      return nil
+    end
+
+    local template = self:_SpawnAssetPrepareTemplate(asset, alias)
+    if not template or type(template.units) ~= "table" or #template.units ~= #site.roadSpawnPositions then
+      fail(site, "WAREHOUSE_SPAWN_TEMPLATE_INVALID")
+      return nil
+    end
+
+    template.route.points[1] = template.route.points[1] or {}
+    for index, position in ipairs(site.roadSpawnPositions) do
+      local unit = template.units[index]
+      unit.x = position.x
+      unit.y = position.y
+      unit.alt = position.alt
+      unit.heading = math.rad(position.heading)
+      if asset.livery then
+        unit.livery_id = asset.livery
+      end
+      if asset.skill then
+        unit.skill = asset.skill
+      end
+    end
+    template.route.points[1].x = site.roadSpawnPositions[1].x
+    template.route.points[1].y = site.roadSpawnPositions[1].y
+    template.x = site.roadSpawnPositions[1].x
+    template.y = site.roadSpawnPositions[1].y
+    template.alt = site.roadSpawnPositions[1].alt
+    template.lateActivation = lateactivated
+
+    log("ROAD_ALIGNED_WAREHOUSE_SPAWN site=" .. site.id
+      .. " units=" .. tostring(#site.roadSpawnPositions)
+      .. " leadDistanceM=" .. tostring(roundMeters(site.roadSpawnDiagnostics.leadDistance))
+      .. " maximumSnapM=" .. tostring(roundMeters(site.roadSpawnDiagnostics.maximumSnap)))
+    return _DATABASE:Spawn(template)
+  end
+  return true
+end
+
 local function prepareSite(site, templateGroup)
   site.failed = false
   site.passed = false
@@ -166,7 +372,22 @@ local function prepareSite(site, templateGroup)
   site.platoon:AddMissionCapability(AUFTRAG.Type.ARMOREDGUARD, 100)
   site.brigade:AddPlatoon(site.platoon)
 
-  log("SITE_READY site=" .. site.id .. " totalDistanceM=" .. tostring(roundMeters(totalDistance)) .. " tacticalLegM=" .. tostring(roundMeters(tacticalLeg)))
+  local roadSpawnPositions, roadSpawnDiagnostics, roadSpawnError = buildRoadSpawnPositions(site, templateGroup)
+  if not roadSpawnPositions then
+    fail(site, roadSpawnError)
+    return false
+  end
+  site.roadSpawnPositions = roadSpawnPositions
+  site.roadSpawnDiagnostics = roadSpawnDiagnostics
+  if not installRoadAlignedWarehouseSpawnAdapter(site) then
+    return false
+  end
+
+  log("SITE_READY site=" .. site.id
+    .. " totalDistanceM=" .. tostring(roundMeters(totalDistance))
+    .. " tacticalLegM=" .. tostring(roundMeters(tacticalLeg))
+    .. " roadSpawnLeadM=" .. tostring(roundMeters(roadSpawnDiagnostics.leadDistance))
+    .. " roadSpawnMaxSnapM=" .. tostring(roundMeters(roadSpawnDiagnostics.maximumSnap)))
   return true
 end
 
