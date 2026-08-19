@@ -307,3 +307,17 @@ Result: six sites PASS; owner visual acceptance
 ~~~
 
 Bestätigt sind exakt für diesen Scope: die per-BRIGADE Adapterausführung vor der Warehouse-Materialisierung, vier Unitpositionen auf der Straße je Site, 74 m Marschraum, maximal 4 m Road-Snap, einmalige Assetmaterialisierung, `OnAfterAssetSpawned`-/`OnAfterArmyOnMission`-gestützter Lifecycle, `SetReturnToLegion(false)`, same-ARMYGROUP Mission 1/2 und stabiler Zielhalt. Die Ausnahme bleibt intern, versionsgebunden und nicht produktionsverallgemeinert.
+
+## Addendum 2026-08-19 – Acceptance 4 Fenty return handoff (DCS pending)
+
+Für Acceptance 4 ist der mobile, öffentliche Rückgabepfad source-geprüft:
+
+```text
+ARMYGROUP:RTZ(owner-defined handoff zone, ENUMS.Formation.Vehicle.OnRoad)
+-> temporary OnRoad detour waypoint
+-> ARMYGROUP:Returned()
+-> LEGION:__AddAsset(10, group, 1)
+-> WAREHOUSE AddAsset / physical group removal
+```
+
+Der Test verwendet den dokumentierten mobilen Pfad. Der immobile `ARMYGROUP:onbeforeRTZ`-Teleportzweig ist ausgeschlossen. Die Return-Handoff-Zone wird ausschließlich vom Owner im Mission Editor positioniert und muss nicht beobachtbar sowie für die von MOOSE gewählte Zielkoordinate und vier M-ATV frei sein. Noch `SOURCE_REVIEWED / DCS_PENDING`; keine CampaignState-Buchung und keine Produktionsbaseline.
