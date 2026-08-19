@@ -321,3 +321,19 @@ ARMYGROUP:RTZ(existing Fenty ACCESS zone, ENUMS.Formation.Vehicle.OnRoad)
 ```
 
 Der Test verwendet den dokumentierten mobilen Pfad. Der immobile `ARMYGROUP:onbeforeRTZ`-Teleportzweig ist ausgeschlossen. Der bestehende Fenty-ACCESS-Marker wird sowohl für Spawn/Start als auch für Rückkehr/Handoff verwendet und muss für die von MOOSE gewählte Zielkoordinate sowie vier M-ATV frei sein. Noch `SOURCE_REVIEWED / DCS_PENDING`; keine CampaignState-Buchung und keine Produktionsbaseline.
+
+## Addendum 2026-08-19 – Acceptance-4-2-DCS-Nachweis
+
+Der mobile öffentliche Fenty-Rückgabepfad wurde in DCS 2.9.28.26385 MT praktisch bestätigt:
+
+~~~text
+Tested source commit: ec66a29ddbd234d07f28d174a7725e4331cc31a6
+Bundle SHA-256: 643637683e7e161584d5b1dbcc16b87a6691b2f32a6ae4e101229da1d35af5bd
+MIZ: OMW_Template_v13_ground_test(20260819-200418).miz
+MIZ SHA-256: 1564001e9aa524217a9142c35977d5cf9c0d4e8b2765c1de351ecb31a7edf3e2
+internal mission SHA-256: c0b26f5af717d9db0c60551b06544348eb58d7597bf8917cdb3989f97c3cc4b7
+MOOSE SHA-256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
+Result: PASS / owner visual acceptance
+~~~
+
+Für genau diesen Scope bestätigt: ARMYGROUP:RTZ(existing Fenty ACCESS zone, OnRoad) führte über den Returning-FSM-Zustand zu Returned; anschließend wurde der normale LEGION:__AddAsset(10, group, 1)-/Warehouse-Handoff ausgeführt. Die vier M-ATV fuhren bis zur bestehenden Fenty-ACCESS-Zone und die temporäre DCS-Gruppe wurde erst danach kontrolliert entfernt; diese sichtbare Entfernung ist erwartetes Warehouse-Verhalten. Kein Teleport wurde während Materialisierung, Anfahrt oder Rückfahrt akzeptiert. CampaignState blieb unverändert.
