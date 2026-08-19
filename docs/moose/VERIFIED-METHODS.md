@@ -518,6 +518,6 @@ Result: PASS / owner visual acceptance
 
 | Methode/Pfad | Status | Grenze |
 |---|---|---|
-| `ARMYGROUP:RTZ(Zone, ENUMS.Formation.Vehicle.OnRoad)` | `SOURCE_REVIEWED / DCS_PENDING` | mobiler Group-Pfad fügt einen temporären Ground-Waypoint in eine owner-definierte Zone ein; die Zielkoordinate ist innerhalb dieser Zone zufällig |
+| `ARMYGROUP:RTZ(Zone, ENUMS.Formation.Vehicle.OnRoad)` | `SOURCE_REVIEWED / DCS_PENDING` | mobiler Group-Pfad fügt einen temporären Ground-Waypoint in die bestehende Fenty-ACCESS-Zone ein; die Zielkoordinate ist innerhalb dieser Zone zufällig |
 | `ARMYGROUP:onafterReturned -> LEGION:__AddAsset(10, group, 1)` | `SOURCE_REVIEWED / DCS_PENDING` | Rückgabe an das bestehende operative Warehouse nach zehn Sekunden; kein CampaignState-Settlement |
 | `WAREHOUSE:onafterAddAsset` für bekannte, lebende Gruppe | `SOURCE_REVIEWED / DCS_PENDING` | stellt den Assetbestand wieder her und despawnt/stoppt die physische OPSGROUP; Sichtbarkeit muss in DCS am Owner-Handoff-Marker geprüft werden |
