@@ -513,3 +513,11 @@ Result: PASS / owner visual acceptance
 | `WAREHOUSE:_SpawnAssetGroundNaval(...)` + `_SpawnAssetPrepareTemplate(...)` + `_DATABASE:Spawn(template)` | `VALIDATED_FOR_DOCUMENTED_SCOPE / INTERNAL_RESTRICTED` | ausschließlich die freigegebene per-BRIGADE Acceptance-3-2-Ausnahme; road-aligned 4-Unit Spawn, 74 m Marschraum, Road-Snap <= 4 m; keine allgemeine öffentliche API oder Produktionsfreigabe |
 | `BRIGADE:New`, `BRIGADE:AddPlatoon`, `PLATOON:New`, `COHORT:AddMissionCapability`, `COHORT:CountAssets` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | parallele sechs-Domain-Auswahl und genau eine Materialisierung pro Site |
 | `AUFTRAG:NewARMOREDGUARD`, `SetMissionSpeed`, `SetReturnToLegion(false)`, `__Cancel(...)` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | On-Road 27 kt -> MissionDone physical stay -> same ARMYGROUP Vee 8 kt -> stable halt, sechs Sites |
+
+## Addendum 2026-08-19 – Acceptance 4 source review
+
+| Methode/Pfad | Status | Grenze |
+|---|---|---|
+| `ARMYGROUP:RTZ(Zone, ENUMS.Formation.Vehicle.OnRoad)` | `SOURCE_REVIEWED / DCS_PENDING` | mobiler Group-Pfad fügt einen temporären Ground-Waypoint in eine owner-definierte Zone ein; die Zielkoordinate ist innerhalb dieser Zone zufällig |
+| `ARMYGROUP:onafterReturned -> LEGION:__AddAsset(10, group, 1)` | `SOURCE_REVIEWED / DCS_PENDING` | Rückgabe an das bestehende operative Warehouse nach zehn Sekunden; kein CampaignState-Settlement |
+| `WAREHOUSE:onafterAddAsset` für bekannte, lebende Gruppe | `SOURCE_REVIEWED / DCS_PENDING` | stellt den Assetbestand wieder her und despawnt/stoppt die physische OPSGROUP; Sichtbarkeit muss in DCS am Owner-Handoff-Marker geprüft werden |
