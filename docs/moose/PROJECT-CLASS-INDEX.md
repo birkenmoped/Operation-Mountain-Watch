@@ -62,16 +62,16 @@ REJECTED_FOR_PROJECT_USE
 | `COHORT` | `VALIDATED_FOR_DOCUMENTED_SCOPE` + `SOURCE_REVIEWED` | AirOps-Lifecycle praktisch bestätigt; Ground-Review bestätigt `AddMissionCapability`, `SetMissionRange`, `CanMission`, `CountAssets` und 75-NM-Ground-Default source-seitig |
 | `FLIGHTGROUP` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | AAR FuelLow, Dead/OnAfterDead, GetCoordinate, `AddWaypoint(...)`, `AddMission(...)` und `OnAfterPassingWaypoint(...)`; Acceptance 7 bestätigte FIR -> 60-NM -> AUFTRAG sowie Egress -> External Handoff |
 | `COMMANDER` | `VALIDATED_FOR_DOCUMENTED_SCOPE` + `SOURCE_REVIEWED` | dokumentierter COMMANDER-Lifecycle; Ground-Review bestätigt `AddBrigade(...)` und `AddOpsTransport(...)` source-seitig; MissionDemand bleibt OMW-Tasking-Autorität |
-| `AUFTRAG` | `VALIDATED_FOR_DOCUMENTED_SCOPE` + `SOURCE_REVIEWED` | AAR-Methoden praktisch bestätigt; Ground-Review bestätigt `NewPATROLZONE`, `SetReturnToLegion(false)` und den FSM-generierten `__Cancel(...)`-Pfad; Ground-DCS-Acceptance offen |
+| `AUFTRAG` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | AAR-Methoden sowie dokumentierte Ground-Acceptance-1 bis -4-Lifecycles praktisch bestätigt; keine CampaignState-Autorität |
 | `SPAWN` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | area-spezifische AAR-Templates und externe Materialisierung praktisch bestätigt; Ground Acceptance 1 verwendet keinen direkten SPAWN-Pfad |
 | `SCHEDULER` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | allgemeine OMW-Nutzung praktisch bestätigt; Ground Acceptance 1 verwendet nur One-shot-Koordination, kein hochfrequentes Polling |
 | `USERFLAG` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Warehouse-Acceptance-Readiness-Pfade |
 | `GROUP`, `UNIT`, `STATIC`, `ZONE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Wrapper-/Objektauflösung in dokumentierten Scopes; Acceptance-1-v13-Objektvertrag read-only bestätigt, Ground-Runtime offen |
 | `COORDINATE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | `Get2DDistance(...)`, `GetIntermediateCoordinate(...)` und `HeadingTo(...)` im dokumentierten AirOps-Scope |
-| `BRIGADE` | `SOURCE_REVIEWED` | `New`, `AddPlatoon`, Asset-Pool-/LEGION-Bindung und Callbackpfade geprüft; Acceptance-1-Harness gestaged, noch nicht DCS-validiert |
-| `PLATOON` | `SOURCE_REVIEWED` | `New`, Capability-Filter und post-start `CountAssets` für Acceptance 1 source-geprüft; DCS-Selektion offen |
-| `ARMYGROUP` | `SOURCE_REVIEWED` | Routing/RTZ/Returned/Rearm/Retreat und MissionDone-Persistenzpfad geprüft; Same-group follow-up ist Acceptance-1-Ziel, noch nicht DCS-validiert |
-| `OPSGROUP` | `VALIDATED_FOR_DOCUMENTED_SCOPE` + `SOURCE_REVIEWED` | AirOps-Methoden praktisch bestätigt; Ground-Review bestätigt MissionDone-/Return- und Cargo-Pfade source-seitig; Ground-Acceptance offen |
+| `BRIGADE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` + `INTERNAL_RESTRICTED` | Acceptance 1–4 bestätigen Ground-Assetpool, Materialisierung und Callback-Lifecycle; die road-aligned private Warehouse-Spawn-Ausnahme bleibt auf Acceptance-3-2 und den gepinnten MOOSE-Stand begrenzt |
+| `PLATOON` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Acceptance 1–4 bestätigen dokumentierte Assetselektion und Wiederverwendung im Ground-Scope; keine allgemeine Produktionsfreigabe |
+| `ARMYGROUP` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Acceptance 1–4 bestätigen MissionDone-Persistenz, Same-group-Follow-up sowie mobilen RTZ/Returned-Fenty-Handoff; immobiler Teleportpfad bleibt ausgeschlossen |
+| `OPSGROUP` | `VALIDATED_FOR_DOCUMENTED_SCOPE` + `SOURCE_REVIEWED` | AirOps-Methoden sowie Ground-MissionDone-/Return-Pfade in Acceptance 1–4 praktisch bestätigt; Cargo-Pfade bleiben source-reviewed |
 | `OPSTRANSPORT` | `SOURCE_REVIEWED` | Constructor, Cargo/Carrier-Zonen, `AddPathTransport`, Disembark- und Carrier-Verträge geprüft; taktischer OMW-Transport benötigt eigenen DCS-Test |
 | `CTLD`, `CSAR`, `AICSAR` | `PLANNED` / teilweise verwendet | separate Acceptance erforderlich |
 | `INTEL` | `PLANNED` | taktisches Lagebild; Laufzeitnachweis offen |
