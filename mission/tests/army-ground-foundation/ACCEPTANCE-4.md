@@ -36,6 +36,7 @@ Acceptance 4 prüft **ausschließlich** den Fenty-Rückgabe-Handoff einer durch 
 WAREHOUSE/BRIGADE materialization
 -> ARMOREDGUARD road approach
 -> MissionDone with physical group retained
+-> 30-second AUFTRAG settlement delay
 -> public ARMYGROUP:RTZ(existing Fenty ACCESS zone, OnRoad)
 -> ARMYGROUP Returned
 -> existing MOOSE LEGION:__AddAsset(10, group, 1)
@@ -125,8 +126,10 @@ Der Lauf ist nur positiv, wenn alle folgenden Marker und Beobachtungen vorliegen
 OMW_GND_A4 SITE_READY site=FENTY ...
 OMW_GND_A4 ROAD_ALIGNED_WAREHOUSE_SPAWN site=FENTY units=4 ...
 OMW_GND_A4 GROUP_MATERIALIZED site=FENTY ...
-OMW_GND_A4 MISSION1_DONE site=FENTY physicalGroupRetained=true
-OMW_GND_A4 RETURN_TO_HANDOFF_QUEUED site=FENTY ... formation=OnRoad
+OMW_GND_A4 MISSION1_DONE site=FENTY physicalGroupRetained=true returnSettlementDelaySec=30
+OMW_GND_A4 RETURN_RTZ_ACTIVE site=FENTY ... zone=ZON_BLUE_GND_FENTY_ACCESS formation=OnRoad
+OMW_GND_A4 RETURN_RTZ_ISSUED site=FENTY ... state=Returning
+OMW_GND_A4 RETURN_IN_PROGRESS site=FENTY ... state=Returning
 OMW_GND_A4 RETURNED_HANDOFF site=FENTY ...
 OMW_GND_A4 WAREHOUSE_ADD_ASSET site=FENTY ...
 OMW_GND_A4 SITE_RUNTIME_PASS site=FENTY spawnCount=1 returnedCount=1 warehouseAddAssetCount=1 physicalGroupRemoved=true
@@ -136,6 +139,7 @@ OMW_GND_A4 RUNTIME_PASS_VISUAL_PENDING sites=1 passed=1
 Zusätzlich visuell:
 
 - vier M-ATV materialisieren road-aligned in Marschreihenfolge ohne Kollision;
+- der RTZ-FSM wechselt nach dem Settlement-Delay nach `Returning` und bleibt dort bis zur Rückgabe;
 - die Gruppe fährt normal zur Rückgabezone;
 - es gibt keinen sichtbaren Teleporter;
 - die Gruppe wird erst am nicht beobachtbaren Handoff-Ort entfernt;
@@ -154,10 +158,25 @@ Output:
 mission/tests/army-ground-foundation/dist/OMW_Army_Ground_Acceptance_4.lua
 
 BuilderVersion / Test ID:
-ARMY-GROUND-ACCEPTANCE-4-1
+ARMY-GROUND-ACCEPTANCE-4-2
 ```
 
-Der Builder blockiert direkte DCS-Spawn-/Teleport-/MIST-Pfade, verlangt genau einen bereits freigegebenen privaten Warehouse-Spawnaufruf und verlangt die RTZ-, Returned-, AddAsset- und Despawn-Prüfmarker.
+Der Builder blockiert direkte DCS-Spawn-/Teleport-/MIST-Pfade, verlangt genau einen bereits freigegebenen privaten Warehouse-Spawnaufruf und verlangt den 30-Sekunden-Settlement-Delay sowie RTZ-state-, progress-, timeout-, Returned-, AddAsset- und Despawn-Prüfmarker.
+
+## 7.1 Correction after the first real Acceptance-4 run
+
+The first Acceptance-4 run is a negative result, not an incomplete observation window:
+
+```text
+mission_time: 14115.652 seconds (3:55:16)
+Mission 1 cancellation: 496.954 seconds
+remaining observation after MissionDone: about 3:47 hours
+observed: no Returned, no Warehouse AddAsset, no runtime pass
+```
+
+The former two-second delay issued `RTZ(...)` before the associated `AUFTRAG` had completed its evaluator path. The correction keeps the same public `ARMYGROUP:RTZ(...)` lifecycle and the same single Fenty ACCESS marker, but waits 30 mission seconds before RTZ and proves the `Returning` FSM state with one progress checkpoint. A one-shot 900-second mission-time timeout converts a missing return into an explicit failure; it is not a strategic or production timeout.
+
+This correction is `DCS_PENDING`; it does not claim that the return succeeds until the revised bundle is embedded and executed in DCS.
 
 ## 8. Nicht Teil dieses Gates
 
