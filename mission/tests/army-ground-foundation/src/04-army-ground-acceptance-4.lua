@@ -29,7 +29,6 @@ local sites = {
     platoonName = "PLT_BLUE_GND_JALALABAD_RETURN_MATV",
     accessZone = "ZON_BLUE_GND_FENTY_ACCESS",
     observationZone = "ZON_BLUE_GND_FENTY_PATROL_TEST_01",
-    returnZone = "ZON_BLUE_GND_FENTY_RETURN_HANDOFF_01",
   },
 }
 
@@ -288,16 +287,13 @@ local function prepareSite(site, templateGroup)
   end
   local accessZone = ZONE:FindByName(site.accessZone)
   local observationZone = ZONE:FindByName(site.observationZone)
-  local returnZone = ZONE:FindByName(site.returnZone)
 
   if not requireObject(site, warehouseHost, site.warehouse) then return false end
   if not requireObject(site, templateGroup, TEMPLATE_NAME) then return false end
   if not requireObject(site, accessZone, site.accessZone) then return false end
   if not requireObject(site, observationZone, site.observationZone) then return false end
-  if not requireObject(site, returnZone, site.returnZone) then return false end
 
   site.accessZoneObject = accessZone
-  site.returnZoneObject = returnZone
   site.targetCoord = observationZone:GetCoordinate()
   local accessCoord = accessZone:GetCoordinate()
   local totalDistance = accessCoord:Get2DDistance(site.targetCoord)
@@ -345,7 +341,7 @@ local function prepareSite(site, templateGroup)
     .. " approachLegM=" .. tostring(roundMeters(approachLeg))
     .. " roadSpawnLeadM=" .. tostring(roundMeters(roadSpawnDiagnostics.leadDistance))
     .. " roadSpawnMaxSnapM=" .. tostring(roundMeters(roadSpawnDiagnostics.maximumSnap))
-    .. " returnZone=" .. site.returnZone)
+    .. " returnZone=" .. site.accessZone)
   return true
 end
 
@@ -386,10 +382,10 @@ local function issueReturn(site)
     return
   end
   site.returnIssued = true
-  armyGroup:RTZ(site.returnZoneObject, ENUMS.Formation.Vehicle.OnRoad)
+  armyGroup:RTZ(site.accessZoneObject, ENUMS.Formation.Vehicle.OnRoad)
   log("RETURN_TO_HANDOFF_QUEUED site=" .. site.id
     .. " group=" .. site.firstArmyGroupName
-    .. " zone=" .. site.returnZone
+    .. " zone=" .. site.accessZone
     .. " formation=OnRoad")
 end
 
