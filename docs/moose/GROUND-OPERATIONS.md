@@ -313,11 +313,11 @@ Bestätigt sind exakt für diesen Scope: die per-BRIGADE Adapterausführung vor 
 Für Acceptance 4 ist der mobile, öffentliche Rückgabepfad source-geprüft:
 
 ```text
-ARMYGROUP:RTZ(owner-defined handoff zone, ENUMS.Formation.Vehicle.OnRoad)
+ARMYGROUP:RTZ(existing Fenty ACCESS zone, ENUMS.Formation.Vehicle.OnRoad)
 -> temporary OnRoad detour waypoint
 -> ARMYGROUP:Returned()
 -> LEGION:__AddAsset(10, group, 1)
 -> WAREHOUSE AddAsset / physical group removal
 ```
 
-Der Test verwendet den dokumentierten mobilen Pfad. Der immobile `ARMYGROUP:onbeforeRTZ`-Teleportzweig ist ausgeschlossen. Die Return-Handoff-Zone wird ausschließlich vom Owner im Mission Editor positioniert und muss nicht beobachtbar sowie für die von MOOSE gewählte Zielkoordinate und vier M-ATV frei sein. Noch `SOURCE_REVIEWED / DCS_PENDING`; keine CampaignState-Buchung und keine Produktionsbaseline.
+Der Test verwendet den dokumentierten mobilen Pfad. Der immobile `ARMYGROUP:onbeforeRTZ`-Teleportzweig ist ausgeschlossen. Der bestehende Fenty-ACCESS-Marker wird sowohl für Spawn/Start als auch für Rückkehr/Handoff verwendet und muss für die von MOOSE gewählte Zielkoordinate sowie vier M-ATV frei sein. Noch `SOURCE_REVIEWED / DCS_PENDING`; keine CampaignState-Buchung und keine Produktionsbaseline.
