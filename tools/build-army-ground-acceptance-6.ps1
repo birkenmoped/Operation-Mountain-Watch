@@ -5,7 +5,7 @@ $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 
 $repoRoot = Split-Path -Parent $PSScriptRoot
-$sourceFile = Join-Path $repoRoot 'mission\tests\army-ground-foundation\src\05-army-ground-acceptance-6.lua'
+$sourceFile = Join-Path $repoRoot 'mission\tests\army-ground-foundation\src\06-army-ground-acceptance-6.lua'
 $campaignStateSourceFile = Join-Path $repoRoot 'scripts\campaign\OMW_CampaignState.lua'
 $distDir = Join-Path $repoRoot 'mission\tests\army-ground-foundation\dist'
 $outputFile = Join-Path $distDir 'OMW_Army_Ground_Acceptance_6.lua'
