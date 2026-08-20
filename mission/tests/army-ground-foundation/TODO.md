@@ -49,31 +49,33 @@ Honaker-Miracle -> OP JoJo
 Bostick -> OP Mustang / OP Clydesdale / OP Stallion
 ```
 
-Die aktuelle Reconciliation steht in:
+Maßgebliche Fachdateien:
 
-- [`OMW-ARMY-GROUND-KUNAR-OPERATIONAL-DOMAIN-RECONCILIATION`](../../../docs/ground/ARMY-GROUND-KUNAR-OPERATIONAL-DOMAIN-RECONCILIATION.md)
+```text
+docs/ground/ARMY-GROUND-KUNAR-OPERATIONAL-DOMAIN-RECONCILIATION.md
+docs/ground/ARMY-GROUND-RESOURCE-READINESS-CONTRACT.md
+docs/ground/ARMY-GROUND-RESOURCE-QUANTITY-AND-SETTLEMENT-BASELINE.md
+docs/ground/ARMY-GROUND-RETURN-SETTLEMENT-DECISION-PREPARATION.md
+```
 
 ## 2. Architekturgrenze
 
 ```text
 CampaignState strategic authority
-!= historical formation
 != MOOSE BRIGADE / WAREHOUSE / PLATOON
 != physical DCS GROUP / ARMYGROUP
 ```
 
-Zusätzlich gilt nach der Kunar-Reconciliation:
+Zusätzlich:
 
 ```text
 strategic parent / resource obligation
 != physical dispatch origin
 ```
 
-Ein MOOSE-Warehouse ist nur physischer Host/operativer Mirror. Es erzeugt keine eigene strategische Ressourcenhoheit.
+MOOSE bleibt für Materialisierung, AUFTRAG-/ARMYGROUP-Lifecycle, Routing, RTZ, Returned und Warehouse-Handoff verantwortlich. CampaignState bleibt alleinige strategische Ressourcenautorität.
 
-## 3. Aktuelle operative MOOSE-Domänen
-
-Für den nächsten Integrationslauf sind sechs Domains geplant:
+## 3. Operative MOOSE-Domänen
 
 ```text
 BDE_BLUE_GND_JALALABAD -> WH_BLUE_GND_FENTY
@@ -84,458 +86,234 @@ BDE_BLUE_GND_HONAKER   -> WH_BLUE_GND_HONAKER
 BDE_BLUE_GND_BOSTICK   -> WH_BLUE_GND_BOSTICK
 ```
 
-Fortress und Honaker erhalten damit einen eigenen operativen MOOSE-Materialisierungspunkt, aber **keinen automatisch neuen CampaignState-Fahrzeugbestand**.
+Fortress und Honaker besitzen weiterhin keinen erfundenen unabhängigen Produktionspool. Ihre endgültigen permanenten Personnel-/Vehicle-Mengen bleiben offen.
 
-Für Fortress und Honaker gilt bis zu einer separaten Mengenentscheidung:
-
-```text
-production vehicle quantity = NOT YET DECIDED
-production personnel quantity = NOT YET DECIDED
-integration-test patrol allocation = ALLOWED TEST-ONLY
-strategic auto-credit = FORBIDDEN
-```
-
-## 4. Bestehende Produktionsnahe Vehicle Baselines
-
-Unverändert:
+## 4. Produktionsnahe Ground-Root-Baseline
 
 ```text
-Jalalabad / Fenty   48 wheeled vehicles
-FOB Joyce           20 wheeled vehicles
-FOB Wright          22 wheeled vehicles
-FOB Bostick         26 wheeled vehicles
+GROUND_NODE_JALALABAD / Fenty:
+  PERSONNEL 480 / VEHICLE 48 / SUPPLY 120 / AMMO 100 / FUEL 120
+
+GROUND_NODE_JOYCE:
+  PERSONNEL 180 / VEHICLE 20 / SUPPLY 48 / AMMO 44 / FUEL 40
+
+GROUND_NODE_WRIGHT:
+  PERSONNEL 120 / VEHICLE 22 / SUPPLY 36 / AMMO 30 / FUEL 36
+
+GROUND_NODE_BOSTICK:
+  PERSONNEL 220 / VEHICLE 26 / SUPPLY 56 / AMMO 52 / FUEL 48
 ```
 
-Honaker:
+Verbindliche M-ATV-Korrelation:
 
 ```text
-2 x M777A2 historically confirmed for 2011-07-30
-Foundation technical proxy: 2 x L118_Unit
+1 M-ATV = 1 VEHICLE + 3 PERSONNEL
+4 M-ATV = 4 VEHICLE + 12 PERSONNEL
 ```
 
-Die bisherige Aussage `Honaker = 0 permanent wheeled vehicles` bleibt nur für die bereits beschlossene frühere Vehicle Baseline gültig und darf **nicht** als Beweis verwendet werden, dass Honaker 2011 keine lokale operative Fahrzeugnutzung oder Staging-Funktion hatte. Die neue Mengenentscheidung bleibt offen.
-
-Fortress erhält ebenfalls noch keine erfundene permanente Vehicle-Baseline.
-
-## 5. Ground Acceptance 1
-
-Acceptance 1 bestätigte für den exakt dokumentierten Joyce-Teststand:
+Settlement-Regeln:
 
 ```text
-BRIGADE / PLATOON lifecycle
-one materialization
-SetReturnToLegion(false)
-MissionDone physical stay
-same physical ARMYGROUP follow-up reuse
-spawnCount = 1
+confirmed return -> immediate one-time availability credit
+confirmed loss -> permanent loss
+returned damaged vehicle -> immediate one-time availability credit
+active nonterminal commitment at server stop/crash -> one-time strategic recredit at next startup
+no physical DCS/MOOSE continuation or respawn
 ```
 
-Ergebnisdokument:
+## 5. Validierte technische Meilensteine
 
-- [`2026-08-18-acceptance-1-runtime.md`](results/2026-08-18-acceptance-1-runtime.md)
-
-Der PATROLZONE-Fahrzeuglauf war technisch nützlich, ist aber kein gewünschtes Production-Fahrverhalten für mounted security groups.
-
-## 6. Ground Acceptance 2
-
-Acceptance 2 ersetzte `PATROLZONE` durch:
+### Acceptance 3-2
 
 ```text
-ARMOREDGUARD / On Road
--> same-group MissionDone persistence
--> ARMOREDGUARD / Vee
--> FullStop / stable hold
+six road-aligned Warehouse materializations
+same ARMYGROUP across mission phases
+stable target hold
+PASS / owner visual acceptance
 ```
 
-Der technische Runtime-Pfad lief bis:
+### Acceptance 4-2
 
 ```text
-RUNTIME_PASS_VISUAL_PENDING
-spawnCount=1
-same group reused
-Vee visible
-hold movedM=0
+MissionDone
+-> ARMYGROUP:RTZ(existing ACCESS zone, OnRoad)
+-> Returned
+-> Warehouse AddAsset
+-> controlled physical group removal
+PASS / owner visual acceptance
 ```
 
-Owner-Beobachtung:
+Ergebnis:
 
 ```text
-behavior deutlich besser
-Vee im Zielgebiet sichtbar
-10 kt road speed deutlich zu langsam
-DCS time acceleration used
+mission/tests/army-ground-foundation/results/2026-08-19-acceptance-4-runtime.md
 ```
 
-Ergebnisdokument:
+### Acceptance 6
 
-- [`2026-08-18-acceptance-2-runtime.md`](results/2026-08-18-acceptance-2-runtime.md)
+```text
+Fenty:  4 -> 4 return
+Joyce:  4 -> 1 loss + 3 return
+Wright: 4 -> 1 loss + damaged survivor + 3 return
+PASS / owner visual acceptance
+```
 
-Die vollständige visuelle Acceptance bleibt formal offen, bis sichtbarer Teleport/Despawn und sichtbare Dublette ausdrücklich bestätigt oder verneint wurden. Der getestete ARMOREDGUARD-Verhaltenspfad ist dennoch ausreichend, um nun auf Multi-Domain-Ebene zu skalieren.
+### Acceptance 7 – VALIDATED
 
-## 7. Ground Acceptance 3 – aktueller Gate
+Acceptance 7 bestätigte den Ground-CampaignState-Settlement-Adapter gegen den realen MOOSE-Ground-Lifecycle.
+
+```text
+Source commit:
+e049e34fe8e6de878fd390486888f3912bb179d8
+
+Bundle SHA-256:
+b591ccd746896c90064fa93d9b3d42626384f55e605efc748bf304ffccb86ec7
+
+MIZ:
+OMW_Template_v14_ground_test.miz
+
+MIZ SHA-256:
+88184ec180837044ff4dcef7cca264fe7ee5fcf5d55a8af19b11125c41eab94d
+
+DCS:
+2.9.28.26385 MT
+
+Result:
+PASS / owner visual acceptance
+```
+
+Bestätigt:
+
+```text
+Fenty:  4 VEHICLE + 12 PERSONNEL consumed -> 4/12 returned exactly once
+Joyce:  4/12 consumed -> 1/3 permanent loss + 3/9 returned exactly once
+Wright: 4/12 consumed -> 1/3 permanent loss + damaged survivor + 3/9 returned exactly once
+restart: unresolved 4/12 commitment -> strategic recredit exactly once
+no physical restart continuation or respawn
+```
+
+Runtime-Evidenz:
+
+```text
+mission/tests/army-ground-foundation/results/2026-08-20-acceptance-7-runtime.md
+```
+
+## 6. Aktueller Gate – Acceptance 8
+
+Acceptance 8 integriert den validierten Ground-Settlement-Adapter gegen den produktionsnahen initialen CampaignState-Bestand, ohne einen zweiten strategischen Store zu erzeugen.
+
+Neue Produktionsmodule:
+
+```text
+scripts/logistics/OMW_GroundInitialStock.lua
+scripts/ground/OMW_GroundRuntimeIntegration.lua
+```
+
+Bestehender gemeinsamer Initializer wird erweitert:
+
+```text
+scripts/logistics/OMW_AirOpsCampaignStateInitializer.lua
+```
+
+Zielkomposition:
+
+```text
+single CampaignState store
+= AirOpsInitialStock
++ AARStrategicStock
++ GroundInitialStock
+```
+
+Ground-Root-Nodes:
+
+```text
+GROUND_NODE_JALALABAD
+GROUND_NODE_JOYCE
+GROUND_NODE_WRIGHT
+GROUND_NODE_BOSTICK
+```
+
+Loss-Audit-Ressourcen pro Root-Node:
+
+```text
+GROUND:<nodeId>:VEHICLE_LOST
+GROUND:<nodeId>:PERSONNEL_LOST
+```
+
+Sie sind reine Audit-Zähler und keine Verfügbarkeitsquelle.
 
 Testplan:
 
-- [`OMW-TEST-ARMY-GROUND-ACCEPTANCE-3`](ACCEPTANCE-3.md)
+```text
+mission/tests/army-ground-foundation/ACCEPTANCE-8.md
+```
 
 Runtime source:
 
 ```text
-mission/tests/army-ground-foundation/src/03-army-ground-acceptance-3.lua
+mission/tests/army-ground-foundation/src/08-army-ground-production-integration.lua
 ```
 
 Builder:
 
 ```text
-tools/build-army-ground-acceptance-3.ps1
+tools/build-army-ground-acceptance-8.ps1
 ```
 
-BuilderVersion/Test-ID:
+Bundle:
 
 ```text
-ARMY-GROUND-ACCEPTANCE-3-1
+mission/tests/army-ground-foundation/dist/OMW_Army_Ground_Acceptance_8.lua
 ```
 
-### Bewegungsprofil
+BuilderVersion / Test-ID:
 
 ```text
-normal road transit:
-ARMOREDGUARD / On Road / 27 kt (~50 km/h)
-
-final tactical leg:
-ARMOREDGUARD / Vee / 8 kt
-
-objective:
-FullStop / stable hold
-SetReturnToLegion(false)
+ARMY-GROUND-ACCEPTANCE-8-1
 ```
 
-### Testziel
+## 7. MOOSE-first-Status Acceptance 8
 
-Alle sechs Domains gleichzeitig:
+Acceptance 8 führt keine neue MOOSE-Klasse, keinen neuen MOOSE-Callback und keinen weiteren privaten MOOSE-Override ein.
+
+Der physische Ground-Lifecycle ist durch Acceptance 7 validiert. Acceptance 8 testet nur die strategische CampaignState-Komposition und die bereits validierte Adapter-Semantik gegen die Produktionsmengen.
 
 ```text
-FENTY
-FORTRESS
-JOYCE
-WRIGHT
-HONAKER
-BOSTICK
+new MOOSE behavior: none
+new Native-DCS behavior: none
+new private MOOSE override: none
 ```
 
-Zu prüfen:
+Die bereits genehmigte road-aligned Warehouse-Ausnahme aus Acceptance 3-2 bleibt unverändert und ist nicht Bestandteil des neuen Produktionsintegrationscodes.
+
+## 8. Nächster lokaler Schritt
 
 ```text
-six BRIGADE starts
-six Warehouse hosts
-six independent materializations
-one patrol test group per site
-no cross-site group/callback/state collision
-no duplicate spawn
-same-group Mission 1 -> Mission 2 reuse per site
-27 kt road movement quality
-Vee transition
-stable ARMOREDGUARD hold
-no visible teleport/despawn
-pathfinding quality at all six sites
+pull current remote branch
+-> build Acceptance 8 bundle
+-> record real bundle SHA-256
+-> owner embeds only the generated bundle in the test .miz
+-> run Acceptance 8
+-> return real DCS log and tested MIZ
 ```
 
-## 8. Mission-Editor-Gate für Acceptance 3
+Acceptance 8 benötigt keine neue Ground-Bewegungs- oder Pathfinding-Abnahme. Die DCS-Ausführung dient dem realen Laufzeitnachweis der produktionsnahen Single-CampaignState-Komposition.
 
-Vor lokalem Build/Einbau muss die aktuelle Owner-`.miz` read-only gegen folgende Objektliste geprüft werden:
+## 9. Weiterhin offene Punkte
 
-```text
-WH_BLUE_GND_FENTY
-WH_BLUE_GND_FORTRESS
-WH_BLUE_GND_JOYCE
-WH_BLUE_GND_WRIGHT
-WH_BLUE_GND_HONAKER
-WH_BLUE_GND_BOSTICK
-
-TPL_BLUE_GND_PATROL_MATV_4
-
-ZON_BLUE_GND_FENTY_ACCESS
-ZON_BLUE_GND_FORTRESS_ACCESS
-ZON_BLUE_GND_JOYCE_ACCESS
-ZON_BLUE_GND_WRIGHT_ACCESS
-ZON_BLUE_GND_HONAKER_ACCESS
-ZON_BLUE_GND_BOSTICK_ACCESS
-
-ZON_BLUE_GND_FENTY_PATROL_TEST_01
-ZON_BLUE_GND_FORTRESS_PATROL_TEST_01
-ZON_BLUE_GND_JOYCE_PATROL_TEST_01
-ZON_BLUE_GND_WRIGHT_PATROL_TEST_01
-ZON_BLUE_GND_HONAKER_PATROL_TEST_01
-ZON_BLUE_GND_BOSTICK_PATROL_TEST_01
-```
-
-ChatGPT verändert keine `.miz`.
-
-## 9. Offene Architektur-/Research-Punkte
-
-Nicht im Acceptance-3-Test stillschweigend entscheiden:
+Nicht durch Acceptance 8 stillschweigend entscheiden:
 
 ```text
-- final Fortress personnel/vehicle property book
-- final Honaker personnel/vehicle property book
+- permanent Fortress personnel/vehicle property book
+- permanent Honaker personnel/vehicle property book
 - exact July-2011 Joyce company distribution
 - exact July-2011 Bostick maneuver company/platoon distribution
 - exact July-2011 Wright artillery assignment
 - Jalalabad exact ground QRF/base-defense formation
 - final Honaker strategic parent/support-parent contract after complete evidence reconciliation
-- production return/handoff and Warehouse re-entry
-- cross-session reconstitution
+- production Ground-order generation
 - OPSTRANSPORT
-- CampaignState exactly-once runtime settlement adapter
+- general cross-domain persistence architecture
 ```
 
-## 10. Nächster lokaler Schritt
-
-Da derzeit kein Zugriff auf die lokale Entwicklungsstation besteht, bleibt der lokale Gate bewusst offen.
-
-Sobald Zugriff wieder vorhanden ist:
-
-```text
-remote branch pull
--> read-only Mission Editor object check
--> build Acceptance 3 bundle
--> record real bundle SHA-256
--> owner embeds bundle in test .miz
--> record final MIZ/internal mission/embedded resource hashes
--> run one six-domain DCS integration test
--> return real logs + visual observations
-```
-
-Kein lokaler Build, Hash oder DCS-Verhalten wird bis dahin angenommen oder simuliert.
-
-## Addendum 2026-08-19 – freigegebene Road-aligned-Warehouse-Ausnahme
-
-Der Projektinhaber hat am 19.08.2026 die eng begrenzte interne MOOSE-Ausnahme freigegeben:
-
-~~~text
-TM01M-Straßenpositions-/Heading-Berechnung
--> pro BRIGADE-Instanz Adapter an WAREHOUSE:_SpawnAssetGroundNaval(...)
--> unveränderte WAREHOUSE-Assetreservation und BRIGADE-/PLATOON-/ARMYGROUP-/AUFTRAG-Lifecycle
-~~~
-
-Sie ersetzt weder `BRIGADE:AddMission(...)` noch Warehouse-Materialisierung und schafft keine strategische Ressourcenautorität. Gültig nur mit dem gepinnten MOOSE-Stand und bis zum DCS-Regressionstest als `SOURCE_REVIEWED_EXCEPTION_APPROVED_DCS_PENDING`.
-
-Zusätzlich im Acceptance-3-Lauf prüfen: vier M-ATV je Domain road-aligned, Marschreihenfolge und Fahrtrichtung; keine Static-/Scenery-Kollision am Materialisierungspunkt; weiterhin genau eine Warehouse-Materialisierung und derselbe ARMYGROUP über Mission 1/2.
-## Addendum 2026-08-19 – Acceptance 3 technisch akzeptiert
-
-Acceptance 3-2 ist für den genau dokumentierten Branch-/Artefaktstand technisch akzeptiert:
-
-~~~text
-Source commit: 9b4997bf024efe0fab18b4d18552117cd8eeee21
-Bundle SHA-256: 1f3879c1245483ba69cb8a5cc76ea1af4f46cdd01d7c9778440f2a2c6d08ef00
-MIZ: OMW_Template_v13_ground_test(10).miz
-MIZ SHA-256: a6ce41bc9d7ab0f352f567322401e238dcd2057c548b4ddba44fe9f32f4577cd
-DCS: 2.9.28.26385 MT
-Result: PASS / owner visual acceptance
-~~~
-
-Sechs road-aligned Warehouse-Materialisierungen, dieselben ARMYGROUPs über Mission 1/2 und sechs stabile Zielhalte wurden real bestätigt. Die offene Arbeit bleibt auf Produktionsintegration, Ressourcenverträge, Rückgabe/Reconstitution und die ausdrücklich ausgeschlossenen Funktionsbereiche begrenzt.
-
-## Addendum 2026-08-19 – Acceptance 4 freigegeben und DCS-pending
-
-Der Projektinhaber hat die Entwicklung des Fenty-spezifischen Rückgabe-/Warehouse-Handoff-Gates freigegeben. Acceptance 4 verwendet keine neue Convoy- oder Ressourcenarchitektur:
-
-```text
-Acceptance-3-2 road-aligned Warehouse materialization
--> ARMOREDGUARD / On Road / 27 kt
--> MissionDone with SetReturnToLegion(false)
--> public ARMYGROUP:RTZ(return handoff zone, OnRoad)
--> Returned
--> MOOSE LEGION:__AddAsset(10, group, 1)
--> physical group removal after Warehouse AddAsset
-```
-
-Offen vor dem lokalen Build-/DCS-Gate:
-
-```text
-owner validates the existing:
-ZON_BLUE_GND_FENTY_ACCESS
-
-The same ACCESS marker is the Warehouse spawn, start and return/handoff area; no second FOB/Warehouse marker is introduced.
-
-then:
-build Acceptance 4
--> record actual bundle SHA-256
--> owner embeds the bundle in the current .miz
--> record final MIZ/internal mission/embedded resource hashes
--> one real Fenty DCS return-handoff run
--> assess logs and visual observations
-```
-
-Kein CampaignState-Settlement, keine Produktionsgutschrift, keine Reconstitution und keine .miz-Änderung durch ChatGPT sind Teil dieses Gates.
-## Addendum 2026-08-19 – Acceptance 4 technisch akzeptiert
-
-Acceptance 4-2 bestätigt für den exakt dokumentierten Fenty-Stand den öffentlichen mobilen MOOSE-Rückgabepfad:
-
-~~~text
-MissionDone
--> 30-second AUFTRAG settlement delay
--> ARMYGROUP:RTZ(ZON_BLUE_GND_FENTY_ACCESS, OnRoad)
--> Returned
--> LEGION/Warehouse AddAsset
--> controlled physical DCS-group removal
-~~~
-
-Die tatsächliche MIZ-Provenienz, das Bundle und der Runtime-Nachweis stehen in:
-
-- [Acceptance 4 runtime evidence](results/2026-08-19-acceptance-4-runtime.md)
-
-Damit sind für diesen exakten Teststand Road-aligned Materialisierung, ein einzelner Spawn, öffentlicher mobiler RTZ, Warehouse-Rückgabe und die nach Ankunft sichtbar beobachtete kontrollierte Entfernung der temporären DCS-Gruppe bestätigt. Offen bleiben bewusst CampaignState-Settlement, Produktionsgutschrift, Verlustbehandlung, Reconstitution und Multi-Site-Return.
-
-## Addendum 2026-08-19 – Vorbereitung Ground-CampaignState-Rückgabe
-
-Die A4-2-Rückgabe ist operativ akzeptiert, aber noch keine strategische Buchung. Die festgelegten Ground-Settlement- und Restart-Regeln sowie das verbleibende Produktionsdaten-Gate stehen in:
-
-- [`OMW-PLAN-ARMY-GROUND-RETURN-SETTLEMENT`](../../../docs/ground/ARMY-GROUND-RETURN-SETTLEMENT-DECISION-PREPARATION.md)
-
-Bis zur Umsetzung bleiben keine Ground-CampaignState-Credits produktiv aktiv.
-
-
-## Addendum 2026-08-19 – Acceptance 5 freigegeben und DCS-pending
-
-Acceptance 5 ist der absichtlich enge nächste Gate nach A4-2:
-
-```text
-isolierter Test-Store (nicht Produktion): 4
--> ReserveResource / Consume vor der bestehenden MOOSE-Materialisierung
--> unveränderter Fenty BRIGADE/PLATOON/WAREHOUSE-/RTZ-Return
--> bestätigtes Returned + Warehouse AddAsset + physische Gruppenentfernung
--> CreditResourceOnce: 4
--> derselbe Credit erneut: idempotenter No-op
-```
-
-Testplan:
-
-- [`OMW-TEST-ARMY-GROUND-ACCEPTANCE-5`](ACCEPTANCE-5.md)
-
-Builder:
-
-```text
-tools/build-army-ground-acceptance-5.ps1
-```
-
-A5 definiert weder einen Produktionsfahrzeugbestand noch ändert es `.miz`, den
-Fenty-48er-Bestand, einen bestehenden globalen CampaignState-Store oder die offenen
-Verlust-/Teilverlust-/Restart-Fragen. Der Owner bindet das gebaute Bundle manuell ein.
-
-
-## Addendum 2026-08-20 – Acceptance 6: ein kombinierter DCS-Gate
-
-Der nächste DCS-Lauf bündelt die offenen Rückgabe-/Verlustfälle:
-
-~~~text
-FENTY:  4 aus -> 4 zurück -> CampaignState-Testcredit 4
-JOYCE:  4 aus -> 3 zurück -> CampaignState-Testcredit 3
-WRIGHT: 4 aus -> 3 zurück, ein Rückkehrer beschädigt -> Testcredit 3
-~~~
-
-Der Test bleibt vollständig isoliert und ändert weder die Produktionsbaseline noch
-.miz. Zur Schadens- und Verlustinjektion verwendet er ausschließlich vorhandene
-MOOSE-Wrapper (UNIT:Destroy(false), UNIT:SetLife(50)); deren konkretes Zusammenspiel
-mit mobilem Ground-Return ist DCS-pending. Wartung/Reparatur ist ausgeschlossen:
-Alle Rückkehrer sind unmittelbar wieder verfügbar.
-
-Testplan: OMW-TEST-ARMY-GROUND-ACCEPTANCE-6, ACCEPTANCE-6.md
-
-Builder:
-
-~~~text
-tools/build-army-ground-acceptance-6.ps1
-~~~
-
-
-## Addendum 2026-08-20 – Acceptance 6 technisch akzeptiert
-
-Acceptance 6 ist für den exakt dokumentierten Branch-/Artefaktstand technisch und visuell akzeptiert. Drei Standorte liefen gleichzeitig über ihre jeweiligen bestehenden ACCESS-Marker; es gab keine beobachtbaren Auffälligkeiten.
-
-~~~text
-Source commit: c03af3bdf33c83d2fee5477f90f1479df1ec52d3
-Bundle SHA-256: 17d0e5f534f67ca41088e3303e7f8ab9af346a6c8a637c987e4047eb99fc55da
-MIZ SHA-256: 7b10b96cd1fbebef7831ccf633e1f57c34b8a318238b38865606fd47dfeb59db
-Result: PASS / owner visual acceptance
-~~~
-
-Damit ist für den Testumfang belegt:
-
-~~~text
-Fenty:  4 aus -> 4 zurück -> isolierter Testcredit 4
-Joyce:  4 aus -> 1 Verlust + 3 zurück -> isolierter Testcredit 3
-Wright: 4 aus -> 1 Verlust + 1 beschädigter Rückkehrer + 3 zurück -> isolierter Testcredit 3
-~~~
-
-Der Scope führt keine Produktionsbuchung, Wartungslogik oder Reparaturwartezeit ein. Rückkehrer werden sofort verfügbar; nur nicht zurückgekehrte Units gelten als Verlust. Offen bleibt die separate Produktionsintegration des strategischen Return-Settlement-Adapters einschließlich Restart-Reconciliation.
-
-
-## Addendum 2026-08-20 – Settlement- und Restart-Entscheidung festgehalten
-
-Die Ground-Regeln sind nun entschieden und im Settlement-Plan dokumentiert:
-
-~~~text
-physical Unit count = strategic consume count
-confirmed returned Unit = immediate one-time credit
-non-returned Unit = permanent loss
-damaged returned Unit = immediate availability
-active nonterminal commitment at server stop/crash = one-time strategic recredit at next startup
-no physical DCS/MOOSE group continuation or respawn
-~~~
-
-Damit bleibt für die Produktionsintegration nur noch die konkrete, bereits baselierte Zuordnung von Ground-Ressourcen und Source Nodes offen. Der nächste DCS-Gate wird diese Fälle gemeinsam, nicht in einzelnen Folgeläufen, prüfen.
-
-
-## Addendum 2026-08-20 – Aktuelle Übergabe / Acceptance 7
-
-### Ziel
-
-```text
-Ein MOOSE-first Ground-Settlement-Adapter rechnet die bereits akzeptierten
-MOOSE-Rückgaben strategisch über CampaignState ab, ohne eigene DCS-/MOOSE-
-Lifecycle- oder Persistenzlogik einzuführen.
-```
-
-Verbindliche Zuordnung für den motorisierten M-ATV-Verband:
-
-```text
-1 physisches M-ATV = 1 VEHICLE + 3 PERSONNEL
-4 M-ATV            = 4 VEHICLE + 12 PERSONNEL
-```
-
-### Aktueller Stand
-
-- Aktiver Branch: agent/army-ground-foundation-reconciliation.
-- A3-2, A4-2 und A6 sind technisch akzeptiert; A6 bestätigte den kombinierten Normal-, Teilverlust- und beschädigten Rückkehrfall.
-- Die strategischen Regeln sind entschieden: Rückkehr sofort verfügbar; Verlust dauerhaft; beschädigte Rückkehr sofort verfügbar; nichtterminaler Auftrag bei Serverende/Crash wird beim nächsten Start genau einmal strategisch rückgebucht; keine physische Gruppenfortsetzung und kein Respawn.
-- Der neue reine CampaignState-Adapter liegt in scripts/ground/OMW_GroundCampaignStateAdapter.lua.
-- Acceptance 7 liegt in mission/tests/army-ground-foundation/src/07-army-ground-acceptance-7.lua; Builder: tools/build-army-ground-acceptance-7.ps1.
-- A7 nutzt nur isolierte, aber an den dokumentierten Ground-Nodes und Mengen ausgerichtete Test-Stores. Produktionsbaseline und .miz bleiben unverändert.
-
-### Verbindliche Dokumentation und Übergabe
-
-```text
-Hauptentscheidung / Übergabe:
-docs/ground/ARMY-GROUND-RETURN-SETTLEMENT-DECISION-PREPARATION.md
-
-Ressourcenmengen und Settlement-Basis:
-docs/ground/ARMY-GROUND-RESOURCE-QUANTITY-AND-SETTLEMENT-BASELINE.md
-
-Resource-ID-Vertrag:
-docs/ground/ARMY-GROUND-RESOURCE-READINESS-CONTRACT.md
-
-Operative Node-/Parent-Zuordnung:
-docs/ground/ARMY-GROUND-KUNAR-OPERATIONAL-DOMAIN-RECONCILIATION.md
-
-Diese Arbeits- und Übergabeliste:
-mission/tests/army-ground-foundation/TODO.md
-```
-
-### Noch zu erledigen
-
-1. Acceptance-7-Quelltext und Builder statisch prüfen; danach Bundle bauen und SHA-256 erfassen.
-2. Owner bindet ausschließlich das gebaute Bundle manuell in eine Test-.miz ein.
-3. Ein gebündelter DCS-Lauf prüft Fenty (4/12 zurück), Joyce (3/9 zurück, 1/3 Verlust), Wright (3/9 zurück einschließlich beschädigtem Rückkehrer) sowie die einmalige Restart-Reconciliation ohne physische Wiederherstellung.
-4. Reale DCS-/Debrief-Logs, Bundle-Hash und MIZ-Hash auswerten und als A7-Runtime-Evidenz dokumentieren.
-5. Erst nach A7-Abnahme: Produktionsintegration des Adapters gegen den autoritativen CampaignState-Initialbestand. Nicht Bestandteil: ATO-/Ground-Order-Struktur oder eine allgemeine Cross-Domain-Persistenzarchitektur.
+Kein lokaler Build, Hash oder DCS-Verhalten wird angenommen oder simuliert. Nur reale Konsolenausgabe, reale Artefakt-Hashes und dokumentierte DCS-Evidenz bilden die Grundlage für den nächsten Gate.
