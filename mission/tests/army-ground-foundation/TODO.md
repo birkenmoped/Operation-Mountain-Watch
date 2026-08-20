@@ -485,3 +485,57 @@ no physical DCS/MOOSE group continuation or respawn
 ~~~
 
 Damit bleibt für die Produktionsintegration nur noch die konkrete, bereits baselierte Zuordnung von Ground-Ressourcen und Source Nodes offen. Der nächste DCS-Gate wird diese Fälle gemeinsam, nicht in einzelnen Folgeläufen, prüfen.
+
+
+## Addendum 2026-08-20 – Aktuelle Übergabe / Acceptance 7
+
+### Ziel
+
+```text
+Ein MOOSE-first Ground-Settlement-Adapter rechnet die bereits akzeptierten
+MOOSE-Rückgaben strategisch über CampaignState ab, ohne eigene DCS-/MOOSE-
+Lifecycle- oder Persistenzlogik einzuführen.
+```
+
+Verbindliche Zuordnung für den motorisierten M-ATV-Verband:
+
+```text
+1 physisches M-ATV = 1 VEHICLE + 3 PERSONNEL
+4 M-ATV            = 4 VEHICLE + 12 PERSONNEL
+```
+
+### Aktueller Stand
+
+- Aktiver Branch: agent/army-ground-foundation-reconciliation.
+- A3-2, A4-2 und A6 sind technisch akzeptiert; A6 bestätigte den kombinierten Normal-, Teilverlust- und beschädigten Rückkehrfall.
+- Die strategischen Regeln sind entschieden: Rückkehr sofort verfügbar; Verlust dauerhaft; beschädigte Rückkehr sofort verfügbar; nichtterminaler Auftrag bei Serverende/Crash wird beim nächsten Start genau einmal strategisch rückgebucht; keine physische Gruppenfortsetzung und kein Respawn.
+- Der neue reine CampaignState-Adapter liegt in scripts/ground/OMW_GroundCampaignStateAdapter.lua.
+- Acceptance 7 liegt in mission/tests/army-ground-foundation/src/07-army-ground-acceptance-7.lua; Builder: tools/build-army-ground-acceptance-7.ps1.
+- A7 nutzt nur isolierte, aber an den dokumentierten Ground-Nodes und Mengen ausgerichtete Test-Stores. Produktionsbaseline und .miz bleiben unverändert.
+
+### Verbindliche Dokumentation und Übergabe
+
+```text
+Hauptentscheidung / Übergabe:
+docs/ground/ARMY-GROUND-RETURN-SETTLEMENT-DECISION-PREPARATION.md
+
+Ressourcenmengen und Settlement-Basis:
+docs/ground/ARMY-GROUND-RESOURCE-QUANTITY-AND-SETTLEMENT-BASELINE.md
+
+Resource-ID-Vertrag:
+docs/ground/ARMY-GROUND-RESOURCE-READINESS-CONTRACT.md
+
+Operative Node-/Parent-Zuordnung:
+docs/ground/ARMY-GROUND-KUNAR-OPERATIONAL-DOMAIN-RECONCILIATION.md
+
+Diese Arbeits- und Übergabeliste:
+mission/tests/army-ground-foundation/TODO.md
+```
+
+### Noch zu erledigen
+
+1. Acceptance-7-Quelltext und Builder statisch prüfen; danach Bundle bauen und SHA-256 erfassen.
+2. Owner bindet ausschließlich das gebaute Bundle manuell in eine Test-.miz ein.
+3. Ein gebündelter DCS-Lauf prüft Fenty (4/12 zurück), Joyce (3/9 zurück, 1/3 Verlust), Wright (3/9 zurück einschließlich beschädigtem Rückkehrer) sowie die einmalige Restart-Reconciliation ohne physische Wiederherstellung.
+4. Reale DCS-/Debrief-Logs, Bundle-Hash und MIZ-Hash auswerten und als A7-Runtime-Evidenz dokumentieren.
+5. Erst nach A7-Abnahme: Produktionsintegration des Adapters gegen den autoritativen CampaignState-Initialbestand. Nicht Bestandteil: ATO-/Ground-Order-Struktur oder eine allgemeine Cross-Domain-Persistenzarchitektur.
