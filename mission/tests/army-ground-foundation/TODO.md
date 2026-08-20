@@ -11,9 +11,11 @@ not_authoritative_for:
   - DCS runtime acceptance beyond cited result documents
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
+supersedes:
+superseded_by:
 source_branch: agent/army-ground-foundation-reconciliation
 source_commit: PENDING_MERGE
-validated_in_dcs: false
+validated_in_dcs: true
 ---
 
 # ARMY Ground Foundation – Arbeitsstand und To-do
@@ -42,19 +44,32 @@ docs/ground/ARMY-GROUND-RESOURCE-QUANTITY-AND-SETTLEMENT-BASELINE.md
 docs/ground/ARMY-GROUND-RETURN-SETTLEMENT-DECISION-PREPARATION.md
 ```
 
-## 2. Architekturgrenze
+## 2. Zielstatus GROUNDBASE
+
+Der technische Ground-Foundation-/GROUNDBASE-Zielzustand ist auf diesem Branch erreicht:
 
 ```text
 CampaignState = sole strategic resource authority
 MOOSE BRIGADE / WAREHOUSE / PLATOON / ARMYGROUP = operational lifecycle
 DCS groups/statics/cargo = temporary physical representation / telemetry
-```
-
-```text
 strategic resource owner != physical dispatch origin
 ```
 
-## 3. Settlement – VALIDATED
+Erreicht sind:
+
+```text
+six operational Ground domains
+six strategic Ground stock nodes
+single CampaignState composition with AirOps + AAR + Ground
+validated physical MOOSE Ground lifecycle
+validated return/loss/restart settlement
+Fortress/Honaker permanent stock decision
+Fortress/Honaker stock integration into production source modules
+```
+
+Nicht Teil dieses abgeschlossenen Foundation-Ziels sind Ground-order generation, vollständige Detail-ORBAT jeder Garnison, OPSTRANSPORT oder allgemeine cross-domain persistence.
+
+## 3. Settlement – ACCEPTED TECHNICAL BASELINE
 
 Verbindliche Motorized-Patrol-Korrelation:
 
@@ -62,7 +77,7 @@ Verbindliche Motorized-Patrol-Korrelation:
 1 M-ATV = 1 VEHICLE + 3 PERSONNEL
 ```
 
-Verbindliche Settlement-Regeln:
+Settlement-Regeln:
 
 ```text
 confirmed return, including damaged survivor -> immediate one-time availability credit
@@ -88,29 +103,29 @@ Runtime evidence:
 mission/tests/army-ground-foundation/results/2026-08-20-acceptance-7-runtime.md
 ```
 
-## 4. Acceptance 8 – RUNTIME PASS
+## 4. Production-shaped CampaignState integration
 
-Acceptance 8 validated the production-shaped single-CampaignState composition for the previously decided four Ground stock nodes while preserving AirOps and AAR stock.
-
-```text
-OMW_GND_A8 START testId=ARMY-GROUND-ACCEPTANCE-8-1
-OMW_GND_A8 COMPOSITION_OK airOps=true aar=true groundResources=28
-OMW_GND_A8 SETTLEMENT_OK site=JOYCE returnedVehicle=3 returnedPersonnel=9 lostVehicle=1 lostPersonnel=3
-OMW_GND_A8 RESTART_OK runtimeId=ARMY-GROUND-A8-BOSTICK-OPEN-1 vehicle=4 personnel=12 exactlyOnce=true
-OMW_GND_A8 RUNTIME_PASS testId=ARMY-GROUND-ACCEPTANCE-8-1 singleCampaignState=true productionBaselineMutation=false mizMutation=false
-```
-
-Acceptance 8 introduced no new MOOSE behavior and no new physical lifecycle.
-
-## 5. Fortress / Honaker 2011 resource decision – BINDING
-
-The remaining quantity gap is closed by:
+Acceptance 8 validated the single-CampaignState integration of AirOps, AAR and the original four Ground nodes while preserving the existing Ground settlement adapter.
 
 ```text
-docs/ground/ARMY-GROUND-FORTRESS-HONAKER-2011-RESOURCE-DECISION.md
+OMW_GND_A8 COMPOSITION_OK
+OMW_GND_A8 SETTLEMENT_OK
+OMW_GND_A8 RESTART_OK
+OMW_GND_A8 RUNTIME_PASS
 ```
 
-Production-stock nodes:
+Production source modules:
+
+```text
+scripts/logistics/OMW_GroundInitialStock.lua
+scripts/ground/OMW_GroundCampaignStateAdapter.lua
+scripts/ground/OMW_GroundRuntimeIntegration.lua
+scripts/logistics/OMW_AirOpsCampaignStateInitializer.lua
+```
+
+No second CampaignState store, MOOSE resource authority or DCS Warehouse resource authority is introduced.
+
+## 5. Fortress / Honaker resource decision – BINDING
 
 ```text
 GROUND_NODE_FORTRESS
@@ -130,137 +145,95 @@ GROUND_NODE_HONAKER
   supplyParent = GROUND_NODE_JOYCE
 ```
 
-Evidence boundary:
-
-```text
-Fortress VEHICLE 18 = OMW design value supported by Sep-2011 ~16+ vehicle-sized physical footprint
-Fortress PERSONNEL 160 = OMW taskable pool supported by historical 150-200 occupancy scale and overlapping 2011 MP/infantry presence
-Honaker VEHICLE 18 = OMW design value supported by Jan-2010 ~17 vehicle-sized footprint plus 2011 protected-vehicle/mounted/recovery evidence
-Honaker PERSONNEL 120 = OMW taskable pool supported by D Co 2-35 / TF Cacti 2011 operational presence and sustained-COP/staging role
-```
-
 These are OMW design quantities, not claims of exact historical daily inventories.
 
-## 6. Honaker artillery correction
-
-The earlier Foundation assumption
-
-```text
-2 x M777A2 at Honaker on 30.07.2011
-```
-
-is superseded for the OMW scenario baseline.
-
-Current contract:
+Current Honaker artillery evidence contract:
 
 ```text
 2011 local mortar capability = confirmed
 Jan-2010 possible two-gun position = observed; type/continuity unresolved
 2012 M777 evidence = outside scenario period
-no fixed M777/L118 production requirement from the superseded July-2011 assumption
+no fixed M777/L118 production requirement
 ```
 
-Older Ground documents containing the superseded assumption must be reconciled before merge to main.
+## 6. Acceptance 9-2 – ACCEPTED TECHNICAL BASELINE
 
-## 7. Current Gate – Acceptance 9 corrected rerun
-
-Acceptance 9 validates:
+Accepted runtime provenance:
 
 ```text
-single CampaignState with six Ground stock nodes
-Fortress exact design values
-Honaker exact design values
-existing Jalalabad/Joyce/Wright/Bostick values unchanged
-AirOps and AAR stock preserved
-existing exactly-once Ground settlement adapter on Fortress and Honaker
-no new MOOSE/DCS lifecycle behavior
+Acceptance commit:
+45d916217c0085728082c3ef2efcd582d736caae
+
+Test-ID:
+ARMY-GROUND-ACCEPTANCE-9-2
+
+Bundle SHA-256:
+35cc922581da980f558733433e487b025e083859b943641276672b6c168b4d6a
+
+MIZ:
+OMW_Template_v14_ground_test.miz
+
+MIZ SHA-256:
+29587060d630d53303d4e858c1fd5a898ea3e09d51dec36ff130d3d0ac6e3ef3
+
+DCS:
+2.9.28.26385 MT
+
+MOOSE commit:
+73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+
+Moose.lua SHA-256:
+e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
 ```
 
-### Failed first runtime
-
-The real `ARMY-GROUND-ACCEPTANCE-9-1` run on 2026-08-20 failed immediately after:
-
-```text
-OMW_GND_A9 START testId=ARMY-GROUND-ACCEPTANCE-9-1
-```
-
-with:
-
-```text
-[OMW][Logistics.AirOpsCampaignStateInitializer] unknown CampaignState nodeId=GROUND_NODE_FORTRESS
-```
-
-Tested artifact provenance:
-
-```text
-Source commit: 60a4931403405d01b1147f6beb6cc71e011c5406
-Bundle SHA-256: 3ad34e253cd36bd755379d1d94638dff1be3f002cdfdbe2eea5bdd51a6deaad1
-Uploaded/tested MIZ SHA-256: 31b51da96b465ef483cf062a685904764652a0e4434eb9d73280149efddec64b
-Embedded bundle SHA-256: 3ad34e253cd36bd755379d1d94638dff1be3f002cdfdbe2eea5bdd51a6deaad1
-Embedded Moose.lua SHA-256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
-DCS: 2.9.28.26385 MT
-Result: FAILED
-```
-
-Failure evidence:
-
-```text
-mission/tests/army-ground-foundation/results/2026-08-20-acceptance-9-failed-node-registry.md
-```
-
-### Root cause and correction
-
-The Ground stock contained Fortress/Honaker, but `AirOpsCampaignStateInitializer.NodeAirbaseName` still registered only the earlier four Ground nodes.
-
-Corrected branch state:
-
-```text
-GROUND_NODE_FORTRESS registered
-GROUND_NODE_HONAKER registered
-Acceptance 9 builder statically verifies all six initializer node-registry entries
-BuilderVersion/Test-ID bumped to ARMY-GROUND-ACCEPTANCE-9-2
-```
-
-Files:
-
-```text
-scripts/logistics/OMW_AirOpsCampaignStateInitializer.lua
-mission/tests/army-ground-foundation/ACCEPTANCE-9.md
-mission/tests/army-ground-foundation/src/09-army-ground-fortress-honaker-production-stock.lua
-tools/build-army-ground-acceptance-9.ps1
-```
-
-Required runtime markers for the corrected rerun:
+Real runtime markers:
 
 ```text
 OMW_GND_A9 START testId=ARMY-GROUND-ACCEPTANCE-9-2
-OMW_GND_A9 SIX_NODE_STOCK_OK
-OMW_GND_A9 FORTRESS_SETTLEMENT_OK
-OMW_GND_A9 HONAKER_SETTLEMENT_OK
-OMW_GND_A9 RUNTIME_PASS testId=ARMY-GROUND-ACCEPTANCE-9-2
+OMW_GND_A9 SIX_NODE_STOCK_OK fortressVehicle=18 fortressPersonnel=160 honakerVehicle=18 honakerPersonnel=120
+OMW_GND_A9 FORTRESS_SETTLEMENT_OK returnedVehicle=4 returnedPersonnel=12 exactlyOnce=true
+OMW_GND_A9 HONAKER_SETTLEMENT_OK returnedVehicle=3 returnedPersonnel=9 lostVehicle=1 lostPersonnel=3 exactlyOnce=true
+OMW_GND_A9 RUNTIME_PASS testId=ARMY-GROUND-ACCEPTANCE-9-2 sixGroundNodes=true productionBaselineMutation=false mizMutation=false
 ```
 
-No success is inferred from the source correction. A real rebuilt bundle hash and a new DCS run are required.
-
-## 8. After Acceptance 9
-
-If corrected Acceptance 9 passes:
+Result document:
 
 ```text
-reconcile superseded Fortress/Honaker clauses in older Ground baseline documents
--> production activation/integration of the six-node Ground CampaignState foundation
--> Ground-order generation remains a separate later scope
+mission/tests/army-ground-foundation/results/2026-08-20-acceptance-9-runtime.md
 ```
 
-Still open and not decided by Acceptance 9:
+The failed `ARMY-GROUND-ACCEPTANCE-9-1` run remains preserved as regression evidence only.
+
+## 7. Current branch closeout
+
+The remaining work on this branch is documentation and integration closeout, not another Ground lifecycle acceptance:
+
+```text
+1. reconcile superseded Fortress/Honaker clauses in older Ground planning documents
+2. ensure the six-node source modules are documented as the accepted Ground Foundation production contract
+3. run documentation validation and review the complete branch diff
+4. prepare the branch for owner review / merge workflow
+```
+
+No Acceptance 10 is planned merely to repeat Acceptance 7/8/9 behavior.
+
+## 8. Separate later scopes
+
+These items are intentionally not blockers for closing the GROUNDBASE foundation:
 
 ```text
 exact July-2011 Joyce company distribution
 exact July-2011 Bostick maneuver company/platoon distribution
 exact July-2011 Wright artillery assignment
 Jalalabad exact ground QRF/base-defense formation
+Ground-order generation / ATO-equivalent Ground tasking structure
 OPSTRANSPORT
 general cross-domain persistence architecture
+production patrol/observation mission geometry beyond validated Foundation behavior
 ```
 
-No local build, hash or DCS behavior is assumed. Only real console output, real artifact hashes and real DCS evidence advance the gate.
+They require their own later decisions and/or branches.
+
+## 9. Verification rule
+
+No local build, hash or DCS behavior is assumed. Only real console output, real artifact hashes and real DCS evidence advance an acceptance gate.
