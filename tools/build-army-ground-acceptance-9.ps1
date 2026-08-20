@@ -16,8 +16,8 @@ $testFile = Join-Path $repoRoot 'mission\tests\army-ground-foundation\src\09-arm
 $distDir = Join-Path $repoRoot 'mission\tests\army-ground-foundation\dist'
 $outputFile = Join-Path $distDir 'OMW_Army_Ground_Acceptance_9.lua'
 
-$builderVersion = 'ARMY-GROUND-ACCEPTANCE-9-1'
-$testId = 'ARMY-GROUND-ACCEPTANCE-9-1'
+$builderVersion = 'ARMY-GROUND-ACCEPTANCE-9-2'
+$testId = 'ARMY-GROUND-ACCEPTANCE-9-2'
 
 $files = @(
   $campaignStateFile,
@@ -71,6 +71,20 @@ $combined = $initializer + $groundStock + $adapter + $integration + $test
 foreach ($marker in $requiredMarkers) {
   if (-not $combined.Contains($marker)) {
     throw "Acceptance 9 sources are missing required marker: $marker"
+  }
+}
+
+$initializerRequiredNodes = @(
+  'GROUND_NODE_JALALABAD',
+  'GROUND_NODE_FORTRESS',
+  'GROUND_NODE_JOYCE',
+  'GROUND_NODE_WRIGHT',
+  'GROUND_NODE_HONAKER',
+  'GROUND_NODE_BOSTICK'
+)
+foreach ($nodeId in $initializerRequiredNodes) {
+  if (-not $initializer.Contains($nodeId)) {
+    throw "AirOpsCampaignStateInitializer node registry is missing required Ground node: $nodeId"
   }
 }
 
@@ -142,6 +156,7 @@ Write-Host "GroundNodes: GROUND_NODE_JALALABAD,GROUND_NODE_FORTRESS,GROUND_NODE_
 Write-Host "FortressStock: PERSONNEL=160 VEHICLE=18 SUPPLY=44 AMMO=48 FUEL=40"
 Write-Host "HonakerStock: PERSONNEL=120 VEHICLE=18 SUPPLY=40 AMMO=40 FUEL=36"
 Write-Host "MotorizedPatrolContract: 1 M-ATV = 1 VEHICLE + 3 PERSONNEL"
+Write-Host "InitializerNodeRegistryGate: true"
 Write-Host "GroundLifecycleMutation: false"
 Write-Host "MOOSEOverride: false"
 Write-Host "ProductionBaselineMutation: false"
