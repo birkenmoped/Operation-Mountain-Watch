@@ -532,3 +532,28 @@ Result: PASS / owner visual acceptance
 | LEGION:__AddAsset(10, group, 1) / Warehouse AddAsset | VALIDATED_FOR_DOCUMENTED_SCOPE | Ein Rückgabe-Handoff stellte den operativen Warehouse-Assetbestand wieder her und entfernte anschließend die temporäre physische DCS-Gruppe. Keine strategische CampaignState-Buchung. |
 
 Provenienz und Einschränkungen: [Acceptance 4 runtime evidence](../../mission/tests/army-ground-foundation/results/2026-08-19-acceptance-4-runtime.md). Gültig nur für MOOSE commit 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54, die zitierte Mission und den mobilen Fenty-Scope.
+
+
+## Addendum 2026-08-20 – ARMY Ground Acceptance 6
+
+Der folgende Runtime-Nachweis ist auf den exakten Ground-Return-Scope beschränkt:
+
+~~~text
+Source commit: c03af3bdf33c83d2fee5477f90f1479df1ec52d3
+Builder/Test-ID: ARMY-GROUND-ACCEPTANCE-6-1
+Bundle SHA-256: 17d0e5f534f67ca41088e3303e7f8ab9af346a6c8a637c987e4047eb99fc55da
+MIZ SHA-256: 7b10b96cd1fbebef7831ccf633e1f57c34b8a318238b38865606fd47dfeb59db
+MOOSE commit/SHA: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54 / e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
+DCS: 2.9.28.26385 MT
+Result: PASS / owner visual acceptance without anomalies
+~~~
+
+| Methode | Status | Belegter Umfang |
+|---|---|---|
+| GROUP:GetSize() | VALIDATED_FOR_DOCUMENTED_SCOPE | Nach test-only UNIT:Destroy(false) bestätigte die aktuelle Gruppenstärke exakt drei Rückkehrer in Joyce und Wright. |
+| GROUP:GetUnits() | VALIDATED_FOR_DOCUMENTED_SCOPE | Deterministische Auswahl der test-only Verlust- bzw. Schadensunit im dokumentierten Vier-M-ATV-A6-Scope. |
+| UNIT:Destroy(false) | VALIDATED_FOR_DOCUMENTED_SCOPE | Ein M-ATV je Joyce/Wright wurde nach MissionDone als Verlust entfernt; keine Rückkehr- oder CampaignState-Gutschrift für die entfernte Unit. |
+| UNIT:SetLife(50) | VALIDATED_FOR_DOCUMENTED_SCOPE | Ein Wright-Rückkehrer erhielt Life 4 -> 2 und erreichte dennoch den regulären RTZ-/Warehouse-Handoff. |
+| ARMYGROUP:RTZ(existing site ACCESS zone, OnRoad) | VALIDATED_FOR_DOCUMENTED_SCOPE | Drei parallele mobile Rückgaben zu ihren jeweiligen ACCESS-Zonen; anschließend Returned -> Warehouse AddAsset -> controlled physical group removal. |
+
+Der Nachweis führt keine Wartungs-/Reparaturzustände ein. Ein zurückgekehrtes, auch beschädigtes Fahrzeug wird sofort als verfügbar gutgeschrieben; nicht zurückgekehrte Units werden nicht gutgeschrieben.

@@ -339,22 +339,20 @@ Result: PASS / owner visual acceptance
 Für genau diesen Scope bestätigt: ARMYGROUP:RTZ(existing Fenty ACCESS zone, OnRoad) führte über den Returning-FSM-Zustand zu Returned; anschließend wurde der normale LEGION:__AddAsset(10, group, 1)-/Warehouse-Handoff ausgeführt. Die vier M-ATV fuhren bis zur bestehenden Fenty-ACCESS-Zone und die temporäre DCS-Gruppe wurde erst danach kontrolliert entfernt; diese sichtbare Entfernung ist erwartetes Warehouse-Verhalten. Kein Teleport wurde während Materialisierung, Anfahrt oder Rückfahrt akzeptiert. CampaignState blieb unverändert.
 
 
-## Addendum 2026-08-20 – Acceptance 6 planned partial-loss/damage gate
+## Addendum 2026-08-20 – Acceptance 6 partial-loss/damage runtime evidence
 
 ~~~text
-MOOSE methods examined in pinned source:
+Validated MOOSE methods in exact A6 scope:
 GROUP:GetSize()
 GROUP:GetUnits()
-UNIT:Destroy(false)     -- inherited POSITIONABLE method
+UNIT:Destroy(false)
 UNIT:SetLife(Percent)
+Source commit: c03af3bdf33c83d2fee5477f90f1479df1ec52d3
+Bundle SHA-256: 17d0e5f534f67ca41088e3303e7f8ab9af346a6c8a637c987e4047eb99fc55da
+MIZ SHA-256: 7b10b96cd1fbebef7831ccf633e1f57c34b8a318238b38865606fd47dfeb59db
+Result: PASS / owner visual acceptance without anomalies
 ~~~
 
-Acceptance 6 uses these existing MOOSE wrappers only as test fixtures after a normal
-MissionDone and before the existing public ARMYGROUP:RTZ(..., OnRoad) path. It must
-prove that a three-unit mobile return remains operable, reaches the usual
-Returned -> Warehouse AddAsset handoff, and can be reconciled into the isolated
-CampaignState store by returning-unit count. The concrete runtime use is
-SOURCE_REVIEWED / DCS_PENDING, not validated.
+Acceptance 6 nutzte die vorhandenen MOOSE-Wrapper erst nach normalem MissionDone und vor dem bestehenden öffentlichen ARMYGROUP:RTZ(..., OnRoad)-Pfad. Der DCS-Lauf bestätigte: ein Drei-Unit-Mobilreturn bleibt operabel, erreicht Returned -> Warehouse AddAsset und wird über die tatsächliche Rückkehreranzahl im isolierten CampaignState-Teststore genau einmal gutgeschrieben.
 
-No maintenance, repair delay, workshop capacity, new DCS spawning or private return
-adapter is introduced. MaintenanceTime remains at the MOOSE default of zero.
+Wright bestätigte zusätzlich UNIT:SetLife(50) mit Life 4 -> 2; die beschädigte Unit kehrte regulär zurück. Kein Wartungs-, Reparaturwarte-, Werkstattkapazitäts-, neuer DCS-Spawn- oder privater Return-Adapter ist eingeführt. MaintenanceTime bleibt beim MOOSE-Default null; jeder Rückkehrer ist nach Warehouse-Handoff sofort verfügbar.

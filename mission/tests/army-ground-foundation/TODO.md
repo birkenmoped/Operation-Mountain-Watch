@@ -447,3 +447,25 @@ Builder:
 ~~~text
 tools/build-army-ground-acceptance-6.ps1
 ~~~
+
+
+## Addendum 2026-08-20 – Acceptance 6 technisch akzeptiert
+
+Acceptance 6 ist für den exakt dokumentierten Branch-/Artefaktstand technisch und visuell akzeptiert. Drei Standorte liefen gleichzeitig über ihre jeweiligen bestehenden ACCESS-Marker; es gab keine beobachtbaren Auffälligkeiten.
+
+~~~text
+Source commit: c03af3bdf33c83d2fee5477f90f1479df1ec52d3
+Bundle SHA-256: 17d0e5f534f67ca41088e3303e7f8ab9af346a6c8a637c987e4047eb99fc55da
+MIZ SHA-256: 7b10b96cd1fbebef7831ccf633e1f57c34b8a318238b38865606fd47dfeb59db
+Result: PASS / owner visual acceptance
+~~~
+
+Damit ist für den Testumfang belegt:
+
+~~~text
+Fenty:  4 aus -> 4 zurück -> isolierter Testcredit 4
+Joyce:  4 aus -> 1 Verlust + 3 zurück -> isolierter Testcredit 3
+Wright: 4 aus -> 1 Verlust + 1 beschädigter Rückkehrer + 3 zurück -> isolierter Testcredit 3
+~~~
+
+Der Scope führt keine Produktionsbuchung, Wartungslogik oder Reparaturwartezeit ein. Rückkehrer werden sofort verfügbar; nur nicht zurückgekehrte Units gelten als Verlust. Offen bleibt die separate Produktionsintegration des strategischen Return-Settlement-Adapters einschließlich Restart-Reconciliation.

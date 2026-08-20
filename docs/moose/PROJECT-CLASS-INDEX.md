@@ -62,16 +62,16 @@ REJECTED_FOR_PROJECT_USE
 | `COHORT` | `VALIDATED_FOR_DOCUMENTED_SCOPE` + `SOURCE_REVIEWED` | AirOps-Lifecycle praktisch bestätigt; Ground-Review bestätigt `AddMissionCapability`, `SetMissionRange`, `CanMission`, `CountAssets` und 75-NM-Ground-Default source-seitig |
 | `FLIGHTGROUP` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | AAR FuelLow, Dead/OnAfterDead, GetCoordinate, `AddWaypoint(...)`, `AddMission(...)` und `OnAfterPassingWaypoint(...)`; Acceptance 7 bestätigte FIR -> 60-NM -> AUFTRAG sowie Egress -> External Handoff |
 | `COMMANDER` | `VALIDATED_FOR_DOCUMENTED_SCOPE` + `SOURCE_REVIEWED` | dokumentierter COMMANDER-Lifecycle; Ground-Review bestätigt `AddBrigade(...)` und `AddOpsTransport(...)` source-seitig; MissionDemand bleibt OMW-Tasking-Autorität |
-| `AUFTRAG` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | AAR-Methoden sowie dokumentierte Ground-Acceptance-1 bis -4-Lifecycles praktisch bestätigt; keine CampaignState-Autorität |
+| `AUFTRAG` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | AAR-Methoden sowie dokumentierte Ground-Acceptance-1 bis -6-Lifecycles praktisch bestätigt; keine CampaignState-Autorität |
 | `SPAWN` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | area-spezifische AAR-Templates und externe Materialisierung praktisch bestätigt; Ground Acceptance 1 verwendet keinen direkten SPAWN-Pfad |
 | `SCHEDULER` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | allgemeine OMW-Nutzung praktisch bestätigt; Ground Acceptance 1 verwendet nur One-shot-Koordination, kein hochfrequentes Polling |
 | `USERFLAG` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Warehouse-Acceptance-Readiness-Pfade |
-| `GROUP`, `UNIT`, `STATIC`, `ZONE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Wrapper-/Objektauflösung in dokumentierten Scopes; Acceptance-1-v13-Objektvertrag read-only bestätigt, Ground-Runtime offen |
+| `GROUP`, `UNIT`, `STATIC`, `ZONE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Wrapper-/Objektauflösung in dokumentierten Scopes; Acceptance-1-v13-Objektvertrag read-only bestätigt, Ground-Acceptance-6 bestätigt GetSize, GetUnits, test-only Destroy(false) und SetLife(50) im dokumentierten Verlust-/Schaden-Return-Scope |
 | `COORDINATE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | `Get2DDistance(...)`, `GetIntermediateCoordinate(...)` und `HeadingTo(...)` im dokumentierten AirOps-Scope |
-| `BRIGADE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` + `INTERNAL_RESTRICTED` | Acceptance 1–4 bestätigen Ground-Assetpool, Materialisierung und Callback-Lifecycle; die road-aligned private Warehouse-Spawn-Ausnahme bleibt auf Acceptance-3-2 und den gepinnten MOOSE-Stand begrenzt |
-| `PLATOON` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Acceptance 1–4 bestätigen dokumentierte Assetselektion und Wiederverwendung im Ground-Scope; keine allgemeine Produktionsfreigabe |
-| `ARMYGROUP` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Acceptance 1–4 bestätigen MissionDone-Persistenz, Same-group-Follow-up sowie mobilen RTZ/Returned-Fenty-Handoff; immobiler Teleportpfad bleibt ausgeschlossen |
-| `OPSGROUP` | `VALIDATED_FOR_DOCUMENTED_SCOPE` + `SOURCE_REVIEWED` | AirOps-Methoden sowie Ground-MissionDone-/Return-Pfade in Acceptance 1–4 praktisch bestätigt; Cargo-Pfade bleiben source-reviewed |
+| `BRIGADE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` + `INTERNAL_RESTRICTED` | Acceptance 1–6 bestätigen Ground-Assetpool, Materialisierung, Callback-Lifecycle und die parallelen Rückgabevarianten; die road-aligned private Warehouse-Spawn-Ausnahme bleibt auf Acceptance-3-2 und den gepinnten MOOSE-Stand begrenzt |
+| `PLATOON` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Acceptance 1–6 bestätigen dokumentierte Assetselektion, Wiederverwendung und Rückgabevarianten im Ground-Scope; keine allgemeine Produktionsfreigabe |
+| `ARMYGROUP` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Acceptance 1–6 bestätigen MissionDone-Persistenz, Same-group-Follow-up sowie mobilen RTZ/Returned-Handoff einschließlich paralleler Teilverlust-/Schadenrückgabe; immobiler Teleportpfad bleibt ausgeschlossen |
+| `OPSGROUP` | `VALIDATED_FOR_DOCUMENTED_SCOPE` + `SOURCE_REVIEWED` | AirOps-Methoden sowie Ground-MissionDone-/Return-Pfade in Acceptance 1–6 praktisch bestätigt; Cargo-Pfade bleiben source-reviewed |
 | `OPSTRANSPORT` | `SOURCE_REVIEWED` | Constructor, Cargo/Carrier-Zonen, `AddPathTransport`, Disembark- und Carrier-Verträge geprüft; taktischer OMW-Transport benötigt eigenen DCS-Test |
 | `CTLD`, `CSAR`, `AICSAR` | `PLANNED` / teilweise verwendet | separate Acceptance erforderlich |
 | `INTEL` | `PLANNED` | taktisches Lagebild; Laufzeitnachweis offen |

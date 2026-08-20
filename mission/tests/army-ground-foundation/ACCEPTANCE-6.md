@@ -1,6 +1,6 @@
 ---
 document_id: OMW-TEST-ARMY-GROUND-ACCEPTANCE-6
-status: DCS_PENDING
+status: ACCEPTED_TECHNICAL_BASELINE
 owning_policy: OMW-GOV-001
 authoritative_for:
   - combined ground return, partial-loss and damage acceptance gate
@@ -9,8 +9,8 @@ project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
 superseded_by:
 source_branch: agent/army-ground-foundation-reconciliation
-source_commit: GIT_HISTORY
-validated_in_dcs: false
+source_commit: c03af3bdf33c83d2fee5477f90f1479df1ec52d3
+validated_in_dcs: true
 base_branch: agent/army-ground-foundation-reconciliation
 base_commit: 8cd87be143d76fcc81d92e034670f012b6c9b824
 base_status: ACCEPTED_TECHNICAL_BASELINE
@@ -59,7 +59,7 @@ Werkstatt-, Reparatur- oder Wartezeitlogik.
   gepinnten Moose.lua (Commit
   73d3ed119cd9e7e3f2cfcabbaa34513d30529b54, SHA-256
   e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915).
-  Ihre Verwendung in diesem Ground-Lifecycle ist bis zum DCS-Lauf nicht validiert.
+  Ihre Verwendung in diesem Ground-Lifecycle ist durch den nachstehenden A6-Lauf validiert.
 - Keine neue Native-DCS-Spawn-, Routing-, Warehouse- oder Reparaturlogik.
 
 ## Pass-Kriterien
@@ -74,3 +74,29 @@ Werkstatt-, Reparatur- oder Wartezeitlogik.
 - Je Site genau ein Returned und ein Warehouse AddAsset; danach ist die
   physische Gruppe entfernt.
 - Keine globale Fehlermeldung und kein Return-Timeout.
+
+## DCS-Testergebnis – 20.08.2026
+
+~~~text
+Tested source commit: c03af3bdf33c83d2fee5477f90f1479df1ec52d3
+Builder/Test-ID: ARMY-GROUND-ACCEPTANCE-6-1
+Bundle SHA-256: 17d0e5f534f67ca41088e3303e7f8ab9af346a6c8a637c987e4047eb99fc55da
+MIZ: OMW_Template_v13_ground_test(20260820-160651).miz
+MIZ SHA-256: 7b10b96cd1fbebef7831ccf633e1f57c34b8a318238b38865606fd47dfeb59db
+internal mission SHA-256: 535d63cae7562062d96b686b937c2fcc3ac49775396f61e8f7f5088595f2930f
+MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+Moose.lua SHA-256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
+DCS: 2.9.28.26385 MT
+dcs.log SHA-256: da99733626b2b6886981d4e6b6420f9720d3967c873785a8db9143a97ad56614
+debrief.log SHA-256: c17e0dc4b801025d726870806218da0be039c492da96f5a43c590e16b58feb7e
+Result: PASS / owner visual acceptance without anomalies
+~~~
+
+Der Lauf materialisierte alle drei Gruppen genau einmal und bestätigte den unveränderten MOOSE-Lifecycle über MissionDone, 30-sekündige Settlement-Phase, mobilen ARMYGROUP:RTZ(..., OnRoad) zum jeweiligen bestehenden ACCESS-Marker, Returned, Warehouse AddAsset und kontrollierte Entfernung der temporären DCS-Gruppe. Kein A6-Timeout und kein A6-Laufzeitfehler wurde protokolliert.
+
+- Fenty: vier Rückkehrer, Testcredit genau einmal um vier.
+- Joyce: ein mit UNIT:Destroy(false) entfernter Verlust, drei Rückkehrer und Testcredit genau einmal um drei.
+- Wright: ein Verlust, ein Rückkehrer durch UNIT:SetLife(50) von Life 4 auf 2 beschädigt, drei Rückkehrer und Testcredit genau einmal um drei.
+
+Der Schadenswert ändert die unmittelbare Rückgabe nicht: Jeder tatsächlich zurückgekehrte Rückkehrer wird gemäß Eigentümerentscheidung sofort wieder verfügbar. Nicht zurückgekehrte Units werden nicht gutgeschrieben. Der isolierte Test-Store bleibt kein Produktionsbestand und keine Produktionsbuchung.
+
