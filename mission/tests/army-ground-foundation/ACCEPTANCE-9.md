@@ -69,11 +69,13 @@ Generated bundle:
 mission/tests/army-ground-foundation/dist/OMW_Army_Ground_Acceptance_9.lua
 ```
 
-BuilderVersion / Test-ID:
+Current BuilderVersion / Test-ID:
 
 ```text
-ARMY-GROUND-ACCEPTANCE-9-1
+ARMY-GROUND-ACCEPTANCE-9-2
 ```
+
+`ARMY-GROUND-ACCEPTANCE-9-1` is retained only as failed runtime evidence. It must not be reused.
 
 ## 4. Static/build gates
 
@@ -81,6 +83,7 @@ Builder must confirm:
 
 ```text
 single existing AirOpsCampaignStateInitializer path
+AirOpsCampaignStateInitializer node registry contains all six Ground nodes
 GroundInitialStock contains all six nodes
 Ground resource rows = 42
 Fortress and Honaker resource IDs exist
@@ -105,7 +108,7 @@ OMW_GND_A9 HONAKER_SETTLEMENT_OK
 OMW_GND_A9 RUNTIME_PASS
 ```
 
-Any `OMW_GND_A9 FAIL` fails the run.
+Any `OMW_GND_A9 FAIL` or mission-script exception before `RUNTIME_PASS` fails the run.
 
 ### Fortress settlement
 
@@ -147,7 +150,26 @@ Jan-2010 possible two-gun position = observed but type/continuity unresolved
 2012 M777 evidence = outside OMW scenario period
 ```
 
-## 7. Validation boundary
+## 7. Failed Acceptance-9-1 evidence
+
+The first real DCS run on 2026-08-20 failed immediately after the A9 start marker because the existing CampaignState initializer registry did not yet contain the new Fortress node:
+
+```text
+OMW_GND_A9 START testId=ARMY-GROUND-ACCEPTANCE-9-1
+[OMW][Logistics.AirOpsCampaignStateInitializer] unknown CampaignState nodeId=GROUND_NODE_FORTRESS
+```
+
+Evidence:
+
+```text
+mission/tests/army-ground-foundation/results/2026-08-20-acceptance-9-failed-node-registry.md
+```
+
+The source fix registers both `GROUND_NODE_FORTRESS` and `GROUND_NODE_HONAKER`, and the builder now statically verifies the complete six-node registry before generating the bundle.
+
+A new real build/hash and DCS run with `ARMY-GROUND-ACCEPTANCE-9-2` are required.
+
+## 8. Validation boundary
 
 A successful build is not DCS validation.
 
