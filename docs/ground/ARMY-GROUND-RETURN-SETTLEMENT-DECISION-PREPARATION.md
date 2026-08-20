@@ -4,10 +4,10 @@ status: PLANNED
 document_class: DECISION_PREPARATION
 owning_policy: OMW-GOV-001
 authoritative_for:
-  - recorded owner decisions and mandatory gates for a future ARMY Ground CampaignState settlement adapter
+  - recorded owner decisions and mandatory gates for the ARMY Ground CampaignState settlement adapter
 not_authoritative_for:
-  - production resource identifiers, quantities, or source-node mappings
-  - a runtime implementation or DCS acceptance result
+  - production resource identifiers, quantities, or source-node mappings beyond the cited baselines
+  - production activation or runtime acceptance outside cited result documents
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 source_branch: agent/army-ground-foundation-reconciliation
@@ -31,7 +31,7 @@ materialize from WAREHOUSE
 -> controlled removal of the temporary physical DCS group
 ~~~
 
-Der MOOSE-Handoff ist noch keine strategische Buchung. Diese Vorbereitung legt deshalb nur fest, wie ein künftiger Ground-CampaignState-Adapter den bereits bestätigten operativen Lifecycle strategisch abrechnet.
+Acceptance 7 hat anschließend den kleinen Ground-CampaignState-Settlement-Adapter gegen diesen bereits bestätigten operativen Lifecycle technisch und visuell validiert. Die strategische Buchung bleibt dabei strikt von der MOOSE-/DCS-Lifecycle-Führung getrennt.
 
 ## 2. Festgelegte Eigentümerentscheidungen
 
@@ -66,9 +66,11 @@ Damit werden weder bestätigte Verluste künstlich wiederhergestellt noch intakt
 
 MOOSE bleibt verantwortlich für Materialisierung, AUFTRAG-/ARMYGROUP-Lifecycle, Routing, `Returned` und Warehouse-Handoff.
 
-CampaignState bleibt allein verantwortlich für strategische Verfügbarkeit, Commitments und deren einmalige Abrechnung. Die notwendige Korrelation zwischen MOOSE-Runtime und CampaignState ist daher ein kleiner projektspezifischer Adapter und keine zweite Warehouse- oder DCS-Bestandsführung. Vor der Umsetzung ist die MOOSE-Lücke gemäß `OMW-GOV-MOOSE-FIRST` erneut am gepinnten Stand zu dokumentieren.
+CampaignState bleibt allein verantwortlich für strategische Verfügbarkeit, Commitments und deren einmalige Abrechnung. Die notwendige Korrelation zwischen MOOSE-Runtime und CampaignState ist daher ein kleiner projektspezifischer Adapter und keine zweite Warehouse- oder DCS-Bestandsführung.
 
-## 5. Bereits vorhandene Produktionsbaseline und tatsächliche Restlücke
+Acceptance 7 hat diese Grenze für den gepinnten MOOSE-Stand bestätigt. Der Ground-Settlement-Adapter selbst enthält keine DCS- oder MOOSE-Aufrufe; die bereits genehmigte road-aligned Warehouse-Materialisierungs-Ausnahme aus Acceptance 3-2 blieb unverändert.
+
+## 5. Bereits vorhandene Produktionsbaseline und Unit-zu-Ressourcen-Korrelation
 
 Die Ground-Quantities, Root Nodes und stabilen Resource IDs sind bereits im Branch festgelegt:
 
@@ -82,14 +84,14 @@ Resource ID: GROUND:<groundNodeId>:<resourceClass>
 
 Fortress besitzt keinen eigenen strategischen Root-Pool. Honaker-Miracle bindet seinen lokalen Personnel-Vertrag aus Joyce. Das sind keine fehlenden Bestandsdaten.
 
-Die verbleibende fachliche Korrelationsregel betrifft ausschließlich gemischte physische Gruppen:
+Die Unit-zu-Ressourcen-Korrelation für den getesteten motorisierten Verband ist festgelegt und durch Acceptance 7 bestätigt:
 
 ~~~text
-MOTORISED PATROL contract = PERSONNEL 12 + VEHICLE 4
-DCS M-ATV group           = 4 physical vehicle units
+1 physical M-ATV = 1 VEHICLE + 3 PERSONNEL
+4 M-ATV          = 4 VEHICLE + 12 PERSONNEL
 ~~~
 
-Für jeden Rückkehrer/Verlust muss der Adapter deshalb wissen, wie viele strategische PERSONNEL-Units neben der jeweiligen physischen Fahrzeug-Unit zu buchen sind. Diese Zuordnung darf nicht aus dem bloßen DCS-Gruppenzähler geraten werden.
+Diese Zuordnung wird explizit über den Adaptervertrag geführt und nicht aus einem bloßen DCS-Gruppenzähler geraten.
 
 Unverändert gilt:
 
@@ -98,9 +100,9 @@ strategic parent / resource obligation != physical dispatch origin
 MOOSE Warehouse AddAsset != CampaignState credit without adapter settlement
 ~~~
 
-## 6. Nächster technische Schritt: ein gebündelter Produktions-Acceptance-Lauf
+## 6. Acceptance 7 – Produktionsnahes Settlement-Gate abgeschlossen
 
-Nach Festlegung der Unit-zu-Ressourcen-Korrelation umfasst **ein** Acceptance-Bundle mindestens:
+Der gebündelte Acceptance-7-Lauf prüfte:
 
 ~~~text
 1. normaler Vier-Unit-Return:        exact consumed units -> exact returned credit
@@ -110,9 +112,40 @@ Nach Festlegung der Unit-zu-Ressourcen-Korrelation umfasst **ein** Acceptance-Bu
 5. Idempotenz:                       duplicate return/restart callback -> no second credit
 ~~~
 
-Der Lauf darf isolierte Test-Stores verwenden und ändert keine .miz. Erst nach erfolgreicher technischer Abnahme werden konkrete Produktionsadapter eingeführt.
+Validierter Stand:
 
-## 7. Ausgeschlossen
+~~~text
+Source commit: e049e34fe8e6de878fd390486888f3912bb179d8
+Bundle SHA-256: b591ccd746896c90064fa93d9b3d42626384f55e605efc748bf304ffccb86ec7
+MIZ: OMW_Template_v14_ground_test.miz
+MIZ SHA-256: 88184ec180837044ff4dcef7cca264fe7ee5fcf5d55a8af19b11125c41eab94d
+DCS: 2.9.28.26385 MT
+Result: PASS / owner visual acceptance
+~~~
+
+Vollständige Evidenz:
+
+- [`2026-08-20-acceptance-7-runtime.md`](../../mission/tests/army-ground-foundation/results/2026-08-20-acceptance-7-runtime.md)
+
+Damit ist das technische Settlement-Gate geschlossen.
+
+## 7. Nächster technischer Schritt
+
+Als nächstes darf die Produktionsintegration des bereits getesteten Adapters gegen den autoritativen CampaignState-Initialbestand vorbereitet werden.
+
+Dabei unverändert:
+
+~~~text
+CampaignState = einzige strategische Ressourcenautorität
+MOOSE = operativer Ground-Lifecycle
+GroundCampaignStateAdapter = kleine Korrelation/Settlement-Brücke
+keine parallele Ressourcenhoheit im MOOSE Warehouse
+keine physische Restart-Fortsetzung oder Respawns
+~~~
+
+Die Produktionsintegration muss die bereits baselierten Resource IDs und Source Nodes verwenden und darf keine neuen Mengen für Fortress oder Honaker erfinden.
+
+## 8. Ausgeschlossen
 
 ~~~text
 DCS group continuation across a restart
