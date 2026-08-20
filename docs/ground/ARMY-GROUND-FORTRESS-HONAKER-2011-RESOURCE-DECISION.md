@@ -16,19 +16,20 @@ scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 source_branch: agent/army-ground-foundation-reconciliation
 source_commit: PENDING_MERGE
-validated_in_dcs: false
+validated_in_dcs: true
 supersedes:
   - Fortress/Honaker quantity-open clauses in OMW-ARMY-GROUND-KUNAR-OPERATIONAL-DOMAIN-RECONCILIATION
   - Fortress/Honaker vehicle quantity clauses in OMW-ARMY-GROUND-VEHICLE-BASELINE
   - Honaker dependent-only resource clauses in OMW-ARMY-GROUND-RESOURCE-QUANTITY-SETTLEMENT
   - Honaker 2 x M777A2 July-2011 fixed-fire-support assumption in current Ground Foundation documents
+superseded_by:
 ---
 
 # Fortress / Honaker-Miracle 2011 Resource Decision
 
 ## 1. Decision scope
 
-This decision closes the remaining permanent resource-property-book gap for the two Kunar operational domains that were already technically validated as independent MOOSE materialization domains:
+This decision closes the permanent resource-property-book gap for the two Kunar operational domains already technically validated as independent MOOSE materialization domains:
 
 ```text
 COP Fortress
@@ -36,8 +37,6 @@ COP Honaker-Miracle
 ```
 
 The decision does not claim exact historical property-book numbers. It converts the best available in-period evidence into explicit OMW CampaignState design quantities.
-
-The authority boundary remains:
 
 ```text
 historical evidence
@@ -71,16 +70,12 @@ Social-media comments and Wikipedia-style compilations may support discovery onl
 
 ### 3.1 Classification and 2011 role
 
-For the OMW scenario period the canonical installation class is corrected to:
-
 ```text
 canonical display name: COP Fortress
 canonical installation class: COP
 historical source variants: Combat Outpost Fortress / COP Fortress / FOB Fortress
 location: Chawkay/Chowkay District, Kunar
 ```
-
-The historical naming variance does not change the resource model.
 
 Confirmed 2011 operational evidence includes:
 
@@ -102,8 +97,6 @@ The exact friendly mortar caliber/model and exact 105-mm howitzer model are not 
 ### 3.2 Vehicle evidence
 
 The September-2011 satellite image shows approximately sixteen or more vehicle-sized objects distributed through the installation. Individual objects cannot all be typed reliably from satellite resolution.
-
-Therefore:
 
 ```text
 historically observed physical footprint: approximately >=16 vehicle-sized objects
@@ -218,11 +211,11 @@ GROUND_NODE_HONAKER
 
 A supply parent is not a second resource authority and does not force every physical convoy to originate there.
 
-Both nodes now own their local CampaignState resource pools. MOOSE WAREHOUSE/BRIGADE remains operational only.
+Both nodes own their local CampaignState resource pools. MOOSE WAREHOUSE/BRIGADE remains operational only.
 
 ## 6. Settlement contract
 
-The validated Ground settlement rules apply unchanged to both new root-stock nodes:
+The validated Ground settlement rules apply unchanged to both nodes:
 
 ```text
 1 M-ATV test/mission correlation = 1 VEHICLE + 3 PERSONNEL
@@ -234,17 +227,66 @@ no physical DCS/MOOSE continuation or respawn
 
 No new resource authority is introduced.
 
-## 7. Production gate
+## 7. Production gate – passed
 
-The production stock may be extended with `GROUND_NODE_FORTRESS` and `GROUND_NODE_HONAKER` only together with a dedicated acceptance that proves:
+The six-node production stock is implemented through:
+
+```text
+scripts/logistics/OMW_GroundInitialStock.lua
+scripts/logistics/OMW_AirOpsCampaignStateInitializer.lua
+scripts/ground/OMW_GroundCampaignStateAdapter.lua
+scripts/ground/OMW_GroundRuntimeIntegration.lua
+```
+
+Acceptance 9-2 proves that:
 
 ```text
 single CampaignState composition remains intact
-all six Ground root-stock nodes materialize in CampaignState
+all six Ground stock nodes materialize in CampaignState
 Fortress and Honaker initial values match this decision
-existing AirOps/AAR/Ground values remain unchanged
-existing exactly-once Ground settlement adapter works on both new nodes
+existing AirOps/AAR/Ground values remain intact
+existing exactly-once Ground settlement adapter works on both nodes
 no new MOOSE behavior or private override is introduced
 ```
 
-DCS validation remains required before the new six-node production baseline is marked `VALIDATED`.
+## 8. Accepted DCS provenance
+
+```text
+Acceptance document:
+mission/tests/army-ground-foundation/ACCEPTANCE-9.md
+
+Result document:
+mission/tests/army-ground-foundation/results/2026-08-20-acceptance-9-runtime.md
+
+Acceptance branch:
+agent/army-ground-foundation-reconciliation
+
+Acceptance commit:
+45d916217c0085728082c3ef2efcd582d736caae
+
+Test-ID:
+ARMY-GROUND-ACCEPTANCE-9-2
+
+Bundle SHA-256:
+35cc922581da980f558733433e487b025e083859b943641276672b6c168b4d6a
+
+Mission:
+OMW_Template_v14_ground_test.miz
+
+Mission SHA-256:
+29587060d630d53303d4e858c1fd5a898ea3e09d51dec36ff130d3d0ac6e3ef3
+
+DCS:
+2.9.28.26385 MT
+
+MOOSE commit:
+73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+
+Moose.lua SHA-256:
+e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
+
+Result:
+PASS
+```
+
+The accepted test validates the CampaignState production-stock composition and existing Ground settlement path. Acceptance 7 remains the accepted physical MOOSE Ground lifecycle evidence.
