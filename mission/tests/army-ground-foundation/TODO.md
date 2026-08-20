@@ -204,15 +204,24 @@ mission/tests/army-ground-foundation/results/2026-08-20-acceptance-9-runtime.md
 
 The failed `ARMY-GROUND-ACCEPTANCE-9-1` run remains preserved as regression evidence only.
 
-## 7. Current branch closeout
+## 7. Branch closeout status
 
-The remaining work on this branch is documentation and integration closeout, not another Ground lifecycle acceptance:
+Abgeschlossen:
 
 ```text
-1. reconcile superseded Fortress/Honaker clauses in older Ground planning documents
-2. ensure the six-node source modules are documented as the accepted Ground Foundation production contract
-3. run documentation validation and review the complete branch diff
-4. prepare the branch for owner review / merge workflow
+1. Acceptance 9-2 runtime provenance documented
+2. Fortress/Honaker superseded quantity and artillery clauses reconciled in the Ground domain contracts
+3. six-node CampaignState production source contract documented
+4. restart contract reconciled to strategic one-time recredit with no physical continuation
+5. no new MOOSE/DCS lifecycle code introduced after the accepted runtime commit
+```
+
+Noch vor Review/Merge erforderlich:
+
+```text
+1. repository documentation validator
+2. complete branch diff review against main
+3. owner decision whether to open/advance the branch PR and merge
 ```
 
 No Acceptance 10 is planned merely to repeat Acceptance 7/8/9 behavior.
