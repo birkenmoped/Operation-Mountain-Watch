@@ -8,12 +8,11 @@ local Initializer = {}
 
 local TAG = "[OMW][Logistics.AirOpsCampaignStateInitializer]"
 
-Initializer.SchemaVersion = "OMW-AIROPS-CAMPAIGNSTATE-INITIALIZER-3"
+Initializer.SchemaVersion = "OMW-AIROPS-CAMPAIGNSTATE-INITIALIZER-4"
 
--- These are CampaignState node labels. OFFMAP_* entries are intentionally not
--- DCS airbase names and must never be passed to AIRBASE, WAREHOUSE or AIRWING.
--- The legacy field name is retained because CampaignState currently requires a
--- non-empty airbaseName for every resource node.
+-- These are CampaignState node labels. OFFMAP_* and GROUND_NODE_* entries are
+-- strategic/logical nodes and must never be passed to AIRBASE, WAREHOUSE or
+-- AIRWING merely because CampaignState retains the legacy airbaseName field.
 Initializer.NodeAirbaseName = {
   BAGRAM = "Bagram",
   JALALABAD = "Jalalabad",
@@ -24,6 +23,12 @@ Initializer.NodeAirbaseName = {
   TARINKOT = "Tarinkot",
   OFFMAP_MANAS = "OFF-MAP LOGICAL NODE - MANAS",
   OFFMAP_AL_UDEID = "OFF-MAP LOGICAL NODE - AL UDEID",
+  GROUND_NODE_JALALABAD = "GROUND NODE - Jalalabad / FOB Fenty",
+  GROUND_NODE_FORTRESS = "GROUND NODE - COP Fortress",
+  GROUND_NODE_JOYCE = "GROUND NODE - FOB Joyce",
+  GROUND_NODE_WRIGHT = "GROUND NODE - FOB Wright",
+  GROUND_NODE_HONAKER = "GROUND NODE - COP Honaker-Miracle",
+  GROUND_NODE_BOSTICK = "GROUND NODE - FOB Bostick",
 }
 
 local function fail(message)
@@ -82,7 +87,7 @@ local function validateRow(row, index, sourceLabel)
   normalizeUnit(row)
 
   if not Initializer.NodeAirbaseName[row.nodeId] then
-    fail("unknown AirOps nodeId=" .. tostring(row.nodeId))
+    fail("unknown CampaignState nodeId=" .. tostring(row.nodeId))
   end
 
   if row.supplyParent ~= "OFF_MAP" and not Initializer.NodeAirbaseName[row.supplyParent] then

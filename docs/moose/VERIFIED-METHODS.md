@@ -493,3 +493,67 @@ RESULT PASS
 FuelLow ist davon bewusst getrennt und bleibt Immediate Egress. Der Acceptance-Lauf bestätigte außerdem vier STANDARD-Tracks, zwei demand-gesteuerte RESERVE-Tracks, mindestens 60 s Same-source-Spacing, natürliche EGPAN/DAVER/PINAX-Transits, External Handoff, Reserve-Shutdown, Loss/Replacement und CampaignState exact-once Accounting.
 
 Grenze: Die Validierung gilt ausschließlich für den oben dokumentierten Branch-/Commit-/Mission-/Bundle-/DCS-/MOOSE-Stand. Lower-/Upper-Airway-Routing war nicht Teil dieses Tests.
+
+## Addendum 2026-08-19 – Ground Acceptance 3-2
+
+~~~text
+MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+Moose.lua SHA-256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
+OMW source: mission/tests/army-ground-foundation/src/03-army-ground-acceptance-3.lua
+Tested commit: 9b4997bf024efe0fab18b4d18552117cd8eeee21
+Bundle SHA-256: 1f3879c1245483ba69cb8a5cc76ea1af4f46cdd01d7c9778440f2a2c6d08ef00
+Mission: OMW_Template_v13_ground_test(10).miz
+DCS: 2.9.28.26385 MT
+Result: PASS / owner visual acceptance
+~~~
+
+| Methode/Pfad | Status | Bestätigter Scope und Grenze |
+|---|---|---|
+| `WAREHOUSE:SetSpawnZone(...)` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | sechs Ground-Hosts mit ACCESS-Zone; Fenty-Host wurde im Mission Editor so positioniert, dass die MOOSE-Host–Zone-Distanzgrenze erfüllt ist |
+| `WAREHOUSE:_SpawnAssetGroundNaval(...)` + `_SpawnAssetPrepareTemplate(...)` + `_DATABASE:Spawn(template)` | `VALIDATED_FOR_DOCUMENTED_SCOPE / INTERNAL_RESTRICTED` | ausschließlich die freigegebene per-BRIGADE Acceptance-3-2-Ausnahme; road-aligned 4-Unit Spawn, 74 m Marschraum, Road-Snap <= 4 m; keine allgemeine öffentliche API oder Produktionsfreigabe |
+| `BRIGADE:New`, `BRIGADE:AddPlatoon`, `PLATOON:New`, `COHORT:AddMissionCapability`, `COHORT:CountAssets` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | parallele sechs-Domain-Auswahl und genau eine Materialisierung pro Site |
+| `AUFTRAG:NewARMOREDGUARD`, `SetMissionSpeed`, `SetReturnToLegion(false)`, `__Cancel(...)` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | On-Road 27 kt -> MissionDone physical stay -> same ARMYGROUP Vee 8 kt -> stable halt, sechs Sites |
+
+## Addendum 2026-08-19 – Acceptance 4 source review
+
+| Methode/Pfad | Status | Grenze |
+|---|---|---|
+| `ARMYGROUP:RTZ(Zone, ENUMS.Formation.Vehicle.OnRoad)` | `SOURCE_REVIEWED / DCS_PENDING` | mobiler Group-Pfad fügt einen temporären Ground-Waypoint in die bestehende Fenty-ACCESS-Zone ein; die Zielkoordinate ist innerhalb dieser Zone zufällig |
+| `ARMYGROUP:onafterReturned -> LEGION:__AddAsset(10, group, 1)` | `SOURCE_REVIEWED / DCS_PENDING` | Rückgabe an das bestehende operative Warehouse nach zehn Sekunden; kein CampaignState-Settlement |
+| `WAREHOUSE:onafterAddAsset` für bekannte, lebende Gruppe | `SOURCE_REVIEWED / DCS_PENDING` | stellt den Assetbestand wieder her und despawnt/stoppt die physische OPSGROUP; Sichtbarkeit muss in DCS am Owner-Handoff-Marker geprüft werden |
+
+## Addendum 2026-08-19 – Acceptance-4-2 Ground-return runtime evidence
+
+| Methode / Callback | Status | Exakt bestätigter Umfang |
+|---|---|---|
+| ARMYGROUP:RTZ(Zone, ENUMS.Formation.Vehicle.OnRoad) | VALIDATED_FOR_DOCUMENTED_SCOPE | Mobiler Fenty-ARMYGROUP fährt über den öffentlichen RTZ-Pfad zur bestehenden ZON_BLUE_GND_FENTY_ACCESS; kein immobiler Teleportpfad verwendet. |
+| ARMYGROUP:OnAfterRTZ(...) | VALIDATED_FOR_DOCUMENTED_SCOPE | RTZ-Auslösung, Zielzone und OnRoad-Formation im Acceptance-4-2-Harness protokolliert; FSM wechselte zu Returning. |
+| ARMYGROUP:OnAfterReturned(...) | VALIDATED_FOR_DOCUMENTED_SCOPE | Nach Ankunft wurde genau ein Returned-Handoff bestätigt. |
+| LEGION:__AddAsset(10, group, 1) / Warehouse AddAsset | VALIDATED_FOR_DOCUMENTED_SCOPE | Ein Rückgabe-Handoff stellte den operativen Warehouse-Assetbestand wieder her und entfernte anschließend die temporäre physische DCS-Gruppe. Keine strategische CampaignState-Buchung. |
+
+Provenienz und Einschränkungen: [Acceptance 4 runtime evidence](../../mission/tests/army-ground-foundation/results/2026-08-19-acceptance-4-runtime.md). Gültig nur für MOOSE commit 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54, die zitierte Mission und den mobilen Fenty-Scope.
+
+
+## Addendum 2026-08-20 – ARMY Ground Acceptance 6
+
+Der folgende Runtime-Nachweis ist auf den exakten Ground-Return-Scope beschränkt:
+
+~~~text
+Source commit: c03af3bdf33c83d2fee5477f90f1479df1ec52d3
+Builder/Test-ID: ARMY-GROUND-ACCEPTANCE-6-1
+Bundle SHA-256: 17d0e5f534f67ca41088e3303e7f8ab9af346a6c8a637c987e4047eb99fc55da
+MIZ SHA-256: 7b10b96cd1fbebef7831ccf633e1f57c34b8a318238b38865606fd47dfeb59db
+MOOSE commit/SHA: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54 / e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
+DCS: 2.9.28.26385 MT
+Result: PASS / owner visual acceptance without anomalies
+~~~
+
+| Methode | Status | Belegter Umfang |
+|---|---|---|
+| GROUP:GetSize() | VALIDATED_FOR_DOCUMENTED_SCOPE | Nach test-only UNIT:Destroy(false) bestätigte die aktuelle Gruppenstärke exakt drei Rückkehrer in Joyce und Wright. |
+| GROUP:GetUnits() | VALIDATED_FOR_DOCUMENTED_SCOPE | Deterministische Auswahl der test-only Verlust- bzw. Schadensunit im dokumentierten Vier-M-ATV-A6-Scope. |
+| UNIT:Destroy(false) | VALIDATED_FOR_DOCUMENTED_SCOPE | Ein M-ATV je Joyce/Wright wurde nach MissionDone als Verlust entfernt; keine Rückkehr- oder CampaignState-Gutschrift für die entfernte Unit. |
+| UNIT:SetLife(50) | VALIDATED_FOR_DOCUMENTED_SCOPE | Ein Wright-Rückkehrer erhielt Life 4 -> 2 und erreichte dennoch den regulären RTZ-/Warehouse-Handoff. |
+| ARMYGROUP:RTZ(existing site ACCESS zone, OnRoad) | VALIDATED_FOR_DOCUMENTED_SCOPE | Drei parallele mobile Rückgaben zu ihren jeweiligen ACCESS-Zonen; anschließend Returned -> Warehouse AddAsset -> controlled physical group removal. |
+
+Der Nachweis führt keine Wartungs-/Reparaturzustände ein. Ein zurückgekehrtes, auch beschädigtes Fahrzeug wird sofort als verfügbar gutgeschrieben; nicht zurückgekehrte Units werden nicht gutgeschrieben.

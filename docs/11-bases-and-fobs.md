@@ -6,16 +6,18 @@ owning_policy: OMW-GOV-001
 authoritative_for:
   - planned campaign functions and common metadata of bases, FOBs, COPs and checkpoints
   - planned Kunar and Nuristan ground-site reconciliation for existing mission templates
+  - current ARMY Ground Foundation installation scope and parent relationships
 not_authoritative_for:
   - active air ORBAT
   - final Mission Editor object state
   - final ground-force ORBAT or exact personnel strengths
+  - final MOOSE BRIGADE topology
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
   - vertical-prototype-only base sequence
 superseded_by:
-source_branch: agent/kunar-ground-site-reconciliation
+source_branch: agent/army-ground-foundation-reconciliation
 source_commit: PENDING_MERGE
 validated_in_dcs: false
 ---
@@ -174,6 +176,125 @@ Air-Advisor- und Ausbildungsstandort. Am 30.09.2011 sind 838 AEAG und 444 AEAS i
 
 FOBs, COPs und Checkpoints besitzen begrenzte Ressourcen, Fähigkeiten und Zufahrtsarten. Nicht jeder Standort unterstützt Fixed-Wing-Betrieb, Slingload, Luftabwurf oder ein eigenes AIRWING.
 
+### 3.1 Aktueller ARMY-Ground-Foundation-Scope
+
+Für die aktive BLUE-Ground-Foundation wird innerhalb des allgemeinen Standortkatalogs ein engerer Arbeitsraum verwendet. Die aktive Einheitenbaseline ist einheitlich **Juli 2011**; Installationsstatus und Schließungen werden weiterhin über den gesamten OMW-Zeitraum 01.08.2010–31.12.2011 bewertet.
+
+Der reconciliierte GROUNDBASE-Scope umfasst sechs operative Ground-Domänen:
+
+```text
+Jalalabad / FOB Fenty
+COP Fortress
+FOB Joyce
+FOB Wright
+COP Honaker-Miracle
+FOB Bostick
+```
+
+Für diesen Arbeitsstrang ausdrücklich außerhalb des aktuellen Spielfelds:
+
+```text
+FOB Salerno / Khost and adjacent ground sites
+Camp Fiaz / Asadabad
+```
+
+Camp Fiaz wird nicht physisch aufgebaut; FOB Wright übernimmt den für OMW benötigten Asadabad-Knoten. Die historische `FARP`-Einordnung von Wright im Aviation-Kontext bleibt davon unberührt. Für den Ground-Foundation-Scope ist Wright zusätzlich als aktiver Support-/Security-Knoten vorgesehen; für Juli 2011 ist `1-14th Illinois Agribusiness Development Team` mit `Security Force Platoon` als konkreter Ground-Ansatz belegt. Die genaue Juli-2011-Artilleriezuordnung auf Wright bleibt offen und wird nicht aus dem 2010er M777-Nachweis fortgeschrieben.
+
+Aktuelles operatives Installationsmodell:
+
+```text
+GROUND_NODE_JALALABAD
+└── Jalalabad / FOB Fenty
+
+GROUND_NODE_FORTRESS
+└── COP Fortress
+
+GROUND_NODE_JOYCE
+└── FOB Joyce
+
+GROUND_NODE_WRIGHT
+└── FOB Wright
+
+GROUND_NODE_HONAKER
+└── COP Honaker-Miracle
+    └── OP JoJo
+
+GROUND_NODE_BOSTICK
+└── FOB Bostick
+    ├── OP Mustang
+    ├── OP Clydesdale
+    └── OP Stallion
+```
+
+Die sechs `GROUND_NODE_*`-IDs sind strategische CampaignState-Buchungsadressen und operative Domänenanker, keine historische Brigadegliederung. Die Ebenen bleiben strikt getrennt:
+
+```text
+Installation
+!= historical formation
+!= CampaignState resource node
+!= MOOSE BRIGADE / PLATOON
+!= physical DCS GROUP / ARMYGROUP
+```
+
+Support-parent-Beziehungen:
+
+```text
+GROUND_NODE_FORTRESS -> GROUND_NODE_JALALABAD
+GROUND_NODE_JOYCE    -> GROUND_NODE_JALALABAD
+GROUND_NODE_WRIGHT   -> GROUND_NODE_JALALABAD
+GROUND_NODE_HONAKER  -> GROUND_NODE_JOYCE
+GROUND_NODE_BOSTICK  -> GROUND_NODE_JALALABAD
+```
+
+Der Support-Parent ist keine zweite Ressourcenautorität und schreibt keinen zwingenden physischen Dispatch-Ursprung vor.
+
+Für die aktuelle Juli-2011-Baseline gelten als belastbare Higher-HQ-/Battalion-Zuordnungen beziehungsweise 2011er Standortbelege:
+
+```text
+Jalalabad / FOB Fenty
+  TF Bronco / 3rd BCT, 25th Infantry Division
+  TF Steel / 3-7 Field Artillery
+
+COP Fortress
+  64th Military Police Company contingent assigned/based at COP Fortress in January 2011
+  B Company / 2-327 Infantry / TF No Slack operational presence in March 2011
+
+FOB Joyce
+  TF Cacti / 2-35 Infantry
+
+COP Honaker-Miracle
+  D Company / 2-35 Infantry / TF Cacti 2011 operational presence
+  retained Pech position / Hammer Down staging role
+
+FOB Bostick
+  TF Wolfhound / 2-27 Infantry
+
+FOB Wright
+  1-14th Illinois Agribusiness Development Team
+  Security Force Platoon
+```
+
+Die konkrete Company-/Platoon-Zuordnung und physische DCS-Stärke ist damit nur dort festgelegt, wo die jeweilige Primärevidenz sie tatsächlich trägt.
+
+CampaignState-Initialbestände für Fortress/Honaker sind durch `docs/ground/ARMY-GROUND-FORTRESS-HONAKER-2011-RESOURCE-DECISION.md` festgelegt und durch Acceptance 9-2 für die dokumentierte technische Provenienz bestätigt. Sie sind OMW-Designwerte und keine behaupteten historischen Tagesinventare.
+
+#### OP-Parent-Regel
+
+Ein OP ist keine eigenständige Ressourcenorganisation:
+
+```text
+OP active only if:
+- assigned parent FOB/COP is active
+  OR
+- an explicit replacement parent is documented
+```
+
+Ein OP besitzt nicht automatisch einen eigenen Personnel Pool, ein eigenes Warehouse, einen eigenen QRF-Ursprung oder einen eigenen Patrol-Ursprung. Besatzung, Ablösung, Verstärkung und Versorgung binden Ressourcen des Parent-Ground-Nodes. `CampaignState` bleibt dafür die strategische Autorität.
+
+Für Bostick sind Mustang, Clydesdale und Stallion als OMW-Overwatch-Kette geplant. `OP Mustang` ist im Februar 2011 als aktive Stellung durch C Troop / 1-32 Cavalry / TF Bandit belegt. Die Einordnung von Clydesdale und Stallion als abhängige Bostick-Overwatch-Positionen ist eine Missionsdesignentscheidung und wird nicht als Nachweis identischer Juli-2011-Besetzung formuliert.
+
+Für Joyce/Honaker bleibt `OP JoJo` hinsichtlich der konkreten 2010/11-Besetzung `PROVISIONAL`; die geplante Parent-Beziehung über Honaker-Miracle erlaubt keine stärkere historische Behauptung.
+
 ## 4. Historisch qualifizierter Standortkatalog
 
 | Standort | Klasse/Funktion | Historisch belegte Rolle | Evidenzquelle |
@@ -191,7 +312,8 @@ FOBs, COPs und Checkpoints besitzen begrenzte Ressourcen, Fähigkeiten und Zufah
 | COP Sayed Abad | `MISSION_STAGING` | Talon-Purge-PZ/Aufnahmeraum | Dokument 50, S05 |
 | FOB Howz-e Madad | `GROUND_BASE_ONLY` | Battalion-FOB und CH-47-Ziel/Versorgungsknoten | Dokument 50, S01/S05 |
 | FOB Blessing | `GROUND_BASE_ONLY` | 2011 Übergabe/Aufgabe | Dokument 50, S01 |
-| COP Honaker-Miracle | `GROUND_BASE_ONLY` | isolierter, gehaltener COP | Dokument 50, S01 |
+| COP Fortress | `GROUND_BASE_ONLY` | aktiver Combat Outpost im Chawkay/Chowkay-Raum; 2011 MP-/Infanteriepräsenz und Steilfeuerkontext belegt | Ground-Resource-Decision / DVIDS-/Army-Evidenz |
+| COP Honaker-Miracle | `GROUND_BASE_ONLY` | isolierter, gehaltener COP; 2011 TF-Cacti-/D-Co-Präsenz und Staging-Rolle | Dokument 50, S01; Ground-Resource-Decision |
 | COP Stout | `GROUND_BASE_ONLY` | Hamkari-/Arghandab-Außenposten | Dokument 50, S01 |
 | Außenposten Babur | `GROUND_BASE_ONLY` | nördlicher Folgeaußenposten, Name offen | Dokument 50, S01 |
 | Patrol Base Dakota | `GROUND_BASE_ONLY` | Marjah Hold-/Build-Basis | Dokument 50, S01 |
@@ -226,9 +348,9 @@ UNVERIFIED
 
 | Standort / Template | Provinz / Raum | Reconciliation 01.08.2010–31.12.2011 | Arbeitsstatus für OMW | Bemerkung |
 |---|---|---|---|---|
-| FOB Fortress | Kunar, Chawkay/Chowkay | Aktivität im Zeitraum gestützt | `ACTIVE` | größerer Ground-Standort; konkrete 2011er Garnison und indirektes Feuer noch zu präzisieren |
+| COP Fortress | Kunar, Chawkay/Chowkay | 2011 aktive Stellung mit zugewiesenem 64th-MP-Kontingent und B/2-327-Operationsbezug bestätigt | `ACTIVE` | OMW canonical class `COP`; Fortress besitzt eigenen Ground stock node |
 | FOB Joyce | Kunar, Chawkay | Juli 2011 TF Cacti / 2-35 Infantry laut Dokument 64; 2010 ebenfalls aktive Nutzung belegt | `ACTIVE` | regionaler Ground-Hub für southern Kunar |
-| COP Honaker-Miracle | Kunar, Pech Valley | 2010/2011 aktive US-Stellung belegt | `ACTIVE` | lokaler Hold-/Patrol-Knoten |
+| COP Honaker-Miracle | Kunar, Pech Valley | 2010/2011 aktive US-Stellung; 2011 D Co / 2-35 und Hammer-Down-Staging belegt | `ACTIVE` | eigener Ground stock node; Joyce bleibt Support-Parent |
 | OP JoJo | Kunar, oberhalb Honaker-Miracle | OEF Base Tracker führt `OP Jojo` als `Outpost`; Lage unterstützt Overwatch-Beziehung | `PROVISIONAL` | Existenz/Lage gestützt; konkrete Besetzungsdaten 2010/11 noch offen |
 | Firebase California | Kunar, Pech Valley | historische Existenz bestätigt; OMW-Zeitraum noch nicht ausreichend datiert | `PROVISIONAL` | keine konkrete Artillerie-/Mörserzuweisung ohne weiteren Nachweis |
 | COP Michigan | Kunar, Pech Valley | Aug. 2010 aktiv; Ende März 2011 als US-Stellung geschlossen | `PARTIAL` | nach Schließung keine aktive US-Garnison; dokumentierte `mortar section` während Aktivzeit |
@@ -237,8 +359,8 @@ UNVERIFIED
 | OP 2, Korengal | Kunar, Korengal Valley | Template vorhanden; kanonischer historischer Name bislang nicht bestätigt | `UNVERIFIED` | nicht als historisch benannter OP festschreiben, bis Identität geklärt ist |
 | Firebase / OP Restrepo | Kunar, Korengal Valley | mit Korengal-Komplex vor OMW aufgegeben | `CLOSED_BEFORE_OMW` | historische Stellung bestätigt |
 | Falcon Base / Bari Kot | Kunar, Nari/Naray border area | Basisexistenz 2010 gestützt; Spezial-/Partner-Force-Charakter | `ACTIVE` | als `SPECIAL_SITE`, nicht automatisch regulärer US-Army-FOB modellieren |
-| OP Stallion | northern Kunar / Bostick sector | historische Existenz gestützt; genaue 2010/11-Belegung offen | `PROVISIONAL` | Parent-Beziehung zu Bostick noch nicht als historische Tatsache festschreiben |
-| OP Clydesdale | northern Kunar / Bostick sector | Template/historische Sekundärhinweise vorhanden; 2010/11-Belegung offen | `PROVISIONAL` | weitere Primärquelle erforderlich |
+| OP Stallion | northern Kunar / Bostick sector | historische Existenz gestützt; genaue 2010/11-Belegung offen | `PROVISIONAL` | OMW plant die Parent-Beziehung zu Bostick; identische Juli-2011-Besetzung ist nicht belegt |
+| OP Clydesdale | northern Kunar / Bostick sector | realer Standort gestützt; genaue 2010/11-Belegung offen | `PROVISIONAL` | OMW plant die Parent-Beziehung zu Bostick; identische Juli-2011-Besetzung ist nicht belegt |
 | OP Mace | Kunar/Nuristan border sector | bis 21.12.2010 US-betrieben, danach ANA-Übernahme | `PARTIAL` | BLUE bleibt bestehen; Control/Owner wechselt US -> ANA |
 | COP Keating / Kamdesh | Nuristan, Kamdesh | Schließung bereits Oktober 2009 angeordnet und nach Battle of Kamdesh aufgegeben | `CLOSED_BEFORE_OMW` | kein aktiver US-COP im OMW-Zeitraum |
 | OP Fritsche | Nuristan, Kamdesh | gemeinsam mit Keating vor OMW geschlossen | `CLOSED_BEFORE_OMW` | Army belegt platoon-sized OP und 120-mm-Mortar-Fire-Support für 2009 |
