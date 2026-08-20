@@ -1,7 +1,7 @@
 -- Operation Mountain Watch - ARMY Ground Foundation Acceptance 9.
 -- Fortress/Honaker six-node production-stock gate only; no new MOOSE/DCS lifecycle logic.
 
-local TEST_ID = "ARMY-GROUND-ACCEPTANCE-9-1"
+local TEST_ID = "ARMY-GROUND-ACCEPTANCE-9-2"
 local TAG = "OMW_GND_A9"
 
 local function log(message)
