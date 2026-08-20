@@ -42,6 +42,7 @@ docs/ground/ARMY-GROUND-FORTRESS-HONAKER-2011-RESOURCE-DECISION.md
 docs/ground/ARMY-GROUND-KUNAR-OPERATIONAL-DOMAIN-RECONCILIATION.md
 docs/ground/ARMY-GROUND-RESOURCE-QUANTITY-AND-SETTLEMENT-BASELINE.md
 docs/ground/ARMY-GROUND-RETURN-SETTLEMENT-DECISION-PREPARATION.md
+docs/ground/ARMY-GROUND-TEMPLATE-NAMING-AND-DCS-TYPE-MAPPING.md
 ```
 
 ## 2. Zielstatus GROUNDBASE
@@ -65,6 +66,9 @@ validated physical MOOSE Ground lifecycle
 validated return/loss/restart settlement
 Fortress/Honaker permanent stock decision
 Fortress/Honaker stock integration into production source modules
+reusable vehicle template baseline
+reusable 9-man infantry squad template
+site-bound Fortress/Bostick/Honaker fire-support template baseline
 ```
 
 Nicht Teil dieses abgeschlossenen Foundation-Ziels sind Ground-order generation, vollständige Detail-ORBAT jeder Garnison, OPSTRANSPORT oder allgemeine cross-domain persistence.
@@ -204,7 +208,74 @@ mission/tests/army-ground-foundation/results/2026-08-20-acceptance-9-runtime.md
 
 The failed `ARMY-GROUND-ACCEPTANCE-9-1` run remains preserved as regression evidence only.
 
-## 7. Branch closeout status
+## 7. Current Mission Editor template additions
+
+Read-only inspection of the current owner-provided `OMW_Template_v14_ground_test(5).miz` confirms:
+
+```text
+SHA-256:
+675b98648b6a2f4aa7d03c3bf7c08efab30e36777991ee5cecb1f7433372852a
+
+TPL_BLUE_GND_PATROL_MIXED_4
+  3 x CHAP_MATV
+  1 x MaxxPro_MRAP
+
+TPL_BLUE_GND_PATROL_MIXED_3
+  2 x CHAP_MATV
+  1 x MaxxPro_MRAP
+
+TPL_BLUE_GND_INF_RIFLE_SQUAD_9
+  7 x Soldier M4
+  2 x Soldier M249
+
+TPL_BLUE_GND_FORTRESS_FS_ARTY_L118_1
+  1 x L118_Unit
+
+TPL_BLUE_GND_BOSTICK_FS_ARTY_L118_2
+  2 x L118_Unit
+
+TPL_BLUE_GND_HONAKER_FS_MORTAR_2B11_2
+  2 x 2B11 mortar
+```
+
+The infantry squad is the reusable physical Foundation representation for foot patrol, local security, OP relief/return and later dismount tasks. Actual embark/disembark behavior remains later OPSTRANSPORT/Ground-order scope.
+
+One Mission Editor naming correction is still required in the current owner MIZ:
+
+```text
+current:
+TPL_BLUE_GND_BOSTICK_FS_ARTY_L118_3_02
+
+required:
+TPL_BLUE_GND_BOSTICK_FS_ARTY_L118_2_02
+```
+
+The group itself is already named `TPL_BLUE_GND_BOSTICK_FS_ARTY_L118_2` and contains two L118 units. This is only a unit-name cleanup, not a resource or runtime architecture change.
+
+## 8. DCS test policy for remaining Ground work
+
+Owner decision:
+
+```text
+No further single-feature / single-acceptance DCS missions on this branch.
+```
+
+If any remaining Foundation addition or later integration actually requires new in-game proof, it must be bundled into a single Ground integration/collection mission together with the other outstanding runtime checks.
+
+Pure Mission Editor template creation/renaming and documentation reconciliation do not trigger a new DCS acceptance by themselves when no new runtime mechanism is introduced.
+
+Potential behaviors that would require future bundled runtime coverage if implemented:
+
+```text
+infantry embark/disembark from convoy carriers
+OPSTRANSPORT-based OP relief/reinforcement
+new fire-support tasking/control behavior
+new mixed-template lifecycle behavior not already covered by the validated Ground lifecycle
+```
+
+No Acceptance 10 is planned merely to repeat Acceptance 7/8/9 behavior.
+
+## 9. Branch closeout status
 
 Abgeschlossen:
 
@@ -213,20 +284,20 @@ Abgeschlossen:
 2. Fortress/Honaker superseded quantity and artillery clauses reconciled in the Ground domain contracts
 3. six-node CampaignState production source contract documented
 4. restart contract reconciled to strategic one-time recredit with no physical continuation
-5. no new MOOSE/DCS lifecycle code introduced after the accepted runtime commit
+5. reusable infantry/mixed-patrol/fire-support template contract documented
+6. no new MOOSE/DCS lifecycle code introduced after the accepted runtime commit
 ```
 
 Noch vor Review/Merge erforderlich:
 
 ```text
-1. repository documentation validator
-2. complete branch diff review against main
-3. owner decision whether to open/advance the branch PR and merge
+1. owner fixes the single stale Bostick L118 unit suffix in the current MIZ
+2. repository documentation validator
+3. complete branch diff review against main
+4. owner decision whether to open/advance the branch PR and merge
 ```
 
-No Acceptance 10 is planned merely to repeat Acceptance 7/8/9 behavior.
-
-## 8. Separate later scopes
+## 10. Separate later scopes
 
 These items are intentionally not blockers for closing the GROUNDBASE foundation:
 
@@ -243,6 +314,6 @@ production patrol/observation mission geometry beyond validated Foundation behav
 
 They require their own later decisions and/or branches.
 
-## 9. Verification rule
+## 11. Verification rule
 
 No local build, hash or DCS behavior is assumed. Only real console output, real artifact hashes and real DCS evidence advance an acceptance gate.
