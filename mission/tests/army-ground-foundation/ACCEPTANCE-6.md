@@ -99,4 +99,3 @@ Der Lauf materialisierte alle drei Gruppen genau einmal und bestätigte den unve
 - Wright: ein Verlust, ein Rückkehrer durch UNIT:SetLife(50) von Life 4 auf 2 beschädigt, drei Rückkehrer und Testcredit genau einmal um drei.
 
 Der Schadenswert ändert die unmittelbare Rückgabe nicht: Jeder tatsächlich zurückgekehrte Rückkehrer wird gemäß Eigentümerentscheidung sofort wieder verfügbar. Nicht zurückgekehrte Units werden nicht gutgeschrieben. Der isolierte Test-Store bleibt kein Produktionsbestand und keine Produktionsbuchung.
-
