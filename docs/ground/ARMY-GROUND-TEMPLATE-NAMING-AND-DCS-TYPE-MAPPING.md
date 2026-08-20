@@ -8,7 +8,7 @@ authoritative_for:
   - source-qualified mapping from approved OMW vehicle families to DCS type names
   - separation between strategic installation IDs, Ground nodes, reusable templates and runtime groups
 not_authoritative_for:
-  - final Mission Editor object placement
+  - final Mission Editor object placement beyond the owner-provided fixed fire-support positions cited below
   - exact Fortress/Honaker vehicle-family split
   - accepted DCS behavior beyond cited acceptance results
 scenario_period: 2010-08-01/2011-12-31
@@ -25,8 +25,6 @@ validated_in_dcs: true
 # ARMY Ground Foundation – Template Naming and DCS Type Mapping
 
 ## 1. Identity layers
-
-The identity layers remain separate:
 
 ```text
 CampaignState installation
@@ -110,9 +108,12 @@ Dependent OPs do not automatically receive their own warehouse or strategic stoc
 ## 6. Materialization classes
 
 ```text
-FIXED INSTALLATION DEFENSE
--> physical at mission start where required
--> not demand-time spawned into exact defensive positions
+FIXED INSTALLATION DEFENSE / FIRE SUPPORT
+-> placed in the exact Mission Editor position selected for the real FOB/COP emplacement
+-> normally physically present at mission start
+-> not materialized at an ACCESS boundary
+-> not randomly repositioned by WAREHOUSE spawning
+-> if a future CampaignState gate requires conditional creation, it may only appear at the exact stored emplacement position and before a player can reasonably observe the transition
 
 MOBILE OPERATIONAL ASSETS
 -> CampaignState reservation first
@@ -124,7 +125,7 @@ REINFORCEMENT / LOGISTICS TRANSPORT
 -> strategic ownership changes only by explicit CampaignState settlement
 ```
 
-Site-bound fire-support templates are Mission Editor representations of local capability. They do not become independent strategic resource authorities.
+The current Fortress, Bostick and Honaker fire-support groups are therefore fixed installation assets. Their Mission Editor coordinates/headings are part of their physical representation and must not be replaced by generic warehouse/access-zone placement.
 
 ## 7. Observed/approved DCS type names
 
@@ -223,7 +224,7 @@ The mixed patrol templates are additional representations only. They do not inva
 
 ## 10. Site-bound fire-support templates
 
-Current owner-created Mission Editor templates:
+Current owner-created Mission Editor groups:
 
 ```text
 TPL_BLUE_GND_FORTRESS_FS_ARTY_L118_1
@@ -246,7 +247,7 @@ site-bound fire support:
 TPL_BLUE_GND_<SITE>_FS_<CATEGORY>_<TYPE>_<WEAPON_COUNT>
 ```
 
-The trailing count is the number of named weapon systems, not the total number of support vehicles in a battery/platoon representation.
+The trailing count is the number of named weapon systems.
 
 Evidence boundaries:
 
@@ -272,11 +273,11 @@ The superseded Honaker mapping `TPL_BLUE_GND_FIRE_SUPPORT_L118_PROXY_2 -> 2 x L1
 
 ## 11. Current owner MIZ inspection
 
-Read-only inspection of the owner-provided current test mission:
+Read-only inspection of the latest owner-provided test mission:
 
 ```text
-file: OMW_Template_v14_ground_test(5).miz
-SHA-256: 675b98648b6a2f4aa7d03c3bf7c08efab30e36777991ee5cecb1f7433372852a
+file: OMW_Template_v14_ground_test(6).miz
+SHA-256: f4d27b43bd97a6b9666279b9b1ad4851b57cc264169ac6dd08207318dba014af
 ```
 
 Confirmed Mission Editor group contents:
@@ -284,12 +285,15 @@ Confirmed Mission Editor group contents:
 ```text
 TPL_BLUE_GND_FORTRESS_FS_ARTY_L118_1
   1 x L118_Unit
+  mission-start present at the owner-selected Fortress emplacement
 
 TPL_BLUE_GND_BOSTICK_FS_ARTY_L118_2
   2 x L118_Unit
+  mission-start present at the owner-selected Bostick emplacement
 
 TPL_BLUE_GND_HONAKER_FS_MORTAR_2B11_2
   2 x 2B11 mortar
+  mission-start present at the owner-selected Honaker emplacement
 
 TPL_BLUE_GND_PATROL_MIXED_4
   3 x CHAP_MATV + 1 x MaxxPro_MRAP
@@ -301,17 +305,9 @@ TPL_BLUE_GND_INF_RIFLE_SQUAD_9
   7 x Soldier M4 + 2 x Soldier M249
 ```
 
-One Mission Editor naming defect remains in this exact MIZ and must be corrected by the project owner before the template set is considered clean:
+For all three fixed fire-support groups the latest MIZ contains no `lateActivation = true` flag. They therefore exist from mission start at the exact Mission Editor coordinates/headings selected by the owner. The previous stale Bostick unit suffix is corrected in this MIZ (`...L118_2_02`).
 
-```text
-group: TPL_BLUE_GND_BOSTICK_FS_ARTY_L118_2
-unit 1: TPL_BLUE_GND_BOSTICK_FS_ARTY_L118_2_01
-unit 2: TPL_BLUE_GND_BOSTICK_FS_ARTY_L118_3_02   <- stale suffix
-required unit 2 name:
-TPL_BLUE_GND_BOSTICK_FS_ARTY_L118_2_02
-```
-
-This is a naming defect only; no runtime behavior is inferred from the read-only inspection.
+This is read-only Mission Editor verification; no new runtime tasking behavior is inferred.
 
 ## 12. MOOSE source basis
 
@@ -326,11 +322,12 @@ Ground lifecycle behavior is validated separately by Acceptance 7. Acceptance 9 
 
 ## 13. Runtime-test boundary
 
-Creating or renaming Mission Editor templates does not by itself require a dedicated DCS acceptance when no new runtime mechanism is introduced.
+Creating, renaming or mission-start placing fixed Mission Editor groups does not by itself require a dedicated DCS acceptance when no new runtime mechanism is introduced.
 
 If later Ground work introduces new runtime behavior such as:
 
 ```text
+conditional exact-position fire-support materialization
 infantry embark/disembark from convoy carriers
 OPSTRANSPORT-based relief or reinforcement
 new fire-support tasking/control behavior
