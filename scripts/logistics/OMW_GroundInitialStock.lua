@@ -4,8 +4,9 @@
 -- creates no independent store. It is intended to be composed into the single
 -- authoritative CampaignState initial state through the existing initializer.
 --
--- Source baseline:
+-- Source baselines:
 -- docs/ground/ARMY-GROUND-RESOURCE-QUANTITY-AND-SETTLEMENT-BASELINE.md
+-- docs/ground/ARMY-GROUND-FORTRESS-HONAKER-2011-RESOURCE-DECISION.md
 
 local InitialStock = {}
 
@@ -55,8 +56,10 @@ end
 InitialStock.Rows = {}
 
 appendNode(InitialStock.Rows, "GROUND_NODE_JALALABAD", 480, 48, 120, 100, 120, "OFF_MAP")
+appendNode(InitialStock.Rows, "GROUND_NODE_FORTRESS", 160, 18, 44, 48, 40, "GROUND_NODE_JALALABAD")
 appendNode(InitialStock.Rows, "GROUND_NODE_JOYCE", 180, 20, 48, 44, 40, "GROUND_NODE_JALALABAD")
 appendNode(InitialStock.Rows, "GROUND_NODE_WRIGHT", 120, 22, 36, 30, 36, "GROUND_NODE_JALALABAD")
+appendNode(InitialStock.Rows, "GROUND_NODE_HONAKER", 120, 18, 40, 40, 36, "GROUND_NODE_JOYCE")
 appendNode(InitialStock.Rows, "GROUND_NODE_BOSTICK", 220, 26, 56, 52, 48, "GROUND_NODE_JALALABAD")
 
 InitialStock.MotorizedPatrol = {
