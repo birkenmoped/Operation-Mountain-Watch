@@ -54,7 +54,7 @@ local function sortedKeys(map)
 end
 
 local function commitmentId(runtimeId, resourceId)
-  return TRANSACTION_PREFIX .. runtimeId .. ":" .. resourceId
+  return TRANSACTION_PREFIX .. runtimeId .. "|" .. resourceId
 end
 
 local function creditId(prefix, runtimeId, resourceId)
@@ -66,13 +66,8 @@ local function parseCommitmentId(transactionId)
     return nil
   end
   local payload = transactionId:sub(#TRANSACTION_PREFIX + 1)
-  local separator = payload:match("^.*():")
-  if not separator then
-    return nil
-  end
-  local runtimeId = payload:sub(1, separator - 1)
-  local resourceId = payload:sub(separator + 1)
-  if runtimeId == "" or resourceId == "" then
+  local runtimeId, resourceId = payload:match("^([^|]+)|(.+)$")
+  if not runtimeId or not resourceId or runtimeId == "" or resourceId == "" then
     return nil
   end
   return runtimeId, resourceId
