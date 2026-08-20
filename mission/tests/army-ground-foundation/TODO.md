@@ -389,11 +389,11 @@ Damit sind für diesen exakten Teststand Road-aligned Materialisierung, ein einz
 
 ## Addendum 2026-08-19 – Vorbereitung Ground-CampaignState-Rückgabe
 
-Die A4-2-Rückgabe ist operativ akzeptiert, aber noch keine strategische Buchung. Die vor Implementierung erforderlichen Entscheidungen und der geplante Acceptance-Scope stehen in:
+Die A4-2-Rückgabe ist operativ akzeptiert, aber noch keine strategische Buchung. Die festgelegten Ground-Settlement- und Restart-Regeln sowie das verbleibende Produktionsdaten-Gate stehen in:
 
 - [`OMW-PLAN-ARMY-GROUND-RETURN-SETTLEMENT`](../../../docs/ground/ARMY-GROUND-RETURN-SETTLEMENT-DECISION-PREPARATION.md)
 
-Bis zu einer expliziten Eigentümerentscheidung bleiben Ground-CampaignState-Credit, Verlustbehandlung und Restart-Reconciliation unverändert offen.
+Bis zur Umsetzung bleiben keine Ground-CampaignState-Credits produktiv aktiv.
 
 
 ## Addendum 2026-08-19 – Acceptance 5 freigegeben und DCS-pending
@@ -469,3 +469,19 @@ Wright: 4 aus -> 1 Verlust + 1 beschädigter Rückkehrer + 3 zurück -> isoliert
 ~~~
 
 Der Scope führt keine Produktionsbuchung, Wartungslogik oder Reparaturwartezeit ein. Rückkehrer werden sofort verfügbar; nur nicht zurückgekehrte Units gelten als Verlust. Offen bleibt die separate Produktionsintegration des strategischen Return-Settlement-Adapters einschließlich Restart-Reconciliation.
+
+
+## Addendum 2026-08-20 – Settlement- und Restart-Entscheidung festgehalten
+
+Die Ground-Regeln sind nun entschieden und im Settlement-Plan dokumentiert:
+
+~~~text
+physical Unit count = strategic consume count
+confirmed returned Unit = immediate one-time credit
+non-returned Unit = permanent loss
+damaged returned Unit = immediate availability
+active nonterminal commitment at server stop/crash = one-time strategic recredit at next startup
+no physical DCS/MOOSE group continuation or respawn
+~~~
+
+Damit bleibt für die Produktionsintegration nur noch die konkrete, bereits baselierte Zuordnung von Ground-Ressourcen und Source Nodes offen. Der nächste DCS-Gate wird diese Fälle gemeinsam, nicht in einzelnen Folgeläufen, prüfen.
