@@ -117,7 +117,7 @@ $forbiddenPatterns = @(
   'timer\.scheduleFunction',
   'mist\.',
   'MIST',
-  'io\.',
+  '(?<![A-Za-z0-9_])io\.',
   'lfs\.',
   'os\.execute',
   'LoadBackAssetInPosition',
