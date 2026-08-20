@@ -92,8 +92,6 @@ mission/tests/army-ground-foundation/results/2026-08-20-acceptance-7-runtime.md
 
 Acceptance 8 validated the production-shaped single-CampaignState composition for the previously decided four Ground stock nodes while preserving AirOps and AAR stock.
 
-Real DCS log markers from 2026-08-20:
-
 ```text
 OMW_GND_A8 START testId=ARMY-GROUND-ACCEPTANCE-8-1
 OMW_GND_A8 COMPOSITION_OK airOps=true aar=true groundResources=28
@@ -112,7 +110,7 @@ The remaining quantity gap is closed by:
 docs/ground/ARMY-GROUND-FORTRESS-HONAKER-2011-RESOURCE-DECISION.md
 ```
 
-New production-stock nodes:
+Production-stock nodes:
 
 ```text
 GROUND_NODE_FORTRESS
@@ -164,48 +162,89 @@ no fixed M777/L118 production requirement from the superseded July-2011 assumpti
 
 Older Ground documents containing the superseded assumption must be reconciled before merge to main.
 
-## 7. Current Gate – Acceptance 9
+## 7. Current Gate – Acceptance 9 corrected rerun
 
-Purpose:
+Acceptance 9 validates:
 
 ```text
-validate six-node Ground stock in the single CampaignState
-validate Fortress and Honaker exact initial design values
-preserve existing Jalalabad/Joyce/Wright/Bostick values
-preserve AirOps and AAR stock
-exercise existing exactly-once Ground settlement adapter on Fortress and Honaker
-introduce no new MOOSE/DCS lifecycle behavior
+single CampaignState with six Ground stock nodes
+Fortress exact design values
+Honaker exact design values
+existing Jalalabad/Joyce/Wright/Bostick values unchanged
+AirOps and AAR stock preserved
+existing exactly-once Ground settlement adapter on Fortress and Honaker
+no new MOOSE/DCS lifecycle behavior
+```
+
+### Failed first runtime
+
+The real `ARMY-GROUND-ACCEPTANCE-9-1` run on 2026-08-20 failed immediately after:
+
+```text
+OMW_GND_A9 START testId=ARMY-GROUND-ACCEPTANCE-9-1
+```
+
+with:
+
+```text
+[OMW][Logistics.AirOpsCampaignStateInitializer] unknown CampaignState nodeId=GROUND_NODE_FORTRESS
+```
+
+Tested artifact provenance:
+
+```text
+Source commit: 60a4931403405d01b1147f6beb6cc71e011c5406
+Bundle SHA-256: 3ad34e253cd36bd755379d1d94638dff1be3f002cdfdbe2eea5bdd51a6deaad1
+Uploaded/tested MIZ SHA-256: 31b51da96b465ef483cf062a685904764652a0e4434eb9d73280149efddec64b
+Embedded bundle SHA-256: 3ad34e253cd36bd755379d1d94638dff1be3f002cdfdbe2eea5bdd51a6deaad1
+Embedded Moose.lua SHA-256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
+DCS: 2.9.28.26385 MT
+Result: FAILED
+```
+
+Failure evidence:
+
+```text
+mission/tests/army-ground-foundation/results/2026-08-20-acceptance-9-failed-node-registry.md
+```
+
+### Root cause and correction
+
+The Ground stock contained Fortress/Honaker, but `AirOpsCampaignStateInitializer.NodeAirbaseName` still registered only the earlier four Ground nodes.
+
+Corrected branch state:
+
+```text
+GROUND_NODE_FORTRESS registered
+GROUND_NODE_HONAKER registered
+Acceptance 9 builder statically verifies all six initializer node-registry entries
+BuilderVersion/Test-ID bumped to ARMY-GROUND-ACCEPTANCE-9-2
 ```
 
 Files:
 
 ```text
+scripts/logistics/OMW_AirOpsCampaignStateInitializer.lua
 mission/tests/army-ground-foundation/ACCEPTANCE-9.md
 mission/tests/army-ground-foundation/src/09-army-ground-fortress-honaker-production-stock.lua
 tools/build-army-ground-acceptance-9.ps1
 ```
 
-Generated bundle:
+Required runtime markers for the corrected rerun:
 
 ```text
-mission/tests/army-ground-foundation/dist/OMW_Army_Ground_Acceptance_9.lua
-```
-
-Required runtime markers:
-
-```text
-OMW_GND_A9 START
+OMW_GND_A9 START testId=ARMY-GROUND-ACCEPTANCE-9-2
 OMW_GND_A9 SIX_NODE_STOCK_OK
 OMW_GND_A9 FORTRESS_SETTLEMENT_OK
 OMW_GND_A9 HONAKER_SETTLEMENT_OK
-OMW_GND_A9 RUNTIME_PASS
+OMW_GND_A9 RUNTIME_PASS testId=ARMY-GROUND-ACCEPTANCE-9-2
 ```
 
-Any `OMW_GND_A9 FAIL` fails the run.
+No success is inferred from the source correction. A real rebuilt bundle hash and a new DCS run are required.
 
 ## 8. After Acceptance 9
 
-If Acceptance 9 passes:
+If corrected Acceptance 9 passes:
 
 ```text
 reconcile superseded Fortress/Honaker clauses in older Ground baseline documents
