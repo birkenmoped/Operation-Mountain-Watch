@@ -4,89 +4,54 @@ status: PLANNED
 document_class: DOMAIN_CONTRACT
 owning_policy: OMW-GOV-001
 authoritative_for:
-  - planned Kunar/Jalalabad installation classification for the current ARMY Ground Foundation
-  - planned separation of CampaignState parentage from physical dispatch origin
-  - planned MOOSE operational-domain scope for Fenty, Fortress, Joyce, Wright, Honaker-Miracle and Bostick
-  - immediate integration-test site scope after Ground Acceptance 2
+  - current Kunar/Jalalabad Ground Foundation installation classification
+  - separation of CampaignState strategic ownership from physical dispatch origin
+  - six-domain MOOSE operational scope for Fenty, Fortress, Joyce, Wright, Honaker-Miracle and Bostick
 not_authoritative_for:
-  - final historical garrison strengths
-  - final vehicle property books per installation
+  - exact historical daily garrison strengths
+  - exact historical daily vehicle property books
   - final Mission Editor coordinates
-  - accepted DCS runtime behavior for the multi-domain test
   - repository-wide authority before merge to main
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
-  - four-BRIGADE-only planning in OMW-ARMY-GROUND-ROLE-PLATOON-BASELINE for the current Kunar integration-test scope
-  - root-node-only ACCESS planning in OMW-ARMY-GROUND-RECONSTITUTION-ACCESS-CONTRACT for the current Kunar integration-test scope
-  - treatment of Honaker-Miracle as destination-only/no-local-operational-domain in the current working branch
+  - earlier FOB classification of Fortress in this document
+  - earlier quantity-open clauses for Fortress and Honaker
+  - treatment of Honaker as destination-only/no-local-stock
 superseded_by:
 source_branch: agent/army-ground-foundation-reconciliation
 source_commit: PENDING_MERGE
-validated_in_dcs: false
+validated_in_dcs: true
 ---
 
 # ARMY Ground Foundation – Kunar Operational-Domain Reconciliation
 
 ## 1. Zweck
 
-Dieses Dokument reconciliiert die aktuelle Ground-Foundation-Topologie vor dem naechsten DCS-Integrationstest.
+Dieses Dokument beschreibt den reconcilierten Ground-Foundation-Zustand nach Acceptance 9.
 
-Ausgangspunkt sind drei getrennte Ebenen, die nicht mehr als dieselbe Beziehung behandelt werden duerfen:
+Die drei Ebenen bleiben strikt getrennt:
 
 ```text
-CampaignState installation / strategic ownership
+CampaignState strategic installation/resource ownership
 != MOOSE operational materialization domain
 != physical dispatch origin for a concrete mission
 ```
 
-Die Trennung ist erforderlich, weil die Geografie und die belegte Nutzung der Forward Sites nicht mit einer starren linearen Parent-Kette identisch sind.
+## 2. Reconciled installation model
 
-## 2. Quellen- und Evidenzgrenze
-
-### 2.1 Honaker-Miracle
-
-Die offizielle U.S.-Army-Historie `The Afghan Surge: January 2009-August 2011` beschreibt fuer 2011:
-
-- beim Pech Realignment blieb COP Honaker-Miracle als Ausnahme bestehen, um Asadabad gegen Insurgent pressure abzuschirmen;
-- nach der Rueckkehr von TF Cacti / 2-35 Infantry in den Pech-Raum wurde Honaker-Miracle als staging ground fuer Operation Hammer Down genutzt;
-- Lt. Col. Colin P. Tuley fuehrte die Operation von COP Honaker-Miracle aus und setzte von dort Reservekraefte ein;
-- die Operation erforderte mehrere Resupply-Missionen.
-
-Das belegt einen realen lokalen Operations-/Staging-Charakter. Es belegt **nicht** automatisch einen dauerhaft unabhaengigen strategischen Fahrzeug- oder Ressourcenpool.
-
-### 2.2 Fortress
-
-Die Projektquellen belegen die historische Standortbezeichnung `FOB Fortress` mehrfach. Fruehere ORBAT-Snapshots fuehren einen Ground-owning Infantry Battalion node in Chawkay/Chowkay; War-Diary-/MSR-Evidenz beschreibt Combat Logistics Patrols mit Security Halt, Versorgung und Weiterfahrt ueber Fortress.
-
-Einzelne Quellen verwenden auch `COP Fortress`. Fuer OMW gilt deshalb:
-
-```text
-canonical OMW installation class: FOB
-canonical display name: FOB Fortress
-historical source alias: COP Fortress
-```
-
-Die Alias-Varianz wird dokumentiert, aber nicht als Grund genutzt, die OMW-Klasse auf `COP` zu reduzieren.
-
-### 2.3 RC-East / Kunar operating environment
-
-Zeitgenoessische RC-East-Unterlagen betonen Key Terrain, Lines of Communication, dezentrale Forward Presence und die starke Wirkung von Terrain auf Freedom of Movement. Daraus folgt fuer OMW keine einzelne historische Parent-Kette, sondern die Notwendigkeit, strategische Ressourcenverantwortung und konkrete physische Dispatch-Entscheidung getrennt abzubilden.
-
-## 3. Reconciliertes Installationsmodell
-
-Fuer den aktuellen Kunar-/Jalalabad-Foundation-Scope werden sechs operative Installationsstandorte gefuehrt:
+Für den aktuellen Kunar-/Jalalabad-Foundation-Scope werden sechs operative Standorte geführt:
 
 ```text
 Jalalabad / FOB Fenty
-FOB Fortress
+COP Fortress
 FOB Joyce
 FOB Wright
 COP Honaker-Miracle
 FOB Bostick
 ```
 
-Abhaengige OPs bleiben davon getrennt:
+Dependent OPs:
 
 ```text
 COP Honaker-Miracle
@@ -98,86 +63,84 @@ FOB Bostick
 `-- OP Stallion
 ```
 
-Die sechs Standorte sind **keine Behauptung sechs historischer Brigaden** und **keine sechs unabhaengigen CampaignState-Ressourcenautoritaeten**.
+### COP Fortress
 
-## 4. Stabile Installation-IDs
+```text
+canonical display name: COP Fortress
+canonical installation class: COP
+historical aliases: Combat Outpost Fortress / COP Fortress / FOB Fortress
+location: Chawkay/Chowkay District, Kunar
+```
+
+The historical source-name variance does not change the current OMW installation class.
+
+### COP Honaker-Miracle
+
+```text
+canonical display name: COP Honaker-Miracle
+canonical installation class: COP
+location: Dara-I-Pech / Pech River Valley, Kunar
+```
+
+2011 evidence supports an independent local operational/staging role and local strategic stock.
+
+## 3. Stable installation IDs
 
 ```text
 BLUE_GROUND_HUB_JALALABAD_FENTY
-BLUE_GROUND_FOB_FORTRESS
+BLUE_GROUND_COP_FORTRESS
 BLUE_GROUND_FOB_JOYCE
 BLUE_GROUND_FOB_WRIGHT
 BLUE_GROUND_COP_HONAKER_MIRACLE
 BLUE_GROUND_FOB_BOSTICK
 ```
 
-Die bisher nicht kanonische Form `BLUE_GROUND_COP_FORTRESS` wird fuer neue Arbeit nicht verwendet.
+Any older new-work use of `BLUE_GROUND_FOB_FORTRESS` is superseded by the canonical COP identity above.
 
-## 5. Strategische Parent- und Support-Semantik
+## 4. Strategic Ground nodes and support relationships
 
-### 5.1 `parentInstallationId`
-
-`parentInstallationId` beschreibt die strategische/organisatorische CampaignState-Beziehung einer abhaengigen Installation. Es ist **kein** Zwang, dass jeder physische Convoy von diesem Parent abfahren muss.
-
-Aktueller Arbeitsstand:
+All six operational domains now have their own CampaignState stock node:
 
 ```text
-BLUE_GROUND_HUB_JALALABAD_FENTY
-  parentInstallationId = null
-
-BLUE_GROUND_FOB_FORTRESS
-  parentInstallationId = null
-  regionalSupportParent = BLUE_GROUND_HUB_JALALABAD_FENTY
-
-BLUE_GROUND_FOB_JOYCE
-  parentInstallationId = null
-  regionalSupportParent = BLUE_GROUND_HUB_JALALABAD_FENTY
-
-BLUE_GROUND_FOB_WRIGHT
-  parentInstallationId = null
-  regionalSupportParent = BLUE_GROUND_HUB_JALALABAD_FENTY
-
-BLUE_GROUND_COP_HONAKER_MIRACLE
-  parentInstallationId = BLUE_GROUND_FOB_JOYCE
-
-BLUE_GROUND_FOB_BOSTICK
-  parentInstallationId = null
-  regionalSupportParent = BLUE_GROUND_HUB_JALALABAD_FENTY
+GROUND_NODE_JALALABAD
+GROUND_NODE_FORTRESS
+GROUND_NODE_JOYCE
+GROUND_NODE_WRIGHT
+GROUND_NODE_HONAKER
+GROUND_NODE_BOSTICK
 ```
 
-Die Joyce-Parentage von Honaker bleibt vorerst als OMW CampaignState-Arbeitsvertrag erhalten. Die historischen Quellen werden **nicht** so interpretiert, als habe diese Beziehung ueber den gesamten Kampagnenzeitraum unveraendert bestanden.
-
-### 5.2 Physical dispatch origin
-
-Eine konkrete physische Mission darf aus einem anderen geeigneten operativen Standort starten, sofern CampaignState die strategische Reservation vorher korrekt bindet.
+Support-parent contract:
 
 ```text
-strategic owner / obligation
--> reserve resource in CampaignState
--> select validated physical dispatch origin
--> execute MOOSE mission
--> settle arrival/loss/abort exactly once
+GROUND_NODE_JALALABAD
+  supplyParent = OFF_MAP
+
+GROUND_NODE_FORTRESS
+  supplyParent = GROUND_NODE_JALALABAD
+
+GROUND_NODE_JOYCE
+  supplyParent = GROUND_NODE_JALALABAD
+
+GROUND_NODE_WRIGHT
+  supplyParent = GROUND_NODE_JALALABAD
+
+GROUND_NODE_HONAKER
+  supplyParent = GROUND_NODE_JOYCE
+
+GROUND_NODE_BOSTICK
+  supplyParent = GROUND_NODE_JALALABAD
 ```
 
-Damit gilt ausdruecklich:
+A supply parent is not a second resource authority and does not require every physical mission to dispatch from that node.
 
 ```text
 resource owner != physical dispatch origin
 ```
 
-Fuer Honaker sind als moegliche physische Support-Urspruenge mindestens zu pruefen:
+## 5. MOOSE operational domains
 
-```text
-local Honaker operational stock/staging
-FOB Wright
-FOB Joyce
-```
-
-Wright wird wegen der Geografie und der vorhandenen MSR-/QRF-Funktion als naheliegender Forward-Support-Kandidat behandelt. Das macht Wright **nicht** zum strategischen Parent von Honaker.
-
-## 6. MOOSE operational domains
-
-Fuer den naechsten Integrationstest wird folgende operative MOOSE-Topologie geplant:
+Current operational topology:
 
 ```text
 BLUE COMMANDER
@@ -201,28 +164,26 @@ BLUE COMMANDER
     `-- WH_BLUE_GND_BOSTICK
 ```
 
-Bedeutung:
+`BRIGADE` is an operational MOOSE lifecycle domain and does not assert a historical brigade formation. MOOSE `WAREHOUSE` remains operational/mirroring only; CampaignState remains the sole strategic resource authority.
 
-- `BRIGADE` ist hier eine MOOSE operative Materialisierungs-/Lifecycle-Domaene;
-- der Name behauptet keine historische Brigadeformation;
-- `WAREHOUSE` ist ein physischer MOOSE host/mirror und keine strategische Ressourcenautoritaet;
-- CampaignState bleibt alleinige Autoritaet fuer strategische Personnel-/Vehicle-/Supply-/Ammo-/Fuel-Vertraege.
+## 6. Six-node stock contract
 
-### 6.1 Honaker-Grenze
+Order: `PERSONNEL / VEHICLE / SUPPLY / AMMO / FUEL`.
 
-Die eigene Honaker-MOOSE-Domaene ist durch die 2011 belegte Staging-/Reservefunktion technisch und missionsfachlich gerechtfertigt. Sie **beweist keinen neuen additiven Fahrzeugbestand**.
+```text
+GROUND_NODE_JALALABAD 480 / 48 / 120 / 100 / 120
+GROUND_NODE_FORTRESS  160 / 18 / 44  / 48  / 40
+GROUND_NODE_JOYCE     180 / 20 / 48  / 44  / 40
+GROUND_NODE_WRIGHT    120 / 22 / 36  / 30  / 36
+GROUND_NODE_HONAKER   120 / 18 / 40  / 40  / 36
+GROUND_NODE_BOSTICK   220 / 26 / 56  / 52  / 48
+```
 
-Bis eine separate Property-Book-/Vehicle-Baseline beschlossen ist, duerfen Acceptance-/Integrationstest-Assets fuer Honaker nur als **test-only operational allocation** gefuehrt werden. Sie duerfen die bestehende Joyce- oder Wright-Fahrzeugbaseline nicht stillschweigend erhoehen.
+Fortress/Honaker quantities are defined by `OMW-ARMY-GROUND-FORTRESS-HONAKER-2011-RESOURCE-DECISION` and are OMW design quantities, not exact historical daily inventories.
 
-### 6.2 Fortress-Grenze
+## 7. ACCESS and handoff model
 
-Dasselbe gilt fuer Fortress: der Standort rechtfertigt eine eigene operative Materialisierungsdomaene. Eine konkrete permanente 2011-Fahrzeugstaerke ist damit nicht bewiesen.
-
-Der erste Multi-Domain-Test darf deshalb ein einzelnes wiederverwendbares Test-Patrol-Asset pro Standort verwenden, ohne daraus eine Produktionsmenge abzuleiten.
-
-## 7. ACCESS- und Zielmarker
-
-Fuer den naechsten Integrationstest werden fuer alle sechs operativen Domains eigene physische Handoff-/ACCESS-Marker benoetigt:
+Each operational domain has its own validated/planned handoff identity:
 
 ```text
 ZON_BLUE_GND_FENTY_ACCESS
@@ -233,143 +194,67 @@ ZON_BLUE_GND_HONAKER_ACCESS
 ZON_BLUE_GND_BOSTICK_ACCESS
 ```
 
-Die ACCESS-Zone ist nicht die Installation selbst. Sie bleibt ausserhalb der aktiven FOB-/COP-Geometrie und soll road-side, pathfinding-plausibel und soweit praktisch nicht beobachtbar liegen.
+The ACCESS zone is not the installation itself. It is the operational materialization/return boundary and must remain road-side, pathfinding-plausible and outside observable spawn/despawn conditions where practical.
 
-Fuer den aktuellen Test werden ebenfalls je Domain eigene Ziel-/Observation-Marker verwendet:
+## 8. Settlement contract
 
-```text
-ZON_BLUE_GND_FENTY_PATROL_TEST_01
-ZON_BLUE_GND_FORTRESS_PATROL_TEST_01
-ZON_BLUE_GND_JOYCE_PATROL_TEST_01
-ZON_BLUE_GND_WRIGHT_PATROL_TEST_01
-ZON_BLUE_GND_HONAKER_PATROL_TEST_01
-ZON_BLUE_GND_BOSTICK_PATROL_TEST_01
-```
-
-Diese Testmarker sind keine Produktions-Patrol-Zones und legen keine spaetere Missionsgeometrie fest.
-
-## 8. Vehicle-/PLATOON-Grenze vor dem Integrationstest
-
-Die existierenden produktionsnahen Vehicle Baselines fuer Fenty, Joyce, Wright und Bostick werden durch diese Reconciliation **nicht erhoeht oder neu verteilt**.
-
-Fuer Fortress und Honaker gilt bis zur separaten Mengenentscheidung:
+The validated contract applies to all six Ground nodes:
 
 ```text
-production vehicle quantity: NOT YET DECIDED
-production personnel quantity: NOT YET DECIDED
-integration-test patrol asset: allowed as test-only allocation
-strategic auto-credit: forbidden
+1 M-ATV = 1 VEHICLE + 3 PERSONNEL
+confirmed return, including damaged survivor -> immediate one-time availability credit
+confirmed loss -> permanent loss
+open nonterminal commitment at server stop/crash -> one-time strategic recredit at next startup
+no physical DCS/MOOSE continuation or respawn
 ```
 
-Das gemeinsame Testtemplate bleibt:
+Acceptance 7 is the physical MOOSE Ground lifecycle acceptance. Acceptance 8 validates production-shaped CampaignState integration. Acceptance 9-2 validates Fortress/Honaker stock and the existing settlement adapter on the two new stock nodes.
+
+## 9. Honaker artillery correction
+
+The earlier assumption
 
 ```text
-TPL_BLUE_GND_PATROL_MATV_4
-4 x CHAP_MATV
+2 x M777A2 at Honaker on 30.07.2011
 ```
 
-Die Verwendung desselben Template-Typs an sechs Standorten bedeutet nicht, dass sechs zusaetzliche Vierergruppen als permanenter CampaignState-Bestand erzeugt werden.
+is not part of the current Foundation contract.
 
-## 9. Bewegungsverhalten fuer den naechsten Test
-
-Ground Acceptance 2 hat den MOOSE-first-Verhaltenspfad fuer eine einzelne Joyce-Gruppe technisch bestaetigt. Fuer den Multi-Domain-Test wird dasselbe Verhalten ohne neue Parallelimplementierung skaliert:
+Current evidence boundary:
 
 ```text
-normal road transit
--> ARMOREDGUARD / On Road
--> target ~50 km/h
--> MOOSE mission speed 27 kt
-
-final tactical leg
--> ARMOREDGUARD / Vee
--> 8 kt initial test value
-
-observation position
--> FullStop / stable hold
--> same physical ARMYGROUP
--> SetReturnToLegion(false)
+2011 Honaker local mortar capability = confirmed
+Jan-2010 possible two-gun position = observed; type/continuity unresolved
+2012 M777 evidence = outside scenario period
+no fixed M777/L118 production requirement
 ```
 
-`27 kt` ist die technische Annaeherung an die bereits im OMW-TM01M-Konvoi verwendeten `50 km/h` und muss im Multi-Domain-DCS-Lauf visuell/pathfinding-seitig erneut bewertet werden.
+## 10. Accepted technical evidence
 
-## 10. Naechster DCS-Integrationstest
-
-Der naechste Test ist **kein weiterer Single-Site-Tippelschritt**.
-
-Er startet die sechs operativen Domains gemeinsam:
+Acceptance 9-2:
 
 ```text
-FENTY
-FORTRESS
-JOYCE
-WRIGHT
-HONAKER
-BOSTICK
+acceptance commit: 45d916217c0085728082c3ef2efcd582d736caae
+bundle SHA-256: 35cc922581da980f558733433e487b025e083859b943641276672b6c168b4d6a
+MIZ: OMW_Template_v14_ground_test.miz
+MIZ SHA-256: 29587060d630d53303d4e858c1fd5a898ea3e09d51dec36ff130d3d0ac6e3ef3
+DCS: 2.9.28.26385 MT
+MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+Moose.lua SHA-256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
+result: PASS
 ```
 
-Zu pruefen sind mindestens:
+## 11. Later scope
+
+Not required to close the current GROUNDBASE foundation:
 
 ```text
-- six BRIGADE instances resolve and start
-- six physical warehouse hosts resolve
-- six independent ACCESS materializations
-- exactly one test patrol group per domain
-- no alias/callback/state collision between domains
-- normal road transit at the higher transit speed
-- no prolonged spawn-area circling
-- final tactical Vee transition
-- ARMOREDGUARD stable hold
-- same-group lifecycle continuity
-- no duplicate materialization
-- no visible teleport/despawn
-- DCS pathfinding quality at all six sites
+exact July-2011 Joyce company distribution
+exact July-2011 Bostick maneuver company/platoon distribution
+exact July-2011 Wright artillery assignment
+Jalalabad exact ground QRF/base-defense formation
+Ground-order generation
+OPSTRANSPORT
+general cross-domain persistence
+production patrol/observation geometry beyond the validated Foundation behavior
 ```
-
-Der Test ist ein **Integrationstest der operativen Domaenen**, keine Abnahme der finalen Fortress-/Honaker-Property-Books.
-
-## 11. Mission-Editor-Gate
-
-Vor dem Build des Multi-Domain-Testbundles muss die Mission read-only gegen folgende Objektliste geprueft werden:
-
-```text
-WH_BLUE_GND_FENTY
-WH_BLUE_GND_FORTRESS
-WH_BLUE_GND_JOYCE
-WH_BLUE_GND_WRIGHT
-WH_BLUE_GND_HONAKER
-WH_BLUE_GND_BOSTICK
-
-ZON_BLUE_GND_FENTY_ACCESS
-ZON_BLUE_GND_FORTRESS_ACCESS
-ZON_BLUE_GND_JOYCE_ACCESS
-ZON_BLUE_GND_WRIGHT_ACCESS
-ZON_BLUE_GND_HONAKER_ACCESS
-ZON_BLUE_GND_BOSTICK_ACCESS
-
-ZON_BLUE_GND_FENTY_PATROL_TEST_01
-ZON_BLUE_GND_FORTRESS_PATROL_TEST_01
-ZON_BLUE_GND_JOYCE_PATROL_TEST_01
-ZON_BLUE_GND_WRIGHT_PATROL_TEST_01
-ZON_BLUE_GND_HONAKER_PATROL_TEST_01
-ZON_BLUE_GND_BOSTICK_PATROL_TEST_01
-
-TPL_BLUE_GND_PATROL_MATV_4
-```
-
-ChatGPT mutiert die `.miz` nicht. Fehlende oder unpassend platzierte Mission-Editor-Objekte werden dem Projektinhaber als konkrete ME-Arbeit gemeldet.
-
-## 12. Offene Punkte nach dem Integrationstest
-
-Erst nach dem sechsfachen Runtime-Test werden folgende Entscheidungen weitergefuehrt:
-
-```text
-- permanent Fortress vehicle/property-book quantity
-- permanent Honaker mobile vehicle/property-book quantity
-- exact CampaignState reservation split for local staging versus reinforcement
-- final support-origin selection rules
-- production route/observation geometry
-- return/handoff acceptance
-- cross-session reconstitution
-```
-
-Keine dieser Mengen oder Regeln wird aus dem Integrationstest selbst abgeleitet.
