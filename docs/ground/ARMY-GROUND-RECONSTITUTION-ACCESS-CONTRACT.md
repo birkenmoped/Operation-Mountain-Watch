@@ -4,353 +4,197 @@ status: PLANNED
 document_class: DOMAIN_CONTRACT
 owning_policy: OMW-GOV-001
 authoritative_for:
-  - planned restart and reconstitution boundaries for current ARMY Ground Foundation assets
-  - planned ACCESS-zone, road-anchor and return/handoff rules for mobile ground assets
-  - separation between fixed mission-start representation, live-session field persistence and cross-session reconstitution
+  - current ACCESS-zone, road-anchor and return/handoff rules for mobile Ground assets
+  - current restart settlement boundary for open Ground commitments
+  - separation between live-session physical state and cross-session strategic state
 not_authoritative_for:
   - final Mission Editor coordinates
-  - accepted DCS ground pathfinding behavior
-  - accepted restart persistence implementation
-  - DCS runtime acceptance
+  - final production route geometry
+  - general cross-domain persistence architecture
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
+  - physical cross-session FIELD_DEPLOYED continuation/reconstitution model for Ground assets
+  - fixed Honaker fire-support reconstitution example
 superseded_by:
 source_branch: agent/army-ground-foundation-reconciliation
 source_commit: PENDING_MERGE
-validated_in_dcs: false
+validated_in_dcs: true
 ---
 
-# ARMY Ground Foundation – Reconstitution and ACCESS Boundary Contract
+# ARMY Ground Foundation – Restart and ACCESS Boundary Contract
 
-## 1. Zweck
-
-Dieser Vertrag schließt die Architekturgrenze vor dem ersten Ground-Runtime-Test.
-
-Operation Mountain Watch trennt drei Fälle strikt:
+## 1. Current authority boundary
 
 ```text
-A. fixed mission-start representation
-B. live-session mobile field persistence
-C. cross-session / restart reconstitution
+CampaignState = strategic authority
+MOOSE = operational lifecycle
+DCS = temporary physical representation
 ```
 
-Diese Fälle dürfen nicht über denselben Spawn-/Teleport-/Warehouse-Pfad vermischt werden.
+The validated Ground settlement decision intentionally does **not** persist physical Ground groups across mission/server restarts.
 
-`CampaignState` bleibt strategische Autorität. MOOSE und DCS materialisieren den jeweils freigegebenen Zustand lediglich physisch.
-
-## 2. Source-qualified MOOSE basis
-
-Gepinnter Stand:
+## 2. Pinned MOOSE basis
 
 ```text
-MOOSE 2.9.18
-commit 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
-Moose.lua SHA-256 e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
+MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+Moose.lua SHA-256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
 ```
 
-Source-verifiziert:
+Relevant validated/used MOOSE Ground mechanisms are documented in the Ground MOOSE project documentation and Acceptance 7. This contract introduces no new MOOSE behavior.
 
-```lua
-BRIGADE:New(WarehouseName, BrigadeName)
-PLATOON:New(TemplateGroupName, Ngroups, PlatoonName)
-LEGION:AddMission(Mission)
-AUFTRAG:NewPATROLZONE(Zone, Speed, Altitude, Formation)
-AUFTRAG:SetReturnToLegion(false)
-BRIGADE:LoadBackAssetInPosition(Templatename, Position)
-```
+## 3. Live-session mobile lifecycle
 
-Wichtige Source-Grenzen:
-
-- `BRIGADE:New(...)` benötigt ein benanntes STATIC- oder UNIT-Objekt als physische Warehouse-Repräsentation.
-- `LEGION:AddMission(...)` stellt die öffentliche Mission-Queue-Schnittstelle auch für BRIGADE bereit.
-- `AUFTRAG:NewPATROLZONE(...)` ist ausdrücklich für AIR, GROUND und NAVAL dokumentiert.
-- `BRIGADE:LoadBackAssetInPosition(...)` materialisiert gespeicherte Ground-Assets per SpawnFromCoordinate und ist daher kein unkritischer sichtbarer Wiederherstellungspfad.
-- `AUFTRAG:SetReturnToLegion(false)` ist der primäre MOOSE-first-Kandidat dafür, dass ein Ground-Asset nach Missionsende physisch im Feld verbleibt.
-
-Keiner dieser Punkte ist für die konkrete OMW-Ground-Foundation bereits DCS-validiert.
-
-## 3. Fixed mission-start representation
-
-Fixed Assets sind physisch von Missionsbeginn an vorhanden.
-
-Beispiele:
+During a live session a mobile Ground asset remains correlated to its strategic commitment.
 
 ```text
-perimeter / tower / gate defenders
-fixed installation security groups
-Honaker fixed fire-support pair
+CampaignState reservation
+-> MOOSE materialization at controlled ACCESS boundary
+-> physical mission
+-> terminal return/loss OR still-open commitment
 ```
 
-Regeln:
+The physical DCS group is temporary and does not itself own the strategic resource.
+
+## 4. Return settlement
+
+Confirmed return, including a damaged surviving vehicle/group member covered by the mission correlation:
 
 ```text
-- Mission Editor / deterministic mission-start placement
-- no demand-time spawn into occupied installation geometry
-- no same-session replacement into exact fixed combat position
-- destroyed fixed asset remains absent for the current session
-- strategic loss is settled in CampaignState exactly once
+confirmed return
+-> one-time CampaignState availability credit
+-> physical return handling/removal only after settlement boundary
+-> duplicate callback/event cannot credit again
 ```
 
-Ein Server-/Missionsneustart darf einen fixed asset nur dann wieder zeigen, wenn CampaignState ihn zum Neustartzeitpunkt weiterhin als verfügbar beziehungsweise repariert/ersetzt führt.
+Acceptance 7 validates the return path and exactly-once behavior.
 
-## 4. Live-session mobile field persistence
-
-Mobile operative Assets werden aus dem Root-Node-Pool materialisiert und physisch bewegt.
-
-Für Missionen, bei denen die Gruppe nach Auftragsende im Feld verbleiben soll, ist der erste MOOSE-first-Testpfad:
+## 5. Loss settlement
 
 ```text
-AUFTRAG
--> SetReturnToLegion(false)
--> MissionDone
--> group remains physical at current position
+confirmed loss
+-> permanent strategic loss
+-> loss audit entry exactly once
+-> no strategic return credit
 ```
 
-Dieser Fall darf **nicht** gleichzeitig eine CampaignState-Rückgabe auslösen.
+A destroyed resource is not recreated merely because a new DCS session starts.
 
-Zulässiger strategischer Zustand nach Missionsende:
+## 6. Server stop / crash settlement
+
+This is the binding Ground restart rule:
 
 ```text
-vehicle/personnel reservation remains COMMITTED / FIELD_DEPLOYED
-physical group remains correlated to the same stable entity/reservation
+open nonterminal commitment at server stop/crash
+-> no attempt to continue the old physical DCS/MOOSE group
+-> no respawn of that group at its last field position
+-> one-time strategic recredit at the next startup
+-> commitment/reconciliation record marked settled exactly once
 ```
 
-Unzulässig:
+The purpose is to avoid both arbitrary resource loss and purposeless orphaned units after restart.
+
+This supersedes the earlier model that tried to reconstruct `FIELD_DEPLOYED` Ground groups across sessions.
+
+## 7. No physical continuation contract
+
+Forbidden for the current Ground Foundation:
 
 ```text
-MissionDone
--> group remains physically in field
-AND
--> resource is credited back to available stock
+persist last DCS coordinate
+-> spawn same convoy/patrol there after restart
+
+persist MOOSE ARMYGROUP physical state
+-> recreate it as continuation after restart
+
+server crash
+-> leave strategic resource permanently committed without terminal settlement
 ```
 
-Das wäre eine Dublette der strategischen Ressource.
+A future project-wide persistence architecture may revisit this only through a separate owner decision and acceptance.
 
-## 5. Cross-session / restart reconstitution
+## 8. ACCESS zones
 
-Ein Neustart beendet die physische DCS-Welt, aber nicht automatisch den strategischen CampaignState.
-
-Der Restart-Vertrag lautet:
+Current six operational-domain handoff identities:
 
 ```text
-persisted CampaignState
--> determine strategic asset state
--> determine whether a physical representation is required at mission start
--> materialize before normal player observation OR at a controlled non-observable boundary
--> correlate to the same stable strategic entity/reservation
-```
-
-### 5.1 Zustandsklassen
-
-Mindestens folgende Persistenzzustände werden vorgesehen:
-
-```text
-AVAILABLE_AT_NODE
-FIELD_DEPLOYED
-FIXED_ACTIVE
-DAMAGED_OR_DISABLED
-LOST
-RETURN_PENDING
-```
-
-### 5.2 Reconstitution rules
-
-```text
-AVAILABLE_AT_NODE
--> remains virtual/warehouse-eligible until demanded
-
-FIXED_ACTIVE
--> mission-start physical representation if still strategically available
-
-FIELD_DEPLOYED
--> may be reconstituted only through a controlled restart path
--> never as an observable same-session teleport
-
-DAMAGED_OR_DISABLED
--> no automatic full-strength regeneration
-
-LOST
--> must not reappear
-
-RETURN_PENDING
--> settlement must be resolved before any new availability credit
-```
-
-### 5.3 MOOSE LoadBack boundary
-
-`BRIGADE:LoadBackAssetInPosition(...)` remains source-reviewed but **not approved as the general OMW restart solution**.
-
-It may only be considered later if all of the following are true:
-
-```text
-- persisted identity correlation is deterministic
-- materialization happens before players can observe it or at a non-observable boundary
-- no duplicate asset exists in Warehouse/BRIGADE stock
-- CampaignState remains authoritative
-- DCS test confirms lifecycle and follow-up mission reuse
-```
-
-Until then, restart reconstitution is `PLANNED / NOT_ACCEPTED`.
-
-## 6. Root-node ACCESS zones
-
-Each Root Ground Node uses one operational handoff zone:
-
-```text
-ZON_BLUE_GND_JALALABAD_ACCESS
+ZON_BLUE_GND_FENTY_ACCESS
+ZON_BLUE_GND_FORTRESS_ACCESS
 ZON_BLUE_GND_JOYCE_ACCESS
 ZON_BLUE_GND_WRIGHT_ACCESS
+ZON_BLUE_GND_HONAKER_ACCESS
 ZON_BLUE_GND_BOSTICK_ACCESS
 ```
 
-The ACCESS zone is not the installation itself.
+ACCESS zones are operational boundaries, not the installation geometry itself.
 
-Placement rules:
+Rules:
 
 ```text
-- outside the active FOB/HUB perimeter
-- preferably on or directly beside a usable road
-- no tight internal FOB pathfinding requirement
-- screened from normal player observation where practical
-- enough space for the largest approved template to materialize without collision
-- suitable for both outbound and inbound handoff
+road-side or directly adjacent to a validated usable road
+outside active base geometry where practical
+materialization/departure/return/handoff boundary
+no visible teleport/spawn/despawn transition
 ```
 
-The ACCESS zone may serve as:
+## 9. Ground pathfinding boundary
+
+Ground AI pathfinding remains unreliable by project policy.
+
+Production Ground movement must use:
 
 ```text
-materialization boundary
-convoy departure boundary
-convoy arrival boundary
-return/handoff boundary
-reinforcement handoff
-supply transfer handoff
+validated road anchors
+validated routes where required
+ACCESS boundaries
+assembly/return points where required
+bounded mission geometry
 ```
 
-A second assembly zone is not required by default.
+Acceptance of one route/site does not prove all future routes.
 
-## 7. Road-anchor contract
+## 10. Fixed mission-start assets
 
-Every mobile route used for production must have a validated road-side start/transition point.
+Fixed installation defense may still exist physically from mission start, but it is separate from mobile Ground commitments.
 
-Working object naming:
+There is no current Foundation requirement for a fixed Honaker M777/L118 pair.
 
 ```text
-RTE_BLUE_GND_<NODE>_<ROLE>_<NN>
+2011 Honaker local mortar capability = confirmed
+Jan-2010 possible two-gun position = observed; type/continuity unresolved
+2012 M777 evidence = outside scenario period
 ```
 
-Examples:
+## 11. Validated motorized correlation
 
 ```text
-RTE_BLUE_GND_JOYCE_PATROL_01
-RTE_BLUE_GND_BOSTICK_QRF_01
-RTE_BLUE_GND_JALALABAD_LOGISTICS_01
+1 M-ATV = 1 VEHICLE + 3 PERSONNEL
+4-vehicle patrol = 4 VEHICLE + 12 PERSONNEL
 ```
 
-A route object may later be represented by a Mission Editor PathGroup where MOOSE functionality benefits from an explicit predefined path.
+This is the current accepted motorized patrol resource correlation, not a universal property-book composition rule for every Ground vehicle type.
 
-No route is production-approved merely because a straight-line waypoint can be generated.
+## 12. Acceptance evidence
 
-## 8. Return / handoff boundary
+Acceptance 7 validates the physical MOOSE return/loss/restart settlement contract. Acceptance 8 validates production-shaped CampaignState integration. Acceptance 9-2 confirms the same settlement adapter on Fortress and Honaker within the six-node stock composition.
 
-Normal mobile return must remain physical until the group reaches a non-observable handoff boundary.
-
-Preferred contract:
+Acceptance 9-2 provenance:
 
 ```text
-mission decides to return
--> physical route to ACCESS / return boundary
--> confirm arrival
--> settle mission state
--> only then allow MOOSE Returned / Warehouse AddAsset behavior
--> CampaignState release exactly once
+acceptance commit: 45d916217c0085728082c3ef2efcd582d736caae
+bundle SHA-256: 35cc922581da980f558733433e487b025e083859b943641276672b6c168b4d6a
+MIZ SHA-256: 29587060d630d53303d4e858c1fd5a898ea3e09d51dec36ff130d3d0ac6e3ef3
+DCS: 2.9.28.26385 MT
+result: PASS
 ```
 
-Because source review shows that Warehouse AddAsset removes the physical group, the actual removal point must be outside reasonable player observation.
+## 13. Later scope
 
-Unzulässig:
-
-```text
-field mission ends
--> immediate Returned
--> visible Despawn/Destroy near player area
-```
-
-## 9. Dependent OP boundary
-
-Dependent OPs do not receive independent Warehouse/ACCESS infrastructure.
+The current Ground Foundation deliberately leaves these separate:
 
 ```text
-JoJo <- Honaker-Miracle <- Joyce
-Mustang/Clydesdale/Stallion <- Bostick
-```
-
-OP reinforcement therefore starts at the direct parent transport domain and ends through a validated ROAD / FOOT / ROAD_FOOT path.
-
-No standard AIR sustainment or direct theater-hub spawn at an OP is permitted.
-
-## 10. Acceptance sequencing
-
-The first DCS runtime test intentionally excludes restart reconstitution and OPSTRANSPORT.
-
-Acceptance sequence:
-
-```text
-ACCEPTANCE 1
-one BRIGADE / one PLATOON / one mobile ARMYGROUP
-PATROLZONE mission
-SetReturnToLegion(false)
-physical stay after MissionDone
-follow-up mission reuse
-no duplicate strategic credit
-
-ACCEPTANCE 2+
-return/handoff
-CampaignState settlement adapter
-restart/reconstitution
+general cross-domain persistence architecture
+Ground-order generation
+production route/observation geometry
 OPSTRANSPORT
-artillery
-full multi-node integration
 ```
-
-This keeps the first runtime test focused on the smallest source-reviewed lifecycle that can invalidate or confirm the planned architecture.
-
-## 11. Mission Editor prerequisites for Acceptance 1
-
-The first test will use Joyce.
-
-Required physical objects to be created by the project owner in the Mission Editor:
-
-```text
-WH_BLUE_GND_JOYCE
-  STATIC or UNIT object
-  physical MOOSE BRIGADE warehouse host
-
-TPL_BLUE_GND_PATROL_MATV_4
-  late-activated reusable template
-  4 x CHAP_MATV
-
-ZON_BLUE_GND_JOYCE_ACCESS
-  road-side / player-non-observable handoff zone
-
-ZON_BLUE_GND_JOYCE_PATROL_TEST_01
-  nearby reachable ground patrol test zone
-```
-
-The exact coordinates are Mission Editor decisions and require visual/terrain inspection. They are not invented in documentation.
-
-## 12. Exit criteria for architecture preparation
-
-This contract is ready for the first runtime implementation only when:
-
-```text
-- Joyce warehouse host exists
-- Joyce PATROL template exists
-- Joyce ACCESS zone exists
-- Joyce patrol test zone exists
-- placement is visually/pathfinding-plausible
-- exact mission artifact hash is recorded after owner build
-```
-
-Only then should the Ground Runtime Acceptance 1 Lua be built against that exact mission artifact.
