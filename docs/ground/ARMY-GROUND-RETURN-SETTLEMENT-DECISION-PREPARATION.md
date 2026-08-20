@@ -68,39 +68,49 @@ MOOSE bleibt verantwortlich für Materialisierung, AUFTRAG-/ARMYGROUP-Lifecycle,
 
 CampaignState bleibt allein verantwortlich für strategische Verfügbarkeit, Commitments und deren einmalige Abrechnung. Die notwendige Korrelation zwischen MOOSE-Runtime und CampaignState ist daher ein kleiner projektspezifischer Adapter und keine zweite Warehouse- oder DCS-Bestandsführung. Vor der Umsetzung ist die MOOSE-Lücke gemäß `OMW-GOV-MOOSE-FIRST` erneut am gepinnten Stand zu dokumentieren.
 
-## 5. Noch offene Produktionsdaten – einziges Umsetzungsgate
+## 5. Bereits vorhandene Produktionsbaseline und tatsächliche Restlücke
 
-Vor einem Produktionsadapter müssen ausschließlich die bereits baselinierten Ground-Bestände in konkrete CampaignState-Ressourcen und Source Nodes überführt werden:
+Die Ground-Quantities, Root Nodes und stabilen Resource IDs sind bereits im Branch festgelegt:
 
 ~~~text
-resource type / stable resource ID
-source node / strategic parent
-approved initial quantity
-operational MOOSE warehouse host
+GROUND_NODE_JALALABAD / Fenty: PERSONNEL 480, VEHICLE 48
+GROUND_NODE_JOYCE:             PERSONNEL 180, VEHICLE 20
+GROUND_NODE_WRIGHT:            PERSONNEL 120, VEHICLE 22
+GROUND_NODE_BOSTICK:           PERSONNEL 220, VEHICLE 26
+Resource ID: GROUND:<groundNodeId>:<resourceClass>
 ~~~
 
-Dabei gilt weiterhin:
+Fortress besitzt keinen eigenen strategischen Root-Pool. Honaker-Miracle bindet seinen lokalen Personnel-Vertrag aus Joyce. Das sind keine fehlenden Bestandsdaten.
+
+Die verbleibende fachliche Korrelationsregel betrifft ausschließlich gemischte physische Gruppen:
+
+~~~text
+MOTORISED PATROL contract = PERSONNEL 12 + VEHICLE 4
+DCS M-ATV group           = 4 physical vehicle units
+~~~
+
+Für jeden Rückkehrer/Verlust muss der Adapter deshalb wissen, wie viele strategische PERSONNEL-Units neben der jeweiligen physischen Fahrzeug-Unit zu buchen sind. Diese Zuordnung darf nicht aus dem bloßen DCS-Gruppenzähler geraten werden.
+
+Unverändert gilt:
 
 ~~~text
 strategic parent / resource obligation != physical dispatch origin
 MOOSE Warehouse AddAsset != CampaignState credit without adapter settlement
 ~~~
 
-Es werden keine neuen Mengen erfunden. Für Standorte, deren Bestandsgrundlage bereits festgelegt ist, wird diese Grundlage verwendet; bei noch ungeklärter Zuordnung bleibt die Produktionsmaterialisierung gesperrt.
-
 ## 6. Nächster technische Schritt: ein gebündelter Produktions-Acceptance-Lauf
 
-Sobald die Zuordnung aus Abschnitt 5 vorliegt, umfasst **ein** Acceptance-Bundle mindestens:
+Nach Festlegung der Unit-zu-Ressourcen-Korrelation umfasst **ein** Acceptance-Bundle mindestens:
 
 ~~~text
-1. normaler Vier-Unit-Return:        4 consume -> 4 returned credit
-2. Teilverlust:                      4 consume -> 3 returned credit -> 1 permanent loss
-3. beschädigter Rückkehrer:          4 consume -> 3 returned credit, davon 1 damaged
+1. normaler Vier-Unit-Return:        exact consumed units -> exact returned credit
+2. Teilverlust:                      exact survivor credit -> confirmed units remain loss
+3. beschädigter Rückkehrer:          same immediate credit as an undamaged survivor
 4. Restart-Reconciliation:           consumed active commitment -> startup recredit once
 5. Idempotenz:                       duplicate return/restart callback -> no second credit
 ~~~
 
-Der Lauf darf isolierte Test-Stores verwenden und ändert keine `.miz`. Erst nach erfolgreicher technischer Abnahme werden konkrete Produktionsressourcen und -adapter eingeführt.
+Der Lauf darf isolierte Test-Stores verwenden und ändert keine .miz. Erst nach erfolgreicher technischer Abnahme werden konkrete Produktionsadapter eingeführt.
 
 ## 7. Ausgeschlossen
 
