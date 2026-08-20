@@ -1,6 +1,6 @@
 ---
 document_id: OMW-TEST-ARMY-GROUND-ACCEPTANCE-7
-status: PLANNED
+status: VALIDATED
 document_class: ACCEPTANCE_TEST_PLAN
 owning_policy: OMW-GOV-001
 authoritative_for:
@@ -9,12 +9,13 @@ authoritative_for:
 not_authoritative_for:
   - production CampaignState activation
   - final production resource mutation
-  - DCS runtime behavior before documented execution
+  - DCS runtime behavior outside the cited validated test stand
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 source_branch: agent/army-ground-foundation-reconciliation
-source_commit: PENDING_TEST
-validated_in_dcs: false
+source_commit: e049e34fe8e6de878fd390486888f3912bb179d8
+validated_in_dcs: true
+validation_date: 2026-08-20
 supersedes:
 superseded_by:
 ---
@@ -264,7 +265,9 @@ Debrief log
 Owner visual observations
 ```
 
-Ohne diese Evidenz bleibt Acceptance 7 `DCS_PENDING` und darf nicht als `VALIDATED` oder technische Baseline bezeichnet werden.
+Die reale Runtime-Evidenz für den akzeptierten Lauf steht in:
+
+- [`2026-08-20-acceptance-7-runtime.md`](results/2026-08-20-acceptance-7-runtime.md)
 
 ## 9. Ausgeschlossen
 
@@ -281,3 +284,23 @@ maintenance / repair queues
 physical group persistence across restart
 MIZ modification by ChatGPT
 ```
+
+## 10. Validierter Lauf 2026-08-20
+
+Acceptance 7 ist für den exakt dokumentierten Stand technisch und visuell akzeptiert:
+
+```text
+Source commit: e049e34fe8e6de878fd390486888f3912bb179d8
+Bundle SHA-256: b591ccd746896c90064fa93d9b3d42626384f55e605efc748bf304ffccb86ec7
+MIZ: OMW_Template_v14_ground_test.miz
+MIZ SHA-256: 88184ec180837044ff4dcef7cca264fe7ee5fcf5d55a8af19b11125c41eab94d
+Internal mission SHA-256: 0d1cfecc0c600484cbe675e8a7bae5e053658c86aca30500b71a9b370b30518d
+Embedded bundle SHA-256: b591ccd746896c90064fa93d9b3d42626384f55e605efc748bf304ffccb86ec7
+Embedded Moose.lua SHA-256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
+DCS: 2.9.28.26385 MT
+Result: PASS / owner visual acceptance
+```
+
+Der reale Runtime-Lauf erreichte `RUNTIME_PASS_VISUAL_PENDING sites=3 passed=3`; alle drei Sites meldeten `SITE_RUNTIME_PASS`. Der Projektinhaber meldete nach visueller Beobachtung keine erkennbaren Auffälligkeiten.
+
+Damit ist das Acceptance-7-Gate geschlossen. Der nächste fachlich zulässige Schritt ist die Produktionsintegration des getesteten Ground-CampaignState-Adapters gegen den autoritativen CampaignState-Initialbestand; diese Integration ist nicht rückwirkend Bestandteil der Acceptance-7-Validierung.
