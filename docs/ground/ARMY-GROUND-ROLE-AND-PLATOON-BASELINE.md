@@ -4,118 +4,92 @@ status: PLANNED
 document_class: DOMAIN_CONTRACT
 owning_policy: OMW-GOV-001
 authoritative_for:
-  - planned assignment of the current Ground Foundation vehicle baseline to operational roles per Ground Node
-  - planned four-BRIGADE MOOSE topology for Jalalabad, Joyce, Wright and Bostick
-  - planned PLATOON role pools and reusable template multiplicities for the current Ground Foundation
+  - planned assignment of current Ground vehicle baselines to operational roles
+  - current six-domain MOOSE BRIGADE topology
+  - reusable mobile Ground template and PLATOON role planning
 not_authoritative_for:
+  - exact Fortress/Honaker internal vehicle-family split
   - final Mission Editor placement
-  - accepted DCS runtime behavior
-  - final CampaignState personnel, ammo, fuel or supply quantities
-  - accepted MOOSE Ground runtime architecture
+  - Ground-order generation
+  - fixed Honaker artillery proxy
+  - accepted DCS runtime behavior beyond cited acceptance results
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
+  - four-BRIGADE-only topology
+  - Honaker no-BRIGADE/fixed-artillery-only planning
 superseded_by:
 source_branch: agent/army-ground-foundation-reconciliation
 source_commit: PENDING_MERGE
-validated_in_dcs: false
+validated_in_dcs: true
 ---
 
 # ARMY Ground Foundation – Rollen- und PLATOON-Baseline
 
-## 1. Zweck
-
-Dieses Dokument schließt die Ground-Foundation-Arbeitsschritte
-
-```text
-1. offene Fahrzeug-/Proxyentscheidungen für den aktuellen Foundation-Scope,
-2. Zuordnung der Working Vehicle Baseline zu operativen Rollen,
-3. konkrete geplante MOOSE-BRIGADE-/PLATOON-Struktur pro Ground Node.
-```
-
-Die Architekturgrenze bleibt unverändert:
+## 1. Architekturgrenze
 
 ```text
 CampaignState
-= strategische Ressourcenautorität
+= sole strategic resource authority
 
 MOOSE BRIGADE / PLATOON / ARMYGROUP / WAREHOUSE
-= operative Auswahl, Materialisierung und Lifecycle
+= operational selection, materialization and lifecycle
 
 DCS GROUP / UNIT
-= temporäre physische Repräsentation
+= temporary physical representation
 ```
 
-Die hier festgelegten MOOSE-Objekte sind `PLANNED`. Source-Review des gepinnten MOOSE-Stands ist erfolgt; DCS-Runtime-Acceptance steht noch aus.
+`BDE_` names represent MOOSE operational domains and do not assert historical brigade formations.
 
-## 2. MOOSE-Source-Basis
-
-Geprüfter Stand:
+## 2. Pinned MOOSE basis
 
 ```text
-MOOSE release: 2.9.18
 MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
 Moose.lua SHA-256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
 ```
 
-Für die geplante Struktur sind im tatsächlich verwendeten Source insbesondere vorhanden:
+Relevant source-verified mechanisms include:
 
 ```lua
 COMMANDER:AddBrigade(...)
-BRIGADE:New(WarehouseName, BrigadeName)
+BRIGADE:New(...)
 BRIGADE:AddPlatoon(...)
-PLATOON:New(TemplateGroupName, Ngroups, PlatoonName)
+PLATOON:New(...)
 COHORT:AddMissionCapability(...)
 COHORT:SetMissionRange(...)
 COHORT:CanMission(...)
 AUFTRAG:SetReturnToLegion(false)
-AUFTRAG:NewARTY(...)
 ```
 
-Der Source enthält außerdem `AUFTRAG.Type.PATROLZONE`, `AUFTRAG.Type.ONGUARD`, `AUFTRAG.Type.GROUNDATTACK`, `AUFTRAG.Type.ARTY` und `AUFTRAG.Type.OPSTRANSPORT`. Welche dieser Missionstypen je Rolle produktiv freigegeben werden, bleibt an den späteren DCS-Test gebunden; die Rollenbezeichnung in diesem Dokument ist keine Behauptung, dass bereits jede Mission in DCS akzeptiert ist.
+Physical Ground lifecycle behavior is accepted through Acceptance 7; Acceptance 9 adds no new MOOSE behavior.
 
-## 3. Topologieentscheidung: vier operative BRIGADEs
-
-Für den aktuellen Foundation-Scope werden die vier Root Ground Nodes als vier getrennte operative MOOSE-`BRIGADE`-Domänen geplant:
+## 3. Six operational BRIGADE domains
 
 ```text
 BLUE COMMANDER
 |
 +-- BDE_BLUE_GND_JALALABAD
-|   `-- GROUND_NODE_JALALABAD
+|   `-- WH_BLUE_GND_FENTY
+|
++-- BDE_BLUE_GND_FORTRESS
+|   `-- WH_BLUE_GND_FORTRESS
 |
 +-- BDE_BLUE_GND_JOYCE
-|   `-- GROUND_NODE_JOYCE
+|   `-- WH_BLUE_GND_JOYCE
 |
 +-- BDE_BLUE_GND_WRIGHT
-|   `-- GROUND_NODE_WRIGHT
+|   `-- WH_BLUE_GND_WRIGHT
+|
++-- BDE_BLUE_GND_HONAKER
+|   `-- WH_BLUE_GND_HONAKER
 |
 `-- BDE_BLUE_GND_BOSTICK
-    `-- GROUND_NODE_BOSTICK
+    `-- WH_BLUE_GND_BOSTICK
 ```
 
-Begründung:
+Each domain may materialize operational assets only after CampaignState authorization. MOOSE warehouse counts do not become strategic stock.
 
-- jeder Root Ground Node besitzt einen eigenen lokalen Fahrzeug-/Ressourcenvertrag;
-- lokale Missionen sollen vorrangig aus dem zugehörigen Node bedient werden;
-- die Parent-/Support-Hierarchie bleibt CampaignState-Domäne und wird nicht durch eine einzige übergroße MOOSE-BRIGADE ersetzt;
-- abhängige COPs/OPs erhalten keine eigene BRIGADE;
-- ein MOOSE-`BDE_`-Name behauptet keine historische Brigadeformation.
-
-Geplante Warehouse-Mirror-Namen:
-
-```text
-WH_BLUE_GND_JALALABAD
-WH_BLUE_GND_JOYCE
-WH_BLUE_GND_WRIGHT
-WH_BLUE_GND_BOSTICK
-```
-
-Diese WAREHOUSE-Instanzen dürfen keine strategische Ressourcenhoheit erhalten.
-
-## 4. Reusable Template Baseline
-
-Die folgenden wiederverwendbaren Templategruppen werden als Foundation-Satz geplant:
+## 4. Reusable mobile templates
 
 ```text
 TPL_BLUE_GND_PATROL_MATV_4
@@ -145,45 +119,36 @@ TPL_BLUE_GND_UTILITY_HMMWV_2
 
 TPL_BLUE_GND_OP_REINFORCEMENT_MRAP_3
   3 x MaxxPro_MRAP
-
-TPL_BLUE_GND_FIRE_SUPPORT_L118_PROXY_2
-  2 x L118_Unit
 ```
 
-`TPL_BLUE_GND_FIRE_SUPPORT_L118_PROXY_2` ist ausschließlich die technische Foundation-Abbildung der historisch belegten zwei M777A2 auf Honaker-Miracle. Die historische Bezeichnung bleibt `2 x M777A2`; `L118_Unit` wird nicht als historisch gleichwertiges System dargestellt.
+The previous `TPL_BLUE_GND_FIRE_SUPPORT_L118_PROXY_2` is not part of the current production Foundation contract.
 
 ## 5. Jalalabad / FOB Fenty
 
-Working Vehicle Baseline:
-
-```text
-48 wheeled vehicles
-```
-
-Rollenverteilung:
+Vehicle baseline: `48`.
 
 ```text
 PATROL / MOBILE SECURITY
-  2 x TPL_BLUE_GND_PATROL_MATV_4     = 8 MATV
-  1 x TPL_BLUE_GND_PATROL_MRAP_4     = 4 MRAP
+  2 x TPL_BLUE_GND_PATROL_MATV_4
+  1 x TPL_BLUE_GND_PATROL_MRAP_4
 
 QRF
-  4 x TPL_BLUE_GND_QRF_MIXED_4       = 8 MATV + 8 MRAP
+  4 x TPL_BLUE_GND_QRF_MIXED_4
 
 LOCAL SECURITY RESERVE
-  1 x TPL_BLUE_GND_SECURITY_MRAP_2    = 2 MRAP
+  1 x TPL_BLUE_GND_SECURITY_MRAP_2
 
 LOGISTICS
-  6 x TPL_BLUE_GND_LOG_M1083_2        = 12 M1083
+  6 x TPL_BLUE_GND_LOG_M1083_2
 
 FUEL SUPPORT
-  1 x TPL_BLUE_GND_FUEL_M978_2        = 2 M978 HEMTT Tanker
+  1 x TPL_BLUE_GND_FUEL_M978_2
 
 UTILITY / COMMAND / LOCAL SUPPORT
-  2 x TPL_BLUE_GND_UTILITY_HMMWV_2    = 4 HMMWV
+  4 HMMWV held outside an autonomous mission PLATOON
 ```
 
-Kontrollsumme:
+Family checksum:
 
 ```text
 16 MATV
@@ -191,315 +156,192 @@ Kontrollsumme:
 12 M1083
 2 M978 HEMTT Tanker
 4 HMMWV
-= 48 wheeled vehicles
+= 48
 ```
 
-Geplante PLATOONs:
+## 6. FOB Joyce
 
-```text
-PLT_BLUE_GND_JALALABAD_PATROL_MATV
-  template: TPL_BLUE_GND_PATROL_MATV_4
-  Ngroups: 2
-
-PLT_BLUE_GND_JALALABAD_PATROL_MRAP
-  template: TPL_BLUE_GND_PATROL_MRAP_4
-  Ngroups: 1
-
-PLT_BLUE_GND_JALALABAD_QRF
-  template: TPL_BLUE_GND_QRF_MIXED_4
-  Ngroups: 4
-
-PLT_BLUE_GND_JALALABAD_SECURITY
-  template: TPL_BLUE_GND_SECURITY_MRAP_2
-  Ngroups: 1
-
-PLT_BLUE_GND_JALALABAD_LOGISTICS
-  template: TPL_BLUE_GND_LOG_M1083_2
-  Ngroups: 6
-
-PLT_BLUE_GND_JALALABAD_FUEL_SUPPORT
-  template: TPL_BLUE_GND_FUEL_M978_2
-  Ngroups: 1
-```
-
-Die vier HMMWV bleiben zunächst lokaler Utility-/Command-Bestand und werden nicht als eigener Missions-PLATOON freigeschaltet.
-
-`FIRE_SUPPORT` bleibt am Jalalabad-Node als CampaignState-Capability aktiv, erhält in dieser Fahrzeugbaseline aber noch keinen eigenen physischen PLATOON-Bestand. Die TF-Steel-Zuordnung allein rechtfertigt keine erfundene Geschützstückzahl.
-
-## 6. FOB Joyce / Honaker-Miracle
-
-Working Vehicle Baseline Joyce:
-
-```text
-20 wheeled vehicles
-```
-
-Rollenverteilung:
+Vehicle baseline: `20`.
 
 ```text
 PATROL
-  1 x TPL_BLUE_GND_PATROL_MATV_4      = 4 MATV
+  1 x TPL_BLUE_GND_PATROL_MATV_4
 
 QRF
-  2 x TPL_BLUE_GND_QRF_MIXED_4        = 4 MATV + 4 MRAP
+  2 x TPL_BLUE_GND_QRF_MIXED_4
 
 LOCAL SECURITY
-  1 x TPL_BLUE_GND_SECURITY_MRAP_2     = 2 MRAP
+  1 x TPL_BLUE_GND_SECURITY_MRAP_2
 
 LOGISTICS
-  2 x TPL_BLUE_GND_LOG_M1083_2         = 4 M1083
+  2 x TPL_BLUE_GND_LOG_M1083_2
 
 UTILITY / COMMAND
-  1 x TPL_BLUE_GND_UTILITY_HMMWV_2     = 2 HMMWV
+  2 HMMWV held outside an autonomous mission PLATOON
 ```
 
-Kontrollsumme:
+Family checksum:
 
 ```text
 8 MATV
 6 MRAP
 4 M1083
 2 HMMWV
-= 20 wheeled vehicles
+= 20
 ```
 
-Geplante PLATOONs:
-
-```text
-PLT_BLUE_GND_JOYCE_PATROL
-  template: TPL_BLUE_GND_PATROL_MATV_4
-  Ngroups: 1
-
-PLT_BLUE_GND_JOYCE_QRF
-  template: TPL_BLUE_GND_QRF_MIXED_4
-  Ngroups: 2
-
-PLT_BLUE_GND_JOYCE_SECURITY
-  template: TPL_BLUE_GND_SECURITY_MRAP_2
-  Ngroups: 1
-
-PLT_BLUE_GND_JOYCE_LOGISTICS
-  template: TPL_BLUE_GND_LOG_M1083_2
-  Ngroups: 2
-```
-
-Die zwei HMMWV bleiben zunächst lokaler Utility-/Command-Bestand.
-
-Honaker-Miracle erhält keine eigene BRIGADE. Die historisch belegten zwei M777A2 werden physisch am COP gehalten. Für die technische Foundation wird folgendes Fixed-Fire-Support-Template geplant:
-
-```text
-TPL_BLUE_GND_FIRE_SUPPORT_L118_PROXY_2
--> 2 x L118_Unit
--> represents 2 x M777A2 for OMW technical purposes only
-```
-
-Eine dynamische `PLATOON`-Warehouse-Materialisierung dieser Geschütze ist ausdrücklich **nicht** vorgesehen. Die Geschütze sollen bei Missionsstart physisch vorhanden sein. Die spätere MOOSE-Anbindung für `AUFTRAG:NewARTY(...)` muss diesen Fixed-Asset-Vertrag respektieren und wird separat in DCS getestet.
+Joyce remains the strategic support parent for Honaker but does not own Honaker's local stock.
 
 ## 7. FOB Wright
 
-Working Vehicle Baseline:
-
-```text
-22 wheeled vehicles
-```
-
-Die bisher offene `engineer / route-support`-Zuordnung wird für die Foundation bewusst **ohne erfundenen Buffalo-/Husky-Proxy** geschlossen. Die zwei spezialisierten Slots werden als geschützte Engineer-/Route-Support-Escortfahrzeuge mit vorhandener MRAP-Familie abgebildet.
-
-Rollenverteilung:
+Vehicle baseline: `22`.
 
 ```text
 PATROL / SECFOR
-  1 x TPL_BLUE_GND_PATROL_MATV_4            = 4 MATV
+  1 x TPL_BLUE_GND_PATROL_MATV_4
 
 QRF
-  2 x TPL_BLUE_GND_QRF_MIXED_4              = 4 MATV + 4 MRAP
+  2 x TPL_BLUE_GND_QRF_MIXED_4
 
 ENGINEER / ROUTE SUPPORT SECURITY
-  2 x TPL_BLUE_GND_ENGINEER_SUPPORT_MRAP_2  = 4 MRAP
+  2 x TPL_BLUE_GND_ENGINEER_SUPPORT_MRAP_2
 
 LOGISTICS
-  2 x TPL_BLUE_GND_LOG_M1083_2              = 4 M1083
+  2 x TPL_BLUE_GND_LOG_M1083_2
 
 UTILITY / COMMAND
-  1 x TPL_BLUE_GND_UTILITY_HMMWV_2          = 2 HMMWV
+  2 HMMWV held outside an autonomous mission PLATOON
 ```
 
-Kontrollsumme:
+Family checksum:
 
 ```text
 8 MATV
 8 MRAP
 4 M1083
 2 HMMWV
-= 22 wheeled vehicles
+= 22
 ```
 
-Geplante PLATOONs:
-
-```text
-PLT_BLUE_GND_WRIGHT_PATROL
-  template: TPL_BLUE_GND_PATROL_MATV_4
-  Ngroups: 1
-
-PLT_BLUE_GND_WRIGHT_QRF
-  template: TPL_BLUE_GND_QRF_MIXED_4
-  Ngroups: 2
-
-PLT_BLUE_GND_WRIGHT_ENGINEER_SUPPORT
-  template: TPL_BLUE_GND_ENGINEER_SUPPORT_MRAP_2
-  Ngroups: 2
-
-PLT_BLUE_GND_WRIGHT_LOGISTICS
-  template: TPL_BLUE_GND_LOG_M1083_2
-  Ngroups: 2
-```
-
-Die zwei HMMWV bleiben zunächst lokaler Utility-/Command-Bestand.
-
-Wright erhält in dieser Juli-2011-Baseline **keinen aktiven FIRE_SUPPORT-PLATOON**, solange die exakte Juli-Artilleriezuordnung offen bleibt.
+No mine-clearing capability is asserted by the engineer-support abstraction.
 
 ## 8. FOB Bostick
 
-Working Vehicle Baseline:
-
-```text
-26 wheeled vehicles
-```
-
-Die bisher offene `recovery/support`-Position wird für die Foundation ohne erfundenes Wrecker-DCS-Modell geschlossen. Die Recovery-Funktion bleibt strategisch und missionsfachlich erhalten; physisch wird der Supportslot mit der bestätigten M1083-Familie repräsentiert. DCS-Towing wird nicht behauptet.
-
-Rollenverteilung:
+Vehicle baseline: `26`.
 
 ```text
 PATROL
-  2 x TPL_BLUE_GND_PATROL_MATV_4             = 8 MATV
+  2 x TPL_BLUE_GND_PATROL_MATV_4
 
 QRF
-  1 x TPL_BLUE_GND_QRF_MIXED_4               = 2 MATV + 2 MRAP
+  1 x TPL_BLUE_GND_QRF_MIXED_4
 
 OP REINFORCEMENT / MOBILE SECURITY
-  2 x TPL_BLUE_GND_OP_REINFORCEMENT_MRAP_3   = 6 MRAP
+  2 x TPL_BLUE_GND_OP_REINFORCEMENT_MRAP_3
 
 LOGISTICS / RECOVERY SUPPORT
-  3 x TPL_BLUE_GND_LOG_M1083_2               = 6 M1083
+  3 x TPL_BLUE_GND_LOG_M1083_2
 
 UTILITY / COMMAND
-  1 x TPL_BLUE_GND_UTILITY_HMMWV_2           = 2 HMMWV
+  2 HMMWV held outside an autonomous mission PLATOON
 ```
 
-Kontrollsumme:
+Family checksum:
 
 ```text
 10 MATV
 8 MRAP
 6 M1083
 2 HMMWV
-= 26 wheeled vehicles
+= 26
 ```
 
-Geplante PLATOONs:
+DCS towing/recovery mechanics are not asserted.
+
+## 9. COP Fortress
+
+Strategic vehicle baseline:
 
 ```text
-PLT_BLUE_GND_BOSTICK_PATROL
-  template: TPL_BLUE_GND_PATROL_MATV_4
-  Ngroups: 2
-
-PLT_BLUE_GND_BOSTICK_QRF
-  template: TPL_BLUE_GND_QRF_MIXED_4
-  Ngroups: 1
-
-PLT_BLUE_GND_BOSTICK_OP_REINFORCEMENT
-  template: TPL_BLUE_GND_OP_REINFORCEMENT_MRAP_3
-  Ngroups: 2
-
-PLT_BLUE_GND_BOSTICK_LOGISTICS
-  template: TPL_BLUE_GND_LOG_M1083_2
-  Ngroups: 3
+GROUND_NODE_FORTRESS VEHICLE = 18
 ```
 
-Die zwei HMMWV bleiben zunächst lokaler Utility-/Command-Bestand.
+The exact internal M-ATV/MRAP/HMMWV/logistics split is not yet fixed by current evidence and is not invented here.
 
-Bostick erhält in dieser Juli-2011-Baseline **keinen aktiven FIRE_SUPPORT-PLATOON**, solange die Juli-Artilleriezuordnung offen bleibt.
+Current operational contract:
 
-## 9. PLATOON-Missionsrollen
+```text
+own BRIGADE/WAREHOUSE operational domain
+CampaignState reservation before materialization
+validated M-ATV patrol template may be used where the mission contract requests that representation
+exact production PLATOON multiplicities = later role-allocation decision
+```
 
-Die geplanten Mission-Capability-Grenzen sind rollenbasiert und werden im Runtime-Code nur mit source-verifizierten `AUFTRAG.Type`-Werten umgesetzt.
+Fortress can therefore participate in the production Ground Foundation without pretending that the validated four-M-ATV patrol test defines its complete property book.
 
-Arbeitszuordnung:
+## 10. COP Honaker-Miracle
+
+Strategic vehicle baseline:
+
+```text
+GROUND_NODE_HONAKER VEHICLE = 18
+```
+
+The exact internal vehicle-family split is not fixed by current evidence.
+
+Current operational contract:
+
+```text
+own BRIGADE/WAREHOUSE operational domain
+CampaignState reservation before materialization
+validated mobile Ground lifecycle available
+exact production PLATOON multiplicities = later role-allocation decision
+```
+
+The old fixed-fire-support contract is superseded:
+
+```text
+no production requirement for 2 x M777A2
+no production requirement for 2 x L118_Unit proxy
+2011 local mortar capability remains historically confirmed
+```
+
+## 11. Mission-role boundary
+
+Potential MOOSE mission-role mapping remains subject to the later Ground-order design:
 
 ```text
 PATROL
--> primary candidate: AUFTRAG.Type.PATROLZONE
-
 QRF
--> primary candidate: AUFTRAG.Type.ONGUARD / GROUNDATTACK depending MissionDemand
-
 SECURITY
--> primary candidate: AUFTRAG.Type.ONGUARD
-
-ENGINEER_SUPPORT
--> no autonomous mine-clearing simulation
--> movement/security mission only
-
+ENGINEER SUPPORT SECURITY
 LOGISTICS
--> transport/support role
--> OPSTRANSPORT only after DCS transport acceptance
-
-FUEL_SUPPORT
--> logistics/support role
--> no autonomous strategic fuel authority
-
-FIRE_SUPPORT
--> AUFTRAG.Type.ARTY
--> fixed physical gun contract first
+OP REINFORCEMENT
 ```
 
-`MissionDemand` bleibt die fachliche Auswahl- und Priorisierungsinstanz. `COHORT:AddMissionCapability(...)` begrenzt die MOOSE-Auswahl; es ersetzt keine CampaignState-Verfügbarkeitsprüfung.
+No new mission-generation layer is introduced by this Foundation document.
 
-## 10. Mission-Range Baseline
+## 12. Accepted technical evidence
 
-Der Source setzt für Ground-COHORTs standardmäßig 75 NM. OMW übernimmt diesen Wert **nicht** pauschal als operative Reichweite.
+Acceptance 7 proves the physical MOOSE Ground lifecycle. Acceptance 8 proves production-shaped CampaignState integration. Acceptance 9-2 proves all six Ground stock nodes and Fortress/Honaker settlement behavior.
 
-Für die Foundation gilt:
+Acceptance 9-2:
 
 ```text
-PLATOON mission range
--> later node-specific bounded value
--> based on validated road routes and support hierarchy
--> never used to skip direct parent/support rules
+acceptance commit: 45d916217c0085728082c3ef2efcd582d736caae
+bundle SHA-256: 35cc922581da980f558733433e487b025e083859b943641276672b6c168b4d6a
+MIZ SHA-256: 29587060d630d53303d4e858c1fd5a898ea3e09d51dec36ff130d3d0ac6e3ef3
+DCS: 2.9.28.26385 MT
+result: PASS
 ```
 
-Bis zur Routen-/DCS-Abnahme wird kein eigener numerischer Range-Wert als `VALIDATED` geführt.
-
-## 11. Strategische Buchungsgrenze
-
-Die oben aufgeführten `Ngroups` beschreiben die geplante MOOSE-Assetstruktur. Sie dürfen CampaignState nicht verdoppeln.
+## 13. Later scope
 
 ```text
-CampaignState VEHICLE reservation
--> select eligible PLATOON asset
--> materialize / task through MOOSE
--> observe result
--> settle CampaignState exactly once
+exact Fortress vehicle-family split and PLATOON multiplicities
+exact Honaker vehicle-family split and PLATOON multiplicities
+Ground-order generation
+exact Joyce/Bostick formation distribution
+exact Wright artillery assignment
+any future source-backed artillery mapping
 ```
-
-Ein MOOSE-WAREHOUSE-Asset ist keine zusätzliche strategische Fahrzeugmenge.
-
-## 12. Noch offene Testgates
-
-Nach Abschluss dieser Designschritte sind insbesondere noch offen:
-
-```text
-- Mission Editor placement of reusable templates
-- exact ACCESS-zone coordinates and road anchors
-- M978 HEMTT Tanker presence/behavior in the actual mission environment
-- L118_Unit proxy range/behavior versus the M777A2 design requirement
-- PLATOON selection behavior with the planned mission capabilities
-- road pathfinding for each mobile template
-- SetReturnToLegion(false) Ground mission persistence
-- physical return/handoff and Warehouse settlement
-- OP reinforcement movement and arrival/loss settlement
-- CampaignState <-> MOOSE Warehouse anti-double-authority runtime contract
-```
-
-Keiner dieser Punkte ist durch dieses Dokument `VALIDATED`.
