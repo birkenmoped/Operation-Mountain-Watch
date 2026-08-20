@@ -4,169 +4,95 @@ status: PLANNED
 document_class: DOMAIN_CONTRACT
 owning_policy: OMW-GOV-001
 authoritative_for:
-  - working CampaignState quantities for the current Jalalabad/Kunar ARMY Ground Foundation nodes
-  - working action costs and readiness thresholds for ground resources
-  - planned installation-damage to CampaignState settlement semantics
-  - explicit one-way authority boundary between CampaignState and MOOSE/DCS warehouse representations
+  - working CampaignState quantities for the current six Jalalabad/Kunar Ground Foundation nodes
+  - working Ground action costs and readiness semantics
+  - Ground settlement authority boundary between CampaignState and MOOSE/DCS representations
 not_authoritative_for:
-  - exact historical July-2011 property-book inventories or personnel rosters
+  - exact historical daily property-book inventories or personnel rosters
   - final Mission Editor object counts
-  - final DCS proxy behavior
-  - DCS runtime acceptance
+  - final Ground-order generation
+  - fixed artillery inventories not covered by a separate current decision
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
+  - Honaker dependent-only resource model
+  - Honaker 40-person child-only commitment as the complete local resource model
+  - fixed M777/L118 loss-settlement clauses for Honaker
 superseded_by:
 source_branch: agent/army-ground-foundation-reconciliation
 source_commit: PENDING_MERGE
-validated_in_dcs: false
+validated_in_dcs: true
 ---
 
 # ARMY Ground Foundation – Resource Quantity and Settlement Baseline
 
 ## 1. Zweck
 
-Die Ground Foundation benötigt konkrete CampaignState-Mengen, obwohl vollständige historische lokale Inventare nicht vorliegen. Dieses Dokument setzt deshalb bewusst **OMW-Designwerte** auf Basis der bereits festgelegten Fahrzeugbaseline, Standortrollen, Formationseinordnung, Parent-Hierarchie und der bisherigen Evidenz.
-
-Die Werte sind keine Behauptung exakter historischer Property-Book- oder Personnel-Roster-Zahlen.
+Die Ground Foundation führt konkrete CampaignState-Mengen als OMW-Designwerte. Vollständige historische lokale Property Books liegen nicht vor und werden nicht behauptet.
 
 ```text
 historical evidence
 -> supported role / scale
--> OMW working quantity
--> CampaignState authority
+-> OMW design quantity
+-> CampaignState strategic authority
 -> MOOSE/DCS operational representation
 ```
 
-## 2. Einheitensystem
+## 2. Resource units
 
-### 2.1 PERSONNEL
+### PERSONNEL
 
-`PERSONNEL` wird als reale strategische Personenzahl geführt. Die Zahl beschreibt den für Ground-Operations, lokale Sicherung, QRF, Patrol, Logistics und Child-Support verfügbaren OMW-Pool des Nodes; sie ist **nicht** die vollständige historische Basisbevölkerung einschließlich aller Aviation-, Contractor-, Medical-, Staff- oder sonstigen nicht für Ground-Tasking verfügbaren Personen.
+`PERSONNEL` is a real strategic headcount for OMW Ground tasking. It is not the complete historical population of an installation.
 
-### 2.2 VEHICLE
+### VEHICLE
 
-`VEHICLE` wird als einzelne strategische Fahrzeugeinheit geführt. Die Menge entspricht der Working Vehicle Baseline:
+`VEHICLE` is one strategic vehicle unit. Decorative/statics and transient theater convoys do not automatically increase this stock.
 
-```text
-Jalalabad / Fenty = 48
-Joyce             = 20
-Wright            = 22
-Bostick           = 26
-```
+### SUPPLY / AMMO / FUEL
 
-Die Fahrzeugfamilien stehen in `OMW-ARMY-GROUND-VEHICLE-BASELINE` und `OMW-ARMY-GROUND-TEMPLATE-NAMING-TYPE-MAPPING`.
-
-### 2.3 SUPPLY, AMMO, FUEL
-
-Um unbelegte Tonnen- oder Literbestände zu vermeiden, werden diese Ressourcen als **normalized logistics units** geführt:
+These resources use normalized CampaignState logistics units:
 
 ```text
 1 SUPPLY_UNIT = one normalized general sustainment package
-1 AMMO_UNIT   = one normalized ground-ammunition package
-1 FUEL_UNIT   = one normalized ground-fuel package
+1 AMMO_UNIT   = one normalized Ground ammunition package
+1 FUEL_UNIT   = one normalized Ground fuel package
 ```
 
-Diese Units sind CampaignState-Buchungseinheiten. Eine spätere Mission kann ein Paket auf konkrete Cargo-/Truck-Kapazität abbilden, ohne rückwirkend eine historisch exakte Tonnage zu behaupten.
+They are not claims of historical tonnage or liters.
 
-## 3. Working initial quantities
+## 3. Six-node initial stock
 
-### 3.1 Jalalabad / FOB Fenty
+Order: `PERSONNEL / VEHICLE / SUPPLY / AMMO / FUEL`.
 
-```yaml
-groundNodeId: GROUND_NODE_JALALABAD
-resources:
-  PERSONNEL: 480
-  VEHICLE: 48
-  SUPPLY: 120
-  AMMO: 100
-  FUEL: 120
+```text
+GROUND_NODE_JALALABAD 480 / 48 / 120 / 100 / 120
+GROUND_NODE_FORTRESS  160 / 18 / 44  / 48  / 40
+GROUND_NODE_JOYCE     180 / 20 / 48  / 44  / 40
+GROUND_NODE_WRIGHT    120 / 22 / 36  / 30  / 36
+GROUND_NODE_HONAKER   120 / 18 / 40  / 40  / 36
+GROUND_NODE_BOSTICK   220 / 26 / 56  / 52  / 48
 ```
 
-Begründung:
+Support-parent contract:
 
-- regionaler Ground-/Logistics-Hub;
-- Brigade-HQ-/Security-Kontext;
-- größter lokaler Fahrzeugpool;
-- regionaler Parent für Joyce, Wright und Bostick;
-- zusätzlicher Nachschub von Bagram sowie Pakistan/Torkham-GLOC.
-
-`480 PERSONNEL` ist ein OMW-verfügbarer Ground-Pool, nicht die Gesamtstärke aller real auf Jalalabad/Fenty befindlichen Kräfte.
-
-### 3.2 FOB Joyce
-
-```yaml
-groundNodeId: GROUND_NODE_JOYCE
-resources:
-  PERSONNEL: 180
-  VEHICLE: 20
-  SUPPLY: 48
-  AMMO: 44
-  FUEL: 40
+```text
+JALALABAD -> OFF_MAP
+FORTRESS  -> JALALABAD
+JOYCE     -> JALALABAD
+WRIGHT    -> JALALABAD
+HONAKER   -> JOYCE
+BOSTICK   -> JALALABAD
 ```
 
-Begründung:
+A support parent is not a second resource authority.
 
-- TF-Cacti-/2-35-Infantry-Knoten;
-- Patrol/QRF/Logistics;
-- Parent für Honaker-Miracle;
-- Fire-Support-Sustainment für die auf Honaker bestätigten zwei M777A2.
+Fortress/Honaker quantities are defined by `OMW-ARMY-GROUND-FORTRESS-HONAKER-2011-RESOURCE-DECISION`.
 
-### 3.3 FOB Wright
+## 4. Dependent OP commitments
 
-```yaml
-groundNodeId: GROUND_NODE_WRIGHT
-resources:
-  PERSONNEL: 120
-  VEHICLE: 22
-  SUPPLY: 36
-  AMMO: 30
-  FUEL: 36
-```
+The dependent OP model remains separate from the six root-stock nodes.
 
-Begründung:
-
-- SECFOR-/PRT-/Support-Knoten;
-- signifikante geschützte Mobilität;
-- kein bestätigtes Juli-2011-Artillerie-Detachment im aktuellen Vertrag.
-
-### 3.4 FOB Bostick
-
-```yaml
-groundNodeId: GROUND_NODE_BOSTICK
-resources:
-  PERSONNEL: 220
-  VEHICLE: 26
-  SUPPLY: 56
-  AMMO: 52
-  FUEL: 48
-```
-
-Begründung:
-
-- Battalion-/Task-Force-Knoten;
-- hoher Patrol-/QRF-Bedarf;
-- direkte Parent-Verantwortung für Mustang, Clydesdale und Stallion;
-- Recovery-/Logistics-Capability.
-
-## 4. Dependent installation personnel commitments
-
-### 4.1 COP Honaker-Miracle
-
-Honaker besitzt keinen unabhängigen Root-Pool. Für die Working Baseline wird eine lokale Personnel-Bindung aus Joyce vorgesehen:
-
-```yaml
-childInstallationId: BLUE_GROUND_COP_HONAKER_MIRACLE
-parentInstallationId: BLUE_GROUND_FOB_JOYCE
-PERSONNEL_nominal: 40
-PERSONNEL_source: GROUND_NODE_JOYCE
-```
-
-Die zwei M777A2 sind physischer Fire-Support-Bestand; Crew-/Security-Personal ist in dieser 40-Personen-Bindung enthalten. Supply/Ammo/Fuel dürfen für den COP separat aus Joyce transferiert werden, weil Honaker als sustained COP behandelt wird.
-
-### 4.2 Bostick OPs
-
-Für die drei geplanten Bostick-OPs wird je eine kleine Personnel-Occupancy vorgesehen:
+### Bostick OPs
 
 ```text
 OP Mustang     nominal PERSONNEL = 12
@@ -174,27 +100,27 @@ OP Clydesdale  nominal PERSONNEL = 12
 OP Stallion    nominal PERSONNEL = 12
 ```
 
-Gesamtbindung bei vollständiger Besetzung:
+Total full-occupancy commitment:
 
 ```text
-Bostick child OP occupancy = 36 PERSONNEL
+36 PERSONNEL from the Bostick strategic domain
 ```
 
-Routine-AMMO/SUPPLY/FOOD/WATER werden für OPs weiterhin abstrahiert. Es gibt keinen unabhängigen OP-VEHICLE-, FUEL- oder Warehouse-Vertrag.
+Routine OP supply is abstracted unless a later logistics mission explicitly transfers resources.
 
-### 4.3 OP JoJo
+### OP JoJo
 
 ```text
 nominal PERSONNEL candidate = 12
 activation = PROVISIONAL
-active reservation = 0 until owner activates the OP
+active reservation = 0 until owner activation
 ```
 
-Damit erzeugt die reservierte Identität noch keinen Ressourcenverbrauch.
+COP Honaker-Miracle itself is no longer a dependent-only child resource commitment. It owns `GROUND_NODE_HONAKER` stock.
 
-## 5. Protected local defense reserve
+## 5. Existing protected local defense reserves
 
-Nicht der gesamte Personnel-/Vehicle-Pool darf für MissionDemand freigegeben werden. Pro Root Node bleibt folgende Mindestreserve geschützt:
+Existing working reserves for the original four nodes remain:
 
 | Node | Personnel reserve | Vehicle reserve | Ammo reserve | Fuel reserve |
 |---|---:|---:|---:|---:|
@@ -203,15 +129,11 @@ Nicht der gesamte Personnel-/Vehicle-Pool darf für MissionDemand freigegeben we
 | Wright | 36 | 4 | 10 | 8 |
 | Bostick | 60 | 5 | 14 | 10 |
 
-MissionDemand darf eine neue offensive/routinemäßige Mission nicht reservieren, wenn dadurch die jeweilige lokale Defense Reserve unterschritten würde.
-
-Child-Occupancy-Reservations zählen als gebunden und reduzieren den frei disponiblen Personnel-Pool.
+Fortress/Honaker exact defense-reserve thresholds are not invented by Acceptance 9; they remain a later Ground-order/readiness calibration. Until then, mission generation must not silently assume their entire stock is freely taskable.
 
 ## 6. Working action costs
 
-Die Kosten sind CampaignState-Reservierungen pro gleichzeitigem Auftrag. Verbrauch und Rückgabe werden erst durch den jeweiligen Mission-/Loss-/Return-Settlement entschieden.
-
-### 6.1 Motorized Patrol
+### Motorized Patrol
 
 ```yaml
 PERSONNEL: 12
@@ -221,7 +143,14 @@ AMMO: 2
 FUEL: 2
 ```
 
-### 6.2 Ground QRF
+For the validated materialization/settlement correlation:
+
+```text
+1 M-ATV = 1 VEHICLE + 3 PERSONNEL
+4-vehicle patrol = 4 VEHICLE + 12 PERSONNEL
+```
+
+### Ground QRF
 
 ```yaml
 PERSONNEL: 16
@@ -231,7 +160,7 @@ AMMO: 3
 FUEL: 3
 ```
 
-### 6.3 Local Logistics / Resupply Convoy
+### Local Logistics / Resupply Convoy
 
 ```yaml
 PERSONNEL: 6
@@ -241,7 +170,7 @@ AMMO: payload-defined
 FUEL: 2 plus payload-defined fuel transfer
 ```
 
-### 6.4 OP personnel reinforcement
+### OP personnel reinforcement
 
 ```yaml
 PERSONNEL: requested replacement count
@@ -251,27 +180,11 @@ AMMO: 0
 FUEL: transport-method dependent
 ```
 
-Die OP-Ressource selbst ist ausschließlich `PERSONNEL`; Fahrzeug/Fuel gehören gegebenenfalls zum Parent-Transportauftrag und werden nicht dem OP gutgeschrieben.
+No fixed Honaker artillery fire-mission cost is part of this baseline.
 
-### 6.5 Honaker Fire Support
+## 7. Readiness thresholds
 
-Für einen Fire-Support-Auftrag wird kein Geschütz neu materialisiert. Die zwei Geschütze sind fixed physical assets.
-
-Working reservation per fire mission:
-
-```yaml
-PERSONNEL: 0 additional if crew already committed to Honaker occupancy
-VEHICLE: 0
-SUPPLY: 0
-AMMO: 2
-FUEL: 0
-```
-
-Die spätere DCS-Acceptance kann den Ammo-Kostensatz kalibrieren, wenn tatsächliche Schusszahlen/Proxyverhalten bekannt sind.
-
-## 7. Numeric readiness thresholds
-
-Readiness wird pro Ressource aus dem Verhältnis `available / initial` abgeleitet. Bereits gebundene Ressourcen gelten nicht als `available`.
+Working resource state:
 
 ```text
 AVAILABLE     >= 60%
@@ -280,268 +193,138 @@ CRITICAL      > 0% and < 35%
 UNAVAILABLE   = 0% or required minimum cannot be met
 ```
 
-Für eine Capability gilt der **schlechteste Zustand ihrer required resources** als Baseline-State. Supporting-/Sustainment-Ressourcen dürfen den State um höchstens eine Stufe verschlechtern, wenn sie unter `CRITICAL` fallen.
+A mission remains ineligible if its action cost would violate an applicable protected reserve even when the percentage state appears sufficient.
 
-Zusätzlich gilt immer der harte Action-Cost-/Defense-Reserve-Test:
+Capability baseline:
 
 ```text
-percentage says AVAILABLE
-but mission cost would violate protected reserve
--> mission is NOT ELIGIBLE
+PATROL
+  required: PERSONNEL, AMMO
+  motorized additionally: VEHICLE, FUEL
+
+QRF
+  required: PERSONNEL, VEHICLE, AMMO, FUEL
+
+LOGISTICS
+  required: PERSONNEL, VEHICLE, FUEL
+  plus payload resource
+
+CHILD SUPPORT
+  required: PERSONNEL
+  plus transport resources where applicable
 ```
 
-Damit vermeiden Prozentwerte unrealistische Freigaben kleiner Restmengen.
+## 8. Settlement contract
 
-## 8. Capability-specific gates
-
-### 8.1 PATROL
-
-Required:
+Physical DCS state is telemetry/evidence until correlated to an authoritative CampaignState commitment.
 
 ```text
-PERSONNEL
-AMMO
+CampaignState reservation approved
+-> MOOSE operational asset selected/materialized
+-> physical mission executes
+-> observed return/loss/open state
+-> adapter submits idempotent settlement
+-> CampaignState mutates exactly once
 ```
 
-Motorized additionally:
+Validated rules:
 
 ```text
-VEHICLE
-FUEL
+confirmed return, including damaged survivor
+-> immediate one-time availability credit
+
+confirmed loss
+-> permanent loss
+
+open nonterminal commitment at server stop/crash
+-> one-time strategic recredit at next startup
+
+physical DCS/MOOSE group from the previous session
+-> no continuation / no respawn
 ```
 
-`CRITICAL` blockiert routinemäßige neue Patrols.
-
-### 8.2 QRF
-
-Required:
+### Vehicle loss
 
 ```text
-PERSONNEL
-VEHICLE
-AMMO
-FUEL
-```
-
-Bei `CRITICAL` bleibt QRF nur für defensive/recovery-nahe Prioritätsfälle zulässig, sofern Action Cost und Defense Reserve trotzdem eingehalten werden.
-
-### 8.3 LOGISTICS
-
-Required:
-
-```text
-PERSONNEL
-VEHICLE
-FUEL
-```
-
-Payload-Ressource muss zusätzlich in der zu transferierenden Menge verfügbar sein.
-
-### 8.4 CHILD SUPPORT
-
-Für OP-Reinforcement required:
-
-```text
-PERSONNEL
-```
-
-Für Honaker-Sustainment zusätzlich die konkret transferierte Resource Class.
-
-### 8.5 FIRE SUPPORT
-
-Required:
-
-```text
-approved physical fire-support system
-committed crew/occupancy
-AMMO
-```
-
-Wright und Bostick bleiben ohne aktive Juli-2011-Fire-Support-Capability, bis eine separate Entscheidung das ändert.
-
-## 9. Installation damage -> CampaignState settlement
-
-### 9.1 Grundregel
-
-Physischer DCS-Schaden ist zunächst **Telemetry/Evidence**, nicht automatisch eine strategische Buchung.
-
-```text
-DCS hit / destroy event
--> correlate physical object to stable installation/resource representation
--> classify damage/loss
--> create idempotent settlement record
--> apply CampaignState mutation exactly once
--> recalculate readiness
-```
-
-### 9.2 Settlement classes
-
-```text
-DAMAGE_INFRASTRUCTURE
-LOSS_PERSONNEL
-LOSS_VEHICLE
-LOSS_FIRE_SUPPORT_SYSTEM
-LOSS_SUPPLY
-LOSS_AMMO
-LOSS_FUEL
-NO_STRATEGIC_SETTLEMENT
-```
-
-Ein einzelnes Explosionsereignis darf mehrere Settlement Records erzeugen, wenn tatsächlich mehrere getrennte Ressourcen betroffen sind, aber jede konkrete Resource-/Entity-Korrelation darf nur einmal gebucht werden.
-
-### 9.3 Vehicle loss
-
-```text
-confirmed destruction of strategic vehicle representation
+confirmed loss of one correlated strategic vehicle
 -> VEHICLE -1 exactly once
+-> VEHICLE_LOST audit +1 exactly once
 ```
 
-Ein dekoratives Static ohne CampaignState-Fahrzeugbindung erzeugt keinen `VEHICLE`-Verlust.
+### Personnel loss
 
-### 9.4 Personnel loss
+Personnel settlement follows the mission/resource correlation. Visible DCS soldiers are not automatically one-to-one persistent personnel.
 
-Visible DCS soldiers are tactical representation, not one-to-one persistent personnel unless explicitly correlated.
+### Supply / Ammo / Fuel loss
 
-Für mobile Gruppen wird die zugehörige Mission-/Reservation-Stärke als Verlustbasis verwendet. Teilverluste werden später anhand des bestätigten Gruppen-/Unit-Vertrags gebucht; keine pauschale 1:1-Zählung aller sichtbaren Soldaten ohne Korrelation.
+Only explicitly correlated physical cargo/storage representations or mission manifests may produce strategic loss. Decorative destruction does not create arbitrary resource debits.
 
-### 9.5 Fixed fire-support loss
+## 9. Honaker artillery correction
 
-Für Honaker gilt:
+The former clauses for:
 
 ```text
-2 physical M777A2-equivalent proxy slots
--> each slot has stable fire-support asset identity
--> confirmed destruction of one slot
--> fire-support available systems 2 -> 1
--> confirmed destruction of second slot
--> 1 -> 0
--> FIRE_SUPPORT_READINESS = UNAVAILABLE regardless of AMMO
+2 x M777A2 fixed Honaker assets
+2 x L118_Unit proxy slots
+fixed-fire-support loss settlement
 ```
 
-Kein Same-Session-Respawn erzeugt das verlorene Geschütz neu.
+are superseded.
 
-### 9.6 Supply/Ammo/Fuel damage
-
-Nur physische Storage-/Cargo-Repräsentationen mit explizitem Transfer-/Stock-Manifest erzeugen strategischen Verlust.
+Current contract:
 
 ```text
-burning fuel object without manifest
-!= automatic arbitrary FUEL debit
+2011 local mortar capability = confirmed
+Jan-2010 possible two-gun position = observed; type/continuity unresolved
+2012 M777 evidence = outside scenario period
+no fixed M777/L118 production resource or loss-settlement contract
 ```
 
-## 10. CampaignState <-> MOOSE Warehouse one-way authority contract
-
-### 10.1 Authority
+## 10. CampaignState <-> MOOSE authority
 
 ```text
 CampaignState
 = sole strategic authority
 
-MOOSE WAREHOUSE / BRIGADE / PLATOON
-= operational asset selection and lifecycle representation
+MOOSE WAREHOUSE / BRIGADE / PLATOON / ARMYGROUP
+= operational selection and lifecycle representation
 
-DCS Warehouse / DCS group / static / cargo
+DCS groups / statics / cargo / warehouses
 = physical representation and telemetry
 ```
 
-### 10.2 Allowed direction
+Forbidden reverse authority includes:
 
 ```text
-CampaignState reservation approved
--> adapter enables/selects corresponding MOOSE operational asset
--> physical mission executes
--> observed result
--> adapter submits settlement candidate
--> CampaignState accepts/rejects settlement exactly once
-```
-
-### 10.3 Forbidden reverse authority
-
-Unzulässig:
-
-```text
-MOOSE AddAsset -> CampaignState credit
-MOOSE Returned -> automatic CampaignState credit
-MOOSE Warehouse count change -> overwrite CampaignState quantity
-DCS warehouse quantity -> overwrite CampaignState quantity
-DCS Despawn -> resource return
-DCS Destroy -> unclassified strategic debit
+MOOSE Warehouse count -> overwrite CampaignState
+DCS warehouse quantity -> overwrite CampaignState
+DCS despawn -> automatic strategic return
+uncorrelated DCS destroy -> strategic debit
 CTLD delivery -> automatic strategic credit
 ```
 
-### 10.4 Reconciliation invariant
+## 11. Accepted technical evidence
 
-Für jede strategische Ressource gilt:
+Acceptance 7 validates the physical MOOSE Ground lifecycle and settlement behavior. Acceptance 8 validates production-shaped single-CampaignState integration. Acceptance 9-2 validates all six Ground stock nodes and the existing Fortress/Honaker settlement path.
 
-```text
-strategicAvailable
-+ strategicReserved
-+ strategicCommitted
-+ strategicLost/consumed
-= authoritative CampaignState accounting domain
-```
-
-MOOSE-/DCS-Zähler dürfen zur Diagnose mitgeführt werden, sind aber Mirrors. Eine Abweichung erzeugt einen Fehler-/Reconciliation-Event und **keine** automatische Gegenbuchung.
-
-## 11. Initial node snapshot
-
-```yaml
-GROUND_NODE_JALALABAD:
-  PERSONNEL: 480
-  VEHICLE: 48
-  SUPPLY: 120
-  AMMO: 100
-  FUEL: 120
-
-GROUND_NODE_JOYCE:
-  PERSONNEL: 180
-  VEHICLE: 20
-  SUPPLY: 48
-  AMMO: 44
-  FUEL: 40
-  childCommitments:
-    BLUE_GROUND_COP_HONAKER_MIRACLE:
-      PERSONNEL: 40
-
-GROUND_NODE_WRIGHT:
-  PERSONNEL: 120
-  VEHICLE: 22
-  SUPPLY: 36
-  AMMO: 30
-  FUEL: 36
-
-GROUND_NODE_BOSTICK:
-  PERSONNEL: 220
-  VEHICLE: 26
-  SUPPLY: 56
-  AMMO: 52
-  FUEL: 48
-  childCommitments:
-    BLUE_GROUND_OP_MUSTANG:
-      PERSONNEL: 12
-    BLUE_GROUND_OP_CLYDESDALE:
-      PERSONNEL: 12
-    BLUE_GROUND_OP_STALLION:
-      PERSONNEL: 12
-```
-
-`BLUE_GROUND_OP_JOJO` remains reservation-free while activation is provisional.
-
-## 12. Acceptance boundary
-
-Dieser Stand ist `PLANNED`.
-
-Noch in DCS zu prüfen sind insbesondere:
+Acceptance 9-2 provenance:
 
 ```text
-- actual mission-group sizes against the selected action costs
-- practical vehicle availability and simultaneous tasking
-- MOOSE BRIGADE/PLATOON asset selection with CampaignState gating
-- loss correlation and exactly-once settlement
-- physical destruction versus warehouse/asset mirror behavior
-- readiness transitions under real mission losses
-- fire-support ammo calibration
-- multiplayer event ordering and duplicate-event resistance
+acceptance commit: 45d916217c0085728082c3ef2efcd582d736caae
+bundle SHA-256: 35cc922581da980f558733433e487b025e083859b943641276672b6c168b4d6a
+MIZ SHA-256: 29587060d630d53303d4e858c1fd5a898ea3e09d51dec36ff130d3d0ac6e3ef3
+DCS: 2.9.28.26385 MT
+result: PASS
 ```
 
-Keiner dieser Punkte ist durch dieses Dokument `VALIDATED`.
+## 12. Later scope
+
+Not closed by this Foundation baseline:
+
+```text
+Fortress/Honaker exact defense-reserve calibration
+exact Fortress/Honaker vehicle-family split
+Ground-order generation
+OPSTRANSPORT
+general cross-domain persistence
+```
