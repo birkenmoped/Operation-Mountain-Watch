@@ -75,54 +75,55 @@ local function isFinite(value)
     and value < math.huge
 end
 
-local function copyMap(value)
-  if value == nil then
-    return nil
-  end
+local function deepCopy(value, seen)
   if type(value) ~= "table" then
     return value
   end
+
+  seen = seen or {}
+  if seen[value] then
+    fail("cyclic tables are not supported in MissionDemand data")
+  end
+
+  seen[value] = true
   local result = {}
   for key, item in pairs(value) do
-    if type(item) == "table" then
-      local nested = {}
-      for nestedKey, nestedValue in pairs(item) do
-        nested[nestedKey] = nestedValue
-      end
-      result[key] = nested
-    else
-      result[key] = item
-    end
+    result[deepCopy(key, seen)] = deepCopy(item, seen)
   end
+  seen[value] = nil
   return result
 end
 
-local function copyDemand(demand)
-  if not demand then
-    return nil
+local function valuesEqual(a, b, seen)
+  if type(a) ~= type(b) then
+    return false
+  end
+  if type(a) ~= "table" then
+    return a == b
   end
 
-  return {
-    id = demand.id,
-    missionType = demand.missionType,
-    origin = demand.origin,
-    objective = demand.objective,
-    target = demand.target,
-    priority = demand.priority,
-    playerCapable = demand.playerCapable,
-    aiCapable = demand.aiCapable,
-    reservationState = demand.reservationState,
-    expiresAt = demand.expiresAt,
-    successCriteria = copyMap(demand.successCriteria),
-    failureConsequences = copyMap(demand.failureConsequences),
-    resourceReservation = copyMap(demand.resourceReservation),
-    status = demand.status,
-    createdReason = demand.createdReason,
-    dedupeKey = demand.dedupeKey,
-    assignedTo = demand.assignedTo,
-    result = copyMap(demand.result),
-    failureReason = demand.failureReason,
-  }
+  seen = seen or {}
+  seen[a] = seen[a] or {}
+  if seen[a][b] then
+    return true
+  end
+  seen[a][b] = true
+
+  for key, value in pairs(a) do
+    if not valuesEqual(value, b[key], seen) then
+      return false
+    end
+  end
+  for key in pairs(b) do
+    if a[key] == nil then
+      return false
+    end
+  end
+  return true
+end
+
+local function copyDemand(demand)
+  return demand and deepCopy(demand) or nil
 end
 
 local function sortedKeys(map)
@@ -138,6 +139,18 @@ local function validateBoolean(value, label)
   if value ~= nil and type(value) ~= "boolean" then
     fail(label .. " must be boolean when provided")
   end
+end
+
+local function isTerminalStatus(status)
+  return TERMINAL[status] == true
+end
+
+local function isKnownStatus(status)
+  return status == MissionDemand.Status.OPEN
+    or status == MissionDemand.Status.PLAYER_ASSIGNED
+    or status == MissionDemand.Status.AI_ASSIGNED
+    or status == MissionDemand.Status.ACTIVE
+    or isTerminalStatus(status)
 end
 
 local function validateDemandSpec(spec)
@@ -166,8 +179,51 @@ local function validateDemandSpec(spec)
   end
 end
 
-local function isTerminalStatus(status)
-  return TERMINAL[status] == true
+local function normalizeCreationSpec(spec)
+  return {
+    id = spec.id,
+    missionType = spec.missionType,
+    origin = spec.origin,
+    objective = spec.objective,
+    target = deepCopy(spec.target),
+    priority = spec.priority,
+    playerCapable = spec.playerCapable == true,
+    aiCapable = spec.aiCapable == true,
+    reservationState = spec.reservationState,
+    expiresAt = spec.expiresAt,
+    successCriteria = deepCopy(spec.successCriteria),
+    failureConsequences = deepCopy(spec.failureConsequences),
+    resourceReservation = deepCopy(spec.resourceReservation),
+    createdReason = spec.createdReason,
+    dedupeKey = spec.dedupeKey,
+  }
+end
+
+local function creationSpecMatches(demand, spec)
+  local normalized = normalizeCreationSpec(spec)
+  for key, value in pairs(normalized) do
+    if not valuesEqual(demand[key], value) then
+      return false
+    end
+  end
+  return true
+end
+
+local function validateRestoredDemand(demand)
+  validateDemandSpec(demand)
+
+  local status = demand.status or MissionDemand.Status.OPEN
+  if not isKnownStatus(status) then
+    fail("unsupported restored status=" .. tostring(status))
+  end
+
+  if status == MissionDemand.Status.PLAYER_ASSIGNED
+      or status == MissionDemand.Status.AI_ASSIGNED
+      or status == MissionDemand.Status.ACTIVE then
+    requireNonEmptyString(demand.assignedTo, "assignedTo")
+  end
+
+  return status
 end
 
 function MissionDemand.IsTerminalStatus(status)
@@ -194,16 +250,7 @@ function MissionDemand.Restore(snapshot)
   registry.schemaVersion = snapshot.schemaVersion or MissionDemand.SchemaVersion
 
   for _, source in ipairs(snapshot.demands or {}) do
-    validateDemandSpec(source)
-
-    local status = source.status or MissionDemand.Status.OPEN
-    if status ~= MissionDemand.Status.OPEN
-        and status ~= MissionDemand.Status.PLAYER_ASSIGNED
-        and status ~= MissionDemand.Status.AI_ASSIGNED
-        and status ~= MissionDemand.Status.ACTIVE
-        and not isTerminalStatus(status) then
-      fail("unsupported restored status=" .. tostring(status))
-    end
+    local status = validateRestoredDemand(source)
 
     if registry.demandsById[source.id] then
       fail("duplicate restored demand id=" .. tostring(source.id))
@@ -230,7 +277,10 @@ function Registry:Create(spec)
 
   local existing = self.demandsById[spec.id]
   if existing then
-    return copyDemand(existing), false, "id_exists"
+    if creationSpecMatches(existing, spec) then
+      return copyDemand(existing), false, "idempotent_existing"
+    end
+    fail("demand id already exists with different specification id=" .. tostring(spec.id))
   end
 
   local duplicateId = self.activeByDedupeKey[spec.dedupeKey]
@@ -238,23 +288,24 @@ function Registry:Create(spec)
     return copyDemand(self.demandsById[duplicateId]), false, "active_duplicate"
   end
 
+  local creation = normalizeCreationSpec(spec)
   local demand = {
-    id = spec.id,
-    missionType = spec.missionType,
-    origin = spec.origin,
-    objective = spec.objective,
-    target = spec.target,
-    priority = spec.priority,
-    playerCapable = spec.playerCapable == true,
-    aiCapable = spec.aiCapable == true,
-    reservationState = spec.reservationState,
-    expiresAt = spec.expiresAt,
-    successCriteria = copyMap(spec.successCriteria),
-    failureConsequences = copyMap(spec.failureConsequences),
-    resourceReservation = copyMap(spec.resourceReservation),
+    id = creation.id,
+    missionType = creation.missionType,
+    origin = creation.origin,
+    objective = creation.objective,
+    target = creation.target,
+    priority = creation.priority,
+    playerCapable = creation.playerCapable,
+    aiCapable = creation.aiCapable,
+    reservationState = creation.reservationState,
+    expiresAt = creation.expiresAt,
+    successCriteria = creation.successCriteria,
+    failureConsequences = creation.failureConsequences,
+    resourceReservation = creation.resourceReservation,
     status = MissionDemand.Status.OPEN,
-    createdReason = spec.createdReason,
-    dedupeKey = spec.dedupeKey,
+    createdReason = creation.createdReason,
+    dedupeKey = creation.dedupeKey,
     assignedTo = nil,
     result = nil,
     failureReason = nil,
@@ -274,10 +325,7 @@ end
 function Registry:GetActiveByDedupeKey(dedupeKey)
   requireNonEmptyString(dedupeKey, "dedupeKey")
   local id = self.activeByDedupeKey[dedupeKey]
-  if not id then
-    return nil
-  end
-  return copyDemand(self.demandsById[id])
+  return id and copyDemand(self.demandsById[id]) or nil
 end
 
 local function getDemandOrFail(registry, id)
@@ -306,13 +354,32 @@ local function transition(registry, demand, toStatus)
 
   demand.status = toStatus
 
-  if isTerminalStatus(toStatus) then
-    if registry.activeByDedupeKey[demand.dedupeKey] == demand.id then
-      registry.activeByDedupeKey[demand.dedupeKey] = nil
-    end
+  if isTerminalStatus(toStatus)
+      and registry.activeByDedupeKey[demand.dedupeKey] == demand.id then
+    registry.activeByDedupeKey[demand.dedupeKey] = nil
   end
 
   return true
+end
+
+local function assign(registry, demand, targetStatus, assigneeId)
+  requireNonEmptyString(assigneeId, "assigneeId")
+
+  if demand.status == targetStatus then
+    if demand.assignedTo == assigneeId then
+      return copyDemand(demand), false
+    end
+    fail(string.format(
+      "demand already assigned to different assignee id=%s current=%s requested=%s",
+      tostring(demand.id),
+      tostring(demand.assignedTo),
+      tostring(assigneeId)
+    ))
+  end
+
+  transition(registry, demand, targetStatus)
+  demand.assignedTo = assigneeId
+  return copyDemand(demand), true
 end
 
 function Registry:AssignPlayer(id, assigneeId)
@@ -320,15 +387,7 @@ function Registry:AssignPlayer(id, assigneeId)
   if demand.playerCapable ~= true then
     fail("demand is not player capable id=" .. tostring(id))
   end
-  requireNonEmptyString(assigneeId, "assigneeId")
-
-  if demand.status == MissionDemand.Status.PLAYER_ASSIGNED and demand.assignedTo == assigneeId then
-    return copyDemand(demand), false
-  end
-
-  transition(self, demand, MissionDemand.Status.PLAYER_ASSIGNED)
-  demand.assignedTo = assigneeId
-  return copyDemand(demand), true
+  return assign(self, demand, MissionDemand.Status.PLAYER_ASSIGNED, assigneeId)
 end
 
 function Registry:AssignAI(id, assigneeId)
@@ -336,15 +395,7 @@ function Registry:AssignAI(id, assigneeId)
   if demand.aiCapable ~= true then
     fail("demand is not AI capable id=" .. tostring(id))
   end
-  requireNonEmptyString(assigneeId, "assigneeId")
-
-  if demand.status == MissionDemand.Status.AI_ASSIGNED and demand.assignedTo == assigneeId then
-    return copyDemand(demand), false
-  end
-
-  transition(self, demand, MissionDemand.Status.AI_ASSIGNED)
-  demand.assignedTo = assigneeId
-  return copyDemand(demand), true
+  return assign(self, demand, MissionDemand.Status.AI_ASSIGNED, assigneeId)
 end
 
 function Registry:Activate(id)
@@ -360,7 +411,7 @@ function Registry:Succeed(id, result)
   end
 
   transition(self, demand, MissionDemand.Status.SUCCESS)
-  demand.result = copyMap(result)
+  demand.result = deepCopy(result)
   return copyDemand(demand), true
 end
 
@@ -392,10 +443,17 @@ function Registry:SetReservationState(id, reservationState, resourceReservation)
     fail("cannot mutate reservation on terminal demand id=" .. tostring(id))
   end
 
-  demand.reservationState = reservationState
-  if resourceReservation ~= nil then
-    demand.resourceReservation = copyMap(resourceReservation)
+  local nextReservation = resourceReservation ~= nil
+    and deepCopy(resourceReservation)
+    or demand.resourceReservation
+
+  if demand.reservationState == reservationState
+      and valuesEqual(demand.resourceReservation, nextReservation) then
+    return copyDemand(demand), false
   end
+
+  demand.reservationState = reservationState
+  demand.resourceReservation = nextReservation
   return copyDemand(demand), true
 end
 
