@@ -63,6 +63,7 @@ function BostickAmmoSupport.New(spec)
   end
 
   local templateName = spec.templateName or BostickAmmoSupport.TemplateName
+  local platoonName = spec.platoonName or BostickAmmoSupport.PlatoonName
   local assignment = spec.assignment or BostickAmmoSupport.Assignment
   local entityId = spec.entityId or BostickAmmoSupport.EntityId
 
@@ -92,7 +93,7 @@ function BostickAmmoSupport.New(spec)
     platoonFactory = platoonFactory,
     descriptorGroupName = descriptorGroupName,
     templateName = templateName,
-    platoonName = spec.platoonName or BostickAmmoSupport.PlatoonName,
+    platoonName = platoonName,
     assignment = assignment,
     stockCount = spec.stockCount or 1,
     priority = spec.priority or 20,
@@ -106,6 +107,7 @@ function BostickAmmoSupport.New(spec)
     forwardCoordinate = forwardCoordinate,
     materializer = materializer,
     templateName = templateName,
+    platoonName = platoonName,
     assignment = assignment,
     entityId = entityId,
   }, Service)
@@ -127,7 +129,7 @@ function Service:GetConfig()
   return {
     schemaVersion = BostickAmmoSupport.SchemaVersion,
     templateName = self.templateName,
-    platoonName = BostickAmmoSupport.PlatoonName,
+    platoonName = self.platoonName,
     assignment = self.assignment,
     entityId = self.entityId,
   }
