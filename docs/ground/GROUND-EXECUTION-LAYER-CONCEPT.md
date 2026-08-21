@@ -325,3 +325,50 @@ MOOSE SELF-REQUEST PATH SOURCE REVIEWED
 M1083 DCS REARM CAPABILITY NOT YET VALIDATED
 BUNDLED GROUND INTEGRATION TEST PENDING
 ```
+
+## 13. Bostick-Bindung fuer den M1083-Supportpfad
+
+Der konkrete Bostick-Aufrufer ist jetzt als kleine Kompositionsschicht vorhanden:
+
+```text
+scripts/ground/OMW_BostickAmmoSupport.lua
+```
+
+Die Bindung fixiert nur die bereits festgelegten Identitaeten:
+
+```text
+Template      TPL_BLUE_GND_SUP_M1083
+Platoon       PLT_BLUE_GND_BOSTICK_AMMO_SUPPORT
+Assignment    OMW:BOSTICK:AMMO-SUPPORT:M1083
+ACCESS        caller-provided ZON_BLUE_GND_BOSTICK_ACCESS
+```
+
+Sie installiert den vorhandenen `OMW_GroundRoadSpawnAdapter` ausschliesslich fuer genau dieses Template plus Assignment und erzeugt danach den vorhandenen `OMW_GroundSupportMaterializer`. Andere Bostick-Spawns fallen unveraendert auf den originalen MOOSE-WAREHOUSE-Pfad zurueck.
+
+Die Outbound-Koordinate bleibt absichtlich ein Laufzeitinput. Es wird keine statische Fahrtrichtung oder erfundene Route in die Kompositionsschicht geschrieben. Der spaetere Artillerie-/Rearm-Aufrufer kann die fuer den konkreten Einsatz belastbare Richtung liefern.
+
+Der Callback des Materializers liefert weiterhin nur die echte materialisierte MOOSE-`GROUP`. Die Bindung kennt weder CampaignState-Munitionsmengen noch `ARTY` und importiert deshalb nicht den separaten MissionDemand-Rearm-Adapter. Damit bleibt die Branchgrenze sauber:
+
+```text
+Ground Execution Layer
+-> materialized Bostick M1083 GROUP
+
+MissionDemand / Rearm Layer
+-> strategic CONSUMPTION
+-> ARTY:SetRearmingGroup(materialized GROUP)
+```
+
+Contract-Test-Source:
+
+```text
+tests/ground/test_bostick_ammo_support.lua
+```
+
+Status:
+
+```text
+BOSTICK SUPPORT BINDING SOURCE IMPLEMENTED
+CONTRACT TEST SOURCE STAGED / NOT EXECUTED
+M1083 DCS REARM CAPABILITY OPEN
+DCS INTEGRATION PENDING
+```
