@@ -78,265 +78,179 @@ Ein Modul gilt erst als produktiv übernommen, wenn:
 - verbleibende Eigenlogik separat genehmigt ist;
 - CampaignState und MOOSE keine parallele Autorität besitzen.
 
-## 6. TODO – TM01M gegen Ground Production Base reconciliieren
+## 6. TM01M – Reconciliation als historischer Machbarkeitsnachweis
 
-### 6.1 Ziel
+### 6.1 Owner-Klarstellung 2026-08-21
 
-`TM01M` soll nur noch die Ground-Laufzeitfunktion behalten, die nach Einführung der produktiven `OMW_Ground_Base.lua` tatsächlich noch benötigt wird. Doppelte Zuständigkeiten für CampaignState, Ressourcen, Settlement, Restart-Reconciliation oder Ground-Lifecycle dürfen nicht bestehen bleiben.
+`TM01M` war ein Machbarkeits- und Regressionstest für physische MOOSE-Konvois. Es war nie als strategische Logistik-, CampaignState-, Warehouse- oder Settlement-Schicht gedacht.
 
-Der Zielzustand ist:
+Der Projektinhaber entfernt `LOAD_TM01M` bei nächster geeigneter Gelegenheit selbst aus der Missionsdatei. Es wird kein produktiver `TM01M`-Nachfolger nur deshalb eingeführt, weil der Test aus der `.miz` verschwindet.
+
+Damit ist die frühere Annahme verworfen, `TM01M` müsse gegen `OMW_Ground_Base.lua` auf Ressourcen-, Settlement-, Restart- oder Warehouse-Funktionen zerlegt werden.
+
+Verbindliche Abgrenzung:
 
 ```text
-CampaignState / Warehouse Production Base
-  -> einzige strategische Ressourcenautorität
+TM01M
+= HISTORICAL_TEST_FIXTURE / technische Convoy-Evidenz
 
 OMW_Ground_Base.lua
-  -> Ground-Initialbestände
-  -> Ground-CampaignState-Adapter
-  -> Settlement / Return / Loss
-  -> Restart-Reconciliation
+= produktive strategische Ground-Integration
+  - Ground-Initialbestände
+  - Ground-CampaignState-Adapter
+  - Settlement / Return / Loss
+  - Restart-Reconciliation
 
-TM01M oder Nachfolger
-  -> nur noch notwendige physische Convoy-Ausführung
-  -> Spawn-Platzierung / Marschordnung, soweit weiterhin benötigt
-  -> Routing / Movement, soweit MOOSE dafür keinen bereits geeigneteren produktiven Pfad stellt
-  -> Watchguard nur soweit nach MOOSE-Prüfung weiterhin erforderlich
-  -> keine parallele Ressourcenhoheit
+TM01M hatte keine Zuständigkeit für:
+  - Warenbewegung als strategische Buchung
+  - Warehouse Debit/Credit
+  - CampaignState-Ressourcenhoheit
+  - Settlement
+  - Loss-Reconciliation
+  - Restart-Reconciliation
 ```
 
-Wenn nach der Reconciliation keine eigenständige produktive Aufgabe für `TM01M` verbleibt, wird `LOAD_TM01M` aus dem produktiven Startup entfernt, statt das Modul künstlich weiterzuführen.
+### 6.2 Tatsächlich bestätigter TM01M-Scope
 
-### 6.2 Aktueller Stand
+Die maßgebliche TM01M-Dokumentation auf `feature/tm01m-moose-native-baseline` beschreibt den Test als saubere MOOSE-native physische Convoy-Baseline. Verwendet wurden insbesondere:
 
-Aktuelle Repository- und Missionsbaseline:
+```lua
+PATHLINE:FindByName(...)
+PATHLINE:GetNumberOfPoints()
+PATHLINE:GetPoint2DFromIndex(...)
+
+COORDINATE:GetClosestPointToRoad(...)
+COORDINATE:GetPathOnRoad(...)
+
+SPAWN:InitSetUnitAbsolutePositions(...)
+GROUP:Route(...)
+SCHEDULER:New(...)
+GROUP:Destroy(false, 60)
+```
+
+Die älteren TM01B-/TM01C-Mechanismen für Proxy, Caching, Virtualisierung, Pack/Unpack, Reveal Window, Watchdog, Recovery oder Teleport gehörten ausdrücklich nicht zu TM01M.
+
+### 6.3 DCS-bestätigte technische Erkenntnisse
+
+#### A. Road-aligned Spawn
+
+Der TM01M-PASS vom 26.07.2026 bestätigte für den exakt dokumentierten Stand:
 
 ```text
-main: 4bc42557d64b089db7c697ec2bd9579d3efe6a8e
-Mission: OMW_Template_v14_ground_test(8).miz
+Branch: feature/tm01m-moose-native-baseline
+Commit: 0db10501f81c160cd5818088e760af181b33d86d
+Configuration: TM01M-moose-native-msr-pathline-1
+DCS: 2.9.28.26283
 ```
 
-Dokument 38 führt derzeit folgende relevante Startup-Reihenfolge:
+Nachgewiesen wurde ein straßengerechter absoluter Spawn aller sechs Fahrzeuge über MOOSE `SPAWN:InitSetUnitAbsolutePositions(...)`, einschließlich korrekter Fahrzeugausrichtung entlang der vorgesehenen Fahrtrichtung.
+
+Der spätere Fünf-Konvoi-PASS bestätigte dieselbe Grundfunktion parallel für:
 
 ```text
-T+1  LOAD_AIROPS_WAREHOUSE_BASE
-T+2  LOAD_GROUND_BASE
-     Bedingung: OMW_WAREHOUSE_READY == 1
-T+6  LOAD_TM01M
-     derzeit ohne dokumentierten Ground-Ready-Gate
+Branch: feature/tm01m-moose-native-baseline
+Commit: da2714af9d312d92913a0b325ca3c2e8e91f8064
+Configuration: TM01M-moose-native-five-convoys-1
+DCS: 2.9.28.26283
+5 Convoys
+30 vehicles total
+50 km/h
+On Road
 ```
 
-Die produktive Ground Base ist auf `main` vorhanden. Ihr dokumentierter Scope umfasst strategische Ground-Bestände, CampaignState-Adapter, Settlement und Restart-Reconciliation. Sie enthält ausdrücklich keine neue MOOSE-/DCS-Spawn-, Routing-, Warehouse- oder Schedulerlogik.
+Alle 30 Fahrzeuge wurden visuell korrekt straßengerecht positioniert und ausgerichtet.
 
-Der ältere TM01-Review beschreibt als TM01-Funktionsfelder unter anderem:
+#### B. PATHLINE-basierte MSR-Führung
 
-- Convoy-Spawn und Routenausführung;
-- Pack/Unpack beziehungsweise Repräsentationswechsel;
-- CampaignState-Abbildung;
-- Player-/Representation-Interest;
-- Watchguard und Stuck-Recovery;
-- Scheduler, Events, Sets und Group-Wrapper.
-
-PR #22 / Branch `feature/tm01m-moose-native-baseline` bleibt laut Unterprojektregister ein offener Draft mit branchgebundenen Ein- und Fünf-Convoy-PASS-Nachweisen. Dieser Stand ist Evidenz für die bevorzugte MOOSE-native Convoy-Richtung, aber keine aktuelle `main`-Produktionsautorität.
-
-Damit ist aktuell **nicht** ausreichend geklärt, welcher konkrete Teil des in der v14-MIZ geladenen `TM01M` nach den inzwischen gemergten Ground-Acceptances noch produktiv erforderlich ist.
-
-### 6.3 Zu erledigende Schritte
-
-#### Schritt 1 – Exakten TM01M-Ist-Stand sichern
-
-- [ ] Exakte `TM01M.lua` aus der aktuell verwendeten v14-MIZ beziehungsweise aus ihrer nachweisbaren Source erfassen.
-- [ ] SHA-256 der tatsächlich geladenen Datei bestimmen.
-- [ ] Herkunft, Branch und Commit dokumentieren; nichts aus älteren TM01-Branches stillschweigend als identisch annehmen.
-- [ ] PR #22 und dessen aktuellen Branch-Head nur als historische/branchgebundene Evidenz danebenstellen.
-- [ ] Aktuell geladenen `Moose.lua`-Commit und SHA-256 für die spätere API-Prüfung festhalten.
-
-**Ergebnis:** Es gibt genau einen nachweisbaren TM01M-Codebestand, gegen den reconciliert wird.
-
-#### Schritt 2 – Funktionsinventar des real geladenen TM01M erstellen
-
-Jede Funktion des geladenen Moduls einer Kategorie zuordnen:
+TM01M bestätigte praktisch:
 
 ```text
-A  strategische Ressourcen / CampaignState
-B  Settlement / Return / Loss / Restart
-C  physischer Spawn / Road-Aligned Placement
-D  Route / Movement / Mission Assignment
-E  Watchguard / Stuck Recovery
-F  Representation / Pack-Unpack / Interest
-G  Scheduler / Events / Messaging / Marker
-H  reine Diagnose / Testfunktion
+Mission Editor PATHLINE
+-> MOOSE PATHLINE readout
+-> automatische Vorwärts-/Rückwärtsorientierung
+-> Verkettung mehrerer MSR-Segmente
+-> Road Connector vom Startknoten zur PATHLINE
+-> Road Connector von PATHLINE zum Zielknoten
 ```
 
-Für jede Funktion dokumentieren:
+Im Single-Convoy-PASS wurde die vollständige Route von Bagram über `MSR_EAST_E03` und `MSR_EAST_E02` bis Jalalabad gefahren.
 
-- [ ] fachlicher Zweck;
-- [ ] aufgerufene MOOSE-Klasse/-Methode;
-- [ ] Native-DCS- oder eigene Hilfslogik;
-- [ ] gelesener/geänderter CampaignState;
-- [ ] erzeugte/entfernte DCS-Gruppen;
-- [ ] Abhängigkeit von Mission-Editor-Templates/Zonen;
-- [ ] heutiger Aufrufer und Startup-Abhängigkeit.
+Im Fünf-Konvoi-PASS wurden sechs Mission-Editor-PATHLINEs für fünf parallele Konvois erfolgreich verwendet; alle 30 Fahrzeuge erreichten ihre vorgesehenen Zielzonen.
 
-**Ergebnis:** Keine Funktionsentscheidung erfolgt allein aufgrund des Dateinamens oder früherer Testbeschreibungen.
+#### C. MOOSE Route Execution
 
-#### Schritt 3 – Gegen die heutige Ground Production Base abgleichen
+`GROUP:Route(...)` wurde im dokumentierten TM01M-Scope praktisch bestätigt. Die erzeugten Ground-Routen wurden mit `On Road` und den konfigurierten Geschwindigkeiten tatsächlich ausgeführt.
 
-Für jede TM01M-Funktion entscheiden:
+Diese Evidenz bestätigt die konkrete MOOSE-/DCS-Machbarkeit des getesteten Pfades. Sie erzeugt keine allgemeine Freigabe für beliebige Ground-Routen oder andere DCS-/MOOSE-Stände.
 
-- [ ] `ALREADY_OWNED_BY_GROUND_BASE` – aus TM01M entfernen/nicht mehr produktiv verwenden;
-- [ ] `MOOSE_DIRECT` – durch vorhandene MOOSE-Funktion abbilden;
-- [ ] `MOOSE_ADAPTER` – kleiner OMW-Adapter um MOOSE bleibt erforderlich;
-- [ ] `PROJECT_DOMAIN` – echte OMW-Fachlogik, die außerhalb MOOSE bleiben muss;
-- [ ] `HISTORICAL_TEST_ONLY` – nicht in Produktion übernehmen;
-- [ ] `UNRESOLVED` – erst nach weiterer MOOSE-/DCS-Prüfung entscheidbar.
+### 6.4 Beziehung zur späteren Ground Foundation
 
-Insbesondere sind als bereits durch die Ground-Foundation besetzt zu behandeln:
+Die aus TM01M gewonnene Road-Spawn-Erkenntnis wurde später in der ARMY-Ground-Acceptance 3-2 erneut für den BRIGADE/WAREHOUSE-Pfad genutzt.
+
+Wichtig ist die Trennung:
 
 ```text
-strategische Resource Authority
-Return-/Loss-Settlement
-beschädigte Rückkehrer -> sofort verfügbar
-permanenter Verlust
-Restart-Reconciliation offener Aufträge
-keine physische Missionsfortsetzung/Respawns nach Serverende
+TM01M
+-> erster praktischer Nachweis der road-aligned Spawn-Geometrie
+   über MOOSE SPAWN absolute unit positions
+
+Ground Acceptance 3-2
+-> spätere Anwendung derselben geometrischen Grundidee
+   innerhalb des MOOSE BRIGADE/WAREHOUSE-Materialisierungspfades
 ```
 
-**Ergebnis:** Es existiert nur noch eine Zuständigkeit je Ground-Lifecycle-Funktion.
+Acceptance 3-2 ist deshalb der relevantere Nachweis für die heutige Ground-Foundation-Integration. Der TM01M-PASS bleibt zusätzliche technische Evidenz und darf nicht verloren gehen.
 
-#### Schritt 4 – MOOSE-First-Prüfung für die verbleibenden physischen Funktionen
+### 6.5 Was aus TM01M nicht als Produktionsarchitektur übernommen wird
 
-Vor neuer oder weitergeführter Eigenlogik verbindlich prüfen:
-
-1. passende MOOSE-Dokumentation;
-2. tatsächlich verwendete `Moose.lua`;
-3. Signaturen, Events, FSMs, Voraussetzungen und Rückgaben;
-4. offizielle MOOSE-Demos/Tests, soweit vorhanden.
-
-Mindestens gegen den realen Bedarf prüfen:
+Nicht aus TM01M abzuleiten oder als eigenes Produktionssystem zu übernehmen sind:
 
 ```text
-ARMYGROUP / OPSGROUP / GROUP
-AUFTRAG
-MOVEMENT
-PATHLINE
-Core.Astar
-SCHEDULER
-FSM
-SET_* und Eventhandling
-OPSTRANSPORT, falls Infantry-/Transportaufgaben betroffen sind
+- eigener Ground Mission Controller
+- eigener strategischer Convoy-/Logistikzustand
+- eigene Warehouse- oder CampaignState-Buchung
+- eigene Settlement-/Restart-FSM
+- eigener Route Catalog als Parallelarchitektur
+- eigene Pathfinding-Engine
+- permanenter TM01M Scheduler/Bootstrap
+- Testmenüs und Testdiagnostik als Production Runtime
 ```
 
-`docs/moose/PROJECT-CLASS-INDEX.md` und gegebenenfalls `VERIFIED-METHODS.md` sind im selben Änderungsscope zu aktualisieren, sobald eine neue MOOSE-Nutzung festgelegt wird.
+Für konkrete produktive Ground-Missionen bleibt MOOSE-first verbindlich. Die TM01M-Erkenntnisse sind dabei geprüfte Baustein-Evidenz, keine Verpflichtung, den historischen Testcode weiterzuführen.
 
-**Ergebnis:** Eigene TM01M-Mechanik bleibt nur dort bestehen, wo die konkrete MOOSE-Lücke nachgewiesen ist.
-
-#### Schritt 5 – Zielvertrag für Convoys festlegen
-
-Der produktive Convoy-Pfad muss mindestens eindeutig festlegen:
-
-- [ ] wer Ressourcen vor Dispatch reserviert/debitiert;
-- [ ] wer das physische Template auswählt;
-- [ ] wer die straßenorientierte Spawn-Platzierung ausführt;
-- [ ] wer `ARMYGROUP`/`AUFTRAG` erzeugt beziehungsweise übernimmt;
-- [ ] wer Route und Rückkehr anstößt;
-- [ ] wer Schäden/Verluste meldet;
-- [ ] wer Settlement ausführt;
-- [ ] wer die physische Gruppe nach abgeschlossenem Return entfernt;
-- [ ] wie ein Serverende während eines offenen Auftrags behandelt wird.
-
-Verbindlich bleibt:
+### 6.6 Verbleibende TODOs für diesen Reconciliation-Scope
 
 ```text
-TM01M darf CampaignState nicht parallel zu OMW_Ground_Base verwalten.
+[x] TM01M als Machbarkeitstest statt Production Runtime eingeordnet
+[x] bestätigt: road-aligned Spawn ist praktisch nachgewiesen
+[x] bestätigt: PATHLINE-basierte MSR-Führung ist praktisch nachgewiesen
+[x] bestätigt: MOOSE GROUP:Route-Ausführung ist praktisch nachgewiesen
+[x] bestätigt: TM01M hatte keine strategische Warehouse-/CampaignState-/Settlement-Funktion
+[x] kein produktiver TM01M-Nachfolger erforderlich
+
+[ ] docs/moose/PROJECT-CLASS-INDEX.md um den dokumentierten TM01M-Scope ergänzen
+[ ] passende Ground-/MOOSE-Themendokumentation mit der Evidenz synchronisieren
+[ ] Dokumentationsvalidator ausführen und vollständigen Diff prüfen
+[ ] LOAD_TM01M wird vom Projektinhaber aus der `.miz` entfernt
 ```
 
-#### Schritt 6 – Startup-Vertrag bereinigen
+Für die Entfernung von `LOAD_TM01M` ist keine neue Lua-Implementierung erforderlich.
 
-`LOAD_TM01M` darf nicht lediglich aufgrund von `TIME MORE (6)` als produktiv bereit angenommen werden.
+### 6.7 Abschlussgrenze
 
-Zu entscheiden und umzusetzen ist eine der beiden sauberen Varianten:
+Der TM01M-Reconciliation-Scope ist fachlich abgeschlossen, sobald die bestätigten technischen Erkenntnisse dauerhaft in der aktuellen MOOSE-/Ground-Dokumentation verankert sind.
+
+Danach gilt:
 
 ```text
-Variante A
-OMW_GROUND_READY erfolgreich
-  -> TM01M/Nachfolger initialisieren
+TM01M runtime
+-> kann aus der Mission entfernt werden
 
-Variante B
-TM01M wird nicht mehr separat benötigt
-  -> LOAD_TM01M vollständig aus der Produktions-MIZ entfernen
+TM01M evidence
+-> bleibt als exakter historischer DCS-Testnachweis erhalten
+
+Production Ground execution
+-> wird aus den aktuellen Ground-Foundations und konkreten MOOSE-Missionen entwickelt
 ```
 
-Falls ein Ready-Gate technisch über Lua statt über einen DCS User Flag erfolgt, muss das fail-closed Verhalten dokumentiert und statisch geprüft werden. Kein zusätzliches globales Ready-System ohne Notwendigkeit einführen.
-
-#### Schritt 7 – Kleinste notwendige Implementierung
-
-Erst nach Abschluss der Schritte 1–6:
-
-- [ ] redundante TM01M-Teile entfernen oder isolieren;
-- [ ] verbleibende Convoy-Ausführung an `OMW_Ground_Base` anbinden;
-- [ ] existierende, bereits genehmigte Road-Aligned-Spawn-Ausnahme nur dann weiterverwenden, wenn sie für denselben nachgewiesenen Zweck weiterhin erforderlich ist;
-- [ ] keine zweite Settlement-/Ressourcenlogik aufbauen;
-- [ ] bestehende Mission-Editor-Templates verwenden statt Duplikate per Lua zu erzeugen;
-- [ ] Logging mit stabilen Entity-/Node-IDs beibehalten.
-
-#### Schritt 8 – Statische Prüfung und Dokumentation
-
-Vor DCS:
-
-- [ ] Lua-Syntax prüfen;
-- [ ] `git diff --check`;
-- [ ] vollständigen Diff gegen `main` prüfen;
-- [ ] Builder/Bundle deterministisch bauen und SHA-256 erfassen;
-- [ ] Dokumentation 38, 39 und 40 gegen den neuen Stand abgleichen;
-- [ ] Ground-Production-Dokument aktualisieren, falls sich sein Load-/Ready-Vertrag ändert;
-- [ ] MOOSE-Projektdokumentation aktualisieren, falls Klassen/Methoden neu produktiv genutzt werden;
-- [ ] klar markieren, was nur in DCS verifiziert werden kann.
-
-#### Schritt 9 – Nur gebündelter DCS-Integrationstest
-
-Für diesen Scope keine neuen Einzelabnahmen. Falls Runtime-Verhalten geändert wird, erfolgt genau ein gebündelter Ground-Integrations-/Sammeltest mit mehreren gleichzeitig beobachtbaren Fällen.
-
-Mindestens gemeinsam prüfen:
-
-```text
-- Startup Warehouse -> Ground Base -> Convoy Runtime
-- mehrere Ground-Nodes parallel
-- erfolgreicher Dispatch und Return
-- Teilverlust einer Gruppe
-- beschädigte Rückkehr ohne Reparaturtimer
-- kein Doppelspawn / keine doppelte Ressourcenbuchung
-- korrekte physische Entfernung nach Settlement
-- mindestens ein offener Auftrag beim kontrollierten Missionsende/Restart,
-  falls Restart-Verhalten durch den Reconciliation-Scope berührt wird
-```
-
-Pathfinding, Spawn-Platzierung und Watchguard gelten nur für den exakt getesteten Missions-/DCS-/MOOSE-Stand als validiert.
-
-### 6.4 Abschlusskriterien
-
-Die Reconciliation ist abgeschlossen, wenn alle folgenden Punkte erfüllt sind:
-
-```text
-[ ] real geladenes TM01M eindeutig identifiziert und gehasht
-[ ] jede TM01M-Funktion klassifiziert
-[ ] keine doppelte CampaignState-/Settlement-Autorität
-[ ] MOOSE-First-Prüfung für alle verbleibenden Runtime-Funktionen dokumentiert
-[ ] produktiver Startup-Vertrag eindeutig
-[ ] kleinste notwendige Lua-Änderung umgesetzt
-[ ] statische Prüfungen und Builder/Hash erfolgreich
-[ ] erforderliche Dokumentation aktualisiert
-[ ] falls Runtime geändert: gebündelter DCS-Integrationstest bestanden
-[ ] Projektinhaberfreigabe für erforderliche Nicht-MOOSE-Ausnahmen dokumentiert
-[ ] LOAD_TM01M entweder sauber integriert oder aus der Produktions-MIZ entfernt
-```
-
-### 6.5 Nächster unmittelbarer Arbeitsschritt
-
-```text
-Nicht programmieren.
-Zuerst den tatsächlich in OMW_Template_v14_ground_test(8).miz geladenen
-TM01M-Codebestand sichern, hashen und Funktion für Funktion gegen
-OMW_Ground_Base sowie den aktuellen MOOSE-Stand inventarisieren.
-```
-
-Erst dieses Inventar entscheidet, ob `TM01M` reduziert, ersetzt oder vollständig aus dem produktiven Startup entfernt wird.
+Der nächste große Integrationsfokus bleibt damit wie in der Projektübergabe vorgesehen bei der Orchestrierung der vorhandenen Foundations, nicht bei einer Weiterentwicklung von TM01M.
