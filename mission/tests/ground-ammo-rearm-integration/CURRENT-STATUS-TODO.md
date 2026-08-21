@@ -7,8 +7,8 @@ Stand: 22.08.2026
 ```text
 Repository: birkenmoped/Operation-Mountain-Watch
 Arbeitsbranch: agent/ground-ammo-rearm-integration
-Branch-Stand vor diesem Dokumentations-Commit:
-04674c29061c6a70f54b537598442857448441b6
+Acceptance-provenance parent/status commit before documentation reconciliation:
+f74d29ce3e0de0b0fc6d4e5d829e0bdfaddb9be3
 
 Projektphase auf main:
 COMPLETE_FOUNDATION_BUILD_PHASE
@@ -62,10 +62,10 @@ Strategische Hoheit bleibt ausschließlich beim gemeinsamen `CampaignState`. DCS
 MOOSE release: 2.9.18
 MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
 Moose.lua SHA-256:
-e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
+E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915
 ```
 
-Der produktive Fixed-Battery-Pfad ist MOOSE-first:
+Der Fixed-Battery-Pfad ist MOOSE-first:
 
 ```text
 ARTY
@@ -73,9 +73,9 @@ ARTY
 + ARTY FSM / Rearm / Rearmed
 ```
 
-`AMMOTRUCK` bleibt für diesen ersten Fixed-Battery-Pfad sekundär, weil der geprüfte Framework-Pfad zusätzliche autonome Dispatcher-/ammo_cargo-Static-Semantik besitzt, die hier nicht benötigt wird.
+`AMMOTRUCK` bleibt für diesen ersten Fixed-Battery-Pfad sekundär und weiterhin nur `SOURCE_REVIEWED`; es wurde im Acceptance-Lauf nicht ausgeführt.
 
-## 4. Aktuelle Build-/Bundle-Provenienz
+## 4. Build-/Bundle-Provenienz
 
 ### Acceptance-Bundle
 
@@ -111,10 +111,10 @@ FC0F8F20909DD57E5DEE3AF6414FB56B35D8671D726471DEDB6D6984E590801B
 
 Dieser Stand seedet Ground-Initialbestand in denselben autoritativen CampaignState und erzeugt keinen zweiten Ground-Store.
 
-### Ground-Production-Bundle mit echtem DCS-Readiness-Flag
+### Ground-Production-Bundle
 
 ```text
-Build commit / Branch-HEAD des getesteten Builders:
+Build commit / getesteter Source-Stand:
 04674c29061c6a70f54b537598442857448441b6
 
 BuilderVersion:
@@ -132,7 +132,7 @@ GroundReadyContractMarkersVerified: true
 
 BASE-3 verwendet den öffentlichen MOOSE-`USERFLAG`-Pfad. `OMW_GROUND_READY` wird fail-closed auf 0 initialisiert und erst nach erfolgreichem `OMW.Ground.Base.Attach(...)` plus DCS-Userflag-Readback auf 1 gesetzt.
 
-## 5. DCS-Runtime-Ergebnis vom 21.08.2026
+## 5. DCS-Runtime-Ergebnis
 
 DCS:
 
@@ -140,7 +140,7 @@ DCS:
 2.9.28.26385 MT
 ```
 
-Zurückgemeldete Runtime-Logs:
+Runtime-Logs:
 
 ```text
 dcs(20260821-215616).log
@@ -152,7 +152,7 @@ SHA-256:
 B773DDB09401B7E58F4393EEEEDCE858EB98F769E1BE2DE9AB12392B10583A9E
 ```
 
-Der DCS-Log bestätigt den vollständigen funktionalen Pfad:
+Der DCS-Log bestätigt:
 
 ```text
 initialAmmo = 300
@@ -164,7 +164,7 @@ finalAmmo = 302
 PASS M1083_REARM_CONFIRMED=true
 ```
 
-Damit ist für den tatsächlich gelaufenen Scope praktisch beobachtet:
+Praktisch beobachtet:
 
 ```text
 Ground readiness USERFLAG bridge        PASS
@@ -185,16 +185,14 @@ Der Debrief bestätigt zusätzlich `OMW_GROUND_READY=1` als echten Trigger-State
 
 ### Intentionales BLUE-OP-Ziel
 
-Die Acceptance-Zielzone lag absichtlich auf einem BLUE OP, damit die Artillerieeinschläge beobachtbar waren. Im Debrief erscheinen entsprechend zwei BLUE-Infanterieverluste:
+Die Acceptance-Zielzone lag absichtlich auf einem BLUE OP. Im Debrief erscheinen deshalb zwei BLUE-Infanterieverluste:
 
 ```text
 Soldier M249
 Soldier M4
 ```
 
-Diese Verluste sind daher keine Testanomalie oder Friendly-Fire-Limitierung, sondern ein bewusst erzeugter physischer Ground-Verlust.
-
-Sie liefern gleichzeitig einen später relevanten Integrationsfall:
+Diese Verluste sind keine Testanomalie. Der daraus ableitbare spätere Scope bleibt getrennt:
 
 ```text
 OP personnel loss
@@ -204,87 +202,107 @@ OP personnel loss
 -> restored OP strength
 ```
 
-Dieser nachgelagerte Verstärkungs-Lifecycle wurde in diesem Acceptance-Lauf jedoch NICHT getestet und darf noch nicht als funktionierend dargestellt werden.
+Dieser Verstärkungs-Lifecycle wurde nicht getestet.
 
-## 6. Statusgrenze des Runtime-PASS
+## 6. Geschlossene Acceptance-Provenienz
 
-Der funktionale Rearm-Pfad hat real `PASS` geliefert. Der Stand wird trotzdem noch NICHT als repository-weite oder vollständige `ACCEPTED_TECHNICAL_BASELINE` erklärt.
-
-Noch fehlende Acceptance-Provenienz:
+Der funktionale Runtime-PASS ist inzwischen vollständig an die tatsächlich ausgeführte Mission gebunden.
 
 ```text
-exact executed MIZ file SHA-256
-internal mission SHA-256 / final embedded-resource recheck for the executed artifact
-```
-
-Der Debrief nennt als ausgeführten Pfad:
-
-```text
+Executed mission path:
 C:\Users\Sven\Saved Games\DCS.openbeta\Missions\OMW_Template_v15.miz
+
+MIZ SHA-256:
+A2AF2BD5FA9792DEF422F3B47755894E8F3220453F31F63F1594CCD61E9AF1B4
+
+internal mission SHA-256:
+2378F38E9B07365D25ACE38E45A23D87E2CC76F185A062FB2A46CA8EE31C1A53
 ```
 
-Der exakte SHA-256 dieser tatsächlich ausgeführten Datei muss noch vom Projektinhaber real zurückgemeldet beziehungsweise die ausgeführte `.miz` erneut read-only geprüft werden. Vorher bleibt die korrekte Formulierung:
+Read-only Embedded-Resource-Recheck der tatsächlich ausgeführten MIZ:
 
 ```text
-FUNCTIONAL DCS RESULT: PASS
-ACCEPTED_TECHNICAL_BASELINE: PENDING PROVENANCE CLOSURE
-MERGED_TO_MAIN: false
+Moose.lua
+E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915
+MATCH
+
+OMW_AirOps_Warehouse_Base.lua
+FC0F8F20909DD57E5DEE3AF6414FB56B35D8671D726471DEDB6D6984E590801B
+MATCH
+
+OMW_Ground_Base.lua
+6DBDE7AA75E34FA6C7A42A7C97B3E407C069806666C60E8D27F8616D647383EE
+MATCH
+
+OMW_Ground_Ammo_Rearm_Acceptance_1.lua
+94C18556B80E97A30420DD551BC0CD98E978CBA2E487A6AA6B35281E1F29FDD7
+MATCH
 ```
 
-## 7. Aktuelle TODO-Liste
+Status für exakt diesen Branch-/Source-/Bundle-/MIZ-/DCS-/MOOSE-Scope:
+
+```text
+FUNCTIONAL DCS RESULT:
+PASS
+
+ACCEPTED_TECHNICAL_BASELINE:
+YES — EXACT DOCUMENTED SCOPE ONLY
+
+MERGED_TO_MAIN:
+false
+```
+
+Die technische Acceptance erzeugt keine repository-weite normative Wirkung und validiert keine nicht getesteten Folgepfade.
+
+## 7. TODO-Status
 
 ### TODO 1 – Acceptance-Provenienz schließen
 
-**Ziel:** Den vorhandenen Runtime-PASS reproduzierbar an das exakt ausgeführte Missionsartefakt binden.
+```text
+STATUS: COMPLETE
+```
 
-**Aktueller Stand:** DCS-/Debrief-Logs, Bundle-Hashes, MOOSE-Hash und Runtime-Marker liegen vor. Exakter Hash der tatsächlich ausgeführten `.miz` fehlt noch.
-
-**Noch zu tun:**
+Abgeschlossen:
 
 ```text
-1. SHA-256 der tatsächlich ausgeführten OMW_Template_v15.miz real ermitteln.
-2. Dieselbe ausgeführte .miz read-only prüfen/hochladen.
-3. Embedded hashes erneut bestätigen:
-   - Moose.lua
-   - OMW_AirOps_Warehouse_Base.lua
-   - OMW_Ground_Base.lua
-   - OMW_Ground_Ammo_Rearm_Acceptance_1.lua
-4. internal mission SHA-256 dokumentieren.
-5. Erst danach den exakten Teststand als ACCEPTED_TECHNICAL_BASELINE bewerten.
+- realer SHA-256 der ausgeführten OMW_Template_v15.miz
+- internal mission SHA-256
+- embedded Moose.lua recheck
+- embedded OMW_AirOps_Warehouse_Base.lua recheck
+- embedded OMW_Ground_Base.lua recheck
+- embedded OMW_Ground_Ammo_Rearm_Acceptance_1.lua recheck
+- alle vier Runtime-Artefakte MATCH
 ```
 
 ### TODO 2 – MOOSE-Dokumentation auf den realen PASS anheben
 
-**Ziel:** Projekt-MOOSE-Dokumentation mit dem praktisch bestätigten ARTY-/USERFLAG-/WAREHOUSE-Scope synchronisieren.
+```text
+STATUS: COMPLETE ON WORKING BRANCH
+```
 
-**Aktueller Stand:** Source-Review ist vorhanden; `ARTY` steht im Projektklassenindex noch nur auf `SOURCE_REVIEWED`. Der Runtime-PASS ist dort und in `VERIFIED-METHODS.md` noch nicht eingetragen.
-
-**Noch zu tun nach Provenienzschluss:**
+Aktualisiert:
 
 ```text
-1. docs/moose/PROJECT-CLASS-INDEX.md aktualisieren.
-2. ARTY für exakt den bestätigten Scope auf VALIDATED_FOR_DOCUMENTED_SCOPE anheben.
-3. docs/moose/VERIFIED-METHODS.md ergänzen:
-   - ARTY:New
-   - ARTY:AssignTargetCoord
-   - ARTY:GetAmmo
-   - ARTY:SetRearmingGroup
-   - ARTY:SetRearmingGroupOnRoad
-   - ARTY:Rearm
-   - OnAfterCeaseFire / OnBeforeRearm / OnAfterRearmed
-   - USERFLAG readiness gate where applicable
-4. docs/moose/MISSION-DEMAND-RESUPPLY-CAS-SOURCE-REVIEW.md Abschnitt 16.8–16.11 auf Runtime-Befund aktualisieren.
-5. CHAP_M1083 von DCS_RUNTIME_OPEN auf den exakt getesteten Bostick-Rearm-Scope anheben.
-6. VERIFIED-METHODS nur mit vollständiger Mission-/Bundle-/DCS-/MOOSE-Provenienz aktualisieren.
+docs/moose/PROJECT-CLASS-INDEX.md
+docs/moose/VERIFIED-METHODS.md
+docs/moose/MISSION-DEMAND-RESUPPLY-CAS-SOURCE-REVIEW.md
+mission/tests/ground-ammo-rearm-integration/README.md
+```
+
+Dokumentierte Grenze:
+
+```text
+ARTY = VALIDATED_FOR_DOCUMENTED_SCOPE for exact Bostick acceptance
+USERFLAG = Ground readiness scope added
+CHAP_M1083 = validated only as operational rearm support in exact Bostick L118/ARTY RearmingGroup scope
+AMMOTRUCK = remains SOURCE_REVIEWED
 ```
 
 ### TODO 3 – BostickAmmoRearmService Lifecycle-Hygiene korrigieren
 
 **Ziel:** Den getesteten Vertical Slice vor Produktionsfreigabe gegen bekannte Source-Risiken absichern.
 
-**Aktueller Stand:** Der Runtime-Pfad funktioniert im Acceptance-Harness. Im Produktionsservice bleiben jedoch bekannte Source-Hygienepunkte offen.
-
-**Noch zu tun:**
+Noch zu tun:
 
 ```text
 1. Synchrones onMaterialized-/pending-Kontext-Overwrite in OMW_BostickAmmoRearmService.lua beheben.
@@ -299,9 +317,9 @@ MERGED_TO_MAIN: false
 
 **Ziel:** Verhindern, dass nach Serverrestart eine bereits `CONSUMED` gebuchte lokale Rearm-Transaktion erneut physisch kostenlos rearmen kann.
 
-**Aktueller Stand:** CampaignState `Consume(transactionId)` ist korrekt idempotent und bucht strategisch nur einmal ab. Für einen Neustart zwischen CONSUMED und dauerhaft bestätigter physischer Completion existiert jedoch noch kein belastbarer Produktionsvertrag.
+Aktueller Stand: CampaignState `Consume(transactionId)` ist idempotent und bucht strategisch nur einmal ab. Für einen Neustart zwischen `CONSUMED` und dauerhaft bestätigter physischer Completion existiert noch kein belastbarer Produktionsvertrag.
 
-**Owner-Entscheidung erforderlich.** Nicht stillschweigend implementieren.
+**Owner-Entscheidung erforderlich. Nicht stillschweigend implementieren.**
 
 Zu bewertende Richtungen:
 
@@ -314,15 +332,9 @@ C. Consume erst bei OnAfterRearmed
    -> derzeit nicht bevorzugt, weil die strategische Ressource während des physischen Rearm-Vorgangs ungebunden bliebe
 ```
 
-Vor Implementierung muss der Projektinhaber die gewünschte Semantik festlegen.
-
 ### TODO 5 – OP-Verluste und automatische Verstärkung als getrennten Scope definieren
 
-**Ziel:** Physische Verluste an vorgelagerten OPs sollen künftig einen nachvollziehbaren Strength-/Reinforcement-Demand beim zuständigen COP/FOB/Node erzeugen.
-
-**Aktueller Stand:** Im jetzigen Lauf wurden zwei BLUE-Infanterieverluste am absichtlich beschossenen OP real beobachtet. Es wurde KEINE automatische Auffüllung getestet.
-
-**Noch zu entscheiden/klären:**
+Noch zu entscheiden/klären:
 
 ```text
 1. Welche feste Hierarchie gilt OP -> verantwortliches COP/FOB -> CampaignState node?
@@ -337,9 +349,7 @@ Dieser Scope darf nicht in den Rearm-Adapter hineingemischt werden.
 
 ### TODO 6 – Regression und Produktionsintegration
 
-**Ziel:** Nach Source-Hygiene und Restart-Entscheidung den Rearm-Vertical-Slice als belastbaren Produktionsbaustein integrieren.
-
-**Noch zu tun:**
+Nach Source-Hygiene und Restart-Entscheidung:
 
 ```text
 1. Source-Fixes umsetzen und remote committen.
@@ -436,13 +446,8 @@ Keine doppelte Ressourcenhoheit zwischen CampaignState, CTLD, MOOSE WAREHOUSE un
 
 ## 9. Unmittelbarer nächster Arbeitsschritt
 
-Der nächste Schritt ist NICHT ein weiterer identischer DCS-Rearm-Lauf.
+Der nächste Arbeitsschritt ist jetzt **TODO 3 – BostickAmmoRearmService Lifecycle-Hygiene**.
 
-Zuerst wird die Acceptance-Provenienz geschlossen:
+Vor Source-Änderungen werden die betroffenen Dateien sowie die tatsächlich verwendeten MOOSE-FSM-Rückgabesemantiken erneut gegen den gepinnten Source geprüft. Es wird keine neue Native-DCS- oder MOOSE-Parallelimplementierung eingeführt.
 
-```text
-Get-FileHash der tatsächlich ausgeführten
-C:\Users\Sven\Saved Games\DCS.openbeta\Missions\OMW_Template_v15.miz
-```
-
-Danach wird genau diese `.miz` read-only gegen die vier eingebetteten Runtime-Artefakte geprüft. Erst anschließend werden MOOSE-Register und Acceptance-Status endgültig angehoben und die offenen Produktions-Hygienepunkte bearbeitet.
+Die Restart-/Replay-Semantik aus TODO 4 bleibt ausdrücklich owner-gated und wird in TODO 3 nicht stillschweigend vorweggenommen.
