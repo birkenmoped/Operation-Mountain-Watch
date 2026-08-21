@@ -12,7 +12,7 @@ $baseFile = Join-Path $repoRoot 'scripts\ground\OMW_GroundBase.lua'
 $distDir = Join-Path $repoRoot 'mission\ground-operations\dist'
 $outputFile = Join-Path $distDir 'OMW_Ground_Base.lua'
 
-$builderVersion = 'OMW-GROUND-PRODUCTION-BASE-1'
+$builderVersion = 'OMW-GROUND-PRODUCTION-BASE-2'
 
 $files = @(
   $groundStockFile,
@@ -32,7 +32,10 @@ $integration = Get-Content -LiteralPath $integrationFile -Raw -Encoding UTF8
 $groundBase = Get-Content -LiteralPath $baseFile -Raw -Encoding UTF8
 
 $requiredMarkers = @(
-  'OMW-GROUND-INITIAL-STOCK-1',
+  'OMW-GROUND-INITIAL-STOCK-2',
+  'GROUND_SUPPLY_PACKAGE',
+  'GROUND_AMMO_PACKAGE',
+  'GROUND_FUEL_PACKAGE',
   'OMW-GROUND-RUNTIME-INTEGRATION-1',
   'OMW-GROUND-PRODUCTION-BASE-1',
   'GROUND_NODE_JALALABAD',
@@ -134,6 +137,8 @@ $hash = (Get-FileHash -LiteralPath $outputFile -Algorithm SHA256).Hash.ToLowerIn
 Write-Host "Built: $outputFile"
 Write-Host "BuilderVersion: $builderVersion"
 Write-Host "GroundBaseSchema: OMW-GROUND-PRODUCTION-BASE-1"
+Write-Host "GroundInitialStockSchema: OMW-GROUND-INITIAL-STOCK-2"
+Write-Host "GroundTransferableResources: GROUND_SUPPLY_PACKAGE,GROUND_AMMO_PACKAGE,GROUND_FUEL_PACKAGE"
 Write-Host "GroundNodes: GROUND_NODE_JALALABAD,GROUND_NODE_FORTRESS,GROUND_NODE_JOYCE,GROUND_NODE_WRIGHT,GROUND_NODE_HONAKER,GROUND_NODE_BOSTICK"
 Write-Host "MotorizedPatrolContract: 1 M-ATV = 1 VEHICLE + 3 PERSONNEL"
 Write-Host "StrategicAuthority: caller-provided single CampaignState store"
