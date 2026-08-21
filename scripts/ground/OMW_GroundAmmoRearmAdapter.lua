@@ -95,6 +95,7 @@ function Service:Request(spec)
   local artilleryGroup = requireTable(spec.artilleryGroup, "spec.artilleryGroup")
   local rearmingGroup = requireTable(spec.rearmingGroup, "spec.rearmingGroup")
   local quantity = requirePositive(spec.quantity or 1, "spec.quantity")
+  local startArty = spec.startArty ~= false
 
   local existing = self.activeByTransactionId[transactionId]
   if existing then
@@ -124,9 +125,11 @@ function Service:Request(spec)
   local requiredMethods = {
     "SetRearmingGroup",
     "SetRearmingGroupOnRoad",
-    "Start",
     "Rearm",
   }
+  if startArty then
+    requiredMethods[#requiredMethods + 1] = "Start"
+  end
   for _, methodName in ipairs(requiredMethods) do
     if type(arty[methodName]) ~= "function" then
       if created then
@@ -167,6 +170,7 @@ function Service:Request(spec)
     artilleryGroup = artilleryGroup,
     rearmingGroup = rearmingGroup,
     arty = arty,
+    startArty = startArty,
     status = "RESERVED",
   }
   self.activeByTransactionId[transactionId] = context
@@ -197,7 +201,13 @@ function Service:Request(spec)
     self.onRearmed(context, Controllable, From, Event, To)
   end
 
-  arty:Start()
+  -- A caller that already owns and started the ARTY instance may suppress Start().
+  -- This is required when the same ARTY object has already fired: ARTY:onafterStart
+  -- records the full-ammo baseline, so restarting after firing would redefine that
+  -- baseline to the depleted state and invalidate full-rearm detection.
+  if startArty then
+    arty:Start()
+  end
   local accepted = arty:Rearm()
 
   if accepted == false then
