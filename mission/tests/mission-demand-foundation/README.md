@@ -30,107 +30,85 @@ RESOURCE SHORTAGE -> RESUPPLY
 TROOPS IN CONTACT -> CAS_IMMEDIATE
 ```
 
-Die Domänenschicht entscheidet nicht über MOOSE-Ausführungsdetails und besitzt keine strategischen Ressourcen. CampaignState bleibt Ressourcenautorität; MOOSE bleibt Ausführungsframework.
-
-## 2. Phase 0 – MOOSE/API Reconciliation
-
-Dokumentiert in:
+Grundregel:
 
 ```text
-docs/90-mission-demand-resupply-and-cas-orchestration-concept.md
-docs/moose/MISSION-DEMAND-RESUPPLY-CAS-SOURCE-REVIEW.md
+CampaignState = strategische Ressourcen- und Zustandsautorität
+MOOSE         = operative Auswahl und Ausführung
+DCS           = temporäre physische Repräsentation und Telemetrie
 ```
 
-Ergebnis:
+Es wird keine zweite Ressourcen-, Missions- oder Bestandsautorität aufgebaut.
+
+## 2. Verbindlicher MOOSE-Stand
+
+Für den Source-Review dieses Branches:
 
 ```text
-CampaignState transfer/transaction foundation          EXISTING
-Ground target/reorder/critical metadata                EXISTING
-Ground supplyParent metadata                           EXISTING
-MOOSE BRIGADE/PLATOON/ARMYGROUP lifecycle             EXISTING / documented scope validated
-MOOSE OPSTRANSPORT                                     SOURCE_REVIEWED
-MOOSE AMMOSUPPLY/FUELSUPPLY                            SOURCE_REVIEWED
-MOOSE AMMOTRUCK                                        SOURCE_REVIEWED / official demo located
-MOOSE ARTY rearm lifecycle                             SOURCE_REVIEWED
-MOOSE EVENTS.Hit                                       SOURCE_REVIEWED
-MOOSE CAS AUFTRAG / COMMANDER dispatch                 SOURCE_REVIEWED
-central BLUE COMMANDER                                 separate existing branch dependency
-exact Production PATHLINE convoy routing               OPEN
+MOOSE release: 2.9.18
+MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+Moose.lua SHA-256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
 ```
 
-Kein neuer Nicht-MOOSE-Routing-, Ammo-Monitor- oder Rearm-Controller-Pfad wurde freigegeben.
+Relevante MOOSE-Kandidaten:
+
+```text
+BRIGADE / PLATOON / ARMYGROUP     documented Ground lifecycle evidence
+AUFTRAG:NewAMMOSUPPLY             SOURCE_REVIEWED
+AUFTRAG:NewFUELSUPPLY             SOURCE_REVIEWED
+AMMOTRUCK                          SOURCE_REVIEWED / official MOOSE demo located
+ARTY rearming lifecycle            SOURCE_REVIEWED
+OPSTRANSPORT                       SOURCE_REVIEWED
+EVENTS.Hit                         SOURCE_REVIEWED
+AUFTRAG CAS / COMMANDER dispatch   SOURCE_REVIEWED
+```
+
+Kein eigener Ground-Ammo-Scheduler, Ammo-Truck-Dispatcher oder Rearm-Controller ist freigegeben oder vorgesehen, solange die vorhandenen MOOSE-Pfade ausreichen.
 
 ## 3. Phase 1 – MissionDemand Registry
 
-Produktionsnaher Domain-Source:
+Source:
 
 ```text
 scripts/campaign/OMW_MissionDemand.lua
 ```
 
-Aktueller Vertrag:
+Typen:
 
 ```text
-Types:
-  RESUPPLY
-  CAS_IMMEDIATE
-
-States:
-  OPEN
-  PLAYER_ASSIGNED
-  AI_ASSIGNED
-  ACTIVE
-  SUCCESS
-  FAILED
-  EXPIRED
+RESUPPLY
+CAS_IMMEDIATE
 ```
 
-Funktionen:
+Zustände:
 
 ```text
-New
-Restore
-Create
-Get
-GetActiveByDedupeKey
-AssignPlayer
-AssignAI
-Activate
-Succeed
-Fail
-Expire
-SetReservationState
-SetPriority
-ListActive
-ExportSnapshot
+OPEN
+PLAYER_ASSIGNED
+AI_ASSIGNED
+ACTIVE
+SUCCESS
+FAILED
+EXPIRED
 ```
 
-Guards:
+Der Registry-Vertrag enthält Deduplizierung, idempotente Create-Semantik, gegenseitig ausschließende Spieler-/KI-Zuweisung, terminale Freigabe des Dedupe-Key und Snapshot/Restore ohne MOOSE-/DCS-Objektreferenzen.
 
-```text
-- exactly one active demand per dedupeKey;
-- duplicate id is idempotent only for an identical creation specification;
-- every creation field, including nil-valued optional fields, participates in idempotency comparison;
-- different specifications under the same id are rejected;
-- player and AI assignment are mutually exclusive by state transition;
-- reassignment to a different assignee without an explicit later retasking contract is rejected;
-- terminal demands release their active dedupe key;
-- MOOSE/DCS references are not stored;
-- arbitrary nested demand metadata is copied defensively;
-- snapshot restore rebuilds active dedupe state and rejects duplicate active keys.
-```
-
-Contract-Test-Source:
+Contract-Test:
 
 ```text
 tests/mission-demand/test_mission_demand.lua
 ```
 
-Der Test deckt Create/Idempotenz, Deduplizierung, nil-Feld-Regressionsschutz, AI-vs-Player-Zuweisung, Aktivierung, Erfolg, Dedupe-Freigabe und Snapshot-Restore ab.
+Status:
 
-Der Test ist im Repository vorhanden, wurde auf der ChatGPT-Ausführungsumgebung aber noch nicht mit einem Lua-5.1-kompatiblen Interpreter ausgeführt. Das ist kein DCS-PASS.
+```text
+SOURCE STAGED
+NOT EXECUTED WITH LUA INTERPRETER
+NOT DCS VALIDATED
+```
 
-## 4. Phase 2 – Resource Demand Policy
+## 4. Phase 2 – ResourceDemandPolicy
 
 Source:
 
@@ -138,7 +116,7 @@ Source:
 scripts/campaign/OMW_ResourceDemandPolicy.lua
 ```
 
-Die Policy verwendet ausschließlich die bereits vorhandenen Ground-Felder:
+Die Policy verwendet ausschließlich:
 
 ```text
 target
@@ -147,190 +125,243 @@ critical
 supplyParent
 ```
 
-Semantik des aktuellen Codes:
+Semantik:
 
 ```text
 reorder == 0
--> automatic resupply disabled for that row
+-> automatic resupply disabled
 
-available <= critical, critical > 0
--> CRITICAL candidate
+available <= critical and critical > 0
+-> CRITICAL
 
 available <= reorder
--> REORDER candidate
+-> REORDER
 
 requestedQuantity
 = target - available
 ```
 
-Die Policy erzeugt nur einen Resupply-Kandidaten. Sie:
+Die Policy reserviert nichts, mutiert CampaignState nicht und erzeugt keine MOOSE-Mission.
 
-```text
-- reserviert keine Ressource;
-- verändert CampaignState nicht;
-- erzeugt keine MOOSE-Mission;
-- legt keine neuen Threshold-Werte fest.
-```
-
-Damit bleibt der derzeitige Foundation-Stand mit `reorder=0` und `critical=0` inert, bis konkrete Werte ausdrücklich festgelegt werden.
-
-Contract-Test-Source:
+Contract-Test:
 
 ```text
 tests/mission-demand/test_resource_demand_policy.lua
 ```
 
-Der Test deckt disabled thresholds, REORDER, CRITICAL, Auffüllmenge bis `target`, Unit-Mismatch, doppelte Policy-Zeilen und ungültige Threshold-Reihenfolge ab.
-
-Gemeinsamer Test-Runner:
+Status:
 
 ```text
-tests/mission-demand/run.lua
+SOURCE STAGED
+NOT EXECUTED WITH LUA INTERPRETER
 ```
 
-Auch dieser Teststand ist noch nicht lokal mit einem Lua-Interpreter ausgeführt.
+## 5. Owner-Entscheidung – Ground Ammo wird paketweise geführt
 
-## 5. Owner-Entscheidung 2026-08-21 – Ground Ammo als strategisches Rearm-Paket
-
-Der Projektinhaber hat für Ground-Munition die Paketvariante bestätigt.
-
-Verbindliche Arbeitssemantik für diesen Branch:
+Owner-Entscheidung vom 21.08.2026:
 
 ```text
-CampaignState Ground ammo
+Ground ammunition in CampaignState
 = standardisiertes strategisches Nachschub-/Rearm-Paket
 != einzelne DCS-Granate
-!= Truck-Inventar einzelner DCS-Waffen
+!= detailliertes DCS-Truck-Inventar
 ```
 
-Begründung:
+Die bestehende Ground-Baseline verwendet bereits normalisierte `AMMO_UNIT`-Pakete. DCS-/MOOSE-Munitionszahlen dienen operativ zur Bedarfserkennung und Rearm-Bestätigung, werden aber nicht zur zweiten strategischen Ressourcenautorität.
 
-```text
-- ein realer Nachschubkonvoi wird nicht für einzelne Restgranaten ausgelöst;
-- DCS Ground Rearm führt keinen nachgewiesenen stückweisen Truck-Ledger;
-- MOOSE besitzt operative Rearm-Lifecycles, aber keinen strategischen OMW-Bestand;
-- CampaignState bleibt alleinige strategische Mengenautorität.
-```
+Eine feinere Paket-Taxonomie wird erst eingeführt, wenn konkrete OMW-Empfängerklassen sie fachlich benötigen. Kategorien wie Artillery/Mortar/AT/Small-Arms werden nicht vorsorglich erfunden.
 
-DCS-/MOOSE-Munitionswerte dürfen für Bedarfserkennung und Rearm-Bestätigung verwendet werden, aber nicht als zweite strategische Ressourcendatenbank.
+## 6. Resource-ID-Impact-Review
 
-Die bestehende Ground-Baseline definiert bereits:
-
-```text
-1 AMMO_UNIT = one normalized Ground ammunition package
-```
-
-Diese Grundidee bleibt erhalten. Die konkrete spätere Unterteilung nach Empfängerklasse, z. B. Artillerie-/Mörser-/AT-/Small-Arms-Pakete, wird erst festgelegt, wenn sie für die reale OMW-ORBAT erforderlich ist. Es werden keine Kategorien ohne konkreten Bedarf erfunden.
-
-## 6. Transferlücke neu bewertet – Ursache ist die Resource-ID-Namensgebung
-
-Der generische CampaignState-`TRANSFER` verwendet absichtlich dieselbe `resourceId` am Ursprung und Ziel:
-
-```text
-originNodeId + resourceId
--> transfer
--> destinationNodeId + resourceId
-```
-
-Der aktuelle Ground-Stock erzeugt dagegen node-spezifische IDs, z. B.:
+Der bisherige Ground-Stock verwendete für alle Ressourcen node-spezifische IDs, zum Beispiel:
 
 ```text
 GROUND:GROUND_NODE_JOYCE:AMMO
 GROUND:GROUND_NODE_HONAKER:AMMO
 ```
 
-Damit liegt der Ort zweimal in den Daten:
+Der vorhandene CampaignState-Transfer ist dagegen bereits sauber als
 
 ```text
-nodeId     = WO liegt die Ressource?
-resourceId = enthält zusätzlich nochmals den Node
+originNodeId + resourceId
+-> TRANSFER
+-> destinationNodeId + resourceId
 ```
 
-Für transferierbare Ressourcen ist die sauberere Semantik:
+modelliert. Der Ort gehört deshalb in `nodeId`, nicht zusätzlich in die ID einer fungiblen Transportressource.
+
+Die frühere Branch-Idee, CampaignState um getrennte `originResourceId` und `destinationResourceId` zu erweitern, ist für diesen Ground-Resupply-Scope verworfen. Der generische CampaignState-Transaktionsvertrag bleibt unverändert.
+
+## 7. Implementierte Normalisierung – kleinster notwendiger Scope
+
+Implementiert auf diesem Branch:
 
 ```text
-nodeId     = Ort
-resourceId = Ressourcentyp / Pakettyp
-quantity   = Bestand
+GROUND_SUPPLY_PACKAGE
+GROUND_AMMO_PACKAGE
+GROUND_FUEL_PACKAGE
 ```
 
-Beispielrichtung, noch ohne Produktionsmigration:
+Diese drei Ressourcen sind zwischen Ground-Nodes fungible Logistikpakete und besitzen deshalb auf allen Nodes dieselbe `resourceId`.
+
+Bewusst unverändert bleiben vorerst:
 
 ```text
-GROUND_NODE_JOYCE   + GROUND:AMMO
-GROUND_NODE_HONAKER + GROUND:AMMO
+GROUND:<NODE>:PERSONNEL
+GROUND:<NODE>:VEHICLE
+GROUND:<NODE>:PERSONNEL_LOST
+GROUND:<NODE>:VEHICLE_LOST
 ```
 
-oder bei später ausdrücklich benötigter Unterteilung derselbe gemeinsame Pakettyp auf beiden Nodes.
-
-Damit kann der bestehende CampaignState-Transfervertrag unverändert bleiben.
-
-## 7. Verworfenes Gate – keine originResourceId/destinationResourceId-Erweiterung
-
-Die vorherige Empfehlung, den persistierten CampaignState-Transfervertrag um getrennte
+Begründung:
 
 ```text
-originResourceId
-destinationResourceId
+- der aktuelle Resupply-Scope benötigt nur die fungiblen Logistikpakete;
+- der akzeptierte Ground-Settlement-Vertrag korreliert PERSONNEL/VEHICLE node-lokal;
+- unnötige Änderungen an validierter Settlement-Semantik werden vermieden;
+- eine spätere echte Cross-Node-Personnel-/Vehicle-Verlegung erhält einen eigenen Domain-Review.
 ```
 
-zu erweitern, wird für diesen Ground-Resupply-Scope nicht weiterverfolgt.
+Damit wird nicht pauschal jede Ground-ID umbenannt, sondern nur die für den aktuellen Transferbedarf erforderliche Redundanz entfernt.
 
-Grund:
+Source:
 
 ```text
-Die Resource-ID sollte den Ressourcentyp beschreiben, nicht den Lagerort.
-Der Lagerort ist bereits durch originNodeId/destinationNodeId eindeutig bestimmt.
+scripts/logistics/OMW_GroundInitialStock.lua
+SchemaVersion = OMW-GROUND-INITIAL-STOCK-2
 ```
 
-Damit ist aktuell keine Änderung am generischen CampaignState-Transaktionsschema erforderlich.
+## 8. Strategischer Transfer nach der Normalisierung
 
-Wichtig: Die bestehende produktive Ground-Foundation auf `main` verwendet weiterhin die bisherigen node-spezifischen IDs. Diese werden nicht stillschweigend geändert. Eine Resource-ID-Normalisierung ist ein eigener, regressionspflichtiger Migrationsschritt und muss Ground-Settlement, Initializer, Snapshots und vorhandene Acceptance-Verträge berücksichtigen.
-
-## 8. MOOSE-First Ground-Rearm – aktuelle Source-Lage
-
-Für die operative Versorgung wurden zusätzlich zum bestehenden AUFTRAG-/BRIGADE-/ARMYGROUP-Pfad geprüft:
+Beispiel:
 
 ```text
+JOYCE
+GROUND_AMMO_PACKAGE = 44
+
+HONAKER
+GROUND_AMMO_PACKAGE = 40
+```
+
+Ein Transfer kann mit dem bestehenden CampaignState-Vertrag erfolgen:
+
+```text
+resourceId        = GROUND_AMMO_PACKAGE
+originNodeId      = GROUND_NODE_JOYCE
+destinationNodeId = GROUND_NODE_HONAKER
+quantity          = N packages
+```
+
+Lifecycle bleibt:
+
+```text
+RESERVED
+-> LOADING
+-> IN_TRANSIT
+-> DELIVERED
+```
+
+oder Verlust/Abbruch über die bereits vorhandenen CampaignState-Transitions.
+
+## 9. Snapshot-Migrationspfad
+
+`docs/04-campaign-state.md` verlangt für persistierte Saves einen Migrationspfad. Deshalb wird kein stiller Hard-Cut auf alte Ground-Snapshots vorgenommen.
+
+`OMW_GroundInitialStock.lua` stellt bereit:
+
+```lua
+GroundInitialStock.MigrateSnapshot(snapshot)
+```
+
+Der Migrationspfad:
+
+```text
+legacy GROUND:<NODE>:SUPPLY -> GROUND_SUPPLY_PACKAGE
+legacy GROUND:<NODE>:AMMO   -> GROUND_AMMO_PACKAGE
+legacy GROUND:<NODE>:FUEL   -> GROUND_FUEL_PACKAGE
+```
+
+PERSONNEL/VEHICLE und deren Loss-Audit-IDs bleiben unverändert.
+
+Der Migration-Code mutiert den übergebenen Snapshot nicht. Enthält ein Snapshot gleichzeitig Legacy- und normalisierte ID für dieselbe Ressource, wird die Migration abgebrochen statt Mengen stillschweigend zusammenzuführen.
+
+Ein alter `GROUND-COMMIT` auf SUPPLY/AMMO/FUEL wird ebenfalls ausdrücklich abgelehnt. Solche Commodity-Commitments gehörten nicht zum akzeptierten Foundation-Settlement, und eine stillschweigende Umdeutung wäre nicht beweissicher.
+
+Der zentrale Initializer stellt zusätzlich bereit:
+
+```lua
+OMW_AirOpsCampaignStateInitializer.MigrateSnapshot(...)
+OMW_AirOpsCampaignStateInitializer.RestoreStore(...)
+```
+
+Damit können Stock-Module ihre migrationsspezifische Logik vor `CampaignState.Restore()` anwenden, ohne Ground-Sonderlogik in den generischen CampaignState einzubauen.
+
+Initializer-Schema:
+
+```text
+OMW-AIROPS-CAMPAIGNSTATE-INITIALIZER-5
+```
+
+## 10. Neuer Contract-Test
+
+Neu:
+
+```text
+tests/mission-demand/test_ground_resource_normalization.lua
+```
+
+Der Test prüft source-seitig:
+
+```text
+- gemeinsame AMMO-ID in Joyce und Honaker;
+- bestehender CampaignState TRANSFER Joyce -> Honaker ohne Schemaerweiterung;
+- origin debit / destination credit;
+- Legacy-Snapshot-Migration für SUPPLY/AMMO/FUEL;
+- PERSONNEL-/VEHICLE-IDs bleiben unverändert.
+```
+
+Der gemeinsame Runner enthält den Test:
+
+```text
+tests/mission-demand/run.lua
+```
+
+Aktueller Ausführungsstatus:
+
+```text
+TEST SOURCE STAGED
+NOT EXECUTED WITH LUA INTERPRETER
+NOT DCS VALIDATED
+```
+
+Ein DCS-Lauf ist für diese reine Domain-/Snapshotlogik nicht erforderlich. Vor Abschluss des Branches bleibt jedoch ein ausführbarer Lua-Contract-Test erforderlich.
+
+## 11. Ground-Rearm-Ausführung – noch nicht implementiert
+
+Die Resource-ID-Normalisierung entscheidet nicht, welcher MOOSE-Pfad die physische Versorgung übernimmt.
+
+Weiter zu vergleichen:
+
+```text
+ARTY RearmingGroup / RearmingPlace
 AMMOTRUCK
-ARTY rearming lifecycle
-GROUP/UNIT ammunition telemetry
+BRIGADE + AUFTRAG:NewAMMOSUPPLY()
 ```
 
-Der offizielle MOOSE-Missionsbestand enthält:
+Die Auswahl muss vom konkreten Empfänger- und Missionsmodell abhängen. Kein eigener Ammo-Monitor oder Dispatcher wird parallel entwickelt.
+
+Für den späteren OMW-DCS-Test sind insbesondere zu erfassen:
 
 ```text
-MOOSE_MISSIONS/develop/Functional/AmmoTruck/AmmoTruck 100 - NTTR - Basic
+konkreter Empfänger / Template
+DCS/MOOSE Ammo-Zustand vor Rearm
+physische Truck-/Supply-Bewegung
+Rearm-Completion
+Rückkehr / Lifecycle
+CampaignState Settlement genau einmal
 ```
 
-Die Demo verwendet `AMMOTRUCK:New(...)`, einen Truck-Set und einen Artillery-Set. Wenn die Artillerie nahe am Munitionsende ist, werden Trucks zur Batterie geschickt und kehren danach zurück.
-
-Für den gepinnten MOOSE-Stand gilt source-seitig:
-
-```text
-AMMOTRUCK
-- besitzt automatische Low-Ammo-Erkennung;
-- besitzt Truck-Dispatch/Arrival/Returning/Home-FSM-Pfade;
-- kann ARMYGROUP-Routing verwenden;
-- `reloads` bedeutet Rearm-Einsätze, nicht einzelne Granaten.
-
-ARTY
-- besitzt eigene Ammo-/Shell-Type-Auswertung;
-- unterstützt RearmingGroup/RearmingPlace;
-- besitzt einen Rearm-Completion-Pfad anhand des realen Empfänger-Munitionsstands.
-```
-
-Folge für OMW:
-
-```text
-kein eigener Ground-Ammo-Scheduler
-kein eigener Ammo-Truck-Dispatcher
-kein eigener Rearm-Controller
-```
-
-Die genaue Wahl zwischen `ARTY`, `AMMOTRUCK` und `BRIGADE/AUFTRAG:NewAMMOSUPPLY()` hängt vom konkreten Empfänger- und Missionsmodell ab und benötigt für den OMW-Produktionspfad einen reproduzierbaren DCS-Test.
-
-## 9. BLUE COMMANDER Dependency
+## 12. BLUE COMMANDER / CAS Dependency
 
 Für CAS wird kein zweiter COMMANDER entwickelt.
 
@@ -340,64 +371,42 @@ Vorhandener separater Branch:
 agent/blue-commander-foundation
 ```
 
-Vorhandener Source dort:
+Vor CAS-Runtime muss dieser gegen den dann aktuellen `main` reconciled und gemäß eigener Acceptance-/Merge-Grenze integriert werden.
+
+Danach:
 
 ```text
-scripts/command/OMW_Blue_Commander.lua
+MOOSE Hit
+-> TacticalSupportIncident
+-> AIR_SUPPORT_REQUEST
+-> CAS_IMMEDIATE MissionDemand
+-> AIR_TASKING_PLAN
+-> AUFTRAG
+-> BLUE COMMANDER
 ```
 
-Der Branch registriert die produktiven BLUE AIRWINGs an genau einem MOOSE COMMANDER, erzeugt selbst keine AUFTRAG- oder OPSTRANSPORT-Objekte und verändert CampaignState nicht.
-
-Vor CAS-Runtime muss dieser Branch gegen den dann aktuellen `main` reconciled und gemäß seiner eigenen Acceptance-/Merge-Grenze integriert werden.
-
-## 10. Nächste Gates
+## 13. Nächste Gates
 
 ```text
-GATE 1
-MissionDemand Registry source + contract tests staged
-
-GATE 2
-ResourceDemandPolicy source + contract tests staged
-
-GATE 3
-Ground transferable resource-ID normalization impact review
-- no CampaignState cross-ID transfer extension
-- preserve existing accepted Ground settlement semantics
-- define migration/regression scope before production stock change
-
-GATE 4
-Ground ammo package taxonomy only where required by actual OMW consumers
-- do not invent package classes
-- DCS/MOOSE ammo telemetry remains operational evidence only
-
-GATE 5
-Select smallest public MOOSE execution path for first Ground ammo-resupply vertical slice
-- ARTY / AMMOTRUCK / BRIGADE+AUFTRAG comparison
-- no custom ammo monitor/dispatcher
-
-GATE 6
-BLUE COMMANDER reconciliation
-
-GATE 7
-MOOSE Hit -> TacticalSupportIncident -> CAS request
-
-GATE 8
-CAS AUFTRAG dispatch and DCS acceptance
+GATE 1  MissionDemand Registry                         STAGED
+GATE 2  ResourceDemandPolicy                          STAGED
+GATE 3  transferable Ground resource-ID normalization IMPLEMENTED / TEST SOURCE STAGED
+GATE 4  package taxonomy beyond generic packages      ONLY IF REQUIRED BY REAL OMW CONSUMERS
+GATE 5  MOOSE Ground ammo execution selection         OPEN
+GATE 6  BLUE COMMANDER reconciliation                  OPEN
+GATE 7  Hit -> TacticalSupportIncident -> CAS          OPEN
+GATE 8  CAS AUFTRAG dispatch / DCS acceptance          OPEN
 ```
 
-## 11. Aktuelle Validierungsgrenze
-
-Zum Zeitpunkt dieses Dokuments wurde kein neuer DCS-Test ausgeführt.
-
-Die neuen Domain-Module enthalten weiterhin keine DCS- oder MOOSE-Aufrufe. Die ergänzte MOOSE-Rearm-Bewertung ist `SOURCE_REVIEWED`, nicht `VALIDATED` für OMW.
-
-Syntax- und ausführbare Contract-Tests bleiben erforderlich, bevor der Branch als fertig bewertet wird. Für die physische Rearm-Ausführung ist ein späterer DCS-Test mit vollständiger Provenienz erforderlich.
-
-Aktueller Teststatus:
+## 14. Aktuelle Validierungsgrenze
 
 ```text
-MissionDemand contract test source      STAGED / NOT EXECUTED
-ResourceDemandPolicy contract test      STAGED / NOT EXECUTED
-MOOSE Ground rearm source review        UPDATED / NOT DCS VALIDATED IN OMW
-MOOSE/DCS runtime                       NOT STARTED
+MissionDemand contract test source             STAGED / NOT EXECUTED
+ResourceDemandPolicy contract test source       STAGED / NOT EXECUTED
+Ground resource normalization test source       STAGED / NOT EXECUTED
+Ground legacy snapshot migration                SOURCE IMPLEMENTED / NOT EXECUTED
+MOOSE Ground rearm review                       SOURCE_REVIEWED / NOT OMW-DCS-VALIDATED
+MOOSE/DCS runtime                               NOT STARTED
 ```
+
+Kein Eintrag dieses Branches wird allein durch Source-Review oder Contract-Test-Source als `VALIDATED` bezeichnet.
