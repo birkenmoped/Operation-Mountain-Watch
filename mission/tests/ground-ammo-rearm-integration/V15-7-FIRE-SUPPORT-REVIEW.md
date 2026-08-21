@@ -1,3 +1,20 @@
+---
+document_id: OMW-GROUND-AMMO-REARM-V15-7-FIRE-SUPPORT-REVIEW
+status: DRAFT
+document_class: TECHNICAL_SOURCE_REVIEW
+owning_policy: OMW-GOV-001
+authoritative_for:
+  - read-only v15(7) Ground fire-support inventory evidence
+  - source-reviewed ARTY RearmingGroup applicability boundary for fixed fire-support consumers
+scenario_period: 2010-08-01/2011-12-31
+project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
+supersedes:
+superseded_by:
+source_branch: agent/ground-ammo-rearm-integration
+source_commit: f3f32f5f4005d0c2dd1714a725b64b1282b46833
+validated_in_dcs: false
+---
+
 # OMW Template v15(7) – Ground Fire Support Review
 
 Stand: 22.08.2026
@@ -135,6 +152,6 @@ Diese Punkte dürfen nicht aus dem Bostick-PASS extrapoliert werden.
 
 ## Nächster technischer Schritt
 
-Zuerst wird der aktuelle Branch-Source nach Abschluss der bereits gestagten Lifecycle-Hygiene gegen diesen Vier-Consumer-Scope reconciliiert. Ziel ist die kleinste MOOSE-first Generalisierung ohne Duplikation der bestehenden Bostick-Komposition.
+Zuerst wird der aktuelle Branch-Source nach Abschluss der bereits gestagten Lifecycle-Hygiene gegen diesen Vier-Consumer-Scope reconciliert. Ziel ist die kleinste MOOSE-first Generalisierung ohne Duplikation der bestehenden Bostick-Komposition.
 
 Ein weiterer DCS-Lauf wird erst nach Source-/Contract-Prüfung und einem kombinierten Acceptance-Plan angefordert; kein identischer Bostick-Einzellauf wird wiederholt.
