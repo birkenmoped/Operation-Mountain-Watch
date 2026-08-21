@@ -336,32 +336,100 @@ NOT DCS VALIDATED
 
 Ein DCS-Lauf ist für diese reine Domain-/Snapshotlogik nicht erforderlich. Vor Abschluss des Branches bleibt jedoch ein ausführbarer Lua-Contract-Test erforderlich.
 
-## 11. Ground-Rearm-Ausführung – noch nicht implementiert
+## 11. Ground-Rearm-Ausführung – Source-Entscheidung
 
-Die Resource-ID-Normalisierung entscheidet nicht, welcher MOOSE-Pfad die physische Versorgung übernimmt.
-
-Weiter zu vergleichen:
+Für den ersten Artillerie-Rearm-Vertical-Slice ist der bevorzugte MOOSE-Pfad jetzt source-seitig festgelegt:
 
 ```text
-ARTY RearmingGroup / RearmingPlace
-AMMOTRUCK
-BRIGADE + AUFTRAG:NewAMMOSUPPLY()
+PREFERRED:   AMMOTRUCK
+ALTERNATIVE: ARTY rearming lifecycle, falls ARTY die Batterie ohnehin operativ besitzt
+GENERIC:     BRIGADE + AUFTRAG:NewAMMOSUPPLY(), ohne eigenen Rearm-Completion-Nachweis
 ```
 
-Die Auswahl muss vom konkreten Empfänger- und Missionsmodell abhängen. Kein eigener Ammo-Monitor oder Dispatcher wird parallel entwickelt.
+`AMMOTRUCK` ist im gepinnten MOOSE-Source genau für die automatische Versorgung von Artilleriegruppen vorgesehen. Das offizielle MOOSE-Beispiel unter `Functional/AmmoTruck` bestätigt diesen Anwendungsfall.
 
 Für den späteren OMW-DCS-Test sind insbesondere zu erfassen:
 
 ```text
 konkreter Empfänger / Template
+konkreter DCS Ammo-Supply-Truck / Template
 DCS/MOOSE Ammo-Zustand vor Rearm
 physische Truck-/Supply-Bewegung
-Rearm-Completion
-Rückkehr / Lifecycle
+TruckArrived / TruckUnloading / TruckReturning / TruckHome
+Rearm-Wirkung am Empfänger
 CampaignState Settlement genau einmal
+Truckverlust / Abbruch
 ```
 
-## 12. BLUE COMMANDER / CAS Dependency
+`TruckReturning` wird im gepinnten Source erst ausgelöst, nachdem die Mindest-Unloadzeit vergangen ist und der Empfänger-Munitionsstand wieder über `ammothreshold` liegt. Das ist ein geeigneter Delivery-Quittierungskandidat, aber kein Beweis eines Vollrearms.
+
+Kein eigener Ammo-Monitor, Truck-Dispatcher oder Rearm-Controller wird parallel entwickelt.
+
+## 12. Offener Asset-Blocker vor Runtime-Code
+
+Die MOOSE-Dokumentation des gepinnten Source nennt als bekannte funktionierende DCS-Supply-Trucks unter anderem:
+
+```text
+M-939  BLUE
+Ural-375 RED
+ZIL-135 RED
+```
+
+Die aktuelle OMW-Ground-Template-Baseline besitzt einen allgemeinen M1083-Logistiktemplate. Für diesen konkreten M1083 ist die DCS Ammo-Supply-Fähigkeit im aktuellen OMW-Stand **nicht bestätigt**.
+
+Folge:
+
+```text
+M1083 logistics role
+!= proof of DCS ammo-supply capability
+```
+
+Vor einem produktiven `AMMOTRUCK`-Adapter muss daher der tatsächlich zu verwendende BLUE Ammo-Supply-Trucktyp beziehungsweise das Template feststehen und später in DCS bestätigt werden. Bis dahin wird kein Runtime-Adapter geschrieben.
+
+## 13. Noch offene strategische Trennung: RESUPPLY vs. REARM
+
+Die Source-Entscheidung für `AMMOTRUCK` löst die operative Rearm-Ausführung, aber noch nicht die strategische Buchungsgrenze zwischen zwei fachlich verschiedenen Vorgängen:
+
+```text
+A) INTER-NODE RESUPPLY
+Hub / Parent -> FOB/COP stock
+GROUND_AMMO_PACKAGE wird TRANSFERRED und am Zielbestand gutgeschrieben.
+
+B) LOCAL REARM
+FOB/COP stock -> konkrete Batterie / Feuerunterstützungsgruppe
+GROUND_AMMO_PACKAGE wird als lokaler strategischer Verbrauch eingesetzt.
+```
+
+Diese Vorgänge dürfen nicht versehentlich zu einer Buchung vermischt werden. Insbesondere wäre folgende Kette falsch, wenn derselbe physische Rearm zugleich als Lagerauffüllung behandelt wird:
+
+```text
+Joyce package leaves
+-> Honaker battery rearms
+-> package remains zusätzlich als Honaker stock verfügbar
+```
+
+Bevor Runtime-Code geschrieben wird, ist daher eine Owner-Entscheidung zur strategischen Kopplung erforderlich. Der technisch sauberste derzeitige Kandidat ist eine zweistufige Semantik:
+
+```text
+INTER-NODE RESUPPLY
+CampaignState TRANSFER
+-> Zielbestand steigt
+
+LOCAL REARM
+CampaignState CONSUMPTION am lokalen Node
+-> danach autorisierter AMMOTRUCK-Rearm
+-> MOOSE/DCS bestätigt die operative Wirkung
+```
+
+Ein physischer Konvoi darf später beide Schritte unmittelbar hintereinander repräsentieren, falls das Missionsdesign das verlangt; strategisch bleiben Transfer und Verbrauch dennoch getrennte, idempotente Vorgänge.
+
+Status:
+
+```text
+RECOMMENDED / OWNER DECISION PENDING
+```
+
+## 14. BLUE COMMANDER / CAS Dependency
 
 Für CAS wird kein zweiter COMMANDER entwickelt.
 
@@ -385,27 +453,33 @@ MOOSE Hit
 -> BLUE COMMANDER
 ```
 
-## 13. Nächste Gates
+## 15. Nächste Gates
 
 ```text
 GATE 1  MissionDemand Registry                         STAGED
 GATE 2  ResourceDemandPolicy                          STAGED
 GATE 3  transferable Ground resource-ID normalization IMPLEMENTED / TEST SOURCE STAGED
-GATE 4  package taxonomy beyond generic packages      ONLY IF REQUIRED BY REAL OMW CONSUMERS
-GATE 5  MOOSE Ground ammo execution selection         OPEN
-GATE 6  BLUE COMMANDER reconciliation                  OPEN
-GATE 7  Hit -> TacticalSupportIncident -> CAS          OPEN
-GATE 8  CAS AUFTRAG dispatch / DCS acceptance          OPEN
+GATE 4  package taxonomy beyond GROUND_AMMO_PACKAGE    DEFERRED UNTIL ACTUAL NEED
+GATE 5  MOOSE Ground ammo execution selection         SOURCE_DECIDED: AMMOTRUCK
+GATE 6  concrete BLUE ammo-supply truck/template       OPEN / DCS CONFIRMATION REQUIRED
+GATE 7  strategic RESUPPLY-vs-REARM booking boundary   OWNER DECISION REQUIRED
+GATE 8  Ground ammo runtime adapter                    BLOCKED BY GATES 6-7
+GATE 9  BLUE COMMANDER reconciliation                  OPEN
+GATE 10 Hit -> TacticalSupportIncident -> CAS          OPEN
+GATE 11 CAS AUFTRAG dispatch / DCS acceptance          OPEN
 ```
 
-## 14. Aktuelle Validierungsgrenze
+## 16. Aktuelle Validierungsgrenze
 
 ```text
 MissionDemand contract test source             STAGED / NOT EXECUTED
 ResourceDemandPolicy contract test source       STAGED / NOT EXECUTED
 Ground resource normalization test source       STAGED / NOT EXECUTED
 Ground legacy snapshot migration                SOURCE IMPLEMENTED / NOT EXECUTED
-MOOSE Ground rearm review                       SOURCE_REVIEWED / NOT OMW-DCS-VALIDATED
+AMMOTRUCK / ARTY Ground rearm review            SOURCE_REVIEWED / NOT OMW-DCS-VALIDATED
+MOOSE Ground ammo executor selection            SOURCE_DECIDED / RUNTIME NOT IMPLEMENTED
+BLUE ammo-supply asset                          NOT YET CONFIRMED
+RESUPPLY-vs-REARM booking boundary              OWNER DECISION PENDING
 MOOSE/DCS runtime                               NOT STARTED
 ```
 
