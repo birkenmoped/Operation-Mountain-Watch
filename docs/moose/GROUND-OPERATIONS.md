@@ -338,7 +338,6 @@ Result: PASS / owner visual acceptance
 
 Für genau diesen Scope bestätigt: ARMYGROUP:RTZ(existing Fenty ACCESS zone, OnRoad) führte über den Returning-FSM-Zustand zu Returned; anschließend wurde der normale LEGION:__AddAsset(10, group, 1)-/Warehouse-Handoff ausgeführt. Die vier M-ATV fuhren bis zur bestehenden Fenty-ACCESS-Zone und die temporäre DCS-Gruppe wurde erst danach kontrolliert entfernt; diese sichtbare Entfernung ist erwartetes Warehouse-Verhalten. Kein Teleport wurde während Materialisierung, Anfahrt oder Rückfahrt akzeptiert. CampaignState blieb unverändert.
 
-
 ## Addendum 2026-08-20 – Acceptance 6 partial-loss/damage runtime evidence
 
 ~~~text
@@ -356,3 +355,52 @@ Result: PASS / owner visual acceptance without anomalies
 Acceptance 6 nutzte die vorhandenen MOOSE-Wrapper erst nach normalem MissionDone und vor dem bestehenden öffentlichen ARMYGROUP:RTZ(..., OnRoad)-Pfad. Der DCS-Lauf bestätigte: ein Drei-Unit-Mobilreturn bleibt operabel, erreicht Returned -> Warehouse AddAsset und wird über die tatsächliche Rückkehreranzahl im isolierten CampaignState-Teststore genau einmal gutgeschrieben.
 
 Wright bestätigte zusätzlich UNIT:SetLife(50) mit Life 4 -> 2; die beschädigte Unit kehrte regulär zurück. Kein Wartungs-, Reparaturwarte-, Werkstattkapazitäts-, neuer DCS-Spawn- oder privater Return-Adapter ist eingeführt. MaintenanceTime bleibt beim MOOSE-Default null; jeder Rückkehrer ist nach Warehouse-Handoff sofort verfügbar.
+
+## Addendum 2026-08-21 – TM01M als historische MOOSE-Convoy-Evidenz
+
+TM01M war ein Machbarkeits- und Regressionstest für physische MOOSE-Konvois. Es wird nicht als produktive Logistik- oder CampaignState-Schicht weitergeführt.
+
+Die dokumentierten DCS-PASS-Stände bestätigen jedoch mehrere für spätere Ground-Arbeit relevante Bausteine:
+
+```text
+Single convoy:
+Branch: feature/tm01m-moose-native-baseline
+Commit: 0db10501f81c160cd5818088e760af181b33d86d
+Configuration: TM01M-moose-native-msr-pathline-1
+DCS: 2.9.28.26283
+Result: PASS
+
+Five convoys:
+Branch: feature/tm01m-moose-native-baseline
+Commit: da2714af9d312d92913a0b325ca3c2e8e91f8064
+Configuration: TM01M-moose-native-five-convoys-1
+DCS: 2.9.28.26283
+Result: PASS
+```
+
+Praktisch bestätigt wurden:
+
+```text
+PATHLINE
+- Mission-Editor-MSR-Zeichnungen lesen
+- Segmentrichtung automatisch vorwärts/rückwärts bestimmen
+- mehrere MSR-Segmente verketten
+
+COORDINATE
+- Start-/Zielbereich auf die Straße projizieren
+- Road Connector über GetPathOnRoad(...) erzeugen
+
+SPAWN
+- InitSetUnitAbsolutePositions(...) für road-aligned Position und Heading
+
+GROUP
+- Route(...) für die kompilierte Ground-Route
+```
+
+Der Single-Convoy-Test fuhr vollständig von Bagram über `MSR_EAST_E03` und `MSR_EAST_E02` bis Jalalabad. Der Five-Convoy-Test bestätigte fünf parallele Konvois mit insgesamt 30 Fahrzeugen bei 50 km/h; alle 30 Fahrzeuge erreichten ihre Zielzonen.
+
+Diese Erkenntnisse bleiben technische Evidenz. Sie begründen keinen produktiven TM01M-Controller, keinen eigenen Route Catalog, keine CampaignState-/Warehouse-Buchung und keine parallele Ground-Missions-FSM.
+
+Die spätere Acceptance 3-2 verwendet die Road-Spawn-Grundidee in einem anderen Kontext erneut: dort innerhalb des MOOSE-BRIGADE/WAREHOUSE-Materialisierungspfads. Für diesen neueren Integrationspfad ist deshalb Acceptance 3-2 der unmittelbarere Nachweis; TM01M bleibt der frühere Machbarkeitsnachweis.
+
+Provenienzgrenze: Die historischen TM01M-Ergebnisberichte dokumentieren Branch, Commit, DCS-Version sowie Log-/Debrief-Hashes, aber keinen vollständigen eingebetteten `Moose.lua`-SHA-256. Die Evidenz wird daher nicht auf andere MOOSE-Stände oder beliebige Ground-Routen verallgemeinert.
