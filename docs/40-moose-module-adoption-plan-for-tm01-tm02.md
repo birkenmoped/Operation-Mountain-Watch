@@ -14,8 +14,8 @@ scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
 superseded_by:
-source_branch: review/tm01-tm02-moose-first
-source_commit: 666ef7a4a6fad52cc1aaecc7d0953e4d112dc8ff
+source_branch: agent/tm01m-ground-production-reconciliation
+source_commit: PENDING_MERGE
 validated_in_dcs: false
 ---
 
@@ -218,7 +218,41 @@ Nicht aus TM01M abzuleiten oder als eigenes Produktionssystem zu übernehmen sin
 
 Für konkrete produktive Ground-Missionen bleibt MOOSE-first verbindlich. Die TM01M-Erkenntnisse sind dabei geprüfte Baustein-Evidenz, keine Verpflichtung, den historischen Testcode weiterzuführen.
 
-### 6.6 Verbleibende TODOs für diesen Reconciliation-Scope
+### 6.6 Verifikation 2026-08-21
+
+Lokaler verifizierter Branch-Stand vor diesem Dokumentationsabschluss:
+
+```text
+Branch: agent/tm01m-ground-production-reconciliation
+Commit: 89a4eb05a71a4e6433186a10526df9109290f95c
+```
+
+Reale lokale Prüfung durch den Projektinhaber:
+
+```text
+git diff --check main...HEAD
+Result: PASS (keine Ausgabe)
+
+docs/40-moose-module-adoption-plan-for-tm01-tm02.md
+SHA256: 7637A2EAA65466F009EB42A0D3C36A22B4EDD8124D616EA094DEC2A65235FD7F
+
+docs/moose/PROJECT-CLASS-INDEX.md
+SHA256: 6C6DE2CC627B39D116725CC84B59930A857F8C7CB4E25933AA5B0478E6D76918
+
+docs/moose/GROUND-OPERATIONS.md
+SHA256: 64F2BA79030A8FF78037A82A5329937CCABCE29AEA1C98ECB57E92D73EB3205D
+```
+
+Der verpflichtende Dokumentationsvalidator konnte lokal nicht ausgeführt werden, weil auf der Entwicklungsmaschine kein `python` im PATH verfügbar ist:
+
+```text
+Documentation validator: NOT_RUN_LOCAL_ENVIRONMENT
+Reason: Python runtime unavailable
+```
+
+Das ist kein Validator-PASS. Der fehlende Lauf bleibt transparent dokumentiert.
+
+### 6.7 Verbleibende TODOs für diesen Reconciliation-Scope
 
 ```text
 [x] TM01M als Machbarkeitstest statt Production Runtime eingeordnet
@@ -229,16 +263,17 @@ Für konkrete produktive Ground-Missionen bleibt MOOSE-first verbindlich. Die TM
 [x] kein produktiver TM01M-Nachfolger erforderlich
 [x] docs/moose/PROJECT-CLASS-INDEX.md um den dokumentierten TM01M-Scope ergänzt
 [x] docs/moose/GROUND-OPERATIONS.md mit der TM01M-Evidenz synchronisiert
+[x] vollständigen Branch-Diff mit `git diff --check main...HEAD` geprüft
+[!] Dokumentationsvalidator nicht ausgeführt: lokale Python-Runtime fehlt
 
-[ ] Dokumentationsvalidator ausführen und vollständigen Diff prüfen
 [ ] LOAD_TM01M wird vom Projektinhaber aus der `.miz` entfernt
 ```
 
 Für die Entfernung von `LOAD_TM01M` ist keine neue Lua-Implementierung erforderlich.
 
-### 6.7 Abschlussgrenze
+### 6.8 Abschlussgrenze
 
-Der TM01M-Reconciliation-Scope ist fachlich abgeschlossen, sobald die bestätigten technischen Erkenntnisse dauerhaft in der aktuellen MOOSE-/Ground-Dokumentation verankert sind.
+Der TM01M-Reconciliation-Scope ist repositoryseitig abgeschlossen. Der noch offene Missionseditor-Schritt `LOAD_TM01M` liegt beim Projektinhaber und verändert die dokumentierte technische Evidenz nicht.
 
 Danach gilt:
 
