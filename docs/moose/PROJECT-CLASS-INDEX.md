@@ -34,6 +34,7 @@ Technische Lifecycle-Details:
 - [`OMW-MOOSE-ISR-FAC-CAS-AAR`](ISR-FAC-CAS-AAR.md)
 - [`OMW-MOOSE-AAR-LRC-TRANSIT`](AAR-LRC-TRANSIT.md)
 - [`OMW-MOOSE-GROUND-OPERATIONS`](GROUND-OPERATIONS.md)
+- [`OMW-MOOSE-MISSION-DEMAND-RESUPPLY-CAS-SOURCE-REVIEW`](MISSION-DEMAND-RESUPPLY-CAS-SOURCE-REVIEW.md)
 
 ## 2. Statusbedeutung
 
@@ -73,6 +74,8 @@ REJECTED_FOR_PROJECT_USE
 | `ARMYGROUP` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Acceptance 1–6 bestätigen MissionDone-Persistenz, Same-group-Follow-up sowie mobilen RTZ/Returned-Handoff einschließlich paralleler Teilverlust-/Schadenrückgabe; immobiler Teleportpfad bleibt ausgeschlossen |
 | `OPSGROUP` | `VALIDATED_FOR_DOCUMENTED_SCOPE` + `SOURCE_REVIEWED` | AirOps-Methoden sowie Ground-MissionDone-/Return-Pfade in Acceptance 1–6 praktisch bestätigt; Cargo-Pfade bleiben source-reviewed |
 | `OPSTRANSPORT` | `SOURCE_REVIEWED` | Constructor, Cargo/Carrier-Zonen, `AddPathTransport`, Disembark- und Carrier-Verträge geprüft; taktischer OMW-Transport benötigt eigenen DCS-Test |
+| `AMMOTRUCK` | `SOURCE_REVIEWED` | gepinnter Source und offizieller Demo-Anwendungsfall für automatische Artillerie-Rearm-Versorgung geprüft; `reloads` ist Rearm-Zykluszahl, keine CampaignState-Menge; OMW-DCS-Test und konkretes BLUE-Supply-Asset offen |
+| `ARTY` | `SOURCE_REVIEWED` | Shell-Type-/RearmingGroup-/Rearm-Completion-Pfade geprüft; nur einsetzen, wenn ARTY die Feuerunterstützungsgruppe operativ besitzen soll, nicht allein als Logistikersatz |
 | `CTLD`, `CSAR`, `AICSAR` | `PLANNED` / teilweise verwendet | separate Acceptance erforderlich |
 | `INTEL` | `PLANNED` | taktisches Lagebild; Laufzeitnachweis offen |
 | `INTEL_DLINK` | `CANDIDATE` | Aggregation getrennter Netze; Performance offen |
@@ -262,6 +265,31 @@ DCS GROUP / UNIT / STATIC = physical representation
 Ein Klassenstatus wird nur angehoben, wenn MOOSE-Version/Commit, OMW-Source, Mission, Hashes, beobachtetes Verhalten und Einschränkungen dokumentiert sind.
 
 `SOURCE_REVIEWED` für Ground-OPS und Acceptance-1-Staging bedeutet ausdrücklich **nicht** `VALIDATED_FOR_DOCUMENTED_SCOPE`. Der Status wird erst nach dem realen DCS-Lauf mit vollständiger Hashprovenienz neu bewertet.
+
+## Addendum 2026-08-21 – Ground Ammo Rearm Source Review
+
+```text
+AMMOTRUCK = SOURCE_REVIEWED
+ARTY      = SOURCE_REVIEWED
+```
+
+`AMMOTRUCK` besitzt im gepinnten Source automatische Low-Ammo-Erkennung, Truck-Zuweisung, Anfahrt, Unloading sowie Return/Home-FSM-Pfade. Das offizielle MOOSE-Beispiel unter `Functional/AmmoTruck` bestätigt den vorgesehenen Artillerie-Rearm-Anwendungsfall. `reloads` ist eine Zahl von Rearm-Vorgängen und keine Granaten- oder CampaignState-Paketmenge.
+
+`TruckReturning` wird erst ausgelöst, nachdem die Mindest-Unloadzeit abgelaufen ist und der Munitionsstatus des Empfängers wieder oberhalb `ammothreshold` liegt. Dieser FSM-Pfad ist daher ein geeigneter späterer OMW-Delivery-Quittierungskandidat, beweist aber **keinen Vollrearm**.
+
+`ARTY` besitzt den detaillierteren Batterie-Rearm-Pfad einschließlich Shell-Type-Auswertung und Vollrearm-Prüfung. Für den ersten OMW-Ammo-Service bleibt `AMMOTRUCK` der kleinere Kandidat; `ARTY` wird nicht ausschließlich zur Logistik eingeführt, wenn es die Feuerunterstützungsgruppe nicht ohnehin operativ verwaltet.
+
+Offene Grenze vor Runtime-Code:
+
+```text
+known MOOSE/DCS supply example: M-939 (BLUE)
+current OMW generic logistics template: M1083 family
+M1083 ammo-supply capability in current OMW DCS setup: NOT VERIFIED
+```
+
+Es wird daher noch kein produktiver AMMOTRUCK-Adapter geschrieben. Zuerst muss ein tatsächlich Ammo-Supply-fähiger BLUE-Trucktyp/Template für OMW feststehen und später in DCS bestätigt werden.
+
+Details: [`OMW-MOOSE-MISSION-DEMAND-RESUPPLY-CAS-SOURCE-REVIEW`](MISSION-DEMAND-RESUPPLY-CAS-SOURCE-REVIEW.md), Abschnitt 16.
 
 ## Addendum 2026-08-19 – `WAREHOUSE` / `_DATABASE` interne Acceptance-3-2-Ausnahme
 
