@@ -112,6 +112,7 @@ function Service:_StartRearm(group, request)
     onRoad = request.onRoad,
     rearmingDistance = request.rearmingDistance,
     rearmingSpeedKph = request.rearmingSpeedKph,
+    startArty = request.startArty,
   })
   self.contexts[request.transactionId] = context
   self.pending = nil
@@ -152,6 +153,7 @@ function Service:Request(spec)
     onRoad = spec.onRoad,
     rearmingDistance = spec.rearmingDistance,
     rearmingSpeedKph = spec.rearmingSpeedKph,
+    startArty = spec.startArty,
   }
 
   local group = self.support:GetMaterializedGroup()
