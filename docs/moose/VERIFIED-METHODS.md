@@ -557,3 +557,58 @@ Result: PASS / owner visual acceptance without anomalies
 | ARMYGROUP:RTZ(existing site ACCESS zone, OnRoad) | VALIDATED_FOR_DOCUMENTED_SCOPE | Drei parallele mobile Rückgaben zu ihren jeweiligen ACCESS-Zonen; anschließend Returned -> Warehouse AddAsset -> controlled physical group removal. |
 
 Der Nachweis führt keine Wartungs-/Reparaturzustände ein. Ein zurückgekehrtes, auch beschädigtes Fahrzeug wird sofort als verfügbar gutgeschrieben; nicht zurückgekehrte Units werden nicht gutgeschrieben.
+
+## Addendum 2026-08-22 – Ground Ammo Rearm Acceptance 1
+
+Der folgende Methodenstatus gilt ausschließlich für die nachgewiesene Bostick-Acceptance-Provenienz:
+
+```text
+Branch: agent/ground-ammo-rearm-integration
+Acceptance source/build commit: 213119ca03a6aeae529d4291b4bbe174ac0995c2
+Ground BASE-3 source/build commit: 04674c29061c6a70f54b537598442857448441b6
+Warehouse BASE-3 build commit: 7da56fdfb45888e7f88d4ea5c3b0fa691f2b0423
+Builder/Test-ID: GROUND-AMMO-REARM-ACCEPTANCE-1
+DCS: 2.9.28.26385 MT
+MOOSE release: 2.9.18
+MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+Moose.lua SHA-256: E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915
+Executed MIZ: OMW_Template_v15.miz
+MIZ SHA-256: A2AF2BD5FA9792DEF422F3B47755894E8F3220453F31F63F1594CCD61E9AF1B4
+internal mission SHA-256: 2378F38E9B07365D25ACE38E45A23D87E2CC76F185A062FB2A46CA8EE31C1A53
+Acceptance bundle SHA-256: 94C18556B80E97A30420DD551BC0CD98E978CBA2E487A6AA6B35281E1F29FDD7
+Ground BASE-3 bundle SHA-256: 6DBDE7AA75E34FA6C7A42A7C97B3E407C069806666C60E8D27F8616D647383EE
+Warehouse BASE-3 bundle SHA-256: FC0F8F20909DD57E5DEE3AF6414FB56B35D8671D726471DEDB6D6984E590801B
+dcs.log SHA-256: 8ECFD3CACC58FF0421E55280D7CE63EFA2A6C1CDA0A09095F7A69E588290DE71
+debrief.log SHA-256: B773DDB09401B7E58F4393EEEEDCE858EB98F769E1BE2DE9AB12392B10583A9E
+Result: PASS
+```
+
+| Methode / Callback | Status | Exakt bestätigter Umfang |
+|---|---|---|
+| `ARTY:New(group, alias)` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Eine laufende ARTY-Instanz verwaltete die feste Bostick-L118-Batterie im Acceptance-Harness. |
+| `ARTY:AssignTargetCoord(...)` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Vier-Schuss-Testziel wurde zugewiesen; beobachteter Munitionsstand fiel `300 -> 296`. |
+| `ARTY:GetAmmo(...)` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Munitionsstände `300`, `296` und nach Rearm `302` wurden im dokumentierten Harness ausgewertet. |
+| `ARTY:SetRearmingGroup(...)` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Materialisierte `CHAP_M1083`-Gruppe wurde explizit als RearmingGroup an die Bostick-ARTY-Instanz gebunden. |
+| `ARTY:SetRearmingGroupOnRoad(...)` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Der dokumentierte Rearm-Pfad verwendete die On-Road-Konfiguration der RearmingGroup. |
+| `ARTY:Rearm()` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Rearm-FSM wurde nach lokaler CampaignState-Reservation ausgelöst und führte bis `Rearmed`/Vollrearm. |
+| `ARTY OnAfterCeaseFire` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Acceptance-Harness verwendete den CeaseFire-Kopplungspunkt nach dem kontrollierten Feuer. |
+| `ARTY OnBeforeRearm` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Genau an diesem nach internem ARTY-Precheck liegenden Hook wurde die reservierte lokale `GROUND_AMMO_PACKAGE`-Transaktion verbraucht; Bestand `52 -> 51`. |
+| `ARTY OnAfterRearmed` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Operative Completion wurde empfangen; Harness bestätigte `PASS M1083_REARM_CONFIRMED=true` und finalAmmo `302`. |
+| `USERFLAG:New(...)` / `Set(...)` / `Get()` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Ground BASE-3 setzte `OMW_GROUND_READY` fail-closed und bestätigte per Readback `1`; der Mission-Editor-Trigger startete den Acceptance-Harness auf genau diesem DCS-Userflag. |
+
+Scope-Grenzen:
+
+```text
+CHAP_M1083 operational ammo-support capability
+= VALIDATED only for this Bostick L118 / ARTY explicit RearmingGroup path
+
+AMMOTRUCK
+= still SOURCE_REVIEWED; not exercised in this run
+
+not validated here:
+- full-battery rejection
+- M1083 loss/interruption
+- restart/replay settlement
+- general CHAP_M1083 behavior outside this exact battery/MIZ/MOOSE scope
+- other ARTY batteries or MOOSE versions
+```
