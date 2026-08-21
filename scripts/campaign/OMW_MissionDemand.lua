@@ -57,6 +57,24 @@ local ALLOWED_TRANSITIONS = {
   },
 }
 
+local CREATION_FIELDS = {
+  "id",
+  "missionType",
+  "origin",
+  "objective",
+  "target",
+  "priority",
+  "playerCapable",
+  "aiCapable",
+  "reservationState",
+  "expiresAt",
+  "successCriteria",
+  "failureConsequences",
+  "resourceReservation",
+  "createdReason",
+  "dedupeKey",
+}
+
 local function fail(message)
   error(TAG .. " " .. tostring(message), 2)
 end
@@ -201,8 +219,8 @@ end
 
 local function creationSpecMatches(demand, spec)
   local normalized = normalizeCreationSpec(spec)
-  for key, value in pairs(normalized) do
-    if not valuesEqual(demand[key], value) then
+  for _, field in ipairs(CREATION_FIELDS) do
+    if not valuesEqual(demand[field], normalized[field]) then
       return false
     end
   end
