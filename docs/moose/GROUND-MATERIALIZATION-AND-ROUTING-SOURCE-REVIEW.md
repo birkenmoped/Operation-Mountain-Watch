@@ -248,3 +248,80 @@ DCS VALIDATION PENDING
 ```
 
 Acceptance 3-2 bleibt historische Runtime-Evidenz fuer den damaligen Scope. Die generalisierte Fassung muss in der naechsten gebuendelten Ground-Integration-Acceptance mit mehreren Templates und normalen MOOSE-Lifecycles erneut geprueft werden.
+
+## 12. Public WAREHOUSE Self-Request fuer Support Assets
+
+Fuer den konkreten Bostick-M1083-Rearm-Pfad wurde zusaetzlich geprueft, wie ein bereits im BRIGADE-/PLATOON-Stock registriertes Support-Asset ohne erfundene Spawn- oder Missions-FSM materialisiert werden kann.
+
+Der gepinnte MOOSE-Source dokumentiert den Self-Request ausdruecklich als vorgesehenen Weg, Warehouse-Assets fuer benutzerdefinierte Aufgaben zu materialisieren:
+
+```lua
+warehouse:AddRequest(
+  warehouse,
+  WAREHOUSE.Descriptor.GROUPNAME,
+  templateName,
+  1,
+  nil,
+  nil,
+  priority,
+  assignment
+)
+```
+
+Bei einem Self-Request sind Sender und Empfaenger dasselbe WAREHOUSE. Nach erfolgreicher Materialisierung liefert der oeffentliche Callback
+
+```lua
+WAREHOUSE:OnAfterSelfRequest(From, Event, To, groupset, request)
+```
+
+ein `SET_GROUP`; `groupset:GetSetObjects()` stellt die materialisierten MOOSE-`GROUP`-Objekte fuer anschliessendes Framework-Tasking bereit.
+
+Fuer BRIGADE/PLATOON gilt ausserdem source-seitig:
+
+```text
+BRIGADE:AddPlatoon(platoon)
+-> BRIGADE:AddAssetToPlatoon(platoon, platoon.Ngroups)
+-> WAREHOUSE:AddAsset(templateGroup, ..., platoon.name)
+```
+
+Damit kann ein M1083-Supportasset zunaechst als echtes PLATOON-/BRIGADE-Stockasset registriert und anschliessend per oeffentlichem WAREHOUSE-Self-Request materialisiert werden. Es ist kein direkter `SPAWN`, kein eigener Asset-Pool und kein Dummy-AUFTRAG zum blossen Erzeugen der Gruppe erforderlich.
+
+Branch-Implementierung:
+
+```text
+scripts/ground/OMW_GroundSupportMaterializer.lua
+tests/ground/test_ground_support_materializer.lua
+```
+
+Der kleine Koordinator:
+
+```text
+PLATOON factory
+-> BRIGADE:AddPlatoon
+-> BRIGADE/WAREHOUSE AddRequest(self, GROUPNAME, ...)
+-> OnAfterSelfRequest
+-> exactly one materialized MOOSE GROUP handed to caller
+```
+
+Er startet die BRIGADE nicht selbst, routet die Gruppe nicht und erzeugt keine eigene operative Mission. Die konkrete Runtime-Komposition bleibt beim aufrufenden Ground-Execution-Scope.
+
+Fuer den Bostick-Rearm ergibt sich damit source-seitig:
+
+```text
+TPL_BLUE_GND_SUP_M1083
+-> PLT_BLUE_GND_BOSTICK_AMMO_SUPPORT
+-> BDE_BLUE_GND_BOSTICK stock
+-> WAREHOUSE self-request
+-> road-aligned WAREHOUSE materialization at Bostick ACCESS
+-> resulting MOOSE GROUP
+-> MissionDemand GroundAmmoRearmAdapter / ARTY:SetRearmingGroup(...)
+```
+
+Status:
+
+```text
+PUBLIC MOOSE MATERIALIZATION PATH SOURCE_REVIEWED
+COORDINATOR SOURCE IMPLEMENTED
+CONTRACT TEST SOURCE STAGED
+DCS INTEGRATION PENDING
+```
