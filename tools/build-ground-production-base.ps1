@@ -154,6 +154,20 @@ end
 
 "@
 
+$bundleMarkers = @(
+  'USERFLAG:New("OMW_GROUND_READY")',
+  'GroundReadyFlag:Set(0)',
+  'GroundReadyFlag:Get() ~= 0',
+  'GroundReadyFlag:Set(1)',
+  'GroundReadyFlag:Get() ~= 1',
+  'OMW_GROUND_READY = 1'
+)
+foreach ($marker in $bundleMarkers) {
+  if (-not $bundle.Contains($marker)) {
+    throw "Ground production bundle is missing readiness contract marker: $marker"
+  }
+}
+
 [System.IO.File]::WriteAllText($outputFile, $bundle, [System.Text.UTF8Encoding]::new($false))
 $hash = (Get-FileHash -LiteralPath $outputFile -Algorithm SHA256).Hash.ToLowerInvariant()
 
@@ -168,6 +182,7 @@ Write-Host "StrategicAuthority: caller-provided single CampaignState store"
 Write-Host "GroundBaseLoadedFlag: OMW_GROUND_BASE_LOADED=1"
 Write-Host "GroundReadyFlag: MOOSE USERFLAG OMW_GROUND_READY becomes 1 only after successful OMW.Ground.Base.Attach(...) and readback"
 Write-Host "GroundReadyFailClosed: true"
+Write-Host "GroundReadyContractMarkersVerified: true"
 Write-Host "GroundLifecycleMutation: false"
 Write-Host "MOOSEOverride: false"
 Write-Host "MizMutation: false"
