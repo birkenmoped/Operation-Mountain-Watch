@@ -11,6 +11,7 @@ local function expectEqual(actual, expected, label)
 end
 
 local fakeSupport = nil
+local synchronousGroup = nil
 local supportModule = {}
 function supportModule.New(spec)
   fakeSupport = {
@@ -23,6 +24,9 @@ function supportModule.New(spec)
   end
   function fakeSupport:Request()
     self.requestCount = self.requestCount + 1
+    if synchronousGroup then
+      self:Complete(synchronousGroup)
+    end
     return nil, true
   end
   function fakeSupport:Complete(group)
@@ -60,23 +64,28 @@ function rearmModule.New(spec)
   return fakeRearm
 end
 
+local function newService()
+  return ServiceModule.New({
+    bostickAmmoSupportModule = supportModule,
+    groundAmmoRearmAdapterModule = rearmModule,
+    store = {},
+    campaignState = {},
+    artyFactory = function() end,
+    brigade = {},
+    accessZone = {},
+    forwardCoordinate = {},
+    roadSpawnAdapter = {},
+    materializerModule = {},
+    platoonFactory = function() end,
+    descriptorGroupName = "GROUPNAME",
+  })
+end
+
 local artilleryGroup = { name = "TPL_BLUE_GND_BOSTICK_FS_ARTY_L118_2" }
 local materializedGroup = { name = "BOSTICK-M1083-001" }
 
-local service = ServiceModule.New({
-  bostickAmmoSupportModule = supportModule,
-  groundAmmoRearmAdapterModule = rearmModule,
-  store = {},
-  campaignState = {},
-  artyFactory = function() end,
-  brigade = {},
-  accessZone = {},
-  forwardCoordinate = {},
-  roadSpawnAdapter = {},
-  materializerModule = {},
-  platoonFactory = function() end,
-  descriptorGroupName = "GROUPNAME",
-})
+synchronousGroup = nil
+local service = newService()
 
 local waiting, requested = service:Request({
   transactionId = "GROUND-REARM-BOSTICK-INTEGRATION-001",
@@ -115,5 +124,17 @@ expectEqual(same, context, "IDEMPOTENT_CONTEXT")
 expectEqual(createdAgain, false, "IDEMPOTENT_CREATED")
 expectEqual(fakeSupport.requestCount, 1, "NO_SECOND_SUPPORT_REQUEST")
 expectEqual(#fakeRearm.requests, 1, "NO_SECOND_REARM_REQUEST")
+
+synchronousGroup = materializedGroup
+local synchronousService = newService()
+local synchronousContext, synchronousRequested = synchronousService:Request({
+  transactionId = "GROUND-REARM-BOSTICK-SYNCHRONOUS-001",
+  artilleryGroup = artilleryGroup,
+})
+expectEqual(synchronousRequested, true, "SYNCHRONOUS_SUPPORT_REQUESTED")
+expectEqual(synchronousContext.status, "CONSUMED", "SYNCHRONOUS_CONTEXT_NOT_WAITING")
+expectEqual(synchronousService:Get("GROUND-REARM-BOSTICK-SYNCHRONOUS-001"), synchronousContext, "SYNCHRONOUS_CONTEXT_PRESERVED")
+expectEqual(#fakeRearm.requests, 1, "SYNCHRONOUS_REARM_REQUEST_COUNT")
+expectEqual(fakeRearm.requests[1].rearmingGroup, materializedGroup, "SYNCHRONOUS_REARMING_GROUP")
 
 print("PASS Bostick support materialization to CampaignState-backed ARTY rearm composition")
