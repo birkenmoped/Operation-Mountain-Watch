@@ -233,7 +233,7 @@ und einen öffentlichen `onafterDelivered(...)`-Pfad. Zusätzlich werden Carrier
 
 `OPSTRANSPORT` passt fachlich besonders gut, wenn reale MOOSE-Cargo-Gruppen beziehungsweise physische Carrier/Cargo-Objekte transportiert werden.
 
-OMW Ground `SUPPLY`, `AMMO` und `FUEL` sind derzeit jedoch normalisierte CampaignState-Einheiten und keine automatisch vorhandenen MOOSE-Cargo-Gruppen oder STORAGE-Waren. Eine zusätzliche operative Darstellung darf nicht zu einer zweiten strategischen Ressourcenhoheit werden.
+OMW Ground `SUPPLY`, `AMMO` und `FUEL` sind derzeit normalisierte CampaignState-Einheiten und keine automatisch vorhandenen MOOSE-Cargo-Gruppen oder STORAGE-Waren. Eine zusätzliche operative Darstellung darf nicht zu einer zweiten strategischen Ressourcenhoheit werden.
 
 ## 7. Wichtige negative Source-Feststellung: kein öffentliches `AUFTRAG:NewOPSTRANSPORT`
 
@@ -538,3 +538,165 @@ Add failure/cancel/restart and exactly-once settlement acceptance cases.
 ```
 
 No step may mark DCS behavior `VALIDATED` until a reproducible owner DCS run with full provenance exists.
+
+## 16. Ground Ammo Resupply – AMMOTRUCK / ARTY Source-Entscheidung 21.08.2026
+
+### 16.1 Strategische Taxonomie
+
+Für den ersten Ground-Ammunition-Vertical-Slice bleibt genau ein fungibler strategischer Pakettyp bestehen:
+
+```text
+GROUND_AMMO_PACKAGE
+```
+
+Es wird jetzt **keine** zusätzliche Aufteilung in `ARTY`, `MORTAR`, `AT` oder `SMALL_ARMS` eingeführt. Die aktuelle OMW-ORBAT enthält zwar unterschiedliche physische Verbraucher, darunter L118-Proxies und einen 2B11-Mortar-Proxy, aber es existiert kein belegter strategischer Initialstock-Split, aus dem belastbare Teilmengen abgeleitet werden könnten. Eine solche Aufteilung würde daher neue Mengen erfinden.
+
+DCS-/MOOSE-Munitionsdaten bleiben operative Telemetrie. Sie definieren nicht den CampaignState-Paketbestand.
+
+### 16.2 `AMMOTRUCK` – gepinnter Source
+
+Im tatsächlich verwendeten `Moose.lua` ist `AMMOTRUCK` als öffentliche MOOSE-FSM-Klasse vorhanden. Source-geprüft sind mindestens:
+
+```lua
+AMMOTRUCK:New(Truckset, Targetset, Coalition, Alias, Homezone)
+```
+
+und die dokumentierten FSM-Hooks:
+
+```text
+OnAfterRouteTruck
+OnAfterTruckArrived
+OnAfterTruckUnloading
+OnAfterTruckReturning
+OnAfterTruckHome
+```
+
+Die Klasse überwacht einen `SET_GROUP` von Versorgungstrucks und einen `SET_GROUP` von Artilleriezielen. Bei niedrigem Ziel-Munitionsstand wird ein verfügbarer Truck zugeteilt, zum Ziel geroutet, in `UNLOADING` versetzt und anschließend zurückgeschickt.
+
+Die Standardwerte des gepinnten Source umfassen unter anderem:
+
+```text
+ammothreshold = 5
+remunidist    = 20000 m
+unloadtime    = 600 s
+waitingtime   = 1800 s
+monitor       = -60 s
+routeonroad   = true
+reloads       = 5
+```
+
+`reloads` ist ausschließlich die Anzahl von Rearm-Einsätzen eines Trucks vor dem Home-Return/Restock. Sie ist **keine** Anzahl von Granaten und darf nicht mit `GROUND_AMMO_PACKAGE`-Mengen gleichgesetzt werden.
+
+### 16.3 Rearm-Erfolgssignal
+
+`AMMOTRUCK:CheckUnloadingTrucks(...)` schickt den Truck erst zurück, wenn mindestens `unloadtime` vergangen ist und `GetAmmoStatus(target) > ammothreshold` gilt.
+
+Damit bedeutet der öffentliche `TruckReturning`-FSM-Pfad source-seitig:
+
+```text
+minimum unload time elapsed
+AND
+recipient ammunition rose above AMMOTRUCK threshold
+```
+
+Er bedeutet **nicht** zwingend:
+
+```text
+recipient fully rearmed to initial ammunition capacity
+```
+
+Für das strategische Paketmodell ist `TruckReturning` deshalb ein geeigneter Kandidat für die spätere Delivery-Quittierung eines **einzelnen freigegebenen Rearm-Pakets**, sofern der DCS-Test mit dem konkreten OMW-Verbraucher bestätigt, dass dieser Übergang zuverlässig erst nach wirksamem Rearm erfolgt.
+
+### 16.4 Verlustverhalten
+
+`AMMOTRUCK:CheckTrucksAlive()` entfernt einen zerstörten/nicht mehr lebenden Truck aus der internen Truckliste und setzt ein zugeordnetes Ziel wieder auf `IDLE`. Der gepinnte Source erzeugt dabei **keinen** CampaignState-Verlust und keinen OMW-spezifischen Failure-Callback.
+
+Folge:
+
+```text
+AMMOTRUCK truck loss
+!= automatic strategic MarkLost
+```
+
+Ein späterer OMW-Adapter muss den bereits vorhandenen Ground-Loss-/CampaignState-Settlement-Pfad verwenden und darf dafür keinen zweiten Ressourcenledger entwickeln. Die exakte öffentliche Event-/Callback-Kopplung für Truckverlust wird vor Runtime-Code nochmals gegen den vorhandenen Ground-Produktionslifecycle geprüft.
+
+### 16.5 ARMYGROUP-Integration
+
+Wenn `usearmygroup = true` und `ARMYGROUP` verfügbar ist, verwendet `AMMOTRUCK` intern einen ARMYGROUP-basierten Pfad und erzeugt für Hin- und Rückfahrt `AUFTRAG:NewONGUARD(...)` mit `SetTeleport(false)`.
+
+Ohne diesen Pfad verwendet die Klasse öffentliche GROUP-Routingmethoden wie `RouteGroundOnRoad(...)` beziehungsweise `RouteGroundTo(...)`.
+
+Für OMW wird kein eigener Truck-Dispatcher und kein paralleler Ground-Routing-Controller eingeführt.
+
+### 16.6 `ARTY`
+
+Der gepinnte Source stellt zusätzlich einen dedizierten `ARTY`-Rearm-Lifecycle bereit, einschließlich Shell-Type-Auswertung, RearmingGroup/RearmingPlace und einer Vollrearm-Prüfung.
+
+`ARTY` ist für OMW relevant, wenn `ARTY` ohnehin die jeweilige Feuerunterstützungsgruppe als operative Artillerielogik besitzt. Die Klasse wird **nicht nur zur Logistik eingeführt**, solange `AMMOTRUCK` den benötigten Rearm-Service für eine bereits existierende DCS/MOOSE-Artilleriegruppe abbilden kann.
+
+Damit lautet die Source-Entscheidung für den ersten Vertical Slice:
+
+```text
+PREFERRED OPERATIONAL REARM SERVICE:
+AMMOTRUCK
+
+ALTERNATIVE / LATER BATTERY-OWNING PATH:
+ARTY rearming lifecycle
+
+GENERIC ZONE SUPPLY:
+BRIGADE + AUFTRAG:NewAMMOSUPPLY remains available,
+but does not by itself prove recipient rearm completion
+```
+
+### 16.7 Offizielles Beispiel
+
+Die MOOSE-Dokumentation des gepinnten Source verweist auf die offiziellen Demo-Missionen unter `Functional/AmmoTruck`. Der geprüfte Demo-Pfad verwendet einen Truck-Set, einen Artillery-Set und `AMMOTRUCK:New(...)`, damit Versorgungstrucks zu nahezu leergeschossener Artillerie fahren, diese rearmen und zurückkehren.
+
+Damit ist `AMMOTRUCK` für diesen Zweck nicht nur source-seitig vorhanden, sondern auch durch ein offizielles Framework-Beispiel als vorgesehener Anwendungsfall belegt. Das ist dennoch **kein OMW-DCS-PASS**.
+
+### 16.8 Offener OMW-Blocker vor Runtime-Code
+
+Die MOOSE-Dokumentation nennt als bekannte funktionierende DCS-Supply-Units unter anderem:
+
+```text
+M-939 (BLUE)
+Ural-375 (RED)
+ZIL-135 (RED)
+```
+
+Die aktuelle OMW-Ground-Template-Baseline führt dagegen einen allgemeinen M1083-Logistiktemplate. Aus dem gepinnten MOOSE-Source ist nicht belegt, dass dieser konkrete OMW-M1083-Template in DCS tatsächlich die Ammo-Supply-Fähigkeit besitzt.
+
+Vor Runtime-Implementierung muss deshalb der **konkrete BLUE Ammo-Supply-Trucktyp/Template** für OMW feststehen und in DCS geprüft werden. Ein M1083 wird nicht allein aufgrund seiner Logistikrolle als Ammo-Supply-fähig angenommen.
+
+Bis dieses Asset feststeht, wird kein produktiver AMMOTRUCK-Adapter geschrieben.
+
+### 16.9 Zielvertrag für den späteren Adapter
+
+Source-seitig ergibt sich als kleinster vorgesehener OMW-Vertrag:
+
+```text
+MissionDemand RESUPPLY
+-> CampaignState reserves 1+ GROUND_AMMO_PACKAGE
+-> authorized physical ammo truck materializes through existing Ground lifecycle
+-> truck becomes eligible for AMMOTRUCK service
+-> AMMOTRUCK RouteTruck
+-> CampaignState transaction -> IN_TRANSIT
+-> AMMOTRUCK TruckReturning after effective rearm threshold
+-> CampaignState transaction -> DELIVERED exactly once
+-> truck returns through normal operational lifecycle
+```
+
+Bei bestätigtem Truckverlust:
+
+```text
+no destination credit
+-> CampaignState MarkLost / existing Ground loss settlement
+```
+
+Bei Abbruch vor In-Transit:
+
+```text
+reservation cancellation/release according to existing CampaignState contract
+```
+
+Die genaue Adapter-API, Truck-Korrelation und Loss-Callback-Bindung bleiben bis zum konkreten OMW-Supply-Asset und zum DCS-Acceptance-Design `OPEN`.
