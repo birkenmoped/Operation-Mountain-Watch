@@ -192,7 +192,205 @@ Beobachtetes Ergebnis
 Offene Einschränkungen
 ```
 
-## 12. Abschlussregel
+## 12. Aktueller Foundation-Integrationsstand der Mission
+
+Stand der Übergabe ist `main` nach Merge von PR #110 mit Commit:
+
+```text
+2512ad3cd03606e146d0e238a468cd5bdc1c9965
+```
+
+Die zuletzt strukturell geprüfte Mission ist:
+
+```text
+OMW_Template_v14_ground_test(8).miz
+SHA-256: d16583aaa69b2dbf17fd65c003295649f2c67fc54744fcc5d25920a44e3fd9e5
+```
+
+Diese MIZ-Prüfung bestätigt die Mission-Editor-Verdrahtung der nachfolgend beschriebenen Production-Bases. Sie ist kein neuer vollständiger DCS-Runtime-Acceptance-Nachweis.
+
+### 12.1 Production-Bases und Abhängigkeiten
+
+Die produktive Foundation ist derzeit wie folgt aufgebaut:
+
+```text
+Moose.lua
+   |
+   +-- OMW_AirOps_Warehouse_Base.lua
+   |      +-- gemeinsamer OMW.AirOps.CampaignContext
+   |      |     +-- store
+   |      |     +-- campaignState
+   |      |     `-- restored
+   |      `-- OMW_WAREHOUSE_READY = 1
+   |
+   +-- OMW_Ground_Base.lua
+   |      +-- Attach an denselben CampaignState/store
+   |      `-- OMW_GROUND_READY = 1
+   |
+   +-- OMW_AAR_Base.lua
+   |      `-- produktive AAR-Runtime
+   |
+   `-- AirOps Foundations
+          +-- Bagram
+          +-- Kandahar
+          +-- Jalalabad
+          +-- Salerno
+          +-- Tarinkot
+          `-- Shindand
+```
+
+CampaignState bleibt die einzige strategische Ressourcenautorität. Ground, AAR, MOOSE Warehouse/STORAGE und die AirOps-Foundations dürfen keine parallele strategische Ressourcenhoheit erzeugen.
+
+### 12.2 Builder und produktive Artefakte
+
+Die wiederverwendbaren Bundles werden lokal aus den versionierten Quellen gebaut. Die generierten `dist`-Artefakte sind Buildprodukte und nicht die strategische Source of Truth.
+
+```text
+Warehouse / CampaignState
+Builder:  tools/build-air-ops-warehouse-production-base.ps1
+MIZ:      OMW_AirOps_Warehouse_Base.lua
+
+Ground
+Builder:  tools/build-ground-production-base.ps1
+MIZ:      OMW_Ground_Base.lua
+
+AAR
+Builder:  tools/build-aar-production-base.ps1
+MIZ:      OMW_AAR_Base.lua
+
+AirOps Foundations
+Builder:  tools/build-bagram-air-operations-foundation.ps1
+Builder:  tools/build-kandahar-air-operations-foundation.ps1
+Builder:  tools/build-jalalabad-air-operations-foundation.ps1
+Builder:  tools/build-salerno-air-operations-foundation.ps1
+Builder:  tools/build-tarinkot-air-operations-foundation.ps1
+Builder:  tools/build-shindand-air-operations-foundation.ps1
+```
+
+Der zuletzt durch den Projektinhaber real verifizierte Ground-Production-Build war:
+
+```text
+BuilderVersion: OMW-GROUND-PRODUCTION-BASE-1
+Bundle: mission/ground-operations/dist/OMW_Ground_Base.lua
+Length: 23038 bytes
+SHA-256: 1ff2a48219dd3cb8e1d1d7ba7a7ac93b6a94b581b4daff068b39d0a06a7e0291
+```
+
+### 12.3 Aktuelle MIZ-Startup-Reihenfolge
+
+Die zuletzt geprüfte v14-MIZ verwendet folgende Staffelung:
+
+```text
+T+0   LOAD_MOOSE
+      -> Moose.lua
+
+T+1   LOAD_AIROPS_WAREHOUSE_BASE
+      -> OMW_AirOps_Warehouse_Base.lua
+      -> OMW_WAREHOUSE_READY = 1 nach erfolgreichem Bootstrap
+
+T+2   LOAD_GROUND_BASE
+      Bedingung: OMW_WAREHOUSE_READY == 1
+      -> OMW_Ground_Base.lua
+      -> OMW.Ground.Base.Attach(...)
+      -> OMW_GROUND_READY = 1
+
+T+5   LOAD_AAR_BASE
+      Bedingung: OMW_WAREHOUSE_READY == 1
+      -> OMW_AAR_Base.lua
+
+T+6   LOAD_TM01M
+      -> bestehender älterer Ground/Convoy-Pfad; produktive Rolle noch zu reconciliieren
+
+T+8   LOAD_AIROPS_BAGRAM
+T+11  LOAD_AIROPS_KANDAHAR
+T+14  LOAD_AIROPS_JALALABAD
+T+17  LOAD_AIROPS_SALERNO
+T+20  LOAD_AIROPS_TARINKOT
+T+24  LOAD_AIROPS_SHINDAND
+```
+
+Die Zeitwerte staffeln nur den Startup. Die fachlich relevanten Sicherheitsbedingungen sind die Ready-Gates und der gemeinsame CampaignState-Kontext.
+
+### 12.4 Ground-Foundation
+
+Aktive strategische Ground-Nodes:
+
+```text
+GROUND_NODE_JALALABAD
+GROUND_NODE_FORTRESS
+GROUND_NODE_JOYCE
+GROUND_NODE_WRIGHT
+GROUND_NODE_HONAKER
+GROUND_NODE_BOSTICK
+```
+
+Der akzeptierte aktuelle Motorized-Patrol-Ressourcenvertrag lautet:
+
+```text
+1 M-ATV = 1 VEHICLE + 3 PERSONNEL
+```
+
+Die Ground-Foundation deckt den strategischen Pfad von Ressourcenbindung, physischer Materialisierung und Mission bis Settlement, Return/Loss und Restart-Reconciliation ab. DCS-Gruppen bleiben temporäre physische Repräsentationen; CampaignState bleibt autoritativ.
+
+Fortress und Honaker-Miracle sind inzwischen in den Ground-Initialbeständen enthalten. Der aktuelle Production-Stock lautet:
+
+```text
+FORTRESS
+PERSONNEL = 160
+VEHICLE   = 18
+SUPPLY    = 44
+AMMO      = 48
+FUEL      = 40
+
+HONAKER
+PERSONNEL = 120
+VEHICLE   = 18
+SUPPLY    = 40
+AMMO      = 40
+FUEL      = 36
+```
+
+### 12.5 Ground-Templates und Fixed Fire Support
+
+Die wiederverwendbaren Ground-Templates umfassen unter anderem motorisierte Patrouillen, gemischte Fahrzeuggruppen und Infanterie. Die 9-Mann-Rifle-Squad ist als eigener physischer Baustein vorgesehen, etwa für Fußpatrouillen, OP-Ablösung oder späteren Dismount aus einem Convoy.
+
+Standortgebundene Fire-Support-Gruppen bleiben Mission-Editor-Assets an ihren exakt gesetzten Stellungen und werden von `OMW_Ground_Base.lua` nicht generisch gespawnt, verschoben oder ersetzt:
+
+```text
+TPL_BLUE_GND_FORTRESS_FS_ARTY_L118_1
+TPL_BLUE_GND_BOSTICK_FS_ARTY_L118_2
+TPL_BLUE_GND_HONAKER_FS_MORTAR_2B11_2
+```
+
+Für Fortress wird konservativ eine einzelne L118 als DCS-Proxy für die belegte lokale 105-mm-Fähigkeit geführt. Aus der historischen/visuellen Evidenz wird keine zweite Haubitze abgeleitet.
+
+### 12.6 Erreichter und noch offener Integrationsstand
+
+Als Foundation vorhanden und auf `main` integriert sind:
+
+```text
+MOOSE framework
+CampaignState foundation
+AirOps Warehouse Production Base
+Ground Production Base
+AAR Production Base
+Bagram AirOps Foundation
+Kandahar AirOps Foundation
+Jalalabad AirOps Foundation
+Salerno AirOps Foundation
+Tarinkot AirOps Foundation
+Shindand AirOps Foundation
+Ground nodes and Ground resource contracts
+Ground templates including infantry and fixed fire support
+```
+
+`READY` beziehungsweise vorhandene Production-Foundation bedeutet nicht, dass die vollständige dynamische Kampagne abgeschlossen ist. Der nächste große Integrationsblock ist die Orchestrierung über MissionDemand/ATO/COMMANDER zwischen den bereits vorhandenen AirOps-, AAR- und Ground-Foundations.
+
+Der Trigger `LOAD_TM01M` ist als separater offener Reconciliation-Punkt zu behandeln. Vor einer endgültigen Production-MIZ ist zu prüfen, welche Funktion davon weiterhin produktiv benötigt wird und welche Teile inzwischen durch die aktuelle Ground-Foundation ersetzt wurden.
+
+Weitere neue DCS-Runtime-Prüfungen dieser Foundation-Phase sollen nach Projektinhaberentscheidung nur noch als gebündelte Integrations-/Sammelmission erfolgen, nicht als neue isolierte Einzelabnahmen.
+
+## 13. Abschlussregel
 
 Ein Objektpaket ist erst produktionsreif, wenn:
 
