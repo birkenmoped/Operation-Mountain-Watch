@@ -108,6 +108,7 @@ Guards:
 ```text
 - exactly one active demand per dedupeKey;
 - duplicate id is idempotent only for an identical creation specification;
+- every creation field, including nil-valued optional fields, participates in idempotency comparison;
 - different specifications under the same id are rejected;
 - player and AI assignment are mutually exclusive by state transition;
 - reassignment to a different assignee without an explicit later retasking contract is rejected;
@@ -117,7 +118,15 @@ Guards:
 - snapshot restore rebuilds active dedupe state and rejects duplicate active keys.
 ```
 
-Dieser Stand ist Source-Review, kein DCS-PASS.
+Contract-Test-Source:
+
+```text
+tests/mission-demand/test_mission_demand.lua
+```
+
+Der Test deckt Create/Idempotenz, Deduplizierung, nil-Feld-Regressionsschutz, AI-vs-Player-Zuweisung, Aktivierung, Erfolg, Dedupe-Freigabe und Snapshot-Restore ab.
+
+Der Test ist im Repository vorhanden, wurde auf der ChatGPT-Ausführungsumgebung aber noch nicht mit einem Lua-5.1-kompatiblen Interpreter ausgeführt. Das ist kein DCS-PASS.
 
 ## 4. Phase 2 – Resource Demand Policy
 
@@ -163,6 +172,22 @@ Die Policy erzeugt nur einen Resupply-Kandidaten. Sie:
 
 Damit bleibt der derzeitige Foundation-Stand mit `reorder=0` und `critical=0` inert, bis konkrete Werte ausdrücklich festgelegt werden.
 
+Contract-Test-Source:
+
+```text
+tests/mission-demand/test_resource_demand_policy.lua
+```
+
+Der Test deckt disabled thresholds, REORDER, CRITICAL, Auffüllmenge bis `target`, Unit-Mismatch, doppelte Policy-Zeilen und ungültige Threshold-Reihenfolge ab.
+
+Gemeinsamer Test-Runner:
+
+```text
+tests/mission-demand/run.lua
+```
+
+Auch dieser Teststand ist noch nicht lokal mit einem Lua-Interpreter ausgeführt.
+
 ## 5. Neu erkannte CampaignState-Transferlücke
 
 Die Phase-0-Prüfung des generischen `CampaignState` und der tatsächlichen Ground-Initialisierung zeigt eine wichtige Integrationslücke.
@@ -188,13 +213,70 @@ kann nicht korrekt durch einen unveränderten generischen `TRANSFER` mit nur ein
 
 Das ist kein MOOSE-Problem. Es ist eine CampaignState-Domänenlücke zwischen dem vorhandenen generischen Transfermodell und der aktuellen Ground-ID-Namensgebung.
 
-## 6. Zulässige Lösungsrichtungen für die Transferlücke
+## 6. Impact Review der Transferlücke
 
-Noch keine der folgenden Richtungen wird in diesem Dokument stillschweigend als verbindliche Eigentümerentscheidung festgelegt.
+Geprüft wurden mindestens:
+
+```text
+scripts/campaign/OMW_CampaignState.lua
+scripts/logistics/OMW_AirOpsCampaignStateInitializer.lua
+scripts/ground/OMW_GroundCampaignStateAdapter.lua
+```
+
+Feststellungen:
+
+```text
+1. CampaignState TRANSFER nutzt resourceId derzeit gleichzeitig für:
+   - origin resource lookup
+   - reservation accounting
+   - origin debit
+   - destination resource lookup
+   - destination credit
+   - transaction equality
+   - snapshot/restore
+
+2. Der Initializer unterstützt bewusst unterschiedliche resourceId pro Node.
+
+3. Ground action commitments verwenden CONSUMPTION und CreditResourceOnce.
+   Dieser bestehende Ground-Settlement-Pfad darf durch eine Transfererweiterung nicht verändert werden.
+
+4. Eine abwärtskompatible Transfererweiterung kann den bisherigen resourceId-Pfad als Legacy-Kurzform erhalten.
+```
+
+Technisch kleinster kompatibler Entwurf:
+
+```text
+legacy input:
+  resourceId = X
+
+normalisiert zu:
+  originResourceId      = X
+  destinationResourceId = X
+
+new cross-node input:
+  originResourceId      = A
+  destinationResourceId = B
+```
+
+Für `CONSUMPTION` bleibt weiterhin ausschließlich die Ursprungsressource relevant.
+
+Snapshot-/Restore-Regel für die vorwärtskompatible Implementierung:
+
+```text
+old snapshot without originResourceId/destinationResourceId
+-> derive both from existing resourceId
+
+new snapshot
+-> persist explicit originResourceId/destinationResourceId
+```
+
+Ein Snapshot, der bereits eine laufende Cross-ID-Transfertransaktion enthält, ist nicht für ein Rollback auf alten Code garantiert. Diese Rollback-Grenze muss vor Produktivnutzung dokumentiert werden.
+
+## 7. Zulässige Lösungsrichtungen für die Transferlücke
 
 ### A – CampaignState Transfer unterstützt getrennte Resource IDs
 
-Abwärtskompatible Erweiterung, beispielsweise logisch:
+Abwärtskompatible Erweiterung:
 
 ```text
 originResourceId
@@ -209,17 +291,8 @@ Vorteil:
 ```text
 - echter TRANSFER-Lifecycle bleibt erhalten;
 - origin debit / destination credit / lost / cancel bleiben zusammenhängend;
-- node-spezifische Ground-IDs müssen nicht umbenannt werden.
-```
-
-Zu prüfen:
-
-```text
-- Snapshot-Kompatibilität;
-- bestehende Transfer-Nutzer;
-- transaction identity/equality;
-- Restore/Reconciliation;
-- Dokument 04/05-Vertrag.
+- node-spezifische Ground-IDs müssen nicht umbenannt werden;
+- bestehende CONSUMPTION-/Ground-Settlement-Pfade bleiben unverändert.
 ```
 
 ### B – Verbrauch am Ursprung + idempotente Gutschrift am Ziel
@@ -234,9 +307,19 @@ Vorteil: keine Änderung des generischen Transfer-Schemas.
 
 Nachteil: Transportzustand, Verlust und Transferidentität würden über einen zusätzlichen OMW-Vertrag gekoppelt und damit Teile des bereits vorhandenen TRANSFER-Modells parallel abbilden.
 
-Aus MOOSE-/Architektursicht ist Richtung A deshalb derzeit der sauberere Prüfpfad, aber eine Änderung des CampaignState-Kernvertrags wird erst nach vollständigem Impact-Review umgesetzt.
+### Empfehlung nach Impact Review
 
-## 7. BLUE COMMANDER Dependency
+```text
+PREFERRED: A
+```
+
+Begründung:
+
+Richtung A erweitert den vorhandenen CampaignState-Transfervertrag an genau der festgestellten Domänenlücke. Richtung B würde dagegen einen zweiten projektspezifischen Transfer-Lifecycle aus vorhandenen Einzeloperationen zusammensetzen.
+
+Da Richtung A den persistierten CampaignState-Transaktionsvertrag erweitert, bleibt die Umsetzung ein dokumentierter Architektur-/Domain-Gate und wird nicht als bereits akzeptierte Produktionsbaseline bezeichnet.
+
+## 8. BLUE COMMANDER Dependency
 
 Für CAS wird kein zweiter COMMANDER entwickelt.
 
@@ -256,17 +339,18 @@ Der Branch registriert die produktiven BLUE AIRWINGs an genau einem MOOSE COMMAN
 
 Vor CAS-Runtime muss dieser Branch gegen den dann aktuellen `main` reconciled und gemäß seiner eigenen Acceptance-/Merge-Grenze integriert werden.
 
-## 8. Nächste Gates
+## 9. Nächste Gates
 
 ```text
 GATE 1
-MissionDemand Registry source review + executable contract test
+MissionDemand Registry source + contract tests staged
 
 GATE 2
-ResourceDemandPolicy contract test with thresholds disabled and synthetic calibrated rows
+ResourceDemandPolicy source + contract tests staged
 
 GATE 3
-CampaignState cross-node resource-ID transfer decision and compatibility review
+Owner approval for preferred CampaignState cross-node transfer direction A
+then implement compatibility-preserving transaction extension + tests
 
 GATE 4
 ROAD_CONVOY MOOSE execution decision
@@ -281,8 +365,16 @@ GATE 7
 CAS AUFTRAG dispatch and DCS acceptance
 ```
 
-## 9. Aktuelle Validierungsgrenze
+## 10. Aktuelle Validierungsgrenze
 
 Zum Zeitpunkt dieses Dokuments wurde kein neuer DCS-Test ausgeführt.
 
 Die neuen Domain-Module enthalten keine DCS- oder MOOSE-Aufrufe. Ein DCS-Test ist für die reine Domainlogik nicht erforderlich, bevor die physische Execution-Schicht angeschlossen wird. Syntax- und ausführbare Contract-Tests bleiben dennoch erforderlich, bevor dieser Branch als fertig bewertet wird.
+
+Aktueller Teststatus:
+
+```text
+MissionDemand contract test source      STAGED / NOT EXECUTED
+ResourceDemandPolicy contract test      STAGED / NOT EXECUTED
+MOOSE/DCS runtime                       NOT STARTED
+```
