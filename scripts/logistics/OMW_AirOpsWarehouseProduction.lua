@@ -27,7 +27,7 @@ local FUEL_RESOURCE_IDS_BY_NODE = {
   TARINKOT = { "FUEL_JP8" },
 }
 
-Production.SchemaVersion = "OMW-AIROPS-WAREHOUSE-PRODUCTION-2"
+Production.SchemaVersion = "OMW-AIROPS-WAREHOUSE-PRODUCTION-3"
 
 local function fail(message)
   error(TAG .. " " .. tostring(message), 2)
@@ -75,15 +75,17 @@ local function createCampaignContext(spec)
   local initialJP8Stock = requireTable(spec.initialJP8Stock, "spec.initialJP8Stock")
   local fuelSupplement = requireTable(spec.fuelSupplement, "spec.fuelSupplement")
   local aarStrategicStock = requireTable(spec.aarStrategicStock, "spec.aarStrategicStock")
+  local groundInitialStock = requireTable(spec.groundInitialStock, "spec.groundInitialStock")
   requireFunction(initializer, "CreateStore", "spec.campaignStateInitializer")
 
-  -- The Warehouse base starts before the AAR base. Therefore the single NEW
-  -- CampaignState context contains the approved on-map JP-8 baseline, Kandahar
-  -- AVGAS supplement and off-map AAR pools before any physical mirror is applied.
+  -- The Warehouse base owns creation of the single authoritative NEW
+  -- CampaignState context. Therefore all approved strategic domains that must
+  -- attach later (AirOps, AAR and Ground) are seeded here exactly once before
+  -- any physical STORAGE mirror or subsystem base is applied.
   local created = initializer.CreateStore(
     campaignState,
     initialStock,
-    { initialJP8Stock, fuelSupplement, aarStrategicStock }
+    { initialJP8Stock, fuelSupplement, aarStrategicStock, groundInitialStock }
   )
 
   return {
@@ -193,7 +195,7 @@ local function startInternal(spec, readyFlag)
   OMW.AirOps.Warehouse = facade
 
   log(string.format(
-    "READY mode=%s campaignContextCreated=%s campaignStateAuthority=true reverseOverwrite=false scheduler=false readyFlag=1",
+    "READY mode=%s campaignContextCreated=%s campaignStateAuthority=true groundStockSeeded=true reverseOverwrite=false scheduler=false readyFlag=1",
     tostring(warehouseSpec.mode),
     tostring(createdContext)
   ))
