@@ -1,4 +1,7 @@
 dofile("tests/ground/test_ground_road_spawn_adapter.lua")
 dofile("tests/ground/test_ground_support_materializer.lua")
 dofile("tests/ground/test_bostick_ammo_support.lua")
-print("PASS Ground execution source contract suite")
+dofile("tests/ground/test_ground_resource_normalization.lua")
+dofile("tests/ground/test_ground_ammo_rearm_adapter.lua")
+dofile("tests/ground/test_bostick_ammo_rearm_service.lua")
+print("PASS Ground execution and ammo rearm source contract suite")
