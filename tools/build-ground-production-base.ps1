@@ -12,7 +12,7 @@ $baseFile = Join-Path $repoRoot 'scripts\ground\OMW_GroundBase.lua'
 $distDir = Join-Path $repoRoot 'mission\ground-operations\dist'
 $outputFile = Join-Path $distDir 'OMW_Ground_Base.lua'
 
-$builderVersion = 'OMW-GROUND-PRODUCTION-BASE-2'
+$builderVersion = 'OMW-GROUND-PRODUCTION-BASE-3'
 
 $files = @(
   $groundStockFile,
@@ -95,7 +95,7 @@ $header = @"
 -- GitCommit: $commit
 -- Scope: production packaging of the accepted six-node ARMY Ground strategic foundation.
 -- Strategic authority: caller-provided single CampaignState store only.
--- MOOSE/DCS lifecycle: none created by this package.
+-- MOOSE/DCS lifecycle: none created by this package; MOOSE USERFLAG is used only for Mission Editor readiness gating.
 -- Fixed ARTY/mortar and reusable DCS templates remain Mission Editor assets and are not spawned here.
 
 "@
@@ -122,9 +122,32 @@ OMW.Ground.Base = GroundBase
 OMW_GROUND_BASE_LOADED = 1
 OMW_GROUND_READY = 0
 
+if type(USERFLAG) ~= "table" or type(USERFLAG.New) ~= "function" then
+  error("[OMW][Ground.Startup] MOOSE USERFLAG class is required for OMW_GROUND_READY", 0)
+end
+
+local GroundReadyFlag = USERFLAG:New("OMW_GROUND_READY")
+GroundReadyFlag:Set(0)
+if GroundReadyFlag:Get() ~= 0 then
+  error("[OMW][Ground.Startup] OMW_GROUND_READY fail-closed initialization readback failed", 0)
+end
+
 local GroundBaseAttach = GroundBase.Attach
 GroundBase.Attach = function(spec)
-  local context = GroundBaseAttach(spec)
+  local ok, context = pcall(GroundBaseAttach, spec)
+  if not ok then
+    OMW_GROUND_READY = 0
+    GroundReadyFlag:Set(0)
+    error(context, 0)
+  end
+
+  GroundReadyFlag:Set(1)
+  if GroundReadyFlag:Get() ~= 1 then
+    OMW_GROUND_READY = 0
+    GroundReadyFlag:Set(0)
+    error("[OMW][Ground.Startup] OMW_GROUND_READY user-flag readback failed", 0)
+  end
+
   OMW_GROUND_READY = 1
   return context
 end
@@ -143,7 +166,8 @@ Write-Host "GroundNodes: GROUND_NODE_JALALABAD,GROUND_NODE_FORTRESS,GROUND_NODE_
 Write-Host "MotorizedPatrolContract: 1 M-ATV = 1 VEHICLE + 3 PERSONNEL"
 Write-Host "StrategicAuthority: caller-provided single CampaignState store"
 Write-Host "GroundBaseLoadedFlag: OMW_GROUND_BASE_LOADED=1"
-Write-Host "GroundReadyFlag: OMW_GROUND_READY becomes 1 only after successful OMW.Ground.Base.Attach(...)"
+Write-Host "GroundReadyFlag: MOOSE USERFLAG OMW_GROUND_READY becomes 1 only after successful OMW.Ground.Base.Attach(...) and readback"
+Write-Host "GroundReadyFailClosed: true"
 Write-Host "GroundLifecycleMutation: false"
 Write-Host "MOOSEOverride: false"
 Write-Host "MizMutation: false"
