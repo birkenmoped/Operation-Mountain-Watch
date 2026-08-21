@@ -8,7 +8,7 @@ local Initializer = {}
 
 local TAG = "[OMW][Logistics.AirOpsCampaignStateInitializer]"
 
-Initializer.SchemaVersion = "OMW-AIROPS-CAMPAIGNSTATE-INITIALIZER-4"
+Initializer.SchemaVersion = "OMW-AIROPS-CAMPAIGNSTATE-INITIALIZER-5"
 
 -- These are CampaignState node labels. OFFMAP_* and GROUND_NODE_* entries are
 -- strategic/logical nodes and must never be passed to AIRBASE, WAREHOUSE or
@@ -191,6 +191,27 @@ local function appendAdditionalStocks(additionalStock, nodesById, metadataByNode
   end
 end
 
+local function stockModules(initialStock, additionalStock)
+  local modules = { initialStock }
+  if additionalStock == nil then
+    return modules
+  end
+
+  if type(additionalStock) == "table" and type(additionalStock.Rows) == "table" then
+    modules[#modules + 1] = additionalStock
+    return modules
+  end
+
+  if type(additionalStock) ~= "table" then
+    fail("additionalStock must be a stock module or an array of stock modules")
+  end
+
+  for _, stockModule in ipairs(additionalStock) do
+    modules[#modules + 1] = stockModule
+  end
+  return modules
+end
+
 local function collectAdditionalSchemaVersions(additionalStock)
   if additionalStock == nil then
     return {}
@@ -231,6 +252,28 @@ function Initializer.BuildInitialState(initialStock, additionalStock)
   }, metadataByNode
 end
 
+function Initializer.MigrateSnapshot(snapshot, initialStock, additionalStock)
+  if type(snapshot) ~= "table" then
+    fail("snapshot must be a table")
+  end
+  validateStockModule(initialStock, "initialStock")
+
+  local migrated = snapshot
+  for index, stockModule in ipairs(stockModules(initialStock, additionalStock)) do
+    validateStockModule(stockModule, "stockModules[" .. tostring(index) .. "]")
+    if stockModule.MigrateSnapshot ~= nil then
+      if type(stockModule.MigrateSnapshot) ~= "function" then
+        fail("stock module MigrateSnapshot must be a function index=" .. tostring(index))
+      end
+      migrated = stockModule.MigrateSnapshot(migrated)
+      if type(migrated) ~= "table" then
+        fail("stock module MigrateSnapshot must return a snapshot table index=" .. tostring(index))
+      end
+    end
+  end
+  return migrated
+end
+
 function Initializer.CreateStore(campaignStateModule, initialStock, additionalStock)
   if type(campaignStateModule) ~= "table" or type(campaignStateModule.New) ~= "function" then
     fail("CampaignState module with New() is required")
@@ -244,6 +287,25 @@ function Initializer.CreateStore(campaignStateModule, initialStock, additionalSt
     store = store,
     initialState = initialState,
     metadataByNode = metadataByNode,
+    initialStockSchemaVersion = initialStock.SchemaVersion,
+    additionalStockSchemaVersion = #additionalSchemaVersions == 1 and additionalSchemaVersions[1] or nil,
+    additionalStockSchemaVersions = additionalSchemaVersions,
+    initializerSchemaVersion = Initializer.SchemaVersion,
+  }
+end
+
+function Initializer.RestoreStore(campaignStateModule, snapshot, initialStock, additionalStock)
+  if type(campaignStateModule) ~= "table" or type(campaignStateModule.Restore) ~= "function" then
+    fail("CampaignState module with Restore() is required")
+  end
+
+  local migratedSnapshot = Initializer.MigrateSnapshot(snapshot, initialStock, additionalStock)
+  local store = campaignStateModule.Restore(migratedSnapshot)
+  local additionalSchemaVersions = collectAdditionalSchemaVersions(additionalStock)
+
+  return {
+    store = store,
+    migratedSnapshot = migratedSnapshot,
     initialStockSchemaVersion = initialStock.SchemaVersion,
     additionalStockSchemaVersion = #additionalSchemaVersions == 1 and additionalSchemaVersions[1] or nil,
     additionalStockSchemaVersions = additionalSchemaVersions,
