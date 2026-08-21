@@ -4,12 +4,12 @@ status: PLANNED
 document_class: MOOSE_SOURCE_REVIEW
 owning_policy: OMW-GOV-001
 authoritative_for:
-  - source-reviewed MOOSE Ground warehouse materialization and predefined routing capabilities relevant to the Ground Execution Layer
-  - documented public-API gap for reusable-template road-aligned per-unit Warehouse spawn geometry
+  - source-reviewed MOOSE Ground warehouse materialization and routing capabilities relevant to road-aligned Ground spawning
+  - documented public-API gap for per-unit WAREHOUSE spawn geometry
+  - owner-approved production scope of the minimal road-spawn materialization adapter
 not_authoritative_for:
-  - DCS runtime acceptance
-  - production approval of any internal MOOSE override
-  - final route catalog data
+  - DCS runtime acceptance of the generalized production adapter
+  - final Ground tasking or route architecture
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
@@ -21,7 +21,7 @@ validated_in_dcs: false
 
 # MOOSE Ground Materialization / Routing – Source Review
 
-## 1. Gepruefter Stand
+## 1. Gepruefter MOOSE-Stand
 
 ```text
 MOOSE release: 2.9.18
@@ -29,222 +29,222 @@ MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
 Moose.lua SHA-256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
 ```
 
-Die Pruefung betrifft nur die Frage, ob die Production Ground Execution Layer mit oeffentlichen MOOSE-Funktionen sowohl
+Ziel der Pruefung ist ausschliesslich die Materialisierungsfrage:
 
 ```text
-A) den BRIGADE/WAREHOUSE-Lifecycle erhalten
-und
-B) ein wiederverwendbares Fahrzeugtemplate exakt strassenorientiert materialisieren
+Kann MOOSE den bestehenden BRIGADE/WAREHOUSE-Lifecycle beibehalten
+und gleichzeitig beliebige Ground Assets reproduzierbar auf einer Strasse
+mit per-unit Position und Heading materialisieren?
 ```
 
-kann.
+## 2. Oeffentliche MOOSE-Funktionalitaet
 
-## 2. Oeffentliche MOOSE-Funktionen – vorhanden
-
-### 2.1 Warehouse Spawn Zone
+Source-geprueft vorhanden:
 
 ```lua
-WAREHOUSE:SetSpawnZone(zone, maxdist)
-```
+WAREHOUSE:SetSpawnZone(...)
+WAREHOUSE:AddOffRoadPath(...)
 
-Damit kann der Mission Designer die Zone begrenzen, in der Ground Assets materialisiert werden.
-
-Die Zone kann auch als Polygon ausgelegt werden. Diese Funktion bestimmt jedoch keine individuellen Positionen oder Headings der Units.
-
-### 2.2 Warehouse Road Connection
-
-Die WAREHOUSE-Dokumentation des gepinnten Source beschreibt eine Road Connection fuer self-propelled Assets und einen manuell setzbaren Road Connection Point.
-
-Damit laesst sich die Anbindung eines Warehouses an das Strassennetz steuern. Das loest nicht die per-unit Materialisierungsgeometrie.
-
-### 2.3 Warehouse Off-Road Path
-
-```lua
-WAREHOUSE:AddOffRoadPath(remotewarehouse, group, oneway)
-```
-
-Der gepinnte Source enthaelt dazu auch ein offizielles eingebettetes Beispiel. Die Waypoints eines late-activated Template-Groups definieren den Pfad zwischen zwei Warehouses.
-
-Wichtig fuer OMW:
-
-```text
-- vordefinierte Wege sind damit MOOSE-nativ moeglich;
-- die Rueckrichtung wird standardmaessig automatisch ergaenzt;
-- mehrere Pfade koennen hinterlegt werden;
-- Start und Ende werden jedoch aus zufaelligen Punkten der jeweiligen Spawn Zones erzeugt.
-```
-
-Der Source von `AddOffRoadPath` verwendet:
-
-```lua
-self.spawnzone:GetRandomCoordinate()
-remotewarehouse.spawnzone:GetRandomCoordinate()
-```
-
-und baut daraus mit `_NewLane(...)` den Pfad.
-
-Damit ist `AddOffRoadPath` fuer einen Warehouse-zu-Warehouse-Transportpfad relevant, aber nicht automatisch identisch mit dem OMW-Vertrag einer explizit gerichteten PATHLINE-Kette mit kontrollierten Handoff-Ankern.
-
-### 2.4 Ground road task
-
-```lua
 CONTROLLABLE:TaskGroundOnRoad(...)
-```
+COORDINATE:GetPathOnRoad(...)
 
-Der Source verwendet `COORDINATE:GetPathOnRoad(...)` und baut daraus Ground Waypoints.
-
-OMW kann dies fuer kleine Connector-Segmente pruefen. Wegen der verbindlichen Ground-AI-Regel ersetzt es aber keine validierten MSR/PATHLINE-Routen.
-
-### 2.5 PATHLINE
-
-Source-geprueft:
-
-```lua
 PATHLINE:GetNumberOfPoints()
 PATHLINE:GetPoint2DFromIndex(...)
 PATHLINE:GetCoordinates()
+
+SPAWN:InitSetUnitAbsolutePositions(...)
 ```
 
-Damit kann OMW eine im Mission Editor definierte, explizite Routengeometrie lesen, ohne eine eigene Pathfinding-Engine zu entwickeln.
+Damit sind Road-Geometrie, vordefinierte Wege, PATHLINE-Lesen und absolute SPAWN-Unitpositionen in MOOSE vorhanden.
 
-### 2.6 SPAWN absolute positions
+## 3. Nachgewiesene oeffentliche API-Luecke
 
-Source-geprueft:
-
-```lua
-SPAWN:InitSetUnitAbsolutePositions(Positions)
-```
-
-Die Methode akzeptiert pro Unit absolute Positionen und optional ein individuelles Heading.
-
-Damit ist die benoetigte Geometriefunktion in MOOSE vorhanden.
-
-Sie ist jedoch Teil des `SPAWN`-Pfades und wird von der normalen Ground-Asset-Materialisierung des WAREHOUSE nicht als oeffentlicher Konfigurationspunkt aufgerufen.
-
-## 3. Tatsaechlicher WAREHOUSE Ground-Spawnpfad
-
-Der gepinnte Source materialisiert Ground Assets ueber:
+Der gepinnte WAREHOUSE-Ground-Spawnpfad materialisiert ueber:
 
 ```lua
 WAREHOUSE:_SpawnAssetGroundNaval(...)
 ```
 
-Der Ablauf ist source-seitig:
+Source-seitig:
 
 ```text
 _SpawnAssetPrepareTemplate(...)
 -> spawnzone:GetRandomCoordinate()
--> bestehende Template-Unitpositionen relativ zu diesem Zufallspunkt verschieben
+-> Templatepositionen relativ verschieben
 -> optional ValidateAndRepositionGroundUnits
 -> _DATABASE:Spawn(template)
--> __AssetSpawned(...)
 ```
 
-Entscheidend:
+Die oeffentliche WAREHOUSE-API stellt im gepinnten Stand keinen Hook bereit, der vor diesem Spawn individuelle absolute Positionen und Headings der Ground-Units uebernimmt.
+
+Damit ist die Luecke eng begrenzt:
 
 ```text
-- oeffentliche SetSpawnZone API: ja
-- kontrollierter Gruppenmittelpunkt: nur ueber Zone, intern zufaellig
-- individuelle absolute Unitpositionen ueber WAREHOUSE public API: nein gefunden
-- individuelles per-unit Heading ueber WAREHOUSE public API: nein gefunden
-- normaler WAREHOUSE Asset/Request/Callback-Lifecycle: ja
+MOOSE kann die Geometrie grundsaetzlich.
+WAREHOUSE kann sie im normalen Ground-Asset-Lifecycle nicht oeffentlich injizieren.
 ```
 
-## 4. Warum ein sehr schmales Spawn-Polygon die Luecke nicht vollstaendig schliesst
+Es besteht keine nachgewiesene Luecke fuer einen eigenen Warehouse-, Asset-, Mission-, FSM- oder Pathfinding-Ersatz.
 
-Ein schmales Polygon kann die zufaellige Gruppenposition geometrisch einschraenken. Es garantiert aber nicht den vollstaendigen OMW-Vertrag:
+## 4. Acceptance-3-2 Evidenz
+
+Acceptance 3-2 verwendete fuer sechs Ground Sites eine owner-genehmigte, versionsgebundene Ausnahme.
+
+Der Adapter:
 
 ```text
-- reproduzierbare Marschreihenfolge entlang der Strassenachse;
-- definierter Fahrzeugabstand;
-- Heading jeder Unit in Fahrtrichtung;
-- wiederverwendbares Template an Strassen mit unterschiedlichem Heading;
-- garantiertes Forward-Alignment zur gewaehlten Route.
+- fing nur _SpawnAssetGroundNaval(...) der jeweiligen BRIGADE ab;
+- verwendete _SpawnAssetPrepareTemplate(...);
+- ersetzte nur absolute Unitpositionen und Heading;
+- spawnte die vorbereitete Kopie genau einmal ueber _DATABASE:Spawn(template);
+- liess Assetreservation, Request Queue, BRIGADE, PLATOON, ARMYGROUP und AUFTRAG bestehen.
 ```
 
-Ein site-spezifisch bereits passend ausgerichtetes Template koennte Teile davon umgehen, wuerde aber die beabsichtigte wiederverwendbare Template-Architektur aufgeben und die bereits vorhandene TM01M-/Acceptance-Erkenntnis nicht sauber verallgemeinern.
+Der damalige DCS-Nachweis bestaetigte diese Materialisierung fuer den dokumentierten sechs-Site-/M-ATV-Testscope.
 
-## 5. Acceptance-3-2 Evidenz
+Dieser Nachweis bleibt begrenzt auf seine dokumentierte Provenienz und beweist nicht automatisch die jetzt allgemeinere Production-Verwendung.
 
-Die Ground Foundation hat diese konkrete Luecke bereits einmal fuer einen Testscope behandelt.
+## 5. Owner-Freigabe 2026-08-21
 
-Die owner-genehmigte Acceptance-3-2-Ausnahme setzte vor dem finalen Warehouse-Spawn absolute per-unit Strassenpositionen und Headings in die vorbereitete Template-Kopie und liess danach den bestehenden Warehouse-/Asset-/Callback-Lifecycle weiterlaufen.
+Der Projektinhaber hat die Ausnahme ausdruecklich erweitert:
 
-Der zugehoerige dokumentierte DCS-Lauf bestaetigte fuer den damaligen Scope sechs Sites und road-aligned Materialisierung.
+> Fuer alle Bodeneinheiten gilt: Wenn auf einer Strasse gespawnt/materialisiert wird, soll die Ausrichtung immer nach dem Acceptance-3-2-Grundverfahren erfolgen.
 
-Diese Evidenz beweist:
+Genehmigter Production-Scope:
 
 ```text
-- der kleine Integrationspunkt funktioniert im dokumentierten Acceptance-Scope;
-- BRIGADE/WAREHOUSE/ARMYGROUP koennen dabei erhalten bleiben.
+Ground asset is intentionally a ROAD SPAWN
+-> MOOSE WAREHOUSE prepares asset
+-> OMW road-spawn adapter computes road-axis positions and headings
+-> prepared template receives only geometry changes
+-> normal MOOSE asset/request/BRIGADE/PLATOON/ARMYGROUP/AUFTRAG lifecycle continues
 ```
 
-Sie beweist NICHT:
+Nicht genehmigt:
 
 ```text
-- automatische Production-Freigabe;
-- Versionsstabilitaet ausserhalb des gepinnten Moose.lua;
-- beliebige Route-/Templatekombinationen;
-- dass kein kuenftiger oeffentlicher MOOSE-Pfad existiert.
+- eigener Warehouse-Ersatz
+- eigener Asset-Pool
+- eigener Ground Mission Controller
+- eigener Route Catalog
+- eigener Pathfinding-Algorithmus
+- parallele Mission-/Return-/Settlement-FSM
 ```
 
-## 6. MOOSE-first Bewertung
+## 6. Production-Implementierung
 
-Anforderungszerlegung:
+Source:
 
 ```text
-Mission/Asset lifecycle                 -> MOOSE direkt
-Route execution                         -> MOOSE direkt
-PATHLINE reading                        -> MOOSE direkt
-road connector                          -> MOOSE direkt, soweit geeignet
-absolute per-unit spawn geometry        -> MOOSE SPAWN kann es
-WAREHOUSE public injection of geometry  -> im gepinnten Source nicht gefunden
+scripts/ground/OMW_GroundRoadSpawnAdapter.lua
 ```
 
-Damit liegt keine Begruendung fuer eine eigene Spawn-/Mission-Engine vor.
+Der Adapter wird an einer konkreten MOOSE-`BRIGADE`/`WAREHOUSE`-Instanz installiert.
 
-Die einzige verbleibende Production-Luecke ist eng:
+Ein vom konkreten MOOSE-Auftrag bereitgestellter Resolver entscheidet ausschliesslich, ob der aktuelle Spawn ein Road Spawn ist:
 
 ```text
-Wie werden MOOSE-faehige absolute per-unit Positionen/Headings
-in den bestehenden WAREHOUSE Ground materialization lifecycle eingespeist,
-ohne Assetreservation, Request Queue, __AssetSpawned oder ARMYGROUP zu ersetzen?
+resolveRoadSpawn(...) == nil
+-> unveraenderter originaler MOOSE Ground-Spawnpfad
+
+resolveRoadSpawn(...) -> table
+-> road-aligned Ausnahme wird angewendet
 ```
 
-## 7. Kleinster moeglicher Fallback
-
-Falls der Projektinhaber spaeter eine Production-Ausnahme genehmigt, darf sie nur diesen Umfang haben:
+Der Resolver muss fuer einen Road Spawn mindestens liefern:
 
 ```text
-1. prepared Warehouse Ground template erhalten;
-2. Route Catalog / PATHLINE start geometry lesen;
-3. absolute Unitpositionen + Headings berechnen;
-4. nur diese Geometriefelder in der vorbereiteten Kopie ersetzen;
-5. genau einmal den normalen Spawn fortsetzen;
-6. bestehenden __AssetSpawned / BRIGADE / PLATOON / ARMYGROUP / AUFTRAG Lifecycle unveraendert lassen.
+accessZone
+forwardCoordinate
 ```
 
-Ausgeschlossen:
+Optional:
 
 ```text
-- eigener Asset-Pool;
-- eigener Warehouse-Ersatz;
-- Raw-SPAWN als parallele Ground-Ressourcenhoheit;
-- eigener MissionDone-Lifecycle;
-- eigener DCS Event Handler, wenn MOOSE Events ausreichen;
-- eigener Pathfinding-Algorithmus.
+entityId
 ```
 
-## 8. Produktionsentscheidung
+Damit trifft der Adapter selbst keine Mission-, Route-, Asset- oder Campaign-Entscheidung.
 
-Status nach Source Review:
+## 7. Road-Geometrie
+
+Der Production-Adapter verwendet ausschliesslich bereits in Acceptance 3-2 eingesetzte MOOSE-/DCS-Geometriepfade:
+
+```lua
+accessZone:GetCoordinate():GetClosestPointToRoad(false)
+startRoad:GetPathOnRoad(forwardCoordinate, true, false, false, false)
+COORDINATE:NewFromVec2(...)
+coordinate:GetClosestPointToRoad(false)
+coordinate:Get2DDistance(...)
+```
+
+Die Ausrichtung jeder Unit wird entlang des lokalen Road-Path-Tangentenverlaufs berechnet.
+
+Anders als der M-ATV-Test erzwingt die Production-Fassung keinen festen 18-m-Abstand fuer alle Ground-Typen. Reihenfolge und Abstaende werden aus dem bereits vorhandenen Asset-Template uebernommen und entlang der Strassenachse abgetragen. Dadurch wird keine neue allgemeine OMW-Formationspolicy eingefuehrt.
+
+## 8. Private MOOSE-Abhaengigkeit
+
+Der Adapter ist bewusst versionsgebunden, weil er diese internen Punkte nutzt:
+
+```lua
+brigade._SpawnAssetGroundNaval
+brigade:_SpawnAssetPrepareTemplate(...)
+_DATABASE:Spawn(template)
+```
+
+Diese Nutzung ist nur fuer die genehmigte Road-Spawn-Geometrieausnahme zulaessig.
+
+Bei einem MOOSE-Update muss vor weiterer Verwendung erneut geprueft werden:
 
 ```text
-PUBLIC MOOSE ROUTING CAPABILITY: SUFFICIENT FOR PLANNED ROUTE EXECUTION
-PUBLIC MOOSE PATHLINE CAPABILITY: SUFFICIENT
-PUBLIC MOOSE SPAWN GEOMETRY CAPABILITY: SUFFICIENT IN SPAWN CLASS
-PUBLIC WAREHOUSE PER-UNIT GEOMETRY INJECTION: NOT FOUND
-PRODUCTION INTERNAL ADAPTER APPROVAL: NOT YET GRANTED
+- Signatur _SpawnAssetGroundNaval
+- Semantik _SpawnAssetPrepareTemplate
+- Rueckgabe-/Callback-Pfad nach _DATABASE:Spawn
+- Assetreservation und Request Queue
+- __AssetSpawned / OnAfterAssetSpawned
+- ARMYGROUP construction
 ```
 
-Damit ist die offene Entscheidung jetzt sauber auf genau einen kleinen Integrationspunkt reduziert. Bis zu einer Owner-Freigabe bleibt `OMW_GroundMaterializationAdapter.lua` geplant und wird nicht als Production Runtime implementiert.
+## 9. Guard Rails
+
+Der Adapter verweigert einen Road Spawn, wenn unter anderem:
+
+```text
+- kein Road-Punkt innerhalb der ACCESS-Zone gefunden wird;
+- kein Road-Path in Outbound-Richtung ermittelt werden kann;
+- die vorhandene Template-Geometrie kollabiert ist;
+- die Gruppe nicht in die verfuegbare Road-Strecke passt;
+- ein Unit-Snap mehr als 30 m betraegt;
+- eine berechnete Position ausserhalb der ACCESS-Zone liegt;
+- WAREHOUSE ValidateAndRepositionGroundUnits gleichzeitig aktiv ist.
+```
+
+Ein angeforderter Road Spawn faellt nicht stillschweigend auf den zufaelligen Standard-WAREHOUSE-Spawn zurueck.
+
+## 10. MOOSE-first Bewertung
+
+```text
+MOOSE asset lifecycle                    DIRECT MOOSE
+MOOSE mission lifecycle                  DIRECT MOOSE
+MOOSE road/path geometry                 DIRECT MOOSE
+MOOSE PATHLINE                           DIRECT MOOSE
+MOOSE public SPAWN absolute positions    AVAILABLE
+WAREHOUSE public per-unit injection      NOT FOUND
+minimal WAREHOUSE geometry adapter       OWNER APPROVED
+custom route engine                      REJECTED / NOT NEEDED
+custom Ground mission engine             REJECTED / NOT NEEDED
+```
+
+Damit ist die Ausnahme auf genau die nachgewiesene API-Luecke begrenzt und entspricht der MOOSE-First-Policy.
+
+## 11. Validierungsgrenze
+
+Status des Production-Adapters:
+
+```text
+SOURCE IMPLEMENTED
+OWNER APPROVED FOR PRODUCTION SCOPE
+DCS VALIDATION PENDING
+```
+
+Acceptance 3-2 bleibt historische Runtime-Evidenz fuer den damaligen Scope. Die generalisierte Fassung muss in der naechsten gebuendelten Ground-Integration-Acceptance mit mehreren Templates und normalen MOOSE-Lifecycles erneut geprueft werden.
