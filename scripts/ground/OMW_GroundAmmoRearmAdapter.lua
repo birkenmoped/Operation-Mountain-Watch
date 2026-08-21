@@ -19,22 +19,30 @@ local function fail(message)
 end
 
 local function requireTable(value, label)
-  if type(value) ~= "table" then fail(label .. " must be a table") end
+  if type(value) ~= "table" then
+    fail(label .. " must be a table")
+  end
   return value
 end
 
 local function requireFunction(value, label)
-  if type(value) ~= "function" then fail(label .. " must be a function") end
+  if type(value) ~= "function" then
+    fail(label .. " must be a function")
+  end
   return value
 end
 
 local function requireNonEmptyString(value, label)
-  if type(value) ~= "string" or value == "" then fail(label .. " requires non-empty string") end
+  if type(value) ~= "string" or value == "" then
+    fail(label .. " requires non-empty string")
+  end
   return value
 end
 
 local function requirePositive(value, label)
-  if type(value) ~= "number" or value ~= value or value <= 0 or value == math.huge then fail(label .. " requires positive finite number") end
+  if type(value) ~= "number" or value ~= value or value <= 0 or value == math.huge then
+    fail(label .. " requires positive finite number")
+  end
   return value
 end
 
@@ -42,15 +50,23 @@ local function noop() end
 
 function GroundAmmoRearmAdapter.New(spec)
   requireTable(spec, "spec")
+
   local store = requireTable(spec.store, "spec.store")
   local campaignState = requireTable(spec.campaignState, "spec.campaignState")
   local artyFactory = requireFunction(spec.artyFactory, "spec.artyFactory")
-  if type(store.ReserveResource) ~= "function" or type(store.Consume) ~= "function" or type(store.Cancel) ~= "function" or type(store.GetTransaction) ~= "function" then
+
+  if type(store.ReserveResource) ~= "function"
+      or type(store.Consume) ~= "function"
+      or type(store.Cancel) ~= "function"
+      or type(store.GetTransaction) ~= "function" then
     fail("spec.store requires ReserveResource(), Consume(), Cancel(), and GetTransaction()")
   end
-  if type(campaignState.TransactionKind) ~= "table" or campaignState.TransactionKind.CONSUMPTION == nil then
+
+  if type(campaignState.TransactionKind) ~= "table"
+      or campaignState.TransactionKind.CONSUMPTION == nil then
     fail("spec.campaignState.TransactionKind.CONSUMPTION is required")
   end
+
   return setmetatable({
     store = store,
     campaignState = campaignState,
@@ -73,6 +89,7 @@ end
 
 function Service:Request(spec)
   requireTable(spec, "spec")
+
   local transactionId = requireNonEmptyString(spec.transactionId, "spec.transactionId")
   local nodeId = requireNonEmptyString(spec.nodeId, "spec.nodeId")
   local artilleryGroup = requireTable(spec.artilleryGroup, "spec.artilleryGroup")
@@ -80,7 +97,9 @@ function Service:Request(spec)
   local quantity = requirePositive(spec.quantity or 1, "spec.quantity")
 
   local existing = self.activeByTransactionId[transactionId]
-  if existing then return existing, false end
+  if existing then
+    return existing, false
+  end
 
   local transaction, created = self.store:ReserveResource({
     transactionId = transactionId,
@@ -96,14 +115,23 @@ function Service:Request(spec)
 
   local arty = self.artyFactory(artilleryGroup, spec.alias)
   if type(arty) ~= "table" then
-    if created then self.store:Cancel(transactionId) end
+    if created then
+      self.store:Cancel(transactionId)
+    end
     fail("artyFactory returned no ARTY object transactionId=" .. transactionId)
   end
 
-  local requiredMethods = { "SetRearmingGroup", "SetRearmingGroupOnRoad", "Start", "Rearm" }
+  local requiredMethods = {
+    "SetRearmingGroup",
+    "SetRearmingGroupOnRoad",
+    "Start",
+    "Rearm",
+  }
   for _, methodName in ipairs(requiredMethods) do
     if type(arty[methodName]) ~= "function" then
-      if created then self.store:Cancel(transactionId) end
+      if created then
+        self.store:Cancel(transactionId)
+      end
       fail("ARTY object requires " .. methodName .. "() transactionId=" .. transactionId)
     end
   end
@@ -113,7 +141,9 @@ function Service:Request(spec)
 
   if spec.rearmingDistance ~= nil then
     if type(arty.SetRearmingDistance) ~= "function" then
-      if created then self.store:Cancel(transactionId) end
+      if created then
+        self.store:Cancel(transactionId)
+      end
       fail("ARTY object requires SetRearmingDistance() for configured distance transactionId=" .. transactionId)
     end
     arty:SetRearmingDistance(requirePositive(spec.rearmingDistance, "spec.rearmingDistance"))
@@ -121,7 +151,9 @@ function Service:Request(spec)
 
   if spec.rearmingSpeedKph ~= nil then
     if type(arty.SetRearmingGroupSpeed) ~= "function" then
-      if created then self.store:Cancel(transactionId) end
+      if created then
+        self.store:Cancel(transactionId)
+      end
       fail("ARTY object requires SetRearmingGroupSpeed() for configured speed transactionId=" .. transactionId)
     end
     arty:SetRearmingGroupSpeed(requirePositive(spec.rearmingSpeedKph, "spec.rearmingSpeedKph"))
@@ -139,14 +171,21 @@ function Service:Request(spec)
   }
   self.activeByTransactionId[transactionId] = context
 
-  arty.OnBeforeRearm = function()
-    local ok, consumedOrError = pcall(function() return self.store:Consume(transactionId) end)
+  -- MOOSE calls the class onbeforeRearm handler first and the user OnBeforeRearm
+  -- hook second. Therefore this hook executes only after ARTY has confirmed that
+  -- the battery can rearm and that a live rearming group/place exists, but still
+  -- before ARTY:onafterRearm starts physical movement.
+  arty.OnBeforeRearm = function(_, Controllable, From, Event, To)
+    local ok, consumedOrError = pcall(function()
+      return self.store:Consume(transactionId)
+    end)
     if not ok then
       context.status = "CONSUMPTION_FAILED"
       context.error = tostring(consumedOrError)
       self:_log("ERROR", "consumption failed transactionId=" .. transactionId, context)
       return false
     end
+
     context.status = "CONSUMED"
     self:_log("INFO", "consumption committed transactionId=" .. transactionId, context)
     return true
@@ -160,13 +199,17 @@ function Service:Request(spec)
 
   arty:Start()
   local accepted = arty:Rearm()
+
   if accepted == false then
     local current = self.store:GetTransaction(transactionId)
-    if current.status == "RESERVED" or current.status == "LOADING" then self.store:Cancel(transactionId) end
+    if current.status == "RESERVED" or current.status == "LOADING" then
+      self.store:Cancel(transactionId)
+    end
     context.status = "REJECTED"
     self:_log("INFO", "ARTY rejected rearm transactionId=" .. transactionId, context)
     return context, created
   end
+
   return context, created
 end
 

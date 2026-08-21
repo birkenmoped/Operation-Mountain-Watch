@@ -123,6 +123,12 @@ local function rejectLegacyGroundCommitment(recordId, oldResourceId, newResource
   end
 end
 
+-- Migrates the supported pre-v2 Ground snapshot representation without mutating
+-- the caller's snapshot. The accepted Ground settlement path only committed
+-- PERSONNEL and VEHICLE; those IDs remain unchanged. Legacy SUPPLY/AMMO/FUEL
+-- node keys are renamed to the shared transferable package IDs. A legacy Ground
+-- commodity commitment is rejected rather than silently rewritten because such
+-- a settlement contract was never part of the accepted Foundation baseline.
 function InitialStock.MigrateSnapshot(snapshot)
   if type(snapshot) ~= "table" then
     fail("snapshot must be a table")
