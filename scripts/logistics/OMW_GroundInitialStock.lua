@@ -10,13 +10,38 @@
 
 local InitialStock = {}
 
-InitialStock.SchemaVersion = "OMW-GROUND-INITIAL-STOCK-1"
+InitialStock.SchemaVersion = "OMW-GROUND-INITIAL-STOCK-2"
 InitialStock.Unit = "count"
+
+InitialStock.ResourceId = {
+  SUPPLY = "GROUND_SUPPLY_PACKAGE",
+  AMMO = "GROUND_AMMO_PACKAGE",
+  FUEL = "GROUND_FUEL_PACKAGE",
+}
+
+local TRANSFERABLE_RESOURCE_CLASSES = {
+  SUPPLY = true,
+  AMMO = true,
+  FUEL = true,
+}
+
+local function fail(message)
+  error("[OMW][Ground.InitialStock] " .. tostring(message), 2)
+end
+
+local function legacyResourceId(nodeId, resourceClass)
+  return "GROUND:" .. nodeId .. ":" .. resourceClass
+end
+
+local function resourceId(nodeId, resourceClass)
+  return InitialStock.ResourceId[resourceClass] or legacyResourceId(nodeId, resourceClass)
+end
 
 local function row(nodeId, resourceClass, initial, supplyParent)
   return {
     nodeId = nodeId,
-    resourceId = "GROUND:" .. nodeId .. ":" .. resourceClass,
+    resourceId = resourceId(nodeId, resourceClass),
+    legacyResourceId = TRANSFERABLE_RESOURCE_CLASSES[resourceClass] and legacyResourceId(nodeId, resourceClass) or nil,
     resourceClass = "GROUND_" .. resourceClass,
     unit = InitialStock.Unit,
     initial = initial,
@@ -31,7 +56,7 @@ end
 local function lossRow(nodeId, resourceClass, supplyParent)
   return {
     nodeId = nodeId,
-    resourceId = "GROUND:" .. nodeId .. ":" .. resourceClass .. "_LOST",
+    resourceId = legacyResourceId(nodeId, resourceClass .. "_LOST"),
     resourceClass = "GROUND_" .. resourceClass .. "_LOSS_AUDIT",
     unit = InitialStock.Unit,
     initial = 0,
@@ -51,6 +76,104 @@ local function appendNode(rows, nodeId, personnel, vehicle, supply, ammo, fuel, 
   rows[#rows + 1] = row(nodeId, "FUEL", fuel, supplyParent)
   rows[#rows + 1] = lossRow(nodeId, "PERSONNEL", supplyParent)
   rows[#rows + 1] = lossRow(nodeId, "VEHICLE", supplyParent)
+end
+
+local function deepCopy(value)
+  if type(value) ~= "table" then
+    return value
+  end
+  local result = {}
+  for key, item in pairs(value) do
+    result[deepCopy(key)] = deepCopy(item)
+  end
+  return result
+end
+
+local function migrationMapByNode()
+  local result = {}
+  for _, source in ipairs(InitialStock.Rows) do
+    if source.legacyResourceId then
+      local byLegacy = result[source.nodeId]
+      if not byLegacy then
+        byLegacy = {}
+        result[source.nodeId] = byLegacy
+      end
+      byLegacy[source.legacyResourceId] = source.resourceId
+    end
+  end
+  return result
+end
+
+local function migratedResourceId(map, nodeId, oldResourceId)
+  local byLegacy = map[nodeId]
+  if not byLegacy then
+    return nil
+  end
+  return byLegacy[oldResourceId]
+end
+
+local function rejectLegacyGroundCommitment(recordId, oldResourceId, newResourceId)
+  if type(recordId) == "string" and recordId:sub(1, 14) == "GROUND-COMMIT:" then
+    fail(string.format(
+      "cannot migrate unsupported legacy commodity commitment id=%s resourceId=%s targetResourceId=%s",
+      recordId,
+      oldResourceId,
+      newResourceId
+    ))
+  end
+end
+
+-- Migrates the supported pre-v2 Ground snapshot representation without mutating
+-- the caller's snapshot. The accepted Ground settlement path only committed
+-- PERSONNEL and VEHICLE; those IDs remain unchanged. Legacy SUPPLY/AMMO/FUEL
+-- node keys are renamed to the shared transferable package IDs. A legacy Ground
+-- commodity commitment is rejected rather than silently rewritten because such
+-- a settlement contract was never part of the accepted Foundation baseline.
+function InitialStock.MigrateSnapshot(snapshot)
+  if type(snapshot) ~= "table" then
+    fail("snapshot must be a table")
+  end
+
+  local migrated = deepCopy(snapshot)
+  local map = migrationMapByNode()
+
+  for _, node in ipairs(migrated.nodes or {}) do
+    local byLegacy = map[node.nodeId]
+    if byLegacy and type(node.resources) == "table" then
+      for oldResourceId, newResourceId in pairs(byLegacy) do
+        local oldEntry = node.resources[oldResourceId]
+        if oldEntry then
+          if node.resources[newResourceId] then
+            fail(string.format(
+              "snapshot contains both legacy and normalized resource IDs nodeId=%s legacy=%s normalized=%s",
+              tostring(node.nodeId),
+              oldResourceId,
+              newResourceId
+            ))
+          end
+          node.resources[newResourceId] = oldEntry
+          node.resources[oldResourceId] = nil
+        end
+      end
+    end
+  end
+
+  for _, transaction in ipairs(migrated.transactions or {}) do
+    local newResourceId = migratedResourceId(map, transaction.originNodeId, transaction.resourceId)
+    if newResourceId then
+      rejectLegacyGroundCommitment(transaction.transactionId, transaction.resourceId, newResourceId)
+      transaction.resourceId = newResourceId
+    end
+  end
+
+  for _, credit in ipairs(migrated.resourceCredits or {}) do
+    local newResourceId = migratedResourceId(map, credit.nodeId, credit.resourceId)
+    if newResourceId then
+      credit.resourceId = newResourceId
+    end
+  end
+
+  return migrated
 end
 
 InitialStock.Rows = {}
