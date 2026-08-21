@@ -48,6 +48,7 @@ local materializerModule = {
 }
 
 local platoonFactory = function() end
+local overridePlatoonName = "PLT_BLUE_GND_BOSTICK_AMMO_SUPPORT_OVERRIDE"
 
 local service = BostickAmmoSupport.New({
   brigade = brigade,
@@ -57,13 +58,14 @@ local service = BostickAmmoSupport.New({
   materializerModule = materializerModule,
   platoonFactory = platoonFactory,
   descriptorGroupName = "GROUPNAME",
+  platoonName = overridePlatoonName,
 })
 
 expectEqual(materializerSpec.brigade, brigade, "MATERIALIZER_BRIGADE")
 expectEqual(materializerSpec.platoonFactory, platoonFactory, "PLATOON_FACTORY")
 expectEqual(materializerSpec.descriptorGroupName, "GROUPNAME", "DESCRIPTOR")
 expectEqual(materializerSpec.templateName, "TPL_BLUE_GND_SUP_M1083", "TEMPLATE")
-expectEqual(materializerSpec.platoonName, "PLT_BLUE_GND_BOSTICK_AMMO_SUPPORT", "PLATOON")
+expectEqual(materializerSpec.platoonName, overridePlatoonName, "PLATOON")
 expectEqual(materializerSpec.assignment, "OMW:BOSTICK:AMMO-SUPPORT:M1083", "ASSIGNMENT")
 expectEqual(materializerSpec.stockCount, 1, "STOCK_COUNT")
 expectEqual(materializerSpec.priority, 20, "PRIORITY")
@@ -96,5 +98,6 @@ expectEqual(groupBefore, nil, "REQUEST_GROUP_BEFORE")
 expectEqual(created, true, "REQUEST_CREATED")
 expectEqual(service:GetMaterializedGroup(), materializedGroup, "MATERIALIZED_GROUP")
 expectEqual(service:GetConfig().schemaVersion, "OMW-BOSTICK-AMMO-SUPPORT-1", "SCHEMA")
+expectEqual(service:GetConfig().platoonName, overridePlatoonName, "CONFIG_PLATOON_OVERRIDE")
 
 print("PASS Bostick M1083 Ground support materialization binding contract")
