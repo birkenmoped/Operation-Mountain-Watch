@@ -44,7 +44,7 @@ BLUE convoy/group attacked
 -> MOOSE AUFTRAG / COMMANDER execution
 ```
 
-Dieses Review ist `SOURCE_REVIEWED`, nicht `VALIDATED`. Es verändert keine `.miz` und führt keinen DCS-Lauf aus.
+Dieses Review ist `SOURCE_REVIEWED`, nicht `VALIDATED`. Es verändert keine `.miz` und führt keinen DCS-Lauf aus. Spätere Runtime-Nachweise werden hier nur als abgegrenzte Evidenz referenziert; die Acceptance-Autorität bleibt beim jeweiligen Acceptance-/Statusdokument mit vollständiger Provenienz.
 
 ## 2. Verwendeter MOOSE-Stand
 
@@ -695,16 +695,16 @@ Zusätzlich bestätigt `TruckReturning` nur, dass der Ziel-Munitionsstand nach `
 
 Das offizielle `Functional/AmmoTruck`-Beispiel bleibt als Framework-Evidenz für den vorgesehenen AMMOTRUCK-Anwendungsfall dokumentiert; es ist kein OMW-DCS-PASS.
 
-### 16.8 v15 Template-/Asset-Review
+### 16.8 v15 Template-/Asset-Review und ausgeführtes Acceptance-Artefakt
 
-Vom Projektinhaber bereitgestellte Mission, read-only geprüft:
+Der ursprüngliche Preflight wurde mit `OMW_Template_v15(1).miz` durchgeführt:
 
 ```text
 Mission artifact: OMW_Template_v15(1).miz
 SHA-256: e7bb9fbafd70174f76944e7a5e84f25ef5263b426c9834ef38bc03c026bde051
 ```
 
-Bestätigt:
+Dabei wurden die benötigten Bostick-/Support-Objekte bestätigt:
 
 ```text
 TPL_BLUE_GND_BOSTICK_FS_ARTY_L118_2
@@ -727,26 +727,40 @@ ZON_BLUE_GND_BOSTICK_ACCESS
   present
 ```
 
-Die vom Projektinhaber bereitgestellten Mission-Editor-Screenshots zeigen beim `CHAP_M1083` und beim `M 818` denselben sichtbaren Versorgungsring. Dies ist starke Editor-Evidenz für eine DCS-Supply-Rolle des M1083, ersetzt aber keinen Runtime-Rearm-Nachweis.
-
 Der gepinnte MOOSE-Helper `UNIT:IsAmmoSupply()` erkennt `M 818` hartcodiert, nicht `CHAP_M1083`. `ARTY:SetRearmingGroup(group)` führt an diesem Kopplungspunkt jedoch keine `UNIT:IsAmmoSupply()`-Prüfung aus, sondern verwendet die explizit übergebene GROUP.
 
-Daher lautet die Asset-Entscheidung für den ersten Test:
+Der spätere reale Acceptance-Lauf wurde mit folgendem, vollständig nachträglich gehashten Artefakt ausgeführt:
 
 ```text
-PREFERRED OMW CANDIDATE:
-TPL_BLUE_GND_SUP_M1083 / CHAP_M1083
+Executed mission path:
+C:\Users\Sven\Saved Games\DCS.openbeta\Missions\OMW_Template_v15.miz
 
-REFERENCE / FALLBACK:
-TPL_BLUE_GND_SUP_M939_1 / M 818
+MIZ SHA-256:
+A2AF2BD5FA9792DEF422F3B47755894E8F3220453F31F63F1594CCD61E9AF1B4
 
-M1083 DCS REARM CAPABILITY:
-RUNTIME CONFIRMATION REQUIRED
+internal mission SHA-256:
+2378F38E9B07365D25ACE38E45A23D87E2CC76F185A062FB2A46CA8EE31C1A53
 ```
 
-Die Late-Activation-Gruppen in v15 bleiben Templates. Der Rearm-Adapter materialisiert sie nicht selbst. Ein lebendes MOOSE-GROUP-Objekt muss zuerst über den bestehenden Ground-/MOOSE-Materialisierungslifecycle bereitgestellt werden.
+Die ausgeführte MIZ enthielt exakt die erwarteten Runtime-Artefakte:
 
-### 16.9 Owner-Entscheidung: RESUPPLY != LOCAL REARM
+```text
+Moose.lua
+E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915
+
+OMW_AirOps_Warehouse_Base.lua
+FC0F8F20909DD57E5DEE3AF6414FB56B35D8671D726471DEDB6D6984E590801B
+
+OMW_Ground_Base.lua
+6DBDE7AA75E34FA6C7A42A7C97B3E407C069806666C60E8D27F8616D647383EE
+
+OMW_Ground_Ammo_Rearm_Acceptance_1.lua
+94C18556B80E97A30420DD551BC0CD98E978CBA2E487A6AA6B35281E1F29FDD7
+```
+
+Für **genau diesen Bostick-L118-/ARTY-RearmingGroup-Scope** ist `TPL_BLUE_GND_SUP_M1083 / CHAP_M1083` damit nicht mehr `DCS_RUNTIME_OPEN`, sondern praktisch als funktionsfähige DCS-Rearm-Unterstützung bestätigt. Daraus folgt ausdrücklich keine pauschale Ammo-Supply-Garantie für andere Empfänger, Missionen oder MOOSE-/DCS-Stände.
+
+### 16.9 Owner-Entscheidung und Runtime-Bestätigung: RESUPPLY != LOCAL REARM
 
 Vom Projektinhaber am 21.08.2026 bestätigt:
 
@@ -760,9 +774,11 @@ LOCAL REARM
 = danach autorisierter MOOSE/DCS-Rearm
 ```
 
-Ein physischer Direktkonvoi darf beide Vorgänge unmittelbar nacheinander repräsentieren. Strategisch bleiben TRANSFER und CONSUMPTION getrennte idempotente Transaktionen. Ein Paket darf nicht gleichzeitig eine Batterie nachladen und zusätzlich im Zieldepotbestand verbleiben.
+Der DCS-Acceptance-Lauf bestätigte für den lokalen Bostick-Rearm genau diese zweite Semantik: `GROUND_AMMO_PACKAGE` fiel von `52` auf `51`, während die physische L118-Batterie von `300` über `296` auf `302` Schuss ging. Es wurde kein zusätzlicher strategischer Zieldepotbestand erzeugt.
 
-### 16.10 Implementierter kleinster Adapter
+Ein physischer Direktkonvoi darf TRANSFER und CONSUMPTION später unmittelbar nacheinander repräsentieren. Strategisch bleiben beide Vorgänge getrennte idempotente Transaktionen. Ein Paket darf nicht gleichzeitig eine Batterie nachladen und zusätzlich im Zieldepotbestand verbleiben.
+
+### 16.10 Implementierter Adapter – bestätigter Scope und verbleibende Source-Hygiene
 
 Branch-source:
 
@@ -785,43 +801,58 @@ Der Adapter besitzt bewusst nur die Koordinationsgrenze zwischen CampaignState u
 - keine zweite Ressourcenhoheit, kein eigener Scheduler, kein eigener Dispatcher.
 ```
 
-Contract-Test-Source:
+Der reale Acceptance-Harness bestätigte den produktionsrelevanten Vertical-Slice bis `ARTY OnAfterRearmed`:
 
 ```text
-tests/mission-demand/test_ground_ammo_rearm_adapter.lua
+initialAmmo = 300
+postFireAmmo = 296
+support type = CHAP_M1083
+GROUND_AMMO_PACKAGE before = 52
+after = 51
+finalAmmo = 302
+PASS M1083_REARM_CONFIRMED=true
 ```
 
-Geprüft werden source-seitig:
+Damit ist der Adapter nicht mehr pauschal `SOURCE_IMPLEMENTED / NOT_VALIDATED`. Praktisch bestätigt ist ausschließlich der dokumentierte prestarted-ARTY-/Bostick-/M1083-Pfad mit genau der Acceptance-Provenienz aus `mission/tests/ground-ammo-rearm-integration/README.md` und `CURRENT-STATUS-TODO.md`.
+
+Vor Produktionsfreigabe bleiben Source-Hygienepunkte offen:
 
 ```text
-successful local consumption before physical rearm execution
-cancel without consumption on ARTY rejection
-idempotent repeated transactionId
-Rearmed callback without second strategic booking
+- synchronous onMaterialized/pending-context overwrite in OMW_BostickAmmoRearmService.lua
+- MOOSE FSM test fakes must accept nil as successful transition-handler return; only false rejects
+- OMW_BostickAmmoSupport.GetConfig() spec/platoon-name override
 ```
 
-Teststatus:
+### 16.11 Runtime-Ergebnis und noch offene Acceptance-Grenzen
+
+Für den exakt ausgeführten Stand ist praktisch bestätigt:
 
 ```text
-SOURCE STAGED
-NOT EXECUTED WITH LUA INTERPRETER
-NOT DCS VALIDATED
+Ground readiness USERFLAG bridge        PASS
+OMW_GROUND_READY Mission-Editor gate    PASS
+L118 controlled firing                  PASS
+observable ammunition reduction         PASS
+M1083 WAREHOUSE self-request            PASS
+M1083 materialization                   PASS
+CHAP_M1083 operational rearm support    PASS
+CampaignState local consumption         PASS
+one GROUND_AMMO_PACKAGE debit           PASS
+ARTY:Rearm() operational path           PASS
+ARTY Rearmed callback                   PASS
+full-ammo restoration                   PASS
 ```
 
-### 16.11 Nächste DCS-Integrationsgrenze
+Die Acceptance-Provenienz ist geschlossen durch den MIZ-Hash, den internen `mission`-Hash und den erneuten Byte-Hash-Abgleich der vier eingebetteten Runtime-Artefakte.
 
-Der nächste reale Lauf muss im gebündelten Ground-Integrationsscope mindestens prüfen:
+Nicht bestätigt und deshalb weiterhin getrennt zu prüfen sind:
 
 ```text
-Bostick 2 x L118_Unit receiver
-materialized CHAP_M1083 RearmingGroup
-ARTY:Rearm() starts only after successful local CampaignState CONSUMPTION
-M1083 drives/rearms using DCS native supply behavior
-ARTY Rearmed occurs only after effective full rearm
-M1083 returns to its remembered start position
-no duplicate CampaignState consumption
-rejection when battery is already full leaves stock unchanged
-truck loss / interruption behavior is observed and documented
+full-battery rejection leaves stock unchanged
+M1083 loss / interruption behavior
+restart/replay semantics for CONSUMED but not durably completed LOCAL REARM
+general CHAP_M1083 behavior outside the exact Bostick L118 / ARTY RearmingGroup path
+AMMOTRUCK runtime behavior
+OP personnel loss -> reinforcement demand lifecycle
 ```
 
-Bis zu diesem realen Lauf bleibt `CHAP_M1083` als Ammo-Supply-Asset `EDITOR_EVIDENCE / DCS_RUNTIME_OPEN` und der Adapter `SOURCE_IMPLEMENTED / NOT_VALIDATED`.
+Der Ground-Rearm-PASS hebt weder `AMMOTRUCK` noch generische ROAD_CONVOY-, OPSTRANSPORT- oder MissionDemand-Resupply-Pfade auf `VALIDATED` an.
