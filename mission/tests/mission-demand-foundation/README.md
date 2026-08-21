@@ -50,13 +50,15 @@ Ground supplyParent metadata                           EXISTING
 MOOSE BRIGADE/PLATOON/ARMYGROUP lifecycle             EXISTING / documented scope validated
 MOOSE OPSTRANSPORT                                     SOURCE_REVIEWED
 MOOSE AMMOSUPPLY/FUELSUPPLY                            SOURCE_REVIEWED
+MOOSE AMMOTRUCK                                        SOURCE_REVIEWED / official demo located
+MOOSE ARTY rearm lifecycle                             SOURCE_REVIEWED
 MOOSE EVENTS.Hit                                       SOURCE_REVIEWED
 MOOSE CAS AUFTRAG / COMMANDER dispatch                 SOURCE_REVIEWED
 central BLUE COMMANDER                                 separate existing branch dependency
 exact Production PATHLINE convoy routing               OPEN
 ```
 
-Kein neuer Nicht-MOOSE-Routing- oder Spawnpfad wurde freigegeben.
+Kein neuer Nicht-MOOSE-Routing-, Ammo-Monitor- oder Rearm-Controller-Pfad wurde freigegeben.
 
 ## 3. Phase 1 – MissionDemand Registry
 
@@ -188,138 +190,147 @@ tests/mission-demand/run.lua
 
 Auch dieser Teststand ist noch nicht lokal mit einem Lua-Interpreter ausgeführt.
 
-## 5. Neu erkannte CampaignState-Transferlücke
+## 5. Owner-Entscheidung 2026-08-21 – Ground Ammo als strategisches Rearm-Paket
 
-Die Phase-0-Prüfung des generischen `CampaignState` und der tatsächlichen Ground-Initialisierung zeigt eine wichtige Integrationslücke.
+Der Projektinhaber hat für Ground-Munition die Paketvariante bestätigt.
 
-Der generische Transfervertrag `ReserveResource()` erwartet derzeit für einen Transfer denselben `resourceId` am Ursprung und Ziel.
+Verbindliche Arbeitssemantik für diesen Branch:
 
-Ground-Ressourcen sind dagegen absichtlich node-spezifisch benannt, zum Beispiel:
+```text
+CampaignState Ground ammo
+= standardisiertes strategisches Nachschub-/Rearm-Paket
+!= einzelne DCS-Granate
+!= Truck-Inventar einzelner DCS-Waffen
+```
+
+Begründung:
+
+```text
+- ein realer Nachschubkonvoi wird nicht für einzelne Restgranaten ausgelöst;
+- DCS Ground Rearm führt keinen nachgewiesenen stückweisen Truck-Ledger;
+- MOOSE besitzt operative Rearm-Lifecycles, aber keinen strategischen OMW-Bestand;
+- CampaignState bleibt alleinige strategische Mengenautorität.
+```
+
+DCS-/MOOSE-Munitionswerte dürfen für Bedarfserkennung und Rearm-Bestätigung verwendet werden, aber nicht als zweite strategische Ressourcendatenbank.
+
+Die bestehende Ground-Baseline definiert bereits:
+
+```text
+1 AMMO_UNIT = one normalized Ground ammunition package
+```
+
+Diese Grundidee bleibt erhalten. Die konkrete spätere Unterteilung nach Empfängerklasse, z. B. Artillerie-/Mörser-/AT-/Small-Arms-Pakete, wird erst festgelegt, wenn sie für die reale OMW-ORBAT erforderlich ist. Es werden keine Kategorien ohne konkreten Bedarf erfunden.
+
+## 6. Transferlücke neu bewertet – Ursache ist die Resource-ID-Namensgebung
+
+Der generische CampaignState-`TRANSFER` verwendet absichtlich dieselbe `resourceId` am Ursprung und Ziel:
+
+```text
+originNodeId + resourceId
+-> transfer
+-> destinationNodeId + resourceId
+```
+
+Der aktuelle Ground-Stock erzeugt dagegen node-spezifische IDs, z. B.:
 
 ```text
 GROUND:GROUND_NODE_JOYCE:AMMO
 GROUND:GROUND_NODE_HONAKER:AMMO
 ```
 
-Der Initializer legt genau diese unterschiedlichen IDs in den jeweiligen CampaignState-Nodes an.
-
-Folge:
+Damit liegt der Ort zweimal in den Daten:
 
 ```text
-JOYCE AMMO -> HONAKER AMMO
+nodeId     = WO liegt die Ressource?
+resourceId = enthält zusätzlich nochmals den Node
 ```
 
-kann nicht korrekt durch einen unveränderten generischen `TRANSFER` mit nur einem `resourceId` dargestellt werden.
-
-Das ist kein MOOSE-Problem. Es ist eine CampaignState-Domänenlücke zwischen dem vorhandenen generischen Transfermodell und der aktuellen Ground-ID-Namensgebung.
-
-## 6. Impact Review der Transferlücke
-
-Geprüft wurden mindestens:
+Für transferierbare Ressourcen ist die sauberere Semantik:
 
 ```text
-scripts/campaign/OMW_CampaignState.lua
-scripts/logistics/OMW_AirOpsCampaignStateInitializer.lua
-scripts/ground/OMW_GroundCampaignStateAdapter.lua
+nodeId     = Ort
+resourceId = Ressourcentyp / Pakettyp
+quantity   = Bestand
 ```
 
-Feststellungen:
+Beispielrichtung, noch ohne Produktionsmigration:
 
 ```text
-1. CampaignState TRANSFER nutzt resourceId derzeit gleichzeitig für:
-   - origin resource lookup
-   - reservation accounting
-   - origin debit
-   - destination resource lookup
-   - destination credit
-   - transaction equality
-   - snapshot/restore
-
-2. Der Initializer unterstützt bewusst unterschiedliche resourceId pro Node.
-
-3. Ground action commitments verwenden CONSUMPTION und CreditResourceOnce.
-   Dieser bestehende Ground-Settlement-Pfad darf durch eine Transfererweiterung nicht verändert werden.
-
-4. Eine abwärtskompatible Transfererweiterung kann den bisherigen resourceId-Pfad als Legacy-Kurzform erhalten.
+GROUND_NODE_JOYCE   + GROUND:AMMO
+GROUND_NODE_HONAKER + GROUND:AMMO
 ```
 
-Technisch kleinster kompatibler Entwurf:
+oder bei später ausdrücklich benötigter Unterteilung derselbe gemeinsame Pakettyp auf beiden Nodes.
 
-```text
-legacy input:
-  resourceId = X
+Damit kann der bestehende CampaignState-Transfervertrag unverändert bleiben.
 
-normalisiert zu:
-  originResourceId      = X
-  destinationResourceId = X
+## 7. Verworfenes Gate – keine originResourceId/destinationResourceId-Erweiterung
 
-new cross-node input:
-  originResourceId      = A
-  destinationResourceId = B
-```
-
-Für `CONSUMPTION` bleibt weiterhin ausschließlich die Ursprungsressource relevant.
-
-Snapshot-/Restore-Regel für die vorwärtskompatible Implementierung:
-
-```text
-old snapshot without originResourceId/destinationResourceId
--> derive both from existing resourceId
-
-new snapshot
--> persist explicit originResourceId/destinationResourceId
-```
-
-Ein Snapshot, der bereits eine laufende Cross-ID-Transfertransaktion enthält, ist nicht für ein Rollback auf alten Code garantiert. Diese Rollback-Grenze muss vor Produktivnutzung dokumentiert werden.
-
-## 7. Zulässige Lösungsrichtungen für die Transferlücke
-
-### A – CampaignState Transfer unterstützt getrennte Resource IDs
-
-Abwärtskompatible Erweiterung:
+Die vorherige Empfehlung, den persistierten CampaignState-Transfervertrag um getrennte
 
 ```text
 originResourceId
-originNodeId
-
 destinationResourceId
-destinationNodeId
 ```
 
-Vorteil:
+zu erweitern, wird für diesen Ground-Resupply-Scope nicht weiterverfolgt.
+
+Grund:
 
 ```text
-- echter TRANSFER-Lifecycle bleibt erhalten;
-- origin debit / destination credit / lost / cancel bleiben zusammenhängend;
-- node-spezifische Ground-IDs müssen nicht umbenannt werden;
-- bestehende CONSUMPTION-/Ground-Settlement-Pfade bleiben unverändert.
+Die Resource-ID sollte den Ressourcentyp beschreiben, nicht den Lagerort.
+Der Lagerort ist bereits durch originNodeId/destinationNodeId eindeutig bestimmt.
 ```
 
-### B – Verbrauch am Ursprung + idempotente Gutschrift am Ziel
+Damit ist aktuell keine Änderung am generischen CampaignState-Transaktionsschema erforderlich.
+
+Wichtig: Die bestehende produktive Ground-Foundation auf `main` verwendet weiterhin die bisherigen node-spezifischen IDs. Diese werden nicht stillschweigend geändert. Eine Resource-ID-Normalisierung ist ein eigener, regressionspflichtiger Migrationsschritt und muss Ground-Settlement, Initializer, Snapshots und vorhandene Acceptance-Verträge berücksichtigen.
+
+## 8. MOOSE-First Ground-Rearm – aktuelle Source-Lage
+
+Für die operative Versorgung wurden zusätzlich zum bestehenden AUFTRAG-/BRIGADE-/ARMYGROUP-Pfad geprüft:
 
 ```text
-origin CONSUMPTION
-+
-destination CreditResourceOnce
+AMMOTRUCK
+ARTY rearming lifecycle
+GROUP/UNIT ammunition telemetry
 ```
 
-Vorteil: keine Änderung des generischen Transfer-Schemas.
-
-Nachteil: Transportzustand, Verlust und Transferidentität würden über einen zusätzlichen OMW-Vertrag gekoppelt und damit Teile des bereits vorhandenen TRANSFER-Modells parallel abbilden.
-
-### Empfehlung nach Impact Review
+Der offizielle MOOSE-Missionsbestand enthält:
 
 ```text
-PREFERRED: A
+MOOSE_MISSIONS/develop/Functional/AmmoTruck/AmmoTruck 100 - NTTR - Basic
 ```
 
-Begründung:
+Die Demo verwendet `AMMOTRUCK:New(...)`, einen Truck-Set und einen Artillery-Set. Wenn die Artillerie nahe am Munitionsende ist, werden Trucks zur Batterie geschickt und kehren danach zurück.
 
-Richtung A erweitert den vorhandenen CampaignState-Transfervertrag an genau der festgestellten Domänenlücke. Richtung B würde dagegen einen zweiten projektspezifischen Transfer-Lifecycle aus vorhandenen Einzeloperationen zusammensetzen.
+Für den gepinnten MOOSE-Stand gilt source-seitig:
 
-Da Richtung A den persistierten CampaignState-Transaktionsvertrag erweitert, bleibt die Umsetzung ein dokumentierter Architektur-/Domain-Gate und wird nicht als bereits akzeptierte Produktionsbaseline bezeichnet.
+```text
+AMMOTRUCK
+- besitzt automatische Low-Ammo-Erkennung;
+- besitzt Truck-Dispatch/Arrival/Returning/Home-FSM-Pfade;
+- kann ARMYGROUP-Routing verwenden;
+- `reloads` bedeutet Rearm-Einsätze, nicht einzelne Granaten.
 
-## 8. BLUE COMMANDER Dependency
+ARTY
+- besitzt eigene Ammo-/Shell-Type-Auswertung;
+- unterstützt RearmingGroup/RearmingPlace;
+- besitzt einen Rearm-Completion-Pfad anhand des realen Empfänger-Munitionsstands.
+```
+
+Folge für OMW:
+
+```text
+kein eigener Ground-Ammo-Scheduler
+kein eigener Ammo-Truck-Dispatcher
+kein eigener Rearm-Controller
+```
+
+Die genaue Wahl zwischen `ARTY`, `AMMOTRUCK` und `BRIGADE/AUFTRAG:NewAMMOSUPPLY()` hängt vom konkreten Empfänger- und Missionsmodell ab und benötigt für den OMW-Produktionspfad einen reproduzierbaren DCS-Test.
+
+## 9. BLUE COMMANDER Dependency
 
 Für CAS wird kein zweiter COMMANDER entwickelt.
 
@@ -339,7 +350,7 @@ Der Branch registriert die produktiven BLUE AIRWINGs an genau einem MOOSE COMMAN
 
 Vor CAS-Runtime muss dieser Branch gegen den dann aktuellen `main` reconciled und gemäß seiner eigenen Acceptance-/Merge-Grenze integriert werden.
 
-## 9. Nächste Gates
+## 10. Nächste Gates
 
 ```text
 GATE 1
@@ -349,32 +360,44 @@ GATE 2
 ResourceDemandPolicy source + contract tests staged
 
 GATE 3
-Owner approval for preferred CampaignState cross-node transfer direction A
-then implement compatibility-preserving transaction extension + tests
+Ground transferable resource-ID normalization impact review
+- no CampaignState cross-ID transfer extension
+- preserve existing accepted Ground settlement semantics
+- define migration/regression scope before production stock change
 
 GATE 4
-ROAD_CONVOY MOOSE execution decision
+Ground ammo package taxonomy only where required by actual OMW consumers
+- do not invent package classes
+- DCS/MOOSE ammo telemetry remains operational evidence only
 
 GATE 5
-BLUE COMMANDER reconciliation
+Select smallest public MOOSE execution path for first Ground ammo-resupply vertical slice
+- ARTY / AMMOTRUCK / BRIGADE+AUFTRAG comparison
+- no custom ammo monitor/dispatcher
 
 GATE 6
-MOOSE Hit -> TacticalSupportIncident -> CAS request
+BLUE COMMANDER reconciliation
 
 GATE 7
+MOOSE Hit -> TacticalSupportIncident -> CAS request
+
+GATE 8
 CAS AUFTRAG dispatch and DCS acceptance
 ```
 
-## 10. Aktuelle Validierungsgrenze
+## 11. Aktuelle Validierungsgrenze
 
 Zum Zeitpunkt dieses Dokuments wurde kein neuer DCS-Test ausgeführt.
 
-Die neuen Domain-Module enthalten keine DCS- oder MOOSE-Aufrufe. Ein DCS-Test ist für die reine Domainlogik nicht erforderlich, bevor die physische Execution-Schicht angeschlossen wird. Syntax- und ausführbare Contract-Tests bleiben dennoch erforderlich, bevor dieser Branch als fertig bewertet wird.
+Die neuen Domain-Module enthalten weiterhin keine DCS- oder MOOSE-Aufrufe. Die ergänzte MOOSE-Rearm-Bewertung ist `SOURCE_REVIEWED`, nicht `VALIDATED` für OMW.
+
+Syntax- und ausführbare Contract-Tests bleiben erforderlich, bevor der Branch als fertig bewertet wird. Für die physische Rearm-Ausführung ist ein späterer DCS-Test mit vollständiger Provenienz erforderlich.
 
 Aktueller Teststatus:
 
 ```text
 MissionDemand contract test source      STAGED / NOT EXECUTED
 ResourceDemandPolicy contract test      STAGED / NOT EXECUTED
+MOOSE Ground rearm source review        UPDATED / NOT DCS VALIDATED IN OMW
 MOOSE/DCS runtime                       NOT STARTED
 ```
