@@ -251,3 +251,77 @@ M1083 AMMO-SUPPLY EFFECT NOT_VALIDATED
 ```
 
 Der Dokumentationsvalidator wurde in dieser Stufe nicht ausgeführt; ein `VALIDATED`-Status wird daraus nicht abgeleitet.
+
+## OMW_Template_v15(6): INVALID wegen Ground-Readiness-Gate
+
+Read-only geprüftes Owner-Artefakt:
+
+```text
+OMW_Template_v15(6).miz
+MIZ SHA-256: 389604B9D16688A0FED4BE9877E1D97E2970057012FE2510FFE41E9D5A2CF3E1
+internal mission SHA-256: 3B39D0655C1847D92BEFAB924414CC688056CD4FAD7B162674B371BE1E86CA8A
+```
+
+Die relevanten eingebetteten Bytes waren diesmal konsistent:
+
+```text
+OMW_AirOps_Warehouse_Base.lua
+  BuilderVersion: OMW-AIROPS-WAREHOUSE-BASE-3
+  SHA-256: FC0F8F20909DD57E5DEE3AF6414FB56B35D8671D726471DEDB6D6984E590801B
+
+OMW_Ground_Base.lua
+  BuilderVersion: OMW-GROUND-PRODUCTION-BASE-2
+  SHA-256: F92A05B6ABE8A12F1470BB2E1A2D6FE66746DDE09DE75D9077675E459411FF3A
+
+OMW_Ground_Ammo_Rearm_Acceptance_1.lua
+  SHA-256: 94C18556B80E97A30420DD551BC0CD98E978CBA2E487A6AA6B35281E1F29FDD7
+
+Moose.lua
+  SHA-256: E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915
+```
+
+Der DCS-Lauf mit `OMW_Template_v15(6)` erreicht den korrigierten Warehouse-READY-Zustand einschließlich `groundStockSeeded=true`; die früheren `unknown nodeId`-/`unknown resourceId`-Fehler treten in diesem Lauf nicht mehr auf. Der eigentliche Rearm-Acceptance-Harness startet jedoch nicht.
+
+Root Cause ist der Readiness-Vertrag zwischen Lua und Mission Editor:
+
+```text
+Mission Editor trigger:
+FLAG EQUALS OMW_GROUND_READY, 1
+
+Ground BASE-2:
+OMW_GROUND_READY = 1
+```
+
+`BASE-2` setzte damit nur eine Lua-Globale. Der Mission-Editor-Trigger prüft dagegen einen DCS User Flag. Der Warehouse-Pfad verwendet bereits MOOSE `USERFLAG` und besitzt deshalb diese Brücke; der Ground-Pfad hatte sie nicht.
+
+Bewertung:
+
+```text
+Warehouse BASE-3 startup                  PASS
+Ground stock schema / resource mismatch   no longer observed
+Ground DCS readiness user flag             NOT REACHED
+Acceptance harness                         NOT STARTED
+L118 controlled firing                     NOT TESTED
+M1083 materialization                      NOT TESTED
+CampaignState local ammo consumption       NOT TESTED
+ARTY rearm                                 NOT TESTED
+M1083 native ammo-supply effect             NOT TESTED
+
+RESULT: INVALID
+```
+
+Dies ist kein Feature-FAIL gegen M1083 oder ARTY-Rearm, weil die Acceptance-Voraussetzung nicht erfüllt wurde.
+
+Der gepinnte MOOSE-Stand stellt den öffentlichen `USERFLAG`-Pfad bereit: `USERFLAG:New(name)`, `Set(number)` -> DCS user flag und `Get()` -> DCS user flag readback. Der Ground-Production-Builder verwendet deshalb ab `OMW-GROUND-PRODUCTION-BASE-3` denselben MOOSE-first Readiness-Mechanismus und setzt `OMW_GROUND_READY` fail-closed erst nach erfolgreichem `GroundBase.Attach(...)` plus User-Flag-Readback.
+
+Source-Fix-Commits auf `agent/ground-ammo-rearm-integration`:
+
+```text
+0e02d44ff08299eedd3c53657bfe5099a420c2d6
+  Make Ground ready gate use MOOSE USERFLAG
+
+318890bc2b05e3102450cbfac79922bf8aa4cca2
+  Verify Ground USERFLAG bundle contract
+```
+
+Der neue Ground-Bundle ist zu diesem Zeitpunkt noch nicht lokal gebaut oder DCS-validiert. Die Dokumentationsprüfung wird erst nach der realen lokalen Build-/Hash-Rückmeldung und dem nächsten MIZ-Preflight fortgesetzt.
