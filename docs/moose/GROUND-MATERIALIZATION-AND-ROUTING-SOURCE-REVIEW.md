@@ -325,3 +325,69 @@ COORDINATOR SOURCE IMPLEMENTED
 CONTRACT TEST SOURCE STAGED
 DCS INTEGRATION PENDING
 ```
+
+## 13. Konkrete Bostick-Komposition ohne neue MOOSE-Ausnahme
+
+Die Bindung fuer genau den Bostick-M1083-Supportfall liegt jetzt in:
+
+```text
+scripts/ground/OMW_BostickAmmoSupport.lua
+```
+
+Sie kombiniert ausschliesslich bereits gepruefte Bausteine:
+
+```text
+OMW_GroundRoadSpawnAdapter.Install(...)
++
+OMW_GroundSupportMaterializer.New(...)
++
+public BRIGADE / PLATOON / WAREHOUSE self-request lifecycle
+```
+
+Der Road-Resolver wird nur aktiv, wenn zugleich
+
+```text
+asset.templatename == TPL_BLUE_GND_SUP_M1083
+AND
+brigade:GetAssignment(request) == OMW:BOSTICK:AMMO-SUPPORT:M1083
+```
+
+gilt. Andere Asset-Requests derselben BRIGADE werden nicht umgebogen.
+
+Die Komposition benoetigt als Laufzeitinput:
+
+```text
+existing BDE_BLUE_GND_BOSTICK instance
+ZON_BLUE_GND_BOSTICK_ACCESS wrapper
+forwardCoordinate for the concrete outbound direction
+WAREHOUSE.Descriptor.GROUPNAME
+PLATOON factory using PLATOON:New(...)
+```
+
+Es wurde bewusst keine feste Outbound-Koordinate erfunden. Ebenso kennt dieser Layer weder CampaignState-Ammo-Consumption noch ARTY-Rearm. Er reicht die materialisierte MOOSE-`GROUP` lediglich an den aufrufenden Layer weiter.
+
+MOOSE-first Bewertung:
+
+```text
+BRIGADE/PLATOON stock registration       DIRECT MOOSE
+WAREHOUSE self request                   DIRECT MOOSE
+OnAfterSelfRequest GROUP handoff         DIRECT MOOSE
+road-aligned per-unit injection          EXISTING OWNER-APPROVED ADAPTER
+Bostick name/assignment composition      SMALL OMW ADAPTER
+custom spawn/route/FSM                    NONE
+```
+
+Contract-Test-Source:
+
+```text
+tests/ground/test_bostick_ammo_support.lua
+```
+
+Status:
+
+```text
+SOURCE IMPLEMENTED
+CONTRACT TEST SOURCE STAGED / NOT EXECUTED
+M1083 DCS REARM CAPABILITY NOT VALIDATED
+BUNDLED GROUND DCS INTEGRATION PENDING
+```
