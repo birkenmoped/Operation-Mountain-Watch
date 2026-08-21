@@ -628,75 +628,200 @@ Ohne diesen Pfad verwendet die Klasse öffentliche GROUP-Routingmethoden wie `Ro
 
 Für OMW wird kein eigener Truck-Dispatcher und kein paralleler Ground-Routing-Controller eingeführt.
 
-### 16.6 `ARTY`
+### 16.6 `ARTY` – korrigierte Fixed-Battery-Entscheidung
 
-Der gepinnte Source stellt zusätzlich einen dedizierten `ARTY`-Rearm-Lifecycle bereit, einschließlich Shell-Type-Auswertung, RearmingGroup/RearmingPlace und einer Vollrearm-Prüfung.
+Die vollständige Prüfung des gepinnten `ARTY`-FSM ergibt für die festen OMW-Feuerunterstützungsgruppen einen kleineren und strategisch sauberer koppelbaren Pfad als `AMMOTRUCK`.
 
-`ARTY` ist für OMW relevant, wenn `ARTY` ohnehin die jeweilige Feuerunterstützungsgruppe als operative Artillerielogik besitzt. Die Klasse wird **nicht nur zur Logistik eingeführt**, solange `AMMOTRUCK` den benötigten Rearm-Service für eine bereits existierende DCS/MOOSE-Artilleriegruppe abbilden kann.
+Source-geprüft:
 
-Damit lautet die Source-Entscheidung für den ersten Vertical Slice:
+```lua
+ARTY:New(group, alias)
+ARTY:SetRearmingGroup(group)
+ARTY:SetRearmingDistance(distance)
+ARTY:SetRearmingGroupSpeed(speed)
+ARTY:SetRearmingGroupOnRoad(onroad)
+ARTY:Rearm()
+```
+
+Der öffentliche `Rearm`-FSM-Pfad lautet:
 
 ```text
-PREFERRED OPERATIONAL REARM SERVICE:
+CombatReady / OutOfAmmo
+-> onbeforeRearm
+-> OnBeforeRearm
+-> onafterRearm
+-> physical RearmingGroup movement
+-> Rearming
+-> Rearmed
+-> onafterRearmed / OnAfterRearmed
+```
+
+Entscheidend ist die Handler-Reihenfolge im gepinnten FSM-Source: der klasseninterne `onbeforeRearm` wird vor dem benutzerdefinierten `OnBeforeRearm` ausgeführt. Der interne ARTY-Handler prüft zuerst, ob die Batterie bereits voll ist und ob eine lebende RearmingGroup beziehungsweise ein RearmingPlace vorhanden ist. Erst danach wird der OMW-Hook aufgerufen. Der interne `onafterRearm`, der die physische Bewegung auslöst, folgt anschließend.
+
+Damit existiert ein öffentlicher MOOSE-Kopplungspunkt für die bestätigte OMW-Grenze:
+
+```text
+CampaignState ReserveResource(CONSUMPTION)
+-> ARTY built-in onbeforeRearm validates operational preconditions
+-> OMW OnBeforeRearm calls CampaignState Consume exactly once
+-> only on success may ARTY onafterRearm start physical movement
+```
+
+`ARTY:_CheckRearmed()` bestätigt im Rearming-Lifecycle Vollrearm relativ zum initialen Munitionsbestand/überlebenden Gruppenstärkeverhältnis und löst danach `Rearmed` aus. `onafterRearmed` schickt die RearmingGroup an ihre gemerkte Ausgangsposition zurück.
+
+Damit gilt für den ersten festen OMW-Artillerie-Vertical-Slice:
+
+```text
+PREFERRED FIXED-BATTERY REARM PATH:
+ARTY + SetRearmingGroup(...)
+
+SECONDARY / LATER POOL-SERVICE PATH:
 AMMOTRUCK
 
-ALTERNATIVE / LATER BATTERY-OWNING PATH:
-ARTY rearming lifecycle
-
 GENERIC ZONE SUPPLY:
-BRIGADE + AUFTRAG:NewAMMOSUPPLY remains available,
-but does not by itself prove recipient rearm completion
+BRIGADE + AUFTRAG:NewAMMOSUPPLY()
 ```
 
-### 16.7 Offizielles Beispiel
+### 16.7 Warum `AMMOTRUCK` sekundär bleibt
 
-Die MOOSE-Dokumentation des gepinnten Source verweist auf die offiziellen Demo-Missionen unter `Functional/AmmoTruck`. Der geprüfte Demo-Pfad verwendet einen Truck-Set, einen Artillery-Set und `AMMOTRUCK:New(...)`, damit Versorgungstrucks zu nahezu leergeschossener Artillerie fahren, diese rearmen und zurückkehren.
-
-Damit ist `AMMOTRUCK` für diesen Zweck nicht nur source-seitig vorhanden, sondern auch durch ein offizielles Framework-Beispiel als vorgesehener Anwendungsfall belegt. Das ist dennoch **kein OMW-DCS-PASS**.
-
-### 16.8 Offener OMW-Blocker vor Runtime-Code
-
-Die MOOSE-Dokumentation nennt als bekannte funktionierende DCS-Supply-Units unter anderem:
+`AMMOTRUCK` bleibt ein valider MOOSE-Kandidat für spätere automatische Multi-Truck-/Multi-Battery-Pools. Für den ersten OMW-Fixed-Battery-Pfad besitzt es aber zwei zusätzliche Eigenschaften, die nicht benötigt werden:
 
 ```text
-M-939 (BLUE)
-Ural-375 (RED)
-ZIL-135 (RED)
+- eigener autonomer Monitor/Dispatcher;
+- sichtbarer ammo_cargo-Static-Spawn im geprüften TruckUnloading-Pfad.
 ```
 
-Die aktuelle OMW-Ground-Template-Baseline führt dagegen einen allgemeinen M1083-Logistiktemplate. Aus dem gepinnten MOOSE-Source ist nicht belegt, dass dieser konkrete OMW-M1083-Template in DCS tatsächlich die Ammo-Supply-Fähigkeit besitzt.
+Zusätzlich bestätigt `TruckReturning` nur, dass der Ziel-Munitionsstand nach `unloadtime` wieder über `ammothreshold` liegt; es ist kein Vollrearm-Signal. `ARTY:Rearmed` ist für die erste feste Batterie daher die präzisere operative Quittierung.
 
-Vor Runtime-Implementierung muss deshalb der **konkrete BLUE Ammo-Supply-Trucktyp/Template** für OMW feststehen und in DCS geprüft werden. Ein M1083 wird nicht allein aufgrund seiner Logistikrolle als Ammo-Supply-fähig angenommen.
+Das offizielle `Functional/AmmoTruck`-Beispiel bleibt als Framework-Evidenz für den vorgesehenen AMMOTRUCK-Anwendungsfall dokumentiert; es ist kein OMW-DCS-PASS.
 
-Bis dieses Asset feststeht, wird kein produktiver AMMOTRUCK-Adapter geschrieben.
+### 16.8 v15 Template-/Asset-Review
 
-### 16.9 Zielvertrag für den späteren Adapter
-
-Source-seitig ergibt sich als kleinster vorgesehener OMW-Vertrag:
+Vom Projektinhaber bereitgestellte Mission, read-only geprüft:
 
 ```text
-MissionDemand RESUPPLY
--> CampaignState reserves 1+ GROUND_AMMO_PACKAGE
--> authorized physical ammo truck materializes through existing Ground lifecycle
--> truck becomes eligible for AMMOTRUCK service
--> AMMOTRUCK RouteTruck
--> CampaignState transaction -> IN_TRANSIT
--> AMMOTRUCK TruckReturning after effective rearm threshold
--> CampaignState transaction -> DELIVERED exactly once
--> truck returns through normal operational lifecycle
+Mission artifact: OMW_Template_v15(1).miz
+SHA-256: e7bb9fbafd70174f76944e7a5e84f25ef5263b426c9834ef38bc03c026bde051
 ```
 
-Bei bestätigtem Truckverlust:
+Bestätigt:
 
 ```text
-no destination credit
--> CampaignState MarkLost / existing Ground loss settlement
+TPL_BLUE_GND_BOSTICK_FS_ARTY_L118_2
+  2 x L118_Unit
+  mission-start present
+
+TPL_BLUE_GND_SUP_M1083
+  1 x CHAP_M1083
+  lateActivation = true
+
+TPL_BLUE_GND_SUP_M939_1
+  1 x M 818
+  lateActivation = true
+
+TPL_BLUE_GND_SUP_TANKER_1
+  1 x M978 HEMTT Tanker
+  lateActivation = true
+
+ZON_BLUE_GND_BOSTICK_ACCESS
+  present
 ```
 
-Bei Abbruch vor In-Transit:
+Die vom Projektinhaber bereitgestellten Mission-Editor-Screenshots zeigen beim `CHAP_M1083` und beim `M 818` denselben sichtbaren Versorgungsring. Dies ist starke Editor-Evidenz für eine DCS-Supply-Rolle des M1083, ersetzt aber keinen Runtime-Rearm-Nachweis.
+
+Der gepinnte MOOSE-Helper `UNIT:IsAmmoSupply()` erkennt `M 818` hartcodiert, nicht `CHAP_M1083`. `ARTY:SetRearmingGroup(group)` führt an diesem Kopplungspunkt jedoch keine `UNIT:IsAmmoSupply()`-Prüfung aus, sondern verwendet die explizit übergebene GROUP.
+
+Daher lautet die Asset-Entscheidung für den ersten Test:
 
 ```text
-reservation cancellation/release according to existing CampaignState contract
+PREFERRED OMW CANDIDATE:
+TPL_BLUE_GND_SUP_M1083 / CHAP_M1083
+
+REFERENCE / FALLBACK:
+TPL_BLUE_GND_SUP_M939_1 / M 818
+
+M1083 DCS REARM CAPABILITY:
+RUNTIME CONFIRMATION REQUIRED
 ```
 
-Die genaue Adapter-API, Truck-Korrelation und Loss-Callback-Bindung bleiben bis zum konkreten OMW-Supply-Asset und zum DCS-Acceptance-Design `OPEN`.
+Die Late-Activation-Gruppen in v15 bleiben Templates. Der Rearm-Adapter materialisiert sie nicht selbst. Ein lebendes MOOSE-GROUP-Objekt muss zuerst über den bestehenden Ground-/MOOSE-Materialisierungslifecycle bereitgestellt werden.
+
+### 16.9 Owner-Entscheidung: RESUPPLY != LOCAL REARM
+
+Vom Projektinhaber am 21.08.2026 bestätigt:
+
+```text
+INTER-NODE RESUPPLY
+= CampaignState TRANSFER
+= Zieldepotbestand steigt
+
+LOCAL REARM
+= CampaignState CONSUMPTION am lokalen Node
+= danach autorisierter MOOSE/DCS-Rearm
+```
+
+Ein physischer Direktkonvoi darf beide Vorgänge unmittelbar nacheinander repräsentieren. Strategisch bleiben TRANSFER und CONSUMPTION getrennte idempotente Transaktionen. Ein Paket darf nicht gleichzeitig eine Batterie nachladen und zusätzlich im Zieldepotbestand verbleiben.
+
+### 16.10 Implementierter kleinster Adapter
+
+Branch-source:
+
+```text
+scripts/ground/OMW_GroundAmmoRearmAdapter.lua
+SchemaVersion: OMW-GROUND-AMMO-REARM-ADAPTER-1
+```
+
+Der Adapter besitzt bewusst nur die Koordinationsgrenze zwischen CampaignState und öffentlichem ARTY-FSM:
+
+```text
+- CampaignState store/module werden injiziert;
+- ARTY factory wird injiziert;
+- artilleryGroup und rearmingGroup müssen bereits materialisierte MOOSE-GROUPs sein;
+- der Adapter spawnt, despawnt, routet oder selektiert keine Gruppe selbst;
+- CONSUMPTION wird reserviert, bevor ARTY:Rearm() ausgelöst wird;
+- Consume erfolgt im ARTY OnBeforeRearm-Hook;
+- bei ARTY-Reject vor dem OMW-Hook wird die Reservation storniert;
+- ARTY OnAfterRearmed wird als operative Completion weitergereicht;
+- keine zweite Ressourcenhoheit, kein eigener Scheduler, kein eigener Dispatcher.
+```
+
+Contract-Test-Source:
+
+```text
+tests/mission-demand/test_ground_ammo_rearm_adapter.lua
+```
+
+Geprüft werden source-seitig:
+
+```text
+successful local consumption before physical rearm execution
+cancel without consumption on ARTY rejection
+idempotent repeated transactionId
+Rearmed callback without second strategic booking
+```
+
+Teststatus:
+
+```text
+SOURCE STAGED
+NOT EXECUTED WITH LUA INTERPRETER
+NOT DCS VALIDATED
+```
+
+### 16.11 Nächste DCS-Integrationsgrenze
+
+Der nächste reale Lauf muss im gebündelten Ground-Integrationsscope mindestens prüfen:
+
+```text
+Bostick 2 x L118_Unit receiver
+materialized CHAP_M1083 RearmingGroup
+ARTY:Rearm() starts only after successful local CampaignState CONSUMPTION
+M1083 drives/rearms using DCS native supply behavior
+ARTY Rearmed occurs only after effective full rearm
+M1083 returns to its remembered start position
+no duplicate CampaignState consumption
+rejection when battery is already full leaves stock unchanged
+truck loss / interruption behavior is observed and documented
+```
+
+Bis zu diesem realen Lauf bleibt `CHAP_M1083` als Ammo-Supply-Asset `EDITOR_EVIDENCE / DCS_RUNTIME_OPEN` und der Adapter `SOURCE_IMPLEMENTED / NOT_VALIDATED`.
