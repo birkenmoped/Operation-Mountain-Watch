@@ -131,7 +131,7 @@ mission/tests/ground-ammo-rearm-integration/dist/OMW_Ground_Ammo_Rearm_Acceptanc
 
 Der Builder bettet nur die bereits getrennten Ground-Module plus Acceptance-Harness ein. Die einzige private MOOSE-Abhängigkeit bleibt der bereits owner-genehmigte `OMW_GroundRoadSpawnAdapter` mit genau einem `_DATABASE:Spawn(template)` im Warehouse-Geometriepfad.
 
-## Lokal bestätigte Build-Provenienz 2026-08-21
+## Lokal bestätigte Acceptance-Build-Provenienz 2026-08-21
 
 Vom Projektinhaber real ausgeführt und zurückgemeldet:
 
@@ -171,35 +171,83 @@ mission/tests/ground-ammo-rearm-integration/src/01-bostick-m1083-rearm-acceptanc
 
 tools/build-ground-ammo-rearm-acceptance.ps1
 508D0901911CFF57242B205D625AC1EDFACDAF2951854BE8211642D23428A40E
+```
 
-mission/tests/ground-ammo-rearm-integration/README.md (pre-provenance-update)
-C9D618A8042452E3C290978C4C5EEAFA0E0A3152186A3A4655101344CB715940
+## Erster DCS-Anlauf: INVALID vor Acceptance-Start
+
+Der erste DCS-Anlauf mit DCS `2.9.28.26385 MT` erreichte den Warehouse-Production-READY-Zustand, scheiterte aber vor `OMW_GROUND_READY` beim Ground-Base-Attach:
+
+```text
+[OMW][Logistics.AirOpsWarehouseProduction] READY mode=NEW ... readyFlag=1
+[OMW][CampaignState] unknown nodeId=GROUND_NODE_JALALABAD
+```
+
+Der Fehler trat in zwei Missionsstarts desselben Logsatzes auf. Damit wurde der eigentliche Rearm-Harness nicht gestartet. Dieser Lauf wird deshalb als `INVALID` klassifiziert und ist ausdrücklich kein negativer DCS-Nachweis gegen `CHAP_M1083`, `ARTY:Rearm()` oder den Road-Spawn-Pfad.
+
+Root Cause: Der Warehouse-Production-Bundle erzeugte zwar den gemeinsamen autoritativen CampaignState, hatte `OMW_GroundInitialStock` aber noch nicht in dessen Initialisierung aufgenommen. `OMW_Ground_Base.Attach(...)` erwartete die sechs `GROUND_NODE_*` bereits im gemeinsamen Store.
+
+## Korrigierter Warehouse-Production-Build
+
+Der gemeinsame CampaignState-Produktionspfad wurde auf demselben Integrationsbranch korrigiert. Es wird weiterhin genau ein autoritativer Store erzeugt; Ground-Initialbestand wird nur als zusätzlicher Stock in denselben Initializer eingespeist.
+
+Vom Projektinhaber lokal bestätigt:
+
+```text
+Commit:
+7da56fdfb45888e7f88d4ea5c3b0fa691f2b0423
+
+BuilderVersion:
+OMW-AIROPS-WAREHOUSE-BASE-3
+
+CampaignStateAuthority:
+OMW.AirOps.CampaignContext
+
+CampaignStateAdditionalStocks:
+OMW_AirOpsInitialJP8Stock,OMW_AirOpsInitialFuelSupplement,OMW_AARStrategicStock,OMW_GroundInitialStock
+
+GroundInitialStockSchema:
+OMW-GROUND-INITIAL-STOCK-2
+
+GroundNodesSeeded:
+GROUND_NODE_JALALABAD,GROUND_NODE_FORTRESS,GROUND_NODE_JOYCE,GROUND_NODE_WRIGHT,GROUND_NODE_HONAKER,GROUND_NODE_BOSTICK
+
+GroundTransferableResources:
+GROUND_SUPPLY_PACKAGE,GROUND_AMMO_PACKAGE,GROUND_FUEL_PACKAGE
+
+Bundle SHA-256:
+FC0F8F20909DD57E5DEE3AF6414FB56B35D8671D726471DEDB6D6984E590801B
+```
+
+Separat lokal bestätigte SHA-256-Werte:
+
+```text
+scripts/logistics/OMW_AirOpsWarehouseProduction.lua
+25A8C90C9AA4901B84605EB7F83250545650139F82FE0BDB1999A946EC08040B
+
+tools/build-air-ops-warehouse-production-base.ps1
+866E8845DF87AADE798197615364C7A28444FFC064C9334D284F60886D36CF03
+
+scripts/logistics/OMW_GroundInitialStock.lua
+E4E099A1C949C69C5E3682403162DC5B435D0C1885845ED5625D281DA77FACCF
+
+scripts/logistics/OMW_AirOpsCampaignStateInitializer.lua
+275ACBBFC6D102AD1FA5C5398EB4331B6E072B77D9EA063D54CB97AC925B7F13
+
+mission/runtime/logistics/OMW_AirOps_Warehouse_Base.lua
+FC0F8F20909DD57E5DEE3AF6414FB56B35D8671D726471DEDB6D6984E590801B
 ```
 
 Bewertung dieser Stufe:
 
 ```text
-REMOTE SOURCE COMMIT VERIFIED
+REMOTE FIX COMMIT VERIFIED
 LOCAL FAST-FORWARD VERIFIED
-LOCAL HEAD VERIFIED
 DIFF CHECK PASS
-LOCAL ACCEPTANCE BUILD PASS
+WAREHOUSE PRODUCTION BUILD PASS
 BUILDER/BUNDLE HASH MATCH PASS
-DCS RESULT NOT_RUN
+PREVIOUS DCS RUN INVALID
+NEXT DCS RUN PENDING NEW MIZ HASH CHAIN
 M1083 AMMO-SUPPLY EFFECT NOT_VALIDATED
 ```
 
 Der Dokumentationsvalidator wurde in dieser Stufe nicht ausgeführt; ein `VALIDATED`-Status wird daraus nicht abgeleitet.
-
-## Status vor DCS-Lauf
-
-```text
-SOURCE IMPLEMENTED
-BUILDER IMPLEMENTED
-LOCAL BUILD/HASH VERIFIED
-MIZ INTEGRATION PENDING
-DCS RESULT NOT_RUN
-M1083 AMMO-SUPPLY EFFECT NOT_VALIDATED
-```
-
-Erst ein realer DCS-Lauf mit Bundle-/MIZ-/Log-/Debrief-Provenienz darf diesen Status anheben.
