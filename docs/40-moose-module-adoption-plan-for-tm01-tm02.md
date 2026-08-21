@@ -227,9 +227,9 @@ Für konkrete produktive Ground-Missionen bleibt MOOSE-first verbindlich. Die TM
 [x] bestätigt: MOOSE GROUP:Route-Ausführung ist praktisch nachgewiesen
 [x] bestätigt: TM01M hatte keine strategische Warehouse-/CampaignState-/Settlement-Funktion
 [x] kein produktiver TM01M-Nachfolger erforderlich
+[x] docs/moose/PROJECT-CLASS-INDEX.md um den dokumentierten TM01M-Scope ergänzt
+[x] docs/moose/GROUND-OPERATIONS.md mit der TM01M-Evidenz synchronisiert
 
-[ ] docs/moose/PROJECT-CLASS-INDEX.md um den dokumentierten TM01M-Scope ergänzen
-[ ] passende Ground-/MOOSE-Themendokumentation mit der Evidenz synchronisieren
 [ ] Dokumentationsvalidator ausführen und vollständigen Diff prüfen
 [ ] LOAD_TM01M wird vom Projektinhaber aus der `.miz` entfernt
 ```
