@@ -161,6 +161,23 @@ function Service:Request(spec)
 
   self.pending = request
   local _, requested = self.support:Request()
+
+  -- The MOOSE-backed materializer may complete synchronously and invoke the
+  -- callback from inside Request(). In that case _OnSupportMaterialized()
+  -- already replaced the pending request with the real rearm context. Do not
+  -- overwrite that context with a stale WAITING_FOR_SUPPORT placeholder.
+  local resolved = self.contexts[transactionId] or self.rearm:Get(transactionId)
+  if self.pending == nil and resolved then
+    return resolved, requested
+  end
+
+  -- Also tolerate a materializer that exposes the group synchronously without
+  -- invoking the callback. The normal callback path remains authoritative.
+  group = self.support:GetMaterializedGroup()
+  if self.pending and group then
+    return self:_StartRearm(group, self.pending)
+  end
+
   local waiting = {
     transactionId = transactionId,
     nodeId = request.nodeId,
