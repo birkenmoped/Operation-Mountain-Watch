@@ -276,3 +276,52 @@ Mindestens zu pruefen:
 ## 11. Naechster Schritt
 
 Nach diesem Commit ist die Materialisierungsgrenze geklaert. Der naechste Arbeitsblock darf wieder nur von einer konkreten Ground-Mission ausgehen und muss dafuer die passende MOOSE-Ausfuehrung pruefen. Es wird kein generischer Ground-Manager vorab erfunden.
+
+## 12. Konkreter Support-Materialisierungsfall: Bostick M1083
+
+Der erste konkrete Nachfolger ist der lokale Artillerie-Rearm-Pfad fuer Bostick. Die MissionDemand-Arbeit benoetigt dafuer kein neues Spawn-System, sondern ein reales MOOSE-`GROUP`-Objekt des bereits vorhandenen Templates:
+
+```text
+TPL_BLUE_GND_SUP_M1083
+```
+
+Der gepinnte MOOSE-Source besitzt dafuer einen oeffentlichen WAREHOUSE-Self-Request-Pfad. Ein `PLATOON` registriert das Template ueber `BRIGADE:AddPlatoon(...)` im BRIGADE-/WAREHOUSE-Stock. Danach kann dieselbe BRIGADE das konkrete Asset von sich selbst per `WAREHOUSE.Descriptor.GROUPNAME` anfordern. `OnAfterSelfRequest(...)` liefert die materialisierte MOOSE-`GROUP` an den nachfolgenden Auftrag.
+
+Dafuer wurde bewusst nur ein kleiner Koordinator hinzugefuegt:
+
+```text
+scripts/ground/OMW_GroundSupportMaterializer.lua
+```
+
+Vertrag:
+
+```text
+PLATOON:New(TPL_BLUE_GND_SUP_M1083, 1, PLT_BLUE_GND_BOSTICK_AMMO_SUPPORT)
+-> BRIGADE:AddPlatoon(...)
+-> WAREHOUSE self-request by GROUPNAME
+-> existing road-spawn adapter controls ACCESS geometry
+-> OnAfterSelfRequest returns exactly one MOOSE GROUP
+-> caller receives GROUP for ARTY:SetRearmingGroup(...)
+```
+
+Der Koordinator erzeugt ausdrücklich nicht:
+
+```text
+- keinen eigenen Spawn
+- keine eigene Mission
+- keine eigene Route
+- keinen Scheduler
+- keinen strategischen Bestand
+- keinen Ersatz fuer BRIGADE/PLATOON/WAREHOUSE
+```
+
+Der konkrete Bostick-Runtime-Aufrufer muss weiterhin die bereits vorhandene Bostick-BRIGADE, `ZON_BLUE_GND_BOSTICK_ACCESS` und eine belastbare Outbound-Koordinate bereitstellen. Der RoadSpawnAdapter wird nicht dupliziert.
+
+Status:
+
+```text
+GROUND SUPPORT MATERIALIZER SOURCE IMPLEMENTED
+MOOSE SELF-REQUEST PATH SOURCE REVIEWED
+M1083 DCS REARM CAPABILITY NOT YET VALIDATED
+BUNDLED GROUND INTEGRATION TEST PENDING
+```
