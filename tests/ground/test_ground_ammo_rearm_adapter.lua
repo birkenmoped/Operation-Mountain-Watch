@@ -33,12 +33,13 @@ local function newFakeArty(options)
   function arty:SetRearmingGroupOnRoad(onRoad) self.onRoad = onRoad return self end
   function arty:SetRearmingDistance(distance) self.rearmingDistance = distance return self end
   function arty:SetRearmingGroupSpeed(speed) self.rearmingSpeedKph = speed return self end
-  function arty:Start() self.started = true return self end
+  function arty:Start() self.started = true return nil end
   function arty:Rearm()
     self.rearmCalled = true
     if options.reject then return false end
     if self.OnBeforeRearm and self:OnBeforeRearm({}, "CombatReady", "Rearm", "Rearming") == false then return false end
-    return true
+    -- Real MOOSE FSM transition handlers return nil on a successful transition.
+    return nil
   end
   function arty:CompleteRearm()
     if self.OnAfterRearmed then self:OnAfterRearmed({}, "Rearming", "Rearmed", "Rearmed") end
