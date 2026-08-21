@@ -29,13 +29,14 @@ local rearmCalls = 0
 local fakeArty = {}
 function fakeArty:SetRearmingGroup(group) self.rearmingGroup = group return self end
 function fakeArty:SetRearmingGroupOnRoad(onRoad) self.onRoad = onRoad return self end
-function fakeArty:Start() startCalls = startCalls + 1 return self end
+function fakeArty:Start() startCalls = startCalls + 1 return nil end
 function fakeArty:Rearm()
   rearmCalls = rearmCalls + 1
   if self.OnBeforeRearm and self:OnBeforeRearm({}, "CombatReady", "Rearm", "Rearming") == false then
     return false
   end
-  return true
+  -- Real MOOSE FSM transition handlers return nil on a successful transition.
+  return nil
 end
 
 local artilleryGroup = { name = "TPL_BLUE_GND_BOSTICK_FS_ARTY_L118_2" }
