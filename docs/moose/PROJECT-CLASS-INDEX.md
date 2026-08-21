@@ -63,11 +63,11 @@ REJECTED_FOR_PROJECT_USE
 | `FLIGHTGROUP` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | AAR FuelLow, Dead/OnAfterDead, GetCoordinate, `AddWaypoint(...)`, `AddMission(...)` und `OnAfterPassingWaypoint(...)`; Acceptance 7 bestätigte FIR -> 60-NM -> AUFTRAG sowie Egress -> External Handoff |
 | `COMMANDER` | `VALIDATED_FOR_DOCUMENTED_SCOPE` + `SOURCE_REVIEWED` | dokumentierter COMMANDER-Lifecycle; Ground-Review bestätigt `AddBrigade(...)` und `AddOpsTransport(...)` source-seitig; MissionDemand bleibt OMW-Tasking-Autorität |
 | `AUFTRAG` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | AAR-Methoden sowie dokumentierte Ground-Acceptance-1 bis -6-Lifecycles praktisch bestätigt; keine CampaignState-Autorität |
-| `SPAWN` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | area-spezifische AAR-Templates und externe Materialisierung praktisch bestätigt; Ground Acceptance 1 verwendet keinen direkten SPAWN-Pfad |
+| `SPAWN` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | area-spezifische AAR-Templates und externe Materialisierung praktisch bestätigt; TM01M bestätigte `InitSetUnitAbsolutePositions(...)` für road-aligned Ground-Spawns mit 6 Fahrzeugen sowie später 30 Fahrzeugen in fünf parallelen Konvois; keine allgemeine Warehouse-Injection daraus ableiten |
 | `SCHEDULER` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | allgemeine OMW-Nutzung praktisch bestätigt; Ground Acceptance 1 verwendet nur One-shot-Koordination, kein hochfrequentes Polling |
 | `USERFLAG` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Warehouse-Acceptance-Readiness-Pfade |
-| `GROUP`, `UNIT`, `STATIC`, `ZONE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Wrapper-/Objektauflösung in dokumentierten Scopes; Acceptance-1-v13-Objektvertrag read-only bestätigt, Ground-Acceptance-6 bestätigt GetSize, GetUnits, test-only Destroy(false) und SetLife(50) im dokumentierten Verlust-/Schaden-Return-Scope |
-| `COORDINATE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | `Get2DDistance(...)`, `GetIntermediateCoordinate(...)` und `HeadingTo(...)` im dokumentierten AirOps-Scope |
+| `GROUP`, `UNIT`, `STATIC`, `ZONE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Wrapper-/Objektauflösung in dokumentierten Scopes; TM01M bestätigte `GROUP:Route(...)` für PATHLINE-basierte Ground-Routen; Acceptance-1-v13-Objektvertrag read-only bestätigt, Ground-Acceptance-6 bestätigt GetSize, GetUnits, test-only Destroy(false) und SetLife(50) im dokumentierten Verlust-/Schaden-Return-Scope |
+| `COORDINATE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | AirOps bestätigt `Get2DDistance(...)`, `GetIntermediateCoordinate(...)` und `HeadingTo(...)`; TM01M bestätigte Ground-Road-Projection und Road-Connector-Nutzung über `GetClosestPointToRoad(...)` und `GetPathOnRoad(...)` im dokumentierten Convoy-Scope |
 | `BRIGADE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` + `INTERNAL_RESTRICTED` | Acceptance 1–6 bestätigen Ground-Assetpool, Materialisierung, Callback-Lifecycle und die parallelen Rückgabevarianten; die road-aligned private Warehouse-Spawn-Ausnahme bleibt auf Acceptance-3-2 und den gepinnten MOOSE-Stand begrenzt |
 | `PLATOON` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Acceptance 1–6 bestätigen dokumentierte Assetselektion, Wiederverwendung und Rückgabevarianten im Ground-Scope; keine allgemeine Produktionsfreigabe |
 | `ARMYGROUP` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Acceptance 1–6 bestätigen MissionDone-Persistenz, Same-group-Follow-up sowie mobilen RTZ/Returned-Handoff einschließlich paralleler Teilverlust-/Schadenrückgabe; immobiler Teleportpfad bleibt ausgeschlossen |
@@ -79,8 +79,10 @@ REJECTED_FOR_PROJECT_USE
 | `PLAYERRECCE` | `CANDIDATE` | spielergeführte Aufklärung; Multiplayerprüfung offen |
 | `TARS` | `CANDIDATE` | verzögerte Foto-/IMINT-Aufklärung; Verfügbarkeit offen |
 | `DETECTION_*` | `PLANNED` | Spezialfälle; kein paralleles strategisches Lagebild neben `INTEL` |
-| `Core.Astar`, `PATHLINE`, `MOVEMENT` | `PLANNED` | Routing und Bewegungsbegrenzung |
-| `_DATABASE` | `INTERNAL_RESTRICTED` | nur Diagnose/Validierung; aktueller AAR- und Ground-Acceptance-1-Pfad verwendet `_DATABASE` nicht |
+| `PATHLINE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | TM01M bestätigte Mission-Editor-PATHLINE-Auflösung, Vorwärts-/Rückwärtsorientierung, Segmentverkettung und vollständige Ground-Routenausführung im exakt dokumentierten Single- und Five-Convoy-Scope; historische Fixture-Evidenz, keine allgemeine Produktionsrouting-Freigabe |
+| `Core.Astar` | `PLANNED` | Netzwerkpfadwahl; keine TM01M-Evidenz |
+| `MOVEMENT` | `PLANNED` | globale Bewegungsbegrenzung; keine TM01M-Evidenz |
+| `_DATABASE` | `INTERNAL_RESTRICTED` | nur Diagnose/Validierung und dokumentierte owner-genehmigte Ground-Acceptance-Ausnahme; TM01M selbst benötigte keinen Warehouse-`_DATABASE`-Pfad |
 | `CHIEF` | `REJECTED_FOR_PROJECT_USE` | aktuelle Produktionsarchitektur `NOT_USED` |
 
 ## 4. ARMY Ground Foundation – Source-Review und Acceptance-1-Staging 18.08.2026
@@ -282,3 +284,56 @@ Status: INTERNAL_RESTRICTED / SOURCE_REVIEWED_EXCEPTION_APPROVED_DCS_PENDING
 |---|---|---|
 | `ARMYGROUP` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Acceptance 4-2 bestätigt den öffentlichen mobilen `RTZ(existing Fenty ACCESS zone, OnRoad)`-Pfad einschließlich `Returning` und `Returned`; kein Teleportpfad verwendet |
 | `WAREHOUSE` / `LEGION` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Acceptance 4-2 bestätigt `Returned -> __AddAsset(10) -> AddAsset -> physical group removal` für Fenty; operative Rückgabe ist keine strategische Ressourcenbuchung |
+
+## Addendum 2026-08-21 – TM01M historische Ground-Convoy-Evidenz
+
+TM01M wird nicht als Production Runtime weitergeführt. Der Test bleibt jedoch als praktischer DCS-Nachweis für mehrere MOOSE-Bausteine erhalten.
+
+```text
+Single-convoy evidence:
+Branch: feature/tm01m-moose-native-baseline
+Commit: 0db10501f81c160cd5818088e760af181b33d86d
+Configuration: TM01M-moose-native-msr-pathline-1
+DCS: 2.9.28.26283
+Result: PASS
+
+Five-convoy evidence:
+Branch: feature/tm01m-moose-native-baseline
+Commit: da2714af9d312d92913a0b325ca3c2e8e91f8064
+Configuration: TM01M-moose-native-five-convoys-1
+DCS: 2.9.28.26283
+Result: PASS
+```
+
+Praktisch bestätigt wurden in diesen exakt dokumentierten Scopes:
+
+```text
+PATHLINE
+- Mission-Editor-PATHLINE-Auflösung
+- automatische Vorwärts-/Rückwärtsorientierung
+- Verkettung mehrerer MSR-Segmente
+
+COORDINATE
+- nearest-road projection
+- road connector generation
+
+SPAWN
+- InitSetUnitAbsolutePositions(...) für road-aligned Unitpositionen/Headings
+
+GROUP
+- Route(...) für die kompilierte Ground-Route
+```
+
+Der Single-Convoy-Lauf bestätigte sechs Fahrzeuge bis Jalalabad. Der Five-Convoy-Lauf bestätigte fünf parallele Konvois mit insgesamt 30 Fahrzeugen bei 50 km/h; alle erreichten ihre Zielzonen.
+
+Grenze der Evidenz:
+
+```text
+TM01M = HISTORICAL_TEST_FIXTURE / feasibility evidence
+TM01M != strategic logistics system
+TM01M != CampaignState authority
+TM01M != Warehouse booking layer
+TM01M != Settlement / Restart logic
+```
+
+Die historischen Ergebnisberichte dokumentieren Branch, Commit, DCS-Version und Log-/Debrief-Hashes. Ein vollständiger eingebetteter `Moose.lua`-SHA-256 ist in diesen beiden Ergebnisberichten nicht ausgewiesen. Deshalb wird die Evidenz nicht stillschweigend auf andere MOOSE-Stände oder beliebige Ground-Routen erweitert.
