@@ -1,26 +1,29 @@
 ---
 document_id: OMW-GROUND-FIRE-SUPPORT-ACCEPTANCE-2
-status: DRAFT
+status: SUPERSEDED
 document_class: ACCEPTANCE_PLAN
 owning_policy: OMW-GOV-001
 authoritative_for:
-  - combined DCS acceptance of fixed fire-support rearm for Bostick, Wright, Fortress and Honaker
+  - combined DCS acceptance plan of fixed fire-support rearm for Bostick, Wright, Fortress and Honaker
   - required Mission Editor target- and local resupply-zone contract for that combined run
   - Option-B durable completion and restore-settlement runtime acceptance boundary
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
 superseded_by:
-source_branch: agent/ground-ammo-rearm-integration
-source_commit: PENDING_MERGE
+  - OMW-GROUND-FIRE-SUPPORT-ACCEPTANCE-2-11-RUNTIME
+source_branch: main
+source_commit: 761f392bbd4e9ffee416e2e598235d9040a9a752
 validated_in_dcs: true
 ---
 
 # Ground Fire Support Acceptance 2 – gebündelter Abschlusslauf
 
+> Der Plan ist abgeschlossen und durch `results/2026-08-22-acceptance-2-11-runtime.md` als exakte Runtime-Evidenz superseded. PR #112 wurde mit Merge-Commit `761f392bbd4e9ffee416e2e598235d9040a9a752` nach `main` integriert.
+
 ## 1. Ziel und Vertrag
 
-Revision 2-11 bündelt die verbleibenden Runtime-Prüfungen in einem DCS-Lauf:
+Revision 2-11 bündelte die verbleibenden Runtime-Prüfungen in einem DCS-Lauf:
 
 ```text
 Phase A: reale MOOSE/DCS-Rearm-Legs
@@ -38,7 +41,7 @@ LOADING     -> CANCELLED
 new transaction after compensation -> new ID -> COMPLETED
 ```
 
-Phase B läuft innerhalb derselben DCS-Session. Sie ist kein echter DCS-Prozessrestart und kein externer Persistenztest.
+Phase B lief innerhalb derselben DCS-Session. Sie war kein echter DCS-Prozessrestart und kein externer Persistenztest.
 
 `CampaignState` bleibt einzige strategische Ressourcenautorität.
 
@@ -105,7 +108,7 @@ Restore mit CONSUMED aber nicht COMPLETED
 -> later rearm requires a new transaction ID
 ```
 
-## 5. Produktionsbundle-Provenienz
+## 5. Produktionsbundle-Provenienz des getesteten Branch-Standes
 
 ```text
 Source / Git HEAD: 49f43a856c1f8bc32ca64835af856119a295640e
@@ -206,11 +209,11 @@ externer Dateisystem-/Server-Persistence-Host: NICHT VORHANDEN
 realer DCS-Prozessrestart mit Snapshot-Datei: NICHT GETESTET / NICHT BEHAUPTET
 ```
 
-Keine `io`-/`lfs`-Persistenz, keine `MissionScripting.lua`-Änderung und keine zweite Persistenzautorität werden eingeführt.
+Keine `io`-/`lfs`-Persistenz, keine `MissionScripting.lua`-Änderung und keine zweite Persistenzautorität wurden eingeführt.
 
-## 9. Mission-Editor-Vertrag
+## 9. Mission-Editor-Vertrag und Cleanup
 
-RESUPPLY-Zonen:
+RESUPPLY-Zonen sind produktiv und bleiben erhalten:
 
 ```text
 ZON_BLUE_GND_BOSTICK_RESUPPLY
@@ -219,16 +222,39 @@ ZON_BLUE_GND_FORTRESS_RESUPPLY
 ZON_BLUE_GND_HONAKER_RESUPPLY
 ```
 
-Zielzonen:
+Acceptance-spezifisch und nach Abschluss aus einer normalen Arbeits-/Produktionsmission entfernbar:
 
 ```text
+OMW_Ground_Fire_Support_Acceptance_2.lua
 ZON_BLUE_GND_BOSTICK_ARTY_ACCEPTANCE_TARGET
 ZON_BLUE_GND_WRIGHT_ARTY_ACCEPTANCE_TARGET
 ZON_BLUE_GND_FORTRESS_ARTY_ACCEPTANCE_TARGET
 ZON_BLUE_GND_HONAKER_MORTAR_ACCEPTANCE_TARGET
 ```
 
-## 10. Status
+Die getestete `OMW_Template_v16.miz` mit SHA-256 `388F02C932BE83823543F97887B4EDBB9E6764D4CEBE543BD8423D43A6ED8620` bleibt als unverändertes Acceptance-Artefakt erhalten. Weitere Missionsarbeit erfolgt auf einer neuen Arbeitsrevision.
+
+## 10. Post-Merge Produktionsbuild
+
+Nach Merge von PR #112 auf `main` wurde bei `HEAD=761f392bbd4e9ffee416e2e598235d9040a9a752` real neu gebaut:
+
+```text
+AirOps Warehouse Production
+BuilderVersion: OMW-AIROPS-WAREHOUSE-BASE-3
+Output: mission/runtime/logistics/OMW_AirOps_Warehouse_Base.lua
+Builder-reported BundleSHA256:
+F4FBF6DB71E56AADBF0B31C931638754FF4DDB75F90E570BA127E56A0251974F
+
+Ground Production
+BuilderVersion: OMW-GROUND-PRODUCTION-BASE-4
+Output: mission/ground-operations/dist/OMW_Ground_Base.lua
+Builder-reported SHA256:
+A5D2A101FFEC3F1C222463002D7D5668C77EF6ACDEEDE1D8B8FEEB5E19D2E026
+```
+
+Die separaten direkten `Get-FileHash`-Readbacks dieser beiden korrekten Ausgabepfade stehen noch aus. Bis dahin werden die Werte nicht als unabhängig bestätigte Artefakthashes bezeichnet.
+
+## 11. Status
 
 ```text
 Revision-2-7 full-depletion diagnostic: DCS PASS for exact provenance
@@ -236,6 +262,10 @@ Revision-2-10 corrected contract: BUILD/HASH VERIFIED; no isolated DCS rerun
 Revision-2-11 bundled acceptance: DCS PASS for exact documented scope
 Mission provenance: CLOSED
 M1083 as Honaker support: OWNER CONFIRMED
-Option-B production implementation: SOURCE COMPLETE / production bundles BUILD/HASH VERIFIED
+Option-B production implementation: MERGED TO MAIN
+PR #112: MERGED
+Merge commit: 761f392bbd4e9ffee416e2e598235d9040a9a752
+Post-merge production rebuild: COMPLETE
+Post-merge direct production artifact hash readback: PENDING
 External filesystem/server persistence host: NOT PRESENT / NOT TESTED / NOT CLAIMED
 ```
