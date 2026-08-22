@@ -24,7 +24,7 @@ validated_in_dcs: partial
 
 ## 1. Zweck
 
-Dieses Review dokumentiert für den ersten Physical-RESUPPLY-Vertical-Slice die MOOSE-First-Prüfung und die nach den ersten beiden DCS-Läufen bestätigten beziehungsweise noch offenen Grenzen. Maßgeblich bleiben `OMW-GOV-001`, `OMW-GOV-MOOSE-FIRST`, die aktuelle Ground-Production-Baseline und der tatsächlich gepinnte MOOSE-Source.
+Dieses Review dokumentiert für den ersten Physical-RESUPPLY-Vertical-Slice die MOOSE-First-Prüfung und die nach den ersten drei DCS-Läufen bestätigten beziehungsweise noch offenen Grenzen. Maßgeblich bleiben `OMW-GOV-001`, `OMW-GOV-MOOSE-FIRST`, die aktuelle Ground-Production-Baseline und der tatsächlich gepinnte MOOSE-Source.
 
 Erster Testfall:
 
@@ -49,7 +49,7 @@ MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
 Moose.lua SHA-256: E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915
 ```
 
-Geprüft wurden die Projekt-MOOSE-Dokumentation, der tatsächliche gepinnte `Moose.lua`-Source und die im Source enthaltenen WAREHOUSE-/LEGION-Pfade. Ein DCS-PASS wird nur für tatsächlich beobachtete Teilpfade ausgewiesen.
+Geprüft wurden die Projekt-MOOSE-Dokumentation, der tatsächliche gepinnte `Moose.lua`-Source und die im Source enthaltenen WAREHOUSE-/LEGION-Pfade. Zusätzlich wurden die offiziellen ARMYGROUP-Demos im MOOSE-Missionsrepository geprüft. Ein DCS-PASS wird nur für tatsächlich beobachtete Teilpfade ausgewiesen.
 
 ## 3. Vorhandene OMW-Verträge
 
@@ -176,7 +176,7 @@ STANDARD_07 capacity = Y
 automatic convoy-class selection
 ```
 
-Ein späterer produktiver Kapazitätsvertrag muss diese Werte separat festlegen, bevor die angeforderte strategische Menge automatisch LIGHT/ STANDARD auswählen darf.
+Ein späterer produktiver Kapazitätsvertrag muss diese Werte separat festlegen, bevor die angeforderte strategische Menge automatisch LIGHT/STANDARD auswählen darf.
 
 ## 7. Delivery-Grenze
 
@@ -202,6 +202,7 @@ Nach bestätigter Lieferung wird die Acceptance-Mission beendet und der physisch
 
 ```text
 MissionDone
+-> settlement window
 -> ARMYGROUP:RTZ(origin ACCESS zone, OnRoad)
 -> OnAfterReturned
 -> BRIGADE / Warehouse AddAsset
@@ -220,7 +221,7 @@ function ARMYGROUP:onafterReturned(From, Event, To)
 end
 ```
 
-Damit muss eine Acceptance, die den Warehouse-Handoff verifiziert, nach `Returned` mindestens dieses framework-eigene 10-Sekunden-Fenster berücksichtigen. Der bisherige Harness prüfte nach 3 Sekunden und war damit source-seitig zu früh. Der nächste Harness verwendet 12 Sekunden vor der finalen `AddAsset`-/Cleanup-Prüfung.
+Damit muss eine Acceptance, die den Warehouse-Handoff verifiziert, nach `Returned` mindestens dieses framework-eigene 10-Sekunden-Fenster berücksichtigen. Der Harness verwendet 12 Sekunden vor der finalen `AddAsset`-/Cleanup-Prüfung.
 
 ## 9. DCS-Lauf 2 – bestätigter Teilpfad
 
@@ -257,7 +258,7 @@ Returned -> AddAsset: NOT YET CONFIRMED IN THIS SLICE
 
 ## 10. Acceptance-Timeout-Grenze
 
-Der nächste Harness trennt die Zeitfenster:
+Der Harness trennt die Zeitfenster:
 
 ```text
 OUTBOUND_TIMEOUT_SEC = 1800
@@ -271,7 +272,46 @@ RETURN_TIMEOUT_SEC = 1800
 
 Damit wird keine neue Runtime-Logik eingeführt; es handelt sich ausschließlich um One-shot-`SCHEDULER`-Gates der Acceptance.
 
-## 11. `OPSTRANSPORT` – bewusst nicht im ersten Slice
+## 11. DCS-Lauf 3 – RTZ zu früh relativ zum AUFTRAG-Abschluss
+
+Exakte Laufdokumentation:
+
+```text
+mission/tests/ground-resupply-execution/results/2026-08-22-ground-ammo-resupply-acceptance-1-fail-3.md
+```
+
+Der geschützte `TPL_BLUE_CONVOY_LIGHT_06` erreichte Honaker, Delivery und MissionDemand-Success wurden korrekt gebucht. Danach zeigte der reale DCS-Log:
+
+```text
+17:56:12.329 MISSION_DONE deliveryCommitted=true
+17:56:12.576 RETURN_RTZ_ACTIVE
+17:56:12.576 RETURN_RTZ_ISSUED ... Joyce ... OnRoad
+17:56:13.110 AUFTRAG ... Mission 3 [Ammo Supply] success!
+17:56:53.062 FAIL reason=RETURN_TIMEOUT seconds=1800 returnedCount=0 addAssetCount=0
+```
+
+Owner-Beobachtung: der komplette Convoy blieb physisch am Honaker-Resupply-Ort stehen und begann keine Rückfahrt.
+
+Damit ist belegt, dass der bisherige Zwei-Sekunden-Scheduler den öffentlichen RTZ-Pfad auslöste, während die AUFTRAG-Abschlussauswertung noch lief. Das ist kein genereller RTZ-Ausfall: die bereits auf `main` dokumentierte und in DCS bestandene ARMY-Ground Acceptance 4-2 verwendet für denselben öffentlichen mobilen Return-Pfad bewusst 30 Sekunden Abstand nach `MissionDone` und erreichte `Returned -> Warehouse AddAsset` erfolgreich. Acceptance 6 bestätigte denselben Rückgabe-Lifecycle zusätzlich mit Teilverlust/Beschädigung.
+
+Für Stage 1A wird deshalb dieselbe praktisch bestätigte Settlement-Grenze übernommen:
+
+```text
+RETURN_ISSUE_DELAY_SEC = 30
+MissionDone
+-> wait 30 s
+-> ARMYGROUP:RTZ(origin ACCESS zone, OnRoad)
+```
+
+Es wird kein neuer Return-Dispatcher, kein Despawn/Respawn am Ziel und kein eigener Router eingeführt.
+
+## 12. AMMOSUPPLY und Entladezeit
+
+Im geprüften gepinnten MOOSE-Pfad wurde kein separater automatischer Entlade-Timer gefunden, der nach Zielerreichen vor einem RTZ zwingend ablaufen müsste. `AUFTRAG:NewAMMOSUPPLY(...)` bildet die Supply-Mission bis zum Mission-Lifecycle-Ende ab; die OMW-Cargo-/Ressourcenbuchung bleibt unabhängig davon CampaignState-Autorität.
+
+Der für Run 3 beobachtete Stillstand wird deshalb nicht als notwendige Entladezeit klassifiziert, sondern als Lifecycle-Überlappung zwischen zu frühem RTZ und noch laufender AUFTRAG-Abschlussauswertung.
+
+## 13. `OPSTRANSPORT` – bewusst nicht im ersten Slice
 
 Die öffentliche `OPSTRANSPORT`-Klasse ist im gepinnten MOOSE vorhanden. Der ebenfalls auffindbare Entwurf `AUFTRAG:NewOPSTRANSPORT(...)` ist im gepinnten Source jedoch auskommentiert und darf nicht als öffentliche API verwendet werden.
 
@@ -290,7 +330,7 @@ OPSTRANSPORT:
 deferred for real physical cargo / troop transport cases
 ```
 
-## 12. Generic SUPPLY
+## 14. Generic SUPPLY
 
 Im geprüften AUFTRAG-Scope wurde keine gleichwertige generische `SUPPLY`-Mission bestätigt. Für `GROUND_SUPPLY_PACKAGE` wird deshalb in diesem Schritt keine Ersatzmission erfunden.
 
@@ -303,7 +343,7 @@ Reihenfolge:
 4. falls erforderlich: owner decision before any custom fallback
 ```
 
-## 13. Aktuelle Acceptance-Grenze
+## 15. Aktuelle Acceptance-Grenze
 
 Der nächste Test darf nur folgende Aussage erzeugen:
 
@@ -314,6 +354,7 @@ one RESUPPLY MissionDemand
 one CampaignState TRANSFER
 one TPL_BLUE_CONVOY_LIGHT_06 physical AMMOSUPPLY execution
 one destination credit
+30 s post-MissionDone settlement window
 explicit full-convoy return to Joyce
 Returned -> Warehouse AddAsset -> physical cleanup
 ```
@@ -331,7 +372,7 @@ CSAR
 external server/process persistence
 ```
 
-## 14. Ergebnis der Source-Prüfung
+## 16. Ergebnis der Source-Prüfung
 
 ```text
 MOOSE-first path found: YES
@@ -341,6 +382,8 @@ existing approved road-spawn adapter reused: YES
 existing mission convoy template reused: YES
 OPSTRANSPORT required for first AMMO slice: NO
 new non-MOOSE exception requested: NO
-DCS delivery path status: PARTIALLY CONFIRMED
-DCS full roundtrip status: NOT YET CONFIRMED
+DCS delivery path status: PRACTICALLY CONFIRMED FOR DOCUMENTED RUNS
+DCS public mobile RTZ path elsewhere in OMW: VALIDATED IN ACCEPTANCE 4-2 / 6 EXACT SCOPES
+DCS full Joyce-Honaker roundtrip status: NOT YET CONFIRMED
+next return timing: 30 s after MissionDone
 ```
