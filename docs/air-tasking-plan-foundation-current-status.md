@@ -16,7 +16,7 @@ supersedes:
 superseded_by:
 source_branch: agent/air-tasking-plan-foundation
 source_commit: PENDING_MERGE
-validated_in_dcs: true
+validated_in_dcs: false
 ---
 
 # Air Tasking Plan Foundation – Aktueller Stand
@@ -24,89 +24,128 @@ validated_in_dcs: true
 ## 1. Gesamtstatus
 
 ```text
-PHASE 0  Governance / Reconciliation / Contracts          PASS
-PHASE 1  Domain Data Model                               PASS
+PHASE 0  Governance / Reconciliation / Contracts          PASS, MAIN RECONCILIATION APPLIED
+PHASE 1  Domain Data Model                               PASS, MAIN RECONCILIATION APPLIED
 PHASE 2  MOOSE-First Capability Verification            PASS
-PHASE 3  First Vertical Integration – AAR                PASS
+PHASE 3  First Vertical Integration – AAR                RETEST REQUIRED
 PHASE 4  Player-Facing Mission Products                  NOT STARTED
 PHASE 5  Ground Alert / CAS Request Lifecycle            NOT STARTED
 PHASE 6  Dynamic Planning / Retasking / Persistence      NOT STARTED
 ```
 
-Phase 0 bis 2 sind branch-lokale PASS-Staende. Phase 3 ist mit `AIR-TASKING-AAR-VERTICAL-2` in DCS validiert. Die technische Acceptance-Provenienz steht in `mission/tests/air-tasking-aar-vertical/README.md`.
+`AIR-TASKING-AAR-VERTICAL-2` bleibt eine reale technische Acceptance fuer seinen exakt dokumentierten Stand. Der aktuelle Branch-Head wurde danach mit dem inzwischen auf `main` integrierten MissionDemand-Vertrag reconciliert und benoetigt deshalb einen neuen Gate-3-Retest.
 
-## 2. Gepruefte Missions-/MOOSE-Baseline
+## 2. Current-main reconciliation
 
-Der erfolgreiche Phase-3-Lauf basiert auf folgendem exakt dokumentierten Stand:
+Der Branch ist gegen den aktuellen `main`-Stand fachlich abgeglichen worden. `main` enthaelt inzwischen insbesondere:
+
+```text
+scripts/campaign/OMW_MissionDemand.lua
+scripts/campaign/OMW_ResourceDemandPolicy.lua
+```
+
+sowie die ueber PR #114 und PR #115 integrierte MissionDemand-/RESUPPLY-Baseline.
+
+Verbindliche Grenze fuer Air Tasking:
+
+```text
+Campaign MissionDemand
+= canonical demand identity and campaign assignment state
+
+Air Tasking
+= ASR / ATM / ATP / REL / EXE planning and correlation
+
+MOOSE / accepted AAR runtime
+= physical execution
+
+CampaignState
+= strategic resource authority and settlement
+```
+
+Air Tasking darf weder einen parallelen MissionDemand-Store noch einen zweiten Ressourcenledger einfuehren.
+
+## 3. MissionDemand-Vertragsanpassung
+
+Der bisherige AAR-Vertical-Slice verwendete direkt den bestehenden AAR-Runtime-Demand-Vertrag:
+
+```text
+missionDemandId
+receiverProfile
+operationsArea
+supportMode
+priority
+```
+
+Der kanonische MissionDemand auf aktuellem `main` verwendet dagegen insbesondere:
+
+```text
+id
+missionType
+priority
+status
+```
+
+Die Air-Tasking-Bridge konsumiert deshalb jetzt den kanonischen MissionDemand read-only und erzeugt ausschliesslich fuer den akzeptierten AAR-Controller einen kleinen AAR-Runtime-Demand:
+
+```text
+MissionDemand.id -> runtimeDemand.missionDemandId
+Air Tasking AAR planning -> receiverProfile / operationsArea / supportMode
+MissionDemand.priority -> runtimeDemand.priority
+```
+
+Der MissionDemand-Status wird durch die Bridge nicht veraendert. Terminale MissionDemands (`SUCCESS`, `FAILED`, `EXPIRED`) werden fuer neue AAR-Unterstuetzung abgewiesen.
+
+## 4. Additive AAR-Grenze
+
+Unveraendert bleiben:
+
+```text
+OMW_AAR_Base.lua
+OMW_AAR_Controller.lua
+OMW_AAR_CampaignStateAdapter.lua
+OMW_AAR_RuntimeIntegration.lua
+main OMW_MissionDemand.lua
+CampaignState settlement
+```
+
+Der fruehere tote `GetAdapterModule()`-/`baseAdapterModule`-Pfad wurde aus der Air-Tasking-Schicht entfernt. Damit verbleibt kein vorgesehener Air-Tasking-Pfad zur Neuerzeugung oder Dekoration des akzeptierten AAR Strategic Adapters.
+
+Runtime-Beobachtung bleibt:
+
+```text
+Controller.GetStation(...)
++ MOOSE SCHEDULER at 5 s
++ Air Tasking internal MD/ASR/ATM/EXE correlation
+```
+
+## 5. Vorherige Gate-3-Acceptance
+
+Der erfolgreiche `AIR-TASKING-AAR-VERTICAL-2`-Lauf bleibt dokumentierte historische technische Evidenz:
 
 ```text
 acceptance branch: agent/air-tasking-plan-foundation
 executable source commit: 1e52a9a685a58d54d0ebc6321d9b1aa81ab4427d
 mission artifact: OMW_Template_v16(6).miz
 mission SHA-256: 5bc2382cf6ea30a77297b4ff3b36b65488dbcb34429d02c9618f1f449814dada
+bundle SHA-256: 30701722eb739fb17b1f827fc681729a6ee781dedd223eab3b03fc72e78ab8a0
 DCS: 2.9.28.26385 MT
-embedded source: l10n/DEFAULT/Moose.lua
-MOOSE context: develop
 MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
 Moose.lua SHA-256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
-existing AAR resource: l10n/DEFAULT/OMW_AAR_Base.lua
-additive Air Tasking bundle SHA-256: 30701722eb739fb17b1f827fc681729a6ee781dedd223eab3b03fc72e78ab8a0
+result: PASS
 ```
 
-Die bestehende AAR-Base blieb unveraendert.
+Dieser PASS wird gemaess Governance nicht auf den geaenderten aktuellen Source-Head uebertragen.
 
-## 3. Phase-3-Architektur
+## 6. Aktueller Retest-Stand
 
-Branch-lokal validierte Integrationsrichtung:
-
-```text
-existing OMW_AAR_Base.lua
--> existing OMW.AirOps.AAR facade RUNNING
--> additive OMW_AirTasking_AARBootstrap
--> OMW_AirTasking_AARBridge
--> existing AAR Controller / CampaignState adapter
--> existing MOOSE execution
-```
-
-Nicht zulaessig fuer diesen Pfad:
+Neue Test-/Builder-Baseline:
 
 ```text
-replace OMW_AAR_Base.lua
-rebuild the accepted AAR base inside Air Tasking
-recreate or mutate the AAR strategic adapter
-recompute AAR area/profile policy
-create a second tanker inventory
-bypass CampaignState settlement
-```
-
-## 4. Implementierter Stand
-
-```text
-scripts/air-operations/OMW_AirTasking_AARBridge.lua
-scripts/air-operations/OMW_AirTasking_AARBootstrap.lua
-mission/tests/air-tasking-aar-vertical/src/01-air-tasking-aar-vertical-acceptance.lua
-tools/build-air-tasking-aar-additive-test.ps1
-```
-
-Der Air-Tasking-Bootstrap verlangt eine bereits laufende `OMW.AirOps.AAR`-Facade. Er startet keinen zweiten AAR-Stack und mutiert keine Methoden der existierenden `StrategicAdapter`-Instanz.
-
-Da der bestehende AAR-Controller keinen separaten Subscriber-Hook fuer Materialization/Handoff/Loss bereitstellt, beobachtet Air Tasking ausschliesslich den oeffentlich exponierten Runtime-Zustand ueber `Controller.GetStation(...)`. Dafuer wird ein MOOSE `SCHEDULER` mit festem 5-Sekunden-Intervall verwendet. Controller und Strategic Adapter bleiben fuer physischen Lifecycle und Settlement allein zustaendig.
-
-Die frueheren nicht-additiven Air-Tasking-AAR-Builder wurden entfernt.
-
-## 5. Lokal bestaetigter additiver Build
-
-Der Projektinhaber hat am 22.08.2026 auf Commit
-
-```text
-1e52a9a685a58d54d0ebc6321d9b1aa81ab4427d
-```
-
-den additiven Builder erfolgreich ausgefuehrt.
-
-```text
-BuilderVersion: OMW-AIR-TASKING-AAR-ADDITIVE-TEST-2
-TestId: AIR-TASKING-AAR-VERTICAL-2
+TestId: AIR-TASKING-AAR-VERTICAL-3
+BuilderVersion: OMW-AIR-TASKING-AAR-ADDITIVE-TEST-3
+MissionDemandContract: CANONICAL_MAIN_SHAPE_READ_ONLY
+AARRuntimeDemandTranslation: true
+LegacyAdapterProxyPath: false
 MizMutation: false
 ExistingAARBaseEmbedded: false
 ExistingAARBaseRecreated: false
@@ -116,71 +155,34 @@ RuntimeObservation: CONTROLLER_GETSTATION_PLUS_MOOSE_SCHEDULER
 ObserverIntervalSec: 5
 ```
 
-Reale SHA-256-Evidenz:
-
-```text
-AirTaskingBridge:
-f582f8646f86dc1ccc0264abdb4dcd4271f225ca2bc6bd4ff8f3705ab1ec782a
-
-AirTaskingBootstrap:
-d2e0d4bd1b75b5fcf60d0186623eb5eed876533c79b9c9a40c6f50176ce3cdf1
-
-Harness:
-0bde695d8b4b09e21494e6065d34afada76cac41ca299cc7f372c530d8c32f28
-
-Additive Test Bundle:
-30701722eb739fb17b1f827fc681729a6ee781dedd223eab3b03fc72e78ab8a0
-```
-
-Der unabhaengige `Get-FileHash` bestaetigte den Bundle-Hash.
-
-## 6. DCS Vertical Acceptance
-
-Der reale DCS-Lauf `dcs(20260822-164658).log` bestaetigt die komplette vorgesehene Kette:
-
-```text
-EXISTING_AAR_ATTACH_PASS
--> STANDARD_BASELINE_PASS
--> WEST/FAST MissionDemand MD-000001
--> LISA reserve materialization AAR-0005
--> ASR-000001 / ATM-000001 / EXE-000001 correlation
--> natural FIR ingress
--> natural 60-NM late approach
--> NATURAL_LISA_ON_STATION_PASS
--> EndAAR(COMPLETE)
--> FIR egress DAVER
--> OFFMAP_HANDOFF
--> EXE ENDED / HANDOFF
--> ATM COMPLETED
--> ASR FULFILLED
--> AL_UDEID available back to 38
--> runtime_id not persisted
--> CORRELATION_PASS
--> SETTLEMENT_PASS
--> RESULT PASS
-```
-
-Die additive Beobachtung meldete dabei ausdruecklich:
-
-```text
-existingAARBase=true
-adapterRecreated=false
-adapterMutated=false
-observerIntervalSec=5
-```
-
-Damit ist der getestete Phase-3-Pfad technisch akzeptiert, ohne die bestehende AAR Acceptance-7 zu ersetzen.
+Der naechste erforderliche Nachweis ist ein realer lokaler Build inklusive Hashes. Erst danach wird die manuelle Mission-Editor-Einbindung fuer den neuen DCS-Retest vorbereitet.
 
 ## 7. Gate 3
 
 ```text
-GATE 3: PASS
-validated_in_dcs: true
+GATE 3 CURRENT HEAD: RETEST REQUIRED
+validated_in_dcs: false
 ```
 
-Die technische Acceptance gilt exakt fuer die in `mission/tests/air-tasking-aar-vertical/README.md` dokumentierte Branch-/Commit-/Mission-/Bundle-/DCS-/MOOSE-Provenienz.
+Der vorherige PASS bleibt fuer den alten exakten Acceptance-Stand gueltig; der aktuelle Reconciliation-Stand ist noch nicht DCS-validiert.
 
-## 8. Merge-Readiness
+## 8. ATO-Grenze
+
+Der bisherige Test ist weiterhin kein vollstaendiger ATO-Test.
+
+Getestet beziehungsweise im Retest erneut zu pruefen ist die vertikale Kette:
+
+```text
+MissionDemand
+-> Air Support Request
+-> Air Tasking Mission
+-> Execution Attempt
+-> accepted AAR runtime
+```
+
+Noch nicht implementiert oder getestet sind insbesondere ein vollstaendiger Air Tasking Plan/ATO-Planungszyklus, periodische Planerzeugung, Player-facing ATO-Produkte oder ein gesamter Tages-/Operationsplan.
+
+## 9. Merge-Readiness
 
 ```text
 MERGE TO MAIN NOW: NOT YET RECOMMENDED
@@ -189,8 +191,9 @@ MERGE TO MAIN NOW: NOT YET RECOMMENDED
 Vor Integration noch erforderlich:
 
 ```text
-current-main reconciliation
-full branch diff review
+local build and contract-test evidence for current reconciliation head
+Gate-3 DCS retest for AIR-TASKING-AAR-VERTICAL-3
+full branch diff review against current main
 document metadata / registry / provenance review
 documentation validator
 owner merge decision
