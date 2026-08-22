@@ -7,16 +7,18 @@ Set-StrictMode -Version Latest
 $repoRoot = Split-Path -Parent $PSScriptRoot
 $groundStockFile = Join-Path $repoRoot 'scripts\logistics\OMW_GroundInitialStock.lua'
 $adapterFile = Join-Path $repoRoot 'scripts\ground\OMW_GroundCampaignStateAdapter.lua'
+$ammoRearmAdapterFile = Join-Path $repoRoot 'scripts\ground\OMW_GroundAmmoRearmAdapter.lua'
 $integrationFile = Join-Path $repoRoot 'scripts\ground\OMW_GroundRuntimeIntegration.lua'
 $baseFile = Join-Path $repoRoot 'scripts\ground\OMW_GroundBase.lua'
 $distDir = Join-Path $repoRoot 'mission\ground-operations\dist'
 $outputFile = Join-Path $distDir 'OMW_Ground_Base.lua'
 
-$builderVersion = 'OMW-GROUND-PRODUCTION-BASE-1'
+$builderVersion = 'OMW-GROUND-PRODUCTION-BASE-4'
 
 $files = @(
   $groundStockFile,
   $adapterFile,
+  $ammoRearmAdapterFile,
   $integrationFile,
   $baseFile
 )
@@ -28,13 +30,23 @@ foreach ($file in $files) {
 
 $groundStock = Get-Content -LiteralPath $groundStockFile -Raw -Encoding UTF8
 $adapter = Get-Content -LiteralPath $adapterFile -Raw -Encoding UTF8
+$ammoRearmAdapter = Get-Content -LiteralPath $ammoRearmAdapterFile -Raw -Encoding UTF8
 $integration = Get-Content -LiteralPath $integrationFile -Raw -Encoding UTF8
 $groundBase = Get-Content -LiteralPath $baseFile -Raw -Encoding UTF8
 
 $requiredMarkers = @(
-  'OMW-GROUND-INITIAL-STOCK-1',
-  'OMW-GROUND-RUNTIME-INTEGRATION-1',
-  'OMW-GROUND-PRODUCTION-BASE-1',
+  'OMW-GROUND-INITIAL-STOCK-2',
+  'GROUND_SUPPLY_PACKAGE',
+  'GROUND_AMMO_PACKAGE',
+  'GROUND_FUEL_PACKAGE',
+  'OMW-GROUND-AMMO-REARM-ADAPTER-2',
+  'GROUND-LOCAL-REARM:',
+  'GROUND-LOCAL-REARM-RESTART:',
+  'CompleteConsumption',
+  'MarkConsumptionCompensated',
+  'GROUND_LOCAL_REARM_RESTART_COMPENSATION',
+  'OMW-GROUND-RUNTIME-INTEGRATION-2',
+  'OMW-GROUND-PRODUCTION-BASE-2',
   'GROUND_NODE_JALALABAD',
   'GROUND_NODE_FORTRESS',
   'GROUND_NODE_JOYCE',
@@ -47,7 +59,7 @@ $requiredMarkers = @(
   'GroundRuntimeIntegration.Attach',
   'GroundBase.Attach'
 )
-$combined = $groundStock + $adapter + $integration + $groundBase
+$combined = $groundStock + $adapter + $ammoRearmAdapter + $integration + $groundBase
 foreach ($marker in $requiredMarkers) {
   if (-not $combined.Contains($marker)) {
     throw "Ground production sources are missing required marker: $marker"
@@ -90,9 +102,10 @@ $header = @"
 -- Builder: tools/build-ground-production-base.ps1
 -- BuilderVersion: $builderVersion
 -- GitCommit: $commit
--- Scope: production packaging of the accepted six-node ARMY Ground strategic foundation.
+-- Scope: production packaging of the accepted six-node ARMY Ground strategic foundation plus owner-approved local-rearm restart settlement.
 -- Strategic authority: caller-provided single CampaignState store only.
--- MOOSE/DCS lifecycle: none created by this package.
+-- Local rearm restart: consumed-but-not-completed transactions are compensated exactly once on restored attach; completed transactions remain consumed.
+-- MOOSE/DCS lifecycle: none created by this package; MOOSE USERFLAG is used only for Mission Editor readiness gating.
 -- Fixed ARTY/mortar and reusable DCS templates remain Mission Editor assets and are not spawned here.
 
 "@
@@ -104,12 +117,14 @@ function Embed-Module([string]$Name, [string]$Source) {
 $bundle = $header
 $bundle += Embed-Module 'GroundInitialStock' $groundStock
 $bundle += Embed-Module 'GroundCampaignStateAdapter' $adapter
+$bundle += Embed-Module 'GroundAmmoRearmAdapter' $ammoRearmAdapter
 $bundle += Embed-Module 'GroundRuntimeIntegration' $integration
 $bundle += Embed-Module 'GroundBase' $groundBase
 $bundle += @"
 GroundBase.Configure({
   groundInitialStock = GroundInitialStock,
   groundCampaignStateAdapter = GroundCampaignStateAdapter,
+  groundAmmoRearmAdapter = GroundAmmoRearmAdapter,
   groundRuntimeIntegration = GroundRuntimeIntegration,
 })
 
@@ -119,26 +134,72 @@ OMW.Ground.Base = GroundBase
 OMW_GROUND_BASE_LOADED = 1
 OMW_GROUND_READY = 0
 
+if type(USERFLAG) ~= "table" or type(USERFLAG.New) ~= "function" then
+  error("[OMW][Ground.Startup] MOOSE USERFLAG class is required for OMW_GROUND_READY", 0)
+end
+
+local GroundReadyFlag = USERFLAG:New("OMW_GROUND_READY")
+GroundReadyFlag:Set(0)
+if GroundReadyFlag:Get() ~= 0 then
+  error("[OMW][Ground.Startup] OMW_GROUND_READY fail-closed initialization readback failed", 0)
+end
+
 local GroundBaseAttach = GroundBase.Attach
 GroundBase.Attach = function(spec)
-  local context = GroundBaseAttach(spec)
+  local ok, context = pcall(GroundBaseAttach, spec)
+  if not ok then
+    OMW_GROUND_READY = 0
+    GroundReadyFlag:Set(0)
+    error(context, 0)
+  end
+
+  GroundReadyFlag:Set(1)
+  if GroundReadyFlag:Get() ~= 1 then
+    OMW_GROUND_READY = 0
+    GroundReadyFlag:Set(0)
+    error("[OMW][Ground.Startup] OMW_GROUND_READY user-flag readback failed", 0)
+  end
+
   OMW_GROUND_READY = 1
   return context
 end
 
 "@
 
+$bundleMarkers = @(
+  'groundAmmoRearmAdapter = GroundAmmoRearmAdapter',
+  'USERFLAG:New("OMW_GROUND_READY")',
+  'GroundReadyFlag:Set(0)',
+  'GroundReadyFlag:Get() ~= 0',
+  'GroundReadyFlag:Set(1)',
+  'GroundReadyFlag:Get() ~= 1',
+  'OMW_GROUND_READY = 1'
+)
+foreach ($marker in $bundleMarkers) {
+  if (-not $bundle.Contains($marker)) {
+    throw "Ground production bundle is missing readiness/reconciliation contract marker: $marker"
+  }
+}
+
 [System.IO.File]::WriteAllText($outputFile, $bundle, [System.Text.UTF8Encoding]::new($false))
 $hash = (Get-FileHash -LiteralPath $outputFile -Algorithm SHA256).Hash.ToLowerInvariant()
 
 Write-Host "Built: $outputFile"
 Write-Host "BuilderVersion: $builderVersion"
-Write-Host "GroundBaseSchema: OMW-GROUND-PRODUCTION-BASE-1"
+Write-Host "GroundBaseSchema: OMW-GROUND-PRODUCTION-BASE-2"
+Write-Host "GroundRuntimeIntegrationSchema: OMW-GROUND-RUNTIME-INTEGRATION-2"
+Write-Host "GroundAmmoRearmAdapterSchema: OMW-GROUND-AMMO-REARM-ADAPTER-2"
+Write-Host "GroundInitialStockSchema: OMW-GROUND-INITIAL-STOCK-2"
+Write-Host "GroundTransferableResources: GROUND_SUPPLY_PACKAGE,GROUND_AMMO_PACKAGE,GROUND_FUEL_PACKAGE"
 Write-Host "GroundNodes: GROUND_NODE_JALALABAD,GROUND_NODE_FORTRESS,GROUND_NODE_JOYCE,GROUND_NODE_WRIGHT,GROUND_NODE_HONAKER,GROUND_NODE_BOSTICK"
 Write-Host "MotorizedPatrolContract: 1 M-ATV = 1 VEHICLE + 3 PERSONNEL"
 Write-Host "StrategicAuthority: caller-provided single CampaignState store"
+Write-Host "LocalRearmRestartCompensation: true"
+Write-Host "LocalRearmPhysicalReplay: false"
 Write-Host "GroundBaseLoadedFlag: OMW_GROUND_BASE_LOADED=1"
-Write-Host "GroundReadyFlag: OMW_GROUND_READY becomes 1 only after successful OMW.Ground.Base.Attach(...)"
+Write-Host "GroundReadyFlag: MOOSE USERFLAG OMW_GROUND_READY becomes 1 only after successful OMW.Ground.Base.Attach(...) and readback"
+Write-Host "GroundReadyFailClosed: true"
+Write-Host "GroundReadyContractMarkersVerified: true"
 Write-Host "GroundLifecycleMutation: false"
 Write-Host "MOOSEOverride: false"
 Write-Host "MizMutation: false"

@@ -1,0 +1,163 @@
+[CmdletBinding()]
+param()
+
+$ErrorActionPreference = 'Stop'
+Set-StrictMode -Version Latest
+
+$repoRoot = Split-Path -Parent $PSScriptRoot
+$materializerFile = Join-Path $repoRoot 'scripts\ground\OMW_GroundSupportMaterializer.lua'
+$fixedSupportFile = Join-Path $repoRoot 'scripts\ground\OMW_FixedFireSupportAmmoSupport.lua'
+$rearmAdapterFile = Join-Path $repoRoot 'scripts\ground\OMW_GroundAmmoRearmAdapter.lua'
+$fixedRearmFile = Join-Path $repoRoot 'scripts\ground\OMW_FixedFireSupportAmmoRearmService.lua'
+$harnessFile = Join-Path $repoRoot 'mission\tests\ground-ammo-rearm-integration\src\02-fixed-fire-support-combined-acceptance.lua'
+$distDir = Join-Path $repoRoot 'mission\tests\ground-ammo-rearm-integration\dist'
+$outputFile = Join-Path $distDir 'OMW_Ground_Fire_Support_Acceptance_2.lua'
+
+$builderVersion = 'GROUND-FIRE-SUPPORT-ACCEPTANCE-2-11'
+$testId = 'GROUND-FIRE-SUPPORT-ACCEPTANCE-2'
+$mooseCommit = '73d3ed119cd9e7e3f2cfcabbaa34513d30529b54'
+$mooseSha256 = 'e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915'
+
+$files = @($materializerFile,$fixedSupportFile,$rearmAdapterFile,$fixedRearmFile,$harnessFile)
+foreach ($file in $files) {
+  if (-not (Test-Path -LiteralPath $file -PathType Leaf)) { throw "Required Ground fire-support acceptance source not found: $file" }
+}
+
+$materializer = Get-Content -LiteralPath $materializerFile -Raw -Encoding UTF8
+$fixedSupport = Get-Content -LiteralPath $fixedSupportFile -Raw -Encoding UTF8
+$rearmAdapter = Get-Content -LiteralPath $rearmAdapterFile -Raw -Encoding UTF8
+$fixedRearm = Get-Content -LiteralPath $fixedRearmFile -Raw -Encoding UTF8
+$harness = Get-Content -LiteralPath $harnessFile -Raw -Encoding UTF8
+$combined = $materializer + $fixedSupport + $rearmAdapter + $fixedRearm + $harness
+
+$requiredMarkers = @(
+  'GROUND-FIRE-SUPPORT-ACCEPTANCE-2',
+  'WH_BLUE_GND_BOSTICK','WH_BLUE_GND_WRIGHT','WH_BLUE_GND_FORTRESS','WH_BLUE_GND_HONAKER',
+  'ZON_BLUE_GND_BOSTICK_RESUPPLY','ZON_BLUE_GND_WRIGHT_RESUPPLY','ZON_BLUE_GND_FORTRESS_RESUPPLY','ZON_BLUE_GND_HONAKER_RESUPPLY',
+  'ZON_BLUE_GND_BOSTICK_ARTY_ACCEPTANCE_TARGET','ZON_BLUE_GND_WRIGHT_ARTY_ACCEPTANCE_TARGET','ZON_BLUE_GND_FORTRESS_ARTY_ACCEPTANCE_TARGET','ZON_BLUE_GND_HONAKER_MORTAR_ACCEPTANCE_TARGET',
+  'TPL_BLUE_GND_BOSTICK_FS_ARTY_L118_2','TPL_BLUE_GND_WRIGHT_FS_ARTY_L118_2','TPL_BLUE_GND_FORTRESS_FS_ARTY_L118_1','TPL_BLUE_GND_HONAKER_FS_MORTAR_2B11_2',
+  'TPL_BLUE_GND_SUP_M1083','GROUND_NODE_BOSTICK','GROUND_NODE_WRIGHT','GROUND_NODE_FORTRESS','GROUND_NODE_HONAKER','GROUND_AMMO_PACKAGE',
+  'ARTY:New(','AssignTargetCoord(','GetAmmo(','SetRearmingGroup','SetSpawnZone(','ReturnToStock','AddAsset(',
+  'OnAfterCeaseFire','OnAfterRearmed','CompleteConsumption','GROUND-LOCAL-REARM:','startArty = false','onRoad = false','WAREHOUSE.Descriptor.GROUPNAME','PLATOON:New(','BRIGADE:New(',
+  'OMW_GROUND_READY','OMW.Ground.Base.GetContext()','SITE_REARM_COMPLETED site=','SITE_REARMED site=','SITE_SUPPORT_RETURNED site=','SITE_PASS site=','FIXED_FIRE_SUPPORT_REARM_CONFIRMED=true',
+  'requireAmmoDepleted','HONAKER_AMMO_DEPLETED','HONAKER_REARM_REQUEST_AFTER_EMPTY','HONAKER_AMMO_NOT_DEPLETED',
+  'campaignState.Restore','RESTORE_PHASE_START','RESTORE_INTERRUPTED_SNAPSHOT','RESTORE_COMPENSATION_PASS','RESTORE_IDEMPOTENCE_PASS','RESTORE_NEW_TRANSACTION_PASS','RESTORE_COMPLETED_PRESERVED_PASS','RESTORE_PRECOMMIT_CANCEL_PASS','RESTORE_SETTLEMENT_PASS','restoreSettlement=true'
+)
+foreach ($marker in $requiredMarkers) {
+  if (-not $combined.Contains($marker)) { throw "Ground fire-support acceptance sources are missing required marker: $marker" }
+}
+
+$forbiddenPatterns = @(
+  'MissionScripting\.lua','world\.addEventHandler','timer\.scheduleFunction','mist\.','MIST','(?<![A-Za-z0-9_])io\.','lfs\.','os\.execute',
+  ':Teleport\s*\(','LoadBackAssetInPosition','SpawnFromCoordinate','AMMOTRUCK:','_DATABASE:Spawn\s*\(','_SpawnAssetGroundNaval',
+  'TPL_BLUE_GND_SUP_M939'
+)
+foreach ($pattern in $forbiddenPatterns) {
+  if ($combined -match $pattern) { throw "Ground fire-support acceptance sources contain forbidden pattern: $pattern" }
+}
+
+if ($fixedSupport -notmatch 'brigade:SetSpawnZone\(spawnZone, spawnZoneMaxDistanceM\)') { throw 'Fixed fire-support support module must use public WAREHOUSE SetSpawnZone.' }
+if ($fixedSupport -match 'brigade\s*:\s*SetValidateAndRepositionGroundUnits\s*\(') { throw 'Fixed fire-support support module must not call the broken pinned-MOOSE SetValidateAndRepositionGroundUnits path.' }
+if ($materializer -notmatch 'self\.brigade:AddAsset\(target\)') { throw 'Ground support materializer must return the known group through WAREHOUSE AddAsset.' }
+if ($rearmAdapter -notmatch 'self\.store:CompleteConsumption\(transactionId\)') { throw 'Ground ammo rearm adapter must persist COMPLETED from MOOSE OnAfterRearmed.' }
+if ($rearmAdapter -notmatch 'GroundAmmoRearmAdapter\.ReconcileRestore') { throw 'Ground ammo rearm adapter must expose restore settlement reconciliation.' }
+if ($rearmAdapter -notmatch 'if startArty then\s+arty:Start\(\)') { throw 'Ground ammo rearm adapter is missing the guarded ARTY Start path.' }
+if ($fixedRearm -notmatch 'SCHEDULER:New') { throw 'Fixed fire-support rearm service must use the MOOSE SCHEDULER return watcher.' }
+if ($harness -notmatch 'startArty\s*=\s*false') { throw 'Combined acceptance harness must preserve prestarted ARTY full-ammo baselines.' }
+if ($harness -notmatch 'onRoad\s*=\s*false') { throw 'Combined acceptance harness must keep local support movement independent of roads.' }
+if ($harness -notmatch 'transaction\.status\s*~=\s*"COMPLETED"') { throw 'Combined acceptance harness must require durable COMPLETED before pass.' }
+if ($harness -notmatch 'for _, spec in ipairs\(SITE_SPECS\) do\s+startSite') { throw 'Combined acceptance harness must launch all configured site legs in the same run.' }
+foreach ($site in @('BOSTICK','WRIGHT','FORTRESS')) {
+  $pattern = 'id\s*=\s*"' + $site + '"[\s\S]*?supportTemplate\s*=\s*"TPL_BLUE_GND_SUP_M1083"[\s\S]*?fireShells\s*=\s*DEFAULT_FIRE_SHELLS'
+  if ($harness -notmatch $pattern) { throw "$site must use the normal four-round M1083 fixed-fire-support contract." }
+}
+if ($harness -notmatch 'id\s*=\s*"HONAKER"[\s\S]*?supportTemplate\s*=\s*"TPL_BLUE_GND_SUP_M1083"[\s\S]*?fireShells\s*=\s*40[\s\S]*?requireAmmoDepleted\s*=\s*true') { throw 'Honaker must use owner-confirmed M1083 support and require full 40-round depletion before rearm.' }
+if ($harness -notmatch 'siteState\.postFireAmmo\s*~=\s*0') { throw 'Honaker full-depletion acceptance must block support request unless post-fire ammo is exactly zero.' }
+if ($harness -notmatch 'campaignState\.Restore\(baseSnapshot\)') { throw 'Combined acceptance must exercise CampaignState Restore from an exported authoritative snapshot.' }
+if ($harness -notmatch 'GroundAmmoRearmAdapter\.ReconcileRestore\(firstRestoreStore, campaignState\)') { throw 'Combined acceptance must exercise interrupted local-rearm restore reconciliation.' }
+if ($harness -notmatch 'GroundAmmoRearmAdapter\.ReconcileRestore\(secondRestoreStore, campaignState\)') { throw 'Combined acceptance must exercise repeated restore idempotence.' }
+if ($harness -notmatch 'campaignState\.TransactionStatus\.COMPLETED') { throw 'Combined acceptance must exercise completed transaction preservation.' }
+if ($harness -notmatch 'campaignState\.TransactionStatus\.RESERVED') { throw 'Combined acceptance must exercise pre-commit RESERVED cancellation.' }
+if ($harness -notmatch 'campaignState\.TransactionStatus\.LOADING') { throw 'Combined acceptance must exercise pre-commit LOADING cancellation.' }
+if ($harness -notmatch 'RESTORE_AUTHORITATIVE_STORE_ISOLATION') { throw 'Combined acceptance restore settlement phase must not mutate the authoritative runtime store.' }
+if ($harness -notmatch 'templateName\s*=\s*spec\.supportTemplate') { throw 'Combined acceptance harness must pass the site-specific support template into the MOOSE materializer.' }
+if ($harness -notmatch 'siteState\.spec\.fireShells') { throw 'Combined acceptance harness must use the per-site fire-shell count.' }
+
+New-Item -ItemType Directory -Path $distDir -Force | Out-Null
+if (Test-Path -LiteralPath $outputFile -PathType Leaf) { Remove-Item -LiteralPath $outputFile -Force }
+
+$commit = (& git -C $repoRoot rev-parse HEAD).Trim()
+if ([string]::IsNullOrWhiteSpace($commit)) { throw 'Unable to resolve Git HEAD for Ground fire-support acceptance build.' }
+$generatedUtc = (Get-Date).ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ssZ')
+
+$header = @"
+-- AUTO-GENERATED FILE. DO NOT EDIT DIRECTLY.
+-- Builder: tools/build-ground-fire-support-acceptance-2.ps1
+-- BuilderVersion: $builderVersion
+-- GitCommit: $commit
+-- GeneratedUtc: $generatedUtc
+-- Gate/Test-ID: $testId
+-- Scope: one bundled DCS acceptance run: concurrent Bostick/Wright/Fortress L118 four-round legs plus Honaker 2B11 full 40-round depletion -> owner-confirmed local M1083 Warehouse materialization -> CampaignState consumption -> MOOSE ARTY RearmingGroup rearm -> durable COMPLETED -> MOOSE ARTY support return -> WAREHOUSE AddAsset; then isolated CampaignState snapshot/restore settlement cases for interrupted CONSUMED compensation, repeated-restore idempotence, COMPLETED preservation, RESERVED/LOADING cancellation and new-transaction-after-compensation semantics.
+-- Honaker contract: M1083 remains the owner-confirmed support vehicle. The support request is issued only after observed 2B11 ammunition reaches zero. M939 remains historical diagnostic evidence only.
+-- Strategic authority: existing OMW.Ground.Base authoritative CampaignState store only. Restore settlement cases run on CampaignState.Restore copies and verify the authoritative runtime store remains unchanged.
+-- Persistence boundary: this bundle validates snapshot/restore settlement behavior inside the DCS runtime. It does not claim an external filesystem/server persistence host, and it performs no io/lfs/native persistence writes.
+-- Ground spawn: public MOOSE WAREHOUSE SetSpawnZone only; the pinned-MOOSE SetValidateAndRepositionGroundUnits path is excluded because its UTILS.GetCenterPoint dependency is missing at runtime. No private road-spawn override is used.
+-- Support cleanup: public MOOSE ARTY return movement plus WAREHOUSE AddAsset after physical return confirmation.
+-- MIZ mutation: false. Safe target geometry and local support spawn geometry must be supplied by the named Mission Editor zones.
+-- MOOSE-Commit: $mooseCommit
+-- Moose.lua-SHA256: $mooseSha256
+
+"@
+
+function Embed-Module([string]$Name, [string]$Source) { return "local $Name = (function()`n$Source`nend)()`n`n" }
+
+$bundle = $header
+$bundle += Embed-Module 'GroundSupportMaterializer' $materializer
+$bundle += Embed-Module 'FixedFireSupportAmmoSupport' $fixedSupport
+$bundle += Embed-Module 'GroundAmmoRearmAdapter' $rearmAdapter
+$bundle += Embed-Module 'FixedFireSupportAmmoRearmService' $fixedRearm
+$bundle += $harness
+
+[System.IO.File]::WriteAllText($outputFile, $bundle, [System.Text.UTF8Encoding]::new($false))
+$hash = (Get-FileHash -LiteralPath $outputFile -Algorithm SHA256).Hash.ToLowerInvariant()
+
+Write-Host "Built: $outputFile"
+Write-Host "BuilderVersion: $builderVersion"
+Write-Host "TestId: $testId"
+Write-Host "GeneratedUtc: $generatedUtc"
+Write-Host "Sites: BOSTICK,WRIGHT,FORTRESS,HONAKER"
+Write-Host "BostickBattery: TPL_BLUE_GND_BOSTICK_FS_ARTY_L118_2"
+Write-Host "WrightBattery: TPL_BLUE_GND_WRIGHT_FS_ARTY_L118_2"
+Write-Host "FortressBattery: TPL_BLUE_GND_FORTRESS_FS_ARTY_L118_1"
+Write-Host "HonakerBattery: TPL_BLUE_GND_HONAKER_FS_MORTAR_2B11_2"
+Write-Host "BostickSupportTemplate: TPL_BLUE_GND_SUP_M1083"
+Write-Host "WrightSupportTemplate: TPL_BLUE_GND_SUP_M1083"
+Write-Host "FortressSupportTemplate: TPL_BLUE_GND_SUP_M1083"
+Write-Host "HonakerSupportTemplate: TPL_BLUE_GND_SUP_M1083"
+Write-Host "StrategicResource: GROUND_AMMO_PACKAGE"
+Write-Host "StrategicQuantityPerSite: 1"
+Write-Host "StandardFireShells: 4"
+Write-Host "HonakerFireShells: 40"
+Write-Host "HonakerRequireAmmoDepleted: true"
+Write-Host "DurableRearmCompletion: true"
+Write-Host "RestoreSettlementCombined: true"
+Write-Host "InterruptedConsumedCompensation: true"
+Write-Host "RepeatedRestoreIdempotence: true"
+Write-Host "CompletedRestorePreservation: true"
+Write-Host "PreCommitRestoreCancellation: RESERVED,LOADING"
+Write-Host "NewTransactionAfterCompensation: true"
+Write-Host "ExternalPersistenceHostClaim: false"
+Write-Host "LocalRearmRestartCompensation: GroundAmmoRearmAdapter ReconcileRestore"
+Write-Host "ConcurrentSiteLegs: true"
+Write-Host "PrestartedARTYPreserved: true"
+Write-Host "LocalWarehouseSpawnZones: true"
+Write-Host "ValidateAndRepositionGroundUnits: false"
+Write-Host "PinnedMooseRepositionDefectGuard: true"
+Write-Host "ApprovedRoadSpawnException: false"
+Write-Host "SupportReturnToStock: true"
+Write-Host "HonakerM939Diagnostic: false"
+Write-Host "MizMutation: false"
+Write-Host "MOOSECommit: $mooseCommit"
+Write-Host "MooseLuaSHA256: $mooseSha256"
+Write-Host "SHA256: $hash"
+Write-Host "GitCommit: $commit"

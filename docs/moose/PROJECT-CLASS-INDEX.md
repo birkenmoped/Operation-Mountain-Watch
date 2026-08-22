@@ -34,6 +34,7 @@ Technische Lifecycle-Details:
 - [`OMW-MOOSE-ISR-FAC-CAS-AAR`](ISR-FAC-CAS-AAR.md)
 - [`OMW-MOOSE-AAR-LRC-TRANSIT`](AAR-LRC-TRANSIT.md)
 - [`OMW-MOOSE-GROUND-OPERATIONS`](GROUND-OPERATIONS.md)
+- [`OMW-MOOSE-MISSION-DEMAND-RESUPPLY-CAS-SOURCE-REVIEW`](MISSION-DEMAND-RESUPPLY-CAS-SOURCE-REVIEW.md)
 
 ## 2. Statusbedeutung
 
@@ -65,7 +66,7 @@ REJECTED_FOR_PROJECT_USE
 | `AUFTRAG` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | AAR-Methoden sowie dokumentierte Ground-Acceptance-1 bis -6-Lifecycles praktisch bestätigt; keine CampaignState-Autorität |
 | `SPAWN` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | area-spezifische AAR-Templates und externe Materialisierung praktisch bestätigt; Ground Acceptance 1 verwendet keinen direkten SPAWN-Pfad |
 | `SCHEDULER` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | allgemeine OMW-Nutzung praktisch bestätigt; Ground Acceptance 1 verwendet nur One-shot-Koordination, kein hochfrequentes Polling |
-| `USERFLAG` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Warehouse-Acceptance-Readiness-Pfade |
+| `USERFLAG` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Warehouse-Acceptance-Readiness-Pfade sowie Ground BASE-3 `OMW_GROUND_READY` Set/Get-Readback und Mission-Editor-Gate im dokumentierten Ground-Ammo-Rearm-Acceptance-1-Scope |
 | `GROUP`, `UNIT`, `STATIC`, `ZONE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Wrapper-/Objektauflösung in dokumentierten Scopes; Acceptance-1-v13-Objektvertrag read-only bestätigt, Ground-Acceptance-6 bestätigt GetSize, GetUnits, test-only Destroy(false) und SetLife(50) im dokumentierten Verlust-/Schaden-Return-Scope |
 | `COORDINATE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | `Get2DDistance(...)`, `GetIntermediateCoordinate(...)` und `HeadingTo(...)` im dokumentierten AirOps-Scope |
 | `BRIGADE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` + `INTERNAL_RESTRICTED` | Acceptance 1–6 bestätigen Ground-Assetpool, Materialisierung, Callback-Lifecycle und die parallelen Rückgabevarianten; die road-aligned private Warehouse-Spawn-Ausnahme bleibt auf Acceptance-3-2 und den gepinnten MOOSE-Stand begrenzt |
@@ -73,6 +74,8 @@ REJECTED_FOR_PROJECT_USE
 | `ARMYGROUP` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Acceptance 1–6 bestätigen MissionDone-Persistenz, Same-group-Follow-up sowie mobilen RTZ/Returned-Handoff einschließlich paralleler Teilverlust-/Schadenrückgabe; immobiler Teleportpfad bleibt ausgeschlossen |
 | `OPSGROUP` | `VALIDATED_FOR_DOCUMENTED_SCOPE` + `SOURCE_REVIEWED` | AirOps-Methoden sowie Ground-MissionDone-/Return-Pfade in Acceptance 1–6 praktisch bestätigt; Cargo-Pfade bleiben source-reviewed |
 | `OPSTRANSPORT` | `SOURCE_REVIEWED` | Constructor, Cargo/Carrier-Zonen, `AddPathTransport`, Disembark- und Carrier-Verträge geprüft; taktischer OMW-Transport benötigt eigenen DCS-Test |
+| `AMMOTRUCK` | `SOURCE_REVIEWED` | gepinnter Source und offizieller Demo-Anwendungsfall für automatische Artillerie-Rearm-Versorgung geprüft; `reloads` ist Rearm-Zykluszahl, keine CampaignState-Menge; kein OMW-AMMOTRUCK-Runtime-PASS |
+| `ARTY` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Ground-Ammo-Rearm-Acceptance-1 bestätigt den Bostick-Fixed-Battery-Pfad mit `New`, `AssignTargetCoord`, `GetAmmo`, `SetRearmingGroup`, `SetRearmingGroupOnRoad`, `Rearm` sowie CeaseFire/BeforeRearm/Rearmed-Callbacks; keine pauschale Validierung anderer Batterien, Supply-Typen oder MOOSE-Versionen |
 | `CTLD`, `CSAR`, `AICSAR` | `PLANNED` / teilweise verwendet | separate Acceptance erforderlich |
 | `INTEL` | `PLANNED` | taktisches Lagebild; Laufzeitnachweis offen |
 | `INTEL_DLINK` | `CANDIDATE` | Aggregation getrennter Netze; Performance offen |
@@ -263,6 +266,31 @@ Ein Klassenstatus wird nur angehoben, wenn MOOSE-Version/Commit, OMW-Source, Mis
 
 `SOURCE_REVIEWED` für Ground-OPS und Acceptance-1-Staging bedeutet ausdrücklich **nicht** `VALIDATED_FOR_DOCUMENTED_SCOPE`. Der Status wird erst nach dem realen DCS-Lauf mit vollständiger Hashprovenienz neu bewertet.
 
+## Addendum 2026-08-21 – Ground Ammo Rearm Source Review
+
+```text
+AMMOTRUCK = SOURCE_REVIEWED
+ARTY      = SOURCE_REVIEWED
+```
+
+`AMMOTRUCK` besitzt im gepinnten Source automatische Low-Ammo-Erkennung, Truck-Zuweisung, Anfahrt, Unloading sowie Return/Home-FSM-Pfade. Das offizielle MOOSE-Beispiel unter `Functional/AmmoTruck` bestätigt den vorgesehenen Artillerie-Rearm-Anwendungsfall. `reloads` ist eine Zahl von Rearm-Vorgängen und keine Granaten- oder CampaignState-Paketmenge.
+
+`TruckReturning` wird erst ausgelöst, nachdem die Mindest-Unloadzeit abgelaufen ist und der Munitionsstatus des Empfängers wieder oberhalb `ammothreshold` liegt. Dieser FSM-Pfad ist daher ein geeigneter späterer OMW-Delivery-Quittierungskandidat, beweist aber **keinen Vollrearm**.
+
+`ARTY` besitzt den detaillierteren Batterie-Rearm-Pfad einschließlich Shell-Type-Auswertung und Vollrearm-Prüfung. Für den ersten OMW-Ammo-Service bleibt `AMMOTRUCK` der kleinere Kandidat; `ARTY` wird nicht ausschließlich zur Logistik eingeführt, wenn es die Feuerunterstützungsgruppe nicht ohnehin operativ verwaltet.
+
+Offene Grenze vor Runtime-Code:
+
+```text
+known MOOSE/DCS supply example: M-939 (BLUE)
+current OMW generic logistics template: M1083 family
+M1083 ammo-supply capability in current OMW DCS setup: NOT VERIFIED
+```
+
+Es wird daher noch kein produktiver AMMOTRUCK-Adapter geschrieben. Zuerst muss ein tatsächlich Ammo-Supply-fähiger BLUE-Trucktyp/Template für OMW feststehen und später in DCS bestätigt werden.
+
+Details: [`OMW-MOOSE-MISSION-DEMAND-RESUPPLY-CAS-SOURCE-REVIEW`](MISSION-DEMAND-RESUPPLY-CAS-SOURCE-REVIEW.md), Abschnitt 16.
+
 ## Addendum 2026-08-19 – `WAREHOUSE` / `_DATABASE` interne Acceptance-3-2-Ausnahme
 
 ~~~text
@@ -282,3 +310,43 @@ Status: INTERNAL_RESTRICTED / SOURCE_REVIEWED_EXCEPTION_APPROVED_DCS_PENDING
 |---|---|---|
 | `ARMYGROUP` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Acceptance 4-2 bestätigt den öffentlichen mobilen `RTZ(existing Fenty ACCESS zone, OnRoad)`-Pfad einschließlich `Returning` und `Returned`; kein Teleportpfad verwendet |
 | `WAREHOUSE` / `LEGION` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Acceptance 4-2 bestätigt `Returned -> __AddAsset(10) -> AddAsset -> physical group removal` für Fenty; operative Rückgabe ist keine strategische Ressourcenbuchung |
+
+## Addendum 2026-08-22 – Ground Ammo Rearm Acceptance 1
+
+Dieses Addendum hebt ausschließlich den im folgenden Provenienzsatz praktisch bestätigten Scope an. Es superseded die offenen `ARTY`-/M1083-Runtime-Aussagen des Addendums vom 21.08.2026; `AMMOTRUCK` bleibt davon unberührt `SOURCE_REVIEWED`.
+
+```text
+Branch: agent/ground-ammo-rearm-integration
+Acceptance source/build commit: 213119ca03a6aeae529d4291b4bbe174ac0995c2
+Ground BASE-3 source/build commit: 04674c29061c6a70f54b537598442857448441b6
+Warehouse BASE-3 build commit: 7da56fdfb45888e7f88d4ea5c3b0fa691f2b0423
+Builder/Test-ID: GROUND-AMMO-REARM-ACCEPTANCE-1
+DCS: 2.9.28.26385 MT
+MOOSE release: 2.9.18
+MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+Moose.lua SHA-256: E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915
+Executed MIZ: OMW_Template_v15.miz
+MIZ SHA-256: A2AF2BD5FA9792DEF422F3B47755894E8F3220453F31F63F1594CCD61E9AF1B4
+internal mission SHA-256: 2378F38E9B07365D25ACE38E45A23D87E2CC76F185A062FB2A46CA8EE31C1A53
+Acceptance bundle SHA-256: 94C18556B80E97A30420DD551BC0CD98E978CBA2E487A6AA6B35281E1F29FDD7
+Ground BASE-3 bundle SHA-256: 6DBDE7AA75E34FA6C7A42A7C97B3E407C069806666C60E8D27F8616D647383EE
+Warehouse BASE-3 bundle SHA-256: FC0F8F20909DD57E5DEE3AF6414FB56B35D8671D726471DEDB6D6984E590801B
+dcs.log SHA-256: 8ECFD3CACC58FF0421E55280D7CE63EFA2A6C1CDA0A09095F7A69E588290DE71
+debrief.log SHA-256: B773DDB09401B7E58F4393EEEEDCE858EB98F769E1BE2DE9AB12392B10583A9E
+Result: PASS
+```
+
+Praktisch bestätigt wurden für genau diesen Stand:
+
+```text
+ARTY fixed-battery lifecycle at Bostick
+L118 controlled firing and observable ammo reduction
+CHAP_M1083 materialization through existing Ground/Warehouse lifecycle
+CampaignState local GROUND_AMMO_PACKAGE consumption exactly once in the observed run
+ARTY Rearm -> Rearmed/full-ammo completion
+MOOSE USERFLAG Ground readiness bridge -> Mission Editor OMW_GROUND_READY == 1
+```
+
+Die beobachteten Munitionswerte waren `300 -> 296 -> 302`; der Bostick-Bestand `GROUND_AMMO_PACKAGE` fiel `52 -> 51`. Der Harness meldete `PASS M1083_REARM_CONFIRMED=true`.
+
+Nicht aus diesem Lauf abzuleiten sind eine allgemeine CHAP_M1083-Supply-Garantie, AMMOTRUCK-Runtime-Verhalten, Full-Battery-Rejection, M1083-Verlust/Unterbrechung, Restart/Replay oder andere Batterien/MOOSE-Versionen.

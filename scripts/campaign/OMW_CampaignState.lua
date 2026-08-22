@@ -33,6 +33,8 @@ CampaignState.TransactionStatus = {
   IN_TRANSIT = "IN_TRANSIT",
   DELIVERED = "DELIVERED",
   CONSUMED = "CONSUMED",
+  COMPLETED = "COMPLETED",
+  COMPENSATED = "COMPENSATED",
   LOST = "LOST",
   CANCELLED = "CANCELLED",
 }
@@ -588,6 +590,32 @@ function Store:Consume(transactionId)
   end
   debitOrigin(self, transaction)
   transaction.status = CampaignState.TransactionStatus.CONSUMED
+  return copyTransaction(transaction), true
+end
+
+function Store:CompleteConsumption(transactionId)
+  local transaction = getTransaction(self, transactionId)
+  if transaction.status == CampaignState.TransactionStatus.COMPLETED then
+    return copyTransaction(transaction), false
+  end
+  if transaction.kind ~= CampaignState.TransactionKind.CONSUMPTION then
+    fail("only consumption transaction can be COMPLETED transactionId=" .. tostring(transactionId))
+  end
+  ensureStatus(transaction, CampaignState.TransactionStatus.CONSUMED)
+  transaction.status = CampaignState.TransactionStatus.COMPLETED
+  return copyTransaction(transaction), true
+end
+
+function Store:MarkConsumptionCompensated(transactionId)
+  local transaction = getTransaction(self, transactionId)
+  if transaction.status == CampaignState.TransactionStatus.COMPENSATED then
+    return copyTransaction(transaction), false
+  end
+  if transaction.kind ~= CampaignState.TransactionKind.CONSUMPTION then
+    fail("only consumption transaction can be COMPENSATED transactionId=" .. tostring(transactionId))
+  end
+  ensureStatus(transaction, CampaignState.TransactionStatus.CONSUMED)
+  transaction.status = CampaignState.TransactionStatus.COMPENSATED
   return copyTransaction(transaction), true
 end
 
