@@ -18,6 +18,7 @@ function supportModule.New(spec)
     spec = spec,
     group = nil,
     requestCount = 0,
+    returnedGroup = nil,
   }
   function fakeSupport:GetMaterializedGroup()
     return self.group
@@ -33,9 +34,14 @@ function supportModule.New(spec)
     self.group = group
     self.spec.onMaterialized(group)
   end
+  function fakeSupport:ReturnToStock(group)
+    self.returnedGroup = group
+    self.group = nil
+    return true
+  end
   function fakeSupport:GetConfig()
     return {
-      schemaVersion = "OMW-FIXED-FIRE-SUPPORT-AMMO-SUPPORT-1",
+      schemaVersion = "OMW-FIXED-FIRE-SUPPORT-AMMO-SUPPORT-2",
       entityId = self.spec.entityId,
       assignment = self.spec.assignment,
     }
@@ -71,6 +77,17 @@ function rearmModule.New(spec)
   return fakeRearm
 end
 
+local scheduledCallback = nil
+local function schedulerFactory(callback, startSeconds, repeatSeconds, stopSeconds)
+  scheduledCallback = callback
+  expectEqual(startSeconds, 1, "RETURN_WATCH_START")
+  expectEqual(repeatSeconds, 5, "RETURN_WATCH_REPEAT")
+  expectEqual(stopSeconds, 305, "RETURN_WATCH_STOP")
+  return { name = "SCHEDULER" }, "SCHEDULE-1"
+end
+
+local supportReturnedContext = nil
+local supportReturnFailure = nil
 local function newService()
   return ServiceModule.New({
     fixedFireSupportAmmoSupportModule = supportModule,
@@ -79,9 +96,7 @@ local function newService()
     campaignState = {},
     artyFactory = function() end,
     brigade = {},
-    accessZone = {},
-    forwardCoordinate = {},
-    roadSpawnAdapter = {},
+    spawnZone = {},
     materializerModule = {},
     platoonFactory = function() end,
     descriptorGroupName = "GROUPNAME",
@@ -91,11 +106,44 @@ local function newService()
     carrierEntityId = "HONAKER-AMMO-SUPPORT-M1083",
     nodeId = "GROUND_NODE_HONAKER",
     alias = "Honaker 2B11",
+    schedulerFactory = schedulerFactory,
+    returnCheckIntervalSec = 5,
+    returnTimeoutSec = 300,
+    onSupportReturned = function(context)
+      supportReturnedContext = context
+    end,
+    onSupportReturnFailed = function(context, reason)
+      supportReturnFailure = { context = context, reason = reason }
+    end,
   })
 end
 
 local artilleryGroup = { name = "TPL_BLUE_GND_HONAKER_FS_MORTAR_2B11_2" }
-local materializedGroup = { name = "HONAKER-M1083-001" }
+local returnDistance = 150
+local initialCoordinate = {}
+local currentCoordinate = {
+  Get2DDistance = function(_, other)
+    expectEqual(other, initialCoordinate, "RETURN_COORDINATE")
+    return returnDistance
+  end,
+}
+local materializedGroup = {
+  name = "HONAKER-M1083-001",
+  GetCoordinate = function()
+    if not materializedGroup.coordinateCaptured then
+      materializedGroup.coordinateCaptured = true
+      return initialCoordinate
+    end
+    return currentCoordinate
+  end,
+  IsAlive = function()
+    return true
+  end,
+}
+initialCoordinate.Get2DDistance = function(_, other)
+  expectEqual(other, initialCoordinate, "INITIAL_RETURN_COORDINATE")
+  return 0
+end
 
 synchronousGroup = nil
 local service = newService()
@@ -129,13 +177,34 @@ expectEqual(fakeRearm.requests[1].rearmingSpeedKph, 25, "REARMING_SPEED")
 local context = service:Get("GROUND-REARM-HONAKER-INTEGRATION-001")
 expectEqual(context.status, "CONSUMED", "COMPOSED_STATUS")
 expectEqual(context.rearmingGroup, materializedGroup, "COMPOSED_REARMING_GROUP")
+expectEqual(context.supportReturnRadiusM, 100, "RETURN_RADIUS")
+
+fakeRearm.spec.onRearmed(context)
+expectEqual(context.status, "RETURNING_SUPPORT", "RETURNING_STATUS")
+expectEqual(type(scheduledCallback), "function", "RETURN_WATCH_SCHEDULED")
+expectEqual(scheduledCallback(), true, "RETURN_WATCH_CONTINUES")
+expectEqual(fakeSupport.returnedGroup, nil, "NOT_RETURNED_WHILE_DISTANT")
+
+returnDistance = 50
+expectEqual(scheduledCallback(), false, "RETURN_WATCH_STOPS")
+expectEqual(fakeSupport.returnedGroup, materializedGroup, "RETURNED_GROUP")
+expectEqual(context.status, "RETURNED_TO_STOCK", "RETURNED_STATUS")
+expectEqual(context.supportReturned, true, "RETURNED_FLAG")
+expectEqual(supportReturnedContext, context, "RETURN_CALLBACK_CONTEXT")
+expectEqual(supportReturnFailure, nil, "NO_RETURN_FAILURE")
 
 local config = service:GetConfig()
-expectEqual(config.schemaVersion, "OMW-FIXED-FIRE-SUPPORT-AMMO-REARM-SERVICE-1", "SCHEMA")
+expectEqual(config.schemaVersion, "OMW-FIXED-FIRE-SUPPORT-AMMO-REARM-SERVICE-2", "SCHEMA")
 expectEqual(config.nodeId, "GROUND_NODE_HONAKER", "CONFIG_NODE")
 expectEqual(config.carrierEntityId, "HONAKER-AMMO-SUPPORT-M1083", "CONFIG_CARRIER")
+expectEqual(config.returnCheckIntervalSec, 5, "CONFIG_RETURN_INTERVAL")
+expectEqual(config.returnTimeoutSec, 300, "CONFIG_RETURN_TIMEOUT")
 
+materializedGroup.coordinateCaptured = false
+returnDistance = 0
 synchronousGroup = materializedGroup
+scheduledCallback = nil
+supportReturnedContext = nil
 local synchronousService = newService()
 local synchronousContext, synchronousRequested = synchronousService:Request({
   transactionId = "GROUND-REARM-HONAKER-SYNCHRONOUS-001",
@@ -147,4 +216,4 @@ expectEqual(synchronousService:Get("GROUND-REARM-HONAKER-SYNCHRONOUS-001"), sync
 expectEqual(#fakeRearm.requests, 1, "SYNCHRONOUS_REARM_REQUEST_COUNT")
 expectEqual(fakeRearm.requests[1].rearmingGroup, materializedGroup, "SYNCHRONOUS_REARMING_GROUP")
 
-print("PASS generic fixed fire-support CampaignState-backed ARTY rearm composition")
+print("PASS generic fixed fire-support CampaignState-backed ARTY rearm and Warehouse return composition")
