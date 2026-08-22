@@ -14,8 +14,8 @@ project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
   - incomplete open-branch list in the documentation index
 superseded_by:
-source_branch: main
-source_commit: 34b1f46120f951ca2a6308cf1d9fbbb4b0a17863
+source_branch: agent/ground-order-foundation
+source_commit: PENDING_MERGE
 validated_in_dcs: false
 ---
 
@@ -59,6 +59,7 @@ Dieses Register bildet offene Pull Requests, ihre Abhängigkeiten, Dokumentation
 | 52 | `agent/salerno-read-only-diagnostics` | alter Air-Ops-Stack | Salerno COMMANDER-/Runtime-Historie | Tests/Builder/Evidenz | `DRAFT`; kanonische Foundation auf `main` | `ACCEPTED_TECHNICAL_BASELINE` für dokumentierten Stage-18-Stand | offen | technische Fixture-/Runtime-Historie |
 | 66–84 | Warehouse-/CampaignState-/STORAGE-Stack | PR 66 startete von `main`; danach gestapelt | Resource ownership, Fuel/Weapon STORAGE, CampaignState transactions, loss/recovery, final fighter mapping | `scripts/campaign/`, `scripts/logistics/`, Warehouse-Testfixtures und branchgebundene Detaildokumentation | offene Draft-Historie; keine pauschale Main-Autorität | mehrere exakt dokumentierte DCS-Acceptance-Stände; finaler Fighter-Gate PASS | 85 | nicht als 214-Commit-Stack direkt integrieren; PR 85 war der saubere Main-Reconciliation-Pfad |
 | 86 | `agent/air-ops-initial-stock-runtime-data` | `main` nach gemergtem PR 85 | AirOps Initial Stock Runtime, CampaignState-Initialisierung und zentraler Warehouse-Bootstrap | `scripts/logistics/`, `mission/tests/air-ops-warehouse-bootstrap/`, MOOSE-STORAGE-Dokumentation | `DRAFT`; aktuell nicht mergebar gegen `main` | `ACCEPTED_TECHNICAL_BASELINE` für Warehouse-Bootstrap auf Commit `2502516fe130b908e500117142399b3e2ca74007`; separate Onboard-Ammo-Acceptance offen | offen | Warehouse-Bootstrap technisch akzeptiert; vor Integration Reconciliation gegen aktuellen `main` erforderlich |
+| 116 | `agent/ground-order-foundation` | `main` | Ground Order Foundation: OPORD/FRAGO/GroundTask/ExecutionAttempt | `docs/91-ground-order-opord-frago-foundation.md`, `docs/handoffs/2026-08-22-ground-order-foundation-handoff.md`, Dokumentationsregister | `PLANNED`; Draft-PR | lokale Branch-/Hash-Verifikation erfolgt; Python-Dokumentationsvalidator lokal `NOT RUN`; keine DCS-Acceptance | offen | Architekturvertrag vor späterem GroundOrderAdapter; keine Runtime in diesem PR |
 
 Der Arbeitsbranch `agent/army-ground-foundation-reconciliation` besitzt zum Stand dieser Reconciliation noch keinen Pull Request und wird daher nicht mit einer erfundenen PR-Nummer in die Tabelle aufgenommen. Sobald ein PR existiert, ist er hier mit realem PR-Status und Abhängigkeit nachzutragen.
 
@@ -81,11 +82,10 @@ main
 ├── PR 41
 ├── PR 45
 ├── PR 49
-└── PR 66 → ... → PR 84
-                    └── PR 85 (merged clean Warehouse reconciliation)
-
-main
-└── PR 86 (AirOps initial-stock runtime and accepted Warehouse bootstrap; reconciliation required)
+├── PR 66 → ... → PR 84
+│                   └── PR 85 (merged clean Warehouse reconciliation)
+├── PR 86 (AirOps initial-stock runtime and accepted Warehouse bootstrap; reconciliation required)
+└── PR 116 (Ground Order Foundation; documentation-only Draft PR)
 ```
 
 PR #53 (Tarinkot), PR #60 (Salerno Foundation), PR #61 (Kandahar Foundation), PR #62 (Dokumentationsmetadaten), PR #63 (Bagram duale AIRWING Foundation), PR #64 (AIRWING-Naming-Reconciliation), PR #65 (Shindand Foundation), PR #85 (Warehouse Main Reconciliation), PR #108 (Kunar Ground Site Reconciliation / FOB Bostick), PR #112 (Ground ammo rearm lifecycle / fixed fire support), PR #114 (MissionDemand Domain Foundation) und PR #115 (Ground RESUPPLY threshold gate) sind nach `main` gemergt und werden nicht mehr als offene aktuelle Foundation-Unterprojekte geführt.
