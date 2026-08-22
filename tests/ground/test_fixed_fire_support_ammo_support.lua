@@ -10,22 +10,26 @@ local function expectEqual(actual, expected, label)
   end
 end
 
+local spawnZone = { name = "ZON_BLUE_GND_WRIGHT_AMMO_SUPPORT_SPAWN" }
+local configuredSpawnZone = nil
+local configuredMaxDistance = nil
+local validateGroundUnits = nil
+local returnedGroup = nil
+
 local brigade = {}
-function brigade:GetAssignment(request)
-  return request.assignment
+function brigade:SetSpawnZone(zone, maxDistance)
+  configuredSpawnZone = zone
+  configuredMaxDistance = maxDistance
+  return self
 end
-
-local accessZone = { name = "ZON_BLUE_GND_WRIGHT_ACCESS" }
-local forwardCoordinate = { name = "WRIGHT_FORWARD" }
-
-local installedRoadConfig = nil
-local roadSpawnAdapter = {
-  Install = function(installedBrigade, config)
-    expectEqual(installedBrigade, brigade, "ROAD_BRIGADE")
-    installedRoadConfig = config
-    return installedBrigade, true
-  end,
-}
+function brigade:SetValidateAndRepositionGroundUnits(enabled)
+  validateGroundUnits = enabled
+  return self
+end
+function brigade:AddAsset(group)
+  returnedGroup = group
+  return self
+end
 
 local materializerSpec = nil
 local materializedGroup = { name = "WRIGHT-M1083-001" }
@@ -39,6 +43,11 @@ local materializer = {
   GetPlatoon = function()
     return { name = "PLT_BLUE_GND_WRIGHT_AMMO_SUPPORT" }
   end,
+  ReturnToStock = function(_, group)
+    brigade:AddAsset(group)
+    materializedGroup = nil
+    return true
+  end,
 }
 local materializerModule = {
   New = function(spec)
@@ -49,9 +58,8 @@ local materializerModule = {
 
 local service = FixedFireSupportAmmoSupport.New({
   brigade = brigade,
-  accessZone = accessZone,
-  forwardCoordinate = forwardCoordinate,
-  roadSpawnAdapter = roadSpawnAdapter,
+  spawnZone = spawnZone,
+  spawnZoneMaxDistanceM = 400,
   materializerModule = materializerModule,
   platoonFactory = function() end,
   descriptorGroupName = "GROUPNAME",
@@ -61,33 +69,25 @@ local service = FixedFireSupportAmmoSupport.New({
   entityId = "WRIGHT-AMMO-SUPPORT-M1083",
 })
 
+expectEqual(configuredSpawnZone, spawnZone, "SPAWN_ZONE")
+expectEqual(configuredMaxDistance, 400, "SPAWN_ZONE_MAX_DISTANCE")
+expectEqual(validateGroundUnits, true, "VALIDATE_GROUND_UNITS")
 expectEqual(materializerSpec.templateName, "TPL_BLUE_GND_SUP_M1083", "TEMPLATE")
 expectEqual(materializerSpec.platoonName, "PLT_BLUE_GND_WRIGHT_AMMO_SUPPORT", "PLATOON")
 expectEqual(materializerSpec.assignment, "OMW:WRIGHT:AMMO-SUPPORT:M1083", "ASSIGNMENT")
 expectEqual(materializerSpec.stockCount, 1, "STOCK_COUNT")
 expectEqual(materializerSpec.priority, 20, "PRIORITY")
 
-local wrongAssignment = installedRoadConfig.resolveRoadSpawn(
-  brigade,
-  { templatename = "TPL_BLUE_GND_SUP_M1083" },
-  { assignment = "OMW:BOSTICK:AMMO-SUPPORT:M1083" }
-)
-expectEqual(wrongAssignment, nil, "SITE_ASSIGNMENT_ISOLATION")
-
-local roadSpec = installedRoadConfig.resolveRoadSpawn(
-  brigade,
-  { templatename = "TPL_BLUE_GND_SUP_M1083" },
-  { assignment = "OMW:WRIGHT:AMMO-SUPPORT:M1083" }
-)
-expectEqual(roadSpec.accessZone, accessZone, "ROAD_ACCESS_ZONE")
-expectEqual(roadSpec.forwardCoordinate, forwardCoordinate, "ROAD_FORWARD_COORDINATE")
-expectEqual(roadSpec.entityId, "WRIGHT-AMMO-SUPPORT-M1083", "ROAD_ENTITY_ID")
-
 local groupBefore, created = service:Request()
 expectEqual(groupBefore, nil, "REQUEST_GROUP_BEFORE")
 expectEqual(created, true, "REQUEST_CREATED")
 expectEqual(service:GetMaterializedGroup(), materializedGroup, "MATERIALIZED_GROUP")
-expectEqual(service:GetConfig().schemaVersion, "OMW-FIXED-FIRE-SUPPORT-AMMO-SUPPORT-1", "SCHEMA")
+expectEqual(service:GetConfig().schemaVersion, "OMW-FIXED-FIRE-SUPPORT-AMMO-SUPPORT-2", "SCHEMA")
 expectEqual(service:GetConfig().assignment, "OMW:WRIGHT:AMMO-SUPPORT:M1083", "CONFIG_ASSIGNMENT")
+expectEqual(service:GetConfig().spawnZoneMaxDistanceM, 400, "CONFIG_SPAWN_MAX_DISTANCE")
 
-print("PASS generic fixed fire-support M1083 materialization contract")
+service:ReturnToStock(materializedGroup)
+expectEqual(returnedGroup.name, "WRIGHT-M1083-001", "RETURNED_GROUP")
+expectEqual(service:GetMaterializedGroup(), nil, "MATERIALIZED_GROUP_CLEARED")
+
+print("PASS generic fixed fire-support local Warehouse materialization contract")
