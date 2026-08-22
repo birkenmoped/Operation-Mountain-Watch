@@ -229,15 +229,18 @@ der CampaignState selbst auf Platte schreibt und beim Prozessneustart wieder lä
 
 Revision 2-11 führt daher keine `io`-/`lfs`-Dateipersistenz, keine `MissionScripting.lua`-Änderung und keinen zweiten Persistenzpfad ein. Der gebündelte DCS-Lauf validiert den realen `ExportSnapshot -> Restore -> ReconcileRestore`-Settlementvertrag innerhalb der DCS-Laufzeit. Ein externer Prozess-/Server-Restart darf daraus nicht behauptet werden.
 
-## 9. Revision 2-11 – Source/Builder-Stand
+## 9. Revision 2-11 – Build-/Hash-Stand
+
+Vom Projektinhaber am 22.08.2026 real ausgeführt und rückgemeldet:
 
 ```text
+Source / Git HEAD: d52a47a418fe3a1a996a5b68198b8dc033ff86c4
 BuilderVersion: GROUND-FIRE-SUPPORT-ACCEPTANCE-2-11
-Acceptance harness: SOURCE COMPLETE / REMOTE
-Builder gates: COMPLETE / REMOTE
-Local build/hash: PENDING REAL OWNER OUTPUT
-DCS runtime: PENDING
+GeneratedUtc: 2026-08-22T14:07:19Z
+Bundle SHA-256: CBA3ACF5D835E6EF6AD11C3FDD295E178B2B8E6B9330749C15419A1638CF379B
 ```
+
+Builder-eigener SHA-256 und separate `Get-FileHash`-Ausgabe stimmen exakt überein. Revision 2-11 ist damit `BUILD/HASH VERIFIED`; DCS-Runtime ist noch offen.
 
 ## 10. Dokumentationsstatus
 
@@ -281,8 +284,8 @@ Damit ist die branch-eigene README-Metadaten-Schuld bereinigt; der Workflow blei
 [x] branch-eigene README-Metadaten-Schuld bereinigt
 [x] aktuellen Dokumentationsvalidator-/CI-Stand geprüft; 18 geerbte Fehler, 0 branch-eigene Fehler in den geänderten OMW-Ground-Rearm-Dokumenten
 [x] finalen Revision-2-11 Diff / Contract / Builder statisch geprüft
+[x] Revision 2-11 lokal gebaut und hash-verifiziert
 
-[ ] Revision 2-11 lokal einmal bauen und hash-verifizieren
 [ ] einen gebündelten DCS-Acceptance-Lauf durchführen
 [ ] Logs gegen alle Physical-/Restore-Marker auswerten
 [ ] Owner-Entscheidung PR #112 Ready / Merge
@@ -297,9 +300,8 @@ Ground Ammo Rearm / Fixed Fire Support
         +-- M1083 Owner-Entscheidung          COMPLETE
         +-- LOCAL REARM Option B              SOURCE IMPLEMENTED / BUILD VERIFIED
         +-- Revision 2-10                     BUILD/HASH VERIFIED
-        +-- Revision 2-11 bundled acceptance SOURCE/BUILDER COMPLETE
+        +-- Revision 2-11 bundled acceptance BUILD/HASH VERIFIED
         +-- Docs/CI + static final review     COMPLETE WITH 18 INHERITED DOC ERRORS
-        +-- einmaliger lokaler Build/Hash     PENDING
         +-- EIN gebündelter DCS-Lauf          PENDING
         `-- Owner-Entscheidung PR #112 Ready / Merge
 ```
