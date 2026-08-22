@@ -27,7 +27,7 @@ validated_in_dcs: false
 PHASE 0  Governance / Reconciliation / Contracts          PASS, MAIN RECONCILIATION APPLIED
 PHASE 1  Domain Data Model                               PASS, MAIN RECONCILIATION APPLIED
 PHASE 2  MOOSE-First Capability Verification            PASS
-PHASE 3  First Vertical Integration – AAR                RETEST REQUIRED
+PHASE 3  First Vertical Integration – AAR                BUILD PASS / DCS RETEST REQUIRED
 PHASE 4  Player-Facing Mission Products                  NOT STARTED
 PHASE 5  Ground Alert / CAS Request Lifecycle            NOT STARTED
 PHASE 6  Dynamic Planning / Retasking / Persistence      NOT STARTED
@@ -138,29 +138,54 @@ Dieser PASS wird gemaess Governance nicht auf den geaenderten aktuellen Source-H
 
 ## 6. Aktueller Retest-Stand
 
-Neue Test-/Builder-Baseline:
+Realer lokaler Build durch den Projektinhaber am 22.08.2026 auf:
 
 ```text
-TestId: AIR-TASKING-AAR-VERTICAL-3
+GitCommit: 93cae7cee601f2af242cfcc963accf499ddea7d8
+SourceCommitUtc: 2026-08-22T19:06:02+02:00
 BuilderVersion: OMW-AIR-TASKING-AAR-ADDITIVE-TEST-3
+TestId: AIR-TASKING-AAR-VERTICAL-3
 MissionDemandContract: CANONICAL_MAIN_SHAPE_READ_ONLY
 AARRuntimeDemandTranslation: true
-LegacyAdapterProxyPath: false
 MizMutation: false
 ExistingAARBaseEmbedded: false
 ExistingAARBaseRecreated: false
 ExistingAARAdapterRecreated: false
 ExistingAARAdapterMutated: false
+LegacyAdapterProxyPath: false
 RuntimeObservation: CONTROLLER_GETSTATION_PLUS_MOOSE_SCHEDULER
 ObserverIntervalSec: 5
+WaitsForExistingAARFacade: true
+MissionEditorAdditionalScriptRequired: true
+MOOSECommit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+MooseLuaSHA256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
+AirTaskingBridgeSHA256: 7054d2a88262dba5546e13fe3dd51f01cdbd1a9efcabc41031b063c5336bb66f
+AirTaskingBootstrapSHA256: 81876fed138533d667aa1f6bcbde2d232cd1bf49a54b83b54464cefb2da5f12a
+HarnessSHA256: 01ab6f5d5bf65c9d64a656d338a39eac67b063afa38ec02f95325c1974f1cb11
+BundleSHA256: dc840397ca311802cee99cf98f7448c0371ce40388f324b31dd01de7bf1c82f3
 ```
 
-Der naechste erforderliche Nachweis ist ein realer lokaler Build inklusive Hashes. Erst danach wird die manuelle Mission-Editor-Einbindung fuer den neuen DCS-Retest vorbereitet.
+Der anschliessende unabhaengige lokale `Get-FileHash` bestaetigte denselben Bundle-Hash:
+
+```text
+DC840397CA311802CEE99CF98F7448C0371CE40388F324B31DD01DE7BF1C82F3
+```
+
+Damit gilt fuer den aktuellen Reconciliation-Stand:
+
+```text
+BUILD: PASS
+BUNDLE HASH CROSS-CHECK: PASS
+LOCAL LUA CONTRACT TEST: NOT RUN - no local Lua interpreter available
+DCS RETEST: NOT RUN
+```
+
+Der naechste Gate-Schritt ist die manuelle Mission-Editor-Einbindung dieses neuen Bundles durch den Projektinhaber und danach ein neuer DCS-Retest. Ein fehlender lokaler Lua-Interpreter wird nicht durch erfundene Testevidenz ersetzt.
 
 ## 7. Gate 3
 
 ```text
-GATE 3 CURRENT HEAD: RETEST REQUIRED
+GATE 3 CURRENT HEAD: BUILD PASS / DCS RETEST REQUIRED
 validated_in_dcs: false
 ```
 
@@ -191,7 +216,6 @@ MERGE TO MAIN NOW: NOT YET RECOMMENDED
 Vor Integration noch erforderlich:
 
 ```text
-local build and contract-test evidence for current reconciliation head
 Gate-3 DCS retest for AIR-TASKING-AAR-VERTICAL-3
 full branch diff review against current main
 document metadata / registry / provenance review
