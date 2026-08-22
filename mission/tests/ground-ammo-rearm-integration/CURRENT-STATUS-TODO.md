@@ -4,14 +4,14 @@ status: DRAFT
 document_class: WORKING_STATUS
 owning_policy: OMW-GOV-001
 authoritative_for:
-  - current branch-local Ground ammo rearm implementation status and remaining work
-  - handoff state for PR 112 before owner-gated Ready or Merge
+  - post-merge Ground ammo rearm implementation status
+  - remaining post-merge production artifact verification
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
 superseded_by:
-source_branch: agent/ground-ammo-rearm-integration
-source_commit: PENDING_MERGE
+source_branch: main
+source_commit: 761f392bbd4e9ffee416e2e598235d9040a9a752
 validated_in_dcs: partial
 ---
 
@@ -19,29 +19,31 @@ validated_in_dcs: partial
 
 Stand: 22.08.2026
 
-## Arbeitszweig
+## Integrationsstatus
 
 ```text
 Repository: birkenmoped/Operation-Mountain-Watch
-Arbeitsbranch: agent/ground-ammo-rearm-integration
-Draft PR: #112 Integrate Ground ammo rearm lifecycle
-Status: OPEN / DRAFT / NOT MERGED
-Projektphase: COMPLETE_FOUNDATION_BUILD_PHASE
+Former work branch: agent/ground-ammo-rearm-integration
+PR: #112 Integrate Ground ammo rearm lifecycle
+PR status: MERGED
+Merge commit: 761f392bbd4e9ffee416e2e598235d9040a9a752
+Target: main
+Project phase: COMPLETE_FOUNDATION_BUILD_PHASE
 ```
 
 ## Abschlussstatus
 
 ```text
-Source implementation: COMPLETE
-Production build/hash: VERIFIED
+Source implementation: COMPLETE / MERGED TO MAIN
 Acceptance 2-11 build/hash: VERIFIED
 Bundled DCS physical rearm: PASS
 Option-B same-session Restore settlement: PASS
 Exact runtime MIZ provenance: CLOSED
 External process/server persistence: NOT PRESENT / NOT TESTED / NOT CLAIMED
 Governance/register review: COMPLETE
-Documentation workflow: PENDING FINAL RESULT
-Owner Ready/Merge decision: PENDING
+PR #112 Ready/Merge decision: COMPLETED
+Post-merge production rebuild: COMPLETED
+Post-merge direct artifact hash readback: PENDING
 ```
 
 ## Exakte Acceptance-Provenienz
@@ -120,28 +122,62 @@ Honaker 2B11 request only at postFireAmmo == 0
 
 Die Restore-Phase verwendete isolierte `CampaignState.Restore(...)`-Kopien innerhalb derselben DCS-Session. Ein echter Prozess-/Server-Restart mit externer Snapshot-Datei wurde nicht getestet und wird nicht behauptet.
 
-## Governance-/Registerabgleich
+## Post-Merge Produktionsbuild auf `main`
+
+Der Projektinhaber hat nach dem Merge real auf `main` gebaut:
 
 ```text
-AGENTS.md: geprüft
-OMW-GOV-001: geprüft
-OMW-GOV-MOOSE-FIRST: geprüft
-SUBPROJECT-REGISTRY: PR #112 nachgetragen
-PROJECT-CLASS-INDEX: branch-diff enthält Ground-Rearm ARTY/AMMOTRUCK-Einträge
-VERIFIED-METHODS: branch-diff enthält ARTY/USERFLAG Ground-Rearm-Evidenz
-FIXED-FIRE-SUPPORT-REARM: auf Acceptance 2-11 PASS reconciliert
-Acceptance 2-11 runtime result: ACCEPTED_TECHNICAL_BASELINE
+Git HEAD:
+761f392bbd4e9ffee416e2e598235d9040a9a752
+
+AirOps Warehouse Production
+BuilderVersion: OMW-AIROPS-WAREHOUSE-BASE-3
+Output: mission/runtime/logistics/OMW_AirOps_Warehouse_Base.lua
+Builder-reported BundleSHA256:
+F4FBF6DB71E56AADBF0B31C931638754FF4DDB75F90E570BA127E56A0251974F
+
+Ground Production
+BuilderVersion: OMW-GROUND-PRODUCTION-BASE-4
+Output: mission/ground-operations/dist/OMW_Ground_Base.lua
+Builder-reported SHA256:
+A5D2A101FFEC3F1C222463002D7D5668C77EF6ACDEEDE1D8B8FEEB5E19D2E026
 ```
+
+Die Builder-Ausgaben sind reale Konsolenausgaben. Die anschließenden direkten `Get-FileHash`-Versuche schlugen ausschließlich fehl, weil zunächst falsche Artefaktpfade angegeben worden waren. Die korrekten Ausgabepfade stehen oben. Bis zur separaten direkten Hash-Rückmeldung werden die beiden Werte nur als **builder-reported** geführt.
+
+## Mission-Editor Cleanup nach Acceptance
+
+`OMW_Ground_Fire_Support_Acceptance_2.lua` ist ausschließlich Acceptance-Harness und gehört nicht in die normale Produktions-/Arbeitsmission.
+
+```text
+Aus normaler Arbeitsmission entfernen:
+OMW_Ground_Fire_Support_Acceptance_2.lua
+ZON_BLUE_GND_BOSTICK_ARTY_ACCEPTANCE_TARGET
+ZON_BLUE_GND_WRIGHT_ARTY_ACCEPTANCE_TARGET
+ZON_BLUE_GND_FORTRESS_ARTY_ACCEPTANCE_TARGET
+ZON_BLUE_GND_HONAKER_MORTAR_ACCEPTANCE_TARGET
+
+Produktiv behalten:
+Moose.lua
+OMW_AirOps_Warehouse_Base.lua
+OMW_Ground_Base.lua
+ZON_BLUE_GND_BOSTICK_RESUPPLY
+ZON_BLUE_GND_WRIGHT_RESUPPLY
+ZON_BLUE_GND_FORTRESS_RESUPPLY
+ZON_BLUE_GND_HONAKER_RESUPPLY
+```
+
+Die bytegenau belegte Acceptance-Mission `OMW_Template_v16.miz` mit SHA-256 `388F02C932BE83823543F97887B4EDBB9E6764D4CEBE543BD8423D43A6ED8620` bleibt als unverändertes Acceptance-Artefakt erhalten; die weitere Missionsentwicklung erfolgt auf einer neuen Arbeitsrevision.
 
 ## Dokumentationsstatus
 
-Der zuletzt vollständig ausgewertete Workflow meldete 18 geerbte Fehler und 0 Warnungen außerhalb der Ground-Rearm-Dokumente. Nach den finalen Provenienz-/Registerupdates läuft der aktuelle Dokumentationsworkflow erneut; sein endgültiges Ergebnis ist vor einer Ready/Merge-Entscheidung zu prüfen.
+Der finale PR-Workflow vor dem Merge meldete 18 Fehler und 0 Warnungen. Diese 18 Fehler lagen ausschließlich in geerbten Ground-/Army-Ground-Dokumenten; nach Schließen der Acceptance-MIZ-Metadaten bestand kein Ground-Rearm-spezifischer Validatorfehler mehr.
 
 ## TODO
 
 ```text
 [x] Source implementation
-[x] Production build/hash
+[x] Production implementation merged to main
 [x] Acceptance 2-11 build/hash
 [x] Bundled DCS acceptance
 [x] four physical rearm legs
@@ -156,9 +192,11 @@ Der zuletzt vollständig ausgewertete Workflow meldete 18 geerbte Fehler und 0 W
 [x] Runtime logs evaluated
 [x] exact runtime MIZ path SHA-256 confirmed
 [x] byte-level mission provenance closed
-[x] governance and registry reconciliation
-[x] final PR diff structurally reviewed
+[x] governance and register reconciliation
+[x] PR #112 Ready for Review
+[x] PR #112 merged to main
+[x] post-merge production rebuild on main
+[x] Mission Editor cleanup boundary documented
 
-[ ] evaluate final Documentation-validation run
-[ ] Owner decision: PR #112 Ready / Merge
+[ ] direct Get-FileHash confirmation of the two post-merge production bundles
 ```
