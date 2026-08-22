@@ -170,7 +170,7 @@ HONAKER   -> TPL_BLUE_GND_SUP_M1083 / 40 rounds / requireAmmoDepleted=true
 
 Honaker darf den Rearm-Request erst nach bestätigtem `postFireAmmo == 0` auslösen.
 
-Der frühere Revision-2-8/2-9-Rückbau auf `HONAKER / M1083 / 4 rounds` war fachlich falsch, weil er die nachgewiesene Vollentleerungsbedingung gemeinsam mit der M939-Diagnosevariable entfernt hat. Revision 2-8 und der bisherige Revision-2-9-Build bleiben als historische Build-/Contract-Evidenz erhalten, bilden aber **nicht** den korrigierten Honaker-Acceptance-Vertrag.
+Der frühere Revision-2-8/2-9-Rückbau auf `HONAKER / M1083 / 4 rounds` war fachlich falsch, weil er die nachgewiesene Vollentleerungsbedingung gemeinsam mit der M939-Diagnosevariable entfernt hat. Revision 2-8 und Revision 2-9 bleiben als historische Build-/Contract-Evidenz erhalten, bilden aber **nicht** den korrigierten Honaker-Acceptance-Vertrag.
 
 Historische Builds:
 
@@ -187,6 +187,24 @@ BuilderVersion: GROUND-FIRE-SUPPORT-ACCEPTANCE-2-9
 GeneratedUtc: 2026-08-22T13:06:55Z
 Bundle SHA-256: D0E628C58567CB46126048AA2903F17C9D15F316C415FFB755FD0192B230EA09
 ```
+
+Korrigierter Acceptance-Build:
+
+```text
+Revision 2-10
+Source / Git HEAD: f4e781a92bfc74062c48b46b91474f632e69d585
+BuilderVersion: GROUND-FIRE-SUPPORT-ACCEPTANCE-2-10
+GeneratedUtc: 2026-08-22T13:44:16Z
+Bundle SHA-256: 1180884FEB764F95CFD89D72CE2D04BE633A9FD73AE0939AE4B476179A5977C5
+HonakerSupportTemplate: TPL_BLUE_GND_SUP_M1083
+StandardFireShells: 4
+HonakerFireShells: 40
+HonakerRequireAmmoDepleted: true
+DurableRearmCompletion: true
+HonakerM939Diagnostic: false
+```
+
+Der vom Builder ausgegebene SHA-256 stimmt exakt mit der unmittelbar danach separat ausgeführten `Get-FileHash -Algorithm SHA256`-Prüfung überein. Dies ist Build-/Hash-/Contract-Evidenz, noch kein neuer DCS-Runtime-PASS.
 
 ## 6. Option B – Completion-Vertrag
 
@@ -234,7 +252,7 @@ CampaignState Source
 SHA-256: 18189A633DBD78FC7EAFBDAF09601BC3241ADAD115DF09DA3EF28B1D85E3E093
 ```
 
-Diese Produktionsbundle-Provenienz bleibt gültig. Die notwendige Korrektur betrifft den Honaker-Acceptance-Harness und dessen Buildervertrag, nicht den M1083-Produktionsvertrag.
+Diese Produktionsbundle-Provenienz bleibt gültig. Die notwendige Korrektur betraf ausschließlich den Honaker-Acceptance-Harness und dessen Buildervertrag, nicht den M1083-Produktionsvertrag.
 
 ## 8. Mission-Editor-Vertrag
 
@@ -278,7 +296,7 @@ Anforderung für RESUPPLY:
 8. Keine CampaignState-Munition wird bei erfolgreichem Rearm zurückerstattet.
 ```
 
-## 10. PASS-Kriterien des korrigierten nächsten Acceptance-Builds
+## 10. PASS-Kriterien Revision 2-10
 
 Pflichtmarker pro Standort:
 
@@ -329,11 +347,11 @@ Der Restart-Compensation-Pfad wird nur mit eigener realer Snapshot-/Restore-Prov
 ```text
 Revision-2-7 diagnostic: DCS PASS for exact full-depletion diagnostic provenance
 Revision-2-8 rollback: HISTORICAL BUILD/HASH EVIDENCE; Honaker full-depletion condition was incorrectly removed
-Revision-2-9 build: HISTORICAL BUILD/HASH EVIDENCE; Honaker contract requires correction
+Revision-2-9 build: HISTORICAL BUILD/HASH EVIDENCE; Honaker contract was incorrect
 M1083 production support choice for Honaker: OWNER CONFIRMED; no further confirmation required
 Corrected Honaker contract: M1083 + full 40-round depletion before rearm request
-Corrected next acceptance build: PENDING
-Option-B DCS COMPLETED-path acceptance: PENDING corrected Honaker harness
+Revision-2-10 corrected acceptance: BUILD/HASH VERIFIED at f4e781a92bfc74062c48b46b91474f632e69d585
+Revision-2-10 DCS successful COMPLETED path: PENDING
 Restart-compensation DCS restore provenance: PENDING
 VALIDATED for new Option-B runtime claims: false
 ```
