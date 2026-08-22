@@ -13,7 +13,7 @@ local Bootstrap = {}
 local TAG = "[OMW][AirTasking.AARBootstrap]"
 local OBSERVER_INTERVAL_SEC = 5
 
-Bootstrap.SchemaVersion = "OMW-AIR-TASKING-AAR-BOOTSTRAP-3"
+Bootstrap.SchemaVersion = "OMW-AIR-TASKING-AAR-BOOTSTRAP-4"
 
 local function fail(message)
   error(TAG .. " " .. tostring(message), 2)
@@ -126,18 +126,8 @@ function Bootstrap.Start(spec)
   requireFunction(bridgeModule, "New", "spec.bridgeModule")
   if type(spec.nextExecutionId) ~= "function" then fail("spec.nextExecutionId must be a function") end
 
-  -- Bridge.New still accepts an adapter-module dependency from the earlier
-  -- pre-bootstrap composition path. In additive mode this sentinel must never
-  -- execute; the existing AAR adapter instance is neither replaced nor mutated.
-  local unusedAdapterModule = {
-    New = function()
-      fail("additive attachment must not create a replacement AAR adapter")
-    end,
-  }
-
   local bridge = bridgeModule.New({
     controller = aar.Controller,
-    baseAdapterModule = unusedAdapterModule,
     nextExecutionId = spec.nextExecutionId,
     logger = spec.logger,
   })
