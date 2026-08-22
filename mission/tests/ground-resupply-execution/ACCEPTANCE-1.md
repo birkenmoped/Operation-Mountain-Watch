@@ -121,6 +121,7 @@ Nach Delivery:
 
 ```text
 MissionDone
+-> 30 s settlement window
 -> explicit ARMYGROUP:RTZ(Joyce ACCESS, OnRoad)
 -> Returned
 -> MOOSE ARMYGROUP:onafterReturned
@@ -128,13 +129,15 @@ MissionDone
 -> physical cleanup
 ```
 
-Der gepinnte MOOSE-Source plant `AddAsset` 10 Sekunden nach `Returned`. Deshalb wird die finale Acceptance-Prüfung erst 12 Sekunden nach `Returned` ausgeführt.
+Der 30-s-Delay übernimmt den bereits in Ground Acceptance 4 DCS-bestätigten Schutz gegen die Race-Condition zwischen `MissionDone`, nachlaufender AUFTRAG-Auswertung und einem zu früh gesetzten RTZ. Der gepinnte MOOSE-Source plant `AddAsset` 10 Sekunden nach `Returned`; deshalb wird die finale Acceptance-Prüfung erst 12 Sekunden nach `Returned` ausgeführt.
 
 Timeouts werden phasenbezogen geprüft:
 
 ```text
 OUTBOUND_TIMEOUT_SEC = 1800
 RETURN_TIMEOUT_SEC = 1800
+RETURN_ISSUE_DELAY_SEC = 30
+RETURN_SETTLEMENT_DELAY_SEC = 12
 ```
 
 Der Return-Timeout startet erst nach akzeptiertem RTZ. Der Outbound-Timeout wird nach bestätigter Delivery wirkungslos.
@@ -205,7 +208,27 @@ Ergebnis:
 mission/tests/ground-resupply-execution/results/2026-08-22-ground-ammo-resupply-acceptance-1-fail-2.md
 ```
 
-## 8. Acceptance Build 1-4 – reale lokale Provenienz
+### Lauf 3 – FAIL / RTZ zu früh nach MissionDone
+
+Der geschützte `TPL_BLUE_CONVOY_LIGHT_06` erreichte Honaker, Delivery wurde gebucht und RTZ wurde akzeptiert. Der Convoy blieb jedoch am Ziel stehen und endete mit `RETURN_TIMEOUT`. Der Log zeigte, dass RTZ bereits innerhalb des noch laufenden AUFTRAG-Abschlussfensters gesetzt wurde. Das reproduzierte die aus Ground Acceptance 4 bekannte 2-s-Race-Condition.
+
+Ergebnis:
+
+```text
+mission/tests/ground-resupply-execution/results/2026-08-22-ground-ammo-resupply-acceptance-1-fail-3.md
+```
+
+Korrektur:
+
+```text
+MissionDone
+-> wait 30 s
+-> RTZ
+```
+
+Kein Despawn/Respawn-Fallback, kein eigener Router und keine neue MOOSE-Ausnahme.
+
+## 8. Acceptance Build 1-4 – historische lokale Provenienz
 
 Owner-seitiger PowerShell-Build:
 
@@ -242,15 +265,51 @@ ResourceDemandPolicy source SHA-256: BDC20ACEDAB60F662093077B8320220EBB71C6C641C
 GroundRoadSpawnAdapter source SHA-256: 1A81FB2E5270C493373CF5BF6EC01F5AFED47004BF25C4225524121155D983E8
 ```
 
+## 9. Acceptance Build 1-5 – reale lokale Provenienz
+
+Owner-seitiger PowerShell-Build nach dem 30-s-RTZ-Settlement-Fix:
+
+```text
+Build Git HEAD: 2d72bcdfc113342a2180b6cd9c84486da790052c
+BuilderVersion: GROUND-AMMO-RESUPPLY-ACCEPTANCE-1-5
+GeneratedUtc: 2026-08-22T18:27:19Z
+TestId: GROUND-AMMO-RESUPPLY-ACCEPTANCE-1
+MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+Moose.lua SHA-256: E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915
+PhysicalTemplate: TPL_BLUE_CONVOY_LIGHT_06
+TransferQuantity: 20
+PackagePerTruckCapacityDefined: false
+OutboundTimeoutSec: 1800
+ReturnTimeoutSec: 1800
+ReturnIssueDelaySec: 30
+ReturnSettlementDelaySec: 12
+```
+
+Erzeugtes Bundle:
+
+```text
+mission/tests/ground-resupply-execution/dist/OMW_Ground_Ammo_Resupply_Acceptance_1.lua
+Bundle SHA-256: 752B3E6F0B77D1B62C750421DDE36202C81B98632FEFBF6A273F913202DF8339
+Independent bundle SHA-256: 752B3E6F0B77D1B62C750421DDE36202C81B98632FEFBF6A273F913202DF8339
+```
+
+Weitere reale Hashes:
+
+```text
+Builder SHA-256: A55103F0DF919365EF40DF4DB459E4E6AB96D858CF973D9F92B59BB48A75ACFD
+Acceptance source SHA-256: 794CA80C717586A796154F605074AC9AB61B27668B216C5A5A8718B772FD76F4
+MissionDemand source SHA-256: E348E75B87135B99D780E07CA6B6FB7C3C530E048E9C6DE790328D147DE32848
+ResourceDemandPolicy source SHA-256: BDC20ACEDAB60F662093077B8320220EBB71C6C641CC604C4356231B8405913C
+GroundRoadSpawnAdapter source SHA-256: 1A81FB2E5270C493373CF5BF6EC01F5AFED47004BF25C4225524121155D983E8
+```
+
 Build classification:
 
 ```text
 PASS
 ```
 
-Die strategische Menge 20 bleibt weiterhin unabhängig von der physischen Zahl der Transportfahrzeuge. Eine automatische LIGHT_06/STANDARD_07-Auswahl ist noch nicht definiert.
-
-## 9. Erwartete Runtime-Pflichtmarker des nächsten Laufs
+## 10. Erwartete Runtime-Pflichtmarker des nächsten Laufs
 
 ```text
 START testId=GROUND-AMMO-RESUPPLY-ACCEPTANCE-1
@@ -261,7 +320,7 @@ MISSION_QUEUED type=AMMOSUPPLY ... template=TPL_BLUE_CONVOY_LIGHT_06
 GROUP_MATERIALIZED ... template=TPL_BLUE_CONVOY_LIGHT_06
 ARMY_ON_MISSION
 DELIVERY_CONFIRMED
-MISSION_DONE deliveryCommitted=true
+MISSION_DONE deliveryCommitted=true returnIssueDelaySec=30
 RETURN_RTZ_ISSUED
 RETURN_RTZ_ACTIVE
 RETURNED_HANDOFF
@@ -271,7 +330,7 @@ PASS ... template=TPL_BLUE_CONVOY_LIGHT_06 ... returnedCount=1 warehouseAddAsset
 
 Jeder `FAIL reason=...`, `OUTBOUND_TIMEOUT` oder `RETURN_TIMEOUT` macht den Lauf FAIL.
 
-## 10. Nicht Teil dieses Gates
+## 11. Nicht Teil dieses Gates
 
 ```text
 package-per-truck capacity
@@ -286,18 +345,19 @@ real external process/server persistence
 production orchestration scheduler
 ```
 
-## 11. Aktueller Status
+## 12. Aktueller Status
 
 ```text
 Source review: UPDATED
 DCS run 1: FAIL / stale Ground bundle
 DCS run 2: FAIL / DELIVERY PATH CONFIRMED / RETURN CUT BY GLOBAL TIMEOUT
+DCS run 3: FAIL / protected convoy delivery PASS / RTZ accepted but physical return blocked by 2-s post-MissionDone race
 physical template decision: TPL_BLUE_CONVOY_LIGHT_06
-acceptance source: UPDATED
-builder: PASS / GROUND-AMMO-RESUPPLY-ACCEPTANCE-1-4
-local build Git HEAD: 0c082407c6d35f094037ecdf118f84c29bacf2bc
-new bundle SHA-256: 3B42E2D3B302B489BBB567B2DC4AD6DEA393C0867ECE73C8107F856A1E016854
-next MIZ: OWNER MISSION-EDITOR EMBEDDING REQUIRED
+acceptance source: UPDATED WITH 30-S RETURN ISSUE DELAY
+builder: PASS / GROUND-AMMO-RESUPPLY-ACCEPTANCE-1-5
+local build Git HEAD: 2d72bcdfc113342a2180b6cd9c84486da790052c
+new bundle SHA-256: 752B3E6F0B77D1B62C750421DDE36202C81B98632FEFBF6A273F913202DF8339
+next MIZ: USER MISSION EDITOR INTEGRATION REQUIRED
 next DCS runtime: NOT RUN
 Acceptance classification: NOT YET PASS
 ```
