@@ -38,6 +38,8 @@ LOADING     -> CANCELLED
 new transaction after compensation -> new ID -> COMPLETED
 ```
 
+Phase B läuft innerhalb derselben DCS-Session. Sie ist kein echter DCS-Prozessrestart und kein externer Persistenztest.
+
 `CampaignState` bleibt einzige strategische Ressourcenautorität.
 
 ## 2. MOOSE-Provenienz
@@ -172,7 +174,7 @@ HONAKER_AMMO_DEPLETED
 HONAKER_REARM_REQUEST_AFTER_EMPTY
 ```
 
-Restore-Settlement im selben DCS-Lauf:
+Restore-Settlement auf isolierten Restore-Kopien innerhalb derselben DCS-Session:
 
 ```text
 CONSUMED -> COMPENSATED exactly once                       PASS
@@ -199,7 +201,7 @@ mission/tests/ground-ammo-rearm-integration/results/2026-08-22-acceptance-2-11-r
 ## 8. Persistenzgrenze
 
 ```text
-CampaignState ExportSnapshot -> Restore -> ReconcileRestore: DCS RUNTIME PASS
+CampaignState ExportSnapshot -> Restore -> ReconcileRestore: DCS RUNTIME PASS in same-session scope
 externer Dateisystem-/Server-Persistence-Host: NICHT VORHANDEN
 realer DCS-Prozessrestart mit Snapshot-Datei: NICHT GETESTET / NICHT BEHAUPTET
 ```
