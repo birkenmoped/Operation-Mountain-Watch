@@ -11,7 +11,7 @@ supersedes:
 superseded_by:
   - OMW-GROUND-FIRE-SUPPORT-ACCEPTANCE-2
 source_branch: agent/ground-ammo-rearm-integration
-source_commit: PENDING_MERGE
+source_commit: 761f392bbd4e9ffee416e2e598235d9040a9a752
 validated_in_dcs: partial
 ---
 
@@ -413,7 +413,8 @@ Bewertung für genau diese Provenienz:
 ```text
 FUNCTIONAL DCS RESULT: PASS
 ACCEPTED_TECHNICAL_BASELINE: YES — EXACT DOCUMENTED SCOPE ONLY
-MERGED_TO_MAIN: false
+MERGED_TO_MAIN: true
+MERGE_COMMIT: 761f392bbd4e9ffee416e2e598235d9040a9a752
 ```
 
 Damit sind für diesen exakten Stand praktisch bestätigt:
