@@ -187,7 +187,7 @@ Reale lokale Hash-Evidenz:
 ```text
 AirTaskingBridgeSHA256: 7054d2a88262dba5546e13fe3dd51f01cdbd1a9efcabc41031b063c5336bb66f
 AirTaskingBootstrapSHA256: 81876fed138533d667aa1f6bcbde2d232cd1bf49a54b83b54464cefb2da5f12a
-HarnessSHA256: 01ab6f5d5bf65c9d64a656d338a39eac67b063c5336bb66f
+HarnessSHA256: 01ab6f5d5bf65c9d64a656d338a39eac67b063afa38ec02f95325c1974f1cb11
 BundleSHA256: dc840397ca311802cee99cf98f7448c0371ce40388f324b31dd01de7bf1c82f3
 ```
 
