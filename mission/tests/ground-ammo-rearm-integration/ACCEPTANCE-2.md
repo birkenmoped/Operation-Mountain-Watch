@@ -5,13 +5,13 @@ document_class: ACCEPTANCE_PLAN
 owning_policy: OMW-GOV-001
 authoritative_for:
   - planned combined DCS acceptance of fixed fire-support rearm for Bostick, Wright, Fortress and Honaker
-  - required Mission Editor target- and local support-spawn-zone contract for that combined run
+  - required Mission Editor target- and local resupply-zone contract for that combined run
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
 superseded_by:
 source_branch: agent/ground-ammo-rearm-integration
-source_commit: 6e0f26c270722450bb974a1f9c6a785fed853cd5
+source_commit: 5c4bbe44bee994c5dd9b1c9cfec011e7a67c8158
 validated_in_dcs: false
 ---
 
@@ -28,11 +28,11 @@ Fortress  L118  -> Runtime-Acceptance
 Honaker   2B11  -> Runtime-Acceptance über explicit MOOSE RearmingGroup
 ```
 
-Der revidierte operative Pfad bleibt MOOSE-first:
+Der aktuelle operative Pfad bleibt MOOSE-first:
 
 ```text
 MOOSE BRIGADE/PLATOON/WAREHOUSE
--> lokaler M1083-Spawn in dedizierter ME-Zone
+-> lokaler M1083-Spawn in dedizierter ME-RESUPPLY-Zone
 -> CampaignState GROUND_AMMO_PACKAGE consumption
 -> MOOSE ARTY:SetRearmingGroup(...)
 -> ARTY:Rearm()
@@ -97,13 +97,11 @@ internal mission SHA-256:
 DCS:
 2.9.28.26385 MT
 
-dcs log:
-dcs(20260822-090622).log
-SHA-256 C57B90AAF86BE2F07E93E1CE974C82ED1721BB13A63AA03CA2EC89CA0261D8C2
+dcs log SHA-256:
+C57B90AAF86BE2F07E93E1CE974C82ED1721BB13A63AA03CA2EC89CA0261D8C2
 
-debrief:
-debrief(20260822-090623).log
-SHA-256 88AA0875B430BE4F75F8A61258E0F8352A092059968A9E8B3D3299AF84AD0614
+debrief SHA-256:
+88AA0875B430BE4F75F8A61258E0F8352A092059968A9E8B3D3299AF84AD0614
 ```
 
 Beobachtetes Ergebnis:
@@ -118,74 +116,132 @@ Aggregate:
 FAIL reason=TIMEOUT seconds=900
 ```
 
-Der Lauf ist damit **kein Acceptance-2-PASS**. Er beweist für diese exakte Revision den erfolgreichen Rearm-Pfad für Bostick, Wright und Fortress. Er validiert nicht die nachfolgende Revision 2.
+Der Lauf ist damit **kein Acceptance-2-PASS**. Er beweist für diese exakte Revision den erfolgreichen Rearm-Pfad für Bostick, Wright und Fortress. Er validiert keine nachfolgende Revision.
 
-Zusätzliche Owner-Beobachtung aus demselben Entwicklungszyklus:
+Zusätzliche Owner-Beobachtung:
 
 ```text
-- der M1083 wird durch die road-aligned Ausnahme auf die nächste geeignete Straße gezwungen;
+- der M1083 wurde durch die road-aligned Ausnahme auf die nächste geeignete Straße gezwungen;
 - nicht jedes FOB/COP besitzt innerhalb der Anlage eine geeignete Straße;
-- dadurch kann der temporäre Support-LKW außerhalb der eigentlichen Anlage materialisieren;
+- dadurch konnte der temporäre Support-LKW außerhalb der eigentlichen Anlage materialisieren;
 - nach Rearm blieb der M1083 an seiner Rückkehr-/Spawnposition physisch bestehen, weil kein Return-to-Warehouse-Cleanup implementiert war.
 ```
 
-Diese Punkte werden in Revision 2 korrigiert und gemeinsam mit dem noch offenen Honaker-Leg geprüft. Kein separater Mini-Regressionstest ist vorgesehen.
+## 4. Revision 2 – Source-Korrektur, nicht DCS-ausgeführt
 
-## 4. Revision 2 – revidierter Source-Stand
+Revision 2 entfernte den `OMW_GroundRoadSpawnAdapter` aus dem Fixed-Fire-Support-Bundle und führte ein:
 
 ```text
+public WAREHOUSE:SetSpawnZone(...)
+public WAREHOUSE:SetValidateAndRepositionGroundUnits(true)
+ARTY-owned support return
+public WAREHOUSE:AddAsset(group) return-to-stock
+```
+
+Owner-lokal gebaut:
+
+```text
+Source commit:
+08c51e981061e3647f83231be1361e6e61e51260
+
+BuilderVersion:
+GROUND-FIRE-SUPPORT-ACCEPTANCE-2-2
+
+Bundle SHA-256:
+9446332A5BEB0088CD27AC0D3B1F0A06B9B8E1B624D004016C85DB77AFEE241A
+```
+
+Diese Revision wurde **nicht** in DCS ausgeführt, weil die zunächst im Source vorgesehenen Zonennamen nicht den vom Projektinhaber tatsächlich in der Arbeits-MIZ angelegten `*_RESUPPLY`-Zonen entsprachen.
+
+## 5. Revision 3 – aktueller Testkandidat
+
+Der Source wurde ausschließlich auf die tatsächlich angelegten Mission-Editor-Zonennamen reconciliert:
+
+```text
+ZON_BLUE_GND_BOSTICK_RESUPPLY
+ZON_BLUE_GND_WRIGHT_RESUPPLY
+ZON_BLUE_GND_FORTRESS_RESUPPLY
+ZON_BLUE_GND_HONAKER_RESUPPLY
+```
+
+Aktueller Source-/Builderstand:
+
+```text
+Source commit:
+5c4bbe44bee994c5dd9b1c9cfec011e7a67c8158
+
 Builder:
 tools/build-ground-fire-support-acceptance-2.ps1
 
 BuilderVersion:
-GROUND-FIRE-SUPPORT-ACCEPTANCE-2-2
+GROUND-FIRE-SUPPORT-ACCEPTANCE-2-3
+
+TestId:
+GROUND-FIRE-SUPPORT-ACCEPTANCE-2
+
+GeneratedUtc:
+2026-08-22T09:34:45Z
 
 Output:
 mission/tests/ground-ammo-rearm-integration/dist/OMW_Ground_Fire_Support_Acceptance_2.lua
 ```
 
-Eingebundene Source-Module:
+Owner-lokaler Build und unabhängige Hash-Prüfung:
 
 ```text
-scripts/ground/OMW_GroundSupportMaterializer.lua
-scripts/ground/OMW_FixedFireSupportAmmoSupport.lua
-scripts/ground/OMW_GroundAmmoRearmAdapter.lua
-scripts/ground/OMW_FixedFireSupportAmmoRearmService.lua
+Builder SHA-256:
+C3526CE2863C94D4F351D438219B744D23B2A11C09A59094944332DBEDD59B31
+
+Independent Get-FileHash SHA-256:
+C3526CE2863C94D4F351D438219B744D23B2A11C09A59094944332DBEDD59B31
+
+Hash match:
+PASS
 ```
 
-Bewusst **nicht** mehr Teil des Fixed-Fire-Support-Bundles:
+Zusätzliche lokal ermittelte Hashes:
 
 ```text
-scripts/ground/OMW_GroundRoadSpawnAdapter.lua
+02-fixed-fire-support-combined-acceptance.lua
+108FD27EFE971BCB375221E0967FC0F508B1F8EB8732EF81081E50D49E60947E
+
+build-ground-fire-support-acceptance-2.ps1
+DF464E761806C065747C0B4BE4C6CBF4F6AE0854F1D14EA09D97C91343264438
+
+OMW_GroundSupportMaterializer.lua
+4A5506C7719216EFC8098661117B9917A215DAF39C161BD81D2560C7F52964ED
+
+OMW_FixedFireSupportAmmoSupport.lua
+30EF36F7F46B46B09398E3D6514D83E29ABDA0069FC9376BAC55E01B5436289A
+
+OMW_FixedFireSupportAmmoRearmService.lua
+2829BDD72840FEB14D744072AD7BAD2B81901E43807D5E75BB1DB654AEFFE067
 ```
 
-Der RoadSpawnAdapter bleibt für echte Road-/Convoy-Materialisierung im Projekt erhalten; Revision 2 verwendet ihn für den lokalen Fire-Support-M1083 nicht.
+## 6. Mission-Editor-Vertrag
 
-## 5. Lokaler Warehouse-Spawnvertrag
-
-Für Fixed Fire Support wird ausschließlich die öffentliche MOOSE-Warehouse-Konfiguration verwendet:
+Erforderliche Resupply-Zonen:
 
 ```text
-WAREHOUSE:SetSpawnZone(localSupportSpawnZone, 500)
-WAREHOUSE:SetValidateAndRepositionGroundUnits(true)
+ZON_BLUE_GND_BOSTICK_RESUPPLY
+ZON_BLUE_GND_WRIGHT_RESUPPLY
+ZON_BLUE_GND_FORTRESS_RESUPPLY
+ZON_BLUE_GND_HONAKER_RESUPPLY
 ```
 
-Die dedizierte Mission-Editor-Zone muss auf freiem, für einen M1083 geeignetem Boden **innerhalb der jeweiligen FOB/COP-Anlage und nahe dem lokalen Warehouse** liegen. Sie ist keine Straßen-/Convoy-Zone.
-
-Erforderliche Zonen:
+Anforderung:
 
 ```text
-ZON_BLUE_GND_BOSTICK_AMMO_SUPPORT_SPAWN
-ZON_BLUE_GND_WRIGHT_AMMO_SUPPORT_SPAWN
-ZON_BLUE_GND_FORTRESS_AMMO_SUPPORT_SPAWN
-ZON_BLUE_GND_HONAKER_AMMO_SUPPORT_SPAWN
+- innerhalb der jeweiligen FOB/COP-Anlage
+- nahe dem lokalen Warehouse
+- freier, für einen M1083 geeigneter Boden
+- nicht als Straßen-/Convoy-Zone auslegen
+- Abstand zu HESCOs, Gebäuden, Statics und anderen Ground Units berücksichtigen
 ```
 
-Die vorhandenen Ground-ACCESS-Zonen bleiben unverändert für ihre anderen Ground-/Convoy-Verträge und werden durch Acceptance 2 nicht gelöscht oder umgedeutet.
+Die bestehenden Ground-ACCESS-Zonen bleiben unverändert für ihre anderen Ground-/Convoy-Verträge.
 
-## 6. Zielzonen
-
-Erforderlich:
+Erforderliche Zielzonen:
 
 ```text
 ZON_BLUE_GND_BOSTICK_ARTY_ACCEPTANCE_TARGET
@@ -194,7 +250,26 @@ ZON_BLUE_GND_FORTRESS_ARTY_ACCEPTANCE_TARGET
 ZON_BLUE_GND_HONAKER_MORTAR_ACCEPTANCE_TARGET
 ```
 
-Sie müssen innerhalb der realen DCS-Reichweite des jeweiligen Systems liegen und dürfen keine BLUE-/zivilen Objekte oder andere Acceptance-Verträge gefährden.
+Die vom Projektinhaber bereitgestellte `OMW_Template_v15(10).miz` wurde read-only geprüft:
+
+```text
+MIZ SHA-256:
+1A159BB32F89ECA1E2EE277483023F2CC7DC2CD8E93CCBC942C651B7F796D8C9
+
+internal mission SHA-256:
+5F86B9B4A65C9D47945D33D9A111731B7B4ABC9A0D9B4977CA92B0AC13E56488
+
+four *_RESUPPLY zones:
+PRESENT
+
+embedded Moose.lua SHA-256:
+E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915
+
+embedded Acceptance-2 bundle SHA-256:
+730F07B1AE79EAA5C4632A4A4CF44A64C41507F2D0E1C317B3F14405F2AA260E
+```
+
+Damit ist `v15(10)` **noch nicht** der Revision-3-Testartefaktstand: sie enthält noch das alte Revision-1-Bundle. Vor einem DCS-Lauf muss ausschließlich dieses eingebettete Acceptance-Bundle ersetzt und die neue MIZ-Hashkette erneut geschlossen werden.
 
 ## 7. Support-Return-/Cleanup-Vertrag
 
@@ -202,7 +277,7 @@ Nach erfolgreichem ARTY-Rearm:
 
 ```text
 1. MOOSE ARTY OnAfterRearmed wird erreicht.
-2. Der ARTY-Class-Lifecycle übernimmt den Return zur beim Rearm gemerkten M1083-Ausgangskoordinate.
+2. ARTY übernimmt den Return zur beim Rearm gemerkten M1083-Ausgangskoordinate.
 3. OMW erzeugt keinen eigenen Return-Wegpunkt und keine Parallelroute.
 4. Ein MOOSE SCHEDULER prüft alle 5 s, ob der M1083 wieder innerhalb 100 m seiner Ausgangskoordinate liegt.
 5. Timeout des Return-Watch: 300 s.
@@ -210,8 +285,6 @@ Nach erfolgreichem ARTY-Rearm:
 7. Der M1083 wird damit in den Warehouse-Assetbestand zurückgeführt und seine physische Repräsentation entfernt.
 8. Fehler/Tod/Timeout erzeugen SUPPORT_RETURN_FAILED und blockieren SITE_PASS.
 ```
-
-Die 100-m-Grenze entspricht der explizit gesetzten `ARTY`-`RearmingDistance` und damit derselben Grenze, anhand derer der gepinnte ARTY-Source entscheidet, ob eine physische Rückfahrt erforderlich ist.
 
 ## 8. Strategische Ressourcen
 
@@ -231,8 +304,6 @@ Quantity per successful rearm:
 Die Warehouse-Rückgabe des temporären M1083 erzeugt keine zweite strategische Ressourcenhoheit und schreibt keine CampaignState-Munition zurück.
 
 ## 9. Ausführung und Marker
-
-Alle vier Legs starten im selben Lauf:
 
 ```text
 ConcurrentSiteLegs: true
@@ -265,7 +336,7 @@ PASS FIXED_FIRE_SUPPORT_REARM_CONFIRMED=true sites=4
 - Battery/Mortar object resolved
 - controlled fire assignment accepted
 - ammunition decreases after firing
-- M1083 materializes through public MOOSE Warehouse lifecycle in the dedicated local support-spawn zone
+- M1083 materializes through public MOOSE Warehouse lifecycle in the dedicated local RESUPPLY zone
 - no forced road-aligned Warehouse spawn override is used
 - local CampaignState transaction == CONSUMED
 - exactly one local GROUND_AMMO_PACKAGE is debited
@@ -276,8 +347,6 @@ PASS FIXED_FIRE_SUPPORT_REARM_CONFIRMED=true sites=4
 - WAREHOUSE:AddAsset returns the known M1083 asset to stock
 - no materialized support group remains active after the return handoff
 ```
-
-Ein Standortfehler erzeugt einen eindeutigen `site=<SITE>`-Marker und blockiert den Aggregate-PASS.
 
 ## 11. Nicht Teil dieser Acceptance
 
@@ -301,7 +370,7 @@ Kleine Folgeänderungen erhalten keinen eigenen Lauf, sofern sie nicht der konkr
 Anstehende Prüfungen werden soweit möglich in einem gemeinsamen Folgetest gebündelt.
 ```
 
-Revision 2 kombiniert deshalb:
+Revision 3 kombiniert deshalb:
 
 ```text
 - Bostick/Wright/Fortress Regression
@@ -316,12 +385,13 @@ Revision 2 kombiniert deshalb:
 ```text
 Revision-1 DCS result: AGGREGATE FAIL / HONAKER TIMEOUT
 Revision-1 Bostick/Wright/Fortress: SITE_PASS for exact old provenance
-Revision-2 source: SOURCE_REVIEWED / DCS_PENDING
-Revision-2 contract tests: UPDATED, NOT EXECUTED IN LOCAL OWNER ENVIRONMENT
-Revision-2 builder: UPDATED, NOT YET BUILT BY OWNER
-Revision-2 bundle hash: PENDING
-Revision-2 local support-spawn zones in MIZ: PENDING OWNER ME CHANGE
-Revision-2 MIZ embedding: NOT STARTED
-Revision-2 DCS runtime: NOT_RUN
+Revision-2: BUILT / NOT RUN / superseded as test candidate by zone-name reconciliation
+Revision-3 source: SOURCE_REVIEWED / DCS_PENDING
+Revision-3 builder: OWNER-BUILT
+Revision-3 bundle hash: C3526CE2863C94D4F351D438219B744D23B2A11C09A59094944332DBEDD59B31
+Revision-3 build/hash match: PASS
+Revision-3 local RESUPPLY zones in v15(10): PRESENT
+Revision-3 MIZ embedding: PENDING bundle replacement
+Revision-3 DCS runtime: NOT_RUN
 VALIDATED: false
 ```
