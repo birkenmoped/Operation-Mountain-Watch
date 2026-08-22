@@ -31,14 +31,6 @@ Projektphase: COMPLETE_FOUNDATION_BUILD_PHASE
 
 Projektweit verbindliche normative Wirkung entsteht erst nach dem Governance-konformen Integrationsweg nach `main`.
 
-Vor relevanter Weiterarbeit mindestens prüfen:
-
-```text
-AGENTS.md
-docs/00-project-governance.md
-docs/26-moose-first-development-policy.md
-```
-
 ## 2. Ziel und Architektur
 
 ```text
@@ -53,7 +45,6 @@ fixed fire-support consumer
 -> CampaignState transaction = COMPLETED
 -> MOOSE ARTY support return
 -> WAREHOUSE:AddAsset(...)
--> physische Support-Gruppe zurück in Warehouse-Bestand
 ```
 
 `CampaignState` bleibt einzige strategische Ressourcenautorität. Kein MIST, kein eigener Rearm-FSM, kein FullAmmo-Scanner, kein MOOSE-Patch.
@@ -94,13 +85,7 @@ Executed mission: OMW_Template_v16.miz
 dcs.log SHA-256: B3C218B81D5A3C386213E4721F1F1AF12C53DF840C8BB758FE7147E6BAF5FD10
 debrief.log SHA-256: 0014C8FE4A4E3BD7DE3D3AF0BCB3DC30C30E786470F1EDA951EBD582F1A48FAE
 
-2B11 40 -> 0
--> Support request
--> 0 -> 40
--> SITE_REARMED
--> SITE_SUPPORT_RETURNED
--> SITE_PASS
--> aggregate PASS
+2B11 40 -> 0 -> support request -> 0 -> 40 -> PASS
 ```
 
 Korrigierte Evidenzgrenze:
@@ -138,7 +123,7 @@ GeneratedUtc: 2026-08-22T13:44:16Z
 Bundle SHA-256: 1180884FEB764F95CFD89D72CE2D04BE633A9FD73AE0939AE4B476179A5977C5
 ```
 
-Builder-Ausgabe und separates `Get-FileHash` stimmten exakt überein. Revision 2-10 ist BUILD/HASH VERIFIED, aber wurde bewusst nicht als eigener zusätzlicher DCS-Einzeltest angesetzt.
+Revision 2-10 ist BUILD/HASH VERIFIED, wurde aber bewusst nicht als eigener zusätzlicher DCS-Einzeltest angesetzt.
 
 ## 6. LOCAL REARM Option B
 
@@ -186,7 +171,7 @@ Bundle SHA-256: 9AAF32A10A9EEB906123AFD37FF14B62542EE7C78F7B5E81E388A22F41EABEAB
 
 ## 7. Keine Tippelschritte – gebündelte finale Acceptance
 
-Die verbleibenden Runtime-Prüfungen werden ab Revision 2-11 in **einem** DCS-Lauf zusammengeführt.
+Revision 2-11 führt die verbleibenden Runtime-Prüfungen in **einem DCS-Lauf** zusammen.
 
 Phase A – reale MOOSE/DCS-Rearm-Legs:
 
@@ -200,35 +185,19 @@ Honaker   M1083 / 40 -> 0 -> COMPLETED -> return-to-stock -> SITE_PASS
 Phase B – im selben DCS-Lauf auf isolierten `CampaignState.Restore(...)`-Kopien:
 
 ```text
-CONSUMED snapshot
--> ReconcileRestore
--> exactly one restart credit
--> COMPENSATED
-
-zweiter Restore
--> keine zweite Gutschrift
--> COMPENSATED bleibt geschlossen
-
-neue Transaction ID nach Compensation
--> CONSUMED -> COMPLETED
--> weiterer Restore
--> COMPLETED bleibt konsumiert
--> keine Compensation
-
-RESERVED restore
--> CANCELLED
--> keine Debit-/Compensation-Wirkung
-
-LOADING restore
--> CANCELLED
--> keine Debit-/Compensation-Wirkung
+CONSUMED -> exactly one restart credit -> COMPENSATED
+second restore -> no duplicate credit
+new transaction ID after compensation -> COMPLETED
+COMPLETED restore -> no compensation
+RESERVED restore -> CANCELLED
+LOADING restore -> CANCELLED
+authoritative runtime store remains unchanged
 ```
 
-Zusätzlich muss der Harness nachweisen, dass diese synthetischen Restore-Fälle den autoritativen Runtime-Store nicht verändern.
-
-Pflichtmarker der Restore-Phase:
+Pflichtmarker:
 
 ```text
+PHYSICAL_REARM_PHASE_PASS
 RESTORE_PHASE_START
 RESTORE_INTERRUPTED_SNAPSHOT
 RESTORE_COMPENSATION_PASS
@@ -246,8 +215,6 @@ Gesamt-PASS:
 PASS FIXED_FIRE_SUPPORT_REARM_CONFIRMED=true sites=4 restoreSettlement=true
 ```
 
-Damit werden erfolgreiche MOOSE-Rearms, Honaker-Vollentleerung und alle aktuell implementierten Option-B-Restore-Semantiken in einem Acceptance-Lauf geprüft.
-
 ## 8. Persistenzgrenze
 
 Repository-Prüfung bestätigt derzeit:
@@ -256,31 +223,34 @@ Repository-Prüfung bestätigt derzeit:
 CampaignState besitzt ExportSnapshot() und Restore().
 GroundRuntimeIntegration erwartet einen vom Caller erzeugten oder wiederhergestellten Store.
 AirOpsWarehouseProduction kann einen extern bereitgestellten campaignContext übernehmen.
-Es existiert in diesem Branch kein produktiver externer Dateisystem-/Server-Persistence-Host, der CampaignState selbst auf Platte schreibt und beim Prozessneustart wieder lädt.
+Im aktuellen Branch existiert kein produktiver externer Dateisystem-/Server-Persistence-Host,
+der CampaignState selbst auf Platte schreibt und beim Prozessneustart wieder lädt.
 ```
 
-Deshalb führt Revision 2-11 **keine** `io`-/`lfs`-Dateipersistenz, keinen `MissionScripting.lua`-Umbau und keinen zweiten Persistenzpfad ein. Der gebündelte DCS-Lauf validiert den realen `ExportSnapshot -> Restore -> ReconcileRestore`-Settlementvertrag innerhalb der DCS-Laufzeit. Eine spätere Behauptung über echten Prozess-/Server-Restart benötigt den dafür zuständigen Persistence-Host und dessen eigene Provenienz.
-
-Diese Grenze ist Architekturrealität und kein Anlass für einen zusätzlichen isolierten 30-Minuten-Test dieses PRs.
+Revision 2-11 führt daher keine `io`-/`lfs`-Dateipersistenz, keine `MissionScripting.lua`-Änderung und keinen zweiten Persistenzpfad ein. Der gebündelte DCS-Lauf validiert den realen `ExportSnapshot -> Restore -> ReconcileRestore`-Settlementvertrag innerhalb der DCS-Laufzeit. Ein externer Prozess-/Server-Restart darf daraus nicht behauptet werden.
 
 ## 9. Revision 2-11 – Source/Builder-Stand
 
 ```text
-Acceptance harness:
-- Vier physische M1083-Rearm-Legs
-- Honaker 40 -> 0
-- danach gebündelte Restore-Settlement-Phase
-- kein Dateisystem-I/O
-- keine MIZ-Mutation
-- autoritativer Runtime-Store bleibt unverändert durch Restore-Fixtures
-
-BuilderVersion:
-GROUND-FIRE-SUPPORT-ACCEPTANCE-2-11
+BuilderVersion: GROUND-FIRE-SUPPORT-ACCEPTANCE-2-11
+Acceptance harness: SOURCE COMPLETE / REMOTE
+Builder gates: COMPLETE / REMOTE
+Local build/hash: PENDING REAL OWNER OUTPUT
+DCS runtime: PENDING
 ```
 
-Source und Builder sind remote veröffentlicht. Ein realer lokaler Build/Hash für Revision 2-11 steht noch aus und darf nicht erfunden werden.
+## 10. Dokumentationsstatus
 
-## 10. Aktuelle TODO-Liste
+```text
+ACCEPTANCE-2.md: Revision 2-11 reconciled
+FIXED-FIRE-SUPPORT-REARM.md: Revision 2-11 reconciled
+CURRENT-STATUS-TODO.md: Revision 2-11 reconciled
+README.md: classified as HISTORICAL_TEST_FIXTURE with metadata; previous full development record remains in Git history at blob 2f1622bdb1a6cd1beeb005af74db07c77af0beea
+```
+
+Es wird kein Dokumentationsvalidator-PASS behauptet, bevor ein aktueller Workflow-/Validator-Nachweis vorliegt.
+
+## 11. Aktuelle TODO-Liste
 
 ```text
 [x] Acceptance-1 Provenienz
@@ -298,30 +268,15 @@ Source und Builder sind remote veröffentlicht. Ein realer lokaler Build/Hash f�
 [x] Option-B Produktionsbundles real gebaut/gehasht
 [x] Revision 2-10 real gebaut/gehasht
 [x] verbleibende Runtime-Prüfungen zu Revision 2-11 gebündelt
-[x] externer Persistence-Host-Iststand geprüft: nicht Bestandteil des aktuellen Produktionsbundles
+[x] externer Persistence-Host-Iststand geprüft
+[x] branch-eigene README-Metadaten-Schuld bereinigt
 
 [ ] Revision 2-11 lokal einmal bauen und hash-verifizieren
 [ ] einen gebündelten DCS-Acceptance-Lauf durchführen
 [ ] Logs gegen alle Physical-/Restore-Marker auswerten
-[ ] branch-eigene Dokumentationsvalidator-Schuld bereinigen
+[ ] aktuellen Dokumentationsvalidator-/CI-Stand prüfen
 [ ] finalen Diff / Contract / Builder prüfen
 [ ] Owner-Entscheidung PR #112 Ready / Merge
-```
-
-## 11. Nicht mehr offen
-
-```text
-separater Honaker-Einzeltest
-separater COMPLETED-Einzeltest
-separater Compensation-Einzeltest
-separater Idempotence-Einzeltest
-M1083 als Honaker-Supportfahrzeug bestätigen
-M939 als Honaker-Produktionslösung verwenden
-Custom-Rearm für 2B11 bauen
-MOOSE GetCenterPoint nachbauen
-SetValidateAndRepositionGroundUnits wieder einschalten
-zweiten Ground CampaignState schaffen
-zweite Ressourcenhoheit im Warehouse einführen
 ```
 
 ## 12. Reihenfolge
