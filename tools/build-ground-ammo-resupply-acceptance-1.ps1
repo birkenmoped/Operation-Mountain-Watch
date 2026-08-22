@@ -12,7 +12,7 @@ $acceptanceSourceFile = Join-Path $repoRoot 'mission\tests\ground-resupply-execu
 $distDir = Join-Path $repoRoot 'mission\tests\ground-resupply-execution\dist'
 $outputFile = Join-Path $distDir 'OMW_Ground_Ammo_Resupply_Acceptance_1.lua'
 
-$builderVersion = 'GROUND-AMMO-RESUPPLY-ACCEPTANCE-1-2'
+$builderVersion = 'GROUND-AMMO-RESUPPLY-ACCEPTANCE-1-3'
 $testId = 'GROUND-AMMO-RESUPPLY-ACCEPTANCE-1'
 $mooseCommit = '73d3ed119cd9e7e3f2cfcabbaa34513d30529b54'
 $mooseSha256 = 'e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915'
@@ -40,7 +40,7 @@ $requiredMarkers = @(
   'MissionDemand.Type',
   'RESUPPLY',
   'OMW-RESOURCE-DEMAND-POLICY-1',
-  'ResourceDemandPolicy.Evaluate',
+  'function Policy.Evaluate',
   'reorder',
   'critical',
   '[OMW][Ground.RoadSpawnAdapter]',
