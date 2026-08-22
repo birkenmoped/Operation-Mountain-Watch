@@ -217,7 +217,7 @@ Status: `IN DEVELOPMENT`
 
 #### Stage 1A – Ground AMMO / Joyce -> Honaker
 
-Status: `SOURCE_AND_BUILDER_STAGED / LOCAL BUILD NOT RUN`
+Status: `SOURCE_STAGED / LOCAL BUILD FAILED ON BUILDER GUARD / FIX STAGED`
 
 Gewählter Pfad:
 
@@ -255,10 +255,10 @@ tools/build-ground-ammo-resupply-acceptance-1.ps1
 docs/moose/GROUND-RESUPPLY-EXECUTION-SOURCE-REVIEW.md
 ```
 
-Builder:
+Builder after failed local gate and correction:
 
 ```text
-GROUND-AMMO-RESUPPLY-ACCEPTANCE-1-2
+GROUND-AMMO-RESUPPLY-ACCEPTANCE-1-3
 ```
 
 Wichtige Designentscheidung dieses Slices:
@@ -287,9 +287,29 @@ OMW_WAREHOUSE_READY == 1
 OMW_GROUND_READY == 1
 ```
 
+Lokales Build-Gate vom 22.08.2026 auf Commit `dc9d35ed72cbc68f78dab893c923f9532dbe3263`:
+
+```text
+Result: FAILED BEFORE BUNDLE CREATION
+Reason: required marker `ResourceDemandPolicy.Evaluate` did not exist literally in source
+Actual source contract: `function Policy.Evaluate(...)`
+Builder SHA-256: 46C2602B1C7BC9B4D2B780FB9A0D2C17AF9450CA1572ACF8904FB49DC7019328
+Acceptance source SHA-256: 38E099C801286768FD9D1D39014BB767BCF99055602D1E06EDACA48634856C83
+Bundle SHA-256: NOT AVAILABLE because no bundle was produced
+```
+
+Bewertung:
+
+```text
+Builder static guard defect only.
+No DCS/runtime result exists.
+No acceptance source change was required.
+The guard now verifies the real module declaration `function Policy.Evaluate`.
+```
+
 Noch offen:
 
-- [ ] Owner local PowerShell build;
+- [ ] Owner local PowerShell rebuild with BuilderVersion `GROUND-AMMO-RESUPPLY-ACCEPTANCE-1-3`;
 - [ ] unabhängiger Bundle-SHA-256;
 - [ ] anschließend konkrete Arbeits-MIZ bestimmen;
 - [ ] Objektvertragssmoke für Joyce/Honaker/M1083;
@@ -412,8 +432,8 @@ Diff, Tests, MOOSE-Doku, Acceptance-Provenienz, Register, keine `PENDING_MERGE`-
 branch:
 agent/automatic-response-orchestration
 
-implementation head before this handoff refresh:
-f9f2a82a221c82c0f8a5d096d1247f4ba4dba886
+implementation head after builder guard correction:
+b54e3ab4912b14e9da688ed21401af52d4d34272
 
 stage:
 STAGE_1A_GROUND_AMMO_RESUPPLY
@@ -422,16 +442,19 @@ MOOSE-first source review:
 COMPLETE FOR STAGE-1A TEST SCOPE
 
 acceptance source:
-STAGED
+STAGED / unchanged by builder correction
 
 builder:
-STAGED / GROUND-AMMO-RESUPPLY-ACCEPTANCE-1-2
+STAGED / GROUND-AMMO-RESUPPLY-ACCEPTANCE-1-3
 
-local owner build:
-NOT RUN
+last local owner build:
+FAILED AT STATIC MARKER GUARD ON dc9d35ed72cbc68f78dab893c923f9532dbe3263
+
+failure reason:
+FALSE LITERAL MARKER `ResourceDemandPolicy.Evaluate`; actual module declaration is `function Policy.Evaluate`
 
 bundle SHA-256:
-UNKNOWN
+UNKNOWN / NO BUNDLE PRODUCED
 
 MIZ mutation:
 NOT STARTED
@@ -445,7 +468,7 @@ NOT YET CREATED
 
 ## 8. Nächster zulässiger Schritt
 
-Der aktuelle Gate ist kein MIZ- oder DCS-Gate. Zuerst muss der Projektinhaber den versionierten Acceptance-Builder lokal mit PowerShell ausführen und den unabhängig berechneten SHA-256 zurückgeben.
+Der aktuelle Gate ist weiterhin kein MIZ- oder DCS-Gate. Zuerst muss der Projektinhaber den korrigierten versionierten Acceptance-Builder `GROUND-AMMO-RESUPPLY-ACCEPTANCE-1-3` lokal mit PowerShell ausführen und den unabhängig berechneten SHA-256 zurückgeben.
 
 Erst danach:
 
