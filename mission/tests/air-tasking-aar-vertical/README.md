@@ -6,7 +6,8 @@ owning_policy: OMW-GOV-001
 authoritative_for:
   - branch-local test scope for Air Tasking to accepted AAR vertical integration
   - additive attachment contract to the already running accepted AAR base
-  - current MissionDemand-to-AAR translation retest requirements
+  - current MissionDemand-to-AAR translation build evidence
+  - retained historical DCS acceptance evidence for the previous exact source provenance
 not_authoritative_for:
   - Acceptance-7 replacement
   - repository-wide architecture beyond merged BINDING documents on main
@@ -24,7 +25,7 @@ validated_in_dcs: false
 
 ## 1. Architekturgrenze
 
-Der Test bleibt strikt additiv:
+Der Testpfad ist strikt additiv:
 
 ```text
 canonical MissionDemand record (read-only)
@@ -103,9 +104,9 @@ Controller.GetStation(...)
 + Air-Tasking-interne Korrelation
 ```
 
-## 4. Aktueller Retest
+## 4. Reconciled test artifact
 
-Neue Test-ID:
+Test-ID:
 
 ```text
 AIR-TASKING-AAR-VERTICAL-3
@@ -123,7 +124,7 @@ Ausgabedatei:
 mission/tests/air-tasking-aar-vertical/dist/OMW_AirTasking_AAR_Vertical_Test.lua
 ```
 
-Builder-Sicherheitsgrenzen umfassen nun zusaetzlich:
+Builder-Sicherheitsgrenzen umfassen:
 
 ```text
 MissionDemandContract: CANONICAL_MAIN_SHAPE_READ_ONLY
@@ -135,7 +136,7 @@ SetStrategicAdapter(...) forbidden
 adapter callback mutation forbidden
 ```
 
-### 4.1 Reale lokale Build-Evidenz fuer den reconcilierten Stand
+## 5. Reale lokale Build-Evidenz fuer den reconcilierten Stand
 
 Der Projektinhaber hat am 22.08.2026 auf folgendem exakten Source-Stand gebaut:
 
@@ -186,12 +187,12 @@ Ein anschliessender unabhaengiger `Get-FileHash` bestaetigte denselben Bundle-Ha
 BUILD PASS
 BUNDLE HASH CROSS-CHECK PASS
 LOCAL LUA CONTRACT TEST NOT RUN - no local Lua interpreter available
-DCS RETEST NOT RUN
+CURRENT SOURCE HEAD DCS RETEST NOT RUN
 ```
 
 Der fehlende lokale Lua-Interpreter wird nicht durch angenommene oder simulierte Testevidenz ersetzt.
 
-## 5. Vorherige technische Acceptance bleibt historische Evidenz
+## 6. Vorherige technische Acceptance bleibt gueltige historische Evidenz
 
 `AIR-TASKING-AAR-VERTICAL-2` wurde am 22.08.2026 erfolgreich in DCS getestet:
 
@@ -239,26 +240,29 @@ SETTLEMENT_PASS
 RESULT PASS
 ```
 
-Diese Acceptance bleibt fuer exakt den damaligen Stand gueltig. Sie wird nicht auf die MissionDemand-reconciled Bridge uebertragen.
+Diese Acceptance bleibt fuer exakt den damaligen Stand gueltig. Sie wird nicht auf die MissionDemand-reconciled Bridge uebertragen. Sie bleibt jedoch Teil-Evidenz fuer den unveraendert gebliebenen physischen AAR-/LISA-/Handoff-/Settlement-Pfad.
 
-## 6. Gate 3 current head
+## 7. Projektinhaberentscheidung zum erneuten LISA-Test
+
+Der Projektinhaber hat am 22.08.2026 entschieden, den `AIR-TASKING-AAR-VERTICAL-3`-LISA-DCS-Retest nicht erneut durchzufuehren. Der Test-Harness wurde bereits aus der Arbeitsmission entfernt.
+
+Damit gilt:
 
 ```text
-GATE 3: BUILD PASS / DCS RETEST REQUIRED
+historical VERTICAL-2 DCS PASS: retained for exact provenance
+reconciled VERTICAL-3 build: PASS
+reconciled VERTICAL-3 DCS runtime: NOT RUN
+current reconciled source head validated_in_dcs: false
+```
+
+Diese Entscheidung ist kein stillschweigender Runtime-PASS fuer den aktuellen Source-Head. Sie entfernt lediglich den erneuten LISA-Lauf als Branch-Reconciliation-Gate.
+
+## 8. Gate 3 current head
+
+```text
+GATE 3 HISTORICAL VERTICAL-2: PASS FOR EXACT DOCUMENTED PROVENANCE
+GATE 3 CURRENT RECONCILED HEAD: BUILD PASS / NOT REVALIDATED IN DCS
 validated_in_dcs: false
 ```
 
-Der aktuelle Reconciliation-Schritt gilt erst dann wieder als technisch akzeptiert, wenn mindestens folgende Evidenz fuer den neuen exakten Stand vorliegt:
-
-```text
-branch / executable source commit
-builder version OMW-AIR-TASKING-AAR-ADDITIVE-TEST-3
-TestId AIR-TASKING-AAR-VERTICAL-3
-bundle SHA-256
-mission SHA-256 after manual insertion
-DCS version
-embedded MOOSE commit / Moose.lua hash
-canonical MissionDemand translation assertions
-required correlation / settlement logs
-RESULT PASS
-```
+Fuer die weitere Branch-Reconciliation sind damit noch Repository-/Dokumentationspruefungen erforderlich, aber kein erneuter LISA-Test.
