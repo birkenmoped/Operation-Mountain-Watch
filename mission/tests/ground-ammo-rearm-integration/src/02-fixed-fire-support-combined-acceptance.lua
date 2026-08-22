@@ -3,16 +3,14 @@
 --
 -- Purpose:
 --   Exercise the same MOOSE-first rearm composition concurrently for the four
---   current Kunar fixed fire-support consumers in one DCS run. Bostick is the
---   regression leg; Wright, Fortress and Honaker are the new runtime legs.
---   This revision also proves local non-road Warehouse materialization and the
---   complete ARTY return -> WAREHOUSE AddAsset cleanup lifecycle for M1083.
+--   current Kunar fixed fire-support consumers in one DCS run. Bostick, Wright
+--   and Fortress keep the M1083 regression path. Honaker alone uses the DCS
+--   standard M939 template to isolate 2B11 support-truck compatibility.
 --
 -- Required owner-provided Mission Editor objects are declared in SITE_SPECS.
 
 local TEST_ID = "GROUND-FIRE-SUPPORT-ACCEPTANCE-2"
 local TAG = "[OMW][" .. TEST_ID .. "]"
-local SUPPORT_TEMPLATE = "TPL_BLUE_GND_SUP_M1083"
 local RESOURCE_ID = "GROUND_AMMO_PACKAGE"
 local FIRE_SHELLS = 4
 local TIMEOUT_SEC = 1200
@@ -22,6 +20,7 @@ local SITE_SPECS = {
     id = "BOSTICK",
     warehouse = "WH_BLUE_GND_BOSTICK",
     battery = "TPL_BLUE_GND_BOSTICK_FS_ARTY_L118_2",
+    supportTemplate = "TPL_BLUE_GND_SUP_M1083",
     supportSpawnZone = "ZON_BLUE_GND_BOSTICK_RESUPPLY",
     targetZone = "ZON_BLUE_GND_BOSTICK_ARTY_ACCEPTANCE_TARGET",
     nodeId = "GROUND_NODE_BOSTICK",
@@ -35,6 +34,7 @@ local SITE_SPECS = {
     id = "WRIGHT",
     warehouse = "WH_BLUE_GND_WRIGHT",
     battery = "TPL_BLUE_GND_WRIGHT_FS_ARTY_L118_2",
+    supportTemplate = "TPL_BLUE_GND_SUP_M1083",
     supportSpawnZone = "ZON_BLUE_GND_WRIGHT_RESUPPLY",
     targetZone = "ZON_BLUE_GND_WRIGHT_ARTY_ACCEPTANCE_TARGET",
     nodeId = "GROUND_NODE_WRIGHT",
@@ -48,6 +48,7 @@ local SITE_SPECS = {
     id = "FORTRESS",
     warehouse = "WH_BLUE_GND_FORTRESS",
     battery = "TPL_BLUE_GND_FORTRESS_FS_ARTY_L118_1",
+    supportTemplate = "TPL_BLUE_GND_SUP_M1083",
     supportSpawnZone = "ZON_BLUE_GND_FORTRESS_RESUPPLY",
     targetZone = "ZON_BLUE_GND_FORTRESS_ARTY_ACCEPTANCE_TARGET",
     nodeId = "GROUND_NODE_FORTRESS",
@@ -61,13 +62,14 @@ local SITE_SPECS = {
     id = "HONAKER",
     warehouse = "WH_BLUE_GND_HONAKER",
     battery = "TPL_BLUE_GND_HONAKER_FS_MORTAR_2B11_2",
+    supportTemplate = "TPL_BLUE_GND_SUP_M939",
     supportSpawnZone = "ZON_BLUE_GND_HONAKER_RESUPPLY",
     targetZone = "ZON_BLUE_GND_HONAKER_MORTAR_ACCEPTANCE_TARGET",
     nodeId = "GROUND_NODE_HONAKER",
     brigade = "BDE_BLUE_GND_HONAKER_FIRE_SUPPORT_ACCEPTANCE",
     platoon = "PLT_BLUE_GND_HONAKER_AMMO_SUPPORT_ACCEPTANCE",
     assignment = "OMW:HONAKER:AMMO-SUPPORT:ACCEPTANCE-2",
-    carrierEntityId = "HONAKER-AMMO-SUPPORT-M1083-ACCEPTANCE-2",
+    carrierEntityId = "HONAKER-AMMO-SUPPORT-M939-ACCEPTANCE-2",
     alias = "Honaker 2B11 Acceptance 2",
   },
 }
@@ -161,6 +163,7 @@ local function finishSitePass(siteState, context, groundContext)
 
   siteState.passed = true
   log("SITE_SUPPORT_RETURNED site=" .. siteState.spec.id
+    .. " template=" .. tostring(siteState.spec.supportTemplate)
     .. " name=" .. tostring(siteState.supportName)
     .. " type=" .. tostring(siteState.supportType)
     .. " returnDistanceM=" .. tostring(context.supportReturnDistanceM))
@@ -175,7 +178,7 @@ local function configureSite(spec, groundContext)
   local warehouseHost = UNIT:FindByName(spec.warehouse)
   if not warehouseHost then warehouseHost = STATIC:FindByName(spec.warehouse, false) end
   requireObject(warehouseHost, spec.warehouse)
-  requireObject(GROUP:FindByName(SUPPORT_TEMPLATE), SUPPORT_TEMPLATE)
+  requireObject(GROUP:FindByName(spec.supportTemplate), spec.supportTemplate)
   if state.failed then return nil end
 
   local brigade = BRIGADE:New(spec.warehouse, spec.brigade)
@@ -224,7 +227,7 @@ local function configureSite(spec, groundContext)
       return PLATOON:New(templateName, count, platoonName)
     end,
     descriptorGroupName = WAREHOUSE.Descriptor.GROUPNAME,
-    templateName = SUPPORT_TEMPLATE,
+    templateName = spec.supportTemplate,
     platoonName = spec.platoon,
     assignment = spec.assignment,
     carrierEntityId = spec.carrierEntityId,
@@ -245,7 +248,10 @@ local function configureSite(spec, groundContext)
         siteState.supportType = supportGroup:GetTypeName()
       end
       local resourceAfter = groundContext.store:GetResource(spec.nodeId, RESOURCE_ID)
-      log("SITE_SUPPORT_MATERIALIZED site=" .. spec.id .. " name=" .. tostring(siteState.supportName) .. " type=" .. tostring(siteState.supportType))
+      log("SITE_SUPPORT_MATERIALIZED site=" .. spec.id
+        .. " template=" .. tostring(spec.supportTemplate)
+        .. " name=" .. tostring(siteState.supportName)
+        .. " type=" .. tostring(siteState.supportType))
       log("SITE_CONSUMPTION_COMMITTED site=" .. spec.id .. " resource=" .. RESOURCE_ID .. " before=" .. tostring(siteState.resourceBefore and siteState.resourceBefore.available) .. " after=" .. tostring(resourceAfter and resourceAfter.available))
       log("SITE_REARMED site=" .. spec.id .. " initialAmmo=" .. tostring(siteState.initialAmmo) .. " postFireAmmo=" .. tostring(siteState.postFireAmmo) .. " currentAmmo=" .. tostring(ammoTotal(siteState)))
     end,
@@ -295,7 +301,10 @@ local function startSite(siteState, groundContext)
       supportReturnRadiusM = 100,
       startArty = false,
     })
-    log("SITE_REARM_REQUEST site=" .. siteState.spec.id .. " status=" .. tostring(context and context.status) .. " resourceBefore=" .. tostring(siteState.resourceBefore.available))
+    log("SITE_REARM_REQUEST site=" .. siteState.spec.id
+      .. " supportTemplate=" .. tostring(siteState.spec.supportTemplate)
+      .. " status=" .. tostring(context and context.status)
+      .. " resourceBefore=" .. tostring(siteState.resourceBefore.available))
   end
 
   local targetName = siteState.arty:AssignTargetCoord(
@@ -318,6 +327,7 @@ local function startSite(siteState, groundContext)
 
   log("SITE_START site=" .. siteState.spec.id
     .. " battery=" .. siteState.spec.battery
+    .. " supportTemplate=" .. siteState.spec.supportTemplate
     .. " supportSpawnZone=" .. siteState.spec.supportSpawnZone
     .. " target=" .. tostring(targetName)
     .. " shellsRequested=" .. tostring(FIRE_SHELLS)
