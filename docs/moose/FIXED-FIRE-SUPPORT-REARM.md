@@ -273,7 +273,7 @@ Gesamt-PASS:
 PASS FIXED_FIRE_SUPPORT_REARM_CONFIRMED=true sites=4 restoreSettlement=true
 ```
 
-## 10. Produktionsbundle-Provenienz
+## 10. Produktions- und Acceptance-Bundle-Provenienz
 
 ```text
 Source / Git HEAD: 49f43a856c1f8bc32ca64835af856119a295640e
@@ -293,6 +293,18 @@ Bundle SHA-256:
 
 Diese Produktionsbundles bleiben unverändert.
 
+Revision 2-11 wurde am 22.08.2026 real gebaut und separat gehasht:
+
+```text
+Source / Git HEAD: d52a47a418fe3a1a996a5b68198b8dc033ff86c4
+BuilderVersion: GROUND-FIRE-SUPPORT-ACCEPTANCE-2-11
+GeneratedUtc: 2026-08-22T14:07:19Z
+Acceptance Bundle SHA-256:
+CBA3ACF5D835E6EF6AD11C3FDD295E178B2B8E6B9330749C15419A1638CF379B
+```
+
+Builder-Ausgabe und `Get-FileHash -Algorithm SHA256` stimmen exakt überein. Revision 2-11 ist damit `BUILD/HASH VERIFIED`, aber noch nicht DCS-runtime-validiert.
+
 ## 11. Status
 
 ```text
@@ -304,7 +316,7 @@ M1083 support choice for Honaker: OWNER CONFIRMED
 Option B source implementation: COMPLETE
 Option B production bundles: BUILD/HASH VERIFIED
 Revision 2-10 corrected acceptance: BUILD/HASH VERIFIED / no isolated rerun
-Revision 2-11 bundled acceptance: SOURCE/BUILDER COMPLETE / local build-hash PENDING
+Revision 2-11 bundled acceptance: BUILD/HASH VERIFIED at d52a47a418fe3a1a996a5b68198b8dc033ff86c4
 External filesystem/server persistence host: NOT PRESENT IN CURRENT BRANCH
 Revision 2-11 DCS acceptance: PENDING
 ```
