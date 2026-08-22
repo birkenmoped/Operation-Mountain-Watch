@@ -8,6 +8,13 @@
 --   use bounded four-round fire legs. Honaker must fully deplete the observed
 --   40-round 2B11 ammunition load before the support request is issued.
 --
+--   After the four physical rearm legs pass, the same run also exercises the
+--   CampaignState snapshot/restore settlement contract on isolated restored
+--   copies of the authoritative state: interrupted CONSUMED compensation,
+--   repeated-restore idempotence, COMPLETED preservation, RESERVED/LOADING
+--   cancellation, and a new transaction after compensation. This is a runtime
+--   settlement test, not proof of an external filesystem persistence host.
+--
 -- Required owner-provided Mission Editor objects are declared in SITE_SPECS.
 
 local TEST_ID = "GROUND-FIRE-SUPPORT-ACCEPTANCE-2"
@@ -15,6 +22,10 @@ local TAG = "[OMW][" .. TEST_ID .. "]"
 local RESOURCE_ID = "GROUND_AMMO_PACKAGE"
 local DEFAULT_FIRE_SHELLS = 4
 local TIMEOUT_SEC = 1200
+local RESTORE_NODE_ID = "GROUND_NODE_BOSTICK"
+local RESTORE_TX_PREFIX = "GROUND-FIRE-SUPPORT-RESTORE-ACCEPTANCE-"
+local REARM_RESERVATION_PREFIX = "GROUND-LOCAL-REARM:"
+local RESTART_CREDIT_PREFIX = "GROUND-LOCAL-REARM-RESTART:"
 
 local SITE_SPECS = {
   {
@@ -80,7 +91,7 @@ local SITE_SPECS = {
   },
 }
 
-local state = { failed = false, passed = false, sites = {} }
+local state = { failed = false, passed = false, sites = {}, groundContext = nil }
 
 local function log(message)
   env.info(TAG .. " " .. tostring(message))
@@ -119,10 +130,191 @@ local function allSitesPassed()
   return true
 end
 
-local function finishAggregateIfReady()
+local function expectEqual(actual, expected, label)
+  if actual ~= expected then
+    fail(label .. " expected=" .. tostring(expected) .. " actual=" .. tostring(actual))
+    return false
+  end
+  return true
+end
+
+local function makeLocalRearmTransaction(store, campaignState, transactionId, targetStatus)
+  local transaction, created = store:ReserveResource({
+    transactionId = transactionId,
+    reservationId = REARM_RESERVATION_PREFIX .. transactionId,
+    carrierEntityId = transactionId .. "-CARRIER",
+    kind = campaignState.TransactionKind.CONSUMPTION,
+    resourceId = RESOURCE_ID,
+    quantity = 1,
+    canonicalUnit = "count",
+    originNodeId = RESTORE_NODE_ID,
+  })
+  if created ~= true then
+    fail("RESTORE_TRANSACTION_NOT_CREATED transactionId=" .. transactionId)
+    return nil
+  end
+
+  if targetStatus == campaignState.TransactionStatus.LOADING then
+    transaction = store:MarkLoading(transactionId)
+  elseif targetStatus == campaignState.TransactionStatus.CONSUMED then
+    transaction = store:Consume(transactionId)
+  elseif targetStatus == campaignState.TransactionStatus.COMPLETED then
+    store:Consume(transactionId)
+    transaction = store:CompleteConsumption(transactionId)
+  elseif targetStatus ~= campaignState.TransactionStatus.RESERVED then
+    fail("RESTORE_UNSUPPORTED_TARGET_STATUS transactionId=" .. transactionId .. " status=" .. tostring(targetStatus))
+    return nil
+  end
+
+  return transaction
+end
+
+local function runRestoreSettlementAcceptance(groundContext)
+  local campaignState = groundContext.campaignState
+  local authoritativeStore = groundContext.store
+
+  if type(campaignState.Restore) ~= "function" then
+    fail("CAMPAIGNSTATE_RESTORE_UNAVAILABLE")
+    return false
+  end
+
+  local baseResource = authoritativeStore:GetResource(RESTORE_NODE_ID, RESOURCE_ID)
+  local baseSnapshot = authoritativeStore:ExportSnapshot()
+  local baseAvailable = baseResource.available
+
+  log("RESTORE_PHASE_START nodeId=" .. RESTORE_NODE_ID
+    .. " resource=" .. RESOURCE_ID
+    .. " authoritativeAvailable=" .. tostring(baseAvailable))
+
+  -- Interrupted local rearm: persisted after strategic consumption but before
+  -- MOOSE OnAfterRearmed/CompleteConsumption.
+  local interruptedTxId = RESTORE_TX_PREFIX .. "INTERRUPTED"
+  local interruptedStore = campaignState.Restore(baseSnapshot)
+  makeLocalRearmTransaction(interruptedStore, campaignState, interruptedTxId, campaignState.TransactionStatus.CONSUMED)
+  if state.failed then return false end
+
+  local interruptedAfterConsume = interruptedStore:GetResource(RESTORE_NODE_ID, RESOURCE_ID)
+  if not expectEqual(interruptedAfterConsume.available, baseAvailable - 1, "RESTORE_INTERRUPTED_DEBIT") then return false end
+
+  local interruptedSnapshot = interruptedStore:ExportSnapshot()
+  log("RESTORE_INTERRUPTED_SNAPSHOT transactionId=" .. interruptedTxId
+    .. " status=CONSUMED available=" .. tostring(interruptedAfterConsume.available))
+
+  local firstRestoreStore = campaignState.Restore(interruptedSnapshot)
+  local firstResult = GroundAmmoRearmAdapter.ReconcileRestore(firstRestoreStore, campaignState)
+  local firstTx = firstRestoreStore:GetTransaction(interruptedTxId)
+  local firstResource = firstRestoreStore:GetResource(RESTORE_NODE_ID, RESOURCE_ID)
+  local creditId = RESTART_CREDIT_PREFIX .. interruptedTxId
+  local firstCredit = firstRestoreStore:GetResourceCredit(creditId)
+
+  if not expectEqual(firstTx.status, campaignState.TransactionStatus.COMPENSATED, "RESTORE_FIRST_STATUS") then return false end
+  if not expectEqual(firstResource.available, baseAvailable, "RESTORE_FIRST_RESOURCE") then return false end
+  if not expectEqual(firstResult.compensated, 1, "RESTORE_FIRST_COMPENSATED_COUNT") then return false end
+  if firstCredit == nil then
+    fail("RESTORE_FIRST_CREDIT_MISSING creditId=" .. creditId)
+    return false
+  end
+  log("RESTORE_COMPENSATION_PASS transactionId=" .. interruptedTxId
+    .. " creditId=" .. creditId
+    .. " available=" .. tostring(firstResource.available))
+
+  -- Repeated restore must not duplicate the compensation credit.
+  local secondRestoreStore = campaignState.Restore(firstRestoreStore:ExportSnapshot())
+  local secondResult = GroundAmmoRearmAdapter.ReconcileRestore(secondRestoreStore, campaignState)
+  local secondTx = secondRestoreStore:GetTransaction(interruptedTxId)
+  local secondResource = secondRestoreStore:GetResource(RESTORE_NODE_ID, RESOURCE_ID)
+  local secondCredit = secondRestoreStore:GetResourceCredit(creditId)
+
+  if not expectEqual(secondTx.status, campaignState.TransactionStatus.COMPENSATED, "RESTORE_SECOND_STATUS") then return false end
+  if not expectEqual(secondResource.available, baseAvailable, "RESTORE_SECOND_RESOURCE") then return false end
+  if not expectEqual(secondResult.compensated, 0, "RESTORE_SECOND_NEW_COMPENSATION_COUNT") then return false end
+  if secondCredit == nil then
+    fail("RESTORE_SECOND_CREDIT_MISSING creditId=" .. creditId)
+    return false
+  end
+  log("RESTORE_IDEMPOTENCE_PASS transactionId=" .. interruptedTxId
+    .. " available=" .. tostring(secondResource.available)
+    .. " newCompensations=" .. tostring(secondResult.compensated))
+
+  -- A new physical service lifecycle must use a new transaction ID. A completed
+  -- transaction must remain consumed across restore and must never be compensated.
+  local newTxId = RESTORE_TX_PREFIX .. "NEW-AFTER-COMPENSATION"
+  if newTxId == interruptedTxId then
+    fail("RESTORE_NEW_TRANSACTION_ID_REUSED")
+    return false
+  end
+  makeLocalRearmTransaction(secondRestoreStore, campaignState, newTxId, campaignState.TransactionStatus.COMPLETED)
+  if state.failed then return false end
+
+  local newAfterComplete = secondRestoreStore:GetResource(RESTORE_NODE_ID, RESOURCE_ID)
+  if not expectEqual(newAfterComplete.available, baseAvailable - 1, "RESTORE_NEW_COMPLETED_DEBIT") then return false end
+
+  local thirdRestoreStore = campaignState.Restore(secondRestoreStore:ExportSnapshot())
+  local thirdResult = GroundAmmoRearmAdapter.ReconcileRestore(thirdRestoreStore, campaignState)
+  local oldTxAfterThird = thirdRestoreStore:GetTransaction(interruptedTxId)
+  local newTxAfterThird = thirdRestoreStore:GetTransaction(newTxId)
+  local thirdResource = thirdRestoreStore:GetResource(RESTORE_NODE_ID, RESOURCE_ID)
+  local unexpectedCompletedCredit = thirdRestoreStore:GetResourceCredit(RESTART_CREDIT_PREFIX .. newTxId)
+
+  if not expectEqual(oldTxAfterThird.status, campaignState.TransactionStatus.COMPENSATED, "RESTORE_THIRD_OLD_STATUS") then return false end
+  if not expectEqual(newTxAfterThird.status, campaignState.TransactionStatus.COMPLETED, "RESTORE_THIRD_NEW_STATUS") then return false end
+  if not expectEqual(thirdResource.available, baseAvailable - 1, "RESTORE_THIRD_RESOURCE") then return false end
+  if not expectEqual(thirdResult.compensated, 0, "RESTORE_THIRD_NEW_COMPENSATION_COUNT") then return false end
+  if unexpectedCompletedCredit ~= nil then
+    fail("RESTORE_COMPLETED_TRANSACTION_COMPENSATED transactionId=" .. newTxId)
+    return false
+  end
+  log("RESTORE_NEW_TRANSACTION_PASS oldTransactionId=" .. interruptedTxId
+    .. " newTransactionId=" .. newTxId
+    .. " oldStatus=" .. tostring(oldTxAfterThird.status)
+    .. " newStatus=" .. tostring(newTxAfterThird.status))
+  log("RESTORE_COMPLETED_PRESERVED_PASS transactionId=" .. newTxId
+    .. " available=" .. tostring(thirdResource.available))
+
+  -- Pre-commit local rearm reservations must be cancelled on restore without a
+  -- debit or compensation. Exercise both RESERVED and LOADING in isolated copies.
+  for _, preCommitCase in ipairs({
+    { suffix = "RESERVED", status = campaignState.TransactionStatus.RESERVED },
+    { suffix = "LOADING", status = campaignState.TransactionStatus.LOADING },
+  }) do
+    local preCommitTxId = RESTORE_TX_PREFIX .. preCommitCase.suffix
+    local preCommitStore = campaignState.Restore(baseSnapshot)
+    makeLocalRearmTransaction(preCommitStore, campaignState, preCommitTxId, preCommitCase.status)
+    if state.failed then return false end
+
+    local preCommitBefore = preCommitStore:GetResource(RESTORE_NODE_ID, RESOURCE_ID)
+    if not expectEqual(preCommitBefore.available, baseAvailable - 1, "RESTORE_PRECOMMIT_RESERVED_AVAILABLE_" .. preCommitCase.suffix) then return false end
+
+    local restoredPreCommitStore = campaignState.Restore(preCommitStore:ExportSnapshot())
+    local preCommitResult = GroundAmmoRearmAdapter.ReconcileRestore(restoredPreCommitStore, campaignState)
+    local preCommitTx = restoredPreCommitStore:GetTransaction(preCommitTxId)
+    local preCommitAfter = restoredPreCommitStore:GetResource(RESTORE_NODE_ID, RESOURCE_ID)
+
+    if not expectEqual(preCommitTx.status, campaignState.TransactionStatus.CANCELLED, "RESTORE_PRECOMMIT_STATUS_" .. preCommitCase.suffix) then return false end
+    if not expectEqual(preCommitAfter.available, baseAvailable, "RESTORE_PRECOMMIT_RESOURCE_" .. preCommitCase.suffix) then return false end
+    if not expectEqual(preCommitResult.cancelledBeforeCommit, 1, "RESTORE_PRECOMMIT_CANCEL_COUNT_" .. preCommitCase.suffix) then return false end
+    log("RESTORE_PRECOMMIT_CANCEL_PASS case=" .. preCommitCase.suffix
+      .. " transactionId=" .. preCommitTxId
+      .. " available=" .. tostring(preCommitAfter.available))
+  end
+
+  -- All restore cases ran on restored copies. The authoritative runtime store
+  -- must be untouched by this synthetic settlement phase.
+  local authoritativeAfter = authoritativeStore:GetResource(RESTORE_NODE_ID, RESOURCE_ID)
+  if not expectEqual(authoritativeAfter.available, baseAvailable, "RESTORE_AUTHORITATIVE_STORE_ISOLATION") then return false end
+
+  log("RESTORE_SETTLEMENT_PASS interruptedCompensated=true repeatedRestoreNoDuplicate=true completedPreserved=true preCommitCancelled=true newTransactionId=true authoritativeStoreIsolated=true")
+  return true
+end
+
+local function finishAggregateIfReady(groundContext)
   if state.failed or state.passed or not allSitesPassed() then return end
+
+  log("PHYSICAL_REARM_PHASE_PASS sites=" .. tostring(#SITE_SPECS))
+  if not runRestoreSettlementAcceptance(groundContext) then return end
+
   state.passed = true
-  log("PASS FIXED_FIRE_SUPPORT_REARM_CONFIRMED=true sites=" .. tostring(#SITE_SPECS))
+  log("PASS FIXED_FIRE_SUPPORT_REARM_CONFIRMED=true sites=" .. tostring(#SITE_SPECS) .. " restoreSettlement=true")
 end
 
 local function finishSitePass(siteState, context, groundContext)
@@ -174,7 +366,7 @@ local function finishSitePass(siteState, context, groundContext)
     .. " type=" .. tostring(siteState.supportType)
     .. " returnDistanceM=" .. tostring(context.supportReturnDistanceM))
   log("SITE_PASS site=" .. siteState.spec.id)
-  finishAggregateIfReady()
+  finishAggregateIfReady(groundContext)
 end
 
 local function configureSite(spec, groundContext)
@@ -389,6 +581,7 @@ local function startAcceptance()
     fail("AUTHORITATIVE_CAMPAIGN_CONTEXT_UNAVAILABLE")
     return
   end
+  state.groundContext = groundContext
 
   for _, spec in ipairs(SITE_SPECS) do configureSite(spec, groundContext) end
   if state.failed then return end
