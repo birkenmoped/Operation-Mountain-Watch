@@ -5,7 +5,6 @@ $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 
 $repoRoot = Split-Path -Parent $PSScriptRoot
-$roadSpawnFile = Join-Path $repoRoot 'scripts\ground\OMW_GroundRoadSpawnAdapter.lua'
 $materializerFile = Join-Path $repoRoot 'scripts\ground\OMW_GroundSupportMaterializer.lua'
 $fixedSupportFile = Join-Path $repoRoot 'scripts\ground\OMW_FixedFireSupportAmmoSupport.lua'
 $rearmAdapterFile = Join-Path $repoRoot 'scripts\ground\OMW_GroundAmmoRearmAdapter.lua'
@@ -14,13 +13,12 @@ $harnessFile = Join-Path $repoRoot 'mission\tests\ground-ammo-rearm-integration\
 $distDir = Join-Path $repoRoot 'mission\tests\ground-ammo-rearm-integration\dist'
 $outputFile = Join-Path $distDir 'OMW_Ground_Fire_Support_Acceptance_2.lua'
 
-$builderVersion = 'GROUND-FIRE-SUPPORT-ACCEPTANCE-2-1'
+$builderVersion = 'GROUND-FIRE-SUPPORT-ACCEPTANCE-2-2'
 $testId = 'GROUND-FIRE-SUPPORT-ACCEPTANCE-2'
 $mooseCommit = '73d3ed119cd9e7e3f2cfcabbaa34513d30529b54'
 $mooseSha256 = 'e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915'
 
 $files = @(
-  $roadSpawnFile,
   $materializerFile,
   $fixedSupportFile,
   $rearmAdapterFile,
@@ -33,13 +31,12 @@ foreach ($file in $files) {
   }
 }
 
-$roadSpawn = Get-Content -LiteralPath $roadSpawnFile -Raw -Encoding UTF8
 $materializer = Get-Content -LiteralPath $materializerFile -Raw -Encoding UTF8
 $fixedSupport = Get-Content -LiteralPath $fixedSupportFile -Raw -Encoding UTF8
 $rearmAdapter = Get-Content -LiteralPath $rearmAdapterFile -Raw -Encoding UTF8
 $fixedRearm = Get-Content -LiteralPath $fixedRearmFile -Raw -Encoding UTF8
 $harness = Get-Content -LiteralPath $harnessFile -Raw -Encoding UTF8
-$combined = $roadSpawn + $materializer + $fixedSupport + $rearmAdapter + $fixedRearm + $harness
+$combined = $materializer + $fixedSupport + $rearmAdapter + $fixedRearm + $harness
 
 $requiredMarkers = @(
   'GROUND-FIRE-SUPPORT-ACCEPTANCE-2',
@@ -47,10 +44,10 @@ $requiredMarkers = @(
   'WH_BLUE_GND_WRIGHT',
   'WH_BLUE_GND_FORTRESS',
   'WH_BLUE_GND_HONAKER',
-  'ZON_BLUE_GND_BOSTICK_ACCESS',
-  'ZON_BLUE_GND_WRIGHT_ACCESS',
-  'ZON_BLUE_GND_FORTRESS_ACCESS',
-  'ZON_BLUE_GND_HONAKER_ACCESS',
+  'ZON_BLUE_GND_BOSTICK_AMMO_SUPPORT_SPAWN',
+  'ZON_BLUE_GND_WRIGHT_AMMO_SUPPORT_SPAWN',
+  'ZON_BLUE_GND_FORTRESS_AMMO_SUPPORT_SPAWN',
+  'ZON_BLUE_GND_HONAKER_AMMO_SUPPORT_SPAWN',
   'ZON_BLUE_GND_BOSTICK_ARTY_ACCEPTANCE_TARGET',
   'ZON_BLUE_GND_WRIGHT_ARTY_ACCEPTANCE_TARGET',
   'ZON_BLUE_GND_FORTRESS_ARTY_ACCEPTANCE_TARGET',
@@ -69,14 +66,21 @@ $requiredMarkers = @(
   'AssignTargetCoord(',
   'GetAmmo(',
   'SetRearmingGroup',
+  'SetSpawnZone(',
+  'SetValidateAndRepositionGroundUnits',
+  'ReturnToStock',
+  'AddAsset(',
   'OnAfterCeaseFire',
   'OnAfterRearmed',
   'startArty = false',
+  'onRoad = false',
   'WAREHOUSE.Descriptor.GROUPNAME',
   'PLATOON:New(',
   'BRIGADE:New(',
   'OMW_GROUND_READY',
   'OMW.Ground.Base.GetContext()',
+  'SITE_REARMED site=',
+  'SITE_SUPPORT_RETURNED site=',
   'SITE_PASS site=',
   'FIXED_FIRE_SUPPORT_REARM_CONFIRMED=true'
 )
@@ -98,7 +102,9 @@ $forbiddenPatterns = @(
   ':Teleport\s*\(',
   'LoadBackAssetInPosition',
   'SpawnFromCoordinate',
-  'AMMOTRUCK:'
+  'AMMOTRUCK:',
+  '_DATABASE:Spawn\s*\(',
+  '_SpawnAssetGroundNaval'
 )
 foreach ($pattern in $forbiddenPatterns) {
   if ($combined -match $pattern) {
@@ -106,19 +112,26 @@ foreach ($pattern in $forbiddenPatterns) {
   }
 }
 
-$privateSpawnMatches = [regex]::Matches($combined, '_DATABASE:Spawn\(template\)')
-if ($privateSpawnMatches.Count -ne 1) {
-  throw "Ground fire-support acceptance must contain exactly one approved RoadSpawnAdapter private database spawn call; found: $($privateSpawnMatches.Count)"
+if ($fixedSupport -notmatch 'brigade:SetSpawnZone\(spawnZone, spawnZoneMaxDistanceM\)') {
+  throw 'Fixed fire-support support module must use public WAREHOUSE SetSpawnZone.'
 }
-
-if ($roadSpawn -notmatch 'brigade\._SpawnAssetGroundNaval\s*=\s*function') {
-  throw 'Ground RoadSpawnAdapter approved Warehouse spawn override was not found.'
+if ($fixedSupport -notmatch 'brigade:SetValidateAndRepositionGroundUnits\(true\)') {
+  throw 'Fixed fire-support support module must enable public MOOSE ground reposition validation.'
+}
+if ($materializer -notmatch 'self\.brigade:AddAsset\(target\)') {
+  throw 'Ground support materializer must return the known group through WAREHOUSE AddAsset.'
 }
 if ($rearmAdapter -notmatch 'if startArty then\s+arty:Start\(\)') {
   throw 'Ground ammo rearm adapter is missing the guarded ARTY Start path.'
 }
+if ($fixedRearm -notmatch 'SCHEDULER:New') {
+  throw 'Fixed fire-support rearm service must use the MOOSE SCHEDULER return watcher.'
+}
 if ($harness -notmatch 'startArty\s*=\s*false') {
   throw 'Combined acceptance harness must preserve prestarted ARTY full-ammo baselines.'
+}
+if ($harness -notmatch 'onRoad\s*=\s*false') {
+  throw 'Combined acceptance harness must keep local support movement independent of roads.'
 }
 if ($harness -notmatch 'for _, spec in ipairs\(SITE_SPECS\) do\s+startSite') {
   throw 'Combined acceptance harness must launch all configured site legs in the same run.'
@@ -142,11 +155,12 @@ $header = @"
 -- GitCommit: $commit
 -- GeneratedUtc: $generatedUtc
 -- Gate/Test-ID: $testId
--- Scope: concurrent Bostick/Wright/Fortress L118 plus Honaker 2B11 firing -> local M1083 Warehouse self-request materialization -> local CampaignState GROUND_AMMO_PACKAGE consumption -> MOOSE ARTY RearmingGroup rearm -> per-site and aggregate confirmation.
+-- Scope: concurrent Bostick/Wright/Fortress L118 plus Honaker 2B11 firing -> local M1083 Warehouse self-request materialization in dedicated clear-ground spawn zones -> local CampaignState GROUND_AMMO_PACKAGE consumption -> MOOSE ARTY RearmingGroup rearm -> MOOSE ARTY physical support return -> WAREHOUSE AddAsset return-to-stock -> per-site and aggregate confirmation.
 -- Bostick role: regression of the already accepted fixed-battery path after source hardening/generalization.
 -- Strategic authority: existing OMW.Ground.Base authoritative CampaignState store only.
--- Approved private exception: existing OMW_GroundRoadSpawnAdapter Warehouse per-unit road geometry injection only.
--- MIZ mutation: false. Safe target geometry must be supplied by the four named Mission Editor target zones.
+-- Ground spawn: public MOOSE WAREHOUSE SetSpawnZone plus SetValidateAndRepositionGroundUnits; no private road-spawn override in this bundle.
+-- Support cleanup: public MOOSE ARTY return movement plus WAREHOUSE AddAsset after physical return confirmation.
+-- MIZ mutation: false. Safe target geometry and local support spawn geometry must be supplied by the named Mission Editor zones.
 -- MOOSE-Commit: $mooseCommit
 -- Moose.lua-SHA256: $mooseSha256
 
@@ -157,7 +171,6 @@ function Embed-Module([string]$Name, [string]$Source) {
 }
 
 $bundle = $header
-$bundle += Embed-Module 'GroundRoadSpawnAdapter' $roadSpawn
 $bundle += Embed-Module 'GroundSupportMaterializer' $materializer
 $bundle += Embed-Module 'FixedFireSupportAmmoSupport' $fixedSupport
 $bundle += Embed-Module 'GroundAmmoRearmAdapter' $rearmAdapter
@@ -182,7 +195,10 @@ Write-Host "StrategicQuantityPerSite: 1"
 Write-Host "FireShellsPerSite: 4"
 Write-Host "ConcurrentSiteLegs: true"
 Write-Host "PrestartedARTYPreserved: true"
-Write-Host "ApprovedRoadSpawnException: true"
+Write-Host "LocalWarehouseSpawnZones: true"
+Write-Host "ValidateAndRepositionGroundUnits: true"
+Write-Host "ApprovedRoadSpawnException: false"
+Write-Host "SupportReturnToStock: true"
 Write-Host "MizMutation: false"
 Write-Host "MOOSECommit: $mooseCommit"
 Write-Host "MooseLuaSHA256: $mooseSha256"
