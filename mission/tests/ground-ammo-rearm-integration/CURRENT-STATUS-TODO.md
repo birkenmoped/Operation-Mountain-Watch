@@ -1,3 +1,20 @@
+---
+document_id: OMW-GROUND-AMMO-REARM-CURRENT-STATUS
+status: DRAFT
+document_class: WORKING_STATUS
+owning_policy: OMW-GOV-001
+authoritative_for:
+  - current branch-local Ground ammo rearm implementation status and remaining work
+  - handoff state for PR 112 before owner-gated Ready or Merge
+scenario_period: 2010-08-01/2011-12-31
+project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
+supersedes:
+superseded_by:
+source_branch: agent/ground-ammo-rearm-integration
+source_commit: PENDING_MERGE
+validated_in_dcs: partial
+---
+
 # Ground Ammo Rearm Integration – aktueller Stand und TODO
 
 Stand: 22.08.2026
