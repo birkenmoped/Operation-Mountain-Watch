@@ -16,7 +16,7 @@ validated_in_dcs: true
 acceptance_branch: agent/ground-ammo-rearm-integration
 acceptance_commit: d52a47a418fe3a1a996a5b68198b8dc033ff86c4
 acceptance_mission: OMW_Template_v16.miz
-acceptance_mission_sha256: PENDING_EXACT_RUNTIME_PATH_HASH
+acceptance_mission_sha256: 388F02C932BE83823543F97887B4EDBB9E6764D4CEBE543BD8423D43A6ED8620
 dcs_version: 2.9.28.26385 MT
 moose_commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
 moose_lua_sha256: E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915
@@ -47,6 +47,12 @@ Acceptance source/build commit: d52a47a418fe3a1a996a5b68198b8dc033ff86c4
 BuilderVersion: GROUND-FIRE-SUPPORT-ACCEPTANCE-2-11
 Acceptance bundle SHA-256: CBA3ACF5D835E6EF6AD11C3FDD295E178B2B8E6B9330749C15419A1638CF379B
 
+Executed mission path:
+C:\Users\Sven\Saved Games\DCS.openbeta\Missions\OMW_Template_v16.miz
+
+Executed mission SHA-256:
+388F02C932BE83823543F97887B4EDBB9E6764D4CEBE543BD8423D43A6ED8620
+
 dcs(20260822-141914).log
 SHA-256: B65B3010612F9FEDCB90210C0799DE889F64A7D643818CD8326730716662D128
 
@@ -54,16 +60,9 @@ debrief(20260822-141915).log
 SHA-256: ED298DC7A21F153021C50726A7B9D245BD9BAF098163D6D59B9D4CB593E40C39
 ```
 
-Der Debrief nennt als ausgeführte Mission:
+Der vom Debrief genannte lokale Runtime-Pfad wurde anschließend vom Projektinhaber real mit `Get-FileHash -Algorithm SHA256` gehasht. Das Ergebnis stimmt exakt mit dem zuvor read-only geprüften hochgeladenen Artefakt `OMW_Template_v16(2).miz` überein:
 
 ```text
-C:\Users\Sven\Saved Games\DCS.openbeta\Missions\OMW_Template_v16.miz
-```
-
-Zusätzlich wurde das zum Lauf hochgeladene MIZ-Artefakt read-only geprüft:
-
-```text
-Uploaded artifact: OMW_Template_v16(2).miz
 MIZ SHA-256: 388F02C932BE83823543F97887B4EDBB9E6764D4CEBE543BD8423D43A6ED8620
 internal mission SHA-256: 180D07D7001FA6EFBDD92D4867F8EDAEFFEFA72470FEE2AEC6A3616B5E919481
 
@@ -80,7 +79,7 @@ embedded OMW_Ground_Fire_Support_Acceptance_2.lua:
 CBA3ACF5D835E6EF6AD11C3FDD295E178B2B8E6B9330749C15419A1638CF379B
 ```
 
-Wichtige Provenienzgrenze: Der Debrief referenziert `OMW_Template_v16.miz`, während das hochgeladene Artefakt als `OMW_Template_v16(2).miz` vorliegt. Die Runtime-Marker entsprechen exakt Revision 2-11 und das hochgeladene Artefakt enthält die erwarteten Bundle-Bytes. Der SHA-256 des exakt ausgeführten lokalen Pfads wurde aber noch nicht separat aus der realen Konsole zurückgemeldet und wird deshalb nicht erfunden.
+Damit ist die bytegenaue Mission-Provenienz geschlossen: ausgeführter lokaler Pfad und hochgeladenes Prüfartefakt besitzen denselben SHA-256.
 
 ## Phase A – physische Rearms
 
@@ -177,5 +176,6 @@ Revision 2-11 functional DCS acceptance: PASS
 Fixed-fire-support physical rearm contract: PASS for exact documented scope
 Option-B ExportSnapshot -> Restore -> ReconcileRestore settlement contract: PASS in DCS runtime
 External process/server persistence: OUT OF SCOPE / NOT PRESENT / NOT CLAIMED
-Exact executed-MIZ SHA-256: PENDING REAL HASH OF DEBRIEF PATH
+Exact executed-MIZ SHA-256: 388F02C932BE83823543F97887B4EDBB9E6764D4CEBE543BD8423D43A6ED8620
+Mission provenance: CLOSED
 ```
