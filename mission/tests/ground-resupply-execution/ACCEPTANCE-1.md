@@ -205,26 +205,50 @@ Ergebnis:
 mission/tests/ground-resupply-execution/results/2026-08-22-ground-ammo-resupply-acceptance-1-fail-2.md
 ```
 
-## 8. Nächster Build
+## 8. Acceptance Build 1-4 – reale lokale Provenienz
 
-Die Acceptance-Quelle ist jetzt auf folgende Änderungen umgestellt:
-
-```text
-physical template: TPL_BLUE_CONVOY_LIGHT_06
-carrier entity: GROUND-RESUPPLY-JOYCE-HONAKER-CONVOY-LIGHT-001
-outbound timeout: 1800 s
-return timeout: 1800 s after accepted RTZ
-final verification: 12 s after Returned
-```
-
-Builder:
+Owner-seitiger PowerShell-Build:
 
 ```text
-tools/build-ground-ammo-resupply-acceptance-1.ps1
+Build Git HEAD: 0c082407c6d35f094037ecdf118f84c29bacf2bc
 BuilderVersion: GROUND-AMMO-RESUPPLY-ACCEPTANCE-1-4
+GeneratedUtc: 2026-08-22T17:45:47Z
+TestId: GROUND-AMMO-RESUPPLY-ACCEPTANCE-1
+MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+Moose.lua SHA-256: E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915
+PhysicalTemplate: TPL_BLUE_CONVOY_LIGHT_06
+TransferQuantity: 20
+PackagePerTruckCapacityDefined: false
+OutboundTimeoutSec: 1800
+ReturnTimeoutSec: 1800
+ReturnSettlementDelaySec: 12
 ```
 
-Der neue Bundle-Hash ist erst nach owner-seitigem lokalen PowerShell-Build bekannt und darf nicht vorweggenommen werden.
+Erzeugtes Bundle:
+
+```text
+mission/tests/ground-resupply-execution/dist/OMW_Ground_Ammo_Resupply_Acceptance_1.lua
+Bundle SHA-256: 3B42E2D3B302B489BBB567B2DC4AD6DEA393C0867ECE73C8107F856A1E016854
+Independent bundle SHA-256: 3B42E2D3B302B489BBB567B2DC4AD6DEA393C0867ECE73C8107F856A1E016854
+```
+
+Weitere reale Hashes:
+
+```text
+Builder SHA-256: 4922E8167C74B649C40369BFD73D811F8011FB7DCC8B203DE02BF8C6A609F045
+Acceptance source SHA-256: 21A5CFEBB5ED6747A5E71A78D977C71CE4B4D9E0B8139A510276F7F5EE800DD2
+MissionDemand source SHA-256: E348E75B87135B99D780E07CA6B6FB7C3C530E048E9C6DE790328D147DE32848
+ResourceDemandPolicy source SHA-256: BDC20ACEDAB60F662093077B8320220EBB71C6C641CC604C4356231B8405913C
+GroundRoadSpawnAdapter source SHA-256: 1A81FB2E5270C493373CF5BF6EC01F5AFED47004BF25C4225524121155D983E8
+```
+
+Build classification:
+
+```text
+PASS
+```
+
+Die strategische Menge 20 bleibt weiterhin unabhängig von der physischen Zahl der Transportfahrzeuge. Eine automatische LIGHT_06/STANDARD_07-Auswahl ist noch nicht definiert.
 
 ## 9. Erwartete Runtime-Pflichtmarker des nächsten Laufs
 
@@ -270,10 +294,10 @@ DCS run 1: FAIL / stale Ground bundle
 DCS run 2: FAIL / DELIVERY PATH CONFIRMED / RETURN CUT BY GLOBAL TIMEOUT
 physical template decision: TPL_BLUE_CONVOY_LIGHT_06
 acceptance source: UPDATED
-builder: UPDATED TO -4
-new local build: NOT RUN
-new bundle hash: UNKNOWN UNTIL REAL BUILD
-next MIZ: NOT YET CREATED
+builder: PASS / GROUND-AMMO-RESUPPLY-ACCEPTANCE-1-4
+local build Git HEAD: 0c082407c6d35f094037ecdf118f84c29bacf2bc
+new bundle SHA-256: 3B42E2D3B302B489BBB567B2DC4AD6DEA393C0867ECE73C8107F856A1E016854
+next MIZ: OWNER MISSION-EDITOR EMBEDDING REQUIRED
 next DCS runtime: NOT RUN
 Acceptance classification: NOT YET PASS
 ```
