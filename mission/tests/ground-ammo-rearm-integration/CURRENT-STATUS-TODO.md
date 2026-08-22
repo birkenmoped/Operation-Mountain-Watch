@@ -138,13 +138,6 @@ FORTRESS  150 -> 146 -> 151 / M1083 / COMPLETED / support returned / SITE_PASS
 HONAKER    40 ->   0 ->  40 / M1083 / COMPLETED / support returned / SITE_PASS
 ```
 
-Honaker-Marker:
-
-```text
-HONAKER_AMMO_DEPLETED
-HONAKER_REARM_REQUEST_AFTER_EMPTY
-```
-
 Restore-Settlement innerhalb derselben DCS-Laufzeit:
 
 ```text
@@ -163,12 +156,6 @@ Gesamtmarker:
 PASS FIXED_FIRE_SUPPORT_REARM_CONFIRMED=true sites=4 restoreSettlement=true
 ```
 
-Ausführliche Runtime-Evidenz:
-
-```text
-mission/tests/ground-ammo-rearm-integration/results/2026-08-22-acceptance-2-11-runtime.md
-```
-
 ## Persistenzgrenze
 
 ```text
@@ -177,18 +164,24 @@ externer Dateisystem-/Server-Persistence-Host: NICHT VORHANDEN
 realer DCS-Prozessrestart mit Snapshot-Datei: NICHT GETESTET / NICHT BEHAUPTET
 ```
 
-Revision 2-11 führt keine `io`-/`lfs`-Persistenz, keine `MissionScripting.lua`-Änderung und keinen zweiten Persistenzpfad ein.
-
-## Dokumentationsstatus
-
-Der letzte geprüfte Workflow `Documentation validation` meldete:
+## Governance-/Registerabgleich
 
 ```text
-18 errors
-0 warnings
+AGENTS.md: geprüft
+OMW-GOV-001: geprüft
+OMW-GOV-MOOSE-FIRST: geprüft
+SUBPROJECT-REGISTRY: PR #112 nachgetragen
+PROJECT-CLASS-INDEX: branch-diff enthält ARTY/AMMOTRUCK Ground-Rearm-Einträge
+VERIFIED-METHODS: branch-diff enthält ARTY/USERFLAG Ground-Rearm-Evidenz
+FIXED-FIRE-SUPPORT-REARM: auf Acceptance 2-11 PASS reconciliert
+Acceptance 2-11 runtime result: ACCEPTED_TECHNICAL_BASELINE
 ```
 
-Alle 18 Fehler lagen in geerbten `docs/ground/`- bzw. `mission/tests/army-ground-foundation/`-Dokumenten; keiner in den geänderten Ground-Rearm-Dokumenten.
+Die method-level Registereinträge bleiben bewusst auf ihre jeweils explizit dokumentierte Provenienz begrenzt; der neue Vier-Consumer-PASS wird im Acceptance-Ergebnis und der thematischen MOOSE-Dokumentation geführt.
+
+## Dokumentations-/CI-Status
+
+Der zuletzt vollständig ausgewertete Workflow meldete 18 geerbte Fehler und 0 Warnungen außerhalb der Ground-Rearm-Dokumente. Nach den finalen Provenienz-/Registerupdates läuft der aktuelle Dokumentationsworkflow erneut; sein endgültiges Ergebnis ist vor einer Ready/Merge-Entscheidung zu prüfen.
 
 ## TODO
 
@@ -218,8 +211,10 @@ Alle 18 Fehler lagen in geerbten `docs/ground/`- bzw. `mission/tests/army-ground
 [x] Runtime-Logs ausgewertet und Ergebnis dokumentiert
 [x] exakten SHA-256 des im Debrief genannten Runtime-MIZ-Pfads real bestätigt
 [x] Mission-Provenienz bytegenau geschlossen
+[x] Governance- und Registerabgleich durchgeführt
+[x] finalen PR-Diff gegen main strukturell geprüft
 
-[ ] finalen PR-#112-Diff / Registry / CI-Stand gegen Governance prüfen
+[ ] aktuellen Documentation-validation-Lauf nach finalen Dokuupdates auswerten
 [ ] Owner-Entscheidung PR #112 Ready / Merge
 ```
 
@@ -234,6 +229,7 @@ Ground Ammo Rearm / Fixed Fire Support
         +-- bundled DCS runtime              PASS
         +-- Option-B restore settlement      PASS within DCS runtime
         +-- exact runtime MIZ provenance     CLOSED
-        +-- final PR review                  PENDING
+        +-- governance/register review       COMPLETE
+        +-- documentation workflow           PENDING FINAL RESULT
         `-- Owner-Entscheidung PR #112 Ready / Merge
 ```
