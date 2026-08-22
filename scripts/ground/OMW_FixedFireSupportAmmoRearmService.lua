@@ -154,11 +154,20 @@ function Service:_OnSupportMaterialized(group)
 end
 
 function Service:_FinishSupportReturn(context)
-  self.support:ReturnToStock(context.supportGroup)
+  local ok, resultOrError = pcall(function()
+    return self.support:ReturnToStock(context.supportGroup)
+  end)
+  if not ok or resultOrError == false then
+    local reason = ok and "Warehouse ReturnToStock rejected" or tostring(resultOrError)
+    self:_FailSupportReturn(context, reason)
+    return false
+  end
+
   context.status = "RETURNED_TO_STOCK"
   context.supportReturned = true
   self.log("INFO", TAG .. " support returned to Warehouse stock transactionId=" .. context.transactionId)
   self.onSupportReturned(context)
+  return true
 end
 
 function Service:_FailSupportReturn(context, reason)
