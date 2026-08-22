@@ -27,13 +27,13 @@ validated_in_dcs: false
 PHASE 0  Governance / Reconciliation / Contracts          PASS, MAIN RECONCILIATION APPLIED
 PHASE 1  Domain Data Model                               PASS, MAIN RECONCILIATION APPLIED
 PHASE 2  MOOSE-First Capability Verification            PASS
-PHASE 3  First Vertical Integration – AAR                BUILD PASS / DCS RETEST REQUIRED
+PHASE 3  First Vertical Integration – AAR                BUILD PASS / PRIOR DCS EVIDENCE RETAINED
 PHASE 4  Player-Facing Mission Products                  NOT STARTED
 PHASE 5  Ground Alert / CAS Request Lifecycle            NOT STARTED
 PHASE 6  Dynamic Planning / Retasking / Persistence      NOT STARTED
 ```
 
-`AIR-TASKING-AAR-VERTICAL-2` bleibt eine reale technische Acceptance fuer seinen exakt dokumentierten Stand. Der aktuelle Branch-Head wurde danach mit dem inzwischen auf `main` integrierten MissionDemand-Vertrag reconciliert und benoetigt deshalb einen neuen Gate-3-Retest.
+`AIR-TASKING-AAR-VERTICAL-2` bleibt eine reale technische Acceptance fuer seinen exakt dokumentierten Stand. Der aktuelle Branch-Head wurde danach mit dem inzwischen auf `main` integrierten MissionDemand-Vertrag reconciliert. Der Projektinhaber hat am 22.08.2026 entschieden, den LISA-spezifischen DCS-Retest nicht erneut durchzufuehren. Der neue Source-Head wird deshalb ausdruecklich nicht als erneut in DCS validiert bezeichnet.
 
 ## 2. Current-main reconciliation
 
@@ -120,7 +120,7 @@ Controller.GetStation(...)
 
 ## 5. Vorherige Gate-3-Acceptance
 
-Der erfolgreiche `AIR-TASKING-AAR-VERTICAL-2`-Lauf bleibt dokumentierte historische technische Evidenz:
+Der erfolgreiche `AIR-TASKING-AAR-VERTICAL-2`-Lauf bleibt dokumentierte technische Evidenz fuer den damaligen exakten Stand:
 
 ```text
 acceptance branch: agent/air-tasking-plan-foundation
@@ -134,9 +134,9 @@ Moose.lua SHA-256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a
 result: PASS
 ```
 
-Dieser PASS wird gemaess Governance nicht auf den geaenderten aktuellen Source-Head uebertragen.
+Dieser PASS wird gemaess Governance nicht auf den geaenderten aktuellen Source-Head uebertragen. Er bleibt jedoch gueltige Teil-Evidenz fuer den unveraendert gebliebenen physischen AAR-/LISA-/Handoff-/Settlement-Pfad.
 
-## 6. Aktueller Retest-Stand
+## 6. Aktueller Reconciliation-Stand
 
 Realer lokaler Build durch den Projektinhaber am 22.08.2026 auf:
 
@@ -177,25 +177,26 @@ Damit gilt fuer den aktuellen Reconciliation-Stand:
 BUILD: PASS
 BUNDLE HASH CROSS-CHECK: PASS
 LOCAL LUA CONTRACT TEST: NOT RUN - no local Lua interpreter available
-DCS RETEST: NOT RUN
+CURRENT SOURCE HEAD DCS VALIDATION: NOT RUN BY OWNER DECISION
 ```
 
-Der naechste Gate-Schritt ist die manuelle Mission-Editor-Einbindung dieses neuen Bundles durch den Projektinhaber und danach ein neuer DCS-Retest. Ein fehlender lokaler Lua-Interpreter wird nicht durch erfundene Testevidenz ersetzt.
+Der LISA-spezifische Acceptance-Harness wurde vom Projektinhaber bereits aus der Arbeitsmission entfernt. Dies ist keine Ruecknahme der historischen `VERTICAL-2`-Acceptance; es bedeutet nur, dass der reconciliierte Source-Head nicht erneut mit diesem Harness in DCS getestet wird.
 
 ## 7. Gate 3
 
 ```text
-GATE 3 CURRENT HEAD: BUILD PASS / DCS RETEST REQUIRED
+GATE 3 HISTORICAL VERTICAL-2: PASS FOR EXACT DOCUMENTED PROVENANCE
+GATE 3 CURRENT RECONCILED HEAD: BUILD PASS / NOT REVALIDATED IN DCS
 validated_in_dcs: false
 ```
 
-Der vorherige PASS bleibt fuer den alten exakten Acceptance-Stand gueltig; der aktuelle Reconciliation-Stand ist noch nicht DCS-validiert.
+Damit ist Phase 3 fuer die weitere Branch-Reconciliation nicht mehr durch einen geplanten LISA-Retest blockiert. Eine Aussage `VALIDATED IN DCS` fuer den aktuellen Reconciliation-Stand bleibt unzulaessig.
 
 ## 8. ATO-Grenze
 
 Der bisherige Test ist weiterhin kein vollstaendiger ATO-Test.
 
-Getestet beziehungsweise im Retest erneut zu pruefen ist die vertikale Kette:
+Nachgewiesen beziehungsweise reconciliert ist die vertikale Kette:
 
 ```text
 MissionDemand
@@ -216,11 +217,12 @@ MERGE TO MAIN NOW: NOT YET RECOMMENDED
 Vor Integration noch erforderlich:
 
 ```text
-Gate-3 DCS retest for AIR-TASKING-AAR-VERTICAL-3
 full branch diff review against current main
 document metadata / registry / provenance review
 documentation validator
 owner merge decision
 ```
+
+Ein erneuter LISA-DCS-Retest ist nach der ausdruecklichen Projektinhaberentscheidung vom 22.08.2026 kein Merge-Gate mehr. Der aktuelle Source-Head bleibt dennoch `validated_in_dcs: false`.
 
 `source_commit: PENDING_MERGE` ist auf diesem ungemergten Branch zulaessig, darf aber nicht unveraendert auf `main` verbleiben.
