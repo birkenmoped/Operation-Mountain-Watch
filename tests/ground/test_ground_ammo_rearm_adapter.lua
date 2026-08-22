@@ -11,6 +11,12 @@ local function expectEqual(actual, expected, label)
   end
 end
 
+local function expectTrue(value, label)
+  if value ~= true then
+    fail(label .. " expected=true actual=" .. tostring(value))
+  end
+end
+
 local function newStore(quantity)
   return CampaignState.New({
     schemaVersion = "GROUND-AMMO-REARM-TEST-1",
@@ -64,7 +70,7 @@ do
     end,
     onRearmed = function(context)
       rearmedCount = rearmedCount + 1
-      expectEqual(context.status, "REARMED", "CALLBACK_STATUS")
+      expectEqual(context.status, "COMPLETED", "CALLBACK_STATUS")
     end,
   })
 
@@ -91,8 +97,16 @@ do
   expectEqual(store:GetTransaction("GROUND-REARM-BOSTICK-001").status, CampaignState.TransactionStatus.CONSUMED, "TX_CONSUMED")
 
   fakeArty:CompleteRearm()
-  expectEqual(context.status, "REARMED", "STATUS_AFTER_COMPLETE")
+  expectEqual(context.status, "COMPLETED", "STATUS_AFTER_COMPLETE")
   expectEqual(rearmedCount, 1, "REARMED_CALLBACK_COUNT")
+  expectEqual(store:GetTransaction("GROUND-REARM-BOSTICK-001").status, CampaignState.TransactionStatus.COMPLETED, "TX_COMPLETED")
+  expectEqual(store:GetResource("GROUND_NODE_BOSTICK", "GROUND_AMMO_PACKAGE").available, 2, "AMMO_REMAINS_CONSUMED_AFTER_COMPLETE")
+
+  local restored = CampaignState.Restore(store:ExportSnapshot())
+  local result = RearmAdapter.ReconcileRestore(restored, CampaignState)
+  expectEqual(result.completed, 1, "RESTORE_COMPLETED_PRESERVED")
+  expectEqual(result.compensated, 0, "RESTORE_COMPLETED_NOT_COMPENSATED")
+  expectEqual(restored:GetResource("GROUND_NODE_BOSTICK", "GROUND_AMMO_PACKAGE").available, 2, "RESTORE_COMPLETED_AMMO")
 end
 
 do
@@ -138,4 +152,51 @@ do
   expectEqual(store:GetResource("GROUND_NODE_BOSTICK", "GROUND_AMMO_PACKAGE").available, 2, "IDEMPOTENT_AMMO")
 end
 
-print("PASS Ground CampaignState consumption to ARTY rearm adapter contract")
+do
+  local store = newStore(3)
+  local fakeArty = newFakeArty()
+  local service = RearmAdapter.New({ store = store, campaignState = CampaignState, artyFactory = function() return fakeArty end })
+  service:Request({
+    transactionId = "GROUND-REARM-BOSTICK-INTERRUPTED",
+    nodeId = "GROUND_NODE_BOSTICK",
+    artilleryGroup = artilleryGroup,
+    rearmingGroup = rearmingGroup,
+    carrierEntityId = "BOSTICK-AMMO-SUPPORT-M1083",
+  })
+  expectEqual(store:GetTransaction("GROUND-REARM-BOSTICK-INTERRUPTED").status, CampaignState.TransactionStatus.CONSUMED, "INTERRUPTED_CONSUMED")
+  expectEqual(store:GetResource("GROUND_NODE_BOSTICK", "GROUND_AMMO_PACKAGE").available, 2, "INTERRUPTED_DEBIT")
+
+  local restored = CampaignState.Restore(store:ExportSnapshot())
+  local first = RearmAdapter.ReconcileRestore(restored, CampaignState)
+  expectEqual(first.compensated, 1, "INTERRUPTED_COMPENSATED")
+  expectEqual(restored:GetTransaction("GROUND-REARM-BOSTICK-INTERRUPTED").status, CampaignState.TransactionStatus.COMPENSATED, "INTERRUPTED_TX_CLOSED")
+  expectEqual(restored:GetResource("GROUND_NODE_BOSTICK", "GROUND_AMMO_PACKAGE").available, 3, "INTERRUPTED_AMMO_RESTORED")
+  expectTrue(restored:GetResourceCredit("GROUND-LOCAL-REARM-RESTART:GROUND-REARM-BOSTICK-INTERRUPTED") ~= nil, "INTERRUPTED_RESTART_CREDIT")
+
+  local second = RearmAdapter.ReconcileRestore(restored, CampaignState)
+  expectEqual(second.compensated, 0, "INTERRUPTED_SECOND_PASS_NO_COMPENSATION")
+  expectEqual(second.alreadyCompensated, 1, "INTERRUPTED_SECOND_PASS_ALREADY_COMPENSATED")
+  expectEqual(restored:GetResource("GROUND_NODE_BOSTICK", "GROUND_AMMO_PACKAGE").available, 3, "INTERRUPTED_SECOND_PASS_AMMO")
+end
+
+do
+  local store = newStore(3)
+  local transactionId = "GROUND-REARM-BOSTICK-PRECOMMIT"
+  store:ReserveResource({
+    transactionId = transactionId,
+    reservationId = "GROUND-LOCAL-REARM:" .. transactionId,
+    kind = CampaignState.TransactionKind.CONSUMPTION,
+    resourceId = "GROUND_AMMO_PACKAGE",
+    quantity = 1,
+    canonicalUnit = "count",
+    originNodeId = "GROUND_NODE_BOSTICK",
+  })
+  expectEqual(store:GetResource("GROUND_NODE_BOSTICK", "GROUND_AMMO_PACKAGE").available, 2, "PRECOMMIT_RESERVED")
+  local restored = CampaignState.Restore(store:ExportSnapshot())
+  local result = RearmAdapter.ReconcileRestore(restored, CampaignState)
+  expectEqual(result.cancelledBeforeCommit, 1, "PRECOMMIT_CANCELLED_ON_RESTORE")
+  expectEqual(restored:GetTransaction(transactionId).status, CampaignState.TransactionStatus.CANCELLED, "PRECOMMIT_TX_CANCELLED")
+  expectEqual(restored:GetResource("GROUND_NODE_BOSTICK", "GROUND_AMMO_PACKAGE").available, 3, "PRECOMMIT_RESERVATION_RELEASED")
+end
+
+print("PASS Ground CampaignState consumption completion and local rearm restart compensation contract")
