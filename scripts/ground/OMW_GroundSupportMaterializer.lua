@@ -2,8 +2,11 @@
 --
 -- This module uses the public MOOSE BRIGADE/PLATOON/WAREHOUSE self-request
 -- lifecycle to materialize one already-registered Ground support asset and
--- hand the resulting MOOSE GROUP to the caller. It does not own strategic
--- resources, spawn via SPAWN, route the group, or create an operational FSM.
+-- hand the resulting MOOSE GROUP to the caller. A materialized support group
+-- can be returned through public WAREHOUSE:AddAsset(group), which restores the
+-- known asset to stock and lets MOOSE remove the physical representation.
+-- It does not own strategic resources, spawn via SPAWN, route the group, or
+-- create an operational FSM.
 
 local GroundSupportMaterializer = {}
 
@@ -12,7 +15,7 @@ Service.__index = Service
 
 local TAG = "[OMW][Ground.SupportMaterializer]"
 
-GroundSupportMaterializer.SchemaVersion = "OMW-GROUND-SUPPORT-MATERIALIZER-1"
+GroundSupportMaterializer.SchemaVersion = "OMW-GROUND-SUPPORT-MATERIALIZER-2"
 
 local function fail(message)
   error(TAG .. " " .. tostring(message), 2)
@@ -59,8 +62,9 @@ function GroundSupportMaterializer.New(spec)
 
   if type(brigade.AddPlatoon) ~= "function"
       or type(brigade.AddRequest) ~= "function"
-      or type(brigade.GetAssignment) ~= "function" then
-    fail("spec.brigade requires AddPlatoon(), AddRequest(), and GetAssignment()")
+      or type(brigade.GetAssignment) ~= "function"
+      or type(brigade.AddAsset) ~= "function" then
+    fail("spec.brigade requires AddPlatoon(), AddRequest(), GetAssignment(), and AddAsset()")
   end
 
   local descriptorGroupName = spec.descriptorGroupName
@@ -155,6 +159,23 @@ function Service:Request()
 
   self.log("INFO", TAG .. " requested template=" .. self.templateName .. " assignment=" .. self.assignment)
   return nil, true
+end
+
+function Service:ReturnToStock(group)
+  local target = group or self.materializedGroup
+  if type(target) ~= "table" then
+    fail("ReturnToStock requires materialized GROUP")
+  end
+  if self.materializedGroup ~= nil and target ~= self.materializedGroup then
+    fail("ReturnToStock group does not match current materialized GROUP")
+  end
+
+  self.brigade:AddAsset(target)
+  self.materializedGroup = nil
+  self.request = nil
+  self.pending = false
+  self.log("INFO", TAG .. " returned to Warehouse stock template=" .. self.templateName .. " assignment=" .. self.assignment)
+  return true
 end
 
 function Service:GetMaterializedGroup()
