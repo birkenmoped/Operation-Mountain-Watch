@@ -81,7 +81,7 @@ Runtime:
 ```text
 Kandahar Main:     296 / 296 exact matches, 0 failures
 Kandahar Heliport:  80 /  80 exact matches, 0 failures
-Total:             376 / 376 exact matches
+Total:             376 / 376 exact matches, 0 failures
 ```
 
 Für diesen Stand ist damit praktisch belegt:
@@ -533,7 +533,6 @@ Result: PASS / owner visual acceptance
 
 Provenienz und Einschränkungen: [Acceptance 4 runtime evidence](../../mission/tests/army-ground-foundation/results/2026-08-19-acceptance-4-runtime.md). Gültig nur für MOOSE commit 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54, die zitierte Mission und den mobilen Fenty-Scope.
 
-
 ## Addendum 2026-08-20 – ARMY Ground Acceptance 6
 
 Der folgende Runtime-Nachweis ist auf den exakten Ground-Return-Scope beschränkt:
@@ -611,4 +610,64 @@ not validated here:
 - restart/replay settlement
 - general CHAP_M1083 behavior outside this exact battery/MIZ/MOOSE scope
 - other ARTY batteries or MOOSE versions
+```
+
+## Addendum 2026-08-22 – Ground AMMO RESUPPLY Acceptance 1
+
+Der folgende Methodenstatus gilt ausschließlich für die nachgewiesene Stage-1A-Joyce-Honaker-Provenienz:
+
+```text
+Branch: agent/automatic-response-orchestration
+Acceptance source/build commit: 2d72bcdfc113342a2180b6cd9c84486da790052c
+BuilderVersion: GROUND-AMMO-RESUPPLY-ACCEPTANCE-1-5
+Acceptance bundle SHA-256: 752B3E6F0B77D1B62C750421DDE36202C81B98632FEFBF6A273F913202DF8339
+DCS: 2.9.28.26385 MT
+MOOSE release: 2.9.18
+MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+Moose.lua SHA-256: E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915
+Executed MIZ: OMW_Template_v18.miz
+MIZ SHA-256: 2FDF31A2E07409CF392D45BFF5FC69750958C670AE3E12FF28D0B4FD8AECC90D
+internal mission SHA-256: 38B207278365CD977E74FF3C9000C6A7C5B13EEE3E5B1BB154F1775055D02AF6
+Result: PASS
+```
+
+| Methode / Callback | Status | Exakt bestätigter Umfang |
+|---|---|---|
+| `BRIGADE:New(...)` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Dedizierte Joyce-BRIGADE materialisierte und verwaltete genau einen geschützten LIGHT_06-Assetpfad für Stage 1A. |
+| `PLATOON:New(TPL_BLUE_CONVOY_LIGHT_06, 1, ...)` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Sechsfahrzeug-Template wurde als ein operatives PLATOON-Asset geführt. |
+| `COHORT:AddMissionCapability(AUFTRAG.Type.AMMOSUPPLY, 100)` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Der LIGHT_06-Assetpool wurde für die AMMOSUPPLY-Mission ausgewählt. |
+| `AUFTRAG:NewAMMOSUPPLY(destinationZone)` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Der Convoy fuhr Joyce -> Honaker und erreichte die Ziel-ACCESS-Zone; Mission wurde nach OMW-Delivery-Gate erfolgreich beendet. |
+| `AUFTRAG:SetMissionSpeed(27)` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | 27 kt war im dokumentierten Lauf aktiv; Owner bewertete die sichtbare Convoy-Geschwindigkeit als passend. Keine generische Geschwindigkeitsbaseline für andere Convoy-Klassen. |
+| `AUFTRAG:SetFormation(ENUMS.Formation.Vehicle.OnRoad)` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Hinweg und expliziter Return verwendeten OnRoad im dokumentierten LIGHT_06-Scope. |
+| `AUFTRAG:SetReturnToLegion(false)` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Automatische Rückgabe wurde unterdrückt; OMW koordinierte nach MissionDone den expliziten öffentlichen RTZ-Pfad. |
+| `ARMYGROUP:RTZ(originZone, ENUMS.Formation.Vehicle.OnRoad)` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Derselbe physische LIGHT_06-ARMYGROUP fuhr nach 30-s Settlement-Fenster von Honaker zurück in die Joyce-ACCESS-Zone. |
+| `ARMYGROUP:OnAfterRTZ(...)` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | RTZ-Aktivierung und OnRoad-Zielzone wurden im Lauf protokolliert. |
+| `ARMYGROUP:OnAfterReturned(...)` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Genau ein `RETURNED_HANDOFF` wurde nach physischer Rückkehr protokolliert. |
+| `ARMYGROUP:onafterReturned -> LEGION:__AddAsset(10, group, 1)` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Zehn Sekunden nach Returned wurde genau ein Warehouse-`AddAsset` beobachtet. |
+| `WAREHOUSE/LEGION AddAsset` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Operativer Assetbestand wurde wiederhergestellt und die temporäre physische Convoy-Gruppe anschließend entfernt. Keine strategische Ressourcenrückbuchung. |
+| `SCHEDULER:New(...)` one-shot return settlement | `VALIDATED_FOR_DOCUMENTED_SCOPE` | 30-s Post-MissionDone-Delay verhinderte die zuvor reproduzierte AUFTRAG/RTZ-Race-Condition; kein hochfrequentes Polling. |
+
+Zusätzlich bestätigt der Acceptance-Harness die MOOSE-/OMW-Grenze:
+
+```text
+CampaignState MarkDelivered
+= strategische Zielgutschrift
+
+MOOSE Returned / Warehouse AddAsset
+= operative Rückgabe der physischen Carrier-Gruppe
+
+keine doppelte Ressourcenautorität
+```
+
+Nicht aus diesem Methoden-PASS abzuleiten:
+
+```text
+package-per-truck capacity
+TPL_BLUE_CONVOY_STANDARD_07 runtime
+automatic LIGHT/STANDARD selection
+FUELSUPPLY runtime
+generic SUPPLY
+convoy combat/loss paths
+restart persistence
+other MOOSE versions
 ```
