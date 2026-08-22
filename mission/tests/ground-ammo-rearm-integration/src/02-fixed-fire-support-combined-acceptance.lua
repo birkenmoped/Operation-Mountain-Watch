@@ -22,7 +22,7 @@ local SITE_SPECS = {
     id = "BOSTICK",
     warehouse = "WH_BLUE_GND_BOSTICK",
     battery = "TPL_BLUE_GND_BOSTICK_FS_ARTY_L118_2",
-    supportSpawnZone = "ZON_BLUE_GND_BOSTICK_AMMO_SUPPORT_SPAWN",
+    supportSpawnZone = "ZON_BLUE_GND_BOSTICK_RESUPPLY",
     targetZone = "ZON_BLUE_GND_BOSTICK_ARTY_ACCEPTANCE_TARGET",
     nodeId = "GROUND_NODE_BOSTICK",
     brigade = "BDE_BLUE_GND_BOSTICK_FIRE_SUPPORT_ACCEPTANCE",
@@ -35,7 +35,7 @@ local SITE_SPECS = {
     id = "WRIGHT",
     warehouse = "WH_BLUE_GND_WRIGHT",
     battery = "TPL_BLUE_GND_WRIGHT_FS_ARTY_L118_2",
-    supportSpawnZone = "ZON_BLUE_GND_WRIGHT_AMMO_SUPPORT_SPAWN",
+    supportSpawnZone = "ZON_BLUE_GND_WRIGHT_RESUPPLY",
     targetZone = "ZON_BLUE_GND_WRIGHT_ARTY_ACCEPTANCE_TARGET",
     nodeId = "GROUND_NODE_WRIGHT",
     brigade = "BDE_BLUE_GND_WRIGHT_FIRE_SUPPORT_ACCEPTANCE",
@@ -48,7 +48,7 @@ local SITE_SPECS = {
     id = "FORTRESS",
     warehouse = "WH_BLUE_GND_FORTRESS",
     battery = "TPL_BLUE_GND_FORTRESS_FS_ARTY_L118_1",
-    supportSpawnZone = "ZON_BLUE_GND_FORTRESS_AMMO_SUPPORT_SPAWN",
+    supportSpawnZone = "ZON_BLUE_GND_FORTRESS_RESUPPLY",
     targetZone = "ZON_BLUE_GND_FORTRESS_ARTY_ACCEPTANCE_TARGET",
     nodeId = "GROUND_NODE_FORTRESS",
     brigade = "BDE_BLUE_GND_FORTRESS_FIRE_SUPPORT_ACCEPTANCE",
@@ -61,7 +61,7 @@ local SITE_SPECS = {
     id = "HONAKER",
     warehouse = "WH_BLUE_GND_HONAKER",
     battery = "TPL_BLUE_GND_HONAKER_FS_MORTAR_2B11_2",
-    supportSpawnZone = "ZON_BLUE_GND_HONAKER_AMMO_SUPPORT_SPAWN",
+    supportSpawnZone = "ZON_BLUE_GND_HONAKER_RESUPPLY",
     targetZone = "ZON_BLUE_GND_HONAKER_MORTAR_ACCEPTANCE_TARGET",
     nodeId = "GROUND_NODE_HONAKER",
     brigade = "BDE_BLUE_GND_HONAKER_FIRE_SUPPORT_ACCEPTANCE",
@@ -72,20 +72,14 @@ local SITE_SPECS = {
   },
 }
 
-local state = {
-  failed = false,
-  passed = false,
-  sites = {},
-}
+local state = { failed = false, passed = false, sites = {} }
 
 local function log(message)
   env.info(TAG .. " " .. tostring(message))
 end
 
 local function fail(reason)
-  if state.failed or state.passed then
-    return
-  end
+  if state.failed or state.passed then return end
   state.failed = true
   log("FAIL reason=" .. tostring(reason))
 end
@@ -112,25 +106,19 @@ end
 local function allSitesPassed()
   for _, spec in ipairs(SITE_SPECS) do
     local siteState = state.sites[spec.id]
-    if not siteState or not siteState.passed then
-      return false
-    end
+    if not siteState or not siteState.passed then return false end
   end
   return true
 end
 
 local function finishAggregateIfReady()
-  if state.failed or state.passed or not allSitesPassed() then
-    return
-  end
+  if state.failed or state.passed or not allSitesPassed() then return end
   state.passed = true
   log("PASS FIXED_FIRE_SUPPORT_REARM_CONFIRMED=true sites=" .. tostring(#SITE_SPECS))
 end
 
 local function finishSitePass(siteState, context, groundContext)
-  if state.failed or siteState.passed then
-    return
-  end
+  if state.failed or siteState.passed then return end
 
   siteState.finalAmmo = ammoTotal(siteState)
   local resourceAfter = groundContext.store:GetResource(siteState.spec.nodeId, RESOURCE_ID)
@@ -147,13 +135,11 @@ local function finishSitePass(siteState, context, groundContext)
     return
   end
   if context.status ~= "RETURNED_TO_STOCK" then
-    fail("CONTEXT_STATUS site=" .. siteState.spec.id
-      .. " expected=RETURNED_TO_STOCK actual=" .. tostring(context.status))
+    fail("CONTEXT_STATUS site=" .. siteState.spec.id .. " expected=RETURNED_TO_STOCK actual=" .. tostring(context.status))
     return
   end
   if not transaction or transaction.status ~= "CONSUMED" then
-    fail("TRANSACTION_STATUS site=" .. siteState.spec.id
-      .. " expected=CONSUMED actual=" .. tostring(transaction and transaction.status))
+    fail("TRANSACTION_STATUS site=" .. siteState.spec.id .. " expected=CONSUMED actual=" .. tostring(transaction and transaction.status))
     return
   end
   if not resourceAfter or not siteState.resourceBefore then
@@ -161,22 +147,15 @@ local function finishSitePass(siteState, context, groundContext)
     return
   end
   if resourceAfter.available ~= siteState.resourceBefore.available - 1 then
-    fail("RESOURCE_DEBIT site=" .. siteState.spec.id
-      .. " expected=" .. tostring(siteState.resourceBefore.available - 1)
-      .. " actual=" .. tostring(resourceAfter.available))
+    fail("RESOURCE_DEBIT site=" .. siteState.spec.id .. " expected=" .. tostring(siteState.resourceBefore.available - 1) .. " actual=" .. tostring(resourceAfter.available))
     return
   end
-  if not siteState.postFireAmmo or not siteState.initialAmmo
-      or siteState.postFireAmmo >= siteState.initialAmmo then
-    fail("AMMO_DID_NOT_DECREASE site=" .. siteState.spec.id
-      .. " initial=" .. tostring(siteState.initialAmmo)
-      .. " postFire=" .. tostring(siteState.postFireAmmo))
+  if not siteState.postFireAmmo or not siteState.initialAmmo or siteState.postFireAmmo >= siteState.initialAmmo then
+    fail("AMMO_DID_NOT_DECREASE site=" .. siteState.spec.id .. " initial=" .. tostring(siteState.initialAmmo) .. " postFire=" .. tostring(siteState.postFireAmmo))
     return
   end
   if not siteState.finalAmmo or siteState.finalAmmo < siteState.initialAmmo then
-    fail("AMMO_NOT_RESTORED site=" .. siteState.spec.id
-      .. " initial=" .. tostring(siteState.initialAmmo)
-      .. " final=" .. tostring(siteState.finalAmmo))
+    fail("AMMO_NOT_RESTORED site=" .. siteState.spec.id .. " initial=" .. tostring(siteState.initialAmmo) .. " final=" .. tostring(siteState.finalAmmo))
     return
   end
 
@@ -194,24 +173,16 @@ local function configureSite(spec, groundContext)
   local supportSpawnZone = requireObject(ZONE:FindByName(spec.supportSpawnZone), spec.supportSpawnZone)
   local targetZone = requireObject(ZONE:FindByName(spec.targetZone), spec.targetZone)
   local warehouseHost = UNIT:FindByName(spec.warehouse)
-  if not warehouseHost then
-    warehouseHost = STATIC:FindByName(spec.warehouse, false)
-  end
+  if not warehouseHost then warehouseHost = STATIC:FindByName(spec.warehouse, false) end
   requireObject(warehouseHost, spec.warehouse)
   requireObject(GROUP:FindByName(SUPPORT_TEMPLATE), SUPPORT_TEMPLATE)
-  if state.failed then
-    return nil
-  end
+  if state.failed then return nil end
 
   local brigade = BRIGADE:New(spec.warehouse, spec.brigade)
-  if not requireObject(brigade, spec.brigade) then
-    return nil
-  end
+  if not requireObject(brigade, spec.brigade) then return nil end
 
   local arty = ARTY:New(batteryGroup, spec.alias)
-  if not requireObject(arty, "ARTY " .. spec.battery) then
-    return nil
-  end
+  if not requireObject(arty, "ARTY " .. spec.battery) then return nil end
   arty:SetReportOFF()
   arty:SetWaitForShotTime(120)
 
@@ -274,17 +245,9 @@ local function configureSite(spec, groundContext)
         siteState.supportType = supportGroup:GetTypeName()
       end
       local resourceAfter = groundContext.store:GetResource(spec.nodeId, RESOURCE_ID)
-      log("SITE_SUPPORT_MATERIALIZED site=" .. spec.id
-        .. " name=" .. tostring(siteState.supportName)
-        .. " type=" .. tostring(siteState.supportType))
-      log("SITE_CONSUMPTION_COMMITTED site=" .. spec.id
-        .. " resource=" .. RESOURCE_ID
-        .. " before=" .. tostring(siteState.resourceBefore and siteState.resourceBefore.available)
-        .. " after=" .. tostring(resourceAfter and resourceAfter.available))
-      log("SITE_REARMED site=" .. spec.id
-        .. " initialAmmo=" .. tostring(siteState.initialAmmo)
-        .. " postFireAmmo=" .. tostring(siteState.postFireAmmo)
-        .. " currentAmmo=" .. tostring(ammoTotal(siteState)))
+      log("SITE_SUPPORT_MATERIALIZED site=" .. spec.id .. " name=" .. tostring(siteState.supportName) .. " type=" .. tostring(siteState.supportType))
+      log("SITE_CONSUMPTION_COMMITTED site=" .. spec.id .. " resource=" .. RESOURCE_ID .. " before=" .. tostring(siteState.resourceBefore and siteState.resourceBefore.available) .. " after=" .. tostring(resourceAfter and resourceAfter.available))
+      log("SITE_REARMED site=" .. spec.id .. " initialAmmo=" .. tostring(siteState.initialAmmo) .. " postFireAmmo=" .. tostring(siteState.postFireAmmo) .. " currentAmmo=" .. tostring(ammoTotal(siteState)))
     end,
     onSupportReturned = function(context)
       SCHEDULER:New(nil, function()
@@ -304,15 +267,10 @@ local function startSite(siteState, groundContext)
   siteState.brigade:Start()
 
   siteState.arty.OnAfterCeaseFire = function(_, Controllable, From, Event, To, target)
-    if state.failed or siteState.passed or siteState.fireComplete then
-      return
-    end
+    if state.failed or siteState.passed or siteState.fireComplete then return end
     siteState.fireComplete = true
     siteState.postFireAmmo = ammoTotal(siteState)
-    log("SITE_FIRE_COMPLETE site=" .. siteState.spec.id
-      .. " target=" .. tostring(target and target.name)
-      .. " initialAmmo=" .. tostring(siteState.initialAmmo)
-      .. " postFireAmmo=" .. tostring(siteState.postFireAmmo))
+    log("SITE_FIRE_COMPLETE site=" .. siteState.spec.id .. " target=" .. tostring(target and target.name) .. " initialAmmo=" .. tostring(siteState.initialAmmo) .. " postFire=" .. tostring(siteState.postFireAmmo))
 
     if not siteState.initialAmmo or siteState.postFireAmmo >= siteState.initialAmmo then
       fail("FIRE_DID_NOT_CONSUME_AMMO site=" .. siteState.spec.id)
@@ -337,18 +295,11 @@ local function startSite(siteState, groundContext)
       supportReturnRadiusM = 100,
       startArty = false,
     })
-    log("SITE_REARM_REQUEST site=" .. siteState.spec.id
-      .. " status=" .. tostring(context and context.status)
-      .. " resourceBefore=" .. tostring(siteState.resourceBefore.available))
+    log("SITE_REARM_REQUEST site=" .. siteState.spec.id .. " status=" .. tostring(context and context.status) .. " resourceBefore=" .. tostring(siteState.resourceBefore.available))
   end
 
   local targetName = siteState.arty:AssignTargetCoord(
-    siteState.targetZone:GetCoordinate(),
-    10,
-    50,
-    FIRE_SHELLS,
-    1,
-    nil,
+    siteState.targetZone:GetCoordinate(), 10, 50, FIRE_SHELLS, 1, nil,
     ARTY.WeaponType.Auto,
     "OMW-FIRE-SUPPORT-ACCEPTANCE-2-" .. siteState.spec.id,
     true
@@ -361,8 +312,7 @@ local function startSite(siteState, groundContext)
   siteState.arty:Start()
   siteState.initialAmmo = ammoTotal(siteState)
   if not siteState.initialAmmo or siteState.initialAmmo <= 0 then
-    fail("INITIAL_AMMO_INVALID site=" .. siteState.spec.id
-      .. " value=" .. tostring(siteState.initialAmmo))
+    fail("INITIAL_AMMO_INVALID site=" .. siteState.spec.id .. " value=" .. tostring(siteState.initialAmmo))
     return
   end
 
@@ -393,24 +343,16 @@ local function startAcceptance()
     return
   end
 
-  for _, spec in ipairs(SITE_SPECS) do
-    configureSite(spec, groundContext)
-  end
-  if state.failed then
-    return
-  end
+  for _, spec in ipairs(SITE_SPECS) do configureSite(spec, groundContext) end
+  if state.failed then return end
 
   for _, spec in ipairs(SITE_SPECS) do
     startSite(state.sites[spec.id], groundContext)
-    if state.failed then
-      return
-    end
+    if state.failed then return end
   end
 
   SCHEDULER:New(nil, function()
-    if state.failed or state.passed then
-      return
-    end
+    if state.failed or state.passed then return end
     local status = {}
     for _, spec in ipairs(SITE_SPECS) do
       local siteState = state.sites[spec.id]
