@@ -13,7 +13,7 @@ $harnessFile = Join-Path $repoRoot 'mission\tests\ground-ammo-rearm-integration\
 $distDir = Join-Path $repoRoot 'mission\tests\ground-ammo-rearm-integration\dist'
 $outputFile = Join-Path $distDir 'OMW_Ground_Fire_Support_Acceptance_2.lua'
 
-$builderVersion = 'GROUND-FIRE-SUPPORT-ACCEPTANCE-2-6'
+$builderVersion = 'GROUND-FIRE-SUPPORT-ACCEPTANCE-2-7'
 $testId = 'GROUND-FIRE-SUPPORT-ACCEPTANCE-2'
 $mooseCommit = '73d3ed119cd9e7e3f2cfcabbaa34513d30529b54'
 $mooseSha256 = 'e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915'
@@ -39,7 +39,8 @@ $requiredMarkers = @(
   'TPL_BLUE_GND_SUP_M1083','TPL_BLUE_GND_SUP_M939','GROUND_NODE_BOSTICK','GROUND_NODE_WRIGHT','GROUND_NODE_FORTRESS','GROUND_NODE_HONAKER','GROUND_AMMO_PACKAGE',
   'ARTY:New(','AssignTargetCoord(','GetAmmo(','SetRearmingGroup','SetSpawnZone(','ReturnToStock','AddAsset(',
   'OnAfterCeaseFire','OnAfterRearmed','startArty = false','onRoad = false','WAREHOUSE.Descriptor.GROUPNAME','PLATOON:New(','BRIGADE:New(',
-  'OMW_GROUND_READY','OMW.Ground.Base.GetContext()','SITE_REARMED site=','SITE_SUPPORT_RETURNED site=','SITE_PASS site=','FIXED_FIRE_SUPPORT_REARM_CONFIRMED=true'
+  'OMW_GROUND_READY','OMW.Ground.Base.GetContext()','SITE_REARMED site=','SITE_SUPPORT_RETURNED site=','SITE_PASS site=','FIXED_FIRE_SUPPORT_REARM_CONFIRMED=true',
+  'HONAKER_AMMO_DEPLETED','HONAKER_REARM_REQUEST_AFTER_EMPTY','HONAKER_AMMO_NOT_DEPLETED'
 )
 foreach ($marker in $requiredMarkers) {
   if (-not $combined.Contains($marker)) { throw "Ground fire-support acceptance sources are missing required marker: $marker" }
@@ -58,11 +59,13 @@ if ($fixedRearm -notmatch 'SCHEDULER:New') { throw 'Fixed fire-support rearm ser
 if ($harness -notmatch 'startArty\s*=\s*false') { throw 'Combined acceptance harness must preserve prestarted ARTY full-ammo baselines.' }
 if ($harness -notmatch 'onRoad\s*=\s*false') { throw 'Combined acceptance harness must keep local support movement independent of roads.' }
 if ($harness -notmatch 'for _, spec in ipairs\(SITE_SPECS\) do\s+startSite') { throw 'Combined acceptance harness must launch all configured site legs in the same run.' }
-if ($harness -notmatch 'id\s*=\s*"BOSTICK"[\s\S]*?supportTemplate\s*=\s*"TPL_BLUE_GND_SUP_M1083"') { throw 'Bostick must remain on the M1083 regression template.' }
-if ($harness -notmatch 'id\s*=\s*"WRIGHT"[\s\S]*?supportTemplate\s*=\s*"TPL_BLUE_GND_SUP_M1083"') { throw 'Wright must remain on the M1083 regression template.' }
-if ($harness -notmatch 'id\s*=\s*"FORTRESS"[\s\S]*?supportTemplate\s*=\s*"TPL_BLUE_GND_SUP_M1083"') { throw 'Fortress must remain on the M1083 regression template.' }
-if ($harness -notmatch 'id\s*=\s*"HONAKER"[\s\S]*?supportTemplate\s*=\s*"TPL_BLUE_GND_SUP_M939"') { throw 'Honaker must use the M939 diagnostic template.' }
+if ($harness -notmatch 'id\s*=\s*"BOSTICK"[\s\S]*?supportTemplate\s*=\s*"TPL_BLUE_GND_SUP_M1083"[\s\S]*?fireShells\s*=\s*DEFAULT_FIRE_SHELLS') { throw 'Bostick must remain on the four-round M1083 regression path.' }
+if ($harness -notmatch 'id\s*=\s*"WRIGHT"[\s\S]*?supportTemplate\s*=\s*"TPL_BLUE_GND_SUP_M1083"[\s\S]*?fireShells\s*=\s*DEFAULT_FIRE_SHELLS') { throw 'Wright must remain on the four-round M1083 regression path.' }
+if ($harness -notmatch 'id\s*=\s*"FORTRESS"[\s\S]*?supportTemplate\s*=\s*"TPL_BLUE_GND_SUP_M1083"[\s\S]*?fireShells\s*=\s*DEFAULT_FIRE_SHELLS') { throw 'Fortress must remain on the four-round M1083 regression path.' }
+if ($harness -notmatch 'id\s*=\s*"HONAKER"[\s\S]*?supportTemplate\s*=\s*"TPL_BLUE_GND_SUP_M939"[\s\S]*?fireShells\s*=\s*40[\s\S]*?requireAmmoDepleted\s*=\s*true') { throw 'Honaker must use M939 and require full 40-round depletion before rearm.' }
 if ($harness -notmatch 'templateName\s*=\s*spec\.supportTemplate') { throw 'Combined acceptance harness must pass the site-specific support template into the MOOSE materializer.' }
+if ($harness -notmatch 'siteState\.postFireAmmo\s*~=\s*0') { throw 'Honaker empty-rearm diagnostic must block support request unless post-fire ammo is exactly zero.' }
+if ($harness -notmatch 'siteState\.spec\.fireShells') { throw 'Combined acceptance harness must use the per-site fire-shell count.' }
 
 New-Item -ItemType Directory -Path $distDir -Force | Out-Null
 if (Test-Path -LiteralPath $outputFile -PathType Leaf) { Remove-Item -LiteralPath $outputFile -Force }
@@ -78,8 +81,8 @@ $header = @"
 -- GitCommit: $commit
 -- GeneratedUtc: $generatedUtc
 -- Gate/Test-ID: $testId
--- Scope: concurrent Bostick/Wright/Fortress L118 with M1083 support plus Honaker 2B11 with M939 support -> local Warehouse self-request materialization in dedicated RESUPPLY zones -> local CampaignState GROUND_AMMO_PACKAGE consumption -> MOOSE ARTY RearmingGroup rearm -> MOOSE ARTY physical support return -> WAREHOUSE AddAsset return-to-stock -> per-site and aggregate confirmation.
--- Diagnostic variable: only Honaker support template changes from TPL_BLUE_GND_SUP_M1083 to TPL_BLUE_GND_SUP_M939; all other site support templates remain M1083.
+-- Scope: concurrent Bostick/Wright/Fortress L118 four-round M1083 regression legs plus Honaker 2B11 full-ammo-depletion M939 diagnostic -> support request only after Honaker reaches zero ammo -> local Warehouse self-request materialization -> CampaignState GROUND_AMMO_PACKAGE consumption -> MOOSE ARTY RearmingGroup rearm -> MOOSE ARTY physical support return -> WAREHOUSE AddAsset return-to-stock -> per-site and aggregate confirmation.
+-- Diagnostic variable: Honaker fires all 40 observed 2B11 rounds and must report post-fire ammo exactly zero before TPL_BLUE_GND_SUP_M939 can be requested. The three L118 control legs remain four-round M1083 tests.
 -- Strategic authority: existing OMW.Ground.Base authoritative CampaignState store only.
 -- Ground spawn: public MOOSE WAREHOUSE SetSpawnZone only; the pinned-MOOSE SetValidateAndRepositionGroundUnits path is excluded because its UTILS.GetCenterPoint dependency is missing at runtime. No private road-spawn override is used.
 -- Support cleanup: public MOOSE ARTY return movement plus WAREHOUSE AddAsset after physical return confirmation.
@@ -116,7 +119,9 @@ Write-Host "FortressSupportTemplate: TPL_BLUE_GND_SUP_M1083"
 Write-Host "HonakerSupportTemplate: TPL_BLUE_GND_SUP_M939"
 Write-Host "StrategicResource: GROUND_AMMO_PACKAGE"
 Write-Host "StrategicQuantityPerSite: 1"
-Write-Host "FireShellsPerSite: 4"
+Write-Host "StandardFireShells: 4"
+Write-Host "HonakerFireShells: 40"
+Write-Host "HonakerRequireAmmoDepleted: true"
 Write-Host "ConcurrentSiteLegs: true"
 Write-Host "PrestartedARTYPreserved: true"
 Write-Host "LocalWarehouseSpawnZones: true"
