@@ -11,57 +11,95 @@ supersedes:
 superseded_by:
 source_branch: agent/automatic-response-orchestration
 source_commit: PENDING_MERGE
-validated_in_dcs: false
+validated_in_dcs: partial
 ---
 
 # Ground RESUPPLY Execution
 
 ## Zweck
 
-Dieses Testpaket prüft den ersten vollständigen vertikalen Ground-RESUPPLY-Pfad zwischen der auf `main` integrierten MissionDemand-/ResourceDemandPolicy und der bestehenden MOOSE-Ground-Ausführung.
+Dieses Testpaket prüft die MissionDemand-/CampaignState-gekoppelten physischen Ground-RESUPPLY-Pfade über MOOSE BRIGADE / PLATOON / ARMYGROUP / AUFTRAG.
 
-Erster Scope:
+## Stage 1A – AMMO
 
 ```text
 GROUND_NODE_HONAKER
 GROUND_AMMO_PACKAGE
-40 -> 20
--> ResourceDemandPolicy REORDER
--> RESUPPLY MissionDemand
--> CampaignState TRANSFER from GROUND_NODE_JOYCE, quantity 20
--> MOOSE BRIGADE / PLATOON / ARMYGROUP
--> AUFTRAG AMMOSUPPLY
--> TPL_BLUE_GND_SUP_M1083
--> Honaker ACCESS-zone delivery proof
--> CampaignState DELIVERED
--> MissionDemand SUCCESS
--> RTZ Joyce ACCESS zone
--> Warehouse AddAsset / physical cleanup
+40 -> 20 -> 40
+CampaignState TRANSFER 20 from GROUND_NODE_JOYCE
+TPL_BLUE_CONVOY_LIGHT_06
+AUFTRAG AMMOSUPPLY
+OnRoad 27 kt
+30 s MissionDone -> RTZ settlement window
+Returned -> Warehouse AddAsset -> physical cleanup
 ```
 
-## Dateien
+Status:
+
+```text
+ACCEPTED_TECHNICAL_BASELINE
+```
+
+Details:
 
 ```text
 src/01-ground-ammo-resupply-acceptance.lua
 ACCEPTANCE-1.md
-dist/OMW_Ground_Ammo_Resupply_Acceptance_1.lua   # generated locally
+results/2026-08-22-ground-ammo-resupply-acceptance-1-pass-1.md
+tools/build-ground-ammo-resupply-acceptance-1.ps1
 ```
 
-Builder:
+## Stage 1B – FUEL
 
 ```text
-tools/build-ground-ammo-resupply-acceptance-1.ps1
+GROUND_NODE_HONAKER
+GROUND_FUEL_PACKAGE
+36 -> 18 -> 36
+CampaignState TRANSFER 18 from GROUND_NODE_JOYCE
+TPL_BLUE_CONVOY_FUEL_LIGHT_06
+AUFTRAG FUELSUPPLY
+OnRoad 27 kt
+30 s MissionDone -> RTZ settlement window
+Returned -> Warehouse AddAsset -> physical cleanup
+```
+
+Status:
+
+```text
+SOURCE_REVIEWED / STAGED / DCS_PENDING
+```
+
+Owner-created `OMW_Template_v19.miz` was inspected read-only. The selected Stage-1B fixture contains six vehicles:
+
+```text
+1 CHAP_MATV
+2 M978 HEMTT Tanker
+3 MaxxPro_MRAP
+4 M978 HEMTT Tanker
+5 MaxxPro_MRAP
+6 CHAP_MATV
+```
+
+The physical convoy remains only a representation of the strategic CampaignState transfer. No `GROUND_FUEL_PACKAGE`-per-tanker capacity is defined by this test.
+
+Files:
+
+```text
+src/02-ground-fuel-resupply-acceptance.lua
+ACCEPTANCE-2.md
+dist/OMW_Ground_Fuel_Resupply_Acceptance_1.lua   # generated locally
+tools/build-ground-fuel-resupply-acceptance-1.ps1
 ```
 
 ## MOOSE-First
 
-Technische Source-Prüfung:
+Technical review:
 
 ```text
 docs/moose/GROUND-RESUPPLY-EXECUTION-SOURCE-REVIEW.md
 ```
 
-Verwendeter MOOSE-Stand:
+Pinned MOOSE:
 
 ```text
 MOOSE 2.9.18
@@ -69,17 +107,16 @@ commit 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
 Moose.lua SHA-256 E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915
 ```
 
-Kein eigener Convoy-Dispatcher, kein MIST, keine native DCS-Eventschicht, kein `OPSTRANSPORT` und keine zweite strategische Ressourcenhoheit werden eingeführt.
+No custom convoy dispatcher, no MIST, no native-DCS event layer, no `OPSTRANSPORT`, no alternate strategic resource authority, and no `.miz` mutation by ChatGPT are introduced.
 
-## Aktueller Status
+## Current status
 
 ```text
-Source: STAGED ON BRANCH
-Builder: STAGED ON BRANCH
-Local owner build: NOT RUN
-Bundle SHA-256: UNKNOWN UNTIL OWNER BUILD
-MIZ integration: NOT STARTED
-DCS runtime: NOT RUN
+Stage 1A AMMO: ACCEPTED_TECHNICAL_BASELINE
+Stage 1B FUEL source: STAGED ON BRANCH
+Stage 1B builder: STAGED ON BRANCH
+Stage 1B local owner build: NOT RUN
+Stage 1B bundle SHA-256: UNKNOWN UNTIL OWNER BUILD
+Stage 1B Mission Editor integration: NOT STARTED
+Stage 1B DCS runtime: NOT RUN
 ```
-
-Vor MIZ-Arbeit muss der Projektinhaber zuerst den versionierten Builder lokal per PowerShell ausführen und die reale Ausgabe einschließlich unabhängig ermitteltem Bundle-Hash zurückgeben.
