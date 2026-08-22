@@ -135,7 +135,61 @@ SetStrategicAdapter(...) forbidden
 adapter callback mutation forbidden
 ```
 
-Vor neuem DCS-Lauf sind realer lokaler Build, Hash-Nachweis und anschliessend die manuelle Mission-Editor-Einbindung durch den Projektinhaber erforderlich.
+### 4.1 Reale lokale Build-Evidenz fuer den reconcilierten Stand
+
+Der Projektinhaber hat am 22.08.2026 auf folgendem exakten Source-Stand gebaut:
+
+```text
+GitCommit: 93cae7cee601f2af242cfcc963accf499ddea7d8
+SourceCommitUtc: 2026-08-22T19:06:02+02:00
+BuilderVersion: OMW-AIR-TASKING-AAR-ADDITIVE-TEST-3
+TestId: AIR-TASKING-AAR-VERTICAL-3
+MissionDemandContract: CANONICAL_MAIN_SHAPE_READ_ONLY
+AARRuntimeDemandTranslation: true
+MizMutation: false
+ExistingAARBaseEmbedded: false
+ExistingAARBaseRecreated: false
+ExistingAARAdapterRecreated: false
+ExistingAARAdapterMutated: false
+LegacyAdapterProxyPath: false
+RuntimeObservation: CONTROLLER_GETSTATION_PLUS_MOOSE_SCHEDULER
+ObserverIntervalSec: 5
+WaitsForExistingAARFacade: true
+MissionEditorAdditionalScriptRequired: true
+```
+
+Reale SHA-256-Evidenz:
+
+```text
+MOOSE commit:
+73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+
+Moose.lua:
+e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
+
+AirTaskingBridge:
+7054d2a88262dba5546e13fe3dd51f01cdbd1a9efcabc41031b063c5336bb66f
+
+AirTaskingBootstrap:
+81876fed138533d667aa1f6bcbde2d232cd1bf49a54b83b54464cefb2da5f12a
+
+Harness:
+01ab6f5d5bf65c9d64a656d338a39eac67b063afa38ec02f95325c1974f1cb11
+
+Additive Test Bundle:
+dc840397ca311802cee99cf98f7448c0371ce40388f324b31dd01de7bf1c82f3
+```
+
+Ein anschliessender unabhaengiger `Get-FileHash` bestaetigte denselben Bundle-Hash. Damit gilt:
+
+```text
+BUILD PASS
+BUNDLE HASH CROSS-CHECK PASS
+LOCAL LUA CONTRACT TEST NOT RUN - no local Lua interpreter available
+DCS RETEST NOT RUN
+```
+
+Der fehlende lokale Lua-Interpreter wird nicht durch angenommene oder simulierte Testevidenz ersetzt.
 
 ## 5. Vorherige technische Acceptance bleibt historische Evidenz
 
@@ -190,7 +244,7 @@ Diese Acceptance bleibt fuer exakt den damaligen Stand gueltig. Sie wird nicht a
 ## 6. Gate 3 current head
 
 ```text
-GATE 3: RETEST REQUIRED
+GATE 3: BUILD PASS / DCS RETEST REQUIRED
 validated_in_dcs: false
 ```
 
