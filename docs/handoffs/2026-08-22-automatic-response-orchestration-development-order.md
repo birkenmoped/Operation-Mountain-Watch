@@ -14,7 +14,7 @@ supersedes:
 superseded_by:
 source_branch: agent/automatic-response-orchestration
 source_commit: PENDING_MERGE
-validated_in_dcs: false
+validated_in_dcs: partial
 base_branch: main
 base_commit: 28d0069d5d9ec66e62f1e81ad59fc3dd4e2e249c
 ---
@@ -29,8 +29,6 @@ base: main @ 28d0069d5d9ec66e62f1e81ad59fc3dd4e2e249c
 ```
 
 Ziel ist die geschlossene automatische BLUE-Reaktionskette aus bereits integrierten CampaignState-, MissionDemand-, Ground-, Fire-Support-, AirOps- und CSAR-Bausteinen. Bestehende MOOSE-/Production-Funktionalität wird nicht parallel neu implementiert.
-
-Dieses Dokument ist laufender Entwicklungsauftrag und Handoff. Nach jedem relevanten Gate sind reale Hashes, Teststatus, offene Grenzen und der nächste zulässige Schritt einzutragen.
 
 ## 2. Verbindliche Arbeitsregeln
 
@@ -85,7 +83,7 @@ agent/mission-demand-resupply-cas-concept
 = HISTORICAL REFERENCE ONLY
 
 CURRENT SOURCE OF TRUTH
-= main
+= main plus this branch-local staged/acceptance work
 ```
 
 Bereits integriert:
@@ -177,7 +175,7 @@ Status: `IN DEVELOPMENT`
 
 #### Stage 1A – Ground AMMO / Joyce -> Honaker
 
-Status: `BUILD_PASS / MIZ_PREFLIGHT_PASS / OWNER_EMBEDDING_RETRY_REQUIRED`
+Status: `DCS_DELIVERY_PATH_CONFIRMED / FULL_ROUNDTRIP_RETEST_REQUIRED`
 
 Target chain:
 
@@ -190,7 +188,7 @@ Honaker AMMO 40
 -> CampaignState TRANSFER 20 Joyce -> Honaker
 -> MOOSE BRIGADE / PLATOON / ARMYGROUP
 -> AUFTRAG AMMOSUPPLY
--> M1083 OnRoad to Honaker ACCESS
+-> protected convoy OnRoad to Honaker ACCESS
 -> exact MissionExecute + IsInZone(destination)
 -> MarkDelivered
 -> MissionDemand SUCCESS
@@ -205,134 +203,142 @@ JOYCE AMMO   44 -> 24
 HONAKER AMMO 40 -> 20 -> 40
 ```
 
-Build evidence:
+##### Physical template decision
+
+Der Projektinhaber hat entschieden, die bereits in der Mission vorhandenen Convoy-Templates zu verwenden:
 
 ```text
-Build GitCommit: 99ea86bf61036f2d04008b17bcb8c1d6e236b030
-GeneratedUtc: 2026-08-22T16:57:51Z
-BuilderVersion: GROUND-AMMO-RESUPPLY-ACCEPTANCE-1-3
-Bundle SHA-256: D1E908D08DF3DA787D01E760F5B9C01771F5D17CBBD51C8545A4A00086E10676
-Independent bundle SHA-256: D1E908D08DF3DA787D01E760F5B9C01771F5D17CBBD51C8545A4A00086E10676
-Builder SHA-256: AEF56E16FE896854D32EAE409FC04A6C8C0BE20266EF591242DC5C866C5FB820
-Acceptance source SHA-256: 38E099C801286768FD9D1D39014BB767BCF99055602D1E06EDACA48634856C83
+TPL_BLUE_CONVOY_LIGHT_06
+TPL_BLUE_CONVOY_STANDARD_07
+```
+
+Für Stage 1A:
+
+```text
+TPL_BLUE_CONVOY_LIGHT_06
+```
+
+Noch **nicht** festgelegt:
+
+```text
+package-per-truck capacity
+automatic LIGHT_06 vs STANDARD_07 selection
+```
+
+Die strategische Transfermenge bleibt CampaignState-Autorität und wird in diesem Acceptance-Slice nicht aus der Zahl der physischen Trucks abgeleitet.
+
+##### DCS-Lauf 1
+
+```text
+MIZ: OMW_Template_v17.miz
+Result: FAIL
+reason: RESOURCE_DEMAND_POLICY_NO_CANDIDATE
+root cause: stale embedded Ground production bundle with pre-PR-115 zero thresholds
+physical AMMOSUPPLY reached: no
+```
+
+Detailed result:
+
+```text
+mission/tests/ground-resupply-execution/results/2026-08-22-ground-ammo-resupply-acceptance-1-fail-1.md
+```
+
+##### Ground production rebuild
+
+Owner-local real build evidence:
+
+```text
+Build Git HEAD: cfc7edb4bc7db771569c54224432fd501ddeea57
+BuilderVersion: OMW-GROUND-PRODUCTION-BASE-4
+OMW_Ground_Base.lua SHA-256: E616D35F5EBDBDDD4275785091D47F57445348D1FF4BB4CFBE7DEE0F0B12D78E
+Builder SHA-256: 3A7B61B3EC19A442D6B3C933FF467AF4671421AB30C37D801D98F481BA3BD355
+GroundInitialStock SHA-256: 7F73F489D7E896C815D57FAD54A62B2185932539E44471087C2826729B6FEE66
+```
+
+##### DCS-Lauf 2
+
+```text
+MIZ: OMW_Template_v18.miz
+MIZ SHA-256: 2518A950CC36110552AA962179D5D8A4674F4C73E1518009706DAA79DBF92C09
+internal mission SHA-256: A94F9F4D77245A0FA6E65B7E7657E5B8B3457CFD5FCB60A528F83EA57B563F34
+DCS: 2.9.28.26385
 MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
 Moose.lua SHA-256: E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915
-Build result: PASS
+Ground production bundle SHA-256: E616D35F5EBDBDDD4275785091D47F57445348D1FF4BB4CFBE7DEE0F0B12D78E
+Acceptance bundle SHA-256: D1E908D08DF3DA787D01E760F5B9C01771F5D17CBBD51C8545A4A00086E10676
+Result: FAIL / DELIVERY PATH CONFIRMED / ROUNDTRIP INCOMPLETE
 ```
 
-Design boundary:
+Observed markers:
 
 ```text
-CampaignState owns cargo quantity.
-MOOSE AMMOSUPPLY owns physical movement only.
-OPSTRANSPORT is not used in Stage 1A.
+DEMAND_RESERVED
+PHYSICAL_EXECUTION_READY
+BRIGADE_STARTED
+MISSION_QUEUED type=AMMOSUPPLY
+GROUP_MATERIALIZED
+ARMY_ON_MISSION
+DELIVERY_CONFIRMED ... quantity=20 ... demandStatus=SUCCESS
+MISSION_DONE deliveryCommitted=true
+RETURN_RTZ_ACTIVE
+RETURN_RTZ_ISSUED ... Joyce ... OnRoad
+FAIL reason=TIMEOUT seconds=1800 ... returnedCount=0 addAssetCount=0
 ```
 
-Delivery boundary:
+Bewertung:
 
 ```text
-MissionDone alone != delivery
-Delivery requires exact AMMOSUPPLY MissionExecute
-AND ARMYGROUP:IsInZone(Honaker ACCESS) == true
+ResourceDemand: PASS for run-2 scope
+MissionDemand reservation: PASS for run-2 scope
+CampaignState IN_TRANSIT debit: PASS for run-2 scope
+physical AMMOSUPPLY outbound: PASS for run-2 scope
+destination-zone delivery proof: PASS for run-2 scope
+CampaignState DELIVERED: PASS for run-2 scope
+MissionDemand SUCCESS: PASS for run-2 scope
+RTZ accepted: PASS for run-2 scope
+Returned: NOT TESTED TO COMPLETION
+Warehouse AddAsset: NOT TESTED TO COMPLETION
+Stage 1A overall: NOT PASS
 ```
 
-#### Stage 1A MIZ preflight – PASS
-
-Selected source MIZ:
+Detailed result:
 
 ```text
-OMW_Template_v16.miz
-MIZ SHA-256: 91837A67121D769145136745BBAC2F12C92F4F054ED1EADD5E937EFB9533F8A9
-internal mission SHA-256: BFC50C8FA4AA953D63B8D1AAEC8B927645253996FFA6990DF6D5118F98659AF7
+mission/tests/ground-resupply-execution/results/2026-08-22-ground-ammo-resupply-acceptance-1-fail-2.md
 ```
 
-Required object contract confirmed read-only:
+##### Acceptance correction after run 2
+
+Der vorherige Harness hatte einen einzigen 1800-s-Timeout ab Teststart. Der Rückweg begann erst kurz vor dessen Ablauf. Außerdem plante der Harness die finale Prüfung nur 3 s nach `Returned`, während der gepinnte MOOSE-Source in `ARMYGROUP:onafterReturned` erst `legion:__AddAsset(10, group, 1)` plant.
+
+Aktualisierter Vertrag:
 
 ```text
-WH_BLUE_GND_JOYCE
-ZON_BLUE_GND_JOYCE_ACCESS
-ZON_BLUE_GND_HONAKER_ACCESS
-TPL_BLUE_GND_SUP_M1083
+physical template: TPL_BLUE_CONVOY_LIGHT_06
+OUTBOUND_TIMEOUT_SEC = 1800
+RETURN_TIMEOUT_SEC = 1800, starts only after accepted RTZ
+RETURN_SETTLEMENT_DELAY_SEC = 12
 ```
 
-Embedded startup resources confirmed:
+Source/build files:
 
 ```text
-Moose.lua
-OMW_AirOps_Warehouse_Base.lua
-OMW_Ground_Base.lua
+mission/tests/ground-resupply-execution/src/01-ground-ammo-resupply-acceptance.lua
+tools/build-ground-ammo-resupply-acceptance-1.ps1
+BuilderVersion: GROUND-AMMO-RESUPPLY-ACCEPTANCE-1-4
 ```
 
-Startup mapping confirmed:
+New build status:
 
 ```text
-Mission Start -> Moose.lua
-time > 1 s -> OMW_AirOps_Warehouse_Base.lua
-time > 2 s AND OMW_WAREHOUSE_READY == 1
--> OMW_Ground_Base.lua
--> OMW.Ground.Base.Attach(existing OMW.AirOps.CampaignContext)
+NOT RUN LOCALLY YET
+new bundle SHA-256: UNKNOWN UNTIL OWNER BUILD
 ```
 
-Read-only preflight result:
-
-```text
-PASS
-```
-
-#### Stage 1A owner embedding attempt – 2026-08-22
-
-Dedicated work copy created:
-
-```text
-OMW_Template_v16_Ground_Ammo_Resupply_Acceptance_1.miz
-initial SHA-256: 91837A67121D769145136745BBAC2F12C92F4F054ED1EADD5E937EFB9533F8A9
-```
-
-Expected Mission Editor mutation:
-
-```text
-one ONCE trigger
-OMW_WAREHOUSE_READY == 1
-OMW_GROUND_READY == 1
-DO SCRIPT FILE -> OMW_Ground_Ammo_Resupply_Acceptance_1.lua
-```
-
-Returned post-mutation evidence:
-
-```text
-post-mutation MIZ SHA-256:
-91837A67121D769145136745BBAC2F12C92F4F054ED1EADD5E937EFB9533F8A9
-
-post-mutation internal mission SHA-256:
-BFC50C8FA4AA953D63B8D1AAEC8B927645253996FFA6990DF6D5118F98659AF7
-
-OMW_WAREHOUSE_READY references: 16
-OMW_GROUND_READY references: 0
-
-result:
-FAIL / NO_MIZ_MUTATION_OBSERVED
-```
-
-Die beiden Hashes sind exakt identisch zur unveränderten Ausgangsmission. Deshalb ist keine Mutation der Acceptance-Arbeitskopie nachgewiesen. Es wird keine Ursache geraten. Der vorherige read-only Preflight bleibt gültig. DCS bleibt gesperrt.
-
-Detailed acceptance record:
+Detailed acceptance plan:
 
 ```text
 mission/tests/ground-resupply-execution/ACCEPTANCE-1.md
-```
-
-Next Stage-1A gate:
-
-```text
-open ONLY dedicated acceptance work copy
--> add the one required trigger
--> save the mission
--> close Mission Editor
--> verify MIZ hash changed
--> verify internal mission hash changed
--> verify OMW_GROUND_READY reference exists
--> then verify resource mapping / embedded bundle / Moose / structure
--> no DCS before full post-mutation PASS
 ```
 
 #### Stage 1B – Ground FUEL
@@ -449,41 +455,47 @@ Full diff, tests, MOOSE docs, exact acceptance provenance, registries, no stale 
 current_branch: agent/automatic-response-orchestration
 main_reference_checked_at: 2026-08-22
 main_reference_commit: 28d0069d5d9ec66e62f1e81ad59fc3dd4e2e249c
-completed_gate: STAGE_1A_BUILD_AND_READ_ONLY_MIZ_PREFLIGHT
 current_stage: STAGE_1A_GROUND_AMMO_RESUPPLY
-build_status: PASS
-bundle_sha256: D1E908D08DF3DA787D01E760F5B9C01771F5D17CBBD51C8545A4A00086E10676
-selected_source_miz: OMW_Template_v16.miz
-selected_source_miz_sha256: 91837A67121D769145136745BBAC2F12C92F4F054ED1EADD5E937EFB9533F8A9
-internal_mission_sha256_source: BFC50C8FA4AA953D63B8D1AAEC8B927645253996FFA6990DF6D5118F98659AF7
-miz_preflight: PASS
-dedicated_acceptance_miz: OMW_Template_v16_Ground_Ammo_Resupply_Acceptance_1.miz
-owner_embedding_attempt: NO_MIZ_MUTATION_OBSERVED
-post_mutation_miz_sha256: 91837A67121D769145136745BBAC2F12C92F4F054ED1EADD5E937EFB9533F8A9
-post_mutation_internal_mission_sha256: BFC50C8FA4AA953D63B8D1AAEC8B927645253996FFA6990DF6D5118F98659AF7
-omw_ground_ready_reference_count: 0
-post_mutation_preflight: FAIL
-embedded_bundle_hash: UNKNOWN / NOT REACHED
-dcs_test_status: NOT RUN
+completed_runtime_gate: DCS_RUN_2_DELIVERY_AND_RTZ_ACCEPTANCE
+stage_1a_overall: NOT_PASS
+run_1: FAIL_RESOURCE_DEMAND_POLICY_STALE_GROUND_BUNDLE
+run_2: FAIL_GLOBAL_TIMEOUT_AFTER_DELIVERY_AND_RTZ
+run_2_delivery: PASS_FOR_DOCUMENTED_SCOPE
+run_2_rtz_acceptance: PASS_FOR_DOCUMENTED_SCOPE
+run_2_returned: NOT_REACHED_BEFORE_TIMEOUT
+run_2_add_asset: NOT_REACHED_BEFORE_TIMEOUT
+selected_physical_template_next_run: TPL_BLUE_CONVOY_LIGHT_06
+standard_template_available: TPL_BLUE_CONVOY_STANDARD_07
+package_per_truck_capacity: NOT_DEFINED
+automatic_convoy_class_selection: NOT_DEFINED
+acceptance_builder_version_next: GROUND-AMMO-RESUPPLY-ACCEPTANCE-1-4
+new_acceptance_build: NOT_RUN
+new_acceptance_bundle_sha256: UNKNOWN
+production_ground_bundle_sha256: E616D35F5EBDBDDD4275785091D47F57445348D1FF4BB4CFBE7DEE0F0B12D78E
 production_runtime_implementation: NOT YET CREATED
-known_failures: initial builder marker mismatch fixed; current gate blocked because no MIZ mutation was observed
-open_owner_decisions: none; repeat the already approved acceptance embedding in the dedicated work copy
-next_allowed_step: repeat owner Mission Editor embedding and prove that MIZ/internal mission hashes changed before further structure checks
+next_allowed_step: owner local PowerShell build and hash verification of acceptance -4
 ```
 
 ## 7. Next allowed step
 
-Only the already approved Stage-1A owner-side MIZ embedding retry is allowed.
+Nur der neue Acceptance-Build ist jetzt freigegeben:
 
 ```text
-open dedicated acceptance MIZ
--> add exactly one Acceptance trigger
--> save and close Mission Editor
--> verify changed MIZ SHA-256
--> verify changed internal mission SHA-256
--> verify OMW_GROUND_READY reference exists
--> if those pass, continue embedded resource/hash checks
--> no DCS if any check fails
+git pull current branch
+-> build tools/build-ground-ammo-resupply-acceptance-1.ps1
+-> record Git HEAD / builder version / bundle SHA-256 / source hashes
+-> return real console output
 ```
 
-DCS execution remains not authorized.
+Erst danach:
+
+```text
+owner replaces only the Acceptance DO SCRIPT FILE resource in a new MIZ revision
+-> retain current Ground production bundle E616D35F...
+-> retain Moose.lua pin
+-> retain existing Acceptance trigger conditions
+-> static MIZ/resource/hash preflight
+-> DCS run only after that preflight passes
+```
+
+Keine neue `.miz`-Mutation durch ChatGPT. Kein DCS-Lauf vor neuem Bundle-/MIZ-Provenienzgate.
