@@ -7,7 +7,7 @@
 -- AUFTRAG AMMOSUPPLY -> destination-zone proof -> delivery settlement
 -- -> explicit OnRoad RTZ -> Returned -> Warehouse AddAsset.
 --
--- This file does not define production orchestration.
+-- This file does not define production orchestration or cargo-capacity mapping.
 
 local TEST_ID = "GROUND-AMMO-RESUPPLY-ACCEPTANCE-1"
 local TAG = "[OMW][" .. TEST_ID .. "]"
@@ -19,13 +19,13 @@ local RESOURCE_UNIT = "count"
 local WAREHOUSE_NAME = "WH_BLUE_GND_JOYCE"
 local ORIGIN_ACCESS_ZONE = "ZON_BLUE_GND_JOYCE_ACCESS"
 local DESTINATION_ACCESS_ZONE = "ZON_BLUE_GND_HONAKER_ACCESS"
-local TEMPLATE_NAME = "TPL_BLUE_GND_SUP_M1083"
+local TEMPLATE_NAME = "TPL_BLUE_CONVOY_LIGHT_06"
 local BRIGADE_NAME = "BDE_BLUE_GND_JOYCE_RESUPPLY_ACCEPTANCE"
 local PLATOON_NAME = "PLT_BLUE_GND_JOYCE_AMMO_RESUPPLY_ACCEPTANCE"
 local DEMAND_ID = "RESUPPLY-ACCEPTANCE-HONAKER-AMMO-001"
 local TRANSFER_ID = "TRANSFER-ACCEPTANCE-JOYCE-HONAKER-AMMO-001"
 local SHORTAGE_TX_ID = "CONSUMPTION-ACCEPTANCE-HONAKER-AMMO-001"
-local CARRIER_ENTITY_ID = "GROUND-RESUPPLY-JOYCE-HONAKER-M1083-001"
+local CARRIER_ENTITY_ID = "GROUND-RESUPPLY-JOYCE-HONAKER-CONVOY-LIGHT-001"
 local ASSIGNEE_ID = "AI:BRIGADE:" .. BRIGADE_NAME
 
 local INITIAL_ORIGIN = 44
@@ -36,7 +36,9 @@ local TRANSFER_QUANTITY = 20
 local FINAL_ORIGIN = 24
 local FINAL_DESTINATION = 40
 local ROAD_SPEED_KNOTS = 27
-local TIMEOUT_SEC = 1800
+local OUTBOUND_TIMEOUT_SEC = 1800
+local RETURN_TIMEOUT_SEC = 1800
+local RETURN_SETTLEMENT_DELAY_SEC = 12
 
 local state = {
   failed = false,
@@ -123,7 +125,17 @@ local function verifyFinalState()
   log("PASS originFinal=" .. tostring(origin.quantity)
     .. " destinationFinal=" .. tostring(destination.quantity)
     .. " transferQuantity=" .. tostring(TRANSFER_QUANTITY)
+    .. " template=" .. TEMPLATE_NAME
     .. " demandStatus=SUCCESS spawnCount=1 returnedCount=1 warehouseAddAssetCount=1")
+end
+
+local function scheduleReturnTimeout()
+  SCHEDULER:New(nil, function()
+    if state.failed or state.passed or state.returnedCount > 0 then return end
+    fail("RETURN_TIMEOUT seconds=" .. tostring(RETURN_TIMEOUT_SEC)
+      .. " returnedCount=" .. tostring(state.returnedCount)
+      .. " addAssetCount=" .. tostring(state.addAssetCount))
+  end, {}, RETURN_TIMEOUT_SEC)
 end
 
 local function issueReturn()
@@ -141,6 +153,7 @@ local function issueReturn()
   end
   log("RETURN_RTZ_ISSUED group=" .. tostring(state.armyGroup:GetName())
     .. " zone=" .. ORIGIN_ACCESS_ZONE .. " formation=OnRoad")
+  scheduleReturnTimeout()
 end
 
 local function attachArmyGroupCallbacks(armyGroup)
@@ -210,7 +223,9 @@ local function attachArmyGroupCallbacks(armyGroup)
     state.returnedCount = state.returnedCount + 1
     if not expectEqual(state.returnedCount, 1, "RETURNED_COUNT_EVENT") then return end
     log("RETURNED_HANDOFF group=" .. tostring(self:GetName()))
-    SCHEDULER:New(nil, verifyFinalState, {}, 3)
+    -- Pinned MOOSE ARMYGROUP:onafterReturned schedules Legion __AddAsset(10,...).
+    -- Verify only after that framework-owned handoff had time to complete.
+    SCHEDULER:New(nil, verifyFinalState, {}, RETURN_SETTLEMENT_DELAY_SEC)
   end
 end
 
@@ -223,7 +238,8 @@ local function installBrigadeCallbacks()
     local transaction = state.store:MarkLoading(TRANSFER_ID)
     if not expectEqual(transaction.status, state.campaignState.TransactionStatus.LOADING, "TRANSFER_LOADING_STATUS") then return end
     state.registry:SetReservationState(DEMAND_ID, "LOADING")
-    log("GROUP_MATERIALIZED name=" .. tostring(Group and Group:GetName() or "UNKNOWN") .. " transferStatus=LOADING")
+    log("GROUP_MATERIALIZED name=" .. tostring(Group and Group:GetName() or "UNKNOWN")
+      .. " template=" .. TEMPLATE_NAME .. " transferStatus=LOADING")
   end
 
   state.brigade.OnAfterArmyOnMission = function(self, From, Event, To, ArmyGroup, Mission)
@@ -268,7 +284,8 @@ local function installBrigadeCallbacks()
       state.mission:SetPriority(20, true)
       state.brigade:AddMission(state.mission)
       log("MISSION_QUEUED type=AMMOSUPPLY formation=OnRoad speedKt=" .. tostring(ROAD_SPEED_KNOTS)
-        .. " origin=" .. ORIGIN_NODE .. " destination=" .. DESTINATION_NODE)
+        .. " origin=" .. ORIGIN_NODE .. " destination=" .. DESTINATION_NODE
+        .. " template=" .. TEMPLATE_NAME)
     end, {}, 5)
   end
 end
@@ -364,9 +381,9 @@ local function preparePhysicalExecution()
   state.platoon:AddMissionCapability(AUFTRAG.Type.AMMOSUPPLY, 100)
   state.brigade:AddPlatoon(state.platoon)
 
-  -- Dedicated acceptance BRIGADE: every M1083 materialization belongs to this
-  -- single AMMOSUPPLY test. The resolver therefore filters only by template and
-  -- does not guess MOOSE request.assignment semantics.
+  -- Dedicated acceptance BRIGADE: every LIGHT_06 convoy materialization belongs
+  -- to this single AMMOSUPPLY test. CampaignState quantity remains abstract;
+  -- this test does not define package-per-truck capacity.
   OMW_GROUND_RESUPPLY_ROAD_SPAWN_ADAPTER.Install(state.brigade, {
     resolveRoadSpawn = function(self, asset, request)
       if not asset or asset.templatename ~= TEMPLATE_NAME then return nil end
@@ -417,12 +434,10 @@ installBrigadeCallbacks()
 state.brigade:Start()
 
 SCHEDULER:New(nil, function()
-  if state.failed or state.passed then return end
-  fail("TIMEOUT seconds=" .. tostring(TIMEOUT_SEC)
+  if state.failed or state.passed or state.deliveryCommitted then return end
+  fail("OUTBOUND_TIMEOUT seconds=" .. tostring(OUTBOUND_TIMEOUT_SEC)
     .. " spawnCount=" .. tostring(state.spawnCount)
     .. " armyOnMissionCount=" .. tostring(state.armyOnMissionCount)
     .. " missionExecuteCount=" .. tostring(state.missionExecuteCount)
-    .. " missionDoneCount=" .. tostring(state.missionDoneCount)
-    .. " returnedCount=" .. tostring(state.returnedCount)
-    .. " addAssetCount=" .. tostring(state.addAssetCount))
-end, {}, TIMEOUT_SEC)
+    .. " missionDoneCount=" .. tostring(state.missionDoneCount))
+end, {}, OUTBOUND_TIMEOUT_SEC)
