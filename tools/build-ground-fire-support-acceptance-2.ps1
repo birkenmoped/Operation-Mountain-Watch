@@ -13,7 +13,7 @@ $harnessFile = Join-Path $repoRoot 'mission\tests\ground-ammo-rearm-integration\
 $distDir = Join-Path $repoRoot 'mission\tests\ground-ammo-rearm-integration\dist'
 $outputFile = Join-Path $distDir 'OMW_Ground_Fire_Support_Acceptance_2.lua'
 
-$builderVersion = 'GROUND-FIRE-SUPPORT-ACCEPTANCE-2-8'
+$builderVersion = 'GROUND-FIRE-SUPPORT-ACCEPTANCE-2-9'
 $testId = 'GROUND-FIRE-SUPPORT-ACCEPTANCE-2'
 $mooseCommit = '73d3ed119cd9e7e3f2cfcabbaa34513d30529b54'
 $mooseSha256 = 'e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915'
@@ -38,8 +38,8 @@ $requiredMarkers = @(
   'TPL_BLUE_GND_BOSTICK_FS_ARTY_L118_2','TPL_BLUE_GND_WRIGHT_FS_ARTY_L118_2','TPL_BLUE_GND_FORTRESS_FS_ARTY_L118_1','TPL_BLUE_GND_HONAKER_FS_MORTAR_2B11_2',
   'TPL_BLUE_GND_SUP_M1083','GROUND_NODE_BOSTICK','GROUND_NODE_WRIGHT','GROUND_NODE_FORTRESS','GROUND_NODE_HONAKER','GROUND_AMMO_PACKAGE',
   'ARTY:New(','AssignTargetCoord(','GetAmmo(','SetRearmingGroup','SetSpawnZone(','ReturnToStock','AddAsset(',
-  'OnAfterCeaseFire','OnAfterRearmed','startArty = false','onRoad = false','WAREHOUSE.Descriptor.GROUPNAME','PLATOON:New(','BRIGADE:New(',
-  'OMW_GROUND_READY','OMW.Ground.Base.GetContext()','SITE_REARMED site=','SITE_SUPPORT_RETURNED site=','SITE_PASS site=','FIXED_FIRE_SUPPORT_REARM_CONFIRMED=true'
+  'OnAfterCeaseFire','OnAfterRearmed','CompleteConsumption','GROUND-LOCAL-REARM:','startArty = false','onRoad = false','WAREHOUSE.Descriptor.GROUPNAME','PLATOON:New(','BRIGADE:New(',
+  'OMW_GROUND_READY','OMW.Ground.Base.GetContext()','SITE_REARM_COMPLETED site=','SITE_REARMED site=','SITE_SUPPORT_RETURNED site=','SITE_PASS site=','FIXED_FIRE_SUPPORT_REARM_CONFIRMED=true'
 )
 foreach ($marker in $requiredMarkers) {
   if (-not $combined.Contains($marker)) { throw "Ground fire-support acceptance sources are missing required marker: $marker" }
@@ -57,10 +57,12 @@ foreach ($pattern in $forbiddenPatterns) {
 if ($fixedSupport -notmatch 'brigade:SetSpawnZone\(spawnZone, spawnZoneMaxDistanceM\)') { throw 'Fixed fire-support support module must use public WAREHOUSE SetSpawnZone.' }
 if ($fixedSupport -match 'brigade\s*:\s*SetValidateAndRepositionGroundUnits\s*\(') { throw 'Fixed fire-support support module must not call the broken pinned-MOOSE SetValidateAndRepositionGroundUnits path.' }
 if ($materializer -notmatch 'self\.brigade:AddAsset\(target\)') { throw 'Ground support materializer must return the known group through WAREHOUSE AddAsset.' }
+if ($rearmAdapter -notmatch 'self\.store:CompleteConsumption\(transactionId\)') { throw 'Ground ammo rearm adapter must persist COMPLETED from MOOSE OnAfterRearmed.' }
 if ($rearmAdapter -notmatch 'if startArty then\s+arty:Start\(\)') { throw 'Ground ammo rearm adapter is missing the guarded ARTY Start path.' }
 if ($fixedRearm -notmatch 'SCHEDULER:New') { throw 'Fixed fire-support rearm service must use the MOOSE SCHEDULER return watcher.' }
 if ($harness -notmatch 'startArty\s*=\s*false') { throw 'Combined acceptance harness must preserve prestarted ARTY full-ammo baselines.' }
 if ($harness -notmatch 'onRoad\s*=\s*false') { throw 'Combined acceptance harness must keep local support movement independent of roads.' }
+if ($harness -notmatch 'transaction\.status\s*~=\s*"COMPLETED"') { throw 'Combined acceptance harness must require durable COMPLETED before pass.' }
 if ($harness -notmatch 'for _, spec in ipairs\(SITE_SPECS\) do\s+startSite') { throw 'Combined acceptance harness must launch all configured site legs in the same run.' }
 foreach ($site in @('BOSTICK','WRIGHT','FORTRESS','HONAKER')) {
   $pattern = 'id\s*=\s*"' + $site + '"[\s\S]*?supportTemplate\s*=\s*"TPL_BLUE_GND_SUP_M1083"[\s\S]*?fireShells\s*=\s*DEFAULT_FIRE_SHELLS'
@@ -83,9 +85,10 @@ $header = @"
 -- GitCommit: $commit
 -- GeneratedUtc: $generatedUtc
 -- Gate/Test-ID: $testId
--- Scope: concurrent Bostick/Wright/Fortress L118 and Honaker 2B11 fixed-fire-support legs -> four-round controlled fire -> local M1083 Warehouse self-request materialization -> CampaignState GROUND_AMMO_PACKAGE consumption -> MOOSE ARTY RearmingGroup rearm -> MOOSE ARTY physical support return -> WAREHOUSE AddAsset return-to-stock -> per-site and aggregate confirmation.
+-- Scope: concurrent Bostick/Wright/Fortress L118 and Honaker 2B11 fixed-fire-support legs -> four-round controlled fire -> local M1083 Warehouse self-request materialization -> CampaignState GROUND_AMMO_PACKAGE consumption -> MOOSE ARTY RearmingGroup rearm -> durable CampaignState COMPLETED on MOOSE OnAfterRearmed -> MOOSE ARTY physical support return -> WAREHOUSE AddAsset return-to-stock -> per-site and aggregate confirmation.
 -- Diagnostic rollback: the earlier Honaker M939 plus forced 40-round depletion experiment is documentation-only evidence and is forbidden in this production-facing acceptance contract.
 -- Strategic authority: existing OMW.Ground.Base authoritative CampaignState store only.
+-- Restart contract: incomplete CONSUMED local-rearm transactions are compensated exactly once by Ground Base restore reconciliation; this acceptance run validates the successful COMPLETED branch, not a server-restart event.
 -- Ground spawn: public MOOSE WAREHOUSE SetSpawnZone only; the pinned-MOOSE SetValidateAndRepositionGroundUnits path is excluded because its UTILS.GetCenterPoint dependency is missing at runtime. No private road-spawn override is used.
 -- Support cleanup: public MOOSE ARTY return movement plus WAREHOUSE AddAsset after physical return confirmation.
 -- MIZ mutation: false. Safe target geometry and local support spawn geometry must be supplied by the named Mission Editor zones.
@@ -122,6 +125,8 @@ Write-Host "HonakerSupportTemplate: TPL_BLUE_GND_SUP_M1083"
 Write-Host "StrategicResource: GROUND_AMMO_PACKAGE"
 Write-Host "StrategicQuantityPerSite: 1"
 Write-Host "FireShellsPerSite: 4"
+Write-Host "DurableRearmCompletion: true"
+Write-Host "LocalRearmRestartCompensation: GroundBase restore path"
 Write-Host "ConcurrentSiteLegs: true"
 Write-Host "PrestartedARTYPreserved: true"
 Write-Host "LocalWarehouseSpawnZones: true"
