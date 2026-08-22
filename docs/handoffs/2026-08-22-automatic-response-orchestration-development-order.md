@@ -175,7 +175,7 @@ Status: `IN DEVELOPMENT`
 
 #### Stage 1A – Ground AMMO / Joyce -> Honaker
 
-Status: `DCS_DELIVERY_PATH_CONFIRMED / FULL_ROUNDTRIP_RETEST_REQUIRED`
+Status: `DCS_DELIVERY_PATH_CONFIRMED / PROTECTED_CONVOY_RETEST_BUILD_PASS`
 
 Target chain:
 
@@ -328,11 +328,22 @@ tools/build-ground-ammo-resupply-acceptance-1.ps1
 BuilderVersion: GROUND-AMMO-RESUPPLY-ACCEPTANCE-1-4
 ```
 
-New build status:
+Owner-local real build evidence:
 
 ```text
-NOT RUN LOCALLY YET
-new bundle SHA-256: UNKNOWN UNTIL OWNER BUILD
+Build Git HEAD: 0c082407c6d35f094037ecdf118f84c29bacf2bc
+GeneratedUtc: 2026-08-22T17:45:47Z
+BuilderVersion: GROUND-AMMO-RESUPPLY-ACCEPTANCE-1-4
+Bundle SHA-256: 3B42E2D3B302B489BBB567B2DC4AD6DEA393C0867ECE73C8107F856A1E016854
+Independent bundle SHA-256: 3B42E2D3B302B489BBB567B2DC4AD6DEA393C0867ECE73C8107F856A1E016854
+Builder SHA-256: 4922E8167C74B649C40369BFD73D811F8011FB7DCC8B203DE02BF8C6A609F045
+Acceptance source SHA-256: 21A5CFEBB5ED6747A5E71A78D977C71CE4B4D9E0B8139A510276F7F5EE800DD2
+MissionDemand source SHA-256: E348E75B87135B99D780E07CA6B6FB7C3C530E048E9C6DE790328D147DE32848
+ResourceDemandPolicy source SHA-256: BDC20ACEDAB60F662093077B8320220EBB71C6C641CC604C4356231B8405913C
+GroundRoadSpawnAdapter source SHA-256: 1A81FB2E5270C493373CF5BF6EC01F5AFED47004BF25C4225524121155D983E8
+MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+Moose.lua SHA-256: E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915
+Build result: PASS
 ```
 
 Detailed acceptance plan:
@@ -469,33 +480,32 @@ standard_template_available: TPL_BLUE_CONVOY_STANDARD_07
 package_per_truck_capacity: NOT_DEFINED
 automatic_convoy_class_selection: NOT_DEFINED
 acceptance_builder_version_next: GROUND-AMMO-RESUPPLY-ACCEPTANCE-1-4
-new_acceptance_build: NOT_RUN
-new_acceptance_bundle_sha256: UNKNOWN
+new_acceptance_build: PASS
+new_acceptance_build_git_head: 0c082407c6d35f094037ecdf118f84c29bacf2bc
+new_acceptance_bundle_sha256: 3B42E2D3B302B489BBB567B2DC4AD6DEA393C0867ECE73C8107F856A1E016854
+new_acceptance_builder_sha256: 4922E8167C74B649C40369BFD73D811F8011FB7DCC8B203DE02BF8C6A609F045
+new_acceptance_source_sha256: 21A5CFEBB5ED6747A5E71A78D977C71CE4B4D9E0B8139A510276F7F5EE800DD2
 production_ground_bundle_sha256: E616D35F5EBDBDDD4275785091D47F57445348D1FF4BB4CFBE7DEE0F0B12D78E
 production_runtime_implementation: NOT YET CREATED
-next_allowed_step: owner local PowerShell build and hash verification of acceptance -4
+next_allowed_step: owner Mission Editor replacement of Acceptance DO SCRIPT FILE resource in new MIZ revision, then static preflight
 ```
 
 ## 7. Next allowed step
 
-Nur der neue Acceptance-Build ist jetzt freigegeben:
+Der neue Acceptance-Build ist reproduzierbar nachgewiesen. Als nächstes darf der Projektinhaber im Mission Editor ausschließlich die Acceptance-Ressource aktualisieren:
 
 ```text
-git pull current branch
--> build tools/build-ground-ammo-resupply-acceptance-1.ps1
--> record Git HEAD / builder version / bundle SHA-256 / source hashes
--> return real console output
-```
-
-Erst danach:
-
-```text
-owner replaces only the Acceptance DO SCRIPT FILE resource in a new MIZ revision
--> retain current Ground production bundle E616D35F...
--> retain Moose.lua pin
--> retain existing Acceptance trigger conditions
+base MIZ: OMW_Template_v18.miz
+-> save as next MIZ revision
+-> keep Moose.lua unchanged
+-> keep OMW_AirOps_Warehouse_Base.lua unchanged
+-> keep current OMW_Ground_Base.lua unchanged
+-> keep Acceptance trigger and conditions unchanged
+-> replace only DO SCRIPT FILE resource OMW_Ground_Ammo_Resupply_Acceptance_1.lua
+   with local bundle SHA-256 3B42E2D3B302B489BBB567B2DC4AD6DEA393C0867ECE73C8107F856A1E016854
+-> save/close Mission Editor
 -> static MIZ/resource/hash preflight
--> DCS run only after that preflight passes
+-> no DCS run before preflight PASS
 ```
 
-Keine neue `.miz`-Mutation durch ChatGPT. Kein DCS-Lauf vor neuem Bundle-/MIZ-Provenienzgate.
+Keine `.miz`-Mutation durch ChatGPT. Kein DCS-Lauf vor neuem Bundle-/MIZ-Provenienzgate.
