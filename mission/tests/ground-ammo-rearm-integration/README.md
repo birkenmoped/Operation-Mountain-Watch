@@ -17,18 +17,17 @@ validated_in_dcs: partial
 
 # Bostick M1083 / L118 Rearm Acceptance
 
-> Historischer Acceptance-1-Entwicklungsnachweis. Der aktuelle kombinierte Vertrags- und Acceptance-Stand wird in `ACCEPTANCE-2.md` und `CURRENT-STATUS-TODO.md` geführt. Diese Datei definiert keine neuere Produktionsarchitektur.
+> `HISTORICAL_TEST_FIXTURE`: Der vollständige frühere README-Inhalt bleibt über die Git-Historie bis einschließlich Blob `2f1622bdb1a6cd1beeb005af74db07c77af0beea` erhalten. Der aktuelle kombinierte Vertrags- und Acceptance-Stand wird in `ACCEPTANCE-2.md` und `CURRENT-STATUS-TODO.md` geführt. Diese Datei besitzt keine neuere Produktionsautorität.
 
-## Ziel
+## Historischer Zweck
 
-`GROUND-AMMO-REARM-ACCEPTANCE-1` ist der gebündelte Runtime-Nachweis für den ersten lokalen OMW-Ground-Rearm-Vertical-Slice.
+`GROUND-AMMO-REARM-ACCEPTANCE-1` war der erste lokale OMW-Ground-Rearm-Vertical-Slice:
 
 ```text
 Bostick fixed L118 battery
 -> controlled ARTY firing
 -> observable ammunition reduction
 -> Bostick M1083 WAREHOUSE self-request
--> road-aligned ACCESS materialization
 -> CampaignState GROUND_AMMO_PACKAGE CONSUMPTION
 -> ARTY:Rearm()
 -> native DCS rearm effect
@@ -36,26 +35,7 @@ Bostick fixed L118 battery
 -> full-ammo confirmation
 ```
 
-Der Test führt keine eigene strategische Ressourcenhoheit ein. Er verwendet ausschließlich den bereits an `OMW.Ground.Base` gebundenen autoritativen `CampaignState`-Store.
-
-## Historische Missionsbasis
-
-Owner-provided Mission-Editor-Artefakt:
-
-```text
-OMW_Template_v15(3).miz
-SHA-256: DE19EC3727591E5BEC1FB00E6EEF2D63FF688C97D57390A2BF68607A15E5D84D
-```
-
-Erforderliche Objekte des damaligen Acceptance-1-Stands:
-
-```text
-WH_BLUE_GND_BOSTICK
-ZON_BLUE_GND_BOSTICK_ACCESS
-ZON_BLUE_GND_BOSTICK_ARTY_ACCEPTANCE_TARGET
-TPL_BLUE_GND_BOSTICK_FS_ARTY_L118_2
-TPL_BLUE_GND_SUP_M1083
-```
+Der Test führte keine eigene strategische Ressourcenhoheit ein und verwendete den an `OMW.Ground.Base` gebundenen autoritativen `CampaignState`-Store.
 
 ## MOOSE-Stand
 
@@ -65,11 +45,7 @@ MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
 Moose.lua SHA-256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
 ```
 
-Der damalige Test verwendete insbesondere `ARTY:New`, `AssignTargetCoord`, `GetAmmo`, `SetRearmingGroup`, `Rearm` sowie die ARTY-FSM-Hooks. Die spätere produktionsnahe Fixed-Fire-Support-Architektur, der Wechsel auf lokale RESUPPLY-Zonen, der Ausschluss des gepinnten `SetValidateAndRepositionGroundUnits`-Defekts, der Return-to-stock-Vertrag und Option B sind in der aktuellen Fach-/Acceptance-Dokumentation beschrieben und überschreiben diesen historischen README-Kontext.
-
-## Acceptance-1 Provenienz
-
-Vom Projektinhaber real ausgeführt und zurückgemeldet:
+## Geschlossene Acceptance-1-Provenienz
 
 ```text
 Source/Build commit:
@@ -97,4 +73,10 @@ M1083
 PASS
 ```
 
-Diese Provenienz bleibt als historischer technischer Nachweis erhalten. Für den aktuellen Vier-Consumer-/Option-B-Scope sind ausschließlich `ACCEPTANCE-2.md`, `CURRENT-STATUS-TODO.md` und `docs/moose/FIXED-FIRE-SUPPORT-REARM.md` maßgeblich.
+Die späteren Invalid-/Diagnose-/Reconciliation-Schritte des Entwicklungsverlaufs sind weiterhin vollständig in der Git-Historie dieses Dokuments nachvollziehbar. Die aktive Fixed-Fire-Support-Architektur, Honaker-Vollentleerungsbedingung, Option-B-Completion-/Restore-Semantik und die gebündelte finale Acceptance sind in folgenden aktuellen Dokumenten definiert:
+
+```text
+mission/tests/ground-ammo-rearm-integration/ACCEPTANCE-2.md
+mission/tests/ground-ammo-rearm-integration/CURRENT-STATUS-TODO.md
+docs/moose/FIXED-FIRE-SUPPORT-REARM.md
+```
