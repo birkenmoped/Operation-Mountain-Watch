@@ -123,15 +123,6 @@ Real bestätigt:
 -> aggregate PASS
 ```
 
-Frühere Diagnose-Provenienz:
-
-```text
-Source: 5c5fa0ba7653ef51144ca0223dd7cad0ad36f0a7
-BuilderVersion: GROUND-FIRE-SUPPORT-ACCEPTANCE-2-7
-Bundle SHA-256: 1655E4F2F5D4AB69BF4BDAFBD82CE3D8FF0049CD557245336B71C275F21BED3D
-DCS: 2.9.28.26385 MT
-```
-
 Daraus folgt ausschließlich:
 
 ```text
@@ -212,6 +203,8 @@ Deshalb gilt:
 Acceptance 2-11 validiert ExportSnapshot -> Restore -> ReconcileRestore in DCS.
 Acceptance 2-11 beweist keinen echten externen Server-/Prozess-Restart-Persistence-Pfad.
 ```
+
+Die Restore-Settlement-Phase von Acceptance 2-11 lief auf isolierten `CampaignState.Restore(...)`-Kopien **innerhalb derselben DCS-Session**. Sie ist kein physischer Server-Restart-Test und kein externer Persistenznachweis.
 
 Keine `io`-/`lfs`-Persistenz wird dafür neu eingeführt; keine `MissionScripting.lua`-Änderung und keine zweite Persistenzautorität.
 
@@ -300,7 +293,7 @@ Option B source implementation: COMPLETE
 Option B production bundles: BUILD/HASH VERIFIED
 Acceptance 2-11 build/hash: VERIFIED
 Acceptance 2-11 physical rearm: DCS PASS
-Acceptance 2-11 restore settlement: DCS PASS within runtime snapshot/restore scope
+Acceptance 2-11 restore settlement: DCS PASS within same-session runtime snapshot/restore scope
 Exact runtime MIZ provenance: CLOSED
 External filesystem/server persistence host: NOT PRESENT / NOT TESTED / NOT CLAIMED
 ```
