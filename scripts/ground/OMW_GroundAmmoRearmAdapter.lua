@@ -11,8 +11,10 @@ local Service = {}
 Service.__index = Service
 
 local TAG = "[OMW][Ground.AmmoRearm]"
+local REARM_RESERVATION_PREFIX = "GROUND-LOCAL-REARM:"
+local RESTART_CREDIT_PREFIX = "GROUND-LOCAL-REARM-RESTART:"
 
-GroundAmmoRearmAdapter.SchemaVersion = "OMW-GROUND-AMMO-REARM-ADAPTER-1"
+GroundAmmoRearmAdapter.SchemaVersion = "OMW-GROUND-AMMO-REARM-ADAPTER-2"
 
 local function fail(message)
   error(TAG .. " " .. tostring(message), 2)
@@ -46,26 +48,103 @@ local function requirePositive(value, label)
   return value
 end
 
+local function isLocalRearmTransaction(transaction)
+  return type(transaction) == "table"
+    and type(transaction.reservationId) == "string"
+    and transaction.reservationId:sub(1, #REARM_RESERVATION_PREFIX) == REARM_RESERVATION_PREFIX
+end
+
 local function noop() end
+
+local function validateStore(store)
+  requireTable(store, "store")
+  local required = {
+    "ReserveResource",
+    "Consume",
+    "CompleteConsumption",
+    "MarkConsumptionCompensated",
+    "Cancel",
+    "GetTransaction",
+    "CreditResourceOnce",
+    "GetResourceCredit",
+    "ExportSnapshot",
+  }
+  for _, methodName in ipairs(required) do
+    if type(store[methodName]) ~= "function" then
+      fail("store requires " .. methodName .. "()")
+    end
+  end
+  return store
+end
+
+local function validateCampaignState(campaignState)
+  requireTable(campaignState, "campaignState")
+  if type(campaignState.TransactionKind) ~= "table"
+      or campaignState.TransactionKind.CONSUMPTION == nil then
+    fail("campaignState.TransactionKind.CONSUMPTION is required")
+  end
+  if type(campaignState.TransactionStatus) ~= "table"
+      or campaignState.TransactionStatus.CONSUMED == nil
+      or campaignState.TransactionStatus.COMPLETED == nil
+      or campaignState.TransactionStatus.COMPENSATED == nil then
+    fail("campaignState consumption completion statuses are required")
+  end
+  return campaignState
+end
+
+function GroundAmmoRearmAdapter.ReconcileRestore(store, campaignState)
+  store = validateStore(store)
+  campaignState = validateCampaignState(campaignState)
+
+  local result = {
+    compensated = 0,
+    alreadyCompensated = 0,
+    completed = 0,
+    cancelledBeforeCommit = 0,
+  }
+
+  local snapshot = store:ExportSnapshot()
+  for _, transaction in ipairs(snapshot.transactions or {}) do
+    if isLocalRearmTransaction(transaction) then
+      if transaction.status == campaignState.TransactionStatus.CONSUMED then
+        local creditId = RESTART_CREDIT_PREFIX .. transaction.transactionId
+        local existingCredit = store:GetResourceCredit(creditId)
+        if not existingCredit then
+          store:CreditResourceOnce({
+            creditId = creditId,
+            nodeId = transaction.originNodeId,
+            resourceId = transaction.resourceId,
+            quantity = transaction.quantity,
+            canonicalUnit = transaction.canonicalUnit,
+            reason = "GROUND_LOCAL_REARM_RESTART_COMPENSATION",
+            entityId = transaction.carrierEntityId or transaction.transactionId,
+          })
+          result.compensated = result.compensated + 1
+        else
+          result.alreadyCompensated = result.alreadyCompensated + 1
+        end
+        store:MarkConsumptionCompensated(transaction.transactionId)
+      elseif transaction.status == campaignState.TransactionStatus.COMPLETED then
+        result.completed = result.completed + 1
+      elseif transaction.status == campaignState.TransactionStatus.COMPENSATED then
+        result.alreadyCompensated = result.alreadyCompensated + 1
+      elseif transaction.status == campaignState.TransactionStatus.RESERVED
+          or transaction.status == campaignState.TransactionStatus.LOADING then
+        store:Cancel(transaction.transactionId)
+        result.cancelledBeforeCommit = result.cancelledBeforeCommit + 1
+      end
+    end
+  end
+
+  return result
+end
 
 function GroundAmmoRearmAdapter.New(spec)
   requireTable(spec, "spec")
 
-  local store = requireTable(spec.store, "spec.store")
-  local campaignState = requireTable(spec.campaignState, "spec.campaignState")
+  local store = validateStore(spec.store)
+  local campaignState = validateCampaignState(spec.campaignState)
   local artyFactory = requireFunction(spec.artyFactory, "spec.artyFactory")
-
-  if type(store.ReserveResource) ~= "function"
-      or type(store.Consume) ~= "function"
-      or type(store.Cancel) ~= "function"
-      or type(store.GetTransaction) ~= "function" then
-    fail("spec.store requires ReserveResource(), Consume(), Cancel(), and GetTransaction()")
-  end
-
-  if type(campaignState.TransactionKind) ~= "table"
-      or campaignState.TransactionKind.CONSUMPTION == nil then
-    fail("spec.campaignState.TransactionKind.CONSUMPTION is required")
-  end
 
   return setmetatable({
     store = store,
@@ -104,7 +183,7 @@ function Service:Request(spec)
 
   local transaction, created = self.store:ReserveResource({
     transactionId = transactionId,
-    reservationId = spec.reservationId or transactionId,
+    reservationId = REARM_RESERVATION_PREFIX .. transactionId,
     missionDemandId = spec.missionDemandId,
     carrierEntityId = spec.carrierEntityId,
     kind = self.campaignState.TransactionKind.CONSUMPTION,
@@ -114,11 +193,13 @@ function Service:Request(spec)
     originNodeId = nodeId,
   })
 
+  if not created then
+    fail("local rearm transactionId cannot be reused across service lifecycles=" .. transactionId)
+  end
+
   local arty = self.artyFactory(artilleryGroup, spec.alias)
   if type(arty) ~= "table" then
-    if created then
-      self.store:Cancel(transactionId)
-    end
+    self.store:Cancel(transactionId)
     fail("artyFactory returned no ARTY object transactionId=" .. transactionId)
   end
 
@@ -132,9 +213,7 @@ function Service:Request(spec)
   end
   for _, methodName in ipairs(requiredMethods) do
     if type(arty[methodName]) ~= "function" then
-      if created then
-        self.store:Cancel(transactionId)
-      end
+      self.store:Cancel(transactionId)
       fail("ARTY object requires " .. methodName .. "() transactionId=" .. transactionId)
     end
   end
@@ -144,9 +223,7 @@ function Service:Request(spec)
 
   if spec.rearmingDistance ~= nil then
     if type(arty.SetRearmingDistance) ~= "function" then
-      if created then
-        self.store:Cancel(transactionId)
-      end
+      self.store:Cancel(transactionId)
       fail("ARTY object requires SetRearmingDistance() for configured distance transactionId=" .. transactionId)
     end
     arty:SetRearmingDistance(requirePositive(spec.rearmingDistance, "spec.rearmingDistance"))
@@ -154,9 +231,7 @@ function Service:Request(spec)
 
   if spec.rearmingSpeedKph ~= nil then
     if type(arty.SetRearmingGroupSpeed) ~= "function" then
-      if created then
-        self.store:Cancel(transactionId)
-      end
+      self.store:Cancel(transactionId)
       fail("ARTY object requires SetRearmingGroupSpeed() for configured speed transactionId=" .. transactionId)
     end
     arty:SetRearmingGroupSpeed(requirePositive(spec.rearmingSpeedKph, "spec.rearmingSpeedKph"))
@@ -196,8 +271,17 @@ function Service:Request(spec)
   end
 
   arty.OnAfterRearmed = function(_, Controllable, From, Event, To)
-    context.status = "REARMED"
-    self:_log("INFO", "rearm completed transactionId=" .. transactionId, context)
+    local ok, completedOrError = pcall(function()
+      return self.store:CompleteConsumption(transactionId)
+    end)
+    if not ok then
+      context.status = "COMPLETION_FAILED"
+      context.error = tostring(completedOrError)
+      self:_log("ERROR", "durable rearm completion failed transactionId=" .. transactionId, context)
+    else
+      context.status = "COMPLETED"
+      self:_log("INFO", "rearm completed transactionId=" .. transactionId, context)
+    end
     self.onRearmed(context, Controllable, From, Event, To)
   end
 
@@ -221,6 +305,14 @@ function Service:Request(spec)
   end
 
   return context, created
+end
+
+function GroundAmmoRearmAdapter.GetConfig()
+  return {
+    schemaVersion = GroundAmmoRearmAdapter.SchemaVersion,
+    reservationPrefix = REARM_RESERVATION_PREFIX,
+    restartCreditPrefix = RESTART_CREDIT_PREFIX,
+  }
 end
 
 return GroundAmmoRearmAdapter
