@@ -2,6 +2,8 @@
 --
 -- Architecture boundary:
 --   * Air Tasking owns stable ASR/ATM/EXE domain correlation only.
+--   * Canonical MissionDemand identity/state is consumed read-only from the campaign domain.
+--   * AAR-specific runtime demand fields are translated locally for the accepted AAR controller.
 --   * The existing AAR controller remains authoritative for AAR area/profile policy.
 --   * The existing AAR CampaignState adapter remains authoritative for KC-135 transactions.
 --   * MOOSE remains responsible for physical tanker execution through the existing controller.
@@ -19,11 +21,10 @@ local TERMINAL_MISSION_STATUS = {
   ABORTED = true,
 }
 
-local TERMINAL_REQUEST_STATUS = {
-  FULFILLED = true,
-  DENIED = true,
-  CANCELLED = true,
-  ABORTED = true,
+local TERMINAL_MISSION_DEMAND_STATUS = {
+  SUCCESS = true,
+  FAILED = true,
+  EXPIRED = true,
 }
 
 local ACTIVE_EXECUTION_STATUS = {
@@ -93,6 +94,32 @@ local function executionIsActive(attempt)
   return attempt and ACTIVE_EXECUTION_STATUS[attempt.status] == true
 end
 
+local function validateCanonicalMissionDemand(missionDemand)
+  requireTable(missionDemand, "missionDemand")
+  local missionDemandId = requirePrefix(missionDemand.id, "MD-", "missionDemand.id")
+  requireString(missionDemand.missionType, "missionDemand.missionType")
+
+  if type(missionDemand.priority) ~= "number" then
+    fail("missionDemand.priority must be numeric per canonical MissionDemand contract")
+  end
+  if missionDemand.status and TERMINAL_MISSION_DEMAND_STATUS[missionDemand.status] then
+    fail("terminal MissionDemand cannot be submitted for AAR support id=" .. missionDemandId)
+  end
+
+  return missionDemandId
+end
+
+local function buildAARRuntimeDemand(missionDemandId, missionDemand, aarDemand)
+  aarDemand = requireTable(aarDemand, "aarDemand")
+  return {
+    missionDemandId = missionDemandId,
+    receiverProfile = requireString(aarDemand.receiverProfile, "aarDemand.receiverProfile"),
+    operationsArea = requireString(aarDemand.operationsArea, "aarDemand.operationsArea"),
+    supportMode = requireString(aarDemand.supportMode, "aarDemand.supportMode"),
+    priority = missionDemand.priority,
+  }
+end
+
 function Bridge.New(spec)
   spec = requireTable(spec, "spec")
   local controller = requireTable(spec.controller, "spec.controller")
@@ -100,14 +127,10 @@ function Bridge.New(spec)
   requireFunction(controller.SubmitDemand, "controller.SubmitDemand")
   requireFunction(controller.EndDemand, "controller.EndDemand")
 
-  local baseAdapterModule = requireTable(spec.baseAdapterModule, "spec.baseAdapterModule")
-  requireFunction(baseAdapterModule.New, "baseAdapterModule.New")
-
   local nextExecutionId = requireFunction(spec.nextExecutionId, "spec.nextExecutionId")
 
   return setmetatable({
     controller = controller,
-    baseAdapterModule = baseAdapterModule,
     nextExecutionId = nextExecutionId,
     logger = spec.logger,
     recordsByMissionId = {},
@@ -119,7 +142,7 @@ end
 function Bridge:_Log(eventName, record, extra)
   local missionId = record and record.mission and record.mission.mission_id or "NONE"
   local requestId = record and record.request and record.request.request_id or "NONE"
-  local demandId = record and record.missionDemand and record.missionDemand.missionDemandId or "NONE"
+  local demandId = record and record.missionDemand and record.missionDemand.id or "NONE"
   local text = string.format("%s event=%s mission=%s request=%s demand=%s%s",
     TAG, tostring(eventName), tostring(missionId), tostring(requestId), tostring(demandId),
     extra and (" " .. tostring(extra)) or "")
@@ -285,67 +308,13 @@ function Bridge:_OnLost(selection, runtime, reason)
     "execution=" .. replacement.execution_attempt_id)
 end
 
-function Bridge:GetAdapterModule()
-  local owner = self
-  local baseModule = self.baseAdapterModule
-  local wrappedModule = {}
-
-  function wrappedModule.New(store, campaignState)
-    local base = baseModule.New(store, campaignState)
-    local proxy = {}
-
-    function proxy:CanMaterialize(selection)
-      return base:CanMaterialize(selection)
-    end
-
-    function proxy:OnMaterialized(selection, runtime)
-      local result = base:OnMaterialized(selection, runtime)
-      owner:_OnMaterialized(selection, runtime, result)
-      return result
-    end
-
-    function proxy:OnHandoff(selection, runtime)
-      local result = base:OnHandoff(selection, runtime)
-      owner:_OnHandoff(selection, runtime)
-      return result
-    end
-
-    function proxy:OnLost(selection, runtime, reason)
-      local result = base:OnLost(selection, runtime, reason)
-      owner:_OnLost(selection, runtime, reason)
-      return result
-    end
-
-    if type(base.ReconcileRestore) == "function" then
-      function proxy:ReconcileRestore()
-        return base:ReconcileRestore()
-      end
-    end
-
-    if type(base.GetPoolStatus) == "function" then
-      function proxy:GetPoolStatus(sourceDomain)
-        return base:GetPoolStatus(sourceDomain)
-      end
-    end
-
-    if type(base.GetConfig) == "function" then
-      function proxy:GetConfig()
-        return base:GetConfig()
-      end
-    end
-
-    return proxy
-  end
-
-  return wrappedModule
-end
-
 function Bridge:SubmitApprovedAAR(spec)
   spec = requireTable(spec, "spec")
   local requestId = requirePrefix(spec.requestId, "ASR-", "requestId")
   local missionId = requirePrefix(spec.missionId, "ATM-", "missionId")
   local missionDemand = requireTable(spec.missionDemand, "missionDemand")
-  local missionDemandId = requirePrefix(missionDemand.missionDemandId, "MD-", "missionDemand.missionDemandId")
+  local missionDemandId = validateCanonicalMissionDemand(missionDemand)
+  local runtimeDemand = buildAARRuntimeDemand(missionDemandId, missionDemand, spec.aarDemand)
 
   if spec.requestStatus ~= "APPROVED" then
     fail("SubmitApprovedAAR requires explicit requestStatus=APPROVED")
@@ -353,8 +322,10 @@ function Bridge:SubmitApprovedAAR(spec)
   if self.recordsByMissionId[missionId] then fail("duplicate missionId=" .. missionId) end
   if self.recordsByDemandId[missionDemandId] then fail("MissionDemand already bridged id=" .. missionDemandId) end
 
-  -- Use the existing AAR policy for validation and area/profile selection.
-  local selection, reason = self.controller.SelectArea(missionDemand)
+  -- Translate canonical MissionDemand + Air Tasking AAR planning fields into the
+  -- existing accepted AAR controller's small runtime-demand contract. The
+  -- controller remains authoritative for area/profile policy.
+  local selection, reason = self.controller.SelectArea(runtimeDemand)
   if not selection then
     return nil, reason
   end
@@ -366,7 +337,7 @@ function Bridge:SubmitApprovedAAR(spec)
     request_timing = spec.requestTiming,
     priority = missionDemand.priority,
     required_effect_or_task = spec.requiredEffectOrTask or "AAR_SUPPORT",
-    area_or_target_reference = missionDemand.operationsArea,
+    area_or_target_reference = runtimeDemand.operationsArea,
     status = "APPROVED",
     assigned_mission_ids = { missionId },
     change_serial = spec.requestChangeSerial or 0,
@@ -391,6 +362,7 @@ function Bridge:SubmitApprovedAAR(spec)
     request = request,
     mission = mission,
     missionDemand = shallowCopy(missionDemand),
+    runtimeDemand = runtimeDemand,
     selection = shallowCopy(selection),
     executionAttempts = {},
     pendingTerminal = nil,
@@ -399,7 +371,7 @@ function Bridge:SubmitApprovedAAR(spec)
   self.recordsByMissionId[missionId] = record
   self.recordsByDemandId[missionDemandId] = record
 
-  local runtimeOrTrack, submitReason = self.controller.SubmitDemand(missionDemand)
+  local runtimeOrTrack, submitReason = self.controller.SubmitDemand(runtimeDemand)
   if not runtimeOrTrack then
     self.recordsByMissionId[missionId] = nil
     self.recordsByDemandId[missionDemandId] = nil
@@ -412,7 +384,7 @@ function Bridge:SubmitApprovedAAR(spec)
     string.format("area=%s controllerReason=%s", tostring(selection.area), tostring(submitReason)))
 
   -- If the existing controller reused an already materialized compatible runtime,
-  -- no new adapter OnMaterialized event is emitted. Correlate that runtime here.
+  -- no new materialization observation occurs. Correlate that runtime here.
   if type(runtimeOrTrack) == "table" and type(runtimeOrTrack.runtimeId) == "string" then
     self:_StartExecution(record, runtimeOrTrack)
   end
@@ -452,7 +424,7 @@ function Bridge:EndAAR(missionId, outcome)
 
   record.pendingTerminal = terminal
   record.mission.closure_reason = outcome
-  local controllerResult, reason = self.controller.EndDemand(record.missionDemand, controllerStatus)
+  local controllerResult, reason = self.controller.EndDemand(record.runtimeDemand, controllerStatus)
 
   -- EndDemand removes queued reserve materialization when the demand is closed.
   -- Any stable PENDING EXE record therefore becomes cancelled for this mission.
