@@ -13,8 +13,8 @@ project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
   - registry that listed Document 22 only as a branch reservation
 superseded_by:
-source_branch: main
-source_commit: GIT_HISTORY
+source_branch: agent/ground-order-foundation
+source_commit: PENDING_MERGE
 validated_in_dcs: false
 ---
 
@@ -111,6 +111,7 @@ Eine Nummer und eine stabile `document_id` dürfen im aktuellen Bestand jeweils 
 | 88 | `OMW-AIR-TASKING-PLAN-FOUNDATION` | `docs/88-air-tasking-plan-foundation.md` | `BINDING_PROJECT_DECISION` | Air-Tasking-Plan-Architektur und MOOSE-Integrationsgrenze |
 | 89 | `OMW-AAR-ACCEPTANCE-7-FINALIZATION` | `docs/89-aar-acceptance-7-finalization.md` | `BINDING_PROJECT_DECISION` | Acceptance-7-abgeleitete finale AAR-Designbaseline |
 | 90 | `OMW-PLAN-MISSION-DEMAND-RESUPPLY-CAS` | `docs/90-mission-demand-resupply-and-cas-orchestration-concept.md` | `PLANNED` | MissionDemand-, Resupply- und Immediate-CAS-Orchestrierung |
+| 91 | `OMW-GROUND-ORDER-OPORD-FRAGO-FOUNDATION` | `docs/91-ground-order-opord-frago-foundation.md` | `PLANNED` | Ground-Order-Architektur, OPORD/FRAGO, GroundTask/ExecutionAttempt und MOOSE-Ausführungsgrenze |
 
 ## 3. Reservierte Nummern auf offenen Branches
 
