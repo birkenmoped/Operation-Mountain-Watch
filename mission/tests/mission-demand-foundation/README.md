@@ -16,7 +16,7 @@ project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
 superseded_by:
 source_branch: agent/mission-demand-reconciliation
-source_commit: PENDING_MERGE
+source_commit: afb572d82b8f804d2af0d338c77a2fd77df13307
 validated_in_dcs: false
 ---
 
@@ -146,13 +146,25 @@ Alle 18 verbleibenden Fehler liegen in bereits auf `main` vorhandenen Army-Groun
 
 ## Diff-Prüfung
 
-Der Projektinhaber hat für den zuvor veröffentlichten Reconciliation-Stand real ausgeführt:
+Der Projektinhaber hat für den veröffentlichten Inhaltsstand
+
+```text
+afb572d82b8f804d2af0d338c77a2fd77df13307
+```
+
+real ausgeführt:
 
 ```text
 git diff --check origin/main...HEAD
 ```
 
-ohne Ausgabe und damit ohne Whitespace-Fehler. Nach den beiden nachfolgenden Dokumentations-/CI-Commits ist vor einer Mergefreigabe erneut ein finaler `git diff --check` gegen den dann aktuellen Branch-Head erforderlich.
+mit dem Ergebnis:
+
+```text
+PASS git diff --check
+```
+
+Der nachfolgende Provenienzabschluss ändert nur Dokumentationsmetadaten. Vor dem Merge bleibt ein letzter lokaler Pull-/Hash-/Diff-Readback des finalen Branch-Heads erforderlich.
 
 ## Aktueller Status
 
@@ -161,6 +173,7 @@ SOURCE RECONCILED AGAINST CURRENT MAIN
 MISSIONDEMAND CONTRACT TESTS PASS ON LUA 5.4.6
 DOCUMENT 90 REGISTRY ERROR FIXED
 DOCUMENTATION VALIDATOR: 18 INHERITED MAIN ERRORS / 0 BRANCH-SPECIFIC ERRORS
+CONTENT DIFF CHECK PASS AT afb572d82b8f804d2af0d338c77a2fd77df13307
 DCS TEST NOT REQUIRED FOR THIS DOMAIN-ONLY STEP
 ```
 
@@ -170,11 +183,12 @@ DCS TEST NOT REQUIRED FOR THIS DOMAIN-ONLY STEP
 GATE 1  Lua contract tests                         PASS
 GATE 2  Branch-specific documentation validation  PASS
         repository-wide workflow remains red due to 18 inherited main errors
-GATE 3  Final complete branch diff review          OPEN
+GATE 3  Complete branch diff review                PASS FOR CONTENT HEAD afb572d82b8f804d2af0d338c77a2fd77df13307
+        final provenance-head readback remains required before merge
 GATE 4  Owner decision: target/reorder/critical    NOT YET REQUESTED
 GATE 5  First physical RESUPPLY vertical slice     BLOCKED BY GATE 4
 GATE 6  BLUE COMMANDER reconciliation              SEPARATE DEPENDENCY
 GATE 7  Hit -> Incident -> CAS_IMMEDIATE            LATER
 ```
 
-Keine DCS-Runtime-Aussage dieses Dokuments ist `VALIDATED`. Die aktuelle PASS-Aussage gilt ausschließlich für die Lua-Contract-Tests des dokumentierten Branch-Stands.
+Keine DCS-Runtime-Aussage dieses Dokuments ist `VALIDATED`. Die aktuelle PASS-Aussage gilt ausschließlich für die Lua-Contract-Tests und die dokumentierten Source-/Diff-Prüfungen des genannten Branch-Stands.
