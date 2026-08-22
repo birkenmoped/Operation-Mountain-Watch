@@ -121,6 +121,7 @@ Eine Nummer und eine stabile `document_id` dürfen im aktuellen Bestand jeweils 
 | 18 | 27 | branchlokale Kollision; vor Integration zwingend neu nummerieren |
 | 24 | 31 | branchlokale ältere Fassung; die reduzierte `main`-Fassung von Dokument 31 ist autoritativ |
 | 24 | 32–36 | nur Draft-PR #24; Bagram/Kandahar; vor Integration gegen den aktuellen `main`-Bestand und Nummernkollisionen prüfen |
+| 116 | 91 | Draft-PR #116; Ground Order Foundation (OPORD/FRAGO/GroundTask/ExecutionAttempt), vor Merge gegen `main` erneut prüfen |
 
 ## 4. Nicht nummerierte aktuelle Dokumente
 
