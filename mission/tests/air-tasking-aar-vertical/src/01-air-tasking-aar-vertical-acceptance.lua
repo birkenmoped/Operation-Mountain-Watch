@@ -4,14 +4,16 @@
 --   * wait for the accepted OMW.AirOps.AAR facade to be RUNNING;
 --   * attach Air Tasking without recreating/replacing the AAR base;
 --   * wait for the accepted four STANDARD AAR tracks to reach a stable baseline;
---   * submit one approved WEST/FAST MissionDemand through the Air Tasking bridge;
+--   * submit one canonical-shape MissionDemand plus AAR planning fields through the Air Tasking bridge;
+--   * verify translation to the accepted AAR runtime-demand contract;
 --   * verify LISA reserve materialization, stable ASR/ATM/EXE correlation and natural track arrival;
 --   * close the mission only after natural on-station arrival;
---   * verify external handoff, exact-once strategic recredit and terminal domain state.
+--   * verify external handoff, exact-once strategic recredit and terminal Air Tasking domain state.
 --
--- This harness does not alter AAR routing, fuel, relief, CampaignState accounting or MOOSE internals.
+-- This harness does not alter MissionDemand state, AAR routing, fuel, relief,
+-- CampaignState accounting or MOOSE internals.
 
-local TEST_ID = "AIR-TASKING-AAR-VERTICAL-2"
+local TEST_ID = "AIR-TASKING-AAR-VERTICAL-3"
 local TAG = "[OMW][TEST][AirTaskingAARVertical]"
 local POLL_SEC = 5
 local ATTACH_POLL_SEC = 1
@@ -77,30 +79,60 @@ local function submitDemand()
   local pool = vertical.AAR.StrategicAdapter:GetPoolStatus("AL_UDEID")
   baselineAlUdeidAvailable = pool.available
 
+  -- Canonical MissionDemand contract shape from current main. This acceptance
+  -- fixture is read-only input to Air Tasking; the bridge does not own or mutate
+  -- the MissionDemand lifecycle.
+  local canonicalDemand = {
+    id = DEMAND_ID,
+    missionType = "CAS_IMMEDIATE",
+    origin = "AIR_TASKING_AAR_VERTICAL_ACCEPTANCE",
+    objective = "Provide AAR support to a WEST receiver package",
+    target = { operationsArea = "WEST" },
+    priority = 100,
+    playerCapable = true,
+    aiCapable = true,
+    reservationState = nil,
+    expiresAt = nil,
+    successCriteria = { aarSupport = true },
+    failureConsequences = nil,
+    resourceReservation = nil,
+    createdReason = "AIR_TASKING_AAR_VERTICAL_ACCEPTANCE",
+    dedupeKey = "AIR_TASKING_AAR_VERTICAL|WEST|FAST",
+    status = "OPEN",
+    assignedTo = nil,
+    result = nil,
+    failureReason = nil,
+  }
+
   local record, reason = vertical.SubmitApprovedAAR({
     requestId = REQUEST_ID,
     missionId = MISSION_ID,
     requestStatus = "APPROVED",
     requestTiming = "PREPLANNED",
     requiredEffectOrTask = "AAR_SUPPORT",
-    missionDemand = {
-      missionDemandId = DEMAND_ID,
+    missionDemand = canonicalDemand,
+    aarDemand = {
       receiverProfile = "FAST",
       operationsArea = "WEST",
       supportMode = "SUPPORT",
-      priority = "ACCEPTANCE",
     },
   })
 
   assertTrue(record ~= nil, "SubmitApprovedAAR rejected reason=" .. tostring(reason))
   assertEqual(record.request.request_id, REQUEST_ID, "request id")
+  assertEqual(record.request.mission_demand_id, DEMAND_ID, "canonical MissionDemand id")
   assertEqual(record.mission.mission_id, MISSION_ID, "mission id")
   assertEqual(record.mission.mission_area_id, "LISA", "mission area")
+  assertEqual(record.runtimeDemand.missionDemandId, DEMAND_ID, "runtime MissionDemand correlation")
+  assertEqual(record.runtimeDemand.receiverProfile, "FAST", "runtime receiver profile")
+  assertEqual(record.runtimeDemand.operationsArea, "WEST", "runtime operations area")
+  assertEqual(record.runtimeDemand.supportMode, "SUPPORT", "runtime support mode")
+  assertEqual(record.runtimeDemand.priority, 100, "runtime numeric priority")
   assertEqual(record.request.status, "TASKED", "request status after submit")
   assertEqual(record.mission.status, "TASKED", "mission status after submit")
 
   demandSubmitted = true
-  log(string.format("DEMAND_SUBMITTED demand=%s request=%s mission=%s reason=%s baselineAlUdeidAvailable=%s",
+  log(string.format("DEMAND_SUBMITTED demand=%s request=%s mission=%s reason=%s baselineAlUdeidAvailable=%s canonicalContract=true",
     DEMAND_ID, REQUEST_ID, MISSION_ID, tostring(reason), tostring(baselineAlUdeidAvailable)))
 end
 
@@ -124,7 +156,7 @@ local function finalPass()
   end
 
   log(string.format(
-    "CORRELATION_PASS demand=%s request=%s mission=%s execution=%s runtimePersisted=false",
+    "CORRELATION_PASS demand=%s request=%s mission=%s execution=%s runtimePersisted=false canonicalContract=true",
     DEMAND_ID, REQUEST_ID, MISSION_ID, tostring(attempts[#attempts].execution_attempt_id)))
   log(string.format("SETTLEMENT_PASS source=AL_UDEID available=%s", tostring(pool.available)))
   log("RESULT PASS testId=" .. TEST_ID)
@@ -202,7 +234,7 @@ local function attachWhenReady()
   assertEqual(vertical.AAR.Config.sourceDomainByArea.LISA, "AL_UDEID", "LISA source")
   assertEqual(vertical.AAR.Config.firFixByArea.LISA, "DAVER", "LISA FIR fix")
 
-  log("EXISTING_AAR_ATTACH_PASS sameFacade=true adapterRecreated=false testId=" .. TEST_ID)
+  log("EXISTING_AAR_ATTACH_PASS sameFacade=true adapterRecreated=false adapterMutated=false testId=" .. TEST_ID)
   if attachScheduler then attachScheduler:Stop() end
   testScheduler = SCHEDULER:New(nil, pollTest, {}, POLL_SEC, POLL_SEC)
 end
