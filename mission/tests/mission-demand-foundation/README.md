@@ -41,7 +41,9 @@ scripts/campaign/OMW_ResourceDemandPolicy.lua
 tests/mission-demand/test_mission_demand.lua
 tests/mission-demand/test_resource_demand_policy.lua
 tests/mission-demand/run.lua
+.github/workflows/mission-demand-validation.yml
 docs/90-mission-demand-resupply-and-cas-orchestration-concept.md
+docs/DOCUMENT-REGISTRY.md
 ```
 
 ## Bewusst nicht aus dem Legacy-Branch übernommen
@@ -87,7 +89,7 @@ critical = 0
 
 Damit erzeugt die Policy aus dem aktuellen produktiven Ground-Bestand noch keinen automatischen RESUPPLY-Bedarf. Schwellenwerte werden nicht erfunden.
 
-## Tests
+## Lua-Contract-Tests
 
 Runner:
 
@@ -95,7 +97,18 @@ Runner:
 tests/mission-demand/run.lua
 ```
 
-Erwartete Ausgabe bei Erfolg:
+GitHub-Actions-Nachweis:
+
+```text
+workflow: MissionDemand validation
+run: 32582386144
+source head: ec92b8128cf097895983eaebf807a7e160863665
+runner: ubuntu-24.04
+Lua: 5.4.6
+result: PASS
+```
+
+Reale Testausgabe:
 
 ```text
 PASS test_mission_demand
@@ -103,25 +116,65 @@ PASS test_resource_demand_policy
 PASS mission-demand test suite
 ```
 
-Aktueller Status:
+Der lokale Windows-Entwicklungsrechner besitzt weiterhin keinen separaten Lua-Interpreter. Der Contract-Test wurde daher reproduzierbar im PR-Workflow gegen den dokumentierten Branch-Head ausgeführt. Es handelt sich um Domain-/Unit-Evidenz und nicht um DCS-Runtime-Acceptance.
+
+## Dokumentationsvalidator
+
+Der erste PR-Lauf meldete 19 Fehler. Davon war genau ein Fehler durch diesen Branch verursacht:
+
+```text
+docs/DOCUMENT-REGISTRY.md:
+numbered document is not registered:
+docs/90-mission-demand-resupply-and-cas-orchestration-concept.md
+```
+
+Dokument 90 wurde daraufhin im zentralen Dokumentregister ergänzt.
+
+Der Wiederholungslauf gegen Commit
+
+```text
+9f77718cd669c524b95dfd15c53ace751b198ddb
+```
+
+meldete danach:
+
+```text
+documentation validation: 18 error(s), 0 warning(s)
+```
+
+Alle 18 verbleibenden Fehler liegen in bereits auf `main` vorhandenen Army-Ground-/Ground-Dokumenten und werden in diesem MissionDemand-Reconciliation-PR nicht fachfremd korrigiert. Für die in diesem Branch neu hinzugefügten beziehungsweise geänderten MissionDemand-Dokumente meldete der Validator keinen verbleibenden Fehler.
+
+## Diff-Prüfung
+
+Der Projektinhaber hat für den zuvor veröffentlichten Reconciliation-Stand real ausgeführt:
+
+```text
+git diff --check origin/main...HEAD
+```
+
+ohne Ausgabe und damit ohne Whitespace-Fehler. Nach den beiden nachfolgenden Dokumentations-/CI-Commits ist vor einer Mergefreigabe erneut ein finaler `git diff --check` gegen den dann aktuellen Branch-Head erforderlich.
+
+## Aktueller Status
 
 ```text
 SOURCE RECONCILED AGAINST CURRENT MAIN
-TEST SOURCE COMMITTED
-LUA INTERPRETER EXECUTION PENDING
+MISSIONDEMAND CONTRACT TESTS PASS ON LUA 5.4.6
+DOCUMENT 90 REGISTRY ERROR FIXED
+DOCUMENTATION VALIDATOR: 18 INHERITED MAIN ERRORS / 0 BRANCH-SPECIFIC ERRORS
 DCS TEST NOT REQUIRED FOR THIS DOMAIN-ONLY STEP
 ```
 
 ## Nächste Gates
 
 ```text
-GATE 1  Lua contract tests                         OPEN
-GATE 2  Documentation validator                    OPEN
-GATE 3  Complete branch diff review                OPEN
+GATE 1  Lua contract tests                         PASS
+GATE 2  Branch-specific documentation validation  PASS
+        repository-wide workflow remains red due to 18 inherited main errors
+GATE 3  Final complete branch diff review          OPEN
 GATE 4  Owner decision: target/reorder/critical    NOT YET REQUESTED
 GATE 5  First physical RESUPPLY vertical slice     BLOCKED BY GATE 4
 GATE 6  BLUE COMMANDER reconciliation              SEPARATE DEPENDENCY
 GATE 7  Hit -> Incident -> CAS_IMMEDIATE            LATER
 ```
 
-Keine Runtime-Aussage dieses Dokuments ist `VALIDATED`, solange der entsprechende reproduzierbare Test nicht dokumentiert ist.
+Keine DCS-Runtime-Aussage dieses Dokuments ist `VALIDATED`. Die aktuelle PASS-Aussage gilt ausschließlich für die Lua-Contract-Tests des dokumentierten Branch-Stands.
