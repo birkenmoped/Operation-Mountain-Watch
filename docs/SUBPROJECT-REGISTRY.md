@@ -14,8 +14,8 @@ project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
   - incomplete open-branch list in the documentation index
 superseded_by:
-source_branch: main
-source_commit: 341a65105c24807de3ac289bb18d80339111cbd1
+source_branch: agent/mission-demand-resupply-thresholds
+source_commit: 59222ad8e673d5e2cd72f4ee7cd5b8e3b7e012bf
 validated_in_dcs: false
 ---
 
@@ -59,6 +59,7 @@ Dieses Register bildet offene Pull Requests, ihre Abhängigkeiten, Dokumentation
 | 52 | `agent/salerno-read-only-diagnostics` | alter Air-Ops-Stack | Salerno COMMANDER-/Runtime-Historie | Tests/Builder/Evidenz | `DRAFT`; kanonische Foundation auf `main` | `ACCEPTED_TECHNICAL_BASELINE` für dokumentierten Stage-18-Stand | offen | technische Fixture-/Runtime-Historie |
 | 66–84 | Warehouse-/CampaignState-/STORAGE-Stack | PR 66 startete von `main`; danach gestapelt | Resource ownership, Fuel/Weapon STORAGE, CampaignState transactions, loss/recovery, final fighter mapping | `scripts/campaign/`, `scripts/logistics/`, Warehouse-Testfixtures und branchgebundene Detaildokumentation | offene Draft-Historie; keine pauschale Main-Autorität | mehrere exakt dokumentierte DCS-Acceptance-Stände; finaler Fighter-Gate PASS | 85 | nicht als 214-Commit-Stack direkt integrieren; PR 85 war der saubere Main-Reconciliation-Pfad |
 | 86 | `agent/air-ops-initial-stock-runtime-data` | `main` nach gemergtem PR 85 | AirOps Initial Stock Runtime, CampaignState-Initialisierung und zentraler Warehouse-Bootstrap | `scripts/logistics/`, `mission/tests/air-ops-warehouse-bootstrap/`, MOOSE-STORAGE-Dokumentation | `DRAFT`; aktuell nicht mergebar gegen `main` | `ACCEPTED_TECHNICAL_BASELINE` für Warehouse-Bootstrap auf Commit `2502516fe130b908e500117142399b3e2ca74007`; separate Onboard-Ammo-Acceptance offen | offen | Warehouse-Bootstrap technisch akzeptiert; vor Integration Reconciliation gegen aktuellen `main` erforderlich |
+| 115 | `agent/mission-demand-resupply-thresholds` | `main` nach PR 114 | Ground-RESUPPLY Schwellen 50%/25% | `scripts/logistics/OMW_GroundInitialStock.lua`, `tests/mission-demand/`, Dokument 90 | `DRAFT`; Ready/Merge nicht freigegeben | MissionDemand Lua-Contract PASS; branchspezifische Dokumentationsprüfung PASS; kein DCS-Runtime-Claim | erster physischer RESUPPLY-Vertical-Slice | schließt nur Threshold-Gate; keine physische Ausführung |
 
 Der Arbeitsbranch `agent/army-ground-foundation-reconciliation` besitzt zum Stand dieser Reconciliation noch keinen Pull Request und wird daher nicht mit einer erfundenen PR-Nummer in die Tabelle aufgenommen. Sobald ein PR existiert, ist er hier mit realem PR-Status und Abhängigkeit nachzutragen.
 
@@ -81,8 +82,9 @@ main
 ├── PR 41
 ├── PR 45
 ├── PR 49
-└── PR 66 → ... → PR 84
-                    └── PR 85 (merged clean Warehouse reconciliation)
+├── PR 66 → ... → PR 84
+│                   └── PR 85 (merged clean Warehouse reconciliation)
+└── PR 115 (Ground RESUPPLY threshold gate; Draft)
 
 main
 └── PR 86 (AirOps initial-stock runtime and accepted Warehouse bootstrap; reconciliation required)
@@ -117,7 +119,6 @@ status: MERGED
 source_head: c8d1cad4ce7469f350b6a3d6e10fee955348620c
 merge_commit: 341a65105c24807de3ac289bb18d80339111cbd1
 acceptance_boundary: Lua contract tests PASS; kein DCS-Runtime-Claim
-resource_boundary: automatische Ground-Resupply-Erzeugung bleibt bei reorder=0 / critical=0 deaktiviert
 ```
 
 ## 4. Verbindliche Regeln
