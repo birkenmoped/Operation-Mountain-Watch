@@ -9,7 +9,6 @@ authoritative_for:
   - branch-local merge-readiness assessment
 not_authoritative_for:
   - repository-wide architecture beyond merged BINDING documents on main
-  - DCS runtime acceptance
   - final owner decision to merge the branch
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
@@ -17,7 +16,7 @@ supersedes:
 superseded_by:
 source_branch: agent/air-tasking-plan-foundation
 source_commit: PENDING_MERGE
-validated_in_dcs: false
+validated_in_dcs: true
 ---
 
 # Air Tasking Plan Foundation – Aktueller Stand
@@ -28,33 +27,37 @@ validated_in_dcs: false
 PHASE 0  Governance / Reconciliation / Contracts          PASS
 PHASE 1  Domain Data Model                               PASS
 PHASE 2  MOOSE-First Capability Verification            PASS
-PHASE 3  First Vertical Integration – AAR                IN PROGRESS
+PHASE 3  First Vertical Integration – AAR                PASS
 PHASE 4  Player-Facing Mission Products                  NOT STARTED
 PHASE 5  Ground Alert / CAS Request Lifecycle            NOT STARTED
 PHASE 6  Dynamic Planning / Retasking / Persistence      NOT STARTED
 ```
 
-Phase 0 bis 2 sind branch-lokale PASS-Staende. Phase 3 ist noch nicht in DCS validiert.
+Phase 0 bis 2 sind branch-lokale PASS-Staende. Phase 3 ist mit `AIR-TASKING-AAR-VERTICAL-2` in DCS validiert. Die technische Acceptance-Provenienz steht in `mission/tests/air-tasking-aar-vertical/README.md`.
 
 ## 2. Gepruefte Missions-/MOOSE-Baseline
 
-Die aktuelle vom Projektinhaber bereitgestellte Mission wurde ausschliesslich lesend geprueft:
+Der erfolgreiche Phase-3-Lauf basiert auf folgendem exakt dokumentierten Stand:
 
 ```text
-mission artifact: OMW_Template_v12_groundworks(2).miz
-mission SHA-256: 3c634370d43d57ed4788c55d991c903441cdfa57709581af61debb4105f9a078
+acceptance branch: agent/air-tasking-plan-foundation
+executable source commit: 1e52a9a685a58d54d0ebc6321d9b1aa81ab4427d
+mission artifact: OMW_Template_v16(6).miz
+mission SHA-256: 5bc2382cf6ea30a77297b4ff3b36b65488dbcb34429d02c9618f1f449814dada
+DCS: 2.9.28.26385 MT
 embedded source: l10n/DEFAULT/Moose.lua
 MOOSE context: develop
 MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
 Moose.lua SHA-256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
 existing AAR resource: l10n/DEFAULT/OMW_AAR_Base.lua
+additive Air Tasking bundle SHA-256: 30701722eb739fb17b1f827fc681729a6ee781dedd223eab3b03fc72e78ab8a0
 ```
 
-Die bestehende AAR-Base bleibt unveraendert.
+Die bestehende AAR-Base blieb unveraendert.
 
 ## 3. Phase-3-Architektur
 
-Verbindliche branch-lokale Integrationsrichtung:
+Branch-lokal validierte Integrationsrichtung:
 
 ```text
 existing OMW_AAR_Base.lua
@@ -129,50 +132,53 @@ Additive Test Bundle:
 30701722eb739fb17b1f827fc681729a6ee781dedd223eab3b03fc72e78ab8a0
 ```
 
-Der unabhaengige `Get-FileHash` bestaetigte den Bundle-Hash. Dies ist Build-/Source-Evidenz, kein DCS-Runtime-PASS.
+Der unabhaengige `Get-FileHash` bestaetigte den Bundle-Hash.
 
 ## 6. DCS Vertical Acceptance
 
-Die lokal gebaute Datei lautet:
-
-```text
-mission/tests/air-tasking-aar-vertical/dist/OMW_AirTasking_AAR_Vertical_Test.lua
-```
-
-Sie wird durch den Projektinhaber als **zusaetzliche** Mission-Editor-`DO SCRIPT FILE`-Aktion eingefuegt. `OMW_AAR_Base.lua` bleibt unangetastet.
-
-Der Test wartet auf die bereits laufende AAR-Base und prueft anschliessend:
+Der reale DCS-Lauf `dcs(20260822-164658).log` bestaetigt die komplette vorgesehene Kette:
 
 ```text
 EXISTING_AAR_ATTACH_PASS
--> four STANDARD tracks
--> WEST/FAST MissionDemand
--> LISA reserve materialization
--> stable MD/ASR/ATM/EXE correlation
--> natural track arrival
+-> STANDARD_BASELINE_PASS
+-> WEST/FAST MissionDemand MD-000001
+-> LISA reserve materialization AAR-0005
+-> ASR-000001 / ATM-000001 / EXE-000001 correlation
+-> natural FIR ingress
+-> natural 60-NM late approach
+-> NATURAL_LISA_ON_STATION_PASS
 -> EndAAR(COMPLETE)
--> external handoff
--> exact-once AL_UDEID recredit
+-> FIR egress DAVER
+-> OFFMAP_HANDOFF
+-> EXE ENDED / HANDOFF
+-> ATM COMPLETED
+-> ASR FULFILLED
+-> AL_UDEID available back to 38
+-> runtime_id not persisted
+-> CORRELATION_PASS
+-> SETTLEMENT_PASS
 -> RESULT PASS
 ```
+
+Die additive Beobachtung meldete dabei ausdruecklich:
+
+```text
+existingAARBase=true
+adapterRecreated=false
+adapterMutated=false
+observerIntervalSec=5
+```
+
+Damit ist der getestete Phase-3-Pfad technisch akzeptiert, ohne die bestehende AAR Acceptance-7 zu ersetzen.
 
 ## 7. Gate 3
 
 ```text
-GATE 3: OPEN
-validated_in_dcs: false
+GATE 3: PASS
+validated_in_dcs: true
 ```
 
-Vor einem PASS erforderlich:
-
-```text
-manual Mission Editor insertion by project owner
-Mission SHA-256
-tested DCS version
-embedded MOOSE commit/hash
-required runtime logs
-RESULT PASS
-```
+Die technische Acceptance gilt exakt fuer die in `mission/tests/air-tasking-aar-vertical/README.md` dokumentierte Branch-/Commit-/Mission-/Bundle-/DCS-/MOOSE-Provenienz.
 
 ## 8. Merge-Readiness
 
@@ -183,7 +189,6 @@ MERGE TO MAIN NOW: NOT YET RECOMMENDED
 Vor Integration noch erforderlich:
 
 ```text
-Gate-3 DCS vertical acceptance
 current-main reconciliation
 full branch diff review
 document metadata / registry / provenance review
