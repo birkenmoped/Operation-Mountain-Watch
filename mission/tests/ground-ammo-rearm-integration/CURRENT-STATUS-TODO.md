@@ -344,10 +344,10 @@ STATUS: COMPLETE
 ### TODO 2 – MOOSE-/Acceptance-Dokumentation finalisieren
 
 ```text
-STATUS: SUBSTANTIALLY COMPLETE / FINAL REVIEW PENDING
+STATUS: BUILD PROVENANCE RECORDED / FINAL REVIEW PENDING
 ```
 
-`ACCEPTANCE-2.md` und `docs/moose/FIXED-FIRE-SUPPORT-REARM.md` enthalten jetzt Diagnoseevidenz, SetSpawnZone/Reposition-Boundary, Support Return-to-stock sowie Option-B-Completion-/Restart-Semantik. Für Option B wurde keine neue MOOSE-Methode eingeführt; daher ist keine künstliche Statusänderung in `PROJECT-CLASS-INDEX.md` oder `VERIFIED-METHODS.md` erforderlich.
+`ACCEPTANCE-2.md`, `docs/moose/FIXED-FIRE-SUPPORT-REARM.md` und diese Statusdatei enthalten Diagnoseevidenz, SetSpawnZone/Reposition-Boundary, Support Return-to-stock, Option-B-Completion-/Restart-Semantik und die realen Option-B-Build-Hashes. Für Option B wurde keine neue MOOSE-Methode eingeführt; daher ist keine künstliche Statusänderung in `PROJECT-CLASS-INDEX.md` oder `VERIFIED-METHODS.md` erforderlich.
 
 ### TODO 3 – Lifecycle-Hygiene / finaler Review
 
@@ -402,15 +402,15 @@ Erledigt:
 [x] Ground Production Base 4 real gebaut/gehasht
 [x] Acceptance-2 Revision 2-9 real gebaut/gehasht
 [x] Builder-/separate Get-FileHash-Werte stimmen für alle drei Bundles überein
+[x] Option-B-Build-Provenienz in Acceptance-/MOOSE-/Statusdokumentation eingetragen
 ```
 
 Offen:
 
 ```text
-[ ] Acceptance-2 / MOOSE-Dokumentation mit finaler Option-B-Build-Provenienz abschließen
 [ ] finalen Diff / Contract / Builder prüfen
 [ ] branch-eigene Dokumentationsvalidator-Schuld bereinigen; geerbte Ground-Foundation-Schuld separat ausweisen
-[ ] gebündelten DCS-Test des neuen COMPLETED-Pfades durchführen, sofern Runtime-Acceptance für PR-Abschluss erforderlich ist
+[ ] gebündelten DCS-Test des neuen COMPLETED-Pfades durchführen
 [ ] Restart-Compensation nur mit realer Restore-Provenienz als DCS-validiert markieren
 [ ] Owner-Entscheidung PR #112 Ready / Merge
 ```
@@ -439,7 +439,8 @@ Ground Ammo Rearm / Fixed Fire Support
         +-- Diagnose-Rückbau                 COMPLETE / BUILD VERIFIED
         +-- LOCAL REARM Option B             OWNER APPROVED / SOURCE IMPLEMENTED / BUILD VERIFIED
         +-- Option-B Bundle-Provenienz       COMPLETE
-        +-- Doku-/Diff-Reconciliation        FINAL REVIEW PENDING
+        +-- Doku-Reconciliation              BUILD PROVENANCE RECORDED
+        +-- finaler Diff/Contract-Review     PENDING
         +-- DCS COMPLETED Runtime-Acceptance PENDING
         +-- Restart-Compensation Acceptance  PENDING REAL RESTORE PROVENANCE
         `-- Owner-Entscheidung PR #112 Ready / Merge
