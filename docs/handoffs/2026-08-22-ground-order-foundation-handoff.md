@@ -25,17 +25,24 @@ validated_in_dcs: false
 
 Eine realistische, strukturierte Ground-Order-Schicht für Operation Mountain Watch festlegen, ohne ein frei erfundenes Ground-ATO/GTO-Format oder eine parallele Missionsausführungsengine einzuführen.
 
-## Arbeitsbranch
+## Arbeitsbranch und Pull Request
 
 ```text
-agent/ground-order-foundation
+branch: agent/ground-order-foundation
+pull request: 116
+pull request state: OPEN DRAFT
+base: main
 ```
+
+Der Draft-Status ist beabsichtigt. Eine Änderung zu `Ready for Review` oder ein Merge benötigt weiterhin die ausdrückliche Freigabe des Projektinhabers.
 
 ## Primärdokument
 
 ```text
 docs/91-ground-order-opord-frago-foundation.md
 ```
+
+Dokument 91 ist im branchlokalen `DOCUMENT-REGISTRY.md` registriert und in `docs/README.md` sowie `docs/SUBPROJECT-REGISTRY.md` eingeordnet.
 
 ## Aktueller Stand
 
@@ -56,6 +63,8 @@ Dokumentiert sind:
 
 ## Verifizierter lokaler Readback durch Projektinhaber
 
+Für den ersten veröffentlichten Dokumentstand wurde real zurückgemeldet:
+
 ```text
 branch: agent/ground-order-foundation
 HEAD: 8eff0768260d48cea5dc656aef2fae7dda6d16f4
@@ -64,7 +73,42 @@ DOCUMENT SHA-256: 9F812F0E97F779B20D17538CC321721D7361BCE979CF0A149F7CBCC72C833D
 
 Der lokale Working Tree enthielt zahlreiche bereits vorhandene untracked Build-/Testartefakte. Für `docs/91-ground-order-opord-frago-foundation.md` wurde keine lokale Modifikation gemeldet.
 
-Lokale Dokumentationsvalidierung wurde **nicht ausgeführt**, da auf dem lokalen Windows-System des Projektinhabers kein Python installiert ist. Dies ist ausdrücklich weder PASS noch FAIL.
+Lokale Dokumentationsvalidierung wurde **nicht ausgeführt**, da auf dem lokalen Windows-System des Projektinhabers kein Python installiert ist. Dies ist ausdrücklich weder PASS noch FAIL. Lokale Folgeanweisungen verwenden deshalb PowerShell/Git und vorhandene PowerShell-Projektskripte; Python-basierte Dokumentationsvalidierung läuft in Repository-CI.
+
+## GitHub-CI-Dokumentationsvalidierung
+
+Draft-PR #116 hat die GitHub-Actions-Dokumentationsvalidierung ausgeführt.
+
+Erster Registerlauf:
+
+```text
+run: 32586791695
+result: FAILURE
+errors: 19
+new branch-specific error:
+docs/DOCUMENT-REGISTRY.md: numbered document is not registered: docs/91-ground-order-opord-frago-foundation.md
+```
+
+Dieser branchspezifische Registerfehler wurde korrigiert, indem Dokument 91 in das nummerierte Dokumentregister aufgenommen wurde.
+
+Nachlauf nach Registerkorrektur:
+
+```text
+run: 32586858809
+result: FAILURE
+errors: 18
+warnings: 0
+new Ground Order Foundation validation errors: 0
+```
+
+Die verbleibenden 18 Fehler sind die bereits auf dem zugrunde liegenden Ground-/Main-Dokumentationsstand vorhandenen Metadaten-/Acceptance-Provenienzfehler, insbesondere in `docs/ground/` und `mission/tests/army-ground-foundation/`. Dokument 90 dokumentierte denselben vorhandenen 18-Fehler-Stand bereits vor PR #116. PR #116 fügt nach der Registerkorrektur keinen eigenen Validatorfehler hinzu.
+
+Daraus folgt ausdrücklich **kein globaler Dokumentations-PASS**. Der korrekte Status lautet:
+
+```text
+repository documentation validation: FAILURE (18 pre-existing errors)
+Ground Order Foundation branch-specific validation delta: PASS (0 new errors)
+```
 
 ## Geprüfter MOOSE-Artefaktstand
 
@@ -83,8 +127,8 @@ Diese Prüfung ist statisch und keine DCS-Runtime-Acceptance.
 
 ## Noch offen
 
-1. GitHub-CI-/Dokumentationsvalidator gegen den Branch auswerten.
-2. Dokument 91 und Branch-Handoff gegen aktuelle `main`-Dokumentationsregister reconciliieren; Nummer 91 darf vor Merge nicht kollidieren.
+1. Projektinhaber prüft den finalen Remote-Branchstand lokal per `git pull`, HEAD-/Hash-Readback und `git diff --check`; keine lokale Python-Anweisung.
+2. Vor Merge erneut prüfen, dass Nummer 91 auf dem dann aktuellen `main` nicht kollidiert und PR #116 weiterhin konfliktfrei ist.
 3. Bei neuer produktiver MOOSE-Nutzung `docs/moose/PROJECT-CLASS-INDEX.md`, thematische MOOSE-Dokumentation und gegebenenfalls `VERIFIED-METHODS.md` aktualisieren.
 4. Noch **keinen** produktiven GroundOrderAdapter implementieren, bis der Informationsvertrag und die MOOSE-Abbildung als Foundation akzeptiert sind.
 5. Vor Runtime-Code erneut aktuelle MOOSE-Dokumentation, tatsächlich gepinnte `Moose.lua`, Signaturen/FSMs und relevante offizielle Beispiele prüfen.
@@ -96,4 +140,5 @@ Diese Prüfung ist statisch und keine DCS-Runtime-Acceptance.
 - kein vollständiges USMTF-/ADatP-3-System;
 - keine DCS-Runtime-Acceptance;
 - keine produktive BLUE-COMMANDER-/GroundOrder-Runtime;
+- kein globaler Dokumentationsvalidator-PASS;
 - keine historische Frequenz-/COMSEC-/Authentifizierungsrekonstruktion.
