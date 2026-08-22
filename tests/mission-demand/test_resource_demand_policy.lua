@@ -1,4 +1,5 @@
 local Policy = dofile("scripts/campaign/OMW_ResourceDemandPolicy.lua")
+local InitialStock = dofile("scripts/logistics/OMW_GroundInitialStock.lua")
 
 local function assertEqual(actual, expected, label)
   if actual ~= expected then
@@ -41,6 +42,25 @@ local function snapshot(available)
     reserved = 0,
     available = available,
   }
+end
+
+local transferable = {
+  GROUND_SUPPLY = true,
+  GROUND_AMMO = true,
+  GROUND_FUEL = true,
+}
+
+assertEqual(InitialStock.ResupplyThresholds.reorderRatio, 0.50, "approved reorder ratio")
+assertEqual(InitialStock.ResupplyThresholds.criticalRatio, 0.25, "approved critical ratio")
+
+for _, stockRow in ipairs(InitialStock.Rows) do
+  if transferable[stockRow.resourceClass] then
+    assertEqual(stockRow.reorder, stockRow.target * 0.50, stockRow.nodeId .. " " .. stockRow.resourceClass .. " reorder")
+    assertEqual(stockRow.critical, stockRow.target * 0.25, stockRow.nodeId .. " " .. stockRow.resourceClass .. " critical")
+  else
+    assertEqual(stockRow.reorder, 0, stockRow.nodeId .. " " .. stockRow.resourceClass .. " no automatic reorder")
+    assertEqual(stockRow.critical, 0, stockRow.nodeId .. " " .. stockRow.resourceClass .. " no automatic critical")
+  end
 end
 
 assertEqual(Policy.Evaluate(row(0, 0), snapshot(0)), nil, "zero reorder disables automatic resupply")

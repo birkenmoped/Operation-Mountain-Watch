@@ -19,6 +19,11 @@ InitialStock.ResourceId = {
   FUEL = "GROUND_FUEL_PACKAGE",
 }
 
+InitialStock.ResupplyThresholds = {
+  reorderRatio = 0.50,
+  criticalRatio = 0.25,
+}
+
 local TRANSFERABLE_RESOURCE_CLASSES = {
   SUPPLY = true,
   AMMO = true,
@@ -37,7 +42,19 @@ local function resourceId(nodeId, resourceClass)
   return InitialStock.ResourceId[resourceClass] or legacyResourceId(nodeId, resourceClass)
 end
 
+local function thresholds(resourceClass, target)
+  if not TRANSFERABLE_RESOURCE_CLASSES[resourceClass] then
+    return 0, 0
+  end
+
+  return target * InitialStock.ResupplyThresholds.reorderRatio,
+    target * InitialStock.ResupplyThresholds.criticalRatio
+end
+
 local function row(nodeId, resourceClass, initial, supplyParent)
+  local target = initial
+  local reorder, critical = thresholds(resourceClass, target)
+
   return {
     nodeId = nodeId,
     resourceId = resourceId(nodeId, resourceClass),
@@ -45,9 +62,9 @@ local function row(nodeId, resourceClass, initial, supplyParent)
     resourceClass = "GROUND_" .. resourceClass,
     unit = InitialStock.Unit,
     initial = initial,
-    target = initial,
-    reorder = 0,
-    critical = 0,
+    target = target,
+    reorder = reorder,
+    critical = critical,
     supplyParent = supplyParent,
     mappingStatus = "OMW_GROUND_DESIGN_STOCK",
   }
