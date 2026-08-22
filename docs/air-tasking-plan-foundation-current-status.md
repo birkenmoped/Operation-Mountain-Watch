@@ -70,7 +70,7 @@ Nicht zulaessig fuer diesen Pfad:
 ```text
 replace OMW_AAR_Base.lua
 rebuild the accepted AAR base inside Air Tasking
-recreate the AAR strategic adapter
+recreate or mutate the AAR strategic adapter
 recompute AAR area/profile policy
 create a second tanker inventory
 bypass CampaignState settlement
@@ -85,25 +85,61 @@ mission/tests/air-tasking-aar-vertical/src/01-air-tasking-aar-vertical-acceptanc
 tools/build-air-tasking-aar-additive-test.ps1
 ```
 
-Der Air-Tasking-Bootstrap verlangt eine bereits laufende `OMW.AirOps.AAR`-Facade. Er startet keinen zweiten AAR-Stack. Die existierende `StrategicAdapter`-Instanz wird nicht ersetzt; Air Tasking beobachtet ihre oeffentlichen Settlement-Callbacks additiv und delegiert immer zuerst an die bestehende Implementierung.
+Der Air-Tasking-Bootstrap verlangt eine bereits laufende `OMW.AirOps.AAR`-Facade. Er startet keinen zweiten AAR-Stack und mutiert keine Methoden der existierenden `StrategicAdapter`-Instanz.
+
+Da der bestehende AAR-Controller keinen separaten Subscriber-Hook fuer Materialization/Handoff/Loss bereitstellt, beobachtet Air Tasking ausschliesslich den oeffentlich exponierten Runtime-Zustand ueber `Controller.GetStation(...)`. Dafuer wird ein MOOSE `SCHEDULER` mit festem 5-Sekunden-Intervall verwendet. Controller und Strategic Adapter bleiben fuer physischen Lifecycle und Settlement allein zustaendig.
 
 Die frueheren nicht-additiven Air-Tasking-AAR-Builder wurden entfernt.
 
-## 5. DCS Vertical Acceptance
+## 5. Lokal bestaetigter additiver Build
 
-Test-ID:
+Der Projektinhaber hat am 22.08.2026 auf Commit
 
 ```text
-AIR-TASKING-AAR-VERTICAL-2
+1e52a9a685a58d54d0ebc6321d9b1aa81ab4427d
 ```
 
-Der lokale Builder erzeugt nur die zusaetzliche Test-Lua:
+den additiven Builder erfolgreich ausgefuehrt.
+
+```text
+BuilderVersion: OMW-AIR-TASKING-AAR-ADDITIVE-TEST-2
+TestId: AIR-TASKING-AAR-VERTICAL-2
+MizMutation: false
+ExistingAARBaseEmbedded: false
+ExistingAARBaseRecreated: false
+ExistingAARAdapterRecreated: false
+ExistingAARAdapterMutated: false
+RuntimeObservation: CONTROLLER_GETSTATION_PLUS_MOOSE_SCHEDULER
+ObserverIntervalSec: 5
+```
+
+Reale SHA-256-Evidenz:
+
+```text
+AirTaskingBridge:
+f582f8646f86dc1ccc0264abdb4dcd4271f225ca2bc6bd4ff8f3705ab1ec782a
+
+AirTaskingBootstrap:
+d2e0d4bd1b75b5fcf60d0186623eb5eed876533c79b9c9a40c6f50176ce3cdf1
+
+Harness:
+0bde695d8b4b09e21494e6065d34afada76cac41ca299cc7f372c530d8c32f28
+
+Additive Test Bundle:
+30701722eb739fb17b1f827fc681729a6ee781dedd223eab3b03fc72e78ab8a0
+```
+
+Der unabhaengige `Get-FileHash` bestaetigte den Bundle-Hash. Dies ist Build-/Source-Evidenz, kein DCS-Runtime-PASS.
+
+## 6. DCS Vertical Acceptance
+
+Die lokal gebaute Datei lautet:
 
 ```text
 mission/tests/air-tasking-aar-vertical/dist/OMW_AirTasking_AAR_Vertical_Test.lua
 ```
 
-Diese Datei wird durch den Projektinhaber als zusaetzliche Mission-Editor-`DO SCRIPT FILE`-Aktion eingefuegt. `OMW_AAR_Base.lua` bleibt unangetastet.
+Sie wird durch den Projektinhaber als **zusaetzliche** Mission-Editor-`DO SCRIPT FILE`-Aktion eingefuegt. `OMW_AAR_Base.lua` bleibt unangetastet.
 
 Der Test wartet auf die bereits laufende AAR-Base und prueft anschliessend:
 
@@ -120,7 +156,7 @@ EXISTING_AAR_ATTACH_PASS
 -> RESULT PASS
 ```
 
-## 6. Gate 3
+## 7. Gate 3
 
 ```text
 GATE 3: OPEN
@@ -130,16 +166,15 @@ validated_in_dcs: false
 Vor einem PASS erforderlich:
 
 ```text
-local additive Lua build + hash
 manual Mission Editor insertion by project owner
 Mission SHA-256
-DCS version
+tested DCS version
 embedded MOOSE commit/hash
 required runtime logs
 RESULT PASS
 ```
 
-## 7. Merge-Readiness
+## 8. Merge-Readiness
 
 ```text
 MERGE TO MAIN NOW: NOT YET RECOMMENDED
