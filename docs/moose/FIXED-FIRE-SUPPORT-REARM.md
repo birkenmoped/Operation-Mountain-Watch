@@ -201,6 +201,23 @@ postFireAmmo == 0
 
 Der frühere Rückbau auf `HONAKER / M1083 / 4 rounds` war fachlich falsch. Dabei wurde die notwendige Vollentleerungsbedingung irrtümlich zusammen mit der M939-Diagnosevariable entfernt. Die historische Build-/Hash-Evidenz der Revisionen 2-8 und 2-9 bleibt erhalten, definiert aber nicht mehr den gültigen Honaker-Acceptance-Vertrag.
 
+Der korrigierte Acceptance-Harness und Builder wurden anschließend umgesetzt und real gebaut:
+
+```text
+Source / Git HEAD: f4e781a92bfc74062c48b46b91474f632e69d585
+BuilderVersion: GROUND-FIRE-SUPPORT-ACCEPTANCE-2-10
+GeneratedUtc: 2026-08-22T13:44:16Z
+Bundle SHA-256: 1180884FEB764F95CFD89D72CE2D04BE633A9FD73AE0939AE4B476179A5977C5
+HonakerSupportTemplate: TPL_BLUE_GND_SUP_M1083
+StandardFireShells: 4
+HonakerFireShells: 40
+HonakerRequireAmmoDepleted: true
+DurableRearmCompletion: true
+HonakerM939Diagnostic: false
+```
+
+Builder-Ausgabe und separate `Get-FileHash -Algorithm SHA256`-Prüfung stimmen exakt überein. Dies ist Build-/Hash-/Contract-Evidenz; der neue DCS-Runtime-PASS steht noch aus.
+
 ## 8. LOCAL REARM Restart/Replay – Option B
 
 Owner-Entscheidung vom 22.08.2026: **Option B genehmigt**.
@@ -301,15 +318,22 @@ GroundAmmoRearmAdapterSchema: OMW-GROUND-AMMO-REARM-ADAPTER-2
 Bundle SHA-256: 9AAF32A10A9EEB906123AFD37FF14B62542EE7C78F7B5E81E388A22F41EABEAB
 ```
 
-Historical Fixed Fire Support Acceptance build:
+Historische Fixed Fire Support Acceptance-Builds:
 
 ```text
+Revision 2-9
 BuilderVersion: GROUND-FIRE-SUPPORT-ACCEPTANCE-2-9
 GeneratedUtc: 2026-08-22T13:06:55Z
 Bundle SHA-256: D0E628C58567CB46126048AA2903F17C9D15F316C415FFB755FD0192B230EA09
+
+Revision 2-10
+Source / Git HEAD: f4e781a92bfc74062c48b46b91474f632e69d585
+BuilderVersion: GROUND-FIRE-SUPPORT-ACCEPTANCE-2-10
+GeneratedUtc: 2026-08-22T13:44:16Z
+Bundle SHA-256: 1180884FEB764F95CFD89D72CE2D04BE633A9FD73AE0939AE4B476179A5977C5
 ```
 
-Die Produktionsbundle-Provenienz bleibt gültig. Der Acceptance-2-9-Harness muss wegen der falsch entfernten Honaker-Vollentleerungsbedingung korrigiert werden.
+Die Produktionsbundle-Provenienz bleibt gültig. Revision 2-10 ist der korrigierte, build-/hash-verifizierte Acceptance-Kandidat.
 
 ## 11. Acceptance-Grenze
 
@@ -356,7 +380,7 @@ M1083 as Honaker production support: OWNER CONFIRMED / no further confirmation r
 Honaker full-depletion acceptance condition: REQUIRED
 Option B source implementation: COMPLETE
 Option B production bundles: BUILD/HASH VERIFIED
-Current Acceptance-2-9 harness: REQUIRES HONAKER CONTRACT CORRECTION
-Option B DCS COMPLETED-path acceptance: PENDING corrected harness
+Revision 2-10 corrected acceptance: BUILD/HASH VERIFIED
+Option B DCS COMPLETED-path acceptance: PENDING Revision 2-10 runtime
 Option B DCS restart-compensation acceptance: PENDING REAL RESTORE PROVENANCE
 ```
