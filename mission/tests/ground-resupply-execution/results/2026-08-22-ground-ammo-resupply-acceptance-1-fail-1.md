@@ -80,13 +80,41 @@ critical = 10
 
 No acceptance-runtime workaround is permitted. The production Ground bundle must first be rebuilt from the current repository source and owner-embedded in the next test MIZ, preserving CampaignState as the sole strategic authority.
 
+### Real owner rebuild evidence – 2026-08-22
+
 ```text
-build current tools/build-ground-production-base.ps1
--> record generated OMW_Ground_Base.lua SHA-256
--> owner replaces only the Ground production DO SCRIPT FILE resource in next MIZ revision
--> retain the already verified acceptance bundle unchanged
--> verify embedded Ground bundle hash + acceptance hash + Moose hash
--> rerun Stage-1A acceptance
+Build Git HEAD: cfc7edb4bc7db771569c54224432fd501ddeea57
+BuilderVersion: OMW-GROUND-PRODUCTION-BASE-4
+Output: mission/ground-operations/dist/OMW_Ground_Base.lua
+Builder-reported SHA-256: E616D35F5EBDBDDD4275785091D47F57445348D1FF4BB4CFBE7DEE0F0B12D78E
+Independent SHA-256: E616D35F5EBDBDDD4275785091D47F57445348D1FF4BB4CFBE7DEE0F0B12D78E
+Builder SHA-256: 3A7B61B3EC19A442D6B3C933FF467AF4671421AB30C37D801D98F481BA3BD355
+GroundInitialStock source SHA-256: 7F73F489D7E896C815D57FAD54A62B2185932539E44471087C2826729B6FEE66
+GroundInitialStockSchema: OMW-GROUND-INITIAL-STOCK-2
+Ground transferable resources: GROUND_SUPPLY_PACKAGE, GROUND_AMMO_PACKAGE, GROUND_FUEL_PACKAGE
+Strategic authority: caller-provided single CampaignState store
+```
+
+Rebuild classification:
+
+```text
+PASS
+builder-reported output hash == independent output hash: true
+```
+
+Next allowed step:
+
+```text
+owner opens OMW_Template_v17.miz
+-> Save As next revision (recommended OMW_Template_v18.miz)
+-> replace only the existing OMW_Ground_Base.lua DO SCRIPT FILE resource with:
+   P:\DCS-DEV\Operation-Mountain-Watch\mission\ground-operations\dist\OMW_Ground_Base.lua
+-> leave Moose.lua, OMW_AirOps_Warehouse_Base.lua and OMW_Ground_Ammo_Resupply_Acceptance_1.lua unchanged
+-> save and close Mission Editor
+-> verify embedded Ground bundle SHA-256 == E616D35F5EBDBDDD4275785091D47F57445348D1FF4BB4CFBE7DEE0F0B12D78E
+-> verify embedded Acceptance bundle SHA-256 == D1E908D08DF3DA787D01E760F5B9C01771F5D17CBBD51C8545A4A00086E10676
+-> verify embedded Moose.lua SHA-256 == E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915
+-> only then rerun Stage-1A acceptance
 ```
 
 This result does not validate or invalidate:
