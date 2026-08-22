@@ -310,14 +310,33 @@ ZON_BLUE_GND_HONAKER_MORTAR_ACCEPTANCE_TARGET
 
 ## 9. Revision-2-11 Buildstatus
 
+Vom Projektinhaber am 22.08.2026 real ausgeführt:
+
 ```text
+Source / Git HEAD: d52a47a418fe3a1a996a5b68198b8dc033ff86c4
 BuilderVersion: GROUND-FIRE-SUPPORT-ACCEPTANCE-2-11
-Source/Builder: REMOTE COMPLETE
-Local build/hash: PENDING REAL OWNER OUTPUT
-DCS runtime: PENDING
+GeneratedUtc: 2026-08-22T14:07:19Z
+Bundle SHA-256: CBA3ACF5D835E6EF6AD11C3FDD295E178B2B8E6B9330749C15419A1638CF379B
 ```
 
-Kein Bundle-Hash wird vor der realen lokalen Builder-/`Get-FileHash`-Ausgabe angenommen.
+Builder-Ausgabe und direkt anschließendes `Get-FileHash -Algorithm SHA256` stimmen exakt überein. Damit ist Revision 2-11 `BUILD/HASH VERIFIED`. Dies ist noch kein DCS-Runtime-PASS.
+
+Verifizierte Builder-Vertragsmarker:
+
+```text
+HonakerSupportTemplate: TPL_BLUE_GND_SUP_M1083
+HonakerFireShells: 40
+HonakerRequireAmmoDepleted: true
+DurableRearmCompletion: true
+RestoreSettlementCombined: true
+InterruptedConsumedCompensation: true
+RepeatedRestoreIdempotence: true
+CompletedRestorePreservation: true
+PreCommitRestoreCancellation: RESERVED,LOADING
+NewTransactionAfterCompensation: true
+ExternalPersistenceHostClaim: false
+HonakerM939Diagnostic: false
+```
 
 ## 10. Status
 
@@ -325,7 +344,8 @@ Kein Bundle-Hash wird vor der realen lokalen Builder-/`Get-FileHash`-Ausgabe ang
 Revision-2-7 full-depletion diagnostic: DCS PASS for exact provenance
 Revision-2-8/2-9 Honaker four-round rollback: HISTORICAL / invalid Honaker acceptance contract
 Revision-2-10 corrected contract: BUILD/HASH VERIFIED; no isolated DCS rerun
-Revision-2-11 bundled final acceptance: SOURCE/BUILDER COMPLETE, local build/hash PENDING
+Revision-2-11 bundled final acceptance: BUILD/HASH VERIFIED at d52a47a418fe3a1a996a5b68198b8dc033ff86c4
+Revision-2-11 DCS runtime: PENDING
 M1083 as Honaker support: OWNER CONFIRMED / no further confirmation required
 Option-B production implementation: SOURCE COMPLETE / production bundles BUILD/HASH VERIFIED
 External filesystem/server persistence host: NOT PRESENT IN CURRENT BRANCH / not claimed by this acceptance
