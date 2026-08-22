@@ -11,8 +11,8 @@ scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
 superseded_by:
-source_branch: agent/ground-ammo-rearm-integration
-source_commit: PENDING_MERGE
+source_branch: main
+source_commit: 761f392bbd4e9ffee416e2e598235d9040a9a752
 validated_in_dcs: partial
 ---
 
@@ -195,7 +195,7 @@ CampaignState.Restore(snapshot)
 
 Der Store selbst enthält bewusst kein Dateisystem-I/O. `GroundBase` erzeugt keinen CampaignState; der Caller liefert den neuen oder wiederhergestellten Store. `AirOpsWarehouseProduction` kann einen extern bereitgestellten `campaignContext` übernehmen.
 
-Im aktuellen Branch ist **kein produktiver externer Dateisystem-/Server-Persistence-Host vorhanden**, der diesen Snapshot selbst auf Platte schreibt und nach einem Prozessrestart wieder einliest.
+Auf dem integrierten `main`-Stand ist **kein produktiver externer Dateisystem-/Server-Persistence-Host vorhanden**, der diesen Snapshot selbst auf Platte schreibt und nach einem Prozessrestart wieder einliest.
 
 Deshalb gilt:
 
@@ -263,25 +263,62 @@ Vollständige Evidenz:
 mission/tests/ground-ammo-rearm-integration/results/2026-08-22-acceptance-2-11-runtime.md
 ```
 
-## 10. Produktionsbundle-Provenienz
+## 10. Merge und Post-Merge Produktionsbuild
+
+PR #112 wurde nach ausdrücklicher Owner-Freigabe auf Ready gesetzt und anschließend nach `main` gemerged:
 
 ```text
-Source / Git HEAD: 49f43a856c1f8bc32ca64835af856119a295640e
-CampaignState source SHA-256:
-18189A633DBD78FC7EAFBDAF09601BC3241ADAD115DF09DA3EF28B1D85E3E093
+PR: 112
+Merge commit: 761f392bbd4e9ffee416e2e598235d9040a9a752
+```
 
+Danach wurden die produktiven Bundles real auf `main` neu gebaut:
+
+```text
 AirOps Warehouse Production
 BuilderVersion: OMW-AIROPS-WAREHOUSE-BASE-3
-Bundle SHA-256:
-472F72F3D688BB4B8624C882527DCA3DEBD42CDE5DD455AC63D7CD2D796BB735
+Output: mission/runtime/logistics/OMW_AirOps_Warehouse_Base.lua
+Builder-reported BundleSHA256:
+F4FBF6DB71E56AADBF0B31C931638754FF4DDB75F90E570BA127E56A0251974F
 
 Ground Production
 BuilderVersion: OMW-GROUND-PRODUCTION-BASE-4
-Bundle SHA-256:
-9AAF32A10A9EEB906123AFD37FF14B62542EE7C78F7B5E81E388A22F41EABEAB
+Output: mission/ground-operations/dist/OMW_Ground_Base.lua
+Builder-reported SHA256:
+A5D2A101FFEC3F1C222463002D7D5668C77EF6ACDEEDE1D8B8FEEB5E19D2E026
 ```
 
-## 11. Status
+Die separaten direkten `Get-FileHash`-Readbacks der beiden korrekten Ausgabepfade stehen noch aus. Bis zu dieser realen Rückmeldung gelten die beiden Werte ausschließlich als Builder-Ausgabe.
+
+## 11. Mission-Editor Cleanup nach Acceptance
+
+Der kombinierte Acceptance-Harness ist nicht Teil der produktiven OMW-Runtime.
+
+Aus einer normalen Arbeits-/Produktionsmission entfernen:
+
+```text
+OMW_Ground_Fire_Support_Acceptance_2.lua
+ZON_BLUE_GND_BOSTICK_ARTY_ACCEPTANCE_TARGET
+ZON_BLUE_GND_WRIGHT_ARTY_ACCEPTANCE_TARGET
+ZON_BLUE_GND_FORTRESS_ARTY_ACCEPTANCE_TARGET
+ZON_BLUE_GND_HONAKER_MORTAR_ACCEPTANCE_TARGET
+```
+
+Produktiv erhalten bleiben:
+
+```text
+Moose.lua
+OMW_AirOps_Warehouse_Base.lua
+OMW_Ground_Base.lua
+ZON_BLUE_GND_BOSTICK_RESUPPLY
+ZON_BLUE_GND_WRIGHT_RESUPPLY
+ZON_BLUE_GND_FORTRESS_RESUPPLY
+ZON_BLUE_GND_HONAKER_RESUPPLY
+```
+
+Die bytegenau nachgewiesene `OMW_Template_v16.miz` mit SHA-256 `388F02C932BE83823543F97887B4EDBB9E6764D4CEBE543BD8423D43A6ED8620` bleibt als unverändertes Acceptance-Artefakt erhalten. Weitere Missionsentwicklung erfolgt auf einer neuen Arbeitsrevision.
+
+## 12. Status
 
 ```text
 MOOSE source review: COMPLETE for documented APIs
@@ -289,11 +326,13 @@ Pinned reposition defect: RUNTIME CONFIRMED / excluded
 M1083 support choice for Honaker: OWNER CONFIRMED
 2B11 40 -> 0 -> 40: RUNTIME CONFIRMED
 2B11 partial-ammo rearm: NOT PROVEN
-Option B source implementation: COMPLETE
-Option B production bundles: BUILD/HASH VERIFIED
+Option B source implementation: COMPLETE / MERGED TO MAIN
 Acceptance 2-11 build/hash: VERIFIED
 Acceptance 2-11 physical rearm: DCS PASS
 Acceptance 2-11 restore settlement: DCS PASS within same-session runtime snapshot/restore scope
 Exact runtime MIZ provenance: CLOSED
+PR #112: MERGED
+Post-merge production rebuild: COMPLETE
+Post-merge direct production artifact hash readback: PENDING
 External filesystem/server persistence host: NOT PRESENT / NOT TESTED / NOT CLAIMED
 ```
