@@ -110,6 +110,7 @@ Eine Nummer und eine stabile `document_id` dürfen im aktuellen Bestand jeweils 
 | 87 | `OMW-HIST-AFGHANISTAN-CSAR-KANDAHAR-SOURCE-REVIEW` | `docs/87-afghanistan-csar-and-kandahar-airfield-source-review.md` | `BINDING` | Afghanistan-2011-CSAR-, Rescue-, Kandahar- und Airfield-Quellenreview |
 | 88 | `OMW-AIR-TASKING-PLAN-FOUNDATION` | `docs/88-air-tasking-plan-foundation.md` | `BINDING_PROJECT_DECISION` | Air-Tasking-Plan-Architektur und MOOSE-Integrationsgrenze |
 | 89 | `OMW-AAR-ACCEPTANCE-7-FINALIZATION` | `docs/89-aar-acceptance-7-finalization.md` | `BINDING_PROJECT_DECISION` | Acceptance-7-abgeleitete finale AAR-Designbaseline |
+| 90 | `OMW-PLAN-MISSION-DEMAND-RESUPPLY-CAS` | `docs/90-mission-demand-resupply-and-cas-orchestration-concept.md` | `PLANNED` | MissionDemand-, Resupply- und Immediate-CAS-Orchestrierung |
 
 ## 3. Reservierte Nummern auf offenen Branches
 
