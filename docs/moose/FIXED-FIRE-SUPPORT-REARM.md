@@ -1,6 +1,6 @@
 ---
 document_id: OMW-MOOSE-FIXED-FIRE-SUPPORT-REARM
-status: SOURCE_REVIEWED
+status: DRAFT
 document_class: TECHNICAL_ARCHITECTURE_REFERENCE
 owning_policy: OMW-GOV-001
 authoritative_for:
@@ -12,7 +12,7 @@ project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
 superseded_by:
 source_branch: agent/ground-ammo-rearm-integration
-source_commit: b2b741fd2b0bd0c86d5cfd4268b042db2883e2a8
+source_commit: PENDING_MERGE
 validated_in_dcs: partial
 ---
 
