@@ -213,7 +213,7 @@ LegacyAdapterProxyPath: false
 
 Der im selben CI-Lauf erzeugte Bundle-Hash wurde unabhängig mit `sha256sum` gegengeprüft und stimmte mit dem Builder-Output überein.
 
-Die repositoryweite `Documentation validation` ist in PR #117 rot, jedoch ausschließlich wegen 18 bereits auf `main` vorhandener Ground-Metadaten-/Acceptance-Provenienzfehler. Der Validator meldete `0 warning(s)` und keinen Fehler in einer Air-Tasking-Datei dieses PR. Diese fremden Ground-Fehler werden in PR #117 bewusst nicht repariert.
+Die repositoryweite `Documentation validation` ist in PR #117 rot, jedoch ausschließlich wegen 18 bereits auf `main` vorhandener Ground-Metadaten-/Acceptance-Provenienzfehler. Der Validator meldete `0 warning(s)` und keinen Fehler in einer Air-Tasking-Datei dieses PR oder in der aktuellen Übergabedatei. Diese fremden Ground-Fehler werden in PR #117 bewusst nicht repariert.
 
 ## 10. Owner decision zum erneuten LISA-Retest
 
@@ -274,7 +274,7 @@ Für den aktuellen Scope wurden keine neuen blockierenden Air-Tasking-Codefehler
 
 Gemäß `docs/DOCUMENT-METADATA-POLICY.md` ist `source_commit: PENDING_MERGE` auf einem offenen PR-Branch zulässig. Der Wert bleibt bis zur tatsächlichen Integration bestehen und darf auf `main` anschließend nicht verbleiben.
 
-Vor einer Integration ist damit nur noch die ausdrückliche Owner-Freigabe für `Ready for Review` beziehungsweise Merge erforderlich. Ein Merge erfolgt nicht automatisch.
+Vor einer Integration ist damit nur noch die ausdrückliche Owner-Freigabe für `Ready for Review` beziehungsweise Merge erforderlich. Der aktuelle GitHub-`mergeable`-Status ist unmittelbar vor einer tatsächlichen Integration erneut real zu lesen; er wird nicht als statische Eigenschaft dieses Dokuments behandelt.
 
 ## 14. Übergabe und aktualisierte TODO-Liste
 
