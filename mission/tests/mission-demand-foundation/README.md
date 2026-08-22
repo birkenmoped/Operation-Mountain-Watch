@@ -16,7 +16,7 @@ project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
 superseded_by:
 source_branch: agent/mission-demand-reconciliation
-source_commit: afb572d82b8f804d2af0d338c77a2fd77df13307
+source_commit: c8d1cad4ce7469f350b6a3d6e10fee955348620c
 validated_in_dcs: false
 ---
 
@@ -24,7 +24,23 @@ validated_in_dcs: false
 
 ## Ziel
 
-Der Branch `agent/mission-demand-reconciliation` übernimmt aus dem alten Branch `agent/mission-demand-resupply-cas-concept` ausschließlich die noch fehlende Campaign-Domain-Foundation und reconciliert sie gegen den aktuellen `main`-Stand.
+Der Branch `agent/mission-demand-reconciliation` übernahm aus dem alten Branch `agent/mission-demand-resupply-cas-concept` ausschließlich die noch fehlende Campaign-Domain-Foundation und reconciliierte sie gegen den damaligen `main`-Stand. PR #114 wurde nach finaler lokaler Readback-Prüfung nach `main` gemergt.
+
+## Integration
+
+```text
+source branch:
+agent/mission-demand-reconciliation
+
+final source head:
+c8d1cad4ce7469f350b6a3d6e10fee955348620c
+
+PR:
+114
+
+merge commit:
+341a65105c24807de3ac289bb18d80339111cbd1
+```
 
 ## Base
 
@@ -44,6 +60,7 @@ tests/mission-demand/run.lua
 .github/workflows/mission-demand-validation.yml
 docs/90-mission-demand-resupply-and-cas-orchestration-concept.md
 docs/DOCUMENT-REGISTRY.md
+docs/SUBPROJECT-REGISTRY.md
 ```
 
 ## Bewusst nicht aus dem Legacy-Branch übernommen
@@ -56,7 +73,7 @@ Ground production builder changes
 older MissionDemand MOOSE source review
 ```
 
-Diese Bereiche besitzen auf `main` inzwischen neuere beziehungsweise DCS-validierte Nachfolger.
+Diese Bereiche besitzen auf `main` neuere beziehungsweise DCS-validierte Nachfolger.
 
 ## Domain-Vertrag
 
@@ -97,18 +114,16 @@ Runner:
 tests/mission-demand/run.lua
 ```
 
-GitHub-Actions-Nachweis:
+GitHub-Actions-Nachweis auf dem finalen Merge-Kandidaten:
 
 ```text
 workflow: MissionDemand validation
-run: 32582386144
-source head: ec92b8128cf097895983eaebf807a7e160863665
-runner: ubuntu-24.04
-Lua: 5.4.6
+run: 32582675460
+source head: c8d1cad4ce7469f350b6a3d6e10fee955348620c
 result: PASS
 ```
 
-Reale Testausgabe:
+Zusätzlich wurde der vollständige Testlauf zuvor unter Lua 5.4.6 protokolliert:
 
 ```text
 PASS test_mission_demand
@@ -116,7 +131,7 @@ PASS test_resource_demand_policy
 PASS mission-demand test suite
 ```
 
-Der lokale Windows-Entwicklungsrechner besitzt weiterhin keinen separaten Lua-Interpreter. Der Contract-Test wurde daher reproduzierbar im PR-Workflow gegen den dokumentierten Branch-Head ausgeführt. Es handelt sich um Domain-/Unit-Evidenz und nicht um DCS-Runtime-Acceptance.
+Es handelt sich um Domain-/Unit-Evidenz und nicht um DCS-Runtime-Acceptance.
 
 ## Dokumentationsvalidator
 
@@ -130,50 +145,53 @@ docs/90-mission-demand-resupply-and-cas-orchestration-concept.md
 
 Dokument 90 wurde daraufhin im zentralen Dokumentregister ergänzt.
 
-Der Wiederholungslauf gegen Commit
-
-```text
-9f77718cd669c524b95dfd15c53ace751b198ddb
-```
-
-meldete danach:
+Die späteren Wiederholungsläufe meldeten:
 
 ```text
 documentation validation: 18 error(s), 0 warning(s)
 ```
 
-Alle 18 verbleibenden Fehler liegen in bereits auf `main` vorhandenen Army-Ground-/Ground-Dokumenten und werden in diesem MissionDemand-Reconciliation-PR nicht fachfremd korrigiert. Für die in diesem Branch neu hinzugefügten beziehungsweise geänderten MissionDemand-Dokumente meldete der Validator keinen verbleibenden Fehler.
+Alle 18 verbleibenden Fehler liegen in bereits vor PR #114 auf `main` vorhandenen Army-Ground-/Ground-Dokumenten. Für die in PR #114 neu hinzugefügten beziehungsweise geänderten MissionDemand-Dokumente meldete der Validator keinen verbleibenden branchspezifischen Fehler.
 
-## Diff-Prüfung
+## Finale lokale Readback-Prüfung
 
-Der Projektinhaber hat für den veröffentlichten Inhaltsstand
+Der Projektinhaber hat für den finalen Merge-Kandidaten
 
 ```text
-afb572d82b8f804d2af0d338c77a2fd77df13307
+c8d1cad4ce7469f350b6a3d6e10fee955348620c
 ```
 
-real ausgeführt:
+real ausgeführt und zurückgemeldet:
 
 ```text
+git pull --ff-only origin agent/mission-demand-reconciliation
+git rev-parse HEAD
+git diff --stat origin/main...HEAD
 git diff --check origin/main...HEAD
+PENDING_MERGE check
+SHA-256 readback der zehn Merge-Kandidaten-Dateien
 ```
 
-mit dem Ergebnis:
+Ergebnisse:
 
 ```text
+HEAD MATCH
 PASS git diff --check
+PASS no PENDING_MERGE in MissionDemand documents
+10 files changed, 1492 insertions(+), 3 deletions(-)
 ```
 
-Der nachfolgende Provenienzabschluss ändert nur Dokumentationsmetadaten. Vor dem Merge bleibt ein letzter lokaler Pull-/Hash-/Diff-Readback des finalen Branch-Heads erforderlich.
+Die real zurückgemeldeten SHA-256-Werte des finalen Merge-Kandidaten sind im zugehörigen Projekt-Chat protokolliert. Sie werden hier nicht nachträglich neu berechnet oder simuliert.
 
 ## Aktueller Status
 
 ```text
-SOURCE RECONCILED AGAINST CURRENT MAIN
-MISSIONDEMAND CONTRACT TESTS PASS ON LUA 5.4.6
-DOCUMENT 90 REGISTRY ERROR FIXED
-DOCUMENTATION VALIDATOR: 18 INHERITED MAIN ERRORS / 0 BRANCH-SPECIFIC ERRORS
-CONTENT DIFF CHECK PASS AT afb572d82b8f804d2af0d338c77a2fd77df13307
+SOURCE RECONCILIATION MERGED TO MAIN VIA PR #114
+FINAL SOURCE HEAD c8d1cad4ce7469f350b6a3d6e10fee955348620c
+MERGE COMMIT 341a65105c24807de3ac289bb18d80339111cbd1
+MISSIONDEMAND CONTRACT TESTS PASS
+BRANCH-SPECIFIC DOCUMENTATION VALIDATION PASS
+FINAL LOCAL DIFF CHECK PASS
 DCS TEST NOT REQUIRED FOR THIS DOMAIN-ONLY STEP
 ```
 
@@ -183,12 +201,11 @@ DCS TEST NOT REQUIRED FOR THIS DOMAIN-ONLY STEP
 GATE 1  Lua contract tests                         PASS
 GATE 2  Branch-specific documentation validation  PASS
         repository-wide workflow remains red due to 18 inherited main errors
-GATE 3  Complete branch diff review                PASS FOR CONTENT HEAD afb572d82b8f804d2af0d338c77a2fd77df13307
-        final provenance-head readback remains required before merge
-GATE 4  Owner decision: target/reorder/critical    NOT YET REQUESTED
+GATE 3  Complete branch diff / local readback      PASS at c8d1cad4ce7469f350b6a3d6e10fee955348620c
+GATE 4  Owner decision: target/reorder/critical    OPEN
 GATE 5  First physical RESUPPLY vertical slice     BLOCKED BY GATE 4
 GATE 6  BLUE COMMANDER reconciliation              SEPARATE DEPENDENCY
 GATE 7  Hit -> Incident -> CAS_IMMEDIATE            LATER
 ```
 
-Keine DCS-Runtime-Aussage dieses Dokuments ist `VALIDATED`. Die aktuelle PASS-Aussage gilt ausschließlich für die Lua-Contract-Tests und die dokumentierten Source-/Diff-Prüfungen des genannten Branch-Stands.
+Keine DCS-Runtime-Aussage dieses Dokuments ist `VALIDATED`. Die PASS-Aussagen gelten ausschließlich für die dokumentierten Lua-Contract-, Source-, Diff- und Readback-Prüfungen.
