@@ -112,10 +112,13 @@ Builder-Ausgabe und separate `Get-FileHash`-Ausgabe stimmen exakt überein.
 
 ## Revision 2-11 DCS Runtime
 
-Der gebündelte Lauf ist funktional erfolgreich abgeschlossen.
-
 ```text
 DCS: 2.9.28.26385 MT
+Executed mission:
+C:\Users\Sven\Saved Games\DCS.openbeta\Missions\OMW_Template_v16.miz
+
+Executed mission SHA-256:
+388F02C932BE83823543F97887B4EDBB9E6764D4CEBE543BD8423D43A6ED8620
 
 dcs(20260822-141914).log
 SHA-256: B65B3010612F9FEDCB90210C0799DE889F64A7D643818CD8326730716662D128
@@ -123,6 +126,8 @@ SHA-256: B65B3010612F9FEDCB90210C0799DE889F64A7D643818CD8326730716662D128
 debrief(20260822-141915).log
 SHA-256: ED298DC7A21F153021C50726A7B9D245BD9BAF098163D6D59B9D4CB593E40C39
 ```
+
+Der lokale Runtime-MIZ-Pfad wurde real gehasht. Sein SHA-256 stimmt exakt mit dem hochgeladenen Prüfartefakt `OMW_Template_v16(2).miz` überein. Die bytegenaue Mission-Provenienz ist damit geschlossen.
 
 Physische Phase:
 
@@ -140,7 +145,7 @@ HONAKER_AMMO_DEPLETED
 HONAKER_REARM_REQUEST_AFTER_EMPTY
 ```
 
-Restore-Settlement:
+Restore-Settlement innerhalb derselben DCS-Laufzeit:
 
 ```text
 CONSUMED -> COMPENSATED exactly once                         PASS
@@ -163,38 +168,6 @@ Ausführliche Runtime-Evidenz:
 ```text
 mission/tests/ground-ammo-rearm-integration/results/2026-08-22-acceptance-2-11-runtime.md
 ```
-
-## MIZ-Provenienzgrenze
-
-Der Debrief nennt als ausgeführten Pfad:
-
-```text
-C:\Users\Sven\Saved Games\DCS.openbeta\Missions\OMW_Template_v16.miz
-```
-
-Das zum Lauf hochgeladene Artefakt `OMW_Template_v16(2).miz` wurde read-only geprüft:
-
-```text
-MIZ SHA-256:
-388F02C932BE83823543F97887B4EDBB9E6764D4CEBE543BD8423D43A6ED8620
-
-internal mission SHA-256:
-180D07D7001FA6EFBDD92D4867F8EDAEFFEFA72470FEE2AEC6A3616B5E919481
-
-embedded Acceptance 2-11:
-CBA3ACF5D835E6EF6AD11C3FDD295E178B2B8E6B9330749C15419A1638CF379B
-
-embedded Ground Base:
-9AAF32A10A9EEB906123AFD37FF14B62542EE7C78F7B5E81E388A22F41EABEAB
-
-embedded Warehouse Base:
-472F72F3D688BB4B8624C882527DCA3DEBD42CDE5DD455AC63D7CD2D796BB735
-
-embedded Moose.lua:
-E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915
-```
-
-Der exakte SHA-256 des im Debrief genannten lokalen Runtime-Pfads wurde noch nicht separat aus der realen Konsole zurückgemeldet. Daher wird `388F...` noch nicht als Hash des ausgeführten Pfads behauptet.
 
 ## Persistenzgrenze
 
@@ -243,9 +216,10 @@ Alle 18 Fehler lagen in geerbten `docs/ground/`- bzw. `mission/tests/army-ground
 [x] RESERVED/LOADING cancellation
 [x] new transaction after compensation
 [x] Runtime-Logs ausgewertet und Ergebnis dokumentiert
-[x] Docs/CI + statischer Diff/Contract/Builder-Review durchgeführt
+[x] exakten SHA-256 des im Debrief genannten Runtime-MIZ-Pfads real bestätigt
+[x] Mission-Provenienz bytegenau geschlossen
 
-[ ] exakten SHA-256 des im Debrief genannten Runtime-MIZ-Pfads real bestätigen
+[ ] finalen PR-#112-Diff / Registry / CI-Stand gegen Governance prüfen
 [ ] Owner-Entscheidung PR #112 Ready / Merge
 ```
 
@@ -259,6 +233,7 @@ Ground Ammo Rearm / Fixed Fire Support
         +-- Revision 2-11 build/hash         VERIFIED
         +-- bundled DCS runtime              PASS
         +-- Option-B restore settlement      PASS within DCS runtime
-        +-- exact runtime MIZ path hash      PENDING REAL CONSOLE HASH
+        +-- exact runtime MIZ provenance     CLOSED
+        +-- final PR review                  PENDING
         `-- Owner-Entscheidung PR #112 Ready / Merge
 ```
