@@ -18,9 +18,9 @@ validated_in_dcs: partial
 
 ## Zweck
 
-Dieses Testpaket prüft die MissionDemand-/CampaignState-gekoppelten physischen Ground-RESUPPLY-Pfade über MOOSE BRIGADE / PLATOON / ARMYGROUP / AUFTRAG.
+Dieses Testpaket prüft MissionDemand-/CampaignState-gekoppelte physische Ground-RESUPPLY-Pfade. CampaignState bleibt strategische Ressourcenautorität; MOOSE übernimmt die physische Ausführung.
 
-## Stage 1A – AMMO
+## Stage 1A – AMMO / akzeptiert
 
 ```text
 GROUND_NODE_HONAKER
@@ -30,17 +30,14 @@ CampaignState TRANSFER 20 from GROUND_NODE_JOYCE
 TPL_BLUE_CONVOY_LIGHT_06
 AUFTRAG AMMOSUPPLY
 OnRoad 27 kt
-30 s MissionDone -> RTZ settlement window
+30 s MissionDone -> RTZ settlement
+same ARMYGROUP return
 Returned -> Warehouse AddAsset -> physical cleanup
 ```
 
-Status:
+Status: `ACCEPTED_TECHNICAL_BASELINE`.
 
-```text
-ACCEPTED_TECHNICAL_BASELINE
-```
-
-Details:
+Dateien:
 
 ```text
 src/01-ground-ammo-resupply-acceptance.lua
@@ -49,55 +46,79 @@ results/2026-08-22-ground-ammo-resupply-acceptance-1-pass-1.md
 tools/build-ground-ammo-resupply-acceptance-1.ps1
 ```
 
-## Stage 1B – FUEL
+## Stage 1B – FUELSUPPLY / geschlossen
+
+Der Versuch, die abstrakte CampaignState-Meta-Ware `GROUND_FUEL_PACKAGE` mit `AUFTRAG:NewFUELSUPPLY(...)` als Warehouse-to-Warehouse-Roundtrip auszuführen, ist für diesen OMW-Scope fehlgeschlagen:
 
 ```text
-GROUND_NODE_HONAKER
-GROUND_FUEL_PACKAGE
-36 -> 18 -> 36
-CampaignState TRANSFER 18 from GROUND_NODE_JOYCE
-TPL_BLUE_CONVOY_FUEL_LIGHT_06
-AUFTRAG FUELSUPPLY
-OnRoad 27 kt
-30 s MissionDone -> RTZ settlement window
-Returned -> Warehouse AddAsset -> physical cleanup
+ROAD_ALIGNED_WAREHOUSE_SPAWN
+GROUP_MATERIALIZED
+ARMY_ON_MISSION mission=FUELSUPPLY
+-> no MissionExecute
+-> no MissionDone
+-> OUTBOUND_TIMEOUT
 ```
 
-Status:
-
-```text
-SOURCE_REVIEWED / STAGED / DCS_PENDING
-```
-
-Owner-created `OMW_Template_v19.miz` was inspected read-only. The selected Stage-1B fixture contains six vehicles:
-
-```text
-1 CHAP_MATV
-2 M978 HEMTT Tanker
-3 MaxxPro_MRAP
-4 M978 HEMTT Tanker
-5 MaxxPro_MRAP
-6 CHAP_MATV
-```
-
-The physical convoy remains only a representation of the strategic CampaignState transfer. No `GROUND_FUEL_PACKAGE`-per-tanker capacity is defined by this test.
-
-Files:
+`FUELSUPPLY` bleibt als MOOSE-API bestehen, wird für diesen OMW-Meta-RESUPPLY-Executor aber nicht weiterverwendet. Die Testquelle und das Ergebnis bleiben historische Negativ-Evidenz.
 
 ```text
 src/02-ground-fuel-resupply-acceptance.lua
 ACCEPTANCE-2.md
-dist/OMW_Ground_Fuel_Resupply_Acceptance_1.lua   # generated locally
+results/2026-08-22-ground-fuel-resupply-acceptance-1-fail-1.md
 tools/build-ground-fuel-resupply-acceptance-1.ps1
 ```
 
-## MOOSE-First
+## Stage 1C – generischer Meta-RESUPPLY / AUFTRAG NOTHING
 
-Technical review:
+Owner-approved physical contract vom 22.08.2026:
 
 ```text
-docs/moose/GROUND-RESUPPLY-EXECUTION-SOURCE-REVIEW.md
+CampaignState meta-resource shortage
+-> MissionDemand RESUPPLY
+-> CampaignState TRANSFER
+-> existing resource-appropriate convoy template
+-> BRIGADE / PLATOON / ARMYGROUP
+-> AUFTRAG:NewNOTHING(destination ACCESS zone)
+-> destination-zone proof
+-> CampaignState DELIVERED / MissionDemand SUCCESS
+-> mission cancel / MissionDone
+-> same ARMYGROUP RTZ origin
+-> Returned -> Warehouse AddAsset
 ```
+
+Erster Fixture bleibt Fuel, damit nur die physische Missionssemantik gegenüber dem fehlgeschlagenen Stage-1B-Lauf gewechselt wird:
+
+```text
+RESOURCE: GROUND_FUEL_PACKAGE
+JOYCE 40 -> 22
+HONAKER 36 -> 18 -> 36
+TEMPLATE: TPL_BLUE_CONVOY_FUEL_LIGHT_06
+PHYSICAL MISSION: AUFTRAG NOTHING
+```
+
+`AUFTRAG NOTHING` trägt keine strategische Fuel-/Cargo-Menge. Der sichtbare M978-Konvoi ist ausschließlich physische Repräsentation.
+
+Fail-fast:
+
+```text
+OutboundTimeoutSec = 600
+DestinationCheckIntervalSec = 15
+DestinationExecutionGraceSec = 90
+```
+
+Wenn der Convoy physisch in Honaker ACCESS eintritt und `MissionExecute` nicht binnen 90 Sekunden folgt, endet der Test mit `DESTINATION_EXECUTION_TIMEOUT` statt eines weiteren 30-Minuten-Wartens.
+
+Dateien:
+
+```text
+src/03-ground-meta-resupply-nothing-acceptance.lua
+ACCEPTANCE-3.md
+tools/build-ground-meta-resupply-nothing-acceptance-1.ps1
+```
+
+Status: `STAGED / SOURCE_REVIEWED / OWNER BUILD PENDING / DCS_PENDING`.
+
+## MOOSE-First
 
 Pinned MOOSE:
 
@@ -107,16 +128,10 @@ commit 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
 Moose.lua SHA-256 E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915
 ```
 
-No custom convoy dispatcher, no MIST, no native-DCS event layer, no `OPSTRANSPORT`, no alternate strategic resource authority, and no `.miz` mutation by ChatGPT are introduced.
-
-## Current status
+Technische Review:
 
 ```text
-Stage 1A AMMO: ACCEPTED_TECHNICAL_BASELINE
-Stage 1B FUEL source: STAGED ON BRANCH
-Stage 1B builder: STAGED ON BRANCH
-Stage 1B local owner build: NOT RUN
-Stage 1B bundle SHA-256: UNKNOWN UNTIL OWNER BUILD
-Stage 1B Mission Editor integration: NOT STARTED
-Stage 1B DCS runtime: NOT RUN
+docs/moose/GROUND-RESUPPLY-EXECUTION-SOURCE-REVIEW.md
 ```
+
+Kein eigener Convoy-Dispatcher, kein MIST, kein nativer DCS-Eventlayer, kein OPSTRANSPORT, keine zweite Ressourcenautorität und keine `.miz`-Mutation durch ChatGPT.
