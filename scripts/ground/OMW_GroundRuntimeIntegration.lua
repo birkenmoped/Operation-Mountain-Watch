@@ -9,7 +9,7 @@ local Integration = {}
 
 local TAG = "[OMW][Ground.RuntimeIntegration]"
 
-Integration.SchemaVersion = "OMW-GROUND-RUNTIME-INTEGRATION-1"
+Integration.SchemaVersion = "OMW-GROUND-RUNTIME-INTEGRATION-2"
 
 local function fail(message)
   error(TAG .. " " .. tostring(message), 2)
@@ -41,6 +41,8 @@ local function validateStoreApi(store)
   requireFunction(store, "GetResource", "store")
   requireFunction(store, "ReserveResource", "store")
   requireFunction(store, "Consume", "store")
+  requireFunction(store, "CompleteConsumption", "store")
+  requireFunction(store, "MarkConsumptionCompensated", "store")
   requireFunction(store, "CreditResourceOnce", "store")
   requireFunction(store, "GetResourceCredit", "store")
   requireFunction(store, "ExportSnapshot", "store")
@@ -81,19 +83,23 @@ function Integration.Attach(spec)
   validateStoreApi(store)
   local campaignState = requireTable(spec.campaignState, "campaignState")
   local adapterModule = requireTable(spec.adapterModule, "adapterModule")
+  local ammoRearmAdapterModule = requireTable(spec.ammoRearmAdapterModule, "ammoRearmAdapterModule")
   local groundInitialStock = requireTable(spec.groundInitialStock, "groundInitialStock")
 
   validateStockModule(groundInitialStock)
   requireFunction(adapterModule, "New", "adapterModule")
+  requireFunction(ammoRearmAdapterModule, "ReconcileRestore", "ammoRearmAdapterModule")
 
   local restored = spec.restored == true
   local checkedResources = validateGroundResources(store, groundInitialStock, not restored)
   local adapter = adapterModule.New(store, campaignState)
   local reconciliation = nil
+  local localRearmReconciliation = nil
 
   if restored then
     requireFunction(adapter, "ReconcileRestore", "adapter")
     reconciliation = adapter:ReconcileRestore()
+    localRearmReconciliation = ammoRearmAdapterModule.ReconcileRestore(store, campaignState)
   end
 
   return {
@@ -102,6 +108,7 @@ function Integration.Attach(spec)
     adapter = adapter,
     restored = restored,
     reconciliation = reconciliation,
+    localRearmReconciliation = localRearmReconciliation,
     checkedResources = checkedResources,
     groundInitialStockSchemaVersion = groundInitialStock.SchemaVersion,
     schemaVersion = Integration.SchemaVersion,
