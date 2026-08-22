@@ -21,22 +21,20 @@ base_commit: 28d0069d5d9ec66e62f1e81ad59fc3dd4e2e249c
 
 # Entwicklungsauftrag – Automatic Response Orchestration
 
-## 1. Zweck und Arbeitsbranch
-
-Dieser Branch entwickelt die geschlossene automatische BLUE-Reaktionskette aus dem aktuellen `main`-Stand. Bereits integrierte CampaignState-, MissionDemand-, Ground-, Fire-Support-, AirOps- und CSAR-Bausteine werden orchestriert; akzeptierte Funktionen werden nicht parallel neu implementiert.
+## 1. Zweck / Arbeitsbranch
 
 ```text
 branch: agent/automatic-response-orchestration
 base: main @ 28d0069d5d9ec66e62f1e81ad59fc3dd4e2e249c
 ```
 
-Dieses Dokument ist Entwicklungsauftrag und laufendes Handoff. Nach jedem relevanten Schritt sind Ist-Stand, Dateien, Tests, Hashes, offene Grenzen und der nächste zulässige Gate zu aktualisieren.
+Ziel ist die geschlossene automatische BLUE-Reaktionskette aus bereits integrierten CampaignState-, MissionDemand-, Ground-, Fire-Support-, AirOps- und CSAR-Bausteinen. Bestehende MOOSE-/Production-Funktionalität wird nicht parallel neu implementiert.
 
-## 2. Pflichtprüfung vor jeder Entwicklungsstufe
+Dieses Dokument ist der laufende Entwicklungsauftrag und Handoff. Nach jedem relevanten Gate sind reale Hashes, Teststatus, offene Grenzen und der nächste zulässige Schritt einzutragen.
 
-Vor jeder neuen Stufe und nach längerer Unterbrechung müssen die aktuellen Regeln auf `main` erneut gelesen werden. Branchkopien oder alte Handoffs ersetzen dies nicht.
+## 2. Verbindliche Arbeitsregeln
 
-Mindestens:
+Vor jeder neuen Entwicklungsstufe oder nach längerer Unterbrechung aktuelle `main`-Regeln erneut lesen:
 
 ```text
 AGENTS.md
@@ -48,110 +46,76 @@ docs/SUBPROJECT-REGISTRY.md
 mission/tests/GOVERNANCE.md
 ```
 
-Je nach Stufe zusätzlich aktuelle Fach-, Acceptance- und `docs/moose/`-Dokumente.
-
 MOOSE-First:
 
 ```text
-MOOSE documentation
+MOOSE docs
 -> actual pinned Moose.lua
 -> signatures / returns / FSM / events / prerequisites
 -> official demos/tests where relevant
--> direct MOOSE / configuration / callbacks
+-> direct MOOSE/configuration/callbacks
 -> smallest adapter only if still required
 ```
 
-Keine MOOSE- oder DCS-Funktion wird geraten.
+Aufgabentrennung:
 
-## 3. Aufgabentrennung / lokale Toolgrenze
-
+```text
 ChatGPT:
+Repository/Governance -> implementation/docs/tests -> diff/guards -> commit/publish -> local handoff
 
-```text
-Repository/Governance prüfen
--> Entwicklung erstellen
--> Diff/Guards/Dokumentation/MOOSE-First prüfen
--> selbst committen und remote veröffentlichen
--> erst danach lokale Schritte übergeben
+Project owner:
+PowerShell local checks -> Mission Editor/.miz work where required -> DCS -> real console/hashes/logs/debrief/observations
 ```
 
-Projektinhaber:
-
-```text
-PowerShell-Schritte lokal ausführen
-MIZ/Mission Editor gemäß main-Governance bearbeiten
-DCS-Läufe ausführen
-reale Konsole / Hashes / Logs / Debrief / Beobachtungen zurückgeben
-```
-
-Lokale Entwicklungsmaschine:
+Lokale Grenze:
 
 ```text
 Lua interpreter: NOT AVAILABLE
 Python: NOT AVAILABLE
-```
-
-Daher:
-
-```text
-local builds/checks: PowerShell only
-build instructions: always in code blocks
-no lua/luac/python/python3 assumptions
-no invented local builds or hashes
+local checks/builds: PowerShell only
+build instructions: always code blocks
+no invented local build/hash/DCS result
 no CODEX
 ```
 
-## 4. Aktuelle Source of Truth
-
-Legacy:
+## 3. Aktuelle Source of Truth
 
 ```text
 agent/mission-demand-resupply-cas-concept
 = HISTORICAL REFERENCE ONLY
+
+CURRENT SOURCE OF TRUTH
+= main
 ```
 
-Aktuelle Autorität ist `main`.
-
-PR #114 – MissionDemand Foundation:
+Bereits integriert:
 
 ```text
-merge commit: 341a65105c24807de3ac289bb18d80339111cbd1
-status: MERGED
+PR #114 / MissionDemand Foundation
+merge: 341a65105c24807de3ac289bb18d80339111cbd1
+- MissionDemand registry/state model
+- RESUPPLY
+- CAS_IMMEDIATE
+- assignment exclusivity
+- active dedupe
+- snapshot/restore
+- ResourceDemandPolicy
+
+PR #115 / Ground RESUPPLY thresholds
+merge: 34b1f46120f951ca2a6308cf1d9fbbb4b0a17863
+- reorder = 50% of target
+- critical = 25% of target
+
+PR #112 / Fixed Fire Support / local ammo rearm
+- merged
+- physical MOOSE/DCS rearm PASS for documented provenance
+- same-session restore settlement PASS
+- external process/server persistence NOT TESTED / NOT CLAIMED
 ```
 
-Integriert:
+CampaignState bleibt alleinige strategische Ressourcenautorität.
 
-```text
-MissionDemand registry/state model
-RESUPPLY
-CAS_IMMEDIATE
-AI/player assignment exclusivity
-active dedupe
-snapshot/restore
-ResourceDemandPolicy
-```
-
-PR #115 – Ground RESUPPLY thresholds:
-
-```text
-merge commit: 34b1f46120f951ca2a6308cf1d9fbbb4b0a17863
-status: MERGED
-reorder  = 50% of target
-critical = 25% of target
-```
-
-PR #112 – Fixed Fire Support / local ammo rearm:
-
-```text
-status: MERGED
-physical MOOSE/DCS rearm: DCS PASS for documented provenance
-same-session restore settlement: PASS
-external process/server persistence: NOT TESTED / NOT CLAIMED
-```
-
-CampaignState bleibt einzige strategische Ressourcenautorität.
-
-## 5. Endziele
+## 4. Endziele
 
 ```text
 A. FOB attacked
@@ -173,7 +137,7 @@ E. CAS helicopter lost with surviving isolated personnel
    -> Player CSAR or AICSAR
 ```
 
-Architekturgrenze:
+Architektur:
 
 ```text
 CampaignState = strategic truth/resource authority
@@ -182,23 +146,21 @@ MOOSE = operational execution
 DCS groups = temporary physical representation
 ```
 
-## 6. Entwicklungsstufen
+## 5. Entwicklungsstufen
 
 ### Stage 0 – Governance / Ist-Stand / MOOSE Ground reconciliation
 
 Status: `COMPLETE FOR STAGE-1A SCOPE`
 
-Erledigt:
-
 ```text
 current main rules reviewed
-PR #114 / #115 / #112 reconciled
+PR #114/#115/#112 reconciled
 CampaignState TRANSFER lifecycle reviewed
 Ground production separation reviewed
 BRIGADE/PLATOON/ARMYGROUP/AUFTRAG lifecycle reviewed
 Ground return lifecycle reviewed
 OMW_GroundRoadSpawnAdapter confirmed as existing owner-approved exception
-NewAMMOSUPPLY / NewFUELSUPPLY source-confirmed in pinned Moose.lua
+NewAMMOSUPPLY / NewFUELSUPPLY source-confirmed
 AUFTRAG:NewOPSTRANSPORT excluded because unavailable/commented in pinned source
 no new non-MOOSE exception required for Stage 1A
 ```
@@ -215,9 +177,9 @@ Status: `IN DEVELOPMENT`
 
 #### Stage 1A – Ground AMMO / Joyce -> Honaker
 
-Status: `BUILD_PASS / MIZ_SELECTION_NEXT`
+Status: `BUILD_PASS / MIZ_PREFLIGHT_PASS / OWNER_EMBEDDING_NEXT`
 
-Physical and strategic chain:
+Target chain:
 
 ```text
 Honaker AMMO 40
@@ -253,17 +215,12 @@ mission/tests/ground-resupply-execution/src/01-ground-ammo-resupply-acceptance.l
 tools/build-ground-ammo-resupply-acceptance-1.ps1
 ```
 
-Builder:
+Real owner build evidence:
 
 ```text
-GROUND-AMMO-RESUPPLY-ACCEPTANCE-1-3
-```
-
-Real local build evidence returned by project owner:
-
-```text
-GitCommit: 99ea86bf61036f2d04008b17bcb8c1d6e236b030
+Build GitCommit: 99ea86bf61036f2d04008b17bcb8c1d6e236b030
 GeneratedUtc: 2026-08-22T16:57:51Z
+BuilderVersion: GROUND-AMMO-RESUPPLY-ACCEPTANCE-1-3
 Bundle SHA-256: D1E908D08DF3DA787D01E760F5B9C01771F5D17CBBD51C8545A4A00086E10676
 Independent bundle SHA-256: D1E908D08DF3DA787D01E760F5B9C01771F5D17CBBD51C8545A4A00086E10676
 Builder SHA-256: AEF56E16FE896854D32EAE409FC04A6C8C0BE20266EF591242DC5C866C5FB820
@@ -278,10 +235,7 @@ Moose.lua SHA-256: E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A
 Build result:
 
 ```text
-BUILD PASS
-bundle emitted: true
-builder hash report matches independent bundle hash: true
-DCS runtime: NOT RUN
+PASS
 ```
 
 Design boundary:
@@ -289,47 +243,108 @@ Design boundary:
 ```text
 CampaignState owns cargo quantity.
 MOOSE AMMOSUPPLY owns physical movement only.
-OPSTRANSPORT is not used in this first abstract-resource transfer slice.
+OPSTRANSPORT is not used in Stage 1A.
 ```
 
-Delivery gate:
+Delivery boundary:
 
 ```text
 MissionDone alone != delivery
-Delivery requires exact acceptance AMMOSUPPLY MissionExecute
+Delivery requires exact AMMOSUPPLY MissionExecute
 AND ARMYGROUP:IsInZone(Honaker ACCESS) == true
 ```
 
-Next gate:
+#### Stage 1A MIZ preflight – 2026-08-22
+
+Owner local candidate list selected the newest mission:
 
 ```text
-select concrete work MIZ
--> record MIZ SHA-256
--> internal mission SHA-256
--> confirm object contract
--> confirm startup resources/triggers
--> only then embed acceptance bundle
--> verify embedded bundle and Moose hashes
--> only then DCS run
+OMW_Template_v16.miz
 ```
 
-Required MIZ objects:
+Uploaded inspection copy:
+
+```text
+OMW_Template_v16(7).miz
+```
+
+The uploaded copy is byte-identical to the locally listed candidate:
+
+```text
+MIZ SHA-256: 91837A67121D769145136745BBAC2F12C92F4F054ED1EADD5E937EFB9533F8A9
+internal mission SHA-256: BFC50C8FA4AA953D63B8D1AAEC8B927645253996FFA6990DF6D5118F98659AF7
+```
+
+Required object contract read-only confirmed:
 
 ```text
 WH_BLUE_GND_JOYCE
+  static anchor present / HESCO_generator
+
 ZON_BLUE_GND_JOYCE_ACCESS
+  trigger zone present / radius 152.4 m
+
 ZON_BLUE_GND_HONAKER_ACCESS
+  trigger zone present / radius 121.92 m
+
 TPL_BLUE_GND_SUP_M1083
+  Ground template present
+  one CHAP_M1083
+  lateActivation = true
 ```
 
-Required startup chain:
+Embedded production resources:
 
 ```text
-Moose.lua
-OMW_AirOps_Warehouse_Base.lua
-OMW_Ground_Base.lua
-OMW_WAREHOUSE_READY == 1
-OMW_GROUND_READY == 1
+l10n/DEFAULT/Moose.lua
+E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915
+
+l10n/DEFAULT/OMW_AirOps_Warehouse_Base.lua
+472F72F3D688BB4B8624C882527DCA3DEBD42CDE5DD455AC63D7CD2D796BB735
+
+l10n/DEFAULT/OMW_Ground_Base.lua
+9AAF32A10A9EEB906123AFD37FF14B62542EE7C78F7B5E81E388A22F41EABEAB
+```
+
+Read-only startup mapping confirmed from `mission.trig` + `mapResource`:
+
+```text
+Mission Start -> Moose.lua
+time > 1 s -> OMW_AirOps_Warehouse_Base.lua
+time > 2 s AND OMW_WAREHOUSE_READY == 1
+-> OMW_Ground_Base.lua
+-> OMW.Ground.Base.Attach(existing OMW.AirOps.CampaignContext store/module)
+```
+
+Preflight result:
+
+```text
+MIZ identity: PASS
+internal mission identity: PASS
+required object contract: PASS
+Moose.lua identity: PASS
+Warehouse Base present: PASS
+Ground Base present: PASS
+single CampaignState handoff: PASS
+MIZ mutation: NOT STARTED
+DCS runtime: NOT RUN
+```
+
+Detailed authority:
+
+```text
+mission/tests/ground-resupply-execution/ACCEPTANCE-1.md
+```
+
+Next Stage-1A gate:
+
+```text
+owner copies v16 to dedicated acceptance MIZ
+-> embeds exactly one acceptance DO SCRIPT FILE
+-> gates it after Warehouse/Ground readiness
+-> saves once
+-> post-mutation hashes and structure checked
+-> no DCS run until post-mutation preflight PASS
 ```
 
 #### Stage 1B – Ground FUEL
@@ -344,16 +359,16 @@ MOOSE candidate: AUFTRAG:NewFUELSUPPLY(Zone)
 
 Status: `BLOCKED FOR SEPARATE MOOSE GAP REVIEW`
 
-Keine gleichwertige generische `AUFTRAG:NewSUPPLY(...)`-API wurde für den gepinnten Scope bestätigt. Kein PATROL-/RELOCATE-Ersatz wird missbraucht. Falls MOOSE keinen geeigneten Pfad bietet, ist vor eigenem Fallback eine Owner-Entscheidung erforderlich.
+No equivalent generic `AUFTRAG:NewSUPPLY(...)` API is confirmed for the pinned MOOSE scope. No unrelated mission type may be used as a hidden substitute. Any fallback requires a documented gap and owner decision.
 
 ### Stage 2 – FOB attack -> support demand
 
 Status: `PLANNED`
 
 ```text
-verified attack/contact event source
+verified attack/contact source
 -> deduplicated TacticalSupportIncident
--> capability/range/readiness/resources/ROE evaluation
+-> capability/range/readiness/resources/ROE
 -> ARTY / QRF / CAS demand
 ```
 
@@ -363,8 +378,8 @@ Status: `PLANNED / FOUNDATIONS AVAILABLE`
 
 ```text
 reuse PR #112 local rearm
--> authoritative CampaignState consumption
--> ResourceDemandPolicy re-evaluation
+-> CampaignState consumption
+-> ResourceDemandPolicy reevaluation
 -> exactly one RESUPPLY demand when threshold crossed
 ```
 
@@ -375,7 +390,7 @@ Status: `PLANNED`
 ```text
 physical convoy lifecycle as event source
 -> deduplicated support incident
--> transport demand and support demand remain separate identities
+-> transport demand and support demand remain separate
 ```
 
 ### Stage 5 – BLUE assignment / CAS execution
@@ -383,8 +398,8 @@ physical convoy lifecycle as event source
 Status: `BLOCKED BY BLUE COMMANDER RECONCILIATION`
 
 ```text
-current COMMANDER/AIRWING/SQUADRON/AUFTRAG source review
--> selective reconciliation of historical BLUE COMMANDER work
+current COMMANDER/AIRWING/SQUADRON/AUFTRAG review
+-> selective reconciliation
 -> exclusive player/AI assignment
 -> CAS_IMMEDIATE runtime
 ```
@@ -396,9 +411,9 @@ Status: `PLANNED`
 ```text
 final CSARIncident model/FSM
 -> verified loss/ejection/survival event source
--> exactly one incident
+-> one incident
 -> Player/AICSAR exclusivity
--> persistent Rescue/Capture/Death/Expired/Recovery settlement
+-> persistent final settlement
 ```
 
 ### Stage 7 – End-to-End chain
@@ -411,7 +426,7 @@ FOB attacked
 -> artillery
 -> fire
 -> local ammo rearm
--> stock threshold crossed
+-> stock threshold
 -> RESUPPLY demand
 -> physical convoy
 -> convoy attacked
@@ -420,20 +435,13 @@ FOB attacked
 -> delivery/loss settlement
 ```
 
-plus:
-
-```text
-CAS helicopter lost
--> one CSARIncident
--> Player CSAR or AICSAR
--> final settlement
-```
+plus CSAR chain after CAS aircraft loss.
 
 ### Stage 8 – Restore / restart / idempotence
 
 Status: `PLANNED`
 
-No duplicate demands, reservations, debits, credits or unexplained losses. External process/server restart is claimed only after real test.
+No duplicate demands, reservations, debits, credits or unexplained losses. External process/server restart only after real test.
 
 ### Stage 9 – Multiplayer / performance / failures
 
@@ -445,34 +453,50 @@ Parallel demands, assignment races, destroyed carriers/responders, routing failu
 
 Status: `PLANNED`
 
-Diff, tests, MOOSE documentation, acceptance provenance, registries, no stale `PENDING_MERGE` metadata on main, and no runtime claims beyond exact tested provenance.
+Full diff, tests, MOOSE docs, exact acceptance provenance, registries, no stale `PENDING_MERGE` on `main`, no runtime claims beyond tested scope.
 
-## 7. Aktueller Gate-Stand
-
-```text
-branch: agent/automatic-response-orchestration
-stage: STAGE_1A_GROUND_AMMO_RESUPPLY
-source review: COMPLETE FOR TEST SCOPE
-builder: PASS
-bundle hash: D1E908D08DF3DA787D01E760F5B9C01771F5D17CBBD51C8545A4A00086E10676
-MIZ selected: false
-MIZ object-contract smoke: NOT RUN
-MIZ embedding: NOT STARTED
-DCS runtime: NOT RUN
-production runtime implementation: NOT YET CREATED
-```
-
-## 8. Nächster zulässiger Schritt
-
-Nur MIZ-Auswahl und read-only Preflight gemäß Dokument 22:
+## 6. Current handoff state
 
 ```text
-identify concrete current OMW work MIZ
--> record filename and SHA-256
--> record internal mission SHA-256
--> confirm required Joyce/Honaker/M1083 objects
--> confirm Moose/Warehouse/Ground startup resources and trigger order
--> stop on any mismatch
+current_branch: agent/automatic-response-orchestration
+main_reference_checked_at: 2026-08-22
+main_reference_commit: 28d0069d5d9ec66e62f1e81ad59fc3dd4e2e249c
+completed_gate: STAGE_1A_BUILD_AND_READ_ONLY_MIZ_PREFLIGHT
+current_stage: STAGE_1A_GROUND_AMMO_RESUPPLY
+build_status: PASS
+bundle_sha256: D1E908D08DF3DA787D01E760F5B9C01771F5D17CBBD51C8545A4A00086E10676
+selected_miz: OMW_Template_v16.miz
+selected_miz_sha256_pre_mutation: 91837A67121D769145136745BBAC2F12C92F4F054ED1EADD5E937EFB9533F8A9
+internal_mission_sha256_pre_mutation: BFC50C8FA4AA953D63B8D1AAEC8B927645253996FFA6990DF6D5118F98659AF7
+miz_preflight: PASS
+miz_change_required: true
+miz_change_owner: project owner
+miz_mutation_status: NOT STARTED
+dcs_test_required_after_post_mutation_preflight: true
+dcs_test_status: NOT RUN
+production_runtime_implementation: NOT YET CREATED
+known_failures: initial builder marker mismatch fixed in BuilderVersion 1-3; no current open build failure
+open_owner_decisions: none for the currently approved Stage-1A acceptance embedding
+next_allowed_step: owner MIZ embedding followed by post-mutation hash/structure preflight; no DCS before PASS
 ```
 
-Erst nach diesem statischen PASS darf das Acceptance-Bundle eingebettet werden.
+## 7. Next allowed step
+
+Only the Stage-1A owner-side MIZ embedding and post-mutation static verification are allowed now.
+
+```text
+OMW_Template_v16.miz
+-> dedicated acceptance copy
+-> one DO SCRIPT FILE for OMW_Ground_Ammo_Resupply_Acceptance_1.lua
+-> condition after OMW_WAREHOUSE_READY / OMW_GROUND_READY
+-> save
+-> MIZ SHA-256
+-> internal mission SHA-256
+-> embedded acceptance SHA-256
+-> embedded Moose SHA-256
+-> duplicate-resource/trigger check
+-> object/startup contract recheck
+-> stop before DCS if any mismatch
+```
+
+DCS execution is not yet authorized by this document.
