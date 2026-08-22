@@ -17,7 +17,7 @@ project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
 superseded_by:
 source_branch: agent/mission-demand-reconciliation
-source_commit: afb572d82b8f804d2af0d338c77a2fd77df13307
+source_commit: c8d1cad4ce7469f350b6a3d6e10fee955348620c
 validated_in_dcs: false
 ---
 
@@ -53,7 +53,7 @@ DCS groups    = temporary physical representation
 
 ## 2. Reconciliation gegen aktuellen `main`
 
-Ausgangsbasis dieses Branches:
+Ausgangsbasis des Reconciliation-Branches:
 
 ```text
 main commit:
@@ -61,11 +61,20 @@ main commit:
 
 legacy source branch:
 agent/mission-demand-resupply-cas-concept
+
+final reconciliation source head:
+c8d1cad4ce7469f350b6a3d6e10fee955348620c
+
+merged via PR:
+114
+
+merge commit:
+341a65105c24807de3ac289bb18d80339111cbd1
 ```
 
-Der Legacy-Branch wird nicht als Ganzes übernommen. Seit seiner Abzweigung wurden insbesondere Ground-Ressourcen, Ground-Rearm, CampaignState-Integration und MOOSE-Dokumentation auf `main` weiterentwickelt.
+Der Legacy-Branch wurde nicht als Ganzes übernommen. Seit seiner Abzweigung wurden insbesondere Ground-Ressourcen, Ground-Rearm, CampaignState-Integration und MOOSE-Dokumentation auf `main` weiterentwickelt.
 
-Nicht zurückportiert werden deshalb ältere Branch-Fassungen von:
+Nicht zurückportiert wurden deshalb ältere Branch-Fassungen von:
 
 ```text
 scripts/ground/OMW_GroundAmmoRearmAdapter.lua
@@ -131,7 +140,7 @@ Damit ist automatische Resupply-Erzeugung bewusst deaktiviert, bis der Projektin
 
 ## 4. MissionDemand Domain Registry
 
-Produktionskandidat auf diesem Reconciliation-Branch:
+Auf `main` integrierter Domain-Layer:
 
 ```text
 scripts/campaign/OMW_MissionDemand.lua
@@ -193,7 +202,7 @@ assignedTo
 
 ## 5. ResourceDemandPolicy
 
-Produktionskandidat:
+Auf `main` integrierter Domain-Layer:
 
 ```text
 scripts/campaign/OMW_ResourceDemandPolicy.lua
@@ -245,7 +254,7 @@ RESUPPLY|<destinationNodeId>|<resourceId>
 
 ## 6. RESUPPLY – nächster vertikaler Pfad
 
-Die nächste Ausbaustufe darf erst beginnen, nachdem die Domain-Tests des aktuellen Branches ausgeführt sind und die benötigten `reorder`-/`critical`-Werte ausdrücklich beschlossen wurden.
+Die Domain-Tests dieses Blocks sind ausgeführt und bestanden. Die nächste Ausbaustufe darf beginnen, sobald die benötigten `reorder`-/`critical`-Werte ausdrücklich beschlossen wurden.
 
 Zielkette:
 
@@ -328,7 +337,15 @@ ResourceDemandPolicy
 - current normalized GROUND_AMMO_PACKAGE ID
 ```
 
-DCS ist für diese reine Domain-Stufe nicht erforderlich. Die Tests müssen jedoch mit einem realen Lua-Interpreter ausgeführt werden, bevor dieser Block als technisch abgeschlossen gilt.
+Der GitHub-Actions-Lauf auf dem finalen Source-Head `c8d1cad4ce7469f350b6a3d6e10fee955348620c` war erfolgreich. Die protokollierte Lua-5.4-Testausgabe lautet:
+
+```text
+PASS test_mission_demand
+PASS test_resource_demand_policy
+PASS mission-demand test suite
+```
+
+DCS ist für diese reine Domain-Stufe nicht erforderlich. Daraus folgt ausdrücklich keine DCS-Runtime-Acceptance.
 
 ## 10. Nicht Teil dieses Schritts
 
@@ -346,17 +363,19 @@ DCS ist für diese reine Domain-Stufe nicht erforderlich. Die Tests müssen jedo
 
 ## 11. Abnahmekriterien
 
-Dieser Domain-Reconciliation-Block ist abgeschlossen, wenn:
+Der Domain-Reconciliation-Block ist abgeschlossen:
 
 ```text
-[ ] current-main contract review complete
-[ ] MissionDemand source committed on reconciliation branch
-[ ] ResourceDemandPolicy source committed on reconciliation branch
-[ ] normalized Ground resource IDs used in tests
-[ ] Lua contract tests PASS
-[ ] documentation validator reviewed
-[ ] complete diff reviewed
-[ ] no stale Ground-rearm implementation reintroduced
+[x] current-main contract review complete
+[x] MissionDemand source committed and merged
+[x] ResourceDemandPolicy source committed and merged
+[x] normalized Ground resource IDs used in tests
+[x] Lua contract tests PASS
+[x] documentation validator reviewed
+[x] complete diff reviewed
+[x] no stale Ground-rearm implementation reintroduced
 ```
 
-Danach folgt eine getrennte Eigentümerentscheidung über die konkreten Resupply-Schwellen und den ersten physischen RESUPPLY-Vertical-Slice.
+Die repositoryweite Documentation Validation bleibt wegen 18 bereits vor PR #114 vorhandenen Army-Ground-/Ground-Metadatenfehlern rot; PR #114 hinterließ keinen MissionDemand-spezifischen Validatorfehler.
+
+Als nächster fachlicher Schritt folgt eine getrennte Eigentümerentscheidung über die konkreten Resupply-Schwellen und den ersten physischen RESUPPLY-Vertical-Slice.
