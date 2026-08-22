@@ -13,8 +13,8 @@ project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
   - registry that listed Document 22 only as a branch reservation
 superseded_by:
-source_branch: main
-source_commit: GIT_HISTORY
+source_branch: agent/air-tasking-plan-main-reconciliation
+source_commit: PENDING_MERGE
 validated_in_dcs: false
 ---
 
@@ -149,3 +149,6 @@ Eine Nummer und eine stabile `document_id` dürfen im aktuellen Bestand jeweils 
 | `OMW-TEST-ARMY-GROUND-ACCEPTANCE-6` | `mission/tests/army-ground-foundation/ACCEPTANCE-6.md` | `ACCEPTED_TECHNICAL_BASELINE`; combined Fenty/Joyce/Wright normal-return, partial-loss and damaged-return gate |
 | `OMW-RESULT-ARMY-GROUND-ACCEPTANCE-4-RUNTIME-20260819` | `mission/tests/army-ground-foundation/results/2026-08-19-acceptance-4-runtime.md` | `ACCEPTED_TECHNICAL_BASELINE`; exact Fenty return-handoff runtime evidence |
 | `OMW-PLAN-ARMY-GROUND-RETURN-SETTLEMENT` | `docs/ground/ARMY-GROUND-RETURN-SETTLEMENT-DECISION-PREPARATION.md` | `PLANNED`; owner-decision inputs for Ground strategic return settlement |
+| `OMW-AIR-TASKING-PLAN-MAIN-RECONCILIATION` | `docs/air-tasking-plan-main-reconciliation.md` | `DRAFT`; selective current-main reconciliation for Air Tasking AAR integration |
+| `OMW-MOOSE-AIR-TASKING-C2-LIFECYCLE` | `docs/moose/AIR-TASKING-C2-LIFECYCLE.md` | `DRAFT`; MOOSE C2/lifecycle source-review reference for Air Tasking |
+| `OMW-TEST-AIR-TASKING-AAR-VERTICAL` | `mission/tests/air-tasking-aar-vertical/README.md` | `HISTORICAL_TEST_FIXTURE`; VERTICAL-2 exact-provenance DCS evidence plus VERTICAL-3 build fixture |
