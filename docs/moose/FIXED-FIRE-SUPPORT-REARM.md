@@ -29,44 +29,36 @@ FORTRESS  -> L118
 HONAKER   -> 2B11
 ```
 
-Produktionsnaher Supportvertrag:
-
-```text
-TPL_BLUE_GND_SUP_M1083
-```
-
-Der diagnostische Honaker-M939-Zweig ist keine Produktionsarchitektur.
+`CampaignState` bleibt die einzige strategische Ressourcenautorität. MOOSE WAREHOUSE/BRIGADE/PLATOON bildet nur den operativen Asset-Lifecycle ab; DCS/MOOSE-Gruppen sind physische Repräsentationen.
 
 ## 2. Gepinnter MOOSE-Stand
 
 ```text
 MOOSE release: 2.9.18
 MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
-Moose.lua SHA-256: e3b750921ee22cfb37dd1cec7549831a9165FFE64CD26BE154B49E63E001A915
+Moose.lua SHA-256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
 ```
 
-Für diesen Scope source- beziehungsweise runtime-belegt relevant:
+Für den produktionsnahen Fixed-Fire-Support-Pfad werden die im gepinnten Source vorhandenen öffentlichen Verträge verwendet:
 
-```text
+```lua
 WAREHOUSE:SetSpawnZone(...)
 WAREHOUSE:AddAsset(...)
-BRIGADE / PLATOON materialization
 ARTY:SetRearmingGroup(...)
 ARTY:SetRearmingGroupOnRoad(...)
 ARTY:SetRearmingDistance(...)
 ARTY:Rearm()
-ARTY OnBeforeRearm
 ARTY OnAfterRearmed
 SCHEDULER:New(...)
 ```
 
-Kein eigener OMW-Rearm-FSM und kein FullAmmo-Scanner werden eingeführt.
+Option B führt **keine neue MOOSE-API** ein. `ARTY OnAfterRearmed` bleibt der vorhandene Framework-Completion-Hook. Es gibt keinen eigenen Rearm-FSM, keinen FullAmmo-Scanner und keinen MOOSE-Patch.
 
 ## 3. Lokale Warehouse-Materialisierung
 
-Für Fixed Fire Support wird pro Standort eine dedizierte Mission-Editor-RESUPPLY-Zone auf freiem Boden innerhalb der FOB/COP-Anlage verwendet.
+Für Fixed Fire Support wird pro Standort eine dedizierte Mission-Editor-RESUPPLY-Zone auf freiem Boden innerhalb der jeweiligen FOB/COP-Anlage verwendet.
 
-Verwendeter MOOSE-Pfad:
+Verwendeter Pfad:
 
 ```lua
 WAREHOUSE:SetSpawnZone(Zone, MaxDist)
@@ -80,13 +72,7 @@ WAREHOUSE:SetValidateAndRepositionGroundUnits(true)
 
 ### 3.1 Verifizierter Defekt im gepinnten MOOSE-Stand
 
-Der gepinnte Source enthält in `UTILS.ValidateAndRepositionGroundUnits(...)` den Aufruf:
-
-```lua
-Anchor = Anchor or UTILS.GetCenterPoint(units)
-```
-
-Für den gepinnten OMW-Stand wurde keine passende Definition von `UTILS.GetCenterPoint(...)` gefunden. Ein realer DCS-Lauf reproduzierte:
+Die Methode `WAREHOUSE:SetValidateAndRepositionGroundUnits(...)` ist real und in MOOSE dokumentiert. Der gepinnte OMW-Source ruft in der internen Helper-Kette jedoch `UTILS.GetCenterPoint(units)` auf; für den gepinnten Stand wurde keine Definition dieser Funktion gefunden. Der reale DCS-Lauf vom 22.08.2026 reproduzierte:
 
 ```text
 attempt to call field 'GetCenterPoint' (a nil value)
@@ -96,16 +82,7 @@ ValidateAndRepositionGroundUnits
 -> onafterRequest
 ```
 
-Folgerung für OMW:
-
-```text
-KEEP: WAREHOUSE:SetSpawnZone(...)
-DO NOT USE: WAREHOUSE:SetValidateAndRepositionGroundUnits(...)
-NO MOOSE patch/override
-NO native DCS spawn/reposition fallback
-```
-
-Der benötigte Materialisierungsvertrag wird durch owner-kontrollierte freie RESUPPLY-Zonen erfüllt.
+OMW patcht MOOSE nicht und baut `GetCenterPoint` nicht nach. `WAREHOUSE:SetSpawnZone(...)` mit kontrollierter ME-Zone erfüllt den benötigten lokalen Materialisierungsvertrag ohne Parallelframework.
 
 ## 4. Mission-Editor-Vertrag
 
@@ -119,18 +96,18 @@ ZON_BLUE_GND_HONAKER_RESUPPLY
 Anforderung:
 
 ```text
-innerhalb der jeweiligen FOB/COP-Anlage
-nahe lokalem Warehouse
-freier Boden für M1083
-kein Road-/Convoy-Zonenvertrag
-Abstand zu HESCOs, Gebäuden, Statics und Ground Units
+- innerhalb der jeweiligen FOB/COP-Anlage
+- nahe dem lokalen Warehouse
+- freier, für einen M1083 geeigneter Boden
+- nicht als Straßen-/Convoy-Zone auslegen
+- Abstand zu HESCOs, Gebäuden, Statics und anderen Ground Units berücksichtigen
 ```
 
-Der private `OMW_GroundRoadSpawnAdapter` gehört nicht zu diesem lokalen Fixed-Fire-Support-Pfad.
+Der private `OMW_GroundRoadSpawnAdapter` bleibt außerhalb des produktionsnahen Fixed-Fire-Support-Pfades. Die kombinierte Acceptance 2 verwendet für alle vier Standorte den normalen M1083-/SetSpawnZone-Vertrag ohne Road-Spawn-Ausnahme.
 
-## 5. ARTY Rearm und strategisches Commitment
+## 5. ARTY-Rearm und Rückkehr
 
-Der OMW-Adapter setzt die öffentliche MOOSE-Konfiguration:
+Im gepinnten Source vorhanden:
 
 ```lua
 ARTY:SetRearmingGroup(Group)
@@ -139,78 +116,115 @@ ARTY:SetRearmingDistance(100)
 ARTY:Rearm()
 ```
 
-Der CampaignState-Verbrauch erfolgt im vorhandenen MOOSE-`OnBeforeRearm`-Hook, nachdem ARTY seinen internen Rearm-Gate passiert hat und eine gültige RearmingGroup beziehungsweise RearmingPlace vorhanden ist.
+`ARTY:onafterRearm(...)` speichert die Ausgangskoordinate der RearmingGroup. `ARTY:onafterRearmed(...)` übernimmt bei ausreichender Distanz die physische Rückkehr zur gemerkten Ausgangskoordinate.
 
-```text
-ARTY accepts physical rearm
--> CampaignState transaction = CONSUMED
--> GROUND_AMMO_PACKAGE -1
-```
-
-Damit ist die Ressource nicht mehr strategisch verfügbar, sobald der physische Service tatsächlich beginnt.
-
-## 6. Dauerhafte Completion
-
-Der gepinnte ARTY-FSM besitzt den `Rearmed`-Pfad und den User-Hook `OnAfterRearmed`.
-
-OMW verwendet genau diesen vorhandenen Callback als Completion-Grenze:
-
-```text
-ARTY OnAfterRearmed
--> CampaignState:CompleteConsumption(transactionId)
--> transaction = COMPLETED
-```
-
-`COMPLETED` bedeutet:
-
-```text
-physischer DCS/MOOSE-Rearm wurde bestätigt
-strategischer Verbrauch bleibt bestehen
-Restart darf diese Transaktion nicht kompensieren
-```
-
-Es wird kein paralleler Munitionsscanner aufgebaut.
-
-## 7. Support-Rückkehr und Return-to-stock
-
-`ARTY:onafterRearm(...)` merkt die Ausgangskoordinate der RearmingGroup. Nach `Rearmed` übernimmt ARTY die physische Rückkehr.
-
-OMW erzeugt keinen eigenen Return-Wegpunkt. Ein MOOSE-`SCHEDULER` bestätigt begrenzt die Rückkehrgrenze:
-
-```text
-Intervall: 5 s
-Timeout: 300 s
-Radius: 100 m sofern nicht explizit anders konfiguriert
-```
-
-Nach bestätigter Rückkehr:
+OMW erzeugt keinen eigenen Return-Wegpunkt. Ein MOOSE-`SCHEDULER` prüft alle 5 s die Rückkehrgrenze; nach bestätigter Rückkehr erfolgt:
 
 ```lua
 WAREHOUSE:AddAsset(Group)
 ```
 
-Damit bleibt der operative Asset-/Stock-Lifecycle MOOSE-owned. Das Zurücklegen des M1083 in den Warehouse-Assetbestand erstattet **kein** `GROUND_AMMO_PACKAGE`.
+Damit bleibt der operative Asset-/Stock-Lifecycle MOOSE-owned. CampaignState bleibt alleinige strategische Autorität für `GROUND_AMMO_PACKAGE`.
 
-## 8. Owner-approved LOCAL REARM Restart-Reconciliation
+## 6. Korrigierte DCS-Rearm-Interpretation und 2B11-Diagnose
 
-Owner-Entscheidung 22.08.2026: **Option B**.
-
-Vertrag:
+Frühere partielle 2B11-Entleerungen wurden zunächst als möglicher Support-/Weapon-Type-Fehler interpretiert. Die anschließende Diagnose zeigte für den exakt getesteten Stand:
 
 ```text
-CONSUMED + COMPLETED
--> Verbrauch bleibt bestehen
+2B11 40 -> 0
+-> Support request
+-> 0 -> 40
+-> SITE_REARMED
+-> SITE_SUPPORT_RETURNED
+-> SITE_PASS
+-> aggregate PASS
+```
 
-CONSUMED + not COMPLETED on restored startup
+Diagnose-Provenienz:
+
+```text
+Source: 5c5fa0ba7653ef51144ca0223dd7cad0ad36f0a7
+BuilderVersion: GROUND-FIRE-SUPPORT-ACCEPTANCE-2-7
+Bundle SHA-256: 1655E4F2F5D4AB69BF4BDAFBD82CE3D8FF0049CD557245336B71C275F21BED3D
+DCS: 2.9.28.26385 MT
+Executed mission: OMW_Template_v16.miz
+dcs.log SHA-256: B3C218B81D5A3C386213E4721F1F1AF12C53DF840C8BB758FE7147E6BAF5FD10
+debrief.log SHA-256: 0014C8FE4A4E3BD7DE3D3AF0BCB3DC30C30E786470F1EDA951EBD582F1A48FAE
+```
+
+Belegbare Schlussfolgerung:
+
+```text
+- kein 2B11-Defekt nachgewiesen
+- keine M1083-Inkompatibilität nachgewiesen
+- DCS bestimmt den tatsächlichen Rearm-Zeitpunkt
+- kein Custom-Rearm für 2B11 erforderlich
+```
+
+Die zwischenzeitliche M939-/40-Schuss-Vollentleerungsvariante bleibt Diagnoseevidenz und ist kein Produktionsvertrag.
+
+## 7. Produktiver Fixed-Fire-Support-Vertrag nach Diagnose-Rückbau
+
+Der aktive kombinierte Acceptance-Vertrag verwendet wieder einheitlich:
+
+```text
+BOSTICK   -> TPL_BLUE_GND_SUP_M1083 / 4 rounds
+WRIGHT    -> TPL_BLUE_GND_SUP_M1083 / 4 rounds
+FORTRESS  -> TPL_BLUE_GND_SUP_M1083 / 4 rounds
+HONAKER   -> TPL_BLUE_GND_SUP_M1083 / 4 rounds
+```
+
+Nicht mehr aktiv:
+
+```text
+TPL_BLUE_GND_SUP_M939 for Honaker
+fireShells = 40
+requireAmmoDepleted
+HONAKER_AMMO_DEPLETED
+HONAKER_REARM_REQUEST_AFTER_EMPTY
+HONAKER_AMMO_NOT_DEPLETED
+```
+
+Revision 2-8 wurde real gebaut und gehasht:
+
+```text
+Source / Git HEAD: 02093710b7feabf3440cb04674f7799207b9da5e
+BuilderVersion: GROUND-FIRE-SUPPORT-ACCEPTANCE-2-8
+GeneratedUtc: 2026-08-22T12:49:12Z
+Bundle SHA-256: 54019389DF61173BAA732524F716DFAC7930B2E74B226445167588380554FF0B
+```
+
+Dieser Nachweis ist Build-/Contract-Evidenz, kein zusätzlicher DCS-Runtime-PASS.
+
+## 8. LOCAL REARM Restart/Replay – Option B
+
+Owner-Entscheidung vom 22.08.2026: **Option B genehmigt**.
+
+Verbindlicher Lifecycle:
+
+```text
+Rearm accepted / physical service begins
+-> GROUND_AMMO_PACKAGE transaction = CONSUMED
+
+ARTY OnAfterRearmed
+-> transaction = COMPLETED
+
+restored startup with CONSUMED but not COMPLETED
 -> exactly-once strategic compensation
 -> transaction = COMPENSATED
--> keine physische Mission wird wiederhergestellt
--> neuer Rearm benötigt neue transactionId
+-> old transaction remains historical/closed
+-> no physical replay
+-> any later rearm requires a new transaction ID
+```
 
-RESERVED/LOADING local rearm on restored startup
--> reservation wird storniert
--> kein strategischer Verbrauch
--> keine physische Mission wird wiederhergestellt
+Implementierungsgrenze:
+
+```text
+CampaignState.TransactionStatus.COMPLETED
+CampaignState.TransactionStatus.COMPENSATED
+CampaignState:CompleteConsumption(...)
+CampaignState:MarkConsumptionCompensated(...)
+GroundAmmoRearmAdapter.ReconcileRestore(...)
 ```
 
 Korrelation:
@@ -220,109 +234,126 @@ reservationId = GROUND-LOCAL-REARM:<transactionId>
 restart creditId = GROUND-LOCAL-REARM-RESTART:<transactionId>
 ```
 
-Der vorhandene `CampaignState:CreditResourceOnce(...)`-Vertrag macht die Restart-Gutschrift idempotent. Der Local-Rearm-Adapter setzt danach den Consumption-Status auf `COMPENSATED`.
-
-Der allgemeine Ground-Return/Loss/Restart-Pfad bleibt davon getrennt und unverändert.
-
-## 9. Strategische Autoritätsgrenze
+Restore-Reihenfolge:
 
 ```text
-CampaignState
-= einzige strategische Ressourcenautorität
-
-MOOSE WAREHOUSE / BRIGADE / PLATOON
-= operative Assetmaterialisierung und Assetbestand
-
-ARTY / DCS ammo state
-= physischer Rearm-Lifecycle und Telemetrie
+existing general Ground ReconcileRestore()
+-> Local Rearm ReconcileRestore()
 ```
 
-Nicht zulässig:
+Damit bleibt die allgemeine Ground-Restart-Reconciliation unverändert; Local Rearm ergänzt nur den speziellen Completion-/Settlement-Vertrag.
+
+## 9. Genau-einmal-Restart-Settlement
+
+Für eine wiederhergestellte Local-Rearm-Transaktion gilt:
 
 ```text
-zweiter Ground-CampaignState
-Warehouse als zweite GROUND_AMMO_PACKAGE-Autorität
-Replay des alten physischen Rearm-Vorgangs nach Restart
-Wiederverwendung einer abgeschlossenen/kompensierten transactionId
+COMPLETED
+-> keine Gutschrift
+-> bleibt historisch abgeschlossen und konsumiert
+
+CONSUMED
+-> CreditResourceOnce(...)
+-> COMPENSATED
+-> keine physische Mission wird wiederhergestellt
+
+COMPENSATED
+-> keine zweite Gutschrift
+
+RESERVED / LOADING
+-> Cancel
+-> Reservation wird freigegeben
 ```
 
-## 10. Runtime-Evidenz
+Die Genau-einmal-Wirkung basiert auf dem bereits vorhandenen autoritativen CampaignState-`CreditResourceOnce`-Vertrag mit deterministischer Credit-ID. Es wird kein zweites Persistenzsystem eingeführt.
 
-### 10.1 Bostick Baseline
+## 10. Real bestätigte Option-B-Build-Provenienz
+
+Vom Projektinhaber am 22.08.2026 real ausgeführt und zurückgemeldet:
 
 ```text
-Source: 213119ca03a6aeae529d4291b4bbe174ac0995c2
-Bundle SHA-256: 94C18556B80E97A30420DD551BC0CD98E978CBA2E487A6AA6B35281E1F29FDD7
-Executed MIZ: OMW_Template_v15.miz
-MIZ SHA-256: A2AF2BD5FA9792DEF422F3B47755894E8F3220453F31F63F1594CCD61E9AF1B4
-Runtime: 300 -> 296 -> 302
-GROUND_AMMO_PACKAGE: 52 -> 51
-Result: PASS
+Source / Git HEAD:
+49f43a856c1f8bc32ca64835af856119a295640e
+
+CampaignState source SHA-256:
+18189A633DBD78FC7EAFBDAF09601BC3241ADAD115DF09DA3EF28B1D85E3E093
 ```
 
-### 10.2 Honaker 2B11 Diagnose
+AirOps Warehouse Production:
 
 ```text
-Source: 5c5fa0ba7653ef51144ca0223dd7cad0ad36f0a7
-BuilderVersion: GROUND-FIRE-SUPPORT-ACCEPTANCE-2-7
-Bundle SHA-256: 1655E4F2F5D4AB69BF4BDAFBD82CE3D8FF0049CD557245336B71C275F21BED3D
-Executed mission: OMW_Template_v16.miz
-DCS: 2.9.28.26385 MT
+BuilderVersion: OMW-AIROPS-WAREHOUSE-BASE-3
+Bundle SHA-256: 472F72F3D688BB4B8624C882527DCA3DEBD42CDE5DD455AC63D7CD2D796BB735
 ```
 
-Beobachtet:
+Ground Production:
 
 ```text
-2B11 40 -> 0 -> 40
-SITE_REARMED
-SITE_SUPPORT_RETURNED
-SITE_PASS
-aggregate PASS
+BuilderVersion: OMW-GROUND-PRODUCTION-BASE-4
+GroundBaseSchema: OMW-GROUND-PRODUCTION-BASE-2
+GroundRuntimeIntegrationSchema: OMW-GROUND-RUNTIME-INTEGRATION-2
+GroundAmmoRearmAdapterSchema: OMW-GROUND-AMMO-REARM-ADAPTER-2
+Bundle SHA-256: 9AAF32A10A9EEB906123AFD37FF14B62542EE7C78F7B5E81E388A22F41EABEAB
 ```
 
-Schlussfolgerung: Kein 2B11-Defekt und keine M1083-Inkompatibilität wurden nachgewiesen. Die M939-/Vollentleerungsvariante war Diagnostik.
-
-### 10.3 Diagnostischer Rückbau
-
-Realer lokaler Build:
+Fixed Fire Support Acceptance:
 
 ```text
-Source: 02093710b7feabf3440cb04674f7799207b9da5e
-BuilderVersion: GROUND-FIRE-SUPPORT-ACCEPTANCE-2-8
-Bundle SHA-256: 54019389DF61173BAA732524F716DFAC7930B2E74B226445167588380554FF0B
-HonakerSupportTemplate: TPL_BLUE_GND_SUP_M1083
-FireShellsPerSite: 4
+BuilderVersion: GROUND-FIRE-SUPPORT-ACCEPTANCE-2-9
+GeneratedUtc: 2026-08-22T13:06:55Z
+Bundle SHA-256: D0E628C58567CB46126048AA2903F17C9D15F316C415FFB755FD0192B230EA09
+```
+
+Die Builder-Ausgaben und die unmittelbar danach separat ausgeführten `Get-FileHash -Algorithm SHA256`-Prüfungen stimmen für alle drei Bundles exakt überein.
+
+Bestätigte Builder-Gates:
+
+```text
+LocalRearmRestartCompensation: true
+LocalRearmPhysicalReplay: false
+DurableRearmCompletion: true
+ValidateAndRepositionGroundUnits: false
+PinnedMooseRepositionDefectGuard: true
+ApprovedRoadSpawnException: false
+SupportReturnToStock: true
 HonakerM939Diagnostic: false
+MizMutation: false
 ```
 
-Dies ist Build-/Contract-Evidenz, kein neuer DCS-PASS.
+Dieser Nachweis bestätigt Build, Contract-Gates und Hash-Konsistenz. Er validiert noch nicht den neuen `COMPLETED`- oder Restart-Compensation-Pfad in DCS.
 
-## 11. Aktueller Implementierungsstand
+## 11. Acceptance-Grenze
 
-Der Branch enthält jetzt:
+Für einen neuen erfolgreichen Runtime-Nachweis muss die kombinierte Acceptance nachweisen:
 
 ```text
-CampaignState statuses: CONSUMED / COMPLETED / COMPENSATED
-CampaignState:CompleteConsumption(...)
-CampaignState:MarkConsumptionCompensated(...)
-GroundAmmoRearmAdapter.ReconcileRestore(...)
-GroundRuntimeIntegration restored attach -> Local Rearm reconciliation
-GroundBase packaging of the Local Rearm reconciliation module
-Acceptance-2 successful-path gate on transaction == COMPLETED
+fire
+-> ammo decrease
+-> local M1083 materialization
+-> exactly one CampaignState GROUND_AMMO_PACKAGE consumed
+-> ARTY OnAfterRearmed
+-> CampaignState transaction COMPLETED
+-> SITE_REARM_COMPLETED
+-> ARTY-owned support return
+-> WAREHOUSE AddAsset return-to-stock
+-> no physical support group remains
+-> SITE_PASS
 ```
 
-Aktueller Acceptance-Builder:
+Aggregate PASS nur bei vier `SITE_PASS`.
+
+Der Restart-Compensation-Pfad darf nur dann als DCS-validiert markiert werden, wenn zusätzlich eine reale Snapshot-/Restore-Provenienz den Fall `CONSUMED && not COMPLETED -> COMPENSATED exactly once` belegt. Source-/Builder-Verifikation allein reicht dafür nicht.
+
+## 12. Status
 
 ```text
-GROUND-FIRE-SUPPORT-ACCEPTANCE-2-9
+MOOSE source review: COMPLETE for documented APIs
+Pinned reposition defect: RUNTIME CONFIRMED / excluded
+M1083 local SetSpawnZone path: RUNTIME CONFIRMED for prior acceptance provenance
+2B11 40 -> 0 -> 40 diagnosis: RUNTIME CONFIRMED for exact diagnostic provenance
+Diagnostic rollback: BUILD VERIFIED
+Option B source implementation: COMPLETE
+Option B production bundles: BUILD/HASH VERIFIED
+Option B DCS COMPLETED-path acceptance: PENDING
+Option B DCS restart-compensation acceptance: PENDING REAL RESTORE PROVENANCE
 ```
-
-Noch nicht als Runtime-Nachweis vorhanden:
-
-```text
-Revision 2-9 local bundle hashes
-Revision 2-9 DCS successful COMPLETED branch
-realer Server-Crash-/Filesystem-Test
-```
-
-Der letzte Punkt ist nicht Voraussetzung für den reinen Reconciliation-Vertrag, solange kein neuer Persistenz-Transport eingeführt wird; ein tatsächlicher Persistenz-Host bleibt ein separater Scope.
