@@ -11,7 +11,7 @@ project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
 superseded_by:
 source_branch: agent/ground-ammo-rearm-integration
-source_commit: 5c4bbe44bee994c5dd9b1c9cfec011e7a67c8158
+source_commit: ea07916ddc8e18b5f5d72e48750229dc8085ff63
 validated_in_dcs: false
 ---
 
@@ -19,13 +19,11 @@ validated_in_dcs: false
 
 ## 1. Zweck und Status
 
-Dieses Dokument beschreibt den revidierten MOOSE-first-Pfad für lokalen Munitionsnachschub der festen OMW-Feuerunterstützungsstellungen Bostick, Wright, Fortress und Honaker.
+Dieses Dokument beschreibt den MOOSE-first-Pfad für lokalen Munitionsnachschub der festen OMW-Feuerunterstützungsstellungen Bostick, Wright, Fortress und Honaker.
 
 ```text
 Status: SOURCE_REVIEWED / DCS_PENDING
 ```
-
-Der frühere Bostick-Vertical-Slice und der erste kombinierte Acceptance-2-Lauf bleiben historische technische Evidenz für ihre exakte Provenienz. Sie validieren nicht den hier beschriebenen Local-Spawn-/Return-to-stock-Pfad.
 
 ## 2. Gepinnter MOOSE-Stand
 
@@ -35,86 +33,47 @@ MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
 Moose.lua SHA-256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
 ```
 
-## 3. Source-verifizierte MOOSE-Verträge
+## 3. Lokale Warehouse-Materialisierung
 
-### 3.1 Lokale Warehouse-Materialisierung
+Für Fixed Fire Support wird eine dedizierte Mission-Editor-RESUPPLY-Zone auf freiem Boden innerhalb der jeweiligen FOB/COP-Anlage verwendet.
 
-Im gepinnten Source vorhanden:
+Produktiver Kandidat:
 
 ```lua
 WAREHOUSE:SetSpawnZone(Zone, MaxDist)
-WAREHOUSE:SetValidateAndRepositionGroundUnits(Switch)
-WAREHOUSE:AddAsset(Group)
 ```
 
-Für Fixed Fire Support wird eine dedizierte Mission-Editor-Spawnzone innerhalb der jeweiligen FOB/COP-Anlage verwendet. `SetValidateAndRepositionGroundUnits(true)` lässt MOOSE die Ground-Unit-Position vor Materialisierung auf eine geeignete freie Bodenposition korrigieren.
-
-Der private `OMW_GroundRoadSpawnAdapter` ist **nicht** Teil dieses Fixed-Fire-Support-Pfades. Er bleibt auf die dokumentierten Road-/Convoy-Verwendungen begrenzt.
-
-### 3.2 ARTY-Rearm und Rückkehr
-
-Im gepinnten Source vorhanden:
+Bewusst nicht verwendet:
 
 ```lua
-ARTY:SetRearmingGroup(Group)
-ARTY:SetRearmingGroupOnRoad(false)
-ARTY:SetRearmingDistance(100)
-ARTY:Rearm()
+WAREHOUSE:SetValidateAndRepositionGroundUnits(true)
 ```
 
-`ARTY:onafterRearm(...)` speichert die aktuelle Koordinate der RearmingGroup als `RearmingGroupCoord`.
+### 3.1 Verifizierter Defekt im gepinnten MOOSE-Stand
 
-`ARTY:onafterRearmed(...)`:
-
-```text
-wenn Entfernung RearmingGroup -> RearmingGroupCoord > RearmingDistance
--> MOOSE _Move(...) zurück zur gemerkten Ausgangskoordinate
-
-sonst
--> ClearTasks()
-```
-
-OMW erzeugt deshalb keinen eigenen Return-Wegpunkt und keine parallele Routinglogik.
-
-### 3.3 Return-to-stock-Handoff
-
-Nach `OnAfterRearmed` startet OMW nur einen kleinen MOOSE-`SCHEDULER`-Watch:
-
-```text
-Intervall: 5 s
-Timeout: 300 s
-Rückkehrgrenze: 100 m
-```
-
-Der Watch prüft ausschließlich die Distanz des bekannten M1083 zu seiner vor dem Rearm gespeicherten Ausgangskoordinate. Sobald die MOOSE-ARTY-Rückkehrgrenze erreicht ist, wird der bekannte physische Support über den öffentlichen Warehouse-Pfad zurückgegeben:
+Die Methode `WAREHOUSE:SetValidateAndRepositionGroundUnits(...)` ist real und in MOOSE DEVELOP dokumentiert; sie wurde nicht von OMW erfunden. Der aufgerufene gepinnte Source enthält jedoch:
 
 ```lua
-WAREHOUSE:AddAsset(Group)
+function UTILS.ValidateAndRepositionGroundUnits(Positions, Anchor, MaxRadius, Spacing)
+  local units = Positions
+  Anchor = Anchor or UTILS.GetCenterPoint(units)
 ```
 
-Damit bleibt der Asset-/Stock-Lifecycle MOOSE-owned. Es gibt keinen nativen DCS-Destroy-Aufruf, keinen Teleport und keine zweite Ressourcenbuchhaltung.
-
-## 4. Strategische Autorität
+Für den gepinnten OMW-Stand wurde keine Definition von `UTILS.GetCenterPoint(...)` gefunden. Der reale DCS-Lauf vom 22.08.2026 reproduzierte exakt:
 
 ```text
-CampaignState
--> einzige strategische Autorität für GROUND_AMMO_PACKAGE
-
-MOOSE WAREHOUSE/BRIGADE/PLATOON
--> operativer Support-Assetpool und Materialisierung
-
-MOOSE ARTY
--> physischer Rearm-/Return-Lifecycle
-
-DCS GROUP
--> temporäre physische Repräsentation des M1083
+attempt to call field 'GetCenterPoint' (a nil value)
+ValidateAndRepositionGroundUnits
+-> _SpawnAssetGroundNaval
+-> _SpawnAssetRequest
+-> onafterRequest
 ```
 
-Die Rückgabe des M1083 an Warehouse-Stock erstattet **keine** strategische Munition. Die lokale `GROUND_AMMO_PACKAGE`-Transaktion bleibt nach erfolgreichem Rearm `CONSUMED`.
+Damit ist der Pfad für den gepinnten OMW-MOOSE-Stand als fehlerhaft behandelt. OMW patcht MOOSE nicht und implementiert `GetCenterPoint` nicht nach, weil der benötigte lokale Materialisierungsvertrag mit der öffentlichen `WAREHOUSE:SetSpawnZone(...)`-API und einer kontrolliert freien ME-Zone erfüllt werden kann.
 
-## 5. Mission-Editor-Vertrag
+Offizielle MOOSE-Warehouse-Beispiele verwenden `SetSpawnZone(...)` für Ground-Assets; im Review wurde kein offizielles Missionsbeispiel gefunden, das `SetValidateAndRepositionGroundUnits(...)` verwendet.
 
-Der aktuelle Mission-Editor-Vertrag verwendet pro Standort eine dedizierte lokale Resupply-Zone:
+## 4. Mission-Editor-Vertrag
 
 ```text
 ZON_BLUE_GND_BOSTICK_RESUPPLY
@@ -133,18 +92,84 @@ Anforderung:
 - Abstand zu HESCOs, Gebäuden, Statics und anderen Ground Units berücksichtigen
 ```
 
-Die bestehenden ACCESS-Zonen behalten ihre bisherigen Ground-/Convoy-Verträge und werden nicht entfernt.
+Der private `OMW_GroundRoadSpawnAdapter` bleibt außerhalb dieses Fixed-Fire-Support-Pfades und nur für dokumentierte Road-/Convoy-Verwendungen bestehen.
 
-Die vom Projektinhaber bereitgestellte `OMW_Template_v15(10).miz` enthält diese vier `*_RESUPPLY`-Zonen. Die MIZ wurde nur read-only geprüft; die konkrete DCS-Tauglichkeit der Bodenflächen bleibt bis zum Lauf offen.
+## 5. ARTY-Rearm und Rückkehr
 
-## 6. Acceptance-Grenze
+Im gepinnten Source vorhanden:
 
-Der nächste kombinierte Acceptance-2-Lauf muss pro Standort nachweisen:
+```lua
+ARTY:SetRearmingGroup(Group)
+ARTY:SetRearmingGroupOnRoad(false)
+ARTY:SetRearmingDistance(100)
+ARTY:Rearm()
+```
+
+`ARTY:onafterRearm(...)` speichert die Ausgangskoordinate der RearmingGroup. `ARTY:onafterRearmed(...)` übernimmt bei ausreichender Distanz die physische Rückkehr zur gemerkten Ausgangskoordinate.
+
+OMW erzeugt keinen eigenen Return-Wegpunkt. Ein MOOSE-`SCHEDULER` prüft alle 5 s die Rückkehrgrenze von 100 m; Timeout 300 s. Nach bestätigter Rückkehr erfolgt:
+
+```lua
+WAREHOUSE:AddAsset(Group)
+```
+
+Damit bleibt der operative Asset-/Stock-Lifecycle MOOSE-owned. CampaignState bleibt alleinige strategische Autorität für `GROUND_AMMO_PACKAGE`.
+
+## 6. DCS-Lauf Revision 3 vom 22.08.2026
+
+Revision 3 verwendete:
+
+```text
+BuilderVersion: GROUND-FIRE-SUPPORT-ACCEPTANCE-2-3
+Bundle SHA-256: C3526CE2863C94D4F351D438219B744D23B2A11C09A59094944332DBEDD59B31
+MIZ SHA-256: FBA4D8C5966DA375396014E2C2E8BC81B17F7595EBE5DBEF9544AD9FDD2747C5
+DCS: 2.9.28.26385 MT
+```
+
+Reale Log-Artefakte:
+
+```text
+dcs(20260822-094345).log
+SHA-256: 844D5D5D1E38C96E925F3186F216356A44AB7F91923CB20B33C3D1AC79434B55
+
+debrief(20260822-094344).log
+SHA-256: 5E07BB46F6709FA847C27A239934305CB9974E5569EDB86BC61DD6A3D571499A
+```
+
+Ergebnis:
+
+```text
+BOSTICK   fire/ammo-decrease/rearm-request reached
+WRIGHT    fire/ammo-decrease/rearm-request reached
+FORTRESS  fire/ammo-decrease/rearm-request reached
+HONAKER   fire/ammo-decrease/rearm-request reached
+
+M1083 materialization: 0/4
+Aggregate: FAIL / TIMEOUT
+Root cause: pinned MOOSE ValidateAndRepositionGroundUnits -> missing UTILS.GetCenterPoint
+```
+
+Dieser Lauf validiert weder Support-Materialisierung noch CampaignState-Verbrauch, Rearm-Completion, Support-Return oder Return-to-stock.
+
+## 7. Revision 4 – aktueller Korrekturkandidat
+
+Revision 4 entfernt ausschließlich die Nutzung des fehlerhaften MOOSE-Reposition-Pfades aus Fixed Fire Support:
+
+```text
+WAREHOUSE:SetSpawnZone(...): retained
+WAREHOUSE:SetValidateAndRepositionGroundUnits(...): not called
+RoadSpawnAdapter: not used
+MOOSE patch/override: none
+```
+
+Der Builder muss den fehlerhaften Methodenaufruf im Fixed-Fire-Support-Modul ausdrücklich blockieren.
+
+Geplanter nächster Acceptance-Lauf bleibt gebündelt:
 
 ```text
 fire
 -> ammo decrease
--> local Warehouse M1083 materialization in *_RESUPPLY zone
+-> local M1083 materialization in *_RESUPPLY zone
 -> exactly one CampaignState ammo package consumed
 -> ARTY Rearmed
 -> ARTY-owned support return
@@ -154,28 +179,3 @@ fire
 ```
 
 Aggregate PASS nur bei vier `SITE_PASS`.
-
-Aktueller Buildstand:
-
-```text
-Source commit:
-5c4bbe44bee994c5dd9b1c9cfec011e7a67c8158
-
-BuilderVersion:
-GROUND-FIRE-SUPPORT-ACCEPTANCE-2-3
-
-Bundle SHA-256:
-C3526CE2863C94D4F351D438219B744D23B2A11C09A59094944332DBEDD59B31
-
-Build/Hash:
-owner-local build + independent Get-FileHash MATCH
-```
-
-Bis zum nächsten DCS-Lauf gilt:
-
-```text
-Local spawn: SOURCE_REVIEWED / DCS_PENDING
-ARTY support return: SOURCE_REVIEWED / DCS_PENDING for this composition
-Warehouse AddAsset cleanup: SOURCE_REVIEWED / DCS_PENDING for this composition
-Honaker 2B11 end-to-end: DCS_PENDING
-```
