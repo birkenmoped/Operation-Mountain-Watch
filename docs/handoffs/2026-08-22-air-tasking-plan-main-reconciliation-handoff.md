@@ -86,18 +86,19 @@ agent/air-tasking-plan-main-reconciliation
 reconciliation base:
 main @ 28d0069d5d9ec66e62f1e81ad59fc3dd4e2e249c
 
-reviewed PR head before this handoff commit:
+reviewed PR head before handoff documentation commits:
 49600cdbb7b7b50a15a723a4d21ed38753f271e0
 
 pull request:
 #117 Reconcile Air Tasking foundation onto current main
 
-PR state at handoff creation:
+PR state:
 OPEN
 DRAFT
-mergeable=true
-behind main=0
+branch relation after handoff documentation: behind main=0
 ```
+
+`mergeable` muss unmittelbar vor jeder Ready-/Merge-Entscheidung erneut real von GitHub gelesen werden und wird in dieser Übergabe nicht als dauerhafte Eigenschaft festgeschrieben.
 
 PR #117 bleibt absichtlich Draft. Weder `Ready for Review` noch Merge wurden ohne Owner-Freigabe durchgeführt.
 
@@ -567,7 +568,7 @@ Der geprüfte Lauf meldete:
 0 warnings
 ```
 
-Die 18 Fehler liegen in bereits auf `main` vorhandenen, fachfremden Ground-/Army-Ground-Dokumenten, darunter Metadaten-/Acceptance-Provenienzfehler. Der Validator meldete keinen Air-Tasking-spezifischen Fehler aus PR #117.
+Die 18 Fehler liegen in bereits auf `main` vorhandenen, fachfremden Ground-/Army-Ground-Dokumenten, darunter Metadaten-/Acceptance-Provenienzfehler. Der Validator meldete keinen Air-Tasking-spezifischen Fehler aus PR #117 und keinen Fehler in dieser Übergabedatei.
 
 Entscheidung:
 
@@ -678,6 +679,7 @@ Das übergeordnete Projektziel "Air Tasking Plan Foundation" ist daher nach dem 
 [COMPLETE] known shared-runtime limitation documented
 [COMPLETE] owner decision recorded: no repeated LISA VERTICAL-3 DCS gate
 [COMPLETE] repository-wide documentation CI failure triaged as unrelated Ground metadata debt
+[COMPLETE] dedicated handoff/TODO document created and validator produced no new Air-Tasking/handoff error
 [PENDING OWNER DECISION] authorize PR #117 Ready for Review
 [PENDING OWNER DECISION] authorize PR #117 merge
 [POST-MERGE REQUIRED] replace all PR-local source_commit: PENDING_MERGE values that land on main with valid full commit provenance
@@ -727,7 +729,7 @@ Ohne ausdrückliche Entscheidung wird weder der Draft-Status geändert noch geme
 Vor dem tatsächlichen Merge erneut real prüfen:
 
 ```text
-PR #117 is still mergeable
+PR #117 current mergeable state
 PR head SHA has not changed unexpectedly
 branch is not behind main
 Air Tasking validation latest applicable run is PASS
@@ -851,7 +853,7 @@ new DCS validation of reconciled source:
 NOT RUN BY OWNER DECISION
 
 PR #117:
-DRAFT / MERGEABLE / OWNER DECISION PENDING
+DRAFT / OWNER DECISION PENDING
 
 handoff:
 CURRENT AS OF 2026-08-22
