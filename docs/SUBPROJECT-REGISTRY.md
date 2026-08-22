@@ -31,7 +31,7 @@ Dieses Register bildet offene Pull Requests, ihre Abhängigkeiten, Dokumentation
 |---:|---|---|---|---|---|---|---|---|
 | 3 | `design/warehouses-and-concealment` | `main` | frühe Logistics-/Warehouse-/MOOSE-Baseline | `docs/`, `mission/tests/`, `vendor/moose/` | `DRAFT`; Altbestand | keine repositoryweite Acceptance | 4 | Grundlage vieler späterer Stacks; vor Integration neu bewerten |
 | 4 | `feature/tm01a-bootstrap` | PR 3 | TM01A Bootstrap | `mission/tests/tm01-blue-convoy/` | `DRAFT` | DCS-Bootstrap-PASS branchgebunden | 5 | technischer Nachweis |
-| 5 | `feature/tm01a-physical-spawn` | PR 4 | kontrollierter Convoy-Spawn | gleicher TM01-Pfad | `DRAFT` | Spawn-PASS branchgebunden | 6 | technischer Nachweis |
+| 5 | `feature/tm01a-physical-spawn` | PR 4 | TM01A kontrollierter Convoy-Spawn | gleicher TM01-Pfad | `DRAFT` | Spawn-PASS branchgebunden | 6 | technischer Nachweis |
 | 6 | `feature/tm01a-road-routing` | PR 5 | kontrolliertes Road Routing | gleicher TM01-Pfad | `DRAFT` | Routing-PASS branchgebunden | 7 | technischer Nachweis |
 | 7 | `docs/tm01a-findings-persistence-logistics` | PR 6 | TM01A Erkenntnisse und ADRs | `docs/`, TM01-Notes | `DRAFT` | Dokumentationskonsolidierung | 8 | historische Entwicklungsbasis |
 | 8 | `feature/tm01b-convoy-caching` | PR 7 | TM01B/TM01C Proxy-/Caching-Experimente | `mission/tests/tm01-blue-convoy/` | `DRAFT`; gemischter historischer Teststand | TM01B nicht akzeptiert; TM01C teilweise/PASS je Test | 9 und 22 | nicht ungeprüft als Produktionsarchitektur übernehmen |
@@ -59,6 +59,7 @@ Dieses Register bildet offene Pull Requests, ihre Abhängigkeiten, Dokumentation
 | 52 | `agent/salerno-read-only-diagnostics` | alter Air-Ops-Stack | Salerno COMMANDER-/Runtime-Historie | Tests/Builder/Evidenz | `DRAFT`; kanonische Foundation auf `main` | `ACCEPTED_TECHNICAL_BASELINE` für dokumentierten Stage-18-Stand | offen | technische Fixture-/Runtime-Historie |
 | 66–84 | Warehouse-/CampaignState-/STORAGE-Stack | PR 66 startete von `main`; danach gestapelt | Resource ownership, Fuel/Weapon STORAGE, CampaignState transactions, loss/recovery, final fighter mapping | `scripts/campaign/`, `scripts/logistics/`, Warehouse-Testfixtures und branchgebundene Detaildokumentation | offene Draft-Historie; keine pauschale Main-Autorität | mehrere exakt dokumentierte DCS-Acceptance-Stände; finaler Fighter-Gate PASS | 85 | nicht als 214-Commit-Stack direkt integrieren; PR 85 war der saubere Main-Reconciliation-Pfad |
 | 86 | `agent/air-ops-initial-stock-runtime-data` | `main` nach gemergtem PR 85 | AirOps Initial Stock Runtime, CampaignState-Initialisierung und zentraler Warehouse-Bootstrap | `scripts/logistics/`, `mission/tests/air-ops-warehouse-bootstrap/`, MOOSE-STORAGE-Dokumentation | `DRAFT`; aktuell nicht mergebar gegen `main` | `ACCEPTED_TECHNICAL_BASELINE` für Warehouse-Bootstrap auf Commit `2502516fe130b908e500117142399b3e2ca74007`; separate Onboard-Ammo-Acceptance offen | offen | Warehouse-Bootstrap technisch akzeptiert; vor Integration Reconciliation gegen aktuellen `main` erforderlich |
+| 112 | `agent/ground-ammo-rearm-integration` | `main` | Ground ammo rearm lifecycle / fixed fire support | `scripts/campaign/`, `scripts/ground/`, `scripts/logistics/`, `mission/tests/ground-ammo-rearm-integration/`, `docs/moose/FIXED-FIRE-SUPPORT-REARM.md` | `DRAFT`; owner-gated Ready/Merge | `ACCEPTED_TECHNICAL_BASELINE` für Acceptance 2-11 auf `d52a47a418fe3a1a996a5b68198b8dc033ff86c4`; DCS 2.9.28.26385 MT; MIZ SHA-256 `388F02C932BE83823543F97887B4EDBB9E6764D4CEBE543BD8423D43A6ED8620`; externer Prozess-Persistence-Host nicht getestet/nicht behauptet | offen | MOOSE-first fixed-fire-support rearm; CampaignState bleibt alleinige strategische Ressourcenautorität |
 
 Der Arbeitsbranch `agent/army-ground-foundation-reconciliation` besitzt zum Stand dieser Reconciliation noch keinen Pull Request und wird daher nicht mit einer erfundenen PR-Nummer in die Tabelle aufgenommen. Sobald ein PR existiert, ist er hier mit realem PR-Status und Abhängigkeit nachzutragen.
 
@@ -85,7 +86,8 @@ main
                     └── PR 85 (merged clean Warehouse reconciliation)
 
 main
-└── PR 86 (AirOps initial-stock runtime and accepted Warehouse bootstrap; reconciliation required)
+├── PR 86 (AirOps initial-stock runtime and accepted Warehouse bootstrap; reconciliation required)
+└── PR 112 (Ground ammo rearm lifecycle; Acceptance 2-11 accepted technical baseline; owner-gated Ready/Merge)
 ```
 
 PR #53 (Tarinkot), PR #60 (Salerno Foundation), PR #61 (Kandahar Foundation), PR #62 (Dokumentationsmetadaten), PR #63 (Bagram duale AIRWING Foundation), PR #64 (AIRWING-Naming-Reconciliation), PR #65 (Shindand Foundation), PR #85 (Warehouse Main Reconciliation) und PR #108 (Kunar Ground Site Reconciliation / FOB Bostick) sind nach `main` gemergt und werden nicht mehr als offene aktuelle Foundation-Unterprojekte geführt.
@@ -122,7 +124,6 @@ warehouse_bootstrap_acceptance_status: ACCEPTED_TECHNICAL_BASELINE
 warehouse_runtime_main_at_merge_assessment: 3223db1f7eb130ae2070a926b6f476e6a010f515
 warehouse_runtime_branch_relation: DIVERGED
 warehouse_foundation_decision_block: CLOSED
-warehouse_additional_bootstrap_dcs_test_required: false
 source: GitHub pull-request state plus documented exact-provenance DCS evidence
 ```
 
