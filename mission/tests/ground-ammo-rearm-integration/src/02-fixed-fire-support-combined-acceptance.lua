@@ -145,8 +145,8 @@ local function finishSitePass(siteState, context, groundContext)
     fail("CONTEXT_STATUS site=" .. siteState.spec.id .. " expected=RETURNED_TO_STOCK actual=" .. tostring(context.status))
     return
   end
-  if not transaction or transaction.status ~= "CONSUMED" then
-    fail("TRANSACTION_STATUS site=" .. siteState.spec.id .. " expected=CONSUMED actual=" .. tostring(transaction and transaction.status))
+  if not transaction or transaction.status ~= "COMPLETED" then
+    fail("TRANSACTION_STATUS site=" .. siteState.spec.id .. " expected=COMPLETED actual=" .. tostring(transaction and transaction.status))
     return
   end
   if not resourceAfter or not siteState.resourceBefore then
@@ -247,6 +247,11 @@ local function configureSite(spec, groundContext)
     end,
     onRearmed = function(context)
       siteState.rearmed = true
+      local transaction = groundContext.store:GetTransaction(siteState.transactionId)
+      if not transaction or transaction.status ~= "COMPLETED" then
+        fail("REARM_COMPLETION_NOT_DURABLE site=" .. spec.id .. " actual=" .. tostring(transaction and transaction.status))
+        return
+      end
       local supportGroup = context.supportGroup
       if supportGroup then
         siteState.supportName = supportGroup:GetName()
@@ -258,6 +263,7 @@ local function configureSite(spec, groundContext)
         .. " name=" .. tostring(siteState.supportName)
         .. " type=" .. tostring(siteState.supportType))
       log("SITE_CONSUMPTION_COMMITTED site=" .. spec.id .. " resource=" .. RESOURCE_ID .. " before=" .. tostring(siteState.resourceBefore and siteState.resourceBefore.available) .. " after=" .. tostring(resourceAfter and resourceAfter.available))
+      log("SITE_REARM_COMPLETED site=" .. spec.id .. " transactionStatus=" .. tostring(transaction.status))
       log("SITE_REARMED site=" .. spec.id .. " initialAmmo=" .. tostring(siteState.initialAmmo) .. " postFireAmmo=" .. tostring(siteState.postFireAmmo) .. " currentAmmo=" .. tostring(ammoTotal(siteState)))
     end,
     onSupportReturned = function(context)
