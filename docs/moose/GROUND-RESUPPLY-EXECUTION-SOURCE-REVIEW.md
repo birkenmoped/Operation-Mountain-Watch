@@ -8,9 +8,11 @@ authoritative_for:
   - accepted Stage 1A AMMOSUPPLY lifecycle
   - failed Stage 1B FUELSUPPLY OMW meta-resupply experiment
   - WAREHOUSE SELFPROPELLED replacement-candidate source review
+  - AUFTRAG NOTHING generic movement-candidate source review
 not_authoritative_for:
   - production generic Ground RESUPPLY executor
   - WAREHOUSE SELFPROPELLED runtime acceptance
+  - AUFTRAG NOTHING runtime acceptance
   - CAS or CSAR execution
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
@@ -129,7 +131,7 @@ Detailergebnis:
 mission/tests/ground-resupply-execution/results/2026-08-22-ground-fuel-resupply-acceptance-1-fail-1.md
 ```
 
-## 5. MOOSE-native Ersatzkandidat: WAREHOUSE SELFPROPELLED
+## 5. MOOSE-native Ersatzkandidat A: WAREHOUSE SELFPROPELLED
 
 Der gepinnte MOOSE-Source dokumentiert einen direkten Warehouse-zu-Warehouse-Assettransfer:
 
@@ -144,9 +146,9 @@ WAREHOUSE.TransportType.SELFPROPELLED
 Assets go to their destination by themselves. No transport carrier needed.
 ```
 
-Für Ground-Assets führt `WAREHOUSE:onafterRequestSpawned()` direkt `_RouteGround(group, Request)` aus. `_RouteGround` verwendet eine definierte Off-Road-Verbindung, falls vorhanden; andernfalls wird die Straßenverbindung zwischen den Warehouses verwendet.
+Für Ground-Assets führt WAREHOUSE den Request selbst aus und routet den Ground-Asset-Group über `_RouteGround(...)`. Definierte `AddOffRoadPath(...)`-Verbindungen haben Vorrang; andernfalls wird die Straßenverbindung zwischen den Warehouses verwendet.
 
-Besonders relevant ist MOOSE Warehouse Example 15:
+Besonders relevant ist die im gepinnten Source eingebettete Warehouse-Dokumentation, Example 15:
 
 ```lua
 warehouse.Kobuleti:AddAsset("M978", 20)
@@ -160,53 +162,142 @@ warehouse.Kobuleti:AddRequest(
 )
 ```
 
-Die Dokumentation beschreibt dazu ausdrücklich, dass Trucks an beiden Warehouses gespawnt und zum jeweils anderen Warehouse geführt werden.
+Die Dokumentation beschreibt ausdrücklich, dass Trucks an den Warehouses gespawnt und zum jeweils anderen Warehouse geführt werden. Damit ist generischer selbstfahrender Ground-Asset-Transfer ein belegter MOOSE-Anwendungsfall.
 
-Damit ist der generische physische Truck-Transfer ein wesentlich besser belegter MOOSE-first Kandidat als `FUELSUPPLY` für Meta-Waren.
+### 5.1 Harte Handoff-Grenze
 
-## 6. Wichtige Handoff-Grenze des WAREHOUSE-Pfads
-
-Der Source zeigt bei `WAREHOUSE:onafterArrived(...)`:
+`WAREHOUSE:onafterArrived(...)` ist für mobile Ground-Groups nicht optional:
 
 ```text
-self-propelled asset
+Arrived
 -> receiving warehouse selected
--> mobile ground group routed toward warehouse coordinate
--> warehouse:__AddAsset(60, group)
+-> RouteGroundTo(receiving warehouse coordinate, 30% max speed, Off Road)
+-> receivingWarehouse:__AddAsset(60, group)
 ```
 
-Das bedeutet: MOOSE übernimmt das physische Asset nach der Ankunft wieder in den Warehouse-Stock. Ein späterer Rücktransport wird aus diesem Stock erneut materialisiert.
+`WAREHOUSE:onafterAddAsset(...)` nimmt das bekannte Asset in den Ziel-Stock auf und entfernt die lebende physische Gruppe über OPSGROUP-Despawn beziehungsweise Group-Destroy.
 
-Für OMW ist daher vor Adoption zwingend zu klären:
+Damit ist für einen Roundtrip zwingend:
 
 ```text
-Framework-owned destination handoff/despawn
-+ later warehouse materialization for return
-versus
-OMW rule: no observable spawn/despawn/teleport
+outbound materialization
+-> physical drive
+-> destination absorption/despawn
+-> destination warehouse stock
+-> later return request
+-> new materialization
+-> physical return drive
 ```
 
-Dieser Punkt ist derzeit der entscheidende Architektur-/Acceptance-Gate. Er wird nicht durch eine eigene Route oder einen eigenen Dispatcher umgangen.
+Der gepinnte Source enthält keinen öffentlichen Schalter, der dieses 60-s-Arrival-Absorbieren deaktiviert und denselben physischen Group-Lifecycle für eine sofortige Rückfahrt erhält.
 
-## 7. Nicht geeignete Alternativen
+`WAREHOUSE:SetSpawnZone(zone, maxdist)` erlaubt zwar eine separate Ground-Spawnzone bis standardmäßig 5000 m vom Warehouse, löst aber nur die Materialisierungsposition. Es ändert nicht den Arrival-`__AddAsset(60, group)`-Pfad.
+
+Folge für OMW:
+
+```text
+WAREHOUSE SELFPROPELLED = framework-native Warehouse transfer
+same physical convoy roundtrip = NOT PROVIDED BY THIS PUBLIC LIFECYCLE
+no observable spawn/despawn = only potentially satisfiable via intentionally hidden base handoff areas
+```
+
+Ob ein bewusst verdeckter Warehouse-Handoff als zulässig gilt, ist eine Owner-/Designentscheidung und wird nicht stillschweigend angenommen.
+
+## 6. MOOSE-native Ersatzkandidat B: AUFTRAG NOTHING als neutraler Move-and-Wait-Pfad
+
+Der gepinnte Source enthält:
+
+```lua
+AUFTRAG:NewNOTHING(RelaxZone)
+```
+
+Dokumentierter Zweck:
+
+```text
+[GROUND, NAVAL] Create a mission to do NOTHING.
+RelaxZone = zone where the assets are supposed to do nothing.
+```
+
+Source-seitig bestätigt:
+
+```text
+AUFTRAG.Type.NOTHING
+AUFTRAG.SpecialTask.NOTHING
+categories = GROUND, NAVAL
+mission target = RelaxZone
+WeaponHold
+AlarmState.Auto
+missionFraction = 1.0
+```
+
+Für `OPSGROUP:RouteToMission(...)` wird bei `NOTHING` eine zufällige Coordinate innerhalb der Zielzone gewählt. Für `ARMYGROUP` wird anschließend über den normalen MOOSE-Waypoint-/Routingpfad zur Mission gefahren. `AUFTRAG:SetMissionSpeed(...)` und `AUFTRAG:SetFormation(...)` sind öffentliche Setter; `mission.optionFormation` wird beim Ground-Mission-Waypoint verwendet.
+
+Beim Task-Start führt `AUFTRAG.SpecialTask.NOTHING` für ARMYGROUP/NAVYGROUP einen FullStop aus. `TaskCancel` behandelt `NOTHING` ausdrücklich als `done=true`; damit existiert source-seitig ein sauberer MOOSE-Pfad:
+
+```text
+move to destination zone
+-> NOTHING executes / group stops
+-> OMW may evaluate exact physical arrival
+-> cancel mission
+-> MissionDone lifecycle
+-> same ARMYGROUP remains available for subsequent RTZ
+```
+
+Das ist semantisch kein Fuel-, Ammo- oder Cargo-Transportmodell. Genau deshalb ist es für CampaignState-Meta-Waren als **neutraler physischer Move-and-Wait-Kandidat** interessanter als das zweckgebundene `FUELSUPPLY`.
+
+Wichtig: In `MOOSE_MISSIONS` und `MOOSE_MISSIONS_UNPACKED` wurde bei der aktuellen Suche kein dediziertes `NewNOTHING`-Beispiel gefunden. Deshalb bleibt dieser Pfad `SOURCE_REVIEWED / DCS_PENDING`.
+
+## 7. Vergleich der Kandidaten
+
+```text
+WAREHOUSE SELFPROPELLED
++ offizieller Warehouse-Ground-Transfer-Anwendungsfall
++ Example 15 mit M978/M818
++ MOOSE-eigener Request-/Arrival-/Stock-Lifecycle
+- Ziel-Absorption/Despawn nach 60 s fest im Lifecycle
+- same physical convoy roundtrip nicht vorgesehen
+- strategische OMW-Ware darf trotzdem nicht zum MOOSE-Assetbestand werden
+
+AUFTRAG NOTHING
++ direkte öffentliche MOOSE-Mission
++ GROUND ausdrücklich unterstützt
++ neutral gegenüber Cargo-/Fuel-Semantik
++ normaler ARMYGROUP-Waypoint-/Mission-/Cancel-Lifecycle
++ same physical group kann source-seitig nach MissionDone weiterverwendet werden
++ kompatibel mit CampaignState als alleiniger Warenautorität
+- kein dediziertes offizielles Demo gefunden
+- OMW-Verwendung als Meta-Resupply-Bewegungsauftrag noch nicht in DCS validiert
+```
+
+Damit ist `AUFTRAG:NewNOTHING(destinationZone)` derzeit der kleinere Kandidat für einen **sichtbar kontinuierlichen** Meta-Resupply-Convoy, während `WAREHOUSE SELFPROPELLED` der stärker dokumentierte Kandidat für einen **Warehouse-owned Assettransfer mit Absorption/Rematerialisierung** bleibt.
+
+## 8. Nicht geeignete Alternativen
 
 `STORAGE`-/OPSTRANSPORT-Fuel-Cargo darf nicht zur zweiten strategischen Fuel-Autorität werden. CampaignState bleibt autoritativ.
 
-`AUFTRAG:NewCARGOTRANSPORT(...)` ist kein generischer Ground-Meta-Warenpfad. `AUFTRAG:NewOPSTRANSPORT(...)` ist im gepinnten Stand nicht als nutzbarer öffentlicher Konstruktor bestätigt.
+`AUFTRAG:NewCARGOTRANSPORT(...)` ist laut gepinntem Source ein AIR-ROTARY Slingload-Pfad. `AUFTRAG:NewFREIGHTTRANSPORT(...)` ist ein AIR-Transportpfad für interne Cargo-Items. Der `AUFTRAG:NewOPSTRANSPORT(...)`-Konstruktor ist im gepinnten Source auskommentiert und damit kein nutzbarer öffentlicher Pfad.
 
 Ein eigener Native-DCS- oder Parallel-Dispatcher bleibt ohne dokumentierten MOOSE-Gap und Owner-Freigabe ausgeschlossen.
 
-## 8. Aktueller Status
+## 9. Aktueller Status und Entscheidungsgrenze
 
 ```text
 Stage 1A AMMO / AMMOSUPPLY: ACCEPTED_TECHNICAL_BASELINE
 Stage 1B FUEL / FUELSUPPLY meta-resupply: FAILED / CLOSED
 GROUND_FUEL_PACKAGE strategic model: RETAIN AS CAMPAIGNSTATE META RESOURCE
 Fuel convoy templates: RETAIN AS PHYSICAL REPRESENTATIONS
-WAREHOUSE SELFPROPELLED: SOURCE_REVIEWED CANDIDATE
-WAREHOUSE visual handoff/despawn boundary: OPEN
+WAREHOUSE SELFPROPELLED: SOURCE_REVIEWED CANDIDATE / ABSORB-REMATERIALIZE LIFECYCLE
+AUFTRAG NOTHING: SOURCE_REVIEWED CANDIDATE / SAME-GROUP MOVE-AND-WAIT
 replacement DCS acceptance: NOT YET STAGED
 production executor: NOT YET CREATED
 ```
 
-Kein weiterer DCS-Lauf wird angesetzt, bevor die Warehouse-Handoff-Grenze geklärt und der kleinste MOOSE-first Ersatzpfad festgelegt ist.
+Vor einem neuen DCS-Lauf ist nur noch die Designentscheidung erforderlich, welcher physische Vertrag gewollt ist:
+
+```text
+A) Warehouse-owned transfer mit verdecktem Despawn/Respawn-Handoff
+oder
+B) same physical convoy Hin-/Rückweg mit AUFTRAG NOTHING als neutralem MOOSE-Move-and-Wait-Auftrag
+```
+
+Keine der beiden Varianten verändert die strategische Ressourcenhoheit von CampaignState.
