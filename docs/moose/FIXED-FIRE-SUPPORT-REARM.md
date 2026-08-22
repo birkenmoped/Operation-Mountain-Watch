@@ -11,7 +11,7 @@ project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
 superseded_by:
 source_branch: agent/ground-ammo-rearm-integration
-source_commit: 28c6d830df671700d8de043131438d90e34be7f3
+source_commit: 5c4bbe44bee994c5dd9b1c9cfec011e7a67c8158
 validated_in_dcs: false
 ---
 
@@ -25,7 +25,7 @@ Dieses Dokument beschreibt den revidierten MOOSE-first-Pfad für lokalen Munitio
 Status: SOURCE_REVIEWED / DCS_PENDING
 ```
 
-Der frühere Bostick-Vertical-Slice und der erste kombinierte Acceptance-2-Lauf bleiben historische technische Evidenz für ihre exakte Provenienz. Sie validieren nicht den hier beschriebenen revidierten Local-Spawn-/Return-to-stock-Pfad.
+Der frühere Bostick-Vertical-Slice und der erste kombinierte Acceptance-2-Lauf bleiben historische technische Evidenz für ihre exakte Provenienz. Sie validieren nicht den hier beschriebenen Local-Spawn-/Return-to-stock-Pfad.
 
 ## 2. Gepinnter MOOSE-Stand
 
@@ -114,13 +114,13 @@ Die Rückgabe des M1083 an Warehouse-Stock erstattet **keine** strategische Muni
 
 ## 5. Mission-Editor-Vertrag
 
-Revision 2 benötigt pro Standort eine dedizierte lokale Support-Spawnzone:
+Der aktuelle Mission-Editor-Vertrag verwendet pro Standort eine dedizierte lokale Resupply-Zone:
 
 ```text
-ZON_BLUE_GND_BOSTICK_AMMO_SUPPORT_SPAWN
-ZON_BLUE_GND_WRIGHT_AMMO_SUPPORT_SPAWN
-ZON_BLUE_GND_FORTRESS_AMMO_SUPPORT_SPAWN
-ZON_BLUE_GND_HONAKER_AMMO_SUPPORT_SPAWN
+ZON_BLUE_GND_BOSTICK_RESUPPLY
+ZON_BLUE_GND_WRIGHT_RESUPPLY
+ZON_BLUE_GND_FORTRESS_RESUPPLY
+ZON_BLUE_GND_HONAKER_RESUPPLY
 ```
 
 Anforderung:
@@ -135,6 +135,8 @@ Anforderung:
 
 Die bestehenden ACCESS-Zonen behalten ihre bisherigen Ground-/Convoy-Verträge und werden nicht entfernt.
 
+Die vom Projektinhaber bereitgestellte `OMW_Template_v15(10).miz` enthält diese vier `*_RESUPPLY`-Zonen. Die MIZ wurde nur read-only geprüft; die konkrete DCS-Tauglichkeit der Bodenflächen bleibt bis zum Lauf offen.
+
 ## 6. Acceptance-Grenze
 
 Der nächste kombinierte Acceptance-2-Lauf muss pro Standort nachweisen:
@@ -142,7 +144,7 @@ Der nächste kombinierte Acceptance-2-Lauf muss pro Standort nachweisen:
 ```text
 fire
 -> ammo decrease
--> local Warehouse M1083 materialization
+-> local Warehouse M1083 materialization in *_RESUPPLY zone
 -> exactly one CampaignState ammo package consumed
 -> ARTY Rearmed
 -> ARTY-owned support return
@@ -153,7 +155,23 @@ fire
 
 Aggregate PASS nur bei vier `SITE_PASS`.
 
-Bis dahin gilt:
+Aktueller Buildstand:
+
+```text
+Source commit:
+5c4bbe44bee994c5dd9b1c9cfec011e7a67c8158
+
+BuilderVersion:
+GROUND-FIRE-SUPPORT-ACCEPTANCE-2-3
+
+Bundle SHA-256:
+C3526CE2863C94D4F351D438219B744D23B2A11C09A59094944332DBEDD59B31
+
+Build/Hash:
+owner-local build + independent Get-FileHash MATCH
+```
+
+Bis zum nächsten DCS-Lauf gilt:
 
 ```text
 Local spawn: SOURCE_REVIEWED / DCS_PENDING
