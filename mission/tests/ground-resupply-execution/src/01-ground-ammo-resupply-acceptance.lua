@@ -38,6 +38,7 @@ local FINAL_DESTINATION = 40
 local ROAD_SPEED_KNOTS = 27
 local OUTBOUND_TIMEOUT_SEC = 1800
 local RETURN_TIMEOUT_SEC = 1800
+local RETURN_ISSUE_DELAY_SEC = 30
 local RETURN_SETTLEMENT_DELAY_SEC = 12
 
 local state = {
@@ -206,8 +207,11 @@ local function attachArmyGroupCallbacks(armyGroup)
     state.missionDoneCount = state.missionDoneCount + 1
     if not expectEqual(state.missionDoneCount, 1, "MISSION_DONE_COUNT") then return end
     if state.deliveryCommitted ~= true then fail("MISSION_DONE_BEFORE_DELIVERY_SETTLEMENT"); return end
-    log("MISSION_DONE deliveryCommitted=true")
-    SCHEDULER:New(nil, issueReturn, {}, 2)
+    log("MISSION_DONE deliveryCommitted=true returnIssueDelaySec=" .. tostring(RETURN_ISSUE_DELAY_SEC))
+    -- Acceptance 4 on main proved that issuing RTZ only two seconds after
+    -- MissionDone can overlap the still-running AUFTRAG completion evaluation.
+    -- Reuse the DCS-confirmed 30-second settlement window before RTZ.
+    SCHEDULER:New(nil, issueReturn, {}, RETURN_ISSUE_DELAY_SEC)
   end
 
   function armyGroup:OnAfterRTZ(From, Event, To, Zone, Formation)
