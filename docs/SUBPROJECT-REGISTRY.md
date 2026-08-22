@@ -14,8 +14,8 @@ project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
   - incomplete open-branch list in the documentation index
 superseded_by:
-source_branch: agent/army-ground-foundation-reconciliation
-source_commit: PENDING_MERGE
+source_branch: main
+source_commit: 761f392bbd4e9ffee416e2e598235d9040a9a752
 validated_in_dcs: false
 ---
 
@@ -59,7 +59,6 @@ Dieses Register bildet offene Pull Requests, ihre Abhängigkeiten, Dokumentation
 | 52 | `agent/salerno-read-only-diagnostics` | alter Air-Ops-Stack | Salerno COMMANDER-/Runtime-Historie | Tests/Builder/Evidenz | `DRAFT`; kanonische Foundation auf `main` | `ACCEPTED_TECHNICAL_BASELINE` für dokumentierten Stage-18-Stand | offen | technische Fixture-/Runtime-Historie |
 | 66–84 | Warehouse-/CampaignState-/STORAGE-Stack | PR 66 startete von `main`; danach gestapelt | Resource ownership, Fuel/Weapon STORAGE, CampaignState transactions, loss/recovery, final fighter mapping | `scripts/campaign/`, `scripts/logistics/`, Warehouse-Testfixtures und branchgebundene Detaildokumentation | offene Draft-Historie; keine pauschale Main-Autorität | mehrere exakt dokumentierte DCS-Acceptance-Stände; finaler Fighter-Gate PASS | 85 | nicht als 214-Commit-Stack direkt integrieren; PR 85 war der saubere Main-Reconciliation-Pfad |
 | 86 | `agent/air-ops-initial-stock-runtime-data` | `main` nach gemergtem PR 85 | AirOps Initial Stock Runtime, CampaignState-Initialisierung und zentraler Warehouse-Bootstrap | `scripts/logistics/`, `mission/tests/air-ops-warehouse-bootstrap/`, MOOSE-STORAGE-Dokumentation | `DRAFT`; aktuell nicht mergebar gegen `main` | `ACCEPTED_TECHNICAL_BASELINE` für Warehouse-Bootstrap auf Commit `2502516fe130b908e500117142399b3e2ca74007`; separate Onboard-Ammo-Acceptance offen | offen | Warehouse-Bootstrap technisch akzeptiert; vor Integration Reconciliation gegen aktuellen `main` erforderlich |
-| 112 | `agent/ground-ammo-rearm-integration` | `main` | Ground ammo rearm lifecycle / fixed fire support | `scripts/campaign/`, `scripts/ground/`, `scripts/logistics/`, `mission/tests/ground-ammo-rearm-integration/`, `docs/moose/FIXED-FIRE-SUPPORT-REARM.md` | `DRAFT`; owner-gated Ready/Merge | `ACCEPTED_TECHNICAL_BASELINE` für Acceptance 2-11 auf `d52a47a418fe3a1a996a5b68198b8dc033ff86c4`; DCS 2.9.28.26385 MT; MIZ SHA-256 `388F02C932BE83823543F97887B4EDBB9E6764D4CEBE543BD8423D43A6ED8620`; externer Prozess-Persistence-Host nicht getestet/nicht behauptet | offen | MOOSE-first fixed-fire-support rearm; CampaignState bleibt alleinige strategische Ressourcenautorität |
 
 Der Arbeitsbranch `agent/army-ground-foundation-reconciliation` besitzt zum Stand dieser Reconciliation noch keinen Pull Request und wird daher nicht mit einer erfundenen PR-Nummer in die Tabelle aufgenommen. Sobald ein PR existiert, ist er hier mit realem PR-Status und Abhängigkeit nachzutragen.
 
@@ -86,11 +85,10 @@ main
                     └── PR 85 (merged clean Warehouse reconciliation)
 
 main
-├── PR 86 (AirOps initial-stock runtime and accepted Warehouse bootstrap; reconciliation required)
-└── PR 112 (Ground ammo rearm lifecycle; Acceptance 2-11 accepted technical baseline; owner-gated Ready/Merge)
+└── PR 86 (AirOps initial-stock runtime and accepted Warehouse bootstrap; reconciliation required)
 ```
 
-PR #53 (Tarinkot), PR #60 (Salerno Foundation), PR #61 (Kandahar Foundation), PR #62 (Dokumentationsmetadaten), PR #63 (Bagram duale AIRWING Foundation), PR #64 (AIRWING-Naming-Reconciliation), PR #65 (Shindand Foundation), PR #85 (Warehouse Main Reconciliation) und PR #108 (Kunar Ground Site Reconciliation / FOB Bostick) sind nach `main` gemergt und werden nicht mehr als offene aktuelle Foundation-Unterprojekte geführt.
+PR #53 (Tarinkot), PR #60 (Salerno Foundation), PR #61 (Kandahar Foundation), PR #62 (Dokumentationsmetadaten), PR #63 (Bagram duale AIRWING Foundation), PR #64 (AIRWING-Naming-Reconciliation), PR #65 (Shindand Foundation), PR #85 (Warehouse Main Reconciliation), PR #108 (Kunar Ground Site Reconciliation / FOB Bostick) und PR #112 (Ground ammo rearm lifecycle / fixed fire support) sind nach `main` gemergt und werden nicht mehr als offene aktuelle Foundation-Unterprojekte geführt.
 
 Für PR #108 ist der reale GitHub-Merge-Stand:
 
@@ -98,6 +96,17 @@ Für PR #108 ist der reale GitHub-Merge-Stand:
 PR: 108
 status: MERGED
 merge_commit: 08f679926e5ac059e9853f54ffa7bb634063eaa4
+```
+
+Für PR #112 ist der reale GitHub-Merge-Stand:
+
+```text
+PR: 112
+status: MERGED
+merge_commit: 761f392bbd4e9ffee416e2e598235d9040a9a752
+accepted_runtime: OMW-GROUND-FIRE-SUPPORT-ACCEPTANCE-2-11-RUNTIME
+acceptance_mission_sha256: 388F02C932BE83823543F97887B4EDBB9E6764D4CEBE543BD8423D43A6ED8620
+persistence_boundary: same-session Restore settlement PASS; external process/server persistence not tested/not claimed
 ```
 
 ## 4. Verbindliche Regeln
