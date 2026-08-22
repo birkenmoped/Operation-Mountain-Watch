@@ -168,7 +168,7 @@ git pull --ff-only origin agent/mission-demand-reconciliation
 git rev-parse HEAD
 git diff --stat origin/main...HEAD
 git diff --check origin/main...HEAD
-PENDING_MERGE check
+merge-placeholder check
 SHA-256 readback der zehn Merge-Kandidaten-Dateien
 ```
 
@@ -177,7 +177,7 @@ Ergebnisse:
 ```text
 HEAD MATCH
 PASS git diff --check
-PASS no PENDING_MERGE in MissionDemand documents
+PASS no unresolved merge placeholder in MissionDemand documents
 10 files changed, 1492 insertions(+), 3 deletions(-)
 ```
 
