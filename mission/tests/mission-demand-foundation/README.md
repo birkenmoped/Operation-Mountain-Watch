@@ -15,8 +15,8 @@ scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
 superseded_by:
-source_branch: agent/mission-demand-resupply-thresholds
-source_commit: 59222ad8e673d5e2cd72f4ee7cd5b8e3b7e012bf
+source_branch: main
+source_commit: 34b1f46120f951ca2a6308cf1d9fbbb4b0a17863
 validated_in_dcs: false
 ---
 
@@ -34,7 +34,9 @@ merge commit:
 341a65105c24807de3ac289bb18d80339111cbd1
 ```
 
-## Threshold-Branch
+## Threshold-Integration
+
+PR #115 integrierte die freigegebenen Ground-RESUPPLY-Schwellen nach `main`.
 
 ```text
 branch:
@@ -43,11 +45,14 @@ agent/mission-demand-resupply-thresholds
 base main:
 732e76fd4d17eb17242fea3c422a961a57e0a523
 
-verified source head:
-59222ad8e673d5e2cd72f4ee7cd5b8e3b7e012bf
+final source head:
+48e627eb3d61ab8e41d933d709d9f93cdc0a0273
 
 PR:
 115
+
+merge commit:
+34b1f46120f951ca2a6308cf1d9fbbb4b0a17863
 ```
 
 ## Freigegebene Ground-Resupply-Schwellen
@@ -128,33 +133,33 @@ transferable Ground rows use target * 0.50 / target * 0.25
 non-transferable and audit rows remain 0 / 0
 ```
 
-GitHub-Actions-Nachweis:
+Finaler GitHub-Actions-Nachweis für den Merge-Kandidaten:
 
 ```text
 workflow: MissionDemand validation
-run: 32583205475
-source head: 59222ad8e673d5e2cd72f4ee7cd5b8e3b7e012bf
+run: 32583400735
+source head: 48e627eb3d61ab8e41d933d709d9f93cdc0a0273
 result: PASS
 ```
 
 ## Dokumentationsvalidator
 
-GitHub-Actions-Nachweis:
+Finaler GitHub-Actions-Nachweis für den Merge-Kandidaten:
 
 ```text
 workflow: Documentation validation
-run: 32583205479
+run: 32583400737
 result: 18 error(s), 0 warning(s)
 ```
 
 Alle 18 Fehler liegen in bereits vor PR #115 auf `main` vorhandenen Army-Ground-/Ground-Dokumenten. Der Threshold-Branch fügte keinen MissionDemand-spezifischen Validatorfehler hinzu.
 
-## Finale lokale Readback-Prüfung
+## Finale lokale Branch-Readback-Prüfung
 
-Der Projektinhaber hat für den Source-Head
+Der Projektinhaber hat für den finalen Source-Head
 
 ```text
-59222ad8e673d5e2cd72f4ee7cd5b8e3b7e012bf
+48e627eb3d61ab8e41d933d709d9f93cdc0a0273
 ```
 
 real zurückgemeldet:
@@ -162,10 +167,11 @@ real zurückgemeldet:
 ```text
 HEAD MATCH
 PASS git diff --check
-5 files changed, 181 insertions(+), 160 deletions(-)
+PASS no unresolved merge placeholder
+6 files changed, 247 insertions(+), 319 deletions(-)
 ```
 
-Reale SHA-256-Werte:
+Reale SHA-256-Werte dieses finalen Branch-Stands:
 
 ```text
 7F73F489D7E896C815D57FAD54A62B2185932539E44471087C2826729B6FEE66
@@ -177,24 +183,40 @@ tests/mission-demand/test_resource_demand_policy.lua
 B5980E05C207AEACECC33ED318C6664BCD5DE4700FF941CB02786D9970DD3C6C
 .github/workflows/mission-demand-validation.yml
 
-E5B3242995358DB683B295BB87DF646B24DC3C05D36941BED971132BAB61C873
+E2AA65B19E796F631900ABD988B91BA67CE07656A916B0702B738FBFB5B8CE37
 docs/90-mission-demand-resupply-and-cas-orchestration-concept.md
 
-CF654D7563C399147A551805966321933C7457419699C274D30044864A66A16C
+E174E9B7529035CC4B5CF4A1C001DCE5B044D15B570CA01C5CC6C5239EB70077
+docs/SUBPROJECT-REGISTRY.md
+
+DFCEA9D21298F30EE6C93D0FECF58854BAA94A834C09E2381F2131CC5B5CD3CB
 mission/tests/mission-demand-foundation/README.md
 ```
 
-Die sichtbaren lokalen `??`-Einträge sind untracked Build-/Testartefakte. Es wurden keine tracked modifications gemeldet.
+## Post-Merge main-Readback
+
+Der Projektinhaber hat nach dem Merge `main` auf den realen Merge-Commit aktualisiert:
+
+```text
+main head:
+34b1f46120f951ca2a6308cf1d9fbbb4b0a17863
+
+merge ancestry:
+PASS PR #115 source head is in main
+```
+
+Die SHA-256-Werte der sechs integrierten Dateien entsprechen dem finalen Branch-Readback. Die sichtbaren lokalen `??`-Einträge sind untracked Build-/Testartefakte; es wurden keine tracked modifications gemeldet.
 
 ## Aktueller Status
 
 ```text
 FOUNDATION MERGED TO MAIN VIA PR #114
 GROUND RESUPPLY THRESHOLD OWNER DECISION COMPLETE
-THRESHOLD IMPLEMENTATION PUBLISHED
+THRESHOLD IMPLEMENTATION MERGED TO MAIN VIA PR #115
 THRESHOLD LUA CONTRACT TESTS PASS
 THRESHOLD BRANCH-SPECIFIC DOCUMENTATION REVIEW PASS
 THRESHOLD SOURCE DIFF / LOCAL READBACK PASS
+THRESHOLD POST-MERGE MAIN READBACK PASS
 DCS TEST NOT REQUIRED FOR THIS DOMAIN/CONFIGURATION STEP
 ```
 
@@ -211,6 +233,7 @@ GATE 4  Owner decision: target/reorder/critical    PASS
 GATE 4A Threshold-branch Lua contract tests        PASS
 GATE 4B Threshold-branch documentation review      PASS
 GATE 4C Threshold-branch diff/local readback       PASS
+GATE 4D Threshold merge/post-merge main readback   PASS
 GATE 5  First physical RESUPPLY vertical slice     OPEN
 GATE 6  BLUE COMMANDER reconciliation              SEPARATE DEPENDENCY
 GATE 7  Hit -> Incident -> CAS_IMMEDIATE            LATER
