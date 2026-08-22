@@ -5,7 +5,7 @@ document_class: WORKING_STATUS
 owning_policy: OMW-GOV-001
 authoritative_for:
   - post-merge Ground ammo rearm implementation status
-  - remaining post-merge production artifact verification
+  - post-merge production artifact verification
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
@@ -43,7 +43,8 @@ External process/server persistence: NOT PRESENT / NOT TESTED / NOT CLAIMED
 Governance/register review: COMPLETE
 PR #112 Ready/Merge decision: COMPLETED
 Post-merge production rebuild: COMPLETED
-Post-merge direct artifact hash readback: PENDING
+Post-merge direct artifact hash readback: VERIFIED
+Ground rearm integration block: CLOSED
 ```
 
 ## Exakte Acceptance-Provenienz
@@ -124,10 +125,10 @@ Die Restore-Phase verwendete isolierte `CampaignState.Restore(...)`-Kopien inner
 
 ## Post-Merge Produktionsbuild auf `main`
 
-Der Projektinhaber hat nach dem Merge real auf `main` gebaut:
+Der Projektinhaber hat nach dem Merge real auf `main` gebaut und die Builder-Ausgaben anschließend durch direkte `Get-FileHash`-Readbacks der erzeugten Artefakte bestätigt:
 
 ```text
-Git HEAD:
+Build Git HEAD:
 761f392bbd4e9ffee416e2e598235d9040a9a752
 
 AirOps Warehouse Production
@@ -135,15 +136,21 @@ BuilderVersion: OMW-AIROPS-WAREHOUSE-BASE-3
 Output: mission/runtime/logistics/OMW_AirOps_Warehouse_Base.lua
 Builder-reported BundleSHA256:
 F4FBF6DB71E56AADBF0B31C931638754FF4DDB75F90E570BA127E56A0251974F
+Direct Get-FileHash SHA-256:
+F4FBF6DB71E56AADBF0B31C931638754FF4DDB75F90E570BA127E56A0251974F
+Result: MATCH / VERIFIED
 
 Ground Production
 BuilderVersion: OMW-GROUND-PRODUCTION-BASE-4
 Output: mission/ground-operations/dist/OMW_Ground_Base.lua
 Builder-reported SHA256:
 A5D2A101FFEC3F1C222463002D7D5668C77EF6ACDEEDE1D8B8FEEB5E19D2E026
+Direct Get-FileHash SHA-256:
+A5D2A101FFEC3F1C222463002D7D5668C77EF6ACDEEDE1D8B8FEEB5E19D2E026
+Result: MATCH / VERIFIED
 ```
 
-Die Builder-Ausgaben sind reale Konsolenausgaben. Die anschließenden direkten `Get-FileHash`-Versuche schlugen ausschließlich fehl, weil zunächst falsche Artefaktpfade angegeben worden waren. Die korrekten Ausgabepfade stehen oben. Bis zur separaten direkten Hash-Rückmeldung werden die beiden Werte nur als **builder-reported** geführt.
+Die ersten direkten Hash-Versuche schlugen ausschließlich wegen zuvor falsch angegebenen Artefaktpfaden fehl. Die anschließend auf den realen Builder-Ausgabepfaden ermittelten Hashes stimmen jeweils exakt mit der Builder-Ausgabe überein. Es war kein erneuter Build erforderlich.
 
 ## Mission-Editor Cleanup nach Acceptance
 
@@ -173,6 +180,8 @@ Die bytegenau belegte Acceptance-Mission `OMW_Template_v16.miz` mit SHA-256 `388
 
 Der finale PR-Workflow vor dem Merge meldete 18 Fehler und 0 Warnungen. Diese 18 Fehler lagen ausschließlich in geerbten Ground-/Army-Ground-Dokumenten; nach Schließen der Acceptance-MIZ-Metadaten bestand kein Ground-Rearm-spezifischer Validatorfehler mehr.
 
+Der Ground-Rearm-Arbeitsblock ist nach realem Merge, post-merge Produktionsbuild, direkter Artefakt-Hashbestätigung und dokumentierter Mission-Editor-Cleanup-Grenze vollständig abgeschlossen. Ein externer Prozess-/Server-Persistence-Host bleibt ausdrücklich außerhalb dieses Abschlusses, weil er nicht vorhanden und nicht getestet ist.
+
 ## TODO
 
 ```text
@@ -196,7 +205,8 @@ Der finale PR-Workflow vor dem Merge meldete 18 Fehler und 0 Warnungen. Diese 18
 [x] PR #112 Ready for Review
 [x] PR #112 merged to main
 [x] post-merge production rebuild on main
+[x] direct Get-FileHash confirmation of both post-merge production bundles
 [x] Mission Editor cleanup boundary documented
 
-[ ] direct Get-FileHash confirmation of the two post-merge production bundles
+OPEN ITEMS FOR THIS BLOCK: NONE
 ```
