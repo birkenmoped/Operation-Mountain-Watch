@@ -18,8 +18,6 @@ validated_in_dcs: false
 
 ## 1. Ziel
 
-Der Test prüft erstmals die vollständige Kette von einem autoritativen Ground-Ressourcenmangel bis zur physischen MOOSE-Lieferung und strategischen Gutschrift.
-
 ```text
 Honaker AMMO 40
 -> test-only consumption 20
@@ -36,29 +34,25 @@ Honaker AMMO 40
 -> Warehouse AddAsset / physical cleanup
 ```
 
-## 2. Strategische Werte
-
-```text
-GROUND_NODE_JOYCE / GROUND_AMMO_PACKAGE
-initial/target = 44
-
-GROUND_NODE_HONAKER / GROUND_AMMO_PACKAGE
-initial/target = 40
-reorder = 20
-critical = 10
-supplyParent = GROUND_NODE_JOYCE
-```
-
-Der Testverbrauch von 20 Einheiten ist reine Acceptance-Vorbereitung und keine behauptete reale Feuerverbrauchsmenge.
-
-Erwarteter Endzustand:
+Erwarteter strategischer Endzustand:
 
 ```text
 JOYCE AMMO   44 -> 24
 HONAKER AMMO 40 -> 20 -> 40
 ```
 
-## 3. Physischer MOOSE-Vertrag
+## 2. Strategische / operative Grenze
+
+```text
+CampaignState = alleinige strategische Ressourcen-/Cargo-Autorität
+MissionDemand = Demand-/Assignment-Zustand
+MOOSE BRIGADE / PLATOON / ARMYGROUP / AUFTRAG = physische Ausführung
+DCS group = temporäre physische Repräsentation
+```
+
+`OPSTRANSPORT` wird in diesem Slice nicht verwendet.
+
+Physischer MOOSE-Vertrag:
 
 ```text
 BRIGADE:New(...)
@@ -73,11 +67,9 @@ BRIGADE:AddMission(...)
 ARMYGROUP:RTZ(originZone, ENUMS.Formation.Vehicle.OnRoad)
 ```
 
-Die owner-approved `OMW_GroundRoadSpawnAdapter`-Ausnahme wird nur für die straßenausgerichtete Materialisierung verwendet. Request-, Asset-, PLATOON-, ARMYGROUP- und AUFTRAG-Lifecycle bleiben MOOSE-owned.
+Die bereits owner-approved `OMW_GroundRoadSpawnAdapter`-Ausnahme wird ausschließlich für road-aligned Materialisierung verwendet.
 
-CampaignState bleibt alleinige strategische Cargo-/Ressourcenautorität. `OPSTRANSPORT` wird in diesem Slice nicht verwendet.
-
-## 4. Delivery- und Settlement-Gate
+## 3. Delivery-/Settlement-Gate
 
 Delivery ist fail-closed:
 
@@ -87,7 +79,7 @@ AND exact Mission == acceptance AMMOSUPPLY mission
 AND ARMYGROUP:IsInZone(ZON_BLUE_GND_HONAKER_ACCESS) == true
 ```
 
-Erst dann:
+Erst danach:
 
 ```text
 CampaignState MarkDelivered(TRANSFER_ID)
@@ -97,17 +89,7 @@ MissionDemand SUCCESS
 
 `MissionDone` allein ist kein Liefernachweis.
 
-## 5. Rückkehr
-
-```text
-MissionDone
--> ARMYGROUP:RTZ(ZON_BLUE_GND_JOYCE_ACCESS, OnRoad)
--> OnAfterReturned
--> BRIGADE OnAfterAddAsset
--> physical group removed
-```
-
-## 6. Build-Provenienz
+## 4. Build-Provenienz
 
 ```text
 Builder: tools/build-ground-ammo-resupply-acceptance-1.ps1
@@ -126,54 +108,29 @@ GroundRoadSpawnAdapter source SHA-256: 1A81FB2E5270C493373CF5BF6EC01F5AFED47004B
 MOOSE release: 2.9.18
 MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
 Moose.lua SHA-256: E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915
+Build classification: PASS
 ```
 
-Buildklassifikation:
+## 5. Arbeits-MIZ / read-only Preflight
+
+Ausgewählte Ausgangsmission:
 
 ```text
-BUILD PASS
-bundle emitted: true
-builder-reported bundle hash == independently calculated bundle hash: true
-```
-
-## 7. Ausgewählte Arbeits-MIZ / read-only Preflight
-
-Der Projektinhaber listete am 2026-08-22 die aktuellen lokalen OMW-Missionen. Jüngster Kandidat war `OMW_Template_v16.miz`. Die hochgeladene Kopie `OMW_Template_v16(7).miz` wurde read-only geprüft und ist byte-identisch mit dem gelisteten lokalen Kandidaten.
-
-```text
-Selected work MIZ: OMW_Template_v16.miz
-Uploaded inspection copy: OMW_Template_v16(7).miz
+OMW_Template_v16.miz
 MIZ SHA-256: 91837A67121D769145136745BBAC2F12C92F4F054ED1EADD5E937EFB9533F8A9
 internal mission SHA-256: BFC50C8FA4AA953D63B8D1AAEC8B927645253996FFA6990DF6D5118F98659AF7
 ```
 
-### 7.1 Objektvertrag
-
-Read-only in der internen `mission` bestätigt:
+Required object contract read-only confirmed:
 
 ```text
 WH_BLUE_GND_JOYCE
-  static/warehouse anchor present
-  DCS type: HESCO_generator
-
 ZON_BLUE_GND_JOYCE_ACCESS
-  trigger zone present
-  radius: 152.4 m
-
 ZON_BLUE_GND_HONAKER_ACCESS
-  trigger zone present
-  radius: 121.92 m
-
 TPL_BLUE_GND_SUP_M1083
-  ground template group present
-  one unit: TPL_BLUE_GND_SUP_M1083_01
-  DCS type: CHAP_M1083
-  lateActivation: true
 ```
 
-Damit ist der statische Namens-/Typvertrag für den Stage-1A-Scope erfüllt. DCS-Wegfindung und reale Materialisierung sind weiterhin ausschließlich Runtime-Gegenstand.
-
-### 7.2 Eingebettete Startup-Ressourcen
+Embedded startup resources confirmed:
 
 ```text
 l10n/DEFAULT/Moose.lua
@@ -186,47 +143,87 @@ l10n/DEFAULT/OMW_Ground_Base.lua
 SHA-256: 9AAF32A10A9EEB906123AFD37FF14B62542EE7C78F7B5E81E388A22F41EABEAB
 ```
 
-`Moose.lua` entspricht exakt dem für diese Acceptance gepinnten Stand.
-
-### 7.3 Trigger-/Startup-Reihenfolge
-
-Aus `mission.trig` und `l10n/DEFAULT/mapResource` read-only bestätigt:
+Startup mapping read-only confirmed:
 
 ```text
-Trigger 1 / Mission Start
-ResKey_Action_6 -> Moose.lua
-
-Trigger 2 / time > 1 s
-ResKey_Action_238 -> OMW_AirOps_Warehouse_Base.lua
-
-Trigger 3 / time > 2 s AND OMW_WAREHOUSE_READY == 1
-ResKey_Action_239 -> OMW_Ground_Base.lua
--> OMW.Ground.Base.Attach({
-     store = OMW.AirOps.CampaignContext.store,
-     campaignState = OMW.AirOps.CampaignContext.campaignState,
-     restored = OMW.AirOps.CampaignContext.restored == true
-   })
+Mission Start -> Moose.lua
+time > 1 s -> OMW_AirOps_Warehouse_Base.lua
+time > 2 s AND OMW_WAREHOUSE_READY == 1
+-> OMW_Ground_Base.lua
+-> OMW.Ground.Base.Attach(existing OMW.AirOps.CampaignContext)
 ```
 
-Damit verwendet Ground denselben autoritativen CampaignState-Kontext wie die Warehouse-Foundation.
-
-`OMW_GROUND_READY` steht nicht als separate Bedingung im unveränderten `mission`-File. Das ist für den Preflight kein Fehler: `OMW_Ground_Base.lua` setzt das USERFLAG nach erfolgreichem Attach; das Acceptance-Bundle prüft vor eigener Ausführung fail-closed `OMW_WAREHOUSE_READY == 1` und `OMW_GROUND_READY == 1`.
-
-Read-only Preflight-Klassifikation:
+Read-only classification:
 
 ```text
 MIZ identity: PASS
 internal mission identity: PASS
 required object contract: PASS
-Moose.lua present/hash: PASS
+Moose.lua identity: PASS
 Warehouse Base present: PASS
 Ground Base present: PASS
 CampaignState handoff: PASS
-MIZ mutation: NOT STARTED
-DCS runtime: NOT RUN
 ```
 
-## 8. Erwartete Pflichtmarker
+## 6. Owner embedding attempt – 2026-08-22
+
+Owner created the dedicated work copy:
+
+```text
+C:\Users\Sven\Saved Games\DCS.openbeta\Missions\OMW_Template_v16_Ground_Ammo_Resupply_Acceptance_1.miz
+WorkCopyInitialSHA256: 91837A67121D769145136745BBAC2F12C92F4F054ED1EADD5E937EFB9533F8A9
+```
+
+Expected Mission Editor change:
+
+```text
+one ONCE trigger
+conditions:
+  OMW_WAREHOUSE_READY == 1
+  OMW_GROUND_READY == 1
+action:
+  DO SCRIPT FILE -> OMW_Ground_Ammo_Resupply_Acceptance_1.lua
+```
+
+Returned post-mutation preflight evidence:
+
+```text
+post-mutation MIZ SHA-256:
+91837A67121D769145136745BBAC2F12C92F4F054ED1EADD5E937EFB9533F8A9
+
+internal mission SHA-256:
+BFC50C8FA4AA953D63B8D1AAEC8B927645253996FFA6990DF6D5118F98659AF7
+
+object occurrences:
+WH_BLUE_GND_JOYCE = 2
+ZON_BLUE_GND_JOYCE_ACCESS = 1
+ZON_BLUE_GND_HONAKER_ACCESS = 1
+TPL_BLUE_GND_SUP_M1083 = 2
+
+ready-flag references in internal mission:
+OMW_WAREHOUSE_READY = 16
+OMW_GROUND_READY = 0
+
+preflight result:
+FAIL before resource-mapping / embedded-bundle verification
+reason: Required readiness flag reference missing: OMW_GROUND_READY
+```
+
+### 6.1 Bewertung
+
+Die MIZ-SHA-256 und der interne `mission`-SHA-256 sind nach dem angeblichen Mission-Editor-Schritt exakt identisch mit der unveränderten Ausgangsmission. Gleichzeitig fehlt jede `OMW_GROUND_READY`-Referenz im internen `mission`-File.
+
+Daraus folgt für diesen Gate ausschließlich:
+
+```text
+NO_MIZ_MUTATION_OBSERVED
+```
+
+Nicht behauptet wird, warum die Änderung nicht gespeichert wurde. Mögliche Ursachen wie falsche geöffnete Datei, nicht gespeicherte Mission oder nicht angelegter Trigger bleiben unbestätigt und werden nicht als Root Cause ausgegeben.
+
+Der ursprüngliche read-only Preflight bleibt gültig; es wurde keine veränderte Test-MIZ nachgewiesen. DCS ist weiterhin nicht freigegeben.
+
+## 7. Erwartete Runtime-Pflichtmarker
 
 ```text
 START testId=GROUND-AMMO-RESUPPLY-ACCEPTANCE-1
@@ -247,7 +244,7 @@ PASS originFinal=24 destinationFinal=40 transferQuantity=20 demandStatus=SUCCESS
 
 Jeder `FAIL reason=...`-Marker macht den Lauf FAIL.
 
-## 9. Nicht Teil dieses Gates
+## 8. Nicht Teil dieses Gates
 
 ```text
 FUEL RESUPPLY
@@ -260,7 +257,7 @@ real external process/server persistence
 production orchestration scheduler
 ```
 
-## 10. Aktueller Status
+## 9. Aktueller Status
 
 ```text
 Source review: COMPLETE FOR THIS TEST SCOPE
@@ -268,32 +265,26 @@ Acceptance source: STAGED
 Builder: PASS
 Independent bundle hash: MATCH
 MIZ selected: OMW_Template_v16.miz
-MIZ pre-mutation SHA-256: 91837A67121D769145136745BBAC2F12C92F4F054ED1EADD5E937EFB9533F8A9
-internal mission pre-mutation SHA-256: BFC50C8FA4AA953D63B8D1AAEC8B927645253996FFA6990DF6D5118F98659AF7
 MIZ object/startup preflight: PASS
-MIZ embedding: NOT STARTED
-post-mutation MIZ hash: UNKNOWN
-embedded acceptance bundle hash: UNKNOWN
-post-mutation embedded Moose.lua hash: UNKNOWN
+dedicated work copy: CREATED
+owner embedding attempt: NO_MIZ_MUTATION_OBSERVED
+post-mutation MIZ hash: unchanged from source
+post-mutation internal mission hash: unchanged from source
+OMW_GROUND_READY reference in internal mission: 0
+embedded acceptance bundle hash: NOT REACHED / UNKNOWN
+post-mutation embedded Moose.lua hash: NOT REACHED / UNKNOWN
 DCS runtime: NOT RUN
 Acceptance classification: NOT_RUN
 ```
 
-## 11. Nächster Gate
+## 10. Nächster Gate
 
-Der nächste zulässige Schritt ist ausschließlich die owner-seitige Mission-Editor-Einbettung des bereits gebauten Bundles in eine neue Arbeitskopie von `OMW_Template_v16.miz` und danach die erneute Hash-/Strukturprüfung nach Dokument 22.
+Nur die dedizierte Acceptance-Arbeitskopie darf erneut im Mission Editor geöffnet werden. Der Acceptance-Trigger muss real angelegt, die Mission gespeichert und der Editor geschlossen werden. Danach zuerst MIZ- und interner mission-Hash prüfen.
 
 ```text
-copy v16 to dedicated acceptance MIZ
--> add exactly one DO SCRIPT FILE for OMW_Ground_Ammo_Resupply_Acceptance_1.lua
--> gate it after Warehouse/Ground readiness
--> save once
--> record new MIZ SHA-256
--> record new internal mission SHA-256
--> verify embedded acceptance bundle SHA-256 == local build hash
--> verify embedded Moose.lua SHA-256 unchanged
--> verify no duplicate acceptance resource/trigger
--> stop before DCS until this post-mutation preflight passes
+work copy must change bytes
+AND internal mission hash must change
+AND OMW_GROUND_READY reference must exist
 ```
 
-Kein DCS-Lauf vor vollständigem statischem Post-Mutation-PASS.
+Erst danach folgen Resource-Mapping-, embedded bundle-, Moose- und vollständige Strukturprüfung. Kein DCS-Lauf bis zum vollständigen Post-Mutation-PASS.
