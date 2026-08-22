@@ -241,14 +241,23 @@ DCS runtime: PENDING
 
 ## 10. Dokumentationsstatus
 
+Der aktuelle GitHub-Workflow `Documentation validation` wurde geprüft. Ergebnis für den Branchstand vor dem nachfolgenden reinen Status-Update:
+
 ```text
-ACCEPTANCE-2.md: Revision 2-11 reconciled
-FIXED-FIRE-SUPPORT-REARM.md: Revision 2-11 reconciled
-CURRENT-STATUS-TODO.md: Revision 2-11 reconciled
-README.md: classified as HISTORICAL_TEST_FIXTURE with metadata; previous full development record remains in Git history at blob 2f1622bdb1a6cd1beeb005af74db07c77af0beea
+18 errors
+0 warnings
 ```
 
-Es wird kein Dokumentationsvalidator-PASS behauptet, bevor ein aktueller Workflow-/Validator-Nachweis vorliegt.
+Alle 18 Fehler liegen in bereits vorhandenen `docs/ground/`- bzw. `mission/tests/army-ground-foundation/`-Dokumenten. Der Validator meldete **keinen** Fehler für:
+
+```text
+mission/tests/ground-ammo-rearm-integration/README.md
+mission/tests/ground-ammo-rearm-integration/ACCEPTANCE-2.md
+mission/tests/ground-ammo-rearm-integration/CURRENT-STATUS-TODO.md
+docs/moose/FIXED-FIRE-SUPPORT-REARM.md
+```
+
+Damit ist die branch-eigene README-Metadaten-Schuld bereinigt; der Workflow bleibt wegen geerbter, sachfremder Ground-Foundation-Dokumentationsschuld rot. Ein globaler Dokumentationsvalidator-PASS wird nicht behauptet.
 
 ## 11. Aktuelle TODO-Liste
 
@@ -270,12 +279,12 @@ Es wird kein Dokumentationsvalidator-PASS behauptet, bevor ein aktueller Workflo
 [x] verbleibende Runtime-Prüfungen zu Revision 2-11 gebündelt
 [x] externer Persistence-Host-Iststand geprüft
 [x] branch-eigene README-Metadaten-Schuld bereinigt
+[x] aktuellen Dokumentationsvalidator-/CI-Stand geprüft; 18 geerbte Fehler, 0 branch-eigene Fehler in den geänderten OMW-Ground-Rearm-Dokumenten
+[x] finalen Revision-2-11 Diff / Contract / Builder statisch geprüft
 
 [ ] Revision 2-11 lokal einmal bauen und hash-verifizieren
 [ ] einen gebündelten DCS-Acceptance-Lauf durchführen
 [ ] Logs gegen alle Physical-/Restore-Marker auswerten
-[ ] aktuellen Dokumentationsvalidator-/CI-Stand prüfen
-[ ] finalen Diff / Contract / Builder prüfen
 [ ] Owner-Entscheidung PR #112 Ready / Merge
 ```
 
@@ -289,8 +298,8 @@ Ground Ammo Rearm / Fixed Fire Support
         +-- LOCAL REARM Option B              SOURCE IMPLEMENTED / BUILD VERIFIED
         +-- Revision 2-10                     BUILD/HASH VERIFIED
         +-- Revision 2-11 bundled acceptance SOURCE/BUILDER COMPLETE
+        +-- Docs/CI + static final review     COMPLETE WITH 18 INHERITED DOC ERRORS
         +-- einmaliger lokaler Build/Hash     PENDING
         +-- EIN gebündelter DCS-Lauf          PENDING
-        +-- finaler Review                    PENDING
         `-- Owner-Entscheidung PR #112 Ready / Merge
 ```
