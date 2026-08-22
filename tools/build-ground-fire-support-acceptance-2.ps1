@@ -13,7 +13,7 @@ $harnessFile = Join-Path $repoRoot 'mission\tests\ground-ammo-rearm-integration\
 $distDir = Join-Path $repoRoot 'mission\tests\ground-ammo-rearm-integration\dist'
 $outputFile = Join-Path $distDir 'OMW_Ground_Fire_Support_Acceptance_2.lua'
 
-$builderVersion = 'GROUND-FIRE-SUPPORT-ACCEPTANCE-2-4'
+$builderVersion = 'GROUND-FIRE-SUPPORT-ACCEPTANCE-2-5'
 $testId = 'GROUND-FIRE-SUPPORT-ACCEPTANCE-2'
 $mooseCommit = '73d3ed119cd9e7e3f2cfcabbaa34513d30529b54'
 $mooseSha256 = 'e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915'
@@ -51,7 +51,8 @@ foreach ($pattern in $forbiddenPatterns) {
 }
 
 if ($fixedSupport -notmatch 'brigade:SetSpawnZone\(spawnZone, spawnZoneMaxDistanceM\)') { throw 'Fixed fire-support support module must use public WAREHOUSE SetSpawnZone.' }
-if ($fixedSupport -match 'SetValidateAndRepositionGroundUnits') { throw 'Fixed fire-support support module must not use the broken pinned-MOOSE SetValidateAndRepositionGroundUnits path.' }
+# Guard executable use only. Documentation/comments may name the broken MOOSE method when explaining why it is excluded.
+if ($fixedSupport -match 'brigade\s*:\s*SetValidateAndRepositionGroundUnits\s*\(') { throw 'Fixed fire-support support module must not call the broken pinned-MOOSE SetValidateAndRepositionGroundUnits path.' }
 if ($materializer -notmatch 'self\.brigade:AddAsset\(target\)') { throw 'Ground support materializer must return the known group through WAREHOUSE AddAsset.' }
 if ($rearmAdapter -notmatch 'if startArty then\s+arty:Start\(\)') { throw 'Ground ammo rearm adapter is missing the guarded ARTY Start path.' }
 if ($fixedRearm -notmatch 'SCHEDULER:New') { throw 'Fixed fire-support rearm service must use the MOOSE SCHEDULER return watcher.' }
