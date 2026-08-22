@@ -5,6 +5,8 @@
 --   Exercise the same MOOSE-first rearm composition concurrently for the four
 --   current Kunar fixed fire-support consumers in one DCS run. Bostick is the
 --   regression leg; Wright, Fortress and Honaker are the new runtime legs.
+--   This revision also proves local non-road Warehouse materialization and the
+--   complete ARTY return -> WAREHOUSE AddAsset cleanup lifecycle for M1083.
 --
 -- Required owner-provided Mission Editor objects are declared in SITE_SPECS.
 
@@ -13,14 +15,14 @@ local TAG = "[OMW][" .. TEST_ID .. "]"
 local SUPPORT_TEMPLATE = "TPL_BLUE_GND_SUP_M1083"
 local RESOURCE_ID = "GROUND_AMMO_PACKAGE"
 local FIRE_SHELLS = 4
-local TIMEOUT_SEC = 900
+local TIMEOUT_SEC = 1200
 
 local SITE_SPECS = {
   {
     id = "BOSTICK",
     warehouse = "WH_BLUE_GND_BOSTICK",
     battery = "TPL_BLUE_GND_BOSTICK_FS_ARTY_L118_2",
-    accessZone = "ZON_BLUE_GND_BOSTICK_ACCESS",
+    supportSpawnZone = "ZON_BLUE_GND_BOSTICK_AMMO_SUPPORT_SPAWN",
     targetZone = "ZON_BLUE_GND_BOSTICK_ARTY_ACCEPTANCE_TARGET",
     nodeId = "GROUND_NODE_BOSTICK",
     brigade = "BDE_BLUE_GND_BOSTICK_FIRE_SUPPORT_ACCEPTANCE",
@@ -33,7 +35,7 @@ local SITE_SPECS = {
     id = "WRIGHT",
     warehouse = "WH_BLUE_GND_WRIGHT",
     battery = "TPL_BLUE_GND_WRIGHT_FS_ARTY_L118_2",
-    accessZone = "ZON_BLUE_GND_WRIGHT_ACCESS",
+    supportSpawnZone = "ZON_BLUE_GND_WRIGHT_AMMO_SUPPORT_SPAWN",
     targetZone = "ZON_BLUE_GND_WRIGHT_ARTY_ACCEPTANCE_TARGET",
     nodeId = "GROUND_NODE_WRIGHT",
     brigade = "BDE_BLUE_GND_WRIGHT_FIRE_SUPPORT_ACCEPTANCE",
@@ -46,7 +48,7 @@ local SITE_SPECS = {
     id = "FORTRESS",
     warehouse = "WH_BLUE_GND_FORTRESS",
     battery = "TPL_BLUE_GND_FORTRESS_FS_ARTY_L118_1",
-    accessZone = "ZON_BLUE_GND_FORTRESS_ACCESS",
+    supportSpawnZone = "ZON_BLUE_GND_FORTRESS_AMMO_SUPPORT_SPAWN",
     targetZone = "ZON_BLUE_GND_FORTRESS_ARTY_ACCEPTANCE_TARGET",
     nodeId = "GROUND_NODE_FORTRESS",
     brigade = "BDE_BLUE_GND_FORTRESS_FIRE_SUPPORT_ACCEPTANCE",
@@ -59,7 +61,7 @@ local SITE_SPECS = {
     id = "HONAKER",
     warehouse = "WH_BLUE_GND_HONAKER",
     battery = "TPL_BLUE_GND_HONAKER_FS_MORTAR_2B11_2",
-    accessZone = "ZON_BLUE_GND_HONAKER_ACCESS",
+    supportSpawnZone = "ZON_BLUE_GND_HONAKER_AMMO_SUPPORT_SPAWN",
     targetZone = "ZON_BLUE_GND_HONAKER_MORTAR_ACCEPTANCE_TARGET",
     nodeId = "GROUND_NODE_HONAKER",
     brigade = "BDE_BLUE_GND_HONAKER_FIRE_SUPPORT_ACCEPTANCE",
@@ -133,15 +135,20 @@ local function finishSitePass(siteState, context, groundContext)
   siteState.finalAmmo = ammoTotal(siteState)
   local resourceAfter = groundContext.store:GetResource(siteState.spec.nodeId, RESOURCE_ID)
   local transaction = groundContext.store:GetTransaction(siteState.transactionId)
-  local supportGroup = siteState.service:GetSupport():GetMaterializedGroup()
+  local activeSupportGroup = siteState.service:GetSupport():GetMaterializedGroup()
+  local returnedGroup = context.supportGroup
 
-  if not supportGroup or not supportGroup:IsAlive() then
-    fail("SUPPORT_GROUP_NOT_ALIVE site=" .. siteState.spec.id)
+  if activeSupportGroup ~= nil then
+    fail("SUPPORT_GROUP_STILL_MATERIALIZED site=" .. siteState.spec.id)
     return
   end
-  if context.status ~= "REARMED" then
+  if returnedGroup and type(returnedGroup.IsAlive) == "function" and returnedGroup:IsAlive() == true then
+    fail("SUPPORT_GROUP_STILL_ALIVE_AFTER_RETURN site=" .. siteState.spec.id)
+    return
+  end
+  if context.status ~= "RETURNED_TO_STOCK" then
     fail("CONTEXT_STATUS site=" .. siteState.spec.id
-      .. " expected=REARMED actual=" .. tostring(context.status))
+      .. " expected=RETURNED_TO_STOCK actual=" .. tostring(context.status))
     return
   end
   if not transaction or transaction.status ~= "CONSUMED" then
@@ -174,24 +181,17 @@ local function finishSitePass(siteState, context, groundContext)
   end
 
   siteState.passed = true
-  log("SITE_SUPPORT_MATERIALIZED site=" .. siteState.spec.id
-    .. " name=" .. tostring(supportGroup:GetName())
-    .. " type=" .. tostring(supportGroup:GetTypeName()))
-  log("SITE_CONSUMPTION_COMMITTED site=" .. siteState.spec.id
-    .. " resource=" .. RESOURCE_ID
-    .. " before=" .. tostring(siteState.resourceBefore.available)
-    .. " after=" .. tostring(resourceAfter.available))
-  log("SITE_REARMED site=" .. siteState.spec.id
-    .. " initialAmmo=" .. tostring(siteState.initialAmmo)
-    .. " postFireAmmo=" .. tostring(siteState.postFireAmmo)
-    .. " finalAmmo=" .. tostring(siteState.finalAmmo))
+  log("SITE_SUPPORT_RETURNED site=" .. siteState.spec.id
+    .. " name=" .. tostring(siteState.supportName)
+    .. " type=" .. tostring(siteState.supportType)
+    .. " returnDistanceM=" .. tostring(context.supportReturnDistanceM))
   log("SITE_PASS site=" .. siteState.spec.id)
   finishAggregateIfReady()
 end
 
 local function configureSite(spec, groundContext)
   local batteryGroup = requireObject(GROUP:FindByName(spec.battery), spec.battery)
-  local accessZone = requireObject(ZONE:FindByName(spec.accessZone), spec.accessZone)
+  local supportSpawnZone = requireObject(ZONE:FindByName(spec.supportSpawnZone), spec.supportSpawnZone)
   local targetZone = requireObject(ZONE:FindByName(spec.targetZone), spec.targetZone)
   local warehouseHost = UNIT:FindByName(spec.warehouse)
   if not warehouseHost then
@@ -207,7 +207,6 @@ local function configureSite(spec, groundContext)
   if not requireObject(brigade, spec.brigade) then
     return nil
   end
-  brigade:SetSpawnZone(accessZone, 1000)
 
   local arty = ARTY:New(batteryGroup, spec.alias)
   if not requireObject(arty, "ARTY " .. spec.battery) then
@@ -219,16 +218,20 @@ local function configureSite(spec, groundContext)
   local siteState = {
     spec = spec,
     batteryGroup = batteryGroup,
+    supportSpawnZone = supportSpawnZone,
     targetZone = targetZone,
     brigade = brigade,
     arty = arty,
     transactionId = "GROUND-FIRE-SUPPORT-ACCEPTANCE-2-" .. spec.id,
     fireComplete = false,
+    rearmed = false,
     passed = false,
     initialAmmo = nil,
     postFireAmmo = nil,
     finalAmmo = nil,
     resourceBefore = nil,
+    supportName = nil,
+    supportType = nil,
   }
 
   siteState.service = FixedFireSupportAmmoRearmService.New({
@@ -243,9 +246,8 @@ local function configureSite(spec, groundContext)
       return arty
     end,
     brigade = brigade,
-    accessZone = accessZone,
-    forwardCoordinate = batteryGroup:GetCoordinate(),
-    roadSpawnAdapter = GroundRoadSpawnAdapter,
+    spawnZone = supportSpawnZone,
+    spawnZoneMaxDistanceM = 500,
     materializerModule = GroundSupportMaterializer,
     platoonFactory = function(templateName, count, platoonName)
       return PLATOON:New(templateName, count, platoonName)
@@ -259,11 +261,38 @@ local function configureSite(spec, groundContext)
     alias = spec.alias,
     stockCount = 1,
     priority = 20,
+    returnCheckIntervalSec = 5,
+    returnTimeoutSec = 300,
     log = function(level, message)
       log("SITE_LOG site=" .. spec.id .. " level=" .. tostring(level) .. " " .. tostring(message))
     end,
     onRearmed = function(context)
-      finishSitePass(siteState, context, groundContext)
+      siteState.rearmed = true
+      local supportGroup = context.supportGroup
+      if supportGroup then
+        siteState.supportName = supportGroup:GetName()
+        siteState.supportType = supportGroup:GetTypeName()
+      end
+      local resourceAfter = groundContext.store:GetResource(spec.nodeId, RESOURCE_ID)
+      log("SITE_SUPPORT_MATERIALIZED site=" .. spec.id
+        .. " name=" .. tostring(siteState.supportName)
+        .. " type=" .. tostring(siteState.supportType))
+      log("SITE_CONSUMPTION_COMMITTED site=" .. spec.id
+        .. " resource=" .. RESOURCE_ID
+        .. " before=" .. tostring(siteState.resourceBefore and siteState.resourceBefore.available)
+        .. " after=" .. tostring(resourceAfter and resourceAfter.available))
+      log("SITE_REARMED site=" .. spec.id
+        .. " initialAmmo=" .. tostring(siteState.initialAmmo)
+        .. " postFireAmmo=" .. tostring(siteState.postFireAmmo)
+        .. " currentAmmo=" .. tostring(ammoTotal(siteState)))
+    end,
+    onSupportReturned = function(context)
+      SCHEDULER:New(nil, function()
+        finishSitePass(siteState, context, groundContext)
+      end, {}, 2)
+    end,
+    onSupportReturnFailed = function(_, reason)
+      fail("SUPPORT_RETURN_FAILED site=" .. spec.id .. " reason=" .. tostring(reason))
     end,
   })
 
@@ -303,7 +332,9 @@ local function startSite(siteState, groundContext)
       quantity = 1,
       artilleryGroup = siteState.batteryGroup,
       alias = siteState.spec.alias,
-      onRoad = true,
+      onRoad = false,
+      rearmingDistance = 100,
+      supportReturnRadiusM = 100,
       startArty = false,
     })
     log("SITE_REARM_REQUEST site=" .. siteState.spec.id
@@ -337,6 +368,7 @@ local function startSite(siteState, groundContext)
 
   log("SITE_START site=" .. siteState.spec.id
     .. " battery=" .. siteState.spec.battery
+    .. " supportSpawnZone=" .. siteState.spec.supportSpawnZone
     .. " target=" .. tostring(targetName)
     .. " shellsRequested=" .. tostring(FIRE_SHELLS)
     .. " initialAmmo=" .. tostring(siteState.initialAmmo))
@@ -382,7 +414,9 @@ local function startAcceptance()
     local status = {}
     for _, spec in ipairs(SITE_SPECS) do
       local siteState = state.sites[spec.id]
-      status[#status + 1] = spec.id .. "=" .. tostring(siteState and siteState.passed)
+      status[#status + 1] = spec.id
+        .. "=passed:" .. tostring(siteState and siteState.passed)
+        .. "/rearmed:" .. tostring(siteState and siteState.rearmed)
     end
     fail("TIMEOUT seconds=" .. tostring(TIMEOUT_SEC) .. " sites=" .. table.concat(status, ","))
   end, {}, TIMEOUT_SEC)
