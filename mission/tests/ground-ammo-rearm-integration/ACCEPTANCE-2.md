@@ -218,7 +218,7 @@ OMW_FixedFireSupportAmmoRearmService.lua
 2829BDD72840FEB14D744072AD7BAD2B81901E43807D5E75BB1DB654AEFFE067
 ```
 
-## 6. Mission-Editor-Vertrag
+## 6. Mission-Editor-Vertrag und Revision-3-MIZ-Preflight
 
 Erforderliche Resupply-Zonen:
 
@@ -250,26 +250,74 @@ ZON_BLUE_GND_FORTRESS_ARTY_ACCEPTANCE_TARGET
 ZON_BLUE_GND_HONAKER_MORTAR_ACCEPTANCE_TARGET
 ```
 
-Die vom Projektinhaber bereitgestellte `OMW_Template_v15(10).miz` wurde read-only geprüft:
+Nach der Owner-Ersetzung des Acceptance-Bundles wurde die bereitgestellte Arbeits-MIZ read-only geprüft:
 
 ```text
+MIZ:
+OMW_Template_v15(20260822-093745).miz
+
 MIZ SHA-256:
-1A159BB32F89ECA1E2EE277483023F2CC7DC2CD8E93CCBC942C651B7F796D8C9
+FBA4D8C5966DA375396014E2C2E8BC81B17F7595EBE5DBEF9544AD9FDD2747C5
 
 internal mission SHA-256:
-5F86B9B4A65C9D47945D33D9A111731B7B4ABC9A0D9B4977CA92B0AC13E56488
+77C876E029C91F098E30648205FDED144EE67F6234385BB5D04E59B9F90A742E
 
-four *_RESUPPLY zones:
-PRESENT
+embedded Acceptance-2 bundle SHA-256:
+C3526CE2863C94D4F351D438219B744D23B2A11C09A59094944332DBEDD59B31
 
 embedded Moose.lua SHA-256:
 E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915
 
-embedded Acceptance-2 bundle SHA-256:
-730F07B1AE79EAA5C4632A4A4CF44A64C41507F2D0E1C317B3F14405F2AA260E
+embedded OMW_AirOps_Warehouse_Base.lua SHA-256:
+FC0F8F20909DD57E5DEE3AF6414FB56B35D8671D726471DEDB6D6984E590801B
+
+embedded OMW_Ground_Base.lua SHA-256:
+6DBDE7AA75E34FA6C7A42A7C97B3E407C069806666C60E8D27F8616D647383EE
 ```
 
-Damit ist `v15(10)` **noch nicht** der Revision-3-Testartefaktstand: sie enthält noch das alte Revision-1-Bundle. Vor einem DCS-Lauf muss ausschließlich dieses eingebettete Acceptance-Bundle ersetzt und die neue MIZ-Hashkette erneut geschlossen werden.
+Bundle-Header und Einbindung wurden ebenfalls geprüft:
+
+```text
+BuilderVersion: GROUND-FIRE-SUPPORT-ACCEPTANCE-2-3
+GitCommit: 5c4bbe44bee994c5dd9b1c9cfec011e7a67c8158
+ResKey_Action_240 -> OMW_Ground_Fire_Support_Acceptance_2.lua
+Trigger action 18 -> ResKey_Action_240
+Moose.lua loads before Warehouse Base, Ground Base and Acceptance-2
+OMW_Ground_Ammo_Rearm_Acceptance_1.lua: NOT PRESENT
+```
+
+Objektvertragssmoke nach dem letzten MIZ-Speichern:
+
+```text
+four required *_RESUPPLY zones: PRESENT exactly once
+RESUPPLY zone radius: 15.24 m each
+four required acceptance target zones: PRESENT exactly once
+WH_BLUE_GND_BOSTICK / WRIGHT / FORTRESS / HONAKER: PRESENT
+TPL_BLUE_GND_BOSTICK_FS_ARTY_L118_2: 2 x L118_Unit
+TPL_BLUE_GND_WRIGHT_FS_ARTY_L118_2: 2 x L118_Unit
+TPL_BLUE_GND_FORTRESS_FS_ARTY_L118_1: 1 x L118_Unit
+TPL_BLUE_GND_HONAKER_FS_MORTAR_2B11_2: 2 x 2B11 mortar
+TPL_BLUE_GND_SUP_M1083: 1 x CHAP_M1083, Late Activation
+```
+
+Statische Freigabe für den nächsten DCS-Lauf:
+
+```yaml
+branch_and_commit_known: true
+builder_version_known: true
+source_guard_pass: true
+lifecycle_guard_pass: true
+bundle_built_from_current_source: true
+bundle_hash_recorded: true
+miz_hash_recorded: true
+embedded_bundle_hash_matches: true
+embedded_moose_hash_matches: true
+object_contract_smoke_present: true
+acceptance_criteria_current: true
+previous_failures_documented: true
+```
+
+Die statische Artefaktkette ist damit für Revision 3 geschlossen. Das ist **kein DCS-Runtime-PASS**.
 
 ## 7. Support-Return-/Cleanup-Vertrag
 
@@ -390,8 +438,12 @@ Revision-3 source: SOURCE_REVIEWED / DCS_PENDING
 Revision-3 builder: OWNER-BUILT
 Revision-3 bundle hash: C3526CE2863C94D4F351D438219B744D23B2A11C09A59094944332DBEDD59B31
 Revision-3 build/hash match: PASS
-Revision-3 local RESUPPLY zones in v15(10): PRESENT
-Revision-3 MIZ embedding: PENDING bundle replacement
+Revision-3 MIZ: OMW_Template_v15(20260822-093745).miz
+Revision-3 MIZ hash: FBA4D8C5966DA375396014E2C2E8BC81B17F7595EBE5DBEF9544AD9FDD2747C5
+Revision-3 embedded bundle hash match: PASS
+Revision-3 embedded Moose hash match: PASS
+Revision-3 object contract smoke: PASS
+Revision-3 static preflight: PASS
 Revision-3 DCS runtime: NOT_RUN
 VALIDATED: false
 ```
