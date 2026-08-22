@@ -41,7 +41,7 @@ $requiredMarkers = @(
   'OnAfterCeaseFire','OnAfterRearmed','CompleteConsumption','GROUND-LOCAL-REARM:','startArty = false','onRoad = false','WAREHOUSE.Descriptor.GROUPNAME','PLATOON:New(','BRIGADE:New(',
   'OMW_GROUND_READY','OMW.Ground.Base.GetContext()','SITE_REARM_COMPLETED site=','SITE_REARMED site=','SITE_SUPPORT_RETURNED site=','SITE_PASS site=','FIXED_FIRE_SUPPORT_REARM_CONFIRMED=true',
   'requireAmmoDepleted','HONAKER_AMMO_DEPLETED','HONAKER_REARM_REQUEST_AFTER_EMPTY','HONAKER_AMMO_NOT_DEPLETED',
-  'CampaignState.Restore','RESTORE_PHASE_START','RESTORE_INTERRUPTED_SNAPSHOT','RESTORE_COMPENSATION_PASS','RESTORE_IDEMPOTENCE_PASS','RESTORE_NEW_TRANSACTION_PASS','RESTORE_COMPLETED_PRESERVED_PASS','RESTORE_PRECOMMIT_CANCEL_PASS','RESTORE_SETTLEMENT_PASS','restoreSettlement=true'
+  'campaignState.Restore','RESTORE_PHASE_START','RESTORE_INTERRUPTED_SNAPSHOT','RESTORE_COMPENSATION_PASS','RESTORE_IDEMPOTENCE_PASS','RESTORE_NEW_TRANSACTION_PASS','RESTORE_COMPLETED_PRESERVED_PASS','RESTORE_PRECOMMIT_CANCEL_PASS','RESTORE_SETTLEMENT_PASS','restoreSettlement=true'
 )
 foreach ($marker in $requiredMarkers) {
   if (-not $combined.Contains($marker)) { throw "Ground fire-support acceptance sources are missing required marker: $marker" }
