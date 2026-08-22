@@ -167,7 +167,7 @@ Eine weitere Bestätigung des M1083 als Supportfahrzeug ist nicht erforderlich.
 
 Der M939 bleibt ausschließlich historische Diagnoseevidenz und ist keine offene Produktionsalternative.
 
-Der gültige nächste Acceptance-Vertrag lautet daher:
+Der gültige Acceptance-Vertrag lautet:
 
 ```text
 BOSTICK   -> TPL_BLUE_GND_SUP_M1083 / 4 rounds
@@ -178,7 +178,7 @@ HONAKER   -> TPL_BLUE_GND_SUP_M1083 / 40 rounds / requireAmmoDepleted=true
 
 Honaker darf erst bei `postFireAmmo == 0` den Rearm-Request auslösen.
 
-## 8. Fehler im Diagnose-Rückbau
+## 8. Fehler im Diagnose-Rückbau und Korrektur
 
 Beim Rückbau der M939-Diagnose wurde die Honaker-Vollentleerungsbedingung irrtümlich mit entfernt. Dadurch entstanden Revision 2-8 und Revision 2-9 mit:
 
@@ -202,7 +202,22 @@ BuilderVersion: GROUND-FIRE-SUPPORT-ACCEPTANCE-2-9
 Bundle SHA-256: D0E628C58567CB46126048AA2903F17C9D15F316C415FFB755FD0192B230EA09
 ```
 
-Diese Builds sind Build-/Hash-Evidenz, aber kein gültiger Honaker-Acceptance-Vertrag.
+Korrigierter Acceptance-Harness/Builder:
+
+```text
+Source / Git HEAD: f4e781a92bfc74062c48b46b91474f632e69d585
+BuilderVersion: GROUND-FIRE-SUPPORT-ACCEPTANCE-2-10
+GeneratedUtc: 2026-08-22T13:44:16Z
+Bundle SHA-256: 1180884FEB764F95CFD89D72CE2D04BE633A9FD73AE0939AE4B476179A5977C5
+HonakerSupportTemplate: TPL_BLUE_GND_SUP_M1083
+StandardFireShells: 4
+HonakerFireShells: 40
+HonakerRequireAmmoDepleted: true
+DurableRearmCompletion: true
+HonakerM939Diagnostic: false
+```
+
+Builder-Ausgabe und separate `Get-FileHash -Algorithm SHA256`-Prüfung stimmen exakt überein. Revision 2-10 ist damit BUILD/HASH VERIFIED, aber noch nicht DCS-runtime-validiert.
 
 ## 9. LOCAL REARM Restart/Replay – Option B
 
@@ -255,7 +270,7 @@ BuilderVersion: OMW-GROUND-PRODUCTION-BASE-4
 Bundle SHA-256: 9AAF32A10A9EEB906123AFD37FF14B62542EE7C78F7B5E81E388A22F41EABEAB
 ```
 
-Diese Produktionsbundle-Provenienz bleibt gültig. Korrigiert werden muss ausschließlich der Honaker-Acceptance-Harness/Buildervertrag.
+Diese Produktionsbundle-Provenienz bleibt gültig. Die korrigierte Acceptance 2 Revision 2-10 nutzt diese Produktionsbasis unverändert.
 
 ## 10. Aktuelle TODO-Liste
 
@@ -274,12 +289,12 @@ Diese Produktionsbundle-Provenienz bleibt gültig. Korrigiert werden muss aussch
 [x] Option-B Produktionsbundles real gebaut/gehasht
 [x] Dokumentation zur 2B11-Vollentleerung korrigiert
 [x] M1083 für Honaker durch Owner bestätigt; keine weitere Bestätigung erforderlich
+[x] Acceptance-Harness Honaker auf 40 rounds + requireAmmoDepleted=true korrigiert
+[x] Builder-Gates entsprechend korrigiert
+[x] Revision 2-10 Acceptance-Bundle real gebaut/gehasht
 
-[ ] Acceptance-Harness Honaker wieder auf 40 rounds + requireAmmoDepleted=true setzen
-[ ] Builder-Gates entsprechend korrigieren
-[ ] korrigierten Acceptance-Bundle real bauen/hashen
 [ ] finalen Diff / Contract / Builder prüfen
-[ ] DCS COMPLETED-Runtime-Acceptance mit korrigiertem Honaker-Vertrag
+[ ] DCS COMPLETED-Runtime-Acceptance mit Revision 2-10
 [ ] Restart-Compensation nur mit realer Restore-Provenienz als DCS-validiert markieren
 [ ] branch-eigene Dokumentationsvalidator-Schuld bereinigen
 [ ] Owner-Entscheidung PR #112 Ready / Merge
@@ -307,8 +322,8 @@ Ground Ammo Rearm / Fixed Fire Support
         +-- 2B11 Evidenzkorrektur            COMPLETE
         +-- M1083 Owner-Entscheidung         COMPLETE
         +-- LOCAL REARM Option B             OWNER APPROVED / SOURCE IMPLEMENTED / BUILD VERIFIED
-        +-- Honaker Acceptance-Harness       CORRECTION PENDING
-        +-- korrigierter Acceptance-Build    PENDING
+        +-- Honaker Acceptance-Harness       CORRECTED
+        +-- Revision 2-10 Acceptance-Build   BUILD/HASH VERIFIED
         +-- DCS COMPLETED Runtime-Acceptance PENDING
         +-- Restart-Compensation Acceptance  PENDING REAL RESTORE PROVENANCE
         `-- Owner-Entscheidung PR #112 Ready / Merge
