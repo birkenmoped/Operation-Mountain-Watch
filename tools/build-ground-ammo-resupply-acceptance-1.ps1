@@ -12,7 +12,7 @@ $acceptanceSourceFile = Join-Path $repoRoot 'mission\tests\ground-resupply-execu
 $distDir = Join-Path $repoRoot 'mission\tests\ground-resupply-execution\dist'
 $outputFile = Join-Path $distDir 'OMW_Ground_Ammo_Resupply_Acceptance_1.lua'
 
-$builderVersion = 'GROUND-AMMO-RESUPPLY-ACCEPTANCE-1-1'
+$builderVersion = 'GROUND-AMMO-RESUPPLY-ACCEPTANCE-1-2'
 $testId = 'GROUND-AMMO-RESUPPLY-ACCEPTANCE-1'
 $mooseCommit = '73d3ed119cd9e7e3f2cfcabbaa34513d30529b54'
 $mooseSha256 = 'e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915'
@@ -36,14 +36,14 @@ $acceptanceSource = Get-Content -LiteralPath $acceptanceSourceFile -Raw -Encodin
 $combined = $missionDemand + $resourceDemandPolicy + $roadSpawnAdapter + $acceptanceSource
 
 $requiredMarkers = @(
+  'OMW-MISSION-DEMAND-1',
   'MissionDemand.Type',
   'RESUPPLY',
+  'OMW-RESOURCE-DEMAND-POLICY-1',
   'ResourceDemandPolicy.Evaluate',
   'reorder',
   'critical',
-  'OMW-GROUND-MISSION-DEMAND',
-  'OMW-GROUND-RESOURCE-DEMAND-POLICY',
-  'OMW_GroundRoadSpawnAdapter',
+  '[OMW][Ground.RoadSpawnAdapter]',
   'AUFTRAG:NewAMMOSUPPLY',
   'AUFTRAG.Type.AMMOSUPPLY',
   'SetFormation(ENUMS.Formation.Vehicle.OnRoad)',
@@ -53,6 +53,7 @@ $requiredMarkers = @(
   'MarkDelivered',
   'OnAfterMissionExecute',
   'IsInZone(state.destinationZone)',
+  'MISSION_EXECUTE_OUTSIDE_DESTINATION',
   'OnAfterReturned',
   'RTZ(state.originZone, ENUMS.Formation.Vehicle.OnRoad)',
   'GROUND_NODE_JOYCE',
@@ -83,10 +84,6 @@ foreach ($pattern in $forbiddenPatterns) {
   if ($acceptanceSource -match $pattern) {
     throw "Ground AMMO RESUPPLY acceptance contains forbidden runtime pattern: $pattern"
   }
-}
-
-if ($acceptanceSource -notmatch 'MissionExecute.*destination-zone proof|MISSION_EXECUTE_OUTSIDE_DESTINATION') {
-  throw 'Acceptance source must fail closed when MissionExecute occurs outside the destination zone.'
 }
 
 New-Item -ItemType Directory -Path $distDir -Force | Out-Null
@@ -148,6 +145,6 @@ Write-Host "SHA256: $hash"
 
 foreach ($file in $files) {
   $fileHash = (Get-FileHash -LiteralPath $file -Algorithm SHA256).Hash.ToUpperInvariant()
-  $relative = [System.IO.Path]::GetRelativePath($repoRoot, $file)
+  $relative = $file.Substring($repoRoot.Length).TrimStart('\')
   Write-Host "SourceSHA256: $relative = $fileHash"
 }
