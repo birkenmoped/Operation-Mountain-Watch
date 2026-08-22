@@ -59,6 +59,7 @@ Dieses Register bildet offene Pull Requests, ihre Abhängigkeiten, Dokumentation
 | 52 | `agent/salerno-read-only-diagnostics` | alter Air-Ops-Stack | Salerno COMMANDER-/Runtime-Historie | Tests/Builder/Evidenz | `DRAFT`; kanonische Foundation auf `main` | `ACCEPTED_TECHNICAL_BASELINE` für dokumentierten Stage-18-Stand | offen | technische Fixture-/Runtime-Historie |
 | 66–84 | Warehouse-/CampaignState-/STORAGE-Stack | PR 66 startete von `main`; danach gestapelt | Resource ownership, Fuel/Weapon STORAGE, CampaignState transactions, loss/recovery, final fighter mapping | `scripts/campaign/`, `scripts/logistics/`, Warehouse-Testfixtures und branchgebundene Detaildokumentation | offene Draft-Historie; keine pauschale Main-Autorität | mehrere exakt dokumentierte DCS-Acceptance-Stände; finaler Fighter-Gate PASS | 85 | nicht als 214-Commit-Stack direkt integrieren; PR 85 war der saubere Main-Reconciliation-Pfad |
 | 86 | `agent/air-ops-initial-stock-runtime-data` | `main` nach gemergtem PR 85 | AirOps Initial Stock Runtime, CampaignState-Initialisierung und zentraler Warehouse-Bootstrap | `scripts/logistics/`, `mission/tests/air-ops-warehouse-bootstrap/`, MOOSE-STORAGE-Dokumentation | `DRAFT`; aktuell nicht mergebar gegen `main` | `ACCEPTED_TECHNICAL_BASELINE` für Warehouse-Bootstrap auf Commit `2502516fe130b908e500117142399b3e2ca74007`; separate Onboard-Ammo-Acceptance offen | offen | Warehouse-Bootstrap technisch akzeptiert; vor Integration Reconciliation gegen aktuellen `main` erforderlich |
+| 114 | `agent/mission-demand-reconciliation` | `main` | MissionDemand Domain Foundation für RESUPPLY und CAS_IMMEDIATE | `scripts/campaign/OMW_MissionDemand.lua`, `scripts/campaign/OMW_ResourceDemandPolicy.lua`, `tests/mission-demand/`, Dokument 90 | `READY FOR REVIEW`; Merge durch Projektinhaber freigegeben | Lua-Contract-Tests PASS auf Lua 5.4.6; kein DCS-Runtime-Claim | physischer RESUPPLY-Vertical-Slice nach Schwellenentscheidung; BLUE COMMANDER separat | Campaign-Domain-Foundation; keine automatische Resupply-Aktivierung bei `reorder=0`/`critical=0` |
 
 Der Arbeitsbranch `agent/army-ground-foundation-reconciliation` besitzt zum Stand dieser Reconciliation noch keinen Pull Request und wird daher nicht mit einer erfundenen PR-Nummer in die Tabelle aufgenommen. Sobald ein PR existiert, ist er hier mit realem PR-Status und Abhängigkeit nachzutragen.
 
@@ -81,8 +82,9 @@ main
 ├── PR 41
 ├── PR 45
 ├── PR 49
-└── PR 66 → ... → PR 84
-                    └── PR 85 (merged clean Warehouse reconciliation)
+├── PR 66 → ... → PR 84
+│                   └── PR 85 (merged clean Warehouse reconciliation)
+└── PR 114 (MissionDemand reconciliation; Ready for Review)
 
 main
 └── PR 86 (AirOps initial-stock runtime and accepted Warehouse bootstrap; reconciliation required)
