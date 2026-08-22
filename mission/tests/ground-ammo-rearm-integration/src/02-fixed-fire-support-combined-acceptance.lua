@@ -4,9 +4,9 @@
 -- Purpose:
 --   Exercise the same MOOSE-first rearm composition concurrently for the four
 --   current Kunar fixed fire-support consumers in one DCS run. All four sites
---   use the normal M1083 support contract and a bounded four-round fire leg.
---   The earlier Honaker M939/full-depletion variant is retained only as
---   diagnostic evidence in Acceptance documentation, not as production logic.
+--   use the owner-confirmed M1083 support contract. Bostick, Wright and Fortress
+--   use bounded four-round fire legs. Honaker must fully deplete the observed
+--   40-round 2B11 ammunition load before the support request is issued.
 --
 -- Required owner-provided Mission Editor objects are declared in SITE_SPECS.
 
@@ -75,7 +75,8 @@ local SITE_SPECS = {
     assignment = "OMW:HONAKER:AMMO-SUPPORT:ACCEPTANCE-2",
     carrierEntityId = "HONAKER-AMMO-SUPPORT-M1083-ACCEPTANCE-2",
     alias = "Honaker 2B11 Acceptance 2",
-    fireShells = DEFAULT_FIRE_SHELLS,
+    fireShells = 40,
+    requireAmmoDepleted = true,
   },
 }
 
@@ -294,6 +295,19 @@ local function startSite(siteState, groundContext)
       return
     end
 
+    if siteState.spec.requireAmmoDepleted then
+      if siteState.postFireAmmo ~= 0 then
+        fail("HONAKER_AMMO_NOT_DEPLETED site=" .. siteState.spec.id
+          .. " expected=0 actual=" .. tostring(siteState.postFireAmmo)
+          .. " shellsRequested=" .. tostring(siteState.spec.fireShells))
+        return
+      end
+      log("HONAKER_AMMO_DEPLETED site=" .. siteState.spec.id
+        .. " initial=" .. tostring(siteState.initialAmmo)
+        .. " current=" .. tostring(siteState.postFireAmmo)
+        .. " shellsRequested=" .. tostring(siteState.spec.fireShells))
+    end
+
     siteState.resourceBefore = groundContext.store:GetResource(siteState.spec.nodeId, RESOURCE_ID)
     if not siteState.resourceBefore then
       fail("RESOURCE_BEFORE_UNAVAILABLE site=" .. siteState.spec.id)
@@ -312,6 +326,11 @@ local function startSite(siteState, groundContext)
       supportReturnRadiusM = 100,
       startArty = false,
     })
+    if siteState.spec.requireAmmoDepleted then
+      log("HONAKER_REARM_REQUEST_AFTER_EMPTY site=" .. siteState.spec.id
+        .. " supportTemplate=" .. tostring(siteState.spec.supportTemplate)
+        .. " status=" .. tostring(context and context.status))
+    end
     log("SITE_REARM_REQUEST site=" .. siteState.spec.id
       .. " supportTemplate=" .. tostring(siteState.spec.supportTemplate)
       .. " status=" .. tostring(context and context.status)
@@ -335,6 +354,12 @@ local function startSite(siteState, groundContext)
     fail("INITIAL_AMMO_INVALID site=" .. siteState.spec.id .. " value=" .. tostring(siteState.initialAmmo))
     return
   end
+  if siteState.spec.requireAmmoDepleted and siteState.spec.fireShells < siteState.initialAmmo then
+    fail("HONAKER_FIRE_REQUEST_TOO_SMALL site=" .. siteState.spec.id
+      .. " initialAmmo=" .. tostring(siteState.initialAmmo)
+      .. " shellsRequested=" .. tostring(siteState.spec.fireShells))
+    return
+  end
 
   log("SITE_START site=" .. siteState.spec.id
     .. " battery=" .. siteState.spec.battery
@@ -342,6 +367,7 @@ local function startSite(siteState, groundContext)
     .. " supportSpawnZone=" .. siteState.spec.supportSpawnZone
     .. " target=" .. tostring(targetName)
     .. " shellsRequested=" .. tostring(siteState.spec.fireShells)
+    .. " requireAmmoDepleted=" .. tostring(siteState.spec.requireAmmoDepleted == true)
     .. " initialAmmo=" .. tostring(siteState.initialAmmo))
 end
 
