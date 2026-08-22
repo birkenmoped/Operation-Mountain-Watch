@@ -4,15 +4,16 @@
 -- Purpose:
 --   Exercise the same MOOSE-first rearm composition concurrently for the four
 --   current Kunar fixed fire-support consumers in one DCS run. Bostick, Wright
---   and Fortress keep the M1083 regression path. Honaker alone uses the DCS
---   standard M939 template to isolate 2B11 support-truck compatibility.
+--   and Fortress keep the four-round M1083 regression path. Honaker uses the
+--   DCS standard M939 and must fully deplete the 2B11 ammunition before the
+--   support request is issued, isolating the DCS mortar empty-rearm behavior.
 --
 -- Required owner-provided Mission Editor objects are declared in SITE_SPECS.
 
 local TEST_ID = "GROUND-FIRE-SUPPORT-ACCEPTANCE-2"
 local TAG = "[OMW][" .. TEST_ID .. "]"
 local RESOURCE_ID = "GROUND_AMMO_PACKAGE"
-local FIRE_SHELLS = 4
+local DEFAULT_FIRE_SHELLS = 4
 local TIMEOUT_SEC = 1200
 
 local SITE_SPECS = {
@@ -29,6 +30,7 @@ local SITE_SPECS = {
     assignment = "OMW:BOSTICK:AMMO-SUPPORT:ACCEPTANCE-2",
     carrierEntityId = "BOSTICK-AMMO-SUPPORT-M1083-ACCEPTANCE-2",
     alias = "Bostick L118 Acceptance 2",
+    fireShells = DEFAULT_FIRE_SHELLS,
   },
   {
     id = "WRIGHT",
@@ -43,6 +45,7 @@ local SITE_SPECS = {
     assignment = "OMW:WRIGHT:AMMO-SUPPORT:ACCEPTANCE-2",
     carrierEntityId = "WRIGHT-AMMO-SUPPORT-M1083-ACCEPTANCE-2",
     alias = "Wright L118 Acceptance 2",
+    fireShells = DEFAULT_FIRE_SHELLS,
   },
   {
     id = "FORTRESS",
@@ -57,6 +60,7 @@ local SITE_SPECS = {
     assignment = "OMW:FORTRESS:AMMO-SUPPORT:ACCEPTANCE-2",
     carrierEntityId = "FORTRESS-AMMO-SUPPORT-M1083-ACCEPTANCE-2",
     alias = "Fortress L118 Acceptance 2",
+    fireShells = DEFAULT_FIRE_SHELLS,
   },
   {
     id = "HONAKER",
@@ -71,6 +75,8 @@ local SITE_SPECS = {
     assignment = "OMW:HONAKER:AMMO-SUPPORT:ACCEPTANCE-2",
     carrierEntityId = "HONAKER-AMMO-SUPPORT-M939-ACCEPTANCE-2",
     alias = "Honaker 2B11 Acceptance 2",
+    fireShells = 40,
+    requireAmmoDepleted = true,
   },
 }
 
@@ -152,7 +158,7 @@ local function finishSitePass(siteState, context, groundContext)
     fail("RESOURCE_DEBIT site=" .. siteState.spec.id .. " expected=" .. tostring(siteState.resourceBefore.available - 1) .. " actual=" .. tostring(resourceAfter.available))
     return
   end
-  if not siteState.postFireAmmo or not siteState.initialAmmo or siteState.postFireAmmo >= siteState.initialAmmo then
+  if siteState.postFireAmmo == nil or not siteState.initialAmmo or siteState.postFireAmmo >= siteState.initialAmmo then
     fail("AMMO_DID_NOT_DECREASE site=" .. siteState.spec.id .. " initial=" .. tostring(siteState.initialAmmo) .. " postFire=" .. tostring(siteState.postFireAmmo))
     return
   end
@@ -283,6 +289,19 @@ local function startSite(siteState, groundContext)
       return
     end
 
+    if siteState.spec.requireAmmoDepleted then
+      if siteState.postFireAmmo ~= 0 then
+        fail("HONAKER_AMMO_NOT_DEPLETED site=" .. siteState.spec.id
+          .. " expected=0 actual=" .. tostring(siteState.postFireAmmo)
+          .. " shellsRequested=" .. tostring(siteState.spec.fireShells))
+        return
+      end
+      log("HONAKER_AMMO_DEPLETED site=" .. siteState.spec.id
+        .. " initial=" .. tostring(siteState.initialAmmo)
+        .. " current=" .. tostring(siteState.postFireAmmo)
+        .. " shellsRequested=" .. tostring(siteState.spec.fireShells))
+    end
+
     siteState.resourceBefore = groundContext.store:GetResource(siteState.spec.nodeId, RESOURCE_ID)
     if not siteState.resourceBefore then
       fail("RESOURCE_BEFORE_UNAVAILABLE site=" .. siteState.spec.id)
@@ -301,6 +320,11 @@ local function startSite(siteState, groundContext)
       supportReturnRadiusM = 100,
       startArty = false,
     })
+    if siteState.spec.requireAmmoDepleted then
+      log("HONAKER_REARM_REQUEST_AFTER_EMPTY site=" .. siteState.spec.id
+        .. " supportTemplate=" .. tostring(siteState.spec.supportTemplate)
+        .. " status=" .. tostring(context and context.status))
+    end
     log("SITE_REARM_REQUEST site=" .. siteState.spec.id
       .. " supportTemplate=" .. tostring(siteState.spec.supportTemplate)
       .. " status=" .. tostring(context and context.status)
@@ -308,7 +332,7 @@ local function startSite(siteState, groundContext)
   end
 
   local targetName = siteState.arty:AssignTargetCoord(
-    siteState.targetZone:GetCoordinate(), 10, 50, FIRE_SHELLS, 1, nil,
+    siteState.targetZone:GetCoordinate(), 10, 50, siteState.spec.fireShells, 1, nil,
     ARTY.WeaponType.Auto,
     "OMW-FIRE-SUPPORT-ACCEPTANCE-2-" .. siteState.spec.id,
     true
@@ -324,13 +348,20 @@ local function startSite(siteState, groundContext)
     fail("INITIAL_AMMO_INVALID site=" .. siteState.spec.id .. " value=" .. tostring(siteState.initialAmmo))
     return
   end
+  if siteState.spec.requireAmmoDepleted and siteState.spec.fireShells < siteState.initialAmmo then
+    fail("HONAKER_FIRE_REQUEST_TOO_SMALL site=" .. siteState.spec.id
+      .. " initialAmmo=" .. tostring(siteState.initialAmmo)
+      .. " shellsRequested=" .. tostring(siteState.spec.fireShells))
+    return
+  end
 
   log("SITE_START site=" .. siteState.spec.id
     .. " battery=" .. siteState.spec.battery
     .. " supportTemplate=" .. siteState.spec.supportTemplate
     .. " supportSpawnZone=" .. siteState.spec.supportSpawnZone
     .. " target=" .. tostring(targetName)
-    .. " shellsRequested=" .. tostring(FIRE_SHELLS)
+    .. " shellsRequested=" .. tostring(siteState.spec.fireShells)
+    .. " requireAmmoDepleted=" .. tostring(siteState.spec.requireAmmoDepleted == true)
     .. " initialAmmo=" .. tostring(siteState.initialAmmo))
 end
 
@@ -369,6 +400,7 @@ local function startAcceptance()
       status[#status + 1] = spec.id
         .. "=passed:" .. tostring(siteState and siteState.passed)
         .. "/rearmed:" .. tostring(siteState and siteState.rearmed)
+        .. "/postFireAmmo:" .. tostring(siteState and siteState.postFireAmmo)
     end
     fail("TIMEOUT seconds=" .. tostring(TIMEOUT_SEC) .. " sites=" .. table.concat(status, ","))
   end, {}, TIMEOUT_SEC)
