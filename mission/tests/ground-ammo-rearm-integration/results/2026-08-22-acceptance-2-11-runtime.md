@@ -5,7 +5,7 @@ document_class: ACCEPTANCE_RESULT
 owning_policy: OMW-GOV-001
 authoritative_for:
   - DCS runtime result of bundled fixed-fire-support rearm Acceptance 2-11
-  - exact observed physical rearm and restore-settlement markers for the documented runtime
+  - exact observed physical rearm and same-session restore-settlement markers for the documented runtime
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
@@ -31,9 +31,10 @@ FUNCTIONAL DCS RESULT: PASS
 PHYSICAL REARM SITES: 4/4 PASS
 RESTORE SETTLEMENT: PASS IN SAME DCS SESSION
 EXTERNAL PROCESS/SERVER PERSISTENCE: NOT TESTED / NOT CLAIMED
+MISSION PROVENANCE: CLOSED
 ```
 
-Der gebündelte Lauf erreichte den vorgesehenen Gesamtmarker:
+Gesamtmarker:
 
 ```text
 PASS FIXED_FIRE_SUPPORT_REARM_CONFIRMED=true sites=4 restoreSettlement=true
@@ -49,94 +50,59 @@ Acceptance bundle SHA-256: CBA3ACF5D835E6EF6AD11C3FDD295E178B2B8E6B9330749C15419
 
 Executed mission path:
 C:\Users\Sven\Saved Games\DCS.openbeta\Missions\OMW_Template_v16.miz
-
 Executed mission SHA-256:
 388F02C932BE83823543F97887B4EDBB9E6764D4CEBE543BD8423D43A6ED8620
+internal mission SHA-256:
+180D07D7001FA6EFBDD92D4867F8EDAEFFEFA72470FEE2AEC6A3616B5E919481
 
-dcs(20260822-141914).log
-SHA-256: B65B3010612F9FEDCB90210C0799DE889F64A7D643818CD8326730716662D128
+dcs(20260822-141914).log SHA-256:
+B65B3010612F9FEDCB90210C0799DE889F64A7D643818CD8326730716662D128
 
-debrief(20260822-141915).log
-SHA-256: ED298DC7A21F153021C50726A7B9D245BD9BAF098163D6D59B9D4CB593E40C39
+debrief(20260822-141915).log SHA-256:
+ED298DC7A21F153021C50726A7B9D245BD9BAF098163D6D59B9D4CB593E40C39
 ```
 
-Der vom Debrief genannte lokale Runtime-Pfad wurde anschließend vom Projektinhaber real mit `Get-FileHash -Algorithm SHA256` gehasht. Das Ergebnis stimmt exakt mit dem zuvor read-only geprüften hochgeladenen Artefakt `OMW_Template_v16(2).miz` überein:
+Der vom Debrief genannte lokale Runtime-Pfad wurde vom Projektinhaber real mit `Get-FileHash -Algorithm SHA256` gehasht. Das Ergebnis stimmt exakt mit dem zuvor read-only geprüften hochgeladenen Artefakt `OMW_Template_v16(2).miz` überein.
+
+Eingebettete Komponenten des hochgeladenen, bytegleichen MIZ-Artefakts:
 
 ```text
-MIZ SHA-256: 388F02C932BE83823543F97887B4EDBB9E6764D4CEBE543BD8423D43A6ED8620
-internal mission SHA-256: 180D07D7001FA6EFBDD92D4867F8EDAEFFEFA72470FEE2AEC6A3616B5E919481
-
-embedded Moose.lua:
+Moose.lua:
 E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915
 
-embedded OMW_AirOps_Warehouse_Base.lua:
+OMW_AirOps_Warehouse_Base.lua:
 472F72F3D688BB4B8624C882527DCA3DEBD42CDE5DD455AC63D7CD2D796BB735
 
-embedded OMW_Ground_Base.lua:
+OMW_Ground_Base.lua:
 9AAF32A10A9EEB906123AFD37FF14B62542EE7C78F7B5E81E388A22F41EABEAB
 
-embedded OMW_Ground_Fire_Support_Acceptance_2.lua:
+OMW_Ground_Fire_Support_Acceptance_2.lua:
 CBA3ACF5D835E6EF6AD11C3FDD295E178B2B8E6B9330749C15419A1638CF379B
 ```
 
-Damit ist die bytegenaue Mission-Provenienz geschlossen: ausgeführter lokaler Pfad und hochgeladenes Prüfartefakt besitzen denselben SHA-256.
-
 ## Phase A – physische Rearms
 
-### Bostick
-
 ```text
-L118 ammo: 300 -> 296 -> 301
-M1083 materialized: CHAP_M1083
-GROUND_AMMO_PACKAGE: 52 -> 51
-transactionStatus: COMPLETED
-support returned: yes
-SITE_PASS: yes
+BOSTICK   L118 300 -> 296 -> 301 / M1083 / GROUND_AMMO_PACKAGE 52 -> 51 / COMPLETED / returned / PASS
+WRIGHT    L118 300 -> 296 -> 300/301 / M1083 / GROUND_AMMO_PACKAGE 30 -> 29 / COMPLETED / returned / PASS
+FORTRESS  L118 150 -> 146 -> 151 / M1083 / GROUND_AMMO_PACKAGE 48 -> 47 / COMPLETED / returned / PASS
+HONAKER   2B11 40 -> 0 -> 40 / M1083 / GROUND_AMMO_PACKAGE 40 -> 39 / COMPLETED / returned / PASS
 ```
 
-### Wright
+Honaker produzierte:
 
 ```text
-L118 ammo: 300 -> 296 -> 300/301 observed after completion/return
-M1083 materialized: CHAP_M1083
-GROUND_AMMO_PACKAGE: 30 -> 29
-transactionStatus: COMPLETED
-support returned: yes
-SITE_PASS: yes
+HONAKER_AMMO_DEPLETED
+HONAKER_REARM_REQUEST_AFTER_EMPTY
 ```
 
-### Fortress
-
-```text
-L118 ammo: 150 -> 146 -> 151
-M1083 materialized: CHAP_M1083
-GROUND_AMMO_PACKAGE: 48 -> 47
-transactionStatus: COMPLETED
-support returned: yes
-SITE_PASS: yes
-```
-
-### Honaker
-
-```text
-2B11 ammo: 40 -> 0 -> 40
-HONAKER_AMMO_DEPLETED: yes
-HONAKER_REARM_REQUEST_AFTER_EMPTY: yes
-supportTemplate: TPL_BLUE_GND_SUP_M1083
-materialized type: CHAP_M1083
-GROUND_AMMO_PACKAGE: 40 -> 39
-transactionStatus: COMPLETED
-support returned: yes
-SITE_PASS: yes
-```
-
-Damit ist der zuvor korrigierte Honaker-Vertrag im gebündelten Lauf real bestätigt: vollständige Entleerung auf 0, erst danach Rearm-Request, anschließend M1083-Rearm und vollständige Wiederherstellung auf 40.
+Damit ist für den dokumentierten Scope bestätigt: vollständige 2B11-Entleerung auf 0, erst danach Rearm-Request, M1083-Rearm und Wiederherstellung auf 40.
 
 ## Phase B – Restore-Settlement
 
 Die Restore-Settlement-Phase lief auf isolierten `CampaignState.Restore(...)`-Kopien innerhalb derselben DCS-Session. Es fand kein DCS-Prozessneustart und kein externer Snapshot-Datei-Roundtrip statt.
 
-Der Lauf erzeugte alle Pflichtmarker:
+Pflichtmarker:
 
 ```text
 RESTORE_PHASE_START
@@ -150,7 +116,7 @@ RESTORE_PRECOMMIT_CANCEL_PASS case=LOADING
 RESTORE_SETTLEMENT_PASS
 ```
 
-Damit ist innerhalb derselben realen DCS-Laufzeit bestätigt:
+Bestätigter same-session Scope:
 
 ```text
 CONSUMED -> exactly-once compensation -> COMPENSATED
