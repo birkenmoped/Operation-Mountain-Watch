@@ -95,7 +95,7 @@ E. CAS helicopter lost with survivors -> CSARIncident -> Player/AICSAR
 ### Stage 0 – Governance / Ist-Stand / MOOSE reconciliation
 
 ```text
-Status: COMPLETE FOR STAGE-1A SCOPE
+Status: COMPLETE FOR STAGE-1A/1B SCOPE
 ```
 
 Source review:
@@ -113,9 +113,7 @@ Status: ACCEPTED_TECHNICAL_BASELINE
 Bestätigte Kette:
 
 ```text
-Honaker AMMO 40
--> consumption 20
--> ResourceDemandPolicy REORDER
+Honaker AMMO 40 -> consumption 20 -> REORDER
 -> one MissionDemand RESUPPLY
 -> CampaignState TRANSFER 20 Joyce -> Honaker
 -> TPL_BLUE_CONVOY_LIGHT_06
@@ -132,56 +130,119 @@ Honaker AMMO 40
 -> physical cleanup
 ```
 
-Finaler strategischer Zustand:
-
-```text
-JOYCE AMMO   44 -> 24
-HONAKER AMMO 40 -> 20 -> 40
-```
-
-#### Stage-1A PASS-Provenienz
+Provenienz:
 
 ```text
 Acceptance source/build commit: 2d72bcdfc113342a2180b6cd9c84486da790052c
 BuilderVersion: GROUND-AMMO-RESUPPLY-ACCEPTANCE-1-5
 Acceptance bundle SHA-256: 752B3E6F0B77D1B62C750421DDE36202C81B98632FEFBF6A273F913202DF8339
-Ground production bundle SHA-256: E616D35F5EBDBDDD4275785091D47F57445348D1FF4BB4CFBE7DEE0F0B12D78E
 MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
 Moose.lua SHA-256: E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915
 DCS: 2.9.28.26385 MT
 Executed mission: OMW_Template_v18.miz
 MIZ SHA-256: 2FDF31A2E07409CF392D45BFF5FC69750958C670AE3E12FF28D0B4FD8AECC90D
 internal mission SHA-256: 38B207278365CD977E74FF3C9000C6A7C5B13EEE3E5B1BB154F1775055D02AF6
-dcs.log SHA-256: 0C0B5784A0AA1C67E0BE57CEEF90006FBEEE40805D7A589D8EF8DC6DC3BFDFDF
-debrief.log SHA-256: C9EA7398241DEA3323B39FAD8F28D97D27B5A1CB1EE05A79433BA26896666DEB
 Result: PASS
 ```
 
-Result file:
+### Stage 1B – Ground FUEL Joyce -> Honaker
 
 ```text
-mission/tests/ground-resupply-execution/results/2026-08-22-ground-ammo-resupply-acceptance-1-pass-1.md
+Status: SOURCE_REVIEWED / STAGED / OWNER BUILD REQUIRED
 ```
 
-#### Stage-1A wichtige Erkenntnisse
+MOOSE-first review confirmed in the pinned source:
 
 ```text
-protected physical template: TPL_BLUE_CONVOY_LIGHT_06
-speed in accepted run: 27 kt
-package-per-truck capacity: NOT_DEFINED
-automatic LIGHT_06/STANDARD_07 selection: NOT_DEFINED
+AUFTRAG:NewFUELSUPPLY(Zone)
+AUFTRAG.Type.FUELSUPPLY
+AUFTRAG.SpecialTask.FUELSUPPLY
 ```
 
-Der 30-s-Delay nach `MissionDone` ist für diesen Pfad Teil der akzeptierten Lifecycle-Koordination. Ein 2-s-Delay reproduzierte zuvor eine Race-Condition: RTZ wurde angenommen, aber der Convoy blieb am Ziel und lief in RETURN_TIMEOUT.
+Online MOOSE documentation lists `NewFUELSUPPLY(Zone)` as a Ground FUEL SUPPLY mission. Official `MOOSE_MISSIONS` and `MOOSE_MISSIONS_UNPACKED` were searched; no dedicated current `NewFUELSUPPLY` demo was found. No API or runtime behavior is inferred from a nonexistent demo.
 
-### Stage 1B – Ground FUEL
+Owner-created `OMW_Template_v19.miz` was inspected read-only:
 
 ```text
-Status: PLANNED / NEXT NATURAL RESUPPLY SLICE
-MOOSE candidate: AUFTRAG:NewFUELSUPPLY(Zone)
+MIZ SHA-256: B89DBE7B755D25B43384B158F3D25921C70847820F71B837F12F86C5D863A8A6
+internal mission SHA-256: 6B15369398C3B5989B676DB473127489C236F5948737AA3242FDB182FD515B95
 ```
 
-Vor Implementierung erneut gegen Dokumentation, gepinnte `Moose.lua` und offizielle Beispiele prüfen. Kein stillschweigendes Kopieren von AMMO-Semantik ohne Source-Abgleich.
+Selected physical fixture:
+
+```text
+TPL_BLUE_CONVOY_FUEL_LIGHT_06
+lateActivation=true
+6 vehicles
+1 CHAP_MATV
+2 M978 HEMTT Tanker
+3 MaxxPro_MRAP
+4 M978 HEMTT Tanker
+5 MaxxPro_MRAP
+6 CHAP_MATV
+```
+
+Additional new templates present but not selected by this acceptance:
+
+```text
+TPL_BLUE_CONVOY_FUEL_STD_07
+TPL_BLUE_CONVOY_MIXED_LIGHT_06
+TPL_BLUE_CONVOY_MIXED_STD_07
+```
+
+Stage-1B target chain:
+
+```text
+Honaker FUEL 36
+-> test-only consumption 18
+-> Honaker FUEL 18 == reorder
+-> one MissionDemand RESUPPLY
+-> CampaignState TRANSFER 18 Joyce -> Honaker
+-> TPL_BLUE_CONVOY_FUEL_LIGHT_06
+-> MOOSE BRIGADE / PLATOON / ARMYGROUP
+-> AUFTRAG FUELSUPPLY / OnRoad 27 kt
+-> exact destination-zone delivery proof
+-> CampaignState DELIVERED
+-> MissionDemand SUCCESS
+-> MissionDone
+-> 30 s settlement window
+-> same ARMYGROUP RTZ Joyce ACCESS / OnRoad
+-> Returned
+-> Warehouse AddAsset
+-> physical cleanup
+```
+
+Expected final strategic state:
+
+```text
+JOYCE FUEL   40 -> 22
+HONAKER FUEL 36 -> 18 -> 36
+```
+
+Staged files:
+
+```text
+mission/tests/ground-resupply-execution/src/02-ground-fuel-resupply-acceptance.lua
+mission/tests/ground-resupply-execution/ACCEPTANCE-2.md
+tools/build-ground-fuel-resupply-acceptance-1.ps1
+```
+
+Builder:
+
+```text
+GROUND-FUEL-RESUPPLY-ACCEPTANCE-1-1
+```
+
+Capacity remains intentionally undefined:
+
+```text
+1 M978 = X GROUND_FUEL_PACKAGE      NOT_DEFINED
+FUEL_LIGHT_06 capacity              NOT_DEFINED
+FUEL_STD_07 capacity                NOT_DEFINED
+automatic convoy class selection    NOT_DEFINED
+```
+
+No new MOOSE exception is introduced. The existing owner-approved road-spawn adapter is reused unchanged.
 
 ### Stage 1C – Generic Ground SUPPLY
 
@@ -195,28 +256,18 @@ Keine gleichwertige generische öffentliche `AUFTRAG:NewSUPPLY(...)`-API ist bes
 
 ```text
 Status: PLANNED
-verified contact source
--> deduplicated TacticalSupportIncident
--> capability/range/readiness/resources/ROE
--> ARTY / QRF / CAS demand
 ```
 
 ### Stage 3 – Fire support -> local rearm -> RESUPPLY follow-up
 
 ```text
 Status: PLANNED / FOUNDATIONS AVAILABLE
-reuse PR #112 local rearm
--> CampaignState consumption
--> ResourceDemandPolicy reevaluation
--> exactly one RESUPPLY demand when threshold crossed
 ```
 
 ### Stage 4 – Convoy under attack -> support demand
 
 ```text
 Status: PLANNED
-physical convoy lifecycle as event source
--> deduplicated support incident
 ```
 
 ### Stage 5 – BLUE assignment / CAS execution
@@ -235,17 +286,6 @@ Status: PLANNED
 
 ```text
 Status: PLANNED
-FOB attacked
--> support demand
--> artillery
--> local rearm
--> stock threshold
--> RESUPPLY demand
--> physical convoy
--> convoy attacked
--> support demand
--> response
--> settlement
 ```
 
 ### Stage 8 – Restore / restart / idempotence
@@ -272,26 +312,26 @@ Status: PLANNED
 current_branch: agent/automatic-response-orchestration
 main_reference_checked_at: 2026-08-22
 main_reference_commit: 28d0069d5d9ec66e62f1e81ad59fc3dd4e2e249c
-current_stage: STAGE_1A_GROUND_AMMO_RESUPPLY
 stage_1a_overall: ACCEPTED_TECHNICAL_BASELINE
-run_1: FAIL_STALE_GROUND_THRESHOLDS
-run_2: FAIL_GLOBAL_TIMEOUT_AFTER_DELIVERY
-run_3: FAIL_2S_RETURN_RACE
-run_4: PASS_FULL_ROUNDTRIP
-run_4_delivery: PASS
-run_4_return: PASS
-run_4_returned: PASS
-run_4_add_asset: PASS
-run_4_cleanup: PASS
-selected_physical_template: TPL_BLUE_CONVOY_LIGHT_06
-accepted_speed_kt_for_stage_1a_fixture: 27
-package_per_truck_capacity: NOT_DEFINED
-automatic_convoy_class_selection: NOT_DEFINED
+current_stage: STAGE_1B_GROUND_FUEL_RESUPPLY
+stage_1b_moose_docs: REVIEWED
+stage_1b_pinned_source: REVIEWED
+stage_1b_official_demos: REVIEWED_NO_DEDICATED_FUELSUPPLY_DEMO_FOUND
+stage_1b_v19_template_preflight: PASS_READ_ONLY
+stage_1b_selected_template: TPL_BLUE_CONVOY_FUEL_LIGHT_06
+stage_1b_expected_transfer_quantity: 18
+stage_1b_accepted_speed_fixture_kt: 27
+stage_1b_return_issue_delay_sec: 30
+stage_1b_return_settlement_delay_sec: 12
+stage_1b_builder_version: GROUND-FUEL-RESUPPLY-ACCEPTANCE-1-1
+stage_1b_local_owner_build: NOT_RUN
+stage_1b_bundle_sha256: UNKNOWN
+stage_1b_mission_editor_integration: NOT_STARTED
+stage_1b_dcs_runtime: NOT_RUN
 production_runtime_implementation: NOT_YET_CREATED
-next_natural_stage: STAGE_1B_GROUND_FUEL
-owner_decision_required_before_skipping_or_reordering_stages: true
+next_allowed_step: OWNER_POWERSHELL_BUILD_AND_HASH
 ```
 
-## 7. Entscheidungsgrenze
+## 7. Nächster erlaubter Schritt
 
-Stage 1A ist technisch abgeschlossen. Der nächste natürliche Schritt der bestehenden Reihenfolge ist Stage 1B Ground FUEL. Eine andere Priorisierung bleibt Owner-Entscheidung.
+Der Owner baut ausschließlich das Stage-1B-Acceptance-Bundle lokal per PowerShell und liefert die reale Ausgabe einschließlich unabhängiger Hashes zurück. Erst danach folgt die Mission-Editor-Integration in einer neuen Owner-MIZ-Revision.
