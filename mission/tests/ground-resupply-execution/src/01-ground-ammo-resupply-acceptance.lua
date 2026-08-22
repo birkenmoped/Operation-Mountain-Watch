@@ -389,8 +389,14 @@ end
 log("START testId=" .. TEST_ID .. " origin=" .. ORIGIN_NODE
   .. " destination=" .. DESTINATION_NODE .. " resource=" .. RESOURCE_ID)
 
-if OMW_WAREHOUSE_READY ~= 1 then fail("OMW_WAREHOUSE_READY expected=1 actual=" .. tostring(OMW_WAREHOUSE_READY)); return end
-if OMW_GROUND_READY ~= 1 then fail("OMW_GROUND_READY expected=1 actual=" .. tostring(OMW_GROUND_READY)); return end
+if type(USERFLAG) ~= "table" or type(USERFLAG.New) ~= "function" then
+  fail("MOOSE_USERFLAG_UNAVAILABLE")
+  return
+end
+local warehouseReady = USERFLAG:New("OMW_WAREHOUSE_READY"):Get()
+local groundReady = USERFLAG:New("OMW_GROUND_READY"):Get()
+if warehouseReady ~= 1 then fail("OMW_WAREHOUSE_READY expected=1 actual=" .. tostring(warehouseReady)); return end
+if groundReady ~= 1 then fail("OMW_GROUND_READY expected=1 actual=" .. tostring(groundReady)); return end
 if type(OMW) ~= "table" or type(OMW.Ground) ~= "table" or type(OMW.Ground.Base) ~= "table" then
   fail("OMW_GROUND_BASE_UNAVAILABLE")
   return
