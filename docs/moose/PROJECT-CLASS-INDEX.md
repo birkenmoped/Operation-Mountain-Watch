@@ -35,6 +35,7 @@ Technische Lifecycle-Details:
 - [`OMW-MOOSE-AAR-LRC-TRANSIT`](AAR-LRC-TRANSIT.md)
 - [`OMW-MOOSE-GROUND-OPERATIONS`](GROUND-OPERATIONS.md)
 - [`OMW-MOOSE-MISSION-DEMAND-RESUPPLY-CAS-SOURCE-REVIEW`](MISSION-DEMAND-RESUPPLY-CAS-SOURCE-REVIEW.md)
+- [`OMW-MOOSE-GROUND-RESUPPLY-EXECUTION-SOURCE-REVIEW`](GROUND-RESUPPLY-EXECUTION-SOURCE-REVIEW.md)
 
 ## 2. Statusbedeutung
 
@@ -58,22 +59,22 @@ REJECTED_FOR_PROJECT_USE
 | `AIRBASE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Auflösung, ID, Parkingdump und airfield-spezifische Kalibrierung |
 | `AIRWING` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Konstruktion, Stockregistrierung, SQUADRON-Bindung und direkter AUFTRAG-Dispatch; externe OMW-AAR-Pools verwenden bewusst kein AIRWING |
 | `SQUADRON` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Foundation-Bestände und post-start Assetbindung |
-| `WAREHOUSE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` + `INTERNAL_RESTRICTED` | AirOps-Stock-/Asset-Lifecycle und Acceptance 3-2 Ground-Materialisierung praktisch bestätigt; die private road-aligned Ausnahme ist auf den dokumentierten Branch-/MOOSE-/MIZ-Scope begrenzt |
+| `WAREHOUSE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` + `INTERNAL_RESTRICTED` | AirOps-Stock-/Asset-Lifecycle, Ground-Materialisierung und dokumentierte mobile Return-Handoffs praktisch bestätigt; Stage-1A Joyce-Honaker bestätigt `Returned -> AddAsset -> physical cleanup`; private road-aligned Ausnahme bleibt auf dokumentierten Scope begrenzt |
 | `STORAGE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | CampaignState->DCS-Warehouse Mirror/Telemetry; keine strategische Rückautorität |
-| `COHORT` | `VALIDATED_FOR_DOCUMENTED_SCOPE` + `SOURCE_REVIEWED` | AirOps-Lifecycle praktisch bestätigt; Ground-Review bestätigt `AddMissionCapability`, `SetMissionRange`, `CanMission`, `CountAssets` und 75-NM-Ground-Default source-seitig |
+| `COHORT` | `VALIDATED_FOR_DOCUMENTED_SCOPE` + `SOURCE_REVIEWED` | AirOps-Lifecycle praktisch bestätigt; Ground-Review bestätigt `AddMissionCapability`, `SetMissionRange`, `CanMission`, `CountAssets`; Stage-1A bestätigt AMMOSUPPLY-Capability für den LIGHT_06-PLATOON |
 | `FLIGHTGROUP` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | AAR FuelLow, Dead/OnAfterDead, GetCoordinate, `AddWaypoint(...)`, `AddMission(...)` und `OnAfterPassingWaypoint(...)`; Acceptance 7 bestätigte FIR -> 60-NM -> AUFTRAG sowie Egress -> External Handoff |
 | `COMMANDER` | `VALIDATED_FOR_DOCUMENTED_SCOPE` + `SOURCE_REVIEWED` | dokumentierter COMMANDER-Lifecycle; Ground-Review bestätigt `AddBrigade(...)` und `AddOpsTransport(...)` source-seitig; MissionDemand bleibt OMW-Tasking-Autorität |
-| `AUFTRAG` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | AAR-Methoden sowie dokumentierte Ground-Acceptance-1 bis -6-Lifecycles praktisch bestätigt; keine CampaignState-Autorität |
-| `SPAWN` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | area-spezifische AAR-Templates und externe Materialisierung praktisch bestätigt; Ground Acceptance 1 verwendet keinen direkten SPAWN-Pfad |
-| `SCHEDULER` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | allgemeine OMW-Nutzung praktisch bestätigt; Ground Acceptance 1 verwendet nur One-shot-Koordination, kein hochfrequentes Polling |
-| `USERFLAG` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Warehouse-Acceptance-Readiness-Pfade sowie Ground BASE-3 `OMW_GROUND_READY` Set/Get-Readback und Mission-Editor-Gate im dokumentierten Ground-Ammo-Rearm-Acceptance-1-Scope |
-| `GROUP`, `UNIT`, `STATIC`, `ZONE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Wrapper-/Objektauflösung in dokumentierten Scopes; Acceptance-1-v13-Objektvertrag read-only bestätigt, Ground-Acceptance-6 bestätigt GetSize, GetUnits, test-only Destroy(false) und SetLife(50) im dokumentierten Verlust-/Schaden-Return-Scope |
+| `AUFTRAG` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | AAR-Methoden, Ground-Acceptance-1 bis -6 sowie Stage-1A `NewAMMOSUPPLY`, 27-kt OnRoad execution, `SetReturnToLegion(false)` und erfolgreicher Joyce-Honaker-Joyce-Lifecycle praktisch bestätigt; keine CampaignState-Autorität |
+| `SPAWN` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | area-spezifische AAR-Templates und externe Materialisierung praktisch bestätigt; Ground Stage-1A verwendet keinen direkten SPAWN-Pfad |
+| `SCHEDULER` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | allgemeine OMW-Nutzung praktisch bestätigt; Ground Stage-1A verwendet One-shot-Koordination für 30-s Return-Settlement und 12-s AddAsset-Verifikation, kein hochfrequentes Polling |
+| `USERFLAG` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Warehouse-Acceptance-Readiness-Pfade sowie Ground `OMW_GROUND_READY` Set/Get-Readback und Mission-Editor-Gates in dokumentierten Scopes |
+| `GROUP`, `UNIT`, `STATIC`, `ZONE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Wrapper-/Objektauflösung in dokumentierten Scopes; Ground-Acceptance-6 bestätigt GetSize, GetUnits, test-only Destroy(false) und SetLife(50); Stage-1A bestätigt ZONE-basierte Destination-/Return-Gates |
 | `COORDINATE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | `Get2DDistance(...)`, `GetIntermediateCoordinate(...)` und `HeadingTo(...)` im dokumentierten AirOps-Scope |
-| `BRIGADE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` + `INTERNAL_RESTRICTED` | Acceptance 1–6 bestätigen Ground-Assetpool, Materialisierung, Callback-Lifecycle und die parallelen Rückgabevarianten; die road-aligned private Warehouse-Spawn-Ausnahme bleibt auf Acceptance-3-2 und den gepinnten MOOSE-Stand begrenzt |
-| `PLATOON` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Acceptance 1–6 bestätigen dokumentierte Assetselektion, Wiederverwendung und Rückgabevarianten im Ground-Scope; keine allgemeine Produktionsfreigabe |
-| `ARMYGROUP` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Acceptance 1–6 bestätigen MissionDone-Persistenz, Same-group-Follow-up sowie mobilen RTZ/Returned-Handoff einschließlich paralleler Teilverlust-/Schadenrückgabe; immobiler Teleportpfad bleibt ausgeschlossen |
-| `OPSGROUP` | `VALIDATED_FOR_DOCUMENTED_SCOPE` + `SOURCE_REVIEWED` | AirOps-Methoden sowie Ground-MissionDone-/Return-Pfade in Acceptance 1–6 praktisch bestätigt; Cargo-Pfade bleiben source-reviewed |
-| `OPSTRANSPORT` | `SOURCE_REVIEWED` | Constructor, Cargo/Carrier-Zonen, `AddPathTransport`, Disembark- und Carrier-Verträge geprüft; taktischer OMW-Transport benötigt eigenen DCS-Test |
+| `BRIGADE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` + `INTERNAL_RESTRICTED` | Ground-Acceptance-1 bis -6 sowie Stage-1A bestätigen Assetpool, LIGHT_06-Materialisierung, AMMOSUPPLY-Dispatch, Callback-Lifecycle und Warehouse-Rückgabe; road-aligned private Warehouse-Spawn-Ausnahme bleibt begrenzt |
+| `PLATOON` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Ground-Acceptance-1 bis -6 sowie Stage-1A bestätigen Assetselektion, `TPL_BLUE_CONVOY_LIGHT_06`, AMMOSUPPLY-Capability und Rückgabe im dokumentierten Scope; keine allgemeine Produktionsfreigabe |
+| `ARMYGROUP` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Acceptance 1–6 sowie Stage-1A bestätigen MissionDone-Persistenz, mobilen `RTZ(..., OnRoad)`, `Returning`, `Returned` und Warehouse-Handoff; Stage-1A bestätigt denselben physischen LIGHT_06-Hin-/Rückweg nach 30-s Settlement; immobiler Teleportpfad bleibt ausgeschlossen |
+| `OPSGROUP` | `VALIDATED_FOR_DOCUMENTED_SCOPE` + `SOURCE_REVIEWED` | AirOps-Methoden sowie Ground-MissionDone-/Return-Pfade praktisch bestätigt; Cargo-Pfade bleiben source-reviewed |
+| `OPSTRANSPORT` | `SOURCE_REVIEWED` | Constructor, Cargo/Carrier-Zonen, `AddPathTransport`, Disembark- und Carrier-Verträge geprüft; Stage-1A AMMO benötigt OPSTRANSPORT nicht; taktischer OMW-Transport benötigt eigenen DCS-Test |
 | `AMMOTRUCK` | `SOURCE_REVIEWED` | gepinnter Source und offizieller Demo-Anwendungsfall für automatische Artillerie-Rearm-Versorgung geprüft; `reloads` ist Rearm-Zykluszahl, keine CampaignState-Menge; kein OMW-AMMOTRUCK-Runtime-PASS |
 | `ARTY` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Ground-Ammo-Rearm-Acceptance-1 bestätigt den Bostick-Fixed-Battery-Pfad mit `New`, `AssignTargetCoord`, `GetAmmo`, `SetRearmingGroup`, `SetRearmingGroupOnRoad`, `Rearm` sowie CeaseFire/BeforeRearm/Rearmed-Callbacks; keine pauschale Validierung anderer Batterien, Supply-Typen oder MOOSE-Versionen |
 | `CTLD`, `CSAR`, `AICSAR` | `PLANNED` / teilweise verwendet | separate Acceptance erforderlich |
@@ -83,7 +84,7 @@ REJECTED_FOR_PROJECT_USE
 | `TARS` | `CANDIDATE` | verzögerte Foto-/IMINT-Aufklärung; Verfügbarkeit offen |
 | `DETECTION_*` | `PLANNED` | Spezialfälle; kein paralleles strategisches Lagebild neben `INTEL` |
 | `Core.Astar`, `PATHLINE`, `MOVEMENT` | `PLANNED` | Routing und Bewegungsbegrenzung |
-| `_DATABASE` | `INTERNAL_RESTRICTED` | nur Diagnose/Validierung; aktueller AAR- und Ground-Acceptance-1-Pfad verwendet `_DATABASE` nicht |
+| `_DATABASE` | `INTERNAL_RESTRICTED` | nur Diagnose/Validierung; aktueller AAR- und Stage-1A-Ground-RESUPPLY-Pfad verwendet `_DATABASE` nicht direkt |
 | `CHIEF` | `REJECTED_FOR_PROJECT_USE` | aktuelle Produktionsarchitektur `NOT_USED` |
 
 ## 4. ARMY Ground Foundation – Source-Review und Acceptance-1-Staging 18.08.2026
@@ -142,16 +143,7 @@ BuilderVersion: ARMY-GROUND-ACCEPTANCE-1-1
 
 Der Harness plant genau einen Joyce-BRIGADE-/PLATOON-PATROLZONE-Pfad und prüft `MissionDone -> physical stay -> same ARMYGROUP follow-up` sowie Dublettenfreiheit. Das ist **STAGED / SOURCE_REVIEWED**, kein Runtime-PASS.
 
-Wichtige Grenzen bleiben:
-
-```text
-- SetReturnToLegion(false) ist noch nicht im Ground-Scope DCS-validiert.
-- WAREHOUSE:SetSpawnZone(...) ist für die Joyce-ACCESS-Zone source-geprüft, aber DCS-Pathfinding/Materialisierung offen.
-- BRIGADE:LoadBackAssetInPosition nutzt SpawnFromCoordinate und bleibt für beobachtbare Reconstitution ausgeschlossen.
-- immobile ARMYGROUP RTZ kann teleportieren und bleibt im sichtbaren OMW-Bereich ausgeschlossen.
-- Returned -> WAREHOUSE AddAsset entfernt die physische Gruppe; Return-Handoff benötigt eigenen Test.
-- OPSTRANSPORT coordinate unload materialisiert per _Respawn und benötigt eigenen Test.
-```
+Wichtige historische Grenzen dieses frühen Staging-Abschnitts werden durch spätere Acceptance-Ergebnisse teilweise superseded; für aktuelle Runtime-Aussagen sind die späteren Addenda maßgeblich.
 
 ### 4.3 Official example review
 
@@ -264,7 +256,7 @@ DCS GROUP / UNIT / STATIC = physical representation
 
 Ein Klassenstatus wird nur angehoben, wenn MOOSE-Version/Commit, OMW-Source, Mission, Hashes, beobachtetes Verhalten und Einschränkungen dokumentiert sind.
 
-`SOURCE_REVIEWED` für Ground-OPS und Acceptance-1-Staging bedeutet ausdrücklich **nicht** `VALIDATED_FOR_DOCUMENTED_SCOPE`. Der Status wird erst nach dem realen DCS-Lauf mit vollständiger Hashprovenienz neu bewertet.
+`VALIDATED_FOR_DOCUMENTED_SCOPE` gilt ausschließlich für die jeweils explizit dokumentierte Provenienz und Wirkung.
 
 ## Addendum 2026-08-21 – Ground Ammo Rearm Source Review
 
@@ -279,15 +271,12 @@ ARTY      = SOURCE_REVIEWED
 
 `ARTY` besitzt den detaillierteren Batterie-Rearm-Pfad einschließlich Shell-Type-Auswertung und Vollrearm-Prüfung. Für den ersten OMW-Ammo-Service bleibt `AMMOTRUCK` der kleinere Kandidat; `ARTY` wird nicht ausschließlich zur Logistik eingeführt, wenn es die Feuerunterstützungsgruppe nicht ohnehin operativ verwaltet.
 
-Offene Grenze vor Runtime-Code:
+Offene historische Grenze vor dem späteren Runtime-Nachweis:
 
 ```text
 known MOOSE/DCS supply example: M-939 (BLUE)
 current OMW generic logistics template: M1083 family
-M1083 ammo-supply capability in current OMW DCS setup: NOT VERIFIED
 ```
-
-Es wird daher noch kein produktiver AMMOTRUCK-Adapter geschrieben. Zuerst muss ein tatsächlich Ammo-Supply-fähiger BLUE-Trucktyp/Template für OMW feststehen und später in DCS bestätigt werden.
 
 Details: [`OMW-MOOSE-MISSION-DEMAND-RESUPPLY-CAS-SOURCE-REVIEW`](MISSION-DEMAND-RESUPPLY-CAS-SOURCE-REVIEW.md), Abschnitt 16.
 
@@ -302,7 +291,7 @@ Scope: sechs Acceptance-3-BRIGADE-Instanzen
 Status: INTERNAL_RESTRICTED / SOURCE_REVIEWED_EXCEPTION_APPROVED_DCS_PENDING
 ~~~
 
-`WAREHOUSE:SetSpawnZone(...)` genügt nicht für exakt road-aligned Einzelaufstellung. Der freigegebene Adapter übernimmt ausschließlich TM01M-Positionen/Headings in die vom Warehouse bereitete Spawn-Templatekopie. Assetreservation, Queue, `__AssetSpawned`, `OnAfterAssetSpawned`, `OnAfterArmyOnMission` und `ARMYGROUP`-/`AUFTRAG`-Lifecycle dürfen dadurch nicht umgangen werden. Ein DCS-Regressionstest muss sowohl sichtbare Straßenaufstellung als auch alle bisherigen sechs Domain-Lifecycle-Kriterien erneut belegen.
+`WAREHOUSE:SetSpawnZone(...)` genügt nicht für exakt road-aligned Einzelaufstellung. Der freigegebene Adapter übernimmt ausschließlich TM01M-Positionen/Headings in die vom Warehouse bereitete Spawn-Templatekopie. Assetreservation, Queue, `__AssetSpawned`, `OnAfterAssetSpawned`, `OnAfterArmyOnMission` und `ARMYGROUP`-/`AUFTRAG`-Lifecycle dürfen dadurch nicht umgangen werden.
 
 ## Addendum 2026-08-19 – Acceptance 4 return-handoff scope
 
@@ -313,7 +302,7 @@ Status: INTERNAL_RESTRICTED / SOURCE_REVIEWED_EXCEPTION_APPROVED_DCS_PENDING
 
 ## Addendum 2026-08-22 – Ground Ammo Rearm Acceptance 1
 
-Dieses Addendum hebt ausschließlich den im folgenden Provenienzsatz praktisch bestätigten Scope an. Es superseded die offenen `ARTY`-/M1083-Runtime-Aussagen des Addendums vom 21.08.2026; `AMMOTRUCK` bleibt davon unberührt `SOURCE_REVIEWED`.
+Dieses Addendum hebt ausschließlich den im folgenden Provenienzsatz praktisch bestätigten Scope an. `AMMOTRUCK` bleibt davon unberührt `SOURCE_REVIEWED`.
 
 ```text
 Branch: agent/ground-ammo-rearm-integration
@@ -347,6 +336,35 @@ ARTY Rearm -> Rearmed/full-ammo completion
 MOOSE USERFLAG Ground readiness bridge -> Mission Editor OMW_GROUND_READY == 1
 ```
 
-Die beobachteten Munitionswerte waren `300 -> 296 -> 302`; der Bostick-Bestand `GROUND_AMMO_PACKAGE` fiel `52 -> 51`. Der Harness meldete `PASS M1083_REARM_CONFIRMED=true`.
+## Addendum 2026-08-22 – Stage 1A Ground AMMO RESUPPLY Acceptance
 
-Nicht aus diesem Lauf abzuleiten sind eine allgemeine CHAP_M1083-Supply-Garantie, AMMOTRUCK-Runtime-Verhalten, Full-Battery-Rejection, M1083-Verlust/Unterbrechung, Restart/Replay oder andere Batterien/MOOSE-Versionen.
+```text
+Branch: agent/automatic-response-orchestration
+Acceptance source/build commit: 2d72bcdfc113342a2180b6cd9c84486da790052c
+BuilderVersion: GROUND-AMMO-RESUPPLY-ACCEPTANCE-1-5
+Acceptance bundle SHA-256: 752B3E6F0B77D1B62C750421DDE36202C81B98632FEFBF6A273F913202DF8339
+DCS: 2.9.28.26385 MT
+MOOSE release: 2.9.18
+MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+Moose.lua SHA-256: E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915
+Executed MIZ: OMW_Template_v18.miz
+MIZ SHA-256: 2FDF31A2E07409CF392D45BFF5FC69750958C670AE3E12FF28D0B4FD8AECC90D
+internal mission SHA-256: 38B207278365CD977E74FF3C9000C6A7C5B13EEE3E5B1BB154F1775055D02AF6
+Result: PASS
+```
+
+Für genau diesen Provenienzsatz praktisch bestätigt:
+
+```text
+BRIGADE -> PLATOON -> ARMYGROUP protected LIGHT_06 materialization
+AUFTRAG:NewAMMOSUPPLY(destinationZone)
+AUFTRAG:SetMissionSpeed(27)
+AUFTRAG:SetFormation(OnRoad)
+AUFTRAG:SetReturnToLegion(false)
+CampaignState fail-closed delivery settlement after destination-zone proof
+30 s post-MissionDone settlement window
+same ARMYGROUP RTZ to Joyce ACCESS / OnRoad
+Returned -> LEGION/Warehouse AddAsset -> physical cleanup
+```
+
+Die strategische Transfermenge `20 GROUND_AMMO_PACKAGE` bleibt unabhängig von der physischen Zahl der Fahrzeuge. `TPL_BLUE_CONVOY_LIGHT_06` ist in diesem Acceptance-Scope eine feste physische Repräsentation, keine definierte Kapazitätsklasse.
