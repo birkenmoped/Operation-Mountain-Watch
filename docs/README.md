@@ -15,8 +15,8 @@ project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
   - incomplete documentation index without subproject registry
 superseded_by:
-source_branch: docs/afghanistan-aip-kaia-lop
-source_commit: 2c220ee6a27cfc5f9570ab7deaf0cc1b97771a04
+source_branch: agent/ground-order-foundation
+source_commit: PENDING_MERGE
 validated_in_dcs: false
 ---
 
@@ -51,6 +51,7 @@ Ein offener Draft-PR ist keine `main`-Autorität. Ein branchgebundener PASS blei
 | Dokumentmetadaten | [`OMW-GOV-DOCUMENT-METADATA`](DOCUMENT-METADATA-POLICY.md) | `BINDING` | Dokumentationsvalidator |
 | Dokumentnummern/IDs | [`OMW-GOV-DOCUMENT-REGISTRY`](DOCUMENT-REGISTRY.md) | `BINDING_PROJECT_DECISION` | dieser Index |
 | Unterprojekte/PR-Stacks | [`OMW-GOV-SUBPROJECT-REGISTRY`](SUBPROJECT-REGISTRY.md) | `BINDING` | GitHub-PR-Metadaten |
+| Ground Order / OPORD / FRAGO | [`OMW-GROUND-ORDER-OPORD-FRAGO-FOUNDATION`](91-ground-order-opord-frago-foundation.md) | `PLANNED`; Draft-PR #116 | MissionDemand, Ground-Domainvertrag, Air-Tasking-Foundation, geprüfter MOOSE-Artefaktstand; keine DCS-Runtime-Acceptance |
 | Quellenaufnahme dieses Arbeitsstrangs | [`OMW-EVIDENCE-SOURCE-INTAKE-AUDIT-2026-07-28`](evidence/source-intake-audit-2026-07-28.md) | `BINDING` | Zuordnung, Ausschlüsse und offene Primärquellenprüfung |
 | historischer Rahmen | [`OMW-HIST-SETTING`](09-historical-setting.md) | `BINDING` | historische Quellen |
 | historische Kräfte-, Basen- und Aviation-Recherche | [`OMW-HIST-AFGHANISTAN-FORCE-BASING-AVIATION`](50-afghanistan-force-basing-aviation-2010-2011.md) | `BINDING` | CMH-, Army-, DVIDS-, ORBAT- und Fachquellen; keine aktive ORBAT-Autorität |
@@ -167,6 +168,7 @@ Ein offener Draft-PR ist keine `main`-Autorität. Ein branchgebundener PASS blei
 - [72 – Afghanistan AIP 2008](72-afghanistan-aip-2008-airspace-aerodromes-and-flight-procedures.md)
 - [73 – KAIA Local Operating Procedures 2009](73-kaia-local-operating-procedures-2009.md)
 - [82 – Russland, OEF und ISAF in Afghanistan](82-russia-oef-isaf-afghanistan-role.md)
+- [91 – Ground Order Foundation: OPORD, FRAGO und MOOSE-Ausführungsgrenze](91-ground-order-opord-frago-foundation.md) *(Draft-PR #116; noch nicht auf `main`)*
 
 ## 5. Thematische Einstiegspunkte
 
@@ -198,6 +200,15 @@ Ein offener Draft-PR ist keine `main`-Autorität. Ein branchgebundener PASS blei
 - [`72-afghanistan-aip-2008-airspace-aerodromes-and-flight-procedures.md`](72-afghanistan-aip-2008-airspace-aerodromes-and-flight-procedures.md)
 - [`73-kaia-local-operating-procedures-2009.md`](73-kaia-local-operating-procedures-2009.md)
 - [`82-russia-oef-isaf-afghanistan-role.md`](82-russia-oef-isaf-afghanistan-role.md)
+
+### Ground Orders und Bodenoperationen
+
+- [`91-ground-order-opord-frago-foundation.md`](91-ground-order-opord-frago-foundation.md)
+- [`90-mission-demand-resupply-and-cas-orchestration-concept.md`](90-mission-demand-resupply-and-cas-orchestration-concept.md)
+- [`67-afghanistan-route-clearance-counter-ied-and-convoy-design.md`](67-afghanistan-route-clearance-counter-ied-and-convoy-design.md)
+- [`49-msr-routendesign-und-infrastrukturmarker.md`](49-msr-routendesign-und-infrastrukturmarker.md)
+- [`ground/ARMY-GROUND-FOUNDATION-DOMAIN-CONTRACT.md`](ground/ARMY-GROUND-FOUNDATION-DOMAIN-CONTRACT.md)
+- [`ground/ARMY-GROUND-RETURN-SETTLEMENT-DECISION-PREPARATION.md`](ground/ARMY-GROUND-RETURN-SETTLEMENT-DECISION-PREPARATION.md)
 
 ### Routen, C-IED und Convoys
 
