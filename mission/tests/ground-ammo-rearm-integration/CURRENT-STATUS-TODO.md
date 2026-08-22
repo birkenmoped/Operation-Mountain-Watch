@@ -29,125 +29,73 @@ Status: OPEN / DRAFT / NOT MERGED
 Projektphase: COMPLETE_FOUNDATION_BUILD_PHASE
 ```
 
-## Architektur
+## Abschlussstatus
 
 ```text
-fixed fire-support consumer
--> reale DCS-Munition wird verbraucht
--> MOOSE WAREHOUSE / BRIGADE / PLATOON materialisiert lokalen M1083
--> CampaignState bucht genau 1 GROUND_AMMO_PACKAGE
--> ARTY:SetRearmingGroup(...)
--> ARTY:Rearm()
--> DCS/MOOSE Rearm
--> ARTY OnAfterRearmed
--> CampaignState transaction = COMPLETED
--> ARTY-owned support return
--> WAREHOUSE:AddAsset(...)
+Source implementation: COMPLETE
+Production build/hash: VERIFIED
+Acceptance 2-11 build/hash: VERIFIED
+Bundled DCS physical rearm: PASS
+Option-B same-session Restore settlement: PASS
+Exact runtime MIZ provenance: CLOSED
+External process/server persistence: NOT PRESENT / NOT TESTED / NOT CLAIMED
+Governance/register review: COMPLETE
+Documentation workflow: PENDING FINAL RESULT
+Owner Ready/Merge decision: PENDING
 ```
 
-`CampaignState` bleibt einzige strategische Ressourcenautorität. Kein MIST, kein eigener Rearm-FSM, kein FullAmmo-Scanner, kein MOOSE-Patch.
-
-## Gepinnter MOOSE-Stand
+## Exakte Acceptance-Provenienz
 
 ```text
-MOOSE release: 2.9.18
-MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
-Moose.lua SHA-256:
-E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915
-```
+Acceptance source/build commit:
+d52a47a418fe3a1a996a5b68198b8dc033ff86c4
 
-`WAREHOUSE:SetValidateAndRepositionGroundUnits(...)` bleibt wegen des real bestätigten `UTILS.GetCenterPoint`-Defekts ausgeschlossen. Lokale Materialisierung bleibt auf `WAREHOUSE:SetSpawnZone(...)`.
+BuilderVersion:
+GROUND-FIRE-SUPPORT-ACCEPTANCE-2-11
 
-## Aktiver Vier-Consumer-Vertrag
-
-```text
-BOSTICK   -> TPL_BLUE_GND_SUP_M1083 / L118 / 4 rounds
-WRIGHT    -> TPL_BLUE_GND_SUP_M1083 / L118 / 4 rounds
-FORTRESS  -> TPL_BLUE_GND_SUP_M1083 / L118 / 4 rounds
-HONAKER   -> TPL_BLUE_GND_SUP_M1083 / 2B11 / 40 rounds / requireAmmoDepleted=true
-```
-
-Honaker darf den Support-/Rearm-Request erst nach `postFireAmmo == 0` auslösen.
-
-## Option B
-
-```text
-physical rearm begins
--> transaction = CONSUMED
-
-ARTY OnAfterRearmed
--> transaction = COMPLETED
-
-Restore mit CONSUMED aber nicht COMPLETED
--> exactly-once strategic compensation
--> transaction = COMPENSATED
--> no physical replay
--> later service requires a new transaction ID
-```
-
-Produktionsbundles real gebaut/gehasht:
-
-```text
-Source / Git HEAD: 49f43a856c1f8bc32ca64835af856119a295640e
-CampaignState source SHA-256: 18189A633DBD78FC7EAFBDAF09601BC3241ADAD115DF09DA3EF28B1D85E3E093
-
-OMW_AirOps_Warehouse_Base.lua
-472F72F3D688BB4B8624C882527DCA3DEBD42CDE5DD455AC63D7CD2D796BB735
-
-OMW_Ground_Base.lua
-9AAF32A10A9EEB906123AFD37FF14B62542EE7C78F7B5E81E388A22F41EABEAB
-```
-
-## Revision 2-11 Build-/Hash-Provenienz
-
-```text
-Source / Git HEAD: d52a47a418fe3a1a996a5b68198b8dc033ff86c4
-BuilderVersion: GROUND-FIRE-SUPPORT-ACCEPTANCE-2-11
-GeneratedUtc: 2026-08-22T14:07:19Z
-Bundle SHA-256:
+Acceptance bundle SHA-256:
 CBA3ACF5D835E6EF6AD11C3FDD295E178B2B8E6B9330749C15419A1638CF379B
-```
 
-Builder-Ausgabe und separate `Get-FileHash`-Ausgabe stimmen exakt überein.
-
-## Revision 2-11 DCS Runtime
-
-```text
-DCS: 2.9.28.26385 MT
 Executed mission:
 C:\Users\Sven\Saved Games\DCS.openbeta\Missions\OMW_Template_v16.miz
 
 Executed mission SHA-256:
 388F02C932BE83823543F97887B4EDBB9E6764D4CEBE543BD8423D43A6ED8620
 
-dcs(20260822-141914).log
-SHA-256: B65B3010612F9FEDCB90210C0799DE889F64A7D643818CD8326730716662D128
+DCS:
+2.9.28.26385 MT
 
-debrief(20260822-141915).log
-SHA-256: ED298DC7A21F153021C50726A7B9D245BD9BAF098163D6D59B9D4CB593E40C39
+dcs(20260822-141914).log SHA-256:
+B65B3010612F9FEDCB90210C0799DE889F64A7D643818CD8326730716662D128
+
+debrief(20260822-141915).log SHA-256:
+ED298DC7A21F153021C50726A7B9D245BD9BAF098163D6D59B9D4CB593E40C39
+
+Moose.lua SHA-256:
+E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915
 ```
 
-Der lokale Runtime-MIZ-Pfad wurde real gehasht. Sein SHA-256 stimmt exakt mit dem hochgeladenen Prüfartefakt `OMW_Template_v16(2).miz` überein. Die bytegenaue Mission-Provenienz ist damit geschlossen.
+Der lokale Runtime-MIZ-Pfad wurde real gehasht. Sein SHA-256 stimmt exakt mit dem hochgeladenen Artefakt `OMW_Template_v16(2).miz` überein.
 
-Physische Phase:
+## Runtime-Ergebnis
 
 ```text
-BOSTICK   300 -> 296 -> 301 / M1083 / COMPLETED / support returned / SITE_PASS
-WRIGHT    300 -> 296 -> 300/301 / M1083 / COMPLETED / support returned / SITE_PASS
-FORTRESS  150 -> 146 -> 151 / M1083 / COMPLETED / support returned / SITE_PASS
-HONAKER    40 ->   0 ->  40 / M1083 / COMPLETED / support returned / SITE_PASS
+BOSTICK   300 -> 296 -> 301 / M1083 / COMPLETED / support returned / PASS
+WRIGHT    300 -> 296 -> 300/301 / M1083 / COMPLETED / support returned / PASS
+FORTRESS  150 -> 146 -> 151 / M1083 / COMPLETED / support returned / PASS
+HONAKER    40 ->   0 ->  40 / M1083 / COMPLETED / support returned / PASS
 ```
 
-Restore-Settlement innerhalb derselben DCS-Laufzeit:
+Restore-Settlement innerhalb derselben DCS-Session:
 
 ```text
-CONSUMED -> COMPENSATED exactly once                         PASS
-second restore -> no duplicate credit                       PASS
-new transaction after compensation -> new ID -> COMPLETED   PASS
-COMPLETED restore -> no compensation                        PASS
-RESERVED restore -> CANCELLED                               PASS
-LOADING restore -> CANCELLED                                PASS
-authoritative runtime store isolated from fixture copies    PASS
+CONSUMED -> COMPENSATED exactly once                       PASS
+second restore -> no duplicate credit                     PASS
+new transaction after compensation -> new ID -> COMPLETED PASS
+COMPLETED restore -> no compensation                      PASS
+RESERVED restore -> CANCELLED                             PASS
+LOADING restore -> CANCELLED                              PASS
+authoritative runtime store isolation                     PASS
 ```
 
 Gesamtmarker:
@@ -156,13 +104,21 @@ Gesamtmarker:
 PASS FIXED_FIRE_SUPPORT_REARM_CONFIRMED=true sites=4 restoreSettlement=true
 ```
 
-## Persistenzgrenze
+## Architekturgrenzen
 
 ```text
-CampaignState ExportSnapshot/Restore/ReconcileRestore: DCS RUNTIME PASS
-externer Dateisystem-/Server-Persistence-Host: NICHT VORHANDEN
-realer DCS-Prozessrestart mit Snapshot-Datei: NICHT GETESTET / NICHT BEHAUPTET
+CampaignState = einzige strategische Ressourcenautorität
+MIST = nicht verwendet
+MOOSE patch = nicht verwendet
+Custom Rearm FSM = nicht verwendet
+FullAmmo scanner = nicht verwendet
+WAREHOUSE:SetSpawnZone(...) = verwendet
+WAREHOUSE:SetValidateAndRepositionGroundUnits(...) = ausgeschlossen
+Honaker M1083 = owner-confirmed
+Honaker 2B11 request only at postFireAmmo == 0
 ```
+
+Die Restore-Phase verwendete isolierte `CampaignState.Restore(...)`-Kopien innerhalb derselben DCS-Session. Ein echter Prozess-/Server-Restart mit externer Snapshot-Datei wurde nicht getestet und wird nicht behauptet.
 
 ## Governance-/Registerabgleich
 
@@ -171,65 +127,38 @@ AGENTS.md: geprüft
 OMW-GOV-001: geprüft
 OMW-GOV-MOOSE-FIRST: geprüft
 SUBPROJECT-REGISTRY: PR #112 nachgetragen
-PROJECT-CLASS-INDEX: branch-diff enthält ARTY/AMMOTRUCK Ground-Rearm-Einträge
+PROJECT-CLASS-INDEX: branch-diff enthält Ground-Rearm ARTY/AMMOTRUCK-Einträge
 VERIFIED-METHODS: branch-diff enthält ARTY/USERFLAG Ground-Rearm-Evidenz
 FIXED-FIRE-SUPPORT-REARM: auf Acceptance 2-11 PASS reconciliert
 Acceptance 2-11 runtime result: ACCEPTED_TECHNICAL_BASELINE
 ```
 
-Die method-level Registereinträge bleiben bewusst auf ihre jeweils explizit dokumentierte Provenienz begrenzt; der neue Vier-Consumer-PASS wird im Acceptance-Ergebnis und der thematischen MOOSE-Dokumentation geführt.
-
-## Dokumentations-/CI-Status
+## Dokumentationsstatus
 
 Der zuletzt vollständig ausgewertete Workflow meldete 18 geerbte Fehler und 0 Warnungen außerhalb der Ground-Rearm-Dokumente. Nach den finalen Provenienz-/Registerupdates läuft der aktuelle Dokumentationsworkflow erneut; sein endgültiges Ergebnis ist vor einer Ready/Merge-Entscheidung zu prüfen.
 
 ## TODO
 
 ```text
-[x] Acceptance-1 Provenienz
-[x] Vier-Consumer-Pfad
-[x] CampaignState Debit
-[x] lokaler WAREHOUSE M1083 Spawn
-[x] SetSpawnZone
-[x] defekter GetCenterPoint-Pfad ausgeschlossen
-[x] ARTY-owned Support Return
-[x] WAREHOUSE AddAsset Return-to-stock
-[x] Honaker 2B11 40 -> 0 -> 40
-[x] M1083 für Honaker owner-confirmed
-[x] Option B source-seitig implementiert
-[x] Option-B Produktionsbundles real gebaut/gehasht
-[x] Revision 2-11 real gebaut/gehasht
-[x] EIN gebündelter DCS-Acceptance-Lauf
-[x] vier physische Rearms inkl. Honaker full depletion
-[x] COMPLETED für alle vier Standorte
-[x] Support Return-to-stock für alle vier Standorte
-[x] Restore compensation exactly once
-[x] repeated-restore idempotence
-[x] completed-preservation
+[x] Source implementation
+[x] Production build/hash
+[x] Acceptance 2-11 build/hash
+[x] Bundled DCS acceptance
+[x] four physical rearm legs
+[x] Honaker 40 -> 0 -> 40
+[x] COMPLETED for all four sites
+[x] support return-to-stock for all four sites
+[x] same-session restore compensation exactly once
+[x] repeated restore idempotence
+[x] completed preservation
 [x] RESERVED/LOADING cancellation
 [x] new transaction after compensation
-[x] Runtime-Logs ausgewertet und Ergebnis dokumentiert
-[x] exakten SHA-256 des im Debrief genannten Runtime-MIZ-Pfads real bestätigt
-[x] Mission-Provenienz bytegenau geschlossen
-[x] Governance- und Registerabgleich durchgeführt
-[x] finalen PR-Diff gegen main strukturell geprüft
+[x] Runtime logs evaluated
+[x] exact runtime MIZ path SHA-256 confirmed
+[x] byte-level mission provenance closed
+[x] governance and registry reconciliation
+[x] final PR diff structurally reviewed
 
-[ ] aktuellen Documentation-validation-Lauf nach finalen Dokuupdates auswerten
-[ ] Owner-Entscheidung PR #112 Ready / Merge
-```
-
-## Aktueller Abschlussstand
-
-```text
-Ground Ammo Rearm / Fixed Fire Support
-        |
-        +-- source implementation            COMPLETE
-        +-- production build/hash            VERIFIED
-        +-- Revision 2-11 build/hash         VERIFIED
-        +-- bundled DCS runtime              PASS
-        +-- Option-B restore settlement      PASS within DCS runtime
-        +-- exact runtime MIZ provenance     CLOSED
-        +-- governance/register review       COMPLETE
-        +-- documentation workflow           PENDING FINAL RESULT
-        `-- Owner-Entscheidung PR #112 Ready / Merge
+[ ] evaluate final Documentation-validation run
+[ ] Owner decision: PR #112 Ready / Merge
 ```
