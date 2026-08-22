@@ -119,9 +119,7 @@ Damit wurde der Return-Code nie erreicht. `FUELSUPPLY` wird nicht weiter durch T
 CampaignState meta resource / count
 ```
 
-Der M978-Konvoi ist physische Repräsentation; keine reale DCS-Fuel-Menge oder Package-per-Tanker-Kapazität wird daraus abgeleitet.
-
-Das fehlgeschlagene Acceptance-Bundle kann der Owner aus der Mission entfernen/deaktivieren. Die neuen Fuel-/Mixed-Convoy-Templates bleiben erhalten.
+Der M978-Konvoi ist physische Repräsentation; keine reale DCS-Fuel-Menge oder Package-per-Tanker-Kapazität wird daraus abgeleitet. Das fehlgeschlagene Acceptance-Bundle kann aus der Owner-Mission entfernt/deaktiviert werden; die Fuel-/Mixed-Convoy-Templates bleiben erhalten.
 
 Detailresultat:
 
@@ -131,41 +129,94 @@ mission/tests/ground-resupply-execution/results/2026-08-22-ground-fuel-resupply-
 
 ## 5. MOOSE-first Ersatzprüfung
 
-Der gepinnte MOOSE-Source belegt `AUFTRAG:NewFUELSUPPLY(Zone)` primär im Kontext von `BRIGADE:AddRefuellingZone(...)`. Ein Warehouse-to-Warehouse-Roundtrip für abstrakte Fuel-Pakete ist nicht durch eine dedizierte offizielle Demo belegt.
+### 5.1 Kandidat A – WAREHOUSE SELFPROPELLED
 
-Der stärkere generische MOOSE-Kandidat ist:
+Der gepinnte Source und die eingebettete Warehouse-Dokumentation belegen:
 
 ```text
 WAREHOUSE:AddRequest(...)
 WAREHOUSE.TransportType.SELFPROPELLED
 ```
 
-MOOSE Warehouse Example 15 verwendet ausdrücklich selbstfahrende `M978`- und `M818`-Ground-Assets zwischen Warehouses. Der Source routet Ground-Assets über `_RouteGround(...)` zum anfordernden Warehouse.
+Warehouse Example 15 verwendet `M978` und `M818` als selbstfahrende Ground-Assets zwischen Warehouses. Das ist ein echter MOOSE-native Ground-Transfer-Anwendungsfall.
 
-Offene harte Grenze:
-
-```text
-WAREHOUSE:onafterArrived(...)
--> receiving warehouse
--> mobile group routes toward warehouse
--> __AddAsset(60, group)
-```
-
-Damit übernimmt MOOSE das Asset physisch in den Ziel-Warehouse-Stock. Ein späterer Rücktransport würde aus diesem Stock erneut materialisiert. Das muss vor Adoption gegen die OMW-Regel `no observable spawn/despawn/teleport` reconciliert werden.
-
-Status:
+Die harte Grenze ist jedoch ebenfalls source-seitig eindeutig:
 
 ```text
-WAREHOUSE SELFPROPELLED: SOURCE_REVIEWED CANDIDATE
-visual destination handoff: OPEN
-replacement acceptance: NOT_YET_STAGED
-custom/native DCS fallback: NOT_APPROVED
+Arrived
+-> RouteGroundTo(receiving warehouse coordinate)
+-> receivingWarehouse:__AddAsset(60, group)
+-> physical group removed into warehouse stock
 ```
+
+Ein späterer Rücktransport materialisiert das Asset aus dem Ziel-Warehouse erneut. Ein öffentlicher Schalter zum Erhalt desselben physischen Groups nach Ankunft wurde nicht gefunden. `SetSpawnZone(...)` verändert nur die Spawnposition, nicht diesen Arrival-Handoff.
+
+Daher:
+
+```text
+WAREHOUSE SELFPROPELLED
+= source-reviewed native Warehouse transfer
+= requires absorb/rematerialize lifecycle
+= only compatible with OMW visibility rule if handoff areas are deliberately non-observable
+```
+
+Ob diese verdeckte Handoff-Variante gewollt ist, ist eine Owner-Designentscheidung.
+
+### 5.2 Kandidat B – AUFTRAG NOTHING
+
+Der gepinnte Source enthält:
+
+```lua
+AUFTRAG:NewNOTHING(RelaxZone)
+```
+
+Dokumentiert als Ground/Naval-Mission für Assets, die in einer Zielzone „do nothing“ sollen. Source-seitig bestätigt:
+
+```text
+GROUND supported
+zone target
+normal OPSGROUP/ARMYGROUP RouteToMission
+public SetMissionSpeed(...)
+public SetFormation(...)
+SpecialTask.NOTHING -> FullStop at mission execution
+TaskCancel -> done=true
+```
+
+Damit existiert ein MOOSE-native neutraler Move-and-Wait-Pfad:
+
+```text
+same physical convoy
+-> move to destination zone
+-> NOTHING executes / group stops
+-> OMW validates exact arrival and settles CampaignState meta resource
+-> cancel mission
+-> MissionDone
+-> same ARMYGROUP can RTZ to origin
+```
+
+Das vermeidet eine falsche Fuel-/Cargo-Semantik und behält CampaignState als alleinige Warenautorität. In den offiziellen `MOOSE_MISSIONS`-/`MOOSE_MISSIONS_UNPACKED`-Suchen wurde jedoch kein dediziertes `NewNOTHING`-Beispiel gefunden; daher bleibt der Pfad `SOURCE_REVIEWED / DCS_PENDING`.
+
+### 5.3 Entscheidungsgrenze
+
+```text
+A) WAREHOUSE SELFPROPELLED
+   Warehouse-owned transfer
+   destination absorption/despawn
+   later rematerialized return
+
+B) AUFTRAG NOTHING
+   neutral move-and-wait
+   same physical convoy
+   explicit CampaignState delivery settlement
+   same-group RTZ
+```
+
+Für die bisherige OMW-Anforderung „keine beobachtbaren Spawn-/Despawn-Vorgänge“ ist B der kleinere fachliche Fit. Das ist noch keine stillschweigende Projektentscheidung und noch kein DCS-PASS.
 
 ## 6. Weitere Entwicklungsstufen
 
 ```text
-Stage 1C Generic Ground SUPPLY: pending same generic transport reconciliation
+Stage 1C Generic Ground SUPPLY: pending same generic transport decision
 Stage 2 FOB attack -> support demand: PLANNED
 Stage 3 fire support -> local rearm -> resupply: FOUNDATIONS AVAILABLE
 Stage 4 convoy under attack -> support demand: PLANNED
@@ -188,12 +239,14 @@ stage_1b_fuelsupply: FAILED_CLOSED_FOR_META_RESUPPLY
 stage_1b_test_lua_in_owner_mission: MAY_BE_REMOVED
 fuel_meta_resource_model: RETAIN
 fuel_convoy_templates: RETAIN
-current_research: WAREHOUSE_SELFPROPELLED_GENERIC_PHYSICAL_TRANSFER
 warehouse_selfpropelled_source: REVIEWED
 warehouse_example_15_m978_m818: CONFIRMED_IN_PINNED_SOURCE_DOCS
 warehouse_arrived_addasset_60s: CONFIRMED_IN_PINNED_SOURCE
-observable_handoff_gate: OPEN
+warehouse_same_group_roundtrip: NOT_PROVIDED
+auftrag_nothing_source: REVIEWED
+auftrag_nothing_official_demo: NOT_FOUND_IN_CURRENT_SEARCH
+auftrag_nothing_same_group_candidate: YES_SOURCE_SIDE
 replacement_acceptance: NOT_YET_STAGED
 production_runtime_implementation: NOT_YET_CREATED
-next_allowed_step: RESOLVE_WAREHOUSE_VISUAL_HANDOFF_AND_SELECT_REPLACEMENT_ACCEPTANCE
+next_allowed_step: OWNER_SELECTS_PHYSICAL_CONTRACT_A_OR_B
 ```
