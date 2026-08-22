@@ -53,6 +53,7 @@ CampaignState settlement
 mission/tests/air-tasking-aar-vertical/test_bridge.lua
 mission/tests/air-tasking-aar-vertical/src/01-air-tasking-aar-vertical-acceptance.lua
 tools/build-air-tasking-aar-additive-test.ps1
+.github/workflows/air-tasking-validation.yml
 ```
 
 Buildausgabe:
@@ -65,7 +66,7 @@ mission/tests/air-tasking-aar-vertical/dist/OMW_AirTasking_AAR_Vertical_Test.lua
 
 ## 3. Historische VERTICAL-2 Acceptance
 
-Der reale DCS-Lauf `AIR-TASKING-AAR-VERTICAL-2` erreichte fuer seinen exakt dokumentierten Stand PASS:
+Der reale DCS-Lauf `AIR-TASKING-AAR-VERTICAL-2` erreichte für seinen exakt dokumentierten Stand PASS:
 
 ```text
 branch: agent/air-tasking-plan-foundation
@@ -79,7 +80,7 @@ Moose.lua SHA-256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a
 result: PASS
 ```
 
-Der Lauf bestaetigte unter anderem:
+Der Lauf bestätigte unter anderem:
 
 ```text
 existing AAR facade retained
@@ -94,11 +95,11 @@ AL_UDEID exact-once recredit
 runtime_id excluded from persisted Air Tasking snapshot
 ```
 
-Diese Acceptance bleibt ausschliesslich fuer die damalige Provenienz gueltig.
+Diese Acceptance bleibt ausschließlich für die damalige Provenienz gültig.
 
 ## 4. MissionDemand-reconciled VERTICAL-3 fixture
 
-Der spaetere Source-Stand wurde an den produktiven `main`-MissionDemand-Vertrag angepasst:
+Der spätere Source-Stand wurde an den produktiven `main`-MissionDemand-Vertrag angepasst:
 
 ```text
 MissionDemand.id -> runtimeDemand.missionDemandId
@@ -106,7 +107,7 @@ MissionDemand.priority -> runtimeDemand.priority
 Air Tasking planning -> receiverProfile / operationsArea / supportMode
 ```
 
-Build-Provenienz:
+Lokale Build-Provenienz:
 
 ```text
 executable source commit: 93cae7cee601f2af242cfcc963accf499ddea7d8
@@ -127,32 +128,48 @@ HarnessSHA256: 01ab6f5d5bf65c9d64a656d338a39eac67b063afa38ec02f95325c1974f1cb11
 BundleSHA256: dc840397ca311802cee99cf98f7448c0371ce40388f324b31dd01de7bf1c82f3
 ```
 
-Der unabhaengige lokale `Get-FileHash` bestaetigte denselben Bundle-Hash.
+Der unabhängige lokale `Get-FileHash` bestätigte denselben Bundle-Hash. Lokal war kein Lua-Interpreter vorhanden; deshalb wurde lokal kein Lua-Contract-PASS behauptet.
 
-Lokaler Lua-Contract-Test:
+## 5. GitHub-Actions Contract-/Build-Nachweis
+
+PR #117 führt zusätzlich `.github/workflows/air-tasking-validation.yml` aus. Der reale Workflow-Lauf auf dem PR-Merge-Ref erreichte PASS:
 
 ```text
-NOT RUN - local Lua interpreter unavailable
+Lua 5.1 contract test: AIR_TASKING_AAR_BRIDGE_TEST_PASS
+PowerShell bundle build: PASS
+MissionDemandContract: CANONICAL_MAIN_SHAPE_READ_ONLY
+AARRuntimeDemandTranslation: true
+MizMutation: false
+ExistingAARBaseEmbedded: false
+ExistingAARBaseRecreated: false
+ExistingAARAdapterRecreated: false
+ExistingAARAdapterMutated: false
+LegacyAdapterProxyPath: false
 ```
 
-## 5. Owner decision: kein erneuter LISA-Retest
+Der Workflow prüft den erzeugten Bundle-Hash anschließend unabhängig mit `sha256sum`; der Wert stimmte mit dem Builder-Output überein.
 
-Der Projektinhaber hat den LISA-Harness aus der Arbeitsmission entfernt und am 22.08.2026 entschieden, den VERTICAL-3-DCS-Lauf nicht erneut als Reconciliation-/Merge-Gate auszufuehren.
+Dieser CI-Nachweis ist ein Lua-/Buildvertrag und **kein** DCS-Runtime-PASS.
+
+## 6. Owner decision: kein erneuter LISA-Retest
+
+Der Projektinhaber hat den LISA-Harness aus der Arbeitsmission entfernt und am 22.08.2026 entschieden, den VERTICAL-3-DCS-Lauf nicht erneut als Reconciliation-/Merge-Gate auszuführen.
 
 Daraus folgt:
 
 ```text
 VERTICAL-2: historical DCS PASS retained for exact provenance
-VERTICAL-3: BUILD PASS / HASH PASS
+VERTICAL-3 local build/hash: PASS
+VERTICAL-3 Lua contract in CI: PASS
 VERTICAL-3 DCS runtime: NOT RUN BY OWNER DECISION
 current reconciled implementation validated_in_dcs: false
 ```
 
 Der Test-Harness darf im Repository als reproduzierbares Fixture erhalten bleiben, muss aber nicht in einer normalen OMW-Mission geladen werden.
 
-## 6. Sicherheitsgrenzen des Builders
+## 7. Sicherheitsgrenzen des Builders
 
-Der Builder prueft unter anderem:
+Der Builder prüft unter anderem:
 
 ```text
 MissionDemand canonical-shape markers
@@ -165,8 +182,8 @@ no GetAdapterModule legacy proxy path
 no baseAdapterModule legacy dependency
 ```
 
-Der Builder beweist keine DCS-Runtime-Funktion; er prueft Buildvertrag und verbotene Integrationspfade.
+Der Builder beweist keine DCS-Runtime-Funktion; er prüft Buildvertrag und verbotene Integrationspfade.
 
-## 7. Bekannte Testgrenze
+## 8. Bekannte Testgrenze
 
-Die aktuelle Bridge fuehrt pro AAR `runtimeId` eine einzelne Air-Tasking-Korrelation. Der Vertical-Test verwendet deshalb bewusst einen einzelnen Demand. Mehrere logisch getrennte Demands auf demselben bereits laufenden Tanker sind nicht durch diesen Test abgedeckt.
+Die aktuelle Bridge führt pro AAR `runtimeId` eine einzelne Air-Tasking-Korrelation. Der Vertical-Test verwendet deshalb bewusst einen einzelnen Demand. Mehrere logisch getrennte Demands auf demselben bereits laufenden Tanker sind nicht durch diesen Test abgedeckt.
