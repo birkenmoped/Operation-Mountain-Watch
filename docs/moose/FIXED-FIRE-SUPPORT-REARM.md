@@ -123,16 +123,13 @@ Real bestätigt:
 -> aggregate PASS
 ```
 
-Provenienz:
+Frühere Diagnose-Provenienz:
 
 ```text
 Source: 5c5fa0ba7653ef51144ca0223dd7cad0ad36f0a7
 BuilderVersion: GROUND-FIRE-SUPPORT-ACCEPTANCE-2-7
 Bundle SHA-256: 1655E4F2F5D4AB69BF4BDAFBD82CE3D8FF0049CD557245336B71C275F21BED3D
 DCS: 2.9.28.26385 MT
-Executed mission: OMW_Template_v16.miz
-dcs.log SHA-256: B3C218B81D5A3C386213E4721F1F1AF12C53DF840C8BB758FE7147E6BAF5FD10
-debrief.log SHA-256: 0014C8FE4A4E3BD7DE3D3AF0BCB3DC30C30E786470F1EDA951EBD582F1A48FAE
 ```
 
 Daraus folgt ausschließlich:
@@ -143,8 +140,6 @@ kein Custom-Rearm erforderlich
 vollständige Entleerung = nachgewiesene Voraussetzung des getesteten Pfads
 partielle Entleerung = NICHT als funktionierender 2B11-Rearm-Pfad nachgewiesen
 ```
-
-Die frühere Interpretation, bei 40 -> 36 müsse lediglich länger gewartet werden, ist verworfen.
 
 ## 6. M1083 Owner-Entscheidung
 
@@ -162,17 +157,6 @@ WRIGHT    -> M1083 / 4 rounds
 FORTRESS  -> M1083 / 4 rounds
 HONAKER   -> M1083 / 40 rounds / requireAmmoDepleted=true / request only at postFireAmmo=0
 ```
-
-Revision 2-10 korrigierte diesen Vertrag und wurde real gebaut/gehasht:
-
-```text
-Source / Git HEAD: f4e781a92bfc74062c48b46b91474f632e69d585
-BuilderVersion: GROUND-FIRE-SUPPORT-ACCEPTANCE-2-10
-GeneratedUtc: 2026-08-22T13:44:16Z
-Bundle SHA-256: 1180884FEB764F95CFD89D72CE2D04BE633A9FD73AE0939AE4B476179A5977C5
-```
-
-Sie wird nicht als isolierter zusätzlicher DCS-Test ausgeführt; die Runtime-Prüfung geht in Revision 2-11 auf.
 
 ## 7. LOCAL REARM Option B
 
@@ -209,8 +193,6 @@ COMPENSATED -> no duplicate compensation
 RESERVED / LOADING -> Cancel
 ```
 
-Die allgemeine Ground-Reconciliation bleibt getrennt; `GroundRuntimeIntegration` ruft bei `restored=true` zuerst den allgemeinen Ground-Pfad und danach Local Rearm auf.
-
 ## 8. Persistenzarchitektur – tatsächlicher Iststand
 
 `CampaignState` besitzt:
@@ -227,53 +209,68 @@ Im aktuellen Branch ist **kein produktiver externer Dateisystem-/Server-Persiste
 Deshalb gilt:
 
 ```text
-Revision 2-11 darf ExportSnapshot -> Restore -> ReconcileRestore in DCS validieren.
-Revision 2-11 darf keinen echten externen Server-/Prozess-Restart-Persistence-Nachweis behaupten.
+Acceptance 2-11 validiert ExportSnapshot -> Restore -> ReconcileRestore in DCS.
+Acceptance 2-11 beweist keinen echten externen Server-/Prozess-Restart-Persistence-Pfad.
 ```
 
 Keine `io`-/`lfs`-Persistenz wird dafür neu eingeführt; keine `MissionScripting.lua`-Änderung und keine zweite Persistenzautorität.
 
-## 9. Gebündelte Revision 2-11
-
-Statt weiterer Einzeltests umfasst ein DCS-Lauf:
+## 9. Acceptance 2-11 – realer DCS-PASS
 
 ```text
-Phase A
-Bostick/Wright/Fortress physical M1083 rearm
-Honaker 2B11 40 -> 0 then M1083 rearm
-all four -> COMPLETED -> support return -> SITE_PASS
+Acceptance source/build commit:
+d52a47a418fe3a1a996a5b68198b8dc033ff86c4
 
-Phase B on isolated CampaignState restored copies
-CONSUMED -> COMPENSATED exactly once
-second restore -> no duplicate credit
-new transaction ID after compensation -> COMPLETED
-COMPLETED survives restore without compensation
-RESERVED -> CANCELLED
-LOADING -> CANCELLED
-authoritative runtime store remains unchanged by restore fixtures
+BuilderVersion:
+GROUND-FIRE-SUPPORT-ACCEPTANCE-2-11
+
+Acceptance Bundle SHA-256:
+CBA3ACF5D835E6EF6AD11C3FDD295E178B2B8E6B9330749C15419A1638CF379B
+
+Executed mission:
+C:\Users\Sven\Saved Games\DCS.openbeta\Missions\OMW_Template_v16.miz
+
+Executed mission SHA-256:
+388F02C932BE83823543F97887B4EDBB9E6764D4CEBE543BD8423D43A6ED8620
+
+DCS:
+2.9.28.26385 MT
 ```
 
-Restore-Marker:
+Physische Phase:
 
 ```text
-RESTORE_PHASE_START
-RESTORE_INTERRUPTED_SNAPSHOT
-RESTORE_COMPENSATION_PASS
-RESTORE_IDEMPOTENCE_PASS
-RESTORE_NEW_TRANSACTION_PASS
-RESTORE_COMPLETED_PRESERVED_PASS
-RESTORE_PRECOMMIT_CANCEL_PASS case=RESERVED
-RESTORE_PRECOMMIT_CANCEL_PASS case=LOADING
-RESTORE_SETTLEMENT_PASS
+BOSTICK   300 -> 296 -> 301 / M1083 / COMPLETED / return-to-stock / PASS
+WRIGHT    300 -> 296 -> 300/301 / M1083 / COMPLETED / return-to-stock / PASS
+FORTRESS  150 -> 146 -> 151 / M1083 / COMPLETED / return-to-stock / PASS
+HONAKER    40 ->   0 ->  40 / M1083 / COMPLETED / return-to-stock / PASS
 ```
 
-Gesamt-PASS:
+Restore-Settlement innerhalb derselben DCS-Laufzeit:
+
+```text
+CONSUMED -> COMPENSATED exactly once                       PASS
+second restore -> no duplicate credit                     PASS
+new transaction after compensation -> new ID -> COMPLETED PASS
+COMPLETED restore -> no compensation                      PASS
+RESERVED restore -> CANCELLED                             PASS
+LOADING restore -> CANCELLED                              PASS
+authoritative runtime store isolation                     PASS
+```
+
+Gesamtmarker:
 
 ```text
 PASS FIXED_FIRE_SUPPORT_REARM_CONFIRMED=true sites=4 restoreSettlement=true
 ```
 
-## 10. Produktions- und Acceptance-Bundle-Provenienz
+Vollständige Evidenz:
+
+```text
+mission/tests/ground-ammo-rearm-integration/results/2026-08-22-acceptance-2-11-runtime.md
+```
+
+## 10. Produktionsbundle-Provenienz
 
 ```text
 Source / Git HEAD: 49f43a856c1f8bc32ca64835af856119a295640e
@@ -291,32 +288,19 @@ Bundle SHA-256:
 9AAF32A10A9EEB906123AFD37FF14B62542EE7C78F7B5E81E388A22F41EABEAB
 ```
 
-Diese Produktionsbundles bleiben unverändert.
-
-Revision 2-11 wurde am 22.08.2026 real gebaut und separat gehasht:
-
-```text
-Source / Git HEAD: d52a47a418fe3a1a996a5b68198b8dc033ff86c4
-BuilderVersion: GROUND-FIRE-SUPPORT-ACCEPTANCE-2-11
-GeneratedUtc: 2026-08-22T14:07:19Z
-Acceptance Bundle SHA-256:
-CBA3ACF5D835E6EF6AD11C3FDD295E178B2B8E6B9330749C15419A1638CF379B
-```
-
-Builder-Ausgabe und `Get-FileHash -Algorithm SHA256` stimmen exakt überein. Revision 2-11 ist damit `BUILD/HASH VERIFIED`, aber noch nicht DCS-runtime-validiert.
-
 ## 11. Status
 
 ```text
 MOOSE source review: COMPLETE for documented APIs
 Pinned reposition defect: RUNTIME CONFIRMED / excluded
 M1083 support choice for Honaker: OWNER CONFIRMED
-2B11 40 -> 0 -> 40 diagnostic: RUNTIME CONFIRMED for exact provenance
+2B11 40 -> 0 -> 40: RUNTIME CONFIRMED
 2B11 partial-ammo rearm: NOT PROVEN
 Option B source implementation: COMPLETE
 Option B production bundles: BUILD/HASH VERIFIED
-Revision 2-10 corrected acceptance: BUILD/HASH VERIFIED / no isolated rerun
-Revision 2-11 bundled acceptance: BUILD/HASH VERIFIED at d52a47a418fe3a1a996a5b68198b8dc033ff86c4
-External filesystem/server persistence host: NOT PRESENT IN CURRENT BRANCH
-Revision 2-11 DCS acceptance: PENDING
+Acceptance 2-11 build/hash: VERIFIED
+Acceptance 2-11 physical rearm: DCS PASS
+Acceptance 2-11 restore settlement: DCS PASS within runtime snapshot/restore scope
+Exact runtime MIZ provenance: CLOSED
+External filesystem/server persistence host: NOT PRESENT / NOT TESTED / NOT CLAIMED
 ```
