@@ -12,7 +12,7 @@ $acceptanceSourceFile = Join-Path $repoRoot 'mission\tests\ground-resupply-execu
 $distDir = Join-Path $repoRoot 'mission\tests\ground-resupply-execution\dist'
 $outputFile = Join-Path $distDir 'OMW_Ground_Ammo_Resupply_Acceptance_1.lua'
 
-$builderVersion = 'GROUND-AMMO-RESUPPLY-ACCEPTANCE-1-4'
+$builderVersion = 'GROUND-AMMO-RESUPPLY-ACCEPTANCE-1-5'
 $testId = 'GROUND-AMMO-RESUPPLY-ACCEPTANCE-1'
 $mooseCommit = '73d3ed119cd9e7e3f2cfcabbaa34513d30529b54'
 $mooseSha256 = 'e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915'
@@ -58,6 +58,7 @@ $requiredMarkers = @(
   'RTZ(state.originZone, ENUMS.Formation.Vehicle.OnRoad)',
   'OUTBOUND_TIMEOUT_SEC',
   'RETURN_TIMEOUT_SEC',
+  'RETURN_ISSUE_DELAY_SEC',
   'RETURN_SETTLEMENT_DELAY_SEC',
   'GROUND_NODE_JOYCE',
   'GROUND_NODE_HONAKER',
@@ -146,6 +147,7 @@ Write-Host 'PhysicalCargoAuthority: false'
 Write-Host 'PackagePerTruckCapacityDefined: false'
 Write-Host 'OutboundTimeoutSec: 1800'
 Write-Host 'ReturnTimeoutSec: 1800'
+Write-Host 'ReturnIssueDelaySec: 30'
 Write-Host 'ReturnSettlementDelaySec: 12'
 Write-Host 'OPSTRANSPORT: false'
 Write-Host 'MizMutation: false'
