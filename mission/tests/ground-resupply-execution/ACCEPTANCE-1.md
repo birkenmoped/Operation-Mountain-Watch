@@ -111,7 +111,7 @@ MissionDone
 
 ## 6. Benötigter Mission-Editor-Vertrag
 
-Vor Einbindung des Bundles müssen in der Arbeits-MIZ real bestätigt werden:
+Vor Einbindung des Bundles müssen in der tatsächlich ausgewählten Arbeits-MIZ real bestätigt werden:
 
 ```text
 WH_BLUE_GND_JOYCE
@@ -148,7 +148,7 @@ tools/build-ground-ammo-resupply-acceptance-1.ps1
 BuilderVersion:
 
 ```text
-GROUND-AMMO-RESUPPLY-ACCEPTANCE-1-2
+GROUND-AMMO-RESUPPLY-ACCEPTANCE-1-3
 ```
 
 Ausgabe:
@@ -157,16 +157,31 @@ Ausgabe:
 mission/tests/ground-resupply-execution/dist/OMW_Ground_Ammo_Resupply_Acceptance_1.lua
 ```
 
-Verwendete Source-Dateien:
+Realer lokaler Build durch den Projektinhaber am 2026-08-22:
 
 ```text
-scripts/campaign/OMW_MissionDemand.lua
-scripts/campaign/OMW_ResourceDemandPolicy.lua
-scripts/ground/OMW_GroundRoadSpawnAdapter.lua
-mission/tests/ground-resupply-execution/src/01-ground-ammo-resupply-acceptance.lua
+GitCommit: 99ea86bf61036f2d04008b17bcb8c1d6e236b030
+GeneratedUtc: 2026-08-22T16:57:51Z
+BuilderVersion: GROUND-AMMO-RESUPPLY-ACCEPTANCE-1-3
+TestId: GROUND-AMMO-RESUPPLY-ACCEPTANCE-1
+Bundle SHA-256: D1E908D08DF3DA787D01E760F5B9C01771F5D17CBBD51C8545A4A00086E10676
+Independent bundle SHA-256: D1E908D08DF3DA787D01E760F5B9C01771F5D17CBBD51C8545A4A00086E10676
+Builder SHA-256: AEF56E16FE896854D32EAE409FC04A6C8C0BE20266EF591242DC5C866C5FB820
+Acceptance source SHA-256: 38E099C801286768FD9D1D39014BB767BCF99055602D1E06EDACA48634856C83
+MissionDemand source SHA-256: E348E75B87135B99D780E07CA6B6FB7C3C530E048E9C6DE790328D147DE32848
+ResourceDemandPolicy source SHA-256: BDC20ACEDAB60F662093077B8320220EBB71C6C641CC604C4356231B8405913C
+GroundRoadSpawnAdapter source SHA-256: 1A81FB2E5270C493373CF5BF6EC01F5AFED47004BF25C4225524121155D983E8
 ```
 
-MOOSE-Provenienz:
+Buildklassifikation:
+
+```text
+BUILD PASS
+bundle emitted: true
+builder-reported bundle hash == independently calculated bundle hash: true
+```
+
+MOOSE-Provenienz aus dem Builder:
 
 ```text
 MOOSE release: 2.9.18
@@ -174,7 +189,7 @@ MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
 Moose.lua SHA-256: E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915
 ```
 
-Lokaler Build und Bundle-Hash sind noch nicht ausgeführt beziehungsweise bekannt und dürfen erst nach realer Owner-Ausgabe eingetragen werden.
+Der Build-PASS ist kein DCS-PASS. Die MIZ-/Embedded-Hash-/Object-Contract-Kette ist noch offen.
 
 ## 8. Erwartete Pflichtmarker
 
@@ -217,13 +232,33 @@ production orchestration scheduler
 ```text
 Source review: COMPLETE FOR THIS TEST SCOPE
 Acceptance source: STAGED
-Builder: STAGED
-Local owner build: NOT RUN
-Independent bundle hash: NOT AVAILABLE
+Builder: GROUND-AMMO-RESUPPLY-ACCEPTANCE-1-3
+Local owner build: PASS
+Independent bundle hash: MATCH
+Bundle SHA-256: D1E908D08DF3DA787D01E760F5B9C01771F5D17CBBD51C8545A4A00086E10676
+MIZ selection: NEXT GATE
 MIZ object-contract smoke: NOT RUN
 MIZ embedding: NOT STARTED
+Embedded bundle hash: UNKNOWN
+Embedded Moose.lua hash: UNKNOWN
 DCS runtime: NOT RUN
 Acceptance classification: NOT_RUN
 ```
 
-Der nächste Gate ist ausschließlich lokaler PowerShell-Build plus unabhängige SHA-256-Prüfung. Erst nach Rückgabe dieser realen Ausgabe wird die MIZ-Einbindung vorbereitet.
+## 11. Nächster Gate
+
+Nach dem erfolgreichen Build ist jetzt ausschließlich die konkrete Arbeits-MIZ auszuwählen und deren Objekt-/Startup-Vertrag read-only zu prüfen.
+
+```text
+select concrete work MIZ
+-> record MIZ SHA-256
+-> inspect internal mission SHA-256
+-> confirm WH_BLUE_GND_JOYCE
+-> confirm ZON_BLUE_GND_JOYCE_ACCESS
+-> confirm ZON_BLUE_GND_HONAKER_ACCESS
+-> confirm TPL_BLUE_GND_SUP_M1083
+-> confirm Moose.lua + Warehouse Base + Ground Base startup resources/triggers
+-> only then embed acceptance bundle
+```
+
+Kein DCS-Lauf vor vollständigem statischem Preflight nach Dokument 22.
