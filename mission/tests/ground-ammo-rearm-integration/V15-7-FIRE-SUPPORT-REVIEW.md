@@ -6,12 +6,13 @@ owning_policy: OMW-GOV-001
 authoritative_for:
   - read-only v15(7) Ground fire-support inventory evidence
   - source-reviewed ARTY RearmingGroup applicability boundary for fixed fire-support consumers
+  - current owner decisions for Fire-Support proxy retention and DCS-test consolidation
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
 superseded_by:
 source_branch: agent/ground-ammo-rearm-integration
-source_commit: f3f32f5f4005d0c2dd1714a725b64b1282b46833
+source_commit: b58f788dcd6ea194f31715d27d9b02cc1008a3ca
 validated_in_dcs: false
 ---
 
@@ -123,7 +124,40 @@ OMW_GroundAmmoRearmAdapter.lua
 
 ist bereits weitgehend standortunabhängig und koppelt CampaignState an den öffentlichen MOOSE-`ARTY`-FSM.
 
-Vor einer produktiven Ausweitung darf daher nicht je FOB ein eigener nahezu identischer Rearm-Stack kopiert werden. Der nächste Architektur-Review muss prüfen, welche Bostick-spezifischen Teile reine Konfiguration sind und in einen gemeinsamen Fixed-Fire-Support-Rearm-Service überführt werden können.
+Vor einer produktiven Ausweitung darf daher nicht je FOB ein eigener nahezu identischer Rearm-Stack kopiert werden.
+
+Der Branch enthält deshalb jetzt zusätzlich die standortneutralen Source-Contracts:
+
+```text
+scripts/ground/OMW_FixedFireSupportAmmoSupport.lua
+scripts/ground/OMW_FixedFireSupportAmmoRearmService.lua
+```
+
+Diese Schicht generalisiert ausschließlich die bereits vorhandene Komposition:
+
+```text
+MOOSE BRIGADE/PLATOON/WAREHOUSE self-request materialization
++ bestehender GroundRoadSpawnAdapter
++ bestehender GroundAmmoRearmAdapter
++ MOOSE ARTY SetRearmingGroup/Rearm FSM
+```
+
+Standortidentität wird über Konfiguration geliefert:
+
+```text
+nodeId
+carrierEntityId
+templateName
+platoonName
+assignment
+accessZone
+forwardCoordinate
+alias
+```
+
+Es wird kein eigener Dispatcher, kein zusätzlicher Spawnpfad, kein eigener Rearm-FSM und keine zweite Ressourcenhoheit eingeführt.
+
+Die bisherigen Bostick-Module bleiben bis zur kombinierten Runtime-Acceptance unverändert als bereits praktisch belegter Referenzpfad erhalten. Eine Ablösung oder Löschung erfolgt erst nach erfolgreicher gemeinsamer Acceptance und ist nicht aus dem Source-Review abzuleiten.
 
 Dabei bleiben verbindlich:
 
@@ -136,9 +170,59 @@ DCS groups = temporäre physische Repräsentation
 
 Keine zusätzliche Native-DCS-Rearm-Logik, kein eigener Truck-Dispatcher und keine zweite Ressourcenhoheit werden eingeführt.
 
+## Aktuelle Ressourcen-Nodes
+
+Die aktuelle Ground-Resource-Baseline führt für den Vier-Consumer-Scope bereits eigenständige CampaignState-Nodes:
+
+```text
+GROUND_NODE_FORTRESS
+GROUND_NODE_WRIGHT
+GROUND_NODE_HONAKER
+GROUND_NODE_BOSTICK
+```
+
+Damit benötigt die Fire-Support-Rearm-Komposition keine neue strategische Ressourcenautorität und keine künstliche gemeinsame Bostick-Ressource für andere Standorte.
+
+## Owner-Entscheidung – aktuelle DCS-Waffen bleiben zunächst bestehen
+
+Nach Vergleich der in DCS verfügbaren BLUE-Alternativen bleibt die aktuelle Mission zunächst unverändert:
+
+```text
+Bostick   -> L118
+Wright    -> L118
+Fortress  -> L118
+Honaker   -> 2B11 mortar
+```
+
+Für Bostick ist historische 155-mm-Feuerunterstützung belegt. Die verfügbare DCS-M109 bildet zwar Kaliber und Reichweitenklasse besser ab, bringt in der konkreten Kunar-Geometrie aber keinen ausreichenden operativen Reichweitengewinn, um die deutlich schlechtere visuelle und organisatorische Proxy-Passung zu rechtfertigen.
+
+Daher erfolgt **kein aktueller Wechsel auf M109**. Diese Entscheidung ändert keine historische Quellenbewertung; sie ist eine Missionsdesign-/Proxy-Entscheidung.
+
+## Owner-Entscheidung – DCS-Testzeit bündeln
+
+Ein DCS-Lauf kostet praktisch mindestens etwa 30 Minuten. Kleine Folgetests, die nur unwesentlich vom unmittelbar vorherigen PASS abweichen, werden deshalb vermieden, sofern sie nicht der konkreten Fehlerbehebung oder Fehlerisolierung dienen.
+
+Standard für diesen Scope:
+
+```text
+kein separater Bostick-only Regression Run
+
+nächster DCS-Lauf nach Möglichkeit kombiniert:
+- Bostick: Regression des bereits validierten Pfades nach Source-Härtung
+- Wright: L118 Rearm
+- Fortress: L118 Rearm
+- Honaker: 2B11 Rearm über explicit RearmingGroup
+- getrennte Subsystemmarker und getrennte Standortergebnisse
+- ein Aggregatergebnis
+```
+
+Ein separater kleiner Lauf ist nur vorgesehen, wenn ein konkreter Fehler anders nicht sauber isoliert oder behoben werden kann.
+
 ## Noch nicht bestätigt
 
 ```text
+- generischer FixedFireSupportAmmoSupport in DCS
+- generischer FixedFireSupportAmmoRearmService in DCS
 - Wright L118 rearm in DCS
 - Fortress L118 rearm in DCS
 - Honaker 2B11 mortar rearm in DCS
@@ -152,6 +236,16 @@ Diese Punkte dürfen nicht aus dem Bostick-PASS extrapoliert werden.
 
 ## Nächster technischer Schritt
 
-Zuerst wird der aktuelle Branch-Source nach Abschluss der bereits gestagten Lifecycle-Hygiene gegen diesen Vier-Consumer-Scope reconciliert. Ziel ist die kleinste MOOSE-first Generalisierung ohne Duplikation der bestehenden Bostick-Komposition.
+Die Source-Generalisation ist jetzt als standortneutraler Contract vorbereitet. Vor dem nächsten DCS-Lauf folgt:
 
-Ein weiterer DCS-Lauf wird erst nach Source-/Contract-Prüfung und einem kombinierten Acceptance-Plan angefordert; kein identischer Bostick-Einzellauf wird wiederholt.
+```text
+1. Source-/Contract-Diff prüfen.
+2. Generische Contract-Tests in die Ground-Test-Suite aufnehmen.
+3. Kombinierten Vier-Consumer-Acceptance-Harness entwerfen.
+4. Pro Standort sichere und eindeutige Testziel-Geometrie festlegen.
+5. Notwendige MIZ-Änderungen vor Mutation ausdrücklich freigeben.
+6. EIN kombiniertes Bundle bauen und per Hashkette in die freigegebene MIZ einbinden.
+7. EINEN kombinierten DCS-Lauf durchführen.
+```
+
+Kein identischer oder nahezu identischer Bostick-Einzellauf wird ohne Fehlerbehebungsgrund wiederholt.
