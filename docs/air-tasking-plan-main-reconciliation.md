@@ -275,3 +275,11 @@ Für den aktuellen Scope wurden keine neuen blockierenden Air-Tasking-Codefehler
 Gemäß `docs/DOCUMENT-METADATA-POLICY.md` ist `source_commit: PENDING_MERGE` auf einem offenen PR-Branch zulässig. Der Wert bleibt bis zur tatsächlichen Integration bestehen und darf auf `main` anschließend nicht verbleiben.
 
 Vor einer Integration ist damit nur noch die ausdrückliche Owner-Freigabe für `Ready for Review` beziehungsweise Merge erforderlich. Ein Merge erfolgt nicht automatisch.
+
+## 14. Übergabe und aktualisierte TODO-Liste
+
+Der vollständige Übergabestand mit Ziel, aktuellem Status, Entscheidungen, Fehlern, Lösungen, Evidenz, lokalen Worktree-Hinweisen und den verbleibenden Schritten bis zur Integration ist hier dokumentiert:
+
+- [`OMW-HANDOFF-AIR-TASKING-MAIN-RECONCILIATION-2026-08-22`](handoffs/2026-08-22-air-tasking-plan-main-reconciliation-handoff.md)
+
+Diese Übergabe ist für die Fortsetzung maßgeblich, ersetzt aber keine BINDING-Governance- oder Architekturentscheidung.
