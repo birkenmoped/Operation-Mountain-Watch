@@ -127,7 +127,8 @@ local currentCoordinate = {
     return returnDistance
   end,
 }
-local materializedGroup = {
+local materializedGroup
+materializedGroup = {
   name = "HONAKER-M1083-001",
   GetCoordinate = function()
     if not materializedGroup.coordinateCaptured then
