@@ -272,23 +272,32 @@ PR: 112
 Merge commit: 761f392bbd4e9ffee416e2e598235d9040a9a752
 ```
 
-Danach wurden die produktiven Bundles real auf `main` neu gebaut:
+Danach wurden die produktiven Bundles real auf `main` neu gebaut und ihre erzeugten Dateien separat mit `Get-FileHash -Algorithm SHA256` geprüft:
 
 ```text
+Build Git HEAD:
+761f392bbd4e9ffee416e2e598235d9040a9a752
+
 AirOps Warehouse Production
 BuilderVersion: OMW-AIROPS-WAREHOUSE-BASE-3
 Output: mission/runtime/logistics/OMW_AirOps_Warehouse_Base.lua
 Builder-reported BundleSHA256:
 F4FBF6DB71E56AADBF0B31C931638754FF4DDB75F90E570BA127E56A0251974F
+Direct Get-FileHash SHA-256:
+F4FBF6DB71E56AADBF0B31C931638754FF4DDB75F90E570BA127E56A0251974F
+Result: MATCH / VERIFIED
 
 Ground Production
 BuilderVersion: OMW-GROUND-PRODUCTION-BASE-4
 Output: mission/ground-operations/dist/OMW_Ground_Base.lua
 Builder-reported SHA256:
 A5D2A101FFEC3F1C222463002D7D5668C77EF6ACDEEDE1D8B8FEEB5E19D2E026
+Direct Get-FileHash SHA-256:
+A5D2A101FFEC3F1C222463002D7D5668C77EF6ACDEEDE1D8B8FEEB5E19D2E026
+Result: MATCH / VERIFIED
 ```
 
-Die separaten direkten `Get-FileHash`-Readbacks der beiden korrekten Ausgabepfade stehen noch aus. Bis zu dieser realen Rückmeldung gelten die beiden Werte ausschließlich als Builder-Ausgabe.
+Die direkte Artefaktprüfung bestätigt damit exakt die realen Builder-Ausgaben. Für diese post-merge Build-/Hash-Verifikation ist kein erneuter DCS-Lauf erforderlich.
 
 ## 11. Mission-Editor Cleanup nach Acceptance
 
@@ -333,6 +342,7 @@ Acceptance 2-11 restore settlement: DCS PASS within same-session runtime snapsho
 Exact runtime MIZ provenance: CLOSED
 PR #112: MERGED
 Post-merge production rebuild: COMPLETE
-Post-merge direct production artifact hash readback: PENDING
+Post-merge direct production artifact hash readback: VERIFIED
+Ground rearm integration block: CLOSED
 External filesystem/server persistence host: NOT PRESENT / NOT TESTED / NOT CLAIMED
 ```
