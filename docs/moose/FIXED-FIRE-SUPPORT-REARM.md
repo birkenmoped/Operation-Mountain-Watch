@@ -103,7 +103,7 @@ Anforderung:
 - Abstand zu HESCOs, Gebäuden, Statics und anderen Ground Units berücksichtigen
 ```
 
-Der private `OMW_GroundRoadSpawnAdapter` bleibt außerhalb des produktionsnahen Fixed-Fire-Support-Pfades. Die kombinierte Acceptance 2 verwendet für alle vier Standorte den normalen M1083-/SetSpawnZone-Vertrag ohne Road-Spawn-Ausnahme.
+Der private `OMW_GroundRoadSpawnAdapter` bleibt außerhalb des produktionsnahen Fixed-Fire-Support-Pfades. Die kombinierte Acceptance verwendet für alle vier Standorte den normalen M1083-/SetSpawnZone-Vertrag ohne Road-Spawn-Ausnahme.
 
 ## 5. ARTY-Rearm und Rückkehr
 
@@ -126,9 +126,18 @@ WAREHOUSE:AddAsset(Group)
 
 Damit bleibt der operative Asset-/Stock-Lifecycle MOOSE-owned. CampaignState bleibt alleinige strategische Autorität für `GROUND_AMMO_PACKAGE`.
 
-## 6. Korrigierte DCS-Rearm-Interpretation und 2B11-Diagnose
+## 6. 2B11-Rearm: korrigierte Evidenzgrenze
 
-Frühere partielle 2B11-Entleerungen wurden zunächst als möglicher Support-/Weapon-Type-Fehler interpretiert. Die anschließende Diagnose zeigte für den exakt getesteten Stand:
+Die Diagnose wurde gezielt auf vollständige 2B11-Munitionsentleerung angehoben. Der getestete Harness verlangte:
+
+```text
+fireShells = 40
+requireAmmoDepleted = true
+postFireAmmo == 0
+Support request erst nach bestätigter Vollentleerung
+```
+
+Der reale DCS-Lauf bestätigte:
 
 ```text
 2B11 40 -> 0
@@ -156,45 +165,41 @@ Belegbare Schlussfolgerung:
 
 ```text
 - kein 2B11-Defekt nachgewiesen
-- keine M1083-Inkompatibilität nachgewiesen
-- DCS bestimmt den tatsächlichen Rearm-Zeitpunkt
 - kein Custom-Rearm für 2B11 erforderlich
+- vollständige Entleerung ist für den getesteten 2B11-Rearm-Pfad die nachgewiesene Voraussetzung
+- partielle Entleerung ist NICHT als funktionierender 2B11-Rearm-Pfad nachgewiesen
 ```
 
-Die zwischenzeitliche M939-/40-Schuss-Vollentleerungsvariante bleibt Diagnoseevidenz und ist kein Produktionsvertrag.
+Die frühere Formulierung, DCS bestimme bei partieller 2B11-Entleerung lediglich den späteren Rearm-Zeitpunkt, war durch die Evidenz nicht gedeckt und ist verworfen.
 
-## 7. Produktiver Fixed-Fire-Support-Vertrag nach Diagnose-Rückbau
+## 7. M1083-Entscheidung und produktionsnaher Vertrag
 
-Der aktive kombinierte Acceptance-Vertrag verwendet wieder einheitlich:
+Owner-Entscheidung vom 22.08.2026:
+
+```text
+Honaker verwendet TPL_BLUE_GND_SUP_M1083.
+Eine weitere Bestätigung des M1083 als Supportfahrzeug ist nicht erforderlich.
+```
+
+Der zwischenzeitlich verwendete M939 war ausschließlich Diagnosemittel. Er ist weder Produktionsvertrag noch offene Vergleichsvariable.
+
+Der korrigierte produktionsnahe Vertrag lautet:
 
 ```text
 BOSTICK   -> TPL_BLUE_GND_SUP_M1083 / 4 rounds
 WRIGHT    -> TPL_BLUE_GND_SUP_M1083 / 4 rounds
 FORTRESS  -> TPL_BLUE_GND_SUP_M1083 / 4 rounds
-HONAKER   -> TPL_BLUE_GND_SUP_M1083 / 4 rounds
+HONAKER   -> TPL_BLUE_GND_SUP_M1083 / 40 rounds / requireAmmoDepleted=true
 ```
 
-Nicht mehr aktiv:
+Für Honaker gilt zusätzlich:
 
 ```text
-TPL_BLUE_GND_SUP_M939 for Honaker
-fireShells = 40
-requireAmmoDepleted
-HONAKER_AMMO_DEPLETED
-HONAKER_REARM_REQUEST_AFTER_EMPTY
-HONAKER_AMMO_NOT_DEPLETED
+postFireAmmo == 0
+-> erst dann Support request / ARTY Rearm
 ```
 
-Revision 2-8 wurde real gebaut und gehasht:
-
-```text
-Source / Git HEAD: 02093710b7feabf3440cb04674f7799207b9da5e
-BuilderVersion: GROUND-FIRE-SUPPORT-ACCEPTANCE-2-8
-GeneratedUtc: 2026-08-22T12:49:12Z
-Bundle SHA-256: 54019389DF61173BAA732524F716DFAC7930B2E74B226445167588380554FF0B
-```
-
-Dieser Nachweis ist Build-/Contract-Evidenz, kein zusätzlicher DCS-Runtime-PASS.
+Der frühere Rückbau auf `HONAKER / M1083 / 4 rounds` war fachlich falsch. Dabei wurde die notwendige Vollentleerungsbedingung irrtümlich zusammen mit der M939-Diagnosevariable entfernt. Die historische Build-/Hash-Evidenz der Revisionen 2-8 und 2-9 bleibt erhalten, definiert aber nicht mehr den gültigen Honaker-Acceptance-Vertrag.
 
 ## 8. LOCAL REARM Restart/Replay – Option B
 
@@ -296,7 +301,7 @@ GroundAmmoRearmAdapterSchema: OMW-GROUND-AMMO-REARM-ADAPTER-2
 Bundle SHA-256: 9AAF32A10A9EEB906123AFD37FF14B62542EE7C78F7B5E81E388A22F41EABEAB
 ```
 
-Fixed Fire Support Acceptance:
+Historical Fixed Fire Support Acceptance build:
 
 ```text
 BuilderVersion: GROUND-FIRE-SUPPORT-ACCEPTANCE-2-9
@@ -304,30 +309,15 @@ GeneratedUtc: 2026-08-22T13:06:55Z
 Bundle SHA-256: D0E628C58567CB46126048AA2903F17C9D15F316C415FFB755FD0192B230EA09
 ```
 
-Die Builder-Ausgaben und die unmittelbar danach separat ausgeführten `Get-FileHash -Algorithm SHA256`-Prüfungen stimmen für alle drei Bundles exakt überein.
-
-Bestätigte Builder-Gates:
-
-```text
-LocalRearmRestartCompensation: true
-LocalRearmPhysicalReplay: false
-DurableRearmCompletion: true
-ValidateAndRepositionGroundUnits: false
-PinnedMooseRepositionDefectGuard: true
-ApprovedRoadSpawnException: false
-SupportReturnToStock: true
-HonakerM939Diagnostic: false
-MizMutation: false
-```
-
-Dieser Nachweis bestätigt Build, Contract-Gates und Hash-Konsistenz. Er validiert noch nicht den neuen `COMPLETED`- oder Restart-Compensation-Pfad in DCS.
+Die Produktionsbundle-Provenienz bleibt gültig. Der Acceptance-2-9-Harness muss wegen der falsch entfernten Honaker-Vollentleerungsbedingung korrigiert werden.
 
 ## 11. Acceptance-Grenze
 
 Für einen neuen erfolgreichen Runtime-Nachweis muss die kombinierte Acceptance nachweisen:
 
 ```text
-fire
+Bostick/Wright/Fortress:
+fire 4 rounds
 -> ammo decrease
 -> local M1083 materialization
 -> exactly one CampaignState GROUND_AMMO_PACKAGE consumed
@@ -336,7 +326,17 @@ fire
 -> SITE_REARM_COMPLETED
 -> ARTY-owned support return
 -> WAREHOUSE AddAsset return-to-stock
--> no physical support group remains
+-> SITE_PASS
+
+Honaker:
+2B11 40 -> 0
+-> HONAKER_AMMO_DEPLETED
+-> M1083 support request
+-> ARTY Rearm
+-> CampaignState transaction COMPLETED
+-> SITE_REARM_COMPLETED
+-> ARTY-owned support return
+-> WAREHOUSE AddAsset return-to-stock
 -> SITE_PASS
 ```
 
@@ -350,10 +350,13 @@ Der Restart-Compensation-Pfad darf nur dann als DCS-validiert markiert werden, w
 MOOSE source review: COMPLETE for documented APIs
 Pinned reposition defect: RUNTIME CONFIRMED / excluded
 M1083 local SetSpawnZone path: RUNTIME CONFIRMED for prior acceptance provenance
+M1083 as Honaker production support: OWNER CONFIRMED / no further confirmation required
 2B11 40 -> 0 -> 40 diagnosis: RUNTIME CONFIRMED for exact diagnostic provenance
-Diagnostic rollback: BUILD VERIFIED
+2B11 partial-ammo rearm: NOT PROVEN / must not be assumed
+Honaker full-depletion acceptance condition: REQUIRED
 Option B source implementation: COMPLETE
 Option B production bundles: BUILD/HASH VERIFIED
-Option B DCS COMPLETED-path acceptance: PENDING
+Current Acceptance-2-9 harness: REQUIRES HONAKER CONTRACT CORRECTION
+Option B DCS COMPLETED-path acceptance: PENDING corrected harness
 Option B DCS restart-compensation acceptance: PENDING REAL RESTORE PROVENANCE
 ```
