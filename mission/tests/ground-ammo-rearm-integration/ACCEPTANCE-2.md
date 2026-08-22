@@ -13,14 +13,14 @@ supersedes:
 superseded_by:
 source_branch: agent/ground-ammo-rearm-integration
 source_commit: PENDING_MERGE
-validated_in_dcs: partial
+validated_in_dcs: true
 ---
 
 # Ground Fire Support Acceptance 2 – gebündelter Abschlusslauf
 
-## 1. Ziel
+## 1. Ziel und Vertrag
 
-Die verbleibenden Runtime-Prüfungen von PR #112 werden nicht als Einzeltests ausgeführt. Revision 2-11 bündelt in **einem DCS-Lauf**:
+Revision 2-11 bündelt die verbleibenden Runtime-Prüfungen in einem DCS-Lauf:
 
 ```text
 Phase A: reale MOOSE/DCS-Rearm-Legs
@@ -30,17 +30,17 @@ Fortress  L118 / M1083 / 4 rounds
 Honaker   2B11 / M1083 / 40 -> 0
 
 Phase B: CampaignState Restore-Settlement auf isolierten Snapshot-Kopien
-CONSUMED   -> COMPENSATED exactly once
+CONSUMED    -> COMPENSATED exactly once
 COMPENSATED -> repeated restore without duplicate credit
-COMPLETED  -> preserved without compensation
-RESERVED   -> CANCELLED
-LOADING    -> CANCELLED
+COMPLETED   -> preserved without compensation
+RESERVED    -> CANCELLED
+LOADING     -> CANCELLED
 new transaction after compensation -> new ID -> COMPLETED
 ```
 
 `CampaignState` bleibt einzige strategische Ressourcenautorität.
 
-## 2. MOOSE-Provenienz und zulässiger Pfad
+## 2. MOOSE-Provenienz
 
 ```text
 MOOSE release: 2.9.18
@@ -49,7 +49,7 @@ Moose.lua SHA-256:
 E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915
 ```
 
-Verwendete öffentliche MOOSE-Verträge:
+Verwendete MOOSE-Verträge:
 
 ```text
 WAREHOUSE:SetSpawnZone(...)
@@ -62,59 +62,18 @@ ARTY OnAfterRearmed
 SCHEDULER:New(...)
 ```
 
-Bewusst ausgeschlossen:
+Ausgeschlossen bleiben:
 
 ```text
 WAREHOUSE:SetValidateAndRepositionGroundUnits(...)
 MIST
 MOOSE patch / UTILS.GetCenterPoint fallback
-private/native DCS spawn/rearm parallel path
+private/native DCS rearm parallel path
 ```
 
-Der gepinnte `SetValidateAndRepositionGroundUnits`-Pfad ist wegen des real reproduzierten fehlenden `UTILS.GetCenterPoint` ausgeschlossen. Lokale Materialisierung erfolgt über kontrollierte Mission-Editor-RESUPPLY-Zonen und `WAREHOUSE:SetSpawnZone(...)`.
+## 3. Honaker / 2B11
 
-## 3. 2B11-Evidenz und Honaker-Vertrag
-
-Der real bestätigte Diagnosepfad lautet:
-
-```text
-2B11 40 -> 0
--> support request
--> 0 -> 40
--> SITE_REARMED
--> SITE_SUPPORT_RETURNED
--> SITE_PASS
--> aggregate PASS
-```
-
-Provenienz:
-
-```text
-Source: 5c5fa0ba7653ef51144ca0223dd7cad0ad36f0a7
-BuilderVersion: GROUND-FIRE-SUPPORT-ACCEPTANCE-2-7
-Bundle SHA-256: 1655E4F2F5D4AB69BF4BDAFBD82CE3D8FF0049CD557245336B71C275F21BED3D
-DCS: 2.9.28.26385 MT
-Executed mission: OMW_Template_v16.miz
-dcs.log SHA-256: B3C218B81D5A3C386213E4721F1F1AF12C53DF840C8BB758FE7147E6BAF5FD10
-debrief.log SHA-256: 0014C8FE4A4E3BD7DE3D3AF0BCB3DC30C30E786470F1EDA951EBD582F1A48FAE
-```
-
-Belegbare Grenze:
-
-```text
-vollständige Entleerung = nachgewiesene Voraussetzung des getesteten 2B11-Rearm-Pfades
-partielle Entleerung = NICHT als funktionierender 2B11-Rearm-Pfad nachgewiesen
-```
-
-Owner-Entscheidung vom 22.08.2026:
-
-```text
-Honaker support template: TPL_BLUE_GND_SUP_M1083
-weitere Bestätigung des M1083 als Supportfahrzeug: NICHT ERFORDERLICH
-M939: historische Diagnosevariable, keine Produktionsalternative
-```
-
-Aktiver physischer Vertrag:
+Aktiver Vertrag:
 
 ```text
 BOSTICK   -> TPL_BLUE_GND_SUP_M1083 / 4 rounds
@@ -123,9 +82,9 @@ FORTRESS  -> TPL_BLUE_GND_SUP_M1083 / 4 rounds
 HONAKER   -> TPL_BLUE_GND_SUP_M1083 / 40 rounds / requireAmmoDepleted=true
 ```
 
-Honaker löst den Support-/Rearm-Request erst bei `postFireAmmo == 0` aus.
+Honaker darf den Support-/Rearm-Request erst bei `postFireAmmo == 0` auslösen. M1083 ist owner-confirmed; M939 bleibt historische Diagnosevariable.
 
-## 4. Option B – Completion-/Restore-Vertrag
+## 4. Option B
 
 Owner-approved:
 
@@ -144,21 +103,7 @@ Restore mit CONSUMED aber nicht COMPLETED
 -> later rearm requires a new transaction ID
 ```
 
-Implementierte Domain-/Adapter-Verträge:
-
-```text
-CampaignState.TransactionStatus.COMPLETED
-CampaignState.TransactionStatus.COMPENSATED
-Store:CompleteConsumption(...)
-Store:MarkConsumptionCompensated(...)
-Store:ExportSnapshot()
-CampaignState.Restore(...)
-GroundAmmoRearmAdapter.ReconcileRestore(...)
-```
-
 ## 5. Produktionsbundle-Provenienz
-
-Vom Projektinhaber real gebaut und gehasht:
 
 ```text
 Source / Git HEAD: 49f43a856c1f8bc32ca64835af856119a295640e
@@ -173,122 +118,95 @@ BuilderVersion: OMW-GROUND-PRODUCTION-BASE-4
 SHA-256: 9AAF32A10A9EEB906123AFD37FF14B62542EE7C78F7B5E81E388A22F41EABEAB
 ```
 
-Diese Produktionsbundles bleiben für Revision 2-11 unverändert.
-
-Korrigierte Revision 2-10 wurde ebenfalls real gebaut/gehasht, aber bewusst nicht als zusätzlicher Einzel-DCS-Test angesetzt:
+## 6. Acceptance 2-11 Build-/Runtime-Provenienz
 
 ```text
-Source / Git HEAD: f4e781a92bfc74062c48b46b91474f632e69d585
-BuilderVersion: GROUND-FIRE-SUPPORT-ACCEPTANCE-2-10
-GeneratedUtc: 2026-08-22T13:44:16Z
-Bundle SHA-256: 1180884FEB764F95CFD89D72CE2D04BE633A9FD73AE0939AE4B476179A5977C5
+Acceptance source/build commit:
+d52a47a418fe3a1a996a5b68198b8dc033ff86c4
+
+BuilderVersion:
+GROUND-FIRE-SUPPORT-ACCEPTANCE-2-11
+
+GeneratedUtc:
+2026-08-22T14:07:19Z
+
+Acceptance Bundle SHA-256:
+CBA3ACF5D835E6EF6AD11C3FDD295E178B2B8E6B9330749C15419A1638CF379B
+
+Executed mission:
+C:\Users\Sven\Saved Games\DCS.openbeta\Missions\OMW_Template_v16.miz
+
+Executed mission SHA-256:
+388F02C932BE83823543F97887B4EDBB9E6764D4CEBE543BD8423D43A6ED8620
+
+internal mission SHA-256:
+180D07D7001FA6EFBDD92D4867F8EDAEFFEFA72470FEE2AEC6A3616B5E919481
+
+DCS:
+2.9.28.26385 MT
+
+dcs(20260822-141914).log SHA-256:
+B65B3010612F9FEDCB90210C0799DE889F64A7D643818CD8326730716662D128
+
+debrief(20260822-141915).log SHA-256:
+ED298DC7A21F153021C50726A7B9D245BD9BAF098163D6D59B9D4CB593E40C39
 ```
 
-## 6. Revision 2-11 – gebündelte Runtime-Acceptance
+Der lokale Runtime-MIZ-Pfad wurde real mit `Get-FileHash -Algorithm SHA256` bestätigt. Sein Hash stimmt exakt mit dem hochgeladenen Prüfartefakt `OMW_Template_v16(2).miz` überein. Die Mission-Provenienz ist damit bytegenau geschlossen.
 
-### Phase A – reale physische Rearms
+## 7. Runtime-Ergebnis
 
-Pro Standort müssen nachgewiesen werden:
+Physische Phase:
 
 ```text
-SITE_START
-SITE_FIRE_COMPLETE
-SITE_REARM_REQUEST
-SITE_SUPPORT_MATERIALIZED
-SITE_CONSUMPTION_COMMITTED
-SITE_REARM_COMPLETED
-SITE_REARMED
-SITE_SUPPORT_RETURNED
-SITE_PASS
+BOSTICK   300 -> 296 -> 301 / M1083 / COMPLETED / return-to-stock / PASS
+WRIGHT    300 -> 296 -> 300/301 / M1083 / COMPLETED / return-to-stock / PASS
+FORTRESS  150 -> 146 -> 151 / M1083 / COMPLETED / return-to-stock / PASS
+HONAKER    40 ->   0 ->  40 / M1083 / COMPLETED / return-to-stock / PASS
 ```
 
-Zusätzlich Honaker:
+Honaker-Pflichtmarker:
 
 ```text
-initialAmmo = 40
-postFireAmmo = 0
 HONAKER_AMMO_DEPLETED
 HONAKER_REARM_REQUEST_AFTER_EMPTY
-supportTemplate = TPL_BLUE_GND_SUP_M1083
 ```
 
-### Phase B – Restore-Settlement im selben DCS-Lauf
-
-Nach vier `SITE_PASS` exportiert der Harness den aktuellen autoritativen Snapshot. Sämtliche Restore-Fixtures laufen auf `CampaignState.Restore(...)`-Kopien; der autoritative Runtime-Store darf nicht verändert werden.
-
-Geprüfte Fälle:
+Restore-Settlement im selben DCS-Lauf:
 
 ```text
-1. CONSUMED interruption
-   -> Restore
-   -> ReconcileRestore
-   -> exactly one restart credit
-   -> COMPENSATED
-
-2. repeated restore
-   -> COMPENSATED bleibt geschlossen
-   -> keine zweite Gutschrift
-
-3. new transaction after compensation
-   -> neue transactionId
-   -> COMPLETED
-   -> weiterer Restore
-   -> keine Compensation für COMPLETED
-
-4. RESERVED on restore
-   -> CANCELLED
-   -> Reservation freigegeben
-
-5. LOADING on restore
-   -> CANCELLED
-   -> Reservation freigegeben
+CONSUMED -> COMPENSATED exactly once                       PASS
+second restore -> no duplicate credit                     PASS
+new transaction after compensation -> new ID -> COMPLETED PASS
+COMPLETED restore -> no compensation                      PASS
+RESERVED restore -> CANCELLED                             PASS
+LOADING restore -> CANCELLED                              PASS
+authoritative runtime store isolation                     PASS
 ```
 
-Pflichtmarker:
-
-```text
-PHYSICAL_REARM_PHASE_PASS
-RESTORE_PHASE_START
-RESTORE_INTERRUPTED_SNAPSHOT
-RESTORE_COMPENSATION_PASS
-RESTORE_IDEMPOTENCE_PASS
-RESTORE_NEW_TRANSACTION_PASS
-RESTORE_COMPLETED_PRESERVED_PASS
-RESTORE_PRECOMMIT_CANCEL_PASS case=RESERVED
-RESTORE_PRECOMMIT_CANCEL_PASS case=LOADING
-RESTORE_SETTLEMENT_PASS
-```
-
-Gesamt-PASS:
+Gesamtmarker:
 
 ```text
 PASS FIXED_FIRE_SUPPORT_REARM_CONFIRMED=true sites=4 restoreSettlement=true
 ```
 
-## 7. Persistenzgrenze
-
-Die Repository-Prüfung ergibt:
+Vollständige Ergebnisdatei:
 
 ```text
-CampaignState besitzt ExportSnapshot() und Restore().
-GroundRuntimeIntegration erwartet einen vom Caller erzeugten oder wiederhergestellten Store.
-AirOpsWarehouseProduction kann einen extern bereitgestellten campaignContext übernehmen.
-Im aktuellen Branch existiert kein produktiver externer Dateisystem-/Server-Persistence-Host,
-der den CampaignState-Snapshot selbst auf Platte schreibt und nach Prozessneustart wieder lädt.
+mission/tests/ground-ammo-rearm-integration/results/2026-08-22-acceptance-2-11-runtime.md
 ```
 
-Revision 2-11 führt daher ausdrücklich **keine** neue Dateipersistenz ein:
+## 8. Persistenzgrenze
 
 ```text
-kein io/lfs
-keine MissionScripting.lua-Änderung
-kein zweiter Persistence-Host
-keine zweite Ressourcenautorität
+CampaignState ExportSnapshot -> Restore -> ReconcileRestore: DCS RUNTIME PASS
+externer Dateisystem-/Server-Persistence-Host: NICHT VORHANDEN
+realer DCS-Prozessrestart mit Snapshot-Datei: NICHT GETESTET / NICHT BEHAUPTET
 ```
 
-Der DCS-Lauf kann den realen `ExportSnapshot -> Restore -> ReconcileRestore`-Settlementvertrag in der DCS-Laufzeit validieren. Er beweist **nicht** einen externen Prozess-/Server-Restart über einen noch nicht vorhandenen Persistence-Host. Diese Grenze muss in der Ergebnisdokumentation erhalten bleiben.
+Keine `io`-/`lfs`-Persistenz, keine `MissionScripting.lua`-Änderung und keine zweite Persistenzautorität werden eingeführt.
 
-## 8. Mission-Editor-Vertrag
+## 9. Mission-Editor-Vertrag
 
 RESUPPLY-Zonen:
 
@@ -308,46 +226,14 @@ ZON_BLUE_GND_FORTRESS_ARTY_ACCEPTANCE_TARGET
 ZON_BLUE_GND_HONAKER_MORTAR_ACCEPTANCE_TARGET
 ```
 
-## 9. Revision-2-11 Buildstatus
-
-Vom Projektinhaber am 22.08.2026 real ausgeführt:
-
-```text
-Source / Git HEAD: d52a47a418fe3a1a996a5b68198b8dc033ff86c4
-BuilderVersion: GROUND-FIRE-SUPPORT-ACCEPTANCE-2-11
-GeneratedUtc: 2026-08-22T14:07:19Z
-Bundle SHA-256: CBA3ACF5D835E6EF6AD11C3FDD295E178B2B8E6B9330749C15419A1638CF379B
-```
-
-Builder-Ausgabe und direkt anschließendes `Get-FileHash -Algorithm SHA256` stimmen exakt überein. Damit ist Revision 2-11 `BUILD/HASH VERIFIED`. Dies ist noch kein DCS-Runtime-PASS.
-
-Verifizierte Builder-Vertragsmarker:
-
-```text
-HonakerSupportTemplate: TPL_BLUE_GND_SUP_M1083
-HonakerFireShells: 40
-HonakerRequireAmmoDepleted: true
-DurableRearmCompletion: true
-RestoreSettlementCombined: true
-InterruptedConsumedCompensation: true
-RepeatedRestoreIdempotence: true
-CompletedRestorePreservation: true
-PreCommitRestoreCancellation: RESERVED,LOADING
-NewTransactionAfterCompensation: true
-ExternalPersistenceHostClaim: false
-HonakerM939Diagnostic: false
-```
-
 ## 10. Status
 
 ```text
 Revision-2-7 full-depletion diagnostic: DCS PASS for exact provenance
-Revision-2-8/2-9 Honaker four-round rollback: HISTORICAL / invalid Honaker acceptance contract
 Revision-2-10 corrected contract: BUILD/HASH VERIFIED; no isolated DCS rerun
-Revision-2-11 bundled final acceptance: BUILD/HASH VERIFIED at d52a47a418fe3a1a996a5b68198b8dc033ff86c4
-Revision-2-11 DCS runtime: PENDING
-M1083 as Honaker support: OWNER CONFIRMED / no further confirmation required
+Revision-2-11 bundled acceptance: DCS PASS for exact documented scope
+Mission provenance: CLOSED
+M1083 as Honaker support: OWNER CONFIRMED
 Option-B production implementation: SOURCE COMPLETE / production bundles BUILD/HASH VERIFIED
-External filesystem/server persistence host: NOT PRESENT IN CURRENT BRANCH / not claimed by this acceptance
-VALIDATED for Revision-2-11 runtime claims: false
+External filesystem/server persistence host: NOT PRESENT / NOT TESTED / NOT CLAIMED
 ```
