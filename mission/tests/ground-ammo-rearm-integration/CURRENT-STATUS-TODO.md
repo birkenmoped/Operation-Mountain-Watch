@@ -33,6 +33,7 @@ fixed fire-support consumer
 -> ARTY:Rearm()
 -> DCS führt die Rearm-Mechanik aus
 -> MOOSE erkennt Rearmed
+-> CampaignState markiert die Transaktion COMPLETED
 -> Support kehrt zurück
 -> WAREHOUSE:AddAsset(...)
 -> physische Support-Gruppe wird wieder Warehouse-Bestand
@@ -50,6 +51,8 @@ E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915
 ```
 
 Der gepinnte Source enthält den ARTY-`Rearmed`-FSM-Pfad und den User-Hook `OnAfterRearmed`. Dieser vorhandene MOOSE-Callback ist der Completion-Anknüpfungspunkt; ein eigener Rearm-FSM oder FullAmmo-Scanner wird nicht eingeführt.
+
+Für Option B wurde **keine neue MOOSE-API** eingeführt. Die vorhandenen `PROJECT-CLASS-INDEX.md`-/`VERIFIED-METHODS.md`-Einträge für ARTY, WAREHOUSE und die verwendeten Callbacks bleiben deshalb die maßgebliche MOOSE-Evidenz; es erfolgt keine unbegründete Runtime-Aufwertung dieser Register.
 
 ## 4. Bereits abgeschlossen
 
@@ -187,25 +190,33 @@ HONAKER_AMMO_NOT_DEPLETED
 korrespondierende Builder-Gates und Diagnose-Header
 ```
 
-Die Diagnoseevidenz bleibt in der Dokumentation erhalten.
-
-Aktueller Builder:
+Realer Revision-2-8-Build:
 
 ```text
+Source / Git HEAD:
+02093710b7feabf3440cb04674f7799207b9da5e
+
+BuilderVersion:
 GROUND-FIRE-SUPPORT-ACCEPTANCE-2-8
+
+GeneratedUtc:
+2026-08-22T12:49:12Z
+
+Bundle SHA-256:
+54019389DF61173BAA732524F716DFAC7930B2E74B226445167588380554FF0B
 ```
 
-## 9. LOCAL REARM Restart/Replay – Owner-Entscheidung
+Dieser Nachweis ist Build-/Contract-Evidenz, kein neuer DCS-PASS.
+
+## 9. LOCAL REARM Restart/Replay – Owner-Entscheidung und Umsetzung
 
 ```text
-STATUS: OWNER APPROVED
+STATUS: OWNER APPROVED / SOURCE IMPLEMENTED
 DECISION: OPTION B
 DATE: 22.08.2026
 ```
 
-Der Projektinhaber hat Option B ausdrücklich genehmigt.
-
-Verbindlicher Implementierungsvertrag:
+Verbindlicher Vertrag:
 
 ```text
 Rearm accepted / physical service begins
@@ -216,28 +227,43 @@ OnAfterRearmed
 
 Server stop/crash while CONSUMED but not COMPLETED
 -> one-time restart compensation
+-> transaction = COMPENSATED
 -> old transaction remains historical/closed
 -> any later rearm requires a new transaction ID
 ```
+
+Implementiert wurde:
+
+```text
+CampaignState.TransactionStatus.COMPLETED
+CampaignState.TransactionStatus.COMPENSATED
+Store:CompleteConsumption(...)
+Store:MarkConsumptionCompensated(...)
+
+GroundAmmoRearmAdapter reservationId:
+GROUND-LOCAL-REARM:<transactionId>
+
+Restart creditId:
+GROUND-LOCAL-REARM-RESTART:<transactionId>
+
+GroundAmmoRearmAdapter.ReconcileRestore(...)
+CONSUMED   -> CreditResourceOnce + COMPENSATED
+COMPLETED  -> bleibt konsumiert
+COMPENSATED -> keine zweite Gutschrift
+RESERVED/LOADING -> Cancel / Reservation freigeben
+```
+
+`GroundRuntimeIntegration` führt beim bestehenden restored Attach zuerst den allgemeinen Ground-`ReconcileRestore()`-Pfad und danach die getrennte Local-Rearm-Reconciliation aus. Kein physischer DCS/MOOSE-Vorgang wird wiederholt.
 
 Zusätzliche Grenzen:
 
 ```text
 kein Replay des alten physischen DCS/MOOSE-Rearm-Vorgangs
-keine Wiederverwendung derselben Transaction ID
+keine Wiederverwendung einer bereits vorhandenen Transaction ID für einen neuen Rearm
 keine zweite Ressourcenhoheit im MOOSE Warehouse
 CampaignState bleibt strategische Autorität
 allgemeiner Ground-Restart-Reconciliation-Pfad bleibt unverändert
-LOCAL REARM ergänzt nur Completion-/Restart-Korrelation
-```
-
-MOOSE-first:
-
-```text
-OnAfterRearmed = vorhandener ARTY-FSM-Completion-Hook
-kein Custom-Rearm-FSM
-kein eigener FullAmmo-Scanner
-kein MOOSE-Patch
+kein neuer Persistenz-Host
 ```
 
 ## 10. Aktuelle TODO-Liste
@@ -251,10 +277,10 @@ STATUS: COMPLETE
 ### TODO 2 – MOOSE-/Acceptance-Dokumentation finalisieren
 
 ```text
-STATUS: OPEN
+STATUS: SUBSTANTIALLY COMPLETE / FINAL REVIEW PENDING
 ```
 
-Nachzutragen sind insbesondere SetSpawnZone, der gepinnte Reposition-Defekt, Support Return-to-stock, die korrigierte DCS-Rearm-Interpretation, die 2B11-Diagnoseevidenz und die genehmigte LOCAL-REARM-Restart-Semantik.
+`ACCEPTANCE-2.md` und `docs/moose/FIXED-FIRE-SUPPORT-REARM.md` enthalten jetzt Diagnoseevidenz, SetSpawnZone/Reposition-Boundary, Support Return-to-stock sowie Option-B-Completion-/Restart-Semantik. Für Option B wurde keine neue MOOSE-Methode eingeführt; daher ist keine künstliche Statusänderung in `PROJECT-CLASS-INDEX.md` oder `VERIFIED-METHODS.md` erforderlich.
 
 ### TODO 3 – Lifecycle-Hygiene / finaler Review
 
@@ -262,22 +288,15 @@ Nachzutragen sind insbesondere SetSpawnZone, der gepinnte Reposition-Defekt, Sup
 STATUS: SUBSTANTIALLY COMPLETE / FINAL REVIEW PENDING
 ```
 
-Der synchrone Materialisierungsfall ist im Source berücksichtigt. Der vollständige Diff-/Contract-Review bleibt vor PR-Abschluss erforderlich.
+Der synchrone Materialisierungsfall ist berücksichtigt. Die neuen Source-Contracts besitzen Tests für `COMPLETED`, exactly-once `COMPENSATED`, Pre-Commit-Cancel und die Verdrahtung über `GroundRuntimeIntegration`. Diese Lua-Tests sind im Repository vorhanden, wurden in diesem Arbeitsgang aber mangels dokumentierter ausführbarer Lua-CI **nicht als ausgeführt behauptet**.
 
-### TODO 4 – LOCAL REARM Completion-/Restart-Korrelation implementieren
-
-```text
-STATUS: OWNER APPROVED / IMPLEMENTATION OPEN
-```
+### TODO 4 – LOCAL REARM Completion-/Restart-Korrelation
 
 ```text
-CONSUMED -> durable COMPLETED correlation through CampaignState
-CONSUMED && not COMPLETED on restore -> exactly-once compensation
-old transaction -> historical/closed
-new physical rearm -> new transaction ID
+STATUS: SOURCE IMPLEMENTED / LOCAL BUILD-HASH PENDING
 ```
 
-Die Umsetzung muss den vorhandenen CampaignState Snapshot-/Restore-Pfad verwenden und darf keine zweite Persistenzautorität schaffen.
+Die Implementierung folgt dem owner-approved Option-B-Vertrag und nutzt ausschließlich den vorhandenen CampaignState Snapshot-/Restore-/Credit-Vertrag.
 
 ### TODO 5 – OP-Verluste und automatische Verstärkung
 
@@ -298,7 +317,7 @@ Erledigt:
 ```text
 [x] Acceptance-1 Provenienz
 [x] generalisierter Vier-Consumer-Harness
-[x] Bostick/Wright/Fortress Rearm PASS
+[x] Bostick/Wright/Fortress Rearm-PASS für dokumentierte ältere Provenienz
 [x] CampaignState Debit
 [x] lokaler WAREHOUSE Support-Spawn
 [x] SetSpawnZone
@@ -307,17 +326,22 @@ Erledigt:
 [x] WAREHOUSE AddAsset Return-to-stock
 [x] 2B11 40 -> 0 -> 40 Diagnose
 [x] Diagnosevertrag aus produktionsnahem Harness/Builder entfernt
+[x] Revision 2-8 real gebaut/gehasht
 [x] Option B ausdrücklich owner-approved
+[x] Option B source-seitig implementiert
+[x] Acceptance-Harness auf dauerhaften COMPLETED-Status angehoben
+[x] Ground-Production-Base um Local-Rearm-Restore-Reconciliation erweitert
 ```
 
 Offen:
 
 ```text
-[ ] neuen BuilderVersion-2-8-Bundle-Hash real ermitteln
-[ ] LOCAL REARM Completion-/Restart-Korrelation implementieren
-[ ] Acceptance-2 / MOOSE-Dokumentation finalisieren
+[ ] aktuellen Remote-Head lokal pullen
+[ ] AirOps Warehouse Production Base neu bauen/hashen, da CampaignState eingebettet wird
+[ ] Ground Production Base 4 bauen/hashen
+[ ] Acceptance-2 Revision 2-9 bauen/hashen
 [ ] finalen Diff / Contract / Builder prüfen
-[ ] falls neue Runtime-Claims erforderlich: gebündelter DCS-Test
+[ ] falls neue Runtime-Claims erforderlich: gebündelter DCS-Test des COMPLETED-Pfades
 [ ] Owner-Entscheidung PR #112 Ready / Merge
 ```
 
@@ -342,11 +366,11 @@ zweite Ressourcenhoheit im Warehouse einführen
 ```text
 Ground Ammo Rearm / Fixed Fire Support
         |
-        +-- Diagnose-Rückbau                 SOURCE COMPLETE
-        +-- LOCAL REARM Option B             OWNER APPROVED
-        +-- Builder 2-8 real bauen/hashen
-        +-- Completion/Restart implementieren
-        +-- Acceptance-/MOOSE-Doku finalisieren
+        +-- Diagnose-Rückbau                 COMPLETE / BUILD VERIFIED
+        +-- LOCAL REARM Option B             OWNER APPROVED / SOURCE IMPLEMENTED
+        +-- Doku-Reconciliation              SUBSTANTIALLY COMPLETE
+        +-- Production/Acceptance Builds     PENDING OWNER HASHES
         +-- finaler Review
-        `-- PR #112 Abschluss
+        +-- ggf. gebündelter DCS-COMPLETED-Test
+        `-- Owner-Entscheidung PR #112 Ready / Merge
 ```
