@@ -16,7 +16,7 @@ validated_in_dcs: true
 acceptance_branch: agent/ground-ammo-rearm-integration
 acceptance_commit: d52a47a418fe3a1a996a5b68198b8dc033ff86c4
 acceptance_mission: OMW_Template_v16.miz
-acceptance_mission_sha256: 388F02C932BE83823543F97887B4EDBB9E6764D4CEBE543BD8423D43A6ED8620
+acceptance_mission_sha256: 388f02c932be83823543f97887b4edbb9e6764d4cebe543bd8423d43a6ed8620
 dcs_version: 2.9.28.26385 MT
 moose_commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
 moose_lua_sha256: E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915
