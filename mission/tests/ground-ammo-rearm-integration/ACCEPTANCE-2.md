@@ -102,9 +102,18 @@ Root cause: ValidateAndRepositionGroundUnits -> missing UTILS.GetCenterPoint
 
 Danach wurde der fehlerhafte Pfad entfernt und `WAREHOUSE:SetSpawnZone(...)` beibehalten.
 
-## 4. 2B11-Diagnose
+## 4. 2B11-Diagnose und korrigierte Interpretation
 
-Ein diagnostischer Honaker-Lauf bewies für den exakt getesteten Stand:
+Die Honaker-Diagnose wurde bewusst auf vollständige Munitionsentleerung umgestellt. Der Harness verlangte:
+
+```text
+fireShells = 40
+requireAmmoDepleted = true
+postFireAmmo == 0
+Support request erst nach bestätigter Vollentleerung
+```
+
+Der reale Lauf bewies für den exakt getesteten Stand:
 
 ```text
 2B11 40 -> 0
@@ -128,42 +137,58 @@ dcs.log SHA-256: B3C218B81D5A3C386213E4721F1F1AF12C53DF840C8BB758FE7147E6BAF5FD1
 debrief.log SHA-256: 0014C8FE4A4E3BD7DE3D3AF0BCB3DC30C30E786470F1EDA951EBD582F1A48FAE
 ```
 
-Die Diagnose zeigt keinen 2B11-Defekt und keine nachgewiesene M1083-Inkompatibilität. DCS bestimmt den tatsächlichen Rearm-Zeitpunkt. Der M939-/40-Schuss-Zweig ist Diagnoseevidenz und kein Produktionsvertrag.
+Belegbare Schlussfolgerung:
 
-## 5. Diagnose-Rückbau
+```text
+- kein 2B11-Defekt nachgewiesen
+- kein Custom-Rearm für 2B11 erforderlich
+- vollständige Entleerung ist für den getesteten 2B11-Rearm-Pfad die nachgewiesene Voraussetzung
+- partielle Entleerung ist NICHT als funktionierender 2B11-Rearm-Pfad nachgewiesen
+```
 
-Der produktionsnahe Vertrag verwendet wieder:
+Die frühere Formulierung `DCS bestimmt den tatsächlichen Rearm-Zeitpunkt` war für partielle 2B11-Entleerung zu weitgehend und wird hiermit korrigiert.
+
+## 5. Aktiver produktionsnaher Honaker-Vertrag
+
+Owner-Entscheidung vom 22.08.2026:
+
+```text
+Honaker support template: TPL_BLUE_GND_SUP_M1083
+weitere Bestätigung des M1083 als Supportfahrzeug: NICHT ERFORDERLICH
+```
+
+Der M939 war ausschließlich Diagnosemittel und ist kein Produktionsvertrag.
+
+Für die 2B11-Munitionslogik bleibt dagegen die reale Diagnose maßgeblich:
 
 ```text
 BOSTICK   -> TPL_BLUE_GND_SUP_M1083 / 4 rounds
 WRIGHT    -> TPL_BLUE_GND_SUP_M1083 / 4 rounds
 FORTRESS  -> TPL_BLUE_GND_SUP_M1083 / 4 rounds
-HONAKER   -> TPL_BLUE_GND_SUP_M1083 / 4 rounds
+HONAKER   -> TPL_BLUE_GND_SUP_M1083 / 40 rounds / requireAmmoDepleted=true
 ```
 
-Entfernt:
+Honaker darf den Rearm-Request erst nach bestätigtem `postFireAmmo == 0` auslösen.
+
+Der frühere Revision-2-8/2-9-Rückbau auf `HONAKER / M1083 / 4 rounds` war fachlich falsch, weil er die nachgewiesene Vollentleerungsbedingung gemeinsam mit der M939-Diagnosevariable entfernt hat. Revision 2-8 und der bisherige Revision-2-9-Build bleiben als historische Build-/Contract-Evidenz erhalten, bilden aber **nicht** den korrigierten Honaker-Acceptance-Vertrag.
+
+Historische Builds:
 
 ```text
-TPL_BLUE_GND_SUP_M939 for Honaker
-fireShells = 40
-requireAmmoDepleted
-HONAKER_AMMO_DEPLETED
-HONAKER_REARM_REQUEST_AFTER_EMPTY
-HONAKER_AMMO_NOT_DEPLETED
-```
-
-Realer Revision-2-8-Build:
-
-```text
+Revision 2-8
 Source / Git HEAD: 02093710b7feabf3440cb04674f7799207b9da5e
 BuilderVersion: GROUND-FIRE-SUPPORT-ACCEPTANCE-2-8
 GeneratedUtc: 2026-08-22T12:49:12Z
 Bundle SHA-256: 54019389DF61173BAA732524F716DFAC7930B2E74B226445167588380554FF0B
+
+Revision 2-9
+Source / Git HEAD: 49f43a856c1f8bc32ca64835af856119a295640e
+BuilderVersion: GROUND-FIRE-SUPPORT-ACCEPTANCE-2-9
+GeneratedUtc: 2026-08-22T13:06:55Z
+Bundle SHA-256: D0E628C58567CB46126048AA2903F17C9D15F316C415FFB755FD0192B230EA09
 ```
 
-Dieser Build ist keine neue Runtime-Validierung.
-
-## 6. Option B – neuer Completion-Vertrag
+## 6. Option B – Completion-Vertrag
 
 Owner-approved Vertrag:
 
@@ -180,7 +205,7 @@ restored startup with CONSUMED but not COMPLETED
 -> no physical replay
 ```
 
-Die kombinierte Acceptance 2 prüft im normalen erfolgreichen Lauf jetzt zusätzlich:
+Die kombinierte Acceptance prüft im normalen erfolgreichen Lauf zusätzlich:
 
 ```text
 SITE_REARM_COMPLETED
@@ -189,7 +214,7 @@ CampaignState transaction status == COMPLETED
 
 Der Restart-Compensation-Fall ist ein eigener Restore-Nachweis und wird nicht aus einem normalen successful-rearm-Lauf abgeleitet.
 
-## 7. Real bestätigter Revision-2-9-Build
+## 7. Real bestätigte Option-B-Produktionsbundles
 
 Vom Projektinhaber am 22.08.2026 real ausgeführt:
 
@@ -197,24 +222,6 @@ Vom Projektinhaber am 22.08.2026 real ausgeführt:
 Source / Git HEAD:
 49f43a856c1f8bc32ca64835af856119a295640e
 
-BuilderVersion:
-GROUND-FIRE-SUPPORT-ACCEPTANCE-2-9
-
-TestId:
-GROUND-FIRE-SUPPORT-ACCEPTANCE-2
-
-GeneratedUtc:
-2026-08-22T13:06:55Z
-
-Bundle SHA-256:
-D0E628C58567CB46126048AA2903F17C9D15F316C415FFB755FD0192B230EA09
-```
-
-Der Builder-Hash und der anschließend separat mit `Get-FileHash -Algorithm SHA256` ermittelte Hash stimmen exakt überein.
-
-Zugehörige, ebenfalls real gebaute Produktionsbundles:
-
-```text
 AirOps Warehouse Production Base
 BuilderVersion: OMW-AIROPS-WAREHOUSE-BASE-3
 SHA-256: 472F72F3D688BB4B8624C882527DCA3DEBD42CDE5DD455AC63D7CD2D796BB735
@@ -222,29 +229,12 @@ SHA-256: 472F72F3D688BB4B8624C882527DCA3DEBD42CDE5DD455AC63D7CD2D796BB735
 Ground Production Base
 BuilderVersion: OMW-GROUND-PRODUCTION-BASE-4
 SHA-256: 9AAF32A10A9EEB906123AFD37FF14B62542EE7C78F7B5E81E388A22F41EABEAB
-```
 
-CampaignState Source im AirOps-Build:
-
-```text
+CampaignState Source
 SHA-256: 18189A633DBD78FC7EAFBDAF09601BC3241ADAD115DF09DA3EF28B1D85E3E093
 ```
 
-Bestätigte Builder-Gates:
-
-```text
-DurableRearmCompletion: true
-LocalRearmRestartCompensation: GroundBase restore path
-LocalWarehouseSpawnZones: true
-ValidateAndRepositionGroundUnits: false
-PinnedMooseRepositionDefectGuard: true
-ApprovedRoadSpawnException: false
-SupportReturnToStock: true
-HonakerM939Diagnostic: false
-MizMutation: false
-```
-
-Dieser Nachweis ist Build-/Hash-/Contract-Evidenz. Revision 2-9 ist noch nicht als DCS-Runtime-PASS dokumentiert.
+Diese Produktionsbundle-Provenienz bleibt gültig. Die notwendige Korrektur betrifft den Honaker-Acceptance-Harness und dessen Buildervertrag, nicht den M1083-Produktionsvertrag.
 
 ## 8. Mission-Editor-Vertrag
 
@@ -288,7 +278,7 @@ Anforderung für RESUPPLY:
 8. Keine CampaignState-Munition wird bei erfolgreichem Rearm zurückerstattet.
 ```
 
-## 10. PASS-Kriterien Revision 2-9
+## 10. PASS-Kriterien des korrigierten nächsten Acceptance-Builds
 
 Pflichtmarker pro Standort:
 
@@ -304,19 +294,14 @@ SITE_SUPPORT_RETURNED
 SITE_PASS
 ```
 
-Pro Standort:
+Zusätzlich Honaker:
 
 ```text
-- fire assignment accepted
-- ammunition decreases
-- M1083 materializes through public WAREHOUSE lifecycle in RESUPPLY zone
-- exactly one local GROUND_AMMO_PACKAGE consumed
-- ARTY reaches OnAfterRearmed
-- CampaignState transaction == COMPLETED
-- ammunition restored to at least initial baseline
-- ARTY-owned support return completes
-- WAREHOUSE:AddAsset returns known asset to stock
-- no physical support group remains after handoff
+initialAmmo = 40
+postFireAmmo = 0
+HONAKER_AMMO_DEPLETED
+HONAKER_REARM_REQUEST_AFTER_EMPTY
+supportTemplate = TPL_BLUE_GND_SUP_M1083
 ```
 
 Aggregate PASS:
@@ -325,7 +310,7 @@ Aggregate PASS:
 PASS FIXED_FIRE_SUPPORT_REARM_CONFIRMED=true sites=4
 ```
 
-## 11. Nicht Teil des normalen Revision-2-9-Runtime-Laufs
+## 11. Nicht Teil des normalen Runtime-Laufs
 
 ```text
 - real server restart between CONSUMED and COMPLETED
@@ -342,10 +327,13 @@ Der Restart-Compensation-Pfad wird nur mit eigener realer Snapshot-/Restore-Prov
 ## 12. Aktueller Status
 
 ```text
-Revision-2-7 diagnostic: DCS PASS for exact diagnostic provenance
-Revision-2-8 rollback: BUILD/HASH VERIFIED, no new DCS runtime claim
-Revision-2-9 Option-B candidate: BUILD/HASH VERIFIED
-Revision-2-9 DCS successful COMPLETED path: PENDING
+Revision-2-7 diagnostic: DCS PASS for exact full-depletion diagnostic provenance
+Revision-2-8 rollback: HISTORICAL BUILD/HASH EVIDENCE; Honaker full-depletion condition was incorrectly removed
+Revision-2-9 build: HISTORICAL BUILD/HASH EVIDENCE; Honaker contract requires correction
+M1083 production support choice for Honaker: OWNER CONFIRMED; no further confirmation required
+Corrected Honaker contract: M1083 + full 40-round depletion before rearm request
+Corrected next acceptance build: PENDING
+Option-B DCS COMPLETED-path acceptance: PENDING corrected Honaker harness
 Restart-compensation DCS restore provenance: PENDING
 VALIDATED for new Option-B runtime claims: false
 ```
