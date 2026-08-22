@@ -209,34 +209,52 @@ DCS: 2.9.28.26385 MT
 result: PASS
 ```
 
-Diese technische Acceptance bleibt als historische Evidenz gueltig, wird aber nach der MissionDemand-Reconciliation nicht auf den aktuellen Source-Head uebertragen.
+Diese technische Acceptance bleibt fuer ihren exakten Stand gueltig. Sie wird nicht auf den aktuellen Source-Head uebertragen, bleibt aber Teil-Evidenz fuer den unveraenderten physischen AAR-/LISA-/Handoff-/Settlement-Pfad.
 
-## 10. Current Gate 3
+## 10. Current reconciliation evidence
+
+Der reconciliierte Source-Stand wurde lokal gebaut und unabhaengig gehasht:
 
 ```text
-PHASE 3 RECONCILIATION: IMPLEMENTED, RETEST REQUIRED
-GATE 3 CURRENT HEAD: OPEN
+GitCommit: 93cae7cee601f2af242cfcc963accf499ddea7d8
+BuilderVersion: OMW-AIR-TASKING-AAR-ADDITIVE-TEST-3
+TestId: AIR-TASKING-AAR-VERTICAL-3
+MissionDemandContract: CANONICAL_MAIN_SHAPE_READ_ONLY
+AARRuntimeDemandTranslation: true
+LegacyAdapterProxyPath: false
+BundleSHA256: dc840397ca311802cee99cf98f7448c0371ce40388f324b31dd01de7bf1c82f3
+Independent Get-FileHash: dc840397ca311802cee99cf98f7448c0371ce40388f324b31dd01de7bf1c82f3
+```
+
+Der lokale Lua-Contract-Test wurde mangels lokalem Lua-Interpreter nicht ausgefuehrt und wird nicht als PASS behauptet.
+
+## 11. Owner decision on LISA retest
+
+Der Projektinhaber hat am 22.08.2026 entschieden, den LISA-spezifischen `AIR-TASKING-AAR-VERTICAL-3`-DCS-Retest nicht erneut durchzufuehren. Der bereits erfolgreiche `VERTICAL-2`-Lauf wird als bestehende Teil-Evidenz beibehalten. Der LISA-Test-Harness wurde vom Projektinhaber bereits aus der Arbeitsmission entfernt.
+
+Diese Entscheidung bedeutet ausdruecklich nicht:
+
+```text
+current source head validated in DCS
+VERTICAL-2 acceptance transferred to current source head
+new runtime PASS inferred without test
+```
+
+Sie bedeutet:
+
+```text
+no additional LISA retest gate for branch reconciliation
+historical VERTICAL-2 runtime evidence retained
+current source head remains validated_in_dcs: false
+```
+
+## 12. Current Gate 3
+
+```text
+PHASE 3 RECONCILIATION: IMPLEMENTED
+HISTORICAL VERTICAL-2: PASS FOR EXACT DOCUMENTED PROVENANCE
+CURRENT RECONCILED HEAD: BUILD PASS / NOT REVALIDATED IN DCS
 validated_in_dcs: false
 ```
 
-Neue Testbaseline:
-
-```text
-TestId: AIR-TASKING-AAR-VERTICAL-3
-BuilderVersion: OMW-AIR-TASKING-AAR-ADDITIVE-TEST-3
-```
-
-Vor einem neuen Gate-3-PASS sind mindestens erforderlich:
-
-```text
-local contract test
-local additive bundle build
-real source and bundle hashes
-manual Mission Editor insertion by project owner
-mission SHA-256
-DCS runtime test
-canonical MissionDemand translation assertions
-natural LISA arrival / handoff
-exact-once settlement
-RESULT PASS
-```
+Phase 3 ist damit fuer die weitere Branch-Reconciliation nicht durch einen erneuten LISA-Test blockiert. Eine spaetere Aenderung an AAR-Routing, AAR-Lifecycle, Strategic Adapter, Settlement, Runtime-Observer oder MissionDemand-to-AAR-Translation kann einen neuen DCS-Test erneut erforderlich machen.
