@@ -148,7 +148,7 @@ Result: PASS
 ### Stage 1B – Ground FUEL Joyce -> Honaker
 
 ```text
-Status: SOURCE_REVIEWED / STAGED / OWNER BUILD REQUIRED
+Status: SOURCE_REVIEWED / OWNER BUILD PASS / MISSION EDITOR INTEGRATION NEXT
 ```
 
 MOOSE-first review confirmed in the pinned source:
@@ -182,14 +182,6 @@ lateActivation=true
 6 CHAP_MATV
 ```
 
-Additional new templates present but not selected by this acceptance:
-
-```text
-TPL_BLUE_CONVOY_FUEL_STD_07
-TPL_BLUE_CONVOY_MIXED_LIGHT_06
-TPL_BLUE_CONVOY_MIXED_STD_07
-```
-
 Stage-1B target chain:
 
 ```text
@@ -219,18 +211,20 @@ JOYCE FUEL   40 -> 22
 HONAKER FUEL 36 -> 18 -> 36
 ```
 
-Staged files:
+Owner-local build evidence:
 
 ```text
-mission/tests/ground-resupply-execution/src/02-ground-fuel-resupply-acceptance.lua
-mission/tests/ground-resupply-execution/ACCEPTANCE-2.md
-tools/build-ground-fuel-resupply-acceptance-1.ps1
-```
-
-Builder:
-
-```text
-GROUND-FUEL-RESUPPLY-ACCEPTANCE-1-1
+Build Git HEAD: 4f651829e975f42d4aba44a9bd0813969a2f2d8b
+GeneratedUtc: 2026-08-22T19:25:35Z
+BuilderVersion: GROUND-FUEL-RESUPPLY-ACCEPTANCE-1-1
+Bundle SHA-256: A2C71E86244A2E6869E8A0A3D7384D917875064B11102CDA410A7DBD9C1C6922
+Independent bundle SHA-256: A2C71E86244A2E6869E8A0A3D7384D917875064B11102CDA410A7DBD9C1C6922
+Builder SHA-256: 3A8CFA93058C8595CE48E9BBE102D8F020BDC69B8D36F74DAF20E9CC439E18E4
+Acceptance source SHA-256: 38FF22AE66FB5B85BFDD4096AAF4AE05D4B0E53436AD5DB4DBC882FA2D93AA1A
+MissionDemand source SHA-256: E348E75B87135B99D780E07CA6B6FB7C3C530E048E9C6DE790328D147DE32848
+ResourceDemandPolicy source SHA-256: BDC20ACEDAB60F662093077B8320220EBB71C6C641CC604C4356231B8405913C
+GroundRoadSpawnAdapter source SHA-256: 1A81FB2E5270C493373CF5BF6EC01F5AFED47004BF25C4225524121155D983E8
+Build result: PASS
 ```
 
 Capacity remains intentionally undefined:
@@ -324,14 +318,15 @@ stage_1b_accepted_speed_fixture_kt: 27
 stage_1b_return_issue_delay_sec: 30
 stage_1b_return_settlement_delay_sec: 12
 stage_1b_builder_version: GROUND-FUEL-RESUPPLY-ACCEPTANCE-1-1
-stage_1b_local_owner_build: NOT_RUN
-stage_1b_bundle_sha256: UNKNOWN
+stage_1b_local_owner_build: PASS
+stage_1b_build_git_head: 4f651829e975f42d4aba44a9bd0813969a2f2d8b
+stage_1b_bundle_sha256: A2C71E86244A2E6869E8A0A3D7384D917875064B11102CDA410A7DBD9C1C6922
 stage_1b_mission_editor_integration: NOT_STARTED
 stage_1b_dcs_runtime: NOT_RUN
 production_runtime_implementation: NOT_YET_CREATED
-next_allowed_step: OWNER_POWERSHELL_BUILD_AND_HASH
+next_allowed_step: OWNER_MISSION_EDITOR_INTEGRATION_THEN_STATIC_PREFLIGHT
 ```
 
 ## 7. Nächster erlaubter Schritt
 
-Der Owner baut ausschließlich das Stage-1B-Acceptance-Bundle lokal per PowerShell und liefert die reale Ausgabe einschließlich unabhängiger Hashes zurück. Erst danach folgt die Mission-Editor-Integration in einer neuen Owner-MIZ-Revision.
+Der Owner integriert ausschließlich das gebaute Stage-1B-Acceptance-Bundle in eine neue Mission-Editor-Revision, speichert und schließt die Mission. Danach folgt ein statischer read-only MIZ-/Ressourcen-/Hash-Preflight. Kein DCS-Lauf vor diesem Preflight-PASS.
