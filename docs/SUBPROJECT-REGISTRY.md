@@ -14,8 +14,8 @@ project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
   - incomplete open-branch list in the documentation index
 superseded_by:
-source_branch: agent/mission-demand-resupply-thresholds
-source_commit: 59222ad8e673d5e2cd72f4ee7cd5b8e3b7e012bf
+source_branch: main
+source_commit: 34b1f46120f951ca2a6308cf1d9fbbb4b0a17863
 validated_in_dcs: false
 ---
 
@@ -59,7 +59,6 @@ Dieses Register bildet offene Pull Requests, ihre Abhängigkeiten, Dokumentation
 | 52 | `agent/salerno-read-only-diagnostics` | alter Air-Ops-Stack | Salerno COMMANDER-/Runtime-Historie | Tests/Builder/Evidenz | `DRAFT`; kanonische Foundation auf `main` | `ACCEPTED_TECHNICAL_BASELINE` für dokumentierten Stage-18-Stand | offen | technische Fixture-/Runtime-Historie |
 | 66–84 | Warehouse-/CampaignState-/STORAGE-Stack | PR 66 startete von `main`; danach gestapelt | Resource ownership, Fuel/Weapon STORAGE, CampaignState transactions, loss/recovery, final fighter mapping | `scripts/campaign/`, `scripts/logistics/`, Warehouse-Testfixtures und branchgebundene Detaildokumentation | offene Draft-Historie; keine pauschale Main-Autorität | mehrere exakt dokumentierte DCS-Acceptance-Stände; finaler Fighter-Gate PASS | 85 | nicht als 214-Commit-Stack direkt integrieren; PR 85 war der saubere Main-Reconciliation-Pfad |
 | 86 | `agent/air-ops-initial-stock-runtime-data` | `main` nach gemergtem PR 85 | AirOps Initial Stock Runtime, CampaignState-Initialisierung und zentraler Warehouse-Bootstrap | `scripts/logistics/`, `mission/tests/air-ops-warehouse-bootstrap/`, MOOSE-STORAGE-Dokumentation | `DRAFT`; aktuell nicht mergebar gegen `main` | `ACCEPTED_TECHNICAL_BASELINE` für Warehouse-Bootstrap auf Commit `2502516fe130b908e500117142399b3e2ca74007`; separate Onboard-Ammo-Acceptance offen | offen | Warehouse-Bootstrap technisch akzeptiert; vor Integration Reconciliation gegen aktuellen `main` erforderlich |
-| 115 | `agent/mission-demand-resupply-thresholds` | `main` nach PR 114 | Ground-RESUPPLY Schwellen 50%/25% | `scripts/logistics/OMW_GroundInitialStock.lua`, `tests/mission-demand/`, Dokument 90 | `DRAFT`; Ready/Merge nicht freigegeben | MissionDemand Lua-Contract PASS; branchspezifische Dokumentationsprüfung PASS; kein DCS-Runtime-Claim | erster physischer RESUPPLY-Vertical-Slice | schließt nur Threshold-Gate; keine physische Ausführung |
 
 Der Arbeitsbranch `agent/army-ground-foundation-reconciliation` besitzt zum Stand dieser Reconciliation noch keinen Pull Request und wird daher nicht mit einer erfundenen PR-Nummer in die Tabelle aufgenommen. Sobald ein PR existiert, ist er hier mit realem PR-Status und Abhängigkeit nachzutragen.
 
@@ -82,15 +81,14 @@ main
 ├── PR 41
 ├── PR 45
 ├── PR 49
-├── PR 66 → ... → PR 84
-│                   └── PR 85 (merged clean Warehouse reconciliation)
-└── PR 115 (Ground RESUPPLY threshold gate; Draft)
+└── PR 66 → ... → PR 84
+                    └── PR 85 (merged clean Warehouse reconciliation)
 
 main
 └── PR 86 (AirOps initial-stock runtime and accepted Warehouse bootstrap; reconciliation required)
 ```
 
-PR #53 (Tarinkot), PR #60 (Salerno Foundation), PR #61 (Kandahar Foundation), PR #62 (Dokumentationsmetadaten), PR #63 (Bagram duale AIRWING Foundation), PR #64 (AIRWING-Naming-Reconciliation), PR #65 (Shindand Foundation), PR #85 (Warehouse Main Reconciliation), PR #108 (Kunar Ground Site Reconciliation / FOB Bostick), PR #112 (Ground ammo rearm lifecycle / fixed fire support) und PR #114 (MissionDemand Domain Foundation) sind nach `main` gemergt und werden nicht mehr als offene aktuelle Foundation-Unterprojekte geführt.
+PR #53 (Tarinkot), PR #60 (Salerno Foundation), PR #61 (Kandahar Foundation), PR #62 (Dokumentationsmetadaten), PR #63 (Bagram duale AIRWING Foundation), PR #64 (AIRWING-Naming-Reconciliation), PR #65 (Shindand Foundation), PR #85 (Warehouse Main Reconciliation), PR #108 (Kunar Ground Site Reconciliation / FOB Bostick), PR #112 (Ground ammo rearm lifecycle / fixed fire support), PR #114 (MissionDemand Domain Foundation) und PR #115 (Ground RESUPPLY threshold gate) sind nach `main` gemergt und werden nicht mehr als offene aktuelle Foundation-Unterprojekte geführt.
 
 Für PR #108 ist der reale GitHub-Merge-Stand:
 
@@ -119,6 +117,17 @@ status: MERGED
 source_head: c8d1cad4ce7469f350b6a3d6e10fee955348620c
 merge_commit: 341a65105c24807de3ac289bb18d80339111cbd1
 acceptance_boundary: Lua contract tests PASS; kein DCS-Runtime-Claim
+```
+
+Für PR #115 ist der reale GitHub-Merge-Stand:
+
+```text
+PR: 115
+status: MERGED
+source_head: 48e627eb3d61ab8e41d933d709d9f93cdc0a0273
+merge_commit: 34b1f46120f951ca2a6308cf1d9fbbb4b0a17863
+thresholds: reorder=50% of target; critical=25% of target
+acceptance_boundary: MissionDemand Lua contract PASS; branch-specific documentation review PASS; local branch and post-merge main readback PASS; kein DCS-Runtime-Claim
 ```
 
 ## 4. Verbindliche Regeln
