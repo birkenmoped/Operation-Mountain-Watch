@@ -29,7 +29,7 @@ moose_lua_sha256: E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A9
 ```text
 FUNCTIONAL DCS RESULT: PASS
 PHYSICAL REARM SITES: 4/4 PASS
-RESTORE SETTLEMENT: PASS
+RESTORE SETTLEMENT: PASS IN SAME DCS SESSION
 EXTERNAL PROCESS/SERVER PERSISTENCE: NOT TESTED / NOT CLAIMED
 ```
 
@@ -134,6 +134,8 @@ Damit ist der zuvor korrigierte Honaker-Vertrag im gebündelten Lauf real bestä
 
 ## Phase B – Restore-Settlement
 
+Die Restore-Settlement-Phase lief auf isolierten `CampaignState.Restore(...)`-Kopien innerhalb derselben DCS-Session. Es fand kein DCS-Prozessneustart und kein externer Snapshot-Datei-Roundtrip statt.
+
 Der Lauf erzeugte alle Pflichtmarker:
 
 ```text
@@ -148,7 +150,7 @@ RESTORE_PRECOMMIT_CANCEL_PASS case=LOADING
 RESTORE_SETTLEMENT_PASS
 ```
 
-Damit ist innerhalb des realen DCS-Laufs bestätigt:
+Damit ist innerhalb derselben realen DCS-Laufzeit bestätigt:
 
 ```text
 CONSUMED -> exactly-once compensation -> COMPENSATED
@@ -174,7 +176,7 @@ keine MIST-/Native-DCS-/Custom-Rearm-Ausnahme eingeführt
 ```text
 Revision 2-11 functional DCS acceptance: PASS
 Fixed-fire-support physical rearm contract: PASS for exact documented scope
-Option-B ExportSnapshot -> Restore -> ReconcileRestore settlement contract: PASS in DCS runtime
+Option-B ExportSnapshot -> Restore -> ReconcileRestore settlement contract: PASS in same-session DCS runtime
 External process/server persistence: OUT OF SCOPE / NOT PRESENT / NOT CLAIMED
 Exact executed-MIZ SHA-256: 388F02C932BE83823543F97887B4EDBB9E6764D4CEBE543BD8423D43A6ED8620
 Mission provenance: CLOSED
