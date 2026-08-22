@@ -228,7 +228,7 @@ Dieser Nachweis ist Build-/Contract-Evidenz, kein neuer DCS-PASS.
 ## 9. LOCAL REARM Restart/Replay – Owner-Entscheidung und Umsetzung
 
 ```text
-STATUS: OWNER APPROVED / SOURCE IMPLEMENTED
+STATUS: OWNER APPROVED / SOURCE IMPLEMENTED / BUILD VERIFIED
 DECISION: OPTION B
 DATE: 22.08.2026
 ```
@@ -283,6 +283,56 @@ allgemeiner Ground-Restart-Reconciliation-Pfad bleibt unverändert
 kein neuer Persistenz-Host
 ```
 
+### 9.1 Real bestätigte Build-/Hash-Provenienz für Option B
+
+Vom Projektinhaber am 22.08.2026 real ausgeführt und zurückgemeldet:
+
+```text
+Source / Git HEAD:
+49f43a856c1f8bc32ca64835af856119a295640e
+
+CampaignState source SHA-256:
+18189A633DBD78FC7EAFBDAF09601BC3241ADAD115DF09DA3EF28B1D85E3E093
+
+AirOps Warehouse Production BuilderVersion:
+OMW-AIROPS-WAREHOUSE-BASE-3
+Bundle SHA-256:
+472F72F3D688BB4B8624C882527DCA3DEBD42CDE5DD455AC63D7CD2D796BB735
+
+Ground Production BuilderVersion:
+OMW-GROUND-PRODUCTION-BASE-4
+GroundBaseSchema: OMW-GROUND-PRODUCTION-BASE-2
+GroundRuntimeIntegrationSchema: OMW-GROUND-RUNTIME-INTEGRATION-2
+GroundAmmoRearmAdapterSchema: OMW-GROUND-AMMO-REARM-ADAPTER-2
+Bundle SHA-256:
+9AAF32A10A9EEB906123AFD37FF14B62542EE7C78F7B5E81E388A22F41EABEAB
+
+Fixed Fire Support Acceptance BuilderVersion:
+GROUND-FIRE-SUPPORT-ACCEPTANCE-2-9
+GeneratedUtc:
+2026-08-22T13:06:55Z
+Bundle SHA-256:
+D0E628C58567CB46126048AA2903F17C9D15F316C415FFB755FD0192B230EA09
+```
+
+Die vom jeweiligen Builder ausgegebenen Bundle-Hashes stimmen exakt mit den anschließend separat über `Get-FileHash -Algorithm SHA256` ermittelten Hashes überein.
+
+Zusätzlich bestätigte Builder-Gates:
+
+```text
+LocalRearmRestartCompensation: true
+LocalRearmPhysicalReplay: false
+DurableRearmCompletion: true
+ValidateAndRepositionGroundUnits: false
+PinnedMooseRepositionDefectGuard: true
+ApprovedRoadSpawnException: false
+SupportReturnToStock: true
+HonakerM939Diagnostic: false
+MizMutation: false
+```
+
+Dieser Nachweis bestätigt Build, Contract-Gates und Hash-Konsistenz. Er ist **kein** DCS-Runtime-Nachweis für den neuen `COMPLETED`-/Restart-Compensation-Pfad.
+
 ## 10. Aktuelle TODO-Liste
 
 ### TODO 1 – Acceptance-Provenienz
@@ -310,10 +360,10 @@ Der synchrone Materialisierungsfall ist berücksichtigt. Die neuen Source-Contra
 ### TODO 4 – LOCAL REARM Completion-/Restart-Korrelation
 
 ```text
-STATUS: SOURCE IMPLEMENTED / LOCAL BUILD-HASH PENDING
+STATUS: SOURCE IMPLEMENTED / BUILD VERIFIED / DCS RUNTIME PENDING
 ```
 
-Die Implementierung folgt dem owner-approved Option-B-Vertrag und nutzt ausschließlich den vorhandenen CampaignState Snapshot-/Restore-/Credit-Vertrag.
+Die Implementierung folgt dem owner-approved Option-B-Vertrag und nutzt ausschließlich den vorhandenen CampaignState Snapshot-/Restore-/Credit-Vertrag. Die drei betroffenen Bundles wurden für Source `49f43a856c1f8bc32ca64835af856119a295640e` real gebaut und gehasht; die neuen Runtime-Claims bleiben bis zum DCS-Lauf offen.
 
 ### TODO 5 – OP-Verluste und automatische Verstärkung
 
@@ -348,17 +398,20 @@ Erledigt:
 [x] Option B source-seitig implementiert
 [x] Acceptance-Harness auf dauerhaften COMPLETED-Status angehoben
 [x] Ground-Production-Base um Local-Rearm-Restore-Reconciliation erweitert
+[x] AirOps Warehouse Production Base für Option-B-CampaignState neu gebaut/gehasht
+[x] Ground Production Base 4 real gebaut/gehasht
+[x] Acceptance-2 Revision 2-9 real gebaut/gehasht
+[x] Builder-/separate Get-FileHash-Werte stimmen für alle drei Bundles überein
 ```
 
 Offen:
 
 ```text
-[ ] aktuellen Remote-Head lokal pullen
-[ ] AirOps Warehouse Production Base neu bauen/hashen, da CampaignState eingebettet wird
-[ ] Ground Production Base 4 bauen/hashen
-[ ] Acceptance-2 Revision 2-9 bauen/hashen
+[ ] Acceptance-2 / MOOSE-Dokumentation mit finaler Option-B-Build-Provenienz abschließen
 [ ] finalen Diff / Contract / Builder prüfen
-[ ] falls neue Runtime-Claims erforderlich: gebündelter DCS-Test des COMPLETED-Pfades
+[ ] branch-eigene Dokumentationsvalidator-Schuld bereinigen; geerbte Ground-Foundation-Schuld separat ausweisen
+[ ] gebündelten DCS-Test des neuen COMPLETED-Pfades durchführen, sofern Runtime-Acceptance für PR-Abschluss erforderlich ist
+[ ] Restart-Compensation nur mit realer Restore-Provenienz als DCS-validiert markieren
 [ ] Owner-Entscheidung PR #112 Ready / Merge
 ```
 
@@ -384,10 +437,10 @@ zweite Ressourcenhoheit im Warehouse einführen
 Ground Ammo Rearm / Fixed Fire Support
         |
         +-- Diagnose-Rückbau                 COMPLETE / BUILD VERIFIED
-        +-- LOCAL REARM Option B             OWNER APPROVED / SOURCE IMPLEMENTED
-        +-- Doku-Reconciliation              SUBSTANTIALLY COMPLETE
-        +-- Production/Acceptance Builds     PENDING OWNER HASHES
-        +-- finaler Review
-        +-- ggf. gebündelter DCS-COMPLETED-Test
+        +-- LOCAL REARM Option B             OWNER APPROVED / SOURCE IMPLEMENTED / BUILD VERIFIED
+        +-- Option-B Bundle-Provenienz       COMPLETE
+        +-- Doku-/Diff-Reconciliation        FINAL REVIEW PENDING
+        +-- DCS COMPLETED Runtime-Acceptance PENDING
+        +-- Restart-Compensation Acceptance  PENDING REAL RESTORE PROVENANCE
         `-- Owner-Entscheidung PR #112 Ready / Merge
 ```
