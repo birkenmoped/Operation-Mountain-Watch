@@ -17,7 +17,7 @@ project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
 superseded_by:
 source_branch: agent/mission-demand-reconciliation
-source_commit: PENDING_MERGE
+source_commit: afb572d82b8f804d2af0d338c77a2fd77df13307
 validated_in_dcs: false
 ---
 
