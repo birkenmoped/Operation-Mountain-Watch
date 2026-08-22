@@ -16,8 +16,8 @@ scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
 superseded_by:
-source_branch: agent/mission-demand-resupply-thresholds
-source_commit: 59222ad8e673d5e2cd72f4ee7cd5b8e3b7e012bf
+source_branch: main
+source_commit: 34b1f46120f951ca2a6308cf1d9fbbb4b0a17863
 validated_in_dcs: false
 ---
 
@@ -117,6 +117,19 @@ Loss-Audit resources
 
 Die Berechnung erfolgt direkt aus `target`. Es wird keine zusätzliche Rundungsregel eingeführt.
 
+PR #115 integrierte diese Schwellen nach `main`:
+
+```text
+branch:
+agent/mission-demand-resupply-thresholds
+
+final source head:
+48e627eb3d61ab8e41d933d709d9f93cdc0a0273
+
+merge commit:
+34b1f46120f951ca2a6308cf1d9fbbb4b0a17863
+```
+
 ## 5. MissionDemand Domain Registry
 
 Integrierter Domain-Layer:
@@ -159,44 +172,55 @@ RESUPPLY|<destinationNodeId>|<resourceId>
 
 ## 6. Verifikation des Schwellen-Schritts
 
-Source-Head:
+Finaler Source-Head des Merge-Kandidaten:
 
 ```text
-59222ad8e673d5e2cd72f4ee7cd5b8e3b7e012bf
+48e627eb3d61ab8e41d933d709d9f93cdc0a0273
 ```
 
 GitHub Actions:
 
 ```text
 MissionDemand validation
-run: 32583205475
+run: 32583400735
 result: PASS
 ```
 
 Documentation Validation:
 
 ```text
-run: 32583205479
+run: 32583400737
 result: 18 error(s), 0 warning(s)
 ```
 
 Alle 18 Fehler sind bereits vorhandene Army-Ground-/Ground-Metadatenfehler auf `main`; der Threshold-Branch fügte keinen MissionDemand-spezifischen Validatorfehler hinzu.
 
-Der Projektinhaber meldete für denselben Source-Head real zurück:
+Der Projektinhaber meldete für denselben finalen Source-Head real zurück:
 
 ```text
 HEAD MATCH
 PASS git diff --check
-5 files changed, 181 insertions(+), 160 deletions(-)
+PASS no unresolved merge placeholder
+6 files changed, 247 insertions(+), 319 deletions(-)
 ```
 
-Die fünf real zurückgemeldeten SHA-256-Werte sind im zugehörigen Projekt-Chat protokolliert.
+Nach dem Merge wurde `main` real auf folgenden Stand aktualisiert:
+
+```text
+main head:
+34b1f46120f951ca2a6308cf1d9fbbb4b0a17863
+
+merge ancestry:
+PASS PR #115 source head is in main
+```
+
+Die sechs SHA-256-Werte des integrierten Stands entsprechen dem finalen Branch-Readback.
 
 DCS ist für diese reine Domain-/Konfigurationsstufe nicht erforderlich. Daraus folgt ausdrücklich keine DCS-Runtime-Acceptance.
 
 ## 7. RESUPPLY – nächster vertikaler Pfad
 
-Der Schwellen-Gate ist fachlich und technisch geschlossen. Der nächste Entwicklungsschritt ist der erste physische RESUPPLY-Vertical-Slice:
+Der Schwellen-Gate ist fachlich, technisch und auf `main` integriert geschlossen. Der nächste Entwicklungsschritt ist der erste physische RESUPPLY-Vertical-Slice:
 
 ```text
 ResourceDemandPolicy candidate
@@ -256,7 +280,9 @@ Die produktive CAS-Ausführung hängt von der separaten BLUE-COMMANDER-Reconcili
 [x] Lua contract tests PASS on threshold branch
 [x] documentation validator reviewed
 [x] complete diff reviewed
-[x] final local pull/hash readback complete
+[x] final local branch pull/hash readback complete
+[x] merged via PR #115
+[x] post-merge main readback complete
 ```
 
 Der Schwellen-Gate ist damit geschlossen. Der erste physische RESUPPLY-Vertical-Slice ist fachlich nicht mehr durch fehlende Schwellenwerte blockiert.
