@@ -3,11 +3,12 @@
 -- This module composes the public MOOSE BRIGADE/PLATOON/WAREHOUSE self-request
 -- materializer for one configured local ammunition-support asset. Site identity
 -- is configuration, not code. The support asset is materialized inside a
--- dedicated local Warehouse spawn zone and MOOSE ground-position validation is
--- enabled so fixed fire-support resupply does not depend on a nearby road.
--- It does not own CampaignState ammunition, create ARTY tasking, route the
--- support group after materialization, or spawn outside the existing MOOSE
--- WAREHOUSE lifecycle.
+-- dedicated local Warehouse spawn zone that must be placed on free ground in
+-- the Mission Editor. The pinned MOOSE SetValidateAndRepositionGroundUnits path
+-- is intentionally not enabled because its UTILS helper chain is broken in the
+-- pinned source/runtime. This module does not own CampaignState ammunition,
+-- create ARTY tasking, route the support group after materialization, or spawn
+-- outside the existing MOOSE WAREHOUSE lifecycle.
 
 local FixedFireSupportAmmoSupport = {}
 
@@ -16,7 +17,7 @@ Service.__index = Service
 
 local TAG = "[OMW][Ground.FixedFireSupportAmmoSupport]"
 
-FixedFireSupportAmmoSupport.SchemaVersion = "OMW-FIXED-FIRE-SUPPORT-AMMO-SUPPORT-2"
+FixedFireSupportAmmoSupport.SchemaVersion = "OMW-FIXED-FIRE-SUPPORT-AMMO-SUPPORT-3"
 
 local function fail(message)
   error(TAG .. " " .. tostring(message), 2)
@@ -61,9 +62,6 @@ function FixedFireSupportAmmoSupport.New(spec)
   if type(brigade.SetSpawnZone) ~= "function" then
     fail("spec.brigade.SetSpawnZone() is required")
   end
-  if type(brigade.SetValidateAndRepositionGroundUnits) ~= "function" then
-    fail("spec.brigade.SetValidateAndRepositionGroundUnits() is required")
-  end
   if type(brigade.AddAsset) ~= "function" then
     fail("spec.brigade.AddAsset() is required")
   end
@@ -83,7 +81,6 @@ function FixedFireSupportAmmoSupport.New(spec)
   local spawnZoneMaxDistanceM = requirePositive(spec.spawnZoneMaxDistanceM or 500, "spec.spawnZoneMaxDistanceM")
 
   brigade:SetSpawnZone(spawnZone, spawnZoneMaxDistanceM)
-  brigade:SetValidateAndRepositionGroundUnits(true)
 
   local materializer = materializerModule.New({
     brigade = brigade,
