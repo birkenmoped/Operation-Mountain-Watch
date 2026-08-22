@@ -3,10 +3,10 @@
 --
 -- Purpose:
 --   Exercise the same MOOSE-first rearm composition concurrently for the four
---   current Kunar fixed fire-support consumers in one DCS run. Bostick, Wright
---   and Fortress keep the four-round M1083 regression path. Honaker uses the
---   DCS standard M939 and must fully deplete the 2B11 ammunition before the
---   support request is issued, isolating the DCS mortar empty-rearm behavior.
+--   current Kunar fixed fire-support consumers in one DCS run. All four sites
+--   use the normal M1083 support contract and a bounded four-round fire leg.
+--   The earlier Honaker M939/full-depletion variant is retained only as
+--   diagnostic evidence in Acceptance documentation, not as production logic.
 --
 -- Required owner-provided Mission Editor objects are declared in SITE_SPECS.
 
@@ -66,17 +66,16 @@ local SITE_SPECS = {
     id = "HONAKER",
     warehouse = "WH_BLUE_GND_HONAKER",
     battery = "TPL_BLUE_GND_HONAKER_FS_MORTAR_2B11_2",
-    supportTemplate = "TPL_BLUE_GND_SUP_M939",
+    supportTemplate = "TPL_BLUE_GND_SUP_M1083",
     supportSpawnZone = "ZON_BLUE_GND_HONAKER_RESUPPLY",
     targetZone = "ZON_BLUE_GND_HONAKER_MORTAR_ACCEPTANCE_TARGET",
     nodeId = "GROUND_NODE_HONAKER",
     brigade = "BDE_BLUE_GND_HONAKER_FIRE_SUPPORT_ACCEPTANCE",
     platoon = "PLT_BLUE_GND_HONAKER_AMMO_SUPPORT_ACCEPTANCE",
     assignment = "OMW:HONAKER:AMMO-SUPPORT:ACCEPTANCE-2",
-    carrierEntityId = "HONAKER-AMMO-SUPPORT-M939-ACCEPTANCE-2",
+    carrierEntityId = "HONAKER-AMMO-SUPPORT-M1083-ACCEPTANCE-2",
     alias = "Honaker 2B11 Acceptance 2",
-    fireShells = 40,
-    requireAmmoDepleted = true,
+    fireShells = DEFAULT_FIRE_SHELLS,
   },
 }
 
@@ -289,19 +288,6 @@ local function startSite(siteState, groundContext)
       return
     end
 
-    if siteState.spec.requireAmmoDepleted then
-      if siteState.postFireAmmo ~= 0 then
-        fail("HONAKER_AMMO_NOT_DEPLETED site=" .. siteState.spec.id
-          .. " expected=0 actual=" .. tostring(siteState.postFireAmmo)
-          .. " shellsRequested=" .. tostring(siteState.spec.fireShells))
-        return
-      end
-      log("HONAKER_AMMO_DEPLETED site=" .. siteState.spec.id
-        .. " initial=" .. tostring(siteState.initialAmmo)
-        .. " current=" .. tostring(siteState.postFireAmmo)
-        .. " shellsRequested=" .. tostring(siteState.spec.fireShells))
-    end
-
     siteState.resourceBefore = groundContext.store:GetResource(siteState.spec.nodeId, RESOURCE_ID)
     if not siteState.resourceBefore then
       fail("RESOURCE_BEFORE_UNAVAILABLE site=" .. siteState.spec.id)
@@ -320,11 +306,6 @@ local function startSite(siteState, groundContext)
       supportReturnRadiusM = 100,
       startArty = false,
     })
-    if siteState.spec.requireAmmoDepleted then
-      log("HONAKER_REARM_REQUEST_AFTER_EMPTY site=" .. siteState.spec.id
-        .. " supportTemplate=" .. tostring(siteState.spec.supportTemplate)
-        .. " status=" .. tostring(context and context.status))
-    end
     log("SITE_REARM_REQUEST site=" .. siteState.spec.id
       .. " supportTemplate=" .. tostring(siteState.spec.supportTemplate)
       .. " status=" .. tostring(context and context.status)
@@ -348,12 +329,6 @@ local function startSite(siteState, groundContext)
     fail("INITIAL_AMMO_INVALID site=" .. siteState.spec.id .. " value=" .. tostring(siteState.initialAmmo))
     return
   end
-  if siteState.spec.requireAmmoDepleted and siteState.spec.fireShells < siteState.initialAmmo then
-    fail("HONAKER_FIRE_REQUEST_TOO_SMALL site=" .. siteState.spec.id
-      .. " initialAmmo=" .. tostring(siteState.initialAmmo)
-      .. " shellsRequested=" .. tostring(siteState.spec.fireShells))
-    return
-  end
 
   log("SITE_START site=" .. siteState.spec.id
     .. " battery=" .. siteState.spec.battery
@@ -361,7 +336,6 @@ local function startSite(siteState, groundContext)
     .. " supportSpawnZone=" .. siteState.spec.supportSpawnZone
     .. " target=" .. tostring(targetName)
     .. " shellsRequested=" .. tostring(siteState.spec.fireShells)
-    .. " requireAmmoDepleted=" .. tostring(siteState.spec.requireAmmoDepleted == true)
     .. " initialAmmo=" .. tostring(siteState.initialAmmo))
 end
 
