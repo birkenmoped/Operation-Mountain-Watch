@@ -10,10 +10,10 @@ local function expectEqual(actual, expected, label)
   end
 end
 
-local spawnZone = { name = "ZON_BLUE_GND_WRIGHT_AMMO_SUPPORT_SPAWN" }
+local spawnZone = { name = "ZON_BLUE_GND_WRIGHT_RESUPPLY" }
 local configuredSpawnZone = nil
 local configuredMaxDistance = nil
-local validateGroundUnits = nil
+local repositionCallCount = 0
 local returnedGroup = nil
 
 local brigade = {}
@@ -22,8 +22,8 @@ function brigade:SetSpawnZone(zone, maxDistance)
   configuredMaxDistance = maxDistance
   return self
 end
-function brigade:SetValidateAndRepositionGroundUnits(enabled)
-  validateGroundUnits = enabled
+function brigade:SetValidateAndRepositionGroundUnits(_)
+  repositionCallCount = repositionCallCount + 1
   return self
 end
 function brigade:AddAsset(group)
@@ -71,7 +71,7 @@ local service = FixedFireSupportAmmoSupport.New({
 
 expectEqual(configuredSpawnZone, spawnZone, "SPAWN_ZONE")
 expectEqual(configuredMaxDistance, 400, "SPAWN_ZONE_MAX_DISTANCE")
-expectEqual(validateGroundUnits, true, "VALIDATE_GROUND_UNITS")
+expectEqual(repositionCallCount, 0, "REPOSITION_PATH_MUST_NOT_BE_CALLED")
 expectEqual(materializerSpec.templateName, "TPL_BLUE_GND_SUP_M1083", "TEMPLATE")
 expectEqual(materializerSpec.platoonName, "PLT_BLUE_GND_WRIGHT_AMMO_SUPPORT", "PLATOON")
 expectEqual(materializerSpec.assignment, "OMW:WRIGHT:AMMO-SUPPORT:M1083", "ASSIGNMENT")
@@ -82,7 +82,7 @@ local groupBefore, created = service:Request()
 expectEqual(groupBefore, nil, "REQUEST_GROUP_BEFORE")
 expectEqual(created, true, "REQUEST_CREATED")
 expectEqual(service:GetMaterializedGroup(), materializedGroup, "MATERIALIZED_GROUP")
-expectEqual(service:GetConfig().schemaVersion, "OMW-FIXED-FIRE-SUPPORT-AMMO-SUPPORT-2", "SCHEMA")
+expectEqual(service:GetConfig().schemaVersion, "OMW-FIXED-FIRE-SUPPORT-AMMO-SUPPORT-3", "SCHEMA")
 expectEqual(service:GetConfig().assignment, "OMW:WRIGHT:AMMO-SUPPORT:M1083", "CONFIG_ASSIGNMENT")
 expectEqual(service:GetConfig().spawnZoneMaxDistanceM, 400, "CONFIG_SPAWN_MAX_DISTANCE")
 
@@ -90,4 +90,4 @@ service:ReturnToStock(materializedGroup)
 expectEqual(returnedGroup.name, "WRIGHT-M1083-001", "RETURNED_GROUP")
 expectEqual(service:GetMaterializedGroup(), nil, "MATERIALIZED_GROUP_CLEARED")
 
-print("PASS generic fixed fire-support local Warehouse materialization contract")
+print("PASS generic fixed fire-support local Warehouse materialization contract without broken MOOSE reposition path")
