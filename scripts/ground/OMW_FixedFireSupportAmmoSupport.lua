@@ -1,8 +1,10 @@
 -- Operation Mountain Watch - fixed fire-support ammunition materialization binding.
 --
--- This module composes the existing Ground road-spawn adapter and the public
--- MOOSE BRIGADE/PLATOON/WAREHOUSE self-request materializer for one configured
--- local ammunition-support asset. Site identity is configuration, not code.
+-- This module composes the public MOOSE BRIGADE/PLATOON/WAREHOUSE self-request
+-- materializer for one configured local ammunition-support asset. Site identity
+-- is configuration, not code. The support asset is materialized inside a
+-- dedicated local Warehouse spawn zone and MOOSE ground-position validation is
+-- enabled so fixed fire-support resupply does not depend on a nearby road.
 -- It does not own CampaignState ammunition, create ARTY tasking, route the
 -- support group after materialization, or spawn outside the existing MOOSE
 -- WAREHOUSE lifecycle.
@@ -14,7 +16,7 @@ Service.__index = Service
 
 local TAG = "[OMW][Ground.FixedFireSupportAmmoSupport]"
 
-FixedFireSupportAmmoSupport.SchemaVersion = "OMW-FIXED-FIRE-SUPPORT-AMMO-SUPPORT-1"
+FixedFireSupportAmmoSupport.SchemaVersion = "OMW-FIXED-FIRE-SUPPORT-AMMO-SUPPORT-2"
 
 local function fail(message)
   error(TAG .. " " .. tostring(message), 2)
@@ -41,21 +43,29 @@ local function requireNonEmptyString(value, label)
   return value
 end
 
+local function requirePositive(value, label)
+  if type(value) ~= "number" or value ~= value or value <= 0 or value == math.huge then
+    fail(label .. " requires positive finite number")
+  end
+  return value
+end
+
 function FixedFireSupportAmmoSupport.New(spec)
   requireTable(spec, "spec")
 
   local brigade = requireTable(spec.brigade, "spec.brigade")
-  local accessZone = requireTable(spec.accessZone, "spec.accessZone")
-  local forwardCoordinate = requireTable(spec.forwardCoordinate, "spec.forwardCoordinate")
-  local roadSpawnAdapter = requireTable(spec.roadSpawnAdapter, "spec.roadSpawnAdapter")
+  local spawnZone = requireTable(spec.spawnZone, "spec.spawnZone")
   local materializerModule = requireTable(spec.materializerModule, "spec.materializerModule")
   local platoonFactory = requireFunction(spec.platoonFactory, "spec.platoonFactory")
 
-  if type(brigade.GetAssignment) ~= "function" then
-    fail("spec.brigade.GetAssignment() is required")
+  if type(brigade.SetSpawnZone) ~= "function" then
+    fail("spec.brigade.SetSpawnZone() is required")
   end
-  if type(roadSpawnAdapter.Install) ~= "function" then
-    fail("spec.roadSpawnAdapter.Install() is required")
+  if type(brigade.SetValidateAndRepositionGroundUnits) ~= "function" then
+    fail("spec.brigade.SetValidateAndRepositionGroundUnits() is required")
+  end
+  if type(brigade.AddAsset) ~= "function" then
+    fail("spec.brigade.AddAsset() is required")
   end
   if type(materializerModule.New) ~= "function" then
     fail("spec.materializerModule.New() is required")
@@ -70,27 +80,10 @@ function FixedFireSupportAmmoSupport.New(spec)
   local platoonName = requireNonEmptyString(spec.platoonName, "spec.platoonName")
   local assignment = requireNonEmptyString(spec.assignment, "spec.assignment")
   local entityId = requireNonEmptyString(spec.entityId, "spec.entityId")
+  local spawnZoneMaxDistanceM = requirePositive(spec.spawnZoneMaxDistanceM or 500, "spec.spawnZoneMaxDistanceM")
 
-  roadSpawnAdapter.Install(brigade, {
-    resolveRoadSpawn = function(_, asset, request)
-      if type(asset) ~= "table" or asset.templatename ~= templateName then
-        return nil
-      end
-      if brigade:GetAssignment(request) ~= assignment then
-        return nil
-      end
-      return {
-        accessZone = accessZone,
-        forwardCoordinate = forwardCoordinate,
-        entityId = entityId,
-      }
-    end,
-    log = spec.roadSpawnLog,
-    rearClearanceM = spec.rearClearanceM,
-    headingSampleM = spec.headingSampleM,
-    maxSnapM = spec.maxSnapM,
-    minimumTemplateSpacingM = spec.minimumTemplateSpacingM,
-  })
+  brigade:SetSpawnZone(spawnZone, spawnZoneMaxDistanceM)
+  brigade:SetValidateAndRepositionGroundUnits(true)
 
   local materializer = materializerModule.New({
     brigade = brigade,
@@ -107,8 +100,8 @@ function FixedFireSupportAmmoSupport.New(spec)
 
   return setmetatable({
     brigade = brigade,
-    accessZone = accessZone,
-    forwardCoordinate = forwardCoordinate,
+    spawnZone = spawnZone,
+    spawnZoneMaxDistanceM = spawnZoneMaxDistanceM,
     materializer = materializer,
     templateName = templateName,
     platoonName = platoonName,
@@ -129,6 +122,10 @@ function Service:GetPlatoon()
   return self.materializer:GetPlatoon()
 end
 
+function Service:ReturnToStock(group)
+  return self.materializer:ReturnToStock(group)
+end
+
 function Service:GetConfig()
   return {
     schemaVersion = FixedFireSupportAmmoSupport.SchemaVersion,
@@ -136,6 +133,7 @@ function Service:GetConfig()
     platoonName = self.platoonName,
     assignment = self.assignment,
     entityId = self.entityId,
+    spawnZoneMaxDistanceM = self.spawnZoneMaxDistanceM,
   }
 end
 
