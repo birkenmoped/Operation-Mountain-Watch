@@ -16,29 +16,19 @@ project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
 superseded_by:
 source_branch: agent/mission-demand-resupply-thresholds
-source_commit: PENDING_MERGE
+source_commit: 59222ad8e673d5e2cd72f4ee7cd5b8e3b7e012bf
 validated_in_dcs: false
 ---
 
 # MissionDemand Foundation – Reconciliation-Status
 
-## Ziel
+## Foundation
 
-Der Branch `agent/mission-demand-reconciliation` übernahm aus dem alten Branch `agent/mission-demand-resupply-cas-concept` ausschließlich die noch fehlende Campaign-Domain-Foundation und reconciliierte sie gegen den damaligen `main`-Stand. PR #114 wurde nach finaler lokaler Readback-Prüfung nach `main` gemergt.
-
-Der Folgebranch `agent/mission-demand-resupply-thresholds` schließt den danach noch offenen Schwellen-Gate für automatische Ground-RESUPPLY-Bedarfe.
-
-## Integration der Foundation
+PR #114 integrierte die MissionDemand-Domain-Foundation nach `main`.
 
 ```text
-source branch:
-agent/mission-demand-reconciliation
-
 final source head:
 c8d1cad4ce7469f350b6a3d6e10fee955348620c
-
-PR:
-114
 
 merge commit:
 341a65105c24807de3ac289bb18d80339111cbd1
@@ -52,19 +42,13 @@ agent/mission-demand-resupply-thresholds
 
 base main:
 732e76fd4d17eb17242fea3c422a961a57e0a523
+
+verified source head:
+59222ad8e673d5e2cd72f4ee7cd5b8e3b7e012bf
+
+PR:
+115
 ```
-
-## Domain-Vertrag
-
-```text
-CampaignState = strategic resource authority
-MissionDemand = demand identity / assignment state
-MOOSE         = later operational execution
-```
-
-`OMW_MissionDemand.lua` besitzt keine MOOSE-/DCS-Abhängigkeit.
-
-`OMW_ResourceDemandPolicy.lua` liest ausschließlich vorhandene Policy-Felder und CampaignState-Snapshots. Es verändert weder CampaignState noch MOOSE.
 
 ## Freigegebene Ground-Resupply-Schwellen
 
@@ -97,9 +81,9 @@ Die produktive Konfiguration liegt in:
 scripts/logistics/OMW_GroundInitialStock.lua
 ```
 
-und berechnet die Schwellen direkt aus dem jeweiligen `target`. Es wird keine zusätzliche Rundungsregel eingeführt.
+Die Schwellen werden direkt aus dem jeweiligen `target` berechnet. Es gibt keine zusätzliche Rundungsregel.
 
-## Erwartete aktuelle Schwellenwerte
+## Erwartete Schwellenwerte
 
 ```text
 GROUND_NODE_JALALABAD
@@ -135,13 +119,7 @@ FUEL    target 48   reorder 24  critical 12
 
 ## Lua-Contract-Tests
 
-Runner:
-
-```text
-tests/mission-demand/run.lua
-```
-
-Der bestehende `test_resource_demand_policy.lua` prüft auf diesem Branch zusätzlich:
+Der bestehende Test prüft zusätzlich die produktive GroundInitialStock-Konfiguration:
 
 ```text
 InitialStock.ResupplyThresholds.reorderRatio == 0.50
@@ -150,43 +128,77 @@ transferable Ground rows use target * 0.50 / target * 0.25
 non-transferable and audit rows remain 0 / 0
 ```
 
-Der MissionDemand-GitHub-Workflow wurde so erweitert, dass eine Änderung an `OMW_GroundInitialStock.lua` den Contract-Test ebenfalls auslöst.
-
-## Foundation-Nachweis
-
-Der finale Foundation-Merge-Kandidat hatte bereits folgenden GitHub-Actions-Nachweis:
+GitHub-Actions-Nachweis:
 
 ```text
 workflow: MissionDemand validation
-run: 32582675460
-source head: c8d1cad4ce7469f350b6a3d6e10fee955348620c
+run: 32583205475
+source head: 59222ad8e673d5e2cd72f4ee7cd5b8e3b7e012bf
 result: PASS
 ```
 
-Zusätzlich wurde der vollständige Testlauf zuvor unter Lua 5.4.6 protokolliert:
-
-```text
-PASS test_mission_demand
-PASS test_resource_demand_policy
-PASS mission-demand test suite
-```
-
-Diese Evidenz gilt nur für den genannten Foundation-Stand. Der neue Threshold-Branch benötigt einen eigenen realen Workflow-PASS.
-
 ## Dokumentationsvalidator
 
-Die Foundation-Reconciliation hinterließ keinen MissionDemand-spezifischen Validatorfehler. Repositoryweit bestehen weiterhin 18 bereits vorher vorhandene Army-Ground-/Ground-Metadatenfehler. Der Threshold-Branch darf keine neuen branchspezifischen Fehler hinzufügen.
+GitHub-Actions-Nachweis:
+
+```text
+workflow: Documentation validation
+run: 32583205479
+result: 18 error(s), 0 warning(s)
+```
+
+Alle 18 Fehler liegen in bereits vor PR #115 auf `main` vorhandenen Army-Ground-/Ground-Dokumenten. Der Threshold-Branch fügte keinen MissionDemand-spezifischen Validatorfehler hinzu.
+
+## Finale lokale Readback-Prüfung
+
+Der Projektinhaber hat für den Source-Head
+
+```text
+59222ad8e673d5e2cd72f4ee7cd5b8e3b7e012bf
+```
+
+real zurückgemeldet:
+
+```text
+HEAD MATCH
+PASS git diff --check
+5 files changed, 181 insertions(+), 160 deletions(-)
+```
+
+Reale SHA-256-Werte:
+
+```text
+7F73F489D7E896C815D57FAD54A62B2185932539E44471087C2826729B6FEE66
+scripts/logistics/OMW_GroundInitialStock.lua
+
+0C20680E9D2A7AF55857CC04BF1737EB8E3B5FDF2AE86D2532E79CDBEAB9C1BD
+tests/mission-demand/test_resource_demand_policy.lua
+
+B5980E05C207AEACECC33ED318C6664BCD5DE4700FF941CB02786D9970DD3C6C
+.github/workflows/mission-demand-validation.yml
+
+E5B3242995358DB683B295BB87DF646B24DC3C05D36941BED971132BAB61C873
+docs/90-mission-demand-resupply-and-cas-orchestration-concept.md
+
+CF654D7563C399147A551805966321933C7457419699C274D30044864A66A16C
+mission/tests/mission-demand-foundation/README.md
+```
+
+Die sichtbaren lokalen `??`-Einträge sind untracked Build-/Testartefakte. Es wurden keine tracked modifications gemeldet.
 
 ## Aktueller Status
 
 ```text
 FOUNDATION MERGED TO MAIN VIA PR #114
 GROUND RESUPPLY THRESHOLD OWNER DECISION COMPLETE
-THRESHOLD IMPLEMENTATION PUBLISHED ON agent/mission-demand-resupply-thresholds
+THRESHOLD IMPLEMENTATION PUBLISHED
+THRESHOLD LUA CONTRACT TESTS PASS
+THRESHOLD BRANCH-SPECIFIC DOCUMENTATION REVIEW PASS
+THRESHOLD SOURCE DIFF / LOCAL READBACK PASS
 DCS TEST NOT REQUIRED FOR THIS DOMAIN/CONFIGURATION STEP
 ```
 
-## Nächste Gates
+## Gates
 
 ```text
 GATE 1  Foundation Lua contract tests              PASS
@@ -196,12 +208,12 @@ GATE 4  Owner decision: target/reorder/critical    PASS
         target unchanged
         reorder = 50% of target
         critical = 25% of target
-GATE 4A Threshold-branch Lua contract tests        OPEN
-GATE 4B Threshold-branch documentation review      OPEN
-GATE 4C Threshold-branch diff/local readback       OPEN
-GATE 5  First physical RESUPPLY vertical slice     OPEN AFTER 4A-4C
+GATE 4A Threshold-branch Lua contract tests        PASS
+GATE 4B Threshold-branch documentation review      PASS
+GATE 4C Threshold-branch diff/local readback       PASS
+GATE 5  First physical RESUPPLY vertical slice     OPEN
 GATE 6  BLUE COMMANDER reconciliation              SEPARATE DEPENDENCY
 GATE 7  Hit -> Incident -> CAS_IMMEDIATE            LATER
 ```
 
-Keine DCS-Runtime-Aussage dieses Dokuments ist `VALIDATED`. Die Schwellenentscheidung und ihre Domain-/Konfigurationsprüfung sind vom späteren physischen MOOSE-/DCS-RESUPPLY-Lifecycle getrennt.
+Keine DCS-Runtime-Aussage dieses Dokuments ist `VALIDATED`. Der Schwellen-Gate ist geschlossen; die spätere physische MOOSE-/DCS-Ausführung bleibt ein eigener Entwicklungsschritt.
