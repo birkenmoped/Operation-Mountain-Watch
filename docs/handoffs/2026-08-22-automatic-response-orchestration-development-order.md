@@ -23,14 +23,14 @@ base_commit: 28d0069d5d9ec66e62f1e81ad59fc3dd4e2e249c
 
 ## 1. Zweck und Arbeitsbranch
 
-Dieser Branch entwickelt die geschlossene automatische BLUE-Reaktionskette aus dem aktuellen `main`-Stand. Bereits vorhandene CampaignState-, MissionDemand-, Ground-, Fire-Support-, AirOps- und CSAR-Bausteine werden orchestriert; akzeptierte Funktionen werden nicht parallel neu implementiert.
+Dieser Branch entwickelt die geschlossene automatische BLUE-Reaktionskette aus dem aktuellen `main`-Stand. Bereits integrierte CampaignState-, MissionDemand-, Ground-, Fire-Support-, AirOps- und CSAR-Bausteine werden orchestriert; akzeptierte Funktionen werden nicht parallel neu implementiert.
 
 ```text
 branch: agent/automatic-response-orchestration
 base: main @ 28d0069d5d9ec66e62f1e81ad59fc3dd4e2e249c
 ```
 
-Dieses Dokument ist zugleich Entwicklungsauftrag und laufendes Handoff. Es ist nach jedem relevanten Schritt mit Ist-Stand, Dateien, Tests, offenen Grenzen und nächstem zulässigen Gate zu aktualisieren.
+Dieses Dokument ist Entwicklungsauftrag und laufendes Handoff. Nach jedem relevanten Schritt sind Ist-Stand, Dateien, Tests, Hashes, offene Grenzen und der nächste zulässige Gate zu aktualisieren.
 
 ## 2. Pflichtprüfung vor jeder Entwicklungsstufe
 
@@ -48,16 +48,16 @@ docs/SUBPROJECT-REGISTRY.md
 mission/tests/GOVERNANCE.md
 ```
 
-Je nach Stufe zusätzlich die aktuellen Fach-, Acceptance- und `docs/moose/`-Dokumente.
+Je nach Stufe zusätzlich aktuelle Fach-, Acceptance- und `docs/moose/`-Dokumente.
 
-MOOSE-First bleibt zwingend:
+MOOSE-First:
 
 ```text
 MOOSE documentation
 -> actual pinned Moose.lua
 -> signatures / returns / FSM / events / prerequisites
 -> official demos/tests where relevant
--> MOOSE configuration/composition/events
+-> direct MOOSE / configuration / callbacks
 -> smallest adapter only if still required
 ```
 
@@ -65,7 +65,7 @@ Keine MOOSE- oder DCS-Funktion wird geraten.
 
 ## 3. Aufgabentrennung / lokale Toolgrenze
 
-### ChatGPT
+ChatGPT:
 
 ```text
 Repository/Governance prüfen
@@ -75,7 +75,7 @@ Repository/Governance prüfen
 -> erst danach lokale Schritte übergeben
 ```
 
-### Projektinhaber
+Projektinhaber:
 
 ```text
 PowerShell-Schritte lokal ausführen
@@ -91,28 +91,30 @@ Lua interpreter: NOT AVAILABLE
 Python: NOT AVAILABLE
 ```
 
-Deshalb:
+Daher:
 
-- lokale Build-/Prüfschritte nur PowerShell;
-- Buildanweisungen immer in Codeblöcken;
-- keine lokalen `lua`, `luac`, `python`, `python3`-Befehle voraussetzen;
-- keine lokalen Builds oder Hashes erfinden;
-- kein CODEX.
+```text
+local builds/checks: PowerShell only
+build instructions: always in code blocks
+no lua/luac/python/python3 assumptions
+no invented local builds or hashes
+no CODEX
+```
 
 ## 4. Aktuelle Source of Truth
 
-Der Legacy-Branch:
+Legacy:
 
 ```text
 agent/mission-demand-resupply-cas-concept
+= HISTORICAL REFERENCE ONLY
 ```
 
-ist historische Referenz בלבד. Aktuelle Autorität ist `main`.
+Aktuelle Autorität ist `main`.
 
-### PR #114 – MissionDemand Foundation
+PR #114 – MissionDemand Foundation:
 
 ```text
-branch: agent/mission-demand-reconciliation
 merge commit: 341a65105c24807de3ac289bb18d80339111cbd1
 status: MERGED
 ```
@@ -129,22 +131,16 @@ snapshot/restore
 ResourceDemandPolicy
 ```
 
-### PR #115 – Ground RESUPPLY thresholds
+PR #115 – Ground RESUPPLY thresholds:
 
 ```text
-branch: agent/mission-demand-resupply-thresholds
 merge commit: 34b1f46120f951ca2a6308cf1d9fbbb4b0a17863
 status: MERGED
-```
-
-Verbindlich für transferierbare Ground-Ressourcen:
-
-```text
 reorder  = 50% of target
 critical = 25% of target
 ```
 
-### PR #112 – Fixed Fire Support / local ammo rearm
+PR #112 – Fixed Fire Support / local ammo rearm:
 
 ```text
 status: MERGED
@@ -153,7 +149,7 @@ same-session restore settlement: PASS
 external process/server persistence: NOT TESTED / NOT CLAIMED
 ```
 
-Der M1083-/ARTY-Rearm-Pfad wird wiederverwendet, nicht neu gebaut.
+CampaignState bleibt einzige strategische Ressourcenautorität.
 
 ## 5. Endziele
 
@@ -177,7 +173,7 @@ E. CAS helicopter lost with surviving isolated personnel
    -> Player CSAR or AICSAR
 ```
 
-Überall gilt:
+Architekturgrenze:
 
 ```text
 CampaignState = strategic truth/resource authority
@@ -186,7 +182,7 @@ MOOSE = operational execution
 DCS groups = temporary physical representation
 ```
 
-## 6. Entwicklungsstufen und aktueller Stand
+## 6. Entwicklungsstufen
 
 ### Stage 0 – Governance / Ist-Stand / MOOSE Ground reconciliation
 
@@ -194,18 +190,20 @@ Status: `COMPLETE FOR STAGE-1A SCOPE`
 
 Erledigt:
 
-- [x] aktuelle Pflichtregeln auf `main` erneut geprüft;
-- [x] PR #114 / #115 / #112 als heutige Grundlagen bestätigt;
-- [x] CampaignState TRANSFER lifecycle geprüft;
-- [x] aktuelle Ground Production-Trennung geprüft;
-- [x] BRIGADE/PLATOON/ARMYGROUP/AUFTRAG- und Return-Lifecycle aus den Ground-Acceptances geprüft;
-- [x] owner-approved `OMW_GroundRoadSpawnAdapter` als bestehende Materialisierungsausnahme bestätigt;
-- [x] gepinnte `Moose.lua` für `NewAMMOSUPPLY`, `NewFUELSUPPLY`, Formation, Mission-Lifecycle, Zone-Prüfung und OPSTRANSPORT geprüft;
-- [x] `AUFTRAG:NewOPSTRANSPORT(...)` als nicht verfügbare auskommentierte API ausgeschlossen;
-- [x] erster kleinster physischer AMMO-Pfad festgelegt;
-- [x] keine neue Nicht-MOOSE-Ausnahme erforderlich.
+```text
+current main rules reviewed
+PR #114 / #115 / #112 reconciled
+CampaignState TRANSFER lifecycle reviewed
+Ground production separation reviewed
+BRIGADE/PLATOON/ARMYGROUP/AUFTRAG lifecycle reviewed
+Ground return lifecycle reviewed
+OMW_GroundRoadSpawnAdapter confirmed as existing owner-approved exception
+NewAMMOSUPPLY / NewFUELSUPPLY source-confirmed in pinned Moose.lua
+AUFTRAG:NewOPSTRANSPORT excluded because unavailable/commented in pinned source
+no new non-MOOSE exception required for Stage 1A
+```
 
-Technisches Review:
+Technical review:
 
 ```text
 docs/moose/GROUND-RESUPPLY-EXECUTION-SOURCE-REVIEW.md
@@ -217,9 +215,9 @@ Status: `IN DEVELOPMENT`
 
 #### Stage 1A – Ground AMMO / Joyce -> Honaker
 
-Status: `SOURCE_STAGED / LOCAL BUILD FAILED ON BUILDER GUARD / FIX STAGED`
+Status: `BUILD_PASS / MIZ_SELECTION_NEXT`
 
-Gewählter Pfad:
+Physical and strategic chain:
 
 ```text
 Honaker AMMO 40
@@ -230,15 +228,15 @@ Honaker AMMO 40
 -> CampaignState TRANSFER 20 Joyce -> Honaker
 -> MOOSE BRIGADE / PLATOON / ARMYGROUP
 -> AUFTRAG AMMOSUPPLY
--> M1083 drives OnRoad toward Honaker ACCESS zone
--> exact MissionExecute + IsInZone(destination) proof
+-> M1083 OnRoad to Honaker ACCESS
+-> exact MissionExecute + IsInZone(destination)
 -> MarkDelivered
 -> MissionDemand SUCCESS
--> explicit RTZ Joyce ACCESS zone OnRoad
--> Returned -> Warehouse AddAsset -> physical cleanup
+-> explicit RTZ Joyce ACCESS OnRoad
+-> Returned -> Warehouse AddAsset
 ```
 
-Erwarteter strategischer Endzustand:
+Expected strategic end state:
 
 ```text
 JOYCE AMMO   44 -> 24
@@ -248,137 +246,160 @@ HONAKER AMMO 40 -> 20 -> 40
 Staged files:
 
 ```text
-mission/tests/ground-resupply-execution/src/01-ground-ammo-resupply-acceptance.lua
+docs/moose/GROUND-RESUPPLY-EXECUTION-SOURCE-REVIEW.md
 mission/tests/ground-resupply-execution/README.md
 mission/tests/ground-resupply-execution/ACCEPTANCE-1.md
+mission/tests/ground-resupply-execution/src/01-ground-ammo-resupply-acceptance.lua
 tools/build-ground-ammo-resupply-acceptance-1.ps1
-docs/moose/GROUND-RESUPPLY-EXECUTION-SOURCE-REVIEW.md
 ```
 
-Builder after failed local gate and correction:
+Builder:
 
 ```text
 GROUND-AMMO-RESUPPLY-ACCEPTANCE-1-3
 ```
 
-Wichtige Designentscheidung dieses Slices:
+Real local build evidence returned by project owner:
+
+```text
+GitCommit: 99ea86bf61036f2d04008b17bcb8c1d6e236b030
+GeneratedUtc: 2026-08-22T16:57:51Z
+Bundle SHA-256: D1E908D08DF3DA787D01E760F5B9C01771F5D17CBBD51C8545A4A00086E10676
+Independent bundle SHA-256: D1E908D08DF3DA787D01E760F5B9C01771F5D17CBBD51C8545A4A00086E10676
+Builder SHA-256: AEF56E16FE896854D32EAE409FC04A6C8C0BE20266EF591242DC5C866C5FB820
+Acceptance source SHA-256: 38E099C801286768FD9D1D39014BB767BCF99055602D1E06EDACA48634856C83
+MissionDemand source SHA-256: E348E75B87135B99D780E07CA6B6FB7C3C530E048E9C6DE790328D147DE32848
+ResourceDemandPolicy source SHA-256: BDC20ACEDAB60F662093077B8320220EBB71C6C641CC604C4356231B8405913C
+GroundRoadSpawnAdapter source SHA-256: 1A81FB2E5270C493373CF5BF6EC01F5AFED47004BF25C4225524121155D983E8
+MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+Moose.lua SHA-256: E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915
+```
+
+Build result:
+
+```text
+BUILD PASS
+bundle emitted: true
+builder hash report matches independent bundle hash: true
+DCS runtime: NOT RUN
+```
+
+Design boundary:
 
 ```text
 CampaignState owns cargo quantity.
 MOOSE AMMOSUPPLY owns physical movement only.
+OPSTRANSPORT is not used in this first abstract-resource transfer slice.
 ```
 
-`OPSTRANSPORT` wird nicht verwendet, weil der erste AMMO-Slice keine zusätzliche physische CargoGroup benötigt und keine zweite Fracht-/Bestandsautorität entstehen darf.
-
-Delivery ist fail-closed:
+Delivery gate:
 
 ```text
 MissionDone alone != delivery
-
-Delivery requires:
-exact AMMOSUPPLY MissionExecute
+Delivery requires exact acceptance AMMOSUPPLY MissionExecute
 AND ARMYGROUP:IsInZone(Honaker ACCESS) == true
 ```
 
-Readiness wird über die MOOSE-USERFLAGs geprüft:
+Next gate:
 
 ```text
+select concrete work MIZ
+-> record MIZ SHA-256
+-> internal mission SHA-256
+-> confirm object contract
+-> confirm startup resources/triggers
+-> only then embed acceptance bundle
+-> verify embedded bundle and Moose hashes
+-> only then DCS run
+```
+
+Required MIZ objects:
+
+```text
+WH_BLUE_GND_JOYCE
+ZON_BLUE_GND_JOYCE_ACCESS
+ZON_BLUE_GND_HONAKER_ACCESS
+TPL_BLUE_GND_SUP_M1083
+```
+
+Required startup chain:
+
+```text
+Moose.lua
+OMW_AirOps_Warehouse_Base.lua
+OMW_Ground_Base.lua
 OMW_WAREHOUSE_READY == 1
 OMW_GROUND_READY == 1
 ```
-
-Lokales Build-Gate vom 22.08.2026 auf Commit `dc9d35ed72cbc68f78dab893c923f9532dbe3263`:
-
-```text
-Result: FAILED BEFORE BUNDLE CREATION
-Reason: required marker `ResourceDemandPolicy.Evaluate` did not exist literally in source
-Actual source contract: `function Policy.Evaluate(...)`
-Builder SHA-256: 46C2602B1C7BC9B4D2B780FB9A0D2C17AF9450CA1572ACF8904FB49DC7019328
-Acceptance source SHA-256: 38E099C801286768FD9D1D39014BB767BCF99055602D1E06EDACA48634856C83
-Bundle SHA-256: NOT AVAILABLE because no bundle was produced
-```
-
-Bewertung:
-
-```text
-Builder static guard defect only.
-No DCS/runtime result exists.
-No acceptance source change was required.
-The guard now verifies the real module declaration `function Policy.Evaluate`.
-```
-
-Noch offen:
-
-- [ ] Owner local PowerShell rebuild with BuilderVersion `GROUND-AMMO-RESUPPLY-ACCEPTANCE-1-3`;
-- [ ] unabhängiger Bundle-SHA-256;
-- [ ] anschließend konkrete Arbeits-MIZ bestimmen;
-- [ ] Objektvertragssmoke für Joyce/Honaker/M1083;
-- [ ] Bundle einbetten und interne Hashkette prüfen;
-- [ ] DCS-Lauf;
-- [ ] Ergebnisdokumentation;
-- [ ] `docs/moose/PROJECT-CLASS-INDEX.md` bei Runtime-Abschluss mit dem exakten AMMOSUPPLY-Scope synchronisieren; die Klassenstatus selbst wurden durch das reine Source-Staging noch nicht angehoben.
 
 #### Stage 1B – Ground FUEL
 
 Status: `PLANNED AFTER STAGE 1A`
 
-MOOSE-Kandidat source-confirmed:
-
 ```text
-AUFTRAG:NewFUELSUPPLY(Zone)
+MOOSE candidate: AUFTRAG:NewFUELSUPPLY(Zone)
 ```
-
-Kein Runtime-Code vor Abschluss/Review von Stage 1A.
 
 #### Stage 1C – Generic Ground SUPPLY
 
 Status: `BLOCKED FOR SEPARATE MOOSE GAP REVIEW`
 
-Keine generische gleichwertige `AUFTRAG:NewSUPPLY(...)`-API wurde für den gepinnten Scope bestätigt. Es wird kein PATROL-/RELOCATE-Ersatz missbraucht. Falls MOOSE keine geeignete Funktion bietet, ist vor eigenem Fallback eine Owner-Entscheidung erforderlich.
+Keine gleichwertige generische `AUFTRAG:NewSUPPLY(...)`-API wurde für den gepinnten Scope bestätigt. Kein PATROL-/RELOCATE-Ersatz wird missbraucht. Falls MOOSE keinen geeigneten Pfad bietet, ist vor eigenem Fallback eine Owner-Entscheidung erforderlich.
 
 ### Stage 2 – FOB attack -> support demand
 
 Status: `PLANNED`
 
-- Event-/Incident-Grenze verifizieren;
-- Treffer zu einem laufenden TacticalSupportIncident aggregieren;
-- kein Request-Sturm;
-- ARTY/QRF/CAS capability/readiness/range/resources/ROE bewerten.
+```text
+verified attack/contact event source
+-> deduplicated TacticalSupportIncident
+-> capability/range/readiness/resources/ROE evaluation
+-> ARTY / QRF / CAS demand
+```
 
 ### Stage 3 – Fire support -> local rearm -> RESUPPLY follow-up
 
 Status: `PLANNED / FOUNDATIONS AVAILABLE`
 
-- PR-#112-Rearm wiederverwenden;
-- Verbrauch CampaignState-seitig abrechnen;
-- nach Verbrauch ResourceDemandPolicy evaluieren;
-- genau einen RESUPPLY-Demand erzeugen.
+```text
+reuse PR #112 local rearm
+-> authoritative CampaignState consumption
+-> ResourceDemandPolicy re-evaluation
+-> exactly one RESUPPLY demand when threshold crossed
+```
 
 ### Stage 4 – Convoy under attack -> support demand
 
 Status: `PLANNED`
 
-- physischer Convoy-Lifecycle als Eventquelle;
-- deduplizierter Supportincident;
-- Transport-Demand und Support-Demand bleiben getrennte Identitäten.
+```text
+physical convoy lifecycle as event source
+-> deduplicated support incident
+-> transport demand and support demand remain separate identities
+```
 
 ### Stage 5 – BLUE assignment / CAS execution
 
 Status: `BLOCKED BY BLUE COMMANDER RECONCILIATION`
 
-- aktuelles `COMMANDER/AIRWING/SQUADRON/AUFTRAG` erneut source-reviewen;
-- alten BLUE-COMMANDER-Branch nur selektiv reconciliieren;
-- `CAS_IMMEDIATE` erst danach produktiv dispatchen.
+```text
+current COMMANDER/AIRWING/SQUADRON/AUFTRAG source review
+-> selective reconciliation of historical BLUE COMMANDER work
+-> exclusive player/AI assignment
+-> CAS_IMMEDIATE runtime
+```
 
 ### Stage 6 – Aircraft loss -> CSARIncident -> Player/AICSAR
 
 Status: `PLANNED`
 
-- endgültiges CSARIncident-Modell/FSM;
-- Loss/Ejection/Survival-Ereignisse verifizieren;
-- genau ein Incident;
-- Player/AICSAR exklusiv;
-- Rescue/Capture/Death/Expired/Recovery persistent abrechnen.
+```text
+final CSARIncident model/FSM
+-> verified loss/ejection/survival event source
+-> exactly one incident
+-> Player/AICSAR exclusivity
+-> persistent Rescue/Capture/Death/Expired/Recovery settlement
+```
 
 ### Stage 7 – End-to-End chain
 
@@ -412,75 +433,46 @@ CAS helicopter lost
 
 Status: `PLANNED`
 
-Keine doppelten Demands, Reservierungen, Abbuchungen, Gutschriften oder grundlosen Verluste. Externer Prozess-/Serverrestart wird nur nach realem Test behauptet.
+No duplicate demands, reservations, debits, credits or unexplained losses. External process/server restart is claimed only after real test.
 
 ### Stage 9 – Multiplayer / performance / failures
 
 Status: `PLANNED`
 
-Parallele Demands, Assignment-Races, zerstörte Carrier/Responder, Routingfehler, Abbruch, Reconnect und Schedulerlast.
+Parallel demands, assignment races, destroyed carriers/responders, routing failures, aborts, reconnect and scheduler load.
 
 ### Stage 10 – Production reconciliation / merge readiness
 
 Status: `PLANNED`
 
-Diff, Tests, MOOSE-Doku, Acceptance-Provenienz, Register, keine `PENDING_MERGE`-Werte auf `main`, keine Aussagen über getesteten Scope hinaus.
+Diff, tests, MOOSE documentation, acceptance provenance, registries, no stale `PENDING_MERGE` metadata on main, and no runtime claims beyond exact tested provenance.
 
-## 7. Aktueller technischer Gate-Stand
+## 7. Aktueller Gate-Stand
 
 ```text
-branch:
-agent/automatic-response-orchestration
-
-implementation head after builder guard correction:
-b54e3ab4912b14e9da688ed21401af52d4d34272
-
-stage:
-STAGE_1A_GROUND_AMMO_RESUPPLY
-
-MOOSE-first source review:
-COMPLETE FOR STAGE-1A TEST SCOPE
-
-acceptance source:
-STAGED / unchanged by builder correction
-
-builder:
-STAGED / GROUND-AMMO-RESUPPLY-ACCEPTANCE-1-3
-
-last local owner build:
-FAILED AT STATIC MARKER GUARD ON dc9d35ed72cbc68f78dab893c923f9532dbe3263
-
-failure reason:
-FALSE LITERAL MARKER `ResourceDemandPolicy.Evaluate`; actual module declaration is `function Policy.Evaluate`
-
-bundle SHA-256:
-UNKNOWN / NO BUNDLE PRODUCED
-
-MIZ mutation:
-NOT STARTED
-
-DCS runtime:
-NOT RUN
-
-production runtime implementation:
-NOT YET CREATED
+branch: agent/automatic-response-orchestration
+stage: STAGE_1A_GROUND_AMMO_RESUPPLY
+source review: COMPLETE FOR TEST SCOPE
+builder: PASS
+bundle hash: D1E908D08DF3DA787D01E760F5B9C01771F5D17CBBD51C8545A4A00086E10676
+MIZ selected: false
+MIZ object-contract smoke: NOT RUN
+MIZ embedding: NOT STARTED
+DCS runtime: NOT RUN
+production runtime implementation: NOT YET CREATED
 ```
 
 ## 8. Nächster zulässiger Schritt
 
-Der aktuelle Gate ist weiterhin kein MIZ- oder DCS-Gate. Zuerst muss der Projektinhaber den korrigierten versionierten Acceptance-Builder `GROUND-AMMO-RESUPPLY-ACCEPTANCE-1-3` lokal mit PowerShell ausführen und den unabhängig berechneten SHA-256 zurückgeben.
-
-Erst danach:
+Nur MIZ-Auswahl und read-only Preflight gemäß Dokument 22:
 
 ```text
-build/hash PASS
--> select current work MIZ
--> object-contract smoke
--> owner MIZ embedding
--> embedded bundle/Moose/MIZ hashes
--> DCS acceptance
--> evaluate result
--> only then production adapter decision
+identify concrete current OMW work MIZ
+-> record filename and SHA-256
+-> record internal mission SHA-256
+-> confirm required Joyce/Honaker/M1083 objects
+-> confirm Moose/Warehouse/Ground startup resources and trigger order
+-> stop on any mismatch
 ```
 
-Kein DCS-PASS und keine Produktionsreife werden vorweggenommen.
+Erst nach diesem statischen PASS darf das Acceptance-Bundle eingebettet werden.
