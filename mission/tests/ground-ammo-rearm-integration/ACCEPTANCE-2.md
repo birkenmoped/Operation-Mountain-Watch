@@ -11,7 +11,7 @@ project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
 superseded_by:
 source_branch: agent/ground-ammo-rearm-integration
-source_commit: 593589ddeafc3f7671243e2c8c0d0f9866ec5605
+source_commit: 1e086c0e6c7c06239a6e0a1be77f9aed2af0b07a
 validated_in_dcs: false
 ---
 
@@ -215,13 +215,68 @@ sofern kein konkreter Fehler isoliert werden muss.
 
 Der Bostick-Regressionsteil wird mit Wright/Fortress/Honaker in diesem Lauf kombiniert. Separate Folgeprüfungen werden nur zur konkreten Fehlerbehebung oder Fehlerisolierung durchgeführt.
 
-## 10. Aktueller Status
+## 10. Reale lokale Build-Provenienz
+
+Vom Projektinhaber am 22.08.2026 lokal ausgeführt:
+
+```text
+Git HEAD:
+1e086c0e6c7c06239a6e0a1be77f9aed2af0b07a
+
+BuilderVersion:
+GROUND-FIRE-SUPPORT-ACCEPTANCE-2-1
+
+TestId:
+GROUND-FIRE-SUPPORT-ACCEPTANCE-2
+
+GeneratedUtc:
+2026-08-22T08:42:47Z
+
+Bundle:
+mission/tests/ground-ammo-rearm-integration/dist/OMW_Ground_Fire_Support_Acceptance_2.lua
+
+Builder SHA-256:
+730F07B1AE79EAA5C4632A4A4CF44A64C41507F2D0E1C317B3F14405F2AA260E
+
+Independent Get-FileHash SHA-256:
+730F07B1AE79EAA5C4632A4A4CF44A64C41507F2D0E1C317B3F14405F2AA260E
+
+Hash match:
+PASS
+```
+
+Zusätzliche lokal ermittelte Source-/Builder-/Test-Hashes:
+
+```text
+OMW_FixedFireSupportAmmoSupport.lua
+9277057D7E3DB511C66A2ED430E6DFA5FC211F9E6F00530CDEA00BC566CEF40B
+
+OMW_FixedFireSupportAmmoRearmService.lua
+FF02B1184DF6F576E73090711B8CF1A29EF5C7DFD168EA5826631ABEB6C7C951
+
+02-fixed-fire-support-combined-acceptance.lua
+E866E375FE8CB884B1CF984291839E14F4E3E1CA8DFC23F3DAF2AF68C8AD87D1
+
+build-ground-fire-support-acceptance-2.ps1
+8E7B49F7651A5A10B1F47B4FF83162871DA208C29B14F9A474BEA875630F18CF
+
+test_fixed_fire_support_ammo_support.lua
+EBE28CA1789E2A29867317D38D0795837094349D6004F75B42042472CC19D78E
+
+test_fixed_fire_support_ammo_rearm_service.lua
+AF7DEA1BBBDFAB8B8FCD685E761FE0580DBB693919A1C4221B80FECD398FD1A1
+
+ACCEPTANCE-2.md before this provenance update
+B1AF54DBE5C02604F4E6A2D9EF87D29990C236A7341C9D028CA6B8C17DF2C73B
+```
+
+## 11. Aktueller Status
 
 ```text
 Source generalization: STAGED
 Contract tests: ADDED, NOT EXECUTED IN LOCAL OWNER ENVIRONMENT
-Builder: STAGED
-Combined bundle: NOT YET BUILT BY OWNER
+Builder: BUILT BY OWNER
+Combined bundle: BUILT AND HASH-MATCHED
 MIZ target-zone preparation: BLOCKED_PENDING_OWNER_APPROVAL
 MIZ embedding: NOT STARTED
 DCS runtime: NOT_RUN
