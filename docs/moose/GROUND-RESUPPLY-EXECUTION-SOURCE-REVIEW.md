@@ -4,17 +4,16 @@ status: ACCEPTED_TECHNICAL_BASELINE
 document_class: TECHNICAL_SOURCE_REVIEW
 owning_policy: OMW-GOV-001
 authoritative_for:
-  - branch-local MOOSE source review for physical Ground RESUPPLY vertical slices
-  - AMMOSUPPLY execution and return lifecycle for Joyce-to-Honaker Stage 1A
-  - FUELSUPPLY source-reviewed staging boundary for Joyce-to-Honaker Stage 1B
+  - branch-local MOOSE source review for physical Ground RESUPPLY execution
+  - accepted Stage 1A AMMOSUPPLY lifecycle
+  - failed Stage 1B FUELSUPPLY OMW meta-resupply experiment
+  - WAREHOUSE SELFPROPELLED replacement-candidate source review
 not_authoritative_for:
-  - generic SUPPLY execution
-  - FUELSUPPLY runtime acceptance before the dedicated DCS test
+  - production generic Ground RESUPPLY executor
+  - WAREHOUSE SELFPROPELLED runtime acceptance
   - CAS or CSAR execution
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
-supersedes:
-superseded_by:
 source_branch: agent/automatic-response-orchestration
 source_commit: PENDING_MERGE
 validated_in_dcs: partial
@@ -30,276 +29,184 @@ MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
 Moose.lua SHA-256: E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915
 ```
 
-Geprüft wurden Projekt-MOOSE-Dokumentation, tatsächlicher gepinnter `Moose.lua`-Source, aktuelle Online-Dokumentation sowie offizielle MOOSE-Demo-/Testrepositories. Maßgeblich für API-Verfügbarkeit und Lifecycle bleibt die tatsächlich geladene `Moose.lua`.
+MOOSE-Dokumentation, tatsächlicher gepinnter Source und offizielle Beispielbestände werden getrennt betrachtet. Runtime-Aussagen gelten nur für dokumentierte DCS-Provenienz.
 
 ## 2. Strategische Grenze
 
 ```text
-CampaignState = alleinige strategische Ressourcen-/Cargo-Autorität
+CampaignState = einzige strategische Ressourcenautorität
 MissionDemand = Demand-/Assignment-Zustand
-MOOSE BRIGADE / PLATOON / ARMYGROUP / AUFTRAG = physische operative Ausführung
-DCS group = temporäre physische Repräsentation
+MOOSE = physische operative Ausführung
+DCS groups = temporäre physische Repräsentation
 ```
 
-CampaignState TRANSFER bleibt:
+`GROUND_AMMO_PACKAGE`, `GROUND_FUEL_PACKAGE` und `GROUND_SUPPLY_PACKAGE` sind strategische CampaignState-Waren. Eine physische Truck-/Tanker-Anzahl definiert keine Package-Kapazität.
+
+Insbesondere hat Stage 1B keine reale DCS-Fuel-Menge in Litern/Gallonen transportiert.
+
+## 3. Stage 1A – AMMO akzeptiert
+
+DCS-bestätigter MOOSE-first Pfad:
 
 ```text
-ReserveResource
--> RESERVED
--> MarkLoading
--> LOADING
--> MarkInTransit
--> origin debit exactly once
--> IN_TRANSIT
--> MarkDelivered
--> destination credit exactly once
--> DELIVERED
-```
-
-Der physische Convoy besitzt keine eigene strategische Menge.
-
-## 3. Stage 1A – AMMO / akzeptierter MOOSE-first Pfad
-
-Im gepinnten Source vorhanden und im dokumentierten Stage-1A-DCS-Lauf praktisch bestätigt:
-
-```lua
-AUFTRAG:NewAMMOSUPPLY(Zone)
-```
-
-Verwendeter Pfad:
-
-```text
-BRIGADE
-PLATOON
-ARMYGROUP
-AUFTRAG.Type.AMMOSUPPLY
+BRIGADE / PLATOON / ARMYGROUP
 AUFTRAG:NewAMMOSUPPLY(destinationZone)
-AUFTRAG:SetMissionSpeed(27)
-AUFTRAG:SetFormation(ENUMS.Formation.Vehicle.OnRoad)
-AUFTRAG:SetReturnToLegion(false)
-ARMYGROUP:RTZ(originZone, ENUMS.Formation.Vehicle.OnRoad)
-```
-
-Die owner-approved `OMW_GroundRoadSpawnAdapter.lua`-Ausnahme dient ausschließlich der road-aligned Materialisierung. Request-, Asset-, BRIGADE-, PLATOON-, ARMYGROUP- und AUFTRAG-Lifecycle bleiben MOOSE-owned.
-
-Kein eigener Router, kein eigener Convoy-Dispatcher, kein Raw-SPAWN-Fallback und kein Despawn/Respawn-Return wurden eingeführt.
-
-### Stage-1A Provenienz
-
-```text
-Branch: agent/automatic-response-orchestration
-Acceptance source/build commit: 2d72bcdfc113342a2180b6cd9c84486da790052c
-BuilderVersion: GROUND-AMMO-RESUPPLY-ACCEPTANCE-1-5
-Acceptance bundle SHA-256: 752B3E6F0B77D1B62C750421DDE36202C81B98632FEFBF6A273F913202DF8339
-DCS: 2.9.28.26385 MT
-MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
-Moose.lua SHA-256: E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915
-Executed mission: OMW_Template_v18.miz
-MIZ SHA-256: 2FDF31A2E07409CF392D45BFF5FC69750958C670AE3E12FF28D0B4FD8AECC90D
-internal mission SHA-256: 38B207278365CD977E74FF3C9000C6A7C5B13EEE3E5B1BB154F1775055D02AF6
-Result: PASS
-```
-
-Runtime bestätigte:
-
-```text
-CampaignState AMMO shortage / REORDER demand
-MissionDemand RESUPPLY
-CampaignState TRANSFER Joyce -> Honaker
-TPL_BLUE_CONVOY_LIGHT_06
-AMMOSUPPLY / OnRoad 27 kt
-destination-zone proof
-MarkDelivered / MissionDemand SUCCESS
+SetMissionSpeed(27)
+SetFormation(OnRoad)
+SetReturnToLegion(false)
+CampaignState delivery after exact destination-zone proof
 MissionDone
-30 s settlement window
-same ARMYGROUP RTZ Joyce
+30 s settlement
+same ARMYGROUP RTZ Joyce ACCESS / OnRoad
 Returned
 LEGION/Warehouse AddAsset
 physical cleanup
 ```
 
-## 4. Delivery-/Return-Grenze
-
-Für AMMO und den Stage-1B-FUEL-Harness gilt fail-closed:
+Provenienz:
 
 ```text
-exact ARMYGROUP
-+ exact acceptance AUFTRAG mission
-+ OnAfterMissionExecute
-+ ARMYGROUP:IsInZone(destination ACCESS zone) == true
--> CampaignState MarkDelivered
--> MissionDemand DELIVERED / SUCCESS
+Acceptance source/build commit: 2d72bcdfc113342a2180b6cd9c84486da790052c
+BuilderVersion: GROUND-AMMO-RESUPPLY-ACCEPTANCE-1-5
+Bundle SHA-256: 752B3E6F0B77D1B62C750421DDE36202C81B98632FEFBF6A273F913202DF8339
+DCS: 2.9.28.26385 MT
+Executed mission: OMW_Template_v18.miz
+MIZ SHA-256: 2FDF31A2E07409CF392D45BFF5FC69750958C670AE3E12FF28D0B4FD8AECC90D
+Result: PASS
 ```
 
-`MissionDone` allein ist kein Liefernachweis.
+Nur dieser AMMO-Scope ist praktisch validiert.
 
-Der gepinnte MOOSE-Source enthält für ARMYGROUP:
+## 4. Stage 1B – FUELSUPPLY Versuch
 
-```lua
-function ARMYGROUP:onafterReturned(From, Event, To)
-  if self.legion then
-    self.legion:__AddAsset(10, self.group, 1)
-  end
-end
-```
-
-Der Acceptance-Harness wartet deshalb 12 Sekunden nach `Returned`, bevor Warehouse-AddAsset und physische Entfernung final geprüft werden.
-
-## 5. Return-Timing / Race-Condition
-
-Stage 1A reproduzierte mit nur zwei Sekunden Abstand:
-
-```text
-MissionDone
--> early RTZ accepted
--> AUFTRAG completion still running
--> Convoy remains at destination
--> RETURN_TIMEOUT
-```
-
-Mit dem aus Ground Acceptance 4 übernommenen 30-s-Fenster wurde der komplette Return praktisch bestätigt:
-
-```text
-MissionDone
--> wait 30 s
--> ARMYGROUP:RTZ(origin ACCESS, OnRoad)
--> Returned
--> Warehouse AddAsset
--> PASS
-```
-
-Dieses Fenster ist eine Lifecycle-Koordination und weder AMMO- noch FUEL-Entladezeit.
-
-## 6. Stage 1B – FUEL / Source Review
-
-Die aktuelle Online-MOOSE-Dokumentation führt ausdrücklich:
+Der gepinnte Source enthält:
 
 ```lua
 AUFTRAG:NewFUELSUPPLY(Zone)
 ```
 
-als Ground FUEL SUPPLY mission.
+sowie `AUFTRAG.Type.FUELSUPPLY` und `AUFTRAG.SpecialTask.FUELSUPPLY`.
 
-Die tatsächlich gepinnte `Moose.lua` bestätigt:
+Die Source-Prüfung zeigt zugleich den vorgesehenen BRIGADE-Kontext:
 
 ```text
-AUFTRAG.Type.FUELSUPPLY
-AUFTRAG.SpecialTask.FUELSUPPLY
+BRIGADE:AddRefuellingZone(zone)
+-> BRIGADE status processing
+-> AUFTRAG:NewFUELSUPPLY(supplyzone.zone)
+```
+
+Damit ist `FUELSUPPLY` nachweislich mit einer operativen Refuelling-Zone verknüpft. Eine offizielle aktuelle Demo für den von OMW versuchten abstrakten Warehouse-to-Warehouse-Fuel-Package-Roundtrip wurde nicht gefunden.
+
+Der DCS-Lauf widerlegt die zuvor angenommene Gleichsetzung mit dem Stage-1A-AMMOSUPPLY-Lifecycle für diesen OMW-Scope:
+
+```text
+ROAD_ALIGNED_WAREHOUSE_SPAWN
+GROUP_MATERIALIZED
+ARMY_ON_MISSION mission=FUELSUPPLY
+-> no OnAfterMissionExecute
+-> no DELIVERY_CONFIRMED
+-> no MissionDone
+-> no RTZ
+FAIL OUTBOUND_TIMEOUT
+missionExecuteCount=0
+missionDoneCount=0
+```
+
+Deshalb gilt:
+
+```text
 AUFTRAG:NewFUELSUPPLY(Zone)
+= available MOOSE API
+= valid Refuelling-Zone concept candidate
+= REJECTED_FOR_CURRENT_OMW_META_RESUPPLY_EXECUTOR
 ```
 
-Die Methode konstruiert den Ground-FUELSUPPLY-Pfad mit Zielzone, WeaponHold, AlarmState.Auto und `missionFraction = 1.0`. Im OPSGROUP-SpecialTask-/TaskCancel-Pfad wird `FUELSUPPLY` zusammen mit `AMMOSUPPLY` behandelt. Damit existiert ein direkter MOOSE-first-Pfad; ein projektspezifischer FUEL-Dispatcher ist nicht erforderlich.
+Das ist keine generelle Aussage, dass `FUELSUPPLY` fehlerhaft sei.
 
-Die offiziellen Repositories `MOOSE_MISSIONS` und `MOOSE_MISSIONS_UNPACKED` wurden nach einem dedizierten aktuellen `NewFUELSUPPLY`-/`FUELSUPPLY`-Demo-Slice durchsucht. Kein entsprechender direkter Demo-Beleg wurde gefunden. Diese fehlende Demo-Evidenz wird nicht durch Annahmen ersetzt.
-
-Status vor DCS:
+Detailergebnis:
 
 ```text
-AUFTRAG:NewFUELSUPPLY(Zone) = SOURCE_REVIEWED / DCS_PENDING
-AUFTRAG.Type.FUELSUPPLY = SOURCE_REVIEWED / DCS_PENDING
-FUELSUPPLY OPSGROUP execution = SOURCE_REVIEWED / DCS_PENDING
+mission/tests/ground-resupply-execution/results/2026-08-22-ground-fuel-resupply-acceptance-1-fail-1.md
 ```
 
-## 7. Stage 1B – v19 Physical Fixture
+## 5. MOOSE-native Ersatzkandidat: WAREHOUSE SELFPROPELLED
 
-Owner-created Mission `OMW_Template_v19.miz`, durch ChatGPT ausschließlich read-only geprüft:
+Der gepinnte MOOSE-Source dokumentiert einen direkten Warehouse-zu-Warehouse-Assettransfer:
 
 ```text
-MIZ SHA-256: B89DBE7B755D25B43384B158F3D25921C70847820F71B837F12F86C5D863A8A6
-internal mission SHA-256: 6B15369398C3B5989B676DB473127489C236F5948737AA3242FDB182FD515B95
+WAREHOUSE:AddRequest(...)
+WAREHOUSE.TransportType.SELFPROPELLED
 ```
 
-Ausgewähltes Acceptance-Fixture:
+`SELFPROPELLED` ist definiert als:
 
 ```text
-TPL_BLUE_CONVOY_FUEL_LIGHT_06
-lateActivation = true
-1 CHAP_MATV
-2 M978 HEMTT Tanker
-3 MaxxPro_MRAP
-4 M978 HEMTT Tanker
-5 MaxxPro_MRAP
-6 CHAP_MATV
+Assets go to their destination by themselves. No transport carrier needed.
 ```
 
-Weitere neue Templates in v19:
+Für Ground-Assets führt `WAREHOUSE:onafterRequestSpawned()` direkt `_RouteGround(group, Request)` aus. `_RouteGround` verwendet eine definierte Off-Road-Verbindung, falls vorhanden; andernfalls wird die Straßenverbindung zwischen den Warehouses verwendet.
+
+Besonders relevant ist MOOSE Warehouse Example 15:
+
+```lua
+warehouse.Kobuleti:AddAsset("M978", 20)
+warehouse.London:AddAsset("M818", 20)
+warehouse.Kobuleti:AddOffRoadPath(warehouse.London, ...)
+warehouse.Kobuleti:AddRequest(
+  warehouse.London,
+  WAREHOUSE.Descriptor.ATTRIBUTE,
+  WAREHOUSE.Attribute.GROUND_TRUCK,
+  WAREHOUSE.Quantity.ALL
+)
+```
+
+Die Dokumentation beschreibt dazu ausdrücklich, dass Trucks an beiden Warehouses gespawnt und zum jeweils anderen Warehouse geführt werden.
+
+Damit ist der generische physische Truck-Transfer ein wesentlich besser belegter MOOSE-first Kandidat als `FUELSUPPLY` für Meta-Waren.
+
+## 6. Wichtige Handoff-Grenze des WAREHOUSE-Pfads
+
+Der Source zeigt bei `WAREHOUSE:onafterArrived(...)`:
 
 ```text
-TPL_BLUE_CONVOY_FUEL_STD_07
-TPL_BLUE_CONVOY_MIXED_LIGHT_06
-TPL_BLUE_CONVOY_MIXED_STD_07
+self-propelled asset
+-> receiving warehouse selected
+-> mobile ground group routed toward warehouse coordinate
+-> warehouse:__AddAsset(60, group)
 ```
 
-Sie werden durch Stage 1B nicht automatisch ausgewählt und definieren keine strategische Capacity-Regel.
+Das bedeutet: MOOSE übernimmt das physische Asset nach der Ankunft wieder in den Warehouse-Stock. Ein späterer Rücktransport wird aus diesem Stock erneut materialisiert.
 
-## 8. Stage 1B – geplanter Acceptance-Vertrag
-
-Ground-Baseline:
+Für OMW ist daher vor Adoption zwingend zu klären:
 
 ```text
-JOYCE FUEL target/initial 40, reorder 20, critical 10
-HONAKER FUEL target/initial 36, reorder 18, critical 9, supplyParent Joyce
+Framework-owned destination handoff/despawn
++ later warehouse materialization for return
+versus
+OMW rule: no observable spawn/despawn/teleport
 ```
 
-Acceptance-Slice:
+Dieser Punkt ist derzeit der entscheidende Architektur-/Acceptance-Gate. Er wird nicht durch eine eigene Route oder einen eigenen Dispatcher umgangen.
+
+## 7. Nicht geeignete Alternativen
+
+`STORAGE`-/OPSTRANSPORT-Fuel-Cargo darf nicht zur zweiten strategischen Fuel-Autorität werden. CampaignState bleibt autoritativ.
+
+`AUFTRAG:NewCARGOTRANSPORT(...)` ist kein generischer Ground-Meta-Warenpfad. `AUFTRAG:NewOPSTRANSPORT(...)` ist im gepinnten Stand nicht als nutzbarer öffentlicher Konstruktor bestätigt.
+
+Ein eigener Native-DCS- oder Parallel-Dispatcher bleibt ohne dokumentierten MOOSE-Gap und Owner-Freigabe ausgeschlossen.
+
+## 8. Aktueller Status
 
 ```text
-HONAKER 36
--> test-only consumption 18
--> HONAKER 18 / REORDER
--> one RESUPPLY MissionDemand
--> CampaignState TRANSFER 18 Joyce -> Honaker
--> TPL_BLUE_CONVOY_FUEL_LIGHT_06
--> AUFTRAG:NewFUELSUPPLY(Honaker ACCESS)
--> OnRoad 27 kt
--> exact destination-zone delivery proof
--> CampaignState DELIVERED
--> MissionDemand SUCCESS
--> MissionDone
--> 30 s settlement window
--> same ARMYGROUP RTZ Joyce
--> Returned
--> Warehouse AddAsset
--> physical cleanup
+Stage 1A AMMO / AMMOSUPPLY: ACCEPTED_TECHNICAL_BASELINE
+Stage 1B FUEL / FUELSUPPLY meta-resupply: FAILED / CLOSED
+GROUND_FUEL_PACKAGE strategic model: RETAIN AS CAMPAIGNSTATE META RESOURCE
+Fuel convoy templates: RETAIN AS PHYSICAL REPRESENTATIONS
+WAREHOUSE SELFPROPELLED: SOURCE_REVIEWED CANDIDATE
+WAREHOUSE visual handoff/despawn boundary: OPEN
+replacement DCS acceptance: NOT YET STAGED
+production executor: NOT YET CREATED
 ```
 
-Strategischer Endzustand:
-
-```text
-JOYCE FUEL   40 -> 22
-HONAKER FUEL 36 -> 18 -> 36
-```
-
-Keine Ableitung:
-
-```text
-1 M978 = X GROUND_FUEL_PACKAGE
-FUEL_LIGHT_06 capacity = X
-FUEL_STD_07 capacity = Y
-automatic FUEL_LIGHT/FUEL_STD selection
-```
-
-## 9. Generic SUPPLY
-
-Für `GROUND_SUPPLY_PACKAGE` wurde weiterhin keine gleichwertige generische öffentliche `AUFTRAG:NewSUPPLY(...)`-Mission bestätigt.
-
-```text
-AMMO -> AMMOSUPPLY: ACCEPTED_TECHNICAL_BASELINE
-FUEL -> FUELSUPPLY: SOURCE_REVIEWED / DCS_PENDING
-generic SUPPLY -> separate MOOSE gap review
-custom fallback -> only after documented gap + owner approval
-```
-
-## 10. Ergebnis
-
-```text
-MOOSE-first FUEL path found: YES
-custom physical dispatcher required: NO
-custom routing/pathfinding required: NO
-existing approved road-spawn adapter reused: YES
-owner-created dedicated fuel convoy template available: YES
-OPSTRANSPORT required: NO
-new non-MOOSE exception requested: NO
-Stage 1A AMMO: ACCEPTED_TECHNICAL_BASELINE
-Stage 1B FUEL: SOURCE_REVIEWED / STAGED / DCS_PENDING
-```
+Kein weiterer DCS-Lauf wird angesetzt, bevor die Warehouse-Handoff-Grenze geklärt und der kleinste MOOSE-first Ersatzpfad festgelegt ist.
