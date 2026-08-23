@@ -1,18 +1,23 @@
 ---
 document_id: OMW-MOOSE-AWACS-EXTERNAL-LIFECYCLE
-status: SOURCE_REVIEWED_STAGED
+status: ACCEPTED_TECHNICAL_BASELINE
 document_class: MOOSE_TECHNICAL_NOTE
 owning_policy: OMW-GOV-001
 authoritative_for:
-  - staged MOOSE-first external E-3 physical lifecycle
+  - DCS-validated MOOSE-first external E-3 routing lifecycle for the exact Acceptance-1 provenance
   - source-reviewed method boundary for AWACS ingress, orbit, egress and later AAR integration
 not_authoritative_for:
-  - DCS runtime validation
+  - complete AWACS production validation beyond the documented Acceptance-1 routing scope
   - historical 964th EAACS routing details not explicitly sourced
   - production AAR dispatch before dedicated acceptance
+  - six-hour relief lifecycle, fuel calibration, loss and restart behavior before dedicated acceptance
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
-validated_in_dcs: false
+source_branch: agent/awacs-external-lifecycle-foundation
+source_commit: bde8a6e8d006b7c8d744b739510b08aa9812d48b
+validated_in_dcs: true
+supersedes:
+superseded_by:
 ---
 
 # MOOSE – External E-3 AWACS Lifecycle
@@ -37,6 +42,8 @@ CampaignState OFFMAP_AL_DHAFRA
 -> Despawn / CampaignState recredit
 ```
 
+Dieser Routing-Lifecycle ist seit Acceptance 1 für den exakt dokumentierten Branch-/Commit-/MIZ-/Bundle-/DCS-/MOOSE-Stand praktisch bestätigt. Fuel, sechs Stunden Station Time, Relief, Loss/Restart und AWACS-AAR bleiben getrennte offene Acceptance-Blöcke.
+
 ## 2. Gepinnter MOOSE-Stand
 
 ```text
@@ -45,7 +52,7 @@ MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
 Moose.lua SHA-256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
 ```
 
-## 3. Source-verifizierte Methoden
+## 3. Source-verifizierte und praktisch bestätigte Methoden
 
 Im tatsächlich gepinnten `Moose.lua` geprüft:
 
@@ -86,6 +93,22 @@ Wie beim validierten AAR-Racetrack besitzt der zugrunde liegende ORBIT-Pfad ein 
 mission:SetMissionAltitude(TRACK_ALTITUDE_FT)
 ```
 
+Acceptance 1 bestätigte praktisch die Kette:
+
+```text
+SPAWN:SpawnFromCoordinate(...)
+-> FLIGHTGROUP:AddWaypoint(ROSIE)
+-> PassingWaypoint / OnAfterPassingWaypoint
+-> FLIGHTGROUP:AddMission(AUFTRAG:NewAWACS(...))
+-> APOC ON_STATION
+-> AUFTRAG:Cancel() / SetMissionEgressCoord(ROSIE)
+-> ROSIE outbound PassingWaypoint
+-> FLIGHTGROUP:AddWaypoint(external handoff)
+-> Despawn / recredit path
+```
+
+`FLIGHTGROUP:Refuel(...)` bleibt für AWACS lediglich source-reviewed; Acceptance 1 testete keine Luftbetankung.
+
 ## 4. Warum nicht die MOOSE-Klasse `AWACS`
 
 Die umfangreiche MOOSE-`AWACS`-Klasse ist im gepinnten Stand ein eigener Air-Controller mit FEZ, Fighter-Control, SRS/TTS, eigener Shift-Change-Logik und Home-Airbase-Annahmen. Diese Verantwortungen passen nicht zum OMW-Ziel, zunächst nur den historischen physischen Afghanistan-E-3-Lifecycle abzubilden.
@@ -101,7 +124,9 @@ AUFTRAG:NewAWACS
 
 und nicht die Aktivierung eines funktional größeren Framework-Subsystems, dessen zusätzliche Verantwortungen OMW nicht angefordert hat.
 
-## 5. Verbindliche Staging-Konfiguration
+Acceptance 1 bestätigt, dass dieser kleinere MOOSE-first-Pfad für Materialisierung, FIR-Transit, AWACS-Mission, Egress und External Handoff im getesteten Scope funktioniert. Es besteht damit für diesen Routing-Scope kein Anlass für eine Native-DCS- oder parallele AWACS-Implementierung.
+
+## 5. Verbindliche Konfiguration
 
 ```text
 Template:                 OMW_C2_E3A_WIZARD
@@ -126,9 +151,45 @@ Planned station cycle:    6 h
 
 Die `FL320`-Trackhöhe ist die OMW-Ableitung aus Graveyards vorgeschlagenem `FL310/FL330`-Block und dessen ausdrücklicher Vorgabe eines einzelnen Flight Levels mit 1.000 ft Puffer oben und unten. Sie ist kein historischer Nachweis für den 964th-EAACS-Flug vom 26.11.2010.
 
-`300 kt`, der 30-NM-Late-Approach und der 6-h-Stationszyklus sind OMW-Planungswerte und müssen in DCS validiert werden.
+Acceptance 1 bestätigt die Routing-Übergänge und die AWACS-Missionseinbindung. Die tatsächliche Einhaltung von `300 kt`, FL340/FL350/FL320 während des gesamten Profils sowie die reale 017°T/30-NM-Racetrack-Geometrie müssen noch mit eigener Telemetrie beziehungsweise visueller Beobachtung abgenommen werden.
 
-## 6. Relief
+## 6. Acceptance 1 – Routing-Lifecycle
+
+```text
+Testdatum:                2026-08-23
+Branch:                   agent/awacs-external-lifecycle-foundation
+Tested source commit:     bde8a6e8d006b7c8d744b739510b08aa9812d48b
+Mission:                  OMW_Template_v19(8).miz
+Mission SHA-256:          d788af36535d3acd1866d15ffb5d354b2c44b5f8ee40d4baf6fd1d97b7c0f8a5
+DCS:                      2.9.28.26385 MT
+Embedded Moose.lua SHA:   e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
+Embedded Warehouse SHA:   01a9ca70988198ecbd76f4d1cab4304261f2cc56911584b44741c0d49c7b146c
+Embedded AWACS bundle SHA:639841a552343f4d0f7180f657a4a0b3141fb0b9af3ed6f1d9915ec955444fc2
+dcs.log SHA-256:          593d02d455db0cae04cfd0e7651671d3af1d76ab430ff3232da7b19dac391c2f
+debrief.log SHA-256:      32df4af4943f5ca3d2a98dde61e452054b5183fd21fa9f6b78750894ec106eb7
+Result:                    PASS for routing lifecycle scope
+```
+
+Runtime-Reihenfolge des erfolgreichen Laufs:
+
+```text
+MATERIALIZED
+-> FIR_INGRESS_PASSED ROSIE
+-> LATE_APPROACH_PASSED / ADD_AWACS_MISSION
+-> ON_STATION APOC
+-> EGRESS_ORDERED
+-> FIR_EGRESS_PASSED ROSIE
+-> MOOSE Mission 3 [AWACS] success
+-> EXTERNAL_HANDOFF / DESPAWN_AND_RECREDIT
+```
+
+Der zugehörige `dcs.log` enthält zusätzlich einen früheren fehlgeschlagenen Versuch aus demselben DCS-Prozess. Dieser scheiterte vor Materialisierung mit `unknown nodeId=OFFMAP_AL_DHAFRA`, weil noch ein älteres Warehouse-Bundle eingebettet war. Der spätere Acceptance-1-Lauf verwendet nachweislich das korrigierte eingebettete Warehouse-Bundle `01a9ca...b146c`. Der frühere Versuch bleibt Diagnoseevidenz und ist nicht Teil des PASS.
+
+Vollständige Evidenz:
+
+- [`AWACS External Lifecycle Acceptance`](../../mission/tests/awacs-external-lifecycle/ACCEPTANCE.md)
+
+## 7. Relief
 
 Die AAR-Acceptance-7-Grundsätze werden übernommen:
 
@@ -140,7 +201,9 @@ Die AAR-Acceptance-7-Grundsätze werden übernommen:
 - Verlust wird nicht recredited;
 - External Handoff recredited genau einmal.
 
-## 7. AAR-Grenze
+Diese Relief-Semantik ist für AWACS noch nicht DCS-validiert. Acceptance 1 prüfte nur einen kontrolliert ausgelösten Egress des einzelnen ACTIVE-Flugzeugs.
+
+## 8. AAR-Grenze
 
 Der gepinnte Source enthält `FLIGHTGROUP:Refuel(...)`. Die Methode pausiert eine laufende Mission und verwendet den DCS-Refuelling-Task; sie enthält jedoch keine OMW-Policy für die Auswahl eines bestimmten STANDARD-/RESERVE-Tankers.
 
@@ -162,7 +225,7 @@ B) AAR MissionDemand bringt einen geeigneten Reserve-Tanker zu einem Rendezvous 
    so dass der E-3 seinen C2-Footprint möglichst wenig verlassen muss.
 ```
 
-## 8. Fuel-Grenze
+## 9. Fuel-Grenze
 
 Das aktuelle Mission-Editor-Template enthält 65.000 kg Fuel. Eine öffentliche `SPAWN:InitFuel(...)`-Methode wird nicht angenommen. Wie bei AAR muss der reale DCS-Burn per Telemetrie kalibriert werden.
 
@@ -175,10 +238,20 @@ Vor Produktionsfreigabe fehlen mindestens:
 - FuelLow/AAR-Schwelle;
 - Entscheidung, ob geplantes AAR oder Relief die reguläre Stationsdauer begrenzt.
 
-## 9. Acceptance
+## 10. Noch offene DCS-Acceptance
 
-Verbindlicher Testplan für diesen Staging-Scope:
+Acceptance 1 validiert nicht die gesamte Foundation. Offen bleiben mindestens:
 
-- [`AWACS External Lifecycle Acceptance`](../../mission/tests/awacs-external-lifecycle/ACCEPTANCE.md)
+```text
+cruise altitude/speed telemetry
+APOC racetrack heading/leg geometry
+player-side WIZARD / 357.300 MHz service
+fuel calibration
+six-hour station cycle
+scheduled relief and physical handover
+loss settlement
+restart reconciliation
+AWACS AAR / designated tanker coordination
+```
 
-Kein `VALIDATED` ohne dokumentierten DCS-Lauf mit Mission-, Bundle-, Commit- und MOOSE-Provenienz.
+`VALIDATED` ist daher immer scope-bezogen zu lesen. Eine vollständige Produktionsfreigabe erfolgt erst nach den noch ausstehenden Acceptance-Blöcken.
