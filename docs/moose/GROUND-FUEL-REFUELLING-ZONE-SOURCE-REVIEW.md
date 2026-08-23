@@ -4,10 +4,10 @@ status: SOURCE_REVIEWED
 document_class: TECHNICAL_SOURCE_REVIEW
 owning_policy: OMW-GOV-001
 authoritative_for:
-  - branch-local Stage 1B2 MOOSE source review for BRIGADE RefuellingZone/FUELSUPPLY execution
+  - branch-local Stage 1B2 MOOSE source review for Ground FUELSUPPLY execution
 not_authoritative_for:
-  - DCS runtime validation
   - production Fuel executor selection
+  - untested one-shot FUELSUPPLY return completion
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 source_branch: agent/automatic-response-orchestration
@@ -15,7 +15,7 @@ source_commit: PENDING_MERGE
 validated_in_dcs: false
 ---
 
-# Ground Fuel RefuellingZone / FUELSUPPLY – MOOSE Source Review
+# Ground FUELSUPPLY – MOOSE Source Review
 
 ## 1. Geprüfter Stand
 
@@ -27,33 +27,7 @@ Moose.lua SHA-256: E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A
 
 Maßgeblich ist die tatsächlich verwendete `Moose.lua`.
 
-## 2. BRIGADE:AddRefuellingZone
-
-Der gepinnte Source enthält:
-
-```lua
-function BRIGADE:AddRefuellingZone(RefuellingZone)
-  local supplyzone={}
-  supplyzone.zone=RefuellingZone
-  supplyzone.mission=nil
-  supplyzone.marker=MARKER:New(supplyzone.zone:GetCoordinate(), "Refuelling Zone"):ToCoalition(self:GetCoalition())
-  table.insert(self.refuellingZones, supplyzone)
-  return supplyzone
-end
-```
-
-Der BRIGADE-Statuslauf erzeugt für registrierte Refuelling Zones selbstständig FUELSUPPLY-Missionen:
-
-```lua
-if (not supplyzone.mission) or supplyzone.mission:IsOver() then
-  supplyzone.mission=AUFTRAG:NewFUELSUPPLY(supplyzone.zone)
-  self:AddMission(supplyzone.mission)
-end
-```
-
-Damit ist `BRIGADE:AddRefuellingZone(...)` der MOOSE-native Einstieg, wenn die BRIGADE den Refuelling-Service verwalten soll.
-
-## 3. AUFTRAG:NewFUELSUPPLY
+## 2. AUFTRAG:NewFUELSUPPLY
 
 Der gepinnte Source bestätigt:
 
@@ -70,23 +44,66 @@ function AUFTRAG:NewFUELSUPPLY(Zone)
 end
 ```
 
-Für den FUELSUPPLY-SpecialTask erzeugt MOOSE am Ziel keine zusätzliche DCS-Tankmengen-Autorität. Der OPSGROUP-Pfad bleibt dort aktiv und wartet auf eine spätere Lifecycle-Aktion.
+Der FUELSUPPLY-SpecialTask bleibt am Ziel aktiv, bis eine Lifecycle-Aktion ihn beendet. `TaskCancel` behandelt FUELSUPPLY als abschließbaren SpecialTask.
 
-`TaskCancel` behandelt `AUFTRAG.SpecialTask.FUELSUPPLY` als unmittelbar abschließbaren SpecialTask und führt damit in den normalen `TaskDone`/`MissionDone`-Lifecycle.
+Für einen einzelnen strategischen CampaignState-Transfer ist `AUFTRAG:NewFUELSUPPLY(Zone)` die kleinste direkte MOOSE-Abstraktion, die genau einen FUELSUPPLY-Auftrag repräsentiert.
 
-## 4. ReturnToLegion
+## 3. BRIGADE:AddRefuellingZone
 
-`AUFTRAG:SetReturnToLegion(Switch)` kann den Mission-Return explizit überschreiben. Ohne Override entscheidet der OPSGROUP-Default.
+Der gepinnte Source enthält:
 
-Der gepinnte OPSGROUP-Source setzt bei `SetReturnToLegion(nil)` beziehungsweise ohne `false` den Ground-/Naval-Return auf `true`. Nach abgeschlossenem Mission-/Task-Queue-Pfad ruft `_CheckGroupDone(...)` bei vorhandener LEGION und `legionReturn=true` für ARMYGROUP `RTZ(self.legion.spawnzone)` auf.
+```lua
+function BRIGADE:AddRefuellingZone(RefuellingZone)
+  local supplyzone={}
+  supplyzone.zone=RefuellingZone
+  supplyzone.mission=nil
+  supplyzone.marker=MARKER:New(supplyzone.zone:GetCoordinate(), "Refuelling Zone"):ToCoalition(self:GetCoalition())
+  table.insert(self.refuellingZones, supplyzone)
+  return supplyzone
+end
+```
 
-Stage 1B2 verwendet deshalb bewusst **keinen** projektspezifischen expliziten RTZ-Aufruf. Der Test soll den MOOSE-eigenen Return-Pfad beobachten.
+Der BRIGADE-Statuslauf verwaltet diese Zone persistent:
 
-## 5. Offizielle Beispiele
+```lua
+if (not supplyzone.mission) or supplyzone.mission:IsOver() then
+  supplyzone.mission=AUFTRAG:NewFUELSUPPLY(supplyzone.zone)
+  self:AddMission(supplyzone.mission)
+end
+```
 
-Die offiziellen MOOSE-Missions-Repositories wurden nach `AddRefuellingZone` / `FUELSUPPLY` durchsucht. In der durchgeführten Suche wurde kein direkt passendes offizielles Demonstrationsbeispiel für den vollständigen `BRIGADE:AddRefuellingZone -> FUELSUPPLY -> ReturnToLegion`-Pfad gefunden.
+Damit ist `AddRefuellingZone(...)` kein One-Shot-Transfer-Dispatcher. Die Methode registriert einen dauerhaft zu verwaltenden Refuelling-Service. Sobald die aktuelle Mission over ist, erzeugt BRIGADE erneut FUELSUPPLY.
 
-Das ist kein Negativbeweis über die API. Für Stage 1B2 sind deshalb der gepinnte Source und der reproduzierbare DCS-Acceptance-Test maßgeblich.
+## 4. Reale Stage-1B2-Runtime-Evidenz Build 2-2
+
+Der DCS-Lauf mit Build `GROUND-FUEL-REFUELLING-ZONE-ACCEPTANCE-2-2` bestätigte genau diese Source-Semantik:
+
+```text
+FUELSUPPLY assigned
+-> convoy reaches Honaker
+-> destination zone observed
+-> MissionExecute observed
+-> CampaignState delivery committed
+-> mission cancelled / MissionDone
+-> BRIGADE creates replacement FUELSUPPLY
+-> acceptance detects MULTIPLE_FUELSUPPLY_MISSIONS_ASSIGNED
+```
+
+Daher gilt branch-lokal:
+
+```text
+BRIGADE:AddRefuellingZone for persistent service: SOURCE + RUNTIME CONSISTENT
+BRIGADE:AddRefuellingZone for one-shot strategic transfer: NOT SUITABLE
+AUFTRAG:NewFUELSUPPLY one-shot execution: SOURCE REVIEWED, COMPLETE RETURN TEST PENDING
+```
+
+## 5. ReturnToLegion
+
+`AUFTRAG:SetReturnToLegion(Switch)` kann den Return explizit überschreiben. Ohne `false` entscheidet der OPSGROUP-Default.
+
+Der gepinnte OPSGROUP-Source setzt für Ground-/Naval-Gruppen den Return-to-Legion-Pfad standardmäßig aktiv. Nach abgeschlossenem Mission-/Task-Queue-Pfad kann `_CheckGroupDone(...)` für eine ARMYGROUP mit LEGION den RTZ-Pfad zur Legion-Spawnzone auslösen.
+
+Stage 1B2 Build 2-3 verwendet deshalb weiterhin keinen projektspezifischen RTZ-Aufruf. Genau dieser MOOSE-eigene Rückkehrpfad ist Teil des nächsten DCS-Tests.
 
 ## 6. OMW-Architekturgrenze
 
@@ -94,7 +111,7 @@ Das ist kein Negativbeweis über die API. Für Stage 1B2 sind deshalb der gepinn
 CampaignState GROUND_FUEL_PACKAGE
 = sole strategic resource authority
 
-BRIGADE / FUELSUPPLY / ARMYGROUP / M978
+FUELSUPPLY / BRIGADE / PLATOON / ARMYGROUP / M978
 = physical operational execution only
 ```
 
@@ -105,21 +122,22 @@ M978 physical fuel quantity
 -> authoritative CampaignState package quantity
 ```
 
-## 7. Stage-1B2-Testgrenze
+## 7. Stage-1B2 Build 2-3 Testgrenze
 
 ```text
-BRIGADE:AddRefuellingZone(Honaker ACCESS)
--> MOOSE-created FUELSUPPLY
--> existing FUEL-capable PLATOON
+AUFTRAG:NewFUELSUPPLY(Honaker ACCESS)
+-> BRIGADE:AddMission
+-> existing FUELSUPPLY-capable PLATOON
 -> road-aligned warehouse materialization
--> destination MissionExecute proof
+-> MissionExecute observation
+-> independent destination-zone proof
 -> exact-once CampaignState settlement
 -> FUELSUPPLY cancel
 -> normal MOOSE ReturnToLegion
 -> Returned -> Warehouse AddAsset
 ```
 
-Keine harten Outbound-/Return-Fahrzeit-Timeouts.
+Keine persistente `AddRefuellingZone(...)`-Registrierung und keine harten Outbound-/Return-Fahrzeit-Timeouts.
 
 Acceptance:
 
@@ -130,9 +148,9 @@ mission/tests/ground-resupply-execution/ACCEPTANCE-4.md
 ## 8. Status
 
 ```text
-BRIGADE:AddRefuellingZone: SOURCE_REVIEWED
 AUFTRAG:NewFUELSUPPLY: SOURCE_REVIEWED
-FUELSUPPLY SpecialTask cancel path: SOURCE_REVIEWED
-MOOSE default Ground ReturnToLegion path: SOURCE_REVIEWED
-Stage 1B2 runtime: NOT_YET_RUN
+BRIGADE:AddRefuellingZone persistent replacement behavior: SOURCE_REVIEWED + DCS_OBSERVED
+FUELSUPPLY SpecialTask cancel path: SOURCE_REVIEWED + DCS_OBSERVED
+MOOSE default Ground ReturnToLegion completion for one-shot FUELSUPPLY: DCS_TEST_PENDING
+production Fuel executor selection: NOT_YET_ACCEPTED
 ```
