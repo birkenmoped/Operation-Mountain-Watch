@@ -2,13 +2,12 @@
 --
 -- MOOSE-first boundary:
 --   * SPAWN materializes the late-activation E-3 template outside Kabul FIR.
---   * FLIGHTGROUP executes explicit transit waypoints and the physical lifecycle.
---   * AUFTRAG:NewAWACS executes the DCS AWACS racetrack mission.
---   * CampaignState is the sole strategic aircraft authority through the injected adapter.
---   * The MOOSE AWACS AI-controller class is intentionally not used here; its FEZ/SRS/
---     home-airbase lifecycle does not match the off-map Afghanistan support contract.
---
--- Runtime status: source-reviewed/staged. DCS acceptance is still required.
+--   * FLIGHTGROUP executes explicit transit, AAR transfer and physical lifecycle.
+--   * AUFTRAG:NewORBIT_RACETRACK provides pre-service standby on the APOC track.
+--   * AUFTRAG:NewAWACS provides the actual 1100Z-1900Z AWACS service window.
+--   * FLIGHTGROUP:Refuel executes the DCS receiver task after a designated tanker
+--     has been verified as the nearest compatible tanker at the rendezvous.
+--   * CampaignState remains the sole strategic aircraft authority through the adapter.
 
 OMW = OMW or {}
 
@@ -32,30 +31,29 @@ local TRACK_SPEED_KT = 300
 local TRACK_HEADING_DEG = 17
 local TRACK_LEG_NM = 30
 
--- External materialization point: geodetic point on the modern ZHOB->BIROS geometry,
--- exactly 15 NM before the period-correct ROSIE fix. This is an OMW abstraction,
--- not a claim that the 2010/11 Pakistan ATS segment used the modern BIROS naming.
 local EXTERNAL_POINT = { lat = 31.5117470464, lon = 69.2298100106 }
 local ROSIE = { lat = 31.6666666667, lon = 68.9997166667 }
 local APOC = { lat = 32.6850000000, lon = 69.0500000000 }
 
--- No-RVSM semi-circular transit planning:
--- external point -> ROSIE is westbound, therefore FL340;
--- ROSIE -> APOC is north/eastbound, therefore FL350 until late approach;
--- AWACS mission then transitions to FL320.
 local SPAWN_ALTITUDE_FT = 34000
 local INBOUND_CRUISE_ALTITUDE_FT = 35000
 local OUTBOUND_CRUISE_ALTITUDE_FT = 34000
 local TRANSIT_SPEED_KT = 300
 local SPAWN_INITIAL_SPEED_KT = 400
 local LATE_APPROACH_NM = 30
+local AAR_LATE_APPROACH_NM = 30
+local AAR_NEAREST_TANKER_RADIUS_NM = 40
+
+-- Afghanistan local mission clock. Afghanistan Time is UTC+04:30.
+-- Graveyard-derived coverage window: 1100Z-1900Z = 1530L-2330L.
+local SERVICE_START_SEC = 15 * 3600 + 30 * 60
+local PLANNED_AAR_SEC = 19 * 3600 + 30 * 60
+local SERVICE_END_SEC = 23 * 3600 + 30 * 60
 
 local FIR_FIX_RADIUS_NM = 5
 local TRACK_ENTRY_RADIUS_NM = 5
 local HANDOFF_RADIUS_NM = 5
 local DISPATCH_INTERVAL_SEC = 5
-local STATION_CYCLE_SEC = 6 * 60 * 60
-local RELIEF_HANDOVER_ETA_SEC = 5 * 60
 local MAX_PHYSICAL_AIRCRAFT = 2
 
 local state = {
@@ -63,17 +61,11 @@ local state = {
   spawner = nil,
   runtimesById = {},
   activeRuntime = nil,
-  reliefRuntime = nil,
   nextRuntimeId = 0,
   callsignInUse = {},
   monitor = nil,
   started = false,
-  reliefQueued = false,
-  nextPlannedHandoverAt = nil,
-  reliefLaunchAt = nil,
 }
-
-local ensureRelief
 
 local function fail(message)
   error(TAG .. " " .. tostring(message), 2)
@@ -85,6 +77,10 @@ end
 
 local function now()
   return timer.getAbsTime()
+end
+
+local function clockSec()
+  return UTILS.SecondsOfToday()
 end
 
 local function requireMoose()
@@ -173,71 +169,130 @@ local function makeSelection(role)
   }
 end
 
-local function cancelToEgress(runtime, reason)
+local function makeStandbyMission(runtime)
+  local mission = AUFTRAG:NewORBIT_RACETRACK(runtime.trackCoord, TRACK_ALTITUDE_FT, TRACK_SPEED_KT, TRACK_HEADING_DEG, TRACK_LEG_NM)
+  mission:SetMissionAltitude(TRACK_ALTITUDE_FT)
+  mission:SetMissionEgressCoord(runtime.firEgressCoord, OUTBOUND_CRUISE_ALTITUDE_FT, TRANSIT_SPEED_KT)
+  return mission
+end
+
+local function makeAwacsMission(runtime)
+  local mission = AUFTRAG:NewAWACS(runtime.trackCoord, TRACK_ALTITUDE_FT, TRACK_SPEED_KT, TRACK_HEADING_DEG, TRACK_LEG_NM)
+  mission:SetMissionAltitude(TRACK_ALTITUDE_FT)
+  mission:SetMissionEgressCoord(runtime.firEgressCoord, OUTBOUND_CRUISE_ALTITUDE_FT, TRANSIT_SPEED_KT)
+  return mission
+end
+
+local function cancelGroupMission(runtime)
+  if runtime and runtime.serviceMission and runtime.flightGroup and runtime.flightGroup:IsAlive() then
+    runtime.flightGroup:MissionCancel(runtime.serviceMission)
+  end
+  runtime.serviceMission = nil
+  runtime.serviceMissionKind = nil
+end
+
+local function addStandbyMission(runtime)
+  cancelGroupMission(runtime)
+  runtime.serviceMission = makeStandbyMission(runtime)
+  runtime.serviceMissionKind = "STANDBY_ORBIT"
+  runtime.flightGroup:AddMission(runtime.serviceMission)
+  runtime.serviceState = "STANDBY"
+  log(string.format("SERVICE_STANDBY runtime=%s untilLocalSec=%d", runtime.runtimeId, SERVICE_START_SEC))
+end
+
+local function addAwacsMission(runtime, reason)
+  cancelGroupMission(runtime)
+  runtime.serviceMission = makeAwacsMission(runtime)
+  runtime.serviceMissionKind = "AWACS"
+  runtime.flightGroup:AddMission(runtime.serviceMission)
+  runtime.serviceState = "ACTIVE"
+  runtime.lastServiceActivatedAt = now()
+  log(string.format("SERVICE_ACTIVE runtime=%s reason=%s callsign=Wizard%d-1 frequencyMHz=%.3f",
+    runtime.runtimeId, tostring(reason), runtime.callsignNumber, FREQUENCY_MHZ))
+end
+
+local function routeDirectEgress(runtime, reason)
   if not runtime or runtime.egressOrdered or runtime.lossHandled or runtime.handoffComplete then return false end
   runtime.egressOrdered = true
   runtime.egressReason = reason
-  if not runtime.missionAdded then
-    runtime.missionAdded = true
-    runtime.missionAddedAt = now()
-    runtime.flightGroup:AddMission(runtime.mission)
-    log(string.format("MISSION_ADDED runtime=%s reason=PRETRACK_EGRESS", runtime.runtimeId))
-  end
-  runtime.mission:Cancel()
+  runtime.serviceState = "CLOSED"
+  cancelGroupMission(runtime)
+  runtime.flightGroup:AddWaypoint(runtime.firEgressCoord, TRANSIT_SPEED_KT, nil, OUTBOUND_CRUISE_ALTITUDE_FT, true)
   log(string.format("EGRESS_ORDERED runtime=%s reason=%s target=%s altitudeFt=%d speedKt=%d",
     runtime.runtimeId, tostring(reason), FIR_FIX_NAME, OUTBOUND_CRUISE_ALTITUDE_FT, TRANSIT_SPEED_KT))
   return true
 end
 
+local function cancelToEgress(runtime, reason)
+  if not runtime or runtime.egressOrdered or runtime.lossHandled or runtime.handoffComplete then return false end
+  runtime.egressOrdered = true
+  runtime.egressReason = reason
+  runtime.serviceState = "CLOSED"
+  if runtime.serviceMission then
+    runtime.serviceMission:Cancel()
+    log(string.format("EGRESS_ORDERED runtime=%s reason=%s target=%s altitudeFt=%d speedKt=%d",
+      runtime.runtimeId, tostring(reason), FIR_FIX_NAME, OUTBOUND_CRUISE_ALTITUDE_FT, TRANSIT_SPEED_KT))
+    return true
+  end
+  return routeDirectEgress(runtime, reason)
+end
+
 local function handleLoss(runtime, reason)
   if not runtime or runtime.lossHandled or runtime.handoffComplete then return false end
   runtime.lossHandled = true
+  runtime.serviceState = "LOST"
   state.strategicAdapter:OnLost(runtime.selection, runtime, reason or "DEAD")
   releaseCallsign(runtime)
   state.runtimesById[runtime.runtimeId] = nil
   if state.activeRuntime == runtime then state.activeRuntime = nil end
-  if state.reliefRuntime == runtime then state.reliefRuntime = nil end
-
-  if state.started then
-    if state.activeRuntime and state.activeRuntime.flightGroup and state.activeRuntime.flightGroup:IsAlive() then
-      ensureRelief("LOSS_REPLACEMENT")
-    else
-      ensureRelief("ACTIVE_LOSS")
-    end
-  end
-
   log(string.format("AIRCRAFT_LOST runtime=%s reason=%s action=NO_RECREDIT", runtime.runtimeId, tostring(reason)))
   return true
 end
 
-local function scheduleCycle(runtime, timestamp)
-  runtime.onStationAt = timestamp
-  local visibleTransitSec = (runtime.routeDistanceNm / TRANSIT_SPEED_KT) * 3600
-  state.nextPlannedHandoverAt = timestamp + STATION_CYCLE_SEC
-  state.reliefLaunchAt = state.nextPlannedHandoverAt - math.max(0, visibleTransitSec - RELIEF_HANDOVER_ETA_SEC)
-  log(string.format("ON_STATION runtime=%s area=%s cycleSec=%d reliefLaunchInSec=%.0f",
-    runtime.runtimeId, AREA_NAME, STATION_CYCLE_SEC, state.reliefLaunchAt - timestamp))
+local function routeReturnFromAar(runtime)
+  local distanceNm = runtime.aarRendezvousCoord:Get2DDistance(runtime.trackCoord) / 1852
+  if distanceNm <= AAR_LATE_APPROACH_NM then
+    fail(string.format("AAR rendezvous too close to APOC runtime=%s distanceNm=%.1f", runtime.runtimeId, distanceNm))
+  end
+  local approach = runtime.trackCoord:GetIntermediateCoordinate(runtime.aarRendezvousCoord, AAR_LATE_APPROACH_NM / distanceNm)
+  approach:SetAltitude(UTILS.FeetToMeters(OUTBOUND_CRUISE_ALTITUDE_FT), true)
+  runtime.aarReturnApproachCoord = approach
+  local waypoint = runtime.flightGroup:AddWaypoint(approach, TRANSIT_SPEED_KT, nil, OUTBOUND_CRUISE_ALTITUDE_FT, true)
+  runtime.aarReturnApproachUid = waypoint.uid
+  runtime.aarPhase = "RETURN_TRANSFER"
+  log(string.format("AAR_RETURN_TRANSFER runtime=%s altitudeFt=%d speedKt=%d lateApproachNm=%d",
+    runtime.runtimeId, OUTBOUND_CRUISE_ALTITUDE_FT, TRANSIT_SPEED_KT, AAR_LATE_APPROACH_NM))
 end
 
-local function promoteRelief(relief, timestamp)
-  local outgoing = state.activeRuntime
-  if outgoing and outgoing ~= relief and not outgoing.egressOrdered then
-    cancelToEgress(outgoing, "SCHEDULED_RELIEF")
+local function beginAarTransfer(runtime, rendezvousCoordinate, designatedTankerGroupName)
+  local distanceNm = runtime.trackCoord:Get2DDistance(rendezvousCoordinate) / 1852
+  if distanceNm <= AAR_LATE_APPROACH_NM then
+    return false, "AWACS_AAR_RENDEZVOUS_TOO_CLOSE"
   end
-  state.reliefRuntime = nil
-  state.reliefQueued = false
-  state.activeRuntime = relief
-  relief.role = "ACTIVE"
-  scheduleCycle(relief, timestamp)
-  log(string.format("RELIEF_ON_STATION runtime=%s outgoingRuntime=%s", relief.runtimeId,
-    outgoing and outgoing.runtimeId or "NONE"))
+
+  cancelGroupMission(runtime)
+  local approach = rendezvousCoordinate:GetIntermediateCoordinate(runtime.trackCoord, AAR_LATE_APPROACH_NM / distanceNm)
+  approach:SetAltitude(UTILS.FeetToMeters(OUTBOUND_CRUISE_ALTITUDE_FT), true)
+
+  runtime.aarRendezvousCoord = rendezvousCoordinate
+  runtime.designatedTankerGroupName = designatedTankerGroupName
+  runtime.aarApproachCoord = approach
+  runtime.aarRequested = true
+  runtime.aarRequestedAt = now()
+  runtime.aarPhase = "OUTBOUND_TRANSFER"
+  runtime.serviceState = "INTERRUPTED_AAR"
+
+  local waypoint = runtime.flightGroup:AddWaypoint(approach, TRANSIT_SPEED_KT, nil, OUTBOUND_CRUISE_ALTITUDE_FT, true)
+  runtime.aarApproachUid = waypoint.uid
+
+  log(string.format("AAR_TRANSFER_STARTED runtime=%s tanker=%s altitudeFt=%d speedKt=%d rendezvousDistanceNm=%.1f",
+    runtime.runtimeId, tostring(designatedTankerGroupName), OUTBOUND_CRUISE_ALTITUDE_FT, TRANSIT_SPEED_KT, distanceNm))
+  return true
 end
 
 local function materialize(role, reason)
   requireMoose()
-  if countPhysicalRuntimes() >= MAX_PHYSICAL_AIRCRAFT then
-    return nil, "MAX_PHYSICAL_AIRCRAFT"
-  end
+  if countPhysicalRuntimes() >= MAX_PHYSICAL_AIRCRAFT then return nil, "MAX_PHYSICAL_AIRCRAFT" end
 
   local selection = makeSelection(role)
   local allowed, strategicReason = state.strategicAdapter:CanMaterialize(selection)
@@ -262,10 +317,6 @@ local function materialize(role, reason)
   local flightGroup = FLIGHTGROUP:New(group)
   if not flightGroup then fail("failed to create FLIGHTGROUP group=" .. tostring(group:GetName())) end
 
-  local mission = AUFTRAG:NewAWACS(coords.track, TRACK_ALTITUDE_FT, TRACK_SPEED_KT, TRACK_HEADING_DEG, TRACK_LEG_NM)
-  mission:SetMissionAltitude(TRACK_ALTITUDE_FT)
-  mission:SetMissionEgressCoord(coords.rosieOutbound, OUTBOUND_CRUISE_ALTITUDE_FT, TRANSIT_SPEED_KT)
-
   local runtime = {
     runtimeId = runtimeId,
     role = role,
@@ -273,7 +324,6 @@ local function materialize(role, reason)
     reason = reason,
     group = group,
     flightGroup = flightGroup,
-    mission = mission,
     callsignNumber = callsignNumber,
     spawnCoord = coords.spawn,
     firIngressCoord = coords.rosieInbound,
@@ -289,36 +339,75 @@ local function materialize(role, reason)
     lateWaypointUid = nil,
     firIngressPassed = false,
     lateApproachPassed = false,
-    missionAdded = false,
-    onStationAt = nil,
+    physicalOnTrack = false,
+    serviceState = "INBOUND",
+    serviceMission = nil,
+    serviceMissionKind = nil,
     egressOrdered = false,
     firEgressPassed = false,
     externalHandoffRouted = false,
     handoffComplete = false,
     lossHandled = false,
-    refuelRequested = false,
     materializedAt = now(),
+    aarRequested = false,
+    aarPhase = nil,
+    aarCompletedAt = nil,
+    aarApproachUid = nil,
+    aarReturnApproachUid = nil,
   }
 
   function flightGroup:OnAfterPassingWaypoint(From, Event, To, Waypoint)
-    if not Waypoint or runtime.egressOrdered or runtime.lossHandled then return end
+    if not Waypoint or runtime.lossHandled or runtime.handoffComplete then return end
+
     if Waypoint.uid == runtime.firWaypointUid and not runtime.firIngressPassed then
       runtime.firIngressPassed = true
       runtime.firIngressPassedAt = now()
       log(string.format("FIR_INGRESS_PASSED runtime=%s fix=%s waypointUid=%d", runtime.runtimeId, FIR_FIX_NAME, Waypoint.uid))
       return
     end
+
     if Waypoint.uid == runtime.lateWaypointUid and not runtime.lateApproachPassed then
       if not runtime.firIngressPassed then fail("late approach reached before ROSIE runtime=" .. runtime.runtimeId) end
       runtime.lateApproachPassed = true
       runtime.lateApproachPassedAt = now()
-      if not runtime.missionAdded then
-        runtime.missionAdded = true
-        runtime.missionAddedAt = runtime.lateApproachPassedAt
-        runtime.flightGroup:AddMission(runtime.mission)
+      if clockSec() < SERVICE_START_SEC then addStandbyMission(runtime) else addAwacsMission(runtime, "ARRIVED_AFTER_SERVICE_START") end
+      log(string.format("LATE_APPROACH_PASSED runtime=%s distanceToTrackNm=%.1f", runtime.runtimeId, LATE_APPROACH_NM))
+      return
+    end
+
+    if runtime.aarApproachUid and Waypoint.uid == runtime.aarApproachUid and runtime.aarPhase == "OUTBOUND_TRANSFER" then
+      local nearest = runtime.flightGroup:FindNearestTanker(AAR_NEAREST_TANKER_RADIUS_NM)
+      if not nearest then
+        fail("designated tanker unavailable near AAR rendezvous runtime=" .. runtime.runtimeId)
       end
-      log(string.format("LATE_APPROACH_PASSED runtime=%s distanceToTrackNm=%.1f action=ADD_AWACS_MISSION",
-        runtime.runtimeId, LATE_APPROACH_NM))
+      if nearest:GetName() ~= runtime.designatedTankerGroupName then
+        fail(string.format("nearest tanker mismatch runtime=%s expected=%s actual=%s",
+          runtime.runtimeId, tostring(runtime.designatedTankerGroupName), tostring(nearest:GetName())))
+      end
+      runtime.aarPhase = "REFUELING"
+      runtime.aarRefuelTaskAt = now()
+      log(string.format("AAR_REFUEL_TASK runtime=%s tanker=%s", runtime.runtimeId, runtime.designatedTankerGroupName))
+      runtime.flightGroup:Refuel(runtime.aarRendezvousCoord)
+      return
+    end
+
+    if runtime.aarReturnApproachUid and Waypoint.uid == runtime.aarReturnApproachUid and runtime.aarPhase == "RETURN_TRANSFER" then
+      runtime.aarPhase = "REJOINING"
+      addAwacsMission(runtime, "AAR_RETURN")
+      log(string.format("AAR_RETURN_LATE_APPROACH runtime=%s action=ADD_AWACS_MISSION", runtime.runtimeId))
+    end
+  end
+
+  function flightGroup:OnAfterRefueled(From, Event, To)
+    if runtime.lossHandled or runtime.handoffComplete then return end
+    runtime.aarCompletedAt = now()
+    runtime.aarPhase = "REFUELED"
+    log(string.format("AAR_REFUELED runtime=%s tanker=%s", runtime.runtimeId, tostring(runtime.designatedTankerGroupName)))
+    if clockSec() >= SERVICE_END_SEC then
+      runtime.serviceState = "CLOSED"
+      routeDirectEgress(runtime, "SERVICE_WINDOW_ENDED_DURING_AAR")
+    else
+      routeReturnFromAar(runtime)
     end
   end
 
@@ -332,85 +421,73 @@ local function materialize(role, reason)
   runtime.lateWaypointUid = lateWaypoint.uid
 
   state.runtimesById[runtimeId] = runtime
-  if role == "RELIEF" then
-    state.reliefRuntime = runtime
-    state.reliefQueued = false
-  else
-    state.activeRuntime = runtime
-  end
-
+  state.activeRuntime = runtime
   state.strategicAdapter:OnMaterialized(selection, runtime)
 
   log(string.format(
-    "MATERIALIZED runtime=%s role=%s source=%s spawnToRosieNm=%.2f rosieToApocNm=%.2f firToLateNm=%.2f callsign=Wizard%d-1 frequencyMHz=%.3f",
+    "MATERIALIZED runtime=%s role=%s source=%s spawnToRosieNm=%.2f rosieToApocNm=%.2f firToLateNm=%.2f callsign=Wizard%d-1 frequencyMHz=%.3f serviceStartLocalSec=%d serviceEndLocalSec=%d plannedAarLocalSec=%d",
     runtime.runtimeId, role, SOURCE_DOMAIN, runtime.spawnToFirNm, runtime.firToTrackNm,
-    runtime.firToLateApproachNm, callsignNumber, FREQUENCY_MHZ))
+    runtime.firToLateApproachNm, callsignNumber, FREQUENCY_MHZ, SERVICE_START_SEC, SERVICE_END_SEC, PLANNED_AAR_SEC))
 
   return runtime
 end
 
-ensureRelief = function(reason)
-  if state.reliefRuntime and state.reliefRuntime.flightGroup and state.reliefRuntime.flightGroup:IsAlive()
-      and not state.reliefRuntime.egressOrdered and not state.reliefRuntime.lossHandled then
-    return state.reliefRuntime, false
-  end
-  if state.reliefQueued then return nil, false end
-  if countPhysicalRuntimes() >= MAX_PHYSICAL_AIRCRAFT then return nil, false end
-
-  state.reliefQueued = true
-  local runtime, err = materialize("RELIEF", reason or "SCHEDULED")
-  if not runtime then
-    state.reliefQueued = false
-    log(string.format("RELIEF_DEFERRED reason=%s", tostring(err)))
-    return nil, false
-  end
-  return runtime, true
-end
-
 local function monitor()
+  local runtime = state.activeRuntime
+  if not runtime or runtime.lossHandled or runtime.handoffComplete or not runtime.flightGroup or not runtime.flightGroup:IsAlive() then return end
+
   local timestamp = now()
-  local active = state.activeRuntime
-  if active and active.flightGroup and active.flightGroup:IsAlive() and not active.egressOrdered and not active.lossHandled then
-    if active.firIngressPassed and active.lateApproachPassed and active.missionAdded and not active.onStationAt then
-      local distanceNm = getDistanceNm(active.flightGroup, active.trackCoord)
-      if distanceNm and distanceNm <= TRACK_ENTRY_RADIUS_NM then scheduleCycle(active, timestamp) end
-    end
-    if active.onStationAt and state.reliefLaunchAt and timestamp >= state.reliefLaunchAt then
-      ensureRelief("SCHEDULED")
+  local localSec = clockSec()
+
+  if runtime.lateApproachPassed and not runtime.egressOrdered then
+    local distanceNm = getDistanceNm(runtime.flightGroup, runtime.trackCoord)
+    if distanceNm and distanceNm <= TRACK_ENTRY_RADIUS_NM then
+      if not runtime.physicalOnTrack then
+        runtime.physicalOnTrack = true
+        runtime.physicalOnTrackAt = timestamp
+        log(string.format("ON_TRACK runtime=%s area=%s serviceState=%s", runtime.runtimeId, AREA_NAME, runtime.serviceState))
+      end
+      if runtime.serviceState == "REJOINING" then
+        runtime.serviceState = "ACTIVE"
+        runtime.aarPhase = "COMPLETE"
+        log(string.format("AAR_RETURN_ON_STATION runtime=%s serviceState=ACTIVE", runtime.runtimeId))
+      elseif runtime.serviceState == "STANDBY" and localSec >= SERVICE_START_SEC and localSec < SERVICE_END_SEC then
+        addAwacsMission(runtime, "SCHEDULED_1100Z_START")
+      end
     end
   end
 
-  local relief = state.reliefRuntime
-  if relief and relief.flightGroup and relief.flightGroup:IsAlive() and not relief.egressOrdered and not relief.lossHandled
-      and relief.firIngressPassed and relief.lateApproachPassed and relief.missionAdded then
-    local distanceNm = getDistanceNm(relief.flightGroup, relief.trackCoord)
-    if distanceNm and distanceNm <= TRACK_ENTRY_RADIUS_NM then promoteRelief(relief, timestamp) end
+  if not runtime.egressOrdered and localSec >= SERVICE_END_SEC and runtime.serviceState ~= "CLOSED" then
+    runtime.serviceState = "CLOSED"
+    runtime.serviceClosedAt = timestamp
+    log(string.format("SERVICE_CLOSED runtime=%s localSec=%.1f scheduledLocalSec=%d", runtime.runtimeId, localSec, SERVICE_END_SEC))
+    if runtime.aarPhase == "OUTBOUND_TRANSFER" or runtime.aarPhase == "REFUELING" or runtime.aarPhase == "RETURN_TRANSFER" then
+      runtime.closePending = true
+    else
+      cancelToEgress(runtime, "SCHEDULED_1900Z_END")
+    end
   end
 
-  for runtimeId, runtime in pairs(state.runtimesById) do
-    if runtime.egressOrdered and not runtime.handoffComplete and not runtime.lossHandled
-        and runtime.flightGroup and runtime.flightGroup:IsAlive() then
-      if not runtime.firEgressPassed then
-        local distanceNm = getDistanceNm(runtime.flightGroup, runtime.firEgressCoord)
-        if distanceNm and distanceNm <= FIR_FIX_RADIUS_NM then
-          runtime.firEgressPassed = true
-          runtime.firEgressPassedAt = timestamp
-          runtime.flightGroup:AddWaypoint(runtime.externalHandoffCoord, TRANSIT_SPEED_KT, nil, OUTBOUND_CRUISE_ALTITUDE_FT)
-          runtime.externalHandoffRouted = true
-          log(string.format("FIR_EGRESS_PASSED runtime=%s fix=%s action=ROUTE_EXTERNAL_HANDOFF", runtime.runtimeId, FIR_FIX_NAME))
-        end
-      else
-        local distanceNm = getDistanceNm(runtime.flightGroup, runtime.externalHandoffCoord)
-        if distanceNm and distanceNm <= HANDOFF_RADIUS_NM then
-          runtime.handoffComplete = true
-          state.strategicAdapter:OnHandoff(runtime.selection, runtime)
-          runtime.flightGroup:Despawn(1, true)
-          releaseCallsign(runtime)
-          state.runtimesById[runtimeId] = nil
-          if state.activeRuntime == runtime then state.activeRuntime = nil end
-          if state.reliefRuntime == runtime then state.reliefRuntime = nil end
-          log(string.format("EXTERNAL_HANDOFF runtime=%s action=DESPAWN_AND_RECREDIT", runtime.runtimeId))
-        end
+  if runtime.egressOrdered then
+    if not runtime.firEgressPassed then
+      local distanceNm = getDistanceNm(runtime.flightGroup, runtime.firEgressCoord)
+      if distanceNm and distanceNm <= FIR_FIX_RADIUS_NM then
+        runtime.firEgressPassed = true
+        runtime.firEgressPassedAt = timestamp
+        runtime.flightGroup:AddWaypoint(runtime.externalHandoffCoord, TRANSIT_SPEED_KT, nil, OUTBOUND_CRUISE_ALTITUDE_FT)
+        runtime.externalHandoffRouted = true
+        log(string.format("FIR_EGRESS_PASSED runtime=%s fix=%s action=ROUTE_EXTERNAL_HANDOFF", runtime.runtimeId, FIR_FIX_NAME))
+      end
+    else
+      local distanceNm = getDistanceNm(runtime.flightGroup, runtime.externalHandoffCoord)
+      if distanceNm and distanceNm <= HANDOFF_RADIUS_NM then
+        runtime.handoffComplete = true
+        state.strategicAdapter:OnHandoff(runtime.selection, runtime)
+        runtime.flightGroup:Despawn(1, true)
+        releaseCallsign(runtime)
+        state.runtimesById[runtime.runtimeId] = nil
+        state.activeRuntime = nil
+        log(string.format("EXTERNAL_HANDOFF runtime=%s action=DESPAWN_AND_RECREDIT", runtime.runtimeId))
       end
     end
   end
@@ -443,21 +520,33 @@ function Controller.RequestEgress(reason)
   return cancelToEgress(state.activeRuntime, reason or "REQUESTED_EGRESS")
 end
 
--- Source-reviewed MOOSE integration boundary for later DCS acceptance.
--- FLIGHTGROUP:Refuel(...) pauses the current mission and resumes it after the
--- refuelling task, but it does not provide an OMW policy for selecting a
--- specific reserve tanker. Until that end-to-end path is accepted in DCS,
--- the production controller must not silently dispatch the E-3 to an arbitrary
--- nearest tanker. The AAR subsystem may instead bring a reserve tanker to APOC.
-function Controller.RequestRefuel(rendezvousCoordinate)
-  if rendezvousCoordinate == nil then
-    return false, "AWACS_AAR_RENDEZVOUS_REQUIRED"
+function Controller.RequestRefuel(rendezvousCoordinate, designatedTankerGroupName)
+  local runtime = state.activeRuntime
+  if not runtime or not runtime.flightGroup or not runtime.flightGroup:IsAlive() then return false, "AWACS_NOT_AVAILABLE" end
+  if runtime.egressOrdered or runtime.lossHandled or runtime.handoffComplete then return false, "AWACS_NOT_REFUELABLE_STATE" end
+  if runtime.aarRequested then return false, "AWACS_AAR_ALREADY_REQUESTED" end
+  if runtime.serviceState ~= "ACTIVE" then return false, "AWACS_SERVICE_NOT_ACTIVE" end
+  if rendezvousCoordinate == nil then return false, "AWACS_AAR_RENDEZVOUS_REQUIRED" end
+  if type(designatedTankerGroupName) ~= "string" or designatedTankerGroupName == "" then
+    return false, "AWACS_AAR_TANKER_REQUIRED"
   end
-  return false, "AWACS_AAR_DCS_ACCEPTANCE_REQUIRED"
+
+  local nearest = runtime.flightGroup:FindNearestTanker(AAR_NEAREST_TANKER_RADIUS_NM)
+  if nearest and nearest:GetName() ~= designatedTankerGroupName then
+    log(string.format("AAR_NEAREST_TANKER_PRECHECK expected=%s actual=%s action=TRANSFER_ALLOWED_RECHECK_AT_APPROACH",
+      designatedTankerGroupName, nearest:GetName()))
+  end
+
+  return beginAarTransfer(runtime, rendezvousCoordinate, designatedTankerGroupName)
 end
 
 function Controller.GetRuntime()
   return state.activeRuntime
+end
+
+function Controller.GetServiceState()
+  local runtime = state.activeRuntime
+  return runtime and runtime.serviceState or "NONE"
 end
 
 function Controller.GetConfig()
@@ -482,11 +571,16 @@ function Controller.GetConfig()
     trackHeadingDeg = TRACK_HEADING_DEG,
     trackLegNm = TRACK_LEG_NM,
     lateApproachNm = LATE_APPROACH_NM,
-    stationCycleSec = STATION_CYCLE_SEC,
+    serviceStartLocalSec = SERVICE_START_SEC,
+    plannedAarLocalSec = PLANNED_AAR_SEC,
+    serviceEndLocalSec = SERVICE_END_SEC,
+    serviceWindowSec = SERVICE_END_SEC - SERVICE_START_SEC,
+    aarLateApproachNm = AAR_LATE_APPROACH_NM,
     maxPhysicalAircraft = MAX_PHYSICAL_AIRCRAFT,
     mooseCommit = MOOSE_COMMIT,
     mooseSha256 = MOOSE_SHA256,
     refuelDispatchAccepted = false,
+    designatedRefuelReceiverPath = true,
   }
 end
 
