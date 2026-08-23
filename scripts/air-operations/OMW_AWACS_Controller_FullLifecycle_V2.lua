@@ -1,4 +1,4 @@
--- Operation Mountain Watch - full external E-3 AWACS lifecycle controller, revision 3.
+-- Operation Mountain Watch - full external E-3 AWACS lifecycle controller, revision 4.
 --
 -- MOOSE-first implementation:
 --   * SPAWN materializes the late-activation E-3 template at the visible off-map handoff.
@@ -15,9 +15,13 @@
 --
 -- Fuel policy - OMW engineering baseline, DCS Acceptance 4 pending:
 --   * <=65 percent: pre-dispatch dedicated reserve tanker LISA toward the AWACS rendezvous.
---   * <=40 percent: WIZARD requires AAR. Prefer LISA if already established at rendezvous;
---     otherwise use FLIGHTGROUP:FindNearestTanker() for the nearest compatible active tanker.
+--   * When LISA is established at the rendezvous on the AWACS track altitude, WIZARD begins AAR
+--     immediately instead of intentionally burning down to the fallback threshold.
+--   * <=40 percent: fallback AAR trigger. Prefer ready LISA; otherwise use
+--     FLIGHTGROUP:FindNearestTanker() for the nearest compatible active tanker.
 --   * <=25 percent without an established refuel task: off-map fuel contingency via ROSIE.
+--   * LISA FuelLow egress is deferred while WIZARD is actively refuelling from LISA; the tanker
+--     mission is not cancelled underneath an established receiver task.
 --   * MOOSE automatic FuelLow/FuelCritical RTB is disabled so WIZARD is never sent to an
 --     arbitrary Afghan airfield merely because its fuel state crossed a framework threshold.
 --   * FLIGHTGROUP:SetFuelLowRefuel(false) is intentional. The pinned implementation's built-in
@@ -78,7 +82,7 @@ local LISA_MISSION_DEMAND_ID = "AWACS-AAR-APOC-FUEL"
 local LISA_EXTERNAL = { lat = 28.90264890, lon = 64.61166667 }
 local DAVER = { lat = 29.57166667, lon = 64.67666667 }
 local LISA_RENDEZVOUS = { lat = 33.6233926368, lon = 68.6395554105 }
-local LISA_TRACK_ALTITUDE_FT = 25000
+local LISA_TRACK_ALTITUDE_FT = TRACK_ALTITUDE_FT
 local LISA_TRACK_SPEED_KT = 300
 local LISA_TRACK_HEADING_DEG = 340
 local LISA_TRACK_LEG_NM = 20
@@ -88,6 +92,7 @@ local LISA_EGRESS_ALTITUDE_FT = 34000
 local LISA_TRANSIT_SPEED_KT = 300
 local LISA_FUEL_LOW_PCT = 38
 local LISA_TRACK_ENTRY_RADIUS_NM = 5
+local LISA_READY_ALTITUDE_TOLERANCE_FT = 1000
 
 local FIR_RADIUS_NM = 5
 local TRACK_ENTRY_RADIUS_NM = 5
@@ -348,6 +353,7 @@ local function orderLisaEgress(reason)
   if not lisa or lisa.egressOrdered or lisa.lossHandled or lisa.handoffComplete then return false end
   lisa.egressOrdered = true
   lisa.egressReason = reason
+  lisa.egressPending = false
   if lisa.mission then lisa.mission:Cancel() end
   log(string.format("LISA_EGRESS_ORDERED runtime=%s reason=%s", lisa.runtimeId, tostring(reason)))
   return true
@@ -409,6 +415,8 @@ local function dispatchLisa(reason)
     latePassed = false,
     missionAdded = false,
     onStation = false,
+    readyAt = nil,
+    egressPending = false,
     egressOrdered = false,
     firEgressPassed = false,
     handoffComplete = false,
@@ -433,6 +441,15 @@ local function dispatchLisa(reason)
   end
 
   function flightGroup:OnAfterFuelLow(From, Event, To)
+    local runtime = state.activeRuntime
+    local activeReceiver = runtime and runtime.aarPhase == "REFUELING"
+      and runtime.designatedTankerGroupName == lisa.group:GetName()
+    if activeReceiver then
+      lisa.egressPending = true
+      log(string.format("LISA_EGRESS_DEFERRED runtime=%s reason=LISA_FUEL_LOW receiver=%s",
+        lisa.runtimeId, runtime.runtimeId))
+      return
+    end
     orderLisaEgress("LISA_FUEL_LOW")
   end
 
@@ -450,8 +467,9 @@ local function dispatchLisa(reason)
 
   adapter:OnMaterialized(selection, lisa)
   state.lisa = lisa
-  log(string.format("LISA_DISPATCHED runtime=%s reason=%s rendezvousLat=%.6f rendezvousLon=%.6f",
-    lisa.runtimeId, tostring(reason), LISA_RENDEZVOUS.lat, LISA_RENDEZVOUS.lon))
+  log(string.format("LISA_DISPATCHED runtime=%s reason=%s rendezvousLat=%.6f rendezvousLon=%.6f trackAltitudeFt=%d trackSpeedKt=%d",
+    lisa.runtimeId, tostring(reason), LISA_RENDEZVOUS.lat, LISA_RENDEZVOUS.lon,
+    LISA_TRACK_ALTITUDE_FT, LISA_TRACK_SPEED_KT))
   return true, "DISPATCHED"
 end
 
@@ -675,11 +693,24 @@ local function monitorLisa()
   local lisa = state.lisa
   if not lisa or lisa.lossHandled or lisa.handoffComplete or not lisa.flightGroup or not lisa.flightGroup:IsAlive() then return end
 
-  if lisa.missionAdded and not lisa.onStation then
+  if lisa.missionAdded and not lisa.onStation and not lisa.egressOrdered then
     local distanceNm = getDistanceNm(lisa.flightGroup, lisa.rendezvousCoord)
-    if distanceNm and distanceNm <= LISA_TRACK_ENTRY_RADIUS_NM then
+    local altitudeFt = lisa.flightGroup:GetAltitude()
+    local altitudeReady = type(altitudeFt) == "number"
+      and math.abs(altitudeFt - LISA_TRACK_ALTITUDE_FT) <= LISA_READY_ALTITUDE_TOLERANCE_FT
+    if distanceNm and distanceNm <= LISA_TRACK_ENTRY_RADIUS_NM and altitudeReady then
       lisa.onStation = true
-      log(string.format("LISA_ON_RENDEZVOUS runtime=%s distanceNm=%.1f", lisa.runtimeId, distanceNm))
+      lisa.readyAt = now()
+      log(string.format("LISA_READY runtime=%s distanceNm=%.1f altitudeFt=%.0f targetAltitudeFt=%d trackSpeedKt=%d",
+        lisa.runtimeId, distanceNm, altitudeFt, LISA_TRACK_ALTITUDE_FT, LISA_TRACK_SPEED_KT))
+
+      local runtime = state.activeRuntime
+      if runtime and not runtime.egressOrdered and not runtime.lossHandled and not runtime.handoffComplete
+          and runtime.aarPhase == nil then
+        if requireRefuel(runtime, "LISA_READY_ON_RENDEZVOUS") then
+          tryAcquireTanker(runtime)
+        end
+      end
     end
   end
 
@@ -717,7 +748,7 @@ local function monitorAwacs(runtime)
 
   if type(fuelPct) == "number" and fuelPct <= AAR_TRIGGER_FUEL_PCT
       and runtime.aarPhase == nil and not runtime.egressOrdered then
-    requireRefuel(runtime, "FUEL_THRESHOLD_MONITOR")
+    requireRefuel(runtime, "FUEL_THRESHOLD_FALLBACK")
   end
 
   if runtime.aarPhase == "SEEKING_TANKER" then
@@ -814,7 +845,7 @@ function Controller.Start()
 
   state.monitor = SCHEDULER:New(nil, monitor, {}, 1, DISPATCH_INTERVAL_SEC)
   state.started = true
-  log("STARTED mode=FULL_FUEL_DRIVEN_AAR_V3")
+  log("STARTED mode=FULL_FUEL_DRIVEN_AAR_V4")
   return runtime
 end
 
@@ -899,6 +930,10 @@ function Controller.GetConfig()
     lisaRendezvous = { lat = LISA_RENDEZVOUS.lat, lon = LISA_RENDEZVOUS.lon },
     lisaRendezvousAltitudeFt = LISA_TRACK_ALTITUDE_FT,
     lisaRendezvousSpeedKt = LISA_TRACK_SPEED_KT,
+    lisaReadyAltitudeToleranceFt = LISA_READY_ALTITUDE_TOLERANCE_FT,
+    lisaReadyImmediateAar = true,
+    lisaFuelLowEgressDeferredDuringActiveAar = true,
+    aarTriggerIsFallback = true,
     mooseCommit = MOOSE_COMMIT,
     mooseSha256 = MOOSE_SHA256,
     persistentOrbit = true,
