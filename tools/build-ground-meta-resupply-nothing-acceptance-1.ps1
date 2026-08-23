@@ -12,7 +12,7 @@ $acceptanceSourceFile = Join-Path $repoRoot 'mission\tests\ground-resupply-execu
 $distDir = Join-Path $repoRoot 'mission\tests\ground-resupply-execution\dist'
 $outputFile = Join-Path $distDir 'OMW_Ground_Meta_Resupply_NOTHING_Acceptance_1.lua'
 
-$builderVersion = 'GROUND-META-RESUPPLY-NOTHING-ACCEPTANCE-1-3'
+$builderVersion = 'GROUND-META-RESUPPLY-NOTHING-ACCEPTANCE-1-4'
 $testId = 'GROUND-META-RESUPPLY-NOTHING-ACCEPTANCE-1'
 $mooseCommit = '73d3ed119cd9e7e3f2cfcabbaa34513d30529b54'
 $mooseSha256 = 'e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915'
@@ -77,7 +77,9 @@ $forbiddenPatterns = @(
   'timer\.scheduleFunction',
   'OPSTRANSPORT:New',
   'AUFTRAG:NewOPSTRANSPORT',
-  'SPAWN:'
+  'SPAWN:',
+  'OUTBOUND_TIMEOUT',
+  'RETURN_TIMEOUT'
 )
 foreach ($pattern in $forbiddenPatterns) {
   if ($acceptanceSource -match $pattern) {
@@ -108,6 +110,7 @@ $header = @"
 -- MooseLuaSHA256: $mooseSha256
 -- StrategicAuthority: existing OMW.AirOps.CampaignContext / OMW.Ground.Base CampaignState only.
 -- PhysicalRepresentation: existing TPL_BLUE_CONVOY_FUEL_LIGHT_06; no DCS fuel quantity or package-per-tanker capacity is defined.
+-- AcceptanceCompletion: observation/event-driven; no hard outbound or return travel-time failure gate.
 -- ExplicitExclusions: FUELSUPPLY, OPSTRANSPORT, generic cargo authority, native-DCS dispatcher, MIST, MissionScripting.lua mutation.
 
 "@
@@ -144,12 +147,13 @@ Write-Host 'PhysicalTankers: 2 x M978 HEMTT Tanker'
 Write-Host 'PhysicalCargoAuthority: false'
 Write-Host 'DcsFuelQuantityDefined: false'
 Write-Host 'PackagePerTankerCapacityDefined: false'
-Write-Host 'OutboundTimeoutSec: 2700'
+Write-Host 'OutboundTravelTimeoutSec: none'
 Write-Host 'DestinationCheckIntervalSec: 15'
 Write-Host 'DestinationExecutionGraceSec: 90'
-Write-Host 'ReturnTimeoutSec: 1800'
+Write-Host 'ReturnTravelTimeoutSec: none'
 Write-Host 'ReturnIssueDelaySec: 30'
 Write-Host 'ReturnSettlementDelaySec: 12'
+Write-Host 'AcceptanceCompletion: event-driven'
 Write-Host 'FUELSUPPLY: false'
 Write-Host 'OPSTRANSPORT: false'
 Write-Host 'MizMutation: false'
