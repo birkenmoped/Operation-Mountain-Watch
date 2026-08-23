@@ -8,7 +8,7 @@ $repoRoot = Split-Path -Parent $PSScriptRoot
 $distDir = Join-Path $repoRoot 'mission\runtime\air-operations'
 $outputFile = Join-Path $distDir 'OMW_AWACS_Foundation.lua'
 
-$builderVersion = 'OMW-AIROPS-AWACS-FOUNDATION-5'
+$builderVersion = 'OMW-AIROPS-AWACS-FOUNDATION-6'
 $mooseCommit = '73d3ed119cd9e7e3f2cfcabbaa34513d30529b54'
 $mooseSha256 = 'e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915'
 
@@ -18,7 +18,7 @@ $files = [ordered]@{
   OffMapStrategicStock = Join-Path $repoRoot 'scripts\logistics\OMW_AARStrategicStock.lua'
   CampaignStateInitializer = Join-Path $repoRoot 'scripts\logistics\OMW_AirOpsCampaignStateInitializer.lua'
   Adapter = Join-Path $repoRoot 'scripts\air-operations\OMW_AWACS_CampaignStateAdapter.lua'
-  Controller = Join-Path $repoRoot 'scripts\air-operations\OMW_AWACS_Controller_FullLifecycle.lua'
+  Controller = Join-Path $repoRoot 'scripts\air-operations\OMW_AWACS_Controller_FullLifecycle_V2.lua'
   Bootstrap = Join-Path $repoRoot 'scripts\air-operations\OMW_AirOps_AWACS_Bootstrap.lua'
 }
 
@@ -51,7 +51,7 @@ $requiredMarkers = @(
   @{ File = 'Controller'; Marker = 'AUFTRAG:NewORBIT_RACETRACK' },
   @{ File = 'Controller'; Marker = 'AUFTRAG:NewTANKER' },
   @{ File = 'Controller'; Marker = 'flightGroup:SetFuelLowRTB(false)' },
-  @{ File = 'Controller'; Marker = 'flightGroup:SetFuelLowRefuel(true)' },
+  @{ File = 'Controller'; Marker = 'flightGroup:SetFuelLowRefuel(false)' },
   @{ File = 'Controller'; Marker = 'flightGroup:SetFuelLowThreshold(AAR_TRIGGER_FUEL_PCT)' },
   @{ File = 'Controller'; Marker = 'flightGroup:SetFuelCriticalThreshold(AAR_CRITICAL_FUEL_PCT)' },
   @{ File = 'Controller'; Marker = 'FindNearestTanker' },
@@ -59,8 +59,9 @@ $requiredMarkers = @(
   @{ File = 'Controller'; Marker = 'function flightGroup:OnAfterRefueled' },
   @{ File = 'Controller'; Marker = 'SERVICE_START_SEC = 15 * 3600 + 30 * 60' },
   @{ File = 'Controller'; Marker = 'SERVICE_END_SEC = 23 * 3600 + 30 * 60' },
+  @{ File = 'Controller'; Marker = 'function Controller.GetLisaRuntime()' },
   @{ File = 'Controller'; Marker = 'function Controller.RequestRefuel(rendezvousCoordinate, designatedTankerGroupName)' },
-  @{ File = 'Bootstrap'; Marker = 'AWACS_TIMED_COVERAGE_FOUNDATION' }
+  @{ File = 'Bootstrap'; Marker = 'AWACS_FULL_FUEL_DRIVEN_AAR_FOUNDATION' }
 )
 
 foreach ($requirement in $requiredMarkers) {
@@ -78,7 +79,8 @@ $forbiddenPatterns = @(
   'os\.execute',
   'UNIT:Explode',
   'AUFTRAG:NewAWACS\(',
-  'EnRouteTaskAWACS\('
+  'EnRouteTaskAWACS\(',
+  'SetFuelLowRefuel\(true\)'
 )
 
 foreach ($entry in $content.GetEnumerator()) {
@@ -116,11 +118,13 @@ $header = @"
 -- Service: WIZARD, 357.300 MHz AM, 1530-2330 local (1100Z-1900Z).
 -- Station: FL320, 300 KT, 017T, 30 NM leg.
 -- Visible transfer: FL350 / 440 KT.
--- Fuel policy: LISA pre-dispatch <=65 percent, AAR required <=40 percent, off-map contingency <=25 percent if no refuel path is established.
--- Refuel policy: MOOSE FuelLow / nearest-tanker discovery; dedicated LISA is staged toward the AWACS rendezvous, otherwise the nearest compatible tanker is used.
+-- Fuel policy: LISA pre-dispatch <=65 percent, AAR required <=40 percent, off-map contingency <=25 percent if no refuel task is established.
+-- Refuel policy: MOOSE FuelLow event + MOOSE compatible-tanker discovery + MOOSE Refuel execution.
+-- Dedicated LISA is preferred once established at the AWACS rendezvous; otherwise nearest compatible active tanker is used.
+-- Pinned MOOSE SetFuelLowRefuel automatic 50-NM search is intentionally disabled because it cannot express that OMW policy.
 -- MOOSE automatic Afghanistan RTB on FuelLow/FuelCritical is disabled.
 -- Egress: service closes at 2330 local -> explicit FL350/440 KT direct route to ROSIE -> external handoff/despawn.
--- DCS validation: full fuel-driven lifecycle requires a new acceptance run.
+-- DCS validation: full fuel-driven lifecycle requires Acceptance 4.
 -- No automated MIZ mutation.
 -- MOOSE-Commit: $mooseCommit
 -- Moose.lua-SHA256: $mooseSha256
@@ -183,7 +187,8 @@ Write-Host 'LisaPredispatchFuelPct: 65'
 Write-Host 'AARTriggerFuelPct: 40'
 Write-Host 'AARCriticalFuelPct: 25'
 Write-Host 'FuelLowRTB: false'
-Write-Host 'FuelLowRefuel: true'
+Write-Host 'FuelLowRefuelBuiltIn: false'
+Write-Host 'FuelLowEventDrivenAAR: true'
 Write-Host 'AutomaticNearestTankerFallback: true'
 Write-Host 'DedicatedLisaPredispatch: true'
 Write-Host 'DCSValidatedFullLifecycle: false'
