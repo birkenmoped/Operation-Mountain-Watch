@@ -8,6 +8,7 @@ on:
       - "mission/tests/awacs-external-lifecycle/**"
       - "tools/build-awacs-foundation.ps1"
       - "tools/build-awacs-acceptance-2.ps1"
+      - "tools/build-awacs-acceptance-3.ps1"
       - ".github/workflows/awacs-validation.yml"
   workflow_dispatch:
 
@@ -37,6 +38,7 @@ jobs:
           luac5.1 -p scripts/air-operations/OMW_AWACS_Controller.lua
           luac5.1 -p scripts/air-operations/OMW_AirOps_AWACS_Bootstrap.lua
           luac5.1 -p mission/tests/awacs-external-lifecycle/src/02-awacs-flight-profile-acceptance.lua
+          luac5.1 -p mission/tests/awacs-external-lifecycle/src/03-awacs-persistent-orbit-emission-acceptance.lua
 
       - name: Build AWACS foundation
         shell: pwsh
@@ -46,12 +48,17 @@ jobs:
         shell: pwsh
         run: ./tools/build-awacs-acceptance-2.ps1
 
+      - name: Build persistent-orbit AWACS acceptance
+        shell: pwsh
+        run: ./tools/build-awacs-acceptance-3.ps1
+
       - name: Generated bundle syntax
         shell: bash
         run: |
           set -euo pipefail
           luac5.1 -p mission/runtime/air-operations/OMW_AWACS_Foundation.lua
           luac5.1 -p mission/tests/awacs-external-lifecycle/dist/OMW_AWACS_Acceptance_2.lua
+          luac5.1 -p mission/tests/awacs-external-lifecycle/dist/OMW_AWACS_Acceptance_3.lua
 
       - name: Verify no generated files became tracked changes
         shell: bash
