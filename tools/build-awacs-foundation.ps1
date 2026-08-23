@@ -8,7 +8,7 @@ $repoRoot = Split-Path -Parent $PSScriptRoot
 $distDir = Join-Path $repoRoot 'mission\runtime\air-operations'
 $outputFile = Join-Path $distDir 'OMW_AWACS_Foundation.lua'
 
-$builderVersion = 'OMW-AIROPS-AWACS-FOUNDATION-2'
+$builderVersion = 'OMW-AIROPS-AWACS-FOUNDATION-3'
 $mooseCommit = '73d3ed119cd9e7e3f2cfcabbaa34513d30529b54'
 $mooseSha256 = 'e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915'
 
@@ -41,6 +41,8 @@ $requiredMarkers = @(
   @{ File = 'Controller'; Marker = 'FIR_FIX_NAME = "ROSIE"' },
   @{ File = 'Controller'; Marker = 'AREA_NAME = "APOC"' },
   @{ File = 'Controller'; Marker = 'FREQUENCY_MHZ = 357.300' },
+  @{ File = 'Controller'; Marker = 'TRANSIT_SPEED_KT = 440' },
+  @{ File = 'Controller'; Marker = 'SPAWN_INITIAL_SPEED_KT = 440' },
   @{ File = 'Controller'; Marker = 'AUFTRAG:NewORBIT_RACETRACK' },
   @{ File = 'Controller'; Marker = 'AUFTRAG:NewAWACS' },
   @{ File = 'Controller'; Marker = 'mission:SetMissionAltitude(TRACK_ALTITUDE_FT)' },
@@ -105,10 +107,11 @@ $header = @"
 -- Standby: APOC racetrack before 1530 local without AWACS mission service.
 -- Service: WIZARD, 357.300 MHz AM, 1530-2330 local (1100Z-1900Z).
 -- Station: FL320, 300 KT, 017T, 30 NM leg.
--- AAR receiver path: leave APOC -> FL340/300 KT transfer -> designated rendezvous -> MOOSE Refuel -> FL340/300 KT return -> APOC.
+-- E-3 transfer baseline: 440 KT target for external/ingress/egress/AAR transfer; approximately the upper end of the adopted 420-440 KTAS engineering range. This is an OMW engineering baseline, not a claim of an exact historical 964th EAACS LRC schedule.
+-- AAR receiver path: leave APOC -> FL340/440 KT transfer -> designated rendezvous -> MOOSE Refuel -> FL340/440 KT return -> APOC.
 -- AAR tanker dispatch: acceptance-gated; no automatic nearest-tanker policy is claimed by this production bundle.
--- Egress: service closes at 2330 local -> FL340/300 KT -> ROSIE -> external handoff/despawn.
--- DCS validation: Acceptance 1 covers the earlier routing lifecycle only; timed service/AAR requires dedicated acceptance.
+-- Egress: service closes at 2330 local -> FL340/440 KT -> ROSIE -> external handoff/despawn.
+-- DCS validation: Acceptance 1 covers the earlier routing lifecycle only; timed service/AAR and the 440-KT transfer calibration require dedicated acceptance.
 -- No automated MIZ mutation.
 -- MOOSE-Commit: $mooseCommit
 -- Moose.lua-SHA256: $mooseSha256
@@ -156,13 +159,15 @@ Write-Host 'TrackAltitudeFt: 32000'
 Write-Host 'TrackSpeedKt: 300'
 Write-Host 'TrackHeadingTrueDeg: 17'
 Write-Host 'TrackLegNm: 30'
+Write-Host 'SpawnInitialSpeedKt: 440'
+Write-Host 'TransitSpeedKt: 440'
 Write-Host 'LateApproachNm: 30'
 Write-Host 'ServiceStartLocal: 15:30'
 Write-Host 'PlannedAARLocal: 19:30'
 Write-Host 'ServiceEndLocal: 23:30'
 Write-Host 'ServiceWindowSec: 28800'
 Write-Host 'AARTransferAltitudeFt: 34000'
-Write-Host 'AARTransferSpeedKt: 300'
+Write-Host 'AARTransferSpeedKt: 440'
 Write-Host 'AARLateApproachNm: 30'
 Write-Host 'DesignatedRefuelReceiverPath: true'
 Write-Host 'AutomaticRefuelDispatch: false'
