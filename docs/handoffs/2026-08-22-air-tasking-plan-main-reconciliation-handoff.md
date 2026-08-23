@@ -696,7 +696,7 @@ Das übergeordnete Projektziel "Air Tasking Plan Foundation" ist daher nach dem 
 [COMPLETE] dedicated handoff/TODO document created and validator produced no new Air-Tasking/handoff error
 [PENDING OWNER DECISION] authorize PR #117 Ready for Review
 [PENDING OWNER DECISION] authorize PR #117 merge
-[POST-MERGE REQUIRED] replace all PR-local source_commit: PENDING_MERGE values that land on main with valid full commit provenance
+[POST-MERGE REQUIRED] replace all PR-local source_commit: 121edd572f596e9a156c6c9137e24f5c9fdc72cc values that land on main with valid full commit provenance
 [POST-MERGE REQUIRED] verify final main diff/readback and exact merge commit
 [POST-MERGE REQUIRED] update SUBPROJECT-REGISTRY from open PR #117 to merged history if required by current registry policy
 [POST-MERGE REQUIRED] update this handoff / reconciliation status or supersede it with a finalization record

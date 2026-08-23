@@ -286,7 +286,7 @@ Der vollständige PR-#117-Diff gegen aktuellen `main` wurde erneut geprüft. Der
 
 Für den aktuellen Scope wurden keine neuen blockierenden Air-Tasking-Codefehler festgestellt. Die dokumentierte shared-runtime-Grenze bleibt bewusst offen und wird nicht als verdeckter Merge-Blocker umgedeutet.
 
-Gemäß `docs/DOCUMENT-METADATA-POLICY.md` ist `source_commit: PENDING_MERGE` auf einem offenen PR-Branch zulässig. Der Wert bleibt bis zur tatsächlichen Integration bestehen und darf auf `main` anschließend nicht verbleiben.
+Gemäß `docs/DOCUMENT-METADATA-POLICY.md` ist `source_commit: 121edd572f596e9a156c6c9137e24f5c9fdc72cc` auf einem offenen PR-Branch zulässig. Der Wert bleibt bis zur tatsächlichen Integration bestehen und darf auf `main` anschließend nicht verbleiben.
 
 Vor einer Integration ist damit nur noch die ausdrückliche Owner-Freigabe für `Ready for Review` beziehungsweise Merge erforderlich. Der aktuelle GitHub-`mergeable`-Status ist unmittelbar vor einer tatsächlichen Integration erneut real zu lesen; er wird nicht als statische Eigenschaft dieses Dokuments behandelt.
 
