@@ -18,6 +18,7 @@ local state = {
   lastSensorState = nil,
   lastAarPhase = nil,
   lisaObserved = false,
+  lisaReadyObserved = false,
   fuelLowObserved = false,
   refuelObserved = false,
   egressObserved = false,
@@ -64,10 +65,9 @@ local function sample()
   local position = coord and coord:GetLLDDM() or "UNKNOWN"
 
   local fuelPct = fg:GetFuelMin()
-  local altitudeM = fg:GetAltitude()
-  local altitudeFt = type(altitudeM) == "number" and UTILS.MetersToFeet(altitudeM) or nil
-  local velocityMps = fg:GetVelocity()
-  local speedKt = velocityMps and UTILS.MpsToKnots(velocityMps) or nil
+  -- OPSGROUP/FLIGHTGROUP:GetAltitude() returns feet in the pinned MOOSE source.
+  local altitudeFt = fg:GetAltitude()
+  local speedKt = runtime.group and runtime.group:IsAlive() and runtime.group:GetVelocityKNOTS() or nil
   local headingDeg = fg:GetHeading()
   local localSec = UTILS.SecondsOfToday()
 
@@ -92,6 +92,15 @@ local function sample()
     state.lisaObserved = true
     log(string.format("LISA_OBSERVED runtime=%s onStation=%s egress=%s loss=%s",
       tostring(lisa.runtimeId), tostring(lisa.onStation == true), tostring(lisa.egressOrdered == true), tostring(lisa.lossHandled == true)))
+  end
+
+  if lisa and lisa.onStation and not state.lisaReadyObserved then
+    state.lisaReadyObserved = true
+    local lisaAltitudeFt = lisa.flightGroup and lisa.flightGroup:IsAlive() and lisa.flightGroup:GetAltitude() or nil
+    local lisaSpeedKt = lisa.group and lisa.group:IsAlive() and lisa.group:GetVelocityKNOTS() or nil
+    log(string.format("LISA_READY_OBSERVED runtime=%s localSec=%.1f altitudeFt=%s speedKt=%s egressPending=%s",
+      tostring(lisa.runtimeId), localSec, fmt(lisaAltitudeFt, "%.0f"), fmt(lisaSpeedKt, "%.1f"),
+      tostring(lisa.egressPending == true)))
   end
 
   if type(fuelPct) == "number" and fuelPct <= 40 then state.fuelLowObserved = true end
