@@ -1,6 +1,6 @@
 ---
 document_id: OMW-GROUND-FUEL-RESUPPLY-ACCEPTANCE-1
-status: FAILED
+status: INCONCLUSIVE
 document_class: ACCEPTANCE_PLAN_AND_RESULT
 owning_policy: OMW-GOV-001
 authoritative_for:
@@ -14,16 +14,20 @@ validated_in_dcs: false
 
 # Ground FUEL RESUPPLY Acceptance 1 – Joyce nach Honaker
 
-## 1. Ergebnis
+## 1. Ergebnis – korrigierte Bewertung
 
 ```text
 TestId: GROUND-FUEL-RESUPPLY-ACCEPTANCE-1
-Overall: FAIL
-FailureClass: OUTBOUND_MISSION_EXECUTION_NOT_REACHED
-FUELSUPPLY as OMW meta-resupply executor: REJECTED_FOR_CURRENT_SCOPE
+Overall: INCONCLUSIVE
+FailureClass: HARNESS_TIMEOUT_CONTAMINATED
+FUELSUPPLY runtime suitability for OMW strategic meta-resupply: NOT PROVEN / NOT DISPROVEN
 ```
 
-Der Test hat nicht den Return-Pfad erreicht. Der Fuel-Convoy wurde materialisiert und `ARMY_ON_MISSION` wurde ausgelöst, aber `OnAfterMissionExecute` blieb aus. Deshalb wurden `MarkDelivered`, `MissionDemand SUCCESS`, `MissionDone`, Cancel und RTZ nie ausgeführt.
+Der damalige Lauf erreichte `ROAD_ALIGNED_WAREHOUSE_SPAWN`, `GROUP_MATERIALIZED` und `ARMY_ON_MISSION`, endete aber mit `OUTBOUND_TIMEOUT seconds=1800`, bevor `OnAfterMissionExecute` beobachtet wurde.
+
+Die spätere DCS-Evidenz aus Stage 1C zeigt für dieselbe Joyce→Honaker-Strecke eine reale Fahr-/Ankunftszeit von mehr als 30 Minuten. Damit war der 1800-s-Harness nicht geeignet, aus dem Ausbleiben von `MissionExecute` einen Fehler von `AUFTRAG:NewFUELSUPPLY(...)` abzuleiten.
+
+Die frühere Bewertung `FUELSUPPLY ... REJECTED_FOR_CURRENT_SCOPE` wird deshalb zurückgenommen. Der Lauf beweist weder einen FUELSUPPLY-Routingfehler noch einen Fehler des Return-Pfads.
 
 Detailergebnis:
 
@@ -37,7 +41,7 @@ results/2026-08-22-ground-fuel-resupply-acceptance-1-fail-1.md
 GROUND_FUEL_PACKAGE = CampaignState meta resource / unit=count
 ```
 
-Dieser Acceptance-Lauf hat keine reale DCS-Fuel-Menge in Litern oder Gallonen in M978 geladen. Der physische Tankerkonvoi war ausschließlich operative Repräsentation. Daraus folgt keine Kapazitätsrelation zwischen M978 und `GROUND_FUEL_PACKAGE`.
+Der Acceptance-Lauf hat keine reale DCS-Fuel-Menge in Litern oder Gallonen in M978 geladen. Der physische Tankerkonvoi war ausschließlich operative Repräsentation. Daraus folgt keine Kapazitätsrelation zwischen M978 und `GROUND_FUEL_PACKAGE`.
 
 ## 3. Build-Provenienz
 
@@ -70,7 +74,7 @@ TPL_BLUE_CONVOY_FUEL_LIGHT_06
 6 CHAP_MATV
 ```
 
-Das Template bleibt als physische Fuel-Convoy-Repräsentation verwendbar. Der fehlgeschlagene Test verwirft nicht das Template, sondern die Verwendung von `AUFTRAG:NewFUELSUPPLY(Zone)` für den OMW-Warehouse-zu-Warehouse-Meta-Warenpfad.
+Das Template bleibt als physische Fuel-Convoy-Repräsentation verwendbar.
 
 ## 5. Runtime-Evidenz
 
@@ -82,13 +86,13 @@ GROUP_MATERIALIZED
 ARMY_ON_MISSION mission=FUELSUPPLY transferStatus=IN_TRANSIT demandStatus=ACTIVE
 ```
 
-Terminal:
+Terminal des Harness:
 
 ```text
 FAIL reason=OUTBOUND_TIMEOUT seconds=1800 spawnCount=1 armyOnMissionCount=1 missionExecuteCount=0 missionDoneCount=0
 ```
 
-Nicht erreicht:
+Nicht beobachtet, weil der Harness vorher in `failed=true` wechselte:
 
 ```text
 DELIVERY_CONFIRMED
@@ -99,37 +103,34 @@ WAREHOUSE_ADD_ASSET
 PASS
 ```
 
-## 6. MOOSE-first Neubewertung
+## 6. MOOSE-first Einordnung
 
-`AUFTRAG:NewFUELSUPPLY(Zone)` existiert im gepinnten Source. Der BRIGADE-Source nutzt den Missionstyp jedoch im Kontext von `AddRefuellingZone(...)`. Eine offizielle Demo für den von OMW versuchten Warehouse-zu-Warehouse-Meta-Waren-Roundtrip wurde nicht gefunden.
+`AUFTRAG:NewFUELSUPPLY(Zone)` existiert im gepinnten Source und ist ein vorgesehener Ground-Missionstyp. BRIGADE/COMMANDER verwenden ihn im Kontext registrierter Refuelling Zones. Damit bleibt FUELSUPPLY für operative Refuelling-Services relevant.
 
-Dagegen dokumentiert derselbe gepinnte MOOSE-Source einen nativen Warehouse-Transferpfad:
+Für OMW muss diese operative Rolle von der strategischen Meta-Ressourcenlogistik getrennt bleiben:
 
 ```text
-WAREHOUSE:AddRequest(...)
-WAREHOUSE.TransportType.SELFPROPELLED
+CampaignState GROUND_FUEL_PACKAGE
+= strategische Ressourcenautorität
+
+AUFTRAG FUELSUPPLY / RefuellingZone
+= operative physische Refuelling-Service-Rolle
 ```
 
-Für Ground-Assets routet `WAREHOUSE:onafterRequestSpawned()` das Asset selbständig zum anfordernden Warehouse. MOOSE Example 15 verwendet ausdrücklich `M978` und `M818` als selbstfahrende Warehouse-Assets zwischen zwei Warehouses.
+Ein M978 ist dadurch nicht automatisch Träger einer autoritativen CampaignState-Fuelmenge.
 
-Wichtige Grenze: Nach `Arrived` routet MOOSE die Ground-Group zum Ziel-Warehouse und plant `warehouse:__AddAsset(60, group)`. Ein späterer Rücktransport würde deshalb eine erneute Warehouse-Materialisierung erfordern. Vor OMW-Adoption muss geprüft werden, ob dieses Framework-Handoff mit der Projektregel gegen beobachtbare Spawn-/Despawn-Vorgänge vereinbar ist.
+Der native `WAREHOUSE.TransportType.SELFPROPELLED`-Pfad bleibt als Framework-Funktion dokumentiert, ist für den aktuellen OMW-Roundtrip aber wegen des Warehouse-Handoffs/`AddAsset` und möglicher erneuter Materialisierung nicht automatisch der bevorzugte Ersatz.
 
 ## 7. Mission-Editor-Status
 
-Das fehlgeschlagene Acceptance-Bundle ist nicht mehr erforderlich. Der Projektinhaber kann den Trigger/`DO SCRIPT FILE` für
-
-```text
-OMW_Ground_Fuel_Resupply_Acceptance_1.lua
-```
-
-aus der Mission entfernen oder deaktivieren. Die neuen `TPL_BLUE_CONVOY_FUEL_*`- und `TPL_BLUE_CONVOY_MIXED_*`-Templates bleiben bestehen.
+Das alte FUELSUPPLY-Acceptance-Bundle ist für den aktuellen strategischen Stage-1C-Test nicht erforderlich. Die `TPL_BLUE_CONVOY_FUEL_*`- und `TPL_BLUE_CONVOY_MIXED_*`-Templates bleiben bestehen.
 
 ## 8. Nächster Schritt
 
 ```text
-1. FUELSUPPLY acceptance path closed as FAIL.
+1. Do not classify the old FUELSUPPLY runtime as a proven failure.
 2. Keep GROUND_FUEL_PACKAGE as CampaignState meta resource.
-3. Complete WAREHOUSE SELFPROPELLED source/lifecycle review.
-4. Resolve observable warehouse handoff boundary before a replacement acceptance is staged.
-5. No further DCS test until that source review is complete.
+3. Complete Stage 1C strategic meta-resupply acceptance independently.
+4. If operational field refuelling is required, stage a separate short-distance RefuellingZone/FUELSUPPLY acceptance.
+5. Do not use a hard travel-time failure gate for that acceptance.
 ```
