@@ -12,7 +12,7 @@ project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
   - class index without consolidated AIRWING lifecycle evidence
 superseded_by:
-source_branch: agent/army-ground-foundation-reconciliation
+source_branch: agent/air-tasking-plan-main-reconciliation
 source_commit: PENDING_MERGE
 validated_in_dcs: partial
 ---
@@ -35,6 +35,7 @@ Technische Lifecycle-Details:
 - [`OMW-MOOSE-AAR-LRC-TRANSIT`](AAR-LRC-TRANSIT.md)
 - [`OMW-MOOSE-GROUND-OPERATIONS`](GROUND-OPERATIONS.md)
 - [`OMW-MOOSE-MISSION-DEMAND-RESUPPLY-CAS-SOURCE-REVIEW`](MISSION-DEMAND-RESUPPLY-CAS-SOURCE-REVIEW.md)
+- [`OMW-MOOSE-AIR-TASKING-C2-LIFECYCLE`](AIR-TASKING-C2-LIFECYCLE.md)
 
 ## 2. Statusbedeutung
 
@@ -350,3 +351,32 @@ MOOSE USERFLAG Ground readiness bridge -> Mission Editor OMW_GROUND_READY == 1
 Die beobachteten Munitionswerte waren `300 -> 296 -> 302`; der Bostick-Bestand `GROUND_AMMO_PACKAGE` fiel `52 -> 51`. Der Harness meldete `PASS M1083_REARM_CONFIRMED=true`.
 
 Nicht aus diesem Lauf abzuleiten sind eine allgemeine CHAP_M1083-Supply-Garantie, AMMOTRUCK-Runtime-Verhalten, Full-Battery-Rejection, M1083-Verlust/Unterbrechung, Restart/Replay oder andere Batterien/MOOSE-Versionen.
+
+## Addendum 2026-08-22 – Air Tasking Main Reconciliation
+
+Die Air-Tasking-Reconciliation verwendet fuer den aktuellen AAR-Vertical-Pfad ausschließlich bereits im Projekt vorhandene MOOSE-Bausteine und den akzeptierten AAR-Controller:
+
+```text
+SCHEDULER:New(...)
+Controller.GetStation(...)
+existing AAR SPAWN / FLIGHTGROUP / AUFTRAG lifecycle
+```
+
+Branch:
+
+```text
+agent/air-tasking-plan-main-reconciliation
+```
+
+Gepinnter MOOSE-Stand:
+
+```text
+MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+Moose.lua SHA-256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
+```
+
+Die neue Air-Tasking-Schicht implementiert keinen parallelen MOOSE-Dispatcher, kein eigenes Tanker-Routing und keinen zweiten strategischen Assetbestand. Der 5-Sekunden-`SCHEDULER` beobachtet nur den ueber `Controller.GetStation(...)` exponierten Runtime-Zustand fuer ASR/ATM/EXE-Korrelation.
+
+`AIR-TASKING-AAR-VERTICAL-2` bleibt ein realer DCS-PASS fuer seine exakt dokumentierte historische Provenienz. Die MissionDemand-reconcilierten Source-Artefakte wurden danach neu gebaut und gehasht, aber auf ausdrueckliche Owner-Entscheidung nicht erneut als `VERTICAL-3` in DCS ausgefuehrt. Deshalb wird der reconcilierten Implementierung **kein neuer `VALIDATED_FOR_DOCUMENTED_SCOPE`-Status** aus diesem Schritt zugeschrieben.
+
+Details: [`OMW-MOOSE-AIR-TASKING-C2-LIFECYCLE`](AIR-TASKING-C2-LIFECYCLE.md) und [`OMW-AIR-TASKING-PLAN-MAIN-RECONCILIATION`](../air-tasking-plan-main-reconciliation.md).
