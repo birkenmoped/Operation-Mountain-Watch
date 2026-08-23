@@ -6,7 +6,8 @@
 -- -> CampaignState TRANSFER Joyce -> Honaker -> MOOSE BRIGADE/PLATOON
 -- -> BRIGADE:AddRefuellingZone(Honaker ACCESS)
 -- -> BRIGADE creates AUFTRAG:NewFUELSUPPLY(...) itself
--- -> destination execution proof -> CampaignState delivery settlement
+-- -> FUELSUPPLY execution observed independently from destination-zone proof
+-- -> destination-zone proof -> CampaignState delivery settlement
 -- -> mission cancel -> normal MOOSE ReturnToLegion lifecycle
 -- -> Returned -> Warehouse AddAsset -> physical cleanup.
 --
@@ -39,6 +40,8 @@ local SHORTAGE_DESTINATION = 18
 local TRANSFER_QUANTITY = 18
 local FINAL_ORIGIN = 22
 local FINAL_DESTINATION = 36
+local DESTINATION_CHECK_INTERVAL_SEC = 15
+local DESTINATION_EXECUTION_GRACE_SEC = 90
 local RETURN_SETTLEMENT_DELAY_SEC = 12
 
 local state = {
@@ -51,6 +54,7 @@ local state = {
   returnedCount = 0,
   addAssetCount = 0,
   deliveryCommitted = false,
+  destinationObserved = false,
   mission = nil,
 }
 
@@ -101,6 +105,7 @@ local function verifyFinalState()
   if not expectEqual(state.missionDoneCount, 1, "MISSION_DONE_COUNT") then return end
   if not expectEqual(state.returnedCount, 1, "RETURNED_COUNT") then return end
   if not expectEqual(state.addAssetCount, 1, "WAREHOUSE_ADD_ASSET_COUNT") then return end
+  if state.destinationObserved ~= true then fail("DESTINATION_NOT_OBSERVED"); return end
   if state.deliveryCommitted ~= true then fail("DELIVERY_NOT_COMMITTED"); return end
   if state.armyGroup and state.armyGroup:IsAlive() then
     fail("PHYSICAL_GROUP_NOT_REMOVED_AFTER_WAREHOUSE_ADD")
@@ -131,7 +136,72 @@ local function verifyFinalState()
     .. " transferQuantity=" .. tostring(TRANSFER_QUANTITY)
     .. " template=" .. TEMPLATE_NAME
     .. " physicalMission=BRIGADE_REFUELLING_ZONE_FUELSUPPLY"
-    .. " demandStatus=SUCCESS spawnCount=1 missionExecuteCount=1 missionDoneCount=1 returnedCount=1 warehouseAddAssetCount=1")
+    .. " demandStatus=SUCCESS spawnCount=1 missionExecuteCount=1 destinationObserved=true"
+    .. " missionDoneCount=1 returnedCount=1 warehouseAddAssetCount=1")
+end
+
+local function commitDeliveryIfReady()
+  if state.failed or state.passed or state.deliveryCommitted then return end
+  if state.missionExecuteCount < 1 or state.destinationObserved ~= true then return end
+
+  local transaction = state.store:MarkDelivered(TRANSFER_ID)
+  if not expectEqual(transaction.status, state.campaignState.TransactionStatus.DELIVERED, "TRANSFER_DELIVERY_STATUS") then return end
+
+  state.registry:SetReservationState(DEMAND_ID, "DELIVERED", {
+    transactionId = TRANSFER_ID,
+    originNodeId = ORIGIN_NODE,
+    destinationNodeId = DESTINATION_NODE,
+    resourceId = RESOURCE_ID,
+    quantity = TRANSFER_QUANTITY,
+    carrierEntityId = CARRIER_ENTITY_ID,
+  })
+  state.registry:Succeed(DEMAND_ID, {
+    transactionId = TRANSFER_ID,
+    carrierEntityId = CARRIER_ENTITY_ID,
+    destinationNodeId = DESTINATION_NODE,
+  })
+  state.deliveryCommitted = true
+
+  if not expectEqual(snapshot(DESTINATION_NODE).quantity, FINAL_DESTINATION, "DESTINATION_DELIVERED_QUANTITY") then return end
+
+  log("DELIVERY_CONFIRMED group=" .. tostring(state.armyGroup and state.armyGroup:GetName() or "UNKNOWN")
+    .. " destination=" .. DESTINATION_NODE
+    .. " quantity=" .. tostring(TRANSFER_QUANTITY)
+    .. " missionExecuteObserved=true destinationObserved=true"
+    .. " campaignStateStatus=DELIVERED demandStatus=SUCCESS")
+
+  -- FUELSUPPLY is intentionally open-ended at the target. End this single
+  -- acceptance transaction after exact-once strategic delivery and let the
+  -- normal MOOSE legion-return lifecycle handle the return.
+  state.mission:__Cancel(1)
+end
+
+local function checkDestinationProgress()
+  if state.failed or state.passed or state.deliveryCommitted then return end
+  if not state.armyGroup or not state.armyGroup:IsAlive() then return end
+
+  if state.armyGroup:IsInZone(state.destinationZone) == true then
+    if state.destinationObserved ~= true then
+      state.destinationObserved = true
+      log("DESTINATION_ZONE_ENTERED group=" .. tostring(state.armyGroup:GetName())
+        .. " missionExecuteCount=" .. tostring(state.missionExecuteCount)
+        .. " graceSec=" .. tostring(DESTINATION_EXECUTION_GRACE_SEC))
+
+      if state.missionExecuteCount < 1 then
+        SCHEDULER:New(nil, function()
+          if state.failed or state.passed or state.deliveryCommitted or state.missionExecuteCount > 0 then return end
+          fail("DESTINATION_EXECUTION_TIMEOUT seconds=" .. tostring(DESTINATION_EXECUTION_GRACE_SEC)
+            .. " missionExecuteCount=" .. tostring(state.missionExecuteCount)
+            .. " missionDoneCount=" .. tostring(state.missionDoneCount))
+        end, {}, DESTINATION_EXECUTION_GRACE_SEC)
+      end
+    end
+
+    commitDeliveryIfReady()
+    return
+  end
+
+  SCHEDULER:New(nil, checkDestinationProgress, {}, DESTINATION_CHECK_INTERVAL_SEC)
 end
 
 local function attachArmyGroupCallbacks(armyGroup)
@@ -143,40 +213,11 @@ local function attachArmyGroupCallbacks(armyGroup)
     state.missionExecuteCount = state.missionExecuteCount + 1
     if not expectEqual(state.missionExecuteCount, 1, "MISSION_EXECUTE_COUNT") then return end
 
-    if self:IsInZone(state.destinationZone) ~= true then
-      fail("MISSION_EXECUTE_OUTSIDE_DESTINATION zone=" .. DESTINATION_ACCESS_ZONE)
-      return
-    end
+    log("MISSION_EXECUTE_OBSERVED group=" .. tostring(self:GetName())
+      .. " destinationObserved=" .. tostring(state.destinationObserved)
+      .. " inDestinationZone=" .. tostring(self:IsInZone(state.destinationZone) == true))
 
-    local transaction = state.store:MarkDelivered(TRANSFER_ID)
-    if not expectEqual(transaction.status, state.campaignState.TransactionStatus.DELIVERED, "TRANSFER_DELIVERY_STATUS") then return end
-
-    state.registry:SetReservationState(DEMAND_ID, "DELIVERED", {
-      transactionId = TRANSFER_ID,
-      originNodeId = ORIGIN_NODE,
-      destinationNodeId = DESTINATION_NODE,
-      resourceId = RESOURCE_ID,
-      quantity = TRANSFER_QUANTITY,
-      carrierEntityId = CARRIER_ENTITY_ID,
-    })
-    state.registry:Succeed(DEMAND_ID, {
-      transactionId = TRANSFER_ID,
-      carrierEntityId = CARRIER_ENTITY_ID,
-      destinationNodeId = DESTINATION_NODE,
-    })
-    state.deliveryCommitted = true
-
-    if not expectEqual(snapshot(DESTINATION_NODE).quantity, FINAL_DESTINATION, "DESTINATION_DELIVERED_QUANTITY") then return end
-
-    log("DELIVERY_CONFIRMED group=" .. tostring(self:GetName())
-      .. " destination=" .. DESTINATION_NODE
-      .. " quantity=" .. tostring(TRANSFER_QUANTITY)
-      .. " campaignStateStatus=DELIVERED demandStatus=SUCCESS")
-
-    -- FUELSUPPLY is intentionally open-ended at the target. End this single
-    -- acceptance transaction after exact-once strategic delivery and let the
-    -- normal MOOSE legion-return lifecycle handle the return.
-    state.mission:__Cancel(1)
+    commitDeliveryIfReady()
   end
 
   function armyGroup:OnAfterMissionDone(From, Event, To, Mission)
@@ -242,6 +283,7 @@ local function installBrigadeCallbacks()
     log("ARMY_ON_MISSION group=" .. tostring(ArmyGroup:GetName())
       .. " mission=FUELSUPPLY source=BRIGADE_ADD_REFUELLING_ZONE"
       .. " transferStatus=IN_TRANSIT demandStatus=ACTIVE")
+    SCHEDULER:New(nil, checkDestinationProgress, {}, DESTINATION_CHECK_INTERVAL_SEC)
   end
 
   state.brigade.OnAfterAddAsset = function(self, From, Event, To, Group, Groups)
