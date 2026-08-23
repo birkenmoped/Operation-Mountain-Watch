@@ -8,6 +8,9 @@ authoritative_for:
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 source_branch: agent/awacs-external-lifecycle-foundation
+source_commit: GIT_HISTORY
+supersedes:
+superseded_by:
 validated_in_dcs: false
 ---
 
@@ -133,19 +136,19 @@ Der Service-State ist vom physischen Orbit getrennt:
 
 ```text
 before 15:30: persistent orbit / sensor standby
-15:30:       sensor/service active, no mission replacement
+15:30:       sensor/service active, no mission replacement, no APOC position gate
 AAR:         MOOSE Refuel pauses persistent mission
 post-AAR:    mission resumes; sensor active only once back on APOC
 23:30:       true egress; only here is the persistent orbit cancelled
 ```
 
-Damit darf eine reine Statusänderung keinen ROSIE-Detour mehr auslösen.
+Die Missionsuhr wird über `UTILS.SecondsOfToday()` ausgewertet. Der frühere 5-NM-APOC-Gate für den planmäßigen 15:30-Wechsel ist entfernt; der 5-NM-Radius bleibt nur für die physische Rejoin-Bestätigung nach AAR. Damit darf eine reine Statusänderung keinen ROSIE-Detour und keine mehrminütige Aktivierungsverzögerung mehr auslösen.
 
 ## Validierungsstatus
 
 ```text
 source review: complete for the listed pinned MOOSE methods
-Lua/CI syntax: pending final branch CI
+Lua/CI syntax: passed on working branch after final lifecycle corrections
 DCS Acceptance 4: pending
 VALIDATED: no
 ```
