@@ -251,6 +251,71 @@ destination zone observed
 
 Die Reihenfolge dieser beiden Beobachtungen ist nicht fest verdrahtet.
 
+### 6.4 Reale lokale Build-Evidenz für korrigierten Build 2-2
+
+Der Projektinhaber hat den korrigierten Branchstand lokal per Fast-forward aktualisiert und Build `2-2` erfolgreich erzeugt.
+
+```text
+Git HEAD:
+a253d2c05f0cce94b25c0d79eb5602d64523bdce
+
+GeneratedUtc:
+2026-08-23T22:10:27Z
+
+BuilderVersion:
+GROUND-FUEL-REFUELLING-ZONE-ACCEPTANCE-2-2
+
+TestId:
+GROUND-FUEL-REFUELLING-ZONE-ACCEPTANCE-2
+
+MOOSE commit:
+73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+
+Moose.lua SHA-256:
+E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915
+
+Bundle SHA-256:
+351493A40AF9F2FCB4574C2DFEF7D2704B603A804C43AB1A1CBB3651E18DB0AD
+
+Builder SHA-256:
+3B874528B17027A0BFE16C16D7CCA1BBF44F88D0990D141EB7E5045CBE6FE537
+
+Acceptance source SHA-256:
+7E7E821A58E7DD55243CC763853739E81517E52CF8D915F63A229FC5A1D8A05A
+
+OMW_MissionDemand.lua SHA-256:
+E348E75B87135B99D780E07CA6B6FB7C3C530E048E9C6DE790328D147DE32848
+
+OMW_ResourceDemandPolicy.lua SHA-256:
+BDC20ACEDAB60F662093077B8320220EBB71C6C641CC604C4356231B8405913C
+
+OMW_GroundRoadSpawnAdapter.lua SHA-256:
+1A81FB2E5270C493373CF5BF6EC01F5AFED47004BF25C4225524121155D983E8
+
+DestinationProof:
+Stage-1C-style independent zone polling plus observed MissionExecute
+
+DestinationCheckIntervalSec:
+15
+
+DestinationExecutionGraceSec:
+90
+
+HardOutboundTravelTimeout:
+false
+
+HardReturnTravelTimeout:
+false
+
+ReturnMode:
+MOOSE ReturnToLegion
+
+Build result:
+PASS
+```
+
+Dieser Build ist der einzige aktuell zulässige Stage-1B2-DCS-Teststand. Der Build-PASS ist ausschließlich ein lokaler Reproduzierbarkeitsnachweis und kein DCS-Runtime-PASS.
+
 ## 7. Entscheidungsregel nach DCS-Test
 
 ```text
@@ -271,10 +336,13 @@ INCONCLUSIVE
 ## 8. Aktueller Status
 
 ```text
-status: STAGED_FOR_LOCAL_BUILD_AND_DCS_ACCEPTANCE
+status: STAGED_FOR_DCS_ACCEPTANCE
 previous_build_2_1: SUPERSEDED_BY_HARNESS_FIX
 previous_dcs_run: HARNESS_LOGIC_ERROR / INCONCLUSIVE
+current_build_commit: a253d2c05f0cce94b25c0d79eb5602d64523bdce
 current_builder: GROUND-FUEL-REFUELLING-ZONE-ACCEPTANCE-2-2
+current_bundle_sha256: 351493A40AF9F2FCB4574C2DFEF7D2704B603A804C43AB1A1CBB3651E18DB0AD
+local_build: PASS
 validated_in_dcs: false
 result: NOT_RUN_FOR_BUILD_2_2
 ```
