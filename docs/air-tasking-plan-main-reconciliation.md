@@ -16,11 +16,25 @@ project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
 superseded_by:
 source_branch: agent/air-tasking-plan-main-reconciliation
-source_commit: PENDING_MERGE
+source_commit: 9d282bf61e7e54f110b95a4ee9eb2bede01838a5
 validated_in_dcs: false
 ---
 
 # Air Tasking Plan – Main Reconciliation
+
+## 0. Post-Merge-Status
+
+PR #117 wurde nach ausdrücklicher Owner-Freigabe am 23.08.2026 zunächst auf Ready for Review gesetzt und anschließend nach erneutem GitHub-Readback integriert.
+
+```text
+PR: 117
+status: MERGED
+source_head: 0c654f2e699a4b8150b785f90fe14e53d2435016
+merge_commit: d1ef605c510917b2e69bfb96c109ad9ff8e26654
+reconciled_source_validated_in_dcs: false
+```
+
+Die Integration erweitert die historische `VERTICAL-2`-DCS-Evidenz nicht. `VERTICAL-3` bleibt Build-/Hash-/Lua-Contract-Evidenz ohne neuen DCS-PASS. Die dokumentierte Shared-Runtime-Grenze bleibt offen. Aussagen in späteren Abschnitten, die den Owner-Entscheid oder Merge noch als ausstehend beschreiben, sind als historischer Pre-Merge-Stand zu lesen.
 
 ## 1. Zweck
 
