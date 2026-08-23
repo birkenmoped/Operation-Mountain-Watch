@@ -106,21 +106,25 @@ Die owner-approved `OMW_GroundRoadSpawnAdapter`-Ausnahme wird unverändert wiede
 
 ## 6. Timeout-/Fail-fast-Vertrag
 
+Die Outbound-Timeouts dieses Acceptance-Harness sind ausschließlich **Test-Sicherheitsgrenzen**. Sie sind kein Produktionsvertrag und dürfen nicht als feste maximale Fahrzeit für produktive Ground-RESUPPLY-Missionen übernommen werden. Produktiv muss der Convoy-Lifecycle zustands-/ereignisbasiert bleiben; DCS-Routenführung und Ground-AI-Fahrzeit sind nicht deterministisch genug für eine feste Lieferfrist.
+
 Der erste Stage-1C-Build verwendete `OutboundTimeoutSec = 600`. Das war ein Harness-Fehler: Joyce-ACCESS zu Honaker-ACCESS liegen bereits Luftlinie rund 16,9 km auseinander. Bei 27 kt (~50 km/h) beträgt die theoretische Mindestfahrzeit ohne Straßendetour und AI-Verlangsamung rund 1.218 s. Der 600-s-Timeout musste daher vor einer normalen Ankunft auslösen.
 
-Nach `fail()` setzt der Harness `state.failed=true`; alle nachfolgenden MissionExecute-/MissionDone-/RTZ-Callbacks verlassen den Test dann absichtlich. Das erklärt den beobachteten Lauf: Der bereits geroutete Convoy fuhr physisch weiter nach Honaker, konnte nach dem vorzeitigen Test-FAIL aber keine Delivery-/Return-Kette mehr auslösen.
+Build 1-2 hob das Testfenster auf 1.800 s an. Auch dieser Wert erwies sich für den real beobachteten Joyce->Honaker-Lauf als zu knapp: Der Missionsstart liegt etwa bei 15:25, die physische Ankunft des Convoys in der Zielzone etwa bei 15:58. Damit liegt die beobachtete Fahr-/Ankunftszeit bei ungefähr 33 Minuten beziehungsweise rund 1.980 s und bereits oberhalb des 1.800-s-Testfensters.
 
-Korrigierter Vertrag:
+Nach `fail()` setzt der Harness `state.failed=true`; alle nachfolgenden MissionExecute-/MissionDone-/RTZ-Callbacks verlassen den Test dann absichtlich. Damit kann ein physisch weiterfahrender Convoy nach einem zu frühen Harness-FAIL später korrekt ankommen, ohne dass Delivery oder RTZ noch verarbeitet werden.
+
+Aktueller Acceptance-Vertrag:
 
 ```text
-OutboundTimeoutSec = 1800
+OutboundTimeoutSec = 2700
 DestinationCheckIntervalSec = 15
 DestinationExecutionGraceSec = 90
 ```
 
-Der 1800-s-Wert entspricht wieder dem bereits in Stage 1A verwendeten Outbound-Fenster. Der eigentliche Fail-fast-Schutz bleibt erhalten: Erst nach tatsächlichem Eintritt in Honaker ACCESS muss `MissionExecute` binnen 90 Sekunden folgen; andernfalls `DESTINATION_EXECUTION_TIMEOUT`.
+`2700 s` entsprechen 45 Minuten und dienen ausschließlich als Acceptance-Watchdog mit Reserve gegenüber der beobachteten ca. 33-minütigen Fahrt. Der eigentliche Fail-fast-Schutz bleibt erhalten: Erst nach tatsächlichem Eintritt in Honaker ACCESS muss `MissionExecute` binnen 90 Sekunden folgen; andernfalls `DESTINATION_EXECUTION_TIMEOUT`.
 
-## 7. Build- und MIZ-Provenienz des Fehlversuchs
+## 7. Build- und MIZ-Provenienz des ersten Fehlversuchs
 
 ```text
 Source/build commit: cb32f23886e68371bf45ab4f7a1394200f542c29
@@ -175,7 +179,7 @@ Detailresultat:
 results/2026-08-23-ground-meta-resupply-nothing-acceptance-1-fail-1.md
 ```
 
-## 9. Korrigierter Build-Stand
+## 9. Build 1-2 – historische lokale Evidenz
 
 Owner-lokal am 23.08.2026 erfolgreich gebaut und unabhängig nachgehasht:
 
@@ -201,11 +205,28 @@ OPSTRANSPORT: false
 MizMutation: false
 ```
 
+Dieser Build bleibt historische Provenienz und wird durch Build 1-3 nicht rückwirkend verändert.
+
+## 10. Aktueller Build 1-3 – Build ausstehend
+
+Source und Builder sind auf dem Branch für den nächsten Owner-Build vorbereitet:
+
 ```text
-Acceptance-1-1 result: HARNESS_FALSE_FAIL_OUTBOUND_TIMEOUT_TOO_SHORT
-Corrected build: OWNER_LOCAL_BUILD_PASS
-NewNOTHING runtime acceptance: NOT YET PROVEN
-Next step: OWNER_MISSION_EDITOR_REINTEGRATION_AND_READ_ONLY_MIZ_PREFLIGHT
+BuilderVersion: GROUND-META-RESUPPLY-NOTHING-ACCEPTANCE-1-3
+OutboundTimeoutSec: 2700
+DestinationCheckIntervalSec: 15
+DestinationExecutionGraceSec: 90
+ReturnTimeoutSec: 1800
+ReturnIssueDelaySec: 30
+ReturnSettlementDelaySec: 12
+FUELSUPPLY: false
+OPSTRANSPORT: false
+MizMutation: false
 ```
 
-Kein Produktionsstatus und kein `VALIDATED` wird aus dem Fehlversuch oder dem Build-PASS abgeleitet.
+```text
+Build 1-3 status: OWNER_LOCAL_BUILD_PENDING
+NewNOTHING runtime acceptance: NOT YET PROVEN
+```
+
+Kein Produktionsstatus und kein `VALIDATED` wird aus den bisherigen Fehlversuchen oder Build-PASS-Werten abgeleitet.
