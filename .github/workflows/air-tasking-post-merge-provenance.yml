@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - agent/air-tasking-post-merge-provenance
+  pull_request:
+    branches:
+      - main
 
 permissions:
   contents: write
