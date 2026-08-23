@@ -15,6 +15,7 @@ local state = {
   scheduler = nil,
   samples = 0,
   lastServiceState = nil,
+  lastSensorState = nil,
   lastAarPhase = nil,
   lisaObserved = false,
   fuelLowObserved = false,
@@ -60,26 +61,29 @@ local function sample()
   state.samples = state.samples + 1
   local fg = runtime.flightGroup
   local coord = fg:GetCoordinate()
-  local lat, lon = nil, nil
-  if coord then lat, lon = coord:GetLLDDM() end
+  local position = coord and coord:GetLLDDM() or "UNKNOWN"
 
   local fuelPct = fg:GetFuelMin()
-  local altitudeFt = fg:GetAltitude()
+  local altitudeM = fg:GetAltitude()
+  local altitudeFt = type(altitudeM) == "number" and UTILS.MetersToFeet(altitudeM) or nil
   local velocityMps = fg:GetVelocity()
   local speedKt = velocityMps and UTILS.MpsToKnots(velocityMps) or nil
   local headingDeg = fg:GetHeading()
+  local localSec = UTILS.SecondsOfToday()
 
-  if runtime.serviceState ~= state.lastServiceState then
-    log(string.format("SERVICE_STATE runtime=%s from=%s to=%s fuelPct=%s",
-      tostring(runtime.runtimeId), tostring(state.lastServiceState), tostring(runtime.serviceState), fmt(fuelPct, "%.2f")))
+  if runtime.serviceState ~= state.lastServiceState or runtime.sensorState ~= state.lastSensorState then
+    log(string.format("SERVICE_STATE runtime=%s from=%s to=%s sensorFrom=%s sensorTo=%s localSec=%.1f fuelPct=%s",
+      tostring(runtime.runtimeId), tostring(state.lastServiceState), tostring(runtime.serviceState),
+      tostring(state.lastSensorState), tostring(runtime.sensorState), localSec, fmt(fuelPct, "%.2f")))
     state.lastServiceState = runtime.serviceState
+    state.lastSensorState = runtime.sensorState
   end
 
   if runtime.aarPhase ~= state.lastAarPhase then
-    log(string.format("AAR_PHASE runtime=%s from=%s to=%s tanker=%s selectionReason=%s fuelPct=%s",
+    log(string.format("AAR_PHASE runtime=%s from=%s to=%s tanker=%s selectionReason=%s localSec=%.1f fuelPct=%s",
       tostring(runtime.runtimeId), tostring(state.lastAarPhase), tostring(runtime.aarPhase),
       tostring(runtime.designatedTankerGroupName or "NONE"), tostring(runtime.aarSelectionReason or "NONE"),
-      fmt(fuelPct, "%.2f")))
+      localSec, fmt(fuelPct, "%.2f")))
     state.lastAarPhase = runtime.aarPhase
   end
 
@@ -96,10 +100,10 @@ local function sample()
   if runtime.handoffComplete then state.handoffObserved = true end
 
   log(string.format(
-    "TELEMETRY seq=%d runtime=%s localSec=%.1f serviceState=%s sensorState=%s aarPhase=%s tanker=%s altFt=%s speedKt=%s headingDeg=%s fuelPct=%s lat=%s lon=%s egress=%s",
+    "TELEMETRY seq=%d runtime=%s localSec=%.1f serviceState=%s sensorState=%s aarPhase=%s tanker=%s altFt=%s speedKt=%s headingDeg=%s fuelPct=%s position=%s egress=%s",
     state.samples,
     tostring(runtime.runtimeId),
-    UTILS.SecondsOfToday(),
+    localSec,
     tostring(runtime.serviceState),
     tostring(runtime.sensorState),
     tostring(runtime.aarPhase or "NONE"),
@@ -108,8 +112,7 @@ local function sample()
     fmt(speedKt, "%.1f"),
     fmt(headingDeg, "%.1f"),
     fmt(fuelPct, "%.2f"),
-    fmt(lat, "%.6f"),
-    fmt(lon, "%.6f"),
+    tostring(position),
     tostring(runtime.egressOrdered == true)
   ))
 end
