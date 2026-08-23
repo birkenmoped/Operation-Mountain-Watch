@@ -9,6 +9,7 @@ on:
       - "tools/build-awacs-foundation.ps1"
       - "tools/build-awacs-acceptance-2.ps1"
       - "tools/build-awacs-acceptance-3.ps1"
+      - "tools/build-awacs-acceptance-4.ps1"
       - ".github/workflows/awacs-validation.yml"
   workflow_dispatch:
 
@@ -36,9 +37,12 @@ jobs:
           set -euo pipefail
           luac5.1 -p scripts/air-operations/OMW_AWACS_CampaignStateAdapter.lua
           luac5.1 -p scripts/air-operations/OMW_AWACS_Controller.lua
+          luac5.1 -p scripts/air-operations/OMW_AWACS_Controller_FullLifecycle.lua
+          luac5.1 -p scripts/air-operations/OMW_AWACS_Controller_FullLifecycle_V2.lua
           luac5.1 -p scripts/air-operations/OMW_AirOps_AWACS_Bootstrap.lua
           luac5.1 -p mission/tests/awacs-external-lifecycle/src/02-awacs-flight-profile-acceptance.lua
           luac5.1 -p mission/tests/awacs-external-lifecycle/src/03-awacs-persistent-orbit-emission-acceptance.lua
+          luac5.1 -p mission/tests/awacs-external-lifecycle/src/04-awacs-full-fuel-aar-acceptance.lua
 
       - name: Build AWACS foundation
         shell: pwsh
@@ -52,6 +56,10 @@ jobs:
         shell: pwsh
         run: ./tools/build-awacs-acceptance-3.ps1
 
+      - name: Build fuel-driven AWACS acceptance
+        shell: pwsh
+        run: ./tools/build-awacs-acceptance-4.ps1
+
       - name: Generated bundle syntax
         shell: bash
         run: |
@@ -59,6 +67,7 @@ jobs:
           luac5.1 -p mission/runtime/air-operations/OMW_AWACS_Foundation.lua
           luac5.1 -p mission/tests/awacs-external-lifecycle/dist/OMW_AWACS_Acceptance_2.lua
           luac5.1 -p mission/tests/awacs-external-lifecycle/dist/OMW_AWACS_Acceptance_3.lua
+          luac5.1 -p mission/tests/awacs-external-lifecycle/dist/OMW_AWACS_Acceptance_4.lua
 
       - name: Verify no generated files became tracked changes
         shell: bash
