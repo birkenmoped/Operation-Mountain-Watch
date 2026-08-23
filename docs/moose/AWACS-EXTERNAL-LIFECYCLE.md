@@ -16,6 +16,13 @@ project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 source_branch: agent/awacs-external-lifecycle-foundation
 source_commit: bde8a6e8d006b7c8d744b739510b08aa9812d48b
 validated_in_dcs: true
+acceptance_branch: agent/awacs-external-lifecycle-foundation
+acceptance_commit: bde8a6e8d006b7c8d744b739510b08aa9812d48b
+acceptance_mission: OMW_Template_v19(8).miz
+acceptance_mission_sha256: d788af36535d3acd1866d15ffb5d354b2c44b5f8ee40d4baf6fd1d97b7c0f8a5
+dcs_version: 2.9.28.26385 MT
+moose_commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+moose_artifact_sha256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
 supersedes:
 superseded_by:
 ---
