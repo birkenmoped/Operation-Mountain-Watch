@@ -1,10 +1,10 @@
 ---
 document_id: OMW-GROUND-META-RESUPPLY-NOTHING-ACCEPTANCE-1
-status: DRAFT
+status: FAILED
 document_class: ACCEPTANCE_PLAN
 owning_policy: OMW-GOV-001
 authoritative_for:
-  - branch-local acceptance plan for generic MissionDemand-driven Ground meta-resource RESUPPLY via AUFTRAG NOTHING
+  - branch-local acceptance plan and result for generic MissionDemand-driven Ground meta-resource RESUPPLY via AUFTRAG NOTHING
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
@@ -24,7 +24,7 @@ Der fehlgeschlagene `AUFTRAG:NewFUELSUPPLY(...)`-Pfad bleibt historische Negativ
 
 ## 2. Ziel
 
-Erster Fixture bleibt bewusst `GROUND_FUEL_PACKAGE`, um den bisherigen Stage-1B-Versuch mit minimal veränderter strategischer Semantik zu ersetzen:
+Erster Fixture bleibt bewusst `GROUND_FUEL_PACKAGE`, um gegenüber Stage 1B nur die physische Missionssemantik zu wechseln:
 
 ```text
 HONAKER FUEL 36
@@ -72,8 +72,6 @@ FUEL_LIGHT_06 capacity
 physical cargo authority
 ```
 
-Der M978 ist für diesen Test lediglich eine plausible sichtbare Repräsentation von Fuel-Nachschub.
-
 ## 4. MOOSE-First Nachweis
 
 Gepinnter Stand:
@@ -84,27 +82,13 @@ MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
 Moose.lua SHA-256: E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915
 ```
 
-Im tatsächlich verwendeten Source bestätigt:
+Source-seitig bestätigt:
 
 ```lua
 AUFTRAG:NewNOTHING(RelaxZone)
 ```
 
-Weitere bestätigte Semantik:
-
-```text
-AUFTRAG.Type.NOTHING
-AUFTRAG.SpecialTask.NOTHING
-GROUND/NAVAL categories
-zone objective
-WeaponHold
-AlarmState.Auto
-missionFraction = 1.0
-OPSGROUP NOTHING task -> FullStop at execution
-TaskCancel NOTHING -> TaskDone -> MissionDone path
-```
-
-Eine dedizierte offizielle MOOSE-Demo für den OMW-Meta-RESUPPLY-Roundtrip ist nicht belegt. Runtime bleibt daher DCS-pending.
+sowie `AUFTRAG.Type.NOTHING`, `AUFTRAG.SpecialTask.NOTHING`, Ground/Naval-Kategorie, zone objective, FullStop bei Ausführung und TaskCancel->TaskDone. Eine dedizierte offizielle Demo für den OMW-Roundtrip ist nicht belegt.
 
 ## 5. Physischer Vertrag
 
@@ -118,11 +102,9 @@ BRIGADE:AddMission(...)
 ARMYGROUP:RTZ(originZone, ENUMS.Formation.Vehicle.OnRoad)
 ```
 
-Die bereits owner-approved `OMW_GroundRoadSpawnAdapter`-Ausnahme wird unverändert wiederverwendet.
+Die owner-approved `OMW_GroundRoadSpawnAdapter`-Ausnahme wird unverändert wiederverwendet.
 
 ## 6. Fail-fast Gate
-
-Der frühere Fuel-Test wartete bis zum 1800-s-Outbound-Timeout. Dieser Harness begrenzt die Wartezeit:
 
 ```text
 OutboundTimeoutSec = 600
@@ -130,58 +112,83 @@ DestinationCheckIntervalSec = 15
 DestinationExecutionGraceSec = 90
 ```
 
-Nach tatsächlichem Eintritt des ARMYGROUP in die Honaker-ACCESS-Zone muss `MissionExecute` innerhalb von 90 Sekunden folgen. Andernfalls:
+Nach Eintritt in Honaker ACCESS muss `MissionExecute` binnen 90 Sekunden folgen; andernfalls `DESTINATION_EXECUTION_TIMEOUT`.
+
+## 7. Build- und MIZ-Provenienz
 
 ```text
-FAIL reason=DESTINATION_EXECUTION_TIMEOUT
-```
-
-Damit wird ein erneuter physischer Zielstillstand ohne MOOSE-Lifecycle-Fortschritt früh erkannt.
-
-## 7. Delivery / Return
-
-Delivery bleibt fail-closed:
-
-```text
-exact Mission
-AND OnAfterMissionExecute
-AND ARMYGROUP:IsInZone(Honaker ACCESS) == true
--> CampaignState MarkDelivered
--> MissionDemand SUCCESS
-```
-
-Danach:
-
-```text
-mission:__Cancel(1)
--> MissionDone
--> 30 s settlement
--> same ARMYGROUP RTZ Joyce
--> Returned
--> MOOSE Legion/Warehouse AddAsset
--> 12 s final verification
-```
-
-Der 30-s-Delay wird als bereits bei Stage 1A bestätigte AUFTRAG-/RTZ-Lifecycle-Koordination beibehalten; er ist keine Entladezeit.
-
-## 8. Source / Builder
-
-```text
-mission/tests/ground-resupply-execution/src/03-ground-meta-resupply-nothing-acceptance.lua
-tools/build-ground-meta-resupply-nothing-acceptance-1.ps1
+Source/build commit: cb32f23886e68371bf45ab4f7a1394200f542c29
 BuilderVersion: GROUND-META-RESUPPLY-NOTHING-ACCEPTANCE-1-1
-Output: mission/tests/ground-resupply-execution/dist/OMW_Ground_Meta_Resupply_NOTHING_Acceptance_1.lua
+Bundle SHA-256: BC9A70327A456FC8718907B9701E83194303B0A5816F0EA0C309310D7118B8FE
+Builder SHA-256: 68A58E3F2C0C05D79B0FFC642CEDEB70008748FE81EE56D31BE9437CDB070E37
+Acceptance source SHA-256: 7B91D5DD74C874C03CB36FAF6CF9231201D45CB51FD749644EDA857A9FFD137E
+GroundRoadSpawnAdapter SHA-256: 1A81FB2E5270C493373CF5BF6EC01F5AFED47004BF25C4225524121155D983E8
+Uploaded executed MIZ SHA-256: A4D04484584A04C092AAFF31981A477F9179203944B7DAAD4C7CF2D2DD8A63FF
+Internal mission SHA-256: B68EDC033D9C8E2FE0F8F93C81A063425F019F1C7A38A30710833AD367BCA90A
+Embedded bundle SHA-256: BC9A70327A456FC8718907B9701E83194303B0A5816F0EA0C309310D7118B8FE
+Embedded Moose.lua SHA-256: E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915
+DCS: 2.9.28.26385 MT
+Executed mission path from debrief: OMW_Template_v19.miz
 ```
 
-## 9. Aktueller Status
+Read-only MIZ-Preflight bestätigte den korrekten `ResKey_Action_243`, `triggerOnce`, beide Readiness-Flags, `TIME > 5`, keine alte AMMO/FUEL-Acceptance-Ressource sowie das unveränderte `TPL_BLUE_CONVOY_FUEL_LIGHT_06` mit `lateActivation=true` und sechs Fahrzeugen.
+
+## 8. DCS-Lauf 2026-08-23
+
+Beobachtet:
 
 ```text
-Owner physical contract approval: YES
-MOOSE docs/source review: COMPLETE FOR STAGED SCOPE
-Acceptance source: STAGED ON BRANCH
-Builder: STAGED ON BRANCH
-Owner-local build: NOT RUN
-Mission Editor integration: NOT STARTED
-DCS runtime: NOT RUN
-Acceptance result: DCS_PENDING
+START
+DEMAND_RESERVED quantity=18
+PHYSICAL_EXECUTION_READY physicalMission=NOTHING
+BRIGADE_STARTED
+MISSION_QUEUED type=NOTHING formation=OnRoad speedKt=27
+ROAD_ALIGNED_WAREHOUSE_SPAWN units=6 formationLengthM=76.8 maxSnapM=2.1
+GROUP_MATERIALIZED transferStatus=LOADING
+ARMY_ON_MISSION mission=NOTHING transferStatus=IN_TRANSIT demandStatus=ACTIVE
+WARNING TRANSPORT: CREATING PATH MAKES TOO LONG!!!!!
+FAIL reason=OUTBOUND_TIMEOUT seconds=600 destinationObserved=false spawnCount=1 armyOnMissionCount=1 missionExecuteCount=0 missionDoneCount=0
+```
+
+Nicht erreicht:
+
+```text
+DESTINATION_OBSERVED
+MissionExecute
+DELIVERY_CONFIRMED
+MissionDone
+RTZ
+Returned
+Warehouse AddAsset
+```
+
+Log-Provenienz:
+
+```text
+dcs.log SHA-256: 23E2D0B31B66464A57D3BC5F45F92A75D4EF913413833311042CD4BC74F1AAA3
+debrief.log SHA-256: 2574F8746F6D4A88E6D6F038AFC33DB5600DC4D52CC6A0E946A8E2155B0D8922
+```
+
+## 9. Klassifikation und nächste Grenze
+
+```text
+Acceptance result: FAIL
+Failure boundary: OUTBOUND ROUTING BEFORE DESTINATION
+NOTHING lifecycle at destination: NOT REACHED / NOT EVALUATED
+Return lifecycle: NOT REACHED / NOT EVALUATED
+CampaignState delivery: NOT COMMITTED
+```
+
+Der unmittelbar nach `ARMY_ON_MISSION` auftretende DCS-Marker `CREATING PATH MAKES TOO LONG!!!!!` macht Ground-Route/Waypoint-Erzeugung zum nächsten Untersuchungsgegenstand. Es wird kein Timer, Radius oder Warehouse auf Verdacht geändert.
+
+Detailresultat:
+
+```text
+results/2026-08-23-ground-meta-resupply-nothing-acceptance-1-fail-1.md
+```
+
+Nächster freigegebener Schritt:
+
+```text
+COMPARE_AMMOSUPPLY_VS_NOTHING_GROUND_ROUTE_GENERATION
 ```
