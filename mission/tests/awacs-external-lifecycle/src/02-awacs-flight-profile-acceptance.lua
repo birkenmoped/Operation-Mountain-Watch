@@ -10,7 +10,7 @@
 --   OPSGROUP:GetGroup / GetCoordinate
 --   GROUP:GetUnit
 --   UNIT:GetCurrentFuelKgs / GetFuelMassMax
---   COORDINATE:GetLat / GetLon
+--   COORDINATE:GetLLDDM
 --   UTILS.MpsToKnots / SecondsOfToday
 
 local Acceptance2 = {}
@@ -89,6 +89,12 @@ local function readTelemetry(runtime)
     fuelMaxKg = maxFuel
   end
 
+  local latitude = nil
+  local longitude = nil
+  if coordinate then
+    latitude, longitude = coordinate:GetLLDDM()
+  end
+
   return {
     altitudeFt = altitudeFt,
     speedKt = velocityMps and UTILS.MpsToKnots(velocityMps) or nil,
@@ -96,8 +102,8 @@ local function readTelemetry(runtime)
     fuelPct = fuelPct,
     fuelKg = fuelKg,
     fuelMaxKg = fuelMaxKg,
-    lat = coordinate and coordinate:GetLat() or nil,
-    lon = coordinate and coordinate:GetLon() or nil,
+    lat = latitude,
+    lon = longitude,
   }
 end
 
