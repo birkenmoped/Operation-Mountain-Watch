@@ -4,7 +4,7 @@ status: PLANNED
 document_class: ACCEPTANCE_PLAN_AND_RESULT
 owning_policy: OMW-GOV-001
 authoritative_for:
-  - branch-local Stage 1B2 MOOSE-native Ground FUEL RefuellingZone/FUELSUPPLY acceptance plan
+  - branch-local Stage 1B2 MOOSE-native Ground FUELSUPPLY acceptance plan and result history
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 source_branch: agent/automatic-response-orchestration
@@ -12,34 +12,27 @@ source_commit: PENDING_MERGE
 validated_in_dcs: false
 ---
 
-# Stage 1B2 – MOOSE-native Ground FUEL RefuellingZone / FUELSUPPLY Acceptance
+# Stage 1B2 – MOOSE-native Ground FUELSUPPLY Acceptance
 
-## 1. Entscheidung und Zweck
+## 1. Ziel
 
-Der Projektinhaber hat entschieden, vor Stage 1D den normalen MOOSE-Fuel-Pfad erneut und ohne den alten Harness-Travel-Timeout zu prüfen.
-
-Ziel ist ausdrücklich **nicht**, den timeout-kontaminierten Stage-1B-Lauf als Fehler fortzuschreiben. Stattdessen wird geprüft, ob der von MOOSE selbst vorgesehene BRIGADE-RefuellingZone-Pfad für OMW tragfähig ist.
+Vor Stage 1D wird geprüft, ob `GROUND_FUEL_PACKAGE` physisch mit dem spezialisierten MOOSE-Executor `FUELSUPPLY` ausgeführt werden kann, während `CampaignState` alleinige strategische Ressourcenautorität bleibt.
 
 ```text
-Stage 1B historical result:
-HISTORICAL_TEST_FIXTURE
-HARNESS_TIMEOUT_CONTAMINATED
-INCONCLUSIVE
-
-Stage 1B2 objective:
-MOOSE-native BRIGADE:AddRefuellingZone(...)
--> BRIGADE creates AUFTRAG:NewFUELSUPPLY(...) itself
--> physical FUEL convoy
--> FUELSUPPLY MissionExecute observation
+CampaignState
+-> MissionDemand RESUPPLY
+-> CampaignState TRANSFER Joyce -> Honaker
+-> MOOSE BRIGADE / PLATOON / ARMYGROUP
+-> FUELSUPPLY physical execution
 -> independent destination-zone proof
--> exact-once CampaignState settlement
--> normal MOOSE ReturnToLegion
+-> exact-once CampaignState delivery
+-> MOOSE ReturnToLegion
 -> Returned -> Warehouse AddAsset
 ```
 
-## 2. MOOSE-First Source Review
+Keine harte Outbound- oder Return-Fahrzeitbegrenzung ist zulässig.
 
-Geprüfter Stand:
+## 2. MOOSE-Stand
 
 ```text
 MOOSE release: 2.9.18
@@ -47,302 +40,186 @@ MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
 Moose.lua SHA-256: E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915
 ```
 
-Der tatsächlich verwendete Source bestätigt:
+Der gepinnte Source bestätigt sowohl `BRIGADE:AddRefuellingZone(Zone)` als auch `AUFTRAG:NewFUELSUPPLY(Zone)`.
 
-```lua
-function BRIGADE:AddRefuellingZone(RefuellingZone)
-  local supplyzone={}
-  supplyzone.zone=RefuellingZone
-  supplyzone.mission=nil
-  supplyzone.marker=MARKER:New(supplyzone.zone:GetCoordinate(), "Refuelling Zone"):ToCoalition(self:GetCoalition())
-  table.insert(self.refuellingZones, supplyzone)
-  return supplyzone
-end
-```
-
-Im BRIGADE-Statuslauf gilt source-seitig:
-
-```lua
-if (not supplyzone.mission) or supplyzone.mission:IsOver() then
-  supplyzone.mission=AUFTRAG:NewFUELSUPPLY(supplyzone.zone)
-  self:AddMission(supplyzone.mission)
-end
-```
-
-`AUFTRAG:NewFUELSUPPLY(Zone)` erzeugt einen Ground-FUELSUPPLY-Auftrag. Der OPSGROUP-SpecialTask bleibt am Ziel aktiv und wartet, bis eine spätere Lifecycle-Aktion den Auftrag beendet. `TaskCancel` behandelt FUELSUPPLY als abschließbaren SpecialTask. Nach `MissionDone` entscheidet der normale OPSGROUP-Lifecycle anhand von `legionReturn`; der Ground-Default ist Return-to-Legion, sofern er nicht ausdrücklich auf `false` gesetzt wurde.
-
-Damit ist für Stage 1B2 kein eigener FUELSUPPLY-Dispatcher und kein expliziter OMW-RTZ-Override erforderlich.
-
-## 3. Acceptance-Vertrag
+Wesentliche Semantik:
 
 ```text
-HONAKER GROUND_FUEL_PACKAGE 36
--> test-only consume 18
--> HONAKER 18 / REORDER
--> MissionDemand RESUPPLY
--> CampaignState TRANSFER 18 Joyce -> Honaker
--> TPL_BLUE_CONVOY_FUEL_LIGHT_06
--> BRIGADE / PLATOON
--> BRIGADE:AddRefuellingZone(Honaker ACCESS)
--> MOOSE creates FUELSUPPLY mission
--> road-aligned warehouse materialization
--> MissionExecute observed as FUELSUPPLY lifecycle evidence
--> independent Stage-1C-style destination-zone polling
--> destination zone confirmed
--> CampaignState DELIVERED
--> MissionDemand SUCCESS
--> FUELSUPPLY cancel after exact-once settlement
--> MissionDone
--> normal MOOSE ReturnToLegion
--> Returned
--> Warehouse AddAsset
--> physical cleanup
+BRIGADE:AddRefuellingZone
+= persistente Service-Registrierung
+= BRIGADE erzeugt erneut FUELSUPPLY, wenn die vorherige Mission over ist
+
+AUFTRAG:NewFUELSUPPLY
+= einzelner FUELSUPPLY-Auftrag
+= kann einer BRIGADE direkt per AddMission übergeben werden
 ```
 
-Strategische Endwerte:
+## 3. Strategischer Testvertrag
 
 ```text
-JOYCE FUEL   40 -> 22
-HONAKER FUEL 36 -> 18 -> 36
+JOYCE GROUND_FUEL_PACKAGE   40 -> 22
+HONAKER GROUND_FUEL_PACKAGE 36 -> 18 -> 36
+TransferQuantity: 18
+Template: TPL_BLUE_CONVOY_FUEL_LIGHT_06
+Physical tankers: 2 x M978 HEMTT Tanker
 ```
 
-## 4. Wichtige Abgrenzungen
-
-```text
-CampaignState GROUND_FUEL_PACKAGE
-= einzige strategische Fuel-Ressourcenautorität
-
-MOOSE FUELSUPPLY
-= physischer/operativer Executor
-
-M978
-= physische Repräsentation
-```
-
-Der Test definiert ausdrücklich **nicht**:
+Nicht definiert werden:
 
 ```text
 1 M978 = X GROUND_FUEL_PACKAGE
-DCS internal fuel quantity = CampaignState quantity
+DCS fuel quantity = CampaignState quantity
 MOOSE Warehouse fuel = CampaignState fuel
 ```
 
-## 5. Harness-Regeln
-
-Der alte Fehlerpfad wird nicht wiederholt:
+## 4. Historie Build 2-1
 
 ```text
-Hard outbound travel timeout: NONE
-Hard return travel timeout: NONE
-Completion: event-driven / zone-observed
+BuilderVersion: GROUND-FUEL-REFUELLING-ZONE-ACCEPTANCE-2-1
+Build commit: cab06376b92fd185ca37c26bceb211f77f514366
+Bundle SHA-256: B032595AC96CEBB00233A06F3747598F82C3295882B641EF2391965851542417
+Result: HARNESS_LOGIC_ERROR / INCONCLUSIVE
 ```
 
-Die Zielerkennung folgt jetzt wieder der bereits in Stage 1C verwendeten Struktur:
+Fehlerursache: `OnAfterMissionExecute` verlangte synchron `IsInZone(destinationZone) == true`. Dies wich unnötig von der bereits bewährten Stage-1C-Zielerkennung ab.
+
+## 5. Build 2-2 – korrigierte Zielerkennung
+
+Reale lokale Build-Evidenz:
 
 ```text
-DestinationCheckIntervalSec: 15
-DestinationExecutionGraceSec: 90
+Build commit: a253d2c05f0cce94b25c0d79eb5602d64523bdce
+BuilderVersion: GROUND-FUEL-REFUELLING-ZONE-ACCEPTANCE-2-2
+GeneratedUtc: 2026-08-23T22:10:27Z
+Bundle SHA-256: 351493A40AF9F2FCB4574C2DFEF7D2704B603A804C43AB1A1CBB3651E18DB0AD
+Builder SHA-256: 3B874528B17027A0BFE16C16D7CCA1BBF44F88D0990D141EB7E5045CBE6FE537
+Acceptance source SHA-256: 7E7E821A58E7DD55243CC763853739E81517E52CF8D915F63A229FC5A1D8A05A
+Local build: PASS
 ```
 
-`DestinationExecutionGraceSec` beginnt nur dann nach bestätigtem Zoneneintritt, wenn `MissionExecute` zu diesem Zeitpunkt noch nicht beobachtet wurde. Es ist kein Travel-Timeout.
-
-Der vorhandene owner-approved `OMW_GroundRoadSpawnAdapter.lua` wird unverändert weiterverwendet. Keine neue Spawnlogik, kein MIST, keine Native-DCS-Parallelimplementierung und keine `.miz`-Mutation durch ChatGPT.
-
-## 6. Testdateien
-
-```text
-mission/tests/ground-resupply-execution/src/04-ground-fuel-refuelling-zone-acceptance.lua
-tools/build-ground-fuel-refuelling-zone-acceptance-2.ps1
-mission/tests/ground-resupply-execution/dist/OMW_Ground_Fuel_Refuelling_Zone_Acceptance_2.lua
-```
-
-Aktuelle Builder-Version nach Harness-Korrektur:
-
-```text
-GROUND-FUEL-REFUELLING-ZONE-ACCEPTANCE-2-2
-```
-
-### 6.1 Historische lokale Build-Evidenz für Build 2-1
-
-Der Projektinhaber hatte Build `2-1` lokal erfolgreich erzeugt.
-
-```text
-Git HEAD:
-cab06376b92fd185ca37c26bceb211f77f514366
-
-GeneratedUtc:
-2026-08-23T20:21:52Z
-
-BuilderVersion:
-GROUND-FUEL-REFUELLING-ZONE-ACCEPTANCE-2-1
-
-TestId:
-GROUND-FUEL-REFUELLING-ZONE-ACCEPTANCE-2
-
-MOOSE commit:
-73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
-
-Moose.lua SHA-256:
-E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915
-
-Bundle SHA-256:
-B032595AC96CEBB00233A06F3747598F82C3295882B641EF2391965851542417
-
-Builder SHA-256:
-8157F14DECC8DA95D26EF6EA91F87CB3A5E01992B8FFD2622DB76FC1ECB4AF99
-
-Acceptance source SHA-256:
-F8A0CBE4FDEA315D8CDFDB63F2B0EAE56F08FD08DE4297E399B2A85F607135F9
-
-Build result:
-PASS
-```
-
-Dieser Build ist durch den nachfolgenden Harness-Fix superseded und darf nicht für einen neuen Acceptance-Lauf verwendet werden.
-
-### 6.2 DCS-Lauf mit Build 2-1 – Harness-Fehler, kein FUELSUPPLY-Fehlerbeleg
-
-Der reale DCS-Lauf zeigte:
-
-```text
-MOOSE RefuellingZone/FUELSUPPLY dispatch: observed
-physical convoy materialization: observed
-convoy arrival at Honaker area: visually observed
-FUELSUPPLY MissionExecute: observed
-acceptance result: FAIL
-failure reason: MISSION_EXECUTE_OUTSIDE_DESTINATION
-```
-
-Die Ursache lag im Acceptance-Harness: Build `2-1` verlangte synchron im `OnAfterMissionExecute`-Callback zusätzlich `IsInZone(destinationZone) == true`. Das wich ohne technischen Grund von der bereits DCS-bestätigten Stage-1C-Zielerkennung ab.
-
-Der Lauf wird daher klassifiziert als:
-
-```text
-HARNESS_LOGIC_ERROR
-INCONCLUSIVE_FOR_FUELSUPPLY_ARCHITECTURE
-```
-
-Er beweist weder PASS noch FAIL der beabsichtigten Stage-1B2-Zielarchitektur.
-
-### 6.3 Korrektur für Build 2-2
-
-Build `2-2` übernimmt wieder die Stage-1C-Struktur für die physische Zielbestätigung und ändert nur den tatsächlich zu testenden Executor-Vertrag:
-
-```text
-Stage 1C reference:
-AUFTRAG:NewNOTHING(...)
-+ independent destination-zone polling
-+ explicit OMW RTZ
-
-Stage 1B2 corrected delta:
-BRIGADE:AddRefuellingZone(...)
--> MOOSE-created FUELSUPPLY
-+ same independent destination-zone polling
-+ normal MOOSE ReturnToLegion
-```
-
-Delivery wird erst committed, wenn **beide** Bedingungen erfüllt sind:
+Harness-Vertrag:
 
 ```text
 MissionExecute observed
 AND
 destination zone observed
+-> exact-once delivery settlement
 ```
 
-Die Reihenfolge dieser beiden Beobachtungen ist nicht fest verdrahtet.
+Die Reihenfolge beider Beobachtungen ist nicht fest verdrahtet.
 
-### 6.4 Reale lokale Build-Evidenz für korrigierten Build 2-2
+## 6. DCS-Lauf Build 2-2 – persistente RefuellingZone nicht für One-Shot geeignet
 
-Der Projektinhaber hat den korrigierten Branchstand lokal per Fast-forward aktualisiert und Build `2-2` erfolgreich erzeugt.
+Testumgebung aus realem Lauf:
 
 ```text
-Git HEAD:
-a253d2c05f0cce94b25c0d79eb5602d64523bdce
-
-GeneratedUtc:
-2026-08-23T22:10:27Z
-
-BuilderVersion:
-GROUND-FUEL-REFUELLING-ZONE-ACCEPTANCE-2-2
-
-TestId:
-GROUND-FUEL-REFUELLING-ZONE-ACCEPTANCE-2
-
-MOOSE commit:
-73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
-
-Moose.lua SHA-256:
-E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915
-
-Bundle SHA-256:
-351493A40AF9F2FCB4574C2DFEF7D2704B603A804C43AB1A1CBB3651E18DB0AD
-
-Builder SHA-256:
-3B874528B17027A0BFE16C16D7CCA1BBF44F88D0990D141EB7E5045CBE6FE537
-
-Acceptance source SHA-256:
-7E7E821A58E7DD55243CC763853739E81517E52CF8D915F63A229FC5A1D8A05A
-
-OMW_MissionDemand.lua SHA-256:
-E348E75B87135B99D780E07CA6B6FB7C3C530E048E9C6DE790328D147DE32848
-
-OMW_ResourceDemandPolicy.lua SHA-256:
-BDC20ACEDAB60F662093077B8320220EBB71C6C641CC604C4356231B8405913C
-
-OMW_GroundRoadSpawnAdapter.lua SHA-256:
-1A81FB2E5270C493373CF5BF6EC01F5AFED47004BF25C4225524121155D983E8
-
-DestinationProof:
-Stage-1C-style independent zone polling plus observed MissionExecute
-
-DestinationCheckIntervalSec:
-15
-
-DestinationExecutionGraceSec:
-90
-
-HardOutboundTravelTimeout:
-false
-
-HardReturnTravelTimeout:
-false
-
-ReturnMode:
-MOOSE ReturnToLegion
-
-Build result:
-PASS
+DCS: 2.9.28.26385 MT
+Mission: OMW_Template_v19.miz
+MOOSE: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+Moose.lua SHA-256: E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915
+Bundle SHA-256: 351493A40AF9F2FCB4574C2DFEF7D2704B603A804C43AB1A1CBB3651E18DB0AD
 ```
 
-Dieser Build ist der einzige aktuell zulässige Stage-1B2-DCS-Teststand. Der Build-PASS ist ausschließlich ein lokaler Reproduzierbarkeitsnachweis und kein DCS-Runtime-PASS.
-
-## 7. Entscheidungsregel nach DCS-Test
+Beobachtete Sequenz:
 
 ```text
-PASS
--> GROUND_FUEL_PACKAGE physical execution target becomes MOOSE RefuellingZone/FUELSUPPLY
--> Stage 1C NOTHING remains technical evidence but is no longer the preferred Fuel executor
--> reconcile production executor and documentation before adoption
+GROUP_MATERIALIZED
+-> ARMY_ON_MISSION FUELSUPPLY
+-> DESTINATION_ZONE_ENTERED
+-> MISSION_EXECUTE_OBSERVED
+-> DELIVERY_CONFIRMED
+-> MISSION_DONE
+-> BRIGADE erzeugt wegen persistenter RefuellingZone einen neuen FUELSUPPLY
+-> FAIL MULTIPLE_FUELSUPPLY_MISSIONS_ASSIGNED
+```
 
-FAIL with clean, non-timeout-contaminated and non-harness-contaminated evidence
--> analyze actual MOOSE/DCS failure cause
--> do not silently revert architecture
+Der Lauf belegt damit:
+
+```text
+FUELSUPPLY dispatch: PASS
+road-aligned materialization: PASS
+physical movement to Honaker: PASS
+destination-zone proof: PASS
+MissionExecute: PASS
+CampaignState exact-once delivery: PASS
+MissionDemand SUCCESS: PASS
+
+BRIGADE:AddRefuellingZone as one-shot strategic transfer dispatcher: NOT SUITABLE
+Return-to-Legion completion: NOT PROVEN IN THIS RUN
+```
+
+Klassifikation:
+
+```text
+FUELSUPPLY_EXECUTION_OBSERVED
+PERSISTENT_REFUELLING_ZONE_LIFECYCLE_MISMATCH
+INCONCLUSIVE_FOR_COMPLETE_ONE_SHOT_FUELSUPPLY_RETURN_PATH
+```
+
+Dies ist kein Beleg gegen `FUELSUPPLY` selbst. Der MOOSE-Source erklärt das beobachtete Verhalten: registrierte Refuelling Zones erzeugen erneut eine FUELSUPPLY-Mission, wenn die vorherige Mission over ist.
+
+## 7. Build 2-3 – kleinste MOOSE-first Korrektur
+
+Der nächste Test ändert ausschließlich die Missions-Erzeugung:
+
+```text
+ENTFERNT:
+BRIGADE:AddRefuellingZone(destinationZone)
+
+NEU:
+AUFTRAG:NewFUELSUPPLY(destinationZone)
+-> SetMissionSpeed(27 kt)
+-> SetFormation(OnRoad)
+-> BRIGADE:AddMission(mission)
+```
+
+Unverändert bleiben:
+
+```text
+CampaignState / MissionDemand / transfer reservation
+TPL_BLUE_CONVOY_FUEL_LIGHT_06
+OMW_GroundRoadSpawnAdapter
+Stage-1C-style destination polling
+MissionExecute observation
+exact-once delivery settlement
+no hard travel timeout
+no explicit OMW RTZ
+normal MOOSE ReturnToLegion
+Returned -> Warehouse AddAsset verification
+```
+
+Builder-Version:
+
+```text
+GROUND-FUEL-REFUELLING-ZONE-ACCEPTANCE-2-3
+```
+
+Der Builder verbietet jetzt ausdrücklich `AddRefuellingZone(...)` im Acceptance-Source und verlangt `AUFTRAG:NewFUELSUPPLY(state.destinationZone)`.
+
+## 8. Entscheidungsregel
+
+```text
+Build 2-3 PASS in DCS
+-> GROUND_FUEL_PACKAGE physical executor target = one-shot MOOSE FUELSUPPLY
+-> Stage 1C NOTHING remains accepted fallback evidence, but no longer preferred for Fuel
+-> production executor reconciliation follows before adoption
+
+Build 2-3 clean FAIL
+-> analyze actual MOOSE/DCS failure
+-> no silent fallback decision
 
 INCONCLUSIVE
 -> no architecture change
--> Stage 1C remains the accepted strategic meta-resupply fallback evidence
 ```
 
-## 8. Aktueller Status
+## 9. Aktueller Status
 
 ```text
-status: STAGED_FOR_DCS_ACCEPTANCE
-previous_build_2_1: SUPERSEDED_BY_HARNESS_FIX
-previous_dcs_run: HARNESS_LOGIC_ERROR / INCONCLUSIVE
-current_build_commit: a253d2c05f0cce94b25c0d79eb5602d64523bdce
-current_builder: GROUND-FUEL-REFUELLING-ZONE-ACCEPTANCE-2-2
-current_bundle_sha256: 351493A40AF9F2FCB4574C2DFEF7D2704B603A804C43AB1A1CBB3651E18DB0AD
-local_build: PASS
+previous_build_2_1: HARNESS_LOGIC_ERROR / INCONCLUSIVE
+previous_build_2_2: PERSISTENT_REFUELLING_ZONE_LIFECYCLE_MISMATCH
+current_builder: GROUND-FUEL-REFUELLING-ZONE-ACCEPTANCE-2-3
+current_execution_model: ONE_SHOT_AUFTRAG_NEW_FUELSUPPLY
+local_build_2_3: NOT_YET_RUN
 validated_in_dcs: false
-result: NOT_RUN_FOR_BUILD_2_2
+result: STAGED_FOR_LOCAL_BUILD
 ```
