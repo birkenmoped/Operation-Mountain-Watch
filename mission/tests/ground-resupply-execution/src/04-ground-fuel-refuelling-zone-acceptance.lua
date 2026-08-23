@@ -1,16 +1,16 @@
--- Operation Mountain Watch - MOOSE-native Ground FUEL RefuellingZone acceptance.
+-- Operation Mountain Watch - MOOSE-native one-shot Ground FUELSUPPLY acceptance.
 -- Test-ID: GROUND-FUEL-REFUELLING-ZONE-ACCEPTANCE-2
 --
 -- Acceptance-only vertical slice:
 -- Honaker CampaignState FUEL shortage -> ResourceDemandPolicy -> MissionDemand
 -- -> CampaignState TRANSFER Joyce -> Honaker -> MOOSE BRIGADE/PLATOON
--- -> BRIGADE:AddRefuellingZone(Honaker ACCESS)
--- -> BRIGADE creates AUFTRAG:NewFUELSUPPLY(...) itself
--- -> FUELSUPPLY execution observed independently from destination-zone proof
+-- -> AUFTRAG:NewFUELSUPPLY(Honaker ACCESS)
+-- -> one-shot FUELSUPPLY execution observed independently from destination-zone proof
 -- -> destination-zone proof -> CampaignState delivery settlement
 -- -> mission cancel -> normal MOOSE ReturnToLegion lifecycle
 -- -> Returned -> Warehouse AddAsset -> physical cleanup.
 --
+-- No persistent BRIGADE RefuellingZone is registered by this test.
 -- No hard outbound/return travel-time failure gate is used.
 -- No DCS fuel quantity or package-per-truck capacity is defined by this test.
 
@@ -40,6 +40,7 @@ local SHORTAGE_DESTINATION = 18
 local TRANSFER_QUANTITY = 18
 local FINAL_ORIGIN = 22
 local FINAL_DESTINATION = 36
+local ROAD_SPEED_KNOTS = 27
 local DESTINATION_CHECK_INTERVAL_SEC = 15
 local DESTINATION_EXECUTION_GRACE_SEC = 90
 local RETURN_SETTLEMENT_DELAY_SEC = 12
@@ -135,7 +136,7 @@ local function verifyFinalState()
     .. " destinationFinal=" .. tostring(destination.quantity)
     .. " transferQuantity=" .. tostring(TRANSFER_QUANTITY)
     .. " template=" .. TEMPLATE_NAME
-    .. " physicalMission=BRIGADE_REFUELLING_ZONE_FUELSUPPLY"
+    .. " physicalMission=ONESHOT_FUELSUPPLY"
     .. " demandStatus=SUCCESS spawnCount=1 missionExecuteCount=1 destinationObserved=true"
     .. " missionDoneCount=1 returnedCount=1 warehouseAddAssetCount=1")
 end
@@ -170,7 +171,7 @@ local function commitDeliveryIfReady()
     .. " missionExecuteObserved=true destinationObserved=true"
     .. " campaignStateStatus=DELIVERED demandStatus=SUCCESS")
 
-  -- FUELSUPPLY is intentionally open-ended at the target. End this single
+  -- FUELSUPPLY is intentionally open-ended at the target. End this one-shot
   -- acceptance transaction after exact-once strategic delivery and let the
   -- normal MOOSE legion-return lifecycle handle the return.
   state.mission:__Cancel(1)
@@ -259,13 +260,7 @@ local function installBrigadeCallbacks()
   end
 
   state.brigade.OnAfterArmyOnMission = function(self, From, Event, To, ArmyGroup, Mission)
-    if state.failed or state.passed then return end
-    if not Mission or Mission.type ~= AUFTRAG.Type.FUELSUPPLY then return end
-    if state.mission and Mission ~= state.mission then
-      fail("MULTIPLE_FUELSUPPLY_MISSIONS_ASSIGNED")
-      return
-    end
-    state.mission = Mission
+    if state.failed or state.passed or Mission ~= state.mission then return end
 
     state.armyOnMissionCount = state.armyOnMissionCount + 1
     if not expectEqual(state.armyOnMissionCount, 1, "ARMY_ON_MISSION_COUNT") then return end
@@ -281,7 +276,7 @@ local function installBrigadeCallbacks()
     if not expectEqual(snapshot(ORIGIN_NODE).quantity, FINAL_ORIGIN, "ORIGIN_IN_TRANSIT_QUANTITY") then return end
 
     log("ARMY_ON_MISSION group=" .. tostring(ArmyGroup:GetName())
-      .. " mission=FUELSUPPLY source=BRIGADE_ADD_REFUELLING_ZONE"
+      .. " mission=FUELSUPPLY source=AUFTRAG_NEW_FUELSUPPLY"
       .. " transferStatus=IN_TRANSIT demandStatus=ACTIVE")
     SCHEDULER:New(nil, checkDestinationProgress, {}, DESTINATION_CHECK_INTERVAL_SEC)
   end
@@ -295,9 +290,24 @@ local function installBrigadeCallbacks()
 
   state.brigade.OnAfterStart = function(self, From, Event, To)
     if state.failed then return end
-    log("BRIGADE_STARTED brigade=" .. BRIGADE_NAME
-      .. " refuellingZone=" .. DESTINATION_ACCESS_ZONE
-      .. " missionCreation=MOOSE_AUTOMATIC")
+    log("BRIGADE_STARTED brigade=" .. BRIGADE_NAME)
+    SCHEDULER:New(nil, function()
+      if state.failed then return end
+      local availableAssets = state.platoon:CountAssets(true, AUFTRAG.Type.FUELSUPPLY)
+      if not expectEqual(availableAssets, 1, "PLATOON_ASSET_COUNT") then return end
+
+      state.mission = AUFTRAG:NewFUELSUPPLY(state.destinationZone)
+      state.mission:SetName("OMW_GROUND_FUELSUPPLY_JOYCE_TO_HONAKER")
+      state.mission:SetMissionSpeed(ROAD_SPEED_KNOTS)
+      state.mission:SetFormation(ENUMS.Formation.Vehicle.OnRoad)
+      state.mission:SetPriority(20, true)
+      state.brigade:AddMission(state.mission)
+
+      log("MISSION_QUEUED type=FUELSUPPLY source=AUFTRAG_NEW_FUELSUPPLY"
+        .. " formation=OnRoad speedKt=" .. tostring(ROAD_SPEED_KNOTS)
+        .. " origin=" .. ORIGIN_NODE .. " destination=" .. DESTINATION_NODE
+        .. " resource=" .. RESOURCE_ID .. " template=" .. TEMPLATE_NAME)
+    end, {}, 5)
   end
 end
 
@@ -332,7 +342,7 @@ local function createDemandAndReservation()
     id = DEMAND_ID,
     missionType = OMW_GROUND_RESUPPLY_MISSION_DEMAND.Type.RESUPPLY,
     origin = ORIGIN_NODE,
-    objective = "Restore Honaker Ground fuel to target stock through MOOSE RefuellingZone/FUELSUPPLY",
+    objective = "Restore Honaker Ground fuel to target stock through one-shot MOOSE FUELSUPPLY",
     target = { nodeId = DESTINATION_NODE, resourceId = RESOURCE_ID },
     priority = 20,
     playerCapable = false,
@@ -404,17 +414,12 @@ local function preparePhysicalExecution()
     log = function(message) log(message) end,
   })
 
-  state.refuellingZone = requireValue(
-    state.brigade:AddRefuellingZone(state.destinationZone),
-    "BRIGADE:AddRefuellingZone return"
-  )
-  if state.failed then return false end
-
   log("PHYSICAL_EXECUTION_READY warehouse=" .. WAREHOUSE_NAME
     .. " template=" .. TEMPLATE_NAME
     .. " originZone=" .. ORIGIN_ACCESS_ZONE
-    .. " refuellingZone=" .. DESTINATION_ACCESS_ZONE
-    .. " missionCreation=BRIGADE_ADD_REFUELLING_ZONE"
+    .. " targetZone=" .. DESTINATION_ACCESS_ZONE
+    .. " missionCreation=AUFTRAG_NEW_FUELSUPPLY"
+    .. " persistentRefuellingZone=false"
     .. " hardTravelTimeout=false")
   return true
 end
