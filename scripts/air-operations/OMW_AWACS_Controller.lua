@@ -212,25 +212,27 @@ local function addAwacsMission(runtime, reason)
 end
 
 local function routeDirectEgress(runtime, reason)
-  if not runtime or runtime.egressOrdered or runtime.lossHandled or runtime.handoffComplete then return false end
+  if not runtime or runtime.lossHandled or runtime.handoffComplete then return false end
+  if runtime.egressOrdered and runtime.firEgressDirectWaypointUid then return false end
   runtime.egressOrdered = true
   runtime.egressReason = reason
   runtime.serviceState = "CLOSED"
   cancelGroupMission(runtime)
-  runtime.flightGroup:AddWaypoint(runtime.firEgressCoord, TRANSIT_SPEED_KT, nil, OUTBOUND_CRUISE_ALTITUDE_FT, true)
-  log(string.format("EGRESS_ORDERED runtime=%s reason=%s target=%s altitudeFt=%d speedKt=%d",
+  local waypoint = runtime.flightGroup:AddWaypoint(runtime.firEgressCoord, TRANSIT_SPEED_KT, nil, OUTBOUND_CRUISE_ALTITUDE_FT, true)
+  runtime.firEgressDirectWaypointUid = waypoint and waypoint.uid or true
+  log(string.format("EGRESS_ORDERED runtime=%s reason=%s target=%s altitudeFt=%d speedKt=%d mode=DIRECT_WAYPOINT",
     runtime.runtimeId, tostring(reason), FIR_FIX_NAME, OUTBOUND_CRUISE_ALTITUDE_FT, TRANSIT_SPEED_KT))
   return true
 end
 
 local function cancelToEgress(runtime, reason)
   if not runtime or runtime.egressOrdered or runtime.lossHandled or runtime.handoffComplete then return false end
-  runtime.egressOrdered = true
   runtime.egressReason = reason
   runtime.serviceState = "CLOSED"
   if runtime.serviceMission then
+    runtime.egressOrdered = true
     runtime.serviceMission:Cancel()
-    log(string.format("EGRESS_ORDERED runtime=%s reason=%s target=%s altitudeFt=%d speedKt=%d",
+    log(string.format("EGRESS_ORDERED runtime=%s reason=%s target=%s altitudeFt=%d speedKt=%d mode=MISSION_EGRESS",
       runtime.runtimeId, tostring(reason), FIR_FIX_NAME, OUTBOUND_CRUISE_ALTITUDE_FT, TRANSIT_SPEED_KT))
     return true
   end
@@ -344,6 +346,7 @@ local function materialize(role, reason)
     serviceMission = nil,
     serviceMissionKind = nil,
     egressOrdered = false,
+    firEgressDirectWaypointUid = nil,
     firEgressPassed = false,
     externalHandoffRouted = false,
     handoffComplete = false,
@@ -392,9 +395,14 @@ local function materialize(role, reason)
     end
 
     if runtime.aarReturnApproachUid and Waypoint.uid == runtime.aarReturnApproachUid and runtime.aarPhase == "RETURN_TRANSFER" then
-      runtime.aarPhase = "REJOINING"
-      addAwacsMission(runtime, "AAR_RETURN")
-      log(string.format("AAR_RETURN_LATE_APPROACH runtime=%s action=ADD_AWACS_MISSION", runtime.runtimeId))
+      if runtime.closePending or clockSec() >= SERVICE_END_SEC then
+        runtime.aarPhase = "COMPLETE_CLOSED"
+        routeDirectEgress(runtime, "SERVICE_WINDOW_ENDED_DURING_AAR_RETURN")
+      else
+        runtime.aarPhase = "REJOINING"
+        addAwacsMission(runtime, "AAR_RETURN")
+        log(string.format("AAR_RETURN_LATE_APPROACH runtime=%s action=ADD_AWACS_MISSION", runtime.runtimeId))
+      end
     end
   end
 
@@ -403,7 +411,7 @@ local function materialize(role, reason)
     runtime.aarCompletedAt = now()
     runtime.aarPhase = "REFUELED"
     log(string.format("AAR_REFUELED runtime=%s tanker=%s", runtime.runtimeId, tostring(runtime.designatedTankerGroupName)))
-    if clockSec() >= SERVICE_END_SEC then
+    if clockSec() >= SERVICE_END_SEC or runtime.closePending then
       runtime.serviceState = "CLOSED"
       routeDirectEgress(runtime, "SERVICE_WINDOW_ENDED_DURING_AAR")
     else
