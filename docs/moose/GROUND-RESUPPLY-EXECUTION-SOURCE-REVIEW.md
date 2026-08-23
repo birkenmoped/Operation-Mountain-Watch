@@ -7,10 +7,9 @@ authoritative_for:
   - branch-local MOOSE source review for physical Ground RESUPPLY execution
   - accepted Stage 1A AMMOSUPPLY lifecycle
   - timeout-contaminated Stage 1B FUELSUPPLY experiment
-  - source-reviewed and runtime-passed Stage 1C AUFTRAG NOTHING meta-resupply path
+  - accepted Stage 1C AUFTRAG NOTHING meta-resupply path
 not_authoritative_for:
-  - production generic Ground RESUPPLY executor
-  - formal Stage 1C ACCEPTED_TECHNICAL_BASELINE before exact executed MIZ SHA-256 is recorded
+  - production generic Ground RESUPPLY executor outside the accepted Stage 1C fixture
   - operational RefuellingZone/FUELSUPPLY acceptance
   - CAS or CSAR execution
 scenario_period: 2010-08-01/2011-12-31
@@ -209,7 +208,7 @@ Moose.lua SHA-256: E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A
 Result: BUILD PASS
 ```
 
-## 10. Stage 1C – DCS Runtime PASS
+## 10. Stage 1C – DCS Runtime PASS und technische Baseline
 
 Der Build-1-4-DCS-Lauf erreichte vollständig:
 
@@ -236,17 +235,21 @@ Terminaler Harness-Befund:
 PASS originFinal=22 destinationFinal=36 transferQuantity=18 template=TPL_BLUE_CONVOY_FUEL_LIGHT_06 physicalMission=NOTHING demandStatus=SUCCESS spawnCount=1 returnedCount=1 warehouseAddAssetCount=1
 ```
 
-DCS-/Log-Provenienz:
+Vollständige Acceptance-Provenienz:
 
 ```text
+Acceptance branch: agent/automatic-response-orchestration
+Acceptance commit: 8803505edf07120bc6d1673b41f69067e8db0211
 DCS: 2.9.28.26385 MT
 Executed mission path: C:\Users\Sven\Saved Games\DCS.openbeta\Missions\OMW_Template_v19.miz
+Executed MIZ SHA-256: D788AF36535D3ACD1866D15FFB5D354B2C44B5F8EE40D4BAF6FD1D97B7C0F8A5
+MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+Moose.lua SHA-256: E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915
 dcs.log SHA-256: 7F89D79C10C8C61BB7994CE762C2554124212501FC019E83F5A34C87C54A67DD
 debrief.log SHA-256: 21D917BC43A00F429A22B1EE697E64A62EC9B487254D330F5A7B1F574A253FA2
-Executed MIZ SHA-256: PENDING_OWNER_HASH
 ```
 
-Der Runtime-Lifecycle ist damit positiv belegt. Die formale Hochstufung von Stage 1C auf `ACCEPTED_TECHNICAL_BASELINE` bleibt ausschließlich wegen der noch fehlenden SHA-256 der exakt ausgeführten Build-1-4-`OMW_Template_v19.miz` gesperrt. Ein älterer v19-Hash wird nicht übernommen.
+Stage 1C ist damit für genau diesen dokumentierten Stand `ACCEPTED_TECHNICAL_BASELINE`. Der Nachweis bestätigt den strategischen Meta-Ressourcen-Roundtrip, nicht einen allgemeinen produktiven Executor für alle Ground-RESUPPLY-Fälle.
 
 Detailresultat:
 
@@ -260,10 +263,7 @@ mission/tests/ground-resupply-execution/results/2026-08-23-ground-meta-resupply-
 Stage 1A AMMO / AMMOSUPPLY: ACCEPTED_TECHNICAL_BASELINE
 Stage 1B FUEL / FUELSUPPLY strategic meta-resupply experiment: INCONCLUSIVE / HISTORICAL_TEST_FIXTURE
 WAREHOUSE SELFPROPELLED: SOURCE_REVIEWED / NOT_SELECTED_FOR_CONTINUOUS_ROUNDTRIP
-Stage 1C AUFTRAG NOTHING source: SOURCE_REVIEWED
-Stage 1C Build 1-4: BUILD PASS
-Stage 1C DCS runtime lifecycle: PASS
-Stage 1C formal ACCEPTED_TECHNICAL_BASELINE: BLOCKED_MISSING_MIZ_SHA256
+Stage 1C AUFTRAG NOTHING: ACCEPTED_TECHNICAL_BASELINE FOR DOCUMENTED STRATEGIC META-RESUPPLY FIXTURE
 GROUND_FUEL_PACKAGE: RETAIN AS CAMPAIGNSTATE META RESOURCE
 Fuel convoy templates: RETAIN AS PHYSICAL REPRESENTATIONS
 Operational RefuellingZone/FUELSUPPLY: SEPARATE FUTURE ACCEPTANCE
