@@ -55,15 +55,14 @@ OPSGROUP:GetCoordinate()
 GROUP:GetUnit(1)
 UNIT:GetCurrentFuelKgs()
 UNIT:GetFuelMassMax()
-COORDINATE:GetLat()
-COORDINATE:GetLon()
+COORDINATE:GetLLDDM()
 UTILS.MpsToKnots(...)
 UTILS.SecondsOfToday()
 ```
 
 Der Harness verwendet keine `_DATABASE`-Interna, keinen Native-DCS-Scheduler, keinen eigenen Spawn-/Routingpfad und keine alternative AWACS-Mission.
 
-`FLIGHTGROUP:GetFuelMin()`, `UNIT:GetCurrentFuelKgs()` und `UNIT:GetFuelMassMax()` sind bereits im dokumentierten AAR-Scope praktisch verwendet. `OPSGROUP:GetAltitude()`, `GetVelocity()` und `GetHeading()` wurden im gepinnten `Moose.lua` mit den verwendeten Signaturen source-seitig geprüft. Für diese read-only Telemetrie ist kein eigenes offizielles Demo-Konstrukt erforderlich; es wird keine neue Lifecycle-Semantik daraus abgeleitet.
+`FLIGHTGROUP:GetFuelMin()`, `UNIT:GetCurrentFuelKgs()` und `UNIT:GetFuelMassMax()` sind bereits im dokumentierten AAR-Scope praktisch verwendet. `OPSGROUP:GetAltitude()`, `GetVelocity()` und `GetHeading()` wurden im gepinnten `Moose.lua` mit den verwendeten Signaturen source-seitig geprüft. `COORDINATE:GetLLDDM()` wurde im tatsächlich verwendeten `Moose.lua` geprüft und liefert über `coord.LOtoLL(self:GetVec3())` die geodätischen Latitude-/Longitude-Werte. Die zunächst erwogenen Methoden `COORDINATE:GetLat()` / `GetLon()` wurden ausdrücklich verworfen, weil sie im gepinnten Source lediglich die internen lokalen `x`-/`z`-Koordinaten zurückgeben und daher für die geodätische Racetrack-Auswertung ungeeignet sind. Für diese read-only Telemetrie ist kein eigenes offizielles Demo-Konstrukt erforderlich; es wird keine neue Lifecycle-Semantik daraus abgeleitet.
 
 ## 3. Testartefakte
 
@@ -124,6 +123,8 @@ max internal fuel kg
 latitude
 longitude
 ```
+
+Latitude/Longitude stammen aus `COORDINATE:GetLLDDM()` und sind damit geodätische Koordinaten, nicht die internen DCS-Lokalkoordinaten `x`/`z`.
 
 Phasen:
 
