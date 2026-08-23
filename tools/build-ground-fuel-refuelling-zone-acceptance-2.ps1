@@ -12,7 +12,7 @@ $acceptanceSourceFile = Join-Path $repoRoot 'mission\tests\ground-resupply-execu
 $distDir = Join-Path $repoRoot 'mission\tests\ground-resupply-execution\dist'
 $outputFile = Join-Path $distDir 'OMW_Ground_Fuel_Refuelling_Zone_Acceptance_2.lua'
 
-$builderVersion = 'GROUND-FUEL-REFUELLING-ZONE-ACCEPTANCE-2-2'
+$builderVersion = 'GROUND-FUEL-REFUELLING-ZONE-ACCEPTANCE-2-1'
 $testId = 'GROUND-FUEL-REFUELLING-ZONE-ACCEPTANCE-2'
 $mooseCommit = '73d3ed119cd9e7e3f2cfcabbaa34513d30529b54'
 $mooseSha256 = 'e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915'
