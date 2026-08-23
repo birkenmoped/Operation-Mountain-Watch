@@ -8,7 +8,7 @@ $repoRoot = Split-Path -Parent $PSScriptRoot
 $distDir = Join-Path $repoRoot 'mission\runtime\air-operations'
 $outputFile = Join-Path $distDir 'OMW_AWACS_Foundation.lua'
 
-$builderVersion = 'OMW-AIROPS-AWACS-FOUNDATION-6'
+$builderVersion = 'OMW-AIROPS-AWACS-FOUNDATION-7'
 $mooseCommit = '73d3ed119cd9e7e3f2cfcabbaa34513d30529b54'
 $mooseSha256 = 'e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915'
 
@@ -48,6 +48,10 @@ $requiredMarkers = @(
   @{ File = 'Controller'; Marker = 'LISA_PREDISPATCH_FUEL_PCT = 65' },
   @{ File = 'Controller'; Marker = 'AAR_TRIGGER_FUEL_PCT = 40' },
   @{ File = 'Controller'; Marker = 'AAR_CRITICAL_FUEL_PCT = 25' },
+  @{ File = 'Controller'; Marker = 'LISA_TRACK_ALTITUDE_FT = TRACK_ALTITUDE_FT' },
+  @{ File = 'Controller'; Marker = 'LISA_TRACK_SPEED_KT = 300' },
+  @{ File = 'Controller'; Marker = 'LISA_READY_ON_RENDEZVOUS' },
+  @{ File = 'Controller'; Marker = 'LISA_EGRESS_DEFERRED' },
   @{ File = 'Controller'; Marker = 'AUFTRAG:NewORBIT_RACETRACK' },
   @{ File = 'Controller'; Marker = 'AUFTRAG:NewTANKER' },
   @{ File = 'Controller'; Marker = 'flightGroup:SetFuelLowRTB(false)' },
@@ -118,13 +122,14 @@ $header = @"
 -- Service: WIZARD, 357.300 MHz AM, 1530-2330 local (1100Z-1900Z).
 -- Station: FL320, 300 KT, 017T, 30 NM leg.
 -- Visible transfer: FL350 / 440 KT.
--- Fuel policy: LISA pre-dispatch <=65 percent, AAR required <=40 percent, off-map contingency <=25 percent if no refuel task is established.
+-- Fuel policy: LISA pre-dispatch <=65 percent; once LISA is ready at FL320/300 KT WIZARD begins AAR immediately.
+-- Fallback fuel policy: <=40 percent requires AAR with nearest compatible tanker fallback; <=25 percent without an established path triggers off-map contingency.
 -- Refuel policy: MOOSE FuelLow event + MOOSE compatible-tanker discovery + MOOSE Refuel execution.
--- Dedicated LISA is preferred once established at the AWACS rendezvous; otherwise nearest compatible active tanker is used.
+-- Dedicated LISA is preferred once established at the AWACS rendezvous; LISA FuelLow egress is deferred during active WIZARD AAR.
 -- Pinned MOOSE SetFuelLowRefuel automatic 50-NM search is intentionally disabled because it cannot express that OMW policy.
 -- MOOSE automatic Afghanistan RTB on FuelLow/FuelCritical is disabled.
 -- Egress: service closes at 2330 local -> explicit FL350/440 KT direct route to ROSIE -> external handoff/despawn.
--- DCS validation: full fuel-driven lifecycle requires Acceptance 4.
+-- DCS validation: revised LISA-ready lifecycle requires Acceptance 4.
 -- No automated MIZ mutation.
 -- MOOSE-Commit: $mooseCommit
 -- Moose.lua-SHA256: $mooseSha256
@@ -184,7 +189,12 @@ Write-Host 'ServiceWindowSec: 28800'
 Write-Host 'PersistentOrbit: true'
 Write-Host 'AWACSMissionTaskUsed: false'
 Write-Host 'LisaPredispatchFuelPct: 65'
+Write-Host 'LisaTrackAltitudeFt: 32000'
+Write-Host 'LisaTrackSpeedKt: 300'
+Write-Host 'LisaReadyImmediateAAR: true'
+Write-Host 'LisaFuelLowEgressDeferredDuringActiveAAR: true'
 Write-Host 'AARTriggerFuelPct: 40'
+Write-Host 'AARTriggerRole: FALLBACK'
 Write-Host 'AARCriticalFuelPct: 25'
 Write-Host 'FuelLowRTB: false'
 Write-Host 'FuelLowRefuelBuiltIn: false'
