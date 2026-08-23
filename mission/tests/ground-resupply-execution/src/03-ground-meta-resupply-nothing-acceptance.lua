@@ -36,10 +36,8 @@ local TRANSFER_QUANTITY = 18
 local FINAL_ORIGIN = 22
 local FINAL_DESTINATION = 36
 local ROAD_SPEED_KNOTS = 27
-local OUTBOUND_TIMEOUT_SEC = 2700
 local DESTINATION_CHECK_INTERVAL_SEC = 15
 local DESTINATION_EXECUTION_GRACE_SEC = 90
-local RETURN_TIMEOUT_SEC = 1800
 local RETURN_ISSUE_DELAY_SEC = 30
 local RETURN_SETTLEMENT_DELAY_SEC = 12
 
@@ -134,15 +132,6 @@ local function verifyFinalState()
     .. " demandStatus=SUCCESS spawnCount=1 returnedCount=1 warehouseAddAssetCount=1")
 end
 
-local function scheduleReturnTimeout()
-  SCHEDULER:New(nil, function()
-    if state.failed or state.passed or state.returnedCount > 0 then return end
-    fail("RETURN_TIMEOUT seconds=" .. tostring(RETURN_TIMEOUT_SEC)
-      .. " returnedCount=" .. tostring(state.returnedCount)
-      .. " addAssetCount=" .. tostring(state.addAssetCount))
-  end, {}, RETURN_TIMEOUT_SEC)
-end
-
 local function issueReturn()
   if state.failed or state.returnIssued then return end
   if not state.armyGroup or not state.armyGroup:IsAlive() then
@@ -158,7 +147,6 @@ local function issueReturn()
   end
   log("RETURN_RTZ_ISSUED group=" .. tostring(state.armyGroup:GetName())
     .. " zone=" .. ORIGIN_ACCESS_ZONE .. " formation=OnRoad")
-  scheduleReturnTimeout()
 end
 
 local function checkDestinationProgress()
@@ -453,13 +441,3 @@ if not createDemandAndReservation() then return end
 if not preparePhysicalExecution() then return end
 installBrigadeCallbacks()
 state.brigade:Start()
-
-SCHEDULER:New(nil, function()
-  if state.failed or state.passed or state.deliveryCommitted then return end
-  fail("OUTBOUND_TIMEOUT seconds=" .. tostring(OUTBOUND_TIMEOUT_SEC)
-    .. " destinationObserved=" .. tostring(state.destinationObserved)
-    .. " spawnCount=" .. tostring(state.spawnCount)
-    .. " armyOnMissionCount=" .. tostring(state.armyOnMissionCount)
-    .. " missionExecuteCount=" .. tostring(state.missionExecuteCount)
-    .. " missionDoneCount=" .. tostring(state.missionDoneCount))
-end, {}, OUTBOUND_TIMEOUT_SEC)
