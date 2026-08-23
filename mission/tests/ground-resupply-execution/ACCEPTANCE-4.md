@@ -16,7 +16,7 @@ validated_in_dcs: false
 
 ## 1. Entscheidung und Zweck
 
-Der Projektinhaber hat am 23.08.2026 entschieden, vor Stage 1D den normalen MOOSE-Fuel-Pfad erneut und diesmal ohne den alten Harness-Timeout zu prüfen.
+Der Projektinhaber hat entschieden, vor Stage 1D den normalen MOOSE-Fuel-Pfad erneut und ohne den alten Harness-Travel-Timeout zu prüfen.
 
 Ziel ist ausdrücklich **nicht**, den timeout-kontaminierten Stage-1B-Lauf als Fehler fortzuschreiben. Stattdessen wird geprüft, ob der von MOOSE selbst vorgesehene BRIGADE-RefuellingZone-Pfad für OMW tragfähig ist.
 
@@ -30,7 +30,8 @@ Stage 1B2 objective:
 MOOSE-native BRIGADE:AddRefuellingZone(...)
 -> BRIGADE creates AUFTRAG:NewFUELSUPPLY(...) itself
 -> physical FUEL convoy
--> destination execution
+-> FUELSUPPLY MissionExecute observation
+-> independent destination-zone proof
 -> exact-once CampaignState settlement
 -> normal MOOSE ReturnToLegion
 -> Returned -> Warehouse AddAsset
@@ -85,7 +86,9 @@ HONAKER GROUND_FUEL_PACKAGE 36
 -> BRIGADE:AddRefuellingZone(Honaker ACCESS)
 -> MOOSE creates FUELSUPPLY mission
 -> road-aligned warehouse materialization
--> destination MissionExecute proof
+-> MissionExecute observed as FUELSUPPLY lifecycle evidence
+-> independent Stage-1C-style destination-zone polling
+-> destination zone confirmed
 -> CampaignState DELIVERED
 -> MissionDemand SUCCESS
 -> FUELSUPPLY cancel after exact-once settlement
@@ -131,10 +134,17 @@ Der alte Fehlerpfad wird nicht wiederholt:
 ```text
 Hard outbound travel timeout: NONE
 Hard return travel timeout: NONE
-Completion: event-driven
+Completion: event-driven / zone-observed
 ```
 
-Es bleibt nur die bereits in anderen Ground-Acceptances verwendete kurze Settlement-Verzögerung nach `Returned`, bevor der finale Zustand geprüft wird.
+Die Zielerkennung folgt jetzt wieder der bereits in Stage 1C verwendeten Struktur:
+
+```text
+DestinationCheckIntervalSec: 15
+DestinationExecutionGraceSec: 90
+```
+
+`DestinationExecutionGraceSec` beginnt nur dann nach bestätigtem Zoneneintritt, wenn `MissionExecute` zu diesem Zeitpunkt noch nicht beobachtet wurde. Es ist kein Travel-Timeout.
 
 Der vorhandene owner-approved `OMW_GroundRoadSpawnAdapter.lua` wird unverändert weiterverwendet. Keine neue Spawnlogik, kein MIST, keine Native-DCS-Parallelimplementierung und keine `.miz`-Mutation durch ChatGPT.
 
@@ -146,15 +156,15 @@ tools/build-ground-fuel-refuelling-zone-acceptance-2.ps1
 mission/tests/ground-resupply-execution/dist/OMW_Ground_Fuel_Refuelling_Zone_Acceptance_2.lua
 ```
 
-Builder-Version:
+Aktuelle Builder-Version nach Harness-Korrektur:
 
 ```text
-GROUND-FUEL-REFUELLING-ZONE-ACCEPTANCE-2-1
+GROUND-FUEL-REFUELLING-ZONE-ACCEPTANCE-2-2
 ```
 
-### 6.1 Reale lokale Build-Evidenz vom 23.08.2026
+### 6.1 Historische lokale Build-Evidenz für Build 2-1
 
-Der Projektinhaber hat den Branch lokal per Fast-forward auf den veröffentlichten Acceptance-Stand aktualisiert und den Builder erfolgreich ausgeführt.
+Der Projektinhaber hatte Build `2-1` lokal erfolgreich erzeugt.
 
 ```text
 Git HEAD:
@@ -184,20 +194,62 @@ Builder SHA-256:
 Acceptance source SHA-256:
 F8A0CBE4FDEA315D8CDFDB63F2B0EAE56F08FD08DE4297E399B2A85F607135F9
 
-OMW_MissionDemand.lua SHA-256:
-E348E75B87135B99D780E07CA6B6FB7C3C530E048E9C6DE790328D147DE32848
-
-OMW_ResourceDemandPolicy.lua SHA-256:
-BDC20ACEDAB60F662093077B8320220EBB71C6C641CC604C4356231B8405913C
-
-OMW_GroundRoadSpawnAdapter.lua SHA-256:
-1A81FB2E5270C493373CF5BF6EC01F5AFED47004BF25C4225524121155D983E8
-
 Build result:
 PASS
 ```
 
-Der Build bestätigt nur Reproduzierbarkeit und die erzeugte Bundle-Provenienz. Er ist kein DCS-Runtime-Nachweis.
+Dieser Build ist durch den nachfolgenden Harness-Fix superseded und darf nicht für einen neuen Acceptance-Lauf verwendet werden.
+
+### 6.2 DCS-Lauf mit Build 2-1 – Harness-Fehler, kein FUELSUPPLY-Fehlerbeleg
+
+Der reale DCS-Lauf zeigte:
+
+```text
+MOOSE RefuellingZone/FUELSUPPLY dispatch: observed
+physical convoy materialization: observed
+convoy arrival at Honaker area: visually observed
+FUELSUPPLY MissionExecute: observed
+acceptance result: FAIL
+failure reason: MISSION_EXECUTE_OUTSIDE_DESTINATION
+```
+
+Die Ursache lag im Acceptance-Harness: Build `2-1` verlangte synchron im `OnAfterMissionExecute`-Callback zusätzlich `IsInZone(destinationZone) == true`. Das wich ohne technischen Grund von der bereits DCS-bestätigten Stage-1C-Zielerkennung ab.
+
+Der Lauf wird daher klassifiziert als:
+
+```text
+HARNESS_LOGIC_ERROR
+INCONCLUSIVE_FOR_FUELSUPPLY_ARCHITECTURE
+```
+
+Er beweist weder PASS noch FAIL der beabsichtigten Stage-1B2-Zielarchitektur.
+
+### 6.3 Korrektur für Build 2-2
+
+Build `2-2` übernimmt wieder die Stage-1C-Struktur für die physische Zielbestätigung und ändert nur den tatsächlich zu testenden Executor-Vertrag:
+
+```text
+Stage 1C reference:
+AUFTRAG:NewNOTHING(...)
++ independent destination-zone polling
++ explicit OMW RTZ
+
+Stage 1B2 corrected delta:
+BRIGADE:AddRefuellingZone(...)
+-> MOOSE-created FUELSUPPLY
++ same independent destination-zone polling
++ normal MOOSE ReturnToLegion
+```
+
+Delivery wird erst committed, wenn **beide** Bedingungen erfüllt sind:
+
+```text
+MissionExecute observed
+AND
+destination zone observed
+```
+
+Die Reihenfolge dieser beiden Beobachtungen ist nicht fest verdrahtet.
 
 ## 7. Entscheidungsregel nach DCS-Test
 
@@ -207,7 +259,7 @@ PASS
 -> Stage 1C NOTHING remains technical evidence but is no longer the preferred Fuel executor
 -> reconcile production executor and documentation before adoption
 
-FAIL with clean, non-timeout-contaminated evidence
+FAIL with clean, non-timeout-contaminated and non-harness-contaminated evidence
 -> analyze actual MOOSE/DCS failure cause
 -> do not silently revert architecture
 
@@ -219,8 +271,10 @@ INCONCLUSIVE
 ## 8. Aktueller Status
 
 ```text
-status: STAGED_FOR_DCS_ACCEPTANCE
-local_build: PASS
+status: STAGED_FOR_LOCAL_BUILD_AND_DCS_ACCEPTANCE
+previous_build_2_1: SUPERSEDED_BY_HARNESS_FIX
+previous_dcs_run: HARNESS_LOGIC_ERROR / INCONCLUSIVE
+current_builder: GROUND-FUEL-REFUELLING-ZONE-ACCEPTANCE-2-2
 validated_in_dcs: false
-result: NOT_RUN
+result: NOT_RUN_FOR_BUILD_2_2
 ```
