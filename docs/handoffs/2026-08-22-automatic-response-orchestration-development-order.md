@@ -83,24 +83,9 @@ Result: PASS
 
 Status: `FAILED / CLOSED FOR CURRENT OMW META-RESUPPLY USE`.
 
-Build-/Runtime-Evidenz:
-
-```text
-BuilderVersion: GROUND-FUEL-RESUPPLY-ACCEPTANCE-1-1
-Bundle SHA-256: A2C71E86244A2E6869E8A0A3D7384D917875064B11102CDA410A7DBD9C1C6922
-Physical template: TPL_BLUE_CONVOY_FUEL_LIGHT_06
-DCS: 2.9.28.26385 MT
-ROAD_ALIGNED_WAREHOUSE_SPAWN
-GROUP_MATERIALIZED
-ARMY_ON_MISSION mission=FUELSUPPLY
-FAIL OUTBOUND_TIMEOUT
-missionExecuteCount=0
-missionDoneCount=0
-```
-
-Return-Code wurde nie erreicht. `FUELSUPPLY` wird für die abstrakte OMW-Meta-Ware nicht weiter angepasst.
-
 `GROUND_FUEL_PACKAGE` bleibt CampaignState-Meta-Ressource. Der M978 ist nur physische Repräsentation; keine reale DCS-Fuelmenge wird daraus abgeleitet.
+
+Der `FUELSUPPLY`-Versuch erreichte `ARMY_ON_MISSION`, aber kein MissionExecute/MissionDone/RTZ und wird für diesen OMW-Meta-Warenpfad nicht weiter angepasst.
 
 ## 5. MOOSE-first Ersatzreconciliation
 
@@ -129,7 +114,7 @@ AUFTRAG NewNOTHING physical meta-resupply contract: APPROVED FOR ACCEPTANCE
 
 ## 6. Stage 1C – Generic Ground Meta RESUPPLY via NOTHING
 
-Status: `DCS FAIL / OUTBOUND ROUTING RECONCILIATION REQUIRED`.
+### Run 1 – gültige Provenienz, aber Harness-FALSE-FAIL
 
 Owner-Build-Provenienz:
 
@@ -137,12 +122,9 @@ Owner-Build-Provenienz:
 Source/build commit: cb32f23886e68371bf45ab4f7a1394200f542c29
 BuilderVersion: GROUND-META-RESUPPLY-NOTHING-ACCEPTANCE-1-1
 Bundle SHA-256: BC9A70327A456FC8718907B9701E83194303B0A5816F0EA0C309310D7118B8FE
-Builder SHA-256: 68A58E3F2C0C05D79B0FFC642CEDEB70008748FE81EE56D31BE9437CDB070E37
-Acceptance source SHA-256: 7B91D5DD74C874C03CB36FAF6CF9231201D45CB51FD749644EDA857A9FFD137E
-GroundRoadSpawnAdapter SHA-256: 1A81FB2E5270C493373CF5BF6EC01F5AFED47004BF25C4225524121155D983E8
 ```
 
-Read-only MIZ-Provenienz nach dem Lauf:
+Read-only MIZ-Provenienz:
 
 ```text
 Executed path from debrief: OMW_Template_v19.miz
@@ -150,47 +132,73 @@ Uploaded MIZ SHA-256: A4D04484584A04C092AAFF31981A477F9179203944B7DAAD4C7CF2D2DD
 Internal mission SHA-256: B68EDC033D9C8E2FE0F8F93C81A063425F019F1C7A38A30710833AD367BCA90A
 Embedded acceptance bundle SHA-256: BC9A70327A456FC8718907B9701E83194303B0A5816F0EA0C309310D7118B8FE
 Embedded Moose.lua SHA-256: E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915
-Trigger: ONCE / OMW_WAREHOUSE_READY=1 / OMW_GROUND_READY=1 / TIME>5
-Old Ground AMMO/FUEL acceptance bundle embedded: NO
-TPL_BLUE_CONVOY_FUEL_LIGHT_06: present / lateActivation=true / six vehicles
 ```
 
-DCS 2.9.28.26385 MT beobachtet:
+Runtime bis zum Harness-FAIL:
 
 ```text
-START
-DEMAND_RESERVED quantity=18
-PHYSICAL_EXECUTION_READY physicalMission=NOTHING
-BRIGADE_STARTED
-MISSION_QUEUED type=NOTHING formation=OnRoad speedKt=27
-ROAD_ALIGNED_WAREHOUSE_SPAWN units=6 formationLengthM=76.8 maxSnapM=2.1
-GROUP_MATERIALIZED transferStatus=LOADING
-ARMY_ON_MISSION mission=NOTHING transferStatus=IN_TRANSIT demandStatus=ACTIVE
-WARNING TRANSPORT: CREATING PATH MAKES TOO LONG!!!!!
-FAIL reason=OUTBOUND_TIMEOUT seconds=600 destinationObserved=false spawnCount=1 armyOnMissionCount=1 missionExecuteCount=0 missionDoneCount=0
+ROAD_ALIGNED_WAREHOUSE_SPAWN
+GROUP_MATERIALIZED
+ARMY_ON_MISSION mission=NOTHING
+FAIL reason=OUTBOUND_TIMEOUT seconds=600 destinationObserved=false missionExecuteCount=0 missionDoneCount=0
 ```
 
-Damit wurde weder Honaker ACCESS beobachtet noch `MissionExecute` erreicht. Delivery-, MissionDone- und RTZ-Pfade wurden nicht ausgeführt und sind für NOTHING weiterhin nicht runtime-validiert.
-
-Log-Provenienz:
+Owner-Beobachtung danach:
 
 ```text
-dcs.log SHA-256: 23E2D0B31B66464A57D3BC5F45F92A75D4EF913413833311042CD4BC74F1AAA3
-debrief.log SHA-256: 2574F8746F6D4A88E6D6F038AFC33DB5600DC4D52CC6A0E946A8E2155B0D8922
+Convoy physically reached Honaker
+Convoy did not return
 ```
 
-Detailresultat:
+Die ursprüngliche Diagnose `OUTBOUND ROUTING FAILURE` ist verworfen. Joyce-ACCESS -> Honaker-ACCESS beträgt rund 16,9 km Luftlinie. Bei 27 kt (~50 km/h) ist die theoretische Mindestfahrzeit bereits rund 1.218 s. Der 600-s-Timeout war daher zu kurz.
+
+Nach dem Timeout setzte der Harness `state.failed=true`; spätere MissionExecute-/MissionDone-/RTZ-Callbacks wurden damit absichtlich ignoriert. Das erklärt, warum der Convoy physisch weiterfuhr und später nicht zurückgeschickt wurde.
+
+Klassifikation:
+
+```text
+HARNESS_FALSE_FAIL_OUTBOUND_TIMEOUT_TOO_SHORT
+NewNOTHING runtime acceptance: NOT YET PROVEN
+```
+
+Der DCS-Marker `CREATING PATH MAKES TOO LONG!!!!!` bleibt als Diagnosehinweis, ist aber nicht als Root Cause des fehlenden Returns belegt.
+
+### Korrigierter Stage-1C-Harness
+
+```text
+OUTBOUND_TIMEOUT_SEC = 1800
+DESTINATION_CHECK_INTERVAL_SEC = 15
+DESTINATION_EXECUTION_GRACE_SEC = 90
+RETURN_TIMEOUT_SEC = 1800
+RETURN_ISSUE_DELAY_SEC = 30
+RETURN_SETTLEMENT_DELAY_SEC = 12
+```
+
+Der Fail-fast-Schutz bleibt erhalten: Nach tatsächlichem Eintritt in Honaker ACCESS muss MissionExecute binnen 90 Sekunden folgen.
+
+Korrigierte Remote-Commits:
+
+```text
+7cb6c4a07788543da5840af6ac73ff4729749f1d  Restore viable outbound timeout for meta resupply acceptance
+e0ac65f447b193ea8152bdb5984c5344de346ba9  Bump meta resupply builder after timeout correction
+```
+
+BuilderVersion:
+
+```text
+GROUND-META-RESUPPLY-NOTHING-ACCEPTANCE-1-2
+```
+
+Detailresultat des ersten Laufs:
 
 ```text
 mission/tests/ground-resupply-execution/results/2026-08-23-ground-meta-resupply-nothing-acceptance-1-fail-1.md
 ```
 
-Der nächste Schritt ist ausdrücklich kein weiterer DCS-Test. Zuerst wird die Ground-Route-/Waypoint-Erzeugung von AMMOSUPPLY und NOTHING im gepinnten MOOSE-Source gegeneinander reconciliert, insbesondere im Zusammenhang mit `CREATING PATH MAKES TOO LONG!!!!!`.
-
 ## 7. Weitere Entwicklungsstufen
 
 ```text
-Stage 1D generic SUPPLY / other meta resources: BLOCKED BY STAGE 1C ROUTING
+Stage 1D generic SUPPLY / other meta resources: BLOCKED UNTIL CORRECTED STAGE 1C RETEST
 Stage 2 FOB attack -> support demand: PLANNED
 Stage 3 fire support -> local rearm -> resupply: FOUNDATIONS AVAILABLE
 Stage 4 convoy under attack -> support demand: PLANNED
@@ -206,7 +214,7 @@ Stage 10 production reconciliation/merge readiness: PLANNED
 
 ```text
 current_branch: agent/automatic-response-orchestration
-main_reference_checked_at: 2026-08-22
+main_reference_checked_at: 2026-08-23
 main_reference_commit: 28d0069d5d9ec66e62f1e81ad59fc3dd4e2e249c
 stage_1a: ACCEPTED_TECHNICAL_BASELINE
 stage_1b_fuelsupply: FAILED_CLOSED_FOR_META_RESUPPLY
@@ -215,13 +223,11 @@ fuel_convoy_templates: RETAIN
 warehouse_selfpropelled: SOURCE_REVIEWED_NOT_SELECTED_FOR_CONTINUOUS_ROUNDTRIP
 stage_1c_executor: AUFTRAG_NEWNOTHING
 stage_1c_owner_contract: APPROVED_2026_08_22
-stage_1c_owner_build: PASS
-stage_1c_miz_preflight: PASS_READ_ONLY_POST_RUN
-stage_1c_dcs_runtime: FAIL_OUTBOUND_TIMEOUT
-stage_1c_destination_observed: false
-stage_1c_mission_execute: 0
-stage_1c_mission_done: 0
-stage_1c_route_warning: CREATING_PATH_MAKES_TOO_LONG
+stage_1c_run1_provenance: PASS
+stage_1c_run1_classification: HARNESS_FALSE_FAIL_OUTBOUND_TIMEOUT_TOO_SHORT
+stage_1c_newnothing_runtime_validation: PENDING
+stage_1c_corrected_outbound_timeout_sec: 1800
+stage_1c_builder_version: GROUND-META-RESUPPLY-NOTHING-ACCEPTANCE-1-2
 production_runtime_implementation: NOT_YET_CREATED
-next_allowed_step: COMPARE_AMMOSUPPLY_VS_NOTHING_GROUND_ROUTE_GENERATION
+next_allowed_step: OWNER_PULL_BUILD_HASH_GATE
 ```
