@@ -8,7 +8,7 @@ $repoRoot = Split-Path -Parent $PSScriptRoot
 $source = Join-Path $repoRoot 'mission\tests\awacs-external-lifecycle\src\04-awacs-full-fuel-aar-acceptance.lua'
 $distDir = Join-Path $repoRoot 'mission\tests\awacs-external-lifecycle\dist'
 $output = Join-Path $distDir 'OMW_AWACS_Acceptance_4.lua'
-$builderVersion = 'OMW-AWACS-ACCEPTANCE-4-1'
+$builderVersion = 'OMW-AWACS-ACCEPTANCE-4-2'
 $mooseCommit = '73d3ed119cd9e7e3f2cfcabbaa34513d30529b54'
 $mooseSha256 = 'e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915'
 
@@ -33,8 +33,8 @@ foreach ($marker in $required) {
 $forbidden = @(
   'SPAWN:New',
   'AUFTRAG:New',
-  ':Refuel(',
-  ':AddWaypoint(',
+  ':Refuel\(',
+  ':AddWaypoint\(',
   'MissionScripting\.lua',
   'mist\.',
   'io\.',
