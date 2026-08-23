@@ -6,7 +6,7 @@
 local Bootstrap = {}
 
 local TAG = "[OMW][AirOps.AWACS.Bootstrap]"
-Bootstrap.SchemaVersion = "OMW-AIROPS-AWACS-FOUNDATION-2"
+Bootstrap.SchemaVersion = "OMW-AIROPS-AWACS-FOUNDATION-3"
 
 local function fail(message)
   error(TAG .. " " .. tostring(message), 2)
@@ -98,6 +98,7 @@ function Bootstrap.Start(spec)
   requireFunction(controller, "RequestEgress", "spec.controller")
   requireFunction(controller, "RequestRefuel", "spec.controller")
   requireFunction(controller, "GetRuntime", "spec.controller")
+  requireFunction(controller, "GetLisaRuntime", "spec.controller")
   requireFunction(controller, "GetServiceState", "spec.controller")
   requireFunction(controller, "GetConfig", "spec.controller")
 
@@ -125,7 +126,7 @@ function Bootstrap.Start(spec)
     CampaignContextCreated = createdContext,
     Config = config,
     InitialRuntime = runtime,
-    Scope = "AWACS_TIMED_COVERAGE_FOUNDATION",
+    Scope = "AWACS_FULL_FUEL_DRIVEN_AAR_FOUNDATION",
   }
 
   function facade.RequestEgress(reason)
@@ -140,6 +141,10 @@ function Bootstrap.Start(spec)
     return controller.GetRuntime()
   end
 
+  function facade.GetLisaRuntime()
+    return controller.GetLisaRuntime()
+  end
+
   function facade.GetServiceState()
     return controller.GetServiceState()
   end
@@ -147,9 +152,10 @@ function Bootstrap.Start(spec)
   OMW.AirOps.AWACS = facade
 
   log(string.format(
-    "RUNNING source=%s area=%s fir=%s callsign=%s frequencyMHz=%.3f serviceStartLocalSec=%d plannedAarLocalSec=%d serviceEndLocalSec=%d dcsValidated=false",
+    "RUNNING source=%s area=%s fir=%s callsign=%s frequencyMHz=%.3f serviceStartLocalSec=%d serviceEndLocalSec=%d spawnAltitudeFt=%d expectedSpawnFuelPct=%d lisaPredispatchFuelPct=%d aarTriggerFuelPct=%d aarCriticalFuelPct=%d dcsValidated=false",
     config.sourceDomain, config.area, config.firFix, config.callsign, config.frequencyMHz,
-    config.serviceStartLocalSec, config.plannedAarLocalSec, config.serviceEndLocalSec
+    config.serviceStartLocalSec, config.serviceEndLocalSec, config.spawnAltitudeFt, config.expectedSpawnFuelPct,
+    config.lisaPredispatchFuelPct, config.aarTriggerFuelPct, config.aarCriticalFuelPct
   ))
 
   return facade
