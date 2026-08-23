@@ -36,7 +36,7 @@ Dieses Register bildet offene Pull Requests, ihre Abhängigkeiten, Dokumentation
 | 7 | `docs/tm01a-findings-persistence-logistics` | PR 6 | TM01A Erkenntnisse und ADRs | `docs/`, TM01-Notes | `DRAFT` | Dokumentationskonsolidierung | 8 | historische Entwicklungsbasis |
 | 8 | `feature/tm01b-convoy-caching` | PR 7 | TM01B/TM01C Proxy-/Caching-Experimente | `mission/tests/tm01-blue-convoy/` | `DRAFT`; gemischter historischer Teststand | TM01B nicht akzeptiert; TM01C teilweise/PASS je Test | 9 und 22 | nicht ungeprüft als Produktionsarchitektur übernehmen |
 | 9 | `feature/tm02-red-side-foundation` | PR 8 | TM02A RED Relay | `mission/tests/tm02-red-relay/` | `DRAFT` | DCS-Validation ausstehend | 10 | früher vertikaler RED-Test |
-| 10 | `feature/tm02-red-tree-fill` | PR 9 | TM02N Tree Fill | gleicher Network-Pfad | `DRAFT` | DCS-Test ausstehend | 11 | frühes Baum-/Fill-Modell |
+| 10 | `feature/tm02-red-tree-fill` | PR 9 | TM02N Tree Fill | gleicher RED-Pfad | `DRAFT` | DCS-Test ausstehend | 11 | frühes Baum-/Fill-Modell |
 | 11 | `feature/tm02-red-loss-replenishment` | PR 10 | TM02R Loss Replenishment | gleicher RED-Pfad | `DRAFT` | DCS-Test ausstehend | 12 | früher Replenishment-Test |
 | 12 | `feature/tm02-red-proxy-movement` | PR 11 | TM02V Proxy Fill | gleicher RED-Pfad | `HISTORICAL_TEST_FIXTURE` innerhalb Draft-PR | technische Teilnachweise; keine Produktionsarchitektur | 13 | ausdrücklich historisch |
 | 13 | `feature/tm02w-red-network-registry` | PR 12 | TM02W1 Network Registry | `mission/tests/tm02-red-network/` | `DRAFT` | W1 DCS-PASS branchgebunden | 14 | Beginn der akzeptierten Produktionsrichtung |
