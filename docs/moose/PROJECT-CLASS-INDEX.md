@@ -59,22 +59,22 @@ REJECTED_FOR_PROJECT_USE
 | `AIRBASE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Auflösung, ID, Parkingdump und airfield-spezifische Kalibrierung |
 | `AIRWING` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Konstruktion, Stockregistrierung, SQUADRON-Bindung und direkter AUFTRAG-Dispatch; externe OMW-AAR-Pools verwenden bewusst kein AIRWING |
 | `SQUADRON` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Foundation-Bestände und post-start Assetbindung |
-| `WAREHOUSE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` + `INTERNAL_RESTRICTED` | AirOps-Stock-/Asset-Lifecycle, Ground-Materialisierung und dokumentierte mobile Return-Handoffs praktisch bestätigt; Stage-1A Joyce-Honaker bestätigt `Returned -> AddAsset -> physical cleanup`; private road-aligned Ausnahme bleibt auf dokumentierten Scope begrenzt |
+| `WAREHOUSE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` + `INTERNAL_RESTRICTED` | AirOps-Stock-/Asset-Lifecycle, Ground-Materialisierung und dokumentierte mobile Return-Handoffs praktisch bestätigt; Stage 1A und Stage 1C bestätigen `Returned -> AddAsset -> physical cleanup`; private road-aligned Ausnahme bleibt auf dokumentierten Scope begrenzt |
 | `STORAGE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | CampaignState->DCS-Warehouse Mirror/Telemetry; keine strategische Rückautorität |
-| `COHORT` | `VALIDATED_FOR_DOCUMENTED_SCOPE` + `SOURCE_REVIEWED` | AirOps-Lifecycle praktisch bestätigt; Ground-Review bestätigt `AddMissionCapability`, `SetMissionRange`, `CanMission`, `CountAssets`; Stage-1A bestätigt AMMOSUPPLY-Capability für den LIGHT_06-PLATOON; Stage-1B FUELSUPPLY-Capability ist source-reviewed/DCS-pending |
+| `COHORT` | `VALIDATED_FOR_DOCUMENTED_SCOPE` + `SOURCE_REVIEWED` | AirOps-Lifecycle praktisch bestätigt; Ground-Review bestätigt `AddMissionCapability`, `SetMissionRange`, `CanMission`, `CountAssets`; Stage 1A bestätigt AMMOSUPPLY- und Stage 1C NOTHING-Capability im dokumentierten Scope; Stage 1B FUELSUPPLY bleibt source-reviewed und runtime-inconclusive |
 | `FLIGHTGROUP` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | AAR FuelLow, Dead/OnAfterDead, GetCoordinate, `AddWaypoint(...)`, `AddMission(...)` und `OnAfterPassingWaypoint(...)`; Acceptance 7 bestätigte FIR -> 60-NM -> AUFTRAG sowie Egress -> External Handoff |
 | `COMMANDER` | `VALIDATED_FOR_DOCUMENTED_SCOPE` + `SOURCE_REVIEWED` | dokumentierter COMMANDER-Lifecycle; Ground-Review bestätigt `AddBrigade(...)` und `AddOpsTransport(...)` source-seitig; MissionDemand bleibt OMW-Tasking-Autorität |
-| `AUFTRAG` | `VALIDATED_FOR_DOCUMENTED_SCOPE` + `SOURCE_REVIEWED` | AAR-Methoden, Ground-Acceptance-1 bis -6 sowie Stage-1A `NewAMMOSUPPLY`, 27-kt OnRoad execution, `SetReturnToLegion(false)` und erfolgreicher Joyce-Honaker-Joyce-Lifecycle praktisch bestätigt; `NewFUELSUPPLY(Zone)`/`Type.FUELSUPPLY` für Stage 1B source-reviewed/DCS-pending; keine CampaignState-Autorität |
-| `SPAWN` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | area-spezifische AAR-Templates und externe Materialisierung praktisch bestätigt; Ground Stage-1A/1B verwenden keinen direkten SPAWN-Pfad |
-| `SCHEDULER` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | allgemeine OMW-Nutzung praktisch bestätigt; Ground Stage-1A verwendet One-shot-Koordination für 30-s Return-Settlement und 12-s AddAsset-Verifikation; Stage 1B übernimmt diese Lifecycle-Koordination testweise, kein hochfrequentes Polling |
+| `AUFTRAG` | `VALIDATED_FOR_DOCUMENTED_SCOPE` + `SOURCE_REVIEWED` | AAR-Methoden, Ground-Acceptance-1 bis -6, Stage 1A `NewAMMOSUPPLY` sowie Stage 1C `NewNOTHING` mit 27-kt OnRoad execution, `SetReturnToLegion(false)` und vollständigem Joyce-Honaker-Joyce-Lifecycle praktisch bestätigt; `NewFUELSUPPLY(Zone)` bleibt source-reviewed, Stage-1B-Runtime ist timeout-kontaminiert/inconclusive; keine CampaignState-Autorität |
+| `SPAWN` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | area-spezifische AAR-Templates und externe Materialisierung praktisch bestätigt; Ground Stage 1A/1B/1C verwenden keinen direkten SPAWN-Pfad |
+| `SCHEDULER` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | allgemeine OMW-Nutzung praktisch bestätigt; Ground Stage 1A und Stage 1C verwenden geordnete One-shot-/Intervall-Koordination, Stage 1C ohne harte Travel-Time-Failure-Gates |
 | `USERFLAG` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Warehouse-Acceptance-Readiness-Pfade sowie Ground `OMW_GROUND_READY` Set/Get-Readback und Mission-Editor-Gates in dokumentierten Scopes |
-| `GROUP`, `UNIT`, `STATIC`, `ZONE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Wrapper-/Objektauflösung in dokumentierten Scopes; Ground-Acceptance-6 bestätigt GetSize, GetUnits, test-only Destroy(false) und SetLife(50); Stage-1A bestätigt ZONE-basierte Destination-/Return-Gates |
+| `GROUP`, `UNIT`, `STATIC`, `ZONE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Wrapper-/Objektauflösung in dokumentierten Scopes; Ground-Acceptance-6 bestätigt GetSize, GetUnits, test-only Destroy(false) und SetLife(50); Stage 1A und Stage 1C bestätigen ZONE-basierte Destination-/Return-Gates |
 | `COORDINATE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | `Get2DDistance(...)`, `GetIntermediateCoordinate(...)` und `HeadingTo(...)` im dokumentierten AirOps-Scope |
-| `BRIGADE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` + `INTERNAL_RESTRICTED` | Ground-Acceptance-1 bis -6 sowie Stage-1A bestätigen Assetpool, LIGHT_06-Materialisierung, AMMOSUPPLY-Dispatch, Callback-Lifecycle und Warehouse-Rückgabe; Stage-1B Fuel-Light-Dispatch ist staged/DCS-pending; road-aligned private Warehouse-Spawn-Ausnahme bleibt begrenzt |
-| `PLATOON` | `VALIDATED_FOR_DOCUMENTED_SCOPE` + `SOURCE_REVIEWED` | Ground-Acceptance-1 bis -6 sowie Stage-1A bestätigen Assetselektion, `TPL_BLUE_CONVOY_LIGHT_06`, AMMOSUPPLY-Capability und Rückgabe im dokumentierten Scope; Stage-1B `TPL_BLUE_CONVOY_FUEL_LIGHT_06`/FUELSUPPLY-Capability source-reviewed/DCS-pending |
-| `ARMYGROUP` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Acceptance 1–6 sowie Stage-1A bestätigen MissionDone-Persistenz, mobilen `RTZ(..., OnRoad)`, `Returning`, `Returned` und Warehouse-Handoff; Stage-1A bestätigt denselben physischen LIGHT_06-Hin-/Rückweg nach 30-s Settlement; Stage-1B Fuel-Kombination DCS-pending; immobiler Teleportpfad bleibt ausgeschlossen |
-| `OPSGROUP` | `VALIDATED_FOR_DOCUMENTED_SCOPE` + `SOURCE_REVIEWED` | AirOps-Methoden sowie Ground-MissionDone-/Return-Pfade praktisch bestätigt; Stage-1B FUELSUPPLY SpecialTask/TaskCancel source-reviewed; Cargo-Pfade bleiben source-reviewed |
-| `OPSTRANSPORT` | `SOURCE_REVIEWED` | Constructor, Cargo/Carrier-Zonen, `AddPathTransport`, Disembark- und Carrier-Verträge geprüft; Stage-1A AMMO und Stage-1B FUEL benötigen OPSTRANSPORT nicht; taktischer OMW-Transport benötigt eigenen DCS-Test |
+| `BRIGADE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` + `INTERNAL_RESTRICTED` | Ground-Acceptance-1 bis -6, Stage 1A und Stage 1C bestätigen Assetpool, Materialisierung, AUFTRAG-Dispatch, Callback-Lifecycle und Warehouse-Rückgabe; Stage 1C bestätigt `TPL_BLUE_CONVOY_FUEL_LIGHT_06` mit NOTHING; road-aligned private Warehouse-Spawn-Ausnahme bleibt begrenzt |
+| `PLATOON` | `VALIDATED_FOR_DOCUMENTED_SCOPE` + `SOURCE_REVIEWED` | Ground-Acceptance-1 bis -6 und Stage 1A bestätigen Assetselektion/AMMOSUPPLY; Stage 1C bestätigt `TPL_BLUE_CONVOY_FUEL_LIGHT_06` mit `AUFTRAG.Type.NOTHING`; FUELSUPPLY bleibt source-reviewed/inconclusive |
+| `ARMYGROUP` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Acceptance 1–6, Stage 1A und Stage 1C bestätigen MissionDone-Persistenz, mobilen `RTZ(..., OnRoad)`, `Returning`, `Returned` und Warehouse-Handoff; Stage 1C bestätigt denselben Fuel-Light-ARMYGROUP auf vollständigem Hin-/Rückweg; immobiler Teleportpfad bleibt ausgeschlossen |
+| `OPSGROUP` | `VALIDATED_FOR_DOCUMENTED_SCOPE` + `SOURCE_REVIEWED` | AirOps-Methoden sowie Ground-MissionDone-/Return-Pfade praktisch bestätigt; Stage 1C bestätigt NOTHING execution/cancel-to-MissionDone im dokumentierten Scope; Stage 1B FUELSUPPLY SpecialTask/TaskCancel bleibt source-reviewed/inconclusive; Cargo-Pfade bleiben source-reviewed |
+| `OPSTRANSPORT` | `SOURCE_REVIEWED` | Constructor, Cargo/Carrier-Zonen, `AddPathTransport`, Disembark- und Carrier-Verträge geprüft; Stage 1A und Stage 1C benötigen OPSTRANSPORT nicht; taktischer OMW-Transport benötigt eigenen DCS-Test |
 | `AMMOTRUCK` | `SOURCE_REVIEWED` | gepinnter Source und offizieller Demo-Anwendungsfall für automatische Artillerie-Rearm-Versorgung geprüft; `reloads` ist Rearm-Zykluszahl, keine CampaignState-Menge; kein OMW-AMMOTRUCK-Runtime-PASS |
 | `ARTY` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Ground-Ammo-Rearm-Acceptance-1 bestätigt den Bostick-Fixed-Battery-Pfad mit `New`, `AssignTargetCoord`, `GetAmmo`, `SetRearmingGroup`, `SetRearmingGroupOnRoad`, `Rearm` sowie CeaseFire/BeforeRearm/Rearmed-Callbacks; keine pauschale Validierung anderer Batterien, Supply-Typen oder MOOSE-Versionen |
 | `CTLD`, `CSAR`, `AICSAR` | `PLANNED` / teilweise verwendet | separate Acceptance erforderlich |
@@ -405,19 +405,19 @@ The current online MOOSE documentation explicitly lists `AUFTRAG:NewFUELSUPPLY(Z
 
 ## Addendum 2026-08-22 – Stage 1B runtime FAIL and Stage 1C AUFTRAG NOTHING replacement
 
-Dieses Addendum **superseded für den aktuellen Branch** die unmittelbar davor stehende `DCS_PENDING`-Aussage zu Stage 1B.
+Dieses Addendum ist historische Entwicklungsevidenz. Die spätere Stage-1C-Acceptance superseded die hier noch enthaltene frühe FAIL-/DCS_PENDING-Einordnung.
 
-Stage 1B realer Runtime-Befund:
+Stage 1B damaliger Harness-Befund:
 
 ```text
 AUFTRAG:NewFUELSUPPLY(Zone)
 ROAD_ALIGNED_WAREHOUSE_SPAWN
 GROUP_MATERIALIZED
 ARMY_ON_MISSION mission=FUELSUPPLY
--> no MissionExecute
--> no MissionDone
--> OUTBOUND_TIMEOUT
-Result: FAIL / CLOSED FOR CURRENT OMW META-RESUPPLY USE
+-> no MissionExecute before harness abort
+-> no MissionDone before harness abort
+-> OUTBOUND_TIMEOUT 1800
+Result: HARNESS_TIMEOUT_CONTAMINATED / INCONCLUSIVE
 ```
 
 Owner-approved Stage-1C-Ersatzvertrag vom 22.08.2026:
@@ -431,8 +431,7 @@ CampaignState meta resource
 -> MarkDelivered / MissionDemand SUCCESS
 -> __Cancel
 -> MissionDone
--> 30 s settlement
--> same ARMYGROUP RTZ origin
+-> delayed same ARMYGROUP RTZ origin
 -> Returned -> AddAsset
 ```
 
@@ -447,12 +446,37 @@ OPSGROUP NOTHING execution -> __FullStop(0.1)
 TaskCancel NOTHING -> TaskDone
 ```
 
-Acceptance-only Fail-fast:
+Aktueller Status steht im folgenden Stage-1C-Addendum.
+
+## Addendum 2026-08-23 – Stage 1C AUFTRAG NOTHING accepted runtime scope
 
 ```text
-OutboundTimeoutSec=600
-DestinationCheckIntervalSec=15
-DestinationExecutionGraceSec=90
+Acceptance branch: agent/automatic-response-orchestration
+Acceptance commit: 8803505edf07120bc6d1673b41f69067e8db0211
+BuilderVersion: GROUND-META-RESUPPLY-NOTHING-ACCEPTANCE-1-4
+Bundle SHA-256: C881C82C3F699914E18FFE64DE73E650E20AF82B55B3F486154C40059F44CB65
+Mission: OMW_Template_v19.miz
+Mission SHA-256: D788AF36535D3ACD1866D15FFB5D354B2C44B5F8EE40D4BAF6FD1D97B7C0F8A5
+DCS: 2.9.28.26385 MT
+MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+Moose.lua SHA-256: E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915
+Result: PASS / ACCEPTED_TECHNICAL_BASELINE
 ```
 
-Status: `SOURCE_REVIEWED / OWNER_APPROVED_FOR_ACCEPTANCE / DCS_PENDING`.
+Für genau diesen Provenienzsatz praktisch bestätigt:
+
+```text
+PLATOON:AddMissionCapability(AUFTRAG.Type.NOTHING, 100)
+AUFTRAG:NewNOTHING(destinationZone)
+AUFTRAG:SetMissionSpeed(27)
+AUFTRAG:SetFormation(ENUMS.Formation.Vehicle.OnRoad)
+AUFTRAG:SetReturnToLegion(false)
+MissionExecute after destination-zone proof
+AUFTRAG cancel -> MissionDone
+same ARMYGROUP RTZ(originZone, OnRoad)
+ARMYGROUP Returned
+LEGION/Warehouse AddAsset
+physical cleanup
+```
+
+Der Stage-1C-Nachweis betrifft ausschließlich den neutralen physischen Executor für einen CampaignState-gesteuerten strategischen Meta-Ressourcen-Roundtrip. Er verleiht `AUFTRAG NOTHING`, M978 oder MOOSE keine strategische Fuel-/Cargo-Autorität. Der separate operative `FUELSUPPLY`-/RefuellingZone-Pfad bleibt ungeprüft.
