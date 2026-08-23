@@ -10,6 +10,7 @@ authoritative_for:
   - COMMANDER start and selection sequence
   - source-reviewed WAREHOUSE parking method boundaries
   - AAR runtime method evidence for the exact documented acceptance provenance
+  - AWACS routing lifecycle method evidence for the exact documented Acceptance-1 provenance
   - documented validation scope and limitations
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
@@ -612,3 +613,59 @@ not validated here:
 - general CHAP_M1083 behavior outside this exact battery/MIZ/MOOSE scope
 - other ARTY batteries or MOOSE versions
 ```
+
+## Addendum 2026-08-23 – AWACS Acceptance 1 routing lifecycle
+
+### Provenienz
+
+```text
+Branch:                   agent/awacs-external-lifecycle-foundation
+Tested source commit:     bde8a6e8d006b7c8d744b739510b08aa9812d48b
+Mission:                  OMW_Template_v19(8).miz
+Mission SHA-256:          d788af36535d3acd1866d15ffb5d354b2c44b5f8ee40d4baf6fd1d97b7c0f8a5
+DCS:                      2.9.28.26385 MT
+MOOSE release:            2.9.18
+MOOSE commit:             73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+Moose.lua SHA-256:        e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
+Embedded Warehouse SHA:   01a9ca70988198ecbd76f4d1cab4304261f2cc56911584b44741c0d49c7b146c
+Embedded AWACS bundle SHA:639841a552343f4d0f7180f657a4a0b3141fb0b9af3ed6f1d9915ec955444fc2
+Controller source SHA:    6ed1c54465764b5745f1071a59439f29dc08a93d1875492d25ff5ba889bd13bd
+dcs.log SHA-256:          593d02d455db0cae04cfd0e7651671d3af1d76ab430ff3232da7b19dac391c2f
+debrief.log SHA-256:      32df4af4943f5ca3d2a98dde61e452054b5183fd21fa9f6b78750894ec106eb7
+Result:                    PASS for routing lifecycle scope
+```
+
+### Praktisch bestätigte Methoden und Pfade
+
+| Methode / Pfad | Status | Exakt bestätigter AWACS-Umfang |
+|---|---|---|
+| `SPAWN:InitCallSign(...)` / `InitHeading(...)` / `InitSpeedKnots(...)` / `SpawnFromCoordinate(...)` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | `OMW_C2_E3A_WIZARD` materialisierte am externen Pakistan-Punkt als `Wizard1-1`; der Controller protokollierte den vorgesehenen External-Spawn-/ROSIE-Abstand und 357.300 MHz-Kontext. |
+| `FLIGHTGROUP:New(...)` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Die materialisierte E-3-Gruppe wurde als FLIGHTGROUP durch den vollständigen dokumentierten Routing-Lifecycle geführt. |
+| `FLIGHTGROUP:AddWaypoint(...)` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | ROSIE inbound, 30-NM-Late-Approach und nach FIR-Egress der getrennte External-Handoff-Waypoint wurden im erfolgreichen Lauf erreicht beziehungsweise ausgelöst. |
+| `FLIGHTGROUP/OPSGROUP PassingWaypoint` / `OnAfterPassingWaypoint(...)` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | ROSIE inbound und der Late-Approach-Waypoint wurden in korrekter Reihenfolge erkannt; Late Approach fügte erst danach den AWACS-Auftrag hinzu. |
+| `FLIGHTGROUP:AddMission(...)` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | `AUFTRAG:NewAWACS(...)` wurde nach Late Approach an die E-3 übergeben; anschließend wurde `ON_STATION area=APOC` erreicht. |
+| `AUFTRAG:NewAWACS(...)` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | MOOSE-AWACS-Auftrag wurde auf APOC im E-3-Lifecycle gestartet; MOOSE meldete beim kontrollierten Egress `Mission 3 [AWACS] success!`. |
+| `AUFTRAG:SetMissionAltitude(...)` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Teil des erfolgreich ausgeführten AWACS-Auftrags; die tatsächliche durchgehende FL320-Einhaltung bleibt noch gesondert telemetrisch zu prüfen. |
+| `AUFTRAG:SetMissionEgressCoord(...)` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Egress auf ROSIE / FL340 / 300 kt wurde angeordnet; ROSIE outbound wurde vor External Handoff bestätigt. |
+| `AUFTRAG:Cancel()` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Kontrollierter Acceptance-Egress führte aus APOC in den vorgesehenen ROSIE-Outbound-/External-Handoff-Pfad. |
+| `OPSGROUP/FLIGHTGROUP:Despawn(...)` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Despawn erfolgte erst nach `FIR_EGRESS_PASSED` und Erreichen des externen Handoff-Bereichs; der Controller meldete `DESPAWN_AND_RECREDIT`. |
+
+### Grenzen
+
+Nicht durch Acceptance 1 belegt:
+
+```text
+continuous altitude/speed compliance
+actual APOC 017T / 30-NM racetrack geometry
+player-side WIZARD / 357.300 MHz service usability
+fuel calibration
+six-hour station cycle
+scheduled relief / physical handover
+loss settlement
+restart reconciliation
+FLIGHTGROUP:Refuel(...) or tanker-selection policy
+```
+
+`FLIGHTGROUP:Refuel(...)` bleibt für AWACS `SOURCE_REVIEWED / DCS_PENDING`; aus dem Acceptance-1-PASS darf keine automatische nearest-tanker-Policy abgeleitet werden.
+
+Vollständige Runtime-Evidenz: [`AWACS Acceptance 1`](../../mission/tests/awacs-external-lifecycle/ACCEPTANCE.md) und [`Routing Lifecycle Runtime Evidence`](../../mission/tests/awacs-external-lifecycle/results/2026-08-23-routing-lifecycle-acceptance-1.md).
