@@ -20,6 +20,7 @@ local COMPLETE_TIMEOUT_SEC = 16 * 3600 + 10 * 60
 
 local state = {
   started = false,
+  runtime = nil,
   egressRequested = false,
   activationObserved = false,
   standbyObserved = false,
@@ -40,7 +41,7 @@ local function clockSec()
   return UTILS.SecondsOfToday()
 end
 
-local function requireRuntime()
+local function requireInitialRuntime()
   if not OMW or not OMW.AirOps or not OMW.AirOps.AWACS then
     fail("OMW.AirOps.AWACS is unavailable; load OMW_AWACS_Foundation.lua first")
   end
@@ -55,14 +56,16 @@ end
 local function sampleRuntime(runtime)
   local fg = runtime.flightGroup
   if not fg or not fg:IsAlive() then
-    log(string.format("SAMPLE runtime=%s alive=false serviceState=%s sensorState=%s",
-      tostring(runtime.runtimeId), tostring(runtime.serviceState), tostring(runtime.sensorState)))
+    log(string.format("SAMPLE runtime=%s alive=false serviceState=%s sensorState=%s handoffComplete=%s",
+      tostring(runtime.runtimeId), tostring(runtime.serviceState), tostring(runtime.sensorState), tostring(runtime.handoffComplete)))
     return
   end
 
   local coordinate = fg:GetCoordinate()
-  local altitudeFt = fg:GetAltitude() and UTILS.MetersToFeet(fg:GetAltitude()) or -1
-  local velocityKt = fg:GetVelocity() and UTILS.MpsToKnots(fg:GetVelocity()) or -1
+  local altitude = fg:GetAltitude()
+  local velocity = fg:GetVelocity()
+  local altitudeFt = altitude and UTILS.MetersToFeet(altitude) or -1
+  local velocityKt = velocity and UTILS.MpsToKnots(velocity) or -1
   local headingDeg = fg:GetHeading() or -1
   local fuelPct = fg:GetFuelMin()
   local fuelKg = fg:GetCurrentFuelKgs()
@@ -70,9 +73,9 @@ local function sampleRuntime(runtime)
   local position = coordinate and coordinate:GetLLDDM() or "UNKNOWN"
 
   log(string.format(
-    "SAMPLE runtime=%s clockSec=%.1f serviceState=%s sensorState=%s missionKind=%s physicalOnTrack=%s egressOrdered=%s altFt=%.0f speedKt=%.1f headingDeg=%.1f fuelPct=%s fuelKg=%s fuelMaxKg=%s position=%s",
+    "SAMPLE runtime=%s clockSec=%.1f serviceState=%s sensorState=%s missionKind=%s physicalOnTrack=%s egressOrdered=%s handoffComplete=%s altFt=%.0f speedKt=%.1f headingDeg=%.1f fuelPct=%s fuelKg=%s fuelMaxKg=%s position=%s",
     tostring(runtime.runtimeId), clockSec(), tostring(runtime.serviceState), tostring(runtime.sensorState),
-    tostring(runtime.serviceMissionKind), tostring(runtime.physicalOnTrack), tostring(runtime.egressOrdered),
+    tostring(runtime.serviceMissionKind), tostring(runtime.physicalOnTrack), tostring(runtime.egressOrdered), tostring(runtime.handoffComplete),
     altitudeFt, velocityKt, headingDeg,
     fuelPct and string.format("%.4f", fuelPct) or "nil",
     fuelKg and string.format("%.1f", fuelKg) or "nil",
@@ -84,7 +87,9 @@ end
 local function monitor()
   if state.completed then return end
 
-  local runtime = requireRuntime()
+  local runtime = state.runtime
+  if not runtime then fail("Acceptance 3 runtime reference is unavailable") end
+
   local serviceState = tostring(runtime.serviceState)
   local sensorState = tostring(runtime.sensorState)
   local localSec = clockSec()
@@ -146,7 +151,8 @@ function Acceptance3.Start()
   if state.started then return Acceptance3 end
   if not SCHEDULER or not UTILS then fail("required MOOSE SCHEDULER/UTILS classes are unavailable") end
 
-  local runtime = requireRuntime()
+  local runtime = requireInitialRuntime()
+  state.runtime = runtime
   state.started = true
 
   log(string.format(
