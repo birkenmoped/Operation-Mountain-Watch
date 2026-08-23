@@ -8,6 +8,13 @@
 --   * FLIGHTGROUP:Refuel executes the DCS receiver task after a designated tanker
 --     has been verified as the nearest compatible tanker at the rendezvous.
 --   * CampaignState remains the sole strategic aircraft authority through the adapter.
+--
+-- E-3 transfer-performance baseline:
+--   * OMW uses 440 KT for the visible external/ingress/egress/AAR transfer legs.
+--   * This represents the upper end of the adopted 420-440 KTAS engineering range
+--     for a stabilized high-altitude transit and is not claimed as an exact
+--     historical 964th EAACS flight-manual LRC schedule.
+--   * APOC remains a distinct FL320 / 300 KT mission profile.
 
 OMW = OMW or {}
 
@@ -38,8 +45,8 @@ local APOC = { lat = 32.6850000000, lon = 69.0500000000 }
 local SPAWN_ALTITUDE_FT = 34000
 local INBOUND_CRUISE_ALTITUDE_FT = 35000
 local OUTBOUND_CRUISE_ALTITUDE_FT = 34000
-local TRANSIT_SPEED_KT = 300
-local SPAWN_INITIAL_SPEED_KT = 400
+local TRANSIT_SPEED_KT = 440
+local SPAWN_INITIAL_SPEED_KT = 440
 local LATE_APPROACH_NM = 30
 local AAR_LATE_APPROACH_NM = 30
 local AAR_NEAREST_TANKER_RADIUS_NM = 40
@@ -433,9 +440,10 @@ local function materialize(role, reason)
   state.strategicAdapter:OnMaterialized(selection, runtime)
 
   log(string.format(
-    "MATERIALIZED runtime=%s role=%s source=%s spawnToRosieNm=%.2f rosieToApocNm=%.2f firToLateNm=%.2f callsign=Wizard%d-1 frequencyMHz=%.3f serviceStartLocalSec=%d serviceEndLocalSec=%d plannedAarLocalSec=%d",
+    "MATERIALIZED runtime=%s role=%s source=%s spawnToRosieNm=%.2f rosieToApocNm=%.2f firToLateNm=%.2f callsign=Wizard%d-1 frequencyMHz=%.3f spawnSpeedKt=%d transitSpeedKt=%d serviceStartLocalSec=%d serviceEndLocalSec=%d plannedAarLocalSec=%d",
     runtime.runtimeId, role, SOURCE_DOMAIN, runtime.spawnToFirNm, runtime.firToTrackNm,
-    runtime.firToLateApproachNm, callsignNumber, FREQUENCY_MHZ, SERVICE_START_SEC, SERVICE_END_SEC, PLANNED_AAR_SEC))
+    runtime.firToLateApproachNm, callsignNumber, FREQUENCY_MHZ, SPAWN_INITIAL_SPEED_KT, TRANSIT_SPEED_KT,
+    SERVICE_START_SEC, SERVICE_END_SEC, PLANNED_AAR_SEC))
 
   return runtime
 end
@@ -571,6 +579,7 @@ function Controller.GetConfig()
     rosie = { lat = ROSIE.lat, lon = ROSIE.lon },
     apoc = { lat = APOC.lat, lon = APOC.lon },
     spawnAltitudeFt = SPAWN_ALTITUDE_FT,
+    spawnInitialSpeedKt = SPAWN_INITIAL_SPEED_KT,
     inboundCruiseAltitudeFt = INBOUND_CRUISE_ALTITUDE_FT,
     outboundCruiseAltitudeFt = OUTBOUND_CRUISE_ALTITUDE_FT,
     transitSpeedKt = TRANSIT_SPEED_KT,
