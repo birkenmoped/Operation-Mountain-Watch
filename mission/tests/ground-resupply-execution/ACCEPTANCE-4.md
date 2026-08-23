@@ -188,13 +188,36 @@ normal MOOSE ReturnToLegion
 Returned -> Warehouse AddAsset verification
 ```
 
-Builder-Version:
+Reale lokale Build-Evidenz für Build `2-3`:
 
 ```text
-GROUND-FUEL-REFUELLING-ZONE-ACCEPTANCE-2-3
+Git HEAD: 2bd930729ed12a073f5364dc139281b60151acf0
+GeneratedUtc: 2026-08-23T23:08:54Z
+BuilderVersion: GROUND-FUEL-REFUELLING-ZONE-ACCEPTANCE-2-3
+TestId: GROUND-FUEL-REFUELLING-ZONE-ACCEPTANCE-2
+MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+Moose.lua SHA-256: E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915
+MissionCreation: AUFTRAG:NewFUELSUPPLY -> BRIGADE:AddMission
+PersistentRefuellingZone: false
+DestinationProof: Stage-1C-style independent zone polling plus observed MissionExecute
+DestinationCheckIntervalSec: 15
+DestinationExecutionGraceSec: 90
+ReturnMode: MOOSE ReturnToLegion
+HardOutboundTravelTimeout: false
+HardReturnTravelTimeout: false
+ReturnSettlementDelaySec: 12
+OPSTRANSPORT: false
+MizMutation: false
+Bundle SHA-256: 8CBDFA12B1A052517D82CB20A460CA665415353FE38ED2F1C50928BE6C7966A0
+Builder SHA-256: BD5C8657B759A8915F471AC54B56C375DCC7865B745EA208AC7B3DF822B6A023
+Acceptance source SHA-256: 8FAD1F29E2054C5CE621549AA167BFF2A6DE45EE7C39EAEDF57AD3E234029287
+OMW_MissionDemand.lua SHA-256: E348E75B87135B99D780E07CA6B6FB7C3C530E048E9C6DE790328D147DE32848
+OMW_ResourceDemandPolicy.lua SHA-256: BDC20ACEDAB60F662093077B8320220EBB71C6C641CC604C4356231B8405913C
+OMW_GroundRoadSpawnAdapter.lua SHA-256: 1A81FB2E5270C493373CF5BF6EC01F5AFED47004BF25C4225524121155D983E8
+Local build: PASS
 ```
 
-Der Builder verbietet jetzt ausdrücklich `AddRefuellingZone(...)` im Acceptance-Source und verlangt `AUFTRAG:NewFUELSUPPLY(state.destinationZone)`.
+Der Build-PASS bestätigt nur die lokale Reproduzierbarkeit und Provenienz des erzeugten Bundles. Er ist noch kein DCS-Runtime-Nachweis.
 
 ## 8. Entscheidungsregel
 
@@ -217,9 +240,11 @@ INCONCLUSIVE
 ```text
 previous_build_2_1: HARNESS_LOGIC_ERROR / INCONCLUSIVE
 previous_build_2_2: PERSISTENT_REFUELLING_ZONE_LIFECYCLE_MISMATCH
+current_build_commit: 2bd930729ed12a073f5364dc139281b60151acf0
 current_builder: GROUND-FUEL-REFUELLING-ZONE-ACCEPTANCE-2-3
 current_execution_model: ONE_SHOT_AUFTRAG_NEW_FUELSUPPLY
-local_build_2_3: NOT_YET_RUN
+current_bundle_sha256: 8CBDFA12B1A052517D82CB20A460CA665415353FE38ED2F1C50928BE6C7966A0
+local_build_2_3: PASS
 validated_in_dcs: false
-result: STAGED_FOR_LOCAL_BUILD
+result: STAGED_FOR_DCS_ACCEPTANCE
 ```
