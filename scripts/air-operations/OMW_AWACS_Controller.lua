@@ -3,8 +3,11 @@
 -- MOOSE-first boundary:
 --   * SPAWN materializes the late-activation E-3 template outside Kabul FIR.
 --   * FLIGHTGROUP executes explicit transit, AAR transfer and physical lifecycle.
---   * AUFTRAG:NewORBIT_RACETRACK provides pre-service standby on the APOC track.
---   * AUFTRAG:NewAWACS provides the actual 1100Z-1900Z AWACS service window.
+--   * AUFTRAG:NewORBIT_RACETRACK provides the persistent APOC physical orbit.
+--   * OPSGROUP:SwitchEmission and CONTROLLABLE radar options model the visible
+--     AEW sensor state without replacing the physical orbit mission.
+--   * No AUFTRAG:NewAWACS / EnRouteTaskAWACS task is required for the current
+--     OMW "visible AEW actor" scope; player-side fighter control is out of scope.
 --   * FLIGHTGROUP:Refuel executes the DCS receiver task after a designated tanker
 --     has been verified as the nearest compatible tanker at the rendezvous.
 --   * CampaignState remains the sole strategic aircraft authority through the adapter.
@@ -176,21 +179,31 @@ local function makeSelection(role)
   }
 end
 
-local function makeStandbyMission(runtime)
+local function makePersistentOrbit(runtime)
   local mission = AUFTRAG:NewORBIT_RACETRACK(runtime.trackCoord, TRACK_ALTITUDE_FT, TRACK_SPEED_KT, TRACK_HEADING_DEG, TRACK_LEG_NM)
   mission:SetMissionAltitude(TRACK_ALTITUDE_FT)
-  mission:SetMissionEgressCoord(runtime.firEgressCoord, OUTBOUND_CRUISE_ALTITUDE_FT, TRANSIT_SPEED_KT)
   return mission
 end
 
-local function makeAwacsMission(runtime)
-  local mission = AUFTRAG:NewAWACS(runtime.trackCoord, TRACK_ALTITUDE_FT, TRACK_SPEED_KT, TRACK_HEADING_DEG, TRACK_LEG_NM)
-  mission:SetMissionAltitude(TRACK_ALTITUDE_FT)
-  mission:SetMissionEgressCoord(runtime.firEgressCoord, OUTBOUND_CRUISE_ALTITUDE_FT, TRANSIT_SPEED_KT)
-  return mission
+local function setSensorState(runtime, enabled, reason)
+  if not runtime or not runtime.flightGroup or not runtime.flightGroup:IsAlive() then return false end
+  if not runtime.group or not runtime.group:IsAlive() then return false end
+
+  if enabled then
+    runtime.group:SetOptionRadarUsingForContinousSearch()
+    runtime.flightGroup:SwitchEmission(true)
+    runtime.sensorState = "EMITTING"
+  else
+    runtime.flightGroup:SwitchEmission(false)
+    runtime.group:SetOptionRadarUsingNever()
+    runtime.sensorState = "SILENT"
+  end
+
+  log(string.format("SENSOR_STATE runtime=%s state=%s reason=%s", runtime.runtimeId, runtime.sensorState, tostring(reason)))
+  return true
 end
 
-local function cancelGroupMission(runtime)
+local function cancelPhysicalMission(runtime)
   if runtime and runtime.serviceMission and runtime.flightGroup and runtime.flightGroup:IsAlive() then
     runtime.flightGroup:MissionCancel(runtime.serviceMission)
   end
@@ -198,24 +211,42 @@ local function cancelGroupMission(runtime)
   runtime.serviceMissionKind = nil
 end
 
-local function addStandbyMission(runtime)
-  cancelGroupMission(runtime)
-  runtime.serviceMission = makeStandbyMission(runtime)
-  runtime.serviceMissionKind = "STANDBY_ORBIT"
+local function addPersistentOrbit(runtime, serviceState, reason)
+  cancelPhysicalMission(runtime)
+  runtime.serviceMission = makePersistentOrbit(runtime)
+  runtime.serviceMissionKind = "PERSISTENT_RACETRACK"
   runtime.flightGroup:AddMission(runtime.serviceMission)
-  runtime.serviceState = "STANDBY"
-  log(string.format("SERVICE_STANDBY runtime=%s untilLocalSec=%d", runtime.runtimeId, SERVICE_START_SEC))
+  runtime.serviceState = serviceState or "STANDBY"
+
+  if runtime.serviceState == "ACTIVE" then
+    setSensorState(runtime, true, reason or "ORBIT_ACTIVE")
+    runtime.lastServiceActivatedAt = now()
+  else
+    setSensorState(runtime, false, reason or "ORBIT_STANDBY")
+  end
+
+  log(string.format("PERSISTENT_ORBIT runtime=%s serviceState=%s missionKind=%s",
+    runtime.runtimeId, runtime.serviceState, runtime.serviceMissionKind))
 end
 
-local function addAwacsMission(runtime, reason)
-  cancelGroupMission(runtime)
-  runtime.serviceMission = makeAwacsMission(runtime)
-  runtime.serviceMissionKind = "AWACS"
-  runtime.flightGroup:AddMission(runtime.serviceMission)
+local function activateService(runtime, reason)
+  if not runtime or runtime.serviceState == "CLOSED" or runtime.lossHandled or runtime.handoffComplete then return false end
+  if runtime.serviceMissionKind ~= "PERSISTENT_RACETRACK" then return false end
+  if not setSensorState(runtime, true, reason or "SERVICE_ACTIVE") then return false end
   runtime.serviceState = "ACTIVE"
   runtime.lastServiceActivatedAt = now()
-  log(string.format("SERVICE_ACTIVE runtime=%s reason=%s callsign=Wizard%d-1 frequencyMHz=%.3f",
+  log(string.format("SERVICE_ACTIVE runtime=%s reason=%s callsign=Wizard%d-1 frequencyMHz=%.3f mode=PERSISTENT_ORBIT_SENSOR_TOGGLE",
     runtime.runtimeId, tostring(reason), runtime.callsignNumber, FREQUENCY_MHZ))
+  return true
+end
+
+local function deactivateService(runtime, reason)
+  if not runtime or runtime.lossHandled or runtime.handoffComplete then return false end
+  setSensorState(runtime, false, reason or "SERVICE_INACTIVE")
+  if runtime.serviceState ~= "CLOSED" then runtime.serviceState = "STANDBY" end
+  log(string.format("SERVICE_INACTIVE runtime=%s reason=%s mode=PERSISTENT_ORBIT_SENSOR_TOGGLE",
+    runtime.runtimeId, tostring(reason)))
+  return true
 end
 
 local function routeDirectEgress(runtime, reason)
@@ -224,26 +255,13 @@ local function routeDirectEgress(runtime, reason)
   runtime.egressOrdered = true
   runtime.egressReason = reason
   runtime.serviceState = "CLOSED"
-  cancelGroupMission(runtime)
+  setSensorState(runtime, false, "EGRESS")
+  cancelPhysicalMission(runtime)
   local waypoint = runtime.flightGroup:AddWaypoint(runtime.firEgressCoord, TRANSIT_SPEED_KT, nil, OUTBOUND_CRUISE_ALTITUDE_FT, true)
   runtime.firEgressDirectWaypointUid = waypoint and waypoint.uid or true
   log(string.format("EGRESS_ORDERED runtime=%s reason=%s target=%s altitudeFt=%d speedKt=%d mode=DIRECT_WAYPOINT",
     runtime.runtimeId, tostring(reason), FIR_FIX_NAME, OUTBOUND_CRUISE_ALTITUDE_FT, TRANSIT_SPEED_KT))
   return true
-end
-
-local function cancelToEgress(runtime, reason)
-  if not runtime or runtime.egressOrdered or runtime.lossHandled or runtime.handoffComplete then return false end
-  runtime.egressReason = reason
-  runtime.serviceState = "CLOSED"
-  if runtime.serviceMission then
-    runtime.egressOrdered = true
-    runtime.serviceMission:Cancel()
-    log(string.format("EGRESS_ORDERED runtime=%s reason=%s target=%s altitudeFt=%d speedKt=%d mode=MISSION_EGRESS",
-      runtime.runtimeId, tostring(reason), FIR_FIX_NAME, OUTBOUND_CRUISE_ALTITUDE_FT, TRANSIT_SPEED_KT))
-    return true
-  end
-  return routeDirectEgress(runtime, reason)
 end
 
 local function handleLoss(runtime, reason)
@@ -279,7 +297,8 @@ local function beginAarTransfer(runtime, rendezvousCoordinate, designatedTankerG
     return false, "AWACS_AAR_RENDEZVOUS_TOO_CLOSE"
   end
 
-  cancelGroupMission(runtime)
+  deactivateService(runtime, "AAR_TRANSFER")
+  cancelPhysicalMission(runtime)
   local approach = rendezvousCoordinate:GetIntermediateCoordinate(runtime.trackCoord, AAR_LATE_APPROACH_NM / distanceNm)
   approach:SetAltitude(UTILS.FeetToMeters(OUTBOUND_CRUISE_ALTITUDE_FT), true)
 
@@ -350,6 +369,7 @@ local function materialize(role, reason)
     lateApproachPassed = false,
     physicalOnTrack = false,
     serviceState = "INBOUND",
+    sensorState = "SILENT",
     serviceMission = nil,
     serviceMissionKind = nil,
     egressOrdered = false,
@@ -366,6 +386,8 @@ local function materialize(role, reason)
     aarReturnApproachUid = nil,
   }
 
+  setSensorState(runtime, false, "MATERIALIZED_INBOUND")
+
   function flightGroup:OnAfterPassingWaypoint(From, Event, To, Waypoint)
     if not Waypoint or runtime.lossHandled or runtime.handoffComplete then return end
 
@@ -380,7 +402,8 @@ local function materialize(role, reason)
       if not runtime.firIngressPassed then fail("late approach reached before ROSIE runtime=" .. runtime.runtimeId) end
       runtime.lateApproachPassed = true
       runtime.lateApproachPassedAt = now()
-      if clockSec() < SERVICE_START_SEC then addStandbyMission(runtime) else addAwacsMission(runtime, "ARRIVED_AFTER_SERVICE_START") end
+      local initialState = clockSec() < SERVICE_START_SEC and "STANDBY" or "ACTIVE"
+      addPersistentOrbit(runtime, initialState, initialState == "ACTIVE" and "ARRIVED_AFTER_SERVICE_START" or "ARRIVED_BEFORE_SERVICE_START")
       log(string.format("LATE_APPROACH_PASSED runtime=%s distanceToTrackNm=%.1f", runtime.runtimeId, LATE_APPROACH_NM))
       return
     end
@@ -407,8 +430,8 @@ local function materialize(role, reason)
         routeDirectEgress(runtime, "SERVICE_WINDOW_ENDED_DURING_AAR_RETURN")
       else
         runtime.aarPhase = "REJOINING"
-        addAwacsMission(runtime, "AAR_RETURN")
-        log(string.format("AAR_RETURN_LATE_APPROACH runtime=%s action=ADD_AWACS_MISSION", runtime.runtimeId))
+        addPersistentOrbit(runtime, "REJOINING", "AAR_RETURN_LATE_APPROACH")
+        log(string.format("AAR_RETURN_LATE_APPROACH runtime=%s action=ADD_PERSISTENT_ORBIT", runtime.runtimeId))
       end
     end
   end
@@ -461,26 +484,29 @@ local function monitor()
       if not runtime.physicalOnTrack then
         runtime.physicalOnTrack = true
         runtime.physicalOnTrackAt = timestamp
-        log(string.format("ON_TRACK runtime=%s area=%s serviceState=%s", runtime.runtimeId, AREA_NAME, runtime.serviceState))
+        log(string.format("ON_TRACK runtime=%s area=%s serviceState=%s sensorState=%s",
+          runtime.runtimeId, AREA_NAME, runtime.serviceState, runtime.sensorState))
       end
       if runtime.serviceState == "REJOINING" then
-        runtime.serviceState = "ACTIVE"
         runtime.aarPhase = "COMPLETE"
-        log(string.format("AAR_RETURN_ON_STATION runtime=%s serviceState=ACTIVE", runtime.runtimeId))
+        activateService(runtime, "AAR_RETURN_ON_STATION")
+        log(string.format("AAR_RETURN_ON_STATION runtime=%s serviceState=%s sensorState=%s",
+          runtime.runtimeId, runtime.serviceState, runtime.sensorState))
       elseif runtime.serviceState == "STANDBY" and localSec >= SERVICE_START_SEC and localSec < SERVICE_END_SEC then
-        addAwacsMission(runtime, "SCHEDULED_1100Z_START")
+        activateService(runtime, "SCHEDULED_1100Z_START")
       end
     end
   end
 
   if not runtime.egressOrdered and localSec >= SERVICE_END_SEC and runtime.serviceState ~= "CLOSED" then
-    runtime.serviceState = "CLOSED"
     runtime.serviceClosedAt = timestamp
+    deactivateService(runtime, "SCHEDULED_1900Z_END")
+    runtime.serviceState = "CLOSED"
     log(string.format("SERVICE_CLOSED runtime=%s localSec=%.1f scheduledLocalSec=%d", runtime.runtimeId, localSec, SERVICE_END_SEC))
     if runtime.aarPhase == "OUTBOUND_TRANSFER" or runtime.aarPhase == "REFUELING" or runtime.aarPhase == "RETURN_TRANSFER" then
       runtime.closePending = true
     else
-      cancelToEgress(runtime, "SCHEDULED_1900Z_END")
+      routeDirectEgress(runtime, "SCHEDULED_1900Z_END")
     end
   end
 
@@ -528,12 +554,12 @@ function Controller.Start()
   if not runtime then fail("initial AWACS materialization denied: " .. tostring(reason)) end
   state.monitor = SCHEDULER:New(nil, monitor, {}, 1, DISPATCH_INTERVAL_SEC)
   state.started = true
-  log("STARTED template=" .. TEMPLATE .. " area=" .. AREA_NAME .. " firFix=" .. FIR_FIX_NAME)
+  log("STARTED template=" .. TEMPLATE .. " area=" .. AREA_NAME .. " firFix=" .. FIR_FIX_NAME .. " serviceMode=PERSISTENT_ORBIT_SENSOR_TOGGLE")
   return runtime
 end
 
 function Controller.RequestEgress(reason)
-  return cancelToEgress(state.activeRuntime, reason or "REQUESTED_EGRESS")
+  return routeDirectEgress(state.activeRuntime, reason or "REQUESTED_EGRESS")
 end
 
 function Controller.RequestRefuel(rendezvousCoordinate, designatedTankerGroupName)
@@ -598,6 +624,9 @@ function Controller.GetConfig()
     mooseSha256 = MOOSE_SHA256,
     refuelDispatchAccepted = false,
     designatedRefuelReceiverPath = true,
+    persistentOrbit = true,
+    awacsTaskUsed = false,
+    sensorControl = "SWITCH_EMISSION_PLUS_RADAR_OPTION",
   }
 end
 
