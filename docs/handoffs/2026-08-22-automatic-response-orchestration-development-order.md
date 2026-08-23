@@ -105,7 +105,9 @@ Executed mission: OMW_Template_v18.miz
 Result: PASS
 ```
 
-## 4. Stage 1B – FUELSUPPLY Versuch
+## 4. Stage 1B – FUELSUPPLY Versuch und Stage 1B2-Neutest
+
+### 4.1 Historischer Stage-1B-Lauf
 
 Status: `HISTORICAL_TEST_FIXTURE / INCONCLUSIVE`.
 
@@ -126,7 +128,62 @@ M978 = physical representation only
 1 M978 != defined number of packages
 ```
 
-`AUFTRAG:NewFUELSUPPLY(...)` bleibt als MOOSE-nativer Kandidat für einen **separaten operativen RefuellingZone-Service** relevant. Das ist nicht identisch mit strategischem Warehouse-/CampaignState-Meta-RESUPPLY.
+### 4.2 Stage 1B2 – MOOSE-native RefuellingZone/FUELSUPPLY Acceptance
+
+Projektinhaberentscheidung 23.08.2026:
+
+```text
+Before Stage 1D, test the normal MOOSE fuel path again.
+If it works, prefer MOOSE FUELSUPPLY for Fuel and stop using NOTHING as the Fuel executor.
+```
+
+Der Source-Review bestätigt für den gepinnten Stand:
+
+```text
+BRIGADE:AddRefuellingZone(zone)
+-> BRIGADE creates AUFTRAG:NewFUELSUPPLY(zone)
+-> compatible FUELSUPPLY PLATOON / ARMYGROUP
+-> FUELSUPPLY mission lifecycle
+```
+
+Stage 1B2 testet deshalb bewusst **nicht** erneut den OMW-direkten Konstruktorpfad aus Stage 1B, sondern den nativen BRIGADE-RefuellingZone-Pfad.
+
+Zusätzlich wird kein expliziter OMW-RTZ-Override verwendet. Nach exact-once Delivery wird die offene FUELSUPPLY-Mission beendet und der normale MOOSE-`ReturnToLegion`-Lifecycle beobachtet.
+
+Verbindliche Harness-Grenze:
+
+```text
+Hard outbound travel timeout: NONE
+Hard return travel timeout: NONE
+Acceptance completion: event-driven
+```
+
+Acceptance:
+
+```text
+mission/tests/ground-resupply-execution/ACCEPTANCE-4.md
+```
+
+Builder:
+
+```text
+tools/build-ground-fuel-refuelling-zone-acceptance-2.ps1
+BuilderVersion: GROUND-FUEL-REFUELLING-ZONE-ACCEPTANCE-2-1
+```
+
+Entscheidungsregel:
+
+```text
+PASS
+-> reconcile GROUND_FUEL_PACKAGE physical execution toward MOOSE RefuellingZone/FUELSUPPLY
+-> Stage 1C NOTHING remains accepted evidence but ceases to be the preferred Fuel executor
+
+FAIL with clean non-timeout evidence
+-> analyze actual MOOSE/DCS failure before any fallback decision
+
+INCONCLUSIVE
+-> no architecture change
+```
 
 ## 5. Stage 1C – Generic Ground Meta RESUPPLY via AUFTRAG NOTHING
 
@@ -231,6 +288,8 @@ real DCS fuel quantity authority
 operational FUELSUPPLY behavior
 ```
 
+Stage 1C bleibt auch während Stage 1B2 eine akzeptierte technische Baseline. Ein erfolgreicher Stage-1B2-Lauf würde nur die **bevorzugte Fuel-Ausführung** ändern; er löscht die Stage-1C-Provenienz nicht.
+
 ## 6. Aktuelle TODO-Reihenfolge
 
 Diese Liste ist die maßgebliche branch-lokale TODO-Liste.
@@ -240,16 +299,21 @@ DONE  Stage 1A: AMMO RESUPPLY technical baseline
 DONE  Stage 1B: FUELSUPPLY experiment reclassified as timeout-contaminated/inconclusive
 DONE  Stage 1C: strategic meta-resource RESUPPLY via AUFTRAG NOTHING accepted
 
-NEXT  Stage 1D: reconcile generic meta-resource/SUPPLY execution scope
-      - determine whether one generic NOTHING executor can serve additional meta resources
+NEXT  Stage 1B2: MOOSE-native RefuellingZone/FUELSUPPLY acceptance
+      - BRIGADE:AddRefuellingZone(...) is the mission source
+      - BRIGADE/MOOSE creates AUFTRAG FUELSUPPLY itself
+      - no hard outbound/return travel-time failure gate
+      - CampaignState remains sole strategic fuel authority
+      - no M978/package-capacity authority
+      - after exact-once delivery, observe normal MOOSE ReturnToLegion
+      - DCS result determines whether Fuel keeps NOTHING or moves to FUELSUPPLY
+
+DEFERRED UNTIL 1B2 RESULT  Stage 1D: reconcile generic meta-resource/SUPPLY execution scope
+      - determine which non-Fuel meta resources can use a generic NOTHING executor
+      - if Stage 1B2 PASS, remove Fuel from the intended generic NOTHING scope
       - no physical cargo-capacity authority
       - no new parallel resource ownership
-      - MOOSE-first source review before code
-
-NEXT  Operational Fuel Service:
-      - separate short-distance RefuellingZone/FUELSUPPLY acceptance only if required for mission operation
-      - no hard travel-time failure gate
-      - verify actual DCS refuelling effect separately from CampaignState fuel packages
+      - MOOSE-first source review before production code
 
 PLANNED Stage 2: FOB attacked -> support demand
 PLANNED Stage 3: fire support -> local rearm -> strategic resupply closure
@@ -292,6 +356,7 @@ Ground RESUPPLY Acceptance:
 mission/tests/ground-resupply-execution/ACCEPTANCE-1.md
 mission/tests/ground-resupply-execution/ACCEPTANCE-2.md
 mission/tests/ground-resupply-execution/ACCEPTANCE-3.md
+mission/tests/ground-resupply-execution/ACCEPTANCE-4.md
 mission/tests/ground-resupply-execution/results/2026-08-23-ground-meta-resupply-nothing-acceptance-1-pass-1.md
 ```
 
@@ -308,12 +373,13 @@ current_branch: agent/automatic-response-orchestration
 main_reference_commit: cace7e888e655cfce20c9338b9e327ff45cee726
 stage_1a: ACCEPTED_TECHNICAL_BASELINE
 stage_1b_fuelsupply: HISTORICAL_TEST_FIXTURE_INCONCLUSIVE
+stage_1b2_refuelling_zone_fuelsupply: STAGED_NOT_RUN
 stage_1c_newnothing: ACCEPTED_TECHNICAL_BASELINE
 stage_1c_acceptance_commit: 8803505edf07120bc6d1673b41f69067e8db0211
 stage_1c_miz_sha256: D788AF36535D3ACD1866D15FFB5D354B2C44B5F8EE40D4BAF6FD1D97B7C0F8A5
 fuel_meta_resource_model: RETAIN_CAMPAIGNSTATE_AUTHORITY
 fuel_convoy_templates: RETAIN_PHYSICAL_REPRESENTATION
-operational_fuelsupply: SEPARATE_ACCEPTANCE_NOT_YET_RUN
+fuel_preferred_physical_executor: PENDING_STAGE_1B2
 production_generic_executor: NOT_YET_CREATED
-next_development_gate: STAGE_1D_SCOPE_RECONCILIATION
+next_development_gate: STAGE_1B2_DCS_ACCEPTANCE
 ```
