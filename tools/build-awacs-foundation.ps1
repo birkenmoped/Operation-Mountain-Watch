@@ -8,7 +8,7 @@ $repoRoot = Split-Path -Parent $PSScriptRoot
 $distDir = Join-Path $repoRoot 'mission\runtime\air-operations'
 $outputFile = Join-Path $distDir 'OMW_AWACS_Foundation.lua'
 
-$builderVersion = 'OMW-AIROPS-AWACS-FOUNDATION-1'
+$builderVersion = 'OMW-AIROPS-AWACS-FOUNDATION-2'
 $mooseCommit = '73d3ed119cd9e7e3f2cfcabbaa34513d30529b54'
 $mooseSha256 = 'e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915'
 
@@ -41,12 +41,18 @@ $requiredMarkers = @(
   @{ File = 'Controller'; Marker = 'FIR_FIX_NAME = "ROSIE"' },
   @{ File = 'Controller'; Marker = 'AREA_NAME = "APOC"' },
   @{ File = 'Controller'; Marker = 'FREQUENCY_MHZ = 357.300' },
+  @{ File = 'Controller'; Marker = 'AUFTRAG:NewORBIT_RACETRACK' },
   @{ File = 'Controller'; Marker = 'AUFTRAG:NewAWACS' },
   @{ File = 'Controller'; Marker = 'mission:SetMissionAltitude(TRACK_ALTITUDE_FT)' },
   @{ File = 'Controller'; Marker = 'mission:SetMissionEgressCoord' },
-  @{ File = 'Controller'; Marker = 'function flightGroup:OnAfterPassingWaypoint' },
-  @{ File = 'Controller'; Marker = 'AWACS_AAR_DCS_ACCEPTANCE_REQUIRED' },
-  @{ File = 'Bootstrap'; Marker = 'AWACS_EXTERNAL_LIFECYCLE_FOUNDATION' }
+  @{ File = 'Controller'; Marker = 'SERVICE_START_SEC = 15 * 3600 + 30 * 60' },
+  @{ File = 'Controller'; Marker = 'PLANNED_AAR_SEC = 19 * 3600 + 30 * 60' },
+  @{ File = 'Controller'; Marker = 'SERVICE_END_SEC = 23 * 3600 + 30 * 60' },
+  @{ File = 'Controller'; Marker = 'FindNearestTanker' },
+  @{ File = 'Controller'; Marker = 'flightGroup:Refuel' },
+  @{ File = 'Controller'; Marker = 'function flightGroup:OnAfterRefueled' },
+  @{ File = 'Controller'; Marker = 'function Controller.RequestRefuel(rendezvousCoordinate, designatedTankerGroupName)' },
+  @{ File = 'Bootstrap'; Marker = 'AWACS_TIMED_COVERAGE_FOUNDATION' }
 )
 
 foreach ($requirement in $requiredMarkers) {
@@ -93,14 +99,16 @@ $header = @"
 -- BuilderVersion: $builderVersion
 -- GitCommit: $commit
 -- SourceCommitUtc: $sourceCommitUtc
--- Scope: OMW external E-3 AWACS lifecycle foundation.
+-- Scope: OMW external E-3 AWACS timed-coverage foundation.
 -- Strategic source: OFFMAP_AL_DHAFRA.
 -- Route: external materialization -> ROSIE -> 30 NM late approach -> APOC.
--- Station: WIZARD, 357.300 MHz AM, APOC, FL320, 300 KT, 017T, 30 NM leg.
--- Egress: APOC -> ROSIE -> external handoff/despawn.
--- Scheduled relief: one ACTIVE plus at most one RELIEF; handover only on physical track arrival.
--- AAR dispatch: source-reviewed but intentionally acceptance-gated; no automatic nearest-tanker dispatch.
--- DCS validation: NOT YET PERFORMED for this AWACS foundation.
+-- Standby: APOC racetrack before 1530 local without AWACS mission service.
+-- Service: WIZARD, 357.300 MHz AM, 1530-2330 local (1100Z-1900Z).
+-- Station: FL320, 300 KT, 017T, 30 NM leg.
+-- AAR receiver path: leave APOC -> FL340/300 KT transfer -> designated rendezvous -> MOOSE Refuel -> FL340/300 KT return -> APOC.
+-- AAR tanker dispatch: acceptance-gated; no automatic nearest-tanker policy is claimed by this production bundle.
+-- Egress: service closes at 2330 local -> FL340/300 KT -> ROSIE -> external handoff/despawn.
+-- DCS validation: Acceptance 1 covers the earlier routing lifecycle only; timed service/AAR requires dedicated acceptance.
 -- No automated MIZ mutation.
 -- MOOSE-Commit: $mooseCommit
 -- Moose.lua-SHA256: $mooseSha256
@@ -137,7 +145,7 @@ foreach ($pattern in $forbiddenPatterns) {
 Write-Host "Built: $outputFile"
 Write-Host "BuilderVersion: $builderVersion"
 Write-Host "SourceCommitUtc: $sourceCommitUtc"
-Write-Host 'Scope: AWACS_EXTERNAL_LIFECYCLE_FOUNDATION'
+Write-Host 'Scope: AWACS_TIMED_COVERAGE_FOUNDATION'
 Write-Host 'Template: OMW_C2_E3A_WIZARD'
 Write-Host 'StrategicSource: OFFMAP_AL_DHAFRA'
 Write-Host 'FIRFix: ROSIE'
@@ -149,10 +157,17 @@ Write-Host 'TrackSpeedKt: 300'
 Write-Host 'TrackHeadingTrueDeg: 17'
 Write-Host 'TrackLegNm: 30'
 Write-Host 'LateApproachNm: 30'
-Write-Host 'StationCycleSec: 21600'
-Write-Host 'MaxPhysicalAircraft: 2'
+Write-Host 'ServiceStartLocal: 15:30'
+Write-Host 'PlannedAARLocal: 19:30'
+Write-Host 'ServiceEndLocal: 23:30'
+Write-Host 'ServiceWindowSec: 28800'
+Write-Host 'AARTransferAltitudeFt: 34000'
+Write-Host 'AARTransferSpeedKt: 300'
+Write-Host 'AARLateApproachNm: 30'
+Write-Host 'DesignatedRefuelReceiverPath: true'
 Write-Host 'AutomaticRefuelDispatch: false'
-Write-Host 'DCSValidated: false'
+Write-Host 'MaxPhysicalAircraft: 2'
+Write-Host 'DCSValidatedTimedServiceAndAAR: false'
 Write-Host 'MizMutation: false'
 Write-Host "MOOSECommit: $mooseCommit"
 Write-Host "MooseLuaSHA256: $mooseSha256"
