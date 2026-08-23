@@ -9,7 +9,7 @@ $sourceFile = Join-Path $repoRoot 'mission\tests\awacs-external-lifecycle\src\03
 $distDir = Join-Path $repoRoot 'mission\tests\awacs-external-lifecycle\dist'
 $outputFile = Join-Path $distDir 'OMW_AWACS_Acceptance_3.lua'
 
-$builderVersion = 'OMW-AWACS-ACCEPTANCE-3-1'
+$builderVersion = 'OMW-AWACS-ACCEPTANCE-3-2'
 $testId = 'AWACS-PERSISTENT-ORBIT-EMISSION-ACCEPTANCE-3'
 $mooseCommit = '73d3ed119cd9e7e3f2cfcabbaa34513d30529b54'
 $mooseSha256 = 'e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915'
@@ -30,8 +30,6 @@ $requiredMarkers = @(
   'GetVelocity()',
   'GetHeading()',
   'GetFuelMin()',
-  'GetCurrentFuelKgs()',
-  'GetFuelMassMax()',
   'GetLLDDM()',
   'UTILS.SecondsOfToday',
   'RequestEgress',
@@ -56,7 +54,9 @@ $forbiddenPatterns = @(
   'lfs\.',
   'os\.execute',
   'AUFTRAG:NewAWACS',
-  'EnRouteTaskAWACS'
+  'EnRouteTaskAWACS',
+  'GetCurrentFuelKgs',
+  'GetFuelMassMax'
 )
 
 foreach ($pattern in $forbiddenPatterns) {
