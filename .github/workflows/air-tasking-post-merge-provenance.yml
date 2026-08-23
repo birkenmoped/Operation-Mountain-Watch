@@ -1,18 +1,15 @@
-name: Air Tasking post-merge provenance reconciliation
+name: Finalize Air Tasking provenance reconciliation
 
 on:
   push:
     branches:
       - agent/air-tasking-post-merge-provenance
-  pull_request:
-    branches:
-      - main
 
 permissions:
   contents: write
 
 jobs:
-  reconcile:
+  finalize:
     if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
     steps:
@@ -22,75 +19,56 @@ jobs:
           ref: agent/air-tasking-post-merge-provenance
           fetch-depth: 0
 
-      - name: Record post-merge state
+      - name: Correct historical wording and remove temporary workflow
         shell: bash
         run: |
           python3 - <<'PY'
           from pathlib import Path
 
-          merge_sha = "d1ef605c510917b2e69bfb96c109ad9ff8e26654"
-          head_sha = "0c654f2e699a4b8150b785f90fe14e53d2435016"
-
           recon = Path("docs/air-tasking-plan-main-reconciliation.md")
           text = recon.read_text(encoding="utf-8")
-          marker = "## 0. Post-Merge-Status"
-          if marker not in text:
-              title = "# Air Tasking Plan – Main Reconciliation\n"
-              note = f'''\n## 0. Post-Merge-Status\n\nPR #117 wurde nach ausdrücklicher Owner-Freigabe am 23.08.2026 zunächst auf Ready for Review gesetzt und anschließend nach erneutem GitHub-Readback integriert.\n\n```text\nPR: 117\nstatus: MERGED\nsource_head: {head_sha}\nmerge_commit: {merge_sha}\nreconciled_source_validated_in_dcs: false\n```\n\nDie Integration erweitert die historische `VERTICAL-2`-DCS-Evidenz nicht. `VERTICAL-3` bleibt Build-/Hash-/Lua-Contract-Evidenz ohne neuen DCS-PASS. Die dokumentierte Shared-Runtime-Grenze bleibt offen. Aussagen in späteren Abschnitten, die den Owner-Entscheid oder Merge noch als ausstehend beschreiben, sind als historischer Pre-Merge-Stand zu lesen.\n'''
-              if title not in text:
-                  raise SystemExit("reconciliation title marker missing")
-              text = text.replace(title, title + note, 1)
-              recon.write_text(text, encoding="utf-8")
+          text = text.replace(
+              "Gemäß `docs/DOCUMENT-METADATA-POLICY.md` ist `source_commit: 121edd572f596e9a156c6c9137e24f5c9fdc72cc` auf einem offenen PR-Branch zulässig.",
+              "Gemäß `docs/DOCUMENT-METADATA-POLICY.md` ist `source_commit: PENDING_MERGE` auf einem offenen PR-Branch zulässig."
+          )
+          recon.write_text(text, encoding="utf-8")
 
           handoff = Path("docs/handoffs/2026-08-22-air-tasking-plan-main-reconciliation-handoff.md")
           text = handoff.read_text(encoding="utf-8")
-          marker = "## 0. Post-Merge-Nachtrag – 23.08.2026"
-          if marker not in text:
-              title = "# Handoff – Air Tasking Plan Main Reconciliation\n"
-              note = f'''\n## 0. Post-Merge-Nachtrag – 23.08.2026\n\nDer in dieser Übergabe noch als Owner-Gate dokumentierte Integrationsschritt ist abgeschlossen. Der Projektinhaber hat Ready for Review und Merge ausdrücklich freigegeben; GitHub bestätigt PR #117 als gemergt.\n\n```text\nPR: 117\nstatus: MERGED\nsource_head: {head_sha}\nmerge_commit: {merge_sha}\nreconciled_source_validated_in_dcs: false\n```\n\nDie nachfolgenden Abschnitte bleiben als vollständiger Pre-Merge-Handoff und Entscheidungsverlauf erhalten. Ein dort noch als `PENDING OWNER DECISION`, `DRAFT` oder "nächster Schritt" formulierter Merge-Gate-Stand ist historisch und wird durch diesen Nachtrag ersetzt. Nicht ersetzt werden die MOOSE-First-Grenzen, die exakte historische `VERTICAL-2`-Provenienz, die fehlende `VERTICAL-3`-DCS-Validation und die bekannte Shared-Runtime-Limitation.\n'''
-              if title not in text:
-                  raise SystemExit("handoff title marker missing")
-              text = text.replace(title, title + note, 1)
-              handoff.write_text(text, encoding="utf-8")
+          text = text.replace(
+              "[POST-MERGE REQUIRED] replace all PR-local source_commit: 121edd572f596e9a156c6c9137e24f5c9fdc72cc values that land on main with valid full commit provenance",
+              "[COMPLETE] replace all PR-local source_commit: PENDING_MERGE values that landed on main with valid full commit provenance"
+          )
+          text = text.replace(
+              "[PENDING OWNER DECISION] authorize PR #117 Ready for Review",
+              "[COMPLETE] owner authorized PR #117 Ready for Review; transition performed"
+          )
+          text = text.replace(
+              "[PENDING OWNER DECISION] authorize PR #117 merge",
+              "[COMPLETE] owner authorized PR #117 merge; PR merged as d1ef605c510917b2e69bfb96c109ad9ff8e26654"
+          )
+          text = text.replace(
+              "[POST-MERGE REQUIRED] update SUBPROJECT-REGISTRY from open PR #117 to merged history if required by current registry policy",
+              "[COMPLETE] update SUBPROJECT-REGISTRY from open PR #117 to merged history"
+          )
+          text = text.replace(
+              "[POST-MERGE REQUIRED] update this handoff / reconciliation status or supersede it with a finalization record",
+              "[COMPLETE] add explicit post-merge status to this handoff and reconciliation record"
+          )
+          handoff.write_text(text, encoding="utf-8")
+
+          registry = Path("docs/SUBPROJECT-REGISTRY.md")
+          text = registry.read_text(encoding="utf-8")
+          text = text.replace(
+              "| 10 | `feature/tm02-red-tree-fill` | PR 9 | TM02N Tree Fill | gleicher Network-Pfad |",
+              "| 10 | `feature/tm02-red-tree-fill` | PR 9 | TM02N Tree Fill | gleicher RED-Pfad |"
+          )
+          registry.write_text(text, encoding="utf-8")
           PY
 
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add docs/air-tasking-plan-main-reconciliation.md docs/handoffs/2026-08-22-air-tasking-plan-main-reconciliation-handoff.md
-          if git diff --cached --quiet; then
-            echo "No post-merge note changes required"
-          else
-            git commit -m "Document PR 117 post-merge state"
-          fi
-
-          PROVENANCE_SHA="$(git rev-parse HEAD)"
-          echo "Provenance source commit: ${PROVENANCE_SHA}"
-
-          python3 - "$PROVENANCE_SHA" <<'PY'
-          from pathlib import Path
-          import sys
-
-          sha = sys.argv[1]
-          files = [
-              Path("docs/DOCUMENT-REGISTRY.md"),
-              Path("docs/SUBPROJECT-REGISTRY.md"),
-              Path("docs/air-tasking-plan-main-reconciliation.md"),
-              Path("docs/handoffs/2026-08-22-air-tasking-plan-main-reconciliation-handoff.md"),
-              Path("docs/moose/PROJECT-CLASS-INDEX.md"),
-              Path("mission/tests/air-tasking-aar-vertical/README.md"),
-          ]
-          for path in files:
-              text = path.read_text(encoding="utf-8")
-              if "source_commit: PENDING_MERGE" in text:
-                  text = text.replace("source_commit: PENDING_MERGE", f"source_commit: {sha}", 1)
-                  path.write_text(text, encoding="utf-8")
-          PY
-
-          git add docs/DOCUMENT-REGISTRY.md docs/SUBPROJECT-REGISTRY.md docs/air-tasking-plan-main-reconciliation.md docs/handoffs/2026-08-22-air-tasking-plan-main-reconciliation-handoff.md docs/moose/PROJECT-CLASS-INDEX.md mission/tests/air-tasking-aar-vertical/README.md
-          if git diff --cached --quiet; then
-            echo "No PENDING_MERGE values remained in target files"
-          else
-            git commit -m "Finalize Air Tasking post-merge provenance"
-          fi
-
+          git rm .github/workflows/air-tasking-post-merge-provenance.yml
+          git add docs/air-tasking-plan-main-reconciliation.md docs/handoffs/2026-08-22-air-tasking-plan-main-reconciliation-handoff.md docs/SUBPROJECT-REGISTRY.md
+          git commit -m "Finalize PR 117 post-merge reconciliation"
           git push origin HEAD:agent/air-tasking-post-merge-provenance
