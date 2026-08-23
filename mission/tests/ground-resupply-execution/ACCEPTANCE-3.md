@@ -16,15 +16,9 @@ validated_in_dcs: false
 
 # Ground Meta RESUPPLY Acceptance 1 – AUFTRAG NOTHING
 
-## 1. Owner-Entscheidung
+## 1. Ziel
 
-Am 22.08.2026 hat der Projektinhaber den physischen Vertrag für `AUFTRAG:NewNOTHING(...)` als Ersatzkandidaten für abstrakte Ground-Meta-Waren bestätigt.
-
-Der fehlgeschlagene `AUFTRAG:NewFUELSUPPLY(...)`-Pfad bleibt historische Negativ-Evidenz und wird nicht überschrieben.
-
-## 2. Ziel
-
-Erster Fixture bleibt bewusst `GROUND_FUEL_PACKAGE`, um gegenüber Stage 1B nur die physische Missionssemantik zu wechseln:
+Erster Fixture bleibt bewusst `GROUND_FUEL_PACKAGE`:
 
 ```text
 HONAKER FUEL 36
@@ -36,11 +30,11 @@ HONAKER FUEL 36
 -> BRIGADE / PLATOON / ARMYGROUP
 -> AUFTRAG:NewNOTHING(Honaker ACCESS)
 -> OnRoad 27 kt
--> exact destination-zone proof
+-> destination-zone proof
 -> CampaignState DELIVERED
 -> MissionDemand SUCCESS
 -> mission cancel / MissionDone
--> 30 s settlement
+-> 30 s delayed RTZ issue
 -> same ARMYGROUP RTZ Joyce ACCESS / OnRoad
 -> Returned
 -> Warehouse AddAsset
@@ -54,7 +48,7 @@ JOYCE FUEL   40 -> 22
 HONAKER FUEL 36 -> 18 -> 36
 ```
 
-## 3. Architekturgrenze
+## 2. Architekturgrenze
 
 ```text
 CampaignState = alleinige strategische Ressourcenautorität
@@ -72,7 +66,7 @@ FUEL_LIGHT_06 capacity
 physical cargo authority
 ```
 
-## 4. MOOSE-First Nachweis
+## 3. MOOSE-First Nachweis
 
 Gepinnter Stand:
 
@@ -90,7 +84,7 @@ AUFTRAG:NewNOTHING(RelaxZone)
 
 sowie `AUFTRAG.Type.NOTHING`, `AUFTRAG.SpecialTask.NOTHING`, Ground/Naval-Kategorie, zone objective, FullStop bei Ausführung und TaskCancel->TaskDone. Eine dedizierte offizielle Demo für den OMW-Roundtrip ist nicht belegt.
 
-## 5. Physischer Vertrag
+## 4. Physischer Vertrag
 
 ```text
 PLATOON:AddMissionCapability(AUFTRAG.Type.NOTHING, 100)
@@ -104,129 +98,120 @@ ARMYGROUP:RTZ(originZone, ENUMS.Formation.Vehicle.OnRoad)
 
 Die owner-approved `OMW_GroundRoadSpawnAdapter`-Ausnahme wird unverändert wiederverwendet.
 
-## 6. Timeout-/Fail-fast-Vertrag
+## 5. Acceptance-Abschlussvertrag
 
-Die Outbound-Timeouts dieses Acceptance-Harness sind ausschließlich **Test-Sicherheitsgrenzen**. Sie sind kein Produktionsvertrag und dürfen nicht als feste maximale Fahrzeit für produktive Ground-RESUPPLY-Missionen übernommen werden. Produktiv muss der Convoy-Lifecycle zustands-/ereignisbasiert bleiben; DCS-Routenführung und Ground-AI-Fahrzeit sind nicht deterministisch genug für eine feste Lieferfrist.
-
-Der erste Stage-1C-Build verwendete `OutboundTimeoutSec = 600`. Das war ein Harness-Fehler: Joyce-ACCESS zu Honaker-ACCESS liegen bereits Luftlinie rund 16,9 km auseinander. Bei 27 kt (~50 km/h) beträgt die theoretische Mindestfahrzeit ohne Straßendetour und AI-Verlangsamung rund 1.218 s. Der 600-s-Timeout musste daher vor einer normalen Ankunft auslösen.
-
-Build 1-2 hob das Testfenster auf 1.800 s an. Auch dieser Wert erwies sich für den real beobachteten Joyce->Honaker-Lauf als zu knapp: Der Missionsstart liegt etwa bei 15:25, die physische Ankunft des Convoys in der Zielzone etwa bei 15:58. Damit liegt die beobachtete Fahr-/Ankunftszeit bei ungefähr 33 Minuten beziehungsweise rund 1.980 s und bereits oberhalb des 1.800-s-Testfensters.
-
-Nach `fail()` setzt der Harness `state.failed=true`; alle nachfolgenden MissionExecute-/MissionDone-/RTZ-Callbacks verlassen den Test dann absichtlich. Damit kann ein physisch weiterfahrender Convoy nach einem zu frühen Harness-FAIL später korrekt ankommen, ohne dass Delivery oder RTZ noch verarbeitet werden.
-
-Aktueller Acceptance-Vertrag:
+Die früheren harten Fahrzeit-Gates waren ein Harness-Fehler und sind ab Build 1-4 vollständig entfernt.
 
 ```text
-OutboundTimeoutSec = 2700
+OutboundTravelTimeoutSec = none
+ReturnTravelTimeoutSec = none
+AcceptanceCompletion = event-driven
 DestinationCheckIntervalSec = 15
 DestinationExecutionGraceSec = 90
+ReturnIssueDelaySec = 30
+ReturnSettlementDelaySec = 12
 ```
 
-`2700 s` entsprechen 45 Minuten und dienen ausschließlich als Acceptance-Watchdog mit Reserve gegenüber der beobachteten ca. 33-minütigen Fahrt. Der eigentliche Fail-fast-Schutz bleibt erhalten: Erst nach tatsächlichem Eintritt in Honaker ACCESS muss `MissionExecute` binnen 90 Sekunden folgen; andernfalls `DESTINATION_EXECUTION_TIMEOUT`.
-
-## 7. Build- und MIZ-Provenienz des ersten Fehlversuchs
+Der Test endet damit nicht mehr aufgrund einer angenommenen DCS-Fahrzeit. Er wartet auf den tatsächlichen Lifecycle:
 
 ```text
-Source/build commit: cb32f23886e68371bf45ab4f7a1394200f542c29
-BuilderVersion: GROUND-META-RESUPPLY-NOTHING-ACCEPTANCE-1-1
-Bundle SHA-256: BC9A70327A456FC8718907B9701E83194303B0A5816F0EA0C309310D7118B8FE
-Builder SHA-256: 68A58E3F2C0C05D79B0FFC642CEDEB70008748FE81EE56D31BE9437CDB070E37
-Acceptance source SHA-256: 7B91D5DD74C874C03CB36FAF6CF9231201D45CB51FD749644EDA857A9FFD137E
-GroundRoadSpawnAdapter SHA-256: 1A81FB2E5270C493373CF5BF6EC01F5AFED47004BF25C4225524121155D983E8
-Uploaded executed MIZ SHA-256: A4D04484584A04C092AAFF31981A477F9179203944B7DAAD4C7CF2D2DD8A63FF
-Internal mission SHA-256: B68EDC033D9C8E2FE0F8F93C81A063425F019F1C7A38A30710833AD367BCA90A
-Embedded bundle SHA-256: BC9A70327A456FC8718907B9701E83194303B0A5816F0EA0C309310D7118B8FE
-Embedded Moose.lua SHA-256: E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915
+start -> destination entered -> MissionExecute -> delivery -> MissionDone -> RTZ -> Returned -> AddAsset -> PASS
+```
+
+`DestinationExecutionGraceSec = 90` ist kein Travel-Timeout. Diese Frist beginnt erst nach beobachtetem Eintritt in die Zielzone und prüft ausschließlich, ob der MOOSE-FSM danach `MissionExecute` liefert.
+
+## 6. Historische Harness-False-Fails
+
+Build 1-1 nutzte `OutboundTimeoutSec = 600`; Build 1-2 nutzte `OutboundTimeoutSec = 1800`. Beide Werte waren für die reale Joyce→Honaker-DCS-Fahrzeit ungeeignet. Nach `fail()` setzte der Harness `state.failed=true`; spätere Lifecycle-Callbacks wurden dadurch absichtlich ignoriert.
+
+Diese Läufe beweisen daher keinen Routing- oder RTZ-Fehler von `NewNOTHING`.
+
+## 7. DCS-Lauf mit Build 1-3 – partielle positive Runtime-Evidenz
+
+Der reale DCS-Lauf mit Build 1-3 erreichte erstmals die entscheidende Hinweg-/Delivery-/RTZ-Kette:
+
+```text
+DESTINATION_ZONE_ENTERED
+DELIVERY_CONFIRMED
+MISSION_DONE
+AUFTRAG success
+RETURN_RTZ_ACTIVE
+RETURN_RTZ_ISSUED
+```
+
+Damit ist für den getesteten Stand real belegt:
+
+```text
+AUFTRAG NOTHING transport
+-> destination-zone detection
+-> CampaignState DELIVERED
+-> MissionDemand SUCCESS
+-> MissionDone
+-> same ARMYGROUP RTZ issued
+```
+
+Der Lauf endete anschließend ausschließlich mit dem noch vorhandenen `RETURN_TIMEOUT seconds=1800`, bevor `Returned`/`AddAsset` beobachtet werden konnten. Dieser Return-Timeout wird deshalb nicht als produktiver oder funktionaler Fehler gewertet.
+
+Ausgeführte Mission laut debrief:
+
+```text
+C:\Users\Sven\Saved Games\DCS.openbeta\Missions\OMW_Template_v19.miz
 DCS: 2.9.28.26385 MT
-Executed mission path from debrief: OMW_Template_v19.miz
 ```
 
-Read-only MIZ-Preflight bestätigte den korrekten `ResKey_Action_243`, `triggerOnce`, beide Readiness-Flags, `TIME > 5`, keine alte AMMO/FUEL-Acceptance-Ressource sowie das unveränderte `TPL_BLUE_CONVOY_FUEL_LIGHT_06` mit `lateActivation=true` und sechs Fahrzeugen.
-
-## 8. DCS-Lauf 2026-08-23 – Ergebnis und Korrektur
-
-Beobachtet:
-
-```text
-START
-DEMAND_RESERVED quantity=18
-PHYSICAL_EXECUTION_READY physicalMission=NOTHING
-BRIGADE_STARTED
-MISSION_QUEUED type=NOTHING formation=OnRoad speedKt=27
-ROAD_ALIGNED_WAREHOUSE_SPAWN units=6 formationLengthM=76.8 maxSnapM=2.1
-GROUP_MATERIALIZED transferStatus=LOADING
-ARMY_ON_MISSION mission=NOTHING transferStatus=IN_TRANSIT demandStatus=ACTIVE
-WARNING TRANSPORT: CREATING PATH MAKES TOO LONG!!!!!
-FAIL reason=OUTBOUND_TIMEOUT seconds=600 destinationObserved=false spawnCount=1 armyOnMissionCount=1 missionExecuteCount=0 missionDoneCount=0
-```
-
-Die visuelle Owner-Beobachtung war, dass der Convoy anschließend Honaker erreichte und dort stehen blieb. Das widerspricht dem Log nicht: Der Timeout hatte den Acceptance-Harness bereits beendet, nicht die physische DCS-Route.
-
-Der Lauf ist daher als **Harness-FALSE-FAIL durch zu kurzes Outbound-Fenster** zu behandeln. Er beweist weder einen `NewNOTHING`-Routingfehler noch einen Fehler der RTZ-Rückfahrt. Der Return-Pfad wurde durch `state.failed=true` nicht mehr verarbeitet.
-
-Der DCS-Marker `CREATING PATH MAKES TOO LONG!!!!!` bleibt als diagnostischer Hinweis dokumentiert, ist aber nicht als Root Cause dieses fehlenden Returns belegt.
-
-Log-Provenienz:
-
-```text
-dcs.log SHA-256: 23E2D0B31B66464A57D3BC5F45F92A75D4EF913413833311042CD4BC74F1AAA3
-debrief.log SHA-256: 2574F8746F6D4A88E6D6F038AFC33DB5600DC4D52CC6A0E946A8E2155B0D8922
-```
-
-Detailresultat:
-
-```text
-results/2026-08-23-ground-meta-resupply-nothing-acceptance-1-fail-1.md
-```
-
-## 9. Build 1-2 – historische lokale Evidenz
+## 8. Build 1-4 – reale lokale Build-Evidenz
 
 Owner-lokal am 23.08.2026 erfolgreich gebaut und unabhängig nachgehasht:
 
 ```text
 Branch: agent/automatic-response-orchestration
-Git HEAD: b34897403c4685061211b32cd081da3ac0e20000
-BuilderVersion: GROUND-META-RESUPPLY-NOTHING-ACCEPTANCE-1-2
-Bundle SHA-256: 2B6C3357A51E19889B9420E766F7E5E408B4810B3545F30FDFFDFB399B19ED27
-Independent bundle SHA-256: 2B6C3357A51E19889B9420E766F7E5E408B4810B3545F30FDFFDFB399B19ED27
-Builder SHA-256: A7A5A730C581DBB3E5762B886A43C6FB64BF40CA4658E050F9F6127FDCDB125B
-Acceptance source SHA-256: A21A88BD4BAC18FF4AE497C7A66C606E71DE888A9C55AA019AC1939B0F08D045
+Git HEAD: 8803505edf07120bc6d1673b41f69067e8db0211
+BuilderVersion: GROUND-META-RESUPPLY-NOTHING-ACCEPTANCE-1-4
+GeneratedUtc: 2026-08-23T15:24:27Z
+Bundle SHA-256: C881C82C3F699914E18FFE64DE73E650E20AF82B55B3F486154C40059F44CB65
+Independent bundle SHA-256: C881C82C3F699914E18FFE64DE73E650E20AF82B55B3F486154C40059F44CB65
+Builder SHA-256: 9F7E3DFAE967BA39C373190A11495EC5AFD39357B0C1001A12F952606816B636
+Acceptance source SHA-256: 21A54365C6138425CF5CDF4965F9E6F3396889477708B37A23BCBCFD77897C0C
 GroundRoadSpawnAdapter SHA-256: 1A81FB2E5270C493373CF5BF6EC01F5AFED47004BF25C4225524121155D983E8
+MissionDemand source SHA-256: E348E75B87135B99D780E07CA6B6FB7C3C530E048E9C6DE790328D147DE32848
+ResourceDemandPolicy source SHA-256: BDC20ACEDAB60F662093077B8320220EBB71C6C641CC604C4356231B8405913C
 MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
 Moose.lua SHA-256: E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915
-OutboundTimeoutSec: 1800
+OutboundTravelTimeoutSec: none
 DestinationCheckIntervalSec: 15
 DestinationExecutionGraceSec: 90
-ReturnTimeoutSec: 1800
+ReturnTravelTimeoutSec: none
 ReturnIssueDelaySec: 30
 ReturnSettlementDelaySec: 12
+AcceptanceCompletion: event-driven
 FUELSUPPLY: false
 OPSTRANSPORT: false
 MizMutation: false
 ```
 
-Dieser Build bleibt historische Provenienz und wird durch Build 1-3 nicht rückwirkend verändert.
+Build 1-4 ist damit ein realer lokaler BUILD PASS. `NewNOTHING` ist jedoch erst dann vollständig runtime-accepted, wenn ein DCS-Lauf `Returned -> Warehouse AddAsset -> PASS` dokumentiert.
 
-## 10. Aktueller Build 1-3 – Build ausstehend
+## 9. Mission-Editor-Integration für Build 1-4
 
-Source und Builder sind auf dem Branch für den nächsten Owner-Build vorbereitet:
-
-```text
-BuilderVersion: GROUND-META-RESUPPLY-NOTHING-ACCEPTANCE-1-3
-OutboundTimeoutSec: 2700
-DestinationCheckIntervalSec: 15
-DestinationExecutionGraceSec: 90
-ReturnTimeoutSec: 1800
-ReturnIssueDelaySec: 30
-ReturnSettlementDelaySec: 12
-FUELSUPPLY: false
-OPSTRANSPORT: false
-MizMutation: false
-```
+Das bestehende Stage-1C-`DO SCRIPT FILE` muss im DCS Mission Editor erneut auf folgende Datei gesetzt werden:
 
 ```text
-Build 1-3 status: OWNER_LOCAL_BUILD_PENDING
-NewNOTHING runtime acceptance: NOT YET PROVEN
+mission\tests\ground-resupply-execution\dist\OMW_Ground_Meta_Resupply_NOTHING_Acceptance_1.lua
 ```
 
-Kein Produktionsstatus und kein `VALIDATED` wird aus den bisherigen Fehlversuchen oder Build-PASS-Werten abgeleitet.
+Erwarteter eingebetteter Bundle-Hash:
+
+```text
+C881C82C3F699914E18FFE64DE73E650E20AF82B55B3F486154C40059F44CB65
+```
+
+Die zuletzt funktionierende Honaker-ACCESS-Geometrie soll unverändert bleiben. Kein weiterer Timeout- oder Formationstest ist Bestandteil dieses Acceptance-Laufs.
+
+## 10. Status
+
+```text
+Build 1-4: BUILD PASS
+MIZ integration: OWNER ACTION REQUIRED
+DCS final runtime acceptance: PENDING
+VALIDATED: false
+```
