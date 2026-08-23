@@ -1,16 +1,23 @@
 ---
 document_id: OMW-GROUND-META-RESUPPLY-NOTHING-ACCEPTANCE-1
-status: PLANNED
+status: ACCEPTED_TECHNICAL_BASELINE
 document_class: ACCEPTANCE_PLAN_AND_RESULT
 owning_policy: OMW-GOV-001
 authoritative_for:
-  - branch-local acceptance plan and result for generic MissionDemand-driven Ground meta-resource RESUPPLY via AUFTRAG NOTHING
+  - branch-local accepted technical baseline for MissionDemand-driven Ground meta-resource RESUPPLY via AUFTRAG NOTHING
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
 superseded_by:
 source_branch: agent/automatic-response-orchestration
 source_commit: PENDING_MERGE
+acceptance_branch: agent/automatic-response-orchestration
+acceptance_commit: 8803505edf07120bc6d1673b41f69067e8db0211
+acceptance_mission: OMW_Template_v19.miz
+acceptance_mission_sha256: D788AF36535D3ACD1866D15FFB5D354B2C44B5F8EE40D4BAF6FD1D97B7C0F8A5
+dcs_version: 2.9.28.26385 MT
+moose_commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+moose_artifact_sha256: E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915
 validated_in_dcs: true
 ---
 
@@ -158,16 +165,12 @@ MizMutation: false
 
 ## 8. DCS-Lauf mit Build 1-4 – Runtime PASS
 
-DCS-Version laut `dcs.log`:
+DCS-/Missionsprovenienz:
 
 ```text
-DCS 2.9.28.26385 MT
-```
-
-Ausgeführte Mission laut `debrief.log`:
-
-```text
-C:\Users\Sven\Saved Games\DCS.openbeta\Missions\OMW_Template_v19.miz
+DCS: 2.9.28.26385 MT
+Executed mission: C:\Users\Sven\Saved Games\DCS.openbeta\Missions\OMW_Template_v19.miz
+Executed MIZ SHA-256: D788AF36535D3ACD1866D15FFB5D354B2C44B5F8EE40D4BAF6FD1D97B7C0F8A5
 ```
 
 Der Acceptance-Lifecycle wurde vollständig erreicht:
@@ -195,7 +198,7 @@ Terminaler Harness-Befund:
 PASS originFinal=22 destinationFinal=36 transferQuantity=18 template=TPL_BLUE_CONVOY_FUEL_LIGHT_06 physicalMission=NOTHING demandStatus=SUCCESS spawnCount=1 returnedCount=1 warehouseAddAssetCount=1
 ```
 
-Damit ist runtime-seitig für den beobachteten Stand bestätigt:
+Damit ist runtime-seitig für den dokumentierten Stand bestätigt:
 
 ```text
 CampaignState shortage
@@ -225,21 +228,21 @@ Detailresultat:
 results/2026-08-23-ground-meta-resupply-nothing-acceptance-1-pass-1.md
 ```
 
-## 9. Provenienzgrenze vor ACCEPTED_TECHNICAL_BASELINE
+## 9. Formale Acceptance-Provenienz
 
-Der Runtime-PASS ist real und dokumentiert. Für die formale Hochstufung dieses Dokuments auf `ACCEPTED_TECHNICAL_BASELINE` fehlt jedoch noch die nach `docs/DOCUMENT-METADATA-POLICY.md` verpflichtende SHA-256 der **exakt ausgeführten** `OMW_Template_v19.miz` mit Build 1-4.
-
-Bis diese Hashprovenienz vorliegt, gilt daher:
+Die nach `docs/DOCUMENT-METADATA-POLICY.md` erforderliche technische Acceptance-Provenienz liegt vollständig vor:
 
 ```text
-Build 1-4: BUILD PASS
-DCS runtime lifecycle: PASS
-Acceptance mission path: OMW_Template_v19.miz
-Acceptance mission SHA-256: PENDING_OWNER_HASH
-Formal ACCEPTED_TECHNICAL_BASELINE promotion: BLOCKED_MISSING_MIZ_SHA256
+Acceptance branch: agent/automatic-response-orchestration
+Acceptance commit: 8803505edf07120bc6d1673b41f69067e8db0211
+Acceptance mission: OMW_Template_v19.miz
+Acceptance mission SHA-256: D788AF36535D3ACD1866D15FFB5D354B2C44B5F8EE40D4BAF6FD1D97B7C0F8A5
+DCS: 2.9.28.26385 MT
+MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+Moose.lua SHA-256: E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915
 ```
 
-Es wird keine Mission-SHA aus einem älteren v19-Stand übernommen oder geraten.
+Damit ist dieser exakte Stage-1C-Stand `ACCEPTED_TECHNICAL_BASELINE`. Die technische Acceptance gilt nur für die dokumentierte Branch-/Commit-/MIZ-/DCS-/MOOSE-Provenienz und erzeugt vor einem Merge keine repository-weite normative Wirkung.
 
 ## 10. Architekturresultat
 
@@ -257,5 +260,5 @@ CampaignState final quantities: PASS (Joyce 22 / Honaker 36)
 MissionDemand final status: PASS / SUCCESS
 Returned handoff: PASS
 Warehouse AddAsset: PASS
-Formal ACCEPTED_TECHNICAL_BASELINE: PENDING exact executed MIZ SHA-256
+Formal ACCEPTED_TECHNICAL_BASELINE: YES
 ```
