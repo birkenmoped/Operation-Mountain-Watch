@@ -93,3 +93,28 @@ Für Parking-Overrides ist diese Prüfung abgeschlossen:
 - [`OMW-MOOSE-WAREHOUSE-PARKING-OVERRIDE-RESEARCH`](WAREHOUSE-PARKING-OVERRIDE-RESEARCH.md)
 
 Der Bericht belegt eine parametrierbare AIRBASE-API, aber keinen WAREHOUSE-Setter oder -Hook. Er genehmigt keinen Runtime-Override und keine MOOSE-Quelländerung.
+
+## 5. Extern basierter E-3-AWACS-Pfad
+
+Für den extern basierten USAF-E-3-AWACS-Lifecycle wird kein DCS-Airbase-Ersatz für Al Dhafra erzeugt. `OFFMAP_AL_DHAFRA` bleibt ein reiner CampaignState-Knoten.
+
+Der source-geprüfte Staging-Pfad verwendet:
+
+```text
+SPAWN
+-> FLIGHTGROUP
+-> AUFTRAG:NewAWACS(...)
+-> AUFTRAG:SetMissionAltitude(...)
+-> AUFTRAG:SetMissionEgressCoord(...)
+-> PassingWaypoint-FSM
+-> External Handoff / Despawn
+```
+
+Die umfangreiche MOOSE-Klasse `AWACS` wird hierfür bewusst nicht verwendet, weil ihr eigener FEZ-/Fighter-Control-/SRS-/Home-Airbase-Scope über die angeforderte physische OMW-AWACS-Abbildung hinausgeht.
+
+Technische Details, Evidenzgrenzen und Acceptance:
+
+- [`OMW-MOOSE-AWACS-EXTERNAL-LIFECYCLE`](AWACS-EXTERNAL-LIFECYCLE.md)
+- [`AWACS External Lifecycle Acceptance`](../../mission/tests/awacs-external-lifecycle/ACCEPTANCE.md)
+
+Bis zu einem dokumentierten DCS-PASS bleibt dieser AWACS-Pfad `SOURCE_REVIEWED_STAGED` und ist nicht branch-unabhängig validiert.
