@@ -12,7 +12,7 @@ $acceptanceSourceFile = Join-Path $repoRoot 'mission\tests\ground-resupply-execu
 $distDir = Join-Path $repoRoot 'mission\tests\ground-resupply-execution\dist'
 $outputFile = Join-Path $distDir 'OMW_Ground_Fuel_Refuelling_Zone_Acceptance_2.lua'
 
-$builderVersion = 'GROUND-FUEL-REFUELLING-ZONE-ACCEPTANCE-2-1'
+$builderVersion = 'GROUND-FUEL-REFUELLING-ZONE-ACCEPTANCE-2-2'
 $testId = 'GROUND-FUEL-REFUELLING-ZONE-ACCEPTANCE-2'
 $mooseCommit = '73d3ed119cd9e7e3f2cfcabbaa34513d30529b54'
 $mooseSha256 = 'e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915'
@@ -49,6 +49,11 @@ $requiredMarkers = @(
   'MarkInTransit',
   'MarkDelivered',
   'OnAfterMissionExecute',
+  'MISSION_EXECUTE_OBSERVED',
+  'DESTINATION_CHECK_INTERVAL_SEC',
+  'DESTINATION_EXECUTION_GRACE_SEC',
+  'DESTINATION_ZONE_ENTERED',
+  'commitDeliveryIfReady',
   'IsInZone(state.destinationZone)',
   'OnAfterMissionDone',
   'OnAfterReturned',
@@ -107,7 +112,7 @@ $header = @"
 -- GitCommit: $commit
 -- GeneratedUtc: $generatedUtc
 -- TestId: $testId
--- Scope: Joyce -> Honaker CampaignState FUEL shortage / MissionDemand / BRIGADE:AddRefuellingZone / MOOSE-created FUELSUPPLY / normal MOOSE ReturnToLegion acceptance.
+-- Scope: Joyce -> Honaker CampaignState FUEL shortage / MissionDemand / BRIGADE:AddRefuellingZone / MOOSE-created FUELSUPPLY / independent destination-zone proof / normal MOOSE ReturnToLegion acceptance.
 -- MOOSECommit: $mooseCommit
 -- MooseLuaSHA256: $mooseSha256
 -- StrategicAuthority: existing OMW.AirOps.CampaignContext / OMW.Ground.Base CampaignState only.
@@ -142,6 +147,9 @@ Write-Host 'Destination: GROUND_NODE_HONAKER'
 Write-Host 'Resource: GROUND_FUEL_PACKAGE'
 Write-Host 'TransferQuantity: 18'
 Write-Host 'MissionCreation: BRIGADE:AddRefuellingZone -> MOOSE AUFTRAG FUELSUPPLY'
+Write-Host 'DestinationProof: Stage-1C-style independent zone polling plus observed MissionExecute'
+Write-Host 'DestinationCheckIntervalSec: 15'
+Write-Host 'DestinationExecutionGraceSec: 90'
 Write-Host 'ReturnMode: MOOSE ReturnToLegion'
 Write-Host 'PhysicalTemplate: TPL_BLUE_CONVOY_FUEL_LIGHT_06'
 Write-Host 'PhysicalTemplateUnits: 6'
