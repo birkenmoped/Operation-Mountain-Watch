@@ -16,11 +16,25 @@ project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
 superseded_by:
 source_branch: agent/air-tasking-plan-main-reconciliation
-source_commit: PENDING_MERGE
+source_commit: 9d282bf61e7e54f110b95a4ee9eb2bede01838a5
 validated_in_dcs: false
 ---
 
 # Handoff – Air Tasking Plan Main Reconciliation
+
+## 0. Post-Merge-Nachtrag – 23.08.2026
+
+Der in dieser Übergabe noch als Owner-Gate dokumentierte Integrationsschritt ist abgeschlossen. Der Projektinhaber hat Ready for Review und Merge ausdrücklich freigegeben; GitHub bestätigt PR #117 als gemergt.
+
+```text
+PR: 117
+status: MERGED
+source_head: 0c654f2e699a4b8150b785f90fe14e53d2435016
+merge_commit: d1ef605c510917b2e69bfb96c109ad9ff8e26654
+reconciled_source_validated_in_dcs: false
+```
+
+Die nachfolgenden Abschnitte bleiben als vollständiger Pre-Merge-Handoff und Entscheidungsverlauf erhalten. Ein dort noch als `PENDING OWNER DECISION`, `DRAFT` oder "nächster Schritt" formulierter Merge-Gate-Stand ist historisch und wird durch diesen Nachtrag ersetzt. Nicht ersetzt werden die MOOSE-First-Grenzen, die exakte historische `VERTICAL-2`-Provenienz, die fehlende `VERTICAL-3`-DCS-Validation und die bekannte Shared-Runtime-Limitation.
 
 Stand: 22.08.2026
 
@@ -680,12 +694,12 @@ Das übergeordnete Projektziel "Air Tasking Plan Foundation" ist daher nach dem 
 [COMPLETE] owner decision recorded: no repeated LISA VERTICAL-3 DCS gate
 [COMPLETE] repository-wide documentation CI failure triaged as unrelated Ground metadata debt
 [COMPLETE] dedicated handoff/TODO document created and validator produced no new Air-Tasking/handoff error
-[PENDING OWNER DECISION] authorize PR #117 Ready for Review
-[PENDING OWNER DECISION] authorize PR #117 merge
-[POST-MERGE REQUIRED] replace all PR-local source_commit: PENDING_MERGE values that land on main with valid full commit provenance
+[COMPLETE] owner authorized PR #117 Ready for Review; transition performed
+[COMPLETE] owner authorized PR #117 merge; PR merged as d1ef605c510917b2e69bfb96c109ad9ff8e26654
+[COMPLETE] replace all PR-local source_commit: PENDING_MERGE values that landed on main with valid full commit provenance
 [POST-MERGE REQUIRED] verify final main diff/readback and exact merge commit
-[POST-MERGE REQUIRED] update SUBPROJECT-REGISTRY from open PR #117 to merged history if required by current registry policy
-[POST-MERGE REQUIRED] update this handoff / reconciliation status or supersede it with a finalization record
+[COMPLETE] update SUBPROJECT-REGISTRY from open PR #117 to merged history
+[COMPLETE] add explicit post-merge status to this handoff and reconciliation record
 ```
 
 ### B. Nach sauberem Merge: Air Tasking Foundation fortsetzen
