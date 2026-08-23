@@ -63,10 +63,10 @@ REJECTED_FOR_PROJECT_USE
 | `WAREHOUSE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` + `INTERNAL_RESTRICTED` | AirOps-Stock-/Asset-Lifecycle und Acceptance 3-2 Ground-Materialisierung praktisch bestätigt; die private road-aligned Ausnahme ist auf den dokumentierten Branch-/MOOSE-/MIZ-Scope begrenzt |
 | `STORAGE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | CampaignState->DCS-Warehouse Mirror/Telemetry; keine strategische Rückautorität |
 | `COHORT` | `VALIDATED_FOR_DOCUMENTED_SCOPE` + `SOURCE_REVIEWED` | AirOps-Lifecycle praktisch bestätigt; Ground-Review bestätigt `AddMissionCapability`, `SetMissionRange`, `CanMission`, `CountAssets` und 75-NM-Ground-Default source-seitig |
-| `FLIGHTGROUP` | `VALIDATED_FOR_DOCUMENTED_SCOPE` + `SOURCE_REVIEWED` | AAR FuelLow, Dead/OnAfterDead, GetCoordinate, `AddWaypoint(...)`, `AddMission(...)` und `OnAfterPassingWaypoint(...)` sind im AAR-Scope validiert; AWACS übernimmt diese Pfade source-seitig und ergänzt den noch nicht DCS-validierten `Refuel(...)`-Integrationskandidaten |
+| `FLIGHTGROUP` | `VALIDATED_FOR_DOCUMENTED_SCOPE` + `SOURCE_REVIEWED` | AAR FuelLow, Dead/OnAfterDead, GetCoordinate, `AddWaypoint(...)`, `AddMission(...)` und `OnAfterPassingWaypoint(...)` sind im AAR-Scope validiert; AWACS Acceptance 1 bestätigt dieselben Transit-/PassingWaypoint-/AddMission-/Egress-Bausteine für den E-3-Routing-Scope; `Refuel(...)` bleibt für AWACS source-reviewed und DCS-offen |
 | `COMMANDER` | `VALIDATED_FOR_DOCUMENTED_SCOPE` + `SOURCE_REVIEWED` | dokumentierter COMMANDER-Lifecycle; Ground-Review bestätigt `AddBrigade(...)` und `AddOpsTransport(...)` source-seitig; MissionDemand bleibt OMW-Tasking-Autorität |
-| `AUFTRAG` | `VALIDATED_FOR_DOCUMENTED_SCOPE` + `SOURCE_REVIEWED` | AAR-Methoden sowie dokumentierte Ground-Acceptance-1 bis -6-Lifecycles praktisch bestätigt; `NewAWACS(...)` ist im gepinnten Source geprüft, aber für OMW-AWACS noch nicht DCS-validiert; keine CampaignState-Autorität |
-| `SPAWN` | `VALIDATED_FOR_DOCUMENTED_SCOPE` + `SOURCE_REVIEWED` | area-spezifische AAR-Templates und externe Materialisierung praktisch bestätigt; AWACS übernimmt den Pfad für `OMW_C2_E3A_WIZARD` source-seitig, DCS-Acceptance offen |
+| `AUFTRAG` | `VALIDATED_FOR_DOCUMENTED_SCOPE` + `SOURCE_REVIEWED` | AAR-Methoden sowie dokumentierte Ground-Acceptance-1 bis -6-Lifecycles praktisch bestätigt; `NewAWACS(...)`, `SetMissionAltitude(...)`, `SetMissionEgressCoord(...)` und `Cancel()` sind für den dokumentierten AWACS-Acceptance-1-Routing-Scope DCS-validiert; keine CampaignState-Autorität |
+| `SPAWN` | `VALIDATED_FOR_DOCUMENTED_SCOPE` + `SOURCE_REVIEWED` | area-spezifische AAR-Templates und externe Materialisierung praktisch bestätigt; AWACS Acceptance 1 bestätigt `OMW_C2_E3A_WIZARD` external materialization mit Wizard callsign/heading/speed configuration im dokumentierten Scope |
 | `SCHEDULER` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | allgemeine OMW-Nutzung praktisch bestätigt; Ground Acceptance 1 verwendet nur One-shot-Koordination, kein hochfrequentes Polling |
 | `USERFLAG` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Warehouse-Acceptance-Readiness-Pfade sowie Ground BASE-3 `OMW_GROUND_READY` Set/Get-Readback und Mission-Editor-Gate im dokumentierten Ground-Ammo-Rearm-Acceptance-1-Scope |
 | `GROUP`, `UNIT`, `STATIC`, `ZONE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Wrapper-/Objektauflösung in dokumentierten Scopes; Acceptance-1-v13-Objektvertrag read-only bestätigt, Ground-Acceptance-6 bestätigt GetSize, GetUnits, test-only Destroy(false) und SetLife(50) im dokumentierten Verlust-/Schaden-Return-Scope |
@@ -382,9 +382,9 @@ Die neue Air-Tasking-Schicht implementiert keinen parallelen MOOSE-Dispatcher, k
 
 Details: [`OMW-MOOSE-AIR-TASKING-C2-LIFECYCLE`](AIR-TASKING-C2-LIFECYCLE.md) und [`OMW-AIR-TASKING-PLAN-MAIN-RECONCILIATION`](../air-tasking-plan-main-reconciliation.md).
 
-## Addendum 2026-08-23 – External E-3 AWACS Source Review
+## Addendum 2026-08-23 – External E-3 AWACS Acceptance 1
 
-Der neue AWACS-Pfad verwendet keine neue Framework-Autorität, sondern kombiniert die bereits OMW-erprobten externen SPAWN-/FLIGHTGROUP-Lifecycle-Bausteine mit der source-verifizierten `AUFTRAG:NewAWACS(...)`-Mission.
+Der AWACS-Pfad verwendet keine neue Framework-Autorität, sondern kombiniert die bereits OMW-erprobten externen SPAWN-/FLIGHTGROUP-Lifecycle-Bausteine mit `AUFTRAG:NewAWACS(...)`.
 
 ```text
 SPAWN / FLIGHTGROUP transit
@@ -396,15 +396,47 @@ SPAWN / FLIGHTGROUP transit
 -> External Handoff
 ```
 
-`FLIGHTGROUP:Refuel(...)` ist source-verifiziert, wird aber bis zur eigenen E-3/AAR-Acceptance nicht automatisch ausgelöst. Insbesondere wird keine eigenständige nearest-tanker-Policy parallel zum vorhandenen OMW-AAR-System eingeführt.
+Acceptance 1 hat diesen Routing-Lifecycle in DCS praktisch bestätigt:
+
+```text
+Branch:                   agent/awacs-external-lifecycle-foundation
+Tested source commit:     bde8a6e8d006b7c8d744b739510b08aa9812d48b
+Mission:                  OMW_Template_v19(8).miz
+Mission SHA-256:          d788af36535d3acd1866d15ffb5d354b2c44b5f8ee40d4baf6fd1d97b7c0f8a5
+DCS:                      2.9.28.26385 MT
+MOOSE commit:             73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+Moose.lua SHA-256:        e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
+Embedded Warehouse SHA:   01a9ca70988198ecbd76f4d1cab4304261f2cc56911584b44741c0d49c7b146c
+Embedded AWACS bundle SHA:639841a552343f4d0f7180f657a4a0b3141fb0b9af3ed6f1d9915ec955444fc2
+dcs.log SHA-256:          593d02d455db0cae04cfd0e7651671d3af1d76ab430ff3232da7b19dac391c2f
+debrief.log SHA-256:      32df4af4943f5ca3d2a98dde61e452054b5183fd21fa9f6b78750894ec106eb7
+Result:                    PASS for routing lifecycle scope
+```
+
+Bestätigte Reihenfolge:
+
+```text
+MATERIALIZED
+-> FIR_INGRESS_PASSED ROSIE
+-> LATE_APPROACH_PASSED / ADD_AWACS_MISSION
+-> ON_STATION APOC
+-> EGRESS_ORDERED
+-> FIR_EGRESS_PASSED ROSIE
+-> MOOSE AWACS mission success
+-> EXTERNAL_HANDOFF / DESPAWN_AND_RECREDIT
+```
+
+Damit ist `AUFTRAG:NewAWACS(...)` für diesen OMW-Scope von `SOURCE_REVIEWED` auf `VALIDATED_FOR_DOCUMENTED_SCOPE` angehoben. Ebenso ist der E-3-spezifische externe `SPAWN`-/`FLIGHTGROUP`-Routingpfad praktisch bestätigt.
+
+`FLIGHTGROUP:Refuel(...)` bleibt source-verifiziert, wird aber bis zur eigenen E-3/AAR-Acceptance nicht automatisch ausgelöst. Insbesondere wird keine eigenständige nearest-tanker-Policy parallel zum vorhandenen OMW-AAR-System eingeführt.
 
 Status:
 
 ```text
-AWACS physical lifecycle: SOURCE_REVIEWED_STAGED
-AWACS DCS acceptance:     OPEN
+AWACS routing lifecycle:  VALIDATED_FOR_DOCUMENTED_SCOPE
+AWACS complete foundation: PARTIAL / OPEN ACCEPTANCE BLOCKS
 AWACS automatic AAR:      BLOCKED_PENDING_DCS_ACCEPTANCE
 MOOSE AWACS controller:   NOT_USED
 ```
 
-Details: [`OMW-MOOSE-AWACS-EXTERNAL-LIFECYCLE`](AWACS-EXTERNAL-LIFECYCLE.md).
+Details: [`OMW-MOOSE-AWACS-EXTERNAL-LIFECYCLE`](AWACS-EXTERNAL-LIFECYCLE.md) und [`AWACS Acceptance 1`](../../mission/tests/awacs-external-lifecycle/ACCEPTANCE.md).
