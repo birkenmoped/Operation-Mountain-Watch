@@ -37,8 +37,6 @@ Returned -> Warehouse AddAsset -> physical cleanup
 
 Status: `ACCEPTED_TECHNICAL_BASELINE`.
 
-Dateien:
-
 ```text
 src/01-ground-ammo-resupply-acceptance.lua
 ACCEPTANCE-1.md
@@ -48,18 +46,7 @@ tools/build-ground-ammo-resupply-acceptance-1.ps1
 
 ## Stage 1B – FUELSUPPLY / geschlossen
 
-Der Versuch, die abstrakte CampaignState-Meta-Ware `GROUND_FUEL_PACKAGE` mit `AUFTRAG:NewFUELSUPPLY(...)` als Warehouse-to-Warehouse-Roundtrip auszuführen, ist für diesen OMW-Scope fehlgeschlagen:
-
-```text
-ROAD_ALIGNED_WAREHOUSE_SPAWN
-GROUP_MATERIALIZED
-ARMY_ON_MISSION mission=FUELSUPPLY
--> no MissionExecute
--> no MissionDone
--> OUTBOUND_TIMEOUT
-```
-
-`FUELSUPPLY` bleibt als MOOSE-API bestehen, wird für diesen OMW-Meta-RESUPPLY-Executor aber nicht weiterverwendet. Die Testquelle und das Ergebnis bleiben historische Negativ-Evidenz.
+Der Versuch, die abstrakte CampaignState-Meta-Ware `GROUND_FUEL_PACKAGE` mit `AUFTRAG:NewFUELSUPPLY(...)` als Warehouse-to-Warehouse-Roundtrip auszuführen, ist für diesen OMW-Scope fehlgeschlagen. `FUELSUPPLY` bleibt als MOOSE-API bestehen, wird für diesen OMW-Meta-RESUPPLY-Executor aber nicht weiterverwendet.
 
 ```text
 src/02-ground-fuel-resupply-acceptance.lua
@@ -86,7 +73,7 @@ CampaignState meta-resource shortage
 -> Returned -> Warehouse AddAsset
 ```
 
-Erster Fixture bleibt Fuel, damit nur die physische Missionssemantik gegenüber dem fehlgeschlagenen Stage-1B-Lauf gewechselt wird:
+Erster Fixture:
 
 ```text
 RESOURCE: GROUND_FUEL_PACKAGE
@@ -98,15 +85,36 @@ PHYSICAL MISSION: AUFTRAG NOTHING
 
 `AUFTRAG NOTHING` trägt keine strategische Fuel-/Cargo-Menge. Der sichtbare M978-Konvoi ist ausschließlich physische Repräsentation.
 
-Fail-fast:
+### Run 1 – Harness-FALSE-FAIL
+
+Builder `GROUND-META-RESUPPLY-NOTHING-ACCEPTANCE-1-1` verwendete `OutboundTimeoutSec = 600`. Das war für Joyce -> Honaker zu kurz: rund 16,9 km Luftlinie bedeuten bei 27 kt bereits theoretisch rund 1.218 s Mindestfahrzeit.
+
+Der Harness setzte nach 600 s `state.failed=true`. Der Convoy fuhr laut Owner-Beobachtung danach physisch bis Honaker weiter, aber spätere MissionExecute-/Delivery-/MissionDone-/RTZ-Callbacks wurden wegen des bereits gesetzten FAIL-Zustands nicht mehr verarbeitet.
 
 ```text
-OutboundTimeoutSec = 600
-DestinationCheckIntervalSec = 15
-DestinationExecutionGraceSec = 90
+Run-1 classification: HARNESS_FALSE_FAIL_OUTBOUND_TIMEOUT_TOO_SHORT
+NewNOTHING runtime acceptance: NOT YET PROVEN
 ```
 
-Wenn der Convoy physisch in Honaker ACCESS eintritt und `MissionExecute` nicht binnen 90 Sekunden folgt, endet der Test mit `DESTINATION_EXECUTION_TIMEOUT` statt eines weiteren 30-Minuten-Wartens.
+Ergebnis:
+
+```text
+results/2026-08-23-ground-meta-resupply-nothing-acceptance-1-fail-1.md
+```
+
+### Korrigierter Harness
+
+```text
+BuilderVersion = GROUND-META-RESUPPLY-NOTHING-ACCEPTANCE-1-2
+OutboundTimeoutSec = 1800
+DestinationCheckIntervalSec = 15
+DestinationExecutionGraceSec = 90
+ReturnTimeoutSec = 1800
+ReturnIssueDelaySec = 30
+ReturnSettlementDelaySec = 12
+```
+
+Der Fail-fast-Gate bleibt erhalten: Nach tatsächlichem Eintritt in Honaker ACCESS muss `MissionExecute` binnen 90 Sekunden folgen.
 
 Dateien:
 
@@ -116,7 +124,7 @@ ACCEPTANCE-3.md
 tools/build-ground-meta-resupply-nothing-acceptance-1.ps1
 ```
 
-Status: `STAGED / SOURCE_REVIEWED / OWNER BUILD PENDING / DCS_PENDING`.
+Status: `CORRECTED / OWNER BUILD PENDING / DCS RETEST PENDING`.
 
 ## MOOSE-First
 
