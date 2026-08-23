@@ -8,7 +8,7 @@ $repoRoot = Split-Path -Parent $PSScriptRoot
 $distDir = Join-Path $repoRoot 'mission\runtime\air-operations'
 $outputFile = Join-Path $distDir 'OMW_AWACS_Foundation.lua'
 
-$builderVersion = 'OMW-AIROPS-AWACS-FOUNDATION-3'
+$builderVersion = 'OMW-AIROPS-AWACS-FOUNDATION-4'
 $mooseCommit = '73d3ed119cd9e7e3f2cfcabbaa34513d30529b54'
 $mooseSha256 = 'e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915'
 
@@ -44,9 +44,12 @@ $requiredMarkers = @(
   @{ File = 'Controller'; Marker = 'TRANSIT_SPEED_KT = 440' },
   @{ File = 'Controller'; Marker = 'SPAWN_INITIAL_SPEED_KT = 440' },
   @{ File = 'Controller'; Marker = 'AUFTRAG:NewORBIT_RACETRACK' },
-  @{ File = 'Controller'; Marker = 'AUFTRAG:NewAWACS' },
   @{ File = 'Controller'; Marker = 'mission:SetMissionAltitude(TRACK_ALTITUDE_FT)' },
-  @{ File = 'Controller'; Marker = 'mission:SetMissionEgressCoord' },
+  @{ File = 'Controller'; Marker = 'flightGroup:SwitchEmission(true)' },
+  @{ File = 'Controller'; Marker = 'flightGroup:SwitchEmission(false)' },
+  @{ File = 'Controller'; Marker = 'runtime.group:SetOptionRadarUsingNever()' },
+  @{ File = 'Controller'; Marker = 'runtime.group:SetOptionRadarUsingForContinousSearch()' },
+  @{ File = 'Controller'; Marker = 'PERSISTENT_RACETRACK' },
   @{ File = 'Controller'; Marker = 'SERVICE_START_SEC = 15 * 3600 + 30 * 60' },
   @{ File = 'Controller'; Marker = 'PLANNED_AAR_SEC = 19 * 3600 + 30 * 60' },
   @{ File = 'Controller'; Marker = 'SERVICE_END_SEC = 23 * 3600 + 30 * 60' },
@@ -71,7 +74,10 @@ $forbiddenPatterns = @(
   'lfs\.',
   'os\.execute',
   'UNIT:Explode',
-  'SetFuelLowRefuel\(true\)'
+  'SetFuelLowRefuel\(true\)',
+  'AUFTRAG:NewAWACS',
+  'EnRouteTaskAWACS',
+  'SetMissionEgressCoord'
 )
 
 foreach ($entry in $content.GetEnumerator()) {
@@ -104,14 +110,17 @@ $header = @"
 -- Scope: OMW external E-3 AWACS timed-coverage foundation.
 -- Strategic source: OFFMAP_AL_DHAFRA.
 -- Route: external materialization -> ROSIE -> 30 NM late approach -> APOC.
--- Standby: APOC racetrack before 1530 local without AWACS mission service.
+-- Physical station: one persistent APOC AUFTRAG racetrack; no AWACS mission-task replacement at service-state changes.
+-- Standby before 1530 local: radar option NEVER plus MOOSE emission OFF.
+-- Active 1530-2330 local: radar option CONTINUOUS SEARCH plus MOOSE emission ON.
+-- DCS AWACS fighter-control task: not used for the current OMW visible-AEW-actor scope.
 -- Service: WIZARD, 357.300 MHz AM, 1530-2330 local (1100Z-1900Z).
 -- Station: FL320, 300 KT, 017T, 30 NM leg.
 -- E-3 transfer baseline: 440 KT target for external/ingress/egress/AAR transfer; approximately the upper end of the adopted 420-440 KTAS engineering range. This is an OMW engineering baseline, not a claim of an exact historical 964th EAACS LRC schedule.
 -- AAR receiver path: leave APOC -> FL340/440 KT transfer -> designated rendezvous -> MOOSE Refuel -> FL340/440 KT return -> APOC.
 -- AAR tanker dispatch: acceptance-gated; no automatic nearest-tanker policy is claimed by this production bundle.
--- Egress: service closes at 2330 local -> FL340/440 KT -> ROSIE -> external handoff/despawn.
--- DCS validation: Acceptance 1 covers the earlier routing lifecycle only; timed service/AAR and the 440-KT transfer calibration require dedicated acceptance.
+-- Egress: service closes at 2330 local -> sensor OFF -> explicit FL340/440 KT direct waypoint to ROSIE -> external handoff/despawn.
+-- DCS validation: Acceptance 1 covers the earlier routing lifecycle only; persistent-orbit sensor toggling requires Acceptance 3.
 -- No automated MIZ mutation.
 -- MOOSE-Commit: $mooseCommit
 -- Moose.lua-SHA256: $mooseSha256
@@ -148,7 +157,7 @@ foreach ($pattern in $forbiddenPatterns) {
 Write-Host "Built: $outputFile"
 Write-Host "BuilderVersion: $builderVersion"
 Write-Host "SourceCommitUtc: $sourceCommitUtc"
-Write-Host 'Scope: AWACS_TIMED_COVERAGE_FOUNDATION'
+Write-Host 'Scope: AWACS_PERSISTENT_ORBIT_SENSOR_FOUNDATION'
 Write-Host 'Template: OMW_C2_E3A_WIZARD'
 Write-Host 'StrategicSource: OFFMAP_AL_DHAFRA'
 Write-Host 'FIRFix: ROSIE'
@@ -166,13 +175,16 @@ Write-Host 'ServiceStartLocal: 15:30'
 Write-Host 'PlannedAARLocal: 19:30'
 Write-Host 'ServiceEndLocal: 23:30'
 Write-Host 'ServiceWindowSec: 28800'
+Write-Host 'PersistentOrbit: true'
+Write-Host 'AWACSMissionTaskUsed: false'
+Write-Host 'SensorControl: SwitchEmission + radar option'
 Write-Host 'AARTransferAltitudeFt: 34000'
 Write-Host 'AARTransferSpeedKt: 440'
 Write-Host 'AARLateApproachNm: 30'
 Write-Host 'DesignatedRefuelReceiverPath: true'
 Write-Host 'AutomaticRefuelDispatch: false'
 Write-Host 'MaxPhysicalAircraft: 2'
-Write-Host 'DCSValidatedTimedServiceAndAAR: false'
+Write-Host 'DCSValidatedPersistentOrbitSensorToggle: false'
 Write-Host 'MizMutation: false'
 Write-Host "MOOSECommit: $mooseCommit"
 Write-Host "MooseLuaSHA256: $mooseSha256"
