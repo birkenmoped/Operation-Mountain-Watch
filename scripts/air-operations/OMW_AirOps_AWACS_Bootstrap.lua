@@ -1,13 +1,12 @@
 -- Operation Mountain Watch - external AWACS subsystem bootstrap.
 --
--- This bootstrap composes the source-reviewed AWACS physical controller with the
--- single CampaignState authority. It does not create an AIRWING because Al Dhafra
--- is represented as an off-map strategic source, not as a DCS airbase.
+-- This bootstrap composes the AWACS physical controller with the single
+-- CampaignState authority. Al Dhafra remains an off-map strategic source.
 
 local Bootstrap = {}
 
 local TAG = "[OMW][AirOps.AWACS.Bootstrap]"
-Bootstrap.SchemaVersion = "OMW-AIROPS-AWACS-FOUNDATION-1"
+Bootstrap.SchemaVersion = "OMW-AIROPS-AWACS-FOUNDATION-2"
 
 local function fail(message)
   error(TAG .. " " .. tostring(message), 2)
@@ -98,6 +97,8 @@ function Bootstrap.Start(spec)
   requireFunction(controller, "Start", "spec.controller")
   requireFunction(controller, "RequestEgress", "spec.controller")
   requireFunction(controller, "RequestRefuel", "spec.controller")
+  requireFunction(controller, "GetRuntime", "spec.controller")
+  requireFunction(controller, "GetServiceState", "spec.controller")
   requireFunction(controller, "GetConfig", "spec.controller")
 
   local campaignContext, createdContext = resolveCampaignContext(spec)
@@ -124,26 +125,31 @@ function Bootstrap.Start(spec)
     CampaignContextCreated = createdContext,
     Config = config,
     InitialRuntime = runtime,
-    Scope = "AWACS_EXTERNAL_LIFECYCLE_FOUNDATION",
+    Scope = "AWACS_TIMED_COVERAGE_FOUNDATION",
   }
 
   function facade.RequestEgress(reason)
     return controller.RequestEgress(reason)
   end
 
-  function facade.RequestRefuel(rendezvousCoordinate)
-    return controller.RequestRefuel(rendezvousCoordinate)
+  function facade.RequestRefuel(rendezvousCoordinate, designatedTankerGroupName)
+    return controller.RequestRefuel(rendezvousCoordinate, designatedTankerGroupName)
   end
 
   function facade.GetRuntime()
     return controller.GetRuntime()
   end
 
+  function facade.GetServiceState()
+    return controller.GetServiceState()
+  end
+
   OMW.AirOps.AWACS = facade
 
   log(string.format(
-    "RUNNING source=%s area=%s fir=%s callsign=%s frequencyMHz=%.3f stationCycleSec=%d dcsValidated=false",
-    config.sourceDomain, config.area, config.firFix, config.callsign, config.frequencyMHz, config.stationCycleSec
+    "RUNNING source=%s area=%s fir=%s callsign=%s frequencyMHz=%.3f serviceStartLocalSec=%d plannedAarLocalSec=%d serviceEndLocalSec=%d dcsValidated=false",
+    config.sourceDomain, config.area, config.firFix, config.callsign, config.frequencyMHz,
+    config.serviceStartLocalSec, config.plannedAarLocalSec, config.serviceEndLocalSec
   ))
 
   return facade
