@@ -1,6 +1,6 @@
 ---
 document_id: OMW-GROUND-META-RESUPPLY-NOTHING-ACCEPTANCE-1
-status: FAILED
+status: PLANNED
 document_class: ACCEPTANCE_PLAN
 owning_policy: OMW-GOV-001
 authoritative_for:
@@ -104,17 +104,23 @@ ARMYGROUP:RTZ(originZone, ENUMS.Formation.Vehicle.OnRoad)
 
 Die owner-approved `OMW_GroundRoadSpawnAdapter`-Ausnahme wird unverändert wiederverwendet.
 
-## 6. Fail-fast Gate
+## 6. Timeout-/Fail-fast-Vertrag
+
+Der erste Stage-1C-Build verwendete `OutboundTimeoutSec = 600`. Das war ein Harness-Fehler: Joyce-ACCESS zu Honaker-ACCESS liegen bereits Luftlinie rund 16,9 km auseinander. Bei 27 kt (~50 km/h) beträgt die theoretische Mindestfahrzeit ohne Straßendetour und AI-Verlangsamung rund 1.218 s. Der 600-s-Timeout musste daher vor einer normalen Ankunft auslösen.
+
+Nach `fail()` setzt der Harness `state.failed=true`; alle nachfolgenden MissionExecute-/MissionDone-/RTZ-Callbacks verlassen den Test dann absichtlich. Das erklärt den beobachteten Lauf: Der bereits geroutete Convoy fuhr physisch weiter nach Honaker, konnte nach dem vorzeitigen Test-FAIL aber keine Delivery-/Return-Kette mehr auslösen.
+
+Korrigierter Vertrag:
 
 ```text
-OutboundTimeoutSec = 600
+OutboundTimeoutSec = 1800
 DestinationCheckIntervalSec = 15
 DestinationExecutionGraceSec = 90
 ```
 
-Nach Eintritt in Honaker ACCESS muss `MissionExecute` binnen 90 Sekunden folgen; andernfalls `DESTINATION_EXECUTION_TIMEOUT`.
+Der 1800-s-Wert entspricht wieder dem bereits in Stage 1A verwendeten Outbound-Fenster. Der eigentliche Fail-fast-Schutz bleibt erhalten: Erst nach tatsächlichem Eintritt in Honaker ACCESS muss `MissionExecute` binnen 90 Sekunden folgen; andernfalls `DESTINATION_EXECUTION_TIMEOUT`.
 
-## 7. Build- und MIZ-Provenienz
+## 7. Build- und MIZ-Provenienz des Fehlversuchs
 
 ```text
 Source/build commit: cb32f23886e68371bf45ab4f7a1394200f542c29
@@ -133,7 +139,7 @@ Executed mission path from debrief: OMW_Template_v19.miz
 
 Read-only MIZ-Preflight bestätigte den korrekten `ResKey_Action_243`, `triggerOnce`, beide Readiness-Flags, `TIME > 5`, keine alte AMMO/FUEL-Acceptance-Ressource sowie das unveränderte `TPL_BLUE_CONVOY_FUEL_LIGHT_06` mit `lateActivation=true` und sechs Fahrzeugen.
 
-## 8. DCS-Lauf 2026-08-23
+## 8. DCS-Lauf 2026-08-23 – Ergebnis und Korrektur
 
 Beobachtet:
 
@@ -150,17 +156,11 @@ WARNING TRANSPORT: CREATING PATH MAKES TOO LONG!!!!!
 FAIL reason=OUTBOUND_TIMEOUT seconds=600 destinationObserved=false spawnCount=1 armyOnMissionCount=1 missionExecuteCount=0 missionDoneCount=0
 ```
 
-Nicht erreicht:
+Die visuelle Owner-Beobachtung war, dass der Convoy anschließend Honaker erreichte und dort stehen blieb. Das widerspricht dem Log nicht: Der Timeout hatte den Acceptance-Harness bereits beendet, nicht die physische DCS-Route.
 
-```text
-DESTINATION_OBSERVED
-MissionExecute
-DELIVERY_CONFIRMED
-MissionDone
-RTZ
-Returned
-Warehouse AddAsset
-```
+Der Lauf ist daher als **Harness-FALSE-FAIL durch zu kurzes Outbound-Fenster** zu behandeln. Er beweist weder einen `NewNOTHING`-Routingfehler noch einen Fehler der RTZ-Rückfahrt. Der Return-Pfad wurde durch `state.failed=true` nicht mehr verarbeitet.
+
+Der DCS-Marker `CREATING PATH MAKES TOO LONG!!!!!` bleibt als diagnostischer Hinweis dokumentiert, ist aber nicht als Root Cause dieses fehlenden Returns belegt.
 
 Log-Provenienz:
 
@@ -169,26 +169,21 @@ dcs.log SHA-256: 23E2D0B31B66464A57D3BC5F45F92A75D4EF913413833311042CD4BC74F1AAA
 debrief.log SHA-256: 2574F8746F6D4A88E6D6F038AFC33DB5600DC4D52CC6A0E946A8E2155B0D8922
 ```
 
-## 9. Klassifikation und nächste Grenze
-
-```text
-Acceptance result: FAIL
-Failure boundary: OUTBOUND ROUTING BEFORE DESTINATION
-NOTHING lifecycle at destination: NOT REACHED / NOT EVALUATED
-Return lifecycle: NOT REACHED / NOT EVALUATED
-CampaignState delivery: NOT COMMITTED
-```
-
-Der unmittelbar nach `ARMY_ON_MISSION` auftretende DCS-Marker `CREATING PATH MAKES TOO LONG!!!!!` macht Ground-Route/Waypoint-Erzeugung zum nächsten Untersuchungsgegenstand. Es wird kein Timer, Radius oder Warehouse auf Verdacht geändert.
-
 Detailresultat:
 
 ```text
 results/2026-08-23-ground-meta-resupply-nothing-acceptance-1-fail-1.md
 ```
 
-Nächster freigegebener Schritt:
+## 9. Korrigierter Staging-Stand
 
 ```text
-COMPARE_AMMOSUPPLY_VS_NOTHING_GROUND_ROUTE_GENERATION
+Acceptance-1-1 result: HARNESS_FALSE_FAIL_OUTBOUND_TIMEOUT_TOO_SHORT
+NewNOTHING runtime acceptance: NOT YET PROVEN
+Corrected source: OUTBOUND_TIMEOUT_SEC = 1800
+Corrected builder: GROUND-META-RESUPPLY-NOTHING-ACCEPTANCE-1-2
+Destination execution grace: 90 s after actual destination-zone entry
+Next step: OWNER_PULL_BUILD_HASH_GATE
 ```
+
+Kein Produktionsstatus und kein `VALIDATED` wird aus dem Fehlversuch abgeleitet.
