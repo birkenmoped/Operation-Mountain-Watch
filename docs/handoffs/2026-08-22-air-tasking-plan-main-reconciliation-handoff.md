@@ -22,6 +22,20 @@ validated_in_dcs: false
 
 # Handoff – Air Tasking Plan Main Reconciliation
 
+## 0. Post-Merge-Nachtrag – 23.08.2026
+
+Der in dieser Übergabe noch als Owner-Gate dokumentierte Integrationsschritt ist abgeschlossen. Der Projektinhaber hat Ready for Review und Merge ausdrücklich freigegeben; GitHub bestätigt PR #117 als gemergt.
+
+```text
+PR: 117
+status: MERGED
+source_head: 0c654f2e699a4b8150b785f90fe14e53d2435016
+merge_commit: d1ef605c510917b2e69bfb96c109ad9ff8e26654
+reconciled_source_validated_in_dcs: false
+```
+
+Die nachfolgenden Abschnitte bleiben als vollständiger Pre-Merge-Handoff und Entscheidungsverlauf erhalten. Ein dort noch als `PENDING OWNER DECISION`, `DRAFT` oder "nächster Schritt" formulierter Merge-Gate-Stand ist historisch und wird durch diesen Nachtrag ersetzt. Nicht ersetzt werden die MOOSE-First-Grenzen, die exakte historische `VERTICAL-2`-Provenienz, die fehlende `VERTICAL-3`-DCS-Validation und die bekannte Shared-Runtime-Limitation.
+
 Stand: 22.08.2026
 
 ## 1. Übergabeziel
