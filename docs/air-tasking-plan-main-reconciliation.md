@@ -16,7 +16,7 @@ project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
 superseded_by:
 source_branch: agent/air-tasking-plan-main-reconciliation
-source_commit: PENDING_MERGE
+source_commit: 9d282bf61e7e54f110b95a4ee9eb2bede01838a5
 validated_in_dcs: false
 ---
 
