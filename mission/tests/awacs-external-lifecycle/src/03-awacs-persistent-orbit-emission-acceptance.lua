@@ -68,18 +68,14 @@ local function sampleRuntime(runtime)
   local velocityKt = velocity and UTILS.MpsToKnots(velocity) or -1
   local headingDeg = fg:GetHeading() or -1
   local fuelPct = fg:GetFuelMin()
-  local fuelKg = fg:GetCurrentFuelKgs()
-  local fuelMaxKg = fg:GetFuelMassMax()
   local position = coordinate and coordinate:GetLLDDM() or "UNKNOWN"
 
   log(string.format(
-    "SAMPLE runtime=%s clockSec=%.1f serviceState=%s sensorState=%s missionKind=%s physicalOnTrack=%s egressOrdered=%s handoffComplete=%s altFt=%.0f speedKt=%.1f headingDeg=%.1f fuelPct=%s fuelKg=%s fuelMaxKg=%s position=%s",
+    "SAMPLE runtime=%s clockSec=%.1f serviceState=%s sensorState=%s missionKind=%s physicalOnTrack=%s egressOrdered=%s handoffComplete=%s altFt=%.0f speedKt=%.1f headingDeg=%.1f fuelPct=%s position=%s",
     tostring(runtime.runtimeId), clockSec(), tostring(runtime.serviceState), tostring(runtime.sensorState),
-    tostring(runtime.serviceMissionKind), tostring(runtime.physicalOnTrack), tostring(runtime.egressOrdered), tostring(runtime.handoffComplete),
+    tostring(runtime.serviceMissionKind or runtime.orbitMissionKind), tostring(runtime.physicalOnTrack), tostring(runtime.egressOrdered), tostring(runtime.handoffComplete),
     altitudeFt, velocityKt, headingDeg,
     fuelPct and string.format("%.4f", fuelPct) or "nil",
-    fuelKg and string.format("%.1f", fuelKg) or "nil",
-    fuelMaxKg and string.format("%.1f", fuelMaxKg) or "nil",
     tostring(position)
   ))
 end
@@ -95,8 +91,8 @@ local function monitor()
   local localSec = clockSec()
 
   if state.lastServiceState ~= serviceState or state.lastSensorState ~= sensorState then
-    log(string.format("STATE_CHANGE runtime=%s serviceState=%s sensorState=%s missionKind=%s",
-      tostring(runtime.runtimeId), serviceState, sensorState, tostring(runtime.serviceMissionKind)))
+    log(string.format("STATE_CHANGE runtime=%s serviceState=%s sensorState=%s missionKind=%s localSec=%.1f",
+      tostring(runtime.runtimeId), serviceState, sensorState, tostring(runtime.serviceMissionKind or runtime.orbitMissionKind), localSec))
     state.lastServiceState = serviceState
     state.lastSensorState = sensorState
   end
@@ -108,9 +104,9 @@ local function monitor()
   if serviceState == "ACTIVE" and sensorState == "EMITTING" then
     if not state.activationObserved then
       state.activationObserved = true
-      log(string.format("SERVICE_ACTIVATION_OBSERVED runtime=%s missionKind=%s persistentOrbit=%s",
-        tostring(runtime.runtimeId), tostring(runtime.serviceMissionKind),
-        tostring(runtime.serviceMissionKind == "PERSISTENT_RACETRACK")))
+      log(string.format("SERVICE_ACTIVATION_OBSERVED runtime=%s missionKind=%s persistentOrbit=%s localSec=%.1f",
+        tostring(runtime.runtimeId), tostring(runtime.serviceMissionKind or runtime.orbitMissionKind),
+        tostring((runtime.serviceMissionKind or runtime.orbitMissionKind) == "PERSISTENT_RACETRACK"), localSec))
     end
   end
 
@@ -119,7 +115,8 @@ local function monitor()
   if not state.egressRequested and localSec >= CONTROLLED_EGRESS_SEC then
     if not state.standbyObserved then fail("standby SILENT state was not observed before controlled egress") end
     if not state.activationObserved then fail("ACTIVE/EMITTING state was not observed before controlled egress") end
-    if runtime.serviceMissionKind ~= "PERSISTENT_RACETRACK" then
+    local missionKind = runtime.serviceMissionKind or runtime.orbitMissionKind
+    if missionKind ~= "PERSISTENT_RACETRACK" then
       fail("persistent racetrack mission was not retained through service activation")
     end
 
