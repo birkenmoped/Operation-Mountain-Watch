@@ -175,15 +175,37 @@ Detailresultat:
 results/2026-08-23-ground-meta-resupply-nothing-acceptance-1-fail-1.md
 ```
 
-## 9. Korrigierter Staging-Stand
+## 9. Korrigierter Build-Stand
+
+Owner-lokal am 23.08.2026 erfolgreich gebaut und unabhängig nachgehasht:
+
+```text
+Branch: agent/automatic-response-orchestration
+Git HEAD: b34897403c4685061211b32cd081da3ac0e20000
+BuilderVersion: GROUND-META-RESUPPLY-NOTHING-ACCEPTANCE-1-2
+Bundle SHA-256: 2B6C3357A51E19889B9420E766F7E5E408B4810B3545F30FDFFDFB399B19ED27
+Independent bundle SHA-256: 2B6C3357A51E19889B9420E766F7E5E408B4810B3545F30FDFFDFB399B19ED27
+Builder SHA-256: A7A5A730C581DBB3E5762B886A43C6FB64BF40CA4658E050F9F6127FDCDB125B
+Acceptance source SHA-256: A21A88BD4BAC18FF4AE497C7A66C606E71DE888A9C55AA019AC1939B0F08D045
+GroundRoadSpawnAdapter SHA-256: 1A81FB2E5270C493373CF5BF6EC01F5AFED47004BF25C4225524121155D983E8
+MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+Moose.lua SHA-256: E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915
+OutboundTimeoutSec: 1800
+DestinationCheckIntervalSec: 15
+DestinationExecutionGraceSec: 90
+ReturnTimeoutSec: 1800
+ReturnIssueDelaySec: 30
+ReturnSettlementDelaySec: 12
+FUELSUPPLY: false
+OPSTRANSPORT: false
+MizMutation: false
+```
 
 ```text
 Acceptance-1-1 result: HARNESS_FALSE_FAIL_OUTBOUND_TIMEOUT_TOO_SHORT
+Corrected build: OWNER_LOCAL_BUILD_PASS
 NewNOTHING runtime acceptance: NOT YET PROVEN
-Corrected source: OUTBOUND_TIMEOUT_SEC = 1800
-Corrected builder: GROUND-META-RESUPPLY-NOTHING-ACCEPTANCE-1-2
-Destination execution grace: 90 s after actual destination-zone entry
-Next step: OWNER_PULL_BUILD_HASH_GATE
+Next step: OWNER_MISSION_EDITOR_REINTEGRATION_AND_READ_ONLY_MIZ_PREFLIGHT
 ```
 
-Kein Produktionsstatus und kein `VALIDATED` wird aus dem Fehlversuch abgeleitet.
+Kein Produktionsstatus und kein `VALIDATED` wird aus dem Fehlversuch oder dem Build-PASS abgeleitet.
