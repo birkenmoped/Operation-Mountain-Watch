@@ -34,7 +34,8 @@ end
 local function getFacade()
   if not OMW or not OMW.AirOps or not OMW.AirOps.AWACS then return nil end
   local facade = OMW.AirOps.AWACS
-  if facade.Status ~= "RUNNING" or type(facade.GetRuntime) ~= "function" then return nil end
+  if facade.Status ~= "RUNNING" or type(facade.GetRuntime) ~= "function"
+      or type(facade.GetLisaRuntime) ~= "function" then return nil end
   return facade
 end
 
@@ -75,20 +76,24 @@ local function sample()
   end
 
   if runtime.aarPhase ~= state.lastAarPhase then
-    log(string.format("AAR_PHASE runtime=%s from=%s to=%s tanker=%s fuelPct=%s",
+    log(string.format("AAR_PHASE runtime=%s from=%s to=%s tanker=%s selectionReason=%s fuelPct=%s",
       tostring(runtime.runtimeId), tostring(state.lastAarPhase), tostring(runtime.aarPhase),
-      tostring(runtime.designatedTankerGroupName or "NONE"), fmt(fuelPct, "%.2f")))
+      tostring(runtime.designatedTankerGroupName or "NONE"), tostring(runtime.aarSelectionReason or "NONE"),
+      fmt(fuelPct, "%.2f")))
     state.lastAarPhase = runtime.aarPhase
+  end
+
+  local lisa = facade.GetLisaRuntime()
+  if lisa and not state.lisaObserved then
+    state.lisaObserved = true
+    log(string.format("LISA_OBSERVED runtime=%s onStation=%s egress=%s loss=%s",
+      tostring(lisa.runtimeId), tostring(lisa.onStation == true), tostring(lisa.egressOrdered == true), tostring(lisa.lossHandled == true)))
   end
 
   if type(fuelPct) == "number" and fuelPct <= 40 then state.fuelLowObserved = true end
   if runtime.aarCompletedAt then state.refuelObserved = true end
   if runtime.egressOrdered then state.egressObserved = true end
   if runtime.handoffComplete then state.handoffObserved = true end
-  if OMW and OMW.AirOps and OMW.AirOps.AAR then
-    local counts = type(OMW.AirOps.AAR.GetRuntimeCounts) == "function" and OMW.AirOps.AAR.GetRuntimeCounts() or nil
-    if counts and counts.supportAircraft and counts.supportAircraft > 4 then state.lisaObserved = true end
-  end
 
   log(string.format(
     "TELEMETRY seq=%d runtime=%s localSec=%.1f serviceState=%s sensorState=%s aarPhase=%s tanker=%s altFt=%s speedKt=%s headingDeg=%s fuelPct=%s lat=%s lon=%s egress=%s",
