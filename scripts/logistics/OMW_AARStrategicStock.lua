@@ -11,7 +11,10 @@
 
 local StrategicStock = {}
 
-StrategicStock.SchemaVersion = "OMW-OFFMAP-AIR-SUPPORT-STOCK-3"
+-- Keep the accepted AAR schema marker for existing production validators.
+-- ExtendedSchemaVersion records the additive AWACS resource extension.
+StrategicStock.SchemaVersion = "OMW-AAR-STRATEGIC-STOCK-2"
+StrategicStock.ExtendedSchemaVersion = "OMW-OFFMAP-AIR-SUPPORT-STOCK-3"
 StrategicStock.ResourceId = "AIRCRAFT_KC135"
 StrategicStock.LossResourceId = "AIRCRAFT_KC135_LOST"
 StrategicStock.AwacsResourceId = "AIRCRAFT_E3A_AWACS"
