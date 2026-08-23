@@ -1,16 +1,23 @@
 ---
 document_id: OMW-GROUND-META-RESUPPLY-NOTHING-ACCEPTANCE-1-PASS-1
-status: DRAFT
+status: ACCEPTED_TECHNICAL_BASELINE
 document_class: ACCEPTANCE_RESULT
 owning_policy: OMW-GOV-001
 authoritative_for:
-  - branch-local runtime evidence for Ground meta-resource RESUPPLY via AUFTRAG NOTHING
+  - branch-local accepted runtime evidence for Ground meta-resource RESUPPLY via AUFTRAG NOTHING
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
 superseded_by:
 source_branch: agent/automatic-response-orchestration
 source_commit: PENDING_MERGE
+acceptance_branch: agent/automatic-response-orchestration
+acceptance_commit: 8803505edf07120bc6d1673b41f69067e8db0211
+acceptance_mission: OMW_Template_v19.miz
+acceptance_mission_sha256: D788AF36535D3ACD1866D15FFB5D354B2C44B5F8EE40D4BAF6FD1D97B7C0F8A5
+dcs_version: 2.9.28.26385 MT
+moose_commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+moose_artifact_sha256: E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915
 validated_in_dcs: true
 ---
 
@@ -22,7 +29,7 @@ validated_in_dcs: true
 TestId: GROUND-META-RESUPPLY-NOTHING-ACCEPTANCE-1
 BuilderVersion: GROUND-META-RESUPPLY-NOTHING-ACCEPTANCE-1-4
 Runtime result: PASS
-Formal ACCEPTED_TECHNICAL_BASELINE: PENDING_MIZ_SHA256
+Formal ACCEPTED_TECHNICAL_BASELINE: YES
 ```
 
 Der DCS-Lauf erreichte den vollständigen Stage-1C-Lifecycle von Joyce nach Honaker und mit demselben `ARMYGROUP` zurück nach Joyce.
@@ -51,10 +58,10 @@ MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
 Moose.lua SHA-256: E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915
 DCS: 2.9.28.26385 MT
 Executed mission path: C:\Users\Sven\Saved Games\DCS.openbeta\Missions\OMW_Template_v19.miz
-Executed MIZ SHA-256: PENDING_OWNER_HASH
+Executed MIZ SHA-256: D788AF36535D3ACD1866D15FFB5D354B2C44B5F8EE40D4BAF6FD1D97B7C0F8A5
 ```
 
-Die Mission-SHA wird nicht aus einem älteren v19-Stand übernommen. Ohne den Hash der exakt ausgeführten Build-1-4-Mission bleibt die formale `ACCEPTED_TECHNICAL_BASELINE`-Hochstufung gesperrt.
+Diese Provenienz erfüllt die dokumentierte technische Acceptance-Grenze. Der Status gilt ausschließlich für den exakt dokumentierten Branch-, Commit-, Missions-, DCS- und MOOSE-Stand.
 
 ## 4. Acceptance-Konfiguration
 
@@ -153,12 +160,16 @@ loss/interruption/restart behavior
 
 Der frühere Stage-1B-FUELSUPPLY-Lauf bleibt separat als `HARNESS_TIMEOUT_CONTAMINATED / INCONCLUSIVE` dokumentiert.
 
-## 8. Offener Provenienzpunkt
-
-Für die formale Hochstufung auf `ACCEPTED_TECHNICAL_BASELINE` fehlt nur noch:
+## 8. Technische Baseline
 
 ```text
-SHA-256 der exakt ausgeführten OMW_Template_v19.miz mit Build 1-4
+Acceptance branch: agent/automatic-response-orchestration
+Acceptance commit: 8803505edf07120bc6d1673b41f69067e8db0211
+Acceptance mission: OMW_Template_v19.miz
+Acceptance mission SHA-256: D788AF36535D3ACD1866D15FFB5D354B2C44B5F8EE40D4BAF6FD1D97B7C0F8A5
+DCS: 2.9.28.26385 MT
+MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+Moose.lua SHA-256: E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915
 ```
 
-Bis dahin bleibt dieses Ergebnis `DRAFT` mit realem DCS-Runtime-PASS, aber ohne formale Baseline-Promotion.
+Resultat: `ACCEPTED_TECHNICAL_BASELINE` für genau diesen dokumentierten Stage-1C-Scope. Vor einem Merge nach `main` entsteht daraus keine repository-weite normative Wirkung.
