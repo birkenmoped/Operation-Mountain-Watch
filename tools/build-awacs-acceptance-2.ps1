@@ -9,7 +9,7 @@ $sourceFile = Join-Path $repoRoot 'mission\tests\awacs-external-lifecycle\src\02
 $distDir = Join-Path $repoRoot 'mission\tests\awacs-external-lifecycle\dist'
 $outputFile = Join-Path $distDir 'OMW_AWACS_Acceptance_2.lua'
 
-$builderVersion = 'OMW-AWACS-ACCEPTANCE-2-3'
+$builderVersion = 'OMW-AWACS-ACCEPTANCE-2-4'
 $testId = 'AWACS-ACCEPTANCE-2-FULL-DURATION-AAR'
 $mooseCommit = '73d3ed119cd9e7e3f2cfcabbaa34513d30529b54'
 $mooseSha256 = 'e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915'
@@ -79,7 +79,7 @@ $header = @"
 -- BuilderVersion: $builderVersion
 -- TestId: $testId
 -- GitCommit: $commit
--- Scope: full 1530L-2330L AWACS service, flight profile, fuel telemetry and visible designated reserve-tanker AAR acceptance.
+-- Scope: full 1530L-2330L AWACS service, E-3 440-KT transfer-profile telemetry, fuel telemetry and visible designated reserve-tanker AAR acceptance.
 -- Test-only tanker coordinator: LISA KC-135 uses the already-running AAR subsystem StrategicAdapter and CampaignState authority.
 -- Production AAR controller mutation: false.
 -- Native DCS scheduler: false; MOOSE SCHEDULER only.
@@ -110,8 +110,10 @@ Write-Host 'ReserveTankerSource: AL_UDEID via DAVER'
 Write-Host 'AARRendezvous: 60 NM bearing 340T from APOC'
 Write-Host 'AARRendezvousAltitudeFt: 25000'
 Write-Host 'AARRendezvousSpeedKt: 300'
+Write-Host 'AWACSSpawnInitialSpeedKt: 440'
 Write-Host 'AWACSTransferAltitudeFt: 34000'
-Write-Host 'AWACSTransferSpeedKt: 300'
+Write-Host 'AWACSTransferSpeedKt: 440'
+Write-Host 'AWACSTrackSpeedKt: 300'
 Write-Host 'ManualRadioCheckRequired: true'
 Write-Host 'ProductionAARControllerMutation: false'
 Write-Host 'SharedAARStrategicAdapter: true'
