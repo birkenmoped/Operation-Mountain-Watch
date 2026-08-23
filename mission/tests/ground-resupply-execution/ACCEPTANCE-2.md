@@ -1,12 +1,14 @@
 ---
 document_id: OMW-GROUND-FUEL-RESUPPLY-ACCEPTANCE-1
-status: INCONCLUSIVE
+status: HISTORICAL_TEST_FIXTURE
 document_class: ACCEPTANCE_PLAN_AND_RESULT
 owning_policy: OMW-GOV-001
 authoritative_for:
   - branch-local Stage 1B Ground FUEL RESUPPLY FUELSUPPLY acceptance result
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
+supersedes:
+superseded_by:
 source_branch: agent/automatic-response-orchestration
 source_commit: PENDING_MERGE
 validated_in_dcs: false
@@ -25,9 +27,9 @@ FUELSUPPLY runtime suitability for OMW strategic meta-resupply: NOT PROVEN / NOT
 
 Der damalige Lauf erreichte `ROAD_ALIGNED_WAREHOUSE_SPAWN`, `GROUP_MATERIALIZED` und `ARMY_ON_MISSION`, endete aber mit `OUTBOUND_TIMEOUT seconds=1800`, bevor `OnAfterMissionExecute` beobachtet wurde.
 
-Die spätere DCS-Evidenz aus Stage 1C zeigt für dieselbe Joyce→Honaker-Strecke eine reale Fahr-/Ankunftszeit von mehr als 30 Minuten. Damit war der 1800-s-Harness nicht geeignet, aus dem Ausbleiben von `MissionExecute` einen Fehler von `AUFTRAG:NewFUELSUPPLY(...)` abzuleiten.
+Die spätere DCS-Evidenz aus Stage 1C zeigt für dieselbe Joyce→Honaker-Strecke, dass 1.800 Simulationssekunden als harte Acceptance-Grenze ungeeignet waren. Damit darf aus dem Ausbleiben von `MissionExecute` vor dem Harness-Abbruch kein Fehler von `AUFTRAG:NewFUELSUPPLY(...)` abgeleitet werden.
 
-Die frühere Bewertung `FUELSUPPLY ... REJECTED_FOR_CURRENT_SCOPE` wird deshalb zurückgenommen. Der Lauf beweist weder einen FUELSUPPLY-Routingfehler noch einen Fehler des Return-Pfads.
+Die frühere Bewertung `FUELSUPPLY ... REJECTED_FOR_CURRENT_SCOPE` ist deshalb zurückgenommen. Der Lauf beweist weder einen FUELSUPPLY-Routingfehler noch einen Fehler des Return-Pfads.
 
 Detailergebnis:
 
@@ -123,14 +125,14 @@ Der native `WAREHOUSE.TransportType.SELFPROPELLED`-Pfad bleibt als Framework-Fun
 
 ## 7. Mission-Editor-Status
 
-Das alte FUELSUPPLY-Acceptance-Bundle ist für den aktuellen strategischen Stage-1C-Test nicht erforderlich. Die `TPL_BLUE_CONVOY_FUEL_*`- und `TPL_BLUE_CONVOY_MIXED_*`-Templates bleiben bestehen.
+Das alte FUELSUPPLY-Acceptance-Bundle ist für den strategischen Stage-1C-Test nicht erforderlich. Die `TPL_BLUE_CONVOY_FUEL_*`- und `TPL_BLUE_CONVOY_MIXED_*`-Templates bleiben bestehen.
 
 ## 8. Nächster Schritt
 
 ```text
 1. Do not classify the old FUELSUPPLY runtime as a proven failure.
 2. Keep GROUND_FUEL_PACKAGE as CampaignState meta resource.
-3. Complete Stage 1C strategic meta-resupply acceptance independently.
+3. Keep the Stage 1C strategic meta-resupply path independent of FUELSUPPLY.
 4. If operational field refuelling is required, stage a separate short-distance RefuellingZone/FUELSUPPLY acceptance.
 5. Do not use a hard travel-time failure gate for that acceptance.
 ```
