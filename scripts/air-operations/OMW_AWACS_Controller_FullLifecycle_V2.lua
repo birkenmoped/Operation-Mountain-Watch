@@ -1,4 +1,4 @@
--- Operation Mountain Watch - full external E-3 AWACS lifecycle controller, revision 2.
+-- Operation Mountain Watch - full external E-3 AWACS lifecycle controller, revision 3.
 --
 -- MOOSE-first implementation:
 --   * SPAWN materializes the late-activation E-3 template at the visible off-map handoff.
@@ -23,6 +23,11 @@
 --   * FLIGHTGROUP:SetFuelLowRefuel(false) is intentional. The pinned implementation's built-in
 --     automatic path searches only 50 NM; OMW needs LISA priority plus a wider compatible-
 --     tanker fallback. FuelLow/FindNearestTanker/Refuel themselves remain MOOSE-native.
+--
+-- Service timing:
+--   * 15:30 local is evaluated against UTILS.SecondsOfToday(), not elapsed mission time.
+--   * Scheduled activation is independent of the aircraft position on the racetrack.
+--   * The 5 NM APOC gate is used only to confirm physical arrival/rejoin after AAR.
 
 OMW = OMW or {}
 
@@ -216,7 +221,8 @@ local function setSensorState(runtime, enabled, reason)
     runtime.sensorState = "SILENT"
   end
 
-  log(string.format("SENSOR_STATE runtime=%s state=%s reason=%s", runtime.runtimeId, runtime.sensorState, tostring(reason)))
+  log(string.format("SENSOR_STATE runtime=%s state=%s reason=%s localSec=%.1f",
+    runtime.runtimeId, runtime.sensorState, tostring(reason), clockSec()))
   return true
 end
 
@@ -242,7 +248,8 @@ local function activateService(runtime, reason)
   if runtime.orbitMissionKind ~= "PERSISTENT_RACETRACK" then return false end
   runtime.serviceState = "ACTIVE"
   setSensorState(runtime, true, reason or "SERVICE_ACTIVE")
-  log(string.format("SERVICE_ACTIVE runtime=%s reason=%s", runtime.runtimeId, tostring(reason)))
+  log(string.format("SERVICE_ACTIVE runtime=%s reason=%s localSec=%.1f",
+    runtime.runtimeId, tostring(reason), clockSec()))
   return true
 end
 
@@ -717,6 +724,15 @@ local function monitorAwacs(runtime)
     tryAcquireTanker(runtime)
   end
 
+  -- Scheduled service activation is a time-domain state change only. Do not gate it
+  -- on proximity to the APOC anchor: doing so delayed the 15:30 emission switch by
+  -- several minutes while WIZARD happened to be on the far side of the racetrack.
+  if runtime.serviceState == "STANDBY" and runtime.orbitMissionKind == "PERSISTENT_RACETRACK"
+      and localSec >= SERVICE_START_SEC and localSec < SERVICE_END_SEC and runtime.aarPhase == nil
+      and not runtime.egressOrdered then
+    activateService(runtime, "SCHEDULED_1100Z_START")
+  end
+
   if runtime.latePassed and not runtime.egressOrdered then
     local distanceNm = getDistanceNm(runtime.flightGroup, runtime.trackCoord)
     if distanceNm and distanceNm <= TRACK_ENTRY_RADIUS_NM then
@@ -726,10 +742,9 @@ local function monitorAwacs(runtime)
           runtime.runtimeId, fuelPct or -1, runtime.serviceState))
       end
 
-      if runtime.serviceState == "STANDBY" and localSec >= SERVICE_START_SEC and localSec < SERVICE_END_SEC
-          and runtime.aarPhase == nil then
-        activateService(runtime, "SCHEDULED_1100Z_START")
-      elseif runtime.serviceState == "REJOINING" and runtime.aarPhase == nil then
+      -- The positional gate remains appropriate after AAR: sensor service is restored
+      -- only after WIZARD has physically rejoined APOC.
+      if runtime.serviceState == "REJOINING" and runtime.aarPhase == nil then
         activateService(runtime, "AAR_RETURN_ON_STATION")
       end
     end
@@ -799,7 +814,7 @@ function Controller.Start()
 
   state.monitor = SCHEDULER:New(nil, monitor, {}, 1, DISPATCH_INTERVAL_SEC)
   state.started = true
-  log("STARTED mode=FULL_FUEL_DRIVEN_AAR_V2")
+  log("STARTED mode=FULL_FUEL_DRIVEN_AAR_V3")
   return runtime
 end
 
@@ -893,6 +908,7 @@ function Controller.GetConfig()
     fuelLowEventDrivenAar = true,
     automaticNearestTankerFallback = true,
     dedicatedLisaPredispatch = true,
+    scheduledActivationPositionGated = false,
     dcsValidatedFullLifecycle = false,
   }
 end
