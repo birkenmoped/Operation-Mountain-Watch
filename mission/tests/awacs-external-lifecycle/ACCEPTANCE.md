@@ -1,3 +1,20 @@
+---
+document_id: OMW-AWACS-EXTERNAL-LIFECYCLE-ACCEPTANCE
+status: PLANNED
+document_class: DCS_ACCEPTANCE_PLAN
+owning_policy: OMW-GOV-001
+authoritative_for:
+  - AWACS external-lifecycle acceptance plan and staged validation boundaries
+  - Acceptance-1 routing lifecycle criteria and subsequent AWACS acceptance gates
+scenario_period: 2010-08-01/2011-12-31
+project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
+source_branch: agent/awacs-external-lifecycle-foundation
+source_commit: GIT_HISTORY
+validated_in_dcs: partial
+supersedes:
+superseded_by:
+---
+
 # AWACS External Lifecycle – Acceptance Plan
 
 Status: `ROUTING LIFECYCLE PASS / PARTIAL DCS VALIDATION`
