@@ -46,7 +46,89 @@ Skill:       Excellent
 
 This is staging provenance only. It is not an AWACS runtime PASS and does not validate the branch bundle.
 
-## 3. MOOSE-first path under test
+## 3. Local source/build provenance – 2026-08-23
+
+Owner-executed local verification from the dedicated AWACS worktree:
+
+```text
+Worktree: P:\DCS-DEV\Operation-Mountain-Watch-AWACS
+Branch:   agent/awacs-external-lifecycle-foundation
+HEAD:     04da781e7fd3c66f62ec91007d5d06009af3dbf2
+Pre-build git status: clean
+Post-build git status: clean
+```
+
+The existing AAR production source gate passed unchanged on the AWACS branch:
+
+```text
+AAR production finalization source gate: PASS
+CampaignStateAuthority: true
+StrategicTurnaroundTimer: false
+LossRecredit: false
+RestoreReconciliation: true
+StandardTracks: 4
+ReserveTracks: 2
+FIRFixRouting: true
+ExternalSpawnHandoffSeparated: true
+AirwaysRouting: false
+```
+
+AWACS foundation build output:
+
+```text
+BuilderVersion: OMW-AIROPS-AWACS-FOUNDATION-1
+Scope: AWACS_EXTERNAL_LIFECYCLE_FOUNDATION
+Template: OMW_C2_E3A_WIZARD
+StrategicSource: OFFMAP_AL_DHAFRA
+FIRFix: ROSIE
+PrimaryArea: APOC
+Callsign: WIZARD
+FrequencyMHzAM: 357.300
+TrackAltitudeFt: 32000
+TrackSpeedKt: 300
+TrackHeadingTrueDeg: 17
+TrackLegNm: 30
+LateApproachNm: 30
+StationCycleSec: 21600
+MaxPhysicalAircraft: 2
+AutomaticRefuelDispatch: false
+DCSValidated: false
+MizMutation: false
+```
+
+Real local SHA-256 values reported by the owner:
+
+```text
+OMW_AWACS_Foundation.lua
+2B029A29EC54994715ABBEF52875E3122D01F40D4866FEF361543068667F23E8
+
+OMW_AWACS_Controller.lua
+6ED1C54465764B5745F1071A59439F29DC08A93D1875492D25FF5BA889BD13BD
+
+OMW_AWACS_CampaignStateAdapter.lua
+2E2129959EDC131C3FAA51B7E9A1F64B46D82F1F4C57968AECAB070DD1EA2754
+
+OMW_AirOps_AWACS_Bootstrap.lua
+60E039A6C13D2B952AB33AB8FE2D7E6113B652A6EE75D252BC7466A834143344
+
+OMW_AARStrategicStock.lua
+2B53644DC2966B142B975B31F469CBE8AD5E8088A86ADC36940A7E745322D00C
+
+OMW_AirOpsCampaignStateInitializer.lua
+5D16C40DFDBF8841AE15E0CC62C52F6922953A4F561071E2C018DB9DD43B41E8
+```
+
+Pinned MOOSE for this build:
+
+```text
+Release:           2.9.18
+Commit:            73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+Moose.lua SHA-256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
+```
+
+This records a successful local source/build gate only. It does not constitute DCS runtime validation.
+
+## 4. MOOSE-first path under test
 
 ```text
 SPAWN:New(template)
@@ -69,15 +151,7 @@ SPAWN:New(template)
 -> external handoff / Despawn
 ```
 
-Pinned MOOSE:
-
-```text
-Release:           2.9.18
-Commit:            73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
-Moose.lua SHA-256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
-```
-
-## 4. Required DCS acceptance observations
+## 5. Required DCS acceptance observations
 
 1. E-3 materializes at the external point, outside Kabul FIR, without a visible teleport inside Afghanistan.
 2. Initial energy state is plausible for E-3; `400 kt` is a staging value and must be corrected if DCS behavior is implausible.
@@ -94,7 +168,7 @@ Moose.lua SHA-256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a
 13. Aircraft loss consumes the committed E-3 permanently and increments only the loss audit resource.
 14. Restart reconciliation recredits unresolved physical commitments but preserves documented losses.
 
-## 5. Fuel calibration – mandatory before production validation
+## 6. Fuel calibration – mandatory before production validation
 
 The current Mission Editor template contains `65000 kg` fuel. No public `SPAWN:InitFuel(...)` path is assumed.
 
@@ -112,7 +186,7 @@ FuelLow / AAR decision threshold
 
 No linear conversion from published endurance to DCS fuel percentage is accepted as a replacement for telemetry.
 
-## 6. AAR acceptance boundary
+## 7. AAR acceptance boundary
 
 AFCENT documents E-3 aerial refuelling over Afghanistan in 2011. The pinned MOOSE source provides `FLIGHTGROUP:Refuel(...)` and the FuelLow/refuel FSM path.
 
@@ -133,7 +207,7 @@ B) reserve tanker is dispatched to an AWACS-compatible rendezvous near APOC whil
 
 No automatic nearest-tanker behavior is approved by this foundation.
 
-## 7. Provenance required for PASS
+## 8. Provenance required for PASS
 
 A PASS must record:
 
