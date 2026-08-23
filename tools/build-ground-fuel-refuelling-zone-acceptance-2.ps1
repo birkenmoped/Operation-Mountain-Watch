@@ -12,7 +12,7 @@ $acceptanceSourceFile = Join-Path $repoRoot 'mission\tests\ground-resupply-execu
 $distDir = Join-Path $repoRoot 'mission\tests\ground-resupply-execution\dist'
 $outputFile = Join-Path $distDir 'OMW_Ground_Fuel_Refuelling_Zone_Acceptance_2.lua'
 
-$builderVersion = 'GROUND-FUEL-REFUELLING-ZONE-ACCEPTANCE-2-2'
+$builderVersion = 'GROUND-FUEL-REFUELLING-ZONE-ACCEPTANCE-2-3'
 $testId = 'GROUND-FUEL-REFUELLING-ZONE-ACCEPTANCE-2'
 $mooseCommit = '73d3ed119cd9e7e3f2cfcabbaa34513d30529b54'
 $mooseSha256 = 'e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915'
@@ -25,7 +25,7 @@ $files = @(
 )
 foreach ($file in $files) {
   if (-not (Test-Path -LiteralPath $file -PathType Leaf)) {
-    throw "Required Ground FUEL RefuellingZone acceptance source not found: $file"
+    throw "Required Ground FUEL one-shot FUELSUPPLY acceptance source not found: $file"
   }
 }
 
@@ -42,9 +42,12 @@ $requiredMarkers = @(
   'OMW-RESOURCE-DEMAND-POLICY-1',
   'function Policy.Evaluate',
   '[OMW][Ground.RoadSpawnAdapter]',
-  'BRIGADE:AddRefuellingZone',
+  'AUFTRAG:NewFUELSUPPLY(state.destinationZone)',
   'AUFTRAG.Type.FUELSUPPLY',
-  'source=BRIGADE_ADD_REFUELLING_ZONE',
+  'source=AUFTRAG_NEW_FUELSUPPLY',
+  'persistentRefuellingZone=false',
+  'SetMissionSpeed',
+  'SetFormation',
   'MarkLoading',
   'MarkInTransit',
   'MarkDelivered',
@@ -66,7 +69,7 @@ $requiredMarkers = @(
 )
 foreach ($marker in $requiredMarkers) {
   if (-not $combined.Contains($marker)) {
-    throw "Ground FUEL RefuellingZone acceptance sources are missing required marker: $marker"
+    throw "Ground FUEL one-shot FUELSUPPLY acceptance sources are missing required marker: $marker"
   }
 }
 
@@ -86,11 +89,12 @@ $forbiddenPatterns = @(
   'OUTBOUND_TIMEOUT_SEC',
   'RETURN_TIMEOUT_SEC',
   'SetReturnToLegion\s*\(false\)',
-  ':RTZ\s*\('
+  ':RTZ\s*\(',
+  'AddRefuellingZone\s*\('
 )
 foreach ($pattern in $forbiddenPatterns) {
   if ($acceptanceSource -match $pattern) {
-    throw "Ground FUEL RefuellingZone acceptance contains forbidden runtime pattern: $pattern"
+    throw "Ground FUEL one-shot FUELSUPPLY acceptance contains forbidden runtime pattern: $pattern"
   }
 }
 
@@ -101,7 +105,7 @@ if (Test-Path -LiteralPath $outputFile -PathType Leaf) {
 
 $commit = (& git -C $repoRoot rev-parse HEAD).Trim()
 if ([string]::IsNullOrWhiteSpace($commit)) {
-  throw 'Unable to resolve Git HEAD for Ground FUEL RefuellingZone acceptance build.'
+  throw 'Unable to resolve Git HEAD for Ground FUEL one-shot FUELSUPPLY acceptance build.'
 }
 $generatedUtc = (Get-Date).ToUniversalTime().ToString('yyyy-MM-ddTHH:mm:ssZ')
 
@@ -112,13 +116,14 @@ $header = @"
 -- GitCommit: $commit
 -- GeneratedUtc: $generatedUtc
 -- TestId: $testId
--- Scope: Joyce -> Honaker CampaignState FUEL shortage / MissionDemand / BRIGADE:AddRefuellingZone / MOOSE-created FUELSUPPLY / independent destination-zone proof / normal MOOSE ReturnToLegion acceptance.
+-- Scope: Joyce -> Honaker CampaignState FUEL shortage / MissionDemand / one-shot AUFTRAG:NewFUELSUPPLY / independent destination-zone proof / normal MOOSE ReturnToLegion acceptance.
 -- MOOSECommit: $mooseCommit
 -- MooseLuaSHA256: $mooseSha256
 -- StrategicAuthority: existing OMW.AirOps.CampaignContext / OMW.Ground.Base CampaignState only.
 -- PhysicalRepresentation: existing TPL_BLUE_CONVOY_FUEL_LIGHT_06; no package-per-tanker capacity is defined by this acceptance.
+-- PersistentRefuellingZone: false.
 -- HardTravelTimeout: false.
--- ExplicitExclusions: direct AUFTRAG:NewFUELSUPPLY construction by OMW, explicit RTZ override, OPSTRANSPORT, generic SUPPLY, CAS, CSAR, native-DCS dispatcher, MIST, MissionScripting.lua mutation.
+-- ExplicitExclusions: BRIGADE:AddRefuellingZone persistent service registration, explicit RTZ override, OPSTRANSPORT, generic SUPPLY, CAS, CSAR, native-DCS dispatcher, MIST, MissionScripting.lua mutation.
 
 "@
 
@@ -146,7 +151,8 @@ Write-Host 'Origin: GROUND_NODE_JOYCE'
 Write-Host 'Destination: GROUND_NODE_HONAKER'
 Write-Host 'Resource: GROUND_FUEL_PACKAGE'
 Write-Host 'TransferQuantity: 18'
-Write-Host 'MissionCreation: BRIGADE:AddRefuellingZone -> MOOSE AUFTRAG FUELSUPPLY'
+Write-Host 'MissionCreation: AUFTRAG:NewFUELSUPPLY -> BRIGADE:AddMission'
+Write-Host 'PersistentRefuellingZone: false'
 Write-Host 'DestinationProof: Stage-1C-style independent zone polling plus observed MissionExecute'
 Write-Host 'DestinationCheckIntervalSec: 15'
 Write-Host 'DestinationExecutionGraceSec: 90'
