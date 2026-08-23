@@ -8,7 +8,7 @@ $repoRoot = Split-Path -Parent $PSScriptRoot
 $source = Join-Path $repoRoot 'mission\tests\awacs-external-lifecycle\src\04-awacs-full-fuel-aar-acceptance.lua'
 $distDir = Join-Path $repoRoot 'mission\tests\awacs-external-lifecycle\dist'
 $output = Join-Path $distDir 'OMW_AWACS_Acceptance_4.lua'
-$builderVersion = 'OMW-AWACS-ACCEPTANCE-4-2'
+$builderVersion = 'OMW-AWACS-ACCEPTANCE-4-3'
 $mooseCommit = '73d3ed119cd9e7e3f2cfcabbaa34513d30529b54'
 $mooseSha256 = 'e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915'
 
@@ -20,6 +20,8 @@ $content = Get-Content -LiteralPath $source -Raw -Encoding UTF8
 $required = @(
   'AWACS.Acceptance4',
   'GetFuelMin()',
+  'GetVelocityKNOTS()',
+  'LISA_READY_OBSERVED',
   'AAR_PHASE',
   'TELEMETRY',
   'observerOnly=true'
@@ -62,8 +64,10 @@ $header = @"
 -- Scope: full fuel-driven WIZARD lifecycle observer.
 -- Expected visible spawn: FL350 / 440 KT / approximately 77 percent template fuel.
 -- LISA pre-dispatch threshold: 65 percent WIZARD fuel.
--- AAR trigger: 40 percent WIZARD fuel.
+-- LISA ready contract: dedicated tanker established at FL320 / 300 KT initiates WIZARD AAR without waiting for 40 percent.
+-- Fallback AAR trigger: 40 percent WIZARD fuel if LISA has not established the planned AAR path.
 -- Critical off-map contingency: 25 percent WIZARD fuel if no established refuel path exists.
+-- LISA FuelLow egress must be deferred while WIZARD is actively refuelling from LISA.
 -- MOOSE FuelLow RTB: disabled; nearest compatible tanker fallback is required.
 -- Acceptance observer does not spawn, route or refuel aircraft.
 -- GitCommit: $commit
@@ -85,11 +89,17 @@ Write-Host 'ExpectedSpawnAltitudeFt: 35000'
 Write-Host 'ExpectedSpawnSpeedKt: 440'
 Write-Host 'ExpectedSpawnFuelPct: 77'
 Write-Host 'LisaPredispatchFuelPct: 65'
+Write-Host 'LisaTrackAltitudeFt: 32000'
+Write-Host 'LisaTrackSpeedKt: 300'
+Write-Host 'LisaReadyImmediateAAR: true'
+Write-Host 'LisaFuelLowEgressDeferredDuringActiveAAR: true'
 Write-Host 'AARTriggerFuelPct: 40'
+Write-Host 'AARTriggerRole: FALLBACK'
 Write-Host 'AARCriticalFuelPct: 25'
 Write-Host 'FuelLowRTB: false'
 Write-Host 'AutomaticNearestTankerFallback: true'
 Write-Host 'ObserverOnly: true'
+Write-Host 'TelemetryAltitudeUnit: FEET'
 Write-Host 'MizMutation: false'
 Write-Host "MOOSECommit: $mooseCommit"
 Write-Host "MooseLuaSHA256: $mooseSha256"
