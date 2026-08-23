@@ -129,53 +129,68 @@ AUFTRAG NewNOTHING physical meta-resupply contract: APPROVED FOR ACCEPTANCE
 
 ## 6. Stage 1C – Generic Ground Meta RESUPPLY via NOTHING
 
-Status: `STAGED / SOURCE_REVIEWED / OWNER BUILD PENDING / DCS_PENDING`.
+Status: `DCS FAIL / OUTBOUND ROUTING RECONCILIATION REQUIRED`.
 
-Erster Fixture bleibt bewusst Fuel, damit gegenüber Stage 1B nur die physische Missionssemantik gewechselt wird:
-
-```text
-HONAKER GROUND_FUEL_PACKAGE 36
--> consume 18
--> 18 / REORDER
--> one MissionDemand RESUPPLY
--> CampaignState TRANSFER 18 Joyce -> Honaker
--> TPL_BLUE_CONVOY_FUEL_LIGHT_06
--> BRIGADE / PLATOON / ARMYGROUP
--> AUFTRAG:NewNOTHING(Honaker ACCESS)
--> OnRoad 27 kt
--> exact destination-zone proof
--> CampaignState DELIVERED
--> MissionDemand SUCCESS
--> mission cancel / MissionDone
--> 30 s settlement
--> same ARMYGROUP RTZ Joyce ACCESS / OnRoad
--> Returned
--> Warehouse AddAsset
--> physical cleanup
-```
-
-Fail-fast:
+Owner-Build-Provenienz:
 
 ```text
-OutboundTimeoutSec: 600
-DestinationCheckIntervalSec: 15
-DestinationExecutionGraceSec: 90
+Source/build commit: cb32f23886e68371bf45ab4f7a1394200f542c29
+BuilderVersion: GROUND-META-RESUPPLY-NOTHING-ACCEPTANCE-1-1
+Bundle SHA-256: BC9A70327A456FC8718907B9701E83194303B0A5816F0EA0C309310D7118B8FE
+Builder SHA-256: 68A58E3F2C0C05D79B0FFC642CEDEB70008748FE81EE56D31BE9437CDB070E37
+Acceptance source SHA-256: 7B91D5DD74C874C03CB36FAF6CF9231201D45CB51FD749644EDA857A9FFD137E
+GroundRoadSpawnAdapter SHA-256: 1A81FB2E5270C493373CF5BF6EC01F5AFED47004BF25C4225524121155D983E8
 ```
 
-Nach beobachtetem Eintritt in Honaker ACCESS muss `MissionExecute` binnen 90 Sekunden folgen; andernfalls endet der Harness mit `DESTINATION_EXECUTION_TIMEOUT`.
-
-Staged files:
+Read-only MIZ-Provenienz nach dem Lauf:
 
 ```text
-mission/tests/ground-resupply-execution/src/03-ground-meta-resupply-nothing-acceptance.lua
-mission/tests/ground-resupply-execution/ACCEPTANCE-3.md
-tools/build-ground-meta-resupply-nothing-acceptance-1.ps1
+Executed path from debrief: OMW_Template_v19.miz
+Uploaded MIZ SHA-256: A4D04484584A04C092AAFF31981A477F9179203944B7DAAD4C7CF2D2DD8A63FF
+Internal mission SHA-256: B68EDC033D9C8E2FE0F8F93C81A063425F019F1C7A38A30710833AD367BCA90A
+Embedded acceptance bundle SHA-256: BC9A70327A456FC8718907B9701E83194303B0A5816F0EA0C309310D7118B8FE
+Embedded Moose.lua SHA-256: E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915
+Trigger: ONCE / OMW_WAREHOUSE_READY=1 / OMW_GROUND_READY=1 / TIME>5
+Old Ground AMMO/FUEL acceptance bundle embedded: NO
+TPL_BLUE_CONVOY_FUEL_LIGHT_06: present / lateActivation=true / six vehicles
 ```
+
+DCS 2.9.28.26385 MT beobachtet:
+
+```text
+START
+DEMAND_RESERVED quantity=18
+PHYSICAL_EXECUTION_READY physicalMission=NOTHING
+BRIGADE_STARTED
+MISSION_QUEUED type=NOTHING formation=OnRoad speedKt=27
+ROAD_ALIGNED_WAREHOUSE_SPAWN units=6 formationLengthM=76.8 maxSnapM=2.1
+GROUP_MATERIALIZED transferStatus=LOADING
+ARMY_ON_MISSION mission=NOTHING transferStatus=IN_TRANSIT demandStatus=ACTIVE
+WARNING TRANSPORT: CREATING PATH MAKES TOO LONG!!!!!
+FAIL reason=OUTBOUND_TIMEOUT seconds=600 destinationObserved=false spawnCount=1 armyOnMissionCount=1 missionExecuteCount=0 missionDoneCount=0
+```
+
+Damit wurde weder Honaker ACCESS beobachtet noch `MissionExecute` erreicht. Delivery-, MissionDone- und RTZ-Pfade wurden nicht ausgeführt und sind für NOTHING weiterhin nicht runtime-validiert.
+
+Log-Provenienz:
+
+```text
+dcs.log SHA-256: 23E2D0B31B66464A57D3BC5F45F92A75D4EF913413833311042CD4BC74F1AAA3
+debrief.log SHA-256: 2574F8746F6D4A88E6D6F038AFC33DB5600DC4D52CC6A0E946A8E2155B0D8922
+```
+
+Detailresultat:
+
+```text
+mission/tests/ground-resupply-execution/results/2026-08-23-ground-meta-resupply-nothing-acceptance-1-fail-1.md
+```
+
+Der nächste Schritt ist ausdrücklich kein weiterer DCS-Test. Zuerst wird die Ground-Route-/Waypoint-Erzeugung von AMMOSUPPLY und NOTHING im gepinnten MOOSE-Source gegeneinander reconciliert, insbesondere im Zusammenhang mit `CREATING PATH MAKES TOO LONG!!!!!`.
 
 ## 7. Weitere Entwicklungsstufen
 
 ```text
-Stage 1D generic SUPPLY / other meta resources: after Stage 1C runtime evidence
+Stage 1D generic SUPPLY / other meta resources: BLOCKED BY STAGE 1C ROUTING
 Stage 2 FOB attack -> support demand: PLANNED
 Stage 3 fire support -> local rearm -> resupply: FOUNDATIONS AVAILABLE
 Stage 4 convoy under attack -> support demand: PLANNED
@@ -200,10 +215,13 @@ fuel_convoy_templates: RETAIN
 warehouse_selfpropelled: SOURCE_REVIEWED_NOT_SELECTED_FOR_CONTINUOUS_ROUNDTRIP
 stage_1c_executor: AUFTRAG_NEWNOTHING
 stage_1c_owner_contract: APPROVED_2026_08_22
-stage_1c_source: STAGED
-stage_1c_builder: STAGED
-stage_1c_owner_build: NOT_RUN
-stage_1c_dcs_runtime: NOT_RUN
+stage_1c_owner_build: PASS
+stage_1c_miz_preflight: PASS_READ_ONLY_POST_RUN
+stage_1c_dcs_runtime: FAIL_OUTBOUND_TIMEOUT
+stage_1c_destination_observed: false
+stage_1c_mission_execute: 0
+stage_1c_mission_done: 0
+stage_1c_route_warning: CREATING_PATH_MAKES_TOO_LONG
 production_runtime_implementation: NOT_YET_CREATED
-next_allowed_step: OWNER_PULL_BUILD_HASH_GATE
+next_allowed_step: COMPARE_AMMOSUPPLY_VS_NOTHING_GROUND_ROUTE_GENERATION
 ```
