@@ -15,10 +15,12 @@ validated_in_dcs: false
 ## Klassifikation
 
 ```text
-FAIL
+HARNESS_FALSE_FAIL_OUTBOUND_TIMEOUT_TOO_SHORT
 ```
 
-Der Test ist nach nachträglichem read-only MIZ-Preflight für die hochgeladene ausgeführte Arbeitsmission als gültiger technischer FAIL klassifiziert. `AUFTRAG:NewNOTHING(...)` wurde materialisiert und dem ARMYGROUP zugewiesen, aber der Convoy erreichte die Honaker-ACCESS-Zone innerhalb des Acceptance-Fensters nicht.
+Der DCS-Lauf selbst ist durch vollständige Build-/MIZ-/Log-Provenienz gültig. Seine ursprüngliche Interpretation als Routing-FAIL wird jedoch korrigiert: Der Acceptance-Harness setzte nach 600 Simulationssekunden `state.failed=true`, obwohl die konfigurierte Fahrt physikalisch länger benötigt.
+
+Die Owner-Beobachtung, dass der Convoy anschließend Honaker erreichte, aber nicht zurückfuhr, ist damit vereinbar: Die DCS-Gruppe fuhr nach dem Harness-FAIL weiter, während alle späteren Acceptance-Callbacks wegen `state.failed` absichtlich nicht mehr verarbeitet wurden.
 
 ## Provenienz
 
@@ -64,7 +66,7 @@ ZON_BLUE_GND_HONAKER_ACCESS present
 
 ## Runtime
 
-Beobachtete Sequenz:
+Beobachtete Sequenz bis zum Harness-FAIL:
 
 ```text
 START
@@ -79,28 +81,65 @@ WARNING TRANSPORT: CREATING PATH MAKES TOO LONG!!!!!
 FAIL reason=OUTBOUND_TIMEOUT seconds=600 destinationObserved=false spawnCount=1 armyOnMissionCount=1 missionExecuteCount=0 missionDoneCount=0
 ```
 
-Nicht erreicht:
+Die Owner-Beobachtung war anschließend:
 
 ```text
-DESTINATION_OBSERVED
-MissionExecute
-DELIVERY_CONFIRMED
-MissionDone
-RTZ
-Returned
-Warehouse AddAsset
+Convoy reached Honaker physically
+Convoy did not return
 ```
 
-## Bewertung
+## Root Cause des fehlenden Returns in diesem Lauf
 
-Dieser Lauf widerlegt nicht die source-seitige Verfügbarkeit von `AUFTRAG:NewNOTHING(...)`, zeigt aber, dass der aktuelle OMW Joyce->Honaker NOTHING-Pfad den bestehenden Ground-Routingvertrag nicht erfolgreich bis zur Zielzone ausführt.
+Die ACCESS-Zentren liegen rund 16,9 km Luftlinie auseinander. Bei 27 kt (~50 km/h) beträgt bereits die theoretische Mindestfahrzeit ohne Straßendetour und Ground-AI-Verlangsamung rund 1.218 Sekunden.
 
-Der auffällige DCS-Marker `CREATING PATH MAKES TOO LONG!!!!!` erscheint unmittelbar nach `ARMY_ON_MISSION`. Die nächste Untersuchung muss deshalb den tatsächlich erzeugten Ground-Route/Waypoint-Pfad von NOTHING mit dem DCS-bestätigten AMMOSUPPLY-Pfad vergleichen. Keine Timer-, Radius- oder Warehouse-Verschiebung auf Verdacht.
-
-## Nächster freigegebener Schritt
+Damit war:
 
 ```text
-COMPARE_AMMOSUPPLY_VS_NOTHING_GROUND_ROUTE_GENERATION
+OutboundTimeoutSec = 600
 ```
 
-Kein weiterer DCS-Lauf, bevor der Routing-Unterschied source-seitig erklärt und der kleinste belegbare Fix festgelegt ist.
+für diese Route zu kurz.
+
+Der Acceptance-Code setzt bei Ablauf:
+
+```text
+state.failed = true
+```
+
+und die nachfolgenden Lifecycle-Callbacks beginnen mit einem `state.failed`-Guard. Deshalb konnten nach dem Timeout keine spätere Zielankunft, `MissionExecute`, Delivery, `MissionDone` oder `RTZ` mehr als Acceptance-Ereignisse verarbeitet werden. Die physische DCS-Gruppe selbst wurde dadurch nicht gestoppt und konnte weiter nach Honaker fahren.
+
+Der Marker `CREATING PATH MAKES TOO LONG!!!!!` bleibt als diagnostische Beobachtung erhalten, ist aber durch diesen Lauf **nicht** als Ursache des fehlenden Returns belegt.
+
+## Aussagegrenze
+
+Dieser Lauf beweist nicht, dass `AUFTRAG:NewNOTHING(...)` für den OMW-Vertrag funktioniert. Er widerlegt es aber auch nicht. Der Test endete vor dem sinnvoll erreichbaren Zielzeitpunkt durch einen Harness-Fehler.
+
+Nicht runtime-validiert bleiben:
+
+```text
+NOTHING MissionExecute at Honaker
+CampaignState delivery settlement via NOTHING
+MissionDone after cancel
+same ARMYGROUP RTZ Joyce
+Returned / Warehouse AddAsset
+```
+
+## Korrektur
+
+```text
+OUTBOUND_TIMEOUT_SEC: 600 -> 1800
+BuilderVersion: GROUND-META-RESUPPLY-NOTHING-ACCEPTANCE-1-2
+DestinationCheckIntervalSec: remains 15
+DestinationExecutionGraceSec: remains 90
+```
+
+Der 90-s-Fail-fast-Gate bleibt erhalten und greift erst nach tatsächlich beobachtetem Eintritt in die Zielzone.
+
+## Nächster Schritt
+
+```text
+OWNER_PULL_BUILD_HASH_GATE
+-> Mission Editor bundle replacement by owner
+-> read-only MIZ preflight
+-> one corrected DCS acceptance run
+```
