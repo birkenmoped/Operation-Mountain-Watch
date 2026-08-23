@@ -20,7 +20,33 @@ External handoff:  spawn coordinate
 
 The external spawn coordinate is the computed point 15 NM before the period-correct ROSIE fix on the ZHOB-to-ROSIE geometry. It is an OMW materialization abstraction and not a historical Pakistan ATS claim.
 
-## 2. MOOSE-first path under test
+## 2. Staging mission provenance
+
+Owner-supplied mission used to confirm the current E-3 Mission Editor template before runtime integration:
+
+```text
+Mission artifact:        OMW_Template_v19(4).miz
+MIZ SHA-256:              38f4cb47bbbf6ea66b678467c406d82e4ce0e2cf3cd9d89ccd0efcb9d60b6884
+internal mission SHA-256: 93e2f752f5123c1cf7c7f6efb186ef2f7a470845ba484355649ca8a201430c00
+```
+
+Read-only template inspection confirmed:
+
+```text
+Group:       OMW_C2_E3A_WIZARD
+Unit:        OMW_C2_E3A_WIZARD_01
+Type:        E-3A
+Task:        AWACS
+Late Act.:   true
+Callsign:    Wizard11
+Frequency:   357.300 MHz AM
+Fuel:        65000 kg
+Skill:       Excellent
+```
+
+This is staging provenance only. It is not an AWACS runtime PASS and does not validate the branch bundle.
+
+## 3. MOOSE-first path under test
 
 ```text
 SPAWN:New(template)
@@ -51,7 +77,7 @@ Commit:            73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
 Moose.lua SHA-256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
 ```
 
-## 3. Required DCS acceptance observations
+## 4. Required DCS acceptance observations
 
 1. E-3 materializes at the external point, outside Kabul FIR, without a visible teleport inside Afghanistan.
 2. Initial energy state is plausible for E-3; `400 kt` is a staging value and must be corrected if DCS behavior is implausible.
@@ -68,7 +94,7 @@ Moose.lua SHA-256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a
 13. Aircraft loss consumes the committed E-3 permanently and increments only the loss audit resource.
 14. Restart reconciliation recredits unresolved physical commitments but preserves documented losses.
 
-## 4. Fuel calibration – mandatory before production validation
+## 5. Fuel calibration – mandatory before production validation
 
 The current Mission Editor template contains `65000 kg` fuel. No public `SPAWN:InitFuel(...)` path is assumed.
 
@@ -86,7 +112,7 @@ FuelLow / AAR decision threshold
 
 No linear conversion from published endurance to DCS fuel percentage is accepted as a replacement for telemetry.
 
-## 5. AAR acceptance boundary
+## 6. AAR acceptance boundary
 
 AFCENT documents E-3 aerial refuelling over Afghanistan in 2011. The pinned MOOSE source provides `FLIGHTGROUP:Refuel(...)` and the FuelLow/refuel FSM path.
 
@@ -107,7 +133,7 @@ B) reserve tanker is dispatched to an AWACS-compatible rendezvous near APOC whil
 
 No automatic nearest-tanker behavior is approved by this foundation.
 
-## 6. Provenance required for PASS
+## 7. Provenance required for PASS
 
 A PASS must record:
 
