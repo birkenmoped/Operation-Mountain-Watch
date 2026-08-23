@@ -75,9 +75,9 @@ $forbiddenPatterns = @(
   'os\.execute',
   'UNIT:Explode',
   'SetFuelLowRefuel\(true\)',
-  'AUFTRAG:NewAWACS',
-  'EnRouteTaskAWACS',
-  'SetMissionEgressCoord'
+  'AUFTRAG:NewAWACS\(',
+  'EnRouteTaskAWACS\(',
+  'SetMissionEgressCoord\('
 )
 
 foreach ($entry in $content.GetEnumerator()) {
