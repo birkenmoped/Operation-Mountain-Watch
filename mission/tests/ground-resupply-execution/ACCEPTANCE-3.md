@@ -1,7 +1,7 @@
 ---
 document_id: OMW-GROUND-META-RESUPPLY-NOTHING-ACCEPTANCE-1
 status: PLANNED
-document_class: ACCEPTANCE_PLAN
+document_class: ACCEPTANCE_PLAN_AND_RESULT
 owning_policy: OMW-GOV-001
 authoritative_for:
   - branch-local acceptance plan and result for generic MissionDemand-driven Ground meta-resource RESUPPLY via AUFTRAG NOTHING
@@ -11,7 +11,7 @@ supersedes:
 superseded_by:
 source_branch: agent/automatic-response-orchestration
 source_commit: PENDING_MERGE
-validated_in_dcs: false
+validated_in_dcs: true
 ---
 
 # Ground Meta RESUPPLY Acceptance 1 – AUFTRAG NOTHING
@@ -82,7 +82,7 @@ Source-seitig bestätigt:
 AUFTRAG:NewNOTHING(RelaxZone)
 ```
 
-sowie `AUFTRAG.Type.NOTHING`, `AUFTRAG.SpecialTask.NOTHING`, Ground/Naval-Kategorie, zone objective, FullStop bei Ausführung und TaskCancel->TaskDone. Eine dedizierte offizielle Demo für den OMW-Roundtrip ist nicht belegt.
+sowie `AUFTRAG.Type.NOTHING`, `AUFTRAG.SpecialTask.NOTHING`, Ground/Naval-Kategorie, zone objective, FullStop bei Ausführung und TaskCancel -> TaskDone. Eine dedizierte offizielle Demo für den OMW-Roundtrip ist nicht belegt.
 
 ## 4. Physischer Vertrag
 
@@ -122,44 +122,11 @@ start -> destination entered -> MissionExecute -> delivery -> MissionDone -> RTZ
 
 ## 6. Historische Harness-False-Fails
 
-Build 1-1 nutzte `OutboundTimeoutSec = 600`; Build 1-2 nutzte `OutboundTimeoutSec = 1800`. Beide Werte waren für die reale Joyce→Honaker-DCS-Fahrzeit ungeeignet. Nach `fail()` setzte der Harness `state.failed=true`; spätere Lifecycle-Callbacks wurden dadurch absichtlich ignoriert.
+Build 1-1 nutzte `OutboundTimeoutSec = 600`; Build 1-2 nutzte `OutboundTimeoutSec = 1800`; Build 1-3 behielt zusätzlich `ReturnTimeoutSec = 1800`. Diese harten Fahrzeit-Gates waren für die reale DCS-Ground-AI-Fahrt ungeeignet. Nach `fail()` setzte der Harness `state.failed=true`; spätere Lifecycle-Callbacks wurden dadurch absichtlich ignoriert.
 
-Diese Läufe beweisen daher keinen Routing- oder RTZ-Fehler von `NewNOTHING`.
+Diese Läufe beweisen daher keinen Routing-, Delivery- oder RTZ-Fehler von `NewNOTHING`.
 
-## 7. DCS-Lauf mit Build 1-3 – partielle positive Runtime-Evidenz
-
-Der reale DCS-Lauf mit Build 1-3 erreichte erstmals die entscheidende Hinweg-/Delivery-/RTZ-Kette:
-
-```text
-DESTINATION_ZONE_ENTERED
-DELIVERY_CONFIRMED
-MISSION_DONE
-AUFTRAG success
-RETURN_RTZ_ACTIVE
-RETURN_RTZ_ISSUED
-```
-
-Damit ist für den getesteten Stand real belegt:
-
-```text
-AUFTRAG NOTHING transport
--> destination-zone detection
--> CampaignState DELIVERED
--> MissionDemand SUCCESS
--> MissionDone
--> same ARMYGROUP RTZ issued
-```
-
-Der Lauf endete anschließend ausschließlich mit dem noch vorhandenen `RETURN_TIMEOUT seconds=1800`, bevor `Returned`/`AddAsset` beobachtet werden konnten. Dieser Return-Timeout wird deshalb nicht als produktiver oder funktionaler Fehler gewertet.
-
-Ausgeführte Mission laut debrief:
-
-```text
-C:\Users\Sven\Saved Games\DCS.openbeta\Missions\OMW_Template_v19.miz
-DCS: 2.9.28.26385 MT
-```
-
-## 8. Build 1-4 – reale lokale Build-Evidenz
+## 7. Build 1-4 – reale lokale Build-Evidenz
 
 Owner-lokal am 23.08.2026 erfolgreich gebaut und unabhängig nachgehasht:
 
@@ -189,29 +156,106 @@ OPSTRANSPORT: false
 MizMutation: false
 ```
 
-Build 1-4 ist damit ein realer lokaler BUILD PASS. `NewNOTHING` ist jedoch erst dann vollständig runtime-accepted, wenn ein DCS-Lauf `Returned -> Warehouse AddAsset -> PASS` dokumentiert.
+## 8. DCS-Lauf mit Build 1-4 – Runtime PASS
 
-## 9. Mission-Editor-Integration für Build 1-4
-
-Das bestehende Stage-1C-`DO SCRIPT FILE` muss im DCS Mission Editor erneut auf folgende Datei gesetzt werden:
+DCS-Version laut `dcs.log`:
 
 ```text
-mission\tests\ground-resupply-execution\dist\OMW_Ground_Meta_Resupply_NOTHING_Acceptance_1.lua
+DCS 2.9.28.26385 MT
 ```
 
-Erwarteter eingebetteter Bundle-Hash:
+Ausgeführte Mission laut `debrief.log`:
 
 ```text
-C881C82C3F699914E18FFE64DE73E650E20AF82B55B3F486154C40059F44CB65
+C:\Users\Sven\Saved Games\DCS.openbeta\Missions\OMW_Template_v19.miz
 ```
 
-Die zuletzt funktionierende Honaker-ACCESS-Geometrie soll unverändert bleiben. Kein weiterer Timeout- oder Formationstest ist Bestandteil dieses Acceptance-Laufs.
+Der Acceptance-Lifecycle wurde vollständig erreicht:
 
-## 10. Status
+```text
+START
+DEMAND_RESERVED
+ROAD_ALIGNED_WAREHOUSE_SPAWN
+GROUP_MATERIALIZED
+ARMY_ON_MISSION
+DESTINATION_ZONE_ENTERED
+DELIVERY_CONFIRMED
+MISSION_DONE
+AUFTRAG success
+RETURN_RTZ_ACTIVE
+RETURN_RTZ_ISSUED
+RETURNED_HANDOFF
+WAREHOUSE_ADD_ASSET
+PASS
+```
+
+Terminaler Harness-Befund:
+
+```text
+PASS originFinal=22 destinationFinal=36 transferQuantity=18 template=TPL_BLUE_CONVOY_FUEL_LIGHT_06 physicalMission=NOTHING demandStatus=SUCCESS spawnCount=1 returnedCount=1 warehouseAddAssetCount=1
+```
+
+Damit ist runtime-seitig für den beobachteten Stand bestätigt:
+
+```text
+CampaignState shortage
+-> MissionDemand RESUPPLY
+-> one physical Fuel-Light convoy
+-> AUFTRAG NOTHING Joyce -> Honaker
+-> destination-zone detection
+-> CampaignState DELIVERED
+-> MissionDemand SUCCESS
+-> MissionDone
+-> same ARMYGROUP RTZ Joyce
+-> Returned
+-> Warehouse AddAsset
+-> physical cleanup
+```
+
+Die nach Upload berechneten SHA-256 der Testlogs lauten:
+
+```text
+dcs(20260823-153336).log: 7F89D79C10C8C61BB7994CE762C2554124212501FC019E83F5A34C87C54A67DD
+debrief(20260823-153334).log: 21D917BC43A00F429A22B1EE697E64A62EC9B487254D330F5A7B1F574A253FA2
+```
+
+Detailresultat:
+
+```text
+results/2026-08-23-ground-meta-resupply-nothing-acceptance-1-pass-1.md
+```
+
+## 9. Provenienzgrenze vor ACCEPTED_TECHNICAL_BASELINE
+
+Der Runtime-PASS ist real und dokumentiert. Für die formale Hochstufung dieses Dokuments auf `ACCEPTED_TECHNICAL_BASELINE` fehlt jedoch noch die nach `docs/DOCUMENT-METADATA-POLICY.md` verpflichtende SHA-256 der **exakt ausgeführten** `OMW_Template_v19.miz` mit Build 1-4.
+
+Bis diese Hashprovenienz vorliegt, gilt daher:
 
 ```text
 Build 1-4: BUILD PASS
-MIZ integration: OWNER ACTION REQUIRED
-DCS final runtime acceptance: PENDING
-VALIDATED: false
+DCS runtime lifecycle: PASS
+Acceptance mission path: OMW_Template_v19.miz
+Acceptance mission SHA-256: PENDING_OWNER_HASH
+Formal ACCEPTED_TECHNICAL_BASELINE promotion: BLOCKED_MISSING_MIZ_SHA256
+```
+
+Es wird keine Mission-SHA aus einem älteren v19-Stand übernommen oder geraten.
+
+## 10. Architekturresultat
+
+Der DCS-Lauf bestätigt `AUFTRAG:NewNOTHING(...)` für den getesteten **strategischen Meta-Ressourcen-Roundtrip** als funktionalen physischen Executor. Daraus folgt keine Fuel-/Cargo-Autorität für MOOSE oder DCS.
+
+`AUFTRAG:NewFUELSUPPLY(...)` bleibt davon getrennt. Der frühere Stage-1B-Lauf war timeout-kontaminiert und ist kein Runtime-Gegenbeweis. FUELSUPPLY bleibt als MOOSE-nativer Kandidat für einen späteren separaten operativen RefuellingZone-Service relevant.
+
+## 11. Status
+
+```text
+Build 1-4: PASS
+DCS runtime: PASS
+Full Joyce -> Honaker -> Joyce roundtrip: PASS
+CampaignState final quantities: PASS (Joyce 22 / Honaker 36)
+MissionDemand final status: PASS / SUCCESS
+Returned handoff: PASS
+Warehouse AddAsset: PASS
+Formal ACCEPTED_TECHNICAL_BASELINE: PENDING exact executed MIZ SHA-256
 ```
