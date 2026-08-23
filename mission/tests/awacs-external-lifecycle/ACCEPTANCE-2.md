@@ -4,13 +4,13 @@ status: PLANNED
 document_class: DCS_ACCEPTANCE_PLAN
 owning_policy: OMW-GOV-001
 authoritative_for:
-  - AWACS flight-profile telemetry acceptance
-  - 30-minute APOC fuel-burn capture
-  - manual player-side WIZARD radio-service check
+  - full-duration AWACS flight-profile and service-window acceptance
+  - visible designated reserve-tanker AAR acceptance
+  - full-sortie fuel and racetrack telemetry acceptance
+  - manual player-side WIZARD radio-service checks
 not_authoritative_for:
-  - six-hour relief lifecycle
+  - production promotion of the test-only reserve-tanker coordinator before DCS acceptance
   - loss and restart reconciliation
-  - AWACS aerial-refuelling dispatch
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 source_branch: agent/awacs-external-lifecycle-foundation
@@ -20,223 +20,307 @@ supersedes:
 superseded_by:
 ---
 
-# AWACS Acceptance 2 – Flight Profile, Track, Radio and Fuel Telemetry
+# AWACS Acceptance 2 – vollständiger Dienst, sichtbare AAR und Flugprofil
 
 ## 1. Zweck
 
-Acceptance 1 hat den grundlegenden Routing-Lifecycle praktisch bestätigt:
+Acceptance 1 hat den grundlegenden physischen Routing-Lifecycle bestätigt:
 
 ```text
 External Spawn
 -> ROSIE inbound
--> Late Approach
--> AUFTRAG:NewAWACS
--> APOC ON_STATION
+-> APOC
 -> controlled egress
 -> ROSIE outbound
 -> External Handoff
 ```
 
-Acceptance 2 erfasst die noch fehlende physische Telemetrie, ohne den Produktionscontroller umzubauen.
-
-## 2. MOOSE-first Testgrenze
-
-Der Harness ist ein reiner Testobserver und verwendet ausschließlich öffentliche MOOSE-Pfade:
+Acceptance 2 ist bewusst **kein weiterer Kurztest**. Es wird ein vollständiger WIZARD-Einsatz über das geplante historische Abdeckungsfenster geflogen und beobachtet:
 
 ```text
+Mission start before service window
+-> WIZARD external materialization
+-> ROSIE
+-> APOC standby orbit
+-> 15:30 local / 1100Z: AWACS service ACTIVE
+-> four hours coverage
+-> designated LISA reserve tanker arrives near APOC
+-> WIZARD leaves APOC on transfer profile
+-> visible AAR
+-> WIZARD returns on transfer profile
+-> APOC AWACS service ACTIVE again
+-> 23:30 local / 1900Z: AWACS service CLOSED
+-> immediate transfer profile / ROSIE
+-> external handoff / despawn / strategic recredit
+```
+
+## 2. Zeitmodell
+
+Afghanistan Time ist UTC+04:30. Das für OMW verwendete WIZARD-Abdeckungsfenster lautet:
+
+```text
+1100Z = 15:30 local
+1900Z = 23:30 local
+Coverage duration = 8 h / 28,800 s
+```
+
+Für den Acceptance-Lauf wird die Missionsstartzeit auf **15:05 local** gesetzt. Der bisherige Stand der bereitgestellten `OMW_Template_v19(9).miz` war 15:25 local (`start_time = 55500`) und ist für einen extern materialisierten E-3 mit rund 76 NM sichtbarem Ingress zu spät.
+
+Ziel des neuen Starts:
+
+```text
+15:05  mission start / WIZARD materialization
+~15:20-15:25  APOC physical arrival expected
+15:30  AWACS service enabled exactly by mission clock
+```
+
+Die reale Ankunftszeit wird nicht aus der Planung als PASS übernommen. Maßgeblich ist die DCS-Evidenz.
+
+## 3. AWACS-Flugprofil
+
+```text
+External spawn -> ROSIE:
+FL340 / transfer speed 300 kt after initial stabilization
+
+ROSIE -> late approach:
+FL350 / 300 kt
+
+APOC:
+FL320 / 300 kt / 017T / 30 NM racetrack
+
+APOC -> AAR rendezvous:
+leave AWACS mission
+return to transfer profile FL340 / 300 kt
+
+AAR rendezvous:
+receiver joins designated tanker through MOOSE FLIGHTGROUP:Refuel(...)
+
+AAR rendezvous -> APOC:
+FL340 / 300 kt transfer
+30 NM late approach
+then re-establish FL320 / 300 kt AWACS racetrack
+
+23:30 service end -> ROSIE:
+immediate track departure
+FL340 / 300 kt
+```
+
+Damit wird die bereits in Acceptance 1 funktionierende Trennung zwischen Track- und Transferprofil auch für den AAR-Unterbruch beibehalten.
+
+## 4. Service-State
+
+Physische Präsenz und AWACS-Dienst sind getrennt:
+
+```text
+INBOUND
+STANDBY
+ACTIVE
+INTERRUPTED_AAR
+REJOINING
+ACTIVE
+CLOSED
+```
+
+Vor 15:30 darf WIZARD physisch auf APOC kreisen, aber der DCS-AWACS-Task ist noch nicht aktiv. Um 15:30 ersetzt der Controller den Standby-Racetrack durch `AUFTRAG:NewAWACS(...)`. Während des AAR-Unterbruchs ist der AWACS-Task aufgehoben. Nach Rückkehr auf APOC wird er erneut gesetzt. Um 23:30 wird er endgültig beendet und der Rückflug eingeleitet.
+
+## 5. MOOSE-first AAR-Grenze
+
+Der tatsächlich gepinnte MOOSE-Stand bietet:
+
+```text
+FLIGHTGROUP:FindNearestTanker(...)
+FLIGHTGROUP:Refuel(Coordinate)
+FLIGHTGROUP OnAfterRefueled
+AUFTRAG:NewTANKER(...)
+AUFTRAG:NewAWACS(...)
+AUFTRAG:NewORBIT_RACETRACK(...)
+FLIGHTGROUP:AddWaypoint(...)
+FLIGHTGROUP:AddMission(...)
 SCHEDULER:New(...)
-FLIGHTGROUP:IsAlive()
-FLIGHTGROUP:GetAltitude()
-FLIGHTGROUP:GetVelocity()
-FLIGHTGROUP:GetHeading()
-FLIGHTGROUP:GetFuelMin()
-OPSGROUP:GetGroup()
-OPSGROUP:GetCoordinate()
-GROUP:GetUnit(1)
-UNIT:GetCurrentFuelKgs()
-UNIT:GetFuelMassMax()
-COORDINATE:GetLLDDM()
-UTILS.MpsToKnots(...)
-UTILS.SecondsOfToday()
 ```
 
-Der Harness verwendet keine `_DATABASE`-Interna, keinen Native-DCS-Scheduler, keinen eigenen Spawn-/Routingpfad und keine alternative AWACS-Mission.
+`FLIGHTGROUP:Refuel(...)` verwendet den DCS-Refuelling-Task zum **nächstgelegenen kompatiblen Tanker**. Deshalb behauptet OMW keine nicht vorhandene MOOSE-Schnittstelle zur direkten Tanker-ID-Auswahl. Stattdessen wird der gewünschte Reserve-Tanker an ein getrenntes Rendezvous gebracht und unmittelbar vor dem Refuel-Task mit `FindNearestTanker(...)` verifiziert. Nur wenn der gefundene Tanker exakt der designierte LISA-Verband ist, wird der Refuel-Task ausgelöst.
 
-`FLIGHTGROUP:GetFuelMin()`, `UNIT:GetCurrentFuelKgs()` und `UNIT:GetFuelMassMax()` sind bereits im dokumentierten AAR-Scope praktisch verwendet. `OPSGROUP:GetAltitude()`, `GetVelocity()` und `GetHeading()` wurden im gepinnten `Moose.lua` mit den verwendeten Signaturen source-seitig geprüft. `COORDINATE:GetLLDDM()` wurde im tatsächlich verwendeten `Moose.lua` geprüft und liefert über `coord.LOtoLL(self:GetVec3())` die geodätischen Latitude-/Longitude-Werte. Die zunächst erwogenen Methoden `COORDINATE:GetLat()` / `GetLon()` wurden ausdrücklich verworfen, weil sie im gepinnten Source lediglich die internen lokalen `x`-/`z`-Koordinaten zurückgeben und daher für die geodätische Racetrack-Auswertung ungeeignet sind. Für diese read-only Telemetrie ist kein eigenes offizielles Demo-Konstrukt erforderlich; es wird keine neue Lifecycle-Semantik daraus abgeleitet.
+## 6. Designierter Reserve-Tanker
 
-## 3. Testartefakte
+Für den Acceptance-Lauf wird die vorhandene LISA-Grundlage verwendet:
 
 ```text
-Source:
-mission/tests/awacs-external-lifecycle/src/02-awacs-flight-profile-acceptance.lua
-
-Builder:
-tools/build-awacs-acceptance-2.ps1
-
-Generated bundle:
-mission/tests/awacs-external-lifecycle/dist/OMW_AWACS_Acceptance_2.lua
+Template: OMW_AAR_KC135_LISA
+Callsign: Texaco 3-1
+Strategic source: OFFMAP_AL_UDEID
+FIR ingress/egress: DAVER
+Availability class: RESERVE
+Receiver profile: FAST / boom
 ```
 
-## 4. Testkonfiguration
+Der Testkoordinator verwendet den **bereits laufenden AAR-CampaignState-Adapter** für `CanMaterialize`, `OnMaterialized`, `OnHandoff` und `OnLost`. Es entsteht keine zweite Ressourcenhoheit.
+
+Der Testkoordinator ist noch keine produktive Erweiterung des AAR-Dispatchers. Er dient dazu, den vollständigen MOOSE/DCS-Pfad erst praktisch zu bestätigen.
+
+## 7. AAR-Rendezvous und Tanker-Timing
+
+Rendezvous:
 
 ```text
-Telemetry interval:       15 s
-Required station dwell:   1800 s / 30 min
-Egress trigger:           relative to observed APOC ON_STATION
-Egress reason:            ACCEPTANCE_2_PROFILE_FUEL_EGRESS
-Radio check:              manual player observation required
-Callsign:                 WIZARD
-Frequency:                357.300 MHz AM
+approximately 60 NM from APOC on bearing 340T
+N33.6233926368 E068.6395554105
+Tanker orbit: FL250 / 300 kt / 340T / 20 NM leg
 ```
 
-Die 30 Minuten Station Time werden bewusst relativ zu `ON_STATION` gemessen. Damit hängt der Test nicht von der absoluten Missionszeit ab und wiederholt nicht das Acceptance-1-Problem eines bereits weit fortgeschrittenen `TIME MORE`-Triggers.
+Die Lage hält den Tanker vom APOC-Racetrack getrennt und vergrößert den Abstand zum nächstgelegenen Standardtanker KRUSTY. Die tatsächliche `FindNearestTanker`-Auflösung wird dennoch im DCS-Test geprüft und nicht vorausgesetzt.
 
-## 5. Mission-Editor-Voraussetzungen
+Geometrische Planung LISA:
 
-Die Mission muss in dieser Reihenfolge laden:
+```text
+Al Udeid external -> DAVER: ~40.3 NM
+DAVER -> AWACS AAR rendezvous: ~316.6 NM
+Total visible route: ~356.9 NM
+Nominal transfer at 300 kt: ~71.4 min
+```
+
+Tankerplanung:
+
+```text
+18:10 local  LISA materialization / dispatch
+~19:20 local expected rendezvous arrival
+19:30 local  WIZARD planned AAR departure from APOC
+```
+
+Damit wartet der Reserve-Tanker nur kurz am Rendezvous, anstatt bereits seit 15:30 mehrere Stunden Kraftstoff zu verbrauchen.
+
+## 8. Fuel-Modell für diesen Test
+
+Das E-3-Mission-Editor-Template enthält 65,000 kg internen Kraftstoff. Acceptance 2 setzt **keine künstliche Spawn-Fuel-API** voraus. Der nahezu volle Spawnzustand wird als Abstraktion eines vorgelagerten, off-map erfolgten Top-off/AAR interpretiert.
+
+Der vollständige Lauf misst den tatsächlichen DCS-Verbrauch über:
+
+```text
+spawn
+ROSIE inbound
+APOC standby
+15:30 service start
+pre-AAR station
+AAR departure
+pre-contact / post-contact
+APOC return
+service end
+ROSIE outbound
+external handoff
+```
+
+Erst diese Daten entscheiden, ob der angenommene eine sichtbare Mid-mission-AAR für die spätere Produktionsbaseline ausreicht.
+
+## 9. Testartefakte und Ladefolge
 
 ```text
 1. Moose.lua
 2. OMW_AirOps_Warehouse_Base.lua
-3. OMW_AWACS_Foundation.lua
-4. OMW_AWACS_Acceptance_2.lua
+3. OMW_AAR_Base.lua
+4. OMW_AWACS_Foundation.lua
+5. OMW_AWACS_Acceptance_2.lua
 ```
 
-Der alte Acceptance-1-Trigger, der nach absolut `TIME MORE 1800` `RequestEgress("ACCEPTANCE_1_ROUTING_EGRESS")` auslöst, muss für Acceptance 2 deaktiviert werden. Andernfalls wird die E-3 vor Abschluss der 30-minütigen Station-Telemetrie wieder aus APOC herausgeschickt.
+Der frühere Acceptance-1-Trigger `RequestEgress("ACCEPTANCE_1_ROUTING_EGRESS")` darf in dieser Testmission nicht aktiv sein.
 
-Das Produktions-AWACS-Bundle selbst wird für Acceptance 2 nicht test-only verändert.
-
-## 6. Automatisch protokollierte Telemetrie
-
-Jede Probe schreibt:
+Source:
 
 ```text
-runtime ID
-phase
-simulation time
+mission/tests/awacs-external-lifecycle/src/02-awacs-flight-profile-acceptance.lua
+```
+
+Builder:
+
+```text
+tools/build-awacs-acceptance-2.ps1
+```
+
+Generated bundle:
+
+```text
+mission/tests/awacs-external-lifecycle/dist/OMW_AWACS_Acceptance_2.lua
+```
+
+## 10. Automatische Evidenz
+
+AWACS-Telemetrie wird einmal pro Minute protokolliert:
+
+```text
+mission clock
+service state
+AAR phase
 altitude ft
 speed kt
 heading deg
 fuel percent
 fuel kg
 max internal fuel kg
-latitude
-longitude
-```
-
-Latitude/Longitude stammen aus `COORDINATE:GetLLDDM()` und sind damit geodätische Koordinaten, nicht die internen DCS-Lokalkoordinaten `x`/`z`.
-
-Phasen:
-
-```text
-INBOUND_EXTERNAL
-INBOUND_AFG
-AWACS_APPROACH
-ON_STATION
-EGRESS
+geodetic latitude / longitude via COORDINATE:GetLLDDM()
 ```
 
 Wichtige Marker:
 
 ```text
-[OMW][AWACS.Acceptance2] START
-[OMW][AWACS.Acceptance2] TELEMETRY
-[OMW][AWACS.Acceptance2] PHASE_CHANGE
-[OMW][AWACS.Acceptance2] STATION_BASELINE
-[OMW][AWACS.Acceptance2] STATION_MIDPOINT
-[OMW][AWACS.Acceptance2] STATION_30MIN_COMPLETE
-[OMW][AWACS.Acceptance2] EGRESS_REQUESTED
+[OMW][AWACS.Controller] SERVICE_STANDBY
+[OMW][AWACS.Controller] SERVICE_ACTIVE
+[OMW][AWACS.Controller] AAR_TRANSFER_STARTED
+[OMW][AWACS.Controller] AAR_REFUEL_TASK
+[OMW][AWACS.Controller] AAR_REFUELED
+[OMW][AWACS.Controller] AAR_RETURN_TRANSFER
+[OMW][AWACS.Controller] AAR_RETURN_ON_STATION
+[OMW][AWACS.Controller] SERVICE_CLOSED
+[OMW][AWACS.Controller] FIR_EGRESS_PASSED
+[OMW][AWACS.Controller] EXTERNAL_HANDOFF
+
+[OMW][AWACS.Acceptance2] TANKER_DISPATCHED
+[OMW][AWACS.Acceptance2] TANKER_FIR_INGRESS
+[OMW][AWACS.Acceptance2] TANKER_READY
+[OMW][AWACS.Acceptance2] AWACS_AAR_REQUESTED
+[OMW][AWACS.Acceptance2] AWACS_AAR_COMPLETED
+[OMW][AWACS.Acceptance2] TANKER_EGRESS_ORDERED
+[OMW][AWACS.Acceptance2] TANKER_EXTERNAL_HANDOFF
 [OMW][AWACS.Acceptance2] AUTOMATED_CAPTURE_COMPLETE
 ```
 
-## 7. Auswertungskriterien
+## 11. Manuelle Radio-Beobachtung
 
-### Transitprofil
-
-Zu prüfen:
+Der Projektinhaber prüft mit einem geeigneten Client:
 
 ```text
-External Spawn / ROSIE inbound:
-planned FL340 / approx. 300 kt after initial stabilization
-
-ROSIE -> late approach:
-planned transition to FL350 / approx. 300 kt
-
-Late Approach -> APOC:
-natural transition toward FL320 / 300 kt
+before 15:30: WIZARD service not available
+15:30 onward: WIZARD / 357.300 MHz AM available
+before AAR: normal AWACS response
+while AWACS task is interrupted for AAR: no operational WIZARD service expected
+on APOC return: WIZARD service available again
+from 23:30: WIZARD service closed
 ```
 
-Die Werte werden nicht aus der Sollkonfiguration als PASS angenommen. Maßgeblich sind die realen Telemetriedaten.
+Diese Spielerinteraktion kann nicht aus internen Controllerzuständen als bestanden abgeleitet werden.
 
-### APOC-Racetrack
+## 12. PASS-Grenze
 
-Die 15-s-Positions- und Heading-Proben müssen nach dem Lauf geodätisch ausgewertet werden. Zielbild:
-
-```text
-primary axis approximately 017T / 197T
-leg length approximately 30 NM
-track altitude approximately FL320
-track speed approximately 300 kt
-```
-
-Acceptance 2 behauptet den Racetrack erst nach Auswertung der realen Positionen als bestätigt.
-
-### Fuel
-
-Zu erfassen:
+Acceptance 2 kann für den exakt dokumentierten Branch-/Commit-/MIZ-/Bundle-/DCS-/MOOSE-Stand bestätigen:
 
 ```text
-spawn fuel
-ROSIE fuel
-first APOC station fuel
-15-minute station fuel
-30-minute station fuel
-ROSIE outbound fuel
-external-handoff fuel
-```
-
-Der Harness berechnet zusätzlich aus der 30-Minuten-Stationphase:
-
-```text
-fuelBurnKg
-fuelBurnPct
-projectedHourlyBurnKg = 2 * observed 30-minute burn
-```
-
-Die Projektion ist eine Kalibrierhilfe und kein Ersatz für spätere Langzeit-/Relief-Evidenz.
-
-### Radio / native AWACS service
-
-Während `ON_STATION` muss der Projektinhaber mit einem geeigneten Client prüfen:
-
-```text
-WIZARD ist als AWACS-Ansprechpartner verfügbar
-357.300 MHz AM ist die verwendete Frequenz
-mindestens eine native AWACS-Abfrage erhält eine plausible Antwort
-```
-
-Der Harness kann diese Spieler-Radiointeraktion nicht aus dem internen Controllerstatus ableiten. Das Ergebnis muss deshalb als reale Beobachtung dokumentiert werden.
-
-## 8. PASS-Grenze
-
-Acceptance 2 kann nach Log-/Trackauswertung und manueller Radio-Beobachtung bestätigen:
-
-```text
-physical cruise profile
+pre-service physical arrival / standby
+exact 15:30 service activation
+8-hour service-window clock
+physical transfer and track profiles
 APOC racetrack geometry
-native WIZARD radio service
-baseline DCS fuel burn
-normal egress after measured station dwell
+visible designated LISA AAR
+return to APOC after AAR
+actual DCS fuel burn across the complete sortie
+native WIZARD radio service behavior
+exact 23:30 service closure
+immediate return transfer
+ROSIE outbound / external handoff
+LISA strategic settlement
 ```
 
-Nicht Bestandteil:
+Weiterhin getrennt offen bleiben insbesondere:
 
 ```text
-6-hour station cycle
-scheduled relief launch and handover
-loss settlement
-restart reconciliation
-AAR / tanker rendezvous
+AWACS loss settlement under actual aircraft destruction
+restart reconciliation with unresolved AWACS/AAR commitments
+production promotion of the dedicated AWACS AAR demand orchestration
 ```
-
-Diese bleiben nachfolgende Acceptance-Blöcke.
