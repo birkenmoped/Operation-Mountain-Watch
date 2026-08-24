@@ -74,12 +74,14 @@ Der verworfene V4-/Live-Retask-Pfad mit `ClearWaypoints()` ist nicht Bestandteil
 
 ## 4. Produktivartefakt
 
-Die Entwicklungsbezeichnung `OMW_AWACS_Foundation.lua` wird jetzt durch ein eigenes Produktionsbundle ersetzt:
+Die Entwicklungsbezeichnung `OMW_AWACS_Foundation.lua` ist durch ein eigenes Produktionsbundle abgelöst:
 
 ```text
 tools/build-awacs-base.ps1
 -> mission/runtime/air-operations/OMW_AWACS_Base.lua
 ```
+
+Der frühere Einstieg `tools/build-awacs-foundation.ps1` ist nur noch ein Kompatibilitätswrapper und delegiert an den Base-Builder.
 
 Die AWACS-Base enthält ausschließlich Produktionscode für:
 
@@ -152,8 +154,9 @@ Für eine formale Anhebung zu `ACCEPTED_TECHNICAL_BASELINE` fehlen weiterhin die
 [x] final ROSIE egress / external handoff
 [x] source architecture frozen on V3 + minimal MOE relief
 [x] documentation reconciled for Base productization
-[ ] create tools/build-awacs-base.ps1
-[ ] update CI and final build verifier to OMW_AWACS_Base.lua
+[x] create tools/build-awacs-base.ps1
+[x] deprecate foundation builder to compatibility wrapper
+[x] update CI and final build verifier to OMW_AWACS_Base.lua
 [ ] local Base build and real SHA-256
 [ ] replace Foundation with Base in mission editor test copy
 [ ] short DCS load/smoke confirmation for renamed Base artifact
