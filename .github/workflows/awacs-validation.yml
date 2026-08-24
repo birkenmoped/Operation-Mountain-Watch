@@ -7,6 +7,7 @@ on:
       - "scripts/air-operations/OMW_AirOps_AWACS_Bootstrap.lua"
       - "mission/tests/awacs-external-lifecycle/**"
       - "tools/build-awacs-foundation.ps1"
+      - "tools/build-awacs-final-lifecycle.ps1"
       - "tools/build-awacs-acceptance-2.ps1"
       - "tools/build-awacs-acceptance-3.ps1"
       - "tools/build-awacs-acceptance-4.ps1"
@@ -40,6 +41,7 @@ jobs:
           luac5.1 -p scripts/air-operations/OMW_AWACS_Controller.lua
           luac5.1 -p scripts/air-operations/OMW_AWACS_Controller_FullLifecycle.lua
           luac5.1 -p scripts/air-operations/OMW_AWACS_Controller_FullLifecycle_V2.lua
+          luac5.1 -p scripts/air-operations/OMW_AWACS_Controller_FullLifecycle_V3.lua
           luac5.1 -p scripts/air-operations/OMW_AirOps_AWACS_Bootstrap.lua
           luac5.1 -p mission/tests/awacs-external-lifecycle/src/02-awacs-flight-profile-acceptance.lua
           luac5.1 -p mission/tests/awacs-external-lifecycle/src/03-awacs-persistent-orbit-emission-acceptance.lua
