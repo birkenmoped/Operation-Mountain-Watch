@@ -8,7 +8,7 @@ authoritative_for:
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 source_branch: agent/awacs-external-lifecycle-foundation
-source_commit: GIT_HISTORY
+source_commit: PENDING_MERGE
 supersedes:
 superseded_by:
 validated_in_dcs: false
@@ -18,213 +18,182 @@ validated_in_dcs: false
 
 ## 1. Ziel
 
-Acceptance 4 prüft den vollständigen sichtbaren E-3A-WIZARD-Lifecycle mit fuel-state-gesteuerter Luftbetankung. Der Test ist kein verkürzter Einzeltest: WIZARD soll den realen Missionsablauf vom externen Spawn bis zum externen Handoff durchlaufen.
+Acceptance 4 ist der integrierte End-to-End-Test des sichtbaren E-3A-WIZARD-Lifecycles auf diesem Branch. Der bereits ausgeführte Lauf vom 23./24.08.2026 bestätigte die physische MOOSE-AAR-Kette, zeigte aber zwei Orchestrierungsprobleme: WIZARD wartete trotz vorausgeschickter LISA bis zum 40-%-Fallback und LISA erhielt während des laufenden Receiver-Refuels bereits ihren FuelLow-Egress. Diese Befunde wurden korrigiert.
 
-Der Lauf vom 23./24.08.2026 bestätigte die physische MOOSE-Refuel-Kette, führte aber zu einer gezielten Revision der LISA-Rendezvous-Policy. Diese Revision ist noch nicht DCS-validiert und ist Gegenstand des nächsten Laufs.
+Acceptance 5 hat anschließend die E-3A-Flugprofile vermessen. Der finale Acceptance-4-Rerun prüft nun die reconciliierte Runtime in einem Durchgang.
 
-## 2. Verbindlicher Teststand
+## 2. Framework- und Architekturgrenze
 
 ```text
+MOOSE release: 2.9.18
 MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
 Moose.lua SHA-256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
-AWACS task: not used
-Physical station: persistent AUFTRAG racetrack
-CampaignState: sole strategic aircraft authority
 ```
 
-Die realen lokalen Build- und MIZ-Hashes werden erst nach Owner-Build beziehungsweise Owner-Mission-Editor-Speicherung eingetragen. Ohne diese Provenienz ist kein `VALIDATED` zulässig.
-
-## 3. Mission-Editor-Vertrag
-
-Der Projektbesitzer ändert die MIZ. ChatGPT mutiert keine `.miz`.
-
-`OMW_C2_E3A_WIZARD`:
+Physische Aktionen müssen ausschließlich aus der AWACS-/AAR-Produktionsruntime stammen. Das Acceptance-Skript ist observer-only und darf insbesondere nicht:
 
 ```text
-Late Activation: yes
-Internal fuel: approximately 77 percent
-Equivalent engineering target with the current 65,000 kg DCS template capacity: approximately 50,000 kg
+spawnen
+routen
+Refuel auslösen
+AUFTRAG erzeugen
+Fuel künstlich verändern
+Aircraft zerstören
 ```
 
-Der Fuel-Wert ist eine OMW-Engineering-Abschätzung für den bereits absolvierten Off-map-Transit Al Dhafra -> sichtbarer Spawn. Er ist kein behaupteter exakter T.O.-Performance-Wert. Der gepinnte öffentliche MOOSE-SPAWN-Pfad enthält keinen für OMW verifizierten `InitFuel`-Setter; deshalb wird der Fuel-State im ME-Template gesetzt und zur Laufzeit nur geprüft/logged.
+## 3. Finaler Runtime-Stand
 
-## 4. Flugprofil
+Foundation:
 
 ```text
-Off-map provenance:
-Al Dhafra -> heavy climb -> fuel burnoff / step climb -> visible handoff
-
-Visible spawn:
-FL350 / 440 kt / approximately 77 percent fuel
-
-Ingress:
-visible spawn -> ROSIE at FL350 / 440 kt
-ROSIE -> 30 NM late approach at FL350 / 440 kt
-late approach -> APOC FL320 / 300 kt
-
-APOC:
-017T / 30 NM racetrack
-one persistent physical AUFTRAG orbit
-
-Service window:
-15:30 local -> ACTIVE / EMITTING
-23:30 local -> CLOSED / SILENT / true egress
+tools/build-awacs-foundation.ps1
+-> mission/runtime/air-operations/OMW_AWACS_Foundation.lua
 ```
 
-Der frühere sichtbare FL340->FL350-Step entfällt vollständig.
-
-## 5. Service-/Sensor-Timing
-
-`15:30` ist eine Missionsuhrzeit und wird mit `UTILS.SecondsOfToday()` ausgewertet. Sie ist **nicht** als Zeit seit Missionsstart modelliert.
-
-Verbindliches Soll:
+Controller:
 
 ```text
-STANDBY + persistent racetrack before 15:30
-15:30 local (+ max. scheduler cadence): sensor/radar -> EMITTING
-no mission replacement
-no ROSIE detour
-no APOC-position gate for scheduled activation
+scripts/air-operations/OMW_AWACS_Controller_FullLifecycle_V3.lua
 ```
 
-Der 5-NM-APOC-Radius bleibt ausschließlich für **physische Rejoin-Bestätigung nach AAR** relevant. Nach AAR wird der Sensor erst wieder aktiviert, wenn WIZARD APOC tatsächlich erreicht hat.
-
-## 6. Revidierte Fuel-/AAR-Policy
+Observer:
 
 ```text
-<= 65 percent WIZARD fuel:
-pre-dispatch dedicated reserve tanker LISA toward the AWACS rendezvous
-
-LISA ready:
-within 5 NM of the dedicated rendezvous
-and within +/-1000 ft of FL320
--> WIZARD immediately begins the MOOSE refuel path with LISA
--> do not deliberately wait for 40 percent
-
-<= 40 percent WIZARD fuel:
-fallback AAR trigger if the planned LISA path is not ready
-1. prefer LISA if ready
-2. otherwise MOOSE FindNearestTanker() selects the nearest compatible active tanker
-3. MOOSE FLIGHTGROUP:Refuel(...) executes receiver refuelling
-
-<= 25 percent:
-if no refuel task is established, controlled off-map fuel contingency via ROSIE
+tools/build-awacs-acceptance-4.ps1
+-> mission/tests/awacs-external-lifecycle/dist/OMW_AWACS_Acceptance_4.lua
 ```
 
-Die E-3A darf bei FuelLow/FuelCritical nicht durch die normale MOOSE-RTB-Automatik nach Sharana oder zu einem anderen beliebigen afghanischen Flugplatz geschickt werden.
-
-## 7. MOOSE-First-Begründung
-
-Im gepinnten `Moose.lua` sind bestätigt:
+## 4. Erwartetes Flugprofil
 
 ```text
-SetFuelLowThreshold(...)
-SetFuelLowRTB(...)
-SetFuelLowRefuel(...)
-SetFuelCriticalThreshold(...)
-SetFuelCriticalRTB(...)
-FuelLow / FuelCritical FSM events
-FindNearestTanker(...)
-Refuel(...)
-Refueled FSM event
-OPSGROUP:GetAltitude()
-POSITIONABLE:GetVelocityKNOTS()
+WIZARD visible spawn / normal transit:
+FL350 / 270 KIAS target
+
+APOC persistent racetrack:
+FL320 / 250 KIAS / 017T / 30 NM
+
+LISA dedicated AAR racetrack:
+FL250 / 270 KIAS / 340T / 20 NM
+
+WIZARD dedicated-LISA rendezvous route:
+FL250 / 290 KIAS target
+
+Final join/contact:
+DCS refuelling task controlled
 ```
 
-Die eingebaute `SetFuelLowRefuel(true)`-Policy wird **nicht** aktiviert, weil der gepinnte Source darin fest mit `FindNearestTanker(50)` arbeitet. Das genügt nicht für den OMW-Vertrag `LISA first, otherwise reachable compatible fallback`. OMW orchestriert daher nur die Auswahl; Fuel-Events, Kompatibilitätssuche und Refuel-Ausführung bleiben MOOSE-Funktionen.
+WIZARD-Route-Speed wird mit derselben `UTILS.IasToTas()`-Konvertierung erzeugt, die Acceptance 5 praktisch verwendet hat. Für die AUFTRAG-Racetracks bleiben die Trackwerte direkte Missions-IAS.
 
-## 8. Dedicated LISA
-
-LISA verwendet den bestehenden strategischen AAR-Adapter und erzeugt keine zweite Ressourcenautorität.
+## 5. Fuel-/AAR-Policy
 
 ```text
-Template: OMW_AAR_KC135_LISA
-Source: AL_UDEID via DAVER
-Rendezvous: 33.6233926368 N / 68.6395554105 E
-Track: FL320 / 300 kt / 340T / 20 NM
-FuelLow: 38 percent
+65 %  LISA pre-dispatch
+LISA ready -> geplanter AAR beginnt sofort
+40 %  fallback trigger, falls LISA nicht bereit ist
+25 %  sichtbarer off-map contingency egress, falls kein Refuel-Pfad etabliert ist
+
+LISA FuelLow: 38 %
 ```
 
-`300 kt` bleibt das bestehende OMW-FAST-Profil. Für diesen AWACS-Rendezvous wird nicht auf das 220-kt-SLOW-Profil gewechselt.
+`40 %` ist keine normale AAR-Zielschwelle.
 
-Wenn LISA `FuelLow` während eines bereits laufenden WIZARD-Refuels erreicht, darf die Tanker-Mission nicht sofort gecancelt werden:
+LISA-ready:
 
 ```text
-active WIZARD refuel from LISA + LISA FuelLow
--> LISA egress pending
--> refuel continues
--> after WIZARD Refueled: LISA egress
+<= 5 NM vom Rendezvous-Anker
++/- 1000 ft um FL250
 ```
 
-Ohne aktiven WIZARD-Receiver bleibt `LISA FuelLow -> immediate egress` gültig.
+Es wird kein zusätzlicher ungeprüfter Speed-Gate verwendet; tatsächliche LISA-IAS/TAS wird protokolliert.
 
-## 9. Acceptance-Observer
+## 6. MOOSE-Refuel-Vertrag
 
-`OMW_AWACS_Acceptance_4.lua` ist read-only/observer-only. Es darf keine Gruppe spawnen, routen, betanken oder zerstören.
-
-Es protokolliert alle 30 Sekunden mindestens:
+Der gepinnte Source bestätigt:
 
 ```text
-serviceState
-sensorState
-aarPhase
+FLIGHTGROUP:Refuel(Coordinate)
+-> PauseMission()
+-> DCS TaskRefueling()
+-> receiver route mit self.speedCruise
+-> Refueled FSM
+```
+
+Vor dem geplanten LISA-Refuel setzt die Runtime den öffentlichen `SetDefaultSpeed(...)`-Pfad auf das TAS-Äquivalent von `FL250 / 290 KIAS`. Ein eigener Native-DCS-Contact-Controller wird nicht eingeführt.
+
+Nach `Refueled` wird der normale WIZARD-Route-Speed wiederhergestellt. Die pausierte APOC-Mission bleibt MOOSE-Autorität; Sensorservice wird erst nach physischem APOC-Rejoin wieder aktiv.
+
+## 7. Observer-Telemetrie
+
+Alle 30 Sekunden werden mindestens protokolliert:
+
+```text
+runtime ID
+local mission time
+service state
+sensor state
+AAR phase
 designated tanker
-altitude in feet
-speed in knots
+WIZARD altitude
+WIZARD IAS
+WIZARD TAS
 heading
-fuelPct
+fuel percent
 position
 egress state
-LISA appearance
-LISA ready state
 ```
 
-Wichtige Korrektur nach dem Lauf vom 23./24.08.2026: `FLIGHTGROUP:GetAltitude()` liefert im gepinnten MOOSE-Source bereits Feet. Die frühere zusätzliche `UTILS.MetersToFeet()`-Konvertierung war falsch und erzeugte scheinbare Höhen um 105.000 ft. Diese Werte waren ein Observer-Bug, kein reales DCS-Flugprofil. Acceptance 4 gibt den MOOSE-Wert nun direkt als Feet aus.
+Zusätzlich werden bei LISA-ready und AAR-Phasenwechsel LISA-Höhe und LISA-IAS/TAS protokolliert.
 
-## 10. PASS-Kriterien
+## 8. PASS-Kriterien des finalen Laufs
 
-Ein PASS der revidierten Acceptance 4 erfordert mindestens:
-
-1. sichtbarer Spawn nahe FL350/440 kt und Fuel im vereinbarten Template-Toleranzbereich;
-2. ROSIE ohne sichtbaren FL340->FL350-Step;
-3. APOC wird erreicht und stabil bei FL320/300 kt geflogen;
-4. 15:30 aktiviert Sensor/Radar ohne APOC-Positionsgate, ROSIE-Detour oder Missionsersatz;
-5. RWR-SILENT/EMITTING vor/nach 15:30 wird, soweit mit dem gewählten Client prüfbar, manuell dokumentiert;
-6. LISA wird nach Unterschreiten der 65-Prozent-Schwelle materialisiert oder ein nachvollziehbarer strategischer Ablehnungsgrund geloggt;
-7. LISA etabliert ihren AWACS-Rendezvous auf FL320 mit 300-kt-FAST-Profil;
-8. sobald `LISA_READY` erreicht wird, beginnt WIZARD AAR ohne künstliches Warten auf 40 Prozent;
-9. falls LISA bis 40 Prozent nicht bereit ist, beginnt der Fallback-AAR-Pfad und kein Afghanistan-RTB;
-10. LISA wird bevorzugt, wenn sie bereit ist; sonst wird ein kompatibler aktiver Fallback-Tanker gewählt;
-11. WIZARD betankt sichtbar und kehrt anschließend zum persistenten APOC-Racetrack zurück, sofern 23:30 noch nicht erreicht ist;
-12. löst LISA während aktiver WIZARD-Betankung `FuelLow` aus, wird ihr Egress bis zum Receiver-Refuel-Abschluss zurückgestellt;
-13. kein ungewollter ROSIE-Detour beim AAR-Beginn oder bei der Rückkehr;
-14. bei 23:30 wird der Dienst beendet und WIZARD verlässt den Track kontrolliert über ROSIE;
-15. externer Handoff/Despawn und strategische Rückbuchung erfolgen exakt einmal;
-16. keine E-3A-Notlandung in Sharana und kein fuel-bedingter Crash;
-17. LISA führt nach abgeschlossener Unterstützung ihren eigenen Egress/Handoff aus;
-18. Observer-Höhen entsprechen dem real sichtbaren Flugniveau und zeigen keinen doppelten Feet-Umrechnungsfehler;
-19. `dcs.log`, `debrief.log`, MIZ-Hash, internal-mission-Hash und Bundle-Hashes werden dokumentiert.
-
-## 11. Bisherige DCS-Evidenz und offene Punkte
-
-Der Lauf vom 23./24.08.2026 belegt für den **vorherigen** Controllerstand:
+Der Lauf gilt nur dann als technisch erfolgreich, wenn die reale DCS-Evidenz für den ausgeführten Branch-/Commit-/MIZ-/Bundle-/MOOSE-Stand mindestens Folgendes bestätigt:
 
 ```text
-- LISA was physically materialized and used as WIZARD tanker
-- WIZARD entered the MOOSE Refuel path and eventually reached a Refueled event
-- persistent-mission rejoin path was entered after AAR
-- nearest-compatible fallback path was observed in a later fuel cycle
-- old logic waited until approximately 40 percent before first AAR even though LISA had been pre-dispatched
-- LISA FuelLow occurred during the running receiver-refuel sequence
+1. WIZARD materialisiert sichtbar am externen Handoff.
+2. ROSIE-Ingress bleibt erhalten.
+3. Normaler Transit entspricht dem neuen FL350-/270-KIAS-Profil ohne alten 440-kt-Zwang.
+4. WIZARD erreicht den persistenten APOC-Racetrack bei FL320 / 250 KIAS plausibel.
+5. Der 15:30-Servicewechsel erzeugt keinen Missions-/ROSIE-Detour.
+6. Bei <=65 % wird LISA vorausgeschickt.
+7. LISA erreicht den FL250-/270-KIAS-AAR-Track und wird ready.
+8. LISA-ready startet den geplanten WIZARD-AAR ohne absichtliches Warten auf 40 %.
+9. WIZARD verwendet den MOOSE-Refuel-Pfad; finaler DCS-Join/Contact bleibt plausibel.
+10. MOOSE `Refueled` tritt ein.
+11. WIZARD kehrt physisch zum APOC-Racetrack zurück; Sensorservice wird erst danach reaktiviert.
+12. Falls LISA FuelLow während des aktiven Receiver-Refuels auftritt, wird ihr Egress bis `Refueled` aufgeschoben.
+13. Planmäßiger oder explizit angeforderter Service-Ende-Egress führt über ROSIE zum externen Handoff.
+14. WIZARD wird erst am externen Handoff despawned und strategisch genau einmal recredited.
+15. LISA wird über ihren externen Handoff ebenfalls genau einmal strategisch reconciliiert.
 ```
 
-Diese Evidenz validiert nicht automatisch die revidierte LISA-ready-Policy. Noch offen und deshalb DCS-pending:
+Nicht jeder negative Fallback muss künstlich provoziert werden, sofern sein Teilpfad bereits auf exakt dokumentierter technischer Evidenz beruht und durch die finale Änderung nicht berührt wurde.
+
+## 9. Provenienzpflicht
+
+Ein PASS darf erst dokumentiert werden, wenn mindestens vorliegen:
 
 ```text
-- immediate WIZARD AAR initiation after revised LISA_READY
-- LISA FL320 racetrack behavior
-- practical FAST-profile rendezvous/catch-up behavior at 300 kt
-- deferred LISA FuelLow egress during an active receiver refuel
-- corrected observer altitude output
-- 65/40/25 thresholds after the changed normal AAR start point
+Branch
+Source commit
+DCS version
+MIZ file name
+MIZ SHA-256
+internal mission SHA-256
+AWACS Foundation bundle SHA-256
+Acceptance-4 bundle SHA-256
+Moose.lua SHA-256
+MOOSE commit
+dcs.log / relevante Logevidenz
+```
+
+Fehlende Werte werden nicht rekonstruiert oder geraten.
+
+## 10. Status
+
+Der final reconciliierte Runtime-Stand ist vorbereitet, aber noch nicht im integrierten DCS-Lauf geprüft.
+
+```text
+status: DRAFT
+validated_in_dcs: false
+final integrated rerun: DCS_PENDING
 ```
