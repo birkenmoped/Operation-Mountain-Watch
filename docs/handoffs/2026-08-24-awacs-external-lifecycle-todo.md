@@ -24,6 +24,7 @@ Branch: agent/awacs-external-lifecycle-foundation
 PR: #121 – Stage external AWACS lifecycle base
 Getesteter Source-Lifecycle-Stand: 2bda2f066ce1ad11aeed5eb7b98b294d2e399e2d
 Base-Package-Stand: c738052037c741f4b52cc6d2f0c818a6b24babc5
+Finaler Review-Stand vor Owner-Freigabe: 8b264ec0ffcb2c50a29074245e2578bc72b47083
 DCS: 2.9.28.26385 MT
 MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
 Moose.lua SHA-256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
@@ -117,7 +118,7 @@ OMW_AWACS_Base.lua
 other AirOps systems
 ```
 
-`OMW_AAR_Base.lua` bleibt die allgemeine Tankerbasis. `OMW_AWACS_Base.lua` bleibt Eigentümer des WIZARD-spezifischen Lifecycle einschließlich der dedizierten LISA-/MOE-Geometrie. Es wird keine doppelte strategische Ressourcenautorität eingeführt.
+`OMW_AAR_Base.lua` bleibt die allgemeine Tankerbasis. `OMW_AWACS_Base.lua` bleibt Eigentümer des WIZARD-spezifischen Lifecycle einschließlich der dedizierten LISA-/MOE-Geometrie. CampaignState bleibt die strategische Ressourcenautorität.
 
 ## 6. Reale Base-Provenienz
 
@@ -166,7 +167,49 @@ Belegte Runtime-Sequenz:
 
 Damit ist die Packaging-/Load-Grenze der neuen Base in DCS bestätigt. Im untersuchten Smoke-Zeitfenster wurde kein AWACS-bezogener `SCRIPTING ERROR`, `stack traceback` oder nil-Zugriffsfehler gefunden.
 
-## 8. Aktueller Abschlussstand
+## 8. Finaler PR-/CI-Review
+
+Der finale Review hat die zuvor widersprüchlichen AWACS-Stagingaussagen in den aktuellen verbindlichen Dokumenten reconciliert:
+
+```text
+docs/18-air-operations-implementation.md
+docs/moose/AIR-OPERATIONS.md
+docs/moose/PROJECT-CLASS-INDEX.md
+docs/moose/VERIFIED-METHODS.md
+```
+
+Aktuelle verbindliche Produktionswerte sind damit konsistent dokumentiert:
+
+```text
+WIZARD transit: FL350 / 270 KIAS
+APOC:           FL320 / 250 KIAS / 017T / 30 NM
+AAR 1:          LISA
+AAR 2:          MOE
+AAR track:      FL250 / 270 KIAS / 340T / 20 NM
+```
+
+CI für Review-Head `8b264ec0ffcb2c50a29074245e2578bc72b47083`:
+
+```text
+AWACS validation run #92: SUCCESS
+- Lua 5.1 source syntax: PASS
+- OMW_AWACS_Base.lua build: PASS
+- Acceptance 2 build: PASS
+- Acceptance 3 build: PASS
+- Acceptance 4 build: PASS
+- Acceptance 5 build: PASS
+- generated bundle syntax: PASS
+- generated files untracked check: PASS
+
+Documentation validation run #1134: FAILURE
+- 18 errors
+- all 18 errors are pre-existing ARMY-ground metadata/provenance errors
+- no AWACS document/link/metadata error reported
+```
+
+`main` steht weiterhin auf `cace7e888e655cfce20c9338b9e327ff45cee726`; PR #121 ist gegen diesen Stand mergeable.
+
+## 9. Aktueller Abschlussstand
 
 ```text
 [x] functional full lifecycle DCS run
@@ -184,11 +227,21 @@ Damit ist die Packaging-/Load-Grenze der neuen Base in DCS bestätigt. Im unters
 [x] short DCS load/smoke confirmation for renamed Base artifact
 [x] bind final MIZ/internal-mission hashes for Base smoke test
 [x] document Base smoke result
-[ ] final PR diff / CI reconciliation
+[x] final PR diff / binding-document reconciliation
+[x] final AWACS CI review
+[x] verify documentation-CI failure is outside AWACS scope
 [ ] owner authorization for Ready for Review
 [ ] merge only after authorization
 ```
 
-## 9. Entscheidungsgrenze
+## 10. Entscheidungsgrenze
 
-Es wird keine weitere Lifecycle- oder Routing-Architektur geändert, solange ein neuer DCS-Befund dies nicht erzwingt. Die Produktivisierung `Foundation -> Base` ist abgeschlossen. Offen sind nur noch der finale PR-/CI-Review und die explizite Owner-Freigabe für Ready for Review beziehungsweise Merge.
+Es wird keine weitere Lifecycle- oder Routing-Architektur geändert, solange ein neuer DCS-Befund dies nicht erzwingt. Die Produktivisierung `Foundation -> Base` und der technische PR-Review sind abgeschlossen.
+
+Nächster zulässiger Schritt:
+
+```text
+Owner approval
+-> mark PR #121 Ready for Review
+-> final merge authorization remains separate
+```
