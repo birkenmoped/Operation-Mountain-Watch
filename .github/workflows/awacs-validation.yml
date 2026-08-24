@@ -10,6 +10,7 @@ on:
       - "tools/build-awacs-acceptance-2.ps1"
       - "tools/build-awacs-acceptance-3.ps1"
       - "tools/build-awacs-acceptance-4.ps1"
+      - "tools/build-awacs-acceptance-5.ps1"
       - ".github/workflows/awacs-validation.yml"
   workflow_dispatch:
 
@@ -43,6 +44,7 @@ jobs:
           luac5.1 -p mission/tests/awacs-external-lifecycle/src/02-awacs-flight-profile-acceptance.lua
           luac5.1 -p mission/tests/awacs-external-lifecycle/src/03-awacs-persistent-orbit-emission-acceptance.lua
           luac5.1 -p mission/tests/awacs-external-lifecycle/src/04-awacs-full-fuel-aar-acceptance.lua
+          luac5.1 -p mission/tests/awacs-external-lifecycle/src/05-awacs-e3-performance-matrix.lua
 
       - name: Build AWACS foundation
         shell: pwsh
@@ -60,6 +62,10 @@ jobs:
         shell: pwsh
         run: ./tools/build-awacs-acceptance-4.ps1
 
+      - name: Build E-3 performance matrix acceptance
+        shell: pwsh
+        run: ./tools/build-awacs-acceptance-5.ps1
+
       - name: Generated bundle syntax
         shell: bash
         run: |
@@ -68,6 +74,7 @@ jobs:
           luac5.1 -p mission/tests/awacs-external-lifecycle/dist/OMW_AWACS_Acceptance_2.lua
           luac5.1 -p mission/tests/awacs-external-lifecycle/dist/OMW_AWACS_Acceptance_3.lua
           luac5.1 -p mission/tests/awacs-external-lifecycle/dist/OMW_AWACS_Acceptance_4.lua
+          luac5.1 -p mission/tests/awacs-external-lifecycle/dist/OMW_AWACS_Acceptance_5.lua
 
       - name: Verify no generated files became tracked changes
         shell: bash
