@@ -81,23 +81,25 @@ if ($branch -ne 'agent/awacs-external-lifecycle-foundation') {
   throw "Wrong branch. Expected agent/awacs-external-lifecycle-foundation, got $branch"
 }
 
-& (Join-Path $repoRoot 'tools\build-awacs-foundation.ps1')
+& (Join-Path $repoRoot 'tools\build-awacs-base.ps1')
 & (Join-Path $repoRoot 'tools\build-awacs-acceptance-4.ps1')
 
-$foundation = Join-Path $repoRoot 'mission\runtime\air-operations\OMW_AWACS_Foundation.lua'
+$base = Join-Path $repoRoot 'mission\runtime\air-operations\OMW_AWACS_Base.lua'
 $acceptance4 = Join-Path $repoRoot 'mission\tests\awacs-external-lifecycle\dist\OMW_AWACS_Acceptance_4.lua'
 $controller = Join-Path $repoRoot 'scripts\air-operations\OMW_AWACS_Controller_FullLifecycle_V3.lua'
+$moeRelief = Join-Path $repoRoot 'scripts\air-operations\OMW_AWACS_MOE_Relief.lua'
 $observer = Join-Path $repoRoot 'mission\tests\awacs-external-lifecycle\src\04-awacs-full-fuel-aar-acceptance.lua'
 
-Assert-NoUtf8Bom -Path $foundation
+Assert-NoUtf8Bom -Path $base
 Assert-NoUtf8Bom -Path $acceptance4
 
 Write-Host '=== FINAL ARTIFACT HASHES ==='
 Write-Host "ControllerSHA256: $(Get-LowerSha256 -Path $controller)"
+Write-Host "MoeReliefSHA256: $(Get-LowerSha256 -Path $moeRelief)"
 Write-Host "Acceptance4SourceSHA256: $(Get-LowerSha256 -Path $observer)"
-Write-Host "FoundationBundleSHA256: $(Get-LowerSha256 -Path $foundation)"
+Write-Host "BaseBundleSHA256: $(Get-LowerSha256 -Path $base)"
 Write-Host "Acceptance4BundleSHA256: $(Get-LowerSha256 -Path $acceptance4)"
-Write-Host 'Utf8BomFoundation: false'
+Write-Host 'Utf8BomBase: false'
 Write-Host 'Utf8BomAcceptance4: false'
 
 if (-not [string]::IsNullOrWhiteSpace($Acceptance5Miz)) {
