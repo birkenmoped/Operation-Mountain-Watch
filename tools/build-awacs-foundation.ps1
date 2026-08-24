@@ -8,7 +8,7 @@ $repoRoot = Split-Path -Parent $PSScriptRoot
 $distDir = Join-Path $repoRoot 'mission\runtime\air-operations'
 $outputFile = Join-Path $distDir 'OMW_AWACS_Foundation.lua'
 
-$builderVersion = 'OMW-AIROPS-AWACS-FOUNDATION-8'
+$builderVersion = 'OMW-AIROPS-AWACS-FOUNDATION-11'
 $mooseCommit = '73d3ed119cd9e7e3f2cfcabbaa34513d30529b54'
 $mooseSha256 = 'e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915'
 
@@ -19,6 +19,7 @@ $files = [ordered]@{
   CampaignStateInitializer = Join-Path $repoRoot 'scripts\logistics\OMW_AirOpsCampaignStateInitializer.lua'
   Adapter = Join-Path $repoRoot 'scripts\air-operations\OMW_AWACS_CampaignStateAdapter.lua'
   Controller = Join-Path $repoRoot 'scripts\air-operations\OMW_AWACS_Controller_FullLifecycle_V3.lua'
+  MoeRelief = Join-Path $repoRoot 'scripts\air-operations\OMW_AWACS_MOE_Relief.lua'
   Bootstrap = Join-Path $repoRoot 'scripts\air-operations\OMW_AirOps_AWACS_Bootstrap.lua'
 }
 
@@ -43,34 +44,21 @@ $requiredMarkers = @(
   @{ File = 'Controller'; Marker = 'FREQUENCY_MHZ = 357.300' },
   @{ File = 'Controller'; Marker = 'TRANSIT_ALTITUDE_FT = 35000' },
   @{ File = 'Controller'; Marker = 'TRANSIT_IAS_KT = 270' },
-  @{ File = 'Controller'; Marker = 'FAST_TRANSIT_IAS_KT = 290' },
   @{ File = 'Controller'; Marker = 'TRACK_ALTITUDE_FT = 32000' },
   @{ File = 'Controller'; Marker = 'TRACK_SPEED_KIAS = 250' },
-  @{ File = 'Controller'; Marker = 'AAR_RENDEZVOUS_ALTITUDE_FT = 25000' },
-  @{ File = 'Controller'; Marker = 'AAR_RENDEZVOUS_IAS_KT = 290' },
+  @{ File = 'Controller'; Marker = 'LISA_RENDEZVOUS = { lat = 33.6233926368, lon = 68.6395554105 }' },
   @{ File = 'Controller'; Marker = 'LISA_TRACK_ALTITUDE_FT = 25000' },
   @{ File = 'Controller'; Marker = 'LISA_TRACK_SPEED_KIAS = 270' },
-  @{ File = 'Controller'; Marker = 'EXPECTED_SPAWN_FUEL_PCT = 77' },
-  @{ File = 'Controller'; Marker = 'LISA_PREDISPATCH_FUEL_PCT = 65' },
-  @{ File = 'Controller'; Marker = 'AAR_TRIGGER_FUEL_PCT = 40' },
-  @{ File = 'Controller'; Marker = 'AAR_CRITICAL_FUEL_PCT = 25' },
-  @{ File = 'Controller'; Marker = 'UTILS.IasToTas' },
-  @{ File = 'Controller'; Marker = 'SetDefaultSpeed(runtime.aarRendezvousRouteSpeedKt)' },
   @{ File = 'Controller'; Marker = 'LISA_READY_ON_RENDEZVOUS' },
   @{ File = 'Controller'; Marker = 'LISA_EGRESS_DEFERRED' },
-  @{ File = 'Controller'; Marker = 'AUFTRAG:NewORBIT_RACETRACK' },
-  @{ File = 'Controller'; Marker = 'AUFTRAG:NewTANKER' },
-  @{ File = 'Controller'; Marker = 'flightGroup:SetFuelLowRTB(false)' },
-  @{ File = 'Controller'; Marker = 'flightGroup:SetFuelLowRefuel(false)' },
-  @{ File = 'Controller'; Marker = 'flightGroup:SetFuelLowThreshold(AAR_TRIGGER_FUEL_PCT)' },
-  @{ File = 'Controller'; Marker = 'flightGroup:SetFuelCriticalThreshold(AAR_CRITICAL_FUEL_PCT)' },
-  @{ File = 'Controller'; Marker = 'FindNearestTanker' },
   @{ File = 'Controller'; Marker = 'runtime.flightGroup:Refuel(coordinate)' },
-  @{ File = 'Controller'; Marker = 'function flightGroup:OnAfterRefueled' },
-  @{ File = 'Controller'; Marker = 'SERVICE_START_SEC = 15 * 3600 + 30 * 60' },
-  @{ File = 'Controller'; Marker = 'SERVICE_END_SEC = 23 * 3600 + 30 * 60' },
-  @{ File = 'Controller'; Marker = 'function Controller.GetLisaRuntime()' },
-  @{ File = 'Controller'; Marker = 'function Controller.RequestRefuel(rendezvousCoordinate, designatedTankerGroupName)' },
+  @{ File = 'MoeRelief'; Marker = 'OMW_AAR_KC135_MOE' },
+  @{ File = 'MoeRelief'; Marker = '33.6233926368' },
+  @{ File = 'MoeRelief'; Marker = '68.6395554105' },
+  @{ File = 'MoeRelief'; Marker = 'SECOND_CYCLE_ARMED' },
+  @{ File = 'MoeRelief'; Marker = 'MOE_READY' },
+  @{ File = 'MoeRelief'; Marker = 'controller.RequestRefuel' },
+  @{ File = 'MoeRelief'; Marker = 'AUFTRAG:NewTANKER' },
   @{ File = 'Bootstrap'; Marker = 'AWACS_FULL_FUEL_DRIVEN_AAR_FOUNDATION' }
 )
 
@@ -90,14 +78,15 @@ $forbiddenPatterns = @(
   'UNIT:Explode',
   'AUFTRAG:NewAWACS\(',
   'EnRouteTaskAWACS\(',
-  'SetFuelLowRefuel\(true\)'
+  'SetFuelLowRefuel\(true\)',
+  'ClearWaypoints\('
 )
 
 foreach ($entry in $content.GetEnumerator()) {
-  if ($entry.Key -in @('Controller','Bootstrap')) {
+  if ($entry.Key -in @('Controller','MoeRelief','Bootstrap')) {
     foreach ($pattern in $forbiddenPatterns) {
       if ($entry.Value -match $pattern) {
-        throw "Forbidden native/test marker in AWACS foundation $($entry.Key): $pattern"
+        throw "Forbidden native/live-retask marker in AWACS foundation $($entry.Key): $pattern"
       }
     }
   }
@@ -121,23 +110,15 @@ $header = @"
 -- GitCommit: $commit
 -- SourceCommitUtc: $sourceCommitUtc
 -- Scope: OMW external E-3 AWACS full fuel-driven lifecycle foundation.
+-- Proven runtime base: OMW_AWACS_Controller_FullLifecycle_V3.lua from the last working AWACS/LISA flow.
 -- Strategic source: OFFMAP_AL_DHAFRA.
--- Route: external materialization FL350 -> ROSIE FL350 -> 30 NM late approach -> APOC FL320.
--- Spawn fuel contract: approximately 77 percent in the Mission Editor template; no undocumented SPAWN fuel mutation.
--- Physical station: persistent APOC AUFTRAG racetrack at FL320 / 250 KIAS; no DCS AWACS fighter-control task is required.
--- Service: WIZARD, 357.300 MHz AM, 1530-2330 local (1100Z-1900Z).
--- Visible normal transfer: FL350 / 270 KIAS target, converted with UTILS.IasToTas for MOOSE route speed.
--- Optional fast transfer: FL350 / 290 KIAS target; not selected automatically.
--- Dedicated LISA AAR track/contact: FL250 / 270 KIAS.
--- Dedicated-LISA WIZARD rendezvous route: FL250 / 290 KIAS target before MOOSE FLIGHTGROUP:Refuel().
--- Final join/contact: DCS refuelling-task controlled; no parallel native receiver controller.
--- Fuel policy: LISA pre-dispatch <=65 percent; LISA-ready begins planned AAR immediately.
--- Fallback fuel policy: <=40 percent seeks a compatible tanker; <=25 percent without an established path triggers visible off-map contingency.
--- LISA FuelLow egress is deferred during active WIZARD AAR.
--- Pinned MOOSE SetFuelLowRefuel automatic 50-NM search is disabled because it cannot express the OMW selection policy.
--- MOOSE automatic Afghanistan RTB on FuelLow/FuelCritical is disabled.
--- Egress: service closes at 2330 local -> FL350 / 270 KIAS target -> ROSIE -> external handoff/despawn.
--- DCS validation: final reconciled lifecycle requires the integrated Acceptance 4 rerun.
+-- WIZARD route: external materialization FL350 -> ROSIE -> APOC FL320 / 250 KIAS.
+-- First planned AAR: unchanged V3 LISA flow on AWACS_APOC 33.6233926368N 68.6395554105E / FL250 / 270 KIAS / 340T / 20 NM.
+-- Second planned AAR: MOE relief only, using the exact same AWACS_APOC tanker geometry; no live route retask.
+-- MOE source identity: MANAS / PINAX / OMW_AAR_KC135_MOE / Texaco 4.
+-- WIZARD receiver task remains Controller.RequestRefuel() -> MOOSE FLIGHTGROUP:Refuel().
+-- No production-AAR track override and no ClearWaypoints surgery.
+-- Fuel policy remains 65 percent planned pre-dispatch, 40 percent fallback, 25 percent contingency.
 -- No automated MIZ mutation.
 -- MOOSE-Commit: $mooseCommit
 -- Moose.lua-SHA256: $mooseSha256
@@ -151,6 +132,7 @@ $bundle += "local OMW_AWACS_OffMapStrategicStock = (function()`n" + $content.Off
 $bundle += "local OMW_AWACS_CampaignStateInitializer = (function()`n" + $content.CampaignStateInitializer + "`nend)()`n"
 $bundle += "local OMW_AWACS_Adapter = (function()`n" + $content.Adapter + "`nend)()`n"
 $bundle += "local OMW_AWACS_Controller = (function()`n" + $content.Controller + "`nend)()`n"
+$bundle += "local OMW_AWACS_MoeRelief = (function()`n" + $content.MoeRelief + "`nend)()`n"
 $bundle += "local OMW_AWACS_Bootstrap = (function()`n" + $content.Bootstrap + "`nend)()`n"
 $bundle += @"
 OMW_AWACS_Bootstrap.Start({
@@ -161,6 +143,7 @@ OMW_AWACS_Bootstrap.Start({
   adapterModule = OMW_AWACS_Adapter,
   controller = OMW_AWACS_Controller,
 })
+OMW_AWACS_MoeRelief.Start(OMW_AWACS_Controller)
 "@
 
 foreach ($pattern in $forbiddenPatterns) {
@@ -180,42 +163,28 @@ Write-Host "Built: $outputFile"
 Write-Host "BuilderVersion: $builderVersion"
 Write-Host "SourceCommitUtc: $sourceCommitUtc"
 Write-Host 'Scope: AWACS_FULL_FUEL_DRIVEN_AAR_FOUNDATION'
+Write-Host 'ControllerRevision: V3_PROVEN_BASE_PLUS_MINIMAL_MOE_RELIEF'
 Write-Host 'Template: OMW_C2_E3A_WIZARD'
-Write-Host 'StrategicSource: OFFMAP_AL_DHAFRA'
-Write-Host 'FIRFix: ROSIE'
-Write-Host 'PrimaryArea: APOC'
-Write-Host 'Callsign: WIZARD'
-Write-Host 'FrequencyMHzAM: 357.300'
-Write-Host 'SpawnAltitudeFt: 35000'
 Write-Host 'TransitTargetIASKt: 270'
-Write-Host 'FastTransitTargetIASKt: 290'
-Write-Host 'ExpectedSpawnFuelPct: 77'
 Write-Host 'TrackAltitudeFt: 32000'
 Write-Host 'TrackSpeedKIAS: 250'
-Write-Host 'TrackHeadingTrueDeg: 17'
-Write-Host 'TrackLegNm: 30'
-Write-Host 'LateApproachNm: 30'
-Write-Host 'ServiceStartLocal: 15:30'
-Write-Host 'ServiceEndLocal: 23:30'
-Write-Host 'ServiceWindowSec: 28800'
-Write-Host 'PersistentOrbit: true'
-Write-Host 'AWACSMissionTaskUsed: false'
-Write-Host 'LisaPredispatchFuelPct: 65'
-Write-Host 'LisaTrackAltitudeFt: 25000'
-Write-Host 'LisaTrackSpeedKIAS: 270'
-Write-Host 'WizardAARRendezvousAltitudeFt: 25000'
-Write-Host 'WizardAARRendezvousTargetIASKt: 290'
-Write-Host 'FinalContactSpeedDCSControlled: true'
-Write-Host 'LisaReadyImmediateAAR: true'
-Write-Host 'LisaFuelLowEgressDeferredDuringActiveAAR: true'
+Write-Host 'PlannedAAR1: LISA'
+Write-Host 'PlannedAAR2: MOE'
+Write-Host 'DedicatedAARTrackLat: 33.6233926368'
+Write-Host 'DedicatedAARTrackLon: 68.6395554105'
+Write-Host 'DedicatedAARTrackAltitudeFt: 25000'
+Write-Host 'DedicatedAARTrackSpeedKIAS: 270'
+Write-Host 'DedicatedAARTrackHeadingTrueDeg: 340'
+Write-Host 'DedicatedAARTrackLegNm: 20'
+Write-Host 'MoeSource: MANAS'
+Write-Host 'MoeFIRFix: PINAX'
+Write-Host 'MoeFuelLowPct: 31'
+Write-Host 'LiveTrackRetask: false'
+Write-Host 'ClearWaypointsUsed: false'
 Write-Host 'AARTriggerFuelPct: 40'
-Write-Host 'AARTriggerRole: FALLBACK'
 Write-Host 'AARCriticalFuelPct: 25'
 Write-Host 'FuelLowRTB: false'
 Write-Host 'FuelLowRefuelBuiltIn: false'
-Write-Host 'FuelLowEventDrivenAAR: true'
-Write-Host 'AutomaticNearestTankerFallback: true'
-Write-Host 'DedicatedLisaPredispatch: true'
 Write-Host 'DCSValidatedFullLifecycle: false'
 Write-Host 'Utf8Bom: false'
 Write-Host 'MizMutation: false'
