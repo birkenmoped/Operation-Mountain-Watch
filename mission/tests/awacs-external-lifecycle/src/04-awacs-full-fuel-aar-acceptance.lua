@@ -14,12 +14,13 @@ local MOOSE_SHA256 = "e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e0
 local state = {
   scheduler = nil,
   samples = 0,
+  configLogged = false,
   lastServiceState = nil,
   lastSensorState = nil,
   lastAarPhase = nil,
   lisaObserved = false,
   lisaReadyObserved = false,
-  fuelLowObserved = false,
+  fallbackThresholdObserved = false,
   refuelObserved = false,
   egressObserved = false,
   handoffObserved = false,
@@ -46,12 +47,41 @@ local function fmt(value, pattern)
   return string.format(pattern, value)
 end
 
+local function getIASKt(group)
+  if not group or not group:IsAlive() then return nil end
+  local unit = group:GetUnit(1)
+  if not unit or not unit:IsAlive() then return nil end
+  local iasMps = unit:GetAirspeedIndicated()
+  return type(iasMps) == "number" and UTILS.MpsToKnots(iasMps) or nil
+end
+
+local function logConfig(facade)
+  if state.configLogged then return end
+  local config = facade.Config
+  if type(config) ~= "table" and facade.Controller and type(facade.Controller.GetConfig) == "function" then
+    config = facade.Controller.GetConfig()
+  end
+  if type(config) ~= "table" then return end
+
+  state.configLogged = true
+  log(string.format(
+    "CONFIG transitAltFt=%s transitTargetKIAS=%s trackAltFt=%s trackTargetKIAS=%s lisaAltFt=%s lisaTargetKIAS=%s wizardAarRvAltFt=%s wizardAarRvTargetKIAS=%s lisaPredispatchPct=%s fallbackPct=%s criticalPct=%s finalContactSpeedDcsControlled=%s",
+    tostring(config.inboundCruiseAltitudeFt), tostring(config.transitTargetIASKt),
+    tostring(config.trackAltitudeFt), tostring(config.trackSpeedKIAS),
+    tostring(config.lisaRendezvousAltitudeFt), tostring(config.lisaRendezvousSpeedKIAS),
+    tostring(config.aarRendezvousAltitudeFt), tostring(config.aarRendezvousTargetIASKt),
+    tostring(config.lisaPredispatchFuelPct), tostring(config.aarTriggerFuelPct),
+    tostring(config.aarCriticalFuelPct), tostring(config.finalContactSpeedDcsControlled == true)))
+end
+
 local function sample()
   local facade = getFacade()
   if not facade then
     log("WAITING reason=AWACS_FACADE_NOT_RUNNING")
     return
   end
+
+  logConfig(facade)
 
   local runtime = facade.GetRuntime()
   if not runtime or not runtime.flightGroup or not runtime.flightGroup:IsAlive() then
@@ -65,9 +95,9 @@ local function sample()
   local position = coord and coord:GetLLDDM() or "UNKNOWN"
 
   local fuelPct = fg:GetFuelMin()
-  -- OPSGROUP/FLIGHTGROUP:GetAltitude() returns feet in the pinned MOOSE source.
   local altitudeFt = fg:GetAltitude()
-  local speedKt = runtime.group and runtime.group:IsAlive() and runtime.group:GetVelocityKNOTS() or nil
+  local tasKt = runtime.group and runtime.group:IsAlive() and runtime.group:GetVelocityKNOTS() or nil
+  local iasKt = getIASKt(runtime.group)
   local headingDeg = fg:GetHeading()
   local localSec = UTILS.SecondsOfToday()
 
@@ -80,10 +110,15 @@ local function sample()
   end
 
   if runtime.aarPhase ~= state.lastAarPhase then
-    log(string.format("AAR_PHASE runtime=%s from=%s to=%s tanker=%s selectionReason=%s localSec=%.1f fuelPct=%s",
+    local lisa = facade.GetLisaRuntime()
+    local lisaAltitudeFt = lisa and lisa.flightGroup and lisa.flightGroup:IsAlive() and lisa.flightGroup:GetAltitude() or nil
+    local lisaIASKt = lisa and getIASKt(lisa.group) or nil
+    log(string.format(
+      "AAR_PHASE runtime=%s from=%s to=%s tanker=%s selectionReason=%s dedicatedLisa=%s localSec=%.1f fuelPct=%s wizardAltFt=%s wizardIASKt=%s lisaAltFt=%s lisaIASKt=%s",
       tostring(runtime.runtimeId), tostring(state.lastAarPhase), tostring(runtime.aarPhase),
       tostring(runtime.designatedTankerGroupName or "NONE"), tostring(runtime.aarSelectionReason or "NONE"),
-      localSec, fmt(fuelPct, "%.2f")))
+      tostring(runtime.aarDedicatedLisa == true), localSec, fmt(fuelPct, "%.2f"),
+      fmt(altitudeFt, "%.0f"), fmt(iasKt, "%.1f"), fmt(lisaAltitudeFt, "%.0f"), fmt(lisaIASKt, "%.1f")))
     state.lastAarPhase = runtime.aarPhase
   end
 
@@ -91,25 +126,28 @@ local function sample()
   if lisa and not state.lisaObserved then
     state.lisaObserved = true
     log(string.format("LISA_OBSERVED runtime=%s onStation=%s egress=%s loss=%s",
-      tostring(lisa.runtimeId), tostring(lisa.onStation == true), tostring(lisa.egressOrdered == true), tostring(lisa.lossHandled == true)))
+      tostring(lisa.runtimeId), tostring(lisa.onStation == true), tostring(lisa.egressOrdered == true),
+      tostring(lisa.lossHandled == true)))
   end
 
   if lisa and lisa.onStation and not state.lisaReadyObserved then
     state.lisaReadyObserved = true
     local lisaAltitudeFt = lisa.flightGroup and lisa.flightGroup:IsAlive() and lisa.flightGroup:GetAltitude() or nil
-    local lisaSpeedKt = lisa.group and lisa.group:IsAlive() and lisa.group:GetVelocityKNOTS() or nil
-    log(string.format("LISA_READY_OBSERVED runtime=%s localSec=%.1f altitudeFt=%s speedKt=%s egressPending=%s",
-      tostring(lisa.runtimeId), localSec, fmt(lisaAltitudeFt, "%.0f"), fmt(lisaSpeedKt, "%.1f"),
-      tostring(lisa.egressPending == true)))
+    local lisaTASKt = lisa.group and lisa.group:IsAlive() and lisa.group:GetVelocityKNOTS() or nil
+    local lisaIASKt = getIASKt(lisa.group)
+    log(string.format(
+      "LISA_READY_OBSERVED runtime=%s localSec=%.1f altitudeFt=%s iasKt=%s tasKt=%s egressPending=%s",
+      tostring(lisa.runtimeId), localSec, fmt(lisaAltitudeFt, "%.0f"), fmt(lisaIASKt, "%.1f"),
+      fmt(lisaTASKt, "%.1f"), tostring(lisa.egressPending == true)))
   end
 
-  if type(fuelPct) == "number" and fuelPct <= 40 then state.fuelLowObserved = true end
+  if type(fuelPct) == "number" and fuelPct <= 40 then state.fallbackThresholdObserved = true end
   if runtime.aarCompletedAt then state.refuelObserved = true end
   if runtime.egressOrdered then state.egressObserved = true end
   if runtime.handoffComplete then state.handoffObserved = true end
 
   log(string.format(
-    "TELEMETRY seq=%d runtime=%s localSec=%.1f serviceState=%s sensorState=%s aarPhase=%s tanker=%s altFt=%s speedKt=%s headingDeg=%s fuelPct=%s position=%s egress=%s",
+    "TELEMETRY seq=%d runtime=%s localSec=%.1f serviceState=%s sensorState=%s aarPhase=%s tanker=%s altFt=%s iasKt=%s tasKt=%s headingDeg=%s fuelPct=%s position=%s egress=%s",
     state.samples,
     tostring(runtime.runtimeId),
     localSec,
@@ -118,7 +156,8 @@ local function sample()
     tostring(runtime.aarPhase or "NONE"),
     tostring(runtime.designatedTankerGroupName or "NONE"),
     fmt(altitudeFt, "%.0f"),
-    fmt(speedKt, "%.1f"),
+    fmt(iasKt, "%.1f"),
+    fmt(tasKt, "%.1f"),
     fmt(headingDeg, "%.1f"),
     fmt(fuelPct, "%.2f"),
     tostring(position),
@@ -128,6 +167,7 @@ end
 
 function Acceptance4.Start()
   if not SCHEDULER or not UTILS then fail("required MOOSE scheduler/utilities unavailable") end
+  if type(UTILS.MpsToKnots) ~= "function" then fail("UTILS.MpsToKnots unavailable") end
   if state.scheduler then return Acceptance4 end
   state.scheduler = SCHEDULER:New(nil, sample, {}, 1, SAMPLE_INTERVAL_SEC)
   log(string.format("STARTED sampleIntervalSec=%d mooseCommit=%s mooseSha256=%s observerOnly=true",
