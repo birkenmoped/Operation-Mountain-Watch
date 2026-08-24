@@ -148,6 +148,18 @@ OMW_AWACS_Acceptance_5.lua
 
 Acceptance 5 startet sich selbst. Es werden keine Produktions-AWACS-Foundation, kein AAR-Controller, keine AWACS-Aufgabe, kein CampaignState und keine weiteren Acceptance-Skripte für diesen isolierten Performance-Lauf benötigt.
 
+## DCS-Versuch 2026-08-24 – nicht auswertbar
+
+Der erste reale DCS-Start von Acceptance 5 erzeugte keine Performance-Evidenz. DCS brach das Laden des generierten Bundles unmittelbar in Zeile 1 ab:
+
+```text
+Mission script error: [string "l10n/DEFAULT/OMW_AWACS_Acceptance_5.lua"]:1: unexpected symbol near ''
+```
+
+Die hochgeladene Test-MIZ bestätigte als Ursache ein UTF-8-BOM `EF BB BF` vor dem ersten Lua-Kommentar des generierten Bundles. Der Builder verwendete `Set-Content -Encoding UTF8`; Windows PowerShell 5.1 schreibt dabei ein BOM, während PowerShell 7+ standardmäßig BOM-freies UTF-8 erzeugt. Dadurch konnte der Linux-/PowerShell-7-CI-Lauf das Windows-spezifische Artefakt nicht reproduzieren.
+
+Der Builder wurde deshalb auf explizites `System.Text.UTF8Encoding(false)` umgestellt und prüft das generierte Bundle zusätzlich binär auf ein unerwartetes BOM. Dieser Versuch ist ausdrücklich **kein DCS-PASS und kein Performance-Ergebnis**; die 15 Profile wurden nicht gestartet.
+
 ## Acceptance-Evidenz
 
 Ein auswertbarer Lauf benötigt mindestens:
