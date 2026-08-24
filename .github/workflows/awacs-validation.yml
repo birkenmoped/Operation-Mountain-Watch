@@ -6,6 +6,7 @@ on:
       - "scripts/air-operations/OMW_AWACS_*.lua"
       - "scripts/air-operations/OMW_AirOps_AWACS_Bootstrap.lua"
       - "mission/tests/awacs-external-lifecycle/**"
+      - "tools/build-awacs-base.ps1"
       - "tools/build-awacs-foundation.ps1"
       - "tools/build-awacs-final-lifecycle.ps1"
       - "tools/build-awacs-acceptance-2.ps1"
@@ -49,9 +50,9 @@ jobs:
           luac5.1 -p mission/tests/awacs-external-lifecycle/src/04-awacs-full-fuel-aar-acceptance.lua
           luac5.1 -p mission/tests/awacs-external-lifecycle/src/05-awacs-e3-performance-matrix.lua
 
-      - name: Build AWACS foundation
+      - name: Build AWACS production base
         shell: pwsh
-        run: ./tools/build-awacs-foundation.ps1
+        run: ./tools/build-awacs-base.ps1
 
       - name: Build full-duration AWACS acceptance
         shell: pwsh
@@ -73,7 +74,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          luac5.1 -p mission/runtime/air-operations/OMW_AWACS_Foundation.lua
+          luac5.1 -p mission/runtime/air-operations/OMW_AWACS_Base.lua
           luac5.1 -p mission/tests/awacs-external-lifecycle/dist/OMW_AWACS_Acceptance_2.lua
           luac5.1 -p mission/tests/awacs-external-lifecycle/dist/OMW_AWACS_Acceptance_3.lua
           luac5.1 -p mission/tests/awacs-external-lifecycle/dist/OMW_AWACS_Acceptance_4.lua
