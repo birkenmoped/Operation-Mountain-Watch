@@ -5,29 +5,31 @@ document_class: MOOSE_TECHNICAL_BASELINE
 owning_policy: OMW-GOV-001
 authoritative_for:
   - AWACS fuel-state driven AAR design on the working branch
-  - branch-local AWACS performance engineering baseline after Acceptance 5
+  - branch-local AWACS production-bundle design
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 source_branch: agent/awacs-external-lifecycle-foundation
 source_commit: PENDING_MERGE
 supersedes:
 superseded_by:
-validated_in_dcs: false
+validated_in_dcs: true
 ---
 
 # AWACS Fuel-Driven AAR Lifecycle
 
 ## 1. Geltungsbereich
 
-Dieses Dokument beschreibt den final reconcilierten branch-lokalen WIZARD-/LISA-Lifecycle vor dem abschließenden integrierten DCS-Lauf. Es ersetzt keine Governance auf `main` und erklärt die neue Runtime noch nicht für DCS-validiert.
+Dieses Dokument beschreibt den funktional in DCS bestätigten WIZARD-Lifecycle sowie dessen Produktivisierung als `OMW_AWACS_Base.lua`.
 
-Maßgeblich bleiben:
+Architekturgrenzen:
 
 ```text
 CampaignState = strategische Ressourcenautorität
-DCS-Gruppen = temporäre physische Repräsentationen
+DCS groups = temporäre physische Repräsentationen
 MOOSE = primäres Framework
-kein eigener Native-DCS-Refuel-Controller
+kein MIST
+kein Native-DCS-Refuel-Ersatz
+kein Live-Retask mit ClearWaypoints
 ```
 
 Gepinnter Framework-Stand:
@@ -38,209 +40,142 @@ MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
 Moose.lua SHA-256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
 ```
 
-## 2. Acceptance-5-Engineering-Baseline
+## 2. Validierter WIZARD-Lifecycle
 
-Acceptance 5 flog 15 E-3A-Profile mit jeweils 20 NM Stabilisierung und 200 NM Messstrecke. Der vollständige Test erreichte `ALL_COMPLETE profiles=15`; 14 Profile waren `STABLE`, `FL350 / 310 KIAS` war `MARGINAL`.
-
-Für die Runtime werden daraus folgende Zielwerte übernommen:
+Der erfolgreiche Abschlusslauf vom 24.08.2026 bestätigt funktional:
 
 ```text
-WIZARD normal transit:       FL350 / 270 KIAS
-WIZARD optional fast:        FL350 / 290 KIAS
-WIZARD APOC racetrack:       FL320 / 250 KIAS
-LISA AAR track/contact:      FL250 / 270 KIAS
-WIZARD dedicated-LISA RV:    FL250 / 290 KIAS
-```
-
-Gemessene Referenzwerte:
-
-```text
-FL350 / 270 KIAS -> 430.6 KTAS, 4.162 % / 100 NM, 17.318 % / h, STABLE
-FL350 / 290 KIAS -> 462.5 KTAS, 4.484 % / 100 NM, 20.049 % / h, STABLE
-FL320 / 250 KIAS -> 386.0 KTAS, 3.984 % / 100 NM, 14.784 % / h, STABLE
-FL250 / 270 KIAS -> 384.7 KTAS, 4.352 % / 100 NM, 16.068 % / h, STABLE
-FL250 / 290 KIAS -> 413.2 KTAS, 4.765 % / 100 NM, 19.057 % / h, STABLE
-```
-
-Diese Messwerte sind DCS-Evidenz für den dokumentierten Acceptance-5-Teststand. Die Verwendung derselben Profile im vollständigen AWACS-/LISA-Lifecycle ist bis zum finalen integrierten Lauf `DCS_PENDING`.
-
-## 3. MOOSE-Speed-Vertrag
-
-Der gepinnte Source bestätigt für `FLIGHTGROUP:AddWaypoint(...)` einen Speed-Parameter in knots. Acceptance 5 hat den gewünschten KIAS-Wert vor Übergabe an SPAWN/Routing mit `UTILS.IasToTas(...)` in den MOOSE-Routenwert umgerechnet und die tatsächlich geflogene IAS anschließend unabhängig gemessen.
-
-Daher gilt für WIZARD-Routing:
-
-```text
-KIAS engineering target
--> UTILS.IasToTas(targetKIAS, altitudeMeters)
--> SPAWN:InitSpeedKnots(routeSpeedKt)
--> FLIGHTGROUP:SetDefaultSpeed(routeSpeedKt)
--> FLIGHTGROUP:AddWaypoint(... routeSpeedKt ...)
-```
-
-Für AUFTRAG-Racetracks werden die Missionswerte direkt als Track-IAS geführt:
-
-```text
-APOC: FL320 / 250 KIAS
-LISA: FL250 / 270 KIAS
-```
-
-## 4. Gepinnter `FLIGHTGROUP:Refuel()`-Pfad
-
-Der Source-Review des tatsächlich verwendeten `Moose.lua` bestätigt:
-
-```text
-FLIGHTGROUP:Refuel(Coordinate)
--> PauseMission()
--> DCS TaskRefueling()
--> receiver route to supplied Coordinate
--> route speed from self.speedCruise
--> normal Refueled FSM path
-```
-
-Die öffentliche Refuel-Signatur bietet keine getrennten Parameter für Rendezvous-Höhe, Rendezvous-IAS oder Contact-IAS.
-
-`OPSGROUP:SetDefaultSpeed(Speed)` ist öffentlich und setzt den von `Refuel()` verwendeten Cruise-Speed. Deshalb wird beim geplanten LISA-Pfad unmittelbar vor `Refuel()` der auf `FL250 / 290 KIAS` umgerechnete Route-Speed als Default gesetzt. Die übergebene LISA-Koordinate liefert die aktuelle Tankergeometrie am FL250-Racetrack.
-
-Nach `Refueled` wird der normale WIZARD-Transit-Route-Speed wiederhergestellt. Die pausierte APOC-Mission bleibt MOOSE-Autorität und wird über den vorhandenen Mission-Lifecycle fortgesetzt.
-
-Wichtig:
-
-```text
-290 -> 270 KIAS near contact
-```
-
-wird nicht durch einen eigenen OMW-Contact-Controller erzwungen. Nach Aktivierung des DCS-Refuelling-Tasks liegen finaler Join und Contact beim DCS-AI-Task. Das konkrete Verhalten wird im finalen DCS-Lauf beobachtet.
-
-Für einen Fallback-Tanker wird kein künstliches FL250-/290-KIAS-Profil aufgezwungen. Dessen tatsächliche Tankergeometrie bleibt maßgeblich; die Receiver-Ausführung bleibt `FLIGHTGROUP:Refuel()`.
-
-## 5. Fuel-/AAR-Orchestrierung
-
-Die branch-lokale Policy bleibt nach Acceptance 4/5:
-
-```text
-65 %  -> LISA pre-dispatch
-LISA ready -> geplanter WIZARD-AAR beginnt sofort
-40 %  -> fallback AAR trigger, falls der geplante LISA-Pfad nicht bereit ist
-25 %  -> sichtbarer off-map contingency egress, falls kein Refuel-Pfad etabliert ist
-```
-
-`40 %` ist ausdrücklich keine normale geplante AAR-Startschwelle.
-
-LISA FuelLow bleibt:
-
-```text
-38 %
-```
-
-Wenn LISA FuelLow während eines aktiven WIZARD-Refuels auslöst:
-
-```text
--> egress pending
--> Tankermission nicht unter dem Receiver abbrechen
--> nach WIZARD Refueled LISA-Egress anordnen
-```
-
-## 6. Reserve-/Bingo-Reconciliation
-
-Die auf `main` akzeptierte Tanker-Fuelplanung in `AAR-LRC-TRANSIT.md` verwendet für direkt kalibrierte Tanker:
-
-```text
-FuelLow =
-  measured TRACK_DEPARTURE -> EXTERNAL_HANDOFF burn
-+ virtual EXTERNAL_HANDOFF -> source-base burn
-+ 45-minute reserve
-```
-
-Zusätzlich ist dort ein geplanter Landing Floor von 13,000 lb dokumentiert. Für die sechs Tankerprofile lag die berechnete 45-Minuten-Reserve über diesem Floor und war deshalb die kontrollierende Reservekomponente.
-
-Eine eigenständige zusätzliche `diversion allowance` ist in dieser akzeptierten Tankerformel nicht als separater Term dokumentiert. Sie wird daher für WIZARD nicht erfunden.
-
-Acceptance 5 misst für `FL350 / 270 KIAS`:
-
-```text
-17.318 % fuel / h
-```
-
-Eine rein rechnerische 45-Minuten-Menge unter denselben stabilisierten Testbedingungen beträgt damit ungefähr:
-
-```text
-17.318 * 0.75 ~= 13.0 %
-```
-
-Das ist keine vollständige E-3A-Bingo-Berechnung. Für WIZARD fehlt eine entsprechend kalibrierte physische `APOC -> ROSIE -> external handoff`-Recovery-Rechnung sowie eine reale E-3-spezifische Landing-/Reservevorgabe.
-
-Die vorhandene `25 %` Critical-Grenze wird deshalb **nicht abgesenkt**. Ihre Bedeutung wird begrenzt auf:
-
-```text
-visible DCS contingency floor
--> kontrollierter Egress über ROSIE
+OFFMAP_AL_DHAFRA
+-> visible materialization
+-> ROSIE ingress
+-> FL350 / 270 KIAS transit
+-> APOC FL320 / 250 KIAS persistent racetrack
+-> scheduled sensor/service activation
+-> first planned AAR with LISA
+-> Refueled
+-> APOC physical rejoin / sensor restore
+-> second planned AAR with MOE
+-> Refueled
+-> APOC physical rejoin / sensor restore
+-> service-end egress
+-> ROSIE outbound
 -> external handoff
+-> despawn / strategic recredit
 ```
 
-Der anschließende abstrakte Rückweg vom external handoff zur strategischen Quelle `OFFMAP_AL_DHAFRA` ist keine physisch in DCS geflogene Strecke. Er darf deshalb nicht mit einer ungeprüften DCS-Landing-Fuel-Aussage vermischt werden.
-
-## 7. Persistenter APOC-Orbit und Service
-
-Der physische Orbit und der Service-/Sensorstatus bleiben getrennt:
+Getesteter Source-Stand vor dem Lauf:
 
 ```text
-vor 15:30 local: persistent APOC orbit / sensor standby
-15:30 local:     sensor/service active, kein Missionstausch
-AAR:             MOOSE Refuel pausiert die persistente Mission
-post-AAR:        APOC-Mission wird fortgesetzt; Sensor erst nach physischem Rejoin aktiv
-23:30 local:     Service-Ende, echter Egress über ROSIE
+branch: agent/awacs-external-lifecycle-foundation
+commit: 2bda2f066ce1ad11aeed5eb7b98b294d2e399e2d
+controller: OMW_AWACS_Controller_FullLifecycle_V3.lua
+MOE extension: OMW_AWACS_MOE_Relief.lua
+DCS: 2.9.28.26385 MT
+mission file reported by DCS/debrief: OMW_Template_v20.miz
 ```
 
-APOC:
+Die exakten MIZ- und internal-`mission`-SHA-256-Werte dieses letzten Laufs sind noch nicht gebunden. Deshalb bleibt dieses Dokument `DRAFT` und wird nicht zu `ACCEPTED_TECHNICAL_BASELINE` erhoben.
+
+## 3. Flight- und Performance-Baseline
+
+Acceptance 5 hat 15 E-3A-Profile mit 20 NM Stabilisierung und 200 NM Messstrecke geflogen. Ergebnis:
 
 ```text
-FL320 / 250 KIAS / 017T / 30 NM
+15/15 complete
+14 STABLE
+FL350 / 310 KIAS MARGINAL
 ```
 
-## 8. LISA-ready-Vertrag
-
-LISA wird nach dem akzeptierten AAR-Ingressmuster zunächst über DAVER und den 60-NM-Late-Approach geführt. Erst danach wird der Tanker-AUFTRAG hinzugefügt und die Transition auf den AAR-Track begonnen.
-
-Ready gilt branch-lokal bei:
+Verwendete Produktionswerte:
 
 ```text
-<= 5 NM vom LISA rendezvous anchor
-und
-innerhalb +/- 1000 ft um FL250
+WIZARD normal transit: FL350 / 270 KIAS
+WIZARD optional fast:  FL350 / 290 KIAS
+APOC racetrack:        FL320 / 250 KIAS / 017T / 30 NM
+LISA AAR track:        FL250 / 270 KIAS / 340T / 20 NM
+MOE AAR track:         FL250 / 270 KIAS / 340T / 20 NM
+WIZARD LISA RV target: FL250 / 290 KIAS
 ```
 
-Es wird bewusst kein neuer, ungeprüfter Speed-Gate erfunden. Die Acceptance protokolliert tatsächliche LISA-IAS/TAS beim Ready-Zeitpunkt.
-
-## 9. Runtime-Implementierung
-
-Finaler branch-lokaler Controller:
+Gemeinsamer dedizierter AWACS-AAR-Anker:
 
 ```text
-scripts/air-operations/OMW_AWACS_Controller_FullLifecycle_V3.lua
+33.6233926368 N
+68.6395554105 E
 ```
 
-Der frühere `OMW_AWACS_Controller_FullLifecycle_V2.lua` bleibt als Branch-Entwicklungshistorie erhalten, wird vom finalen Foundation-Builder aber nicht mehr eingebunden.
+## 4. AAR-Zyklen
 
-Produktionsbundle:
+### Erster geplanter Zyklus – LISA
+
+Der bewährte V3-Pfad bleibt unverändert:
 
 ```text
-tools/build-awacs-foundation.ps1
--> mission/runtime/air-operations/OMW_AWACS_Foundation.lua
+65 % WIZARD fuel
+-> LISA pre-dispatch
+-> LISA on dedicated AWACS track
+-> LISA_READY
+-> Controller.RequestRefuel()
+-> FLIGHTGROUP:Refuel()
+-> Refueled
+-> APOC rejoin
 ```
 
-Finaler observer-only Lifecycle-Test:
+LISA:
 
 ```text
-tools/build-awacs-acceptance-4.ps1
--> mission/tests/awacs-external-lifecycle/dist/OMW_AWACS_Acceptance_4.lua
+Template: OMW_AAR_KC135_LISA
+Source: AL_UDEID
+FIR: DAVER
+FuelLow: 38 %
+Track: FL250 / 270 KIAS / 340T / 20 NM
 ```
 
-Acceptance 4 steuert keine physische Aktion. Sie beobachtet unter anderem WIZARD- und LISA-Höhe, IAS/TAS, Fuel, Service-State, AAR-Phase, LISA-ready, Refuel, Rejoin und Egress.
+### Zweiter geplanter Zyklus – MOE
 
-## 10. MOOSE-First-Grenze
+`OMW_AWACS_MOE_Relief.lua` ergänzt ausschließlich den zweiten Zyklus. Die funktionierende WIZARD-Routing-/Refuel-Logik wird nicht ersetzt.
 
-Verwendet werden weiterhin öffentliche beziehungsweise source-verifizierte MOOSE-Pfade:
+```text
+first AAR complete
+-> arm MOE second cycle
+-> next 65 % crossing
+-> MOE materialize
+-> same dedicated AWACS track
+-> MOE_READY
+-> Controller.RequestRefuel()
+-> FLIGHTGROUP:Refuel()
+-> Refueled
+-> MOE egress
+-> APOC rejoin
+```
+
+MOE:
+
+```text
+Template: OMW_AAR_KC135_MOE
+Source: MANAS
+FIR: PINAX
+FuelLow: 31 %
+Track: FL250 / 270 KIAS / 340T / 20 NM
+```
+
+Der Abschlusslauf bestätigt `AAR_REFUELED` mit `OMW_AAR_KC135_MOE#001`, `SECOND_CYCLE_COMPLETE` und den anschließenden APOC-Rejoin.
+
+## 5. Fuel-Policy
+
+```text
+65 % -> planned dedicated tanker pre-dispatch
+40 % -> fallback AAR trigger
+25 % -> visible off-map contingency floor
+```
+
+Die 40-%-Schwelle ist keine normale geplante AAR-Startschwelle.
+
+Die 25-%-Schwelle bleibt eine OMW-DCS-Contingency-Grenze und ist keine ungeprüfte reale E-3A-Landing-Fuel-Aussage.
+
+## 6. MOOSE-First-Vertrag
+
+Source-verifizierte Kernpfade:
 
 ```text
 SPAWN
@@ -257,35 +192,96 @@ FLIGHTGROUP:FindNearestTanker
 FLIGHTGROUP:Refuel
 FuelLow / FuelCritical / Refueled FSM callbacks
 PauseMission / UnpauseMission lifecycle
+AUFTRAG:NewTANKER
 ```
 
-Nicht eingeführt werden:
+Receiver-Ablauf:
+
+```text
+FLIGHTGROUP:Refuel(Coordinate)
+-> PauseMission()
+-> DCS TaskRefueling()
+-> Refueled FSM
+-> persistent APOC mission rejoin
+```
+
+Nicht verwendet:
 
 ```text
 MIST
-Native-DCS-Refuel-Ersatz
-Parallel-Contact-Controller
-MissionScripting.lua-Änderung
-undokumentierte SPAWN-Fuel-Mutation
+Native-DCS-Refuel-Parallelimplementation
+parallel contact controller
+ClearWaypoints live route surgery
+MissionScripting.lua changes
+undocumented SPAWN fuel mutation
 ```
 
-## 11. Offene Acceptance-Grenze
+## 7. Verworfenes V4-/AAR-Base-Retask-Experiment
 
-Vor technischer Abnahme des finalen Branch-Standes ist ein integrierter DCS-Lauf erforderlich. Zu beobachten sind mindestens:
+Der zwischenzeitliche Ansatz, LISA/MOE über ihre produktiven Standard-AAR-Tracks zu beziehen und anschließend live auf einen AWACS-Track umzurouten, ist verworfen.
+
+Begründung aus DCS:
 
 ```text
-external spawn / ROSIE ingress
-FL350 / 270 KIAS normal transit
-APOC FL320 / 250 KIAS
-15:30 service state without detour
-65 % LISA pre-dispatch
-LISA FL250 / 270 KIAS ready
-WIZARD dedicated-LISA rendezvous / DCS final join
-MOOSE Refueled
-APOC rejoin and sensor restore
-LISA deferred egress if FuelLow occurs during active receiver refuel
-23:30 or controlled requested egress
-ROSIE outbound / external handoff / exact-once strategic recredit
+production reserve track geometry pulled WIZARD away from APOC
+subsequent live route override did not establish the intended tanker mission reliably
 ```
 
-Bis dieser Lauf mit realer MIZ-, Bundle-, DCS-, MOOSE- und Log-Provenienz dokumentiert ist, bleibt die final reconciliierte Runtime `DCS_PENDING` und dieses Dokument `DRAFT`.
+Dieser Ansatz gehört nicht zur Produktionsbaseline und wird vom Base-Builder explizit durch das Verbot von `ClearWaypoints(` ausgeschlossen.
+
+## 8. Produktionsbundle `OMW_AWACS_Base.lua`
+
+Nach funktionalem Abschluss wird die bisherige Entwicklungsbezeichnung `Foundation` abgelöst.
+
+Produktionsartefakt:
+
+```text
+tools/build-awacs-base.ps1
+-> mission/runtime/air-operations/OMW_AWACS_Base.lua
+```
+
+Enthaltene Source-Komponenten:
+
+```text
+scripts/campaign/OMW_CampaignState.lua
+scripts/logistics/OMW_AirOpsInitialStock.lua
+scripts/logistics/OMW_AARStrategicStock.lua
+scripts/logistics/OMW_AirOpsCampaignStateInitializer.lua
+scripts/air-operations/OMW_AWACS_CampaignStateAdapter.lua
+scripts/air-operations/OMW_AWACS_Controller_FullLifecycle_V3.lua
+scripts/air-operations/OMW_AWACS_MOE_Relief.lua
+scripts/air-operations/OMW_AirOps_AWACS_Bootstrap.lua
+```
+
+`OMW_AWACS_Acceptance_4.lua` wird **nicht** in die Base aufgenommen.
+
+Die bisherige `tools/build-awacs-foundation.ps1` bleibt nur als Übergangs-/Kompatibilitätseinstieg und delegiert an den Base-Builder. Neue Missionen sollen ausschließlich `OMW_AWACS_Base.lua` laden.
+
+## 9. Lade- und Autoritätsgrenze
+
+Empfohlene Mission-Ladeordnung:
+
+```text
+Moose.lua
+shared CampaignState / required common foundations
+OMW_AAR_Base.lua
+OMW_AWACS_Base.lua
+other AirOps systems
+```
+
+Die AWACS-Base darf vorhandene gemeinsame strategische Daten nutzen, erzeugt aber keine zweite strategische Ressourcenautorität.
+
+Der dedizierte LISA-/MOE-AWACS-AAR-Pfad gehört zum validierten AWACS-Lifecycle. Die allgemeine `OMW_AAR_Base.lua` bleibt unabhängig für die übrige Tankerinfrastruktur zuständig; der verworfene Versuch, deren geografische Standardtracks als AWACS-Track zu verwenden, wird nicht wieder eingeführt.
+
+## 10. Produktivisierungs-Gate
+
+Die Source-Logik ist funktional in DCS validiert. Die Umbenennung zum generierten `OMW_AWACS_Base.lua` verändert Header und Bundle-Hash. Deshalb sind nach Erstellung noch erforderlich:
+
+```text
+local build of OMW_AWACS_Base.lua
+real Base SHA-256
+Lua 5.1 / CI syntax check
+short DCS load/smoke confirmation of the renamed artifact
+```
+
+Erst danach wird das neue Base-Artefakt als exakt DCS-geprüfter Produktionsstand dokumentiert.
