@@ -42,6 +42,7 @@ jobs:
           luac5.1 -p scripts/air-operations/OMW_AWACS_Controller_FullLifecycle.lua
           luac5.1 -p scripts/air-operations/OMW_AWACS_Controller_FullLifecycle_V2.lua
           luac5.1 -p scripts/air-operations/OMW_AWACS_Controller_FullLifecycle_V3.lua
+          luac5.1 -p scripts/air-operations/OMW_AWACS_MOE_Relief.lua
           luac5.1 -p scripts/air-operations/OMW_AirOps_AWACS_Bootstrap.lua
           luac5.1 -p mission/tests/awacs-external-lifecycle/src/02-awacs-flight-profile-acceptance.lua
           luac5.1 -p mission/tests/awacs-external-lifecycle/src/03-awacs-persistent-orbit-emission-acceptance.lua
