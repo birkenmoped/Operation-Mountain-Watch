@@ -1,18 +1,18 @@
 ---
 document_id: OMW-AWACS-ACCEPTANCE-5
-status: PLANNED
+status: DRAFT
+document_class: ACCEPTANCE_PLAN
+owning_policy: OMW-GOV-001
 authoritative_for:
   - E-3A DCS performance matrix test
   - AWACS altitude and IAS fuel-consumption evidence
-scenario_period:
+scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
+source_branch: agent/awacs-external-lifecycle-foundation
+source_commit: GIT_HISTORY
 supersedes:
 superseded_by:
-source_branch: agent/awacs-external-lifecycle-foundation
-source_commit: BRANCH_HEAD
 validated_in_dcs: false
-document_class: ACCEPTANCE_TEST
-owning_policy: OMW-GOV-MOOSE-FIRST
 ---
 
 # AWACS Acceptance 5 – E-3A Performance Matrix
