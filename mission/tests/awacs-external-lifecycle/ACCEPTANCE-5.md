@@ -12,7 +12,7 @@ source_branch: agent/awacs-external-lifecycle-foundation
 source_commit: GIT_HISTORY
 supersedes:
 superseded_by:
-validated_in_dcs: false
+validated_in_dcs: true
 ---
 
 # AWACS Acceptance 5 – E-3A Performance Matrix
@@ -148,7 +148,7 @@ OMW_AWACS_Acceptance_5.lua
 
 Acceptance 5 startet sich selbst. Es werden keine Produktions-AWACS-Foundation, kein AAR-Controller, keine AWACS-Aufgabe, kein CampaignState und keine weiteren Acceptance-Skripte für diesen isolierten Performance-Lauf benötigt.
 
-## DCS-Versuch 2026-08-24 – nicht auswertbar
+## DCS-Versuch 2026-08-24 – erster Start nicht auswertbar
 
 Der erste reale DCS-Start von Acceptance 5 erzeugte keine Performance-Evidenz. DCS brach das Laden des generierten Bundles unmittelbar in Zeile 1 ab:
 
@@ -160,17 +160,163 @@ Die hochgeladene Test-MIZ bestätigte als Ursache ein UTF-8-BOM `EF BB BF` vor d
 
 Der Builder wurde deshalb auf explizites `System.Text.UTF8Encoding(false)` umgestellt und prüft das generierte Bundle zusätzlich binär auf ein unerwartetes BOM. Dieser Versuch ist ausdrücklich **kein DCS-PASS und kein Performance-Ergebnis**; die 15 Profile wurden nicht gestartet.
 
-## Acceptance-Evidenz
+## DCS-Versuch 2026-08-24 – vollständiger Multi-Test
 
-Ein auswertbarer Lauf benötigt mindestens:
+Der zweite Lauf verwendete das BOM-freie Acceptance-5-Bundle.
 
-1. Branch und Commit;
-2. `OMW_AWACS_Acceptance_5.lua` SHA256;
-3. `Moose.lua` SHA256;
-4. MIZ SHA256 und internal-mission SHA256;
-5. DCS-Version;
-6. vollständiges `dcs.log`;
-7. `debrief.log`, soweit erzeugt;
-8. `ALL_COMPLETE profiles=15` oder dokumentierte Einzel-FAILs.
+```text
+Branch:                  agent/awacs-external-lifecycle-foundation
+Runtime source HEAD:     9a3738a2f974d2e895249b69359e17684cc0660e
+Acceptance-5 bundle SHA: 0faf6503a5ef465b8cd613049065c6389cca58bd4cc0b4f0ecb8b243c88a6c60
+Moose.lua SHA-256:       e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
+MOOSE commit:            73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+DCS:                     2.9.28.26385 MT
+Profiles:                15
+Stabilization:           20 NM
+Measurement:             200 NM per profile
+Result marker:           ALL_COMPLETE profiles=15
+```
 
-Erst nach realem DCS-Lauf darf dieses Dokument auf einen validierten Acceptance-Status gehoben werden.
+MIZ-SHA256 und internal-mission-SHA256 für diesen zweiten Lauf liegen noch nicht als reale Konsolenausgabe vor. Deshalb bleibt das Dokument trotz erfolgreichem DCS-Lauf `DRAFT` und wird noch nicht zu `ACCEPTED_TECHNICAL_BASELINE` hochgestuft.
+
+Der Projektinhaber beobachtete zusätzlich, dass alle 15 Flugzeuge ihren jeweiligen Endpunkt physisch erreichten und erst danach Kurs und Höhe änderten. Das Verhalten nach dem Endpunkt liegt außerhalb des 200-NM-Messfensters und beeinflusst die bereits geschriebenen `SUMMARY`-Werte nicht.
+
+### Vollständige Ergebnis-Matrix
+
+| Höhe | Soll IAS | Ø IAS | Ø TAS | Fuel Start | Fuel Ende | Fuel / 200 NM | Fuel / 100 NM | Fuel / h | Bewertung |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|---|
+| FL250 | 230 | 230.0 | 327.7 | 76.204 % | 68.358 % | 7.846 % | 3.923 % | 12.333 % | STABLE |
+| FL250 | 250 | 250.0 | 356.2 | 76.216 % | 68.503 % | 7.713 % | 3.856 % | 13.221 % | STABLE |
+| FL250 | 270 | 270.0 | 384.7 | 76.184 % | 67.480 % | 8.704 % | 4.352 % | 16.068 % | STABLE |
+| FL250 | 290 | 290.0 | 413.2 | 76.075 % | 66.546 % | 9.529 % | 4.765 % | 19.057 % | STABLE |
+| FL250 | 310 | 310.0 | 441.7 | 75.984 % | 65.646 % | 10.338 % | 5.169 % | 22.151 % | STABLE |
+| FL320 | 230 | 230.0 | 355.1 | 76.275 % | 68.824 % | 7.450 % | 3.725 % | 12.710 % | STABLE |
+| FL320 | 250 | 250.0 | 386.0 | 76.238 % | 68.271 % | 7.968 % | 3.984 % | 14.784 % | STABLE |
+| FL320 | 270 | 270.0 | 416.9 | 76.176 % | 67.569 % | 8.607 % | 4.303 % | 17.308 % | STABLE |
+| FL320 | 290 | 290.0 | 447.8 | 76.101 % | 67.122 % | 8.979 % | 4.490 % | 19.471 % | STABLE |
+| FL320 | 310 | 310.0 | 478.6 | 76.001 % | 65.753 % | 10.247 % | 5.124 % | 23.798 % | STABLE |
+| FL350 | 230 | 231.1 | 368.7 | 76.233 % | 68.729 % | 7.504 % | 3.752 % | 13.307 % | STABLE |
+| FL350 | 250 | 250.0 | 398.7 | 76.186 % | 68.319 % | 7.867 % | 3.934 % | 15.144 % | STABLE |
+| FL350 | 270 | 270.0 | 430.6 | 76.179 % | 67.856 % | 8.323 % | 4.162 % | 17.318 % | STABLE |
+| FL350 | 290 | 290.0 | 462.5 | 76.138 % | 67.171 % | 8.967 % | 4.484 % | 20.049 % | STABLE |
+| FL350 | 310 | 296.6 | 473.0 | 76.093 % | 66.556 % | 9.537 % | 4.769 % | 21.866 % | MARGINAL |
+
+Der einzige nicht als `STABLE` klassifizierte Fall ist `FL350 / 310 KIAS`. Die E-3A erreichte dort im Mittel nur 296.6 KIAS, maximal 13.4 KIAS unter Soll. `FL350 / 290 KIAS` wurde dagegen exakt gehalten.
+
+### Kernaussagen aus dem Multi-Test
+
+1. **FL350 ist für den sichtbaren Transit technisch tragfähig.** `270 KIAS` und `290 KIAS` wurden beide stabil gehalten. `310 KIAS` liegt im getesteten Gross-Weight-Bereich bereits am Leistungsrand und wird nicht als Produktions-Sollwert empfohlen.
+2. **Fuel pro Strecke und Fuel pro Stunde müssen getrennt bewertet werden.** Für Transit ist `Fuel / 100 NM` maßgeblich; für Station-Time ist `Fuel / h` maßgeblich.
+3. **FL320 / 230 KIAS** ist der niedrigste gemessene Streckenverbrauch der gesamten Matrix (`3.725 % / 100 NM`), während **FL250 / 230 KIAS** den niedrigsten gemessenen Stundenverbrauch (`12.333 % / h`) liefert. Acceptance 5 ist jedoch ein Geradeausflugtest und beweist keine Racetrack-Turn-Stall-Margin.
+4. **FL320 / 250 KIAS** wurde stabil gehalten und bildet einen sinnvollen Engineering-Kompromiss für den AWACS-Racetrack: mehr Speed-Margin als 230 KIAS, aber deutlich geringerer Fuel-Burn als 270/290/310 KIAS.
+5. **FL250 / 270 KIAS** und **FL250 / 290 KIAS** wurden beide stabil gehalten und bilden eine geeignete DCS-Basis für ein getrenntes AAR-Contact- und Rendezvous-Profil.
+
+## Diskussion und daraus abgeleitete OMW-Engineering-Baseline
+
+Die nach dem Multi-Test geführte Auswertung wurde ausdrücklich von nicht belegten Hersteller- oder Stall-Aussagen getrennt. Acceptance 5 beweist nur das tatsächlich beobachtete DCS-Verhalten im 200-NM-Geradeausflug bei dem verwendeten Template-Gewicht.
+
+### Transit
+
+Zwei technisch sinnvolle FL350-Profile bleiben dokumentiert:
+
+```text
+ECONOMICAL NORMAL TRANSIT
+FL350 / 270 KIAS
+~430.6 KTAS
+4.162 % Fuel / 100 NM
+17.318 % Fuel / h
+
+FAST NORMAL TRANSIT
+FL350 / 290 KIAS
+~462.5 KTAS
+4.484 % Fuel / 100 NM
+20.049 % Fuel / h
+```
+
+`FL350 / 310 KIAS` wird verworfen. Für die weitere OMW-Implementierung ist `FL350 / 270 KIAS` die bevorzugte normale Transit-Baseline; `FL350 / 290 KIAS` bleibt als getestete Fast-Transit-Option dokumentiert.
+
+### AWACS-Racetrack
+
+```text
+OMW ENGINEERING BASELINE
+FL320 / 250 KIAS
+~386.0 KTAS
+3.984 % Fuel / 100 NM
+14.784 % Fuel / h
+```
+
+Die Auswahl von 250 statt 230 KIAS ist eine Engineering-Entscheidung zur zusätzlichen Speed-Margin für Racetrack-Turns und den höheren Gross-Weight-Zustand nach AAR. Acceptance 5 selbst enthält keine Kurven- oder Stall-Grenzprüfung; Aussagen über konkrete Stall-Margins dürfen daraus nicht abgeleitet werden.
+
+### Air-to-Air Refuelling
+
+Der Projektinhaber stellte zusätzlich einen receiver-spezifischen AAR-Tabellenausschnitt für `E-3A/D/F` bereit. Dort wird als Optimum `FL250 / 275 KIAS / M0.66` und als Receiver-Rendezvous-IAS `310 KIAS` ausgewiesen. Diese externe Referenz wird nicht als Zwang interpretiert, WIZARD bis an den oberen Rand seiner DCS-Leistungsfähigkeit zu betreiben.
+
+Die OMW-Engineering-Baseline nutzt daher die in Acceptance 5 stabil bestätigten konservativeren Werte:
+
+```text
+LISA / AAR CONTACT
+FL250 / 270 KIAS
+
+WIZARD RENDEZVOUS
+FL250 / 290 KIAS
+
+Closure margin
++20 KIAS
+
+PRE-CONTACT
+290 -> 270 KIAS
+```
+
+Damit wird Rendezvous-Speed bewusst von Contact-/Transfer-Speed getrennt. Das korrigiert das zuvor beobachtete unplausible Verhalten, bei dem WIZARD einem zu schnellen LISA-Track lange hinterherfliegen musste.
+
+### Reserve-/Bingo-Diskussion
+
+Die bestehende Fuel-Orchestrierung bleibt vorerst:
+
+```text
+65 %  LISA pre-dispatch
+40 %  fallback AAR trigger
+25 %  critical contingency / no more waiting without established refuel path
+```
+
+Acceptance 5 liefert für `FL350 / 270 KIAS` einen gemessenen Stundenverbrauch von `17.318 % / h`. Eine 45-Minuten-Reserve entspricht rein rechnerisch rund `13.0 %` Fuel-Fraction im stabilisierten Geradeausflug. Zusätzlich sind Rückflugstrecke, Climb/Acceleration, Routing-/Diversion-Allowance und eine Mindestankunfts-/Landing-Reserve zu berücksichtigen.
+
+Daraus folgt ausdrücklich **keine** neue validierte Bingo-Formel. Die diskutierte Größenordnung bestätigt lediglich, dass `25 %` als Critical-Egress-Schwelle nicht nach unten korrigiert werden sollte, bevor die für OMW/Tanker bereits verwendete Reserve- und Landing-Fuel-Systematik vollständig abgeglichen ist.
+
+Eine brauchbare Arbeitszerlegung für die weitere Fuel-Policy ist:
+
+```text
+fuel to recovery point
++ diversion allowance
++ 45 min final reserve
++ landing minimum
+= operational bingo / critical recovery requirement
+```
+
+Die konkrete Prozentaufteilung bleibt `DCS_PENDING` beziehungsweise `SOURCE_RECONCILIATION_PENDING` und darf nicht als reale E-3A-Handbuchvorgabe ausgegeben werden.
+
+## Acceptance-Evidenz und Statusgrenze
+
+Der Lauf bestätigt für den dokumentierten DCS-/MOOSE-/Bundle-Stand:
+
+```text
+15/15 profiles completed
+14 profiles STABLE
+1 profile MARGINAL: FL350 / 310 KIAS
+runtime-generated 20 NM stabilization + 200 NM measurement geometry works
+MOOSE IAS->TAS route calibration and independent IAS/TAS observation work in DCS
+```
+
+Nicht bestätigt werden durch Acceptance 5:
+
+```text
+Racetrack turn performance / stall margin
+post-AAR heavy-weight orbit behavior
+real E-3A certified performance limits
+real-world bingo/landing reserve values
+production AWACS lifecycle with the new selected speeds
+LISA AAR lifecycle at FL250 / 270 KIAS
+WIZARD rendezvous at FL250 / 290 KIAS
+```
+
+Für eine Hochstufung zu `ACCEPTED_TECHNICAL_BASELINE` fehlen weiterhin die realen SHA-256-Werte der tatsächlich getesteten zweiten MIZ und ihrer internal `mission`-Datei. Die Produktionsänderung der AWACS-/LISA-Geschwindigkeiten benötigt anschließend einen eigenen vollständigen Lifecycle-/AAR-DCS-Lauf.
