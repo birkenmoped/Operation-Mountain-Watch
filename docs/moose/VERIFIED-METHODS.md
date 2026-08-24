@@ -10,15 +10,15 @@ authoritative_for:
   - COMMANDER start and selection sequence
   - source-reviewed WAREHOUSE parking method boundaries
   - AAR runtime method evidence for the exact documented acceptance provenance
-  - AWACS routing lifecycle method evidence for the exact documented Acceptance-1 provenance
+  - AWACS routing and fuel-driven AAR method evidence for the exact documented provenance
   - documented validation scope and limitations
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
   - method register without lifecycle timing, vertical-option and COMMANDER details
 superseded_by:
-source_branch: agent/kandahar-foundation-july-2011-rebuild
-source_commit: GIT_HISTORY
+source_branch: agent/awacs-external-lifecycle-foundation
+source_commit: PENDING_MERGE
 validated_in_dcs: partial
 ---
 
@@ -534,7 +534,6 @@ Result: PASS / owner visual acceptance
 
 Provenienz und Einschränkungen: [Acceptance 4 runtime evidence](../../mission/tests/army-ground-foundation/results/2026-08-19-acceptance-4-runtime.md). Gültig nur für MOOSE commit 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54, die zitierte Mission und den mobilen Fenty-Scope.
 
-
 ## Addendum 2026-08-20 – ARMY Ground Acceptance 6
 
 Der folgende Runtime-Nachweis ist auf den exakten Ground-Return-Scope beschränkt:
@@ -650,22 +649,55 @@ Result:                    PASS for routing lifecycle scope
 | `AUFTRAG:Cancel()` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Kontrollierter Acceptance-Egress führte aus APOC in den vorgesehenen ROSIE-Outbound-/External-Handoff-Pfad. |
 | `OPSGROUP/FLIGHTGROUP:Despawn(...)` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Despawn erfolgte erst nach `FIR_EGRESS_PASSED` und Erreichen des externen Handoff-Bereichs; der Controller meldete `DESPAWN_AND_RECREDIT`. |
 
-### Grenzen
+### Historische Grenzen dieses Acceptance-1-Nachweises
 
-Nicht durch Acceptance 1 belegt:
-
-```text
-continuous altitude/speed compliance
-actual APOC 017T / 30-NM racetrack geometry
-player-side WIZARD / 357.300 MHz service usability
-fuel calibration
-six-hour station cycle
-scheduled relief / physical handover
-loss settlement
-restart reconciliation
-FLIGHTGROUP:Refuel(...) or tanker-selection policy
-```
-
-`FLIGHTGROUP:Refuel(...)` bleibt für AWACS `SOURCE_REVIEWED / DCS_PENDING`; aus dem Acceptance-1-PASS darf keine automatische nearest-tanker-Policy abgeleitet werden.
+Die damalige Aussage, `FLIGHTGROUP:Refuel(...)` sei für AWACS noch `SOURCE_REVIEWED / DCS_PENDING`, gilt nur für Acceptance 1 und wird für den aktuellen Produktionsscope durch das Addendum vom 24.08.2026 superseded.
 
 Vollständige Runtime-Evidenz: [`AWACS Acceptance 1`](../../mission/tests/awacs-external-lifecycle/ACCEPTANCE.md) und [`Routing Lifecycle Runtime Evidence`](../../mission/tests/awacs-external-lifecycle/results/2026-08-23-routing-lifecycle-acceptance-1.md).
+
+## Addendum 2026-08-24 – AWACS Full-Lifecycle Refuel Evidence
+
+Der aktuelle Produktionsscope verwendet den wiederhergestellten V3-WIZARD-Pfad und die minimale MOE-Erweiterung. Die folgenden Methoden wurden im vollständigen Source-Lifecycle praktisch beobachtet:
+
+```text
+Source branch: agent/awacs-external-lifecycle-foundation
+Source commit: 2bda2f066ce1ad11aeed5eb7b98b294d2e399e2d
+DCS: 2.9.28.26385 MT
+MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+Moose.lua SHA-256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
+```
+
+| Methode / Pfad | Status | Exakt bestätigter AWACS-Umfang |
+|---|---|---|
+| `FLIGHTGROUP:GetFuelMin()` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | WIZARD-Fuelzustand steuerte die geplante LISA-/MOE-Vorbereitung im dokumentierten Source-Lifecycle. |
+| `FLIGHTGROUP:SetFuelLowRTB(false)` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | WIZARD sowie die dedizierten Tanker blieben unter OMW-Lifecycle-Kontrolle statt automatischem FuelLow-RTB. |
+| `FLIGHTGROUP:SetFuelLowThreshold(...)` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | LISA 38 % und MOE 31 % wurden im dedizierten Tanker-Lifecycle verwendet. |
+| `FLIGHTGROUP:Refuel(Coordinate)` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | WIZARD führte den MOOSE/DCS-Refuel-Task sowohl mit LISA als auch mit MOE erfolgreich bis zum `Refueled`-FSM-Ereignis aus. |
+| `FLIGHTGROUP OnAfterRefueled(...)` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Nach beiden Tankzyklen wurde der Refuel-Abschluss erkannt und der APOC-Rejoin eingeleitet. |
+| `AUFTRAG:NewORBIT_RACETRACK(...)` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Persistenter APOC-Orbit wurde als vom Sensor-/Servicezustand getrennte physische Mission verwendet und nach AAR wieder aufgenommen. |
+| `AUFTRAG:NewTANKER(...)` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Dedizierte LISA- und MOE-AWACS-Tankertracks auf derselben FL250/270-KIAS-Geometrie wurden verwendet. |
+| `AUFTRAG:Cancel()` / MissionCancel-Rejoin-Pfad | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Tanker-Egress und WIZARD-Service-Ende wurden kontrolliert aus den laufenden Missionen herausgeführt. |
+| `COORDINATE:GetIntermediateCoordinate(...)` / `Get2DDistance(...)` / `HeadingTo(...)` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | ROSIE-, APOC-, DAVER-/PINAX- und dedizierte AAR-Anfluggeometrie wurden im dokumentierten Lifecycle verwendet. |
+| `SCHEDULER:New(...)` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | 5-Sekunden-Lifecycle-/Fuel-Monitoring koordinierte die AWACS-Abläufe ohne Frame-Scan. |
+
+Beobachteter Ablauf:
+
+```text
+LISA_READY
+-> WIZARD Refuel
+-> Refueled
+-> APOC rejoin / sensor restore
+-> SECOND_CYCLE_ARMED
+-> MOE_READY
+-> WIZARD Refuel
+-> Refueled
+-> SECOND_CYCLE_COMPLETE
+-> APOC rejoin / sensor restore
+-> final ROSIE egress / external handoff
+```
+
+Provenienzgrenze: Die exakten MIZ-/internal-`mission`-Hashes des vollständigen Source-Lifecycle-Laufs wurden nicht nachträglich rekonstruiert. Deshalb wird dieser Lauf nicht als neuer `ACCEPTED_TECHNICAL_BASELINE`-Metadatensatz ausgegeben. Das daraus gebaute `OMW_AWACS_Base.lua`-Packaging wurde separat mit Base SHA `c4e2ab13c2a3be9165993bb4f92bb1b81e34cddfd9dee0e0e7139a12a97ca213` in `OMW_Template_v20.miz` smoke-validiert; MIZ SHA `22220f7c7686228897ac6e7fc0f7bb34ce068cc929a6b7fcf08213f8f5b2be0c`, internal mission SHA `ed02eab1ffc4c353ee16f929d44f3c55fe28093b78ea80508f2fa71fd692775f`.
+
+Nicht aus diesem Nachweis abzuleiten sind andere MOOSE-Versionen, andere Receiver-Typen oder eine allgemeine automatische Tankerwahl außerhalb des dokumentierten WIZARD/LISA-/MOE-Pfads.
+
+Details: [`OMW-MOOSE-AWACS-FUEL-DRIVEN-AAR`](AWACS-FUEL-DRIVEN-AAR-LIFECYCLE.md) und [`AWACS Acceptance 4`](../../mission/tests/awacs-external-lifecycle/ACCEPTANCE-4.md).
