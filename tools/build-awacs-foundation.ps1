@@ -8,7 +8,7 @@ $repoRoot = Split-Path -Parent $PSScriptRoot
 $distDir = Join-Path $repoRoot 'mission\runtime\air-operations'
 $outputFile = Join-Path $distDir 'OMW_AWACS_Foundation.lua'
 
-$builderVersion = 'OMW-AIROPS-AWACS-FOUNDATION-7'
+$builderVersion = 'OMW-AIROPS-AWACS-FOUNDATION-8'
 $mooseCommit = '73d3ed119cd9e7e3f2cfcabbaa34513d30529b54'
 $mooseSha256 = 'e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915'
 
@@ -18,7 +18,7 @@ $files = [ordered]@{
   OffMapStrategicStock = Join-Path $repoRoot 'scripts\logistics\OMW_AARStrategicStock.lua'
   CampaignStateInitializer = Join-Path $repoRoot 'scripts\logistics\OMW_AirOpsCampaignStateInitializer.lua'
   Adapter = Join-Path $repoRoot 'scripts\air-operations\OMW_AWACS_CampaignStateAdapter.lua'
-  Controller = Join-Path $repoRoot 'scripts\air-operations\OMW_AWACS_Controller_FullLifecycle_V2.lua'
+  Controller = Join-Path $repoRoot 'scripts\air-operations\OMW_AWACS_Controller_FullLifecycle_V3.lua'
   Bootstrap = Join-Path $repoRoot 'scripts\air-operations\OMW_AirOps_AWACS_Bootstrap.lua'
 }
 
@@ -42,14 +42,20 @@ $requiredMarkers = @(
   @{ File = 'Controller'; Marker = 'AREA_NAME = "APOC"' },
   @{ File = 'Controller'; Marker = 'FREQUENCY_MHZ = 357.300' },
   @{ File = 'Controller'; Marker = 'TRANSIT_ALTITUDE_FT = 35000' },
-  @{ File = 'Controller'; Marker = 'TRANSIT_SPEED_KT = 440' },
-  @{ File = 'Controller'; Marker = 'SPAWN_INITIAL_SPEED_KT = 440' },
+  @{ File = 'Controller'; Marker = 'TRANSIT_IAS_KT = 270' },
+  @{ File = 'Controller'; Marker = 'FAST_TRANSIT_IAS_KT = 290' },
+  @{ File = 'Controller'; Marker = 'TRACK_ALTITUDE_FT = 32000' },
+  @{ File = 'Controller'; Marker = 'TRACK_SPEED_KIAS = 250' },
+  @{ File = 'Controller'; Marker = 'AAR_RENDEZVOUS_ALTITUDE_FT = 25000' },
+  @{ File = 'Controller'; Marker = 'AAR_RENDEZVOUS_IAS_KT = 290' },
+  @{ File = 'Controller'; Marker = 'LISA_TRACK_ALTITUDE_FT = 25000' },
+  @{ File = 'Controller'; Marker = 'LISA_TRACK_SPEED_KIAS = 270' },
   @{ File = 'Controller'; Marker = 'EXPECTED_SPAWN_FUEL_PCT = 77' },
   @{ File = 'Controller'; Marker = 'LISA_PREDISPATCH_FUEL_PCT = 65' },
   @{ File = 'Controller'; Marker = 'AAR_TRIGGER_FUEL_PCT = 40' },
   @{ File = 'Controller'; Marker = 'AAR_CRITICAL_FUEL_PCT = 25' },
-  @{ File = 'Controller'; Marker = 'LISA_TRACK_ALTITUDE_FT = TRACK_ALTITUDE_FT' },
-  @{ File = 'Controller'; Marker = 'LISA_TRACK_SPEED_KT = 300' },
+  @{ File = 'Controller'; Marker = 'UTILS.IasToTas' },
+  @{ File = 'Controller'; Marker = 'SetDefaultSpeed(runtime.aarRendezvousRouteSpeedKt)' },
   @{ File = 'Controller'; Marker = 'LISA_READY_ON_RENDEZVOUS' },
   @{ File = 'Controller'; Marker = 'LISA_EGRESS_DEFERRED' },
   @{ File = 'Controller'; Marker = 'AUFTRAG:NewORBIT_RACETRACK' },
@@ -118,18 +124,20 @@ $header = @"
 -- Strategic source: OFFMAP_AL_DHAFRA.
 -- Route: external materialization FL350 -> ROSIE FL350 -> 30 NM late approach -> APOC FL320.
 -- Spawn fuel contract: approximately 77 percent in the Mission Editor template; no undocumented SPAWN fuel mutation.
--- Physical station: one persistent APOC AUFTRAG racetrack; no DCS AWACS fighter-control task is required.
+-- Physical station: persistent APOC AUFTRAG racetrack at FL320 / 250 KIAS; no DCS AWACS fighter-control task is required.
 -- Service: WIZARD, 357.300 MHz AM, 1530-2330 local (1100Z-1900Z).
--- Station: FL320, 300 KT, 017T, 30 NM leg.
--- Visible transfer: FL350 / 440 KT.
--- Fuel policy: LISA pre-dispatch <=65 percent; once LISA is ready at FL320/300 KT WIZARD begins AAR immediately.
--- Fallback fuel policy: <=40 percent requires AAR with nearest compatible tanker fallback; <=25 percent without an established path triggers off-map contingency.
--- Refuel policy: MOOSE FuelLow event + MOOSE compatible-tanker discovery + MOOSE Refuel execution.
--- Dedicated LISA is preferred once established at the AWACS rendezvous; LISA FuelLow egress is deferred during active WIZARD AAR.
--- Pinned MOOSE SetFuelLowRefuel automatic 50-NM search is intentionally disabled because it cannot express that OMW policy.
+-- Visible normal transfer: FL350 / 270 KIAS target, converted with UTILS.IasToTas for MOOSE route speed.
+-- Optional fast transfer: FL350 / 290 KIAS target; not selected automatically.
+-- Dedicated LISA AAR track/contact: FL250 / 270 KIAS.
+-- Dedicated-LISA WIZARD rendezvous route: FL250 / 290 KIAS target before MOOSE FLIGHTGROUP:Refuel().
+-- Final join/contact: DCS refuelling-task controlled; no parallel native receiver controller.
+-- Fuel policy: LISA pre-dispatch <=65 percent; LISA-ready begins planned AAR immediately.
+-- Fallback fuel policy: <=40 percent seeks a compatible tanker; <=25 percent without an established path triggers visible off-map contingency.
+-- LISA FuelLow egress is deferred during active WIZARD AAR.
+-- Pinned MOOSE SetFuelLowRefuel automatic 50-NM search is disabled because it cannot express the OMW selection policy.
 -- MOOSE automatic Afghanistan RTB on FuelLow/FuelCritical is disabled.
--- Egress: service closes at 2330 local -> explicit FL350/440 KT direct route to ROSIE -> external handoff/despawn.
--- DCS validation: revised LISA-ready lifecycle requires Acceptance 4.
+-- Egress: service closes at 2330 local -> FL350 / 270 KIAS target -> ROSIE -> external handoff/despawn.
+-- DCS validation: final reconciled lifecycle requires the integrated Acceptance 4 rerun.
 -- No automated MIZ mutation.
 -- MOOSE-Commit: $mooseCommit
 -- Moose.lua-SHA256: $mooseSha256
@@ -163,6 +171,11 @@ foreach ($pattern in $forbiddenPatterns) {
 
 [System.IO.File]::WriteAllText($outputFile, $bundle, [System.Text.UTF8Encoding]::new($false))
 
+$bytes = [System.IO.File]::ReadAllBytes($outputFile)
+if ($bytes.Length -ge 3 -and $bytes[0] -eq 0xEF -and $bytes[1] -eq 0xBB -and $bytes[2] -eq 0xBF) {
+  throw 'Generated AWACS foundation unexpectedly contains a UTF-8 BOM.'
+}
+
 Write-Host "Built: $outputFile"
 Write-Host "BuilderVersion: $builderVersion"
 Write-Host "SourceCommitUtc: $sourceCommitUtc"
@@ -174,12 +187,11 @@ Write-Host 'PrimaryArea: APOC'
 Write-Host 'Callsign: WIZARD'
 Write-Host 'FrequencyMHzAM: 357.300'
 Write-Host 'SpawnAltitudeFt: 35000'
-Write-Host 'SpawnInitialSpeedKt: 440'
+Write-Host 'TransitTargetIASKt: 270'
+Write-Host 'FastTransitTargetIASKt: 290'
 Write-Host 'ExpectedSpawnFuelPct: 77'
-Write-Host 'TransitAltitudeFt: 35000'
-Write-Host 'TransitSpeedKt: 440'
 Write-Host 'TrackAltitudeFt: 32000'
-Write-Host 'TrackSpeedKt: 300'
+Write-Host 'TrackSpeedKIAS: 250'
 Write-Host 'TrackHeadingTrueDeg: 17'
 Write-Host 'TrackLegNm: 30'
 Write-Host 'LateApproachNm: 30'
@@ -189,8 +201,11 @@ Write-Host 'ServiceWindowSec: 28800'
 Write-Host 'PersistentOrbit: true'
 Write-Host 'AWACSMissionTaskUsed: false'
 Write-Host 'LisaPredispatchFuelPct: 65'
-Write-Host 'LisaTrackAltitudeFt: 32000'
-Write-Host 'LisaTrackSpeedKt: 300'
+Write-Host 'LisaTrackAltitudeFt: 25000'
+Write-Host 'LisaTrackSpeedKIAS: 270'
+Write-Host 'WizardAARRendezvousAltitudeFt: 25000'
+Write-Host 'WizardAARRendezvousTargetIASKt: 290'
+Write-Host 'FinalContactSpeedDCSControlled: true'
 Write-Host 'LisaReadyImmediateAAR: true'
 Write-Host 'LisaFuelLowEgressDeferredDuringActiveAAR: true'
 Write-Host 'AARTriggerFuelPct: 40'
@@ -202,6 +217,7 @@ Write-Host 'FuelLowEventDrivenAAR: true'
 Write-Host 'AutomaticNearestTankerFallback: true'
 Write-Host 'DedicatedLisaPredispatch: true'
 Write-Host 'DCSValidatedFullLifecycle: false'
+Write-Host 'Utf8Bom: false'
 Write-Host 'MizMutation: false'
 Write-Host "MOOSECommit: $mooseCommit"
 Write-Host "MooseLuaSHA256: $mooseSha256"
