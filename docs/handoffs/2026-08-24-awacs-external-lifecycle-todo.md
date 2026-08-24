@@ -12,224 +12,157 @@ supersedes:
 superseded_by:
 source_branch: agent/awacs-external-lifecycle-foundation
 source_commit: PENDING_MERGE
-validated_in_dcs: false
+validated_in_dcs: true
 ---
 
-# AWACS External Lifecycle – finaler Abschlussstand
+# AWACS External Lifecycle – Produktivisierung zu `OMW_AWACS_Base.lua`
 
-## 1. Branch und Ziel
+## 1. Aktueller Branch
 
 ```text
 Branch: agent/awacs-external-lifecycle-foundation
 PR: #121 – Stage external AWACS lifecycle foundation
-Status: Draft bis zum finalen DCS-/Provenienz-Gate
-```
-
-Ziel:
-
-```text
-OFFMAP_AL_DHAFRA
--> sichtbare externe WIZARD-Materialisierung
--> ROSIE ingress
--> FL350 / 270 KIAS normal transit
--> APOC FL320 / 250 KIAS persistent racetrack
--> zeitgesteuerter Sensorservice
--> 65 % LISA pre-dispatch
--> LISA FL250 / 270 KIAS AAR track
--> WIZARD FL250 / 290 KIAS dedicated-LISA rendezvous route
--> MOOSE Refuel / DCS final join-contact
--> APOC rejoin
--> Service-Ende-Egress
--> ROSIE outbound
--> external handoff
--> despawn / exact-once strategic recredit
-```
-
-## 2. Maßgebliche Regeln
-
-```text
-AGENTS.md
-docs/00-project-governance.md
-docs/26-moose-first-development-policy.md
-docs/DOCUMENT-METADATA-POLICY.md
-```
-
-MOOSE-Stand:
-
-```text
-release: 2.9.18
-commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+Getesteter Source-Stand: 2bda2f066ce1ad11aeed5eb7b98b294d2e399e2d
+DCS: 2.9.28.26385 MT
+MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
 Moose.lua SHA-256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
 ```
 
-## 3. Erledigte Entwicklung
+## 2. Funktionaler DCS-Abschluss
 
-### Stage A – Acceptance-5-Auswertung
-
-Erledigt:
-
-- [x] 15 E-3A-Profile vollständig in DCS geflogen.
-- [x] `ALL_COMPLETE profiles=15`.
-- [x] 14 `STABLE`, `FL350 / 310 KIAS` `MARGINAL`.
-- [x] Runtime-Engineering-Profil aus realen DCS-Messwerten abgeleitet.
-- [x] DCS-Version des erfolgreichen Laufs dokumentiert: `2.9.28.26385 MT`.
-- [x] ausgeführter Runtime-Source-Stand und Acceptance-5-Bundle-SHA dokumentiert.
-
-Noch reine Provenienzergänzung aus der **real ausgeführten** MIZ:
-
-- [ ] Acceptance-5-MIZ SHA-256.
-- [ ] Acceptance-5-internal-`mission` SHA-256.
-
-Ohne diese beiden Werte bleibt Acceptance 5 gemäß Governance `DRAFT`; sie werden nicht geraten.
-
-### Stage B – finale WIZARD-Flugprofile
-
-Erledigt:
-
-- [x] normal transit `FL350 / 270 KIAS`.
-- [x] optional fast transit `FL350 / 290 KIAS` dokumentiert, nicht automatisch ausgewählt.
-- [x] APOC `FL320 / 250 KIAS`.
-- [x] Spawn-/Waypoint-Speed auf dieselbe `UTILS.IasToTas()`-Konvertierung wie Acceptance 5 umgestellt.
-- [x] normaler Egress ebenfalls `FL350 / 270 KIAS`.
-
-Finaler Controller:
-
-```text
-scripts/air-operations/OMW_AWACS_Controller_FullLifecycle_V3.lua
-```
-
-`OMW_AWACS_Controller_FullLifecycle_V2.lua` bleibt nur als Branch-Entwicklungshistorie erhalten und wird vom finalen Foundation-Builder nicht mehr verwendet.
-
-### Stage C – LISA/AAR-Reconciliation
-
-Erledigt:
-
-- [x] LISA AAR track auf `FL250 / 270 KIAS` gesetzt.
-- [x] WIZARD dedicated-LISA rendezvous target auf `FL250 / 290 KIAS` gesetzt.
-- [x] LISA-ready-Altitude-Gate auf FL250 reconciliert.
-- [x] MOOSE-Source für `SetDefaultSpeed`, `AddWaypoint`, `Refuel`, `PauseMission`, `UnpauseMission` geprüft.
-- [x] `FLIGHTGROUP:Refuel()` bleibt einziger Receiver-Task-Pfad.
-- [x] kein Native-DCS-Refuel-Ersatz.
-- [x] kein eigener Contact-Controller.
-- [x] Fallback-Tanker erhält kein künstliches LISA-Profil.
-- [x] nach `Refueled` wird WIZARD-Default-Speed auf normalen Transit zurückgesetzt.
-
-Source-Befund:
-
-```text
-FLIGHTGROUP:Refuel(Coordinate)
--> PauseMission()
--> DCS TaskRefueling()
--> receiver route mit self.speedCruise
--> Refueled FSM
-```
-
-Daraus folgt für planned LISA:
-
-```text
-SetDefaultSpeed(TAS equivalent of FL250 / 290 KIAS)
--> FLIGHTGROUP:Refuel(LISA coordinate)
--> DCS final join/contact
-```
-
-### Stage D – Fuel/Bingo-Reconciliation
-
-Erledigt:
-
-- [x] akzeptierte Tanker-Fuelbaseline auf `main` geprüft.
-- [x] deren Formel von unbewiesenen Annahmen getrennt.
-- [x] 65/40/25 neu bewertet und **unverändert** gelassen.
-- [x] 25 % nicht als physische Al-Dhafra-Landing-Fuel-Garantie dargestellt.
-
-Akzeptierte Tankerlogik auf `main`:
-
-```text
-measured TRACK_DEPARTURE -> EXTERNAL_HANDOFF burn
-+ virtual EXTERNAL_HANDOFF -> source-base burn
-+ 45-minute reserve
-```
-
-Zusätzlich existiert dort ein 13,000-lb-Landing-Floor; die 45-Minuten-Komponente war für die dokumentierten Tankerprofile kontrollierend. Eine separate `diversion allowance` ist dort nicht als eigener Term dokumentiert und wird für WIZARD nicht erfunden.
-
-Acceptance 5 ergibt bei `FL350 / 270 KIAS` rein rechnerisch etwa `13.0 %` Fuel für 45 Minuten stabilisierten Geradeausflug. Das ist keine vollständige E-3A-Bingoformel.
-
-OMW-Bedeutung der Schwellen:
-
-```text
-65 % = planned LISA pre-dispatch
-40 % = fallback AAR trigger
-25 % = visible DCS off-map contingency floor
-```
-
-### Stage E – Runtime/Builder/Acceptance-Reconciliation
-
-Erledigt:
-
-- [x] finaler V3-Controller erstellt.
-- [x] Foundation-Builder auf V3 umgestellt.
-- [x] Builder-Marker auf neue Profile umgestellt.
-- [x] BOM-Prüfung im Foundation-Builder ergänzt.
-- [x] Acceptance-4-Observer um IAS sowie LISA-/AAR-Geometrie erweitert.
-- [x] Acceptance-4-Builder auf finale Profile umgestellt.
-- [x] Acceptance 4 bleibt observer-only.
-- [x] `AWACS-FUEL-DRIVEN-AAR-LIFECYCLE.md` auf finalen Branch-Stand reconciliert.
-- [x] Acceptance-4-Dokument auf finalen integrierten Lauf reconciliert.
-
-### Stage F – einheitlicher Build-/Verifikationspfad
-
-Erledigt:
-
-- [x] `tools/build-awacs-final-lifecycle.ps1` erstellt.
-- [x] Foundation + Acceptance 4 werden damit in einem Lauf gebaut.
-- [x] Source-/Bundle-Hashes werden ausgegeben.
-- [x] UTF-8-BOM wird geprüft.
-- [x] optional können Acceptance-5-MIZ und finale Lifecycle-MIZ inklusive internal-`mission` SHA-256 ausgewertet werden.
-- [x] AWACS-CI prüft zusätzlich `OMW_AWACS_Controller_FullLifecycle_V3.lua` mit Lua 5.1.
-
-## 4. Finaler DCS-Gate
-
-Es ist **kein weiterer Einzel-Speed-Test** vorgesehen. Der nächste DCS-Lauf ist der integrierte Abschlusslauf.
-
-Er muss mindestens beobachten:
+Der Abschlusslauf vom 24.08.2026 bestätigt funktional den wiederhergestellten V3-Lifecycle mit minimaler MOE-Erweiterung:
 
 ```text
 WIZARD external spawn
-ROSIE ingress
-FL350 / 270 KIAS transit
-APOC FL320 / 250 KIAS
-15:30 service activation without detour
-65 % LISA pre-dispatch
-LISA FL250 / 270 KIAS ready
-immediate planned AAR after LISA ready
-WIZARD dedicated-LISA rendezvous behavior
-DCS final join/contact
-MOOSE Refueled
-APOC physical rejoin
-sensor restore only after rejoin
-LISA deferred FuelLow egress if the condition occurs
-service-end / requested egress
-ROSIE outbound
-external handoff
-exact-once CampaignState reconciliation
+-> ROSIE ingress
+-> FL350 / 270 KIAS
+-> APOC FL320 / 250 KIAS
+-> LISA planned AAR
+-> Refueled
+-> APOC rejoin / sensor restore
+-> MOE planned second AAR
+-> Refueled
+-> APOC rejoin / sensor restore
+-> ROSIE outbound
+-> external handoff
+-> despawn / strategic recredit
 ```
 
-Nicht jeder bereits separat belegte negative Fallback muss künstlich provoziert werden, sofern die finale Änderung seinen Pfad nicht verändert hat.
+Der zweite AAR ist in der Laufzeitevidenz explizit mit `OMW_AAR_KC135_MOE#001`, `AAR_REFUELED`, `SECOND_CYCLE_COMPLETE` und anschließendem `AAR_RETURN_ON_STATION` belegt.
 
-## 5. Noch offen bis Branch-Abschluss
+## 3. Erfolgreiche Architektur
 
-Nur reale lokale/DCS-Evidenz:
+```text
+Controller:
+OMW_AWACS_Controller_FullLifecycle_V3.lua
 
-- [ ] `git pull` auf den finalen Remote-HEAD.
-- [ ] One-pass Build ausführen.
-- [ ] reale Source-/Bundle-Hashes zurückmelden.
-- [ ] Acceptance-5-MIZ + internal-`mission` SHA ergänzen, sofern die exakt erfolgreich ausgeführte MIZ vorliegt.
-- [ ] Foundation- und Acceptance-4-Bundle in die finale Test-MIZ übernehmen; keine automatisierte MIZ-Mutation.
-- [ ] finale Test-MIZ + internal-`mission` SHA erfassen.
-- [ ] integrierten DCS-Lauf durchführen.
-- [ ] `dcs.log`/relevante Laufzeitevidenz auswerten.
-- [ ] Acceptance-Status nur auf Basis dieser realen Ausgabe setzen.
-- [ ] PR #121 aus Draft nehmen, finalen Diff/CI prüfen und nach Freigabe mergen.
+Minimal extension:
+OMW_AWACS_MOE_Relief.lua
 
-## 6. Abschlussgrenze
+AAR 1:
+LISA
 
-Die Branch-Entwicklung ist damit code-/designseitig auf den finalen DCS-Gate vorbereitet. `VALIDATED` oder `ACCEPTED_TECHNICAL_BASELINE` wird für den neuen V3-Lifecycle erst nach realer DCS-Provenienz gesetzt.
+AAR 2:
+MOE
+
+Dedicated tanker geometry for both:
+33.6233926368 N / 68.6395554105 E
+FL250 / 270 KIAS / 340T / 20 NM
+```
+
+Der verworfene V4-/Live-Retask-Pfad mit `ClearWaypoints()` ist nicht Bestandteil des finalen Stands.
+
+## 4. Produktivartefakt
+
+Die Entwicklungsbezeichnung `OMW_AWACS_Foundation.lua` wird jetzt durch ein eigenes Produktionsbundle ersetzt:
+
+```text
+tools/build-awacs-base.ps1
+-> mission/runtime/air-operations/OMW_AWACS_Base.lua
+```
+
+Die AWACS-Base enthält ausschließlich Produktionscode für:
+
+```text
+CampaignState integration
+strategic AWACS stock initialization
+WIZARD full lifecycle
+LISA first planned AAR
+MOE second planned AAR
+service/sensor state
+APOC rejoin
+external handoff / recredit
+```
+
+Nicht Bestandteil der Base:
+
+```text
+OMW_AWACS_Acceptance_4.lua
+Acceptance 5 matrix
+V4 controller
+AARDemandAdapter
+ClearWaypoints live retask
+```
+
+## 5. Mission-Ladeordnung
+
+```text
+Moose.lua
+shared common foundations
+OMW_AAR_Base.lua
+OMW_AWACS_Base.lua
+other AirOps systems
+```
+
+`OMW_AAR_Base.lua` bleibt die allgemeine Tankerbasis. `OMW_AWACS_Base.lua` bleibt Eigentümer des validierten WIZARD-spezifischen Lifecycle einschließlich der dedizierten LISA-/MOE-Geometrie. Es wird keine doppelte strategische Ressourcenautorität eingeführt.
+
+## 6. Provenienzstatus
+
+Bekannte reale Buildwerte des getesteten Foundation-Artefakts:
+
+```text
+Controller SHA-256:
+19da3f455fd01d9a46b20fd748a094873d20bac0c3a8b937976f362e8d06e71a
+
+MOE Relief SHA-256:
+8ad43e871980eff4aec4bf9ac8674f3cef763dd35cf78bf5e00592ac5c403d34
+
+Foundation bundle SHA-256:
+66f6b33e694098fed0727d7d9b8c72ab32285cc3c608de97ff9d1c6850dcd7dc
+
+Acceptance-4 bundle SHA-256:
+23da975a90816569bc7b4269bb7977b2b3e878f9b784005e0993aaaa638cc747
+```
+
+DCS/debrief meldet als Mission:
+
+```text
+OMW_Template_v20.miz
+```
+
+Für eine formale Anhebung zu `ACCEPTED_TECHNICAL_BASELINE` fehlen weiterhin die real gebundenen SHA-256-Werte der exakt ausgeführten finalen MIZ und ihres internen `mission`-Eintrags. Diese werden nicht geraten.
+
+## 7. Noch offen bis Branch-Abschluss
+
+```text
+[x] functional full lifecycle DCS run
+[x] LISA first AAR
+[x] MOE second AAR
+[x] both APOC rejoins
+[x] final ROSIE egress / external handoff
+[x] source architecture frozen on V3 + minimal MOE relief
+[x] documentation reconciled for Base productization
+[ ] create tools/build-awacs-base.ps1
+[ ] update CI and final build verifier to OMW_AWACS_Base.lua
+[ ] local Base build and real SHA-256
+[ ] replace Foundation with Base in mission editor test copy
+[ ] short DCS load/smoke confirmation for renamed Base artifact
+[ ] bind final MIZ/internal-mission hashes
+[ ] final acceptance metadata reconciliation
+[ ] owner authorization for Ready for Review
+[ ] merge only after authorization
+```
+
+## 8. Entscheidungsgrenze
+
+Es wird ab jetzt **keine weitere Lifecycle- oder Routing-Architektur geändert**, solange ein neuer DCS-Befund dies nicht erzwingt. Die Produktivisierung `Foundation -> Base` ist eine Packaging-/Naming-Änderung auf der funktional bestätigten Source-Logik.
