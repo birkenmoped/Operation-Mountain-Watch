@@ -4,27 +4,27 @@ status: PLANNED
 document_class: HANDOFF
 owning_policy: OMW-GOV-001
 authoritative_for:
-  - branch-local AWACS external lifecycle completion order
-  - current progress and remaining work for PR 121
+  - AWACS external lifecycle completion record
+  - PR 121 merge and post-merge production provenance
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
 superseded_by:
-source_branch: agent/awacs-external-lifecycle-foundation
-source_commit: PENDING_MERGE
+source_branch: main
+source_commit: 837ce24aee76c85efa008cd404afc3e4e5aed383
 validated_in_dcs: true
 ---
 
 # AWACS External Lifecycle – Produktivisierung zu `OMW_AWACS_Base.lua`
 
-## 1. Aktueller Branch
+## 1. Integrierter Stand
 
 ```text
-Branch: agent/awacs-external-lifecycle-foundation
-PR: #121 – Stage external AWACS lifecycle base
+Merged PR: #121 – Stage external AWACS lifecycle base
+Main merge commit: 837ce24aee76c85efa008cd404afc3e4e5aed383
 Getesteter Source-Lifecycle-Stand: 2bda2f066ce1ad11aeed5eb7b98b294d2e399e2d
-Base-Package-Stand: c738052037c741f4b52cc6d2f0c818a6b24babc5
-Finaler Review-Stand vor Owner-Freigabe: 8b264ec0ffcb2c50a29074245e2578bc72b47083
+Base-Package-Stand vor Merge: c738052037c741f4b52cc6d2f0c818a6b24babc5
+Finaler Review-Stand: 8b264ec0ffcb2c50a29074245e2578bc72b47083
 DCS: 2.9.28.26385 MT
 MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
 Moose.lua SHA-256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
@@ -76,8 +76,6 @@ Der verworfene V4-/Live-Retask-Pfad mit `ClearWaypoints()` ist nicht Bestandteil
 
 ## 4. Produktivartefakt
 
-Die Entwicklungsbezeichnung `OMW_AWACS_Foundation.lua` ist durch ein eigenes Produktionsbundle abgelöst:
-
 ```text
 tools/build-awacs-base.ps1
 -> mission/runtime/air-operations/OMW_AWACS_Base.lua
@@ -85,28 +83,7 @@ tools/build-awacs-base.ps1
 
 Der frühere Einstieg `tools/build-awacs-foundation.ps1` ist nur noch ein Kompatibilitätswrapper und delegiert an den Base-Builder.
 
-Die AWACS-Base enthält ausschließlich Produktionscode für:
-
-```text
-CampaignState integration
-strategic AWACS stock initialization
-WIZARD full lifecycle
-LISA first planned AAR
-MOE second planned AAR
-service/sensor state
-APOC rejoin
-external handoff / recredit
-```
-
-Nicht Bestandteil der Base:
-
-```text
-OMW_AWACS_Acceptance_4.lua
-Acceptance 5 matrix
-V4 controller
-AARDemandAdapter
-ClearWaypoints live retask
-```
+Die AWACS-Base enthält Produktionscode für CampaignState-Integration, strategische AWACS-Bestandsinitialisierung, WIZARD-Lifecycle, LISA/MOE-AAR, Service-/Sensorzustand, APOC-Rejoin und External Handoff/Recredit. Acceptance-Code, V4-Controller, AARDemandAdapter und `ClearWaypoints`-Live-Retask sind nicht Bestandteil der Base.
 
 ## 5. Mission-Ladeordnung
 
@@ -118,11 +95,11 @@ OMW_AWACS_Base.lua
 other AirOps systems
 ```
 
-`OMW_AAR_Base.lua` bleibt die allgemeine Tankerbasis. `OMW_AWACS_Base.lua` bleibt Eigentümer des WIZARD-spezifischen Lifecycle einschließlich der dedizierten LISA-/MOE-Geometrie. CampaignState bleibt die strategische Ressourcenautorität.
+`OMW_AAR_Base.lua` bleibt die allgemeine Tankerbasis. `OMW_AWACS_Base.lua` bleibt Eigentümer des WIZARD-spezifischen Lifecycle einschließlich der dedizierten LISA-/MOE-Geometrie. CampaignState bleibt strategische Ressourcenautorität.
 
-## 6. Reale Base-Provenienz
+## 6. Base- und Mission-Provenienz vor Merge
 
-Lokaler Build des Produktionsartefakts:
+Real lokal gebauter und anschließend in DCS gesmoketesteter Base-Stand:
 
 ```text
 BuilderVersion: OMW-AIROPS-AWACS-BASE-1
@@ -135,7 +112,7 @@ MOE Relief SHA-256:
 8ad43e871980eff4aec4bf9ac8674f3cef763dd35cf78bf5e00592ac5c403d34
 ```
 
-Gebundene Mission nach Mission-Editor-Umstellung auf `OMW_AWACS_Base.lua`:
+Gebundene Mission des Base-Smoke-Tests:
 
 ```text
 Mission: OMW_Template_v20.miz
@@ -149,36 +126,11 @@ c4e2ab13c2a3be9165993bb4f92bb1b81e34cddfd9dee0e0e7139a12a97ca213
 
 ## 7. Base-Packaging-Smoke-Test
 
-Der DCS-Smoke-Lauf mit der neuen `OMW_AWACS_Base.lua` war erfolgreich.
-
-Belegte Runtime-Sequenz:
-
-```text
-22:06:45 AWACS.FullLifecycleV3 MATERIALIZED runtime=AWACS-0001
-22:06:45 AWACS.FullLifecycleV3 STARTED mode=FULL_FUEL_DRIVEN_AAR_V5
-22:06:45 AirOps.AWACS.Bootstrap RUNNING ... area=APOC fir=ROSIE
-22:06:45 AWACS.MOERelief STARTED mode=MINIMAL_SECOND_TANKER_ONLY
-22:06:58 AWACS.FullLifecycleV3 PERSISTENT_ORBIT ... altitudeFt=32000 speedKIAS=250
-22:06:58 AWACS.FullLifecycleV3 LATE_APPROACH_PASSED ... action=ADD_PERSISTENT_ORBIT
-22:06:58 AWACS.Acceptance4 SERVICE_STATE ... INBOUND -> STANDBY
-22:06:58 AWACS.Acceptance4 TELEMETRY ... runtime=AWACS-0001
-22:12:00 AWACS.FullLifecycleV3 EGRESS_ORDERED ... target=ROSIE
-```
-
-Damit ist die Packaging-/Load-Grenze der neuen Base in DCS bestätigt. Im untersuchten Smoke-Zeitfenster wurde kein AWACS-bezogener `SCRIPTING ERROR`, `stack traceback` oder nil-Zugriffsfehler gefunden.
+Der DCS-Smoke-Lauf mit `OMW_AWACS_Base.lua` war erfolgreich. Belegt wurden Base-Load, V3-Controllerstart, AWACS-Bootstrap, MOE-Relief-Start, WIZARD-Materialisierung, APOC-Orbit und Acceptance-4-Telemetrie ohne AWACS-bezogenen Lua-Abbruch im untersuchten Zeitfenster.
 
 ## 8. Finaler PR-/CI-Review
 
-Der finale Review hat die zuvor widersprüchlichen AWACS-Stagingaussagen in den aktuellen verbindlichen Dokumenten reconciliert:
-
-```text
-docs/18-air-operations-implementation.md
-docs/moose/AIR-OPERATIONS.md
-docs/moose/PROJECT-CLASS-INDEX.md
-docs/moose/VERIFIED-METHODS.md
-```
-
-Aktuelle verbindliche Produktionswerte sind damit konsistent dokumentiert:
+Aktuelle Produktionswerte wurden vor Merge in den zuständigen verbindlichen Dokumenten reconciliert:
 
 ```text
 WIZARD transit: FL350 / 270 KIAS
@@ -192,24 +144,46 @@ CI für Review-Head `8b264ec0ffcb2c50a29074245e2578bc72b47083`:
 
 ```text
 AWACS validation run #92: SUCCESS
-- Lua 5.1 source syntax: PASS
-- OMW_AWACS_Base.lua build: PASS
-- Acceptance 2 build: PASS
-- Acceptance 3 build: PASS
-- Acceptance 4 build: PASS
-- Acceptance 5 build: PASS
-- generated bundle syntax: PASS
-- generated files untracked check: PASS
-
 Documentation validation run #1134: FAILURE
-- 18 errors
-- all 18 errors are pre-existing ARMY-ground metadata/provenance errors
-- no AWACS document/link/metadata error reported
+- 18 pre-existing ARMY-ground metadata/provenance errors
+- 0 AWACS documentation errors
 ```
 
-`main` steht weiterhin auf `cace7e888e655cfce20c9338b9e327ff45cee726`; PR #121 ist gegen diesen Stand mergeable.
+## 9. Merge und post-merge Main-Build
 
-## 9. Aktueller Abschlussstand
+Der Projektinhaber gab zunächst Ready for Review und anschließend den Merge frei. PR #121 wurde auf `main` gemerged.
+
+```text
+Main merge commit:
+837ce24aee76c85efa008cd404afc3e4e5aed383
+```
+
+Der reale lokale post-merge Build wurde aus einem eigenen `main`-Worktree ausgeführt:
+
+```text
+Worktree: P:\DCS-DEV\Operation-Mountain-Watch-main
+Branch: main
+HEAD: 837ce24aee76c85efa008cd404afc3e4e5aed383
+BuilderVersion: OMW-AIROPS-AWACS-BASE-1
+GitCommit embedded in generated Base: 837ce24aee76c85efa008cd404afc3e4e5aed383
+Base SHA-256:
+510c876ff132d0ec612bb6e719529836fe21b4163ab9143d9e27495a6c4d4be3
+```
+
+Alle eingebundenen Source-Komponenten besitzen im post-merge Build weiterhin exakt dieselben SHA-256-Werte wie im vor dem Merge DCS-gesmoketesteten Base-Build, insbesondere:
+
+```text
+Controller SHA-256:
+19da3f455fd01d9a46b20fd748a094873d20bac0c3a8b937976f362e8d06e71a
+MOE Relief SHA-256:
+8ad43e871980eff4aec4bf9ac8674f3cef763dd35cf78bf5e00592ac5c403d34
+Bootstrap SHA-256:
+ea5d624c15f8aa2b07d8c41b877f57422f5163fc93263f5fe472d77b113578eb
+```
+
+Der geänderte Base-Bundle-Hash entsteht durch die Build-Provenienz im generierten Header (`GitCommit` und `SourceCommitUtc`) des post-merge Builds. Er ist deshalb nicht als neue fachliche Source-Änderung zu interpretieren.
+
+## 10. Abschlussstand
 
 ```text
 [x] functional full lifecycle DCS run
@@ -218,30 +192,17 @@ Documentation validation run #1134: FAILURE
 [x] both APOC rejoins
 [x] final ROSIE egress / external handoff
 [x] source architecture frozen on V3 + minimal MOE relief
-[x] documentation reconciled for Base productization
-[x] create tools/build-awacs-base.ps1
-[x] deprecate foundation builder to compatibility wrapper
-[x] update CI and final build verifier to OMW_AWACS_Base.lua
-[x] local Base build and real SHA-256
-[x] replace Foundation with Base in mission editor test copy
-[x] short DCS load/smoke confirmation for renamed Base artifact
-[x] bind final MIZ/internal-mission hashes for Base smoke test
-[x] document Base smoke result
+[x] production Base builder
+[x] Foundation compatibility wrapper
+[x] Base MIZ integration
+[x] Base packaging smoke test
 [x] final PR diff / binding-document reconciliation
 [x] final AWACS CI review
-[x] verify documentation-CI failure is outside AWACS scope
-[ ] owner authorization for Ready for Review
-[ ] merge only after authorization
+[x] owner Ready-for-Review authorization
+[x] PR #121 Ready for Review
+[x] owner merge authorization
+[x] PR #121 merged to main
+[x] post-merge main build and real Base SHA-256
 ```
 
-## 10. Entscheidungsgrenze
-
-Es wird keine weitere Lifecycle- oder Routing-Architektur geändert, solange ein neuer DCS-Befund dies nicht erzwingt. Die Produktivisierung `Foundation -> Base` und der technische PR-Review sind abgeschlossen.
-
-Nächster zulässiger Schritt:
-
-```text
-Owner approval
--> mark PR #121 Ready for Review
--> final merge authorization remains separate
-```
+Die AWACS-Produktivisierung ist damit abgeschlossen. Der post-merge Base-Hash ist als Build-Provenienz dokumentiert; ein erneuter vollständiger DCS-Lifecycle ist durch diesen reinen Header-/Provenienzunterschied nicht automatisch impliziert.
