@@ -4,12 +4,12 @@ status: DRAFT
 document_class: MOOSE_TECHNICAL_BASELINE
 owning_policy: OMW-GOV-001
 authoritative_for:
-  - AWACS fuel-state driven AAR design on the working branch
-  - branch-local AWACS production-bundle design
+  - AWACS fuel-state driven AAR design
+  - AWACS production-bundle design on main
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
-source_branch: agent/awacs-external-lifecycle-foundation
-source_commit: PENDING_MERGE
+source_branch: main
+source_commit: 837ce24aee76c85efa008cd404afc3e4e5aed383
 supersedes:
 superseded_by:
 validated_in_dcs: true
@@ -63,7 +63,7 @@ OFFMAP_AL_DHAFRA
 -> despawn / strategic recredit
 ```
 
-Getesteter Source-Stand vor dem Lauf:
+Getesteter Source-Stand:
 
 ```text
 branch: agent/awacs-external-lifecycle-foundation
@@ -74,7 +74,7 @@ DCS: 2.9.28.26385 MT
 mission file reported by DCS/debrief: OMW_Template_v20.miz
 ```
 
-Die exakten MIZ- und internal-`mission`-SHA-256-Werte dieses letzten Laufs sind noch nicht gebunden. Deshalb bleibt dieses Dokument `DRAFT` und wird nicht zu `ACCEPTED_TECHNICAL_BASELINE` erhoben.
+Die exakten MIZ- und internal-`mission`-SHA-256-Werte dieses vollständigen LISA-/MOE-Laufs wurden nicht nachträglich gebunden. Deshalb bleibt dieses Dokument `DRAFT` und wird nicht zu `ACCEPTED_TECHNICAL_BASELINE` erhoben.
 
 ## 3. Flight- und Performance-Baseline
 
@@ -86,7 +86,7 @@ Acceptance 5 hat 15 E-3A-Profile mit 20 NM Stabilisierung und 200 NM Messstrecke
 FL350 / 310 KIAS MARGINAL
 ```
 
-Verwendete Produktionswerte:
+Produktionswerte:
 
 ```text
 WIZARD normal transit: FL350 / 270 KIAS
@@ -107,8 +107,6 @@ Gemeinsamer dedizierter AWACS-AAR-Anker:
 ## 4. AAR-Zyklen
 
 ### Erster geplanter Zyklus – LISA
-
-Der bewährte V3-Pfad bleibt unverändert:
 
 ```text
 65 % WIZARD fuel
@@ -132,8 +130,6 @@ Track: FL250 / 270 KIAS / 340T / 20 NM
 ```
 
 ### Zweiter geplanter Zyklus – MOE
-
-`OMW_AWACS_MOE_Relief.lua` ergänzt ausschließlich den zweiten Zyklus. Die funktionierende WIZARD-Routing-/Refuel-Logik wird nicht ersetzt.
 
 ```text
 first AAR complete
@@ -169,9 +165,7 @@ Der Abschlusslauf bestätigt `AAR_REFUELED` mit `OMW_AAR_KC135_MOE#001`, `SECOND
 25 % -> visible off-map contingency floor
 ```
 
-Die 40-%-Schwelle ist keine normale geplante AAR-Startschwelle.
-
-Die 25-%-Schwelle bleibt eine OMW-DCS-Contingency-Grenze und ist keine ungeprüfte reale E-3A-Landing-Fuel-Aussage.
+Die 40-%-Schwelle ist keine normale geplante AAR-Startschwelle. Die 25-%-Schwelle bleibt eine OMW-DCS-Contingency-Grenze und ist keine reale E-3A-Landing-Fuel-Aussage.
 
 ## 6. MOOSE-First-Vertrag
 
@@ -218,20 +212,9 @@ undocumented SPAWN fuel mutation
 
 ## 7. Verworfenes V4-/AAR-Base-Retask-Experiment
 
-Der zwischenzeitliche Ansatz, LISA/MOE über ihre produktiven Standard-AAR-Tracks zu beziehen und anschließend live auf einen AWACS-Track umzurouten, ist verworfen.
-
-Begründung aus DCS:
-
-```text
-production reserve track geometry pulled WIZARD away from APOC
-subsequent live route override did not establish the intended tanker mission reliably
-```
-
-Dieser Ansatz gehört nicht zur Produktionsbaseline und wird vom Base-Builder explizit durch das Verbot von `ClearWaypoints(` ausgeschlossen.
+Der zwischenzeitliche Ansatz, LISA/MOE über ihre produktiven Standard-AAR-Tracks zu beziehen und anschließend live auf einen AWACS-Track umzurouten, ist verworfen. Der Base-Builder verhindert die Rückkehr dieses Pfads unter anderem durch das Verbot von `ClearWaypoints(`.
 
 ## 8. Produktionsbundle `OMW_AWACS_Base.lua`
-
-Nach funktionalem Abschluss wird die bisherige Entwicklungsbezeichnung `Foundation` abgelöst.
 
 Produktionsartefakt:
 
@@ -253,35 +236,52 @@ scripts/air-operations/OMW_AWACS_MOE_Relief.lua
 scripts/air-operations/OMW_AirOps_AWACS_Bootstrap.lua
 ```
 
-`OMW_AWACS_Acceptance_4.lua` wird **nicht** in die Base aufgenommen.
+`OMW_AWACS_Acceptance_4.lua` ist nicht Bestandteil der Base. `tools/build-awacs-foundation.ps1` bleibt nur als Kompatibilitätseinstieg und delegiert an den Base-Builder.
 
-Die bisherige `tools/build-awacs-foundation.ps1` bleibt nur als Übergangs-/Kompatibilitätseinstieg und delegiert an den Base-Builder. Neue Missionen sollen ausschließlich `OMW_AWACS_Base.lua` laden.
+## 9. DCS-Packaging-Smoke und Merge
 
-## 9. Lade- und Autoritätsgrenze
-
-Empfohlene Mission-Ladeordnung:
+Der vor dem Merge gebaute Base-Stand wurde in `OMW_Template_v20.miz` eingebettet und in DCS als Packaging-/Load-Smoke bestätigt:
 
 ```text
-Moose.lua
-shared CampaignState / required common foundations
-OMW_AAR_Base.lua
-OMW_AWACS_Base.lua
-other AirOps systems
+Base source commit: c738052037c741f4b52cc6d2f0c818a6b24babc5
+Base SHA-256:
+c4e2ab13c2a3be9165993bb4f92bb1b81e34cddfd9dee0e0e7139a12a97ca213
+MIZ SHA-256:
+22220f7c7686228897ac6e7fc0f7bb34ce068cc929a6b7fcf08213f8f5b2be0c
+internal mission SHA-256:
+ed02eab1ffc4c353ee16f929d44f3c55fe28093b78ea80508f2fa71fd692775f
+DCS: 2.9.28.26385 MT
 ```
 
-Die AWACS-Base darf vorhandene gemeinsame strategische Daten nutzen, erzeugt aber keine zweite strategische Ressourcenautorität.
-
-Der dedizierte LISA-/MOE-AWACS-AAR-Pfad gehört zum validierten AWACS-Lifecycle. Die allgemeine `OMW_AAR_Base.lua` bleibt unabhängig für die übrige Tankerinfrastruktur zuständig; der verworfene Versuch, deren geografische Standardtracks als AWACS-Track zu verwenden, wird nicht wieder eingeführt.
-
-## 10. Produktivisierungs-Gate
-
-Die Source-Logik ist funktional in DCS validiert. Die Umbenennung zum generierten `OMW_AWACS_Base.lua` verändert Header und Bundle-Hash. Deshalb sind nach Erstellung noch erforderlich:
+PR #121 wurde nach Owner-Freigabe auf `main` gemerged:
 
 ```text
-local build of OMW_AWACS_Base.lua
-real Base SHA-256
-Lua 5.1 / CI syntax check
-short DCS load/smoke confirmation of the renamed artifact
+Main merge commit:
+837ce24aee76c85efa008cd404afc3e4e5aed383
 ```
 
-Erst danach wird das neue Base-Artefakt als exakt DCS-geprüfter Produktionsstand dokumentiert.
+Der reale lokale post-merge Build aus `main` ergab:
+
+```text
+BuilderVersion: OMW-AIROPS-AWACS-BASE-1
+GitCommit: 837ce24aee76c85efa008cd404afc3e4e5aed383
+Base SHA-256:
+510c876ff132d0ec612bb6e719529836fe21b4163ab9143d9e27495a6c4d4be3
+```
+
+Die Source-Komponenten-Hashes sind gegenüber dem DCS-gesmoketesteten Build unverändert, darunter:
+
+```text
+Controller SHA-256:
+19da3f455fd01d9a46b20fd748a094873d20bac0c3a8b937976f362e8d06e71a
+MOE Relief SHA-256:
+8ad43e871980eff4aec4bf9ac8674f3cef763dd35cf78bf5e00592ac5c403d34
+Bootstrap SHA-256:
+ea5d624c15f8aa2b07d8c41b877f57422f5163fc93263f5fe472d77b113578eb
+```
+
+Der neue Base-Bundle-Hash entsteht durch die Build-Provenienz im generierten Header (`GitCommit` und `SourceCommitUtc`), nicht durch eine fachliche Änderung der eingebundenen Lua-Source-Komponenten.
+
+## 10. Statusgrenze
+
+Die Source-Logik ist funktional in DCS validiert, und die Packaging-/Load-Grenze des vor dem Merge erzeugten Base-Artefakts ist in DCS bestätigt. Das Dokument bleibt `DRAFT`, weil die vollständige Acceptance-Provenienz des langen LISA-/MOE-Laufs keine nachträglich rekonstruierte MIZ-/internal-`mission`-Hashbindung enthält. Der Merge nach `main` ändert diese Evidenzgrenze nicht.
