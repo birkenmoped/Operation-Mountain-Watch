@@ -7,8 +7,8 @@ authoritative_for:
   - AWACS full fuel-driven AAR acceptance scope
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
-source_branch: agent/awacs-external-lifecycle-foundation
-source_commit: PENDING_MERGE
+source_branch: main
+source_commit: 837ce24aee76c85efa008cd404afc3e4e5aed383
 supersedes:
 superseded_by:
 validated_in_dcs: true
@@ -35,7 +35,7 @@ DCS: 2.9.28.26385 MT
 MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
 Moose.lua SHA-256:
 e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
-Mission: OMW_Template_v20.miz
+Mission reported by DCS/debrief: OMW_Template_v20.miz
 ```
 
 Die funktionale DCS-Evidenz bestätigt:
@@ -56,6 +56,8 @@ external handoff / despawn and strategic recredit
 ```
 
 Beim zweiten AAR zeigt die Laufzeitevidenz WIZARD im aktiven Refuelling mit `OMW_AAR_KC135_MOE#001`, anschließend `AAR_REFUELED`, `SECOND_CYCLE_COMPLETE`, MOE-Egress und danach den erfolgreichen APOC-Rejoin mit erneuter Sensoraktivierung.
+
+Die exakten MIZ- und internal-`mission`-SHA-256-Werte dieses vollständigen LISA-/MOE-Laufs wurden nicht nachträglich gebunden. Deshalb bleibt dieses Acceptance-Dokument trotz `validated_in_dcs: true` im Status `DRAFT` und wird nicht zu `ACCEPTED_TECHNICAL_BASELINE` erhoben.
 
 ## 2. Architektur des getesteten Stands
 
@@ -101,7 +103,7 @@ WIZARD LISA RV target: FL250 / 290 KIAS
 Fuel-Policy:
 
 ```text
-65 % -> planned LISA pre-dispatch
+65 % -> planned LISA/MOE pre-dispatch
 40 % -> fallback AAR trigger
 25 % -> visible off-map contingency floor
 LISA FuelLow -> 38 %
@@ -148,7 +150,7 @@ tools/build-awacs-base.ps1
 -> mission/runtime/air-operations/OMW_AWACS_Base.lua
 ```
 
-Real lokal gebauter Base-Stand:
+Real lokal gebauter Base-Stand vor Merge:
 
 ```text
 BuilderVersion: OMW-AIROPS-AWACS-BASE-1
@@ -193,32 +195,30 @@ Der Smoke-Lauf bestätigt die Packaging-/Load-Grenze:
 [PASS] Acceptance-4 observer receives live telemetry
 ```
 
-Relevante Runtime-Evidenz des Smoke-Laufs:
+Damit ist `OMW_AWACS_Base.lua` als DCS-geladenes Produktionsartefakt für die Packaging-/Load-Grenze praktisch bestätigt. Dieser Smoke-Test ersetzt nicht den separat ausgeführten vollständigen LISA-/MOE-Lifecycle-Test.
+
+## 8. Merge und post-merge Build
+
+Nach Owner-Freigabe wurde PR #121 auf `main` gemerged:
 
 ```text
-22:06:45 AWACS.FullLifecycleV3 MATERIALIZED runtime=AWACS-0001
-22:06:45 AWACS.FullLifecycleV3 STARTED mode=FULL_FUEL_DRIVEN_AAR_V5
-22:06:45 AirOps.AWACS.Bootstrap RUNNING ... area=APOC fir=ROSIE
-22:06:45 AWACS.MOERelief STARTED mode=MINIMAL_SECOND_TANKER_ONLY
-22:06:58 AWACS.FullLifecycleV3 PERSISTENT_ORBIT ... altitudeFt=32000 speedKIAS=250
-22:06:58 AWACS.FullLifecycleV3 LATE_APPROACH_PASSED ... action=ADD_PERSISTENT_ORBIT
-22:06:58 AWACS.Acceptance4 SERVICE_STATE ... INBOUND -> STANDBY
-22:06:58 AWACS.Acceptance4 TELEMETRY ... runtime=AWACS-0001
+Main merge commit:
+837ce24aee76c85efa008cd404afc3e4e5aed383
 ```
 
-Die späteren Smoke-Logzeilen zeigen den weiter laufenden APOC-Lifecycle bis zum planmäßigen Egress:
+Der reale lokale post-merge Build aus dem `main`-Worktree ergab:
 
 ```text
-22:12:00 AWACS.FullLifecycleV3 SENSOR_STATE ... reason=EGRESS
-22:12:00 AWACS.FullLifecycleV3 EGRESS_ORDERED ... target=ROSIE
+Worktree: P:\DCS-DEV\Operation-Mountain-Watch-main
+Branch: main
+HEAD: 837ce24aee76c85efa008cd404afc3e4e5aed383
+BuilderVersion: OMW-AIROPS-AWACS-BASE-1
+Base SHA-256:
+510c876ff132d0ec612bb6e719529836fe21b4163ab9143d9e27495a6c4d4be3
 ```
 
-Damit ist `OMW_AWACS_Base.lua` als DCS-geladenes Produktionsartefakt für die Packaging-/Load-Grenze praktisch bestätigt. Dieser Smoke-Test ersetzt nicht den bereits separat ausgeführten vollständigen LISA-/MOE-Lifecycle-Test, sondern bindet dessen unveränderte Source-Logik an den neuen Base-Artefaktnamen und dessen Hash.
-
-## 8. Bekannte nicht-AWACS-bezogene Logmeldungen
-
-Der Lauf enthält weiterhin DCS-/Mod-/Terrain-Warnungen sowie bekannte externe Meldungen. Sie sind kein Nachweis eines AWACS-Base-Fehlers. Insbesondere wurden im untersuchten Smoke-Zeitfenster keine AWACS-bezogenen `SCRIPTING ERROR`, `stack traceback` oder nil-Zugriffsfehler gefunden.
+Die eingebundenen Source-Komponenten-Hashes sind gegenüber dem DCS-gesmoketesteten Build unverändert, insbesondere Controller, MOE Relief und Bootstrap. Der neue Base-Bundle-Hash entsteht durch die Build-Provenienz im generierten Header (`GitCommit` und `SourceCommitUtc`) des post-merge Builds.
 
 ## 9. Statusgrenze
 
-`validated_in_dcs: true` ist für die dokumentierten funktionalen und Packaging-/Load-Befunde erfüllt. Das Dokument bleibt auf dem offenen Feature-Branch dennoch `DRAFT`, bis die abschließende Repository-/PR-Reconciliation und die Owner-Freigabe für Ready for Review erfolgt sind.
+`validated_in_dcs: true` ist für die dokumentierten funktionalen und Packaging-/Load-Befunde erfüllt. Das Dokument bleibt `DRAFT`, weil die vollständige Acceptance-Provenienz des langen LISA-/MOE-Laufs keine nachträglich rekonstruierte MIZ-/internal-`mission`-Hashbindung enthält. Der Merge nach `main` ändert diese Evidenzgrenze nicht.
