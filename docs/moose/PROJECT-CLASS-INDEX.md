@@ -12,8 +12,8 @@ project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
   - class index without consolidated AIRWING lifecycle evidence
 superseded_by:
-source_branch: agent/air-tasking-plan-main-reconciliation
-source_commit: 9d282bf61e7e54f110b95a4ee9eb2bede01838a5
+source_branch: agent/awacs-external-lifecycle-foundation
+source_commit: PENDING_MERGE
 validated_in_dcs: partial
 ---
 
@@ -33,6 +33,8 @@ Technische Lifecycle-Details:
 - [`OMW-MOOSE-STORAGE-WAREHOUSE-RESOURCE-FOUNDATION`](STORAGE-WAREHOUSE-RESOURCE-FOUNDATION.md)
 - [`OMW-MOOSE-ISR-FAC-CAS-AAR`](ISR-FAC-CAS-AAR.md)
 - [`OMW-MOOSE-AAR-LRC-TRANSIT`](AAR-LRC-TRANSIT.md)
+- [`OMW-MOOSE-AWACS-EXTERNAL-LIFECYCLE`](AWACS-EXTERNAL-LIFECYCLE.md)
+- [`OMW-MOOSE-AWACS-FUEL-DRIVEN-AAR`](AWACS-FUEL-DRIVEN-AAR-LIFECYCLE.md)
 - [`OMW-MOOSE-GROUND-OPERATIONS`](GROUND-OPERATIONS.md)
 - [`OMW-MOOSE-MISSION-DEMAND-RESUPPLY-CAS-SOURCE-REVIEW`](MISSION-DEMAND-RESUPPLY-CAS-SOURCE-REVIEW.md)
 - [`OMW-MOOSE-AIR-TASKING-C2-LIFECYCLE`](AIR-TASKING-C2-LIFECYCLE.md)
@@ -57,16 +59,16 @@ REJECTED_FOR_PROJECT_USE
 | Klasse | Projektstatus | Geltungsgrenze |
 |---|---|---|
 | `AIRBASE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Auflösung, ID, Parkingdump und airfield-spezifische Kalibrierung |
-| `AIRWING` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Konstruktion, Stockregistrierung, SQUADRON-Bindung und direkter AUFTRAG-Dispatch; externe OMW-AAR-Pools verwenden bewusst kein AIRWING |
+| `AIRWING` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Konstruktion, Stockregistrierung, SQUADRON-Bindung und direkter AUFTRAG-Dispatch; externe OMW-AAR-/AWACS-Pools verwenden bewusst kein AIRWING |
 | `SQUADRON` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Foundation-Bestände und post-start Assetbindung |
 | `WAREHOUSE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` + `INTERNAL_RESTRICTED` | AirOps-Stock-/Asset-Lifecycle und Acceptance 3-2 Ground-Materialisierung praktisch bestätigt; die private road-aligned Ausnahme ist auf den dokumentierten Branch-/MOOSE-/MIZ-Scope begrenzt |
 | `STORAGE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | CampaignState->DCS-Warehouse Mirror/Telemetry; keine strategische Rückautorität |
 | `COHORT` | `VALIDATED_FOR_DOCUMENTED_SCOPE` + `SOURCE_REVIEWED` | AirOps-Lifecycle praktisch bestätigt; Ground-Review bestätigt `AddMissionCapability`, `SetMissionRange`, `CanMission`, `CountAssets` und 75-NM-Ground-Default source-seitig |
-| `FLIGHTGROUP` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | AAR FuelLow, Dead/OnAfterDead, GetCoordinate, `AddWaypoint(...)`, `AddMission(...)` und `OnAfterPassingWaypoint(...)`; Acceptance 7 bestätigte FIR -> 60-NM -> AUFTRAG sowie Egress -> External Handoff |
+| `FLIGHTGROUP` | `VALIDATED_FOR_DOCUMENTED_SCOPE` + `SOURCE_REVIEWED` | AAR FuelLow, Dead/OnAfterDead, GetCoordinate, `AddWaypoint(...)`, `AddMission(...)` und `OnAfterPassingWaypoint(...)` sind im AAR-Scope validiert; AWACS bestätigt Transit-/PassingWaypoint-/AddMission-/Egress-Bausteine sowie `Refuel(...) -> Refueled` praktisch mit WIZARD/LISA und WIZARD/MOE im dokumentierten Full-Lifecycle-Scope |
 | `COMMANDER` | `VALIDATED_FOR_DOCUMENTED_SCOPE` + `SOURCE_REVIEWED` | dokumentierter COMMANDER-Lifecycle; Ground-Review bestätigt `AddBrigade(...)` und `AddOpsTransport(...)` source-seitig; MissionDemand bleibt OMW-Tasking-Autorität |
-| `AUFTRAG` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | AAR-Methoden sowie dokumentierte Ground-Acceptance-1 bis -6-Lifecycles praktisch bestätigt; keine CampaignState-Autorität |
-| `SPAWN` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | area-spezifische AAR-Templates und externe Materialisierung praktisch bestätigt; Ground Acceptance 1 verwendet keinen direkten SPAWN-Pfad |
-| `SCHEDULER` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | allgemeine OMW-Nutzung praktisch bestätigt; Ground Acceptance 1 verwendet nur One-shot-Koordination, kein hochfrequentes Polling |
+| `AUFTRAG` | `VALIDATED_FOR_DOCUMENTED_SCOPE` + `SOURCE_REVIEWED` | AAR-Methoden sowie dokumentierte Ground-Acceptance-1 bis -6-Lifecycles praktisch bestätigt; AWACS bestätigt `NewORBIT_RACETRACK(...)`, `NewTANKER(...)`, Mission-Höhen-/Egress-Konfiguration sowie Cancel-/Rejoin-Pfade im dokumentierten Scope; keine CampaignState-Autorität |
+| `SPAWN` | `VALIDATED_FOR_DOCUMENTED_SCOPE` + `SOURCE_REVIEWED` | area-spezifische AAR-Templates und externe Materialisierung praktisch bestätigt; AWACS bestätigt `OMW_C2_E3A_WIZARD`, LISA und MOE external materialization im dokumentierten Scope |
+| `SCHEDULER` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | allgemeine OMW-Nutzung praktisch bestätigt; AWACS verwendet einen 5-Sekunden-Monitor ausschließlich zur Lifecycle-/Fuel-Koordination, keinen Frame-Scan |
 | `USERFLAG` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Warehouse-Acceptance-Readiness-Pfade sowie Ground BASE-3 `OMW_GROUND_READY` Set/Get-Readback und Mission-Editor-Gate im dokumentierten Ground-Ammo-Rearm-Acceptance-1-Scope |
 | `GROUP`, `UNIT`, `STATIC`, `ZONE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Wrapper-/Objektauflösung in dokumentierten Scopes; Acceptance-1-v13-Objektvertrag read-only bestätigt, Ground-Acceptance-6 bestätigt GetSize, GetUnits, test-only Destroy(false) und SetLife(50) im dokumentierten Verlust-/Schaden-Return-Scope |
 | `COORDINATE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | `Get2DDistance(...)`, `GetIntermediateCoordinate(...)` und `HeadingTo(...)` im dokumentierten AirOps-Scope |
@@ -380,3 +382,128 @@ Die neue Air-Tasking-Schicht implementiert keinen parallelen MOOSE-Dispatcher, k
 `AIR-TASKING-AAR-VERTICAL-2` bleibt ein realer DCS-PASS fuer seine exakt dokumentierte historische Provenienz. Die MissionDemand-reconcilierten Source-Artefakte wurden danach neu gebaut und gehasht, aber auf ausdrueckliche Owner-Entscheidung nicht erneut als `VERTICAL-3` in DCS ausgefuehrt. Deshalb wird der reconcilierten Implementierung **kein neuer `VALIDATED_FOR_DOCUMENTED_SCOPE`-Status** aus diesem Schritt zugeschrieben.
 
 Details: [`OMW-MOOSE-AIR-TASKING-C2-LIFECYCLE`](AIR-TASKING-C2-LIFECYCLE.md) und [`OMW-AIR-TASKING-PLAN-MAIN-RECONCILIATION`](../air-tasking-plan-main-reconciliation.md).
+
+## Addendum 2026-08-23 – External E-3 AWACS Acceptance 1
+
+Der AWACS-Pfad verwendet keine neue Framework-Autorität, sondern kombiniert die bereits OMW-erprobten externen SPAWN-/FLIGHTGROUP-Lifecycle-Bausteine mit `AUFTRAG:NewAWACS(...)`.
+
+```text
+SPAWN / FLIGHTGROUP transit
+-> ROSIE
+-> 30-NM late approach
+-> AUFTRAG:NewAWACS(APOC, FL320, 300 kt, 017T, 30 NM)
+-> AUFTRAG:SetMissionAltitude(FL320)
+-> AUFTRAG:SetMissionEgressCoord(ROSIE, FL340, 300 kt)
+-> External Handoff
+```
+
+Acceptance 1 hat diesen Routing-Lifecycle in DCS praktisch bestätigt:
+
+```text
+Branch:                   agent/awacs-external-lifecycle-foundation
+Tested source commit:     bde8a6e8d006b7c8d744b739510b08aa9812d48b
+Mission:                  OMW_Template_v19(8).miz
+Mission SHA-256:          d788af36535d3acd1866d15ffb5d354b2c44b5f8ee40d4baf6fd1d97b7c0f8a5
+DCS:                      2.9.28.26385 MT
+MOOSE commit:             73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+Moose.lua SHA-256:        e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
+Embedded Warehouse SHA:   01a9ca70988198ecbd76f4d1cab4304261f2cc56911584b44741c0d49c7b146c
+Embedded AWACS bundle SHA:639841a552343f4d0f7180f657a4a0b3141fb0b9af3ed6f1d9915ec955444fc2
+dcs.log SHA-256:          593d02d455db0cae04cfd0e7651671d3af1d76ab430ff3232da7b19dac391c2f
+debrief.log SHA-256:      32df4af4943f5ca3d2a98dde61e452054b5183fd21fa9f6b78750894ec106eb7
+Result:                    PASS for routing lifecycle scope
+```
+
+Bestätigte Reihenfolge:
+
+```text
+MATERIALIZED
+-> FIR_INGRESS_PASSED ROSIE
+-> LATE_APPROACH_PASSED / ADD_AWACS_MISSION
+-> ON_STATION APOC
+-> EGRESS_ORDERED
+-> FIR_EGRESS_PASSED ROSIE
+-> MOOSE AWACS mission success
+-> EXTERNAL_HANDOFF / DESPAWN_AND_RECREDIT
+```
+
+Damit ist `AUFTRAG:NewAWACS(...)` für diesen OMW-Scope von `SOURCE_REVIEWED` auf `VALIDATED_FOR_DOCUMENTED_SCOPE` angehoben. Ebenso ist der E-3-spezifische externe `SPAWN`-/`FLIGHTGROUP`-Routingpfad praktisch bestätigt.
+
+Die folgenden Aussagen sind historischer Acceptance-1-Stand und werden durch das Addendum vom 24.08.2026 für den aktuellen Produktionsscope superseded:
+
+```text
+AWACS complete foundation: PARTIAL / OPEN ACCEPTANCE BLOCKS
+AWACS automatic AAR:      BLOCKED_PENDING_DCS_ACCEPTANCE
+```
+
+Details: [`OMW-MOOSE-AWACS-EXTERNAL-LIFECYCLE`](AWACS-EXTERNAL-LIFECYCLE.md) und [`AWACS Acceptance 1`](../../mission/tests/awacs-external-lifecycle/ACCEPTANCE.md).
+
+## Addendum 2026-08-24 – AWACS Full Lifecycle und Base-Packaging
+
+Der aktuelle Produktionsscope verwendet den DCS-bestätigten V3-Lifecycle mit minimaler MOE-Erweiterung:
+
+```text
+OMW_AWACS_Controller_FullLifecycle_V3.lua
++ OMW_AWACS_MOE_Relief.lua
+-> tools/build-awacs-base.ps1
+-> OMW_AWACS_Base.lua
+```
+
+Praktisch bestätigter Source-Lifecycle:
+
+```text
+WIZARD external materialization
+-> ROSIE ingress
+-> FL350 / 270 KIAS transit
+-> APOC FL320 / 250 KIAS persistent orbit
+-> LISA planned AAR
+-> FLIGHTGROUP:Refuel(...)
+-> Refueled
+-> APOC rejoin / sensor restore
+-> MOE planned AAR
+-> FLIGHTGROUP:Refuel(...)
+-> Refueled
+-> APOC rejoin / sensor restore
+-> ROSIE outbound
+-> external handoff / despawn / strategic recredit
+```
+
+Source-Evidenz:
+
+```text
+Branch:        agent/awacs-external-lifecycle-foundation
+Source commit: 2bda2f066ce1ad11aeed5eb7b98b294d2e399e2d
+DCS:           2.9.28.26385 MT
+MOOSE commit:  73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+Moose.lua SHA: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
+```
+
+Die exakten MIZ-/internal-`mission`-Hashes dieses vollständigen Source-Lifecycle-Laufs wurden nicht nachträglich rekonstruiert. Daher wird aus diesem Lauf kein neuer `ACCEPTED_TECHNICAL_BASELINE`-Metadatensatz erfunden. Die konkret beobachteten MOOSE-Pfade dürfen aber als DCS-bestätigte Laufzeitevidenz für den dokumentierten Source-Stand geführt werden.
+
+Das ohne Lifecycle-Änderung daraus gebaute Produktionsartefakt wurde anschließend separat smoke-validiert:
+
+```text
+Base source commit:       c738052037c741f4b52cc6d2f0c818a6b24babc5
+OMW_AWACS_Base.lua SHA:   c4e2ab13c2a3be9165993bb4f92bb1b81e34cddfd9dee0e0e7139a12a97ca213
+Mission:                  OMW_Template_v20.miz
+MIZ SHA-256:              22220f7c7686228897ac6e7fc0f7bb34ce068cc929a6b7fcf08213f8f5b2be0c
+internal mission SHA-256: ed02eab1ffc4c353ee16f929d44f3c55fe28093b78ea80508f2fa71fd692775f
+Result:                   PASS for Base load / bootstrap / materialization / APOC smoke scope
+```
+
+Aktueller Klassenstatus für den AWACS-Produktionsscope:
+
+```text
+SPAWN external WIZARD/LISA/MOE materialization: VALIDATED_FOR_DOCUMENTED_SCOPE
+FLIGHTGROUP transit / waypoint / mission paths: VALIDATED_FOR_DOCUMENTED_SCOPE
+FLIGHTGROUP:Refuel(...) with WIZARD/LISA:        VALIDATED_FOR_DOCUMENTED_SCOPE
+FLIGHTGROUP:Refuel(...) with WIZARD/MOE:         VALIDATED_FOR_DOCUMENTED_SCOPE
+AUFTRAG racetrack/tanker lifecycle:              VALIDATED_FOR_DOCUMENTED_SCOPE
+COORDINATE route geometry helpers:               VALIDATED_FOR_DOCUMENTED_SCOPE
+SCHEDULER 5-second coordination:                 VALIDATED_FOR_DOCUMENTED_SCOPE
+MOOSE AWACS controller class:                    NOT_USED
+```
+
+Der verworfene V4-/`ClearWaypoints()`-Live-Retask-Pfad ist nicht Bestandteil dieser Statusanhebung.
+
+Details: [`OMW-MOOSE-AWACS-FUEL-DRIVEN-AAR`](AWACS-FUEL-DRIVEN-AAR-LIFECYCLE.md) und [`AWACS Acceptance 4`](../../mission/tests/awacs-external-lifecycle/ACCEPTANCE-4.md).

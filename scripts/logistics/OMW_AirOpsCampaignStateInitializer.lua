@@ -8,7 +8,7 @@ local Initializer = {}
 
 local TAG = "[OMW][Logistics.AirOpsCampaignStateInitializer]"
 
-Initializer.SchemaVersion = "OMW-AIROPS-CAMPAIGNSTATE-INITIALIZER-5"
+Initializer.SchemaVersion = "OMW-AIROPS-CAMPAIGNSTATE-INITIALIZER-6"
 
 -- These are CampaignState node labels. OFFMAP_* and GROUND_NODE_* entries are
 -- strategic/logical nodes and must never be passed to AIRBASE, WAREHOUSE or
@@ -23,6 +23,7 @@ Initializer.NodeAirbaseName = {
   TARINKOT = "Tarinkot",
   OFFMAP_MANAS = "OFF-MAP LOGICAL NODE - MANAS",
   OFFMAP_AL_UDEID = "OFF-MAP LOGICAL NODE - AL UDEID",
+  OFFMAP_AL_DHAFRA = "OFF-MAP LOGICAL NODE - AL DHAFRA",
   GROUND_NODE_JALALABAD = "GROUND NODE - Jalalabad / FOB Fenty",
   GROUND_NODE_FORTRESS = "GROUND NODE - COP Fortress",
   GROUND_NODE_JOYCE = "GROUND NODE - FOB Joyce",

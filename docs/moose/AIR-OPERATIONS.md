@@ -93,3 +93,39 @@ Für Parking-Overrides ist diese Prüfung abgeschlossen:
 - [`OMW-MOOSE-WAREHOUSE-PARKING-OVERRIDE-RESEARCH`](WAREHOUSE-PARKING-OVERRIDE-RESEARCH.md)
 
 Der Bericht belegt eine parametrierbare AIRBASE-API, aber keinen WAREHOUSE-Setter oder -Hook. Er genehmigt keinen Runtime-Override und keine MOOSE-Quelländerung.
+
+## 5. Extern basierter E-3-AWACS-Pfad
+
+Für den extern basierten USAF-E-3-AWACS-Lifecycle wird kein DCS-Airbase-Ersatz für Al Dhafra erzeugt. `OFFMAP_AL_DHAFRA` bleibt ein reiner CampaignState-Knoten.
+
+Der produktive branch-lokale Pfad verwendet weiterhin MOOSE-first:
+
+```text
+SPAWN
+-> FLIGHTGROUP
+-> AUFTRAG
+-> FLIGHTGROUP:Refuel(...)
+-> PassingWaypoint-/Refueled-FSM
+-> External Handoff / Despawn
+```
+
+Die umfangreiche MOOSE-Klasse `AWACS` wird hierfür bewusst nicht verwendet, weil ihr eigener FEZ-/Fighter-Control-/SRS-/Home-Airbase-Scope über die angeforderte physische OMW-AWACS-Abbildung hinausgeht.
+
+Der aktuell DCS-bestätigte branch-lokale Produktionspfad ist:
+
+```text
+OMW_AWACS_Controller_FullLifecycle_V3.lua
++ OMW_AWACS_MOE_Relief.lua
+-> tools/build-awacs-base.ps1
+-> mission/runtime/air-operations/OMW_AWACS_Base.lua
+```
+
+Funktional bestätigt sind dabei der externe WIZARD-Lifecycle, der APOC-Orbit, der geplante erste AAR mit LISA, der geplante zweite AAR mit MOE, beide `Refueled`-/Rejoin-Pfade sowie der finale ROSIE-Egress und externe Handoff. Das neu benannte Base-Artefakt wurde zusätzlich in DCS als Packaging-Smoke-Test geladen und bis zum regulären APOC-Lifecycle ausgeführt.
+
+Diese Aussage bleibt auf die dokumentierte Branch-/Commit-/MIZ-/Bundle-/DCS-/MOOSE-Provenienz beschränkt und erzeugt keine branch-unabhängige Validierung.
+
+Technische Details, Evidenzgrenzen und Acceptance:
+
+- [`OMW-MOOSE-AWACS-EXTERNAL-LIFECYCLE`](AWACS-EXTERNAL-LIFECYCLE.md)
+- [`OMW-MOOSE-AWACS-FUEL-DRIVEN-AAR`](AWACS-FUEL-DRIVEN-AAR-LIFECYCLE.md)
+- [`AWACS Acceptance 4`](../../mission/tests/awacs-external-lifecycle/ACCEPTANCE-4.md)
