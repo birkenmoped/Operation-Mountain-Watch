@@ -8,7 +8,7 @@ $repoRoot = Split-Path -Parent $PSScriptRoot
 $sourcePath = Join-Path $repoRoot 'mission\tests\awacs-external-lifecycle\src\05-awacs-e3-performance-matrix.lua'
 $distDir = Join-Path $repoRoot 'mission\tests\awacs-external-lifecycle\dist'
 $outputPath = Join-Path $distDir 'OMW_AWACS_Acceptance_5.lua'
-$builderVersion = 'OMW-AWACS-ACCEPTANCE-5-2'
+$builderVersion = 'OMW-AWACS-ACCEPTANCE-5-3'
 $mooseCommit = '73d3ed119cd9e7e3f2cfcabbaa34513d30529b54'
 $mooseSha256 = 'e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915'
 
@@ -76,7 +76,18 @@ $header = @"
 
 "@
 
-Set-Content -LiteralPath $outputPath -Value ($header + $content) -Encoding UTF8
+# Windows PowerShell 5.1 writes a UTF-8 BOM when Set-Content -Encoding UTF8 is used.
+# DCS Lua 5.1 rejects that BOM at byte 0 with "unexpected symbol near ''".
+# Use UTF8Encoding(false) explicitly so the generated mission script is BOM-free on
+# both Windows PowerShell 5.1 and PowerShell 7+.
+$utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+[System.IO.File]::WriteAllText($outputPath, ($header + $content), $utf8NoBom)
+
+$firstBytes = [System.IO.File]::ReadAllBytes($outputPath)
+if ($firstBytes.Length -ge 3 -and $firstBytes[0] -eq 0xEF -and $firstBytes[1] -eq 0xBB -and $firstBytes[2] -eq 0xBF) {
+  throw "Generated Acceptance 5 bundle contains an unexpected UTF-8 BOM: $outputPath"
+}
+
 $bundleSha = (Get-FileHash -LiteralPath $outputPath -Algorithm SHA256).Hash.ToLowerInvariant()
 
 Write-Host "Built: $outputPath"
@@ -93,6 +104,7 @@ Write-Host 'RuntimeGeometry: true'
 Write-Host 'MissionEditorMarkersRequired: false'
 Write-Host 'MissionEditorRoutesRequired: false'
 Write-Host 'MissionEditorPerProfileTriggersRequired: false'
+Write-Host 'Utf8Bom: false'
 Write-Host "MOOSECommit: $mooseCommit"
 Write-Host "MooseLuaSHA256: $mooseSha256"
 Write-Host "GitCommit: $gitCommit"
