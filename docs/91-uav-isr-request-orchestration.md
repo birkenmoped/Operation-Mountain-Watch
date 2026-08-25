@@ -99,6 +99,7 @@ Vor Codearbeit sind zusätzlich die zu diesem MOOSE-Stand passenden offiziellen 
 3. Das System akzeptiert ausschließlich einen einzelnen gültigen BLUE-Marker innerhalb eines festzulegenden Submit-Radius.
 4. Der Request wird mit stabiler Request-ID, anfordernder Gruppe, Marker-ID und Zielkoordinate gespeichert.
 5. Eine erfolgreiche Abgabe bindet die Zielkoordinate an die Request-ID; spätere Markeränderungen ändern den Auftrag nicht.
+6. Weil der geprüfte `MARKEROPS_BASE`-Delete-Callback keine Marker-ID liefert, leert Phase 1 nach jedem relevanten Marker-Delete den lokalen Kandidatencache. Neue Abgaben erfordern danach eine erneute Markeränderung; bereits angenommene Requests bleiben unverändert gebunden.
 
 Mehrdeutige Marker, ungültige Texte, fremde Koalition, No-go-Zonen oder fehlender Marker führen zu einer gruppenspezifischen, erklärenden Ablehnung.
 
@@ -261,12 +262,24 @@ Vor Runtime-Implementierung erforderlich:
 
 - [x] D1--D7 entscheiden und den verbindlichen Fachvertrag dokumentieren.
 - [x] MOOSE-first-Gap-Nachweis für die Marker-zu-Gruppenmenü-Korrelation und die ausdrückliche Projektinhaberfreigabe dokumentieren.
-- [ ] `MARKEROPS_BASE` für gültige BLUE-`UAV RECON`-Marker konfigurieren.
-- [ ] Gruppenmenü mit Submit-, Own-status- und Own-cancel-Ansicht implementieren.
-- [ ] Eindeutigkeitsprüfung für nächsten gültigen Marker, Marker-ID-Bindung und Fehlermeldungen implementieren.
-- [ ] Noch keine UAV-Reservierung, kein Spawn, keine Waffenlogik.
-- [ ] Multiplayer-DCS-Acceptance: zwei BLUE-Gruppen, nahe/mehrdeutige/ungültige Marker, private Statusausgabe, kein Fremdabbruch.
+- [x] `MARKEROPS_BASE` im source-getesteten Bridge-Modul für gültige BLUE-`UAV RECON`-Marker konfigurieren; DCS-Integration/Acceptance weiter offen.
+- [x] Gruppenmenü mit Submit-, Own-status- und Own-cancel-Ansicht im source-getesteten Bridge-Modul implementieren; DCS-Integration/Acceptance weiter offen.
+- [x] Eindeutigkeitsprüfung für nächsten gültigen Marker, Marker-ID-Bindung und Fehlermeldungen implementieren; GitHub-Lua-Contract-PASS, keine DCS-Acceptance.
+- [x] Keine UAV-Reservierung, kein Spawn und keine Waffenlogik implementiert.
+- [ ] Multiplayer-DCS-Acceptance: zwei BLUE-Gruppen, nahe/mehrdeutige/ungültige Marker, private Statusausgabe, kein Fremdabbruch. Der neue Code ist noch in kein Missionsbundle/MIZ integriert.
 
+### Phase 1.1 -- Source-Contract-Provenienz
+
+Implementierte, noch nicht in ein Missionsbundle injizierte Artefakte:
+
+```text
+scripts/campaign/OMW_ISR_RequestCoordinator.lua
+scripts/air-operations/OMW_ISR_RequestMenu.lua
+tests/uav-isr/test_isr_request_coordinator.lua
+.github/workflows/uav-isr-request-validation.yml
+```
+
+Der GitHub-Workflow `UAV ISR request validation` lief für Commit `9f173aa64ce3439fe98aa9f0082d55d4da02da75` erfolgreich. Dieser Contract-Test prüft Request-Eigentum, Gruppenquote, Blue-/Text-/Radius-Validierung, Gleichstand, Owner-Cancel sowie das konservative Cache-Leeren bei einem MOOSE-Marker-Delete. Er ist kein DCS- oder Multiplayer-Acceptance-Nachweis.
 ### Phase 2 -- CampaignState-Request und Ressourcenreservierung
 
 - [ ] Stabile ISR-Request-Entity-ID und erlaubte Zustandsübergänge definieren.
