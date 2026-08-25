@@ -203,4 +203,46 @@ do
   expectTrue(messages[#messages].text:find("no valid UAV RECON marker") ~= nil, "DELETE_FAIL_CLOSED_MESSAGE")
 end
 
+
+do
+  local added = false
+  local fakeMoose = {
+    MARKEROPS_BASE = { New = function() return {} end },
+    MENU_GROUP = { New = function(_, group, text, parent) return { group = group, text = text, parent = parent } end },
+    MENU_GROUP_COMMAND = { New = function(_, group, text, parent, callback) return { group = group, text = text, parent = parent, callback = callback } end },
+    SET_CLIENT = {
+      New = function()
+        local clientSet = {}
+        function clientSet:FilterCoalitions(value)
+          expectEqual(value, "blue", "CLIENT_SET_COALITION")
+          return self
+        end
+        function clientSet:FilterStart()
+          self:OnAfterAdded(nil, nil, nil, "CLIENT_BLUE_1", {
+            GetGroup = function()
+              return {
+                GetID = function() return 501 end,
+                GetCoordinate = function() return coordinate(0, 0) end,
+              }
+            end,
+          })
+          added = true
+          return self
+        end
+        return clientSet
+      end,
+    },
+  }
+
+  local runtime = RequestMenu.New({
+    coordinator = newCoordinator(),
+    blueCoalitionNumber = 2,
+    moose = fakeMoose,
+    sendMessage = function() end,
+  })
+  runtime:RegisterBlueClients()
+  expectTrue(added, "CLIENT_SET_FILTER_STARTED")
+  expectTrue(runtime.menusByGroupId["501"] ~= nil, "CLIENT_GROUP_MENU_REGISTERED")
+end
+
 print("PASS UAV ISR request coordinator and MOOSE menu contract")
