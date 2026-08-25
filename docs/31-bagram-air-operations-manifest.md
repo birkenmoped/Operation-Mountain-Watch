@@ -21,7 +21,7 @@ supersedes:
   - single-AIRWING Bagram runtime structure AW_US_BAGRAM
 superseded_by:
 source_branch: agent/bagram-mq1a-lre-foundation
-source_commit: PENDING_MERGE
+source_commit: b18937c2a152c631563bc78208a60fa3a24503d0
 validated_in_dcs: false
 document_class: HISTORICAL_EVIDENCE_ACTIVE_ORBAT_AND_FOUNDATION_CONTRACT
 ---
