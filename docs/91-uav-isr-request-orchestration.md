@@ -24,6 +24,16 @@ Dieses Dokument ist ein Entwicklungsauftrag und eine Arbeitsliste. Es fasst den 
 
 Es ist **kein** Nachweis eines funktionierenden DCS-Laufzeitverhaltens und erzeugt keine neue produktive Baseline. Vor der Implementierung sind die offenen Projektinhaberentscheidungen in Abschnitt 8 zu bestätigen und in die zuständigen Fachdokumente zu übernehmen.
 
+## 1.1 Ausführungsgrenze der Entwicklungsumgebung
+
+Im lokalen OMW-Arbeitsverzeichnis werden weder Python noch Lua als Entwicklungs- oder Testlaufzeit vorausgesetzt. Deshalb gilt:
+
+- Dokumentations- und statische Repository-Prüfungen erfolgen im veröffentlichten Repository über die vorhandene CI, nicht durch lokale Python-Aufrufe.
+- Lua wird nicht lokal ausgeführt oder durch einen lokalen Lua-Interpreter „akzeptiert“.
+- DCS-Laufzeitaussagen entstehen ausschließlich aus einem reproduzierbar gebauten, in DCS geladenen Missionsartefakt samt der dafür erforderlichen Logs und Hashes.
+
+Ein lokales `git pull` dient nur dem Abgleich des Worktrees mit dem veröffentlichten Branch.
+
 ## 2. Zielbild
 
 BLUE-Spielergruppen können begrenzte militärische ISR-Unterstützung anfordern, ohne spezielle Client-Slots zu benötigen.
