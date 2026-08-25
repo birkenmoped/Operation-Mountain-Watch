@@ -22,7 +22,7 @@ owning_policy: OMW-GOV-001
 
 Dieses Dokument ist ein Entwicklungsauftrag und eine Arbeitsliste. Es fasst den fachlichen Entscheidungsstand zur Spieleranforderung von militärischer UAV-Aufklärung zusammen und legt die notwendige, MOOSE-first-konforme Entwicklungs- und Acceptance-Reihenfolge fest.
 
-Es ist **kein** Nachweis eines funktionierenden DCS-Laufzeitverhaltens und erzeugt keine neue produktive Baseline. Vor der Implementierung sind die offenen Projektinhaberentscheidungen in Abschnitt 8 zu bestätigen und in die zuständigen Fachdokumente zu übernehmen.
+Es ist **kein** Nachweis eines funktionierenden DCS-Laufzeitverhaltens und erzeugt keine neue produktive Baseline. Die Projektinhaberentscheidungen D1--D7 sind in Abschnitt 8 dokumentiert. Weiterhin offen bleiben ausschließlich konkret zu testende DCS-Parameter und Implementierungsdetails.
 
 ## 1.1 Ausführungsgrenze der Entwicklungsumgebung
 
@@ -52,7 +52,7 @@ MOOSE AIRWING / SQUADRON / AUFTRAG physical execution
 
 Die Anforderung erzeugt keinen UAV-Spawn. Sie erzeugt einen Bedarf. `CampaignState` bleibt die einzige Autorität für strategischen Bestand, Reservierung, Verlust, Turnaround und Restart-Reconciliation. Die physische Ausführung erfolgt über MOOSE.
 
-Die erste produktive Stufe umfasst ausschließlich unbewaffnete beziehungsweise `WeaponHold`-geführte **RECON**. AFAC, Laserdesignation und Waffenwirkung sind ausdrücklich nicht Teil dieses Auftrags.
+Die vorhandenen MQ-1-/MQ-9-Mission-Editor-Templates bleiben mit ihrer festgelegten Standardbewaffnung unverändert. Die erste produktive Stufe führt sie jedoch ausschließlich als **RECON** mit `WeaponHold`: keine Spieler-Waffenfreigabe, kein AFAC und keine Laserdesignation.
 
 ## 3. Fachlicher Hintergrund
 
@@ -112,7 +112,7 @@ Mehrdeutige Marker, ungültige Texte, fremde Koalition, No-go-Zonen oder fehlend
 | Fremde Requests | Nicht abbrechbar und nicht detailliert sichtbar. |
 | Eigene Requests | Wartende Anfrage stornierbar; nach Start nur geordneter Recall. |
 | Statusanzeige | Gruppenbezogen über `MENU_GROUP_COMMAND` und `MESSAGE:ToGroup`. |
-| Zielinformationen | Nur für die anfordernde Gruppe; keine automatische koalitionsweite Feindlage. |
+| Zielinformationen | Ausschließlich die native DCS-Fog-of-War-Lage. Es werden keine projektspezifischen Zielmarker, Textmeldungen oder gruppenspezifischen Kontaktfeeds erzeugt. |
 
 Bei OMWs Clientregel "eine Clientgruppe = ein Luftfahrzeug" ist Gruppenbesitz der korrekte Mehrspielerbezug. Sollte später eine Gruppe mehrere unabhängige Spieler enthalten, teilen diese bewusst Requeststatus und Abbruchrecht.
 
@@ -133,7 +133,7 @@ Ein Request ist nicht gleich einer Sortie. Ein aktives UAV kann mehrere Requests
 
 ### 5.4 Kapazität und Queue
 
-Wenn kein UAV verfügbar ist, bleibt eine gültige Anfrage in `QUEUED`. Die anfordernde Gruppe sieht mindestens Request-ID, Queue-Position und Grund.
+Chief-/Commander-Aufträge haben Vorrang und werden durch Spieleranfragen nicht unterbrochen. Wenn deshalb oder wegen eines ausgeschöpften Pools kein geeignetes UAV verfügbar ist, bleibt eine gültige Spieleranfrage in `QUEUED`. Die anfordernde Gruppe sieht mindestens Request-ID, Queue-Position und Grund.
 
 Beispiel:
 
@@ -156,6 +156,8 @@ Eine ETA darf nur gemeldet werden, wenn sie aus dokumentierten realen Laufzeitwe
 
 ### 5.6 Sortie-Persistenz und Holding
 
+Ein Spielerauftrag dauert höchstens **45 Minuten On-Station** und kann nur von seiner Eigentümergruppe vorzeitig per geordnetem Recall beendet werden. Chief-/Commander-Aufträge verwenden diese 45-Minuten-Regel nicht; ihre Laufzeit ist Teil ihres eigenen Auftragsvertrags.
+
 Nach einem Request kehrt das UAV nicht zwangsläufig nach Kandahar zurück. Die ISR-Zelle bewertet vor jeder Folgebeauftragung:
 
 ```text
@@ -174,6 +176,7 @@ Nur bei positiver Bewertung wird die nächste Mission der laufenden UAV-Sortie z
 Stage 1 bis einschließlich der ersten produktiven Freigabe:
 
 ```text
+mission-editor template: existing fixed standard loadout
 mission type: RECON only
 ROE: WeaponHold
 no player weapon release
@@ -185,17 +188,9 @@ Ein späteres bewaffnetes UAV ist ein eigenständiger Fire-Support-Entscheidungs
 
 ### 5.8 Fog of War
 
-Das UAV-Lagebild wird gruppenspezifisch ausgegeben:
+Für das UAV-Lagebild wird ausschließlich das native DCS Fog of War verwendet. Der ISR-Koordinator erzeugt weder `MESSAGE:ToGroup`-Kontaktmeldungen noch `MARKER:ToGroup`-Zielmarker und verwendet nicht `INTEL:SetClusterAnalysis(..., true)`.
 
-```text
-active UAV reconnaissance zone
-  + currently detected contact
-  -> MESSAGE:ToGroup and/or MARKER:ToGroup
-  -> only to request owner group
-  -> withdraw/update on contact loss or request completion
-```
-
-Die DCS-Server-/Missionseinstellungen für F10-Sichtbarkeit sind ein eigenes Acceptance-Gate. Sie dürfen keine gegnerischen Einheiten allgemein sichtbar machen und damit das MOOSE-gesteuerte Lagebild entwerten.
+Die konkrete Wirkung des aktivierten DCS Fog of War auf eine durch das UAV erkannte Einheit ist in einer Multiplayer-DCS-Acceptance zu beobachten und zu protokollieren. MOOSE ändert dabei weder die Sichtbarkeit noch die Kontakt-Haltedauer.
 
 ## 6. Architektur- und Authority-Grenzen
 
@@ -213,26 +208,26 @@ Der OMW ISR Request Coordinator ist ein kleiner projektspezifischer Adapter. Sei
 
 Vor Runtime-Implementierung erforderlich:
 
-- verbindlich gewählter DCS-UAV-Typ als historisch dokumentierter OMW-Asset;
+- verbindlicher OMW-Pool der 361st ERS in Kandahar: vier MQ-1 und zwei MQ-9, jeweils über die bestehenden Mission-Editor-Templates mit festgelegter Standardbewaffnung;
 - Heimatbasis Kandahar einschließlich realem Template, Parking-/Start-/Recovery-Nachweis;
 - AIRWING-/SQUADRON-/Warehouse-/CampaignState-Assetvertrag ohne doppelte Ressourcenhoheit;
-- sichere Transit-, Holding- und Rückkehrbereiche einschließlich Höhen- und Wettergrenzen;
+- sichere Transit-, Holding- und Rückkehrbereiche einschließlich Höhen- und Wettergrenzen; der vorhandene RC-East-Bullseye ist hierfür nur ein zu testender Kandidat, keine freigegebene globale Holding-Zone;
 - Request- und Recon-Zonenregeln, No-go-/NSL-/Basis-/Schutzbereichsprüfung;
 - BLUE-Clientgruppen-Set und gruppenspezifische Menülebensdauer;
 - DCS-F10-/Multiplayer-Sichtbarkeitseinstellungen als dokumentierte Baseline;
 - definierter Persistenzbereich für CampaignState und dokumentierte Restart-Reconciliation.
 
-## 8. Offene Projektinhaberentscheidungen (BLOCKING)
+## 8. Projektinhaberentscheidungen D1--D7
 
-| ID | Entscheidung | Warum blockierend |
+| ID | Entscheidung | Verbleibendes Acceptance-Gate |
 |---|---|---|
-| D1 | UAV-Typ, Anzahl, Bewaffnungsvorhandensein und OMW-historischer Ersatz | Bestimmt Template, Sensorik, Endurance, AIRWING-Stock und Tests. |
-| D2 | Endgültige Heimatbasis und Transit-/Holding-Konzept | Kandahar ist aktuelle Annahme, aber noch keine bestätigte Mission-Editor-Baseline. |
-| D3 | Submit-Radius, Recon-Radius, On-Station-Minimum, Hold-Limit und Rückkehrreserve | Definiert Gültigkeit, Fairness und Sortieentscheidung. |
-| D4 | Prioritätsmodell einschließlich zulässiger Preemption | Verhindert missbräuchliche oder unverständliche Queue-Änderungen. |
-| D5 | Verhalten bei Spielerdisconnect, Gruppenverlust, Slotwechsel und Request-Ablauf | Erforderlich für Multiplayer- und Restart-Konsistenz. |
-| D6 | Zielanzeigeformat: Text, gruppenspezifische Marker oder beides | Bestimmt Fog-of-War-Umsetzung und Performance. |
-| D7 | Umfang der ersten Akzeptanz: nur einzelne Sortie oder bereits Mehrfachbeauftragung | Bestimmt Testdauer und Risiko. |
+| D1 | Gemeinsamer Kandahar-Pool der 361st ERS: **4 MQ-1** und **2 MQ-9**. Es werden ausschließlich die bereits vorhandenen, mit Standardbewaffnung ausgestatteten Mission-Editor-Templates verwendet. | Reale Template-/Parking-/Start-/Recovery-Ausführung in DCS. |
+| D2 | Für diesen Entwicklungsauftrag starten und recovern MQ-1/MQ-9 ausschließlich in Kandahar. Bagram und Jalalabad werden nicht als zusätzliche operative Heimatbasen eingeführt. Der RC-East-Bullseye existiert in der Mission, ist aber erst nach Höhenprofiltest als Holding-Ort nutzbar. | Holding-Ort, Höhenprofil, Wetter- und Rückkehrreserve in DCS validieren. |
+| D3 | Der Spieler fordert keinen Typ an. Die ISR Cell wählt anhand von Flugweg, Recon-Orbit, Rückweg, Sicherheitsmarge und Verfügbarkeit selbst MQ-1 oder MQ-9. Kann keine Plattform das sichere Profil erfüllen, wird der **Spielerauftrag abgelehnt**; keine automatische Verlegung des Aufklärungsgebiets. | Sicherheitsmargen, Flughöhen und tatsächliche Template-Leistung je Geländeprofil in DCS testen. |
+| D4 | Nur spielergenerierte Aufträge folgen diesem Vertrag: höchstens **45 Minuten On-Station**, vorzeitiger Recall nur durch die Eigentümergruppe. Chief-/Commander-Aufträge, etwa Convoy- oder strategische Aufklärung, verwenden ihren eigenen Auftragspfad. | Request- und Sortie-Zustände inklusive Recall in DCS beobachten. |
+| D5 | Chief-/Commander-Aufträge haben Vorrang. Spieleranfragen unterbrechen keine laufende Commander-Mission; begrenzte Verfügbarkeit ist absichtlich spürbar. | Gemeinsamen Pool und fehlende Preemption im CampaignState-/MOOSE-Ablauf testen. |
+| D6 | Jede BLUE-Clientgruppe darf anfordern, besitzt aber höchstens **eine** offene Spieleranfrage (wartend, im Anflug oder On-Station). Fremde Anfragen sind nicht abbrechbar. | Gruppen-ID-Bindung, Slotwechsel, Disconnect und Mehrspieler-Menü testen. |
+| D7 | Es bleibt beim **nativen DCS Fog of War**. Keine zusätzlichen MOOSE-Intel-Cluster- oder Zielmarker, keine scripted Kontakt-Haltedauer. | DCS-F10-Sichtbarkeit und UAV-Sensorerfassung im Multiplayer beobachten und dokumentieren. |
 
 ## 9. Entwicklungsreihenfolge
 
@@ -247,7 +242,7 @@ Vor Runtime-Implementierung erforderlich:
 
 ### Phase 1 -- Fachvertrag und reine UI-/Marker-Acceptance
 
-- [ ] D1--D7 entscheiden und den verbindlichen Fachvertrag dokumentieren.
+- [x] D1--D7 entscheiden und den verbindlichen Fachvertrag dokumentieren.
 - [ ] MOOSE-first-Gap-Nachweis für die Marker-zu-Gruppenmenü-Korrelation schreiben; kleinsten OMW-Adapter abgrenzen.
 - [ ] `MARKEROPS_BASE` für gültige BLUE-`UAV RECON`-Marker konfigurieren.
 - [ ] Gruppenmenü mit Submit-, Own-status- und Own-cancel-Ansicht implementieren.
@@ -275,17 +270,16 @@ Vor Runtime-Implementierung erforderlich:
 
 - [ ] Folge-RECON-Mission an bereits fliegenden UAV-OPSGROUP nur über nachgewiesene MOOSE-Missionsqueue integrieren.
 - [ ] Bedingung für Direktverlegung, begrenzte Holding und RTB nach D3 implementieren.
-- [ ] Queue-Priorität ohne Preemption testen.
-- [ ] Optional und separat: urgent-Preemption mit kontrolliertem MissionCancel/Neuauftrag testen.
+- [ ] Chief-/Commander-Priorität ohne Preemption durch Spielerrequests testen.
+- [ ] Keine urgent-Preemption für Spielerrequests implementieren.
 - [ ] DCS-Acceptance: `RECON A -> RECON B -> RTB`, inklusive tatsächlicher Treibstoff-/Routenbeobachtung.
 
-### Phase 5 -- Gruppenbezogenes Lagebild / Fog of War
+### Phase 5 -- Natives DCS Fog of War
 
-- [ ] Detektionsquelle, Sensor-/LOS-Grenzen und Kontaktablauf nach D6 festlegen.
-- [ ] Nur gruppenspezifische `MESSAGE:ToGroup`/`MARKER:ToGroup` einsetzen.
-- [ ] Kontaktverlust, Missionsende und Recall entfernen/aktualisieren die Gruppenanzeige.
-- [ ] DCS-F10-Sichtbarkeitsbaseline gegenprüfen.
-- [ ] Multiplayer-DCS-Acceptance: Anforderer sieht Kontakt, andere BLUE-Gruppe sieht ihn nicht; Verlust der Detektion entfernt/entwertet die Anzeige.
+- [ ] Keine zusätzlichen Zielmarker, gruppenspezifischen Kontaktmeldungen oder MOOSE-INTEL-Cluster-Marker implementieren.
+- [ ] DCS-F10-Sichtbarkeitsbaseline und aktiviertes Fog of War gegenprüfen.
+- [ ] Multiplayer-DCS-Acceptance: Sichtbarkeit einer durch das UAV erkannten Einheit beobachten; Ergebnis samt DCS-/Missionsversion dokumentieren.
+- [ ] Prüfen, dass kein OMW-Skript die native Fog-of-War-Lage durch eigene Marker oder Meldungen umgeht.
 
 ### Phase 6 -- Vollständige Integration und Dokumentation
 
@@ -309,16 +303,16 @@ Vor Runtime-Implementierung erforderlich:
 | Folgeauftrag | Ein UAV fliegt nach genügend Restzeit `A -> B` ohne unnötiges RTB. |
 | Unzureichende Rückkehrreserve | UAV verweigert Folgeauftrag und kehrt geordnet zurück. |
 | Recall | Geordnete Missionsbeendigung; kein Teleport/Despawn. |
-| Kontaktanzeige | Nur berechtigte Gruppe erhält aktuelle Kontakte. |
-| Kontaktverlust | Gruppenanzeige wird entfernt/aktualisiert. |
+| Natives Fog of War | UAV-Erfassung und F10-Sichtbarkeit entsprechen nachweisbar den gewählten DCS-Missionseinstellungen. |
+| Keine Skriptmarker | Der ISR-Pfad erzeugt keine zusätzlichen Intel-/Zielmarker und keine künstliche Kontakt-Haltedauer. |
 | Restart | Keine doppelte Reservierung, kein Duplikat-Spawn, konsistenter Requeststatus. |
 
 ## 11. Aktueller Stand
 
-- Fachliches Zielbild und Multiplayer-Grundsätze sind erarbeitet.
+- Fachliches Zielbild, D1--D7 und Multiplayer-Grundsätze sind entschieden.
 - Der dedizierte Arbeitszweig ist auf `8ba6f7b1be42111723ad70d337ed466f76a2b716` angelegt; der Remote-Zweig trägt denselben Namen.
 - MOOSE-Quellprüfung für Marker, Gruppenmenü, RECON, OPSGROUP-Missionsqueue, CHIEF-Grenze und gruppenspezifische Nachrichten/Marker ist als Planungsrecherche erfolgt, jedoch noch nicht gegen das Testmissions-Bundle gehasht oder in DCS akzeptiert.
-- Der Main-Stand enthält keine produktive OMW-Laufzeit unter `src/` oder `mission/`; ein UAV-Mission-Editor-Template, ein CampaignState-Integrationspunkt und ein DCS-Test für diese Funktion existieren daher auf diesem Zweig noch nicht.
+- Der Main-Stand enthält auf diesem Zweig noch keinen produktiven Player-ISR-Request-Koordinator und keinen DCS-Acceptance-Test für diese Funktion. Die bereits vorhandenen MQ-1-/MQ-9-Mission-Editor-Templates bleiben die verbindliche Ausgangsbasis.
 - Keine Aussage in diesem Dokument ist als `VALIDATED` zu verstehen.
 
 ## 12. Übergabehinweis
