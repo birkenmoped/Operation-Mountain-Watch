@@ -17,21 +17,21 @@ $outputDirectory = Join-Path $repoRoot 'mission/tests/uav-isr-request/dist'
 $outputFile = Join-Path $outputDirectory 'OMW_UAV_ISR_Request_Acceptance_1.lua'
 
 $forbiddenPatterns = @(
-  'SPAWN\\s*:',
-  'AUFTRAG\\s*:',
-  'AIRWING\\s*:',
-  'SQUADRON\\s*:',
-  'missionCommands\\.',
-  'world\\.addEventHandler',
-  'timer\\.scheduleFunction',
-  'trigger\\.action',
-  'coalition\\.',
-  'Group\\.getByName',
-  'mist\\.',
-  'MissionScripting\\.lua',
-  '\\bio\\.',
-  '\\blfs\\.',
-  '\\bos\\.execute'
+  'SPAWN\s*:',
+  'AUFTRAG\s*:',
+  'AIRWING\s*:',
+  'SQUADRON\s*:',
+  'missionCommands\.',
+  'world\.addEventHandler',
+  'timer\.scheduleFunction',
+  'trigger\.action',
+  'coalition\.',
+  'Group\.getByName',
+  'mist\.',
+  'MissionScripting\.lua',
+  '\bio\.',
+  '\blfs\.',
+  '\bos\.execute'
 )
 
 foreach ($sourceFile in $sourceFiles) {
@@ -86,7 +86,8 @@ local runtime = Acceptance.Start({
 return runtime
 "@
 
-Set-Content -LiteralPath $outputFile -Value $bundle -Encoding utf8NoBOM -NoNewline
+$utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+[System.IO.File]::WriteAllText($outputFile, $bundle, $utf8NoBom)
 $bundleHash = (Get-FileHash -LiteralPath $outputFile -Algorithm SHA256).Hash.ToLowerInvariant()
 
 Write-Host "BuilderVersion: $builderVersion"
