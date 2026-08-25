@@ -75,6 +75,8 @@ Der geplante OMW-UAV-ISR-Pfad kombiniert ausschließlich die folgenden MOOSE-Bau
 ```text
 MARKEROPS_BASE
 -> validiert BLUE-Markerereignisse mit Text, COORDINATE, Marker-ID und Koalition
+SET_CLIENT
+-> registriert BLUE-Clientgruppen für die gruppenspezifische Menüanlage
 MENU_GROUP / MENU_GROUP_COMMAND
 -> erzeugt Submit-, Own-status- und Own-cancel-Befehle im DCS-Gruppenkontext
 AIRWING / SQUADRON / AUFTRAG / OPSGROUP
@@ -84,6 +86,7 @@ AIRWING / SQUADRON / AUFTRAG / OPSGROUP
 Im gepinnten MOOSE-Source ist geprüft:
 
 - `MARKEROPS_BASE:New(Tagname, Keywords)` registriert Add/Change/Remove; der `OnAfterMarkChanged`-Pfad übergibt Text, passende Keywords, `COORDINATE`, Marker-ID, Koalition sowie optionalen Spielernamen;
+- `SET_CLIENT:New():FilterCoalitions("blue"):FilterStart()` ist der source-geprüfte Gruppenregistrierungspfad für BLUE-Clients; die konkrete DCS-Behandlung inaktiver Slots, Besetzung und Rejoin bleibt Acceptance-Gegenstand;
 - `MENU_GROUP_COMMAND:New(Group, MenuText, ParentMenu, CommandMenuFunction, ...)` registriert den Befehl über die DCS-Gruppen-ID und ruft die Funktion mit den beim Einrichten festgelegten Argumenten auf;
 - `AUFTRAG:NewRECON(...)` ist der spätere RECON-Pfad und setzt im geprüften Source `WeaponHold`.
 
