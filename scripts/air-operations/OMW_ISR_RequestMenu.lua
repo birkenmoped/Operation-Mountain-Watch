@@ -112,6 +112,24 @@ function RequestMenu.New(config)
   return self
 end
 
+function RequestMenu:RegisterBlueClients()
+  requireTable(self.moose.SET_CLIENT, "MOOSE SET_CLIENT")
+
+  local clientSet = self.moose.SET_CLIENT:New():FilterCoalitions("blue")
+
+  function clientSet:OnAfterAdded(From, Event, To, ObjectName, client)
+    local group = client and client:GetGroup() or nil
+    if group and group:GetID() then
+      self.owner:RegisterGroup(group)
+    end
+  end
+
+  self.clientSet = clientSet
+  clientSet.owner = self
+  clientSet:FilterStart()
+  return clientSet
+end
+
 function RequestMenu:OnMarkerChanged(text, coordinate, markerId, coalitionNumber)
   self.coordinator:UpsertMarker({
     markerId = markerId,
