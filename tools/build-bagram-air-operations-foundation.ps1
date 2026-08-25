@@ -9,7 +9,7 @@ $sourceFile = Join-Path $repoRoot 'scripts\air-operations\OMW_AirOps_Bagram_Boot
 $distDir = Join-Path $repoRoot 'mission\tests\bagram-air-operations\dist'
 $outputFile = Join-Path $distDir 'OMW_AirOps_Bagram.lua'
 $lifecycleGuard = Join-Path $repoRoot 'tools\Test-AirOpsLifecycleGuards.ps1'
-$builderVersion = 'BGRAM-AIR-OPS-DUAL-FOUNDATION-3'
+$builderVersion = 'BGRAM-AIR-OPS-DUAL-FOUNDATION-4'
 
 if (-not (Test-Path -LiteralPath $sourceFile -PathType Leaf)) {
     throw "Bagram foundation source not found: $sourceFile"
@@ -39,6 +39,19 @@ $requiredMarkers = @(
     'logicalAirframes = 83',
     'representedAirframes = 81',
     'logicalReserve = 2',
+    'parkingBlacklist',
+    'SetParkingSpotBlacklist',
+    'SetParkingIDs',
+    'PARKING_POLICY_PRESTART status=PASS',
+    'PARKING_POLICY_POSTSTART status=%s',
+    'parkingPolicy=PASS',
+    'parkingLabels = "M01-M12"',
+    'parkingLabels = "M13-M24"',
+    'parkingLabels = "B01-B08"',
+    'parkingLabels = "A10,S01-S05"',
+    'parkingLabels = "R15-R16"',
+    'parkingLabels = "R17-R18"',
+    'parkingLabels = "R19-R20"',
     'SQUADRON_STOCK_PRESTART',
     'usafAirwing:Start()',
     'armyAirwing:Start()',
@@ -63,7 +76,6 @@ $forbiddenPatterns = @(
     'AddMission\s*\(',
     'Bagram-to-Jalalabad',
     'directSpawnRequested=true',
-    'SetParkingIDs\s*\(',
     'HH60G_CSAR_LEAD_1SHIP',
     'HH60G_CSAR_COVER_1SHIP',
     'UH60_TRANSPORT_1SHIP'
@@ -80,7 +92,7 @@ if (Test-Path -LiteralPath $outputFile -PathType Leaf) {
 }
 
 $commit = (& git -C $repoRoot rev-parse HEAD).Trim()
-$header = "-- AUTO-GENERATED FILE. DO NOT EDIT DIRECTLY.`n-- Builder: tools/build-bagram-air-operations-foundation.ps1`n-- BuilderVersion: $builderVersion`n-- GitCommit: $commit`n-- MOOSE-Pin: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54`n-- Scope: Bagram dual-AIRWING/SQUADRON foundation only; no test dispatch.`n`n"
+$header = "-- AUTO-GENERATED FILE. DO NOT EDIT DIRECTLY.`n-- Builder: tools/build-bagram-air-operations-foundation.ps1`n-- BuilderVersion: $builderVersion`n-- GitCommit: $commit`n-- MOOSE-Pin: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54`n-- Scope: Bagram dual-AIRWING/SQUADRON foundation with validated parking policy; no test dispatch.`n`n"
 $content = $header + $source
 
 foreach ($pattern in $forbiddenPatterns) {
@@ -101,7 +113,7 @@ foreach ($pattern in $forbiddenPatterns) {
 $hash = (Get-FileHash -LiteralPath $outputFile -Algorithm SHA256).Hash.ToLowerInvariant()
 Write-Host "Built: $outputFile"
 Write-Host "BuilderVersion: $builderVersion"
-Write-Host "Scope: AIRWING_SQUADRON_FOUNDATION_ONLY"
+Write-Host "Scope: AIRWING_SQUADRON_FOUNDATION_WITH_PARKING_POLICY"
 Write-Host "Airwings: 2"
 Write-Host "Squadrons: 7"
 Write-Host "RegisteredGroups: 69"
@@ -109,11 +121,13 @@ Write-Host "RepresentedAirframes: 81"
 Write-Host "LogicalAirframes: 83"
 Write-Host "LogicalReserve: 2"
 Write-Host "RolePayloadsExpected: 8"
+Write-Host "ParkingBlacklistEntries: 10"
+Write-Host "SquadronParkingPools: 7"
 Write-Host "LifecycleGuard: PASS"
 Write-Host "TestDispatch: ABSENT"
 Write-Host "AUFTRAGInstances: ABSENT"
 Write-Host "OPSTRANSPORTInstances: ABSENT"
 Write-Host "Commander: ABSENT"
-Write-Host "ParkingOverride: ABSENT"
+Write-Host "ParkingPolicy: ENABLED"
 Write-Host "SHA256: $hash"
 Write-Host "GitCommit: $commit"
