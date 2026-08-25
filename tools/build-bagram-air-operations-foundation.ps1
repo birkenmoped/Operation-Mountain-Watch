@@ -9,7 +9,7 @@ $sourceFile = Join-Path $repoRoot 'scripts\air-operations\OMW_AirOps_Bagram_Boot
 $distDir = Join-Path $repoRoot 'mission\tests\bagram-air-operations\dist'
 $outputFile = Join-Path $distDir 'OMW_AirOps_Bagram.lua'
 $lifecycleGuard = Join-Path $repoRoot 'tools\Test-AirOpsLifecycleGuards.ps1'
-$builderVersion = 'BGRAM-AIR-OPS-DUAL-FOUNDATION-2'
+$builderVersion = 'BGRAM-AIR-OPS-DUAL-FOUNDATION-3'
 
 if (-not (Test-Path -LiteralPath $sourceFile -PathType Leaf)) {
     throw "Bagram foundation source not found: $sourceFile"
@@ -27,14 +27,17 @@ $requiredMarkers = @(
     'WH_AIR_US_BAGRAM_ARMY',
     'SQ_US_BGRM_F15E_335_EFS',
     'SQ_US_BGRM_F16C_121_EFS',
+    'SQ_US_BGRM_MQ1A_62_ERS',
     'SQ_US_BGRM_C130_774_EAS',
     'SQ_US_BGRM_HH60G_83_ERQS',
     'SQ_US_BGRM_UH60_A_1_169',
     'SQ_US_BGRM_CH47_B_7_158',
+    'TPL_AIR_US_BGRM_MQ1A_RECON_1SHIP',
     'TPL_AIR_US_BGRM_HH60G_CSAR_1SHIP',
     'TPL_AIR_US_BGRM_UH60_UTILITY_1SHIP',
-    'logicalAirframes = 75',
-    'representedAirframes = 73',
+    'AUFTRAG.Type.RECON',
+    'logicalAirframes = 83',
+    'representedAirframes = 81',
     'logicalReserve = 2',
     'SQUADRON_STOCK_PRESTART',
     'usafAirwing:Start()',
@@ -100,12 +103,12 @@ Write-Host "Built: $outputFile"
 Write-Host "BuilderVersion: $builderVersion"
 Write-Host "Scope: AIRWING_SQUADRON_FOUNDATION_ONLY"
 Write-Host "Airwings: 2"
-Write-Host "Squadrons: 6"
-Write-Host "RegisteredGroups: 61"
-Write-Host "RepresentedAirframes: 73"
-Write-Host "LogicalAirframes: 75"
+Write-Host "Squadrons: 7"
+Write-Host "RegisteredGroups: 69"
+Write-Host "RepresentedAirframes: 81"
+Write-Host "LogicalAirframes: 83"
 Write-Host "LogicalReserve: 2"
-Write-Host "RolePayloadsExpected: 7"
+Write-Host "RolePayloadsExpected: 8"
 Write-Host "LifecycleGuard: PASS"
 Write-Host "TestDispatch: ABSENT"
 Write-Host "AUFTRAGInstances: ABSENT"

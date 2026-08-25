@@ -7,6 +7,7 @@ authoritative_for:
   - Bagram active air ORBAT
   - Bagram dual-AIRWING foundation structure
   - Bagram logical aircraft inventories
+  - Bagram MQ-1A LRE representation
   - Bagram F-15E CAS and STRIKE payload authoring baseline
 not_authoritative_for:
   - current Mission Editor parking state
@@ -19,8 +20,8 @@ supersedes:
   - docs/28-bagram-air-operations-manifest.md
   - single-AIRWING Bagram runtime structure AW_US_BAGRAM
 superseded_by:
-source_branch: agent/bagram-f15e-payload-main-reconciliation
-source_commit: bab797c89395228fedf9103053176f754b5b7c99
+source_branch: agent/bagram-mq1a-lre-foundation
+source_commit: PENDING_MERGE
 validated_in_dcs: false
 document_class: HISTORICAL_EVIDENCE_ACTIVE_ORBAT_AND_FOUNDATION_CONTRACT
 ---
@@ -29,7 +30,7 @@ document_class: HISTORICAL_EVIDENCE_ACTIVE_ORBAT_AND_FOUNDATION_CONTRACT
 
 ## 1. Dokumentstatus
 
-Dieses Dokument ist verbindlich für die historische Bagram-Fighter-Evidenz, die aktive Bagram-ORBAT und den dualen AIRWING-Foundation-Vertrag.
+Dieses Dokument ist verbindlich für die historische Bagram-Fighter-Evidenz, die aktive Bagram-ORBAT, die Bagram-MQ-1A-LRE-Abbildung und den dualen AIRWING-Foundation-Vertrag.
 
 Der frühere technische Sammelknoten
 
@@ -92,13 +93,38 @@ B Company, 7-158 Aviation Regiment   | CH-47
 
 USAF Personnel Recovery und Army UH-60 Utility werden ausdrücklich nicht zusammengelegt. Die Army-Komponenten gehören organisatorisch nicht in die USAF-AIRWING-Domäne.
 
-### 2.4 Quellenbasis
+### 2.4 62nd ERS und Launch-and-Recovery-Element
+
+Der Juli-2011-ORBAT führt die 62nd Expeditionary Reconnaissance Squadron im Afghanistan-RPA-Kontext mit MQ-1 und MQ-9. Für Bagram wird in OMW zusätzlich die LRE-Struktur berücksichtigt.
+
+Die offizielle USAF-Veröffentlichung `Predators of the Mountains` beschreibt die 62nd ERS in Bagram als Launch and Recovery Element: Das lokale Personal führt Start und Landung über Sichtfunk-/Line-of-Sight-Verbindung durch; nach dem Steigflug wird die Missionskontrolle an ein Mission Control Element in den USA übergeben. Die Quelle belegt außerdem lokale Wartungs- und Turnaround-Aufgaben für MQ-1 Predator in Bagram.
+
+Eine spätere AFCENT-Veröffentlichung `62nd ERS keeps mission going` bestätigt das LRE/MCE-Betriebsmodell für die 62nd ERS erneut. Wegen ihres Veröffentlichungsstands 2014 dient sie für OMW nur als Struktur-/Kontinuitätsbeleg und nicht als direkter Nachweis eines Bagram-Bestands im Jahr 2011.
+
+[`OMW-HIST-PREDATOR-REAPER-AFGHANISTAN-SOURCE-REVIEW`](85-predator-reaper-afghanistan-source-review.md) hält ausdrücklich fest, dass die verfügbare Evidenz keine vollständige 2011er Airframe-zu-Basis-Verteilung und keine belastbare konkrete MQ-1/MQ-9-Stückzahl für Bagram beweist.
+
+Daraus folgt die ausdrückliche OMW-Designentscheidung des Projektinhabers vom 25.08.2026:
+
+```text
+Unit: 62nd Expeditionary Reconnaissance Squadron
+Operational representation: Bagram Launch and Recovery Element
+OMW represented aircraft type: MQ-1A
+Logical local LRE pool: 8 aircraft
+Mission Control Element: remote / CONUS, not physically represented in DCS
+```
+
+Die Zahl `8` ist ein OMW-Kampagnenbestand. Sie ist keine Behauptung, dass 2011 dauerhaft exakt acht Predator in Bagram stationiert waren. Ebenso ist `MQ-1A` die gewählte OMW-/DCS-Abbildung und keine Behauptung, dass die historische 62nd ERS in Bagram zu diesem Zeitpunkt ausschließlich diese Untervariante betrieb. MQ-9 und MC-12 werden durch diese Bagram-OMW-Entscheidung nicht als aktive lokale Pools umgesetzt.
+
+### 2.5 Quellenbasis
 
 - U.S. Air Forces Central, `Coalition Forces 70, Taliban 0`, 14.11.2011;
 - U.S. Air Force, `Close air support protects coalition forces, kills 70 insurgents`, 14.11.2011;
 - 113th Wing, `113th Wing initiates first ANG F-16 deployment to Afghanistan`, 11.10.2011;
 - F-16.net, `Bagram AB Deployment 2011-12`;
 - Juli-2011 Coalition ORBAT;
+- U.S. Air Force, `Predators of the Mountains`, Bagram LRE evidence;
+- U.S. Air Forces Central, `62nd ERS keeps mission going`, post-period LRE/MCE continuity evidence;
+- [`OMW-HIST-PREDATOR-REAPER-AFGHANISTAN-SOURCE-REVIEW`](85-predator-reaper-afghanistan-source-review.md);
 - zeitgenössische 10th-CAB-/TF-Phoenix-Publikationen;
 - projektseitig ausgewertete Maxar-/Google-Earth-Satellitenaufnahme `12/2011`.
 
@@ -108,6 +134,7 @@ USAF Personnel Recovery und Army UH-60 Utility werden ausdrücklich nicht zusamm
 AW_US_BGRM_455_AEW
 ├── SQ_US_BGRM_F15E_335_EFS       13 F-15E
 ├── SQ_US_BGRM_F16C_121_EFS       13 F-16C
+├── SQ_US_BGRM_MQ1A_62_ERS         8 MQ-1A  [OMW Bagram LRE representation]
 ├── SQ_US_BGRM_C130_774_EAS       20 C-130
 └── SQ_US_BGRM_HH60G_83_ERQS       6 HH-60G
 
@@ -119,10 +146,10 @@ AW_US_BGRM_TF_FALCON_10_CAB
 Gesamtbestand:
 
 ```text
-75 logische Luftfahrzeuge
+83 logische Luftfahrzeuge
 ```
 
-Die Werte sind OMW-Kampagnenbestände und keine Behauptung über eine vollständige USAF-/Army-TOE an einem einzigen Stichtag.
+Die Werte sind OMW-Kampagnenbestände und keine Behauptung über eine vollständige USAF-/Army-TOE an einem einzigen Stichtag. Für die acht MQ-1A gilt zusätzlich die LRE-Abgrenzung aus Abschnitt 2.4.
 
 ## 4. DCS-Abbildung
 
@@ -241,6 +268,25 @@ Internal: M61A1
 
 Die GBU-12 ist dabei ausschließlich ein funktionaler Ersatz für die Laseroption der realen GBU-54 und darf nicht als historisch identische Außenlast beschrieben werden. Zusätzliche AIM-9 auf Station 2 und 8 gehören nicht zum Standard-CAS-Loadout. Die genaue AIM-120-Untervariante, der Targeting-Pod, alle CLSIDs sowie die sichtbare Clean-Darstellung der Stationen 2 und 8 bleiben Gegenstand des finalen `.miz`-Audits und der DCS-Acceptance.
 
+### MQ-1A / 62nd ERS LRE
+
+```text
+SQUADRON: SQ_US_BGRM_MQ1A_62_ERS
+Template: TPL_AIR_US_BGRM_MQ1A_RECON_1SHIP
+OMW represented type: MQ-1A
+Logical local LRE pool: 8
+MOOSE mission capability: AUFTRAG.Type.RECON
+Grouping: 1
+Asset groups: 8
+Logical reserve: 0
+```
+
+Für den gepinnten MOOSE-Stand ist `AUFTRAG.Type.RECON` vorhanden und wird im MOOSE-Mission-Task-Mapping auf `ENUMS.MissionTask.RECONNAISSANCE` abgebildet. Die Foundation verwendet diesen nativen MOOSE-Pfad als SQUADRON-Mission-Capability und Payload-Typ; es wird keine parallele eigene RECON-Missionslogik eingeführt.
+
+Die Foundation bildet ausschließlich den lokalen Bagram-LRE-Airframe-Pool ab. Das Mission Control Element in den USA ist kein physisches DCS-Asset. Die aktuelle Foundation erzeugt außerdem keine konkrete RECON-AUFTRAG-Instanz; taktische ISR-/UAV-Orchestrierung bleibt einem separaten, dafür autorisierten Runtime-Pfad vorbehalten.
+
+Die Mission-Editor-Parking-Whitelist/-Blacklist ist nicht Bestandteil dieses Foundation-Commits. Eine spätere Parking-Bindung muss den nachgewiesenen MOOSE-Parking-Vertrag und die tatsächlich genehmigten Bagram-TerminalIDs verwenden und separat in DCS geprüft werden.
+
 ### HH-60G und CH-47
 
 Die im historischen Mission-Editor-Zweig verwendeten DCS-Ersatzmuster bleiben technische Repräsentationen und sind keine historische Typbehauptung. Der finale Mission-Editor-Stand ist vor DCS-Acceptance erneut zu auditieren.
@@ -277,9 +323,10 @@ SQ_US_BGRM_F16C_121_EFS
   1 logischer Reserve-Airframe
 ```
 
-Die vier 1-Ship-SQUADRONs werden vollständig als MOOSE-Assetgruppen registriert:
+Die fünf 1-Ship-SQUADRONs werden vollständig als MOOSE-Assetgruppen registriert:
 
 ```text
+MQ-1A:   8 x 1
 C-130:  20 x 1
 HH-60G:  6 x 1
 UH-60:  10 x 1
@@ -289,9 +336,9 @@ CH-47:  13 x 1
 Damit ergeben sich:
 
 ```text
-61 Assetgruppen
-73 MOOSE-repräsentierbare Airframes
-75 logische Airframes
+69 Assetgruppen
+81 MOOSE-repräsentierbare Airframes
+83 logische Airframes
  2 logische Reserve-Airframes
 ```
 
@@ -308,6 +355,9 @@ SQ_US_BGRM_F15E_335_EFS
 
 SQ_US_BGRM_F16C_121_EFS
   TPL_AIR_US_BGRM_F16C_CAS_2SHIP
+
+SQ_US_BGRM_MQ1A_62_ERS
+  TPL_AIR_US_BGRM_MQ1A_RECON_1SHIP
 
 SQ_US_BGRM_C130_774_EAS
   TPL_AIR_US_BGRM_C130_TRANSPORT_1SHIP
@@ -328,7 +378,7 @@ Der frühere `F16`-Template-Identifier wird für den Neubau auf `F16C` normalisi
 
 Für `TPL_AIR_US_BGRM_F16C_CAS_2SHIP` gilt zusätzlich der Payloadvertrag aus [`OMW-AIR-BAGRAM-F16C-CAS-PAYLOAD`](evidence/bagram-f16c-cas-payload-decision-2026-08-13.md). Für die beiden F-15E-Seeds ist Abschnitt 4 dieses Dokuments die autoritative Payload-Authoring-Baseline.
 
-Die Foundation registriert damit sieben Role-Payload-Seeds: zwei für F-15E sowie je einen für F-16C, C-130, HH-60G, UH-60 und CH-47.
+Die Foundation registriert damit acht Role-Payload-Seeds: zwei für F-15E sowie je einen für F-16C, MQ-1A, C-130, HH-60G, UH-60 und CH-47.
 
 ## 8. Foundation-Runtime-Grenze
 
@@ -342,18 +392,18 @@ Nicht Bestandteil dieses Schrittes sind:
 - konkrete AUFTRAG-Instanzen;
 - OPSTRANSPORT-Instanzen;
 - F10-Teststeuerung;
-- Parking-Override;
+- Parking-Override beziehungsweise die Bagram-Parking-Whitelist/-Blacklist;
 - Persistenz oder CampaignState-Mutation.
 
-## 9. Aktueller Foundation-Acceptance-Stand
+## 9. Foundation-Acceptance-Stand
 
-Der DCS-Lauf vom 10.08.2026 ist für den exakt dokumentierten Branch-, Commit-, Missions-, Bundle-, DCS- und MOOSE-Stand als `ACCEPTED_TECHNICAL_BASELINE` festgehalten:
+Der DCS-Lauf vom 10.08.2026 bleibt für seinen exakt dokumentierten damaligen Branch-, Commit-, Missions-, Bundle-, DCS- und MOOSE-Stand als `ACCEPTED_TECHNICAL_BASELINE` festgehalten:
 
 ```text
 mission/tests/bagram-air-operations/expected/bagram-dual-airwing-foundation-acceptance.md
 ```
 
-Bestätigt wurden:
+Dieser historische Lauf bestätigte die damals gültige sechs-SQUADRON-Foundation:
 
 ```text
 airwings=2
@@ -371,7 +421,21 @@ commanderCreated=false
 f10Controls=false
 ```
 
-Diese Acceptance validiert nicht automatisch taktische CAS-/STRIKE-Ausführung, Parking-Compliance, Recovery, Loss Accounting, CampaignState-Persistenz oder Multiplayer-Endurance.
+Die Aufnahme der 62nd-ERS-MQ-1A-LRE-Abbildung verändert den Foundation-Vertrag auf:
+
+```text
+airwings=2
+squadrons=7
+registeredGroups=69
+representedAirframes=81
+logicalAirframes=83
+logicalReserve=2
+rolePayloads=8
+```
+
+Der frühere DCS-PASS darf für diese neue Konfiguration nicht wiederverwendet werden. Der neue Stand benötigt mindestens Build-/Hash-Nachweis und anschließend eine eigene DCS-Foundation-Acceptance gegen die Mission, die `TPL_AIR_US_BGRM_MQ1A_RECON_1SHIP` tatsächlich enthält.
+
+Die frühere Acceptance validiert außerdem nicht automatisch taktische CAS-/STRIKE-/RECON-Ausführung, Parking-Compliance, Recovery, Loss Accounting, CampaignState-Persistenz oder Multiplayer-Endurance.
 
 Für die F-15E-STRIKE-Stores liegt zusätzlich die separate Fighter-Store-Runtime-Korrelation vom 13.08.2026 vor. Sie bestätigt die exakten GBU-31(V)1/B-/GBU-31(V)3/B-STORAGE-Mappings für ihren dokumentierten Scope, nicht die vollständige taktische STRIKE-Acceptance.
 
@@ -380,6 +444,7 @@ Für die F-15E-STRIKE-Stores liegt zusätzlich die separate Fighter-Store-Runtim
 Verbindlich aus diesem Dokument sind:
 
 - aktive Bagram-ORBAT;
+- 62nd-ERS-Bagram-LRE-Abbildung mit acht logischen MQ-1A als OMW-Kampagnenbestand;
 - duale AIRWING-Struktur;
 - logische Bestände;
 - Warehouse- und Foundation-Vertrag;
@@ -389,4 +454,4 @@ Verbindlich aus diesem Dokument sind:
 
 Die konkrete F-16C-Payloadinterpretation, DCS-Abbildung und Acceptance-Grenze ist in [`OMW-AIR-BAGRAM-F16C-CAS-PAYLOAD`](evidence/bagram-f16c-cas-payload-decision-2026-08-13.md) autoritativ dokumentiert.
 
-Nicht aus diesem Dokument abzuleiten sind finale ParkingIDs, taktische Missionen, Recovery, Persistenz oder Multiplayer-Endurance.
+Nicht aus diesem Dokument abzuleiten sind finale ParkingIDs, taktische Missionen, Recovery, Persistenz oder Multiplayer-Endurance. Insbesondere setzt die hier beschriebene MQ-1A-LRE-Foundation keine Parkplatzliste und keinen konkreten RECON-AUFTRAG voraus.
