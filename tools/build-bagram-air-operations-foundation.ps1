@@ -9,7 +9,7 @@ $sourceFile = Join-Path $repoRoot 'scripts\air-operations\OMW_AirOps_Bagram_Boot
 $distDir = Join-Path $repoRoot 'mission\tests\bagram-air-operations\dist'
 $outputFile = Join-Path $distDir 'OMW_AirOps_Bagram.lua'
 $lifecycleGuard = Join-Path $repoRoot 'tools\Test-AirOpsLifecycleGuards.ps1'
-$builderVersion = 'BGRAM-AIR-OPS-DUAL-FOUNDATION-4'
+$builderVersion = 'BGRAM-AIR-OPS-DUAL-FOUNDATION-5'
 
 if (-not (Test-Path -LiteralPath $sourceFile -PathType Leaf)) {
     throw "Bagram foundation source not found: $sourceFile"
@@ -108,6 +108,7 @@ foreach ($pattern in $forbiddenPatterns) {
     -GeneratedFile $outputFile `
     -PreStartFunctionName 'constructFoundation' `
     -PostStartFunctionName 'inspectIdleFoundation' `
+    -RequirePostStartAssetValidation `
     -FoundationScope
 
 $hash = (Get-FileHash -LiteralPath $outputFile -Algorithm SHA256).Hash.ToLowerInvariant()
@@ -124,6 +125,7 @@ Write-Host "RolePayloadsExpected: 8"
 Write-Host "ParkingBlacklistEntries: 10"
 Write-Host "SquadronParkingPools: 7"
 Write-Host "LifecycleGuard: PASS"
+Write-Host "PostStartAssetValidation: REQUIRED"
 Write-Host "TestDispatch: ABSENT"
 Write-Host "AUFTRAGInstances: ABSENT"
 Write-Host "OPSTRANSPORTInstances: ABSENT"
