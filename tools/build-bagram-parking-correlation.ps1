@@ -9,7 +9,7 @@ $sourceFile = Join-Path $repoRoot 'mission\tests\bagram-parking-correlation\src\
 $candidateCsv = Join-Path $repoRoot 'docs\data\bagram-me-parking-to-moose-terminalid-candidate.csv'
 $distDir = Join-Path $repoRoot 'mission\tests\bagram-parking-correlation\dist'
 $outputFile = Join-Path $distDir 'OMW_Bagram_Parking_Correlation.lua'
-$builderVersion = 'BAGRAM-PARKING-CORRELATION-1'
+$builderVersion = 'BAGRAM-PARKING-CORRELATION-2'
 
 if (-not (Test-Path -LiteralPath $sourceFile -PathType Leaf)) {
     throw "Bagram parking correlation source not found: $sourceFile"
@@ -61,10 +61,10 @@ foreach ($row in $rows) {
 }
 
 if (-not $seenLabels.ContainsKey('D09')) {
-    throw 'Required Bagram marker group D09 is missing.'
+    throw 'Required Bagram reference group D09 is missing.'
 }
 if (-not $seenLabels.ContainsKey('D09-1')) {
-    throw 'Required Bagram marker group D09-1 is missing.'
+    throw 'Required Bagram reference group D09-1 is missing.'
 }
 if (-not $seenTerminalIDs.ContainsKey(0)) {
     throw 'Required valid TerminalID 0 candidate is missing.'
@@ -80,10 +80,10 @@ $content = $source.Replace('__BAGRAM_PARKING_CANDIDATES__', $luaTable)
 $requiredMarkers = @(
     'AIRBASE:FindByName',
     'GetParkingSpotsTable',
-    'GROUP:FindByName',
-    'Get2DDistance',
-    'RESULT status=%s',
-    'matchDistanceMeters'
+    'runtimeUniqueTerminalIDs',
+    'runtimeDuplicateIDs',
+    'unexpectedRuntimeIDs',
+    'RESULT status=%s'
 )
 foreach ($marker in $requiredMarkers) {
     if (-not $content.Contains($marker)) {
@@ -92,6 +92,8 @@ foreach ($marker in $requiredMarkers) {
 }
 
 $forbiddenPatterns = @(
+    'GROUP\s*:\s*FindByName',
+    'Get2DDistance\s*\(',
     'SetParkingIDs\s*\(',
     'SetParkingSpotWhitelist\s*\(',
     'SetParkingSpotBlacklist\s*\(',
@@ -115,7 +117,7 @@ if (Test-Path -LiteralPath $outputFile -PathType Leaf) {
 }
 
 $commit = (& git -C $repoRoot rev-parse HEAD).Trim()
-$header = "-- AUTO-GENERATED FILE. DO NOT EDIT DIRECTLY.`n-- Builder: tools/build-bagram-parking-correlation.ps1`n-- BuilderVersion: $builderVersion`n-- GitCommit: $commit`n-- MOOSE-Pin: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54`n-- Scope: read-only Bagram parking marker to runtime MOOSE TerminalID correlation.`n`n"
+$header = "-- AUTO-GENERATED FILE. DO NOT EDIT DIRECTLY.`n-- Builder: tools/build-bagram-parking-correlation.ps1`n-- BuilderVersion: $builderVersion`n-- GitCommit: $commit`n-- MOOSE-Pin: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54`n-- Scope: read-only Bagram reference TerminalID set to runtime MOOSE TerminalID set correlation.`n`n"
 $content = $header + $content
 
 [System.IO.File]::WriteAllText($outputFile, $content, [System.Text.UTF8Encoding]::new($false))
@@ -123,9 +125,10 @@ $content = $header + $content
 $hash = (Get-FileHash -LiteralPath $outputFile -Algorithm SHA256).Hash.ToLowerInvariant()
 Write-Host "Built: $outputFile"
 Write-Host "BuilderVersion: $builderVersion"
-Write-Host "Scope: READ_ONLY_BAGRAM_PARKING_CORRELATION"
+Write-Host "Scope: READ_ONLY_BAGRAM_TERMINALID_SET_CORRELATION"
 Write-Host "Candidates: $($rows.Count)"
-Write-Host "ExpectedMarkerGroups: 187"
+Write-Host "CandidateTerminalIDsUnique: PASS"
+Write-Host "ReferenceMarkerGroupsRequiredInTestMiz: NO"
 Write-Host "ParkingMutation: ABSENT"
 Write-Host "SpawnMutation: ABSENT"
 Write-Host "TaskingMutation: ABSENT"
