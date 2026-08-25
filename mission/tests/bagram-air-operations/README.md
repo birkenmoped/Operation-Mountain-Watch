@@ -105,6 +105,50 @@ Moose.lua SHA-256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a
 0 F10 controls
 ```
 
+## Local build verification 25.08.2026
+
+Der Projektinhaber hat den Builder im separaten lokalen Worktree
+
+```text
+P:\DCS-DEV\Operation-Mountain-Watch-bagram-mq1a-lre
+```
+
+auf folgendem Remote-Quellstand ausgeführt:
+
+```text
+Branch: agent/bagram-mq1a-lre-foundation
+Git HEAD: 34a3d6008ee61ee91b01a1d572ee29fbae3011b8
+BuilderVersion: BGRAM-AIR-OPS-DUAL-FOUNDATION-3
+LifecycleGuard: PASS
+Airwings: 2
+Squadrons: 7
+RegisteredGroups: 69
+RepresentedAirframes: 81
+LogicalAirframes: 83
+LogicalReserve: 2
+RolePayloadsExpected: 8
+TestDispatch: ABSENT
+AUFTRAGInstances: ABSENT
+OPSTRANSPORTInstances: ABSENT
+Commander: ABSENT
+ParkingOverride: ABSENT
+```
+
+Die real zurückgemeldeten lokalen SHA-256-Werte lauten:
+
+```text
+Generated bundle:
+311AFE593C4869EA530232A8C742CF09A5080A2EBD47A3266C24306541B436FC
+
+Source Lua:
+550C33C4AC221171C80439008047F7D36C7D1DBD6F7C37ED772004E673D78505
+
+Builder:
+B33DF31ECDE305465C4EA14E02465754462C3A5B8093D19AD469EE94969D3E2A
+```
+
+Dieser Nachweis bestätigt ausschließlich den lokalen Build, den statischen Lifecycle-Guard und die reproduzierte Foundation-Konfiguration für den genannten Commit. Er ist **kein DCS-Runtime-PASS** und validiert insbesondere nicht Spawn, Parking, Taxi, Start, RECON-Dispatch, Missionserfüllung, Recovery oder Persistenz.
+
 Der frühere sechs-SQUADRON-DCS-PASS ist für diesen erweiterten Foundation-Vertrag nicht übertragbar. Ein neuer DCS-PASS gilt nur für die vom Projektinhaber tatsächlich getestete MIZ samt Hash, DCS-Version, eingebettetem Bundle und eingebetteter Moose.lua.
 
 Die Missionsdatei wird durch ChatGPT nicht automatisiert verändert oder neu gepackt.
