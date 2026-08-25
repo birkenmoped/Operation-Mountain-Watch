@@ -1,11 +1,11 @@
 -- Operation Mountain Watch - Bagram AIRWING/SQUADRON foundation.
 --
 -- Scope: dual AIRWING, seven SQUADRONs, inventory registration, grouping,
--- turnover, takeoff configuration, mission capabilities, role payloads and
--- AIRWING start.
+-- turnover, takeoff configuration, mission capabilities, role payloads,
+-- validated Bagram parking policy and AIRWING start.
 --
 -- Deliberately excluded: COMMANDER, AUFTRAG instances, OPSTRANSPORT, F10/test
--- controls, tactical mission orchestration, parking override, recovery and persistence.
+-- controls, tactical mission orchestration, recovery and persistence.
 
 OMW = OMW or {}
 OMW.AirOps = OMW.AirOps or {}
@@ -28,12 +28,50 @@ local function countTable(value)
   return count
 end
 
+local function sameNumberSet(actual, expected)
+  if type(actual) ~= "table" or type(expected) ~= "table" or #actual ~= #expected then
+    return false
+  end
+  local seen = {}
+  for _, id in ipairs(actual) do
+    seen[id] = (seen[id] or 0) + 1
+  end
+  for _, id in ipairs(expected) do
+    if not seen[id] then
+      return false
+    end
+    seen[id] = seen[id] - 1
+    if seen[id] == 0 then
+      seen[id] = nil
+    end
+  end
+  return next(seen) == nil
+end
+
 local config = {
   turnoverMin = 20,
   turnoverMax = 40,
   logicalAirframes = 83,
   representedAirframes = 81,
   logicalReserve = 2,
+
+  -- Hard airbase-level exclusions. These are the currently authored Bagram
+  -- client positions plus the two HAZ survey positions. SQUADRON parkingIDs
+  -- are authoritative for the AIRWING asset path and intentionally do not
+  -- include any of these IDs.
+  parkingBlacklist = {
+    111, -- A08 C-130 client
+    21,  -- A09 C-130 client
+    24,  -- M27 F-15E client
+    158, -- M28 F-15E client
+    114, -- M29 F-16C client
+    145, -- M30 F-16C client
+    88,  -- R21 CH-47 client
+    85,  -- R22 CH-47 client
+    188, -- HAZ01
+    31,  -- HAZ02
+  },
+
   usaf = {
     airbaseName = AIRBASE.Afghanistan and AIRBASE.Afghanistan.Bagram or "Bagram",
     warehouseName = "WH_AIR_US_BAGRAM",
@@ -53,6 +91,8 @@ local config = {
       grouping = 2,
       logicalAircraft = 13,
       residualAircraft = 1,
+      parkingLabels = "M01-M12",
+      parkingIDs = { 121, 120, 1, 35, 190, 108, 27, 60, 103, 80, 16, 71 },
       missionTypes = { AUFTRAG.Type.CAS, AUFTRAG.Type.STRIKE },
       payloadTemplates = {
         "TPL_AIR_US_BGRM_F15E_CAS_2SHIP",
@@ -67,6 +107,8 @@ local config = {
       grouping = 2,
       logicalAircraft = 13,
       residualAircraft = 1,
+      parkingLabels = "M13-M24",
+      parkingIDs = { 183, 133, 119, 12, 117, 82, 64, 126, 137, 148, 159, 151 },
       missionTypes = { AUFTRAG.Type.CAS },
       payloadTemplates = { "TPL_AIR_US_BGRM_F16C_CAS_2SHIP" },
     },
@@ -78,6 +120,8 @@ local config = {
       grouping = 1,
       logicalAircraft = 8,
       residualAircraft = 0,
+      parkingLabels = "B01-B08",
+      parkingIDs = { 56, 40, 175, 22, 179, 9, 124, 123 },
       missionTypes = { AUFTRAG.Type.RECON },
       payloadTemplates = { "TPL_AIR_US_BGRM_MQ1A_RECON_1SHIP" },
     },
@@ -89,6 +133,8 @@ local config = {
       grouping = 1,
       logicalAircraft = 20,
       residualAircraft = 0,
+      parkingLabels = "A10,S01-S05",
+      parkingIDs = { 4, 185, 125, 37, 97, 141 },
       missionTypes = { AUFTRAG.Type.TROOPTRANSPORT },
       payloadTemplates = { "TPL_AIR_US_BGRM_C130_TRANSPORT_1SHIP" },
     },
@@ -100,6 +146,8 @@ local config = {
       grouping = 1,
       logicalAircraft = 6,
       residualAircraft = 0,
+      parkingLabels = "R15-R16",
+      parkingIDs = { 90, 0 },
       missionTypes = { AUFTRAG.Type.RESCUEHELO },
       payloadTemplates = { "TPL_AIR_US_BGRM_HH60G_CSAR_1SHIP" },
     },
@@ -111,6 +159,8 @@ local config = {
       grouping = 1,
       logicalAircraft = 10,
       residualAircraft = 0,
+      parkingLabels = "R17-R18",
+      parkingIDs = { 163, 96 },
       missionTypes = { AUFTRAG.Type.TROOPTRANSPORT, AUFTRAG.Type.CARGOTRANSPORT },
       payloadTemplates = { "TPL_AIR_US_BGRM_UH60_UTILITY_1SHIP" },
     },
@@ -122,6 +172,8 @@ local config = {
       grouping = 1,
       logicalAircraft = 13,
       residualAircraft = 0,
+      parkingLabels = "R19-R20",
+      parkingIDs = { 164, 61 },
       missionTypes = { AUFTRAG.Type.TROOPTRANSPORT, AUFTRAG.Type.CARGOTRANSPORT },
       payloadTemplates = { "TPL_AIR_US_BGRM_CH47_TRANSPORT_1SHIP" },
     },
@@ -145,12 +197,41 @@ local function requireAnchor(name)
   return anchor
 end
 
+local function validateParkingPolicy()
+  local blacklisted = {}
+  for _, terminalID in ipairs(config.parkingBlacklist) do
+    if blacklisted[terminalID] then
+      error("Duplicate Bagram parking blacklist TerminalID: " .. tostring(terminalID))
+    end
+    blacklisted[terminalID] = true
+  end
+
+  local assigned = {}
+  for key, definition in pairs(config.squadrons) do
+    if type(definition.parkingIDs) ~= "table" or #definition.parkingIDs == 0 then
+      error("Missing parkingIDs for Bagram squadron: " .. tostring(key))
+    end
+    for _, terminalID in ipairs(definition.parkingIDs) do
+      if blacklisted[terminalID] then
+        error(string.format("Bagram squadron %s includes blacklisted TerminalID %d", key, terminalID))
+      end
+      if assigned[terminalID] then
+        error(string.format("Bagram TerminalID %d assigned to multiple squadrons: %s and %s", terminalID, assigned[terminalID], key))
+      end
+      assigned[terminalID] = key
+    end
+  end
+
+  log(string.format("PARKING_POLICY_PRESTART status=PASS blacklist=%d assignedAI=%d", #config.parkingBlacklist, countTable(assigned)))
+end
+
 local function createAirwing(definition)
   local airbase = AIRBASE:FindByName(definition.airbaseName)
   if not airbase then
     error("Airbase not found: " .. tostring(definition.airbaseName))
   end
 
+  airbase:SetParkingSpotBlacklist(config.parkingBlacklist)
   requireAnchor(definition.warehouseName)
 
   local airwing = AIRWING:New(definition.warehouseName, definition.airwingName)
@@ -171,6 +252,7 @@ local function createSquadron(airwing, definition)
   local squadron = SQUADRON:New(definition.template, definition.assetGroups, definition.name)
   squadron:SetGrouping(definition.grouping)
   squadron:SetTurnoverTime(config.turnoverMin, config.turnoverMax)
+  squadron:SetParkingIDs(definition.parkingIDs)
   squadron:AddMissionCapability(definition.missionTypes)
   airwing:AddSquadron(squadron)
 
@@ -181,7 +263,7 @@ local function createSquadron(airwing, definition)
   end
 
   log(string.format(
-    "SQUADRON_REGISTERED name=%s wing=%s template=%s assetGroups=%d grouping=%d representedAircraft=%d logicalAircraft=%d residualAircraft=%d payloads=%d",
+    "SQUADRON_REGISTERED name=%s wing=%s template=%s assetGroups=%d grouping=%d representedAircraft=%d logicalAircraft=%d residualAircraft=%d payloads=%d parkingLabels=%s parkingIDs=%d",
     definition.name,
     definition.wing,
     definition.template,
@@ -190,14 +272,16 @@ local function createSquadron(airwing, definition)
     representedAircraft,
     definition.logicalAircraft,
     residualAircraft,
-    #payloads
+    #payloads,
+    definition.parkingLabels,
+    #definition.parkingIDs
   ))
 
   return squadron, payloads, representedAircraft, residualAircraft
 end
 
 local function constructFoundation()
-  log("BEGIN foundation-only Bagram dual-AIRWING/SQUADRON initialization")
+  log("BEGIN Bagram dual-AIRWING/SQUADRON initialization with parking policy")
   log("MOOSE commit=" .. MOOSE_COMMIT .. " sha256=" .. MOOSE_SHA256)
 
   if not AIRWING or not SQUADRON or not GROUP or not AIRBASE or not AUFTRAG then
@@ -207,6 +291,8 @@ local function constructFoundation()
   if config.usaf.warehouseName == config.army.warehouseName then
     error("Bagram dual-AIRWING foundation requires distinct Warehouse anchors")
   end
+
+  validateParkingPolicy()
 
   local usafAirbase, usafAirwing = createAirwing(config.usaf)
   local armyAirbase, armyAirwing = createAirwing(config.army)
@@ -252,7 +338,7 @@ local function constructFoundation()
     Squadrons = squadrons,
     Payloads = payloads,
     Config = config,
-    Scope = "AIRWING_SQUADRON_FOUNDATION_ONLY",
+    Scope = "AIRWING_SQUADRON_FOUNDATION_WITH_PARKING_POLICY",
     RegisteredGroups = registeredGroups,
     RepresentedAirframes = representedAircraft,
     LogicalAirframes = logicalAircraft,
@@ -273,9 +359,29 @@ local function inspectIdleFoundation()
 
   local usafRunning = state.Airwings.USAF.IsRunning and state.Airwings.USAF:IsRunning() or false
   local armyRunning = state.Airwings.Army.IsRunning and state.Airwings.Army:IsRunning() or false
+  local parkingAssetsChecked = 0
+  local parkingAssetsFailed = 0
+
+  for key, squadron in pairs(state.Squadrons) do
+    local definition = state.Config.squadrons[key]
+    for _, asset in pairs(squadron.assets or {}) do
+      parkingAssetsChecked = parkingAssetsChecked + 1
+      if not sameNumberSet(asset.parkingIDs, definition.parkingIDs) then
+        parkingAssetsFailed = parkingAssetsFailed + 1
+        env.error(string.format("%s PARKING_ASSET status=FAIL squadron=%s asset=%s", TAG, definition.name, tostring(asset.uid or asset.spawngroupname or "unknown")), false)
+      end
+    end
+  end
+
+  local parkingStatus = parkingAssetsFailed == 0 and parkingAssetsChecked == state.RegisteredGroups and "PASS" or "FAIL"
+  log(string.format("PARKING_POLICY_POSTSTART status=%s assetsChecked=%d expectedAssets=%d failed=%d", parkingStatus, parkingAssetsChecked, state.RegisteredGroups, parkingAssetsFailed))
+
+  if parkingStatus ~= "PASS" then
+    error("Bagram parking policy did not propagate to all AIRWING assets")
+  end
 
   log(string.format(
-    "RESULT status=%s airwings=2 squadrons=7 registeredGroups=%d representedAirframes=%d logicalAirframes=%d logicalReserve=%d rolePayloads=%d usafRunning=%s armyRunning=%s missionsCreated=0 transportsCreated=0 commanderCreated=false f10Controls=false",
+    "RESULT status=%s airwings=2 squadrons=7 registeredGroups=%d representedAirframes=%d logicalAirframes=%d logicalReserve=%d rolePayloads=%d usafRunning=%s armyRunning=%s parkingPolicy=PASS parkingAssetsChecked=%d missionsCreated=0 transportsCreated=0 commanderCreated=false f10Controls=false",
     tostring(state.Status),
     tonumber(state.RegisteredGroups) or -1,
     tonumber(state.RepresentedAirframes) or -1,
@@ -283,7 +389,8 @@ local function inspectIdleFoundation()
     tonumber(state.LogicalReserve) or -1,
     tonumber(state.RolePayloads) or -1,
     tostring(usafRunning),
-    tostring(armyRunning)
+    tostring(armyRunning),
+    parkingAssetsChecked
   ))
 end
 
