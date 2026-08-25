@@ -73,6 +73,7 @@ REJECTED_FOR_PROJECT_USE
 | `GROUP`, `UNIT`, `STATIC`, `ZONE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Wrapper-/Objektauflösung in dokumentierten Scopes; Acceptance-1-v13-Objektvertrag read-only bestätigt, Ground-Acceptance-6 bestätigt GetSize, GetUnits, test-only Destroy(false) und SetLife(50) im dokumentierten Verlust-/Schaden-Return-Scope |
 | `COORDINATE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | `Get2DDistance(...)`, `GetIntermediateCoordinate(...)` und `HeadingTo(...)` im dokumentierten AirOps-Scope |
 | `MARKEROPS_BASE` | `SOURCE_REVIEWED` | Player-UAV-ISR Phase 1: BLUE-`UAV RECON`-Markerereignisse; Marker-zu-Gruppen-Eigentum bleibt ein freigegebener OMW-Adapter, DCS-PASS offen |
+| `SET_CLIENT` | `SOURCE_REVIEWED` | Player-UAV-ISR Phase 1: BLUE-Clientgruppenregistrierung für gruppenspezifische Menüs; inaktive Slots, Besetzung und Rejoin DCS-pending |
 | `MENU_GROUP`, `MENU_GROUP_COMMAND` | `SOURCE_REVIEWED` | Player-UAV-ISR Phase 1: gruppengebundene Submit-/Status-/Cancel-Befehle; Mehrspieler-Menülebensdauer und Gruppenrechte DCS-pending |
 | `BRIGADE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` + `INTERNAL_RESTRICTED` | Acceptance 1–6 bestätigen Ground-Assetpool, Materialisierung, Callback-Lifecycle und die parallelen Rückgabevarianten; die road-aligned private Warehouse-Spawn-Ausnahme bleibt auf Acceptance-3-2 und den gepinnten MOOSE-Stand begrenzt |
 | `PLATOON` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Acceptance 1–6 bestätigen dokumentierte Assetselektion, Wiederverwendung und Rückgabevarianten im Ground-Scope; keine allgemeine Produktionsfreigabe |
