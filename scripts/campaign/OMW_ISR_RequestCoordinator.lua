@@ -105,6 +105,13 @@ function Coordinator:UpsertMarker(spec)
     fail("marker text must be a string")
   end
 
+  if spec.text ~= Coordinator.MarkerText
+      or spec.coalitionNumber ~= self.blueCoalitionNumber
+      or spec.coordinate == nil then
+    self.markersById[id] = nil
+    return
+  end
+
   self.markersById[id] = {
     markerId = id,
     text = spec.text,
