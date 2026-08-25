@@ -68,6 +68,29 @@ SPAWN/FLIGHTGROUP/AUFTRAG = physical representation
 - `AUFTRAG`, `COMMANDER`, `AIRWING`, `SQUADRON`, `FLIGHTGROUP` für KI-Missionsausführung;
 - für externes AAR insbesondere `AUFTRAG`, `FLIGHTGROUP`, `COORDINATE`, `SPAWN`, `SCHEDULER`, `UNIT`, `OPSGROUP`.
 
+## 3.1 Player-UAV-ISR-Anforderungen – source-reviewed, DCS pending
+
+Der geplante OMW-UAV-ISR-Pfad kombiniert ausschließlich die folgenden MOOSE-Bausteine:
+
+```text
+MARKEROPS_BASE
+-> validiert BLUE-Markerereignisse mit Text, COORDINATE, Marker-ID und Koalition
+MENU_GROUP / MENU_GROUP_COMMAND
+-> erzeugt Submit-, Own-status- und Own-cancel-Befehle im DCS-Gruppenkontext
+AIRWING / SQUADRON / AUFTRAG / OPSGROUP
+-> spätere physische RECON-Ausführung und Missionsqueue
+```
+
+Im gepinnten MOOSE-Source ist geprüft:
+
+- `MARKEROPS_BASE:New(Tagname, Keywords)` registriert Add/Change/Remove; der `OnAfterMarkChanged`-Pfad übergibt Text, passende Keywords, `COORDINATE`, Marker-ID, Koalition sowie optionalen Spielernamen;
+- `MENU_GROUP_COMMAND:New(Group, MenuText, ParentMenu, CommandMenuFunction, ...)` registriert den Befehl über die DCS-Gruppen-ID und ruft die Funktion mit den beim Einrichten festgelegten Argumenten auf;
+- `AUFTRAG:NewRECON(...)` ist der spätere RECON-Pfad und setzt im geprüften Source `WeaponHold`.
+
+Die Zuordnung einer Kartenmarkierung zu einer Eigentümergruppe wird **nicht** aus dem optionalen Spielernamen des Markerereignisses abgeleitet. Der projektinhaberfreigegebene `OMW ISR Request Coordinator` verbindet im Submit-Menü die aktuell gültige Marker-ID mit der auslösenden Gruppe und erzwingt die eigenen Status-/Cancel-Rechte. Er führt keine nativen DCS-Spawn- oder Routing-Funktionen aus, hält keinen zweiten strategischen Bestand und erzeugt keine Kontakt-/Zielmarker.
+
+Phase 1 bleibt deshalb UI-/Marker-only: kein MQ-Reservieren, kein physischer Auftrag, keine `MARKER:ToGroup`-Kontaktanzeige und keine `INTEL`-Clusteranalyse. Die geforderte Lageanzeige bleibt beim nativen DCS Fog of War. Alle genannten UAV-Pfade sind `SOURCE_REVIEWED / DCS_PENDING`, nicht runtime-validiert.
+
 ## 4. AAR – gepinnter MOOSE-Stand
 
 ```text
