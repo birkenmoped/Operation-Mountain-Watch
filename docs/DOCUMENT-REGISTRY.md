@@ -13,8 +13,8 @@ project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
   - registry that listed Document 22 only as a branch reservation
 superseded_by:
-source_branch: agent/air-tasking-plan-main-reconciliation
-source_commit: 9d282bf61e7e54f110b95a4ee9eb2bede01838a5
+source_branch: agent/uav-isr-request-orchestration
+source_commit: PENDING_MERGE
 validated_in_dcs: false
 ---
 
@@ -121,6 +121,7 @@ Eine Nummer und eine stabile `document_id` dürfen im aktuellen Bestand jeweils 
 | 18 | 27 | branchlokale Kollision; vor Integration zwingend neu nummerieren |
 | 24 | 31 | branchlokale ältere Fassung; die reduzierte `main`-Fassung von Dokument 31 ist autoritativ |
 | 24 | 32–36 | nur Draft-PR #24; Bagram/Kandahar; vor Integration gegen den aktuellen `main`-Bestand und Nummernkollisionen prüfen |
+| — | 91 | branchlokaler Entwicklungsauftrag `OMW-PLAN-UAV-ISR-REQUEST-ORCHESTRATION` in `docs/91-uav-isr-request-orchestration.md`; noch kein Pull Request, vor Merge gegen den aktuellen `main`-Bestand prüfen |
 
 ## 4. Nicht nummerierte aktuelle Dokumente
 

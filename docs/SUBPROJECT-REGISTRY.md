@@ -14,8 +14,8 @@ project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
   - incomplete open-branch list in the documentation index
 superseded_by:
-source_branch: agent/air-tasking-post-merge-provenance
-source_commit: 9d282bf61e7e54f110b95a4ee9eb2bede01838a5
+source_branch: agent/uav-isr-request-orchestration
+source_commit: PENDING_MERGE
 validated_in_dcs: false
 ---
 
@@ -61,6 +61,8 @@ Dieses Register bildet offene Pull Requests, ihre Abhängigkeiten, Dokumentation
 | 86 | `agent/air-ops-initial-stock-runtime-data` | `main` nach gemergtem PR 85 | AirOps Initial Stock Runtime, CampaignState-Initialisierung und zentraler Warehouse-Bootstrap | `scripts/logistics/`, `mission/tests/air-ops-warehouse-bootstrap/`, MOOSE-STORAGE-Dokumentation | `DRAFT`; aktuell nicht mergebar gegen `main` | `ACCEPTED_TECHNICAL_BASELINE` für Warehouse-Bootstrap auf Commit `2502516fe130b908e500117142399b3e2ca74007`; separate Onboard-Ammo-Acceptance offen | offen | Warehouse-Bootstrap technisch akzeptiert; vor Integration Reconciliation gegen aktuellen `main` erforderlich |
 
 Der Arbeitsbranch `agent/army-ground-foundation-reconciliation` besitzt zum Stand dieser Reconciliation noch keinen Pull Request und wird daher nicht mit einer erfundenen PR-Nummer in die Tabelle aufgenommen. Sobald ein PR existiert, ist er hier mit realem PR-Status und Abhängigkeit nachzutragen.
+
+Der Arbeitsbranch `agent/uav-isr-request-orchestration` basiert auf `main` bei `8ba6f7b1be42111723ad70d337ed466f76a2b716` und besitzt noch keinen Pull Request. Sein Gegenstand ist ausschließlich der dokumentierte UAV-ISR-Request-Entwicklungsauftrag in `docs/91-uav-isr-request-orchestration.md`; es gibt keine DCS-Acceptance und noch keinen Produktionscode. Bei Eröffnung eines Pull Requests ist er mit realer PR-Nummer, Abhängigkeiten und Acceptance-Grenze in die Tabelle aufzunehmen.
 
 ## 3. Stackstruktur
 
@@ -166,3 +168,5 @@ source: GitHub pull-request state plus documented exact-provenance DCS evidence
 ```
 
 Ein offener Zustand bedeutet weder aktuelle fachliche Autorität noch Integrationsreife; die Spalten Governance-Status, Acceptance-Status und Produktionsrelevanz bleiben maßgeblich.
+
+
