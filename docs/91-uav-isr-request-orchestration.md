@@ -204,6 +204,23 @@ Die konkrete Wirkung des aktivierten DCS Fog of War auf eine durch das UAV erkan
 
 Der OMW ISR Request Coordinator ist ein kleiner projektspezifischer Adapter. Seine Verantwortung endet bei Validierung, Requestzustand und Übergabe an CampaignState/MOOSE. Er erstellt keine physische DCS-Gruppe selbst.
 
+### 6.1 MOOSE-first-Gap und Projektinhaberfreigabe
+
+Die geprüften MOOSE-Bausteine decken Kartenmarker, gruppengebundene Funkbefehle und die spätere physische Flugausführung ab. Sie enthalten aber keinen fertigen, OMW-spezifischen Vertrag für die verlässliche Zuordnung **Marker -> anfordernde Gruppe -> eigene Stornierungsrechte -> Requestzustand**. Der optionale Spielername im Markerereignis ist dafür keine belastbare Autorität.
+
+Der Projektinhaber hat am **25.08.2026** deshalb folgende kleinste Erweiterung ausdrücklich freigegeben:
+
+```text
+OMW ISR Request Coordinator
++ CampaignState MQ-1/MQ-9 reservation adapter (spätere Phase)
++ MOOSE MARKEROPS_BASE / MENU_GROUP_COMMAND / AIRWING / AUFTRAG integration
+- no native DCS spawn or routing
+- no second strategic resource ledger
+- no target-marker system
+```
+
+Für Phase 1 ist der Coordinator auf Marker-Validierung, gruppengebundene Request-Identität sowie Submit/Status/Cancel begrenzt. Er reserviert noch keine MQ-Ressource, erzeugt keine physische Gruppe und übergibt keinen Flugauftrag. Die spätere MQ-Reservierung bleibt ein schmaler CampaignState-Adapter; MOOSE bleibt für physische Ausführung, Start, Routing und Recovery zuständig.
+
 ## 7. Missionseditor- und Datenvoraussetzungen
 
 Vor Runtime-Implementierung erforderlich:
@@ -243,7 +260,7 @@ Vor Runtime-Implementierung erforderlich:
 ### Phase 1 -- Fachvertrag und reine UI-/Marker-Acceptance
 
 - [x] D1--D7 entscheiden und den verbindlichen Fachvertrag dokumentieren.
-- [ ] MOOSE-first-Gap-Nachweis für die Marker-zu-Gruppenmenü-Korrelation schreiben; kleinsten OMW-Adapter abgrenzen.
+- [x] MOOSE-first-Gap-Nachweis für die Marker-zu-Gruppenmenü-Korrelation und die ausdrückliche Projektinhaberfreigabe dokumentieren.
 - [ ] `MARKEROPS_BASE` für gültige BLUE-`UAV RECON`-Marker konfigurieren.
 - [ ] Gruppenmenü mit Submit-, Own-status- und Own-cancel-Ansicht implementieren.
 - [ ] Eindeutigkeitsprüfung für nächsten gültigen Marker, Marker-ID-Bindung und Fehlermeldungen implementieren.
