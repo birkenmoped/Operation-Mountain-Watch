@@ -1,0 +1,36 @@
+name: UAV ISR request validation
+
+on:
+  push:
+    paths:
+      - "scripts/campaign/OMW_ISR_RequestCoordinator.lua"
+      - "scripts/air-operations/OMW_ISR_RequestMenu.lua"
+      - "tests/uav-isr/**"
+      - ".github/workflows/uav-isr-request-validation.yml"
+  pull_request:
+    paths:
+      - "scripts/campaign/OMW_ISR_RequestCoordinator.lua"
+      - "scripts/air-operations/OMW_ISR_RequestMenu.lua"
+      - "tests/uav-isr/**"
+      - ".github/workflows/uav-isr-request-validation.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  uav-isr-request-contracts:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install Lua 5.4
+        shell: bash
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y lua5.4
+          lua5.4 -v
+
+      - name: Run UAV ISR request contracts
+        shell: bash
+        run: lua5.4 tests/uav-isr/run.lua
