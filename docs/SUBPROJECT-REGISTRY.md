@@ -62,7 +62,7 @@ Dieses Register bildet offene Pull Requests, ihre Abhängigkeiten, Dokumentation
 
 Der Arbeitsbranch `agent/army-ground-foundation-reconciliation` besitzt zum Stand dieser Reconciliation noch keinen Pull Request und wird daher nicht mit einer erfundenen PR-Nummer in die Tabelle aufgenommen. Sobald ein PR existiert, ist er hier mit realem PR-Status und Abhängigkeit nachzutragen.
 
-Der Arbeitsbranch `agent/uav-isr-request-orchestration` basiert auf `main` bei `8ba6f7b1be42111723ad70d337ed466f76a2b716` und besitzt noch keinen Pull Request. Sein Gegenstand ist ausschließlich der dokumentierte UAV-ISR-Request-Entwicklungsauftrag in `docs/91-uav-isr-request-orchestration.md`; es gibt keine DCS-Acceptance und noch keinen Produktionscode. Bei Eröffnung eines Pull Requests ist er mit realer PR-Nummer, Abhängigkeiten und Acceptance-Grenze in die Tabelle aufzunehmen.
+Der Arbeitsbranch `agent/uav-isr-request-orchestration` basiert auf `main` bei `8ba6f7b1be42111723ad70d337ed466f76a2b716` und besitzt noch keinen Pull Request. Sein Gegenstand ist der dokumentierte UAV-ISR-Request-Entwicklungsauftrag in `docs/91-uav-isr-request-orchestration.md` sowie eine isolierte Phase-1-Marker-/Gruppenmenü-Acceptance unter `mission/tests/uav-isr-request/`. Diese Acceptance erzeugt weder physische UAVs noch CampaignState-Reservierungen und ist `DCS_PENDING`; es gibt keinen Produktionscode und keine DCS-Acceptance. Bei Eröffnung eines Pull Requests ist er mit realer PR-Nummer, Abhängigkeiten und Acceptance-Grenze in die Tabelle aufzunehmen.
 
 ## 3. Stackstruktur
 
