@@ -16,7 +16,7 @@ supersedes:
 superseded_by: []
 source_branch: agent/bagram-mq1a-lre-foundation
 source_commit: PENDING_MERGE
-validated_in_dcs: false
+validated_in_dcs: true
 ---
 
 # Bagram Air Operations Foundation Test
@@ -182,8 +182,49 @@ B33DF31ECDE305465C4EA14E02465754462C3A5B8093D19AD469EE94969D3E2A
 
 Der geänderte Bundle-Hash zwischen den beiden Läufen ist erwartbar, weil der Builder den jeweiligen `GitCommit` in den generierten Bundle-Header schreibt. Source-Lua und Builder blieben byte-identisch.
 
-Diese Nachweise bestätigen ausschließlich die lokalen Builds, den statischen Lifecycle-Guard und die reproduzierte Foundation-Konfiguration für die genannten Commits. Sie sind **kein DCS-Runtime-PASS** und validieren insbesondere nicht Spawn, Parking, Taxi, Start, RECON-Dispatch, Missionserfüllung, Recovery oder Persistenz.
+## DCS foundation acceptance 25.08.2026
 
-Der frühere sechs-SQUADRON-DCS-PASS ist für diesen erweiterten Foundation-Vertrag nicht übertragbar. Ein neuer DCS-PASS gilt nur für die vom Projektinhaber tatsächlich getestete MIZ samt Hash, DCS-Version, eingebettetem Bundle und eingebetteter Moose.lua.
+Der finale eingefrorene Testkandidat wurde in DCS mit folgender Provenienz ausgeführt:
+
+```text
+Branch: agent/bagram-mq1a-lre-foundation
+Source / acceptance commit: 4a327d998cb9214f698d0278bbb5fa657eb8deb6
+BuilderVersion: BGRAM-AIR-OPS-DUAL-FOUNDATION-3
+Generated / embedded bundle SHA-256: 681CEF282F06BAFA2DEF45402105584A726BDF907BEE618411E893E6CFBACB0D
+Mission: OMW_Template_v20_BGRM_MQ1A_Foundation_Test.miz
+Mission SHA-256: FE9287B27D32E26EA208B3079CE04F9A8F83568F111E4BB0B348EEB324310081
+DCS: 2.9.28.26385
+Embedded Moose.lua SHA-256: E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915
+DCS log SHA-256: 03FDE3FD3170735620D7CA1116DAF1E162BC69ECF2E267E7D72723C30EDBF64A
+Debrief log SHA-256: E0479D73498ACC6DD0269C810B951CCB55B1EAEB1130AE6E49B4580A79C86BC6
+```
+
+Der Runtime-Marker lautet:
+
+```text
+RESULT status=RUNNING airwings=2 squadrons=7 registeredGroups=69 representedAirframes=81 logicalAirframes=83 logicalReserve=2 rolePayloads=8 usafRunning=true armyRunning=true missionsCreated=0 transportsCreated=0 commanderCreated=false f10Controls=false
+```
+
+Der MQ-1A-LRE-Pool wurde dabei erfolgreich registriert:
+
+```text
+SQUADRON_REGISTERED name=SQ_US_BGRM_MQ1A_62_ERS wing=usaf template=TPL_AIR_US_BGRM_MQ1A_RECON_1SHIP assetGroups=8 grouping=1 representedAircraft=8 logicalAircraft=8 residualAircraft=0 payloads=1
+```
+
+Damit lautet das Foundation-Ergebnis für diesen exakt dokumentierten Stand:
+
+```text
+PASS
+```
+
+Die vollständige Acceptance liegt unter:
+
+```text
+mission/tests/bagram-air-operations/expected/bagram-mq1a-lre-foundation-acceptance.md
+```
+
+Dieser PASS validiert ausschließlich den Foundation-Scope. Er validiert nicht Parking, Taxi, Start/Landung, konkreten MQ-1A-RECON-Dispatch, taktische Missionserfüllung, Recovery, Loss Accounting, Persistenz oder Multiplayer-Endurance.
+
+Der frühere sechs-SQUADRON-DCS-PASS bleibt für seinen exakt dokumentierten historischen Stand erhalten und wird nicht auf die neue Konfiguration übertragen.
 
 Die Missionsdatei wird durch ChatGPT nicht automatisiert verändert oder neu gepackt.
