@@ -270,16 +270,23 @@ Vor Runtime-Implementierung erforderlich:
 
 ### Phase 1.1 -- Source-Contract-Provenienz
 
-Implementierte, noch nicht in ein Missionsbundle injizierte Artefakte:
+Implementierte Source- und Acceptance-Artefakte:
 
 ```text
 scripts/campaign/OMW_ISR_RequestCoordinator.lua
 scripts/air-operations/OMW_ISR_RequestMenu.lua
 tests/uav-isr/test_isr_request_coordinator.lua
+mission/tests/uav-isr-request/src/01-uav-isr-request-acceptance-1.lua
+tools/build-uav-isr-request-acceptance-1.ps1
+mission/tests/uav-isr-request/ACCEPTANCE-1.md
 .github/workflows/uav-isr-request-validation.yml
 ```
 
+Der Builder erzeugt ausschließlich ein separates Acceptance-1-Lua-Bundle. Er enthält statische Sperren gegen physische UAV-/MOOSE-Dispatch-APIs und native DCS-Spawn-/Routing-/Trigger-Pfade. Er verändert keine `.miz` und führt keine CampaignState-Reservierung aus. Die Einbindung erfolgt nur in eine vom Projektinhaber freigegebene Kopie von `OMW_Template_v20.miz`, nach dem unveränderten MOOSE-Load-Trigger.
+
 Der GitHub-Workflow `UAV ISR request validation` lief für Commit `9f173aa64ce3439fe98aa9f0082d55d4da02da75` erfolgreich. Dieser Contract-Test prüft Request-Eigentum, Gruppenquote, Blue-/Text-/Radius-Validierung, Gleichstand, Owner-Cancel sowie das konservative Cache-Leeren bei einem MOOSE-Marker-Delete. Er ist kein DCS- oder Multiplayer-Acceptance-Nachweis.
+
+Die neue Acceptance-1-Mission ist **DCS_PENDING**. Der 10-km-Submit-Radius ist ausdrücklich nur ein Testparameter. Eine DCS-Ausführung muss die in `mission/tests/uav-isr-request/ACCEPTANCE-1.md` geforderte MIZ-/Bundle-/Log-Provenienz liefern.
 ### Phase 2 -- CampaignState-Request und Ressourcenreservierung
 
 - [ ] Stabile ISR-Request-Entity-ID und erlaubte Zustandsübergänge definieren.
