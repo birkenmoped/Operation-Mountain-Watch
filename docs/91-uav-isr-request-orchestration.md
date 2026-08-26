@@ -366,3 +366,39 @@ Aktueller Phasenstatus:
 Ausgeführte Tests mit DCS-/Bundle-/Missionshash:
 Offene Risiken und nächste konkrete Acceptance:
 ```
+
+
+## 13. Acceptance 2 — Kandahar physical dispatch (DRAFT, 26.08.2026)
+
+Acceptance 2 is the next larger vertical slice. It uses only the existing
+Kandahar 361st ERS MQ-9 Mission Editor template with its fixed loadout. The
+player still requests only `UAV RECON`; the acceptance-local ISR Cell chooses
+the single configured MQ-9 profile. Bagram is not an active source in this
+acceptance.
+
+The dispatch contract is intentionally narrow:
+
+```text
+BLUE marker -> group-owned request -> CampaignState reservation
+-> AIRWING:NewPayload(existing template) -> AUFTRAG:NewRECON
+-> AIRWING:AddMission -> physical DCS observation
+```
+
+`CampaignState` owns the acceptance-local Kandahar count (two MQ-9); AIRWING
+does not own a parallel strategic stock. At the MOOSE mission `Started` event
+the reservation is consumed. An owner cancellation before physical start
+cancels the reservation. No recovery/re-credit, queue priority, Bagram source,
+holding, Fog-of-War augmentation or weapons release is part of this slice.
+
+The Acceptance-2 profile (25,000 ft MSL, 180 kt, 5 km recon radius, 45 minutes
+on-station) is a **test profile only**. It is not a production clearance for
+the RC East terrain or the Kandahar transit corridor. The corresponding
+evidence is required in
+`mission/tests/uav-isr-request/ACCEPTANCE-2.md`.
+
+MOOSE evidence: the implementation uses the source-reviewed public
+`AIRWING:NewPayload`, `AIRWING:AddMission`, `ZONE_RADIUS:New` and
+`AUFTRAG:NewRECON` interfaces, and calls `SetTeleport(false)` explicitly.
+The official current MOOSE_MISSIONS tree was searched for AIRWING/AUFTRAG/LEGION
+examples and no matching current demo path was found; this is why Acceptance 2
+is marked DRAFT until DCS evidence is captured.
