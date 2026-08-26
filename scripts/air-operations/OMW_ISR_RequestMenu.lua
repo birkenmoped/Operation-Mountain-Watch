@@ -80,6 +80,7 @@ function RequestMenu.New(config)
     moose = moose,
     menusByGroupId = {},
     sendMessage = config.sendMessage,
+    onRequestQueued = config.onRequestQueued,
   }, RequestMenu)
 
   if self.sendMessage == nil then
@@ -89,6 +90,7 @@ function RequestMenu.New(config)
     end
   end
   requireFunction(self.sendMessage, "config.sendMessage")
+  if self.onRequestQueued ~= nil then requireFunction(self.onRequestQueued, "config.onRequestQueued") end
 
   -- The pinned MARKEROPS_BASE source only calls MarkChanged when the configured
   -- tag matches the *new* text. An empty tag makes every map update observable;
@@ -203,7 +205,17 @@ function RequestMenu:SubmitFromGroup(group)
     end,
   })
   if request then
-    self.sendMessage(group, string.format("ISR Cell: %s queued.", tostring(request.id)))
+    local dispatch, dispatchReason = nil, nil
+    if self.onRequestQueued then
+      dispatch, dispatchReason = self.onRequestQueued(request)
+    end
+    if dispatch then
+      self.sendMessage(group, string.format("ISR Cell: %s assigned to %s.", tostring(request.id), tostring(dispatch.platformId)))
+    elseif dispatchReason and dispatchReason ~= "NO_AVAILABLE_ISR_ASSET" then
+      self.sendMessage(group, string.format("ISR Cell: %s queued; dispatch deferred (%s).", tostring(request.id), tostring(dispatchReason)))
+    else
+      self.sendMessage(group, string.format("ISR Cell: %s queued.", tostring(request.id)))
+    end
     return request
   end
 
