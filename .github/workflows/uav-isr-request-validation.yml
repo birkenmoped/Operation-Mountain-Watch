@@ -18,6 +18,10 @@ on:
     paths:
       - "scripts/campaign/OMW_ISR_RequestCoordinator.lua"
       - "scripts/air-operations/OMW_ISR_RequestMenu.lua"
+      - "scripts/air-operations/OMW_ISR_UavDispatcher.lua"
+      - "scripts/air-operations/OMW_AirOps_Kandahar_Bootstrap.lua"
+      - "scripts/campaign/OMW_ISR_UavCampaignStateAdapter.lua"
+      - "scripts/campaign/OMW_CampaignState.lua"
       - "tests/uav-isr/**"
       - "mission/tests/uav-isr-request/**"
       - "tools/build-uav-isr-request-acceptance-1.ps1"
