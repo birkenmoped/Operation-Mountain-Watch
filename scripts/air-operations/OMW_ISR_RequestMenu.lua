@@ -81,6 +81,7 @@ function RequestMenu.New(config)
     menusByGroupId = {},
     sendMessage = config.sendMessage,
     onRequestQueued = config.onRequestQueued,
+    onRequestCancelled = config.onRequestCancelled,
   }, RequestMenu)
 
   if self.sendMessage == nil then
@@ -91,6 +92,7 @@ function RequestMenu.New(config)
   end
   requireFunction(self.sendMessage, "config.sendMessage")
   if self.onRequestQueued ~= nil then requireFunction(self.onRequestQueued, "config.onRequestQueued") end
+  if self.onRequestCancelled ~= nil then requireFunction(self.onRequestCancelled, "config.onRequestCancelled") end
 
   -- The pinned MARKEROPS_BASE source only calls MarkChanged when the configured
   -- tag matches the *new* text. An empty tag makes every map update observable;
@@ -232,6 +234,7 @@ end
 function RequestMenu:CancelForGroup(group)
   local request, reason = self.coordinator:CancelOwnRequest(group:GetID())
   if request then
+    if self.onRequestCancelled then self.onRequestCancelled(request) end
     self.sendMessage(group, string.format("ISR Cell: %s cancelled.", tostring(request.id)))
     return request
   end
