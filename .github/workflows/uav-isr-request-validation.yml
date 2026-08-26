@@ -13,6 +13,7 @@ on:
       - "mission/tests/uav-isr-request/**"
       - "tools/build-uav-isr-request-acceptance-1.ps1"
       - "tools/build-uav-isr-request-acceptance-2.ps1"
+      - "tools/build-uav-isr-request-acceptance-3.ps1"
       - ".github/workflows/uav-isr-request-validation.yml"
   pull_request:
     paths:
@@ -26,6 +27,7 @@ on:
       - "mission/tests/uav-isr-request/**"
       - "tools/build-uav-isr-request-acceptance-1.ps1"
       - "tools/build-uav-isr-request-acceptance-2.ps1"
+      - "tools/build-uav-isr-request-acceptance-3.ps1"
       - ".github/workflows/uav-isr-request-validation.yml"
 
 permissions:
@@ -57,8 +59,13 @@ jobs:
         shell: pwsh
         run: ./tools/build-uav-isr-request-acceptance-2.ps1
 
+      - name: Build isolated UAV ISR Acceptance 3 bundle
+        shell: pwsh
+        run: ./tools/build-uav-isr-request-acceptance-3.ps1
+
       - name: Verify Acceptance bundles were produced
         shell: bash
         run: |
           test -s mission/tests/uav-isr-request/dist/OMW_UAV_ISR_Request_Acceptance_1.lua
           test -s mission/tests/uav-isr-request/dist/OMW_UAV_ISR_Request_Acceptance_2.lua
+          test -s mission/tests/uav-isr-request/dist/OMW_UAV_ISR_Request_Acceptance_3.lua
