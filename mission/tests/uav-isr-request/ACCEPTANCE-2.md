@@ -17,8 +17,9 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\tools\build-uav-isr-reques
 ```
 
 Inject only `mission/tests/uav-isr-request/dist/OMW_UAV_ISR_Request_Acceptance_2.lua`
-into a copy of the mission after MOOSE has loaded. Do not load the production
-Kandahar bootstrap separately: this bundle contains it.
+into a copy of the mission after MOOSE has loaded. The bundle waits for and
+uses the production Kandahar AIRWING foundation already loaded by the mission;
+it must not initialise a second Kandahar foundation.
 
 ## DCS acceptance
 
