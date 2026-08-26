@@ -45,18 +45,24 @@ function Adapter:Reserve(requestId, profile)
   end
 
   local transactionId = "ISR-UAV-RESERVE:" .. requestId
-  local transaction, reason = self.campaignState:ReserveResource({
+  local ok, transaction, reason = pcall(self.campaignState.ReserveResource, self.campaignState, {
     transactionId = transactionId,
     reservationId = transactionId,
     cargoId = transactionId,
     missionDemandId = requestId,
     carrierEntityId = "ISR_CELL",
+    kind = "CONSUMPTION",
     resourceId = requireString(profile.resourceId, "profile.resourceId"),
     quantity = 1,
     canonicalUnit = "count",
     originNodeId = self.nodeId,
-    destinationNodeId = self.nodeId,
   })
+  if not ok then
+    if tostring(transaction):find("insufficient available resource", 1, true) then
+      return nil, "RESOURCE_UNAVAILABLE"
+    end
+    return nil, "CAMPAIGNSTATE_RESERVATION_FAILED"
+  end
   if not transaction then
     return nil, reason
   end
