@@ -12,7 +12,6 @@ $sources = @(
   'scripts/campaign/OMW_ISR_UavCampaignStateAdapter.lua',
   'scripts/air-operations/OMW_ISR_RequestMenu.lua',
   'scripts/air-operations/OMW_ISR_UavDispatcher.lua',
-  'scripts/air-operations/OMW_AirOps_Kandahar_Bootstrap.lua',
   'mission/tests/uav-isr-request/src/02-uav-isr-request-acceptance-2.lua'
 )
 
@@ -33,9 +32,6 @@ foreach ($relative in $sources) {
   foreach ($pattern in $forbidden) {
     if ($content -match $pattern) { throw "Forbidden native dispatch API in $relative : $pattern" }
   }
-  if ($relative -like '*Kandahar_Bootstrap.lua') {
-    $parts.Add(('do' + [Environment]::NewLine + $content + [Environment]::NewLine + 'end'))
-  } else {
     $name = switch -Wildcard ($relative) {
       '*OMW_CampaignState.lua' { 'CampaignState' }
       '*OMW_ISR_RequestCoordinator.lua' { 'RequestCoordinator' }
@@ -46,9 +42,8 @@ foreach ($relative in $sources) {
       default { throw "No bundle alias for $relative" }
     }
     $parts.Add(('local ' + $name + ' = (function()' + [Environment]::NewLine + $content + [Environment]::NewLine + 'end)()'))
-  }
 }
-$parts.Add('Acceptance.Start()')
+$parts.Add('Acceptance.StartWhenKandaharReady()')
 New-Item -ItemType Directory -Force -Path $outDir | Out-Null
 $separator = [Environment]::NewLine + [Environment]::NewLine
 [System.IO.File]::WriteAllText($output, ($parts -join $separator) + [Environment]::NewLine, [System.Text.UTF8Encoding]::new($false))
