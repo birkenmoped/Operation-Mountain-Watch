@@ -37,11 +37,17 @@ function Dispatcher.New(config)
   local moose = config.moose or _G
   requireTable(moose.ZONE_RADIUS, "MOOSE ZONE_RADIUS")
   requireTable(moose.AUFTRAG, "MOOSE AUFTRAG")
+  requireTable(moose.ENUMS, "MOOSE ENUMS")
   if type(config.campaignAdapter) ~= "table" then
     fail("config.campaignAdapter is required")
   end
   requireFunction(config.campaignAdapter.Reserve, "campaignAdapter.Reserve")
   requireFunction(config.campaignAdapter.ConsumeAtPhysicalStart, "campaignAdapter.ConsumeAtPhysicalStart")
+
+  if config.onMissionStarted ~= nil then requireFunction(config.onMissionStarted, "config.onMissionStarted") end
+  if config.onMissionExecuting ~= nil then requireFunction(config.onMissionExecuting, "config.onMissionExecuting") end
+  if config.onMissionCancelled ~= nil then requireFunction(config.onMissionCancelled, "config.onMissionCancelled") end
+  if config.onMissionDone ~= nil then requireFunction(config.onMissionDone, "config.onMissionDone") end
 
   return setmetatable({
     moose = moose,
@@ -50,6 +56,10 @@ function Dispatcher.New(config)
     profiles = requireTable(config.profiles, "config.profiles"),
     registeredPayloadProfileIds = {},
     missionsByRequestId = {},
+    onMissionStarted = config.onMissionStarted,
+    onMissionExecuting = config.onMissionExecuting,
+    onMissionCancelled = config.onMissionCancelled,
+    onMissionDone = config.onMissionDone,
   }, Dispatcher)
 end
 
@@ -67,24 +77,44 @@ function Dispatcher:_RegisterPayload(airwing, profile)
   end
   -- The template is the existing Mission Editor template, including its fixed
   -- loadout. NewPayload only makes that template operationally selectable.
-  airwing:NewPayload(profile.template, -1, { self.moose.AUFTRAG.Type.RECON }, profile.performance)
+  local missionTypes = { self.moose.AUFTRAG.Type.RECON }
+  if profile.missionKind == "ORBIT_RACETRACK" then
+    missionTypes[#missionTypes + 1] = self.moose.AUFTRAG.Type.ORBIT
+  end
+  airwing:NewPayload(profile.template, -1, missionTypes, profile.performance)
   self.registeredPayloadProfileIds[profile.id] = true
   log("PAYLOAD_REGISTERED profile=" .. profile.id .. " template=" .. profile.template)
 end
 
 function Dispatcher:_BuildMission(request, profile)
-  local zone = self.moose.ZONE_RADIUS:New(
-    "ISR_RECON_" .. request.id,
-    request.coordinate:GetVec2(),
-    profile.reconRadiusMeters
-  )
-  local mission = self.moose.AUFTRAG:NewRECON(
-    zone,
-    profile.reconSpeedKnots,
-    profile.reconAltitudeFeet,
-    false,
-    false
-  )
+  local mission
+
+  if profile.missionKind == "ORBIT_RACETRACK" then
+    -- NewORBIT_RACETRACK enters Executing only at the orbit waypoint. Therefore
+    -- SetDuration governs the approved on-station time, not outbound transit.
+    mission = self.moose.AUFTRAG:NewORBIT_RACETRACK(
+      request.coordinate,
+      profile.reconAltitudeFeet,
+      profile.reconSpeedKnots,
+      profile.orbitHeadingDegrees,
+      profile.orbitLegNm
+    )
+    mission.optionROE = self.moose.ENUMS.ROE.WeaponHold
+  else
+    local zone = self.moose.ZONE_RADIUS:New(
+      "ISR_RECON_" .. request.id,
+      request.coordinate:GetVec2(),
+      profile.reconRadiusMeters
+    )
+    mission = self.moose.AUFTRAG:NewRECON(
+      zone,
+      profile.reconSpeedKnots,
+      profile.reconAltitudeFeet,
+      false,
+      false
+    )
+  end
+
   mission:SetName("ISR " .. request.id .. " " .. profile.platformId)
   mission:SetTime(0)
   mission:SetDuration(profile.onStationSeconds)
@@ -92,6 +122,19 @@ function Dispatcher:_BuildMission(request, profile)
   mission.OnAfterStarted = function(_, _, _, _, _, _)
     self.campaignAdapter:ConsumeAtPhysicalStart(request.id)
     log("MISSION_STARTED requestId=" .. request.id .. " mission=" .. mission.name .. " platform=" .. profile.platformId)
+    if self.onMissionStarted then self.onMissionStarted(request, mission) end
+  end
+  mission.OnAfterExecuting = function(_, _, _, _, _, _)
+    log("MISSION_ON_STATION requestId=" .. request.id .. " mission=" .. mission.name .. " platform=" .. profile.platformId)
+    if self.onMissionExecuting then self.onMissionExecuting(request, mission) end
+  end
+  mission.OnAfterCancel = function(_, _, _, _, _, _)
+    log("MISSION_RETURNING requestId=" .. request.id .. " mission=" .. mission.name .. " platform=" .. profile.platformId)
+    if self.onMissionCancelled then self.onMissionCancelled(request, mission) end
+  end
+  mission.OnAfterDone = function(_, _, _, _, _, _)
+    log("MISSION_DONE requestId=" .. request.id .. " mission=" .. mission.name .. " platform=" .. profile.platformId)
+    if self.onMissionDone then self.onMissionDone(request, mission) end
   end
   return mission
 end
