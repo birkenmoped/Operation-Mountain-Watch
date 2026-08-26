@@ -110,7 +110,8 @@ function Dispatcher:Dispatch(request)
       local mission = self:_BuildMission(request, profile)
       airwing:AddMission(mission)
       log("MISSION_QUEUED requestId=" .. request.id .. " mission=" .. mission.name .. " platform=" .. profile.platformId)
-      self.missionsByRequestId[request.id] = {        profileId = profile.id,
+      self.missionsByRequestId[request.id] = {
+        profileId = profile.id,
         platformId = profile.platformId,
         transactionId = reservation.transactionId,
         mission = mission,
