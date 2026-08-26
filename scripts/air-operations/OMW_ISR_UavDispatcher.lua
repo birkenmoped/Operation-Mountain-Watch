@@ -14,6 +14,10 @@ local function fail(message)
   error(TAG .. " " .. tostring(message), 2)
 end
 
+local function log(message)
+  env.info(TAG .. " " .. tostring(message))
+end
+
 local function requireTable(value, label)
   if type(value) ~= "table" then
     fail(label .. " must be a table")
@@ -65,6 +69,7 @@ function Dispatcher:_RegisterPayload(airwing, profile)
   -- loadout. NewPayload only makes that template operationally selectable.
   airwing:NewPayload(profile.template, -1, { self.moose.AUFTRAG.Type.RECON }, profile.performance)
   self.registeredPayloadProfileIds[profile.id] = true
+  log("PAYLOAD_REGISTERED profile=" .. profile.id .. " template=" .. profile.template)
 end
 
 function Dispatcher:_BuildMission(request, profile)
@@ -86,6 +91,7 @@ function Dispatcher:_BuildMission(request, profile)
   mission:SetTeleport(false)
   mission.OnAfterStarted = function(_, _, _, _, _, _)
     self.campaignAdapter:ConsumeAtPhysicalStart(request.id)
+    log("MISSION_STARTED requestId=" .. request.id .. " mission=" .. mission.name .. " platform=" .. profile.platformId)
   end
   return mission
 end
@@ -103,8 +109,8 @@ function Dispatcher:Dispatch(request)
       self:_RegisterPayload(airwing, profile)
       local mission = self:_BuildMission(request, profile)
       airwing:AddMission(mission)
-      self.missionsByRequestId[request.id] = {
-        profileId = profile.id,
+      log("MISSION_QUEUED requestId=" .. request.id .. " mission=" .. mission.name .. " platform=" .. profile.platformId)
+      self.missionsByRequestId[request.id] = {        profileId = profile.id,
         platformId = profile.platformId,
         transactionId = reservation.transactionId,
         mission = mission,
