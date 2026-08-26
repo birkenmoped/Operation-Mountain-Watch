@@ -245,4 +245,26 @@ do
   expectTrue(runtime.menusByGroupId["501"] ~= nil, "CLIENT_GROUP_MENU_REGISTERED")
 end
 
+
+do
+  local coordinator = newCoordinator()
+  coordinator:UpsertMarker({ markerId = 51, text = "UAV RECON", coordinate = coordinate(1000, 0), coalitionNumber = 2 })
+  local request = assert(coordinator:SubmitNearest({
+    ownerGroupId = 601,
+    distanceForMarker = function(markerCoordinate)
+      return coordinate(0, 0):Get2DDistance(markerCoordinate)
+    end,
+  }))
+  assert(coordinator:MarkReserved(request.id, "MQ-9", "TX-601"))
+  assert(coordinator:MarkAssigned(request.id, "ISR " .. request.id))
+  assert(coordinator:MarkLaunching(request.id))
+  local onStation = assert(coordinator:MarkOnStation(request.id))
+  expectEqual(onStation.status, Coordinator.RequestStatus.ON_STATION, "ON_STATION_STATUS")
+  local returning = assert(coordinator:MarkReturning(request.id))
+  expectEqual(returning.status, Coordinator.RequestStatus.RETURNING, "RETURNING_STATUS")
+  local completed = assert(coordinator:MarkCompleted(request.id))
+  expectEqual(completed.status, Coordinator.RequestStatus.COMPLETED, "COMPLETED_STATUS")
+  expectNil(coordinator:GetOpenRequestForGroup(601), "COMPLETED_REQUEST_CLOSED")
+end
+
 print("PASS UAV ISR request coordinator and MOOSE menu contract")
