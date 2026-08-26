@@ -50,7 +50,8 @@ foreach ($relative in $sources) {
 }
 $parts.Add('Acceptance.Start()')
 New-Item -ItemType Directory -Force -Path $outDir | Out-Null
-[System.IO.File]::WriteAllText($output, ($parts -join [Environment]::NewLine + [Environment]::NewLine) + [Environment]::NewLine, [System.Text.UTF8Encoding]::new($false))
+$separator = [Environment]::NewLine + [Environment]::NewLine
+[System.IO.File]::WriteAllText($output, ($parts -join $separator) + [Environment]::NewLine, [System.Text.UTF8Encoding]::new($false))
 $hash = (Get-FileHash -Algorithm SHA256 -LiteralPath $output).Hash.ToLowerInvariant()
 Write-Output 'BuilderVersion: OMW-UAV-ISR-REQUEST-ACCEPTANCE-2-1'
 Write-Output "Output: $output"
