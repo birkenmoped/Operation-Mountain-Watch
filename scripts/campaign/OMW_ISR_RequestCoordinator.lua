@@ -14,6 +14,8 @@ Coordinator.RequestStatus = {
   ASSIGNED = "ASSIGNED",
   LAUNCHING = "LAUNCHING",
   ON_STATION = "ON_STATION",
+  RETURNING = "RETURNING",
+  COMPLETED = "COMPLETED",
   CANCELLED = "CANCELLED",
 }
 
@@ -218,6 +220,34 @@ function Coordinator:MarkLaunching(requestIdValue)
   if not request then return nil, "UNKNOWN_REQUEST" end
   if request.status ~= Coordinator.RequestStatus.ASSIGNED then return nil, "REQUEST_NOT_ASSIGNED" end
   request.status = Coordinator.RequestStatus.LAUNCHING
+  return copyRequest(request)
+end
+
+function Coordinator:MarkOnStation(requestIdValue)
+  local request = self.requestsById[requireNonEmptyString(requestIdValue, "requestId")]
+  if not request then return nil, "UNKNOWN_REQUEST" end
+  if request.status ~= Coordinator.RequestStatus.LAUNCHING then return nil, "REQUEST_NOT_LAUNCHING" end
+  request.status = Coordinator.RequestStatus.ON_STATION
+  return copyRequest(request)
+end
+
+function Coordinator:MarkReturning(requestIdValue)
+  local request = self.requestsById[requireNonEmptyString(requestIdValue, "requestId")]
+  if not request then return nil, "UNKNOWN_REQUEST" end
+  if request.status ~= Coordinator.RequestStatus.LAUNCHING
+      and request.status ~= Coordinator.RequestStatus.ON_STATION then
+    return nil, "REQUEST_NOT_ACTIVE"
+  end
+  request.status = Coordinator.RequestStatus.RETURNING
+  return copyRequest(request)
+end
+
+function Coordinator:MarkCompleted(requestIdValue)
+  local request = self.requestsById[requireNonEmptyString(requestIdValue, "requestId")]
+  if not request then return nil, "UNKNOWN_REQUEST" end
+  if request.status ~= Coordinator.RequestStatus.RETURNING then return nil, "REQUEST_NOT_RETURNING" end
+  request.status = Coordinator.RequestStatus.COMPLETED
+  self.openRequestIdByOwner[request.ownerGroupId] = nil
   return copyRequest(request)
 end
 
