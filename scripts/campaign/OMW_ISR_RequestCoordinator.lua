@@ -10,6 +10,10 @@ Coordinator.__index = Coordinator
 
 Coordinator.RequestStatus = {
   QUEUED = "QUEUED",
+  RESERVED = "RESERVED",
+  ASSIGNED = "ASSIGNED",
+  LAUNCHING = "LAUNCHING",
+  ON_STATION = "ON_STATION",
   CANCELLED = "CANCELLED",
 }
 
@@ -61,6 +65,9 @@ local function copyRequest(request)
     coordinate = request.coordinate,
     createdAt = request.createdAt,
     cancellationReason = request.cancellationReason,
+    platformId = request.platformId,
+    transactionId = request.transactionId,
+    missionName = request.missionName,
   }
 end
 
@@ -178,10 +185,40 @@ function Coordinator:SubmitNearest(spec)
     coordinate = nearest.coordinate,
     createdAt = spec.createdAt,
     cancellationReason = nil,
+    platformId = nil,
+    transactionId = nil,
+    missionName = nil,
   }
   self.requestsById[id] = request
   self.openRequestIdByOwner[key] = id
   return copyRequest(request), nil
+end
+
+function Coordinator:MarkReserved(requestIdValue, platformId, transactionId)
+  local request = self.requestsById[requireNonEmptyString(requestIdValue, "requestId")]
+  if not request then return nil, "UNKNOWN_REQUEST" end
+  if request.status ~= Coordinator.RequestStatus.QUEUED and request.status ~= Coordinator.RequestStatus.RESERVED then return nil, "REQUEST_NOT_QUEUED" end
+  request.status = Coordinator.RequestStatus.RESERVED
+  request.platformId = requireNonEmptyString(platformId, "platformId")
+  request.transactionId = requireNonEmptyString(transactionId, "transactionId")
+  return copyRequest(request)
+end
+
+function Coordinator:MarkAssigned(requestIdValue, missionName)
+  local request = self.requestsById[requireNonEmptyString(requestIdValue, "requestId")]
+  if not request then return nil, "UNKNOWN_REQUEST" end
+  if request.status ~= Coordinator.RequestStatus.RESERVED then return nil, "REQUEST_NOT_RESERVED" end
+  request.status = Coordinator.RequestStatus.ASSIGNED
+  request.missionName = requireNonEmptyString(missionName, "missionName")
+  return copyRequest(request)
+end
+
+function Coordinator:MarkLaunching(requestIdValue)
+  local request = self.requestsById[requireNonEmptyString(requestIdValue, "requestId")]
+  if not request then return nil, "UNKNOWN_REQUEST" end
+  if request.status ~= Coordinator.RequestStatus.ASSIGNED then return nil, "REQUEST_NOT_ASSIGNED" end
+  request.status = Coordinator.RequestStatus.LAUNCHING
+  return copyRequest(request)
 end
 
 function Coordinator:CancelOwnRequest(ownerGroupId, reason)
