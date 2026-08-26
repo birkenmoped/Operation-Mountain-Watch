@@ -60,6 +60,9 @@ function Acceptance.Start()
       coordinator:MarkAssigned(request.id, assignment.mission.name)
       return assignment
     end,
+    onRequestCancelled = function(request)
+      if request.transactionId then adapter:CancelBeforePhysicalStart(request.id) end
+    end,
   })
   menu:RegisterBlueClients()
 
