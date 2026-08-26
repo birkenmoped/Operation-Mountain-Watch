@@ -1,0 +1,104 @@
+local Dispatcher = dofile("scripts/air-operations/OMW_ISR_UavDispatcher.lua")
+
+env = { info = function() end }
+
+local payloadCall = nil
+local addedMission = nil
+local consumedRequestId = nil
+local lifecycle = {}
+
+local mission = {
+  SetName = function(self, value) self.name = value return self end,
+  SetTime = function(self, value) self.time = value return self end,
+  SetDuration = function(self, value) self.duration = value return self end,
+  SetTeleport = function(self, value) self.teleport = value return self end,
+}
+
+local fakeMoose = {
+  ZONE_RADIUS = { New = function() error("orbit profile must not create a recon zone") end },
+  ENUMS = { ROE = { WeaponHold = "WEAPON_HOLD" } },
+  AUFTRAG = {
+    Type = { RECON = "RECON", ORBIT = "ORBIT" },
+    NewORBIT_RACETRACK = function(coordinate, altitude, speed, heading, leg)
+      lifecycle.constructor = { coordinate, altitude, speed, heading, leg }
+      return mission
+    end,
+  },
+}
+
+local airwing = {
+  NewPayload = function(_, template, count, missionTypes, performance)
+    payloadCall = { template, count, missionTypes, performance }
+  end,
+  AddMission = function(_, value)
+    addedMission = value
+  end,
+}
+
+local adapter = {
+  Reserve = function(_, requestId, profile)
+    lifecycle.reservation = { requestId, profile.id }
+    return { transactionId = "TX-" .. requestId }
+  end,
+  ConsumeAtPhysicalStart = function(_, requestId)
+    consumedRequestId = requestId
+    return true
+  end,
+}
+
+local dispatcher = Dispatcher.New({
+  moose = fakeMoose,
+  campaignAdapter = adapter,
+  kandahar = { Airwings = { Main = airwing } },
+  profiles = {
+    {
+      id = "KAF_MQ9_ORBIT_ACCEPTANCE",
+      platformId = "MQ-9",
+      resourceId = "AIRCRAFT_MQ9",
+      template = "TPL_AIR_US_KAF_MQ9_RECON_1SHIP",
+      missionKind = "ORBIT_RACETRACK",
+      reconAltitudeFeet = 25000,
+      reconSpeedKnots = 180,
+      orbitHeadingDegrees = 90,
+      orbitLegNm = 5,
+      onStationSeconds = 2700,
+    },
+  },
+  onMissionStarted = function(request) lifecycle.started = request.id end,
+  onMissionExecuting = function(request) lifecycle.executing = request.id end,
+  onMissionCancelled = function(request) lifecycle.cancelled = request.id end,
+  onMissionDone = function(request) lifecycle.done = request.id end,
+})
+
+local request = {
+  id = "ISR-0099",
+  coordinate = { sentinel = "marker-coordinate" },
+}
+local assignment = assert(dispatcher:Dispatch(request))
+
+assert(payloadCall.template == "TPL_AIR_US_KAF_MQ9_RECON_1SHIP")
+assert(payloadCall.count == -1)
+assert(payloadCall.missionTypes[1] == "RECON")
+assert(payloadCall.missionTypes[2] == "ORBIT")
+assert(addedMission == mission)
+assert(lifecycle.constructor[1] == request.coordinate)
+assert(lifecycle.constructor[2] == 25000)
+assert(lifecycle.constructor[3] == 180)
+assert(lifecycle.constructor[4] == 90)
+assert(lifecycle.constructor[5] == 5)
+assert(mission.optionROE == "WEAPON_HOLD")
+assert(mission.duration == 2700)
+assert(mission.teleport == false)
+assert(assignment.platformId == "MQ-9")
+
+mission.OnAfterStarted()
+assert(consumedRequestId == "ISR-0099")
+assert(lifecycle.started == "ISR-0099")
+mission.OnAfterExecuting()
+assert(lifecycle.executing == "ISR-0099")
+mission.OnAfterCancel()
+assert(lifecycle.cancelled == "ISR-0099")
+mission.OnAfterDone()
+assert(lifecycle.done == "ISR-0099")
+
+print("PASS test_isr_uav_dispatcher")
