@@ -7,6 +7,11 @@ function Acceptance.Start()
   OMW = OMW or {}
   OMW.Campaign = OMW.Campaign or {}
 
+  local kandahar = OMW.AirOps and OMW.AirOps.Kandahar or nil
+  if not kandahar or kandahar.Status ~= "RUNNING" then
+    error("Kandahar AIRWING foundation is not running")
+  end
+
   local state = CampaignState.New({
     nodes = {
       {
@@ -31,7 +36,7 @@ function Acceptance.Start()
   })
   local dispatcher = UavDispatcher.New({
     campaignAdapter = adapter,
-    kandahar = OMW.AirOps.Kandahar,
+    kandahar = kandahar,
     profiles = {
       {
         id = "KAF_MQ9_ACCEPTANCE",
@@ -78,6 +83,41 @@ function Acceptance.Start()
     30,
     "OMW"
   ):ToAll()
+end
+
+function Acceptance.StartWhenKandaharReady()
+  local attempts = 0
+  local maximumAttempts = 18
+  local scheduler = nil
+
+  local function kandaharIsReady()
+    local kandahar = OMW and OMW.AirOps and OMW.AirOps.Kandahar or nil
+    return kandahar
+      and kandahar.Status == "RUNNING"
+      and kandahar.Airwings
+      and kandahar.Airwings.Main
+  end
+
+  local function beginWhenReady()
+    attempts = attempts + 1
+    if kandaharIsReady() then
+      scheduler:Stop()
+      Acceptance.Start()
+      return
+    end
+
+    if attempts >= maximumAttempts then
+      scheduler:Stop()
+      env.error("[OMW][ISR.Acceptance2] Kandahar AIRWING foundation did not reach RUNNING state", false)
+      MESSAGE:New(
+        "OMW UAV ISR Acceptance 2: Kandahar AIRWING is unavailable; dispatch test stopped.",
+        30,
+        "OMW"
+      ):ToAll()
+    end
+  end
+
+  scheduler = SCHEDULER:New(nil, beginWhenReady, {}, 1, 5)
 end
 
 return Acceptance
