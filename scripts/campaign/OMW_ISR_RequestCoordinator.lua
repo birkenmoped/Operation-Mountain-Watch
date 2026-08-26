@@ -197,7 +197,7 @@ end
 function Coordinator:MarkReserved(requestIdValue, platformId, transactionId)
   local request = self.requestsById[requireNonEmptyString(requestIdValue, "requestId")]
   if not request then return nil, "UNKNOWN_REQUEST" end
-  if request.status ~= Coordinator.RequestStatus.QUEUED and request.status ~= Coordinator.RequestStatus.RESERVED then return nil, "REQUEST_NOT_QUEUED" end
+  if request.status ~= Coordinator.RequestStatus.QUEUED then return nil, "REQUEST_NOT_QUEUED" end
   request.status = Coordinator.RequestStatus.RESERVED
   request.platformId = requireNonEmptyString(platformId, "platformId")
   request.transactionId = requireNonEmptyString(transactionId, "transactionId")
@@ -232,7 +232,7 @@ function Coordinator:CancelOwnRequest(ownerGroupId, reason)
   if request.ownerGroupId ~= key then
     fail("owner index mismatch requestId=" .. tostring(id))
   end
-  if request.status ~= Coordinator.RequestStatus.QUEUED then
+  if request.status ~= Coordinator.RequestStatus.QUEUED and request.status ~= Coordinator.RequestStatus.RESERVED then
     return nil, "REQUEST_NOT_CANCELLABLE"
   end
 
