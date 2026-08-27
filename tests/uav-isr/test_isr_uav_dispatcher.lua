@@ -21,7 +21,7 @@ local fakeMoose = {
   ENUMS = { ROE = { WeaponHold = "WEAPON_HOLD" } },
   AUFTRAG = {
     Type = { RECON = "RECON", ORBIT = "ORBIT" },
-    NewORBIT_CIRCLE = function(coordinate, altitude, speed)
+    NewORBIT_CIRCLE = function(_, coordinate, altitude, speed)
       lifecycle.constructor = { coordinate, altitude, speed }
       return mission
     end,
