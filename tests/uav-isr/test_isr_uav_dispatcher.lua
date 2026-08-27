@@ -84,10 +84,10 @@ local request = {
 }
 local assignment = assert(dispatcher:Dispatch(request))
 
-assert(payloadCall.template == "TPL_AIR_US_KAF_MQ9_RECON_1SHIP")
-assert(payloadCall.count == -1)
-assert(payloadCall.missionTypes[1] == "RECON")
-assert(payloadCall.missionTypes[2] == "ORBIT")
+assert(payloadCall[1] == "TPL_AIR_US_KAF_MQ9_RECON_1SHIP")
+assert(payloadCall[2] == -1)
+assert(payloadCall[3][1] == "RECON")
+assert(payloadCall[3][2] == "ORBIT")
 assert(addedMission == mission)
 assert(lifecycle.constructor[1] == request.coordinate)
 assert(lifecycle.constructor[2] == 25000)
