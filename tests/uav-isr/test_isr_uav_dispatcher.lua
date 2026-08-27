@@ -13,6 +13,7 @@ local mission = {
   SetTime = function(self, value) self.time = value return self end,
   SetDuration = function(self, value) self.duration = value return self end,
   SetTeleport = function(self, value) self.teleport = value return self end,
+  Cancel = function(self) self.cancelCount = (self.cancelCount or 0) + 1 return self end,
 }
 
 local fakeMoose = {
@@ -73,6 +74,7 @@ local dispatcher = Dispatcher.New({
   onMissionStarted = function(request) lifecycle.started = request.id end,
   onMissionExecuting = function(request) lifecycle.executing = request.id end,
   onMissionCancelled = function(request) lifecycle.cancelled = request.id end,
+  onMissionCancelledBeforeStart = function(request) lifecycle.cancelledBeforeStart = request.id end,
   onMissionDone = function(request) lifecycle.done = request.id end,
 })
 
@@ -107,5 +109,28 @@ mission.OnAfterCancel()
 assert(lifecycle.cancelled == "ISR-0099")
 mission.OnAfterDone()
 assert(lifecycle.done == "ISR-0099")
+
+local beforeStart = assert(dispatcher:Dispatch({
+  id = "ISR-0100",
+  coordinate = { sentinel = "marker-coordinate-2" },
+}))
+assert(beforeStart.platformId == "MQ-9")
+assert(dispatcher:CancelRequest("ISR-0100") == "CANCELLED_BEFORE_START")
+assert(mission.cancelCount == 1)
+mission.OnAfterCancel()
+assert(lifecycle.cancelledBeforeStart == "ISR-0100")
+mission.OnAfterDone()
+assert(lifecycle.done == "ISR-0099")
+
+local recall = assert(dispatcher:Dispatch({
+  id = "ISR-0101",
+  coordinate = { sentinel = "marker-coordinate-3" },
+}))
+mission.OnAfterStarted()
+assert(dispatcher:CancelRequest("ISR-0101") == "RECALL_ORDERED")
+assert(mission.cancelCount == 2)
+mission.OnAfterCancel()
+assert(lifecycle.cancelled == "ISR-0101")
+assert(dispatcher:CancelRequest("ISR-0101") == "RECALL_ALREADY_ORDERED")
 
 print("PASS test_isr_uav_dispatcher")

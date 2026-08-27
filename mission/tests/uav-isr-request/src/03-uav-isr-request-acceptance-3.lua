@@ -62,6 +62,10 @@ function Acceptance.Start()
     onMissionCancelled = function(request)
       assert(coordinator:MarkReturning(request.id))
     end,
+    onMissionCancelledBeforeStart = function()
+      -- The menu atomically cancels the coordinator request and releases the
+      -- CampaignState reservation after MOOSE removes the queued mission.
+    end,
     onMissionDone = function(request)
       assert(coordinator:MarkCompleted(request.id))
     end,
@@ -80,8 +84,19 @@ function Acceptance.Start()
       coordinator:MarkAssigned(request.id, assignment.mission.name)
       return assignment
     end,
-    onRequestCancelled = function(request)
-      if request.transactionId then adapter:CancelBeforePhysicalStart(request.id) end
+    onRequestCancellation = function(group, request)
+      local outcome, reason = dispatcher:CancelRequest(request.id)
+      if not outcome then return nil, reason end
+
+      if outcome == "CANCELLED_BEFORE_START" then
+        local cancelled, cancelReason = coordinator:CancelOwnRequest(group:GetID())
+        if not cancelled then return nil, cancelReason end
+        local transaction, releaseReason = adapter:CancelBeforePhysicalStart(request.id)
+        if not transaction then return nil, releaseReason end
+        return "CANCELLED"
+      end
+
+      return outcome
     end,
   })
   menu:RegisterBlueClients()

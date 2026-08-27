@@ -195,7 +195,7 @@ do
   expectTrue(messages[#messages].text:find("ISR%-0001 queued") ~= nil, "MENU_SUBMIT_MESSAGE")
   commands["Own request status"].callback()
   expectTrue(messages[#messages].text:find("status=QUEUED") ~= nil, "MENU_STATUS_MESSAGE")
-  commands["Cancel own queued request"].callback()
+  commands["Cancel own UAV request"].callback()
   expectTrue(messages[#messages].text:find("cancelled") ~= nil, "MENU_CANCEL_MESSAGE")
 
   runtime.markerOps:OnAfterMarkChanged(nil, nil, nil, "UAV RECON", nil, coordinate(1200, 0), 42, 2)
@@ -204,6 +204,41 @@ do
   expectTrue(messages[#messages].text:find("no valid UAV RECON marker") ~= nil, "DELETE_FAIL_CLOSED_MESSAGE")
 end
 
+
+do
+  local commands, messages = {}, {}
+  local fakeMoose = {
+    MARKEROPS_BASE = { New = function() return {} end },
+    MENU_GROUP = { New = function(_, group, text, parent) return { group = group, text = text, parent = parent } end },
+    MENU_GROUP_COMMAND = {
+      New = function(_, group, text, parent, callback)
+        commands[text] = { callback = callback }
+        return commands[text]
+      end,
+    },
+  }
+  local coordinator = newCoordinator()
+  local runtime = RequestMenu.New({
+    coordinator = coordinator,
+    blueCoalitionNumber = 2,
+    moose = fakeMoose,
+    now = function() return 88 end,
+    sendMessage = function(_, text) messages[#messages + 1] = text end,
+    onRequestCancellation = function(_, request)
+      expectEqual(request.status, Coordinator.RequestStatus.QUEUED, "MENU_RECALL_REQUEST_STATUS")
+      return "RECALL_ORDERED"
+    end,
+  })
+  local group = {
+    GetID = function() return 451 end,
+    GetCoordinate = function() return coordinate(0, 0) end,
+  }
+  runtime:RegisterGroup(group)
+  runtime.markerOps:OnAfterMarkChanged(nil, nil, nil, "UAV RECON", nil, coordinate(1200, 0), 45, 2)
+  commands["Submit nearest UAV marker"].callback()
+  commands["Cancel own UAV request"].callback()
+  expectTrue(messages[#messages]:find("recall ordered") ~= nil, "MENU_RECALL_MESSAGE")
+end
 
 do
   local added = false
@@ -266,6 +301,21 @@ do
   local completed = assert(coordinator:MarkCompleted(request.id))
   expectEqual(completed.status, Coordinator.RequestStatus.COMPLETED, "COMPLETED_STATUS")
   expectNil(coordinator:GetOpenRequestForGroup(601), "COMPLETED_REQUEST_CLOSED")
+end
+
+do
+  local coordinator = newCoordinator()
+  coordinator:UpsertMarker({ markerId = 61, text = "UAV RECON", coordinate = coordinate(1000, 0), coalitionNumber = 2 })
+  local request = assert(coordinator:SubmitNearest({
+    ownerGroupId = 701,
+    distanceForMarker = function(markerCoordinate)
+      return coordinate(0, 0):Get2DDistance(markerCoordinate)
+    end,
+  }))
+  assert(coordinator:MarkReserved(request.id, "MQ-9", "TX-701"))
+  assert(coordinator:MarkAssigned(request.id, "ISR " .. request.id))
+  local cancelled = assert(coordinator:CancelOwnRequest(701))
+  expectEqual(cancelled.status, Coordinator.RequestStatus.CANCELLED, "ASSIGNED_CANCEL_STATUS")
 end
 
 print("PASS UAV ISR request coordinator and MOOSE menu contract")

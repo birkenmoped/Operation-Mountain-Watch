@@ -262,7 +262,9 @@ function Coordinator:CancelOwnRequest(ownerGroupId, reason)
   if request.ownerGroupId ~= key then
     fail("owner index mismatch requestId=" .. tostring(id))
   end
-  if request.status ~= Coordinator.RequestStatus.QUEUED and request.status ~= Coordinator.RequestStatus.RESERVED then
+  if request.status ~= Coordinator.RequestStatus.QUEUED
+      and request.status ~= Coordinator.RequestStatus.RESERVED
+      and request.status ~= Coordinator.RequestStatus.ASSIGNED then
     return nil, "REQUEST_NOT_CANCELLABLE"
   end
 

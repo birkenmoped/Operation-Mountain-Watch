@@ -88,7 +88,7 @@ function RequestMenu.New(config)
     menusByGroupId = {},
     sendMessage = config.sendMessage,
     onRequestQueued = config.onRequestQueued,
-    onRequestCancelled = config.onRequestCancelled,
+    onRequestCancellation = config.onRequestCancellation,
   }, RequestMenu)
 
   if self.sendMessage == nil then
@@ -99,7 +99,9 @@ function RequestMenu.New(config)
   end
   requireFunction(self.sendMessage, "config.sendMessage")
   if self.onRequestQueued ~= nil then requireFunction(self.onRequestQueued, "config.onRequestQueued") end
-  if self.onRequestCancelled ~= nil then requireFunction(self.onRequestCancelled, "config.onRequestCancelled") end
+  if self.onRequestCancellation ~= nil then
+    requireFunction(self.onRequestCancellation, "config.onRequestCancellation")
+  end
 
   -- The pinned MARKEROPS_BASE source only calls MarkChanged when the configured
   -- tag matches the *new* text. An empty tag makes every add/change observable;
@@ -207,7 +209,7 @@ function RequestMenu:RegisterGroup(group)
   )
   menus.cancel = self.moose.MENU_GROUP_COMMAND:New(
     group,
-    "Cancel own queued request",
+    "Cancel own UAV request",
     isrMenu,
     function() self:CancelForGroup(group) end
   )
@@ -262,9 +264,30 @@ function RequestMenu:ShowStatusForGroup(group)
 end
 
 function RequestMenu:CancelForGroup(group)
+  local existing = self.coordinator:GetOpenRequestForGroup(group:GetID())
+  if not existing then
+    self.sendMessage(group, messageText("NO_OPEN_REQUEST"))
+    return nil, "NO_OPEN_REQUEST"
+  end
+
+  if self.onRequestCancellation then
+    local outcome, reason = self.onRequestCancellation(group, existing)
+    if outcome == "CANCELLED" then
+      self.sendMessage(group, string.format("ISR Cell: %s cancelled before launch.", tostring(existing.id)))
+      return existing, nil
+    elseif outcome == "RECALL_ORDERED" then
+      self.sendMessage(group, string.format("ISR Cell: %s recall ordered; returning to base.", tostring(existing.id)))
+      return existing, nil
+    elseif outcome == "RECALL_ALREADY_ORDERED" then
+      self.sendMessage(group, string.format("ISR Cell: %s is already returning to base.", tostring(existing.id)))
+      return existing, nil
+    end
+    self.sendMessage(group, messageText(reason or outcome))
+    return nil, reason or outcome
+  end
+
   local request, reason = self.coordinator:CancelOwnRequest(group:GetID())
   if request then
-    if self.onRequestCancelled then self.onRequestCancelled(request) end
     self.sendMessage(group, string.format("ISR Cell: %s cancelled.", tostring(request.id)))
     return request
   end

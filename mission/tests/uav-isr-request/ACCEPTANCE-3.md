@@ -18,9 +18,12 @@ mission this is the orbit waypoint, not aircraft launch. Therefore the timer is
 an On-Station limit rather than a transit limit.
 
 The profile remains acceptance-only: 25,000 ft MSL and 180 kt IAS in a
-circular orbit centred on the marker. It does not clear production terrain corridors, RC-East holding,
-Bagram sourcing, queueing, persistence, recovery re-credit, Fog-of-War
-behaviour or weapon employment.
+circular orbit centred on the marker. The F10 cancel command uses
+`AUFTRAG:Cancel()`: before MOOSE starts the mission it removes the queued
+mission and releases the acceptance reservation; after start it orders a MOOSE
+recall/return-to-base. It never despawns the aircraft. It does not clear
+production terrain corridors, RC-East holding, Bagram sourcing, persistence,
+recovery re-credit, Fog-of-War behaviour or weapon employment.
 
 ## Build
 
@@ -49,9 +52,14 @@ Kandahar foundation.
    `MISSION_ON_STATION`.
 5. In an external/F10 view, capture the MQ-9 physically orbiting the submitted
    marker. The marker and aircraft must be visible in the same evidence set.
-6. Let the full 45-minute On-Station duration elapse. Record
-   `MISSION_RETURNING` and `MISSION_DONE`.
-7. Capture `debrief.log`: MQ-9 engine start, takeoff, landing and shutdown at
+6. Submit a second request and use `Cancel own UAV request` in each available
+   stage: queued/no physical asset, ground launch, airborne transit, and
+   On-Station. Before start expect `cancelled before launch`; after start
+   expect `recall ordered; returning to base`. Record the matching
+   `MISSION_CANCELLED_BEFORE_START` or `MISSION_RECALL_ORDERED` log line.
+7. For a recall after start, observe a physical return to Kandahar; no
+   despawn is permitted. Record `MISSION_RETURNING` and `MISSION_DONE`.
+8. Capture `debrief.log`: MQ-9 engine start, takeoff, landing and shutdown at
    Kandahar. Capture the bundle SHA-256 and screenshots.
 
 ## Pass criterion

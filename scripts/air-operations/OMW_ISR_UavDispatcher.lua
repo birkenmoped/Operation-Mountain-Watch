@@ -54,6 +54,9 @@ function Dispatcher.New(config)
   if config.onMissionStarted ~= nil then requireFunction(config.onMissionStarted, "config.onMissionStarted") end
   if config.onMissionExecuting ~= nil then requireFunction(config.onMissionExecuting, "config.onMissionExecuting") end
   if config.onMissionCancelled ~= nil then requireFunction(config.onMissionCancelled, "config.onMissionCancelled") end
+  if config.onMissionCancelledBeforeStart ~= nil then
+    requireFunction(config.onMissionCancelledBeforeStart, "config.onMissionCancelledBeforeStart")
+  end
   if config.onMissionDone ~= nil then requireFunction(config.onMissionDone, "config.onMissionDone") end
 
   return setmetatable({
@@ -66,6 +69,7 @@ function Dispatcher.New(config)
     onMissionStarted = config.onMissionStarted,
     onMissionExecuting = config.onMissionExecuting,
     onMissionCancelled = config.onMissionCancelled,
+    onMissionCancelledBeforeStart = config.onMissionCancelledBeforeStart,
     onMissionDone = config.onMissionDone,
   }, Dispatcher)
 end
@@ -131,12 +135,15 @@ function Dispatcher:_BuildMission(request, profile, squadron)
   end
 
   requireFunction(mission.AssignSquadrons, "MOOSE AUFTRAG.AssignSquadrons")
+  requireFunction(mission.Cancel, "MOOSE AUFTRAG.Cancel")
   mission:AssignSquadrons({ squadron })
   mission:SetName("ISR " .. request.id .. " " .. profile.platformId)
   mission:SetTime(0)
   mission:SetDuration(profile.onStationSeconds)
   mission:SetTeleport(false)
   mission.OnAfterStarted = function(_, _, _, _, _, _)
+    local record = self.missionsByRequestId[request.id]
+    if record then record.started = true end
     self.campaignAdapter:ConsumeAtPhysicalStart(request.id)
     log("MISSION_STARTED requestId=" .. request.id .. " mission=" .. mission.name .. " platform=" .. profile.platformId)
     if self.onMissionStarted then self.onMissionStarted(request, mission) end
@@ -146,10 +153,22 @@ function Dispatcher:_BuildMission(request, profile, squadron)
     if self.onMissionExecuting then self.onMissionExecuting(request, mission) end
   end
   mission.OnAfterCancel = function(_, _, _, _, _, _)
-    log("MISSION_RETURNING requestId=" .. request.id .. " mission=" .. mission.name .. " platform=" .. profile.platformId)
+    local record = self.missionsByRequestId[request.id]
+    if record and record.cancelMode == "BEFORE_START" then
+      log("MISSION_CANCELLED_BEFORE_START requestId=" .. request.id .. " mission=" .. mission.name)
+      if self.onMissionCancelledBeforeStart then self.onMissionCancelledBeforeStart(request, mission) end
+      return
+    end
+    local reason = record and record.cancelMode == "RECALL" and "OWNER_RECALL" or "MISSION_COMPLETED"
+    log("MISSION_RETURNING requestId=" .. request.id .. " mission=" .. mission.name
+      .. " platform=" .. profile.platformId .. " reason=" .. reason)
     if self.onMissionCancelled then self.onMissionCancelled(request, mission) end
   end
   mission.OnAfterDone = function(_, _, _, _, _, _)
+    local record = self.missionsByRequestId[request.id]
+    if record and record.cancelMode == "BEFORE_START" then
+      return
+    end
     log("MISSION_DONE requestId=" .. request.id .. " mission=" .. mission.name .. " platform=" .. profile.platformId)
     if self.onMissionDone then self.onMissionDone(request, mission) end
   end
@@ -187,6 +206,35 @@ function Dispatcher:Dispatch(request)
     end
   end
   return nil, "NO_AVAILABLE_ISR_ASSET"
+end
+
+function Dispatcher:CancelRequest(requestId)
+  requestId = requireNonEmptyString(requestId, "requestId")
+  local record = self.missionsByRequestId[requestId]
+  if not record then
+    return nil, "NO_DISPATCHED_MISSION"
+  end
+  if record.cancelMode == "BEFORE_START" then
+    return "CANCELLED_BEFORE_START"
+  end
+  if record.cancelMode == "RECALL" then
+    return "RECALL_ALREADY_ORDERED"
+  end
+
+  if record.started then
+    record.cancelMode = "RECALL"
+    log("MISSION_RECALL_ORDERED requestId=" .. requestId
+      .. " mission=" .. tostring(record.mission.name)
+      .. " platform=" .. tostring(record.platformId))
+    record.mission:Cancel()
+    return "RECALL_ORDERED"
+  end
+
+  record.cancelMode = "BEFORE_START"
+  log("MISSION_CANCEL_REQUESTED_BEFORE_START requestId=" .. requestId
+    .. " mission=" .. tostring(record.mission.name))
+  record.mission:Cancel()
+  return "CANCELLED_BEFORE_START"
 end
 
 return Dispatcher
