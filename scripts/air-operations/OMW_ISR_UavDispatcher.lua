@@ -95,7 +95,7 @@ function Dispatcher:_RegisterPayload(airwing, profile)
   -- The template is the existing Mission Editor template, including its fixed
   -- loadout. NewPayload only makes that template operationally selectable.
   local missionTypes = { self.moose.AUFTRAG.Type.RECON }
-  if profile.missionKind == "ORBIT_RACETRACK" then
+  if profile.missionKind == "ORBIT_CIRCLE" then
     missionTypes[#missionTypes + 1] = self.moose.AUFTRAG.Type.ORBIT
   end
   airwing:NewPayload(profile.template, -1, missionTypes, profile.performance)
@@ -106,15 +106,13 @@ end
 function Dispatcher:_BuildMission(request, profile, squadron)
   local mission
 
-  if profile.missionKind == "ORBIT_RACETRACK" then
-    -- NewORBIT_RACETRACK enters Executing only at the orbit waypoint. Therefore
-    -- SetDuration governs the approved on-station time, not outbound transit.
-    mission = self.moose.AUFTRAG:NewORBIT_RACETRACK(
+  if profile.missionKind == "ORBIT_CIRCLE" then
+    -- A static marker request requires a circular orbit centred on the submitted
+    -- coordinate; no heading or leg may create a race-track pattern.
+    mission = self.moose.AUFTRAG:NewORBIT_CIRCLE(
       request.coordinate,
       profile.reconAltitudeFeet,
-      profile.reconSpeedKnots,
-      profile.orbitHeadingDegrees,
-      profile.orbitLegNm
+      profile.reconSpeedKnots
     )
     mission.optionROE = self.moose.ENUMS.ROE.WeaponHold
   else

@@ -20,8 +20,8 @@ local fakeMoose = {
   ENUMS = { ROE = { WeaponHold = "WEAPON_HOLD" } },
   AUFTRAG = {
     Type = { RECON = "RECON", ORBIT = "ORBIT" },
-    NewORBIT_RACETRACK = function(coordinate, altitude, speed, heading, leg)
-      lifecycle.constructor = { coordinate, altitude, speed, heading, leg }
+    NewORBIT_CIRCLE = function(coordinate, altitude, speed)
+      lifecycle.constructor = { coordinate, altitude, speed }
       return mission
     end,
   },
@@ -64,11 +64,9 @@ local dispatcher = Dispatcher.New({
       template = "TPL_AIR_US_KAF_MQ9_RECON_1SHIP",
       airwingKey = "Main",
       squadronKey = "MQ9",
-      missionKind = "ORBIT_RACETRACK",
+      missionKind = "ORBIT_CIRCLE",
       reconAltitudeFeet = 25000,
       reconSpeedKnots = 180,
-      orbitHeadingDegrees = 90,
-      orbitLegNm = 5,
       onStationSeconds = 2700,
     },
   },
@@ -92,8 +90,8 @@ assert(addedMission == mission)
 assert(lifecycle.constructor[1] == request.coordinate)
 assert(lifecycle.constructor[2] == 25000)
 assert(lifecycle.constructor[3] == 180)
-assert(lifecycle.constructor[4] == 90)
-assert(lifecycle.constructor[5] == 5)
+assert(lifecycle.constructor[4] == nil)
+assert(lifecycle.constructor[5] == nil)
 assert(mission.optionROE == "WEAPON_HOLD")
 assert(mission.squadrons[1] == mq9Squadron)
 assert(mission.duration == 2700)
