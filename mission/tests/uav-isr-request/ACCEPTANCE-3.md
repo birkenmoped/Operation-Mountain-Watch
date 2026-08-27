@@ -21,7 +21,10 @@ The profile remains acceptance-only: 25,000 ft MSL and 180 kt IAS in a
 circular orbit centred on the marker. The F10 cancel command uses
 `AUFTRAG:Cancel()`: before MOOSE starts the mission it removes the queued
 mission and releases the acceptance reservation; after start it orders a MOOSE
-recall/return-to-base. It never despawns the aircraft. It does not clear
+recall/return-to-base. MOOSE reclaims the returned AIRWING asset after physical
+recovery; it does not delete the aircraft at the recall command. The request
+remains `RETURNING` until MOOSE no longer reports the recovered OPSGROUP alive.
+It does not clear
 production terrain corridors, RC-East holding, Bagram sourcing, persistence,
 recovery re-credit, Fog-of-War behaviour or weapon employment.
 
@@ -57,8 +60,9 @@ Kandahar foundation.
    On-Station. Before start expect `cancelled before launch`; after start
    expect `recall ordered; returning to base`. Record the matching
    `MISSION_CANCELLED_BEFORE_START` or `MISSION_RECALL_ORDERED` log line.
-7. For a recall after start, observe a physical return to Kandahar; no
-   despawn is permitted. Record `MISSION_RETURNING` and `MISSION_DONE`.
+7. For a recall after start, observe a physical return to Kandahar. The AIRWING
+   may reclaim/despawn the asset after landing and shutdown. Record
+   `MISSION_RETURNING`, `MISSION_TASK_DONE` and `MISSION_RECOVERED`.
 8. Capture `debrief.log`: MQ-9 engine start, takeoff, landing and shutdown at
    Kandahar. Capture the bundle SHA-256 and screenshots.
 

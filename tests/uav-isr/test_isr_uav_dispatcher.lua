@@ -14,9 +14,28 @@ local mission = {
   SetDuration = function(self, value) self.duration = value return self end,
   SetTeleport = function(self, value) self.teleport = value return self end,
   Cancel = function(self) self.cancelCount = (self.cancelCount or 0) + 1 return self end,
+  GetOpsGroups = function(self) return self.opsGroups end,
+}
+
+local opsGroup = {
+  alive = true,
+  IsAlive = function(self) return self.alive end,
+}
+
+local fakeScheduler = {
+  Stop = function(self, scheduleId) self.stopped = scheduleId end,
 }
 
 local fakeMoose = {
+  SCHEDULER = {
+    New = function(_, _, callback, arguments, start, repeatInterval)
+      lifecycle.recoveryCallback = callback
+      lifecycle.recoveryArguments = arguments
+      lifecycle.recoveryStart = start
+      lifecycle.recoveryRepeat = repeatInterval
+      return fakeScheduler, "RECOVERY-SCHEDULE"
+    end,
+  },
   ZONE_RADIUS = { New = function() error("orbit profile must not create a recon zone") end },
   ENUMS = { ROE = { WeaponHold = "WEAPON_HOLD" } },
   AUFTRAG = {
@@ -100,6 +119,7 @@ assert(mission.duration == 2700)
 assert(mission.teleport == false)
 assert(assignment.platformId == "MQ-9")
 
+mission.opsGroups = { opsGroup }
 mission.OnAfterStarted()
 assert(consumedRequestId == "ISR-0099")
 assert(lifecycle.started == "ISR-0099")
@@ -108,7 +128,14 @@ assert(lifecycle.executing == "ISR-0099")
 mission.OnAfterCancel()
 assert(lifecycle.cancelled == "ISR-0099")
 mission.OnAfterDone()
+assert(lifecycle.done == nil)
+assert(lifecycle.recoveryStart == 5)
+assert(lifecycle.recoveryRepeat == 5)
+opsGroup.alive = false
+dispatcher:_ObservePhysicalRecovery("ISR-0099")
 assert(lifecycle.done == "ISR-0099")
+assert(fakeScheduler.stopped == "RECOVERY-SCHEDULE")
+opsGroup.alive = true
 
 local beforeStart = assert(dispatcher:Dispatch({
   id = "ISR-0100",
@@ -126,11 +153,17 @@ local recall = assert(dispatcher:Dispatch({
   id = "ISR-0101",
   coordinate = { sentinel = "marker-coordinate-3" },
 }))
+mission.opsGroups = { opsGroup }
 mission.OnAfterStarted()
 assert(dispatcher:CancelRequest("ISR-0101") == "RECALL_ORDERED")
 assert(mission.cancelCount == 2)
+mission.OnAfterDone()
+assert(lifecycle.done == "ISR-0099")
 mission.OnAfterCancel()
 assert(lifecycle.cancelled == "ISR-0101")
 assert(dispatcher:CancelRequest("ISR-0101") == "RECALL_ALREADY_ORDERED")
+opsGroup.alive = false
+dispatcher:_ObservePhysicalRecovery("ISR-0101")
+assert(lifecycle.done == "ISR-0101")
 
 print("PASS test_isr_uav_dispatcher")

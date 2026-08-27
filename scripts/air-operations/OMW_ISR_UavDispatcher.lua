@@ -45,6 +45,7 @@ function Dispatcher.New(config)
   requireTable(moose.ZONE_RADIUS, "MOOSE ZONE_RADIUS")
   requireTable(moose.AUFTRAG, "MOOSE AUFTRAG")
   requireTable(moose.ENUMS, "MOOSE ENUMS")
+  requireTable(moose.SCHEDULER, "MOOSE SCHEDULER")
   if type(config.campaignAdapter) ~= "table" then
     fail("config.campaignAdapter is required")
   end
@@ -107,6 +108,94 @@ function Dispatcher:_RegisterPayload(airwing, profile)
   log("PAYLOAD_REGISTERED profile=" .. profile.id .. " template=" .. profile.template)
 end
 
+function Dispatcher:_CaptureOpsGroups(record)
+  if record.opsGroups and #record.opsGroups > 0 then
+    return true
+  end
+  if type(record.mission.GetOpsGroups) ~= "function" then
+    return nil, "MOOSE_AUFTRAG_GET_OPS_GROUPS_UNAVAILABLE"
+  end
+
+  local opsGroups = record.mission:GetOpsGroups()
+  if type(opsGroups) ~= "table" or #opsGroups == 0 then
+    return nil, "MOOSE_AUFTRAG_HAS_NO_OPS_GROUPS"
+  end
+  for _, opsGroup in ipairs(opsGroups) do
+    if type(opsGroup.IsAlive) ~= "function" then
+      return nil, "MOOSE_OPS_GROUP_IS_ALIVE_UNAVAILABLE"
+    end
+  end
+  record.opsGroups = opsGroups
+  return true
+end
+
+function Dispatcher:_StopRecoveryMonitor(record)
+  if record.recoveryScheduler and record.recoveryScheduleId then
+    record.recoveryScheduler:Stop(record.recoveryScheduleId)
+  end
+  record.recoveryScheduler = nil
+  record.recoveryScheduleId = nil
+end
+
+function Dispatcher:_CompleteAfterPhysicalRecovery(record)
+  if record.recoveryCompleted then
+    return
+  end
+  record.recoveryCompleted = true
+  self:_StopRecoveryMonitor(record)
+  log("MISSION_RECOVERED requestId=" .. record.requestId
+    .. " mission=" .. record.mission.name .. " platform=" .. record.platformId)
+  if self.onMissionDone then self.onMissionDone(record.request, record.mission) end
+end
+
+function Dispatcher:_ObservePhysicalRecovery(requestId)
+  local record = self.missionsByRequestId[requestId]
+  if not record or not record.returning or record.recoveryCompleted then
+    return
+  end
+
+  local captured = self:_CaptureOpsGroups(record)
+  if not captured then
+    log("MISSION_RECOVERY_AWAITING_GROUP requestId=" .. requestId)
+    return
+  end
+
+  for _, opsGroup in ipairs(record.opsGroups) do
+    if opsGroup:IsAlive() == true then
+      return
+    end
+  end
+  self:_CompleteAfterPhysicalRecovery(record)
+end
+
+function Dispatcher:_StartRecoveryMonitor(record)
+  if record.recoveryScheduler then
+    return
+  end
+  local scheduler, scheduleId = self.moose.SCHEDULER:New(
+    nil,
+    function(requestId)
+      self:_ObservePhysicalRecovery(requestId)
+    end,
+    { record.requestId },
+    5,
+    5
+  )
+  record.recoveryScheduler = scheduler
+  record.recoveryScheduleId = scheduleId
+end
+
+function Dispatcher:_MarkReturning(record, reason)
+  if record.returning then
+    return
+  end
+  record.returning = true
+  log("MISSION_RETURNING requestId=" .. record.requestId .. " mission=" .. record.mission.name
+    .. " platform=" .. record.platformId .. " reason=" .. reason)
+  if self.onMissionCancelled then self.onMissionCancelled(record.request, record.mission) end
+  self:_StartRecoveryMonitor(record)
+end
+
 function Dispatcher:_BuildMission(request, profile, squadron)
   local mission
 
@@ -143,7 +232,13 @@ function Dispatcher:_BuildMission(request, profile, squadron)
   mission:SetTeleport(false)
   mission.OnAfterStarted = function(_, _, _, _, _, _)
     local record = self.missionsByRequestId[request.id]
-    if record then record.started = true end
+    if record then
+      record.started = true
+      local captured, reason = self:_CaptureOpsGroups(record)
+      if not captured then
+        log("MISSION_RECOVERY_GROUP_CAPTURE_DEFERRED requestId=" .. request.id .. " reason=" .. reason)
+      end
+    end
     self.campaignAdapter:ConsumeAtPhysicalStart(request.id)
     log("MISSION_STARTED requestId=" .. request.id .. " mission=" .. mission.name .. " platform=" .. profile.platformId)
     if self.onMissionStarted then self.onMissionStarted(request, mission) end
@@ -159,18 +254,25 @@ function Dispatcher:_BuildMission(request, profile, squadron)
       if self.onMissionCancelledBeforeStart then self.onMissionCancelledBeforeStart(request, mission) end
       return
     end
-    local reason = record and record.cancelMode == "RECALL" and "OWNER_RECALL" or "MISSION_COMPLETED"
-    log("MISSION_RETURNING requestId=" .. request.id .. " mission=" .. mission.name
-      .. " platform=" .. profile.platformId .. " reason=" .. reason)
-    if self.onMissionCancelled then self.onMissionCancelled(request, mission) end
+    if record then
+      local reason = record.cancelMode == "RECALL" and "OWNER_RECALL" or "MISSION_COMPLETED"
+      self:_MarkReturning(record, reason)
+    end
   end
   mission.OnAfterDone = function(_, _, _, _, _, _)
     local record = self.missionsByRequestId[request.id]
     if record and record.cancelMode == "BEFORE_START" then
       return
     end
-    log("MISSION_DONE requestId=" .. request.id .. " mission=" .. mission.name .. " platform=" .. profile.platformId)
-    if self.onMissionDone then self.onMissionDone(request, mission) end
+    if record then
+      record.taskDone = true
+      -- MOOSE marks the AUFTRAG done when its task ends, before its assigned
+      -- aircraft has completed the return flight. The request stays RETURNING
+      -- until the tracked MOOSE OPSGROUP is no longer alive after recovery.
+      self:_MarkReturning(record, record.cancelMode == "RECALL" and "OWNER_RECALL" or "MISSION_COMPLETED")
+      log("MISSION_TASK_DONE requestId=" .. request.id .. " mission=" .. mission.name
+        .. " platform=" .. profile.platformId .. " awaitingPhysicalRecovery=true")
+    end
   end
   return mission
 end
@@ -194,6 +296,8 @@ function Dispatcher:Dispatch(request)
         .. " platform=" .. profile.platformId .. " airwing=" .. tostring(profile.airwingKey or "Main")
         .. " squadron=" .. profile.squadronKey)
       self.missionsByRequestId[request.id] = {
+        requestId = request.id,
+        request = request,
         profileId = profile.id,
         platformId = profile.platformId,
         transactionId = reservation.transactionId,

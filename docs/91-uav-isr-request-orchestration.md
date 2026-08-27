@@ -152,7 +152,7 @@ Eine ETA darf nur gemeldet werden, wenn sie aus dokumentierten realen Laufzeitwe
 |---|---|---|
 | `QUEUED` | Cancel | Request entfernen. |
 | `RESERVED` / `LAUNCHING` | Cancel | Reservierung sauber freigeben, sofern noch kein physischer Start erfolgt ist. |
-| `EN_ROUTE` / `ON_STATION` | Recall | Auftrag geordnet beenden; UAV wird für Folgerequest oder RTB entschieden. Kein Despawn. |
+| `EN_ROUTE` / `ON_STATION` | Recall | Auftrag geordnet beenden; UAV kehrt zur Herkunftsbasis zurück. AIRWING darf das Asset erst nach physischer Recovery zurücknehmen/despawnen. |
 | `RETURNING` / `RECOVERED` | Kein Cancel | Lifecycle läuft zu Ende. |
 
 ### 5.6 Sortie-Persistenz und Holding
@@ -339,7 +339,7 @@ Die neue Acceptance-1-Mission ist **DCS_PENDING**. Der 10-km-Submit-Radius ist a
 | Einzel-RECON | Physischer Start, Recon, Recovery und CampaignState-Abrechnung stimmen überein. |
 | Folgeauftrag | Ein UAV fliegt nach genügend Restzeit `A -> B` ohne unnötiges RTB. |
 | Unzureichende Rückkehrreserve | UAV verweigert Folgeauftrag und kehrt geordnet zurück. |
-| Recall | Geordnete Missionsbeendigung; kein Teleport/Despawn. |
+| Recall | Geordnete Missionsbeendigung; kein Teleport und kein sofortiger Despawn. AIRWING-Rücknahme erst nach physischer Recovery. |
 | Natives Fog of War | UAV-Erfassung und F10-Sichtbarkeit entsprechen nachweisbar den gewählten DCS-Missionseinstellungen. |
 | Keine Skriptmarker | Der ISR-Pfad erzeugt keine zusätzlichen Intel-/Zielmarker und keine künstliche Kontakt-Haltedauer. |
 | Restart | Keine doppelte Reservierung, kein Duplikat-Spawn, konsistenter Requeststatus. |
