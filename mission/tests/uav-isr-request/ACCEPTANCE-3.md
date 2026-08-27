@@ -26,7 +26,10 @@ recovery; it does not delete the aircraft at the recall command. The request
 remains `RETURNING` until MOOSE no longer reports the recovered OPSGROUP alive.
 It does not clear
 production terrain corridors, RC-East holding, Bagram sourcing, persistence,
-recovery re-credit, Fog-of-War behaviour or weapon employment.
+production recovery/repair policy, Fog-of-War behaviour or weapon employment.
+The acceptance-local Kandahar MQ-9 count is credited once only after MOOSE has
+confirmed physical recovery; this permits a later acceptance request without
+treating an airborne or returning aircraft as available.
 
 ## Build
 
@@ -62,7 +65,9 @@ Kandahar foundation.
    `MISSION_CANCELLED_BEFORE_START` or `MISSION_RECALL_ORDERED` log line.
 7. For a recall after start, observe a physical return to Kandahar. The AIRWING
    may reclaim/despawn the asset after landing and shutdown. Record
-   `MISSION_RETURNING`, `MISSION_TASK_DONE` and `MISSION_RECOVERED`.
+   `MISSION_RETURNING`, `MISSION_TASK_DONE` and `MISSION_RECOVERED`
+   (with `resourceRestored=true`). Submit the next marker request only after
+   that recovery line; it must produce `MISSION_QUEUED` and a new MQ-9 launch.
 8. Capture `debrief.log`: MQ-9 engine start, takeoff, landing and shutdown at
    Kandahar. Capture the bundle SHA-256 and screenshots.
 

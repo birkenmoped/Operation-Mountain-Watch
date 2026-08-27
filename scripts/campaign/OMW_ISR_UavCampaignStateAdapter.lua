@@ -25,8 +25,9 @@ function Adapter.New(config)
   end
   if type(config.campaignState.ReserveResource) ~= "function"
       or type(config.campaignState.Cancel) ~= "function"
-      or type(config.campaignState.Consume) ~= "function" then
-    fail("campaignState lacks reservation operations")
+      or type(config.campaignState.Consume) ~= "function"
+      or type(config.campaignState.CreditResourceOnce) ~= "function" then
+    fail("campaignState lacks reservation/recovery operations")
   end
   return setmetatable({
     campaignState = config.campaignState,
@@ -73,6 +74,7 @@ function Adapter:Reserve(requestId, profile)
     resourceId = profile.resourceId,
     platformId = profile.platformId,
     consumed = false,
+    recovered = false,
   }
   self.reservationsByRequestId[requestId] = reservation
   return reservation
@@ -91,6 +93,34 @@ function Adapter:ConsumeAtPhysicalStart(requestId)
     return nil, reason
   end
   reservation.consumed = true
+  return reservation
+end
+
+function Adapter:RecoverAfterPhysicalRecovery(requestId)
+  local reservation = self.reservationsByRequestId[requireString(requestId, "requestId")]
+  if not reservation then
+    return nil, "NO_RESERVATION"
+  end
+  if not reservation.consumed then
+    return nil, "PHYSICAL_START_NOT_RECORDED"
+  end
+  if reservation.recovered then
+    return reservation
+  end
+
+  local credit, reason = self.campaignState:CreditResourceOnce({
+    creditId = "ISR-UAV-RECOVERY:" .. reservation.requestId,
+    nodeId = self.nodeId,
+    resourceId = reservation.resourceId,
+    quantity = 1,
+    canonicalUnit = "count",
+    reason = "PHYSICAL_UAV_RECOVERY",
+    entityId = "ISR_CELL",
+  })
+  if not credit then
+    return nil, reason
+  end
+  reservation.recovered = true
   return reservation
 end
 

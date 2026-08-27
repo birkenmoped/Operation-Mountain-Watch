@@ -26,6 +26,13 @@ assert(adapter:ConsumeAtPhysicalStart("ISR-0002"))
 local resource = assert(state:GetResource("KANDAHAR_MAIN", "AIRCRAFT_MQ9"))
 assert(resource.quantity == 1, "physical start must consume one MQ-9")
 assert(second.platformId == "MQ-9")
+assert(adapter:RecoverAfterPhysicalRecovery("ISR-0002"))
+local recoveredResource = assert(state:GetResource("KANDAHAR_MAIN", "AIRCRAFT_MQ9"))
+assert(recoveredResource.quantity == 2, "physical recovery must restore one MQ-9")
+assert(adapter:RecoverAfterPhysicalRecovery("ISR-0002"))
+local idempotentResource = assert(state:GetResource("KANDAHAR_MAIN", "AIRCRAFT_MQ9"))
+assert(idempotentResource.quantity == 2, "recovery credit must be idempotent")
+assert(adapter:Reserve("ISR-0003", profile))
 
 print("PASS test_isr_uav_campaign_state_adapter")
 

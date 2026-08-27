@@ -236,6 +236,9 @@ function RequestMenu:SubmitFromGroup(group)
     end,
   })
   if request then
+    log("SUBMIT_ACCEPTED groupId=" .. tostring(groupId)
+      .. " requestId=" .. tostring(request.id)
+      .. " markerId=" .. tostring(request.markerId))
     local dispatch, dispatchReason = nil, nil
     if self.onRequestQueued then
       dispatch, dispatchReason = self.onRequestQueued(request)
@@ -243,8 +246,12 @@ function RequestMenu:SubmitFromGroup(group)
     if dispatch then
       self.sendMessage(group, string.format("ISR Cell: %s assigned to %s.", tostring(request.id), tostring(dispatch.platformId)))
     elseif dispatchReason and dispatchReason ~= "NO_AVAILABLE_ISR_ASSET" then
+      log("DISPATCH_DEFERRED requestId=" .. tostring(request.id)
+        .. " reason=" .. tostring(dispatchReason))
       self.sendMessage(group, string.format("ISR Cell: %s queued; dispatch deferred (%s).", tostring(request.id), tostring(dispatchReason)))
     else
+      log("DISPATCH_DEFERRED requestId=" .. tostring(request.id)
+        .. " reason=NO_AVAILABLE_ISR_ASSET")
       self.sendMessage(group, string.format("ISR Cell: %s queued.", tostring(request.id)))
     end
     return request

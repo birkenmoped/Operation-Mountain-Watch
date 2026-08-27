@@ -65,6 +65,10 @@ local adapter = {
     consumedRequestId = requestId
     return true
   end,
+  RecoverAfterPhysicalRecovery = function(_, requestId)
+    lifecycle.recovered = requestId
+    return true
+  end,
 }
 
 local mq9Squadron = { name = "SQ_US_KAF_MQ9_361_ERS" }
@@ -134,6 +138,7 @@ assert(lifecycle.recoveryRepeat == 5)
 opsGroup.alive = false
 dispatcher:_ObservePhysicalRecovery("ISR-0099")
 assert(lifecycle.done == "ISR-0099")
+assert(lifecycle.recovered == "ISR-0099")
 assert(fakeScheduler.stopped == "RECOVERY-SCHEDULE")
 opsGroup.alive = true
 
@@ -165,5 +170,6 @@ assert(dispatcher:CancelRequest("ISR-0101") == "RECALL_ALREADY_ORDERED")
 opsGroup.alive = false
 dispatcher:_ObservePhysicalRecovery("ISR-0101")
 assert(lifecycle.done == "ISR-0101")
+assert(lifecycle.recovered == "ISR-0101")
 
 print("PASS test_isr_uav_dispatcher")

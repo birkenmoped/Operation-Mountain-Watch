@@ -51,6 +51,8 @@ function Dispatcher.New(config)
   end
   requireFunction(config.campaignAdapter.Reserve, "campaignAdapter.Reserve")
   requireFunction(config.campaignAdapter.ConsumeAtPhysicalStart, "campaignAdapter.ConsumeAtPhysicalStart")
+  requireFunction(config.campaignAdapter.RecoverAfterPhysicalRecovery,
+    "campaignAdapter.RecoverAfterPhysicalRecovery")
 
   if config.onMissionStarted ~= nil then requireFunction(config.onMissionStarted, "config.onMissionStarted") end
   if config.onMissionExecuting ~= nil then requireFunction(config.onMissionExecuting, "config.onMissionExecuting") end
@@ -141,10 +143,17 @@ function Dispatcher:_CompleteAfterPhysicalRecovery(record)
   if record.recoveryCompleted then
     return
   end
+  local recovery, reason = self.campaignAdapter:RecoverAfterPhysicalRecovery(record.requestId)
+  if not recovery then
+    log("MISSION_RECOVERY_SETTLEMENT_FAILED requestId=" .. record.requestId
+      .. " reason=" .. tostring(reason))
+    return
+  end
   record.recoveryCompleted = true
   self:_StopRecoveryMonitor(record)
   log("MISSION_RECOVERED requestId=" .. record.requestId
-    .. " mission=" .. record.mission.name .. " platform=" .. record.platformId)
+    .. " mission=" .. record.mission.name .. " platform=" .. record.platformId
+    .. " resourceRestored=true")
   if self.onMissionDone then self.onMissionDone(record.request, record.mission) end
 end
 
