@@ -198,7 +198,7 @@ do
   expectTrue(messages[#messages].text:find("cancelled") ~= nil, "MENU_CANCEL_MESSAGE")
 
   runtime.markerOps:OnAfterMarkChanged(nil, nil, nil, "UAV RECON", nil, coordinate(1200, 0), 42, 2)
-  runtime.markerOps:OnAfterMarkDeleted()
+  runtime.markerDeletionOps:OnAfterMarkDeleted()
   commands["Submit nearest UAV marker"].callback()
   expectTrue(messages[#messages].text:find("no valid UAV RECON marker") ~= nil, "DELETE_FAIL_CLOSED_MESSAGE")
 end

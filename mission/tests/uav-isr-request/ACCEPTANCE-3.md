@@ -42,6 +42,8 @@ Kandahar foundation.
    `MARKER_ADDED` or `MARKER_CHANGED`, with `accepted=true`. A rejected marker
    line records the actual received coalition and text without exposing it to
    other players.
+   An unrelated map-marker deletion must not clear an accepted UAV marker;
+   only `UAV_MARKER_DELETED` clears the UAV marker cache.
 4. Record these `dcs.log` lifecycle lines for the same Request ID:
    `PAYLOAD_REGISTERED`, `MISSION_QUEUED`, `MISSION_STARTED` and
    `MISSION_ON_STATION`.

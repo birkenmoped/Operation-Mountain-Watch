@@ -101,9 +101,13 @@ function RequestMenu.New(config)
   if self.onRequestCancelled ~= nil then requireFunction(self.onRequestCancelled, "config.onRequestCancelled") end
 
   -- The pinned MARKEROPS_BASE source only calls MarkChanged when the configured
-  -- tag matches the *new* text. An empty tag makes every map update observable;
+  -- tag matches the *new* text. An empty tag makes every add/change observable;
   -- strict UAV RECON validation remains in the coordinator. This prevents a
   -- former UAV marker from surviving a text change to an unrelated marker.
+  --
+  -- Do not attach deletion handling to this untagged observer. MARKEROPS_BASE
+  -- supplies no deleted marker ID, so every unrelated marker deletion would
+  -- otherwise clear the valid UAV marker cache.
   self.markerOps = moose.MARKEROPS_BASE:New("", {})
 
   function self.markerOps:OnAfterMarkAdded(From, Event, To, Text, Keywords, Coord, MarkerID, CoalitionNumber)
@@ -114,12 +118,15 @@ function RequestMenu.New(config)
     self.owner:OnMarkerChanged("CHANGED", Text, Coord, MarkerID, CoalitionNumber)
   end
 
-  function self.markerOps:OnAfterMarkDeleted()
-    log("MARKER_DELETED cache=cleared")
+  self.markerDeletionOps = moose.MARKEROPS_BASE:New(Coordinator.MarkerText, {})
+
+  function self.markerDeletionOps:OnAfterMarkDeleted()
+    log("UAV_MARKER_DELETED cache=cleared")
     self.owner:OnMarkerDeleted()
   end
 
   self.markerOps.owner = self
+  self.markerDeletionOps.owner = self
   return self
 end
 
