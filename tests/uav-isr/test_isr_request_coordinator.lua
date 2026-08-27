@@ -183,6 +183,7 @@ do
       messages[#messages + 1] = { group = group, text = text }
     end,
   })
+  expectTrue(runtime.markerDeletionOps ~= nil, "TAGGED_DELETE_MARKEROPS_CREATED")
   local group = {
     GetID = function() return 401 end,
     GetCoordinate = function() return coordinate(0, 0) end,

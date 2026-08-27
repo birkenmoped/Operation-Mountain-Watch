@@ -8,6 +8,7 @@ local RequestMenu = {}
 RequestMenu.__index = RequestMenu
 
 local TAG = "[OMW][ISR.RequestMenu]"
+local UAV_MARKER_TEXT = "UAV RECON"
 
 local function fail(message)
   error(TAG .. " " .. tostring(message), 2)
@@ -118,7 +119,7 @@ function RequestMenu.New(config)
     self.owner:OnMarkerChanged("CHANGED", Text, Coord, MarkerID, CoalitionNumber)
   end
 
-  self.markerDeletionOps = moose.MARKEROPS_BASE:New(Coordinator.MarkerText, {})
+  self.markerDeletionOps = moose.MARKEROPS_BASE:New(UAV_MARKER_TEXT, {})
 
   function self.markerDeletionOps:OnAfterMarkDeleted()
     log("UAV_MARKER_DELETED cache=cleared")
@@ -149,7 +150,7 @@ function RequestMenu:RegisterBlueClients()
 end
 
 function RequestMenu:OnMarkerChanged(eventKind, text, coordinate, markerId, coalitionNumber)
-  local accepted = text == "UAV RECON"
+  local accepted = text == UAV_MARKER_TEXT
     and coalitionNumber == self.blueCoalitionNumber
     and coordinate ~= nil
   log("MARKER_" .. tostring(eventKind)
