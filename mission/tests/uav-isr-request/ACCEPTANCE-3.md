@@ -38,14 +38,18 @@ Kandahar foundation.
 1. Confirm the Acceptance-3 ISR Cell message.
 2. As BLUE, set an exact BLUE F10 marker `UAV RECON` within 50 km of the
    client group and submit it under `F10 -> Command -> ISR Cell`.
-3. Record these `dcs.log` lifecycle lines for the same Request ID:
+3. Before submitting, record the matching `dcs.log` marker line:
+   `MARKER_ADDED` or `MARKER_CHANGED`, with `accepted=true`. A rejected marker
+   line records the actual received coalition and text without exposing it to
+   other players.
+4. Record these `dcs.log` lifecycle lines for the same Request ID:
    `PAYLOAD_REGISTERED`, `MISSION_QUEUED`, `MISSION_STARTED` and
    `MISSION_ON_STATION`.
-4. In an external/F10 view, capture the MQ-9 physically orbiting the submitted
+5. In an external/F10 view, capture the MQ-9 physically orbiting the submitted
    marker. The marker and aircraft must be visible in the same evidence set.
-5. Let the full 45-minute On-Station duration elapse. Record
+6. Let the full 45-minute On-Station duration elapse. Record
    `MISSION_RETURNING` and `MISSION_DONE`.
-6. Capture `debrief.log`: MQ-9 engine start, takeoff, landing and shutdown at
+7. Capture `debrief.log`: MQ-9 engine start, takeoff, landing and shutdown at
    Kandahar. Capture the bundle SHA-256 and screenshots.
 
 ## Pass criterion

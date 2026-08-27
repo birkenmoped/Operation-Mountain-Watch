@@ -48,7 +48,7 @@ New-Item -ItemType Directory -Force -Path $outDir | Out-Null
 $separator = [Environment]::NewLine + [Environment]::NewLine
 [System.IO.File]::WriteAllText($output, ($parts -join $separator) + [Environment]::NewLine, [System.Text.UTF8Encoding]::new($false))
 $hash = (Get-FileHash -Algorithm SHA256 -LiteralPath $output).Hash.ToLowerInvariant()
-Write-Output 'BuilderVersion: OMW-UAV-ISR-REQUEST-ACCEPTANCE-3-1'
+Write-Output 'BuilderVersion: OMW-UAV-ISR-REQUEST-ACCEPTANCE-3-2'
 Write-Output "Output: $output"
 Write-Output "Bundle SHA-256: $hash"
 Write-Output 'MIZ mutation: false'

@@ -13,6 +13,12 @@ local function fail(message)
   error(TAG .. " " .. tostring(message), 2)
 end
 
+local function log(message)
+  if env and type(env.info) == "function" then
+    env.info(TAG .. " " .. tostring(message))
+  end
+end
+
 local function requireFunction(value, label)
   if type(value) ~= "function" then
     fail(label .. " must be a function")
@@ -101,14 +107,15 @@ function RequestMenu.New(config)
   self.markerOps = moose.MARKEROPS_BASE:New("", {})
 
   function self.markerOps:OnAfterMarkAdded(From, Event, To, Text, Keywords, Coord, MarkerID, CoalitionNumber)
-    self.owner:OnMarkerChanged(Text, Coord, MarkerID, CoalitionNumber)
+    self.owner:OnMarkerChanged("ADDED", Text, Coord, MarkerID, CoalitionNumber)
   end
 
   function self.markerOps:OnAfterMarkChanged(From, Event, To, Text, Keywords, Coord, MarkerID, CoalitionNumber)
-    self.owner:OnMarkerChanged(Text, Coord, MarkerID, CoalitionNumber)
+    self.owner:OnMarkerChanged("CHANGED", Text, Coord, MarkerID, CoalitionNumber)
   end
 
   function self.markerOps:OnAfterMarkDeleted()
+    log("MARKER_DELETED cache=cleared")
     self.owner:OnMarkerDeleted()
   end
 
@@ -134,7 +141,16 @@ function RequestMenu:RegisterBlueClients()
   return clientSet
 end
 
-function RequestMenu:OnMarkerChanged(text, coordinate, markerId, coalitionNumber)
+function RequestMenu:OnMarkerChanged(eventKind, text, coordinate, markerId, coalitionNumber)
+  local accepted = text == "UAV RECON"
+    and coalitionNumber == self.blueCoalitionNumber
+    and coordinate ~= nil
+  log("MARKER_" .. tostring(eventKind)
+    .. " id=" .. tostring(markerId)
+    .. " coalition=" .. tostring(coalitionNumber)
+    .. " expectedCoalition=" .. tostring(self.blueCoalitionNumber)
+    .. " text=[" .. tostring(text) .. "]"
+    .. " accepted=" .. tostring(accepted))
   self.coordinator:UpsertMarker({
     markerId = markerId,
     text = text,
@@ -199,6 +215,9 @@ function RequestMenu:SubmitFromGroup(group)
     fail("group coordinate with Get2DDistance is required")
   end
 
+  local markerCount = self.coordinator:GetMarkerCount()
+  log("SUBMIT_ATTEMPT groupId=" .. tostring(groupId)
+    .. " validMarkerCache=" .. tostring(markerCount))
   local request, reason = self.coordinator:SubmitNearest({
     ownerGroupId = groupId,
     createdAt = self.now(),
@@ -222,6 +241,9 @@ function RequestMenu:SubmitFromGroup(group)
   end
 
   self.sendMessage(group, messageText(reason))
+  log("SUBMIT_REJECTED groupId=" .. tostring(groupId)
+    .. " reason=" .. tostring(reason)
+    .. " validMarkerCache=" .. tostring(self.coordinator:GetMarkerCount()))
   return nil, reason
 end
 
