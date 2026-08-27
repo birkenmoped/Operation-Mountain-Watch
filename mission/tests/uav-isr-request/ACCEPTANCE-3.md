@@ -7,6 +7,11 @@ player marker request dispatches the existing Kandahar MQ-9 Mission Editor
 template through MOOSE AIRWING. At the submitted marker it enters a MOOSE
 `AUFTRAG:NewORBIT_RACETRACK` mission.
 
+The acceptance profile binds the AUFTRAG explicitly to the Kandahar MQ-9
+Squadron. This is required because MOOSE adds the generic `ORBIT` capability
+to every squadron and payload; the F10 marker text alone does not select a
+specific aircraft type.
+
 The 45-minute limit is configured as `SetDuration(2700)`. In the pinned MOOSE
 source the execution timestamp is set by the `Executing` event; for an ORBIT
 mission this is the orbit waypoint, not aircraft launch. Therefore the timer is

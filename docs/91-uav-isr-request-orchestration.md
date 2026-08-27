@@ -402,3 +402,19 @@ MOOSE evidence: the implementation uses the source-reviewed public
 The official current MOOSE_MISSIONS tree was searched for AIRWING/AUFTRAG/LEGION
 examples and no matching current demo path was found; this is why Acceptance 2
 is marked DRAFT until DCS evidence is captured.
+
+## 14. Dispatch binding correction — source and Recon-Squadron (DRAFT, 27.08.2026)
+
+The physical test of Acceptance 3 showed that `AIRWING:NewPayload(...)` alone
+does not constrain the selected squadron. In the pinned MOOSE source every
+`SQUADRON:New(...)` and every payload receive the generic `ORBIT` capability.
+An unbound `AUFTRAG:NewORBIT_RACETRACK(...)` can therefore materialise a
+non-UAV orbit-capable squadron, as observed with the Kandahar A-10C 2-ship.
+
+The dispatcher profile now carries an operational source, AIRWING key and
+stable squadron key. It invokes public `AUFTRAG:AssignSquadrons({...})` before
+`AIRWING:AddMission(...)`. The current Acceptance-3 profile selects only the
+Kandahar MQ-9 Squadron. This is not a production Kandahar lock: later source
+selection must choose one concrete available origin pool, then bind its own
+AIRWING and Recon-Squadron in the same way. A global unbound MOOSE AIRWING
+selection remains prohibited.

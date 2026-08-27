@@ -36,13 +36,15 @@ function Acceptance.Start()
   })
   local dispatcher = UavDispatcher.New({
     campaignAdapter = adapter,
-    kandahar = kandahar,
+    source = kandahar,
     profiles = {
       {
         id = "KAF_MQ9_ACCEPTANCE",
         platformId = "MQ-9",
         resourceId = "AIRCRAFT_MQ9",
         template = "TPL_AIR_US_KAF_MQ9_RECON_1SHIP",
+        airwingKey = "Main",
+        squadronKey = "MQ9",
         reconAltitudeFeet = 25000,
         reconSpeedKnots = 180,
         reconRadiusMeters = 5000,

@@ -2,7 +2,7 @@
 --
 -- This adapter selects a preconfigured ISR Cell profile, reserves exactly one
 -- CampaignState aircraft, registers the existing Mission Editor payload with
--- AIRWING and submits AUFTRAG:NewRECON. It intentionally contains no native
+-- AIRWING and submits an AUFTRAG. It intentionally contains no native
 -- DCS spawn, route or target-marker path.
 
 local Dispatcher = {}
@@ -32,6 +32,13 @@ local function requireFunction(value, label)
   return value
 end
 
+local function requireNonEmptyString(value, label)
+  if type(value) ~= "string" or value == "" then
+    fail(label .. " must be a non-empty string")
+  end
+  return value
+end
+
 function Dispatcher.New(config)
   config = requireTable(config, "config")
   local moose = config.moose or _G
@@ -52,7 +59,7 @@ function Dispatcher.New(config)
   return setmetatable({
     moose = moose,
     campaignAdapter = config.campaignAdapter,
-    kandahar = requireTable(config.kandahar, "config.kandahar"),
+    source = requireTable(config.source or config.kandahar, "config.source"),
     profiles = requireTable(config.profiles, "config.profiles"),
     registeredPayloadProfileIds = {},
     missionsByRequestId = {},
@@ -63,12 +70,22 @@ function Dispatcher.New(config)
   }, Dispatcher)
 end
 
-function Dispatcher:_Airwing()
-  local airwing = self.kandahar.Airwings and self.kandahar.Airwings.Main or nil
+function Dispatcher:_Airwing(profile)
+  local airwingKey = requireNonEmptyString(profile.airwingKey or "Main", "profile.airwingKey")
+  local airwing = self.source.Airwings and self.source.Airwings[airwingKey] or nil
   if not airwing or type(airwing.NewPayload) ~= "function" or type(airwing.AddMission) ~= "function" then
-    fail("Kandahar main AIRWING is not available")
+    fail("configured source AIRWING is not available key=" .. airwingKey)
   end
   return airwing
+end
+
+function Dispatcher:_Squadron(profile)
+  local squadronKey = requireNonEmptyString(profile.squadronKey, "profile.squadronKey")
+  local squadron = self.source.Squadrons and self.source.Squadrons[squadronKey] or nil
+  if type(squadron) ~= "table" then
+    fail("configured source squadron is not available key=" .. squadronKey)
+  end
+  return squadron
 end
 
 function Dispatcher:_RegisterPayload(airwing, profile)
@@ -86,7 +103,7 @@ function Dispatcher:_RegisterPayload(airwing, profile)
   log("PAYLOAD_REGISTERED profile=" .. profile.id .. " template=" .. profile.template)
 end
 
-function Dispatcher:_BuildMission(request, profile)
+function Dispatcher:_BuildMission(request, profile, squadron)
   local mission
 
   if profile.missionKind == "ORBIT_RACETRACK" then
@@ -115,6 +132,8 @@ function Dispatcher:_BuildMission(request, profile)
     )
   end
 
+  requireFunction(mission.AssignSquadrons, "MOOSE AUFTRAG.AssignSquadrons")
+  mission:AssignSquadrons({ squadron })
   mission:SetName("ISR " .. request.id .. " " .. profile.platformId)
   mission:SetTime(0)
   mission:SetDuration(profile.onStationSeconds)
@@ -144,15 +163,19 @@ function Dispatcher:Dispatch(request)
   if self.missionsByRequestId[request.id] then
     return nil, "REQUEST_ALREADY_DISPATCHED"
   end
-  local airwing = self:_Airwing()
-
   for _, profile in ipairs(self.profiles) do
+    -- Validate the complete physical dispatch target before creating the
+    -- CampaignState reservation, so a profile wiring error cannot strand one.
+    local airwing = self:_Airwing(profile)
+    local squadron = self:_Squadron(profile)
     local reservation, reason = self.campaignAdapter:Reserve(request.id, profile)
     if reservation then
       self:_RegisterPayload(airwing, profile)
-      local mission = self:_BuildMission(request, profile)
+      local mission = self:_BuildMission(request, profile, squadron)
       airwing:AddMission(mission)
-      log("MISSION_QUEUED requestId=" .. request.id .. " mission=" .. mission.name .. " platform=" .. profile.platformId)
+      log("MISSION_QUEUED requestId=" .. request.id .. " mission=" .. mission.name
+        .. " platform=" .. profile.platformId .. " airwing=" .. tostring(profile.airwingKey or "Main")
+        .. " squadron=" .. profile.squadronKey)
       self.missionsByRequestId[request.id] = {
         profileId = profile.id,
         platformId = profile.platformId,

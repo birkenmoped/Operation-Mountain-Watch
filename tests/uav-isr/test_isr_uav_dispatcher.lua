@@ -8,6 +8,7 @@ local consumedRequestId = nil
 local lifecycle = {}
 
 local mission = {
+  AssignSquadrons = function(self, value) self.squadrons = value return self end,
   SetName = function(self, value) self.name = value return self end,
   SetTime = function(self, value) self.time = value return self end,
   SetDuration = function(self, value) self.duration = value return self end,
@@ -46,16 +47,23 @@ local adapter = {
   end,
 }
 
+local mq9Squadron = { name = "SQ_US_KAF_MQ9_361_ERS" }
+
 local dispatcher = Dispatcher.New({
   moose = fakeMoose,
   campaignAdapter = adapter,
-  kandahar = { Airwings = { Main = airwing } },
+  source = {
+    Airwings = { Main = airwing },
+    Squadrons = { MQ9 = mq9Squadron },
+  },
   profiles = {
     {
       id = "KAF_MQ9_ORBIT_ACCEPTANCE",
       platformId = "MQ-9",
       resourceId = "AIRCRAFT_MQ9",
       template = "TPL_AIR_US_KAF_MQ9_RECON_1SHIP",
+      airwingKey = "Main",
+      squadronKey = "MQ9",
       missionKind = "ORBIT_RACETRACK",
       reconAltitudeFeet = 25000,
       reconSpeedKnots = 180,
@@ -87,6 +95,7 @@ assert(lifecycle.constructor[3] == 180)
 assert(lifecycle.constructor[4] == 90)
 assert(lifecycle.constructor[5] == 5)
 assert(mission.optionROE == "WEAPON_HOLD")
+assert(mission.squadrons[1] == mq9Squadron)
 assert(mission.duration == 2700)
 assert(mission.teleport == false)
 assert(assignment.platformId == "MQ-9")
