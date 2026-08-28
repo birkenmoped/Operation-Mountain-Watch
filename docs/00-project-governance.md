@@ -130,6 +130,58 @@ Eine technische Begründung allein genehmigt keine Abweichung. Für jede produkt
 
 Ohne ausdrückliche Eigentümerfreigabe bleibt eine Nicht-MOOSE-Lösung `DRAFT`, `EXPLORATORY` oder `HISTORICAL_TEST_FIXTURE` und darf nicht als Produktionsarchitektur übernommen werden.
 
+## 5.1 CampaignState–MOOSE-Autorität und Ressourcenabgleich
+
+Für Ressourcen, die sowohl strategisch persistiert als auch als physische DCS-Einheit ausgeführt werden, gilt projektweit die folgende verbindliche Trennung.
+
+### Eine Ressource, zwei Repräsentationen
+
+CampaignState und MOOSE dürfen nicht unabhängig denselben Bestand besitzen. Sie bilden jedoch notwendigerweise zwei Ebenen derselben Ressource ab:
+
+| Ebene | Verbindliche Zuständigkeit |
+|---|---|
+| CampaignState | Persistente strategische Identität, Zugehörigkeit, Verlegung, Verfügbarkeit, Wartungs-/Schadens- und Verlustzustand |
+| MOOSE | Physische DCS-Ausführung und zur Laufzeit beobachtbarer Lifecycle: Bereitstellung, Start, Auftrag, Rückkehr, Landung, Verlust und Bereinigung der DCS-Repräsentation |
+
+Jede Ressource ist über eine stabile, von DCS-Gruppennamen unabhängige Ressourcen-ID zuzuordnen. Ein bloßer Vergleich aggregierter Zähler genügt nicht.
+
+MOOSE wird nicht durch CampaignState ersetzt. Während einer laufenden Mission ist ein bestätigtes MOOSE-Lifecycle-Ereignis für den physischen Zustand maßgeblich. CampaignState übernimmt dieses Ereignis idempotent in den strategischen Zustand.
+
+### Verbindliche Zustandsregeln
+
+- Ein regulär eingesetztes, zurückkehrendes Luft-, Boden- oder See-Asset wird **nicht verbraucht**. Es wechselt zwischen mindestens `available`, `reserved`, `deployed`, `returning`, `maintenance` und `lost`.
+- Ein dauerhafter Bestandsabgang ist nur nach einem bestätigten Verlust- oder ausdrücklich dokumentierten strategischen Abgangsvorgang zulässig.
+- `AUFTRAG:Done`, eine Auftragsstornierung oder ein Rückkehrbefehl sind keine physische Rückkehr. Die Freigabe in CampaignState darf erst nach dem passenden bestätigten MOOSE-Ereignis für physische Rückkehr beziehungsweise Verlust erfolgen.
+- CampaignState wählt vor der Disposition den konkreten Herkunftspool und die strategische Ressource. Der MOOSE-Auftrag wird anschließend explizit an den dazugehörigen AIRWING beziehungsweise die SQUADRON gebunden.
+- MOOSE darf keinen ungebundenen gemeinsamen Pool mehrerer strategischer Herkunftsbestände wählen.
+
+### Abgleich und Konfliktbehandlung
+
+Ein Abgleich ist verpflichtend:
+
+1. beim Missions-/Serverstart;
+2. nach jeder bestätigten physischen Bereitstellung, Rückkehr und jedem Verlust;
+3. nach einer Wiederherstellung oder einem kontrollierten Neustart;
+4. bei einer Dispatch- oder Bestandsabweichung.
+
+Ein erwarteter Lifecycle-Übergang darf den CampaignState nur genau einmal verändern; dafür sind stabile Ereignis- oder Settlement-IDs zu verwenden.
+
+Bei einer ungeklärten Abweichung darf kein System stillschweigend als richtig angenommen und der Bestand nicht automatisch erhöht oder vermindert werden. Das betroffene Asset wird für neue Dispositionen gesperrt, die Abweichung mit Ressourcen-ID, CampaignState-Zustand, MOOSE-Zustand und Lifecycle-Ereignis protokolliert und anschließend gezielt entschieden beziehungsweise bereinigt.
+
+Eine ereignisgebundene, idempotente Übernahme eines bestätigten MOOSE-Ereignisses in CampaignState ist kein zweiter Ressourcenbesitzer, sondern der vorgeschriebene Abgleich der strategischen Persistenz mit der physischen Ausführung.
+
+### Mindestnachweise für neue Ressourcenintegrationen
+
+Jede neue Integration von CampaignState und MOOSE muss mindestens nachweisen:
+
+- Zuordnung über stabile Ressourcen- und Herkunfts-IDs;
+- reservieren, physisch starten, zurückkehren, verlieren und erneut disponieren;
+- idempotente Behandlung mehrfach zugestellter Ereignisse;
+- Verhalten nach Server-/Missionsneustart;
+- Diagnose und Sperrverhalten bei einer absichtlich erzeugten Abweichung.
+
+Ohne diesen Nachweis darf eine Integration nicht als produktive Ressourcenbuchhaltung gelten.
+
 ## 6. Historischer Recherche- und Missionszeitraum
 
 Verbindlicher Recherche- und Kampagnenzeitraum:
