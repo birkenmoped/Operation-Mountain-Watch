@@ -80,7 +80,6 @@ function RequestMenu.New(config)
   requireTable(moose.MARKEROPS_BASE, "MOOSE MARKEROPS_BASE")
   requireTable(moose.MENU_GROUP, "MOOSE MENU_GROUP")
   requireTable(moose.MENU_GROUP_COMMAND, "MOOSE MENU_GROUP_COMMAND")
-  requireTable(moose.SCHEDULER, "MOOSE SCHEDULER")
 
   local self = setmetatable({
     coordinator = config.coordinator,
@@ -92,8 +91,6 @@ function RequestMenu.New(config)
     sendMessage = config.sendMessage,
     onRequestQueued = config.onRequestQueued,
     onRequestCancellation = config.onRequestCancellation,
-    pendingDispatchByRequestId = {},
-    dispatchRetrySeconds = 30,
   }, RequestMenu)
 
   if self.sendMessage == nil then
@@ -233,72 +230,6 @@ function RequestMenu:NotifyGroupId(groupId, text)
   return true
 end
 
-function RequestMenu:_StopPendingDispatch(requestId)
-  local pending = self.pendingDispatchByRequestId[requestId]
-  if pending and pending.scheduler and pending.scheduleId then
-    pending.scheduler:Stop(pending.scheduleId)
-  end
-  self.pendingDispatchByRequestId[requestId] = nil
-end
-
-function RequestMenu:_RetryPendingDispatch(requestId)
-  local pending = self.pendingDispatchByRequestId[requestId]
-  if not pending then
-    return
-  end
-
-  local request = self.coordinator:GetRequest(requestId)
-  if not request or request.status ~= "QUEUED" then
-    self:_StopPendingDispatch(requestId)
-    return
-  end
-
-  local dispatch, reason = self.onRequestQueued(request)
-  if dispatch then
-    self:_StopPendingDispatch(requestId)
-    log("DISPATCH_RETRY_ASSIGNED requestId=" .. tostring(requestId)
-      .. " platform=" .. tostring(dispatch.platformId))
-    self:NotifyGroupId(
-      request.ownerGroupId,
-      string.format("ISR Cell: %s accepted for %s; awaiting MOOSE dispatch.",
-        tostring(request.id), tostring(dispatch.platformId))
-    )
-  elseif reason == "NO_AVAILABLE_ISR_ASSET" then
-    log("DISPATCH_RETRY_WAITING requestId=" .. tostring(requestId)
-      .. " reason=NO_AVAILABLE_ISR_ASSET")
-  else
-    self:_StopPendingDispatch(requestId)
-    log("DISPATCH_RETRY_FAILED requestId=" .. tostring(requestId)
-      .. " reason=" .. tostring(reason))
-    self:NotifyGroupId(
-      request.ownerGroupId,
-      string.format("ISR Cell: %s dispatch failed (%s).",
-        tostring(request.id), tostring(reason))
-    )
-  end
-end
-
-function RequestMenu:_StartPendingDispatch(request)
-  if self.pendingDispatchByRequestId[request.id] then
-    return
-  end
-  local scheduler, scheduleId = self.moose.SCHEDULER:New(
-    nil,
-    function(requestId)
-      self:_RetryPendingDispatch(requestId)
-    end,
-    { request.id },
-    self.dispatchRetrySeconds,
-    self.dispatchRetrySeconds
-  )
-  self.pendingDispatchByRequestId[request.id] = {
-    scheduler = scheduler,
-    scheduleId = scheduleId,
-  }
-  log("DISPATCH_RETRY_SCHEDULED requestId=" .. tostring(request.id)
-    .. " intervalSeconds=" .. tostring(self.dispatchRetrySeconds))
-end
-
 function RequestMenu:SubmitFromGroup(group)
   local groupId = group:GetID()
   local groupCoordinate = group:GetCoordinate()
@@ -326,28 +257,22 @@ function RequestMenu:SubmitFromGroup(group)
     end
     if dispatch then
       self.sendMessage(group, string.format(
-        "ISR Cell: %s accepted for %s; awaiting MOOSE dispatch.",
-        tostring(request.id),
-        tostring(dispatch.platformId)
+        "ISR Cell: %s queued in MOOSE AIRWING for %s.",
+        tostring(request.id), tostring(dispatch.platformId)
       ))
-    elseif dispatchReason == "NO_AVAILABLE_ISR_ASSET" then
-      self:_StartPendingDispatch(request)
-      log("DISPATCH_DEFERRED requestId=" .. tostring(request.id)
-        .. " reason=NO_AVAILABLE_ISR_ASSET retryScheduled=true")
-      self.sendMessage(group, string.format(
-        "ISR Cell: %s accepted; waiting for a strategic MQ-9 to become available.",
-        tostring(request.id)
-      ))
-    else
-      log("DISPATCH_DEFERRED requestId=" .. tostring(request.id)
-        .. " reason=" .. tostring(dispatchReason))
-      self.sendMessage(group, string.format(
-        "ISR Cell: %s queued; dispatch deferred (%s).",
-        tostring(request.id),
-        tostring(dispatchReason)
-      ))
+      return request
     end
-    return request
+
+    -- A failed AIRWING submission is not a hidden local queue. Remove the
+    -- coordinator request so the player can correct or submit again.
+    local cancelled = self.coordinator:CancelOwnRequest(groupId, "MOOSE_QUEUE_SUBMISSION_FAILED")
+    log("MOOSE_QUEUE_SUBMISSION_FAILED requestId=" .. tostring(request.id)
+      .. " reason=" .. tostring(dispatchReason))
+    self.sendMessage(group, string.format(
+      "ISR Cell: %s was not queued in MOOSE (%s).",
+      tostring(request.id), tostring(dispatchReason)
+    ))
+    return nil, dispatchReason
   end
 
   self.sendMessage(group, messageText(reason))
@@ -370,19 +295,6 @@ function RequestMenu:CancelForGroup(group)
     return nil, "NO_OPEN_REQUEST"
   end
 
-  if self.pendingDispatchByRequestId[existing.id] then
-    self:_StopPendingDispatch(existing.id)
-    local cancelled, reason = self.coordinator:CancelOwnRequest(group:GetID())
-    if cancelled then
-      self.sendMessage(group, string.format(
-        "ISR Cell: %s cancelled while awaiting an available MQ-9.",
-        tostring(existing.id)
-      ))
-      return cancelled, nil
-    end
-    self.sendMessage(group, messageText(reason))
-    return nil, reason
-  end
 
   if self.onRequestCancellation then
     local outcome, reason = self.onRequestCancellation(group, existing)
