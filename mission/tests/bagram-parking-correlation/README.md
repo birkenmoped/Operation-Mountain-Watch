@@ -1,6 +1,6 @@
 ---
 document_id: OMW-TEST-BAGRAM-PARKING-CORRELATION
-status: VALIDATED_FOR_DOCUMENTED_SCOPE
+status: ACCEPTED_TECHNICAL_BASELINE
 document_class: TEST_PACKAGE_README
 owning_policy: OMW-GOV-001
 authoritative_for:
@@ -16,6 +16,15 @@ project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 source_branch: agent/bagram-parking-terminalid-baseline
 source_commit: 41fff9e313629fee091572a4fafbe38d206afd4b
 validated_in_dcs: true
+supersedes:
+superseded_by:
+acceptance_branch: agent/bagram-parking-terminalid-baseline
+acceptance_commit: 41fff9e313629fee091572a4fafbe38d206afd4b
+acceptance_mission: OMW_Template_v20_BGRM_Parking_Correlation_1.miz
+acceptance_mission_sha256: e83433d383d5f82583e49ff602a0d89b721b79c534923fd6e3ca3a28ee441e1f
+dcs_version: 2.9.28.26385
+moose_commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+moose_artifact_sha256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
 ---
 
 # Bagram Parking Correlation Test
@@ -48,7 +57,7 @@ Die validierte Zuordnung liegt unter:
 docs/data/bagram-me-parking-to-moose-terminalid-validated.csv
 ```
 
-Die ursprüngliche Candidate-Datei bleibt als Testprovenienz erhalten:
+Die ursprüngliche Candidate-Datei basdan der Referenzmission `BAGRAM.miz` und bleibt als Testprovenienz erhalten:
 
 ```text
 docs/data/bagram-me-parking-to-moose-terminalid-candidate.csv
@@ -91,6 +100,9 @@ e83433d383d5f82583e49ff602a0d89b721b79c534923fd6e3ca3a28ee441e1f
 
 DCS version:
 2.9.28.26385
+
+MOOSE method:
+AIRBASE:GetParkingSpotsTable()
 
 MOOSE commit:
 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54

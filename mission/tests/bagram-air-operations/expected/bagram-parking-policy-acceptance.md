@@ -20,6 +20,8 @@ dcs_version: 2.9.29.27278
 moose_commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
 moose_artifact_sha256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
 validated_in_dcs: false
+supersedes:
+superseded_by:
 ---
 
 # Historical Bagram Parking Policy Lifecycle Fixture
