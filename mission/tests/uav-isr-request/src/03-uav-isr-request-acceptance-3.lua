@@ -54,8 +54,9 @@ function Acceptance.Start()
         performance = nil,
       },
     },
-    onMissionStarted = function(request)
-      assert(coordinator:MarkLaunching(request.id))
+    onMissionStarted = function(request, _, reservation)
+      assert(coordinator:MarkLaunching(request.id,
+        reservation and reservation.transactionId or nil))
     end,
     onMissionExecuting = function(request)
       assert(coordinator:MarkOnStation(request.id))
@@ -64,11 +65,23 @@ function Acceptance.Start()
       assert(coordinator:MarkReturning(request.id))
     end,
     onMissionCancelledBeforeStart = function()
-      -- The menu atomically cancels the coordinator request and releases the
-      -- CampaignState reservation after MOOSE removes the queued mission.
+      -- A MOOSE-queued mission has no CampaignState reservation. The menu
+      -- cancels the coordinator request only after MOOSE removes the mission.
     end,
     onMissionDone = function(request)
       assert(coordinator:MarkCompleted(request.id))
+    end,
+    onMissionReconciliationFailure = function(request, _, reason)
+      assert(coordinator:MarkReconciliationRequired(request.id, reason))
+      if menu then
+        menu:NotifyGroupId(
+          request.ownerGroupId,
+          string.format(
+            "ISR Cell: %s returned, but CampaignState and MOOSE disagree (%s). Further ISR dispatch is blocked.",
+            tostring(request.id), tostring(reason)
+          )
+        )
+      end
     end,
     onMissionRecovered = function(request, _, recovery)
       local seconds = recovery and recovery.turnoverSeconds or nil
@@ -103,7 +116,6 @@ function Acceptance.Start()
       if not assignment then
         return nil, reason
       end
-      coordinator:MarkReserved(request.id, assignment.platformId, assignment.transactionId)
       coordinator:MarkAssigned(request.id, assignment.mission.name)
       return assignment
     end,
