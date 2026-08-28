@@ -17,6 +17,7 @@ Coordinator.RequestStatus = {
   RETURNING = "RETURNING",
   COMPLETED = "COMPLETED",
   CANCELLED = "CANCELLED",
+  RECONCILIATION_REQUIRED = "RECONCILIATION_REQUIRED",
 }
 
 Coordinator.MarkerText = "UAV RECON"
@@ -70,6 +71,7 @@ local function copyRequest(request)
     platformId = request.platformId,
     transactionId = request.transactionId,
     missionName = request.missionName,
+    reconciliationReason = request.reconciliationReason,
   }
 end
 
@@ -190,6 +192,7 @@ function Coordinator:SubmitNearest(spec)
     platformId = nil,
     transactionId = nil,
     missionName = nil,
+    reconciliationReason = nil,
   }
   self.requestsById[id] = request
   self.openRequestIdByOwner[key] = id
@@ -209,17 +212,38 @@ end
 function Coordinator:MarkAssigned(requestIdValue, missionName)
   local request = self.requestsById[requireNonEmptyString(requestIdValue, "requestId")]
   if not request then return nil, "UNKNOWN_REQUEST" end
-  if request.status ~= Coordinator.RequestStatus.RESERVED then return nil, "REQUEST_NOT_RESERVED" end
+  if request.status ~= Coordinator.RequestStatus.QUEUED
+      and request.status ~= Coordinator.RequestStatus.RESERVED then
+    return nil, "REQUEST_NOT_QUEUEABLE"
+  end
   request.status = Coordinator.RequestStatus.ASSIGNED
   request.missionName = requireNonEmptyString(missionName, "missionName")
   return copyRequest(request)
 end
 
-function Coordinator:MarkLaunching(requestIdValue)
+function Coordinator:MarkLaunching(requestIdValue, transactionId)
   local request = self.requestsById[requireNonEmptyString(requestIdValue, "requestId")]
   if not request then return nil, "UNKNOWN_REQUEST" end
   if request.status ~= Coordinator.RequestStatus.ASSIGNED then return nil, "REQUEST_NOT_ASSIGNED" end
   request.status = Coordinator.RequestStatus.LAUNCHING
+  if transactionId ~= nil then
+    request.transactionId = requireNonEmptyString(transactionId, "transactionId")
+  end
+  return copyRequest(request)
+end
+
+function Coordinator:MarkReconciliationRequired(requestIdValue, reason)
+  local request = self.requestsById[requireNonEmptyString(requestIdValue, "requestId")]
+  if not request then return nil, "UNKNOWN_REQUEST" end
+  if request.status ~= Coordinator.RequestStatus.ASSIGNED
+      and request.status ~= Coordinator.RequestStatus.LAUNCHING
+      and request.status ~= Coordinator.RequestStatus.ON_STATION
+      and request.status ~= Coordinator.RequestStatus.RETURNING then
+    return nil, "REQUEST_NOT_RECONCILABLE"
+  end
+  request.status = Coordinator.RequestStatus.RECONCILIATION_REQUIRED
+  request.reconciliationReason = requireNonEmptyString(reason, "reconciliationReason")
+  self.openRequestIdByOwner[request.ownerGroupId] = nil
   return copyRequest(request)
 end
 
