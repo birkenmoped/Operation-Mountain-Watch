@@ -29,11 +29,12 @@ production terrain corridors, RC-East holding, Bagram sourcing, persistence,
 production recovery/repair policy, Fog-of-War behaviour or weapon employment.
 The acceptance-local Kandahar MQ-9 count is credited once only after MOOSE has
 confirmed physical recovery; this permits a later acceptance request without
-treating an airborne or returning aircraft as available. Acceptance 3 then sets
-only its selected MOOSE MQ-9 squadron to `SetTurnoverTime(0, 0)`: after physical
-recovery MOOSE and the acceptance-local CampaignState therefore agree that the
-asset is ready. The production Kandahar foundation retains its separate
-20-minute maintenance time plus 40 minutes per damage point.
+treating an airborne or returning aircraft as available. It does not override
+MOOSE's Kandahar MQ-9 turnover: the production foundation keeps 20 minutes
+regular maintenance plus 40 minutes per damage point. A recovered asset can
+therefore be strategically counted yet remain physically unavailable to MOOSE
+until its turnover expires. The requesting group receives the exact
+MOOSE-reported remaining turnaround time after physical recovery.
 
 ## Build
 
@@ -70,10 +71,11 @@ Kandahar foundation.
 7. For a recall after start, observe a physical return to Kandahar. The AIRWING
    may reclaim/despawn the asset after landing and shutdown. Record
    `MISSION_RETURNING`, `MISSION_TASK_DONE` and `MISSION_RECOVERED`
-   (with `resourceRestored=true`). Acceptance 3 applies MOOSE turnover
-   `0/0` to this MQ-9 squadron, so after that recovery line the next marker
-   request must produce `MISSION_QUEUED` and a new MQ-9 launch without a
-   production maintenance wait.
+   (with `resourceRestored=true` and `turnoverSeconds=<n>`). The requesting
+   group must receive a message giving the remaining MOOSE turnaround time.
+   A later request may be `MISSION_QUEUED` while MOOSE is still maintaining
+   the recovered MQ-9; it starts only when MOOSE reports a physically ready
+   asset.
 8. Capture `debrief.log`: MQ-9 engine start, takeoff, landing and shutdown at
    Kandahar. Capture the bundle SHA-256 and screenshots.
 
