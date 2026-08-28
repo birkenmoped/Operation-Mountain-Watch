@@ -19,7 +19,9 @@ local mission = {
 
 local opsGroup = {
   alive = true,
+  airborne = false,
   IsAlive = function(self) return self.alive end,
+  IsAirborne = function(self) return self.airborne end,
 }
 
 local fakeScheduler = {
@@ -71,14 +73,14 @@ local adapter = {
   end,
 }
 
+local mq9Asset = { flightgroup = opsGroup }
+
 local mq9Squadron = {
   name = "SQ_US_KAF_MQ9_361_ERS",
-  assets = {
-    { flightgroup = opsGroup },
-  },
+  assets = { mq9Asset },
   GetRepairTime = function(_, asset)
-    assert(asset.flightgroup == opsGroup)
-    return 1200
+    assert(asset == mq9Asset)
+    return asset.Treturned and 1200 or 0
   end,
 }
 
@@ -109,7 +111,13 @@ local dispatcher = Dispatcher.New({
   onMissionCancelledBeforeStart = function(request) lifecycle.cancelledBeforeStart = request.id end,
   onMissionDone = function(request) lifecycle.done = request.id end,
   onMissionRecovered = function(request, _, recovery)
-    lifecycle.recovery = { request.id, recovery.turnoverSeconds, recovery.turnoverReason }
+    lifecycle.recovery = {
+      request.id,
+      recovery.turnoverSeconds,
+      recovery.turnoverReason,
+      recovery.turnoverWaived,
+      recovery.takeoffConfirmed,
+    }
   end,
 })
 
@@ -137,6 +145,9 @@ assert(assignment.platformId == "MQ-9")
 
 mission.opsGroups = { opsGroup }
 mission.OnAfterStarted()
+opsGroup.airborne = true
+opsGroup.OnAfterElementTakeoff(opsGroup, "Taxiing", "ElementTakeoff", "Airborne", {}, nil)
+assert(dispatcher.missionsByRequestId["ISR-0099"].takeoffConfirmed == true)
 assert(consumedRequestId == "ISR-0099")
 assert(lifecycle.started == "ISR-0099")
 mission.OnAfterExecuting()
@@ -147,6 +158,7 @@ mission.OnAfterDone()
 assert(lifecycle.done == nil)
 assert(lifecycle.recoveryStart == 5)
 assert(lifecycle.recoveryRepeat == 5)
+mq9Asset.Treturned = 1
 opsGroup.alive = false
 dispatcher:_ObservePhysicalRecovery("ISR-0099")
 assert(lifecycle.done == "ISR-0099")
@@ -154,8 +166,13 @@ assert(lifecycle.recovered == "ISR-0099")
 assert(lifecycle.recovery[1] == "ISR-0099")
 assert(lifecycle.recovery[2] == 1200)
 assert(lifecycle.recovery[3] == nil)
+assert(lifecycle.recovery[4] == false)
+assert(lifecycle.recovery[5] == true)
 assert(fakeScheduler.stopped == "RECOVERY-SCHEDULE")
 opsGroup.alive = true
+opsGroup.airborne = false
+opsGroup.OnAfterElementTakeoff = nil
+mq9Asset.Treturned = nil
 
 local beforeStart = assert(dispatcher:Dispatch({
   id = "ISR-0100",
@@ -183,10 +200,20 @@ mission.OnAfterCancel()
 assert(lifecycle.cancelled == "ISR-0101")
 assert(dispatcher:CancelRequest("ISR-0101") == "RECALL_ALREADY_ORDERED")
 opsGroup.alive = false
+-- The group can disappear before MOOSE has re-added the asset. The dispatcher
+-- must wait rather than strategically settle an un-reconciled return.
+dispatcher:_ObservePhysicalRecovery("ISR-0101")
+assert(lifecycle.done == "ISR-0099")
+assert(lifecycle.recovered == "ISR-0099")
+mq9Asset.Treturned = 1
 dispatcher:_ObservePhysicalRecovery("ISR-0101")
 assert(lifecycle.done == "ISR-0101")
 assert(lifecycle.recovered == "ISR-0101")
 assert(lifecycle.recovery[1] == "ISR-0101")
-assert(lifecycle.recovery[2] == 1200)
+assert(lifecycle.recovery[2] == 0)
+assert(lifecycle.recovery[3] == nil)
+assert(lifecycle.recovery[4] == true)
+assert(lifecycle.recovery[5] == false)
+assert(mq9Asset.Treturned == nil)
 
 print("PASS test_isr_uav_dispatcher")
