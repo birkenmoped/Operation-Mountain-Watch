@@ -13,10 +13,17 @@ not_authoritative_for:
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 source_branch: agent/army-ground-foundation-reconciliation
-source_commit: PENDING_MERGE
+source_commit: 998080da9a7a71dae7f713b9590dfeadb5ae93ba
 validated_in_dcs: true
 supersedes:
 superseded_by:
+acceptance_branch: agent/army-ground-foundation-reconciliation
+acceptance_commit: 9b4997bf024efe0fab18b4d18552117cd8eeee21
+acceptance_mission: OMW_Template_v13_ground_test(10).miz
+acceptance_mission_sha256: a6ce41bc9d7ab0f352f567322401e238dcd2057c548b4ddba44fe9f32f4577cd
+dcs_version: 2.9.28.26385 MT
+moose_commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+moose_artifact_sha256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
 ---
 
 # ARMY Ground Foundation – Acceptance 3

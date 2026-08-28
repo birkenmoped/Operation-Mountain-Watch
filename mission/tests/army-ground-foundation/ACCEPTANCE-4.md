@@ -24,6 +24,13 @@ base_status: ACCEPTED_TECHNICAL_BASELINE
 merged_to_main: false
 inherited_risk:
   - parent branch may still be revised
+acceptance_branch: agent/army-ground-foundation-reconciliation
+acceptance_commit: ec66a29ddbd234d07f28d174a7725e4331cc31a6
+acceptance_mission: OMW_Template_v13_ground_test(20260819-200418).miz
+acceptance_mission_sha256: 1564001e9aa524217a9142c35977d5cf9c0d4e8b2765c1de351ecb31a7edf3e2
+dcs_version: 2.9.28.26385 MT
+moose_commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+moose_artifact_sha256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
 ---
 
 # ARMY Ground Foundation – Acceptance 4

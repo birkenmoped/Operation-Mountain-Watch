@@ -13,6 +13,8 @@ project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 source_branch: agent/bagram-parking-policy-integration
 source_commit: GIT_HISTORY
 validated_in_dcs: false
+supersedes:
+superseded_by:
 ---
 
 # Historical Bagram Final Parking Acceptance Fixture

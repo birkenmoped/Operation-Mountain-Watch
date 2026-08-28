@@ -1,9 +1,16 @@
 ---
 document_id: OMW-TEST-ARMY-GROUND-ACCEPTANCE-5
-status: DCS_PENDING
+status: PLANNED
 document_class: ACCEPTANCE_TEST_SPECIFICATION
 source_branch: agent/army-ground-foundation-reconciliation
 validated_in_dcs: false
+owning_policy: OMW-GOV-001
+authoritative_for:
+scenario_period: 2010-08-01/2011-12-31
+project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
+supersedes:
+superseded_by:
+source_commit: 998080da9a7a71dae7f713b9590dfeadb5ae93ba
 ---
 
 # ARMY Ground Foundation – Acceptance 5: Fenty test-only strategic return settlement

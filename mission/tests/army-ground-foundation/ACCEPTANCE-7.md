@@ -1,6 +1,6 @@
 ---
 document_id: OMW-TEST-ARMY-GROUND-ACCEPTANCE-7
-status: VALIDATED
+status: ACCEPTED_TECHNICAL_BASELINE
 document_class: ACCEPTANCE_TEST_PLAN
 owning_policy: OMW-GOV-001
 authoritative_for:
@@ -18,6 +18,13 @@ validated_in_dcs: true
 validation_date: 2026-08-20
 supersedes:
 superseded_by:
+acceptance_branch: agent/army-ground-foundation-reconciliation
+acceptance_commit: e049e34fe8e6de878fd390486888f3912bb179d8
+acceptance_mission: OMW_Template_v14_ground_test.miz
+acceptance_mission_sha256: 88184ec180837044ff4dcef7cca264fe7ee5fcf5d55a8af19b11125c41eab94d
+dcs_version: 2.9.28.26385 MT
+moose_commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+moose_artifact_sha256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
 ---
 
 # ARMY Ground Foundation – Acceptance 7

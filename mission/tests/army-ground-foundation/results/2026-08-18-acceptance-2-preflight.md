@@ -1,6 +1,6 @@
 ---
 document_id: OMW-TEST-ARMY-GROUND-ACCEPTANCE-2-PREFLIGHT
-status: EVIDENCE
+status: HISTORICAL_TEST_FIXTURE
 document_class: TEST_EVIDENCE
 owning_policy: OMW-GOV-001
 authoritative_for:
