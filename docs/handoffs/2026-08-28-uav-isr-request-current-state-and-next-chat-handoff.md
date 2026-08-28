@@ -88,15 +88,35 @@ und ohne bestätigten ElementTakeoff
 Sie ersetzt weder MOOSE-Dispatch noch MOOSE-Rückgabe, erzeugt keine DCS-Gruppe,
 ändert keine Staffelkonfiguration und gilt nicht als Produktionswartungspolitik.
 
-## 5. Noch notwendiger DCS-Gate
+## 5. Korrektur: verzögerte strategische Disposition
 
-Der aktuelle Build muss zwei getrennte Fälle nachweisen:
+Der Lauf mit Bundle A3-11 belegt zusätzlich einen separaten Fehler:
 
-1. **Bodenabbruch:** Spawn/Triebwerkstart, Recall vor Taxi/Takeoff, Despawn.
+```text
+16:09:51 ISR-0007 SUBMIT_ACCEPTED
+16:09:51 DISPATCH_DEFERRED reason=NO_AVAILABLE_ISR_ASSET
+16:15:57 / 16:16:05 vorherige MQ-9 physisch recovered
+danach kein erneuter Dispatch-Versuch
+```
+
+ISR-0007 war damit nie in MOOSEs AIRWING-Missionswarteschlange. Die
+F10-Meldung `queued` bezeichnete nur den lokalen Coordinator-Zustand und war
+falsch bzw. unvollständig. A3-12 führt deshalb einen MOOSE-`SCHEDULER` mit
+30-Sekunden-Intervall ein: Solange ein Request strategisch `QUEUED` bleibt,
+wird die Reservierung erneut versucht. Nach der CampaignState-Gutschrift wird
+der AUFTRAG einmal in die bestehende AIRWING übergeben; erst dort steuert MOOSE
+die noch laufende Turnoverzeit. Ein noch wartender Request kann über F10
+abgebrochen werden.
+
+## 6. Noch notwendiger DCS-Gate
+
+Der aktuelle Build muss drei getrennte Fälle nachweisen:
+
+1. **Strategisch wartender Request:** Während beide MQ-9 aktiv oder in Turnover sind, einen dritten Request absenden. Erwartet: `DISPATCH_RETRY_SCHEDULED`; nach physischer Recovery `DISPATCH_RETRY_ASSIGNED` und anschließend MOOSE-Start erst nach seiner Turnoverzeit.\n2. **Bodenabbruch:** Spawn/Triebwerkstart, Recall vor Taxi/Takeoff, Despawn.
    Erwartet: `MISSION_TURNOVER_WAIVED_NO_TAKEOFF`,
    `takeoffConfirmed=false`, `turnoverWaived=true`,
    `turnoverSeconds=0`, sofortige Verfügbarkeitsmeldung.
-2. **Echter Flug:** bestätigter Takeoff, danach Recall/Rückkehr.
+3. **Echter Flug:** bestätigter Takeoff, danach Recall/Rückkehr.
    Erwartet: `MISSION_TAKEOFF_CONFIRMED`,
    `takeoffConfirmed=true`, `turnoverWaived=false` und positive
    MOOSE-Turnoverzeit mit Hinweismeldung.
