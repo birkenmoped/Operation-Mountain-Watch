@@ -4,8 +4,8 @@ status: PLANNED
 document_class: CHAT_HANDOFF
 owning_policy: OMW-GOV-001
 authoritative_for:
-  - branch-local current state before and during main reconciliation
-  - current reconciliation gates and merge-readiness blockers
+  - branch-local current state after main reconciliation
+  - current reconciliation result, TODO re-audit and merge-readiness blockers
 not_authoritative_for:
   - repository-wide architecture before merge to main
   - DCS acceptance beyond exact recorded provenance
@@ -20,9 +20,7 @@ base_commit: 998080da9a7a71dae7f713b9590dfeadb5ae93ba
 
 # Handoff – Automatic Response Orchestration Main Reconciliation – 29.08.2026
 
-## 1. Aktueller Auftrag
-
-Der Projektinhaber hat folgende Reihenfolge bestätigt:
+## 1. Owner-approved Reihenfolge
 
 ```text
 1. Dokumentation auf aktuellen Stand bringen.
@@ -32,9 +30,19 @@ Der Projektinhaber hat folgende Reihenfolge bestätigt:
 5. Erst danach Merge-Readiness herstellen und PR auf Ready for Review setzen.
 ```
 
-## 2. Git-Ausgangslage
+Stand dieses Handoffs:
 
-Vor dem Reconciliation-Merge:
+```text
+1 DONE
+2 DONE
+3 BLOCKED_BY_MISSING_EXECUTED_MIZ_SHA256
+4 DONE – remaining scope classified
+5 NOT STARTED
+```
+
+## 2. Main-Reconciliation
+
+Ausgangslage:
 
 ```text
 branch: agent/automatic-response-orchestration
@@ -45,7 +53,23 @@ branch behind: 195
 status: diverged
 ```
 
-Der Branch darf keine neueren `main`-Baselines zurücksetzen.
+Reconciliation:
+
+```text
+internal PR: #130
+merge commit: 5263fe7f2f7cb3bc358b39101200dfcc3ae513ea
+PR direction: main -> agent/automatic-response-orchestration
+result: merged
+```
+
+Nach Reconciliation:
+
+```text
+branch behind main: 0
+main merge base: 998080da9a7a71dae7f713b9590dfeadb5ae93ba
+```
+
+Konflikte wurden nach Governance aufgelöst: aktueller `main` war Basis des Merge-Trees; nur branch-spezifische Acceptance-, Builder-, Test- und Source-Review-Dateien wurden ergänzt. Alte Branch-Versionen gemeinsam weiterentwickelter Dateien wurden nicht über `main` gelegt. Insbesondere wurden `docs/moose/PROJECT-CLASS-INDEX.md` und `docs/moose/VERIFIED-METHODS.md` aus dem aktuellen `main` beibehalten und müssen später additiv um die neue Fuel-Evidenz ergänzt werden.
 
 ## 3. Stage-Stand
 
@@ -60,12 +84,12 @@ Stage 1C meta RESUPPLY via NOTHING
   ACCEPTED_TECHNICAL_BASELINE
 
 Stage 1B2 one-shot FUELSUPPLY
-  DCS runtime PASS observed
+  DCS runtime PASS
   preferred Fuel executor decision resolved
-  formal acceptance still blocked by missing exact executed-MIZ SHA-256
+  formal acceptance blocked by missing exact executed-MIZ SHA-256
 ```
 
-Build 2-3 identity:
+Build 2-3:
 
 ```text
 build commit: 2bd930729ed12a073f5364dc139281b60151acf0
@@ -75,6 +99,7 @@ MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
 Moose.lua SHA-256: E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915
 DCS: 2.9.28.26385 MT
 mission name: OMW_Template_v19.miz
+executed MIZ SHA-256: PENDING_OWNER_EVIDENCE
 ```
 
 Observed terminal path:
@@ -95,77 +120,87 @@ AUFTRAG:NewFUELSUPPLY
 
 ## 4. Fuel-Entscheidung
 
-Für `GROUND_FUEL_PACKAGE` ist nach dem realen Build-2-3-Lauf der bevorzugte physische Executor:
-
 ```text
-one-shot AUFTRAG:NewFUELSUPPLY
+GROUND_FUEL_PACKAGE
+-> CampaignState = sole strategic resource authority
+-> one-shot AUFTRAG:NewFUELSUPPLY
 -> BRIGADE:AddMission
+-> MOOSE ReturnToLegion
 ```
 
-Nicht verwenden für einen einzelnen CampaignState-Transfer:
+Nicht als One-Shot-Dispatcher verwenden:
 
 ```text
 BRIGADE:AddRefuellingZone
 ```
 
-weil diese API eine persistente Refuelling-Service-Registrierung erzeugt.
+Diese API ist für eine persistente Refuelling-Service-Registrierung geeignet und erzeugt nach Missionsende bei weiter registrierter Zone erneut FUELSUPPLY.
 
-CampaignState bleibt alleinige strategische Fuel-Autorität. M978 und MOOSE/DCS-Fuel werden nicht zu einer zweiten Bestandsautorität.
-
-## 5. Main-Reconciliation-Prüfung
-
-Nach Integration von `main` sind mindestens erneut zu prüfen:
+## 5. TODO-Reaudit nach integriertem main
 
 ```text
-AGENTS.md
-docs/00-project-governance.md
-docs/26-moose-first-development-policy.md
-docs/DOCUMENT-METADATA-POLICY.md
-docs/DOCUMENT-REGISTRY.md
-docs/SUBPROJECT-REGISTRY.md
-scripts/campaign/OMW_CampaignState.lua
-scripts/campaign/OMW_MissionDemand.lua
-scripts/campaign/OMW_ResourceDemandPolicy.lua
-scripts/ground/
-scripts/air-operations/
-relevante Fire-Support-, AAR-, AWACS-, ISR/FAC/CAS- und CSAR-Dokumente
+Stage 1D  STILL_REQUIRED
+Stage 2   STILL_REQUIRED
+Stage 3   PARTIALLY_COVERED_ON_MAIN
+Stage 4   STILL_REQUIRED
+Stage 5   PARTIALLY_COVERED_ON_MAIN
+Stage 6   STILL_REQUIRED
+Stage 7   STILL_REQUIRED
+Stage 8   PARTIALLY_COVERED_ON_MAIN
+Stage 9   STILL_REQUIRED
+Stage 10  BLOCKED
 ```
 
-## 6. TODO-Reaudit
-
-Die alte TODO-Liste 1D–9 ist nach Reconciliation nicht automatisch weiter gültig. Jeder Stage wird in eine der folgenden Klassen eingeordnet:
+Wesentliche Befunde:
 
 ```text
-DONE_ON_MAIN
-PARTIALLY_COVERED_ON_MAIN
-STILL_REQUIRED
-SUPERSEDED
-OUT_OF_SCOPE
+Stage 3:
+  Fixed Fire Support + local ammo rearm exist on main.
+  Automatic depletion/rearm -> strategic RESUPPLY closure remains.
+
+Stage 5:
+  Current Air Tasking + ISR/FAC/CAS foundations exist on main.
+  Automatic-response MissionDemand/event adapter remains.
+
+Stage 6:
+  BINDING CSAR index explicitly leaves technical CSAR/AICSAR acceptance,
+  CSARIncident, dedicated-server/reconnect and restart tests open.
+
+Stage 8:
+  CampaignState/Ground restart/reconciliation foundations exist.
+  Automatic-response-specific in-flight demand/executor/idempotence remains.
 ```
 
-Erst danach wird neue Runtime-Logik geschrieben.
-
-## 7. Merge-Readiness-Gates
-
-Vor Ready for Review müssen geschlossen sein:
+Die ausführliche aktuelle Reihenfolge steht in:
 
 ```text
-- branch fully reconciled against current main
-- Stage 1B2 exact executed-MIZ SHA-256 recorded
+docs/handoffs/2026-08-22-automatic-response-orchestration-development-order.md
+```
+
+## 6. Merge-Readiness-Gates
+
+Vor Ready for Review müssen noch geschlossen werden:
+
+```text
+- exact Stage 1B2 executed-MIZ SHA-256
+- genuinely missing Stages 1D–9 implemented/reconciled
+- MOOSE PROJECT-CLASS-INDEX / VERIFIED-METHODS additiv aktualisiert
 - full diff reviewed
 - available builders/tests executed
 - documentation validator run
-- MOOSE class/method docs reconciled
 - DOCUMENT-REGISTRY and SUBPROJECT-REGISTRY aligned
 - no merge-blocking PENDING_MERGE metadata remains
 - remaining DCS-only checks explicitly identified
+- feature PR to main created
 ```
 
-## 8. Aktueller Status
+## 7. Aktueller Status
 
 ```text
 ready_for_review: false
 merge_to_main: false
-current_gate: MAIN_RECONCILIATION
+main_reconciliation: DONE
+current_gate: STAGE_1B2_PROVENANCE
 next_provenance_input_needed: exact SHA-256 of the MIZ executed for Stage 1B2 Build 2-3
+next_development_stage_after_provenance: STAGE_1D
 ```
