@@ -180,6 +180,14 @@ local config = {
   },
 }
 
+local parkingValidation = {
+  expectedAssets = 69,
+  assetsChecked = 0,
+  failed = 0,
+  seen = {},
+  completed = false,
+}
+
 local function requireTemplate(name)
   local group = GROUP and GROUP:FindByName(name) or nil
   if not group then
@@ -195,6 +203,15 @@ local function requireAnchor(name)
     error("Warehouse anchor not found: " .. tostring(name))
   end
   return anchor
+end
+
+local function getSquadronDefinition(name)
+  for _, definition in pairs(config.squadrons) do
+    if definition.name == name then
+      return definition
+    end
+  end
+  return nil
 end
 
 local function validateParkingPolicy()
@@ -225,6 +242,79 @@ local function validateParkingPolicy()
   log(string.format("PARKING_POLICY_PRESTART status=PASS blacklist=%d assignedAI=%d", #config.parkingBlacklist, countTable(assigned)))
 end
 
+local function finalizeParkingValidation()
+  if parkingValidation.completed or parkingValidation.assetsChecked < parkingValidation.expectedAssets then
+    return
+  end
+
+  parkingValidation.completed = true
+  local state = OMW and OMW.AirOps and OMW.AirOps.Bagram or nil
+  local parkingStatus = parkingValidation.failed == 0 and parkingValidation.assetsChecked == parkingValidation.expectedAssets and "PASS" or "FAIL"
+
+  log(string.format(
+    "PARKING_POLICY_POSTSTART status=%s assetsChecked=%d expectedAssets=%d failed=%d lifecycle=WAREHOUSE_NEWASSET",
+    parkingStatus,
+    parkingValidation.assetsChecked,
+    parkingValidation.expectedAssets,
+    parkingValidation.failed
+  ))
+
+  if not state then
+    env.error(TAG .. " ERROR Bagram foundation state unavailable during NewAsset parking validation", false)
+    return
+  end
+
+  if parkingStatus ~= "PASS" then
+    state.Status = "ERROR"
+    state.Error = "Bagram parking policy did not propagate to all AIRWING assets"
+    env.error(TAG .. " ERROR " .. state.Error, false)
+    return
+  end
+
+  local usafRunning = state.Airwings.USAF.IsRunning and state.Airwings.USAF:IsRunning() or false
+  local armyRunning = state.Airwings.Army.IsRunning and state.Airwings.Army:IsRunning() or false
+
+  log(string.format(
+    "RESULT status=%s airwings=2 squadrons=7 registeredGroups=%d representedAirframes=%d logicalAirframes=%d logicalReserve=%d rolePayloads=%d usafRunning=%s armyRunning=%s parkingPolicy=PASS parkingAssetsChecked=%d missionsCreated=0 transportsCreated=0 commanderCreated=false f10Controls=false",
+    tostring(state.Status),
+    tonumber(state.RegisteredGroups) or -1,
+    tonumber(state.RepresentedAirframes) or -1,
+    tonumber(state.LogicalAirframes) or -1,
+    tonumber(state.LogicalReserve) or -1,
+    tonumber(state.RolePayloads) or -1,
+    tostring(usafRunning),
+    tostring(armyRunning),
+    parkingValidation.assetsChecked
+  ))
+end
+
+local function validateNewAssetParking(asset, assignment)
+  local squadronName = assignment ~= nil and assignment ~= "" and assignment or asset.assignment
+  local definition = getSquadronDefinition(squadronName)
+  if not definition then
+    return
+  end
+
+  local uid = asset.uid or asset.spawngroupname
+  if parkingValidation.seen[uid] then
+    return
+  end
+  parkingValidation.seen[uid] = true
+  parkingValidation.assetsChecked = parkingValidation.assetsChecked + 1
+
+  if not sameNumberSet(asset.parkingIDs, definition.parkingIDs) then
+    parkingValidation.failed = parkingValidation.failed + 1
+    env.error(string.format(
+      "%s PARKING_ASSET status=FAIL squadron=%s asset=%s",
+      TAG,
+      definition.name,
+      tostring(uid or "unknown")
+    ), false)
+  end
+
+  finalizeParkingValidation()
+end
+
 local function createAirwing(definition)
   local airbase = AIRBASE:FindByName(definition.airbaseName)
   if not airbase then
@@ -237,6 +327,14 @@ local function createAirwing(definition)
   local airwing = AIRWING:New(definition.warehouseName, definition.airwingName)
   airwing:SetAirbase(airbase)
   airwing:SetTakeoffCold()
+
+  -- MOOSE WAREHOUSE:AddAsset() emits NewAsset after 0.1 s. The inherited
+  -- LEGION:onafterNewAsset() assigns cohort parkingIDs before this public
+  -- OnAfterNewAsset callback runs. Validate exactly at that lifecycle point.
+  function airwing:OnAfterNewAsset(From, Event, To, asset, assignment)
+    validateNewAssetParking(asset, assignment)
+  end
+
   return airbase, airwing
 end
 
@@ -327,6 +425,9 @@ local function constructFoundation()
   if logicalReserve ~= config.logicalReserve then
     error("Logical reserve total mismatch")
   end
+  if registeredGroups ~= parkingValidation.expectedAssets then
+    error("Parking validation expected asset count mismatch")
+  end
 
   log("SQUADRON_STOCK_PRESTART usafAirwingStockEntries=" .. tostring(countTable(usafAirwing.stock)))
   log("SQUADRON_STOCK_PRESTART armyAirwingStockEntries=" .. tostring(countTable(armyAirwing.stock)))
@@ -357,40 +458,24 @@ local function inspectIdleFoundation()
     error("Bagram foundation state is unavailable after AIRWING start")
   end
 
-  local usafRunning = state.Airwings.USAF.IsRunning and state.Airwings.USAF:IsRunning() or false
-  local armyRunning = state.Airwings.Army.IsRunning and state.Airwings.Army:IsRunning() or false
-  local parkingAssetsChecked = 0
-  local parkingAssetsFailed = 0
+  local expectedAssets = state.RegisteredGroups
+  local observedAssets = 0
+  local parkingPoolsDefined = 0
 
   for key, squadron in pairs(state.Squadrons) do
     local definition = state.Config.squadrons[key]
-    for _, asset in pairs(squadron.assets or {}) do
-      parkingAssetsChecked = parkingAssetsChecked + 1
-      if not sameNumberSet(asset.parkingIDs, definition.parkingIDs) then
-        parkingAssetsFailed = parkingAssetsFailed + 1
-        env.error(string.format("%s PARKING_ASSET status=FAIL squadron=%s asset=%s", TAG, definition.name, tostring(asset.uid or asset.spawngroupname or "unknown")), false)
-      end
+    observedAssets = observedAssets + countTable(squadron.assets)
+    if type(definition.parkingIDs) == "table" and #definition.parkingIDs > 0 then
+      parkingPoolsDefined = parkingPoolsDefined + 1
     end
   end
 
-  local parkingStatus = parkingAssetsFailed == 0 and parkingAssetsChecked == state.RegisteredGroups and "PASS" or "FAIL"
-  log(string.format("PARKING_POLICY_POSTSTART status=%s assetsChecked=%d expectedAssets=%d failed=%d", parkingStatus, parkingAssetsChecked, state.RegisteredGroups, parkingAssetsFailed))
-
-  if parkingStatus ~= "PASS" then
-    error("Bagram parking policy did not propagate to all AIRWING assets")
-  end
-
   log(string.format(
-    "RESULT status=%s airwings=2 squadrons=7 registeredGroups=%d representedAirframes=%d logicalAirframes=%d logicalReserve=%d rolePayloads=%d usafRunning=%s armyRunning=%s parkingPolicy=PASS parkingAssetsChecked=%d missionsCreated=0 transportsCreated=0 commanderCreated=false f10Controls=false",
-    tostring(state.Status),
-    tonumber(state.RegisteredGroups) or -1,
-    tonumber(state.RepresentedAirframes) or -1,
-    tonumber(state.LogicalAirframes) or -1,
-    tonumber(state.LogicalReserve) or -1,
-    tonumber(state.RolePayloads) or -1,
-    tostring(usafRunning),
-    tostring(armyRunning),
-    parkingAssetsChecked
+    "PARKING_POLICY_POSTSTART status=PENDING assetsChecked=%d expectedAssets=%d failed=%d parkingPools=%d lifecycle=AWAITING_WAREHOUSE_NEWASSET",
+    observedAssets,
+    expectedAssets,
+    parkingValidation.failed,
+    parkingPoolsDefined
   ))
 end
 
