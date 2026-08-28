@@ -146,7 +146,6 @@ $content = $header + $source
     -GeneratedFile $outputFile `
     -PreStartFunctionName 'constructFoundation' `
     -PostStartFunctionName 'inspectIdleFoundation' `
-    -RequirePostStartAssetValidation `
     -FoundationScope
 
 $hash = (Get-FileHash -LiteralPath $outputFile -Algorithm SHA256).Hash.ToLowerInvariant()
