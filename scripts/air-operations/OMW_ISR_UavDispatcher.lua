@@ -1,9 +1,10 @@
 -- Operation Mountain Watch - MOOSE-only player ISR UAV dispatch adapter.
 --
--- This adapter selects a preconfigured ISR Cell profile, reserves exactly one
--- CampaignState aircraft, registers the existing Mission Editor payload with
--- AIRWING and submits an AUFTRAG. It intentionally contains no native
--- DCS spawn, route or target-marker path.
+-- This adapter submits each valid request directly to the configured MOOSE
+-- AIRWING queue. MOOSE alone decides physical asset availability and turnover.
+-- CampaignState is updated only after MOOSE confirms physical start, then again
+-- after physical recovery. It intentionally contains no native DCS spawn, route
+-- or target-marker path and no local dispatch/retry queue.
 
 local Dispatcher = {}
 Dispatcher.__index = Dispatcher
@@ -49,8 +50,8 @@ function Dispatcher.New(config)
   if type(config.campaignAdapter) ~= "table" then
     fail("config.campaignAdapter is required")
   end
-  requireFunction(config.campaignAdapter.Reserve, "campaignAdapter.Reserve")
-  requireFunction(config.campaignAdapter.ConsumeAtPhysicalStart, "campaignAdapter.ConsumeAtPhysicalStart")
+  requireFunction(config.campaignAdapter.BeginPhysicalStart,
+    "campaignAdapter.BeginPhysicalStart")
   requireFunction(config.campaignAdapter.RecoverAfterPhysicalRecovery,
     "campaignAdapter.RecoverAfterPhysicalRecovery")
 
@@ -61,6 +62,10 @@ function Dispatcher.New(config)
     requireFunction(config.onMissionCancelledBeforeStart, "config.onMissionCancelledBeforeStart")
   end
   if config.onMissionDone ~= nil then requireFunction(config.onMissionDone, "config.onMissionDone") end
+  if config.onMissionReconciliationFailure ~= nil then
+    requireFunction(config.onMissionReconciliationFailure,
+      "config.onMissionReconciliationFailure")
+  end
   if config.onMissionRecovered ~= nil then
     requireFunction(config.onMissionRecovered, "config.onMissionRecovered")
   end
@@ -72,11 +77,13 @@ function Dispatcher.New(config)
     profiles = requireTable(config.profiles, "config.profiles"),
     registeredPayloadProfileIds = {},
     missionsByRequestId = {},
+    reconciliationBlocked = false,
     onMissionStarted = config.onMissionStarted,
     onMissionExecuting = config.onMissionExecuting,
     onMissionCancelled = config.onMissionCancelled,
     onMissionCancelledBeforeStart = config.onMissionCancelledBeforeStart,
     onMissionDone = config.onMissionDone,
+    onMissionReconciliationFailure = config.onMissionReconciliationFailure,
     onMissionRecovered = config.onMissionRecovered,
   }, Dispatcher)
 end
@@ -235,6 +242,20 @@ function Dispatcher:_CompleteAfterPhysicalRecovery(record)
     return
   end
 
+  if record.reconciliationFailure then
+    record.recoveryCompleted = true
+    self:_StopRecoveryMonitor(record)
+    log("MISSION_RECOVERED_RECONCILIATION_REQUIRED requestId=" .. record.requestId
+      .. " mission=" .. record.mission.name
+      .. " platform=" .. record.platformId
+      .. " reason=" .. tostring(record.reconciliationFailure))
+    if self.onMissionReconciliationFailure then
+      self.onMissionReconciliationFailure(record.request, record.mission,
+        record.reconciliationFailure)
+    end
+    return
+  end
+
   -- Do not settle CampaignState before MOOSE has re-added the returned asset.
   -- In the no-takeoff branch that is also the only safe point to remove the
   -- MOOSE-maintenance timestamp. A recovery scheduler retry handles the small
@@ -380,9 +401,34 @@ function Dispatcher:_BuildMission(request, profile, squadron)
         self:_ObserveTakeoff(record)
       end
     end
-    self.campaignAdapter:ConsumeAtPhysicalStart(request.id)
-    log("MISSION_STARTED requestId=" .. request.id .. " mission=" .. mission.name .. " platform=" .. profile.platformId)
-    if self.onMissionStarted then self.onMissionStarted(request, mission) end
+
+    -- MOOSE has now selected and physically started this specific mission. This
+    -- is the first CampaignState settlement point; it is deliberately not an
+    -- admission gate for AIRWING's queue.
+    local reservation, settlementReason =
+      self.campaignAdapter:BeginPhysicalStart(request.id, profile)
+    if not reservation then
+      record.reconciliationFailure = settlementReason or "CAMPAIGNSTATE_MOOSE_DIVERGENCE"
+      self.reconciliationBlocked = true
+      log("MISSION_START_RECONCILIATION_FAILED requestId=" .. request.id
+        .. " mission=" .. mission.name
+        .. " platform=" .. profile.platformId
+        .. " reason=" .. tostring(record.reconciliationFailure))
+      if self.onMissionStarted then self.onMissionStarted(request, mission, nil) end
+
+      -- The physical mission has already been started by MOOSE. Cancel through
+      -- MOOSE and wait for its physical return; do not invent a local recovery
+      -- path or credit CampaignState for an un-settled sortie.
+      record.cancelMode = "RECONCILIATION_FAILURE"
+      mission:Cancel()
+      return
+    end
+
+    record.transactionId = reservation.transactionId
+    log("MISSION_STARTED requestId=" .. request.id .. " mission=" .. mission.name
+      .. " platform=" .. profile.platformId
+      .. " transactionId=" .. tostring(reservation.transactionId))
+    if self.onMissionStarted then self.onMissionStarted(request, mission, reservation) end
   end
   mission.OnAfterExecuting = function(_, _, _, _, _, _)
     log("MISSION_ON_STATION requestId=" .. request.id .. " mission=" .. mission.name .. " platform=" .. profile.platformId)
@@ -396,7 +442,9 @@ function Dispatcher:_BuildMission(request, profile, squadron)
       return
     end
     if record then
-      local reason = record.cancelMode == "RECALL" and "OWNER_RECALL" or "MISSION_COMPLETED"
+      local reason = record.cancelMode == "RECALL" and "OWNER_RECALL"
+        or (record.cancelMode == "RECONCILIATION_FAILURE"
+          and "CAMPAIGNSTATE_RECONCILIATION_FAILURE" or "MISSION_COMPLETED")
       self:_MarkReturning(record, reason)
     end
   end
@@ -420,38 +468,38 @@ end
 
 function Dispatcher:Dispatch(request)
   requireTable(request, "request")
+  if self.reconciliationBlocked then
+    return nil, "RECONCILIATION_BLOCKED"
+  end
   if self.missionsByRequestId[request.id] then
     return nil, "REQUEST_ALREADY_DISPATCHED"
   end
+
   for _, profile in ipairs(self.profiles) do
-    -- Validate the complete physical dispatch target before creating the
-    -- CampaignState reservation, so a profile wiring error cannot strand one.
+    -- AIRWING owns resource admission: payload registration and AddMission happen
+    -- before, and independently of, CampaignState settlement.
     local airwing = self:_Airwing(profile)
     local squadron = self:_Squadron(profile)
-    local reservation, reason = self.campaignAdapter:Reserve(request.id, profile)
-    if reservation then
-      self:_RegisterPayload(airwing, profile)
-      local mission = self:_BuildMission(request, profile, squadron)
-      airwing:AddMission(mission)
-      log("MISSION_QUEUED requestId=" .. request.id .. " mission=" .. mission.name
-        .. " platform=" .. profile.platformId .. " airwing=" .. tostring(profile.airwingKey or "Main")
-        .. " squadron=" .. profile.squadronKey)
-      self.missionsByRequestId[request.id] = {
-        requestId = request.id,
-        request = request,
-        profileId = profile.id,
-        platformId = profile.platformId,
-        transactionId = reservation.transactionId,
-        mission = mission,
-        squadron = squadron,
-      }
-      return self.missionsByRequestId[request.id]
-    end
-    if reason ~= "RESOURCE_UNAVAILABLE" then
-      return nil, reason
-    end
+    self:_RegisterPayload(airwing, profile)
+    local mission = self:_BuildMission(request, profile, squadron)
+    local record = {
+      requestId = request.id,
+      request = request,
+      profileId = profile.id,
+      profile = profile,
+      platformId = profile.platformId,
+      mission = mission,
+      squadron = squadron,
+    }
+    self.missionsByRequestId[request.id] = record
+    airwing:AddMission(mission)
+    log("MISSION_QUEUED requestId=" .. request.id .. " mission=" .. mission.name
+      .. " platform=" .. profile.platformId .. " airwing=" .. tostring(profile.airwingKey or "Main")
+      .. " squadron=" .. profile.squadronKey .. " authority=MOOSE_AIRWING_QUEUE")
+    return record
   end
-  return nil, "NO_AVAILABLE_ISR_ASSET"
+
+  return nil, "NO_ISR_PROFILE"
 end
 
 function Dispatcher:CancelRequest(requestId)
