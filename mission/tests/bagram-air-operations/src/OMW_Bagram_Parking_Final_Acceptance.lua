@@ -172,7 +172,8 @@ local function inspectPhysicalParking(key, opsGroup)
   for _, unit in ipairs(units) do
     result.unitsMaterialized = result.unitsMaterialized + 1
     local coordinate = unit:GetCoordinate()
-    local spot, distance = coordinate and nearestParkingSpot(coordinate) or nil, nil
+    local spot = nil
+    local distance = nil
     if coordinate then
       spot, distance = nearestParkingSpot(coordinate)
     end
@@ -240,7 +241,8 @@ local function handleOpsOnMission(opsGroup, mission)
   local key = result.missionToKey[mission]
   if not key then
     result.unexpectedMissions = result.unexpectedMissions + 1
-    fail(string.format("DISPATCH_EVENT status=FAIL reason=UNEXPECTED_MISSION group=%s mission=%s", tostring(opsGroup and opsGroup:GetName()), tostring(mission and mission:GetName())))
+    local missionId = mission and (mission.name or mission.auftragsnummer or mission.type) or "nil"
+    fail(string.format("DISPATCH_EVENT status=FAIL reason=UNEXPECTED_MISSION group=%s mission=%s", tostring(opsGroup and opsGroup.GetName and opsGroup:GetName()), tostring(missionId)))
     return
   end
   if result.seenMissions[mission] then
