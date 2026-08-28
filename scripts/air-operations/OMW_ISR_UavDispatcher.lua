@@ -265,6 +265,8 @@ function Dispatcher:_CompleteAfterPhysicalRecovery(record)
   if self.onMissionDone then self.onMissionDone(record.request, record.mission) end
   if self.onMissionRecovered then
     self.onMissionRecovered(record.request, record.mission, {
+      takeoffConfirmed = record.takeoffConfirmed == true,
+      turnoverWaived = turnoverWaived == true,
       turnoverSeconds = turnoverSeconds,
       turnoverReason = turnoverReason,
     })
