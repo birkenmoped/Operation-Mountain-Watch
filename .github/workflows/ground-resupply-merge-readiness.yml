@@ -23,6 +23,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          git branch main origin/main
           python3 tools/finalize-ground-resupply-merge-readiness.py
           python3 tools/validate_documentation.py .
           python3 tools/validate_documentation.py --main .
