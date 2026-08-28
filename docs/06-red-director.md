@@ -1,45 +1,52 @@
+---
+document_id: OMW-RED-DIRECTOR
+status: SUPERSEDED
+document_class: HISTORICAL_ARCHITECTURE
+owning_policy: OMW-GOV-001
+authoritative_for:
+  - historical early Red Director design
+not_authoritative_for:
+  - current RED production architecture
+scenario_period: 2010-08-01/2011-12-31
+project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
+supersedes:
+superseded_by:
+  - OMW-ARCH-CAMPAIGN-DYNAMIC-MISSION
+  - OMW-GOV-001
+source_branch: agent/complete-documentation-authority-migration
+source_commit: 666ef7a4a6fad52cc1aaecc7d0953e4d112dc8ff
+validated_in_dcs: false
+---
+
 # 06 – Red Director
 
-## Informationslage
+## Status
 
-Rot kennt permanente blaue Airbases und FOBs grundsätzlich. Abstrakte Informanten melden größere Konvois, Bauarbeiten und sichtbare Truppenbewegungen mit variabler Verzögerung und Genauigkeit. Eine physische Spitzel-KI wird nicht simuliert.
+`SUPERSEDED` als aktuelle Produktionsarchitektur.
 
-## Zellzustände
+Der frühere Red-Director-Entwurf bleibt als historischer Architekturstand erhalten:
 
-- `DORMANT`
-- `SELECT_TARGET`
-- `PREPARE`
-- `ASSEMBLE`
-- `MOVE`
-- `ATTACK`
-- `WITHDRAW`
-- `DISPERSED`
-- `REBUILDING`
-- `DESTROYED`
+- [`Legacy-Red-Director`](evidence/source-records/legacy-06-red-director.md)
 
-## Zielauswahl
+Aktuell verbindlich ist:
 
-Ziele werden anhand strategischer Bedeutung, Verteidigungsstärke, Versorgungslage, Entfernung, bekannter Route, eigener Verluste und blauer Luftüberwachung bewertet.
+- [`OMW-ARCH-CAMPAIGN-DYNAMIC-MISSION`](37-campaign-architecture-and-dynamic-mission-design.md)
 
-## Operationstypen
+## Fortgeführte Grundideen
 
-- Straßenhinterhalt
-- Angriff auf Patrouille oder Fahrzeuggruppe
-- Mörser- oder Raketenangriff
-- Raid auf FOB oder Logistikpunkt
-- koordinierter Großangriff
-- Such- und Capture-Team für abgeschossene Piloten
+- RED besitzt begrenzte regionale Ressourcen und Informationsstände.
+- Zielauswahl berücksichtigt strategische Bedeutung, Entfernung, Risiko, Versorgung, BLUE-Präsenz und eigene Verluste.
+- Operationen besitzen Vorbereitung, Bewegung, Angriff, Rückzug und strategische Folgen.
+- RED-Gruppen sollen sich bei hohen Verlusten zurückziehen oder zerstreuen, statt zwingend bis zur Vernichtung zu kämpfen.
+- Regeneration entsteht über Netzwerke und Ressourcen, nicht über einen reinen Respawn-Timer.
 
-Kampfgruppen bestehen üblicherweise aus mindestens fünf Personen. Kleinere Elemente sind als Spotter, Kuriere oder Vorhut zulässig.
+## Ersetzte Annahmen
 
-## Verluste und Rückzug
+Die aktuelle Produktionsrichtung verwendet keine starre einzelne Zell-FSM als vollständige RED-Architektur. Maßgeblich sind:
 
-Rote Gruppen sollen bei hohen Verlusten nicht bis zur vollständigen Vernichtung weiterkämpfen. Rückzug erfolgt zu vorbereiteten Punkten mit kurzen, geprüften Routen. Nach ausreichender Entfernung und ohne Beobachtung können Überlebende wieder virtualisiert werden.
-
-## Wiederaufbau
-
-Zellen ersetzen Personal, Waffen, Fahrzeuge und Camps mit Verzögerung. Die Geschwindigkeit hängt von regionalem Einfluss, vorhandenen Verstecken, Verlusten und blauem Druck ab.
-
-## Spielerzahlskalierung
-
-Ein gegnerisches Bedrohungsbudget wird aus Zahl und Rollen aktiver Spieler abgeleitet und geglättet. Es beeinflusst parallele Operationen und verfügbare Mittel. Kurzfristige Verbindungswechsel dürfen keine unmittelbaren Großangriffe auslösen.
+- gewichtete Kommando-, Bewegungs- und Personalnetze;
+- mehrere Quellen und alternative Wege;
+- getrennte Standort- und Operationszustände;
+- Guard Floor, Readiness Target und Hard Capacity;
+- bounded command cycles;
+- MOOSE-first für physische Ausführung und Überwachung.

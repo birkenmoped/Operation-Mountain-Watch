@@ -1,239 +1,332 @@
+---
+document_id: OMW-UNIT-CATALOG
+status: PLANNED
+document_class: TEMPLATE_AND_UNIT_CATALOG
+owning_policy: OMW-GOV-001
+authoritative_for:
+  - planned identifier and metadata model for DCS units and templates
+  - naming separation between templates, runtime groups and strategic entities
+not_authoritative_for:
+  - final complete unit catalog
+  - unverified DCS type names
+scenario_period: 2010-08-01/2011-12-31
+project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
+supersedes:
+superseded_by:
+source_branch: agent/complete-documentation-authority-migration
+source_commit: d2f45fa6424f22cbd13dd0cbfb9c59e7b0466a16
+validated_in_dcs: false
+---
+
 # 13 – Einheiten- und Templatekatalog
 
-## Ziel
+## 1. Zweck
 
-Der Katalog beschreibt nur Einheiten, Gruppen und Luftfahrzeuge, die in der Kampagne tatsächlich verwendet werden. Eine vollständige Kopie aller DCS-Einheiten ist nicht erforderlich.
+Der Katalog umfasst nur Einheiten, Gruppen, Templates und Luftfahrzeuge, die in der Kampagne tatsächlich verwendet werden.
 
-## Vier getrennte Identifikatoren
+Der vollständige frühere Katalogentwurf bleibt unverändert erhalten:
 
-### DCS-Typname
+- [`Legacy-Einheiten- und Templatekatalog`](evidence/source-records/legacy-13-unit-catalog.md)
 
-Der von `Unit:getTypeName()` zurückgegebene interne Typname identifiziert ein konkretes Fahrzeug, einen Soldaten oder ein Luftfahrzeug. Er wird für Persistenz, Verlustauswertung, Klassifizierung und Template-Validierung benötigt.
+Historische Einheits-, Standort-, Zeitraum- und Stärkenbelege werden aus folgender Referenz übernommen:
 
-### Mission-Editor-Gruppenname
+- [`OMW-HIST-AFGHANISTAN-FORCE-BASING-AVIATION`](50-afghanistan-force-basing-aviation-2010-2011.md)
 
-MOOSE `SPAWN` referenziert primär den Namen einer auf `Late Activation` gesetzten Template-Gruppe.
+Die Aufnahme einer historischen Einheit in die Recherche erzeugt noch kein DCS-Template und keinen aktiven CampaignState-Bestand.
 
-Beispiel:
+## 2. Vier getrennte Identifikatoren
 
-```lua
-local spawn = SPAWN:New("TPL_RED_CELL_INF_SMALL_01")
-```
+1. DCS-Typname aus der tatsächlich verwendeten DCS-Version;
+2. Mission-Editor-Gruppenname des Templates;
+3. Mission-Editor-/Laufzeit-Einheitenname;
+4. stabile strategische CampaignState-Entity-ID.
 
-### Mission-Editor-Einheitenname
+DCS- und MOOSE-Laufzeitnamen dürfen nicht als persistente strategische Primärschlüssel verwendet werden.
 
-Jede einzelne Einheit innerhalb eines Templates besitzt einen eigenen Namen. Diese Namen sind nicht als dauerhafte strategische IDs zu verwenden, da MOOSE beim Spawn Laufzeitsuffixe ergänzt.
-
-### Strategische Entity-ID
-
-Die Kampagne vergibt eine eigene persistente ID, die unabhängig von einer konkreten DCS-Gruppe bestehen bleibt.
-
-Beispiel:
+Zusätzlich besitzt jede historisch abgeleitete Einheit einen stabilen Research-Identifier:
 
 ```text
-RED_CELL_KUNAR_003_ASSAULT_GROUP_02
+HIST_<NATION>_<UNIT>_<PERIOD_OR_ROTATION>
 ```
 
-## Namenskonventionen
+Research-Identifier und aktive CampaignState-Entity-ID sind nicht identisch.
 
-Template-Gruppen verwenden:
+## 3. Namensregeln
 
 ```text
 TPL_<COALITION>_<ROLE>_<VARIANT>
 ```
 
-Beispiele:
+Das Zeichen `#` wird in eigenen Template- und Aliasnamen nicht verwendet, weil MOOSE es für Laufzeitsuffixe nutzt.
 
-- `TPL_RED_CELL_INF_SMALL_01`
-- `TPL_RED_CELL_ASSAULT_01`
-- `TPL_RED_MORTAR_TEAM_01`
-- `TPL_RED_CAPTURE_TEAM_01`
-- `TPL_BLUE_CONVOY_SUPPLY_LIGHT_01`
-- `TPL_BLUE_CONVOY_SECURITY_01`
-- `TPL_BLUE_QRF_LIGHT_01`
-- `TPL_BLUE_FOB_GARRISON_MEDIUM_01`
-- `TPL_BLUE_ENGINEER_TEAM_01`
+## 4. Pflichtmetadaten je Template
 
-Das Zeichen `#` wird in Template-Namen nicht verwendet, da MOOSE es für Laufzeitnamen erzeugter Gruppen nutzt.
+### 4.1 Technische Felder
 
-## Benötigte blaue Rollen
+- Template-Gruppenname;
+- Koalition und Land;
+- operative Rolle;
+- Zusammensetzung und Gruppengröße;
+- bestätigte DCS-Typnamen;
+- Skill, Formation, Bewaffnung und Loadout;
+- Ressourcen- und Wiederbeschaffungskosten;
+- Transport- oder Frachtkapazität;
+- erlaubte Missionsarten und Geländearten;
+- Modul- oder Modabhängigkeiten;
+- DCS- und MOOSE-Validierungsstatus.
 
-- leichter Versorgungskonvoi
-- schwerer Versorgungskonvoi
-- Konvoisicherung
-- leichte QRF
-- mechanisierte QRF
-- FOB-Garnison
-- Ingenieurgruppe
-- Mörsergruppe
-- MEDEVAC- und CSAR-Team
-- afghanischer Kontrollpunkt
-- ANA-Infanterie
-- ANP- und Grenzpolizeiposten
+### 4.2 Historische Provenienzfelder
 
-## Benötigte rote Rollen
+Jede historisch begründete Einheit beziehungsweise Variante führt zusätzlich:
 
-- kleine Infanteriezelle
-- mittlere Infanteriezelle
-- Angriffsgruppe
-- Hinterhaltgruppe
-- RPG-Team
-- Maschinengewehrteam
-- Mörserteam
-- Technical-Gruppe
-- Aufklärer oder Spotter
-- Kurier
-- Capture-Team
-- Camp-Garnison
-- Nachschubgruppe
-
-Rote Kampfgruppen bestehen üblicherweise aus mindestens fünf Personen. Kleinere Elemente sind für Spotter, Kuriere oder Vorhut zulässig.
-
-## Template-Metadaten
-
-Für jedes Gruppentemplate werden dokumentiert:
-
-- Template-Gruppenname
-- Koalition und Land
-- operative Rolle
-- Einheitenzusammensetzung
-- DCS-Typnamen
-- Skill und Formation
-- Bewaffnung oder Loadout
-- Bedrohungswert
-- Ressourcen- und Wiederbeschaffungskosten
-- Transport- oder Frachtkapazität
-- virtuelle Durchschnittsgeschwindigkeit
-- erlaubte Missionsarten
-- geeignetes Gelände
-- Rückzugsschwelle
-- erforderliche Module oder Mods
-
-## Beispielstruktur
-
-```yaml
-template_name: TPL_BLUE_CONVOY_SUPPLY_LIGHT_01
-coalition: BLUE
-country: USA
-role: SUPPLY_CONVOY
-composition:
-  - catalog_role: CARGO_TRUCK
-    count: 4
-  - catalog_role: SECURITY_VEHICLE
-    count: 2
-cargo:
-  ammunition: 30
-  fuel: 20
-  construction: 10
-virtual_speed_kph: 30
-retreat_threshold: 0.35
+```text
+historicalResearchId
+historicalSourceIds
+evidenceClass
+effectiveFrom
+effectiveTo
+homeBase
+forwardDetachments
+parentPoolId
+strengthValue
+strengthBasis
+configurationNotes
+sourceConflict
+activeDecisionSource
 ```
 
-## Erfassung interner DCS-Namen
+Bedeutung:
 
-Interne Typnamen werden nicht aus unsicheren Tabellen abgeschrieben. Eine Testmission enthält alle ausgewählten Templates. Ein Debugskript protokolliert für jede Gruppe:
+- `historicalSourceIds`: Quellen-IDs aus Dokument 50;
+- `evidenceClass`: beispielsweise `DIRECT_OFFICIAL`, `SECONDARY`, `VISUAL_CONFIRMED`;
+- `effectiveFrom/effectiveTo`: belegter oder begrenzter Zeitraum;
+- `homeBase`: ausdrücklich belegter Haupt- oder Einsatzstandort;
+- `forwardDetachments`: vorgeschobene, vom Parent-Pool abzuziehende Elemente;
+- `strengthValue`: nur bei belegter oder ausdrücklich als Schätzung gekennzeichneter Stärke;
+- `strengthBasis`: Quelle, Berechnung oder bewusste Projektentscheidung;
+- `configurationNotes`: Varianten, Selbstschutz, Bewaffnung oder DCS-Ersatz;
+- `sourceConflict`: offene widersprüchliche Angaben;
+- `activeDecisionSource`: bei aktiver Verwendung grundsätzlich Dokument 19 oder ein nicht widersprechendes Basenmanifest.
 
-- Gruppenname
-- Einheitenname
-- `Unit:getTypeName()`
-- Koalition und Land
+## 5. Historische Research-Einträge
 
-Dadurch stammen die Strings aus der tatsächlich installierten DCS-Version.
+Die folgenden Einträge sind **Rechercheobjekte**, keine automatisch aktiven Templates oder Bestände.
 
-## Luftfahrzeugrollen
-
-Für die erste Kampagnenplanung sind folgende Module oder Rollen vorgesehen:
-
-- A-10C: CAS und Armed Overwatch
-- F-16C: CAS, Präzisionsangriff und Air Presence
-- F-15E: größere Präzisions- und Nachtangriffe
-- F/A-18C: externe Trägerunterstützung
-- AH-64D: Attack Aviation
-- OH-58D: Aufklärung und Zielzuweisung
-- CH-47F: primärer schwerer taktischer Transport mit interner Fracht und Außenlast
-- UH-1H: leichter taktischer Transport mit interner Fracht und Außenlast
-- UH-60: AI- oder Skriptplattform für Transport, MEDEVAC und Verbindung
-- UH-60L Community Mod: optionale spielbare Transportplattform mit versionsabhängigen internen und externen Frachtpfaden
-- C-130J: regionaler Lufttransport mit gelandeter Lieferung und Luftabwurf
-
-Die Liste beschreibt Kampagnenfunktionen, nicht automatisch eine dauerhafte Stationierung jedes Typs an jeder Basis.
-
-## Transportfähigkeitsprofil
-
-Jede Transportplattform erhält ein explizites Fähigkeitsprofil. Interne Fracht und Außenlast sind getrennte Fähigkeiten und dürfen nicht in einem allgemeinen Feld `cargo=true` zusammengefasst werden.
-
-Zu dokumentierende Felder:
-
-- `transport_mode`: `GROUND`, `ROTARY_WING` oder `FIXED_WING`
-- `internal_cargo`: ja oder nein
-- `internal_cargo_interface`: `NATIVE`, `CTLD`, `ADAPTER` oder `NONE`
-- `internal_cargo_types`: zum Beispiel Kisten, Paletten, Personal oder Verwundete
-- `internal_weight_limit`
-- `internal_volume_limit`
-- `sling_load`: ja oder nein
-- `sling_load_interface`: `NATIVE`, `CTLD`, `ADAPTER` oder `NONE`
-- `sling_hook_count`
-- `sling_weight_limit`
-- `troop_capacity`
-- `requires_runway`: ja oder nein
-- `requires_landing_zone`: ja oder nein
-- `supports_airdrop`: ja oder nein
-- `supports_landed_delivery`: ja oder nein
-- `requires_mod`: ja oder nein
-- `historical_status`: verbindlich, plausibel, optional oder ahistorische Gameplay-Alternative
-
-Beispiel:
+### 5.1 TF Lighthorse / 3-17 CAV
 
 ```yaml
-platform: CH-47F
-transport_mode: ROTARY_WING
-internal_cargo: true
-internal_cargo_interface: NATIVE
-internal_cargo_types:
-  - CRATE
-  - PALLET
-  - PERSONNEL
-sling_load: true
-sling_load_interface: NATIVE
-sling_hook_count: 1
-requires_landing_zone: true
-requires_mod: false
+historicalResearchId: HIST_US_3_17_CAV_TF_LIGHTHORSE_2009_2010
+unit: 3rd Squadron, 17th Cavalry Aviation Regiment
+rotationName: Task Force Lighthorse
+homeBase: Jalalabad Airfield / FOB Fenty
+effectiveFrom: 2009-11
+effectiveTo: 2010-11-18
+aircraftFamilies:
+  - OH-58D
+  - AH-64D
+  - UH-60
+  - CH-47
+historicalSourceIds: [S08]
+evidenceClass: DIRECT_OFFICIAL
+strengthValue: null
+strengthBasis: Rotation performance is documented; local aircraft count is not stated by S08
+activeDecisionSource: OMW-AIR-ACTIVE-ORBAT
 ```
 
-Die UH-1H erhält dasselbe zweigeteilte Profil. Die exakten Schnittstellen, Gewichtsgrenzen und unterstützten Frachtobjekte werden aus der installierten DCS- und MOOSE-Version ermittelt und im Testprotokoll festgehalten.
+### 5.2 TF Shooter / 6-6 CAV
 
-## Transport-Testmatrix
+```yaml
+historicalResearchId: HIST_US_6_6_CAV_TF_SHOOTER_2010_2011
+unit: 6th Squadron, 6th Cavalry Aviation Regiment
+rotationName: Task Force Shooter
+homeBase: Jalalabad Airfield / FOB Fenty
+effectiveFrom: 2010-11-18
+effectiveTo: 2011
+historicalSourceIds: [S08, S05]
+evidenceClass: DIRECT_OFFICIAL
+strengthValue: null
+strengthBasis: Historical task-force presence; active OMW strength is a separate project decision
+activeDecisionSource: OMW-AIR-ACTIVE-ORBAT
+```
 
-Mindestens folgende Kombinationen werden separat geprüft:
+### 5.3 2-17 CAV / Task Force Destiny
 
-| Plattform | Interne Fracht | Außenlast |
-|---|---:|---:|
-| CH-47F | erforderlich | erforderlich |
-| UH-1H | erforderlich | erforderlich |
-| UH-60L Community Mod | optional | optional |
+```yaml
+historicalResearchId: HIST_US_2_17_CAV_TF_DESTINY_2010
+unit: 2nd Squadron, 17th Cavalry Regiment
+elements:
+  - Delta Troop OH-58D pilots and maintenance
+  - E Troop FARP personnel
+homeBase: Kandahar Airfield
+forwardDetachments:
+  - FOB Wilson FARP
+  - FOB Wolverine Banshee detachment context
+historicalSourceIds: [S12, S13, S14]
+evidenceClass: CORROBORATED
+strengthValue: null
+strengthBasis: Local presence and functions documented; complete squadron inventory not stated
+activeDecisionSource: null
+```
 
-Jeder Test erfasst Laden, Flug, Entladen beziehungsweise Absetzen, Verlustfall und genau einmalige Ressourcengutschrift.
+Die genaue organisatorische Zuordnung des Banshee-Detachments bleibt nach der Quellenformulierung gesondert zu prüfen und wird nicht allein aus dem Troop-Namen abgeleitet.
 
-## Mod-Politik
+### 5.4 B Company, 2-3 Aviation
 
-Der Kern der Kampagne soll ohne verpflichtende Community-Mods funktionieren. Ein optionaler UH-60L-Mod kann zusätzliche Spielerslots und Transportoptionen bieten, darf aber nicht dazu führen, dass Spieler ohne Mod den Server oder die Mission nicht nutzen können.
+```yaml
+historicalResearchId: HIST_US_B_2_3_AVN_BGRM_2010
+unit: B Company, 2d Battalion, 3d Aviation Regiment
+aircraftFamily: CH-47
+homeBase: Bagram Airfield
+effectiveFrom: 2010
+effectiveTo: 2010
+historicalSourceIds: [S05]
+evidenceClass: SECONDARY
+strengthValue: 2
+strengthBasis: At least two Bagram aircraft directly participated in Operation Talon Purge; not total company strength
+sourceConflict: null
+```
 
-Für jede Mod-Abhängigkeit müssen dokumentiert werden:
+### 5.5 168th Aviation / FOB Shank Element
 
-- Download- und Versionsquelle
-- Multiplayer-Kompatibilität
-- Update- und Wartungsaufwand
-- Verhalten bei fehlendem Mod
-- Auswirkungen auf Missionsdatei und Serverstart
-- Ersatz durch Core-, AI- oder Skriptplattformen
+```yaml
+historicalResearchId: HIST_US_168_AVN_SHANK_2010
+unit: 168th Aviation Regiment element
+aircraftFamily: CH-47
+homeBase: FOB Shank
+effectiveFrom: 2010
+effectiveTo: 2010
+historicalSourceIds: [S05]
+evidenceClass: SECONDARY
+strengthValue: 2
+strengthBasis: Working Paper explicitly describes two Chinooks in the cited phase
+sourceConflict: Main text says D Company 1-169 AVN; footnote says B Company 1-169 GSAB
+```
 
-## Noch zu entscheiden
+### 5.6 B Company, 3-10 GSAB
 
-- konkrete DCS-Typen je Rolle
-- Länderzuordnung für afghanische Einheiten und verfügbare Assets
-- endgültige Mod-Politik für den UH-60L
-- Skill-Stufen und Gruppengrößen
-- Bedrohungs- und Ressourcenkosten
-- genaue Luftfahrzeug-Slots und historische Verfügbarkeit
-- gemessene interne Fracht- und Außenlastkapazitäten je Plattform
-- unterstützte DCS-, MOOSE-CTLD- und Adapterpfade je Plattform
+```yaml
+historicalResearchId: HIST_US_B_3_10_GSAB_RCE_2010
+unit: B Company, 3d Battalion, 10th General Support Aviation Battalion
+aircraftFamily: CH-47
+homeBase: split-based
+forwardDetachments:
+  - Jalalabad: direct support
+  - Bagram: RC-East general support
+effectiveFrom: 2010
+effectiveTo: 2011
+historicalSourceIds: [S05]
+evidenceClass: SECONDARY
+strengthValue: null
+strengthBasis: Several aircraft at Jalalabad; exact local split not given
+```
+
+### 5.7 B Company, 7-158 AVN
+
+```yaml
+historicalResearchId: HIST_US_B_7_158_AVN_RCE_2011
+unit: B Company, 7th Battalion, 158th Aviation Regiment
+aircraftFamily: CH-47
+homeBase: FOB Salerno
+forwardDetachments:
+  - Bagram Airfield
+  - FOB Shank
+effectiveFrom: 2011-04
+effectiveTo: 2011
+historicalSourceIds: [S05]
+evidenceClass: SECONDARY
+strengthValue: 25
+strengthBasis: 19 organic CH-47 plus 6 aircraft and crews from B/2-135 GSAB
+sourceConflict: Exact 25-aircraft split by location is not stated
+```
+
+### 5.8 159th CAB CH-47 Elements
+
+```yaml
+historicalResearchId: HIST_US_159_CAB_CH47_RCS_2011
+parentUnit: 159th Combat Aviation Brigade
+elements:
+  - B Company, 7-101 AVN: CH-47F
+  - B Company, 1-171 AVN: CH-47D
+  - B Company, 1-52 AVN: CH-47D
+homeBase: Kandahar Airfield
+forwardDetachments:
+  - Tarinkot
+  - FOB Wolverine
+effectiveFrom: 2011-02
+effectiveTo: 2011
+historicalSourceIds: [S05]
+evidenceClass: SECONDARY
+strengthValue: null
+strengthBasis: Majority at Kandahar; platoons forward; exact local split incomplete
+sourceConflict: B/1-171 is also described as split-based at Bagram, Kandahar, Salerno and Shank
+```
+
+### 5.9 USAF-Stichtagseinheiten
+
+S06 darf für folgende Research-Einträge verwendet werden:
+
+- Bagram: 774 EAS/C-130J, 41 EECS/EC-130H, 492 EFS/F-15E, 510 EFS/F-16C, 4 ERS/MC-12W, 56 RQS/HH-60G, VMAQ-3/EA-6B;
+- Kandahar: 702 EAS/C-27J, 772 EAS/C-130J, 42 EATKS/MQ-9, 75 EFS/A-10C, 62 ERS/MQ-1B, 26 und 46 RQS/HH-60G;
+- Shindand: 838 AEAG/444 AEAS;
+- Jalalabad, Kabul, Herat und Mazar-e Sharif: Air-Advisor-Elemente.
+
+Für alle diese Einträge gilt:
+
+```yaml
+effectiveDate: 2011-09-30
+strengthValue: null
+strengthBasis: Unit presence list without aircraft count
+scopeWarning: USAF/AETF-A centered; not a complete Army aviation ORBAT
+```
+
+## 6. Konfigurationsmetadaten OH-58D
+
+Für OH-58D-Templates beziehungsweise Livery-/Static-Varianten dürfen folgende quellenqualifizierte Hinweise geführt werden:
+
+| Konfiguration | Zeitraum/Ort | Evidenz | Quelle |
+|---|---|---|---|
+| sichtbarer AN/ALQ-144-Familien-Störsender | 31.01.2011, Kandahar | `VISUAL_CONFIRMED` | Dokument 50, S10 |
+| M260-artiger Siebenrohr-Raketenbehälter | 31.01.2011, Kandahar | `VISUAL_CONFIRMED` auf Systemfamilienebene | S10 |
+| gegenüberliegender Zweifachträger mit wahrscheinlich zwei Hellfire | 31.01.2011, Kandahar | `VISUAL_PROBABLE` | S10 |
+| kein sichtbarer AN/ALQ-144 an zwei Maschinen | März 2012, Jalalabad | `POST_PERIOD_CONTEXT` | S16 |
+| Raketen und .50-cal-Bewaffnung | März 2012, Jalalabad | `POST_PERIOD_CONTEXT` | S16 |
+
+Ein Test-Fire-Foto legt keine Standardhäufigkeit fest. Exakte Hellfire-Untervarianten werden nicht geraten.
+
+## 7. Missionsrollen als Templatefamilien
+
+Quellenbasierte Templatefamilien:
+
+```text
+TPL_BLUE_RECON_OH58D_TWO_SHIP
+TPL_BLUE_ESCORT_AH64D_TWO_SHIP
+TPL_BLUE_AIR_ASSAULT_CH47_TWO_SHIP
+TPL_BLUE_AIR_ASSAULT_CH47_FOUR_SHIP
+TPL_BLUE_UTILITY_UH60_TWO_SHIP
+TPL_BLUE_MEDEVAC_UH60_LEAD
+TPL_BLUE_MEDEVAC_UH60_COVER
+TPL_BLUE_FARP_SUPPORT
+TPL_BLUE_FIXED_WING_CAS
+TPL_BLUE_FIXED_WING_OVERWATCH
+```
+
+Die Templategröße ist keine Bestandszahl. `SQUADRON:New(..., Ngroups, ...)` zählt Gruppen und muss gegen die jeweilige Template-Gruppengröße umgerechnet werden.
+
+## 8. Validierungsregel
+
+Interne DCS-Typnamen werden aus der verwendeten DCS-Version per Testmission und Diagnose ausgelesen. Unsichere externe Listen gelten nicht als technische Wahrheit.
+
+Vor Aktivierung eines historisch abgeleiteten Templates sind zu prüfen:
+
+- Quelle und Evidenzklasse;
+- aktive Entscheidung in Dokument 19;
+- korrekte Parent-/Detachment-Abbuchung;
+- DCS-Typname;
+- Payload und Livery;
+- Gruppenstärke gegen logischen Bestand;
+- Parking und Rotorabstand;
+- MOOSE-AIRWING-/SQUADRON-Verhalten;
+- Modabhängigkeiten;
+- DCS- und MOOSE-Version.
+
+Die konkrete Template-Bibliothek und die Spawnstrategie stehen in Dokument 15. Aktive Luftfahrzeugbestände und Client-Grenzen stehen in Dokument 19.

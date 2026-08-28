@@ -1,96 +1,82 @@
+---
+document_id: OMW-THEATER-SECTORS
+status: BINDING
+document_class: THEATER_MODEL
+owning_policy: OMW-GOV-001
+authoritative_for:
+  - campaign spatial hierarchy and sector model
+  - required semantic location metadata
+not_authoritative_for:
+  - final Mission Editor polygon geometry
+scenario_period: 2010-08-01/2011-12-31
+project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
+supersedes:
+  - vertical-prototype-only spatial sequencing
+superseded_by:
+source_branch: agent/complete-documentation-authority-migration
+source_commit: 666ef7a4a6fad52cc1aaecc7d0953e4d112dc8ff
+validated_in_dcs: false
+---
+
 # 10 – Operationsraum und Sektoren
 
-## Räumliche Staffelung
+## 1. Räumliche Ebenen
 
-Die Kampagne verwendet vier räumliche Ebenen.
+Die Kampagne verwendet vier Ebenen:
 
-### Strategischer Raum
+- strategischer Raum: Bagram, Kabul und weitere Theaterknoten;
+- operativer Raum: Jalalabad/Fenty, Laghman, Kabul River Valley und regionale Zugänge;
+- taktischer Hauptkampfraum: Kunar River Valley, Pech Valley, Seitentäler und Nuristan-Zugänge;
+- Erweiterungsräume: weitere Regionen innerhalb der DCS-Karte und des Kampagnenzeitraums.
 
-- Bagram Airfield
-- Kabul
-- Jalalabad
+Der vollständige frühere Sektorentwurf bleibt unverändert erhalten:
 
-Dieser Raum bildet Führung, zentrale Reserven, Personalbewegung, schwere Wartung und strategischen Lufttransport ab.
+- [`Legacy-Operationsraum und Sektoren`](evidence/source-records/legacy-10-theater-and-sectors.md)
 
-### Operativer Raum
+Der frühere vertikale Prototyp begrenzt die aktuelle Foundation-Build-Reihenfolge nicht.
 
-- Jalalabad und FOB Fenty
-- Kabul River Valley
-- Laghman
-- Zugänge nach Kunar
+## 2. Sektormodell
 
-Hier werden regionale Logistik, QRF, Hubschrauberoperationen, Aufklärung und Einsatzplanung organisiert.
+Jeder Sektor benötigt mindestens:
 
-### Taktischer Hauptkampfraum
+```text
+sectorId
+displayName
+missionEditorZone
+terrainProfile
+accessProfile
+blueInfluence
+redInfluence
+locations
+routes
+passesAndChokepoints
+supplyLinks
+materializationPolicy
+```
 
-- Kunar River Valley
-- Pech Valley
-- angrenzende Seitentäler
-- Zugänge nach Nuristan
+Vorläufige ID-Familien dürfen weiterverwendet werden, endgültige Grenzen werden jedoch im Mission Editor und anhand der DCS-Terrainrealität geprüft.
 
-Dieser Raum bildet abgelegene Außenposten, Gebirgsoperationen, Mörserangriffe, Hinterhalte und grenznahe gegnerische Netzwerke ab.
+## 3. Ortsmodell
 
-### Erweiterungsraum
+Erfasst werden nur Orte mit strategischer, taktischer oder spielerischer Funktion:
 
-- Kapisa
-- Logar
-- Ghazni
-- Khost
-- Bamyan
+- Airbases, FOBs, COPs und Checkpoints;
+- Städte und Dörfer an relevanten Routen;
+- Pässe, Täler, Brücken und Flussquerungen;
+- Camps, Hide Sites, Caches und Rückzugsräume;
+- Landezonen, Drop Zones und Transferpunkte.
 
-Diese Gebiete bleiben zunächst außerhalb des vertikalen Prototyps und dienen späteren Kampagnenphasen oder multinationalen Nebenoperationen.
+Jeder Ort erhält eine stabile ID und einen validierten DCS-Anker. F10-Kartenbezeichnungen oder externe Koordinaten werden nicht ungeprüft als DCS-Wahrheit übernommen.
 
-## Geplante Sektorstruktur
+## 4. RED-Geografie
 
-Die endgültigen Grenzen werden im DCS Mission Editor als Polygonzonen festgelegt. Vorläufige logische Sektoren sind:
+Täler, Pässe, Seitentäler und grenznahe Wege bestimmen Bewegung, Versorgung und Rückzug. RED-Regeneration entsteht über nachvollziehbare Verbindungen und wird durch Aufklärung, Festnahmen, zerstörte Lager und gesperrte Routen beeinflusst.
 
-- `SECTOR_BAGRAM_STRATEGIC`
-- `SECTOR_KABUL_REAR`
-- `SECTOR_JALALABAD_FENTY`
-- `SECTOR_NANGARHAR_EAST`
-- `SECTOR_LAGHMAN`
-- `SECTOR_KUNAR_RIVER`
-- `SECTOR_PECH_VALLEY`
-- `SECTOR_NURISTAN_APPROACHES`
-- `SECTOR_BORDER_NETWORK`
+## 5. Noch zu erfassen
 
-Jeder Sektor erhält mindestens:
-
-- stabile ID und Anzeigename
-- Missionseditor-Zone
-- Gelände- und Zugangsprofil
-- blaue und rote Einflusswerte
-- bekannte Straßen, Pässe und Täler
-- relevante Basen, Dörfer und Kontrollpunkte
-- mögliche Camps, Hide Sites und Rückzugsräume
-- Nachschub- und Regenerationsverbindungen
-
-## Ortsmodell
-
-Es wird keine vollständige Datenbank aller afghanischen Orte benötigt. Erfasst werden nur Orte mit spielerischer oder strategischer Funktion:
-
-- Airbases und FOBs
-- Städte und Dörfer entlang verwendeter Routen
-- Pässe, Engstellen und Flussquerungen
-- Checkpoints und Beobachtungsstellungen
-- Camp-, Hinterhalt- und Rückzugsräume
-- Landezonen und Drop Zones
-
-Jeder relevante Ort wird über eine Mission-Editor-Zone oder einen validierten Anker referenziert.
-
-## Gegnerspezifische Geografie
-
-Täler und Seitentäler bilden natürliche Operationsräume regionaler Zellen. Bergpässe, Flussachsen und grenznahe Wege bestimmen Bewegung, Nachschub und Rückzug. Mehrere Zellen können sich zeitweise für einen größeren Angriff zusammenschließen und danach wieder in lokale Netzwerke zerfallen.
-
-Rote Kräfte regenerieren nicht allein über einen Respawn-Timer. Personal, Waffen und Munition werden über reale oder virtuelle Grenz-, Tal- und Kurierverbindungen zugeführt. Aufklärung, Festnahmen, zerstörte Lager und gesperrte Routen reduzieren diese Zuflüsse.
-
-## Noch im Mission Editor zu erfassen
-
-- genaue Sektorgrenzen
-- relevante Dörfer und Siedlungszonen
-- Straßen- und Talachsen
-- Camp-Slots und Hide Sites
-- Materialisierungsanker
-- Rückzugspunkte
-- geeignete Hubschrauber-Landezonen
-- Sicht- und Geländebeschränkungen
+- endgültige Sektorpolygone;
+- relevante Siedlungs- und Infrastrukturanker;
+- Straßen-, Tal- und Passachsen;
+- Candidate Sites und Materialisierungsanker;
+- Lande-, Abwurf- und Rückzugspunkte;
+- DCS-Sicht-, Höhen- und Geländebeschränkungen.

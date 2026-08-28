@@ -1,46 +1,51 @@
-# 08 – CSAR
+---
+document_id: OMW-CSAR-LEGACY
+status: SUPERSEDED
+document_class: HISTORICAL_ARCHITECTURE
+owning_policy: OMW-GOV-001
+authoritative_for:
+  - historical early CSAR campaign concept
+not_authoritative_for:
+  - current CSAR source classification
+  - technical MOOSE CSAR acceptance
+scenario_period: 2010-08-01/2011-12-31
+project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
+supersedes:
+superseded_by:
+  - OMW-CSAR-INDEX
+  - OMW-ARCH-CAMPAIGN-DYNAMIC-MISSION
+source_branch: agent/complete-documentation-authority-migration
+source_commit: 666ef7a4a6fad52cc1aaecc7d0953e4d112dc8ff
+validated_in_dcs: false
+---
 
-## Ziel
+# 08 – Frühes CSAR-Konzept
 
-Abgeschossene oder ausgestiegene Piloten erzeugen dynamische Personnel-Recovery-Aufträge. Je nach Region und Informationslage kann daraus ein Wettrennen zwischen blauer Rettung und roter Gefangennahme entstehen.
+## Status
 
-## Technische Basis
+`SUPERSEDED` als aktuelle CSAR-Architektur.
 
-MOOSE CSAR erzeugt und verwaltet den Rettungsfall. Ein eigener `CSARCampaignManager` ergänzt HUMINT, rote Capture-Teams, Evasion, Gefangenschaft, Persistenz und Folgeoperationen.
+Der vollständige frühere Konzepttext bleibt unverändert erhalten:
 
-## Ablauf
+- [`Legacy-CSAR-Konzept`](evidence/source-records/legacy-08-csar.md)
 
-1. Pilot landet oder ein konfigurierter Crash erzeugt einen Fall.
-2. Blau erhält letzte bekannte Position, Rufzeichen und gegebenenfalls Funkbake.
-3. Rot erhält abhängig von Region, Nähe zu Siedlungen, Tageszeit und Signalmitteln verzögerte Informationen.
-4. Ein geeignetes Capture-Team kann reserviert und zum Suchgebiet entsandt werden.
-5. Der Pilot wird aufgenommen, gefangen, getötet oder bleibt vermisst.
-6. Rettung gilt erst nach Rückkehr zu geeigneter Airbase, FARP, MASH oder FOB als abgeschlossen.
+Aktuelle Einordnung:
 
-## Roter Informationsstand
+- [`OMW-CSAR-INDEX`](csar/README.md)
+- [`OMW-ARCH-CAMPAIGN-DYNAMIC-MISSION`](37-campaign-architecture-and-dynamic-mission-design.md)
+- [`OMW-GOV-MOOSE-FIRST`](26-moose-first-development-policy.md)
 
-- `NONE`
-- `RUMOR`
-- `APPROXIMATE`
-- `CONFIRMED`
+## Fortgeführte Grundideen
 
-Rot erhält nicht bei jedem Vorfall automatisch exakte Koordinaten.
+- ein Abschuss oder Ausstieg kann einen persistenten Personnel-Recovery-Vorfall erzeugen;
+- BLUE-Rettung und RED-Capture dürfen auf denselben Vorfall reagieren;
+- Informationsstände und Koordinatengenauigkeit unterscheiden sich zwischen den Seiten;
+- Recovery gilt erst nach Übergabe an eine geeignete Einrichtung als abgeschlossen;
+- Rettung, Gefangennahme, Tod, Vermisststatus und Ablauf besitzen Kampagnenfolgen;
+- Evasion nutzt kurze, validierte Bewegungen statt freier kilometerlanger Boden-KI-Navigation.
 
-## Gefangennahme
+## Ersetzte technische Annahme
 
-Gefangennahme wird durch eigene Distanz- und Zustandslogik ausgelöst, nicht durch unkontrolliertes KI-Feuer. Ein Capture-Team muss den Piloten erreichen und den Bereich für eine Mindestzeit kontrollieren.
+MOOSE CSAR „erzeugt und verwaltet“ nicht automatisch die vollständige OMW-Kampagnenwahrheit. Maßgeblich ist genau ein CampaignState-`CSARIncident`. MOOSE CSAR und `AICSAR` bilden operative Teile ab und werden durch genehmigte Adapter angebunden.
 
-## Evasion
-
-Piloten nutzen nur kurze, vorbereitete Bewegungen zu Hide Sites oder Recovery Points. Keine freie kilometerlange Boden-KI-Navigation.
-
-## Folgen
-
-- gerettet: Personal und Moral bleiben erhalten
-- gefangen: möglicher Propagandaeffekt und spätere Befreiungsmission
-- gefallen: Verlust im Pilotpool
-- vermisst: persistenter Suchfall mit abnehmender Funkfähigkeit
-
-## Begrenzung
-
-Vollständige CSAR-Fälle gelten primär für menschliche Spieler und ausgewählte wichtige AI-Crews. Zahl und Rekursion aktiver Rettungsfälle werden begrenzt.
+Eine technische Produktionsarchitektur und Acceptance sind separat zu erstellen.

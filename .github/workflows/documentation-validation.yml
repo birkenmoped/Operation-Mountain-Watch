@@ -1,0 +1,83 @@
+name: Documentation validation
+
+on:
+  pull_request:
+    paths:
+      - "README.md"
+      - "AGENTS.md"
+      - "docs/**"
+      - "mission/tests/*.md"
+      - "mission/tests/**/*.md"
+      - "tools/validate_documentation.py"
+      - ".github/workflows/documentation-validation.yml"
+  push:
+    branches:
+      - main
+    paths:
+      - "README.md"
+      - "AGENTS.md"
+      - "docs/**"
+      - "mission/tests/*.md"
+      - "mission/tests/**/*.md"
+      - "tools/validate_documentation.py"
+      - ".github/workflows/documentation-validation.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  validate-documentation:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Use Python 3
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.x"
+      - name: Validate documentation metadata and links
+        id: validate
+        shell: bash
+        run: |
+          set +e
+          validator_args=()
+          if [[ "$GITHUB_EVENT_NAME" == "push" && "$GITHUB_REF_NAME" == "main" ]]; then
+            validator_args+=(--main)
+          fi
+          python tools/validate_documentation.py "${validator_args[@]}" . > documentation-validation.txt 2>&1
+          result=$?
+          cat documentation-validation.txt
+          echo "exit_code=$result" >> "$GITHUB_OUTPUT"
+          exit 0
+      - name: Upload documentation validation report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: documentation-validation-report
+          path: documentation-validation.txt
+          if-no-files-found: error
+      - name: Archive checked-out documentation
+        if: always()
+        shell: bash
+        run: |
+          {
+            printf '%s\n' \
+              README.md \
+              AGENTS.md \
+              tools/validate_documentation.py \
+              .github/workflows/documentation-validation.yml
+            find docs -type f -print
+            find mission/tests -type f -name '*.md' -print
+          } > documentation-files.txt
+          tar --exclude=.git -czf documentation-snapshot.tar.gz \
+            --files-from=documentation-files.txt
+      - name: Upload checked-out documentation snapshot
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: documentation-snapshot
+          path: documentation-snapshot.tar.gz
+          if-no-files-found: error
+      - name: Fail on documentation validation errors
+        if: steps.validate.outputs.exit_code != '0'
+        run: exit 1

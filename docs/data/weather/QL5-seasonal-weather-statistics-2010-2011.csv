@@ -1,0 +1,5 @@
+Jahreszeit;Beobachtungen;Mittlere_Temperatur_C;Minimum_C;Maximum_C;Mittlerer_Wind_kt;Mittlere_Sicht_km_max_10;Ohne_Wettercode_pct;HZ_pct;FU_pct;BR_pct;RA_SHRA_pct;TS_pct;Staub_pct;CLR_SKC_pct;FEW_pct;SCT_pct;BKN_OVC_pct
+Sommer;765;30.3;20.0;39.0;4.0;9.5;70.7;20.0;0.0;2.4;6.7;1.7;0.4;11.1;50.1;36.9;49.5
+Herbst;2218;22.1;4.0;38.0;2.9;8.8;46.5;48.8;8.5;0.2;1.1;0.6;2.5;55.1;31.1;11.5;10.5
+Winter;1385;9.6;0.0;22.0;2.5;8.2;48.5;45.2;21.0;2.7;2.8;0.1;1.6;45.2;26.6;15.7;29.0
+Frühling;518;23.4;6.0;43.0;4.2;9.2;66.8;20.1;0.0;4.1;5.6;2.3;5.4;19.7;51.4;23.7;41.1

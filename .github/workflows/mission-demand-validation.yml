@@ -1,0 +1,31 @@
+name: MissionDemand validation
+
+on:
+  pull_request:
+    paths:
+      - "scripts/campaign/OMW_MissionDemand.lua"
+      - "scripts/campaign/OMW_ResourceDemandPolicy.lua"
+      - "scripts/logistics/OMW_GroundInitialStock.lua"
+      - "tests/mission-demand/**"
+      - ".github/workflows/mission-demand-validation.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  mission-demand-contracts:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install Lua 5.4
+        shell: bash
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y lua5.4
+          lua5.4 -v
+
+      - name: Run MissionDemand contract tests
+        shell: bash
+        run: lua5.4 tests/mission-demand/run.lua

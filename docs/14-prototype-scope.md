@@ -1,201 +1,158 @@
+---
+document_id: OMW-PHASE-VERTICAL-PROTOTYPE
+status: SUPERSEDED
+owning_policy: OMW-GOV-001
+authoritative_for:
+  - historical record of the original vertical prototype
+scenario_period: 2010-08-01/2011-12-31
+project_phase: HISTORICAL_VERTICAL_PROTOTYPE
+superseded_by:
+  - OMW-GOV-001 section 9
+  - COMPLETE_FOUNDATION_BUILD_PHASE
+source_branch: agent/reconcile-documentation-authority
+validated_in_dcs: false
+document_class: HISTORICAL_PHASE_BASELINE
+source_commit: GIT_HISTORY
+supersedes:
+---
+
 # 14 – Vertikaler Prototyp
 
-## Ziel
+## Status
 
-Der erste Prototyp soll eine kleine, zusammenhängende Kampagnenstrecke vollständig abbilden. Er dient nicht der flächendeckenden Darstellung von RC-East, sondern der technischen Validierung der Kernsysteme.
+```text
+SUPERSEDED_PROJECT_PHASE
+```
 
-## Operationsraum
+Dieses Dokument bleibt als Entwicklungs- und Planungsnachweis erhalten. Es ist nicht mehr die verbindliche Reihenfolge für den weiteren Projektaufbau.
 
-Der Prototyp konzentriert sich auf:
+Die frühere Strategie konzentrierte sich auf einen kleinen vertikalen Jalalabad–FOB-Connolly-Ausschnitt und wollte dort CampaignState, Virtualisierung, RED Director, Logistik und CSAR vollständig nacheinander validieren.
 
-- Jalalabad Airfield / FOB Fenty
-- die Straßenverbindung zu FOB Connolly
-- angrenzende Siedlungen und Hinterhalträume
-- einen begrenzten roten Operationssektor in Nangarhar
+Die Strategie wurde ersetzt, weil:
 
-Bagram und Kabul existieren zunächst als strategischer Hintergrund und als Quelle übergeordneter Reserven. Sie müssen in der ersten Mission noch nicht vollständig physisch ausgebaut sein.
+- die Tests zu kleinteilig und zeitaufwendig wurden;
+- mehrere frühe Tests vor Einführung der verbindlichen MOOSE-First-Regel entstanden;
+- isolierte Eigenentwicklungen und spätere Neubauten vermeidbare Wiederholungen erzeugten;
+- wichtige Basen-, ORBAT-, Naming- und Missionseditorgrundlagen noch nicht als gemeinsames Gerüst vorlagen;
+- gestapelte Testzweige die Projektwahrheit und den Integrationsstand schwer nachvollziehbar machten.
 
-## Blaue Infrastruktur
+## Neue verbindliche Projektphase
 
-- eine operative Hauptbasis: Jalalabad / FOB Fenty
-- ein vorgeschobener FOB: FOB Connolly
-- ein afghanischer Kontrollpunkt
-- ein regionales Ressourcenlager
-- ein Konvoi-Startbereich
-- eine C-130J-Entlade- und Lagerübergabezone an Jalalabad/Fenty
-- mindestens eine Hubschrauber-Landezone an Jalalabad/Fenty und FOB Connolly
-- eine interne Fracht-Ladezone und eine interne Fracht-Entladezone
-- eine getrennte Außenlast-Aufnahmezone und Außenlast-Absetzzone
-- eine C-130J-Test-Drop-Zone im Raum Jalalabad
+Die aktuelle Phase ist:
 
-## Rote Infrastruktur
+```text
+COMPLETE_FOUNDATION_BUILD_PHASE
+```
 
-- eine regionale Zelle
-- drei mögliche Camp-Slots
-- drei bis sechs Hinterhaltstellungen
-- zwei Rückzugs- oder Zerstreuungsräume
-- mindestens eine virtuelle Nachschubverbindung
-- ein Sammel- oder Assembly Area für größere Angriffe
+Zunächst wird das vollständige Missionsgrundgerüst aufgebaut:
 
-## Logistik
+- relevante Flugplätze und Luftoperationsknoten;
+- FOBs, COPs, OPs, afghanische Kontrollpunkte und Infrastruktur;
+- aktive ORBAT-Arbeitsbestände;
+- Spielergruppen;
+- KI-Templates;
+- Statics und Parking-Baselines;
+- Warehouses und Logistikknoten;
+- Triggerzonen nur bei konkreter technischer Funktion;
+- Naming, stabile Dokument-IDs und zentrale Dokumentnummern;
+- grundlegende MOOSE-AIRWING-, SQUADRON-, AUFTRAG-, OPSTRANSPORT- und Warehouse-Strukturen.
 
-Der Prototyp bildet mehrere voneinander unabhängige Lieferverfahren ab.
+Erst auf diesem gemeinsamen Grundgerüst folgen gezielte Funktions-, Integrations-, Last- und Acceptance-Tests.
 
-### Straße
+## Weiterhin gültige fachliche Inhalte des früheren Prototyps
 
-- ein leichter Straßenkonvoi
-- eine primäre Route
-- nach Möglichkeit eine alternative Route
-- Ressourcenübergabe an FOB Connolly
+Die folgenden Anforderungen bleiben als fachlicher Backlog gültig, aber nicht mehr als vorgeschriebene erste Implementierungsreihenfolge.
 
-### Hubschrauber mit interner Fracht
+### Operationsraum und Kernknoten
 
-- CH-47F mit internen Kisten, Paletten oder Personal
-- UH-1H mit internen Kisten, kleiner Fracht oder Personal
-- optionaler UH-60L Community Mod ohne Pflichtabhängigkeit
-- Aufnahme an einer definierten Ladezone
-- Zuordnung der Cargo-ID zum Luftfahrzeug
-- Entladung an einer definierten Übergabezone
-- genau einmalige Gutschrift des Manifests
+- Jalalabad Airfield / FOB Fenty;
+- FOB Connolly;
+- Straßenverbindung und alternative Routen;
+- angrenzende Siedlungen, Hinterhalträume und rote Operationssektoren;
+- Bagram, Kabul und Kandahar als physisch vorzubereitende strategische beziehungsweise operative Knoten.
 
-### Hubschrauber mit Außenlast
+### Blaue Infrastruktur
 
-- CH-47F mit physischer Außenlast
-- UH-1H mit physischer Außenlast
-- optionaler UH-60L Community Mod
-- Aufnahme an einer Außenlastzone
-- Erkennung von Hook-, Abwurf- und Verlustzustand
-- Ablage innerhalb einer gültigen Absetzzone
-- stabile Endposition vor der Ressourcengutschrift
+- operative Haupt- und Regionalbasen;
+- vorgeschobene FOBs und afghanische Kontrollpunkte;
+- Ressourcenlager und Warehouse-Anker;
+- Konvoi-Start- und Zielbereiche;
+- C-130J-Entlade- und Übergabezonen;
+- Hubschrauber-Landezonen;
+- getrennte interne Fracht- und Außenlastpfade;
+- Drop Zones für Luftabwurfversuche.
 
-Interne Fracht und Außenlast sind zwei getrennte technische Pfade. Dieselbe Cargo-ID darf nicht gleichzeitig intern und extern geführt werden.
+### Rote Infrastruktur
 
-### C-130J mit Landung
+- regionale Zellen;
+- mehrere mögliche Camp- und Strongpoint-Sites;
+- Hinterhalt-, Assembly-, Rückzugs- und Zerstreuungsräume;
+- gewichtete Bewegungs- und Versorgungsnetze;
+- dynamische Besetzung statt starrer Relais- und Mindestgarnisonsarchitektur.
 
-- Transport von einer strategischen oder simulierten Quelle nach Jalalabad/Fenty
-- Landung, Rollen und Erreichen einer definierten Entladezone
-- Entladung oder Warehouse-Übergabe
-- einmalige Gutschrift des Manifests an das regionale Lager
+### Missionsarten
 
-### C-130J-Luftabwurf
+- Konvoieskorte und Hinterhalt;
+- QRF;
+- interne Hubschrauberfracht;
+- Außenlast;
+- Truppen- und Ingenieurtransport;
+- Verwundeten- und Personalrücktransport;
+- gelandete C-130J-Anlieferung;
+- C-130J-Luftabwurf;
+- Aufklärung und Angriff auf bestätigte Camps;
+- FOB-Nachversorgung;
+- CSAR mit möglichem gegnerischem Capture-Team.
 
-- ein Testabwurf in eine definierte Drop Zone
-- Prüfung der stabilen Endposition
-- einmalige Gutschrift gültiger Pakete
-- Behandlung verlorener oder außerhalb der Drop Zone gelandeter Fracht
+### CampaignState und Persistenz
 
-Automatische Notversorgung bleibt nur eine begrenzte Rückfallebene und ersetzt keine Spielerlogistik.
-
-## Missionsarten
-
-Mindestens folgende Missionsabläufe werden abgebildet:
-
-- Konvoieskorte
-- Hinterhalt auf einen Konvoi
-- QRF für einen angegriffenen Konvoi oder FOB
-- Hubschrauber-Nachversorgung mit interner Fracht
-- Hubschrauber-Nachversorgung mit Außenlast
-- Truppen- oder Ingenieurtransport
-- Rücktransport von Personal oder Verwundeten
-- gelandete C-130J-Anlieferung nach Jalalabad/Fenty
-- C-130J-Luftabwurf
-- Aufklärung eines vermuteten Camps
-- Angriff auf ein bestätigtes Camp
-- FOB-Nachversorgung
-- CSAR mit möglichem roten Capture-Team
-
-## Zu validierende Kernsysteme
-
-### CampaignState
-
-- Ressourcenbestände an Jalalabad und FOB Connolly
-- stabile Entity-IDs
-- Verlust- und Lieferbuchungen
-- Speichern und Laden eines kleinen Kampagnenzustands
+- stabile Entity-IDs;
+- Ressourcen-, Verlust- und Lieferbuchungen;
+- versionierte Snapshots und Wiederherstellung;
+- Trennung von logischem Zustand und physischer DCS-/MOOSE-Repräsentation;
+- genau einmalige Transaktionen und Gutschriften.
 
 ### Virtualisierung
 
-- virtueller Konvoi entlang einer gespeicherten Route
-- Materialisierung vor Spieler- oder Feindkontakt
-- Erhaltung von Zusammensetzung und Fracht
-- sichere Dematerialisierung nach Ende des Kontakts
-
-### Red Director
-
-- Zielauswahl aus mehreren Möglichkeiten
-- Reservierung einer roten Gruppe
-- Vorbereitung, Angriff, Rückzug und Wiederaufbau
-- verzögerte HUMINT-Meldung über Konvoibewegungen
-- Regeneration über eine Nachschubverbindung statt über einen einfachen Respawn
+- kanonischer Routenfortschritt;
+- Materialisierung vor relevanter Spieler- oder Feindnähe;
+- Erhaltung von Zusammensetzung, Schaden, Fracht und Auftrag;
+- sichere Dematerialisierung;
+- keine Teleportation oder Zustandskorrektur während erkannter beziehungsweise angegriffener Gruppen, sofern nicht ausdrücklich als genehmigte Recovery-Funktion definiert.
 
 ### Logistik
 
-- gemeinsames Manifestmodell für alle Transportwege
-- Gutschrift einer erfolgreichen Lieferung unabhängig vom Transportweg
-- Umgang mit verlorener, zerstörter oder doppelt gemeldeter Fracht
-- CH-47F-interne Fracht separat testen
-- CH-47F-Außenlast separat testen
-- UH-1H-interne Fracht separat testen
-- UH-1H-Außenlast separat testen
-- Umschlag zwischen Lager, interner Fracht und Außenlast prüfen
-- optionalen UH-60L-Mod nur als Zusatzpfad behandeln
-- C-130J-Landung, Entladezone und Lagerübergabe prüfen
-- C-130J-Paket nur einmal gutschreiben
-- Endposition innerhalb der Drop Zone auswerten
+- gemeinsames Manifestmodell für Straße, interne Fracht, Außenlast, Landung und Airdrop;
+- Cargo-ID niemals gleichzeitig in mehreren Repräsentationen;
+- genau einmalige Gutschrift;
+- Verlust- und Teilverlustbehandlung;
+- Spielerlogistik als primärer Weg;
+- automatische Notversorgung nur als begrenzte Rückfallebene.
 
 ### CSAR
 
-- Erzeugung eines Rettungsfalls
-- verzögerter Informationsgewinn für Rot
-- konkurrierendes Capture-Team
-- Abschluss erst nach Rücktransport zu einer geeigneten Einrichtung
+- Erzeugung eines Rettungsfalls;
+- verzögerter Informationsgewinn;
+- konkurrierendes gegnerisches Capture-Team;
+- Abschluss erst nach Rücktransport zu einer geeigneten Einrichtung.
 
-## Mission-Editor-Daten
+## Historische Abnahmekriterien
 
-Vor der Implementierung werden benötigt:
+Die ursprünglichen Abnahmekriterien bleiben als späterer Integrations-Backlog erhalten:
 
-- getestete Straßenroute Fenty–Connolly
-- vier bis acht Materialisierungsanker
-- drei bis sechs Hinterhaltzonen
-- Camp-, Assembly- und Rückzugszonen
-- FOB-Fenty- und FOB-Connolly-Infrastruktur
-- Einheiten-Templates für alle benötigten Rollen
-- Spieler-Slots und AI-Startplätze
-- C-130J-Park-, Roll- und Entladezone an Jalalabad/Fenty
-- C-130J-Drop-Zone
-- Hubschrauber-Landezonen
-- interne Fracht-Lade- und Entladezonen
-- Außenlast-Aufnahme- und Absetzzonen
+1. physische und virtuelle Konvois behalten Identität, Zusammensetzung, Schaden und Fracht;
+2. Spieler können eskortieren, eingreifen und auf Angriffe reagieren;
+3. interne CH-47F- und UH-1H-Fracht wird korrekt geladen, verloren oder genau einmal gutgeschrieben;
+4. CH-47F- und UH-1H-Außenlasten werden separat behandelt;
+5. C-130J-Landung und Airdrop verwenden dasselbe Manifest- und Ressourcenmodell;
+6. rote Kräfte greifen an, ziehen sich zurück und regenerieren nachvollziehbar über das Produktionsnetz;
+7. FOBs reagieren auf Versorgung und Ausfälle;
+8. CSAR kann von Blau und Rot beeinflusst werden;
+9. Speichern und Laden stellt den strategischen Zustand reproduzierbar wieder her;
+10. Serverleistung bleibt bei mehreren parallelen Aktivitäten stabil.
 
-## Abnahmekriterien
+Diese Kriterien werden künftig in fachlich getrennte MOOSE-First-Testpakete zerlegt, nachdem die benötigten Basen, Templates, Datenmodelle und Schnittstellen im Foundation Build vorhanden sind.
 
-Der Prototyp gilt als erfolgreich, wenn:
+## Autoritätsregel
 
-1. Ein Konvoi virtuell starten und ohne sichtbaren Übergang physisch werden kann.
-2. Spieler den Konvoi eskortieren oder auf einen Angriff reagieren können.
-3. Eine CH-47F interne Fracht von Jalalabad/Fenty nach FOB Connolly liefern kann.
-4. Eine CH-47F eine Außenlast aufnehmen, transportieren und gültig absetzen kann.
-5. Eine UH-1H interne Fracht oder Personal korrekt liefern kann.
-6. Eine UH-1H eine Außenlast aufnehmen, transportieren und gültig absetzen kann.
-7. Für jede der vier Hubschrauberkombinationen Laden, Verlustfall und genau einmalige Gutschrift geprüft wurden oder eine reproduzierbare DCS-/MOOSE-Einschränkung dokumentiert ist.
-8. Dieselbe Cargo-ID niemals gleichzeitig intern und als Außenlast verbucht wird.
-9. Eine C-130J nach Landung in Jalalabad/Fenty ein Manifest genau einmal an das regionale Lager übergeben kann.
-10. Ein C-130J-Luftabwurf gültige Pakete erkennt und verlorene Pakete nicht gutschreibt.
-11. Alle Lieferwege dasselbe Ressourcen- und Manifestmodell verwenden.
-12. Verluste und Fracht korrekt in den Kampagnenzustand übernommen werden.
-13. Eine rote Zelle angreifen, sich zurückziehen und später nachvollziehbar regenerieren kann.
-14. FOB Connolly auf erfolgreiche oder ausgefallene Versorgung reagiert.
-15. Ein CSAR-Fall sowohl von Blau als auch von Rot beeinflusst werden kann.
-16. Speichern und Laden den strategischen Zustand reproduzierbar wiederherstellt.
-17. Die Serverleistung während mehrerer paralleler Aktivitäten stabil bleibt.
-
-## Nicht Bestandteil des ersten Prototyps
-
-- vollständige Darstellung von Kunar und Nuristan
-- FOB Blessing und Pech Valley
-- komplette multinationale RC-East-Struktur
-- vollständige historische Order of Battle
-- alle DCS-Einheiten und Luftfahrzeuge
-- verpflichtende Community-Mods
-- komplexe zivile Simulation
-- strategischer HVT-Endzustand
+Kein Abschnitt dieses historischen Dokuments darf verwendet werden, um die aktuelle Foundation-Build-Phase, die aktive ORBAT, die MOOSE-First-Governance oder neuere basisbezogene Missionseditor-Baselines zu überschreiben.

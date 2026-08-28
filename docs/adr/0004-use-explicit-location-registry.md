@@ -1,47 +1,49 @@
+---
+document_id: OMW-ADR-0004-LOCATION-REGISTRY
+status: BINDING
+document_class: ADR
+owning_policy: OMW-GOV-001
+authoritative_for:
+  - explicit versioned location registry
+  - validation and caching of productive terrain routes
+  - use of scenery scans only for bounded discovery
+scenario_period: 2010-08-01/2011-12-31
+project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
+supersedes:
+  - implicit semantic interpretation of scenery IDs and F10 labels
+superseded_by:
+source_branch: design/map-and-unit-catalog
+source_commit: fca101b4cf207719941700dd98ec86d92adf1abb
+validated_in_dcs: partial
+---
+
 # ADR 0004 – Eigenes Ortsregister und validierte Terrainpfade
 
-- Status: Accepted
-- Date: 2026-07-13
+## Kontext
 
-## Context
+DCS und MOOSE können Airbases referenzieren, Koordinaten auf Straßen oder Schienen projizieren und Pfade zwischen bekannten Endpunkten berechnen. Sie liefern jedoch keine vollständige semantische Datenbank aller Orte, Rollen, Sektoren und taktischen Eigenschaften.
 
-DCS und MOOSE können Airbases auflisten, Koordinaten auf Straßen oder Schienen projizieren und Pfade zwischen vorgegebenen Endpunkten entlang dieser Netze berechnen. MOOSE registriert Scenery-Objekte jedoch nicht flächendeckend, sondern scannt sie nur innerhalb definierter Zonen.
-
-Die Mission benötigt zusätzlich semantische Informationen wie Ortsname, militärische Rolle, Sektor, Versorgungsfähigkeit, Hinterhaltrisiko und Materialisierungsregeln. Diese Informationen lassen sich nicht zuverlässig allein aus Scenery-IDs oder F10-Kartenbeschriftungen ableiten.
-
-## Decision
+## Entscheidung
 
 Operation Mountain Watch führt ein eigenes versioniertes Ortsregister und einen eigenen Routengraphen.
 
 - Airbases werden über MOOSE referenziert.
-- FOBs, COPs, Dörfer, Pässe, Checkpoints und taktische Zonen erhalten eigene stabile IDs.
-- Straßen- und Schienenpfade werden zwischen bekannten Knoten über die DCS-Terrainfunktionen erzeugt.
-- Jeder produktiv verwendete Pfad wird praktisch validiert und anschließend gecacht.
-- Scenery-Scans dienen nur zur Erzeugung von Kandidaten in begrenzten Entwicklungszonen.
-- Stromleitungen und andere Infrastruktur ohne eigene Routing-API werden manuell oder über begrenzte Scenery-Scans erfasst.
+- FOBs, COPs, Dörfer, Pässe, Checkpoints und taktische Zonen erhalten stabile IDs.
+- Straßen- und Schienenpfade werden zwischen bekannten Knoten über passende MOOSE-/DCS-Terrainfunktionen erzeugt.
+- Jeder produktive Pfad wird praktisch validiert und anschließend versioniert gespeichert.
+- Scenery-Scans erzeugen nur Kandidaten in begrenzten Entwicklungszonen.
 
-## Consequences
-
-### Positive
-
-- Kampagnenlogik verwendet stabile und aussagekräftige IDs.
-- DCS-Terrainpfade können automatisiert erzeugt werden, ohne die semantische Kontrolle abzugeben.
-- Fehlerhafte Straßen, Brücken und AI-Probleme können pro Route dokumentiert werden.
-- Große Scenery-Scans belasten die Produktionsmission nicht.
-- Karten- und DCS-Versionen können gezielt nachvalidiert werden.
-
-### Negative
-
-- Orte und Routen benötigen einen Erfassungs- und Freigabeprozess.
-- Terrainpfade müssen nach Kartenupdates erneut getestet werden.
-- Automatische Siedlungserkennung liefert nur Kandidaten, keine verlässlichen Namen oder Rollen.
-- Nicht routbare Infrastruktur erfordert zusätzliche manuelle Datenpflege.
-
-## Rules
+## Regeln
 
 - Kein flächendeckender Scenery-Scan beim normalen Missionsstart.
-- Kein automatisch erzeugter Straßenpfad gilt ohne Test als produktionsbereit.
+- Kein automatisch erzeugter Pfad gilt ohne DCS-Test als produktionsbereit.
 - Ein fehlgeschlagener Pfad wird nicht durch eine unmarkierte Luftlinie ersetzt.
 - Scenery-Namen oder IDs sind keine semantischen Orts-IDs.
-- Stromleitungen, Pipelines und ähnliche Netze werden nicht als Straßen behandelt.
-- Freigegebene Routen speichern DCS-Version, Länge, Fahrzeugklassen, bekannte Probleme und Validierungsstatus.
+- Infrastruktur ohne passende Routing-API wird nicht als Straße behandelt.
+- Freigegebene Routen führen DCS-Version, Länge, Fahrzeugklassen, bekannte Probleme und Validierungsstatus.
+
+## Verweise
+
+- [`OMW-WORLD-DATA-ROUTING`](../16-world-data-and-routing.md)
+- [`OMW-ARCH-PATHFINDING-OPTIONS`](../17-pathfinding-options.md)
+- [`OMW-MSR-ROUTE-DESIGN`](../49-msr-routendesign-und-infrastrukturmarker.md)

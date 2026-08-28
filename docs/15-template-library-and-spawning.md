@@ -1,236 +1,106 @@
+---
+document_id: OMW-TEMPLATE-LIBRARY-SPAWNING
+status: BINDING
+document_class: TEMPLATE_ARCHITECTURE
+owning_policy: OMW-GOV-001
+authoritative_for:
+  - Mission Editor template library and runtime naming strategy
+  - standard physical group creation through MOOSE templates
+  - canonical BLUE convoy template names
+scenario_period: 2010-08-01/2011-12-31
+project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
+supersedes:
+  - prototype-only exception wording for Lua-built groups
+  - TPL_TEST_BLUE_CONVOY_STANDARD_01
+superseded_by:
+source_branch: main
+source_commit: GIT_HISTORY
+validated_in_dcs: false
+---
+
 # 15 – Template-Bibliothek und Spawnstrategie
 
-## Ziel
+## 1. Grundentscheidung
 
-Reguläre physische Gruppen werden aus wiederverwendbaren Mission-Editor-Templates erzeugt. Die Kampagnenlogik entscheidet, wann, wo und mit welchem Auftrag eine strategische Entität materialisiert wird; das Mission-Editor-Template definiert ihre physische Zusammensetzung und DCS-spezifischen Eigenschaften.
+Reguläre physische Gruppen werden aus wiederverwendbaren Mission-Editor-Templates erzeugt. CampaignState entscheidet über Existenz, Auftrag und Ressourcen; das Template definiert DCS-spezifische Zusammensetzung und Eigenschaften.
 
-## Verbindliche Grundentscheidung
+Der vollständige frühere Template- und Spawnentwurf bleibt erhalten:
 
-Der Standardweg für Bodenverbände und AI-Luftfahrzeuge ist:
+- [`Legacy-Template- und Spawnstrategie`](evidence/source-records/legacy-15-template-library-and-spawning.md)
+
+## 2. Standardverfahren
 
 1. Gruppe im DCS Mission Editor anlegen.
-2. Gruppe auf `Late Activation` setzen.
-3. Einen eindeutigen Template-Namen vergeben.
-4. Template über MOOSE `SPAWN:New()` oder `SPAWN:NewWithAlias()` referenzieren.
-5. Gruppe an einer Laufzeitposition, in einer Zone oder an einer Airbase erzeugen.
-6. Den MOOSE-Laufzeitnamen mit einer stabilen strategischen Entity-ID verknüpfen.
+2. `Late Activation` setzen.
+3. eindeutigen, dokumentierten `TPL_...`-Namen vergeben.
+4. Template über MOOSE `SPAWN`, AIRWING-/SQUADRON- oder OPS-Funktion referenzieren.
+5. an validierter Laufzeitposition, Zone oder Airbase erzeugen.
+6. Laufzeitgruppe mit stabiler CampaignState-Entity-ID verknüpfen.
+7. Start, Template-Auswahl, Events, Verlust und Abschluss protokollieren.
 
-Vollständig in Lua aufgebaute DCS-Gruppentabellen sind eine Ausnahme und nicht der Standard des ersten Prototyps.
+Vollständig in Lua aufgebaute DCS-Gruppentabellen sind keine Standardlösung. Sie benötigen eine dokumentierte MOOSE-Prüfung und ausdrückliche Projektinhaberfreigabe.
 
-## Warum Mission-Editor-Templates
+## 3. Namensebenen
 
-Ein Mission-Editor-Template hält DCS-spezifische Details zusammen:
+- Template-ID: stabile Mission-Editor-Gruppe;
+- MOOSE-/DCS-Laufzeitname: flüchtige physische Repräsentation;
+- DCS-Einheitenname: flüchtige Unit-Referenz;
+- CampaignState-Entity-ID: persistente strategische Identität.
 
-- Einheitentypen
-- Gruppenzusammensetzung
-- relative Positionen und Formation
-- Skill
-- Bewaffnung und Payload
-- Livery
-- Funk- und Callsign-Daten
-- Startzustand
-- Route und Aufgaben, soweit diese übernommen werden sollen
+`#` ist in eigenen Template- und Aliasnamen verboten.
 
-Dadurch müssen komplexe DCS-Gruppentabellen nicht manuell in Lua gepflegt werden.
-
-## Template-Bibliothek
-
-Die Mission enthält eine überschaubare Bibliothek wiederverwendbarer Gruppen. Beispiele:
+Für reguläre BLUE-Logistikkonvois gelten verbindlich:
 
 ```text
-TPL_RED_CELL_INF_SMALL_01
-TPL_RED_CELL_INF_MEDIUM_01
-TPL_RED_AMBUSH_RPG_01
-TPL_RED_MORTAR_TEAM_01
-TPL_RED_TECHNICAL_LIGHT_01
-TPL_RED_CAPTURE_TEAM_01
-
-TPL_BLUE_CONVOY_SUPPLY_LIGHT_01
-TPL_BLUE_CONVOY_SUPPLY_HEAVY_01
-TPL_BLUE_CONVOY_SECURITY_01
-TPL_BLUE_QRF_LIGHT_01
-TPL_BLUE_ANA_CHECKPOINT_01
-TPL_BLUE_ENGINEER_TEAM_01
+TPL_BLUE_CONVOY_LIGHT_06
+TPL_BLUE_CONVOY_STANDARD_07
 ```
 
-Templates können im Mission Editor in getrennten Arbeitsbereichen organisiert werden:
+Der alte Testname ist ersetzt:
 
 ```text
-TEMPLATE AREA – BLUE GROUND
-TEMPLATE AREA – RED GROUND
-TEMPLATE AREA – BLUE AIR
-TEMPLATE AREA – RED AIR
-TEMPLATE AREA – LOGISTICS
+TPL_TEST_BLUE_CONVOY_STANDARD_01
 ```
 
-Die Template-Position ist nicht die spätere Einsatzposition, sofern die Gruppe mit einer Laufzeitkoordinate, Zone oder Airbase erzeugt wird.
+Er darf in neuen Missionsständen und neuen Laufzeitkonfigurationen nicht mehr als aktive Konvoi-Vorlage referenziert werden. Die Gruppe ist aus der aktuellen Mission-Editor-Vorlagenbibliothek zu entfernen, sobald die beiden Nachfolgevorlagen angelegt und geprüft sind. Historische Testmissionen und Ergebnisberichte dürfen den Namen ausschließlich als Nachweis ihres damaligen Stands enthalten.
 
-## Namensebenen
+## 4. Template-Bibliothek
 
-### Template-ID
+Die Bibliothek wird nach Koalition, Domäne und Rolle strukturiert. Jedes Template besitzt Metadaten aus Dokument 13 und wird gegen die verwendete DCS-/MOOSE-Version validiert.
 
-Beispiel:
+Für die regulären BLUE-Logistikkonvois gelten zwei kanonische Varianten:
 
 ```text
-TPL_RED_CELL_INF_SMALL_01
+TPL_BLUE_CONVOY_LIGHT_06
+TPL_BLUE_CONVOY_STANDARD_07
 ```
 
-Diese ID bezeichnet die Mission-Editor-Gruppe und wird an MOOSE übergeben.
+Ihre genaue Fahrzeugfolge und Rolle ist in `OMW-CIED-ROUTE-CLEARANCE-CONVOY-DESIGN` (`docs/67-afghanistan-route-clearance-counter-ied-and-convoy-design.md`) festgelegt.
 
-### MOOSE-Laufzeitname
+## 5. MOOSE-native Template-Auswahl
 
-MOOSE ergänzt normalerweise einen Spawn-Zähler. Beispiel:
-
-```text
-RED_NANGARHAR_CELL_003#001
-```
-
-Das Zeichen `#` ist deshalb in eigenen Template- und Aliasnamen verboten.
-
-### DCS-Einheitenname
-
-Einzelne Units erhalten ebenfalls Laufzeitsuffixe. Diese Namen dürfen nicht als dauerhafte Kampagnen-IDs verwendet werden.
-
-### Strategische Entity-ID
-
-Beispiel:
-
-```text
-RED_CELL_NANGARHAR_003_ASSAULT_GROUP_02
-```
-
-Diese ID gehört zum `CampaignState` und bleibt unabhängig von einer konkreten DCS-Gruppe stabil.
-
-## Laufzeitverknüpfung
-
-Beim Materialisieren wird eine explizite Zuordnung gespeichert:
+MOOSE 2.9.18 stellt für eine spätere zufällige Auswahl mehrerer Mission-Editor-Templates folgende Funktion bereit:
 
 ```lua
-EntityManager:LinkPhysicalGroup(
-  "RED_CELL_NANGARHAR_003_ASSAULT_GROUP_02",
-  spawnedGroup:GetName()
-)
+SPAWN:InitRandomizeTemplate({
+  "TPL_BLUE_CONVOY_LIGHT_06",
+  "TPL_BLUE_CONVOY_STANDARD_07",
+})
 ```
 
-Der persistente Zustand darf nie allein über den MOOSE- oder DCS-Laufzeitnamen identifiziert werden.
+Für TM01M gilt eine gestufte Einführung:
 
-## Koalition und Land
+1. `TM01M-moose-native-five-convoys-5` verwendet ausschließlich `TPL_BLUE_CONVOY_STANDARD_07` und bestätigt zuerst die neue Siebener-Struktur;
+2. die zufällige Auswahl aus Light und Standard folgt in einem eigenen Inkrement;
+3. dieses Folgeinkrement muss sechs und sieben Fahrzeuge als zulässige Anfangsstärke unterstützen, die ausgewählte Variante protokollieren und gesondert in DCS abgenommen werden.
 
-Templates werden im Normalfall bereits für die richtige Koalition und das richtige Land erstellt.
+Bis diese Folgeabnahme vorliegt, ist `TPL_BLUE_CONVOY_LIGHT_06` eine vorbereitete Bibliotheksvorlage, aber keine aktive TM01M-Zufallsvariante. Es wird keine eigene Lua-Zufallsfunktion eingeführt.
 
-Beispiele:
+## 6. Spawn- und Beobachtungsregeln
 
-```text
-TPL_BLUE_US_CONVOY_LIGHT_01
-TPL_BLUE_ANA_INFANTRY_01
-TPL_RED_INSURGENT_CELL_01
-```
-
-MOOSE kann Koalition, Land und Kategorie überschreiben. Diese Funktion wird nur gezielt verwendet, weil DCS-Einheitentypen, Liveries und verfügbare Assets länderabhängig sein können.
-
-## Spawnvarianten
-
-### Standard
-
-```lua
-local spawner = SPAWN:New("TPL_RED_CELL_INF_SMALL_01")
-local group = spawner:SpawnInZone(spawnZone)
-```
-
-### Alias für operative Namen
-
-```lua
-local spawner = SPAWN:NewWithAlias(
-  "TPL_RED_CELL_INF_SMALL_01",
-  "RED_NANGARHAR_CELL_003"
-)
-```
-
-### Andere Position
-
-Je nach Gruppe können unter anderem Laufzeitkoordinaten, Zonen oder Airbases als Spawnziel verwendet werden. Die konkrete Methode wird durch den EntityManager gekapselt.
-
-## Wiederherstellung reduzierter Gruppen
-
-Eine persistent beschädigte Gruppe darf nicht automatisch wieder in voller Template-Stärke erscheinen.
-
-Für den Prototyp gilt folgende Priorität:
-
-1. mehrere geprüfte Template-Varianten für typische Stärkestufen;
-2. Kopie eines Mission-Editor-Templates und gezielte Entfernung nicht mehr vorhandener Units;
-3. vollständig dynamische `SPAWN:NewFromTemplate()`-Tabellen nur für begründete Sonderfälle.
-
-Beispielhafte Varianten:
-
-```text
-TPL_RED_CELL_INF_SMALL_FULL_01
-TPL_RED_CELL_INF_SMALL_REDUCED_01
-TPL_RED_CELL_INF_SMALL_CRITICAL_01
-```
-
-Langfristig kann die Zusammensetzung aus dem CampaignState auf eine Kopie des Templates angewendet werden. Dabei werden nur getestete Felder verändert.
-
-## Vollständig dynamische Gruppentabellen
-
-MOOSE unterstützt `SPAWN:NewFromTemplate()` mit einer vollständigen DCS-Gruppentabelle. Dieser Weg erfordert unter anderem:
-
-- valide interne DCS-Typnamen
-- Gruppen- und Unit-Struktur
-- Koalition, Land und Kategorie
-- Positionen und Formation
-- Route und Aufgaben
-- Skill, Payload und weitere typspezifische Daten
-- garantiert eindeutige Namen
-
-Er wird im ersten Prototyp nicht als primärer Mechanismus verwendet.
-
-## Spieler-Slots
-
-Spielerflugzeuge und Spielerhubschrauber bleiben reguläre Mission-Editor-Slots. MOOSE-Spawnvorlagen dienen primär für AI-Gruppen, Bodenverbände, Logistikobjekte und dynamisch materialisierte Kampagnenentitäten.
-
-## Template-Metadaten
-
-Zu jedem Template werden außerhalb der `.miz` mindestens dokumentiert:
-
-```yaml
-template_id: TPL_RED_CELL_INF_SMALL_01
-coalition: RED
-country: TBD
-role: INFANTRY_CELL
-strength_class: SMALL
-mission_editor_group: TPL_RED_CELL_INF_SMALL_01
-composition:
-  personnel: 8
-  rpg: 1
-  machine_gun: 1
-allowed_missions:
-  - AMBUSH
-  - RAID
-  - DEFEND_CAMP
-terrain:
-  - VALLEY
-  - VILLAGE
-  - MOUNTAIN
-```
-
-## Validierung
-
-Jedes Template wird in einer Testmission geprüft:
-
-- Gruppe wird von MOOSE gefunden;
-- `Late Activation` ist gesetzt;
-- alle DCS-Typnamen sind verfügbar;
-- Spawn in Zone und an Koordinate funktioniert;
-- Formation ist plausibel;
-- AI kann den vorgesehenen Auftrag ausführen;
-- Laufzeitnamen kollidieren nicht;
-- Verluste können dem CampaignState eindeutig zugeordnet werden;
-- Mod-Abhängigkeiten sind dokumentiert.
-
-## Nicht zulässig
-
-- individuelle Kampagnenentitäten als hunderte separate Mission-Editor-Gruppen anzulegen;
-- persistente Entity-IDs aus MOOSE-Laufzeitnamen abzuleiten;
-- `#` in Template- oder Aliasnamen zu verwenden;
-- ungetestete DCS-Gruppentabellen direkt aus externen Listen zu erzeugen;
-- vollständig dynamische Gruppenerzeugung einzusetzen, obwohl ein geprüftes Mission-Editor-Template ausreicht.
+- keine Spawns in plausibler Spielerbeobachtung;
+- keine Doppelzählung von Templates und Kampagnenbestand;
+- Position, Fahrtrichtung und Gelände vor Spawn validieren;
+- Materialisierung und Dematerialisierung nach Dokument 07;
+- keine ungeprüfte Übernahme alter Controller-Aufgaben;
+- Fehler und fehlende Templates fail-fast protokollieren.
