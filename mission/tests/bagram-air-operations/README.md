@@ -4,204 +4,137 @@ status: PLANNED
 document_class: TEST_PROJECT_INDEX
 owning_policy: OMW-GOV-001
 authoritative_for:
-  - Bagram dual-AIRWING foundation test layout
-  - Bagram foundation build and Mission Editor prerequisites
-  - Bagram AIRWING/SQUADRON parking-policy acceptance state
-  - final combined Bagram parking acceptance run
+  - Bagram dual-AIRWING foundation test history
+  - Bagram parking-policy correction provenance
 not_authoritative_for:
-  - tactical tasking beyond controlled ALERT5 materialization
-  - taxi, takeoff, landing, recovery or persistence
+  - current production parking allocation
+  - tactical tasking
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
-supersedes:
-  - historical single-AIRWING Bagram test index
-superseded_by: []
 source_branch: agent/bagram-parking-policy-integration
 source_commit: GIT_HISTORY
 validated_in_dcs: partial
 ---
 
-# Bagram Air Operations / Parking Acceptance
+# Bagram Air Operations / Parking
 
-## Aktueller Stand
+## Current production direction
 
-Die Bagram-Foundation selbst ist historisch akzeptiert. Die Parking-Policy wurde inzwischen im DCS-Lifecycle bis zur vollständigen `asset.parkingIDs`-Propagation bestätigt:
-
-```text
-PARKING_POLICY_POSTSTART status=PASS assetsChecked=69 expectedAssets=69 failed=0 lifecycle=WAREHOUSE_NEWASSET
-parkingPolicy=PASS parkingAssetsChecked=69
-```
-
-Der erste Parking-Lauf mit Foundation-5 scheiterte ausschließlich an einer zu frühen synchronen Post-Start-Prüfung. Dieser Acceptance-Harness-Fehler wurde gegen den gepinnten MOOSE-Lifecycle analysiert und mit dem öffentlichen `OnAfterNewAsset`-Callback korrigiert.
-
-Der noch offene Nachweis ist die **tatsächliche physische Materialisierung** auf den vorgesehenen SQUADRON-Parking-Pools. Dafür gibt es genau noch einen kombinierten DCS-Lauf.
-
-## Finaler Test
+The production base is now:
 
 ```text
-TestID: BAGRAM-PARKING-FINAL-ACCEPTANCE-1
-BuilderVersion: BGRAM-PARKING-FINAL-ACCEPTANCE-1
-Builder: tools/build-bagram-parking-final-acceptance.ps1
-Generated bundle: mission/tests/bagram-air-operations/dist/OMW_AirOps_Bagram.lua
-Acceptance contract: mission/tests/bagram-air-operations/expected/bagram-parking-final-acceptance.md
+scripts/air-operations/OMW_AirOps_Bagram.lua
 ```
 
-Der Builder erzeugt **ein** Testbundle aus:
+It is built with:
 
 ```text
-scripts/air-operations/OMW_AirOps_Bagram_Bootstrap.lua
-+
-mission/tests/bagram-air-operations/src/OMW_Bagram_Parking_Final_Acceptance.lua
-+
-docs/data/bagram-me-parking-to-moose-terminalid-validated.csv
+tools/build-bagram-air-operations-foundation.ps1
 ```
 
-Damit enthält der letzte Lauf in einem Artefakt:
+The generated mission-embeddable base is:
 
 ```text
-187/187 TerminalID-Runtimebaseline
-2 AIRWINGs
-7 SQUADRONs
-69 registrierte Assets
-69/69 parkingIDs-Propagation
-44 AI-Pool-TerminalIDs
-10 hard-excluded TerminalIDs
-7 kontrollierte MOOSE ALERT5-Materialisierungen
-9 physische Luftfahrzeuge
-Unit-Koordinate -> nächster realer Bagram-TerminalID
-Own-Pool-/Cross-Pool-/Blacklist-Prüfung
-finales Aggregatergebnis
+mission/tests/bagram-air-operations/dist/OMW_AirOps_Bagram.lua
 ```
 
-## MOOSE-First
-
-Der finale Materialisierungstest verwendet ausschließlich nachgewiesene MOOSE-Pfade:
+The owner-authored parking source of truth is:
 
 ```text
-AIRBASE:GetParkingSpotsTable()
-COORDINATE:Get2DDistance()
-AUFTRAG:NewALERT5(MissionType)
-AUFTRAG:SetRequiredAssets(1, 1)
-AUFTRAG:AssignSquadrons({ squadron })
-AIRWING:AddMission(mission)
-OnAfterOpsOnMission
-SCHEDULER:New(...)
-GROUP:FindByName()
-GROUP:GetUnits()
-UNIT:GetCoordinate()
+docs/data/bagram-parking-policy.csv
 ```
 
-`AUFTRAG:NewALERT5()` ist für diesen Test geeignet, weil der gepinnte MOOSE-Source ALERT5 als uncontrolled materialisierte Luftfahrzeuge beschreibt, die auf eine weitere Zuweisung warten. `LEGION` erzwingt für ALERT5 den Takeoff-Typ `TakeOffParking`.
-
-Nicht verwendet werden:
+The CSV contains exactly 187 Bagram parking rows with four authoritative fields:
 
 ```text
-SPAWN
-FLIGHTGROUP:New
-Native-DCS-Spawn
-COMMANDER
-OPSTRANSPORT
-MIST
-MOOSE-Override
+Stellplatzkennung
+MOOSE TerminalID
+Asset
+Status
 ```
 
-## Required Mission Editor objects
+Only `Status=AI` rows are eligible for MOOSE AIRWING parking. `Static`, `Client`, and `BLOCKED` rows are excluded from MOOSE AIRWING parking.
 
-Airbase:
+The production builder performs a static CSV-to-Lua equality gate before emitting `OMW_AirOps_Bagram.lua`:
 
 ```text
-Bagram
+rows=187
+AI=69
+excluded=118
+TerminalIDs unique=187
+source parking labels match CSV
+source parking IDs match CSV
+source blacklist equals every non-AI CSV row
 ```
 
-Warehouse anchors:
+No range-based or manually normalized parking assignment is allowed.
+
+## Authoritative parking profiles derived 1:1 from CSV
 
 ```text
-WH_AIR_US_BAGRAM
-WH_AIR_US_BAGRAM_ARMY
+F-15E AI:
+E01 E02 E03 E04 E05 M03 M05 M06 M08 M09 M10 M21 M22 M25 M26
+
+F-16 AI:
+M13 M14 M15 M16 M17
+
+MQ-1A AI:
+N09 N10 N11
+
+C-130J-30 AI:
+S03 S04
+
+UH-60 AI:
+N01 N02 N03 N04 N05 N06 N07 N08
+P01 P02 P03 P04 P07 P08 P09 P10 P11 P12 P13 P14
+R01 R02 R03 R04 R05 R06 R07 R26 R28 R29 R31 R32 R33 R34 R35
+
+CH-47F AI:
+R08 R09 R10 R13 R14 R17 R18 R19 R20
 ```
 
-Required Late Activation templates:
+The OMW HH-60G seed is represented in DCS by `UH-60A`; therefore the production base references the owner-authored `UH-60` parking compatibility profile for the HH-60G SQUADRON. No separate HH-60G parking rows exist in the owner CSV.
+
+## Corrected failure history
+
+The earlier branch implementation was wrong because it replaced the owner-authored per-row allocation with invented contiguous blocks such as:
 
 ```text
-TPL_AIR_US_BGRM_F15E_CAS_2SHIP
-TPL_AIR_US_BGRM_F15E_STRIKE_2SHIP
-TPL_AIR_US_BGRM_F16C_CAS_2SHIP
-TPL_AIR_US_BGRM_MQ1A_RECON_1SHIP
-TPL_AIR_US_BGRM_C130_TRANSPORT_1SHIP
-TPL_AIR_US_BGRM_HH60G_CSAR_1SHIP
-TPL_AIR_US_BGRM_UH60_UTILITY_1SHIP
-TPL_AIR_US_BGRM_CH47_TRANSPORT_1SHIP
+F-15E -> M01-M12
+F-16C -> M13-M24
+MQ-1A -> B01-B08
 ```
 
-## Parking policy
+That interpretation was not authorized by the project owner and contradicted the supplied CSV. Example:
 
 ```text
-F-15E: M01-M12
-F-16C: M13-M24
-MQ-1A: B01-B08
-C-130: A10,S01-S05
-HH-60G: R15-R16
-UH-60: R17-R18
-CH-47: R19-R20
+M22 -> TerminalID 148 -> F-15E -> AI
 ```
 
-Hard exclusions:
+but the old Lua placed TerminalID `148` in the F-16 pool. The 28.08.2026 DCS materialization therefore visibly placed an F-16 on owner-designated F-15E parking. The corresponding physical parking acceptance is not a PASS and must not be used as production evidence.
+
+Earlier technical evidence remains limited to the scopes it actually proved:
 
 ```text
-A08 A09
-M27 M28 M29 M30
-R21 R22
-HAZ01 HAZ02
+TerminalID mapping correlation: retained
+MOOSE NewAsset parkingIDs propagation mechanism: retained
+Owner-authored aircraft-to-parking allocation: corrected after runtime discrepancy
 ```
 
-Die sieben Pools umfassen 44 eindeutige AI-TerminalIDs. Die zehn Blacklist-IDs dürfen in keinem Pool vorkommen.
+The project owner explicitly decided that no additional DCS parking test will be run for this correction. The corrected production base must therefore be described as statically reconciled to the authoritative CSV, not newly DCS-validated.
 
-## Finaler Materialisierungsumfang
+## MOOSE-first production path
+
+The base continues to use the verified MOOSE path:
 
 ```text
-F-15E   1 x 2-ship = 2 Units
-F-16C   1 x 2-ship = 2 Units
-MQ-1A   1 x 1-ship = 1 Unit
-C-130   1 x 1-ship = 1 Unit
-HH-60G  1 x 1-ship = 1 Unit
-UH-60   1 x 1-ship = 1 Unit
-CH-47   1 x 1-ship = 1 Unit
-
-Total: 7 groups / 9 units
+AIRBASE:SetParkingSpotBlacklist(...)
+SQUADRON:SetParkingIDs(...)
+AIRWING:AddSquadron(...)
+AIRWING:OnAfterNewAsset(...)
 ```
 
-Jede Unit wird anhand ihrer MOOSE-`UNIT:GetCoordinate()`-Position dem nächstgelegenen Eintrag aus `AIRBASE:GetParkingSpotsTable()` zugeordnet. Ein Abstand über 50 m gilt als nicht belastbar zuordenbar und damit als FAIL.
-
-## Erwarteter finaler Marker
-
-```text
-BAGRAM_PARKING_FINAL_RESULT status=PASS reason=ALL_GATES_PASS foundationAssets=69 foundationParkingChecked=69 foundationParkingFailed=0 dispatchRequested=7 groupsMaterialized=7 unitsMaterialized=9 unitsParkingChecked=9 unitsInOwnPool=9 crossPoolViolations=0 blacklistViolations=0 unknownParking=0 unexpectedMissions=0 groupFailures=0
-```
-
-Nur diese vollständige Kombination ist PASS.
-
-## Build
-
-Finaler Acceptance-Build:
-
-```powershell
-.\tools\build-bagram-parking-final-acceptance.ps1
-```
-
-Der bisherige reine Foundation-Builder bleibt weiterhin verfügbar:
-
-```powershell
-.\tools\build-bagram-air-operations-foundation.ps1
-```
-
-Er ist jedoch **nicht** der Builder für den letzten physischen Parking-Test.
-
-## MOOSE pin
-
-```text
-commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
-Moose.lua SHA-256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
-```
+No native spawn path, `SPAWN`, `COMMANDER`, `OPSTRANSPORT`, or test `ALERT5` dispatch is part of the production base.
 
 ## Foundation accounting
 
@@ -215,38 +148,23 @@ Moose.lua SHA-256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a
 8 role-payload registrations
 ```
 
-## Bisherige Runtime-Evidenz 28.08.2026
-
-Der korrigierte Foundation-6-Lauf bestätigte die ParkingID-Propagation auf alle 69 Assets.
+## MOOSE pin
 
 ```text
-Source commit: 2a0e8044543d42bf4ac9ff087bf3e6ff69d7d45f
-BuilderVersion: BGRAM-AIR-OPS-DUAL-FOUNDATION-6
-Generated bundle SHA-256: 705B2EE891A990A686721B411BC0835A0F3FC500D7F3F82B9F9D0D1496186D0A
-DCS: 2.9.29.27278
-DCS log artifact SHA-256: 41874509E8959A52B766091443F0F14E677BBC388D40BC97931DD86AB34B8E46
-Debrief artifact SHA-256: F6A3A24A0623CE12B21DF4B0D25067B5F9D341D6932614475D83B1BB017C14E4
+commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+Moose.lua SHA-256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
 ```
 
-Diese Evidenz bleibt gültig für den dokumentierten Lifecycle-Scope, ersetzt aber nicht den finalen physischen Materialisierungsnachweis.
+## Historical test fixtures
 
-## Statisches Gate vor dem letzten DCS-Lauf
-
-Nach der letzten MIZ-Änderung werden neu geprüft und dokumentiert:
+The files below remain only as historical acceptance fixtures and must not define production parking allocation:
 
 ```text
-Branch / Commit
-BuilderVersion
-Source-/Builder-/Bundle-SHA-256
-MIZ-SHA-256
-interner mission-SHA-256
-eingebetteter Bundle-SHA-256
-eingebetteter Moose.lua-SHA-256
-Objektvertragssmoke
-Trigger-/Ressourcenpfad
-keine alte parallele Parking-Correlation-Aktion
+scripts/air-operations/OMW_AirOps_Bagram_Bootstrap.lua
+mission/tests/bagram-air-operations/src/OMW_Bagram_Parking_Final_Acceptance.lua
+mission/tests/bagram-air-operations/src/OMW_Bagram_Parking_Final_Retest_Alert5.lua
+tools/build-bagram-parking-final-acceptance.ps1
+tools/build-bagram-parking-final-retest.ps1
 ```
 
-Erst nach diesem Gate wird der **eine letzte DCS-Lauf** gestartet.
-
-Bei PASS werden Ergebnisbericht, README, Manifest und MOOSE-Projektdokumentation synchronisiert. Danach folgen Diff-/CI-Prüfung und die ausdrückliche Ready-for-Review-/Merge-Entscheidung des Projektinhabers.
+They document the development path, including the ALERT5 recruitment correction and the later discovery that the parking pool itself had been incorrectly normalized. Production authority is the owner CSV plus `scripts/air-operations/OMW_AirOps_Bagram.lua`.
