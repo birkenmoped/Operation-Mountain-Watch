@@ -50,12 +50,24 @@ ChatGPT mutiert keine `.miz`. Mission-Editor-Integration und Speichern erfolgen 
 
 ## 2. Governance- und Main-Referenz
 
-Am 29.08.2026 geprüft:
+Am 29.08.2026 geprüft und in den Branch integriert:
 
 ```text
 main: 998080da9a7a71dae7f713b9590dfeadb5ae93ba
+main-reconciliation merge commit: 5263fe7f2f7cb3bc358b39101200dfcc3ae513ea
+internal reconciliation PR: #130
 project phase: COMPLETE_FOUNDATION_BUILD_PHASE
 ```
+
+Der Branch ist nach dieser Reconciliation nicht mehr hinter `main`:
+
+```text
+main -> agent/automatic-response-orchestration
+status: ahead
+behind_by: 0
+```
+
+Die Reconciliation wurde bewusst auf dem aktuellen `main`-Tree aufgebaut. Branch-spezifische Acceptance-/Source-Review-Dateien wurden ergänzt; ältere Branch-Versionen von gemeinsam weiterentwickelten `main`-Dateien wurden nicht zurückgespielt. Insbesondere blieben die aktuellen `main`-Fassungen von `docs/moose/PROJECT-CLASS-INDEX.md` und `docs/moose/VERIFIED-METHODS.md` erhalten.
 
 Pflicht vor weiterer Runtime-Entwicklung:
 
@@ -72,7 +84,7 @@ AGENTS.md
 -> reproduzierbare Verifikation
 ```
 
-Wichtige inzwischen auf `main` vorhandene Grundlagen umfassen mindestens:
+Wichtige inzwischen über `main` integrierte Grundlagen umfassen mindestens:
 
 ```text
 MissionDemand Domain Foundation
@@ -83,8 +95,6 @@ Air Tasking reconciliation
 CampaignState-MOOSE lifecycle/reconciliation governance
 aktuelle AirOps-/AAR-/AWACS-/ISR-FAC-CAS-Baselines
 ```
-
-Die branch-lokale Architektur darf keine neuere `main`-Baseline zurücksetzen.
 
 ## 3. Stage 1A – Ground AMMO RESUPPLY
 
@@ -112,7 +122,7 @@ Honaker AMMO shortage
 -> Warehouse AddAsset
 ```
 
-Maßgebliche Details und Provenienz stehen in:
+Maßgebliche Details und Provenienz:
 
 ```text
 mission/tests/ground-resupply-execution/ACCEPTANCE-1.md
@@ -153,35 +163,25 @@ CampaignState shortage
 -> Warehouse AddAsset
 ```
 
-Maßgebliche Details und Provenienz stehen in:
+Maßgebliche Details und Provenienz:
 
 ```text
 mission/tests/ground-resupply-execution/ACCEPTANCE-3.md
 mission/tests/ground-resupply-execution/results/2026-08-23-ground-meta-resupply-nothing-acceptance-1-pass-1.md
 ```
 
-Stage 1C bleibt technische Evidenz. Für Fuel ist NOTHING nach erfolgreichem spezialisierten FUELSUPPLY-Nachweis nicht mehr der bevorzugte Executor.
+Stage 1C bleibt technische Evidenz. Für Fuel ist NOTHING nach dem spezialisierten FUELSUPPLY-Nachweis nicht mehr der bevorzugte Executor.
 
 ## 6. Stage 1B2 – One-Shot MOOSE FUELSUPPLY
 
-### 6.1 Build- und Source-Ergebnis
+### 6.1 Source-/Lifecycle-Ergebnis
 
-Die erste native Variante mit:
-
-```text
-BRIGADE:AddRefuellingZone(...)
-```
-
-war für den OMW-One-Shot-Transfer ungeeignet, weil die registrierte RefuellingZone eine persistente Service-Anforderung ist und nach Missionsende erneut FUELSUPPLY erzeugt.
-
-Der kleinste MOOSE-first One-Shot-Pfad wurde deshalb auf:
+`BRIGADE:AddRefuellingZone(...)` wurde source-seitig und in Build 2-2 als persistente Service-Registrierung erkannt. Für einen einzelnen CampaignState-Transfer ist daher der MOOSE-native One-Shot-Pfad maßgeblich:
 
 ```text
 AUFTRAG:NewFUELSUPPLY(destinationZone)
 -> BRIGADE:AddMission(mission)
 ```
-
-korrigiert.
 
 Build 2-3:
 
@@ -197,7 +197,7 @@ Moose.lua SHA-256: E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A
 
 ### 6.2 Reale DCS-Beobachtung
 
-Der Projektinhaber hat Build 2-3 anschließend in DCS ausgeführt. Der beobachtete Runtime-Lifecycle erreichte vollständig:
+Der Projektinhaber führte Build 2-3 in DCS aus. Beobachtet wurde der vollständige Lifecycle:
 
 ```text
 MISSION_QUEUED
@@ -215,7 +215,7 @@ MISSION_QUEUED
 -> PASS
 ```
 
-Beobachteter Endzustand:
+Terminaler Zustand:
 
 ```text
 originFinal=22
@@ -243,18 +243,21 @@ Moose.lua SHA-256: E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A
 
 ### 6.3 Formale Acceptance-Grenze
 
-Der DCS-PASS ist real beobachtet, aber die vollständige Governance-Provenienz ist noch nicht geschlossen, weil der SHA-256 der **exakt ausgeführten und nach Einbindung von Build 2-3 gespeicherten MIZ** noch nicht dokumentiert ist.
-
-Daher gilt bis zur realen Hash-Rückmeldung:
+Der Runtime-PASS ist dokumentiert. Für `ACCEPTED_TECHNICAL_BASELINE` fehlt weiterhin genau ein Provenienzbaustein:
 
 ```text
-runtime_result: PASS_OBSERVED
-validated_in_dcs: true
-formal_acceptance: PROVENANCE_INCOMPLETE
-missing: executed MIZ SHA-256 for exact Build-2-3 run
+SHA-256 der exakt im Build-2-3-Lauf ausgeführten und nach Einbindung gespeicherten OMW_Template_v19.miz
 ```
 
-Es ist ausdrücklich unzulässig, den Stage-1C-MIZ-Hash oder einen später veränderten MIZ-Stand hierfür zu übernehmen.
+Daher aktuell:
+
+```text
+runtime_result: PASS
+validated_in_dcs: true
+formal_acceptance: BLOCKED_BY_MISSING_EXECUTED_MIZ_SHA256
+```
+
+Kein anderer MIZ-Hash darf dafür substituiert werden.
 
 ### 6.4 Fuel-Executor-Entscheidung
 
@@ -262,7 +265,7 @@ Die owner-approved Entscheidungsregel ist erfüllt:
 
 ```text
 GROUND_FUEL_PACKAGE
--> CampaignState remains strategic authority
+-> CampaignState remains sole strategic authority
 -> preferred physical executor = one-shot MOOSE FUELSUPPLY
 -> AUFTRAG:NewFUELSUPPLY
 -> BRIGADE:AddMission
@@ -270,112 +273,147 @@ GROUND_FUEL_PACKAGE
 -> MOOSE ReturnToLegion
 ```
 
-Stage 1C NOTHING bleibt als technische Fallback-/Meta-Resource-Evidenz erhalten, ist aber nicht mehr der bevorzugte Fuel-Executor.
-
-Maßgebliches Acceptance-Dokument:
+Maßgebliche Dokumente:
 
 ```text
 mission/tests/ground-resupply-execution/ACCEPTANCE-4.md
+docs/moose/GROUND-FUEL-REFUELLING-ZONE-SOURCE-REVIEW.md
 ```
 
-## 7. Reconciliation-Gate gegen aktuellen main
+## 7. Main-Reconciliation – abgeschlossen
 
-Vor weiterer Stage-Entwicklung wird der Branch gegen den aktuellen `main` reconciliert.
-
-Ausgangslage vor Reconciliation am 29.08.2026:
+Ausgangslage:
 
 ```text
-branch HEAD: 1fa6fe5b87bbed0794219daa460063ef2ebe6df2
-main HEAD:   998080da9a7a71dae7f713b9590dfeadb5ae93ba
-branch ahead of main: 109 commits
-branch behind main:    195 commits
+old branch HEAD: 1fa6fe5b87bbed0794219daa460063ef2ebe6df2
+main HEAD:       998080da9a7a71dae7f713b9590dfeadb5ae93ba
+ahead: 109
+behind: 195
 status: diverged
 ```
 
-Reconciliation-Regeln:
+Reconciliation:
 
 ```text
-- current main governance wins
-- current main BINDING/BINDING_PROJECT_DECISION baselines win
-- branch acceptance evidence is retained only for exact provenance
-- do not restore superseded main code/docs
-- MissionDemand/CampaignState/Ground/AirOps interfaces must be re-read after integration
-- no old branch hash is reused for a new reconciled build
+PR #130: main -> agent/automatic-response-orchestration
+merge commit: 5263fe7f2f7cb3bc358b39101200dfcc3ae513ea
+result: merged
 ```
 
-## 8. Neubewertung der alten Stages 1D–9
-
-Die alte lineare TODO-Liste wird nicht unverändert fortgeschrieben. Erst nach Main-Reconciliation wird jeder Punkt gegen den tatsächlich auf `main` vorhandenen Stand klassifiziert.
-
-Vorläufige Klassifikation:
+Nach Reconciliation:
 
 ```text
-Stage 1D generic meta-resource/SUPPLY executor
-  OPEN / REQUIRES RECONCILIATION
-  Fuel is removed from generic NOTHING target scope.
-
-Stage 2 FOB attacked -> support demand
-  OPEN UNTIL MAIN AUDIT
-
-Stage 3 fire support -> local rearm -> strategic resupply closure
-  PARTIALLY COVERED ON MAIN
-  Fixed Fire Support and local ammo-rearm foundation exist;
-  automatic end-to-end closure still requires explicit audit.
-
-Stage 4 convoy attacked -> support demand
-  OPEN UNTIL MAIN AUDIT
-
-Stage 5 BLUE assignment / CAS reconciliation
-  PARTIALLY/SUBSTANTIALLY COVERED BY NEWER MAIN AIR TASKING / ISR-FAC-CAS WORK
-  exact remaining automatic-response adapter scope must be determined after reconciliation.
-
-Stage 6 aircraft loss -> CSAR
-  OPEN UNTIL MAIN AUDIT
-  do not assume current CSAR production integration without explicit evidence.
-
-Stage 7 end-to-end automatic response chain
-  OPEN
-
-Stage 8 restart / restore / idempotence
-  PARTIALLY COVERED BY CURRENT CAMPAIGNSTATE/GROUND RECONCILIATION WORK
-  automatic-response-specific end-to-end behavior still requires audit.
-
-Stage 9 multiplayer / performance / failure acceptance
-  OPEN
-
-Stage 10 production reconciliation / PR / merge readiness
-  BLOCKED until the preceding reconciliation and evidence gates are closed.
+behind_by: 0
+main is an ancestor of the working branch
 ```
 
-## 9. Unmittelbare Arbeitsreihenfolge
+Konfliktregel war ausdrücklich:
 
 ```text
-1. Reconcile branch with current main 998080da...
-2. Re-read current main governance and affected interfaces.
-3. Complete Stage 1B2 provenance with the exact executed-MIZ SHA-256.
-4. Re-audit Stages 1D–9 against reconciled main.
-5. Implement only genuinely missing production behavior.
-6. Run available builders/tests and documentation validator.
-7. Review full diff against current main.
-8. Update DOCUMENT-REGISTRY / SUBPROJECT-REGISTRY / handoff as required.
-9. Remove merge-blocking PENDING_MERGE metadata before main integration.
-10. Create PR only when the branch is actually merge-ready.
+current main governance and current main BINDING baselines win
+branch-only acceptance evidence is retained
+shared files are not rolled back to stale branch revisions
+```
+
+## 8. TODO-Reaudit nach aktueller main-Integration
+
+Die alte lineare Liste wurde gegen den integrierten Main-Stand neu bewertet.
+
+```text
+Stage 1D – generic meta-resource/SUPPLY executor
+  STILL_REQUIRED
+  Fuel is removed from the generic NOTHING target scope.
+  Existing Stage-1C evidence does not itself create a production-generic executor.
+
+Stage 2 – FOB attacked -> support demand
+  STILL_REQUIRED
+  Current binding architecture defines MissionDemand and FOB campaign objects,
+  but no accepted automatic FOB-attack -> support-demand runtime path was found.
+
+Stage 3 – fire support -> local rearm -> strategic resupply closure
+  PARTIALLY_COVERED_ON_MAIN
+  Fixed Fire Support and local ammo-rearm foundations are already merged and accepted.
+  The automatic end-to-end closure from depletion/rearm demand into strategic
+  MissionDemand RESUPPLY still requires explicit production reconciliation.
+
+Stage 4 – convoy attacked -> support demand
+  STILL_REQUIRED
+  No accepted automatic convoy-under-attack -> support-demand runtime path was found.
+
+Stage 5 – BLUE assignment / CAS reconciliation
+  PARTIALLY_COVERED_ON_MAIN
+  Newer Air Tasking and ISR/FAC/CAS foundations substantially cover the air-side
+  assignment/CAS machinery. The missing scope is the automatic-response adapter
+  from MissionDemand/event input into the current main air-tasking contract.
+
+Stage 6 – aircraft loss -> CSAR incident / MOOSE CSAR-first execution
+  STILL_REQUIRED
+  The current BINDING CSAR index explicitly states that technical MOOSE CSAR/AICSAR
+  acceptance, CSARIncident data model, dedicated-server/reconnect and restart tests
+  are still required.
+
+Stage 7 – end-to-end automatic response chain
+  STILL_REQUIRED
+  Depends on the remaining event-to-demand and executor bridges.
+
+Stage 8 – restart / restore / idempotence reconciliation
+  PARTIALLY_COVERED_ON_MAIN
+  CampaignState/Ground lifecycle reconciliation infrastructure exists on main.
+  Automatic-response-specific in-flight demands, executor state and exact-once
+  recovery still require an end-to-end audit/test.
+
+Stage 9 – multiplayer / performance / failure acceptance
+  STILL_REQUIRED
+
+Stage 10 – production reconciliation / PR / merge readiness
+  BLOCKED
+  Not entered until the genuinely remaining stages and provenance gates are closed.
+```
+
+## 9. Unmittelbare Arbeitsreihenfolge ab jetzt
+
+```text
+DONE  Bring branch documentation current.
+DONE  Reconcile current main 998080da... into the branch without restoring stale baselines.
+DONE  Record Stage 1B2 real runtime PASS and preferred Fuel executor.
+DONE  Re-audit old Stages 1D–9 against reconciled main.
+
+BLOCKED  Close Stage 1B2 formal acceptance.
+         Need exact executed Build-2-3 MIZ SHA-256 from owner evidence.
+
+NEXT  Reconcile Stage 1D production scope.
+      Then implement only genuinely missing automatic-response bridges in the
+      re-audited order above.
+
+FINAL  Full diff, available tests/builders, documentation validator,
+       MOOSE indexes, DOCUMENT-REGISTRY, SUBPROJECT-REGISTRY, handoff,
+       PENDING_MERGE cleanup, feature PR, Ready for Review.
 ```
 
 ## 10. Aktueller Branchstatus
 
 ```text
 current_branch: agent/automatic-response-orchestration
-branch_head_before_main_reconciliation: 1fa6fe5b87bbed0794219daa460063ef2ebe6df2
 main_reference_commit: 998080da9a7a71dae7f713b9590dfeadb5ae93ba
+main_reconciliation_commit: 5263fe7f2f7cb3bc358b39101200dfcc3ae513ea
+main_reconciliation_pr: 130
+main_behind_by: 0
 stage_1a_ammo: ACCEPTED_TECHNICAL_BASELINE
 stage_1b_historical_fuelsupply: HISTORICAL_TEST_FIXTURE_INCONCLUSIVE
 stage_1c_meta_resupply_nothing: ACCEPTED_TECHNICAL_BASELINE
-stage_1b2_one_shot_fuelsupply_runtime: PASS_OBSERVED
-stage_1b2_formal_acceptance: PROVENANCE_INCOMPLETE_EXECUTED_MIZ_SHA256
+stage_1b2_one_shot_fuelsupply_runtime: PASS
+stage_1b2_formal_acceptance: BLOCKED_BY_MISSING_EXECUTED_MIZ_SHA256
 fuel_preferred_physical_executor: MOOSE_ONE_SHOT_FUELSUPPLY
-production_generic_executor: NOT_YET_RECONCILED
-next_gate: MAIN_RECONCILIATION
+stage_1d: STILL_REQUIRED
+stage_2: STILL_REQUIRED
+stage_3: PARTIALLY_COVERED_ON_MAIN
+stage_4: STILL_REQUIRED
+stage_5: PARTIALLY_COVERED_ON_MAIN
+stage_6: STILL_REQUIRED
+stage_7: STILL_REQUIRED
+stage_8: PARTIALLY_COVERED_ON_MAIN
+stage_9: STILL_REQUIRED
 ready_for_review: false
 merge_to_main: false
+next_gate: STAGE_1B2_PROVENANCE_THEN_STAGE_1D
 ```
