@@ -9,7 +9,7 @@ scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 source_branch: agent/automatic-response-orchestration
 source_commit: PENDING_MERGE
-validated_in_dcs: false
+validated_in_dcs: true
 ---
 
 # Stage 1B2 – MOOSE-native Ground FUELSUPPLY Acceptance
@@ -160,7 +160,7 @@ Dies ist kein Beleg gegen `FUELSUPPLY` selbst. Der MOOSE-Source erklärt das beo
 
 ## 7. Build 2-3 – kleinste MOOSE-first Korrektur
 
-Der nächste Test ändert ausschließlich die Missions-Erzeugung:
+Der Test änderte ausschließlich die Missions-Erzeugung:
 
 ```text
 ENTFERNT:
@@ -173,7 +173,7 @@ AUFTRAG:NewFUELSUPPLY(destinationZone)
 -> BRIGADE:AddMission(mission)
 ```
 
-Unverändert bleiben:
+Unverändert blieben:
 
 ```text
 CampaignState / MissionDemand / transfer reservation
@@ -217,25 +217,113 @@ OMW_GroundRoadSpawnAdapter.lua SHA-256: 1A81FB2E5270C493373CF5BF6EC01F5AFED47004
 Local build: PASS
 ```
 
-Der Build-PASS bestätigt nur die lokale Reproduzierbarkeit und Provenienz des erzeugten Bundles. Er ist noch kein DCS-Runtime-Nachweis.
+## 8. DCS-Lauf Build 2-3 – One-Shot FUELSUPPLY erfolgreich
 
-## 8. Entscheidungsregel
+Der Projektinhaber führte den exakt oben bezeichneten Build 2-3 in DCS aus. Der Lauf bestätigte den vollständigen One-Shot-Lifecycle ohne erneute FUELSUPPLY-Erzeugung.
+
+Runtime-Umgebung:
 
 ```text
-Build 2-3 PASS in DCS
--> GROUND_FUEL_PACKAGE physical executor target = one-shot MOOSE FUELSUPPLY
--> Stage 1C NOTHING remains accepted fallback evidence, but no longer preferred for Fuel
--> production executor reconciliation follows before adoption
-
-Build 2-3 clean FAIL
--> analyze actual MOOSE/DCS failure
--> no silent fallback decision
-
-INCONCLUSIVE
--> no architecture change
+DCS: 2.9.28.26385 MT
+Mission name: OMW_Template_v19.miz
+Bundle SHA-256: 8CBDFA12B1A052517D82CB20A460CA665415353FE38ED2F1C50928BE6C7966A0
+MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+Moose.lua SHA-256: E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915
+Executed MIZ SHA-256: PENDING_OWNER_EVIDENCE
 ```
 
-## 9. Aktueller Status
+Beobachtete Sequenz:
+
+```text
+MISSION_QUEUED
+-> ROAD_ALIGNED_WAREHOUSE_SPAWN
+-> GROUP_MATERIALIZED
+-> ARMY_ON_MISSION FUELSUPPLY
+-> DESTINATION_ZONE_ENTERED
+-> MISSION_EXECUTE_OBSERVED
+-> DELIVERY_CONFIRMED
+-> MISSION_DONE
+-> MOOSE ReturnToLegion
+-> RETURNED_HANDOFF
+-> RETURN_RTZ_ACTIVE
+-> WAREHOUSE_ADD_ASSET
+-> PASS
+```
+
+Beobachteter terminaler Zustand:
+
+```text
+originFinal=22
+destinationFinal=36
+transferQuantity=18
+physicalMission=ONESHOT_FUELSUPPLY
+demandStatus=SUCCESS
+spawnCount=1
+missionExecuteCount=1
+destinationObserved=true
+missionDoneCount=1
+returnedCount=1
+warehouseAddAssetCount=1
+```
+
+Damit ist runtime-seitig für diesen Lauf belegt:
+
+```text
+one-shot AUFTRAG:NewFUELSUPPLY dispatch: PASS
+BRIGADE:AddMission assignment: PASS
+road-aligned materialization: PASS
+physical movement to Honaker: PASS
+destination-zone proof: PASS
+MissionExecute: PASS
+CampaignState exact-once delivery: PASS
+MissionDemand SUCCESS: PASS
+normal MOOSE ReturnToLegion: PASS
+Returned handoff: PASS
+Warehouse AddAsset: PASS
+no replacement FUELSUPPLY mission: PASS
+```
+
+### 8.1 Formale Provenienzgrenze
+
+Der Runtime-PASS darf nicht mit dem Stage-1C-MIZ-Hash oder einem später gespeicherten Missionsstand ergänzt werden. Für `ACCEPTED_TECHNICAL_BASELINE` fehlt noch der reale SHA-256 der **exakt im Build-2-3-Lauf ausgeführten und gespeicherten MIZ**.
+
+Bis dieser Hash vom Projektinhaber zurückgeliefert ist, gilt:
+
+```text
+runtime_result: PASS
+validated_in_dcs: true
+formal_acceptance: BLOCKED_BY_MISSING_EXECUTED_MIZ_SHA256
+```
+
+## 9. Architekturentscheidung nach Build 2-3
+
+Die vorher definierte owner-approved Entscheidungsregel ist durch den Runtime-PASS erfüllt.
+
+Für Fuel gilt damit als Ziel für die Produktionsreconciliation:
+
+```text
+GROUND_FUEL_PACKAGE
+-> CampaignState remains sole strategic resource authority
+-> preferred physical executor = one-shot MOOSE FUELSUPPLY
+-> AUFTRAG:NewFUELSUPPLY(destinationZone)
+-> BRIGADE:AddMission(mission)
+-> no persistent BRIGADE:AddRefuellingZone for one-shot strategic transfers
+-> normal MOOSE ReturnToLegion
+```
+
+Stage 1C `AUFTRAG:NewNOTHING` bleibt akzeptierte technische Evidenz für einen neutralen Meta-Resource-Bewegungspfad, ist aber nicht mehr der bevorzugte Fuel-Executor.
+
+Nicht aus diesem Test abzuleiten:
+
+```text
+M978 package capacity authority
+DCS native fuel quantity as CampaignState authority
+MOOSE Warehouse fuel as CampaignState authority
+production-generic RESUPPLY executor already complete
+combat/loss/restart behavior beyond separately accepted contracts
+```
+
+## 10. Aktueller Status
 
 ```text
 previous_build_2_1: HARNESS_LOGIC_ERROR / INCONCLUSIVE
@@ -245,6 +333,8 @@ current_builder: GROUND-FUEL-REFUELLING-ZONE-ACCEPTANCE-2-3
 current_execution_model: ONE_SHOT_AUFTRAG_NEW_FUELSUPPLY
 current_bundle_sha256: 8CBDFA12B1A052517D82CB20A460CA665415353FE38ED2F1C50928BE6C7966A0
 local_build_2_3: PASS
-validated_in_dcs: false
-result: STAGED_FOR_DCS_ACCEPTANCE
+validated_in_dcs: true
+runtime_result: PASS
+formal_acceptance: BLOCKED_BY_MISSING_EXECUTED_MIZ_SHA256
+fuel_preferred_physical_executor: MOOSE_ONE_SHOT_FUELSUPPLY
 ```
