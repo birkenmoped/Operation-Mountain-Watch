@@ -4,69 +4,74 @@ status: ACCEPTED_TECHNICAL_BASELINE
 document_class: ACCEPTANCE_PLAN_AND_RESULT
 owning_policy: OMW-GOV-001
 authoritative_for:
-  - branch-local DCS acceptance baseline for the first MissionDemand-driven physical Ground AMMO RESUPPLY vertical slice
+  - branch-local DCS acceptance baseline for MissionDemand-driven physical Ground AMMO RESUPPLY
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
 superseded_by:
 source_branch: agent/automatic-response-orchestration
 source_commit: PENDING_MERGE
+acceptance_branch: agent/automatic-response-orchestration
+acceptance_commit: 2d72bcdfc113342a2180b6cd9c84486da790052c
+acceptance_mission: OMW_Template_v18.miz
+acceptance_mission_sha256: 2FDF31A2E07409CF392D45BFF5FC69750958C670AE3E12FF28D0B4FD8AECC90D
+dcs_version: 2.9.28.26385 MT
+moose_commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+moose_artifact_sha256: E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915
 validated_in_dcs: true
 ---
 
 # Ground AMMO RESUPPLY Acceptance 1 – Joyce nach Honaker
 
-## 1. Ziel und Ergebnis
+## 1. Ergebnis
 
 ```text
-Honaker AMMO 40
--> test-only consumption 20
--> Honaker AMMO 20
--> ResourceDemandPolicy = REORDER
--> one RESUPPLY MissionDemand
+status: ACCEPTED_TECHNICAL_BASELINE
+runtime_result: PASS
+```
+
+Belegter Lifecycle:
+
+```text
+Honaker AMMO shortage
+-> MissionDemand RESUPPLY
 -> CampaignState TRANSFER Joyce -> Honaker / 20
--> protected TPL_BLUE_CONVOY_LIGHT_06
--> MOOSE AUFTRAG AMMOSUPPLY
+-> TPL_BLUE_CONVOY_LIGHT_06
+-> MOOSE BRIGADE / PLATOON / ARMYGROUP
+-> AUFTRAG:NewAMMOSUPPLY
+-> OnRoad 27 kt
 -> physical arrival in Honaker ACCESS zone
 -> CampaignState DELIVERED
--> Honaker AMMO 40
 -> MissionDemand SUCCESS
--> 30 s post-MissionDone settlement window
--> same ARMYGROUP RTZ Joyce ACCESS / OnRoad
+-> MissionDone
+-> delayed RTZ Joyce ACCESS / OnRoad
 -> Returned
 -> Warehouse AddAsset
 -> physical cleanup
+-> PASS
 ```
 
-Ergebnis:
-
-```text
-PASS
-Stage 1A = ACCEPTED_TECHNICAL_BASELINE for the exact documented provenance
-```
-
-Erwarteter und bestätigter strategischer Endzustand:
+Strategischer Endzustand:
 
 ```text
 JOYCE AMMO   44 -> 24
 HONAKER AMMO 40 -> 20 -> 40
 ```
 
-## 2. Strategische / operative Grenze
+## 2. Autoritätsgrenze
 
 ```text
-CampaignState = alleinige strategische Ressourcen-/Cargo-Autorität
+CampaignState = alleinige strategische Ressourcenautorität
 MissionDemand = Demand-/Assignment-Zustand
-MOOSE BRIGADE / PLATOON / ARMYGROUP / AUFTRAG = physische Ausführung
+MOOSE = physische Ausführung
 DCS group = temporäre physische Repräsentation
 ```
 
-`OPSTRANSPORT` wird in diesem Slice nicht verwendet. Der physische Convoy definiert keine strategische Kapazität. Insbesondere ist aus diesem Test nicht abzuleiten:
+Der physische Convoy definiert keine strategische Package-Kapazität. Insbesondere wird nicht behauptet:
 
 ```text
 1 M1083 = X GROUND_AMMO_PACKAGE
 TPL_BLUE_CONVOY_LIGHT_06 = X packages
-TPL_BLUE_CONVOY_STANDARD_07 = Y packages
 ```
 
 ## 3. Physischer MOOSE-Vertrag
@@ -84,36 +89,9 @@ BRIGADE:AddMission(...)
 ARMYGROUP:RTZ(originZone, ENUMS.Formation.Vehicle.OnRoad)
 ```
 
-Die bereits owner-approved `OMW_GroundRoadSpawnAdapter`-Ausnahme wird ausschließlich für road-aligned Materialisierung verwendet. Kein neuer Router, kein eigener Dispatcher und kein Despawn/Respawn-Fallback wurden eingeführt.
+Die owner-approved `OMW_GroundRoadSpawnAdapter`-Ausnahme wird ausschließlich für road-aligned Materialisierung verwendet.
 
-## 4. Delivery-/Return-Gate
-
-Delivery ist fail-closed:
-
-```text
-OnAfterMissionExecute
-AND exact Mission == acceptance AMMOSUPPLY mission
-AND ARMYGROUP:IsInZone(ZON_BLUE_GND_HONAKER_ACCESS) == true
--> CampaignState MarkDelivered
--> MissionDemand DELIVERED / SUCCESS
-```
-
-Rückgabe:
-
-```text
-MissionDone
--> 30 s settlement window
--> ARMYGROUP:RTZ(Joyce ACCESS, OnRoad)
--> Returned
--> MOOSE ARMYGROUP:onafterReturned
--> legion:__AddAsset(10, group, 1)
--> 12 s final verification window
--> physical cleanup
-```
-
-Der 30-s-Delay übernimmt die bereits in Ground Acceptance 4 bestätigte Schutzgrenze gegen die Race-Condition zwischen `MissionDone`, nachlaufender AUFTRAG-Auswertung und einem zu früh gesetzten RTZ.
-
-## 5. Acceptance Build 1-5 – reale lokale Provenienz
+## 4. Build-Provenienz
 
 ```text
 Build Git HEAD: 2d72bcdfc113342a2180b6cd9c84486da790052c
@@ -127,39 +105,13 @@ ResourceDemandPolicy source SHA-256: BDC20ACEDAB60F662093077B8320220EBB71C6C641C
 GroundRoadSpawnAdapter source SHA-256: 1A81FB2E5270C493373CF5BF6EC01F5AFED47004BF25C4225524121155D983E8
 MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
 Moose.lua SHA-256: E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915
-OutboundTimeoutSec: 1800
-ReturnTimeoutSec: 1800
-ReturnIssueDelaySec: 30
-ReturnSettlementDelaySec: 12
-PhysicalTemplate: TPL_BLUE_CONVOY_LIGHT_06
-TransferQuantity: 20
-PackagePerTruckCapacityDefined: false
 ```
 
-## 6. Laufhistorie
-
-```text
-Run 1: FAIL / stale embedded Ground production thresholds
-Run 2: FAIL / delivery and RTZ acceptance confirmed; global timeout cut return window
-Run 3: FAIL / LIGHT_06 delivery confirmed; 2-s post-MissionDone RTZ race reproduced; RETURN_TIMEOUT
-Run 4: PASS / 30-s settlement window; full Joyce-Honaker-Joyce roundtrip; Returned; Warehouse AddAsset; cleanup
-```
-
-Historische Ergebnisdateien:
-
-```text
-mission/tests/ground-resupply-execution/results/2026-08-22-ground-ammo-resupply-acceptance-1-fail-1.md
-mission/tests/ground-resupply-execution/results/2026-08-22-ground-ammo-resupply-acceptance-1-fail-2.md
-mission/tests/ground-resupply-execution/results/2026-08-22-ground-ammo-resupply-acceptance-1-fail-3.md
-mission/tests/ground-resupply-execution/results/2026-08-22-ground-ammo-resupply-acceptance-1-pass-1.md
-```
-
-## 7. PASS-Provenienz – Lauf 4
+## 5. DCS-PASS-Provenienz
 
 ```text
 DCS: 2.9.28.26385 MT
-Executed mission path: C:\Users\Sven\Saved Games\DCS.openbeta\Missions\OMW_Template_v18.miz
-Uploaded artifact: OMW_Template_v18(1).miz
+Executed mission: OMW_Template_v18.miz
 MIZ SHA-256: 2FDF31A2E07409CF392D45BFF5FC69750958C670AE3E12FF28D0B4FD8AECC90D
 internal mission SHA-256: 38B207278365CD977E74FF3C9000C6A7C5B13EEE3E5B1BB154F1775055D02AF6
 Acceptance bundle SHA-256: 752B3E6F0B77D1B62C750421DDE36202C81B98632FEFBF6A273F913202DF8339
@@ -169,44 +121,49 @@ dcs.log SHA-256: 0C0B5784A0AA1C67E0BE57CEEF90006FBEEE40805D7A589D8EF8DC6DC3BFDFD
 debrief.log SHA-256: C9EA7398241DEA3323B39FAD8F28D97D27B5A1CB1EE05A79433BA26896666DEB
 ```
 
-Reale Pflichtmarker:
+Pflichtmarker des erfolgreichen Laufs:
 
 ```text
-18:34:20.456 DELIVERY_CONFIRMED ... quantity=20 ... campaignStateStatus=DELIVERED demandStatus=SUCCESS
-18:34:21.457 MISSION_DONE deliveryCommitted=true returnIssueDelaySec=30
-18:34:30.913 AUFTRAG ... Mission 3 [Ammo Supply] success!
-18:34:51.463 RETURN_RTZ_ACTIVE
-18:34:51.463 RETURN_RTZ_ISSUED ... Joyce ... OnRoad
-18:36:23.101 RETURNED_HANDOFF
-18:36:33.109 WAREHOUSE_ADD_ASSET
-18:36:35.110 PASS originFinal=24 destinationFinal=40 transferQuantity=20 template=TPL_BLUE_CONVOY_LIGHT_06 demandStatus=SUCCESS spawnCount=1 returnedCount=1 warehouseAddAssetCount=1
+DELIVERY_CONFIRMED
+MISSION_DONE
+AUFTRAG success
+RETURN_RTZ_ACTIVE
+RETURN_RTZ_ISSUED
+RETURNED_HANDOFF
+WAREHOUSE_ADD_ASSET
+PASS originFinal=24 destinationFinal=40 transferQuantity=20
 ```
 
-Die Owner-Beobachtung bewertet die konfigurierte Marschgeschwindigkeit von 27 kt für `TPL_BLUE_CONVOY_LIGHT_06` visuell als passend. Dieser Acceptance-PASS definiert dadurch noch keine generische Geschwindigkeitspolitik für andere Convoy-Klassen.
-
-## 8. Nicht Teil dieser Acceptance
+## 6. Laufhistorie
 
 ```text
-package-per-truck capacity
-automatic LIGHT_06 / STANDARD_07 selection
-STANDARD_07 runtime
+Run 1: FAIL / stale embedded Ground production thresholds
+Run 2: FAIL / delivery and RTZ acceptance confirmed; global timeout cut return window
+Run 3: FAIL / early post-MissionDone RTZ race reproduced
+Run 4: PASS / full Joyce-Honaker-Joyce lifecycle
+```
+
+Detaildateien:
+
+```text
+results/2026-08-22-ground-ammo-resupply-acceptance-1-fail-1.md
+results/2026-08-22-ground-ammo-resupply-acceptance-1-fail-2.md
+results/2026-08-22-ground-ammo-resupply-acceptance-1-fail-3.md
+results/2026-08-22-ground-ammo-resupply-acceptance-1-pass-1.md
+```
+
+## 7. Grenzen
+
+Nicht durch diese Acceptance validiert:
+
+```text
+generic package-per-truck capacity
+automatic convoy-size selection
 FUEL RESUPPLY
-generic SUPPLY
+generic non-AMMO RESUPPLY
 multiple concurrent demands
-convoy under attack / support reaction
-carrier-loss and abort settlement
+convoy-under-attack reaction
+loss/abort settlement
 external process/server persistence
-production orchestration scheduler
-CAS / BLUE COMMANDER
-CSAR
-```
-
-## 9. Aktueller Status
-
-```text
-Stage 1A Ground AMMO Joyce -> Honaker: ACCEPTED_TECHNICAL_BASELINE
-MOOSE-first full roundtrip: PASS for exact documented scope
-CampaignState transfer settlement: PASS for exact documented scope
-Production runtime orchestration: NOT YET CREATED
-Next development gate: Stage 1B Ground FUEL or owner-selected next orchestration stage
+CAS / CSAR
 ```
