@@ -234,12 +234,11 @@ function Dispatcher:_CompleteAfterPhysicalRecovery(record)
   if record.recoveryCompleted then
     return
   end
-  local recovery, reason = self.campaignAdapter:RecoverAfterPhysicalRecovery(record.requestId)
-  if not recovery then
-    log("MISSION_RECOVERY_SETTLEMENT_FAILED requestId=" .. record.requestId
-      .. " reason=" .. tostring(reason))
-    return
-  end
+
+  -- Do not settle CampaignState before MOOSE has re-added the returned asset.
+  -- In the no-takeoff branch that is also the only safe point to remove the
+  -- MOOSE-maintenance timestamp. A recovery scheduler retry handles the small
+  -- interval between OPSGROUP despawn and LEGION asset-return processing.
   local turnoverWaived = false
   local turnoverWaiverReason = nil
   if not record.takeoffConfirmed then
@@ -248,10 +247,19 @@ function Dispatcher:_CompleteAfterPhysicalRecovery(record)
       log("MISSION_TURNOVER_WAIVED_NO_TAKEOFF requestId=" .. record.requestId
         .. " mission=" .. record.mission.name .. " platform=" .. record.platformId)
     else
-      log("MISSION_TURNOVER_WAIVER_NOT_APPLIED requestId=" .. record.requestId
+      log("MISSION_TURNOVER_WAIVER_AWAITING_MOOSE_RETURN requestId=" .. record.requestId
         .. " reason=" .. tostring(turnoverWaiverReason))
+      return
     end
   end
+
+  local recovery, reason = self.campaignAdapter:RecoverAfterPhysicalRecovery(record.requestId)
+  if not recovery then
+    log("MISSION_RECOVERY_SETTLEMENT_FAILED requestId=" .. record.requestId
+      .. " reason=" .. tostring(reason))
+    return
+  end
+
   local turnoverSeconds, turnoverReason = self:_TurnoverSeconds(record)
   record.recoveryCompleted = true
   self:_StopRecoveryMonitor(record)
