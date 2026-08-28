@@ -14,7 +14,7 @@ project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes: []
 superseded_by: []
 source_branch: agent/towns-discovery
-source_commit: PENDING_MERGE
+source_commit: e10cb1c0a4979ab7b178b51144813b0e55cc9506
 validated_in_dcs: false
 moose_release: 2.9.18
 moose_commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
