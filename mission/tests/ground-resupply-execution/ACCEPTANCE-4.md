@@ -7,8 +7,17 @@ authoritative_for:
   - branch-local Stage 1B2 MOOSE-native Ground FUELSUPPLY acceptance result
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
+supersedes:
+superseded_by:
 source_branch: agent/automatic-response-orchestration
 source_commit: PENDING_MERGE
+acceptance_branch: agent/automatic-response-orchestration
+acceptance_commit: 2bd930729ed12a073f5364dc139281b60151acf0
+acceptance_mission: OMW_Template_v19.miz
+acceptance_mission_sha256: 603422EFAFFA860041089D0F1AD41D35642A7863BC1C7B658E0B8F15A6EB63F2
+dcs_version: 2.9.28.26385 MT
+moose_commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+moose_artifact_sha256: E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915
 validated_in_dcs: true
 ---
 
@@ -17,8 +26,6 @@ validated_in_dcs: true
 ## 1. Ergebnis
 
 Stage 1B2 ist für die unten exakt dokumentierte Provenienz technisch akzeptiert.
-
-Belegter One-Shot-Pfad:
 
 ```text
 CampaignState
@@ -39,7 +46,7 @@ CampaignState
 -> PASS
 ```
 
-CampaignState bleibt alleinige strategische Ressourcenautorität. MOOSE/DCS bilden nur die physische Ausführung ab.
+CampaignState bleibt alleinige strategische Ressourcenautorität.
 
 ## 2. Akzeptierte Provenienz
 
@@ -66,11 +73,7 @@ MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
 Moose.lua SHA-256: E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915
 ```
 
-Die lokale Reconciliation-Prüfung vom 29.08.2026 bestätigte zusätzlich, dass das noch vorhandene Build-2-3-Bundle unverändert denselben SHA-256 besitzt:
-
-```text
-8CBDFA12B1A052517D82CB20A460CA665415353FE38ED2F1C50928BE6C7966A0
-```
+The later local reconciliation check confirmed that the retained Build-2-3 bundle still had the same SHA-256.
 
 ## 3. Strategischer Testvertrag
 
@@ -124,34 +127,15 @@ returnedCount=1
 warehouseAddAssetCount=1
 ```
 
-Damit sind für diese Provenienz bestätigt:
-
-```text
-one-shot AUFTRAG:NewFUELSUPPLY dispatch: PASS
-BRIGADE:AddMission assignment: PASS
-road-aligned materialization: PASS
-physical movement to Honaker: PASS
-destination-zone proof: PASS
-MissionExecute: PASS
-CampaignState exact-once delivery: PASS
-MissionDemand SUCCESS: PASS
-normal MOOSE ReturnToLegion: PASS
-Returned handoff: PASS
-Warehouse AddAsset: PASS
-no replacement FUELSUPPLY mission: PASS
-```
-
 ## 5. Build-2-1/2-2-Historie
 
 Build 2-1 war wegen einer falschen synchronen Zielzonenannahme im Harness `HARNESS_LOGIC_ERROR / INCONCLUSIVE`.
 
-Build 2-2 bewies die FUELSUPPLY-Ausführung bis Delivery, verwendete aber `BRIGADE:AddRefuellingZone(...)`. Der gepinnte MOOSE-Source und der Runtime-Lauf zeigten, dass diese API eine persistente Service-Registrierung ist und nach Missionsende erneut FUELSUPPLY erzeugt. Daher ist sie für einen einzelnen strategischen CampaignState-Transfer nicht geeignet.
-
-Diese Historie ist kein Beleg gegen `FUELSUPPLY` selbst.
+Build 2-2 bestätigte FUELSUPPLY-Ausführung bis Delivery, verwendete jedoch `BRIGADE:AddRefuellingZone(...)`. Der gepinnte MOOSE-Source und der Runtime-Lauf bestätigten, dass diese API eine persistente Service-Registrierung ist und nach Missionsende erneut FUELSUPPLY erzeugt. Sie ist damit für einen einzelnen strategischen CampaignState-Transfer nicht geeignet.
 
 ## 6. Architekturentscheidung
 
-Für `GROUND_FUEL_PACKAGE` gilt nach der owner-approved Entscheidungsregel und dem akzeptierten Build-2-3-Lauf:
+Für `GROUND_FUEL_PACKAGE` gilt:
 
 ```text
 CampaignState = sole strategic fuel authority
@@ -194,5 +178,4 @@ formal_acceptance: COMPLETE
 executed_miz_sha256: 603422EFAFFA860041089D0F1AD41D35642A7863BC1C7B658E0B8F15A6EB63F2
 bundle_sha256: 8CBDFA12B1A052517D82CB20A460CA665415353FE38ED2F1C50928BE6C7966A0
 fuel_preferred_physical_executor: MOOSE_ONE_SHOT_FUELSUPPLY
-next_stage: 1D
 ```
