@@ -29,12 +29,38 @@ production terrain corridors, RC-East holding, Bagram sourcing, persistence,
 production recovery/repair policy, Fog-of-War behaviour or weapon employment.
 The acceptance-local Kandahar MQ-9 count is credited once only after MOOSE has
 confirmed physical recovery; this permits a later acceptance request without
-treating an airborne or returning aircraft as available. It does not override
-MOOSE's Kandahar MQ-9 turnover: the production foundation keeps 20 minutes
-regular maintenance plus 40 minutes per damage point. A recovered asset can
-therefore be strategically counted yet remain physically unavailable to MOOSE
-until its turnover expires. The requesting group receives the exact
-MOOSE-reported remaining turnaround time after physical recovery.
+treating an airborne or returning aircraft as available. The production
+foundation keeps MOOSE's 20-minute regular maintenance plus 40 minutes per
+damage point for every asset whose takeoff is confirmed.
+
+### Narrow no-takeoff recall exception
+
+**Requirement:** a spawned MQ-9 that is recalled and removed before actual
+takeoff must be immediately reusable; it must not receive the normal
+post-flight turnover. This is the observed ISR-0003 ground-recall case.
+
+MOOSE documentation and the pinned source were checked for AIRWING,
+SQUADRON/COHORT, LEGION, `FLIGHTGROUP:IsAirborne`, and the documented
+`OnAfterElementTakeoff` FSM callback. The callback confirms an actual DCS
+takeoff. The pinned LEGION return path unconditionally records
+`Asset.Treturned` when it re-adds an asset; no public per-asset API was found
+to waive that timestamp while retaining the configured squadron turnover.
+Official MOOSE mission examples were also checked; none provides such a
+per-asset waiver.
+
+The project owner requested this acceptance correction on 2026-08-28. Its
+approved scope is strictly this acceptance adapter. After physical MOOSE
+recovery, and only if no `ElementTakeoff` callback or `IsAirborne()` result was
+observed, the adapter clears the returned asset's maintenance timestamp. It
+does not spawn, route, destroy, or reconfigure MOOSE assets or squadron
+turnover. The adapter waits for MOOSE to publish the returned timestamp before
+CampaignState is recovered; an unavailable timestamp keeps the request pending
+and logs `MISSION_TURNOVER_WAIVER_AWAITING_MOOSE_RETURN`.
+
+A confirmed flight retains normal MOOSE turnover and reports the remaining
+time. A waived ground recall reports immediate availability to the requesting
+group. This is an acceptance-only, documented fallback—not a production
+maintenance policy—and requires the regressions below.
 
 ## Build
 
@@ -68,16 +94,22 @@ Kandahar foundation.
    On-Station. Before start expect `cancelled before launch`; after start
    expect `recall ordered; returning to base`. Record the matching
    `MISSION_CANCELLED_BEFORE_START` or `MISSION_RECALL_ORDERED` log line.
-7. For a recall after start, observe a physical return to Kandahar. The AIRWING
-   may reclaim/despawn the asset after landing and shutdown. Record
-   `MISSION_RETURNING`, `MISSION_TASK_DONE` and `MISSION_RECOVERED`
-   (with `resourceRestored=true` and `turnoverSeconds=<n>`). The requesting
-   group must receive a message giving the remaining MOOSE turnaround time.
-   A later request may be `MISSION_QUEUED` while MOOSE is still maintaining
-   the recovered MQ-9; it starts only when MOOSE reports a physically ready
-   asset.
+7. Test both return branches:
+   - **Ground recall:** wait for the spawned MQ-9, recall it before taxi/takeoff,
+     then capture the empty original parking position. Expect
+     `MISSION_TURNOVER_WAIVED_NO_TAKEOFF` followed by `MISSION_RECOVERED`
+     with `takeoffConfirmed=false`, `turnoverWaived=true`, and
+     `turnoverSeconds=0`. The requesting group must receive the immediate
+     availability message. The next request must not be delayed by the normal
+     MOOSE turnaround.
+   - **Actual flight:** after an observed takeoff, recall or let the task end.
+     Expect `MISSION_TAKEOFF_CONFIRMED` and `MISSION_RECOVERED` with
+     `takeoffConfirmed=true`, `turnoverWaived=false`, and a positive
+     `turnoverSeconds=<n>`. The requesting group must receive the MOOSE
+     turnaround-time message.
 8. Capture `debrief.log`: MQ-9 engine start, takeoff, landing and shutdown at
-   Kandahar. Capture the bundle SHA-256 and screenshots.
+   Kandahar for the actual-flight branch. Capture the bundle SHA-256 and
+   screenshots for both branches.
 
 ## Pass criterion
 
