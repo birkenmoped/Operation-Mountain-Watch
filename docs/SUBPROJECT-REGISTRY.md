@@ -14,8 +14,8 @@ project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
   - incomplete open-branch list in the documentation index
 superseded_by:
-source_branch: main
-source_commit: 34b1f46120f951ca2a6308cf1d9fbbb4b0a17863
+source_branch: agent/air-tasking-post-merge-provenance
+source_commit: 9d282bf61e7e54f110b95a4ee9eb2bede01838a5
 validated_in_dcs: false
 ---
 
@@ -81,14 +81,12 @@ main
 ├── PR 41
 ├── PR 45
 ├── PR 49
-└── PR 66 → ... → PR 84
-                    └── PR 85 (merged clean Warehouse reconciliation)
-
-main
+├── PR 66 → ... → PR 84
+│                   └── PR 85 (merged clean Warehouse reconciliation)
 └── PR 86 (AirOps initial-stock runtime and accepted Warehouse bootstrap; reconciliation required)
 ```
 
-PR #53 (Tarinkot), PR #60 (Salerno Foundation), PR #61 (Kandahar Foundation), PR #62 (Dokumentationsmetadaten), PR #63 (Bagram duale AIRWING Foundation), PR #64 (AIRWING-Naming-Reconciliation), PR #65 (Shindand Foundation), PR #85 (Warehouse Main Reconciliation), PR #108 (Kunar Ground Site Reconciliation / FOB Bostick), PR #112 (Ground ammo rearm lifecycle / fixed fire support), PR #114 (MissionDemand Domain Foundation) und PR #115 (Ground RESUPPLY threshold gate) sind nach `main` gemergt und werden nicht mehr als offene aktuelle Foundation-Unterprojekte geführt.
+PR #53 (Tarinkot), PR #60 (Salerno Foundation), PR #61 (Kandahar Foundation), PR #62 (Dokumentationsmetadaten), PR #63 (Bagram duale AIRWING Foundation), PR #64 (AIRWING-Naming-Reconciliation), PR #65 (Shindand Foundation), PR #85 (Warehouse Main Reconciliation), PR #108 (Kunar Ground Site Reconciliation / FOB Bostick), PR #112 (Ground ammo rearm lifecycle / fixed fire support), PR #114 (MissionDemand Domain Foundation), PR #115 (Ground RESUPPLY threshold gate) und PR #117 (Air Tasking selective main reconciliation) sind nach `main` gemergt und werden nicht mehr als offene aktuelle Foundation-Unterprojekte geführt.
 
 Für PR #108 ist der reale GitHub-Merge-Stand:
 
@@ -128,6 +126,16 @@ source_head: 48e627eb3d61ab8e41d933d709d9f93cdc0a0273
 merge_commit: 34b1f46120f951ca2a6308cf1d9fbbb4b0a17863
 thresholds: reorder=50% of target; critical=25% of target
 acceptance_boundary: MissionDemand Lua contract PASS; branch-specific documentation review PASS; local branch and post-merge main readback PASS; kein DCS-Runtime-Claim
+```
+
+Für PR #117 ist der reale GitHub-Merge-Stand:
+
+```text
+PR: 117
+status: MERGED
+source_head: 0c654f2e699a4b8150b785f90fe14e53d2435016
+merge_commit: d1ef605c510917b2e69bfb96c109ad9ff8e26654
+acceptance_boundary: historical VERTICAL-2 DCS PASS retained for exact provenance; reconciled VERTICAL-3 local build/hash and GitHub Lua 5.1 contract/build PASS; reconciled source not DCS-validated by owner decision
 ```
 
 ## 4. Verbindliche Regeln

@@ -11,9 +11,9 @@ project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
   - pre-governance air-operations implementation document with four-client limit
 superseded_by:
-source_branch: agent/resolve-document-number-collisions
-source_commit: b9247ea7400dfa0d508536bb8ee10cb222ee5892
-validated_in_dcs: false
+source_branch: agent/awacs-external-lifecycle-foundation
+source_commit: PENDING_MERGE
+validated_in_dcs: partial
 document_class: AIR_OPERATIONS_ARCHITECTURE
 ---
 
@@ -432,3 +432,155 @@ Mögliche MissionDemand-Typen:
 - `FARP_AMMUNITION_DELIVERY`.
 
 Diese Erweiterung ist noch keine implementierte technische Baseline. Vor eigenem Code sind MOOSE-Warehouse-, AIRWING-, AUFTRAG-, OPSTRANSPORT- und Event/FSM-Funktionen vollständig zu prüfen.
+
+## 17. Extern basierte E-3-AWACS-Base
+
+### 17.1 Strategischer und physischer Vertrag
+
+Für den aktuellen DCS-Afghanistan-Kartenausschnitt wird die USAF-E-3 nicht an einem erfundenen afghanischen Ersatzflugplatz stationiert. Der strategische AWACS-Knoten bleibt:
+
+```text
+OFFMAP_AL_DHAFRA
+```
+
+Der Referenzflug ist eine dokumentierte Mission der `964th Expeditionary Airborne Air Control Squadron` über Afghanistan am 26.11.2010. Die OMW-Herleitung der Al-Dhafra-Source wird im Source Record getrennt von den Designentscheidungen dokumentiert:
+
+- [`USAF E-3 AWACS Afghanistan 2010/2011 – Source Record`](evidence/source-records/usaf-awacs-afghanistan-2010-2011-source-record.md)
+
+CampaignState bleibt die strategische Ressourcenautorität. DCS-Gruppen sind nur temporäre physische Repräsentationen. Der minimale OMW-Designbestand bleibt:
+
+```text
+AIRCRAFT_E3A_AWACS @ OFFMAP_AL_DHAFRA = 2
+```
+
+Diese Zahl bildet `1 ACTIVE + maximal 1 RELIEF` ab und ist keine Behauptung über die historische Zahl der 964th-EAACS-Flugzeuge in Al Dhafra.
+
+### 17.2 Produktionsartefakt und Mission-Editor-Template
+
+Das produktive AWACS-Bundle lautet:
+
+```text
+tools/build-awacs-base.ps1
+-> mission/runtime/air-operations/OMW_AWACS_Base.lua
+```
+
+Die Base bündelt den DCS-bestätigten WIZARD-Lifecycle aus `OMW_AWACS_Controller_FullLifecycle_V3.lua` sowie die minimale zweite AAR-Erweiterung `OMW_AWACS_MOE_Relief.lua`. Acceptance-Harnesses sind nicht Bestandteil der Base.
+
+Mission-Editor-Template:
+
+```text
+Group:      OMW_C2_E3A_WIZARD
+Type:       E-3A
+Task:       AWACS
+Late Act.:  true
+Callsign:   WIZARD
+Frequency:  357.300 MHz AM
+```
+
+Die Runtime setzt keine erfundene `SPAWN:InitFuel(...)`-API voraus.
+
+### 17.3 Navigation und APOC-Profil
+
+Afghanische ATS-Namen und Koordinaten folgen der periodengerechten Afghanistan-AIP. Daher wird `ROSIE` als Kabul-FIR-Ein-/Ausflugspunkt verwendet.
+
+```text
+Strategic source:    OFFMAP_AL_DHAFRA
+External spawn:      N31°30'42.29" E069°13'47.32" approx.
+FIR ingress:         ROSIE
+Primary AEW area:    APOC
+FIR egress:          ROSIE
+External handoff:    external spawn coordinate
+```
+
+Der DCS-validierte Produktionsflugzustand lautet:
+
+```text
+WIZARD visible transit:  FL350 / 270 KIAS target
+APOC racetrack:          FL320 / 250 KIAS / 017T / 30 NM
+Late approach:           30 NM
+```
+
+Der frühere Stagingstand `FL340 / 300 kt` beziehungsweise `APOC 300 kt` ist für die Produktion superseded und darf nicht mehr als aktuelle AWACS-Baseline verwendet werden.
+
+### 17.4 Service- und Sensorzustand
+
+Der physische APOC-Orbit bleibt persistent. Service- und Sensorzustand werden davon getrennt geführt. Der validierte Lifecycle umfasst:
+
+```text
+visible materialization
+-> ROSIE ingress
+-> APOC persistent racetrack
+-> scheduled service / sensor activation
+-> AAR interruption with sensor off
+-> physical APOC rejoin
+-> sensor restore
+-> service-end egress
+-> ROSIE outbound
+-> external handoff / despawn / strategic recredit
+```
+
+Die MOOSE-Klasse `AWACS` wird für diesen OMW-Scope nicht verwendet. Die physische Abbildung bleibt MOOSE-first über `SPAWN`, `FLIGHTGROUP`, `AUFTRAG`, `COORDINATE` und FSM-/Callback-Pfade.
+
+### 17.5 Fuel- und AAR-Baseline
+
+E-3-Luftbetankung über Afghanistan ist für 2011 quellenbelegt. Für OMW ist der physische AAR-Lifecycle inzwischen in DCS praktisch bestätigt.
+
+Aktuelle Produktionswerte:
+
+```text
+planned AAR 1:         LISA
+planned AAR 2:         MOE
+common AWACS AAR area: 33.6233926368 N / 68.6395554105 E
+AAR track:             FL250 / 270 KIAS / 340T / 20 NM
+LISA FuelLow:          38 %
+MOE FuelLow:           31 %
+planned pre-dispatch:  65 % WIZARD fuel
+fallback AAR trigger:  40 % WIZARD fuel
+contingency floor:     25 % WIZARD fuel
+```
+
+Receiver-Pfad:
+
+```text
+Controller.RequestRefuel(...)
+-> FLIGHTGROUP:Refuel(...)
+-> MOOSE/DCS refuelling task
+-> Refueled FSM
+-> persistent APOC mission rejoin
+```
+
+Der erste geplante Zyklus verwendet LISA, der zweite MOE auf derselben dedizierten AWACS-AAR-Geometrie. Der verworfene V4-/Live-Retask-Pfad mit `ClearWaypoints()` und `OMW_AWACS_AARDemandAdapter.lua` gehört ausdrücklich nicht zur Produktionsarchitektur.
+
+### 17.6 DCS-Nachweis und Provenienzgrenze
+
+Der vollständige Source-Lifecycle wurde am 24.08.2026 auf folgendem Source-Stand praktisch bestätigt:
+
+```text
+Branch:        agent/awacs-external-lifecycle-foundation
+Source commit: 2bda2f066ce1ad11aeed5eb7b98b294d2e399e2d
+DCS:           2.9.28.26385 MT
+MOOSE commit:  73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+Moose.lua SHA: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
+```
+
+Bestätigt wurden LISA-AAR, APOC-Rejoin, MOE-AAR, zweiter APOC-Rejoin sowie finaler ROSIE-Egress und External Handoff. Die exakten MIZ-/internal-`mission`-Hashes dieses vollständigen Foundation-Laufs wurden nicht nachträglich rekonstruiert.
+
+Das daraus ohne Lifecycle-Änderung gebaute Produktionsartefakt wurde anschließend separat als Base-Packaging in DCS smoke-validiert:
+
+```text
+Base source commit:       c738052037c741f4b52cc6d2f0c818a6b24babc5
+OMW_AWACS_Base.lua SHA:   c4e2ab13c2a3be9165993bb4f92bb1b81e34cddfd9dee0e0e7139a12a97ca213
+Mission:                  OMW_Template_v20.miz
+MIZ SHA-256:              22220f7c7686228897ac6e7fc0f7bb34ce068cc929a6b7fcf08213f8f5b2be0c
+internal mission SHA-256: ed02eab1ffc4c353ee16f929d44f3c55fe28093b78ea80508f2fa71fd692775f
+DCS:                      2.9.28.26385 MT
+Result:                   PASS for Base load / bootstrap / materialization / APOC smoke scope
+```
+
+Dieser Smoke-PASS validiert das neu benannte Base-Packaging, ersetzt aber nicht die Provenienzgrenze des zuvor vollständig geflogenen Source-Lifecycle-Laufs.
+
+Technische Details:
+
+- [`OMW-MOOSE-AWACS-EXTERNAL-LIFECYCLE`](moose/AWACS-EXTERNAL-LIFECYCLE.md)
+- [`OMW-MOOSE-AWACS-FUEL-DRIVEN-AAR`](moose/AWACS-FUEL-DRIVEN-AAR-LIFECYCLE.md)
+- [`AWACS Acceptance 4`](../mission/tests/awacs-external-lifecycle/ACCEPTANCE-4.md)

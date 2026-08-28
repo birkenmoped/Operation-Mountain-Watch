@@ -1,8 +1,12 @@
--- Operation Mountain Watch - Bagram AIRWING/SQUADRON foundation.
+-- Operation Mountain Watch - Bagram AIRWING/SQUADRON production base.
 --
 -- Scope: dual AIRWING, seven SQUADRONs, inventory registration, grouping,
 -- turnover, takeoff configuration, mission capabilities, role payloads,
--- validated Bagram parking policy and AIRWING start.
+-- owner-authored Bagram parking policy, and AIRWING start.
+--
+-- Parking authority: docs/data/bagram-parking-policy.csv.
+-- Only rows with Status=AI are eligible for MOOSE AIRWING parking.
+-- Rows marked Static, Client, or BLOCKED are excluded at airbase level.
 --
 -- Deliberately excluded: COMMANDER, AUFTRAG instances, OPSTRANSPORT, F10/test
 -- controls, tactical mission orchestration, recovery and persistence.
@@ -10,9 +14,10 @@
 OMW = OMW or {}
 OMW.AirOps = OMW.AirOps or {}
 
-local TAG = "[OMW][AirOps.BGRAM.Foundation]"
+local TAG = "[OMW][AirOps.BGRAM]"
 local MOOSE_COMMIT = "73d3ed119cd9e7e3f2cfcabbaa34513d30529b54"
 local MOOSE_SHA256 = "e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915"
+local PARKING_POLICY_SOURCE = "docs/data/bagram-parking-policy.csv"
 
 local function log(message)
   env.info(TAG .. " " .. tostring(message))
@@ -55,21 +60,41 @@ local config = {
   representedAirframes = 81,
   logicalReserve = 2,
 
-  -- Hard airbase-level exclusions. These are the currently authored Bagram
-  -- client positions plus the two HAZ survey positions. SQUADRON parkingIDs
-  -- are authoritative for the AIRWING asset path and intentionally do not
-  -- include any of these IDs.
-  parkingBlacklist = {
-    111, -- A08 C-130 client
-    21,  -- A09 C-130 client
-    24,  -- M27 F-15E client
-    158, -- M28 F-15E client
-    114, -- M29 F-16C client
-    145, -- M30 F-16C client
-    88,  -- R21 CH-47 client
-    85,  -- R22 CH-47 client
-    188, -- HAZ01
-    31,  -- HAZ02
+  -- Exact complement of the 69 owner-authored Status=AI rows.
+  -- Static, Client, and BLOCKED rows are never eligible for MOOSE AIRWING parking.
+  parkingBlacklist = { 66, 2, 41, 92, 149, 52, 102, 111, 21, 4, 56, 40, 175, 22, 179, 9, 124, 123, 109, 23, 136, 105, 58, 140, 154, 93, 115, 169, 33, 25, 81, 44, 142, 19, 6, 91, 83, 162, 112, 184, 63, 94, 129, 131, 170, 75, 134, 186, 29, 48, 10, 101, 34, 107, 165, 62, 32, 14, 20, 168, 13, 178, 160, 3, 116, 49, 55, 130, 78, 110, 177, 99, 43, 166, 28, 155, 188, 31, 121, 120, 35, 27, 16, 71, 82, 64, 126, 159, 151, 24, 158, 114, 145, 30, 173, 47, 139, 11, 106, 90, 0, 88, 85, 135, 122, 59, 26, 72, 8, 161, 185, 125, 141, 171, 53, 73, 113, 100 },
+
+  parkingProfiles = {
+    F15E = {
+      csvAsset = "F-15E",
+      parkingLabels = "E01, E02, E03, E04, E05, M03, M05, M06, M08, M09, M10, M21, M22, M25, M26",
+      parkingIDs = { 189, 157, 138, 39, 84, 1, 190, 108, 60, 103, 80, 137, 148, 128, 42 },
+    },
+    F16C = {
+      csvAsset = "F-16",
+      parkingLabels = "M13, M14, M15, M16, M17",
+      parkingIDs = { 183, 133, 119, 12, 117 },
+    },
+    MQ1A = {
+      csvAsset = "MQ-1A",
+      parkingLabels = "N09, N10, N11",
+      parkingIDs = { 50, 180, 152 },
+    },
+    C130 = {
+      csvAsset = "C-130J-30",
+      parkingLabels = "S03, S04",
+      parkingIDs = { 37, 97 },
+    },
+    UH60 = {
+      csvAsset = "UH-60",
+      parkingLabels = "N01, N02, N03, N04, N05, N06, N07, N08, P01, P02, P03, P04, P07, P08, P09, P10, P11, P12, P13, P14, R01, R02, R03, R04, R05, R06, R07, R26, R28, R29, R31, R32, R33, R34, R35",
+      parkingIDs = { 79, 51, 57, 187, 15, 68, 181, 7, 76, 132, 38, 174, 176, 150, 146, 17, 89, 70, 143, 5, 95, 46, 167, 127, 65, 45, 54, 118, 74, 87, 147, 18, 77, 36, 153 },
+    },
+    CH47 = {
+      csvAsset = "CH-47F",
+      parkingLabels = "R08, R09, R10, R13, R14, R17, R18, R19, R20",
+      parkingIDs = { 144, 104, 182, 172, 67, 163, 96, 164, 61 },
+    },
   },
 
   usaf = {
@@ -91,8 +116,7 @@ local config = {
       grouping = 2,
       logicalAircraft = 13,
       residualAircraft = 1,
-      parkingLabels = "M01-M12",
-      parkingIDs = { 121, 120, 1, 35, 190, 108, 27, 60, 103, 80, 16, 71 },
+      parkingProfile = "F15E",
       missionTypes = { AUFTRAG.Type.CAS, AUFTRAG.Type.STRIKE },
       payloadTemplates = {
         "TPL_AIR_US_BGRM_F15E_CAS_2SHIP",
@@ -107,8 +131,7 @@ local config = {
       grouping = 2,
       logicalAircraft = 13,
       residualAircraft = 1,
-      parkingLabels = "M13-M24",
-      parkingIDs = { 183, 133, 119, 12, 117, 82, 64, 126, 137, 148, 159, 151 },
+      parkingProfile = "F16C",
       missionTypes = { AUFTRAG.Type.CAS },
       payloadTemplates = { "TPL_AIR_US_BGRM_F16C_CAS_2SHIP" },
     },
@@ -120,8 +143,7 @@ local config = {
       grouping = 1,
       logicalAircraft = 8,
       residualAircraft = 0,
-      parkingLabels = "B01-B08",
-      parkingIDs = { 56, 40, 175, 22, 179, 9, 124, 123 },
+      parkingProfile = "MQ1A",
       missionTypes = { AUFTRAG.Type.RECON },
       payloadTemplates = { "TPL_AIR_US_BGRM_MQ1A_RECON_1SHIP" },
     },
@@ -133,8 +155,7 @@ local config = {
       grouping = 1,
       logicalAircraft = 20,
       residualAircraft = 0,
-      parkingLabels = "A10,S01-S05",
-      parkingIDs = { 4, 185, 125, 37, 97, 141 },
+      parkingProfile = "C130",
       missionTypes = { AUFTRAG.Type.TROOPTRANSPORT },
       payloadTemplates = { "TPL_AIR_US_BGRM_C130_TRANSPORT_1SHIP" },
     },
@@ -146,8 +167,9 @@ local config = {
       grouping = 1,
       logicalAircraft = 6,
       residualAircraft = 0,
-      parkingLabels = "R15-R16",
-      parkingIDs = { 90, 0 },
+      -- DCS represents this OMW HH-60G seed as UH-60A, so it uses the
+      -- owner-authored CSV Asset=UH-60 parking compatibility profile.
+      parkingProfile = "UH60",
       missionTypes = { AUFTRAG.Type.RESCUEHELO },
       payloadTemplates = { "TPL_AIR_US_BGRM_HH60G_CSAR_1SHIP" },
     },
@@ -159,8 +181,7 @@ local config = {
       grouping = 1,
       logicalAircraft = 10,
       residualAircraft = 0,
-      parkingLabels = "R17-R18",
-      parkingIDs = { 163, 96 },
+      parkingProfile = "UH60",
       missionTypes = { AUFTRAG.Type.TROOPTRANSPORT, AUFTRAG.Type.CARGOTRANSPORT },
       payloadTemplates = { "TPL_AIR_US_BGRM_UH60_UTILITY_1SHIP" },
     },
@@ -172,8 +193,7 @@ local config = {
       grouping = 1,
       logicalAircraft = 13,
       residualAircraft = 0,
-      parkingLabels = "R19-R20",
-      parkingIDs = { 164, 61 },
+      parkingProfile = "CH47",
       missionTypes = { AUFTRAG.Type.TROOPTRANSPORT, AUFTRAG.Type.CARGOTRANSPORT },
       payloadTemplates = { "TPL_AIR_US_BGRM_CH47_TRANSPORT_1SHIP" },
     },
@@ -214,6 +234,14 @@ local function getSquadronDefinition(name)
   return nil
 end
 
+local function getParkingProfile(definition)
+  local profile = definition and config.parkingProfiles[definition.parkingProfile] or nil
+  if not profile then
+    error("Missing Bagram parking profile for squadron: " .. tostring(definition and definition.name or "unknown"))
+  end
+  return profile
+end
+
 local function validateParkingPolicy()
   local blacklisted = {}
   for _, terminalID in ipairs(config.parkingBlacklist) do
@@ -224,22 +252,34 @@ local function validateParkingPolicy()
   end
 
   local assigned = {}
-  for key, definition in pairs(config.squadrons) do
-    if type(definition.parkingIDs) ~= "table" or #definition.parkingIDs == 0 then
-      error("Missing parkingIDs for Bagram squadron: " .. tostring(key))
+  for profileName, profile in pairs(config.parkingProfiles) do
+    if type(profile.parkingIDs) ~= "table" or #profile.parkingIDs == 0 then
+      error("Missing parkingIDs for Bagram parking profile: " .. tostring(profileName))
     end
-    for _, terminalID in ipairs(definition.parkingIDs) do
+    for _, terminalID in ipairs(profile.parkingIDs) do
       if blacklisted[terminalID] then
-        error(string.format("Bagram squadron %s includes blacklisted TerminalID %d", key, terminalID))
+        error(string.format("Bagram parking profile %s includes excluded TerminalID %d", profileName, terminalID))
       end
       if assigned[terminalID] then
-        error(string.format("Bagram TerminalID %d assigned to multiple squadrons: %s and %s", terminalID, assigned[terminalID], key))
+        error(string.format("Bagram TerminalID %d assigned to multiple CSV asset profiles: %s and %s", terminalID, assigned[terminalID], profileName))
       end
-      assigned[terminalID] = key
+      assigned[terminalID] = profileName
     end
   end
 
-  log(string.format("PARKING_POLICY_PRESTART status=PASS blacklist=%d assignedAI=%d", #config.parkingBlacklist, countTable(assigned)))
+  if countTable(assigned) ~= 69 or #config.parkingBlacklist ~= 118 then
+    error(string.format(
+      "Bagram CSV parking partition mismatch: ai=%d excluded=%d expected=69/118",
+      countTable(assigned),
+      #config.parkingBlacklist
+    ))
+  end
+
+  log(string.format(
+    "PARKING_POLICY_PRESTART status=PASS source=%s csvRows=187 ai=69 excluded=118 assetProfiles=%d",
+    PARKING_POLICY_SOURCE,
+    countTable(config.parkingProfiles)
+  ))
 end
 
 local function finalizeParkingValidation()
@@ -302,12 +342,14 @@ local function validateNewAssetParking(asset, assignment)
   parkingValidation.seen[uid] = true
   parkingValidation.assetsChecked = parkingValidation.assetsChecked + 1
 
-  if not sameNumberSet(asset.parkingIDs, definition.parkingIDs) then
+  local profile = getParkingProfile(definition)
+  if not sameNumberSet(asset.parkingIDs, profile.parkingIDs) then
     parkingValidation.failed = parkingValidation.failed + 1
     env.error(string.format(
-      "%s PARKING_ASSET status=FAIL squadron=%s asset=%s",
+      "%s PARKING_ASSET status=FAIL squadron=%s profile=%s asset=%s",
       TAG,
       definition.name,
+      definition.parkingProfile,
       tostring(uid or "unknown")
     ), false)
   end
@@ -328,9 +370,6 @@ local function createAirwing(definition)
   airwing:SetAirbase(airbase)
   airwing:SetTakeoffCold()
 
-  -- MOOSE WAREHOUSE:AddAsset() emits NewAsset after 0.1 s. The inherited
-  -- LEGION:onafterNewAsset() assigns cohort parkingIDs before this public
-  -- OnAfterNewAsset callback runs. Validate exactly at that lifecycle point.
   function airwing:OnAfterNewAsset(From, Event, To, asset, assignment)
     validateNewAssetParking(asset, assignment)
   end
@@ -347,10 +386,11 @@ local function createSquadron(airwing, definition)
     error("Inventory/grouping mismatch: " .. tostring(definition.name))
   end
 
+  local profile = getParkingProfile(definition)
   local squadron = SQUADRON:New(definition.template, definition.assetGroups, definition.name)
   squadron:SetGrouping(definition.grouping)
   squadron:SetTurnoverTime(config.turnoverMin, config.turnoverMax)
-  squadron:SetParkingIDs(definition.parkingIDs)
+  squadron:SetParkingIDs(profile.parkingIDs)
   squadron:AddMissionCapability(definition.missionTypes)
   airwing:AddSquadron(squadron)
 
@@ -361,7 +401,7 @@ local function createSquadron(airwing, definition)
   end
 
   log(string.format(
-    "SQUADRON_REGISTERED name=%s wing=%s template=%s assetGroups=%d grouping=%d representedAircraft=%d logicalAircraft=%d residualAircraft=%d payloads=%d parkingLabels=%s parkingIDs=%d",
+    "SQUADRON_REGISTERED name=%s wing=%s template=%s assetGroups=%d grouping=%d representedAircraft=%d logicalAircraft=%d residualAircraft=%d payloads=%d parkingProfile=%s csvAsset=%s parkingLabels=%s parkingIDs=%d",
     definition.name,
     definition.wing,
     definition.template,
@@ -371,16 +411,19 @@ local function createSquadron(airwing, definition)
     definition.logicalAircraft,
     residualAircraft,
     #payloads,
-    definition.parkingLabels,
-    #definition.parkingIDs
+    definition.parkingProfile,
+    profile.csvAsset,
+    profile.parkingLabels,
+    #profile.parkingIDs
   ))
 
   return squadron, payloads, representedAircraft, residualAircraft
 end
 
 local function constructFoundation()
-  log("BEGIN Bagram dual-AIRWING/SQUADRON initialization with parking policy")
+  log("BEGIN Bagram dual-AIRWING/SQUADRON production initialization")
   log("MOOSE commit=" .. MOOSE_COMMIT .. " sha256=" .. MOOSE_SHA256)
+  log("PARKING_POLICY source=" .. PARKING_POLICY_SOURCE)
 
   if not AIRWING or not SQUADRON or not GROUP or not AIRBASE or not AUFTRAG then
     error("Required MOOSE AIRWING/SQUADRON foundation classes are unavailable")
@@ -439,7 +482,7 @@ local function constructFoundation()
     Squadrons = squadrons,
     Payloads = payloads,
     Config = config,
-    Scope = "AIRWING_SQUADRON_FOUNDATION_WITH_PARKING_POLICY",
+    Scope = "AIRWING_SQUADRON_BASE_WITH_OWNER_PARKING_POLICY",
     RegisteredGroups = registeredGroups,
     RepresentedAirframes = representedAircraft,
     LogicalAirframes = logicalAircraft,
@@ -460,22 +503,20 @@ local function inspectIdleFoundation()
 
   local expectedAssets = state.RegisteredGroups
   local observedAssets = 0
-  local parkingPoolsDefined = 0
+  local parkingProfilesReferenced = {}
 
   for key, squadron in pairs(state.Squadrons) do
     local definition = state.Config.squadrons[key]
     observedAssets = observedAssets + countTable(squadron.assets)
-    if type(definition.parkingIDs) == "table" and #definition.parkingIDs > 0 then
-      parkingPoolsDefined = parkingPoolsDefined + 1
-    end
+    parkingProfilesReferenced[definition.parkingProfile] = true
   end
 
   log(string.format(
-    "PARKING_POLICY_POSTSTART status=PENDING assetsChecked=%d expectedAssets=%d failed=%d parkingPools=%d lifecycle=AWAITING_WAREHOUSE_NEWASSET",
+    "PARKING_POLICY_POSTSTART status=PENDING assetsChecked=%d expectedAssets=%d failed=%d parkingProfiles=%d lifecycle=AWAITING_WAREHOUSE_NEWASSET",
     observedAssets,
     expectedAssets,
     parkingValidation.failed,
-    parkingPoolsDefined
+    countTable(parkingProfilesReferenced)
   ))
 end
 
