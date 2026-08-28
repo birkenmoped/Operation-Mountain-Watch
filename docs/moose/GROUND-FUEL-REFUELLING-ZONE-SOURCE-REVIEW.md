@@ -1,14 +1,17 @@
 ---
 document_id: OMW-MOOSE-GROUND-FUEL-REFUELLING-ZONE-SOURCE-REVIEW
-status: SOURCE_REVIEWED
+status: BINDING
 document_class: TECHNICAL_SOURCE_REVIEW
 owning_policy: OMW-GOV-001
 authoritative_for:
-  - branch-local Stage 1B2 MOOSE source review for Ground FUELSUPPLY execution
+  - MOOSE source and runtime interpretation for Ground FUELSUPPLY one-shot execution
+  - distinction between one-shot FUELSUPPLY and persistent BRIGADE refuelling services
 not_authoritative_for:
-  - repository-wide production Fuel executor selection before merge to main
+  - strategic fuel authority outside CampaignState
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
+supersedes:
+superseded_by:
 source_branch: agent/automatic-response-orchestration
 source_commit: PENDING_MERGE
 validated_in_dcs: true
@@ -26,83 +29,16 @@ Moose.lua SHA-256: E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A
 
 Maßgeblich ist die tatsächlich verwendete `Moose.lua`.
 
-## 2. AUFTRAG:NewFUELSUPPLY
+## 2. One-Shot FUELSUPPLY
 
-Der gepinnte Source bestätigt:
-
-```lua
-function AUFTRAG:NewFUELSUPPLY(Zone)
-  local mission=AUFTRAG:New(AUFTRAG.Type.FUELSUPPLY)
-  mission:_TargetFromObject(Zone)
-  mission.optionROE=ENUMS.ROE.WeaponHold
-  mission.optionAlarm=ENUMS.AlarmState.Auto
-  mission.missionFraction=1.0
-  mission.categories={AUFTRAG.Category.GROUND}
-  mission.DCStask=mission:GetDCSMissionTask()
-  return mission
-end
-```
-
-Der FUELSUPPLY-SpecialTask bleibt am Ziel aktiv, bis eine Lifecycle-Aktion ihn beendet. `TaskCancel` behandelt FUELSUPPLY als abschließbaren SpecialTask.
-
-Für einen einzelnen strategischen CampaignState-Transfer ist `AUFTRAG:NewFUELSUPPLY(Zone)` die kleinste direkte MOOSE-Abstraktion, die genau einen FUELSUPPLY-Auftrag repräsentiert.
-
-## 3. BRIGADE:AddRefuellingZone
-
-Der gepinnte Source enthält:
-
-```lua
-function BRIGADE:AddRefuellingZone(RefuellingZone)
-  local supplyzone={}
-  supplyzone.zone=RefuellingZone
-  supplyzone.mission=nil
-  supplyzone.marker=MARKER:New(supplyzone.zone:GetCoordinate(), "Refuelling Zone"):ToCoalition(self:GetCoalition())
-  table.insert(self.refuellingZones, supplyzone)
-  return supplyzone
-end
-```
-
-Der BRIGADE-Statuslauf verwaltet diese Zone persistent:
-
-```lua
-if (not supplyzone.mission) or supplyzone.mission:IsOver() then
-  supplyzone.mission=AUFTRAG:NewFUELSUPPLY(supplyzone.zone)
-  self:AddMission(supplyzone.mission)
-end
-```
-
-Damit ist `AddRefuellingZone(...)` kein One-Shot-Transfer-Dispatcher. Die Methode registriert einen dauerhaft zu verwaltenden Refuelling-Service. Sobald die aktuelle Mission over ist, erzeugt BRIGADE erneut FUELSUPPLY.
-
-## 4. Stage-1B2 Build 2-2
-
-Der DCS-Lauf mit Build `GROUND-FUEL-REFUELLING-ZONE-ACCEPTANCE-2-2` bestätigte diese Source-Semantik:
-
-```text
-FUELSUPPLY assigned
--> convoy reaches Honaker
--> destination zone observed
--> MissionExecute observed
--> CampaignState delivery committed
--> mission cancelled / MissionDone
--> BRIGADE creates replacement FUELSUPPLY
--> acceptance detects MULTIPLE_FUELSUPPLY_MISSIONS_ASSIGNED
-```
-
-Daher gilt:
-
-```text
-BRIGADE:AddRefuellingZone for persistent service: SOURCE + RUNTIME CONSISTENT
-BRIGADE:AddRefuellingZone for one-shot strategic transfer: NOT SUITABLE
-```
-
-## 5. Stage-1B2 Build 2-3
-
-Build 2-3 ersetzte ausschließlich die persistente Service-Registrierung durch einen einzelnen MOOSE-Auftrag:
+Der gepinnte Source bestätigt `AUFTRAG:NewFUELSUPPLY(Zone)` als direkten Ground-FUELSUPPLY-Auftrag. Für einen einzelnen strategischen CampaignState-Transfer ist dies die kleinste passende MOOSE-Abstraktion.
 
 ```text
 AUFTRAG:NewFUELSUPPLY(destinationZone)
 -> BRIGADE:AddMission(mission)
 ```
+
+Build 2-3 bestätigte diesen Pfad praktisch einschließlich MissionExecute, CampaignState exact-once Delivery, MissionDemand SUCCESS, MOOSE ReturnToLegion, Returned und Warehouse AddAsset.
 
 Akzeptierte Provenienz:
 
@@ -113,38 +49,38 @@ Bundle SHA-256: 8CBDFA12B1A052517D82CB20A460CA665415353FE38ED2F1C50928BE6C7966A0
 DCS: 2.9.28.26385 MT
 Mission: OMW_Template_v19.miz
 Executed MIZ SHA-256: 603422EFAFFA860041089D0F1AD41D35642A7863BC1C7B658E0B8F15A6EB63F2
-Owner confirmation: mission was not saved or otherwise modified after the successful Build-2-3 DCS run before hashing
 MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
 Moose.lua SHA-256: E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915
 ```
 
-Der reale DCS-Lauf beobachtete vollständig:
+Maßgebliches Acceptance-Dokument:
 
 ```text
-MISSION_QUEUED
--> ROAD_ALIGNED_WAREHOUSE_SPAWN
--> GROUP_MATERIALIZED
--> ARMY_ON_MISSION FUELSUPPLY
--> DESTINATION_ZONE_ENTERED
--> MISSION_EXECUTE_OBSERVED
--> DELIVERY_CONFIRMED
--> MISSION_DONE
--> MOOSE ReturnToLegion
--> RETURNED_HANDOFF
--> RETURN_RTZ_ACTIVE
--> WAREHOUSE_ADD_ASSET
--> PASS
+mission/tests/ground-resupply-execution/ACCEPTANCE-4.md
 ```
 
-Damit sind die One-Shot- und Return-Semantiken praktisch bestätigt.
+## 3. BRIGADE:AddRefuellingZone
 
-## 6. ReturnToLegion
+Der gepinnte Source registriert mit `BRIGADE:AddRefuellingZone(...)` eine persistente Refuelling-Service-Zone. Der BRIGADE-Statuspfad erzeugt erneut `AUFTRAG:NewFUELSUPPLY(...)`, sobald die vorherige Mission over ist.
 
-`AUFTRAG:SetReturnToLegion(Switch)` kann den Return explizit überschreiben. Ohne `false` entscheidet der OPSGROUP-Default.
+Build 2-2 bestätigte genau diese Semantik in DCS:
 
-Build 2-3 verwendete keinen projektspezifischen RTZ-Aufruf. Der DCS-Lauf bestätigte den normalen MOOSE-ReturnToLegion-Pfad bis `Returned` und `Warehouse AddAsset`.
+```text
+FUELSUPPLY assigned
+-> destination reached
+-> delivery committed
+-> MissionDone
+-> replacement FUELSUPPLY generated
+```
 
-## 7. OMW-Architekturgrenze
+Daher gilt:
+
+```text
+BRIGADE:AddRefuellingZone for persistent service: VALID
+BRIGADE:AddRefuellingZone for one-shot CampaignState transfer: NOT SUITABLE
+```
+
+## 4. OMW-Architekturgrenze
 
 ```text
 CampaignState GROUND_FUEL_PACKAGE
@@ -154,47 +90,17 @@ FUELSUPPLY / BRIGADE / PLATOON / ARMYGROUP / M978
 = physical operational execution only
 ```
 
-Nicht zulässig ist die Ableitung:
+Nicht zulässig ist die Ableitung einer autoritativen CampaignState-Menge aus physischer M978-/DCS-/MOOSE-Fuel-Menge.
+
+## 5. Praktisch bestätigter Methoden-Scope
 
 ```text
-M978 physical fuel quantity
--> authoritative CampaignState package quantity
+AUFTRAG:NewFUELSUPPLY(...)                              VALIDATED_FOR_DOCUMENTED_SCOPE
+BRIGADE:AddMission(one-shot FUELSUPPLY)                VALIDATED_FOR_DOCUMENTED_SCOPE
+FUELSUPPLY cancel -> MissionDone                       VALIDATED_FOR_DOCUMENTED_SCOPE
+normal MOOSE Ground ReturnToLegion                     VALIDATED_FOR_DOCUMENTED_SCOPE
+Returned -> Warehouse AddAsset                        VALIDATED_FOR_DOCUMENTED_SCOPE
+BRIGADE:AddRefuellingZone persistent replacement      SOURCE_REVIEWED + DCS_OBSERVED
 ```
 
-Für einen One-Shot-CampaignState-Transfer ist nach Source- und Runtime-Evidenz der bevorzugte physische Pfad:
-
-```text
-AUFTRAG:NewFUELSUPPLY
--> BRIGADE:AddMission
-```
-
-`BRIGADE:AddRefuellingZone` bleibt für persistente Refuelling-Service-Anforderungen geeignet, nicht für einen einzelnen strategischen Transfer.
-
-## 8. Acceptance
-
-Maßgebliches Acceptance-Dokument:
-
-```text
-mission/tests/ground-resupply-execution/ACCEPTANCE-4.md
-```
-
-Status:
-
-```text
-runtime_result: PASS
-validated_in_dcs: true
-formal_acceptance: ACCEPTED_TECHNICAL_BASELINE
-executed_miz_sha256: 603422EFAFFA860041089D0F1AD41D35642A7863BC1C7B658E0B8F15A6EB63F2
-```
-
-## 9. Method status
-
-```text
-AUFTRAG:NewFUELSUPPLY: SOURCE_REVIEWED + VALIDATED_FOR_DOCUMENTED_SCOPE
-BRIGADE:AddMission for one-shot FUELSUPPLY: VALIDATED_FOR_DOCUMENTED_SCOPE
-BRIGADE:AddRefuellingZone persistent replacement behavior: SOURCE_REVIEWED + DCS_OBSERVED
-FUELSUPPLY SpecialTask cancel path: SOURCE_REVIEWED + DCS_OBSERVED
-MOOSE default Ground ReturnToLegion completion for one-shot FUELSUPPLY: VALIDATED_FOR_DOCUMENTED_SCOPE
-preferred one-shot Fuel executor: MOOSE FUELSUPPLY
-formal Stage 1B2 accepted technical baseline: COMPLETE
-```
+Die Validierung gilt ausschließlich für die dokumentierte Stage-1B2-Provenienz und den gepinnten MOOSE-Stand.
