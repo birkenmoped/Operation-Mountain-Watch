@@ -1,7 +1,8 @@
--- Operation Mountain Watch - CampaignState adapter for player ISR UAV reservations.
+-- Operation Mountain Watch - CampaignState adapter for player ISR UAV settlement.
 --
--- CampaignState remains the only strategic source of availability. This adapter
--- never creates an aircraft and never contains a second stock ledger.
+-- MOOSE AIRWING owns physical admission, queueing and turnaround. CampaignState
+-- mirrors a confirmed physical start and a confirmed physical recovery using
+-- idempotent transaction/credit IDs. It does not maintain a second queue.
 
 local Adapter = {}
 Adapter.__index = Adapter
@@ -42,7 +43,7 @@ function Adapter:Reserve(requestId, profile)
     fail("profile is required")
   end
   if self.reservationsByRequestId[requestId] then
-    return nil, "REQUEST_ALREADY_RESERVED"
+    return self.reservationsByRequestId[requestId]
   end
 
   local transactionId = "ISR-UAV-RESERVE:" .. requestId
@@ -60,12 +61,12 @@ function Adapter:Reserve(requestId, profile)
   })
   if not ok then
     if tostring(transaction):find("insufficient available resource", 1, true) then
-      return nil, "RESOURCE_UNAVAILABLE"
+      return nil, "CAMPAIGNSTATE_MOOSE_DIVERGENCE_RESOURCE_UNAVAILABLE"
     end
     return nil, "CAMPAIGNSTATE_RESERVATION_FAILED"
   end
   if not transaction then
-    return nil, reason
+    return nil, reason or "CAMPAIGNSTATE_RESERVATION_FAILED"
   end
 
   local reservation = {
@@ -88,12 +89,35 @@ function Adapter:ConsumeAtPhysicalStart(requestId)
   if reservation.consumed then
     return reservation
   end
-  local transaction, reason = self.campaignState:Consume(reservation.transactionId)
+  local ok, transaction, reason = pcall(self.campaignState.Consume,
+    self.campaignState, reservation.transactionId)
+  if not ok then
+    return nil, "CAMPAIGNSTATE_CONSUME_FAILED:" .. tostring(transaction)
+  end
   if not transaction then
-    return nil, reason
+    return nil, reason or "CAMPAIGNSTATE_CONSUME_FAILED"
   end
   reservation.consumed = true
   return reservation
+end
+
+function Adapter:BeginPhysicalStart(requestId, profile)
+  local reservation, reason = self:Reserve(requestId, profile)
+  if not reservation then
+    return nil, reason
+  end
+  local consumed, consumeReason = self:ConsumeAtPhysicalStart(requestId)
+  if consumed then
+    return consumed
+  end
+
+  -- A failed consume must not leave a ghost reservation. The physical mission
+  -- caller will recall via MOOSE and report the reconciliation failure.
+  if not reservation.consumed then
+    pcall(self.campaignState.Cancel, self.campaignState, reservation.transactionId)
+    self.reservationsByRequestId[requestId] = nil
+  end
+  return nil, consumeReason
 end
 
 function Adapter:RecoverAfterPhysicalRecovery(requestId)
@@ -127,7 +151,8 @@ end
 function Adapter:CancelBeforePhysicalStart(requestId)
   local reservation = self.reservationsByRequestId[requireString(requestId, "requestId")]
   if not reservation then
-    return nil, "NO_RESERVATION"
+    -- A queued MOOSE mission has no CampaignState reservation by design.
+    return { requestId = requestId, cancellationRequired = false }
   end
   if reservation.consumed then
     return nil, "PHYSICAL_START_ALREADY_RECORDED"
