@@ -4,11 +4,10 @@ status: PLANNED
 document_class: CHAT_HANDOFF
 owning_policy: OMW-GOV-001
 authoritative_for:
-  - branch-local current state after main reconciliation
-  - current reconciliation result, TODO re-audit and merge-readiness blockers
+  - branch-local final state after main reconciliation
+  - branch split between completed Ground RESUPPLY scope and successor work
 not_authoritative_for:
   - repository-wide architecture before merge to main
-  - DCS acceptance beyond exact recorded provenance
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 source_branch: agent/automatic-response-orchestration
@@ -16,44 +15,25 @@ source_commit: PENDING_MERGE
 validated_in_dcs: partial
 base_branch: main
 base_commit: 998080da9a7a71dae7f713b9590dfeadb5ae93ba
+supersedes:
+superseded_by:
 ---
 
 # Handoff – Automatic Response Orchestration Main Reconciliation – 29.08.2026
 
-## 1. Owner-approved Reihenfolge
+## 1. Ergebnis der Reconciliation
+
+Der Branch wurde vor dem Abschluss gegen den damaligen aktuellen Main-Stand reconciliert:
 
 ```text
-1. Dokumentation auf aktuellen Stand bringen.
-2. Branch gegen aktuellen main reconciliieren.
-3. Stage 1B2 formal abschließen.
-4. Stages 1D–9 gegen den inzwischen weiterentwickelten main neu bewerten.
-5. Erst danach Merge-Readiness herstellen und PR auf Ready for Review setzen.
-```
-
-Aktueller Stand:
-
-```text
-1 DONE
-2 DONE
-3 DONE
-4 DONE
-5 NOT STARTED
-```
-
-## 2. Main-Reconciliation
-
-```text
-branch: agent/automatic-response-orchestration
-main HEAD used for reconciliation: 998080da9a7a71dae7f713b9590dfeadb5ae93ba
-internal PR: #130
+main reference: 998080da9a7a71dae7f713b9590dfeadb5ae93ba
+internal reconciliation PR: #130
 merge commit: 5263fe7f2f7cb3bc358b39101200dfcc3ae513ea
-result: merged
-branch behind main after reconciliation: 0
 ```
 
-Aktuelle `main`-Governance und BINDING-Baselines wurden nicht durch ältere Branch-Fassungen zurückgesetzt.
+Dabei wurden aktuelle `main`-Governance und gemeinsame Baselines beibehalten. Branch-spezifische Ground-RESUPPLY-Acceptance-Evidenz wurde additiv erhalten.
 
-## 3. Stage-Stand
+## 2. Formal abgeschlossene Stages
 
 ```text
 Stage 1A AMMO RESUPPLY
@@ -69,7 +49,7 @@ Stage 1B2 one-shot FUELSUPPLY
   ACCEPTED_TECHNICAL_BASELINE
 ```
 
-Stage-1B2-Provenienz:
+Stage 1B2 Provenienz:
 
 ```text
 build commit: 2bd930729ed12a073f5364dc139281b60151acf0
@@ -78,105 +58,83 @@ bundle SHA-256: 8CBDFA12B1A052517D82CB20A460CA665415353FE38ED2F1C50928BE6C7966A0
 DCS: 2.9.28.26385 MT
 mission: OMW_Template_v19.miz
 executed MIZ SHA-256: 603422EFAFFA860041089D0F1AD41D35642A7863BC1C7B658E0B8F15A6EB63F2
-owner confirmation: mission was not saved or otherwise modified after the successful Build-2-3 run before hashing
 MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
 Moose.lua SHA-256: E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915
 ```
 
-Belegter Lifecycle:
+Der Projektinhaber bestätigte, dass die ausgeführte MIZ nach dem erfolgreichen Build-2-3-Lauf vor der Hash-Ermittlung nicht erneut gespeichert oder verändert wurde.
+
+## 3. Fuel-Entscheidung
+
+Für `GROUND_FUEL_PACKAGE` ist der technisch akzeptierte bevorzugte physische Executor:
 
 ```text
-AUFTRAG:NewFUELSUPPLY
--> BRIGADE:AddMission
--> destination proof
--> MissionExecute
--> exact-once CampaignState delivery
--> MissionDemand SUCCESS
--> MissionDone
--> MOOSE ReturnToLegion
+AUFTRAG:NewFUELSUPPLY(destinationZone)
+-> BRIGADE:AddMission(mission)
+-> normal MOOSE ReturnToLegion
 -> Returned
 -> Warehouse AddAsset
--> PASS
 ```
 
-## 4. Fuel-Entscheidung
+CampaignState bleibt alleinige strategische Ressourcenautorität.
+
+`BRIGADE:AddRefuellingZone(...)` ist keine One-Shot-Transfer-API, sondern eine persistente Refuelling-Service-Registrierung.
+
+## 4. Branch-Schnitt
+
+Der aktuelle Branch wird als abgeschlossenes Ground-RESUPPLY-Arbeitspaket für den Merge vorbereitet:
 
 ```text
-GROUND_FUEL_PACKAGE
--> CampaignState = sole strategic resource authority
--> preferred physical executor = one-shot AUFTRAG:NewFUELSUPPLY
--> BRIGADE:AddMission
--> MOOSE ReturnToLegion
+agent/automatic-response-orchestration
 ```
 
-Nicht als One-Shot-Dispatcher verwenden:
+Die verbleibende Automatic-Response-Arbeit wurde in einen separaten Nachfolgebranch übertragen:
 
 ```text
-BRIGADE:AddRefuellingZone
+agent/automatic-response-orchestration-continuation
 ```
 
-Diese API registriert einen persistenten Refuelling-Service.
-
-## 5. TODO-Reaudit
+Verschobener Scope:
 
 ```text
-Stage 1D  STILL_REQUIRED
-Stage 2   STILL_REQUIRED
-Stage 3   PARTIALLY_COVERED_ON_MAIN
-Stage 4   STILL_REQUIRED
-Stage 5   PARTIALLY_COVERED_ON_MAIN
-Stage 6   STILL_REQUIRED
-Stage 7   STILL_REQUIRED
-Stage 8   PARTIALLY_COVERED_ON_MAIN
-Stage 9   STILL_REQUIRED
-Stage 10  BLOCKED
+Stage 1D  remaining generic RESUPPLY executor reconciliation
+Stage 2   FOB attacked -> support demand
+Stage 3   fire support -> strategic resupply closure
+Stage 4   convoy attacked -> support demand
+Stage 5   BLUE/CAS automatic-response adapter
+Stage 6   aircraft loss -> CSAR
+Stage 7   complete end-to-end automatic response chain
+Stage 8   restart / restore / idempotence
+Stage 9   multiplayer / performance / failure acceptance
 ```
 
-Ausführliche Reihenfolge:
+Diese Punkte blockieren den Merge des abgeschlossenen Ground-RESUPPLY-Pakets nicht mehr.
+
+## 5. Merge-Readiness-Restgates
+
+Vor Ready for Review des aktuellen Branches verbleiben ausschließlich Merge-/Dokumentationsprüfungen:
 
 ```text
-docs/handoffs/2026-08-22-automatic-response-orchestration-development-order.md
+- MOOSE index / verified-method evidence reconciliation
+- full diff review against current main
+- available builders/tests
+- documentation validator
+- DOCUMENT-REGISTRY / SUBPROJECT-REGISTRY alignment
+- PENDING_MERGE cleanup required by governance
+- feature PR to main
 ```
 
-## 6. Nächstes Gate
+Keine zusätzliche DCS-Acceptance ist für den hier abgeschlossenen Stage-1A/1C/1B2-Scope erforderlich.
 
-Stage 1B2 ist nicht mehr blockiert. Der nächste Arbeitspunkt ist:
-
-```text
-STAGE 1D – production-scope reconciliation for generic non-AMMO/non-FUEL RESUPPLY
-```
-
-Vor neuer Runtime-Logik ist zu prüfen:
+## 6. Aktueller Status
 
 ```text
-- welche strategischen Ground-Ressourcen außerhalb AMMO/FUEL tatsächlich physisch transportiert werden müssen;
-- welche spezialisierten MOOSE-Executor dafür existieren;
-- ob AUFTRAG:NewNOTHING für irgendeine Ressourcenklasse noch fachlich und MOOSE-first gerechtfertigt ist;
-- welche Teile durch inzwischen gemergte Ground-/MissionDemand-Baselines bereits produktiv vorhanden sind.
-```
-
-## 7. Merge-Readiness-Gates
-
-Vor Ready for Review bleiben offen:
-
-```text
-- genuinely missing Stages 1D–9 implemented/reconciled
-- MOOSE documentation fully aligned with final feature scope
-- full diff reviewed
-- available builders/tests executed
-- documentation validator run
-- DOCUMENT-REGISTRY and SUBPROJECT-REGISTRY aligned
-- no merge-blocking PENDING_MERGE metadata remains
-- remaining DCS-only checks explicitly identified
-- feature PR to main created
-```
-
-## 8. Aktueller Status
-
-```text
-ready_for_review: false
-merge_to_main: false
+current_branch: agent/automatic-response-orchestration
+completed_scope: GROUND_RESUPPLY_ORCHESTRATION_ACCEPTANCE
 main_reconciliation: DONE
-stage_1b2: ACCEPTED_TECHNICAL_BASELINE
-current_gate: STAGE_1D_PRODUCTION_SCOPE_RECONCILIATION
+stage_1b2_provenance: COMPLETE
+remaining_runtime_work: MOVED_TO_SUCCESSOR_BRANCH
+successor_branch: agent/automatic-response-orchestration-continuation
+ready_for_review: PENDING_MERGE_READINESS_CHECKS
+merge_to_main: NOT_YET_EXECUTED
 ```
