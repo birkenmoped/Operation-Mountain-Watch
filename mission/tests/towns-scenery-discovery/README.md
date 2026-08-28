@@ -1,14 +1,23 @@
 ---
 document_id: OMW-TEST-SCENERY-DISCOVERY-01
 status: HISTORICAL_TEST_FIXTURE
+document_class: TEST_PROJECT_INDEX
 owning_policy: OMW-GOV-MOOSE-FIRST
 authoritative_for:
   - original native-DCS scenery discovery test procedure
-production_architecture: false
-moose_first_review: PENDING
-native_dcs_exception_approved: false
+not_authoritative_for:
+  - production settlement classification
+  - production terrain metadata architecture
+scenario_period: 2010-08-01/2011-12-31
+project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
+supersedes: []
+superseded_by: []
 source_branch: agent/towns-discovery
+source_commit: PENDING_MERGE
 validated_in_dcs: false
+production_architecture: false
+moose_first_review: SOURCE_REVIEWED_FOR_TOWNS_ONLY
+native_dcs_exception_approved: false
 ---
 
 # OMW TOWNS Scenery Discovery Test 01
@@ -20,16 +29,10 @@ This is a one-time DCS map-data discovery test created before the project-wide M
 ```text
 HISTORICAL_TEST_FIXTURE
 NOT_PRODUCTION_ARCHITECTURE
-MOOSE_FIRST_REVIEW_PENDING
 NATIVE_DCS_EXCEPTION_NOT_APPROVED
 ```
 
-The test may be preserved and executed to collect evidence. Its native DCS implementation must not become a production settlement-classification foundation until:
-
-1. relevant MOOSE `SCENERY`, wrapper, set, zone, coordinate, search, scheduler and marker capabilities have been evaluated;
-2. the findings and any remaining technical gap have been documented;
-3. the project owner has explicitly approved the smallest required native DCS fallback;
-4. the approved design has been validated in DCS.
+The current reconciliation confirms that MOOSE `TOWNS` is the correct framework path for named terrain town references. It does **not** establish that MOOSE provides an equivalent abstraction for arbitrary scenery-density scans. The native scenery-search fixture therefore remains historical only and may not become production architecture without the full MOOSE-first gap review and explicit owner approval required by `OMW-GOV-MOOSE-FIRST`.
 
 ## Purpose
 
@@ -47,9 +50,9 @@ mission/tests/towns-scenery-discovery/dist/OMW_TOWNS_SCENERY_DISCOVERY_TEST.lua
 
 The historical fixture uses the native DCS mission-scripting API. This describes the existing implementation; it is not an approved statement that MOOSE is unnecessary.
 
-## Required MOOSE-first follow-up
+## Required MOOSE-first follow-up before production use
 
-The review must at least check:
+A future production proposal must at least check against the then-pinned MOOSE artifact and official examples:
 
 - MOOSE `SCENERY` wrappers and lookup methods;
 - applicable `SET_*` classes;
@@ -164,13 +167,6 @@ SCENERY_VERY_HIGH
 
 The thresholds are configurable and must be calibrated against the visible Afghanistan map before any operational settlement meaning is assigned.
 
-## First acceptance question
+## Acceptance boundary
 
-The first DCS run is useful when it shows whether:
-
-1. dense visible cities return substantially higher counts than empty control areas;
-2. unnamed visible settlements are detectable through manual probe zones;
-3. label-only or unfinished areas return low or zero counts;
-4. reported scenery type names are stable enough to separate buildings from irrelevant scenery.
-
-No convoy, infantry, settlement-classification or production metadata system may be built on this fixture until the four observations and the mandatory MOOSE-first review are recorded.
+The historical fixture can be retained as an evidence collector. No convoy, infantry, settlement-classification or production metadata system may be built on it without a new MOOSE-first review, any required owner-approved exception, and reproducible DCS acceptance evidence.
