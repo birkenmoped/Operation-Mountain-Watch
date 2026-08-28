@@ -9,7 +9,7 @@ $sourceFile = Join-Path $repoRoot 'scripts\air-operations\OMW_AirOps_Bagram_Boot
 $distDir = Join-Path $repoRoot 'mission\tests\bagram-air-operations\dist'
 $outputFile = Join-Path $distDir 'OMW_AirOps_Bagram.lua'
 $lifecycleGuard = Join-Path $repoRoot 'tools\Test-AirOpsLifecycleGuards.ps1'
-$builderVersion = 'BGRAM-AIR-OPS-DUAL-FOUNDATION-5'
+$builderVersion = 'BGRAM-AIR-OPS-DUAL-FOUNDATION-6'
 
 if (-not (Test-Path -LiteralPath $sourceFile -PathType Leaf)) {
     throw "Bagram foundation source not found: $sourceFile"
@@ -42,6 +42,10 @@ $requiredMarkers = @(
     'parkingBlacklist',
     'SetParkingSpotBlacklist',
     'SetParkingIDs',
+    'function airwing:OnAfterNewAsset',
+    'validateNewAssetParking',
+    'lifecycle=WAREHOUSE_NEWASSET',
+    'lifecycle=AWAITING_WAREHOUSE_NEWASSET',
     'PARKING_POLICY_PRESTART status=PASS',
     'PARKING_POLICY_POSTSTART status=%s',
     'parkingPolicy=PASS',
@@ -125,7 +129,7 @@ Write-Host "RolePayloadsExpected: 8"
 Write-Host "ParkingBlacklistEntries: 10"
 Write-Host "SquadronParkingPools: 7"
 Write-Host "LifecycleGuard: PASS"
-Write-Host "PostStartAssetValidation: REQUIRED"
+Write-Host "PostStartAssetValidation: NEWASSET_EVENT"
 Write-Host "TestDispatch: ABSENT"
 Write-Host "AUFTRAGInstances: ABSENT"
 Write-Host "OPSTRANSPORTInstances: ABSENT"
