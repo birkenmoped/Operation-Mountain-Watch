@@ -1,6 +1,6 @@
 -- Operation Mountain Watch - Bagram AIRWING/SQUADRON foundation.
 --
--- Scope: dual AIRWING, six SQUADRONs, inventory registration, grouping,
+-- Scope: dual AIRWING, seven SQUADRONs, inventory registration, grouping,
 -- turnover, takeoff configuration, mission capabilities, role payloads and
 -- AIRWING start.
 --
@@ -31,8 +31,8 @@ end
 local config = {
   turnoverMin = 20,
   turnoverMax = 40,
-  logicalAirframes = 75,
-  representedAirframes = 73,
+  logicalAirframes = 83,
+  representedAirframes = 81,
   logicalReserve = 2,
   usaf = {
     airbaseName = AIRBASE.Afghanistan and AIRBASE.Afghanistan.Bagram or "Bagram",
@@ -69,6 +69,17 @@ local config = {
       residualAircraft = 1,
       missionTypes = { AUFTRAG.Type.CAS },
       payloadTemplates = { "TPL_AIR_US_BGRM_F16C_CAS_2SHIP" },
+    },
+    MQ1A = {
+      wing = "usaf",
+      name = "SQ_US_BGRM_MQ1A_62_ERS",
+      template = "TPL_AIR_US_BGRM_MQ1A_RECON_1SHIP",
+      assetGroups = 8,
+      grouping = 1,
+      logicalAircraft = 8,
+      residualAircraft = 0,
+      missionTypes = { AUFTRAG.Type.RECON },
+      payloadTemplates = { "TPL_AIR_US_BGRM_MQ1A_RECON_1SHIP" },
     },
     C130 = {
       wing = "usaf",
@@ -208,7 +219,7 @@ local function constructFoundation()
   local logicalReserve = 0
   local rolePayloads = 0
 
-  for _, key in ipairs({ "F15E", "F16C", "C130", "HH60G", "UH60", "CH47" }) do
+  for _, key in ipairs({ "F15E", "F16C", "MQ1A", "C130", "HH60G", "UH60", "CH47" }) do
     local definition = config.squadrons[key]
     local airwing = definition.wing == "usaf" and usafAirwing or armyAirwing
     local squadron, squadronPayloads, represented, residual = createSquadron(airwing, definition)
@@ -264,7 +275,7 @@ local function inspectIdleFoundation()
   local armyRunning = state.Airwings.Army.IsRunning and state.Airwings.Army:IsRunning() or false
 
   log(string.format(
-    "RESULT status=%s airwings=2 squadrons=6 registeredGroups=%d representedAirframes=%d logicalAirframes=%d logicalReserve=%d rolePayloads=%d usafRunning=%s armyRunning=%s missionsCreated=0 transportsCreated=0 commanderCreated=false f10Controls=false",
+    "RESULT status=%s airwings=2 squadrons=7 registeredGroups=%d representedAirframes=%d logicalAirframes=%d logicalReserve=%d rolePayloads=%d usafRunning=%s armyRunning=%s missionsCreated=0 transportsCreated=0 commanderCreated=false f10Controls=false",
     tostring(state.Status),
     tonumber(state.RegisteredGroups) or -1,
     tonumber(state.RepresentedAirframes) or -1,
