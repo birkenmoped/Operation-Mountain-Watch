@@ -7,8 +7,17 @@ authoritative_for:
   - exact DCS runtime result of Stage-1A Ground AMMO RESUPPLY acceptance run 4 on 2026-08-22
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
+supersedes:
+superseded_by:
 source_branch: agent/automatic-response-orchestration
 source_commit: PENDING_MERGE
+acceptance_branch: agent/automatic-response-orchestration
+acceptance_commit: 2d72bcdfc113342a2180b6cd9c84486da790052c
+acceptance_mission: OMW_Template_v18.miz
+acceptance_mission_sha256: 2fdf31a2e07409cf392d45bff5fc69750958c670ae3e12ff28d0b4fd8aecc90d
+dcs_version: 2.9.28.26385 MT
+moose_commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+moose_artifact_sha256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
 validated_in_dcs: true
 ---
 
@@ -21,7 +30,7 @@ Result: PASS
 Stage 1A: ACCEPTED_TECHNICAL_BASELINE for the exact documented scope
 ```
 
-Dieser Nachweis gilt ausschließlich für die unten dokumentierte Branch-/Source-/Bundle-/MIZ-/DCS-/MOOSE-Provenienz. Er ist keine allgemeine Freigabe für andere Ressourcenarten, Convoy-Klassen, MOOSE-Versionen oder Produktionsorchestrierung.
+Dieser Nachweis gilt ausschließlich für die unten dokumentierte Branch-/Source-/Bundle-/MIZ-/DCS-/MOOSE-Provenienz.
 
 ## 2. Provenienz
 
@@ -42,27 +51,22 @@ MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
 Moose.lua SHA-256: E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915
 DCS: 2.9.28.26385 MT
 Executed mission path: C:\Users\Sven\Saved Games\DCS.openbeta\Missions\OMW_Template_v18.miz
-Uploaded mission artifact: OMW_Template_v18(1).miz
 MIZ SHA-256: 2FDF31A2E07409CF392D45BFF5FC69750958C670AE3E12FF28D0B4FD8AECC90D
 internal mission SHA-256: 38B207278365CD977E74FF3C9000C6A7C5B13EEE3E5B1BB154F1775055D02AF6
 dcs.log SHA-256: 0C0B5784A0AA1C67E0BE57CEEF90006FBEEE40805D7A589D8EF8DC6DC3BFDFDF
 debrief.log SHA-256: C9EA7398241DEA3323B39FAD8F28D97D27B5A1CB1EE05A79433BA26896666DEB
 ```
 
-Die hochgeladene Mission wurde nur read-only geprüft; ChatGPT hat keine `.miz` verändert.
-
 ## 3. Testvertrag
 
 ```text
 Honaker AMMO 40
 -> test-only consumption 20
--> ResourceDemandPolicy REORDER
--> one RESUPPLY MissionDemand
+-> one MissionDemand RESUPPLY
 -> CampaignState TRANSFER 20 Joyce -> Honaker
 -> TPL_BLUE_CONVOY_LIGHT_06
 -> MOOSE BRIGADE / PLATOON / ARMYGROUP
--> AUFTRAG:NewAMMOSUPPLY(destinationZone)
--> OnRoad 27 kt
+-> AUFTRAG:NewAMMOSUPPLY
 -> destination-zone proof
 -> CampaignState DELIVERED
 -> MissionDemand SUCCESS
@@ -70,79 +74,23 @@ Honaker AMMO 40
 -> 30 s settlement window
 -> same ARMYGROUP RTZ Joyce ACCESS / OnRoad
 -> Returned
--> MOOSE LEGION/Warehouse AddAsset
+-> Warehouse AddAsset
 -> physical cleanup
 ```
-
-CampaignState bleibt alleinige strategische Ressourcen- und Cargo-Autorität. Die physische Convoy-Gruppe definiert keine package-per-truck-Kapazität.
 
 ## 4. Reale Runtime-Marker
 
 ```text
-18:34:20.456 DELIVERY_CONFIRMED ... destination=GROUND_NODE_HONAKER quantity=20 campaignStateStatus=DELIVERED demandStatus=SUCCESS
-18:34:21.457 MISSION_DONE deliveryCommitted=true returnIssueDelaySec=30
-18:34:30.913 AUFTRAG ... Mission 3 [Ammo Supply] success!
-18:34:51.463 RETURN_RTZ_ACTIVE
-18:34:51.463 RETURN_RTZ_ISSUED ... zone=ZON_BLUE_GND_JOYCE_ACCESS formation=OnRoad
-18:36:23.101 RETURNED_HANDOFF
-18:36:33.109 WAREHOUSE_ADD_ASSET
-18:36:35.110 PASS originFinal=24 destinationFinal=40 transferQuantity=20 template=TPL_BLUE_CONVOY_LIGHT_06 demandStatus=SUCCESS spawnCount=1 returnedCount=1 warehouseAddAssetCount=1
+DELIVERY_CONFIRMED ... quantity=20 ... campaignStateStatus=DELIVERED demandStatus=SUCCESS
+MISSION_DONE deliveryCommitted=true returnIssueDelaySec=30
+AUFTRAG ... Mission 3 [Ammo Supply] success!
+RETURN_RTZ_ACTIVE
+RETURN_RTZ_ISSUED ... zone=ZON_BLUE_GND_JOYCE_ACCESS formation=OnRoad
+RETURNED_HANDOFF
+WAREHOUSE_ADD_ASSET
+PASS originFinal=24 destinationFinal=40 transferQuantity=20 template=TPL_BLUE_CONVOY_LIGHT_06 demandStatus=SUCCESS spawnCount=1 returnedCount=1 warehouseAddAssetCount=1
 ```
 
-Damit liegt die AUFTRAG-Abschlussauswertung vor dem RTZ-Aufruf innerhalb des 30-s-Settlement-Fensters. Der zuvor reproduzierte 2-s-Race-Pfad trat nicht erneut auf.
+## 5. Scope-Grenzen
 
-## 5. Akzeptierte Aussagen
-
-```text
-ResourceDemand candidate: PASS
-MissionDemand reservation/AI assignment: PASS
-CampaignState TRANSFER reservation: PASS
-CampaignState MarkLoading: PASS
-CampaignState MarkInTransit / origin debit: PASS
-protected LIGHT_06 materialization: PASS
-six-vehicle road-aligned spawn: PASS
-AUFTRAG AMMOSUPPLY outbound execution: PASS
-Honaker destination-zone proof: PASS
-CampaignState MarkDelivered / destination credit: PASS
-MissionDemand SUCCESS: PASS
-30-s post-MissionDone settlement window: PASS
-same physical ARMYGROUP RTZ: PASS
-physical return to Joyce: PASS
-Returned callback: PASS
-Warehouse AddAsset: PASS
-physical retirement after warehouse handoff: PASS
-final strategic stocks Joyce 24 / Honaker 40: PASS
-```
-
-Owner visual observation: Convoy speed at the configured 27 kt was visually acceptable. This observation does not define a generic production speed policy for other convoy classes.
-
-## 6. Nicht durch diesen PASS validiert
-
-```text
-package-per-truck capacity
-automatic LIGHT_06 / STANDARD_07 selection
-STANDARD_07 runtime
-FUEL RESUPPLY
-generic GROUND_SUPPLY_PACKAGE execution
-multiple simultaneous resupply demands
-convoy attack / support reaction
-carrier losses during transfer
-abort/recovery paths
-external process/server restart persistence
-production orchestration scheduler
-CAS / BLUE COMMANDER
-CSAR
-```
-
-## 7. Ergebnis
-
-```text
-Stage 1A Ground AMMO Joyce -> Honaker:
-ACCEPTED_TECHNICAL_BASELINE
-
-MOOSE-first physical path:
-BRIGADE -> PLATOON -> ARMYGROUP -> AUFTRAG AMMOSUPPLY -> RTZ -> Returned -> Warehouse AddAsset
-
-CampaignState strategic transfer:
-PASS for the exact documented transaction and mission scope
-```
+Nicht validiert sind insbesondere generische package-per-truck-Kapazität, automatische Convoy-Klassenwahl, FUEL-/Generic-SUPPLY, parallele Demands, Convoy-under-attack-Reaktionen, Loss/Abort, externer Server-Restart, CAS und CSAR.
