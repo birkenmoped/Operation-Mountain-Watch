@@ -6,13 +6,13 @@ owning_policy: OMW-GOV-001
 authoritative_for:
   - branch-local Stage 1B2 MOOSE source review for Ground FUELSUPPLY execution
 not_authoritative_for:
-  - production Fuel executor selection
-  - untested one-shot FUELSUPPLY return completion
+  - repository-wide production Fuel executor selection before merge to main
+  - formal Stage 1B2 accepted baseline without complete executed-MIZ provenance
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 source_branch: agent/automatic-response-orchestration
 source_commit: PENDING_MERGE
-validated_in_dcs: false
+validated_in_dcs: true
 ---
 
 # Ground FUELSUPPLY – MOOSE Source Review
@@ -94,18 +94,57 @@ Daher gilt branch-lokal:
 ```text
 BRIGADE:AddRefuellingZone for persistent service: SOURCE + RUNTIME CONSISTENT
 BRIGADE:AddRefuellingZone for one-shot strategic transfer: NOT SUITABLE
-AUFTRAG:NewFUELSUPPLY one-shot execution: SOURCE REVIEWED, COMPLETE RETURN TEST PENDING
 ```
 
-## 5. ReturnToLegion
+## 5. Reale Stage-1B2-Runtime-Evidenz Build 2-3
+
+Build 2-3 ersetzte ausschließlich die persistente Service-Registrierung durch einen einzelnen MOOSE-Auftrag:
+
+```text
+AUFTRAG:NewFUELSUPPLY(destinationZone)
+-> BRIGADE:AddMission(mission)
+```
+
+Reale Build-Identität:
+
+```text
+Build commit: 2bd930729ed12a073f5364dc139281b60151acf0
+BuilderVersion: GROUND-FUEL-REFUELLING-ZONE-ACCEPTANCE-2-3
+Bundle SHA-256: 8CBDFA12B1A052517D82CB20A460CA665415353FE38ED2F1C50928BE6C7966A0
+DCS: 2.9.28.26385 MT
+Mission name: OMW_Template_v19.miz
+Executed MIZ SHA-256: PENDING_OWNER_EVIDENCE
+```
+
+Der reale DCS-Lauf beobachtete vollständig:
+
+```text
+MISSION_QUEUED
+-> ROAD_ALIGNED_WAREHOUSE_SPAWN
+-> GROUP_MATERIALIZED
+-> ARMY_ON_MISSION FUELSUPPLY
+-> DESTINATION_ZONE_ENTERED
+-> MISSION_EXECUTE_OBSERVED
+-> DELIVERY_CONFIRMED
+-> MISSION_DONE
+-> MOOSE ReturnToLegion
+-> RETURNED_HANDOFF
+-> RETURN_RTZ_ACTIVE
+-> WAREHOUSE_ADD_ASSET
+-> PASS
+```
+
+Damit sind die zuvor nur source-seitig erwarteten One-Shot- und Return-Semantiken praktisch bestätigt. Die formale `ACCEPTED_TECHNICAL_BASELINE` bleibt jedoch bis zur Rücklieferung des exakten ausgeführten MIZ-Hashes gesperrt.
+
+## 6. ReturnToLegion
 
 `AUFTRAG:SetReturnToLegion(Switch)` kann den Return explizit überschreiben. Ohne `false` entscheidet der OPSGROUP-Default.
 
 Der gepinnte OPSGROUP-Source setzt für Ground-/Naval-Gruppen den Return-to-Legion-Pfad standardmäßig aktiv. Nach abgeschlossenem Mission-/Task-Queue-Pfad kann `_CheckGroupDone(...)` für eine ARMYGROUP mit LEGION den RTZ-Pfad zur Legion-Spawnzone auslösen.
 
-Stage 1B2 Build 2-3 verwendet deshalb weiterhin keinen projektspezifischen RTZ-Aufruf. Genau dieser MOOSE-eigene Rückkehrpfad ist Teil des nächsten DCS-Tests.
+Build 2-3 verwendete keinen projektspezifischen RTZ-Aufruf. Der DCS-Lauf bestätigte den normalen MOOSE-ReturnToLegion-Pfad bis `Returned` und `Warehouse AddAsset`.
 
-## 6. OMW-Architekturgrenze
+## 7. OMW-Architekturgrenze
 
 ```text
 CampaignState GROUND_FUEL_PACKAGE
@@ -122,35 +161,38 @@ M978 physical fuel quantity
 -> authoritative CampaignState package quantity
 ```
 
-## 7. Stage-1B2 Build 2-3 Testgrenze
+Für einen One-Shot-CampaignState-Transfer ist nach Source- und Runtime-Evidenz der bevorzugte physische Pfad:
 
 ```text
-AUFTRAG:NewFUELSUPPLY(Honaker ACCESS)
+AUFTRAG:NewFUELSUPPLY
 -> BRIGADE:AddMission
--> existing FUELSUPPLY-capable PLATOON
--> road-aligned warehouse materialization
--> MissionExecute observation
--> independent destination-zone proof
--> exact-once CampaignState settlement
--> FUELSUPPLY cancel
--> normal MOOSE ReturnToLegion
--> Returned -> Warehouse AddAsset
 ```
 
-Keine persistente `AddRefuellingZone(...)`-Registrierung und keine harten Outbound-/Return-Fahrzeit-Timeouts.
+`BRIGADE:AddRefuellingZone` bleibt für persistente Refuelling-Service-Anforderungen geeignet, nicht für einen einzelnen strategischen Transfer.
 
-Acceptance:
+## 8. Acceptance
+
+Maßgebliches Acceptance-Dokument:
 
 ```text
 mission/tests/ground-resupply-execution/ACCEPTANCE-4.md
 ```
 
-## 8. Status
+Formale Grenze:
 
 ```text
-AUFTRAG:NewFUELSUPPLY: SOURCE_REVIEWED
+runtime_result: PASS
+validated_in_dcs: true
+formal_acceptance: BLOCKED_BY_MISSING_EXECUTED_MIZ_SHA256
+```
+
+## 9. Status
+
+```text
+AUFTRAG:NewFUELSUPPLY: SOURCE_REVIEWED + DCS_OBSERVED
 BRIGADE:AddRefuellingZone persistent replacement behavior: SOURCE_REVIEWED + DCS_OBSERVED
 FUELSUPPLY SpecialTask cancel path: SOURCE_REVIEWED + DCS_OBSERVED
-MOOSE default Ground ReturnToLegion completion for one-shot FUELSUPPLY: DCS_TEST_PENDING
-production Fuel executor selection: NOT_YET_ACCEPTED
+MOOSE default Ground ReturnToLegion completion for one-shot FUELSUPPLY: DCS_OBSERVED
+preferred one-shot Fuel executor: MOOSE FUELSUPPLY
+formal Stage 1B2 accepted technical baseline: BLOCKED_BY_MISSING_EXECUTED_MIZ_SHA256
 ```
