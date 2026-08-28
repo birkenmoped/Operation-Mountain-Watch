@@ -166,3 +166,36 @@ source: GitHub pull-request state plus documented exact-provenance DCS evidence
 ```
 
 Ein offener Zustand bedeutet weder aktuelle fachliche Autorität noch Integrationsreife; die Spalten Governance-Status, Acceptance-Status und Produktionsrelevanz bleiben maßgeblich.
+
+## Automatic Response Orchestration - Ground RESUPPLY branch cut
+
+Aktueller Merge-Scope:
+
+```text
+PR: 131
+branch: agent/automatic-response-orchestration
+base: main
+scope: completed Ground RESUPPLY acceptance package
+Stage 1A: ACCEPTED_TECHNICAL_BASELINE
+Stage 1B: HISTORICAL_TEST_FIXTURE / INCONCLUSIVE
+Stage 1C: ACCEPTED_TECHNICAL_BASELINE
+Stage 1B2: ACCEPTED_TECHNICAL_BASELINE
+```
+
+Die verbleibende Automatic-Response-Arbeit ist bewusst vom Merge-Scope getrennt und liegt auf:
+
+```text
+agent/automatic-response-orchestration-continuation
+```
+
+Restscope des Nachfolgers: Stage 1D sowie Stages 2-9 (weitere RESUPPLY-Reconciliation, FOB-/Convoy-Angriffsreaktionen, Fires/CAS, CSAR, End-to-End, Restart/Idempotence und Multiplayer/Performance/Failure Acceptance).
+
+Reconciliation-Historie fuer PR 131:
+
+```text
+PR 130: earlier main reconciliation into feature branch
+PR 133: documentation metadata cleanup merged to main
+PR 134: cleaned main reconciled into feature branch
+```
+
+Keiner dieser Eintraege erweitert die branchgebundenen DCS-Acceptance-Grenzen.

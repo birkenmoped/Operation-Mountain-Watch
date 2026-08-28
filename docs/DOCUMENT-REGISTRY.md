@@ -152,3 +152,17 @@ Eine Nummer und eine stabile `document_id` dürfen im aktuellen Bestand jeweils 
 | `OMW-AIR-TASKING-PLAN-MAIN-RECONCILIATION` | `docs/air-tasking-plan-main-reconciliation.md` | `DRAFT`; selective current-main reconciliation for Air Tasking AAR integration |
 | `OMW-MOOSE-AIR-TASKING-C2-LIFECYCLE` | `docs/moose/AIR-TASKING-C2-LIFECYCLE.md` | `DRAFT`; MOOSE C2/lifecycle source-review reference for Air Tasking |
 | `OMW-TEST-AIR-TASKING-AAR-VERTICAL` | `mission/tests/air-tasking-aar-vertical/README.md` | `HISTORICAL_TEST_FIXTURE`; VERTICAL-2 exact-provenance DCS evidence plus VERTICAL-3 build fixture |
+
+## Ground RESUPPLY technical package - merge addition
+
+Die folgenden stabilen IDs werden mit dem Ground-RESUPPLY-Mergepaket in den Main-Dokumentbestand aufgenommen:
+
+| Stabile ID | Pfad | Status | Klasse/Funktion |
+|---|---|---|---|
+| `OMW-MOOSE-GROUND-RESUPPLY-EXECUTION-SOURCE-REVIEW` | `docs/moose/GROUND-RESUPPLY-EXECUTION-SOURCE-REVIEW.md` | `BINDING` | MOOSE Ground-RESUPPLY Source-/Runtime-Grenze |
+| `OMW-MOOSE-GROUND-FUEL-REFUELLING-ZONE-SOURCE-REVIEW` | `docs/moose/GROUND-FUEL-REFUELLING-ZONE-SOURCE-REVIEW.md` | `BINDING` | One-Shot FUELSUPPLY vs. persistenter Refuelling-Service |
+| `OMW-TEST-GROUND-RESUPPLY-EXECUTION` | `mission/tests/ground-resupply-execution/README.md` | `PLANNED` | Ground-RESUPPLY Testprojektindex |
+| `OMW-GROUND-AMMO-RESUPPLY-ACCEPTANCE-1` | `mission/tests/ground-resupply-execution/ACCEPTANCE-1.md` | `ACCEPTED_TECHNICAL_BASELINE` | Stage 1A AMMO RESUPPLY |
+| `OMW-GROUND-FUEL-RESUPPLY-ACCEPTANCE-1` | `mission/tests/ground-resupply-execution/ACCEPTANCE-2.md` | `HISTORICAL_TEST_FIXTURE` | historischer/inconclusive FUELSUPPLY-Versuch |
+| `OMW-GROUND-META-RESUPPLY-NOTHING-ACCEPTANCE-1` | `mission/tests/ground-resupply-execution/ACCEPTANCE-3.md` | `ACCEPTED_TECHNICAL_BASELINE` | Stage 1C neutraler NOTHING-Transport |
+| `OMW-GROUND-FUEL-REFUELLING-ZONE-ACCEPTANCE-2` | `mission/tests/ground-resupply-execution/ACCEPTANCE-4.md` | `ACCEPTED_TECHNICAL_BASELINE` | Stage 1B2 One-Shot FUELSUPPLY |

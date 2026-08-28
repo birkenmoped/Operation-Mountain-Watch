@@ -701,3 +701,47 @@ Provenienzgrenze: Die exakten MIZ-/internal-`mission`-Hashes des vollständigen 
 Nicht aus diesem Nachweis abzuleiten sind andere MOOSE-Versionen, andere Receiver-Typen oder eine allgemeine automatische Tankerwahl außerhalb des dokumentierten WIZARD/LISA-/MOE-Pfads.
 
 Details: [`OMW-MOOSE-AWACS-FUEL-DRIVEN-AAR`](AWACS-FUEL-DRIVEN-AAR-LIFECYCLE.md) und [`AWACS Acceptance 4`](../../mission/tests/awacs-external-lifecycle/ACCEPTANCE-4.md).
+
+## Ground RESUPPLY - method-level evidence 29.08.2026
+
+Gepinnter Framework-Stand:
+
+```text
+MOOSE release: 2.9.18
+MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+Moose.lua SHA-256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
+```
+
+| Methode / Pfad | Status | Exakt bestaetigter OMW-Umfang |
+|---|---|---|
+| `AUFTRAG:NewAMMOSUPPLY(...)` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Stage 1A: MissionDemand-getriebener physischer AMMO-Transfer bis Zielbeobachtung, exactly-once CampaignState-Settlement, Rueckkehr und Warehouse-Handoff. |
+| `AUFTRAG:NewNOTHING(...)` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Stage 1C: neutraler physischer Meta-RESUPPLY-Transport; technische Evidenz/Fallback, nicht bevorzugter Fuel-Executor nach Stage 1B2. |
+| `AUFTRAG:NewFUELSUPPLY(...)` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Stage 1B2: One-Shot Fuel-Dispatch ueber Zielzone, genau eine Materialisierung/Mission, Zielbeobachtung, CampaignState-Settlement und normale Rueckkehr. |
+| `BRIGADE:AddMission(...)` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Direkter One-Shot-Dispatch der dokumentierten Ground-RESUPPLY-Missionen. |
+| `BRIGADE:AddRefuellingZone(...)` | `SOURCE_REVIEWED` | Registriert im gepinnten Source einen persistenten Refuelling-Service; der BRIGADE-Statuspfad kann Folge-FUELSUPPLY-Missionen erzeugen. Daher nicht als One-Shot-Transferdispatcher verwendet. |
+| `AUFTRAG:SetReturnToLegion(...)` / normaler Legion-Return | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Rueckkehrverhalten in den dokumentierten Ground-Lifecycles; Stage 1B2 nutzt den normalen MOOSE-Return ohne OMW-eigenen RTZ-Override. |
+| `ARMYGROUP:RTZ(...)` / `Returned` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Physische Rueckkehr und `Returned`-Handoff fuer die dokumentierten mobilen Ground-Gruppen. |
+| `WAREHOUSE AddAsset` nach `Returned` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Rueckgabe der temporaeren physischen Repraesentation in den MOOSE-Warehouse-Lifecycle; keine strategische Ressourcenautoritaet. |
+
+Acceptance-Provenienz:
+
+```text
+Stage 1A AMMO:
+  acceptance_commit: 2d72bcdfc113342a2180b6cd9c84486da790052c
+  mission: OMW_Template_v18.miz
+  mission_sha256: 2fdf31a2e07409cf392d45bff5fc69750958c670ae3e12ff28d0b4fd8aecc90d
+
+Stage 1C NOTHING:
+  acceptance_commit: 8803505edf07120bc6d1673b41f69067e8db0211
+  mission: OMW_Template_v19.miz
+  mission_sha256: d788af36535d3acd1866d15ffb5d354b2c44b5f8ee40d4baf6fd1d97b7c0f8a5
+
+Stage 1B2 FUELSUPPLY:
+  acceptance_commit: 2bd930729ed12a073f5364dc139281b60151acf0
+  bundle_sha256: 8cbdfa12b1a052517d82cb20a460ca665415353fe38ed2f1c50928be6c7966a0
+  mission: OMW_Template_v19.miz
+  mission_sha256: 603422efaffa860041089d0f1ad41d35642a7863bc1c7b658e0b8f15a6eb63f2
+  dcs: 2.9.28.26385 MT
+```
+
+Grenze: Diese Eintraege bestaetigen weder eine DCS-Fuelmengen-Synchronisation noch einen generischen Executor fuer weitere CampaignState-Ressourcen.

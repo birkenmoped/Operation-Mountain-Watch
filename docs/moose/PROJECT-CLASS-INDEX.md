@@ -507,3 +507,27 @@ MOOSE AWACS controller class:                    NOT_USED
 Der verworfene V4-/`ClearWaypoints()`-Live-Retask-Pfad ist nicht Bestandteil dieser Statusanhebung.
 
 Details: [`OMW-MOOSE-AWACS-FUEL-DRIVEN-AAR`](AWACS-FUEL-DRIVEN-AAR-LIFECYCLE.md) und [`AWACS Acceptance 4`](../../mission/tests/awacs-external-lifecycle/ACCEPTANCE-4.md).
+
+## Ground RESUPPLY accepted execution addendum - 29.08.2026
+
+Fuer den exakt dokumentierten Ground-RESUPPLY-Scope gelten mit MOOSE 2.9.18 / Commit
+`73d3ed119cd9e7e3f2cfcabbaa34513d30529b54` / `Moose.lua`
+SHA-256 `e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915`
+zusaetzlich folgende Klassenstaende:
+
+| Klasse | Projektstatus | Geltungsgrenze |
+|---|---|---|
+| `AUFTRAG` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Stage 1A bestaetigt `NewAMMOSUPPLY(...)`; Stage 1C bestaetigt den neutralen physischen Meta-RESUPPLY-Pfad ueber `NewNOTHING(...)`; Stage 1B2 bestaetigt `NewFUELSUPPLY(...)` als One-Shot-Fuel-Executor. Die Nachweise gelten nur fuer die jeweiligen Acceptance-Provenienzen. |
+| `BRIGADE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` + `SOURCE_REVIEWED` | `AddMission(...)` ist im dokumentierten Ground-RESUPPLY-Lifecycle praktisch bestaetigt. `AddRefuellingZone(...)` ist source-seitig als persistente Refuelling-Service-Registrierung eingeordnet und wird nicht als One-Shot-CampaignState-Transferdispatcher verwendet. |
+| `ARMYGROUP` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Die akzeptierten RESUPPLY-Laeufe bestaetigen physischen Hinweg, Return-to-Legion/RTZ, `Returned` und den anschliessenden Warehouse-Handoff im jeweils dokumentierten Scope. |
+| `WAREHOUSE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` + `INTERNAL_RESTRICTED` | Materialisierung und `Returned -> AddAsset` sind in den Ground-RESUPPLY-Acceptances beobachtet; die bereits genehmigte road-aligned Ground-Spawn-Ausnahme bleibt auf ihren dokumentierten Scope begrenzt. |
+
+Technische Details und Grenzen:
+
+- [`Ground RESUPPLY Execution Source Review`](GROUND-RESUPPLY-EXECUTION-SOURCE-REVIEW.md)
+- [`Ground FUELSUPPLY Source Review`](GROUND-FUEL-REFUELLING-ZONE-SOURCE-REVIEW.md)
+- [`Ground AMMO RESUPPLY Acceptance 1`](../../mission/tests/ground-resupply-execution/ACCEPTANCE-1.md)
+- [`Ground Meta RESUPPLY NOTHING Acceptance`](../../mission/tests/ground-resupply-execution/ACCEPTANCE-3.md)
+- [`Ground FUELSUPPLY Acceptance 2`](../../mission/tests/ground-resupply-execution/ACCEPTANCE-4.md)
+
+Dieser Addendum-Eintrag validiert keinen generischen Produktions-Executor fuer weitere Ressourcentypen und keine CAS-/CSAR-Ausfuehrung.
