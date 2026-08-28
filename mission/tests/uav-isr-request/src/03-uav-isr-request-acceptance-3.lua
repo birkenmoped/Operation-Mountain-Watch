@@ -72,7 +72,15 @@ function Acceptance.Start()
     end,
     onMissionRecovered = function(request, _, recovery)
       local seconds = recovery and recovery.turnoverSeconds or nil
-      if menu and type(seconds) == "number" and seconds > 0 then
+      if menu and recovery and recovery.turnoverWaived then
+        menu:NotifyGroupId(
+          request.ownerGroupId,
+          string.format(
+            "ISR Cell: %s was recalled before takeoff. MQ-9 is immediately available; no MOOSE turnaround was applied.",
+            tostring(request.id)
+          )
+        )
+      elseif menu and type(seconds) == "number" and seconds > 0 then
         local minutes = math.ceil(seconds / 60)
         menu:NotifyGroupId(
           request.ownerGroupId,
