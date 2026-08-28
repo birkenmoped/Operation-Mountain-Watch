@@ -4,40 +4,40 @@ status: PLANNED
 document_class: TECHNICAL_ARCHITECTURE
 owning_policy: OMW-GOV-001
 authoritative_for:
-  - planned MOOSE-based ISR, contact, FAC/JTAC, CAS, strike, BDA and AAR integration
+  - planned MOOSE-based ISR, contact, FAC/JTAC, CAS, strike and BDA integration
   - separation of sensing, decision, tasking, designation and effects
-  - current MOOSE AAR runtime boundaries and integration rules
+  - CAS-to-AAR interface boundary for AAR-capable assets
 not_authoritative_for:
   - active ORBAT or mission-specific ROE
+  - AAR track geometry, tanker lifecycle, source-domain stock, relief or tanker acceptance
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
-  - earlier AAR section without current runtime evidence
+  - earlier version that treated AAR as an internal sub-architecture of ISR/FAC/CAS
 superseded_by:
-source_branch: main
-source_commit: 2e9cbe6104f2e23bc3031821459e1f16309a946b
+source_branch: agent/isr-fac-cas-aar-interface-reconciliation
+source_commit: PENDING_MERGE
 validated_in_dcs: partial
 ---
 
-# ISR-, FAC-, AFAC-, JTAC-, CAS- und AAR-Architektur
+# ISR-, FAC-, AFAC-, JTAC- und CAS-Architektur mit AAR-Schnittstelle
 
-## 1. Status
+## 1. Status und Abgrenzung
 
-```text
-PLANNED – vollständige ISR/FAC/CAS-Kette noch nicht akzeptiert
-AAR production finalization – ACCEPTED_TECHNICAL_BASELINE für den exakt dokumentierten Acceptance-5-Stand
-```
+Die vollständige ISR-/FAC-/CAS-Kette ist weiterhin `PLANNED`.
 
-Der Dokumentstatus bleibt `PLANNED`, weil die übergreifende ISR-/FAC-/CAS-Architektur nicht vollständig akzeptiert ist. Der AAR-Unterbereich besitzt dagegen eine eigene, vollständig dokumentierte technische Acceptance.
+AAR ist dagegen ein separates, bereits implementiertes und akzeptiertes Air-Ops-Subsystem. Dieses Dokument regelt deshalb nur noch die Schnittstelle eines AAR-fähigen CAS-/Strike-Assets zur bestehenden AAR-Fähigkeit.
 
-Fachliche Grundlagen:
+Verbindliche AAR-Referenzen:
 
-- [`OMW-C2-AIR-C2-CAS-AFGHANISTAN`](../45-air-c2-cas-afghanistan.md)
-- [`OMW-TARGETING-AFGHANISTAN-NSL`](../48-afghanistan-no-strike-list.md)
 - [`OMW-AAR-ISAF-ACO`](../29-isaf-2009-2013-air-to-air-refueling.md)
-- [`OMW-MOOSE-FOG-OF-WAR-RECCE`](FOG-OF-WAR-RECCE.md)
+- [`OMW-AAR-ACCEPTANCE-7-FINALIZATION`](../89-aar-acceptance-7-finalization.md)
+- [`OMW-MOOSE-AAR-LRC-TRANSIT`](AAR-LRC-TRANSIT.md)
+- [`OMW-MOOSE-VERIFIED-METHODS-AAR-ACCEPTANCE-7`](VERIFIED-METHODS-AAR-ACCEPTANCE-7.md)
 
-## 2. Architekturgrenzen
+Für Fog of War, `INTEL`, `PLAYERRECCE`, `INTEL_DLINK` und RECON gilt zusätzlich [`OMW-MOOSE-FOG-OF-WAR-RECCE`](FOG-OF-WAR-RECCE.md).
+
+## 2. Gesamtarchitektur
 
 ```text
 Sensor / Beobachtung
@@ -50,270 +50,221 @@ Sensor / Beobachtung
 -> CampaignState-Folge
 ```
 
-Kein einzelner FAC-, FACA-, CAS- oder AUFTRAG-Typ bildet automatisch die gesamte Kette ab. `CampaignState` bleibt strategische Ressourcenautorität; MOOSE materialisiert und betreibt physische Missionsrepräsentationen.
+Aufklärung, Kontaktverwaltung, Zielentscheidung, Spielerauftrag, KI-Auftrag, Markierung, Wirkung und BDA bleiben getrennte Schichten. Kein einzelner FAC-, FACA-, CAS- oder AUFTRAG-Typ bildet automatisch die gesamte Kette ab.
 
-Für externe OMW-AAR-Pools gilt ausdrücklich:
+Vorrangig zu prüfende MOOSE-Bausteine sind `INTEL`, `TARGET`, `PLAYERRECCE`, `DESIGNATE`, `PLAYERTASKCONTROLLER`, `AUFTRAG`, `COMMANDER`, `AIRWING`, `SQUADRON` und `FLIGHTGROUP`.
 
-```text
-kein AIRWING-/WAREHOUSE-Bestand für MANAS/AL_UDEID
-kein paralleles DCS-Warehouse-Inventar
-CampaignState = count authority
-SPAWN/FLIGHTGROUP/AUFTRAG = physical representation
-```
+## 3. Setting 1 – Spieleraufklärung
 
-## 3. Vorrangige MOOSE-Bausteine
-
-- `INTEL`, `DETECTION`, Sets für Kontakte und Lagebild;
-- `TARGET`, `PLAYERRECCE`, `DESIGNATE`, `PLAYERTASK`;
-- `AUFTRAG`, `COMMANDER`, `AIRWING`, `SQUADRON`, `FLIGHTGROUP` für KI-Missionsausführung;
-- für externes AAR insbesondere `AUFTRAG`, `FLIGHTGROUP`, `COORDINATE`, `SPAWN`, `SCHEDULER`, `UNIT`, `OPSGROUP`.
-
-## 4. AAR – gepinnter MOOSE-Stand
+### Variante 1 – Eigenbekämpfung
 
 ```text
-MOOSE release: 2.9.18
-MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
-Moose.lua SHA-256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
+Spieler entdeckt Ziel
+-> optional Meldung an HQ / Lagebild
+-> eigener Angriff
+-> BDA / Zielstatus
 ```
 
-Im tatsächlich verwendeten `Moose.lua` geprüft und für den dokumentierten Acceptance-5-Scope praktisch bestätigt:
-
-- `AUFTRAG:NewTANKER(...)`;
-- `AUFTRAG:SetMissionIngressCoord(...)`;
-- `AUFTRAG:SetMissionEgressCoord(...)`;
-- `AUFTRAG:Cancel()`;
-- `SPAWN:InitCallSign(...)`;
-- SPAWN-interne Template-STN-Kollisionsauflösung ohne erzwungenes `InitSTN(...)`;
-- `UNIT:GetSTN()`;
-- `GROUP:GetCallsign()`;
-- `FLIGHTGROUP:GetFuelMin()`;
-- `FLIGHTGROUP:SetFuelLowThreshold(...)`;
-- `FLIGHTGROUP:SetFuelLowRTB(false)`;
-- `FLIGHTGROUP`-FSM `FuelLow`, `Dead` / `onafterDead` und projektspezifischer `OnAfterDead`-Callback;
-- `FLIGHTGROUP:AddWaypoint(Coordinate, Speed, AfterWaypointWithID, Altitude, Updateroute)`;
-- `OPSGROUP:SwitchRadio(...)`, `TurnOffRadio()`, `SwitchTACAN(...)`, `TurnOffTACAN()`, `Despawn(...)`;
-- `COORDINATE:Get2DDistance(...)`;
-- `SCHEDULER:New(...)`;
-- `UNIT:Explode(...)` ausschließlich als Testverlustinjektion.
-
-`FLIGHTGROUP:AddWaypoint(...)` wird nach physischer Passage des FIR-Egress-Fixes verwendet, um den separaten External-Handoff-Punkt anzufügen. Acceptance-5 bestätigte diesen zweistufigen Egress-/Handoff-Pfad praktisch.
-
-`OPSGROUP:SwitchCallsign(...)` bleibt im MOOSE verfügbar, ist aber nicht Teil des korrigierten AAR-Identity-Lifecycles. Ein physischer Tanker behält seine Callsign-Familie vom Spawn bis Despawn.
-
-## 5. AAR-Netz: STANDARD und RESERVE
+### Variante 2 – Spieler als AFAC für AI-Unterstützung
 
 ```text
-STANDARD / bis auf weiteres kontinuierlich:
-NELSON     FAST   MANAS      EGPAN   Texaco
-PATTY      SLOW   MANAS      EGPAN   Texaco
-MILHOUSE   SLOW   AL_UDEID   DAVER   Shell
-KRUSTY     SLOW   AL_UDEID   DAVER   Arco
-
-RESERVE / nur bei MissionDemand:
-LISA       FAST   MANAS      PINAX   Texaco
-MOE        FAST   MANAS      PINAX   Texaco
+Spieler entdeckt und meldet Ziel
+-> Identifikation / Freigabe
+-> AI-Unterstützung anfordern
+-> geeignetes AI-Asset auswählen
+-> Spieler markiert / lasert / übergibt Koordinaten
+-> Angriff
+-> BDA
 ```
 
-Die kontinuierliche STANDARD-Verfügbarkeit ist eine OMW-Betriebsentscheidung, kein historischer 24/7-Nachweis. Eine spätere ATO-/Zeitfensterlogik darf diese Verfügbarkeit oberhalb des Tanker-Lifecycles steuern.
+Der Spielerlaser ist nicht automatisch die technische Zielautorisierung. DCS-AI-Verhalten mit Spielerlaser, passendem Code und geeigneter Munition muss separat validiert werden.
 
-## 6. MissionDemand
-
-STANDARD:
+### Variante 3 – Spieler markiert für Spieler
 
 ```text
-Demand
--> kompatiblen bereits laufenden Standard-Track nutzen
-
-COMPLETE / CANCELLED / ABORTED
--> Demand endet
--> Standard-Track bleibt aktiv
+Spieler entdeckt Ziel
+-> Spielerauftrag
+-> CAS-/Strike-Spieler übernimmt
+-> AFAC übermittelt Zielinformation und gegebenenfalls Laser-Code
+-> Markierung / Lasing
+-> Angriff
+-> BDA
 ```
 
-RESERVE:
+`PLAYERRECCE` und Player-Task-Funktionalität sind hierfür vorrangige MOOSE-Kandidaten.
+
+## 4. Setting 2 – UAV-Aufklärung
+
+### Variante 1 – reine ISR-Meldung
 
 ```text
-erster Demand
--> Reserve-Track materialisieren
-
-weitere Demands
--> denselben Track nutzen
-
-letzter Demand endet
--> keine weitere Relief-Erzeugung
--> vorhandene Tanker Cancel/Egress
--> FIR Egress
--> External Handoff
--> Reserve wieder unbesetzt
+UAV erkennt Kontakt / Cluster
+-> Lagebild aktualisieren
+-> HQ / MissionDemand verarbeitet Information
+-> Spieler- oder AI-Auftrag aus letzter bekannter Lage
 ```
 
-Der COMMANDER darf diese OMW-Rollenentscheidung nicht durch implizite Near-Tanker-Auswahl ersetzen.
-
-## 7. Sortie-Identity und Track-Identity
-
-Jeder KC-135 ist eine eigene 1-Ship-Gruppe. Der Callsign ist `Family n-1` und bleibt während der gesamten Sortie stabil:
+### Variante 2 – bewaffnete UAV greift selbst an
 
 ```text
-Texaco n-1: NELSON/PATTY/LISA/MOE
-Arco n-1:   KRUSTY
-Shell n-1:  MILHOUSE
+UAV erkennt Ziel
+-> Identifikation / ROE / Freigabe
+-> eigener Angriff bei geeigneter Bewaffnung
+-> erneute Beobachtung / BDA
 ```
 
-Relief verwendet dieselbe Familie mit anderer freier Gruppennummer. Link-16-STN wird von MOOSE verwaltet und über `UNIT:GetSTN()` ausgelesen.
+Automatische Bekämpfung jedes erkannten Kontaktes ist nicht zulässig.
 
-Track-Identity:
+### Variante 3 – UAV unterstützt Spieler-CAS
 
 ```text
-Radio + TACAN ON nur bei Stationsbesitz
-Radio + TACAN OFF bei Transit/Relief-inbound/Egress
+UAV erkennt Ziel
+-> Spielerauftrag
+-> Spieler übernimmt
+-> UAV hält Track
+-> Markierung / Laser / Koordinaten
+-> Angriff
+-> BDA
 ```
 
-Acceptance-5 bestätigte unter anderem den MILHOUSE-Relief mit stabiler Shell-Familie und getrennten `n-1`-Sorties.
-
-## 8. FIR- und External-Routing
-
-Verbindliche Trennung:
+### Variante 4 – kein Spieler übernimmt
 
 ```text
-External Spawn
--> FIR Ingress Fix
--> AAR Track
--> FIR Egress Fix
--> External Handoff
--> Despawn
+UAV erkennt Ziel
+-> Spielerauftrag wird angeboten
+-> kein geeigneter Spieler übernimmt rechtzeitig
+-> Ziel bleibt gültig
+-> MissionDemand / Commander wählt AI-Unterstützung
+-> Angriff
+-> BDA
 ```
 
-FIR Fix:
+Dringlichkeit, Freundnähe, Zielwert, Track-Alter, ROE, Waffenwirkung und Verfügbarkeit sind einzubeziehen.
+
+## 5. Setting 3 – Bodenpatrouille mit Feindkontakt
 
 ```text
-NELSON/PATTY    -> EGPAN
-KRUSTY/MILHOUSE -> DAVER
-LISA/MOE        -> PINAX
+Patrouille / FOB-Kraft hat Feindkontakt
+-> TIC / Support Demand
+-> eigene Position + Zielinformation + Dringlichkeit
+-> geeignete Assets bewerten
+-> Spielerflug ODER AI-CAS ODER bewaffnete UAV ODER andere genehmigte Unterstützung
+-> JTAC/FAC markiert soweit verfügbar
+-> Wirkung / BDA
 ```
 
-MOOSE-first:
+Ein Boden-JTAC kann Laser, Rauch oder andere unterstützte Markierungen bereitstellen. Sichtlinie, Reichweite, Überleben des JTAC und Zielaktualität sind zu berücksichtigen.
+
+## 6. Asset-Auswahl
+
+Das nächstgelegene Asset ist nicht automatisch das beste Asset. Zu bewerten sind mindestens:
 
 ```text
-SPAWN:SpawnFromCoordinate(externalSpawn)
-AUFTRAG:SetMissionIngressCoord(firIngress)
-AUFTRAG:SetMissionEgressCoord(firEgress)
-AUFTRAG:Cancel()
-FLIGHTGROUP:AddWaypoint(externalHandoff) after FIR-egress passage
-OPSGROUP:Despawn(...) only at external handoff
+Missionsfähigkeit
++ ETA / Entfernung
++ geeignete A/G-Bewaffnung
++ Treibstoff / AAR-Fähigkeit
++ aktuelle Aufgabe und Priorität
++ Bedrohungsverträglichkeit
++ Markierungsfähigkeit
++ Spielerstatus
 ```
 
-Acceptance-5 bestätigte natürliche FIR-Passage über EGPAN, DAVER und PINAX sowie den anschließenden External Handoff. Vollständiges Lower-/Upper-Airway-Routing bleibt ausdrücklich späterer optionaler Scope.
+Der Scoring-Mechanismus ist OMW-Orchestrierung und darf MOOSE-Asset- und Missionslogik nicht unnötig ersetzen.
 
-## 9. Relief / FuelLow
-
-### 9.1 Scheduled Relief
-
-Akzeptierte Semantik:
+## 7. CAS ist Bereitschaft, nicht Einmalangriff
 
 ```text
-ACTIVE
--> 3 h station cycle from actual takeover
--> exactly one RELIEF
--> same callsign family, different n-1 group number
--> relief flies natural external spawn -> FIR ingress -> real track
--> ETA <= 5 min: handover ARMED only
--> outgoing remains ACTIVE and owns radio/TACAN
--> relief reaches real track / close handover geometry
--> relief becomes station owner
--> only then outgoing Cancel/Egress
--> outgoing FIR egress
--> external handoff/recredit/despawn
+Launch
+-> CAS station / loiter
+-> Target Assignment A
+-> Angriff
+-> zurück zur CAS-Bereitschaft
+-> Target Assignment B
+-> Angriff
+-> zurück zur CAS-Bereitschaft
+-> ...
+-> RTB / Ablösung erst bei operativem Missionsende
 ```
 
-Der frühere Acceptance-5-Vorlauf auf Commit `877f0c15c0b46dc8d08f39f7cdcde36e065563b5` deckte einen Controllerfehler auf: Das 5-Minuten-Gate wurde fälschlich als Handover selbst behandelt. Dieser Lauf bleibt verworfene Regressionsevidenz.
+Ein konkreter Zielauftrag und die Lebensdauer des CAS-Sorties sind getrennt zu behandeln.
 
-Die Korrektur auf Acceptance-Commit `5e7dbec37f53155f39c63c25590cf6b4e35814ca` trennt `HANDOVER_ARMED` vom tatsächlichen Track-Handover. Im finalen Owner-Lauf wurde ausdrücklich protokolliert:
+Vor Implementierung ist gegen die gepinnte `Moose.lua` und offizielle Beispiele zu prüfen, ob `AUFTRAG:NewCAS()`, `AUFTRAG:NewCASENHANCED()` oder eine andere MOOSE-Kombination den gewünschten Lifecycle abbildet.
+
+## 8. Missionsfähigkeits- und Winchester-Bewertung
+
+Nicht die Gesamtzahl verbliebener Waffen ist entscheidend, sondern die Eignung für die aktuelle Zielart und ROE.
 
 ```text
-SCHEDULED_RELIEF_ARMED_HOLD_PASS area=MILHOUSE outgoingStillActive=true reliefStillInbound=true
-SINGLE_SCHEDULED_RELIEF_PASS area=MILHOUSE armedHold=true naturalTrackHandover=true
+Kann der Flug für die aktuelle Aufgabe noch sinnvoll wirken?
 ```
 
-Damit ist die Scheduled-Relief-Semantik für den dokumentierten Acceptance-Stand praktisch bestätigt.
+Beispiele: nur Luft-Luft-Waffen bedeuten keine normale CAS-Fähigkeit; nur Kanone kann für bestimmte leichte Ziele noch genügen; ungelenkte Waffen können bei enger Freundnähe ungeeignet sein.
 
-### 9.2 FuelLow
+## 9. AAR-Schnittstelle
 
-FuelLow bleibt bewusst asymmetrisch zum Scheduled Relief:
+AAR wird nicht durch die ISR-/FAC-/CAS-Komponente erzeugt, disponiert oder betrieben.
+
+Für AAR-fähige Assets stehen die separat geregelten OMW-Tankertracks zur Verfügung. Die vier STANDARD-Tracks laufen gemäß der verbindlichen AAR-Baseline bis zu einer später genehmigten ATO-/Zeitfensterregel kontinuierlich; RESERVE-Tracks bleiben MissionDemand-gesteuert.
+
+Daher ist Fuel Low bei einem AAR-fähigen CAS-/Strike-Asset nicht automatisch Missionsende:
 
 ```text
-ACTIVE FuelLow
--> existing relief reuse OR exactly one emergency relief
--> outgoing Egress immediately
--> no 5-minute wait
--> temporary coverage gap allowed
--> replacement becomes station owner after natural track arrival
+Asset missionsfähig?
+-> Fuel ausreichend: Mission fortsetzen
+-> Fuel niedrig und AAR sinnvoll/verfügbar:
+   bestehende AAR-Fähigkeit nutzen
+   -> kompatiblen geeigneten Tanker anfliegen
+   -> refuel
+   -> bisherigen Auftrag / CAS-Bereitschaft fortsetzen
+-> kein sinnvoller/erreichbarer AAR-Pfad:
+   Bingo / RTB / Ablösung
 ```
 
-Acceptance-5 bestätigte diesen NELSON-FuelLow-Pfad praktisch.
+Nicht Gegenstand dieses Dokuments sind Tanker-Spawning, Track-Geometrie, Callsigns, Frequenzen, TACAN, Relief, Tanker-FuelLow, Source Domains, KC-135-Pools oder AAR-Acceptance.
 
-## 10. Loss und CampaignState
+## 10. BDA und ROE
+
+Ein ausgeführter Angriff ist nicht automatisch ein zerstörtes Ziel. Vorgesehene BDA-Zustände sind beispielsweise:
 
 ```text
-FLIGHTGROUP Dead
--> OnAfterDead
--> Adapter OnLost
--> kein AIRCRAFT_KC135 recredit
--> AIRCRAFT_KC135_LOST +1 exactly once
--> replacement nur wenn Track weiterhin benötigt/offen
+NOT_ASSESSED
+-> PARTIAL
+-> EFFECTIVE
+-> DESTROYED
+-> INCONCLUSIVE
+-> REATTACK_REQUIRED
 ```
 
-Strategische Pools:
+Vor einer Bekämpfung sind mindestens Identifikation, No-Strike-Regeln, Friendly-Nähe, Track-Alter, Markierungszuordnung, Waffenwirkung, Freigabestatus und Einsatzfähigkeit zu prüfen.
+
+## 11. Noch offene OMW-Orchestrierung
+
+Offen bleiben insbesondere:
+
+- exakter Spieler-Meldeweg;
+- `PLAYERRECCE`-Einbindung für OH-58D und weitere Module;
+- Verhältnis `INTEL` / `TARGET` / Player Task;
+- Designation-/Laser-Kopplung für Spieler und AI;
+- Wahl und Lifecycle des MOOSE-CAS-Auftrags;
+- missionsabhängige Waffenbewertung;
+- Asset-Scoring und Spieler-zu-AI-Eskalation;
+- BDA-Rückführung in das Lagebild.
+
+AAR-Track-, Tanker- und Relief-Fragen sind keine offenen Entscheidungen dieses Dokuments.
+
+## 12. Testgrenze
+
+Die noch offene ISR-/FAC-/CAS-Kette benötigt getrennte DCS-Tests für Spieler-Recon, UAV-INTEL, Player Tasks, Spieler-/AI-Designation, Boden-JTAC, CAS-Retasking, Rückkehr zur CAS-Bereitschaft, Waffenbewertung und BDA.
+
+Für AAR ist nur noch die **Schnittstelle** zu testen:
 
 ```text
-OFFMAP_MANAS    AIRCRAFT_KC135 = 16
-OFFMAP_AL_UDEID AIRCRAFT_KC135 = 40
+AAR-fähiger CAS-Flug
+-> Fuel Low
+-> bestehende AAR-Fähigkeit nutzen
+-> Refuel
+-> dieselbe CAS-Mission fortsetzen
 ```
 
-Bestätigter External-Handoff recreditiert genau eine KC-135. Restore-Reconciliation löst nur persistierte, nicht anderweitig aufgelöste Commitments exactly once auf.
-
-Acceptance-5 injizierte PATTY absichtlich über die öffentliche MOOSE-Methode `UNIT:Explode()`. Beobachtet wurden `FLIGHTGROUP Dead/OnAfterDead`, kein Recredit, Loss-Audit +1 und eine natürliche Replacement-Sortie über EGPAN.
-
-## 11. Operative Concurrency
-
-Die AI-Support-Regel `2/2/4` gilt nicht für AAR.
-
-```text
-steady state STANDARD = 4 Tanker
-Reserve = +1 je geöffnetem Reserve-Track
-pro Track max. 1 ACTIVE + 1 RELIEF
-MANAS und AL_UDEID parallel möglich
->=60 s Materialisierungsabstand innerhalb derselben Source Domain
-```
-
-## 12. Evidence / Acceptance
-
-Final akzeptierter Owner-DCS-Lauf:
-
-```text
-Test: AAR-PRODUCTION-FINAL-ACCEPTANCE-5
-Branch: agent/aar-runtime-finalization
-Acceptance commit: 5e7dbec37f53155f39c63c25590cf6b4e35814ca
-Mission: OMW_Template_v9_AirOps_rdy.miz
-Mission SHA-256: c9e3978a4bbb35ebbfe5ae362021b5f8870129d6c8b06b58147424dde71a94e3
-Bundle SHA-256: f33b0a5a6212d9a1103dfa2e0ab677777142ca771a2f5007a3ab1c7fee594cbf
-DCS: 2.9.28.26385 MT
-MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
-Moose.lua SHA-256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
-Result: PASS
-```
-
-Der Lauf bestätigte insbesondere:
-
-- vier STANDARD- und zwei demand-gesteuerte RESERVE-Tracks;
-- mindestens 60 s Same-source-Spacing;
-- natürliche EGPAN-/DAVER-/PINAX-Transits;
-- stabile Callsign-Familien und STN-Readback;
-- Scheduled Relief mit Armed-Hold bis zur realen Relief-Ankunft;
-- Radio/TACAN-Transfer erst bei tatsächlicher Übernahme;
-- FuelLow Immediate Egress;
-- External Handoff;
-- Reserve-Shutdown;
-- PATTY Loss/Replacement;
-- CampaignState exact-once Accounting;
-- `FINAL_STEADY_STATE_PASS` und `RESULT PASS`.
-
-Der AAR-Unterbereich ist damit für diese exakte Provenienz `ACCEPTED_TECHNICAL_BASELINE`. Die vollständige ISR/FAC/CAS-Kette bleibt weiterhin `PLANNED`.
+Dieser Test wiederholt nicht die bereits abgeschlossene AAR-Acceptance.
