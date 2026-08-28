@@ -12,7 +12,7 @@ not_authoritative_for:
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 source_branch: agent/army-ground-foundation-reconciliation
-source_commit: PENDING_MERGE
+source_commit: 998080da9a7a71dae7f713b9590dfeadb5ae93ba
 validated_in_dcs: true
 supersedes:
   - four-node-only production-stock description in the earlier settlement preparation

@@ -17,6 +17,14 @@ base_status: ACCEPTED_TECHNICAL_BASELINE
 merged_to_main: false
 inherited_risk:
   - parent branch remains unmerged
+document_class: DCS_RUNTIME_ACCEPTANCE
+acceptance_branch: agent/army-ground-foundation-reconciliation
+acceptance_commit: c03af3bdf33c83d2fee5477f90f1479df1ec52d3
+acceptance_mission: OMW_Template_v13_ground_test(20260820-160651).miz
+acceptance_mission_sha256: 7b10b96cd1fbebef7831ccf633e1f57c34b8a318238b38865606fd47dfeb59db
+dcs_version: 2.9.28.26385 MT
+moose_commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+moose_artifact_sha256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
 ---
 
 # ARMY Ground Acceptance 6 – parallele Rückgabe, Teilverlust und Schaden

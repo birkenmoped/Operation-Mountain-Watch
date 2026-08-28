@@ -15,7 +15,7 @@ not_authoritative_for:
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 source_branch: agent/army-ground-foundation-reconciliation
-source_commit: PENDING_MERGE
+source_commit: 998080da9a7a71dae7f713b9590dfeadb5ae93ba
 validated_in_dcs: true
 supersedes:
   - Fortress/Honaker quantity-open clauses in OMW-ARMY-GROUND-KUNAR-OPERATIONAL-DOMAIN-RECONCILIATION
@@ -23,6 +23,7 @@ supersedes:
   - Honaker dependent-only resource clauses in OMW-ARMY-GROUND-RESOURCE-QUANTITY-SETTLEMENT
   - Honaker 2 x M777A2 July-2011 fixed-fire-support assumption in current Ground Foundation documents
 superseded_by:
+document_class: GROUND_RESOURCE_DECISION
 ---
 
 # Fortress / Honaker-Miracle 2011 Resource Decision

@@ -14,7 +14,7 @@ project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
 superseded_by:
 source_branch: agent/army-ground-foundation-reconciliation
-source_commit: PENDING_MERGE
+source_commit: 998080da9a7a71dae7f713b9590dfeadb5ae93ba
 acceptance_branch: agent/army-ground-foundation-reconciliation
 acceptance_commit: 45d916217c0085728082c3ef2efcd582d736caae
 acceptance_mission: OMW_Template_v14_ground_test.miz

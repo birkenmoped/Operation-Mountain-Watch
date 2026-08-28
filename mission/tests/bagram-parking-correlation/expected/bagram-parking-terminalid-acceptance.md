@@ -21,6 +21,9 @@ dcs_version: 2.9.28.26385
 moose_commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
 moose_artifact_sha256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
 validated_in_dcs: true
+supersedes:
+superseded_by:
+acceptance_commit: 41fff9e313629fee091572a4fafbe38d206afd4b
 ---
 
 # Bagram Parking TerminalID Acceptance

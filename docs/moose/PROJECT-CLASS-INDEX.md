@@ -13,7 +13,7 @@ supersedes:
   - class index without consolidated AIRWING lifecycle evidence
 superseded_by:
 source_branch: agent/awacs-external-lifecycle-foundation
-source_commit: PENDING_MERGE
+source_commit: 998080da9a7a71dae7f713b9590dfeadb5ae93ba
 validated_in_dcs: partial
 ---
 

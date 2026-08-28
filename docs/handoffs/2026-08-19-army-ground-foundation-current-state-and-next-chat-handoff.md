@@ -18,7 +18,7 @@ supersedes:
   - OMW-HANDOFF-ARMY-GROUND-FOUNDATION-2026-08-18
 superseded_by:
 source_branch: agent/army-ground-foundation-reconciliation
-source_commit: PENDING_MERGE
+source_commit: 998080da9a7a71dae7f713b9590dfeadb5ae93ba
 validated_in_dcs: false
 ---
 
