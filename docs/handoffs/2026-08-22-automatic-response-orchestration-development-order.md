@@ -9,7 +9,7 @@ authoritative_for:
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 source_branch: agent/automatic-response-orchestration
-source_commit: PENDING_MERGE
+source_commit: dac19985de5ecae89b6948854e4a4bd5906f765b
 validated_in_dcs: partial
 base_branch: main
 base_commit: 998080da9a7a71dae7f713b9590dfeadb5ae93ba

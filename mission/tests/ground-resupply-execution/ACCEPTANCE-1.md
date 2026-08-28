@@ -10,7 +10,7 @@ project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
 superseded_by:
 source_branch: agent/automatic-response-orchestration
-source_commit: PENDING_MERGE
+source_commit: dac19985de5ecae89b6948854e4a4bd5906f765b
 acceptance_branch: agent/automatic-response-orchestration
 acceptance_commit: 2d72bcdfc113342a2180b6cd9c84486da790052c
 acceptance_mission: OMW_Template_v18.miz

@@ -11,7 +11,7 @@ supersedes:
 superseded_by:
   - OMW-GROUND-FUEL-REFUELLING-ZONE-ACCEPTANCE-2
 source_branch: agent/automatic-response-orchestration
-source_commit: PENDING_MERGE
+source_commit: dac19985de5ecae89b6948854e4a4bd5906f765b
 validated_in_dcs: true
 ---
 

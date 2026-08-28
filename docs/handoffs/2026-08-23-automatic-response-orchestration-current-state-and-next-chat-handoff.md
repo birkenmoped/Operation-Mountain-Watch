@@ -11,7 +11,7 @@ project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
 superseded_by:
 source_branch: agent/automatic-response-orchestration
-source_commit: PENDING_MERGE
+source_commit: dac19985de5ecae89b6948854e4a4bd5906f765b
 validated_in_dcs: partial
 base_branch: main
 base_commit: cace7e888e655cfce20c9338b9e327ff45cee726
