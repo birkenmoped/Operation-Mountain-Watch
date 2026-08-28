@@ -86,6 +86,7 @@ function RequestMenu.New(config)
     now = config.now or function() return nil end,
     moose = moose,
     menusByGroupId = {},
+    groupsById = {},
     sendMessage = config.sendMessage,
     onRequestQueued = config.onRequestQueued,
     onRequestCancellation = config.onRequestCancellation,
@@ -215,7 +216,17 @@ function RequestMenu:RegisterGroup(group)
   )
 
   self.menusByGroupId[key] = menus
+  self.groupsById[key] = group
   return menus
+end
+
+function RequestMenu:NotifyGroupId(groupId, text)
+  local group = self.groupsById[tostring(groupId)]
+  if not group then
+    return nil, "GROUP_NOT_REGISTERED"
+  end
+  self.sendMessage(group, text)
+  return true
 end
 
 function RequestMenu:SubmitFromGroup(group)
@@ -244,7 +255,11 @@ function RequestMenu:SubmitFromGroup(group)
       dispatch, dispatchReason = self.onRequestQueued(request)
     end
     if dispatch then
-      self.sendMessage(group, string.format("ISR Cell: %s assigned to %s.", tostring(request.id), tostring(dispatch.platformId)))
+      self.sendMessage(group, string.format(
+        "ISR Cell: %s accepted for %s; awaiting MOOSE dispatch.",
+        tostring(request.id),
+        tostring(dispatch.platformId)
+      ))
     elseif dispatchReason and dispatchReason ~= "NO_AVAILABLE_ISR_ASSET" then
       log("DISPATCH_DEFERRED requestId=" .. tostring(request.id)
         .. " reason=" .. tostring(dispatchReason))
