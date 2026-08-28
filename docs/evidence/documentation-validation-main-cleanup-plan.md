@@ -10,7 +10,7 @@ project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
 superseded_by:
 source_branch: agent/documentation-validation-main-cleanup
-source_commit: PENDING_MERGE
+source_commit: ba77bf4a65d8247854926ccec45f60c90786fecf
 validated_in_dcs: false
 ---
 
