@@ -7,7 +7,6 @@ authoritative_for:
   - branch-local Stage 1B2 MOOSE source review for Ground FUELSUPPLY execution
 not_authoritative_for:
   - repository-wide production Fuel executor selection before merge to main
-  - formal Stage 1B2 accepted baseline without complete executed-MIZ provenance
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 source_branch: agent/automatic-response-orchestration
@@ -74,9 +73,9 @@ end
 
 Damit ist `AddRefuellingZone(...)` kein One-Shot-Transfer-Dispatcher. Die Methode registriert einen dauerhaft zu verwaltenden Refuelling-Service. Sobald die aktuelle Mission over ist, erzeugt BRIGADE erneut FUELSUPPLY.
 
-## 4. Reale Stage-1B2-Runtime-Evidenz Build 2-2
+## 4. Stage-1B2 Build 2-2
 
-Der DCS-Lauf mit Build `GROUND-FUEL-REFUELLING-ZONE-ACCEPTANCE-2-2` bestätigte genau diese Source-Semantik:
+Der DCS-Lauf mit Build `GROUND-FUEL-REFUELLING-ZONE-ACCEPTANCE-2-2` bestätigte diese Source-Semantik:
 
 ```text
 FUELSUPPLY assigned
@@ -89,14 +88,14 @@ FUELSUPPLY assigned
 -> acceptance detects MULTIPLE_FUELSUPPLY_MISSIONS_ASSIGNED
 ```
 
-Daher gilt branch-lokal:
+Daher gilt:
 
 ```text
 BRIGADE:AddRefuellingZone for persistent service: SOURCE + RUNTIME CONSISTENT
 BRIGADE:AddRefuellingZone for one-shot strategic transfer: NOT SUITABLE
 ```
 
-## 5. Reale Stage-1B2-Runtime-Evidenz Build 2-3
+## 5. Stage-1B2 Build 2-3
 
 Build 2-3 ersetzte ausschließlich die persistente Service-Registrierung durch einen einzelnen MOOSE-Auftrag:
 
@@ -105,15 +104,18 @@ AUFTRAG:NewFUELSUPPLY(destinationZone)
 -> BRIGADE:AddMission(mission)
 ```
 
-Reale Build-Identität:
+Akzeptierte Provenienz:
 
 ```text
 Build commit: 2bd930729ed12a073f5364dc139281b60151acf0
 BuilderVersion: GROUND-FUEL-REFUELLING-ZONE-ACCEPTANCE-2-3
 Bundle SHA-256: 8CBDFA12B1A052517D82CB20A460CA665415353FE38ED2F1C50928BE6C7966A0
 DCS: 2.9.28.26385 MT
-Mission name: OMW_Template_v19.miz
-Executed MIZ SHA-256: PENDING_OWNER_EVIDENCE
+Mission: OMW_Template_v19.miz
+Executed MIZ SHA-256: 603422EFAFFA860041089D0F1AD41D35642A7863BC1C7B658E0B8F15A6EB63F2
+Owner confirmation: mission was not saved or otherwise modified after the successful Build-2-3 DCS run before hashing
+MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+Moose.lua SHA-256: E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915
 ```
 
 Der reale DCS-Lauf beobachtete vollständig:
@@ -134,13 +136,11 @@ MISSION_QUEUED
 -> PASS
 ```
 
-Damit sind die zuvor nur source-seitig erwarteten One-Shot- und Return-Semantiken praktisch bestätigt. Die formale `ACCEPTED_TECHNICAL_BASELINE` bleibt jedoch bis zur Rücklieferung des exakten ausgeführten MIZ-Hashes gesperrt.
+Damit sind die One-Shot- und Return-Semantiken praktisch bestätigt.
 
 ## 6. ReturnToLegion
 
 `AUFTRAG:SetReturnToLegion(Switch)` kann den Return explizit überschreiben. Ohne `false` entscheidet der OPSGROUP-Default.
-
-Der gepinnte OPSGROUP-Source setzt für Ground-/Naval-Gruppen den Return-to-Legion-Pfad standardmäßig aktiv. Nach abgeschlossenem Mission-/Task-Queue-Pfad kann `_CheckGroupDone(...)` für eine ARMYGROUP mit LEGION den RTZ-Pfad zur Legion-Spawnzone auslösen.
 
 Build 2-3 verwendete keinen projektspezifischen RTZ-Aufruf. Der DCS-Lauf bestätigte den normalen MOOSE-ReturnToLegion-Pfad bis `Returned` und `Warehouse AddAsset`.
 
@@ -178,21 +178,23 @@ Maßgebliches Acceptance-Dokument:
 mission/tests/ground-resupply-execution/ACCEPTANCE-4.md
 ```
 
-Formale Grenze:
+Status:
 
 ```text
 runtime_result: PASS
 validated_in_dcs: true
-formal_acceptance: BLOCKED_BY_MISSING_EXECUTED_MIZ_SHA256
+formal_acceptance: ACCEPTED_TECHNICAL_BASELINE
+executed_miz_sha256: 603422EFAFFA860041089D0F1AD41D35642A7863BC1C7B658E0B8F15A6EB63F2
 ```
 
-## 9. Status
+## 9. Method status
 
 ```text
-AUFTRAG:NewFUELSUPPLY: SOURCE_REVIEWED + DCS_OBSERVED
+AUFTRAG:NewFUELSUPPLY: SOURCE_REVIEWED + VALIDATED_FOR_DOCUMENTED_SCOPE
+BRIGADE:AddMission for one-shot FUELSUPPLY: VALIDATED_FOR_DOCUMENTED_SCOPE
 BRIGADE:AddRefuellingZone persistent replacement behavior: SOURCE_REVIEWED + DCS_OBSERVED
 FUELSUPPLY SpecialTask cancel path: SOURCE_REVIEWED + DCS_OBSERVED
-MOOSE default Ground ReturnToLegion completion for one-shot FUELSUPPLY: DCS_OBSERVED
+MOOSE default Ground ReturnToLegion completion for one-shot FUELSUPPLY: VALIDATED_FOR_DOCUMENTED_SCOPE
 preferred one-shot Fuel executor: MOOSE FUELSUPPLY
-formal Stage 1B2 accepted technical baseline: BLOCKED_BY_MISSING_EXECUTED_MIZ_SHA256
+formal Stage 1B2 accepted technical baseline: COMPLETE
 ```
