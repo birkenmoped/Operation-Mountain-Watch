@@ -61,6 +61,9 @@ function Dispatcher.New(config)
     requireFunction(config.onMissionCancelledBeforeStart, "config.onMissionCancelledBeforeStart")
   end
   if config.onMissionDone ~= nil then requireFunction(config.onMissionDone, "config.onMissionDone") end
+  if config.onMissionRecovered ~= nil then
+    requireFunction(config.onMissionRecovered, "config.onMissionRecovered")
+  end
 
   return setmetatable({
     moose = moose,
@@ -74,6 +77,7 @@ function Dispatcher.New(config)
     onMissionCancelled = config.onMissionCancelled,
     onMissionCancelledBeforeStart = config.onMissionCancelledBeforeStart,
     onMissionDone = config.onMissionDone,
+    onMissionRecovered = config.onMissionRecovered,
   }, Dispatcher)
 end
 
@@ -131,6 +135,36 @@ function Dispatcher:_CaptureOpsGroups(record)
   return true
 end
 
+function Dispatcher:_CaptureAsset(record)
+  if record.asset then
+    return true
+  end
+  if type(record.squadron) ~= "table" or type(record.squadron.assets) ~= "table" then
+    return nil, "MOOSE_SQUADRON_ASSET_TABLE_UNAVAILABLE"
+  end
+  for _, asset in pairs(record.squadron.assets) do
+    for _, opsGroup in ipairs(record.opsGroups or {}) do
+      if asset.flightgroup == opsGroup then
+        record.asset = asset
+        return true
+      end
+    end
+  end
+  return nil, "MOOSE_ASSET_FOR_OPS_GROUP_NOT_FOUND"
+end
+
+function Dispatcher:_TurnoverSeconds(record)
+  if not record.asset or type(record.squadron) ~= "table"
+      or type(record.squadron.GetRepairTime) ~= "function" then
+    return nil, "MOOSE_TURNOVER_TIME_UNAVAILABLE"
+  end
+  local seconds = record.squadron:GetRepairTime(record.asset)
+  if type(seconds) ~= "number" then
+    return nil, "MOOSE_TURNOVER_TIME_INVALID"
+  end
+  return math.max(0, seconds)
+end
+
 function Dispatcher:_StopRecoveryMonitor(record)
   if record.recoveryScheduler and record.recoveryScheduleId then
     record.recoveryScheduler:Stop(record.recoveryScheduleId)
@@ -149,12 +183,21 @@ function Dispatcher:_CompleteAfterPhysicalRecovery(record)
       .. " reason=" .. tostring(reason))
     return
   end
+  local turnoverSeconds, turnoverReason = self:_TurnoverSeconds(record)
   record.recoveryCompleted = true
   self:_StopRecoveryMonitor(record)
   log("MISSION_RECOVERED requestId=" .. record.requestId
     .. " mission=" .. record.mission.name .. " platform=" .. record.platformId
-    .. " resourceRestored=true")
+    .. " resourceRestored=true"
+    .. " turnoverSeconds=" .. tostring(turnoverSeconds)
+    .. " turnoverReason=" .. tostring(turnoverReason))
   if self.onMissionDone then self.onMissionDone(record.request, record.mission) end
+  if self.onMissionRecovered then
+    self.onMissionRecovered(record.request, record.mission, {
+      turnoverSeconds = turnoverSeconds,
+      turnoverReason = turnoverReason,
+    })
+  end
 end
 
 function Dispatcher:_ObservePhysicalRecovery(requestId)
@@ -246,6 +289,12 @@ function Dispatcher:_BuildMission(request, profile, squadron)
       local captured, reason = self:_CaptureOpsGroups(record)
       if not captured then
         log("MISSION_RECOVERY_GROUP_CAPTURE_DEFERRED requestId=" .. request.id .. " reason=" .. reason)
+      else
+        local assetCaptured, assetReason = self:_CaptureAsset(record)
+        if not assetCaptured then
+          log("MISSION_RECOVERY_ASSET_CAPTURE_DEFERRED requestId=" .. request.id
+            .. " reason=" .. assetReason)
+        end
       end
     end
     self.campaignAdapter:ConsumeAtPhysicalStart(request.id)
@@ -311,6 +360,7 @@ function Dispatcher:Dispatch(request)
         platformId = profile.platformId,
         transactionId = reservation.transactionId,
         mission = mission,
+        squadron = squadron,
       }
       return self.missionsByRequestId[request.id]
     end
