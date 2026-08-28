@@ -153,6 +153,63 @@ function Dispatcher:_CaptureAsset(record)
   return nil, "MOOSE_ASSET_FOR_OPS_GROUP_NOT_FOUND"
 end
 
+function Dispatcher:_MarkTakeoff(record, source)
+  if record.takeoffConfirmed then
+    return
+  end
+  record.takeoffConfirmed = true
+  record.takeoffSource = source
+  log("MISSION_TAKEOFF_CONFIRMED requestId=" .. record.requestId
+    .. " mission=" .. record.mission.name .. " platform=" .. record.platformId
+    .. " source=" .. source)
+end
+
+function Dispatcher:_ObserveTakeoff(record)
+  if record.takeoffConfirmed or not record.opsGroups then
+    return record.takeoffConfirmed
+  end
+
+  record.takeoffObservers = record.takeoffObservers or {}
+  for _, opsGroup in ipairs(record.opsGroups) do
+    if type(opsGroup.IsAirborne) == "function" and opsGroup:IsAirborne() == true then
+      self:_MarkTakeoff(record, "MOOSE_IS_AIRBORNE")
+      return true
+    end
+
+    if not record.takeoffObservers[opsGroup] then
+      local previous = opsGroup.OnAfterElementTakeoff
+      opsGroup.OnAfterElementTakeoff = function(group, from, event, to, element, airbase)
+        if previous then
+          previous(group, from, event, to, element, airbase)
+        end
+        self:_MarkTakeoff(record, "MOOSE_ELEMENT_TAKEOFF")
+      end
+      record.takeoffObservers[opsGroup] = true
+    end
+  end
+  return false
+end
+
+function Dispatcher:_WaiveTurnoverAfterNoTakeoff(record)
+  if record.takeoffConfirmed then
+    return false, "TAKEOFF_CONFIRMED"
+  end
+  local captured, captureReason = self:_CaptureAsset(record)
+  if not captured then
+    return nil, captureReason
+  end
+  -- MOOSE LEGION unconditionally sets Asset.Treturned when a returned asset is
+  -- re-added to its cohort. MOOSE exposes no per-asset public waiver for that
+  -- timestamp. This narrowly removes only the maintenance timestamp after the
+  -- MOOSE physical return is complete and only when its ElementTakeoff callback
+  -- never occurred.
+  if record.asset.Treturned == nil then
+    return nil, "MOOSE_RETURN_TIMESTAMP_UNAVAILABLE"
+  end
+  record.asset.Treturned = nil
+  return true
+end
+
 function Dispatcher:_TurnoverSeconds(record)
   if not record.asset or type(record.squadron) ~= "table"
       or type(record.squadron.GetRepairTime) ~= "function" then
@@ -183,12 +240,26 @@ function Dispatcher:_CompleteAfterPhysicalRecovery(record)
       .. " reason=" .. tostring(reason))
     return
   end
+  local turnoverWaived = false
+  local turnoverWaiverReason = nil
+  if not record.takeoffConfirmed then
+    turnoverWaived, turnoverWaiverReason = self:_WaiveTurnoverAfterNoTakeoff(record)
+    if turnoverWaived then
+      log("MISSION_TURNOVER_WAIVED_NO_TAKEOFF requestId=" .. record.requestId
+        .. " mission=" .. record.mission.name .. " platform=" .. record.platformId)
+    else
+      log("MISSION_TURNOVER_WAIVER_NOT_APPLIED requestId=" .. record.requestId
+        .. " reason=" .. tostring(turnoverWaiverReason))
+    end
+  end
   local turnoverSeconds, turnoverReason = self:_TurnoverSeconds(record)
   record.recoveryCompleted = true
   self:_StopRecoveryMonitor(record)
   log("MISSION_RECOVERED requestId=" .. record.requestId
     .. " mission=" .. record.mission.name .. " platform=" .. record.platformId
     .. " resourceRestored=true"
+    .. " takeoffConfirmed=" .. tostring(record.takeoffConfirmed == true)
+    .. " turnoverWaived=" .. tostring(turnoverWaived == true)
     .. " turnoverSeconds=" .. tostring(turnoverSeconds)
     .. " turnoverReason=" .. tostring(turnoverReason))
   if self.onMissionDone then self.onMissionDone(record.request, record.mission) end
@@ -212,6 +283,7 @@ function Dispatcher:_ObservePhysicalRecovery(requestId)
     return
   end
 
+  self:_ObserveTakeoff(record)
   for _, opsGroup in ipairs(record.opsGroups) do
     if opsGroup:IsAlive() == true then
       return
@@ -295,6 +367,7 @@ function Dispatcher:_BuildMission(request, profile, squadron)
           log("MISSION_RECOVERY_ASSET_CAPTURE_DEFERRED requestId=" .. request.id
             .. " reason=" .. assetReason)
         end
+        self:_ObserveTakeoff(record)
       end
     end
     self.campaignAdapter:ConsumeAtPhysicalStart(request.id)
