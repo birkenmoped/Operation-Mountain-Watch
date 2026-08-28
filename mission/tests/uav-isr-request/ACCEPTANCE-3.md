@@ -57,6 +57,15 @@ turnover. The adapter waits for MOOSE to publish the returned timestamp before
 CampaignState is recovered; an unavailable timestamp keeps the request pending
 and logs `MISSION_TURNOVER_WAIVER_AWAITING_MOOSE_RETURN`.
 
+A request that cannot reserve a strategic MQ-9 is not yet in MOOSE's AIRWING
+queue. The F10 menu therefore keeps that request in the coordinator's
+`QUEUED` state and retries the CampaignState reservation every 30 seconds
+using MOOSE `SCHEDULER`. After a physical recovery restores the strategic
+credit, the retry adds the AUFTRAG to the existing MOOSE AIRWING. MOOSE then
+remains the authority for the configured physical turnover before launch. The
+old message `queued` without a retry was incorrect and could leave a request
+permanently unstarted.
+
 A confirmed flight retains normal MOOSE turnover and reports the remaining
 time. A waived ground recall reports immediate availability to the requesting
 group. This is an acceptance-only, documented fallback—not a production
