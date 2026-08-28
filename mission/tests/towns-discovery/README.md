@@ -1,6 +1,29 @@
+---
+document_id: OMW-TEST-TOWNS-DISCOVERY
+status: HISTORICAL_TEST_FIXTURE
+document_class: TEST_PROJECT_INDEX
+owning_policy: OMW-GOV-001
+authoritative_for:
+  - historical Afghanistan TOWNS discovery fixture
+not_authoritative_for:
+  - production settlement classification
+  - current DCS runtime acceptance
+scenario_period: 2010-08-01/2011-12-31
+project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
+supersedes: []
+superseded_by: []
+source_branch: agent/towns-discovery
+source_commit: PENDING_MERGE
+validated_in_dcs: false
+---
+
 # OMW TOWNS Discovery 01
 
-Development mission step for inventorying the Afghanistan terrain `towns.lua` through MOOSE `TOWNS`.
+Development fixture for inventorying the Afghanistan terrain `towns.lua` through MOOSE `TOWNS`. It is preserved as historical evidence only; it is not a production settlement-classification architecture.
+
+## MOOSE-first scope
+
+The pinned MOOSE source contains `Navigation.Towns` and `TOWNS:NewFromFile(FileName)`. The fixture therefore uses MOOSE as the primary town-data interface. Native `land.*`, `io`, and `lfs` access in this fixture is development/evidence-only and is not approved for production use.
 
 ## Build the mission bundle
 
@@ -65,9 +88,7 @@ OMW_DEV_AF_TOWNS_DISCOVERY_01.miz
 
 ## Mission scripting access
 
-The discovery step reads the DCS terrain file and writes development exports. The local development installation therefore requires the relevant `MissionScripting.lua` restrictions for `io` and `lfs` to be disabled.
-
-Keep a backup of `MissionScripting.lua` and use this only in the controlled development environment.
+The historical discovery step reads the DCS terrain file and can write development exports. If this fixture is intentionally rerun in a controlled development installation, the required `io`/`lfs` access must be configured manually by the operator. Operation Mountain Watch does not automatically modify `MissionScripting.lua`.
 
 ## Expected runtime output
 
@@ -96,3 +117,7 @@ Search for:
 ```text
 [OMW-TOWNS]
 ```
+
+## Acceptance boundary
+
+Merging this fixture records source-reviewed historical tooling only. No current DCS PASS, `VALIDATED` status, or production Native-DCS exception is claimed.
