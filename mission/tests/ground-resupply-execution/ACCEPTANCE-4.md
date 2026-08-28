@@ -14,10 +14,10 @@ source_commit: PENDING_MERGE
 acceptance_branch: agent/automatic-response-orchestration
 acceptance_commit: 2bd930729ed12a073f5364dc139281b60151acf0
 acceptance_mission: OMW_Template_v19.miz
-acceptance_mission_sha256: 603422EFAFFA860041089D0F1AD41D35642A7863BC1C7B658E0B8F15A6EB63F2
+acceptance_mission_sha256: 603422efaffa860041089d0f1ad41d35642a7863bc1c7b658e0b8f15a6eb63f2
 dcs_version: 2.9.28.26385 MT
 moose_commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
-moose_artifact_sha256: E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915
+moose_artifact_sha256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
 validated_in_dcs: true
 ---
 
@@ -72,8 +72,6 @@ MOOSE release: 2.9.18
 MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
 Moose.lua SHA-256: E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915
 ```
-
-The later local reconciliation check confirmed that the retained Build-2-3 bundle still had the same SHA-256.
 
 ## 3. Strategischer Testvertrag
 
