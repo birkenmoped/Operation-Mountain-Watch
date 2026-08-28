@@ -71,7 +71,16 @@ local adapter = {
   end,
 }
 
-local mq9Squadron = { name = "SQ_US_KAF_MQ9_361_ERS" }
+local mq9Squadron = {
+  name = "SQ_US_KAF_MQ9_361_ERS",
+  assets = {
+    { flightgroup = opsGroup },
+  },
+  GetRepairTime = function(_, asset)
+    assert(asset.flightgroup == opsGroup)
+    return 1200
+  end,
+}
 
 local dispatcher = Dispatcher.New({
   moose = fakeMoose,
@@ -99,6 +108,9 @@ local dispatcher = Dispatcher.New({
   onMissionCancelled = function(request) lifecycle.cancelled = request.id end,
   onMissionCancelledBeforeStart = function(request) lifecycle.cancelledBeforeStart = request.id end,
   onMissionDone = function(request) lifecycle.done = request.id end,
+  onMissionRecovered = function(request, _, recovery)
+    lifecycle.recovery = { request.id, recovery.turnoverSeconds, recovery.turnoverReason }
+  end,
 })
 
 local request = {
@@ -139,6 +151,9 @@ opsGroup.alive = false
 dispatcher:_ObservePhysicalRecovery("ISR-0099")
 assert(lifecycle.done == "ISR-0099")
 assert(lifecycle.recovered == "ISR-0099")
+assert(lifecycle.recovery[1] == "ISR-0099")
+assert(lifecycle.recovery[2] == 1200)
+assert(lifecycle.recovery[3] == nil)
 assert(fakeScheduler.stopped == "RECOVERY-SCHEDULE")
 opsGroup.alive = true
 
@@ -171,5 +186,7 @@ opsGroup.alive = false
 dispatcher:_ObservePhysicalRecovery("ISR-0101")
 assert(lifecycle.done == "ISR-0101")
 assert(lifecycle.recovered == "ISR-0101")
+assert(lifecycle.recovery[1] == "ISR-0101")
+assert(lifecycle.recovery[2] == 1200)
 
 print("PASS test_isr_uav_dispatcher")
