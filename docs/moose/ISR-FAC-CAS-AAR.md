@@ -15,8 +15,8 @@ project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
   - earlier version that treated AAR as an internal sub-architecture of ISR/FAC/CAS
 superseded_by:
-source_branch: agent/isr-fac-cas-aar-interface-reconciliation
-source_commit: PENDING_MERGE
+source_branch: main
+source_commit: 36c9d71cc2f80497753b58b70d22418d354c4f71
 validated_in_dcs: partial
 ---
 
