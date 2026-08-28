@@ -13,17 +13,6 @@ function Acceptance.Start()
     error("Kandahar AIRWING foundation is not running")
   end
 
-  -- Acceptance-3 deliberately removes the production turnaround delay for the
-  -- MQ-9. This keeps CampaignState's post-recovery credit congruent with the
-  -- physical MOOSE availability required by this short-cycle test. The
-  -- production Kandahar foundation remains configured at 20 min maintenance
-  -- plus 40 min per damage point.
-  local acceptanceSquadron = kandahar.Squadrons and kandahar.Squadrons.MQ9 or nil
-  if not acceptanceSquadron or type(acceptanceSquadron.SetTurnoverTime) ~= "function" then
-    error("Kandahar MQ-9 squadron turnover API is unavailable")
-  end
-  acceptanceSquadron:SetTurnoverTime(0, 0)
-
   local state = CampaignState.New({
     nodes = {
       {
@@ -46,6 +35,7 @@ function Acceptance.Start()
     campaignState = state,
     nodeId = "KANDAHAR_MAIN",
   })
+  local menu = nil
   local dispatcher = UavDispatcher.New({
     campaignAdapter = adapter,
     source = kandahar,
@@ -80,9 +70,23 @@ function Acceptance.Start()
     onMissionDone = function(request)
       assert(coordinator:MarkCompleted(request.id))
     end,
+    onMissionRecovered = function(request, _, recovery)
+      local seconds = recovery and recovery.turnoverSeconds or nil
+      if menu and type(seconds) == "number" and seconds > 0 then
+        local minutes = math.ceil(seconds / 60)
+        menu:NotifyGroupId(
+          request.ownerGroupId,
+          string.format(
+            "ISR Cell: %s recovered. MQ-9 is in MOOSE turnaround; next availability in about %d min.",
+            tostring(request.id),
+            minutes
+          )
+        )
+      end
+    end,
   })
 
-  local menu = RequestMenu.New({
+  menu = RequestMenu.New({
     coordinator = coordinator,
     blueCoalitionNumber = coalition.side.BLUE,
     now = function() return timer.getTime() end,
