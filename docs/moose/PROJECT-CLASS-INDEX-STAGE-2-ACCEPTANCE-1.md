@@ -1,13 +1,13 @@
 ---
 document_id: OMW-MOOSE-CLASS-INDEX-STAGE-2-ACCEPTANCE-1
-status: PLANNED
+status: VALIDATED_FOR_DOCUMENTED_SCOPE
 document_class: MOOSE_CLASS_REGISTER_ADDENDUM
 owning_policy: OMW-GOV-001
 authoritative_for:
-  - branch-local Stage 2 MOOSE class evidence pending DCS Acceptance 1
+  - branch-local Stage 2 MOOSE class evidence validated by DCS Acceptance 1
 not_authoritative_for:
-  - master PROJECT-CLASS-INDEX status on main
-  - DCS runtime validation before Acceptance 1 is executed
+  - master PROJECT-CLASS-INDEX status on main before merge/reconciliation
+  - broader OPSZONE behavior outside the exact documented Acceptance-1 scope
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
@@ -17,8 +17,8 @@ supersedes:
   - dedicated Fortress patrol-test-zone dependency for ONGUARD
 superseded_by:
 source_branch: agent/fob-attack-support-demand
-source_commit: GIT_HISTORY
-validated_in_dcs: false
+source_commit: e3bc977e35ab3a06a5417124684250ae50a15a8b
+validated_in_dcs: true
 ---
 
 # Stage 2 Acceptance 1 – MOOSE class evidence
@@ -31,27 +31,27 @@ MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
 Moose.lua SHA-256: E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915
 ```
 
-## 2. Branch-local class status
+## 2. Branch-local class status after DCS Acceptance 1
 
-| Klasse/Pfad | Status vor DCS-Lauf | Stage-2-Verwendung |
+| Klasse/Pfad | Status | Stage-2-Verwendung |
 |---|---|---|
-| `BRIGADE` | bereits in anderen Ground-Scopes `VALIDATED_FOR_DOCUMENTED_SCOPE`; neuer Infantry-Security-Scope noch nicht validiert | Fortress operational domain for one existing rifle-squad template through public Warehouse/Legion lifecycle |
-| `LEGION` / `WAREHOUSE` | existing framework hierarchy; Stage-2 anchor use source-reviewed | `BRIGADE -> LEGION -> WAREHOUSE`; public `WAREHOUSE:GetCoordinate()` supplies Fortress guard/security anchor from `WH_BLUE_GND_FORTRESS` |
-| `PLATOON` / `COHORT` | `SOURCE_REVIEWED` plus prior Ground lifecycle evidence; new infantry/ONGUARD combination pending | `PLATOON:New(TPL_BLUE_GND_INF_RIFLE_SQUAD_9, 1, ...)`, `AddMissionCapability(AUFTRAG.Type.ONGUARD, 100)` |
-| `AUFTRAG` / `NewONGUARD` | `SOURCE_REVIEWED` for this exact mission type; acceptance staged | keeps a real BLUE local-security squad at the Warehouse-derived installation anchor |
-| `ARMYGROUP` / `OPSGROUP` lifecycle | prior Ground scopes validated; new infantry ONGUARD scope pending | `OnAfterArmyOnMission` and `OnAfterMissionExecute` prove the Sentry is executing before the perimeter monitor starts |
-| `ZONE_RADIUS` | `SOURCE_REVIEWED`; DCS Stage-2 runtime pending | runtime 1000 m circular security perimeter from `warehouseCoordinate:GetVec2()`; no ME security zone |
-| `OPSZONE` | `SOURCE_REVIEWED`; DCS Stage-2 runtime pending | BLUE-owned installation perimeter; scans hostile Ground presence and raises FSM `Attacked` |
-| `OPSZONE:SetObjectCategories` | `SOURCE_REVIEWED`; DCS Stage-2 runtime pending | restricts scan to `Object.Category.UNIT`; Statics do not satisfy BLUE presence in this acceptance |
-| `OPSZONE:SetUnitCategories` | `SOURCE_REVIEWED`; DCS Stage-2 runtime pending | restricts units to `Unit.Category.GROUND_UNIT` |
-| `OPSZONE:SetCaptureThreatlevel` | `SOURCE_REVIEWED`; DCS Stage-2 runtime pending | Acceptance value `0`; the defended-zone `Attacked` branch checks RED aggregate threat against this threshold |
-| `OPSZONE:SetCaptureNunits` | `SOURCE_REVIEWED`; DCS Stage-2 runtime pending | explicitly retains value `1` for the separate capture branch; it is not the defended-zone `Attacked` unit threshold |
-| `OPSZONE:SetDrawZone` / `SetMarkZone` | `SOURCE_REVIEWED`; DCS Stage-2 runtime pending | runtime security perimeter stays off the F10 map |
-| `OPSZONE.UpdateSeconds` | source-verified public class field consumed by `onafterStart`; no dedicated setter exists in pinned source | Acceptance-only value `5` seconds to avoid the class default 120-second evaluation interval during manual DCS testing |
-| `OPSZONE OnAfterAttacked` | `SOURCE_REVIEWED`; DCS Stage-2 runtime pending | `OnAfterAttacked(From, Event, To, AttackerCoalition)` is the MOOSE-first boundary that emits the qualified installation threat |
-| `SCHEDULER` | already elsewhere `VALIDATED_FOR_DOCUMENTED_SCOPE`; new Stage-2 scope not independently validated | five-second post-BRIGADE-start orchestration and PASS evaluation; no custom presence scan |
+| `BRIGADE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` for this Acceptance-1 composition | Fortress operational domain for one existing rifle-squad template through public Warehouse/Legion lifecycle |
+| `LEGION` / `WAREHOUSE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` for Warehouse-coordinate anchor use | `BRIGADE -> LEGION -> WAREHOUSE`; public `WAREHOUSE:GetCoordinate()` supplies Fortress guard/security anchor from `WH_BLUE_GND_FORTRESS` |
+| `PLATOON` / `COHORT` | `VALIDATED_FOR_DOCUMENTED_SCOPE` for this infantry/ONGUARD composition | `PLATOON:New(TPL_BLUE_GND_INF_RIFLE_SQUAD_9, 1, ...)`, `AddMissionCapability(AUFTRAG.Type.ONGUARD, 100)` |
+| `AUFTRAG` / `NewONGUARD` | `VALIDATED_FOR_DOCUMENTED_SCOPE` for this Fortress local-security mission | keeps a real BLUE local-security squad at the Warehouse-derived installation anchor |
+| `ARMYGROUP` / `OPSGROUP` lifecycle | `VALIDATED_FOR_DOCUMENTED_SCOPE` for the observed sentry mission path | `OnAfterArmyOnMission` and `OnAfterMissionExecute` proved the Sentry executing before the perimeter monitor started |
+| `ZONE_RADIUS` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | runtime 1000 m circular security perimeter from `warehouseCoordinate:GetVec2()`; no ME security zone |
+| `OPSZONE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | BLUE-owned installation perimeter detected hostile RED Ground presence and raised FSM `Attacked` |
+| `OPSZONE:SetObjectCategories` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | scan restricted to `Object.Category.UNIT`; Statics did not satisfy BLUE presence in this acceptance |
+| `OPSZONE:SetUnitCategories` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | units restricted to `Unit.Category.GROUND_UNIT` |
+| `OPSZONE:SetCaptureThreatlevel` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Acceptance value `0`; defended-zone `Attacked` path qualified RED presence |
+| `OPSZONE:SetCaptureNunits` | `VALIDATED_FOR_DOCUMENTED_SCOPE` only as configured capture-branch parameter | value `1`; not the defended-zone `Attacked` unit threshold |
+| `OPSZONE:SetDrawZone` / `SetMarkZone` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | runtime security perimeter remained unmarked/undrawn |
+| `OPSZONE.UpdateSeconds` | `VALIDATED_FOR_DOCUMENTED_SCOPE` for direct field override before `Start()` | Acceptance-only value `5` seconds; production cadence remains undecided |
+| `OPSZONE OnAfterAttacked` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | `OnAfterAttacked(From, Event, To, AttackerCoalition)` emitted the qualified installation threat |
+| `SCHEDULER` | existing validated class; Acceptance-1 orchestration observed | five-second post-BRIGADE-start orchestration and PASS evaluation; no custom presence scan |
 
-No status is raised to `VALIDATED_FOR_DOCUMENTED_SCOPE` by source or CI alone.
+Validation is limited to the exact runtime composition documented below. It does not generalize to arbitrary OPSZONE ownership/capture/contested scenarios.
 
 ## 3. Source evidence for runtime security zone
 
@@ -160,9 +160,60 @@ is superseded for Stage-2 primary threat qualification. Real DCS testing showed 
 
 Git history retains that investigation; the active implementation now uses runtime `ZONE_RADIUS -> OPSZONE -> OnAfterAttacked`.
 
-## 9. Negative boundary
+## 9. DCS Acceptance-1 runtime evidence
 
-Not used by the active Stage-2 acceptance:
+Observed on 2026-08-29 in DCS 2.9.29.27278:
+
+```text
+SENTRY_ON_MISSION
+SENTRY_ONGUARD_EXECUTING
+OPSZONE OMW_SECURITY_BLUE_GROUND_COP_FORTRESS | Starting OPSZONE v0.6.2
+[FobThreatOpsZoneAdapter] started MOOSE OPSZONE security perimeter zone=OMW_SECURITY_BLUE_GROUND_COP_FORTRESS radiusM=1000 owner=2 updateSeconds=5 threatlevel=0 captureNunits=1
+READY ... securityRadiusM=1000 detection=OPSZONE_ATTACKED scanSeconds=5
+QUALIFIED_THREAT count=1 ... evidence=OPSZONE_ATTACKED
+DEMAND_RESULT ... created=true reason=nil
+PASS qualifiedThreats=1 activeDemands=1 ... missionType=CAS_IMMEDIATE installationId=BLUE_GROUND_COP_FORTRESS ... personnelBefore=160 personnelAfterCommit=151 securityRadiusM=1000 detection=OPSZONE_ATTACKED
+OPSZONE OMW_SECURITY_BLUE_GROUND_COP_FORTRESS | Stopping OPSZONE
+```
+
+This validates the exact Stage-2 MOOSE-first chain:
+
+```text
+Warehouse coordinate
+-> runtime ZONE_RADIUS 1000 m
+-> BLUE OPSZONE
+-> RED Ground presence while BLUE local-security presence remains
+-> OPSZONE Attacked
+-> OnAfterAttacked(..., RED)
+-> qualified threat
+-> one CAS_IMMEDIATE MissionDemand
+```
+
+No `EVENTS.Hit` or `EVENTS.Shot` was required for qualification.
+
+## 10. Provenance
+
+```text
+Tested source commit: e3bc977e35ab3a06a5417124684250ae50a15a8b
+BuilderVersion: FOB-ATTACK-THREAT-ACCEPTANCE-1-2
+Acceptance Lua: OMW_FOB_Attack_Threat_Acceptance_1.lua
+Acceptance bundle SHA-256: 9A3382BF0EE476ED105A5EEF56575C73EBE591AAA00C1C4B1DA7A55F27835650
+DCS version: 2.9.29.27278
+MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+Moose.lua SHA-256: E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915
+dcs.log SHA-256: 8C8821ABDD412258A1B2ABF18FC9AA8018767E80894B174DAFE982513B3D2B2D
+debrief.log SHA-256: 081FE758DAE40933F011CE8156364BAC5EF40C13247150999F7CACE2159FD227
+Owner-supplied MIZ artifact: OMW_Template_v20_GroundWorks(10).miz
+Owner-supplied MIZ artifact SHA-256: 54E6562A095E771721E417CC8F5AEE0606066EA619E9E72D462E402A6D3EC118
+Runtime debrief mission path: C:\Users\Sven\Saved Games\DCS.openbeta\Missions\OMW_Template_v20_GroundWorks.miz
+Result: PASS
+```
+
+The filename difference between the uploaded MIZ artifact and the runtime debrief path is preserved explicitly; no identity beyond the owner-supplied test artifact is inferred from the filename alone.
+
+## 11. Negative boundary
+
+Not validated or used by this acceptance:
 
 ```text
 EVENTS.Hit as mandatory trigger
@@ -180,16 +231,9 @@ custom/native presence scanner
 AUFTRAG:NewCAS
 COMMANDER:AddMission for CAS
 AIRWING/SQUADRON dispatch
+production OPSZONE scan cadence
 ```
 
-## 10. Reconciliation
+## 12. Reconciliation
 
-After a real Acceptance-1 run with complete provenance:
-
-```text
-PASS
--> reconcile only the exactly observed ZONE_RADIUS / OPSZONE / OnAfterAttacked plus already observed Ground lifecycle scope into master PROJECT-CLASS-INDEX and VERIFIED-METHODS
-
-FAIL
--> no status increase; document the observed failure and required correction
-```
+Acceptance 1 is `VALIDATED_FOR_DOCUMENTED_SCOPE` on this branch. On merge, reconcile only the exactly observed Stage-2 `ZONE_RADIUS / OPSZONE / OnAfterAttacked` scope plus the observed Ground lifecycle composition into the master `PROJECT-CLASS-INDEX` / `VERIFIED-METHODS` documentation. No broader OPSZONE behavior is implied.
