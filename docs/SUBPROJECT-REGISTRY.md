@@ -199,3 +199,13 @@ PR 134: cleaned main reconciled into feature branch
 ```
 
 Keiner dieser Eintraege erweitert die branchgebundenen DCS-Acceptance-Grenzen.
+
+
+## UAV ISR Request main reconciliation
+
+```text
+branch: agent/uav-isr-request-main-reconciliation
+base: main @ 99d4d88d9b9eea2026fe525ebab4e29ff60cdbfa
+status: DRAFT / no pull request / no DCS acceptance
+scope: document and resolve the public MOOSE AIRWING-queue versus individual-asset-binding gap before rebuilding the ISR acceptance harness
+```
