@@ -5,6 +5,7 @@ on:
     paths:
       - "scripts/campaign/OMW_MissionDemand.lua"
       - "scripts/campaign/OMW_ResourceDemandPolicy.lua"
+      - "scripts/campaign/OMW_FobAttackDemandPolicy.lua"
       - "scripts/logistics/OMW_GroundInitialStock.lua"
       - "tests/mission-demand/**"
       - ".github/workflows/mission-demand-validation.yml"
