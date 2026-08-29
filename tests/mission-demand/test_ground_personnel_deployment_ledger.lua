@@ -10,6 +10,7 @@ local store = CampaignState.New({
   nodes = {
     {
       nodeId = "GROUND_NODE_FORTRESS",
+      airbaseName = "FOB Fortress",
       resources = {
         GROUND_PERSONNEL = { quantity = 160, unit = "count" },
       },
