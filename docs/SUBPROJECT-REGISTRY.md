@@ -14,8 +14,8 @@ project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
   - incomplete open-branch list in the documentation index
 superseded_by:
-source_branch: agent/air-tasking-post-merge-provenance
-source_commit: 9d282bf61e7e54f110b95a4ee9eb2bede01838a5
+source_branch: agent/automatic-response-orchestration-continuation
+source_commit: GIT_HISTORY
 validated_in_dcs: false
 ---
 
@@ -59,6 +59,7 @@ Dieses Register bildet offene Pull Requests, ihre Abhängigkeiten, Dokumentation
 | 52 | `agent/salerno-read-only-diagnostics` | alter Air-Ops-Stack | Salerno COMMANDER-/Runtime-Historie | Tests/Builder/Evidenz | `DRAFT`; kanonische Foundation auf `main` | `ACCEPTED_TECHNICAL_BASELINE` für dokumentierten Stage-18-Stand | offen | technische Fixture-/Runtime-Historie |
 | 66–84 | Warehouse-/CampaignState-/STORAGE-Stack | PR 66 startete von `main`; danach gestapelt | Resource ownership, Fuel/Weapon STORAGE, CampaignState transactions, loss/recovery, final fighter mapping | `scripts/campaign/`, `scripts/logistics/`, Warehouse-Testfixtures und branchgebundene Detaildokumentation | offene Draft-Historie; keine pauschale Main-Autorität | mehrere exakt dokumentierte DCS-Acceptance-Stände; finaler Fighter-Gate PASS | 85 | nicht als 214-Commit-Stack direkt integrieren; PR 85 war der saubere Main-Reconciliation-Pfad |
 | 86 | `agent/air-ops-initial-stock-runtime-data` | `main` nach gemergtem PR 85 | AirOps Initial Stock Runtime, CampaignState-Initialisierung und zentraler Warehouse-Bootstrap | `scripts/logistics/`, `mission/tests/air-ops-warehouse-bootstrap/`, MOOSE-STORAGE-Dokumentation | `DRAFT`; aktuell nicht mergebar gegen `main` | `ACCEPTED_TECHNICAL_BASELINE` für Warehouse-Bootstrap auf Commit `2502516fe130b908e500117142399b3e2ca74007`; separate Onboard-Ammo-Acceptance offen | offen | Warehouse-Bootstrap technisch akzeptiert; vor Integration Reconciliation gegen aktuellen `main` erforderlich |
+| 136 | `agent/automatic-response-orchestration-continuation` | `main` / PR #135 accepted parent | Stage 1D-S SUPPLY und Stage 1D-P PERSONNEL orchestration baselines | `scripts/campaign/`, `scripts/logistics/`, `mission/tests/ground-resupply-execution/`, `docs/moose/`, handoffs | `DRAFT` PR; merge requires explicit owner approval | Stage 1D-S and Stage 1D-P contain exact-provenance `ACCEPTED_TECHNICAL_BASELINE` results; Stage 1D-P Air Acceptance-4 PASS | new Stage 1D-V branch after merge | current integration candidate; no repository-wide authority until merge |
 
 Der Arbeitsbranch `agent/army-ground-foundation-reconciliation` besitzt zum Stand dieser Reconciliation noch keinen Pull Request und wird daher nicht mit einer erfundenen PR-Nummer in die Tabelle aufgenommen. Sobald ein PR existiert, ist er hier mit realem PR-Status und Abhängigkeit nachzutragen.
 
@@ -83,10 +84,11 @@ main
 ├── PR 49
 ├── PR 66 → ... → PR 84
 │                   └── PR 85 (merged clean Warehouse reconciliation)
-└── PR 86 (AirOps initial-stock runtime and accepted Warehouse bootstrap; reconciliation required)
+├── PR 86 (AirOps initial-stock runtime and accepted Warehouse bootstrap; reconciliation required)
+└── PR 136 (Stage 1D-S / Stage 1D-P integration candidate; Draft until owner Ready/Merge approval)
 ```
 
-PR #53 (Tarinkot), PR #60 (Salerno Foundation), PR #61 (Kandahar Foundation), PR #62 (Dokumentationsmetadaten), PR #63 (Bagram duale AIRWING Foundation), PR #64 (AIRWING-Naming-Reconciliation), PR #65 (Shindand Foundation), PR #85 (Warehouse Main Reconciliation), PR #108 (Kunar Ground Site Reconciliation / FOB Bostick), PR #112 (Ground ammo rearm lifecycle / fixed fire support), PR #114 (MissionDemand Domain Foundation), PR #115 (Ground RESUPPLY threshold gate) und PR #117 (Air Tasking selective main reconciliation) sind nach `main` gemergt und werden nicht mehr als offene aktuelle Foundation-Unterprojekte geführt.
+PR #53 (Tarinkot), PR #60 (Salerno Foundation), PR #61 (Kandahar Foundation), PR #62 (Dokumentationsmetadaten), PR #63 (Bagram duale AIRWING Foundation), PR #64 (AIRWING-Naming-Reconciliation), PR #65 (Shindand Foundation), PR #85 (Warehouse Main Reconciliation), PR #108 (Kunar Ground Site Reconciliation / FOB Bostick), PR #112 (Ground ammo rearm lifecycle / fixed fire support), PR #114 (MissionDemand Domain Foundation), PR #115 (Ground RESUPPLY threshold gate), PR #117 (Air Tasking selective main reconciliation) und PR #135 (Ground RESUPPLY orchestration baselines) sind nach `main` gemergt und werden nicht mehr als offene aktuelle Foundation-Unterprojekte geführt.
 
 Für PR #108 ist der reale GitHub-Merge-Stand:
 
@@ -138,6 +140,15 @@ merge_commit: d1ef605c510917b2e69bfb96c109ad9ff8e26654
 acceptance_boundary: historical VERTICAL-2 DCS PASS retained for exact provenance; reconciled VERTICAL-3 local build/hash and GitHub Lua 5.1 contract/build PASS; reconciled source not DCS-validated by owner decision
 ```
 
+Für PR #135 ist der reale GitHub-Merge-Stand:
+
+```text
+PR: 135
+status: MERGED
+merge_commit: 99d4d88d9b9eea2026fe525ebab4e29ff60cdbfa
+acceptance_boundary: completed Ground RESUPPLY package through Stage 1D-S parent baseline; remaining automatic-response work moved to continuation branch
+```
+
 ## 4. Verbindliche Regeln
 
 1. Ein branchgebundener PASS gilt nur für den dokumentierten Branch-, Commit-, Missions-, DCS- und MOOSE-Stand.
@@ -147,55 +158,35 @@ acceptance_boundary: historical VERTICAL-2 DCS PASS retained for exact provenanc
 5. Merge und „Ready for Review“ benötigen weiterhin die ausdrückliche Freigabe des Projektinhabers.
 6. Dieses Register wird bei Öffnen, Schließen, Retargeting, Neubau oder Ablösung eines dokumentationsrelevanten PR aktualisiert.
 
-## 5. Registerabgleich vom 13. August 2026
+## 5. Registerabgleich vom 29. August 2026
 
 ```yaml
-warehouse_source_stack: PR_66_THROUGH_PR_84_OPEN_DRAFT_HISTORY
-warehouse_clean_integration_pr: 85
-warehouse_clean_integration_status: MERGED
-warehouse_clean_integration_merge_commit: 3b4d2470639409e9a82ceed0fee85aa0627c0b3c
-warehouse_runtime_pr: 86
-warehouse_runtime_branch: agent/air-ops-initial-stock-runtime-data
-warehouse_runtime_status: OPEN_DRAFT_NOT_MERGEABLE
-warehouse_bootstrap_acceptance_commit: 2502516fe130b908e500117142399b3e2ca74007
-warehouse_bootstrap_acceptance_status: ACCEPTED_TECHNICAL_BASELINE
-warehouse_runtime_main_at_merge_assessment: 3223db1f7eb130ae2070a926b6f476e6a010f515
-warehouse_runtime_branch_relation: DIVERGED
-warehouse_foundation_decision_block: CLOSED
+automatic_response_parent_pr: 135
+automatic_response_parent_status: MERGED
+automatic_response_parent_merge_commit: 99d4d88d9b9eea2026fe525ebab4e29ff60cdbfa
+automatic_response_continuation_pr: 136
+automatic_response_continuation_branch: agent/automatic-response-orchestration-continuation
+automatic_response_continuation_status: OPEN_DRAFT_MERGEABLE
+automatic_response_stage_1d_s: ACCEPTED_TECHNICAL_BASELINE
+automatic_response_stage_1d_p_air: ACCEPTED_TECHNICAL_BASELINE
+automatic_response_stage_1d_p_mission_sha256: 3B93F9817379BA6C66C8C02DD2142D1EDA3D88090CB8FC88973D4DAC45EE6B11
+next_stage_after_merge: Stage_1D_V_VEHICLE_source_design_reconciliation
 source: GitHub pull-request state plus documented exact-provenance DCS evidence
 ```
 
 Ein offener Zustand bedeutet weder aktuelle fachliche Autorität noch Integrationsreife; die Spalten Governance-Status, Acceptance-Status und Produktionsrelevanz bleiben maßgeblich.
 
-## Automatic Response Orchestration - Ground RESUPPLY branch cut
+## Automatic Response Orchestration – current integration cut
 
 Aktueller Merge-Scope:
 
 ```text
-PR: 131
-branch: agent/automatic-response-orchestration
+PR: 136
+branch: agent/automatic-response-orchestration-continuation
 base: main
-scope: completed Ground RESUPPLY acceptance package
-Stage 1A: ACCEPTED_TECHNICAL_BASELINE
-Stage 1B: HISTORICAL_TEST_FIXTURE / INCONCLUSIVE
-Stage 1C: ACCEPTED_TECHNICAL_BASELINE
-Stage 1B2: ACCEPTED_TECHNICAL_BASELINE
+scope: Stage 1D-S SUPPLY + Stage 1D-P PERSONNEL integration cut
+Stage 1D-S: ACCEPTED_TECHNICAL_BASELINE
+Stage 1D-P Air: ACCEPTED_TECHNICAL_BASELINE
 ```
 
-Die verbleibende Automatic-Response-Arbeit ist bewusst vom Merge-Scope getrennt und liegt auf:
-
-```text
-agent/automatic-response-orchestration-continuation
-```
-
-Restscope des Nachfolgers: Stage 1D sowie Stages 2-9 (weitere RESUPPLY-Reconciliation, FOB-/Convoy-Angriffsreaktionen, Fires/CAS, CSAR, End-to-End, Restart/Idempotence und Multiplayer/Performance/Failure Acceptance).
-
-Reconciliation-Historie fuer PR 131:
-
-```text
-PR 130: earlier main reconciliation into feature branch
-PR 133: documentation metadata cleanup merged to main
-PR 134: cleaned main reconciled into feature branch
-```
-
-Keiner dieser Eintraege erweitert die branchgebundenen DCS-Acceptance-Grenzen.
+Die nächste Entwicklungsstufe wird bewusst nicht auf diesen bereits großen Integrationsbranch gestapelt. Nach Merge von PR #136 wird Stage 1D-V auf einem neuen Branch vom aktualisierten `main` begonnen.
