@@ -10,7 +10,7 @@ project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
 superseded_by:
 source_branch: agent/automatic-response-orchestration-continuation
-source_commit: PENDING_MERGE
+source_commit: GIT_HISTORY
 validated_in_dcs: partial
 base_branch: main
 base_commit: 99d4d88d9b9eea2026fe525ebab4e29ff60cdbfa
