@@ -166,3 +166,10 @@ Die folgenden stabilen IDs werden mit dem Ground-RESUPPLY-Mergepaket in den Main
 | `OMW-GROUND-FUEL-RESUPPLY-ACCEPTANCE-1` | `mission/tests/ground-resupply-execution/ACCEPTANCE-2.md` | `HISTORICAL_TEST_FIXTURE` | historischer/inconclusive FUELSUPPLY-Versuch |
 | `OMW-GROUND-META-RESUPPLY-NOTHING-ACCEPTANCE-1` | `mission/tests/ground-resupply-execution/ACCEPTANCE-3.md` | `ACCEPTED_TECHNICAL_BASELINE` | Stage 1C neutraler NOTHING-Transport |
 | `OMW-GROUND-FUEL-REFUELLING-ZONE-ACCEPTANCE-2` | `mission/tests/ground-resupply-execution/ACCEPTANCE-4.md` | `ACCEPTED_TECHNICAL_BASELINE` | Stage 1B2 One-Shot FUELSUPPLY |
+
+
+## UAV ISR Request main reconciliation
+
+| Stabile ID | Pfad | Status | Klasse/Funktion |
+|---|---|---|---|
+| `OMW-UAV-ISR-REQUEST-MAIN-RECONCILIATION` | `docs/91-uav-isr-request-orchestration.md` | `DRAFT` | Main-basierte UAV-ISR-Reconciliation; geprüfte AIRWING-Queue/Einzelasset-Grenze, keine Produktions- oder DCS-Acceptance |
