@@ -6,9 +6,10 @@
 -- -> CampaignState TRANSFER Joyce -> Honaker -> MOOSE BRIGADE/PLATOON/ARMYGROUP
 -- -> neutral AUFTRAG NOTHING movement -> destination-zone proof
 -- -> exact-once CampaignState SUPPLY settlement -> MissionDemand SUCCESS
--- -> mission cancel -> normal MOOSE ReturnToLegion lifecycle
--- -> Returned -> Warehouse AddAsset -> physical cleanup.
+-- -> mission cancel -> delayed explicit OnRoad RTZ -> Returned -> Warehouse AddAsset
+-- -> physical cleanup.
 --
+-- Physical lifecycle intentionally follows the accepted Stage 1C NOTHING baseline.
 -- AUFTRAG NOTHING carries no strategic cargo or warehouse authority.
 -- CampaignState remains the sole strategic SUPPLY authority.
 
@@ -42,6 +43,7 @@ local FINAL_DESTINATION = 40
 local ROAD_SPEED_KNOTS = 27
 local DESTINATION_CHECK_INTERVAL_SEC = 15
 local DESTINATION_EXECUTION_GRACE_SEC = 90
+local RETURN_ISSUE_DELAY_SEC = 30
 local RETURN_SETTLEMENT_DELAY_SEC = 12
 
 local state = {
@@ -54,6 +56,7 @@ local state = {
   returnedCount = 0,
   addAssetCount = 0,
   deliveryCommitted = false,
+  returnIssued = false,
   destinationObserved = false,
   mission = nil,
 }
@@ -107,6 +110,7 @@ local function verifyFinalState()
   if not expectEqual(state.addAssetCount, 1, "WAREHOUSE_ADD_ASSET_COUNT") then return end
   if state.destinationObserved ~= true then fail("DESTINATION_NOT_OBSERVED"); return end
   if state.deliveryCommitted ~= true then fail("DELIVERY_NOT_COMMITTED"); return end
+  if state.returnIssued ~= true then fail("RETURN_NOT_ISSUED"); return end
   if state.armyGroup and state.armyGroup:IsAlive() then
     fail("PHYSICAL_GROUP_NOT_REMOVED_AFTER_WAREHOUSE_ADD")
     return
@@ -138,44 +142,25 @@ local function verifyFinalState()
     .. " template=" .. TEMPLATE_NAME
     .. " physicalMission=NOTHING"
     .. " demandStatus=SUCCESS spawnCount=1 missionExecuteCount=1 destinationObserved=true"
-    .. " missionDoneCount=1 returnedCount=1 warehouseAddAssetCount=1")
+    .. " missionDoneCount=1 returnIssued=true returnedCount=1 warehouseAddAssetCount=1")
 end
 
-local function commitDeliveryIfReady()
-  if state.failed or state.passed or state.deliveryCommitted then return end
-  if state.missionExecuteCount < 1 or state.destinationObserved ~= true then return end
+local function issueReturn()
+  if state.failed or state.returnIssued then return end
+  if not state.armyGroup or not state.armyGroup:IsAlive() then
+    fail("RETURN_GROUP_NOT_ALIVE")
+    return
+  end
 
-  local transaction = state.store:MarkDelivered(TRANSFER_ID)
-  if not expectEqual(transaction.status, state.campaignState.TransactionStatus.DELIVERED, "TRANSFER_DELIVERY_STATUS") then return end
+  state.returnIssued = true
+  state.armyGroup:RTZ(state.originZone, ENUMS.Formation.Vehicle.OnRoad)
+  if not state.armyGroup:IsReturning() then
+    fail("RETURN_RTZ_NOT_ACCEPTED state=" .. tostring(state.armyGroup:GetState()))
+    return
+  end
 
-  state.registry:SetReservationState(DEMAND_ID, "DELIVERED", {
-    transactionId = TRANSFER_ID,
-    originNodeId = ORIGIN_NODE,
-    destinationNodeId = DESTINATION_NODE,
-    resourceId = RESOURCE_ID,
-    quantity = TRANSFER_QUANTITY,
-    carrierEntityId = CARRIER_ENTITY_ID,
-  })
-  state.registry:Succeed(DEMAND_ID, {
-    transactionId = TRANSFER_ID,
-    carrierEntityId = CARRIER_ENTITY_ID,
-    destinationNodeId = DESTINATION_NODE,
-  })
-  state.deliveryCommitted = true
-
-  if not expectEqual(snapshot(DESTINATION_NODE).quantity, FINAL_DESTINATION, "DESTINATION_DELIVERED_QUANTITY") then return end
-
-  log("DELIVERY_CONFIRMED group=" .. tostring(state.armyGroup and state.armyGroup:GetName() or "UNKNOWN")
-    .. " destination=" .. DESTINATION_NODE
-    .. " resource=" .. RESOURCE_ID
-    .. " quantity=" .. tostring(TRANSFER_QUANTITY)
-    .. " missionExecuteObserved=true destinationObserved=true"
-    .. " campaignStateStatus=DELIVERED demandStatus=SUCCESS")
-
-  -- End the one-shot physical task after exact-once strategic delivery. No
-  -- persistent service is registered; MOOSE owns the subsequent physical
-  -- ReturnToLegion / Returned / Warehouse AddAsset lifecycle.
-  state.mission:__Cancel(1)
+  log("RETURN_RTZ_ISSUED group=" .. tostring(state.armyGroup:GetName())
+    .. " zone=" .. ORIGIN_ACCESS_ZONE .. " formation=OnRoad")
 end
 
 local function checkDestinationProgress()
@@ -186,20 +171,15 @@ local function checkDestinationProgress()
     if state.destinationObserved ~= true then
       state.destinationObserved = true
       log("DESTINATION_ZONE_ENTERED group=" .. tostring(state.armyGroup:GetName())
-        .. " missionExecuteCount=" .. tostring(state.missionExecuteCount)
         .. " graceSec=" .. tostring(DESTINATION_EXECUTION_GRACE_SEC))
 
-      if state.missionExecuteCount < 1 then
-        SCHEDULER:New(nil, function()
-          if state.failed or state.passed or state.deliveryCommitted or state.missionExecuteCount > 0 then return end
-          fail("DESTINATION_EXECUTION_TIMEOUT seconds=" .. tostring(DESTINATION_EXECUTION_GRACE_SEC)
-            .. " missionExecuteCount=" .. tostring(state.missionExecuteCount)
-            .. " missionDoneCount=" .. tostring(state.missionDoneCount))
-        end, {}, DESTINATION_EXECUTION_GRACE_SEC)
-      end
+      SCHEDULER:New(nil, function()
+        if state.failed or state.passed or state.deliveryCommitted or state.missionExecuteCount > 0 then return end
+        fail("DESTINATION_EXECUTION_TIMEOUT seconds=" .. tostring(DESTINATION_EXECUTION_GRACE_SEC)
+          .. " missionExecuteCount=" .. tostring(state.missionExecuteCount)
+          .. " missionDoneCount=" .. tostring(state.missionDoneCount))
+      end, {}, DESTINATION_EXECUTION_GRACE_SEC)
     end
-
-    commitDeliveryIfReady()
     return
   end
 
@@ -215,11 +195,41 @@ local function attachArmyGroupCallbacks(armyGroup)
     state.missionExecuteCount = state.missionExecuteCount + 1
     if not expectEqual(state.missionExecuteCount, 1, "MISSION_EXECUTE_COUNT") then return end
 
+    if self:IsInZone(state.destinationZone) ~= true then
+      fail("MISSION_EXECUTE_OUTSIDE_DESTINATION zone=" .. DESTINATION_ACCESS_ZONE)
+      return
+    end
+
+    local transaction = state.store:MarkDelivered(TRANSFER_ID)
+    if not expectEqual(transaction.status, state.campaignState.TransactionStatus.DELIVERED, "TRANSFER_DELIVERY_STATUS") then return end
+
+    state.registry:SetReservationState(DEMAND_ID, "DELIVERED", {
+      transactionId = TRANSFER_ID,
+      originNodeId = ORIGIN_NODE,
+      destinationNodeId = DESTINATION_NODE,
+      resourceId = RESOURCE_ID,
+      quantity = TRANSFER_QUANTITY,
+      carrierEntityId = CARRIER_ENTITY_ID,
+    })
+    state.registry:Succeed(DEMAND_ID, {
+      transactionId = TRANSFER_ID,
+      carrierEntityId = CARRIER_ENTITY_ID,
+      destinationNodeId = DESTINATION_NODE,
+    })
+    state.deliveryCommitted = true
+
+    if not expectEqual(snapshot(DESTINATION_NODE).quantity, FINAL_DESTINATION, "DESTINATION_DELIVERED_QUANTITY") then return end
+
     log("MISSION_EXECUTE_OBSERVED group=" .. tostring(self:GetName())
       .. " destinationObserved=" .. tostring(state.destinationObserved)
-      .. " inDestinationZone=" .. tostring(self:IsInZone(state.destinationZone) == true))
+      .. " inDestinationZone=true")
+    log("DELIVERY_CONFIRMED group=" .. tostring(self:GetName())
+      .. " destination=" .. DESTINATION_NODE
+      .. " resource=" .. RESOURCE_ID
+      .. " quantity=" .. tostring(TRANSFER_QUANTITY)
+      .. " physicalMission=NOTHING campaignStateStatus=DELIVERED demandStatus=SUCCESS")
 
-    commitDeliveryIfReady()
+    state.mission:__Cancel(1)
   end
 
   function armyGroup:OnAfterMissionDone(From, Event, To, Mission)
@@ -227,14 +237,16 @@ local function attachArmyGroupCallbacks(armyGroup)
     state.missionDoneCount = state.missionDoneCount + 1
     if not expectEqual(state.missionDoneCount, 1, "MISSION_DONE_COUNT") then return end
     if state.deliveryCommitted ~= true then fail("MISSION_DONE_BEFORE_DELIVERY_SETTLEMENT"); return end
-    log("MISSION_DONE deliveryCommitted=true returnMode=MOOSE_RETURN_TO_LEGION")
+
+    log("MISSION_DONE deliveryCommitted=true returnIssueDelaySec=" .. tostring(RETURN_ISSUE_DELAY_SEC))
+    SCHEDULER:New(nil, issueReturn, {}, RETURN_ISSUE_DELAY_SEC)
   end
 
   function armyGroup:OnAfterRTZ(From, Event, To, Zone, Formation)
     if state.failed then return end
-    log("RETURN_RTZ_ACTIVE group=" .. tostring(self:GetName())
-      .. " zone=" .. tostring(Zone and Zone:GetName() or "UNKNOWN")
-      .. " formation=" .. tostring(Formation))
+    if Zone ~= state.originZone then fail("RETURN_RTZ_UNEXPECTED_ZONE"); return end
+    if Formation ~= ENUMS.Formation.Vehicle.OnRoad then fail("RETURN_RTZ_UNEXPECTED_FORMATION"); return end
+    log("RETURN_RTZ_ACTIVE group=" .. tostring(self:GetName()))
   end
 
   function armyGroup:OnAfterReturned(From, Event, To)
@@ -249,7 +261,7 @@ end
 
 local function installBrigadeCallbacks()
   state.brigade.OnAfterAssetSpawned = function(self, From, Event, To, Group, Asset, Request)
-    if state.failed or state.passed then return end
+    if state.failed then return end
     state.spawnCount = state.spawnCount + 1
     if not expectEqual(state.spawnCount, 1, "SPAWN_COUNT_EVENT") then return end
 
@@ -261,7 +273,7 @@ local function installBrigadeCallbacks()
   end
 
   state.brigade.OnAfterArmyOnMission = function(self, From, Event, To, ArmyGroup, Mission)
-    if state.failed or state.passed or Mission ~= state.mission then return end
+    if state.failed or Mission ~= state.mission then return end
     state.armyOnMissionCount = state.armyOnMissionCount + 1
     if not expectEqual(state.armyOnMissionCount, 1, "ARMY_ON_MISSION_COUNT") then return end
     if not ArmyGroup then fail("ARMYGROUP_NIL"); return end
@@ -282,7 +294,7 @@ local function installBrigadeCallbacks()
   end
 
   state.brigade.OnAfterAddAsset = function(self, From, Event, To, Group, Groups)
-    if state.failed or state.passed then return end
+    if state.failed then return end
     state.addAssetCount = state.addAssetCount + 1
     if not expectEqual(state.addAssetCount, 1, "WAREHOUSE_ADD_ASSET_COUNT_EVENT") then return end
     log("WAREHOUSE_ADD_ASSET group=" .. tostring(Group and Group:GetName() or "UNKNOWN"))
@@ -300,11 +312,13 @@ local function installBrigadeCallbacks()
       state.mission:SetName("OMW_GROUND_SUPPLY_RESUPPLY_JOYCE_TO_HONAKER")
       state.mission:SetMissionSpeed(ROAD_SPEED_KNOTS)
       state.mission:SetFormation(ENUMS.Formation.Vehicle.OnRoad)
+      state.mission:SetReturnToLegion(false)
       state.mission:SetPriority(20, true)
       state.brigade:AddMission(state.mission)
 
       log("MISSION_QUEUED type=NOTHING source=AUFTRAG_NEW_NOTHING"
         .. " formation=OnRoad speedKt=" .. tostring(ROAD_SPEED_KNOTS)
+        .. " returnToLegion=false"
         .. " origin=" .. ORIGIN_NODE .. " destination=" .. DESTINATION_NODE
         .. " resource=" .. RESOURCE_ID .. " template=" .. TEMPLATE_NAME)
     end, {}, 5)
@@ -424,6 +438,7 @@ local function preparePhysicalExecution()
     .. " strategicAuthority=CAMPAIGNSTATE"
     .. " dcsWarehouseCargoAuthority=false"
     .. " persistentService=false"
+    .. " returnMode=EXPLICIT_MOOSE_RTZ_ONROAD"
     .. " hardTravelTimeout=false")
   return true
 end
