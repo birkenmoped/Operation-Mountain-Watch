@@ -36,263 +36,300 @@ RED ground presence inside runtime security perimeter
 -> MissionDemand CAS_IMMEDIATE
 ```
 
-Stage 2B erweitert diesen Eingang zu einer vollständigen, aber weiterhin MOOSE-first ausgeführten Reaktion. Der vorhandene MissionDemand- und CampaignState-Vertrag bleibt erhalten; Stage 2B darf keine zweite Ressourcenautorität und keine parallele Spawn-/Routing-/Lifecycle-Welt einführen.
+Stage 2B erweitert diesen Eingang zu einer vollständigen MOOSE-first-Reaktion. CampaignState bleibt alleinige strategische Ressourcenautorität; MOOSE führt die physischen AIRWING-/SQUADRON-/FLIGHTGROUP- und BRIGADE-/PLATOON-/ARMYGROUP-Lifecycles aus.
 
-## 2. Zielbild
-
-Ein qualifizierter FOB-/COP-Angriff löst mehrere koordinierte Reaktionen aus:
+## 2. Implementiertes Stage-2B-Zielbild
 
 ```text
 qualified installation threat
 |
 +-> CAS_IMMEDIATE
-|   -> vorhandener AIRWING / SQUADRON
-|   -> MOOSE AUFTRAG CAS
-|   -> reale Flight-Materialisierung
+|   -> existing Jalalabad AIRWING / AH-64D SQUADRON
+|   -> AUFTRAG:NewCAS
+|   -> shared OMW_FlightPath valley corridor
 |   -> CAS execution
-|   -> threat cleared / mission closure
-|   -> RTB / physical recovery
+|   -> OPSZONE Defeated(RED)
+|   -> AUFTRAG:Cancel
+|   -> FLIGHTGROUP RTB / Landed / Arrived
 |
-+-> LOCAL_COUNTERATTACK
-|   -> CampaignState personnel availability check
-|   -> preserve installation defence reserve
-|   -> MOOSE BRIGADE / PLATOON / ARMYGROUP materialization
-|   -> MOOSE ground mission against hostile force
-|   -> mission end or OutOfAmmo
-|   -> RTZ to recovery handoff
++-> local infantry response
+|   -> CampaignState PERSONNEL reservation
+|   -> preserve 50 % defence reserve floor
+|   -> Ground Warehouse / BRIGADE / PLATOON / ARMYGROUP
+|   -> AUFTRAG:NewGROUNDATTACK(real RED group)
+|   -> threat clear / relief or MOOSE OutOfAmmo lifecycle
+|   -> explicit ARMYGROUP:RTZ to installation ACCESS return handoff
 |   -> Returned / Warehouse AddAsset
-|   -> CampaignState survivor/loss settlement
+|   -> exactly-once personnel settlement
 |
 +-> post-combat resource reevaluation
-    -> if personnel below existing reorder threshold
-    -> existing PERSONNEL RESUPPLY orchestration
+    -> existing ResourceDemandPolicy
+    -> MissionDemand RESUPPLY only if existing PERSONNEL threshold is crossed
+    -> existing PERSONNEL physical resupply orchestration remains unchanged
 ```
 
-CAS, lokale Gegenwehr und spätere Versorgung sind damit getrennte Antworten auf denselben strategischen Vorfall. Sie dürfen sich gegenseitig nicht als Ressourcenautorität ersetzen.
+## 3. MOOSE-first-Prüfung – Ergebnis
 
-## 3. Lokale Selbstverteidigung und 50-Prozent-Grenze
-
-Der Projektinhaber hat für die lokale Gegenangriffskraft folgende Grenze festgelegt:
+Der tatsächlich gepinnte `Moose.lua` bestätigt die benötigten Framework-Pfade. Die vollständige API-Liste und der Validierungsstatus stehen in:
 
 ```text
-mindestens 50 % des installationsbezogenen PERSONNEL-Target-/Maximalbestands
-bleiben als strategische Verteidigungsreserve gebunden bzw. nicht für den Gegenangriff disponierbar.
+docs/moose/PROJECT-CLASS-INDEX-STAGE-2-ACCEPTANCE-2.md
 ```
 
-Daraus folgt:
+Wesentliche Ergebnisse:
 
 ```text
-counterattack commitment
-<= available personnel above defence reserve floor
-<= 50 % of installation personnel target
+OPSZONE Attacked -> Defeated -> Guarded
+AUFTRAG:NewCAS is orbit-based and does not auto-finish when current targets disappear
+AUFTRAG:Cancel exists
+FLIGHTGROUP can RTB after mission/task completion
+AUFTRAG:NewGROUNDATTACK exists for ground groups
+ARMYGROUP:RTZ / Returned / Warehouse AddAsset exists
+MOOSE owns OutOfAmmo lifecycle; no OMW ammo poller required
+PATHLINE + FLIGHTGROUP waypoint APIs support the already validated OMW_FlightPath corridor
 ```
 
-Die 50-%-Grenze ist ein Maximum, kein Sollwert. Die physische Gegenangriffskraft wird nur in der für den Angriff erforderlichen und im verfügbaren MOOSE-/OMW-Templatebestand darstellbaren Größe materialisiert.
+Für `GROUNDATTACK` wurde in der offiziellen MOOSE-Missionssammlung kein belastbarer Demo-Nachweis gefunden. Deshalb wird kein Demo-Nachweis behauptet; der gepinnte Source ist für die API-/Semantikprüfung maßgeblich.
 
-Beispiel Fortress mit aktuellem Target 160:
+## 4. Lokale Selbstverteidigung und 50-Prozent-Grenze
+
+Bindende Stage-2B-Grenze:
 
 ```text
-personnel target: 160
+at least 50 % of installation PERSONNEL target/max
+must remain unavailable for counterattack commitment
+```
+
+Für Fortress:
+
+```text
+PERSONNEL target: 160
 defence reserve floor: 80
-maximum simultaneously committed outside the reserve: 80
+maximum total personnel outside that reserve: 80
 ```
 
-Bereits gebundene Guard-/Sentry-Personen zählen als nicht verfügbare CampaignState-Ressourcen und dürfen nicht erneut disponiert werden.
+Die 50-%-Grenze ist ein Maximum, kein Sollwert. Acceptance 2 verwendet je eine 9-Personen-Gruppe für Guard und QRF; damit werden nur 18 Personen gleichzeitig gebunden.
 
-## 4. Physische lokale Gegenangriffskraft
+## 5. Korrigierter PERSONNEL-Deployment-Vertrag
 
-Die Gegenangriffskraft wird nicht mit einem direkten `SPAWN:`-Shortcut erzeugt. Vorgesehen ist die vorhandene OMW-/MOOSE-Kette:
+Die strategische Semantik ist ausdrücklich **Reservation während des Einsatzes**, nicht sofortiger permanenter Verbrauch.
 
 ```text
-CampaignState reservation/commitment
--> existing Ground Warehouse / BRIGADE
--> PLATOON / template asset
+before deployment:
+quantity = strategic personnel strength
+reserved = already deployed/committed personnel
+available = quantity - reserved
+
+on deployment:
+ReserveResource(quantity)
+-> strategic quantity unchanged
+-> reserved increases
+-> available decreases
+
+on physical return:
+Cancel(deployment reservation)
+-> survivors become available again
+
+confirmed casualties:
+separate exact-once CONSUMPTION
+-> strategic quantity decreases only by confirmed casualties
+```
+
+Damit wird ein Soldat nicht beim Deployment und später beim Tod doppelt abgezogen. Der Stage-2A-Acceptance-Harness hatte seine neun Personen testlokal als Consumption behandelt; diese konkrete Harness-Technik ist **keine** Produktionsbaseline und wird in Stage 2B korrigiert.
+
+Implementierter Adapter:
+
+```text
+scripts/ground/OMW_GroundPersonnelDeploymentLedger.lua
+```
+
+## 6. Lokaler Gegenangriff
+
+Die Stage-2B-QRF nutzt keinen direkten `SPAWN:`-Shortcut und keine eigene Ground-Attack-Task-Implementierung:
+
+```text
+CampaignState reservation
+-> existing MOOSE Ground Warehouse / BRIGADE
+-> QRF PLATOON
 -> ARMYGROUP
--> MOOSE AUFTRAG suitable for the verified counterattack requirement
+-> AUFTRAG:NewGROUNDATTACK(real RED group from OPSZONE scanned group set)
 ```
 
-Die konkrete AUFTRAG-Art wird erst nach der verbindlichen MOOSE-first-Prüfung gegen Dokumentation, gepinnten `Moose.lua` und offizielle Beispiele festgelegt. Keine eigene Targeting- oder Weltobjekt-Scanlogik wird vor dieser Prüfung implementiert.
+Der gepinnte MOOSE-Source erklärt bei `GROUNDATTACK`, dass DCS-Attack-Group/-Unit-Tasks für Ground nicht geeignet sind und MOOSE deshalb den Angreifer in die Nähe des Zielobjekts führt, wo die Gruppe selbständig bekämpft. Genau dieser Framework-Weg wird wiederverwendet.
 
-## 5. Rückkehrvertrag für Guard und Gegenangriff
+## 7. Threat clear und CAS-Abschluss
 
-Die physische Rückkehr darf nicht voraussetzen, dass DCS-Ground-AI bis direkt an ein Warehouse-Gebäude gelangt. Innerhalb von FOBs/COPs können HESCOs, Mauern, Statics, Zelte und andere Objekte den letzten Weg blockieren.
+`AUFTRAG:NewCAS` baut auf einer Orbit-Mission auf. Daher ist ein Dauerorbit nach Vernichtung aller aktuellen Gegner erklärbar und kein geeigneter regulärer OMW-Abschluss.
 
-Deshalb gilt für lokale Infanterie der geplante Recovery-Handoff:
+Stage 2B verwendet stattdessen:
 
 ```text
-mission end / rotation / OutOfAmmo
--> MOOSE RTZ toward installation return/recovery area
--> group reaches validated recovery handoff area
--> physical return considered complete
--> normal MOOSE Returned / Legion-Warehouse AddAsset lifecycle
+BLUE-owned OPSZONE
++ BLUE local security remains
++ RED disappears
+-> OPSZONE Defeated(RED)
+-> onThreatCleared
+-> CAS AUFTRAG:Cancel()
+-> FLIGHTGROUP mission/task lifecycle becomes done
+-> RTB
+-> Landed
+-> Arrived / AIRWING recovery
+```
+
+Es wird kein separater OMW-Präsenzscanner eingeführt.
+
+## 8. AH-64-Talrouting
+
+Die bereits in der PERSONNEL-Air-Resupply-Acceptance verwendete owner-authored Mission-Editor-PATHLINE ist identifiziert:
+
+```text
+OMW_FlightPath
+```
+
+Der dort bereits DCS-erprobte Korridorvertrag lautet:
+
+```text
+centerline: owner-authored OMW_FlightPath
+outbound: 500 m directional right offset
+return: reversed centerline + 500 m directional right offset
+altitude: 500 ft AGL
+```
+
+Stage 2B hat diese Logik in einen gemeinsamen kleinen Adapter extrahiert:
+
+```text
+scripts/air-operations/OMW_HelicopterFlightPathCorridor.lua
+```
+
+Der CAS-Adapter kopiert keine Tal-Koordinaten. Fixed-Wing-CAS erhält daraus keine automatische Korridorpflicht.
+
+## 9. Guard-/QRF-Rückkehr und Recovery-Handoff
+
+Die Gruppe muss nicht bis an das Warehouse-Gebäude pathfinden. Für Fortress Acceptance 2 wird der bereits bestehende operative Handoff verwendet:
+
+```text
+ZON_BLUE_GND_FORTRESS_ACCESS
+```
+
+Seine Bedeutung bleibt strikt:
+
+```text
+materialization / departure / return / recovery handoff
+```
+
+und ausdrücklich **nicht**:
+
+```text
+security perimeter
+```
+
+Rückkehr:
+
+```text
+mission end / explicit relief / OutOfAmmo path
+-> AUFTRAG end/cancel as applicable
+-> delayed ARMYGROUP:RTZ(ZON_BLUE_GND_FORTRESS_ACCESS, OffRoad)
+-> physical approach/entry
+-> Returned
+-> MOOSE Warehouse AddAsset
 -> CampaignState settlement
 ```
 
-Der Recovery-Handoff ist **kein beobachtbares Teleportieren im Einsatzraum**. Er muss an einem pro Installation validierten Punkt beziehungsweise Radius liegen, an dem die Gruppe eindeutig zum FOB/COP zurückgekehrt ist und das anschließende physische Cleanup plausibel bleibt.
+Das folgt dem bereits in Ground-Resupply akzeptierten expliziten RTZ-/Returned-Präzedenzfall. Kein nacktes `Destroy()` gilt als Rückkehr.
 
-Ein nacktes `Destroy()` als strategische Rückgabe ist nicht zulässig. CampaignState darf Rückkehr nur aufgrund des bestätigten MOOSE-Lifecycle übernehmen.
+## 10. Guard-Rotation und OutOfAmmo
 
-## 6. Guard-Rotation
+Produktive Rotationsdauer bleibt eine offene Projektentscheidung. Acceptance 2 prüft zunächst die **explizite Relief-Rückkehr nach Threat clear** für den Guard. Der Framework-Review bestätigt zusätzlich MOOSE-eigene OutOfAmmo-/Return-Konfiguration; deshalb wird kein eigener Ammo-Scheduler implementiert.
 
-Der bestehende Fortress-Guard/Sentry-`ONGUARD`-Auftrag ist funktional dauerhaft. Stage 2B ergänzt daher einen endlichen Guard-Lifecycle:
+Spätere Produktionsrotation:
 
 ```text
-Warehouse
--> Guard materialization
--> ONGUARD
--> rotation condition OR OutOfAmmo OR explicit relief condition
+ONGUARD
+-> rotation condition OR OutOfAmmo OR explicit relief
 -> mission closure
--> RTZ to recovery handoff
--> Returned / Warehouse
--> CampaignState survivor/loss settlement
--> replacement Guard only from actually available personnel
+-> RTZ recovery handoff
+-> Returned/Warehouse
+-> personnel settlement
+-> replacement only from available CampaignState PERSONNEL
 ```
 
-Die endgültige Rotationsdauer wird nicht in diesem Dokument festgelegt. Sie ist vor Produktion als eigene Designkonstante zu entscheiden und zu testen.
+## 11. Post-combat Reorder und RESUPPLY
 
-## 7. OutOfAmmo
-
-Leergeschossene lokale Infanterie bleibt nicht unbegrenzt als aktive Guard-/Counterattack-Gruppe im Feld.
-
-Geplanter Vertrag:
+Nach Settlement wird ausschließlich die vorhandene ResourceDemandPolicy verwendet. Für Fortress bleibt die bestehende PERSONNEL-Regel maßgeblich:
 
 ```text
-MOOSE OutOfAmmo
--> disengage / return request
--> RTZ to installation recovery handoff
--> Returned / Warehouse
--> settlement
+target = 160
+reorder = 128
+comparison = strict BELOW
 ```
 
-Ob und welche MOOSE-eigene OutOfAmmo-/Retreat-/RTZ-Konfiguration direkt verwendet wird, muss vor Implementierung im gepinnten Source und in den offiziellen Beispielen verifiziert werden. Kein eigener Munitions-Polling-Scheduler wird vor einer nachgewiesenen MOOSE-Lücke eingeführt.
+Stage 2B führt keinen neuen Threshold ein.
 
-## 8. Verluste und CampaignState
-
-Materialisierte PERSONNEL-Ressourcen werden beim Deployment bereits aus dem verfügbaren CampaignState-Pool gebunden beziehungsweise entnommen. Gefallene Soldaten dürfen deshalb beim Tod nicht ein zweites Mal aus demselben verfügbaren Bestand abgezogen werden.
-
-Settlement-Prinzip:
+Da Guard + QRF im Acceptance-Lauf zusammen nur 18 Personen binden, können aus einem vollen Bestand von 160 selbst bei Totalverlust nur 142 verbleiben. Der normale End-to-End-Lauf kann deshalb die 128er-Schwelle nicht sinnvoll erzwingen. Die Abnahme wird getrennt:
 
 ```text
-deployed personnel
--> survivors physically return
--> survivors credited back exactly once
--> non-returning confirmed losses remain unavailable
--> loss audit updated exactly once
+DCS Acceptance 2:
+prove real post-combat reevaluation against current CampaignState
+
+Lua contract test:
+prove available=127 -> RESUPPLY MissionDemand
+prove available=128 -> no demand under strict BELOW
+
+existing accepted PERSONNEL resupply acceptance:
+remains physical transport baseline
 ```
 
-Nach abgeschlossenem Settlement wird der vorhandene PERSONNEL-Reorder-Vertrag neu bewertet. Für Fortress ist im aktuellen Ground-Stock-Modell die bestehende Schwelle maßgeblich; Stage 2B führt keine neue Resupply-Schwelle ein.
+## 12. Aktueller Implementierungsstand
+
+Implementiert und remote veröffentlicht:
 
 ```text
-post-combat personnel below existing reorder threshold
--> existing MissionDemand RESUPPLY path
--> existing PERSONNEL transport/orchestration
+scripts/ground/OMW_FobThreatOpsZoneAdapter.lua                  schema v2
+scripts/air-operations/OMW_FobAttackCasDispatchAdapter.lua      schema v2
+scripts/air-operations/OMW_HelicopterFlightPathCorridor.lua     schema v1
+scripts/ground/OMW_GroundPersonnelDeploymentLedger.lua          schema v1
+scripts/campaign/OMW_ResourceDemandCoordinator.lua              schema v1
+mission/tests/fob-attack-support-demand/src/02-fob-attack-cas-dispatch-acceptance-2.lua
+tools/build-fob-attack-cas-dispatch-acceptance-2.ps1            builder v2-2
 ```
 
-Damit wird kein paralleler Resupply-Mechanismus für Stage 2B entwickelt.
+MissionDemand contract CI hat nach den Stage-2B-Erweiterungen einen erfolgreichen Lauf erreicht. Das ist statische/Lua-Vertragsprüfung; DCS-Runtime-Verhalten bleibt `PENDING_DCS`.
 
-## 9. CAS-Lifecycle und Missionsende
+## 13. DCS-Abnahmegrenze
 
-Ein Stage-2B-PASS darf nicht bei `CAS_EXECUTING` enden. Der beobachtete Dauerorbit nach Vernichtung aller Feinde zeigt, dass die vollständige Reaktion zusätzlich eine saubere Missionsbeendigung braucht.
-
-Zielzustand:
+Ein PASS benötigt mindestens:
 
 ```text
-CAS_IMMEDIATE demand
--> dispatch
--> flight on mission
--> CAS executing
--> hostile installation threat eliminated
--> CAS mission closure through verified MOOSE lifecycle
--> RTB
--> landing / physical recovery
--> strategic asset lifecycle settlement
+real Guard ONGUARD
+OPSZONE Attacked(RED)
+exactly one CAS_IMMEDIATE
+real Jalalabad AH-64 FLIGHTGROUP
+OMW_FlightPath corridor installed
+CAS executing
+real QRF ARMYGROUP + GROUNDATTACK
+OPSZONE Defeated(RED)
+CAS closure requested
+CAS RTB
+CAS Landed
+CAS Arrived
+Guard/QRF RTZ
+Returned / Warehouse lifecycle
+exact-once casualty settlement
+post-combat PERSONNEL reorder evaluation
 ```
 
-Ein bloßes Warten bis Fuel-Low/Bingo ist nicht die geplante reguläre Abschlusslogik für einen erfolgreich beseitigten FOB-/COP-Angriff.
+Erst danach darf der neue Stage-2B-Lifecycle als DCS-validiert dokumentiert werden.
 
-Die konkrete MOOSE-native Methode beziehungsweise FSM-Kombination für das missionsbezogene Beenden des CAS-Auftrags wird vor Implementierung erneut gegen Dokumentation, gepinnten Source und offizielle Beispiele geprüft. Eine eigene Target-Clear-/RTB-Parallelsteuerung darf nur nach dokumentierter MOOSE-Lücke und ausdrücklicher Ausnahmefreigabe entstehen.
-
-## 10. CAS-Helikopter-Routing
-
-CAS-Helikopter sollen nicht geometrisch direkt über hohe Gebirgskämme zum Einsatzgebiet fliegen. Für Rotary-Wing-CAS ist die bereits im OMW-Lufttransport eingeführte und getestete Tal-/Korridorführung wiederzuverwenden.
-
-Geplanter Vertrag:
+## 14. Weiterhin offene Produktionswerte
 
 ```text
-helicopter origin
--> existing validated valley/transit corridor
--> tactical ingress from final corridor anchor
--> CAS area
--> tactical egress
--> approved corridor return
--> home base
-```
-
-Stage 2B darf die Talroute nicht als zweite hart codierte Koordinatenkopie duplizieren. Vor Implementierung ist die aktuell maßgebliche Lufttransport-Route im Repository zu identifizieren und als gemeinsame Route-/Corridor-Definition beziehungsweise über den bereits vorhandenen öffentlichen OMW-Pfad wiederzuverwenden.
-
-Diese Anforderung gilt für CAS-Helikopter. Fixed-Wing-CAS erhält daraus nicht automatisch dieselbe Talroute.
-
-## 11. Geplanter Acceptance-Schnitt
-
-Acceptance 2 wird gegenüber dem bisherigen reinen Dispatch-Nachweis erweitert. Der Test muss mindestens folgende operative Teilketten unterscheiden und protokollieren:
-
-```text
-A. Threat -> CAS
-   demand created
-   CAS dispatched
-   real FLIGHTGROUP observed
-   CAS executing
-   threat cleared
-   CAS mission closure
-   RTB/recovery observed
-
-B. Threat -> local counterattack
-   available personnel evaluated
-   50 % reserve floor preserved
-   response force committed
-   real ARMYGROUP materialized
-   counterattack mission executed
-   mission end or OutOfAmmo return path
-   RTZ/recovery handoff
-   Returned/Warehouse observed
-
-C. Post-combat settlement
-   survivors/losses settled exactly once
-   personnel stock reevaluated
-   existing PERSONNEL RESUPPLY demand appears if and only if the existing threshold is crossed
-```
-
-Ein erster technischer DCS-Slice darf diese Punkte in mehreren reproduzierbaren Acceptance-Läufen aufteilen, wenn ein einzelner Lauf dadurch unnötig lang oder diagnostisch unklar würde. Die fachliche Stage-2B-Abnahme bleibt jedoch erst vollständig, wenn alle drei Teilketten belegt sind.
-
-## 12. Offene, entscheidungspflichtige Werte
-
-Vor produktiver Generalisierung bleiben bewusst offen:
-
-```text
-installation-specific recovery handoff position/radius
+final installation-specific recovery geometry beyond current ACCESS handoff
 guard rotation duration
-counterattack force-sizing ratio below the 50 % maximum
-maximum simultaneous local response groups
-CAS threat-clear confirmation/hold time before mission closure
+counterattack force-sizing below 50 % maximum
+maximum simultaneous response groups
+optional threat-clear hold/BDA duration before CAS closure
 production OPSZONE cadence
-production CAS source-selection between multiple valid origins
+production CAS source-selection among multiple valid origins
 ```
 
-Diese Werte werden nicht stillschweigend aus Acceptance-Konstanten zu Produktionsregeln erhoben.
-
-## 13. MOOSE-first Prüfauftrag vor Implementierung
-
-Vor Stage-2B-Codeänderungen sind mindestens zu prüfen:
-
-```text
-AUFTRAG CAS completion / cancel / Done / Success lifecycle
-FLIGHTGROUP RTB/recovery lifecycle
-AIRWING/SQUADRON mission and asset return lifecycle
-ARMYGROUP RTZ / Returned / ReturnToLegion
-ARMYGROUP / OPSGROUP OutOfAmmo behavior and supported configuration
-suitable AUFTRAG type for local infantry counterattack
-existing OMW helicopter valley/transit route implementation
-existing PERSONNEL loss/return settlement and RESUPPLY orchestration
-```
-
-Jede neue MOOSE-Nutzung wird im Stage-2B-Klassenindex und nach DCS-Bestätigung gegebenenfalls im Master-Index/`VERIFIED-METHODS.md` nachgeführt.
+Diese Werte werden nicht aus Acceptance-Konstanten stillschweigend zu Produktionsentscheidungen erhoben.
