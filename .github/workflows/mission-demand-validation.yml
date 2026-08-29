@@ -34,4 +34,17 @@ jobs:
 
       - name: Run MissionDemand contract tests
         shell: bash
-        run: lua5.4 tests/mission-demand/run.lua
+        run: |
+          set +e
+          lua5.4 tests/mission-demand/run.lua > mission-demand-test-output.txt 2>&1
+          rc=$?
+          cat mission-demand-test-output.txt
+          exit $rc
+
+      - name: Upload MissionDemand test output
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mission-demand-test-output
+          path: mission-demand-test-output.txt
+          if-no-files-found: error
