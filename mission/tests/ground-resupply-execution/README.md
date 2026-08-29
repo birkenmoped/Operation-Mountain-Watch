@@ -9,8 +9,8 @@ scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
 superseded_by:
-source_branch: agent/automatic-response-orchestration
-source_commit: dac19985de5ecae89b6948854e4a4bd5906f765b
+source_branch: agent/automatic-response-orchestration-continuation
+source_commit: 4771420480a994ce7356abc618ae0a3189dc105e
 validated_in_dcs: partial
 ---
 
@@ -44,9 +44,9 @@ results/2026-08-22-ground-ammo-resupply-acceptance-1-pass-1.md
 tools/build-ground-ammo-resupply-acceptance-1.ps1
 ```
 
-## Stage 1B – FUELSUPPLY / geschlossen
+## Stage 1B – historischer FUELSUPPLY-Pfad
 
-Der Versuch, die abstrakte CampaignState-Meta-Ware `GROUND_FUEL_PACKAGE` mit `AUFTRAG:NewFUELSUPPLY(...)` als Warehouse-to-Warehouse-Roundtrip auszuführen, ist für diesen OMW-Scope fehlgeschlagen. `FUELSUPPLY` bleibt als MOOSE-API bestehen, wird für diesen OMW-Meta-RESUPPLY-Executor aber nicht weiterverwendet.
+Der erste Versuch, die abstrakte CampaignState-Meta-Ware `GROUND_FUEL_PACKAGE` mit `AUFTRAG:NewFUELSUPPLY(...)` als Warehouse-to-Warehouse-Roundtrip auszuführen, bleibt historischer Testkontext. Der spätere Stage-1B2-One-Shot-FUELSUPPLY-Pfad ist die akzeptierte Fuel-Baseline.
 
 ```text
 src/02-ground-fuel-resupply-acceptance.lua
@@ -57,7 +57,7 @@ tools/build-ground-fuel-resupply-acceptance-1.ps1
 
 ## Stage 1C – generischer Meta-RESUPPLY / AUFTRAG NOTHING
 
-Owner-approved physical contract vom 22.08.2026:
+Technisch akzeptierter Vertrag:
 
 ```text
 CampaignState meta-resource shortage
@@ -66,65 +66,105 @@ CampaignState meta-resource shortage
 -> existing resource-appropriate convoy template
 -> BRIGADE / PLATOON / ARMYGROUP
 -> AUFTRAG:NewNOTHING(destination ACCESS zone)
+-> SetReturnToLegion(false)
 -> destination-zone proof
 -> CampaignState DELIVERED / MissionDemand SUCCESS
 -> mission cancel / MissionDone
--> same ARMYGROUP RTZ origin
+-> delayed explicit ARMYGROUP:RTZ(origin ACCESS, OnRoad)
 -> Returned -> Warehouse AddAsset
 ```
 
-Erster Fixture:
-
-```text
-RESOURCE: GROUND_FUEL_PACKAGE
-JOYCE 40 -> 22
-HONAKER 36 -> 18 -> 36
-TEMPLATE: TPL_BLUE_CONVOY_FUEL_LIGHT_06
-PHYSICAL MISSION: AUFTRAG NOTHING
-```
-
-`AUFTRAG NOTHING` trägt keine strategische Fuel-/Cargo-Menge. Der sichtbare M978-Konvoi ist ausschließlich physische Repräsentation.
-
-### Run 1 – Harness-FALSE-FAIL
-
-Builder `GROUND-META-RESUPPLY-NOTHING-ACCEPTANCE-1-1` verwendete `OutboundTimeoutSec = 600`. Das war für Joyce -> Honaker zu kurz: rund 16,9 km Luftlinie bedeuten bei 27 kt bereits theoretisch rund 1.218 s Mindestfahrzeit.
-
-Der Harness setzte nach 600 s `state.failed=true`. Der Convoy fuhr laut Owner-Beobachtung danach physisch bis Honaker weiter, aber spätere MissionExecute-/Delivery-/MissionDone-/RTZ-Callbacks wurden wegen des bereits gesetzten FAIL-Zustands nicht mehr verarbeitet.
-
-```text
-Run-1 classification: HARNESS_FALSE_FAIL_OUTBOUND_TIMEOUT_TOO_SHORT
-NewNOTHING runtime acceptance: NOT YET PROVEN
-```
-
-Ergebnis:
-
-```text
-results/2026-08-23-ground-meta-resupply-nothing-acceptance-1-fail-1.md
-```
-
-### Korrigierter Harness
-
-```text
-BuilderVersion = GROUND-META-RESUPPLY-NOTHING-ACCEPTANCE-1-2
-OutboundTimeoutSec = 1800
-DestinationCheckIntervalSec = 15
-DestinationExecutionGraceSec = 90
-ReturnTimeoutSec = 1800
-ReturnIssueDelaySec = 30
-ReturnSettlementDelaySec = 12
-```
-
-Der Fail-fast-Gate bleibt erhalten: Nach tatsächlichem Eintritt in Honaker ACCESS muss `MissionExecute` binnen 90 Sekunden folgen.
-
-Dateien:
+Status: `ACCEPTED_TECHNICAL_BASELINE`.
 
 ```text
 src/03-ground-meta-resupply-nothing-acceptance.lua
 ACCEPTANCE-3.md
+results/2026-08-23-ground-meta-resupply-nothing-acceptance-1-pass-1.md
 tools/build-ground-meta-resupply-nothing-acceptance-1.ps1
 ```
 
-Status: `CORRECTED / OWNER BUILD PENDING / DCS RETEST PENDING`.
+Keine harten Outbound-/Return-Travel-Timeouts gehören zum akzeptierten Stage-1C-Build.
+
+## Stage 1B2 – one-shot FUELSUPPLY / akzeptiert
+
+Für `GROUND_FUEL_PACKAGE` ist der spezialisierte one-shot MOOSE-Pfad akzeptiert:
+
+```text
+AUFTRAG:NewFUELSUPPLY(destinationZone)
+-> BRIGADE:AddMission(...)
+-> destination-zone proof
+-> exact-once CampaignState delivery
+-> mission cancel
+-> normal MOOSE ReturnToLegion
+-> Returned
+-> Warehouse AddAsset
+```
+
+Status: `ACCEPTED_TECHNICAL_BASELINE`.
+
+```text
+src/04-ground-fuel-refuelling-zone-acceptance.lua
+ACCEPTANCE-4.md
+```
+
+## Stage 1D-S – SUPPLY / akzeptiert
+
+Stage 1D-S verwendet für normalisierte allgemeine Sustainment-Einheiten den bereits akzeptierten neutralen NOTHING-Pfad und lässt CampaignState alleinige strategische SUPPLY-Autorität bleiben.
+
+```text
+GROUND_NODE_HONAKER
+GROUND_SUPPLY_PACKAGE
+resourceClass=GROUND_SUPPLY
+JOYCE   48 -> 28
+HONAKER 40 -> 20 -> 40
+TPL_BLUE_CONVOY_LIGHT_06
+AUFTRAG:NewNOTHING(Honaker ACCESS)
+OnRoad 27 kt
+SetReturnToLegion(false)
+destination-zone proof
+CampaignState DELIVERED / MissionDemand SUCCESS
+mission cancel / MissionDone
+30 s delay
+ARMYGROUP:RTZ(Joyce ACCESS, OnRoad)
+Returned -> Warehouse AddAsset -> physical cleanup
+```
+
+DCS-PASS-Provenienz:
+
+```text
+Branch: agent/automatic-response-orchestration-continuation
+Build commit: 4771420480a994ce7356abc618ae0a3189dc105e
+BuilderVersion: GROUND-SUPPLY-RESUPPLY-NOTHING-ACCEPTANCE-1-2
+Bundle SHA-256: C805C996A2028629251F833F0E0D0ED06F462C15271A1166E0DB8DF0BA105CE3
+Mission: OMW_Template_v20_GroundWorks.miz
+Mission SHA-256: BA556641A9ECAD629FDBE62AEA5CC30E22E081B81B4188C136855026F70D0907
+DCS: 2.9.29.27278 MT
+MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+Moose.lua SHA-256: E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915
+Runtime result: PASS
+```
+
+Dateien:
+
+```text
+src/05-ground-supply-resupply-nothing-acceptance.lua
+ACCEPTANCE-5.md
+results/2026-08-29-ground-supply-resupply-nothing-acceptance-1-pass-1.md
+tools/build-ground-supply-resupply-nothing-acceptance-1.ps1
+```
+
+Wichtige Regressionserkenntnis: Der erste Stage-1D-S-Build wich unnötig vom bereits bestandenen Stage-1C-NOTHING-Lifecycle ab. Der erfolgreiche Build 1-2 stellt den Stage-1C-Vertrag wieder her; keine neue Zielzone und keine eigene Routinglogik wurden eingeführt.
+
+## Nächster Scope
+
+```text
+Stage 1D-P PERSONNEL
+-> Source-/Design-Reconciliation
+-> TROOPTRANSPORT nur mit realer physischer Cargo-Gruppe bewerten
+
+Stage 1D-V VEHICLE
+-> quantity transfer vs. whole-cohort relocation getrennt bewerten
+```
 
 ## MOOSE-First
 
@@ -136,10 +176,11 @@ commit 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
 Moose.lua SHA-256 E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915
 ```
 
-Technische Review:
+Technische Reviews:
 
 ```text
 docs/moose/GROUND-RESUPPLY-EXECUTION-SOURCE-REVIEW.md
+docs/moose/GROUND-GENERIC-RESUPPLY-STAGE-1D-SOURCE-REVIEW.md
 ```
 
-Kein eigener Convoy-Dispatcher, kein MIST, kein nativer DCS-Eventlayer, kein OPSTRANSPORT, keine zweite Ressourcenautorität und keine `.miz`-Mutation durch ChatGPT.
+Kein eigener Convoy-Dispatcher, kein MIST, kein nativer DCS-Eventlayer, keine zweite Ressourcenautorität und keine `.miz`-Mutation durch ChatGPT.
