@@ -12,7 +12,7 @@ $acceptanceSourceFile = Join-Path $repoRoot 'mission\tests\fob-attack-support-de
 $distDir = Join-Path $repoRoot 'mission\tests\fob-attack-support-demand\dist'
 $outputFile = Join-Path $distDir 'OMW_FOB_Attack_Hit_Acceptance_1.lua'
 
-$builderVersion = 'FOB-ATTACK-HIT-ACCEPTANCE-1-4'
+$builderVersion = 'FOB-ATTACK-HIT-ACCEPTANCE-1-5'
 $testId = 'FOB-ATTACK-HIT-ACCEPTANCE-1'
 $mooseCommit = '73d3ed119cd9e7e3f2cfcabbaa34513d30529b54'
 $mooseSha256 = 'e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915'
@@ -35,8 +35,8 @@ $requiredMarkers = @(
   'FOB_ATTACK_QUALIFIED', 'OMW-FOB-ATTACK-HIT-ADAPTER-1', 'BASE:New()',
   'HandleEvent', 'EVENTS.Hit', 'FOB-ATTACK-HIT-ACCEPTANCE-1',
   'TPL_BLUE_GND_INF_RIFLE_SQUAD_9', 'GROUND_NODE_FORTRESS', 'GROUND_PERSONNEL',
-  'BRIGADE:New', 'PLATOON:New', 'AUFTRAG:NewONGUARD',
-  'ZON_BLUE_GND_FORTRESS_PATROL_TEST_01', 'BLUE_GROUND_COP_FORTRESS',
+  'BRIGADE:New', 'PLATOON:New', 'AUFTRAG:NewONGUARD', 'GetCoordinate()',
+  'WH_BLUE_GND_FORTRESS', 'BLUE_GROUND_COP_FORTRESS', 'guardSource=warehouse-coordinate',
   'active_duplicate', 'SCHEDULER:New'
 )
 foreach ($marker in $requiredMarkers) {
@@ -49,7 +49,8 @@ $forbiddenPatterns = @(
   'CampaignState\.New', 'CampaignState\.Restore', 'MissionScripting\.lua',
   'mist\.', '\bMIST\b', 'world\.addEventHandler', 'timer\.scheduleFunction',
   'os\.execute', ':Teleport\s*\(', 'SPAWN:', 'AUFTRAG:NewCAS',
-  'COMMANDER:AddMission', 'AIRWING', 'SQUADRON', 'TST_BLUE_GND_FORTRESS_HIT_TARGET'
+  'COMMANDER:AddMission', 'AIRWING', 'SQUADRON', 'TST_BLUE_GND_FORTRESS_HIT_TARGET',
+  'ZON_BLUE_GND_FORTRESS_PATROL_TEST_01'
 )
 foreach ($pattern in $forbiddenPatterns) {
   if ($acceptanceSource -match $pattern -or $hitAdapter -match $pattern) {
@@ -75,14 +76,15 @@ $header = @"
 -- GitCommit: $commit
 -- GeneratedUtc: $generatedUtc
 -- TestId: $testId
--- Scope: production-stack Stage 2 Fortress GROUND_PERSONNEL -> MOOSE BRIGADE/PLATOON rifle squad -> AUFTRAG ONGUARD -> EVENTS.Hit -> CAS_IMMEDIATE MissionDemand -> repeated-hit active dedupe.
+-- Scope: existing OMW mission stack -> Fortress GROUND_PERSONNEL -> MOOSE BRIGADE/PLATOON rifle squad -> warehouse-derived AUFTRAG ONGUARD -> EVENTS.Hit -> CAS_IMMEDIATE MissionDemand -> repeated-hit active dedupe.
 -- MOOSECommit: $mooseCommit
 -- MooseLuaSHA256: $mooseSha256
--- StrategicAuthority: pre-existing OMW.AirOps.CampaignContext attached through OMW_Ground_Base.lua and OMW_Ground_Startup.lua.
--- RequiredLoadOrder: Moose.lua -> OMW_AirOps_Warehouse_Base.lua -> OMW_Ground_Base.lua -> OMW_Ground_Startup.lua -> this bundle.
+-- StrategicAuthority: pre-existing OMW.AirOps.CampaignContext already attached to OMW.Ground.Base by the mission's existing GroundBase.Attach trigger.
+-- RequiredBefore: existing mission OMW_AirOps_Warehouse_Base.lua -> OMW_Ground_Base.lua -> existing GroundBase.Attach trigger -> this bundle.
 -- CampaignStateCreation: false
 -- PhysicalRepresentation: existing TPL_BLUE_GND_INF_RIFLE_SQUAD_9 through public BRIGADE/PLATOON/Warehouse lifecycle.
--- ExplicitExclusions: dedicated BLUE test target, CAS dispatch, COMMANDER mission execution, AIRWING/SQUADRON dispatch, native world event handler, MIST, MissionScripting.lua mutation.
+-- GuardPoint: derived at runtime from the Fortress BRIGADE/WAREHOUSE coordinate; no Mission Editor guard zone required.
+-- ExplicitExclusions: dedicated BLUE test target, dedicated guard trigger zone, CAS dispatch, COMMANDER mission execution, AIRWING/SQUADRON dispatch, native world event handler, MIST, MissionScripting.lua mutation.
 
 "@
 
@@ -106,7 +108,7 @@ Write-Host "GeneratedUtc: $generatedUtc"
 Write-Host "GitCommit: $commit"
 Write-Host "MOOSECommit: $mooseCommit"
 Write-Host "MooseLuaSHA256: $($mooseSha256.ToUpperInvariant())"
-Write-Host 'RequiredBefore: OMW_AirOps_Warehouse_Base.lua,OMW_Ground_Base.lua,OMW_Ground_Startup.lua'
+Write-Host 'RequiredBefore: existing OMW_AirOps_Warehouse_Base.lua,existing OMW_Ground_Base.lua,existing GroundBase.Attach trigger'
 Write-Host 'CampaignStateAuthority: OMW.AirOps.CampaignContext'
 Write-Host 'CampaignStateCreation: false'
 Write-Host 'RequiresGroundBaseAttached: true'
@@ -116,7 +118,8 @@ Write-Host 'PersonnelNode: GROUND_NODE_FORTRESS'
 Write-Host 'PersonnelResource: GROUND_PERSONNEL'
 Write-Host 'PersonnelCommitted: 9'
 Write-Host 'PhysicalLifecycle: MOOSE BRIGADE/PLATOON/Warehouse'
-Write-Host 'GuardMission: AUFTRAG NewONGUARD at ZON_BLUE_GND_FORTRESS_PATROL_TEST_01'
+Write-Host 'GuardMission: AUFTRAG NewONGUARD at runtime Fortress warehouse coordinate'
+Write-Host 'MissionEditorGuardZoneRequired: false'
 Write-Host 'InstallationId: BLUE_GROUND_COP_FORTRESS'
 Write-Host 'RequiredPhysicalHits: at least 2 real RED-on-BLUE EVENTS.Hit events'
 Write-Host 'ExpectedDemandType: CAS_IMMEDIATE'
