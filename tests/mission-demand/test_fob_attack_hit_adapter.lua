@@ -149,7 +149,7 @@ assertFalse(ignoredUnregisteredCreated, "unregistered blue target not created")
 assertEqual(ignoredUnregisteredReason, "TARGET_NOT_REGISTERED", "unregistered target reason")
 
 local bostick, bostickCreated, bostickReason = adapter:ProcessHitEvent(makeEvent(105, {
-  TgtGroupName = nil,
+  TgtGroupName = "",
   TgtUnitName = "BLUE_BOSTICK_STATIC",
 }))
 assertTrue(bostickCreated, "registered unit/static target creates separate site demand")
