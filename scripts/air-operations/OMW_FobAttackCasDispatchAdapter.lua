@@ -58,6 +58,7 @@ function Adapter.New(spec)
     fail("missionDemand.Status is required")
   end
 
+  requireFunction(registry, "Get", "registry")
   requireFunction(registry, "AssignAI", "registry")
   requireFunction(registry, "Activate", "registry")
   requireFunction(registry, "Succeed", "registry")
