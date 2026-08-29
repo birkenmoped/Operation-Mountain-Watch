@@ -31,7 +31,7 @@ local BaseStock = {
 }
 
 local created = Initializer.CreateStore(CampaignState, BaseStock, GroundInitialStock)
-expectEqual(created.initializerSchemaVersion, "OMW-AIROPS-CAMPAIGNSTATE-INITIALIZER-5", "INITIALIZER_SCHEMA")
+expectEqual(created.initializerSchemaVersion, "OMW-AIROPS-CAMPAIGNSTATE-INITIALIZER-6", "INITIALIZER_SCHEMA")
 expectEqual(GroundInitialStock.SchemaVersion, "OMW-GROUND-INITIAL-STOCK-3", "GROUND_SCHEMA")
 expectEqual(created.store:GetResource("GROUND_NODE_JOYCE", GroundInitialStock.ResourceId.AMMO).available, 44, "JOYCE_AMMO_INITIAL")
 expectEqual(created.store:GetResource("GROUND_NODE_HONAKER", GroundInitialStock.ResourceId.AMMO).available, 40, "HONAKER_AMMO_INITIAL")
