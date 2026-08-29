@@ -118,18 +118,21 @@ Der gepinnte Source zeigt außerdem: Bei BLUE-owned OPSZONE führt RED-Präsenz 
 Der Sicherheitsperimeter wird vollständig zur Laufzeit erzeugt:
 
 ```text
-anchor       = WH_BLUE_GND_FORTRESS via BRIGADE/WAREHOUSE:GetCoordinate()
-zone name    = OMW_SECURITY_BLUE_GROUND_COP_FORTRESS
-radius       = 1000 m
-owner        = BLUE
-objects      = UNIT only
-units        = GROUND_UNIT only
-min RED      = 1
-threatlevel  = 0
-scan interval= 5 s (Acceptance only)
-F10 draw     = off
-F10 marker   = off
+anchor        = WH_BLUE_GND_FORTRESS via BRIGADE/WAREHOUSE:GetCoordinate()
+zone name     = OMW_SECURITY_BLUE_GROUND_COP_FORTRESS
+radius        = 1000 m
+owner         = BLUE
+objects       = UNIT only
+units         = GROUND_UNIT only
+attack RED    = Nred > 0
+threatlevel   = 0
+captureNunits = 1 (separate capture semantics)
+scan interval = 5 s (Acceptance only)
+F10 draw      = off
+F10 marker    = off
 ```
+
+Für den verteidigten BLUE-Zustand prüft MOOSE `Nred > 0` und den Threat-Level. `captureNunits=1` gehört zur separaten Capture-Logik, falls die BLUE-Präsenz verschwindet; es ist nicht das eigentliche Attacked-Kriterium.
 
 Damit ist keine zusätzliche Mission-Editor-Security-Zone erforderlich.
 
@@ -265,7 +268,7 @@ Alle müssen gleichzeitig gelten:
 5. Guard-/Security-Anker wird aus WH_BLUE_GND_FORTRESS über BRIGADE/WAREHOUSE:GetCoordinate() abgeleitet.
 6. Die Sentry erreicht AUFTRAG ONGUARD und bleibt als BLUE Ground presence im Perimeter.
 7. Zur Laufzeit entsteht `OMW_SECURITY_BLUE_GROUND_COP_FORTRESS` als ZONE_RADIUS mit 1000 m Radius.
-8. Daraus entsteht eine BLUE-owned OPSZONE mit UNIT/GROUND_UNIT-Scan, `captureNunits=1` und `captureThreatlevel=0`.
+8. Daraus entsteht eine BLUE-owned OPSZONE mit UNIT/GROUND_UNIT-Scan und `captureThreatlevel=0`; für den Attacked-Pfad gilt `Nred > 0`.
 9. Keine Mission-Editor-Security-Zone wird benötigt.
 10. Reale RED Ground presence innerhalb des Perimeters löst `OnAfterAttacked(..., coalition.side.RED)` aus.
 11. Dieser Threat erzeugt genau einen CAS_IMMEDIATE Demand für BLUE_GROUND_COP_FORTRESS.
