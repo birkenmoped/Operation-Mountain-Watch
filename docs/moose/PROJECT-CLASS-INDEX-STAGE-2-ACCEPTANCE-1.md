@@ -12,6 +12,7 @@ scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
   - dedicated BLUE test-target version of Stage 2 Acceptance 1
+  - Acceptance-1 variant requiring separately preloaded Ground Base
 superseded_by:
 source_branch: agent/fob-attack-support-demand
 source_commit: GIT_HISTORY
@@ -38,7 +39,7 @@ Moose.lua SHA-256: E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A
 | `ARMYGROUP` / `OPSGROUP` lifecycle | prior Ground scopes validated; new infantry ONGUARD scope pending | `OnAfterArmyOnMission` correlation and `OnAfterMissionExecute` proof before the dynamic group is registered as an attack target |
 | `BASE` | `SOURCE_REVIEWED` / acceptance staged | `BASE:New()`, `HandleEvent(EVENTS.Hit, ...)`, `UnHandleEvent(EVENTS.Hit)` for the MOOSE-first Hit listener |
 | `EVENTS.Hit` | `SOURCE_REVIEWED` / acceptance staged | real RED-on-BLUE hit against the dynamically materialized Fortress infantry group |
-| `SCHEDULER` | already elsewhere `VALIDATED_FOR_DOCUMENTED_SCOPE`; new Stage-2 scope not independently validated | low-frequency post-start orchestration and 2-s PASS evaluation; no World/frame scan |
+| `SCHEDULER` | already elsewhere `VALIDATED_FOR_DOCUMENTED_SCOPE`; new Stage-2 scope not independently validated | five-second post-BRIGADE-start orchestration and two-second PASS evaluation; no World/frame scan |
 
 No status is raised to `VALIDATED_FOR_DOCUMENTED_SCOPE` by source or CI alone.
 
@@ -68,9 +69,21 @@ as a reusable physical representation suitable for local security. Acceptance 1 
 
 ## 5. CampaignState boundary
 
-The acceptance reads the already-attached authoritative Ground context through `OMW.Ground.Base.GetContext()` and consumes nine `GROUND_PERSONNEL` from `GROUND_NODE_FORTRESS` for the test deployment.
+BuilderVersion `FOB-ATTACK-HIT-ACCEPTANCE-1-3` embeds the existing CampaignState and Ground composition modules and creates exactly one fresh acceptance-local CampaignState from the current `GroundInitialStock.Rows`. The same store is attached to `GroundBase` before the sentry harness starts.
 
-This is campaign-domain bookkeeping, not MOOSE resource authority. BRIGADE/PLATOON/Warehouse only materialize the physical squad. Infantry casualty/return/restart settlement remains outside this acceptance.
+The runtime sequence is:
+
+```text
+CampaignState.New(current GroundInitialStock)
+-> GroundBase.Configure(existing Ground modules)
+-> GroundBase.Attach(single acceptance store)
+-> OMW.Ground.Base.GetContext()
+-> consume nine GROUND_PERSONNEL from GROUND_NODE_FORTRESS
+```
+
+No separate `OMW_Ground_Base.lua` or second CampaignState startup bundle is loaded for this acceptance. This is test composition only and does not establish the production CampaignState startup/persistence architecture.
+
+CampaignState remains strategic authority. BRIGADE/PLATOON/Warehouse only materialize the physical squad. Infantry casualty/return/restart settlement remains outside this acceptance.
 
 ## 6. Negative boundary
 
@@ -78,6 +91,8 @@ Not used:
 
 ```text
 TST_BLUE_GND_FORTRESS_HIT_TARGET
+separate OMW_Ground_Base.lua for Acceptance 1
+second CampaignState store
 SPAWN direct materialization
 world.addEventHandler
 MIST
