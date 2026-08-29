@@ -12,7 +12,7 @@ local function coord(x, y)
     return math.sqrt(dx*dx+dy*dy)
   end
   function c:HeadingTo(other)
-    local angle = math.deg(math.atan2(other.x-self.x, other.y-self.y))
+    local angle = math.deg(math.atan(other.x-self.x, other.y-self.y))
     if angle < 0 then angle=angle+360 end
     return angle
   end
