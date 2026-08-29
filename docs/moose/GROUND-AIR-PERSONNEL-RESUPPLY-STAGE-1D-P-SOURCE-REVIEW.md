@@ -12,17 +12,19 @@ not_authoritative_for:
   - current OMW_FlightPath offset calibration
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
-source_branch: agent/automatic-response-orchestration-continuation
-validated_in_dcs: false
+supersedes:
 superseded_by:
-  - OMW-MOOSE-GROUND-AIR-PERSONNEL-RESUPPLY-STAGE-1D-P-ACCEPTANCE-4-RUNTIME-RESULT
+  - OMW-MOOSE-GROUND-AIR-PERSONNEL-RESUPPLY-STAGE-1D-P-ACCEPTANCE-4-FINAL
+source_branch: agent/automatic-response-orchestration-continuation
+source_commit: PENDING_MERGE
+validated_in_dcs: false
 ---
 
 # Stage 1D-P – Initial PERSONNEL Ground/Air Source Review
 
 Dieses Dokument bleibt als historischer Entwicklungsnachweis erhalten, ist aber für den Air-Pfad **SUPERSEDED**.
 
-Die weiterhin gültigen fachlichen Entscheidungen aus der ursprünglichen Review sind:
+Weiterhin gültige fachliche Entscheidungen:
 
 ```text
 GROUND_PERSONNEL = transferable strategic CampaignState headcount
@@ -36,34 +38,32 @@ Jalalabad CH-47 remains a Jalalabad AIRWING/SQUADRON asset
 no hard Ground/Air travel timeout
 ```
 
-Die folgenden ursprünglichen Air-Annahmen wurden durch reale DCS-Läufe widerlegt beziehungsweise präzisiert und dürfen **nicht** weiter als aktuelle Architektur gelesen werden:
+Durch spätere reale DCS-Läufe korrigierte Annahmen:
 
 ```text
-1. Fortress as Invisible FARP for intermediate AIRWING landing
-   -> rejected for this scope because foreign-FARP Arrived/Legion return caused premature despawn.
+Fortress Invisible FARP as intermediate landing
+-> rejected for this AIRWING scope
 
-2. LegionAssetReturned as sufficient physical home-return proof
-   -> rejected; physical Jalalabad OnAfterLanded must precede LegionAssetReturned.
+LegionAssetReturned as physical home-return proof
+-> rejected alone; physical Jalalabad OnAfterLanded must precede it
 
-3. MissionDone near Fortress as LANDATCOORDINATE delivery proof
-   -> rejected when mission egress exists; MissionDone occurs only later at/after egress.
+MissionDone near Fortress as delivery instant with mission egress
+-> rejected; MissionDone occurs later at/after egress
 
-4. second Takeoff callback as mandatory delivery proof
-   -> rejected after Acceptance-2 false negative.
+second Takeoff as mandatory delivery proof
+-> rejected after Acceptance-2 false negative
 
-5. heading -90 degrees as the OMW right-hand lane
-   -> rejected by owner visual runtime calibration; current tested OMW path uses +90 degrees.
+heading -90 degrees as OMW right-hand lane
+-> rejected by runtime observation; accepted tested OMW calibration uses +90 degrees
 ```
 
-Der aktuelle vollständige Source-/Runtime-Vertrag steht in:
+Der aktuelle vollständige Vertrag und die exakte Acceptance-Provenienz stehen in:
 
 ```text
-docs/moose/GROUND-AIR-PERSONNEL-RESUPPLY-STAGE-1D-P-ACCEPTANCE-4-RUNTIME-RESULT.md
-docs/moose/GROUND-AIR-PERSONNEL-RESUPPLY-STAGE-1D-P-FLIGHTPATH-ACCEPTANCE-2-RUNTIME-FINDINGS.md
-docs/moose/GROUND-AIR-PERSONNEL-RESUPPLY-STAGE-1D-P-FLIGHTPATH-RETURN-SOURCE-REVIEW.md
+docs/moose/GROUND-AIR-PERSONNEL-RESUPPLY-STAGE-1D-P-ACCEPTANCE-4-FINAL.md
 ```
 
-Current MOOSE/DCS-bounded settlement:
+Accepted settlement for that exact scope:
 
 ```text
 matching FLIGHTGROUP/OPSGROUP OnAfterTaskDone
@@ -77,5 +77,3 @@ physical OnAfterLanded at Jalalabad
 -> LegionAssetReturned
 -> PASS
 ```
-
-See the Acceptance-4 report for the exact branch/commit/bundle/DCS/MOOSE/log provenance and the still-pending exact tested MIZ SHA-256.
