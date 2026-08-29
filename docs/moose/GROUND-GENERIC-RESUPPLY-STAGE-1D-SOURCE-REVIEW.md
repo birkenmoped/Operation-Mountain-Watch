@@ -7,7 +7,7 @@ authoritative_for:
   - branch-local MOOSE-first source review for Stage 1D non-AMMO/non-FUEL Ground RESUPPLY
   - candidate mapping of SUPPLY, PERSONNEL and VEHICLE transfers to available MOOSE transport mechanisms
 not_authoritative_for:
-  - accepted production executor for Stage 1D
+  - accepted production executor for Stage 1D-P PERSONNEL or Stage 1D-V VEHICLE
   - DCS runtime acceptance of TROOPTRANSPORT, OPSTRANSPORT storage transport or cohort relocation
   - permission to make DCS warehouses a second strategic resource authority
 scenario_period: 2010-08-01/2011-12-31
@@ -15,8 +15,8 @@ project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
 superseded_by:
 source_branch: agent/automatic-response-orchestration-continuation
-source_commit: 0392836695f11dbd263505025da15fcabe98d4f4
-validated_in_dcs: false
+source_commit: 4771420480a994ce7356abc618ae0a3189dc105e
+validated_in_dcs: partial
 ---
 
 # Ground Stage 1D – MOOSE-first Source Review für verbleibende RESUPPLY-Ressourcen
@@ -269,78 +269,82 @@ CampaignState SUPPLY transfer reservation
 -> BRIGADE:AddMission(...)
 -> physical arrival evidence
 -> exactly-once CampaignState settlement
--> normal MOOSE return / Returned / Warehouse handoff
+-> explicit MOOSE ARMYGROUP RTZ return / Returned / Warehouse handoff
 ```
 
 Das ist keine Native-DCS- oder Nicht-MOOSE-Ausnahme. Es verwendet ausschließlich den bereits akzeptierten MOOSE-Lifecycle, behauptet aber auch keine nicht vorhandene MOOSE-`SUPPLYSUPPLY`-Mission.
 
 Für `PERSONNEL` und `VEHICLE` wird dieser neutrale Pfad **nicht automatisch** übernommen. Beide Ressourcen repräsentieren strategische Assets/Headcount und benötigen einen eigenen physischen Repräsentationsvertrag.
 
-## 6. Empfohlener Stage-1D-Schnitt
+## 6. Stage-1D-S Runtime-Akzeptanz
 
-Stage 1D sollte nicht mehr als ein einziger generischer Test behandelt werden, sondern in drei Entscheidungen getrennt werden:
+Stage 1D-S wurde am 29.08.2026 im DCS-Lauf praktisch bestätigt.
 
 ```text
-Stage 1D-S
-SUPPLY
--> neutraler MOOSE NOTHING Ground convoy
--> Acceptance-Kandidat
+status: ACCEPTED_TECHNICAL_BASELINE
+runtime_result: PASS
+branch: agent/automatic-response-orchestration-continuation
+build_commit: 4771420480a994ce7356abc618ae0a3189dc105e
+builder_version: GROUND-SUPPLY-RESUPPLY-NOTHING-ACCEPTANCE-1-2
+bundle_sha256: C805C996A2028629251F833F0E0D0ED06F462C15271A1166E0DB8DF0BA105CE3
+mission_sha256: BA556641A9ECAD629FDBE62AEA5CC30E22E081B81B4188C136855026F70D0907
+dcs: 2.9.29.27278 MT
+```
 
+Beobachteter Lifecycle:
+
+```text
+START
+-> DEMAND_RESERVED
+-> MISSION_QUEUED
+-> ROAD_ALIGNED_WAREHOUSE_SPAWN
+-> GROUP_MATERIALIZED
+-> ARMY_ON_MISSION
+-> DESTINATION_ZONE_ENTERED
+-> MISSION_EXECUTE_OBSERVED
+-> DELIVERY_CONFIRMED
+-> MISSION_DONE
+-> delayed explicit ARMYGROUP:RTZ(Joyce ACCESS, OnRoad)
+-> RETURNED_HANDOFF
+-> WAREHOUSE_ADD_ASSET
+-> PASS
+```
+
+Der erfolgreiche Build stellt bewusst den bereits in Stage 1C bestandenen NOTHING-Vertrag wieder her. Eine zuvor eingeführte Abweichung auf einen FUELSUPPLY-artigen automatischen Return-Pfad war eine unnötige Regression und wurde entfernt. Es wurde keine neue interne Zielzone und keine eigene Ground-Routinglogik eingeführt.
+
+Vollständige Evidenz:
+
+```text
+mission/tests/ground-resupply-execution/ACCEPTANCE-5.md
+mission/tests/ground-resupply-execution/results/2026-08-29-ground-supply-resupply-nothing-acceptance-1-pass-1.md
+```
+
+## 7. Verbleibender Stage-1D-Schnitt
+
+```text
 Stage 1D-P
 PERSONNEL
 -> TROOPTRANSPORT nur mit realer Cargo-Gruppe
--> zunächst Source-/Design-Reconciliation
+-> Source-/Design-Reconciliation
 
 Stage 1D-V
 VEHICLE
 -> whole-cohort relocation separat von quantity resupply unterscheiden
--> zunächst Source-/Design-Reconciliation
+-> Source-/Design-Reconciliation
 ```
 
 Damit wird vermieden, dass `PERSONNEL`, `VEHICLE` und `SUPPLY` trotz unterschiedlicher Semantik künstlich durch denselben Executor gepresst werden.
 
-## 7. Nächster technischer Schritt
+## 8. DCS-Testpflicht für verbleibende Ressourcen
 
-Ohne neue Architekturentscheidung kann als nächstes **Stage 1D-S** vorbereitet werden, weil dafür bereits eine MOOSE-first-konforme, technisch akzeptierte Mechanik existiert.
-
-Der Acceptance-Scope soll ausdrücklich nur prüfen:
+Stage 1D-S ist technisch akzeptiert. Für Stage 1D-P und Stage 1D-V bleiben eigene Acceptance-Nachweise erforderlich. Insbesondere sind vor produktiver Freigabe zu klären:
 
 ```text
-MissionDemand RESUPPLY(resource=SUPPLY)
--> CampaignState reserve/transfer
--> one-shot AUFTRAG:NewNOTHING(destinationZone)
--> existing BRIGADE/PLATOON/ARMYGROUP materialization
--> physical arrival
--> exact-once SUPPLY settlement
--> MissionDemand SUCCESS
--> MOOSE return lifecycle
+physical representation contract
+CampaignState stable resource identity
+MOOSE executor semantics
+exactly-once settlement
+loss / damage / partial return behavior
+restart / reconciliation behavior
+no second resource authority
 ```
-
-Nicht Bestandteil dieses Tests:
-
-```text
-DCS warehouse storage transfer
-OPSTRANSPORT:AddCargoStorage strategic ownership
-PERSONNEL transfer
-VEHICLE transfer
-TROOPTRANSPORT acceptance
-whole-cohort relocation acceptance
-```
-
-## 8. DCS-Testpflichtige Punkte
-
-Vor `ACCEPTED_TECHNICAL_BASELINE` für Stage 1D-S sind mindestens nachzuweisen:
-
-```text
-one and only one physical convoy
-correct source and destination CampaignState mutation
-no DCS/MOOSE Warehouse resource authority introduced
-arrival observed before settlement
-settlement exactly once
-MissionDemand SUCCESS exactly once
-normal MOOSE return
-Returned -> Warehouse AddAsset
-no spontaneous second mission
-```
-
-Für Stage 1D-P und Stage 1D-V werden erst nach eigener Design-/Source-Reconciliation konkrete Acceptance-Pläne erstellt.
