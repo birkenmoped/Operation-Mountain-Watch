@@ -12,8 +12,8 @@ project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
   - class index without consolidated AIRWING lifecycle evidence
 superseded_by:
-source_branch: agent/awacs-external-lifecycle-foundation
-source_commit: 998080da9a7a71dae7f713b9590dfeadb5ae93ba
+source_branch: agent/automatic-response-orchestration-continuation
+source_commit: GIT_HISTORY
 validated_in_dcs: partial
 ---
 
@@ -38,6 +38,7 @@ Technische Lifecycle-Details:
 - [`OMW-MOOSE-GROUND-OPERATIONS`](GROUND-OPERATIONS.md)
 - [`OMW-MOOSE-MISSION-DEMAND-RESUPPLY-CAS-SOURCE-REVIEW`](MISSION-DEMAND-RESUPPLY-CAS-SOURCE-REVIEW.md)
 - [`OMW-MOOSE-AIR-TASKING-C2-LIFECYCLE`](AIR-TASKING-C2-LIFECYCLE.md)
+- [`Stage 1D-P Air PERSONNEL Acceptance-4`](GROUND-AIR-PERSONNEL-RESUPPLY-STAGE-1D-P-ACCEPTANCE-4-FINAL.md)
 
 ## 2. Statusbedeutung
 
@@ -59,23 +60,24 @@ REJECTED_FOR_PROJECT_USE
 | Klasse | Projektstatus | Geltungsgrenze |
 |---|---|---|
 | `AIRBASE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Auflösung, ID, Parkingdump und airfield-spezifische Kalibrierung |
-| `AIRWING` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Konstruktion, Stockregistrierung, SQUADRON-Bindung und direkter AUFTRAG-Dispatch; externe OMW-AAR-/AWACS-Pools verwenden bewusst kein AIRWING |
-| `SQUADRON` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Foundation-Bestände und post-start Assetbindung |
+| `AIRWING` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Konstruktion, Stockregistrierung, SQUADRON-Bindung und direkter AUFTRAG-Dispatch; Stage 1D-P bestätigt Jalalabad-CH-47-Dispatch und `LegionAssetReturned` erst nach physischer Jalalabad-Landung; externe OMW-AAR-/AWACS-Pools verwenden bewusst kein AIRWING |
+| `SQUADRON` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Foundation-Bestände und post-start Assetbindung; Stage 1D-P bindet `SQ_US_JBAD_CH47_HEAVYLIFT` explizit an den akzeptierten Auftrag |
 | `WAREHOUSE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` + `INTERNAL_RESTRICTED` | AirOps-Stock-/Asset-Lifecycle und Acceptance 3-2 Ground-Materialisierung praktisch bestätigt; die private road-aligned Ausnahme ist auf den dokumentierten Branch-/MOOSE-/MIZ-Scope begrenzt |
 | `STORAGE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | CampaignState->DCS-Warehouse Mirror/Telemetry; keine strategische Rückautorität |
 | `COHORT` | `VALIDATED_FOR_DOCUMENTED_SCOPE` + `SOURCE_REVIEWED` | AirOps-Lifecycle praktisch bestätigt; Ground-Review bestätigt `AddMissionCapability`, `SetMissionRange`, `CanMission`, `CountAssets` und 75-NM-Ground-Default source-seitig |
-| `FLIGHTGROUP` | `VALIDATED_FOR_DOCUMENTED_SCOPE` + `SOURCE_REVIEWED` | AAR FuelLow, Dead/OnAfterDead, GetCoordinate, `AddWaypoint(...)`, `AddMission(...)` und `OnAfterPassingWaypoint(...)` sind im AAR-Scope validiert; AWACS bestätigt Transit-/PassingWaypoint-/AddMission-/Egress-Bausteine sowie `Refuel(...) -> Refueled` praktisch mit WIZARD/LISA und WIZARD/MOE im dokumentierten Full-Lifecycle-Scope |
+| `FLIGHTGROUP` | `VALIDATED_FOR_DOCUMENTED_SCOPE` + `SOURCE_REVIEWED` | AAR/AWACS-Lifecycles praktisch bestätigt; Stage 1D-P bestätigt `AddWaypoint(...)`, `OnAfterTaskDone`, späteres `OnAfterMissionDone` als Diagnose und physisches `OnAfterLanded` in Jalalabad im akzeptierten CH-47-Return-Scope |
 | `COMMANDER` | `VALIDATED_FOR_DOCUMENTED_SCOPE` + `SOURCE_REVIEWED` | dokumentierter COMMANDER-Lifecycle; Ground-Review bestätigt `AddBrigade(...)` und `AddOpsTransport(...)` source-seitig; MissionDemand bleibt OMW-Tasking-Autorität |
-| `AUFTRAG` | `VALIDATED_FOR_DOCUMENTED_SCOPE` + `SOURCE_REVIEWED` | AAR-Methoden sowie dokumentierte Ground-Acceptance-1 bis -6-Lifecycles praktisch bestätigt; AWACS bestätigt `NewORBIT_RACETRACK(...)`, `NewTANKER(...)`, Mission-Höhen-/Egress-Konfiguration sowie Cancel-/Rejoin-Pfade im dokumentierten Scope; keine CampaignState-Autorität |
+| `AUFTRAG` | `VALIDATED_FOR_DOCUMENTED_SCOPE` + `SOURCE_REVIEWED` | AAR-, AWACS- und Ground-Lifecycles praktisch bestätigt; Stage 1D-P bestätigt `NewLANDATCOORDINATE(...)`, `SetMissionEgressCoord(...)`, `AssignSquadrons(...)` sowie gruppenspezifische Waypoint-/Egress-/Task-Abfragen; keine CampaignState-Autorität |
 | `SPAWN` | `VALIDATED_FOR_DOCUMENTED_SCOPE` + `SOURCE_REVIEWED` | area-spezifische AAR-Templates und externe Materialisierung praktisch bestätigt; AWACS bestätigt `OMW_C2_E3A_WIZARD`, LISA und MOE external materialization im dokumentierten Scope |
 | `SCHEDULER` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | allgemeine OMW-Nutzung praktisch bestätigt; AWACS verwendet einen 5-Sekunden-Monitor ausschließlich zur Lifecycle-/Fuel-Koordination, keinen Frame-Scan |
 | `USERFLAG` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Warehouse-Acceptance-Readiness-Pfade sowie Ground BASE-3 `OMW_GROUND_READY` Set/Get-Readback und Mission-Editor-Gate im dokumentierten Ground-Ammo-Rearm-Acceptance-1-Scope |
 | `GROUP`, `UNIT`, `STATIC`, `ZONE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Wrapper-/Objektauflösung in dokumentierten Scopes; Acceptance-1-v13-Objektvertrag read-only bestätigt, Ground-Acceptance-6 bestätigt GetSize, GetUnits, test-only Destroy(false) und SetLife(50) im dokumentierten Verlust-/Schaden-Return-Scope |
-| `COORDINATE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | `Get2DDistance(...)`, `GetIntermediateCoordinate(...)` und `HeadingTo(...)` im dokumentierten AirOps-Scope |
+| `COORDINATE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | `Get2DDistance(...)`, `GetIntermediateCoordinate(...)`, `HeadingTo(...)` sowie Stage-1D-P-`Translate(...)` im jeweils dokumentierten AirOps-/FlightPath-Scope |
 | `BRIGADE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` + `INTERNAL_RESTRICTED` | Acceptance 1–6 bestätigen Ground-Assetpool, Materialisierung, Callback-Lifecycle und die parallelen Rückgabevarianten; die road-aligned private Warehouse-Spawn-Ausnahme bleibt auf Acceptance-3-2 und den gepinnten MOOSE-Stand begrenzt |
 | `PLATOON` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Acceptance 1–6 bestätigen dokumentierte Assetselektion, Wiederverwendung und Rückgabevarianten im Ground-Scope; keine allgemeine Produktionsfreigabe |
 | `ARMYGROUP` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Acceptance 1–6 bestätigen MissionDone-Persistenz, Same-group-Follow-up sowie mobilen RTZ/Returned-Handoff einschließlich paralleler Teilverlust-/Schadenrückgabe; immobiler Teleportpfad bleibt ausgeschlossen |
-| `OPSGROUP` | `VALIDATED_FOR_DOCUMENTED_SCOPE` + `SOURCE_REVIEWED` | AirOps-Methoden sowie Ground-MissionDone-/Return-Pfade in Acceptance 1–6 praktisch bestätigt; Cargo-Pfade bleiben source-reviewed |
+| `OPSGROUP` | `VALIDATED_FOR_DOCUMENTED_SCOPE` + `SOURCE_REVIEWED` | AirOps-/Ground-Pfade praktisch bestätigt; Stage 1D-P bestätigt TaskDone-Lifecycle und `Get2DDistance(...)` als Zielnäheprüfung für das LANDAT-Settlement; Cargo-Pfade bleiben source-reviewed |
+| `LEGION` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Ground-Returned-Handoffs und Stage 1D-P Air-Asset-Return praktisch bestätigt; `LegionAssetReturned` allein ist im Air-PERSONNEL-Scope ausdrücklich kein physischer RTB-Nachweis |
 | `OPSTRANSPORT` | `SOURCE_REVIEWED` | Constructor, Cargo/Carrier-Zonen, `AddPathTransport`, Disembark- und Carrier-Verträge geprüft; taktischer OMW-Transport benötigt eigenen DCS-Test |
 | `AMMOTRUCK` | `SOURCE_REVIEWED` | gepinnter Source und offizieller Demo-Anwendungsfall für automatische Artillerie-Rearm-Versorgung geprüft; `reloads` ist Rearm-Zykluszahl, keine CampaignState-Menge; kein OMW-AMMOTRUCK-Runtime-PASS |
 | `ARTY` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Ground-Ammo-Rearm-Acceptance-1 bestätigt den Bostick-Fixed-Battery-Pfad mit `New`, `AssignTargetCoord`, `GetAmmo`, `SetRearmingGroup`, `SetRearmingGroupOnRoad`, `Rearm` sowie CeaseFire/BeforeRearm/Rearmed-Callbacks; keine pauschale Validierung anderer Batterien, Supply-Typen oder MOOSE-Versionen |
@@ -85,7 +87,8 @@ REJECTED_FOR_PROJECT_USE
 | `PLAYERRECCE` | `CANDIDATE` | spielergeführte Aufklärung; Multiplayerprüfung offen |
 | `TARS` | `CANDIDATE` | verzögerte Foto-/IMINT-Aufklärung; Verfügbarkeit offen |
 | `DETECTION_*` | `PLANNED` | Spezialfälle; kein paralleles strategisches Lagebild neben `INTEL` |
-| `Core.Astar`, `PATHLINE`, `MOVEMENT` | `PLANNED` | Routing und Bewegungsbegrenzung |
+| `PATHLINE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Stage 1D-P Acceptance-4 bestätigt `OMW_FlightPath` als MOOSE-resolvierte, owner-authored 84-Punkte-Linie; 14 Punkte wurden im Jalalabad->Fortress-Scope tatsächlich verwendet; keine allgemeine Validierung anderer Pathlines |
+| `Core.Astar`, `MOVEMENT` | `PLANNED` | Routing und Bewegungsbegrenzung außerhalb des akzeptierten `PATHLINE`-Scopes |
 | `_DATABASE` | `INTERNAL_RESTRICTED` | nur Diagnose/Validierung; aktueller AAR- und Ground-Acceptance-1-Pfad verwendet `_DATABASE` nicht |
 | `CHIEF` | `REJECTED_FOR_PROJECT_USE` | aktuelle Produktionsarchitektur `NOT_USED` |
 
@@ -531,3 +534,53 @@ Technische Details und Grenzen:
 - [`Ground FUELSUPPLY Acceptance 2`](../../mission/tests/ground-resupply-execution/ACCEPTANCE-4.md)
 
 Dieser Addendum-Eintrag validiert keinen generischen Produktions-Executor fuer weitere Ressourcentypen und keine CAS-/CSAR-Ausfuehrung.
+
+## Stage 1D-P Air PERSONNEL Acceptance-4 class reconciliation - 29.08.2026
+
+Der folgende Klassenstatus ist auf den exakten Acceptance-4-Provenienzsatz begrenzt:
+
+```text
+Branch: agent/automatic-response-orchestration-continuation
+Acceptance commit: be8adc3ad1e2cfa6de7a25252cd8b217caeccde3
+Builder: AIR-PERSONNEL-FLIGHTPATH-RETURN-ACCEPTANCE-4-1
+Bundle SHA-256: C2BD325AF48BF6EA08936BCA666E4460293B60CC36FB8FE0181BC5140DF9ABD3
+Mission: OMW_Template_v20_GroundWorks.miz
+Mission SHA-256: 3B93F9817379BA6C66C8C02DD2142D1EDA3D88090CB8FC88973D4DAC45EE6B11
+DCS: 2.9.29.27278 MT
+MOOSE release: 2.9.18
+MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+Moose.lua SHA-256: E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915
+Result: PASS
+```
+
+Praktisch bestätigt:
+
+```text
+PATHLINE
+-> OMW_FlightPath resolves through MOOSE
+-> 84 owner-authored points present
+-> 14-point Jalalabad-Fortress subset used in the accepted flight
+
+AUFTRAG / FLIGHTGROUP / OPSGROUP
+-> LANDATCOORDINATE physical intermediate landing at Fortress
+-> matching TaskDone near LZ is the delivery-settlement signal
+-> MissionDone with egress occurs later and is diagnostic
+-> physical Jalalabad OnAfterLanded precedes LegionAssetReturned
+
+AIRWING / SQUADRON / LEGION
+-> exact Jalalabad CH-47 squadron dispatch
+-> physical return proof remains separate from Legion asset-return accounting
+```
+
+Nicht aus diesem Nachweis abzuleiten:
+
+```text
+other PATHLINE geometries
+other LZs or aircraft types
+MissionDone as generic delivery instant
+LegionAssetReturned as sole physical RTB proof
+tactical Infantry GROUP transport
+other DCS or MOOSE versions
+```
+
+Vollständige Evidenz: [`Stage 1D-P Air PERSONNEL Acceptance-4`](GROUND-AIR-PERSONNEL-RESUPPLY-STAGE-1D-P-ACCEPTANCE-4-FINAL.md).
