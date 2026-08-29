@@ -44,8 +44,8 @@ Moose.lua SHA-256: E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A
 | `OPSZONE` | `SOURCE_REVIEWED`; DCS Stage-2 runtime pending | BLUE-owned installation perimeter; scans hostile Ground presence and raises FSM `Attacked` |
 | `OPSZONE:SetObjectCategories` | `SOURCE_REVIEWED`; DCS Stage-2 runtime pending | restricts scan to `Object.Category.UNIT`; Statics do not satisfy BLUE presence in this acceptance |
 | `OPSZONE:SetUnitCategories` | `SOURCE_REVIEWED`; DCS Stage-2 runtime pending | restricts units to `Unit.Category.GROUND_UNIT` |
-| `OPSZONE:SetCaptureThreatlevel` | `SOURCE_REVIEWED`; DCS Stage-2 runtime pending | Acceptance value `0`: any RED Ground unit inside the security perimeter is alarm-worthy |
-| `OPSZONE:SetCaptureNunits` | `SOURCE_REVIEWED`; DCS Stage-2 runtime pending | Acceptance value `1` |
+| `OPSZONE:SetCaptureThreatlevel` | `SOURCE_REVIEWED`; DCS Stage-2 runtime pending | Acceptance value `0`; the defended-zone `Attacked` branch checks RED aggregate threat against this threshold |
+| `OPSZONE:SetCaptureNunits` | `SOURCE_REVIEWED`; DCS Stage-2 runtime pending | explicitly retains value `1` for the separate capture branch; it is not the defended-zone `Attacked` unit threshold |
 | `OPSZONE:SetDrawZone` / `SetMarkZone` | `SOURCE_REVIEWED`; DCS Stage-2 runtime pending | runtime security perimeter stays off the F10 map |
 | `OPSZONE.UpdateSeconds` | source-verified public class field consumed by `onafterStart`; no dedicated setter exists in pinned source | Acceptance-only value `5` seconds to avoid the class default 120-second evaluation interval during manual DCS testing |
 | `OPSZONE OnAfterAttacked` | `SOURCE_REVIEWED`; DCS Stage-2 runtime pending | `OnAfterAttacked(From, Event, To, AttackerCoalition)` is the MOOSE-first boundary that emits the qualified installation threat |
@@ -84,7 +84,7 @@ For a BLUE-owned OPSZONE the pinned `EvaluateZone()` path distinguishes two case
 
 ```text
 Nblu == 0
--> RED satisfying threshold can enter capture processing
+-> RED satisfying capture unit/threat criteria can enter capture processing
 
 Nblu > 0 AND Nred > 0 AND Tred >= threatlevelCapture
 -> Attacked(coalition.side.RED)
@@ -108,11 +108,13 @@ Acceptance 1 configures:
 ObjectCategories   = UNIT only
 UnitCategories     = GROUND_UNIT only
 CaptureThreatlevel = 0
-CaptureNunits      = 1
+CaptureNunits      = 1 (capture semantics retained explicitly)
 DrawZone           = false
 MarkZone           = false
 UpdateSeconds      = 5 (Acceptance only)
 ```
+
+For the defended BLUE-zone attack branch, the practical alarm condition is `Nred > 0` plus `Tred >= 0`; `CaptureNunits` is not consulted by that branch.
 
 The pinned source documents default `UpdateSeconds = 120` and `onafterStart()` reads `self.UpdateSeconds` before starting its status timer. The five-second override is limited to the acceptance harness; production cadence remains a separate later configuration decision.
 
