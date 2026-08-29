@@ -8,11 +8,17 @@ local Policy = {}
 
 local TAG = "[OMW][ResourceDemandPolicy]"
 
-Policy.SchemaVersion = "OMW-RESOURCE-DEMAND-POLICY-1"
+Policy.SchemaVersion = "OMW-RESOURCE-DEMAND-POLICY-2"
 
 Policy.Level = {
   REORDER = "REORDER",
   CRITICAL = "CRITICAL",
+}
+
+Policy.ReorderComparison = {
+  AT_OR_BELOW = "AT_OR_BELOW",
+  BELOW = "BELOW",
+  DISABLED = "DISABLED",
 }
 
 local function fail(message)
@@ -44,6 +50,16 @@ local function copy(value)
   return result
 end
 
+local function normalizeReorderComparison(value)
+  value = value or Policy.ReorderComparison.AT_OR_BELOW
+  if value ~= Policy.ReorderComparison.AT_OR_BELOW
+      and value ~= Policy.ReorderComparison.BELOW
+      and value ~= Policy.ReorderComparison.DISABLED then
+    fail("row.reorderComparison requires AT_OR_BELOW, BELOW, or DISABLED")
+  end
+  return value
+end
+
 local function normalizeRow(row)
   if type(row) ~= "table" then
     fail("resource policy row must be a table")
@@ -57,6 +73,7 @@ local function normalizeRow(row)
     target = requireNonNegativeNumber(row.target, "row.target"),
     reorder = requireNonNegativeNumber(row.reorder, "row.reorder"),
     critical = requireNonNegativeNumber(row.critical, "row.critical"),
+    reorderComparison = normalizeReorderComparison(row.reorderComparison),
     supplyParent = requireNonEmptyString(row.supplyParent, "row.supplyParent"),
   }
 
@@ -72,11 +89,30 @@ local function normalizeRow(row)
     ))
   end
 
+  if normalized.reorderComparison == Policy.ReorderComparison.DISABLED
+      and (normalized.reorder ~= 0 or normalized.critical ~= 0) then
+    fail(string.format(
+      "disabled reorder comparison requires zero thresholds nodeId=%s resourceId=%s",
+      normalized.nodeId,
+      normalized.resourceId
+    ))
+  end
+
   return normalized
 end
 
 local function dedupeKey(row)
   return table.concat({ "RESUPPLY", row.nodeId, row.resourceId }, "|")
+end
+
+local function isAtReorder(row, available)
+  if row.reorderComparison == Policy.ReorderComparison.DISABLED or row.reorder <= 0 then
+    return false
+  end
+  if row.reorderComparison == Policy.ReorderComparison.BELOW then
+    return available < row.reorder
+  end
+  return available <= row.reorder
 end
 
 function Policy.BuildIndex(rows)
@@ -125,17 +161,14 @@ function Policy.Evaluate(row, resourceSnapshot)
     ))
   end
 
-  -- A zero reorder threshold is the explicit disabled state in the current
-  -- Ground Initial Stock baseline. Automatic resupply remains disabled until
-  -- calibrated values are approved and written into the authoritative data.
-  if row.reorder <= 0 then
+  if row.reorderComparison == Policy.ReorderComparison.DISABLED or row.reorder <= 0 then
     return nil
   end
 
   local level = nil
   if row.critical > 0 and available <= row.critical then
     level = Policy.Level.CRITICAL
-  elseif available <= row.reorder then
+  elseif isAtReorder(row, available) then
     level = Policy.Level.REORDER
   end
 
@@ -160,6 +193,7 @@ function Policy.Evaluate(row, resourceSnapshot)
     target = row.target,
     reorder = row.reorder,
     critical = row.critical,
+    reorderComparison = row.reorderComparison,
     requestedQuantity = requestedQuantity,
     dedupeKey = dedupeKey(row),
   }
