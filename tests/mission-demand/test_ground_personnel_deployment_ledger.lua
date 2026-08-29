@@ -8,9 +8,10 @@ local function assertTrue(value, label) if value ~= true then error(label .. " e
 
 local store = CampaignState.New({
   nodes = {
-    GROUND_NODE_FORTRESS = {
+    {
+      nodeId = "GROUND_NODE_FORTRESS",
       resources = {
-        GROUND_PERSONNEL = { quantity = 160, canonicalUnit = "count" },
+        GROUND_PERSONNEL = { quantity = 160, unit = "count" },
       },
     },
   },
