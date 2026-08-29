@@ -1,6 +1,6 @@
 ---
 document_id: OMW-MOOSE-CLASS-INDEX-STAGE-1D-P-ACCEPTANCE-4
-status: DRAFT
+status: ACCEPTED_TECHNICAL_BASELINE
 document_class: MOOSE_CLASS_REGISTER_SUPPLEMENT
 owning_policy: OMW-GOV-001
 authoritative_for:
@@ -8,8 +8,10 @@ authoritative_for:
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 source_branch: agent/automatic-response-orchestration-continuation
+source_commit: be8adc3ad1e2cfa6de7a25252cd8b217caeccde3
 validated_in_dcs: true
 master_register_reconciliation_required: true
+acceptance_miz_sha256: 3B93F9817379BA6C66C8C02DD2142D1EDA3D88090CB8FC88973D4DAC45EE6B11
 ---
 
 # MOOSE Class Index Supplement – Stage 1D-P Acceptance-4
@@ -22,6 +24,18 @@ Pinned MOOSE:
 release: 2.9.18
 commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
 Moose.lua SHA-256: E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915
+```
+
+Accepted runtime provenance:
+
+```text
+source/builder commit: be8adc3ad1e2cfa6de7a25252cd8b217caeccde3
+builder: AIR-PERSONNEL-FLIGHTPATH-RETURN-ACCEPTANCE-4-1
+bundle SHA-256: C2BD325AF48BF6EA08936BCA666E4460293B60CC36FB8FE0181BC5140DF9ABD3
+mission: OMW_Template_v20_GroundWorks.miz
+mission SHA-256: 3B93F9817379BA6C66C8C02DD2142D1EDA3D88090CB8FC88973D4DAC45EE6B11
+DCS: 2.9.29.27278 MT
+runtime result: PASS
 ```
 
 | Class | Branch-local status | Stage 1D-P Acceptance-4 evidence |
@@ -46,7 +60,7 @@ foreign FARP/AIRBASE intermediate Arrived
 Detailed evidence:
 
 ```text
-docs/moose/GROUND-AIR-PERSONNEL-RESUPPLY-STAGE-1D-P-ACCEPTANCE-4-RUNTIME-RESULT.md
+docs/moose/GROUND-AIR-PERSONNEL-RESUPPLY-STAGE-1D-P-ACCEPTANCE-4-FINAL.md
 ```
 
-Formal `ACCEPTED_TECHNICAL_BASELINE` promotion remains blocked only by the missing SHA-256 of the exact tested `.miz`.
+This supplement is branch-local `ACCEPTED_TECHNICAL_BASELINE`; repository-wide normative effect still requires merge to `main` or an explicit governance decision.
