@@ -95,14 +95,16 @@ Der gepinnte `OPSZONE:EvaluateZone()`-Pfad für eine BLUE-owned Zone ist relevan
 
 ```text
 BLUE presence remains in zone
-AND RED presence > 0
-AND RED aggregate threat >= configured threshold
+AND Nred > 0
+AND RED aggregate threat >= configured threatlevelCapture
 -> Attacked(coalition.side.RED)
 ```
 
 `OPSZONE:IsContested()` bedeutet, dass RED und BLUE gleichzeitig innerhalb der Zone vorhanden sind.
 
-Ohne BLUE-Präsenz greift stattdessen die Capture-Logik. Deshalb ist die vorhandene Fortress-Sentry im Acceptance-Aufbau weiterhin sinnvoll: Sie stellt die reale lokale BLUE-Verteidigung dar, ist aber kein speziell registriertes Hit-Ziel mehr.
+Ohne BLUE-Präsenz greift stattdessen die Capture-Logik. Dort wird zusätzlich `nunitsCapture` geprüft. `SetCaptureNunits(1)` ist deshalb nicht der Trigger für den verteidigten `Attacked`-Pfad; der Adapter setzt den Wert lediglich explizit für die separate Capture-Semantik.
+
+Deshalb ist die vorhandene Fortress-Sentry im Acceptance-Aufbau weiterhin sinnvoll: Sie stellt die reale lokale BLUE-Verteidigung dar, ist aber kein speziell registriertes Hit-Ziel mehr.
 
 ## 4. Öffentlicher FSM-Callback
 
@@ -147,16 +149,17 @@ Acceptance 1 setzt:
 ObjectCategories   = { Object.Category.UNIT }
 UnitCategories     = { Unit.Category.GROUND_UNIT }
 CaptureThreatlevel = 0
-CaptureNunits      = 1
+CaptureNunits      = 1 (separate capture semantics)
 DrawZone           = false
 MarkZone           = false
 ```
 
-Damit gilt bewusst:
+Damit gilt im verteidigten BLUE-Zustand bewusst:
 
 ```text
-one hostile RED ground unit inside security perimeter
+Nred > 0 inside security perimeter
 + real BLUE ground presence
++ aggregate RED threat >= 0
 -> possible/imminent installation attack alarm
 ```
 
