@@ -531,3 +531,13 @@ Technische Details und Grenzen:
 - [`Ground FUELSUPPLY Acceptance 2`](../../mission/tests/ground-resupply-execution/ACCEPTANCE-4.md)
 
 Dieser Addendum-Eintrag validiert keinen generischen Produktions-Executor fuer weitere Ressourcentypen und keine CAS-/CSAR-Ausfuehrung.
+
+
+## UAV ISR Request – main-basierte Reconciliation (29.08.2026)
+
+| Klasse / Methode | Status | geprüfte Grenze |
+|---|---|---|
+| `AIRWING:AddMission(...)` | `SOURCE_REVIEWED` | Öffentliche MOOSE-Queue; AIRWING rekrutiert bei Fälligkeit aus den der Mission zugewiesenen SQUADRONs. Kein Beleg für eine öffentliche Kombination mit vorherigem Einzelasset-Binding. |
+| `AUFTRAG:AssignSquadrons(...)`, `AUFTRAG:AddAsset(...)`, `LEGION:MissionAssign(...)` | `SOURCE_REVIEWED` | Einzelasset-Binding und direkter MOOSE-Request sind geprüft; `MissionAssign` ist nicht die normale AIRWING-Queue. Keine DCS-Acceptance. |
+| `WAREHOUSE:OnAfterNewAsset(..., asset, ...)` | `VALIDATED_FOR_DOCUMENTED_SCOPE` / `SOURCE_REVIEWED` | Bagram verwendet den öffentlichen Callback für post-start Asset-/Parking-Prüfung; für die UAV-strategische Ressourcenbindung noch nicht DCS-validiert. |
+| `COHORT:SetTurnoverTime(...)`, `GetRepairTime(asset)` | `SOURCE_REVIEWED` | Cohort-weite Turnoverlogik; keine bestätigte öffentliche Einzelasset-Ausnahme für „Recall vor Take-off“. |
