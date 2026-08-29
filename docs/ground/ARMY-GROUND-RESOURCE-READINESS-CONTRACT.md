@@ -7,6 +7,7 @@ authoritative_for:
   - resource-class contract for the six current ARMY Ground Foundation stock nodes
   - readiness semantics derived from Ground resource availability
   - capability impact of Ground resource loss and supply failure
+  - PERSONNEL resupply trigger and refill semantics
 not_authoritative_for:
   - exact Fortress/Honaker defense-reserve thresholds
   - final historical company or platoon strengths
@@ -18,10 +19,10 @@ supersedes:
   - four-root-only readiness model
   - owner-decision-required quantities now closed by current stock baselines
   - Honaker child-only resource treatment
+  - node-specific-only PERSONNEL transfer model
 superseded_by:
-source_branch: agent/army-ground-foundation-reconciliation
-source_commit: 998080da9a7a71dae7f713b9590dfeadb5ae93ba
-validated_in_dcs: true
+source_branch: agent/automatic-response-orchestration-continuation
+validated_in_dcs: partial
 ---
 
 # ARMY Ground Foundation – Ressourcen- und Readiness-Vertrag
@@ -59,6 +60,17 @@ VEHICLE_LOST audit
 
 `SUPPLY`, `AMMO` and `FUEL` are normalized Ground logistics units.
 
+For resupply and transfer, the shared transferable CampaignState resources are:
+
+```text
+GROUND_PERSONNEL
+GROUND_SUPPLY_PACKAGE
+GROUND_AMMO_PACKAGE
+GROUND_FUEL_PACKAGE
+```
+
+`VEHICLE` and audit resources remain node-specific bookkeeping resources unless a later approved contract changes that boundary.
+
 ## 3. Six current Ground nodes
 
 ```text
@@ -83,9 +95,29 @@ GROUND_NODE_BOSTICK   220 / 26 / 56  / 52  / 48
 
 Fortress/Honaker values are governed by `OMW-ARMY-GROUND-FORTRESS-HONAKER-2011-RESOURCE-DECISION`.
 
+The current `supplyParent` chain is:
+
+```text
+GROUND_NODE_JALALABAD -> GROUND_NODE_FORTRESS
+GROUND_NODE_JALALABAD -> GROUND_NODE_JOYCE
+GROUND_NODE_JALALABAD -> GROUND_NODE_WRIGHT
+GROUND_NODE_JALALABAD -> GROUND_NODE_BOSTICK
+GROUND_NODE_JOYCE     -> GROUND_NODE_HONAKER
+GROUND_NODE_JALALABAD -> OFF_MAP parent for its own replenishment boundary
+```
+
 ## 4. Resource IDs
 
-Schema:
+Transferable resources use shared resource IDs so the same CampaignState resource can move between nodes:
+
+```text
+PERSONNEL -> GROUND_PERSONNEL
+SUPPLY    -> GROUND_SUPPLY_PACKAGE
+AMMO      -> GROUND_AMMO_PACKAGE
+FUEL      -> GROUND_FUEL_PACKAGE
+```
+
+Node-specific resources continue to use the bookkeeping schema:
 
 ```text
 GROUND:<groundNodeId>:<resourceClass>
@@ -94,16 +126,51 @@ GROUND:<groundNodeId>:<resourceClass>
 Examples:
 
 ```text
-GROUND:GROUND_NODE_FORTRESS:PERSONNEL
 GROUND:GROUND_NODE_FORTRESS:VEHICLE
-GROUND:GROUND_NODE_HONAKER:PERSONNEL
 GROUND:GROUND_NODE_HONAKER:VEHICLE
 GROUND:GROUND_NODE_HONAKER:VEHICLE_LOST
+GROUND:GROUND_NODE_HONAKER:PERSONNEL_LOST
 ```
 
 Resource IDs are strategic bookkeeping addresses and are independent of DCS/MOOSE names.
 
-## 5. Capability contracts
+## 5. PERSONNEL resupply floor
+
+Owner decision, 29.08.2026:
+
+```text
+PERSONNEL target stock = 100%
+PERSONNEL resupply floor = 80% of target
+exactly 80% = no RESUPPLY demand
+below 80% = RESUPPLY demand
+requested quantity = refill to 100% target
+PERSONNEL critical threshold = not defined in this stage
+```
+
+Current numeric PERSONNEL floors:
+
+| Node | Target | 80% floor | Demand starts |
+|---|---:|---:|---:|
+| Jalalabad | 480 | 384 | below 384 |
+| Fortress | 160 | 128 | below 128 |
+| Joyce | 180 | 144 | below 144 |
+| Wright | 120 | 96 | below 96 |
+| Honaker | 120 | 96 | below 96 |
+| Bostick | 220 | 176 | below 176 |
+
+Example Honaker:
+
+```text
+PERSONNEL 97 -> no demand
+PERSONNEL 96 -> no demand
+PERSONNEL 95 -> RESUPPLY 25 -> target 120
+```
+
+This rule is a **logistics resupply trigger**. It does not redefine the general capability-readiness bands in section 7.
+
+PERSONNEL may be physically represented by a Ground convoy or by an Air carrier while remaining a CampaignState headcount. Visible infantry boarding/disembarking is not required for ordinary PERSONNEL resupply. Physical infantry-group movement to OPs or AOs belongs to a separate tactical deployment contract.
+
+## 6. Capability contracts
 
 Common capabilities may require:
 
@@ -118,16 +185,9 @@ Common capabilities may require:
 
 A fire-support capability is only active where separately supported by current evidence and a current technical contract. No fixed Honaker M777/L118 capability is active in this Foundation baseline.
 
-## 6. Readiness states
+## 7. Readiness states
 
-```text
-AVAILABLE
-CONSTRAINED
-CRITICAL
-UNAVAILABLE
-```
-
-Working numeric baseline:
+General capability-readiness working baseline:
 
 ```text
 AVAILABLE     >= 60%
@@ -138,7 +198,9 @@ UNAVAILABLE   = 0% or required minimum cannot be met
 
 A capability inherits the worst state of its required resources. Supporting/sustainment resources may degrade eligibility according to the current mission contract.
 
-## 7. Mission eligibility boundary
+The PERSONNEL 80% resupply floor acts earlier than these capability degradation bands and is intentionally separate from them.
+
+## 8. Mission eligibility boundary
 
 Readiness never overrides hard resource availability or protected reserve rules.
 
@@ -152,7 +214,7 @@ Existing working protected reserves remain defined for Jalalabad, Joyce, Wright 
 
 Exact Fortress/Honaker protected reserve thresholds are intentionally not invented by Acceptance 9. They belong to later Ground-order/readiness calibration.
 
-## 8. Motorized patrol correlation
+## 9. Motorized patrol correlation
 
 Validated correlation:
 
@@ -163,7 +225,7 @@ Validated correlation:
 
 This is the accepted resource correlation for the validated patrol path, not a universal family composition rule for every Ground vehicle.
 
-## 9. Resource-loss effects
+## 10. Resource-loss effects
 
 A strategic loss occurs only when correlated to an authoritative commitment or transfer.
 
@@ -190,7 +252,7 @@ failed/lost resupply transfer
 -> only committed manifest resources are lost
 ```
 
-## 10. Return and restart effects
+## 11. Return and restart effects
 
 Binding Ground settlement rules:
 
@@ -208,7 +270,7 @@ open nonterminal commitment at server stop/crash
 
 Readiness is recalculated from the resulting CampaignState state.
 
-## 11. OP support
+## 12. OP support
 
 Dependent OPs may reserve resources from their parent/supporting domain, but the OP does not automatically become a new root-stock authority.
 
@@ -221,7 +283,9 @@ Bostick -> OP Mustang / OP Clydesdale / OP Stallion
 
 COP Honaker-Miracle itself is a full strategic stock node and is not treated as a child-only resource record.
 
-## 12. Honaker artillery correction
+Physical infantry movement from a FOB/COP to an OP is not ordinary meta-PERSONNEL resupply. It requires a later tactical deployment contract with a real DCS infantry group.
+
+## 13. Honaker artillery correction
 
 Superseded:
 
@@ -239,7 +303,7 @@ Jan-2010 possible two-gun position = observed; type/continuity unresolved
 2012 M777 evidence = outside scenario period
 ```
 
-## 13. Accepted technical evidence
+## 14. Accepted technical evidence
 
 Acceptance 7 validates the physical Ground lifecycle and settlement rules. Acceptance 8 validates production-shaped single-CampaignState composition. Acceptance 9-2 validates all six stock nodes and the Fortress/Honaker settlement path.
 
@@ -251,12 +315,16 @@ DCS: 2.9.28.26385 MT
 Result: PASS
 ```
 
-## 14. Later scope
+The new shared `GROUND_PERSONNEL` normalization, strict-below-80-percent demand rule and combined Ground/Air PERSONNEL resupply implementation are currently **SOURCE_REVIEWED / STAGED**, not DCS-validated.
+
+## 15. Later scope
 
 ```text
 Fortress/Honaker exact protected defense reserves
 Ground-order generation
 exact remaining ORBAT allocations
-OPSTRANSPORT
+physical FOB/COP -> OP infantry deployment
+physical AO insertion/extraction
+OPSTRANSPORT / TROOPTRANSPORT where real groups are transported
 cross-domain persistence architecture
 ```
