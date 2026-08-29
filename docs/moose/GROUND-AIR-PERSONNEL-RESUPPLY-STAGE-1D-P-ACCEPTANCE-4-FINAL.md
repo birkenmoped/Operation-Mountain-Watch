@@ -14,13 +14,21 @@ not_authoritative_for:
   - other rotary-wing corridors, LZs, aircraft types, DCS versions or MOOSE versions
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
+supersedes:
+  - OMW-MOOSE-GROUND-AIR-PERSONNEL-RESUPPLY-STAGE-1D-P-ACCEPTANCE-4-RUNTIME-RESULT
+superseded_by:
 source_branch: agent/automatic-response-orchestration-continuation
 source_commit: be8adc3ad1e2cfa6de7a25252cd8b217caeccde3
 validated_in_dcs: true
+acceptance_branch: agent/automatic-response-orchestration-continuation
+acceptance_commit: be8adc3ad1e2cfa6de7a25252cd8b217caeccde3
+acceptance_mission: OMW_Template_v20_GroundWorks.miz
+acceptance_mission_sha256: 3B93F9817379BA6C66C8C02DD2142D1EDA3D88090CB8FC88973D4DAC45EE6B11
+dcs_version: 2.9.29.27278 MT
+moose_commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+moose_artifact_sha256: E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915
 runtime_result: PASS
 accepted_technical_baseline: true
-supersedes:
-  - OMW-MOOSE-GROUND-AIR-PERSONNEL-RESUPPLY-STAGE-1D-P-ACCEPTANCE-4-RUNTIME-RESULT
 ---
 
 # Stage 1D-P – Air PERSONNEL Acceptance-4 Final
