@@ -172,4 +172,4 @@ Die folgenden stabilen IDs werden mit dem Ground-RESUPPLY-Mergepaket in den Main
 
 | Stabile ID | Pfad | Status | Klasse/Funktion |
 |---|---|---|---|
-| `OMW-UAV-ISR-REQUEST-MAIN-RECONCILIATION` | `docs/91-uav-isr-request-orchestration.md` | `DRAFT` | Main-basierte UAV-ISR-Reconciliation; geprüfte AIRWING-Queue/Einzelasset-Grenze, keine Produktions- oder DCS-Acceptance |
+| `OMW-UAV-ISR-REQUEST-MAIN-RECONCILIATION` | `docs/91-uav-isr-request-orchestration.md` | `DRAFT` | Main-basierte UAV-ISR-Reconciliation; geprüfte AIRWING-Queue/Einzelasset-Grenze und owner-freigegebene, eng begrenzte Ground-Recall-Turnover-Ausnahme; keine DCS-Acceptance |
