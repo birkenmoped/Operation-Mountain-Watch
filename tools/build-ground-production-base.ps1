@@ -13,7 +13,7 @@ $baseFile = Join-Path $repoRoot 'scripts\ground\OMW_GroundBase.lua'
 $distDir = Join-Path $repoRoot 'mission\ground-operations\dist'
 $outputFile = Join-Path $distDir 'OMW_Ground_Base.lua'
 
-$builderVersion = 'OMW-GROUND-PRODUCTION-BASE-4'
+$builderVersion = 'OMW-GROUND-PRODUCTION-BASE-5'
 
 $files = @(
   $groundStockFile,
@@ -35,7 +35,9 @@ $integration = Get-Content -LiteralPath $integrationFile -Raw -Encoding UTF8
 $groundBase = Get-Content -LiteralPath $baseFile -Raw -Encoding UTF8
 
 $requiredMarkers = @(
-  'OMW-GROUND-INITIAL-STOCK-2',
+  'OMW-GROUND-INITIAL-STOCK-3',
+  'GROUND_PERSONNEL',
+  'personnelReorderRatio = 0.80',
   'GROUND_SUPPLY_PACKAGE',
   'GROUND_AMMO_PACKAGE',
   'GROUND_FUEL_PACKAGE',
@@ -102,8 +104,9 @@ $header = @"
 -- Builder: tools/build-ground-production-base.ps1
 -- BuilderVersion: $builderVersion
 -- GitCommit: $commit
--- Scope: production packaging of the accepted six-node ARMY Ground strategic foundation plus owner-approved local-rearm restart settlement.
+-- Scope: production packaging of the accepted six-node ARMY Ground strategic foundation plus owner-approved local-rearm restart settlement and transferable PERSONNEL readiness data.
 -- Strategic authority: caller-provided single CampaignState store only.
+-- PERSONNEL: shared CampaignState resource GROUND_PERSONNEL; strict resupply trigger below 80 percent target; refill policy is evaluated outside this package.
 -- Local rearm restart: consumed-but-not-completed transactions are compensated exactly once on restored attach; completed transactions remain consumed.
 -- MOOSE/DCS lifecycle: none created by this package; MOOSE USERFLAG is used only for Mission Editor readiness gating.
 -- Fixed ARTY/mortar and reusable DCS templates remain Mission Editor assets and are not spawned here.
@@ -189,8 +192,9 @@ Write-Host "BuilderVersion: $builderVersion"
 Write-Host "GroundBaseSchema: OMW-GROUND-PRODUCTION-BASE-2"
 Write-Host "GroundRuntimeIntegrationSchema: OMW-GROUND-RUNTIME-INTEGRATION-2"
 Write-Host "GroundAmmoRearmAdapterSchema: OMW-GROUND-AMMO-REARM-ADAPTER-2"
-Write-Host "GroundInitialStockSchema: OMW-GROUND-INITIAL-STOCK-2"
-Write-Host "GroundTransferableResources: GROUND_SUPPLY_PACKAGE,GROUND_AMMO_PACKAGE,GROUND_FUEL_PACKAGE"
+Write-Host "GroundInitialStockSchema: OMW-GROUND-INITIAL-STOCK-3"
+Write-Host "GroundTransferableResources: GROUND_PERSONNEL,GROUND_SUPPLY_PACKAGE,GROUND_AMMO_PACKAGE,GROUND_FUEL_PACKAGE"
+Write-Host "PersonnelReorderRule: below 80 percent target, refill to target"
 Write-Host "GroundNodes: GROUND_NODE_JALALABAD,GROUND_NODE_FORTRESS,GROUND_NODE_JOYCE,GROUND_NODE_WRIGHT,GROUND_NODE_HONAKER,GROUND_NODE_BOSTICK"
 Write-Host "MotorizedPatrolContract: 1 M-ATV = 1 VEHICLE + 3 PERSONNEL"
 Write-Host "StrategicAuthority: caller-provided single CampaignState store"
