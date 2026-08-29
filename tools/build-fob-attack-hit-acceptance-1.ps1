@@ -12,7 +12,7 @@ $acceptanceSourceFile = Join-Path $repoRoot 'mission\tests\fob-attack-support-de
 $distDir = Join-Path $repoRoot 'mission\tests\fob-attack-support-demand\dist'
 $outputFile = Join-Path $distDir 'OMW_FOB_Attack_Hit_Acceptance_1.lua'
 
-$builderVersion = 'FOB-ATTACK-HIT-ACCEPTANCE-1-1'
+$builderVersion = 'FOB-ATTACK-HIT-ACCEPTANCE-1-2'
 $testId = 'FOB-ATTACK-HIT-ACCEPTANCE-1'
 $mooseCommit = '73d3ed119cd9e7e3f2cfcabbaa34513d30529b54'
 $mooseSha256 = 'e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915'
@@ -45,7 +45,13 @@ $requiredMarkers = @(
   'HandleEvent',
   'EVENTS.Hit',
   'FOB-ATTACK-HIT-ACCEPTANCE-1',
-  'TST_BLUE_GND_FORTRESS_HIT_TARGET',
+  'TPL_BLUE_GND_INF_RIFLE_SQUAD_9',
+  'GROUND_NODE_FORTRESS',
+  'GROUND_PERSONNEL',
+  'BRIGADE:New',
+  'PLATOON:New',
+  'AUFTRAG:NewONGUARD',
+  'ZON_BLUE_GND_FORTRESS_PATROL_TEST_01',
   'BLUE_GROUND_COP_FORTRESS',
   'active_duplicate',
   'SCHEDULER:New'
@@ -68,7 +74,8 @@ $forbiddenPatterns = @(
   'AUFTRAG:NewCAS',
   'COMMANDER:AddMission',
   'AIRWING',
-  'SQUADRON'
+  'SQUADRON',
+  'TST_BLUE_GND_FORTRESS_HIT_TARGET'
 )
 foreach ($pattern in $forbiddenPatterns) {
   if ($acceptanceSource -match $pattern -or $hitAdapter -match $pattern) {
@@ -94,11 +101,12 @@ $header = @"
 -- GitCommit: $commit
 -- GeneratedUtc: $generatedUtc
 -- TestId: $testId
--- Scope: Stage 2 MOOSE EVENTS.Hit -> qualified Fortress attack -> CAS_IMMEDIATE MissionDemand -> repeated-hit active dedupe.
+-- Scope: Stage 2 Fortress GROUND_PERSONNEL -> MOOSE BRIGADE/PLATOON rifle squad -> AUFTRAG ONGUARD -> EVENTS.Hit -> CAS_IMMEDIATE MissionDemand -> repeated-hit active dedupe.
 -- MOOSECommit: $mooseCommit
 -- MooseLuaSHA256: $mooseSha256
--- StrategicAuthority: existing MissionDemand/Campaign domain only; no resource mutation.
--- ExplicitExclusions: CAS dispatch, AUFTRAG, COMMANDER mission execution, AIRWING/SQUADRON dispatch, native world event handler, MIST, MissionScripting.lua mutation.
+-- StrategicAuthority: existing attached OMW Ground CampaignState context; 9 Fortress GROUND_PERSONNEL are consumed for the test sentry deployment.
+-- PhysicalRepresentation: existing TPL_BLUE_GND_INF_RIFLE_SQUAD_9 through public BRIGADE/PLATOON/Warehouse lifecycle.
+-- ExplicitExclusions: dedicated BLUE test target, CAS dispatch, COMMANDER mission execution, AIRWING/SQUADRON dispatch, native world event handler, MIST, MissionScripting.lua mutation.
 
 "@
 
@@ -122,7 +130,13 @@ Write-Host "GeneratedUtc: $generatedUtc"
 Write-Host "GitCommit: $commit"
 Write-Host "MOOSECommit: $mooseCommit"
 Write-Host "MooseLuaSHA256: $($mooseSha256.ToUpperInvariant())"
-Write-Host 'TargetGroup: TST_BLUE_GND_FORTRESS_HIT_TARGET'
+Write-Host 'TargetModel: existing Fortress rifle squad from Ground personnel pool'
+Write-Host 'Template: TPL_BLUE_GND_INF_RIFLE_SQUAD_9'
+Write-Host 'PersonnelNode: GROUND_NODE_FORTRESS'
+Write-Host 'PersonnelResource: GROUND_PERSONNEL'
+Write-Host 'PersonnelCommitted: 9'
+Write-Host 'PhysicalLifecycle: MOOSE BRIGADE/PLATOON/Warehouse'
+Write-Host 'GuardMission: AUFTRAG NewONGUARD at ZON_BLUE_GND_FORTRESS_PATROL_TEST_01'
 Write-Host 'InstallationId: BLUE_GROUND_COP_FORTRESS'
 Write-Host 'RequiredPhysicalHits: at least 2 real RED-on-BLUE EVENTS.Hit events'
 Write-Host 'ExpectedDemandType: CAS_IMMEDIATE'
@@ -131,6 +145,8 @@ Write-Host 'ExpectedSecondCreate: false / active_duplicate'
 Write-Host 'ExpectedActiveDemandCount: 1'
 Write-Host 'CASDispatch: false'
 Write-Host 'NativeWorldEventHandler: false'
+Write-Host 'DedicatedBlueTestTargetRequired: false'
+Write-Host 'RequiresGroundBaseAttached: true'
 Write-Host 'MizMutation: false'
 Write-Host "SHA256: $hash"
 
