@@ -6,18 +6,17 @@ owning_policy: OMW-GOV-001
 authoritative_for:
   - Stage 2 DCS acceptance plan for MOOSE EVENTS.Hit qualification
   - Fortress infantry sentry target and PASS criteria
-  - acceptance-local CampaignState/GroundBase bootstrap contract
+  - production-stack load order used by Stage 2 Acceptance 1
 not_authoritative_for:
   - runtime validation before the documented DCS run
-  - production CampaignState startup architecture
-  - production infantry loss/return settlement
+  - infantry casualty / survivor-return / restart settlement
   - CAS aircraft dispatch
   - general attack severity classification
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
   - dedicated TST_BLUE_GND_FORTRESS_HIT_TARGET Acceptance-1 target plan
-  - Acceptance-1 plan requiring a separately preloaded Ground Base
+  - standalone Acceptance-1 CampaignState/GroundBase bootstrap plan
 superseded_by:
 source_branch: agent/fob-attack-support-demand
 source_commit: GIT_HISTORY
@@ -28,40 +27,53 @@ validated_in_dcs: false
 
 ## 1. Ziel
 
-Der Test bestätigt den Stage-2-Runtime-Pfad mit einer realen OMW-Fortress-Infanterierepräsentation statt einer künstlichen BLUE-Testzielgruppe:
+Der Test bestätigt Stage 2 gegen den normalen OMW-Produktionsstack statt gegen einen Acceptance-eigenen Parallelstack:
 
 ```text
-one fresh authoritative acceptance CampaignState
--> current GroundInitialStock
--> GroundBase Attach
--> commit 9 GROUND_PERSONNEL at GROUND_NODE_FORTRESS
--> MOOSE BRIGADE / PLATOON / Warehouse materialization
--> existing TPL_BLUE_GND_INF_RIFLE_SQUAD_9
--> AUFTRAG:NewONGUARD(...) at Fortress patrol-test zone
--> real RED weapon hit on the materialized squad
--> MOOSE EVENTS.Hit
--> OMW_FobAttackHitAdapter
--> OMW_FobAttackDemandPolicy
--> MissionDemand CAS_IMMEDIATE
--> repeated real hit at same installation
--> active_duplicate
--> exactly one active CAS demand
+Moose.lua
+-> OMW_AirOps_Warehouse_Base.lua
+   -> exactly one authoritative OMW.AirOps.CampaignContext
+   -> AirOps/AAR/Ground strategic stock seeded once
+   -> OMW_WAREHOUSE_READY = 1
+-> OMW_Ground_Base.lua
+   -> OMW.Ground.Base
+   -> OMW_GROUND_READY = 0
+-> OMW_Ground_Startup.lua
+   -> attach OMW.Ground.Base to OMW.AirOps.CampaignContext
+   -> OMW_GROUND_READY = 1
+-> Stage 2 Acceptance bundle
+   -> commit 9 Fortress GROUND_PERSONNEL
+   -> MOOSE BRIGADE / PLATOON / Warehouse materialization
+   -> TPL_BLUE_GND_INF_RIFLE_SQUAD_9
+   -> AUFTRAG:NewONGUARD(...)
+   -> real RED hit
+   -> MOOSE EVENTS.Hit
+   -> CAS_IMMEDIATE MissionDemand
+   -> repeated hit -> active_duplicate
+   -> exactly one active CAS demand
 ```
 
-Nicht Bestandteil dieses Tests:
+Es wird kein eigener Acceptance-CampaignState erzeugt.
+
+## 2. Produktions- und Autoritätsgrenze
+
+Der Warehouse-Production-Base ist der bestehende Besitzer der NEW-Erzeugung des einzigen autoritativen CampaignState-Kontexts. Er registriert ihn als:
 
 ```text
-production CampaignState startup/persistence
-infantry casualty / return / restart settlement
-AUFTRAG:NewCAS(...)
-COMMANDER:AddMission(...) for CAS
-AIRWING/SQUADRON dispatch
-CAS success/failure
-attack severity model
-native world.addEventHandler
+OMW.AirOps.CampaignContext
 ```
 
-## 2. Gepinnter MOOSE-Stand
+und seeded dabei bereits die genehmigten AirOps-, AAR- und Ground-Bestände. `CampaignState` bleibt alleinige strategische Ressourcenautorität.
+
+`OMW_Ground_Base.lua` erzeugt keinen Store. Der neue kleine Produktions-Startup-Bridge
+
+```text
+scripts/ground/OMW_GroundStartup.lua
+```
+
+verbindet ausschließlich `OMW.Ground.Base` mit dem bereits existierenden `OMW.AirOps.CampaignContext`. Er erzeugt weder CampaignState noch DCS-/MOOSE-Assets.
+
+## 3. Gepinnter MOOSE-Stand
 
 ```text
 MOOSE release: 2.9.18
@@ -69,11 +81,10 @@ MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
 Moose.lua SHA-256: E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915
 ```
 
-Verwendeter Framework-Pfad:
+Verwendeter MOOSE-Pfad im eigentlichen Acceptance-Slice:
 
 ```text
 BRIGADE:New(...)
-WAREHOUSE:SetSpawnZone(...) through BRIGADE
 PLATOON:New(...)
 COHORT:AddMissionCapability(AUFTRAG.Type.ONGUARD, ...)
 LEGION:AddMission(...)
@@ -81,17 +92,16 @@ AUFTRAG:NewONGUARD(...)
 AUFTRAG:SetReturnToLegion(false)
 BRIGADE OnAfterArmyOnMission
 ARMYGROUP OnAfterMissionExecute
-BASE:New()
 BASE:HandleEvent(EVENTS.Hit, callback)
 BASE:UnHandleEvent(EVENTS.Hit)
 SCHEDULER:New(...)
 ```
 
-`AUFTRAG:NewONGUARD(Coordinate)` ist im tatsächlich gepinnten `Moose.lua` als öffentlicher GROUND/NAVAL-Auftrag vorhanden. Für den Hit-Pfad wird kein paralleler DCS-World-Eventhandler verwendet.
+Für Startup-/Ready-Gates wird der vorhandene MOOSE-`USERFLAG`-Pfad verwendet. Kein paralleler `world.addEventHandler`, kein MIST und keine `MissionScripting.lua`-Änderung.
 
-## 3. Bestehende OMW-Objekte
+## 4. Bestehende Mission-Editor-Objekte
 
-Der Acceptance-Harness setzt folgende bereits definierte OMW-Namen voraus:
+Erforderlich:
 
 ```text
 WH_BLUE_GND_FORTRESS
@@ -100,60 +110,69 @@ ZON_BLUE_GND_FORTRESS_PATROL_TEST_01
 TPL_BLUE_GND_INF_RIFLE_SQUAD_9
 ```
 
-Das Rifle-Squad-Template ist im aktuellen Ground-Template-Vertrag als
+Das Rifle-Squad-Template ist die bestehende 9-Mann-Darstellung:
 
 ```text
 7 x Soldier M4
 2 x Soldier M249
 ```
 
-dokumentiert und ausdrücklich als wiederverwendbare physische Repräsentation für Fußpatrouille und lokale Sicherung vorgesehen.
+Keine zusätzliche BLUE-Testzielgruppe ist erforderlich.
 
-Der Harness legt dafür branch-/testlokal an:
-
-```text
-BRIGADE alias: BDE_BLUE_GND_FORTRESS_STAGE2_A1
-PLATOON alias: PLT_BLUE_GND_FORTRESS_SENTRY_STAGE2_A1
-Mission name: OMW_STAGE2_A1_FORTRESS_SENTRY
-```
-
-Diese Aliase behaupten keine zusätzliche strategische Organisation oder Ressource.
-
-## 4. CampaignState-/GroundBase-Bootstrap
-
-Acceptance 1 ist ab BuilderVersion `FOB-ATTACK-HIT-ACCEPTANCE-1-3` selbständig. Das Bundle enthält die bereits vorhandenen produktiven Module:
+## 5. Zu bauende Runtime-Artefakte
 
 ```text
-scripts/campaign/OMW_CampaignState.lua
-scripts/logistics/OMW_GroundInitialStock.lua
-scripts/ground/OMW_GroundCampaignStateAdapter.lua
-scripts/ground/OMW_GroundAmmoRearmAdapter.lua
-scripts/ground/OMW_GroundRuntimeIntegration.lua
-scripts/ground/OMW_GroundBase.lua
+tools/build-air-ops-warehouse-production-base.ps1
+-> mission/runtime/logistics/OMW_AirOps_Warehouse_Base.lua
+
+tools/build-ground-production-base.ps1
+-> mission/ground-operations/dist/OMW_Ground_Base.lua
+
+tools/build-ground-startup.ps1
+-> mission/ground-operations/dist/OMW_Ground_Startup.lua
+
+tools/build-fob-attack-hit-acceptance-1.ps1
+-> mission/tests/fob-attack-support-demand/dist/OMW_FOB_Attack_Hit_Acceptance_1.lua
 ```
 
-Die Acceptance-Bootstrap-Datei
+Der Stage-2-Builder enthält nur MissionDemand, FOB-Attack-DemandPolicy, den MOOSE-Hit-Adapter und den Acceptance-Harness. Er enthält ausdrücklich **keinen** `CampaignState.New(...)`, keinen GroundBase und keinen Ground-Startup-Parallelpfad.
+
+## 6. Mission-Editor-Ladereihenfolge
+
+Die Actions werden in dieser Reihenfolge geladen:
 
 ```text
-mission/tests/fob-attack-support-demand/src/00-stage2-ground-context-bootstrap.lua
+1. Moose.lua
+2. OMW_AirOps_Warehouse_Base.lua
+3. OMW_Ground_Base.lua
+4. OMW_Ground_Startup.lua
+5. OMW_FOB_Attack_Hit_Acceptance_1.lua
 ```
 
-führt ausschließlich für diese Testmission folgende Komposition aus:
+Keine willkürlichen Sekunden-Delays zwischen diesen fünf Dateien. Die Abhängigkeiten sind synchron und fail-closed:
 
 ```text
-current GroundInitialStock.Rows
--> CampaignState.New(...)
--> exactly one fresh acceptance store
--> GroundBase.Configure(...)
--> OMW.Ground.Base = GroundBase
--> GroundBase.Attach(store, CampaignState, restored=false)
+OMW_AirOps_Warehouse_Base.lua
+-> OMW_WAREHOUSE_READY == 1
+
+OMW_Ground_Base.lua
+-> OMW_GROUND_BASE_LOADED == 1
+-> OMW_GROUND_READY == 0
+
+OMW_Ground_Startup.lua
+-> requires OMW_WAREHOUSE_READY == 1
+-> attaches exactly OMW.AirOps.CampaignContext
+-> OMW_GROUND_READY == 1
+
+Stage 2 Acceptance
+-> requires active OMW.Ground.Base.GetContext()
 ```
 
-Es wird **kein zweiter Store** erzeugt. Deshalb darf für diesen Acceptance-Lauf vor dem Stage-2-Bundle weder ein separates CampaignState-Startup-Bundle noch `OMW_Ground_Base.lua` geladen werden.
+Damit wird derselbe strategische Store vom Warehouse- und Ground-Stack verwendet.
 
-Diese Bootstrap-Komposition ist keine Entscheidung über den späteren produktiven CampaignState-Startup/Persistence-Pfad. Sie beseitigt ausschließlich die unnötige externe Startup-Abhängigkeit der Acceptance-Mission.
+## 7. Fortress-Sentry und PERSONNEL
 
-Für die neun Soldaten wird danach genau eine Consumption-Transaktion angelegt:
+Der Acceptance-Harness reserviert/consumed genau:
 
 ```text
 node: GROUND_NODE_FORTRESS
@@ -162,150 +181,86 @@ quantity: 9
 transaction: STAGE2-A1-FORTRESS-SENTRY-PERSONNEL
 ```
 
-Auf dem frischen aktuellen Ground-Bestand gilt:
+Bei frischem Produktionskontext entspricht dies `160 -> 151`; das Runtime-Kriterium bleibt `before - 9`.
+
+Danach:
 
 ```text
-160 -> 151 available GROUND_PERSONNEL
+BRIGADE alias: BDE_BLUE_GND_FORTRESS_STAGE2_A1
+PLATOON alias: PLT_BLUE_GND_FORTRESS_SENTRY_STAGE2_A1
+Mission: OMW_STAGE2_A1_FORTRESS_SENTRY
+Mission type: AUFTRAG ONGUARD
+Zone: ZON_BLUE_GND_FORTRESS_PATROL_TEST_01
 ```
 
-Wichtig: Acceptance 1 validiert nur die **Disposition/Commitment-Grenze** für diese Testgruppe. Tote, Überlebende, Rückkehr, Recredit und Restart dieser Infanteriegruppe werden hier nicht abgewickelt und nicht als produktiv validiert.
+Infantry casualty, survivor return, recredit und restart settlement bleiben außerhalb dieses Acceptance-Scopes.
 
-## 5. Mission-Editor-Gate
+## 8. Runtime-Ablauf und Angriff
 
-ChatGPT verändert die `.miz` nicht. Eine zusätzliche BLUE-Zielgruppe wie
-
-```text
-TST_BLUE_GND_FORTRESS_HIT_TARGET
-```
-
-ist ausdrücklich **nicht erforderlich**.
-
-Für den Lauf müssen die in Abschnitt 3 genannten bestehenden Fortress-Objekte/Templates in der tatsächlich verwendeten Mission vorhanden sein. Zusätzlich wird ein RED-Angreifer benötigt, der die materialisierte Rifle-Squad-Gruppe real beschießt. AI oder tester-kontrolliert ist zulässig; mindestens zwei echte RED-on-BLUE `EVENTS.Hit`-Ereignisse müssen an der dynamischen Runtime-Gruppe eintreffen.
-
-Keine Trigger-Explosion, kein künstlicher Event-Aufruf und kein Native-DCS-Testhandler ersetzt die realen Treffer.
-
-## 6. Bundle und Ladevertrag
-
-Builder:
+Vor dem RED-Angriff müssen im `dcs.log` insbesondere erscheinen:
 
 ```text
-tools/build-fob-attack-hit-acceptance-1.ps1
-```
-
-Output:
-
-```text
-mission/tests/fob-attack-support-demand/dist/OMW_FOB_Attack_Hit_Acceptance_1.lua
-```
-
-Ab BuilderVersion `FOB-ATTACK-HIT-ACCEPTANCE-1-3` ist für diese Acceptance im Mission Editor nur folgende Lua-Reihenfolge vorgesehen:
-
-```text
-1. Moose.lua
-2. OMW_FOB_Attack_Hit_Acceptance_1.lua
-```
-
-Nicht zusätzlich laden:
-
-```text
-OMW_Ground_Base.lua
-separates CampaignState startup bundle
-ältere Stage-2 Acceptance bundles
-```
-
-Zwischen `Moose.lua` und dem Acceptance-Bundle ist kein erfundener Zeitdelay erforderlich; die Reihenfolge der `MISSION START / DO SCRIPT FILE` Actions ist die Abhängigkeit. Der Acceptance-Harness startet die Fortress-BRIGADE anschließend selbst. Fünf Sekunden nach deren `OnAfterStart` wird die Sentry-Mission vorbereitet.
-
-## 7. Runtime-Ablauf
-
-Vor dem Angriff müssen im `dcs.log` nacheinander insbesondere erscheinen:
-
-```text
-[OMW][FOB-ATTACK-HIT-ACCEPTANCE-1][BOOTSTRAP] READY authority=single_acceptance_campaignstate fortressPersonnel=160
-PERSONNEL_COMMITTED ... quantity=9 before=160 after=151
-SENTRY_QUEUED ... TPL_BLUE_GND_INF_RIFLE_SQUAD_9
+[OMW][Logistics.AirOpsWarehouseProduction] READY ... groundStockSeeded=true ...
+[OMW][Ground.Startup] READY authority=OMW.AirOps.CampaignContext ... warehouseReady=1 groundReady=1
+PERSONNEL_COMMITTED ... quantity=9
+SENTRY_QUEUED ...
 SENTRY_ON_MISSION ...
 SENTRY_ONGUARD_EXECUTING ...
-READY targetGroup=<dynamic MOOSE/DCS runtime group> ...
+READY targetGroup=<dynamic runtime group> ...
 ```
 
-Erst ab dem letzten `READY targetGroup=...` ist der dynamische Runtime-Gruppenname im Hit-Adapter registriert. **Erst danach darf RED feuern.**
+Erst nach dem letzten `READY targetGroup=...` darf RED die materialisierte Sentry-Gruppe real beschießen.
 
-Nach dem ersten qualifizierten Treffer:
+Erwartung:
 
 ```text
-QUALIFIED_HIT count=1
-DEMAND_RESULT ... created=true reason=nil
+first real RED-on-BLUE hit
+-> QUALIFIED_HIT count=1
+-> DEMAND_RESULT created=true reason=nil
+
+second real RED-on-BLUE hit while demand active
+-> QUALIFIED_HIT count=2
+-> DEMAND_RESULT created=false reason=active_duplicate
+
+then
+-> PASS ... activeDemands=1 ... missionType=CAS_IMMEDIATE ... installationId=BLUE_GROUND_COP_FORTRESS
 ```
 
-Nach einem zweiten realen Treffer derselben materialisierten Fortress-Gruppe, solange der erste Demand aktiv ist:
+## 9. PASS-Kriterien
+
+Alle müssen gleichzeitig gelten:
 
 ```text
-QUALIFIED_HIT count=2
-DEMAND_RESULT ... created=false reason=active_duplicate
+1. Warehouse Production Base erzeugt/registriert genau den gemeinsamen OMW.AirOps.CampaignContext und erreicht OMW_WAREHOUSE_READY=1.
+2. OMW_Ground_Base.lua ist geladen.
+3. OMW_Ground_Startup.lua attached GroundBase an exakt denselben CampaignState-Store und erreicht OMW_GROUND_READY=1.
+4. Kein zweiter CampaignState-Store wird vom Stage-2-Bundle erzeugt.
+5. Genau 9 Fortress GROUND_PERSONNEL werden committed/consumed.
+6. TPL_BLUE_GND_INF_RIFLE_SQUAD_9 wird über MOOSE BRIGADE/PLATOON/Warehouse materialisiert.
+7. Dieselbe Runtime-Gruppe erreicht AUFTRAG ONGUARD.
+8. MOOSE EVENTS.Hit liefert mindestens zwei reale RED-on-BLUE Treffer.
+9. Erster Treffer erzeugt genau einen CAS_IMMEDIATE Demand.
+10. Zweiter Treffer liefert active_duplicate und erzeugt keinen zweiten Demand.
+11. Genau ein aktiver Fortress-CAS-Demand verbleibt.
+12. Kein CAS-AUFTRAG/COMMANDER/AIRWING/SQUADRON-Dispatch wird ausgeführt.
+13. Kein world.addEventHandler/MIST/MissionScripting.lua-Pfad wird verwendet.
+14. dcs.log enthält den expliziten PASS-Eintrag.
 ```
 
-Anschließend muss der Harness genau einen aktiven Demand bestätigen und ausgeben:
+## 10. Provenienz
 
-```text
-PASS qualifiedHits=<n>=2 activeDemands=1 ... missionType=CAS_IMMEDIATE installationId=BLUE_GROUND_COP_FORTRESS ... personnelCommitted=9
-```
-
-Der Hit-Listener wird nach PASS über MOOSE `UnHandleEvent` beendet.
-
-## 8. PASS-Kriterien
-
-Alle Kriterien müssen gleichzeitig erfüllt sein:
-
-```text
-1. Das Bundle erzeugt genau einen frischen Acceptance-CampaignState aus dem aktuellen GroundInitialStock und attached GroundBase erfolgreich.
-2. Fortress startet mit 160 available GROUND_PERSONNEL.
-3. Genau 9 Fortress GROUND_PERSONNEL werden für die Test-Sentry-Deployment-Transaktion committed/consumed; danach 151 available.
-4. TPL_BLUE_GND_INF_RIFLE_SQUAD_9 wird über MOOSE BRIGADE/PLATOON/Warehouse materialisiert.
-5. Dieselbe Runtime-Gruppe erreicht AUFTRAG ONGUARD und wird danach dynamisch im Hit-Adapter registriert.
-6. MOOSE EVENTS.Hit liefert mindestens zwei reale RED-on-BLUE Treffer an dieser Gruppe.
-7. Beide Treffer werden als BLUE_GROUND_COP_FORTRESS qualifiziert.
-8. Erster Treffer erzeugt genau einen CAS_IMMEDIATE Demand.
-9. Zweiter Treffer erzeugt keinen zweiten Demand und liefert active_duplicate.
-10. MissionDemand führt danach genau einen aktiven Demand für Fortress.
-11. Kein CAS-AUFTRAG/COMMANDER/AIRWING/SQUADRON-Dispatch wird ausgeführt.
-12. Kein world.addEventHandler/MIST/MissionScripting.lua-Pfad wird verwendet.
-13. dcs.log enthält den expliziten PASS-Eintrag.
-```
-
-## 9. Nicht aus Acceptance 1 ableiten
-
-Ein PASS beweist nicht:
-
-```text
-production CampaignState startup/persistence
-Infantry casualty settlement
-Infantry survivor return / recredit
-cross-session restoration
-production-wide sentry generation
-all Fortress objects as attack triggers
-CAS aircraft dispatch or mission success
-arbitrary severity/priority classification
-```
-
-Diese Grenzen werden nicht durch den Testlauf erweitert.
-
-## 10. Acceptance-Provenienz
-
-Erst nach dem realen Lauf werden eingetragen:
+Erst nach realem DCS-Lauf werden dokumentiert:
 
 ```text
 Git commit
-BuilderVersion
-Bundle SHA-256
-MIZ filename
-MIZ SHA-256
-internal mission SHA-256, soweit nach Workflow erhoben
+BuilderVersions
+SHA-256 aller vier Runtime-Bundles
+MIZ filename + SHA-256
 DCS version
-MOOSE commit
-Moose.lua SHA-256
+MOOSE commit + Moose.lua SHA-256
 dcs.log SHA-256
 debrief.log SHA-256, soweit erzeugt
 Result
 ```
 
-Bis dahin bleibt dieser Stand `PLANNED` / `validated_in_dcs: false`.
+Bis dahin bleibt `PLANNED` / `validated_in_dcs: false`.
