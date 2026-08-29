@@ -10,21 +10,36 @@
 
 local InitialStock = {}
 
-InitialStock.SchemaVersion = "OMW-GROUND-INITIAL-STOCK-2"
+InitialStock.SchemaVersion = "OMW-GROUND-INITIAL-STOCK-3"
 InitialStock.Unit = "count"
 
 InitialStock.ResourceId = {
+  PERSONNEL = "GROUND_PERSONNEL",
   SUPPLY = "GROUND_SUPPLY_PACKAGE",
   AMMO = "GROUND_AMMO_PACKAGE",
   FUEL = "GROUND_FUEL_PACKAGE",
 }
 
 InitialStock.ResupplyThresholds = {
-  reorderRatio = 0.50,
-  criticalRatio = 0.25,
+  commodityReorderRatio = 0.50,
+  commodityCriticalRatio = 0.25,
+  personnelReorderRatio = 0.80,
+}
+
+InitialStock.ReorderComparison = {
+  AT_OR_BELOW = "AT_OR_BELOW",
+  BELOW = "BELOW",
+  DISABLED = "DISABLED",
 }
 
 local TRANSFERABLE_RESOURCE_CLASSES = {
+  PERSONNEL = true,
+  SUPPLY = true,
+  AMMO = true,
+  FUEL = true,
+}
+
+local COMMODITY_RESOURCE_CLASSES = {
   SUPPLY = true,
   AMMO = true,
   FUEL = true,
@@ -43,17 +58,24 @@ local function resourceId(nodeId, resourceClass)
 end
 
 local function thresholds(resourceClass, target)
-  if not TRANSFERABLE_RESOURCE_CLASSES[resourceClass] then
-    return 0, 0
+  if resourceClass == "PERSONNEL" then
+    return target * InitialStock.ResupplyThresholds.personnelReorderRatio,
+      0,
+      InitialStock.ReorderComparison.BELOW
   end
 
-  return target * InitialStock.ResupplyThresholds.reorderRatio,
-    target * InitialStock.ResupplyThresholds.criticalRatio
+  if COMMODITY_RESOURCE_CLASSES[resourceClass] then
+    return target * InitialStock.ResupplyThresholds.commodityReorderRatio,
+      target * InitialStock.ResupplyThresholds.commodityCriticalRatio,
+      InitialStock.ReorderComparison.AT_OR_BELOW
+  end
+
+  return 0, 0, InitialStock.ReorderComparison.DISABLED
 end
 
 local function row(nodeId, resourceClass, initial, supplyParent)
   local target = initial
-  local reorder, critical = thresholds(resourceClass, target)
+  local reorder, critical, reorderComparison = thresholds(resourceClass, target)
 
   return {
     nodeId = nodeId,
@@ -65,6 +87,7 @@ local function row(nodeId, resourceClass, initial, supplyParent)
     target = target,
     reorder = reorder,
     critical = critical,
+    reorderComparison = reorderComparison,
     supplyParent = supplyParent,
     mappingStatus = "OMW_GROUND_DESIGN_STOCK",
   }
@@ -80,6 +103,7 @@ local function lossRow(nodeId, resourceClass, supplyParent)
     target = 0,
     reorder = 0,
     critical = 0,
+    reorderComparison = InitialStock.ReorderComparison.DISABLED,
     supplyParent = supplyParent,
     mappingStatus = "OMW_RUNTIME_AUDIT",
   }
@@ -129,7 +153,11 @@ local function migratedResourceId(map, nodeId, oldResourceId)
   return byLegacy[oldResourceId]
 end
 
-local function rejectLegacyGroundCommitment(recordId, oldResourceId, newResourceId)
+local function rejectUnsupportedLegacyGroundCommitment(recordId, oldResourceId, newResourceId)
+  if newResourceId == InitialStock.ResourceId.PERSONNEL then
+    return
+  end
+
   if type(recordId) == "string" and recordId:sub(1, 14) == "GROUND-COMMIT:" then
     fail(string.format(
       "cannot migrate unsupported legacy commodity commitment id=%s resourceId=%s targetResourceId=%s",
@@ -140,12 +168,13 @@ local function rejectLegacyGroundCommitment(recordId, oldResourceId, newResource
   end
 end
 
--- Migrates the supported pre-v2 Ground snapshot representation without mutating
--- the caller's snapshot. The accepted Ground settlement path only committed
--- PERSONNEL and VEHICLE; those IDs remain unchanged. Legacy SUPPLY/AMMO/FUEL
--- node keys are renamed to the shared transferable package IDs. A legacy Ground
--- commodity commitment is rejected rather than silently rewritten because such
--- a settlement contract was never part of the accepted Foundation baseline.
+-- Migrates supported pre-v3 Ground snapshots without mutating the caller's
+-- snapshot. Legacy node-specific PERSONNEL IDs are normalized to the shared
+-- transferable PERSONNEL resource. Legacy SUPPLY/AMMO/FUEL node keys continue
+-- to migrate to their shared package IDs. Existing PERSONNEL commitments are
+-- supported because PERSONNEL settlement predates this normalization; legacy
+-- commodity commitments remain rejected because they were never part of the
+-- accepted Foundation settlement contract.
 function InitialStock.MigrateSnapshot(snapshot)
   if type(snapshot) ~= "table" then
     fail("snapshot must be a table")
@@ -178,7 +207,7 @@ function InitialStock.MigrateSnapshot(snapshot)
   for _, transaction in ipairs(migrated.transactions or {}) do
     local newResourceId = migratedResourceId(map, transaction.originNodeId, transaction.resourceId)
     if newResourceId then
-      rejectLegacyGroundCommitment(transaction.transactionId, transaction.resourceId, newResourceId)
+      rejectUnsupportedLegacyGroundCommitment(transaction.transactionId, transaction.resourceId, newResourceId)
       transaction.resourceId = newResourceId
     end
   end
