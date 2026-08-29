@@ -136,9 +136,8 @@ function Adapter.New(spec)
 end
 
 function Instance:_log(message)
-  local logger = self.opsZone
-  if logger and type(logger.I) == "function" then
-    logger:I(TAG .. " " .. tostring(message))
+  if self.opsZone and type(self.opsZone.I) == "function" then
+    self.opsZone:I(TAG .. " " .. tostring(message))
   end
 end
 
@@ -243,11 +242,14 @@ function Instance:Start()
 
   opsZone:SetObjectCategories({ Object.Category.UNIT })
   opsZone:SetUnitCategories({ Unit.Category.GROUND_UNIT })
+  -- OPSZONE's defended-zone Attacked path checks RED aggregate threat against this threshold.
   opsZone:SetCaptureThreatlevel(self.captureThreatlevel)
+  -- OPSZONE's defended-zone Attacked path does not consult nunitsCapture; this is for capture semantics.
   opsZone:SetCaptureNunits(self.captureNunits)
   opsZone:SetDrawZone(false)
   opsZone:SetMarkZone(false)
   if self.updateSeconds ~= nil then
+    -- The pinned OPSZONE has no setter; onafterStart reads this public class field directly.
     opsZone.UpdateSeconds = self.updateSeconds
   end
 
@@ -262,7 +264,7 @@ function Instance:Start()
   opsZone:Start()
 
   self:_log(string.format(
-    "started MOOSE OPSZONE security perimeter zone=%s radiusM=%s owner=%s updateSeconds=%s threatlevel=%s nunits=%s",
+    "started MOOSE OPSZONE security perimeter zone=%s radiusM=%s owner=%s updateSeconds=%s threatlevel=%s captureNunits=%s",
     tostring(self.zoneName),
     tostring(self.radiusM),
     tostring(self.blueCoalition),
