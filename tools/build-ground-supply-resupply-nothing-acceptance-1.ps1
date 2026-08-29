@@ -12,7 +12,7 @@ $acceptanceSourceFile = Join-Path $repoRoot 'mission\tests\ground-resupply-execu
 $distDir = Join-Path $repoRoot 'mission\tests\ground-resupply-execution\dist'
 $outputFile = Join-Path $distDir 'OMW_Ground_SUPPLY_Resupply_NOTHING_Acceptance_1.lua'
 
-$builderVersion = 'GROUND-SUPPLY-RESUPPLY-NOTHING-ACCEPTANCE-1-1'
+$builderVersion = 'GROUND-SUPPLY-RESUPPLY-NOTHING-ACCEPTANCE-1-2'
 $testId = 'GROUND-SUPPLY-RESUPPLY-NOTHING-ACCEPTANCE-1'
 $mooseCommit = '73d3ed119cd9e7e3f2cfcabbaa34513d30529b54'
 $mooseSha256 = 'e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915'
@@ -48,6 +48,8 @@ $requiredMarkers = @(
   'AUFTRAG:NewNOTHING',
   'AUFTRAG.Type.NOTHING',
   'SetFormation(ENUMS.Formation.Vehicle.OnRoad)',
+  'SetReturnToLegion(false)',
+  'state.armyGroup:RTZ(state.originZone, ENUMS.Formation.Vehicle.OnRoad)',
   'MarkLoading',
   'MarkInTransit',
   'MarkDelivered',
@@ -55,7 +57,7 @@ $requiredMarkers = @(
   'DESTINATION_ZONE_ENTERED',
   'DELIVERY_CONFIRMED',
   'OnAfterMissionDone',
-  'returnMode=MOOSE_RETURN_TO_LEGION',
+  'RETURN_RTZ_ISSUED',
   'OnAfterReturned',
   'WAREHOUSE_ADD_ASSET',
   'GROUND_NODE_JOYCE',
@@ -83,7 +85,6 @@ $forbiddenPatterns = @(
   'AddCargoStorage',
   'NewTROOPTRANSPORT',
   'RelocateCohort',
-  'SetReturnToLegion\(false\)',
   'SPAWN:',
   'OUTBOUND_TIMEOUT',
   'RETURN_TIMEOUT'
@@ -112,7 +113,7 @@ $header = @"
 -- GitCommit: $commit
 -- GeneratedUtc: $generatedUtc
 -- TestId: $testId
--- Scope: Stage 1D-S Joyce -> Honaker CampaignState SUPPLY shortage / MissionDemand / MOOSE AUFTRAG NOTHING / normal MOOSE return lifecycle acceptance.
+-- Scope: Stage 1D-S Joyce -> Honaker CampaignState SUPPLY shortage / MissionDemand / MOOSE AUFTRAG NOTHING / accepted Stage 1C delayed explicit OnRoad RTZ lifecycle acceptance.
 -- MOOSECommit: $mooseCommit
 -- MooseLuaSHA256: $mooseSha256
 -- StrategicAuthority: existing OMW Ground CampaignState only.
@@ -159,10 +160,11 @@ Write-Host 'PhysicalTemplate: TPL_BLUE_CONVOY_LIGHT_06'
 Write-Host 'DcsWarehouseCargoAuthority: false'
 Write-Host 'MooseWarehouseCargoAuthority: false'
 Write-Host 'PersistentService: false'
-Write-Host 'ReturnMode: MOOSE ReturnToLegion lifecycle'
+Write-Host 'ReturnMode: explicit MOOSE ARMYGROUP RTZ to Joyce ACCESS after MissionDone'
 Write-Host 'OutboundTravelTimeoutSec: none'
 Write-Host 'DestinationCheckIntervalSec: 15'
-Write-Host 'DestinationExecutionGraceSec: 90'
+Write-Host 'DestinationExecutionGraceSec: 90 after destination-zone observation only'
+Write-Host 'ReturnIssueDelaySec: 30'
 Write-Host 'ReturnTravelTimeoutSec: none'
 Write-Host 'ReturnSettlementDelaySec: 12'
 Write-Host 'AcceptanceCompletion: event-driven'
