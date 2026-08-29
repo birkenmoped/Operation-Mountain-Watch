@@ -268,3 +268,10 @@ AAR-fähiger CAS-Flug
 ```
 
 Dieser Test wiederholt nicht die bereits abgeschlossene AAR-Acceptance.
+
+
+## Addendum 29.08.2026 – UAV-ISR-AIRWING-Queue und Einzelasset-Binding
+
+Für die frische Main-Reconciliation wurde der gepinnte MOOSE-Stand auf die Kombination aus strategischer Einzelressource und AIRWING-Queue geprüft. `AIRWING:AddMission(...)` ist der öffentliche Queue-Pfad. `AUFTRAG:AddAsset(...)` bindet dagegen ein einzelnes `WAREHOUSE.Assetitem`; der direkte MOOSE-Pfad `LEGION:MissionAssign(...)` fordert dieses Asset an, nutzt aber nicht die normale AIRWING-Queue. Der Source-Review belegt keine öffentliche API, die beides atomar kombiniert. `WAREHOUSE:OnAfterNewAsset(..., asset, ...)` ist der öffentliche Lifecycle-Hook für die session-lokale MOOSE-`asset.uid`-Erfassung; die strategische OMW-ID bleibt davon getrennt.
+
+Keine DCS-Acceptance und keine produktive Ausnahme sind aus diesem Addendum abzuleiten. Details und Entscheidungsoptionen: [OMW-UAV-ISR-REQUEST-MAIN-RECONCILIATION](../91-uav-isr-request-orchestration.md).
