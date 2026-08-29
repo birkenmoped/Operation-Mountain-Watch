@@ -8,7 +8,10 @@ local Policy = {}
 
 local TAG = "[OMW][ResourceDemandPolicy]"
 
-Policy.SchemaVersion = "OMW-RESOURCE-DEMAND-POLICY-2"
+-- The strict BELOW comparison is an optional row field and preserves the
+-- existing default AT_OR_BELOW behavior, so the public policy schema remains
+-- backward compatible with accepted acceptance builders.
+Policy.SchemaVersion = "OMW-RESOURCE-DEMAND-POLICY-1"
 
 Policy.Level = {
   REORDER = "REORDER",
