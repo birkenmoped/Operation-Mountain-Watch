@@ -86,6 +86,15 @@ den tatsächlich gepinnten Quellstand geprüft. In den offiziellen Beispielen
 wurde kein Gegenbeispiel für eine öffentliche Einzelasset-Turnover-Ausnahme
 gefunden.
 
+Nachvollziehbare externe Quellen:
+
+- [MOOSE AUFTRAG API](https://flightcontrol-master.github.io/MOOSE_DOCS/Documentation/Ops.Auftrag.html)
+- [MOOSE WAREHOUSE API](https://flightcontrol-master.github.io/MOOSE_DOCS/Documentation/Functional.Warehouse.html)
+- [MOOSE AIRWING-Quellcode](https://github.com/FlightControl-Master/MOOSE/blob/master-ng/Moose%20Development/Moose/Ops/AirWing.lua)
+- [offizielles MOOSE-Repository](https://github.com/FlightControl-Master/MOOSE)
+- [offizielle Beispielmissionen](https://github.com/FlightControl-Master/MOOSE_MISSIONS)
+- [entpackte offizielle Beispielmissionen](https://github.com/FlightControl-Master/MOOSE_MISSIONS_UNPACKED)
+
 ## 3. Die geprüfte Lücke
 
 Die beiden öffentlichen Wege sind **nicht kombinierbar**, ohne ihr jeweiliges
