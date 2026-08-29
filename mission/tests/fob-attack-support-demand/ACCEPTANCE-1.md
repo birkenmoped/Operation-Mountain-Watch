@@ -174,7 +174,26 @@ Damit schützt die Testgruppe den Fortress-Warehouse-/FOB-Bereich, ohne dass der
 
 Infantry casualty, survivor return, recredit und restart settlement bleiben außerhalb dieses Acceptance-Scopes.
 
-## 7. Runtime-Ablauf und Angriff
+## 7. Erster realer DCS-Lauf – FAIL vor Sentry-Start
+
+Der Lauf vom 2026-08-29 mit `OMW_Template_v20_GroundWorks(9).miz` erreichte den bestehenden Warehouse-/Ground-Ready-Pfad, scheiterte aber vor der Sentry-Materialisierung an der falschen Harness-Annahme:
+
+```text
+[OMW][FOB-ATTACK-HIT-ACCEPTANCE-1] FAIL missing object=ZON_BLUE_GND_FORTRESS_PATROL_TEST_01
+```
+
+Die Mission enthielt diese Zone nicht. Dieser Lauf validiert Stage 2 nicht; er dokumentiert ausschließlich den fehlgeschlagenen Acceptance-Harness.
+
+Fehlerkorrektur:
+
+```text
+vorher: externe Mission-Editor-Zone ZON_BLUE_GND_FORTRESS_PATROL_TEST_01 erforderlich
+jetzt: Guard-Punkt wird aus WH_BLUE_GND_FORTRESS über BRIGADE/WAREHOUSE:GetCoordinate() abgeleitet
+```
+
+Es wird ausdrücklich **keine neue Mission-Editor-Zone** als Workaround gefordert.
+
+## 8. Runtime-Ablauf und Angriff
 
 Vor dem RED-Angriff müssen im `dcs.log` insbesondere erscheinen:
 
@@ -203,7 +222,7 @@ then
 -> PASS ... activeDemands=1 ... missionType=CAS_IMMEDIATE ... installationId=BLUE_GROUND_COP_FORTRESS
 ```
 
-## 8. PASS-Kriterien
+## 9. PASS-Kriterien
 
 Alle müssen gleichzeitig gelten:
 
@@ -224,9 +243,9 @@ Alle müssen gleichzeitig gelten:
 14. dcs.log enthält den expliziten PASS-Eintrag.
 ```
 
-## 9. Provenienz
+## 10. Provenienz
 
-Erst nach realem DCS-Lauf werden dokumentiert:
+Erst nach realem DCS-PASS werden dokumentiert:
 
 ```text
 Git commit
