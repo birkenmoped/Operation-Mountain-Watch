@@ -281,9 +281,59 @@ Alle müssen gleichzeitig gelten:
 
 Der `active_duplicate`-Vertrag für wiederholte Threat-Incidents wird zusätzlich durch die MissionDemand-/Adapter-CI geprüft; Acceptance 1 verlangt keinen künstlich erzeugten zweiten physischen Treffer.
 
-## 11. Provenienz
+## 11. Vorbereiteter lokaler Build – 2026-08-29
 
-Erst nach realem DCS-PASS werden dokumentiert:
+Der Projektinhaber hat den Remote-Stand erfolgreich per Fast-Forward in den vorgesehenen Worktree gezogen und den Stage-2-Threat-Acceptance-Bundle lokal gebaut.
+
+Dokumentierte reale Konsolenausgabe:
+
+```text
+branch: agent/fob-attack-support-demand
+GitCommit: 43e728e1a80ae8e36d62bcc29101c67c38e38db3
+BuilderVersion: FOB-ATTACK-THREAT-ACCEPTANCE-1-2
+TestId: FOB-ATTACK-THREAT-ACCEPTANCE-1
+GeneratedUtc: 2026-08-29T19:52:34Z
+MOOSECommit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+MooseLuaSHA256: E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915
+BundleSHA256: E51C997A869E0972EC106B7C8DF2914D0C06958B3352B1FB3B1FD9E831ED74F3
+```
+
+Der externe `Get-FileHash`-Aufruf bestätigte denselben Bundle-Hash:
+
+```text
+E51C997A869E0972EC106B7C8DF2914D0C06958B3352B1FB3B1FD9E831ED74F3
+```
+
+Zusätzliche lokale Source-Hashes aus demselben Build:
+
+```text
+scripts/campaign/OMW_MissionDemand.lua
+E348E75B87135B99D780E07CA6B6FB7C3C530E048E9C6DE790328D147DE32848
+
+scripts/campaign/OMW_FobAttackDemandPolicy.lua
+F1BB5041382823B8B4DD6EE2EA6418B38C834C3347FBAAD633F8F24DA1A07FF5
+
+scripts/ground/OMW_FobThreatOpsZoneAdapter.lua
+C53BE08B5F0ABCEA8DF3FADDA9EA41E2FEBAACA34FED1B3D1D195F63E0D6650D
+
+mission/tests/fob-attack-support-demand/src/01-fob-attack-threat-acceptance-1.lua
+C979A41892320006DB83A2965A41BBC52203877479F611B30085D4CB6FC791FE
+```
+
+Dieser Abschnitt dokumentiert ausschließlich die reale Build-Provenienz. Er ist **kein** DCS-Runtime-PASS und ändert `validated_in_dcs: false` nicht.
+
+Der lokale Worktree enthielt vor dem Pull bereits untracked Bereiche:
+
+```text
+mission/ground-operations/
+mission/tests/fob-attack-support-demand/dist/
+```
+
+Diese wurden nicht als Branch-Inhalt interpretiert und durch den Fast-Forward nicht als validierte Repository-Artefakte übernommen.
+
+## 12. Provenienz nach realem DCS-Lauf
+
+Erst nach realem DCS-PASS werden zusätzlich dokumentiert:
 
 ```text
 Git commit
