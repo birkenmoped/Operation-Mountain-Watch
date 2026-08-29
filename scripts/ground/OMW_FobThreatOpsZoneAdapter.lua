@@ -177,7 +177,7 @@ function Instance:Start()
   local adapter = self
   function opsZone:OnAfterAttacked(From, Event, To, AttackerCoalition)
     local demand, created, reason, incident = adapter:ProcessThreat(AttackerCoalition)
-    if attackerCoalition == adapter.redCoalition and adapter.onThreatStarted then
+    if demand ~= nil and adapter.onThreatStarted then
       adapter.onThreatStarted(adapter, self, demand, created, reason, incident)
     end
   end
