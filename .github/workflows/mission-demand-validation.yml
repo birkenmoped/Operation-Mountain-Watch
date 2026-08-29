@@ -7,8 +7,10 @@ on:
       - "scripts/campaign/OMW_ResourceDemandPolicy.lua"
       - "scripts/campaign/OMW_FobAttackDemandPolicy.lua"
       - "scripts/ground/OMW_FobAttackHitAdapter.lua"
+      - "scripts/ground/OMW_GroundStartup.lua"
       - "scripts/logistics/OMW_GroundInitialStock.lua"
       - "tests/mission-demand/**"
+      - "tests/ground/test_ground_startup.lua"
       - ".github/workflows/mission-demand-validation.yml"
 
 permissions:
@@ -31,3 +33,7 @@ jobs:
       - name: Run MissionDemand contract tests
         shell: bash
         run: lua5.4 tests/mission-demand/run.lua
+
+      - name: Run Ground startup bridge test
+        shell: bash
+        run: lua5.4 tests/ground/test_ground_startup.lua
