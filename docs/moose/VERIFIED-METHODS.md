@@ -11,14 +11,15 @@ authoritative_for:
   - source-reviewed WAREHOUSE parking method boundaries
   - AAR runtime method evidence for the exact documented acceptance provenance
   - AWACS routing and fuel-driven AAR method evidence for the exact documented provenance
+  - Stage 1D-P Air PERSONNEL FlightPath, LANDAT task and physical-return method evidence
   - documented validation scope and limitations
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
   - method register without lifecycle timing, vertical-option and COMMANDER details
 superseded_by:
-source_branch: agent/awacs-external-lifecycle-foundation
-source_commit: 998080da9a7a71dae7f713b9590dfeadb5ae93ba
+source_branch: agent/automatic-response-orchestration-continuation
+source_commit: GIT_HISTORY
 validated_in_dcs: partial
 ---
 
@@ -31,6 +32,7 @@ Dieses Register führt praktisch geprüfte MOOSE-Aufrufe und den jeweils belegte
 Ergänzende Lifecycle-Autorität:
 
 - [`OMW-MOOSE-AIRWING-SQUADRON-WAREHOUSE-LIFECYCLE`](AIRWING-SQUADRON-WAREHOUSE-LIFECYCLE.md)
+- [`Stage 1D-P Air PERSONNEL Acceptance-4`](GROUND-AIR-PERSONNEL-RESUPPLY-STAGE-1D-P-ACCEPTANCE-4-FINAL.md)
 
 Historische Vollfassung:
 
@@ -745,3 +747,60 @@ Stage 1B2 FUELSUPPLY:
 ```
 
 Grenze: Diese Eintraege bestaetigen weder eine DCS-Fuelmengen-Synchronisation noch einen generischen Executor fuer weitere CampaignState-Ressourcen.
+
+## Stage 1D-P Air PERSONNEL Acceptance-4 method reconciliation - 29.08.2026
+
+Exakte Provenienz:
+
+```text
+Branch: agent/automatic-response-orchestration-continuation
+Acceptance commit: be8adc3ad1e2cfa6de7a25252cd8b217caeccde3
+Builder: AIR-PERSONNEL-FLIGHTPATH-RETURN-ACCEPTANCE-4-1
+Bundle SHA-256: C2BD325AF48BF6EA08936BCA666E4460293B60CC36FB8FE0181BC5140DF9ABD3
+Mission: OMW_Template_v20_GroundWorks.miz
+Mission SHA-256: 3B93F9817379BA6C66C8C02DD2142D1EDA3D88090CB8FC88973D4DAC45EE6B11
+DCS: 2.9.29.27278 MT
+MOOSE release: 2.9.18
+MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+Moose.lua SHA-256: E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915
+Result: PASS
+```
+
+| Methode / Callback | Status | Exakt bestätigter Stage-1D-P-Umfang |
+|---|---|---|
+| `PATHLINE:FindByName("OMW_FlightPath")` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Owner-authored Mission-Editor-Linie wurde im realen DCS-Lauf als MOOSE `PATHLINE` aufgelöst. |
+| `PATHLINE:GetCoordinates()` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | 84 Punkte wurden gelesen; 14 Punkte bildeten den tatsächlich verwendeten Jalalabad-Fortress-Teilpfad. |
+| `COORDINATE:HeadingTo(...)` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Segmentheading für die OMW-Flugkorridor-Lane verwendet. |
+| `COORDINATE:Translate(...)` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | 500-m-Lateralversatz ausgeführt; die akzeptierte OMW-Runtime-Kalibrierung verwendet `heading + 90°`. |
+| `AUFTRAG:NewLANDATCOORDINATE(...)` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | CH-47 führte physische Fortress-Zwischenlandung und etwa 30 s Dwell aus. |
+| `AUFTRAG:SetMissionEgressCoord(...)` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Return-/Egress-Komposition wurde geflogen; zugleich wurde bestätigt, dass MissionDone erst nach dem LANDAT-Task kommt. |
+| `AUFTRAG:AssignSquadrons(...)` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Auftrag war explizit an `SQ_US_JBAD_CH47_HEAVYLIFT` gebunden. |
+| `AUFTRAG:GetGroupWaypointIndex(...)` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Mission-Waypoint wurde zur FlightPath-Komposition gruppenspezifisch ermittelt. |
+| `AUFTRAG:GetGroupEgressWaypointUID(...)` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Return-Korridor wurde vor dem Missions-Egress gruppenspezifisch komponiert. |
+| `AUFTRAG:GetGroupWaypointTask(flightGroup)` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Exakter LANDAT-Task wurde für das Delivery-Settlement identifiziert. |
+| `FLIGHTGROUP:AddWaypoint(...)` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | 14 Outbound- und 13 Return-Korridorwaypoints wurden installiert und physisch geflogen. |
+| `FLIGHTGROUP / OPSGROUP OnAfterTaskDone` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Matching LANDAT-Task wurde 4.1 m von der Fortress-LZ abgeschlossen; dies ist für diesen Scope der akzeptierte physische Delivery-Nachweis. |
+| `FLIGHTGROUP OnAfterMissionDone` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Callback trat später nach dem Delivery-Settlement auf; bei gesetztem Egress ist er Diagnose, nicht Fortress-Delivery-Instant. |
+| `FLIGHTGROUP OnAfterLanded` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Physische Jalalabad-Heimlandung wurde vor dem Asset-Return bestätigt. |
+| `OPSGROUP:Get2DDistance(...)` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | LANDAT-Task wurde mit 4.1 m Zielabstand innerhalb des 250-m-Acceptance-Radius bestätigt. |
+| `AIRWING:AddMission(...)` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Jalalabad AIRWING dispatchte den gebundenen CH-47-Auftrag. |
+| `AIRWING OnAfterFlightOnMission` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Zugewiesene physische FLIGHTGROUP wurde vor Korridorinsertion erfasst. |
+| `LEGION/AIRWING OnAfterLegionAssetReturned` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Asset-Return trat erst nach physischer Jalalabad-Landung auf; allein ist dieser Callback kein RTB-Nachweis. |
+
+Verworfene Interpretationen aus realen DCS-Läufen:
+
+```text
+second OnAfterTakeoff near Fortress
+-> not a mandatory PERSONNEL delivery signal
+
+MissionDone near Fortress
+-> wrong with mission egress; MissionDone is later mission-level completion
+
+LegionAssetReturned alone
+-> insufficient as physical home-return proof
+
+foreign FARP/AIRBASE as intermediate Fortress landing
+-> rejected for this AIRWING path because Arrived/Legion return can terminate the physical home-return lifecycle
+```
+
+Die Validierung ist strikt auf die oben dokumentierte MIZ-, Bundle-, DCS- und MOOSE-Provenienz begrenzt. Vollständige Evidenz: [`Stage 1D-P Air PERSONNEL Acceptance-4`](GROUND-AIR-PERSONNEL-RESUPPLY-STAGE-1D-P-ACCEPTANCE-4-FINAL.md).
