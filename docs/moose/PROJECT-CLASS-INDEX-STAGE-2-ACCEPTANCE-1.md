@@ -107,7 +107,19 @@ The Stage-2 bundle creates no CampaignState and no parallel Ground context.
 
 CampaignState remains strategic authority. BRIGADE/PLATOON/Warehouse only materialize the physical squad. Infantry casualty/return/restart settlement remains outside this acceptance.
 
-## 6. Negative boundary
+## 6. Corrected failed assumption from first DCS run
+
+The first real Stage-2 Acceptance-1 attempt on 2026-08-29 failed before sentry materialization because the harness required the nonexistent Mission-Editor zone:
+
+```text
+ZON_BLUE_GND_FORTRESS_PATROL_TEST_01
+```
+
+The correction is architectural, not a Mission-Editor workaround: the Sentry guard point is now derived directly from the existing Fortress warehouse through the source-verified MOOSE inheritance/API path `BRIGADE -> LEGION -> WAREHOUSE:GetCoordinate()`.
+
+This removes the unnecessary Mission-Editor dependency rather than asking the owner to add a trigger zone that the system can derive itself.
+
+## 7. Negative boundary
 
 Not used:
 
@@ -127,7 +139,7 @@ COMMANDER:AddMission for CAS
 AIRWING/SQUADRON dispatch
 ```
 
-## 7. Reconciliation
+## 8. Reconciliation
 
 After a real Acceptance-1 run with complete provenance:
 
