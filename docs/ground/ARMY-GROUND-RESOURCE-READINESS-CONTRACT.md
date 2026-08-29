@@ -22,6 +22,7 @@ supersedes:
   - node-specific-only PERSONNEL transfer model
 superseded_by:
 source_branch: agent/automatic-response-orchestration-continuation
+source_commit: PENDING_MERGE
 validated_in_dcs: partial
 ---
 
@@ -315,7 +316,7 @@ DCS: 2.9.28.26385 MT
 Result: PASS
 ```
 
-The new shared `GROUND_PERSONNEL` normalization, strict-below-80-percent demand rule and combined Ground/Air PERSONNEL resupply implementation are currently **SOURCE_REVIEWED / STAGED**, not DCS-validated.
+The shared `GROUND_PERSONNEL` normalization and strict-below-80-percent demand rule are part of the current Stage 1D-P contract. The Jalalabad -> Fortress Air PERSONNEL carrier/settlement path is an `ACCEPTED_TECHNICAL_BASELINE` for the exact Acceptance-4 provenance documented in `docs/moose/GROUND-AIR-PERSONNEL-RESUPPLY-STAGE-1D-P-ACCEPTANCE-4-FINAL.md`. The Ground PERSONNEL carrier uses the previously accepted NOTHING/RTZ mechanics; this contract remains `validated_in_dcs: partial` because it spans broader readiness semantics that were not all exercised by Stage 1D-P.
 
 ## 15. Later scope
 
