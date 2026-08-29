@@ -1,11 +1,11 @@
 ---
-document_id: OMW-STAGE-2-FOB-ATTACK-HIT-ACCEPTANCE-1
+document_id: OMW-STAGE-2-FOB-ATTACK-THREAT-ACCEPTANCE-1
 status: PLANNED
 document_class: DCS_ACCEPTANCE_PLAN
 owning_policy: OMW-GOV-001
 authoritative_for:
-  - Stage 2 DCS acceptance plan for MOOSE EVENTS.Hit qualification
-  - Fortress infantry sentry target and PASS criteria
+  - Stage 2 DCS acceptance plan for MOOSE OPSZONE perimeter-threat qualification
+  - Fortress runtime 1000 m security perimeter and PASS criteria
   - use of the existing OMW mission runtime stack
 not_authoritative_for:
   - runtime validation before the documented DCS run
@@ -15,6 +15,7 @@ not_authoritative_for:
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
+  - Stage 2 Acceptance-1 requirement for real RED-on-BLUE EVENTS.Hit
   - dedicated TST_BLUE_GND_FORTRESS_HIT_TARGET Acceptance-1 target plan
   - standalone Acceptance-1 CampaignState/GroundBase bootstrap plan
   - dedicated Fortress patrol-test-zone dependency for the Sentry guard point
@@ -24,11 +25,11 @@ source_commit: GIT_HISTORY
 validated_in_dcs: false
 ---
 
-# Stage 2 – FOB Attack Hit Acceptance 1
+# Stage 2 – FOB Attack Threat Acceptance 1
 
 ## 1. Ziel
 
-Der Test bestätigt Stage 2 gegen den bereits in der aktuellen OMW-Testmission vorhandenen Runtime-Stack:
+Der Test bestätigt den korrigierten Stage-2-Vertrag gegen den bereits in der aktuellen OMW-Testmission vorhandenen Runtime-Stack:
 
 ```text
 existing Moose.lua
@@ -43,20 +44,22 @@ existing Moose.lua
    -> commit 9 Fortress GROUND_PERSONNEL
    -> MOOSE BRIGADE / PLATOON / Warehouse materialization
    -> TPL_BLUE_GND_INF_RIFLE_SQUAD_9
-   -> derive guard coordinate from WH_BLUE_GND_FORTRESS through BRIGADE/WAREHOUSE:GetCoordinate()
+   -> derive guard/security anchor from WH_BLUE_GND_FORTRESS via BRIGADE/WAREHOUSE:GetCoordinate()
    -> AUFTRAG:NewONGUARD(...)
-   -> real RED hit
-   -> MOOSE EVENTS.Hit
+   -> runtime ZONE_RADIUS(..., 1000 m)
+   -> BLUE OPSZONE
+   -> real RED ground presence inside perimeter
+   -> OPSZONE OnAfterAttacked(..., RED)
    -> CAS_IMMEDIATE MissionDemand
-   -> repeated hit -> active_duplicate
    -> exactly one active CAS demand
+   -> PASS
 ```
 
-Es wird kein eigener Acceptance-CampaignState erzeugt und kein zusätzlicher Ground-startup bridge benötigt.
+Ein physischer Treffer auf BLUE ist **nicht** mehr Voraussetzung. Der Alarmzustand soll bereits bei feindlicher Bodenpräsenz im Sicherheitsperimeter entstehen.
 
 ## 2. Produktions- und Autoritätsgrenze
 
-Die bereits eingebettete Warehouse Production Base ist Besitzer des gemeinsamen autoritativen CampaignState-Kontexts:
+Die bereits eingebettete Warehouse Production Base bleibt Besitzer des gemeinsamen autoritativen CampaignState-Kontexts:
 
 ```text
 OMW.AirOps.CampaignContext
@@ -82,7 +85,7 @@ MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
 Moose.lua SHA-256: E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915
 ```
 
-Verwendeter MOOSE-Pfad:
+Für diesen Acceptance-Scope source-verifiziert:
 
 ```text
 BRIGADE:New(...)
@@ -95,14 +98,44 @@ AUFTRAG:NewONGUARD(...)
 AUFTRAG:SetReturnToLegion(false)
 BRIGADE OnAfterArmyOnMission
 ARMYGROUP OnAfterMissionExecute
-BASE:HandleEvent(EVENTS.Hit, callback)
-BASE:UnHandleEvent(EVENTS.Hit)
+ZONE_RADIUS:New(name, Vec2, radius)
+OPSZONE:New(zone, coalition.side.BLUE)
+OPSZONE:SetObjectCategories(...)
+OPSZONE:SetUnitCategories(...)
+OPSZONE:SetCaptureThreatlevel(...)
+OPSZONE:SetCaptureNunits(...)
+OPSZONE:SetDrawZone(false)
+OPSZONE:SetMarkZone(false)
+OPSZONE:Start()
+OPSZONE OnAfterAttacked(..., AttackerCoalition)
 SCHEDULER:New(...)
 ```
 
-Der gepinnte `Moose.lua` bestätigt, dass `BRIGADE` von `LEGION`, `LEGION` von `WAREHOUSE` erbt und `WAREHOUSE:GetCoordinate()` die Koordinate der physischen Warehouse-Struktur zurückgibt. Daher wird kein Mission-Editor-Triggerpunkt für den Guard-Auftrag benötigt.
+Der gepinnte Source zeigt außerdem: Bei BLUE-owned OPSZONE führt RED-Präsenz mit ausreichendem Threat-Level zum Zustand `Attacked`, solange BLUE-Präsenz in der Zone verbleibt. Ohne BLUE-Präsenz läuft stattdessen der Capture-Pfad. Deshalb bleibt die reale Fortress-Sentry als lokale BLUE-Sicherung Bestandteil des Acceptance-Aufbaus.
 
-## 4. Bestehende Mission-Editor-Objekte
+## 4. Runtime-Sicherheitsperimeter
+
+Der Sicherheitsperimeter wird vollständig zur Laufzeit erzeugt:
+
+```text
+anchor       = WH_BLUE_GND_FORTRESS via BRIGADE/WAREHOUSE:GetCoordinate()
+zone name    = OMW_SECURITY_BLUE_GROUND_COP_FORTRESS
+radius       = 1000 m
+owner        = BLUE
+objects      = UNIT only
+units        = GROUND_UNIT only
+min RED      = 1
+threatlevel  = 0
+scan interval= 5 s (Acceptance only)
+F10 draw     = off
+F10 marker   = off
+```
+
+Damit ist keine zusätzliche Mission-Editor-Security-Zone erforderlich.
+
+`ZON_BLUE_GND_FORTRESS_ACCESS` bleibt unverändert. Sie wird nur weiterhin für die validierte Ground-Materialisierung genutzt. Nach der Ground-Baseline ist ACCESS eine Materialisierungs-/Departure-/Return-/Handoff-Grenze und nicht die Installationsgeometrie.
+
+## 5. Bestehende Mission-Editor-Objekte
 
 Erforderlich:
 
@@ -115,38 +148,45 @@ TPL_BLUE_GND_INF_RIFLE_SQUAD_9
 Nicht erforderlich:
 
 ```text
+ZON_BLUE_GND_FORTRESS_SECURITY
 ZON_BLUE_GND_FORTRESS_PATROL_TEST_01
-zusätzliche Guard-/Sentry-Triggerzone
 TST_BLUE_GND_FORTRESS_HIT_TARGET
-zusätzliche BLUE-Infanteriegruppe im Mission Editor
+zusätzliche BLUE-Testgruppe
 ```
 
-Das Rifle-Squad-Template ist die bestehende 9-Mann-Darstellung:
+Das Rifle-Squad-Template bleibt:
 
 ```text
 7 x Soldier M4
 2 x Soldier M249
 ```
 
-## 5. Stage-2-Bundle
+## 6. Stage-2-Bundle
 
 Builder:
 
 ```text
-tools/build-fob-attack-hit-acceptance-1.ps1
+tools/build-fob-attack-threat-acceptance-1.ps1
 ```
 
 Output:
 
 ```text
-mission/tests/fob-attack-support-demand/dist/OMW_FOB_Attack_Hit_Acceptance_1.lua
+mission/tests/fob-attack-support-demand/dist/OMW_FOB_Attack_Threat_Acceptance_1.lua
 ```
 
-Der Stage-2-Builder enthält nur MissionDemand, FOB-Attack-DemandPolicy, den MOOSE-Hit-Adapter und den Acceptance-Harness. Er enthält keinen CampaignState, keinen GroundBase und keinen zusätzlichen Ground-startup bridge.
+Der Builder enthält ausschließlich:
 
-Für die aktuelle `OMW_Template_v20_GroundWorks`-Testmission bleiben die bereits eingebetteten `OMW_AirOps_Warehouse_Base.lua`, `OMW_Ground_Base.lua` und der bestehende GroundBase-Attach-Trigger unverändert.
+```text
+OMW_MissionDemand.lua
+OMW_FobAttackDemandPolicy.lua
+OMW_FobThreatOpsZoneAdapter.lua
+01-fob-attack-threat-acceptance-1.lua
+```
 
-## 6. Fortress-Sentry und PERSONNEL
+Kein CampaignState wird erzeugt; GroundBase wird nicht ersetzt; die bestehende Mission bleibt unverändert.
+
+## 7. Fortress-Sentry und PERSONNEL
 
 Der Acceptance-Harness reserviert/consumed genau:
 
@@ -157,9 +197,9 @@ quantity: 9
 transaction: STAGE2-A1-FORTRESS-SENTRY-PERSONNEL
 ```
 
-Bei frischem Produktionskontext entspricht dies `160 -> 151`; das Runtime-Kriterium bleibt `before - 9`.
+Bei frischem Produktionskontext entspricht dies `160 -> 151`; das eigentliche Runtime-Kriterium bleibt `before - 9`.
 
-Danach wird die Sentry ausschließlich aus vorhandenem Bestand materialisiert:
+Danach materialisiert MOOSE:
 
 ```text
 BRIGADE alias: BDE_BLUE_GND_FORTRESS_STAGE2_A1
@@ -167,62 +207,53 @@ PLATOON alias: PLT_BLUE_GND_FORTRESS_SENTRY_STAGE2_A1
 Template: TPL_BLUE_GND_INF_RIFLE_SQUAD_9
 Mission: OMW_STAGE2_A1_FORTRESS_SENTRY
 Mission type: AUFTRAG ONGUARD
-Guard point: runtime coordinate of WH_BLUE_GND_FORTRESS via BRIGADE/WAREHOUSE:GetCoordinate()
+Guard point: WH_BLUE_GND_FORTRESS runtime coordinate
 ```
 
-Damit schützt die Testgruppe den Fortress-Warehouse-/FOB-Bereich, ohne dass der Mission Editor eine separate Guard-Zone bereitstellen muss.
+Die Sentry ist jetzt **kein spezielles Hit-Ziel**. Sie stellt reale lokale BLUE-Präsenz im Installationsbereich her und hält damit die OPSZONE im verteidigten Zustand.
 
-Infantry casualty, survivor return, recredit und restart settlement bleiben außerhalb dieses Acceptance-Scopes.
+## 8. Historische Hit-Versuche
 
-## 7. Erster realer DCS-Lauf – FAIL vor Sentry-Start
-
-Der Lauf vom 2026-08-29 mit `OMW_Template_v20_GroundWorks(9).miz` erreichte den bestehenden Warehouse-/Ground-Ready-Pfad, scheiterte aber vor der Sentry-Materialisierung an der falschen Harness-Annahme:
+Die bisherigen Läufe am 2026-08-29 bleiben diagnostische Evidenz für den verworfenen Hit-Vertrag:
 
 ```text
-[OMW][FOB-ATTACK-HIT-ACCEPTANCE-1] FAIL missing object=ZON_BLUE_GND_FORTRESS_PATROL_TEST_01
+- Warehouse-basierter Guard-Punkt funktionierte.
+- 9 Fortress PERSONNEL wurden korrekt committed.
+- BRIGADE/PLATOON/ONGUARD und dynamische Sentry funktionierten bis READY.
+- Ein realer Feuerkampf entstand.
+- Ein exakter RED-on-dynamic-Sentry EVENTS.Hit war nicht zuverlässig reproduzierbar.
 ```
 
-Die Mission enthielt diese Zone nicht. Dieser Lauf validiert Stage 2 nicht; er dokumentiert ausschließlich den fehlgeschlagenen Acceptance-Harness.
+Diese Ergebnisse erhöhen den neuen OPSZONE-Scope nicht auf `VALIDATED`. Sie erklären nur, warum `EVENTS.Hit` nicht länger als notwendiges Alarmkriterium verwendet wird.
 
-Fehlerkorrektur:
+## 9. Runtime-Ablauf
 
-```text
-vorher: externe Mission-Editor-Zone ZON_BLUE_GND_FORTRESS_PATROL_TEST_01 erforderlich
-jetzt: Guard-Punkt wird aus WH_BLUE_GND_FORTRESS über BRIGADE/WAREHOUSE:GetCoordinate() abgeleitet
-```
-
-Es wird ausdrücklich **keine neue Mission-Editor-Zone** als Workaround gefordert.
-
-## 8. Runtime-Ablauf und Angriff
-
-Vor dem RED-Angriff müssen im `dcs.log` insbesondere erscheinen:
+Vor der Bedrohungsqualifikation müssen im `dcs.log` insbesondere erscheinen:
 
 ```text
 PERSONNEL_COMMITTED ... quantity=9
 SENTRY_QUEUED ... warehouse=WH_BLUE_GND_FORTRESS guardSource=warehouse-coordinate
 SENTRY_ON_MISSION ...
 SENTRY_ONGUARD_EXECUTING ... warehouse=WH_BLUE_GND_FORTRESS
-READY targetGroup=<dynamic runtime group> ... guardSource=warehouse-coordinate
+[FobThreatOpsZoneAdapter] started MOOSE OPSZONE security perimeter ...
+READY ... securityZone=OMW_SECURITY_BLUE_GROUND_COP_FORTRESS securityRadiusM=1000 detection=OPSZONE_ATTACKED scanSeconds=5
 ```
 
-Erst nach `READY targetGroup=...` darf RED die materialisierte Sentry-Gruppe real beschießen.
+Danach genügt reale RED-Bodenpräsenz innerhalb von 1000 m um den Fortress-Warehouse-Anker.
 
 Erwartung:
 
 ```text
-first real RED-on-BLUE hit
--> QUALIFIED_HIT count=1
--> DEMAND_RESULT created=true reason=nil
-
-second real RED-on-BLUE hit while demand active
--> QUALIFIED_HIT count=2
--> DEMAND_RESULT created=false reason=active_duplicate
-
-then
--> PASS ... activeDemands=1 ... missionType=CAS_IMMEDIATE ... installationId=BLUE_GROUND_COP_FORTRESS
+MOOSE OPSZONE sees RED ground presence while BLUE sentry remains in zone
+-> OPSZONE Attacked(RED)
+-> QUALIFIED_THREAT count=1
+-> DEMAND_RESULT ... created=true reason=nil
+-> PASS ... activeDemands=1 missionType=CAS_IMMEDIATE installationId=BLUE_GROUND_COP_FORTRESS
 ```
 
-## 9. PASS-Kriterien
+Kein Schuss und kein Treffer sind erforderlich.
+
+## 10. PASS-Kriterien
 
 Alle müssen gleichzeitig gelten:
 
@@ -231,19 +262,23 @@ Alle müssen gleichzeitig gelten:
 2. Stage 2 verwendet den bereits attached OMW Ground CampaignState-Kontext; kein zweiter Store wird erzeugt.
 3. Genau 9 Fortress GROUND_PERSONNEL werden committed/consumed.
 4. TPL_BLUE_GND_INF_RIFLE_SQUAD_9 wird über MOOSE BRIGADE/PLATOON/Warehouse materialisiert.
-5. Der ONGUARD-Zielpunkt wird zur Laufzeit aus WH_BLUE_GND_FORTRESS über BRIGADE/WAREHOUSE:GetCoordinate() abgeleitet.
-6. Keine zusätzliche Mission-Editor-Guard-Zone ist erforderlich.
-7. Dieselbe Runtime-Gruppe erreicht AUFTRAG ONGUARD.
-8. MOOSE EVENTS.Hit liefert mindestens zwei reale RED-on-BLUE Treffer.
-9. Erster Treffer erzeugt genau einen CAS_IMMEDIATE Demand.
-10. Zweiter Treffer liefert active_duplicate und erzeugt keinen zweiten Demand.
-11. Genau ein aktiver Fortress-CAS-Demand verbleibt.
-12. Kein CAS-AUFTRAG/COMMANDER/AIRWING/SQUADRON-Dispatch wird ausgeführt.
-13. Kein world.addEventHandler/MIST/MissionScripting.lua-Pfad wird verwendet.
-14. dcs.log enthält den expliziten PASS-Eintrag.
+5. Guard-/Security-Anker wird aus WH_BLUE_GND_FORTRESS über BRIGADE/WAREHOUSE:GetCoordinate() abgeleitet.
+6. Die Sentry erreicht AUFTRAG ONGUARD und bleibt als BLUE Ground presence im Perimeter.
+7. Zur Laufzeit entsteht `OMW_SECURITY_BLUE_GROUND_COP_FORTRESS` als ZONE_RADIUS mit 1000 m Radius.
+8. Daraus entsteht eine BLUE-owned OPSZONE mit UNIT/GROUND_UNIT-Scan, `captureNunits=1` und `captureThreatlevel=0`.
+9. Keine Mission-Editor-Security-Zone wird benötigt.
+10. Reale RED Ground presence innerhalb des Perimeters löst `OnAfterAttacked(..., coalition.side.RED)` aus.
+11. Dieser Threat erzeugt genau einen CAS_IMMEDIATE Demand für BLUE_GROUND_COP_FORTRESS.
+12. Genau ein aktiver Fortress-CAS-Demand verbleibt.
+13. Kein EVENTS.Hit/Shot wird für die Qualifikation benötigt.
+14. Kein CAS-AUFTRAG/COMMANDER/AIRWING/SQUADRON-Dispatch wird ausgeführt.
+15. Kein world.addEventHandler/MIST/MissionScripting.lua-Pfad wird verwendet.
+16. dcs.log enthält den expliziten PASS-Eintrag.
 ```
 
-## 10. Provenienz
+Der `active_duplicate`-Vertrag für wiederholte Threat-Incidents wird zusätzlich durch die MissionDemand-/Adapter-CI geprüft; Acceptance 1 verlangt keinen künstlich erzeugten zweiten physischen Treffer.
+
+## 11. Provenienz
 
 Erst nach realem DCS-PASS werden dokumentiert:
 
