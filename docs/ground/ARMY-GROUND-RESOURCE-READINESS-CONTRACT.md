@@ -22,7 +22,7 @@ supersedes:
   - node-specific-only PERSONNEL transfer model
 superseded_by:
 source_branch: agent/automatic-response-orchestration-continuation
-source_commit: PENDING_MERGE
+source_commit: GIT_HISTORY
 validated_in_dcs: partial
 ---
 
