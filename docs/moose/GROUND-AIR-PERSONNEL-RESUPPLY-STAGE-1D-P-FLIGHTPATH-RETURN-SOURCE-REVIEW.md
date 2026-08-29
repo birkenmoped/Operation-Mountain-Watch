@@ -7,208 +7,255 @@ authoritative_for:
   - Stage 1D-P Air PERSONNEL FlightPath and physical-return source review
   - OMW_FlightPath use as preferred rotary-wing corridor
   - Fortress normal-LZ intermediate landing contract
+  - source explanation for TaskDone versus MissionDone with mission egress
 not_authoritative_for:
-  - DCS runtime validation of FlightPath routing
   - production-wide rotary-wing routing beyond the documented acceptance scope
   - physical infantry-group transport
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 source_branch: agent/automatic-response-orchestration-continuation
-validated_in_dcs: false
+validated_in_dcs: true
 ---
 
 # Stage 1D-P – Air PERSONNEL FlightPath / Physical Return Source Review
 
-## 1. Anlass
-
-Der erste kombinierte Stage-1D-P-Lauf bestätigte den strategischen PERSONNEL-Transfer Jalalabad -> Fortress, zeigte aber für den Air-Lifecycle ein nicht akzeptables Verhalten: Der CH-47 landete am Fortress-Ziel und wurde dort unmittelbar als AIRWING/LEGION-Asset zurückgegeben beziehungsweise entfernt, anstatt physisch nach Jalalabad zurückzufliegen.
-
-Der Air-Teil dieses Laufs ist deshalb **kein technischer PASS** für den geforderten physischen Rückkehr-Lifecycle.
-
-Der Ground-Pfad Joyce -> Honaker wird durch diese Korrektur nicht neu entworfen.
-
-## 2. MOOSE-Source-Befund
-
-Geprüfter Stand:
+## 1. Pinned MOOSE
 
 ```text
 MOOSE release: 2.9.18
 MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
-Moose.lua SHA-256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
+Moose.lua SHA-256: E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915
 ```
 
-Im gepinnten Source ist für `FLIGHTGROUP:onafterArrived(...)` dokumentiert und implementiert, dass ein AI-AIRWING-Asset bei `Arrived` an das Legion/AIRWING zurückgegeben wird. Der Source enthält dabei selbst den offenen Hinweis, dass nicht geprüft wird, ob die aktuelle Basis tatsächlich die AIRWING-Heimatbasis ist.
+Documentation alone was not treated as proof; the actual pinned `Moose.lua` and relevant official FlightGroup landing example were used.
 
-Damit ist eine Intermediate-Landung auf einer DCS-Airbase-/FARP-Repräsentation für diesen OMW-Scope ungeeignet, weil sie den Airwing-Rückgabe-Lifecycle vorzeitig auslösen kann.
+## 2. Foreign FARP limitation and normal Fortress LZ
 
-## 3. Normale LZ statt Intermediate-FARP
+The original combined PERSONNEL acceptance landed the Jalalabad AIRWING CH-47 on a Fortress Invisible FARP. The helicopter was then returned/despawned there instead of physically returning home.
 
-Für den neuen Acceptance-Pfad ist Fortress daher eine normale Mission-Editor-Triggerzone:
+The pinned source explains the risk: `FLIGHTGROUP:onafterArrived(...)` can call `ReturnToLegion(1)` for an AIRWING flight, and the source contains a TODO noting that the current base is not checked against the AIRWING home base.
+
+For this scope the intermediate destination is therefore an ordinary Mission Editor trigger-zone/coordinate LZ:
 
 ```text
 OMW_BLUE_LZ_FORTRESS_01
 ```
 
-Sie dient nur als präziser physischer Landing-Anker. Sie besitzt für diesen Scope keine FARP-/AIRBASE-Rückgabe-Semantik.
+It is intentionally not an AIRBASE/FARP for the intermediate landing.
 
-Der gepinnte Source bestätigt:
+The physical home-return contract is:
 
 ```text
-FLIGHTGROUP:onafterLandAt(...)
--> GROUP:TaskLandAtVec2(Coordinate:GetVec2(), Duration)
-
-FLIGHTGROUP:onafterLandedAt(...)
--> FSM-Nachweis der Zwischenlandung
+OnAfterLanded at Jalalabad
+-> home landing proof
+-> afterwards LegionAssetReturned
 ```
 
-Die offizielle MOOSE-Demo `Ops/Flightgroup/Flightgroup - 040 - Helo Land At` verwendet denselben Grundpfad: Helikopter landet an einer normalen Koordinate, wartet für eine definierte Dauer und setzt danach seinen Flug fort.
+`LegionAssetReturned` alone is insufficient.
 
-## 4. OMW_FlightPath als bevorzugter Corridor
+## 3. OMW_FlightPath via MOOSE PATHLINE
 
-Die owner-erstellte Mission-Editor-Linie
+The owner-authored Mission Editor line:
 
 ```text
 OMW_FlightPath
 ```
 
-wird von MOOSE automatisch als `PATHLINE` registriert. Der gepinnte Source bestätigt:
+is registered by MOOSE as a `PATHLINE`. Relevant public methods used by the accepted path include:
 
 ```text
-PATHLINE:FindByName(Name)
-PATHLINE:GetCoordinates()
-COORDINATE:HeadingTo(ToCoordinate)
-COORDINATE:Translate(Distance, Angle, Keepalt, Overwrite)
+PATHLINE:FindByName(...)
+PATHLINE:GetCoordinates(...)
+COORDINATE:HeadingTo(...)
+COORDINATE:Translate(...)
+FLIGHTGROUP:AddWaypoint(...)
 ```
 
-Der Acceptance-Pfad verwendet die gezeichnete Talachse als **bevorzugten**, nicht zwingenden Corridor:
+No native `env.mission` parsing, duplicate route database or custom DCS route dispatcher is used.
+
+Owner decision:
 
 ```text
-Jalalabad
--> so früh wie sinnvoll auf OMW_FlightPath
--> dem Corridor so lange wie sinnvoll folgen
--> missionbedingt bei Fortress ausscheren
--> OMW_BLUE_LZ_FORTRESS_01
--> nach der Zwischenlandung Corridor wieder aufnehmen
--> entlang OMW_FlightPath zurück
--> Jalalabad
+OMW_FlightPath is a preferred valley corridor.
+Mission purpose may leave/rejoin it when required.
+Nominal lane is 500 m right of the reference line relative to direction of travel.
 ```
 
-Der Missionszweck darf die Corridor-Bindung verlassen. Die Linie ist kein geographischer Zwangspfad für jede Missionsphase.
+After the first DCS run the owner refined the line with additional points before valley cuts, at branches and before/at FOB/COP locations. The later tested geometry contains 84 total path points and uses a 14-point Jalalabad-Fortress subset.
 
-## 5. Richtungsabhängige laterale Trennung
+## 4. Right-side runtime calibration
 
-Owner-Entscheidung:
+The initial source-review assumption used:
 
 ```text
-Sollspur = 500 m rechts der OMW_FlightPath-Referenzlinie,
-bezogen auf die jeweilige Flugrichtung.
+heading - 90 degrees
 ```
 
-Die Source-geprüfte Umsetzung verwendet je Segment:
+The owner visually observed that this appeared on the wrong side in the actual OMW/DCS route. The accepted later test path therefore uses:
 
 ```text
-heading = current:HeadingTo(next)
-right-hand coordinate = current:Translate(500, heading - 90, false, false)
+heading + 90 degrees
 ```
 
-Für Gegenverkehr liegen die Sollspuren damit auf gegenüberliegenden Seiten der Referenzlinie und ungefähr 1000 m auseinander, soweit die Mission-Editor-gezeichnete Talachse den entsprechenden Raum bereitstellt.
+for the OMW right-hand lane.
 
-Für den Acceptance-Lauf wird eine 500-ft-AGL-Waypoint-Höhe verwendet. `FLIGHTGROUP:AddWaypoint(...)` verwendet für Helikopter im gepinnten Source `WaypointAltType.RADIO`; der explizite Altitude-Parameter wird in Fuß übergeben.
+This is explicitly a runtime calibration for this path and not a general statement that redefines MOOSE coordinate mathematics.
 
-## 6. AUFTRAG-/FLIGHTGROUP-Routing
+## 5. Owner-authored leave/rejoin points
 
-Der bestehende Missionsauftrag bleibt:
+The current implementation deliberately uses the nearest suitable owner-authored PATHLINE point rather than inventing a terrain-aware projection system.
+
+Tested current geometry:
+
+```text
+OMW_FlightPath total points: 84
+Jalalabad -> Fortress corridor points: 14
+originWaypointIndex: 1
+destinationWaypointIndex: 14
+nearest Fortress corridor point: approximately 692.4 m from LZ
+outbound inserted waypoints: 14
+return inserted waypoints: 13
+```
+
+No dynamic terrain scan is used.
+
+## 6. AUFTRAG routing composition
+
+The physical mission remains MOOSE-native:
 
 ```text
 AUFTRAG:NewLANDATCOORDINATE(...)
-```
-
-Zusätzlich wird der MOOSE-eigene Mission-Egress verwendet:
-
-```text
 AUFTRAG:SetMissionEgressCoord(...)
+AUFTRAG:AssignSquadrons(...)
+AIRWING:AddMission(...)
 ```
 
-Der gepinnte `OPSGROUP:RouteToMission(...)`-Source bestätigt, dass bei Air-Gruppen ein Mission-Waypoint und danach ein Egress-Waypoint angelegt werden. `MissionDone` wird bei vorhandenem Egress erst nach Passieren des Egress-Waypoints ausgelöst.
+The corridor is composed with MOOSE waypoint APIs around the mission waypoint/egress lifecycle.
 
-Nach Erzeugung dieser AUFTRAG-Waypoints werden mit öffentlichen MOOSE-Waypoint-Methoden die Corridor-Waypoints eingefügt:
+Relevant source-backed methods:
 
 ```text
 AUFTRAG:GetGroupWaypointIndex(...)
 AUFTRAG:GetGroupEgressWaypointUID(...)
+AUFTRAG:GetGroupWaypointTask(...)
 OPSGROUP:GetWaypointIndex(...)
 OPSGROUP:GetWaypointUIDFromIndex(...)
 FLIGHTGROUP:AddWaypoint(...)
 ```
 
-Dadurch entsteht für den Acceptance-Scope:
+## 7. Critical lifecycle lesson: TaskDone is the delivery instant
+
+Three potential settlement signals were tested.
+
+### Second Takeoff – rejected
+
+Acceptance-2 showed the physical Fortress departure but did not provide a second `OnAfterTakeoff` usable by the harness. This produced a false negative. Therefore second Takeoff is not the delivery authority.
+
+### MissionDone – rejected for delivery with egress
+
+The pinned `OPSGROUP`/mission lifecycle and Acceptance-3 showed that with a mission egress, `MissionDone` occurs after egress, not at the intermediate `LANDATCOORDINATE` task. In the real run it was approximately 48.6 km from Fortress when received.
+
+Therefore:
 
 ```text
-current route
--> outbound right-offset OMW_FlightPath points
--> LANDATCOORDINATE Fortress
--> return right-offset OMW_FlightPath points
--> AUFTRAG egress near Jalalabad
--> normal MOOSE aircraft return
--> physical Jalalabad landing
--> LegionAssetReturned
+MissionDone = mission-level completion diagnostic
+MissionDone != Fortress LANDAT task completion when egress exists
 ```
 
-Es wird kein Native-DCS-Routing-Dispatcher eingeführt.
+### TaskDone – accepted for this scope
 
-## 7. Delivery- und Return-Nachweis
-
-Strategische Delivery erfolgt erst bei physischer Zwischenlandung:
+Acceptance-4 uses:
 
 ```text
-FLIGHTGROUP OnAfterLandedAt
-AND IsAirborne() == false
-AND distance to OMW_BLUE_LZ_FORTRESS_01 <= 100 m
--> CampaignState MarkDelivered
+FLIGHTGROUP / OPSGROUP OnAfterTaskDone
+-> mission:GetGroupWaypointTask(flightGroup)
+-> matching Task.id
+-> Get2DDistance(Fortress LZ) <= 250 m
+```
+
+This produced the real runtime proof:
+
+```text
+AIR_DELIVERY_CONFIRMED_ON_LANDAT_TASK_DONE
+distanceM=4.1
+landTaskDoneCount=1
+campaignStateStatus=DELIVERED
+demandStatus=SUCCESS
+```
+
+Only then does OMW perform exact-once strategic settlement:
+
+```text
+CampaignState MarkDelivered
 -> MissionDemand SUCCESS
 ```
 
-Der finale Acceptance-PASS ist strenger als der erste Stage-1D-P-Test:
+## 8. Final physical return proof
+
+After delivery settlement:
 
 ```text
-Delivery at Fortress
-AND MissionDone only after return-corridor egress
-AND FLIGHTGROUP OnAfterLanded at Jalalabad
-AND only afterwards AIRWING OnAfterLegionAssetReturned
+return corridor
+-> later MissionDone diagnostic
+-> physical OnAfterLanded at Jalalabad
+-> LegionAssetReturned
 -> PASS
 ```
 
-`LegionAssetReturned` allein gilt ausdrücklich **nicht** als physischer Rückkehrnachweis.
-
-## 8. Unveränderte strategische Werte
+The Acceptance-4 log confirms:
 
 ```text
-Origin:       GROUND_NODE_JALALABAD
-Destination:  GROUND_NODE_FORTRESS
-Resource:     GROUND_PERSONNEL
-Initial:      Jalalabad 480 / Fortress 160
-Shortage:     Fortress -33 -> 127
-80% floor:    128
-Transfer:     33
-Expected:     Jalalabad 447 / Fortress 160
-Squadron:     SQ_US_JBAD_CH47_HEAVYLIFT
-Template:     TPL_AIR_US_JBAD_CH47_HEAVYLIFT_1SHIP
+AIR_HOME_LANDED ... airbase=Jalalabad deliveryConfirmed=true
+AIR_LEGION_ASSET_RETURNED ... homeLandingConfirmed=true
+PASS ... final=447/160 ... physicalReturn=JALALABAD
 ```
 
-Warehouse-/Ground-Resource-Authority bleibt unverändert. Für diese Korrektur ist kein weiterer Umbau der produktiven Warehouse- oder Ground-Base erforderlich.
+## 9. Dwell versus timeout
 
-## 9. DCS-offene Punkte
-
-Folgendes ist **SOURCE_REVIEWED / STAGED**, aber noch nicht DCS-validiert:
+The mission uses:
 
 ```text
-- tatsächliche Waypoint-Reihenfolge nach Corridor-Insertion;
-- CH-47 folgt der 500-m-Rechtsspur ausreichend stabil;
-- LANDATCOORDINATE auf normaler Triggerzone landet am vorgesehenen Fortress-Punkt;
-- Wiederstart nach 30 s Dwell;
-- Return-Corridor wird vollständig geflogen;
-- MissionDone tritt erst am Egress nahe Jalalabad ein;
-- physische Landung in Jalalabad erfolgt vor LegionAssetReturned.
+LANDATCOORDINATE dwell: 30 s
 ```
 
-Erst der reale DCS-Lauf mit exakter Commit-/Bundle-/MIZ-/MOOSE-Provenienz darf diesen Air-Pfad zu einer akzeptierten technischen Baseline machen.
+The owner visually observed the CH-47 remain in the Fortress intermediate landing for approximately that period before departure.
+
+This is not a travel deadline. The contract remains:
+
+```text
+no hard outbound travel timeout
+no hard return travel timeout
+```
+
+## 10. Strategic boundaries
+
+```text
+CampaignState = sole strategic GROUND_PERSONNEL authority
+MOOSE = physical execution/lifecycle authority
+MissionDemand = demand/reservation/success authority
+```
+
+Ordinary PERSONNEL resupply remains abstract headcount; no `TROOPTRANSPORT`, physical Infantry GROUP cargo, CTLD troop cargo or OPSTRANSPORT strategic resource authority is introduced.
+
+## 11. Runtime result and provenance gate
+
+Acceptance-4 runtime result is PASS with:
+
+```text
+source/builder commit: be8adc3ad1e2cfa6de7a25252cd8b217caeccde3
+builder: AIR-PERSONNEL-FLIGHTPATH-RETURN-ACCEPTANCE-4-1
+bundle SHA-256: C2BD325AF48BF6EA08936BCA666E4460293B60CC36FB8FE0181BC5140DF9ABD3
+DCS: 2.9.29.27278 MT
+MOOSE: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+Moose.lua SHA-256: E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915
+mission: OMW_Template_v20_GroundWorks.miz
+mission SHA-256: PENDING OWNER HASH
+```
+
+The detailed acceptance document is:
+
+```text
+docs/moose/GROUND-AIR-PERSONNEL-RESUPPLY-STAGE-1D-P-ACCEPTANCE-4-RUNTIME-RESULT.md
+```
+
+The DCS behavior is validated for the exact runtime path, but governance promotion to `ACCEPTED_TECHNICAL_BASELINE` remains blocked only by the missing SHA-256 of the exact tested `.miz`.
