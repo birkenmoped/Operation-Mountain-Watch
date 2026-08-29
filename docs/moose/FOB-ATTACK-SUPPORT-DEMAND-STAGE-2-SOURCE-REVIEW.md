@@ -4,43 +4,48 @@ status: PLANNED
 document_class: DOMAIN_AND_MOOSE_SOURCE_REVIEW
 owning_policy: OMW-GOV-001
 authoritative_for:
-  - Stage 2 qualified FOB/COP attack to MissionDemand contract
-  - separation of attack qualification from MissionDemand creation
-  - active-demand dedupe boundary for repeated attack evidence
+  - Stage 2 FOB/COP threat-to-MissionDemand contract
+  - separation of MOOSE perimeter threat qualification from MissionDemand creation
+  - active-demand dedupe boundary for repeated threat evidence
 not_authoritative_for:
-  - DCS runtime acceptance of MOOSE Hit event qualification
+  - DCS runtime validation before documented Acceptance 1
   - CAS aircraft dispatch or BLUE COMMANDER execution
   - final attack severity or priority classification
   - arbitrary time-based attack cooldowns
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
+  - Stage 2 requirement for a real RED-on-BLUE EVENTS.Hit before support demand creation
 superseded_by:
 source_branch: agent/fob-attack-support-demand
 source_commit: GIT_HISTORY
 validated_in_dcs: false
 ---
 
-# Stage 2 – FOB/COP attacked -> support demand
+# Stage 2 – FOB/COP threat -> support demand
 
-## 1. Scope
+## 1. Corrected operational scope
 
-Stage 1D-V ist durch die Owner-Entscheidung `OMW-ARMY-GROUND-VEHICLE-REPLENISHMENT-DECISION` geschlossen. Der nächste Automatic-Response-Scope ist damit:
+Stage 2 models an automatic response to a possible or ongoing attack on a BLUE Ground installation:
 
 ```text
-qualified BLUE FOB/COP attack incident
+hostile RED ground presence inside installation security perimeter
+-> MOOSE OPSZONE Attacked
+-> qualified installation threat incident
 -> MissionDemand CAS_IMMEDIATE
 ```
 
-Stage 2 erzeugt **noch keinen** MOOSE-CAS-Auftrag und disponiert kein Flugzeug. Der spätere BLUE/CAS-Adapter bleibt ein eigener Entwicklungsschritt.
+A physical hit on BLUE is no longer required. The operational reason is explicit: a FOB/COP can raise an alarm and request support when hostile forces are detected inside its security perimeter, before BLUE casualties occur.
 
-## 2. Bestehende MissionDemand-Baseline
+Stage 2 still creates no CAS AUFTRAG and dispatches no aircraft. CAS execution remains a later BLUE-response stage.
 
-`scripts/campaign/OMW_MissionDemand.lua` besitzt bereits:
+## 2. Existing MissionDemand authority
+
+`scripts/campaign/OMW_MissionDemand.lua` remains the only MissionDemand registry and already provides:
 
 ```text
 MissionDemand.Type.CAS_IMMEDIATE
-MissionDemand Registry:Create(...)
+Registry:Create(...)
 activeByDedupeKey
 idempotent_existing
 active_duplicate
@@ -48,81 +53,58 @@ terminal release of dedupeKey
 snapshot/restore of active demands
 ```
 
-Daher wird kein zweites Support-Request-Register und kein paralleler CAS-Lifecycle eingeführt.
+`scripts/campaign/OMW_FobAttackDemandPolicy.lua` remains framework-independent. It accepts only a qualified incident and creates the existing CAS_IMMEDIATE demand shape.
 
-Der neue Domain-Adapter liegt in:
+No second support-request registry or resource authority is introduced.
 
-```text
-scripts/campaign/OMW_FobAttackDemandPolicy.lua
-```
+## 3. Incident contract
 
-Er besitzt keine MOOSE-/DCS-Abhängigkeit und nimmt nur einen **bereits qualifizierten** Angriffsvorfall entgegen.
-
-## 3. Qualifizierter Incident-Vertrag
-
-Stage 2 setzt für die Domain-Grenze mindestens voraus:
+Required domain fields remain:
 
 ```text
 incidentId       stable, non-empty
-installationId   stable CampaignState installation ID
+installationId   stable OMW installation identity
 priority         finite number supplied by the incident classifier
 ```
 
-Optional dürfen operative Hinweise mitgeführt werden:
+Operational metadata may include:
 
 ```text
 position
-reportedTarget
+reportedTarget.targetKind = INSTALLATION_SECURITY_PERIMETER
+reportedTarget.targetName = runtime security-zone name
+reportedTarget.radiusM
+reportedTarget.evidence = OPSZONE_ATTACKED
 ```
 
-Die Policy erfindet bewusst keine Prioritätszahl und keinen Schweregrad. Diese Klassifikation gehört zur späteren Incident-Qualification und benötigt einen eigenen fachlichen beziehungsweise Runtime-Vertrag.
+The policy still does not invent attack severity or arbitrary cooldowns.
 
-## 4. Dedupe ohne erfundenen Timer
+## 4. Dedupe
 
-Ein einzelner Treffer darf nicht eine eigene CAS-Mission erzeugen.
-
-Die Stage-2-Policy verwendet deshalb zwei bestehende MissionDemand-Mechanismen:
-
-```text
-same incidentId
--> same MissionDemand id
--> idempotent_existing
-
-new incidentId at same installation while CAS demand nonterminal
--> same installation dedupeKey
--> active_duplicate
-```
-
-Dedupe-Key:
+The existing key remains:
 
 ```text
 CAS_IMMEDIATE|FOB_ATTACK|<installationId>
 ```
 
-Wenn der bestehende Demand terminal ist, gibt MissionDemand den Dedupe-Key frei. Erst dann kann ein neuer qualifizierter Incident an derselben Installation einen neuen Demand erzeugen.
-
-Damit wird **kein** willkürlicher 5-/10-/15-Minuten-Cooldown eingeführt.
-
-## 5. Demand-Spezifikation
-
-Ein qualifizierter Incident erzeugt:
+Therefore:
 
 ```text
-missionType       CAS_IMMEDIATE
-origin            attacked installationId
-objective         Defend attacked BLUE Ground installation
-playerCapable     true
-aiCapable         true
-reservationState  NOT_APPLICABLE
-createdReason     FOB_ATTACK_QUALIFIED
-resourceReservation nil
+same incidentId
+-> idempotent_existing
+
+new incident same installation while demand nonterminal
+-> active_duplicate
+
+terminal demand
+-> dedupe key released
 ```
 
-Das strategische Ressourcenledger bleibt unberührt. Der Demand beschreibt Unterstützungsbedarf, keine neue Ressource.
+The DCS acceptance needs to prove one real OPSZONE threat creates one demand. Repeated-threat dedupe remains contract-tested in CI and does not require manufacturing two physical hits in DCS.
 
-## 6. MOOSE-first: Event-Erfassung
+## 5. MOOSE-first source review
 
-Der bereits auf `main` vorhandene Source-Review `OMW-MOOSE-MISSION-DEMAND-RESUPPLY-CAS-SOURCE-REVIEW` hat für den gepinnten MOOSE-Stand bestätigt:
+Pinned framework:
 
 ```text
 MOOSE release: 2.9.18
@@ -130,71 +112,118 @@ MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
 Moose.lua SHA-256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
 ```
 
-Der tatsächlich verwendete `Moose.lua` enthält den öffentlichen Event-Pfad für `EVENTS.Hit`. Die Eventdaten führen unter anderem Initiator-/Target-Felder wie:
+The actual pinned `Moose.lua` confirms the direct runtime path:
 
-```text
-IniCoalition
-TgtCoalition
-TgtUnitName
-TgtGroupName
-TgtUnit
-TgtGroup
+```lua
+ZONE_RADIUS:New(name, coordinate:GetVec2(), radiusM)
+OPSZONE:New(zone, coalition.side.BLUE)
+OPSZONE:SetObjectCategories(...)
+OPSZONE:SetUnitCategories(...)
+OPSZONE:SetCaptureThreatlevel(...)
+OPSZONE:SetCaptureNunits(...)
+OPSZONE:SetDrawZone(...)
+OPSZONE:SetMarkZone(...)
+OPSZONE:Start()
+function opsZone:OnAfterAttacked(From, Event, To, AttackerCoalition)
 ```
 
-Folgerung:
+`OPSZONE:EvaluateZone()` for a BLUE-owned zone raises `Attacked(coalition.side.RED)` when BLUE presence remains in the zone and RED presence is present with sufficient configured threat level. `IsContested()` explicitly means RED and BLUE are both present.
+
+For Acceptance 1 the runtime settings are intentionally simple:
 
 ```text
-MOOSE Hit event
--> OMW adapter resolves target to known BLUE runtime/installation mapping
--> hostile/valid event qualification
--> stable incidentId
--> OMW_FobAttackDemandPolicy
--> MissionDemand CAS_IMMEDIATE
+security radius         = 1000 m
+object categories       = UNIT only
+unit categories         = GROUND_UNIT only
+capture/attack units    = 1
+capture threat level    = 0
+owner                    = BLUE
+scan interval           = 5 s (Acceptance only)
+F10 draw/marker          = disabled
 ```
 
-Für diesen Standardfall wird kein paralleles `world.addEventHandler` geplant.
+Threat level 0 is intentional for this Stage-2 rule: mere hostile RED ground presence in the security perimeter is sufficient to raise the installation alarm. This is an OMW design decision for the current acceptance, not a universal MOOSE default recommendation.
 
-## 7. Was Stage 2 bewusst noch nicht behauptet
+## 6. Runtime perimeter source
 
-Dieser Commit validiert **nicht**:
+No Mission-Editor security trigger zone is required.
+
+The installation anchor is the already source-reviewed MOOSE Warehouse coordinate:
 
 ```text
-- dass jeder EVENTS.Hit ein strategischer FOB/COP-Angriff ist;
-- welche Units/Statics innerhalb einer Installation den Trigger tragen;
-- wie die Attack-Priorität aus Art, Anzahl oder Dauer der Angriffe berechnet wird;
-- wie ein MOOSE EventData-Target in jeder DCS-Situation aussieht;
-- dass CAS tatsächlich dispatched oder erfolgreich geflogen wird;
-- einen festen Attack-Cooldown.
+BRIGADE -> LEGION -> WAREHOUSE:GetCoordinate()
 ```
 
-Die DCS-seitige Hit-Qualification benötigt einen gezielten Acceptance-Lauf. CAS-Execution bleibt beim späteren BLUE/CAS-Automatic-Response-Adapter.
-
-## 8. Contract-Test
-
-`tests/mission-demand/test_fob_attack_demand_policy.lua` prüft mindestens:
+Acceptance 1 derives:
 
 ```text
-qualified incident -> CAS_IMMEDIATE OPEN demand
-same incident -> idempotent
-second incident same site while active -> active_duplicate
-different site -> parallel demand allowed
-terminal demand -> new incident at same site allowed
-missing/invalid required incident fields -> rejected
+WH_BLUE_GND_FORTRESS
+-> brigade:GetCoordinate()
+-> coordinate:GetVec2()
+-> ZONE_RADIUS("OMW_SECURITY_BLUE_GROUND_COP_FORTRESS", ..., 1000)
+-> OPSZONE(..., BLUE)
 ```
 
-Die Tests laufen über die bestehende `MissionDemand validation` GitHub Action.
+This is separate from `ZON_BLUE_GND_FORTRESS_ACCESS`. The Ground reconstitution/access contract defines ACCESS zones as operational materialization/departure/return/handoff boundaries, not installation geometry. ACCESS therefore remains unchanged and is not repurposed as a security perimeter.
 
-## 9. Nächster Stage-2-Schritt
+## 7. BLUE-presence requirement
 
-Nach erfolgreichem Domain-/CI-Gate folgt als kleinster MOOSE-first Runtime-Slice:
+Pinned MOOSE source also establishes an important runtime condition: for a BLUE-owned OPSZONE, `Attacked` due presence is raised when BLUE remains present and RED is detected. If no BLUE unit is present, capture-state logic applies instead.
+
+Acceptance 1 therefore retains the already staged Fortress 9-man rifle squad as a real local-security representation:
 
 ```text
-one explicitly registered BLUE installation target set
--> MOOSE EVENTS.Hit
--> qualification adapter
--> stable test incident
--> CAS_IMMEDIATE MissionDemand
--> repeated hit does not create second active demand
+9 GROUND_PERSONNEL
+-> TPL_BLUE_GND_INF_RIFLE_SQUAD_9
+-> MOOSE BRIGADE / PLATOON
+-> AUFTRAG:NewONGUARD(warehouse coordinate)
+-> BLUE ground presence at installation
 ```
 
-Dieser nächste Slice benötigt einen dokumentierten DCS-Acceptance-Lauf, bevor der MOOSE-Hit-Adapter als `VALIDATED_FOR_DOCUMENTED_SCOPE` geführt werden darf.
+The squad is no longer a special hit target. It only provides the physical local-security element and proves the defended-zone condition.
+
+## 8. Superseded Hit path
+
+The earlier experimental path was:
+
+```text
+registered dynamic BLUE Sentry
+-> RED must physically hit that exact runtime group
+-> EVENTS.Hit
+-> CAS_IMMEDIATE
+```
+
+Real DCS runs showed that this is unnecessarily fragile for the operational requirement: RED can be in fire contact with the installation without producing a qualifying hit on the exact registered group.
+
+That path is removed from the active Stage-2 implementation. Git history preserves the investigation and failed/partial acceptance evidence. No `world.addEventHandler`, MIST, or native replacement is introduced.
+
+## 9. Active implementation
+
+```text
+scripts/ground/OMW_FobThreatOpsZoneAdapter.lua
+mission/tests/fob-attack-support-demand/src/01-fob-attack-threat-acceptance-1.lua
+tests/mission-demand/test_fob_threat_opszone_adapter.lua
+tools/build-fob-attack-threat-acceptance-1.ps1
+```
+
+The adapter owns only MOOSE runtime qualification and delegates the qualified incident to `OMW_FobAttackDemandPolicy`.
+
+## 10. Acceptance boundary
+
+Acceptance 1 must prove:
+
+```text
+existing authoritative CampaignState reused
+-> 9 Fortress GROUND_PERSONNEL consumed
+-> rifle squad materialized and ONGUARD
+-> runtime 1000 m ZONE_RADIUS created from Warehouse coordinate
+-> BLUE OPSZONE started
+-> actual RED ground presence in perimeter
+-> OnAfterAttacked(..., RED)
+-> one CAS_IMMEDIATE MissionDemand
+-> PASS
+```
+
+No hit, casualty, shot event, manual ME security zone, CAS dispatch, MIST, or native DCS world-event handler is required.
+
+DCS runtime status remains `PLANNED` until that exact path passes with recorded provenance.
