@@ -12,7 +12,7 @@ $acceptanceSourceFile = Join-Path $repoRoot 'mission\tests\fob-attack-support-de
 $distDir = Join-Path $repoRoot 'mission\tests\fob-attack-support-demand\dist'
 $outputFile = Join-Path $distDir 'OMW_FOB_Attack_Threat_Acceptance_1.lua'
 
-$builderVersion = 'FOB-ATTACK-THREAT-ACCEPTANCE-1-1'
+$builderVersion = 'FOB-ATTACK-THREAT-ACCEPTANCE-1-2'
 $testId = 'FOB-ATTACK-THREAT-ACCEPTANCE-1'
 $mooseCommit = '73d3ed119cd9e7e3f2cfcabbaa34513d30529b54'
 $mooseSha256 = 'e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915'
@@ -86,7 +86,8 @@ $header = @"
 -- CampaignStateCreation: false
 -- PhysicalRepresentation: existing TPL_BLUE_GND_INF_RIFLE_SQUAD_9 through public BRIGADE/PLATOON/Warehouse lifecycle.
 -- SecurityPerimeter: runtime ZONE_RADIUS centered on the Fortress BRIGADE/WAREHOUSE coordinate; radius 1000m; no Mission Editor security trigger required.
--- ThreatDetection: MOOSE OPSZONE owner BLUE, ground UNIT scan, one RED ground unit, threatlevel threshold 0, OnAfterAttacked callback.
+-- ThreatDetection: MOOSE OPSZONE owner BLUE, ground UNIT scan, defended-zone Attacked condition Nred>0 and RED threatlevel>=0, OnAfterAttacked callback.
+-- CaptureSemantics: SetCaptureNunits(1) retained explicitly for the separate no-BLUE-presence capture branch; it is not the defended-zone Attacked unit threshold.
 -- ExplicitExclusions: EVENTS.Hit dependency, dedicated BLUE hit target, dedicated security trigger zone, CAS dispatch, COMMANDER mission execution, AIRWING/SQUADRON dispatch, native world event handler, MIST, MissionScripting.lua mutation.
 
 "@
@@ -129,7 +130,8 @@ Write-Host 'MissionEditorSecurityZoneRequired: false'
 Write-Host 'ThreatDetection: MOOSE OPSZONE OnAfterAttacked'
 Write-Host 'ThreatObjectCategory: UNIT'
 Write-Host 'ThreatUnitCategory: GROUND_UNIT'
-Write-Host 'ThreatCaptureNunits: 1'
+Write-Host 'AttackedCondition: Nred>0 and RED aggregate threat>=0 while BLUE presence remains'
+Write-Host 'CaptureNunits: 1 (separate capture branch)'
 Write-Host 'ThreatCaptureThreatlevel: 0'
 Write-Host 'ThreatScanSeconds: 5'
 Write-Host 'InstallationId: BLUE_GROUND_COP_FORTRESS'
