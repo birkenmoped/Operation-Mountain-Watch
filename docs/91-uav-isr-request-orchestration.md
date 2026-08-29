@@ -7,6 +7,7 @@ authoritative_for:
   - branch-local UAV ISR reconciliation assessment
   - MOOSE AIRWING queue and individual asset selection gap
   - prohibited reuse of earlier ISR dispatcher patterns
+  - owner-approved, narrowly scoped MOOSE-internal turnover exception
 not_authoritative_for:
   - production UAV ISR architecture
   - DCS runtime acceptance
@@ -63,12 +64,27 @@ Moose.lua SHA-256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a
 | Vorselektiertes Asset sofort anfordern | `LEGION:MissionAssign(mission, legions)` | MOOSE-FSM-Pfad, aber keine normale AIRWING-Queue. |
 | Einzelne Rückkehr ohne Turnover freigeben | öffentliche API | Nicht gefunden. `COHORT:SetTurnoverTime` und `GetRepairTime` arbeiten pro COHORT; `Asset.Treturned` ist intern. |
 
-Quellenprüfung: eingebettelte MOOSE-Dokumentation und `Moose.lua`,
-verbindliche Main-Dokumente
-`OMW-MOOSE-AIRWING-SQUADRON-WAREHOUSE-LIFECYCLE`,
-`OMW-GOV-001` und `OMW-GOV-MOOSE-FIRST`. Die offizielle AIRWING-Dokumentation
-beschreibt `AddMission` als Queue-Pfad; die Signaturen und Seiteneffekte
-wurden gegen den tatsächlich gepinnten Quellstand geprüft.
+Quellenprüfung, abgeschlossen am 2026-08-29:
+
+- Projekt: aktuelle Main-Governance, MOOSE-first-Policy,
+  AIRWING/SQUADRON/WAREHOUSE-Lifecycle-Dokumentation und die vorhandene
+  Bagram-Foundation;
+- gepinnter MOOSE-Quellstand: eingebettelte MOOSE-Dokumentation und
+  `Moose.lua` mit den oben genannten Release-, Commit- und Hash-Angaben;
+- offizielle MOOSE-Online-API: AUFTRAG, AIRWING und WAREHOUSE;
+- offizielles GitHub-Repository `FlightControl-Master/MOOSE` sowie die
+  bereitgestellten Beispielmissionen `MOOSE_MISSIONS` und
+  `MOOSE_MISSIONS_UNPACKED`.
+
+Die Prüfung ergab keinen öffentlichen MOOSE-Mechanismus, der die Turnoverzeit
+für **ein bestimmtes** zurückkehrendes Asset nach einem Recall vor Take-off
+auf null setzt. Die gefundenen öffentlichen APIs konfigurieren Turnover auf
+COHORT-Ebene. `Asset.Treturned` ist im gepinnten MOOSE-Quellstand ein
+interner Asset-Zeitstempel. Die offizielle AIRWING-Dokumentation beschreibt
+`AddMission` als Queue-Pfad; die Signaturen und Seiteneffekte wurden gegen
+den tatsächlich gepinnten Quellstand geprüft. In den offiziellen Beispielen
+wurde kein Gegenbeispiel für eine öffentliche Einzelasset-Turnover-Ausnahme
+gefunden.
 
 ## 3. Die geprüfte Lücke
 
@@ -115,10 +131,9 @@ wählen und versucht die spätere Zuordnung über interne Tabellen zu erraten.
 Der noch ältere lokale Retry-Dispatcher war ebenfalls falsch: Er duplizierte
 die MOOSE-Queue.
 
-## 5. Zulässige nächste Architekturentscheidung
+## 5. Architekturentscheidung für Queue und Ressourcenbindung
 
-Vor einer neuen Test-LUA muss der Projektinhaber eine der folgenden
-MOOSE-konformen Richtungen festlegen:
+Für Queue und Ressourcenbindung gelten weiterhin die folgenden MOOSE-konformen Richtungen. Die nachfolgende Owner-Freigabe bezieht sich ausschließlich auf die Turnover-Ausnahme in Abschnitt 6 und entscheidet nicht erneut über diese Architektur:
 
 | Option | Queue | Einzelressource vor Disposition | Offene Konsequenz |
 |---|---|---|---|
@@ -133,7 +148,41 @@ Mehrfach-Queueing auf einer bereits reservierten Einzelressource. Dieser
 strategische Buchungs- und Cancel-Vertrag muss vor Implementierung entschieden
 und getestet werden.
 
-## 6. Nicht wiederholen
+## 6. Owner-Freigabe: Einzelasset-Turnover-Ausnahme bei Ground Recall
+
+Am **2026-08-29** hat der Projektinhaber nach der dokumentierten vollständigen
+Prüfung die Ausnahme **D** für diesen eng begrenzten Fall freigegeben:
+
+> Wird ein physisch gespawntes UAV vor dem ersten bestätigten Airborne-/Take-off-
+> Ereignis abgebrochen und despawnt, darf OMW nach erfolgreicher MOOSE-
+> Rückgabe den internen Zeitstempel `Asset.Treturned` **nur für dieses bereits
+> eindeutig gebundene Asset** zurücksetzen, damit keine Turnoverzeit aktiviert
+> bleibt.
+
+Dies ist **keine** allgemeine MOOSE-Umgehung. Sie gilt nur, wenn alle folgenden
+Bedingungen nachweisbar erfüllt sind:
+
+1. Die Mission wurde durch den Nutzer abgebrochen.
+2. Für die gebundene Gruppe liegt kein bestätigtes Airborne-/Take-off-Ereignis vor.
+3. MOOSE hat die physische Gruppe bereits zurückgegeben bzw. despawnt; das
+   Asset und seine eindeutige MOOSE-`uid` sind noch eindeutig verfügbar.
+4. CampaignState und MOOSE-Ressourcenbindung stimmen für dieselbe stabile
+   OMW-Ressourcen-ID überein.
+5. Der Eingriff wird mit Request-ID, OMW-Ressourcen-ID, MOOSE-`uid`,
+   Gruppenname, Zeitstempel und Entscheidungsgrund protokolliert.
+
+Nicht freigegeben sind: Veränderung von `Treturned` nach Take-off, bei
+On-station, bei Rückflug, bei Verlust, zur Beschleunigung regulärer Turnover-
+Zeiten, für ungebundene Assets oder als Ersatz für MOOSE-Queueing. Bei fehlender
+oder widersprüchlicher Bindung bleibt die Ressource gesperrt und wird nicht
+still repariert.
+
+Die Implementierung muss diese Ausnahme als isolierten, testbaren
+Kompatibilitätspunkt kennzeichnen. Sie darf keine anderen MOOSE-Interna lesen
+oder ändern und benötigt mindestens einen statischen Test sowie einen DCS-
+Akzeptanztest für den Ground-Recall-Fall.
+
+## 7. Nicht wiederholen
 
 - Keine lokale Dispatch-/Retry-Queue neben MOOSE.
 - Kein `Asset.Treturned = nil`.
@@ -145,15 +194,16 @@ und getestet werden.
 - Kein DCS-Test dieser Reconciliation, bevor die gewählte Option vollständig
   implementiert und statisch geprüft wurde.
 
-## 7. Erforderliche Nachweise nach der Entscheidung
+## 8. Erforderliche Nachweise nach der Entscheidung
 
 1. stabile OMW-Ressourcen-ID ↔ MOOSE-Bindung;
 2. Queue, Start, Cancel vor Spawn, Cancel am Boden, Cancel nach Take-off,
    On-station, Return, Loss und erneute Disposition;
 3. Doppelte Lifecycle-Ereignisse idempotent;
-4. Server-/Missionsrestart mit erneutem Bindungslauf;
-5. absichtliche CampaignState/MOOSE-Abweichung: Sperre, Diagnose und
+4. Ground Recall nach Spawn, aber vor Airborne: exakt eine protokollierte, owner-freigegebene Turnover-Ausnahme;
+5. Server-/Missionsrestart mit erneutem Bindungslauf;
+6. absichtliche CampaignState/MOOSE-Abweichung: Sperre, Diagnose und
    zielgerichtete Entscheidung;
-6. DCS-Provenienz mit exakt geladener MOOSE-Datei, MIZ- und Bundle-Hash.
+7. DCS-Provenienz mit exakt geladener MOOSE-Datei, MIZ- und Bundle-Hash.
 
 Bis dahin ist dieser Zweig **DRAFT** und kein Testkandidat.
