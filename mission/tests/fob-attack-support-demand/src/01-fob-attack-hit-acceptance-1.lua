@@ -10,7 +10,6 @@ local PRIORITY = 90
 local TEMPLATE_NAME = "TPL_BLUE_GND_INF_RIFLE_SQUAD_9"
 local WAREHOUSE_NAME = "WH_BLUE_GND_FORTRESS"
 local ACCESS_ZONE_NAME = "ZON_BLUE_GND_FORTRESS_ACCESS"
-local GUARD_ZONE_NAME = "ZON_BLUE_GND_FORTRESS_PATROL_TEST_01"
 local BRIGADE_NAME = "BDE_BLUE_GND_FORTRESS_STAGE2_A1"
 local PLATOON_NAME = "PLT_BLUE_GND_FORTRESS_SENTRY_STAGE2_A1"
 local COMMITMENT_ID = "STAGE2-A1-FORTRESS-SENTRY-PERSONNEL"
@@ -30,6 +29,7 @@ local state = {
   brigade = nil,
   platoon = nil,
   guardMission = nil,
+  guardCoordinate = nil,
   runtimeGroupName = nil,
   personnelBefore = nil,
   personnelAfterCommit = nil,
@@ -130,7 +130,7 @@ local function startHitAdapter(runtimeGroupName)
   })
   local _, started = state.adapter:Start()
   if started ~= true then fail("MOOSE EVENTS.Hit adapter failed to start") end
-  log(string.format("READY targetGroup=%s installationId=%s personnelCommitted=%d guardMission=ONGUARD", runtimeGroupName, INSTALLATION_ID, PERSONNEL_COUNT))
+  log(string.format("READY targetGroup=%s installationId=%s personnelCommitted=%d guardMission=ONGUARD guardSource=warehouse-coordinate", runtimeGroupName, INSTALLATION_ID, PERSONNEL_COUNT))
 end
 
 local function attachArmyGroupCallbacks(armyGroup)
@@ -139,22 +139,20 @@ local function attachArmyGroupCallbacks(armyGroup)
   function armyGroup:OnAfterMissionExecute(From, Event, To, Mission)
     if Mission ~= state.guardMission then return end
     state.runtimeGroupName = self:GetName()
-    log(string.format("SENTRY_ONGUARD_EXECUTING group=%s zone=%s", tostring(state.runtimeGroupName), GUARD_ZONE_NAME))
+    log(string.format("SENTRY_ONGUARD_EXECUTING group=%s warehouse=%s", tostring(state.runtimeGroupName), WAREHOUSE_NAME))
     startHitAdapter(state.runtimeGroupName)
   end
 end
 
 local function setupFortressSentry()
   local templateGroup = requireObject(GROUP:FindByName(TEMPLATE_NAME), TEMPLATE_NAME)
-  local warehouseHost = UNIT:FindByName(WAREHOUSE_NAME)
-  if not warehouseHost then warehouseHost = STATIC:FindByName(WAREHOUSE_NAME, false) end
-  requireObject(warehouseHost, WAREHOUSE_NAME)
   local accessZone = requireObject(ZONE:FindByName(ACCESS_ZONE_NAME), ACCESS_ZONE_NAME)
-  local guardZone = requireObject(ZONE:FindByName(GUARD_ZONE_NAME), GUARD_ZONE_NAME)
   if templateGroup:GetInitialSize() ~= PERSONNEL_COUNT then fail("rifle squad template size mismatch") end
 
   state.brigade = requireObject(BRIGADE:New(WAREHOUSE_NAME, BRIGADE_NAME), BRIGADE_NAME)
   state.brigade:SetSpawnZone(accessZone, 1000)
+  state.guardCoordinate = requireObject(state.brigade:GetCoordinate(), WAREHOUSE_NAME .. " coordinate")
+
   state.platoon = requireObject(PLATOON:New(TEMPLATE_NAME, 1, PLATOON_NAME), PLATOON_NAME)
   state.platoon:AddMissionCapability(AUFTRAG.Type.ONGUARD, 100)
   state.brigade:AddPlatoon(state.platoon)
@@ -171,11 +169,11 @@ local function setupFortressSentry()
       local availableAssets = state.platoon:CountAssets(true, AUFTRAG.Type.ONGUARD)
       if availableAssets ~= 1 then fail("Fortress sentry platoon expected exactly one ONGUARD-capable asset actual=" .. tostring(availableAssets)) end
       commitFortressPersonnel()
-      state.guardMission = AUFTRAG:NewONGUARD(guardZone:GetCoordinate())
+      state.guardMission = AUFTRAG:NewONGUARD(state.guardCoordinate)
       state.guardMission:SetName("OMW_STAGE2_A1_FORTRESS_SENTRY")
       state.guardMission:SetReturnToLegion(false)
       state.brigade:AddMission(state.guardMission)
-      log(string.format("SENTRY_QUEUED template=%s platoon=%s zone=%s personnel=%d", TEMPLATE_NAME, PLATOON_NAME, GUARD_ZONE_NAME, PERSONNEL_COUNT))
+      log(string.format("SENTRY_QUEUED template=%s platoon=%s warehouse=%s guardSource=warehouse-coordinate personnel=%d", TEMPLATE_NAME, PLATOON_NAME, WAREHOUSE_NAME, PERSONNEL_COUNT))
     end, {}, POST_START_DELAY_SEC)
   end
 
