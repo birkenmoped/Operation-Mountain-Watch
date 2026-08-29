@@ -10,7 +10,6 @@ project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
 superseded_by:
 source_branch: agent/automatic-response-orchestration-continuation
-source_commit: 4771420480a994ce7356abc618ae0a3189dc105e
 validated_in_dcs: partial
 base_branch: main
 base_commit: 99d4d88d9b9eea2026fe525ebab4e29ff60cdbfa
@@ -33,11 +32,10 @@ Akzeptierter Parent-Scope:
 Stage 1A  AMMO RESUPPLY                ACCEPTED_TECHNICAL_BASELINE
 Stage 1C  meta RESUPPLY via NOTHING    ACCEPTED_TECHNICAL_BASELINE
 Stage 1B2 one-shot FUELSUPPLY          ACCEPTED_TECHNICAL_BASELINE
+Stage 1D-S SUPPLY via NOTHING          ACCEPTED_TECHNICAL_BASELINE
 ```
 
 ## 2. Stage 1D-S – abgeschlossen und technisch akzeptiert
-
-Stage 1D-S `SUPPLY` ist auf diesem Branch jetzt technisch akzeptiert.
 
 ```text
 status: ACCEPTED_TECHNICAL_BASELINE
@@ -72,14 +70,6 @@ MissionDemand RESUPPLY(resource=GROUND_SUPPLY_PACKAGE)
 -> PASS
 ```
 
-Strategischer Testvertrag:
-
-```text
-JOYCE   GROUND_SUPPLY_PACKAGE 48 -> 28
-HONAKER GROUND_SUPPLY_PACKAGE 40 -> 20 -> 40
-TransferQuantity: 20
-```
-
 Evidenz:
 
 ```text
@@ -90,9 +80,9 @@ docs/moose/GROUND-GENERIC-RESUPPLY-STAGE-1D-SOURCE-REVIEW.md
 
 ## 3. Regressionserkenntnis aus Stage 1D-S
 
-Der erste Stage-1D-S-Harness wich unnötig vom bereits in Stage 1C bestandenen `AUFTRAG NOTHING`-Lifecycle ab. Dadurch wurde ein bereits gelöstes Return-Problem erneut geöffnet. Die erfolgreiche Korrektur bestand nicht aus neuer Routinglogik oder einer neuen Zielzone, sondern aus der Rückkehr auf die technisch akzeptierte Stage-1C-Mechanik.
+Der erste Stage-1D-S-Harness wich unnötig vom bereits in Stage 1C bestandenen `AUFTRAG NOTHING`-Lifecycle ab. Die erfolgreiche Korrektur bestand aus der Rückkehr auf die technisch akzeptierte Stage-1C-Mechanik, nicht aus neuer Routinglogik oder einer neuen Zielzone.
 
-Für Folgearbeiten ist deshalb verbindlicher Arbeitsgrundsatz auf diesem Branch:
+Für Folgearbeiten gilt:
 
 ```text
 vorhandene ACCEPTED_TECHNICAL_BASELINE
@@ -101,9 +91,78 @@ vorhandene ACCEPTED_TECHNICAL_BASELINE
 -> nur kleinstes erforderliches Delta implementieren
 ```
 
-Diese Regression war vermeidbar und verursachte unnötigen Test-, Zeit- und Tokenaufwand. Sie darf in Stage 1D-P/1D-V nicht wiederholt werden.
+## 4. Stage 1D-P – owner-approved PERSONNEL contract
 
-## 4. MOOSE-first – aktueller Stand
+PERSONNEL bleibt strategischer CampaignState-Headcount und wird für gewöhnlichen Resupply **nicht** als reale Infantry-GROUP-Cargo modelliert.
+
+Owner-Entscheidung:
+
+```text
+shared resourceId: GROUND_PERSONNEL
+reorder trigger: strictly below 80% of target
+exactly 80%: no demand
+resupply quantity: refill to 100% target
+PERSONNEL critical threshold: not defined in this stage
+```
+
+Die vorhandene Supply-Parent-Kette gilt:
+
+```text
+Jalalabad -> Fortress
+Jalalabad -> Joyce
+Jalalabad -> Wright
+Jalalabad -> Bostick
+Joyce     -> Honaker
+```
+
+FOB/COP -> OP oder AO mit physisch laufender Infanterie bleibt ein separater späterer Deployment-Scope.
+
+## 5. Stage 1D-P – kombinierter Acceptance-Scope
+
+Status:
+
+```text
+SOURCE_REVIEWED / STAGED
+validated_in_dcs: false
+```
+
+### Ground leg
+
+```text
+Joyce PERSONNEL 180
+Honaker PERSONNEL 120 -> simulated shortage 95
+80% floor Honaker: 96
+Demand: 25
+Transfer: Joyce -> Honaker 25
+Expected final: Joyce 155 / Honaker 120
+Carrier: TPL_BLUE_CONVOY_LIGHT_06
+Mission: AUFTRAG NOTHING
+Return: accepted delayed explicit ARMYGROUP RTZ OnRoad
+```
+
+Der Ground-Lifecycle wird gegenüber Stage 1D-S nicht neu erfunden.
+
+### Air leg
+
+```text
+Jalalabad PERSONNEL 480
+Fortress PERSONNEL 160 -> simulated shortage 127
+80% floor Fortress: 128
+Demand: 33
+Transfer: Jalalabad -> Fortress 33
+Expected final: Jalalabad 447 / Fortress 160
+Carrier owner: Jalalabad AIRWING
+Squadron: SQ_US_JBAD_CH47_HEAVYLIFT
+Template: TPL_AIR_US_JBAD_CH47_HEAVYLIFT_1SHIP
+Mission: AUFTRAG LANDATCOORDINATE
+Target: existing OMW_BLUE_LZ_FORTRESS_01 invisible FARP
+```
+
+Der Helikopter wird nicht Fortress zugeschlagen. Er startet als Jalalabad-AIRWING-Asset, repräsentiert die Aufnahme des PERSONNEL-Bestands am Source-Node Jalalabad, liefert nach physischem Landing-Nachweis bei Fortress und kehrt über den normalen MOOSE AIRWING/LEGION-Lifecycle nach Jalalabad zurück.
+
+Kein `TROOPTRANSPORT`, da keine reale Infantry GROUP transportiert wird.
+
+## 6. MOOSE-first evidence Stage 1D-P
 
 Pinned MOOSE:
 
@@ -113,50 +172,120 @@ MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
 Moose.lua SHA-256: E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915
 ```
 
-Stage-1D-Source-Review:
+Im tatsächlich gepinnten Source geprüft:
 
 ```text
-SUPPLY
--> kein spezialisierter Ground-SUPPLY-AUFTRAG
--> AUFTRAG:NewNOTHING ist im dokumentierten Scope technisch akzeptiert
-
-PERSONNEL
--> AUFTRAG:NewTROOPTRANSPORT(...) vorhanden
--> reale GROUP/SET_GROUP Cargo erforderlich
--> kein abstrakter PERSONNEL-Headcount-Transport belegt
-
-VEHICLE
--> LEGION/COMMANDER:RelocateCohort(...) vorhanden
--> ganze Cohorts
--> kein beliebiger VEHICLE +N Transfer
-
-OPSTRANSPORT:AddCargoStorage(...)
--> DCS STORAGE Warehouse
--> keine strategische CampaignState-Autorität
+AUFTRAG:NewLANDATCOORDINATE(...)
+AUFTRAG:SetRequiredAssets(...)
+AUFTRAG:AssignSquadrons(...)
+AIRWING:onafterFlightOnMission(...)
+FLIGHTGROUP:onafterTakeoff(...)
+FLIGHTGROUP:IsAirborne(...)
+OPSGROUP:onafterMissionDone(...)
+OPSGROUP:Get2DDistance(...)
+LEGION:onafterLegionAssetReturned(...)
 ```
 
-## 5. Nächster technischer Arbeitspunkt
+Der Source bestätigt außerdem, dass `AUFTRAG:SetReturnToLegion(...)` nur Army/Navy betrifft und Aircraft immer über den Air-Lifecycle zurückkehren.
 
-Nächster Schritt ist jetzt **Stage 1D-P / PERSONNEL Source-/Design-Reconciliation**.
-
-Noch keine Implementierung beginnen, bevor mindestens geklärt ist:
+Details:
 
 ```text
-1. Welche strategische PERSONNEL-Einheit wird physisch repräsentiert?
-2. Muss jede PERSONNEL-Verlegung eine reale Infanterie-GROUP/SET_GROUP-Cargo besitzen?
-3. Welche vorhandenen Ground-Infanterie-Templates und Cohorts sind zuständig?
-4. Welche genaue NewTROOPTRANSPORT-Semantik liefert die gepinnte Moose.lua?
-5. Welche Pickup-/Dropoff-/Carrier-Lifecycle-Events sind öffentlich und für CampaignState-Settlement geeignet?
-6. Wie werden Verluste/Teilrückkehr und idempotente Settlement-IDs behandelt?
-7. Welche vorhandenen OMW-Tests oder offiziellen MOOSE-Demos belegen den Pfad bereits?
+docs/moose/GROUND-AIR-PERSONNEL-RESUPPLY-STAGE-1D-P-SOURCE-REVIEW.md
 ```
 
-Nur wenn `TROOPTRANSPORT` die fachliche PERSONNEL-Repräsentation tatsächlich erfüllt, wird daraus ein Stage-1D-P-Acceptance-Harness abgeleitet.
+## 7. Implementierte branch-lokale Änderungen
 
-## 6. Verbleibende Entwicklungsreihenfolge
+Strategische Daten/Policy:
 
 ```text
-Stage 1D-P  PERSONNEL source/design reconciliation
+scripts/logistics/OMW_GroundInitialStock.lua
+  -> schema OMW-GROUND-INITIAL-STOCK-3
+  -> shared GROUND_PERSONNEL
+  -> strict BELOW 80% PERSONNEL reorder rule
+  -> legacy PERSONNEL-ID migration
+
+scripts/campaign/OMW_ResourceDemandPolicy.lua
+  -> optional reorderComparison
+  -> default behavior backward compatible
+  -> BELOW semantics for PERSONNEL
+```
+
+Tests:
+
+```text
+tests/mission-demand/test_resource_demand_policy.lua
+tests/ground/test_ground_resource_normalization.lua
+```
+
+Production builders:
+
+```text
+tools/build-air-ops-warehouse-production-base.ps1
+  -> must be rebuilt because Warehouse Base seeds the single CampaignState
+
+tools/build-ground-production-base.ps1
+  -> must be rebuilt because Ground Base exposes/attaches Ground stock v3
+```
+
+Acceptance:
+
+```text
+mission/tests/ground-resupply-execution/src/06-ground-air-personnel-resupply-acceptance.lua
+tools/build-ground-air-personnel-resupply-acceptance-1.ps1
+output: mission/tests/ground-resupply-execution/dist/OMW_Ground_Air_PERSONNEL_Resupply_Acceptance_1.lua
+```
+
+No `.miz` mutation was performed.
+
+## 8. Local verification gate before Mission Editor work
+
+The owner must pull the final remote commit and produce real output/hashes for all three bundles:
+
+```text
+1. OMW_AirOps_Warehouse_Base.lua
+2. OMW_Ground_Base.lua
+3. OMW_Ground_Air_PERSONNEL_Resupply_Acceptance_1.lua
+```
+
+Only after these real hashes are returned may the Mission Editor replacement instructions be issued.
+
+## 9. Expected DCS lifecycle after build/ME gate
+
+Ground:
+
+```text
+PERSONNEL shortage below 80%
+-> demand/reservation
+-> NOTHING convoy
+-> Honaker destination proof
+-> exact-once delivery
+-> MissionDone
+-> explicit RTZ Joyce
+-> Returned
+-> Warehouse AddAsset
+```
+
+Air:
+
+```text
+PERSONNEL shortage below 80%
+-> demand/reservation
+-> Jalalabad CH-47 FlightOnMission / loading
+-> Takeoff / IN_TRANSIT
+-> LANDATCOORDINATE Fortress FARP
+-> grounded + <=100 m target proof
+-> exact-once delivery / demand SUCCESS
+-> normal MOOSE air return
+-> LegionAssetReturned at Jalalabad
+```
+
+There is no hard Ground or Air travel-time timeout.
+
+## 10. Verbleibende Entwicklungsreihenfolge
+
+```text
+Stage 1D-P  local build/hash -> Mission Editor -> DCS acceptance
 Stage 1D-V  VEHICLE source/design reconciliation
 Stage 2     FOB attacked -> support demand
 Stage 3     fire support -> strategic resupply closure
@@ -169,7 +298,7 @@ Stage 9     multiplayer / performance / failure acceptance
 Stage 10    production reconciliation and merge readiness
 ```
 
-## 7. Arbeitsgrenzen
+## 11. Arbeitsgrenzen
 
 ```text
 CampaignState = sole strategic authority
@@ -178,4 +307,4 @@ MOOSE = primary operational executor
 DCS groups = temporary physical representations
 ```
 
-Keine `.miz`-Mutation durch ChatGPT. Keine nicht dokumentierte zweite Ressourcenautorität. Keine Native-DCS-/Nicht-MOOSE-Parallelimplementierung ohne ausdrückliche Eigentümerfreigabe.
+Keine `.miz`-Mutation durch ChatGPT. Keine zweite Ressourcenautorität. Keine Native-DCS-/Nicht-MOOSE-Parallelimplementierung ohne ausdrückliche Eigentümerfreigabe. Kein `VALIDATED` ohne dokumentierten realen DCS-Test.
