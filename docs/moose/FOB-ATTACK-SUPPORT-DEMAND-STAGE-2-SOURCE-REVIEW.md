@@ -135,14 +135,15 @@ For Acceptance 1 the runtime settings are intentionally simple:
 security radius         = 1000 m
 object categories       = UNIT only
 unit categories         = GROUND_UNIT only
-capture/attack units    = 1
-capture threat level    = 0
+attack threat threshold = 0
 owner                    = BLUE
 scan interval           = 5 s (Acceptance only)
 F10 draw/marker          = disabled
 ```
 
-Threat level 0 is intentional for this Stage-2 rule: mere hostile RED ground presence in the security perimeter is sufficient to raise the installation alarm. This is an OMW design decision for the current acceptance, not a universal MOOSE default recommendation.
+Important source nuance: `SetCaptureNunits(...)` participates in the capture branch when the owning side is absent; the defended-zone `Attacked` branch checks `Nred > 0` plus the configured threat threshold. Therefore Stage 2 does **not** depend on `SetCaptureNunits(1)` as an attack trigger. The adapter still sets it explicitly to `1` so subsequent capture semantics retain the MOOSE default rather than being left implicit.
+
+Threat level `0` is intentional for this Stage-2 rule: mere hostile RED ground presence in the security perimeter is sufficient to raise the installation alarm. This is an OMW design decision for the current acceptance, not a universal MOOSE default recommendation.
 
 ## 6. Runtime perimeter source
 
