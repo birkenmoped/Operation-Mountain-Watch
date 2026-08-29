@@ -10,8 +10,8 @@ project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
 superseded_by:
 source_branch: agent/automatic-response-orchestration-continuation
-source_commit: 0392836695f11dbd263505025da15fcabe98d4f4
-validated_in_dcs: false
+source_commit: 4771420480a994ce7356abc618ae0a3189dc105e
+validated_in_dcs: partial
 base_branch: main
 base_commit: 99d4d88d9b9eea2026fe525ebab4e29ff60cdbfa
 ---
@@ -20,133 +20,156 @@ base_commit: 99d4d88d9b9eea2026fe525ebab4e29ff60cdbfa
 
 ## 1. Ausgangspunkt
 
-Dieser Nachfolgebranch basiert jetzt auf dem nach `main` integrierten Ground-RESUPPLY-Stand:
+Der Nachfolgebranch basiert auf dem nach `main` integrierten Ground-RESUPPLY-Parent-Scope:
 
 ```text
 main merge PR: #135
 main merge commit: 99d4d88d9b9eea2026fe525ebab4e29ff60cdbfa
-superseded draft PR: #131
 ```
 
 Akzeptierter Parent-Scope:
 
 ```text
-Stage 1A AMMO RESUPPLY                ACCEPTED_TECHNICAL_BASELINE
-Stage 1B historical FUELSUPPLY        HISTORICAL_TEST_FIXTURE / INCONCLUSIVE
-Stage 1C meta RESUPPLY via NOTHING    ACCEPTED_TECHNICAL_BASELINE
-Stage 1B2 one-shot FUELSUPPLY         ACCEPTED_TECHNICAL_BASELINE
+Stage 1A  AMMO RESUPPLY                ACCEPTED_TECHNICAL_BASELINE
+Stage 1C  meta RESUPPLY via NOTHING    ACCEPTED_TECHNICAL_BASELINE
+Stage 1B2 one-shot FUELSUPPLY          ACCEPTED_TECHNICAL_BASELINE
 ```
 
-Der frühere branchgebundene Parent-Stand ist damit nicht mehr die Arbeitsbasis des Nachfolgers. Gemeinsame Dokumentation, MOOSE-Evidenzregister und Acceptance-Artefakte werden aus dem aktuellen `main` geerbt.
+## 2. Stage 1D-S – abgeschlossen und technisch akzeptiert
 
-## 2. Lokaler Readback nach Parent-Merge
-
-Der Projektinhaber hat den Nachfolgebranch nach dem Parent-Merge real lokal ausgecheckt und folgende Identität bestätigt:
+Stage 1D-S `SUPPLY` ist auf diesem Branch jetzt technisch akzeptiert.
 
 ```text
-local branch:
-agent/automatic-response-orchestration-continuation
-
-local HEAD:
-0392836695f11dbd263505025da15fcabe98d4f4
-
-origin continuation:
-0392836695f11dbd263505025da15fcabe98d4f4
-
-origin/main:
-99d4d88d9b9eea2026fe525ebab4e29ff60cdbfa
-
-origin/main...HEAD:
-0 1
+status: ACCEPTED_TECHNICAL_BASELINE
+runtime_result: PASS
+branch: agent/automatic-response-orchestration-continuation
+build_commit: 4771420480a994ce7356abc618ae0a3189dc105e
+builder_version: GROUND-SUPPLY-RESUPPLY-NOTHING-ACCEPTANCE-1-2
+bundle_sha256: C805C996A2028629251F833F0E0D0ED06F462C15271A1166E0DB8DF0BA105CE3
+mission: OMW_Template_v20_GroundWorks.miz
+mission_sha256: BA556641A9ECAD629FDBE62AEA5CC30E22E081B81B4188C136855026F70D0907
+dcs: 2.9.29.27278 MT
+moose_commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+moose_sha256: E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915
 ```
 
-Die vorhandenen lokalen `??`-Einträge sind untracked Build-/Testartefakte und werden nicht Bestandteil des Branches.
-
-## 3. Verbleibende Entwicklungsreihenfolge
-
-Die ursprüngliche Stage 1D wird nach dem erneuten MOOSE-first-Review nicht mehr künstlich als ein einziger generischer Ressourcentest behandelt.
+Akzeptierter Lifecycle:
 
 ```text
-Stage 1D-S  SUPPLY
-            neutraler one-shot Ground convoy über AUFTRAG:NewNOTHING
-            Acceptance-Kandidat
+MissionDemand RESUPPLY(resource=GROUND_SUPPLY_PACKAGE)
+-> CampaignState reserve / transfer Joyce -> Honaker
+-> existing Ground logistics PLATOON / TPL_BLUE_CONVOY_LIGHT_06
+-> AUFTRAG:NewNOTHING(ZON_BLUE_GND_HONAKER_ACCESS)
+-> SetReturnToLegion(false)
+-> physical destination-zone proof
+-> exact-once CampaignState SUPPLY settlement
+-> MissionDemand SUCCESS
+-> mission cancel / MissionDone
+-> 30 s delayed ARMYGROUP:RTZ(ZON_BLUE_GND_JOYCE_ACCESS, OnRoad)
+-> physical return
+-> Returned
+-> Warehouse AddAsset
+-> PASS
+```
 
-Stage 1D-P  PERSONNEL
-            TROOPTRANSPORT nur bei realer physischer Cargo-Gruppe
-            Source-/Design-Reconciliation vor Acceptance
+Strategischer Testvertrag:
 
-Stage 1D-V  VEHICLE
-            quantity transfer vs. whole-cohort relocation trennen
-            Source-/Design-Reconciliation vor Acceptance
+```text
+JOYCE   GROUND_SUPPLY_PACKAGE 48 -> 28
+HONAKER GROUND_SUPPLY_PACKAGE 40 -> 20 -> 40
+TransferQuantity: 20
+```
 
+Evidenz:
+
+```text
+mission/tests/ground-resupply-execution/ACCEPTANCE-5.md
+mission/tests/ground-resupply-execution/results/2026-08-29-ground-supply-resupply-nothing-acceptance-1-pass-1.md
+docs/moose/GROUND-GENERIC-RESUPPLY-STAGE-1D-SOURCE-REVIEW.md
+```
+
+## 3. Regressionserkenntnis aus Stage 1D-S
+
+Der erste Stage-1D-S-Harness wich unnötig vom bereits in Stage 1C bestandenen `AUFTRAG NOTHING`-Lifecycle ab. Dadurch wurde ein bereits gelöstes Return-Problem erneut geöffnet. Die erfolgreiche Korrektur bestand nicht aus neuer Routinglogik oder einer neuen Zielzone, sondern aus der Rückkehr auf die technisch akzeptierte Stage-1C-Mechanik.
+
+Für Folgearbeiten ist deshalb verbindlicher Arbeitsgrundsatz auf diesem Branch:
+
+```text
+vorhandene ACCEPTED_TECHNICAL_BASELINE
+-> exakt als Referenz vergleichen
+-> bewiesenen Lifecycle nicht ohne fachlich zwingenden Grund verändern
+-> nur kleinstes erforderliches Delta implementieren
+```
+
+Diese Regression war vermeidbar und verursachte unnötigen Test-, Zeit- und Tokenaufwand. Sie darf in Stage 1D-P/1D-V nicht wiederholt werden.
+
+## 4. MOOSE-first – aktueller Stand
+
+Pinned MOOSE:
+
+```text
+MOOSE release: 2.9.18
+MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+Moose.lua SHA-256: E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915
+```
+
+Stage-1D-Source-Review:
+
+```text
+SUPPLY
+-> kein spezialisierter Ground-SUPPLY-AUFTRAG
+-> AUFTRAG:NewNOTHING ist im dokumentierten Scope technisch akzeptiert
+
+PERSONNEL
+-> AUFTRAG:NewTROOPTRANSPORT(...) vorhanden
+-> reale GROUP/SET_GROUP Cargo erforderlich
+-> kein abstrakter PERSONNEL-Headcount-Transport belegt
+
+VEHICLE
+-> LEGION/COMMANDER:RelocateCohort(...) vorhanden
+-> ganze Cohorts
+-> kein beliebiger VEHICLE +N Transfer
+
+OPSTRANSPORT:AddCargoStorage(...)
+-> DCS STORAGE Warehouse
+-> keine strategische CampaignState-Autorität
+```
+
+## 5. Nächster technischer Arbeitspunkt
+
+Nächster Schritt ist jetzt **Stage 1D-P / PERSONNEL Source-/Design-Reconciliation**.
+
+Noch keine Implementierung beginnen, bevor mindestens geklärt ist:
+
+```text
+1. Welche strategische PERSONNEL-Einheit wird physisch repräsentiert?
+2. Muss jede PERSONNEL-Verlegung eine reale Infanterie-GROUP/SET_GROUP-Cargo besitzen?
+3. Welche vorhandenen Ground-Infanterie-Templates und Cohorts sind zuständig?
+4. Welche genaue NewTROOPTRANSPORT-Semantik liefert die gepinnte Moose.lua?
+5. Welche Pickup-/Dropoff-/Carrier-Lifecycle-Events sind öffentlich und für CampaignState-Settlement geeignet?
+6. Wie werden Verluste/Teilrückkehr und idempotente Settlement-IDs behandelt?
+7. Welche vorhandenen OMW-Tests oder offiziellen MOOSE-Demos belegen den Pfad bereits?
+```
+
+Nur wenn `TROOPTRANSPORT` die fachliche PERSONNEL-Repräsentation tatsächlich erfüllt, wird daraus ein Stage-1D-P-Acceptance-Harness abgeleitet.
+
+## 6. Verbleibende Entwicklungsreihenfolge
+
+```text
+Stage 1D-P  PERSONNEL source/design reconciliation
+Stage 1D-V  VEHICLE source/design reconciliation
 Stage 2     FOB attacked -> support demand
 Stage 3     fire support -> strategic resupply closure
 Stage 4     convoy attacked -> support demand
 Stage 5     BLUE/CAS automatic-response adapter
 Stage 6     aircraft loss -> CSAR incident / MOOSE CSAR-first execution
 Stage 7     complete end-to-end automatic response chain
-Stage 8     restart / restore / idempotence for automatic-response state
+Stage 8     restart / restore / idempotence
 Stage 9     multiplayer / performance / failure acceptance
 Stage 10    production reconciliation and merge readiness
 ```
 
-Source-Review:
-
-```text
-docs/moose/GROUND-GENERIC-RESUPPLY-STAGE-1D-SOURCE-REVIEW.md
-```
-
-## 4. Stage-1D MOOSE-first Ergebnis
-
-Gepinnter Stand:
-
-```text
-MOOSE release: 2.9.18
-MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
-Moose.lua SHA-256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
-```
-
-Wesentliche Befunde:
-
-```text
-AUFTRAG:NewTROOPTRANSPORT(...)
--> öffentlich vorhanden
--> reale GROUP/SET_GROUP Cargo
--> AIR ROTARY / GROUND
--> kein abstrakter PERSONNEL-Headcount
-
-AUFTRAG:NewCARGOTRANSPORT(...)
--> öffentlich vorhanden
--> Slingload / Helicopter
--> StaticCargo + ME-Zone
--> kein generischer Ground convoy
-
-AUFTRAG:NewFREIGHTTRANSPORT(...)
--> öffentlich vorhanden
--> Air transport
--> Static cargo -> AIRBASE
--> kein generischer Ground convoy
-
-OPSTRANSPORT:New(...)
--> öffentliche Klasse vorhanden
--> Ground carrier möglich
--> Storage transport vorhanden
--> AddCargoStorage arbeitet aber mit DCS STORAGE warehouses
--> darf nicht zur zweiten strategischen Authority neben CampaignState werden
-
-AUFTRAG:NewOPSTRANSPORT(...)
--> in der gepinnten Moose.lua auskommentiert
--> darf nicht als verfügbare öffentliche API verwendet werden
-
-LEGION/COMMANDER:RelocateCohort(...)
--> öffentliche Relocation-Einstiege
--> verschieben kompletten COHORT / alle Assets
--> kein beliebiger VEHICLE +N Resupply-Transfer
-```
-
-Für normalisierte `SUPPLY`-Einheiten wurde kein spezialisierter MOOSE-Ground-Supply-Auftrag gefunden. Deshalb ist der bereits DCS-akzeptierte neutrale `AUFTRAG:NewNOTHING(...)`-Lifecycle der kleinste MOOSE-first-konforme Stage-1D-S-Kandidat. `PERSONNEL` und `VEHICLE` werden nicht stillschweigend über denselben Executor generalisiert.
-
-## 5. Verbindliche Arbeitsgrenzen
+## 7. Arbeitsgrenzen
 
 ```text
 CampaignState = sole strategic authority
@@ -155,45 +178,4 @@ MOOSE = primary operational executor
 DCS groups = temporary physical representations
 ```
 
-Für neue MOOSE-Nutzung gilt weiterhin:
-
-```text
-Dokumentation
--> tatsächlich verwendete Moose.lua
--> Signaturen/FSM/Events
--> offizielle Demos/Tests, soweit relevant
--> erst dann Implementation
-```
-
-ChatGPT mutiert keine `.miz`; Mission-Editor-Integration und DCS-Test erfolgen durch den Projektinhaber.
-
-## 6. Nächster Implementierungsschritt
-
-Nächster technischer Arbeitspunkt ist ausschließlich:
-
-```text
-Stage 1D-S
-MissionDemand RESUPPLY(resource=SUPPLY)
--> CampaignState reserve/transfer
--> AUFTRAG:NewNOTHING(destinationZone)
--> BRIGADE:AddMission(...)
--> physical arrival evidence
--> exactly-once SUPPLY settlement
--> MissionDemand SUCCESS
--> normal MOOSE return lifecycle
-```
-
-Nicht in Stage 1D-S aufnehmen:
-
-```text
-DCS warehouse storage authority
-OPSTRANSPORT:AddCargoStorage strategic transfer
-PERSONNEL
-VEHICLE
-TROOPTRANSPORT acceptance
-whole-cohort relocation acceptance
-```
-
-## 7. Reconciliation-Hinweis
-
-Der vorherige Continuation-Commit `8f7d4774384ced5d41da5885b7a2d9d46cd3ce73` enthielt ausschließlich diese Handoff-Datei auf dem damals ungemergten Parent-Stand. Nach dem erfolgreichen Parent-Merge wurde der Nachfolgebranch bewusst auf den tatsächlichen neuen `main` gesetzt und diese Handoff-Datei mit der neuen Base-Provenienz neu angelegt. Es ging dabei keine Implementierungsarbeit verloren.
+Keine `.miz`-Mutation durch ChatGPT. Keine nicht dokumentierte zweite Ressourcenautorität. Keine Native-DCS-/Nicht-MOOSE-Parallelimplementierung ohne ausdrückliche Eigentümerfreigabe.
