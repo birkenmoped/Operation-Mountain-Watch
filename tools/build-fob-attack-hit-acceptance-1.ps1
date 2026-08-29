@@ -5,13 +5,6 @@ $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 
 $repoRoot = Split-Path -Parent $PSScriptRoot
-$campaignStateFile = Join-Path $repoRoot 'scripts\campaign\OMW_CampaignState.lua'
-$groundStockFile = Join-Path $repoRoot 'scripts\logistics\OMW_GroundInitialStock.lua'
-$groundCampaignStateAdapterFile = Join-Path $repoRoot 'scripts\ground\OMW_GroundCampaignStateAdapter.lua'
-$groundAmmoRearmAdapterFile = Join-Path $repoRoot 'scripts\ground\OMW_GroundAmmoRearmAdapter.lua'
-$groundRuntimeIntegrationFile = Join-Path $repoRoot 'scripts\ground\OMW_GroundRuntimeIntegration.lua'
-$groundBaseFile = Join-Path $repoRoot 'scripts\ground\OMW_GroundBase.lua'
-$groundBootstrapFile = Join-Path $repoRoot 'mission\tests\fob-attack-support-demand\src\00-stage2-ground-context-bootstrap.lua'
 $missionDemandFile = Join-Path $repoRoot 'scripts\campaign\OMW_MissionDemand.lua'
 $demandPolicyFile = Join-Path $repoRoot 'scripts\campaign\OMW_FobAttackDemandPolicy.lua'
 $hitAdapterFile = Join-Path $repoRoot 'scripts\ground\OMW_FobAttackHitAdapter.lua'
@@ -19,69 +12,32 @@ $acceptanceSourceFile = Join-Path $repoRoot 'mission\tests\fob-attack-support-de
 $distDir = Join-Path $repoRoot 'mission\tests\fob-attack-support-demand\dist'
 $outputFile = Join-Path $distDir 'OMW_FOB_Attack_Hit_Acceptance_1.lua'
 
-$builderVersion = 'FOB-ATTACK-HIT-ACCEPTANCE-1-3'
+$builderVersion = 'FOB-ATTACK-HIT-ACCEPTANCE-1-4'
 $testId = 'FOB-ATTACK-HIT-ACCEPTANCE-1'
 $mooseCommit = '73d3ed119cd9e7e3f2cfcabbaa34513d30529b54'
 $mooseSha256 = 'e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915'
 
-$files = @(
-  $campaignStateFile,
-  $groundStockFile,
-  $groundCampaignStateAdapterFile,
-  $groundAmmoRearmAdapterFile,
-  $groundRuntimeIntegrationFile,
-  $groundBaseFile,
-  $groundBootstrapFile,
-  $missionDemandFile,
-  $demandPolicyFile,
-  $hitAdapterFile,
-  $acceptanceSourceFile
-)
+$files = @($missionDemandFile, $demandPolicyFile, $hitAdapterFile, $acceptanceSourceFile)
 foreach ($file in $files) {
   if (-not (Test-Path -LiteralPath $file -PathType Leaf)) {
     throw "Required Stage 2 FOB attack acceptance source not found: $file"
   }
 }
 
-$campaignState = Get-Content -LiteralPath $campaignStateFile -Raw -Encoding UTF8
-$groundStock = Get-Content -LiteralPath $groundStockFile -Raw -Encoding UTF8
-$groundCampaignStateAdapter = Get-Content -LiteralPath $groundCampaignStateAdapterFile -Raw -Encoding UTF8
-$groundAmmoRearmAdapter = Get-Content -LiteralPath $groundAmmoRearmAdapterFile -Raw -Encoding UTF8
-$groundRuntimeIntegration = Get-Content -LiteralPath $groundRuntimeIntegrationFile -Raw -Encoding UTF8
-$groundBase = Get-Content -LiteralPath $groundBaseFile -Raw -Encoding UTF8
-$groundBootstrap = Get-Content -LiteralPath $groundBootstrapFile -Raw -Encoding UTF8
 $missionDemand = Get-Content -LiteralPath $missionDemandFile -Raw -Encoding UTF8
 $demandPolicy = Get-Content -LiteralPath $demandPolicyFile -Raw -Encoding UTF8
 $hitAdapter = Get-Content -LiteralPath $hitAdapterFile -Raw -Encoding UTF8
 $acceptanceSource = Get-Content -LiteralPath $acceptanceSourceFile -Raw -Encoding UTF8
-$combined = $campaignState + $groundStock + $groundCampaignStateAdapter + $groundAmmoRearmAdapter + $groundRuntimeIntegration + $groundBase + $groundBootstrap + $missionDemand + $demandPolicy + $hitAdapter + $acceptanceSource
+$combined = $missionDemand + $demandPolicy + $hitAdapter + $acceptanceSource
 
 $requiredMarkers = @(
-  'function CampaignState.New',
-  'OMW-GROUND-INITIAL-STOCK-3',
-  'OMW-GROUND-RUNTIME-INTEGRATION-2',
-  'OMW-GROUND-PRODUCTION-BASE-2',
-  'single_acceptance_campaignstate',
-  'GroundBase.Attach',
-  'OMW-MISSION-DEMAND-1',
-  'CAS_IMMEDIATE',
-  'OMW-FOB-ATTACK-DEMAND-POLICY-1',
-  'FOB_ATTACK_QUALIFIED',
-  'OMW-FOB-ATTACK-HIT-ADAPTER-1',
-  'BASE:New()',
-  'HandleEvent',
-  'EVENTS.Hit',
-  'FOB-ATTACK-HIT-ACCEPTANCE-1',
-  'TPL_BLUE_GND_INF_RIFLE_SQUAD_9',
-  'GROUND_NODE_FORTRESS',
-  'GROUND_PERSONNEL',
-  'BRIGADE:New',
-  'PLATOON:New',
-  'AUFTRAG:NewONGUARD',
-  'ZON_BLUE_GND_FORTRESS_PATROL_TEST_01',
-  'BLUE_GROUND_COP_FORTRESS',
-  'active_duplicate',
-  'SCHEDULER:New'
+  'OMW-MISSION-DEMAND-1', 'CAS_IMMEDIATE', 'OMW-FOB-ATTACK-DEMAND-POLICY-1',
+  'FOB_ATTACK_QUALIFIED', 'OMW-FOB-ATTACK-HIT-ADAPTER-1', 'BASE:New()',
+  'HandleEvent', 'EVENTS.Hit', 'FOB-ATTACK-HIT-ACCEPTANCE-1',
+  'TPL_BLUE_GND_INF_RIFLE_SQUAD_9', 'GROUND_NODE_FORTRESS', 'GROUND_PERSONNEL',
+  'BRIGADE:New', 'PLATOON:New', 'AUFTRAG:NewONGUARD',
+  'ZON_BLUE_GND_FORTRESS_PATROL_TEST_01', 'BLUE_GROUND_COP_FORTRESS',
+  'active_duplicate', 'SCHEDULER:New'
 )
 foreach ($marker in $requiredMarkers) {
   if (-not $combined.Contains($marker)) {
@@ -90,22 +46,13 @@ foreach ($marker in $requiredMarkers) {
 }
 
 $forbiddenPatterns = @(
-  'MissionScripting\.lua',
-  'mist\.',
-  'MIST',
-  'world\.addEventHandler',
-  'timer\.scheduleFunction',
-  'os\.execute',
-  ':Teleport\s*\(',
-  'SPAWN:',
-  'AUFTRAG:NewCAS',
-  'COMMANDER:AddMission',
-  'AIRWING',
-  'SQUADRON',
-  'TST_BLUE_GND_FORTRESS_HIT_TARGET'
+  'CampaignState\.New', 'CampaignState\.Restore', 'MissionScripting\.lua',
+  'mist\.', '\bMIST\b', 'world\.addEventHandler', 'timer\.scheduleFunction',
+  'os\.execute', ':Teleport\s*\(', 'SPAWN:', 'AUFTRAG:NewCAS',
+  'COMMANDER:AddMission', 'AIRWING', 'SQUADRON', 'TST_BLUE_GND_FORTRESS_HIT_TARGET'
 )
 foreach ($pattern in $forbiddenPatterns) {
-  if ($groundBootstrap -match $pattern -or $acceptanceSource -match $pattern -or $hitAdapter -match $pattern) {
+  if ($acceptanceSource -match $pattern -or $hitAdapter -match $pattern) {
     throw "Stage 2 FOB attack acceptance contains forbidden runtime pattern: $pattern"
   }
 }
@@ -128,11 +75,12 @@ $header = @"
 -- GitCommit: $commit
 -- GeneratedUtc: $generatedUtc
 -- TestId: $testId
--- Scope: standalone Stage 2 Fortress acceptance: one fresh authoritative CampaignState -> GroundBase attach -> 9 Fortress PERSONNEL -> MOOSE BRIGADE/PLATOON rifle squad -> AUFTRAG ONGUARD -> EVENTS.Hit -> CAS_IMMEDIATE MissionDemand -> repeated-hit active dedupe.
+-- Scope: production-stack Stage 2 Fortress GROUND_PERSONNEL -> MOOSE BRIGADE/PLATOON rifle squad -> AUFTRAG ONGUARD -> EVENTS.Hit -> CAS_IMMEDIATE MissionDemand -> repeated-hit active dedupe.
 -- MOOSECommit: $mooseCommit
 -- MooseLuaSHA256: $mooseSha256
--- StrategicAuthority: exactly one acceptance-local fresh OMW CampaignState store built from current GroundInitialStock and attached to GroundBase.
--- ExternalGroundBaseRequired: false. Do not load OMW_Ground_Base.lua before this bundle.
+-- StrategicAuthority: pre-existing OMW.AirOps.CampaignContext attached through OMW_Ground_Base.lua and OMW_Ground_Startup.lua.
+-- RequiredLoadOrder: Moose.lua -> OMW_AirOps_Warehouse_Base.lua -> OMW_Ground_Base.lua -> OMW_Ground_Startup.lua -> this bundle.
+-- CampaignStateCreation: false
 -- PhysicalRepresentation: existing TPL_BLUE_GND_INF_RIFLE_SQUAD_9 through public BRIGADE/PLATOON/Warehouse lifecycle.
 -- ExplicitExclusions: dedicated BLUE test target, CAS dispatch, COMMANDER mission execution, AIRWING/SQUADRON dispatch, native world event handler, MIST, MissionScripting.lua mutation.
 
@@ -143,13 +91,6 @@ function Embed-Module([string]$Name, [string]$Source) {
 }
 
 $bundle = $header
-$bundle += Embed-Module 'OMW_STAGE2_CAMPAIGN_STATE' $campaignState
-$bundle += Embed-Module 'OMW_STAGE2_GROUND_INITIAL_STOCK' $groundStock
-$bundle += Embed-Module 'OMW_STAGE2_GROUND_CAMPAIGN_STATE_ADAPTER' $groundCampaignStateAdapter
-$bundle += Embed-Module 'OMW_STAGE2_GROUND_AMMO_REARM_ADAPTER' $groundAmmoRearmAdapter
-$bundle += Embed-Module 'OMW_STAGE2_GROUND_RUNTIME_INTEGRATION' $groundRuntimeIntegration
-$bundle += Embed-Module 'OMW_STAGE2_GROUND_BASE' $groundBase
-$bundle += $groundBootstrap + "`n`n"
 $bundle += Embed-Module 'OMW_STAGE2_MISSION_DEMAND' $missionDemand
 $bundle += Embed-Module 'OMW_STAGE2_FOB_ATTACK_DEMAND_POLICY' $demandPolicy
 $bundle += Embed-Module 'OMW_STAGE2_FOB_ATTACK_HIT_ADAPTER' $hitAdapter
@@ -165,9 +106,10 @@ Write-Host "GeneratedUtc: $generatedUtc"
 Write-Host "GitCommit: $commit"
 Write-Host "MOOSECommit: $mooseCommit"
 Write-Host "MooseLuaSHA256: $($mooseSha256.ToUpperInvariant())"
-Write-Host 'CampaignStateBootstrap: one fresh authoritative acceptance store from current GroundInitialStock'
-Write-Host 'ExternalGroundBaseRequired: false'
-Write-Host 'DoNotLoadBeforeAcceptance: OMW_Ground_Base.lua'
+Write-Host 'RequiredBefore: OMW_AirOps_Warehouse_Base.lua,OMW_Ground_Base.lua,OMW_Ground_Startup.lua'
+Write-Host 'CampaignStateAuthority: OMW.AirOps.CampaignContext'
+Write-Host 'CampaignStateCreation: false'
+Write-Host 'RequiresGroundBaseAttached: true'
 Write-Host 'TargetModel: existing Fortress rifle squad from Ground personnel pool'
 Write-Host 'Template: TPL_BLUE_GND_INF_RIFLE_SQUAD_9'
 Write-Host 'PersonnelNode: GROUND_NODE_FORTRESS'
