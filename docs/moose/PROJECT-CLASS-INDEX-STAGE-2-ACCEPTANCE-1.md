@@ -11,6 +11,7 @@ not_authoritative_for:
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
+  - Stage 2 Acceptance-1 EVENTS.Hit qualification evidence
   - dedicated BLUE test-target version of Stage 2 Acceptance 1
   - Acceptance-1 standalone CampaignState/GroundBase bootstrap variant
   - dedicated Fortress patrol-test-zone dependency for ONGUARD
@@ -34,52 +35,88 @@ Moose.lua SHA-256: E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A
 
 | Klasse/Pfad | Status vor DCS-Lauf | Stage-2-Verwendung |
 |---|---|---|
-| `BRIGADE` | bereits in anderen Ground-Scopes `VALIDATED_FOR_DOCUMENTED_SCOPE`; neuer Infantry-Sentry-Scope noch nicht validiert | Fortress operational domain for one existing rifle-squad template through the public Warehouse/Legion lifecycle |
-| `LEGION` / `WAREHOUSE` | existing framework hierarchy; Stage-2 guard-point use source-reviewed | `BRIGADE -> LEGION -> WAREHOUSE`; public `WAREHOUSE:GetCoordinate()` supplies the Fortress guard coordinate from `WH_BLUE_GND_FORTRESS` |
+| `BRIGADE` | bereits in anderen Ground-Scopes `VALIDATED_FOR_DOCUMENTED_SCOPE`; neuer Infantry-Security-Scope noch nicht validiert | Fortress operational domain for one existing rifle-squad template through public Warehouse/Legion lifecycle |
+| `LEGION` / `WAREHOUSE` | existing framework hierarchy; Stage-2 anchor use source-reviewed | `BRIGADE -> LEGION -> WAREHOUSE`; public `WAREHOUSE:GetCoordinate()` supplies Fortress guard/security anchor from `WH_BLUE_GND_FORTRESS` |
 | `PLATOON` / `COHORT` | `SOURCE_REVIEWED` plus prior Ground lifecycle evidence; new infantry/ONGUARD combination pending | `PLATOON:New(TPL_BLUE_GND_INF_RIFLE_SQUAD_9, 1, ...)`, `AddMissionCapability(AUFTRAG.Type.ONGUARD, 100)` |
-| `AUFTRAG` / `NewONGUARD` | `SOURCE_REVIEWED` for this exact mission type; acceptance staged | public GROUND/NAVAL ONGUARD mission at the runtime Fortress warehouse coordinate; no ME guard zone and no custom sentry task |
-| `ARMYGROUP` / `OPSGROUP` lifecycle | prior Ground scopes validated; new infantry ONGUARD scope pending | `OnAfterArmyOnMission` correlation and `OnAfterMissionExecute` proof before dynamic group registration as attack target |
-| `BASE` | `SOURCE_REVIEWED` / acceptance staged | `BASE:New()`, `HandleEvent(EVENTS.Hit, ...)`, `UnHandleEvent(EVENTS.Hit)` for the MOOSE-first Hit listener |
-| `EVENTS.Hit` | `SOURCE_REVIEWED` / acceptance staged | real RED-on-BLUE hit against the dynamically materialized Fortress infantry group |
-| `SCHEDULER` | already elsewhere `VALIDATED_FOR_DOCUMENTED_SCOPE`; new Stage-2 scope not independently validated | five-second post-BRIGADE-start orchestration and two-second PASS evaluation; no World/frame scan |
+| `AUFTRAG` / `NewONGUARD` | `SOURCE_REVIEWED` for this exact mission type; acceptance staged | keeps a real BLUE local-security squad at the Warehouse-derived installation anchor |
+| `ARMYGROUP` / `OPSGROUP` lifecycle | prior Ground scopes validated; new infantry ONGUARD scope pending | `OnAfterArmyOnMission` and `OnAfterMissionExecute` prove the Sentry is executing before the perimeter monitor starts |
+| `ZONE_RADIUS` | `SOURCE_REVIEWED`; DCS Stage-2 runtime pending | runtime 1000 m circular security perimeter from `warehouseCoordinate:GetVec2()`; no ME security zone |
+| `OPSZONE` | `SOURCE_REVIEWED`; DCS Stage-2 runtime pending | BLUE-owned installation perimeter; scans hostile Ground presence and raises FSM `Attacked` |
+| `OPSZONE:SetObjectCategories` | `SOURCE_REVIEWED`; DCS Stage-2 runtime pending | restricts scan to `Object.Category.UNIT`; Statics do not satisfy BLUE presence in this acceptance |
+| `OPSZONE:SetUnitCategories` | `SOURCE_REVIEWED`; DCS Stage-2 runtime pending | restricts units to `Unit.Category.GROUND_UNIT` |
+| `OPSZONE:SetCaptureThreatlevel` | `SOURCE_REVIEWED`; DCS Stage-2 runtime pending | Acceptance value `0`: any RED Ground unit inside the security perimeter is alarm-worthy |
+| `OPSZONE:SetCaptureNunits` | `SOURCE_REVIEWED`; DCS Stage-2 runtime pending | Acceptance value `1` |
+| `OPSZONE:SetDrawZone` / `SetMarkZone` | `SOURCE_REVIEWED`; DCS Stage-2 runtime pending | runtime security perimeter stays off the F10 map |
+| `OPSZONE.UpdateSeconds` | source-verified public class field consumed by `onafterStart`; no dedicated setter exists in pinned source | Acceptance-only value `5` seconds to avoid the class default 120-second evaluation interval during manual DCS testing |
+| `OPSZONE OnAfterAttacked` | `SOURCE_REVIEWED`; DCS Stage-2 runtime pending | `OnAfterAttacked(From, Event, To, AttackerCoalition)` is the MOOSE-first boundary that emits the qualified installation threat |
+| `SCHEDULER` | already elsewhere `VALIDATED_FOR_DOCUMENTED_SCOPE`; new Stage-2 scope not independently validated | five-second post-BRIGADE-start orchestration and PASS evaluation; no custom presence scan |
 
 No status is raised to `VALIDATED_FOR_DOCUMENTED_SCOPE` by source or CI alone.
 
-## 3. Source evidence for the guard point
+## 3. Source evidence for runtime security zone
 
-The pinned `Moose.lua` establishes this inheritance chain:
+The pinned `Moose.lua` explicitly demonstrates:
+
+```lua
+OPSZONE:New(
+  ZONE_RADIUS:New("OpsZoneTwo", mycoordinate:GetVec2(), 5000),
+  coalition.side.BLUE
+)
+```
+
+`OPSZONE:New` accepts `ZONE_RADIUS`, creates internal unit/group scan sets for that zone, and records the supplied coalition as the initial owner.
+
+For the OMW acceptance this becomes:
 
 ```text
-BRIGADE:New(...)
--> LEGION:New(...)
--> WAREHOUSE:New(...)
+WH_BLUE_GND_FORTRESS
+-> BRIGADE/WAREHOUSE:GetCoordinate()
+-> COORDINATE:GetVec2()
+-> ZONE_RADIUS(..., 1000)
+-> OPSZONE(..., BLUE)
 ```
 
-and publicly exposes:
+No Mission-Editor security trigger zone is required.
+
+## 4. Source evidence for threat qualification
+
+For a BLUE-owned OPSZONE the pinned `EvaluateZone()` path distinguishes two cases:
+
+```text
+Nblu == 0
+-> RED satisfying threshold can enter capture processing
+
+Nblu > 0 AND Nred > 0 AND Tred >= threatlevelCapture
+-> Attacked(coalition.side.RED)
+```
+
+Therefore Stage 2 deliberately retains a real BLUE local-security squad inside the perimeter. It is not a hit target; it supplies the defended BLUE presence required for the intended `Attacked` state.
+
+The public FSM callback signature is documented and implemented as:
 
 ```lua
-function WAREHOUSE:GetCoordinate()
-  return self.warehouse:GetCoord()
-end
+OnAfterAttacked(From, Event, To, AttackerCoalition)
 ```
 
-Therefore the Stage-2 Sentry can derive its guard point directly from the Fortress physical warehouse structure through:
+This removes the need for an OMW `EVENTS.Hit` listener for the primary installation-alarm condition.
 
-```lua
-brigade:GetCoordinate()
+## 5. OPSZONE scan configuration
+
+Acceptance 1 configures:
+
+```text
+ObjectCategories   = UNIT only
+UnitCategories     = GROUND_UNIT only
+CaptureThreatlevel = 0
+CaptureNunits      = 1
+DrawZone           = false
+MarkZone           = false
+UpdateSeconds      = 5 (Acceptance only)
 ```
 
-No Mission-Editor trigger zone is required for this coordinate.
+The pinned source documents default `UpdateSeconds = 120` and `onafterStart()` reads `self.UpdateSeconds` before starting its status timer. The five-second override is limited to the acceptance harness; production cadence remains a separate later configuration decision.
 
-The pinned `Moose.lua` also exposes:
-
-```lua
-AUFTRAG:NewONGUARD(Coordinate)
-```
-
-for `GROUND` / `NAVAL`; the OPSGROUP routing path has an explicit ONGUARD/ARMOREDGUARD branch.
-
-## 4. Existing OMW physical template
+## 6. Existing OMW physical template and CampaignState boundary
 
 The current Ground template contract defines:
 
@@ -89,11 +126,7 @@ TPL_BLUE_GND_INF_RIFLE_SQUAD_9
   2 x Soldier M249
 ```
 
-as a reusable physical representation suitable for local security. Acceptance 1 reuses this template and does not request a new dedicated BLUE test target.
-
-## 5. CampaignState boundary
-
-Acceptance 1 uses the already loaded and attached OMW Ground context from the current test mission:
+Acceptance 1 uses the already loaded and attached OMW Ground context:
 
 ```text
 OMW.AirOps.CampaignContext
@@ -103,47 +136,58 @@ OMW.AirOps.CampaignContext
 -> consume nine GROUND_PERSONNEL from GROUND_NODE_FORTRESS
 ```
 
-The Stage-2 bundle creates no CampaignState and no parallel Ground context.
+CampaignState remains strategic authority. BRIGADE/PLATOON/Warehouse and OPSZONE remain operational/runtime representations only.
 
-CampaignState remains strategic authority. BRIGADE/PLATOON/Warehouse only materialize the physical squad. Infantry casualty/return/restart settlement remains outside this acceptance.
+## 7. ACCESS-zone boundary
 
-## 6. Corrected failed assumption from first DCS run
+`ZON_BLUE_GND_FORTRESS_ACCESS` remains part of the existing materialization boundary for the BRIGADE spawn path.
 
-The first real Stage-2 Acceptance-1 attempt on 2026-08-29 failed before sentry materialization because the harness required the nonexistent Mission-Editor zone:
+It is **not** reused as the installation security perimeter. Current Ground authority defines ACCESS zones as operational materialization/departure/return/handoff boundaries, not installation geometry.
+
+## 8. Superseded Hit path
+
+The earlier branch-local MOOSE path:
 
 ```text
-ZON_BLUE_GND_FORTRESS_PATROL_TEST_01
+BASE:HandleEvent(EVENTS.Hit, ...)
+-> registered dynamic Sentry target
+-> physical RED-on-BLUE hit
 ```
 
-The correction is architectural, not a Mission-Editor workaround: the Sentry guard point is now derived directly from the existing Fortress warehouse through the source-verified MOOSE inheritance/API path `BRIGADE -> LEGION -> WAREHOUSE:GetCoordinate()`.
+is superseded for Stage-2 primary threat qualification. Real DCS testing showed this condition is unnecessarily late and fragile for the intended alarm semantics.
 
-This removes the unnecessary Mission-Editor dependency rather than asking the owner to add a trigger zone that the system can derive itself.
+Git history retains that investigation; the active implementation now uses runtime `ZONE_RADIUS -> OPSZONE -> OnAfterAttacked`.
 
-## 7. Negative boundary
+## 9. Negative boundary
 
-Not used:
+Not used by the active Stage-2 acceptance:
 
 ```text
+EVENTS.Hit as mandatory trigger
+EVENTS.Shot as mandatory trigger
 TST_BLUE_GND_FORTRESS_HIT_TARGET
+ZON_BLUE_GND_FORTRESS_SECURITY in Mission Editor
 ZON_BLUE_GND_FORTRESS_PATROL_TEST_01
-dedicated Mission-Editor guard zone
 second CampaignState store
 Acceptance-specific Ground startup bridge
 SPAWN direct materialization
 world.addEventHandler
 MIST
 native timer.scheduleFunction
-custom/native Sentry task
+custom/native presence scanner
 AUFTRAG:NewCAS
 COMMANDER:AddMission for CAS
 AIRWING/SQUADRON dispatch
 ```
 
-## 8. Reconciliation
+## 10. Reconciliation
 
 After a real Acceptance-1 run with complete provenance:
 
 ```text
-PASS -> reconcile only the exactly observed BRIGADE/PLATOON/WAREHOUSE:GetCoordinate/ONGUARD/EVENTS.Hit scope into master PROJECT-CLASS-INDEX and VERIFIED-METHODS
-FAIL -> no status increase; document the failure and required correction
+PASS
+-> reconcile only the exactly observed ZONE_RADIUS / OPSZONE / OnAfterAttacked plus already observed Ground lifecycle scope into master PROJECT-CLASS-INDEX and VERIFIED-METHODS
+
+FAIL
+-> no status increase; document the observed failure and required correction
 ```
