@@ -232,6 +232,55 @@ existing PERSONNEL resupply orchestration is reused
 
 Der Nachweis darf in einen separaten Acceptance-2-Unterlauf aufgeteilt werden, damit ein einzelner DCS-Lauf nicht unnötig lang und diagnostisch unklar wird.
 
+## Verifizierter lokaler Build-Checkpoint 2026-08-29
+
+Der Projektinhaber hat nach Pull auf den dokumentierten Branch-HEAD den vorhandenen Stage-2B-CAS-Dispatch-Bundle lokal gebaut und den SHA-256 separat verifiziert.
+
+```text
+Branch: agent/fob-attack-support-demand
+Git HEAD: a590c23126c8bb666ffea581e805b3e9b8f4776b
+BuilderVersion: FOB-ATTACK-CAS-DISPATCH-ACCEPTANCE-2-1
+TestId: FOB-ATTACK-CAS-DISPATCH-ACCEPTANCE-2
+GeneratedUtc: 2026-08-29T21:14:05Z
+Bundle: mission/tests/fob-attack-support-demand/dist/OMW_FOB_Attack_CAS_Dispatch_Acceptance_2.lua
+Bundle SHA-256: 9ADB5C601A1F30C748C747835FA62B191F485AEC002106020B34EC9D0844CCD8
+MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+Moose.lua SHA-256: E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915
+RequiresGroundBaseAttached: true
+RequiresJalalabadAirOpsRunning: true
+CASAirwing: AW_US_JBAD_TF_SHOOTER_6_6_CAV
+CASSquadron: SQ_US_JBAD_AH64D_B_1_10_AVN
+CASMissionType: AUFTRAG.Type.CAS
+CASAltitudeFt: 10000 (acceptance-only)
+CASSpeedKts: 120 (acceptance-only)
+DirectSpawn: false
+CommanderCreated: false
+MizMutation: false
+```
+
+Builder-source hashes:
+
+```text
+scripts/campaign/OMW_MissionDemand.lua
+E348E75B87135B99D780E07CA6B6FB7C3C530E048E9C6DE790328D147DE32848
+
+scripts/campaign/OMW_FobAttackDemandPolicy.lua
+F1BB5041382823B8B4DD6EE2EA6418B38C834C3347FBAAD633F8F24DA1A07FF5
+
+scripts/ground/OMW_FobThreatOpsZoneAdapter.lua
+C53BE08B5F0ABCEA8DF3FADDA9EA41E2FEBAACA34FED1B3D1D195F63E0D6650D
+
+scripts/air-operations/OMW_FobAttackCasDispatchAdapter.lua
+823189650CF984C7FDE2280AAD097F4F70A7670BEBD4D304D3FA34F0A15EC363
+
+mission/tests/fob-attack-support-demand/src/02-fob-attack-cas-dispatch-acceptance-2.lua
+9D1F457A3935854A9A2C21888ABE542B13B66ADE0C16EC9B8F3440512C3C00B8
+```
+
+Die separate `Get-FileHash`-Ausgabe stimmt exakt mit dem vom Builder ausgegebenen Bundle-Hash überein. Der lokale Git-Status zeigte nur die bereits bekannten untracked Verzeichnisse `mission/ground-operations/` und `mission/tests/fob-attack-support-demand/dist/`.
+
+Dieser Build-Checkpoint ist **kein DCS-PASS**. Außerdem bildet `FOB-ATTACK-CAS-DISPATCH-ACCEPTANCE-2-1` nur den bereits implementierten CAS-Dispatch-Slice ab. Die nachträglich beschlossene Erweiterung um CAS-Abschluss/RTB, lokale Gegenwehr, Guard-Rotation/Recovery, Verlust-Settlement und Resupply-Reevaluation ist in diesem Bundle noch nicht implementiert und darf mit diesem Bundle nicht als getestet gelten.
+
 ## Nicht durch Acceptance 2 entschieden
 
 Offen bleiben bewusst:
