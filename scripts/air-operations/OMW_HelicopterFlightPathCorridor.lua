@@ -7,7 +7,7 @@
 local Corridor = {}
 
 local TAG = "[OMW][HelicopterFlightPathCorridor]"
-Corridor.SchemaVersion = "OMW-HELICOPTER-FLIGHTPATH-CORRIDOR-1"
+Corridor.SchemaVersion = "OMW-HELICOPTER-FLIGHTPATH-CORRIDOR-2"
 Corridor.DefaultPathlineName = "OMW_FlightPath"
 Corridor.DefaultOffsetRightM = 500
 Corridor.DefaultRightHeadingDeltaDeg = 90
@@ -114,6 +114,40 @@ function Corridor.Resolve(spec)
   }
 end
 
+local function armRouteReadyInstall(flightGroup, mission, resolved, altitudeFtAgl)
+  flightGroup.__omwFlightPathCorridorPending = {
+    mission = mission,
+    resolved = resolved,
+    altitudeFtAgl = altitudeFtAgl,
+  }
+
+  if flightGroup.__omwFlightPathCorridorRouteHook then return end
+  flightGroup.__omwFlightPathCorridorRouteHook = true
+
+  local previousUpdateRoute = flightGroup.OnAfterUpdateRoute
+  function flightGroup:OnAfterUpdateRoute(From, Event, To, n, N)
+    if previousUpdateRoute then previousUpdateRoute(self, From, Event, To, n, N) end
+
+    local pending = self.__omwFlightPathCorridorPending
+    if not pending or self.__omwFlightPathCorridorInstalling then return end
+
+    self.__omwFlightPathCorridorInstalling = true
+    local installed, ok, reason = Corridor.Install(self, pending.mission, pending.resolved, pending.altitudeFtAgl)
+    self.__omwFlightPathCorridorInstalling = nil
+
+    if ok then
+      self.__omwFlightPathCorridorInstalled = {
+        mission = pending.mission,
+        result = installed,
+      }
+      self.__omwFlightPathCorridorPending = nil
+      self.__omwFlightPathCorridorLastReason = nil
+    elseif reason ~= "MISSION_ROUTE_UIDS_NOT_READY" then
+      self.__omwFlightPathCorridorLastReason = reason
+    end
+  end
+end
+
 function Corridor.Install(flightGroup, mission, resolved, altitudeFtAgl)
   requireTable(flightGroup, "flightGroup")
   requireTable(mission, "mission")
@@ -127,9 +161,22 @@ function Corridor.Install(flightGroup, mission, resolved, altitudeFtAgl)
     fail("FLIGHTGROUP waypoint APIs are required")
   end
 
+  local cached = flightGroup.__omwFlightPathCorridorInstalled
+  if cached and cached.mission == mission and cached.result then
+    return cached.result, true, nil
+  end
+  if flightGroup.__omwFlightPathCorridorLastReason then
+    return nil, false, flightGroup.__omwFlightPathCorridorLastReason
+  end
+
   local missionUid = mission:GetGroupWaypointIndex(flightGroup)
   local egressUid = mission:GetGroupEgressWaypointUID(flightGroup)
   if type(missionUid) ~= "number" or type(egressUid) ~= "number" then
+    -- MOOSE creates these UIDs in OPSGROUP:RouteToMission(), which is scheduled
+    -- from OPSGROUP:onafterMissionStart(). AIRWING:FlightOnMission can therefore
+    -- legitimately fire before the route exists. Subscribe to the documented
+    -- FLIGHTGROUP OnAfterUpdateRoute FSM callback instead of guessing with timers.
+    armRouteReadyInstall(flightGroup, mission, resolved, altitudeFtAgl)
     return nil, false, "MISSION_ROUTE_UIDS_NOT_READY"
   end
 
@@ -160,13 +207,22 @@ function Corridor.Install(flightGroup, mission, resolved, altitudeFtAgl)
     returnCount = returnCount + 1
   end
 
-  return {
+  local result = {
     missionUid = missionUid,
     egressUid = egressUid,
     outboundWaypointCount = outboundCount,
     returnWaypointCount = returnCount,
     altitudeFtAgl = altitude,
-  }, true, nil
+  }
+
+  flightGroup.__omwFlightPathCorridorInstalled = {
+    mission = mission,
+    result = result,
+  }
+  flightGroup.__omwFlightPathCorridorPending = nil
+  flightGroup.__omwFlightPathCorridorLastReason = nil
+
+  return result, true, nil
 end
 
 return Corridor
