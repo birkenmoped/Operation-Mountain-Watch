@@ -17,7 +17,7 @@ $acceptanceSourceFile = Join-Path $repoRoot 'mission\tests\fob-attack-support-de
 $distDir = Join-Path $repoRoot 'mission\tests\fob-attack-support-demand\dist'
 $outputFile = Join-Path $distDir 'OMW_FOB_Attack_CAS_Dispatch_Acceptance_2.lua'
 
-$builderVersion = 'FOB-ATTACK-CAS-DISPATCH-ACCEPTANCE-2-4'
+$builderVersion = 'FOB-ATTACK-CAS-DISPATCH-ACCEPTANCE-2-5'
 $testId = 'FOB-ATTACK-CAS-DISPATCH-ACCEPTANCE-2'
 $mooseCommit = '73d3ed119cd9e7e3f2cfcabbaa34513d30529b54'
 $mooseSha256 = 'e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915'
@@ -50,7 +50,7 @@ $requiredMarkers = @(
   'AUFTRAG:NewGROUNDATTACK', 'OnAfterRTZ', 'OnAfterReturned', 'GetNelements',
   'Warehouse WH_BLUE_GND_FORTRESS spawn zone', 'MOOSE_DEFAULT_TRUE',
   'OMW-GROUND-PERSONNEL-DEPLOYMENT-LEDGER-1', 'OMW-RESOURCE-DEMAND-COORDINATOR-1',
-  'OMW-HELICOPTER-FLIGHTPATH-CORRIDOR-2', 'PATHLINE:FindByName', 'OMW_FlightPath',
+  'OMW-HELICOPTER-FLIGHTPATH-CORRIDOR-3', 'PATHLINE:FindByName', 'OMW_FlightPath',
   'OnAfterUpdateRoute', 'OnAfterFlightOnMission', 'OnAfterRTB', 'OnAfterLanded', 'OnAfterArrived',
   'FOB-ATTACK-CAS-DISPATCH-ACCEPTANCE-2', 'WH_BLUE_GND_FORTRESS',
   'TPL_BLUE_GND_INF_RIFLE_SQUAD_9', 'AW_US_JBAD_TF_SHOOTER_6_6_CAV',
@@ -95,7 +95,7 @@ $header = @"
 -- StrategicAuthority: pre-existing OMW Ground CampaignState; deployed personnel are reserved, not consumed; only confirmed casualties permanently decrement strategic quantity.
 -- GroundOrigin: WH_BLUE_GND_FORTRESS / TPL_BLUE_GND_INF_RIFLE_SQUAD_9.
 -- GroundReturn: native MOOSE origin-legion spawnzone; no ACCESS override, no SetReturnToLegion(false), no explicit ARMYGROUP:RTZ command.
--- CASRouteInstall: MOOSE FLIGHTGROUP OnAfterUpdateRoute after AUFTRAG RouteToMission creates group route UIDs; no timer-only route readiness assumption.
+-- CASRouteInstall: requires the MOOSE AUFTRAG mission waypoint UID; egress UID is optional for NewCAS and is not a route-readiness gate.
 -- DefenceReserveFloor: 80 PERSONNEL for Fortress acceptance.
 -- ExplicitExclusions: additional ME test zones, direct SPAWN, custom Ground RTZ controller, native world event handler, MIST, MissionScripting.lua mutation, new CampaignState, custom presence/ammo polling.
 
@@ -141,7 +141,7 @@ Write-Host 'CASSquadron: SQ_US_JBAD_AH64D_B_1_10_AVN'
 Write-Host 'CASMissionType: AUFTRAG.Type.CAS'
 Write-Host 'CASClosure: OPSZONE Defeated(RED) -> AUFTRAG Cancel -> FLIGHTGROUP RTB/Landed/Arrived'
 Write-Host 'CASHelicopterCorridor: OMW_FlightPath / 500m directional right offset / 500ft AGL'
-Write-Host 'CASRouteInstall: FLIGHTGROUP OnAfterUpdateRoute after MOOSE RouteToMission route creation'
+Write-Host 'CASRouteInstall: AUFTRAG mission waypoint UID required; NewCAS egress UID optional'
 Write-Host 'LocalCounterattack: AUFTRAG.Type.GROUNDATTACK'
 Write-Host 'GroundRecovery: native ReturnToLegion -> origin legion spawnzone -> Returned -> origin Warehouse AddAsset'
 Write-Host 'PersonnelAccounting: reserve while deployed; consume confirmed casualties only'
