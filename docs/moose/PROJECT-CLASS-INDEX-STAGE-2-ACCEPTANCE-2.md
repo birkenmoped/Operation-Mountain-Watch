@@ -6,6 +6,7 @@ owning_policy: OMW-GOV-001
 authoritative_for:
   - branch-local Stage 2B MOOSE class/API evidence pending DCS Acceptance 2
   - branch-local source evidence for Ground Warehouse spawnzone/homezone/ReturnToLegion behavior
+  - branch-local source evidence for FLIGHTGROUP route-ready corridor installation
 not_authoritative_for:
   - master PROJECT-CLASS-INDEX status on main
   - DCS validation before Acceptance 2 passes
@@ -37,7 +38,9 @@ Moose.lua SHA-256: E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A
 | `AUFTRAG:NewCAS(ZoneCAS, Altitude, Speed, Coordinate, Heading, Leg, TargetTypes)` | `SOURCE_VERIFIED_PENDING_DCS` | vorhandener Jalalabad-AH-64D-CAS-Auftrag |
 | `AIRWING` / `LEGION:AddMission` | `SOURCE_VERIFIED`, vorhandene OMW Foundation | vorhandener Jalalabad-AIRWING nimmt den CAS-AUFTRAG in seine Mission Queue auf |
 | `SQUADRON` / `COHORT:AddMissionCapability` | `SOURCE_VERIFIED`, vorhandene OMW Foundation | vorhandener AH-64D-SQUADRON besitzt `AUFTRAG.Type.CAS` |
-| `AIRWING OnAfterFlightOnMission` | `SOURCE_VERIFIED_PENDING_DCS` | reale FLIGHTGROUP-Materialisierung/Missionszuordnung |
+| `AIRWING OnAfterFlightOnMission` | `SOURCE_VERIFIED_PENDING_DCS` | reale FLIGHTGROUP-Materialisierung/Missionszuordnung; kann vor dem verzögerten Aufbau der gruppenspezifischen AUFTRAG-Route eintreten |
+| `OPSGROUP:onafterMissionStart` / `RouteToMission(Mission, 3)` | `SOURCE_VERIFIED` | MOOSE setzt Mission STARTED und baut die Missionsroute anschließend verzögert auf; erklärt `nil`-Route-UIDs im früheren AIRWING-Callback |
+| `FLIGHTGROUP OnAfterUpdateRoute(From, Event, To, n, N)` | `SOURCE_VERIFIED_PENDING_DCS_STAGE2B` | MOOSE-FSM-Callback zum eventgebundenen Einfügen des `OMW_FlightPath`-Korridors, sobald die Missionsroute aufgebaut wurde |
 | `AUFTRAG OnAfterExecuting` | `SOURCE_VERIFIED_PENDING_DCS` | reale CAS-Missionausführung; MissionDemand wird `ACTIVE` |
 | `AUFTRAG:Cancel()` | `SOURCE_VERIFIED_PENDING_DCS` | beendet den laufenden CAS-Auftrag nach `OPSZONE Defeated(RED)` über den MOOSE-FSM-Pfad |
 | `FLIGHTGROUP:_CheckGroupDone()` / `RTB()` | `SOURCE_VERIFIED_PENDING_DCS` | nach Missionsende ohne verbleibende Mission/Task geht AI zum Home-/Destination-Airbase zurück |
@@ -55,11 +58,11 @@ Moose.lua SHA-256: E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A
 | `OPSGROUP:SetReturnOnOutOfAmmo(...)` / `OutOfAmmo`-Lifecycle | `SOURCE_VERIFIED_PENDING_DCS_STAGE2B` | MOOSE besitzt einen nativen Leerschuss-Rückkehrpfad; Stage 2B führt keinen eigenen Ammo-Poller ein |
 | `OPSGROUP:GetNelements()` | `SOURCE_VERIFIED_PENDING_DCS_STAGE2B` | Zahl der überlebenden physischen Elemente beim Recovery-/Loss-Settlement |
 | `PATHLINE:FindByName("OMW_FlightPath")` / `PATHLINE:GetCoordinates()` | `SOURCE_VERIFIED`; OMW-FlightPath bereits in PERSONNEL-Air-Resupply DCS-validiert | owner-authored Tal-/Transitkorridor als gemeinsame Geometriequelle |
-| `AUFTRAG:GetGroupWaypointIndex(...)` / `GetGroupEgressWaypointUID(...)` | `SOURCE_VERIFIED`; vorhandener OMW FlightPath-Präzedenzfall | MOOSE-Missionsroute als Einfügeanker für den Korridor |
-| `FLIGHTGROUP:AddWaypoint(...)` | `SOURCE_VERIFIED`; vorhandener OMW FlightPath-Präzedenzfall | 500-m-Rechtsversatz outbound/return, 500 ft AGL, ohne Koordinatenkopie |
+| `AUFTRAG:GetGroupWaypointIndex(...)` / `GetGroupEgressWaypointUID(...)` | `SOURCE_VERIFIED`; vorhandener OMW FlightPath-Präzedenzfall | gruppenspezifische MOOSE-Missionsanker; dürfen vor `RouteToMission` noch `nil` sein |
+| `FLIGHTGROUP:AddWaypoint(...)` | `SOURCE_VERIFIED`; vorhandener OMW FlightPath-Präzedenzfall | 500-m-Rechtsversatz outbound/return, 500 ft AGL; bei Helos verwendet MOOSE Radar-/AGL-Waypoints |
 | `AUFTRAG OnAfterSuccess` / `OnAfterFailed` | `SOURCE_VERIFIED_PENDING_DCS` | terminaler MissionDemand-Status nach MOOSE-Abschluss/Fehlschlag |
 
-Die offizielle MOOSE-Missionssammlung wurde für `GROUNDATTACK` durchsucht; es wurde dabei kein belastbarer Demo-Nachweis gefunden. Deshalb wird für diesen Pfad ausschließlich der tatsächlich gepinnte `Moose.lua` als API-/Semantiknachweis verwendet. Es wird kein nicht gefundener Demo-Test behauptet.
+Die offizielle MOOSE-Missionssammlung wurde für `GROUNDATTACK` und für einen belastbaren `OnAfterUpdateRoute`-Korridor-Präzedenzfall durchsucht; es wurde dabei kein belastbarer Demo-Nachweis gefunden. Deshalb wird für diese Pfade der tatsächlich gepinnte `Moose.lua` als API-/Semantiknachweis verwendet. Es wird kein nicht gefundener Demo-Test behauptet.
 
 ## Verifizierte Threat-Clear-Semantik
 
@@ -70,6 +73,51 @@ Attacked -> Defeated -> Guarded
 ```
 
 Für eine BLUE-owned Zone gilt im relevanten Pfad: bleibt BLUE im Perimeter und ist RED nicht mehr vorhanden, erzeugt MOOSE `Defeated(RED)`. Stage 2B verwendet genau diesen Framework-Zustandswechsel als Threat-Clear-Signal. Ein separater OMW-Präsenzscanner wird nicht eingeführt.
+
+## Verifizierte CAS-Routenbereitschaft
+
+Der gepinnte Source belegt die Reihenfolge:
+
+```text
+LEGION OpsOnMission
+-> AIRWING FlightOnMission
+
+OPSGROUP MissionStart
+-> RouteToMission(Mission, 3)
+-> gruppenspezifische Mission-/Egress-Waypoint-UIDs
+-> FLIGHTGROUP UpdateRoute
+```
+
+Der DCS-Lauf mit Commit `8d900cf5f87082e79a46e9ba53602aa1e6ff6810` zeigte praktisch, dass ein ausschließlich timerbasierter Zugriff aus `AIRWING FlightOnMission` zu früh sein kann:
+
+```text
+CAS_CORRIDOR_INSTALL_FAILED reason=MISSION_ROUTE_UIDS_NOT_READY
+```
+
+Dies ist kein Nachweis gegen `OMW_FlightPath`, sondern gegen die bisherige Timing-Annahme des Stage-2B-Adapters.
+
+Der korrigierte Branch-Pfad verwendet deshalb den MOOSE-FSM-Callback:
+
+```text
+route UIDs ready
+-> FLIGHTGROUP:AddWaypoint(...)
+
+route UIDs not ready
+-> arm FLIGHTGROUP OnAfterUpdateRoute
+-> MOOSE RouteToMission creates route
+-> OnAfterUpdateRoute
+-> FLIGHTGROUP:AddWaypoint(...)
+```
+
+`OMW_HelicopterFlightPathCorridor` Schema 2 cached eine erfolgreiche Installation pro FLIGHTGROUP/AUFTRAG, damit ein späterer Acceptance-Aufruf dieselben Waypoints nicht erneut einfügt.
+
+Diese Korrektur ist source- und unit-testbar, bleibt für den sichtbaren Talflug jedoch `PENDING_DCS`.
+
+Themendokument:
+
+```text
+docs/moose/FOB-ATTACK-CAS-ROUTE-READY-STAGE-2B.md
+```
 
 ## Verifizierte CAS-Abschluss-Semantik
 
@@ -223,10 +271,20 @@ confirmed physical Returned
 
 CampaignState berechnet nicht den physischen Rückweg und wählt nicht anhand des Zielortes ein Rückkehr-Warehouse. MOOSE führt den origin-bound physischen Lifecycle; CampaignState übernimmt bestätigte Return-/Loss-Ereignisse idempotent für das ursprüngliche Deployment.
 
-## Validierungsgrenze
+## Aktueller DCS-Befund und Validierungsgrenze
 
-Alle als `PENDING_DCS` gekennzeichneten Kombinationen dürfen erst nach dem dokumentierten Acceptance-Lauf auf `VALIDATED`/`ACCEPTED_TECHNICAL_BASELINE` angehoben werden.
+Der Fortress-Gesamtlauf mit Commit `8d900cf5f87082e79a46e9ba53602aa1e6ff6810` ist **kein vollständiger Acceptance-2-PASS**. Er belegte jedoch innerhalb seines dokumentierten Laufes:
 
-Vor dem nächsten Stage-2B-DCS-Lauf muss insbesondere der aktuell noch explizite Fortress-ACCESS-/`SetReturnToLegion(false)`-Harness gegen den neu dokumentierten nativen Homezone-Pfad reconciliert werden.
+```text
+BLUE Guard materialization / ONGUARD
+QRF materialization / GROUNDATTACK
+QRF native ReturnToLegion
+QRF origin Fortress Warehouse recovery
+CampaignState QRF settlement
+```
 
-Ein `CAS_EXECUTING` oder ein bloßer Ground-Mission-Start reicht nicht: Threat clear, CAS RTB/recovery, origin-bound Ground-Return, Returned/Warehouse-Settlement und Reorder-Evaluation gehören zum Abnahmescope.
+Nicht nachgewiesen wurden insbesondere der korrekte `OMW_FlightPath`-Talflug und die vollständige CAS-Closure-/RTB-/Landed-/Arrived-Kette. Zusätzlich blieb mindestens eine RED-Infanterieeinheit im Fortress-/HESCO-Bereich, so dass Threat Clear nicht sauber erreicht wurde.
+
+Alle als `PENDING_DCS` gekennzeichneten Kombinationen dürfen erst nach dem dokumentierten Acceptance-Lauf auf einen validierten technischen Status angehoben werden.
+
+Ein `CAS_EXECUTING` oder ein bloßer Ground-Mission-Start reicht nicht: sichtbarer Talflug, Threat Clear, CAS RTB/recovery, origin-bound Ground-Return, Returned/Warehouse-Settlement und Reorder-Evaluation gehören zum Abnahmescope.
