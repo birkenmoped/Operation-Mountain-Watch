@@ -10,7 +10,7 @@ local Instance = {}
 Instance.__index = Instance
 
 local TAG = "[OMW][FobAttackFunctionalArtyDispatchAdapter]"
-Adapter.SchemaVersion = "OMW-FOB-ATTACK-FUNCTIONAL-ARTY-DISPATCH-ADAPTER-2"
+Adapter.SchemaVersion = "OMW-FOB-ATTACK-FUNCTIONAL-ARTY-DISPATCH-ADAPTER-3"
 
 local function fail(message)
   error(TAG .. " " .. tostring(message), 2)
@@ -50,7 +50,7 @@ function Adapter.New(spec)
   for _, name in ipairs({ "Get", "AssignAI", "Activate", "Succeed", "Fail" }) do
     requireFunction(registry, name, "registry")
   end
-  requireFunction(arty, "AssignAttackGroup", "arty")
+  requireFunction(arty, "AssignTargetCoord", "arty")
   requireNonEmptyString(spec.assigneeId, "assigneeId")
 
   if spec.priority ~= nil and (not isFinite(spec.priority) or spec.priority < 1 or spec.priority > 100) then
@@ -81,7 +81,9 @@ function Adapter.New(spec)
     weaponType = spec.weaponType,
     targetsByDemandId = {},
     demandIdByTargetName = {},
+    completedTargetsByDemandId = {},
     onFireStarted = spec.onFireStarted,
+    onTargetComplete = spec.onTargetComplete,
     onFireComplete = spec.onFireComplete,
     onFireRejected = spec.onFireRejected,
     verifyFireComplete = spec.verifyFireComplete,
@@ -93,6 +95,16 @@ end
 
 function Instance:_log(message)
   if type(self.arty.I) == "function" then self.arty:I(TAG .. " " .. tostring(message)) end
+end
+
+function Instance:_allTargetsComplete(demandId)
+  local targets = self.targetsByDemandId[demandId] or {}
+  local completed = self.completedTargetsByDemandId[demandId] or {}
+  if #targets == 0 then return false end
+  for _, targetName in ipairs(targets) do
+    if completed[targetName] ~= true then return false end
+  end
+  return true
 end
 
 function Instance:_installCallbacks()
@@ -118,7 +130,8 @@ function Instance:_installCallbacks()
   local previousCeaseFire = self.arty.OnAfterCeaseFire
   self.arty.OnAfterCeaseFire = function(selfArty, Controllable, From, Event, To, target)
     if previousCeaseFire then previousCeaseFire(selfArty, Controllable, From, Event, To, target) end
-    local demandId = target and adapter.demandIdByTargetName[target.name] or nil
+    local targetName = target and target.name or nil
+    local demandId = targetName and adapter.demandIdByTargetName[targetName] or nil
     if not demandId then return end
     local demand = adapter.registry:Get(demandId)
     local verified, failureReason = true, nil
@@ -130,39 +143,53 @@ function Instance:_installCallbacks()
       if demand and (demand.status == adapter.missionDemand.Status.AI_ASSIGNED or demand.status == adapter.missionDemand.Status.ACTIVE) then
         adapter.registry:Fail(demandId, failureReason or "PHYSICAL_FIRE_NOT_CONFIRMED")
       end
-      adapter:_log("fire-support rejected demandId=" .. tostring(demandId) .. " target=" .. tostring(target and target.name) .. " reason=" .. tostring(failureReason or "PHYSICAL_FIRE_NOT_CONFIRMED"))
+      adapter:_log("fire-support rejected demandId=" .. tostring(demandId) .. " target=" .. tostring(targetName) .. " reason=" .. tostring(failureReason or "PHYSICAL_FIRE_NOT_CONFIRMED"))
       if type(adapter.onFireRejected) == "function" then adapter.onFireRejected(demandId, target, Controllable, failureReason or "PHYSICAL_FIRE_NOT_CONFIRMED") end
       return
     end
+
+    local completed = adapter.completedTargetsByDemandId[demandId]
+    if completed and completed[targetName] ~= true then
+      completed[targetName] = true
+      if type(adapter.onTargetComplete) == "function" then adapter.onTargetComplete(demandId, target, Controllable) end
+    end
+
+    if not adapter:_allTargetsComplete(demandId) then
+      adapter:_log("fire-support target complete demandId=" .. tostring(demandId) .. " target=" .. tostring(targetName) .. " awaitingRemainingTargets=true")
+      return
+    end
+
+    demand = adapter.registry:Get(demandId)
     if demand and demand.status == adapter.missionDemand.Status.ACTIVE then
       adapter.registry:Succeed(demandId, {
         executor = adapter.assigneeId,
-        functionalArtyTarget = target.name,
+        functionalArtyTargets = adapter.targetsByDemandId[demandId],
         fireMissionExecuted = true,
         physicalFireConfirmed = adapter.verifyFireComplete ~= nil,
       })
     end
-    adapter:_log("fire-support complete demandId=" .. tostring(demandId) .. " target=" .. tostring(target and target.name))
+    adapter:_log("fire-support complete demandId=" .. tostring(demandId) .. " targets=" .. tostring(#(adapter.targetsByDemandId[demandId] or {})))
     if type(adapter.onFireComplete) == "function" then adapter.onFireComplete(demandId, target, Controllable) end
   end
 
   local previousDead = self.arty.OnAfterDead
   self.arty.OnAfterDead = function(selfArty, Controllable, From, Event, To, Unitname)
     if previousDead then previousDead(selfArty, Controllable, From, Event, To, Unitname) end
-    for demandId, targetName in pairs(adapter.targetsByDemandId) do
+    for demandId, targetNames in pairs(adapter.targetsByDemandId) do
       local demand = adapter.registry:Get(demandId)
       if demand and (demand.status == adapter.missionDemand.Status.AI_ASSIGNED or demand.status == adapter.missionDemand.Status.ACTIVE) then
         adapter.registry:Fail(demandId, "MOOSE_ARTY_DEAD")
-        adapter:_log("fire-support failed demandId=" .. tostring(demandId) .. " reason=MOOSE_ARTY_DEAD target=" .. tostring(targetName))
+        adapter:_log("fire-support failed demandId=" .. tostring(demandId) .. " reason=MOOSE_ARTY_DEAD targets=" .. tostring(#targetNames))
       end
     end
   end
 end
 
-function Instance:Dispatch(demand, targetGroup)
+function Instance:DispatchTargets(demand, targetGroups)
   requireTable(demand, "demand")
   requireNonEmptyString(demand.id, "demand.id")
-  requireTable(targetGroup, "targetGroup")
+  requireTable(targetGroups, "targetGroups")
+  if #targetGroups < 1 then return nil, false, "NO_TARGETS" end
 
   if demand.missionType ~= self.missionDemand.Type.FIRE_SUPPORT_IMMEDIATE then
     return nil, false, "UNSUPPORTED_MISSION_TYPE"
@@ -173,34 +200,62 @@ function Instance:Dispatch(demand, targetGroup)
   if existing then return existing, false, "ALREADY_DISPATCHED" end
   if demand.status ~= self.missionDemand.Status.OPEN then return nil, false, "DEMAND_NOT_OPEN" end
 
-  if type(targetGroup.IsAlive) == "function" and targetGroup:IsAlive() ~= true then
-    return nil, false, "TARGET_NOT_ALIVE"
+  local prepared = {}
+  for index, targetGroup in ipairs(targetGroups) do
+    requireTable(targetGroup, "targetGroups[" .. tostring(index) .. "]")
+    requireFunction(targetGroup, "GetCoordinate", "targetGroups[" .. tostring(index) .. "]")
+    requireFunction(targetGroup, "GetName", "targetGroups[" .. tostring(index) .. "]")
+    if type(targetGroup.IsAlive) == "function" and targetGroup:IsAlive() ~= true then
+      return nil, false, "TARGET_NOT_ALIVE"
+    end
+    local coordinate = targetGroup:GetCoordinate()
+    if type(coordinate) ~= "table" then return nil, false, "TARGET_COORDINATE_UNAVAILABLE" end
+    local groupName = targetGroup:GetName()
+    if type(groupName) ~= "string" or groupName == "" then return nil, false, "TARGET_NAME_UNAVAILABLE" end
+    prepared[#prepared + 1] = { coordinate=coordinate, groupName=groupName }
   end
 
-  local targetName = self.arty:AssignAttackGroup(
-    targetGroup,
-    self.priority,
-    self.radiusM,
-    self.shells,
-    self.maxEngagements,
-    nil,
-    self.weaponType,
-    nil,
-    true
-  )
-  if not targetName then return nil, false, "MOOSE_ARTY_TARGET_REJECTED" end
+  local targetNames = {}
+  for _, item in ipairs(prepared) do
+    local targetName = self.arty:AssignTargetCoord(
+      item.coordinate,
+      self.priority,
+      self.radiusM,
+      self.shells,
+      self.maxEngagements,
+      nil,
+      self.weaponType,
+      item.groupName,
+      true
+    )
+    if not targetName then return nil, false, "MOOSE_ARTY_TARGET_REJECTED" end
+    targetNames[#targetNames + 1] = targetName
+    self.demandIdByTargetName[targetName] = demand.id
+  end
 
   self.registry:AssignAI(demand.id, self.assigneeId)
-  self.targetsByDemandId[demand.id] = targetName
-  self.demandIdByTargetName[targetName] = demand.id
+  self.targetsByDemandId[demand.id] = targetNames
+  self.completedTargetsByDemandId[demand.id] = {}
   self:_log(string.format(
-    "ARTY target queued demandId=%s requester=%s assigneeId=%s target=%s shells=%s radiusM=%s",
-    tostring(demand.id), tostring(demand.origin), tostring(self.assigneeId), tostring(targetName),
+    "ARTY coordinate targets queued demandId=%s requester=%s assigneeId=%s targets=%s shellsPerTarget=%s radiusM=%s",
+    tostring(demand.id), tostring(demand.origin), tostring(self.assigneeId), tostring(#targetNames),
     tostring(self.shells), tostring(self.radiusM)))
-  return targetName, true, nil
+  return targetNames, true, nil
+end
+
+function Instance:Dispatch(demand, targetGroup)
+  local targetNames, dispatched, reason = self:DispatchTargets(demand, { targetGroup })
+  if type(targetNames) == "table" then return targetNames[1], dispatched, reason end
+  return targetNames, dispatched, reason
 end
 
 function Instance:GetTargetName(demandId)
+  requireNonEmptyString(demandId, "demandId")
+  local targets = self.targetsByDemandId[demandId]
+  return targets and targets[1] or nil
+end
+
+function Instance:GetTargetNames(demandId)
   requireNonEmptyString(demandId, "demandId")
   return self.targetsByDemandId[demandId]
 end
