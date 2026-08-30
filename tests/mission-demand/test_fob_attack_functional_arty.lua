@@ -36,11 +36,14 @@ local function newArty()
   return arty, calls
 end
 
+-- Dynamic sequential extension: after the first physically verified fire mission,
+-- the caller can reacquire the MOOSE OPSZONE picture and append one fresh target.
 local registry = MissionDemand.New()
 local demand = newDemand(registry, "1")
 local arty, calls = newArty()
 local started, targetCompleted, completed, verified = 0, 0, 0, 0
-local adapter = Adapter.New({
+local adapter
+adapter = Adapter.New({
   missionDemand = MissionDemand,
   registry = registry,
   arty = arty,
@@ -49,39 +52,48 @@ local adapter = Adapter.New({
   radiusM = 50,
   onFireStarted = function() started = started + 1 end,
   verifyFireComplete = function() verified = verified + 1; return true end,
-  onTargetComplete = function() targetCompleted = targetCompleted + 1 end,
+  onTargetComplete = function(demandId)
+    targetCompleted = targetCompleted + 1
+    if targetCompleted == 1 then
+      local targetName, queued, reason = adapter:QueueTarget(demandId, targetGroup2)
+      assertTrue(queued, "dynamic target queued")
+      assertEqual(reason, nil, "dynamic target queue reason")
+      assertEqual(targetName, "RED-2|FS|002", "dynamic target alias")
+    end
+  end,
   onFireComplete = function() completed = completed + 1 end,
 })
 
-local targetNames, dispatched, reason = adapter:DispatchTargets(demand, {targetGroup1, targetGroup2})
-assertTrue(dispatched, "multi-target dispatch")
+local firstName, dispatched, reason = adapter:Dispatch(demand, targetGroup1)
+assertTrue(dispatched, "first coordinate dispatch")
 assertEqual(reason, nil, "dispatch reason")
-assertEqual(#targetNames, 2, "target count")
-assertEqual(targetNames[1], "RED-1", "first target name")
-assertEqual(targetNames[2], "RED-2", "second target name")
-assertEqual(#calls, 2, "AssignTargetCoord calls")
+assertEqual(firstName, "RED-1|FS|001", "first target alias")
+assertEqual(#calls, 1, "first AssignTargetCoord call")
 assertEqual(calls[1].coordinate, coord1, "first coordinate")
-assertEqual(calls[2].coordinate, coord2, "second coordinate")
 assertEqual(calls[1].priority, 10, "priority")
 assertEqual(calls[1].radiusM, 50, "radius")
 assertEqual(calls[1].shells, 4, "shells")
 assertEqual(calls[1].maxEngagements, 1, "max engagements")
 assertEqual(calls[1].unique, true, "unique target")
 assertEqual(registry:Get(demand.id).status, MissionDemand.Status.AI_ASSIGNED, "assigned")
-assertEqual(adapter:GetTargetName(demand.id), "RED-1", "first target correlation")
-assertEqual(#adapter:GetTargetNames(demand.id), 2, "target correlation count")
+assertEqual(adapter:GetTargetName(demand.id), "RED-1|FS|001", "first target correlation")
+assertEqual(adapter:GetTargetMetadata(firstName).sourceGroupName, "RED-1", "first source group metadata")
 
-arty:OnAfterOpenFire(nil, "READY", "OpenFire", "FIRING", { name="RED-1" })
+arty:OnAfterOpenFire(nil, "READY", "OpenFire", "FIRING", { name=firstName })
 assertEqual(registry:Get(demand.id).status, MissionDemand.Status.ACTIVE, "active")
 assertEqual(started, 1, "first started callback")
-arty:OnAfterCeaseFire(nil, "FIRING", "CeaseFire", "READY", { name="RED-1" })
-assertEqual(registry:Get(demand.id).status, MissionDemand.Status.ACTIVE, "first target does not close demand")
+arty:OnAfterCeaseFire(nil, "FIRING", "CeaseFire", "READY", { name=firstName })
+assertEqual(registry:Get(demand.id).status, MissionDemand.Status.ACTIVE, "fresh target appended before completion gate")
 assertEqual(targetCompleted, 1, "first target complete callback")
-assertEqual(completed, 0, "mission not complete after first target")
+assertEqual(completed, 0, "mission remains active after dynamic extension")
+assertEqual(#calls, 2, "second AssignTargetCoord appended")
+assertEqual(calls[2].coordinate, coord2, "second coordinate is freshly read from new target")
+assertEqual(#adapter:GetTargetNames(demand.id), 2, "dynamic target correlation count")
 
-arty:OnAfterOpenFire(nil, "READY", "OpenFire", "FIRING", { name="RED-2" })
-arty:OnAfterCeaseFire(nil, "FIRING", "CeaseFire", "READY", { name="RED-2" })
-assertEqual(registry:Get(demand.id).status, MissionDemand.Status.SUCCESS, "success")
+local secondName = adapter:GetTargetNames(demand.id)[2]
+arty:OnAfterOpenFire(nil, "READY", "OpenFire", "FIRING", { name=secondName })
+arty:OnAfterCeaseFire(nil, "FIRING", "CeaseFire", "READY", { name=secondName })
+assertEqual(registry:Get(demand.id).status, MissionDemand.Status.SUCCESS, "success after no further target extension")
 assertEqual(registry:Get(demand.id).result.executor, "ARTY:WRIGHT:L118", "executor")
 assertEqual(registry:Get(demand.id).result.physicalFireConfirmed, true, "physical verification result")
 assertEqual(#registry:Get(demand.id).result.functionalArtyTargets, 2, "result target count")
@@ -90,18 +102,26 @@ assertEqual(verified, 2, "verification callbacks")
 assertEqual(targetCompleted, 2, "target complete callbacks")
 assertEqual(completed, 1, "mission complete callback")
 
-local duplicateTargets, duplicateDispatched, duplicateReason = adapter:DispatchTargets(registry:Get(demand.id), {targetGroup1})
-assertEqual(duplicateTargets, adapter:GetTargetNames(demand.id), "duplicate targets")
+local _, queueAfterSuccess, queueAfterSuccessReason = adapter:QueueTarget(demand.id, targetGroup1)
+assertEqual(queueAfterSuccess, false, "cannot extend completed demand")
+assertEqual(queueAfterSuccessReason, "DEMAND_NOT_ACTIVE", "completed demand extension reason")
+
+-- Initial multi-target dispatch remains supported for callers that intentionally
+-- want a fixed list, but each MOOSE target receives a unique fire-mission alias.
+local multiRegistry = MissionDemand.New()
+local multiDemand = newDemand(multiRegistry, "MULTI")
+local multiArty, multiCalls = newArty()
+local multiAdapter = Adapter.New({ missionDemand=MissionDemand, registry=multiRegistry, arty=multiArty, assigneeId="ARTY:WRIGHT:L118" })
+local names, multiDispatched = multiAdapter:DispatchTargets(multiDemand, {targetGroup1,targetGroup2})
+assertTrue(multiDispatched, "multi dispatch")
+assertEqual(names[1], "RED-1|FS|001", "multi first alias")
+assertEqual(names[2], "RED-2|FS|002", "multi second alias")
+assertEqual(#multiCalls, 2, "multi AssignTargetCoord calls")
+
+local duplicateTargets, duplicateDispatched, duplicateReason = multiAdapter:DispatchTargets(multiRegistry:Get(multiDemand.id), {targetGroup1})
+assertEqual(duplicateTargets, multiAdapter:GetTargetNames(multiDemand.id), "duplicate targets")
 assertEqual(duplicateDispatched, false, "duplicate dispatch")
 assertEqual(duplicateReason, "ALREADY_DISPATCHED", "duplicate reason")
-
-local singleRegistry = MissionDemand.New()
-local singleDemand = newDemand(singleRegistry, "SINGLE")
-local singleArty = newArty()
-local singleAdapter = Adapter.New({ missionDemand=MissionDemand, registry=singleRegistry, arty=singleArty, assigneeId="ARTY:WRIGHT:L118" })
-local singleName, singleDispatched = singleAdapter:Dispatch(singleDemand, targetGroup1)
-assertTrue(singleDispatched, "single dispatch")
-assertEqual(singleName, "RED-1", "single dispatch target")
 
 local failedRegistry = MissionDemand.New()
 local failedDemand = newDemand(failedRegistry, "FAILED")
@@ -119,9 +139,9 @@ local failedAdapter = Adapter.New({
   end,
   onFireComplete = function() failedComplete = failedComplete + 1 end,
 })
-failedAdapter:Dispatch(failedDemand, targetGroup1)
-failedArty:OnAfterOpenFire(nil, "READY", "OpenFire", "FIRING", { name="RED-1" })
-failedArty:OnAfterCeaseFire(nil, "FIRING", "CeaseFire", "READY", { name="RED-1" })
+local failedName = failedAdapter:Dispatch(failedDemand, targetGroup1)
+failedArty:OnAfterOpenFire(nil, "READY", "OpenFire", "FIRING", { name=failedName })
+failedArty:OnAfterCeaseFire(nil, "FIRING", "CeaseFire", "READY", { name=failedName })
 assertEqual(failedRegistry:Get(failedDemand.id).status, MissionDemand.Status.FAILED, "unverified fire fails demand")
 assertEqual(failedRegistry:Get(failedDemand.id).failureReason, "PHYSICAL_AMMO_UNCHANGED", "unverified failure reason")
 assertEqual(rejected, 1, "rejected callbacks")
