@@ -23,6 +23,18 @@ local function coord(x, y)
   return c
 end
 
+local function makeFlight()
+  local flight = { added={} }
+  function flight:GetWaypointIndex(uid) assertEqual(uid,20,"mission uid"); return 3 end
+  function flight:GetWaypointUIDFromIndex(index) assertEqual(index,2,"previous waypoint index"); return 10 end
+  function flight:AddWaypoint(coordinate, _, insertAfterUid, altitude, updateRoute)
+    local uid=100+#self.added+1
+    self.added[#self.added+1]={coord=coordinate, after=insertAfterUid, altitude=altitude, update=updateRoute, uid=uid}
+    return { uid=uid }
+  end
+  return flight
+end
+
 local pathline = { coordinates={coord(0,0), coord(0,1000), coord(0,2000), coord(0,3000)} }
 function pathline:GetCoordinates() return self.coordinates end
 
@@ -40,14 +52,7 @@ assertEqual(math.floor(resolved.returnRoute[1].x+0.5), -500, "reverse route righ
 local mission = {}
 function mission:GetGroupWaypointIndex() return 20 end
 function mission:GetGroupEgressWaypointUID() return 30 end
-local flight = { added={} }
-function flight:GetWaypointIndex(uid) assertEqual(uid,20,"mission uid"); return 3 end
-function flight:GetWaypointUIDFromIndex(index) assertEqual(index,2,"previous waypoint index"); return 10 end
-function flight:AddWaypoint(coordinate, _, insertAfterUid, altitude, updateRoute)
-  local uid=100+#self.added+1
-  self.added[#self.added+1]={coord=coordinate, after=insertAfterUid, altitude=altitude, update=updateRoute, uid=uid}
-  return { uid=uid }
-end
+local flight = makeFlight()
 
 local installed, ok, reason = Corridor.Install(flight, mission, resolved, 500)
 assertTrue(ok, "corridor installed")
@@ -62,9 +67,42 @@ assertEqual(flight.added[7].update, true, "last inserted return waypoint updates
 local waitingMission = {}
 function waitingMission:GetGroupWaypointIndex() return nil end
 function waitingMission:GetGroupEgressWaypointUID() return nil end
-local noInstall, noOk, noReason = Corridor.Install(flight, waitingMission, resolved, 500)
+local waitingFlight = makeFlight()
+local noInstall, noOk, noReason = Corridor.Install(waitingFlight, waitingMission, resolved, 500)
 assertEqual(noInstall, nil, "not-ready no install")
 assertEqual(noOk, false, "not-ready false")
 assertEqual(noReason, "MISSION_ROUTE_UIDS_NOT_READY", "not-ready reason")
+assertTrue(type(waitingFlight.OnAfterUpdateRoute)=="function", "not-ready arms MOOSE route callback")
+
+local deferredMission = { missionUid=nil, egressUid=nil }
+function deferredMission:GetGroupWaypointIndex() return self.missionUid end
+function deferredMission:GetGroupEgressWaypointUID() return self.egressUid end
+local deferredFlight = makeFlight()
+deferredFlight.previousUpdateRouteCalls=0
+function deferredFlight:OnAfterUpdateRoute()
+  self.previousUpdateRouteCalls=self.previousUpdateRouteCalls+1
+end
+
+local deferredInstall, deferredOk, deferredReason = Corridor.Install(deferredFlight, deferredMission, resolved, 500)
+assertEqual(deferredInstall, nil, "deferred initial install")
+assertEqual(deferredOk, false, "deferred initial ok")
+assertEqual(deferredReason, "MISSION_ROUTE_UIDS_NOT_READY", "deferred initial reason")
+assertTrue(type(deferredFlight.OnAfterUpdateRoute)=="function", "deferred route callback installed")
+
+deferredMission.missionUid=20
+deferredMission.egressUid=30
+deferredFlight:OnAfterUpdateRoute("Cruising", "UpdateRoute", "Cruising", nil, nil)
+assertEqual(deferredFlight.previousUpdateRouteCalls, 1, "previous route callback preserved")
+assertEqual(#deferredFlight.added, 7, "deferred total added waypoints")
+assertEqual(deferredFlight.added[1].after, 10, "deferred outbound starts after pre-mission waypoint")
+assertEqual(deferredFlight.added[5].after, 20, "deferred return starts after mission waypoint")
+assertEqual(deferredFlight.added[7].update, true, "deferred last return waypoint updates route")
+
+local cached, cachedOk, cachedReason = Corridor.Install(deferredFlight, deferredMission, resolved, 500)
+assertTrue(cachedOk, "deferred cached install")
+assertEqual(cachedReason, nil, "deferred cached reason")
+assertEqual(cached.outboundWaypointCount, 4, "deferred cached outbound count")
+assertEqual(cached.returnWaypointCount, 3, "deferred cached return count")
+assertEqual(#deferredFlight.added, 7, "cached install does not duplicate waypoints")
 
 print("PASS test_helicopter_flightpath_corridor")
