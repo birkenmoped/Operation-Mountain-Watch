@@ -142,7 +142,7 @@ local function armRouteReadyInstall(flightGroup, mission, resolved, altitudeFtAg
       }
       self.__omwFlightPathCorridorPending = nil
       self.__omwFlightPathCorridorLastReason = nil
-    elseif reason ~= "MISSION_ROUTE_UID_NOT_READY" then
+    elseif reason ~= "MISSION_ROUTE_UIDS_NOT_READY" then
       self.__omwFlightPathCorridorLastReason = reason
     end
   end
@@ -174,7 +174,7 @@ function Corridor.Install(flightGroup, mission, resolved, altitudeFtAgl)
     -- FlightOnMission can fire before that route build has completed, so defer
     -- to the FLIGHTGROUP UpdateRoute lifecycle instead of guessing readiness.
     armRouteReadyInstall(flightGroup, mission, resolved, altitudeFtAgl)
-    return nil, false, "MISSION_ROUTE_UID_NOT_READY"
+    return nil, false, "MISSION_ROUTE_UIDS_NOT_READY"
   end
 
   -- An egress UID is optional. OPSGROUP:RouteToMission() only creates and stores
