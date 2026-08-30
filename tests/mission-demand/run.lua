@@ -1,4 +1,10 @@
 dofile("tests/mission-demand/test_mission_demand.lua")
 dofile("tests/mission-demand/test_resource_demand_policy.lua")
+dofile("tests/mission-demand/test_resource_demand_coordinator.lua")
+dofile("tests/mission-demand/test_fob_attack_demand_policy.lua")
+dofile("tests/mission-demand/test_fob_threat_opszone_adapter.lua")
+dofile("tests/mission-demand/test_fob_attack_cas_dispatch_adapter.lua")
+dofile("tests/mission-demand/test_ground_personnel_deployment_ledger.lua")
+dofile("tests/mission-demand/test_helicopter_flightpath_corridor.lua")
 
 print("PASS mission-demand test suite")

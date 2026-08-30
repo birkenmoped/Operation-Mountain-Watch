@@ -5,7 +5,17 @@ on:
     paths:
       - "scripts/campaign/OMW_MissionDemand.lua"
       - "scripts/campaign/OMW_ResourceDemandPolicy.lua"
+      - "scripts/campaign/OMW_ResourceDemandCoordinator.lua"
+      - "scripts/campaign/OMW_FobAttackDemandPolicy.lua"
+      - "scripts/ground/OMW_FobThreatOpsZoneAdapter.lua"
+      - "scripts/ground/OMW_GroundPersonnelDeploymentLedger.lua"
+      - "scripts/air-operations/OMW_FobAttackCasDispatchAdapter.lua"
+      - "scripts/air-operations/OMW_HelicopterFlightPathCorridor.lua"
       - "scripts/logistics/OMW_GroundInitialStock.lua"
+      - "mission/tests/fob-attack-support-demand/src/*.lua"
+      - "tools/build-fob-attack-cas-dispatch-acceptance-2.ps1"
+      - "mission/tests/ground-native-homezone-return/src/*.lua"
+      - "tools/build-ground-native-homezone-return-acceptance-1.ps1"
       - "tests/mission-demand/**"
       - ".github/workflows/mission-demand-validation.yml"
 
@@ -26,6 +36,29 @@ jobs:
           sudo apt-get install -y lua5.4
           lua5.4 -v
 
+      - name: Check Fortress full-response acceptance syntax
+        shell: bash
+        run: |
+          luac5.4 -p mission/tests/fob-attack-support-demand/src/02-fob-attack-cas-dispatch-acceptance-2.lua
+
+      - name: Check historical native Ground homezone fixture syntax
+        shell: bash
+        run: |
+          luac5.4 -p mission/tests/ground-native-homezone-return/src/01-ground-native-homezone-return-acceptance.lua
+
       - name: Run MissionDemand contract tests
         shell: bash
-        run: lua5.4 tests/mission-demand/run.lua
+        run: |
+          set +e
+          lua5.4 tests/mission-demand/run.lua > mission-demand-test-output.txt 2>&1
+          rc=$?
+          cat mission-demand-test-output.txt
+          exit $rc
+
+      - name: Upload MissionDemand test output
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mission-demand-test-output
+          path: mission-demand-test-output.txt
+          if-no-files-found: error
