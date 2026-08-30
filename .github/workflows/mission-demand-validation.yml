@@ -9,6 +9,7 @@ on:
       - "scripts/campaign/OMW_FobAttackDemandPolicy.lua"
       - "scripts/ground/OMW_FobThreatOpsZoneAdapter.lua"
       - "scripts/ground/OMW_GroundPersonnelDeploymentLedger.lua"
+      - "scripts/ground/OMW_FobAttackFunctionalArtyDispatchAdapter.lua"
       - "scripts/air-operations/OMW_FobAttackCasDispatchAdapter.lua"
       - "scripts/air-operations/OMW_HelicopterFlightPathCorridor.lua"
       - "scripts/logistics/OMW_GroundInitialStock.lua"
@@ -18,6 +19,8 @@ on:
       - "tools/build-ground-native-homezone-return-acceptance-1.ps1"
       - "mission/tests/air-ammo-resupply/src/*.lua"
       - "tools/build-air-ammo-cargotransport-acceptance-1.ps1"
+      - "mission/tests/stage3-honaker-wright-full-response/src/*.lua"
+      - "tools/build-stage3-honaker-wright-full-response-acceptance-1.ps1"
       - "tests/mission-demand/**"
       - ".github/workflows/mission-demand-validation.yml"
 
@@ -52,6 +55,12 @@ jobs:
         shell: bash
         run: |
           luac5.4 -p mission/tests/air-ammo-resupply/src/01-air-ammo-resupply-cargotransport-acceptance.lua
+
+      - name: Check Stage 3 Honaker Wright full-response syntax
+        shell: bash
+        run: |
+          luac5.4 -p scripts/ground/OMW_FobAttackFunctionalArtyDispatchAdapter.lua
+          luac5.4 -p mission/tests/stage3-honaker-wright-full-response/src/01-honaker-wright-full-response-acceptance.lua
 
       - name: Run MissionDemand contract tests
         shell: bash
