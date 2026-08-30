@@ -49,6 +49,36 @@ assertEqual(resolved.offsetRightM, 500, "right offset")
 assertEqual(math.floor(resolved.outbound[1].x+0.5), 500, "outbound right-hand x offset")
 assertEqual(math.floor(resolved.returnRoute[1].x+0.5), -500, "reverse route right-hand x offset")
 
+local west = { coordinates={coord(100,3000), coord(100,4000), coord(100,5000)} }
+function west:GetCoordinates() return self.coordinates end
+local chained = Corridor.ResolveSequence({
+  pathlineNames={"OMW_FlightPath","OMW_FlightPath_WEST"},
+  pathlines={pathline,west},
+  originCoordinate=coord(0,100),
+  destinationCoordinate=coord(100,4900),
+  maxJunctionDistanceM=250,
+})
+assertEqual(chained.pathlineName, "OMW_FlightPath -> OMW_FlightPath_WEST", "chained pathline name")
+assertEqual(#chained.pathlineNames, 2, "chained pathline count")
+assertEqual(#chained.junctions, 1, "chained junction count")
+assertEqual(math.floor(chained.junctions[1].distanceM+0.5), 100, "chained junction gap")
+assertEqual(chained.corridorPointCount, 7, "chained centerline point count")
+assertEqual(#chained.outbound, 7, "chained outbound count")
+assertEqual(#chained.returnRoute, 7, "chained return count")
+assertEqual(math.floor(chained.outbound[1].x+0.5), 500, "chained outbound starts right of first path")
+assertEqual(math.floor(chained.returnRoute[1].x+0.5), -400, "chained return starts right of reversed west path")
+
+local gapOk, gapError = pcall(function()
+  local far = { coordinates={coord(2000,3000),coord(2000,4000)} }
+  function far:GetCoordinates() return self.coordinates end
+  Corridor.ResolveSequence({
+    pathlineNames={"A","B"}, pathlines={pathline,far},
+    originCoordinate=coord(0,0), destinationCoordinate=coord(2000,4000), maxJunctionDistanceM=500,
+  })
+end)
+assertEqual(gapOk, false, "oversize junction rejected")
+assertTrue(string.find(gapError, "gap", 1, true) ~= nil, "oversize junction error explains gap")
+
 local mission = {}
 function mission:GetGroupWaypointIndex() return 20 end
 function mission:GetGroupEgressWaypointUID() return 30 end
@@ -64,6 +94,16 @@ assertEqual(#flight.added, 7, "total added waypoints")
 assertEqual(flight.added[1].after, 10, "outbound starts after pre-mission waypoint")
 assertEqual(flight.added[5].after, 20, "return starts after mission waypoint")
 assertEqual(flight.added[7].update, true, "last inserted return waypoint updates route")
+
+local chainedFlight = makeFlight()
+local chainedInstalled, chainedOk, chainedReason = Corridor.Install(chainedFlight, mission, chained, 500)
+assertTrue(chainedOk, "chained corridor installed")
+assertEqual(chainedReason, nil, "chained install reason")
+assertEqual(chainedInstalled.outboundWaypointCount, 7, "chained installed outbound")
+assertEqual(chainedInstalled.returnWaypointCount, 6, "chained installed return")
+assertEqual(#chainedFlight.added, 13, "chained total added waypoints")
+assertEqual(chainedInstalled.pathlineNames[2], "OMW_FlightPath_WEST", "chained install retains sequence")
+assertEqual(math.floor(chainedInstalled.junctions[1].distanceM+0.5), 100, "chained install retains junction evidence")
 
 -- AUFTRAG:NewCAS() does not inherently create an egress coordinate. The MOOSE
 -- RouteToMission path therefore may have a valid mission waypoint UID while
