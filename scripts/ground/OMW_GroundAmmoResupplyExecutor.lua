@@ -65,6 +65,7 @@ function Executor.New(spec)
   if type(campaignState.TransactionKind) ~= "table" or campaignState.TransactionKind.TRANSFER == nil then
     fail("campaignState.TransactionKind.TRANSFER is required")
   end
+  if type(campaignState.TransactionStatus) ~= "table" then fail("campaignState.TransactionStatus is required") end
   requireNonEmptyString(spec.ammoResourceId, "ammoResourceId")
   requireNonEmptyString(spec.assigneeId, "assigneeId")
   requireNonEmptyString(spec.carrierEntityId, "carrierEntityId")
@@ -156,29 +157,11 @@ function Instance:_attachArmyLifecycle(execution, armyGroup)
     if previousExecute then previousExecute(self, From, Event, To, Mission) end
     if Mission ~= execution.mission or execution.closed then return end
 
-    local transaction = executor.store:GetTransaction(execution.transactionId)
-    if transaction.status == executor.campaignState.TransactionStatus.LOADING then
-      executor.store:MarkInTransit(execution.transactionId)
-      executor.registry:SetReservationState(execution.demandId, "IN_TRANSIT", {
-        transactionId = execution.transactionId,
-        carrierEntityId = executor.carrierEntityId,
-      })
-    end
-
-    local current = executor.registry:Get(execution.demandId)
-    if current and current.status == executor.missionDemand.Status.AI_ASSIGNED then
-      executor.registry:Activate(execution.demandId)
-    end
-    executor:_log("resupply in transit demandId=" .. tostring(execution.demandId))
-  end
-
-  local previousDone = armyGroup.OnAfterMissionDone
-  function armyGroup:OnAfterMissionDone(From, Event, To, Mission)
-    if previousDone then previousDone(self, From, Event, To, Mission) end
-    if Mission ~= execution.mission or execution.closed then return end
-
+    -- Accepted Stage-1 contract: AMMOSUPPLY does not self-complete. The exact
+    -- mission executing while the same ARMYGROUP is physically in the
+    -- destination ACCESS zone is the delivery evidence.
     if type(self.IsInZone) ~= "function" or self:IsInZone(executor.destinationZone) ~= true then
-      executor:_failExecution(execution, "AMMO_RESUPPLY_MISSION_DONE_OUTSIDE_DESTINATION")
+      executor:_failExecution(execution, "AMMO_RESUPPLY_MISSION_EXECUTE_OUTSIDE_DESTINATION")
       return
     end
 
@@ -207,6 +190,16 @@ function Instance:_attachArmyLifecycle(execution, armyGroup)
     execution.delivered = true
     if type(execution.mission.__Cancel) == "function" then execution.mission:__Cancel(1) end
     executor:_log("resupply delivered demandId=" .. tostring(execution.demandId))
+  end
+
+  local previousDone = armyGroup.OnAfterMissionDone
+  function armyGroup:OnAfterMissionDone(From, Event, To, Mission)
+    if previousDone then previousDone(self, From, Event, To, Mission) end
+    if Mission ~= execution.mission or execution.closed then return end
+    if execution.delivered ~= true then
+      executor:_failExecution(execution, "AMMO_RESUPPLY_MISSION_DONE_BEFORE_DELIVERY")
+      return
+    end
 
     executor:_defer(function()
       if execution.returnOrdered or execution.returned then return end
@@ -252,7 +245,6 @@ function Instance:Start(demand)
   requireNonEmptyString(demand.origin, "demand.origin")
   requireNonEmptyString(target.nodeId, "demand.target.nodeId")
   if not isFinitePositive(target.requestedQuantity) then fail("demand.target.requestedQuantity must be positive finite") end
-  requireNonEmptyString(target.canonicalUnit or "count", "demand.target.canonicalUnit")
 
   local existing = self.executionsByDemandId[demand.id]
   if existing then return existing, false, "ALREADY_STARTED" end
@@ -292,8 +284,8 @@ function Instance:Start(demand)
 
   local executor = self
   local previousSpawned = self.brigade.OnAfterAssetSpawned
-  self.brigade.OnAfterAssetSpawned = function(brigade, From, Event, To, Group, Asset)
-    if previousSpawned then previousSpawned(brigade, From, Event, To, Group, Asset) end
+  self.brigade.OnAfterAssetSpawned = function(brigade, From, Event, To, Group, Asset, Request)
+    if previousSpawned then previousSpawned(brigade, From, Event, To, Group, Asset, Request) end
     if execution.closed or execution.loadingMarked then return end
     execution.loadingMarked = true
     executor.store:MarkLoading(execution.transactionId)
@@ -307,7 +299,26 @@ function Instance:Start(demand)
   local previousArmyMission = self.brigade.OnAfterArmyOnMission
   self.brigade.OnAfterArmyOnMission = function(brigade, From, Event, To, ArmyGroup, Mission)
     if previousArmyMission then previousArmyMission(brigade, From, Event, To, ArmyGroup, Mission) end
-    if Mission == execution.mission and ArmyGroup then executor:_attachArmyLifecycle(execution, ArmyGroup) end
+    if Mission ~= execution.mission or not ArmyGroup or execution.closed then return end
+
+    executor:_attachArmyLifecycle(execution, ArmyGroup)
+
+    local transactionState = executor.store:GetTransaction(execution.transactionId)
+    if transactionState.status ~= executor.campaignState.TransactionStatus.LOADING then
+      executor:_failExecution(execution, "AMMO_RESUPPLY_ARMY_ON_MISSION_BEFORE_LOADING")
+      return
+    end
+
+    executor.store:MarkInTransit(execution.transactionId)
+    executor.registry:SetReservationState(execution.demandId, "IN_TRANSIT", {
+      transactionId = execution.transactionId,
+      carrierEntityId = executor.carrierEntityId,
+    })
+    local current = executor.registry:Get(execution.demandId)
+    if current and current.status == executor.missionDemand.Status.AI_ASSIGNED then
+      executor.registry:Activate(execution.demandId)
+    end
+    executor:_log("resupply in transit demandId=" .. tostring(execution.demandId))
   end
 
   self.registry:SetReservationState(demand.id, "RESERVED", {
