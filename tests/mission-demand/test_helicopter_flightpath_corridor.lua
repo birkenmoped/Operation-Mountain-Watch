@@ -24,7 +24,7 @@ local function coord(x, y)
 end
 
 local function makeFlight()
-  local flight = { added={} }
+  local flight = { added={}, formations={} }
   function flight:GetWaypointIndex(uid) assertEqual(uid,20,"mission uid"); return 3 end
   function flight:GetWaypointUIDFromIndex(index) assertEqual(index,2,"previous waypoint index"); return 10 end
   function flight:AddWaypoint(coordinate, _, insertAfterUid, altitude, updateRoute)
@@ -32,17 +32,16 @@ local function makeFlight()
     self.added[#self.added+1]={coord=coordinate, after=insertAfterUid, altitude=altitude, update=updateRoute, uid=uid}
     return { uid=uid }
   end
+  function flight:GetGroup()
+    return { SetFormation=function(_, formation) self.formations[#self.formations+1]=formation end }
+  end
   return flight
 end
 
 local pathline = { coordinates={coord(0,0), coord(0,1000), coord(0,2000), coord(0,3000)} }
 function pathline:GetCoordinates() return self.coordinates end
 
-local resolved = Corridor.Resolve({
-  pathline=pathline,
-  originCoordinate=coord(0,100),
-  destinationCoordinate=coord(0,2900),
-})
+local resolved = Corridor.Resolve({ pathline=pathline, originCoordinate=coord(0,100), destinationCoordinate=coord(0,2900) })
 assertEqual(resolved.pathlineName, "OMW_FlightPath", "pathline name")
 assertEqual(resolved.corridorPointCount, 4, "corridor point count")
 assertEqual(resolved.offsetRightM, 500, "right offset")
@@ -52,11 +51,9 @@ assertEqual(math.floor(resolved.returnRoute[1].x+0.5), -500, "reverse route righ
 local west = { coordinates={coord(100,3000), coord(100,4000), coord(100,5000)} }
 function west:GetCoordinates() return self.coordinates end
 local chained = Corridor.ResolveSequence({
-  pathlineNames={"OMW_FlightPath","OMW_FlightPath_WEST"},
-  pathlines={pathline,west},
-  originCoordinate=coord(0,100),
-  destinationCoordinate=coord(100,4900),
-  maxJunctionDistanceM=250,
+  pathlineNames={"OMW_FlightPath","OMW_FlightPath_WEST"}, pathlines={pathline,west},
+  originCoordinate=coord(0,100), destinationCoordinate=coord(100,4900), maxJunctionDistanceM=250,
+  segmentProfiles={{altitudeFtAgl=500},{altitudeFtAgl=2500,formation=720896}},
 })
 assertEqual(chained.pathlineName, "OMW_FlightPath -> OMW_FlightPath_WEST", "chained pathline name")
 assertEqual(#chained.pathlineNames, 2, "chained pathline count")
@@ -65,16 +62,19 @@ assertEqual(math.floor(chained.junctions[1].distanceM+0.5), 100, "chained juncti
 assertEqual(chained.corridorPointCount, 7, "chained centerline point count")
 assertEqual(#chained.outbound, 7, "chained outbound count")
 assertEqual(#chained.returnRoute, 7, "chained return count")
+assertEqual(chained.segmentProfiles[1].altitudeFtAgl, 500, "primary altitude profile")
+assertEqual(chained.segmentProfiles[2].altitudeFtAgl, 2500, "west altitude profile")
+assertEqual(chained.segmentProfiles[2].formation, 720896, "west column formation profile")
+assertEqual(chained.outboundSegmentIndexes[1], 1, "outbound starts primary")
+assertEqual(chained.outboundSegmentIndexes[#chained.outboundSegmentIndexes], 2, "outbound ends west")
+assertEqual(chained.returnSegmentIndexes[1], 2, "return starts west")
 assertEqual(math.floor(chained.outbound[1].x+0.5), 500, "chained outbound starts right of first path")
 assertEqual(math.floor(chained.returnRoute[1].x+0.5), -400, "chained return starts right of reversed west path")
 
 local gapOk, gapError = pcall(function()
   local far = { coordinates={coord(2000,3000),coord(2000,4000)} }
   function far:GetCoordinates() return self.coordinates end
-  Corridor.ResolveSequence({
-    pathlineNames={"A","B"}, pathlines={pathline,far},
-    originCoordinate=coord(0,0), destinationCoordinate=coord(2000,4000), maxJunctionDistanceM=500,
-  })
+  Corridor.ResolveSequence({ pathlineNames={"A","B"}, pathlines={pathline,far}, originCoordinate=coord(0,0), destinationCoordinate=coord(2000,4000), maxJunctionDistanceM=500 })
 end)
 assertEqual(gapOk, false, "oversize junction rejected")
 assertTrue(string.find(gapError, "gap", 1, true) ~= nil, "oversize junction error explains gap")
@@ -83,7 +83,6 @@ local mission = {}
 function mission:GetGroupWaypointIndex() return 20 end
 function mission:GetGroupEgressWaypointUID() return 30 end
 local flight = makeFlight()
-
 local installed, ok, reason = Corridor.Install(flight, mission, resolved, 500)
 assertTrue(ok, "corridor installed")
 assertEqual(reason, nil, "install reason")
@@ -104,10 +103,19 @@ assertEqual(chainedInstalled.returnWaypointCount, 6, "chained installed return")
 assertEqual(#chainedFlight.added, 13, "chained total added waypoints")
 assertEqual(chainedInstalled.pathlineNames[2], "OMW_FlightPath_WEST", "chained install retains sequence")
 assertEqual(math.floor(chainedInstalled.junctions[1].distanceM+0.5), 100, "chained install retains junction evidence")
+assertEqual(chainedFlight.added[1].altitude, 500, "primary outbound is 500 ft AGL")
+assertEqual(chainedFlight.added[5].altitude, 2500, "west outbound is 2500 ft AGL")
+assertEqual(chainedFlight.added[8].altitude, 2500, "west return is 2500 ft AGL")
+assertTrue(type(chainedFlight.OnAfterPassingWaypoint)=="function", "formation transition callback installed")
+local westTransitionUid
+for uid, formation in pairs(chainedInstalled.formationTransitions) do
+  if formation == 720896 then westTransitionUid=uid break end
+end
+assertTrue(type(westTransitionUid)=="number", "west formation transition recorded")
+chainedFlight:OnAfterPassingWaypoint("Cruising","PassingWaypoint","Cruising",{uid=westTransitionUid})
+assertEqual(chainedFlight.formations[1],720896,"west segment switches to RotaryWing Column D70")
 
--- AUFTRAG:NewCAS() does not inherently create an egress coordinate. The MOOSE
--- RouteToMission path therefore may have a valid mission waypoint UID while
--- GetGroupEgressWaypointUID() remains nil. Corridor insertion must still work.
+-- AUFTRAG:NewCAS() may have no egress coordinate. Corridor insertion must still work.
 local casMission = {}
 function casMission:GetGroupWaypointIndex() return 20 end
 function casMission:GetGroupEgressWaypointUID() return nil end
@@ -133,16 +141,12 @@ function deferredMission:GetGroupWaypointIndex() return self.missionUid end
 function deferredMission:GetGroupEgressWaypointUID() return nil end
 local deferredFlight = makeFlight()
 deferredFlight.previousUpdateRouteCalls=0
-function deferredFlight:OnAfterUpdateRoute()
-  self.previousUpdateRouteCalls=self.previousUpdateRouteCalls+1
-end
-
+function deferredFlight:OnAfterUpdateRoute() self.previousUpdateRouteCalls=self.previousUpdateRouteCalls+1 end
 local deferredInstall, deferredOk, deferredReason = Corridor.Install(deferredFlight, deferredMission, resolved, 500)
 assertEqual(deferredInstall, nil, "deferred initial install")
 assertEqual(deferredOk, false, "deferred initial ok")
 assertEqual(deferredReason, "MISSION_ROUTE_UIDS_NOT_READY", "deferred initial reason")
 assertTrue(type(deferredFlight.OnAfterUpdateRoute)=="function", "deferred route callback installed")
-
 deferredMission.missionUid=20
 deferredFlight:OnAfterUpdateRoute("Cruising", "UpdateRoute", "Cruising", nil, nil)
 assertEqual(deferredFlight.previousUpdateRouteCalls, 1, "previous route callback preserved")
@@ -150,7 +154,6 @@ assertEqual(#deferredFlight.added, 7, "deferred total added waypoints")
 assertEqual(deferredFlight.added[1].after, 10, "deferred outbound starts after pre-mission waypoint")
 assertEqual(deferredFlight.added[5].after, 20, "deferred return starts after mission waypoint")
 assertEqual(deferredFlight.added[7].update, true, "deferred last return waypoint updates route")
-
 local cached, cachedOk, cachedReason = Corridor.Install(deferredFlight, deferredMission, resolved, 500)
 assertTrue(cachedOk, "deferred cached install")
 assertEqual(cachedReason, nil, "deferred cached reason")
