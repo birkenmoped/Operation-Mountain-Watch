@@ -12,6 +12,8 @@ on:
       - "scripts/air-operations/OMW_FobAttackCasDispatchAdapter.lua"
       - "scripts/air-operations/OMW_HelicopterFlightPathCorridor.lua"
       - "scripts/logistics/OMW_GroundInitialStock.lua"
+      - "mission/tests/ground-native-homezone-return/src/*.lua"
+      - "tools/build-ground-native-homezone-return-acceptance-1.ps1"
       - "tests/mission-demand/**"
       - ".github/workflows/mission-demand-validation.yml"
 
@@ -31,6 +33,11 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y lua5.4
           lua5.4 -v
+
+      - name: Check native Ground homezone acceptance syntax
+        shell: bash
+        run: |
+          luac5.4 -p mission/tests/ground-native-homezone-return/src/01-ground-native-homezone-return-acceptance.lua
 
       - name: Run MissionDemand contract tests
         shell: bash
