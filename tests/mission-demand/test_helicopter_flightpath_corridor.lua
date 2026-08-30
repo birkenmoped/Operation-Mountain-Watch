@@ -85,7 +85,7 @@ local waitingFlight = makeFlight()
 local noInstall, noOk, noReason = Corridor.Install(waitingFlight, waitingMission, resolved, 500)
 assertEqual(noInstall, nil, "not-ready no install")
 assertEqual(noOk, false, "not-ready false")
-assertEqual(noReason, "MISSION_ROUTE_UID_NOT_READY", "not-ready reason")
+assertEqual(noReason, "MISSION_ROUTE_UIDS_NOT_READY", "not-ready reason")
 assertTrue(type(waitingFlight.OnAfterUpdateRoute)=="function", "not-ready arms MOOSE route callback")
 
 local deferredMission = { missionUid=nil }
@@ -100,7 +100,7 @@ end
 local deferredInstall, deferredOk, deferredReason = Corridor.Install(deferredFlight, deferredMission, resolved, 500)
 assertEqual(deferredInstall, nil, "deferred initial install")
 assertEqual(deferredOk, false, "deferred initial ok")
-assertEqual(deferredReason, "MISSION_ROUTE_UID_NOT_READY", "deferred initial reason")
+assertEqual(deferredReason, "MISSION_ROUTE_UIDS_NOT_READY", "deferred initial reason")
 assertTrue(type(deferredFlight.OnAfterUpdateRoute)=="function", "deferred route callback installed")
 
 deferredMission.missionUid=20
