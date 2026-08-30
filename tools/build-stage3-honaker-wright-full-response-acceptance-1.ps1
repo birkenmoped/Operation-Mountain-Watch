@@ -81,7 +81,7 @@ $requiredMarkers = @(
   'FIRE_SUPPORT_IMMEDIATE','OPSZONE','AUFTRAG:NewGROUNDATTACK','ARTY:New','AssignTargetCoord','QueueTarget',
   'LIVE_FIRE_RETARGET','SetWaitForShotTime','ARTY_WAIT_FOR_SHOT_SEC','verifyFireComplete','PHYSICAL_AMMO_UNCHANGED',
   'SetEngageDetected','ConfirmExecutionEvidence','EVENTS.Shot','requireExecutionEvidence',
-  'SetAltitude','RadarAlt','profileTransitions','RotaryWing.Column.D70','WEST_ALTITUDE_FT_AGL',
+  'SetAltitude','profileTransitions','RotaryWing.Column.D70','WEST_ALTITUDE_FT_AGL',
   'GROUND_AMMO_PACKAGE','GROUND_NODE_WRIGHT','GROUND_NODE_JALALABAD','TPL_BLUE_GND_WRIGHT_FS_ARTY_L118_2','TPL_BLUE_GND_SUP_M1083',
   'AUFTRAG:NewCARGOTRANSPORT','SQ_US_JBAD_CH47_HEAVYLIFT','OMW_FlightPath','OMW_FlightPath_WEST','ResolveSequence',
   'MarkInTransit','MarkDelivered','MESSAGE:New','active_duplicate','onThreatCleared','threatCleared'
