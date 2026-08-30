@@ -3,9 +3,9 @@
 --
 -- RED attack -> existing MOOSE OPSZONE threat qualification -> Honaker QRF +
 -- Jalalabad rotary CAS + immediate fire-support demand -> Wright Functional ARTY
--- -> real local M1083 rearm -> CampaignState AMMO reorder -> exactly one strategic
--- RESUPPLY -> Jalalabad CH-47 CARGOTRANSPORT -> OMW_FlightPath outbound/return ->
--- Wright delivery and strategic settlement.
+-- -> physically verified fire -> real local M1083 rearm -> CampaignState AMMO reorder
+-- -> exactly one strategic RESUPPLY -> Jalalabad CH-47 CARGOTRANSPORT -> valley
+-- FlightPaths outbound/return -> Wright delivery and strategic settlement.
 
 local TEST_ID = "STAGE3-HONAKER-WRIGHT-FULL-RESPONSE-ACCEPTANCE-1"
 local TAG = "[OMW][" .. TEST_ID .. "]"
@@ -23,7 +23,11 @@ local M1083_TEMPLATE = "TPL_BLUE_GND_SUP_M1083"
 local WRIGHT_RESUPPLY_ZONE = "ZON_BLUE_GND_WRIGHT_RESUPPLY"
 local PICKUP_ZONE = "OMW_LOG_NODE_JALALABAD"
 local DROP_ZONE = "OMW_BLUE_LZ_WRIGHT_01"
-local PATHLINE = "OMW_FlightPath"
+local PRIMARY_PATHLINE = "OMW_FlightPath"
+local WEST_PATHLINE = "OMW_FlightPath_WEST"
+local CAS_PATHLINES = { PRIMARY_PATHLINE, WEST_PATHLINE }
+local AIR_AMMO_PATHLINES = { PRIMARY_PATHLINE }
+local JUNCTION_MAX_DISTANCE_M = 1000
 local SECURITY_RADIUS_M = 1000
 local QRF_GROUPS = 3
 local QRF_PERSONNEL = 9
@@ -103,16 +107,24 @@ local function redGroups(opsZone)
   end)
   return result
 end
+local function routeLabel(pathlineNames) return table.concat(pathlineNames, " -> ") end
 
-local function installCorridor(kind, flight, mission, destination)
+local function installCorridor(kind, flight, mission, destination, pathlineNames)
   local attempts = 0
   local function attempt()
     attempts = attempts + 1
-    local resolved = HelicopterCorridor.Resolve({ pathlineName=PATHLINE, originCoordinate=flight:GetCoordinate(), destinationCoordinate=destination })
+    local resolved
+    if #pathlineNames == 1 then
+      resolved = HelicopterCorridor.Resolve({ pathlineName=pathlineNames[1], originCoordinate=flight:GetCoordinate(), destinationCoordinate=destination })
+    else
+      resolved = HelicopterCorridor.ResolveSequence({ pathlineNames=pathlineNames, originCoordinate=flight:GetCoordinate(), destinationCoordinate=destination, maxJunctionDistanceM=JUNCTION_MAX_DISTANCE_M })
+    end
     local installed, ok, reason = HelicopterCorridor.Install(flight, mission, resolved, 500)
     if ok then
       if kind == "CAS" then state.casCorridor = true else state.airCorridor = true end
-      msg(kind == "CAS" and "CAS" or "LOGISTICS", kind .. " outbound + return valley route installed via " .. PATHLINE, 9)
+      local junctionText = ""
+      if installed.junctions and installed.junctions[1] then junctionText = string.format("; junction gap %.0f m", installed.junctions[1].distanceM) end
+      msg(kind == "CAS" and "CAS" or "LOGISTICS", kind .. " outbound + return valley route installed via " .. routeLabel(pathlineNames) .. junctionText, 12)
       return
     end
     if reason == "MISSION_ROUTE_UIDS_NOT_READY" and attempts < 8 then
@@ -131,6 +143,8 @@ local function prepareAirwing()
   state.airwing = air.Airwing
   state.ch47 = air.Squadrons.CH47
   need(GROUP:FindByName("TPL_AIR_US_JBAD_CH47_HEAVYLIFT_1SHIP"), "Jalalabad CH47 template")
+  need(PATHLINE:FindByName(PRIMARY_PATHLINE), PRIMARY_PATHLINE)
+  need(PATHLINE:FindByName(WEST_PATHLINE), WEST_PATHLINE)
   return not state.failed
 end
 
@@ -142,7 +156,7 @@ local function installAirObserver()
     if previous then previous(self, From, Event, To, FlightGroup, Mission) end
     if Mission == state.casMission then
       msg("CAS", "Jalalabad AH-64D assigned to Honaker", 8)
-      installCorridor("CAS", FlightGroup, Mission, state.threat.securityZone:GetCoordinate())
+      installCorridor("CAS", FlightGroup, Mission, state.threat.securityZone:GetCoordinate(), CAS_PATHLINES)
       return
     end
     if Mission ~= state.airMission then return end
@@ -153,7 +167,7 @@ local function installAirObserver()
     registry:SetReservationState(RESUPPLY_DEMAND_ID, "LOADING")
     state.loading = tx and tx.status == context().campaignState.TransactionStatus.LOADING
     msg("LOGISTICS", "CH-47 assigned; Air-AMMO manifest loading at Jalalabad", 10)
-    installCorridor("AIR-AMMO", FlightGroup, Mission, ZONE:FindByName(DROP_ZONE):GetCoordinate())
+    installCorridor("AIR-AMMO", FlightGroup, Mission, ZONE:FindByName(DROP_ZONE):GetCoordinate(), AIR_AMMO_PATHLINES)
     local oldLanded = FlightGroup.OnAfterLanded
     function FlightGroup:OnAfterLanded(F,E,T,Airbase)
       if oldLanded then oldLanded(self,F,E,T,Airbase) end
@@ -236,7 +250,7 @@ local function startAirResupply()
     if not state.inTransit or not state.cargo:IsAlive() or not state.cargo:IsInZone(drop) then fail("Air-AMMO success lacks physical delivery evidence") return end
     if state.transitScheduler and type(state.transitScheduler.Stop)=="function" then state.transitScheduler:Stop() end
     ctx.store:MarkDelivered(TRANSFER_ID); registry:SetReservationState(RESUPPLY_DEMAND_ID,"DELIVERED")
-    registry:Succeed(RESUPPLY_DEMAND_ID,{ transactionId=TRANSFER_ID,cargoId=CARGO_ID,carrierEntityId=CARRIER_ID,physicalMission="AUFTRAG:CARGOTRANSPORT",corridor=PATHLINE })
+    registry:Succeed(RESUPPLY_DEMAND_ID,{ transactionId=TRANSFER_ID,cargoId=CARGO_ID,carrierEntityId=CARRIER_ID,physicalMission="AUFTRAG:CARGOTRANSPORT",corridor=PRIMARY_PATHLINE })
     state.delivered = true
     msg("LOGISTICS", "Air-AMMO delivered at Wright; strategic stock restored to 30 / 30", 12)
   end
@@ -254,7 +268,6 @@ local function setupFireSupport()
   need(GROUP:FindByName(M1083_TEMPLATE), M1083_TEMPLATE)
   if state.failed then return false end
   state.arty = ARTY:New(state.battery,"Wright L118 Stage3 E2E"); state.arty:SetReportOFF(); state.arty:SetWaitForShotTime(120); state.arty:Start()
-  state.physicalAmmoBefore = state.arty:GetAmmo(false)
   local rearmBrigade = BRIGADE:New(WRIGHT_WAREHOUSE,"BDE_BLUE_GND_WRIGHT_STAGE3_E2E_REARM")
   state.rearmService = FixedFireSupportAmmoRearmService.New({ fixedFireSupportAmmoSupportModule=FixedFireSupportAmmoSupport,
     groundAmmoRearmAdapterModule=GroundAmmoRearmAdapter, store=ctx.store, campaignState=ctx.campaignState,
@@ -269,11 +282,25 @@ local function setupFireSupport()
     onSupportReturnFailed=function(_,reason) fail("Wright M1083 return failed: "..tostring(reason)) end })
   state.fireAdapter = FireAdapter.New({ missionDemand=MissionDemand, registry=registry, arty=state.arty, assigneeId="ARTY:WRIGHT:L118",
     priority=10, radiusM=50, shells=FIRE_SHELLS, maxEngagements=1, weaponType=ARTY.WeaponType.Auto,
-    onFireStarted=function() state.fireStarted=true; msg("FIRE SUPPORT","Wright L118 fire mission commencing",10) end,
+    onFireStarted=function()
+      state.fireStarted=true
+      state.physicalAmmoBefore=state.arty:GetAmmo(false)
+      msg("FIRE SUPPORT",string.format("Wright L118 fire mission commencing; physical ammo before=%s",tostring(state.physicalAmmoBefore)),12)
+    end,
+    verifyFireComplete=function()
+      state.physicalAmmoAfter=state.arty:GetAmmo(false)
+      if type(state.physicalAmmoBefore)~="number" or type(state.physicalAmmoAfter)~="number" then return false,"PHYSICAL_AMMO_UNAVAILABLE" end
+      if state.physicalAmmoAfter>=state.physicalAmmoBefore then return false,"PHYSICAL_AMMO_UNCHANGED" end
+      return true
+    end,
+    onFireRejected=function(_,_,_,reason)
+      msg("FIRE SUPPORT",string.format("Wright ARTY FSM ceased but physical fire NOT confirmed: ammo %s -> %s; %s",tostring(state.physicalAmmoBefore),tostring(state.physicalAmmoAfter),tostring(reason)),20)
+      fail("Wright L118 physical fire not confirmed: "..tostring(reason))
+    end,
     onFireComplete=function(demandId)
       if state.fireComplete then return end
-      state.fireComplete=true; state.physicalAmmoAfter=state.arty:GetAmmo(false)
-      msg("FIRE SUPPORT","Wright fire mission complete; local M1083 rearm requested",10)
+      state.fireComplete=true
+      msg("FIRE SUPPORT",string.format("Wright physical fire confirmed: ammo %s -> %s; local M1083 rearm requested",tostring(state.physicalAmmoBefore),tostring(state.physicalAmmoAfter)),14)
       state.rearmService:Request({ transactionId=REARM_TX, missionDemandId=demandId, nodeId=WRIGHT_NODE, resourceId=AMMO_RESOURCE, quantity=1,
         artilleryGroup=state.battery, alias="Wright L118 Stage3 E2E", onRoad=false, rearmingDistance=100, supportReturnRadiusM=100, startArty=false })
     end })
@@ -345,9 +372,9 @@ local function finish()
   local fd=state.fireDemand and registry:Get(state.fireDemand.id) or nil; local rd=registry:Get(RESUPPLY_DEMAND_ID)
   if not w or w.quantity~=30 then fail("Wright final AMMO not 30") return end; if not j or j.quantity~=85 then fail("Jalalabad final AMMO not 85") return end
   if not fd or fd.status~=MissionDemand.Status.SUCCESS then fail("fire-support demand not SUCCESS") return end; if not rd or rd.status~=MissionDemand.Status.SUCCESS then fail("RESUPPLY demand not SUCCESS") return end
-  if not state.physicalAmmoBefore or not state.physicalAmmoAfter or state.physicalAmmoAfter>=state.physicalAmmoBefore then fail("Wright L118 did not consume physical ammo") return end
-  state.passed=true; msg("PASS","Honaker full response complete: own QRF + CAS + Wright L118 + real M1083 rearm + CampaignState threshold + CH-47 Air-AMMO via OMW_FlightPath + Wright 30/30",30)
-  log("PASS WrightAmmo=30 JalalabadAmmo=85 fireDemand="..fd.id.." resupplyDemand="..rd.id.." corridor="..PATHLINE)
+  if type(state.physicalAmmoBefore)~="number" or type(state.physicalAmmoAfter)~="number" or state.physicalAmmoAfter>=state.physicalAmmoBefore then fail("Wright L118 did not consume physical ammo") return end
+  state.passed=true; msg("PASS","Honaker full response complete: own QRF + CAS via WEST valley + Wright L118 physically verified fire + real M1083 rearm + CampaignState threshold + CH-47 Air-AMMO + Wright 30/30",30)
+  log("PASS WrightAmmo=30 JalalabadAmmo=85 fireDemand="..fd.id.." resupplyDemand="..rd.id.." casCorridor="..routeLabel(CAS_PATHLINES).." airAmmoCorridor="..routeLabel(AIR_AMMO_PATHLINES))
 end
 
 SCHEDULER:New(nil,start,{},5)
