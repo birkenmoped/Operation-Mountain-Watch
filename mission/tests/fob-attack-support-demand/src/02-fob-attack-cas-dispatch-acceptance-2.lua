@@ -1,6 +1,7 @@
 -- Operation Mountain Watch - Stage 2B FOB/COP automatic-response Acceptance 2.
--- MOOSE-first end-to-end proof for Fortress threat, rotary CAS, local infantry
--- counterattack, native return-to-origin, personnel settlement and reorder check.
+-- MOOSE-first end-to-end proof for Fortress threat, active perimeter defence,
+-- scalable local infantry QRF, rotary CAS, native return-to-origin,
+-- personnel settlement and reorder check.
 
 local TEST_ID = "FOB-ATTACK-CAS-DISPATCH-ACCEPTANCE-2"
 local INSTALLATION_ID = "BLUE_GROUND_COP_FORTRESS"
@@ -9,6 +10,7 @@ local PERSONNEL_RESOURCE_ID = "GROUND_PERSONNEL"
 local PERSONNEL_RESERVE_FLOOR = 80
 local GUARD_PERSONNEL = 9
 local QRF_PERSONNEL = 9
+local QRF_MAX_GROUPS = 7
 local PRIORITY = 90
 local TEMPLATE_NAME = "TPL_BLUE_GND_INF_RIFLE_SQUAD_9"
 local WAREHOUSE_NAME = "WH_BLUE_GND_FORTRESS"
@@ -17,10 +19,10 @@ local BRIGADE_NAME = "BDE_BLUE_GND_FORTRESS_STAGE2_A2"
 local GUARD_PLATOON_NAME = "PLT_BLUE_GND_FORTRESS_SENTRY_STAGE2_A2"
 local QRF_PLATOON_NAME = "PLT_BLUE_GND_FORTRESS_QRF_STAGE2_A2"
 local GUARD_DEPLOYMENT_ID = "STAGE2-A2-FORTRESS-GUARD-PERSONNEL"
-local QRF_DEPLOYMENT_ID = "STAGE2-A2-FORTRESS-QRF-PERSONNEL"
 local SECURITY_ZONE_NAME = "OMW_SECURITY_BLUE_GROUND_COP_FORTRESS_A2"
 local SECURITY_RADIUS_M = 1000
 local SECURITY_SCAN_SECONDS = 5
+local GROUND_ATTACK_SPEED_KTS = 8
 local CAS_ASSIGNEE_ID = "AIRWING:AW_US_JBAD_TF_SHOOTER_6_6_CAV"
 local CAS_ALTITUDE_FT = 10000
 local CAS_SPEED_KTS = 120
@@ -46,19 +48,16 @@ local state = {
   threatCount=0, dispatchCount=0, passed=false,
   threatAdapter=nil, dispatchAdapter=nil,
   brigade=nil, guardPlatoon=nil, qrfPlatoon=nil,
-  guardMission=nil, qrfMission=nil, guardArmy=nil, qrfArmy=nil,
-  guardDeployment=nil, qrfDeployment=nil,
-  guardSettled=false, qrfSettled=false,
-  guardCasualties=nil, qrfCasualties=nil,
-  guardCoordinate=nil,
-  guardNativeRtz=false, qrfNativeRtz=false,
-  guardReturned=false, qrfReturned=false,
+  guardMission=nil, guardArmy=nil, guardDeployment=nil,
+  guardSettled=false, guardCasualties=nil, guardCoordinate=nil,
+  guardNativeRtz=false, guardReturned=false, guardEngageStarted=false,
+  qrfEntries={}, qrfDispatchComplete=false,
   casMission=nil, casFlightGroup=nil, casExecuting=false,
   casClosureRequested=false, casRtb=false, casLanded=false, casArrived=false,
   corridorInstalled=false, routeAttempts=0,
-  qrfExecuting=false, threatCleared=false,
+  threatCleared=false,
   personnelInitialQuantity=nil, personnelInitialAvailable=nil,
-  personnelAfterGuardReserve=nil, personnelAfterQrfReserve=nil,
+  personnelAfterGuardReserve=nil,
   reorderEvaluated=false, resupplyDemand=nil,
 }
 
@@ -100,7 +99,7 @@ local function reserveDeployment(deploymentId, entityId, quantity)
   local context = requireGroundContext()
   local before = context.store:GetResource(NODE_ID, PERSONNEL_RESOURCE_ID)
   if before.available - quantity < PERSONNEL_RESERVE_FLOOR then
-    fail(string.format("DEFENCE_RESERVE_FLOOR_VIOLATION available=%s requested=%s floor=%s", tostring(before.available), tostring(quantity), tostring(PERSONNEL_RESERVE_FLOOR)))
+    return nil, before, before, "DEFENCE_RESERVE_FLOOR"
   end
   local deployment = PersonnelLedger.New({
     store=context.store, campaignState=context.campaignState,
@@ -114,11 +113,35 @@ local function reserveDeployment(deploymentId, entityId, quantity)
   end
   log(string.format("PERSONNEL_RESERVED deploymentId=%s entityId=%s quantity=%d strategicQuantity=%s availableBefore=%s availableAfter=%s reserveFloor=%d",
     deploymentId, entityId, quantity, tostring(after.quantity), tostring(before.available), tostring(after.available), PERSONNEL_RESERVE_FLOOR))
-  return deployment, before, after
+  return deployment, before, after, nil
+end
+
+local function allQrfSettled()
+  if not state.qrfDispatchComplete then return false end
+  for _, entry in ipairs(state.qrfEntries) do
+    if not entry.settled then return false end
+  end
+  return true
+end
+
+local function allQrfReturnedOrDead()
+  if not state.qrfDispatchComplete then return false end
+  for _, entry in ipairs(state.qrfEntries) do
+    if not (entry.returned or entry.dead) then return false end
+  end
+  return true
+end
+
+local function allQrfEngaged()
+  if #state.qrfEntries == 0 then return false end
+  for _, entry in ipairs(state.qrfEntries) do
+    if not entry.engageStarted then return false end
+  end
+  return true
 end
 
 local function evaluatePersonnelReorder()
-  if not state.guardSettled or not state.qrfSettled or state.reorderEvaluated then return end
+  if not state.guardSettled or not allQrfSettled() or state.reorderEvaluated then return end
   state.reorderEvaluated=true
   local context=requireGroundContext()
   local row=findFortressPersonnelRow()
@@ -136,29 +159,35 @@ local function evaluatePersonnelReorder()
     tostring(candidate ~= nil), tostring(demand and demand.id), tostring(created), tostring(reason)))
 end
 
-local function settleDeployment(kind, armyGroup)
-  local isGuard=kind=="GUARD"
-  if isGuard and state.guardSettled then return end
-  if (not isGuard) and state.qrfSettled then return end
-  local deployment=isGuard and state.guardDeployment or state.qrfDeployment
-  if not deployment then fail(kind .. " deployment ledger missing") end
+local function settleGuard(armyGroup)
+  if state.guardSettled then return end
   local survivors=0
   if armyGroup and type(armyGroup.GetNelements)=="function" then survivors=armyGroup:GetNelements() end
-  local result, changed=deployment:SettleReturned(survivors)
+  local result, changed=state.guardDeployment:SettleReturned(survivors)
   if changed ~= true then return end
-  if isGuard then
-    state.guardSettled=true; state.guardCasualties=result.casualties
-  else
-    state.qrfSettled=true; state.qrfCasualties=result.casualties
-  end
-  log(string.format("%s_PERSONNEL_SETTLED survivors=%d casualties=%d quantity=%s available=%s",
-    kind, result.survivors, result.casualties, tostring(result.snapshot.quantity), tostring(result.snapshot.available)))
+  state.guardSettled=true
+  state.guardCasualties=result.casualties
+  log(string.format("GUARD_PERSONNEL_SETTLED survivors=%d casualties=%d quantity=%s available=%s",
+    result.survivors, result.casualties, tostring(result.snapshot.quantity), tostring(result.snapshot.available)))
   evaluatePersonnelReorder()
 end
 
-local function closeGroundMission(kind, armyGroup, mission)
+local function settleQrf(entry, armyGroup)
+  if entry.settled then return end
+  local survivors=0
+  if armyGroup and type(armyGroup.GetNelements)=="function" then survivors=armyGroup:GetNelements() end
+  local result, changed=entry.deployment:SettleReturned(survivors)
+  if changed ~= true then return end
+  entry.settled=true
+  entry.casualties=result.casualties
+  log(string.format("QRF_PERSONNEL_SETTLED index=%d targetGroup=%s survivors=%d casualties=%d quantity=%s available=%s",
+    entry.index, entry.targetName, result.survivors, result.casualties, tostring(result.snapshot.quantity), tostring(result.snapshot.available)))
+  evaluatePersonnelReorder()
+end
+
+local function closeGroundMission(kind, armyGroup, mission, entry)
   if armyGroup and type(armyGroup.GetNelements)=="function" and armyGroup:GetNelements() <= 0 then
-    settleDeployment(kind, armyGroup)
+    if kind=="GUARD" then settleGuard(armyGroup) else settleQrf(entry, armyGroup) end
     return
   end
   if not mission then
@@ -175,8 +204,8 @@ local function closeGroundMission(kind, armyGroup, mission)
   end
 end
 
-local function attachGroundLifecycle(kind, armyGroup, mission)
-  local marker="__omwStage2B" .. kind
+local function attachGroundLifecycle(kind, armyGroup, mission, entry)
+  local marker="__omwStage2B" .. kind .. tostring(entry and entry.index or "")
   if armyGroup[marker] then return end
   armyGroup[marker]=true
 
@@ -185,11 +214,26 @@ local function attachGroundLifecycle(kind, armyGroup, mission)
     if previousExecute then previousExecute(self, From, Event, To, Mission) end
     if Mission ~= mission then return end
     if kind=="GUARD" then
-      log(string.format("SENTRY_ONGUARD_EXECUTING group=%s warehouse=%s", tostring(self:GetName()), WAREHOUSE_NAME))
+      log(string.format("SENTRY_ONGUARD_EXECUTING group=%s warehouse=%s activeResponse=MOOSE_SET_ENGAGE_DETECTED", tostring(self:GetName()), WAREHOUSE_NAME))
       if not state.threatAdapter then state.startThreatAndDispatch() end
     else
-      state.qrfExecuting=true
-      log(string.format("QRF_GROUNDATTACK_EXECUTING group=%s mission=%s", tostring(self:GetName()), tostring(mission:GetName())))
+      entry.executing=true
+      log(string.format("QRF_GROUNDATTACK_EXECUTING index=%d group=%s targetGroup=%s mission=%s",
+        entry.index, tostring(self:GetName()), entry.targetName, tostring(mission:GetName())))
+    end
+  end
+
+  local previousEngage=armyGroup.OnAfterEngageTarget
+  function armyGroup:OnAfterEngageTarget(From, Event, To, Target, Speed, Formation)
+    if previousEngage then previousEngage(self, From, Event, To, Target, Speed, Formation) end
+    local targetName=Target and type(Target.GetName)=="function" and Target:GetName() or "UNKNOWN"
+    if kind=="GUARD" then
+      state.guardEngageStarted=true
+      log(string.format("SENTRY_ENGAGE_TARGET group=%s target=%s controller=MOOSE_ENGAGE_DETECTED", tostring(self:GetName()), tostring(targetName)))
+    else
+      entry.engageStarted=true
+      log(string.format("QRF_ENGAGE_TARGET index=%d group=%s assignedTarget=%s actualTarget=%s controller=MOOSE_GROUNDATTACK",
+        entry.index, tostring(self:GetName()), entry.targetName, tostring(targetName)))
     end
   end
 
@@ -201,50 +245,101 @@ local function attachGroundLifecycle(kind, armyGroup, mission)
     if zoneName~=EXPECTED_HOMEZONE_NAME then
       fail(string.format("%s native RTZ wrong origin zone expected=%s actual=%s", kind, EXPECTED_HOMEZONE_NAME, tostring(zoneName)))
     end
-    if kind=="GUARD" then state.guardNativeRtz=true else state.qrfNativeRtz=true end
-    log(string.format("%s_NATIVE_RTZ_ACTIVE group=%s zone=%s source=ORIGIN_LEGION_SPAWNZONE",
-      kind, tostring(self:GetName()), tostring(zoneName)))
+    if kind=="GUARD" then state.guardNativeRtz=true else entry.nativeRtz=true end
+    log(string.format("%s_NATIVE_RTZ_ACTIVE%s group=%s zone=%s source=ORIGIN_LEGION_SPAWNZONE",
+      kind, entry and string.format(" index=%d", entry.index) or "", tostring(self:GetName()), tostring(zoneName)))
   end
 
   local previousReturned=armyGroup.OnAfterReturned
   function armyGroup:OnAfterReturned(From, Event, To)
     if previousReturned then previousReturned(self, From, Event, To) end
-    if kind=="GUARD" then state.guardReturned=true else state.qrfReturned=true end
-    log(string.format("%s_RETURNED_ORIGIN group=%s warehouse=%s homezone=%s",
-      kind, tostring(self:GetName()), WAREHOUSE_NAME, EXPECTED_HOMEZONE_NAME))
-    settleDeployment(kind, self)
+    if kind=="GUARD" then
+      state.guardReturned=true
+      log(string.format("GUARD_RETURNED_ORIGIN group=%s warehouse=%s homezone=%s", tostring(self:GetName()), WAREHOUSE_NAME, EXPECTED_HOMEZONE_NAME))
+      settleGuard(self)
+    else
+      entry.returned=true
+      log(string.format("QRF_RETURNED_ORIGIN index=%d group=%s targetGroup=%s warehouse=%s homezone=%s",
+        entry.index, tostring(self:GetName()), entry.targetName, WAREHOUSE_NAME, EXPECTED_HOMEZONE_NAME))
+      settleQrf(entry, self)
+    end
   end
 
   local previousDead=armyGroup.OnAfterDead
   function armyGroup:OnAfterDead(From, Event, To)
     if previousDead then previousDead(self, From, Event, To) end
-    log(string.format("%s_GROUP_DEAD group=%s", kind, tostring(self:GetName())))
-    settleDeployment(kind, self)
+    if kind=="GUARD" then
+      log(string.format("GUARD_GROUP_DEAD group=%s", tostring(self:GetName())))
+      settleGuard(self)
+    else
+      entry.dead=true
+      log(string.format("QRF_GROUP_DEAD index=%d group=%s targetGroup=%s", entry.index, tostring(self:GetName()), entry.targetName))
+      settleQrf(entry, self)
+    end
   end
 end
 
-local function findRedThreatGroup(opsZone)
+local function collectRedThreatGroups(opsZone)
+  local groups={}
   local set=opsZone:GetScannedGroupSet()
   for _, group in pairs(set:GetSet()) do
-    if group and group:IsAlive() and group:GetCoalition()==coalition.side.RED then return group end
+    if group and group:IsAlive() and group:GetCoalition()==coalition.side.RED then
+      groups[#groups+1]=group
+    end
   end
-  return nil
+  table.sort(groups, function(a, b)
+    local da=state.guardCoordinate:Get2DDistance(a:GetCoordinate())
+    local db=state.guardCoordinate:Get2DDistance(b:GetCoordinate())
+    if math.abs(da-db) > 1 then return da < db end
+    return tostring(a:GetName()) < tostring(b:GetName())
+  end)
+  return groups
 end
 
-local function dispatchQrf(opsZone)
-  if state.qrfMission then return end
-  local target=findRedThreatGroup(opsZone)
-  if not target then fail("MOOSE OPSZONE has no alive RED threat group for QRF GROUNDATTACK") end
+local function dispatchQrfs(opsZone)
+  if state.qrfDispatchComplete then return end
+  local targets=collectRedThreatGroups(opsZone)
+  if #targets==0 then fail("MOOSE OPSZONE has no alive RED threat groups for QRF GROUNDATTACK") end
 
-  local deployment, _, after=reserveDeployment(QRF_DEPLOYMENT_ID, QRF_PLATOON_NAME, QRF_PERSONNEL)
-  state.qrfDeployment=deployment
-  state.personnelAfterQrfReserve=after.available
+  local snapshot=requireGroundContext().store:GetResource(NODE_ID, PERSONNEL_RESOURCE_ID)
+  local strategicSlots=math.floor(math.max(snapshot.available-PERSONNEL_RESERVE_FLOOR, 0)/QRF_PERSONNEL)
+  local availableAssets=state.qrfPlatoon:CountAssets(true, AUFTRAG.Type.GROUNDATTACK)
+  local dispatchCount=math.min(#targets, QRF_MAX_GROUPS, strategicSlots, availableAssets)
+  if dispatchCount < 1 then
+    fail(string.format("QRF_DISPATCH_BLOCKED targets=%d availableAssets=%d strategicSlots=%d reserveFloor=%d",
+      #targets, availableAssets, strategicSlots, PERSONNEL_RESERVE_FLOOR))
+  end
 
-  state.qrfMission=AUFTRAG:NewGROUNDATTACK(target, 8, ENUMS.Formation.Vehicle.OffRoad)
-  state.qrfMission:SetName("OMW_STAGE2_A2_FORTRESS_QRF_COUNTERATTACK")
-  state.brigade:AddMission(state.qrfMission)
-  log(string.format("QRF_QUEUED targetGroup=%s personnel=%d reserveFloor=%d mission=GROUNDATTACK returnToLegion=MOOSE_DEFAULT_TRUE",
-    tostring(target:GetName()), QRF_PERSONNEL, PERSONNEL_RESERVE_FLOOR))
+  log(string.format("QRF_RESPONSE_PLAN redGroups=%d availableAssets=%d strategicSlots=%d maxGroups=%d dispatchGroups=%d reserveFloor=%d",
+    #targets, availableAssets, strategicSlots, QRF_MAX_GROUPS, dispatchCount, PERSONNEL_RESERVE_FLOOR))
+
+  for index=1,dispatchCount do
+    local target=targets[index]
+    local deploymentId=string.format("STAGE2-A2-FORTRESS-QRF-%02d-PERSONNEL", index)
+    local entityId=string.format("%s-%02d", QRF_PLATOON_NAME, index)
+    local deployment, _, after, reserveReason=reserveDeployment(deploymentId, entityId, QRF_PERSONNEL)
+    if not deployment then fail("QRF reservation failed reason=" .. tostring(reserveReason)) end
+
+    local mission=AUFTRAG:NewGROUNDATTACK(target, GROUND_ATTACK_SPEED_KTS, ENUMS.Formation.Vehicle.OffRoad)
+    mission:SetName(string.format("OMW_STAGE2_A2_FORTRESS_QRF_%02d_COUNTERATTACK", index))
+    local entry={
+      index=index, mission=mission, army=nil, deployment=deployment,
+      target=target, targetName=tostring(target:GetName()),
+      executing=false, engageStarted=false, nativeRtz=false,
+      returned=false, dead=false, settled=false, casualties=nil,
+      availableAfterReserve=after.available,
+    }
+    state.qrfEntries[#state.qrfEntries+1]=entry
+    state.brigade:AddMission(mission)
+    log(string.format("QRF_QUEUED index=%d targetGroup=%s distanceM=%.0f personnel=%d availableAfter=%s mission=GROUNDATTACK returnToLegion=MOOSE_DEFAULT_TRUE",
+      index, entry.targetName, state.guardCoordinate:Get2DDistance(target:GetCoordinate()), QRF_PERSONNEL,
+      tostring(after.available)))
+  end
+
+  state.qrfDispatchComplete=true
+  log(string.format("QRF_DISPATCH_COMPLETE dispatched=%d redGroups=%d undispatched=%d reasonForLimit=%s",
+    dispatchCount, #targets, #targets-dispatchCount,
+    dispatchCount<#targets and "ASSET_OR_RESERVE_OR_MAX_LIMIT" or "ALL_DETECTED_RED_GROUPS_ASSIGNED"))
 end
 
 local function installCorridorWithRetry(flightGroup, mission)
@@ -265,6 +360,10 @@ local function installCorridorWithRetry(flightGroup, mission)
   end
   if reason=="MISSION_ROUTE_UIDS_NOT_READY" and state.routeAttempts < ROUTE_RETRY_MAX then
     SCHEDULER:New(nil, function() installCorridorWithRetry(flightGroup, mission) end, {}, ROUTE_RETRY_SEC)
+    return
+  end
+  if reason=="MISSION_ROUTE_UIDS_NOT_READY" then
+    log("CAS_CORRIDOR_PENDING_MOOSE_ROUTE_CALLBACK reason=MISSION_ROUTE_UIDS_NOT_READY")
     return
   end
   fail("CAS_CORRIDOR_INSTALL_FAILED reason=" .. tostring(reason))
@@ -350,7 +449,7 @@ function state.startThreatAndDispatch()
       return incidentId
     end,
     onThreatStarted=function(_, opsZone)
-      dispatchQrf(opsZone)
+      dispatchQrfs(opsZone)
     end,
     onThreatCleared=function()
       if state.threatCleared then return end
@@ -361,15 +460,24 @@ function state.startThreatAndDispatch()
         state.casClosureRequested=requested==true or reason=="CLOSURE_ALREADY_REQUESTED"
         log(string.format("CAS_MISSION_CLOSURE requested=%s reason=%s", tostring(requested), tostring(reason)))
       end
-      closeGroundMission("QRF", state.qrfArmy, state.qrfMission)
-      closeGroundMission("GUARD", state.guardArmy, state.guardMission)
+      for _, entry in ipairs(state.qrfEntries) do
+        closeGroundMission("QRF", entry.army, entry.mission, entry)
+      end
+      closeGroundMission("GUARD", state.guardArmy, state.guardMission, nil)
     end,
   })
   local _, started=state.threatAdapter:Start()
   if started~=true then fail("MOOSE OPSZONE threat adapter failed to start") end
-  log(string.format("READY sentryGroup=%s installationId=%s securityRadiusM=%d detection=OPSZONE_ATTACKED scanSeconds=%d casAirwing=%s casSquadron=%s casAvailableAssets=%s corridor=%s groundReturn=MOOSE_NATIVE_ORIGIN_HOMEZONE",
+  log(string.format("READY sentryGroup=%s installationId=%s securityRadiusM=%d detection=OPSZONE_ATTACKED scanSeconds=%d casAirwing=%s casSquadron=%s casAvailableAssets=%s corridor=%s guardResponse=MOOSE_SET_ENGAGE_DETECTED qrfMaxGroups=%d groundReturn=MOOSE_NATIVE_ORIGIN_HOMEZONE",
     tostring(state.guardArmy and state.guardArmy:GetName()), INSTALLATION_ID, SECURITY_RADIUS_M, SECURITY_SCAN_SECONDS,
-    CAS_ASSIGNEE_ID, CAS_SQUADRON_NAME, tostring(availableCasAssets), CORRIDOR_PATHLINE_NAME))
+    CAS_ASSIGNEE_ID, CAS_SQUADRON_NAME, tostring(availableCasAssets), CORRIDOR_PATHLINE_NAME, QRF_MAX_GROUPS))
+end
+
+local function findQrfEntryByMission(mission)
+  for _, entry in ipairs(state.qrfEntries) do
+    if entry.mission==mission then return entry end
+  end
+  return nil
 end
 
 local function setupFortressDefence()
@@ -386,7 +494,7 @@ local function setupFortressDefence()
   state.guardPlatoon=requireObject(PLATOON:New(TEMPLATE_NAME, 1, GUARD_PLATOON_NAME), GUARD_PLATOON_NAME)
   state.guardPlatoon:AddMissionCapability(AUFTRAG.Type.ONGUARD, 100)
   state.brigade:AddPlatoon(state.guardPlatoon)
-  state.qrfPlatoon=requireObject(PLATOON:New(TEMPLATE_NAME, 1, QRF_PLATOON_NAME), QRF_PLATOON_NAME)
+  state.qrfPlatoon=requireObject(PLATOON:New(TEMPLATE_NAME, QRF_MAX_GROUPS, QRF_PLATOON_NAME), QRF_PLATOON_NAME)
   state.qrfPlatoon:AddMissionCapability(AUFTRAG.Type.GROUNDATTACK, 100)
   state.brigade:AddPlatoon(state.qrfPlatoon)
 
@@ -394,27 +502,34 @@ local function setupFortressDefence()
     if not ArmyGroup then fail("BRIGADE OnAfterArmyOnMission returned nil ARMYGROUP") end
     if Mission==state.guardMission then
       state.guardArmy=ArmyGroup
-      attachGroundLifecycle("GUARD", ArmyGroup, Mission)
+      attachGroundLifecycle("GUARD", ArmyGroup, Mission, nil)
       log(string.format("SENTRY_ON_MISSION group=%s mission=%s", tostring(ArmyGroup:GetName()), tostring(Mission:GetName())))
-    elseif Mission==state.qrfMission then
-      state.qrfArmy=ArmyGroup
-      attachGroundLifecycle("QRF", ArmyGroup, Mission)
-      log(string.format("QRF_ON_MISSION group=%s mission=%s", tostring(ArmyGroup:GetName()), tostring(Mission:GetName())))
+    else
+      local entry=findQrfEntryByMission(Mission)
+      if entry then
+        entry.army=ArmyGroup
+        attachGroundLifecycle("QRF", ArmyGroup, Mission, entry)
+        log(string.format("QRF_ON_MISSION index=%d group=%s targetGroup=%s mission=%s",
+          entry.index, tostring(ArmyGroup:GetName()), entry.targetName, tostring(Mission:GetName())))
+      end
     end
   end
 
   state.brigade.OnAfterStart=function()
     SCHEDULER:New(nil, function()
       if state.guardPlatoon:CountAssets(true, AUFTRAG.Type.ONGUARD)~=1 then fail("expected one ONGUARD-capable guard asset") end
-      if state.qrfPlatoon:CountAssets(true, AUFTRAG.Type.GROUNDATTACK)~=1 then fail("expected one GROUNDATTACK-capable QRF asset") end
-      local deployment, _, after=reserveDeployment(GUARD_DEPLOYMENT_ID, GUARD_PLATOON_NAME, GUARD_PERSONNEL)
+      local qrfAssets=state.qrfPlatoon:CountAssets(true, AUFTRAG.Type.GROUNDATTACK)
+      if qrfAssets~=QRF_MAX_GROUPS then fail(string.format("expected %d GROUNDATTACK-capable QRF assets actual=%s", QRF_MAX_GROUPS, tostring(qrfAssets))) end
+      local deployment, _, after, reason=reserveDeployment(GUARD_DEPLOYMENT_ID, GUARD_PLATOON_NAME, GUARD_PERSONNEL)
+      if not deployment then fail("guard reservation failed reason=" .. tostring(reason)) end
       state.guardDeployment=deployment
       state.personnelAfterGuardReserve=after.available
       state.guardMission=AUFTRAG:NewONGUARD(state.guardCoordinate)
+      state.guardMission:SetEngageDetected(SECURITY_RADIUS_M/1852, {"Ground Units"})
       state.guardMission:SetName("OMW_STAGE2_A2_FORTRESS_SENTRY")
       state.brigade:AddMission(state.guardMission)
-      log(string.format("SENTRY_QUEUED template=%s platoon=%s warehouse=%s personnel=%d accounting=RESERVED_NOT_CONSUMED spawnZoneOverride=false returnToLegion=MOOSE_DEFAULT_TRUE",
-        TEMPLATE_NAME, GUARD_PLATOON_NAME, WAREHOUSE_NAME, GUARD_PERSONNEL))
+      log(string.format("SENTRY_QUEUED template=%s platoon=%s warehouse=%s personnel=%d accounting=RESERVED_NOT_CONSUMED activeResponse=SET_ENGAGE_DETECTED rangeM=%d targetTypes=GroundUnits spawnZoneOverride=false returnToLegion=MOOSE_DEFAULT_TRUE",
+        TEMPLATE_NAME, GUARD_PLATOON_NAME, WAREHOUSE_NAME, GUARD_PERSONNEL, SECURITY_RADIUS_M))
     end, {}, POST_START_DELAY_SEC)
   end
   state.brigade:Start()
@@ -425,25 +540,31 @@ setupFortressDefence()
 SCHEDULER:New(nil, function()
   if state.passed then return end
   if not (state.threatCleared and state.casClosureRequested and state.casExecuting and state.casRtb and state.casLanded and state.casArrived
-      and state.corridorInstalled and state.qrfExecuting and state.guardNativeRtz and state.qrfNativeRtz
-      and state.guardReturned and state.qrfReturned and state.guardSettled and state.qrfSettled and state.reorderEvaluated) then return end
+      and state.corridorInstalled and state.guardEngageStarted and allQrfEngaged()
+      and state.guardNativeRtz and state.guardReturned and state.guardSettled
+      and allQrfReturnedOrDead() and allQrfSettled() and state.reorderEvaluated) then return end
 
   local demand=registry:Get(state.demandId)
   local personnel=requireGroundContext().store:GetResource(NODE_ID, PERSONNEL_RESOURCE_ID)
   if not demand or demand.status~=MissionDemand.Status.SUCCESS then fail("CAS MissionDemand did not reach SUCCESS") end
   if state.dispatchCount~=1 then fail("expected exactly one CAS dispatch") end
   if state.personnelAfterGuardReserve ~= state.personnelInitialAvailable-GUARD_PERSONNEL then fail("guard reservation accounting mismatch") end
-  if state.personnelAfterQrfReserve ~= state.personnelInitialAvailable-GUARD_PERSONNEL-QRF_PERSONNEL then fail("QRF reservation accounting mismatch") end
-  if state.personnelAfterQrfReserve < PERSONNEL_RESERVE_FLOOR then fail("defence reserve floor violated") end
-  local expectedQuantity=state.personnelInitialQuantity-(state.guardCasualties or 0)-(state.qrfCasualties or 0)
+
+  local totalQrfCasualties=0
+  for _, entry in ipairs(state.qrfEntries) do
+    if entry.availableAfterReserve < PERSONNEL_RESERVE_FLOOR then fail("defence reserve floor violated by QRF dispatch") end
+    totalQrfCasualties=totalQrfCasualties+(entry.casualties or 0)
+  end
+  local expectedQuantity=state.personnelInitialQuantity-(state.guardCasualties or 0)-totalQrfCasualties
   if personnel.quantity~=expectedQuantity then fail("post-combat personnel quantity mismatch") end
 
   state.passed=true
-  log(string.format("PASS qualifiedThreats=%d dispatches=%d demandId=%s demandStatus=%s casFlight=%s corridor=%s threatClear=OPSZONE_DEFEATED_RED casRTB=%s casLanded=%s casArrived=%s qrfMission=GROUNDATTACK guardNativeRtz=%s qrfNativeRtz=%s guardReturned=%s qrfReturned=%s homezone=%s guardCasualties=%s qrfCasualties=%s personnelInitialQuantity=%s personnelInitialAvailable=%s personnelFinal=%s availableFinal=%s defenceReserveFloor=%d resupplyDemand=%s",
+  log(string.format("PASS qualifiedThreats=%d dispatches=%d demandId=%s demandStatus=%s casFlight=%s corridor=%s threatClear=OPSZONE_DEFEATED_RED casRTB=%s casLanded=%s casArrived=%s guardEngageDetected=%s qrfGroups=%d qrfAllEngaged=%s guardNativeRtz=%s guardReturned=%s qrfAllReturnedOrDead=%s homezone=%s guardCasualties=%s qrfCasualtiesTotal=%d personnelInitialQuantity=%s personnelInitialAvailable=%s personnelFinal=%s availableFinal=%s defenceReserveFloor=%d resupplyDemand=%s",
     state.threatCount, state.dispatchCount, tostring(demand.id), tostring(demand.status), tostring(state.casFlightGroup and state.casFlightGroup:GetName()),
     CORRIDOR_PATHLINE_NAME, tostring(state.casRtb), tostring(state.casLanded), tostring(state.casArrived),
-    tostring(state.guardNativeRtz), tostring(state.qrfNativeRtz), tostring(state.guardReturned), tostring(state.qrfReturned), EXPECTED_HOMEZONE_NAME,
-    tostring(state.guardCasualties), tostring(state.qrfCasualties), tostring(state.personnelInitialQuantity), tostring(state.personnelInitialAvailable),
-    tostring(personnel.quantity), tostring(personnel.available), PERSONNEL_RESERVE_FLOOR, tostring(state.resupplyDemand and state.resupplyDemand.id)))
+    tostring(state.guardEngageStarted), #state.qrfEntries, tostring(allQrfEngaged()), tostring(state.guardNativeRtz), tostring(state.guardReturned),
+    tostring(allQrfReturnedOrDead()), EXPECTED_HOMEZONE_NAME, tostring(state.guardCasualties), totalQrfCasualties,
+    tostring(state.personnelInitialQuantity), tostring(state.personnelInitialAvailable), tostring(personnel.quantity), tostring(personnel.available),
+    PERSONNEL_RESERVE_FLOOR, tostring(state.resupplyDemand and state.resupplyDemand.id)))
   state.threatAdapter:Stop()
 end, {}, 2, 2)
