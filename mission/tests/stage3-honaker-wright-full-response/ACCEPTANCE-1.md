@@ -10,6 +10,7 @@ project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
 superseded_by:
 source_branch: agent/fire-support-strategic-resupply-closure
+source_commit: 9fbfe27c9b5204689ccf578b3a00771d0b26102b
 validated_in_dcs: false
 ---
 
