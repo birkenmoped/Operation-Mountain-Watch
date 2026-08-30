@@ -10,7 +10,7 @@ project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
 superseded_by:
 source_branch: agent/fire-support-strategic-resupply-closure
-source_commit: 9fbfe27c9b5204689ccf578b3a00771d0b26102b
+source_commit: 1be16ef24e6f3727793dfe069d827690cc6a6bf9
 validated_in_dcs: false
 ---
 
@@ -18,20 +18,29 @@ validated_in_dcs: false
 
 ## Zweck
 
-Dieser Lauf ist der kombinierte Stage-3-End-to-End-Test. Er führt vorhandene MOOSE-first-Pfade in einer realen Kette zusammen.
+Dieser Lauf ist der kombinierte Stage-3-End-to-End-Test. Er führt vorhandene MOOSE-first-Pfade in einer realen Kette zusammen und verlangt jetzt reale Feuer-Evidenz sowohl für Wright ARTY als auch für den AH-64-CAS-Anteil.
 
 ```text
 RED ground forces attack COP Honaker
 -> existing MOOSE OPSZONE Attacked qualification
 -> Honaker own infantry QRF response
--> existing Jalalabad AH-64D immediate CAS response
--> CAS route OMW_FlightPath -> OMW_FlightPath_WEST -> Honaker
--> additional FIRE_SUPPORT_IMMEDIATE demand
--> Honaker local 2B11 intentionally unavailable in this acceptance
--> Wright L118 selected
--> MOOSE Functional ARTY attacks one OPSZONE-detected RED group
--> physical MOOSE ARTY ammo must actually decrease
--> only then FIRE_SUPPORT demand SUCCESS
+-> Jalalabad AH-64D CAS response
+-> OMW_FlightPath at 500 ft AGL
+-> OMW_FlightPath_WEST at 2500 ft AGL / RotaryWing.Column.D70
+-> CAS combat mission at 10000 ft mission altitude
+-> MOOSE EngageDetected against Ground Units inside Honaker security zone
+-> real AH-64 Shot event required as execution evidence
+AND
+-> FIRE_SUPPORT_IMMEDIATE demand
+-> Honaker local 2B11 intentionally unavailable
+-> wait 15 s for the existing OPSZONE target picture
+-> select up to 3 currently detected RED groups
+-> obtain each target coordinate from the detected MOOSE GROUP
+-> Wright L118 MOOSE Functional ARTY AssignTargetCoord
+-> DCS Fire At Point
+-> 4 rounds per queued coordinate fire mission
+-> physical ARTY ammo decrease required for every target
+-> only after all queued fire missions complete: FIRE_SUPPORT SUCCESS
 -> existing M1083 local rearm composition
 -> CampaignState consumes exactly 1 GROUND_AMMO_PACKAGE
 -> Wright strategic AMMO 16 -> 15
@@ -56,39 +65,79 @@ RED ground forces attack COP Honaker
 - `GROUND_AMMO_PACKAGE` wird nicht in Kilogramm umgerechnet.
 - Ein physisches `ammo_cargo` repräsentiert das komplette Transfermanifest von 15 strategischen Paketen.
 - Die 1000-kg-Cargomasse ist ausschließlich ein Acceptance-Parameter für den DCS-Slingload.
-- Keine neue Feinderkennung: Bedrohungsevidenz kommt aus dem bestehenden `OMW_FobThreatOpsZoneAdapter` / MOOSE `OPSZONE`.
+- Keine neue Feinderkennung: Bedrohungsevidenz und ARTY-Zielauswahl kommen aus dem bestehenden `OMW_FobThreatOpsZoneAdapter` / MOOSE `OPSZONE`.
 - Keine zweite QRF-Logik außerhalb des vorhandenen MOOSE-`BRIGADE`/`PLATOON`/`AUFTRAG:NewGROUNDATTACK`-Musters.
 - Kein zweiter MOOSE-Owner für die Wright-Batterie: ein Functional-`ARTY`-FSM besitzt Feuer und lokalen Rearm-Lifecycle.
-- `OnAfterOpenFire` / `OnAfterCeaseFire` allein gelten nicht mehr als Beweis realer Schüsse. Vor FIRE_SUPPORT-SUCCESS muss `ARTY:GetAmmo(false)` tatsächlich sinken.
+- `OnAfterOpenFire` / `OnAfterCeaseFire` allein gelten nicht als Beweis realer Schüsse. Für jedes ARTY-Ziel muss `ARTY:GetAmmo(false)` sinken.
+- `AUFTRAG:NewCAS(...):OnAfterSuccess` allein gilt nicht als Beweis eines CAS-Angriffs. Im Acceptance-Lauf wird mindestens ein reales MOOSE-`EVENTS.Shot` der zugewiesenen AH-64-Gruppe verlangt.
 - Honaker-Mörser werden im Test nicht zerstört oder teleportiert; das late-activation Template bleibt unmaterialisiert.
-- CAS nach Honaker verwendet die verkettete Route `OMW_FlightPath -> OMW_FlightPath_WEST`; der Rückweg wird aus derselben Sequenz rückwärts aufgebaut.
 - Air-AMMO nach Wright verwendet weiterhin ausschließlich `OMW_FlightPath` hin und zurück.
 
-## Verkettete PATHLINE-Route
+## Wright ARTY – korrigierter MOOSE-Pfad
 
-`OMW_HelicopterFlightPathCorridor` unterstützt nun eine geordnete Folge vorhandener MOOSE-`PATHLINE`-Objekte. Zwischen zwei Linien wird das nächstgelegene Punktpaar als Junction verwendet. Der aktuelle Acceptance-Vertrag akzeptiert nur Junctions bis maximal `1000 m`; größere Lücken führen zu einem expliziten Fehler statt zu einem stillen Luftlinien-Segment.
+Der vorherige Versuch verwendete `ARTY:AssignAttackGroup()`. MOOSE akzeptierte den Auftrag und ging in `OpenFire`, DCS erzeugte aber innerhalb des 120-s-Wartefensters keinen Schuss; die physische Munition blieb `300 -> 300`. Deshalb wurde dieser Pfad für indirektes L118-Feuer verworfen.
 
-Für Honaker:
+Der neue Vertrag verwendet den für indirektes Feuer vorgesehenen Functional-ARTY-Koordinatenpfad:
+
+```text
+existing OPSZONE
+-> detected RED GROUP
+-> GROUP:GetCoordinate()
+-> ARTY:AssignTargetCoord(...)
+-> MOOSE _FireAtCoord
+-> DCS TaskFireAtPoint
+```
+
+Die Zielkoordinaten werden bei der Feueranforderung aus den real erkannten RED-Gruppen gewonnen. Es gibt keinen zusätzlichen Target-Scanner und keinen manuell gesetzten Feuer-Marker.
+
+Der Acceptance-Lauf wartet nach `OPSZONE Attacked` 15 Sekunden, damit die vorhandene OPSZONE ihr aktuelles Zielbild aktualisieren kann. Danach werden höchstens drei aktuell erkannte RED-Gruppen nach Nähe zu Honaker ausgewählt. Vor der Übergabe werden pro Ziel sichtbar/loggend Zielname, Koordinate, Wright-Zieldistanz sowie die vom laufenden MOOSE-ARTY-Objekt verwendete Min-/Max-Range ausgegeben. Ein außerhalb dieses Envelopes liegendes Ziel führt zum expliziten FAIL.
+
+Für jedes ausgewählte Ziel gilt:
+
+```text
+4 rounds requested
+-> OpenFire
+-> physical ammo baseline
+-> real MOOSE Shot events / DCS fire
+-> CeaseFire
+-> physical ammo must be lower
+```
+
+Erst wenn alle in diesem Incident tatsächlich eingereihten Koordinatenziele physisch bestätigt wurden, darf der gemeinsame `FIRE_SUPPORT_IMMEDIATE`-Demand `SUCCESS` erreichen und der lokale M1083-Rearm angefordert werden.
+
+`ARTY:SetWaitForShotTime()` wird auf den MOOSE-Defaultwert von `300 s` gesetzt. Das ist **kein Artillerie-Cooldown**, sondern ausschließlich die maximale Wartezeit auf das erste reale `Shot`-Event, bevor MOOSE einen fehlgeschlagenen Feuerauftrag abbricht.
+
+## CAS – korrigierter MOOSE-Pfad
+
+Der erste CAS-Versuch zeigte, dass `AUFTRAG:NewCAS()` formal `SUCCESS` melden kann, ohne dass damit ein realer Waffenabschuss bewiesen ist. Der neue Acceptance-Vertrag behält den vorhandenen CAS-Missionstyp für AIRWING/SQUADRON-Kompatibilität bei, aktiviert aber zusätzlich die bereits vorhandene MOOSE-Engagement-Funktion:
+
+```text
+AUFTRAG:NewCAS(Honaker security zone, 10000 ft, 120 kt)
+-> AUFTRAG:SetEngageDetected(5 NM, {"Ground Units"}, Honaker security zone)
+```
+
+Damit bleibt MOOSE für Zielerkennung und Engagement zuständig. Zusätzlich korreliert ein MOOSE-`EVENTHANDLER` das erste reale `EVENTS.Shot` mit der tatsächlich zugewiesenen AH-64-FLIGHTGROUP. Erst diese Evidenz darf den CAS-MissionDemand im Acceptance-Lauf erfolgreich schließen.
+
+Der Acceptance-Code schreibt nicht vor, ob DCS für ein konkretes weiches Ziel M230, Hydra oder Hellfire wählt. Der reale Weapon-Type wird aus dem Shot-Event gemeldet. Eine spätere explizite Waffenpräferenz wäre eine eigene Entscheidung und wird nicht in diesen Test hineinerfunden.
+
+## Verkettete PATHLINE-Route und Höhenprofil
+
+`OMW_HelicopterFlightPathCorridor` unterstützt eine geordnete Folge vorhandener MOOSE-`PATHLINE`-Objekte. Zwischen zwei Linien wird das nächstgelegene Punktpaar als Junction verwendet. Der Acceptance-Vertrag akzeptiert nur Junctions bis `1000 m`; größere Lücken führen zu einem expliziten Fehler statt zu einem stillen Luftlinien-Segment.
+
+Für den Honaker-CAS gilt:
 
 ```text
 Jalalabad
--> OMW_FlightPath
--> Junction
--> OMW_FlightPath_WEST
--> Honaker mission area
+-> OMW_FlightPath             500 ft AGL
+-> Junction bei Kerala
+-> OMW_FlightPath_WEST       2500 ft AGL
+   RotaryWing.Column.D70
+-> Honaker CAS mission       10000 ft mission altitude
 ```
 
-Rückweg:
+MOOSE `FLIGHTGROUP:AddWaypoint()` verwendet für Helikopter `RADIO`-Höhen; die Korridorwerte sind deshalb AGL. Die Formation wird beim Eintritt in das profilierte WEST-Segment über die vorhandene MOOSE-`GROUP:SetFormation(ENUMS.Formation.RotaryWing.Column.D70)`-API gewechselt.
 
-```text
-Honaker mission area
--> OMW_FlightPath_WEST reverse
--> Junction
--> OMW_FlightPath reverse
--> Jalalabad
-```
-
-Für Wright:
+Der Rückweg wird aus derselben zusammengesetzten Geometrie rückwärts aufgebaut. Der WEST-Anteil bleibt bei `2500 ft AGL` und Column. Für Wright-Air-AMMO gilt weiterhin:
 
 ```text
 Jalalabad
@@ -97,26 +146,6 @@ Jalalabad
 -> OMW_FlightPath reverse
 -> Jalalabad
 ```
-
-## Warum Functional ARTY
-
-Der bestehende lokale Rearm-Vertrag arbeitet mit Functional `ARTY` und dessen `OnBeforeRearm` / `OnAfterRearmed`-Lifecycle. Der End-to-End-Lauf nutzt daher dieselbe ARTY-Instanz:
-
-```text
-one Wright physical battery
--> one MOOSE ARTY FSM
--> AssignAttackGroup(real RED OPSZONE group)
--> OnAfterOpenFire
--> physical ammo baseline
--> OnAfterCeaseFire
--> physical ammo must be lower
--> MissionDemand SUCCESS
--> same ARTY instance
--> local Rearm()
--> OnAfterRearmed
-```
-
-Bleibt die physische Munition unverändert, muss der Fire-Support-Demand mit `PHYSICAL_AMMO_UNCHANGED` fehlschlagen und es darf kein lokaler M1083-Rearm als erfolgreiche Feuerfolge gestartet werden.
 
 ## Strategische Testvorbedingung
 
@@ -140,74 +169,67 @@ Danach muss ein real bestätigter Wright-L118-Feuer-/Rearm-Zyklus genau ein stra
 16 -> 15
 ```
 
-Nur dieser reale Rearm-Commit darf den Reorder-Threshold auslösen.
+Nur dieser reale Rearm-Commit darf den Reorder-Threshold auslösen. Die Zahl der verschossenen Granaten wird nicht 1:1 auf `GROUND_AMMO_PACKAGE` abgebildet.
 
 ## Sichtbare Runtime-Telemetrie
 
-Wesentliche Zustandswechsel werden zusätzlich zum DCS-Log über MOOSE `MESSAGE` angezeigt. Erfolgsmeldungen sind ereignis- und evidenzgebunden.
-
-Erwartete Milestones:
+Wesentliche Zustandswechsel werden zusätzlich zum DCS-Log über MOOSE `MESSAGE` angezeigt. Erfolgsmeldungen sind ereignis- und evidenzgebunden. Insbesondere werden sichtbar:
 
 ```text
-[STAGE 3][READY] ...
-[STAGE 3][THREAT] COP Honaker under attack ...
-[STAGE 3][QRF] Honaker requests own QRF ...
-[STAGE 3][QRF] ... engaging ...
-[STAGE 3][CAS] Jalalabad AH-64D assigned to Honaker
-[STAGE 3][CAS] CAS outbound + return valley route installed via OMW_FlightPath -> OMW_FlightPath_WEST; junction gap ... m
-[STAGE 3][CAS] Jalalabad AH-64D CAS executing for Honaker
-[STAGE 3][FIRE SUPPORT] Honaker requests immediate fire support ...
-[STAGE 3][FIRE SUPPORT] Wright L118 selected and assigned
-[STAGE 3][FIRE SUPPORT] Wright L118 fire mission commencing; physical ammo before=...
-[STAGE 3][FIRE SUPPORT] Wright physical fire confirmed: ammo ... -> ...; local M1083 rearm requested
+[STAGE 3][THREAT] OPSZONE Attacked
+[STAGE 3][QRF] ... assigned / engaging
+[STAGE 3][CAS] AH-64 assigned; real weapon employment required
+[STAGE 3][CAS] ... WEST 2500 ft AGL / RotaryWing.Column.D70
+[STAGE 3][CAS] ... MOOSE EngageDetected active
+[STAGE 3][CAS] AH-64D weapon employment confirmed: <weapon>
+[STAGE 3][FIRE SUPPORT] waiting 15 s for OPSZONE target picture
+[STAGE 3][FIRE SUPPORT] ... N OPSZONE targets selected
+[STAGE 3][FIRE SUPPORT] Target i/N ... Wright range ... envelope ...
+[STAGE 3][FIRE SUPPORT] Wright L118 ... coordinate Fire At Point missions queued
+[STAGE 3][FIRE SUPPORT] Wright L118 firing at <target>; physical ammo before=...
+[STAGE 3][FIRE SUPPORT] Wright target i/N complete ... ammo ... -> ...
+[STAGE 3][FIRE SUPPORT] Wright completed N coordinate fire missions ... local M1083 rearm requested
 [STAGE 3][FIRE SUPPORT] Wright local L118 rearm complete; CampaignState AMMO 15 / 30
 [STAGE 3][LOGISTICS] Wright AMMO reorder threshold reached: 15 / 30
 [STAGE 3][LOGISTICS] Exactly one strategic RESUPPLY demand created; Jalalabad selected
-[STAGE 3][LOGISTICS] Physical slingload manifest created at Jalalabad
-[STAGE 3][LOGISTICS] CH-47 assigned; Air-AMMO manifest loading at Jalalabad
-[STAGE 3][LOGISTICS] AIR-AMMO outbound + return valley route installed via OMW_FlightPath
-[STAGE 3][LOGISTICS] Air-AMMO cargo picked up; Jalalabad -> Wright IN TRANSIT
-[STAGE 3][LOGISTICS] Air-AMMO delivered at Wright; strategic stock restored to 30 / 30
-[STAGE 3][LOGISTICS] CH-47 landed back at Jalalabad via OMW_FlightPath
-[STAGE 3][LOGISTICS] CH-47 recovered by Jalalabad AIRWING
+[STAGE 3][LOGISTICS] ... CH-47 ...
 [STAGE 3][PASS] ...
 ```
 
-Negativer ARTY-Gate:
-
-```text
-[STAGE 3][FIRE SUPPORT] Wright ARTY FSM ceased but physical fire NOT confirmed ...
-[STAGE 3][FAIL] Wright L118 physical fire not confirmed: PHYSICAL_AMMO_UNCHANGED
-```
+Bleibt die physische ARTY-Munition eines Zieles unverändert, muss der Test mit `PHYSICAL_AMMO_UNCHANGED` abbrechen. Ein CAS-`AUFTRAG Success` ohne Shot-Evidenz darf den CAS-Demand nicht mehr erfolgreich schließen.
 
 ## PASS-Kriterien
 
 1. Honaker erreicht MOOSE `OPSZONE` Attacked.
 2. Mindestens eine eigene Honaker-QRF-Soldatengruppe materialisiert und beginnt einen realen `GROUNDATTACK` gegen eine erkannte RED-Gruppe.
-3. Jalalabad-CAS erreicht `Executing`; `OMW_FlightPath -> OMW_FlightPath_WEST` wird mit gültiger Junction installiert, hin und zurück.
-4. Ein `FIRE_SUPPORT_IMMEDIATE`-Demand entsteht aus demselben Threat-Incident.
-5. Wright L118 beginnt den Functional-ARTY-Lifecycle und `ARTY:GetAmmo(false)` ist nach CeaseFire kleiner als bei OpenFire.
-6. Erst nach dieser physischen Feuerbestätigung erreicht der FIRE_SUPPORT-Demand `SUCCESS` und wird der M1083-Rearm angefordert.
-7. Der lokale M1083-Rearm läuft durch und der CampaignState-Rearm-Verbrauch ist abgeschlossen.
-8. Wright erreicht dadurch exakt `15` strategische AMMO-Einheiten.
-9. `ResourceDemandPolicy` / `ResourceDemandCoordinator` erzeugen genau einen aktiven RESUPPLY-Demand; unmittelbare Zweitauswertung ergibt `active_duplicate`.
-10. CampaignState reserviert genau einen Jalalabad->Wright-TRANSFER über 15 AMMO-Pakete.
-11. Der CH-47 übernimmt dasselbe physische Manifest; `MarkInTransit` erfolgt erst nach beobachtetem Verlassen der Pickup-Zone.
-12. CH-47 Hin- und Rückweg verwenden `OMW_FlightPath`.
-13. Dasselbe Cargo liegt bei MOOSE-CARGOTRANSPORT-Success physisch in `OMW_BLUE_LZ_WRIGHT_01`.
-14. CampaignState erreicht `DELIVERED`, MissionDemand `SUCCESS`, Wright `30`, Jalalabad `85`.
-15. Der CH-47 landet physisch in Jalalabad und erst danach erfolgt `LegionAssetReturned`.
+3. Jalalabad-CAS erreicht `Executing`; `OMW_FlightPath -> OMW_FlightPath_WEST` wird mit gültiger Junction installiert.
+4. Der WEST-Abschnitt wird mit `2500 ft AGL` und `RotaryWing.Column.D70` profiliert; der Hauptkorridor bleibt `500 ft AGL`.
+5. CAS aktiviert MOOSE `SetEngageDetected` für Ground Units in der Honaker-Security-Zone und mindestens ein reales Shot-Event der zugewiesenen AH-64-Gruppe wird erfasst.
+6. Ein `FIRE_SUPPORT_IMMEDIATE`-Demand entsteht aus demselben Threat-Incident.
+7. Nach der 15-s-Akquisitionsphase werden bis zu drei aktuell von derselben OPSZONE erkannte RED-Gruppen als Koordinatenziele übernommen; alle liegen innerhalb des gemeldeten MOOSE-ARTY-Range-Envelopes.
+8. Wright verwendet `ARTY:AssignTargetCoord()` / DCS `Fire At Point`; `ARTY:GetAmmo(false)` sinkt bei jedem eingereihten Ziel.
+9. Erst nach allen physisch bestätigten Feueraufträgen erreicht FIRE_SUPPORT `SUCCESS` und wird der M1083-Rearm angefordert.
+10. Der lokale M1083-Rearm läuft durch und CampaignState verbraucht genau ein `GROUND_AMMO_PACKAGE`, Wright `16 -> 15`.
+11. `ResourceDemandPolicy` / `ResourceDemandCoordinator` erzeugen genau einen aktiven RESUPPLY-Demand; unmittelbare Zweitauswertung ergibt `active_duplicate`.
+12. CampaignState reserviert genau einen Jalalabad->Wright-TRANSFER über 15 AMMO-Pakete.
+13. Der CH-47 übernimmt dasselbe physische Manifest; `MarkInTransit` erfolgt erst nach beobachtetem Verlassen der Pickup-Zone.
+14. CH-47 Hin- und Rückweg verwenden `OMW_FlightPath`.
+15. Dasselbe Cargo liegt bei MOOSE-CARGOTRANSPORT-Success physisch in `OMW_BLUE_LZ_WRIGHT_01`.
+16. CampaignState erreicht `DELIVERED`, RESUPPLY-MissionDemand `SUCCESS`, Wright `30`, Jalalabad `85`.
+17. Der CH-47 landet physisch in Jalalabad und erst danach erfolgt `LegionAssetReturned`.
 
-## Ergebnis des ersten kombinierten Laufs vom 2026-08-30
+## Befunde der vorherigen Läufe vom 2026-08-30
 
-Der erste Lauf mit der vorherigen Bundle-Version ist **kein PASS** für diese revidierte Acceptance. Beobachtet bzw. geloggt wurden:
+Die vorherigen Bundle-Versionen sind **kein PASS** für diese revidierte Acceptance:
 
-- OPSZONE-Threat wurde erkannt.
-- QRF wurde angefordert.
-- CAS wurde gestartet.
-- Wright Functional ARTY meldete OpenFire und CeaseFire, aber der Tester beobachtete vor Ort keine sichtbaren Schüsse; deshalb ist dieser Lauf keine physische ARTY-Validierung.
-- Beide AH-64 gingen später verloren. Der Tester beobachtete, dass sie nach Verlassen des bisherigen `OMW_FlightPath` wieder direkte Luftlinie über hohes Gelände flogen. Die Verlustursache bleibt unbewiesen; eine Midair-Kollision ist möglich, aber nicht belegt.
-- Dieser Befund führte zur Aufnahme von `OMW_FlightPath_WEST` und zum physischen ARTY-Munitions-Gate.
+- OPSZONE-Threat und QRF wurden ausgelöst.
+- Wright Functional ARTY meldete mit `AssignAttackGroup()` OpenFire/CeaseFire, erzeugte aber keinen realen Schuss; der physische Bestand blieb `300 -> 300`. Der Physical-Fire-Gate erkannte dies korrekt als `PHYSICAL_AMMO_UNCHANGED`.
+- CAS wurde gestartet und die verkettete WEST-Route installiert.
+- Beide AH-64 feuerten nach der vorliegenden Runtime-Evidenz nicht, bevor sie verloren gingen.
+- Das Debrief weist beide AH-64-Verluste auf RED `Soldier AK` / 5.45x39-mm-Feuer zurück; eine zuvor erwogene Midair-Kollision ist für diesen Lauf damit verworfen.
+- Die Route und das Profil wurden daraufhin geändert: WEST `2500 ft AGL`, `RotaryWing.Column.D70`; CAS-Erfolg verlangt jetzt reale Shot-Evidenz.
+
+Diese Befunde sind Testevidenz für die jeweils dokumentierten alten Bundles und werden nicht als Validierung des neuen Standes fortgeschrieben.
 
 ## Mission-Editor-Vertrag
 
