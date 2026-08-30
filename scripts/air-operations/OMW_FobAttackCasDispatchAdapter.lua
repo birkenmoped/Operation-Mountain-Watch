@@ -158,7 +158,8 @@ function Instance:ConfirmExecutionEvidence(demandId, evidence)
   self.executionEvidenceByDemandId[demandId] = evidence or { confirmed=true }
   self:_log("CAS execution evidence confirmed demandId=" .. tostring(demandId))
   local succeeded = self:_succeedWithEvidence(demandId, mission)
-  return mission, true, succeeded and nil or "EVIDENCE_RECORDED_PENDING_ACTIVE"
+  if succeeded then return mission, true, nil end
+  return mission, true, "EVIDENCE_RECORDED_PENDING_ACTIVE"
 end
 
 function Instance:RequestMissionClosure(demandId, reason)
