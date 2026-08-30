@@ -12,6 +12,8 @@ on:
       - "scripts/air-operations/OMW_FobAttackCasDispatchAdapter.lua"
       - "scripts/air-operations/OMW_HelicopterFlightPathCorridor.lua"
       - "scripts/logistics/OMW_GroundInitialStock.lua"
+      - "mission/tests/fob-attack-support-demand/src/*.lua"
+      - "tools/build-fob-attack-cas-dispatch-acceptance-2.ps1"
       - "mission/tests/ground-native-homezone-return/src/*.lua"
       - "tools/build-ground-native-homezone-return-acceptance-1.ps1"
       - "tests/mission-demand/**"
@@ -34,7 +36,12 @@ jobs:
           sudo apt-get install -y lua5.4
           lua5.4 -v
 
-      - name: Check native Ground homezone acceptance syntax
+      - name: Check Fortress full-response acceptance syntax
+        shell: bash
+        run: |
+          luac5.4 -p mission/tests/fob-attack-support-demand/src/02-fob-attack-cas-dispatch-acceptance-2.lua
+
+      - name: Check historical native Ground homezone fixture syntax
         shell: bash
         run: |
           luac5.4 -p mission/tests/ground-native-homezone-return/src/01-ground-native-homezone-return-acceptance.lua
