@@ -4,55 +4,60 @@ status: PLANNED
 document_class: DCS_ACCEPTANCE_PLAN
 owning_policy: OMW-GOV-001
 authoritative_for:
-  - Stage 2B Fortress automatic response acceptance planning
+  - Stage 2B Fortress automatic-response acceptance planning
   - Fortress threat-to-real-CAS execution and completion
-  - local infantry counterattack and return/recovery proof
+  - Fortress infantry guard and QRF execution
+  - native MOOSE Ground return-to-origin proof for the tested Fortress infantry
   - post-combat personnel settlement and resupply reevaluation proof
 not_authoritative_for:
   - production CAS source-selection policy
   - production CAS altitude/speed policy
   - final guard rotation duration
-  - production-wide ground return-zone policy
+  - production-wide ground return-zone policy before cross-site acceptance
   - installations other than Fortress
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
+  - branch-local Stage 2B plan using explicit Fortress ACCESS RTZ as the default return implementation
+  - OMW-GROUND-NATIVE-HOMEZONE-RETURN-ACCEPTANCE-1 as the next required test path
 superseded_by:
 source_branch: agent/fob-attack-support-demand
 source_commit: PENDING_MERGE
 validated_in_dcs: false
 ---
 
-# Stage 2B – FOB/COP automatic response Acceptance 2
+# Stage 2B – Fortress full automatic-response Acceptance 2
 
 ## Ziel
 
-Acceptance 2 prüft den vollständigen Fortress-Response-Lifecycle:
+Der nächste DCS-Lauf ist wieder **ein vollständiger gemeinsamer Fortress-Test**. Es gibt keinen vorgeschalteten Joyce-/Convoy-Test mehr.
 
 ```text
-RED perimeter threat
+real BLUE Fortress infantry sentry
+-> MOOSE runtime OPSZONE around Fortress
+-> real RED perimeter threat
 -> OPSZONE Attacked(RED)
--> CAS_IMMEDIATE
--> Jalalabad AH-64D CAS via OMW_FlightPath
--> local infantry QRF via GROUNDATTACK
+-> CAS_IMMEDIATE MissionDemand
+-> Jalalabad AH-64D CAS
+-> OMW_FlightPath corridor
+-> Fortress infantry QRF
+-> AUFTRAG:NewGROUNDATTACK(real RED group)
 -> RED threat eliminated
 -> OPSZONE Defeated(RED)
--> CAS mission closure / RTB / landing / recovery
--> Guard + QRF normal MOOSE return-to-origin
--> Returned / original Legion-Warehouse
--> exact personnel casualty settlement
--> existing PERSONNEL reorder evaluation
+-> CAS AUFTRAG closure
+-> CAS RTB / Landed / Arrived
+-> Guard + QRF normal MOOSE mission closure
+-> native MOOSE ReturnToLegion
+-> origin Fortress Legion spawnzone
+-> Returned
+-> original Fortress Warehouse AddAsset
+-> CampaignState casualty settlement
+-> PERSONNEL reorder reevaluation
 ```
 
-Ein PASS nur aufgrund von `CAS_EXECUTING` ist ausdrücklich unzulässig.
+Ein PASS nur bis `CAS_EXECUTING` oder `QRF_GROUNDATTACK_EXECUTING` ist unzulässig.
 
-Für die neu geklärte Ground-Return-/Homezone-Architektur gilt zusätzlich:
-
-```text
-docs/moose/GROUND-WAREHOUSE-RETURN-HOMEZONE-LIFECYCLE.md
-```
-
-## Gepinnter MOOSE-Stand
+## MOOSE-Provenienz
 
 ```text
 MOOSE release: 2.9.18
@@ -60,392 +65,359 @@ MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
 Moose.lua SHA-256: E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915
 ```
 
-Die erforderlichen APIs wurden gegen den tatsächlichen gepinnten Source geprüft. Detailregister:
+Der tatsächlich gepinnte Source bestätigt für den Ground-Lifecycle:
 
 ```text
-docs/moose/PROJECT-CLASS-INDEX-STAGE-2-ACCEPTANCE-2.md
+OPSGROUP constructor
+-> SetReturnToLegion()
+-> default legionReturn = true
+
+MissionDone
+-> if AUFTRAG.legionReturn was explicitly set, copy that value to OPSGROUP
+-> if not explicitly set, keep OPSGROUP default true
+
+_CheckGroupDone()
+-> when final waypoint/task/mission is complete
+-> if self.legion and self.legionReturn
+-> ARMYGROUP:RTZ(self.legion.spawnzone)
+
+ARMYGROUP:RTZ(zone)
+-> if already in zone: Returned()
+-> otherwise: GetRandomCoordinate() in zone + physical waypoint
+
+ARMYGROUP:Returned
+-> self.legion:__AddAsset(10, self.group, 1)
 ```
 
-## Vorbedingungen
+Für den normalen Stage-2B-Rückweg wird deshalb keine parallele OMW-Rückkehrsteuerung verwendet.
 
-Vor dem Acceptance-Bundle müssen laufen:
-
-```text
-MOOSE 2.9.18 pinned artifact
-OMW AirOps Warehouse Base
-OMW Ground Base + GroundBase.Attach(...)
-OMW_AirOps_Jalalabad_Bootstrap.lua
-owner-authored PATHLINE: OMW_FlightPath
-```
-
-Erwartete vorhandene AirOps-Ressource:
-
-```text
-AIRWING:  AW_US_JBAD_TF_SHOOTER_6_6_CAV
-SQUADRON: SQ_US_JBAD_AH64D_B_1_10_AVN
-CAS capability available
-```
-
-## Acceptance-spezifischer Fortress-Vertrag
+## Fortress-Prüfobjekte
 
 ```text
 Installation: BLUE_GROUND_COP_FORTRESS
+CampaignState node: GROUND_NODE_FORTRESS
 Warehouse: WH_BLUE_GND_FORTRESS
-Security perimeter: runtime ZONE_RADIUS, 1000 m
-OPSZONE scan: 5 s, acceptance-only
-Guard template: TPL_BLUE_GND_INF_RIFLE_SQUAD_9
-QRF template: TPL_BLUE_GND_INF_RIFLE_SQUAD_9
-Guard commitment: 9 PERSONNEL
-QRF commitment: 9 PERSONNEL
-PERSONNEL target: 160
-Defence reserve floor: 80
-Candidate safe-access geometry: ZON_BLUE_GND_FORTRESS_ACCESS
-CAS altitude: 10000 ft, acceptance-only
-CAS speed: 120 kt, acceptance-only
-CAS corridor: OMW_FlightPath
-Corridor offset: 500 m directional right
-Corridor altitude: 500 ft AGL
+Infantry template: TPL_BLUE_GND_INF_RIFLE_SQUAD_9
+Guard: 9 PERSONNEL
+QRF: 9 PERSONNEL
+Defence reserve floor: 80 PERSONNEL
+Runtime security zone: OMW_SECURITY_BLUE_GROUND_COP_FORTRESS_A2
+Runtime security radius: 1000 m
+OPSZONE update: 5 s, acceptance-only
 ```
 
-`ZON_BLUE_GND_FORTRESS_ACCESS` bleibt ausschließlich Materialisierungs-/Departure-/Arrival-/Return-Handoff-Geometrie. Es wird nicht zur Security-Zone umdefiniert und ist **nicht automatisch der verpflichtende Return-Punkt für alle Ground-Missionen**.
+Für diesen Test wird **keine zusätzliche Mission-Editor-Testzone** benötigt.
 
-## Neu geklärter MOOSE-Ground-Return-Vertrag
-
-Der gepinnte Source bestätigt:
+Insbesondere nicht:
 
 ```text
-WAREHOUSE default zone:
-center = Warehouse object
-radius = 500 m
-
-WAREHOUSE default spawnzone:
-center = Warehouse object
-radius = 250 m
-
-LEGION-created ARMYGROUP:
-homezone = origin Warehouse/Legion spawnzone
-
-ARMYGROUP:RTZ():
-explicit Zone OR self.homezone
-
-outside return zone:
-GetRandomCoordinate() inside that zone -> physical waypoint
-
-inside return zone:
-Returned()
-
-Returned:
-original legion __AddAsset(...)
+ZON_BLUE_GND_JOYCE_PATROL_TEST_01
+irgendeine neue ZON_BLUE_GND_FORTRESS_*_TEST-Zone
 ```
 
-Der Einsatzort verändert die Herkunft nicht. Ein Asset aus Herkunft A, das Standort B unterstützt, muss nach Abschluss über die MOOSE-Herkunfts-Legion zu A zurückkehren und CampaignState muss gegen das ursprüngliche A-Deployment abrechnen.
+Die Security-/Threat-Geometrie wird als MOOSE-Runtime-Zone erzeugt.
 
-## Pre-Test-Gate: aktueller Harness noch nicht freigegeben
+## Fortress ACCESS-Zone
 
-Der aktuell im Branch vorhandene Acceptance-Harness enthält noch die ältere testlokale Kombination:
+Die vorhandene Zone
 
 ```text
-BRIGADE:SetSpawnZone(ZON_BLUE_GND_FORTRESS_ACCESS, 1000)
-Guard AUFTRAG:SetReturnToLegion(false)
-QRF AUFTRAG:SetReturnToLegion(false)
-explicit ARMYGROUP:RTZ(ZON_BLUE_GND_FORTRESS_ACCESS, ...)
+ZON_BLUE_GND_FORTRESS_ACCESS
 ```
 
-Nach der neuen MOOSE-Source-Prüfung darf diese Kombination **nicht unverändert als allgemeine Ground-Return-Architektur getestet und anschließend verallgemeinert werden**.
+bleibt erhalten. Sie ist eine bereits vorhandene sichere Ground-Materialization-/Departure-/Arrival-/Handoff-Geometrie.
 
-Vor dem nächsten DCS-Lauf muss der Harness auf einen klaren Testzweck reconciliert werden.
+Sie wird im **ersten integrierten Test jedoch bewusst nicht als MOOSE spawnzone/homezone override gesetzt**, weil zuerst der native MOOSE-Default geprüft wird.
+
+Der Test enthält daher nicht:
 
 ```text
-PRE_TEST_STATUS: BLOCKED_RETURN_HOMEZONE_RECONCILIATION
+BRIGADE:SetSpawnZone(ZON_BLUE_GND_FORTRESS_ACCESS, ...)
+WAREHOUSE:SetSpawnZone(ZON_BLUE_GND_FORTRESS_ACCESS, ...)
+AUFTRAG:SetReturnToLegion(false)
+ARMYGROUP:RTZ(ZON_BLUE_GND_FORTRESS_ACCESS, ...)
 ```
 
-Es soll daher **noch kein neuer Stage-2B-DCS-PASS mit dem derzeitigen Builder/Bündelstand erzeugt werden**.
-
-## Teststufe A – nativer MOOSE-Homezone-Return
-
-Erste Priorität ist der kleinste MOOSE-native Rückkehrpfad.
-
-Für den Ground-Return-Test gilt:
+Wenn die native Fortress-Warehouse-Geometrie in DCS sichtbar ungeeignet ist, ist der nächste MOOSE-first-Schritt:
 
 ```text
-origin = Fortress Warehouse / BRIGADE
-mobile ARMYGROUP
-no explicit custom return-zone controller
-normal ReturnToLegion enabled / not forced false
-no explicit ARMYGROUP:RTZ(Fortress ACCESS, ...) for normal mission completion
-homezone remains the origin MOOSE Warehouse spawnzone
+SetSpawnZone(existing ZON_BLUE_GND_FORTRESS_ACCESS)
+-> normal ReturnToLegion bleibt aktiv
+-> kein eigener OMW Return-Controller
 ```
 
-Zu beweisen:
+## Ground-Spawn und Ground-Return im aktuellen Test
+
+Die `BRIGADE` wird direkt auf
 
 ```text
-Mission completes normally
-MOOSE initiates return toward self.homezone
-physical movement occurs
-no observable teleport
-no HESCO/static/building drive-through
-Returned occurs
-original Fortress Legion/Warehouse AddAsset occurs
-physical cleanup is plausible
+WH_BLUE_GND_FORTRESS
 ```
 
-Besonders zu beobachten ist, ob die default 250-m-Warehouse-zentrierte `spawnzone/homezone` für die reale Fortress-Geometrie ausreicht.
+aufgebaut und behält ihre native MOOSE-`spawnzone`.
 
-## Teststufe B – ACCESS als MOOSE-Spawn-/Homezone
-
-Nur wenn Stufe A geometrisch oder visuell scheitert, wird die bereits vorhandene Fortress-ACCESS-Geometrie über die öffentliche MOOSE-API geprüft:
-
-```lua
-WAREHOUSE:SetSpawnZone(ZON_BLUE_GND_FORTRESS_ACCESS, validatedMaxDist)
-```
-
-Dann gilt weiterhin:
+Der erwartete Name dieser vom Warehouse erzeugten Zone ist:
 
 ```text
-normal ReturnToLegion
--> ARMYGROUP homezone = configured Warehouse spawnzone
--> native MOOSE RTZ/homezone lifecycle
--> Returned
--> original Fortress Legion/Warehouse
+Warehouse WH_BLUE_GND_FORTRESS spawn zone
 ```
 
-Es wird **kein zusätzlicher paralleler OMW-Return-/Despawn-Controller** eingeführt.
+Der Acceptance-Harness beobachtet `ARMYGROUP:OnAfterRTZ(...)`. Ein Ground-PASS verlangt, dass Guard und QRF jeweils genau über diese Herkunftszone zurückkehren.
 
-Da `SetSpawnZone(...)` auch die Materialisierung beeinflusst, muss Stufe B gleichzeitig prüfen:
+Damit wird gleichzeitig nachgewiesen:
 
 ```text
-spawn/materialization
-safe departure
-mission execution
-safe return
-Returned/Warehouse recovery
+Fortress mission target != return authority
+origin Legion remains Fortress
+origin Warehouse remains Fortress
 ```
 
-## Cross-site Herkunftsnachweis vor Produktionsverallgemeinerung
+## Guard
 
-Fortress allein beweist noch nicht die generische Herkunftslogik. Vor einer produktionsweiten Generalisierung muss mindestens ein separater Fall nachweisen:
+Der Guard wird aus demselben realen Fortress-Infanterietemplate materialisiert:
 
 ```text
-origin site A
--> mission/support at site B
--> mission ends near B
--> group returns to A
--> original A Legion/Warehouse receives asset
--> CampaignState settles against original A deployment/node
+TPL_BLUE_GND_INF_RIFLE_SQUAD_9
 ```
 
-Der Zielstandort B darf nie allein aus seiner Rolle als Einsatzort zum Rückkehr-Warehouse werden.
-
-## PERSONNEL-Accounting
-
-Stage 2B verwendet die bindende strategische Semantik:
+Mission:
 
 ```text
-deployment
--> CampaignState ReserveResource
--> quantity unchanged
--> reserved increases
--> available decreases
-
-confirmed physical return
--> deployment reservation released
--> returned survivors available again
-
-confirmed casualties
--> separate exact-once CampaignState consumption
+AUFTRAG:NewONGUARD(Fortress coordinate)
 ```
 
-Damit werden Gefallene nicht nach einer bereits erfolgten Deployment-Buchung doppelt abgezogen.
+Der real materialisierte BLUE Guard ist die lokale BLUE-Präsenz für OPSZONE. Erst nach `MissionExecute` des Guards wird die Threat-/CAS-Pipeline gestartet.
 
-CampaignState darf die Ressource nicht bereits bei
+Bei `OPSZONE Defeated(RED)` wird die Guard-Mission nur über `AUFTRAG:Cancel()` beendet. Es wird **kein explizites RTZ** ausgelöst. Danach muss MOOSE den normalen ReturnToLegion-Pfad selbst ausführen.
+
+## QRF / Gegenangriff
+
+Bei qualifiziertem `OPSZONE Attacked(RED)` wird die tatsächlich von OPSZONE erkannte lebende RED-Gruppe als Ziel verwendet.
 
 ```text
-MissionDone
-AUFTRAG Cancel
-ReturnToLegion request
-RTZ request
+CampaignState PERSONNEL reservation
+-> Fortress QRF PLATOON
+-> ARMYGROUP
+-> AUFTRAG:NewGROUNDATTACK(real RED group, 8, OffRoad)
 ```
 
-als zurückgekehrt freigeben. Maßgeblich ist der bestätigte physische MOOSE-Lifecycle beziehungsweise bestätigter Verlust.
+Es wird kein eigener DCS-Ground-Attack-Task gebaut.
 
-## CAS-PASS-Kriterien
+`SetReturnToLegion(false)` wird nicht gesetzt.
 
-Der DCS-Log muss mindestens belegen:
+Nach Threat-Clear wird die Mission nur dann explizit über `AUFTRAG:Cancel()` geschlossen, wenn sie noch nicht beendet ist. Die anschließende Rückkehr bleibt MOOSE-eigen.
+
+## CAS
+
+Bestehende OMW-Ressource:
 
 ```text
-SENTRY_ON_MISSION
-SENTRY_ONGUARD_EXECUTING
-READY ... detection=OPSZONE_ATTACKED
-QUALIFIED_THREAT
-DEMAND_RESULT ... created=true
-CAS_DISPATCHED
-CAS_FLIGHT_ON_MISSION
-CAS_CORRIDOR_INSTALLED ... pathline=OMW_FlightPath
-CAS_EXECUTING
-THREAT_CLEARED ... OPSZONE_DEFEATED_RED
-CAS_MISSION_CLOSURE ... requested=true
-CAS_RTB
-CAS_LANDED
-CAS_ARRIVED
+AIRWING: AW_US_JBAD_TF_SHOOTER_6_6_CAV
+SQUADRON: SQ_US_JBAD_AH64D_B_1_10_AVN
 ```
 
-Zusätzlich gilt:
+Acceptance-only Parameter:
 
 ```text
-exactly one CAS dispatch
-MissionDemand reaches ACTIVE on AUFTRAG Executing
-MissionDemand reaches SUCCESS only after MOOSE mission success
-no direct SPAWN
-no native world.addEventHandler
-no MIST
-no .miz mutation by ChatGPT
+CAS altitude: 10000 ft
+CAS speed: 120 kt
+corridor PATHLINE: OMW_FlightPath
+corridor offset: 500 m directional right
+corridor altitude: 500 ft AGL
 ```
 
-## Ground-PASS-Kriterien nach Return-Reconciliation
-
-Der DCS-Lauf muss belegen:
+Pfad:
 
 ```text
-PERSONNEL_RESERVED ... GUARD
-SENTRY_ON_MISSION
-SENTRY_ONGUARD_EXECUTING
-PERSONNEL_RESERVED ... QRF
-QRF_ON_MISSION
-QRF_GROUNDATTACK_EXECUTING
-50 % defence reserve floor never violated
-THREAT_CLEARED
-normal MOOSE return-to-origin begins
-correct origin homezone used
-QRF Returned or confirmed loss
-GUARD Returned or confirmed loss
-original Legion/Warehouse AddAsset for returned groups
-QRF_PERSONNEL_SETTLED
-GUARD_PERSONNEL_SETTLED
+OPSZONE Attacked
+-> MissionDemand CAS_IMMEDIATE
+-> FobAttackCasDispatchAdapter
+-> AUFTRAG:NewCAS(...)
+-> AssignSquadrons({Jalalabad AH-64D squadron})
+-> AIRWING:AddMission(...)
 ```
 
-Ein nacktes `Destroy()` zählt nicht als Rückkehr.
-
-## OutOfAmmo und Guard-Rotation
-
-MOOSE besitzt einen nativen OutOfAmmo-/Return-Pfad. Acceptance 2 führt deshalb keinen eigenen Munitions-Polling-Scheduler ein.
-
-Eine produktive zeitbasierte Guard-Rotationsdauer bleibt eine separate, noch nicht entschiedene Designkonstante. Der Rückkehrpfad einer späteren Rotation soll denselben origin-bound MOOSE-Lifecycle nutzen wie andere temporäre Ground-Deployments.
-
-## Post-combat Reorder / RESUPPLY
-
-Nach Guard-/QRF-Settlement wird der bestehende Fortress-PERSONNEL-Row erneut bewertet:
+Threat-Clear:
 
 ```text
-target = 160
-reorder = 128
-comparison = BELOW
+OPSZONE Defeated(RED)
+-> RequestMissionClosure(...)
+-> AUFTRAG:Cancel()
+-> MOOSE waits for group MissionDone
+-> AUFTRAG Evaluate()
+-> Success when mission success criteria are met
+-> MissionDemand SUCCESS through the existing adapter callback
 ```
 
-Der normale End-to-End-Lauf beginnt mit vollem Bestand und bindet nur 18 Personen. Selbst Totalverlust ergibt 142 und kann deshalb die 128er-Reorder-Schwelle nicht sinnvoll unterschreiten. Daher gelten zwei getrennte Nachweise:
+Der reale CAS-Rückweg muss zusätzlich zeigen:
 
 ```text
-DCS Acceptance 2:
-real post-combat CampaignState reevaluation is observed
-
-Lua contract test:
-available=127 -> exactly one RESUPPLY MissionDemand
-available=128 -> no demand under strict BELOW
+FLIGHTGROUP RTB
+-> Landed
+-> Arrived
 ```
 
-Die physische PERSONNEL-Transportausführung bleibt der bereits vorhandenen PERSONNEL-Resupply-Orchestration vorbehalten. Acceptance 2 implementiert keinen zweiten Transportmechanismus.
+## CampaignState PERSONNEL
 
-## Bestehender Ground-Return-Präzedenzfall
-
-Der bereits akzeptierte Stage-1D-S-SUPPLY-Test bleibt gültig:
+Deployment ist keine Consumption.
 
 ```text
-SetReturnToLegion(false)
--> MissionDone
--> delayed explicit ARMYGROUP:RTZ(Joyce ACCESS, OnRoad)
--> Returned
--> Warehouse AddAsset
+before deployment:
+quantity = strategic personnel quantity
+available = currently dispatchable personnel
+
+Guard deployment:
+quantity unchanged
+available -= 9
+
+QRF deployment:
+quantity unchanged
+available -= 9
+
+physical return:
+reservation released
+survivors become available again
+
+confirmed casualties:
+separate exact-once CONSUMPTION
+quantity -= casualties
 ```
 
-Dieser Test beweist den expliziten RTZ-/Returned-Pfad für seinen dokumentierten Scope. Er beweist nicht, dass explizites RTZ oder ACCESS für alle Ground-Missionen erforderlich ist.
-
-## Regressionen vor projektweiter Umstellung
-
-Vor einer projektweiten Ground-Return-Änderung müssen mindestens geprüft werden:
+Der Harness speichert deshalb getrennt:
 
 ```text
-existing accepted SUPPLY explicit-RTZ path remains valid
-missions intentionally using SetReturnToLegion(false) retain intended field-persistence behavior
-road-aligned Warehouse spawn adapter remains compatible with any SetSpawnZone change
-mobile return uses no observable teleport
-immobile ARMYGROUP teleport branch remains excluded
-CampaignState settlement remains idempotent and origin-bound
+personnelInitialQuantity
+personnelInitialAvailable
 ```
+
+Die Endmengenprüfung verwendet die initiale **quantity**, nicht fälschlich `available`.
+
+## Reorder
+
+Fortress bleibt:
+
+```text
+target: 160
+reorder: 128
+comparison: BELOW
+```
+
+Ein normaler 18-Personen-Guard/QRF-Test kann aus vollem Bestand selbst bei Totalverlust nur auf 142 sinken und damit die 128er-Schwelle nicht überschreiten.
+
+Der DCS-Test beweist daher die reale **post-combat reevaluation**. Der separate Lua-Contract beweist weiterhin:
+
+```text
+127 -> RESUPPLY demand
+128 -> no RESUPPLY demand
+```
+
+Es wird keine künstliche Zusatzattrition nur zur Erzwingung eines Resupply-Auftrags eingeführt.
+
+## PASS-Kriterien
+
+Der Test darf erst PASS melden, wenn gleichzeitig nachgewiesen sind:
+
+```text
+real Fortress BLUE infantry guard materialized
+Guard ONGUARD executing
+OPSZONE Attacked(RED)
+exactly one CAS_IMMEDIATE demand
+exactly one Jalalabad AH-64D CAS dispatch
+CAS executing
+OMW_FlightPath corridor installed
+real Fortress infantry QRF materialized
+QRF GROUNDATTACK executing against real RED OPSZONE group
+OPSZONE Defeated(RED)
+CAS closure requested
+CAS RTB
+CAS Landed
+CAS Arrived
+Guard native RTZ observed
+QRF native RTZ observed
+both RTZ zones == Warehouse WH_BLUE_GND_FORTRESS spawn zone
+Guard Returned
+QRF Returned
+CampaignState Guard settlement
+CampaignState QRF settlement
+post-combat PERSONNEL reorder evaluated
+CAS MissionDemand == SUCCESS
+no duplicate CAS dispatch
+no defence reserve floor violation
+final strategic PERSONNEL quantity == initial quantity - confirmed casualties
+```
+
+## Visuelle Owner-Prüfung
+
+Zusätzlich zu Logs ist in DCS zu beobachten:
+
+```text
+wo Guard und QRF tatsächlich materialisieren
+ob die Fortress-Infanterie plausibel läuft
+ob QRF die RED-Gruppe tatsächlich angreift
+ob CAS real erscheint, anfliegt und wirkt
+ob CAS physisch zurückkehrt
+ob Guard/QRF nach Missionsende selbständig zurücklaufen
+ob die native 250-m-Warehouse-spawnzone die Infantry durch HESCOs/Statics zwingt
+ob irgendein beobachtbarer Teleport auftritt
+wo Returned/Despawn tatsächlich erfolgt
+```
+
+Ein technischer Log-PASS bei sichtbar unplausiblem Ground-Pathfinding ist **kein geometrischer Produktions-PASS**.
 
 ## Build
 
-Der derzeitige Builder ist:
+Builder:
 
 ```text
 tools/build-fob-attack-cas-dispatch-acceptance-2.ps1
-BuilderVersion: FOB-ATTACK-CAS-DISPATCH-ACCEPTANCE-2-2
 ```
 
-Erzeugtes Bundle:
+Output:
 
 ```text
 mission/tests/fob-attack-support-demand/dist/OMW_FOB_Attack_CAS_Dispatch_Acceptance_2.lua
 ```
 
-Der Builder/Harness ist wegen der oben beschriebenen Return-/Homezone-Reconciliation **noch nicht für den nächsten DCS-Lauf freigegeben**.
-
-Der ältere lokal verifizierte Build `FOB-ATTACK-CAS-DISPATCH-ACCEPTANCE-2-1` mit SHA-256 `9ADB5C601A1F30C748C747835FA62B191F485AEC002106020B34EC9D0844CCD8` ist nur historischer Dispatch-Checkpoint und **nicht** das aktuelle Stage-2B-Acceptance-Bundle.
-
-## Statische Verifikation
-
-Die MissionDemand-Vertragstests decken bereits zusätzlich ab:
+Aktueller Builder-Vertrag:
 
 ```text
-OPSZONE threat-start / threat-clear callbacks
-CAS threat-clear closure request
-PERSONNEL deployment reservation and casualty-only consumption
-ResourceDemandPolicy -> MissionDemand RESUPPLY bridge
-shared OMW_FlightPath corridor adapter
+FOB-ATTACK-CAS-DISPATCH-ACCEPTANCE-2-3
+Fortress only
+Infantry only for Guard/QRF
+additional ME test zone: false
+Ground spawnzone override: false
+Ground SetReturnToLegion(false): false
+Ground explicit RTZ: false
+MIZ mutation: false
 ```
 
-Ein erfolgreicher CI-Lauf ersetzt keinen DCS-Acceptance-Test.
+## Joyce-Fehlpfad
 
-## Terminaler Stage-2B-PASS
-
-Nach abgeschlossener Return-Reconciliation darf der Acceptance-Harness erst `PASS` loggen, wenn gleichzeitig belegt sind:
+Der kurzfristig erzeugte isolierte Joyce-/M-ATV-Homezone-Test ist für Stage 2B verworfen und in
 
 ```text
-threat cleared
-CAS closure requested
-CAS executed
-CAS RTB
-CAS landed
-CAS arrived/recovered
-OMW_FlightPath installed
-QRF GROUNDATTACK executed
-Guard physical return/loss settled
-QRF physical return/loss settled
-returned assets credited to their original Legion/Warehouse
-post-combat PERSONNEL reorder evaluated
-CAS MissionDemand SUCCESS
-no defence-reserve violation
-strategic PERSONNEL quantity = initial quantity - confirmed casualties
+mission/tests/ground-native-homezone-return/ACCEPTANCE-1.md
 ```
 
-## Nicht entschieden
+als `SUPERSEDED` dokumentiert.
+
+Der reale Lauf vom 30.08.2026 brach bereits an einer fehlenden historischen `ZON_BLUE_GND_JOYCE_PATROL_TEST_01`-Vorbedingung ab. Er enthält **keine** Aussage über MOOSE ReturnToLegion und **keine** Aussage über Fortress-Infanterie.
+
+## DCS-only Grenze
+
+Bis zum nächsten realen Lauf bleiben insbesondere offen:
 
 ```text
-site-by-site use of native 250 m homezone versus configured ACCESS spawn/homezone
-production CAS source selection
-final CAS altitude/speed
-final guard rotation duration
-counterattack force sizing below 50 % maximum
-maximum simultaneous local response groups
-optional BDA/clear hold before CAS closure
-production OPSZONE cadence
-restart/restore idempotency beyond separately accepted contracts
+native Fortress Infantry materialization position
+native Fortress Warehouse spawnzone Ground pathfinding
+actual Guard/QRF RTZ path
+physical Returned timing
+full CAS + Ground composition
+casualties and exact settlement under real combat
+```
+
+Status:
+
+```text
+READY_FOR_BUILD_AND_DCS_TEST_AFTER_LOCAL_HASH_VERIFICATION
 ```
