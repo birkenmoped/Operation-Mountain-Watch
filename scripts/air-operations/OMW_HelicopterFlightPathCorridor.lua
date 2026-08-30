@@ -7,7 +7,7 @@
 local Corridor = {}
 
 local TAG = "[OMW][HelicopterFlightPathCorridor]"
-Corridor.SchemaVersion = "OMW-HELICOPTER-FLIGHTPATH-CORRIDOR-2"
+Corridor.SchemaVersion = "OMW-HELICOPTER-FLIGHTPATH-CORRIDOR-3"
 Corridor.DefaultPathlineName = "OMW_FlightPath"
 Corridor.DefaultOffsetRightM = 500
 Corridor.DefaultRightHeadingDeltaDeg = 90
@@ -142,7 +142,7 @@ local function armRouteReadyInstall(flightGroup, mission, resolved, altitudeFtAg
       }
       self.__omwFlightPathCorridorPending = nil
       self.__omwFlightPathCorridorLastReason = nil
-    elseif reason ~= "MISSION_ROUTE_UIDS_NOT_READY" then
+    elseif reason ~= "MISSION_ROUTE_UID_NOT_READY" then
       self.__omwFlightPathCorridorLastReason = reason
     end
   end
@@ -154,7 +154,6 @@ function Corridor.Install(flightGroup, mission, resolved, altitudeFtAgl)
   requireTable(resolved, "resolved")
 
   if type(mission.GetGroupWaypointIndex) ~= "function" then fail("AUFTRAG:GetGroupWaypointIndex() is required") end
-  if type(mission.GetGroupEgressWaypointUID) ~= "function" then fail("AUFTRAG:GetGroupEgressWaypointUID() is required") end
   if type(flightGroup.GetWaypointIndex) ~= "function"
       or type(flightGroup.GetWaypointUIDFromIndex) ~= "function"
       or type(flightGroup.AddWaypoint) ~= "function" then
@@ -170,14 +169,21 @@ function Corridor.Install(flightGroup, mission, resolved, altitudeFtAgl)
   end
 
   local missionUid = mission:GetGroupWaypointIndex(flightGroup)
-  local egressUid = mission:GetGroupEgressWaypointUID(flightGroup)
-  if type(missionUid) ~= "number" or type(egressUid) ~= "number" then
-    -- MOOSE creates these UIDs in OPSGROUP:RouteToMission(), which is scheduled
-    -- from OPSGROUP:onafterMissionStart(). AIRWING:FlightOnMission can therefore
-    -- legitimately fire before the route exists. Subscribe to the documented
-    -- FLIGHTGROUP OnAfterUpdateRoute FSM callback instead of guessing with timers.
+  if type(missionUid) ~= "number" then
+    -- MOOSE sets the mission waypoint UID in OPSGROUP:RouteToMission().
+    -- FlightOnMission can fire before that route build has completed, so defer
+    -- to the FLIGHTGROUP UpdateRoute lifecycle instead of guessing readiness.
     armRouteReadyInstall(flightGroup, mission, resolved, altitudeFtAgl)
-    return nil, false, "MISSION_ROUTE_UIDS_NOT_READY"
+    return nil, false, "MISSION_ROUTE_UID_NOT_READY"
+  end
+
+  -- An egress UID is optional. OPSGROUP:RouteToMission() only creates and stores
+  -- one when AUFTRAG:GetMissionEgressCoord() returns a coordinate. NewCAS() is
+  -- derived from NewORBIT() and does not inherently define an egress coordinate.
+  -- The corridor insertion contract only needs the mission waypoint UID.
+  local egressUid = nil
+  if type(mission.GetGroupEgressWaypointUID) == "function" then
+    egressUid = mission:GetGroupEgressWaypointUID(flightGroup)
   end
 
   local missionIndex = flightGroup:GetWaypointIndex(missionUid)
