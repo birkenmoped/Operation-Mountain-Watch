@@ -10,7 +10,7 @@ local Instance = {}
 Instance.__index = Instance
 
 local TAG = "[OMW][FobAttackFunctionalArtyDispatchAdapter]"
-Adapter.SchemaVersion = "OMW-FOB-ATTACK-FUNCTIONAL-ARTY-DISPATCH-ADAPTER-3"
+Adapter.SchemaVersion = "OMW-FOB-ATTACK-FUNCTIONAL-ARTY-DISPATCH-ADAPTER-4"
 
 local function fail(message)
   error(TAG .. " " .. tostring(message), 2)
@@ -82,6 +82,8 @@ function Adapter.New(spec)
     targetsByDemandId = {},
     demandIdByTargetName = {},
     completedTargetsByDemandId = {},
+    targetSequenceByDemandId = {},
+    targetMetadataByName = {},
     onFireStarted = spec.onFireStarted,
     onTargetComplete = spec.onTargetComplete,
     onFireComplete = spec.onFireComplete,
@@ -105,6 +107,53 @@ function Instance:_allTargetsComplete(demandId)
     if completed[targetName] ~= true then return false end
   end
   return true
+end
+
+function Instance:_prepareTargetGroup(targetGroup, label)
+  requireTable(targetGroup, label)
+  requireFunction(targetGroup, "GetCoordinate", label)
+  requireFunction(targetGroup, "GetName", label)
+  if type(targetGroup.IsAlive) == "function" and targetGroup:IsAlive() ~= true then
+    return nil, "TARGET_NOT_ALIVE"
+  end
+  local coordinate = targetGroup:GetCoordinate()
+  if type(coordinate) ~= "table" then return nil, "TARGET_COORDINATE_UNAVAILABLE" end
+  local groupName = targetGroup:GetName()
+  if type(groupName) ~= "string" or groupName == "" then return nil, "TARGET_NAME_UNAVAILABLE" end
+  return { coordinate=coordinate, groupName=groupName, group=targetGroup }, nil
+end
+
+function Instance:_assignPreparedTarget(demandId, prepared)
+  local sequence = (self.targetSequenceByDemandId[demandId] or 0) + 1
+  self.targetSequenceByDemandId[demandId] = sequence
+  local targetAlias = string.format("%s|FS|%03d", prepared.groupName, sequence)
+
+  local targetName = self.arty:AssignTargetCoord(
+    prepared.coordinate,
+    self.priority,
+    self.radiusM,
+    self.shells,
+    self.maxEngagements,
+    nil,
+    self.weaponType,
+    targetAlias,
+    true
+  )
+  if not targetName then return nil, false, "MOOSE_ARTY_TARGET_REJECTED" end
+
+  self.targetsByDemandId[demandId][#self.targetsByDemandId[demandId] + 1] = targetName
+  self.demandIdByTargetName[targetName] = demandId
+  self.targetMetadataByName[targetName] = {
+    sourceGroupName = prepared.groupName,
+    sourceGroup = prepared.group,
+    coordinate = prepared.coordinate,
+    sequence = sequence,
+  }
+  self:_log(string.format(
+    "ARTY coordinate target queued demandId=%s target=%s sourceGroup=%s sequence=%d shells=%s radiusM=%s",
+    tostring(demandId), tostring(targetName), tostring(prepared.groupName), sequence,
+    tostring(self.shells), tostring(self.radiusM)))
+  return targetName, true, nil
 end
 
 function Instance:_installCallbacks()
@@ -202,45 +251,41 @@ function Instance:DispatchTargets(demand, targetGroups)
 
   local prepared = {}
   for index, targetGroup in ipairs(targetGroups) do
-    requireTable(targetGroup, "targetGroups[" .. tostring(index) .. "]")
-    requireFunction(targetGroup, "GetCoordinate", "targetGroups[" .. tostring(index) .. "]")
-    requireFunction(targetGroup, "GetName", "targetGroups[" .. tostring(index) .. "]")
-    if type(targetGroup.IsAlive) == "function" and targetGroup:IsAlive() ~= true then
-      return nil, false, "TARGET_NOT_ALIVE"
-    end
-    local coordinate = targetGroup:GetCoordinate()
-    if type(coordinate) ~= "table" then return nil, false, "TARGET_COORDINATE_UNAVAILABLE" end
-    local groupName = targetGroup:GetName()
-    if type(groupName) ~= "string" or groupName == "" then return nil, false, "TARGET_NAME_UNAVAILABLE" end
-    prepared[#prepared + 1] = { coordinate=coordinate, groupName=groupName }
+    local item, reason = self:_prepareTargetGroup(targetGroup, "targetGroups[" .. tostring(index) .. "]")
+    if not item then return nil, false, reason end
+    prepared[#prepared + 1] = item
   end
 
-  local targetNames = {}
+  self.targetsByDemandId[demand.id] = {}
+  self.completedTargetsByDemandId[demand.id] = {}
+  self.targetSequenceByDemandId[demand.id] = 0
+
+  local targetNames = self.targetsByDemandId[demand.id]
   for _, item in ipairs(prepared) do
-    local targetName = self.arty:AssignTargetCoord(
-      item.coordinate,
-      self.priority,
-      self.radiusM,
-      self.shells,
-      self.maxEngagements,
-      nil,
-      self.weaponType,
-      item.groupName,
-      true
-    )
-    if not targetName then return nil, false, "MOOSE_ARTY_TARGET_REJECTED" end
-    targetNames[#targetNames + 1] = targetName
-    self.demandIdByTargetName[targetName] = demand.id
+    local _, queued, reason = self:_assignPreparedTarget(demand.id, item)
+    if not queued then return nil, false, reason end
   end
 
   self.registry:AssignAI(demand.id, self.assigneeId)
-  self.targetsByDemandId[demand.id] = targetNames
-  self.completedTargetsByDemandId[demand.id] = {}
   self:_log(string.format(
-    "ARTY coordinate targets queued demandId=%s requester=%s assigneeId=%s targets=%s shellsPerTarget=%s radiusM=%s",
+    "ARTY coordinate dispatch demandId=%s requester=%s assigneeId=%s targets=%s shellsPerTarget=%s radiusM=%s",
     tostring(demand.id), tostring(demand.origin), tostring(self.assigneeId), tostring(#targetNames),
     tostring(self.shells), tostring(self.radiusM)))
   return targetNames, true, nil
+end
+
+function Instance:QueueTarget(demandId, targetGroup)
+  requireNonEmptyString(demandId, "demandId")
+  local demand = self.registry:Get(demandId)
+  if not demand then return nil, false, "DEMAND_NOT_FOUND" end
+  if demand.status ~= self.missionDemand.Status.AI_ASSIGNED and demand.status ~= self.missionDemand.Status.ACTIVE then
+    return nil, false, "DEMAND_NOT_ACTIVE"
+  end
+  if not self.targetsByDemandId[demandId] then return nil, false, "DEMAND_NOT_DISPATCHED" end
+
+  local prepared, reason = self:_prepareTargetGroup(targetGroup, "targetGroup")
+  if not prepared then return nil, false, reason end
+  return self:_assignPreparedTarget(demandId, prepared)
 end
 
 function Instance:Dispatch(demand, targetGroup)
@@ -258,6 +303,11 @@ end
 function Instance:GetTargetNames(demandId)
   requireNonEmptyString(demandId, "demandId")
   return self.targetsByDemandId[demandId]
+end
+
+function Instance:GetTargetMetadata(targetName)
+  requireNonEmptyString(targetName, "targetName")
+  return self.targetMetadataByName[targetName]
 end
 
 return Adapter
