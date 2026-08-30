@@ -24,7 +24,7 @@ local function coord(x, y)
 end
 
 local function makeFlight()
-  local flight = { added={}, formations={} }
+  local flight = { added={}, formations={}, altitudeCommands={}, info={} }
   function flight:GetWaypointIndex(uid) assertEqual(uid,20,"mission uid"); return 3 end
   function flight:GetWaypointUIDFromIndex(index) assertEqual(index,2,"previous waypoint index"); return 10 end
   function flight:AddWaypoint(coordinate, _, insertAfterUid, altitude, updateRoute)
@@ -35,6 +35,11 @@ local function makeFlight()
   function flight:GetGroup()
     return { SetFormation=function(_, formation) self.formations[#self.formations+1]=formation end }
   end
+  function flight:SetAltitude(altitude, keep, radarAlt)
+    self.altitudeCommands[#self.altitudeCommands+1]={altitude=altitude,keep=keep,radarAlt=radarAlt}
+    return self
+  end
+  function flight:I(message) self.info[#self.info+1]=message end
   return flight
 end
 
@@ -93,6 +98,7 @@ assertEqual(#flight.added, 7, "total added waypoints")
 assertEqual(flight.added[1].after, 10, "outbound starts after pre-mission waypoint")
 assertEqual(flight.added[5].after, 20, "return starts after mission waypoint")
 assertEqual(flight.added[7].update, true, "last inserted return waypoint updates route")
+assertEqual(#flight.altitudeCommands, 0, "legacy single-path install does not force controller altitude")
 
 local chainedFlight = makeFlight()
 local chainedInstalled, chainedOk, chainedReason = Corridor.Install(chainedFlight, mission, chained, 500)
@@ -103,17 +109,43 @@ assertEqual(chainedInstalled.returnWaypointCount, 6, "chained installed return")
 assertEqual(#chainedFlight.added, 13, "chained total added waypoints")
 assertEqual(chainedInstalled.pathlineNames[2], "OMW_FlightPath_WEST", "chained install retains sequence")
 assertEqual(math.floor(chainedInstalled.junctions[1].distanceM+0.5), 100, "chained install retains junction evidence")
-assertEqual(chainedFlight.added[1].altitude, 500, "primary outbound is 500 ft AGL")
-assertEqual(chainedFlight.added[5].altitude, 2500, "west outbound is 2500 ft AGL")
-assertEqual(chainedFlight.added[8].altitude, 2500, "west return is 2500 ft AGL")
-assertTrue(type(chainedFlight.OnAfterPassingWaypoint)=="function", "formation transition callback installed")
-local westTransitionUid
-for uid, formation in pairs(chainedInstalled.formationTransitions) do
-  if formation == 720896 then westTransitionUid=uid break end
+assertEqual(chainedFlight.added[1].altitude, 500, "primary outbound waypoint requests 500 ft AGL")
+assertEqual(chainedFlight.added[5].altitude, 2500, "west outbound waypoint requests 2500 ft AGL")
+assertEqual(chainedFlight.added[8].altitude, 2500, "west return waypoint requests 2500 ft AGL")
+assertEqual(chainedInstalled.waypointProfiles.outbound[5].altType, "RADIO", "west waypoint telemetry records RADIO")
+assertEqual(chainedInstalled.waypointProfiles.outbound[5].pathlineName, "OMW_FlightPath_WEST", "west waypoint telemetry names pathline")
+assertEqual(#chainedFlight.altitudeCommands, 1, "profile install immediately establishes primary radar altitude")
+assertEqual(chainedFlight.altitudeCommands[1].altitude, 500, "initial radar altitude")
+assertEqual(chainedFlight.altitudeCommands[1].keep, true, "initial radar altitude held")
+assertEqual(chainedFlight.altitudeCommands[1].radarAlt, true, "initial altitude explicitly RADIO/AGL")
+assertTrue(type(chainedFlight.OnAfterPassingWaypoint)=="function", "profile transition callback installed")
+
+local westEntryUid
+for uid, transition in pairs(chainedInstalled.profileTransitions) do
+  if transition.pathlineName == "OMW_FlightPath_WEST" and transition.altitudeFtAgl == 2500 and transition.keepAltitude == true then
+    westEntryUid=uid
+    break
+  end
 end
-assertTrue(type(westTransitionUid)=="number", "west formation transition recorded")
-chainedFlight:OnAfterPassingWaypoint("Cruising","PassingWaypoint","Cruising",{uid=westTransitionUid})
+assertTrue(type(westEntryUid)=="number", "west entry transition recorded before WEST segment")
+chainedFlight:OnAfterPassingWaypoint("Cruising","PassingWaypoint","Cruising",{uid=westEntryUid})
+assertEqual(chainedFlight.altitudeCommands[2].altitude,2500,"west transition commands 2500 ft")
+assertEqual(chainedFlight.altitudeCommands[2].keep,true,"west transition holds altitude across waypoints")
+assertEqual(chainedFlight.altitudeCommands[2].radarAlt,true,"west transition uses radar altitude")
 assertEqual(chainedFlight.formations[1],720896,"west segment switches to RotaryWing Column D70")
+
+local westExitUid = chainedFlight.added[7].uid
+local westExit = chainedInstalled.profileTransitions[westExitUid]
+assertTrue(type(westExit)=="table", "west exit transition recorded")
+assertEqual(westExit.pathlineName,"MISSION","west exit releases to mission route")
+assertEqual(westExit.altitudeFtAgl,2500,"west exit release starts from 2500 ft AGL")
+assertEqual(westExit.keepAltitude,false,"west exit releases persistent altitude hold")
+
+local returnEntry = chainedInstalled.profileTransitions[20]
+assertTrue(type(returnEntry)=="table", "mission waypoint arms return WEST profile")
+assertEqual(returnEntry.altitudeFtAgl,2500,"return WEST altitude command")
+assertEqual(returnEntry.keepAltitude,true,"return WEST altitude held")
+assertEqual(returnEntry.formation,720896,"return WEST Column D70")
 
 -- AUFTRAG:NewCAS() may have no egress coordinate. Corridor insertion must still work.
 local casMission = {}
