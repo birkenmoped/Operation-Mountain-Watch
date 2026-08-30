@@ -5,6 +5,7 @@ document_class: MOOSE_CLASS_REGISTER_ADDENDUM
 owning_policy: OMW-GOV-001
 authoritative_for:
   - branch-local Stage 2B MOOSE class/API evidence pending DCS Acceptance 2
+  - branch-local source evidence for Ground Warehouse spawnzone/homezone/ReturnToLegion behavior
 not_authoritative_for:
   - master PROJECT-CLASS-INDEX status on main
   - DCS validation before Acceptance 2 passes
@@ -13,7 +14,7 @@ project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
 superseded_by:
 source_branch: agent/fob-attack-support-demand
-source_commit: GIT_HISTORY
+source_commit: PENDING_MERGE
 validated_in_dcs: false
 ---
 
@@ -29,7 +30,7 @@ Moose.lua SHA-256: E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A
 
 ## Source-verifizierter Stage-2B-Scope
 
-| Klasse/Pfad | Status vor DCS-Test | Stage-2B-Verwendung |
+| Klasse/Pfad | Status vor DCS-Test | Stage-2B-/Ground-Verwendung |
 |---|---|---|
 | `OPSZONE OnAfterAttacked(From, Event, To, AttackerCoalition)` | `SOURCE_VERIFIED`, Stage 2A DCS-validiert | qualifizierter RED-Angriff auf den verteidigten Perimeter |
 | `OPSZONE OnAfterDefeated(From, Event, To, DefeatedCoalition)` | `SOURCE_VERIFIED_PENDING_DCS` | RED ist aus dem verteidigten BLUE-Perimeter beseitigt; Stage-2B-Threat-Clear-Signal |
@@ -43,10 +44,14 @@ Moose.lua SHA-256: E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A
 | `FLIGHTGROUP OnAfterRTB` | `SOURCE_VERIFIED_PENDING_DCS` | Acceptance-Nachweis des begonnenen Rückflugs |
 | `FLIGHTGROUP OnAfterLanded` | `SOURCE_VERIFIED_PENDING_DCS` | Acceptance-Nachweis der Landung |
 | `FLIGHTGROUP OnAfterArrived` | `SOURCE_VERIFIED_PENDING_DCS` | Acceptance-Nachweis des MOOSE-Airwing-Recovery-Lifecycles |
-| `AUFTRAG:NewGROUNDATTACK(Target, Speed, Formation)` | `SOURCE_VERIFIED_PENDING_DCS` | lokale Infanterie-QRF gegen die reale RED-Gruppe aus dem OPSZONE-Scan; MOOSE-eigener Ground-Attack-Workaround statt eigener Attack-Task-Logik |
-| `AUFTRAG:SetReturnToLegion(false)` | `SOURCE_VERIFIED`, bereits in OMW Ground-Return-Baselines genutzt | verhindert vorzeitige automatische Rückgabe, damit OMW den sichtbaren RTZ-Handoff explizit abnehmen kann |
-| `ARMYGROUP:RTZ(Zone, Formation)` | `SOURCE_VERIFIED`, vorhandene OMW DCS-Return-Baselines | Guard/QRF nach Missionsende zum installationsbezogenen Recovery-Handoff zurückführen |
-| `ARMYGROUP/OPSGROUP Returned` | `SOURCE_VERIFIED`, vorhandene OMW DCS-Return-Baselines | physische Rückkehr; MOOSE gibt das Asset anschließend an Legion/Warehouse zurück |
+| `AUFTRAG:NewGROUNDATTACK(Target, Speed, Formation)` | `SOURCE_VERIFIED_PENDING_DCS` | lokale Infanterie-QRF gegen die reale RED-Gruppe aus dem OPSZONE-Scan; MOOSE-eigener Ground-Attack-Weg statt eigener Attack-Task-Logik |
+| `WAREHOUSE` constructor default `zone` / `spawnzone` | `SOURCE_VERIFIED_PENDING_DCS_GEOMETRY` | normales Ground-Warehouse erzeugt `zone` mit 500 m und `spawnzone` mit 250 m Radius um das Warehouse-Objekt |
+| `WAREHOUSE:SetSpawnZone(zone, maxdist)` | `SOURCE_VERIFIED`; ältere OMW Ground-Acceptances nutzen die API | öffentliche Konfiguration der Materialisierungszone; `maxdist` default 5000 m; beeinflusst auch spätere ARMYGROUP-`homezone` |
+| `LEGION:_CreateFlightGroup(asset)` Ground branch | `SOURCE_VERIFIED` | erzeugt `ARMYGROUP`, setzt Herkunfts-Legion und `opsgroup.homezone=self.spawnzone` |
+| `OPSGROUP:SetReturnToLegion(Switch)` | `SOURCE_VERIFIED` | `true` oder `nil` setzt Ground/Naval-Group auf Return; `false` hält sie nach der letzten Mission im Feld |
+| `AUFTRAG:SetReturnToLegion(Switch)` | `SOURCE_VERIFIED` | `true` fordert Return, `false` verhindert Return, `nil` lässt das Asset entscheiden; MissionDone übernimmt nur expliziten Mission-Wert |
+| `ARMYGROUP:RTZ(Zone, Formation)` / `self.homezone` fallback | `SOURCE_VERIFIED`, expliziter RTZ in vorhandenen OMW DCS-Return-Baselines validiert | ohne explizite Zone verwendet RTZ die origin `homezone`; außerhalb wird `zone:GetRandomCoordinate()` als Wegpunkt gewählt |
+| `ARMYGROUP/OPSGROUP Returned` | `SOURCE_VERIFIED`, vorhandene OMW DCS-Return-Baselines | bei `Returned` ruft ARMYGROUP die eigene Herkunfts-Legion per `__AddAsset(10, self.group, 1)` auf |
 | `OPSGROUP:SetReturnOnOutOfAmmo(...)` / `OutOfAmmo`-Lifecycle | `SOURCE_VERIFIED_PENDING_DCS_STAGE2B` | MOOSE besitzt einen nativen Leerschuss-Rückkehrpfad; Stage 2B führt keinen eigenen Ammo-Poller ein |
 | `OPSGROUP:GetNelements()` | `SOURCE_VERIFIED_PENDING_DCS_STAGE2B` | Zahl der überlebenden physischen Elemente beim Recovery-/Loss-Settlement |
 | `PATHLINE:FindByName("OMW_FlightPath")` / `PATHLINE:GetCoordinates()` | `SOURCE_VERIFIED`; OMW-FlightPath bereits in PERSONNEL-Air-Resupply DCS-validiert | owner-authored Tal-/Transitkorridor als gemeinsame Geometriequelle |
@@ -83,19 +88,122 @@ OPSZONE Defeated(RED)
 
 Diese Kette ist source-verifiziert, aber für die neue Stage-2B-Komposition noch `PENDING_DCS`.
 
-## Verifizierter Ground-Return-Scope
+## Verifizierte Ground-Warehouse-/Homezone-Semantik
 
-Die vorhandenen OMW Ground-Resupply-Acceptances haben bereits den expliziten MOOSE-Pfad nachgewiesen:
+Der gepinnte Source erzeugt für ein normales nicht schiffsbasiertes `WAREHOUSE`:
 
 ```text
-mission end/cancel
--> delayed ARMYGROUP:RTZ(recovery zone, formation)
+self.zone:
+ZONE_RADIUS centered on Warehouse object, radius 500 m
+
+self.spawnzone:
+ZONE_RADIUS centered on Warehouse object, radius 250 m
+```
+
+Die öffentliche API
+
+```lua
+WAREHOUSE:SetSpawnZone(zone, maxdist)
+```
+
+ersetzt `self.spawnzone`; `maxdist` ist optional und fällt auf 5000 m zurück.
+
+Wenn `LEGION` für eine Brigade ein Ground-Asset materialisiert, wird:
+
+```text
+ARMYGROUP created
+-> opsgroup._SetLegion(origin Legion)
+-> opsgroup.homezone = origin Legion spawnzone
+```
+
+Damit enthält die MOOSE-Gruppe bereits ihre Herkunfts-Legion und ihren Herkunfts-Rückkehrbereich.
+
+## Verifizierte `ReturnToLegion`-/RTZ-Semantik
+
+Für Ground/Naval-Gruppen gilt source-seitig:
+
+```text
+OPSGROUP:SetReturnToLegion(true or nil)
+-> legionReturn = true
+
+OPSGROUP:SetReturnToLegion(false)
+-> legionReturn = false
+```
+
+Für Missionskonfiguration gilt:
+
+```text
+AUFTRAG:SetReturnToLegion(true)
+-> mission requests return
+
+AUFTRAG:SetReturnToLegion(false)
+-> mission prevents return
+
+AUFTRAG:SetReturnToLegion(nil)
+-> asset decides
+```
+
+Beim MissionDone-Pfad wird ein expliziter `Mission.legionReturn`-Wert auf das OPSGROUP übernommen. Deshalb ist `SetReturnToLegion(false)` kein neutraler Default, sondern eine bewusste Feldpersistenz-/Sonderpfadentscheidung.
+
+`ARMYGROUP:RTZ(...)` verwendet:
+
+```text
+Zone argument OR self.homezone
+```
+
+und bei mobilen Gruppen:
+
+```text
+already in zone
+-> Returned()
+
+outside zone
+-> zone:GetRandomCoordinate()
+-> AddWaypoint(...)
+-> physical return movement
+```
+
+Für immobile Gruppen außerhalb der Zone existiert ein Teleportpfad. Dieser bleibt für beobachtbare OMW-Bereiche ausgeschlossen.
+
+`ARMYGROUP:onafterReturned(...)` ruft anschließend die bereits gespeicherte Herkunfts-Legion auf:
+
+```lua
+self.legion:__AddAsset(10, self.group, 1)
+```
+
+Damit ist der normale Framework-Lifecycle grundsätzlich origin-bound.
+
+## Neue Ground-Designgrenze
+
+Die bereits akzeptierten OMW Ground-Resupply-Acceptances haben einen **expliziten** MOOSE-Pfad nachgewiesen:
+
+```text
+SetReturnToLegion(false)
+-> mission end/cancel
+-> delayed ARMYGROUP:RTZ(origin ACCESS, formation)
 -> physical return
 -> Returned
 -> Warehouse AddAsset
 ```
 
-Stage 2B verwendet denselben technischen Rückkehrvertrag für mobile Guard-/QRF-Infanterie und setzt den vorhandenen Fortress-`ACCESS`-Bereich ausschließlich als Materialisierungs-/Return-Handoff ein. Er bleibt ausdrücklich **keine** Security-Zone.
+Dieser Nachweis bleibt gültig, wird aber nicht mehr als Beweis interpretiert, dass jedes Ground-Asset explizites RTZ oder eine ACCESS-Zone benötigt.
+
+Die neue MOOSE-first-Prüfreihenfolge lautet:
+
+```text
+1. native Warehouse spawnzone/homezone + normal ReturnToLegion
+2. if geometry fails: public WAREHOUSE:SetSpawnZone(origin ACCESS, ...)
+3. explicit ARMYGROUP:RTZ(origin zone, ...) only when mission semantics require it
+4. custom fallback only after proven MOOSE gap + owner approval
+```
+
+Die vorhandenen `ZON_BLUE_GND_*_ACCESS` bleiben erhalten, werden aber vor DCS-Nachweis nicht pauschal als verpflichtender Return-Bereich definiert.
+
+Querschnittsdokument:
+
+```text
+docs/moose/GROUND-WAREHOUSE-RETURN-HOMEZONE-LIFECYCLE.md
+```
 
 ## CampaignState-/MOOSE-Grenze
 
@@ -107,14 +215,18 @@ CampaignState PERSONNEL deployment
 -> quantity remains unchanged
 -> available decreases
 
-physical Returned
--> cancel deployment reservation
+confirmed physical Returned
+-> release deployment reservation
 -> survivors become available again
 -> consume only confirmed casualties exactly once
 ```
 
-Damit wird kein bereits gebundener Soldat beim Tod ein zweites Mal vom verfügbaren Bestand abgezogen. MOOSE bleibt nur Autorität für die physische Gruppe und deren beobachtbaren Lifecycle.
+CampaignState berechnet nicht den physischen Rückweg und wählt nicht anhand des Zielortes ein Rückkehr-Warehouse. MOOSE führt den origin-bound physischen Lifecycle; CampaignState übernimmt bestätigte Return-/Loss-Ereignisse idempotent für das ursprüngliche Deployment.
 
 ## Validierungsgrenze
 
-Alle als `PENDING_DCS` gekennzeichneten Kombinationen dürfen erst nach dem dokumentierten Acceptance-2-Lauf auf `VALIDATED`/`ACCEPTED_TECHNICAL_BASELINE` angehoben werden. Insbesondere reicht ein `CAS_EXECUTING` nicht mehr aus: Threat clear, CAS RTB/recovery, QRF/Guard-Return, Settlement und Reorder-Evaluation gehören zum Stage-2B-Abnahmescope.
+Alle als `PENDING_DCS` gekennzeichneten Kombinationen dürfen erst nach dem dokumentierten Acceptance-Lauf auf `VALIDATED`/`ACCEPTED_TECHNICAL_BASELINE` angehoben werden.
+
+Vor dem nächsten Stage-2B-DCS-Lauf muss insbesondere der aktuell noch explizite Fortress-ACCESS-/`SetReturnToLegion(false)`-Harness gegen den neu dokumentierten nativen Homezone-Pfad reconciliert werden.
+
+Ein `CAS_EXECUTING` oder ein bloßer Ground-Mission-Start reicht nicht: Threat clear, CAS RTB/recovery, origin-bound Ground-Return, Returned/Warehouse-Settlement und Reorder-Evaluation gehören zum Abnahmescope.
