@@ -9,7 +9,7 @@ $sourceFile = Join-Path $repoRoot 'mission\tests\ground-native-homezone-return\s
 $distDir = Join-Path $repoRoot 'mission\tests\ground-native-homezone-return\dist'
 $outputFile = Join-Path $distDir 'OMW_Ground_Native_Homezone_Return_Acceptance_1.lua'
 
-$builderVersion = 'GROUND-NATIVE-HOMEZONE-RETURN-ACCEPTANCE-1-1'
+$builderVersion = 'GROUND-NATIVE-HOMEZONE-RETURN-ACCEPTANCE-1-2'
 $testId = 'GROUND-NATIVE-HOMEZONE-RETURN-ACCEPTANCE-1'
 $mooseCommit = '73d3ed119cd9e7e3f2cfcabbaa34513d30529b54'
 $mooseSha256 = 'E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915'
@@ -56,7 +56,7 @@ $forbiddenPatterns = @(
   'lfs\.',
   'os\.execute',
   ':SetSpawnZone\s*\(',
-  'SetReturnToLegion\s*\(\s*false\s*\)',
+  '[:\.]SetReturnToLegion\s*\(\s*false\s*\)',
   ':RTZ\s*\(',
   ':Teleport\s*\(',
   'LoadBackAssetInPosition',
