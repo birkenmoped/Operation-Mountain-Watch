@@ -1,6 +1,6 @@
 ---
 document_id: OMW-MOOSE-FIRE-SUPPORT-AUFTRAG-STAGE-3-SOURCE-REVIEW
-status: SOURCE_REVIEWED
+status: PLANNED
 document_class: TECHNICAL_SOURCE_REVIEW
 owning_policy: OMW-GOV-001
 authoritative_for:
@@ -12,6 +12,8 @@ not_authoritative_for:
   - strategic Ground-AMMO resupply settlement beyond the separately accepted Stage-1 baseline
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
+supersedes:
+superseded_by:
 source_branch: agent/fire-support-strategic-resupply-closure
 source_commit: GIT_HISTORY
 validated_in_dcs: false
