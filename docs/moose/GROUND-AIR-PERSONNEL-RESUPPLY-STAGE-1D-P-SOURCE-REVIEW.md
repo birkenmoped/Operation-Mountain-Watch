@@ -16,7 +16,7 @@ supersedes:
 superseded_by:
   - OMW-MOOSE-GROUND-AIR-PERSONNEL-RESUPPLY-STAGE-1D-P-ACCEPTANCE-4-FINAL
 source_branch: agent/automatic-response-orchestration-continuation
-source_commit: PENDING_MERGE
+source_commit: 99d4d88d9b9eea2026fe525ebab4e29ff60cdbfa
 validated_in_dcs: false
 ---
 
