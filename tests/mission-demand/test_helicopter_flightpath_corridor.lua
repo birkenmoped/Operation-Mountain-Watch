@@ -57,12 +57,26 @@ local flight = makeFlight()
 local installed, ok, reason = Corridor.Install(flight, mission, resolved, 500)
 assertTrue(ok, "corridor installed")
 assertEqual(reason, nil, "install reason")
+assertEqual(installed.egressUid, 30, "optional egress uid captured")
 assertEqual(installed.outboundWaypointCount, 4, "outbound count")
 assertEqual(installed.returnWaypointCount, 3, "return count")
 assertEqual(#flight.added, 7, "total added waypoints")
 assertEqual(flight.added[1].after, 10, "outbound starts after pre-mission waypoint")
 assertEqual(flight.added[5].after, 20, "return starts after mission waypoint")
 assertEqual(flight.added[7].update, true, "last inserted return waypoint updates route")
+
+-- AUFTRAG:NewCAS() does not inherently create an egress coordinate. The MOOSE
+-- RouteToMission path therefore may have a valid mission waypoint UID while
+-- GetGroupEgressWaypointUID() remains nil. Corridor insertion must still work.
+local casMission = {}
+function casMission:GetGroupWaypointIndex() return 20 end
+function casMission:GetGroupEgressWaypointUID() return nil end
+local casFlight = makeFlight()
+local casInstalled, casOk, casReason = Corridor.Install(casFlight, casMission, resolved, 500)
+assertTrue(casOk, "CAS corridor installs without egress uid")
+assertEqual(casReason, nil, "CAS no-egress reason")
+assertEqual(casInstalled.egressUid, nil, "CAS egress uid remains optional")
+assertEqual(#casFlight.added, 7, "CAS no-egress waypoint count")
 
 local waitingMission = {}
 function waitingMission:GetGroupWaypointIndex() return nil end
@@ -71,12 +85,12 @@ local waitingFlight = makeFlight()
 local noInstall, noOk, noReason = Corridor.Install(waitingFlight, waitingMission, resolved, 500)
 assertEqual(noInstall, nil, "not-ready no install")
 assertEqual(noOk, false, "not-ready false")
-assertEqual(noReason, "MISSION_ROUTE_UIDS_NOT_READY", "not-ready reason")
+assertEqual(noReason, "MISSION_ROUTE_UID_NOT_READY", "not-ready reason")
 assertTrue(type(waitingFlight.OnAfterUpdateRoute)=="function", "not-ready arms MOOSE route callback")
 
-local deferredMission = { missionUid=nil, egressUid=nil }
+local deferredMission = { missionUid=nil }
 function deferredMission:GetGroupWaypointIndex() return self.missionUid end
-function deferredMission:GetGroupEgressWaypointUID() return self.egressUid end
+function deferredMission:GetGroupEgressWaypointUID() return nil end
 local deferredFlight = makeFlight()
 deferredFlight.previousUpdateRouteCalls=0
 function deferredFlight:OnAfterUpdateRoute()
@@ -86,11 +100,10 @@ end
 local deferredInstall, deferredOk, deferredReason = Corridor.Install(deferredFlight, deferredMission, resolved, 500)
 assertEqual(deferredInstall, nil, "deferred initial install")
 assertEqual(deferredOk, false, "deferred initial ok")
-assertEqual(deferredReason, "MISSION_ROUTE_UIDS_NOT_READY", "deferred initial reason")
+assertEqual(deferredReason, "MISSION_ROUTE_UID_NOT_READY", "deferred initial reason")
 assertTrue(type(deferredFlight.OnAfterUpdateRoute)=="function", "deferred route callback installed")
 
 deferredMission.missionUid=20
-deferredMission.egressUid=30
 deferredFlight:OnAfterUpdateRoute("Cruising", "UpdateRoute", "Cruising", nil, nil)
 assertEqual(deferredFlight.previousUpdateRouteCalls, 1, "previous route callback preserved")
 assertEqual(#deferredFlight.added, 7, "deferred total added waypoints")
