@@ -11,7 +11,7 @@ authoritative_for:
   - post-combat personnel settlement and resupply reevaluation
 not_authoritative_for:
   - production-wide CAS source-selection policy
-  - final installation-specific security or recovery radii
+  - final installation-specific security or return geometry
   - final guard rotation duration
   - final counterattack force-sizing algorithm beyond the approved 50 percent reserve boundary
 scenario_period: 2010-08-01/2011-12-31
@@ -19,7 +19,7 @@ project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
 superseded_by:
 source_branch: agent/fob-attack-support-demand
-source_commit: GIT_HISTORY
+source_commit: PENDING_MERGE
 validated_in_dcs: false
 ---
 
@@ -38,7 +38,13 @@ RED ground presence inside runtime security perimeter
 
 Stage 2B erweitert diesen Eingang zu einer vollständigen MOOSE-first-Reaktion. CampaignState bleibt alleinige strategische Ressourcenautorität; MOOSE führt die physischen AIRWING-/SQUADRON-/FLIGHTGROUP- und BRIGADE-/PLATOON-/ARMYGROUP-Lifecycles aus.
 
-## 2. Implementiertes Stage-2B-Zielbild
+Die während Stage 2B gewonnenen, **projektweit für Ground Operations relevanten** Warehouse-/Homezone-/Return-Erkenntnisse sind zusätzlich in folgendem Querschnittsdokument festgehalten:
+
+```text
+docs/moose/GROUND-WAREHOUSE-RETURN-HOMEZONE-LIFECYCLE.md
+```
+
+## 2. Stage-2B-Zielbild
 
 ```text
 qualified installation threat
@@ -53,14 +59,15 @@ qualified installation threat
 |   -> FLIGHTGROUP RTB / Landed / Arrived
 |
 +-> local infantry response
-|   -> CampaignState PERSONNEL reservation
+|   -> CampaignState PERSONNEL reservation at origin node
 |   -> preserve 50 % defence reserve floor
-|   -> Ground Warehouse / BRIGADE / PLATOON / ARMYGROUP
+|   -> origin Ground Warehouse / BRIGADE / PLATOON / ARMYGROUP
 |   -> AUFTRAG:NewGROUNDATTACK(real RED group)
 |   -> threat clear / relief or MOOSE OutOfAmmo lifecycle
-|   -> explicit ARMYGROUP:RTZ to installation ACCESS return handoff
-|   -> Returned / Warehouse AddAsset
-|   -> exactly-once personnel settlement
+|   -> normal MOOSE return-to-origin lifecycle wherever sufficient
+|   -> ARMYGROUP homezone derived from origin LEGION/Warehouse spawnzone
+|   -> Returned / original Legion-Warehouse AddAsset
+|   -> exactly-once CampaignState settlement against original deployment
 |
 +-> post-combat resource reevaluation
     -> existing ResourceDemandPolicy
@@ -68,9 +75,11 @@ qualified installation threat
     -> existing PERSONNEL physical resupply orchestration remains unchanged
 ```
 
+Eine explizite `ZON_BLUE_GND_FORTRESS_ACCESS`-Rückkehr ist **kein allgemeiner Bestandteil dieses Vertrags**. Sie ist nur eine mögliche, standortspezifische MOOSE-Konfiguration bzw. Acceptance-Fixture, wenn die native Warehouse-Homezone geometrisch nicht genügt.
+
 ## 3. MOOSE-first-Prüfung – Ergebnis
 
-Der tatsächlich gepinnte `Moose.lua` bestätigt die benötigten Framework-Pfade. Die vollständige API-Liste und der Validierungsstatus stehen in:
+Der tatsächlich gepinnte `Moose.lua` bestätigt die benötigten Framework-Pfade. Die Stage-2B-API-Liste und der Validierungsstatus stehen in:
 
 ```text
 docs/moose/PROJECT-CLASS-INDEX-STAGE-2-ACCEPTANCE-2.md
@@ -84,7 +93,14 @@ AUFTRAG:NewCAS is orbit-based and does not auto-finish when current targets disa
 AUFTRAG:Cancel exists
 FLIGHTGROUP can RTB after mission/task completion
 AUFTRAG:NewGROUNDATTACK exists for ground groups
-ARMYGROUP:RTZ / Returned / Warehouse AddAsset exists
+WAREHOUSE default ground spawnzone = 250 m radius around Warehouse object
+WAREHOUSE default warehouse zone = 500 m radius around Warehouse object
+WAREHOUSE:SetSpawnZone(zone, maxdist) can replace the spawnzone through public API
+LEGION assigns opsgroup.homezone = self.spawnzone
+OPSGROUP/AUFTRAG ReturnToLegion semantics exist
+ARMYGROUP:RTZ uses explicit Zone or self.homezone
+ARMYGROUP RTZ uses zone:GetRandomCoordinate() when outside the return zone
+ARMYGROUP Returned -> original legion __AddAsset(...)
 MOOSE owns OutOfAmmo lifecycle; no OMW ammo poller required
 PATHLINE + FLIGHTGROUP waypoint APIs support the already validated OMW_FlightPath corridor
 ```
@@ -127,8 +143,8 @@ ReserveResource(quantity)
 -> available decreases
 
 on physical return:
-Cancel(deployment reservation)
--> survivors become available again
+release deployment reservation
+-> returned survivors become available again
 
 confirmed casualties:
 separate exact-once CONSUMPTION
@@ -148,14 +164,28 @@ scripts/ground/OMW_GroundPersonnelDeploymentLedger.lua
 Die Stage-2B-QRF nutzt keinen direkten `SPAWN:`-Shortcut und keine eigene Ground-Attack-Task-Implementierung:
 
 ```text
-CampaignState reservation
--> existing MOOSE Ground Warehouse / BRIGADE
+CampaignState reservation at origin
+-> origin MOOSE Ground Warehouse / BRIGADE
 -> QRF PLATOON
 -> ARMYGROUP
 -> AUFTRAG:NewGROUNDATTACK(real RED group from OPSZONE scanned group set)
 ```
 
 Der gepinnte MOOSE-Source erklärt bei `GROUNDATTACK`, dass DCS-Attack-Group/-Unit-Tasks für Ground nicht geeignet sind und MOOSE deshalb den Angreifer in die Nähe des Zielobjekts führt, wo die Gruppe selbständig bekämpft. Genau dieser Framework-Weg wird wiederverwendet.
+
+### Herkunftsregel
+
+Der Einsatzort ändert die Herkunft nicht.
+
+```text
+asset from Wright supports Fortress
+-> remains Wright-origin asset
+-> returns through Wright-origin MOOSE lifecycle
+-> is credited to Wright-origin Legion/Warehouse
+-> CampaignState settlement uses Wright-origin deployment/node
+```
+
+Es darf keine Logik geben, die den angegriffenen oder nächstgelegenen Standort nachträglich als Rückkehr-Warehouse auswählt.
 
 ## 7. Threat clear und CAS-Abschluss
 
@@ -203,55 +233,90 @@ scripts/air-operations/OMW_HelicopterFlightPathCorridor.lua
 
 Der CAS-Adapter kopiert keine Tal-Koordinaten. Fixed-Wing-CAS erhält daraus keine automatische Korridorpflicht.
 
-## 9. Guard-/QRF-Rückkehr und Recovery-Handoff
+## 9. Ground-Return: MOOSE zuerst, ACCESS nur bei Bedarf
 
-Die Gruppe muss nicht bis an das Warehouse-Gebäude pathfinden. Für Fortress Acceptance 2 wird der bereits bestehende operative Handoff verwendet:
+Die neue Source-Prüfung korrigiert die bisher zu enge Fortress-Formulierung.
 
-```text
-ZON_BLUE_GND_FORTRESS_ACCESS
-```
+### 9.1 MOOSE-Default
 
-Seine Bedeutung bleibt strikt:
+Ein normales Ground-Warehouse besitzt im gepinnten Source standardmäßig:
 
 ```text
-materialization / departure / return / recovery handoff
+Warehouse zone:
+center = Warehouse object
+radius = 500 m
+
+spawnzone:
+center = Warehouse object
+radius = 250 m
 ```
 
-und ausdrücklich **nicht**:
+Bei der Erzeugung des `ARMYGROUP` setzt `LEGION`:
 
 ```text
-security perimeter
+opsgroup.homezone = self.spawnzone
 ```
 
-Rückkehr:
+`ARMYGROUP:RTZ()` verwendet:
 
 ```text
-mission end / explicit relief / OutOfAmmo path
--> AUFTRAG end/cancel as applicable
--> delayed ARMYGROUP:RTZ(ZON_BLUE_GND_FORTRESS_ACCESS, OffRoad)
--> physical approach/entry
--> Returned
--> MOOSE Warehouse AddAsset
--> CampaignState settlement
+explicit Zone OR self.homezone
 ```
 
-Das folgt dem bereits in Ground-Resupply akzeptierten expliziten RTZ-/Returned-Präzedenzfall. Kein nacktes `Destroy()` gilt als Rückkehr.
+und löst innerhalb der Zone `Returned()` aus. Außerhalb der Zone wird ein zufälliger Punkt in der Zone als Wegpunkt verwendet.
+
+### 9.2 Bedeutung für OMW
+
+MOOSE verlangt damit **nicht**, dass die Gruppe bis zum Warehouse-Objekt selbst fährt. Der native 250-m-Kreis kann bereits genügen.
+
+Ob er an einem realen OMW-FOB/COP genügt, ist jedoch eine DCS-/Geometriefrage: `GetRandomCoordinate()` kann innerhalb des 250-m-Kreises einen Punkt hinter HESCOs, Mauern, Gebäuden oder anderen Statics wählen.
+
+Deshalb werden die vorhandenen ACCESS-Zonen vorerst nicht entfernt.
+
+### 9.3 Öffentliche Konfiguration statt eigener Return-Logik
+
+Wenn der MOOSE-Default an einem Standort nicht sauber funktioniert, ist die nächste Prioritätsstufe:
+
+```lua
+WAREHOUSE:SetSpawnZone(ZON_BLUE_GND_<ORIGIN>_ACCESS, maxdist)
+```
+
+Dann ist die ACCESS-Zone die MOOSE-eigene `spawnzone` und damit automatisch die `homezone` der aus dieser Legion erzeugten Ground-Gruppen.
+
+Wichtig: `SetSpawnZone(...)` beeinflusst auch die Materialisierung. Spawn, Departure und Return müssen gemeinsam getestet werden.
+
+### 9.4 Explizites RTZ ist kein allgemeiner Standard
+
+Der früher akzeptierte Ground-Resupply-Pfad mit
+
+```text
+SetReturnToLegion(false)
+-> MissionDone
+-> explicit ARMYGROUP:RTZ(origin ACCESS)
+```
+
+bleibt ein gültiger technischer Präzedenzfall für genau seinen Scope. Er beweist aber nicht, dass jede Ground-Mission explizites RTZ oder eine ACCESS-Zone benötigt.
+
+Für temporäre QRF-/Response-Kräfte soll der normale MOOSE-Return-to-Legion-Lifecycle Vorrang haben, wenn er die Anforderung erfüllt.
 
 ## 10. Guard-Rotation und OutOfAmmo
 
-Produktive Rotationsdauer bleibt eine offene Projektentscheidung. Acceptance 2 prüft zunächst die **explizite Relief-Rückkehr nach Threat clear** für den Guard. Der Framework-Review bestätigt zusätzlich MOOSE-eigene OutOfAmmo-/Return-Konfiguration; deshalb wird kein eigener Ammo-Scheduler implementiert.
+Produktive Rotationsdauer bleibt eine offene Projektentscheidung. Der Framework-Review bestätigt MOOSE-eigene OutOfAmmo-/Return-Konfiguration; deshalb wird kein eigener Ammo-Scheduler implementiert.
 
-Spätere Produktionsrotation:
+Geplanter Produktions-Lifecycle:
 
 ```text
 ONGUARD
 -> rotation condition OR OutOfAmmo OR explicit relief
--> mission closure
--> RTZ recovery handoff
--> Returned/Warehouse
--> personnel settlement
+-> normal MOOSE mission closure
+-> ReturnToLegion
+-> ARMYGROUP RTZ to origin homezone
+-> Returned / original Warehouse
+-> CampaignState personnel settlement
 -> replacement only from available CampaignState PERSONNEL
 ```
+
+Nur wenn die origin `homezone` in DCS nicht geeignet ist, wird sie über die öffentliche Warehouse-Spawnzone-Konfiguration auf eine validierte origin-ACCESS-Zone gelegt.
 
 ## 11. Post-combat Reorder und RESUPPLY
 
@@ -279,7 +344,7 @@ existing accepted PERSONNEL resupply acceptance:
 remains physical transport baseline
 ```
 
-## 12. Aktueller Implementierungsstand
+## 12. Aktueller Implementierungsstand und notwendige Reconciliation vor DCS
 
 Implementiert und remote veröffentlicht:
 
@@ -295,9 +360,57 @@ tools/build-fob-attack-cas-dispatch-acceptance-2.ps1            builder v2-2
 
 MissionDemand contract CI hat nach den Stage-2B-Erweiterungen einen erfolgreichen Lauf erreicht. Das ist statische/Lua-Vertragsprüfung; DCS-Runtime-Verhalten bleibt `PENDING_DCS`.
 
-## 13. DCS-Abnahmegrenze
+Der aktuelle Acceptance-Harness enthält noch die ältere testlokale Kombination:
 
-Ein PASS benötigt mindestens:
+```text
+BRIGADE:SetSpawnZone(Fortress ACCESS, ...)
+Guard/QRF AUFTRAG:SetReturnToLegion(false)
+explicit ARMYGROUP:RTZ(Fortress ACCESS, ...)
+```
+
+Diese Kombination wird **vor dem nächsten DCS-Lauf noch einmal gegen den jetzt dokumentierten MOOSE-Default-/Homezone-Vertrag reconciliert**. Sie darf nicht durch einen DCS-PASS versehentlich zur allgemeinen Ground-Produktionsarchitektur werden.
+
+## 13. Nächste Testreihenfolge
+
+Vor einem vollständigen Stage-2B-PASS sind zwei Fragen getrennt zu behandeln.
+
+### 13.1 Ground-Return-Geometrie
+
+Erste Priorität ist der einfachste native MOOSE-Pfad:
+
+```text
+origin Warehouse / BRIGADE
+no explicit return-zone override for the return test
+normal ReturnToLegion
+ARMYGROUP self.homezone = origin Warehouse spawnzone
+physical return
+Returned
+origin Warehouse AddAsset
+```
+
+Zu prüfen:
+
+```text
+250 m default homezone physically sufficient?
+no HESCO/static/building collision?
+no visible teleport?
+return cleanup visually plausible?
+correct origin Legion/Warehouse credit?
+```
+
+Wenn dieser Pfad an Fortress nicht genügt, folgt als zweite Stufe:
+
+```text
+WAREHOUSE:SetSpawnZone(ZON_BLUE_GND_FORTRESS_ACCESS, validated maxdist)
+normal ReturnToLegion
+no separate explicit RTZ controller
+```
+
+Erst wenn auch diese öffentliche MOOSE-Konfiguration nicht genügt, ist eine zusätzliche Lösung zu prüfen.
+
+### 13.2 Stage-2B Response-Lifecycle
+
+Ein vollständiger Stage-2B-PASS benötigt danach mindestens:
 
 ```text
 real Guard ONGUARD
@@ -312,18 +425,29 @@ CAS closure requested
 CAS RTB
 CAS Landed
 CAS Arrived
-Guard/QRF RTZ
-Returned / Warehouse lifecycle
+Guard/QRF normal return-to-origin lifecycle
+Returned / original Warehouse lifecycle
 exact-once casualty settlement
 post-combat PERSONNEL reorder evaluation
 ```
 
-Erst danach darf der neue Stage-2B-Lifecycle als DCS-validiert dokumentiert werden.
+## 14. Projektweite Regressionen vor Generalisierung
 
-## 14. Weiterhin offene Produktionswerte
+Da der Ground-Return-Vertrag mehrere bestehende Missionstypen betrifft, muss vor einer produktionsweiten Umstellung zusätzlich geprüft werden:
 
 ```text
-final installation-specific recovery geometry beyond current ACCESS handoff
+1. existing Ground SUPPLY convoy accepted explicit-RTZ path remains valid
+2. missions intentionally using SetReturnToLegion(false) keep their field-persistence semantics
+3. road-aligned Warehouse spawn adapter remains compatible with any SetSpawnZone change
+4. origin A -> mission at B -> return to A is proven at least once
+5. CampaignState settlement is bound to original deployment/node and is idempotent
+6. immobile ARMYGROUP teleport branch remains excluded from observable OMW use
+```
+
+## 15. Weiterhin offene Produktionswerte
+
+```text
+site-by-site decision: native 250 m homezone or configured ACCESS spawn/homezone
 guard rotation duration
 counterattack force-sizing below 50 % maximum
 maximum simultaneous response groups
