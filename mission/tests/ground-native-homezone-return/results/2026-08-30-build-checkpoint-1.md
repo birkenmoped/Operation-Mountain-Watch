@@ -1,14 +1,18 @@
 ---
 document_id: OMW-GROUND-NATIVE-HOMEZONE-RETURN-BUILD-CHECKPOINT-1
-status: BUILD_VERIFIED
+status: HISTORICAL_TEST_FIXTURE
 document_class: TEST_PROVENANCE
 owning_policy: OMW-GOV-001
 authoritative_for:
-  - real local build provenance for Ground Native Homezone Return Acceptance 1
+  - real local build provenance for the historical Ground Native Homezone Return fixture
 not_authoritative_for:
   - DCS runtime validation
+  - Fortress Stage 2B Ground return architecture
   - geometric suitability of the native MOOSE Warehouse spawnzone
-  - repository-wide Ground return architecture
+scenario_period: 2010-08-01/2011-12-31
+project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
+supersedes:
+superseded_by:
 source_branch: agent/fob-attack-support-demand
 source_commit: 3f8dc517a0a5c4f589b34ae35ee6ac370e5ab9ac
 validated_in_dcs: false
@@ -16,9 +20,7 @@ validated_in_dcs: false
 
 # Ground Native Homezone Return – Build Checkpoint 1
 
-## Reale lokale Verifikation
-
-Vom Projektinhaber am 30.08.2026 real ausgeführt und mit vollständiger Konsolenausgabe zurückgemeldet.
+Dieser historische Checkpoint dokumentiert ausschließlich den realen lokalen Build eines später als ungeeignet eingeordneten Joyce/MATV-Testfixtures. Er ist kein DCS-Runtime-PASS und keine Produktionsbaseline.
 
 ```text
 GitCommit: 3f8dc517a0a5c4f589b34ae35ee6ac370e5ab9ac
@@ -43,30 +45,4 @@ SourceSHA256: A198C557B9D4A696174A810639D6E7E174EE111B656926BBBD0290F77CEFA119
 BundleSHA256: 14B204FA28963CBFD0207DCBA7C4679F438AFA731B75368ABA9471F5AFF9E035
 ```
 
-Der separat mit `Get-FileHash -Algorithm SHA256` ermittelte Bundle-Hash stimmt exakt mit dem Builder-Hash überein:
-
-```text
-14B204FA28963CBFD0207DCBA7C4679F438AFA731B75368ABA9471F5AFF9E035
-```
-
-Lokaler Build-Pfad:
-
-```text
-mission/tests/ground-native-homezone-return/dist/OMW_Ground_Native_Homezone_Return_Acceptance_1.lua
-```
-
-## Abgrenzung
-
-Dieser Checkpoint beweist nur Build-/Provenienz-Konsistenz. Er beweist noch nicht:
-
-```text
-native RTZ execution in DCS
-physical return to the Joyce 250 m MOOSE Warehouse spawnzone
-Returned event
-origin Warehouse AddAsset
-physical cleanup
-pathfinding / geometry suitability
-absence of visible obstacle penetration
-```
-
-Diese Punkte bleiben bis zum realen DCS-Lauf `PENDING_DCS`.
+Der unabhängige lokale `Get-FileHash`-Wert stimmte mit dem Builder-Hash überein. Der Test erreichte wegen falschem Standort/Asset und fehlender Destination-Zone keinen aussagefähigen DCS-Return-Nachweis und wurde durch den integrierten Fortress-Infantry-Stage-2B-Pfad ersetzt.
