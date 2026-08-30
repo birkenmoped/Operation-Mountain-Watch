@@ -17,7 +17,7 @@ $acceptanceSourceFile = Join-Path $repoRoot 'mission\tests\fob-attack-support-de
 $distDir = Join-Path $repoRoot 'mission\tests\fob-attack-support-demand\dist'
 $outputFile = Join-Path $distDir 'OMW_FOB_Attack_CAS_Dispatch_Acceptance_2.lua'
 
-$builderVersion = 'FOB-ATTACK-CAS-DISPATCH-ACCEPTANCE-2-5'
+$builderVersion = 'FOB-ATTACK-CAS-DISPATCH-ACCEPTANCE-2-6'
 $testId = 'FOB-ATTACK-CAS-DISPATCH-ACCEPTANCE-2'
 $mooseCommit = '73d3ed119cd9e7e3f2cfcabbaa34513d30529b54'
 $mooseSha256 = 'e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915'
@@ -47,14 +47,16 @@ $combined = $missionDemand + $resourceDemandPolicy + $resourceDemandCoordinator 
 $requiredMarkers = @(
   'CAS_IMMEDIATE', 'OPSZONE:New', 'OnAfterAttacked', 'OnAfterDefeated',
   'OMW-FOB-ATTACK-CAS-DISPATCH-ADAPTER-2', 'AUFTRAG:NewCAS', 'RequestMissionClosure',
-  'AUFTRAG:NewGROUNDATTACK', 'OnAfterRTZ', 'OnAfterReturned', 'GetNelements',
+  'AUFTRAG:NewGROUNDATTACK', 'AUFTRAG:NewONGUARD', 'SetEngageDetected', 'OnAfterEngageTarget',
+  'QRF_RESPONSE_PLAN', 'QRF_DISPATCH_COMPLETE', 'SENTRY_ENGAGE_TARGET', 'QRF_ENGAGE_TARGET',
+  'OnAfterRTZ', 'OnAfterReturned', 'GetNelements',
   'Warehouse WH_BLUE_GND_FORTRESS spawn zone', 'MOOSE_DEFAULT_TRUE',
   'OMW-GROUND-PERSONNEL-DEPLOYMENT-LEDGER-1', 'OMW-RESOURCE-DEMAND-COORDINATOR-1',
   'OMW-HELICOPTER-FLIGHTPATH-CORRIDOR-3', 'PATHLINE:FindByName', 'OMW_FlightPath',
   'OnAfterUpdateRoute', 'OnAfterFlightOnMission', 'OnAfterRTB', 'OnAfterLanded', 'OnAfterArrived',
   'FOB-ATTACK-CAS-DISPATCH-ACCEPTANCE-2', 'WH_BLUE_GND_FORTRESS',
   'TPL_BLUE_GND_INF_RIFLE_SQUAD_9', 'AW_US_JBAD_TF_SHOOTER_6_6_CAV',
-  'SQ_US_JBAD_AH64D_B_1_10_AVN', 'PERSONNEL_RESERVE_FLOOR = 80'
+  'SQ_US_JBAD_AH64D_B_1_10_AVN', 'PERSONNEL_RESERVE_FLOOR = 80', 'QRF_MAX_GROUPS = 7'
 )
 foreach ($marker in $requiredMarkers) {
   if (-not $combined.Contains($marker)) {
@@ -88,14 +90,16 @@ $header = @"
 -- GitCommit: $commit
 -- GeneratedUtc: $generatedUtc
 -- TestId: $testId
--- Scope: Fortress real BLUE infantry sentry -> runtime MOOSE OPSZONE threat -> CAS_IMMEDIATE -> existing Jalalabad AH64D CAS via OMW_FlightPath -> local Fortress infantry QRF via GROUNDATTACK -> OPSZONE Defeated threat-clear -> normal AUFTRAG closure -> native MOOSE Ground ReturnToLegion/RTZ to the Fortress Warehouse default spawnzone -> Returned/origin Warehouse -> exact CampaignState casualty settlement/reorder evaluation; CAS returns through FLIGHTGROUP RTB/Landed/Arrived.
+-- Scope: Fortress real BLUE infantry sentry with MOOSE SetEngageDetected active response -> runtime MOOSE OPSZONE threat -> CAS_IMMEDIATE -> existing Jalalabad AH64D CAS via OMW_FlightPath -> deterministic multi-QRF Fortress infantry response via one MOOSE GROUNDATTACK per detected RED group subject to physical asset availability and CampaignState reserve floor -> OPSZONE Defeated threat-clear -> normal AUFTRAG closure -> native MOOSE Ground ReturnToLegion/RTZ to the Fortress Warehouse default spawnzone -> Returned/origin Warehouse -> exact CampaignState casualty settlement/reorder evaluation; CAS returns through FLIGHTGROUP RTB/Landed/Arrived.
 -- MOOSECommit: $mooseCommit
 -- MooseLuaSHA256: $mooseSha256
 -- RequiredBefore: existing OMW AirOps Warehouse Base, Ground Base attach, OMW_AirOps_Jalalabad_Bootstrap.lua RUNNING, owner-authored PATHLINE OMW_FlightPath.
 -- StrategicAuthority: pre-existing OMW Ground CampaignState; deployed personnel are reserved, not consumed; only confirmed casualties permanently decrement strategic quantity.
 -- GroundOrigin: WH_BLUE_GND_FORTRESS / TPL_BLUE_GND_INF_RIFLE_SQUAD_9.
+-- GuardResponse: AUFTRAG ONGUARD plus MOOSE SetEngageDetected for active Ground-target response within the Fortress security radius.
+-- QRFResponse: deterministic nearest-first RED group ordering; one GROUNDATTACK mission per detected RED group, max 7, bounded by QRF asset availability and the 80-person CampaignState reserve floor.
 -- GroundReturn: native MOOSE origin-legion spawnzone; no ACCESS override, no SetReturnToLegion(false), no explicit ARMYGROUP:RTZ command.
--- CASRouteInstall: requires the MOOSE AUFTRAG mission waypoint UID; egress UID is optional for NewCAS and is not a route-readiness gate.
+-- CASRouteInstall: MOOSE FLIGHTGROUP OnAfterUpdateRoute after AUFTRAG RouteToMission creates the mission waypoint UID; NewCAS egress UID is optional.
 -- DefenceReserveFloor: 80 PERSONNEL for Fortress acceptance.
 -- ExplicitExclusions: additional ME test zones, direct SPAWN, custom Ground RTZ controller, native world event handler, MIST, MissionScripting.lua mutation, new CampaignState, custom presence/ammo polling.
 
@@ -132,6 +136,8 @@ Write-Host 'RequiresPathline: OMW_FlightPath'
 Write-Host 'FortressWarehouse: WH_BLUE_GND_FORTRESS'
 Write-Host 'FortressInfantryTemplate: TPL_BLUE_GND_INF_RIFLE_SQUAD_9'
 Write-Host 'AdditionalMETestZone: false'
+Write-Host 'GuardResponse: AUFTRAG.Type.ONGUARD + SetEngageDetected(Ground Units)'
+Write-Host 'QRFDispatch: deterministic nearest-first / one GROUNDATTACK per detected RED group / max 7 / bounded by assets and reserve floor'
 Write-Host 'GroundSpawnZoneOverride: false'
 Write-Host 'GroundSetReturnToLegionFalse: false'
 Write-Host 'GroundExplicitRTZ: false'
@@ -141,8 +147,8 @@ Write-Host 'CASSquadron: SQ_US_JBAD_AH64D_B_1_10_AVN'
 Write-Host 'CASMissionType: AUFTRAG.Type.CAS'
 Write-Host 'CASClosure: OPSZONE Defeated(RED) -> AUFTRAG Cancel -> FLIGHTGROUP RTB/Landed/Arrived'
 Write-Host 'CASHelicopterCorridor: OMW_FlightPath / 500m directional right offset / 500ft AGL'
-Write-Host 'CASRouteInstall: AUFTRAG mission waypoint UID required; NewCAS egress UID optional'
-Write-Host 'LocalCounterattack: AUFTRAG.Type.GROUNDATTACK'
+Write-Host 'CASRouteInstall: AUFTRAG mission waypoint UID required; NewCAS egress UID optional; FLIGHTGROUP OnAfterUpdateRoute fallback'
+Write-Host 'LocalCounterattack: multiple AUFTRAG.Type.GROUNDATTACK missions'
 Write-Host 'GroundRecovery: native ReturnToLegion -> origin legion spawnzone -> Returned -> origin Warehouse AddAsset'
 Write-Host 'PersonnelAccounting: reserve while deployed; consume confirmed casualties only'
 Write-Host 'FortressDefenceReserveFloor: 80'
