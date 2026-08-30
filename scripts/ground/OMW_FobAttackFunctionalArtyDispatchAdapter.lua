@@ -10,7 +10,7 @@ local Instance = {}
 Instance.__index = Instance
 
 local TAG = "[OMW][FobAttackFunctionalArtyDispatchAdapter]"
-Adapter.SchemaVersion = "OMW-FOB-ATTACK-FUNCTIONAL-ARTY-DISPATCH-ADAPTER-1"
+Adapter.SchemaVersion = "OMW-FOB-ATTACK-FUNCTIONAL-ARTY-DISPATCH-ADAPTER-2"
 
 local function fail(message)
   error(TAG .. " " .. tostring(message), 2)
@@ -65,6 +65,9 @@ function Adapter.New(spec)
   if spec.maxEngagements ~= nil and (not isFinite(spec.maxEngagements) or spec.maxEngagements < 1) then
     fail("maxEngagements must be at least one when provided")
   end
+  if spec.verifyFireComplete ~= nil and type(spec.verifyFireComplete) ~= "function" then
+    fail("verifyFireComplete must be a function when provided")
+  end
 
   local instance = setmetatable({
     missionDemand = missionDemand,
@@ -80,6 +83,8 @@ function Adapter.New(spec)
     demandIdByTargetName = {},
     onFireStarted = spec.onFireStarted,
     onFireComplete = spec.onFireComplete,
+    onFireRejected = spec.onFireRejected,
+    verifyFireComplete = spec.verifyFireComplete,
   }, Instance)
 
   instance:_installCallbacks()
@@ -116,11 +121,25 @@ function Instance:_installCallbacks()
     local demandId = target and adapter.demandIdByTargetName[target.name] or nil
     if not demandId then return end
     local demand = adapter.registry:Get(demandId)
+    local verified, failureReason = true, nil
+    if type(adapter.verifyFireComplete) == "function" then
+      verified, failureReason = adapter.verifyFireComplete(demandId, target, Controllable)
+      verified = verified == true
+    end
+    if not verified then
+      if demand and (demand.status == adapter.missionDemand.Status.AI_ASSIGNED or demand.status == adapter.missionDemand.Status.ACTIVE) then
+        adapter.registry:Fail(demandId, failureReason or "PHYSICAL_FIRE_NOT_CONFIRMED")
+      end
+      adapter:_log("fire-support rejected demandId=" .. tostring(demandId) .. " target=" .. tostring(target and target.name) .. " reason=" .. tostring(failureReason or "PHYSICAL_FIRE_NOT_CONFIRMED"))
+      if type(adapter.onFireRejected) == "function" then adapter.onFireRejected(demandId, target, Controllable, failureReason or "PHYSICAL_FIRE_NOT_CONFIRMED") end
+      return
+    end
     if demand and demand.status == adapter.missionDemand.Status.ACTIVE then
       adapter.registry:Succeed(demandId, {
         executor = adapter.assigneeId,
         functionalArtyTarget = target.name,
         fireMissionExecuted = true,
+        physicalFireConfirmed = adapter.verifyFireComplete ~= nil,
       })
     end
     adapter:_log("fire-support complete demandId=" .. tostring(demandId) .. " target=" .. tostring(target and target.name))
