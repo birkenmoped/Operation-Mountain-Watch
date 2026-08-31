@@ -14,6 +14,10 @@ AUFTRAG = {
     return {
       GetName=function() return "TEST_CASENHANCED" end,
       Cancel=function() end,
+      AssignSquadrons=function(self, squadrons)
+        self.assignedSquadrons=squadrons
+        return self
+      end,
     }
   end,
 }
@@ -21,6 +25,7 @@ AUFTRAG = {
 local registry = MissionDemand.New()
 local airwing = { AddMission=function(self, mission) self.mission=mission return self end, I=function() end }
 local tacticalZone = { name="HONAKER_TACTICAL" }
+local selectedSquadron = { name="SQ_US_JBAD_AH64D_B_1_10_AVN" }
 local demand = registry:Create({
   id="MD-CAS-ENHANCED-1", missionType=MissionDemand.Type.CAS_IMMEDIATE, origin="BLUE_GROUND_COP_HONAKER",
   objective="FOB_ATTACK_SUPPORT", target={installationId="BLUE_GROUND_COP_HONAKER"}, priority=90,
@@ -37,6 +42,7 @@ local adapter = DispatchAdapter.New({
   casSpeedKts=120,
   engageDetectedRangeNm=5,
   engageDetectedTargetTypes={"Ground Units"},
+  squadrons={selectedSquadron},
   requireExecutionEvidence=true,
 })
 
@@ -50,6 +56,7 @@ assertEqual(calls[1].speed, 120, "CASENHANCED speed")
 assertEqual(calls[1].rangeNm, 5, "CASENHANCED detected range")
 assertEqual(calls[1].noEngageZoneSet, nil, "CASENHANCED no-engage set")
 assertEqual(calls[1].targetTypes[1], "Ground Units", "CASENHANCED target type")
+assertEqual(mission.assignedSquadrons[1], selectedSquadron, "CASENHANCED selected squadron")
 assertEqual(airwing.mission, mission, "CASENHANCED added to AIRWING")
 assertEqual(registry:Get(demand.id).status, MissionDemand.Status.AI_ASSIGNED, "CASENHANCED assigned status")
 
