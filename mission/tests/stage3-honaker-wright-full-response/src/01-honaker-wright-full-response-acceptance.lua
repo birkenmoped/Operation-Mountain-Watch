@@ -1,11 +1,12 @@
 -- Operation Mountain Watch - Stage 3 full-response integration acceptance.
 -- Test-ID: STAGE3-HONAKER-WRIGHT-FULL-RESPONSE-ACCEPTANCE-1
 --
--- RED attack -> existing MOOSE OPSZONE threat qualification -> Honaker QRF +
--- Jalalabad rotary CAS + immediate fire-support demand -> Wright Functional ARTY
--- live coordinate fire cycle -> physically verified fire -> real local M1083 rearm
--- -> CampaignState AMMO reorder -> exactly one strategic RESUPPLY -> Jalalabad
--- CH-47 CARGOTRANSPORT -> valley FlightPaths outbound/return -> Wright delivery.
+-- RED attack -> existing MOOSE OPSZONE threat qualification -> Honaker attack
+-- incident -> Honaker QRF + Jalalabad rotary CAS + immediate fire-support demand
+-- -> Wright Functional ARTY live coordinate fire cycle against known incident
+-- attackers -> physically verified fire -> real local M1083 rearm -> CampaignState
+-- AMMO reorder -> exactly one strategic RESUPPLY -> Jalalabad CH-47
+-- CARGOTRANSPORT -> valley FlightPaths outbound/return -> Wright delivery.
 
 local TEST_ID = "STAGE3-HONAKER-WRIGHT-FULL-RESPONSE-ACCEPTANCE-1"
 local TAG = "[OMW][" .. TEST_ID .. "]"
@@ -51,6 +52,7 @@ local MissionDemand = OMW_STAGE3_MISSION_DEMAND
 local CasPolicy = OMW_STAGE3_FOB_ATTACK_DEMAND_POLICY
 local FirePolicy = OMW_STAGE3_FIRE_SUPPORT_DEMAND_POLICY
 local ThreatAdapter = OMW_STAGE3_FOB_THREAT_OPSZONE_ADAPTER
+local IncidentCoordinator = OMW_STAGE3_GROUND_INSTALLATION_ATTACK_INCIDENT
 local CasAdapter = OMW_STAGE3_FOB_ATTACK_CAS_DISPATCH_ADAPTER
 local FireAdapter = OMW_STAGE3_FUNCTIONAL_ARTY_DISPATCH_ADAPTER
 local PersonnelLedger = OMW_STAGE3_PERSONNEL_LEDGER
@@ -66,9 +68,9 @@ local registry = MissionDemand.New()
 local state = {
   failed=false, passed=false, ctx=nil, airwing=nil, ch47=nil,
   brigade=nil, guardCoord=nil, qrfPlatoon=nil, qrfEntries={}, qrfEngaged=false,
-  threat=nil, threatStarted=false, threatCleared=false, incident=nil,
+  threat=nil, threatStarted=false, perimeterClear=false, incident=nil, attackIncident=nil, attackIncidentClosed=false,
   casAdapter=nil, casDemand=nil, casMission=nil, casFlight=nil, casExecuting=false, casCorridor=false, casFired=false, casShotObserver=nil,
-  battery=nil, arty=nil, fireAdapter=nil, fireDemand=nil, fireOpsZone=nil, fireStarted=false, fireComplete=false,
+  battery=nil, arty=nil, fireAdapter=nil, fireDemand=nil, fireStarted=false, fireComplete=false,
   fireTargetCount=0, fireTargetCompleteCount=0, fireLastSourceGroupName=nil,
   physicalAmmoBefore=nil, physicalAmmoAfter=nil, physicalAmmoBeforeByTarget={}, physicalAmmoAfterByTarget={},
   rearmService=nil, rearmComplete=false, supportReturned=false,
@@ -113,6 +115,26 @@ local function redGroups(opsZone)
     return state.guardCoord:Get2DDistance(a:GetCoordinate()) < state.guardCoord:Get2DDistance(b:GetCoordinate())
   end)
   return result
+end
+local function incidentGroups()
+  local result = {}
+  if not state.attackIncident then return result end
+  for _, group in ipairs(state.attackIncident:GetParticipants(true)) do
+    if group and group:GetCoalition() == coalition.side.RED then result[#result+1] = group end
+  end
+  table.sort(result, function(a,b)
+    return state.guardCoord:Get2DDistance(a:GetCoordinate()) < state.guardCoord:Get2DDistance(b:GetCoordinate())
+  end)
+  return result
+end
+local function closeAttackIncidentIfClear()
+  if state.attackIncidentClosed or not state.attackIncident or not state.attackIncident:GetActive() then return state.attackIncidentClosed end
+  if state.attackIncident:HasAliveParticipants() then return false end
+  local _, closed, reason = state.attackIncident:Close("KNOWN_ATTACKERS_NEUTRALIZED")
+  if closed ~= true then fail("Honaker attack incident closure failed: " .. tostring(reason)); return false end
+  state.attackIncidentClosed = true
+  msg("THREAT", "Honaker known attack participants neutralized; attack incident closed independently of alarm-zone state", 14)
+  return true
 end
 local function routeLabel(pathlineNames) return table.concat(pathlineNames, " -> ") end
 
@@ -192,7 +214,7 @@ local function installCasShotObserver()
     local weaponType = EventData.WeaponTypeName or (EventData.Weapon and EventData.Weapon.getTypeName and EventData.Weapon:getTypeName()) or "unknown"
     local _, confirmed, reason = state.casAdapter:ConfirmExecutionEvidence(state.casDemand.id, { event="SHOT", weaponType=weaponType })
     if confirmed ~= true then fail("CAS shot evidence could not be correlated: " .. tostring(reason)); return end
-    msg("CAS", "AH-64D weapon employment confirmed: " .. tostring(weaponType) .. "; overall PASS still requires OPSZONE threat cleared", 12)
+    msg("CAS", "AH-64D weapon employment confirmed: " .. tostring(weaponType) .. "; evidence recorded independently of alarm-zone clearance", 12)
   end
 end
 
@@ -205,7 +227,7 @@ local function installAirObserver()
     if Mission == state.casMission then
       state.casFlight = FlightGroup
       installCasShotObserver()
-      msg("CAS", "Jalalabad AH-64D assigned to Honaker; real weapon employment and threat clearance required", 10)
+      msg("CAS", "Jalalabad AH-64D assigned to Honaker; real weapon employment required; attack-incident closure is independent", 10)
       installCorridor("CAS", FlightGroup, Mission, state.threat.securityZone:GetCoordinate(), CAS_PATHLINES)
       return
     end
@@ -352,8 +374,8 @@ local function fireTargetTelemetry(target)
   }, nil
 end
 
-local function selectNextFireTarget(opsZone)
-  local targets = redGroups(opsZone)
+local function selectNextFireTarget()
+  local targets = incidentGroups()
   if #targets == 0 then return nil end
   if not state.fireLastSourceGroupName then return targets[1] end
   for index, target in ipairs(targets) do
@@ -378,15 +400,16 @@ local function reportFireMission(target, missionNumber)
 end
 
 local function queueNextFireMission(demandId)
-  if state.failed or state.fireComplete or state.threatCleared then return false end
+  if state.failed or state.fireComplete then return false end
   local ammo = state.arty:GetAmmo(false)
   if type(ammo)=="number" and ammo < FIRE_SHELLS then
     msg("FIRE SUPPORT",string.format("Wright physical ammo %d below next %d-round mission; ending fire cycle for rearm",ammo,FIRE_SHELLS),12)
     return false
   end
-  local target = selectNextFireTarget(state.fireOpsZone)
+  local target = selectNextFireTarget()
   if not target then
-    msg("FIRE SUPPORT","No current RED group remains in the existing OPSZONE picture; ending current fire cycle",10)
+    closeAttackIncidentIfClear()
+    msg("FIRE SUPPORT","No living known RED attack participant remains; ending current fire cycle independently of OPSZONE state",10)
     return false
   end
   local nextNumber = state.fireTargetCount + 1
@@ -483,9 +506,9 @@ local function setupFireSupport()
       local metadata = state.fireAdapter:GetTargetMetadata(targetName)
       local sourceName = metadata and metadata.sourceGroupName or targetName
       msg("FIRE SUPPORT",string.format(
-        "Fire mission %d complete: %s ammo %s -> %s; reacquiring existing OPSZONE picture",
+        "Fire mission %d complete: %s ammo %s -> %s; reacquiring living attack-incident participants",
         state.fireTargetCompleteCount,sourceName,tostring(state.physicalAmmoBeforeByTarget[targetName]),tostring(state.physicalAmmoAfterByTarget[targetName])),12)
-      if not state.threatCleared then queueNextFireMission(demandId) end
+      queueNextFireMission(demandId)
     end,
     onFireRejected=function(_,target,_,reason)
       local targetName = target and target.name or "unknown"
@@ -512,9 +535,9 @@ local function setupFireSupport()
   return true
 end
 
-local function dispatchQrf(opsZone)
-  local targets = redGroups(opsZone)
-  if #targets == 0 then fail("no RED groups available for Honaker QRF") return end
+local function dispatchQrf()
+  local targets = incidentGroups()
+  if #targets == 0 then fail("no known RED attack participants available for Honaker QRF") return end
   local available = context().store:GetResource(HONAKER_NODE,PERSONNEL_RESOURCE).available
   local count = math.min(#targets,QRF_GROUPS,math.floor(math.max(available-PERSONNEL_FLOOR,0)/QRF_PERSONNEL),state.qrfPlatoon:CountAssets(true,AUFTRAG.Type.GROUNDATTACK))
   if count < 1 then fail("Honaker QRF blocked by assets/reserve floor") return end
@@ -532,9 +555,9 @@ local function dispatchQrf(opsZone)
   end
 end
 
-local function dispatchFire(opsZone,incident)
-  local target = selectNextFireTarget(opsZone)
-  if not target then fail("no RED target for Wright fire support") return end
+local function dispatchFire(incident)
+  local target = selectNextFireTarget()
+  if not target then fail("no living known RED attack participant for Wright fire support") return end
   if not reportFireMission(target,1) then return end
   local p = target:GetCoordinate():GetVec3()
   local demand,created,reason = FirePolicy.CreateDemand(MissionDemand,registry,incident,{
@@ -544,10 +567,9 @@ local function dispatchFire(opsZone,incident)
   })
   if created~=true then fail("fire-support demand failed: "..tostring(reason)) return end
   state.fireDemand=demand
-  state.fireOpsZone=opsZone
   state.fireTargetCount=1
   state.fireLastSourceGroupName=target:GetName()
-  msg("FIRE SUPPORT","Honaker requests immediate fire support; local mortar unavailable; live OPSZONE retarget cycle armed",12)
+  msg("FIRE SUPPORT","Honaker requests immediate fire support; local mortar unavailable; incident-participant retarget cycle armed",12)
   msg("FIRE SUPPORT","Wright L118 selected; one current MOOSE coordinate Fire At Point mission queued",10)
   local targetName,dispatched,dispatchReason=state.fireAdapter:Dispatch(demand,target)
   if dispatched~=true then fail("Wright ARTY dispatch failed: "..tostring(dispatchReason)); return end
@@ -557,6 +579,10 @@ end
 local function setupDefenceAndThreat()
   state.brigade=BRIGADE:New(HONAKER_WAREHOUSE,"BDE_BLUE_GND_HONAKER_STAGE3_E2E")
   state.guardCoord=state.brigade:GetCoordinate()
+  state.attackIncident=IncidentCoordinator.New({
+    installationId=INSTALLATION_ID,
+    incidentIdFactory=function(_,seq) return "INC-STAGE3-HONAKER-"..seq end,
+  })
   local guard=PLATOON:New(INF_TEMPLATE,1,"PLT_BLUE_GND_HONAKER_STAGE3_GUARD")
   guard:AddMissionCapability(AUFTRAG.Type.ONGUARD,100)
   state.brigade:AddPlatoon(guard)
@@ -590,6 +616,9 @@ local function setupDefenceAndThreat()
         missionDemand=MissionDemand,
         registry=registry,
         policy={CreateDemand=function(md,reg,incident)
+          if state.attackIncident and state.attackIncident:GetActive() and state.casDemand then
+            return state.casDemand,false,"ACTIVE_INCIDENT_REFRESHED"
+          end
           local demand,created,reason=CasPolicy.CreateDemand(md,reg,incident)
           if created then
             state.casDemand=demand
@@ -621,26 +650,42 @@ local function setupDefenceAndThreat()
         captureThreatlevel=0,
         captureNunits=1,
         incidentIdFactory=function(_,seq) return "INC-STAGE3-HONAKER-"..seq end,
+        onThreatEvaluated=function(_,opsZone)
+          if not state.threatStarted or not state.attackIncident or not state.attackIncident:GetActive() then return end
+          local added=state.attackIncident:AddParticipants(redGroups(opsZone))
+          if added>0 then
+            log(string.format("ATTACK_INCIDENT_PARTICIPANTS incidentId=%s added=%d alive=%d",
+              tostring(state.attackIncident:GetActive().incidentId),added,#state.attackIncident:GetParticipants(true)))
+          end
+        end,
         onThreatStarted=function(_,opsZone,demand,created,reason,incident)
           if state.threatStarted then return end
+          local active,incidentCreated,incidentReason=state.attackIncident:ReportEvidence({
+            installationId=INSTALLATION_ID,
+            evidenceType="PROXIMITY_INTRUSION",
+            participantGroups=redGroups(opsZone),
+          })
+          if incidentCreated~=true or not active then fail("Honaker attack incident creation failed: "..tostring(incidentReason)); return end
+          if active.incidentId~=incident.incidentId then fail("Honaker attack incident ID mismatch") return end
           state.threatStarted=true
           state.incident=incident
-          msg("THREAT","COP Honaker under attack - MOOSE OPSZONE Attacked confirmed",12)
-          dispatchQrf(opsZone)
+          msg("THREAT",string.format("COP Honaker under attack - MOOSE OPSZONE Attacked confirmed; incident %s has %d known RED participant(s)",
+            tostring(active.incidentId),#state.attackIncident:GetParticipants(true)),12)
+          dispatchQrf()
           msg("FIRE SUPPORT",string.format(
-            "Waiting %d s for the existing OPSZONE target picture before starting live coordinate fire cycle",
+            "Waiting %d s for OPSZONE evaluations to populate the attack incident before starting live coordinate fire cycle",
             FIRE_TARGET_ACQUIRE_DELAY_SEC),10)
           SCHEDULER:New(nil,function()
-            if not state.failed then dispatchFire(opsZone,incident) end
+            if not state.failed then dispatchFire(incident) end
           end,{},FIRE_TARGET_ACQUIRE_DELAY_SEC)
         end,
         onThreatCleared=function()
-          state.threatCleared=true
-          msg("THREAT","COP Honaker threat cleared - MOOSE OPSZONE Defeated RED confirmed",14)
+          state.perimeterClear=true
+          msg("THREAT","COP Honaker 1000-m alarm perimeter clear - MOOSE OPSZONE Defeated RED; active response continues against living incident participants",14)
         end,
       })
       state.threat:Start()
-      msg("READY","Honaker full-response acceptance armed: QRF + armed CAS + live-retarget Wright ARTY + rearm + CH-47 Air-AMMO",15)
+      msg("READY","Honaker full-response acceptance armed: incident-based QRF/ARTY target context + armed CAS + rearm + CH-47 Air-AMMO",15)
     end,{},5)
   end
   state.brigade:Start()
@@ -669,7 +714,8 @@ end
 
 local function finish()
   if state.failed or state.passed then return end
-  if not (state.threatStarted and state.threatCleared and state.qrfEngaged and state.casExecuting and state.casCorridor and state.casFired
+  closeAttackIncidentIfClear()
+  if not (state.threatStarted and state.attackIncidentClosed and state.qrfEngaged and state.casExecuting and state.casCorridor and state.casFired
       and state.fireStarted and state.fireComplete and state.rearmComplete and state.supportReturned and state.resupply
       and state.inTransit and state.delivered and state.airCorridor and state.homeLanded and state.assetReturned) then return end
 
@@ -689,9 +735,9 @@ local function finish()
 
   state.passed=true
   msg("PASS",string.format(
-    "Honaker full response complete: OPSZONE threat cleared + QRF + armed CAS via WEST 2500 ft AGL Column + %d live Wright coordinate fire missions + M1083 rearm + CampaignState threshold + CH-47 Air-AMMO + Wright 30/30",
+    "Honaker full response complete: known attack participants neutralized + QRF + armed CAS via WEST 2500 ft AGL Column + %d live Wright coordinate fire missions + M1083 rearm + CampaignState threshold + CH-47 Air-AMMO + Wright 30/30",
     state.fireTargetCount),30)
-  log("PASS WrightAmmo=30 JalalabadAmmo=85 fireDemand="..fd.id.." casDemand="..cd.id.." resupplyDemand="..rd.id.." casCorridor="..routeLabel(CAS_PATHLINES).." airAmmoCorridor="..routeLabel(AIR_AMMO_PATHLINES))
+  log("PASS WrightAmmo=30 JalalabadAmmo=85 fireDemand="..fd.id.." casDemand="..cd.id.." resupplyDemand="..rd.id.." perimeterClear="..tostring(state.perimeterClear).." casCorridor="..routeLabel(CAS_PATHLINES).." airAmmoCorridor="..routeLabel(AIR_AMMO_PATHLINES))
 end
 
 SCHEDULER:New(nil,start,{},5)
