@@ -9,7 +9,7 @@ local Instance = {}
 Instance.__index = Instance
 
 local TAG = "[OMW][GroundInstallationAlarmEvidenceAdapter]"
-Adapter.SchemaVersion = "OMW-GROUND-INSTALLATION-ALARM-EVIDENCE-1"
+Adapter.SchemaVersion = "OMW-GROUND-INSTALLATION-ALARM-EVIDENCE-2"
 
 Adapter.EvidenceType = {
   PROXIMITY_INTRUSION = "PROXIMITY_INTRUSION",
@@ -93,6 +93,13 @@ function Instance:_isBlueTarget(eventData)
   return type(eventData) == "table" and eventData.TgtCoalition == self.blueCoalition
 end
 
+function Instance:_targetCoalitionIsBlue(target, eventData)
+  if type(target) == "table" and type(target.GetCoalition) == "function" then
+    return target:GetCoalition() == self.blueCoalition
+  end
+  return self:_isBlueTarget(eventData)
+end
+
 function Instance:_targetIsInAlarmZone(target, eventData)
   if self.targetInAlarmZone then
     return self.targetInAlarmZone(target, eventData, self.alarmZone) == true
@@ -163,9 +170,11 @@ function Instance:ProcessShot(eventData)
   local weapon = self:_newWeapon(eventData.weapon)
   requireTable(weapon, "WEAPON")
 
+  local targetInAlarmZone = false
   if type(weapon.GetTarget) == "function" then
     local target = weapon:GetTarget()
-    if target ~= nil and self:_targetIsInAlarmZone(target, eventData) then
+    if target ~= nil and self:_targetCoalitionIsBlue(target, eventData) and self:_targetIsInAlarmZone(target, eventData) then
+      targetInAlarmZone = true
       self:_emit(Adapter.EvidenceType.DIRECT_FIRE_ATTACK, {
         sourceEvent = "ShotTarget",
         initiatorUnitName = eventData.IniUnitName,
@@ -181,7 +190,14 @@ function Instance:ProcessShot(eventData)
   if type(weapon.IsMissile) == "function" and weapon:IsMissile() then categoryRelevant = true end
   if not categoryRelevant then return weapon, "WEAPON_CATEGORY_NOT_TRACKED" end
 
-  if self.shouldTrackWeapon and self.shouldTrackWeapon(eventData, weapon, self.alarmZone) ~= true then
+  -- A positively correlated target in the alarm zone already produced immediate
+  -- evidence. Do not also start high-frequency impact tracking for that weapon.
+  if targetInAlarmZone then return weapon, "DIRECT_TARGET_EVIDENCE" end
+
+  -- Indirect/stand-off impact tracking is deliberately opt-in. MOOSE WEAPON
+  -- tracking defaults to 0.01 s and must not be started globally for every shot.
+  if not self.shouldTrackWeapon then return weapon, "NO_TRACK_FILTER" end
+  if self.shouldTrackWeapon(eventData, weapon, self.alarmZone) ~= true then
     return weapon, "TRACK_FILTER_REJECTED"
   end
 
