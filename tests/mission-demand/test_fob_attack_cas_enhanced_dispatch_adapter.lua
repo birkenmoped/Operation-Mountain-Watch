@@ -9,7 +9,7 @@ local function assertTrue(value, label) if value ~= true then error(label .. " e
 local previousAuftrag = AUFTRAG
 local calls = {}
 AUFTRAG = {
-  NewCASENHANCED=function(zone, altitude, speed, rangeNm, noEngageZoneSet, targetTypes)
+  NewCASENHANCED=function(self, zone, altitude, speed, rangeNm, noEngageZoneSet, targetTypes)
     calls[#calls+1]={zone=zone,altitude=altitude,speed=speed,rangeNm=rangeNm,noEngageZoneSet=noEngageZoneSet,targetTypes=targetTypes}
     return {
       GetName=function() return "TEST_CASENHANCED" end,
