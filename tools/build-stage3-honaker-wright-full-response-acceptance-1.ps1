@@ -27,7 +27,7 @@ $acceptanceRelative = 'mission\tests\stage3-honaker-wright-full-response\src\01-
 $acceptanceFile = Join-Path $repoRoot $acceptanceRelative
 $distDir = Join-Path $repoRoot 'mission\tests\stage3-honaker-wright-full-response\dist'
 $outputFile = Join-Path $distDir 'OMW_Stage3_Honaker_Wright_Full_Response_Acceptance_1.lua'
-$builderVersion = 'STAGE3-HONAKER-WRIGHT-FULL-RESPONSE-ACCEPTANCE-1-8'
+$builderVersion = 'STAGE3-HONAKER-WRIGHT-FULL-RESPONSE-ACCEPTANCE-1-9'
 $testId = 'STAGE3-HONAKER-WRIGHT-FULL-RESPONSE-ACCEPTANCE-1'
 $mooseCommit = '73d3ed119cd9e7e3f2cfcabbaa34513d30529b54'
 $mooseSha256 = 'e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915'
@@ -61,9 +61,11 @@ $header = @"
 -- CASArea: dedicated 5 NM tactical ZONE_RADIUS centered on Honaker; separate from the 1000 m alarm perimeter; created lazily only after a CAS demand exists.
 -- CASMission: MOOSE AUFTRAG:NewCASENHANCED; mission altitude is Honaker terrain height plus 2500 ft, passed as ASL as required by MOOSE.
 -- CASFaultIsolation: CAS setup/dispatch/corridor failures are recorded as scoped CAS failures so Guard/QRF/ARTY/logistics diagnostics continue; final PASS remains impossible.
+-- CASFoundationPrerequisite: Jalalabad AH64D squadron/payload must advertise both CAS and CASENHANCED; rebuild and reload the Jalalabad AirOps bundle together with this Stage3 bundle.
 -- CASRoute: OMW_FlightPath 500 ft AGL -> OMW_FlightPath_WEST 2500 ft AGL held via MOOSE SetAltitude(...,Keep=true,RadarAlt=true) / RotaryWing.Column.D70 outbound AND reverse return.
 -- RouteTelemetry: OnAfterPassingWaypoint logs requested AGL plus actual AGL/ASL and terrain height from the FLIGHTGROUP coordinate.
 -- FireSupport: reacquire living known attack-incident participants after each physically verified coordinate fire mission.
+-- LocalRearmLifecycle: dedicated Wright rearm BRIGADE is started after materializer registration before any M1083 self-request.
 -- PassThreatGate: attack incident closed only after no living known attack participant remains; OPSZONE Defeated is telemetry only.
 -- AirAmmoRoute: OMW_FlightPath outbound AND return.
 -- StrategicAuthority: existing OMW CampaignState only.
@@ -89,6 +91,7 @@ $requiredMarkers = @(
   'LIVE_FIRE_RETARGET','SetWaitForShotTime','ARTY_WAIT_FOR_SHOT_SEC','verifyFireComplete','PHYSICAL_AMMO_UNCHANGED',
   'AUFTRAG:NewCASENHANCED','CASENHANCED','CAS_TACTICAL_RADIUS_NM','CAS_COMBAT_HEIGHT_FT_AGL','GetLandHeight','NMToMeters',
   'ensureCasContext','CAS_CONTEXT_FAILED','casFailed','CAS FAIL','ConfirmExecutionEvidence','EVENTS.Shot','requireExecutionEvidence','missionMode',
+  'OMW-FIXED-FIRE-SUPPORT-AMMO-SUPPORT-4','brigade:Start()','dedicated support BRIGADE started after materializer registration',
   'SetAltitude','profileTransitions','RotaryWing.Column.D70','WEST_ALTITUDE_FT_AGL','waypoint telemetry','actualAglFt','actualAslFt','terrainFt',
   'GROUND_AMMO_PACKAGE','GROUND_NODE_WRIGHT','GROUND_NODE_JALALABAD','TPL_BLUE_GND_WRIGHT_FS_ARTY_L118_2','TPL_BLUE_GND_SUP_M1083',
   'AUFTRAG:NewCARGOTRANSPORT','SQ_US_JBAD_CH47_HEAVYLIFT','OMW_FlightPath','OMW_FlightPath_WEST','ResolveSequence',
@@ -123,6 +126,7 @@ Write-Host 'AttackIncidentClosure: no living known attack participant remains'
 Write-Host 'HonakerResponse: own infantry QRF + Jalalabad AH64D MOOSE CASENHANCED'
 Write-Host 'CASInitialization: tactical ZONE_RADIUS and CAS adapter are created only when a CAS demand is created'
 Write-Host 'CASFaultIsolation: CAS setup/dispatch/corridor failure does not stop Guard/QRF/ARTY/logistics diagnostics; final PASS remains blocked'
+Write-Host 'CASFoundationPrerequisite: rebuild/reload mission/tests/jalalabad-air-operations/dist/OMW_AirOps_Jalalabad.lua so AH64D capability/payload includes CASENHANCED'
 Write-Host 'FireSupport: Wright TPL_BLUE_GND_WRIGHT_FS_ARTY_L118_2 via MOOSE Functional ARTY AssignTargetCoord / DCS Fire At Point'
 Write-Host 'FireSupportTargets: one live coordinate mission at a time; living attack-incident participants reacquired after every physically confirmed mission'
 Write-Host 'FireSupportRoundsPerMission: 4'
@@ -130,6 +134,7 @@ Write-Host 'FireSupportTargetAcquireDelaySec: 15'
 Write-Host 'FireSupportFirstShotTimeoutSec: 300'
 Write-Host 'FireSupportCompletionEvidence: physical MOOSE ARTY GetAmmo decrease required for every completed coordinate mission'
 Write-Host 'HonakerMortar: intentionally unavailable / not materialized'
+Write-Host 'LocalRearmLifecycle: dedicated Wright support BRIGADE starts after materializer registration before the M1083 self-request'
 Write-Host 'WrightStrategicPrecondition: 30 -> 16 acceptance-only'
 Write-Host 'LocalRearmDebit: 1 GROUND_AMMO_PACKAGE; 16 -> 15'
 Write-Host 'Reorder: 15 AT_OR_BELOW'
