@@ -109,10 +109,11 @@ function Instance:ReportEvidence(evidence)
 
   if created then
     if self.onIncidentStarted then self.onIncidentStarted(self, self.active, evidence) end
-  elseif self.onIncidentUpdated then
-    self.onIncidentUpdated(self, self.active, evidence)
+    return self.active, true, nil
   end
-  return self.active, created, created and nil or "ACTIVE_INCIDENT_REFRESHED"
+
+  if self.onIncidentUpdated then self.onIncidentUpdated(self, self.active, evidence) end
+  return self.active, false, "ACTIVE_INCIDENT_REFRESHED"
 end
 
 function Instance:GetActive()
