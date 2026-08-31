@@ -1,4 +1,4 @@
--- Operation Mountain Watch - Stage 2B MissionDemand -> MOOSE AIRWING CAS adapter.
+-- Operation Mountain Watch - MissionDemand -> MOOSE AIRWING CAS adapter.
 --
 -- MissionDemand remains the assignment/status authority. AIRWING/SQUADRON/AUFTRAG
 -- remain the operational execution path. This adapter owns no strategic resources.
@@ -10,7 +10,8 @@ local Instance = {}
 Instance.__index = Instance
 
 local TAG = "[OMW][FobAttackCasDispatchAdapter]"
-Adapter.SchemaVersion = "OMW-FOB-ATTACK-CAS-DISPATCH-ADAPTER-4"
+Adapter.SchemaVersion = "OMW-FOB-ATTACK-CAS-DISPATCH-ADAPTER-5"
+Adapter.MissionMode = { CAS="CAS", CASENHANCED="CASENHANCED" }
 
 local function fail(message)
   error(TAG .. " " .. tostring(message), 2)
@@ -41,6 +42,10 @@ function Adapter.New(spec)
   for _, name in ipairs({ "Get", "AssignAI", "Activate", "Succeed", "Fail" }) do requireFunction(registry, name, "registry") end
   requireFunction(airwing, "AddMission", "airwing")
   requireNonEmptyString(spec.assigneeId, "assigneeId")
+  local missionMode = spec.missionMode or Adapter.MissionMode.CAS
+  if missionMode ~= Adapter.MissionMode.CAS and missionMode ~= Adapter.MissionMode.CASENHANCED then
+    fail("missionMode must be CAS or CASENHANCED")
+  end
   if spec.casAltitudeFt ~= nil and (not isFinite(spec.casAltitudeFt) or spec.casAltitudeFt <= 0) then fail("casAltitudeFt must be positive finite") end
   if spec.casSpeedKts ~= nil and (not isFinite(spec.casSpeedKts) or spec.casSpeedKts <= 0) then fail("casSpeedKts must be positive finite") end
   if spec.engageDetectedRangeNm ~= nil and (not isFinite(spec.engageDetectedRangeNm) or spec.engageDetectedRangeNm <= 0) then fail("engageDetectedRangeNm must be positive finite") end
@@ -52,6 +57,7 @@ function Adapter.New(spec)
     registry = registry,
     airwing = airwing,
     assigneeId = spec.assigneeId,
+    missionMode = missionMode,
     casAltitudeFt = spec.casAltitudeFt,
     casSpeedKts = spec.casSpeedKts,
     engageDetectedRangeNm = spec.engageDetectedRangeNm,
@@ -71,16 +77,26 @@ end
 function Instance:_newCasMission(targetZone)
   local mission
   if self.auftragFactory then
-    mission = self.auftragFactory(targetZone, self.casAltitudeFt, self.casSpeedKts)
+    mission = self.auftragFactory(targetZone, self.casAltitudeFt, self.casSpeedKts, self.missionMode, self.engageDetectedRangeNm, self.engageDetectedTargetTypes)
+  elseif self.missionMode == Adapter.MissionMode.CASENHANCED then
+    if type(AUFTRAG) ~= "table" or type(AUFTRAG.NewCASENHANCED) ~= "function" then fail("MOOSE AUFTRAG:NewCASENHANCED() is required") end
+    mission = AUFTRAG:NewCASENHANCED(
+      targetZone,
+      self.casAltitudeFt,
+      self.casSpeedKts,
+      self.engageDetectedRangeNm,
+      nil,
+      self.engageDetectedTargetTypes or { "Ground Units" }
+    )
   else
     if type(AUFTRAG) ~= "table" or type(AUFTRAG.NewCAS) ~= "function" then fail("MOOSE AUFTRAG:NewCAS() is required") end
     mission = AUFTRAG:NewCAS(targetZone, self.casAltitudeFt, self.casSpeedKts)
+    if self.engageDetectedRangeNm then
+      requireFunction(mission, "SetEngageDetected", "CAS AUFTRAG")
+      mission:SetEngageDetected(self.engageDetectedRangeNm, self.engageDetectedTargetTypes or { "Ground Units" }, targetZone, nil)
+    end
   end
   requireTable(mission, "CAS AUFTRAG")
-  if self.engageDetectedRangeNm then
-    requireFunction(mission, "SetEngageDetected", "CAS AUFTRAG")
-    mission:SetEngageDetected(self.engageDetectedRangeNm, self.engageDetectedTargetTypes or { "Ground Units" }, targetZone, nil)
-  end
   return mission
 end
 
@@ -96,6 +112,7 @@ function Instance:_succeedWithEvidence(demandId, mission)
   self.registry:Succeed(demandId, {
     executor = self.assigneeId,
     auftrag = mission.GetName and mission:GetName() or nil,
+    missionMode = self.missionMode,
     closureRequested = self.closureRequestedByDemandId[demandId] == true,
     executionEvidence = self.executionEvidenceByDemandId[demandId],
   })
@@ -146,8 +163,8 @@ function Instance:Dispatch(demand, targetZone)
   self.airwing:AddMission(mission)
   self.registry:AssignAI(demand.id, self.assigneeId)
   self.missionsByDemandId[demand.id] = mission
-  self:_log(string.format("CAS queued demandId=%s installationId=%s assigneeId=%s altitudeFt=%s speedKts=%s engageDetectedRangeNm=%s requireExecutionEvidence=%s",
-    tostring(demand.id), tostring(demand.origin), tostring(self.assigneeId), tostring(self.casAltitudeFt), tostring(self.casSpeedKts),
+  self:_log(string.format("CAS queued demandId=%s installationId=%s assigneeId=%s missionMode=%s altitudeFtASL=%s speedKts=%s engageDetectedRangeNm=%s requireExecutionEvidence=%s",
+    tostring(demand.id), tostring(demand.origin), tostring(self.assigneeId), tostring(self.missionMode), tostring(self.casAltitudeFt), tostring(self.casSpeedKts),
     tostring(self.engageDetectedRangeNm), tostring(self.requireExecutionEvidence)))
   return mission, true, nil
 end
