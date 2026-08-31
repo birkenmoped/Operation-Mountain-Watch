@@ -37,6 +37,10 @@ Verbindliche AAR-Referenzen:
 
 Für Fog of War, `INTEL`, `PLAYERRECCE`, `INTEL_DLINK` und RECON gilt zusätzlich [`OMW-MOOSE-FOG-OF-WAR-RECCE`](FOG-OF-WAR-RECCE.md).
 
+Der Stage-3-Source-Audit nach dem realen Build-`1-10`-FAIL ist separat dokumentiert:
+
+- [`OMW-MOOSE-STAGE3-CAS-GUARD-QRF-ROUTING-AUDIT`](STAGE3-CAS-GUARD-QRF-ROUTING-AUDIT.md)
+
 ## 2. Gesamtarchitektur
 
 ```text
@@ -191,6 +195,34 @@ Ein konkreter Zielauftrag und die Lebensdauer des CAS-Sorties sind getrennt zu b
 
 Vor Implementierung ist gegen die gepinnte `Moose.lua` und offizielle Beispiele zu prüfen, ob `AUFTRAG:NewCAS()`, `AUFTRAG:NewCASENHANCED()` oder eine andere MOOSE-Kombination den gewünschten Lifecycle abbildet.
 
+### 7.1 Stage-3-Source-Review 01.09.2026
+
+Der reale Stage-3-Build-`1-10`-Lauf und der anschließende Source-Abgleich präzisieren diese offene Entscheidung:
+
+```text
+AUFTRAG:NewCASENHANCED
+-> SetEngageDetected
+-> FLIGHTGROUP/OPSGROUP detection
+-> MOOSE selects one qualifying detected GROUP
+-> FLIGHTGROUP:EngageTarget(group)
+-> generic DCS TaskAttackGroup
+```
+
+Für den gepinnten MOOSE-Stand ist damit belegt:
+
+- `CASENHANCED` filtert erkannte Ziele nach Distanz, Attributen und Engage-/No-Engage-Zonen;
+- MOOSE wählt im geprüften Pfad jeweils eine qualifizierte erkannte GROUP, statt DCS ein vollständiges MOOSE-Zielset zur freien taktischen Priorisierung zu übergeben;
+- der daraus erzeugte `TaskAttackGroup` setzt keine Apache-spezifischen Weapon-/Expend-/Attack-Direction-/Attack-Altitude-Parameter;
+- `EngageTarget()` pausiert die laufende Mission, führt den separaten Angriffstask aus und lässt die pausierte Mission danach über den OPSGROUP-Lifecycle wieder anlaufen;
+- die offizielle Develop-Beispielmission `Auftrag - 100 - CAS Enhanced` demonstriert `FLIGHTGROUP:SetEngageDetectedOn(...)` zusammen mit `AUFTRAG:NewPATROLZONE(...)` und ebenfalls keinen Hubschrauber-spezifischen Standoff-Controller.
+
+Daraus folgt **nicht**, dass OMW jetzt eigene Hellfire-/Targeting-Logik entwickeln darf. Vielmehr muss die gewünschte CAS-Bereitschaft zuerst weiter gegen vorhandene MOOSE-Kombinationen geprüft werden. Der aktuelle Stage-3-Corridor darf insbesondere nicht unabhängig vom MOOSE Pause-/Unpause-/Ingress-/Egress-Lifecycle Route-Waypoints fest verdrahten.
+
+Details und exakte Grenzen:
+
+- [`OMW-MOOSE-STAGE3-CAS-GUARD-QRF-ROUTING-AUDIT`](STAGE3-CAS-GUARD-QRF-ROUTING-AUDIT.md)
+- [`Stage-3 Build-1-10 FAIL`](../../mission/tests/stage3-honaker-wright-full-response/FAIL-2026-09-01-CAS-QRF-RESUPPLY.md)
+
 ## 8. Missionsfähigkeits- und Winchester-Bewertung
 
 Nicht die Gesamtzahl verbliebener Waffen ist entscheidend, sondern die Eignung für die aktuelle Zielart und ROE.
@@ -246,7 +278,8 @@ Offen bleiben insbesondere:
 - `PLAYERRECCE`-Einbindung für OH-58D und weitere Module;
 - Verhältnis `INTEL` / `TARGET` / Player Task;
 - Designation-/Laser-Kopplung für Spieler und AI;
-- Wahl und Lifecycle des MOOSE-CAS-Auftrags;
+- Wahl und Lifecycle des MOOSE-CAS-Auftrags einschließlich `PATROLZONE + SetEngageDetectedOn` versus `NewCASENHANCED`;
+- lifecycle-sichere Kopplung von owner-authored Valley-Corridor und nativen MOOSE-Ingress-/Egress-Mechanismen;
 - missionsabhängige Waffenbewertung;
 - Asset-Scoring und Spieler-zu-AI-Eskalation;
 - BDA-Rückführung in das Lagebild.
@@ -256,6 +289,8 @@ AAR-Track-, Tanker- und Relief-Fragen sind keine offenen Entscheidungen dieses D
 ## 12. Testgrenze
 
 Die noch offene ISR-/FAC-/CAS-Kette benötigt getrennte DCS-Tests für Spieler-Recon, UAV-INTEL, Player Tasks, Spieler-/AI-Designation, Boden-JTAC, CAS-Retasking, Rückkehr zur CAS-Bereitschaft, Waffenbewertung und BDA.
+
+Der Stage-3-Build-`1-10`-Lauf darf **nicht** als CAS-Validation gelten: Allocation/Start wurden nachgewiesen, aber Höhenführung, Mission-/RTB-Lifecycle und taktisches Angriffsprofil waren `FAIL`.
 
 Für AAR ist nur noch die **Schnittstelle** zu testen:
 
