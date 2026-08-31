@@ -10,7 +10,7 @@ project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
 superseded_by:
 source_branch: agent/fire-support-strategic-resupply-alarm-evidence
-source_commit: PENDING_CURRENT_BRANCH_HEAD
+source_commit: GIT_HISTORY
 validated_in_dcs: false
 ---
 
@@ -166,44 +166,44 @@ final Jalalabad:                               85
 
 Eine physische Granate entspricht nicht einem strategischen `GROUND_AMMO_PACKAGE`. Genau ein realer lokaler Rearm-Zyklus belastet CampaignState um ein Paket.
 
-## 6. CAS: bestaetigter Fehler und noch offene Korrektur
+## 6. CAS: bestaetigter Fehler und aktuelle MOOSE-first-Korrektur
 
-Der aktuelle Zwischenbranch entkoppelt bereits die taktische Ground-/ARTY-Closure von `OPSZONE Defeated`. Der CAS-Ausfuehrungspfad ist jedoch **noch nicht fertig korrigiert**.
+Der aktuelle Zwischenbranch entkoppelt die taktische Ground-/ARTY-Closure von `OPSZONE Defeated` und korrigiert zusaetzlich die CAS-Lifecycle-Semantik.
 
-Der derzeit noch vorhandene Adapterpfad verwendet:
-
-```text
-AUFTRAG:NewCAS(alarmZone, 10000 ft ASL, ...)
-+ SetEngageDetected(..., alarmZone, ...)
-```
-
-Der gepinnte MOOSE-Source zeigt:
+Ein einzelnes `EVENTS.Shot` ist jetzt nur noch Ausfuehrungsevidenz:
 
 ```text
-NewCAS
--> creates ORBIT first
--> default/argument altitude is ASL
--> CAS engage zone is the supplied zone
+AH-64 fires
+-> ConfirmExecutionEvidence(...)
+-> evidence recorded
+-> MissionDemand remains ACTIVE
 ```
 
-Damit sind fuer AH-64 im aktuellen Zwischenstand noch zwei bekannte Probleme offen:
+Der erste Schuss darf den CAS-Demand nicht mehr erfolgreich abschliessen. Erfolg bleibt an den MOOSE-AUFTRAG-/Closure-Lifecycle gebunden und kann bei `requireExecutionEvidence=true` erst nach vorhandener realer Ausfuehrungsevidenz eintreten.
+
+Der CAS-Adapter unterstuetzt ausserdem source-geprueft:
 
 ```text
-10000 ft ASL generic CAS orbit profile
-alarm zone incorrectly reused as CAS engagement zone
+MissionMode.CAS
+MissionMode.CASENHANCED
 ```
 
-Source-verifizierte MOOSE-Kandidaten fuer den folgenden CAS-Schritt sind insbesondere:
+`CASENHANCED` wird direkt ueber die in der gepinnten `Moose.lua` vorhandene Methode erzeugt:
 
-```text
-AUFTRAG:NewCASENHANCED(...)
-AUFTRAG:NewSTRAFING(...)
-AUFTRAG:SetEngageDetected(...)
+```lua
+AUFTRAG:NewCASENHANCED(
+  tacticalZone,
+  altitudeFtASL,
+  speedKts,
+  engageRangeNm,
+  nil,
+  targetTypes
+)
 ```
 
-`NewCASENHANCED` patrouilliert eine CAS-Zone und verwendet `SetEngageDetected`. MOOSE selbst erzeugt in seinem strategischen CAS/CASENHANCED-Pfad eine ASL-Missionshoehe aus `TargetCoord:GetLandHeight()` plus einem AGL-artigen Offset. `NewSTRAFING` ist fuer Guns/Cannons und Rockets ausgelegt und verwendet standardmaessig 1000 ft Engage Altitude.
+Damit ist der Framework-Pfad fuer eine von der 1000-m-Alarmzone getrennte taktische CAS-Zone vorbereitet. Das aktuelle Stage-3-Szenario ist noch nicht auf diese Zone umverdrahtet; bis dahin bleibt der bisherige `NewCAS`-Pfad im Acceptance-Harness eine bekannte offene Stelle.
 
-Eine konkrete OMW-CAS-Tactical-Zone und eine konkrete AH-64-Combat-AGL-Hoehe werden nicht stillschweigend als Projektentscheidung erfunden. Bis dieser folgende Schritt implementiert ist, ist das aktuelle Stage-3-Bundle **nicht DCS-testbereit fuer einen finalen CAS-PASS**.
+Die konkrete Honaker-Tactical-Zone und die AH-64-Combat-Hoehe muessen als Acceptance-Konfiguration explizit gesetzt und danach in DCS geprueft werden. Sie werden nicht stillschweigend als projektweite Doktrin festgelegt.
 
 ## 7. Helicopter-WEST-Hoehenproblem bleibt separat offen
 
@@ -270,7 +270,7 @@ AND
    -> repeat independent of perimeter Defeated
 AND
 -> Jalalabad AH-64 CAS
-   -> separate tactical CAS correction still pending
+   -> separate tactical CAS zone via MOOSE CASENHANCED is prepared but Stage-3 wiring pending
 THEN
 -> known incident attackers neutralized
 -> local M1083 rearm
@@ -325,13 +325,13 @@ Aktueller Builder-Zwischenstand:
 STAGE3-HONAKER-WRIGHT-FULL-RESPONSE-ACCEPTANCE-1-5
 ```
 
-Der Builder weist ausdruecklich darauf hin, dass `NewCAS 10000 ft ASL` in diesem Zwischenstand noch offen ist. Dieser Build ist daher **kein Aufruf zum finalen DCS-Acceptance-Lauf**.
+Der aktuelle Builder weist ausdruecklich darauf hin, dass der Stage-3-Harness den finalen CASENHANCED-Tactical-Zone-Pfad noch nicht nutzt. Dieser Build ist daher **kein Aufruf zum finalen DCS-Acceptance-Lauf**.
 
 ## 12. Offene Punkte
 
 ```text
-CAS tactical engagement area separate from 1000-m alarm perimeter
-AH-64 MOOSE mission/profile replacing generic NewCAS 10000-ft-ASL behavior
+wire Stage 3 to CASENHANCED tactical zone separate from 1000-m alarm perimeter
+choose/document acceptance-only AH-64 tactical zone geometry and combat altitude
 repeated CAS attack / Search-and-Destroy behavior
 real WEST waypoint AGL telemetry and resulting correction
 DCS validation of incident participant retention after perimeter exit
