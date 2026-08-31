@@ -91,12 +91,12 @@ function Instance:_newCasMission(targetZone)
   else
     if type(AUFTRAG) ~= "table" or type(AUFTRAG.NewCAS) ~= "function" then fail("MOOSE AUFTRAG:NewCAS() is required") end
     mission = AUFTRAG:NewCAS(targetZone, self.casAltitudeFt, self.casSpeedKts)
-    if self.engageDetectedRangeNm then
-      requireFunction(mission, "SetEngageDetected", "CAS AUFTRAG")
-      mission:SetEngageDetected(self.engageDetectedRangeNm, self.engageDetectedTargetTypes or { "Ground Units" }, targetZone, nil)
-    end
   end
   requireTable(mission, "CAS AUFTRAG")
+  if self.missionMode == Adapter.MissionMode.CAS and self.engageDetectedRangeNm then
+    requireFunction(mission, "SetEngageDetected", "CAS AUFTRAG")
+    mission:SetEngageDetected(self.engageDetectedRangeNm, self.engageDetectedTargetTypes or { "Ground Units" }, targetZone, nil)
+  end
   return mission
 end
 
