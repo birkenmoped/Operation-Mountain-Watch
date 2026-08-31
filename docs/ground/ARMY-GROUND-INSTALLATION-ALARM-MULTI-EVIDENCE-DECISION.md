@@ -14,7 +14,7 @@ supersedes:
   - any interpretation that multiple confirmed hits are required before an installation alarm may activate
 superseded_by:
 source_branch: agent/ground-installation-alarm-multi-evidence
-source_commit: PENDING_MERGE
+source_commit: 81bbb6744192661bf6d7b7b6bc4760f377e124c8
 validated_in_dcs: false
 ---
 
