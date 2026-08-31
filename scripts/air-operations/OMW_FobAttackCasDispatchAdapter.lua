@@ -10,7 +10,7 @@ local Instance = {}
 Instance.__index = Instance
 
 local TAG = "[OMW][FobAttackCasDispatchAdapter]"
-Adapter.SchemaVersion = "OMW-FOB-ATTACK-CAS-DISPATCH-ADAPTER-5"
+Adapter.SchemaVersion = "OMW-FOB-ATTACK-CAS-DISPATCH-ADAPTER-6"
 Adapter.MissionMode = { CAS="CAS", CASENHANCED="CASENHANCED" }
 
 local function fail(message)
@@ -50,6 +50,10 @@ function Adapter.New(spec)
   if spec.casSpeedKts ~= nil and (not isFinite(spec.casSpeedKts) or spec.casSpeedKts <= 0) then fail("casSpeedKts must be positive finite") end
   if spec.engageDetectedRangeNm ~= nil and (not isFinite(spec.engageDetectedRangeNm) or spec.engageDetectedRangeNm <= 0) then fail("engageDetectedRangeNm must be positive finite") end
   if spec.engageDetectedTargetTypes ~= nil and type(spec.engageDetectedTargetTypes) ~= "table" then fail("engageDetectedTargetTypes must be a table when provided") end
+  if spec.squadrons ~= nil then
+    requireTable(spec.squadrons, "spec.squadrons")
+    if #spec.squadrons < 1 then fail("spec.squadrons must contain at least one SQUADRON when provided") end
+  end
   if spec.auftragFactory ~= nil and type(spec.auftragFactory) ~= "function" then fail("auftragFactory must be a function when provided") end
 
   return setmetatable({
@@ -62,6 +66,7 @@ function Adapter.New(spec)
     casSpeedKts = spec.casSpeedKts,
     engageDetectedRangeNm = spec.engageDetectedRangeNm,
     engageDetectedTargetTypes = spec.engageDetectedTargetTypes,
+    squadrons = spec.squadrons,
     requireExecutionEvidence = spec.requireExecutionEvidence == true,
     auftragFactory = spec.auftragFactory,
     missionsByDemandId = {},
@@ -96,6 +101,10 @@ function Instance:_newCasMission(targetZone)
   if self.missionMode == Adapter.MissionMode.CAS and self.engageDetectedRangeNm then
     requireFunction(mission, "SetEngageDetected", "CAS AUFTRAG")
     mission:SetEngageDetected(self.engageDetectedRangeNm, self.engageDetectedTargetTypes or { "Ground Units" }, targetZone, nil)
+  end
+  if self.squadrons then
+    requireFunction(mission, "AssignSquadrons", "CAS AUFTRAG")
+    mission:AssignSquadrons(self.squadrons)
   end
   return mission
 end
@@ -163,9 +172,9 @@ function Instance:Dispatch(demand, targetZone)
   self.airwing:AddMission(mission)
   self.registry:AssignAI(demand.id, self.assigneeId)
   self.missionsByDemandId[demand.id] = mission
-  self:_log(string.format("CAS queued demandId=%s installationId=%s assigneeId=%s missionMode=%s altitudeFtASL=%s speedKts=%s engageDetectedRangeNm=%s requireExecutionEvidence=%s",
+  self:_log(string.format("CAS queued demandId=%s installationId=%s assigneeId=%s missionMode=%s altitudeFtASL=%s speedKts=%s engageDetectedRangeNm=%s squadronBound=%s requireExecutionEvidence=%s",
     tostring(demand.id), tostring(demand.origin), tostring(self.assigneeId), tostring(self.missionMode), tostring(self.casAltitudeFt), tostring(self.casSpeedKts),
-    tostring(self.engageDetectedRangeNm), tostring(self.requireExecutionEvidence)))
+    tostring(self.engageDetectedRangeNm), tostring(self.squadrons ~= nil), tostring(self.requireExecutionEvidence)))
   return mission, true, nil
 end
 
