@@ -27,7 +27,7 @@ $acceptanceRelative = 'mission\tests\stage3-honaker-wright-full-response\src\01-
 $acceptanceFile = Join-Path $repoRoot $acceptanceRelative
 $distDir = Join-Path $repoRoot 'mission\tests\stage3-honaker-wright-full-response\dist'
 $outputFile = Join-Path $distDir 'OMW_Stage3_Honaker_Wright_Full_Response_Acceptance_1.lua'
-$builderVersion = 'STAGE3-HONAKER-WRIGHT-FULL-RESPONSE-ACCEPTANCE-1-6'
+$builderVersion = 'STAGE3-HONAKER-WRIGHT-FULL-RESPONSE-ACCEPTANCE-1-7'
 $testId = 'STAGE3-HONAKER-WRIGHT-FULL-RESPONSE-ACCEPTANCE-1'
 $mooseCommit = '73d3ed119cd9e7e3f2cfcabbaa34513d30529b54'
 $mooseSha256 = 'e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915'
@@ -61,6 +61,7 @@ $header = @"
 -- CASArea: dedicated 5 NM tactical ZONE_RADIUS centered on Honaker; separate from the 1000 m alarm perimeter.
 -- CASMission: MOOSE AUFTRAG:NewCASENHANCED; mission altitude is Honaker terrain height plus 2500 ft, passed as ASL as required by MOOSE.
 -- CASRoute: OMW_FlightPath 500 ft AGL -> OMW_FlightPath_WEST 2500 ft AGL held via MOOSE SetAltitude(...,Keep=true,RadarAlt=true) / RotaryWing.Column.D70 outbound AND reverse return.
+-- RouteTelemetry: OnAfterPassingWaypoint logs requested AGL plus actual AGL/ASL and terrain height from the FLIGHTGROUP coordinate.
 -- FireSupport: reacquire living known attack-incident participants after each physically verified coordinate fire mission.
 -- PassThreatGate: attack incident closed only after no living known attack participant remains; OPSZONE Defeated is telemetry only.
 -- AirAmmoRoute: OMW_FlightPath outbound AND return.
@@ -87,7 +88,7 @@ $requiredMarkers = @(
   'LIVE_FIRE_RETARGET','SetWaitForShotTime','ARTY_WAIT_FOR_SHOT_SEC','verifyFireComplete','PHYSICAL_AMMO_UNCHANGED',
   'AUFTRAG:NewCASENHANCED','CASENHANCED','CAS_TACTICAL_RADIUS_NM','CAS_COMBAT_HEIGHT_FT_AGL','GetLandHeight','NMToMeters',
   'ConfirmExecutionEvidence','EVENTS.Shot','requireExecutionEvidence','missionMode',
-  'SetAltitude','profileTransitions','RotaryWing.Column.D70','WEST_ALTITUDE_FT_AGL',
+  'SetAltitude','profileTransitions','RotaryWing.Column.D70','WEST_ALTITUDE_FT_AGL','waypoint telemetry','actualAglFt','actualAslFt','terrainFt',
   'GROUND_AMMO_PACKAGE','GROUND_NODE_WRIGHT','GROUND_NODE_JALALABAD','TPL_BLUE_GND_WRIGHT_FS_ARTY_L118_2','TPL_BLUE_GND_SUP_M1083',
   'AUFTRAG:NewCARGOTRANSPORT','SQ_US_JBAD_CH47_HEAVYLIFT','OMW_FlightPath','OMW_FlightPath_WEST','ResolveSequence',
   'MarkInTransit','MarkDelivered','MESSAGE:New','active_duplicate','onThreatCleared','perimeterClear'
@@ -142,7 +143,7 @@ Write-Host 'CASEvidence: real MOOSE EVENTS.Shot recorded but does not by itself 
 Write-Host 'CASRouteOutbound: OMW_FlightPath 500ft AGL -> OMW_FlightPath_WEST 2500ft AGL HELD via MOOSE SetAltitude RadarAlt=true / Column.D70'
 Write-Host 'CASRouteReturn: OMW_FlightPath_WEST 2500ft AGL HELD via MOOSE SetAltitude RadarAlt=true / Column.D70 -> OMW_FlightPath'
 Write-Host 'CASRouteJunctionMaxDistanceM: 1000'
-Write-Host 'RouteTelemetry: every inserted waypoint logs pathline, UID, AGL request and RADIO alt type; profile transitions logged separately'
+Write-Host 'RouteTelemetry: every passed corridor waypoint logs pathline, requested AGL, actual AGL, actual ASL and terrain height; profile transitions logged separately'
 Write-Host 'VisibleTelemetry: MOOSE MESSAGE milestones enabled'
 Write-Host 'FinalExpected: Jalalabad AMMO 85; Wright AMMO 30'
 Write-Host 'MizMutation: false'
