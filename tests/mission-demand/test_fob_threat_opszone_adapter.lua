@@ -17,6 +17,7 @@ local anchor = {}
 function anchor:GetVec2() return { x = 111, y = 222 } end
 function anchor:GetVec3() return { x = 111, y = 333, z = 222 } end
 
+local scannedGroupSet = { marker="scanned-group-set" }
 local createdZone = nil
 local fakeOpsZone = { started=false, stopped=false, UpdateSeconds=120 }
 function fakeOpsZone:SetObjectCategories(value) self.objectCategories=value return self end
@@ -25,12 +26,13 @@ function fakeOpsZone:SetCaptureThreatlevel(value) self.captureThreatlevel=value 
 function fakeOpsZone:SetCaptureNunits(value) self.captureNunits=value return self end
 function fakeOpsZone:SetDrawZone(value) self.drawZone=value return self end
 function fakeOpsZone:SetMarkZone(value) self.markZone=value return self end
+function fakeOpsZone:GetScannedGroupSet() return scannedGroupSet end
 function fakeOpsZone:Start() self.started=true return self end
 function fakeOpsZone:Stop() self.stopped=true return self end
 function fakeOpsZone:I(_) return self end
 
 local registry = MissionDemand.New()
-local sequence, threatStartedCount, threatClearedCount = 0, 0, 0
+local sequence, threatStartedCount, threatEvaluatedCount, threatClearedCount = 0, 0, 0, 0
 local adapter = ThreatAdapter.New({
   missionDemand=MissionDemand, registry=registry, policy=Policy, anchorCoordinate=anchor,
   installationId="BLUE_GROUND_COP_FORTRESS", zoneName="OMW_SECURITY_BLUE_GROUND_COP_FORTRESS",
@@ -52,6 +54,14 @@ local adapter = ThreatAdapter.New({
     threatStartedCount=threatStartedCount+1
     assertTrue(demand ~= nil, "threat start demand")
     assertFalse(created, "callback attack is duplicate after direct test setup")
+  end,
+  onThreatEvaluated=function(_, opsZone, currentScannedGroupSet, from, event, to)
+    threatEvaluatedCount=threatEvaluatedCount+1
+    assertEqual(opsZone, fakeOpsZone, "evaluated callback opszone")
+    assertEqual(currentScannedGroupSet, scannedGroupSet, "evaluated callback scanned set")
+    assertEqual(from, "Attacked", "evaluated callback from")
+    assertEqual(event, "Evaluated", "evaluated callback event")
+    assertEqual(to, "Attacked", "evaluated callback to")
   end,
   onThreatCleared=function(_, _, defeatedCoalition)
     threatClearedCount=threatClearedCount+1
@@ -90,8 +100,12 @@ assertEqual(fakeOpsZone.captureNunits, 1, "capture number")
 assertEqual(fakeOpsZone.drawZone, false, "security perimeter not drawn")
 assertEqual(fakeOpsZone.markZone, false, "security perimeter not marked")
 assertEqual(fakeOpsZone.UpdateSeconds, 5, "acceptance update interval")
+assertTrue(type(fakeOpsZone.OnAfterEvaluated) == "function", "MOOSE OnAfterEvaluated callback installed")
 assertTrue(type(fakeOpsZone.OnAfterAttacked) == "function", "MOOSE OnAfterAttacked callback installed")
 assertTrue(type(fakeOpsZone.OnAfterDefeated) == "function", "MOOSE OnAfterDefeated callback installed")
+
+fakeOpsZone:OnAfterEvaluated("Attacked", "Evaluated", "Attacked")
+assertEqual(threatEvaluatedCount, 1, "threat evaluated callback count")
 
 local callbackDemandCount = #registry:ListActive()
 fakeOpsZone:OnAfterAttacked("Guarded", "Attacked", "Attacked", 1)
