@@ -25,6 +25,8 @@ $sources = [ordered]@{
 }
 $acceptanceRelative = 'mission\tests\stage3-honaker-wright-full-response\src\01-honaker-wright-full-response-acceptance.lua'
 $acceptanceFile = Join-Path $repoRoot $acceptanceRelative
+$jalalabadFoundationRelative = 'scripts\air-operations\OMW_AirOps_Jalalabad_Bootstrap.lua'
+$jalalabadFoundationFile = Join-Path $repoRoot $jalalabadFoundationRelative
 $distDir = Join-Path $repoRoot 'mission\tests\stage3-honaker-wright-full-response\dist'
 $outputFile = Join-Path $distDir 'OMW_Stage3_Honaker_Wright_Full_Response_Acceptance_1.lua'
 $builderVersion = 'STAGE3-HONAKER-WRIGHT-FULL-RESPONSE-ACCEPTANCE-1-9'
@@ -39,6 +41,11 @@ foreach ($name in $sources.Keys) {
   $resolved[$name] = $path
 }
 if (-not (Test-Path -LiteralPath $acceptanceFile -PathType Leaf)) { throw "Acceptance source not found: $acceptanceFile" }
+if (-not (Test-Path -LiteralPath $jalalabadFoundationFile -PathType Leaf)) { throw "Jalalabad AirOps foundation source not found: $jalalabadFoundationFile" }
+$jalalabadFoundationSource = Get-Content -LiteralPath $jalalabadFoundationFile -Raw -Encoding UTF8
+foreach ($marker in @('SQ_US_JBAD_AH64D_B_1_10_AVN','TPL_AIR_US_JBAD_AH64D_CAS_2SHIP','AUFTRAG.Type.CAS','AUFTRAG.Type.CASENHANCED')) {
+  if (-not $jalalabadFoundationSource.Contains($marker)) { throw "Jalalabad AirOps foundation missing Stage 3 CAS prerequisite: $marker" }
+}
 
 function Embed-Module([string]$Name, [string]$Source) { return "local $Name = (function()`n$Source`nend)()`n`n" }
 
@@ -61,7 +68,7 @@ $header = @"
 -- CASArea: dedicated 5 NM tactical ZONE_RADIUS centered on Honaker; separate from the 1000 m alarm perimeter; created lazily only after a CAS demand exists.
 -- CASMission: MOOSE AUFTRAG:NewCASENHANCED; mission altitude is Honaker terrain height plus 2500 ft, passed as ASL as required by MOOSE.
 -- CASFaultIsolation: CAS setup/dispatch/corridor failures are recorded as scoped CAS failures so Guard/QRF/ARTY/logistics diagnostics continue; final PASS remains impossible.
--- CASFoundationPrerequisite: Jalalabad AH64D squadron/payload must advertise both CAS and CASENHANCED; rebuild and reload the Jalalabad AirOps bundle together with this Stage3 bundle.
+-- CASFoundationPrerequisite: Jalalabad AH64D squadron/payload must advertise both CAS and CASENHANCED; rebuild and reload the Jalalabad AirOps foundation bundle together with this Stage3 bundle.
 -- CASRoute: OMW_FlightPath 500 ft AGL -> OMW_FlightPath_WEST 2500 ft AGL held via MOOSE SetAltitude(...,Keep=true,RadarAlt=true) / RotaryWing.Column.D70 outbound AND reverse return.
 -- RouteTelemetry: OnAfterPassingWaypoint logs requested AGL plus actual AGL/ASL and terrain height from the FLIGHTGROUP coordinate.
 -- FireSupport: reacquire living known attack-incident participants after each physically verified coordinate fire mission.
@@ -126,7 +133,7 @@ Write-Host 'AttackIncidentClosure: no living known attack participant remains'
 Write-Host 'HonakerResponse: own infantry QRF + Jalalabad AH64D MOOSE CASENHANCED'
 Write-Host 'CASInitialization: tactical ZONE_RADIUS and CAS adapter are created only when a CAS demand is created'
 Write-Host 'CASFaultIsolation: CAS setup/dispatch/corridor failure does not stop Guard/QRF/ARTY/logistics diagnostics; final PASS remains blocked'
-Write-Host 'CASFoundationPrerequisite: rebuild/reload mission/tests/jalalabad-air-operations/dist/OMW_AirOps_Jalalabad.lua so AH64D capability/payload includes CASENHANCED'
+Write-Host 'CASFoundationPrerequisite: run tools/build-jalalabad-air-operations-foundation.ps1 and reload mission/tests/jalalabad-air-operations/dist/OMW_AirOps_Jalalabad.lua so AH64D capability/payload includes CASENHANCED'
 Write-Host 'FireSupport: Wright TPL_BLUE_GND_WRIGHT_FS_ARTY_L118_2 via MOOSE Functional ARTY AssignTargetCoord / DCS Fire At Point'
 Write-Host 'FireSupportTargets: one live coordinate mission at a time; living attack-incident participants reacquired after every physically confirmed mission'
 Write-Host 'FireSupportRoundsPerMission: 4'
@@ -163,3 +170,5 @@ foreach ($name in $resolved.Keys) {
 }
 $acceptanceHash = (Get-FileHash -LiteralPath $acceptanceFile -Algorithm SHA256).Hash.ToUpperInvariant()
 Write-Host "SourceSHA256: $acceptanceRelative = $acceptanceHash"
+$jalalabadFoundationHash = (Get-FileHash -LiteralPath $jalalabadFoundationFile -Algorithm SHA256).Hash.ToUpperInvariant()
+Write-Host "PrerequisiteSourceSHA256: $jalalabadFoundationRelative = $jalalabadFoundationHash"
