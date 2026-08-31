@@ -7,7 +7,7 @@
 local Corridor = {}
 
 local TAG = "[OMW][HelicopterFlightPathCorridor]"
-Corridor.SchemaVersion = "OMW-HELICOPTER-FLIGHTPATH-CORRIDOR-6"
+Corridor.SchemaVersion = "OMW-HELICOPTER-FLIGHTPATH-CORRIDOR-7"
 Corridor.DefaultPathlineName = "OMW_FlightPath"
 Corridor.DefaultOffsetRightM = 500
 Corridor.DefaultRightHeadingDeltaDeg = 90
@@ -303,6 +303,12 @@ local function mergeTransition(transitions, uid, values)
   transitions[uid] = transition
 end
 
+local function metersToFeet(value)
+  if type(value) ~= "number" then return nil end
+  if type(UTILS) == "table" and type(UTILS.MetersToFeet) == "function" then return UTILS.MetersToFeet(value) end
+  return value * 3.280839895
+end
+
 local function installProfileTransitions(flightGroup, transitions)
   if not transitions or next(transitions) == nil then return end
   if type(flightGroup.SetAltitude) ~= "function" then fail("FLIGHTGROUP/OPSGROUP:SetAltitude() is required for AGL profile enforcement") end
@@ -318,6 +324,22 @@ local function installProfileTransitions(flightGroup, transitions)
   function flightGroup:OnAfterPassingWaypoint(From, Event, To, Waypoint)
     if previousPassingWaypoint then previousPassingWaypoint(self, From, Event, To, Waypoint) end
     local uid = Waypoint and Waypoint.uid or nil
+    local requested = uid and self.__omwFlightPathWaypointProfilesByUid and self.__omwFlightPathWaypointProfilesByUid[uid] or nil
+    local coordinate = type(self.GetCoordinate) == "function" and self:GetCoordinate(true) or nil
+    local actualAslFt, terrainFt, actualAglFt = nil, nil, nil
+    if coordinate and type(coordinate.y) == "number" and type(coordinate.GetLandHeight) == "function" then
+      local terrainM = coordinate:GetLandHeight()
+      actualAslFt = metersToFeet(coordinate.y)
+      terrainFt = metersToFeet(terrainM)
+      actualAglFt = metersToFeet(coordinate.y - terrainM)
+    end
+    if type(self.I) == "function" then
+      self:I(TAG .. string.format(
+        " waypoint telemetry uid=%s pathline=%s requestedAglFt=%s actualAglFt=%s actualAslFt=%s terrainFt=%s",
+        tostring(uid), tostring(requested and requested.pathlineName), tostring(requested and requested.altitudeFtAgl),
+        tostring(actualAglFt), tostring(actualAslFt), tostring(terrainFt)))
+    end
+
     local transition = uid and self.__omwFlightPathProfileTransitions and self.__omwFlightPathProfileTransitions[uid] or nil
     if not transition then return end
 
@@ -468,6 +490,13 @@ function Corridor.Install(flightGroup, mission, resolved, altitudeFtAgl)
       keepAltitude = false,
       pathlineName = "POST_CORRIDOR",
     })
+  end
+
+  flightGroup.__omwFlightPathWaypointProfilesByUid = flightGroup.__omwFlightPathWaypointProfilesByUid or {}
+  for _, profiles in pairs(waypointProfiles) do
+    for _, profile in ipairs(profiles) do
+      flightGroup.__omwFlightPathWaypointProfilesByUid[profile.uid] = profile
+    end
   end
 
   installProfileTransitions(flightGroup, profileTransitions)
