@@ -1,16 +1,16 @@
 -- Operation Mountain Watch - MOOSE-first FOB/COP perimeter-threat qualification adapter.
 --
 -- The adapter creates a runtime ZONE_RADIUS around an installation anchor and lets
--- MOOSE OPSZONE own presence scanning and the Attacked/Defeated FSM transitions.
--- Strategic demand creation remains delegated to OMW_FobAttackDemandPolicy and
--- MissionDemand.
+-- MOOSE OPSZONE own presence scanning and the Attacked/Defeated/Evaluated FSM
+-- transitions. Strategic demand creation remains delegated to
+-- OMW_FobAttackDemandPolicy and MissionDemand.
 
 local Adapter = {}
 local Instance = {}
 Instance.__index = Instance
 
 local TAG = "[OMW][FobThreatOpsZoneAdapter]"
-Adapter.SchemaVersion = "OMW-FOB-THREAT-OPSZONE-ADAPTER-2"
+Adapter.SchemaVersion = "OMW-FOB-THREAT-OPSZONE-ADAPTER-3"
 
 local function fail(message)
   error(TAG .. " " .. tostring(message), 2)
@@ -68,7 +68,7 @@ function Adapter.New(spec)
   end
   if spec.captureThreatlevel ~= nil and not isFinite(spec.captureThreatlevel) then fail("captureThreatlevel must be finite") end
   if spec.captureNunits ~= nil and (not isFinite(spec.captureNunits) or spec.captureNunits < 1) then fail("captureNunits must be at least one") end
-  for _, name in ipairs({ "zoneRadiusFactory", "opsZoneFactory", "incidentIdFactory", "onThreatStarted", "onThreatCleared" }) do
+  for _, name in ipairs({ "zoneRadiusFactory", "opsZoneFactory", "incidentIdFactory", "onThreatStarted", "onThreatEvaluated", "onThreatCleared" }) do
     if spec[name] ~= nil and type(spec[name]) ~= "function" then fail(name .. " must be a function when provided") end
   end
 
@@ -90,6 +90,7 @@ function Adapter.New(spec)
     opsZoneFactory = spec.opsZoneFactory,
     incidentIdFactory = spec.incidentIdFactory,
     onThreatStarted = spec.onThreatStarted,
+    onThreatEvaluated = spec.onThreatEvaluated,
     onThreatCleared = spec.onThreatCleared,
     securityZone = nil,
     opsZone = nil,
@@ -160,7 +161,7 @@ function Instance:Start()
   end
   requireTable(opsZone, "OPSZONE")
 
-  for _, name in ipairs({ "SetObjectCategories", "SetUnitCategories", "SetCaptureThreatlevel", "SetCaptureNunits", "SetDrawZone", "SetMarkZone", "Start", "Stop" }) do
+  for _, name in ipairs({ "SetObjectCategories", "SetUnitCategories", "SetCaptureThreatlevel", "SetCaptureNunits", "SetDrawZone", "SetMarkZone", "GetScannedGroupSet", "Start", "Stop" }) do
     requireFunction(opsZone, name, "OPSZONE")
   end
   if type(Object) ~= "table" or type(Object.Category) ~= "table" or Object.Category.UNIT == nil then fail("DCS Object.Category.UNIT is required") end
@@ -175,6 +176,11 @@ function Instance:Start()
   if self.updateSeconds ~= nil then opsZone.UpdateSeconds = self.updateSeconds end
 
   local adapter = self
+  function opsZone:OnAfterEvaluated(From, Event, To)
+    if adapter.onThreatEvaluated then
+      adapter.onThreatEvaluated(adapter, self, self:GetScannedGroupSet(), From, Event, To)
+    end
+  end
   function opsZone:OnAfterAttacked(From, Event, To, AttackerCoalition)
     local demand, created, reason, incident = adapter:ProcessThreat(AttackerCoalition)
     if demand ~= nil and adapter.onThreatStarted then
@@ -183,7 +189,7 @@ function Instance:Start()
   end
   function opsZone:OnAfterDefeated(From, Event, To, DefeatedCoalition)
     if DefeatedCoalition ~= adapter.redCoalition then return end
-    adapter:_log(string.format("installationId=%s threat cleared by OPSZONE Defeated coalition=%s", tostring(adapter.installationId), tostring(DefeatedCoalition)))
+    adapter:_log(string.format("installationId=%s alarm perimeter cleared by OPSZONE Defeated coalition=%s", tostring(adapter.installationId), tostring(DefeatedCoalition)))
     if adapter.onThreatCleared then adapter.onThreatCleared(adapter, self, DefeatedCoalition) end
   end
 
