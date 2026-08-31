@@ -71,7 +71,7 @@ local state = {
   brigade=nil, guardCoord=nil, qrfPlatoon=nil, qrfEntries={}, qrfEngaged=false,
   threat=nil, threatStarted=false, perimeterClear=false, incident=nil, attackIncident=nil, attackIncidentClosed=false,
   casAdapter=nil, casDemand=nil, casMission=nil, casFlight=nil, casExecuting=false, casCorridor=false, casFired=false, casShotObserver=nil,
-  casTacticalZone=nil, casAltitudeFtAsl=nil,
+  casTacticalZone=nil, casAltitudeFtAsl=nil, casFailed=false, casFailureReason=nil,
   battery=nil, arty=nil, fireAdapter=nil, fireDemand=nil, fireStarted=false, fireComplete=false,
   fireTargetCount=0, fireTargetCompleteCount=0, fireLastSourceGroupName=nil,
   physicalAmmoBefore=nil, physicalAmmoAfter=nil, physicalAmmoBeforeByTarget={}, physicalAmmoAfterByTarget={},
@@ -91,6 +91,12 @@ local function fail(reason)
   if state.failed or state.passed then return end
   state.failed = true
   msg("FAIL", tostring(reason), 20)
+end
+local function failCas(reason)
+  if state.casFailed or state.passed then return end
+  state.casFailed = true
+  state.casFailureReason = tostring(reason)
+  msg("CAS FAIL", state.casFailureReason .. "; Guard/QRF/ARTY/logistics diagnostics continue", 20)
 end
 local function need(value, label)
   if not value then fail("missing " .. label) end
@@ -188,21 +194,70 @@ local function installCorridor(kind, flight, mission, destination, pathlineNames
       return
     end
     if reason == "MISSION_ROUTE_UIDS_NOT_READY" and attempts < 8 then SCHEDULER:New(nil, attempt, {}, 2); return end
-    if reason ~= "MISSION_ROUTE_UIDS_NOT_READY" then fail(kind .. " corridor failed: " .. tostring(reason)) end
+    if reason ~= "MISSION_ROUTE_UIDS_NOT_READY" then
+      if kind == "CAS" then failCas(kind .. " corridor failed: " .. tostring(reason)) else fail(kind .. " corridor failed: " .. tostring(reason)) end
+    end
   end
   attempt()
 end
 
 local function prepareAirwing()
   local air = OMW and OMW.AirOps and OMW.AirOps.Jalalabad or nil
-  if type(air) ~= "table" or air.Status ~= "RUNNING" or not air.Airwing then fail("Jalalabad AIRWING not running") return false end
-  if not air.Squadrons or not air.Squadrons.AH64D or not air.Squadrons.CH47 then fail("Jalalabad AH64D/CH47 squadron missing") return false end
+  if type(air) ~= "table" or air.Status ~= "RUNNING" or not air.Airwing then
+    log("AIRWING_PRECHECK unavailable; ground response remains armed and CAS will report a scoped failure only if demanded")
+    return false
+  end
+  if not air.Squadrons or not air.Squadrons.AH64D or not air.Squadrons.CH47 then
+    log("AIRWING_PRECHECK Jalalabad AH64D/CH47 squadron missing; ground response remains armed")
+    return false
+  end
   state.airwing = air.Airwing
   state.ch47 = air.Squadrons.CH47
-  need(GROUP:FindByName("TPL_AIR_US_JBAD_CH47_HEAVYLIFT_1SHIP"), "Jalalabad CH47 template")
-  need(PATHLINE:FindByName(PRIMARY_PATHLINE), PRIMARY_PATHLINE)
-  need(PATHLINE:FindByName(WEST_PATHLINE), WEST_PATHLINE)
-  return not state.failed
+  if not GROUP:FindByName("TPL_AIR_US_JBAD_CH47_HEAVYLIFT_1SHIP") then
+    log("AIRWING_PRECHECK Jalalabad CH47 template missing")
+    return false
+  end
+  if not PATHLINE:FindByName(PRIMARY_PATHLINE) or not PATHLINE:FindByName(WEST_PATHLINE) then
+    log("AIRWING_PRECHECK required helicopter PATHLINE missing")
+    return false
+  end
+  return true
+end
+
+local function ensureCasContext()
+  if state.casAdapter and state.casTacticalZone then return true end
+  if not state.airwing then
+    failCas("Jalalabad AIRWING unavailable when CAS demand was created")
+    return false
+  end
+  local centerVec2=state.guardCoord:GetVec2()
+  local landHeightM=state.guardCoord:GetLandHeight()
+  state.casAltitudeFtAsl=UTILS.MetersToFeet(landHeightM)+CAS_COMBAT_HEIGHT_FT_AGL
+  state.casTacticalZone=ZONE_RADIUS:New(
+    "OMW_TACTICAL_BLUE_GROUND_COP_HONAKER_STAGE3_CAS",
+    centerVec2,
+    UTILS.NMToMeters(CAS_TACTICAL_RADIUS_NM)
+  )
+  if not state.casTacticalZone then
+    failCas("MOOSE ZONE_RADIUS creation failed for Honaker CAS tactical area")
+    return false
+  end
+  log(string.format(
+    "CAS_TACTICAL_AREA centerLandHeightM=%.1f radiusNm=%s combatHeightFtAgl=%s missionAltitudeFtAsl=%.0f",
+    landHeightM,tostring(CAS_TACTICAL_RADIUS_NM),tostring(CAS_COMBAT_HEIGHT_FT_AGL),state.casAltitudeFtAsl))
+  state.casAdapter=CasAdapter.New({
+    missionDemand=MissionDemand,
+    registry=registry,
+    airwing=state.airwing,
+    assigneeId="AIRWING:AW_US_JBAD_TF_SHOOTER_6_6_CAV",
+    missionMode=CasAdapter.MissionMode.CASENHANCED,
+    casAltitudeFt=state.casAltitudeFtAsl,
+    casSpeedKts=CAS_SPEED_KTS,
+    engageDetectedRangeNm=CAS_ENGAGE_RANGE_NM,
+    engageDetectedTargetTypes={"Ground Units"},
+    requireExecutionEvidence=true,
+  })
+  return state.casAdapter ~= nil
 end
 
 local function installCasShotObserver()
@@ -210,18 +265,18 @@ local function installCasShotObserver()
   state.casShotObserver = EVENTHANDLER:New()
   state.casShotObserver:HandleEvent(EVENTS.Shot)
   function state.casShotObserver:OnEventShot(EventData)
-    if state.failed or state.casFired or not state.casFlight or not state.casDemand then return end
+    if state.failed or state.casFailed or state.casFired or not state.casFlight or not state.casDemand then return end
     if not EventData or EventData.IniGroupName ~= state.casFlight:GetName() then return end
     state.casFired = true
     local weaponType = EventData.WeaponTypeName or (EventData.Weapon and EventData.Weapon.getTypeName and EventData.Weapon:getTypeName()) or "unknown"
     local _, confirmed, reason = state.casAdapter:ConfirmExecutionEvidence(state.casDemand.id, { event="SHOT", weaponType=weaponType })
-    if confirmed ~= true then fail("CAS shot evidence could not be correlated: " .. tostring(reason)); return end
+    if confirmed ~= true then failCas("CAS shot evidence could not be correlated: " .. tostring(reason)); return end
     msg("CAS", "AH-64D weapon employment confirmed: " .. tostring(weaponType) .. "; evidence recorded independently of alarm-zone clearance", 12)
   end
 end
 
 local function installAirObserver()
-  if state.airwing.__omwStage3E2EObserver then return end
+  if not state.airwing or state.airwing.__omwStage3E2EObserver then return end
   state.airwing.__omwStage3E2EObserver = true
   local previous = state.airwing.OnAfterFlightOnMission
   function state.airwing:OnAfterFlightOnMission(From, Event, To, FlightGroup, Mission)
@@ -296,6 +351,10 @@ end
 
 local function startAirResupply()
   if state.resupply then return end
+  if not state.airwing or not state.ch47 then
+    fail("Jalalabad AIRWING/CH47 unavailable when strategic Air-AMMO resupply became necessary")
+    return
+  end
   local ctx = context()
   local row = stockRow(WRIGHT_NODE, AMMO_RESOURCE)
   local wright = ctx.store:GetResource(WRIGHT_NODE, AMMO_RESOURCE)
@@ -586,33 +645,6 @@ local function setupDefenceAndThreat()
     incidentIdFactory=function(_,seq) return "INC-STAGE3-HONAKER-"..seq end,
   })
 
-  local centerVec2=state.guardCoord:GetVec2()
-  local landHeightM=state.guardCoord:GetLandHeight()
-  state.casAltitudeFtAsl=UTILS.MetersToFeet(landHeightM)+CAS_COMBAT_HEIGHT_FT_AGL
-  state.casTacticalZone=ZONE_RADIUS:New(
-    "OMW_TACTICAL_BLUE_GROUND_COP_HONAKER_STAGE3_CAS",
-    centerVec2,
-    UTILS.NMToMeters(CAS_TACTICAL_RADIUS_NM)
-  )
-  state.casTacticalZone:SetDrawZone(false)
-  state.casTacticalZone:SetMarkZone(false)
-  log(string.format(
-    "CAS_TACTICAL_AREA centerLandHeightM=%.1f radiusNm=%s combatHeightFtAgl=%s missionAltitudeFtAsl=%.0f",
-    landHeightM,tostring(CAS_TACTICAL_RADIUS_NM),tostring(CAS_COMBAT_HEIGHT_FT_AGL),state.casAltitudeFtAsl))
-
-  state.casAdapter=CasAdapter.New({
-    missionDemand=MissionDemand,
-    registry=registry,
-    airwing=state.airwing,
-    assigneeId="AIRWING:AW_US_JBAD_TF_SHOOTER_6_6_CAV",
-    missionMode=CasAdapter.MissionMode.CASENHANCED,
-    casAltitudeFt=state.casAltitudeFtAsl,
-    casSpeedKts=CAS_SPEED_KTS,
-    engageDetectedRangeNm=CAS_ENGAGE_RANGE_NM,
-    engageDetectedTargetTypes={"Ground Units"},
-    requireExecutionEvidence=true,
-  })
-
   local guard=PLATOON:New(INF_TEMPLATE,1,"PLT_BLUE_GND_HONAKER_STAGE3_GUARD")
   guard:AddMissionCapability(AUFTRAG.Type.ONGUARD,100)
   state.brigade:AddPlatoon(guard)
@@ -652,6 +684,9 @@ local function setupDefenceAndThreat()
           local demand,created,reason=CasPolicy.CreateDemand(md,reg,incident)
           if created then
             state.casDemand=demand
+            if not ensureCasContext() then
+              return demand,created,"CAS_CONTEXT_FAILED"
+            end
             local mission,ok,why=state.casAdapter:Dispatch(demand,state.casTacticalZone)
             if ok then
               state.casMission=mission
@@ -664,7 +699,7 @@ local function setupDefenceAndThreat()
                   CAS_TACTICAL_RADIUS_NM,state.casAltitudeFtAsl,CAS_COMBAT_HEIGHT_FT_AGL,CAS_ENGAGE_RANGE_NM),12)
               end
             else
-              fail("CAS dispatch failed: "..tostring(why))
+              failCas("CAS dispatch failed: "..tostring(why))
             end
           end
           return demand,created,reason
@@ -715,7 +750,7 @@ local function setupDefenceAndThreat()
         end,
       })
       state.threat:Start()
-      msg("READY","Honaker full-response acceptance armed: incident-based QRF/ARTY + CASENHANCED 5-NM tactical area + rearm + CH-47 Air-AMMO",15)
+      msg("READY","Honaker full-response acceptance armed: Guard/QRF/ARTY first; CASENHANCED tactical context is created only after a CAS demand",15)
     end,{},5)
   end
   state.brigade:Start()
@@ -724,7 +759,8 @@ end
 local function start()
   if OMW_GROUND_READY~=1 then fail("Ground Base not ready") return end
   need(GROUP:FindByName(INF_TEMPLATE),INF_TEMPLATE)
-  if not context() or not prepareAirwing() then return end
+  if not context() then return end
+  prepareAirwing()
   installAirObserver()
   if not preconditionWright() then return end
   if not setupFireSupport() then return end
@@ -734,9 +770,15 @@ end
 local function finish()
   if state.failed or state.passed then return end
   closeAttackIncidentIfClear()
-  if not (state.threatStarted and state.attackIncidentClosed and state.qrfEngaged and state.casExecuting and state.casCorridor and state.casFired
+  local casTerminal = state.casFailed or (state.casExecuting and state.casCorridor and state.casFired)
+  if not (state.threatStarted and state.attackIncidentClosed and state.qrfEngaged and casTerminal
       and state.fireStarted and state.fireComplete and state.rearmComplete and state.supportReturned and state.resupply
       and state.inTransit and state.delivered and state.airCorridor and state.homeLanded and state.assetReturned) then return end
+
+  if state.casFailed then
+    fail("CAS subsystem failed while other Stage-3 chains remained observable: " .. tostring(state.casFailureReason))
+    return
+  end
 
   local ctx=context()
   local w=ctx.store:GetResource(WRIGHT_NODE,AMMO_RESOURCE)
