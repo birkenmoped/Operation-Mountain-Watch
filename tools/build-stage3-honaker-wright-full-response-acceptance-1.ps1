@@ -29,7 +29,7 @@ $jalalabadFoundationRelative = 'scripts\air-operations\OMW_AirOps_Jalalabad_Boot
 $jalalabadFoundationFile = Join-Path $repoRoot $jalalabadFoundationRelative
 $distDir = Join-Path $repoRoot 'mission\tests\stage3-honaker-wright-full-response\dist'
 $outputFile = Join-Path $distDir 'OMW_Stage3_Honaker_Wright_Full_Response_Acceptance_1.lua'
-$builderVersion = 'STAGE3-HONAKER-WRIGHT-FULL-RESPONSE-ACCEPTANCE-1-9'
+$builderVersion = 'STAGE3-HONAKER-WRIGHT-FULL-RESPONSE-ACCEPTANCE-1-10'
 $testId = 'STAGE3-HONAKER-WRIGHT-FULL-RESPONSE-ACCEPTANCE-1'
 $mooseCommit = '73d3ed119cd9e7e3f2cfcabbaa34513d30529b54'
 $mooseSha256 = 'e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915'
@@ -43,7 +43,7 @@ foreach ($name in $sources.Keys) {
 if (-not (Test-Path -LiteralPath $acceptanceFile -PathType Leaf)) { throw "Acceptance source not found: $acceptanceFile" }
 if (-not (Test-Path -LiteralPath $jalalabadFoundationFile -PathType Leaf)) { throw "Jalalabad AirOps foundation source not found: $jalalabadFoundationFile" }
 $jalalabadFoundationSource = Get-Content -LiteralPath $jalalabadFoundationFile -Raw -Encoding UTF8
-foreach ($marker in @('SQ_US_JBAD_AH64D_B_1_10_AVN','TPL_AIR_US_JBAD_AH64D_CAS_2SHIP','AUFTRAG.Type.CAS','AUFTRAG.Type.CASENHANCED')) {
+foreach ($marker in @('SQ_US_JBAD_AH64D_B_1_10_AVN','TPL_AIR_US_JBAD_AH64D_CAS_2SHIP','missionTypes = { AUFTRAG.Type.CAS, AUFTRAG.Type.CASENHANCED }')) {
   if (-not $jalalabadFoundationSource.Contains($marker)) { throw "Jalalabad AirOps foundation missing Stage 3 CAS prerequisite: $marker" }
 }
 
@@ -65,8 +65,11 @@ $header = @"
 -- Scope: Honaker attack -> installation attack incident -> own QRF + CASENHANCED + live-retarget Wright coordinate fire -> local M1083 rearm -> CampaignState AMMO reorder -> Jalalabad CH47 Air-AMMO -> Wright.
 -- AlarmZone: MOOSE OPSZONE 1000 m perimeter is trigger/evidence only; Defeated does not terminate ARTY/CAS/QRF or satisfy overall PASS.
 -- AttackIncident: OPSZONE Evaluated adds newly observed RED groups; living known participants remain tactical targets after leaving the alarm perimeter.
+-- QRF: MOOSE AUFTRAG:NewONGUARD + SetEngageDetected in a separate 5-NM acceptance tactical area; not bound to one RED target object.
+-- QRFPassGate: physical ArmyOnMission deployment is required; weapon engagement remains telemetry because ARTY/CAS may neutralize attackers first.
 -- CASArea: dedicated 5 NM tactical ZONE_RADIUS centered on Honaker; separate from the 1000 m alarm perimeter; created lazily only after a CAS demand exists.
 -- CASMission: MOOSE AUFTRAG:NewCASENHANCED; mission altitude is Honaker terrain height plus 2500 ft, passed as ASL as required by MOOSE.
+-- CASAirSquadronBinding: AUFTRAG:AssignSquadrons binds Stage3 CAS to SQ_US_JBAD_AH64D_B_1_10_AVN.
 -- CASFaultIsolation: CAS setup/dispatch/corridor failures are recorded as scoped CAS failures so Guard/QRF/ARTY/logistics diagnostics continue; final PASS remains impossible.
 -- CASFoundationPrerequisite: Jalalabad AH64D squadron/payload must advertise both CAS and CASENHANCED; rebuild and reload the Jalalabad AirOps foundation bundle together with this Stage3 bundle.
 -- CASRoute: OMW_FlightPath 500 ft AGL -> OMW_FlightPath_WEST 2500 ft AGL held via MOOSE SetAltitude(...,Keep=true,RadarAlt=true) / RotaryWing.Column.D70 outbound AND reverse return.
@@ -94,10 +97,12 @@ $combinedForValidation += $acceptanceSource
 
 $requiredMarkers = @(
   'FIRE_SUPPORT_IMMEDIATE','OPSZONE','OnAfterEvaluated','GetScannedGroupSet','OMW_STAGE3_GROUND_INSTALLATION_ATTACK_INCIDENT',
-  'PROXIMITY_INTRUSION','GetParticipants','KNOWN_ATTACKERS_NEUTRALIZED','AUFTRAG:NewGROUNDATTACK','ARTY:New','AssignTargetCoord','QueueTarget',
+  'PROXIMITY_INTRUSION','GetParticipants','KNOWN_ATTACKERS_NEUTRALIZED','ARTY:New','AssignTargetCoord','QueueTarget',
+  'QRF_TACTICAL_RADIUS_NM','QRF_ENGAGE_RANGE_NM','AUFTRAG:NewONGUARD','SetEngageDetected','qrfDeployed','AUFTRAG.Type.ONGUARD',
   'LIVE_FIRE_RETARGET','SetWaitForShotTime','ARTY_WAIT_FOR_SHOT_SEC','verifyFireComplete','PHYSICAL_AMMO_UNCHANGED',
   'AUFTRAG:NewCASENHANCED','CASENHANCED','CAS_TACTICAL_RADIUS_NM','CAS_COMBAT_HEIGHT_FT_AGL','GetLandHeight','NMToMeters',
   'ensureCasContext','CAS_CONTEXT_FAILED','casFailed','CAS FAIL','ConfirmExecutionEvidence','EVENTS.Shot','requireExecutionEvidence','missionMode',
+  'squadrons={state.ah64d}','AssignSquadrons','OMW-FOB-ATTACK-CAS-DISPATCH-ADAPTER-6',
   'OMW-FIXED-FIRE-SUPPORT-AMMO-SUPPORT-4','brigade:Start()','dedicated support BRIGADE started after materializer registration',
   'SetAltitude','profileTransitions','RotaryWing.Column.D70','WEST_ALTITUDE_FT_AGL','waypoint telemetry','actualAglFt','actualAslFt','terrainFt',
   'GROUND_AMMO_PACKAGE','GROUND_NODE_WRIGHT','GROUND_NODE_JALALABAD','TPL_BLUE_GND_WRIGHT_FS_ARTY_L118_2','TPL_BLUE_GND_SUP_M1083',
@@ -109,7 +114,7 @@ foreach ($marker in $requiredMarkers) { if (-not $combinedForValidation.Contains
 $forbiddenPatterns = @(
   'MissionScripting\.lua','mist\.','\bMIST\b','(?<![A-Za-z0-9_])io\.','lfs\.','os\.execute',':Teleport\s*\(',
   'world\.addEventHandler','timer\.scheduleFunction','coalition\.addGroup','coalition\.addStaticObject','AddCargoStorage','NewFREIGHTTRANSPORT',
-  'casTacticalZone:SetDrawZone','casTacticalZone:SetMarkZone'
+  'casTacticalZone:SetDrawZone','casTacticalZone:SetMarkZone','AUFTRAG:NewGROUNDATTACK\s*\(targets\[i\]'
 )
 foreach ($pattern in $forbiddenPatterns) { if ($acceptanceSource -match $pattern) { throw "Stage 3 full-response acceptance contains forbidden runtime pattern: $pattern" } }
 
@@ -131,7 +136,12 @@ Write-Host 'AttackIncident: one active Honaker incident retains living known RED
 Write-Host 'AttackIncidentRefresh: MOOSE OPSZONE OnAfterEvaluated / GetScannedGroupSet'
 Write-Host 'AttackIncidentClosure: no living known attack participant remains'
 Write-Host 'HonakerResponse: own infantry QRF + Jalalabad AH64D MOOSE CASENHANCED'
+Write-Host 'QRFMission: MOOSE AUFTRAG NewONGUARD + SetEngageDetected; not bound to one RED target object'
+Write-Host 'QRFTacticalAreaRadiusNm: 5'
+Write-Host 'QRFEngageDetectedRangeNm: 5'
+Write-Host 'QRFPassGate: ArmyOnMission physical deployment required; EngageTarget is telemetry because ARTY/CAS may neutralize attackers first'
 Write-Host 'CASInitialization: tactical ZONE_RADIUS and CAS adapter are created only when a CAS demand is created'
+Write-Host 'CASAirSquadronBinding: SQ_US_JBAD_AH64D_B_1_10_AVN via MOOSE AUFTRAG AssignSquadrons'
 Write-Host 'CASFaultIsolation: CAS setup/dispatch/corridor failure does not stop Guard/QRF/ARTY/logistics diagnostics; final PASS remains blocked'
 Write-Host 'CASFoundationPrerequisite: run tools/build-jalalabad-air-operations-foundation.ps1 and reload mission/tests/jalalabad-air-operations/dist/OMW_AirOps_Jalalabad.lua so AH64D capability/payload includes CASENHANCED'
 Write-Host 'FireSupport: Wright TPL_BLUE_GND_WRIGHT_FS_ARTY_L118_2 via MOOSE Functional ARTY AssignTargetCoord / DCS Fire At Point'
@@ -147,7 +157,7 @@ Write-Host 'LocalRearmDebit: 1 GROUND_AMMO_PACKAGE; 16 -> 15'
 Write-Host 'Reorder: 15 AT_OR_BELOW'
 Write-Host 'StrategicResupply: exactly one RESUPPLY, Jalalabad -> Wright, quantity 15'
 Write-Host 'AirPhysicalMission: MOOSE AUFTRAG CARGOTRANSPORT'
-Write-Host 'AirSquadron: SQ_US_JBAD_CH47_HEAVYLIFT'
+Write-Host 'AirSquadron: SQ_US_JBAD_CH47_HEAVYLIFT via MOOSE AUFTRAG AssignSquadrons'
 Write-Host 'AirRouteOutbound: OMW_FlightPath'
 Write-Host 'AirRouteReturn: OMW_FlightPath'
 Write-Host 'CASMission: MOOSE AUFTRAG NewCASENHANCED'
