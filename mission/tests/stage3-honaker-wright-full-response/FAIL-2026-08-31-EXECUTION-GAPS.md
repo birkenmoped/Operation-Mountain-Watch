@@ -1,6 +1,14 @@
 ---
 document_id: OMW-STAGE3-HONAKER-WRIGHT-FAIL-2026-08-31-EXECUTION-GAPS
-status: TEST_EVIDENCE
+status: HISTORICAL_TEST_FIXTURE
+document_class: ACCEPTANCE_RESULT
+owning_policy: OMW-GOV-001
+authoritative_for:
+  - exact 2026-08-31 Stage 3 DCS failure provenance and observed CAS/QRF/rearm execution gaps
+scenario_period: 2010-08-01/2011-12-31
+project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
+supersedes:
+superseded_by:
 test_id: STAGE3-HONAKER-WRIGHT-FULL-RESPONSE-ACCEPTANCE-1
 source_branch: agent/fire-support-strategic-resupply-alarm-evidence
 source_commit: 05dbd538801f298a3eef084dd5d439e11e721ec3
