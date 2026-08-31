@@ -16,46 +16,15 @@ validated_in_dcs: false
 
 # Stage 3 Acceptance 1 – Honaker -> Wright -> Jalalabad Air-AMMO
 
-## 1. Letzter realer DCS-Lauf: FAIL
+## 1. Status
 
-Der zuletzt real ausgefuehrte kombinierte Lauf basiert auf dem damaligen Stage-3-Stand um Commit:
-
-```text
-40051fa657dd2df22352532e1f5bcdf37d17f846
-```
-
-Der Lauf ist ausdruecklich **FAIL** und kein `VALIDATED`-Nachweis.
-
-Beobachtet beziehungsweise durch Log-Evidenz bestaetigt wurden insbesondere:
+Dieser Acceptance-Test ist weiterhin **PLANNED / nicht DCS-validiert**. Der letzte reale Build-`1-8`-Lauf vom 31.08.2026 war `FAIL`. Die dazugehörige Evidenz liegt in:
 
 ```text
-Honaker OPSZONE radius                  1000 m
-Wright ARTY real coordinate fire       yes
-Wright physical ammo                   300 -> 288
-coordinate fire missions               3 x 4 rounds
-OPSZONE Defeated used as stop gate     wrong
-AH-64 real weapon employment           yes
-AH-64 tactical effect                  insufficient
-AH-64 NewCAS orbit                     10000 ft ASL
-CAS restricted to alarm zone           wrong
-strategic closure                      not demonstrated
+mission/tests/stage3-honaker-wright-full-response/FAIL-2026-08-31-EXECUTION-GAPS.md
 ```
 
-Die 1000-m-Alarmzone war im Acceptance-Code faelschlich gleichzeitig taktisches Zielbild und Response-Endbedingung. Dadurch konnte `OPSZONE Defeated` ARTY und CAS faktisch beenden, obwohl ausserhalb der Alarmzone weiterhin relevante RED-Kraefte vorhanden waren.
-
-Der Projektinhaber hat anschliessend verbindlich klargestellt und auf `main` dokumentieren lassen:
-
-```text
-installation alarm/security zone
-= trigger / threat-evidence boundary only
-!= tactical battlespace
-!= weapons engagement zone
-!= fire-support target area
-!= CAS engagement area
-!= mission-end condition
-```
-
-Diese Regel gilt projektweit fuer missionsrelevante BLUE-Installationen und nicht nur fuer Honaker.
+Der nächste Teststand ist Builder `STAGE3-HONAKER-WRIGHT-FULL-RESPONSE-ACCEPTANCE-1-10`. Die Änderungen nach dem realen FAIL sind bis zu einem neuen DCS-Lauf ausschließlich `SOURCE_REVIEWED` / statisch geprüft und **nicht `VALIDATED`**.
 
 ## 2. Gepinnter MOOSE-Stand
 
@@ -65,13 +34,17 @@ MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
 Moose.lua SHA-256: E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915
 ```
 
-Fuer die aktuelle Korrektur source-verifiziert:
+Für diesen Stand source-geprüft und direkt verwendet:
 
 ```text
 OPSZONE Attacked / Defeated / Evaluated
 OPSZONE:GetScannedGroupSet()
-AUFTRAG / ARTY / AssignTargetCoord
+AUFTRAG:NewONGUARD(...)
+AUFTRAG:SetEngageDetected(...)
 AUFTRAG:NewCASENHANCED(...)
+AUFTRAG:AssignSquadrons(...)
+AUFTRAG:NewCARGOTRANSPORT(...)
+ARTY:New / AssignTargetCoord / GetAmmo / Rearm lifecycle
 EVENTHANDLER / EVENTS.Shot
 FLIGHTGROUP waypoint callbacks
 COORDINATE:GetLandHeight()
@@ -79,314 +52,249 @@ OPSGROUP:GetCoordinate(...)
 UTILS.MetersToFeet(...)
 ```
 
-Die MOOSE-`OPSZONE` ruft nach einer regulaeren Auswertung `Evaluated` auf. Der OMW-Adapter exponiert diesen vorhandenen MOOSE-FSM-Pfad ab Schema `OMW-FOB-THREAT-OPSZONE-ADAPTER-3` als `onThreatEvaluated(...)` und uebergibt das aktuelle `GetScannedGroupSet()`.
+MOOSE verwendet selbst im strategischen Dispatcher `ONGUARD` beziehungsweise `PATROLZONE` zusammen mit `SetEngageDetected(...)`, um erkannte Ziele fortlaufend zu bekämpfen. Der Stage-3-QRF-Pfad nutzt deshalb keinen eigenen Search-and-Destroy-Scanner.
 
-Damit wird kein zweiter Feindscanner eingefuehrt.
+## 3. Alarm und Attack Incident
 
-## 3. Neue Trennung: Alarmbild und Attack Incident
-
-Der revidierte Honaker-Vertrag verwendet die OPSZONE nur noch fuer unmittelbare Alarm-/Proximity-Evidenz.
+Die 1000-m-OPSZONE ist ausschließlich Alarm-/Evidence-Grenze:
 
 ```text
 RED enters 1000-m alarm perimeter
--> MOOSE OPSZONE Attacked
--> PROXIMITY_INTRUSION evidence
--> ONE Honaker attack incident
+-> OPSZONE Attacked
+-> PROXIMITY_INTRUSION
+-> one Honaker attack incident
 ```
 
-Bei folgenden MOOSE-OPSZONE-Auswertungen:
+Weitere `OPSZONE Evaluated`-Zyklen ergänzen neu erkannte RED-Gruppen als Incident-Teilnehmer. Ein späteres `OPSZONE Defeated` setzt nur `perimeterClear=true`; lebende bekannte Angreifer bleiben Incident-Teilnehmer und dürfen weiterhin durch QRF, ARTY und CAS bekämpft werden.
 
-```text
-OPSZONE Evaluated
--> current RED groups in perimeter
--> add newly observed groups to active attack incident
-```
-
-Der Incident behaelt bekannte Angreifergruppen als Teilnehmer. Verlaesst eine bekannte lebende Gruppe spaeter die 1000-m-Zone, bleibt sie taktisch Teil dieses Angriffs.
-
-```text
-known attacker leaves alarm perimeter
--> OPSZONE may become Defeated
--> perimeterClear = true
--> attacker remains active incident participant while alive
--> ARTY / QRF / CAS are NOT terminated by perimeter state
-```
-
-Die Incident-Closure ist fuer diesen Acceptance-Fall explizit:
+Acceptance-Closure:
 
 ```text
 no living known attack participant remains
 -> Close("KNOWN_ATTACKERS_NEUTRALIZED")
 ```
 
-Das ist ein Testvertrag fuer den bekannten Stage-3-Angriff und noch keine allgemeine BDA-/Combat-Closure-Architektur fuer alle spaeteren Missionstypen.
+## 4. QRF – dynamische MOOSE-Bodenbekämpfung
 
-## 4. Wright-ARTY: Incident-basierter Live-Retarget-Cycle
+Build `1-8` verwendete pro QRF-Gruppe `AUFTRAG:NewGROUNDATTACK(Target)`. Dieser Auftrag war an genau ein RED-Zielobjekt gekoppelt. Bei gleichzeitigem ARTY-/CAS-Einsatz konnte dieses Ziel sterben, bevor die QRF taktischen Kontakt erreichte.
 
-Der alte Pfad las immer nur das aktuelle 1000-m-OPSZONE-Set. Das wird fuer die taktische Feuerleitung nicht mehr verwendet.
-
-Neuer Ablauf:
+Build `1-10` verwendet deshalb den MOOSE-eigenen Detection-/Engagement-Pfad:
 
 ```text
-attack incident active
--> choose living known incident participant
--> read current GROUP:GetCoordinate()
--> ARTY:AssignTargetCoord(...)
--> 4-round Fire At Point
--> verify physical ARTY ammo decrease
--> reacquire living incident participants
--> choose next/same moving attacker
--> read fresh coordinate
--> queue next fire mission
+QRF materializes through Honaker BRIGADE/PLATOON
+-> AUFTRAG:NewONGUARD(initial incident participant coordinate)
+-> SetEngageDetected(5 NM, {"Ground Units"}, QRF tactical zone)
+-> MOOSE detection remains active
+-> detected RED A may be engaged
+-> if A is destroyed, detected RED B can still be engaged
+```
+
+Acceptance-only QRF-Konfiguration dieses Teststands:
+
+```text
+QRF tactical zone radius:       5 NM around Honaker
+QRF detected-target range:      5 NM
+QRF mission capability:         AUFTRAG.Type.ONGUARD
+```
+
+Die 5-NM-QRF-Zone ist **keine projektweite QRF-Doktrin** und ersetzt nicht die 1000-m-Alarmzone. Sie dient in diesem kombinierten Test ausschließlich als begrenzter taktischer Einsatzraum.
+
+Für den Gesamt-PASS wird die physische `ArmyOnMission`-Materialisierung der QRF verlangt. `EngageTarget` wird zusätzlich protokolliert, ist aber kein zwingender PASS-Gate: ARTY oder CAS dürfen die Angreifer bereits neutralisiert haben, bevor die QRF schießt. Die Incident-Neutralisierung bleibt separat zwingend.
+
+## 5. Wright ARTY und lokaler M1083-Rearm
+
+ARTY bleibt incident-basiert:
+
+```text
+living known incident participant
+-> fresh GROUP coordinate
+-> 4-round coordinate fire mission
+-> physical ARTY ammo decrease required
+-> reacquire living participants
 -> repeat independently of OPSZONE Defeated
 ```
 
-Der Adapter `OMW_FobAttackFunctionalArtyDispatchAdapter` bleibt der einzige OMW-Adapter um dieselbe caller-owned MOOSE-`ARTY`-Instanz. Es wird kein zweiter ARTY-Owner und kein paralleler Targetscanner eingefuehrt.
-
-Fuer jede als abgeschlossen gewertete Fire Mission bleibt verbindlich:
+Strategische Testvorbedingung:
 
 ```text
-OnAfterOpenFire
--> ARTY:GetAmmo(false) baseline
--> real DCS fire
--> OnAfterCeaseFire
--> ARTY:GetAmmo(false) must be lower
+Wright GROUND_AMMO_PACKAGE: 30 -> 16
 ```
 
-Ohne reale Ammo-Abnahme kein positiver Fire-Support-Abschluss.
-
-## 5. Rearm und strategische Closure
-
-Der strategische Vertrag bleibt unveraendert:
+Nach dem realen `1-8`-FAIL wurde die lokale M1083-Materialisierung korrigiert. Der dedizierte Wright-Support-`BRIGADE` wird nun **nach** vollständiger PLATOON-/Materializer-Registrierung gestartet, bevor später ein Self-Request erfolgen kann:
 
 ```text
-Wright CampaignState AMMO acceptance precondition: 30 -> 16
-one real local MOOSE rearm:                    16 -> 15
-reorder threshold:                             15
-strategic RESUPPLY Jalalabad -> Wright:        +15
-final Wright:                                  30
-final Jalalabad:                               85
+register materializer / PLATOON
+-> BRIGADE:Start()
+-> ARTY depletion
+-> M1083 self-request
+-> physical M1083 materialization
+-> MOOSE ARTY Rearm
 ```
 
-Eine physische Granate entspricht nicht einem strategischen `GROUND_AMMO_PACKAGE`. Genau ein realer lokaler Rearm-Zyklus belastet CampaignState um ein Paket.
-
-## 6. CAS: genehmigter Stage-3-CASENHANCED-Vertrag
-
-Der Projektinhaber hat fuer **diesen Honaker-Acceptance-Fall** am 31.08.2026 folgende Werte ausdruecklich genehmigt:
+Die CampaignState-Abbuchung erfolgt weiterhin erst am realen MOOSE-Rearm-Lifecycle:
 
 ```text
-Tactical CAS area radius:       5 NM around Honaker
-AH-64 combat height:            2500 ft above Honaker terrain at zone center
-MOOSE mission type:             AUFTRAG:NewCASENHANCED(...)
-Detected-target engage range:   5 NM
+MOOSE OnBeforeRearm accepted
+-> CampaignState Consume 1 package
+-> Wright 16 -> 15
+
+MOOSE OnAfterRearmed
+-> CompleteConsumption
 ```
 
-Diese Werte sind Acceptance-Konfiguration fuer Honaker Stage 3. Sie sind keine pauschale OMW-Doktrin fuer alle spaeteren CAS-Einsaetze.
+Kein M1083 / kein real akzeptierter Rearm -> keine strategische Abbuchung -> kein strategischer RESUPPLY.
 
-Die 5-NM-CAS-Zone wird als eigene `ZONE_RADIUS` um Honaker erzeugt und ist strikt von der 1000-m-Alarmzone getrennt:
+## 6. Strategischer Air-AMMO-Resupply
+
+Nach real bestätigtem lokalem Rearm:
 
 ```text
-1000-m OPSZONE
-= alarm / proximity evidence only
-
-5-NM CAS tactical zone
-= CASENHANCED patrol / engagement area
+Wright 15 / 30
+-> reorder threshold reached
+-> exactly one MissionDemand RESUPPLY
+-> reserve 15 GROUND_AMMO_PACKAGE at Jalalabad
+-> physical ammo_cargo slingload
+-> AUFTRAG:NewCARGOTRANSPORT
+-> AssignSquadrons({SQ_US_JBAD_CH47_HEAVYLIFT})
+-> CH-47 pickup
+-> OMW_FlightPath outbound
+-> physical delivery at Wright
+-> OMW_FlightPath return
+-> Jalalabad landing / AIRWING asset return
 ```
 
-Der gepinnte MOOSE-Source definiert fuer `AUFTRAG:NewCASENHANCED(CasZone, Altitude, Speed, RangeMax, NoEngageZoneSet, TargetTypes)` den Altitude-Parameter in **feet ASL**. Deshalb berechnet der Acceptance-Harness die Missionshoehe zur Laufzeit:
+Erwarteter Endbestand:
 
 ```text
-Honaker COORDINATE:GetLandHeight()
--> terrain height in meters ASL
--> UTILS.MetersToFeet(...)
--> + 2500 ft
--> CASENHANCED Altitude argument in feet ASL
+Wright:     30
+Jalalabad:  85
 ```
 
-Damit wird kein fixer `10000 ft ASL`-Fastmover-Orbit mehr verwendet.
+## 7. CASENHANCED – Capability und explizite Squadron-Bindung
 
-Der CAS-Adapter verwendet fuer diesen Modus direkt:
+Acceptance-Konfiguration:
+
+```text
+CAS tactical area:              5 NM around Honaker
+AH-64 combat height:            Honaker terrain + 2500 ft
+MOOSE mission:                  AUFTRAG:NewCASENHANCED
+Detected-target range:          5 NM
+Selected squadron:              SQ_US_JBAD_AH64D_B_1_10_AVN
+```
+
+Der reale Build-`1-8`-Lauf erzeugte und queue-te einen CASENHANCED-AUFTRAG, aber der damals geladene Jalalabad-Bootstrap bot für die AH-64-SQUADRON und deren Payload nur `AUFTRAG.Type.CAS`. Deshalb konnte AIRWING keinen passenden CASENHANCED-Pool zuweisen.
+
+Der aktuelle Jalalabad-Bootstrap registriert jetzt sowohl Squadron als auch Payload für:
 
 ```lua
-AUFTRAG:NewCASENHANCED(
-  tacticalZone,
-  altitudeFtASL,
-  speedKts,
-  engageRangeNm,
-  nil,
-  targetTypes
-)
+{
+  AUFTRAG.Type.CAS,
+  AUFTRAG.Type.CASENHANCED,
+}
 ```
 
-`CASENHANCED` ruft im gepinnten MOOSE-Source selbst `SetEngageDetected(...)` mit der uebergebenen CAS-Zone auf und laesst die Gruppe diese Zone zufaellig patrouillieren. Das ist der MOOSE-first Search-/Patrol-Layer fuer den naechsten DCS-Lauf.
+Zusätzlich bindet Stage 3 den CAS-Auftrag explizit über die source-geprüfte MOOSE-API:
 
-Ein einzelnes `EVENTS.Shot` bleibt nur Ausfuehrungsevidenz:
-
-```text
-AH-64 fires
--> ConfirmExecutionEvidence(...)
--> evidence recorded
--> MissionDemand remains ACTIVE
+```lua
+mission:AssignSquadrons({ state.ah64d })
 ```
 
-Erst MOOSE-AUFTRAG-Abschluss **plus** vorhandene Ausfuehrungsevidenz darf den CAS-Demand erfolgreich abschliessen.
+Damit ist die gewünschte Organisationsauswahl nicht mehr nur indirektes AIRWING-Payload-Matching.
 
-## 7. WEST-Hoehenprofil: reale AGL-Telemetrie implementiert
-
-Der Corridor erzeugt fuer `OMW_FlightPath_WEST` weiterhin:
+Wichtig: Der Jalalabad-AirOps-Bootstrap ist **nicht** Bestandteil des Stage-3-Einzelbundles. Für den nächsten DCS-Test müssen daher beide generierten Lua-Dateien neu gebaut und in der Mission aktualisiert werden:
 
 ```text
-2500 ft AGL
-RADIO altitude type
-RotaryWing.Column.D70
-SetAltitude(2500, true, true) at segment transition
-```
-
-Der letzte reale Lauf zeigte trotzdem nach visueller Owner-Beobachtung:
-
-```text
-first WEST area -> climb appears correct
-later WEST waypoint(s) -> helicopter appears to descend again
-```
-
-Deshalb protokolliert `OMW_HelicopterFlightPathCorridor.lua` ab Schema `OMW-HELICOPTER-FLIGHTPATH-CORRIDOR-7` bei `OnAfterPassingWaypoint` eventgebunden:
-
-```text
-waypoint UID
-pathline/profile
-requested AGL
-actual ASL
-terrain ASL
-calculated actual AGL
-```
-
-Technischer Pfad:
-
-```text
-FLIGHTGROUP/OPSGROUP:GetCoordinate(true)
--> COORDINATE.y
--> COORDINATE:GetLandHeight()
--> actual AGL = coordinate.y - land height
--> UTILS.MetersToFeet(...)
-```
-
-Es gibt dafuer keinen neuen hochfrequenten Scheduler und keinen Frame-Scan.
-
-Der naechste reale DCS-Lauf kann damit unterscheiden zwischen korrekt generiertem `RADIO`-/`SetAltitude`-Profil und tatsaechlich davon abweichender DCS-AI-Flughoehe.
-
-## 8. Guard und QRF in diesem Acceptance-Lauf
-
-Die neue projektweite Installationsbaseline sieht fuer Guards bevorzugt owner-authored Patrol Routes und fuer QRF dynamische Infantry-plus-optional-Vehicle-Pakete vor.
-
-Diese beiden qualitativen Erweiterungen werden **noch nicht gleichzeitig in diesen ohnehin fehlerbelasteten Stage-3-Kernlauf eingefuehrt**. Fuer diesen Acceptance-Zwischenschritt bleiben Guard und infantry-only QRF unveraendert, damit die nachgewiesenen Core-Probleme isoliert korrigiert werden koennen.
-
-Spaetere Honaker-Erweiterung:
-
-```text
-Guard -> validated owner-authored patrol route
-QRF   -> infantry + available MRAP/M-ATV/armed HMMWV package
-```
-
-Echtes Auf-/Absitzen bleibt ein eigener `OPSTRANSPORT`-Acceptance-Scope.
-
-## 9. Revidierter End-to-End-Vertrag
-
-```text
-RED attack Honaker
--> MOOSE OPSZONE alarm evidence
--> one Honaker attack incident
--> current/new RED in alarm perimeter added as known incident participants
--> Honaker QRF reacts to incident participants
-AND
--> Wright live coordinate fire cycle against living incident participants
-   -> fresh coordinate
-   -> real fire
-   -> physical ammo proof
-   -> reacquire incident participants
-   -> repeat independent of perimeter Defeated
-AND
--> Jalalabad AH-64 CASENHANCED
-   -> separate 5-NM tactical zone
-   -> runtime mission altitude = Honaker terrain + 2500 ft
-   -> OMW_FlightPath -> OMW_FlightPath_WEST
-   -> actual AGL telemetry at passed waypoints
-   -> repeated MOOSE detected-target engagement inside tactical area
-THEN
--> known incident attackers neutralized
--> local M1083 rearm
--> CampaignState 16 -> 15
--> strategic RESUPPLY
--> Jalalabad CH-47 -> Wright
--> Wright 30 / Jalalabad 85
--> physical return lifecycle
-```
-
-## 10. PASS-Kriterien fuer den naechsten finalen Lauf
-
-Der anschliessende DCS-Lauf muss mindestens nachweisen:
-
-1. `OPSZONE Attacked` erzeugt den Honaker-Attack-Incident.
-2. Neue RED-Gruppen aus `OPSZONE Evaluated` werden demselben Incident hinzugefuegt.
-3. `OPSZONE Defeated` beendet keine laufende ARTY-/CAS-/QRF-Response und ist kein PASS-Gate.
-4. Honaker-QRF greift bekannte Incident-Angreifer an.
-5. Wright fuehrt mehrere reale `AssignTargetCoord`-Fire Missions mit physischer Ammo-Abnahme aus, solange lebende bekannte Incident-Angreifer vorhanden sind.
-6. Eine bekannte RED-Gruppe darf nach Verlassen der 1000-m-Zone weiter als taktisches Ziel bestehen.
-7. CAS verwendet die separate 5-NM-Tactical-Zone und nicht die 1000-m-Alarmzone als Kampfbereich.
-8. `AUFTRAG:NewCASENHANCED` wird mit einer zur Laufzeit aus Honaker-Terrain + 2500 ft berechneten ASL-Hoehe gestartet.
-9. AH-64 fuehrt wiederholte wirksame Angriffe im vorgesehenen taktischen Bereich aus; ein einzelner `Shot` ist kein taktischer Gesamt-PASS.
-10. WEST-Hoehenprofil wird mit realer `requestedAglFt`-/`actualAglFt`-/`actualAslFt`-/`terrainFt`-Telemetrie an relevanten Waypoints nachgewiesen.
-11. Attack-Incident schliesst erst nach gueltiger eigener taktischer Endbedingung; fuer diesen Test: keine lebenden bekannten Angreifer.
-12. Lokaler M1083-Rearm laeuft real und CampaignState erreicht Wright `15`.
-13. Genau ein strategischer RESUPPLY-Demand/TRANSFER Jalalabad -> Wright ueber 15 Pakete wird ausgefuehrt.
-14. CH-47 liefert physisch, Wright erreicht `30`, Jalalabad `85`.
-15. CH-47 kehrt physisch nach Jalalabad zurueck und erst danach erfolgt `LegionAssetReturned`.
-16. Kein `VALIDATED` ohne vollstaendige Commit-/MIZ-/Bundle-/MOOSE-/DCS-Provenienz.
-
-## 11. Build-Vertrag
-
-Die Acceptance mutiert keine `.miz`.
-
-Build:
-
-```text
-tools/build-stage3-honaker-wright-full-response-acceptance-1.ps1
-```
-
-Output:
-
-```text
+mission/tests/jalalabad-air-operations/dist/OMW_AirOps_Jalalabad.lua
 mission/tests/stage3-honaker-wright-full-response/dist/OMW_Stage3_Honaker_Wright_Full_Response_Acceptance_1.lua
 ```
 
-Aktueller Builder:
+Ein `EVENTS.Shot` ist nur Ausführungsevidenz. MissionDemand wird erst nach MOOSE-AUFTRAG-Erfolg plus vorhandener Shot-Evidenz erfolgreich abgeschlossen.
+
+## 8. Helicopter FlightPath
+
+CAS nutzt weiterhin:
 
 ```text
-STAGE3-HONAKER-WRIGHT-FULL-RESPONSE-ACCEPTANCE-1-7
+OMW_FlightPath       -> 500 ft AGL
+OMW_FlightPath_WEST  -> 2500 ft AGL, RADIO, Keep=true, RotaryWing.Column.D70
 ```
 
-Der Builder prueft jetzt explizit die Marker fuer:
+`OnAfterPassingWaypoint` protokolliert eventgebunden:
 
 ```text
-NewCASENHANCED
-5-NM tactical area
-terrain + 2500-ft mission altitude
-incident-based ARTY retargeting
-actual waypoint AGL telemetry
-strategic AMMO closure
+pathline
+requested AGL
+actual AGL
+actual ASL
+terrain height
 ```
 
-## 12. Noch DCS-testpflichtig
+Kein Frame-Scan und kein hochfrequenter Zusatzscheduler.
+
+Der Air-AMMO-CH-47 nutzt `OMW_FlightPath` für Hin- und Rückweg.
+
+## 9. Guard-Grenze dieses Laufs
+
+Die projektweite Guard-Baseline bevorzugt owner-authored Patrol Routes. In der aktuellen Mission existiert unter anderem:
 
 ```text
-CASENHANCED tactical behavior against the actual Honaker RED force
-repeated CAS attack / Search-and-Destroy effectiveness
-actual WEST AGL behavior from the new waypoint telemetry
-incident participant retention after perimeter exit
-sustained ARTY retarget cycle
-local M1083 rearm after the longer fire cycle
-full strategic resupply closure
-later Guard patrol route
-later mixed infantry/vehicle QRF
+OMW_RTE_BLUE_GUARD_HONAKER_01
 ```
 
-Bis diese Punkte reproduzierbar nachgewiesen sind, bleibt der Status `PLANNED` und `validated_in_dcs: false`.
+Diese Guard-Patrol-Qualitätsverbesserung wird **nicht zusätzlich in Build 1-10 aufgenommen**, damit der nächste Lauf ausschließlich die nach dem `1-8`-FAIL identifizierten Integrationsgrenzen CAS, QRF und Rearm/Resupply prüft. Der bestehende Guard-Pfad bleibt für diesen Kernlauf unverändert; die Route wird nach erfolgreichem Stage-3-Kernabschluss integriert.
+
+## 10. Preflight-Matrix vor dem nächsten DCS-Lauf
+
+```text
+Alarm -> Incident                         MOOSE/source + vorhandener DCS-PASS
+Incident -> ARTY demand                  vorhandener DCS-PASS
+ARTY real fire / retarget                vorhandener DCS-PASS
+OPSZONE Defeated decoupling              vorhandener DCS-PASS
+
+Incident -> QRF                          vorhandener Request-/Spawn-Nachweis
+QRF mission type                         NewONGUARD source-reviewed
+QRF continuing detection                 SetEngageDetected source-reviewed
+QRF physical deployment                  DCS pending
+
+Incident -> CAS demand                   vorhandener DCS-PASS
+CASENHANCED construction/queue           vorhandener DCS-PASS
+AH64 Squadron capability CASENHANCED     static checked
+AH64 Payload capability CASENHANCED      static checked
+AH64 explicit AssignSquadrons            source-reviewed + contract test
+AH64 physical allocation/start           DCS pending
+
+ARTY depletion -> M1083 request          vorhandener DCS-PASS
+M1083 materializer registered            static checked
+M1083 dedicated BRIGADE started          static checked + contract test
+M1083 materialization                    DCS pending
+ARTY real Rearmed                        DCS pending
+CampaignState 16 -> 15                   coupled to Rearm evidence; DCS pending
+
+15 -> one RESUPPLY demand                existing policy/logic path
+CH47 CARGOTRANSPORT capability           static checked
+CH47 AssignSquadrons                     source-reviewed / existing accepted pattern
+cargo pickup/delivery/return             DCS pending in this combined scope
+```
+
+## 11. PASS-Kriterien
+
+Gesamt-PASS erst wenn im selben dokumentierten DCS-Lauf mindestens nachgewiesen ist:
+
+```text
+1. Honaker alarm / attack incident created.
+2. Alarm perimeter clear does not terminate response.
+3. QRF physically reaches ArmyOnMission under ONGUARD + SetEngageDetected.
+4. All known attack-incident participants are neutralized.
+5. Wright ARTY fires real coordinate missions with physical ammo decrease.
+6. M1083 physically materializes and MOOSE ARTY real rearm completes.
+7. CampaignState Wright AMMO changes exactly 16 -> 15 from that rearm.
+8. Exactly one strategic RESUPPLY is created.
+9. Jalalabad CH-47 and physical slingload are allocated, picked up and delivered.
+10. Wright finishes at 30 and Jalalabad at 85.
+11. CH-47 returns physically to Jalalabad and AIRWING recovers the asset.
+12. Jalalabad AH-64D is physically allocated to CASENHANCED, flies the route and employs a weapon.
+13. CAS MissionDemand reaches SUCCESS only after MOOSE mission success plus weapon evidence.
+14. No Lua/MOOSE runtime error invalidates the chain.
+```
+
+Bis dahin bleibt `validated_in_dcs: false`.
