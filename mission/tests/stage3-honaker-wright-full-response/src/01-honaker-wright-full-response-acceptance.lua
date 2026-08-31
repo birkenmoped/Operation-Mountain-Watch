@@ -33,6 +33,8 @@ local SECURITY_RADIUS_M = 1000
 local QRF_GROUPS = 3
 local QRF_PERSONNEL = 9
 local PERSONNEL_FLOOR = 80
+local QRF_TACTICAL_RADIUS_NM = 5
+local QRF_ENGAGE_RANGE_NM = 5
 local FIRE_SHELLS = 4
 local FIRE_TARGET_ACQUIRE_DELAY_SEC = 15
 local ARTY_WAIT_FOR_SHOT_SEC = 300
@@ -67,8 +69,8 @@ local HelicopterCorridor = OMW_STAGE3_HELICOPTER_FLIGHTPATH_CORRIDOR
 
 local registry = MissionDemand.New()
 local state = {
-  failed=false, passed=false, ctx=nil, airwing=nil, ch47=nil,
-  brigade=nil, guardCoord=nil, qrfPlatoon=nil, qrfEntries={}, qrfEngaged=false,
+  failed=false, passed=false, ctx=nil, airwing=nil, ah64d=nil, ch47=nil,
+  brigade=nil, guardCoord=nil, qrfPlatoon=nil, qrfEntries={}, qrfDeployed=false, qrfEngaged=false, qrfTacticalZone=nil,
   threat=nil, threatStarted=false, perimeterClear=false, incident=nil, attackIncident=nil, attackIncidentClosed=false,
   casAdapter=nil, casDemand=nil, casMission=nil, casFlight=nil, casExecuting=false, casCorridor=false, casFired=false, casShotObserver=nil,
   casTacticalZone=nil, casAltitudeFtAsl=nil, casFailed=false, casFailureReason=nil,
@@ -212,6 +214,7 @@ local function prepareAirwing()
     return false
   end
   state.airwing = air.Airwing
+  state.ah64d = air.Squadrons.AH64D
   state.ch47 = air.Squadrons.CH47
   if not GROUP:FindByName("TPL_AIR_US_JBAD_CH47_HEAVYLIFT_1SHIP") then
     log("AIRWING_PRECHECK Jalalabad CH47 template missing")
@@ -226,8 +229,8 @@ end
 
 local function ensureCasContext()
   if state.casAdapter and state.casTacticalZone then return true end
-  if not state.airwing then
-    failCas("Jalalabad AIRWING unavailable when CAS demand was created")
+  if not state.airwing or not state.ah64d then
+    failCas("Jalalabad AIRWING/AH64D unavailable when CAS demand was created")
     return false
   end
   local centerVec2=state.guardCoord:GetVec2()
@@ -255,6 +258,7 @@ local function ensureCasContext()
     casSpeedKts=CAS_SPEED_KTS,
     engageDetectedRangeNm=CAS_ENGAGE_RANGE_NM,
     engageDetectedTargetTypes={"Ground Units"},
+    squadrons={state.ah64d},
     requireExecutionEvidence=true,
   })
   return state.casAdapter ~= nil
@@ -599,18 +603,29 @@ end
 local function dispatchQrf()
   local targets = incidentGroups()
   if #targets == 0 then fail("no known RED attack participants available for Honaker QRF") return end
+  if not state.qrfTacticalZone then
+    state.qrfTacticalZone = ZONE_RADIUS:New(
+      "OMW_TACTICAL_BLUE_GROUND_COP_HONAKER_STAGE3_QRF",
+      state.guardCoord:GetVec2(),
+      UTILS.NMToMeters(QRF_TACTICAL_RADIUS_NM)
+    )
+  end
+  if not state.qrfTacticalZone then fail("Honaker QRF tactical ZONE_RADIUS creation failed") return end
   local available = context().store:GetResource(HONAKER_NODE,PERSONNEL_RESOURCE).available
-  local count = math.min(#targets,QRF_GROUPS,math.floor(math.max(available-PERSONNEL_FLOOR,0)/QRF_PERSONNEL),state.qrfPlatoon:CountAssets(true,AUFTRAG.Type.GROUNDATTACK))
+  local count = math.min(#targets,QRF_GROUPS,math.floor(math.max(available-PERSONNEL_FLOOR,0)/QRF_PERSONNEL),state.qrfPlatoon:CountAssets(true,AUFTRAG.Type.ONGUARD))
   if count < 1 then fail("Honaker QRF blocked by assets/reserve floor") return end
-  msg("QRF","Honaker requests own QRF; "..count.." soldier groups assigned",10)
+  msg("QRF",string.format("Honaker requests own QRF; %d soldier group(s) assigned to MOOSE ONGUARD search/engage in %d-NM tactical area",count,QRF_TACTICAL_RADIUS_NM),12)
   for i=1,count do
     local deployment = PersonnelLedger.New({
       store=context().store, campaignState=context().campaignState, nodeId=HONAKER_NODE, resourceId=PERSONNEL_RESOURCE,
       deploymentId="STAGE3-HONAKER-QRF-"..i, entityId="HONAKER-QRF-"..i, quantity=QRF_PERSONNEL, missionDemandId=TEST_ID,
     })
-    local mission = AUFTRAG:NewGROUNDATTACK(targets[i],8,ENUMS.Formation.Vehicle.OffRoad)
+    local initialTargetName = targets[i]:GetName()
+    local mission = AUFTRAG:NewONGUARD(targets[i]:GetCoordinate())
+    mission:SetEngageDetected(QRF_ENGAGE_RANGE_NM,{"Ground Units"},state.qrfTacticalZone)
+    mission:SetRequiredAssets(1,1)
     mission:SetName("OMW_STAGE3_HONAKER_QRF_"..i)
-    local entry={mission=mission,target=targets[i],deployment=deployment,army=nil,engaged=false}
+    local entry={mission=mission,initialTargetName=initialTargetName,deployment=deployment,army=nil,engaged=false}
     state.qrfEntries[#state.qrfEntries+1]=entry
     state.brigade:AddMission(mission)
   end
@@ -649,19 +664,23 @@ local function setupDefenceAndThreat()
   guard:AddMissionCapability(AUFTRAG.Type.ONGUARD,100)
   state.brigade:AddPlatoon(guard)
   state.qrfPlatoon=PLATOON:New(INF_TEMPLATE,QRF_GROUPS,"PLT_BLUE_GND_HONAKER_STAGE3_QRF")
-  state.qrfPlatoon:AddMissionCapability(AUFTRAG.Type.GROUNDATTACK,100)
+  state.qrfPlatoon:AddMissionCapability(AUFTRAG.Type.ONGUARD,100)
   state.brigade:AddPlatoon(state.qrfPlatoon)
 
   state.brigade.OnAfterArmyOnMission=function(self,From,Event,To,ArmyGroup,Mission)
     for i,entry in ipairs(state.qrfEntries) do
       if entry.mission==Mission then
         entry.army=ArmyGroup
+        state.qrfDeployed=true
+        msg("QRF","Honaker QRF group "..i.." deployed; MOOSE ONGUARD detection remains active even if the initial RED group is destroyed by another support asset",10)
         local old=ArmyGroup.OnAfterEngageTarget
         function ArmyGroup:OnAfterEngageTarget(F,E,T,Target,Speed,Formation)
           if old then old(self,F,E,T,Target,Speed,Formation) end
           entry.engaged=true
           state.qrfEngaged=true
-          msg("QRF","Honaker QRF group "..i.." engaging "..entry.target:GetName(),8)
+          local engagedName=entry.initialTargetName
+          if Target and type(Target.GetName)=="function" then engagedName=Target:GetName() end
+          msg("QRF","Honaker QRF group "..i.." engaging detected "..tostring(engagedName),8)
         end
       end
     end
@@ -750,7 +769,7 @@ local function setupDefenceAndThreat()
         end,
       })
       state.threat:Start()
-      msg("READY","Honaker full-response acceptance armed: Guard/QRF/ARTY first; CASENHANCED tactical context is created only after a CAS demand",15)
+      msg("READY","Honaker full-response acceptance armed: Guard + MOOSE ONGUARD QRF search/engage + ARTY; CASENHANCED tactical context is created only after a CAS demand",15)
     end,{},5)
   end
   state.brigade:Start()
@@ -771,7 +790,7 @@ local function finish()
   if state.failed or state.passed then return end
   closeAttackIncidentIfClear()
   local casTerminal = state.casFailed or (state.casExecuting and state.casCorridor and state.casFired)
-  if not (state.threatStarted and state.attackIncidentClosed and state.qrfEngaged and casTerminal
+  if not (state.threatStarted and state.attackIncidentClosed and state.qrfDeployed and casTerminal
       and state.fireStarted and state.fireComplete and state.rearmComplete and state.supportReturned and state.resupply
       and state.inTransit and state.delivered and state.airCorridor and state.homeLanded and state.assetReturned) then return end
 
@@ -796,9 +815,9 @@ local function finish()
 
   state.passed=true
   msg("PASS",string.format(
-    "Honaker full response complete: known attack participants neutralized + QRF + CASENHANCED 5 NM at terrain+2500 ft + %d live Wright coordinate fire missions + M1083 rearm + CampaignState threshold + CH-47 Air-AMMO + Wright 30/30",
+    "Honaker full response complete: known attack participants neutralized + QRF deployed with MOOSE ONGUARD search/engage + CASENHANCED 5 NM at terrain+2500 ft + %d live Wright coordinate fire missions + M1083 rearm + CampaignState threshold + CH-47 Air-AMMO + Wright 30/30",
     state.fireTargetCount),30)
-  log("PASS WrightAmmo=30 JalalabadAmmo=85 fireDemand="..fd.id.." casDemand="..cd.id.." resupplyDemand="..rd.id.." perimeterClear="..tostring(state.perimeterClear).." casMode=CASENHANCED casRadiusNm="..tostring(CAS_TACTICAL_RADIUS_NM).." casAltitudeFtAsl="..tostring(state.casAltitudeFtAsl).." casCorridor="..routeLabel(CAS_PATHLINES).." airAmmoCorridor="..routeLabel(AIR_AMMO_PATHLINES))
+  log("PASS WrightAmmo=30 JalalabadAmmo=85 fireDemand="..fd.id.." casDemand="..cd.id.." resupplyDemand="..rd.id.." perimeterClear="..tostring(state.perimeterClear).." qrfEngaged="..tostring(state.qrfEngaged).." casMode=CASENHANCED casRadiusNm="..tostring(CAS_TACTICAL_RADIUS_NM).." casAltitudeFtAsl="..tostring(state.casAltitudeFtAsl).." casCorridor="..routeLabel(CAS_PATHLINES).." airAmmoCorridor="..routeLabel(AIR_AMMO_PATHLINES))
 end
 
 SCHEDULER:New(nil,start,{},5)
