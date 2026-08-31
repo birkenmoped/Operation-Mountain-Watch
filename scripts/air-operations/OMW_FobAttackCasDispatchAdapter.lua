@@ -2,13 +2,15 @@
 --
 -- MissionDemand remains the assignment/status authority. AIRWING/SQUADRON/AUFTRAG
 -- remain the operational execution path. This adapter owns no strategic resources.
+-- Execution evidence proves that the assigned flight actually employed weapons;
+-- it does not by itself prove tactical mission completion.
 
 local Adapter = {}
 local Instance = {}
 Instance.__index = Instance
 
 local TAG = "[OMW][FobAttackCasDispatchAdapter]"
-Adapter.SchemaVersion = "OMW-FOB-ATTACK-CAS-DISPATCH-ADAPTER-3"
+Adapter.SchemaVersion = "OMW-FOB-ATTACK-CAS-DISPATCH-ADAPTER-4"
 
 local function fail(message)
   error(TAG .. " " .. tostring(message), 2)
@@ -156,10 +158,8 @@ function Instance:ConfirmExecutionEvidence(demandId, evidence)
   if not mission then return nil, false, "MISSION_NOT_FOUND" end
   if self.executionEvidenceByDemandId[demandId] then return mission, false, "EVIDENCE_ALREADY_CONFIRMED" end
   self.executionEvidenceByDemandId[demandId] = evidence or { confirmed=true }
-  self:_log("CAS execution evidence confirmed demandId=" .. tostring(demandId))
-  local succeeded = self:_succeedWithEvidence(demandId, mission)
-  if succeeded then return mission, true, nil end
-  return mission, true, "EVIDENCE_RECORDED_PENDING_ACTIVE"
+  self:_log("CAS execution evidence recorded; tactical completion remains AUFTRAG/closure-owned demandId=" .. tostring(demandId))
+  return mission, true, "EVIDENCE_RECORDED_PENDING_MISSION_COMPLETION"
 end
 
 function Instance:RequestMissionClosure(demandId, reason)
