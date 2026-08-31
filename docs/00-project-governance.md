@@ -9,6 +9,7 @@ authoritative_for:
   - campaign research period
   - active ORBAT selection model
   - project development phase
+  - Ground installation alarm and trigger-zone semantics
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
@@ -79,7 +80,7 @@ validated_in_dcs:
 ---
 ```
 
-Nicht anwendbare Felder dürfen leer bleiben, müssen aber bewusst bewertet werden.
+Nicht anwendbare Felder dürfen leer sein, müssen aber bewusst bewertet werden.
 
 ## 4. Draft-Branches, technische Akzeptanz und Repository-Wahrheit
 
@@ -181,6 +182,43 @@ Jede neue Integration von CampaignState und MOOSE muss mindestens nachweisen:
 - Diagnose und Sperrverhalten bei einer absichtlich erzeugten Abweichung.
 
 Ohne diesen Nachweis darf eine Integration nicht als produktive Ressourcenbuchhaltung gelten.
+
+## 5.2 Verbindliche Ground-Alarm-/Triggerzonen-Regel
+
+Für die BLUE-Ground-Organisation gilt projektweit und standortunabhängig:
+
+```text
+FOB / COP / OP alarm zone
+= threat-detection and response-trigger boundary
+!= tactical battlespace
+!= weapons engagement zone
+!= fire-support target area
+!= CAS engagement area
+!= mission-end condition
+```
+
+Diese Regel gilt für **alle** FOBs, COPs und OPs, nicht nur für Honaker-Miracle und nicht nur für einen einzelnen Acceptance-Test. Eine standortbezogene Alarm-/Security-/Threat-Zone dient ausschließlich dazu, eine unmittelbare Bedrohung der jeweiligen Installation zu erkennen und die vorgesehenen Reaktionsketten auszulösen, zum Beispiel Guard, QRF, Fire Support, CAS oder weitere zulässige Unterstützungsmaßnahmen.
+
+Das Verlassen oder Freikämpfen dieser Alarmzone beendet einen ausgelösten Unterstützungsauftrag **nicht automatisch**. Insbesondere bedeutet ein MOOSE-`OPSZONE`-Zustand wie `Defeated` innerhalb der Alarmzone nur, dass die unmittelbare Bedrohung dieser Triggergrenze beendet ist. Er beweist nicht, dass der umliegende taktische Gefechtsraum frei von relevanten Feindkräften ist.
+
+Nach einer ausgelösten Alarmierung müssen Zielerfassung, Engagement Area und Endbedingung des jeweiligen Unterstützungsauftrags separat und auftragsgerecht bestimmt werden. Dabei gilt weiterhin MOOSE-first; vorhandene MOOSE-Detection-, Zone-, Set-, OPS-, AUFTRAG- und FSM-Funktionalität ist vor projektspezifischen Ergänzungen zu verwenden.
+
+Verbindliches Architekturprinzip:
+
+```text
+enemy enters installation alarm zone
+-> installation threat / alarm state
+-> response demand(s) created
+-> response assets may engage relevant hostile forces in their authorized tactical battlespace
+-> response continues according to its own tactical completion criteria
+
+NOT:
+
+enemy leaves installation alarm zone
+-> automatically terminate ARTY / CAS / QRF / other response
+```
+
+Die konkrete Geometrie beziehungsweise Reichweite der Alarmzone darf je Installation und taktischem Kontext variieren. Die Semantik bleibt jedoch identisch: **Alarmierung und Triggerung, nicht Begrenzung des anschließenden Kampfes.**
 
 ## 6. Historischer Recherche- und Missionszeitraum
 
