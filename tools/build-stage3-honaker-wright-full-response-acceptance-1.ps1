@@ -13,6 +13,7 @@ $sources = [ordered]@{
   OMW_STAGE3_FOB_ATTACK_DEMAND_POLICY = 'scripts\campaign\OMW_FobAttackDemandPolicy.lua'
   OMW_STAGE3_FIRE_SUPPORT_DEMAND_POLICY = 'scripts\campaign\OMW_FobAttackFireSupportDemandPolicy.lua'
   OMW_STAGE3_FOB_THREAT_OPSZONE_ADAPTER = 'scripts\ground\OMW_FobThreatOpsZoneAdapter.lua'
+  OMW_STAGE3_GROUND_INSTALLATION_ATTACK_INCIDENT = 'scripts\ground\OMW_GroundInstallationAttackIncident.lua'
   OMW_STAGE3_FUNCTIONAL_ARTY_DISPATCH_ADAPTER = 'scripts\ground\OMW_FobAttackFunctionalArtyDispatchAdapter.lua'
   OMW_STAGE3_PERSONNEL_LEDGER = 'scripts\ground\OMW_GroundPersonnelDeploymentLedger.lua'
   OMW_STAGE3_GROUND_AMMO_REARM_ADAPTER = 'scripts\ground\OMW_GroundAmmoRearmAdapter.lua'
@@ -26,7 +27,7 @@ $acceptanceRelative = 'mission\tests\stage3-honaker-wright-full-response\src\01-
 $acceptanceFile = Join-Path $repoRoot $acceptanceRelative
 $distDir = Join-Path $repoRoot 'mission\tests\stage3-honaker-wright-full-response\dist'
 $outputFile = Join-Path $distDir 'OMW_Stage3_Honaker_Wright_Full_Response_Acceptance_1.lua'
-$builderVersion = 'STAGE3-HONAKER-WRIGHT-FULL-RESPONSE-ACCEPTANCE-1-4'
+$builderVersion = 'STAGE3-HONAKER-WRIGHT-FULL-RESPONSE-ACCEPTANCE-1-5'
 $testId = 'STAGE3-HONAKER-WRIGHT-FULL-RESPONSE-ACCEPTANCE-1'
 $mooseCommit = '73d3ed119cd9e7e3f2cfcabbaa34513d30529b54'
 $mooseSha256 = 'e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915'
@@ -54,11 +55,13 @@ $header = @"
 -- TestId: $testId
 -- MOOSECommit: $mooseCommit
 -- MooseLuaSHA256: $mooseSha256
--- Scope: Honaker attack -> own QRF + armed CAS + live-retarget Wright coordinate fire -> local M1083 rearm -> CampaignState AMMO reorder -> Jalalabad CH47 Air-AMMO -> Wright.
+-- Scope: Honaker attack -> installation attack incident -> own QRF + armed CAS + live-retarget Wright coordinate fire -> local M1083 rearm -> CampaignState AMMO reorder -> Jalalabad CH47 Air-AMMO -> Wright.
+-- AlarmZone: MOOSE OPSZONE 1000 m perimeter is trigger/evidence only; Defeated does not terminate ARTY/CAS/QRF or satisfy overall PASS.
+-- AttackIncident: OPSZONE Evaluated adds newly observed RED groups; living known participants remain tactical targets after leaving the alarm perimeter.
 -- CASRoute: OMW_FlightPath 500 ft AGL -> OMW_FlightPath_WEST 2500 ft AGL held via MOOSE SetAltitude(...,Keep=true,RadarAlt=true) / RotaryWing.Column.D70 outbound AND reverse return.
--- CASOrbit: MOOSE AUFTRAG:NewCAS 10000 ft ASL; this is distinct from the WEST AGL corridor contract.
--- FireSupport: reacquire the existing MOOSE OPSZONE picture after each physically verified coordinate fire mission while RED threat remains.
--- PassThreatGate: MOOSE OPSZONE Defeated RED required.
+-- CASOrbit: MOOSE AUFTRAG:NewCAS 10000 ft ASL remains in this intermediate build and is a separate open correction from the incident/ARTY fix.
+-- FireSupport: reacquire living known attack-incident participants after each physically verified coordinate fire mission.
+-- PassThreatGate: attack incident closed only after no living known attack participant remains; OPSZONE Defeated is telemetry only.
 -- AirAmmoRoute: OMW_FlightPath outbound AND return.
 -- StrategicAuthority: existing OMW CampaignState only.
 -- PhysicalAirCargo: one ammo_cargo static represents complete 15-package transfer manifest; 1000 kg acceptance-only physical parameter.
@@ -78,13 +81,14 @@ $bundle += $acceptanceSource
 $combinedForValidation += $acceptanceSource
 
 $requiredMarkers = @(
-  'FIRE_SUPPORT_IMMEDIATE','OPSZONE','AUFTRAG:NewGROUNDATTACK','ARTY:New','AssignTargetCoord','QueueTarget',
+  'FIRE_SUPPORT_IMMEDIATE','OPSZONE','OnAfterEvaluated','GetScannedGroupSet','OMW_STAGE3_GROUND_INSTALLATION_ATTACK_INCIDENT',
+  'PROXIMITY_INTRUSION','GetParticipants','KNOWN_ATTACKERS_NEUTRALIZED','AUFTRAG:NewGROUNDATTACK','ARTY:New','AssignTargetCoord','QueueTarget',
   'LIVE_FIRE_RETARGET','SetWaitForShotTime','ARTY_WAIT_FOR_SHOT_SEC','verifyFireComplete','PHYSICAL_AMMO_UNCHANGED',
   'SetEngageDetected','ConfirmExecutionEvidence','EVENTS.Shot','requireExecutionEvidence',
   'SetAltitude','profileTransitions','RotaryWing.Column.D70','WEST_ALTITUDE_FT_AGL',
   'GROUND_AMMO_PACKAGE','GROUND_NODE_WRIGHT','GROUND_NODE_JALALABAD','TPL_BLUE_GND_WRIGHT_FS_ARTY_L118_2','TPL_BLUE_GND_SUP_M1083',
   'AUFTRAG:NewCARGOTRANSPORT','SQ_US_JBAD_CH47_HEAVYLIFT','OMW_FlightPath','OMW_FlightPath_WEST','ResolveSequence',
-  'MarkInTransit','MarkDelivered','MESSAGE:New','active_duplicate','onThreatCleared','threatCleared'
+  'MarkInTransit','MarkDelivered','MESSAGE:New','active_duplicate','onThreatCleared','perimeterClear'
 )
 foreach ($marker in $requiredMarkers) { if (-not $combinedForValidation.Contains($marker)) { throw "Stage 3 full-response sources missing marker: $marker" } }
 
@@ -107,10 +111,13 @@ Write-Host "MOOSECommit: $mooseCommit"
 Write-Host "MooseLuaSHA256: $($mooseSha256.ToUpperInvariant())"
 Write-Host 'AttackSite: BLUE_GROUND_COP_HONAKER'
 Write-Host 'ThreatEvidenceStart: MOOSE OPSZONE Attacked'
-Write-Host 'ThreatEvidencePass: MOOSE OPSZONE Defeated RED required'
+Write-Host 'AlarmPerimeterSemantics: MOOSE OPSZONE Defeated RED is telemetry only; it does not terminate response or satisfy PASS'
+Write-Host 'AttackIncident: one active Honaker incident retains living known RED participants after perimeter exit'
+Write-Host 'AttackIncidentRefresh: MOOSE OPSZONE OnAfterEvaluated / GetScannedGroupSet'
+Write-Host 'AttackIncidentClosure: no living known attack participant remains'
 Write-Host 'HonakerResponse: own infantry QRF + Jalalabad AH64D CAS with MOOSE EngageDetected'
 Write-Host 'FireSupport: Wright TPL_BLUE_GND_WRIGHT_FS_ARTY_L118_2 via MOOSE Functional ARTY AssignTargetCoord / DCS Fire At Point'
-Write-Host 'FireSupportTargets: one live coordinate mission at a time; existing OPSZONE picture reacquired after every physically confirmed mission while threat remains'
+Write-Host 'FireSupportTargets: one live coordinate mission at a time; living attack-incident participants reacquired after every physically confirmed mission'
 Write-Host 'FireSupportRoundsPerMission: 4'
 Write-Host 'FireSupportTargetAcquireDelaySec: 15'
 Write-Host 'FireSupportFirstShotTimeoutSec: 300'
@@ -124,9 +131,9 @@ Write-Host 'AirPhysicalMission: MOOSE AUFTRAG CARGOTRANSPORT'
 Write-Host 'AirSquadron: SQ_US_JBAD_CH47_HEAVYLIFT'
 Write-Host 'AirRouteOutbound: OMW_FlightPath'
 Write-Host 'AirRouteReturn: OMW_FlightPath'
-Write-Host 'CASOrbitAltitudeFtASL: 10000 (MOOSE AUFTRAG NewCAS/NewORBIT semantics)'
+Write-Host 'CASOrbitAltitudeFtASL: 10000 (INTERMEDIATE / OPEN; MOOSE AUFTRAG NewCAS/NewORBIT semantics still to be corrected)'
 Write-Host 'CASEngageDetectedRangeNm: 5'
-Write-Host 'CASEvidence: real MOOSE EVENTS.Shot recorded; overall PASS additionally requires OPSZONE Defeated RED'
+Write-Host 'CASEvidence: real MOOSE EVENTS.Shot recorded; evidence is not attack-incident closure'
 Write-Host 'CASRouteOutbound: OMW_FlightPath 500ft AGL -> OMW_FlightPath_WEST 2500ft AGL HELD via MOOSE SetAltitude RadarAlt=true / Column.D70'
 Write-Host 'CASRouteReturn: OMW_FlightPath_WEST 2500ft AGL HELD via MOOSE SetAltitude RadarAlt=true / Column.D70 -> OMW_FlightPath'
 Write-Host 'CASRouteJunctionMaxDistanceM: 1000'
