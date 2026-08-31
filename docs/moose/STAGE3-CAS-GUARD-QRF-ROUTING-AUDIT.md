@@ -1,6 +1,6 @@
 ---
 document_id: OMW-MOOSE-STAGE3-CAS-GUARD-QRF-ROUTING-AUDIT
-status: SOURCE_REVIEWED
+status: PLANNED
 document_class: MOOSE_TECHNICAL_AUDIT
 owning_policy: OMW-GOV-001
 authoritative_for:
