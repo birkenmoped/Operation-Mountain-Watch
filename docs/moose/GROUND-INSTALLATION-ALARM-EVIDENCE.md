@@ -4,7 +4,7 @@ status: PLANNED
 document_class: MOOSE_TECHNICAL_REFERENCE
 owning_policy: OMW-GOV-001
 authoritative_for:
-  - source-reviewed MOOSE mechanisms for FOB/COP/OP attack evidence
+  - source-reviewed MOOSE mechanisms for installation attack evidence
   - Stage 3 Ground installation alarm sensor implementation scope
   - runtime acceptance requirements for proximity, direct-fire and indirect-fire evidence
 not_authoritative_for:
@@ -24,12 +24,12 @@ validated_in_dcs: false
 
 ## 1. Zweck und Governance-Grenze
 
-Dieses Dokument beschreibt den MOOSE-first Technikpfad fuer die auf `main` verbindlich festgelegte Multi-Evidence-Alarmierung aller BLUE-FOBs, COPs und OPs.
+Dieses Dokument beschreibt den MOOSE-first Technikpfad fuer die projektweit verbindliche Multi-Evidence-Alarmierung missionsrelevanter BLUE-Installationen. Die aktuelle Stage-3-Implementierung verwendet Honaker als Ground-Acceptance-Fall; die Alarmsemantik selbst ist nicht auf Honaker oder ARMY beschraenkt.
 
 Verbindliche fachliche Baseline:
 
-- `OMW-GOV-001`, Abschnitt Ground-Alarm-/Triggerzonen-Regel;
-- `OMW-ARMY-GROUND-INSTALLATION-ALARM-MULTI-EVIDENCE`.
+- `OMW-GOV-001`, Abschnitt Installation-Alarm-/Triggerzonen-Regel;
+- `OMW-ARMY-GROUND-INSTALLATION-ALARM-MULTI-EVIDENCE` beziehungsweise dessen auf `main` generalisierte Installationssemantik.
 
 Die Alarmzone bleibt ausschliesslich Sensor-/Triggergrenze:
 
@@ -54,6 +54,8 @@ Source und offizielle Demo wurden fuer folgende Bausteine geprueft:
 
 ```text
 OPSZONE
+OPSZONE:OnAfterEvaluated(...)
+OPSZONE:GetScannedGroupSet()
 EVENTHANDLER
 EVENTS.Hit
 EVENTS.Shot
@@ -63,12 +65,38 @@ WEAPON
 ZONE
 ```
 
-## 3. `OPSZONE` – Proximity-Evidenz
+## 3. `OPSZONE` – Proximity-Evidenz und Alarmbild
 
 Der vorhandene OMW-Adapter `OMW_FobThreatOpsZoneAdapter.lua` nutzt `OPSZONE` fuer feindliche Ground-Praesenz innerhalb der Alarmzone. Der `Attacked`-FSM-Uebergang bleibt der MOOSE-first Sensor fuer:
 
 ```text
 PROXIMITY_INTRUSION
+```
+
+Der gepinnte Source definiert ausserdem den FSM-Uebergang:
+
+```text
+* -> Evaluated -> *
+```
+
+und ruft `self:Evaluated()` am Ende jeder normalen `OPSZONE`-Auswertung auf. Der oeffentliche Callback-Vertrag lautet:
+
+```lua
+OPSZONE:OnAfterEvaluated(From, Event, To)
+```
+
+Der aktuelle OMW-Adapter exponiert diesen Callback ab Schema `OMW-FOB-THREAT-OPSZONE-ADAPTER-3` als `onThreatEvaluated(...)` und uebergibt dabei `OPSZONE:GetScannedGroupSet()`. Damit kann die bestehende MOOSE-Auswertung neue Angreifer in einen bereits laufenden Installation-Attack-Incident uebernehmen, ohne einen zweiten Welt- oder Frame-Scanner einzufuehren.
+
+Verbindliche Semantik fuer Stage 3:
+
+```text
+OPSZONE current scan
+-> alarm/proximity picture
+-> newly observed hostile groups may be added to active attack incident
+
+hostile group later leaves alarm zone
+-> group may remain a known participant of the active incident
+-> leaving the alarm zone does not itself end ARTY/CAS/QRF
 ```
 
 Wichtig: `OPSZONE Defeated` beschreibt nur das Ende der feindlichen Praesenz innerhalb dieser Alarmgrenze. Der Zustand darf keinen laufenden QRF-, Fire-Support- oder CAS-Auftrag automatisch beenden.
@@ -158,10 +186,19 @@ Branch-local implementiert:
 
 ```text
 scripts/ground/OMW_GroundInstallationAlarmEvidenceAdapter.lua
-Schema: OMW-GROUND-INSTALLATION-ALARM-EVIDENCE-2
+scripts/ground/OMW_GroundInstallationAttackIncident.lua
+scripts/ground/OMW_FobThreatOpsZoneAdapter.lua
 ```
 
-Der Adapter erzeugt ausschliesslich Evidenzobjekte:
+Relevante Schemas:
+
+```text
+OMW-GROUND-INSTALLATION-ALARM-EVIDENCE-2
+OMW-GROUND-INSTALLATION-ATTACK-INCIDENT-1
+OMW-FOB-THREAT-OPSZONE-ADAPTER-3
+```
+
+Der Evidence-Adapter erzeugt ausschliesslich Evidenzobjekte:
 
 ```text
 PROXIMITY_INTRUSION
@@ -171,29 +208,34 @@ CONFIRMED_HIT_ATTACK
 OTHER_CONFIRMED_ATTACK
 ```
 
-Er besitzt ausdruecklich **nicht**:
+Der Incident-Koordinator fasst mehrere Evidenzen eines laufenden Angriffs in genau einem aktiven Incident zusammen und kann bekannte Angreifergruppen als Teilnehmer halten. Verlassene Alarmzonen entfernen eine bekannte Gruppe nicht automatisch aus diesem Incident; `GetParticipants(true)` filtert erst nach realem `IsAlive()`-Status.
+
+Diese Schichten besitzen ausdruecklich **nicht**:
 
 ```text
 CampaignState authority
 MissionDemand authority
 response-dispatch authority
-tactical-completion authority
 ```
 
-Ein spaeterer Incident-/Orchestrierungsadapter muss mehrere Evidenzen desselben Angriffs auf genau einen aktiven Installation-Attack-Incident deduplizieren beziehungsweise diesen aktualisieren.
+Die taktische Completion bleibt auftragsspezifisch. Insbesondere darf `OPSZONE Defeated` nicht als generische Incident-, Fire-Support- oder CAS-Completion verwendet werden.
 
 ## 8. Unit-/CI-Nachweis
 
-Branch-localer Contract-Test:
+Branch-lokale Contract-Tests:
 
 ```text
 tests/mission-demand/test_ground_installation_alarm_evidence_adapter.lua
+tests/mission-demand/test_ground_installation_attack_incident.lua
+tests/mission-demand/test_fob_threat_opszone_adapter.lua
 ```
 
-Abgedeckt sind:
+Abgedeckt sind unter anderem:
 
 ```text
 OPSZONE-fed proximity evidence
+OPSZONE OnAfterEvaluated callback exposure
+current scanned-group-set handoff without second scanner
 ShootingStart direct-fire evidence
 Hit evidence
 Shot target evidence
@@ -202,9 +244,13 @@ filtered shell impact tracking
 impact-inside-zone evidence
 tracking-filter rejection
 MOOSE event registration/unregistration
+multiple evidence items -> one active incident
+participant dedupe
+alive-participant filtering
+explicit incident closure
 ```
 
-Der MissionDemand-CI-Lauf fuer Branch-HEAD `701b20e6a4dae8e5a7dbfb4a65eabdc92df7fa92` ist erfolgreich. Das ist Syntax-/Contract-Evidenz, **kein DCS-Runtime-PASS**.
+CI-Evidenz ist Syntax-/Contract-Evidenz, **kein DCS-Runtime-PASS**. Der jeweils aktuelle Branch-HEAD und die zugehoerigen Workflow-Runs sind vor DCS-Staging neu zu dokumentieren.
 
 ## 9. Erforderlicher DCS-Acceptance-Scope
 
@@ -227,6 +273,10 @@ D. RED Moerser / Artillerie feuert von ausserhalb
 
 E. mehrere Evidenzquellen desselben Angriffs
    -> ein Incident, keine mehrfachen Response-Demands
+
+F. RED-Gruppe wird waehrend laufendem Incident durch OPSZONE-Auswertung erkannt,
+   verlaesst danach die Alarmzone und bleibt lebender Incident-Teilnehmer
+   -> ARTY/CAS darf nicht allein wegen OPSZONE Defeated abbrechen
 ```
 
 Erst danach darf der jeweilige Runtime-Scope als `VALIDATED` dokumentiert werden.
