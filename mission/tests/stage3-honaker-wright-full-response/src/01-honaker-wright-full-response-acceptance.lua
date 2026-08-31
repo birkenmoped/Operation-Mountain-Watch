@@ -36,8 +36,9 @@ local PERSONNEL_FLOOR = 80
 local FIRE_SHELLS = 4
 local FIRE_TARGET_ACQUIRE_DELAY_SEC = 15
 local ARTY_WAIT_FOR_SHOT_SEC = 300
+local CAS_TACTICAL_RADIUS_NM = 5
 local CAS_ENGAGE_RANGE_NM = 5
-local CAS_ORBIT_ALTITUDE_FT_ASL = 10000
+local CAS_COMBAT_HEIGHT_FT_AGL = 2500
 local CAS_SPEED_KTS = 120
 local PRIMARY_ALTITUDE_FT_AGL = 500
 local WEST_ALTITUDE_FT_AGL = 2500
@@ -70,6 +71,7 @@ local state = {
   brigade=nil, guardCoord=nil, qrfPlatoon=nil, qrfEntries={}, qrfEngaged=false,
   threat=nil, threatStarted=false, perimeterClear=false, incident=nil, attackIncident=nil, attackIncidentClosed=false,
   casAdapter=nil, casDemand=nil, casMission=nil, casFlight=nil, casExecuting=false, casCorridor=false, casFired=false, casShotObserver=nil,
+  casTacticalZone=nil, casAltitudeFtAsl=nil,
   battery=nil, arty=nil, fireAdapter=nil, fireDemand=nil, fireStarted=false, fireComplete=false,
   fireTargetCount=0, fireTargetCompleteCount=0, fireLastSourceGroupName=nil,
   physicalAmmoBefore=nil, physicalAmmoAfter=nil, physicalAmmoBeforeByTarget={}, physicalAmmoAfterByTarget={},
@@ -227,8 +229,8 @@ local function installAirObserver()
     if Mission == state.casMission then
       state.casFlight = FlightGroup
       installCasShotObserver()
-      msg("CAS", "Jalalabad AH-64D assigned to Honaker; real weapon employment required; attack-incident closure is independent", 10)
-      installCorridor("CAS", FlightGroup, Mission, state.threat.securityZone:GetCoordinate(), CAS_PATHLINES)
+      msg("CAS", "Jalalabad AH-64D assigned to Honaker CASENHANCED tactical area; real weapon employment and MOOSE mission completion required", 10)
+      installCorridor("CAS", FlightGroup, Mission, state.casTacticalZone:GetCoordinate(), CAS_PATHLINES)
       return
     end
     if Mission ~= state.airMission then return end
@@ -583,6 +585,34 @@ local function setupDefenceAndThreat()
     installationId=INSTALLATION_ID,
     incidentIdFactory=function(_,seq) return "INC-STAGE3-HONAKER-"..seq end,
   })
+
+  local centerVec2=state.guardCoord:GetVec2()
+  local landHeightM=state.guardCoord:GetLandHeight()
+  state.casAltitudeFtAsl=UTILS.MetersToFeet(landHeightM)+CAS_COMBAT_HEIGHT_FT_AGL
+  state.casTacticalZone=ZONE_RADIUS:New(
+    "OMW_TACTICAL_BLUE_GROUND_COP_HONAKER_STAGE3_CAS",
+    centerVec2,
+    UTILS.NMToMeters(CAS_TACTICAL_RADIUS_NM)
+  )
+  state.casTacticalZone:SetDrawZone(false)
+  state.casTacticalZone:SetMarkZone(false)
+  log(string.format(
+    "CAS_TACTICAL_AREA centerLandHeightM=%.1f radiusNm=%s combatHeightFtAgl=%s missionAltitudeFtAsl=%.0f",
+    landHeightM,tostring(CAS_TACTICAL_RADIUS_NM),tostring(CAS_COMBAT_HEIGHT_FT_AGL),state.casAltitudeFtAsl))
+
+  state.casAdapter=CasAdapter.New({
+    missionDemand=MissionDemand,
+    registry=registry,
+    airwing=state.airwing,
+    assigneeId="AIRWING:AW_US_JBAD_TF_SHOOTER_6_6_CAV",
+    missionMode=CasAdapter.MissionMode.CASENHANCED,
+    casAltitudeFt=state.casAltitudeFtAsl,
+    casSpeedKts=CAS_SPEED_KTS,
+    engageDetectedRangeNm=CAS_ENGAGE_RANGE_NM,
+    engageDetectedTargetTypes={"Ground Units"},
+    requireExecutionEvidence=true,
+  })
+
   local guard=PLATOON:New(INF_TEMPLATE,1,"PLT_BLUE_GND_HONAKER_STAGE3_GUARD")
   guard:AddMissionCapability(AUFTRAG.Type.ONGUARD,100)
   state.brigade:AddPlatoon(guard)
@@ -622,7 +652,7 @@ local function setupDefenceAndThreat()
           local demand,created,reason=CasPolicy.CreateDemand(md,reg,incident)
           if created then
             state.casDemand=demand
-            local mission,ok,why=state.casAdapter:Dispatch(demand,state.threat.securityZone)
+            local mission,ok,why=state.casAdapter:Dispatch(demand,state.casTacticalZone)
             if ok then
               state.casMission=mission
               local prev=mission.OnAfterExecuting
@@ -630,8 +660,8 @@ local function setupDefenceAndThreat()
                 if prev then prev(self,F,E,T) end
                 state.casExecuting=true
                 msg("CAS",string.format(
-                  "Jalalabad AH-64D CAS executing for Honaker; MOOSE NewCAS orbit altitude=%d ft ASL; EngageDetected active",
-                  CAS_ORBIT_ALTITUDE_FT_ASL),10)
+                  "Jalalabad AH-64D CASENHANCED executing for Honaker; tactical radius=%d NM; patrol altitude=%.0f ft ASL (Honaker terrain + %d ft); detected-target range=%d NM",
+                  CAS_TACTICAL_RADIUS_NM,state.casAltitudeFtAsl,CAS_COMBAT_HEIGHT_FT_AGL,CAS_ENGAGE_RANGE_NM),12)
               end
             else
               fail("CAS dispatch failed: "..tostring(why))
@@ -685,7 +715,7 @@ local function setupDefenceAndThreat()
         end,
       })
       state.threat:Start()
-      msg("READY","Honaker full-response acceptance armed: incident-based QRF/ARTY target context + armed CAS + rearm + CH-47 Air-AMMO",15)
+      msg("READY","Honaker full-response acceptance armed: incident-based QRF/ARTY + CASENHANCED 5-NM tactical area + rearm + CH-47 Air-AMMO",15)
     end,{},5)
   end
   state.brigade:Start()
@@ -698,17 +728,6 @@ local function start()
   installAirObserver()
   if not preconditionWright() then return end
   if not setupFireSupport() then return end
-  state.casAdapter=CasAdapter.New({
-    missionDemand=MissionDemand,
-    registry=registry,
-    airwing=state.airwing,
-    assigneeId="AIRWING:AW_US_JBAD_TF_SHOOTER_6_6_CAV",
-    casAltitudeFt=CAS_ORBIT_ALTITUDE_FT_ASL,
-    casSpeedKts=CAS_SPEED_KTS,
-    engageDetectedRangeNm=CAS_ENGAGE_RANGE_NM,
-    engageDetectedTargetTypes={"Ground Units"},
-    requireExecutionEvidence=true,
-  })
   setupDefenceAndThreat()
 end
 
@@ -728,16 +747,16 @@ local function finish()
   if not w or w.quantity~=30 then fail("Wright final AMMO not 30") return end
   if not j or j.quantity~=85 then fail("Jalalabad final AMMO not 85") return end
   if not fd or fd.status~=MissionDemand.Status.SUCCESS then fail("fire-support demand not SUCCESS") return end
-  if not cd or cd.status~=MissionDemand.Status.SUCCESS then fail("CAS demand lacks real weapon-employment SUCCESS") return end
+  if not cd or cd.status~=MissionDemand.Status.SUCCESS then fail("CAS demand lacks CASENHANCED mission completion plus real weapon-employment evidence") return end
   if not rd or rd.status~=MissionDemand.Status.SUCCESS then fail("RESUPPLY demand not SUCCESS") return end
   if state.fireTargetCompleteCount ~= state.fireTargetCount or state.fireTargetCount < 1 then fail("not all Wright coordinate fire missions completed") return end
   if type(state.physicalAmmoBefore)~="number" or type(state.physicalAmmoAfter)~="number" or state.physicalAmmoAfter>=state.physicalAmmoBefore then fail("Wright L118 did not consume physical ammo") return end
 
   state.passed=true
   msg("PASS",string.format(
-    "Honaker full response complete: known attack participants neutralized + QRF + armed CAS via WEST 2500 ft AGL Column + %d live Wright coordinate fire missions + M1083 rearm + CampaignState threshold + CH-47 Air-AMMO + Wright 30/30",
+    "Honaker full response complete: known attack participants neutralized + QRF + CASENHANCED 5 NM at terrain+2500 ft + %d live Wright coordinate fire missions + M1083 rearm + CampaignState threshold + CH-47 Air-AMMO + Wright 30/30",
     state.fireTargetCount),30)
-  log("PASS WrightAmmo=30 JalalabadAmmo=85 fireDemand="..fd.id.." casDemand="..cd.id.." resupplyDemand="..rd.id.." perimeterClear="..tostring(state.perimeterClear).." casCorridor="..routeLabel(CAS_PATHLINES).." airAmmoCorridor="..routeLabel(AIR_AMMO_PATHLINES))
+  log("PASS WrightAmmo=30 JalalabadAmmo=85 fireDemand="..fd.id.." casDemand="..cd.id.." resupplyDemand="..rd.id.." perimeterClear="..tostring(state.perimeterClear).." casMode=CASENHANCED casRadiusNm="..tostring(CAS_TACTICAL_RADIUS_NM).." casAltitudeFtAsl="..tostring(state.casAltitudeFtAsl).." casCorridor="..routeLabel(CAS_PATHLINES).." airAmmoCorridor="..routeLabel(AIR_AMMO_PATHLINES))
 end
 
 SCHEDULER:New(nil,start,{},5)
