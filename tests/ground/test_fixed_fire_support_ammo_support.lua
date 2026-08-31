@@ -15,6 +15,7 @@ local configuredSpawnZone = nil
 local configuredMaxDistance = nil
 local repositionCallCount = 0
 local returnedGroup = nil
+local brigadeStartCount = 0
 
 local brigade = {}
 function brigade:SetSpawnZone(zone, maxDistance)
@@ -28,6 +29,10 @@ function brigade:SetValidateAndRepositionGroundUnits(_)
 end
 function brigade:AddAsset(group)
   returnedGroup = group
+  return self
+end
+function brigade:Start()
+  brigadeStartCount = brigadeStartCount + 1
   return self
 end
 
@@ -72,6 +77,7 @@ local service = FixedFireSupportAmmoSupport.New({
 expectEqual(configuredSpawnZone, spawnZone, "SPAWN_ZONE")
 expectEqual(configuredMaxDistance, 400, "SPAWN_ZONE_MAX_DISTANCE")
 expectEqual(repositionCallCount, 0, "REPOSITION_PATH_MUST_NOT_BE_CALLED")
+expectEqual(brigadeStartCount, 1, "DEDICATED_BRIGADE_START_COUNT")
 expectEqual(materializerSpec.templateName, "TPL_BLUE_GND_SUP_M1083", "TEMPLATE")
 expectEqual(materializerSpec.platoonName, "PLT_BLUE_GND_WRIGHT_AMMO_SUPPORT", "PLATOON")
 expectEqual(materializerSpec.assignment, "OMW:WRIGHT:AMMO-SUPPORT:M1083", "ASSIGNMENT")
@@ -82,7 +88,7 @@ local groupBefore, created = service:Request()
 expectEqual(groupBefore, nil, "REQUEST_GROUP_BEFORE")
 expectEqual(created, true, "REQUEST_CREATED")
 expectEqual(service:GetMaterializedGroup(), materializedGroup, "MATERIALIZED_GROUP")
-expectEqual(service:GetConfig().schemaVersion, "OMW-FIXED-FIRE-SUPPORT-AMMO-SUPPORT-3", "SCHEMA")
+expectEqual(service:GetConfig().schemaVersion, "OMW-FIXED-FIRE-SUPPORT-AMMO-SUPPORT-4", "SCHEMA")
 expectEqual(service:GetConfig().assignment, "OMW:WRIGHT:AMMO-SUPPORT:M1083", "CONFIG_ASSIGNMENT")
 expectEqual(service:GetConfig().spawnZoneMaxDistanceM, 400, "CONFIG_SPAWN_MAX_DISTANCE")
 
@@ -90,4 +96,4 @@ service:ReturnToStock(materializedGroup)
 expectEqual(returnedGroup.name, "WRIGHT-M1083-001", "RETURNED_GROUP")
 expectEqual(service:GetMaterializedGroup(), nil, "MATERIALIZED_GROUP_CLEARED")
 
-print("PASS generic fixed fire-support local Warehouse materialization contract without broken MOOSE reposition path")
+print("PASS generic fixed fire-support local Warehouse materialization contract starts dedicated MOOSE BRIGADE after registration")
