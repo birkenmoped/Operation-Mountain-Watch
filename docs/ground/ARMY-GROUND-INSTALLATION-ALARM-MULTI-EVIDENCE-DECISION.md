@@ -22,7 +22,7 @@ supersedes:
   - infantry-only QRF as the intended project-wide baseline
 superseded_by:
 source_branch: agent/installation-guard-qrf-governance
-source_commit: PENDING_MERGE
+source_commit: GIT_HISTORY
 validated_in_dcs: false
 ---
 
