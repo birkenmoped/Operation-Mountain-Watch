@@ -71,8 +71,12 @@ Fuer die aktuelle Korrektur source-verifiziert:
 OPSZONE Attacked / Defeated / Evaluated
 OPSZONE:GetScannedGroupSet()
 AUFTRAG / ARTY / AssignTargetCoord
+AUFTRAG:NewCASENHANCED(...)
 EVENTHANDLER / EVENTS.Shot
 FLIGHTGROUP waypoint callbacks
+COORDINATE:GetLandHeight()
+OPSGROUP:GetCoordinate(...)
+UTILS.MetersToFeet(...)
 ```
 
 Die MOOSE-`OPSZONE` ruft nach einer regulaeren Auswertung `Evaluated` auf. Der OMW-Adapter exponiert diesen vorhandenen MOOSE-FSM-Pfad ab Schema `OMW-FOB-THREAT-OPSZONE-ADAPTER-3` als `onThreatEvaluated(...)` und uebergibt das aktuelle `GetScannedGroupSet()`.
@@ -166,29 +170,42 @@ final Jalalabad:                               85
 
 Eine physische Granate entspricht nicht einem strategischen `GROUND_AMMO_PACKAGE`. Genau ein realer lokaler Rearm-Zyklus belastet CampaignState um ein Paket.
 
-## 6. CAS: bestaetigter Fehler und aktuelle MOOSE-first-Korrektur
+## 6. CAS: genehmigter Stage-3-CASENHANCED-Vertrag
 
-Der aktuelle Zwischenbranch entkoppelt die taktische Ground-/ARTY-Closure von `OPSZONE Defeated` und korrigiert zusaetzlich die CAS-Lifecycle-Semantik.
-
-Ein einzelnes `EVENTS.Shot` ist jetzt nur noch Ausfuehrungsevidenz:
+Der Projektinhaber hat fuer **diesen Honaker-Acceptance-Fall** am 31.08.2026 folgende Werte ausdruecklich genehmigt:
 
 ```text
-AH-64 fires
--> ConfirmExecutionEvidence(...)
--> evidence recorded
--> MissionDemand remains ACTIVE
+Tactical CAS area radius:       5 NM around Honaker
+AH-64 combat height:            2500 ft above Honaker terrain at zone center
+MOOSE mission type:             AUFTRAG:NewCASENHANCED(...)
+Detected-target engage range:   5 NM
 ```
 
-Der erste Schuss darf den CAS-Demand nicht mehr erfolgreich abschliessen. Erfolg bleibt an den MOOSE-AUFTRAG-/Closure-Lifecycle gebunden und kann bei `requireExecutionEvidence=true` erst nach vorhandener realer Ausfuehrungsevidenz eintreten.
+Diese Werte sind Acceptance-Konfiguration fuer Honaker Stage 3. Sie sind keine pauschale OMW-Doktrin fuer alle spaeteren CAS-Einsaetze.
 
-Der CAS-Adapter unterstuetzt ausserdem source-geprueft:
+Die 5-NM-CAS-Zone wird als eigene `ZONE_RADIUS` um Honaker erzeugt und ist strikt von der 1000-m-Alarmzone getrennt:
 
 ```text
-MissionMode.CAS
-MissionMode.CASENHANCED
+1000-m OPSZONE
+= alarm / proximity evidence only
+
+5-NM CAS tactical zone
+= CASENHANCED patrol / engagement area
 ```
 
-`CASENHANCED` wird direkt ueber die in der gepinnten `Moose.lua` vorhandene Methode erzeugt:
+Der gepinnte MOOSE-Source definiert fuer `AUFTRAG:NewCASENHANCED(CasZone, Altitude, Speed, RangeMax, NoEngageZoneSet, TargetTypes)` den Altitude-Parameter in **feet ASL**. Deshalb berechnet der Acceptance-Harness die Missionshoehe zur Laufzeit:
+
+```text
+Honaker COORDINATE:GetLandHeight()
+-> terrain height in meters ASL
+-> UTILS.MetersToFeet(...)
+-> + 2500 ft
+-> CASENHANCED Altitude argument in feet ASL
+```
+
+Damit wird kein fixer `10000 ft ASL`-Fastmover-Orbit mehr verwendet.
+
+Der CAS-Adapter verwendet fuer diesen Modus direkt:
 
 ```lua
 AUFTRAG:NewCASENHANCED(
@@ -201,11 +218,20 @@ AUFTRAG:NewCASENHANCED(
 )
 ```
 
-Damit ist der Framework-Pfad fuer eine von der 1000-m-Alarmzone getrennte taktische CAS-Zone vorbereitet. Das aktuelle Stage-3-Szenario ist noch nicht auf diese Zone umverdrahtet; bis dahin bleibt der bisherige `NewCAS`-Pfad im Acceptance-Harness eine bekannte offene Stelle.
+`CASENHANCED` ruft im gepinnten MOOSE-Source selbst `SetEngageDetected(...)` mit der uebergebenen CAS-Zone auf und laesst die Gruppe diese Zone zufaellig patrouillieren. Das ist der MOOSE-first Search-/Patrol-Layer fuer den naechsten DCS-Lauf.
 
-Die konkrete Honaker-Tactical-Zone und die AH-64-Combat-Hoehe muessen als Acceptance-Konfiguration explizit gesetzt und danach in DCS geprueft werden. Sie werden nicht stillschweigend als projektweite Doktrin festgelegt.
+Ein einzelnes `EVENTS.Shot` bleibt nur Ausfuehrungsevidenz:
 
-## 7. Helicopter-WEST-Hoehenproblem bleibt separat offen
+```text
+AH-64 fires
+-> ConfirmExecutionEvidence(...)
+-> evidence recorded
+-> MissionDemand remains ACTIVE
+```
+
+Erst MOOSE-AUFTRAG-Abschluss **plus** vorhandene Ausfuehrungsevidenz darf den CAS-Demand erfolgreich abschliessen.
+
+## 7. WEST-Hoehenprofil: reale AGL-Telemetrie implementiert
 
 Der Corridor erzeugt fuer `OMW_FlightPath_WEST` weiterhin:
 
@@ -223,20 +249,30 @@ first WEST area -> climb appears correct
 later WEST waypoint(s) -> helicopter appears to descend again
 ```
 
-Damit ist die Route-Konfiguration source-/logseitig belegt, das tatsaechliche DCS-Hoehenhalten aber nicht.
-
-Der naechste Diagnoseausbau soll eventgebunden an MOOSE `PassingWaypoint` reale Flughoehe gegen Terrainhoehe protokollieren:
+Deshalb protokolliert `OMW_HelicopterFlightPathCorridor.lua` ab Schema `OMW-HELICOPTER-FLIGHTPATH-CORRIDOR-7` bei `OnAfterPassingWaypoint` eventgebunden:
 
 ```text
 waypoint UID
 pathline/profile
 requested AGL
-actual MSL
+actual ASL
 terrain ASL
 calculated actual AGL
 ```
 
-Dafuer sind `FLIGHTGROUP:GetCoordinate()`, `COORDINATE:GetVec3()` und `COORDINATE:GetLandHeight()` im gepinnten MOOSE-Source vorhanden. Es wird kein hochfrequenter Scheduler benoetigt.
+Technischer Pfad:
+
+```text
+FLIGHTGROUP/OPSGROUP:GetCoordinate(true)
+-> COORDINATE.y
+-> COORDINATE:GetLandHeight()
+-> actual AGL = coordinate.y - land height
+-> UTILS.MetersToFeet(...)
+```
+
+Es gibt dafuer keinen neuen hochfrequenten Scheduler und keinen Frame-Scan.
+
+Der naechste reale DCS-Lauf kann damit unterscheiden zwischen korrekt generiertem `RADIO`-/`SetAltitude`-Profil und tatsaechlich davon abweichender DCS-AI-Flughoehe.
 
 ## 8. Guard und QRF in diesem Acceptance-Lauf
 
@@ -269,8 +305,12 @@ AND
    -> reacquire incident participants
    -> repeat independent of perimeter Defeated
 AND
--> Jalalabad AH-64 CAS
-   -> separate tactical CAS zone via MOOSE CASENHANCED is prepared but Stage-3 wiring pending
+-> Jalalabad AH-64 CASENHANCED
+   -> separate 5-NM tactical zone
+   -> runtime mission altitude = Honaker terrain + 2500 ft
+   -> OMW_FlightPath -> OMW_FlightPath_WEST
+   -> actual AGL telemetry at passed waypoints
+   -> repeated MOOSE detected-target engagement inside tactical area
 THEN
 -> known incident attackers neutralized
 -> local M1083 rearm
@@ -283,8 +323,6 @@ THEN
 
 ## 10. PASS-Kriterien fuer den naechsten finalen Lauf
 
-Vor einem neuen **finalen** Stage-3-DCS-Lauf muessen im Source mindestens CAS-Engagement-Area und AH-64-Combat-Profil sowie die WEST-Hoehendiagnose fertig sein.
-
 Der anschliessende DCS-Lauf muss mindestens nachweisen:
 
 1. `OPSZONE Attacked` erzeugt den Honaker-Attack-Incident.
@@ -293,15 +331,16 @@ Der anschliessende DCS-Lauf muss mindestens nachweisen:
 4. Honaker-QRF greift bekannte Incident-Angreifer an.
 5. Wright fuehrt mehrere reale `AssignTargetCoord`-Fire Missions mit physischer Ammo-Abnahme aus, solange lebende bekannte Incident-Angreifer vorhanden sind.
 6. Eine bekannte RED-Gruppe darf nach Verlassen der 1000-m-Zone weiter als taktisches Ziel bestehen.
-7. CAS nutzt nicht die 1000-m-Alarmzone als alleinigen Kampfbereich.
-8. AH-64 fuehrt wiederholte wirksame Angriffe im vorgesehenen taktischen Bereich aus; ein einzelner `Shot` ist kein taktischer Gesamt-PASS.
-9. WEST-Hoehenprofil wird mit realer AGL-Telemetrie an relevanten Waypoints nachgewiesen.
-10. Attack-Incident schliesst erst nach gueltiger eigener taktischer Endbedingung; fuer diesen Test: keine lebenden bekannten Angreifer.
-11. Lokaler M1083-Rearm laeuft real und CampaignState erreicht Wright `15`.
-12. Genau ein strategischer RESUPPLY-Demand/TRANSFER Jalalabad -> Wright ueber 15 Pakete wird ausgefuehrt.
-13. CH-47 liefert physisch, Wright erreicht `30`, Jalalabad `85`.
-14. CH-47 kehrt physisch nach Jalalabad zurueck und erst danach erfolgt `LegionAssetReturned`.
-15. Kein `VALIDATED` ohne vollstaendige Commit-/MIZ-/Bundle-/MOOSE-/DCS-Provenienz.
+7. CAS verwendet die separate 5-NM-Tactical-Zone und nicht die 1000-m-Alarmzone als Kampfbereich.
+8. `AUFTRAG:NewCASENHANCED` wird mit einer zur Laufzeit aus Honaker-Terrain + 2500 ft berechneten ASL-Hoehe gestartet.
+9. AH-64 fuehrt wiederholte wirksame Angriffe im vorgesehenen taktischen Bereich aus; ein einzelner `Shot` ist kein taktischer Gesamt-PASS.
+10. WEST-Hoehenprofil wird mit realer `requestedAglFt`-/`actualAglFt`-/`actualAslFt`-/`terrainFt`-Telemetrie an relevanten Waypoints nachgewiesen.
+11. Attack-Incident schliesst erst nach gueltiger eigener taktischer Endbedingung; fuer diesen Test: keine lebenden bekannten Angreifer.
+12. Lokaler M1083-Rearm laeuft real und CampaignState erreicht Wright `15`.
+13. Genau ein strategischer RESUPPLY-Demand/TRANSFER Jalalabad -> Wright ueber 15 Pakete wird ausgefuehrt.
+14. CH-47 liefert physisch, Wright erreicht `30`, Jalalabad `85`.
+15. CH-47 kehrt physisch nach Jalalabad zurueck und erst danach erfolgt `LegionAssetReturned`.
+16. Kein `VALIDATED` ohne vollstaendige Commit-/MIZ-/Bundle-/MOOSE-/DCS-Provenienz.
 
 ## 11. Build-Vertrag
 
@@ -319,23 +358,32 @@ Output:
 mission/tests/stage3-honaker-wright-full-response/dist/OMW_Stage3_Honaker_Wright_Full_Response_Acceptance_1.lua
 ```
 
-Aktueller Builder-Zwischenstand:
+Aktueller Builder:
 
 ```text
-STAGE3-HONAKER-WRIGHT-FULL-RESPONSE-ACCEPTANCE-1-5
+STAGE3-HONAKER-WRIGHT-FULL-RESPONSE-ACCEPTANCE-1-7
 ```
 
-Der aktuelle Builder weist ausdruecklich darauf hin, dass der Stage-3-Harness den finalen CASENHANCED-Tactical-Zone-Pfad noch nicht nutzt. Dieser Build ist daher **kein Aufruf zum finalen DCS-Acceptance-Lauf**.
-
-## 12. Offene Punkte
+Der Builder prueft jetzt explizit die Marker fuer:
 
 ```text
-wire Stage 3 to CASENHANCED tactical zone separate from 1000-m alarm perimeter
-choose/document acceptance-only AH-64 tactical zone geometry and combat altitude
-repeated CAS attack / Search-and-Destroy behavior
-real WEST waypoint AGL telemetry and resulting correction
-DCS validation of incident participant retention after perimeter exit
-DCS validation of sustained ARTY retarget cycle
+NewCASENHANCED
+5-NM tactical area
+terrain + 2500-ft mission altitude
+incident-based ARTY retargeting
+actual waypoint AGL telemetry
+strategic AMMO closure
+```
+
+## 12. Noch DCS-testpflichtig
+
+```text
+CASENHANCED tactical behavior against the actual Honaker RED force
+repeated CAS attack / Search-and-Destroy effectiveness
+actual WEST AGL behavior from the new waypoint telemetry
+incident participant retention after perimeter exit
+sustained ARTY retarget cycle
+local M1083 rearm after the longer fire cycle
 full strategic resupply closure
 later Guard patrol route
 later mixed infantry/vehicle QRF
