@@ -21,6 +21,7 @@ if (-not (Test-Path -LiteralPath $outputFile -PathType Leaf)) {
 }
 
 $bundle = Get-Content -LiteralPath $outputFile -Raw -Encoding UTF8
+$bundle = $bundle.Replace("`r`n", "`n")
 
 function Replace-Exact([string]$Old, [string]$New, [string]$Label) {
   if (-not $script:bundle.Contains($Old)) {
