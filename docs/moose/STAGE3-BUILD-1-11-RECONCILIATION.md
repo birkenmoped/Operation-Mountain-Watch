@@ -6,6 +6,7 @@ owning_policy: OMW-GOV-001
 authoritative_for:
   - Stage 3 build 1-11 MOOSE-first reconciliation after build 1-10 failure
   - approved owner decision for PATHLINE suffix offset metadata
+  - real local Build 1-11 provenance before DCS acceptance
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
@@ -256,17 +257,70 @@ Stage-3 SetAltitude(...)
 duplicate ~= demand
 ```
 
-## 12. Verifikationsstatus
+## 12. Reale lokale Build-Provenienz 2026-09-01
+
+Der Projektinhaber führte nach dem dokumentierten Preflight-Fix den realen lokalen Build im Worktree
+
+```text
+P:\DCS-DEV\Operation-Mountain-Watch-fire-support-strategic-resupply
+```
+
+aus.
+
+Verifizierter Git-Stand:
+
+```text
+Branch: agent/fire-support-strategic-resupply-alarm-evidence
+HEAD:   8c543826f63d7cb436c8cddfac3feb029bcdce96
+```
+
+Vor und nach dem Build meldete `git status --short` ausschließlich bereits vorhandene untracked `dist/`-Verzeichnisse; keine tracked Source-Datei wurde lokal verändert.
+
+Jalalabad AirOps Foundation:
+
+```text
+BuilderVersion: JBAD-AIR-OPS-FOUNDATION-ONLY-4
+AH64DCapabilities: CAS,CASENHANCED,PATROLZONE
+Bundle SHA-256: E70443B6363D576BCDA55CF7EE87266BA413546AB5840CF002ACEC2E0023C468
+GitCommit: 8c543826f63d7cb436c8cddfac3feb029bcdce96
+```
+
+Stage 3:
+
+```text
+BuilderVersion: STAGE3-HONAKER-WRIGHT-FULL-RESPONSE-ACCEPTANCE-1-11
+GeneratedUtc: 2026-09-01T16:07:04Z
+GitCommit: 8c543826f63d7cb436c8cddfac3feb029bcdce96
+MOOSECommit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+MooseLuaSHA256: E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915
+Bundle SHA-256: 77C5214982272B251CB11CD95E6BB996091873028C6D242FBDA2D765AA11CBB8
+```
+
+Relevante neue Source-Hashes des Build-1-11-Pfads:
+
+```text
+OMW_FobAttackCasDispatchAdapter.lua      55722F557CBDF982E293B10D6201385F4F21ED80D8D401DB6C17165F7F68B3EA
+OMW_FobAttackCasPatrolClosure.lua        FCBD97E2DAD589642AA89FC55E2FD35ED2E92A09946B4CD15BAA03BD8B2CD6D7
+OMW_HelicopterFlightPathCorridor.lua     04D99722F0246AD261C47A90104E488FE9EF65721A647BE5CF6BAA602A1E279B
+OMW_HelicopterMissionOwnedCorridor.lua   B940CE6A17D9AB59B1E254A19AB95BB82D94A345571B0A9D032D8C85AA20AF2C
+01-honaker-wright-full-response-acceptance.lua
+                                        A042EBC5B52FEC60AC220B851CACA9403A9ADEF1DAA241A269858DB66ADF49E4
+OMW_AirOps_Jalalabad_Bootstrap.lua       108993CBA4552E0A9893C54F58D207AE1A42635C5895D26BE0DA4C4FEC0C4EEE
+```
+
+Damit ist der lokale Build-/Hash-Gate für Build `1-11` erfüllt. Dies ist **kein DCS-Runtime-PASS**.
+
+## 13. Verifikationsstatus
 
 ```text
 Source/MOOSE review             COMPLETE for build 1-11 path
 Owner offset decision           APPROVED 2026-09-01
 Implementation                  COMPLETE for planned build 1-11 source
-Local PowerShell build          PENDING
-Real local SHA-256 provenance   PENDING
+Local PowerShell build          PASS at commit 8c543826f63d7cb436c8cddfac3feb029bcdce96
+Real local SHA-256 provenance   RECORDED
 Mission Editor rename           PENDING OWNER LOCAL STEP
 Combined DCS acceptance         PENDING
 validated_in_dcs                false
 ```
 
-Erst reale lokale Build-/Hash-Ausgabe und danach ein dokumentierter DCS-Lauf dürfen den Status verändern.
+Nächster zulässiger Schritt ist die lokale Mission-Editor-Reconciliation (`OMW_FlightPath` -> `OMW_FlightPath_R500`), Einbettung der beiden neu gebauten Lua-Bundles und danach ein neuer dokumentierter DCS-Lauf.
