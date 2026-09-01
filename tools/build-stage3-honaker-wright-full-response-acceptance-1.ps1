@@ -72,7 +72,7 @@ $header = @"
 -- AlarmZone: MOOSE OPSZONE 1000 m perimeter is trigger/evidence only; Defeated does not terminate response or satisfy overall PASS.
 -- AttackIncident: OPSZONE Evaluated adds newly observed RED groups; living known participants remain tactical targets after leaving the alarm perimeter.
 -- Guard: owner-authored OMW_RTE_BLUE_GUARD_HONAKER_01 activated and looped with MOOSE GROUP:PatrolRoute().
--- QRF: one rifle-squad GROUP plus one independent TPL_BLUE_GND_QRF_MIXED_4 vehicle GROUP; both use MOOSE ONGUARD + SetEngageDetected against one shared incident picture.
+-- QRF: one rifle-squad GROUP plus one independent TPL_BLUE_GND_QRF_MIXED_4 vehicle GROUP; both use MOOSE ONGUARD + SetEngageDetected against one shared incident picture and each AUFTRAG is pinned to its own PLATOON with AssignCohort().
 -- CASMission: MOOSE AUFTRAG:NewPATROLZONE + SetEngageDetected; this tests CAS readiness/loiter semantics instead of CASENHANCED.
 -- CASLifecycle: native AUFTRAG SetMissionIngressCoord/SetMissionEgressCoord plus missionUID-owned owner-authored corridor points that are removed/reinstalled with MOOSE PauseMission/UnpauseMission route rebuilds.
 -- CASAltitude: no FLIGHTGROUP:SetAltitude override in the Stage3 acceptance; mission altitude and RADIO waypoint altitude are the phase-specific MOOSE sources.
@@ -101,10 +101,10 @@ $requiredMarkers = @(
   'FIRE_SUPPORT_IMMEDIATE','OPSZONE','OnAfterEvaluated','GetScannedGroupSet','PROXIMITY_INTRUSION','KNOWN_ATTACKERS_NEUTRALIZED',
   'ARTY:New','AssignTargetCoord','QueueTarget','LIVE_FIRE_RETARGET','SetWaitForShotTime','verifyFireComplete','PHYSICAL_AMMO_UNCHANGED',
   'OMW_RTE_BLUE_GUARD_HONAKER_01','PatrolRoute','GROUP:Activate','TPL_BLUE_GND_INF_RIFLE_SQUAD_9','TPL_BLUE_GND_QRF_MIXED_4',
-  'AUFTRAG:NewONGUARD','SetEngageDetected','qrfInfDeployed','qrfVehicleDeployed','AUFTRAG.Type.ONGUARD',
+  'AUFTRAG:NewONGUARD','SetEngageDetected','AssignCohort','qrfInfDeployed','qrfVehicleDeployed','AUFTRAG.Type.ONGUARD',
   'AUFTRAG:NewPATROLZONE','PATROLZONE_ENGAGE','CAS_TACTICAL_RADIUS_NM','CAS_COMBAT_HEIGHT_FT_AGL','GetLandHeight','NMToMeters',
   'SetMissionIngressCoord','SetMissionEgressCoord','missionUID','GetGroupEgressWaypointUID','OnAfterUpdateRoute','ConfirmExecutionEvidence','EVENTS.Shot',
-  'OMW-HELICOPTER-MISSION-OWNED-CORRIDOR-1','OMW-FOB-ATTACK-CAS-PATROL-CLOSURE-1','AssignSquadrons','squadrons={state.ah64d}',
+  'OMW-HELICOPTER-MISSION-OWNED-CORRIDOR-2','OMW-FOB-ATTACK-CAS-PATROL-CLOSURE-1','AssignSquadrons','squadrons={state.ah64d}',
   'PATHLINE_SUFFIX','ParsePathlineOffset','OMW_FlightPath_R500','OMW_FlightPath_WEST','WEST_ALTITUDE_FT_AGL','ResolveSequence',
   'GROUND_AMMO_PACKAGE','GROUND_NODE_WRIGHT','GROUND_NODE_JALALABAD','TPL_BLUE_GND_WRIGHT_FS_ARTY_L118_2','TPL_BLUE_GND_SUP_M1083',
   'AUFTRAG:NewCARGOTRANSPORT','SQ_US_JBAD_CH47_HEAVYLIFT','MarkInTransit','MarkDelivered','active_duplicate','duplicate.id','duplicate.dedupeKey',
@@ -114,7 +114,7 @@ foreach ($marker in $requiredMarkers) {
   if (-not $combinedForValidation.Contains($marker)) { throw "Stage 3 full-response sources missing marker: $marker" }
 }
 
-foreach ($marker in @('OMW_FlightPath_R500','OMW_FlightPath_WEST','TPL_BLUE_GND_QRF_MIXED_4','OMW_RTE_BLUE_GUARD_HONAKER_01')) {
+foreach ($marker in @('OMW_FlightPath_R500','OMW_FlightPath_WEST','TPL_BLUE_GND_QRF_MIXED_4','OMW_RTE_BLUE_GUARD_HONAKER_01','mission:AssignCohort(platoon)')) {
   if (-not $acceptanceSource.Contains($marker)) { throw "Stage 3 acceptance missing reconciled marker: $marker" }
 }
 if ($acceptanceSource.Contains('CasAdapter.MissionMode.CASENHANCED')) { throw 'Stage 3 acceptance must not use CASENHANCED after PATROLZONE reconciliation.' }
@@ -148,6 +148,7 @@ Write-Host 'AttackIncidentClosure: no living known attack participant remains'
 Write-Host 'GuardRoute: OMW_RTE_BLUE_GUARD_HONAKER_01 via MOOSE GROUP PatrolRoute'
 Write-Host 'QRFPackage: 1x TPL_BLUE_GND_INF_RIFLE_SQUAD_9 + 1x TPL_BLUE_GND_QRF_MIXED_4'
 Write-Host 'QRFMission: MOOSE AUFTRAG NewONGUARD + SetEngageDetected in one shared 5-NM tactical area'
+Write-Host 'QRFCohortBinding: infantry and vehicle missions each use AUFTRAG AssignCohort for their dedicated PLATOON'
 Write-Host 'QRFPassGate: physical ArmyOnMission deployment required for both infantry and vehicle groups'
 Write-Host 'CASMission: MOOSE AUFTRAG NewPATROLZONE + SetEngageDetected'
 Write-Host 'CASAirSquadronBinding: SQ_US_JBAD_AH64D_B_1_10_AVN via MOOSE AUFTRAG AssignSquadrons'
