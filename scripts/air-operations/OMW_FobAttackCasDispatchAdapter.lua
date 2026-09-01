@@ -10,7 +10,7 @@ local Instance = {}
 Instance.__index = Instance
 
 local TAG = "[OMW][FobAttackCasDispatchAdapter]"
-Adapter.SchemaVersion = "OMW-FOB-ATTACK-CAS-DISPATCH-ADAPTER-7"
+Adapter.SchemaVersion = "OMW-FOB-ATTACK-CAS-DISPATCH-ADAPTER-8"
 Adapter.MissionMode = {
   CAS = "CAS",
   CASENHANCED = "CASENHANCED",
@@ -68,6 +68,7 @@ function Adapter.New(spec)
     if #spec.squadrons < 1 then fail("spec.squadrons must contain at least one SQUADRON when provided") end
   end
   if spec.auftragFactory ~= nil and type(spec.auftragFactory) ~= "function" then fail("auftragFactory must be a function when provided") end
+  if spec.missionConfigurator ~= nil and type(spec.missionConfigurator) ~= "function" then fail("missionConfigurator must be a function when provided") end
   if spec.missionIngressCoordinate ~= nil then requireTable(spec.missionIngressCoordinate, "spec.missionIngressCoordinate") end
   if spec.missionEgressCoordinate ~= nil then requireTable(spec.missionEgressCoordinate, "spec.missionEgressCoordinate") end
 
@@ -88,6 +89,7 @@ function Adapter.New(spec)
     missionEgressAltitudeFt = spec.missionEgressAltitudeFt,
     missionIngressSpeedKts = spec.missionIngressSpeedKts,
     missionEgressSpeedKts = spec.missionEgressSpeedKts,
+    missionConfigurator = spec.missionConfigurator,
     requireExecutionEvidence = spec.requireExecutionEvidence == true,
     auftragFactory = spec.auftragFactory,
     missionsByDemandId = {},
@@ -140,6 +142,9 @@ function Instance:_newCasMission(targetZone)
   if self.missionEgressCoordinate then
     requireFunction(mission, "SetMissionEgressCoord", "CAS AUFTRAG")
     mission:SetMissionEgressCoord(self.missionEgressCoordinate, self.missionEgressAltitudeFt, self.missionEgressSpeedKts)
+  end
+  if self.missionConfigurator then
+    self.missionConfigurator(mission, targetZone)
   end
   if self.squadrons then
     requireFunction(mission, "AssignSquadrons", "CAS AUFTRAG")
@@ -211,10 +216,10 @@ function Instance:Dispatch(demand, targetZone)
   self.airwing:AddMission(mission)
   self.registry:AssignAI(demand.id, self.assigneeId)
   self.missionsByDemandId[demand.id] = mission
-  self:_log(string.format("CAS queued demandId=%s installationId=%s assigneeId=%s missionMode=%s altitudeFtASL=%s speedKts=%s engageDetectedRangeNm=%s squadronBound=%s nativeIngress=%s nativeEgress=%s requireExecutionEvidence=%s",
+  self:_log(string.format("CAS queued demandId=%s installationId=%s assigneeId=%s missionMode=%s altitudeFtASL=%s speedKts=%s engageDetectedRangeNm=%s squadronBound=%s nativeIngress=%s nativeEgress=%s configured=%s requireExecutionEvidence=%s",
     tostring(demand.id), tostring(demand.origin), tostring(self.assigneeId), tostring(self.missionMode), tostring(self.casAltitudeFt), tostring(self.casSpeedKts),
     tostring(self.engageDetectedRangeNm), tostring(self.squadrons ~= nil), tostring(self.missionIngressCoordinate ~= nil), tostring(self.missionEgressCoordinate ~= nil),
-    tostring(self.requireExecutionEvidence)))
+    tostring(self.missionConfigurator ~= nil), tostring(self.requireExecutionEvidence)))
   return mission, true, nil
 end
 
