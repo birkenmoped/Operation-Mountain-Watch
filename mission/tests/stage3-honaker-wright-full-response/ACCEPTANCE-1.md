@@ -38,7 +38,7 @@ Der nach Build `1-10` durchgeführte MOOSE-Source-Audit liegt in:
 docs/moose/STAGE3-CAS-GUARD-QRF-ROUTING-AUDIT.md
 ```
 
-Build `1-10` hat mehrere zuvor offene Integrationsgrenzen real nachgewiesen, aber gleichzeitig neue bzw. zuvor verdeckte Fehler sichtbar gemacht. Es gibt deshalb aktuell **noch keinen freigegebenen nächsten Builderstand**.
+Der nächste Builderstand ist jetzt als **Build `1-11`** vorbereitet. Er enthält die nach dem `1-10`-FAIL freigegebenen Korrekturen, ist aber noch nicht lokal gebaut und nicht in DCS getestet. Deshalb bleibt `validated_in_dcs: false`.
 
 ## 2. Gepinnter MOOSE-Stand
 
@@ -48,21 +48,22 @@ MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
 Moose.lua SHA-256: E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915
 ```
 
-Für diesen Stand source-geprüft und direkt verwendet:
+Für Build `1-11` source-geprüft und direkt verwendet:
 
 ```text
 OPSZONE Attacked / Defeated / Evaluated
 OPSZONE:GetScannedGroupSet()
 AUFTRAG:NewONGUARD(...)
 AUFTRAG:SetEngageDetected(...)
-AUFTRAG:NewCASENHANCED(...)
+AUFTRAG:AssignCohort(...)
+AUFTRAG:NewPATROLZONE(...)
 AUFTRAG:AssignSquadrons(...)
 AUFTRAG:NewCARGOTRANSPORT(...)
 AUFTRAG:SetMissionIngressCoord(...)
 AUFTRAG:SetMissionEgressCoord(...)
+AUFTRAG mission-owned waypoint lifecycle / missionUID
 OPSGROUP / FLIGHTGROUP mission pause/unpause lifecycle
 FLIGHTGROUP:AddWaypoint(...)
-FLIGHTGROUP:SetAltitude(...)
 CONTROLLABLE:PatrolRoute()
 ARTY:New / AssignTargetCoord / GetAmmo / Rearm lifecycle
 EVENTHANDLER / EVENTS.Shot
@@ -92,51 +93,60 @@ no living known attack participant remains
 
 Diese Alarm-/Incident-Trennung ist im bisherigen DCS-Testpfad nachgewiesen und wird nicht erneut als offene Architekturfrage behandelt.
 
-## 4. QRF – Engagementmechanismus und Zusammensetzung
+## 4. QRF – Build 1-11
 
-Build `1-10` ersetzte den vorherigen Single-Target-`GROUNDATTACK` durch:
+Build `1-10` hatte den Single-Target-`GROUNDATTACK` bereits durch den MOOSE-eigenen fortlaufenden Engagementpfad ersetzt:
 
 ```text
-QRF materializes through Honaker BRIGADE/PLATOON
--> AUFTRAG:NewONGUARD(initial incident participant coordinate)
+AUFTRAG:NewONGUARD(initial incident participant coordinate)
 -> SetEngageDetected(5 NM, {"Ground Units"}, QRF tactical zone)
 ```
 
-Dieser MOOSE-eigene Detection-/Engagementmechanismus bleibt grundsätzlich der bevorzugte Pfad. Die gepinnte MOOSE-Strategielogik verwendet selbst `ONGUARD` beziehungsweise `PATROLZONE` zusammen mit `SetEngageDetected(...)` für fortlaufende Bodenbekämpfung.
-
-Der reale Build-`1-10`-Lauf erreichte `ArmyOnMission`, aber der Testcode enthielt ausschließlich Infanterie-Assets. Das widerspricht der bindenden main-Baseline für Phase-1-QRF:
+Build `1-11` bringt zusätzlich die Zusammensetzung auf die bindende Phase-1-Baseline:
 
 ```text
-one infantry GROUP
-+ optional independent suitable vehicle GROUP if available
+1 x TPL_BLUE_GND_INF_RIFLE_SQUAD_9
++
+1 x TPL_BLUE_GND_QRF_MIXED_4
 -> one logical QRF response package
 ```
 
-Vor dem nächsten Acceptance-Lauf muss deshalb die QRF-Zusammensetzung baseline-konform sein. Es wird **kein** eigener Target-Scanner eingeführt.
-
-## 5. Guard – bindende Patrol-Route
-
-Build `1-10` verwendete für die Guard:
+Beide Teilgruppen erhalten einen eigenen `ONGUARD + SetEngageDetected`-Auftrag gegen dieselbe Incident-/Tactical-Area-Sicht. Damit MOOSE nicht aus dem gesamten BRIGADE-Pool rekrutiert, ist jeder Auftrag ausdrücklich an den zuständigen `PLATOON` gebunden:
 
 ```lua
-AUFTRAG:NewONGUARD(state.guardCoord)
+mission:AssignCohort(platoon)
 ```
 
-und damit **nicht** die vorhandene owner-authored Mission-Editor-Route:
+Damit gilt für den Acceptance-Pfad:
+
+```text
+INFANTRY mission -> PLT_BLUE_GND_HONAKER_STAGE3_QRF_INF only
+VEHICLE mission  -> PLT_BLUE_GND_HONAKER_STAGE3_QRF_VEHICLE only
+```
+
+Es wird kein eigener Target-Scanner eingeführt. `ArmyOnMission` beider Teilgruppen ist PASS-Voraussetzung; tatsächliches `EngageTarget` bleibt Telemetrie, weil ARTY oder CAS die Angreifer vorher neutralisieren können.
+
+## 5. Guard – owner-authored PatrolRoute
+
+Build `1-10` verwendete eine stationäre `ONGUARD`-Mission und testete damit die bindende Guard-Baseline nicht.
+
+Build `1-11` verwendet stattdessen die vorhandene owner-authored Mission-Editor-Gruppe:
 
 ```text
 OMW_RTE_BLUE_GUARD_HONAKER_01
 ```
 
-Der Projektinhaber beobachtete eine Infanteriegruppe, die sich im FOB festlief. Dieser Lauf kann daher keine Guard-Patrol-Qualität validieren.
+und startet die wiederholte Patrouille mit dem gepinnten MOOSE-Weg:
 
-Die bindende main-Baseline verlangt aktive Guard-Patrouille auf einer owner-authored, validierten Route. MOOSE-first-Kandidat ist der im gepinnten Stand vorhandene `CONTROLLABLE:PatrolRoute()`-/GROUP-Wrapper-Pfad.
+```lua
+state.guardGroup:PatrolRoute()
+```
 
-Vor dem nächsten Gesamt-Acceptance muss die Guard auf diesen baseline-konformen Pfad gebracht und separat auf Route/Pathfinding geprüft werden.
+Der nächste DCS-Lauf muss bestätigen, dass diese konkrete Afghanistan-Route ohne Festlaufen abgefahren wird. Bis dahin ist die Guard-Route nicht `VALIDATED`.
 
 ## 6. Wright ARTY und lokaler M1083-Rearm
 
-Der reale Build-`1-10`-Lauf hat den zuvor offenen lokalen Rearm-Pfad nachgewiesen:
+Der reale Build-`1-10`-Lauf hat folgenden Pfad bereits nachgewiesen:
 
 ```text
 Wright ARTY real fire / retarget
@@ -149,42 +159,24 @@ Wright ARTY real fire / retarget
 -> reorder threshold 15 / 30 reached
 ```
 
-Dieser Pfad bleibt Bestandteil des End-to-End-Tests, ist aber nicht erneut als ungelöste Architekturentwicklung zu behandeln.
+Dieser Pfad bleibt unverändert Bestandteil des End-to-End-Tests.
 
-## 7. Strategischer Air-AMMO-Resupply
+## 7. Strategischer Air-AMMO-Resupply und Dedupe
 
-Nach real bestätigtem lokalem Rearm erreichte Build `1-10` korrekt:
+Build `1-10` brach nach Erreichen des Reorder-Schwellwerts mit `RESUPPLY dedupe failed` ab. Source-Review zeigte einen Acceptance-Vergleichsfehler: `MissionDemand.Registry:Create()` liefert bei `active_duplicate` eine Deep Copy des vorhandenen Demands zurück.
 
-```text
-Wright 15 / 30
--> reorder threshold reached
--> RESUPPLY demand creation path entered
-```
-
-Der Lauf brach danach mit:
+Build `1-11` prüft deshalb ausschließlich semantische Identität:
 
 ```text
-RESUPPLY dedupe failed
-```
-
-ab.
-
-Source-Review zeigt: Das ist ein Acceptance-Vergleichsfehler. `MissionDemand.Registry:Create()` gibt für `active_duplicate` eine Deep Copy des vorhandenen Demands zurück. Stage 3 prüfte fälschlich Lua-Tabellenidentität:
-
-```lua
-if duplicate ~= demand then ... end
-```
-
-Der nächste Stand muss stattdessen semantische Identität prüfen:
-
-```text
-same demand id
-same dedupeKey
+duplicate.id == demand.id
+duplicate.dedupeKey == demand.dedupeKey
 created == false
 reason == active_duplicate
 ```
 
-Erst danach kann der bereits vorgesehene MOOSE-Pfad weiterlaufen:
+Der fehlerhafte Lua-Tabellenidentitätsvergleich ist entfernt.
+
+Danach soll der vorhandene MOOSE-Pfad erstmals im kombinierten Test erreicht werden:
 
 ```text
 reserve 15 GROUND_AMMO_PACKAGE at Jalalabad
@@ -197,160 +189,142 @@ reserve 15 GROUND_AMMO_PACKAGE at Jalalabad
 -> Jalalabad return / AIRWING asset recovery
 ```
 
-Der CH-47-/CARGOTRANSPORT-Pfad selbst ist durch den Build-`1-10`-Abbruch **nicht als FAIL nachgewiesen**, weil er nicht erreicht wurde.
-
-Erwarteter Endbestand bleibt:
+Erwarteter Endbestand:
 
 ```text
 Wright:     30
 Jalalabad:  85
 ```
 
-## 8. CASENHANCED – Allocation nachgewiesen, taktisches Profil FAIL
+Der CH-47-/CARGOTRANSPORT-Pfad war in Build `1-10` nicht erreicht worden und bleibt im Gesamtverbund DCS-pending.
 
-Build `1-10` hat erstmals die reale AH-64D-Zuweisung an den CASENHANCED-Auftrag nachgewiesen:
+## 8. CAS – PATROLZONE + SetEngageDetected statt CASENHANCED
 
-```text
-CAS tactical area:              5 NM around Honaker
-MOOSE mission:                  AUFTRAG:NewCASENHANCED
-Detected-target range:          5 NM
-Selected squadron:              SQ_US_JBAD_AH64D_B_1_10_AVN
-Squadron skill:                 HIGH
-Squadron/payload capability:    CAS + CASENHANCED
-```
+Build `1-10` hat die AH-64D-Allokation an `NewCASENHANCED` nachgewiesen, aber das resultierende taktische Profil war unbrauchbar: instabile Höhenführung, kein belastbarer Waffeneinsatz, Route-/Lifecycle-Oszillation und CFIT-/Nahbereichsrisiko.
 
-Damit ist die frühere Capability-/Allocation-Lücke geschlossen.
+Der Source-Audit ergab außerdem, dass `CASENHANCED`/`SetEngageDetected` für den tatsächlichen Engagementpfad auf generisches `FLIGHTGROUP:EngageTarget(group)` bzw. DCS `TaskAttackGroup` hinausläuft; ein Apache-spezifisches Hellfire-/Standoff-Profil wird dadurch nicht garantiert.
 
-Der reale taktische Ablauf war jedoch `FAIL`:
-
-- WEST-Höhenprofil überschoss die angeforderten 2500 ft AGL massiv;
-- AH-64D kreisten ohne wirksamen Waffeneinsatz;
-- zeitweise direkter Flug Richtung Jalalabad statt owner-authored Rückroute;
-- anschließende Umkehr zurück Richtung Honaker;
-- Lead-CFIT nach extrem steilem Sink-/Sturzflug;
-- zweiter AH-64 zu tief/zu nah am Gegner und unter Infanteriefeuer;
-- kein belastbares Apache-Standoff-Profil.
-
-Der MOOSE-Audit zeigt außerdem:
-
-```text
-CASENHANCED / SetEngageDetected
--> MOOSE wählt eine erkannte qualifizierte GROUP
--> FLIGHTGROUP:EngageTarget(group)
--> generischer DCS TaskAttackGroup
--> keine Apache-spezifischen Weapon-/Direction-/Standoff-Parameter in diesem Pfad
-```
-
-Ein Wechsel von Skill oder bloßer ROE-Wertänderung ist daher **nicht** als primäre Fehlerbehebung freigegeben.
-
-## 9. CAS Mission-Lifecycle und Corridor
-
-Die gepinnte `FLIGHTGROUP:EngageTarget()`-Logik pausiert die aktuelle Mission:
-
-```text
-EngageTarget
--> PauseMission
--> remove MOOSE mission-owned waypoints
--> execute Engage_Target
--> task done / Disengage
--> _CheckGroupDone
--> UnpauseMission
--> MissionStart / route rebuild
-```
-
-Der aktuelle OMW-Corridor fügt dagegen zusätzliche Hin-/Rückweg-Waypoints als normale FLIGHTGROUP-Waypoints ein und markiert sie nicht mit der MOOSE-`missionUID`.
-
-Damit sind diese OMW-Waypoints nicht lifecycle-gekoppelt an Pause/Unpause der CAS-Mission. Dieser Pfad ist vor dem nächsten Lauf neu zu ordnen.
-
-MOOSE bietet nativ:
+Für die gewünschte **CAS-Bereitschaft im Einsatzraum** verwendet Build `1-11` daher das offizielle MOOSE-Muster:
 
 ```lua
-mission:SetMissionIngressCoord(...)
-mission:SetMissionEgressCoord(...)
+local mission = AUFTRAG:NewPATROLZONE(zone, speedKts, altitudeFtAsl)
+mission:SetEngageDetected(rangeNm, { "Ground Units" }, zone, nil)
 ```
 
-Der Egress ist laut Source/Dokumentation ausdrücklich die Koordinate, zu der die Gruppe **nach Missionsabschluss** fliegt. Dieser native Lifecycle muss vor weiterer eigener Return-Route-Logik genutzt bzw. geprüft werden.
+Der Jalalabad-AH-64D-SQUADRON-/Payload-Pfad enthält dafür zusätzlich `AUFTRAG.Type.PATROLZONE` als Capability.
 
-## 10. Helicopter FlightPath – Höhen- und Offset-Grenzen
+`PATROLZONE + SetEngageDetected` wird als Bereitschafts-/Loiter-Mission bewertet. Ob die daraus entstehenden DCS-Angriffsaufgaben mit der AH-64D taktisch ausreichend funktionieren, muss der nächste DCS-Lauf zeigen. Ein positives Ergebnis wird nicht aus dem Source-Review abgeleitet.
+
+## 9. CAS Mission-Lifecycle und owner-authored Corridor
+
+Der gepinnte MOOSE-Lifecycle pausiert eine aktuelle Mission während `EngageTarget`, entfernt mission-owned Waypoints und baut die Missionsroute beim Unpause/MissionStart wieder auf.
+
+Build `1-11` ordnet den OMW-Corridor deshalb neu:
+
+```text
+AUFTRAG:SetMissionIngressCoord(...)
+AUFTRAG:SetMissionEgressCoord(...)
+-> native MOOSE mission lifecycle anchors
+
+owner-authored PATHLINE geometry
+-> only small OMW adapter
+-> every injected FLIGHTGROUP waypoint gets missionUID = mission.auftragsnummer
+-> MOOSE removes it during PauseMission
+-> adapter rebinds after MOOSE route rebuild
+```
+
+Der Adapter ist:
+
+```text
+scripts/air-operations/OMW_HelicopterMissionOwnedCorridor.lua
+Schema: OMW-HELICOPTER-MISSION-OWNED-CORRIDOR-2
+```
+
+Er ersetzt weder AUFTRAG noch Mission-Pause/Resume noch RTB-Logik. Die DCS-Verifikation muss zeigen, dass nach einem Engage/Disengage kein direkter unbeabsichtigter RTB-/Honaker-Oszillationspfad mehr entsteht.
+
+## 10. Helicopter FlightPath – Höhen- und Offset-Vertrag
 
 ### 10.1 Höhensteuerung
 
-Für den tatsächlich verwendeten FLIGHTGROUP-/OPSGROUP-Pfad gilt:
+Build `1-10` kombinierte RADIO-Waypoint-Höhen mit zusätzlichen `FLIGHTGROUP:SetAltitude(..., Keep=true, RadarAlt=true)`-Profilwechseln. Diese Doppelsteuerung hat im realen DCS-Lauf keine stabile 2500-ft-AGL-Führung erzeugt.
+
+Build `1-11` entfernt deshalb den Stage-3-`SetAltitude()`-Override. Die CAS-Höhenführung wird auf genau einen Pfad reduziert:
 
 ```text
-FLIGHTGROUP:AddWaypoint altitude = feet
-FLIGHTGROUP:SetAltitude altitude  = feet
-```
-
-Es gibt keinen Source-Nachweis für eine additive `2500 + 2500 + ...`-Interpretation je Wegpunkt. `FLIGHTGROUP:AddWaypoint` konvertiert den übergebenen feet-Wert einmal nach Metern und setzt für Hubschrauber im gepinnten Source `RADIO`.
-
-Build `1-10` steuerte WEST aber doppelt:
-
-```text
-RADIO waypoint altitude 2500 ft
+MOOSE PATROLZONE mission altitude
 +
-SetAltitude(2500, Keep=true, RadarAlt=true)
+MOOSE FLIGHTGROUP:AddWaypoint altitude for the owner-authored corridor
 ```
 
-Der reale DCS-Lauf zeigte, dass damit die beabsichtigte AGL-Höhe nicht gehalten wurde. Vor dem nächsten Lauf muss es eine klar definierte, isolierte Höhenführungsquelle geben.
+Die corridor waypoints werden bei Hubschraubern durch den gepinnten MOOSE-Stand als `RADIO` angelegt. Es gibt keinen zusätzlichen persistenten Stage-3-`SetAltitude()`-Befehl.
 
-### 10.2 lateraler Offset
+Der nächste DCS-Lauf muss die tatsächliche AGL-/ASL-Telemetrie verifizieren. Die Syntax-/Einheitenprüfung ist kein DCS-PASS.
 
-Der aktuelle Corridor-Adapter verwendet einen globalen 500-m-Rechtsoffset auch für `OMW_FlightPath_WEST`. Für das enge WEST-Tal ist dies nicht zulässig.
+### 10.2 owner-approved segmentbezogene Offsets
 
-Zu prüfender owner-authored Namensvertrag:
+Der Projektinhaber hat die segmentbezogene Offset-Metadatenlösung ausdrücklich freigegeben.
+
+Verbindlicher OMW-Namensvertrag für diesen Adapter:
 
 ```text
-OMW_FlightPath_R500      -> 500 m rechts
+_R<number> am Namensende = rechts in Metern relativ zur Flugrichtung
+_L<number> am Namensende = links in Metern relativ zur Flugrichtung
+kein Suffix              = 0 m / Centerline
+```
+
+Beispiele:
+
+```text
+OMW_FlightPath_R500      -> +500 m rechts
 OMW_FlightPath_WEST      -> 0 m / Centerline
-OMW_FlightPath_EAST_L250 -> 250 m links
+OMW_FlightPath_EAST_L250 -> -250 m / links
 ```
 
-Regel:
+Die MOOSE-Prüfung hat keine native PATHLINE-Namensmetadatenfunktion ergeben. Daher ist der kleine Parser/Offset-Adapter als genehmigte OMW-Erweiterung zulässig.
+
+Für Stage 3 ist vor dem DCS-Lauf erforderlich:
 
 ```text
-_R<number> am Namensende = rechts in Metern
-_L<number> am Namensende = links in Metern
-kein Suffix              = 0 m
+Mission Editor:
+OMW_FlightPath -> OMW_FlightPath_R500
+OMW_FlightPath_WEST bleibt unverändert
 ```
 
-Die bisher geprüften MOOSE-PATHLINE-/FLIGHTGROUP-/AUFTRAG-APIs besitzen keine solche automatische Namensmetadateninterpretation. Eine kleine OMW-Metadatenadaption bleibt bis zur vollständigen MOOSE-first-Prüfung und expliziten Projektentscheidung nur Kandidat, nicht freigegebene Implementierung.
+Die `.miz` wird durch den Builder nicht mutiert.
 
-## 11. Preflight-Matrix nach realem Build 1-10
+## 11. Build-1-11-Preflight
 
 ```text
-Alarm -> Incident                         DCS proven in existing path
-Incident -> ARTY demand                  DCS proven
-ARTY real fire / retarget                DCS proven
-OPSZONE Defeated decoupling              DCS proven
+Alarm -> Incident                         previously DCS proven
+Incident -> ARTY demand                  previously DCS proven
+ARTY real fire / retarget                previously DCS proven
+OPSZONE Defeated decoupling              previously DCS proven
 
-Incident -> QRF                          DCS proven
-QRF ONGUARD + SetEngageDetected          source-reviewed + ArmyOnMission proven
-QRF infantry-only composition            FAIL versus binding main baseline
-QRF vehicle augmentation                 pending implementation/acceptance
+Guard owner-authored PatrolRoute         implemented / DCS pending
 
-Guard ONGUARD at FOB                     executed but not desired baseline
-Guard owner-authored PatrolRoute         pending
+QRF ONGUARD + SetEngageDetected          source-reviewed / prior ArmyOnMission evidence
+QRF infantry + vehicle package           implemented / DCS pending
+QRF per-role AssignCohort binding        implemented / source gate enabled
 
-Incident -> CAS demand                   DCS proven
-CASENHANCED construction/queue           DCS proven
-AH64 capability / explicit squadron      DCS allocation proven
-AH64 physical start / ingress            DCS proven
-AH64 WEST altitude                       FAIL
-AH64 detected-target attack profile      FAIL
-AH64 mission pause/resume/RTB behavior   FAIL / lifecycle audit required
-AH64 weapon employment                   not successfully proven for acceptance
+Incident -> CAS demand                   previously DCS proven
+PATROLZONE + SetEngageDetected CAS        implemented / DCS pending
+AH64 PATROLZONE capability               implemented / DCS pending
+native mission ingress/egress            implemented / DCS pending
+missionUID-owned corridor rebind         implemented / DCS pending
+single altitude-control path             implemented / DCS pending
+_R/_L/no-suffix offset contract          owner-approved + implemented / DCS pending
+AH64 weapon employment                   DCS pending
 
-ARTY depletion -> M1083 request          DCS proven
-M1083 materialization                    DCS proven
-ARTY real Rearmed                        DCS proven
-CampaignState 16 -> 15                   DCS proven
-M1083 return                             DCS proven
+ARTY depletion -> M1083 request          previously DCS proven
+M1083 materialization                    previously DCS proven
+ARTY real Rearmed                        previously DCS proven
+CampaignState 16 -> 15                   previously DCS proven
+M1083 return                             previously DCS proven
 
-15 -> RESUPPLY threshold                 DCS proven
-RESUPPLY dedupe acceptance gate          FAIL due test-code identity comparison
-CH47 CARGOTRANSPORT                      not reached in build 1-10
-cargo pickup/delivery/return             pending in combined scope
+15 -> RESUPPLY threshold                 previously DCS proven
+RESUPPLY semantic dedupe gate            corrected / DCS pending
+CH47 CARGOTRANSPORT                      combined-path DCS pending
+cargo pickup/delivery/return             combined-path DCS pending
 ```
 
 ## 12. PASS-Kriterien
@@ -360,22 +334,24 @@ Gesamt-PASS bleibt erst erreicht, wenn im selben dokumentierten DCS-Lauf mindest
 ```text
 1. Honaker alarm / attack incident created.
 2. Alarm perimeter clear does not terminate response.
-3. Guard patrols its owner-authored validated route without becoming stuck.
-4. QRF materializes as baseline-conformant logical response package: infantry plus suitable vehicle when available.
-5. QRF reaches ArmyOnMission and can continue detected-target engagement without single-target binding.
-6. All known attack-incident participants are neutralized.
-7. Wright ARTY fires real coordinate missions with physical ammo decrease.
-8. M1083 physically materializes and MOOSE ARTY real rearm completes.
-9. CampaignState Wright AMMO changes exactly 16 -> 15 from that rearm.
-10. Exactly one strategic RESUPPLY is created after semantic dedupe validation.
-11. Jalalabad CH-47 and physical slingload are allocated, picked up and delivered.
-12. Wright finishes at 30 and Jalalabad at 85.
-13. CH-47 returns physically to Jalalabad and AIRWING recovers the asset.
-14. Jalalabad AH-64D is physically allocated and uses a MOOSE-first CAS execution profile that remains terrain-safe and tactically usable.
-15. AH-64D route lifecycle does not perform unexplained RTB/target-area oscillation.
-16. AH-64D achieves real, correlated weapon employment without suicidal close-range/CFIT behavior.
-17. CAS MissionDemand reaches SUCCESS only after valid MOOSE mission completion plus execution evidence.
-18. No Lua/MOOSE runtime error invalidates the chain.
+3. Guard patrols OMW_RTE_BLUE_GUARD_HONAKER_01 without becoming stuck.
+4. QRF materializes as one infantry GROUP plus one suitable vehicle GROUP.
+5. Each QRF mission is recruited from its explicitly assigned PLATOON and both reach ArmyOnMission.
+6. QRF can continue detected-target engagement without single-target binding.
+7. All known attack-incident participants are neutralized.
+8. Wright ARTY fires real coordinate missions with physical ammo decrease.
+9. M1083 physically materializes and MOOSE ARTY real rearm completes.
+10. CampaignState Wright AMMO changes exactly 16 -> 15 from that rearm.
+11. Exactly one strategic RESUPPLY remains after semantic dedupe validation.
+12. Jalalabad CH-47 and physical slingload are allocated, picked up and delivered.
+13. Wright finishes at 30 and Jalalabad at 85.
+14. CH-47 returns physically to Jalalabad and AIRWING recovers the asset.
+15. Jalalabad AH-64D is physically allocated to PATROLZONE + SetEngageDetected readiness.
+16. Native MOOSE ingress/egress plus mission-owned owner-authored corridor survive EngageTarget pause/resume without route oscillation.
+17. Requested corridor altitude profile remains terrain-safe and tactically usable in real DCS telemetry.
+18. AH-64D achieves real correlated weapon employment without suicidal close-range/CFIT behavior.
+19. CAS MissionDemand reaches SUCCESS only after attack-incident tactical completion plus real execution evidence and explicit MOOSE mission closure.
+20. No Lua/MOOSE runtime error invalidates the chain.
 ```
 
 Bis dahin bleibt `validated_in_dcs: false`.
