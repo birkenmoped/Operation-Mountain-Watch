@@ -624,6 +624,7 @@ local function dispatchQrf()
     mission:SetEngageDetected(QRF_ENGAGE_RANGE_NM,{"Ground Units"},state.qrfTacticalZone)
     mission:SetRequiredAssets(1,1)
     mission:SetName("OMW_STAGE3_HONAKER_QRF_"..role)
+    mission:AssignCohort(platoon)
     local entry={role=role,mission=mission,initialTargetName=target:GetName(),deployment=personnelDeployment,army=nil,engaged=false}
     state.qrfEntries[#state.qrfEntries+1]=entry
     state.brigade:AddMission(mission)
