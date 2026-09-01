@@ -12,7 +12,7 @@
 local Adapter = {}
 
 local TAG = "[OMW][HelicopterMissionOwnedCorridor]"
-Adapter.SchemaVersion = "OMW-HELICOPTER-MISSION-OWNED-CORRIDOR-1"
+Adapter.SchemaVersion = "OMW-HELICOPTER-MISSION-OWNED-CORRIDOR-2"
 
 local function fail(message)
   error(TAG .. " " .. tostring(message), 2)
@@ -168,8 +168,7 @@ local function installNow(flightGroup, binding)
     local coordinate = resolved.returnRoute[index]
     local segmentIndex = resolved.returnSegmentIndexes and resolved.returnSegmentIndexes[index] or 1
     local profile = profileFor(resolved, segmentIndex, defaultAltitudeFtAgl)
-    local updateRoute = index == returnCount
-    local waypoint = flightGroup:AddWaypoint(coordinate, nil, afterUid, profile.altitudeFtAgl, updateRoute)
+    local waypoint = flightGroup:AddWaypoint(coordinate, nil, afterUid, profile.altitudeFtAgl, false)
     waypoint.missionUID = mission.auftragsnummer
     binding.installedUids[#binding.installedUids + 1] = waypoint.uid
     returnProfiles[#returnProfiles + 1] = {
@@ -182,10 +181,11 @@ local function installNow(flightGroup, binding)
     afterUid = waypoint.uid
   end
 
-  if returnCount == 0 and #outboundProfiles > 0 then
-    requireFunction(flightGroup, "UpdateRoute", "FLIGHTGROUP")
-    flightGroup:UpdateRoute()
-  end
+  -- Route update happens exactly once, after every injected waypoint carries the
+  -- AUFTRAG missionUID. The OnAfterUpdateRoute hook sees binding.installing=true
+  -- and therefore cannot recursively re-install this route.
+  requireFunction(flightGroup, "UpdateRoute", "FLIGHTGROUP")
+  flightGroup:UpdateRoute()
 
   binding.installing = false
   binding.installCount = (binding.installCount or 0) + 1
@@ -237,6 +237,7 @@ function Adapter.Bind(flightGroup, mission, resolved, spec)
   requireFunction(flightGroup, "GetWaypointIndex", "FLIGHTGROUP")
   requireFunction(flightGroup, "GetWaypointUIDFromIndex", "FLIGHTGROUP")
   requireFunction(flightGroup, "AddWaypoint", "FLIGHTGROUP")
+  requireFunction(flightGroup, "UpdateRoute", "FLIGHTGROUP")
 
   local binding = {
     mission = mission,
