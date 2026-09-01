@@ -100,7 +100,7 @@ $combinedForValidation += $acceptanceSource
 $requiredMarkers = @(
   'FIRE_SUPPORT_IMMEDIATE','OPSZONE','OnAfterEvaluated','GetScannedGroupSet','PROXIMITY_INTRUSION','KNOWN_ATTACKERS_NEUTRALIZED',
   'ARTY:New','AssignTargetCoord','QueueTarget','LIVE_FIRE_RETARGET','SetWaitForShotTime','verifyFireComplete','PHYSICAL_AMMO_UNCHANGED',
-  'OMW_RTE_BLUE_GUARD_HONAKER_01','PatrolRoute','GROUP:Activate','TPL_BLUE_GND_INF_RIFLE_SQUAD_9','TPL_BLUE_GND_QRF_MIXED_4',
+  'OMW_RTE_BLUE_GUARD_HONAKER_01','PatrolRoute','state.guardGroup:Activate()','TPL_BLUE_GND_INF_RIFLE_SQUAD_9','TPL_BLUE_GND_QRF_MIXED_4',
   'AUFTRAG:NewONGUARD','SetEngageDetected','AssignCohort','qrfInfDeployed','qrfVehicleDeployed','AUFTRAG.Type.ONGUARD',
   'AUFTRAG:NewPATROLZONE','PATROLZONE_ENGAGE','CAS_TACTICAL_RADIUS_NM','CAS_COMBAT_HEIGHT_FT_AGL','GetLandHeight','NMToMeters',
   'SetMissionIngressCoord','SetMissionEgressCoord','missionUID','GetGroupEgressWaypointUID','OnAfterUpdateRoute','ConfirmExecutionEvidence','EVENTS.Shot',
