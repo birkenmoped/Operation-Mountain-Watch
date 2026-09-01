@@ -435,7 +435,7 @@ Zwingende Prüfsequenz:
 7. only if a real MOOSE gap remains: document it and ask owner before any fallback
 ```
 
-`OPSGROUP:Route(...)` or another MOOSE routing method must not be selected merely because it exists; the chosen method has to match the actual Guard representation and lifecycle.
+`OPSGROUP:Route(...)` oder eine andere MOOSE-Routingmethode darf nicht allein deshalb gewählt werden, weil sie existiert; die Methode muss zur tatsächlichen Guard-Repräsentation und deren Lifecycle passen.
 
 ## 12. Noch zu tätigende Schritte – verbindliche Reihenfolge
 
