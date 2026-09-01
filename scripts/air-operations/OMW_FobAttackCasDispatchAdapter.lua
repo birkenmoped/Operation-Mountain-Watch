@@ -10,8 +10,12 @@ local Instance = {}
 Instance.__index = Instance
 
 local TAG = "[OMW][FobAttackCasDispatchAdapter]"
-Adapter.SchemaVersion = "OMW-FOB-ATTACK-CAS-DISPATCH-ADAPTER-6"
-Adapter.MissionMode = { CAS="CAS", CASENHANCED="CASENHANCED" }
+Adapter.SchemaVersion = "OMW-FOB-ATTACK-CAS-DISPATCH-ADAPTER-7"
+Adapter.MissionMode = {
+  CAS = "CAS",
+  CASENHANCED = "CASENHANCED",
+  PATROLZONE_ENGAGE = "PATROLZONE_ENGAGE",
+}
 
 local function fail(message)
   error(TAG .. " " .. tostring(message), 2)
@@ -31,6 +35,9 @@ end
 local function isFinite(value)
   return type(value) == "number" and value == value and value > -math.huge and value < math.huge
 end
+local function validateOptionalPositive(value, label)
+  if value ~= nil and (not isFinite(value) or value <= 0) then fail(label .. " must be positive finite") end
+end
 
 function Adapter.New(spec)
   requireTable(spec, "spec")
@@ -43,18 +50,26 @@ function Adapter.New(spec)
   requireFunction(airwing, "AddMission", "airwing")
   requireNonEmptyString(spec.assigneeId, "assigneeId")
   local missionMode = spec.missionMode or Adapter.MissionMode.CAS
-  if missionMode ~= Adapter.MissionMode.CAS and missionMode ~= Adapter.MissionMode.CASENHANCED then
-    fail("missionMode must be CAS or CASENHANCED")
+  if missionMode ~= Adapter.MissionMode.CAS
+      and missionMode ~= Adapter.MissionMode.CASENHANCED
+      and missionMode ~= Adapter.MissionMode.PATROLZONE_ENGAGE then
+    fail("missionMode must be CAS, CASENHANCED or PATROLZONE_ENGAGE")
   end
-  if spec.casAltitudeFt ~= nil and (not isFinite(spec.casAltitudeFt) or spec.casAltitudeFt <= 0) then fail("casAltitudeFt must be positive finite") end
-  if spec.casSpeedKts ~= nil and (not isFinite(spec.casSpeedKts) or spec.casSpeedKts <= 0) then fail("casSpeedKts must be positive finite") end
-  if spec.engageDetectedRangeNm ~= nil and (not isFinite(spec.engageDetectedRangeNm) or spec.engageDetectedRangeNm <= 0) then fail("engageDetectedRangeNm must be positive finite") end
+  validateOptionalPositive(spec.casAltitudeFt, "casAltitudeFt")
+  validateOptionalPositive(spec.casSpeedKts, "casSpeedKts")
+  validateOptionalPositive(spec.engageDetectedRangeNm, "engageDetectedRangeNm")
+  validateOptionalPositive(spec.missionIngressAltitudeFt, "missionIngressAltitudeFt")
+  validateOptionalPositive(spec.missionEgressAltitudeFt, "missionEgressAltitudeFt")
+  validateOptionalPositive(spec.missionIngressSpeedKts, "missionIngressSpeedKts")
+  validateOptionalPositive(spec.missionEgressSpeedKts, "missionEgressSpeedKts")
   if spec.engageDetectedTargetTypes ~= nil and type(spec.engageDetectedTargetTypes) ~= "table" then fail("engageDetectedTargetTypes must be a table when provided") end
   if spec.squadrons ~= nil then
     requireTable(spec.squadrons, "spec.squadrons")
     if #spec.squadrons < 1 then fail("spec.squadrons must contain at least one SQUADRON when provided") end
   end
   if spec.auftragFactory ~= nil and type(spec.auftragFactory) ~= "function" then fail("auftragFactory must be a function when provided") end
+  if spec.missionIngressCoordinate ~= nil then requireTable(spec.missionIngressCoordinate, "spec.missionIngressCoordinate") end
+  if spec.missionEgressCoordinate ~= nil then requireTable(spec.missionEgressCoordinate, "spec.missionEgressCoordinate") end
 
   return setmetatable({
     missionDemand = missionDemand,
@@ -67,6 +82,12 @@ function Adapter.New(spec)
     engageDetectedRangeNm = spec.engageDetectedRangeNm,
     engageDetectedTargetTypes = spec.engageDetectedTargetTypes,
     squadrons = spec.squadrons,
+    missionIngressCoordinate = spec.missionIngressCoordinate,
+    missionEgressCoordinate = spec.missionEgressCoordinate,
+    missionIngressAltitudeFt = spec.missionIngressAltitudeFt,
+    missionEgressAltitudeFt = spec.missionEgressAltitudeFt,
+    missionIngressSpeedKts = spec.missionIngressSpeedKts,
+    missionEgressSpeedKts = spec.missionEgressSpeedKts,
     requireExecutionEvidence = spec.requireExecutionEvidence == true,
     auftragFactory = spec.auftragFactory,
     missionsByDemandId = {},
@@ -93,6 +114,16 @@ function Instance:_newCasMission(targetZone)
       nil,
       self.engageDetectedTargetTypes or { "Ground Units" }
     )
+  elseif self.missionMode == Adapter.MissionMode.PATROLZONE_ENGAGE then
+    if type(AUFTRAG) ~= "table" or type(AUFTRAG.NewPATROLZONE) ~= "function" then fail("MOOSE AUFTRAG:NewPATROLZONE() is required") end
+    mission = AUFTRAG:NewPATROLZONE(targetZone, self.casSpeedKts, self.casAltitudeFt)
+    requireFunction(mission, "SetEngageDetected", "PATROLZONE AUFTRAG")
+    mission:SetEngageDetected(
+      self.engageDetectedRangeNm,
+      self.engageDetectedTargetTypes or { "Ground Units" },
+      targetZone,
+      nil
+    )
   else
     if type(AUFTRAG) ~= "table" or type(AUFTRAG.NewCAS) ~= "function" then fail("MOOSE AUFTRAG:NewCAS() is required") end
     mission = AUFTRAG:NewCAS(targetZone, self.casAltitudeFt, self.casSpeedKts)
@@ -101,6 +132,14 @@ function Instance:_newCasMission(targetZone)
   if self.missionMode == Adapter.MissionMode.CAS and self.engageDetectedRangeNm then
     requireFunction(mission, "SetEngageDetected", "CAS AUFTRAG")
     mission:SetEngageDetected(self.engageDetectedRangeNm, self.engageDetectedTargetTypes or { "Ground Units" }, targetZone, nil)
+  end
+  if self.missionIngressCoordinate then
+    requireFunction(mission, "SetMissionIngressCoord", "CAS AUFTRAG")
+    mission:SetMissionIngressCoord(self.missionIngressCoordinate, self.missionIngressAltitudeFt, self.missionIngressSpeedKts)
+  end
+  if self.missionEgressCoordinate then
+    requireFunction(mission, "SetMissionEgressCoord", "CAS AUFTRAG")
+    mission:SetMissionEgressCoord(self.missionEgressCoordinate, self.missionEgressAltitudeFt, self.missionEgressSpeedKts)
   end
   if self.squadrons then
     requireFunction(mission, "AssignSquadrons", "CAS AUFTRAG")
@@ -172,9 +211,10 @@ function Instance:Dispatch(demand, targetZone)
   self.airwing:AddMission(mission)
   self.registry:AssignAI(demand.id, self.assigneeId)
   self.missionsByDemandId[demand.id] = mission
-  self:_log(string.format("CAS queued demandId=%s installationId=%s assigneeId=%s missionMode=%s altitudeFtASL=%s speedKts=%s engageDetectedRangeNm=%s squadronBound=%s requireExecutionEvidence=%s",
+  self:_log(string.format("CAS queued demandId=%s installationId=%s assigneeId=%s missionMode=%s altitudeFtASL=%s speedKts=%s engageDetectedRangeNm=%s squadronBound=%s nativeIngress=%s nativeEgress=%s requireExecutionEvidence=%s",
     tostring(demand.id), tostring(demand.origin), tostring(self.assigneeId), tostring(self.missionMode), tostring(self.casAltitudeFt), tostring(self.casSpeedKts),
-    tostring(self.engageDetectedRangeNm), tostring(self.squadrons ~= nil), tostring(self.requireExecutionEvidence)))
+    tostring(self.engageDetectedRangeNm), tostring(self.squadrons ~= nil), tostring(self.missionIngressCoordinate ~= nil), tostring(self.missionEgressCoordinate ~= nil),
+    tostring(self.requireExecutionEvidence)))
   return mission, true, nil
 end
 
