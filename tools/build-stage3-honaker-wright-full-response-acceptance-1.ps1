@@ -21,7 +21,9 @@ $sources = [ordered]@{
   OMW_STAGE3_FIXED_FIRE_SUPPORT_AMMO_REARM_SERVICE = 'scripts\ground\OMW_FixedFireSupportAmmoRearmService.lua'
   OMW_STAGE3_GROUND_SUPPORT_MATERIALIZER = 'scripts\ground\OMW_GroundSupportMaterializer.lua'
   OMW_STAGE3_FOB_ATTACK_CAS_DISPATCH_ADAPTER = 'scripts\air-operations\OMW_FobAttackCasDispatchAdapter.lua'
+  OMW_STAGE3_FOB_ATTACK_CAS_PATROL_CLOSURE = 'scripts\air-operations\OMW_FobAttackCasPatrolClosure.lua'
   OMW_STAGE3_HELICOPTER_FLIGHTPATH_CORRIDOR = 'scripts\air-operations\OMW_HelicopterFlightPathCorridor.lua'
+  OMW_STAGE3_HELICOPTER_MISSION_OWNED_CORRIDOR = 'scripts\air-operations\OMW_HelicopterMissionOwnedCorridor.lua'
 }
 $acceptanceRelative = 'mission\tests\stage3-honaker-wright-full-response\src\01-honaker-wright-full-response-acceptance.lua'
 $acceptanceFile = Join-Path $repoRoot $acceptanceRelative
@@ -29,7 +31,7 @@ $jalalabadFoundationRelative = 'scripts\air-operations\OMW_AirOps_Jalalabad_Boot
 $jalalabadFoundationFile = Join-Path $repoRoot $jalalabadFoundationRelative
 $distDir = Join-Path $repoRoot 'mission\tests\stage3-honaker-wright-full-response\dist'
 $outputFile = Join-Path $distDir 'OMW_Stage3_Honaker_Wright_Full_Response_Acceptance_1.lua'
-$builderVersion = 'STAGE3-HONAKER-WRIGHT-FULL-RESPONSE-ACCEPTANCE-1-10'
+$builderVersion = 'STAGE3-HONAKER-WRIGHT-FULL-RESPONSE-ACCEPTANCE-1-11'
 $testId = 'STAGE3-HONAKER-WRIGHT-FULL-RESPONSE-ACCEPTANCE-1'
 $mooseCommit = '73d3ed119cd9e7e3f2cfcabbaa34513d30529b54'
 $mooseSha256 = 'e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915'
@@ -43,7 +45,11 @@ foreach ($name in $sources.Keys) {
 if (-not (Test-Path -LiteralPath $acceptanceFile -PathType Leaf)) { throw "Acceptance source not found: $acceptanceFile" }
 if (-not (Test-Path -LiteralPath $jalalabadFoundationFile -PathType Leaf)) { throw "Jalalabad AirOps foundation source not found: $jalalabadFoundationFile" }
 $jalalabadFoundationSource = Get-Content -LiteralPath $jalalabadFoundationFile -Raw -Encoding UTF8
-foreach ($marker in @('SQ_US_JBAD_AH64D_B_1_10_AVN','TPL_AIR_US_JBAD_AH64D_CAS_2SHIP','missionTypes = { AUFTRAG.Type.CAS, AUFTRAG.Type.CASENHANCED }')) {
+foreach ($marker in @(
+  'SQ_US_JBAD_AH64D_B_1_10_AVN',
+  'TPL_AIR_US_JBAD_AH64D_CAS_2SHIP',
+  'missionTypes = { AUFTRAG.Type.CAS, AUFTRAG.Type.CASENHANCED, AUFTRAG.Type.PATROLZONE }'
+)) {
   if (-not $jalalabadFoundationSource.Contains($marker)) { throw "Jalalabad AirOps foundation missing Stage 3 CAS prerequisite: $marker" }
 }
 
@@ -62,24 +68,20 @@ $header = @"
 -- TestId: $testId
 -- MOOSECommit: $mooseCommit
 -- MooseLuaSHA256: $mooseSha256
--- Scope: Honaker attack -> installation attack incident -> own QRF + CASENHANCED + live-retarget Wright coordinate fire -> local M1083 rearm -> CampaignState AMMO reorder -> Jalalabad CH47 Air-AMMO -> Wright.
--- AlarmZone: MOOSE OPSZONE 1000 m perimeter is trigger/evidence only; Defeated does not terminate ARTY/CAS/QRF or satisfy overall PASS.
+-- Scope: Honaker attack -> installation attack incident -> owner-authored Guard patrol + mixed QRF + PATROLZONE/EngageDetected CAS + live Wright coordinate fire -> local M1083 rearm -> CampaignState AMMO reorder -> Jalalabad CH47 Air-AMMO -> Wright.
+-- AlarmZone: MOOSE OPSZONE 1000 m perimeter is trigger/evidence only; Defeated does not terminate response or satisfy overall PASS.
 -- AttackIncident: OPSZONE Evaluated adds newly observed RED groups; living known participants remain tactical targets after leaving the alarm perimeter.
--- QRF: MOOSE AUFTRAG:NewONGUARD + SetEngageDetected in a separate 5-NM acceptance tactical area; not bound to one RED target object.
--- QRFPassGate: physical ArmyOnMission deployment is required; weapon engagement remains telemetry because ARTY/CAS may neutralize attackers first.
--- CASArea: dedicated 5 NM tactical ZONE_RADIUS centered on Honaker; separate from the 1000 m alarm perimeter; created lazily only after a CAS demand exists.
--- CASMission: MOOSE AUFTRAG:NewCASENHANCED; mission altitude is Honaker terrain height plus 2500 ft, passed as ASL as required by MOOSE.
--- CASAirSquadronBinding: AUFTRAG:AssignSquadrons binds Stage3 CAS to SQ_US_JBAD_AH64D_B_1_10_AVN.
--- CASFaultIsolation: CAS setup/dispatch/corridor failures are recorded as scoped CAS failures so Guard/QRF/ARTY/logistics diagnostics continue; final PASS remains impossible.
--- CASFoundationPrerequisite: Jalalabad AH64D squadron/payload must advertise both CAS and CASENHANCED; rebuild and reload the Jalalabad AirOps foundation bundle together with this Stage3 bundle.
--- CASRoute: OMW_FlightPath 500 ft AGL -> OMW_FlightPath_WEST 2500 ft AGL held via MOOSE SetAltitude(...,Keep=true,RadarAlt=true) / RotaryWing.Column.D70 outbound AND reverse return.
--- RouteTelemetry: OnAfterPassingWaypoint logs requested AGL plus actual AGL/ASL and terrain height from the FLIGHTGROUP coordinate.
+-- Guard: owner-authored OMW_RTE_BLUE_GUARD_HONAKER_01 activated and looped with MOOSE GROUP:PatrolRoute().
+-- QRF: one rifle-squad GROUP plus one independent TPL_BLUE_GND_QRF_MIXED_4 vehicle GROUP; both use MOOSE ONGUARD + SetEngageDetected against one shared incident picture.
+-- CASMission: MOOSE AUFTRAG:NewPATROLZONE + SetEngageDetected; this tests CAS readiness/loiter semantics instead of CASENHANCED.
+-- CASLifecycle: native AUFTRAG SetMissionIngressCoord/SetMissionEgressCoord plus missionUID-owned owner-authored corridor points that are removed/reinstalled with MOOSE PauseMission/UnpauseMission route rebuilds.
+-- CASAltitude: no FLIGHTGROUP:SetAltitude override in the Stage3 acceptance; mission altitude and RADIO waypoint altitude are the phase-specific MOOSE sources.
+-- CASOffsetContract: terminal _R<number> means right meters, _L<number> means left meters, no suffix means centerline. OMW_FlightPath_R500 is +500 m; OMW_FlightPath_WEST is centerline.
+-- CASClosure: PATROLZONE readiness ends only after known attack participants are neutralized and real execution evidence exists; AUFTRAG is cancelled and MissionDemand is succeeded by the explicit closure adapter.
 -- FireSupport: reacquire living known attack-incident participants after each physically verified coordinate fire mission.
--- LocalRearmLifecycle: dedicated Wright rearm BRIGADE is started after materializer registration before any M1083 self-request.
--- PassThreatGate: attack incident closed only after no living known attack participant remains; OPSZONE Defeated is telemetry only.
--- AirAmmoRoute: OMW_FlightPath outbound AND return.
--- StrategicAuthority: existing OMW CampaignState only.
--- PhysicalAirCargo: one ammo_cargo static represents complete 15-package transfer manifest; 1000 kg acceptance-only physical parameter.
+-- ResupplyDedupe: active duplicate is compared semantically by id + dedupeKey, never Lua table identity.
+-- AirAmmoRoute: OMW_FlightPath_R500 outbound AND return using the approved PATHLINE suffix offset contract.
+-- StrategicAuthority: existing OMW CampaignState only; no new vehicle resource authority is introduced by the acceptance QRF package.
 -- MizMutation: false.
 
 "@
@@ -96,27 +98,37 @@ $bundle += $acceptanceSource
 $combinedForValidation += $acceptanceSource
 
 $requiredMarkers = @(
-  'FIRE_SUPPORT_IMMEDIATE','OPSZONE','OnAfterEvaluated','GetScannedGroupSet','OMW_STAGE3_GROUND_INSTALLATION_ATTACK_INCIDENT',
-  'PROXIMITY_INTRUSION','GetParticipants','KNOWN_ATTACKERS_NEUTRALIZED','ARTY:New','AssignTargetCoord','QueueTarget',
-  'QRF_TACTICAL_RADIUS_NM','QRF_ENGAGE_RANGE_NM','AUFTRAG:NewONGUARD','SetEngageDetected','qrfDeployed','AUFTRAG.Type.ONGUARD',
-  'LIVE_FIRE_RETARGET','SetWaitForShotTime','ARTY_WAIT_FOR_SHOT_SEC','verifyFireComplete','PHYSICAL_AMMO_UNCHANGED',
-  'AUFTRAG:NewCASENHANCED','CASENHANCED','CAS_TACTICAL_RADIUS_NM','CAS_COMBAT_HEIGHT_FT_AGL','GetLandHeight','NMToMeters',
-  'ensureCasContext','CAS_CONTEXT_FAILED','casFailed','CAS FAIL','ConfirmExecutionEvidence','EVENTS.Shot','requireExecutionEvidence','missionMode',
-  'squadrons={state.ah64d}','AssignSquadrons','OMW-FOB-ATTACK-CAS-DISPATCH-ADAPTER-6',
-  'OMW-FIXED-FIRE-SUPPORT-AMMO-SUPPORT-4','brigade:Start()','dedicated support BRIGADE started after materializer registration',
-  'SetAltitude','profileTransitions','RotaryWing.Column.D70','WEST_ALTITUDE_FT_AGL','waypoint telemetry','actualAglFt','actualAslFt','terrainFt',
+  'FIRE_SUPPORT_IMMEDIATE','OPSZONE','OnAfterEvaluated','GetScannedGroupSet','PROXIMITY_INTRUSION','KNOWN_ATTACKERS_NEUTRALIZED',
+  'ARTY:New','AssignTargetCoord','QueueTarget','LIVE_FIRE_RETARGET','SetWaitForShotTime','verifyFireComplete','PHYSICAL_AMMO_UNCHANGED',
+  'OMW_RTE_BLUE_GUARD_HONAKER_01','PatrolRoute','GROUP:Activate','TPL_BLUE_GND_INF_RIFLE_SQUAD_9','TPL_BLUE_GND_QRF_MIXED_4',
+  'AUFTRAG:NewONGUARD','SetEngageDetected','qrfInfDeployed','qrfVehicleDeployed','AUFTRAG.Type.ONGUARD',
+  'AUFTRAG:NewPATROLZONE','PATROLZONE_ENGAGE','CAS_TACTICAL_RADIUS_NM','CAS_COMBAT_HEIGHT_FT_AGL','GetLandHeight','NMToMeters',
+  'SetMissionIngressCoord','SetMissionEgressCoord','missionUID','GetGroupEgressWaypointUID','OnAfterUpdateRoute','ConfirmExecutionEvidence','EVENTS.Shot',
+  'OMW-HELICOPTER-MISSION-OWNED-CORRIDOR-1','OMW-FOB-ATTACK-CAS-PATROL-CLOSURE-1','AssignSquadrons','squadrons={state.ah64d}',
+  'PATHLINE_SUFFIX','ParsePathlineOffset','OMW_FlightPath_R500','OMW_FlightPath_WEST','WEST_ALTITUDE_FT_AGL','ResolveSequence',
   'GROUND_AMMO_PACKAGE','GROUND_NODE_WRIGHT','GROUND_NODE_JALALABAD','TPL_BLUE_GND_WRIGHT_FS_ARTY_L118_2','TPL_BLUE_GND_SUP_M1083',
-  'AUFTRAG:NewCARGOTRANSPORT','SQ_US_JBAD_CH47_HEAVYLIFT','OMW_FlightPath','OMW_FlightPath_WEST','ResolveSequence',
-  'MarkInTransit','MarkDelivered','MESSAGE:New','active_duplicate','onThreatCleared','perimeterClear'
+  'AUFTRAG:NewCARGOTRANSPORT','SQ_US_JBAD_CH47_HEAVYLIFT','MarkInTransit','MarkDelivered','active_duplicate','duplicate.id','duplicate.dedupeKey',
+  'MESSAGE:New','onThreatCleared','perimeterClear'
 )
-foreach ($marker in $requiredMarkers) { if (-not $combinedForValidation.Contains($marker)) { throw "Stage 3 full-response sources missing marker: $marker" } }
+foreach ($marker in $requiredMarkers) {
+  if (-not $combinedForValidation.Contains($marker)) { throw "Stage 3 full-response sources missing marker: $marker" }
+}
+
+foreach ($marker in @('OMW_FlightPath_R500','OMW_FlightPath_WEST','TPL_BLUE_GND_QRF_MIXED_4','OMW_RTE_BLUE_GUARD_HONAKER_01')) {
+  if (-not $acceptanceSource.Contains($marker)) { throw "Stage 3 acceptance missing reconciled marker: $marker" }
+}
+if ($acceptanceSource.Contains('CasAdapter.MissionMode.CASENHANCED')) { throw 'Stage 3 acceptance must not use CASENHANCED after PATROLZONE reconciliation.' }
+if ($acceptanceSource -match 'SetAltitude\s*\(') { throw 'Stage 3 acceptance must not issue a FLIGHTGROUP/OPSGROUP SetAltitude override for CAS.' }
+if ($acceptanceSource.Contains('duplicate ~= demand')) { throw 'Stage 3 acceptance must not compare RESUPPLY duplicate Lua table identity.' }
 
 $forbiddenPatterns = @(
   'MissionScripting\.lua','mist\.','\bMIST\b','(?<![A-Za-z0-9_])io\.','lfs\.','os\.execute',':Teleport\s*\(',
   'world\.addEventHandler','timer\.scheduleFunction','coalition\.addGroup','coalition\.addStaticObject','AddCargoStorage','NewFREIGHTTRANSPORT',
   'casTacticalZone:SetDrawZone','casTacticalZone:SetMarkZone','AUFTRAG:NewGROUNDATTACK\s*\(targets\[i\]'
 )
-foreach ($pattern in $forbiddenPatterns) { if ($acceptanceSource -match $pattern) { throw "Stage 3 full-response acceptance contains forbidden runtime pattern: $pattern" } }
+foreach ($pattern in $forbiddenPatterns) {
+  if ($acceptanceSource -match $pattern) { throw "Stage 3 full-response acceptance contains forbidden runtime pattern: $pattern" }
+}
 
 New-Item -ItemType Directory -Path $distDir -Force | Out-Null
 [System.IO.File]::WriteAllText($outputFile, $bundle, [System.Text.UTF8Encoding]::new($false))
@@ -132,44 +144,37 @@ Write-Host "MooseLuaSHA256: $($mooseSha256.ToUpperInvariant())"
 Write-Host 'AttackSite: BLUE_GROUND_COP_HONAKER'
 Write-Host 'ThreatEvidenceStart: MOOSE OPSZONE Attacked'
 Write-Host 'AlarmPerimeterSemantics: MOOSE OPSZONE Defeated RED is telemetry only; it does not terminate response or satisfy PASS'
-Write-Host 'AttackIncident: one active Honaker incident retains living known RED participants after perimeter exit'
-Write-Host 'AttackIncidentRefresh: MOOSE OPSZONE OnAfterEvaluated / GetScannedGroupSet'
 Write-Host 'AttackIncidentClosure: no living known attack participant remains'
-Write-Host 'HonakerResponse: own infantry QRF + Jalalabad AH64D MOOSE CASENHANCED'
-Write-Host 'QRFMission: MOOSE AUFTRAG NewONGUARD + SetEngageDetected; not bound to one RED target object'
-Write-Host 'QRFTacticalAreaRadiusNm: 5'
-Write-Host 'QRFEngageDetectedRangeNm: 5'
-Write-Host 'QRFPassGate: ArmyOnMission physical deployment required; EngageTarget is telemetry because ARTY/CAS may neutralize attackers first'
-Write-Host 'CASInitialization: tactical ZONE_RADIUS and CAS adapter are created only when a CAS demand is created'
+Write-Host 'GuardRoute: OMW_RTE_BLUE_GUARD_HONAKER_01 via MOOSE GROUP PatrolRoute'
+Write-Host 'QRFPackage: 1x TPL_BLUE_GND_INF_RIFLE_SQUAD_9 + 1x TPL_BLUE_GND_QRF_MIXED_4'
+Write-Host 'QRFMission: MOOSE AUFTRAG NewONGUARD + SetEngageDetected in one shared 5-NM tactical area'
+Write-Host 'QRFPassGate: physical ArmyOnMission deployment required for both infantry and vehicle groups'
+Write-Host 'CASMission: MOOSE AUFTRAG NewPATROLZONE + SetEngageDetected'
 Write-Host 'CASAirSquadronBinding: SQ_US_JBAD_AH64D_B_1_10_AVN via MOOSE AUFTRAG AssignSquadrons'
-Write-Host 'CASFaultIsolation: CAS setup/dispatch/corridor failure does not stop Guard/QRF/ARTY/logistics diagnostics; final PASS remains blocked'
-Write-Host 'CASFoundationPrerequisite: run tools/build-jalalabad-air-operations-foundation.ps1 and reload mission/tests/jalalabad-air-operations/dist/OMW_AirOps_Jalalabad.lua so AH64D capability/payload includes CASENHANCED'
+Write-Host 'CASFoundationPrerequisite: Jalalabad AH64D capability/payload includes AUFTRAG.Type.PATROLZONE'
+Write-Host 'CASTacticalAreaRadiusNm: 5'
+Write-Host 'CASCombatHeightFtAGLAtCenter: 2500'
+Write-Host 'CASMissionAltitude: runtime Honaker GetLandHeight + 2500 ft, passed to PATROLZONE as ASL'
+Write-Host 'CASEngageDetectedRangeNm: 5'
+Write-Host 'CASEvidence: real MOOSE EVENTS.Shot plus tactical attack-incident completion required before PATROLZONE closure'
+Write-Host 'CASLifecycle: native SetMissionIngressCoord + SetMissionEgressCoord; mission-owned FlightPath waypoints carry missionUID and rebind after MOOSE route rebuild'
+Write-Host 'CASAltitudeControl: no Stage3 SetAltitude override; MOOSE mission/waypoint altitude only'
+Write-Host 'CASRouteOutbound: OMW_FlightPath_R500 500ft AGL -> OMW_FlightPath_WEST 2500ft AGL'
+Write-Host 'CASRouteReturn: OMW_FlightPath_WEST 2500ft AGL -> OMW_FlightPath_R500 500ft AGL'
+Write-Host 'OffsetContract: _R<number>=right meters; _L<number>=left meters; no suffix=centerline'
+Write-Host 'PrimaryOffset: OMW_FlightPath_R500 = right 500 m'
+Write-Host 'WestOffset: OMW_FlightPath_WEST = centerline 0 m'
+Write-Host 'MissionEditorPrerequisite: rename existing OMW_FlightPath to OMW_FlightPath_R500 before DCS test; WEST name stays unchanged'
 Write-Host 'FireSupport: Wright TPL_BLUE_GND_WRIGHT_FS_ARTY_L118_2 via MOOSE Functional ARTY AssignTargetCoord / DCS Fire At Point'
-Write-Host 'FireSupportTargets: one live coordinate mission at a time; living attack-incident participants reacquired after every physically confirmed mission'
 Write-Host 'FireSupportRoundsPerMission: 4'
-Write-Host 'FireSupportTargetAcquireDelaySec: 15'
-Write-Host 'FireSupportFirstShotTimeoutSec: 300'
-Write-Host 'FireSupportCompletionEvidence: physical MOOSE ARTY GetAmmo decrease required for every completed coordinate mission'
-Write-Host 'HonakerMortar: intentionally unavailable / not materialized'
-Write-Host 'LocalRearmLifecycle: dedicated Wright support BRIGADE starts after materializer registration before the M1083 self-request'
-Write-Host 'WrightStrategicPrecondition: 30 -> 16 acceptance-only'
-Write-Host 'LocalRearmDebit: 1 GROUND_AMMO_PACKAGE; 16 -> 15'
+Write-Host 'LocalRearmDebit: 1 GROUND_AMMO_PACKAGE; Wright 16 -> 15'
 Write-Host 'Reorder: 15 AT_OR_BELOW'
+Write-Host 'ResupplyDedupe: semantic id + dedupeKey equality, created=false, reason=active_duplicate'
 Write-Host 'StrategicResupply: exactly one RESUPPLY, Jalalabad -> Wright, quantity 15'
 Write-Host 'AirPhysicalMission: MOOSE AUFTRAG CARGOTRANSPORT'
 Write-Host 'AirSquadron: SQ_US_JBAD_CH47_HEAVYLIFT via MOOSE AUFTRAG AssignSquadrons'
-Write-Host 'AirRouteOutbound: OMW_FlightPath'
-Write-Host 'AirRouteReturn: OMW_FlightPath'
-Write-Host 'CASMission: MOOSE AUFTRAG NewCASENHANCED'
-Write-Host 'CASTacticalAreaRadiusNm: 5'
-Write-Host 'CASCombatHeightFtAGLAtCenter: 2500'
-Write-Host 'CASMissionAltitude: runtime Honaker GetLandHeight + 2500 ft, passed to CASENHANCED as ASL'
-Write-Host 'CASEngageDetectedRangeNm: 5'
-Write-Host 'CASEvidence: real MOOSE EVENTS.Shot recorded but does not by itself succeed MissionDemand; MOOSE mission completion is also required'
-Write-Host 'CASRouteOutbound: OMW_FlightPath 500ft AGL -> OMW_FlightPath_WEST 2500ft AGL HELD via MOOSE SetAltitude RadarAlt=true / Column.D70'
-Write-Host 'CASRouteReturn: OMW_FlightPath_WEST 2500ft AGL HELD via MOOSE SetAltitude RadarAlt=true / Column.D70 -> OMW_FlightPath'
-Write-Host 'CASRouteJunctionMaxDistanceM: 1000'
-Write-Host 'RouteTelemetry: every passed corridor waypoint logs pathline, requested AGL, actual AGL, actual ASL and terrain height; profile transitions logged separately'
+Write-Host 'AirRouteOutbound: OMW_FlightPath_R500'
+Write-Host 'AirRouteReturn: OMW_FlightPath_R500'
 Write-Host 'VisibleTelemetry: MOOSE MESSAGE milestones enabled'
 Write-Host 'FinalExpected: Jalalabad AMMO 85; Wright AMMO 30'
 Write-Host 'MizMutation: false'
