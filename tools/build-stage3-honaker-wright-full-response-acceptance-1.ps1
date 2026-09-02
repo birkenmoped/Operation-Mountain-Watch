@@ -70,9 +70,9 @@ $header = @"
 -- TestId: $testId
 -- MOOSECommit: $mooseCommit
 -- MooseLuaSHA256: $mooseSha256
--- Scope: Honaker attack -> Guard PATHLINE patrol + mixed QRF recovery + PATROLZONE/EngageDetected CAS corridor lifecycle + Wright ARTY/rearm -> CampaignState AMMO reorder -> Jalalabad CH47 pickup-first Air-AMMO -> Wright -> route return.
+-- Scope: Honaker attack -> Guard PATHLINE patrol + 5-NM tactical-clear gated mixed QRF recovery + PATROLZONE/EngageDetected CAS corridor lifecycle + Wright ARTY/rearm -> CampaignState AMMO reorder -> Jalalabad CH47 pickup-first Air-AMMO -> Wright -> route return.
 -- Guard: TPL_BLUE_GND_INF_RIFLE_SQUAD_9 materialized through Honaker BRIGADE/PLATOON and routed repeatedly over OMW_RTE_BLUE_GUARD_HONAKER_01 using public MOOSE PATHLINE/GetCoordinates/WaypointGround/TaskFunction/SetTaskWaypoint/Route APIs.
--- QRF: one TPL_BLUE_GND_QRF_MIXED_6 GROUP, five infantry plus one CHAP_MATV, no embark/disembark, 5 GROUND_PERSONNEL reserved while deployed; mission Cancel + SetReturnToLegion(true) returns survivors and settles reservation.
+-- QRF: one TPL_BLUE_GND_QRF_MIXED_6 GROUP, five infantry plus one CHAP_MATV, no embark/disembark, 5 GROUND_PERSONNEL reserved while deployed; after zero active RED ground groups remain in the 5-NM tactical area, mission Cancel + SetReturnToLegion(true) returns survivors and settles reservation.
 -- CAS: native AUFTRAG ingress is the common-route entry, then R500 -> WEST -> CAS -> WEST reverse -> R500 reverse -> native Jalalabad-side egress.
 -- AirAmmo: CARGOTRANSPORT pickup is confirmed before corridor injection.
 -- StrategicAuthority: existing OMW CampaignState only.
@@ -92,11 +92,12 @@ $bundle += $acceptanceSource
 $combinedForValidation += $acceptanceSource
 
 $requiredMarkers = @(
-  'FIRE_SUPPORT_IMMEDIATE','OPSZONE','OnAfterEvaluated','GetScannedGroupSet','PROXIMITY_INTRUSION','KNOWN_ATTACKERS_NEUTRALIZED',
+  'FIRE_SUPPORT_IMMEDIATE','OPSZONE','OnAfterEvaluated','GetScannedGroupSet','PROXIMITY_INTRUSION','TACTICAL_AREA_CLEAR',
   'ARTY:New','AssignTargetCoord','QueueTarget','LIVE_FIRE_RETARGET','SetWaitForShotTime','verifyFireComplete','PHYSICAL_AMMO_UNCHANGED',
   'TPL_BLUE_GND_INF_RIFLE_SQUAD_9','TPL_BLUE_GND_QRF_MIXED_6','OMW_RTE_BLUE_GUARD_HONAKER_01',
   'PATHLINE:FindByName','GetCoordinates','WaypointGround','TaskFunction("CONTROLLABLE.Route"','SetTaskWaypoint','state.guardGroup:Route',
   'AUFTRAG:NewONGUARD','SetEngageDetected','AssignCohort','SetReturnToLegion(true)','OnAfterReturned','SettleReturned','qrfReturned',
+  'SET_GROUP:New','FilterCoalitions("red")','FilterCategoryGround','FilterActive(true)','FilterZones({state.casTacticalZone})','CountAlive',
   'AUFTRAG:NewPATROLZONE','PATROLZONE_ENGAGE','CAS_TACTICAL_RADIUS_NM','CAS_COMBAT_HEIGHT_FT_AGL','GetLandHeight','NMToMeters',
   'SetMissionIngressCoord','SetMissionEgressCoord','missionUID','GetGroupEgressWaypointUID','OnAfterUpdateRoute','ConfirmExecutionEvidence','EVENTS.Shot',
   'OMW-HELICOPTER-MISSION-OWNED-CORRIDOR-3','OMW-FOB-ATTACK-CAS-PATROL-CLOSURE-1','AssignSquadrons','squadrons={state.ah64d}',
@@ -118,10 +119,12 @@ foreach ($marker in @(
   'state.qrfPlatoon = PLATOON:New(QRF_TEMPLATE,1,"PLT_BLUE_GND_HONAKER_STAGE3_QRF_MIXED_6")',
   'mission:SetReturnToLegion(true)',
   'entry.mission:Cancel()',
+  'local tacticalRed=countRedGroundGroupsInTacticalZone()',
+  'if tacticalRed==nil or tacticalRed>0 then return false end',
   'state.threat:Stop()',
   'if state.cargo:IsInZone(ZONE:FindByName(PICKUP_ZONE)) then return end',
   'installCargoCorridor(FlightGroup, Mission, ZONE:FindByName(DROP_ZONE):GetCoordinate(), AIR_AMMO_PATHLINES)',
-  'state.finishScheduler=SCHEDULER:New(nil,finish,{},10,2)'
+  'state.finishScheduler=SCHEDULER:New(nil,finish,{},10,10)'
 )) {
   if (-not $acceptanceSource.Contains($marker)) { throw "Stage 3 acceptance missing lifecycle marker: $marker" }
 }
@@ -134,6 +137,7 @@ foreach ($obsolete in @(
   'qrfVehicleDeployed',
   'GROUP:FindByName(GUARD_ROUTE_GROUP)',
   'state.guardGroup:PatrolRoute()',
+  'state.finishScheduler=SCHEDULER:New(nil,finish,{},10,2)',
   'CH-47 assigned; Air-AMMO manifest loading at Jalalabad", 10)\n    installCargoCorridor'
 )) {
   if ($acceptanceSource.Contains($obsolete)) { throw "Stage 3 acceptance still contains obsolete marker: $obsolete" }
@@ -167,16 +171,17 @@ Write-Host 'GuardTemplate: TPL_BLUE_GND_INF_RIFLE_SQUAD_9'
 Write-Host 'GuardPathline: OMW_RTE_BLUE_GUARD_HONAKER_01'
 Write-Host 'GuardRouting: MOOSE PATHLINE GetCoordinates -> COORDINATE WaypointGround -> GROUP TaskFunction/SetTaskWaypoint/Route repeated circuit'
 Write-Host 'QRFTemplate: TPL_BLUE_GND_QRF_MIXED_6'
+Write-Host 'ResponseCompletionGate: zero active RED ground groups in 5-NM tactical zone via MOOSE SET_GROUP FilterOnce/CountAlive'
 Write-Host 'QRFReturn: MOOSE AUFTRAG Cancel + SetReturnToLegion(true) -> ARMYGROUP RTZ/Returned -> PersonnelLedger settlement'
 Write-Host 'CASMission: MOOSE AUFTRAG NewPATROLZONE + SetEngageDetected'
 Write-Host 'CASRouteOrder: spawn -> native ingress at common-route entry -> R500 -> WEST -> CAS -> WEST reverse -> R500 reverse -> native egress -> Jalalabad'
 Write-Host 'CASRouteOutboundAltitude: R500 500ft AGL -> WEST 2500ft AGL'
 Write-Host 'CASRouteReturnAltitude: WEST 2500ft AGL -> R500 500ft AGL'
-Write-Host 'ThreatCleanup: MOOSE OPSZONE Stop after attack-incident closure'
+Write-Host 'ThreatCleanup: MOOSE OPSZONE Stop only after 5-NM tactical-clear response completion'
 Write-Host 'FireSupport: Wright TPL_BLUE_GND_WRIGHT_FS_ARTY_L118_2 via MOOSE Functional ARTY AssignTargetCoord / DCS Fire At Point'
 Write-Host 'StrategicResupply: exactly one RESUPPLY, Jalalabad -> Wright, quantity 15'
 Write-Host 'AirPhysicalMission: MOOSE AUFTRAG CARGOTRANSPORT'
 Write-Host 'AirAmmoRouteOrder: spawn -> slingload pickup confirmed -> R500 outbound -> Wright delivery -> R500 reverse -> Jalalabad'
-Write-Host 'AcceptanceSchedulerCleanup: finish scheduler stops on PASS/FAIL'
+Write-Host 'AcceptanceScheduler: 10-second completion check; stops on PASS/FAIL'
 Write-Host "SHA256: $hash"
 Write-Host 'MizMutation: false'
