@@ -77,6 +77,7 @@ local state = {
   qrfPlatoon=nil, qrfEntries={}, qrfDeployed=false, qrfEngaged=false, qrfTacticalZone=nil,
   qrfRecoveryRequested=false, qrfReturned=false,
   threat=nil, threatStarted=false, threatStopped=false, perimeterClear=false, incident=nil, attackIncident=nil, attackIncidentClosed=false,
+  tacticalRedCount=nil,
   casAdapter=nil, casDemand=nil, casMission=nil, casFlight=nil, casExecuting=false, casCorridor=false, casFired=false,
   casShotObserver=nil, casTacticalZone=nil, casAltitudeFtAsl=nil, casResolved=nil, casLifecycle=nil, casClosed=false,
   casFailed=false, casFailureReason=nil,
@@ -152,6 +153,17 @@ local function incidentGroups()
 end
 local function routeLabel(pathlineNames) return table.concat(pathlineNames, " -> ") end
 
+local function countRedGroundGroupsInTacticalZone()
+  if not state.casTacticalZone then return nil end
+  local redSet=SET_GROUP:New()
+    :FilterCoalitions("red")
+    :FilterCategoryGround()
+    :FilterActive(true)
+    :FilterZones({state.casTacticalZone})
+    :FilterOnce()
+  return redSet:CountAlive()
+end
+
 local function buildGuardPatrolRoute(group, pathline)
   local coordinates = pathline:GetCoordinates()
   if type(coordinates) ~= "table" or #coordinates < 2 then return nil, "GUARD_PATHLINE_REQUIRES_AT_LEAST_TWO_COORDINATES" end
@@ -189,7 +201,7 @@ local function requestQrfRecovery()
   end
   if requested then
     state.qrfRecoveryRequested=true
-    msg("QRF","Honaker incident complete; mixed QRF mission cancelled and MOOSE ReturnToLegion recovery requested",12)
+    msg("QRF","Honaker tactical area clear; mixed QRF mission cancelled and MOOSE ReturnToLegion recovery requested",12)
   end
   return requested
 end
@@ -203,12 +215,12 @@ local function closeCasIfReady()
     demandId=state.casDemand.id,
     tacticalComplete=true,
     executionEvidenceConfirmed=true,
-    reason="KNOWN_ATTACKERS_NEUTRALIZED",
+    reason="TACTICAL_AREA_CLEAR",
     executor="AIRWING:AW_US_JBAD_TF_SHOOTER_6_6_CAV",
   })
   if closed ~= true then failCas("CAS patrol closure failed: " .. tostring(reason)); return false end
   state.casClosed = true
-  msg("CAS", "Honaker attack participants neutralized; PATROLZONE CAS readiness closed through MOOSE AUFTRAG cancellation and MissionDemand success", 12)
+  msg("CAS", "Honaker 5-NM tactical area clear; PATROLZONE CAS closed through MOOSE AUFTRAG cancellation and MissionDemand success", 12)
   return true
 end
 
@@ -220,14 +232,22 @@ local function closeAttackIncidentIfClear()
   end
   if not state.attackIncident or not state.attackIncident:GetActive() then return false end
   if state.attackIncident:HasAliveParticipants() then return false end
-  local _, closed, reason = state.attackIncident:Close("KNOWN_ATTACKERS_NEUTRALIZED")
+
+  local tacticalRed=countRedGroundGroupsInTacticalZone()
+  if tacticalRed and tacticalRed~=state.tacticalRedCount then
+    state.tacticalRedCount=tacticalRed
+    log(string.format("TACTICAL_RED_GROUND_GROUPS radiusNm=%d alive=%d",QRF_TACTICAL_RADIUS_NM,tacticalRed))
+  end
+  if tacticalRed==nil or tacticalRed>0 then return false end
+
+  local _, closed, reason = state.attackIncident:Close("TACTICAL_AREA_CLEAR")
   if closed ~= true then fail("Honaker attack incident closure failed: " .. tostring(reason)); return false end
   state.attackIncidentClosed = true
-  msg("THREAT", "Honaker known attack participants neutralized; attack incident closed independently of alarm-zone state", 14)
+  msg("THREAT", "Honaker 5-NM tactical area clear of active RED ground groups; attack incident closed", 14)
   if state.threat and state.threat.started and not state.threatStopped then
     state.threat:Stop()
     state.threatStopped=true
-    msg("THREAT","Honaker attack incident closed; 5-second MOOSE OPSZONE alarm scan stopped",10)
+    msg("THREAT","Honaker response complete; 5-second MOOSE OPSZONE alarm scan stopped",10)
   end
   requestQrfRecovery()
   closeCasIfReady()
@@ -365,7 +385,7 @@ local function installCasShotObserver()
     local weaponType = EventData.WeaponTypeName or (EventData.Weapon and EventData.Weapon.getTypeName and EventData.Weapon:getTypeName()) or "unknown"
     local _, confirmed, reason = state.casAdapter:ConfirmExecutionEvidence(state.casDemand.id, { event="SHOT", weaponType=weaponType })
     if confirmed ~= true then failCas("CAS shot evidence could not be correlated: " .. tostring(reason)); return end
-    msg("CAS", "AH-64D weapon employment confirmed: " .. tostring(weaponType) .. "; tactical completion remains attack-incident owned", 12)
+    msg("CAS", "AH-64D weapon employment confirmed: " .. tostring(weaponType) .. "; tactical completion waits for zero active RED ground groups in the 5-NM response area", 12)
     closeAttackIncidentIfClear()
   end
 end
@@ -571,7 +591,7 @@ local function queueNextFireMission(demandId)
   local target = selectNextFireTarget()
   if not target then
     closeAttackIncidentIfClear()
-    msg("FIRE SUPPORT","No living known RED attack participant remains; ending current fire cycle independently of OPSZONE state",10)
+    msg("FIRE SUPPORT","No living known RED attack participant remains; ending current fire cycle while CAS/QRF continue against RED groups still inside the 5-NM tactical area",10)
     return false
   end
   local nextNumber = state.fireTargetCount + 1
@@ -830,7 +850,7 @@ local function setupDefenceAndThreat()
         end,
         onThreatCleared=function()
           state.perimeterClear=true
-          msg("THREAT","COP Honaker 1000-m alarm perimeter clear - MOOSE OPSZONE Defeated RED; active response continues against living incident participants",14)
+          msg("THREAT","COP Honaker 1000-m alarm perimeter clear - MOOSE OPSZONE Defeated RED; response continues until the wider 5-NM tactical area is clear",14)
         end,
       })
       state.threat:Start()
@@ -880,10 +900,10 @@ local function finish()
 
   state.passed=true
   stopFinishScheduler()
-  msg("PASS",string.format("Honaker full response complete: Guard PATHLINE patrol + mixed QRF recovery + PATROLZONE CAS corridor lifecycle + %d live Wright fire missions + M1083 rearm + semantic dedupe + CH-47 pickup-first Air-AMMO + Wright 30/30",state.fireTargetCount),30)
+  msg("PASS",string.format("Honaker full response complete: Guard PATHLINE patrol + 5-NM tactical clear + mixed QRF recovery + PATROLZONE CAS corridor lifecycle + %d live Wright fire missions + M1083 rearm + semantic dedupe + CH-47 pickup-first Air-AMMO + Wright 30/30",state.fireTargetCount),30)
   log("PASS WrightAmmo=30 JalalabadAmmo=85 fireDemand="..fd.id.." casDemand="..cd.id.." resupplyDemand="..rd.id
     .." perimeterClear="..tostring(state.perimeterClear).." threatStopped="..tostring(state.threatStopped)
-    .." qrfEngaged="..tostring(state.qrfEngaged).." qrfReturned="..tostring(state.qrfReturned)
+    .." tacticalRedCount="..tostring(state.tacticalRedCount).." qrfEngaged="..tostring(state.qrfEngaged).." qrfReturned="..tostring(state.qrfReturned)
     .." guardPathline="..GUARD_PATHLINE.." qrfTemplate="..QRF_TEMPLATE
     .." casMode=PATROLZONE_ENGAGE casRadiusNm="..tostring(CAS_TACTICAL_RADIUS_NM)
     .." casAltitudeFtAsl="..tostring(state.casAltitudeFtAsl).." casCorridor="..routeLabel(CAS_PATHLINES)
@@ -891,4 +911,4 @@ local function finish()
 end
 
 SCHEDULER:New(nil,start,{},5)
-state.finishScheduler=SCHEDULER:New(nil,finish,{},10,2)
+state.finishScheduler=SCHEDULER:New(nil,finish,{},10,10)
