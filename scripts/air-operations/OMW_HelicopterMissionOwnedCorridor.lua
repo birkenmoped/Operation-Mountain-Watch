@@ -2,9 +2,11 @@
 --
 -- Purpose:
 --   * Keep native AUFTRAG ingress/egress as the mission lifecycle anchors.
---   * Add owner-authored PATHLINE geometry as AUFTRAG-owned FLIGHTGROUP waypoints.
---   * Mark every injected waypoint with missionUID so MOOSE removes it on PauseMission.
---   * Re-install the corridor after MOOSE rebuilds the mission route on Unpause/MissionStart.
+--   * Make native ingress the FIRST owner-authored corridor point so aircraft enter the
+--     corridor before the actual AUFTRAG objective instead of flying directly to the AO.
+--   * Add the remaining owner-authored PATHLINE geometry as AUFTRAG-owned FLIGHTGROUP waypoints.
+--   * Mark every injected waypoint with missionUID so MOOSE owns pause/resume cleanup.
+--   * Re-install the corridor only if MOOSE actually rebuilds/removes the mission route.
 --
 -- This is intentionally a small adapter around MOOSE route ownership. It does not
 -- replace AUFTRAG, FLIGHTGROUP, EngageDetected, mission pause/resume or RTB logic.
@@ -12,7 +14,7 @@
 local Adapter = {}
 
 local TAG = "[OMW][HelicopterMissionOwnedCorridor]"
-Adapter.SchemaVersion = "OMW-HELICOPTER-MISSION-OWNED-CORRIDOR-2"
+Adapter.SchemaVersion = "OMW-HELICOPTER-MISSION-OWNED-CORRIDOR-3"
 
 local function fail(message)
   error(TAG .. " " .. tostring(message), 2)
@@ -58,20 +60,23 @@ function Adapter.ConfigureMission(mission, resolved, spec)
   requireFunction(mission, "SetMissionIngressCoord", "AUFTRAG")
   requireFunction(mission, "SetMissionEgressCoord", "AUFTRAG")
 
-  if type(resolved.outbound) ~= "table" or #resolved.outbound < 1 then
-    fail("resolved.outbound requires at least one coordinate")
+  if type(resolved.outbound) ~= "table" or #resolved.outbound < 2 then
+    fail("resolved.outbound requires at least two coordinates")
   end
-  if type(resolved.returnRoute) ~= "table" or #resolved.returnRoute < 1 then
-    fail("resolved.returnRoute requires at least one coordinate")
+  if type(resolved.returnRoute) ~= "table" or #resolved.returnRoute < 2 then
+    fail("resolved.returnRoute requires at least two coordinates")
   end
 
-  local defaultAltitudeFtAgl = spec.defaultAltitudeFtAgl or 500
-  local ingressCoordinate = resolved.outbound[#resolved.outbound]
+  -- MOOSE RouteToMission() places the native ingress before the mission waypoint.
+  -- Therefore ingress must be the corridor ENTRY nearest the origin, not the final
+  -- corridor point near the AO. The latter caused the tested direct Jalalabad->AO leg
+  -- followed by a turn back to the beginning of the injected corridor.
+  local ingressCoordinate = resolved.outbound[1]
   local egressCoordinate = resolved.returnRoute[#resolved.returnRoute]
-  local ingressSegment = resolved.outboundSegmentIndexes and resolved.outboundSegmentIndexes[#resolved.outbound] or 1
+  local ingressSegment = resolved.outboundSegmentIndexes and resolved.outboundSegmentIndexes[1] or 1
   local egressSegment = resolved.returnSegmentIndexes and resolved.returnSegmentIndexes[#resolved.returnRoute] or 1
-  local ingressProfile = profileFor(resolved, ingressSegment, defaultAltitudeFtAgl)
-  local egressProfile = profileFor(resolved, egressSegment, defaultAltitudeFtAgl)
+  local ingressProfile = profileFor(resolved, ingressSegment, spec.defaultAltitudeFtAgl or 500)
+  local egressProfile = profileFor(resolved, egressSegment, spec.defaultAltitudeFtAgl or 500)
   local ingressAltitudeFtAsl = spec.ingressAltitudeFtAsl or aslFeetForAgl(ingressCoordinate, ingressProfile.altitudeFtAgl)
   local egressAltitudeFtAsl = spec.egressAltitudeFtAsl or aslFeetForAgl(egressCoordinate, egressProfile.altitudeFtAgl)
 
@@ -79,7 +84,7 @@ function Adapter.ConfigureMission(mission, resolved, spec)
   mission:SetMissionEgressCoord(egressCoordinate, egressAltitudeFtAsl, spec.speedKts)
 
   return {
-    mode = "MOOSE_NATIVE_INGRESS_EGRESS_PLUS_MISSION_OWNED_PATHLINE",
+    mode = "MOOSE_NATIVE_CORRIDOR_ENTRY_EGRESS_PLUS_MISSION_OWNED_PATHLINE",
     ingressCoordinate = ingressCoordinate,
     egressCoordinate = egressCoordinate,
     ingressAltitudeFtAsl = ingressAltitudeFtAsl,
@@ -135,8 +140,8 @@ local function installNow(flightGroup, binding)
     return nil, false, "MISSION_ROUTE_UIDS_NOT_READY"
   end
 
-  local preMissionUid = flightGroup:GetWaypointUIDFromIndex(missionIndex - 1)
-  if type(preMissionUid) ~= "number" then
+  local ingressUid = flightGroup:GetWaypointUIDFromIndex(missionIndex - 1)
+  if type(ingressUid) ~= "number" then
     return nil, false, "MISSION_ROUTE_UIDS_NOT_READY"
   end
 
@@ -145,8 +150,11 @@ local function installNow(flightGroup, binding)
   local outboundProfiles, returnProfiles = {}, {}
   local defaultAltitudeFtAgl = binding.defaultAltitudeFtAgl
 
-  local afterUid = preMissionUid
-  for index, coordinate in ipairs(resolved.outbound) do
+  -- resolved.outbound[1] is already represented by AUFTRAG's native ingress waypoint.
+  -- Inject only points 2..N between ingress and the mission execution waypoint.
+  local afterUid = ingressUid
+  for index = 2, #resolved.outbound do
+    local coordinate = resolved.outbound[index]
     local segmentIndex = resolved.outboundSegmentIndexes and resolved.outboundSegmentIndexes[index] or 1
     local profile = profileFor(resolved, segmentIndex, defaultAltitudeFtAgl)
     local waypoint = flightGroup:AddWaypoint(coordinate, nil, afterUid, profile.altitudeFtAgl, false)
@@ -154,6 +162,7 @@ local function installNow(flightGroup, binding)
     binding.installedUids[#binding.installedUids + 1] = waypoint.uid
     outboundProfiles[#outboundProfiles + 1] = {
       uid = waypoint.uid,
+      sourceIndex = index,
       segmentIndex = segmentIndex,
       pathlineName = pathlineFor(resolved, segmentIndex),
       altitudeFtAgl = profile.altitudeFtAgl,
@@ -162,6 +171,9 @@ local function installNow(flightGroup, binding)
     afterUid = waypoint.uid
   end
 
+  -- Return points remain after the mission execution waypoint and lead back to the
+  -- native egress at the Jalalabad-side end of the corridor. The final resolved return
+  -- point is already represented by that native egress waypoint.
   afterUid = missionUid
   local returnCount = math.max(#resolved.returnRoute - 1, 0)
   for index = 1, returnCount do
@@ -173,6 +185,7 @@ local function installNow(flightGroup, binding)
     binding.installedUids[#binding.installedUids + 1] = waypoint.uid
     returnProfiles[#returnProfiles + 1] = {
       uid = waypoint.uid,
+      sourceIndex = index,
       segmentIndex = segmentIndex,
       pathlineName = pathlineFor(resolved, segmentIndex),
       altitudeFtAgl = profile.altitudeFtAgl,
@@ -181,9 +194,6 @@ local function installNow(flightGroup, binding)
     afterUid = waypoint.uid
   end
 
-  -- Route update happens exactly once, after every injected waypoint carries the
-  -- AUFTRAG missionUID. The OnAfterUpdateRoute hook sees binding.installing=true
-  -- and therefore cannot recursively re-install this route.
   requireFunction(flightGroup, "UpdateRoute", "FLIGHTGROUP")
   flightGroup:UpdateRoute()
 
@@ -191,6 +201,7 @@ local function installNow(flightGroup, binding)
   binding.installCount = (binding.installCount or 0) + 1
   binding.lastResult = {
     missionUid = missionUid,
+    ingressUid = ingressUid,
     egressUid = egressUid,
     installCount = binding.installCount,
     outboundWaypointCount = #outboundProfiles,
