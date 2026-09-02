@@ -1,6 +1,6 @@
 ---
 document_id: OMW-TEST-STAGE3-BUILD-1-11-PREFLIGHT-FAIL-2026-09-01
-status: RECORDED_FAIL
+status: PLANNED
 document_class: TEST_EVIDENCE
 owning_policy: OMW-GOV-001
 authoritative_for:
@@ -8,6 +8,9 @@ authoritative_for:
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 source_branch: agent/fire-support-strategic-resupply-alarm-evidence
+source_commit: a2f6cf3d2de6922999cde21e825d69d5a71d2ae7
+supersedes:
+superseded_by:
 validated_in_dcs: false
 ---
 
