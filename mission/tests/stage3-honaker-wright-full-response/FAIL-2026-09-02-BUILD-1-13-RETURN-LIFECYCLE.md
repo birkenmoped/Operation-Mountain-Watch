@@ -6,8 +6,9 @@ owning_policy: OMW-GOV-001
 authoritative_for:
   - exact-provenance Stage 3 build 1-13 DCS runtime observations on 2026-09-02
   - CAS route-order failure
+  - premature attack-incident closure relative to the wider tactical response
   - CH-47 pickup/corridor-order failure
-  - QRF missing post-incident return
+  - QRF missing post-response return
   - post-combat main-thread performance degradation
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
@@ -33,11 +34,11 @@ Bundle SHA256: 9C0C425E52C0E5B0E4E9941C6FE568FAD855C85BB8920F70DC38C6221861AE61
 MizMutation: false
 ```
 
-Der Builder-Hash und ein unmittelbar danach ausgeführtes `Get-FileHash -Algorithm SHA256` stimmten überein.
+Builder-Hash und anschließend ausgeführtes `Get-FileHash -Algorithm SHA256` stimmten überein.
 
 ## 2. Ergebnisgrenze
 
-Der Acceptance-Source erreichte im DCS-Log zwar seinen internen `[STAGE 3][PASS]` und bestätigte unter anderem Wright `30/30`, CH-47-Landung und AIRWING-Recovery. Dieser interne PASS ist **kein Projekt-VALIDATED**, weil die visuelle und zeitliche Runtime-Sequenz mehrere bindende Sollabläufe verletzt.
+Der Acceptance-Source erreichte im DCS-Log zwar seinen internen `[STAGE 3][PASS]`. Dieser interne PASS ist **kein Projekt-VALIDATED**, weil mehrere bindende physische Abläufe verletzt wurden.
 
 ```text
 Stage-3 internal script gate: PASS
@@ -45,180 +46,152 @@ Project acceptance: FAIL
 validated_in_dcs: false
 ```
 
-## 3. Positiv bestätigte Build-1-13-Funktionen
+Positiv bestätigt wurden Guard-Materialisierung/PATHLINE-Grundlage, Mixed-6-QRF-Materialisierung, Wright-Live-ARTY, lokales M1083-Rearm, CampaignState-AMMO `16 -> 15`, genau ein strategischer RESUPPLY, physischer CH-47/Slingload-Pickup, Wright-Delivery und Wiederherstellung auf `30 / 30`, CH-47-Landung/AIRWING-Recovery sowie physischer AH-64-Einsatz mit Waffenabgabe.
 
-Realer DCS-Lauf bestätigte:
+## 3. CAS route-order FAIL
 
-```text
-Honaker Guard PATHLINE preflight resolved
-Guard physically materialized
-mixed-6 QRF physically materialized
-Wright live ARTY fire executed
-local M1083 rearm executed
-CampaignState Wright AMMO crossed 16 -> 15
-one strategic RESUPPLY demand created
-Jalalabad CH-47 physically spawned
-physical slingload pickup occurred
-physical Wright delivery occurred
-Wright strategic stock restored to 30 / 30
-CH-47 returned to Jalalabad and AIRWING recovery event fired
-AH-64 physically spawned, reached AO and employed weapons
-```
-
-## 4. CAS route-order FAIL
-
-Owner-confirmed intended sequence:
+Owner-confirmed Sollablauf:
 
 ```text
 CAS request
 -> AH-64 spawn Jalalabad
--> fly to common-route entry
--> common route / R500
--> branch WEST
--> WEST toward AO
+-> common-route entry
+-> R500
+-> WEST
 -> leave WEST near AO
 -> CAS / S&D
 -> recover to WEST near AO
 -> WEST reverse
--> common route / R500 reverse
+-> R500 reverse
 -> Jalalabad
--> land / recovery
+-> land / AIRWING recovery
 ```
 
-Observed Build-1-13 behavior:
+Beobachtet wurde dagegen zunächst ein Direktflug Richtung AO, anschließend Umkehr zum Jalalabad-seitigen Routenanfang und erst danach der lange R500/WEST-Corridor.
 
-```text
-AH-64 spawn
--> initial direct flight toward AO
--> turn back toward the Jalalabad-side route beginning
--> then traverse injected R500/WEST corridor
--> CAS
--> return sequence with large route stack
-```
+Der Log zeigt für Build 1-13 die komplette Route mit bis zu `outbound index 36 / UID 40` und `returnRoute index 35 / UID 75`.
 
-The logged corridor contained approximately the complete outbound plus return path at once. The CAS route profile reached outbound index 36 / UID 40 and return-route index 35 / UID 75.
-
-Root cause found in source review after the DCS run:
+Source-Review ergab die konkrete Ursache:
 
 ```lua
--- build 1-13 adapter behavior
 local ingressCoordinate = resolved.outbound[#resolved.outbound]
 ```
 
-The adapter made the native MOOSE AUFTRAG ingress the **last** corridor coordinate near the AO. Pinned `Moose.lua` RouteToMission semantics place native ingress before the mission execution waypoint. Therefore MOOSE first routed toward the AO-side ingress, after which the injected route forced the aircraft back through the earlier corridor points.
-
-The next source revision changes native ingress to:
+Damit wurde der native MOOSE-AUFTRAG-Ingress auf das AO-seitige **Ende** des Korridors gesetzt. Gepinnter MOOSE-Source zeigt, dass `RouteToMission` den nativen Mission-Ingress vor den Mission-Execution-Waypoint legt. Die nächste Revision verwendet daher:
 
 ```lua
 local ingressCoordinate = resolved.outbound[1]
 ```
 
-and injects only outbound points `2..N` after that native ingress.
+und injiziert danach nur die verbleibenden Corridor-Punkte `2..N`.
+
+## 4. Premature response-closure FAIL
+
+Build 1-13 schloss den OMW-Attack-Incident bereits um ungefähr `18:28:05`, nachdem die damals gespeicherten bekannten Incident-Participants tot waren. Das war für die **gesamte** Response-Kette zu früh: der AH-64-PATROLZONE-Auftrag erreichte `Executing` erst ungefähr `18:48:22` und lieferte die erste bestätigte Waffenabgabe ungefähr `18:48:58`.
+
+Damit ist belegt:
+
+```text
+known incident participant list empty
+!= wider tactical response area clear
+```
+
+Für Build 1-14 wird deshalb die Response-Closure nicht mehr allein an `HasAliveParticipants()==false` gebunden. Zusätzlich wird mit öffentlichen MOOSE-`SET_GROUP`-Filtern geprüft, ob im gemeinsamen 5-NM-QRF/CAS-Taktikraum noch aktive RED-Ground-GROUPs vorhanden sind:
+
+```text
+SET_GROUP:New()
+-> FilterCoalitions("red")
+-> FilterCategoryGround()
+-> FilterActive(true)
+-> FilterZones({tacticalZone})
+-> FilterOnce()
+-> CountAlive()
+```
+
+Erst bei `CountAlive()==0` wird die Response mit `TACTICAL_AREA_CLEAR` geschlossen, CAS beendet, QRF zurückgerufen und der 5-Sekunden-OPSZONE-Alarm-Scan gestoppt. Das ist ein Acceptance-spezifisches Completion-Gate; es ersetzt keine allgemeine CampaignState- oder Detection-Autorität.
 
 ## 5. CH-47 pickup/corridor-order FAIL
 
-Owner-confirmed intended sequence:
+Owner-confirmed Sollablauf:
 
 ```text
 RESUPPLY request
 -> CH-47 + slingload spawn
--> CH-47 picks up slingload
+-> slingload pickup
 -> common-route entry
--> common route / R500 toward Wright
--> leave route at Wright
--> deliver
--> rejoin route near Wright
+-> R500 toward Wright
+-> leave route / deliver
+-> rejoin R500
 -> R500 reverse
 -> Jalalabad
--> land / recovery
+-> land / AIRWING recovery
 ```
 
-Observed Build-1-13 behavior:
+Build 1-13 installierte die Corridor-Route bereits beim `FlightOnMission`-Callback. Der reale Log belegt:
 
 ```text
-CH-47 assigned
--> corridor installed before physical pickup
--> CH-47 flew outbound without slingload
--> returned to Jalalabad pickup area
--> physical slingload pickup
--> subsequent transport/delivery
+18:29:20  CH-47 assigned / loading
+18:29:22  AIR-AMMO outbound + return corridor installed
+18:40:31  physical cargo pickup / IN_TRANSIT
+18:45:49  delivered at Wright / Wright 30/30
+19:05:24  landed Jalalabad
+19:05:25  AIRWING recovery
 ```
 
-Log chronology proves the ordering defect:
-
-```text
-18:29:20  CH-47 assigned; manifest loading
-18:29:22  AIR-AMMO outbound/return corridor profile installed
-18:40:31  Air-AMMO cargo picked up / IN TRANSIT
-18:45:49  Air-AMMO delivered at Wright / Wright 30/30
-19:05:24  CH-47 landed Jalalabad
-19:05:25  CH-47 recovered by AIRWING
-```
-
-The next source revision therefore does not call the corridor installer in `OnAfterFlightOnMission`. It waits until the existing physical-pickup evidence detects that the slingload has left the Jalalabad pickup zone, stops that temporary polling scheduler, marks the transfer `IN_TRANSIT`, and only then injects the outbound/return corridor.
+Damit wurde der Korridor **vor** dem Slingload-Pickup aktiviert. Build 1-14 verschiebt die Corridor-Installation hinter den vorhandenen physischen Pickup-Nachweis: erst wenn der Cargo-Static die Jalalabad-Pickup-Zone tatsächlich verlassen hat, wird `IN_TRANSIT` gesetzt, der temporäre Pickup-Scheduler gestoppt und die R500-Outbound/Return-Route installiert.
 
 ## 6. QRF recovery FAIL
 
-Observed:
+Build 1-13 materialisierte die owner-approved Mixed-6-QRF korrekt, hatte aber keinen Post-Response-Return. Überlebende blieben nach Ende der Kampfhandlungen im Feld stehen.
 
-```text
-mixed-6 QRF deployed physically
-combat/incident ended
-surviving QRF remained at its last field position
-no automatic return to Honaker occurred
-```
-
-Build 1-13 created `AUFTRAG:NewONGUARD` but did not set or trigger a post-incident MOOSE recovery lifecycle.
-
-Pinned MOOSE 2.9.18 provides the required public path:
+Der gepinnte MOOSE-Source bietet hierfür den öffentlichen Lifecycle:
 
 ```text
 AUFTRAG:SetReturnToLegion(true)
 mission:Cancel()
 -> OPSGROUP MissionDone
--> ARMYGROUP RTZ to legion spawn zone
+-> ARMYGROUP RTZ
 -> ARMYGROUP Returned
 -> LEGION/Warehouse asset return
 ```
 
-The next source revision uses this path and settles the existing `GroundPersonnelDeploymentLedger` only after physical `ARMYGROUP:OnAfterReturned`, using surviving infantry count and excluding the single `CHAP_MATV` vehicle from the five-person strategic reservation.
+Build 1-14 aktiviert `SetReturnToLegion(true)` bereits am QRF-AUFTRAG und ruft `Cancel()` erst nach dem oben beschriebenen `TACTICAL_AREA_CLEAR` auf. Strategische PERSONNEL-Rückgabe erfolgt erst bei physischem `ARMYGROUP:OnAfterReturned` über den vorhandenen `GroundPersonnelDeploymentLedger:SettleReturned(survivors)`. Für das exakt bekannte `TPL_BLUE_GND_QRF_MIXED_6` werden dabei lebende Infanteristen gezählt und das einzelne `CHAP_MATV` nicht als PERSONNEL gewertet.
 
 ## 7. Post-combat performance FAIL
 
-Owner observation is important and narrows the problem:
+Owner-Beobachtung:
 
 ```text
-combat phase: normal/good frame rate
-return/post-combat phase: severe main-thread degradation
+combat phase: good/normal FPS
+return/post-combat phase: severe CPU/main-thread degradation
 ```
 
-Screenshots showed DCS reporting CPU/main-thread bound behavior, with the frame rate dropping into approximately the 10-30 FPS range and pronounced frame-time spikes.
+Screenshots zeigen DCS in der Rückkehrphase als `CPU BOUND (main thread)` mit starken Frame-Time-Spikes. Im Log treten in dieser Phase wiederholt `ModelTimeQuantizer: SAME MODEL TIME` und `ANTIFREEZE ENABLED` auf. Diese Meldungen sind **Symptome**, kein bewiesener Root Cause.
 
-The DCS log contains repeated `ModelTimeQuantizer: SAME MODEL TIME` / `ANTIFREEZE ENABLED` warnings during and after the return phase. These warnings are treated as **symptoms/evidence of simulation stress, not a proven OMW root cause**.
-
-Build 1-13 also left avoidable periodic work active after the incident:
+Build 1-13 ließ zudem vermeidbare periodische Acceptance-Arbeit weiterlaufen:
 
 ```text
-Honaker OPSZONE: updateSeconds=5 continued after attack-incident closure
-Stage-3 finish scheduler: repeated every 2 seconds and continued even after internal PASS
+Honaker OPSZONE updateSeconds=5
+Stage-3 finish check every 2 seconds
 ```
 
-The next source revision performs bounded cleanup:
+Build 1-14 ändert deshalb nur klar begründete Cleanup-Punkte:
 
 ```text
-attack incident truly closed
+TACTICAL_AREA_CLEAR
 -> FobThreatOpsZoneAdapter:Stop()
 -> MOOSE OPSZONE:Stop()
 
-Stage-3 PASS or FAIL
--> stop Stage-3 finish scheduler
+Stage-3 completion check
+-> 10-second cadence statt 2 seconds
+-> SCHEDULER:Stop() on PASS/FAIL
 ```
 
-The Guard patrol remains active by design. No claim is made that these two cleanup changes alone explain or fix the complete FPS problem; Build 1-14 must verify the return phase again in DCS.
+Der Guard-Patrol bleibt absichtlich aktiv. Es wird ausdrücklich **nicht** behauptet, dass diese Cleanup-Maßnahmen allein den FPS-Einbruch beheben. Das ist im nächsten DCS-Lauf zu verifizieren.
 
-## 8. MOOSE-first basis for next revision
+## 8. MOOSE-first Basis Build 1-14
 
-Verified in the pinned `Moose.lua`:
+Im tatsächlich gepinnten `Moose.lua` wurden geprüft:
 
 ```text
 AUFTRAG:SetMissionIngressCoord(...)
@@ -231,36 +204,38 @@ AUFTRAG:SetReturnToLegion(true)
 AUFTRAG:Cancel()
 OPSGROUP MissionDone / _CheckGroupDone
 ARMYGROUP RTZ / Returned
+SET_GROUP FilterCoalitions / FilterCategoryGround / FilterActive / FilterZones / FilterOnce / CountAlive
 OPSZONE:Stop()
 ```
 
-No MIST, native DCS controller, teleport, direct coalition spawn, or parallel mission system is introduced.
+Kein MIST, kein nativer DCS-Controller, kein Teleport und kein paralleles Missionssystem werden eingeführt.
 
-## 9. Build 1-14 acceptance focus
-
-The next DCS run must distinguish four independent gates:
+## 9. Build 1-14 Acceptance-Fokus
 
 ```text
-CAS route order:
-  no initial direct Jalalabad -> AO leg
-  route entry first
+CAS:
+  no initial Jalalabad -> AO shortcut
+  common-route entry first
   R500 -> WEST -> CAS -> WEST reverse -> R500 reverse -> Jalalabad
 
-CH-47 route order:
-  slingload pickup first
-  corridor only after pickup
-  Wright delivery
-  route return
+Response completion:
+  known participants dead is not sufficient
+  zero active RED ground groups in shared 5-NM tactical area required
 
-QRF recovery:
-  incident closure -> Cancel/ReturnToLegion
+CH-47:
+  slingload pickup before corridor ingress
+  Wright delivery
+  R500 return
+
+QRF:
+  no return while tactical RED remains
+  tactical clear -> Cancel/ReturnToLegion
   physical return to Honaker
   Returned/Warehouse callback
-  personnel reservation settlement
+  personnel settlement
 
-performance:
-  no severe sustained main-thread/FPS collapse during return/post-combat phase
-  compare log timing and screenshots against Build 1-13
+Performance:
+  compare return/post-combat main-thread behavior against Build 1-13
 ```
 
-Weapon-employment quality for AH-64 (limited rockets followed mainly by gun, no satisfactory Hellfire/standoff behavior observed) remains a separate follow-up issue and is not silently conflated with the route-order correction.
+Die weiterhin unbefriedigende AH-64-Waffenwahl bzw. fehlende verlässliche Hellfire-/Standoff-Wirkung bleibt ein separater Follow-up-Punkt und wird nicht mit der Routingkorrektur vermischt.
