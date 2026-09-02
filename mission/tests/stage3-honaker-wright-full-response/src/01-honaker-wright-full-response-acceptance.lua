@@ -2,7 +2,7 @@
 -- Test-ID: STAGE3-HONAKER-WRIGHT-FULL-RESPONSE-ACCEPTANCE-1
 --
 -- RED attack -> MOOSE OPSZONE threat qualification -> Honaker attack incident
--- -> owner-authored Guard patrol + mixed infantry/vehicle QRF + Jalalabad rotary CAS
+-- -> owner-authored Guard PATHLINE patrol + one-group mixed QRF + Jalalabad rotary CAS
 -- -> Wright Functional ARTY live coordinate fire -> local M1083 rearm -> CampaignState
 -- AMMO reorder -> exactly one strategic RESUPPLY -> Jalalabad CH-47 CARGOTRANSPORT.
 
@@ -16,9 +16,9 @@ local PERSONNEL_RESOURCE = "GROUND_PERSONNEL"
 local AMMO_RESOURCE = "GROUND_AMMO_PACKAGE"
 local HONAKER_WAREHOUSE = "WH_BLUE_GND_HONAKER"
 local WRIGHT_WAREHOUSE = "WH_BLUE_GND_WRIGHT"
-local INF_TEMPLATE = "TPL_BLUE_GND_INF_RIFLE_SQUAD_9"
-local QRF_VEHICLE_TEMPLATE = "TPL_BLUE_GND_QRF_MIXED_4"
-local GUARD_ROUTE_GROUP = "OMW_RTE_BLUE_GUARD_HONAKER_01"
+local GUARD_TEMPLATE = "TPL_BLUE_GND_INF_RIFLE_SQUAD_9"
+local QRF_TEMPLATE = "TPL_BLUE_GND_QRF_MIXED_6"
+local GUARD_PATHLINE = "OMW_RTE_BLUE_GUARD_HONAKER_01"
 local WRIGHT_BATTERY = "TPL_BLUE_GND_WRIGHT_FS_ARTY_L118_2"
 local M1083_TEMPLATE = "TPL_BLUE_GND_SUP_M1083"
 local WRIGHT_RESUPPLY_ZONE = "ZON_BLUE_GND_WRIGHT_RESUPPLY"
@@ -30,7 +30,8 @@ local CAS_PATHLINES = { PRIMARY_PATHLINE, WEST_PATHLINE }
 local AIR_AMMO_PATHLINES = { PRIMARY_PATHLINE }
 local JUNCTION_MAX_DISTANCE_M = 1000
 local SECURITY_RADIUS_M = 1000
-local QRF_PERSONNEL = 9
+local GUARD_PATROL_SPEED_KMH = 5
+local QRF_PERSONNEL = 5
 local PERSONNEL_FLOOR = 80
 local QRF_TACTICAL_RADIUS_NM = 5
 local QRF_ENGAGE_RANGE_NM = 5
@@ -71,9 +72,8 @@ local MissionOwnedCorridor = OMW_STAGE3_HELICOPTER_MISSION_OWNED_CORRIDOR
 local registry = MissionDemand.New()
 local state = {
   failed=false, passed=false, ctx=nil, airwing=nil, ah64d=nil, ch47=nil,
-  brigade=nil, guardCoord=nil, guardGroup=nil, guardPatrolStarted=false,
-  qrfInfPlatoon=nil, qrfVehiclePlatoon=nil, qrfEntries={}, qrfInfDeployed=false, qrfVehicleDeployed=false,
-  qrfDeployed=false, qrfEngaged=false, qrfTacticalZone=nil,
+  brigade=nil, guardCoord=nil, guardPathline=nil, guardPlatoon=nil, guardMission=nil, guardArmy=nil, guardGroup=nil, guardPatrolStarted=false,
+  qrfPlatoon=nil, qrfEntries={}, qrfDeployed=false, qrfEngaged=false, qrfTacticalZone=nil,
   threat=nil, threatStarted=false, perimeterClear=false, incident=nil, attackIncident=nil, attackIncidentClosed=false,
   casAdapter=nil, casDemand=nil, casMission=nil, casFlight=nil, casExecuting=false, casCorridor=false, casFired=false,
   casShotObserver=nil, casTacticalZone=nil, casAltitudeFtAsl=nil, casResolved=nil, casLifecycle=nil, casClosed=false,
@@ -142,6 +142,18 @@ local function incidentGroups()
   return result
 end
 local function routeLabel(pathlineNames) return table.concat(pathlineNames, " -> ") end
+
+local function buildGuardPatrolRoute(group, pathline)
+  local coordinates = pathline:GetCoordinates()
+  if type(coordinates) ~= "table" or #coordinates < 2 then return nil, "GUARD_PATHLINE_REQUIRES_AT_LEAST_TWO_COORDINATES" end
+  local route = {}
+  for _, coordinate in ipairs(coordinates) do
+    route[#route+1] = coordinate:WaypointGround(GUARD_PATROL_SPEED_KMH, "Off Road")
+  end
+  local repeatTask = group:TaskFunction("CONTROLLABLE.Route", route, 2)
+  group:SetTaskWaypoint(route[#route], repeatTask)
+  return route, nil
+end
 
 local function closeCasIfReady()
   if state.casClosed or state.casFailed or not state.attackIncidentClosed or not state.casFired or not state.casDemand then return false end
@@ -609,28 +621,22 @@ local function dispatchQrf()
   end
   if not state.qrfTacticalZone then fail("Honaker QRF tactical ZONE_RADIUS creation failed") return end
   local personnel = context().store:GetResource(HONAKER_NODE,PERSONNEL_RESOURCE)
-  if not personnel or personnel.available - QRF_PERSONNEL < PERSONNEL_FLOOR then fail("Honaker infantry QRF blocked by personnel reserve floor") return end
-  if state.qrfInfPlatoon:CountAssets(true,AUFTRAG.Type.ONGUARD) < 1 then fail("Honaker infantry QRF asset unavailable") return end
-  if state.qrfVehiclePlatoon:CountAssets(true,AUFTRAG.Type.ONGUARD) < 1 then fail("Honaker vehicle QRF asset unavailable") return end
+  if not personnel or personnel.available - QRF_PERSONNEL < PERSONNEL_FLOOR then fail("Honaker mixed QRF blocked by personnel reserve floor") return end
+  if state.qrfPlatoon:CountAssets(true,AUFTRAG.Type.ONGUARD) < 1 then fail("Honaker mixed QRF asset unavailable") return end
 
-  msg("QRF",string.format("Honaker requests mixed QRF package: one rifle squad + one independent vehicle group in shared %d-NM tactical area",QRF_TACTICAL_RADIUS_NM),12)
+  msg("QRF",string.format("Honaker requests mixed QRF package: 5 infantry + 1 M-ATV/MRAP-class vehicle in one 6-unit GROUP in shared %d-NM tactical area",QRF_TACTICAL_RADIUS_NM),12)
   local deployment = PersonnelLedger.New({
     store=context().store, campaignState=context().campaignState, nodeId=HONAKER_NODE, resourceId=PERSONNEL_RESOURCE,
-    deploymentId="STAGE3-HONAKER-QRF-INF", entityId="HONAKER-QRF-INF", quantity=QRF_PERSONNEL, missionDemandId=TEST_ID,
+    deploymentId="STAGE3-HONAKER-QRF-MIXED-6", entityId="HONAKER-QRF-MIXED-6", quantity=QRF_PERSONNEL, missionDemandId=TEST_ID,
   })
   local target = targets[1]
-  local function addMission(role, platoon, personnelDeployment)
-    local mission = AUFTRAG:NewONGUARD(target:GetCoordinate())
-    mission:SetEngageDetected(QRF_ENGAGE_RANGE_NM,{"Ground Units"},state.qrfTacticalZone)
-    mission:SetRequiredAssets(1,1)
-    mission:SetName("OMW_STAGE3_HONAKER_QRF_"..role)
-    mission:AssignCohort(platoon)
-    local entry={role=role,mission=mission,initialTargetName=target:GetName(),deployment=personnelDeployment,army=nil,engaged=false}
-    state.qrfEntries[#state.qrfEntries+1]=entry
-    state.brigade:AddMission(mission)
-  end
-  addMission("INFANTRY", state.qrfInfPlatoon, deployment)
-  addMission("VEHICLE", state.qrfVehiclePlatoon, nil)
+  local mission = AUFTRAG:NewONGUARD(target:GetCoordinate())
+  mission:SetEngageDetected(QRF_ENGAGE_RANGE_NM,{"Ground Units"},state.qrfTacticalZone)
+  mission:SetRequiredAssets(1,1)
+  mission:SetName("OMW_STAGE3_HONAKER_QRF_MIXED")
+  mission:AssignCohort(state.qrfPlatoon)
+  state.qrfEntries[1]={role="MIXED",mission=mission,initialTargetName=target:GetName(),deployment=deployment,army=nil,engaged=false}
+  state.brigade:AddMission(mission)
 end
 
 local function dispatchFire(incident)
@@ -655,24 +661,35 @@ end
 local function setupDefenceAndThreat()
   state.brigade = BRIGADE:New(HONAKER_WAREHOUSE,"BDE_BLUE_GND_HONAKER_STAGE3_E2E")
   state.guardCoord = state.brigade:GetCoordinate()
-  state.guardGroup = need(GROUP:FindByName(GUARD_ROUTE_GROUP), GUARD_ROUTE_GROUP)
+  state.guardPathline = need(PATHLINE:FindByName(GUARD_PATHLINE), GUARD_PATHLINE)
   state.attackIncident = IncidentCoordinator.New({ installationId=INSTALLATION_ID, incidentIdFactory=function(_,seq) return "INC-STAGE3-HONAKER-"..seq end })
+  if state.failed then return false end
 
-  state.qrfInfPlatoon = PLATOON:New(INF_TEMPLATE,1,"PLT_BLUE_GND_HONAKER_STAGE3_QRF_INF")
-  state.qrfInfPlatoon:AddMissionCapability(AUFTRAG.Type.ONGUARD,100)
-  state.brigade:AddPlatoon(state.qrfInfPlatoon)
-  state.qrfVehiclePlatoon = PLATOON:New(QRF_VEHICLE_TEMPLATE,1,"PLT_BLUE_GND_HONAKER_STAGE3_QRF_VEHICLE")
-  state.qrfVehiclePlatoon:AddMissionCapability(AUFTRAG.Type.ONGUARD,100)
-  state.brigade:AddPlatoon(state.qrfVehiclePlatoon)
+  state.guardPlatoon = PLATOON:New(GUARD_TEMPLATE,1,"PLT_BLUE_GND_HONAKER_STAGE3_GUARD")
+  state.guardPlatoon:AddMissionCapability(AUFTRAG.Type.ONGUARD,100)
+  state.brigade:AddPlatoon(state.guardPlatoon)
+
+  state.qrfPlatoon = PLATOON:New(QRF_TEMPLATE,1,"PLT_BLUE_GND_HONAKER_STAGE3_QRF_MIXED_6")
+  state.qrfPlatoon:AddMissionCapability(AUFTRAG.Type.ONGUARD,100)
+  state.brigade:AddPlatoon(state.qrfPlatoon)
 
   state.brigade.OnAfterArmyOnMission=function(self,From,Event,To,ArmyGroup,Mission)
+    if Mission == state.guardMission then
+      state.guardArmy = ArmyGroup
+      state.guardGroup = ArmyGroup:GetGroup()
+      if not state.guardGroup then fail("Honaker Guard ArmyGroup has no MOOSE GROUP wrapper") return end
+      local route, routeReason = buildGuardPatrolRoute(state.guardGroup, state.guardPathline)
+      if not route then fail("Honaker Guard PATHLINE route build failed: "..tostring(routeReason)) return end
+      state.guardGroup:Route(route,2)
+      state.guardPatrolStarted=true
+      msg("GUARD",string.format("Honaker infantry Guard deployed and routed on %s via MOOSE PATHLINE/GetCoordinates/WaypointGround/TaskFunction/Route; %d route points, repeated circuit",GUARD_PATHLINE,#route),12)
+      return
+    end
     for _,entry in ipairs(state.qrfEntries) do
       if entry.mission==Mission then
         entry.army=ArmyGroup
-        if entry.role=="INFANTRY" then state.qrfInfDeployed=true end
-        if entry.role=="VEHICLE" then state.qrfVehicleDeployed=true end
-        state.qrfDeployed = state.qrfInfDeployed and state.qrfVehicleDeployed
-        msg("QRF","Honaker QRF "..entry.role.." group deployed; MOOSE ONGUARD detection remains active against the shared incident picture",10)
+        state.qrfDeployed=true
+        msg("QRF","Honaker mixed QRF group deployed; MOOSE ONGUARD detection remains active against the shared incident picture",10)
         local old=ArmyGroup.OnAfterEngageTarget
         function ArmyGroup:OnAfterEngageTarget(F,E,T,Target,Speed,Formation)
           if old then old(self,F,E,T,Target,Speed,Formation) end
@@ -680,7 +697,7 @@ local function setupDefenceAndThreat()
           state.qrfEngaged=true
           local engagedName=entry.initialTargetName
           if Target and type(Target.GetName)=="function" then engagedName=Target:GetName() end
-          msg("QRF","Honaker QRF "..entry.role.." engaging detected "..tostring(engagedName),8)
+          msg("QRF","Honaker mixed QRF engaging detected "..tostring(engagedName),8)
         end
       end
     end
@@ -688,10 +705,12 @@ local function setupDefenceAndThreat()
 
   state.brigade.OnAfterStart=function()
     SCHEDULER:New(nil,function()
-      if state.guardGroup:IsAlive() ~= true then state.guardGroup:Activate() end
-      state.guardGroup:PatrolRoute()
-      state.guardPatrolStarted=true
-      msg("GUARD","Owner-authored Honaker route activated with MOOSE GROUP:PatrolRoute()",10)
+      state.guardMission=AUFTRAG:NewONGUARD(state.guardPathline:GetCoordinates()[1])
+      state.guardMission:SetEngageDetected(SECURITY_RADIUS_M/1852,{"Ground Units"})
+      state.guardMission:SetRequiredAssets(1,1)
+      state.guardMission:SetName("OMW_STAGE3_HONAKER_GUARD")
+      state.guardMission:AssignCohort(state.guardPlatoon)
+      state.brigade:AddMission(state.guardMission)
 
       state.threat=ThreatAdapter.New({
         missionDemand=MissionDemand,
@@ -749,17 +768,18 @@ local function setupDefenceAndThreat()
         end,
       })
       state.threat:Start()
-      msg("READY","Honaker Stage-3 armed: owner PatrolRoute Guard + mixed infantry/vehicle ONGUARD QRF + Wright ARTY; PATROLZONE CAS created only on demand",15)
+      msg("READY","Honaker Stage-3 armed: infantry Guard on owner-authored PATHLINE + 5-infantry/1-M-ATV mixed ONGUARD QRF + Wright ARTY; PATROLZONE CAS created only on demand",15)
     end,{},5)
   end
   state.brigade:Start()
+  return true
 end
 
 local function start()
   if OMW_GROUND_READY~=1 then fail("Ground Base not ready") return end
-  need(GROUP:FindByName(INF_TEMPLATE),INF_TEMPLATE)
-  need(GROUP:FindByName(QRF_VEHICLE_TEMPLATE),QRF_VEHICLE_TEMPLATE)
-  need(GROUP:FindByName(GUARD_ROUTE_GROUP),GUARD_ROUTE_GROUP)
+  need(GROUP:FindByName(GUARD_TEMPLATE),GUARD_TEMPLATE)
+  need(GROUP:FindByName(QRF_TEMPLATE),QRF_TEMPLATE)
+  need(PATHLINE:FindByName(GUARD_PATHLINE),GUARD_PATHLINE)
   if not context() then return end
   prepareAirwing()
   installAirObserver()
@@ -773,7 +793,7 @@ local function finish()
   closeAttackIncidentIfClear()
   closeCasIfReady()
   local casTerminal = state.casFailed or (state.casExecuting and state.casCorridor and state.casFired and state.casClosed)
-  if not (state.guardPatrolStarted and state.threatStarted and state.attackIncidentClosed and state.qrfInfDeployed and state.qrfVehicleDeployed and casTerminal
+  if not (state.guardPatrolStarted and state.threatStarted and state.attackIncidentClosed and state.qrfDeployed and casTerminal
       and state.fireStarted and state.fireComplete and state.rearmComplete and state.supportReturned and state.resupply
       and state.inTransit and state.delivered and state.airCorridor and state.homeLanded and state.assetReturned) then return end
   if state.casFailed then fail("CAS subsystem failed while other Stage-3 chains remained observable: " .. tostring(state.casFailureReason)) return end
@@ -793,9 +813,10 @@ local function finish()
   if type(state.physicalAmmoBefore)~="number" or type(state.physicalAmmoAfter)~="number" or state.physicalAmmoAfter>=state.physicalAmmoBefore then fail("Wright L118 did not consume physical ammo") return end
 
   state.passed=true
-  msg("PASS",string.format("Honaker full response complete: owner PatrolRoute Guard + mixed infantry/vehicle QRF + PATROLZONE CAS + %d live Wright fire missions + M1083 rearm + semantic dedupe + CH-47 Air-AMMO + Wright 30/30",state.fireTargetCount),30)
+  msg("PASS",string.format("Honaker full response complete: infantry Guard PATHLINE patrol + 5-infantry/1-M-ATV mixed QRF + PATROLZONE CAS + %d live Wright fire missions + M1083 rearm + semantic dedupe + CH-47 Air-AMMO + Wright 30/30",state.fireTargetCount),30)
   log("PASS WrightAmmo=30 JalalabadAmmo=85 fireDemand="..fd.id.." casDemand="..cd.id.." resupplyDemand="..rd.id
     .." perimeterClear="..tostring(state.perimeterClear).." qrfEngaged="..tostring(state.qrfEngaged)
+    .." guardPathline="..GUARD_PATHLINE.." qrfTemplate="..QRF_TEMPLATE
     .." casMode=PATROLZONE_ENGAGE casRadiusNm="..tostring(CAS_TACTICAL_RADIUS_NM)
     .." casAltitudeFtAsl="..tostring(state.casAltitudeFtAsl).." casCorridor="..routeLabel(CAS_PATHLINES)
     .." airAmmoCorridor="..routeLabel(AIR_AMMO_PATHLINES))
