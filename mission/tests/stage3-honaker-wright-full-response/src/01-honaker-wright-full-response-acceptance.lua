@@ -18,6 +18,7 @@ local HONAKER_WAREHOUSE = "WH_BLUE_GND_HONAKER"
 local WRIGHT_WAREHOUSE = "WH_BLUE_GND_WRIGHT"
 local GUARD_TEMPLATE = "TPL_BLUE_GND_INF_RIFLE_SQUAD_9"
 local QRF_TEMPLATE = "TPL_BLUE_GND_QRF_MIXED_6"
+local QRF_VEHICLE_TYPE = "CHAP_MATV"
 local GUARD_PATHLINE = "OMW_RTE_BLUE_GUARD_HONAKER_01"
 local WRIGHT_BATTERY = "TPL_BLUE_GND_WRIGHT_FS_ARTY_L118_2"
 local M1083_TEMPLATE = "TPL_BLUE_GND_SUP_M1083"
@@ -74,7 +75,8 @@ local state = {
   failed=false, passed=false, ctx=nil, airwing=nil, ah64d=nil, ch47=nil,
   brigade=nil, guardCoord=nil, guardPathline=nil, guardPlatoon=nil, guardMission=nil, guardArmy=nil, guardGroup=nil, guardPatrolStarted=false,
   qrfPlatoon=nil, qrfEntries={}, qrfDeployed=false, qrfEngaged=false, qrfTacticalZone=nil,
-  threat=nil, threatStarted=false, perimeterClear=false, incident=nil, attackIncident=nil, attackIncidentClosed=false,
+  qrfRecoveryRequested=false, qrfReturned=false,
+  threat=nil, threatStarted=false, threatStopped=false, perimeterClear=false, incident=nil, attackIncident=nil, attackIncidentClosed=false,
   casAdapter=nil, casDemand=nil, casMission=nil, casFlight=nil, casExecuting=false, casCorridor=false, casFired=false,
   casShotObserver=nil, casTacticalZone=nil, casAltitudeFtAsl=nil, casResolved=nil, casLifecycle=nil, casClosed=false,
   casFailed=false, casFailureReason=nil,
@@ -83,8 +85,8 @@ local state = {
   physicalAmmoBefore=nil, physicalAmmoAfter=nil, physicalAmmoBeforeByTarget={}, physicalAmmoAfterByTarget={},
   rearmService=nil, rearmComplete=false, supportReturned=false,
   resupply=nil, cargo=nil, airMission=nil, airFlight=nil, airAsset=nil,
-  loading=false, inTransit=false, delivered=false, airCorridor=false, homeLanded=false, assetReturned=false,
-  transitScheduler=nil,
+  loading=false, inTransit=false, delivered=false, airCorridor=false, airCorridorRequested=false, homeLanded=false, assetReturned=false,
+  transitScheduler=nil, finishScheduler=nil,
 }
 
 local function log(text) env.info(TAG .. " " .. tostring(text), false) end
@@ -93,9 +95,16 @@ local function msg(topic, text, seconds)
   log(line)
   MESSAGE:New(line, seconds or 8):ToAll()
 end
+local function stopFinishScheduler()
+  if state.finishScheduler and type(state.finishScheduler.Stop)=="function" then
+    state.finishScheduler:Stop()
+    state.finishScheduler=nil
+  end
+end
 local function fail(reason)
   if state.failed or state.passed then return end
   state.failed = true
+  stopFinishScheduler()
   msg("FAIL", tostring(reason), 20)
 end
 local function failCas(reason)
@@ -155,6 +164,36 @@ local function buildGuardPatrolRoute(group, pathline)
   return route, nil
 end
 
+local function countQrfPersonnelSurvivors(armyGroup)
+  if not armyGroup or type(armyGroup.GetGroup)~="function" then return 0 end
+  local group=armyGroup:GetGroup()
+  if not group or type(group.GetUnits)~="function" then return 0 end
+  local survivors=0
+  for _,unit in ipairs(group:GetUnits() or {}) do
+    if unit and unit:IsAlive() and unit:GetTypeName()~=QRF_VEHICLE_TYPE then
+      survivors=survivors+1
+    end
+  end
+  return math.min(survivors,QRF_PERSONNEL)
+end
+
+local function requestQrfRecovery()
+  if state.qrfRecoveryRequested then return true end
+  local requested=false
+  for _,entry in ipairs(state.qrfEntries) do
+    if entry.mission and entry.army and not entry.recoveryRequested then
+      entry.recoveryRequested=true
+      entry.mission:Cancel()
+      requested=true
+    end
+  end
+  if requested then
+    state.qrfRecoveryRequested=true
+    msg("QRF","Honaker incident complete; mixed QRF mission cancelled and MOOSE ReturnToLegion recovery requested",12)
+  end
+  return requested
+end
+
 local function closeCasIfReady()
   if state.casClosed or state.casFailed or not state.attackIncidentClosed or not state.casFired or not state.casDemand then return false end
   local _, closed, reason = CasPatrolClosure.Complete({
@@ -174,13 +213,23 @@ local function closeCasIfReady()
 end
 
 local function closeAttackIncidentIfClear()
-  if state.attackIncidentClosed then closeCasIfReady(); return true end
+  if state.attackIncidentClosed then
+    requestQrfRecovery()
+    closeCasIfReady()
+    return true
+  end
   if not state.attackIncident or not state.attackIncident:GetActive() then return false end
   if state.attackIncident:HasAliveParticipants() then return false end
   local _, closed, reason = state.attackIncident:Close("KNOWN_ATTACKERS_NEUTRALIZED")
   if closed ~= true then fail("Honaker attack incident closure failed: " .. tostring(reason)); return false end
   state.attackIncidentClosed = true
   msg("THREAT", "Honaker known attack participants neutralized; attack incident closed independently of alarm-zone state", 14)
+  if state.threat and state.threat.started and not state.threatStopped then
+    state.threat:Stop()
+    state.threatStopped=true
+    msg("THREAT","Honaker attack incident closed; 5-second MOOSE OPSZONE alarm scan stopped",10)
+  end
+  requestQrfRecovery()
   closeCasIfReady()
   return true
 end
@@ -202,8 +251,8 @@ local function logCorridorProfiles(kind, installed)
 end
 
 -- Legacy corridor installation is retained only for the already accepted CH-47 cargo path.
--- Stage-3 opts into the owner-approved suffix contract so _R500 is exactly +500 m and
--- an unsuffixed segment such as WEST is centerline.
+-- Stage-3 opts into the owner-approved suffix contract so _R500 is exactly +500 m.
+-- The caller must invoke this only AFTER physical slingload pickup has been confirmed.
 local function installCargoCorridor(flight, mission, destination, pathlineNames)
   local attempts = 0
   local function attempt()
@@ -226,7 +275,7 @@ local function installCargoCorridor(flight, mission, destination, pathlineNames)
     if ok then
       state.airCorridor = true
       logCorridorProfiles("AIR-AMMO", installed)
-      msg("LOGISTICS", "AIR-AMMO outbound + return route installed via " .. routeLabel(pathlineNames) .. " with PATHLINE suffix offsets", 12)
+      msg("LOGISTICS", "Slingload attached; AIR-AMMO outbound + return route installed via " .. routeLabel(pathlineNames) .. " with PATHLINE suffix offsets", 12)
       return
     end
     if reason == "MISSION_ROUTE_UIDS_NOT_READY" and attempts < 8 then SCHEDULER:New(nil, attempt, {}, 2); return end
@@ -327,7 +376,7 @@ local function bindCasMissionOwnedCorridor(flight, mission)
     onInstalled=function(result)
       state.casCorridor = true
       logCorridorProfiles("CAS", result)
-      msg("CAS", "Mission-owned valley corridor bound to MOOSE AUFTRAG lifecycle via " .. routeLabel(CAS_PATHLINES) .. "; _R500=right 500 m, WEST=centerline", 12)
+      msg("CAS", "Mission-owned valley corridor bound in operational order: common-route entry -> R500 -> WEST -> CAS -> WEST reverse -> R500 reverse -> Jalalabad egress", 12)
     end,
     onFailed=function(why) failCas("CAS mission-owned corridor failed: " .. tostring(why)) end,
   })
@@ -344,7 +393,7 @@ local function installAirObserver()
     if Mission == state.casMission then
       state.casFlight = FlightGroup
       installCasShotObserver()
-      msg("CAS", "Jalalabad AH-64D assigned to PATROLZONE + SetEngageDetected CAS readiness; native ingress/egress and mission-owned valley route armed", 12)
+      msg("CAS", "Jalalabad AH-64D assigned to PATROLZONE + SetEngageDetected; route entry is now the native MOOSE ingress anchor before the CAS objective", 12)
       bindCasMissionOwnedCorridor(FlightGroup, Mission)
       return
     end
@@ -355,8 +404,7 @@ local function installAirObserver()
     local tx = context().store:MarkLoading(TRANSFER_ID)
     registry:SetReservationState(RESUPPLY_DEMAND_ID, "LOADING")
     state.loading = tx and tx.status == context().campaignState.TransactionStatus.LOADING
-    msg("LOGISTICS", "CH-47 assigned; Air-AMMO manifest loading at Jalalabad", 10)
-    installCargoCorridor(FlightGroup, Mission, ZONE:FindByName(DROP_ZONE):GetCoordinate(), AIR_AMMO_PATHLINES)
+    msg("LOGISTICS", "CH-47 assigned; Air-AMMO manifest loading at Jalalabad; corridor injection waits for physical slingload pickup", 10)
     local oldLanded = FlightGroup.OnAfterLanded
     function FlightGroup:OnAfterLanded(F,E,T,Airbase)
       if oldLanded then oldLanded(self,F,E,T,Airbase) end
@@ -374,8 +422,13 @@ local function installAirObserver()
       local demand = registry:Get(RESUPPLY_DEMAND_ID)
       if demand and demand.status == MissionDemand.Status.AI_ASSIGNED then registry:Activate(RESUPPLY_DEMAND_ID) end
       state.inTransit = true
-      msg("LOGISTICS", "Air-AMMO cargo picked up; Jalalabad -> Wright IN TRANSIT", 10)
-    end, {}, 5, 5)
+      if state.transitScheduler and type(state.transitScheduler.Stop)=="function" then state.transitScheduler:Stop() end
+      msg("LOGISTICS", "Air-AMMO cargo physically picked up; Jalalabad -> Wright IN TRANSIT; corridor routing starts now", 10)
+      if not state.airCorridorRequested then
+        state.airCorridorRequested=true
+        installCargoCorridor(FlightGroup, Mission, ZONE:FindByName(DROP_ZONE):GetCoordinate(), AIR_AMMO_PATHLINES)
+      end
+    end, {}, 2, 2)
   end
   local oldReturn = state.airwing.OnAfterLegionAssetReturned
   function state.airwing:OnAfterLegionAssetReturned(From, Event, To, Cohort, Asset)
@@ -475,7 +528,7 @@ local function startAirResupply()
   end
   registry:AssignAI(RESUPPLY_DEMAND_ID,"AI:SQUADRON:SQ_US_JBAD_CH47_HEAVYLIFT")
   state.airwing:AddMission(state.airMission)
-  msg("LOGISTICS", "Jalalabad CH-47 Air-AMMO mission queued; outbound AND return via " .. PRIMARY_PATHLINE, 12)
+  msg("LOGISTICS", "Jalalabad CH-47 Air-AMMO mission queued; pickup must precede corridor ingress", 12)
 end
 
 local function fireTargetTelemetry(target)
@@ -526,7 +579,7 @@ local function queueNextFireMission(demandId)
   local targetName, queued, reason = state.fireAdapter:QueueTarget(demandId,target)
   if queued ~= true then fail("Wright ARTY live retarget failed: "..tostring(reason)) return false end
   state.fireTargetCount = nextNumber
-  state.fireLastSourceGroupName = target:GetName()
+  state.fireLastSourceGroupName=target:GetName()
   log(string.format("LIVE_FIRE_RETARGET demandId=%s mission=%d sourceGroup=%s artyTarget=%s",tostring(demandId),nextNumber,tostring(target:GetName()),tostring(targetName)))
   return true
 end
@@ -633,9 +686,10 @@ local function dispatchQrf()
   local mission = AUFTRAG:NewONGUARD(target:GetCoordinate())
   mission:SetEngageDetected(QRF_ENGAGE_RANGE_NM,{"Ground Units"},state.qrfTacticalZone)
   mission:SetRequiredAssets(1,1)
+  mission:SetReturnToLegion(true)
   mission:SetName("OMW_STAGE3_HONAKER_QRF_MIXED")
   mission:AssignCohort(state.qrfPlatoon)
-  state.qrfEntries[1]={role="MIXED",mission=mission,initialTargetName=target:GetName(),deployment=deployment,army=nil,engaged=false}
+  state.qrfEntries[1]={role="MIXED",mission=mission,initialTargetName=target:GetName(),deployment=deployment,army=nil,engaged=false,recoveryRequested=false,returned=false}
   state.brigade:AddMission(mission)
 end
 
@@ -690,15 +744,27 @@ local function setupDefenceAndThreat()
         entry.army=ArmyGroup
         state.qrfDeployed=true
         msg("QRF","Honaker mixed QRF group deployed; MOOSE ONGUARD detection remains active against the shared incident picture",10)
-        local old=ArmyGroup.OnAfterEngageTarget
+        local oldEngage=ArmyGroup.OnAfterEngageTarget
         function ArmyGroup:OnAfterEngageTarget(F,E,T,Target,Speed,Formation)
-          if old then old(self,F,E,T,Target,Speed,Formation) end
+          if oldEngage then oldEngage(self,F,E,T,Target,Speed,Formation) end
           entry.engaged=true
           state.qrfEngaged=true
           local engagedName=entry.initialTargetName
           if Target and type(Target.GetName)=="function" then engagedName=Target:GetName() end
           msg("QRF","Honaker mixed QRF engaging detected "..tostring(engagedName),8)
         end
+        local oldReturned=ArmyGroup.OnAfterReturned
+        function ArmyGroup:OnAfterReturned(F,E,T)
+          if oldReturned then oldReturned(self,F,E,T) end
+          if entry.returned then return end
+          local survivors=countQrfPersonnelSurvivors(self)
+          local settlement,settled=entry.deployment:SettleReturned(survivors)
+          entry.returned=true
+          state.qrfReturned=true
+          msg("QRF",string.format("Honaker mixed QRF returned to camp/Warehouse; personnel survivors=%d casualties=%d reservationSettled=%s",
+            survivors,settlement and settlement.casualties or -1,tostring(settled==true)),12)
+        end
+        if state.attackIncidentClosed and not entry.recoveryRequested then requestQrfRecovery() end
       end
     end
   end
@@ -793,7 +859,7 @@ local function finish()
   closeAttackIncidentIfClear()
   closeCasIfReady()
   local casTerminal = state.casFailed or (state.casExecuting and state.casCorridor and state.casFired and state.casClosed)
-  if not (state.guardPatrolStarted and state.threatStarted and state.attackIncidentClosed and state.qrfDeployed and casTerminal
+  if not (state.guardPatrolStarted and state.threatStarted and state.threatStopped and state.attackIncidentClosed and state.qrfDeployed and state.qrfReturned and casTerminal
       and state.fireStarted and state.fireComplete and state.rearmComplete and state.supportReturned and state.resupply
       and state.inTransit and state.delivered and state.airCorridor and state.homeLanded and state.assetReturned) then return end
   if state.casFailed then fail("CAS subsystem failed while other Stage-3 chains remained observable: " .. tostring(state.casFailureReason)) return end
@@ -813,9 +879,11 @@ local function finish()
   if type(state.physicalAmmoBefore)~="number" or type(state.physicalAmmoAfter)~="number" or state.physicalAmmoAfter>=state.physicalAmmoBefore then fail("Wright L118 did not consume physical ammo") return end
 
   state.passed=true
-  msg("PASS",string.format("Honaker full response complete: infantry Guard PATHLINE patrol + 5-infantry/1-M-ATV mixed QRF + PATROLZONE CAS + %d live Wright fire missions + M1083 rearm + semantic dedupe + CH-47 Air-AMMO + Wright 30/30",state.fireTargetCount),30)
+  stopFinishScheduler()
+  msg("PASS",string.format("Honaker full response complete: Guard PATHLINE patrol + mixed QRF recovery + PATROLZONE CAS corridor lifecycle + %d live Wright fire missions + M1083 rearm + semantic dedupe + CH-47 pickup-first Air-AMMO + Wright 30/30",state.fireTargetCount),30)
   log("PASS WrightAmmo=30 JalalabadAmmo=85 fireDemand="..fd.id.." casDemand="..cd.id.." resupplyDemand="..rd.id
-    .." perimeterClear="..tostring(state.perimeterClear).." qrfEngaged="..tostring(state.qrfEngaged)
+    .." perimeterClear="..tostring(state.perimeterClear).." threatStopped="..tostring(state.threatStopped)
+    .." qrfEngaged="..tostring(state.qrfEngaged).." qrfReturned="..tostring(state.qrfReturned)
     .." guardPathline="..GUARD_PATHLINE.." qrfTemplate="..QRF_TEMPLATE
     .." casMode=PATROLZONE_ENGAGE casRadiusNm="..tostring(CAS_TACTICAL_RADIUS_NM)
     .." casAltitudeFtAsl="..tostring(state.casAltitudeFtAsl).." casCorridor="..routeLabel(CAS_PATHLINES)
@@ -823,4 +891,4 @@ local function finish()
 end
 
 SCHEDULER:New(nil,start,{},5)
-SCHEDULER:New(nil,finish,{},10,2)
+state.finishScheduler=SCHEDULER:New(nil,finish,{},10,2)
