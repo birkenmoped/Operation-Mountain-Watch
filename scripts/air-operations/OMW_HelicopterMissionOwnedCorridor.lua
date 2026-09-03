@@ -4,17 +4,19 @@
 --   * Keep native AUFTRAG ingress/egress as the mission lifecycle anchors.
 --   * Make native ingress the FIRST owner-authored corridor point so aircraft enter the
 --     corridor before the actual AUFTRAG objective instead of flying directly to the AO.
---   * Add the remaining owner-authored PATHLINE geometry as AUFTRAG-owned FLIGHTGROUP waypoints.
---   * Mark every injected waypoint with missionUID so MOOSE owns pause/resume cleanup.
---   * Re-install the corridor only if MOOSE actually rebuilds/removes the mission route.
+--   * Add the remaining outbound PATHLINE geometry as AUFTRAG-owned FLIGHTGROUP waypoints.
+--   * Add the complete return PATHLINE geometry as recovery waypoints NOT owned by the
+--     AUFTRAG so AUFTRAG:Cancel() cannot remove the required WEST/R500 return corridor.
+--   * Re-install the outbound corridor only while the AUFTRAG is still active and only
+--     if MOOSE actually rebuilds/removes the mission route.
 --
--- This is intentionally a small adapter around MOOSE route ownership. It does not
--- replace AUFTRAG, FLIGHTGROUP, EngageDetected, mission pause/resume or RTB logic.
+-- This is intentionally a small adapter around public MOOSE route ownership. It does
+-- not replace AUFTRAG, FLIGHTGROUP, EngageDetected, mission pause/resume or RTB logic.
 
 local Adapter = {}
 
 local TAG = "[OMW][HelicopterMissionOwnedCorridor]"
-Adapter.SchemaVersion = "OMW-HELICOPTER-MISSION-OWNED-CORRIDOR-3"
+Adapter.SchemaVersion = "OMW-HELICOPTER-MISSION-OWNED-CORRIDOR-4"
 
 local function fail(message)
   error(TAG .. " " .. tostring(message), 2)
@@ -69,9 +71,13 @@ function Adapter.ConfigureMission(mission, resolved, spec)
 
   -- MOOSE RouteToMission() places the native ingress before the mission waypoint.
   -- Therefore ingress must be the corridor ENTRY nearest the origin, not the final
-  -- corridor point near the AO. The latter caused the tested direct Jalalabad->AO leg
-  -- followed by a turn back to the beginning of the injected corridor.
+  -- corridor point near the AO.
   local ingressCoordinate = resolved.outbound[1]
+
+  -- The native egress remains a MOOSE mission anchor while the mission is active.
+  -- The complete recovery path is separately installed as non-mission-owned waypoints,
+  -- including its final Jalalabad-side corridor point. This is required because MOOSE
+  -- removes missionUID waypoints when AUFTRAG:Cancel() completes the CAS mission.
   local egressCoordinate = resolved.returnRoute[#resolved.returnRoute]
   local ingressSegment = resolved.outboundSegmentIndexes and resolved.outboundSegmentIndexes[1] or 1
   local egressSegment = resolved.returnSegmentIndexes and resolved.returnSegmentIndexes[#resolved.returnRoute] or 1
@@ -84,7 +90,7 @@ function Adapter.ConfigureMission(mission, resolved, spec)
   mission:SetMissionEgressCoord(egressCoordinate, egressAltitudeFtAsl, spec.speedKts)
 
   return {
-    mode = "MOOSE_NATIVE_CORRIDOR_ENTRY_EGRESS_PLUS_MISSION_OWNED_PATHLINE",
+    mode = "MOOSE_NATIVE_CORRIDOR_ENTRY_PLUS_PERSISTENT_RECOVERY_ROUTE",
     ingressCoordinate = ingressCoordinate,
     egressCoordinate = egressCoordinate,
     ingressAltitudeFtAsl = ingressAltitudeFtAsl,
@@ -101,8 +107,8 @@ local function waypointStillPresent(flightGroup, uid)
   return flightGroup:GetWaypointIndex(uid) ~= nil
 end
 
-local function allInstalledWaypointsPresent(flightGroup, binding)
-  local uids = binding.installedUids or {}
+local function allOutboundWaypointsPresent(flightGroup, binding)
+  local uids = binding.outboundUids or {}
   if #uids == 0 then return false end
   for _, uid in ipairs(uids) do
     if not waypointStillPresent(flightGroup, uid) then return false end
@@ -110,19 +116,27 @@ local function allInstalledWaypointsPresent(flightGroup, binding)
   return true
 end
 
-local function anyInstalledWaypointPresent(flightGroup, binding)
-  for _, uid in ipairs(binding.installedUids or {}) do
+local function anyOutboundWaypointPresent(flightGroup, binding)
+  for _, uid in ipairs(binding.outboundUids or {}) do
     if waypointStillPresent(flightGroup, uid) then return true end
   end
   return false
 end
 
+local function missionIsOver(mission)
+  return type(mission.IsOver) == "function" and mission:IsOver() == true
+end
+
 local function installNow(flightGroup, binding)
   if binding.installing then return nil, false, "INSTALL_IN_PROGRESS" end
-  if allInstalledWaypointsPresent(flightGroup, binding) then
+  if missionIsOver(binding.mission) then
+    binding.closed = true
+    return binding.lastResult, true, "MISSION_OVER_RECOVERY_ROUTE_PRESERVED"
+  end
+  if allOutboundWaypointsPresent(flightGroup, binding) and binding.returnInstalled then
     return binding.lastResult, true, "ALREADY_INSTALLED"
   end
-  if anyInstalledWaypointPresent(flightGroup, binding) then
+  if anyOutboundWaypointPresent(flightGroup, binding) then
     return nil, false, "PARTIAL_MISSION_OWNED_ROUTE_PRESENT"
   end
 
@@ -146,7 +160,8 @@ local function installNow(flightGroup, binding)
   end
 
   binding.installing = true
-  binding.installedUids = {}
+  binding.outboundUids = {}
+  binding.returnUids = binding.returnUids or {}
   local outboundProfiles, returnProfiles = {}, {}
   local defaultAltitudeFtAgl = binding.defaultAltitudeFtAgl
 
@@ -159,7 +174,7 @@ local function installNow(flightGroup, binding)
     local profile = profileFor(resolved, segmentIndex, defaultAltitudeFtAgl)
     local waypoint = flightGroup:AddWaypoint(coordinate, nil, afterUid, profile.altitudeFtAgl, false)
     waypoint.missionUID = mission.auftragsnummer
-    binding.installedUids[#binding.installedUids + 1] = waypoint.uid
+    binding.outboundUids[#binding.outboundUids + 1] = waypoint.uid
     outboundProfiles[#outboundProfiles + 1] = {
       uid = waypoint.uid,
       sourceIndex = index,
@@ -171,27 +186,41 @@ local function installNow(flightGroup, binding)
     afterUid = waypoint.uid
   end
 
-  -- Return points remain after the mission execution waypoint and lead back to the
-  -- native egress at the Jalalabad-side end of the corridor. The final resolved return
-  -- point is already represented by that native egress waypoint.
-  afterUid = missionUid
-  local returnCount = math.max(#resolved.returnRoute - 1, 0)
-  for index = 1, returnCount do
-    local coordinate = resolved.returnRoute[index]
-    local segmentIndex = resolved.returnSegmentIndexes and resolved.returnSegmentIndexes[index] or 1
-    local profile = profileFor(resolved, segmentIndex, defaultAltitudeFtAgl)
-    local waypoint = flightGroup:AddWaypoint(coordinate, nil, afterUid, profile.altitudeFtAgl, false)
-    waypoint.missionUID = mission.auftragsnummer
-    binding.installedUids[#binding.installedUids + 1] = waypoint.uid
-    returnProfiles[#returnProfiles + 1] = {
-      uid = waypoint.uid,
-      sourceIndex = index,
-      segmentIndex = segmentIndex,
-      pathlineName = pathlineFor(resolved, segmentIndex),
-      altitudeFtAgl = profile.altitudeFtAgl,
-      altType = "RADIO",
-    }
-    afterUid = waypoint.uid
+  -- Install the COMPLETE return corridor once. These recovery waypoints intentionally
+  -- have NO missionUID. MOOSE therefore leaves them in the FLIGHTGROUP route when the
+  -- PATROLZONE AUFTRAG is cancelled after tactical completion.
+  if not binding.returnInstalled then
+    afterUid = missionUid
+    for index = 1, #resolved.returnRoute do
+      local coordinate = resolved.returnRoute[index]
+      local segmentIndex = resolved.returnSegmentIndexes and resolved.returnSegmentIndexes[index] or 1
+      local profile = profileFor(resolved, segmentIndex, defaultAltitudeFtAgl)
+      local waypoint = flightGroup:AddWaypoint(coordinate, nil, afterUid, profile.altitudeFtAgl, false)
+      binding.returnUids[#binding.returnUids + 1] = waypoint.uid
+      returnProfiles[#returnProfiles + 1] = {
+        uid = waypoint.uid,
+        sourceIndex = index,
+        segmentIndex = segmentIndex,
+        pathlineName = pathlineFor(resolved, segmentIndex),
+        altitudeFtAgl = profile.altitudeFtAgl,
+        altType = "RADIO",
+      }
+      afterUid = waypoint.uid
+    end
+    binding.returnInstalled = true
+  else
+    for index, uid in ipairs(binding.returnUids) do
+      local segmentIndex = resolved.returnSegmentIndexes and resolved.returnSegmentIndexes[index] or 1
+      local profile = profileFor(resolved, segmentIndex, defaultAltitudeFtAgl)
+      returnProfiles[#returnProfiles + 1] = {
+        uid = uid,
+        sourceIndex = index,
+        segmentIndex = segmentIndex,
+        pathlineName = pathlineFor(resolved, segmentIndex),
+        altitudeFtAgl = profile.altitudeFtAgl,
+        altType = "RADIO",
+      }
+    end
   end
 
   requireFunction(flightGroup, "UpdateRoute", "FLIGHTGROUP")
@@ -213,6 +242,7 @@ local function installNow(flightGroup, binding)
     pathlineNames = resolved.pathlineNames,
     segmentOffsets = resolved.segmentOffsets,
     offsetMode = resolved.offsetMode,
+    recoveryWaypointsMissionOwned = false,
   }
 
   if type(binding.onInstalled) == "function" then
@@ -229,7 +259,11 @@ local function installUpdateRouteHook(flightGroup)
   function flightGroup:OnAfterUpdateRoute(From, Event, To, n, N)
     if previous then previous(self, From, Event, To, n, N) end
     local binding = self.__omwMissionOwnedCorridorBinding
-    if not binding or binding.installing then return end
+    if not binding or binding.installing or binding.closed then return end
+    if missionIsOver(binding.mission) then
+      binding.closed = true
+      return
+    end
     local _, ok, reason = installNow(self, binding)
     if not ok and reason ~= "MISSION_ROUTE_UIDS_NOT_READY" and reason ~= "INSTALL_IN_PROGRESS" then
       binding.lastReason = reason
@@ -245,6 +279,7 @@ function Adapter.Bind(flightGroup, mission, resolved, spec)
   spec = spec or {}
   requireFunction(mission, "GetGroupWaypointIndex", "AUFTRAG")
   requireFunction(mission, "GetGroupEgressWaypointUID", "AUFTRAG")
+  requireFunction(mission, "IsOver", "AUFTRAG")
   requireFunction(flightGroup, "GetWaypointIndex", "FLIGHTGROUP")
   requireFunction(flightGroup, "GetWaypointUIDFromIndex", "FLIGHTGROUP")
   requireFunction(flightGroup, "AddWaypoint", "FLIGHTGROUP")
@@ -256,9 +291,12 @@ function Adapter.Bind(flightGroup, mission, resolved, spec)
     defaultAltitudeFtAgl = spec.defaultAltitudeFtAgl or 500,
     onInstalled = spec.onInstalled,
     onFailed = spec.onFailed,
-    installedUids = {},
+    outboundUids = {},
+    returnUids = {},
+    returnInstalled = false,
     installCount = 0,
     installing = false,
+    closed = false,
     lastResult = nil,
     lastReason = nil,
   }
