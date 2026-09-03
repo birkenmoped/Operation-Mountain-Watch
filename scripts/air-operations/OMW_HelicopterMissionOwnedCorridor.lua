@@ -7,7 +7,7 @@
 --   * Insert the complete return PATHLINE coordinates once after the mission waypoint.
 --   * Keep recovery waypoints outside mission ownership so AUFTRAG completion/cancel does
 --     not remove the WEST/R500 return chain.
---   * Perform no persistent OnAfterUpdateRoute interception or route re-installation.
+--   * Perform no persistent route-update callback interception or route re-installation.
 --
 -- This remains a small adapter around public MOOSE AUFTRAG/FLIGHTGROUP route APIs.
 
