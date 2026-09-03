@@ -89,6 +89,7 @@ foreach ($name in $resolved.Keys) {
   $combinedForValidation += $source
 }
 $acceptanceSource = Get-Content -LiteralPath $acceptanceFile -Raw -Encoding UTF8
+$missionOwnedCorridorSource = Get-Content -LiteralPath $resolved['OMW_STAGE3_HELICOPTER_MISSION_OWNED_CORRIDOR'] -Raw -Encoding UTF8
 $bundle += $acceptanceSource
 $combinedForValidation += $acceptanceSource
 
@@ -149,10 +150,15 @@ foreach ($obsolete in @(
   'if tacticalRed==nil or tacticalRed>0 then return false end',
   'local PICKUP_ZONE = "OMW_LOG_NODE_JALALABAD"',
   'InitValidateAndRepositionStatic(true,120)',
-  'OnAfterUpdateRoute',
   'OMW-HELICOPTER-MISSION-OWNED-CORRIDOR-4'
 )) {
   if ($combinedForValidation.Contains($obsolete)) { throw "Stage 3 sources still contain obsolete lifecycle marker: $obsolete" }
+}
+if ($missionOwnedCorridorSource -match 'function\s+flightGroup:OnAfterUpdateRoute\s*\(') {
+  throw 'Stage 3 one-shot CAS corridor must not install an OnAfterUpdateRoute handler.'
+}
+if ($missionOwnedCorridorSource.Contains('__omwMissionOwnedCorridorHook')) {
+  throw 'Stage 3 one-shot CAS corridor must not retain the legacy persistent route-hook binding.'
 }
 if ($acceptanceSource.Contains('CasAdapter.MissionMode.CASENHANCED')) { throw 'Stage 3 acceptance must not use CASENHANCED after PATROLZONE reconciliation.' }
 if ($acceptanceSource -match 'SetAltitude\s*\(') { throw 'Stage 3 acceptance must not issue a FLIGHTGROUP/OPSGROUP SetAltitude override for CAS.' }
