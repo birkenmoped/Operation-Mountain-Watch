@@ -1,11 +1,19 @@
 ---
 document_id: OMW-MOOSE-STAGE3-BUILD-1-16-ONE-SHOT-ROUTE-TASK-CHAIN
-status: SOURCE_REVIEWED
-document_class: MOOSE_SOURCE_REVIEW
+status: PLANNED
+document_class: MOOSE_TECHNICAL_RECONCILIATION
 owning_policy: OMW-GOV-001
+authoritative_for:
+  - pinned-MOOSE source review for Stage 3 build 1-16 one-shot CAS route/task chaining
+  - Stage 3 incident-participant response completion rule
+  - Stage 3 Honaker Guard/QRF access-zone materialization source review
+  - Stage 3 Jalalabad dedicated Slingload pickup-zone contract
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 source_branch: agent/fire-support-strategic-resupply-alarm-evidence
+source_commit: GIT_HISTORY
+supersedes:
+superseded_by:
 validated_in_dcs: false
 ---
 
@@ -190,7 +198,7 @@ docs/moose/STAGE3-SLINGLOAD-CORRIDOR-EXCEPTION-DECISION.md
 
 ## 8. Build-1-16-Acceptance
 
-Der folgende DCS-Test ist noch ausstehend. `SOURCE_REVIEWED` ist ausdrücklich kein `VALIDATED`.
+Der folgende DCS-Test ist noch ausstehend. Der Source-Review ist ausdrücklich kein `VALIDATED`-Nachweis.
 
 Zu prüfen sind mindestens:
 
