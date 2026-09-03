@@ -1,12 +1,20 @@
 ---
 document_id: OMW-STAGE3-BUILD-1-15-ROUTE-CHAIN-FAIL
-status: FAILED_DCS_ACCEPTANCE
-document_class: ACCEPTANCE_FAILURE_EVIDENCE
+status: PLANNED
+document_class: TEST_EVIDENCE
 owning_policy: OMW-GOV-001
+authoritative_for:
+  - exact-provenance Stage 3 build 1-15 DCS runtime observations on 2026-09-03
+  - CAS response-completion and recovery-route failure
+  - CH-47 outbound/return corridor failure despite physical slingload delivery
+  - Jalalabad Slingload pickup-position failure
+  - Honaker Guard/QRF physical materialization observations
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 source_branch: agent/fire-support-strategic-resupply-alarm-evidence
 source_commit: 739daed6e22ea7bb02b677fe6b06b716c624fd7c
+supersedes:
+superseded_by:
 validated_in_dcs: false
 ---
 
@@ -182,4 +190,4 @@ Insbesondere entfällt beim CAS die dauerhafte `OnAfterUpdateRoute`-Überwachung
 | QRF sinnvoller physischer Access | NICHT bestätigt |
 | Stage-3 Gesamtacceptance | FAIL |
 
-Build 1-15 bleibt damit `FAILED_DCS_ACCEPTANCE` und darf nicht als produktiv validierter Lifecycle referenziert werden.
+Build 1-15 ist damit ein dokumentierter DCS-Acceptance-Fail und darf nicht als produktiv validierter Lifecycle referenziert werden.
