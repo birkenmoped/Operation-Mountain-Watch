@@ -13,8 +13,8 @@
 --   physical delivery the original AUFTRAG is completed with AUFTRAG:Success(), so the
 --   normal AIRWING/LEGION lifecycle remains authoritative for the aircraft.
 --
--- No raw Controller:setTask(), coalition.addGroup(), teleport or polling faster than
--- five seconds is used here.
+-- No raw DCS controller task assignment, native coalition spawning, teleport, or polling
+-- faster than five seconds is used here.
 
 local Handoff = {}
 
