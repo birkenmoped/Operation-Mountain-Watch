@@ -23,6 +23,7 @@ $sources = [ordered]@{
   OMW_STAGE3_FOB_ATTACK_CAS_DISPATCH_ADAPTER = 'scripts\air-operations\OMW_FobAttackCasDispatchAdapter.lua'
   OMW_STAGE3_FOB_ATTACK_CAS_PATROL_CLOSURE = 'scripts\air-operations\OMW_FobAttackCasPatrolClosure.lua'
   OMW_STAGE3_HELICOPTER_FLIGHTPATH_CORRIDOR = 'scripts\air-operations\OMW_HelicopterFlightPathCorridor.lua'
+  OMW_STAGE3_SLINGLOAD_CORRIDOR_HANDOFF = 'scripts\air-operations\OMW_SlingloadCorridorHandoff.lua'
   OMW_STAGE3_HELICOPTER_MISSION_OWNED_CORRIDOR = 'scripts\air-operations\OMW_HelicopterMissionOwnedCorridor.lua'
 }
 $acceptanceRelative = 'mission\tests\stage3-honaker-wright-full-response\src\01-honaker-wright-full-response-acceptance.lua'
@@ -30,7 +31,7 @@ $acceptanceFile = Join-Path $repoRoot $acceptanceRelative
 $jalalabadFoundationFile = Join-Path $repoRoot 'scripts\air-operations\OMW_AirOps_Jalalabad_Bootstrap.lua'
 $distDir = Join-Path $repoRoot 'mission\tests\stage3-honaker-wright-full-response\dist'
 $outputFile = Join-Path $distDir 'OMW_Stage3_Honaker_Wright_Full_Response_Acceptance_1.lua'
-$builderVersion = 'STAGE3-HONAKER-WRIGHT-FULL-RESPONSE-ACCEPTANCE-1-14'
+$builderVersion = 'STAGE3-HONAKER-WRIGHT-FULL-RESPONSE-ACCEPTANCE-1-15'
 $testId = 'STAGE3-HONAKER-WRIGHT-FULL-RESPONSE-ACCEPTANCE-1'
 $mooseCommit = '73d3ed119cd9e7e3f2cfcabbaa34513d30529b54'
 $mooseSha256 = 'e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915'
@@ -73,8 +74,8 @@ $header = @"
 -- Scope: Honaker attack -> Guard PATHLINE patrol + 5-NM tactical-clear gated mixed QRF recovery + PATROLZONE/EngageDetected CAS corridor lifecycle + Wright ARTY/rearm -> CampaignState AMMO reorder -> Jalalabad CH47 pickup-first Air-AMMO -> Wright -> route return.
 -- Guard: TPL_BLUE_GND_INF_RIFLE_SQUAD_9 materialized through Honaker BRIGADE/PLATOON and routed repeatedly over OMW_RTE_BLUE_GUARD_HONAKER_01 using public MOOSE PATHLINE/GetCoordinates/WaypointGround/TaskFunction/SetTaskWaypoint/Route APIs.
 -- QRF: one TPL_BLUE_GND_QRF_MIXED_6 GROUP, five infantry plus one CHAP_MATV, no embark/disembark, 5 GROUND_PERSONNEL reserved while deployed; after zero active RED ground groups remain in the 5-NM tactical area, mission Cancel + SetReturnToLegion(true) returns survivors and settles reservation.
--- CAS: native AUFTRAG ingress is the common-route entry, then R500 -> WEST -> CAS -> WEST reverse -> R500 reverse -> native Jalalabad-side egress.
--- AirAmmo: CARGOTRANSPORT pickup is confirmed before corridor injection.
+-- CAS: native AUFTRAG ingress is the common-route entry; mission-owned R500/WEST outbound reaches CAS; non-mission-owned WEST/R500 recovery waypoints survive AUFTRAG cancellation and lead back to Jalalabad.
+-- AirAmmo: MOOSE CARGOTRANSPORT performs physical pickup; after confirmed pickup the owner-approved narrow CargoTransportation handoff constrains outbound R500 routing, re-issues the same DCS cargo task at the Wright route exit, and preserves R500 return routing.
 -- StrategicAuthority: existing OMW CampaignState only.
 -- MizMutation: false.
 
@@ -100,8 +101,10 @@ $requiredMarkers = @(
   'SET_GROUP:New','FilterCoalitions("red")','FilterCategoryGround','FilterActive(true)','FilterZones({state.casTacticalZone})','CountAlive',
   'AUFTRAG:NewPATROLZONE','PATROLZONE_ENGAGE','CAS_TACTICAL_RADIUS_NM','CAS_COMBAT_HEIGHT_FT_AGL','GetLandHeight','NMToMeters',
   'SetMissionIngressCoord','SetMissionEgressCoord','missionUID','GetGroupEgressWaypointUID','OnAfterUpdateRoute','ConfirmExecutionEvidence','EVENTS.Shot',
-  'OMW-HELICOPTER-MISSION-OWNED-CORRIDOR-3','OMW-FOB-ATTACK-CAS-PATROL-CLOSURE-1','AssignSquadrons','squadrons={state.ah64d}',
+  'OMW-HELICOPTER-MISSION-OWNED-CORRIDOR-4','MOOSE_NATIVE_CORRIDOR_ENTRY_PLUS_PERSISTENT_RECOVERY_ROUTE','MISSION_OVER_RECOVERY_ROUTE_PRESERVED',
+  'OMW-FOB-ATTACK-CAS-PATROL-CLOSURE-1','AssignSquadrons','squadrons={state.ah64d}',
   'PATHLINE_SUFFIX','ParsePathlineOffset','OMW_FlightPath_R500','OMW_FlightPath_WEST','WEST_ALTITUDE_FT_AGL','ResolveSequence',
+  'OMW-SLINGLOAD-CORRIDOR-HANDOFF-1','APPROVED_EXTERNAL_SLINGLOAD_CORRIDOR_HANDOFF','GetWaypointCurrentUID','AddTaskWaypoint','CargoTransportation','AUFTRAG:Success()',
   'GROUND_AMMO_PACKAGE','GROUND_NODE_WRIGHT','GROUND_NODE_JALALABAD','TPL_BLUE_GND_WRIGHT_FS_ARTY_L118_2','TPL_BLUE_GND_SUP_M1083',
   'AUFTRAG:NewCARGOTRANSPORT','SQ_US_JBAD_CH47_HEAVYLIFT','MarkInTransit','MarkDelivered','active_duplicate','duplicate.id','duplicate.dedupeKey',
   'state.threat:Stop()','state.airCorridorRequested=true','state.finishScheduler:Stop()','MESSAGE:New','onThreatCleared','perimeterClear'
@@ -146,6 +149,11 @@ if ($acceptanceSource.Contains('CasAdapter.MissionMode.CASENHANCED')) { throw 'S
 if ($acceptanceSource -match 'SetAltitude\s*\(') { throw 'Stage 3 acceptance must not issue a FLIGHTGROUP/OPSGROUP SetAltitude override for CAS.' }
 if ($acceptanceSource.Contains('duplicate ~= demand')) { throw 'Stage 3 acceptance must not compare RESUPPLY duplicate Lua table identity.' }
 
+$slingloadSource = Get-Content -LiteralPath $resolved['OMW_STAGE3_SLINGLOAD_CORRIDOR_HANDOFF'] -Raw -Encoding UTF8
+foreach ($marker in @('Controller:setTask','coalition.addGroup','coalition.addStaticObject',':Teleport(','world.addEventHandler','timer.scheduleFunction')) {
+  if ($slingloadSource.Contains($marker)) { throw "Approved slingload handoff exceeds documented exception boundary: $marker" }
+}
+
 $forbiddenPatterns = @(
   'MissionScripting\.lua','mist\.','\bMIST\b','(?<![A-Za-z0-9_])io\.','lfs\.','os\.execute',':Teleport\s*\(',
   'world\.addEventHandler','timer\.scheduleFunction','coalition\.addGroup','coalition\.addStaticObject','AddCargoStorage','NewFREIGHTTRANSPORT',
@@ -174,14 +182,16 @@ Write-Host 'QRFTemplate: TPL_BLUE_GND_QRF_MIXED_6'
 Write-Host 'ResponseCompletionGate: zero active RED ground groups in 5-NM tactical zone via MOOSE SET_GROUP FilterOnce/CountAlive'
 Write-Host 'QRFReturn: MOOSE AUFTRAG Cancel + SetReturnToLegion(true) -> ARMYGROUP RTZ/Returned -> PersonnelLedger settlement'
 Write-Host 'CASMission: MOOSE AUFTRAG NewPATROLZONE + SetEngageDetected'
-Write-Host 'CASRouteOrder: spawn -> native ingress at common-route entry -> R500 -> WEST -> CAS -> WEST reverse -> R500 reverse -> native egress -> Jalalabad'
+Write-Host 'CASRouteOrder: spawn -> native ingress at common-route entry -> R500 -> WEST -> CAS -> persistent WEST reverse -> R500 reverse -> Jalalabad'
+Write-Host 'CASRecoveryOwnership: return waypoints are non-mission FLIGHTGROUP waypoints and survive AUFTRAG Cancel'
 Write-Host 'CASRouteOutboundAltitude: R500 500ft AGL -> WEST 2500ft AGL'
 Write-Host 'CASRouteReturnAltitude: WEST 2500ft AGL -> R500 500ft AGL'
 Write-Host 'ThreatCleanup: MOOSE OPSZONE Stop only after 5-NM tactical-clear response completion'
 Write-Host 'FireSupport: Wright TPL_BLUE_GND_WRIGHT_FS_ARTY_L118_2 via MOOSE Functional ARTY AssignTargetCoord / DCS Fire At Point'
 Write-Host 'StrategicResupply: exactly one RESUPPLY, Jalalabad -> Wright, quantity 15'
 Write-Host 'AirPhysicalMission: MOOSE AUFTRAG CARGOTRANSPORT'
-Write-Host 'AirAmmoRouteOrder: spawn -> slingload pickup confirmed -> R500 outbound -> Wright delivery -> R500 reverse -> Jalalabad'
+Write-Host 'AirAmmoRouteOrder: spawn -> MOOSE slingload pickup confirmed -> R500 outbound -> re-issued CargoTransportation at Wright exit -> physical delivery -> R500 reverse -> Jalalabad'
+Write-Host 'AirAmmoException: owner-approved narrow DCS CargoTransportation waypoint-task handoff; no raw Controller/setTask, spawn or teleport path'
 Write-Host 'AcceptanceScheduler: 10-second completion check; stops on PASS/FAIL'
 Write-Host "SHA256: $hash"
 Write-Host 'MizMutation: false'
