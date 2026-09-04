@@ -43,7 +43,7 @@ unique_assignments: 160
 airfield_radio_locations: 14
 source_reference_version: v1.0
 source_reference_date: 2025-10-17
-omw_workbook_version: v1.4
+omw_workbook_version: v1.6
 ```
 
 Verwendete OMW-Color-Gruppen:
@@ -179,7 +179,7 @@ Die Mission enthält 37 Client-Luftfahrzeuge der folgenden Preset-relevanten Mus
 | OH58D | Jalalabad, Kandahar, Salerno |
 | CH-47Fbl1 | Bagram, Jalalabad, Kandahar, Salerno, Shindand, Tarin Kowt |
 
-Aus der aktuellen v21-Mission sind folgende Presetbank-Strukturen direkt serialisiert:
+Aus der aktuellen v21-Mission und der nachfolgenden Mission-Editor-Evidenz ergeben sich folgende Presetbank-Strukturen:
 
 | Muster | Radio / Bank | Presets | Bereich |
 |---|---|---:|---|
@@ -187,30 +187,32 @@ Aus der aktuellen v21-Mission sind folgende Presetbank-Strukturen direkt seriali
 | F-16C_50 | COMM2 | 20 | VHF AM |
 | F-15ESE | Radio 1 | 20 | UHF AM |
 | F-15ESE | Radio 2 | 40 | V/UHF AM |
-| A-10C_2 | ARC-210 | 25 | Multiband; P01-P20 AM, P21-P25 FM im aktuellen Missionsstand |
+| A-10C_2 | ARC-210 | 25 | Multiband / multimode; Frequenz, Modulation und Presetname je Kanal serialisiert |
 | A-10C_2 | ARC-164 | 20 | UHF AM |
 | A-10C_2 | ARC-186 | 20 | VHF FM |
-| AH-64D_BLK_II | VHF AM | 10 | VHF AM |
-| AH-64D_BLK_II | UHF AM | 10 | UHF AM |
-| AH-64D_BLK_II | FM1 | 10 | VHF FM |
-| AH-64D_BLK_II | FM2 | 10 | VHF FM |
-| OH58D | UHF | 20 | UHF AM |
-| OH58D | VHF AM | 20 | VHF AM |
-| OH58D | FM1 | 21 | VHF FM, so in v21 serialisiert |
-| OH58D | FM2 | 21 | VHF FM, so in v21 serialisiert |
-| CH-47Fbl1 | Radio 1 | 20 | FM |
-| CH-47Fbl1 | Radio 2 | 20 | UHF AM |
-| CH-47Fbl1 | Radio 3 | 10 | FM |
+| AH-64D_BLK_II | ARC-186 | 10 | VHF AM |
+| AH-64D_BLK_II | ARC-164 | 10 | UHF AM |
+| AH-64D_BLK_II | FM1 ARC-201D | 10 | VHF FM |
+| AH-64D_BLK_II | FM2 ARC-201D | 10 | VHF FM |
+| OH58D | UHF | 19 normale Presets + Channel M | UHF AM |
+| OH58D | VHF AM | 19 normale Presets + Channel M | VHF AM |
+| OH58D | FM1 | 19 normale Presets + Channel C + Channel M | VHF FM |
+| OH58D | FM2 | 19 normale Presets + Channel C + Channel M | VHF FM |
+| CH-47Fbl1 | ARC-186 / V3 / Radio 1 | 20 | **VHF AM/FM** |
+| CH-47Fbl1 | ARC-164 / U2 / Radio 2 | 20 | **UHF AM** |
+| CH-47Fbl1 | ARC-201D / Radio 3 | 10 | **VHF FM** |
 | C-130J-30 | Radio 1 | 20 | UHF AM |
 | C-130J-30 | Radio 2 | 10 | VHF AM |
 
 Für den C-130J-30 besteht zusätzlich frühere Mission-Editor-Evidenz für zwei UHF- und zwei VHF-Radios (`UHF-1/UHF-2` mit je 20 sowie `VHF-1/VHF-2` mit je 10 Presets). Da v21 nur eine UHF- und eine VHF-Presetliste serialisiert, werden die zweiten Banken im Workbook als **gespiegelte Planungsbanken** geführt und vor einer ME-Bindung erneut am aktuellen C-130-Modul geprüft. Sie werden nicht als unabhängig in v21 nachgewiesene Presetlisten ausgegeben.
 
-Beim CH-47F ist in v21 keine separate VHF-AM-Presetbank serialisiert. Eine solche Bank wird deshalb in der aktuellen Presetbaseline nicht erfunden.
+Für den CH-47F korrigiert die aktuelle Evidenz die frühere Arbeitsannahme. Der offizielle `DCS CH-47F Early Access Guide` bezeichnet V3/ARC-186 ausdrücklich als **VHF-AM/FM**, U2 als **UHF-AM** sowie F1/F5 als VHF-FM. Der Mission-Editor-Test mit v1.5 zeigte UHF-Werte im ARC-186 als wiederholte Werte nahe `151.97 MHz FM`; UHF-Belegungen sind daher aus der ARC-186-Bank entfernt. Maßgeblicher Evidenzdatensatz:
+
+- [`CH-47F radio capability correction – 2026-09-04`](evidence/source-records/ch47-radio-capability-correction-2026-09-04.md)
 
 ## 9. Vollständige Player-Preset-Arbeitsbaseline
 
-Die vollständigen Einzelbelegungen stehen in `OMW_Radio_Frequency_Master_v1.4.xlsx` auf jeweils eigenen Muster-Arbeitsblättern:
+Die vollständigen Einzelbelegungen stehen in `OMW_Radio_Frequency_Master_v1.6.xlsx` auf jeweils eigenen Muster-Arbeitsblättern:
 
 ```text
 PRESET F-16CM
@@ -250,7 +252,9 @@ Shindand ist für F-16CM und F-15E ausdrücklich kein fester Divert-Preset.
 
 ### 9.2 A-10C II – Kandahar
 
-Die A-10-Baseline nutzt die drei Funkgeräte ihrer jeweiligen Funktion entsprechend. Feste Recovery-/Divert-Plätze sind:
+Die A-10-Baseline nutzt die drei Funkgeräte ihrer tatsächlichen Mission-Editor-Fähigkeit entsprechend. Das `ARC-210` ist eine benennbare Multiband-/Multimode-Bank und darf deshalb VHF-AM-, UHF-AM- und VHF-FM-Dienste innerhalb derselben Presetbank führen. Frequenz, Modulation und Presetname werden je Kanal getrennt serialisiert. `ARC-164` bleibt die dedizierte UHF-AM-Bank, `ARC-186` die dedizierte VHF-FM-Bank.
+
+Feste Recovery-/Divert-Plätze sind:
 
 ```text
 Kandahar
@@ -261,7 +265,7 @@ Shindand
 Tarin Kowt
 ```
 
-Die UHF-Bank enthält zusätzlich die vier STANDARD-AAR-Tracks, C2, CSAR/PR und die festen UAV-JTACs. VHF-AM und FM werden für die passenden Airfield-, Ground- und Missionsnetze genutzt.
+Die A-10-Presets enthalten zusätzlich die STANDARD-AAR-Tracks, C2, CSAR/PR, feste UAV-JTACs und die vorgesehenen Ground-/Mission-Netze.
 
 ### 9.3 C-130J-30 – Bagram und Kandahar
 
@@ -291,23 +295,49 @@ Die regionalen Schwerpunkte sind:
 | Bagram | Bagram, Kabul, Jalalabad, Khost nach Band/Relevanz |
 | Kandahar | Kandahar, Kandahar Heliport, Kandahar FARP Complex, Tarin Kowt, Dwyer, Bastion nach Band/Relevanz |
 | Salerno | Khost/Salerno-Region, Khost Heliport, Urgoon, Jalalabad |
-| Shindand | Shindand, Shindand Heliport; VHF 121.500 des Heliports ausgeschlossen |
+| Shindand | Shindand; VHF 121.500 des Heliports ausgeschlossen |
 | Tarin Kowt | Tarin Kowt, Kandahar, Kandahar Heliport, Kandahar FARP Complex, Dwyer |
 
-Die 10er-UHF-Bank des AH-64D verwendet `P10 = WIZARD`. 20er-UHF-Banken von OH-58D und CH-47F verwenden `P11 = WIZARD`.
+Die 10er-UHF-Bank des AH-64D verwendet `P10 = WIZARD`. Die tatsächlichen UHF-Bänke von OH-58D und CH-47F verwenden `P11 = WIZARD`.
 
-Die FM-Bänke priorisieren HOME-/lokale FM-Dienste, `Ground Common 46.000 FM`, `Ground Command 46.025 FM` und anschließend dynamische Ground-Mission-Kanäle. UHF-Bänke priorisieren regionale Aviation-Knoten, Rotary/Air-Assault Common, CSAR/PR sowie die lokal sinnvollsten festen UAV-JTACs und dynamischen JTAC-Kanäle.
+Für den OH-58D gilt das im aktuellen Mission Editor nachgewiesene Sonderkanal-Mapping: UHF/VHF besitzen vor `Kanal 1` einen `Channel M`; FM1/FM2 besitzen `Channel C` und danach `Channel M`. Diese Sonderkanäle werden nicht als normale OMW-Presets überschrieben.
+
+Für den CH-47F gilt ab v1.6:
+
+```text
+ARC-186 / V3
+-> ausschließlich VHF
+-> regionale VHF-AM Aviation-/ATC-/Heliport-Dienste
+-> VHF Common
+-> VHF-FM Ground Common / Ground Command
+-> VHF-FM Dynamic Ground Mission
+-> keine UHF-Dienste
+
+ARC-164 / U2
+-> UHF-AM HOME / regionale Aviation-/FARP-Dienste
+-> Rotary / Air-Assault Common
+-> WIZARD / Theater C2
+-> CSAR / PR
+-> UAV-JTAC / FAC
+-> dynamische UHF-Mission/JTAC-Kanäle
+
+ARC-201D
+-> dedizierte VHF-FM HOME-/Ground-/Tactical-Presets
+```
+
+Damit ist die v1.5-Annahme eines UHF-fähigen CH-47F-ARC-186 ausdrücklich verworfen.
 
 ## 10. Implementierungs- und Acceptance-Grenze
 
-Diese Presetbelegung ist die abgeschlossene **Design-/Mission-Editor-Arbeitsbaseline** für den in Abschnitt 8 genannten v21-Stand. Sie ist noch nicht als DCS-Runtime-Verhalten validiert.
+Diese Presetbelegung ist die aktuelle **Design-/Mission-Editor-Arbeitsbaseline** für den in Abschnitt 8 genannten v21-Stand. Sie ist noch nicht als DCS-Runtime-Verhalten validiert.
 
 Vor `VALIDATED` sind mindestens erforderlich:
 
 1. Presets in den tatsächlichen Client-Gruppen der aktuellen Mission eintragen;
 2. daraus erzeugte `.miz` erneut auslesen und gegen das Workbook vergleichen;
-3. im Cockpit mindestens je Muster die Bank-/Preset-Auswahl, Modulation und erreichbaren Dienste prüfen;
-4. Multiplayer-/SRS-/DCS-VoiceChat-Sanity prüfen, soweit diese Kommunikationswege im Teststand verwendet werden;
-5. FAC/JTAC-, AWACS-, Tanker-, CSAR- und ATC-Ansprechbarkeit für die vorgesehenen Beispielkanäle verifizieren.
+3. im Mission Editor mindestens je Muster die Bank-/Preset-Zuordnung und Modulation prüfen;
+4. im Cockpit mindestens je Muster die Bank-/Preset-Auswahl, Modulation und erreichbaren Dienste prüfen;
+5. Multiplayer-/SRS-/DCS-VoiceChat-Sanity prüfen, soweit diese Kommunikationswege im Teststand verwendet werden;
+6. FAC/JTAC-, AWACS-, Tanker-, CSAR- und ATC-Ansprechbarkeit für die vorgesehenen Beispielkanäle verifizieren.
 
 Erst ein dokumentierter DCS-Lauf darf den Presetstand als `VALIDATED` kennzeichnen.
