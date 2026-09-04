@@ -19,7 +19,7 @@
 local Handoff = {}
 
 local TAG = "[OMW][SlingloadCorridorHandoff]"
-Handoff.SchemaVersion = "OMW-SLINGLOAD-CORRIDOR-HANDOFF-1"
+Handoff.SchemaVersion = "OMW-SLINGLOAD-CORRIDOR-HANDOFF-2"
 
 local Corridor = OMW_STAGE3_HELICOPTER_FLIGHTPATH_CORRIDOR
 if type(Corridor) ~= "table" or type(Corridor.Install) ~= "function" then
@@ -109,7 +109,25 @@ local function installDeliveryMonitor(binding)
   end, {}, 5, 5)
 end
 
-local function installCargoHandoff(flightGroup, mission, resolved, altitudeFtAgl)
+local function resolveCargoReferences(mission, explicitReferences)
+  local params = mission.DCStask and mission.DCStask.params or nil
+  local explicit = type(explicitReferences) == "table" and explicitReferences or nil
+  local cargo = explicit and explicit.cargo or (params and params.cargo or nil)
+  local dropZone = explicit and explicit.dropZone or (params and params.zone or nil)
+  local cargoId = explicit and explicit.cargoId or (params and params.groupId or nil)
+  local zoneId = explicit and explicit.zoneId or (params and params.zoneId or nil)
+
+  if cargo and type(cargoId) ~= "number" and type(cargo.GetID) == "function" then
+    cargoId = cargo:GetID()
+  end
+  if dropZone and type(zoneId) ~= "number" then
+    zoneId = dropZone.ZoneID
+  end
+
+  return cargo, dropZone, cargoId, zoneId
+end
+
+local function installCargoHandoff(flightGroup, mission, resolved, altitudeFtAgl, explicitReferences)
   requireFunction(flightGroup, "GetWaypointCurrentUID", "FLIGHTGROUP")
   requireFunction(flightGroup, "AddWaypoint", "FLIGHTGROUP")
   requireFunction(flightGroup, "AddTaskWaypoint", "FLIGHTGROUP")
@@ -127,11 +145,7 @@ local function installCargoHandoff(flightGroup, mission, resolved, altitudeFtAgl
     return cached.result, true, "ALREADY_INSTALLED"
   end
 
-  local params = mission.DCStask and mission.DCStask.params or nil
-  local cargo = params and params.cargo or nil
-  local dropZone = params and params.zone or nil
-  local cargoId = params and params.groupId or nil
-  local zoneId = params and params.zoneId or nil
+  local cargo, dropZone, cargoId, zoneId = resolveCargoReferences(mission, explicitReferences)
   if not cargo or type(cargo.IsAlive) ~= "function" or type(cargo.IsInZone) ~= "function" then
     return nil, false, "CARGOTRANSPORT_CARGO_REFERENCE_UNAVAILABLE"
   end
@@ -217,6 +231,7 @@ local function installCargoHandoff(flightGroup, mission, resolved, altitudeFtAgl
       segmentOffsets = resolved.segmentOffsets,
       offsetMode = resolved.offsetMode,
       nativeException = "DCS_CargoTransportation_waypoint_task_after_confirmed_pickup",
+      referenceSource = explicitReferences and "EXPLICIT_ACCEPTANCE_CONTEXT" or "MOOSE_MISSION_TASK",
     },
   }
   flightGroup.__omwSlingloadCorridorBinding = binding
@@ -227,18 +242,18 @@ local function installCargoHandoff(flightGroup, mission, resolved, altitudeFtAgl
 
   if type(flightGroup.I) == "function" then
     flightGroup:I(TAG .. string.format(
-      " installed approved slingload handoff anchorUid=%d outbound=%d return=%d cargoId=%d zoneId=%d",
-      anchorUid, #outboundProfiles, #returnProfiles, cargoId, zoneId))
+      " installed approved slingload handoff anchorUid=%d outbound=%d return=%d cargoId=%d zoneId=%d referenceSource=%s",
+      anchorUid, #outboundProfiles, #returnProfiles, cargoId, zoneId, binding.result.referenceSource))
   end
 
   return binding.result, true, nil
 end
 
-function Corridor.Install(flightGroup, mission, resolved, altitudeFtAgl)
+function Corridor.Install(flightGroup, mission, resolved, altitudeFtAgl, explicitReferences)
   if not missionIsCargoTransport(mission) then
     return originalInstall(flightGroup, mission, resolved, altitudeFtAgl)
   end
-  return installCargoHandoff(flightGroup, mission, resolved, altitudeFtAgl)
+  return installCargoHandoff(flightGroup, mission, resolved, altitudeFtAgl, explicitReferences)
 end
 
 Handoff.Install = installCargoHandoff
