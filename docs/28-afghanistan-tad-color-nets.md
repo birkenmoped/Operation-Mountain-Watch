@@ -43,7 +43,7 @@ unique_assignments: 160
 airfield_radio_locations: 14
 source_reference_version: v1.0
 source_reference_date: 2025-10-17
-omw_workbook_version: v1.6
+omw_workbook_version: v1.7
 ```
 
 Verwendete OMW-Color-Gruppen:
@@ -156,7 +156,14 @@ Weitere Grundsätze:
 - RESERVE-/Spare-Tanker `LISA` und `MOE` erhalten keine festen Standard-Presets; bei Aktivierung werden Frequenz beziehungsweise Color-Code durch C2/ATO/Briefing bekanntgegeben.
 - Die vier festen UAV-JTAC/FAC-Kanäle aus Abschnitt 6 werden in für CAS/ISR relevante Presetbänke aufgenommen.
 - Dynamische Mission-/JTAC-Kanäle bleiben als freie beziehungsweise auftragsbezogene Zuweisungen erhalten.
+- Transport-/Utility-Assets (`C-130J-30`, `CH-47F`, später `UH-60`) erhalten **keinen theaterweiten JTAC/FAC-Standardblock**. JTAC/FAC wird nur missions-/rollenbezogen zugewiesen, wenn die konkrete Aufgabe direkte JTAC/FAC-Koordination erfordert.
+- Der `C-130J-30` priorisiert als Theater-Transporter vollständige Airfield-Abdeckung vor JTAC/FAC-Presets.
+- `CH-47F` und später `UH-60` priorisieren regionale Aviation-/FARP-, Ground-/Rotary-, C2- und CSAR-Dienste vor JTAC/FAC-Presets.
 - Die DCS-Szenery-Frequenz `121.500 AM` des Shindand Heliport wird wegen der geschützten VHF-Guard-Frequenz nicht als Player-Preset verwendet.
+
+Die Transport-/Utility-Entscheidung und ihre v1.7-Umsetzung sind zusätzlich dokumentiert in:
+
+- [`Transport / Utility radio preset doctrine – 2026-09-04`](evidence/source-records/transport-utility-radio-preset-doctrine-2026-09-04.md)
 
 ## 8. Aktueller v21-Player-/Radio-Scope
 
@@ -212,7 +219,7 @@ Für den CH-47F korrigiert die aktuelle Evidenz die frühere Arbeitsannahme. Der
 
 ## 9. Vollständige Player-Preset-Arbeitsbaseline
 
-Die vollständigen Einzelbelegungen stehen in `OMW_Radio_Frequency_Master_v1.6.xlsx` auf jeweils eigenen Muster-Arbeitsblättern:
+Die vollständigen Einzelbelegungen stehen in `OMW_Radio_Frequency_Master_v1.7.xlsx` auf jeweils eigenen Muster-Arbeitsblättern:
 
 ```text
 PRESET F-16CM
@@ -269,23 +276,47 @@ Die A-10-Presets enthalten zusätzlich die STANDARD-AAR-Tracks, C2, CSAR/PR, fes
 
 ### 9.3 C-130J-30 – Bagram und Kandahar
 
-Die Fixed-Wing-Recovery-Auswahl ist breiter als bei den Fighter-Presets und umfasst in der Arbeitsbaseline:
+Der C-130J-30 ist in OMW ein **theaterweiter Transporter**. Die Standard-Presets priorisieren deshalb vollständige Airfield-Abdeckung statt eines festen JTAC/FAC-Blocks.
+
+In **beiden** C-130-Basisvarianten (`Bagram`, `Kandahar`) sind auf UHF und VHF alle neun OMW-Airfields enthalten; nur die Reihenfolge ist HOME-first und danach nach operativer Nutzbarkeit angepasst:
 
 ```text
 Bagram
+Camp Bastion
+Dwyer
+Jalalabad
 Kabul
 Kandahar
-Camp Bastion
+Khost
 Shindand
 Tarin Kowt
-Dwyer
 ```
 
-Die Reihenfolge wird je Heimatbasis nach operativer Nähe/Nutzbarkeit angepasst. Die in Abschnitt 8 beschriebene C-130-Radiobank-Evidenzgrenze bleibt bestehen.
+Heliport-only-Standorte gehören nicht zu diesem C-130-Airfield-Set.
+
+Die 20er-UHF-Bank führt zusätzlich:
+
+```text
+P10 US Army UHF Common
+P11 WIZARD / Theater C2
+P12 CSAR / PR Primary
+P13 CSAR / PR Secondary
+P14 NELSON / Texaco 1-1
+P15 PATTY / Texaco 2-1
+P16 MILHOUSE / Shell 2-1
+P17 KRUSTY / Arco 2-1
+P18 Rotary Common
+P19 Air-Assault Common
+P20 US Army Helo Common
+```
+
+Die vier festen UAV-JTAC-Kanäle und die dynamischen JTAC/FAC-Kanäle sind ausdrücklich **keine C-130-Standardpresets**. Bei einer konkreten missionsbezogenen Notwendigkeit wird die JTAC/FAC-Frequenz durch Missionsplanung/Briefing zugewiesen.
+
+Die in Abschnitt 8 beschriebene C-130-Radiobank-Evidenzgrenze bleibt bestehen.
 
 ### 9.4 Rotary-Wing – regionale Presetlogik
 
-AH-64D, OH-58D und CH-47F verwenden standortabhängige regionale Aviation-, Ground-, Rotary-, JTAC- und C2-Blöcke.
+AH-64D, OH-58D und CH-47F verwenden standortabhängige regionale Aviation-, Ground-, Rotary- und C2-Blöcke. JTAC/FAC bleibt bei CAS/ISR-Mustern Bestandteil der normalen Presetlogik; bei Transport-/Utility-Mustern dagegen missions-/rollenbezogen.
 
 Die regionalen Schwerpunkte sind:
 
@@ -302,7 +333,7 @@ Die 10er-UHF-Bank des AH-64D verwendet `P10 = WIZARD`. Die tatsächlichen UHF-B�
 
 Für den OH-58D gilt das im aktuellen Mission Editor nachgewiesene Sonderkanal-Mapping: UHF/VHF besitzen vor `Kanal 1` einen `Channel M`; FM1/FM2 besitzen `Channel C` und danach `Channel M`. Diese Sonderkanäle werden nicht als normale OMW-Presets überschrieben.
 
-Für den CH-47F gilt ab v1.6:
+Für den CH-47F gilt ab v1.7:
 
 ```text
 ARC-186 / V3
@@ -318,14 +349,18 @@ ARC-164 / U2
 -> Rotary / Air-Assault Common
 -> WIZARD / Theater C2
 -> CSAR / PR
--> UAV-JTAC / FAC
--> dynamische UHF-Mission/JTAC-Kanäle
+-> Rotary Mission 1..10
+-> keine festen oder dynamischen JTAC/FAC-Standardpresets
 
 ARC-201D
 -> dedizierte VHF-FM HOME-/Ground-/Tactical-Presets
 ```
 
-Damit ist die v1.5-Annahme eines UHF-fähigen CH-47F-ARC-186 ausdrücklich verworfen.
+Eine konkrete CH-47F-Mission darf bei operativer Notwendigkeit eine JTAC/FAC-Frequenz missionsbezogen zugewiesen bekommen; sie wird nicht als permanenter Standardblock vorgehalten.
+
+Für einen späteren `UH-60`-Player gilt dieselbe Transport-/Utility-Doktrin, solange der Projektinhaber keine rollenbezogene Ausnahme freigibt. Da aktuell kein UH-60-Playerclient im v21-Scope vorhanden ist, wird daraus noch keine Mission-Editor-Implementierung behauptet.
+
+Damit ist die v1.5-Annahme eines UHF-fähigen CH-47F-ARC-186 ausdrücklich verworfen; v1.7 ergänzt die rollenbasierte Transport-/Utility-Abgrenzung.
 
 ## 10. Implementierungs- und Acceptance-Grenze
 
