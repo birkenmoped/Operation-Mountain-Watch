@@ -7,10 +7,12 @@ dofile("tests/mission-demand/test_ground_installation_alarm_evidence_adapter.lua
 dofile("tests/mission-demand/test_ground_installation_attack_incident.lua")
 dofile("tests/mission-demand/test_fob_attack_cas_dispatch_adapter.lua")
 dofile("tests/mission-demand/test_fob_attack_cas_enhanced_dispatch_adapter.lua")
+dofile("tests/mission-demand/test_fob_attack_cas_patrol_closure.lua")
 dofile("tests/mission-demand/test_fob_attack_fire_support.lua")
 dofile("tests/mission-demand/test_fob_attack_functional_arty.lua")
 dofile("tests/mission-demand/test_ground_ammo_resupply_executor.lua")
 dofile("tests/mission-demand/test_ground_personnel_deployment_ledger.lua")
 dofile("tests/mission-demand/test_helicopter_flightpath_corridor.lua")
+dofile("tests/mission-demand/test_slingload_corridor_handoff.lua")
 
 print("PASS mission-demand test suite")
