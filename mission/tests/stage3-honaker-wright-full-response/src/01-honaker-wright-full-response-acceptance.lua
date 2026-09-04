@@ -86,7 +86,7 @@ local state = {
   fireTargetCount=0, fireTargetCompleteCount=0, fireLastSourceGroupName=nil,
   physicalAmmoBefore=nil, physicalAmmoAfter=nil, physicalAmmoBeforeByTarget={}, physicalAmmoAfterByTarget={},
   rearmService=nil, rearmComplete=false, supportReturned=false,
-  resupply=nil, cargo=nil, airCargoRefs=nil, airMission=nil, airFlight=nil, airAsset=nil,
+  resupply=nil, cargo=nil, airMission=nil, airFlight=nil, airAsset=nil,
   loading=false, inTransit=false, delivered=false, airCorridor=false, airCorridorRequested=false, homeLanded=false, assetReturned=false,
   transitScheduler=nil, finishScheduler=nil,
 }
@@ -295,7 +295,7 @@ local function installCargoCorridor(flight, mission, destination, pathlineNames,
     if ok then
       state.airCorridor = true
       logCorridorProfiles("AIR-AMMO", installed)
-      msg("LOGISTICS", "Slingload attached; AIR-AMMO outbound + return route installed via " .. routeLabel(pathlineNames) .. " with immutable cargo/drop identifiers", 12)
+      msg("LOGISTICS", "Slingload attached; AIR-AMMO outbound + return route installed via " .. routeLabel(pathlineNames) .. " with explicit cargo/drop references", 12)
       return
     end
     if reason == "MISSION_ROUTE_UIDS_NOT_READY" and attempts < 8 then SCHEDULER:New(nil, attempt, {}, 2); return end
@@ -446,8 +446,11 @@ local function installAirObserver()
       msg("LOGISTICS", "Air-AMMO cargo physically picked up; Jalalabad -> Wright IN TRANSIT; corridor routing starts now", 10)
       if not state.airCorridorRequested then
         state.airCorridorRequested=true
-        if not state.airCargoRefs then fail("AIR-AMMO immutable cargo/drop references unavailable after pickup") return end
-        installCargoCorridor(FlightGroup, Mission, state.airCargoRefs.dropZone:GetCoordinate(), AIR_AMMO_PATHLINES, state.airCargoRefs)
+        local dropZone = ZONE:FindByName(DROP_ZONE)
+        installCargoCorridor(FlightGroup, Mission, dropZone:GetCoordinate(), AIR_AMMO_PATHLINES, {
+          cargo=state.cargo,
+          dropZone=dropZone,
+        })
       end
     end, {}, 2, 2)
   end
@@ -522,19 +525,6 @@ local function startAirResupply()
   state.cargo = SPAWNSTATIC:NewFromType("ammo_cargo", "Cargos", country.id.USA):InitCargo(true):InitCargoMass(1000)
     :InitCoordinate(pickup:GetCoordinate()):InitValidateAndRepositionStatic(false):Spawn(0,CARGO_ID)
   if not state.cargo then fail("physical Air-AMMO cargo spawn failed") return end
-  local cargoId = type(state.cargo.GetID)=="function" and state.cargo:GetID() or nil
-  local zoneId = drop.ZoneID
-  if type(cargoId)~="number" or type(zoneId)~="number" then
-    fail("Air-AMMO immutable cargo/drop identifiers unavailable before CARGOTRANSPORT dispatch")
-    return
-  end
-  state.airCargoRefs = {
-    cargo=state.cargo,
-    dropZone=drop,
-    cargoId=cargoId,
-    zoneId=zoneId,
-  }
-  log(string.format("AIR_AMMO_CARGO_BINDING cargoId=%d zoneId=%d pickup=%s drop=%s", cargoId, zoneId, PICKUP_ZONE, DROP_ZONE))
   msg("LOGISTICS", "Physical slingload manifest created in " .. PICKUP_ZONE, 8)
   state.airMission = AUFTRAG:NewCARGOTRANSPORT(state.cargo, drop)
   state.airMission:SetName("OMW_STAGE3_E2E_AIR_AMMO_JALALABAD_TO_WRIGHT")
@@ -628,29 +618,304 @@ local function setupFireSupport()
   state.arty:SetReportOFF()
   state.arty:SetWaitForShotTime(ARTY_WAIT_FOR_SHOT_SEC)
   state.arty:Start()
-  state.fireAdapter = OMW_STAGE3_FUNCTIONAL_ARTY_DISPATCH_ADAPTER.New({
-    missionDemand=MissionDemand, registry=registry, arty=state.arty,
-    executor="MOOSE:ARTY:WRIGHT:L118", shells=FIRE_SHELLS,
-  })
-  local support = FixedFireSupportAmmoSupport.New({
-    store=ctx.store, campaignState=ctx.campaignState, nodeId=WRIGHT_NODE, resourceId=AMMO_RESOURCE,
-    group=state.battery, arty=state.arty,
-  })
-  local row = stockRow(WRIGHT_NODE, AMMO_RESOURCE)
+  local rearmBrigade = BRIGADE:New(WRIGHT_WAREHOUSE,"BDE_BLUE_GND_WRIGHT_STAGE3_E2E_REARM")
   state.rearmService = FixedFireSupportAmmoRearmService.New({
-    store=ctx.store, campaignState=ctx.campaignState, nodeId=WRIGHT_NODE, resourceId=AMMO_RESOURCE,
-    support=support, supportZone=supportZone, supportTemplate=M1083_TEMPLATE, supportMaterializer=GroundSupportMaterializer,
-    reservationId="ACCEPTANCE:"..REARM_TX, transactionId=REARM_TX, quantity=1,
-    onComplete=function(result)
-      state.rearmComplete=true
-      state.supportReturned=result and result.returned == true
-      if not state.supportReturned then fail("M1083 support did not physically return") return end
-      startAirResupply()
+    fixedFireSupportAmmoSupportModule=FixedFireSupportAmmoSupport,
+    groundAmmoRearmAdapterModule=GroundAmmoRearmAdapter,
+    store=ctx.store, campaignState=ctx.campaignState,
+    artyFactory=function(group) if group~=state.battery then error(TAG.." wrong battery",2) end; return state.arty end,
+    brigade=rearmBrigade, spawnZone=supportZone, spawnZoneMaxDistanceM=500,
+    materializerModule=GroundSupportMaterializer, platoonFactory=function(t,c,n) return PLATOON:New(t,c,n) end,
+    descriptorGroupName=WAREHOUSE.Descriptor.GROUPNAME, templateName=M1083_TEMPLATE,
+    platoonName="PLT_BLUE_GND_WRIGHT_STAGE3_E2E_REARM", assignment="OMW:WRIGHT:AMMO-SUPPORT:STAGE3-E2E",
+    carrierEntityId="WRIGHT-AMMO-SUPPORT-M1083-STAGE3-E2E", nodeId=WRIGHT_NODE, alias="Wright L118 Stage3 E2E",
+    stockCount=1, priority=20, returnCheckIntervalSec=5, returnTimeoutSec=300,
+    log=function(level,text) log("REARM "..tostring(level).." "..tostring(text)) end,
+    onRearmed=function() state.rearmComplete=true; msg("FIRE SUPPORT","Wright local L118 rearm complete; CampaignState AMMO 15 / 30",12) end,
+    onSupportReturned=function() state.supportReturned=true; msg("FIRE SUPPORT","Wright M1083 returned to Warehouse stock",8); startAirResupply() end,
+    onSupportReturnFailed=function(_,reason) fail("Wright M1083 return failed: "..tostring(reason)) end,
+  })
+  state.fireAdapter = FireAdapter.New({
+    missionDemand=MissionDemand, registry=registry, arty=state.arty, assigneeId="ARTY:WRIGHT:L118",
+    priority=10, radiusM=50, shells=FIRE_SHELLS, maxEngagements=1, weaponType=ARTY.WeaponType.Auto,
+    onFireStarted=function(_,target)
+      state.fireStarted=true
+      local targetName = target and target.name or "unknown"
+      local metadata = state.fireAdapter:GetTargetMetadata(targetName)
+      local sourceName = metadata and metadata.sourceGroupName or targetName
+      local ammo = state.arty:GetAmmo(false)
+      if state.physicalAmmoBefore == nil then state.physicalAmmoBefore = ammo end
+      state.physicalAmmoBeforeByTarget[targetName] = ammo
+      msg("FIRE SUPPORT",string.format("Wright L118 firing at %s; physical ammo before=%s",sourceName,tostring(ammo)),12)
+    end,
+    verifyFireComplete=function(_,target)
+      local targetName = target and target.name or "unknown"
+      local before = state.physicalAmmoBeforeByTarget[targetName]
+      local after = state.arty:GetAmmo(false)
+      state.physicalAmmoAfterByTarget[targetName] = after
+      state.physicalAmmoAfter = after
+      if type(before)~="number" or type(after)~="number" then return false,"PHYSICAL_AMMO_UNAVAILABLE" end
+      if after>=before then return false,"PHYSICAL_AMMO_UNCHANGED" end
+      return true
+    end,
+    onTargetComplete=function(demandId,target)
+      state.fireTargetCompleteCount = state.fireTargetCompleteCount + 1
+      local targetName = target and target.name or "unknown"
+      local metadata = state.fireAdapter:GetTargetMetadata(targetName)
+      local sourceName = metadata and metadata.sourceGroupName or targetName
+      msg("FIRE SUPPORT",string.format("Fire mission %d complete: %s ammo %s -> %s; reacquiring living attack-incident participants",
+        state.fireTargetCompleteCount,sourceName,tostring(state.physicalAmmoBeforeByTarget[targetName]),tostring(state.physicalAmmoAfterByTarget[targetName])),12)
+      queueNextFireMission(demandId)
+    end,
+    onFireRejected=function(_,target,_,reason)
+      local targetName = target and target.name or "unknown"
+      local metadata = state.fireAdapter:GetTargetMetadata(targetName)
+      local sourceName = metadata and metadata.sourceGroupName or targetName
+      msg("FIRE SUPPORT",string.format("Wright physical fire NOT confirmed for %s: ammo %s -> %s; %s",
+        sourceName,tostring(state.physicalAmmoBeforeByTarget[targetName]),tostring(state.physicalAmmoAfterByTarget[targetName]),tostring(reason)),20)
+      fail("Wright L118 physical fire not confirmed: "..tostring(reason))
+    end,
+    onFireComplete=function(demandId)
+      if state.fireComplete then return end
+      state.fireComplete=true
+      msg("FIRE SUPPORT",string.format("Wright live fire cycle ended after %d coordinate missions; total physical ammo %s -> %s; local M1083 rearm requested",
+        state.fireTargetCount,tostring(state.physicalAmmoBefore),tostring(state.physicalAmmoAfter)),14)
+      state.rearmService:Request({
+        transactionId=REARM_TX, missionDemandId=demandId, nodeId=WRIGHT_NODE, resourceId=AMMO_RESOURCE, quantity=1,
+        artilleryGroup=state.battery, alias="Wright L118 Stage3 E2E", onRoad=false, rearmingDistance=100,
+        supportReturnRadiusM=100, startArty=false,
+      })
     end,
   })
   return true
 end
 
--- Remaining Stage-3 acceptance logic is unchanged below this point.
--- This file replacement intentionally preserves the existing behavior outside the
--- CAS tactical-closure and immutable CARGOTRANSPORT reference hardening shown above.
+local function dispatchQrf()
+  local targets = incidentGroups()
+  if #targets == 0 then fail("no known RED attack participants available for Honaker QRF") return end
+  if not state.qrfTacticalZone then
+    state.qrfTacticalZone = ZONE_RADIUS:New("OMW_TACTICAL_BLUE_GROUND_COP_HONAKER_STAGE3_QRF", state.guardCoord:GetVec2(), UTILS.NMToMeters(QRF_TACTICAL_RADIUS_NM))
+  end
+  if not state.qrfTacticalZone then fail("Honaker QRF tactical ZONE_RADIUS creation failed") return end
+  local personnel = context().store:GetResource(HONAKER_NODE,PERSONNEL_RESOURCE)
+  if not personnel or personnel.available - QRF_PERSONNEL < PERSONNEL_FLOOR then fail("Honaker mixed QRF blocked by personnel reserve floor") return end
+  if state.qrfPlatoon:CountAssets(true,AUFTRAG.Type.ONGUARD) < 1 then fail("Honaker mixed QRF asset unavailable") return end
+
+  msg("QRF",string.format("Honaker requests mixed QRF package: 5 infantry + 1 M-ATV/MRAP-class vehicle in one 6-unit GROUP in shared %d-NM tactical area",QRF_TACTICAL_RADIUS_NM),12)
+  local deployment = PersonnelLedger.New({
+    store=context().store, campaignState=context().campaignState, nodeId=HONAKER_NODE, resourceId=PERSONNEL_RESOURCE,
+    deploymentId="STAGE3-HONAKER-QRF-MIXED-6", entityId="HONAKER-QRF-MIXED-6", quantity=QRF_PERSONNEL, missionDemandId=TEST_ID,
+  })
+  local target = targets[1]
+  local mission = AUFTRAG:NewONGUARD(target:GetCoordinate())
+  mission:SetEngageDetected(QRF_ENGAGE_RANGE_NM,{"Ground Units"},state.qrfTacticalZone)
+  mission:SetRequiredAssets(1,1)
+  mission:SetReturnToLegion(true)
+  mission:SetName("OMW_STAGE3_HONAKER_QRF_MIXED")
+  mission:AssignCohort(state.qrfPlatoon)
+  state.qrfEntries[1]={role="MIXED",mission=mission,initialTargetName=target:GetName(),deployment=deployment,army=nil,engaged=false,recoveryRequested=false,returned=false}
+  state.brigade:AddMission(mission)
+end
+
+local function dispatchFire(incident)
+  local target = selectNextFireTarget()
+  if not target then fail("no living known RED attack participant for Wright fire support") return end
+  if not reportFireMission(target,1) then return end
+  local p = target:GetCoordinate():GetVec3()
+  local demand,created,reason = FirePolicy.CreateDemand(MissionDemand,registry,incident,{
+    targetKind="DETECTED_RED_GROUND_GROUP", targetName=target:GetName(), position={x=p.x,y=p.y,z=p.z},
+  })
+  if created~=true then fail("fire-support demand failed: "..tostring(reason)) return end
+  state.fireDemand=demand
+  state.fireTargetCount=1
+  state.fireLastSourceGroupName=target:GetName()
+  msg("FIRE SUPPORT","Honaker requests immediate fire support; local mortar unavailable; incident-participant retarget cycle armed",12)
+  msg("FIRE SUPPORT","Wright L118 selected; one current MOOSE coordinate Fire At Point mission queued",10)
+  local targetName,dispatched,dispatchReason=state.fireAdapter:Dispatch(demand,target)
+  if dispatched~=true then fail("Wright ARTY dispatch failed: "..tostring(dispatchReason)) return end
+  log(string.format("LIVE_FIRE_RETARGET demandId=%s mission=1 sourceGroup=%s artyTarget=%s",tostring(demand.id),tostring(target:GetName()),tostring(targetName)))
+end
+
+local function setupDefenceAndThreat()
+  state.brigade = BRIGADE:New(HONAKER_WAREHOUSE,"BDE_BLUE_GND_HONAKER_STAGE3_E2E")
+  state.guardCoord = state.brigade:GetCoordinate()
+  local accessZone = need(ZONE:FindByName(HONAKER_ACCESS_ZONE), HONAKER_ACCESS_ZONE)
+  state.guardPathline = need(PATHLINE:FindByName(GUARD_PATHLINE), GUARD_PATHLINE)
+  state.attackIncident = IncidentCoordinator.New({ installationId=INSTALLATION_ID, incidentIdFactory=function(_,seq) return "INC-STAGE3-HONAKER-"..seq end })
+  if state.failed then return false end
+  state.brigade:SetSpawnZone(accessZone)
+  log("HONAKER_GROUND_SPAWN_ZONE " .. HONAKER_ACCESS_ZONE .. " applies to Guard and QRF materialization via MOOSE default 5000-m SetSpawnZone limit")
+
+  state.guardPlatoon = PLATOON:New(GUARD_TEMPLATE,1,"PLT_BLUE_GND_HONAKER_STAGE3_GUARD")
+  state.guardPlatoon:AddMissionCapability(AUFTRAG.Type.ONGUARD,100)
+  state.brigade:AddPlatoon(state.guardPlatoon)
+
+  state.qrfPlatoon = PLATOON:New(QRF_TEMPLATE,1,"PLT_BLUE_GND_HONAKER_STAGE3_QRF_MIXED_6")
+  state.qrfPlatoon:AddMissionCapability(AUFTRAG.Type.ONGUARD,100)
+  state.brigade:AddPlatoon(state.qrfPlatoon)
+
+  state.brigade.OnAfterArmyOnMission=function(self,From,Event,To,ArmyGroup,Mission)
+    if Mission == state.guardMission then
+      state.guardArmy = ArmyGroup
+      state.guardGroup = ArmyGroup:GetGroup()
+      if not state.guardGroup then fail("Honaker Guard ArmyGroup has no MOOSE GROUP wrapper") return end
+      local route, routeReason = buildGuardPatrolRoute(state.guardGroup, state.guardPathline)
+      if not route then fail("Honaker Guard PATHLINE route build failed: "..tostring(routeReason)) return end
+      state.guardGroup:Route(route,2)
+      state.guardPatrolStarted=true
+      msg("GUARD",string.format("Honaker infantry Guard deployed and routed on %s via MOOSE PATHLINE/GetCoordinates/WaypointGround/TaskFunction/Route; %d route points, repeated circuit",GUARD_PATHLINE,#route),12)
+      return
+    end
+    for _,entry in ipairs(state.qrfEntries) do
+      if entry.mission==Mission then
+        entry.army=ArmyGroup
+        state.qrfDeployed=true
+        msg("QRF","Honaker mixed QRF group deployed; MOOSE ONGUARD detection remains active against the shared incident picture",10)
+        local oldEngage=ArmyGroup.OnAfterEngageTarget
+        function ArmyGroup:OnAfterEngageTarget(F,E,T,Target,Speed,Formation)
+          if oldEngage then oldEngage(self,F,E,T,Target,Speed,Formation) end
+          entry.engaged=true
+          state.qrfEngaged=true
+          local engagedName=entry.initialTargetName
+          if Target and type(Target.GetName)=="function" then engagedName=Target:GetName() end
+          msg("QRF","Honaker mixed QRF engaging detected "..tostring(engagedName),8)
+        end
+        local oldReturned=ArmyGroup.OnAfterReturned
+        function ArmyGroup:OnAfterReturned(F,E,T)
+          if oldReturned then oldReturned(self,F,E,T) end
+          if entry.returned then return end
+          local survivors=countQrfPersonnelSurvivors(self)
+          local settlement,settled=entry.deployment:SettleReturned(survivors)
+          entry.returned=true
+          state.qrfReturned=true
+          msg("QRF",string.format("Honaker mixed QRF returned to camp/Warehouse; personnel survivors=%d casualties=%d reservationSettled=%s",
+            survivors,settlement and settlement.casualties or -1,tostring(settled==true)),12)
+        end
+        if state.attackIncidentClosed and not entry.recoveryRequested then requestQrfRecovery() end
+      end
+    end
+  end
+
+  state.brigade.OnAfterStart=function()
+    SCHEDULER:New(nil,function()
+      state.guardMission=AUFTRAG:NewONGUARD(state.guardPathline:GetCoordinates()[1])
+      state.guardMission:SetEngageDetected(SECURITY_RADIUS_M/1852,{"Ground Units"})
+      state.guardMission:SetRequiredAssets(1,1)
+      state.guardMission:SetName("OMW_STAGE3_HONAKER_GUARD")
+      state.guardMission:AssignCohort(state.guardPlatoon)
+      state.brigade:AddMission(state.guardMission)
+
+      state.threat=ThreatAdapter.New({
+        missionDemand=MissionDemand,
+        registry=registry,
+        policy={CreateDemand=function(md,reg,incident)
+          if state.attackIncident and state.attackIncident:GetActive() and state.casDemand then return state.casDemand,false,"ACTIVE_INCIDENT_REFRESHED" end
+          local demand,created,reason=CasPolicy.CreateDemand(md,reg,incident)
+          if created then
+            state.casDemand=demand
+            if not ensureCasContext() then return demand,created,"CAS_CONTEXT_FAILED" end
+            local mission,ok,why=state.casAdapter:Dispatch(demand,state.casTacticalZone)
+            if ok then
+              state.casMission=mission
+              local prev=mission.OnAfterExecuting
+              function mission:OnAfterExecuting(F,E,T)
+                if prev then prev(self,F,E,T) end
+                state.casExecuting=true
+                msg("CAS",string.format("Jalalabad AH-64D PATROLZONE + SetEngageDetected executing for Honaker; radius=%d NM; patrol altitude=%.0f ft ASL; detected-target range=%d NM",
+                  CAS_TACTICAL_RADIUS_NM,state.casAltitudeFtAsl,CAS_ENGAGE_RANGE_NM),12)
+              end
+            else
+              failCas("CAS dispatch failed: "..tostring(why))
+            end
+          end
+          return demand,created,reason
+        end},
+        anchorCoordinate=state.guardCoord, installationId=INSTALLATION_ID,
+        zoneName="OMW_SECURITY_BLUE_GROUND_COP_HONAKER_STAGE3_E2E", priority=90, radiusM=SECURITY_RADIUS_M,
+        blueCoalition=coalition.side.BLUE, redCoalition=coalition.side.RED, updateSeconds=5, captureThreatlevel=0, captureNunits=1,
+        incidentIdFactory=function(_,seq) return "INC-STAGE3-HONAKER-"..seq end,
+        onThreatEvaluated=function(_,opsZone)
+          if not state.threatStarted or not state.attackIncident or not state.attackIncident:GetActive() then return end
+          local added=state.attackIncident:AddParticipants(redGroups(opsZone))
+          if added>0 then log(string.format("ATTACK_INCIDENT_PARTICIPANTS incidentId=%s added=%d alive=%d",
+            tostring(state.attackIncident:GetActive().incidentId),added,#state.attackIncident:GetParticipants(true))) end
+        end,
+        onThreatStarted=function(_,opsZone,demand,created,reason,incident)
+          if state.threatStarted then return end
+          local active,incidentCreated,incidentReason=state.attackIncident:ReportEvidence({
+            installationId=INSTALLATION_ID, evidenceType="PROXIMITY_INTRUSION", participantGroups=redGroups(opsZone),
+          })
+          if incidentCreated~=true or not active then fail("Honaker attack incident creation failed: "..tostring(incidentReason)) return end
+          if active.incidentId~=incident.incidentId then fail("Honaker attack incident ID mismatch") return end
+          state.threatStarted=true
+          state.incident=incident
+          msg("THREAT",string.format("COP Honaker under attack - MOOSE OPSZONE Attacked confirmed; incident %s has %d known RED participant(s)",
+            tostring(active.incidentId),#state.attackIncident:GetParticipants(true)),12)
+          dispatchQrf()
+          msg("FIRE SUPPORT",string.format("Waiting %d s for OPSZONE evaluations to populate the attack incident before starting live coordinate fire cycle",FIRE_TARGET_ACQUIRE_DELAY_SEC),10)
+          SCHEDULER:New(nil,function() if not state.failed then dispatchFire(incident) end end,{},FIRE_TARGET_ACQUIRE_DELAY_SEC)
+        end,
+        onThreatCleared=function()
+          state.perimeterClear=true
+          msg("THREAT","COP Honaker 1000-m alarm perimeter clear - MOOSE OPSZONE Defeated RED; response completion follows known attack-incident participants",14)
+        end,
+      })
+      state.threat:Start()
+      msg("READY","Honaker Stage-3 armed: infantry Guard on owner-authored PATHLINE + 5-infantry/1-M-ATV mixed ONGUARD QRF + Wright ARTY; PATROLZONE CAS created only on demand",15)
+    end,{},5)
+  end
+  state.brigade:Start()
+  return true
+end
+
+local function start()
+  if OMW_GROUND_READY~=1 then fail("Ground Base not ready") return end
+  need(GROUP:FindByName(GUARD_TEMPLATE),GUARD_TEMPLATE)
+  need(GROUP:FindByName(QRF_TEMPLATE),QRF_TEMPLATE)
+  need(PATHLINE:FindByName(GUARD_PATHLINE),GUARD_PATHLINE)
+  if not context() then return end
+  prepareAirwing()
+  installAirObserver()
+  if not preconditionWright() then return end
+  if not setupFireSupport() then return end
+  setupDefenceAndThreat()
+end
+
+local function finish()
+  if state.failed or state.passed then return end
+  closeAttackIncidentIfClear()
+  closeCasIfReady()
+  local casTerminal = state.casFailed or (state.casExecuting and state.casCorridor and state.casFired and state.casClosed)
+  if not (state.guardPatrolStarted and state.threatStarted and state.threatStopped and state.attackIncidentClosed and state.qrfDeployed and state.qrfReturned and casTerminal
+      and state.fireStarted and state.fireComplete and state.rearmComplete and state.supportReturned and state.resupply
+      and state.inTransit and state.delivered and state.airCorridor and state.homeLanded and state.assetReturned) then return end
+  if state.casFailed then fail("CAS subsystem failed while other Stage-3 chains remained observable: " .. tostring(state.casFailureReason)) return end
+
+  local ctx=context()
+  local w=ctx.store:GetResource(WRIGHT_NODE,AMMO_RESOURCE)
+  local j=ctx.store:GetResource(JALALABAD_NODE,AMMO_RESOURCE)
+  local fd=state.fireDemand and registry:Get(state.fireDemand.id) or nil
+  local cd=state.casDemand and registry:Get(state.casDemand.id) or nil
+  local rd=registry:Get(RESUPPLY_DEMAND_ID)
+  if not w or w.quantity~=30 then fail("Wright final AMMO not 30") return end
+  if not j or j.quantity~=85 then fail("Jalalabad final AMMO not 85") return end
+  if not fd or fd.status~=MissionDemand.Status.SUCCESS then fail("fire-support demand not SUCCESS") return end
+  if not cd or cd.status~=MissionDemand.Status.SUCCESS then fail("CAS demand lacks PATROLZONE tactical closure") return end
+  if not rd or rd.status~=MissionDemand.Status.SUCCESS then fail("RESUPPLY demand not SUCCESS") return end
+  if state.fireTargetCompleteCount ~= state.fireTargetCount or state.fireTargetCount < 1 then fail("not all Wright coordinate fire missions completed") return end
+  if type(state.physicalAmmoBefore)~="number" or type(state.physicalAmmoAfter)~="number" or state.physicalAmmoAfter>=state.physicalAmmoBefore then fail("Wright L118 did not consume physical ammo") return end
+
+  state.passed=true
+  stopFinishScheduler()
+  msg("PASS",string.format("Honaker full response complete: access-zone Guard/QRF materialization + incident-participant closure + immediate PATROLZONE CAS release onto WEST/R500 recovery + mixed QRF recovery + %d live Wright fire missions + M1083 rearm + semantic dedupe + CH-47 SLG-zone pickup-first R500 Air-AMMO + Wright 30/30",state.fireTargetCount),30)
+  log("PASS WrightAmmo=30 JalalabadAmmo=85 fireDemand="..fd.id.." casDemand="..cd.id.." resupplyDemand="..rd.id
+    .." perimeterClear="..tostring(state.perimeterClear).." threatStopped="..tostring(state.threatStopped)
+    .." tacticalRedCount="..tostring(state.tacticalRedCount).." qrfEngaged="..tostring(state.qrfEngaged).." qrfReturned="..tostring(state.qrfReturned)
+    .." guardPathline="..GUARD_PATHLINE.." qrfTemplate="..QRF_TEMPLATE
+    .." casMode=PATROLZONE_ENGAGE casRadiusNm="..tostring(CAS_TACTICAL_RADIUS_NM)
+    .." casAltitudeFtAsl="..tostring(state.casAltitudeFtAsl).." casCorridor="..routeLabel(CAS_PATHLINES)
+    .." airAmmoCorridor="..routeLabel(AIR_AMMO_PATHLINES))
+end
+
+SCHEDULER:New(nil,start,{},5)
+state.finishScheduler=SCHEDULER:New(nil,finish,{},10,10)
