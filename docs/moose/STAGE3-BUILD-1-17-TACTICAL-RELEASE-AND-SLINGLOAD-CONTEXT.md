@@ -1,6 +1,17 @@
 ---
+document_id: OMW-MOOSE-STAGE3-BUILD-1-17-TACTICAL-RELEASE-AND-SLINGLOAD-CONTEXT
 status: PLANNED
 document_class: MOOSE_IMPLEMENTATION_NOTE
+owning_policy: OMW-GOV-001
+authoritative_for:
+  - Stage 3 Build 1-17 remediation rationale
+  - Build 1-16 runtime failure diagnosis for Guard/QRF, CAS closure, and CH-47 corridor handoff
+scenario_period: 2010-08-01/2011-12-31
+project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
+source_branch: agent/fire-support-strategic-resupply-alarm-evidence
+source_commit: GIT_HISTORY
+supersedes:
+superseded_by:
 validated_in_dcs: false
 ---
 
