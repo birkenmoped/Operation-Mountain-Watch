@@ -1,13 +1,14 @@
 -- Operation Mountain Watch - PATROLZONE CAS completion adapter.
 --
 -- AUFTRAG:PATROLZONE is a readiness/loiter mission and is not expected to end merely
--- because the current attack incident has no living participants. MissionDemand is
--- closed only after OMW has both tactical completion evidence and execution evidence.
+-- because the current attack incident has no living participants. OMW therefore closes
+-- the MOOSE mission explicitly when tactical completion is authoritative. Weapon-use
+-- evidence remains mandatory only for adapters configured to require it.
 
 local Closure = {}
 
 local TAG = "[OMW][FobAttackCasPatrolClosure]"
-Closure.SchemaVersion = "OMW-FOB-ATTACK-CAS-PATROL-CLOSURE-1"
+Closure.SchemaVersion = "OMW-FOB-ATTACK-CAS-PATROL-CLOSURE-2"
 
 local function fail(message)
   error(TAG .. " " .. tostring(message), 2)
@@ -25,7 +26,9 @@ function Closure.Complete(spec)
   local missionDemand = requireTable(spec.missionDemand, "spec.missionDemand")
   if type(spec.demandId) ~= "string" or spec.demandId == "" then fail("spec.demandId is required") end
   if spec.tacticalComplete ~= true then return nil, false, "TACTICAL_COMPLETION_REQUIRED" end
-  if spec.executionEvidenceConfirmed ~= true then return nil, false, "EXECUTION_EVIDENCE_REQUIRED" end
+  if adapter.requireExecutionEvidence == true and spec.executionEvidenceConfirmed ~= true then
+    return nil, false, "EXECUTION_EVIDENCE_REQUIRED"
+  end
   if type(adapter.RequestMissionClosure) ~= "function" then fail("adapter.RequestMissionClosure() is required") end
   if type(registry.Get) ~= "function" or type(registry.Activate) ~= "function" or type(registry.Succeed) ~= "function" then
     fail("MissionDemand registry Get/Activate/Succeed are required")
@@ -48,7 +51,7 @@ function Closure.Complete(spec)
     missionMode = "PATROLZONE_ENGAGE",
     closureReason = spec.reason or "TACTICAL_COMPLETION_CONFIRMED",
     tacticalComplete = true,
-    executionEvidenceConfirmed = true,
+    executionEvidenceConfirmed = spec.executionEvidenceConfirmed == true,
   })
   return mission, true, "CLOSED"
 end
