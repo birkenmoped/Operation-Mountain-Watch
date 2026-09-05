@@ -15,10 +15,16 @@
 --   delivery the original AUFTRAG is completed with AUFTRAG:Success(), so the normal
 --   AIRWING/LEGION lifecycle remains authoritative for the aircraft.
 --
+-- Pinned-MOOSE lifecycle correction:
+--   FLIGHTGROUP:_CheckGroupDone() automatically calls UnpauseMission() when all remaining
+--   missions are paused. That is correct generic MOOSE behavior but conflicts with this
+--   approved pickup-to-drop corridor handoff. A documented MOOSE FSM transition handler
+--   (OnBeforeUnpauseMission) therefore rejects only that transition while the physical
+--   slingload is still en route to Wright. No MOOSE queue/internal state is modified.
+--
 -- Diagnostic note:
---   Lifecycle snapshots below are observation-only. They do not gate, cancel, pause,
---   unpause, reroute, or otherwise alter execution. A small set of MOOSE internal fields
---   is logged only to identify the unexpected PAUSED -> OVER transition seen in DCS.
+--   Lifecycle snapshots remain observation-only. A small set of MOOSE internal fields is
+--   logged only to correlate the public FSM lifecycle; none of those fields is a gate.
 --
 -- No raw DCS controller task assignment, native coalition spawning, teleport, or polling
 -- faster than five seconds is used here.
@@ -26,7 +32,7 @@
 local Handoff = {}
 
 local TAG = "[OMW][SlingloadCorridorHandoff]"
-Handoff.SchemaVersion = "OMW-SLINGLOAD-CORRIDOR-HANDOFF-5"
+Handoff.SchemaVersion = "OMW-SLINGLOAD-CORRIDOR-HANDOFF-6"
 
 local Corridor = OMW_STAGE3_HELICOPTER_FLIGHTPATH_CORRIDOR
 if type(Corridor) ~= "table" or type(Corridor.Install) ~= "function" then
@@ -97,6 +103,7 @@ local function lifecycleSnapshot(flightGroup, mission, label)
   local internalCurrentMission = flightGroup.currentmission
   local internalTaskCurrent = flightGroup.taskcurrent
   local pausedMissions = flightGroup.pausedmissions
+  local missionUid = mission.auftragsnummer
 
   local text = string.format(
     " LIFECYCLE label=%s mission=%s missionState=%s groupStatus=%s publicCurrentMissionIsTarget=%s publicTaskPresent=%s internalCurrentMission=%s internalTaskCurrent=%s pausedCount=%d pausedContainsTarget=%s",
@@ -109,7 +116,7 @@ local function lifecycleSnapshot(flightGroup, mission, label)
     tostring(internalCurrentMission),
     tostring(internalTaskCurrent),
     tableCount(pausedMissions),
-    tostring(tableContains(pausedMissions, mission))
+    tostring(tableContains(pausedMissions, missionUid))
   )
 
   if type(flightGroup.I) == "function" then
@@ -164,6 +171,49 @@ local function installLifecycleDiagnostics(flightGroup, mission)
   end
 end
 
+local function installUnpauseGuard(flightGroup, mission)
+  local guard = flightGroup.__omwSlingloadUnpauseGuard
+  if guard then
+    guard.mission = mission
+    guard.active = true
+    return guard
+  end
+
+  guard = { mission = mission, active = true }
+  flightGroup.__omwSlingloadUnpauseGuard = guard
+
+  local previousUnpause = flightGroup.OnBeforeUnpauseMission
+  function flightGroup:OnBeforeUnpauseMission(From, Event, To, ...)
+    local previousResult = true
+    if previousUnpause then
+      previousResult = previousUnpause(self, From, Event, To, ...)
+      if previousResult == false then return false end
+    end
+
+    local activeGuard = self.__omwSlingloadUnpauseGuard
+    if activeGuard and activeGuard.active == true and activeGuard.mission then
+      lifecycleSnapshot(self, activeGuard.mission, "BLOCKED_AUTO_UNPAUSE_BEFORE_PHYSICAL_DELIVERY")
+      if type(self.I) == "function" then
+        self:I(TAG .. " blocked MOOSE UnpauseMission while external slingload corridor handoff owns pickup-to-drop routing")
+      end
+      return false
+    end
+
+    return previousResult
+  end
+
+  return guard
+end
+
+local function releaseUnpauseGuard(flightGroup, mission, reason)
+  local guard = flightGroup and flightGroup.__omwSlingloadUnpauseGuard or nil
+  if not guard or guard.mission ~= mission then return end
+  guard.active = false
+  if type(flightGroup.I) == "function" then
+    flightGroup:I(TAG .. " released UnpauseMission guard reason=" .. tostring(reason))
+  end
+end
+
 local function profileFor(resolved, segmentIndex, fallbackAltitudeFtAgl)
   local profile = resolved.segmentProfiles and resolved.segmentProfiles[segmentIndex] or nil
   return {
@@ -188,6 +238,7 @@ local function completeDelivery(binding)
   binding.delivered = true
   stopDeliveryMonitor(binding)
   lifecycleSnapshot(binding.flightGroup, binding.mission, "PHYSICAL_DELIVERY_CONFIRMED_BEFORE_SUCCESS")
+  releaseUnpauseGuard(binding.flightGroup, binding.mission, "PHYSICAL_DELIVERY_CONFIRMED")
 
   if type(binding.mission.Success) ~= "function" then
     fail("AUFTRAG:Success() is required after physical slingload delivery")
@@ -208,6 +259,7 @@ local function installDeliveryMonitor(binding)
     if completeDelivery(binding) then return end
     if type(binding.mission.IsOver) == "function" and binding.mission:IsOver() then
       lifecycleSnapshot(binding.flightGroup, binding.mission, "DELIVERY_MONITOR_MISSION_IS_OVER")
+      releaseUnpauseGuard(binding.flightGroup, binding.mission, "MISSION_ENDED_BEFORE_PHYSICAL_DELIVERY")
       stopDeliveryMonitor(binding)
       binding.lastReason = "CARGOTRANSPORT_ENDED_BEFORE_PHYSICAL_DELIVERY"
       if type(binding.flightGroup.E) == "function" then
@@ -225,8 +277,6 @@ local function resolveCargoReferences(mission, explicitReferences)
   local cargoId = explicit and explicit.cargoId or (params and params.groupId or nil)
   local zoneId = explicit and explicit.zoneId or (params and params.zoneId or nil)
 
-  -- Pinned MOOSE OBJECT:GetID() is documented as a string and
-  -- AUFTRAG:NewCARGOTRANSPORT passes it directly as DCS CargoTransportation groupId.
   if cargo and cargoId == nil and type(cargo.GetID) == "function" then
     cargoId = cargo:GetID()
   end
@@ -258,6 +308,7 @@ local function releaseActiveCargoTask(flightGroup, mission)
         requested = true,
         task = currentTask,
       }
+      installUnpauseGuard(flightGroup, mission)
       lifecycleSnapshot(flightGroup, mission, "BEFORE_PauseMission")
       flightGroup:PauseMission()
       lifecycleSnapshot(flightGroup, mission, "AFTER_PauseMission_CALL")
@@ -383,6 +434,7 @@ local function installCargoHandoff(flightGroup, mission, resolved, altitudeFtAgl
     result = {
       mode = "APPROVED_EXTERNAL_SLINGLOAD_CORRIDOR_HANDOFF",
       pauseMode = "MOOSE_OPSGROUP_PAUSE_MISSION",
+      unpauseGuardMode = "MOOSE_FSM_ONBEFORE_UNPAUSEMISSION",
       activeTaskClearedBeforeRoute = true,
       lifecycleDiagnostics = "OBSERVATION_ONLY_PUBLIC_API_PLUS_PINNED_MOOSE_INTERNAL_FIELDS",
       anchorUid = anchorUid,
