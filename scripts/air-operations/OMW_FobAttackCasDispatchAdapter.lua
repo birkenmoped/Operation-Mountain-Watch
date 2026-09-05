@@ -8,7 +8,7 @@ local Instance = {}
 Instance.__index = Instance
 
 local TAG = "[OMW][FobAttackCasDispatchAdapter]"
-Adapter.SchemaVersion = "OMW-FOB-ATTACK-CAS-DISPATCH-ADAPTER-2"
+Adapter.SchemaVersion = "OMW-FOB-ATTACK-CAS-DISPATCH-ADAPTER-3"
 
 local function fail(message)
   error(TAG .. " " .. tostring(message), 2)
@@ -41,6 +41,8 @@ function Adapter.New(spec)
   requireNonEmptyString(spec.assigneeId, "assigneeId")
   if spec.casAltitudeFt ~= nil and (not isFinite(spec.casAltitudeFt) or spec.casAltitudeFt <= 0) then fail("casAltitudeFt must be positive finite") end
   if spec.casSpeedKts ~= nil and (not isFinite(spec.casSpeedKts) or spec.casSpeedKts <= 0) then fail("casSpeedKts must be positive finite") end
+  if spec.engageDetectedRangeNm ~= nil and (not isFinite(spec.engageDetectedRangeNm) or spec.engageDetectedRangeNm <= 0) then fail("engageDetectedRangeNm must be positive finite") end
+  if spec.engageDetectedTargetTypes ~= nil and type(spec.engageDetectedTargetTypes) ~= "table" then fail("engageDetectedTargetTypes must be a table when provided") end
   if spec.auftragFactory ~= nil and type(spec.auftragFactory) ~= "function" then fail("auftragFactory must be a function when provided") end
 
   return setmetatable({
@@ -50,9 +52,13 @@ function Adapter.New(spec)
     assigneeId = spec.assigneeId,
     casAltitudeFt = spec.casAltitudeFt,
     casSpeedKts = spec.casSpeedKts,
+    engageDetectedRangeNm = spec.engageDetectedRangeNm,
+    engageDetectedTargetTypes = spec.engageDetectedTargetTypes,
+    requireExecutionEvidence = spec.requireExecutionEvidence == true,
     auftragFactory = spec.auftragFactory,
     missionsByDemandId = {},
     closureRequestedByDemandId = {},
+    executionEvidenceByDemandId = {},
   }, Instance)
 end
 
@@ -61,9 +67,37 @@ function Instance:_log(message)
 end
 
 function Instance:_newCasMission(targetZone)
-  if self.auftragFactory then return self.auftragFactory(targetZone, self.casAltitudeFt, self.casSpeedKts) end
-  if type(AUFTRAG) ~= "table" or type(AUFTRAG.NewCAS) ~= "function" then fail("MOOSE AUFTRAG:NewCAS() is required") end
-  return AUFTRAG:NewCAS(targetZone, self.casAltitudeFt, self.casSpeedKts)
+  local mission
+  if self.auftragFactory then
+    mission = self.auftragFactory(targetZone, self.casAltitudeFt, self.casSpeedKts)
+  else
+    if type(AUFTRAG) ~= "table" or type(AUFTRAG.NewCAS) ~= "function" then fail("MOOSE AUFTRAG:NewCAS() is required") end
+    mission = AUFTRAG:NewCAS(targetZone, self.casAltitudeFt, self.casSpeedKts)
+  end
+  requireTable(mission, "CAS AUFTRAG")
+  if self.engageDetectedRangeNm then
+    requireFunction(mission, "SetEngageDetected", "CAS AUFTRAG")
+    mission:SetEngageDetected(self.engageDetectedRangeNm, self.engageDetectedTargetTypes or { "Ground Units" }, targetZone, nil)
+  end
+  return mission
+end
+
+function Instance:_succeedWithEvidence(demandId, mission)
+  local current = self.registry:Get(demandId)
+  if not current then return false end
+  if current.status == self.missionDemand.Status.AI_ASSIGNED then
+    self.registry:Activate(demandId)
+    current = self.registry:Get(demandId)
+  end
+  if not current or current.status ~= self.missionDemand.Status.ACTIVE then return false end
+  if self.requireExecutionEvidence and not self.executionEvidenceByDemandId[demandId] then return false end
+  self.registry:Succeed(demandId, {
+    executor = self.assigneeId,
+    auftrag = mission.GetName and mission:GetName() or nil,
+    closureRequested = self.closureRequestedByDemandId[demandId] == true,
+    executionEvidence = self.executionEvidenceByDemandId[demandId],
+  })
+  return true
 end
 
 function Instance:Dispatch(demand, targetZone)
@@ -80,7 +114,7 @@ function Instance:Dispatch(demand, targetZone)
   local existing = self.missionsByDemandId[demand.id]
   if existing then return existing, false, "ALREADY_DISPATCHED" end
 
-  local mission = requireTable(self:_newCasMission(targetZone), "CAS AUFTRAG")
+  local mission = self:_newCasMission(targetZone)
   local adapter, demandId = self, demand.id
 
   function mission:OnAfterExecuting(From, Event, To)
@@ -91,13 +125,11 @@ function Instance:Dispatch(demand, targetZone)
     end
   end
   function mission:OnAfterSuccess(From, Event, To)
-    local current = adapter.registry:Get(demandId)
-    if current and current.status == adapter.missionDemand.Status.ACTIVE then
-      adapter.registry:Succeed(demandId, {
-        executor = adapter.assigneeId,
-        auftrag = mission.GetName and mission:GetName() or nil,
-        closureRequested = adapter.closureRequestedByDemandId[demandId] == true,
-      })
+    if adapter.requireExecutionEvidence and not adapter.executionEvidenceByDemandId[demandId] then
+      adapter:_log("AUFTRAG Success observed but MissionDemand remains active pending execution evidence demandId=" .. tostring(demandId))
+      return
+    end
+    if adapter:_succeedWithEvidence(demandId, mission) then
       adapter:_log("demand succeeded from AUFTRAG Success demandId=" .. tostring(demandId))
     end
   end
@@ -112,9 +144,22 @@ function Instance:Dispatch(demand, targetZone)
   self.airwing:AddMission(mission)
   self.registry:AssignAI(demand.id, self.assigneeId)
   self.missionsByDemandId[demand.id] = mission
-  self:_log(string.format("CAS queued demandId=%s installationId=%s assigneeId=%s altitudeFt=%s speedKts=%s",
-    tostring(demand.id), tostring(demand.origin), tostring(self.assigneeId), tostring(self.casAltitudeFt), tostring(self.casSpeedKts)))
+  self:_log(string.format("CAS queued demandId=%s installationId=%s assigneeId=%s altitudeFt=%s speedKts=%s engageDetectedRangeNm=%s requireExecutionEvidence=%s",
+    tostring(demand.id), tostring(demand.origin), tostring(self.assigneeId), tostring(self.casAltitudeFt), tostring(self.casSpeedKts),
+    tostring(self.engageDetectedRangeNm), tostring(self.requireExecutionEvidence)))
   return mission, true, nil
+end
+
+function Instance:ConfirmExecutionEvidence(demandId, evidence)
+  requireNonEmptyString(demandId, "demandId")
+  local mission = self.missionsByDemandId[demandId]
+  if not mission then return nil, false, "MISSION_NOT_FOUND" end
+  if self.executionEvidenceByDemandId[demandId] then return mission, false, "EVIDENCE_ALREADY_CONFIRMED" end
+  self.executionEvidenceByDemandId[demandId] = evidence or { confirmed=true }
+  self:_log("CAS execution evidence confirmed demandId=" .. tostring(demandId))
+  local succeeded = self:_succeedWithEvidence(demandId, mission)
+  if succeeded then return mission, true, nil end
+  return mission, true, "EVIDENCE_RECORDED_PENDING_ACTIVE"
 end
 
 function Instance:RequestMissionClosure(demandId, reason)

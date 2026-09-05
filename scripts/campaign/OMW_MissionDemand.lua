@@ -17,6 +17,7 @@ MissionDemand.SnapshotVersion = "OMW-MISSION-DEMAND-SNAPSHOT-1"
 MissionDemand.Type = {
   RESUPPLY = "RESUPPLY",
   CAS_IMMEDIATE = "CAS_IMMEDIATE",
+  FIRE_SUPPORT_IMMEDIATE = "FIRE_SUPPORT_IMMEDIATE",
 }
 
 MissionDemand.Status = {
