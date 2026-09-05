@@ -4,6 +4,9 @@ end
 local function assertTrue(value, label)
   if value ~= true then error(label .. " expected=true actual=" .. tostring(value)) end
 end
+local function assertFalse(value, label)
+  if value ~= false then error(label .. " expected=false actual=" .. tostring(value)) end
+end
 
 local oldCorridor = OMW_STAGE3_HELICOPTER_FLIGHTPATH_CORRIDOR
 local oldAuftrag = AUFTRAG
@@ -28,11 +31,16 @@ local Corridor = OMW_STAGE3_HELICOPTER_FLIGHTPATH_CORRIDOR
 
 local nextUid = 20
 local capturedCargoTask = nil
+local capturedDeliveryTask = nil
 local updateRouteCalls = 0
 local pauseMissionCalls = 0
+local missionSuccessCalls = 0
 local activeTask = { id=91, description="MOOSE CARGOTRANSPORT mission task" }
 local mission = nil
 local flight = {
+  currentmission=4,
+  taskcurrent=1,
+  pausedmissions={},
   GetWaypointCurrentUID=function() return 10 end,
   GetTaskCurrent=function() return activeTask end,
   GetMissionCurrent=function() return mission end,
@@ -46,7 +54,8 @@ local flight = {
   end,
   AddTaskWaypoint=function(self, task, waypoint, description, prio)
     capturedCargoTask=task
-    return { task=task, waypoint=waypoint, description=description, prio=prio }
+    capturedDeliveryTask={ task=task, waypoint=waypoint, description=description, prio=prio }
+    return capturedDeliveryTask
   end,
   UpdateRoute=function()
     if activeTask then error("regression: MOOSE would deny UpdateRoute while taskcurrent > 0") end
@@ -56,20 +65,21 @@ local flight = {
   E=function() end,
 }
 
--- Pinned MOOSE OBJECT:GetID() is a string and NewCARGOTRANSPORT passes it directly
--- into CargoTransportation.params.groupId. This exact shape caused the rejected
--- 2026-09-05 focused acceptance fixture to fail before CH-47 dispatch.
+local cargoInDropZone = false
 local cargo = {
   IsAlive=function() return true end,
-  IsInZone=function() return false end,
+  IsInZone=function() return cargoInDropZone end,
   GetID=function() return "7001" end,
 }
 local dropZone = { ZoneID=8002 }
 mission = {
   type=AUFTRAG.Type.CARGOTRANSPORT,
+  auftragsnummer=4,
   DCStask={ params={} },
+  GetState=function() return "executing" end,
+  GetGroupStatus=function() return "paused" end,
   IsOver=function() return false end,
-  Success=function() end,
+  Success=function() missionSuccessCalls=missionSuccessCalls+1 end,
 }
 local resolved = {
   outbound={ {name="OUT1"}, {name="OUT2"} },
@@ -91,6 +101,8 @@ assertEqual(ok, false, "pause-request install status")
 assertEqual(reason, "CARGOTRANSPORT_PAUSE_REQUESTED", "pause-request reason")
 assertEqual(pauseMissionCalls, 1, "pause requested exactly once")
 assertEqual(updateRouteCalls, 0, "no route update while cargo task current")
+assertTrue(type(flight.OnBeforeUnpauseMission)=="function", "MOOSE FSM unpause transition guard installed")
+assertFalse(flight:OnBeforeUnpauseMission("Cruising", "UnpauseMission", "Cruising"), "auto-unpause blocked while pickup-to-drop handoff active")
 
 installed, ok, reason = Handoff.Install(flight, mission, resolved, 500, explicitReferences)
 assertEqual(installed, nil, "task-still-active install result")
@@ -107,12 +119,16 @@ assertEqual(pauseMissionCalls, 1, "wrapper does not repeat pause")
 assertEqual(updateRouteCalls, 0, "wrapper does not update active task route")
 
 activeTask = nil
+flight.taskcurrent = 0
+flight.currentmission = nil
+flight.pausedmissions = {4}
 installed, ok, reason = Handoff.Install(flight, mission, resolved, 500, explicitReferences)
 
 assertTrue(ok, "explicit-reference handoff after MOOSE task release")
 assertEqual(reason, nil, "explicit-reference handoff reason")
 assertEqual(installed.mode, "APPROVED_EXTERNAL_SLINGLOAD_CORRIDOR_HANDOFF", "handoff mode")
 assertEqual(installed.pauseMode, "MOOSE_OPSGROUP_PAUSE_MISSION", "pause mode")
+assertEqual(installed.unpauseGuardMode, "MOOSE_FSM_ONBEFORE_UNPAUSEMISSION", "unpause guard mode")
 assertTrue(installed.activeTaskClearedBeforeRoute, "active task cleared before route")
 assertEqual(installed.referenceSource, "EXPLICIT_ACCEPTANCE_CONTEXT", "reference source")
 assertEqual(installed.outboundWaypointCount, 2, "outbound waypoint count")
@@ -123,6 +139,12 @@ assertTrue(capturedCargoTask ~= nil, "cargo task captured")
 assertEqual(capturedCargoTask.id, "CargoTransportation", "cargo task id")
 assertEqual(capturedCargoTask.params.groupId, "7001", "cargo task preserves pinned MOOSE string group id")
 assertEqual(capturedCargoTask.params.zoneId, 8002, "cargo task zone id from explicit drop zone")
+assertFalse(flight:OnBeforeUnpauseMission("Cruising", "UnpauseMission", "Cruising"), "auto-unpause remains blocked during R500 outbound")
+
+cargoInDropZone = true
+flight:OnAfterTaskDone("Cruising", "TaskDone", "Cruising", capturedDeliveryTask)
+assertEqual(missionSuccessCalls, 1, "physical delivery completes original AUFTRAG once")
+assertTrue(flight:OnBeforeUnpauseMission("Cruising", "UnpauseMission", "Cruising"), "unpause transition allowed after physical delivery")
 
 local cached, cachedOk, cachedReason = Handoff.Install(flight, mission, resolved, 500, explicitReferences)
 assertTrue(cachedOk, "cached handoff")
