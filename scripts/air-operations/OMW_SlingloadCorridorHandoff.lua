@@ -6,12 +6,14 @@
 --   running DCS CargoTransportation main task to an owner-authored PATHLINE.
 --
 -- Owner-approved narrow exception:
---   Use public MOOSE FLIGHTGROUP waypoint/task APIs to replace the already-running
---   CargoTransportation task only after pickup. The outbound/return route remains in
---   FLIGHTGROUP. At the Wright-side route exit a waypoint task re-issues the documented
---   DCS CargoTransportation task for the same cargo and ME drop zone. On confirmed
---   physical delivery the original AUFTRAG is completed with AUFTRAG:Success(), so the
---   normal AIRWING/LEGION lifecycle remains authoritative for the aircraft.
+--   After confirmed pickup, pause the current AUFTRAG through the public MOOSE
+--   OPSGROUP/FLIGHTGROUP PauseMission lifecycle. Wait until MOOSE reports that the
+--   executing CargoTransportation waypoint task is no longer current. Only then use
+--   public FLIGHTGROUP waypoint/task APIs to install the owner-authored outbound/return
+--   route. At the Wright-side route exit a waypoint task re-issues the documented DCS
+--   CargoTransportation task for the same cargo and ME drop zone. On confirmed physical
+--   delivery the original AUFTRAG is completed with AUFTRAG:Success(), so the normal
+--   AIRWING/LEGION lifecycle remains authoritative for the aircraft.
 --
 -- No raw DCS controller task assignment, native coalition spawning, teleport, or polling
 -- faster than five seconds is used here.
@@ -19,7 +21,7 @@
 local Handoff = {}
 
 local TAG = "[OMW][SlingloadCorridorHandoff]"
-Handoff.SchemaVersion = "OMW-SLINGLOAD-CORRIDOR-HANDOFF-2"
+Handoff.SchemaVersion = "OMW-SLINGLOAD-CORRIDOR-HANDOFF-3"
 
 local Corridor = OMW_STAGE3_HELICOPTER_FLIGHTPATH_CORRIDOR
 if type(Corridor) ~= "table" or type(Corridor.Install) ~= "function" then
@@ -75,7 +77,7 @@ local function completeDelivery(binding)
   binding.mission:Success()
 
   if type(binding.flightGroup.I) == "function" then
-    binding.flightGroup:I(TAG .. " physical slingload delivery confirmed; original CARGOTRANSPORT AUFTRAG completed")
+    binding.flightGroup:I(TAG .. " physical slingload delivery confirmed; paused CARGOTRANSPORT AUFTRAG completed")
   end
   return true
 end
@@ -127,6 +129,45 @@ local function resolveCargoReferences(mission, explicitReferences)
   return cargo, dropZone, cargoId, zoneId
 end
 
+local function releaseActiveCargoTask(flightGroup, mission)
+  requireFunction(flightGroup, "GetTaskCurrent", "FLIGHTGROUP")
+  requireFunction(flightGroup, "GetMissionCurrent", "FLIGHTGROUP")
+  requireFunction(flightGroup, "PauseMission", "FLIGHTGROUP")
+
+  local currentTask = flightGroup:GetTaskCurrent()
+  local pauseState = flightGroup.__omwSlingloadCorridorPauseState
+
+  if currentTask then
+    if not pauseState then
+      local currentMission = flightGroup:GetMissionCurrent()
+      if currentMission ~= mission then
+        return false, "CARGOTRANSPORT_CURRENT_MISSION_MISMATCH"
+      end
+      flightGroup.__omwSlingloadCorridorPauseState = {
+        mission = mission,
+        requested = true,
+        task = currentTask,
+      }
+      flightGroup:PauseMission()
+      if type(flightGroup.I) == "function" then
+        flightGroup:I(TAG .. " confirmed pickup; requested public MOOSE PauseMission before corridor UpdateRoute")
+      end
+      return false, "CARGOTRANSPORT_PAUSE_REQUESTED"
+    end
+
+    if pauseState.mission ~= mission then
+      return false, "CARGOTRANSPORT_PAUSE_MISSION_MISMATCH"
+    end
+    return false, "CARGOTRANSPORT_TASK_STILL_EXECUTING"
+  end
+
+  if pauseState and pauseState.mission ~= mission then
+    return false, "CARGOTRANSPORT_PAUSE_MISSION_MISMATCH"
+  end
+
+  return true, nil
+end
+
 local function installCargoHandoff(flightGroup, mission, resolved, altitudeFtAgl, explicitReferences)
   requireFunction(flightGroup, "GetWaypointCurrentUID", "FLIGHTGROUP")
   requireFunction(flightGroup, "AddWaypoint", "FLIGHTGROUP")
@@ -151,6 +192,11 @@ local function installCargoHandoff(flightGroup, mission, resolved, altitudeFtAgl
   end
   if not dropZone or type(zoneId) ~= "number" or type(cargoId) ~= "number" then
     return nil, false, "CARGOTRANSPORT_DROP_REFERENCE_UNAVAILABLE"
+  end
+
+  local released, releaseReason = releaseActiveCargoTask(flightGroup, mission)
+  if released ~= true then
+    return nil, false, releaseReason
   end
 
   local anchorUid = flightGroup:GetWaypointCurrentUID()
@@ -220,6 +266,8 @@ local function installCargoHandoff(flightGroup, mission, resolved, altitudeFtAgl
     lastReason = nil,
     result = {
       mode = "APPROVED_EXTERNAL_SLINGLOAD_CORRIDOR_HANDOFF",
+      pauseMode = "MOOSE_OPSGROUP_PAUSE_MISSION",
+      activeTaskClearedBeforeRoute = true,
       anchorUid = anchorUid,
       outboundWaypointCount = #outboundProfiles,
       returnWaypointCount = #returnProfiles,
@@ -242,7 +290,7 @@ local function installCargoHandoff(flightGroup, mission, resolved, altitudeFtAgl
 
   if type(flightGroup.I) == "function" then
     flightGroup:I(TAG .. string.format(
-      " installed approved slingload handoff anchorUid=%d outbound=%d return=%d cargoId=%d zoneId=%d referenceSource=%s",
+      " installed approved slingload handoff after MOOSE task release anchorUid=%d outbound=%d return=%d cargoId=%d zoneId=%d referenceSource=%s",
       anchorUid, #outboundProfiles, #returnProfiles, cargoId, zoneId, binding.result.referenceSource))
   end
 
