@@ -40,9 +40,10 @@ local function makeAdapter(registry, requireEvidence, cancelCounter)
   })
 end
 
--- Stage-3 contract: tactical completion must release the PATROLZONE mission even when
+-- Stage-3 contract: tactical completion is a release by the supported element after its
+-- own local tactical assessment. It must release the PATROLZONE mission even when
 -- EVENTS.Shot evidence was not observed. Shot evidence remains an acceptance result gate,
--- not an operational RTB gate.
+-- not an operational RTB gate and not a source of C2 omniscience.
 do
   local registry = MissionDemand.New()
   local counter = { count=0 }
@@ -60,6 +61,7 @@ do
     tacticalComplete=true,
     executionEvidenceConfirmed=false,
     reason="KNOWN_ATTACKERS_NEUTRALIZED",
+    releaseSource="BLUE_GROUND_COP_HONAKER",
     executor="AIRWING:TEST",
   })
 
@@ -68,6 +70,8 @@ do
   assertEqual(reason, "CLOSED", "closure reason")
   assertEqual(counter.count, 1, "mission cancel count")
   assertEqual(registry:Get(demand.id).status, MissionDemand.Status.SUCCESS, "demand status")
+  assertEqual(registry:Get(demand.id).result.releaseAuthority, "SUPPORTED_ELEMENT", "release authority")
+  assertEqual(registry:Get(demand.id).result.releaseSource, "BLUE_GROUND_COP_HONAKER", "release source")
   assertEqual(registry:Get(demand.id).result.executionEvidenceConfirmed, false, "recorded evidence state")
 end
 
