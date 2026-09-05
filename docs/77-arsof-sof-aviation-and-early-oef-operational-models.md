@@ -32,6 +32,8 @@ PSEUDONYM_OR_GENERIC_ELEMENT != EXACT_UNIT_IDENTITY
 VIGNETTE_SELECTION != COMPLETE_ORBAT
 ```
 
+Ergaenzend wurde am 5. September 2026 ein vom Projektinhaber bereitgestellter DTIC-/RAND-/CRS-Quellenbatch gegen dieses Dokument geprueft. Die daraus belastbar nutzbaren Aussagen sind in Abschnitt 17 quellenkritisch aufgenommen. Diese Quellen behandeln ueberwiegend 2001-2002 und dienen daher ausschliesslich als historische Betriebs-, C2-, Targeting- und Logistikreferenz; sie ersetzen keine periodengerechte 2010-2011-ORBAT- oder Verfahrensquelle.
+
 ## 2. Führungsstruktur
 
 Wesentliche Organisationen:
@@ -343,3 +345,127 @@ Sie darf nicht unverändert die 2010/2011-ORBAT bestimmen.
 - `docs/54-air-tasking-airspace-control-cas-requests-and-mission-data.md`
 - `docs/60-afghan-air-wars-2009-2011-airpower-operations-reference.md`
 - `docs/63-ntma-sfa-attack-the-network-stratcom-and-local-influence.md`
+
+## 17. Ergaenzender DTIC-/RAND-/CRS-Quellenbatch vom 5. September 2026
+
+### 17.1 Quellenbewertung
+
+Die folgenden vom Projektinhaber bereitgestellten Dokumente enthalten fuer OMW belastbare Zusatzinformationen. Wegen ihres Zeitstands sind sie als **Early-OEF-Hintergrund** und nicht als direkte 2010-2011-Baseline zu verwenden.
+
+| DTIC/Report-ID | Quelle | OMW-Wert | Evidenzgrenze |
+|---|---|---|---|
+| `ADA449279` | Benjamin S. Lambeth, *Air Power Against Terror: America's Conduct of Operation Enduring Freedom*, RAND MG-166-CENTAF, 2005 | **hoch** fuer Air-Ground-Integration, ISR-Fusion, Targeting- und Logistikfriktion | untersucht im Kern 7.10.2001 bis Maerz 2002; keine 2010/2011-ORBAT- oder ROE-Baseline |
+| `ADA434031` | Daniel L. Haulman, *Intertheater Airlift Challenges of Operation Enduring Freedom*, Air Force Historical Research Agency, 14.11.2002 | **hoch** fuer strategischen Airlift, austere basing, Ramp-/Staging- und Cargo-Flow-Friktion | Early OEF; keine automatische Uebertragung konkreter Kapazitaeten auf 2010/2011 |
+| `ADA429053` | Richard G. Rhyne, *Special Forces Command and Control in Afghanistan*, U.S. Army Command and General Staff College, 2004 | **hoch** fuer SOF-/Conventional-C2, OPCON/TACON und gemeinsame Planung | Fallstudie vor allem 2001-2002; keine direkte 2010/2011-C2-ORBAT |
+| `ADA422702` | David D. Kindley, *"Why Won't You Drop, Damn You!?" - An Examination of the Targeting Process in Operation Enduring Freedom and its Implications*, Naval War College | **hoch** fuer ROE-Verstaendnis, CAS/TST-Targeting und Freigabefriktion | bibliographischer Datumswiderspruch: Titelblatt 2.2.2003, Report Documentation Page 2.2.2004; Early-OEF-Fallstudie |
+| `ADA540984` | RAND, *Operation Enduring Freedom: An Assessment*, RB-9148-CENTAF, 2005 | **mittel**, kompakte Zusammenfassung von Lambeth | Sekundaerzusammenfassung des umfangreicheren `ADA449279`; keine unabhaengige Baseline |
+| `RL31152` / `ADA477221` | CRS, *Operation Enduring Freedom: Foreign Pledges of Military & Intelligence Support*, Update 17.10.2001 | **niedrig bis mittel** fuer Coalition Access/Basing als Startbedingung | Momentaufnahme unmittelbar nach Operationsbeginn; Zusagen teilweise ausdruecklich als unklar/vage bezeichnet |
+
+### 17.2 Air-Ground-Integration und ISR
+
+Lambeth dokumentiert fuer Early OEF eine fuer das Missionsdesign relevante Kombination aus technischen Sensoren und menschlichen Sensoren:
+
+- Global Hawk und bewaffnete Predator wurden operativ eingesetzt;
+- eine dauerhaft gespeiste ISR-Lage kombinierte mehrere luft- und weltraumgestuetzte Sensoren;
+- SOF-Teams dienten zugleich als lokale, bewegliche `human ISR sensors`, identifizierten Ziele und verbanden diese mit Praezisionsluftmacht;
+- der operative Effekt entstand nicht aus einem einzelnen Sensor, sondern aus **Fusion, Kommunikation, Zielidentifikation und anschliessender Waffenwirkung**.
+
+Quelle: Lambeth, `ADA449279`, Summary xxii-xxiv, PDF-Seiten 26-28. Der RAND Research Brief `ADA540984` fasst dieselben Befunde zusaetzlich zusammen.
+
+OMW-Ableitung:
+
+```text
+SENSOR_CONTACT != TARGET_AUTHORIZATION
+ISR_FEED != COMMON_OPERATING_PICTURE_WITHOUT_FUSION
+UAV_ON_STATION != TARGET_POSITIVELY_IDENTIFIED
+SOF_EYES_ON_TARGET != AUTOMATIC_WEAPON_RELEASE
+```
+
+Diese Aussagen stuetzen das bestehende OMW-Prinzip, ISR, Request/Tasking, Zielkorrelation und Waffenfreigabe getrennt zu modellieren. Sie rechtfertigen **keine** automatische bewaffnete UAV-Freigabe und keine 2010/2011-spezifische Sensorreichweite ohne periodengerechte Quelle.
+
+### 17.3 Airlift, austere basing und logistische Engpaesse
+
+Haulman identifiziert in Early OEF mehrere wiederkehrende Mobility-Probleme:
+
+- fehlende beziehungsweise begrenzte Theaterinfrastruktur;
+- zu wenige geeignete Offload-Basen;
+- ueberlastete Intermediate Staging Bases;
+- unzureichende In-Transit Visibility und inkompatible Daten-/Trackingprozesse;
+- Abhaengigkeit von C-17 fuer kleinere beziehungsweise weniger entwickelte Flugplaetze;
+- Wartungs- und Verfuegbarkeitsprobleme aelterer Transportmuster;
+- Cargo- und Ramp-Backlogs, wenn Zufluss groesser als die lokale Entlade-/Weiterleitungsleistung war.
+
+Haulman nennt Kandahar und Bagram als zentrale Early-OEF-Theaterbasen und beschreibt, dass auch nach ihrer Oeffnung die begrenzte Abfertigungsleistung den Zufluss begrenzte. Quelle: Haulman, `ADA434031`, S. 1, 6-8.
+
+Lambeth ergaenzt, dass bis zur Oeffnung einer Landverbindung aus Usbekistan Ende November praktisch alles, einschliesslich Treibstoff, eingeflogen werden musste. Quelle: Lambeth, `ADA449279`, Summary xxiv, PDF-Seite 28.
+
+OMW-Ableitung fuer Logistik und Base Capacity:
+
+```text
+RUNWAY_AVAILABLE != UNLIMITED_THROUGHPUT
+CARGO_ARRIVED != CARGO_AVAILABLE_AT_DESTINATION
+AIRLIFT_CAPACITY != OFFLOAD_CAPACITY
+AIRCRAFT_IN_INVENTORY != MISSION_CAPABLE_AIRCRAFT
+STAGING_BASE != INFINITE_RAMP_OR_BILLETING_CAPACITY
+```
+
+Diese Early-OEF-Belege sind fuer OMW als **Systemdesign-Prinzipien** relevant. Konkrete 2010/2011-Kapazitaeten, Flugbewegungen oder Bestandszahlen muessen weiterhin aus periodengerechten Quellen stammen.
+
+### 17.4 SOF-/Conventional-C2 und zeitkritische Planung
+
+Rhyne zeigt anhand der C2-Umstellungen 2002, dass die Integration von Special Forces und konventionellen Verbaenden nicht allein durch organisatorische Zugehoerigkeit geloest wurde. Dokumentiert sind insbesondere:
+
+- wechselnde `OPCON`-/`TACON`-Beziehungen zwischen CJSOTF-A und konventionellen Joint-Task-Force-Strukturen;
+- der Einsatz von SOCCE-Elementen in konventionellen Tactical Operations Centers;
+- gemeinsame Planungsprozesse und direkte Liaison als Beschleuniger;
+- erhebliche Verzoegerungen fuer actionable intelligence bei langen Freigabekanaelen;
+- deutlich kuerzere Reaktionszeiten nach engerer organisatorischer und raeumlicher Integration.
+
+Quelle: Rhyne, `ADA429053`, S. 41-47, insbesondere die C2-Diagramme auf S. 41 und 44 sowie die Ausfuehrungen zu den Freigabezeiten auf S. 45-46.
+
+OMW-Ableitung:
+
+```text
+INTELLIGENCE_AVAILABLE != FORCE_TASKED
+SUPPORTING_RELATIONSHIP != UNDEFINED_AUTHORITY
+DIRECT_LIAISON != RESOURCE_OWNERSHIP
+JOINT_PLANNING != AUTOMATIC_EXECUTION_CLEARANCE
+```
+
+Fuer OMW bestaetigt dies die bereits vorgesehene Trennung von strategischer Autoritaet, Request/Tasking, physischer Ausfuehrung und klaren Zustandsuebergaengen.
+
+### 17.5 ROE-, Targeting- und Freigabefriktion
+
+Kindley beschreibt einen Early-OEF-Fall, in dem das formell veroeffentlichte ROE-Verstaendnis und das tatsaechliche Verstaendnis bei Piloten, AWACS und Air-Operations-Personal auseinanderliefen. Seine zentrale Beobachtung ist fuer OMW nicht die konkrete 2001er ROE-Regel, sondern die **Prozessgefahr einer uneindeutigen oder falsch verstandenen Freigabekette**. Er trennt ausserdem vorgeplante ATO-Ziele, FAC-gefuhrte CAS-Situationen und Time-Sensitive Targeting.
+
+Quelle: Kindley, `ADA422702`, gedruckte S. 4-7.
+
+OMW-Ableitung:
+
+```text
+ATO_ENTRY != WEAPON_RELEASE_AUTHORITY
+TARGET_COORDINATE != POSITIVE_IDENTIFICATION
+FAC_REQUEST != UNCONDITIONAL_CLEARANCE
+ROE_PUBLISHED != ROE_UNDERSTOOD
+```
+
+Damit wird die bestehende OMW-Regel gestuetzt, dass Targeting, Friendly-Risk, ziviles Umfeld, ROE und ausdrueckliche Angriffserlaubnis getrennt nachvollziehbar bleiben muessen.
+
+### 17.6 Nur begrenzt oder nicht in Fachbaselines uebernommene Dokumente
+
+Vier weitere Dateien wurden geprueft, erzeugen aber **keine neue OMW-Fachbaseline**:
+
+- `ADA415851`, John G. Clement, *Operation Enduring Freedom as an Enabling Campaign in the War on Terrorism* (SAMS, 2003): interessante Kampagnentheorie zu `enabling` versus `terminal campaign`, aber fuer den aktuellen OMW-Grundbau zu abstrakt und nicht periodenspezifisch genug fuer eine neue Designregel.
+- `ADA519692`, *Mental Health Advisory Team (MHAT) V ... Operation Enduring Freedom 8: Afghanistan* (2008): relevante Human-Factors-/Belastungsdaten, aber derzeit kein ausreichend direkter Bezug zu einer OMW-System- oder Missionseditorentscheidung.
+- `ADA495793`, GAO-09-302, *DOD Needs to More Accurately Capture and Report the Costs of Operation Iraqi Freedom and Operation Enduring Freedom* (2009): Haushalts-/Kostenreporting, fuer OMW-Missionsdesign ohne belastbaren Mehrwert.
+- `ADA498363`, CRS RS22452, *United States Military Casualty Statistics: Operation Iraqi Freedom and Operation Enduring Freedom* (25.3.2009): historische Casualty-/MEDEVAC-Statistik, aber vor dem Kampagnenzeitraum und teilweise theateruebergreifend aggregiert; deshalb keine direkte OMW-Verlust-, IED- oder MEDEVAC-Rate daraus ableiten.
+
+### 17.7 Verbindliche Nutzungsgrenze fuer den Quellenbatch
+
+Der Batch erhoeht die Quellenbasis fuer **Prinzipien** von C2, ISR, Air-Ground-Integration, Targeting und Logistics Friction. Er aendert keine aktive OMW-ORBAT und setzt keine konkrete 2010/2011-Frequenz, Callsign-, ROE-, Flugplan-, Bestands-, Endurance-, Fuel- oder Base-Capacity-Zahl.
+
+```text
+EARLY_OEF_OPERATIONAL_LESSON != 2010_2011_PERIOD_FACT
+CORROBORATING_SOURCE != ACTIVE_ORBAT_DECISION
+HISTORICAL_PROCESS_FRICTION != DCS_RUNTIME_VALIDATION
+```
