@@ -57,7 +57,7 @@ function Closure.Complete(spec)
     closureReason = spec.reason or "TACTICAL_COMPLETION_CONFIRMED",
     tacticalComplete = true,
     releaseAuthority = Closure.ReleaseAuthority,
-    releaseSource = spec.releaseSource or "REQUESTING_INSTALLATION",
+    releaseSource = spec.releaseSource or demand.origin or "REQUESTING_INSTALLATION",
     executionEvidenceConfirmed = spec.executionEvidenceConfirmed == true,
   })
   return mission, true, "CLOSED"
