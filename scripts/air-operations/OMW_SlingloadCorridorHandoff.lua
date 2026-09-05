@@ -15,13 +15,18 @@
 --   delivery the original AUFTRAG is completed with AUFTRAG:Success(), so the normal
 --   AIRWING/LEGION lifecycle remains authoritative for the aircraft.
 --
+-- Diagnostic note:
+--   Lifecycle snapshots below are observation-only. They do not gate, cancel, pause,
+--   unpause, reroute, or otherwise alter execution. A small set of MOOSE internal fields
+--   is logged only to identify the unexpected PAUSED -> OVER transition seen in DCS.
+--
 -- No raw DCS controller task assignment, native coalition spawning, teleport, or polling
 -- faster than five seconds is used here.
 
 local Handoff = {}
 
 local TAG = "[OMW][SlingloadCorridorHandoff]"
-Handoff.SchemaVersion = "OMW-SLINGLOAD-CORRIDOR-HANDOFF-4"
+Handoff.SchemaVersion = "OMW-SLINGLOAD-CORRIDOR-HANDOFF-5"
 
 local Corridor = OMW_STAGE3_HELICOPTER_FLIGHTPATH_CORRIDOR
 if type(Corridor) ~= "table" or type(Corridor.Install) ~= "function" then
@@ -52,6 +57,113 @@ local function validCargoId(value)
   return type(value) == "number"
 end
 
+local function safeCall(container, methodName, ...)
+  if type(container) ~= "table" or type(container[methodName]) ~= "function" then return nil end
+  local ok, value = pcall(container[methodName], container, ...)
+  if not ok then return "<error:" .. tostring(value) .. ">" end
+  return value
+end
+
+local function tableCount(value)
+  if type(value) ~= "table" then return 0 end
+  local count = 0
+  for _ in pairs(value) do count = count + 1 end
+  return count
+end
+
+local function tableContains(value, needle)
+  if type(value) ~= "table" then return false end
+  for _, item in pairs(value) do
+    if item == needle then return true end
+  end
+  return false
+end
+
+local function missionLabel(mission)
+  if type(mission) ~= "table" then return tostring(mission) end
+  return tostring(mission.name or mission.missionname or mission.type or mission)
+end
+
+local function lifecycleSnapshot(flightGroup, mission, label)
+  if type(flightGroup) ~= "table" or type(mission) ~= "table" then return end
+
+  local missionState = safeCall(mission, "GetState")
+  local groupStatus = safeCall(mission, "GetGroupStatus", flightGroup)
+  local publicCurrentMission = safeCall(flightGroup, "GetMissionCurrent")
+  local publicCurrentTask = safeCall(flightGroup, "GetTaskCurrent")
+
+  -- Diagnostic-only inspection of pinned MOOSE runtime fields. These are never used to
+  -- make routing or mission decisions and therefore are not treated as stable API.
+  local internalCurrentMission = flightGroup.currentmission
+  local internalTaskCurrent = flightGroup.taskcurrent
+  local pausedMissions = flightGroup.pausedmissions
+
+  local text = string.format(
+    " LIFECYCLE label=%s mission=%s missionState=%s groupStatus=%s publicCurrentMissionIsTarget=%s publicTaskPresent=%s internalCurrentMission=%s internalTaskCurrent=%s pausedCount=%d pausedContainsTarget=%s",
+    tostring(label),
+    missionLabel(mission),
+    tostring(missionState),
+    tostring(groupStatus),
+    tostring(publicCurrentMission == mission),
+    tostring(publicCurrentTask ~= nil),
+    tostring(internalCurrentMission),
+    tostring(internalTaskCurrent),
+    tableCount(pausedMissions),
+    tostring(tableContains(pausedMissions, mission))
+  )
+
+  if type(flightGroup.I) == "function" then
+    flightGroup:I(TAG .. text)
+  elseif env and type(env.info) == "function" then
+    env.info(TAG .. text, false)
+  end
+end
+
+local function scheduleLifecycleSnapshots(flightGroup, mission)
+  for _, delay in ipairs({1, 2, 3, 5}) do
+    SCHEDULER:New(nil, function()
+      lifecycleSnapshot(flightGroup, mission, "POST_PAUSE_T+" .. tostring(delay) .. "S")
+    end, {}, delay)
+  end
+end
+
+local function installLifecycleDiagnostics(flightGroup, mission)
+  if flightGroup.__omwSlingloadLifecycleDiagnosticsInstalled then
+    flightGroup.__omwSlingloadLifecycleDiagnosticMission = mission
+    return
+  end
+
+  flightGroup.__omwSlingloadLifecycleDiagnosticsInstalled = true
+  flightGroup.__omwSlingloadLifecycleDiagnosticMission = mission
+
+  local previousPause = flightGroup.OnAfterPauseMission
+  function flightGroup:OnAfterPauseMission(From, Event, To, ...)
+    if previousPause then previousPause(self, From, Event, To, ...) end
+    local diagnosticMission = self.__omwSlingloadLifecycleDiagnosticMission
+    lifecycleSnapshot(self, diagnosticMission, "EVENT_OnAfterPauseMission")
+  end
+
+  local previousTaskDone = flightGroup.OnAfterTaskDone
+  function flightGroup:OnAfterTaskDone(From, Event, To, Task, ...)
+    if previousTaskDone then previousTaskDone(self, From, Event, To, Task, ...) end
+    local diagnosticMission = self.__omwSlingloadLifecycleDiagnosticMission
+    lifecycleSnapshot(self, diagnosticMission, "EVENT_OnAfterTaskDone")
+
+    local binding = self.__omwSlingloadCorridorBinding
+    if not binding or binding.delivered or Task ~= binding.deliveryTask then return end
+    if binding.completeDelivery and binding.completeDelivery(binding) then return end
+    binding.lastReason = "CARGO_TASK_DONE_WITHOUT_PHYSICAL_DELIVERY"
+    if type(self.E) == "function" then self:E(TAG .. " " .. binding.lastReason) end
+  end
+
+  local previousMissionDone = flightGroup.OnAfterMissionDone
+  function flightGroup:OnAfterMissionDone(From, Event, To, Mission, ...)
+    if previousMissionDone then previousMissionDone(self, From, Event, To, Mission, ...) end
+    local diagnosticMission = self.__omwSlingloadLifecycleDiagnosticMission
+    lifecycleSnapshot(self, diagnosticMission, "EVENT_OnAfterMissionDone")
+  end
+end
+
 local function profileFor(resolved, segmentIndex, fallbackAltitudeFtAgl)
   local profile = resolved.segmentProfiles and resolved.segmentProfiles[segmentIndex] or nil
   return {
@@ -75,30 +187,18 @@ local function completeDelivery(binding)
 
   binding.delivered = true
   stopDeliveryMonitor(binding)
+  lifecycleSnapshot(binding.flightGroup, binding.mission, "PHYSICAL_DELIVERY_CONFIRMED_BEFORE_SUCCESS")
 
   if type(binding.mission.Success) ~= "function" then
     fail("AUFTRAG:Success() is required after physical slingload delivery")
   end
   binding.mission:Success()
+  lifecycleSnapshot(binding.flightGroup, binding.mission, "PHYSICAL_DELIVERY_CONFIRMED_AFTER_SUCCESS")
 
   if type(binding.flightGroup.I) == "function" then
     binding.flightGroup:I(TAG .. " physical slingload delivery confirmed; paused CARGOTRANSPORT AUFTRAG completed")
   end
   return true
-end
-
-local function installTaskDoneHook(flightGroup)
-  if flightGroup.__omwSlingloadCorridorTaskHook then return end
-  flightGroup.__omwSlingloadCorridorTaskHook = true
-  local previous = flightGroup.OnAfterTaskDone
-  function flightGroup:OnAfterTaskDone(From, Event, To, Task)
-    if previous then previous(self, From, Event, To, Task) end
-    local binding = self.__omwSlingloadCorridorBinding
-    if not binding or binding.delivered or Task ~= binding.deliveryTask then return end
-    if completeDelivery(binding) then return end
-    binding.lastReason = "CARGO_TASK_DONE_WITHOUT_PHYSICAL_DELIVERY"
-    if type(self.E) == "function" then self:E(TAG .. " " .. binding.lastReason) end
-  end
 end
 
 local function installDeliveryMonitor(binding)
@@ -107,6 +207,7 @@ local function installDeliveryMonitor(binding)
     if binding.delivered then stopDeliveryMonitor(binding); return end
     if completeDelivery(binding) then return end
     if type(binding.mission.IsOver) == "function" and binding.mission:IsOver() then
+      lifecycleSnapshot(binding.flightGroup, binding.mission, "DELIVERY_MONITOR_MISSION_IS_OVER")
       stopDeliveryMonitor(binding)
       binding.lastReason = "CARGOTRANSPORT_ENDED_BEFORE_PHYSICAL_DELIVERY"
       if type(binding.flightGroup.E) == "function" then
@@ -141,6 +242,8 @@ local function releaseActiveCargoTask(flightGroup, mission)
   requireFunction(flightGroup, "GetMissionCurrent", "FLIGHTGROUP")
   requireFunction(flightGroup, "PauseMission", "FLIGHTGROUP")
 
+  installLifecycleDiagnostics(flightGroup, mission)
+
   local currentTask = flightGroup:GetTaskCurrent()
   local pauseState = flightGroup.__omwSlingloadCorridorPauseState
 
@@ -155,7 +258,10 @@ local function releaseActiveCargoTask(flightGroup, mission)
         requested = true,
         task = currentTask,
       }
+      lifecycleSnapshot(flightGroup, mission, "BEFORE_PauseMission")
       flightGroup:PauseMission()
+      lifecycleSnapshot(flightGroup, mission, "AFTER_PauseMission_CALL")
+      scheduleLifecycleSnapshots(flightGroup, mission)
       if type(flightGroup.I) == "function" then
         flightGroup:I(TAG .. " confirmed pickup; requested public MOOSE PauseMission before corridor UpdateRoute")
       end
@@ -165,6 +271,7 @@ local function releaseActiveCargoTask(flightGroup, mission)
     if pauseState.mission ~= mission then
       return false, "CARGOTRANSPORT_PAUSE_MISSION_MISMATCH"
     end
+    lifecycleSnapshot(flightGroup, mission, "WAITING_FOR_TASK_RELEASE")
     return false, "CARGOTRANSPORT_TASK_STILL_EXECUTING"
   end
 
@@ -172,6 +279,7 @@ local function releaseActiveCargoTask(flightGroup, mission)
     return false, "CARGOTRANSPORT_PAUSE_MISSION_MISMATCH"
   end
 
+  lifecycleSnapshot(flightGroup, mission, "TASK_RELEASED_BEFORE_ROUTE_INSTALL")
   return true, nil
 end
 
@@ -271,10 +379,12 @@ local function installCargoHandoff(flightGroup, mission, resolved, altitudeFtAgl
     deliveryTask = deliveryTask,
     delivered = false,
     lastReason = nil,
+    completeDelivery = completeDelivery,
     result = {
       mode = "APPROVED_EXTERNAL_SLINGLOAD_CORRIDOR_HANDOFF",
       pauseMode = "MOOSE_OPSGROUP_PAUSE_MISSION",
       activeTaskClearedBeforeRoute = true,
+      lifecycleDiagnostics = "OBSERVATION_ONLY_PUBLIC_API_PLUS_PINNED_MOOSE_INTERNAL_FIELDS",
       anchorUid = anchorUid,
       outboundWaypointCount = #outboundProfiles,
       returnWaypointCount = #returnProfiles,
@@ -290,10 +400,12 @@ local function installCargoHandoff(flightGroup, mission, resolved, altitudeFtAgl
     },
   }
   flightGroup.__omwSlingloadCorridorBinding = binding
-  installTaskDoneHook(flightGroup)
+  installLifecycleDiagnostics(flightGroup, mission)
   installDeliveryMonitor(binding)
 
+  lifecycleSnapshot(flightGroup, mission, "BEFORE_UpdateRoute")
   flightGroup:UpdateRoute()
+  lifecycleSnapshot(flightGroup, mission, "AFTER_UpdateRoute")
 
   if type(flightGroup.I) == "function" then
     flightGroup:I(TAG .. string.format(
@@ -317,5 +429,3 @@ end
 
 Handoff.Install = installCargoHandoff
 Handoff.OriginalInstall = originalInstall
-
-return Handoff
