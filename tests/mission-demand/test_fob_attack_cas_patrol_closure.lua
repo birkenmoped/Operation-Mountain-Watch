@@ -61,7 +61,6 @@ do
     tacticalComplete=true,
     executionEvidenceConfirmed=false,
     reason="KNOWN_ATTACKERS_NEUTRALIZED",
-    releaseSource="BLUE_GROUND_COP_HONAKER",
     executor="AIRWING:TEST",
   })
 
@@ -71,7 +70,7 @@ do
   assertEqual(counter.count, 1, "mission cancel count")
   assertEqual(registry:Get(demand.id).status, MissionDemand.Status.SUCCESS, "demand status")
   assertEqual(registry:Get(demand.id).result.releaseAuthority, "SUPPORTED_ELEMENT", "release authority")
-  assertEqual(registry:Get(demand.id).result.releaseSource, "BLUE_GROUND_COP_HONAKER", "release source")
+  assertEqual(registry:Get(demand.id).result.releaseSource, "BLUE_GROUND_COP_HONAKER", "release source from demand origin")
   assertEqual(registry:Get(demand.id).result.executionEvidenceConfirmed, false, "recorded evidence state")
 end
 
