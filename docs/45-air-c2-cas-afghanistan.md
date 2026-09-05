@@ -55,6 +55,33 @@ Zusätzliche Quellen in Dokument 54:
 
 Die Projektnutzung folgt [`OMW-GOV-SOURCE-USE`](sources/graveyard-of-empires.md). Patreon-Darstellung, identifizierte Originalquelle, unabhängige Recherche und OMW-Projektentscheidung bleiben getrennt.
 
+### 2.1 Ergänzende Early-OEF-Primär-/Fachquellen aus dem DTIC-Batch vom 5. September 2026
+
+Drei vom Projektinhaber bereitgestellte Facharbeiten ergänzen die bestehende Air-C2-/CAS-Quellenbasis. Sie behandeln überwiegend 2001-2002 und werden deshalb **nur als Prozess- und Friktionsbeleg** genutzt, nicht als 2010/2011-ROE-, C2- oder ORBAT-Baseline:
+
+- David D. Kindley, *"Why Won't You Drop, Damn You!?" - An Examination of the Targeting Process in Operation Enduring Freedom and its Implications*, Naval War College, DTIC `ADA422702`. Bibliographische Besonderheit: Titelblatt 2.2.2003, Report Documentation Page 2.2.2004. Relevante Passagen: gedruckte S. 4-7.
+- Benjamin S. Lambeth, *Air Power Against Terror: America's Conduct of Operation Enduring Freedom*, RAND MG-166-CENTAF, 2005, DTIC `ADA449279`. Relevante Passagen: Summary xxii-xxvi, PDF-Seiten 26-30.
+- Richard G. Rhyne, *Special Forces Command and Control in Afghanistan*, U.S. Army Command and General Staff College, 2004, DTIC `ADA429053`. Relevante Passagen: S. 41-47.
+
+Die breitere Auswertung desselben Quellenbatches einschließlich Airlift/Logistik und ausdrücklich **nicht** übernommener Quellen steht in [`OMW-HIST-ARSOF-SOF-AVIATION-EARLY-OEF`](77-arsof-sof-aviation-and-early-oef-operational-models.md), Abschnitt 17.
+
+Die drei Quellen stützen insbesondere folgende bereits vorhandene OMW-Grenzen:
+
+```text
+ATO_ENTRY != WEAPON_RELEASE_AUTHORITY
+ROE_PUBLISHED != ROE_UNDERSTOOD
+TARGET_COORDINATE != POSITIVE_IDENTIFICATION
+INTELLIGENCE_AVAILABLE != FORCE_TASKED
+SUPPORTING_RELATIONSHIP != UNDEFINED_AUTHORITY
+CAS_AVAILABLE != IMMEDIATE_FIRE
+```
+
+Kindley dokumentiert einen Early-OEF-Fall, in dem eine formal zulässige Waffenwirkung wegen eines über mehrere Ebenen verbreiteten falschen Verständnisses der ROE nicht ausgeführt wurde. Für OMW ist daraus **nicht** die damalige konkrete ROE abzuleiten, sondern die Notwendigkeit, Authority, PID, Friendly Risk, Collateral-Risk-Prüfung und Freigabestatus getrennt und nachvollziehbar zu führen.
+
+Lambeth beschreibt bei Operation Anaconda die Folgen verspäteter Air-Component-Integration: enge Airspace-Deconfliction, eingeschränkte Run-in Headings, dicht gestaffelte Luftfahrzeuge und verzögerte Reaktion auf Fire-Support-Anforderungen. Zusätzlich beschreibt er C2-Friktion zwischen CENTCOM und CAOC bei stark zentralisierter Kontrolle/Execution. Für OMW stützt dies die Trennung von **Tasking**, **Airspace/Deconfliction**, **Terminal Control** und **Weapon Release**.
+
+Rhyne dokumentiert wechselnde OPCON-/TACON-Beziehungen, SOCCE-Integration und verkürzte Reaktionszeiten, nachdem Special-Operations- und konventionelle Stäbe enger integriert wurden. Für OMW bestätigt dies, dass direkte Liaison und gemeinsame Planung einen Request beschleunigen können, ohne dadurch Ressourcenbesitz oder Waffenfreigabe zu ersetzen.
+
 ## 3. Verbindliche Missionsdesign-Grundsätze
 
 - CAS ist ein Führungs-, Koordinations- und Identifikationsprozess, nicht nur Waffenwirkung.
