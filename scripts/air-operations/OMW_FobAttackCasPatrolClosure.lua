@@ -2,13 +2,18 @@
 --
 -- AUFTRAG:PATROLZONE is a readiness/loiter mission and is not expected to end merely
 -- because the current attack incident has no living participants. OMW therefore closes
--- the MOOSE mission explicitly when tactical completion is authoritative. Weapon-use
--- evidence remains mandatory only for adapters configured to require it.
+-- the MOOSE mission explicitly when tactical completion is authoritative. For FOB/COP
+-- attack support, tacticalComplete means that the supported element has released its
+-- current CAS requirement after its own local tactical assessment. It is not an
+-- omniscient C2 decision and it is not inferred by the CAS flight merely because the
+-- flight currently sees no target. Weapon-use evidence remains mandatory only for
+-- adapters configured to require it.
 
 local Closure = {}
 
 local TAG = "[OMW][FobAttackCasPatrolClosure]"
 Closure.SchemaVersion = "OMW-FOB-ATTACK-CAS-PATROL-CLOSURE-2"
+Closure.ReleaseAuthority = "SUPPORTED_ELEMENT"
 
 local function fail(message)
   error(TAG .. " " .. tostring(message), 2)
@@ -51,6 +56,8 @@ function Closure.Complete(spec)
     missionMode = "PATROLZONE_ENGAGE",
     closureReason = spec.reason or "TACTICAL_COMPLETION_CONFIRMED",
     tacticalComplete = true,
+    releaseAuthority = Closure.ReleaseAuthority,
+    releaseSource = spec.releaseSource or "REQUESTING_INSTALLATION",
     executionEvidenceConfirmed = spec.executionEvidenceConfirmed == true,
   })
   return mission, true, "CLOSED"
