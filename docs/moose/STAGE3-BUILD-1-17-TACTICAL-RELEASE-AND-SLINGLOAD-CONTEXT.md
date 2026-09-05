@@ -7,6 +7,7 @@ authoritative_for:
   - Stage 3 Build 1-17 remediation rationale
   - Build 1-16 runtime failure diagnosis for Guard/QRF, CAS closure, and CH-47 corridor handoff
   - Build 1-17 offline regression contract
+  - Stage 3 supported-element, C2, and CAS release-authority separation
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 source_branch: agent/fire-support-strategic-resupply-alarm-evidence
@@ -349,7 +350,8 @@ Damit gilt für weitere Entwicklung auf diesem Branch:
 
 ```text
 bekannter reproduzierbarer Fehlerpfad
--> offline Regression zuerst
+-> source/MOOSE review
+-> dedicated offline regression
 -> CI PASS
 -> lokaler Build + unabhängiger Hash
 -> erst danach DCS-Lauf
@@ -445,7 +447,8 @@ PersonnelLedger settles on ARMYGROUP:Returned
 ```text
 Jalalabad -> R500 -> WEST -> AO
 actual weapon employment
-zero living known attack participants -> immediate PATROLZONE closure
+zero living known attack participants -> Honaker releases its current CAS requirement
+supported-element release -> immediate PATROLZONE closure
 no waiting until Bingo/Fuel
 WEST reverse -> R500 reverse -> Jalalabad
 no direct RTB shortcut
@@ -486,3 +489,109 @@ Für die weitere Historie ausdrücklich festhalten:
 ```
 
 Diese Punkte sind für weitere Reviews als Regression-Grenzen zu behandeln.
+
+## 13. Owner-Entscheidung: lokale Honaker-Führung, C2-Lagegrenze und CAS-Release
+
+Der Projektinhaber hat die Zuständigkeiten für den Honaker-Fall präzisiert. Diese Präzisierung ist für den Stage-3-Acceptance-Pfad verbindlich und verhindert eine künstliche zentrale "God's-eye"-Logik.
+
+### 13.1 Guard und QRF gehören vollständig zu Honaker
+
+```text
+Honaker installation / local ground command
+-> owns Guard employment
+-> owns local QRF employment
+-> owns Guard/QRF recovery decision within the installation response
+
+C2
+-> does NOT decide whether Honaker deploys Guard or QRF
+```
+
+Guard und QRF sind lokale Reaktionsmittel der Installation. C2 koordiniert externe Unterstützungsbedarfe, besitzt aber keine direkte Entscheidungsautorität über Honakers lokale Sicherungskräfte.
+
+### 13.2 C2 besitzt kein automatisches taktisches Honaker-Lagebild
+
+C2 darf nicht allein deshalb als informiert gelten, weil ein gemeinsames Lua-Objekt den Incident-Zustand kennt.
+
+```text
+C2 tactical knowledge
+= reports from Honaker / supported element
+OR reports from CAS
+OR reports from an actually present ISR / sensor provider
+
+NOT:
+internal access to GroundInstallationAttackIncident
+-> automatic omniscient C2 knowledge
+```
+
+Eine Drohne oder ein anderer real modellierter Sensor kann C2 zusätzliche Lageinformation liefern. Ohne solchen Sensor kennt C2 den aktuellen Feindstatus nur aus Meldungen der beteiligten Kräfte.
+
+### 13.3 Vereinfachter Stage-3-CAS-Release-Vertrag
+
+Für Build 1-17 wird bewusst keine zusätzliche komplexe CAS-/C2-Sensorfusion eingeführt. Der Acceptance-Test verwendet die folgende deterministische Vereinfachung:
+
+```text
+Honaker attack incident active
+-> Honaker maintains its CAS requirement
+
+zero living known Honaker attack-incident participants
+-> Honaker local tactical assessment: NO_KNOWN_ATTACKERS_REMAINING
+-> Honaker releases its current CAS requirement
+-> PATROLZONE AUFTRAG Cancel
+-> WEST reverse
+-> R500 reverse
+-> Jalalabad recovery
+```
+
+`tacticalComplete=true` im `OMW_FobAttackCasPatrolClosure` ist für diesen Pfad daher semantisch eine **Freigabe durch das unterstützte Element** und keine autonome Entscheidung von C2 oder des CAS-Flugs.
+
+Der Closure-Adapter zeichnet diese Grenze jetzt als Ergebnis-Evidenz auf:
+
+```text
+releaseAuthority = SUPPORTED_ELEMENT
+releaseSource = requesting installation / Honaker
+```
+
+Der zugehörige Offline-Test prüft diese Metadaten zusätzlich zur weiterhin erforderlichen genau einmaligen Mission-Cancel-Operation.
+
+### 13.4 Was Build 1-17 bewusst nicht modelliert
+
+Der folgende realistischere Konflikt wird in diesem Build nicht zusätzlich implementiert:
+
+```text
+Honaker reports no known attackers
+BUT
+CAS still has a relevant hostile contact
+```
+
+Eine spätere Produktionsausbaustufe kann dafür getrennte Statusreports und eine explizite Entscheidungskette modellieren. Dabei gilt bereits als Designgrenze:
+
+```text
+Honaker can maintain or release its support requirement based on its local tactical need.
+CAS can report CONTACT / NO CONTACT / UNABLE / WINCHESTER / BINGO / DAMAGE.
+C2 can retask or allocate external support based on reports actually received.
+CAS seeing an unrelated hostile does not automatically extend the Honaker CAS task.
+```
+
+Diese spätere Erweiterung darf nicht erneut die aktuelle Stage-3-Acceptance mit zusätzlichen Completion-Guardrails belasten, bevor die einfache physische Recovery-Kette zuverlässig validiert ist.
+
+### 13.5 CAS unable / fuel / weapons state
+
+Ein CAS-Flug kann aus eigenem Flugzustand melden, dass er nicht weiter unterstützen kann, beispielsweise wegen Fuel/Bingo, fehlender geeigneter Bewaffnung oder Beschädigung. Das ist ein **CAS-Ausführungszustand**, keine Aussage darüber, dass Honakers Bodengefecht beendet ist.
+
+Zielvertrag für die spätere Produktionslogik:
+
+```text
+CAS reports unable / Bingo / Winchester / damage
+-> report to supported element and controlling agency
+-> current aircraft leaves the CAS task
+-> planned WEST reverse / R500 reverse recovery remains preferred
+-> remaining CAS requirement may cause replacement / retask
+```
+
+Build 1-17 validiert weiterhin primär, dass die normale unterstützten-seitige Freigabe nicht bis zu einem DCS-Bingo-/Fuel-RTB verzögert wird.
+
+### 13.6 Selbstschutz ist keine CAS-Zielautorität
+
+Selbstschutz beziehungsweise unmittelbare Gefahr für den CAS-Flug ist von der normalen Honaker-CAS-Zielkette getrennt zu behandeln. Ein Selbstschutzfall darf nicht als allgemeine Autorisierung interpretiert werden, weitere sichtbare RED-Kräfte als Fortsetzung des Honaker-Auftrags zu bekämpfen.
+
+Diese Rollen- und Informationsgrenzen verändern keine MOOSE-API und führen keine Native-DCS-Ausnahme ein. Die physische CAS-Ausführung bleibt MOOSE-first über `AIRWING`, `SQUADRON`, `AUFTRAG:PATROLZONE`, `SetEngageDetected` und die bereits dokumentierte öffentliche FLIGHTGROUP-Recovery-Kette.
