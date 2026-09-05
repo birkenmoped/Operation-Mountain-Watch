@@ -37,9 +37,12 @@ local config = {
       assetGroups = 4,
       grouping = 2,
       parkingIDs = { 26, 51, 11 },
-      missionTypes = { AUFTRAG.Type.CAS },
+      missionTypes = { AUFTRAG.Type.CAS, AUFTRAG.Type.CASENHANCED, AUFTRAG.Type.PATROLZONE },
       payloads = {
-        { template = "TPL_AIR_US_JBAD_AH64D_CAS_2SHIP", missionTypes = { AUFTRAG.Type.CAS } },
+        {
+          template = "TPL_AIR_US_JBAD_AH64D_CAS_2SHIP",
+          missionTypes = { AUFTRAG.Type.CAS, AUFTRAG.Type.CASENHANCED, AUFTRAG.Type.PATROLZONE },
+        },
       },
     },
     UH60 = {

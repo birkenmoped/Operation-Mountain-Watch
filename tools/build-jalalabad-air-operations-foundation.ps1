@@ -8,7 +8,7 @@ $repoRoot = Split-Path -Parent $PSScriptRoot
 $sourceFile = Join-Path $repoRoot 'scripts\air-operations\OMW_AirOps_Jalalabad_Bootstrap.lua'
 $distDir = Join-Path $repoRoot 'mission\tests\jalalabad-air-operations\dist'
 $outputFile = Join-Path $distDir 'OMW_AirOps_Jalalabad.lua'
-$builderVersion = 'JBAD-AIR-OPS-FOUNDATION-ONLY-2'
+$builderVersion = 'JBAD-AIR-OPS-FOUNDATION-ONLY-4'
 
 if (-not (Test-Path -LiteralPath $sourceFile -PathType Leaf)) {
     throw "Jalalabad foundation source not found: $sourceFile"
@@ -22,6 +22,10 @@ $requiredMarkers = @(
     'SQ_US_JBAD_AH64D_B_1_10_AVN',
     'SQ_US_JBAD_UH60_UTILITY_MEDEVAC',
     'SQ_US_JBAD_CH47_HEAVYLIFT',
+    'TPL_AIR_US_JBAD_AH64D_CAS_2SHIP',
+    'AUFTRAG.Type.CAS',
+    'AUFTRAG.Type.CASENHANCED',
+    'AUFTRAG.Type.PATROLZONE',
     'SQUADRON:New',
     'SetGrouping',
     'SetParkingIDs',
@@ -80,6 +84,7 @@ $header = @"
 -- GitCommit: $commit
 -- MOOSE-Pin: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
 -- Scope: AIRWING/SQUADRON foundation only; no F10 test missions or dispatch harness.
+-- AH64D-Capabilities: CAS + CASENHANCED + PATROLZONE.
 -- GeneratedUtc: $([DateTime]::UtcNow.ToString('o'))
 
 "@
@@ -98,6 +103,7 @@ $hash = (Get-FileHash -LiteralPath $outputFile -Algorithm SHA256).Hash.ToLowerIn
 Write-Host "Built: $outputFile"
 Write-Host "BuilderVersion: $builderVersion"
 Write-Host "Scope: AIRWING_SQUADRON_FOUNDATION_ONLY"
+Write-Host "AH64DCapabilities: CAS,CASENHANCED,PATROLZONE"
 Write-Host "F10TestMissions: ABSENT"
 Write-Host "AUFTRAGInstances: ABSENT"
 Write-Host "OPSTRANSPORTInstances: ABSENT"

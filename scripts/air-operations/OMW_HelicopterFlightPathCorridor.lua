@@ -1,18 +1,23 @@
 -- Operation Mountain Watch - shared MOOSE helicopter FlightPath corridor adapter.
 --
 -- Extracted from the DCS-accepted Stage 1D-P PERSONNEL air-resupply corridor.
--- Geometry remains owner-authored through PATHLINE; this adapter only orients,
--- composes, offsets, profiles, and inserts MOOSE FLIGHTGROUP waypoints around an AUFTRAG mission.
+-- Geometry remains owner-authored through PATHLINE. Legacy callers may still install
+-- explicit FLIGHTGROUP waypoints; lifecycle-sensitive missions can instead use the
+-- owner-authored path only to derive native MOOSE AUFTRAG ingress/egress anchors.
 
 local Corridor = {}
 
 local TAG = "[OMW][HelicopterFlightPathCorridor]"
-Corridor.SchemaVersion = "OMW-HELICOPTER-FLIGHTPATH-CORRIDOR-6"
+Corridor.SchemaVersion = "OMW-HELICOPTER-FLIGHTPATH-CORRIDOR-8"
 Corridor.DefaultPathlineName = "OMW_FlightPath"
 Corridor.DefaultOffsetRightM = 500
 Corridor.DefaultRightHeadingDeltaDeg = 90
 Corridor.DefaultAltitudeFtAgl = 500
 Corridor.DefaultJunctionMaxDistanceM = 1000
+Corridor.OffsetMode = {
+  LEGACY_DEFAULT = "LEGACY_DEFAULT",
+  PATHLINE_SUFFIX = "PATHLINE_SUFFIX",
+}
 
 local function fail(message)
   error(TAG .. " " .. tostring(message), 2)
@@ -91,6 +96,59 @@ local function directionalRightOffsetCoordinates(coordinates, offsetMeters, head
   return result
 end
 
+function Corridor.ParsePathlineOffset(pathlineName)
+  if type(pathlineName) ~= "string" or pathlineName == "" then fail("pathlineName requires non-empty string") end
+  local side, meters = pathlineName:match("_([RL])(%d+)$")
+  if not side then
+    return { side="CENTER", meters=0, signedRightM=0, source="NO_SUFFIX" }
+  end
+  local value = tonumber(meters)
+  if not value or value < 0 then fail("invalid PATHLINE offset suffix: " .. tostring(pathlineName)) end
+  return {
+    side = side == "R" and "RIGHT" or "LEFT",
+    meters = value,
+    signedRightM = side == "R" and value or -value,
+    source = "PATHLINE_SUFFIX",
+  }
+end
+
+local function offsetForPathline(pathlineName, offsetMode, legacyOffsetRightM)
+  if offsetMode == Corridor.OffsetMode.PATHLINE_SUFFIX then
+    return Corridor.ParsePathlineOffset(pathlineName)
+  end
+  return {
+    side = legacyOffsetRightM > 0 and "RIGHT" or (legacyOffsetRightM < 0 and "LEFT" or "CENTER"),
+    meters = math.abs(legacyOffsetRightM),
+    signedRightM = legacyOffsetRightM,
+    source = "LEGACY_DEFAULT",
+  }
+end
+
+local function directionalSegmentOffsetCoordinates(coordinates, segmentIndexes, pathlineNames, offsetMode, legacyOffsetRightM, headingDeltaDeg)
+  local result, offsets = {}, {}
+  if #coordinates < 2 then return result, offsets end
+  for index, coordinate in ipairs(coordinates) do
+    local fromCoordinate, toCoordinate
+    if index < #coordinates then
+      fromCoordinate = coordinate
+      toCoordinate = coordinates[index + 1]
+    else
+      fromCoordinate = coordinates[index - 1]
+      toCoordinate = coordinate
+    end
+    local segmentIndex = segmentIndexes[index] or 1
+    local pathlineName = pathlineNames[segmentIndex]
+    local offset = offsets[segmentIndex]
+    if not offset then
+      offset = offsetForPathline(pathlineName, offsetMode, legacyOffsetRightM)
+      offsets[segmentIndex] = offset
+    end
+    local heading = fromCoordinate:HeadingTo(toCoordinate)
+    result[#result + 1] = coordinate:Translate(offset.signedRightM, heading + headingDeltaDeg, false, false)
+  end
+  return result, offsets
+end
+
 local function resolvePathline(pathlineName, suppliedPathline)
   local pathline = suppliedPathline
   if not pathline then
@@ -142,7 +200,9 @@ function Corridor.Resolve(spec)
   local originCoordinate = requireTable(spec.originCoordinate, "spec.originCoordinate")
   local destinationCoordinate = requireTable(spec.destinationCoordinate, "spec.destinationCoordinate")
   local pathlineName = spec.pathlineName or Corridor.DefaultPathlineName
-  local offsetRightM = spec.offsetRightM or Corridor.DefaultOffsetRightM
+  local offsetMode = spec.offsetMode or Corridor.OffsetMode.LEGACY_DEFAULT
+  local offsetRightM = spec.offsetRightM
+  if offsetRightM == nil then offsetRightM = Corridor.DefaultOffsetRightM end
   local headingDeltaDeg = spec.rightHeadingDeltaDeg or Corridor.DefaultRightHeadingDeltaDeg
   local segmentProfiles = validateSegmentProfiles(spec.segmentProfiles, {pathlineName})
 
@@ -163,10 +223,16 @@ function Corridor.Resolve(spec)
   end
   if #centerline < 2 then fail("resolved FlightPath corridor is too short") end
 
+  local outbound, segmentOffsets = directionalSegmentOffsetCoordinates(centerline, segmentIndexes, {pathlineName}, offsetMode, offsetRightM, headingDeltaDeg)
+  local returnSegmentIndexes = reverseValues(segmentIndexes)
+  local returnRoute = directionalSegmentOffsetCoordinates(reverseCoordinates(centerline), returnSegmentIndexes, {pathlineName}, offsetMode, offsetRightM, headingDeltaDeg)
+
   return {
     pathlineName = pathlineName,
     pathlineNames = { pathlineName },
+    offsetMode = offsetMode,
     offsetRightM = offsetRightM,
+    segmentOffsets = segmentOffsets,
     rightHeadingDeltaDeg = headingDeltaDeg,
     pathlinePointCount = #rawCoordinates,
     corridorPointCount = #centerline,
@@ -177,9 +243,9 @@ function Corridor.Resolve(spec)
     junctions = {},
     segmentProfiles = segmentProfiles,
     outboundSegmentIndexes = segmentIndexes,
-    returnSegmentIndexes = reverseValues(segmentIndexes),
-    outbound = directionalRightOffsetCoordinates(centerline, offsetRightM, headingDeltaDeg),
-    returnRoute = directionalRightOffsetCoordinates(reverseCoordinates(centerline), offsetRightM, headingDeltaDeg),
+    returnSegmentIndexes = returnSegmentIndexes,
+    outbound = outbound,
+    returnRoute = returnRoute,
   }
 end
 
@@ -195,13 +261,16 @@ function Corridor.ResolveSequence(spec)
       pathline = spec.pathlines and spec.pathlines[1] or nil,
       originCoordinate = originCoordinate,
       destinationCoordinate = destinationCoordinate,
+      offsetMode = spec.offsetMode,
       offsetRightM = spec.offsetRightM,
       rightHeadingDeltaDeg = spec.rightHeadingDeltaDeg,
       segmentProfiles = spec.segmentProfiles,
     })
   end
 
-  local offsetRightM = spec.offsetRightM or Corridor.DefaultOffsetRightM
+  local offsetMode = spec.offsetMode or Corridor.OffsetMode.LEGACY_DEFAULT
+  local offsetRightM = spec.offsetRightM
+  if offsetRightM == nil then offsetRightM = Corridor.DefaultOffsetRightM end
   local headingDeltaDeg = spec.rightHeadingDeltaDeg or Corridor.DefaultRightHeadingDeltaDeg
   local maxJunctionDistanceM = spec.maxJunctionDistanceM or Corridor.DefaultJunctionMaxDistanceM
   if type(maxJunctionDistanceM) ~= "number" or maxJunctionDistanceM <= 0 then fail("spec.maxJunctionDistanceM must be a positive number") end
@@ -251,10 +320,17 @@ function Corridor.ResolveSequence(spec)
   end
   if #centerline < 2 then fail("resolved FlightPath sequence corridor is too short") end
 
+  local outbound, segmentOffsets = directionalSegmentOffsetCoordinates(centerline, centerlineSegments, pathlineNames, offsetMode, offsetRightM, headingDeltaDeg)
+  local returnCenterline = reverseCoordinates(centerline)
+  local returnSegmentIndexes = reverseValues(centerlineSegments)
+  local returnRoute = directionalSegmentOffsetCoordinates(returnCenterline, returnSegmentIndexes, pathlineNames, offsetMode, offsetRightM, headingDeltaDeg)
+
   return {
     pathlineName = table.concat(pathlineNames, " -> "),
     pathlineNames = pathlineNames,
+    offsetMode = offsetMode,
     offsetRightM = offsetRightM,
+    segmentOffsets = segmentOffsets,
     rightHeadingDeltaDeg = headingDeltaDeg,
     pathlinePointCount = totalPointCount,
     corridorPointCount = #centerline,
@@ -266,9 +342,51 @@ function Corridor.ResolveSequence(spec)
     maxJunctionDistanceM = maxJunctionDistanceM,
     segmentProfiles = segmentProfiles,
     outboundSegmentIndexes = centerlineSegments,
-    returnSegmentIndexes = reverseValues(centerlineSegments),
-    outbound = directionalRightOffsetCoordinates(centerline, offsetRightM, headingDeltaDeg),
-    returnRoute = directionalRightOffsetCoordinates(reverseCoordinates(centerline), offsetRightM, headingDeltaDeg),
+    returnSegmentIndexes = returnSegmentIndexes,
+    outbound = outbound,
+    returnRoute = returnRoute,
+  }
+end
+
+local function aslFeetForAgl(coordinate, altitudeFtAgl)
+  if altitudeFtAgl == nil then return nil end
+  if type(coordinate.GetLandHeight) ~= "function" then fail("COORDINATE:GetLandHeight() is required for AGL mission anchor conversion") end
+  if type(UTILS) ~= "table" or type(UTILS.MetersToFeet) ~= "function" then fail("MOOSE UTILS.MetersToFeet() is required") end
+  return UTILS.MetersToFeet(coordinate:GetLandHeight()) + altitudeFtAgl
+end
+
+function Corridor.ConfigureMissionLifecycle(mission, resolved, spec)
+  requireTable(mission, "mission")
+  requireTable(resolved, "resolved")
+  spec = spec or {}
+  if type(mission.SetMissionIngressCoord) ~= "function" or type(mission.SetMissionEgressCoord) ~= "function" then
+    fail("AUFTRAG:SetMissionIngressCoord()/SetMissionEgressCoord() are required")
+  end
+  if type(resolved.outbound) ~= "table" or #resolved.outbound < 1 then fail("resolved.outbound requires at least one coordinate") end
+  if type(resolved.returnRoute) ~= "table" or #resolved.returnRoute < 1 then fail("resolved.returnRoute requires at least one coordinate") end
+
+  local ingressCoordinate = resolved.outbound[#resolved.outbound]
+  local egressCoordinate = resolved.returnRoute[1]
+  local ingressSegment = resolved.outboundSegmentIndexes and resolved.outboundSegmentIndexes[#resolved.outbound] or 1
+  local egressSegment = resolved.returnSegmentIndexes and resolved.returnSegmentIndexes[1] or ingressSegment
+  local ingressProfile = profileFor(resolved, ingressSegment, spec.defaultAltitudeFtAgl or Corridor.DefaultAltitudeFtAgl)
+  local egressProfile = profileFor(resolved, egressSegment, spec.defaultAltitudeFtAgl or Corridor.DefaultAltitudeFtAgl)
+  local ingressAltitudeFtAsl = spec.ingressAltitudeFtAsl or aslFeetForAgl(ingressCoordinate, ingressProfile.altitudeFtAgl)
+  local egressAltitudeFtAsl = spec.egressAltitudeFtAsl or aslFeetForAgl(egressCoordinate, egressProfile.altitudeFtAgl)
+
+  mission:SetMissionIngressCoord(ingressCoordinate, ingressAltitudeFtAsl, spec.speedKts)
+  mission:SetMissionEgressCoord(egressCoordinate, egressAltitudeFtAsl, spec.speedKts)
+
+  return {
+    mode = "MOOSE_NATIVE_INGRESS_EGRESS",
+    ingressCoordinate = ingressCoordinate,
+    egressCoordinate = egressCoordinate,
+    ingressAltitudeFtAsl = ingressAltitudeFtAsl,
+    egressAltitudeFtAsl = egressAltitudeFtAsl,
+    ingressPathlineName = pathlineFor(resolved, ingressSegment),
+    egressPathlineName = pathlineFor(resolved, egressSegment),
+    offsetMode = resolved.offsetMode,
+    segmentOffsets = resolved.segmentOffsets,
   }
 end
 
@@ -303,6 +421,12 @@ local function mergeTransition(transitions, uid, values)
   transitions[uid] = transition
 end
 
+local function metersToFeet(value)
+  if type(value) ~= "number" then return nil end
+  if type(UTILS) == "table" and type(UTILS.MetersToFeet) == "function" then return UTILS.MetersToFeet(value) end
+  return value * 3.280839895
+end
+
 local function installProfileTransitions(flightGroup, transitions)
   if not transitions or next(transitions) == nil then return end
   if type(flightGroup.SetAltitude) ~= "function" then fail("FLIGHTGROUP/OPSGROUP:SetAltitude() is required for AGL profile enforcement") end
@@ -318,6 +442,22 @@ local function installProfileTransitions(flightGroup, transitions)
   function flightGroup:OnAfterPassingWaypoint(From, Event, To, Waypoint)
     if previousPassingWaypoint then previousPassingWaypoint(self, From, Event, To, Waypoint) end
     local uid = Waypoint and Waypoint.uid or nil
+    local requested = uid and self.__omwFlightPathWaypointProfilesByUid and self.__omwFlightPathWaypointProfilesByUid[uid] or nil
+    local coordinate = type(self.GetCoordinate) == "function" and self:GetCoordinate(true) or nil
+    local actualAslFt, terrainFt, actualAglFt = nil, nil, nil
+    if coordinate and type(coordinate.y) == "number" and type(coordinate.GetLandHeight) == "function" then
+      local terrainM = coordinate:GetLandHeight()
+      actualAslFt = metersToFeet(coordinate.y)
+      terrainFt = metersToFeet(terrainM)
+      actualAglFt = metersToFeet(coordinate.y - terrainM)
+    end
+    if type(self.I) == "function" then
+      self:I(TAG .. string.format(
+        " waypoint telemetry uid=%s pathline=%s requestedAglFt=%s actualAglFt=%s actualAslFt=%s terrainFt=%s",
+        tostring(uid), tostring(requested and requested.pathlineName), tostring(requested and requested.altitudeFtAgl),
+        tostring(actualAglFt), tostring(actualAslFt), tostring(terrainFt)))
+    end
+
     local transition = uid and self.__omwFlightPathProfileTransitions and self.__omwFlightPathProfileTransitions[uid] or nil
     if not transition then return end
 
@@ -468,6 +608,13 @@ function Corridor.Install(flightGroup, mission, resolved, altitudeFtAgl)
       keepAltitude = false,
       pathlineName = "POST_CORRIDOR",
     })
+  end
+
+  flightGroup.__omwFlightPathWaypointProfilesByUid = flightGroup.__omwFlightPathWaypointProfilesByUid or {}
+  for _, profiles in pairs(waypointProfiles) do
+    for _, profile in ipairs(profiles) do
+      flightGroup.__omwFlightPathWaypointProfilesByUid[profile.uid] = profile
+    end
   end
 
   installProfileTransitions(flightGroup, profileTransitions)
