@@ -11,7 +11,7 @@ $acceptanceFile = Join-Path $repoRoot 'mission\tests\stage3-cas-resupply-focused
 $distDir = Join-Path $repoRoot 'mission\tests\stage3-cas-resupply-focused\dist'
 $outputFile = Join-Path $distDir 'OMW_Stage3_CAS_Resupply_Focused_Acceptance_1.lua'
 
-$builderVersion = 'STAGE3-CAS-RESUPPLY-FOCUSED-ACCEPTANCE-1-1'
+$builderVersion = 'STAGE3-CAS-RESUPPLY-FOCUSED-ACCEPTANCE-1-2'
 $testId = 'STAGE3-CAS-RESUPPLY-FOCUSED-ACCEPTANCE-1'
 $mooseCommit = '73d3ed119cd9e7e3f2cfcabbaa34513d30529b54'
 $mooseSha256 = 'e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915'
@@ -27,7 +27,7 @@ $combined = $corridorSource + $handoffSource + $acceptanceSource
 
 foreach ($marker in @(
   'OMW-HELICOPTER-FLIGHTPATH-CORRIDOR-8',
-  'OMW-SLINGLOAD-CORRIDOR-HANDOFF-3',
+  'OMW-SLINGLOAD-CORRIDOR-HANDOFF-4',
   'STAGE3-CAS-RESUPPLY-FOCUSED-ACCEPTANCE-1',
   'TPL_AIR_US_JBAD_AH64D_CAS_2SHIP',
   'TPL_AIR_US_JBAD_CH47_HEAVYLIFT_1SHIP',
@@ -40,18 +40,32 @@ foreach ($marker in @(
   'SetMissionIngressCoord',
   'SetMissionEgressCoord',
   'SetMissionWaypointRandomization(0)',
+  'SetEngageDetected',
+  'SetROE(ENUMS.ROE.OpenFire)',
+  'SetROT(ENUMS.ROT.PassiveDefense)',
   'AUFTRAG:NewCARGOTRANSPORT',
   'cargoId=state.cargo:GetID()',
   'zoneId=state.drop.ZoneID',
   'CARGOTRANSPORT_PAUSE_REQUESTED',
   'CARGOTRANSPORT_TASK_STILL_EXECUTING',
+  'CAS and RESUPPLY have independent failure state',
   'No IncidentParticipants or KNOWN_ATTACKERS_NEUTRALIZED completion gate is used'
 )) {
   if (-not $combined.Contains($marker)) { throw "Focused acceptance missing required marker: $marker" }
 }
 
-foreach ($marker in @('Controller:setTask','coalition.addGroup','coalition.addStaticObject',':Teleport(','MissionScripting.lua','mist.','MIST')) {
-  if ($combined.Contains($marker)) { throw "Focused acceptance exceeds approved boundary: $marker" }
+foreach ($marker in @(
+  'cargo numeric ID unavailable',
+  'type(state.cargo:GetID())~="number"',
+  'Controller:setTask',
+  'coalition.addGroup',
+  'coalition.addStaticObject',
+  ':Teleport(',
+  'MissionScripting.lua',
+  'mist.',
+  'MIST'
+)) {
+  if ($combined.Contains($marker)) { throw "Focused acceptance contains forbidden/deprecated marker: $marker" }
 }
 
 function Embed-Module([string]$Name,[string]$Source) {
@@ -74,6 +88,7 @@ $header = @"
 -- Scope: focused parallel AH-64 explicit CAS geometry/execution + CH-47 physical slingload R500 handoff.
 -- Excluded: Guard/QRF/ARTY/CampaignState strategic accounting.
 -- CASCompletion: acceptance-only release 90 seconds after first real AH-64 shot; no IncidentParticipants completion gate.
+-- Isolation: CAS and RESUPPLY failure states are independent and cannot suppress the other subsystem execution.
 -- MizMutation: false.
 
 "@
@@ -94,10 +109,11 @@ Write-Host "GeneratedUtc: $generatedUtc"
 Write-Host "GitCommit: $commit"
 Write-Host "MOOSECommit: $mooseCommit"
 Write-Host "MooseLuaSHA256: $($mooseSha256.ToUpperInvariant())"
-Write-Host 'CAS: NewCAS + explicit WEST tactical ingress/egress + Honaker AO center + randomization 0'
+Write-Host 'CAS: NewCAS + explicit WEST ingress/egress + SetEngageDetected + OpenFire + PassiveDefense + randomization 0'
 Write-Host 'CAS route: Jalalabad -> R500 -> WEST -> ingress -> CAS -> egress -> WEST reverse -> R500 reverse -> Jalalabad'
 Write-Host 'CAS release: acceptance-only 90 seconds after first real shot; no IncidentParticipants/KNOWN_ATTACKERS_NEUTRALIZED gate'
-Write-Host 'RESUPPLY: physical pickup -> explicit cargoId/zoneId -> MOOSE PauseMission/TaskDone -> R500 -> Wright -> R500 reverse -> Jalalabad'
+Write-Host 'RESUPPLY: MOOSE string cargoId accepted -> physical pickup -> PauseMission/TaskDone -> R500 -> Wright -> R500 reverse -> Jalalabad'
+Write-Host 'SubsystemIsolation: CAS and RESUPPLY failures do not suppress the other execution path'
 Write-Host 'FullStage3Required: false'
 Write-Host 'MizMutation: false'
 Write-Host "SHA256: $hash"
