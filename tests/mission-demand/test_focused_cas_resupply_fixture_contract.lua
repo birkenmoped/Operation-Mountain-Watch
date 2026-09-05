@@ -31,8 +31,7 @@ assertNotContains(source, "cargo numeric ID unavailable", "rejected numeric carg
 assertNotContains(source, "type(state.cargo:GetID())~=\"number\"", "numeric cargo-ID requirement")
 
 -- Preserve the DCS-proven MOOSE engagement configuration while NewCAS owns the CAS
--- task and OMW owns the explicit route geometry. The successful CAS path is frozen for
--- the slingload lifecycle diagnostic run.
+-- task and OMW owns the explicit route geometry. The successful CAS path is frozen.
 assertContains(source, "SetMissionIngressCoord", "explicit CAS ingress")
 assertContains(source, "SetMissionEgressCoord", "explicit CAS egress")
 assertContains(source, "SetMissionWaypointRandomization(0)", "CAS waypoint randomization")
@@ -40,10 +39,15 @@ assertContains(source, "SetEngageDetected", "MOOSE CAS EngageDetected")
 assertContains(source, "SetROE(ENUMS.ROE.OpenFire)", "MOOSE CAS ROE")
 assertContains(source, "SetROT(ENUMS.ROT.PassiveDefense)", "MOOSE CAS ROT")
 
--- Lifecycle diagnostics must remain observation-only. They are intended to identify
--- which MOOSE transition changes the paused CARGOTRANSPORT mission to OVER; they must
--- never become a new runtime prerequisite or completion gate.
-assertContains(handoffSource, "OMW-SLINGLOAD-CORRIDOR-HANDOFF-5", "diagnostic handoff schema")
+-- Focus 1-3 proved PauseMission and UpdateRoute keep the source AUFTRAG paused. Pinned
+-- FLIGHTGROUP:_CheckGroupDone can later auto-unpause the only remaining paused mission.
+-- The correction must use the documented MOOSE FSM OnBefore<Event> transition hook,
+-- not mutate MOOSE queue/internal state or invent an acceptance completion gate.
+assertContains(handoffSource, "OMW-SLINGLOAD-CORRIDOR-HANDOFF-6", "handoff schema")
+assertContains(handoffSource, "OnBeforeUnpauseMission", "MOOSE FSM unpause transition handler")
+assertContains(handoffSource, "BLOCKED_AUTO_UNPAUSE_BEFORE_PHYSICAL_DELIVERY", "auto-unpause runtime evidence")
+assertContains(handoffSource, "MOOSE_FSM_ONBEFORE_UNPAUSEMISSION", "unpause guard mode")
+assertContains(handoffSource, "return false", "FSM transition cancellation")
 assertContains(handoffSource, "LIFECYCLE label=", "lifecycle snapshot logging")
 assertContains(handoffSource, "BEFORE_PauseMission", "pre-pause snapshot")
 assertContains(handoffSource, "EVENT_OnAfterPauseMission", "pause callback snapshot")
@@ -52,6 +56,9 @@ assertContains(handoffSource, "EVENT_OnAfterMissionDone", "mission-done callback
 assertContains(handoffSource, "POST_PAUSE_T+", "post-pause timeline snapshots")
 assertContains(handoffSource, "DELIVERY_MONITOR_MISSION_IS_OVER", "mission-over observation")
 assertContains(handoffSource, "Diagnostic-only inspection", "internal-field diagnostic boundary")
+assertNotContains(handoffSource, "pausedmissions = {}", "manual paused mission queue replacement")
+assertNotContains(handoffSource, "currentmission = nil", "manual current mission mutation")
+assertNotContains(handoffSource, "taskcurrent = 0", "manual current task mutation")
 assertNotContains(handoffSource, "if missionState", "mission-state diagnostic gate")
 assertNotContains(handoffSource, "if groupStatus", "group-status diagnostic gate")
 
