@@ -11,7 +11,7 @@ $acceptanceFile = Join-Path $repoRoot 'mission\tests\stage3-cas-resupply-focused
 $distDir = Join-Path $repoRoot 'mission\tests\stage3-cas-resupply-focused\dist'
 $outputFile = Join-Path $distDir 'OMW_Stage3_CAS_Resupply_Focused_Acceptance_1.lua'
 
-$builderVersion = 'STAGE3-CAS-RESUPPLY-FOCUSED-ACCEPTANCE-1-3'
+$builderVersion = 'STAGE3-CAS-RESUPPLY-FOCUSED-ACCEPTANCE-1-4'
 $testId = 'STAGE3-CAS-RESUPPLY-FOCUSED-ACCEPTANCE-1'
 $mooseCommit = '73d3ed119cd9e7e3f2cfcabbaa34513d30529b54'
 $mooseSha256 = 'e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915'
@@ -27,7 +27,7 @@ $combined = $corridorSource + $handoffSource + $acceptanceSource
 
 foreach ($marker in @(
   'OMW-HELICOPTER-FLIGHTPATH-CORRIDOR-8',
-  'OMW-SLINGLOAD-CORRIDOR-HANDOFF-5',
+  'OMW-SLINGLOAD-CORRIDOR-HANDOFF-6',
   'STAGE3-CAS-RESUPPLY-FOCUSED-ACCEPTANCE-1',
   'TPL_AIR_US_JBAD_AH64D_CAS_2SHIP',
   'TPL_AIR_US_JBAD_CH47_HEAVYLIFT_1SHIP',
@@ -48,6 +48,9 @@ foreach ($marker in @(
   'zoneId=state.drop.ZoneID',
   'CARGOTRANSPORT_PAUSE_REQUESTED',
   'CARGOTRANSPORT_TASK_STILL_EXECUTING',
+  'OnBeforeUnpauseMission',
+  'BLOCKED_AUTO_UNPAUSE_BEFORE_PHYSICAL_DELIVERY',
+  'MOOSE_FSM_ONBEFORE_UNPAUSEMISSION',
   'LIFECYCLE label=',
   'BEFORE_PauseMission',
   'EVENT_OnAfterPauseMission',
@@ -94,10 +97,11 @@ $header = @"
 -- TestId: $testId
 -- MOOSECommit: $mooseCommit
 -- MooseLuaSHA256: $mooseSha256
--- Scope: frozen DCS-proven AH-64 CAS path + CH-47 slingload PAUSED-to-OVER lifecycle diagnostics.
+-- Scope: frozen DCS-proven AH-64 CAS path + CH-47 slingload MOOSE auto-unpause lifecycle correction.
 -- Excluded: Guard/QRF/ARTY/CampaignState strategic accounting.
 -- CASCompletion: acceptance-only release 90 seconds after first real AH-64 shot; no IncidentParticipants completion gate.
--- RESUPPLYDiagnostics: observation-only snapshots around PauseMission/TaskDone/MissionDone/UpdateRoute; no diagnostic state is a runtime gate.
+-- RESUPPLYLifecycle: public MOOSE PauseMission plus OnBeforeUnpauseMission transition handler holds the source AUFTRAG paused until physical Wright delivery.
+-- RESUPPLYDiagnostics: observation-only snapshots around PauseMission/TaskDone/MissionDone/UpdateRoute; diagnostic fields are not runtime gates.
 -- Isolation: CAS and RESUPPLY failure states are independent and cannot suppress the other subsystem execution.
 -- MizMutation: false.
 
@@ -121,8 +125,8 @@ Write-Host "MOOSECommit: $mooseCommit"
 Write-Host "MooseLuaSHA256: $($mooseSha256.ToUpperInvariant())"
 Write-Host 'CAS: frozen proven path - NewCAS + explicit WEST ingress/egress + EngageDetected + OpenFire + PassiveDefense + randomization 0'
 Write-Host 'CAS route: Jalalabad -> R500 -> WEST -> ingress -> CAS -> egress -> WEST reverse -> R500 reverse -> Jalalabad'
-Write-Host 'RESUPPLY: physical pickup -> PauseMission -> observation-only lifecycle snapshots -> existing R500 handoff -> Wright -> R500 reverse -> Jalalabad'
-Write-Host 'RESUPPLY diagnostics: mission state/group status/current mission/current task plus pinned-MOOSE paused/current/task fields at pause events and T+1/2/3/5s'
+Write-Host 'RESUPPLY: physical pickup -> PauseMission -> MOOSE OnBeforeUnpauseMission hold -> R500 handoff -> Wright physical delivery -> R500 reverse -> Jalalabad'
+Write-Host 'RESUPPLY lifecycle: pinned FLIGHTGROUP _CheckGroupDone auto-unpause is rejected only while the approved pickup-to-drop corridor handoff is active'
 Write-Host 'DiagnosticGate: false'
 Write-Host 'SubsystemIsolation: CAS and RESUPPLY failures do not suppress the other execution path'
 Write-Host 'FullStage3Required: false'
