@@ -15,8 +15,7 @@ local TAG = "[OMW][" .. TEST_ID .. "]"
 local R500 = "OMW_FlightPath_R500"
 local WEST = "OMW_FlightPath_WEST"
 local HONAKER_ZONE = "ZON_BLUE_GND_HONAKER_ACCESS"
-local PICKUP_ZONE = "ZON_BLUE_LOG_SLG_JALALAD_01"
-local PICKUP_ZONE_FALLBACK = "ZON_BLUE_LOG_SLG_JALALABAD_01"
+local PICKUP_ZONE = "ZON_BLUE_LOG_SLG_JALALABAD_01"
 local DROP_ZONE = "OMW_BLUE_LZ_WRIGHT_01"
 local AH64_TEMPLATE = "TPL_AIR_US_JBAD_AH64D_CAS_2SHIP"
 local CH47_TEMPLATE = "TPL_AIR_US_JBAD_CH47_HEAVYLIFT_1SHIP"
@@ -366,8 +365,7 @@ local function start()
   need(GROUP:FindByName(CH47_TEMPLATE),CH47_TEMPLATE)
   need(PATHLINE:FindByName(R500),R500)
   need(PATHLINE:FindByName(WEST),WEST)
-  state.pickup=ZONE:FindByName(PICKUP_ZONE_FALLBACK) or ZONE:FindByName(PICKUP_ZONE)
-  if not state.pickup then fatalFail("missing "..PICKUP_ZONE_FALLBACK); return end
+  state.pickup=need(ZONE:FindByName(PICKUP_ZONE),PICKUP_ZONE)
   state.drop=need(ZONE:FindByName(DROP_ZONE),DROP_ZONE)
   if state.fatalFailed then return end
 
