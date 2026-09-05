@@ -89,9 +89,9 @@ local explicitReferences = {
 
 -- Build 1-17 regression gap: the old test allowed UpdateRoute unconditionally.
 -- Pinned MOOSE FLIGHTGROUP:onbeforeUpdateRoute rejects ordinary route updates while
--- a non-allowlisted task is current. CARGOTRANSPORT is such a task. First call must
--- therefore request public MOOSE PauseMission and perform no route update.
-local installed, ok, reason = Corridor.Install(flight, mission, resolved, 500, explicitReferences)
+-- a non-allowlisted task is current. CARGOTRANSPORT is such a task. Test the detailed
+-- handoff API directly so the shared Corridor.Install retry translation cannot hide it.
+local installed, ok, reason = Handoff.Install(flight, mission, resolved, 500, explicitReferences)
 assertEqual(installed, nil, "pause-request install result")
 assertEqual(ok, false, "pause-request install status")
 assertEqual(reason, "CARGOTRANSPORT_PAUSE_REQUESTED", "pause-request reason")
@@ -99,17 +99,26 @@ assertEqual(pauseMissionCalls, 1, "pause requested exactly once")
 assertEqual(updateRouteCalls, 0, "no route update while cargo task current")
 
 -- A retry before MOOSE TaskDone must continue waiting and must not request another pause.
-installed, ok, reason = Corridor.Install(flight, mission, resolved, 500, explicitReferences)
+installed, ok, reason = Handoff.Install(flight, mission, resolved, 500, explicitReferences)
 assertEqual(installed, nil, "task-still-active install result")
 assertEqual(ok, false, "task-still-active install status")
 assertEqual(reason, "CARGOTRANSPORT_TASK_STILL_EXECUTING", "task-still-active reason")
 assertEqual(pauseMissionCalls, 1, "pause not repeated")
 assertEqual(updateRouteCalls, 0, "still no route update while task current")
 
+-- The shared corridor wrapper must map the temporary MOOSE task-release state onto the
+-- existing bounded MISSION_ROUTE_UIDS_NOT_READY retry contract used by Stage 3 callers.
+local wrapperResult, wrapperOk, wrapperReason = Corridor.Install(flight, mission, resolved, 500, explicitReferences)
+assertEqual(wrapperResult, nil, "wrapper waiting result")
+assertEqual(wrapperOk, false, "wrapper waiting status")
+assertEqual(wrapperReason, "MISSION_ROUTE_UIDS_NOT_READY", "wrapper retry reason")
+assertEqual(pauseMissionCalls, 1, "wrapper does not repeat pause")
+assertEqual(updateRouteCalls, 0, "wrapper does not update active task route")
+
 -- Simulate the public MOOSE PauseMission -> TaskCancel -> TaskDone lifecycle reaching
 -- the state that FLIGHTGROUP:onbeforeUpdateRoute requires: no current task.
 activeTask = nil
-installed, ok, reason = Corridor.Install(flight, mission, resolved, 500, explicitReferences)
+installed, ok, reason = Handoff.Install(flight, mission, resolved, 500, explicitReferences)
 
 assertTrue(ok, "explicit-reference handoff after MOOSE task release")
 assertEqual(reason, nil, "explicit-reference handoff reason")
@@ -127,7 +136,7 @@ assertEqual(capturedCargoTask.params.groupId, 7001, "cargo task group id from ex
 assertEqual(capturedCargoTask.params.zoneId, 8002, "cargo task zone id from explicit drop zone")
 
 -- A repeated install returns the cached result and must not alter route/task state.
-local cached, cachedOk, cachedReason = Corridor.Install(flight, mission, resolved, 500, explicitReferences)
+local cached, cachedOk, cachedReason = Handoff.Install(flight, mission, resolved, 500, explicitReferences)
 assertTrue(cachedOk, "cached handoff")
 assertEqual(cachedReason, "ALREADY_INSTALLED", "cached handoff reason")
 assertEqual(cached, installed, "cached result identity")
