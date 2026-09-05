@@ -1,10 +1,22 @@
-# Stage 3 – Focused CAS + Air-AMMO Resupply Acceptance
-
-Status: `PLANNED`
-
-```text
+---
+document_id: OMW-MOOSE-STAGE3-CAS-RESUPPLY-FOCUSED-ACCEPTANCE
+status: PLANNED
+document_class: MOOSE_IMPLEMENTATION_NOTE
+owning_policy: OMW-GOV-001
+authoritative_for:
+  - focused Stage 3 AH-64 CAS route and execution acceptance
+  - focused Stage 3 CH-47 slingload route acceptance
+  - removal of IncidentParticipants as tactical completion evidence in this acceptance
+scenario_period: 2010-08-01/2011-12-31
+project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
+source_branch: agent/fire-support-strategic-resupply-alarm-evidence
+source_commit: GIT_HISTORY
+supersedes:
+superseded_by:
 validated_in_dcs: false
-```
+---
+
+# Stage 3 – Focused CAS + Air-AMMO Resupply Acceptance
 
 ## Zweck
 
