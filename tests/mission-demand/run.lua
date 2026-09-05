@@ -14,5 +14,6 @@ dofile("tests/mission-demand/test_ground_ammo_resupply_executor.lua")
 dofile("tests/mission-demand/test_ground_personnel_deployment_ledger.lua")
 dofile("tests/mission-demand/test_helicopter_flightpath_corridor.lua")
 dofile("tests/mission-demand/test_slingload_corridor_handoff.lua")
+dofile("tests/mission-demand/test_focused_cas_resupply_fixture_contract.lua")
 
 print("PASS mission-demand test suite")
