@@ -429,3 +429,5 @@ end
 
 Handoff.Install = installCargoHandoff
 Handoff.OriginalInstall = originalInstall
+
+return Handoff
