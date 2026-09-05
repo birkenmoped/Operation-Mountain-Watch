@@ -31,7 +31,7 @@ $acceptanceFile = Join-Path $repoRoot $acceptanceRelative
 $jalalabadFoundationFile = Join-Path $repoRoot 'scripts\air-operations\OMW_AirOps_Jalalabad_Bootstrap.lua'
 $distDir = Join-Path $repoRoot 'mission\tests\stage3-honaker-wright-full-response\dist'
 $outputFile = Join-Path $distDir 'OMW_Stage3_Honaker_Wright_Full_Response_Acceptance_1.lua'
-$builderVersion = 'STAGE3-HONAKER-WRIGHT-FULL-RESPONSE-ACCEPTANCE-1-17'
+$builderVersion = 'STAGE3-HONAKER-WRIGHT-FULL-RESPONSE-ACCEPTANCE-1-18'
 $testId = 'STAGE3-HONAKER-WRIGHT-FULL-RESPONSE-ACCEPTANCE-1'
 $mooseCommit = '73d3ed119cd9e7e3f2cfcabbaa34513d30529b54'
 $mooseSha256 = 'e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915'
@@ -71,11 +71,11 @@ $header = @"
 -- TestId: $testId
 -- MOOSECommit: $mooseCommit
 -- MooseLuaSHA256: $mooseSha256
--- Scope: Honaker attack -> access-zone Guard/QRF -> incident-participant completion -> immediate PATROLZONE release to WEST/R500 recovery -> Wright ARTY/rearm -> CampaignState AMMO reorder -> Jalalabad CH47 SLG pickup -> explicit-reference R500 cargo handoff -> Wright -> R500 return.
+-- Scope: Honaker attack -> access-zone Guard/QRF -> incident-participant completion -> immediate PATROLZONE release to WEST/R500 recovery -> Wright ARTY/rearm -> CampaignState AMMO reorder -> Jalalabad CH47 SLG pickup -> MOOSE task release -> explicit-reference R500 cargo handoff -> Wright -> R500 return.
 -- Guard/QRF: Honaker BRIGADE materializes both physical response groups at ZON_BLUE_GND_HONAKER_ACCESS using the public MOOSE SetSpawnZone default distance; Guard then follows OMW_RTE_BLUE_GUARD_HONAKER_01.
 -- Response: living attack-incident participants are authoritative for response completion; wider 5-NM RED-group count remains diagnostics only.
 -- CAS: native AUFTRAG ingress + one-shot FLIGHTGROUP outbound waypoints + PATROLZONE mission task + one-shot non-mission WEST/R500 recovery waypoints; tactical completion cancels PATROLZONE immediately and shot telemetry does not block recovery.
--- AirAmmo: physical slingload spawns at ZON_BLUE_LOG_SLG_JALALABAD_01 without automatic reposition; after pickup the approved narrow CargoTransportation handoff receives explicit cargo/drop references and installs one outbound/return route chain.
+-- AirAmmo: physical slingload spawns at ZON_BLUE_LOG_SLG_JALALABAD_01 without automatic reposition; after pickup public MOOSE PauseMission/TaskDone clears the current CARGOTRANSPORT task before the approved explicit-reference route handoff can UpdateRoute.
 -- StrategicAuthority: existing OMW CampaignState only.
 -- MizMutation: false.
 
@@ -105,7 +105,8 @@ $requiredMarkers = @(
   'OMW-HELICOPTER-MISSION-OWNED-CORRIDOR-5','MOOSE_ONE_SHOT_ROUTE_TASK_CHAIN','persistentUpdateRouteHook = false',
   'OMW-FOB-ATTACK-CAS-PATROL-CLOSURE-2','requireExecutionEvidence=false','executionEvidenceConfirmed=state.casFired','AssignSquadrons','squadrons={state.ah64d}',
   'PATHLINE_SUFFIX','ParsePathlineOffset','OMW_FlightPath_R500','OMW_FlightPath_WEST','WEST_ALTITUDE_FT_AGL','ResolveSequence',
-  'OMW-SLINGLOAD-CORRIDOR-HANDOFF-2','APPROVED_EXTERNAL_SLINGLOAD_CORRIDOR_HANDOFF','resolveCargoReferences','EXPLICIT_ACCEPTANCE_CONTEXT','GetWaypointCurrentUID','AddTaskWaypoint','CargoTransportation','AUFTRAG:Success()',
+  'OMW-SLINGLOAD-CORRIDOR-HANDOFF-3','APPROVED_EXTERNAL_SLINGLOAD_CORRIDOR_HANDOFF','resolveCargoReferences','EXPLICIT_ACCEPTANCE_CONTEXT','GetWaypointCurrentUID','AddTaskWaypoint','CargoTransportation','AUFTRAG:Success()',
+  'GetTaskCurrent','GetMissionCurrent','PauseMission','CARGOTRANSPORT_PAUSE_REQUESTED','CARGOTRANSPORT_TASK_STILL_EXECUTING','MOOSE_OPSGROUP_PAUSE_MISSION',
   'ZON_BLUE_LOG_SLG_JALALABAD_01','InitValidateAndRepositionStatic(false)',
   'GROUND_AMMO_PACKAGE','GROUND_NODE_WRIGHT','GROUND_NODE_JALALABAD','TPL_BLUE_GND_WRIGHT_FS_ARTY_L118_2','TPL_BLUE_GND_SUP_M1083',
   'AUFTRAG:NewCARGOTRANSPORT','SQ_US_JBAD_CH47_HEAVYLIFT','MarkInTransit','MarkDelivered','active_duplicate','duplicate.id','duplicate.dedupeKey',
@@ -158,6 +159,7 @@ foreach ($obsolete in @(
   'requireExecutionEvidence=true',
   'OMW-FOB-ATTACK-CAS-PATROL-CLOSURE-1',
   'OMW-SLINGLOAD-CORRIDOR-HANDOFF-1',
+  'OMW-SLINGLOAD-CORRIDOR-HANDOFF-2',
   'OMW-HELICOPTER-MISSION-OWNED-CORRIDOR-4'
 )) {
   if ($combinedForValidation.Contains($obsolete)) { throw "Stage 3 sources still contain obsolete lifecycle marker: $obsolete" }
@@ -218,7 +220,7 @@ Write-Host 'FireSupport: Wright TPL_BLUE_GND_WRIGHT_FS_ARTY_L118_2 via MOOSE Fun
 Write-Host 'StrategicResupply: exactly one RESUPPLY, Jalalabad -> Wright, quantity 15'
 Write-Host 'AirPhysicalMission: MOOSE AUFTRAG CARGOTRANSPORT'
 Write-Host 'AirAmmoPickupZone: ZON_BLUE_LOG_SLG_JALALABAD_01; exact ME zone center, no automatic static reposition'
-Write-Host 'AirAmmoRouteOrder: MOOSE pickup -> explicit cargo/drop references -> one-shot R500 outbound -> re-issued CargoTransportation at Wright exit -> physical delivery -> R500 reverse -> Jalalabad'
+Write-Host 'AirAmmoRouteOrder: MOOSE pickup -> PauseMission/TaskDone release -> one-shot R500 outbound -> re-issued CargoTransportation at Wright exit -> physical delivery -> R500 reverse -> Jalalabad'
 Write-Host 'AirAmmoException: existing owner-approved narrow DCS CargoTransportation waypoint-task handoff retained only for external slingload pickup-to-drop routing'
 Write-Host 'AcceptanceScheduler: 10-second completion check; stops on PASS/FAIL'
 Write-Host "SHA256: $hash"
