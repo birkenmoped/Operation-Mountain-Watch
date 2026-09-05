@@ -117,8 +117,44 @@ SHA-256 C5B3218CB880A05E035B3859A1DE31559C42C70BB7A634A630D5ED1ECA3859B9
 
 The workbook keeps the full semantic `Function / Net` text and stores the short cockpit-visible ARC-210 name in the A-10C II `Notes` column as `UI label: ...`.
 
+## MIZ implementation
+
+The project owner supplied the current v1.7 MIZ as the direct implementation source for the v1.8 naming update:
+
+```text
+OMW_Template_v21_GroundWorks_RadioPresets_v1.7(3).miz
+SHA-256 569A22453588FBE9950BBEC78A29F7002F017AF64BB96C47B75FEC8ED096B900
+```
+
+Generated implementation artifact:
+
+```text
+OMW_Template_v21_GroundWorks_RadioPresets_v1.8.miz
+SHA-256 B5651977EAAA326AF6AC2902F4612ABB7976838141999ACCE453DF0C028EFFF5
+```
+
+Changed scope:
+
+```text
+CLIENT_US_KAF_A10C_01_UNIT_01 -> ARC-210 / Radio[1]
+CLIENT_US_KAF_A10C_02_UNIT_01 -> ARC-210 / Radio[1]
+```
+
+The v1.8 `channelsNames[]` values are serialized exactly according to the approved P01–P25 label list above. During the workbook-to-MIZ reconciliation, ARC-210 preset P01 in the supplied v1.7 MIZ was found at `251.000 MHz` while the v1.8 workbook baseline defines `Kandahar HOME VHF = 125.500 MHz AM`. P01 was therefore reconciled to `125.500 MHz AM` in both A-10C II clients. The separate DCS group/start `frequency` field was not changed.
+
+Implementation verification before publication:
+
+```text
+A-10C II clients updated: 2
+ARC-210 P01-P25 names: workbook/MIZ match
+ARC-210 P01-P25 frequencies: workbook/MIZ match
+ARC-210 P01-P25 modulations: workbook/MIZ match
+ZIP members changed: mission only
+MIZ ZIP integrity: OK
+```
+
 ## Acceptance boundary
 
 `validated_in_dcs` remains false for the complete preset baseline.
 
-The naming behavior itself has cockpit evidence for the COMM/PRESETS page and source support from the DCS-specific ARC-210 pilot manual. A future MIZ update must serialize the v1.8 labels into the A-10C II `channelsNames[]` entries and should then be rechecked in the Mission Editor and cockpit.
+The naming behavior itself has cockpit evidence for the COMM/PRESETS page and source support from the DCS-specific ARC-210 pilot manual. The v1.8 MIZ now serializes the approved names and the reconciled P01 frequency; the remaining acceptance step is to reopen the v1.8 MIZ in the current Mission Editor and verify the A-10C II COMM/PRESETS display and channel selection in cockpit.
