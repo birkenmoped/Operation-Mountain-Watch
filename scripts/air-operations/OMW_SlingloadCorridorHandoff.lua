@@ -301,7 +301,13 @@ function Corridor.Install(flightGroup, mission, resolved, altitudeFtAgl, explici
   if not missionIsCargoTransport(mission) then
     return originalInstall(flightGroup, mission, resolved, altitudeFtAgl)
   end
-  return installCargoHandoff(flightGroup, mission, resolved, altitudeFtAgl, explicitReferences)
+  local result, ok, reason = installCargoHandoff(flightGroup, mission, resolved, altitudeFtAgl, explicitReferences)
+  if ok ~= true and (reason == "CARGOTRANSPORT_PAUSE_REQUESTED" or reason == "CARGOTRANSPORT_TASK_STILL_EXECUTING") then
+    -- Preserve the shared corridor caller's existing bounded retry contract. Detailed
+    -- pause reasons remain available through Handoff.Install for isolated regression.
+    return result, false, "MISSION_ROUTE_UIDS_NOT_READY"
+  end
+  return result, ok, reason
 end
 
 Handoff.Install = installCargoHandoff
