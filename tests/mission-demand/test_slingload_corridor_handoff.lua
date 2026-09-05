@@ -29,8 +29,19 @@ local Corridor = OMW_STAGE3_HELICOPTER_FLIGHTPATH_CORRIDOR
 local nextUid = 20
 local capturedCargoTask = nil
 local updateRouteCalls = 0
+local pauseMissionCalls = 0
+local activeTask = { id=91, description="MOOSE CARGOTRANSPORT mission task" }
+local mission = nil
 local flight = {
   GetWaypointCurrentUID=function() return 10 end,
+  GetTaskCurrent=function() return activeTask end,
+  GetMissionCurrent=function() return mission end,
+  PauseMission=function()
+    pauseMissionCalls=pauseMissionCalls+1
+    -- Deliberately leave activeTask set. Real MOOSE PauseMission() cancels the
+    -- waypoint task through TaskCancel; the task becomes non-current only after
+    -- TaskDone. The handoff must therefore wait and must not call UpdateRoute yet.
+  end,
   AddWaypoint=function(self, coordinate, speed, afterUid, altitude, updateRoute)
     assertEqual(updateRoute, false, "waypoint deferred route update")
     nextUid=nextUid+1
@@ -40,7 +51,10 @@ local flight = {
     capturedCargoTask=task
     return { task=task, waypoint=waypoint, description=description, prio=prio }
   end,
-  UpdateRoute=function() updateRouteCalls=updateRouteCalls+1 end,
+  UpdateRoute=function()
+    if activeTask then error("regression: MOOSE would deny UpdateRoute while taskcurrent > 0") end
+    updateRouteCalls=updateRouteCalls+1
+  end,
   I=function() end,
   E=function() end,
 }
@@ -51,10 +65,10 @@ local cargo = {
   GetID=function() return 7001 end,
 }
 local dropZone = { ZoneID=8002 }
-local mission = {
+mission = {
   type=AUFTRAG.Type.CARGOTRANSPORT,
-  -- Deliberately remove the constructor-time MOOSE task references. The runtime failure
-  -- from Build 1-16 proved they are not a safe post-pickup dependency.
+  -- Deliberately remove the constructor-time MOOSE task references. Build 1-16
+  -- proved they are not a safe post-pickup dependency.
   DCStask={ params={} },
   IsOver=function() return false end,
   Success=function() end,
@@ -68,24 +82,56 @@ local resolved = {
   segmentOffsets={},
   offsetMode="PATHLINE_SUFFIX",
 }
-
-local installed, ok, reason = Corridor.Install(flight, mission, resolved, 500, {
+local explicitReferences = {
   cargo=cargo,
   dropZone=dropZone,
-})
+}
 
-assertTrue(ok, "explicit-reference handoff")
+-- Build 1-17 regression gap: the old test allowed UpdateRoute unconditionally.
+-- Pinned MOOSE FLIGHTGROUP:onbeforeUpdateRoute rejects ordinary route updates while
+-- a non-allowlisted task is current. CARGOTRANSPORT is such a task. First call must
+-- therefore request public MOOSE PauseMission and perform no route update.
+local installed, ok, reason = Corridor.Install(flight, mission, resolved, 500, explicitReferences)
+assertEqual(installed, nil, "pause-request install result")
+assertEqual(ok, false, "pause-request install status")
+assertEqual(reason, "CARGOTRANSPORT_PAUSE_REQUESTED", "pause-request reason")
+assertEqual(pauseMissionCalls, 1, "pause requested exactly once")
+assertEqual(updateRouteCalls, 0, "no route update while cargo task current")
+
+-- A retry before MOOSE TaskDone must continue waiting and must not request another pause.
+installed, ok, reason = Corridor.Install(flight, mission, resolved, 500, explicitReferences)
+assertEqual(installed, nil, "task-still-active install result")
+assertEqual(ok, false, "task-still-active install status")
+assertEqual(reason, "CARGOTRANSPORT_TASK_STILL_EXECUTING", "task-still-active reason")
+assertEqual(pauseMissionCalls, 1, "pause not repeated")
+assertEqual(updateRouteCalls, 0, "still no route update while task current")
+
+-- Simulate the public MOOSE PauseMission -> TaskCancel -> TaskDone lifecycle reaching
+-- the state that FLIGHTGROUP:onbeforeUpdateRoute requires: no current task.
+activeTask = nil
+installed, ok, reason = Corridor.Install(flight, mission, resolved, 500, explicitReferences)
+
+assertTrue(ok, "explicit-reference handoff after MOOSE task release")
 assertEqual(reason, nil, "explicit-reference handoff reason")
 assertEqual(installed.mode, "APPROVED_EXTERNAL_SLINGLOAD_CORRIDOR_HANDOFF", "handoff mode")
+assertEqual(installed.pauseMode, "MOOSE_OPSGROUP_PAUSE_MISSION", "pause mode")
+assertTrue(installed.activeTaskClearedBeforeRoute, "active task cleared before route")
 assertEqual(installed.referenceSource, "EXPLICIT_ACCEPTANCE_CONTEXT", "reference source")
 assertEqual(installed.outboundWaypointCount, 2, "outbound waypoint count")
 assertEqual(installed.returnWaypointCount, 2, "return waypoint count")
-assertEqual(updateRouteCalls, 1, "single route update")
+assertEqual(updateRouteCalls, 1, "single route update after task release")
 assertEqual(originalInstallCalls, 0, "cargo path bypasses original install")
 assertTrue(capturedCargoTask ~= nil, "cargo task captured")
 assertEqual(capturedCargoTask.id, "CargoTransportation", "cargo task id")
 assertEqual(capturedCargoTask.params.groupId, 7001, "cargo task group id from explicit cargo")
 assertEqual(capturedCargoTask.params.zoneId, 8002, "cargo task zone id from explicit drop zone")
+
+-- A repeated install returns the cached result and must not alter route/task state.
+local cached, cachedOk, cachedReason = Corridor.Install(flight, mission, resolved, 500, explicitReferences)
+assertTrue(cachedOk, "cached handoff")
+assertEqual(cachedReason, "ALREADY_INSTALLED", "cached handoff reason")
+assertEqual(cached, installed, "cached result identity")
+assertEqual(updateRouteCalls, 1, "cached handoff does not update route again")
 
 -- Non-cargo missions must still delegate to the original corridor implementation.
 local delegated, delegatedOk = Corridor.Install(flight, {type="PATROLZONE"}, resolved, 500)
