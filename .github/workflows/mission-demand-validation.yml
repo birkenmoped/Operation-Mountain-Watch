@@ -12,6 +12,7 @@ on:
       - "scripts/ground/OMW_FobAttackFunctionalArtyDispatchAdapter.lua"
       - "scripts/air-operations/OMW_FobAttackCasDispatchAdapter.lua"
       - "scripts/air-operations/OMW_HelicopterFlightPathCorridor.lua"
+      - "scripts/air-operations/OMW_SlingloadCorridorHandoff.lua"
       - "scripts/logistics/OMW_GroundInitialStock.lua"
       - "mission/tests/fob-attack-support-demand/src/*.lua"
       - "tools/build-fob-attack-cas-dispatch-acceptance-2.ps1"
@@ -21,6 +22,8 @@ on:
       - "tools/build-air-ammo-cargotransport-acceptance-1.ps1"
       - "mission/tests/stage3-honaker-wright-full-response/src/*.lua"
       - "tools/build-stage3-honaker-wright-full-response-acceptance-1.ps1"
+      - "mission/tests/stage3-cas-resupply-focused/src/*.lua"
+      - "tools/build-stage3-cas-resupply-focused-acceptance-1.ps1"
       - "tests/mission-demand/**"
       - ".github/workflows/mission-demand-validation.yml"
 
@@ -61,6 +64,12 @@ jobs:
         run: |
           luac5.4 -p scripts/ground/OMW_FobAttackFunctionalArtyDispatchAdapter.lua
           luac5.4 -p mission/tests/stage3-honaker-wright-full-response/src/01-honaker-wright-full-response-acceptance.lua
+
+      - name: Check focused Stage 3 CAS resupply acceptance syntax
+        shell: bash
+        run: |
+          luac5.4 -p scripts/air-operations/OMW_SlingloadCorridorHandoff.lua
+          luac5.4 -p mission/tests/stage3-cas-resupply-focused/src/01-stage3-cas-resupply-focused-acceptance.lua
 
       - name: Run MissionDemand contract tests
         shell: bash
