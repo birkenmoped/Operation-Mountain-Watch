@@ -21,7 +21,7 @@
 local Handoff = {}
 
 local TAG = "[OMW][SlingloadCorridorHandoff]"
-Handoff.SchemaVersion = "OMW-SLINGLOAD-CORRIDOR-HANDOFF-3"
+Handoff.SchemaVersion = "OMW-SLINGLOAD-CORRIDOR-HANDOFF-4"
 
 local Corridor = OMW_STAGE3_HELICOPTER_FLIGHTPATH_CORRIDOR
 if type(Corridor) ~= "table" or type(Corridor.Install) ~= "function" then
@@ -45,6 +45,11 @@ local function missionIsCargoTransport(mission)
     and type(AUFTRAG) == "table"
     and type(AUFTRAG.Type) == "table"
     and mission.type == AUFTRAG.Type.CARGOTRANSPORT
+end
+
+local function validCargoId(value)
+  if type(value) == "string" then return value ~= "" end
+  return type(value) == "number"
 end
 
 local function profileFor(resolved, segmentIndex, fallbackAltitudeFtAgl)
@@ -119,7 +124,9 @@ local function resolveCargoReferences(mission, explicitReferences)
   local cargoId = explicit and explicit.cargoId or (params and params.groupId or nil)
   local zoneId = explicit and explicit.zoneId or (params and params.zoneId or nil)
 
-  if cargo and type(cargoId) ~= "number" and type(cargo.GetID) == "function" then
+  -- Pinned MOOSE OBJECT:GetID() is documented as a string and
+  -- AUFTRAG:NewCARGOTRANSPORT passes it directly as DCS CargoTransportation groupId.
+  if cargo and cargoId == nil and type(cargo.GetID) == "function" then
     cargoId = cargo:GetID()
   end
   if dropZone and type(zoneId) ~= "number" then
@@ -190,7 +197,7 @@ local function installCargoHandoff(flightGroup, mission, resolved, altitudeFtAgl
   if not cargo or type(cargo.IsAlive) ~= "function" or type(cargo.IsInZone) ~= "function" then
     return nil, false, "CARGOTRANSPORT_CARGO_REFERENCE_UNAVAILABLE"
   end
-  if not dropZone or type(zoneId) ~= "number" or type(cargoId) ~= "number" then
+  if not dropZone or type(zoneId) ~= "number" or not validCargoId(cargoId) then
     return nil, false, "CARGOTRANSPORT_DROP_REFERENCE_UNAVAILABLE"
   end
 
@@ -290,8 +297,8 @@ local function installCargoHandoff(flightGroup, mission, resolved, altitudeFtAgl
 
   if type(flightGroup.I) == "function" then
     flightGroup:I(TAG .. string.format(
-      " installed approved slingload handoff after MOOSE task release anchorUid=%d outbound=%d return=%d cargoId=%d zoneId=%d referenceSource=%s",
-      anchorUid, #outboundProfiles, #returnProfiles, cargoId, zoneId, binding.result.referenceSource))
+      " installed approved slingload handoff after MOOSE task release anchorUid=%d outbound=%d return=%d cargoId=%s zoneId=%d referenceSource=%s",
+      anchorUid, #outboundProfiles, #returnProfiles, tostring(cargoId), zoneId, binding.result.referenceSource))
   end
 
   return binding.result, true, nil
@@ -303,8 +310,6 @@ function Corridor.Install(flightGroup, mission, resolved, altitudeFtAgl, explici
   end
   local result, ok, reason = installCargoHandoff(flightGroup, mission, resolved, altitudeFtAgl, explicitReferences)
   if ok ~= true and (reason == "CARGOTRANSPORT_PAUSE_REQUESTED" or reason == "CARGOTRANSPORT_TASK_STILL_EXECUTING") then
-    -- Preserve the shared corridor caller's existing bounded retry contract. Detailed
-    -- pause reasons remain available through Handoff.Install for isolated regression.
     return result, false, "MISSION_ROUTE_UIDS_NOT_READY"
   end
   return result, ok, reason
