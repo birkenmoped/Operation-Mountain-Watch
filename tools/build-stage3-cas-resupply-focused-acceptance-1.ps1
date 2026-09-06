@@ -6,28 +6,28 @@ Set-StrictMode -Version Latest
 
 $repoRoot = Split-Path -Parent $PSScriptRoot
 $corridorFile = Join-Path $repoRoot 'scripts\air-operations\OMW_HelicopterFlightPathCorridor.lua'
-$handoffFile = Join-Path $repoRoot 'scripts\air-operations\OMW_SlingloadCorridorHandoff.lua'
-$acceptanceFile = Join-Path $repoRoot 'mission\tests\stage3-cas-resupply-focused\src\01-stage3-cas-resupply-focused-acceptance.lua'
+$transportCorridorFile = Join-Path $repoRoot 'scripts\air-operations\OMW_OpsTransportCorridorAdapter.lua'
+$acceptanceFile = Join-Path $repoRoot 'mission\tests\stage3-cas-resupply-focused\src\02-stage3-cas-resupply-opstransport-acceptance.lua'
 $distDir = Join-Path $repoRoot 'mission\tests\stage3-cas-resupply-focused\dist'
 $outputFile = Join-Path $distDir 'OMW_Stage3_CAS_Resupply_Focused_Acceptance_1.lua'
 
-$builderVersion = 'STAGE3-CAS-RESUPPLY-FOCUSED-ACCEPTANCE-1-4'
+$builderVersion = 'STAGE3-CAS-RESUPPLY-FOCUSED-ACCEPTANCE-1-5'
 $testId = 'STAGE3-CAS-RESUPPLY-FOCUSED-ACCEPTANCE-1'
 $mooseCommit = '73d3ed119cd9e7e3f2cfcabbaa34513d30529b54'
 $mooseSha256 = 'e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915'
 
-foreach ($file in @($corridorFile,$handoffFile,$acceptanceFile)) {
+foreach ($file in @($corridorFile,$transportCorridorFile,$acceptanceFile)) {
   if (-not (Test-Path -LiteralPath $file -PathType Leaf)) { throw "Required focused acceptance source not found: $file" }
 }
 
 $corridorSource = Get-Content -LiteralPath $corridorFile -Raw -Encoding UTF8
-$handoffSource = Get-Content -LiteralPath $handoffFile -Raw -Encoding UTF8
+$transportCorridorSource = Get-Content -LiteralPath $transportCorridorFile -Raw -Encoding UTF8
 $acceptanceSource = Get-Content -LiteralPath $acceptanceFile -Raw -Encoding UTF8
-$combined = $corridorSource + $handoffSource + $acceptanceSource
+$combined = $corridorSource + $transportCorridorSource + $acceptanceSource
 
 foreach ($marker in @(
   'OMW-HELICOPTER-FLIGHTPATH-CORRIDOR-8',
-  'OMW-SLINGLOAD-CORRIDOR-HANDOFF-6',
+  'OMW-OPSTRANSPORT-CORRIDOR-ADAPTER-1',
   'STAGE3-CAS-RESUPPLY-FOCUSED-ACCEPTANCE-1',
   'TPL_AIR_US_JBAD_AH64D_CAS_2SHIP',
   'TPL_AIR_US_JBAD_CH47_HEAVYLIFT_1SHIP',
@@ -43,21 +43,15 @@ foreach ($marker in @(
   'SetEngageDetected',
   'SetROE(ENUMS.ROE.OpenFire)',
   'SetROT(ENUMS.ROT.PassiveDefense)',
-  'AUFTRAG:NewCARGOTRANSPORT',
-  'cargoId=state.cargo:GetID()',
-  'zoneId=state.drop.ZoneID',
-  'CARGOTRANSPORT_PAUSE_REQUESTED',
-  'CARGOTRANSPORT_TASK_STILL_EXECUTING',
-  'OnBeforeUnpauseMission',
-  'BLOCKED_AUTO_UNPAUSE_BEFORE_PHYSICAL_DELIVERY',
-  'MOOSE_FSM_ONBEFORE_UNPAUSEMISSION',
-  'LIFECYCLE label=',
-  'BEFORE_PauseMission',
-  'EVENT_OnAfterPauseMission',
-  'EVENT_OnAfterTaskDone',
-  'EVENT_OnAfterMissionDone',
-  'POST_PAUSE_T+',
-  'DELIVERY_MONITOR_MISSION_IS_OVER',
+  'OPSTRANSPORT:New',
+  'AddCargoStorage',
+  'LEGION.RecruitCohortAssets',
+  'TransportAssign',
+  'OnAfterAssetSpawned',
+  'OnAfterTransport',
+  'OnAfterDelivered',
+  'OMW_STAGE3_OPSTRANSPORT_SOURCE_STORAGE_001',
+  'OMW_STAGE3_OPSTRANSPORT_WRIGHT_STORAGE_001',
   'CAS and RESUPPLY have independent failure state',
   'No IncidentParticipants or KNOWN_ATTACKERS_NEUTRALIZED completion gate is used'
 )) {
@@ -65,10 +59,11 @@ foreach ($marker in @(
 }
 
 foreach ($marker in @(
-  'cargo numeric ID unavailable',
-  'type(state.cargo:GetID())~="number"',
-  'if missionState',
-  'if groupStatus',
+  'AUFTRAG:NewCARGOTRANSPORT',
+  'PauseMission(',
+  'CargoTransportation',
+  'OnBeforeUnpauseMission',
+  'BLOCKED_AUTO_UNPAUSE',
   'Controller:setTask',
   'coalition.addGroup',
   'coalition.addStaticObject',
@@ -97,11 +92,11 @@ $header = @"
 -- TestId: $testId
 -- MOOSECommit: $mooseCommit
 -- MooseLuaSHA256: $mooseSha256
--- Scope: frozen DCS-proven AH-64 CAS path + CH-47 slingload MOOSE auto-unpause lifecycle correction.
+-- Scope: frozen AH-64 CAS path + CH-47 MOOSE OPSTRANSPORT storage transfer over R500.
 -- Excluded: Guard/QRF/ARTY/CampaignState strategic accounting.
 -- CASCompletion: acceptance-only release 90 seconds after first real AH-64 shot; no IncidentParticipants completion gate.
--- RESUPPLYLifecycle: public MOOSE PauseMission plus OnBeforeUnpauseMission transition handler holds the source AUFTRAG paused until physical Wright delivery.
--- RESUPPLYDiagnostics: observation-only snapshots around PauseMission/TaskDone/MissionDone/UpdateRoute; diagnostic fields are not runtime gates.
+-- RESUPPLYLifecycle: MOOSE OPSTRANSPORT owns pickup/loading/transport/unloading/delivery; a public FLIGHTGROUP waypoint adapter supplies R500 for Wright field-LZ routing and return.
+-- RESUPPLYStorage: temporary Mk-82 STORAGE fixture proves source-to-destination weapon transfer; it is not a production OMW inventory decision.
 -- Isolation: CAS and RESUPPLY failure states are independent and cannot suppress the other subsystem execution.
 -- MizMutation: false.
 
@@ -109,7 +104,7 @@ $header = @"
 
 $bundle = $header
 $bundle += Embed-Module 'OMW_STAGE3_HELICOPTER_FLIGHTPATH_CORRIDOR' $corridorSource
-$bundle += Embed-Module 'OMW_STAGE3_SLINGLOAD_CORRIDOR_HANDOFF' $handoffSource
+$bundle += Embed-Module 'OMW_STAGE3_OPSTRANSPORT_CORRIDOR_ADAPTER' $transportCorridorSource
 $bundle += $acceptanceSource
 
 New-Item -ItemType Directory -Path $distDir -Force | Out-Null
@@ -123,10 +118,10 @@ Write-Host "GeneratedUtc: $generatedUtc"
 Write-Host "GitCommit: $commit"
 Write-Host "MOOSECommit: $mooseCommit"
 Write-Host "MooseLuaSHA256: $($mooseSha256.ToUpperInvariant())"
-Write-Host 'CAS: frozen proven path - NewCAS + explicit WEST ingress/egress + EngageDetected + OpenFire + PassiveDefense + randomization 0'
+Write-Host 'CAS: frozen path - NewCAS + explicit WEST ingress/egress + EngageDetected + OpenFire + PassiveDefense + randomization 0'
 Write-Host 'CAS route: Jalalabad -> R500 -> WEST -> ingress -> CAS -> egress -> WEST reverse -> R500 reverse -> Jalalabad'
-Write-Host 'RESUPPLY: physical pickup -> PauseMission -> MOOSE OnBeforeUnpauseMission hold -> R500 handoff -> Wright physical delivery -> R500 reverse -> Jalalabad'
-Write-Host 'RESUPPLY lifecycle: pinned FLIGHTGROUP _CheckGroupDone auto-unpause is rejected only while the approved pickup-to-drop corridor handoff is active'
+Write-Host 'RESUPPLY: MOOSE OPSTRANSPORT + STORAGE; CH-47 carries ammunition Jalalabad -> R500 -> Wright -> R500 reverse -> Jalalabad'
+Write-Host 'RESUPPLY route adapter: public FLIGHTGROUP AddWaypoint/UpdateRoute only; no PauseMission, legacy CargoTransportation task or manual delivery completion'
 Write-Host 'DiagnosticGate: false'
 Write-Host 'SubsystemIsolation: CAS and RESUPPLY failures do not suppress the other execution path'
 Write-Host 'FullStage3Required: false'
