@@ -81,6 +81,7 @@ local config = {
       missionTypes = {
         AUFTRAG.Type.TROOPTRANSPORT,
         AUFTRAG.Type.CARGOTRANSPORT,
+        AUFTRAG.Type.OPSTRANSPORT,
         AUFTRAG.Type.LANDATCOORDINATE,
       },
       payloads = {
@@ -89,6 +90,7 @@ local config = {
           missionTypes = {
             AUFTRAG.Type.TROOPTRANSPORT,
             AUFTRAG.Type.CARGOTRANSPORT,
+            AUFTRAG.Type.OPSTRANSPORT,
             AUFTRAG.Type.LANDATCOORDINATE,
           },
         },
