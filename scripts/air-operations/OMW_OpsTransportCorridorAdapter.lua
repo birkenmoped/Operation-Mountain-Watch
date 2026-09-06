@@ -52,7 +52,7 @@ function Adapter.Bind(flightGroup, transport, resolvedCorridor, altitudeFtAgl, o
   if not flightGroup or type(flightGroup.AddWaypoint) ~= "function" or type(flightGroup.UpdateRoute) ~= "function" then
     return nil, false, "FLIGHTGROUP_REQUIRED"
   end
-  if not transport or type(transport.GetState) ~= "function" then
+  if not transport or type(transport.GetState) ~= "function" or type(transport.IsCarrier) ~= "function" then
     return nil, false, "OPSTRANSPORT_REQUIRED"
   end
   if not resolvedCorridor or type(resolvedCorridor.outbound) ~= "table" or type(resolvedCorridor.returnRoute) ~= "table" then
@@ -74,7 +74,7 @@ function Adapter.Bind(flightGroup, transport, resolvedCorridor, altitudeFtAgl, o
   local oldTransport = flightGroup.OnAfterTransport
   function flightGroup:OnAfterTransport(From, Event, To)
     if oldTransport then oldTransport(self, From, Event, To) end
-    if binding.outboundInstalled or self.cargoTransport ~= transport then return end
+    if binding.outboundInstalled or not transport:IsCarrier(self) then return end
 
     local ok, result = installRoute(self, resolvedCorridor.outbound, altitudeFtAgl, "R500_OUTBOUND", options)
     if not ok then return end
