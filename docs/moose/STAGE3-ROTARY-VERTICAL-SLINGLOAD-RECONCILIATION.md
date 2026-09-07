@@ -6,6 +6,7 @@ owning_policy: OMW-GOV-001
 authoritative_for:
   - source diagnosis of the Jalalabad transport-dispatch vertical-takeoff gap
   - Stage 3 Air-AMMO representation target after Focus 1-8
+  - Stage 3 FlightPath naming contract for current acceptance work
   - next static and DCS acceptance boundary for CH-47 Air-AMMO
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
@@ -28,6 +29,8 @@ Der letzte Focus-Lauf hat erstmals den Jalalabad-CH-47-Transport über den konfi
 ```
 
 Beide Punkte sind getrennt zu behandeln. Dieses Dokument erklärt weder den Rolling Takeoff noch den Slingload-Zielpfad als bereits korrigiert oder DCS-validiert.
+
+Am 07.09.2026 wurde zusätzlich ein neuer Acceptance-Fehler festgestellt: Ein neu erstellter isolierter Slingload-Test verlangte erneut hart `OMW_FlightPath_R500`, obwohl der bereits vorhandene OMW-FlightPath-Namensvertrag die logische Route `OMW_FlightPath` und eine im Mission Editor konfigurierte Variante wie `_R200`, `_R500` oder `_Lnnn` vorsieht. Die tatsächlich getestete Mission registrierte `OMW_FlightPath_R200`. Der Lauf brach deshalb bereits an der falschen Route-Precondition ab. Dieser Fehler wurde durch ChatGPT in den Acceptance-Code eingeführt und hätte vor dem DCS-Lauf statisch erkannt werden müssen.
 
 ## 2. Verbindliche Quellenlage
 
@@ -148,15 +151,13 @@ Es werden keine MOOSE-Interna verändert und kein DCS-Task ersetzt.
 
 ## 6. Foundation- und Preflight-Guard
 
-Die Jalalabad-Foundation wird auf Builder-Version
+Die Jalalabad-Foundation verwendet Builder-Version:
 
 ```text
 JBAD-AIR-OPS-FOUNDATION-ONLY-6
 ```
 
-gehoben.
-
-Der Builder verlangt jetzt statisch:
+Der Builder verlangt statisch:
 
 ```text
 SetOptionPreferVerticalLanding
@@ -166,7 +167,54 @@ VERTICAL_POLICY_APPLIED
 
 Der Stage-3-MIZ-Preflight verlangt dieselbe Foundation-Version und den Transport-Propagation-Marker. Dadurch darf ein altes eingebettetes Jalalabad-Bundle diese Korrektur nicht stillschweigend umgehen.
 
-## 7. Air-AMMO-Zielpfad
+Die lokale Build-Verifikation vom 07.09.2026 hat für Commit `ffb0d91817dc055df22f1f1b435e777140a94593` folgende reale Artefakte bestätigt:
+
+```text
+OMW_AirOps_Jalalabad.lua
+SHA-256: 9C403BCEEAACC0FA1AA178A5A2CE29C4376BA6E3F56CFC0597807E6D1C76AA70
+
+OMW_Air_AMMO_R500_Slingload_Handoff_Acceptance_1.lua
+SHA-256: BFC930D5C958557E7293B108E1952DB25B2F8D35C11AF43BA5A4147104A248A1
+```
+
+Diese Hashes belegen nur den damaligen Buildstand. Nach der nachfolgend dokumentierten Route-Namenskorrektur werden neue lokale Hashes benötigt.
+
+## 7. Verbindlicher FlightPath-Namensvertrag für Stage 3
+
+Der bereits vorhandene OMW-Vertrag `OMW_FlightPathNameContract.lua` ist für die aktuelle Acceptance-Arbeit verbindlich anzuwenden.
+
+Die logische Route heißt:
+
+```text
+OMW_FlightPath
+```
+
+Die im Mission Editor konfigurierte physische Variante darf beispielsweise heißen:
+
+```text
+OMW_FlightPath
+OMW_FlightPath_R200
+OMW_FlightPath_R500
+OMW_FlightPath_L200
+...
+```
+
+Der Suffix ist **Konfiguration**, nicht Teil einer fachlich fest verdrahteten Route-ID. Für Stage 3 gilt daher:
+
+```text
+logical route identity = OMW_FlightPath
+configured ME variant = exactly one matching OMW_FlightPath / OMW_FlightPath_[RL]nnn
+selection = OMW_FlightPathNameContract.SelectFromRegistry(...)
+0 matches = explicit preflight/runtime failure
+>1 matches = explicit ambiguity failure
+exactly 1 match = use that concrete PATHLINE and its configured offset
+```
+
+Ein Acceptance-Test darf deshalb **nicht** erneut `OMW_FlightPath_R200`, `OMW_FlightPath_R500` oder einen anderen Offset als zwingenden Missionsnamen hart codieren, wenn die fachliche Anforderung nur die logische Route `OMW_FlightPath` meint.
+
+Der Name `R500` in älteren Test-IDs oder Dateinamen ist historischer Testkontext und darf nicht als aktuelle ME-Routenanforderung interpretiert werden.
+
+## 8. Air-AMMO-Zielpfad
 
 Der fachliche Stage-3-Zielpfad bleibt:
 
@@ -176,9 +224,9 @@ CampaignState Air-AMMO reservation
 -> AUFTRAG:NewCARGOTRANSPORT
 -> physical external slingload cargo
 -> vertical departure from helicopter parking
--> configured OMW_FlightPath_Rnnn
+-> configured OMW_FlightPath variant selected from logical OMW_FlightPath
 -> Wright-side physical delivery
--> configured OMW_FlightPath_Rnnn reverse
+-> same configured OMW_FlightPath variant reverse
 -> Jalalabad landing
 -> AIRWING LegionAssetReturned
 -> idempotent CampaignState settlement
@@ -192,44 +240,89 @@ OPSTRANSPORT STORAGE-only internal cargo
 
 OPSTRANSPORT bleibt für die Funktionen gültig, die seiner Transportdarstellung entsprechen; Focus 1-8 wird nicht nachträglich als Slingload-Test umgedeutet.
 
-## 8. Acceptance-Grenze
+## 9. Fehlgeschlagener DCS-Lauf 07.09.2026 – Einordnung
 
-Vor dem nächsten DCS-Lauf sind lokal mindestens zu bestätigen:
+Der DCS-Lauf vom 07.09.2026 ist **kein** Test des Vertical-Takeoff- oder Slingload-Zielverhaltens. Er endete bereits an einer fehlerhaften Acceptance-Precondition:
+
+```text
+mission registered: OMW_FlightPath_R200
+acceptance required: OMW_FlightPath_R500
+result: FAIL missing OMW_FlightPath_R500
+```
+
+Bewertung:
+
+```text
+cause: assistant-introduced regression against existing FlightPath naming contract
+user/mission-editor error: NO
+vertical policy tested: NO
+physical slingload pickup tested: NO
+corridor handoff tested: NO
+DCS validation value for target behavior: NONE
+```
+
+Die Wiederholung dieses Fehlertyps muss durch statische Prüfung verhindert werden.
+
+## 10. Acceptance-Grenze und Testkosten-Gate
+
+Ein weiterer DCS-Lauf ist erst zulässig, wenn **vorher** alle statisch prüfbaren Voraussetzungen gegen die tatsächlich verwendete `.miz` erfolgreich geprüft wurden. Der Nutzer hat ausdrücklich festgelegt, dass ein DCS-Test etwa 30 Minuten reale Zeit kostet und deshalb vermeidbare Probe-/Fehlläufe nicht akzeptabel sind.
+
+Vor dem nächsten DCS-Lauf sind mindestens zu bestätigen:
 
 ```text
 exact branch HEAD
-JBAD-AIR-OPS-FOUNDATION-ONLY-6 build
-independent foundation SHA-256
-SetOptionPreferVerticalLanding present
-SetOptionPreferVertical present
-VERTICAL_POLICY_APPLIED present
+current Jalalabad foundation build + independent SHA-256
+current isolated slingload build + independent SHA-256
+exact embedded foundation hash == local foundation hash
+exact embedded acceptance hash == local acceptance hash
+exact embedded Moose.lua hash == pinned Moose.lua hash
+logical FlightPath contract embedded/available
+Mission Editor PATHLINE registry contains exactly one configured OMW_FlightPath variant
+selected concrete PATHLINE is reported by preflight
+required pickup/drop zones exist
+required CH-47 template exists
+no acceptance source hardcodes a required _Rnnn/_Lnnn route variant for the logical OMW_FlightPath
 ```
 
-Danach muss die tatsächlich verwendete `.miz` erneut mit dem aktuellen Foundation-Bundle gespeichert und read-only gegen ihren eingebetteten Stand geprüft werden.
+Ein fehlender, veralteter oder mehrdeutiger statischer Vertrag muss den Preflight **vor DCS** hart abbrechen.
 
-Der nächste Slingload-Lauf muss anschließend mindestens beobachten:
+Der nächste reale Slingload-Lauf muss danach mindestens beobachten:
 
 ```text
 CH-47 spawn
 VERTICAL_POLICY_APPLIED log for the real carrier
 no taxiway/runway rolling-takeoff sequence
 physical external slingload pickup
-configured outbound corridor
+preflight-selected configured outbound corridor
 physical Wright delivery
-configured reverse corridor
+same configured corridor reverse
 physical Jalalabad landing
 AIRWING recovery
 ```
 
 `VALIDATED` ist erst nach diesem realen DCS-Nachweis zulässig.
 
-## 9. Status
+## 11. Arbeitsabsprachen für diesen Branch
+
+Für weitere lokale Schritte gelten zusätzlich die ausdrücklich bestätigten Arbeitsregeln:
+
+```text
+PowerShell-Befehle immer in einem Codeblock ausgeben.
+Bei zu ersetzenden oder zu prüfenden Dateien immer den vollständigen lokalen Pfad mit angeben.
+Keine DCS-Testaufforderung, solange statisch prüfbare Mission-/Bundle-/Route-Voraussetzungen nicht vollständig preflighted sind.
+Keine erfundenen oder angenommenen lokalen Hashes; nur reale Konsolenausgabe ist Folgeschritt-Grundlage.
+```
+
+## 12. Status
 
 ```text
 vertical transport propagation source diagnosis: PASS_SOURCE_REVIEW
-MOOSE-first correction: IMPLEMENTED_REMOTE / LOCAL_BUILD_PENDING
+MOOSE-first vertical correction: IMPLEMENTED_REMOTE / LOCAL_BUILD_CONFIRMED_AT_FFB0D918
 physical external slingload target: RETAINED
-Focus 1-8 STORAGE transport: DIAGNOSTIC_ONLY_FOR_RECRUITMENT_AND_OPSTRANSPORT_LIFECYCLE
+FlightPath logical-name contract: OWNER_RECONFIRMED_2026-09-07
+hardcoded OMW_FlightPath_R500 in isolated acceptance: DEFECT_CONFIRMED
+07.09.2026 DCS run: INVALID_FOR_TARGET_BEHAVIOR / FAILED_PRECONDITION
+preflight route-contract coverage: REQUIRES_FIX
 DCS vertical-departure validation after correction: PENDING
 DCS slingload end-to-end validation after correction: PENDING
 production validation: NO
