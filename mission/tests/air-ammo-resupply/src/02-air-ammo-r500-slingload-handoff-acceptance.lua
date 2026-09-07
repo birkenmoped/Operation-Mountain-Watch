@@ -1,9 +1,11 @@
--- Operation Mountain Watch - isolated CH-47 R500 slingload handoff acceptance.
+-- Operation Mountain Watch - isolated CH-47 slingload handoff acceptance.
+-- Historical Test-ID retains R500 in its identifier, but the runtime route is selected
+-- from the logical OMW_FlightPath contract and must not hard-code an offset variant.
 -- Test-ID: AIR-AMMO-R500-SLINGLOAD-HANDOFF-ACCEPTANCE-1
 --
 -- Scope is deliberately narrow after the Stage 3 Build 1-17 route failure:
--- physical pickup -> public MOOSE task release -> R500 outbound -> Wright delivery
--- -> R500 reverse -> Jalalabad landing/AIRWING recovery.
+-- physical pickup -> public MOOSE task release -> configured FlightPath outbound
+-- -> Wright delivery -> same configured FlightPath reverse -> Jalalabad landing/AIRWING recovery.
 --
 -- This test does not exercise Honaker, Guard, QRF, CAS, ARTY or CampaignState.
 
@@ -12,13 +14,14 @@ local TAG = "[OMW][" .. TEST_ID .. "]"
 
 local PICKUP_ZONE_NAME = "ZON_BLUE_LOG_SLG_JALALABAD_01"
 local DROP_ZONE_NAME = "OMW_BLUE_LZ_WRIGHT_01"
-local PATHLINE_NAME = "OMW_FlightPath_R500"
+local LOGICAL_PATHLINE_NAME = "OMW_FlightPath"
 local AIR_TEMPLATE_NAME = "TPL_AIR_US_JBAD_CH47_HEAVYLIFT_1SHIP"
 local CARGO_NAME = "CARGO-AIR-AMMO-R500-SLINGLOAD-HANDOFF-ACCEPTANCE-001"
 local ALTITUDE_FT_AGL = 500
 local CHECK_INTERVAL_SEC = 5
 local MAX_HANDOFF_ATTEMPTS = 12
 
+local NameContract = OMW_STAGE3_FLIGHTPATH_NAME_CONTRACT
 local Corridor = OMW_STAGE3_HELICOPTER_FLIGHTPATH_CORRIDOR
 local Handoff = OMW_STAGE3_SLINGLOAD_CORRIDOR_HANDOFF
 
@@ -29,6 +32,8 @@ local state = {
   squadron=nil,
   pickupZone=nil,
   dropZone=nil,
+  pathlineName=nil,
+  pathline=nil,
   cargo=nil,
   mission=nil,
   flight=nil,
@@ -48,7 +53,7 @@ end
 
 local function msg(text, seconds)
   log(text)
-  MESSAGE:New("[AIR-AMMO R500] " .. tostring(text), seconds or 10):ToAll()
+  MESSAGE:New("[AIR-AMMO SLINGLOAD] " .. tostring(text), seconds or 10):ToAll()
 end
 
 local function stopMonitor()
@@ -68,17 +73,46 @@ local function requireValue(value, label)
   return value
 end
 
+local function selectConfiguredPathline()
+  if type(NameContract)~="table" or type(NameContract.SelectFromRegistry)~="function" then
+    fail("FlightPath name contract unavailable")
+    return false
+  end
+  if type(_DATABASE)~="table" or type(_DATABASE.PATHLINES)~="table" then
+    fail("MOOSE PATHLINE registry unavailable for acceptance-only route discovery")
+    return false
+  end
+
+  local selected, reason = NameContract.SelectFromRegistry(LOGICAL_PATHLINE_NAME, _DATABASE.PATHLINES)
+  if not selected then
+    fail("FlightPath selection failed: " .. tostring(reason))
+    return false
+  end
+
+  state.pathlineName=selected.name
+  state.pathline=selected.pathline
+  log(string.format(
+    "ROUTE_SELECTED logical=%s configured=%s side=%s meters=%s source=%s",
+    LOGICAL_PATHLINE_NAME,
+    tostring(selected.name),
+    tostring(selected.offset and selected.offset.side),
+    tostring(selected.offset and selected.offset.meters),
+    tostring(selected.offset and selected.offset.source)))
+  return true
+end
+
 local function maybePass()
   if state.failed or state.passed then return end
   if not (state.pickupConfirmed and state.handoffInstalled and state.deliveryConfirmed and state.homeLanded and state.assetReturned) then return end
   state.passed=true
   stopMonitor()
-  msg("PASS pickup -> MOOSE task release -> R500 outbound -> Wright physical delivery -> R500 reverse -> Jalalabad landing/AIRWING recovery", 30)
+  msg("PASS pickup -> MOOSE task release -> configured FlightPath outbound -> Wright physical delivery -> configured FlightPath reverse -> Jalalabad landing/AIRWING recovery", 30)
 end
 
-local function resolveR500()
+local function resolveConfiguredRoute()
   return Corridor.Resolve({
-    pathlineName=PATHLINE_NAME,
+    pathlineName=state.pathlineName,
+    pathline=state.pathline,
     originCoordinate=state.flight:GetCoordinate(),
     destinationCoordinate=state.dropZone:GetCoordinate(),
     offsetMode=Corridor.OffsetMode.PATHLINE_SUFFIX,
@@ -89,7 +123,7 @@ local function tryHandoff()
   if state.failed or state.handoffInstalled or not state.pickupConfirmed then return end
   state.handoffAttempts=state.handoffAttempts+1
 
-  local resolved=resolveR500()
+  local resolved=resolveConfiguredRoute()
   local installed, ok, reason=Handoff.Install(state.flight, state.mission, resolved, ALTITUDE_FT_AGL, {
     cargo=state.cargo,
     dropZone=state.dropZone,
@@ -97,7 +131,8 @@ local function tryHandoff()
 
   if ok == true then
     state.handoffInstalled=true
-    msg(string.format("R500 handoff installed after %d attempt(s); pauseMode=%s activeTaskCleared=%s outbound=%s return=%s",
+    msg(string.format("FlightPath handoff installed route=%s after %d attempt(s); pauseMode=%s activeTaskCleared=%s outbound=%s return=%s",
+      tostring(state.pathlineName),
       state.handoffAttempts,
       tostring(installed.pauseMode),
       tostring(installed.activeTaskClearedBeforeRoute),
@@ -122,7 +157,7 @@ local function tryHandoff()
     return
   end
 
-  fail("R500 handoff failed: " .. tostring(reason))
+  fail("FlightPath handoff failed: " .. tostring(reason))
 end
 
 local function startMonitor()
@@ -187,8 +222,8 @@ local function start()
   requireValue(GROUP:FindByName(AIR_TEMPLATE_NAME), AIR_TEMPLATE_NAME)
   state.pickupZone=requireValue(ZONE:FindByName(PICKUP_ZONE_NAME), PICKUP_ZONE_NAME)
   state.dropZone=requireValue(ZONE:FindByName(DROP_ZONE_NAME), DROP_ZONE_NAME)
-  requireValue(PATHLINE:FindByName(PATHLINE_NAME), PATHLINE_NAME)
   if state.failed then return end
+  if not selectConfiguredPathline() then return end
   if type(state.dropZone.ZoneID)~="number" then fail("Wright drop zone requires numeric ZoneID") return end
 
   state.cargo=SPAWNSTATIC:NewFromType("ammo_cargo","Cargos",country.id.USA)
@@ -203,7 +238,7 @@ local function start()
   installObservers()
 
   state.mission=AUFTRAG:NewCARGOTRANSPORT(state.cargo,state.dropZone)
-  state.mission:SetName("OMW_AIR_AMMO_R500_SLINGLOAD_HANDOFF_ACCEPTANCE")
+  state.mission:SetName("OMW_AIR_AMMO_SLINGLOAD_HANDOFF_ACCEPTANCE")
   state.mission:SetRequiredAssets(1,1)
   state.mission:AssignSquadrons({state.squadron})
   state.mission:SetPriority(20,true)
@@ -212,10 +247,10 @@ local function start()
   function state.mission:OnAfterSuccess(From,Event,To)
     if previousSuccess then previousSuccess(self,From,Event,To) end
     if state.failed then return end
-    if not state.pickupConfirmed or not state.handoffInstalled then fail("CARGOTRANSPORT succeeded before R500 handoff") return end
+    if not state.pickupConfirmed or not state.handoffInstalled then fail("CARGOTRANSPORT succeeded before FlightPath handoff") return end
     if not state.cargo:IsAlive() or not state.cargo:IsInZone(state.dropZone) then fail("mission success lacks physical Wright delivery") return end
     state.deliveryConfirmed=true
-    msg("Physical slingload delivery at Wright confirmed; awaiting R500 reverse and Jalalabad recovery", 12)
+    msg("Physical slingload delivery at Wright confirmed; awaiting configured FlightPath reverse and Jalalabad recovery", 12)
     maybePass()
   end
 
@@ -226,7 +261,7 @@ local function start()
   end
 
   state.airwing:AddMission(state.mission)
-  msg("READY isolated CH-47 test only: pickup -> task release -> R500 outbound -> Wright -> R500 reverse -> Jalalabad", 20)
+  msg("READY isolated CH-47 test only: pickup -> task release -> " .. tostring(state.pathlineName) .. " outbound -> Wright -> same route reverse -> Jalalabad", 20)
 end
 
 SCHEDULER:New(nil,start,{},5)
