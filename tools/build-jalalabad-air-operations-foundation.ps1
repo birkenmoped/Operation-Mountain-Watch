@@ -8,7 +8,7 @@ $repoRoot = Split-Path -Parent $PSScriptRoot
 $sourceFile = Join-Path $repoRoot 'scripts\air-operations\OMW_AirOps_Jalalabad_Bootstrap.lua'
 $distDir = Join-Path $repoRoot 'mission\tests\jalalabad-air-operations\dist'
 $outputFile = Join-Path $distDir 'OMW_AirOps_Jalalabad.lua'
-$builderVersion = 'JBAD-AIR-OPS-FOUNDATION-ONLY-4'
+$builderVersion = 'JBAD-AIR-OPS-FOUNDATION-ONLY-5'
 
 if (-not (Test-Path -LiteralPath $sourceFile -PathType Leaf)) {
     throw "Jalalabad foundation source not found: $sourceFile"
@@ -23,9 +23,11 @@ $requiredMarkers = @(
     'SQ_US_JBAD_UH60_UTILITY_MEDEVAC',
     'SQ_US_JBAD_CH47_HEAVYLIFT',
     'TPL_AIR_US_JBAD_AH64D_CAS_2SHIP',
+    'TPL_AIR_US_JBAD_CH47_HEAVYLIFT_1SHIP',
     'AUFTRAG.Type.CAS',
     'AUFTRAG.Type.CASENHANCED',
     'AUFTRAG.Type.PATROLZONE',
+    'AUFTRAG.Type.OPSTRANSPORT',
     'SQUADRON:New',
     'SetGrouping',
     'SetParkingIDs',
@@ -85,6 +87,7 @@ $header = @"
 -- MOOSE-Pin: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
 -- Scope: AIRWING/SQUADRON foundation only; no F10 test missions or dispatch harness.
 -- AH64D-Capabilities: CAS + CASENHANCED + PATROLZONE.
+-- CH47-Capabilities: TROOPTRANSPORT + CARGOTRANSPORT + OPSTRANSPORT + LANDATCOORDINATE.
 -- GeneratedUtc: $([DateTime]::UtcNow.ToString('o'))
 
 "@
@@ -97,13 +100,18 @@ foreach ($pattern in $forbiddenPatterns) {
     }
 }
 
+if (-not $content.Contains('AUFTRAG.Type.OPSTRANSPORT')) {
+    throw 'Generated Jalalabad foundation is missing CH-47 OPSTRANSPORT capability.'
+}
+
 [System.IO.File]::WriteAllText($outputFile, $content, [System.Text.UTF8Encoding]::new($false))
 
-$hash = (Get-FileHash -LiteralPath $outputFile -Algorithm SHA256).Hash.ToLowerInvariant()
+$hash = (Get-FileHash -LiteralPath $outputFile -Algorithm SHA256).Hash.ToUpperInvariant()
 Write-Host "Built: $outputFile"
 Write-Host "BuilderVersion: $builderVersion"
 Write-Host "Scope: AIRWING_SQUADRON_FOUNDATION_ONLY"
 Write-Host "AH64DCapabilities: CAS,CASENHANCED,PATROLZONE"
+Write-Host "CH47Capabilities: TROOPTRANSPORT,CARGOTRANSPORT,OPSTRANSPORT,LANDATCOORDINATE"
 Write-Host "F10TestMissions: ABSENT"
 Write-Host "AUFTRAGInstances: ABSENT"
 Write-Host "OPSTRANSPORTInstances: ABSENT"
