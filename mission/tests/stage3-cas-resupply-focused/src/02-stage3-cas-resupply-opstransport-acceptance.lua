@@ -29,6 +29,8 @@ local WEST_ALT_FT_AGL = 2500
 local CAS_ALT_FT_AGL = 2500
 local CAS_RELEASE_DELAY_SEC = 90
 local JUNCTION_MAX_M = 1000
+local CARRIER_RECRUIT_RETRY_SEC = 5
+local CARRIER_RECRUIT_MAX_ATTEMPTS = 6
 
 -- Acceptance resource token. This is deliberately a temporary MOOSE STORAGE fixture,
 -- not a production OMW ammunition inventory decision.
@@ -46,7 +48,7 @@ local state = {
   casFailed=false,
   cargoFailed=false,
   passed=false,
-  airwing=nil, ah64d=nil, ch47=nil,
+  airwing=nil, ah64d=nil, ch47=nil, carrierUnitType=nil,
   flightPathName=nil, flightPath=nil, flightPathOffset=nil,
   casMission=nil, casFlight=nil, casAsset=nil, casZone=nil, casResolved=nil,
   casIngress=nil, casRouteInstalled=false, casShot=false, casRelease=false,
@@ -54,6 +56,7 @@ local state = {
   pickup=nil, drop=nil,
   sourceStatic=nil, destStatic=nil, sourceStorage=nil, destStorage=nil,
   cargoTransport=nil, cargoResolved=nil, cargoAsset=nil, cargoFlight=nil, cargoBinding=nil,
+  cargoRecruitAttempts=0, cargoRecruitPending=false,
   cargoOutboundInstalled=false, cargoDelivered=false, cargoReturnInstalled=false,
   cargoHome=false, cargoReturned=false,
 }
@@ -249,6 +252,89 @@ local function createStorageFixtures()
   return true,nil
 end
 
+local function carrierRecruitSnapshot()
+  local cohortState=state.ch47:GetState()
+  local onDuty=state.ch47:IsOnDuty()
+  local capability=state.ch47:GetMissionCapability(AUFTRAG.Type.OPSTRANSPORT)~=nil
+  local stock=state.ch47:CountAssets(true,{AUFTRAG.Type.OPSTRANSPORT})
+  local payloads=state.airwing:CountPayloadsInStock({AUFTRAG.Type.OPSTRANSPORT},state.carrierUnitType)
+  return {
+    cohortState=cohortState,
+    onDuty=onDuty,
+    capability=capability,
+    stock=stock,
+    payloads=payloads,
+  }
+end
+
+local armCargoCarrier
+local function scheduleCargoRecruitment()
+  if state.cargoFailed or state.cargoAsset or state.cargoRecruitPending then return end
+  state.cargoRecruitPending=true
+  SCHEDULER:New(nil,function()
+    state.cargoRecruitPending=false
+    armCargoCarrier()
+  end,{},CARRIER_RECRUIT_RETRY_SEC)
+end
+
+armCargoCarrier=function()
+  if state.cargoFailed or state.cargoAsset then return end
+  state.cargoRecruitAttempts=state.cargoRecruitAttempts+1
+
+  local snapshot=carrierRecruitSnapshot()
+  log(string.format("[STAGE3 FOCUSED][RESUPPLY RECRUIT] attempt=%d/%d cohortState=%s onDuty=%s capability=%s stock=%s payloads=%s unitType=%s",
+    state.cargoRecruitAttempts,CARRIER_RECRUIT_MAX_ATTEMPTS,tostring(snapshot.cohortState),tostring(snapshot.onDuty),
+    tostring(snapshot.capability),tostring(snapshot.stock),tostring(snapshot.payloads),tostring(state.carrierUnitType)))
+
+  if not snapshot.onDuty or not snapshot.capability or snapshot.stock<1 or snapshot.payloads<1 then
+    if state.cargoRecruitAttempts<CARRIER_RECRUIT_MAX_ATTEMPTS then
+      scheduleCargoRecruitment()
+      return
+    end
+    cargoFail(string.format("CH-47 recruitment readiness timeout after %d attempts: cohortState=%s onDuty=%s capability=%s stock=%s payloads=%s",
+      state.cargoRecruitAttempts,tostring(snapshot.cohortState),tostring(snapshot.onDuty),tostring(snapshot.capability),tostring(snapshot.stock),tostring(snapshot.payloads)))
+    return
+  end
+
+  local recruited,assets,legions=LEGION.RecruitCohortAssets(
+    {state.ch47},AUFTRAG.Type.OPSTRANSPORT,nil,1,1,state.drop:GetVec2(),
+    nil,nil,nil,AMMO_TOTAL_WEIGHT_KG,AMMO_TOTAL_WEIGHT_KG,nil,nil,nil,nil,nil,nil)
+
+  local assetCount=type(assets)=="table" and #assets or -1
+  local legionCount=0
+  local recruitedLegion=nil
+  if type(legions)=="table" then
+    for _,legion in pairs(legions) do
+      legionCount=legionCount+1
+      recruitedLegion=legion
+    end
+  end
+  local expectedLegion=recruitedLegion==state.airwing
+  log(string.format("[STAGE3 FOCUSED][RESUPPLY RECRUIT RESULT] attempt=%d recruited=%s assets=%d legions=%d expectedLegion=%s",
+    state.cargoRecruitAttempts,tostring(recruited),assetCount,legionCount,tostring(expectedLegion)))
+
+  if recruited and type(assets)=="table" and assetCount==1 and legionCount==1 and expectedLegion then
+    state.cargoAsset=assets[1]
+    state.cargoTransport:AddAsset(state.cargoAsset)
+    state.airwing:TransportAssign(state.cargoTransport,legions)
+    msg("RESUPPLY READY",string.format("MOOSE OPSTRANSPORT queued after carrier recruitment attempt %d: %d x %s, totalWeight=%dkg, carrier=Jalalabad CH-47, route=%s",
+      state.cargoRecruitAttempts,AMMO_AMOUNT,AMMO_TYPE,AMMO_TOTAL_WEIGHT_KG,routeLabel()),15)
+    return
+  end
+
+  if recruited and type(assets)=="table" and assetCount>0 then
+    LEGION.UnRecruitAssets(assets)
+  end
+
+  if state.cargoRecruitAttempts<CARRIER_RECRUIT_MAX_ATTEMPTS then
+    scheduleCargoRecruitment()
+    return
+  end
+
+  cargoFail(string.format("unable to recruit exactly one Jalalabad CH-47 for OPSTRANSPORT after %d attempts: recruited=%s assets=%d legions=%d expectedLegion=%s cohortState=%s stock=%s payloads=%s",
+    state.cargoRecruitAttempts,tostring(recruited),assetCount,legionCount,tostring(expectedLegion),tostring(snapshot.cohortState),tostring(snapshot.stock),tostring(snapshot.payloads)))
+end
+
 local function startCargo()
   local fixturesOk,fixturesReason=createStorageFixtures()
   if not fixturesOk then cargoFail(fixturesReason); return false end
@@ -298,27 +384,11 @@ local function startCargo()
     if not state.cargoDelivered then cargoFail("MOOSE OPSTRANSPORT cancelled before Wright delivery") end
   end
 
-  local recruited,assets,legions=LEGION.RecruitCohortAssets(
-    {state.ch47},AUFTRAG.Type.OPSTRANSPORT,nil,1,1,state.drop:GetVec2(),
-    nil,nil,nil,AMMO_TOTAL_WEIGHT_KG,AMMO_TOTAL_WEIGHT_KG,nil,nil,nil,nil,nil,nil)
-
-  local legionCount=0
-  local recruitedLegion=nil
-  if type(legions)=="table" then
-    for _,legion in pairs(legions) do
-      legionCount=legionCount+1
-      recruitedLegion=legion
-    end
+  armCargoCarrier()
+  if state.cargoFailed then return false end
+  if not state.cargoAsset then
+    msg("RESUPPLY","OPSTRANSPORT STORAGE setup active; bounded Jalalabad CH-47 recruitment retry is pending",12)
   end
-  if not recruited or type(assets)~="table" or #assets~=1 or legionCount~=1 or recruitedLegion~=state.airwing then
-    cargoFail("unable to recruit exactly one Jalalabad CH-47 for OPSTRANSPORT")
-    return false
-  end
-
-  state.cargoAsset=assets[1]
-  state.cargoTransport:AddAsset(state.cargoAsset)
-  state.airwing:TransportAssign(state.cargoTransport,legions)
-  msg("RESUPPLY READY",string.format("MOOSE OPSTRANSPORT queued: %d x %s, totalWeight=%dkg, carrier=Jalalabad CH-47, route=%s",AMMO_AMOUNT,AMMO_TYPE,AMMO_TOTAL_WEIGHT_KG,routeLabel()),15)
   return true
 end
 
@@ -429,7 +499,8 @@ local function start()
   state.ah64d=air.Squadrons.AH64D
   state.ch47=air.Squadrons.CH47
   need(GROUP:FindByName(AH64_TEMPLATE),AH64_TEMPLATE)
-  need(GROUP:FindByName(CH47_TEMPLATE),CH47_TEMPLATE)
+  local ch47Template=need(GROUP:FindByName(CH47_TEMPLATE),CH47_TEMPLATE)
+  if ch47Template then state.carrierUnitType=ch47Template:GetTypeName() end
   if not resolveConfiguredFlightPath() then return end
   need(PATHLINE:FindByName(WEST),WEST)
   state.pickup=need(ZONE:FindByName(PICKUP_ZONE),PICKUP_ZONE)
@@ -441,11 +512,11 @@ local function start()
   local cargoArmed=startCargo()
 
   if casArmed and cargoArmed then
-    msg("READY","CAS and OPSTRANSPORT RESUPPLY independently armed; subsystem failure cannot suppress the other path",20)
+    msg("READY","CAS armed; OPSTRANSPORT RESUPPLY setup active with bounded MOOSE carrier recruitment; subsystem failure cannot suppress the other path",20)
   elseif casArmed then
     msg("READY","CAS armed; OPSTRANSPORT RESUPPLY failed to arm but CAS execution remains active",20)
   elseif cargoArmed then
-    msg("READY","OPSTRANSPORT RESUPPLY armed; CAS failed to arm but RESUPPLY execution remains active",20)
+    msg("READY","OPSTRANSPORT RESUPPLY setup active; CAS failed to arm but RESUPPLY execution remains active",20)
   else
     msg("FATAL","Neither focused subsystem armed",25)
   end
