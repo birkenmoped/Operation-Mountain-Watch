@@ -5,11 +5,10 @@ document_class: MOOSE_IMPLEMENTATION_NOTE
 owning_policy: OMW-GOV-001
 authoritative_for:
   - focused Stage 3 AH-64 CAS route and execution acceptance
-  - focused Stage 3 CH-47 slingload route acceptance
-  - rejection and remediation of the 2026-09-05 focused test-fixture failure
-  - focused 2026-09-05 DCS evidence for CAS success and CH-47 post-pickup lifecycle failure
-  - Focus 1-3 diagnosis of the CARGOTRANSPORT paused lifecycle
-  - Focus 1-4 MOOSE OnBeforeUnpauseMission correction
+  - focused Stage 3 CH-47 Air-AMMO resupply acceptance
+  - historical focused 2026-09-05 DCS evidence
+  - correction of the falsified CARGOTRANSPORT auto-unpause diagnosis
+  - current MOOSE OPSTRANSPORT STORAGE transport design for Wright
   - removal of IncidentParticipants as tactical completion evidence in this acceptance
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
@@ -24,11 +23,11 @@ validated_in_dcs: false
 
 ## 1. Zweck und Scope
 
-Dieser Acceptance-Pfad isoliert nur:
+Dieser Acceptance-Pfad isoliert zwei voneinander unabhängige Ausführungspfade:
 
 ```text
 AH-64 CAS
-CH-47 external slingload resupply
+CH-47 Air-AMMO resupply
 ```
 
 Bewusst ausgeschlossen:
@@ -42,6 +41,8 @@ CampaignState strategic accounting
 
 Ein Fehler eines Teilpfads darf den anderen Teilpfad nicht unterdrücken. Acceptance-Beobachtung darf keine künstliche Runtime-Voraussetzung erzeugen.
 
+Für strategische Ressourcen gilt weiterhin die aktuelle Governance auf `main`: CampaignState ist die persistente strategische Autorität, MOOSE besitzt den physischen Runtime-Lifecycle. Die in dieser Acceptance verwendete MOOSE-STORAGE-Fixture ist ausschließlich Testmaterial und keine produktive Ressourcenbuchhaltung.
+
 ## 2. MOOSE-Basis
 
 ```text
@@ -49,6 +50,8 @@ MOOSE 2.9.18
 commit 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
 Moose.lua SHA256 E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915
 ```
+
+Die tatsächlich verwendete `Moose.lua` ist für Signaturen, Zustandsübergänge und Nebenwirkungen maßgeblich.
 
 ## 3. Historischer Rejected-Run 1-1
 
@@ -61,7 +64,7 @@ Bundle SHA256: 9ABAED9388293DF31A201DE0F2C334BF384F3CCB8B3FB6B3FB9CC2DF938643D4
 MizMutation: false
 ```
 
-Ursache war ein vom Acceptance-Fixture erfundener Typ-Gate auf `cargo:GetID() == number`. Die gepinnte MOOSE-Implementierung verwendet eine String-ID. Zusätzlich setzte der alte gemeinsame `state.failed` beide unabhängigen Teilpfade außer Betrieb. Beides ist entfernt.
+Der Acceptance-Fixture enthielt einen erfundenen Typ-Gate auf `cargo:GetID() == number`, obwohl der gepinnte MOOSE-Wrapper die ID als String liefert. Zusätzlich setzte ein gemeinsamer `state.failed` beide unabhängigen Teilpfade außer Betrieb.
 
 Verbindlicher Fixture-Vertrag:
 
@@ -71,9 +74,9 @@ RESUPPLY failure != stop CAS
 observation      != invented runtime prerequisite
 ```
 
-## 4. CAS – eingefrorener erfolgreicher Focus-Pfad
+## 4. CAS – bestehender Focus-Pfad
 
-Der aktuelle CAS-Pfad verwendet:
+Der CAS-Pfad verwendet weiterhin:
 
 ```text
 AUFTRAG:NewCAS
@@ -110,9 +113,9 @@ OPSZONE Defeated allein
 Alarmzonen-Ausgang allein
 ```
 
-### DCS Focus 1-2 CAS result
+### Historischer Focus-1-2-Befund
 
-Der reale Lauf bestätigte:
+Der damalige reale Lauf bestätigte im dokumentierten Stand:
 
 ```text
 AH-64 dispatch Jalalabad
@@ -127,26 +130,27 @@ Jalalabad landing
 AIRWING recovery
 ```
 
-Der CAS-Pfad wird in Focus 1-3/1-4 funktional nicht geändert.
+Spätere Läufe zeigten jedoch erneut ein AH-64-Terrain-/Route-Following-Problem. Insbesondere erreichte ein Apache die AO nicht, konnte einen folgenden Geländerücken nicht überwinden, flog anschließend rückwärts und kollidierte mit dem Gelände. Dieser Verlust wird nicht als RPG-bedingte Root Cause klassifiziert. Die aktuelle Acceptance darf das bekannte CAS-Terrainproblem daher nicht als behoben darstellen.
 
-## 5. CH-47 – Sollpfad
+## 5. Historischer CH-47-CARGOTRANSPORT-Pfad
+
+Der frühere Pfad lautete:
 
 ```text
-MOOSE AUFTRAG:NewCARGOTRANSPORT
+AUFTRAG:NewCARGOTRANSPORT
 -> physical external slingload pickup Jalalabad
--> public MOOSE PauseMission / original task release
--> owner-approved R500 outbound handoff
--> Wright-side CargoTransportation waypoint task for same cargo/drop IDs
--> physical delivery Wright
--> original AUFTRAG Success
+-> PauseMission / source task release
+-> R500 outbound handoff
+-> native CargoTransportation waypoint task
+-> intended physical Wright delivery
+-> intended AUFTRAG Success
 -> R500 reverse
 -> Jalalabad
--> AIRWING recovery
 ```
 
-Die eng begrenzte DCS-Task-Ausnahme ist in `STAGE3-SLINGLOAD-CORRIDOR-EXCEPTION-DECISION.md` dokumentiert und bereits vom Projektinhaber freigegeben. Es gibt keine allgemeine Native-DCS-Routingfreigabe.
+Dieser Pfad bestätigte wiederholt Pickup und Teile des R500-Routings, erreichte aber keine belastbare physische Wright-Ablieferung.
 
-## 6. DCS Focus 1-2 – CH-47 Befund
+### Focus 1-2
 
 ```text
 Git commit: b0b862cc0a51e478ef8210dff426727b1cb3071e
@@ -175,11 +179,7 @@ Nicht bestätigt:
 physical Wright delivery
 ```
 
-Der CH-47 flog später mit weiterhin angehängter Last die Rückroute.
-
-## 7. DCS Focus 1-3 – Lifecycle-Diagnose
-
-Provenienz:
+### Focus 1-3
 
 ```text
 Git commit: 7063cee05307c3f3aeb959fd9c0ab896fcfb66c6
@@ -190,137 +190,170 @@ DCS: 2.9.29.27468 MT
 MizMutation: false
 ```
 
-Der reale Lauf widerlegt die Hypothese, `PauseMission()` beende den Auftrag unmittelbar.
-
-Beobachtete Folge:
+Beobachtet wurde:
 
 ```text
-BEFORE PauseMission:
-  missionState=executing
-  groupStatus=executing
-  current mission/task present
-
-OnAfter PauseMission:
-  missionState=executing
-  groupStatus=paused
-  paused mission present
-
-After original TaskDone:
-  missionState=executing
-  groupStatus=paused
-  current mission=nil
-  current task=nil
-  paused mission remains
-
-After UpdateRoute and T+1/T+2/T+3/T+5:
-  missionState=executing
-  groupStatus=paused
-  paused mission remains
-
-later:
-  MissionDone
-  mission/group status done
-  paused mission no longer present
-  CARGOTRANSPORT_ENDED_BEFORE_PHYSICAL_DELIVERY
+PauseMission -> mission executing / group paused
+original TaskDone -> current mission/task cleared while paused mission remained
+UpdateRoute -> paused mission remained
+T+1/T+2/T+3/T+5 -> paused mission remained
+later -> MissionDone before physical Wright delivery
 ```
 
-Der am Wright-Waypoint registrierte `AddTaskWaypoint(CargoTransportation, outboundLast, ...)` ist nicht als unmittelbare Ursache anzusehen: Die gepinnte MOOSE-Implementierung bindet `TaskType.WAYPOINT` tatsächlich an den angegebenen Waypoint und MOOSE selbst verwendet denselben `AddTaskWaypoint(mission.DCStask, waypoint, ...)`-Mechanismus für Missionstasks.
+Die gepinnte MOOSE-Quelle zeigt zwar einen `_CheckGroupDone()`-Pfad, der eine allein verbleibende pausierte Mission automatisch unpausieren kann. Aus Focus 1-3 allein war jedoch **nicht** bewiesen, dass genau dieser interne Pfad den beobachteten `MissionDone` ausgelöst hatte.
 
-## 8. Gepinnte MOOSE-Quellursache nach Focus 1-3
+## 6. Korrektur der früheren Auto-Unpause-Diagnose
 
-Die Quellprüfung von `FLIGHTGROUP:_CheckGroupDone()` zeigt:
+Die frühere Dokumentation wertete die Kombination aus Source-Möglichkeit und Focus-1-3-Lauf zu stark und bezeichnete Auto-Unpause faktisch als Ursache. Das war nicht ausreichend belegt.
+
+Focus 1-4 instrumentierte deshalb den regulären MOOSE-FSM-Hook `OnBeforeUnpauseMission` mit dem eindeutigen Marker:
+
+```text
+BLOCKED_AUTO_UNPAUSE_BEFORE_PHYSICAL_DELIVERY
+```
+
+Im realen Focus-1-4-Lauf trat dieser Marker **nicht** auf. Es gab keinen beobachteten `UnpauseMission`-Versuch vor dem Fehler. Trotzdem wechselte der CARGOTRANSPORT-Auftrag später auf `MissionDone` und endete vor physischer Ablieferung.
+
+Damit gilt:
+
+```text
+Hypothese: _CheckGroupDone auto-unpauses CARGOTRANSPORT und verursacht MissionDone
+Status: FALSIFIED_FOR_FOCUS_1_4_RUNTIME
+```
+
+Zulässig bleibt ausschließlich die allgemein source-verifizierte Aussage:
+
+```text
+FLIGHTGROUP:_CheckGroupDone besitzt einen Auto-Unpause-Pfad für verbleibende pausierte Missionen.
+```
+
+Nicht mehr zulässig ist die Behauptung, dieser Pfad habe den realen Focus-1-4-Fehler verursacht.
+
+Der `OnBeforeUnpauseMission`-Guard löste das reale Delivery-Problem nicht und wird im neuen Acceptance-Pfad nicht weiterverwendet.
+
+## 7. MOOSE-first Reconciliation: OPSTRANSPORT STORAGE
+
+Die erneute MOOSE-Prüfung ergab einen passenderen vorhandenen Framework-Pfad für strategischen Air-AMMO-Transport: `OPSTRANSPORT` kann `STORAGE`-Bestände direkt transportieren.
+
+Der gepinnte Source bestätigt:
+
+```text
+OPSTRANSPORT:New(nil, PickupZone, DeployZone)
+OPSTRANSPORT:AddCargoStorage(StorageFrom, StorageTo, CargoType, CargoAmount, CargoWeight)
+OPSTRANSPORT:SetRequiredCarriers(Nmin, Nmax)
+LEGION.RecruitCohortAssets(... AUFTRAG.Type.OPSTRANSPORT ...)
+OPSTRANSPORT:AddAsset(asset)
+AIRWING:TransportAssign(transport, legions)
+```
+
+Für Waffen und Equipment muss das Stückgewicht explizit angegeben werden, weil es nicht aus der DCS-API ermittelt werden kann.
+
+Der MOOSE-Lifecycle besitzt selbst Storage-Cargo-Zustände und führt Source-Abbuchung, Carrier-Cargo-Bay, Transport, Unloading und Destination-Zubuchung aus. OMW implementiert diese Logik nicht parallel.
+
+### Acceptance-STORAGE-Fixture
+
+```text
+Cargo type: ENUMS.Storage.weapons.bombs.Mk_82
+Amount: 4
+Item weight: 230 kg
+Total weight: 920 kg
+Source static: OMW_STAGE3_OPSTRANSPORT_SOURCE_STORAGE_001
+Destination static: OMW_STAGE3_OPSTRANSPORT_WRIGHT_STORAGE_001
+Pickup: ZON_BLUE_LOG_SLG_JALALABAD_01
+Deploy: OMW_BLUE_LZ_WRIGHT_01
+```
+
+Die Mk-82-Auswahl dient nur einem eindeutig messbaren MOOSE-STORAGE-Transfer. Sie legt keinen produktiven Munitionsbestand fest.
+
+## 8. Carrier-Recruitment – verifizierter Tabellenvertrag
+
+`LEGION.RecruitCohortAssets(...)` hat im gepinnten Source die Signatur:
+
+```text
+Cohorts,
+MissionTypeRecruit,
+MissionTypeOpt,
+NreqMin,
+NreqMax,
+TargetVec2,
+Payloads,
+RangeMax,
+RefuelSystem,
+CargoWeight,
+TotalWeight,
+MaxWeight,
+Categories,
+Attributes,
+Properties,
+WeaponTypes,
+RangeMin
+```
+
+Die Rückgabe `Legions` ist keine numerische Liste. MOOSE schreibt:
 
 ```lua
-local nMissions = self:CountRemainingMissison()
-local nPaused = self:_CountPausedMissions()
-
-if nPaused > 0 and nPaused == nMissions then
-  local missionpaused = self:_GetPausedMission()
-  self:UnpauseMission()
-  return
-end
+Legions[asset.legion.alias] = asset.legion
 ```
 
-Damit unpausiert MOOSE absichtlich eine Mission, wenn alle verbleibenden Missionen des FLIGHTGROUP pausiert sind.
+Daher ist `#legions` für diesen Rückgabewert falsch. Der fokussierte Test iteriert die Tabelle mit `pairs()` und prüft genau einen rekrutierten Carrier-Legion-Eintrag, der dem Jalalabad-AIRWING entsprechen muss.
 
-`OPSGROUP:onafterUnpauseMission()` führt anschließend aus:
+## 9. Wright-Feld-LZ und kleinster Routing-Adapter
+
+`OPSTRANSPORT:AddPathTransport(...)` ist vorhanden. Im gepinnten MOOSE-Stand wird dieser Transportpfad für FLIGHTGROUP-Carrier jedoch nur im implementierten Airbase-Zielpfad übernommen. Wright ist eine normale Feld-LZ-Zone.
+
+Deshalb ergänzt `OMW_OpsTransportCorridorAdapter.lua` ausschließlich die fehlende Feld-LZ-Routengeometrie über öffentliche MOOSE-APIs:
 
 ```text
-mission.unpaused = true
-MissionStart(mission)
-remove mission ID from pausedmissions
+OnAfterTransport
+-> FLIGHTGROUP:GetWaypointCurrentUID()
+-> FLIGHTGROUP:AddWaypoint(... R500 outbound ...)
+-> FLIGHTGROUP:UpdateRoute()
+
+OnAfterDelivered
+-> FLIGHTGROUP:GetWaypointCurrentUID()
+-> FLIGHTGROUP:AddWaypoint(... R500 reverse ...)
+-> FLIGHTGROUP:UpdateRoute()
 ```
 
-Das passt exakt zum real beobachteten Muster `paused -> später pausedmissions leer -> MissionDone`, auch wenn die interne `_CheckGroupDone()`-Tracezeile im DCS-Log wegen des Verbosity-Levels nicht sichtbar war.
+Source-verifiziert ist außerdem die Insert-Semantik: `AddWaypoint(..., AfterWaypointWithID, ...)` ermittelt `GetWaypointIndexAfterID()` und `_AddWaypoint()` führt `table.insert(self.waypoints, index, waypoint)` aus. Die R500-Punkte werden damit tatsächlich hinter der angegebenen UID und vor dem bisher folgenden Waypoint in die MOOSE-Route eingefügt.
 
-Status dieser Ursachenzuordnung:
+Der Adapter übernimmt **nicht**:
 
 ```text
-SOURCE_CONFIRMED_AND_RUNTIME_CONSISTENT
+Cargo ownership
+loading/unloading
+delivery completion
+OPSTRANSPORT state
+native DCS Controller tasking
+Pause/Unpause lifecycle
 ```
 
-Noch nicht behauptet wird:
+## 10. Delivered -> Return-Reihenfolge
+
+Der gepinnte MOOSE-Source zeigt:
 
 ```text
-DCS log directly proved the exact internal _CheckGroupDone call
+OPSTRANSPORT:onafterDelivered
+-> carrier:Delivered(self)
+
+OPSGROUP:onafterDelivered
+-> carrier status Delivered
+-> _CheckGroupDone scheduled after 0.2 s
 ```
 
-## 9. Focus 1-4 – kleinste MOOSE-first Korrektur
+MOOSE-FSM ruft den lowercase Framework-Handler vor dem uppercase User-Callback auf. Der OMW-`OnAfterDelivered`-Callback kann daher unmittelbar nach dem Framework-Handler R500 reverse einfügen, bevor der verzögert geplante `_CheckGroupDone` ausgeführt wird.
 
-MOOSE-FSM-Transition-Handler sind dokumentierte Extension-Points. `OnBefore<Event>` darf `false` zurückgeben und damit genau die angeforderte Transition verwerfen. `UnpauseMission` ist ein reguläres OPSGROUP-FSM-Event.
+Das ist **SOURCE_REVIEWED**, noch kein DCS-Laufzeitbeweis.
 
-Deshalb wird während genau des owner-approved Pickup-to-Drop-Handoffs eine instanzgebundene MOOSE-FSM-Guard verwendet:
-
-```lua
-function flightGroup:OnBeforeUnpauseMission(From, Event, To, ...)
-  if slingloadPickupToDropHandoffActive then
-    return false
-  end
-  return true
-end
-```
-
-Die Guard:
+## 11. Aktuelle Dateien
 
 ```text
-- wird unmittelbar vor dem gewollten PauseMission aktiviert;
-- blockiert nur UnpauseMission solange der physische Slingload noch auf dem genehmigten R500-Pickup-to-Drop-Pfad ist;
-- verändert keine MOOSE-internen queues oder IDs;
-- verändert keine Route;
-- beendet keinen Auftrag;
-- wird vor AUFTRAG:Success nach physisch bestätigter Wright-Ablieferung freigegeben;
-- kettet einen eventuell vorhandenen OnBeforeUnpauseMission-Handler und respektiert dessen false-Rückgabe;
-- lässt Nicht-CARGOTRANSPORT-Pfade unberührt.
-```
-
-Runtime-Evidenz im nächsten Lauf:
-
-```text
-LIFECYCLE label=BLOCKED_AUTO_UNPAUSE_BEFORE_PHYSICAL_DELIVERY
-```
-
-Dieser Handler ist keine künstliche Acceptance-Voraussetzung. Er benutzt genau den von MOOSE angebotenen FSM-Hook, um den verifizierten generischen Auto-Unpause-Lifecycle während einer bereits owner-approved MOOSE/DCS-Handoff-Phase zu begrenzen.
-
-## 10. Acceptance-Isolation
-
-Das Focus-Fixture besitzt weiterhin getrennte Zustände für:
-
-```text
-fatal/shared setup failure
-CAS failure
-RESUPPLY failure
-```
-
-Kein CH-47-Fehler darf den eingefrorenen CAS-Pfad unterdrücken und umgekehrt.
-
-## 11. Dateien
-
-```text
-mission/tests/stage3-cas-resupply-focused/src/01-stage3-cas-resupply-focused-acceptance.lua
+mission/tests/stage3-cas-resupply-focused/src/02-stage3-cas-resupply-opstransport-acceptance.lua
+mission/tests/stage3-cas-resupply-focused/README.md
 scripts/air-operations/OMW_HelicopterFlightPathCorridor.lua
-scripts/air-operations/OMW_SlingloadCorridorHandoff.lua
+scripts/air-operations/OMW_OpsTransportCorridorAdapter.lua
+scripts/air-operations/OMW_AirOps_Jalalabad_Bootstrap.lua
 tools/build-stage3-cas-resupply-focused-acceptance-1.ps1
-tests/mission-demand/test_slingload_corridor_handoff.lua
 tests/mission-demand/test_focused_cas_resupply_fixture_contract.lua
 ```
 
@@ -332,26 +365,32 @@ mission/tests/stage3-cas-resupply-focused/dist/OMW_Stage3_CAS_Resupply_Focused_A
 
 ## 12. Nächster DCS-Nachweis
 
-Focus 1-4 muss real zeigen:
+Der nächste reale Lauf muss für RESUPPLY beobachten:
 
 ```text
-CAS regression-free
-CH-47 physical pickup
-PauseMission / source task release
-MOOSE auto-unpause attempt is blocked by OnBeforeUnpauseMission
-R500 outbound
-physical Wright delivery
-original AUFTRAG Success only after delivery
-R500 reverse
-Jalalabad landing
-AIRWING recovery
+exactly one Jalalabad CH-47 recruited
+OPSTRANSPORT executing
+R500 outbound inserted and physically flown
+source STORAGE 4 -> 0
+destination STORAGE 0 -> 4
+OPSTRANSPORT Delivered
+R500 reverse inserted and physically flown
+physical Jalalabad landing
+AIRWING LegionAssetReturned after landing
 ```
 
-Bis dahin:
+CAS bleibt parallel und unabhängig zu beobachten:
 
 ```text
-CAS isolated path: DCS PASS for Focus 1-2 scope
-CH-47 physical pickup/R500: DCS PASS for Focus scope
-CH-47 Wright delivery: NOT VALIDATED
+Jalalabad -> R500 -> WEST -> ingress -> CAS -> egress -> WEST reverse -> R500 reverse -> Jalalabad
+```
+
+Bis zu einem dokumentierten DCS-Lauf gilt:
+
+```text
+OPSTRANSPORT STORAGE design: SOURCE_REVIEWED
+Wright storage delivery: NOT VALIDATED
+R500 reverse after Delivered: NOT VALIDATED
+current CAS terrain behavior: NOT VALIDATED
 full Stage 3: NOT VALIDATED
 ```
