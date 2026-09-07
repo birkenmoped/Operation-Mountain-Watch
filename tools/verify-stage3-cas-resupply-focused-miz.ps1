@@ -14,6 +14,7 @@ $expectedMooseSha256 = 'E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63
 $foundationEntryName = 'l10n/DEFAULT/OMW_AirOps_Jalalabad.lua'
 $acceptanceEntryName = 'l10n/DEFAULT/OMW_Stage3_CAS_Resupply_Focused_Acceptance_1.lua'
 $mooseEntryName = 'l10n/DEFAULT/Moose.lua'
+$expectedFoundationBuilder = 'JBAD-AIR-OPS-FOUNDATION-ONLY-6'
 
 foreach ($file in @($foundationFile, $acceptanceFile)) {
     if (-not (Test-Path -LiteralPath $file -PathType Leaf)) {
@@ -26,11 +27,14 @@ if (-not (Test-Path -LiteralPath $MizPath -PathType Leaf)) {
 }
 
 $foundationSource = Get-Content -LiteralPath $foundationFile -Raw -Encoding UTF8
-if (-not $foundationSource.Contains('BuilderVersion: JBAD-AIR-OPS-FOUNDATION-ONLY-5')) {
-    throw 'Local Jalalabad foundation is not BuilderVersion JBAD-AIR-OPS-FOUNDATION-ONLY-5.'
+if (-not $foundationSource.Contains("BuilderVersion: $expectedFoundationBuilder")) {
+    throw "Local Jalalabad foundation is not BuilderVersion $expectedFoundationBuilder."
 }
 if (-not $foundationSource.Contains('AUFTRAG.Type.OPSTRANSPORT')) {
     throw 'Local Jalalabad foundation is missing CH-47 OPSTRANSPORT capability.'
+}
+if (-not $foundationSource.Contains('VERTICAL_POLICY_APPLIED')) {
+    throw 'Local Jalalabad foundation is missing transport-path vertical policy propagation.'
 }
 
 $foundationHash = (Get-FileHash -LiteralPath $foundationFile -Algorithm SHA256).Hash.ToUpperInvariant()
@@ -78,11 +82,14 @@ try {
     $embeddedMooseHash = Get-BytesSha256 $embeddedMooseBytes
 
     $embeddedFoundationText = [System.Text.Encoding]::UTF8.GetString($embeddedFoundationBytes)
-    if (-not $embeddedFoundationText.Contains('BuilderVersion: JBAD-AIR-OPS-FOUNDATION-ONLY-5')) {
-        throw "STALE_JALALABAD_FOUNDATION: mission embeds a foundation other than JBAD-AIR-OPS-FOUNDATION-ONLY-5 (embedded SHA256=$embeddedFoundationHash)."
+    if (-not $embeddedFoundationText.Contains("BuilderVersion: $expectedFoundationBuilder")) {
+        throw "STALE_JALALABAD_FOUNDATION: mission embeds a foundation other than $expectedFoundationBuilder (embedded SHA256=$embeddedFoundationHash)."
     }
     if (-not $embeddedFoundationText.Contains('AUFTRAG.Type.OPSTRANSPORT')) {
         throw "STALE_JALALABAD_FOUNDATION: embedded Jalalabad foundation does not contain CH-47 OPSTRANSPORT capability (embedded SHA256=$embeddedFoundationHash)."
+    }
+    if (-not $embeddedFoundationText.Contains('VERTICAL_POLICY_APPLIED')) {
+        throw "STALE_JALALABAD_FOUNDATION: embedded Jalalabad foundation does not contain transport-path vertical policy propagation (embedded SHA256=$embeddedFoundationHash)."
     }
     if ($embeddedFoundationHash -ne $foundationHash) {
         throw "Jalalabad foundation hash mismatch. Local=$foundationHash Embedded=$embeddedFoundationHash"
@@ -98,8 +105,9 @@ try {
     Write-Host "Mission: $resolvedMiz"
     Write-Host "MissionSHA256: $missionHash"
     Write-Host "JalalabadFoundationSHA256: $embeddedFoundationHash"
-    Write-Host 'JalalabadFoundationBuilderVersion: JBAD-AIR-OPS-FOUNDATION-ONLY-5'
+    Write-Host "JalalabadFoundationBuilderVersion: $expectedFoundationBuilder"
     Write-Host 'JalalabadCH47OPSTRANSPORT: PRESENT'
+    Write-Host 'JalalabadRotaryVerticalTransportPropagation: PRESENT'
     Write-Host "FocusedAcceptanceSHA256: $embeddedAcceptanceHash"
     Write-Host "MooseLuaSHA256: $embeddedMooseHash"
     Write-Host 'MizMutation: false'
