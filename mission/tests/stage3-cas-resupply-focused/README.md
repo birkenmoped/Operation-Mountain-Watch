@@ -1,3 +1,24 @@
+---
+document_id: OMW-STAGE3-CAS-RESUPPLY-FOCUSED-README
+status: PLANNED
+document_class: TECHNICAL_ACCEPTANCE_PLAN
+owning_policy: OMW-GOV-001
+authoritative_for:
+  - focused Stage 3 CAS and OPSTRANSPORT resupply test scope
+  - source-reviewed OPSTRANSPORT STORAGE acceptance observations
+not_authoritative_for:
+  - DCS runtime validation before the documented acceptance run passes
+  - production CampaignState resource accounting
+  - final Stage 3 combined acceptance
+scenario_period: 2010-08-01/2011-12-31
+project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
+supersedes:
+superseded_by:
+source_branch: agent/fire-support-strategic-resupply-alarm-evidence
+source_commit: GIT_HISTORY
+validated_in_dcs: false
+---
+
 # Stage 3 CAS + Air-AMMO Resupply – Focused Acceptance
 
 Status: **SOURCE_REVIEWED / DCS pending**
