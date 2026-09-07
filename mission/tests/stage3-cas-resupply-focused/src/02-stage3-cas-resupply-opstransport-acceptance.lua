@@ -12,7 +12,7 @@
 local TEST_ID = "STAGE3-CAS-RESUPPLY-FOCUSED-ACCEPTANCE-1"
 local TAG = "[OMW][" .. TEST_ID .. "]"
 
-local R500 = "OMW_FlightPath_R500"
+local FLIGHTPATH_BASE = "OMW_FlightPath"
 local WEST = "OMW_FlightPath_WEST"
 local HONAKER_ZONE = "ZON_BLUE_GND_HONAKER_ACCESS"
 local PICKUP_ZONE = "ZON_BLUE_LOG_SLG_JALALABAD_01"
@@ -24,7 +24,7 @@ local DEST_STORAGE_NAME = "OMW_STAGE3_OPSTRANSPORT_WRIGHT_STORAGE_001"
 
 local CAS_RADIUS_NM = 5
 local CAS_SPEED_KTS = 120
-local R500_ALT_FT_AGL = 500
+local PRIMARY_ALT_FT_AGL = 500
 local WEST_ALT_FT_AGL = 2500
 local CAS_ALT_FT_AGL = 2500
 local CAS_RELEASE_DELAY_SEC = 90
@@ -37,6 +37,7 @@ local AMMO_AMOUNT = 4
 local AMMO_ITEM_WEIGHT_KG = 230
 local AMMO_TOTAL_WEIGHT_KG = AMMO_AMOUNT * AMMO_ITEM_WEIGHT_KG
 
+local FlightPathNameContract = OMW_STAGE3_FLIGHTPATH_NAME_CONTRACT
 local Corridor = OMW_STAGE3_HELICOPTER_FLIGHTPATH_CORRIDOR
 local TransportCorridor = OMW_STAGE3_OPSTRANSPORT_CORRIDOR_ADAPTER
 
@@ -46,6 +47,7 @@ local state = {
   cargoFailed=false,
   passed=false,
   airwing=nil, ah64d=nil, ch47=nil,
+  flightPathName=nil, flightPath=nil, flightPathOffset=nil,
   casMission=nil, casFlight=nil, casAsset=nil, casZone=nil, casResolved=nil,
   casIngress=nil, casRouteInstalled=false, casShot=false, casRelease=false,
   casHome=false, casReturned=false, shotHandler=nil,
@@ -90,16 +92,20 @@ local function aglToAslFt(coord,aglFt)
   return UTILS.MetersToFeet(coord:GetLandHeight())+aglFt
 end
 
+local function routeLabel()
+  return state.flightPathName or FLIGHTPATH_BASE
+end
+
 local function maybePass()
   if state.fatalFailed or state.casFailed or state.cargoFailed or state.passed then return end
   if not (state.casRouteInstalled and state.casShot and state.casRelease and state.casHome and state.casReturned) then return end
   if not (state.cargoOutboundInstalled and state.cargoDelivered and state.cargoReturnInstalled and state.cargoHome and state.cargoReturned) then return end
   state.passed=true
-  msg("PASS","AH-64 explicit CAS geometry/attack/recovery and CH-47 OPSTRANSPORT storage delivery/R500 recovery confirmed",30)
+  msg("PASS","AH-64 explicit CAS geometry/attack/recovery and CH-47 OPSTRANSPORT storage delivery/configured FlightPath recovery confirmed",30)
 end
 
 local function casAltitude(segmentIndex)
-  return segmentIndex==1 and R500_ALT_FT_AGL or WEST_ALT_FT_AGL
+  return segmentIndex==1 and PRIMARY_ALT_FT_AGL or WEST_ALT_FT_AGL
 end
 
 local function resolveCas()
@@ -108,13 +114,14 @@ local function resolveCas()
   local center=honaker:GetCoordinate()
   state.casZone=ZONE_RADIUS:New("OMW_STAGE3_FOCUSED_CAS_AO",center:GetVec2(),UTILS.NMToMeters(CAS_RADIUS_NM))
   state.casResolved=Corridor.ResolveSequence({
-    pathlineNames={R500,WEST},
+    pathlineNames={state.flightPathName,WEST},
+    pathlines={state.flightPath},
     originCoordinate=state.airwing:GetCoordinate(),
     destinationCoordinate=center,
     maxJunctionDistanceM=JUNCTION_MAX_M,
     offsetMode=Corridor.OffsetMode.PATHLINE_SUFFIX,
     segmentProfiles={
-      {altitudeFtAgl=R500_ALT_FT_AGL},
+      {altitudeFtAgl=PRIMARY_ALT_FT_AGL},
       {altitudeFtAgl=WEST_ALT_FT_AGL,formation=ENUMS.Formation.RotaryWing.Column.D70},
     },
   })
@@ -124,7 +131,7 @@ local function resolveCas()
   end
   state.casIngress=state.casResolved.outbound[#state.casResolved.outbound]
   log(string.format("CAS_GEOMETRY ingressToAoNm=%.2f path=%s -> %s",
-    state.casIngress:Get2DDistance(center)/1852,R500,WEST))
+    state.casIngress:Get2DDistance(center)/1852,routeLabel(),WEST))
   return true
 end
 
@@ -157,7 +164,7 @@ local function installCasRoute(flight,mission)
   end
   flight:UpdateRoute()
   state.casRouteInstalled=true
-  msg("CAS",string.format("R500/WEST route installed around explicit MOOSE ingress/egress: outbound=%d return=%d",outCount,retCount),15)
+  msg("CAS",string.format("%s/WEST route installed around explicit MOOSE ingress/egress: outbound=%d return=%d",routeLabel(),outCount,retCount),15)
   return true,nil
 end
 
@@ -190,7 +197,7 @@ local function installShotHandler()
       if state.casFailed or state.casRelease then return end
       state.casRelease=true
       state.casMission:Cancel()
-      msg("CAS","Acceptance-only release after real attack; use explicit egress and WEST/R500 reverse",12)
+      msg("CAS",string.format("Acceptance-only release after real attack; use explicit egress and WEST/%s reverse",routeLabel()),12)
     end,{},CAS_RELEASE_DELAY_SEC)
   end
 end
@@ -213,7 +220,7 @@ local function startCas()
   state.casMission:AssignSquadrons({state.ah64d})
   state.casMission:SetPriority(10,true)
   state.airwing:AddMission(state.casMission)
-  msg("CAS READY",string.format("MOOSE NewCAS armed: R500/WEST ingress/egress, AO center, EngageDetected %d NM, OpenFire, PassiveDefense",CAS_RADIUS_NM),15)
+  msg("CAS READY",string.format("MOOSE NewCAS armed: %s/WEST ingress/egress, AO center, EngageDetected %d NM, OpenFire, PassiveDefense",routeLabel(),CAS_RADIUS_NM),15)
   return true
 end
 
@@ -247,14 +254,15 @@ local function startCargo()
   if not fixturesOk then cargoFail(fixturesReason); return false end
 
   state.cargoResolved=Corridor.Resolve({
-    pathlineName=R500,
+    pathlineName=state.flightPathName,
+    pathline=state.flightPath,
     originCoordinate=state.pickup:GetCoordinate(),
     destinationCoordinate=state.drop:GetCoordinate(),
     offsetMode=Corridor.OffsetMode.PATHLINE_SUFFIX,
   })
   if not state.cargoResolved or not state.cargoResolved.outbound or #state.cargoResolved.outbound<2 or
      not state.cargoResolved.returnRoute or #state.cargoResolved.returnRoute<2 then
-    cargoFail("R500 corridor resolution failed")
+    cargoFail(routeLabel().." corridor resolution failed")
     return false
   end
 
@@ -280,7 +288,7 @@ local function startCargo()
       return
     end
     state.cargoDelivered=true
-    msg("RESUPPLY",string.format("MOOSE STORAGE delivery confirmed at Wright: %d x %s; awaiting R500 reverse/Jalalabad recovery",AMMO_AMOUNT,AMMO_TYPE),15)
+    msg("RESUPPLY",string.format("MOOSE STORAGE delivery confirmed at Wright: %d x %s; awaiting %s reverse/Jalalabad recovery",AMMO_AMOUNT,AMMO_TYPE,routeLabel()),15)
     maybePass()
   end
 
@@ -310,7 +318,7 @@ local function startCargo()
   state.cargoAsset=assets[1]
   state.cargoTransport:AddAsset(state.cargoAsset)
   state.airwing:TransportAssign(state.cargoTransport,legions)
-  msg("RESUPPLY READY",string.format("MOOSE OPSTRANSPORT queued: %d x %s, totalWeight=%dkg, carrier=Jalalabad CH-47",AMMO_AMOUNT,AMMO_TYPE,AMMO_TOTAL_WEIGHT_KG),15)
+  msg("RESUPPLY READY",string.format("MOOSE OPSTRANSPORT queued: %d x %s, totalWeight=%dkg, carrier=Jalalabad CH-47, route=%s",AMMO_AMOUNT,AMMO_TYPE,AMMO_TOTAL_WEIGHT_KG,routeLabel()),15)
   return true
 end
 
@@ -345,18 +353,18 @@ local function installAirwingObservers()
     if not flight then cargoFail("CH-47 OPSTRANSPORT FLIGHTGROUP unavailable after AIRWING spawn") return end
     state.cargoFlight=flight
 
-    local binding,ok,reason=TransportCorridor.Bind(flight,state.cargoTransport,state.cargoResolved,R500_ALT_FT_AGL,{
+    local binding,ok,reason=TransportCorridor.Bind(flight,state.cargoTransport,state.cargoResolved,PRIMARY_ALT_FT_AGL,{
       onOutboundInstalled=function(installed)
         state.cargoOutboundInstalled=true
-        msg("RESUPPLY",string.format("CH-47 R500 outbound installed by OPSTRANSPORT corridor adapter: %d waypoints",installed.outboundWaypointCount),12)
+        msg("RESUPPLY",string.format("CH-47 %s outbound installed by OPSTRANSPORT corridor adapter: %d waypoints",routeLabel(),installed.outboundWaypointCount),12)
       end,
       onReturnInstalled=function(installed)
         state.cargoReturnInstalled=true
-        msg("RESUPPLY",string.format("CH-47 R500 reverse installed after OPSTRANSPORT Delivered: %d waypoints",installed.returnWaypointCount),12)
+        msg("RESUPPLY",string.format("CH-47 %s reverse installed after OPSTRANSPORT Delivered: %d waypoints",routeLabel(),installed.returnWaypointCount),12)
         maybePass()
       end,
       onError=function(adapterReason)
-        cargoFail("CH-47 OPSTRANSPORT R500 adapter failed: "..tostring(adapterReason))
+        cargoFail("CH-47 OPSTRANSPORT "..routeLabel().." adapter failed: "..tostring(adapterReason))
       end,
     })
     if not ok then cargoFail("CH-47 OPSTRANSPORT corridor bind failed: "..tostring(reason)) return end
@@ -392,6 +400,27 @@ local function installAirwingObservers()
   end
 end
 
+local function resolveConfiguredFlightPath()
+  -- Validation-only registry read. Pinned MOOSE 2.9.18 exposes PATHLINE:FindByName()
+  -- only for exact names and provides no public wildcard/enumeration API. The MOOSE
+  -- DATABASE.PATHLINES registry is therefore read once here solely to identify the
+  -- owner-configured OMW_FlightPath[_Rnnn/_Lnnn] name. All geometry remains MOOSE PATHLINE.
+  if type(_DATABASE)~="table" or type(_DATABASE.PATHLINES)~="table" then
+    fatalFail("MOOSE DATABASE.PATHLINES registry unavailable for configured FlightPath discovery")
+    return false
+  end
+
+  local selected,reason=FlightPathNameContract.SelectFromRegistry(FLIGHTPATH_BASE,_DATABASE.PATHLINES)
+  if not selected then fatalFail(reason); return false end
+  if type(selected.pathline)~="table" then fatalFail("configured FlightPath registry entry is not a PATHLINE: "..tostring(selected.name)); return false end
+
+  state.flightPathName=selected.name
+  state.flightPath=selected.pathline
+  state.flightPathOffset=selected.offset
+  msg("ROUTE",string.format("configured FlightPath selected: %s offset=%s %dm",selected.name,selected.offset.side,selected.offset.meters),12)
+  return true
+end
+
 local function start()
   local air=OMW and OMW.AirOps and OMW.AirOps.Jalalabad or nil
   if type(air)~="table" or air.Status~="RUNNING" or not air.Airwing then fatalFail("Jalalabad AIRWING not running") return end
@@ -401,7 +430,7 @@ local function start()
   state.ch47=air.Squadrons.CH47
   need(GROUP:FindByName(AH64_TEMPLATE),AH64_TEMPLATE)
   need(GROUP:FindByName(CH47_TEMPLATE),CH47_TEMPLATE)
-  need(PATHLINE:FindByName(R500),R500)
+  if not resolveConfiguredFlightPath() then return end
   need(PATHLINE:FindByName(WEST),WEST)
   state.pickup=need(ZONE:FindByName(PICKUP_ZONE),PICKUP_ZONE)
   state.drop=need(ZONE:FindByName(DROP_ZONE),DROP_ZONE)

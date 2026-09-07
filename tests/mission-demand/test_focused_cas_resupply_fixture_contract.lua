@@ -28,6 +28,16 @@ assertContains(source, "local function casFail", "CAS failure function")
 assertContains(source, "local function cargoFail", "RESUPPLY failure function")
 assertNotContains(source, "state.failed", "cross-subsystem failure gate")
 
+-- The primary FlightPath route identity is stable while its _Rnnn/_Lnnn suffix is
+-- mission-editor configuration. The acceptance must discover the configured name
+-- and must never hard-code one offset such as R500 as route identity.
+assertContains(source, "local FLIGHTPATH_BASE = \"OMW_FlightPath\"", "logical FlightPath identity")
+assertContains(source, "FlightPathNameContract.SelectFromRegistry", "configured FlightPath selection")
+assertContains(source, "_DATABASE.PATHLINES", "validation-only MOOSE PATHLINE registry read")
+assertContains(source, "state.flightPathName", "resolved configured FlightPath name")
+assertContains(source, "Corridor.OffsetMode.PATHLINE_SUFFIX", "suffix-driven corridor offset")
+assertNotContains(source, "local R500 = \"OMW_FlightPath_R500\"", "fixed R500 route identity")
+
 -- Preserve the previously used MOOSE CAS engagement contract. This test does not
 -- change the independent AH-64 route/engagement path while RESUPPLY is reconciled.
 assertContains(source, "AUFTRAG:NewCAS", "MOOSE CAS constructor")
