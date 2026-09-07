@@ -8,7 +8,7 @@ $repoRoot = Split-Path -Parent $PSScriptRoot
 $sourceFile = Join-Path $repoRoot 'scripts\air-operations\OMW_AirOps_Jalalabad_Bootstrap.lua'
 $distDir = Join-Path $repoRoot 'mission\tests\jalalabad-air-operations\dist'
 $outputFile = Join-Path $distDir 'OMW_AirOps_Jalalabad.lua'
-$builderVersion = 'JBAD-AIR-OPS-FOUNDATION-ONLY-5'
+$builderVersion = 'JBAD-AIR-OPS-FOUNDATION-ONLY-6'
 
 if (-not (Test-Path -LiteralPath $sourceFile -PathType Leaf)) {
     throw "Jalalabad foundation source not found: $sourceFile"
@@ -36,6 +36,8 @@ $requiredMarkers = @(
     'NewPayload',
     'SetSafeParkingOn',
     'SetOptionPreferVerticalLanding',
+    'SetOptionPreferVertical',
+    'VERTICAL_POLICY_APPLIED',
     'airwing:Start()',
     'missionsCreated=0',
     'transportsCreated=0',
@@ -88,6 +90,7 @@ $header = @"
 -- Scope: AIRWING/SQUADRON foundation only; no F10 test missions or dispatch harness.
 -- AH64D-Capabilities: CAS + CASENHANCED + PATROLZONE.
 -- CH47-Capabilities: TROOPTRANSPORT + CARGOTRANSPORT + OPSTRANSPORT + LANDATCOORDINATE.
+-- RotaryVerticalPolicy: AIRWING native mission path plus AssetSpawned transport-path propagation.
 -- GeneratedUtc: $([DateTime]::UtcNow.ToString('o'))
 
 "@
@@ -103,6 +106,9 @@ foreach ($pattern in $forbiddenPatterns) {
 if (-not $content.Contains('AUFTRAG.Type.OPSTRANSPORT')) {
     throw 'Generated Jalalabad foundation is missing CH-47 OPSTRANSPORT capability.'
 }
+if (-not $content.Contains('VERTICAL_POLICY_APPLIED')) {
+    throw 'Generated Jalalabad foundation is missing transport-path vertical policy propagation.'
+}
 
 [System.IO.File]::WriteAllText($outputFile, $content, [System.Text.UTF8Encoding]::new($false))
 
@@ -112,6 +118,7 @@ Write-Host "BuilderVersion: $builderVersion"
 Write-Host "Scope: AIRWING_SQUADRON_FOUNDATION_ONLY"
 Write-Host "AH64DCapabilities: CAS,CASENHANCED,PATROLZONE"
 Write-Host "CH47Capabilities: TROOPTRANSPORT,CARGOTRANSPORT,OPSTRANSPORT,LANDATCOORDINATE"
+Write-Host "RotaryVerticalPolicy: NATIVE_MISSION_PLUS_TRANSPORT_ASSETSPAWNED_PROPAGATION"
 Write-Host "F10TestMissions: ABSENT"
 Write-Host "AUFTRAGInstances: ABSENT"
 Write-Host "OPSTRANSPORTInstances: ABSENT"
