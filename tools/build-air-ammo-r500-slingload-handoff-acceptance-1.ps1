@@ -11,7 +11,7 @@ $acceptanceFile = Join-Path $repoRoot 'mission\tests\air-ammo-resupply\src\02-ai
 $distDir = Join-Path $repoRoot 'mission\tests\air-ammo-resupply\dist'
 $outputFile = Join-Path $distDir 'OMW_Air_AMMO_R500_Slingload_Handoff_Acceptance_1.lua'
 
-$builderVersion = 'AIR-AMMO-R500-SLINGLOAD-HANDOFF-ACCEPTANCE-1-1'
+$builderVersion = 'AIR-AMMO-R500-SLINGLOAD-HANDOFF-ACCEPTANCE-1-2'
 $testId = 'AIR-AMMO-R500-SLINGLOAD-HANDOFF-ACCEPTANCE-1'
 $mooseCommit = '73d3ed119cd9e7e3f2cfcabbaa34513d30529b54'
 $mooseSha256 = 'e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915'
@@ -27,7 +27,9 @@ $combined = $corridorSource + $handoffSource + $acceptanceSource
 
 foreach ($marker in @(
   'OMW-HELICOPTER-FLIGHTPATH-CORRIDOR-8',
-  'OMW-SLINGLOAD-CORRIDOR-HANDOFF-3',
+  'OMW-SLINGLOAD-CORRIDOR-HANDOFF-6',
+  'MOOSE_FSM_ONBEFORE_UNPAUSEMISSION',
+  'BLOCKED_AUTO_UNPAUSE_BEFORE_PHYSICAL_DELIVERY',
   'AIR-AMMO-R500-SLINGLOAD-HANDOFF-ACCEPTANCE-1',
   'ZON_BLUE_LOG_SLG_JALALABAD_01',
   'OMW_BLUE_LZ_WRIGHT_01',
@@ -71,7 +73,7 @@ $header = @"
 -- TestId: $testId
 -- MOOSECommit: $mooseCommit
 -- MooseLuaSHA256: $mooseSha256
--- Scope: isolated Jalalabad CH-47 physical slingload pickup -> public MOOSE task release -> R500 outbound -> Wright delivery -> R500 reverse -> Jalalabad recovery.
+-- Scope: isolated Jalalabad CH-47 physical slingload pickup -> public MOOSE task release/FSM unpause guard -> R500 outbound -> Wright physical delivery -> R500 reverse -> Jalalabad landing/AIRWING recovery.
 -- StrategicAuthority: none in this isolated physical-route probe.
 -- MizMutation: false.
 
@@ -93,9 +95,9 @@ Write-Host "GeneratedUtc: $generatedUtc"
 Write-Host "GitCommit: $commit"
 Write-Host "MOOSECommit: $mooseCommit"
 Write-Host "MooseLuaSHA256: $($mooseSha256.ToUpperInvariant())"
-Write-Host 'Scope: isolated CH-47 R500 slingload handoff only'
+Write-Host 'Scope: isolated CH-47 R500 physical external slingload handoff only'
 Write-Host 'PickupZone: ZON_BLUE_LOG_SLG_JALALABAD_01'
-Write-Host 'Route: pickup -> MOOSE PauseMission/TaskDone -> R500 outbound -> Wright -> R500 reverse -> Jalalabad'
+Write-Host 'Route: pickup -> MOOSE PauseMission/FSM guard -> R500 outbound -> Wright physical delivery -> R500 reverse -> Jalalabad'
 Write-Host 'DropZone: OMW_BLUE_LZ_WRIGHT_01'
 Write-Host 'FullStage3Required: false'
 Write-Host 'MizMutation: false'
