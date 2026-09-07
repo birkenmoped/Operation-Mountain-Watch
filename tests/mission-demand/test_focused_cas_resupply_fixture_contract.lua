@@ -48,17 +48,17 @@ assertContains(source, "SetEngageDetected", "MOOSE CAS EngageDetected")
 assertContains(source, "SetROE(ENUMS.ROE.OpenFire)", "MOOSE CAS ROE")
 assertContains(source, "SetROT(ENUMS.ROT.PassiveDefense)", "MOOSE CAS ROT")
 
--- The focused Air-AMMO path now uses MOOSE OPSTRANSPORT STORAGE transport end to
--- end. The prior NewCARGOTRANSPORT/PauseMission/native CargoTransportation handoff
--- is deliberately excluded because its diagnosed auto-unpause cause was falsified
--- by the Focus 1-4 DCS run.
+-- The focused Air-AMMO path uses MOOSE OPSTRANSPORT STORAGE transport end to end.
+-- Carrier recruitment remains a direct public MOOSE RecruitCohortAssets +
+-- TransportAssign path because pinned MOOSE 2.9.18 automatic transport-queue
+-- recruitment derives cargo weight only from CargoOpsGroups, not STORAGE cargo.
 assertContains(source, "OPSTRANSPORT:New(nil,state.pickup,state.drop)", "MOOSE OPSTRANSPORT storage constructor")
 assertContains(source, "AddCargoStorage", "MOOSE storage cargo")
 assertContains(source, "GetStaticStorage", "MOOSE STORAGE fixture")
 assertContains(source, "LEGION.RecruitCohortAssets", "MOOSE carrier recruitment")
 assertContains(source, "for _,legion in pairs(legions) do", "alias-keyed legion map iteration")
-assertContains(source, "legionCount~=1", "single carrier legion validation")
-assertContains(source, "recruitedLegion~=state.airwing", "Jalalabad AIRWING validation")
+assertContains(source, "legionCount==1", "single carrier legion validation")
+assertContains(source, "recruitedLegion==state.airwing", "Jalalabad AIRWING validation")
 assertContains(source, "state.airwing:TransportAssign", "MOOSE transport assignment")
 assertContains(source, "OnAfterAssetSpawned", "AIRWING spawned carrier observation")
 assertContains(source, "OnAfterDelivered", "MOOSE delivery observation")
@@ -67,6 +67,20 @@ assertNotContains(source, "AUFTRAG:NewCARGOTRANSPORT", "superseded CARGOTRANSPOR
 assertNotContains(source, "PauseMission(", "superseded mission pause handoff")
 assertNotContains(source, "CargoTransportation", "superseded native cargo task")
 assertNotContains(source, "OnBeforeUnpauseMission", "falsified auto-unpause guard")
+
+-- Carrier startup/recruitment is a bounded readiness window, not another blind
+-- one-shot gate. Diagnostics use public MOOSE cohort/airwing APIs so the next DCS
+-- run distinguishes duty/capability/stock/payload readiness from recruitment shape.
+assertContains(source, "local CARRIER_RECRUIT_RETRY_SEC = 5", "carrier retry interval")
+assertContains(source, "local CARRIER_RECRUIT_MAX_ATTEMPTS = 6", "carrier retry bound")
+assertContains(source, "GetMissionCapability(AUFTRAG.Type.OPSTRANSPORT)", "carrier mission capability diagnostic")
+assertContains(source, "CountAssets(true,{AUFTRAG.Type.OPSTRANSPORT})", "carrier stock diagnostic")
+assertContains(source, "CountPayloadsInStock({AUFTRAG.Type.OPSTRANSPORT},state.carrierUnitType)", "carrier payload diagnostic")
+assertContains(source, "[STAGE3 FOCUSED][RESUPPLY RECRUIT]", "carrier recruitment preflight diagnostic")
+assertContains(source, "[STAGE3 FOCUSED][RESUPPLY RECRUIT RESULT]", "carrier recruitment result diagnostic")
+assertContains(source, "LEGION.UnRecruitAssets(assets)", "malformed successful recruitment cleanup")
+assertContains(source, "scheduleCargoRecruitment()", "bounded carrier retry scheduling")
+assertContains(source, "state.cargoRecruitAttempts<CARRIER_RECRUIT_MAX_ATTEMPTS", "carrier retry stop condition")
 
 -- Wright is a field LZ zone. Pinned MOOSE 2.9.18 does not apply OPSTRANSPORT's
 -- transport path to a FLIGHTGROUP for this target type, so the approved boundary is
