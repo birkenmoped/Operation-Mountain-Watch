@@ -11,7 +11,7 @@ $acceptanceFile = Join-Path $repoRoot 'mission\tests\stage3-cas-resupply-focused
 $distDir = Join-Path $repoRoot 'mission\tests\stage3-cas-resupply-focused\dist'
 $outputFile = Join-Path $distDir 'OMW_Stage3_CAS_Resupply_Focused_Acceptance_1.lua'
 
-$builderVersion = 'STAGE3-CAS-RESUPPLY-FOCUSED-ACCEPTANCE-1-5'
+$builderVersion = 'STAGE3-CAS-RESUPPLY-FOCUSED-ACCEPTANCE-1-6'
 $testId = 'STAGE3-CAS-RESUPPLY-FOCUSED-ACCEPTANCE-1'
 $mooseCommit = '73d3ed119cd9e7e3f2cfcabbaa34513d30529b54'
 $mooseSha256 = 'e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915'
@@ -46,6 +46,9 @@ foreach ($marker in @(
   'OPSTRANSPORT:New',
   'AddCargoStorage',
   'LEGION.RecruitCohortAssets',
+  'for _,legion in pairs(legions) do',
+  'legionCount~=1',
+  'recruitedLegion~=state.airwing',
   'TransportAssign',
   'OnAfterAssetSpawned',
   'OnAfterTransport',
@@ -59,6 +62,7 @@ foreach ($marker in @(
 }
 
 foreach ($marker in @(
+  '#legions',
   'AUFTRAG:NewCARGOTRANSPORT',
   'PauseMission(',
   'CargoTransportation',
@@ -122,6 +126,7 @@ Write-Host 'CAS: frozen path - NewCAS + explicit WEST ingress/egress + EngageDet
 Write-Host 'CAS route: Jalalabad -> R500 -> WEST -> ingress -> CAS -> egress -> WEST reverse -> R500 reverse -> Jalalabad'
 Write-Host 'RESUPPLY: MOOSE OPSTRANSPORT + STORAGE; CH-47 carries ammunition Jalalabad -> R500 -> Wright -> R500 reverse -> Jalalabad'
 Write-Host 'RESUPPLY route adapter: public FLIGHTGROUP AddWaypoint/UpdateRoute only; no PauseMission, legacy CargoTransportation task or manual delivery completion'
+Write-Host 'CarrierLegionContract: alias-keyed MOOSE legion map validated without Lua length operator'
 Write-Host 'DiagnosticGate: false'
 Write-Host 'SubsystemIsolation: CAS and RESUPPLY failures do not suppress the other execution path'
 Write-Host 'FullStage3Required: false'
