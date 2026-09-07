@@ -141,6 +141,26 @@ local function createSquadron(airwing, definition)
   return squadron, payloads
 end
 
+local function installVerticalSpawnPolicy(airwing)
+  local previous = airwing.OnAfterAssetSpawned
+  function airwing:OnAfterAssetSpawned(From, Event, To, group, asset, request)
+    if previous then previous(self, From, Event, To, group, asset, request) end
+
+    local flightGroup = asset and asset.flightgroup or nil
+    if not flightGroup or type(flightGroup.SetOptionPreferVertical) ~= "function" then
+      env.error(TAG .. " VERTICAL_POLICY_APPLY_FAILED asset=" .. tostring(asset and asset.spawngroupname) .. " assignment=" .. tostring(request and request.assignment), false)
+      return
+    end
+
+    flightGroup:SetOptionPreferVertical()
+    log(string.format(
+      "VERTICAL_POLICY_APPLIED group=%s assignment=%s source=AIRWING_OnAfterAssetSpawned",
+      tostring(group and group:GetName()),
+      tostring(request and request.assignment)
+    ))
+  end
+end
+
 local function main()
   log("BEGIN foundation-only Jalalabad AIRWING/SQUADRON initialization")
   log("MOOSE commit=" .. MOOSE_COMMIT .. " sha256=" .. MOOSE_SHA256)
@@ -174,6 +194,7 @@ local function main()
     error("Pinned MOOSE AIRWING:SetOptionPreferVerticalLanding is unavailable")
   end
   airwing:SetOptionPreferVerticalLanding()
+  installVerticalSpawnPolicy(airwing)
 
   local squadrons = {}
   local payloads = {}
