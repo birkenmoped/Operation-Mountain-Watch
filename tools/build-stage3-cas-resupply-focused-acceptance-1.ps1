@@ -12,7 +12,7 @@ $acceptanceFile = Join-Path $repoRoot 'mission\tests\stage3-cas-resupply-focused
 $distDir = Join-Path $repoRoot 'mission\tests\stage3-cas-resupply-focused\dist'
 $outputFile = Join-Path $distDir 'OMW_Stage3_CAS_Resupply_Focused_Acceptance_1.lua'
 
-$builderVersion = 'STAGE3-CAS-RESUPPLY-FOCUSED-ACCEPTANCE-1-7'
+$builderVersion = 'STAGE3-CAS-RESUPPLY-FOCUSED-ACCEPTANCE-1-8'
 $testId = 'STAGE3-CAS-RESUPPLY-FOCUSED-ACCEPTANCE-1'
 $mooseCommit = '73d3ed119cd9e7e3f2cfcabbaa34513d30529b54'
 $mooseSha256 = 'e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915'
@@ -50,9 +50,15 @@ foreach ($marker in @(
   'OPSTRANSPORT:New',
   'AddCargoStorage',
   'LEGION.RecruitCohortAssets',
+  'CARRIER_RECRUIT_MAX_ATTEMPTS',
+  'GetMissionCapability(AUFTRAG.Type.OPSTRANSPORT)',
+  'CountAssets(true,{AUFTRAG.Type.OPSTRANSPORT})',
+  'CountPayloadsInStock({AUFTRAG.Type.OPSTRANSPORT},state.carrierUnitType)',
+  '[STAGE3 FOCUSED][RESUPPLY RECRUIT RESULT]',
+  'LEGION.UnRecruitAssets(assets)',
   'for _,legion in pairs(legions) do',
-  'legionCount~=1',
-  'recruitedLegion~=state.airwing',
+  'legionCount==1',
+  'recruitedLegion==state.airwing',
   'TransportAssign',
   'OnAfterAssetSpawned',
   'OnAfterTransport',
@@ -106,6 +112,7 @@ $header = @"
 -- CASCompletion: acceptance-only release 90 seconds after first real AH-64 shot; no IncidentParticipants completion gate.
 -- RESUPPLYLifecycle: MOOSE OPSTRANSPORT owns pickup/loading/transport/unloading/delivery; a public FLIGHTGROUP waypoint adapter supplies the configured FlightPath for Wright field-LZ routing and return.
 -- RESUPPLYStorage: temporary Mk-82 STORAGE fixture proves source-to-destination weapon transfer; it is not a production OMW inventory decision.
+-- RESUPPLYRecruitment: bounded public-MOOSE carrier readiness/recruitment window; diagnostics distinguish cohort duty/capability/stock/payload readiness and exact recruitment result.
 -- FlightPathContract: logical route identity is OMW_FlightPath; _Rnnn/_Lnnn suffix is mission-editor lateral-offset configuration and is not hard-coded by this acceptance.
 -- Isolation: CAS and RESUPPLY failure states are independent and cannot suppress the other subsystem execution.
 -- MizMutation: false.
@@ -132,6 +139,7 @@ Write-Host "MooseLuaSHA256: $($mooseSha256.ToUpperInvariant())"
 Write-Host 'FlightPath contract: logical route OMW_FlightPath; mission-editor suffix _Rnnn/_Lnnn selects lateral offset dynamically'
 Write-Host 'CAS: frozen path - NewCAS + configured FlightPath + WEST ingress/egress + EngageDetected + OpenFire + PassiveDefense + randomization 0'
 Write-Host 'RESUPPLY: MOOSE OPSTRANSPORT + STORAGE; CH-47 carries ammunition Jalalabad -> configured FlightPath -> Wright -> configured FlightPath reverse -> Jalalabad'
+Write-Host 'RESUPPLY carrier recruitment: bounded public-MOOSE readiness/retry window with duty/capability/stock/payload and exact recruitment diagnostics'
 Write-Host 'RESUPPLY route adapter: public FLIGHTGROUP AddWaypoint/UpdateRoute only; no PauseMission, legacy CargoTransportation task or manual delivery completion'
 Write-Host 'CarrierLegionContract: alias-keyed MOOSE legion map validated without Lua length operator'
 Write-Host 'DiagnosticGate: false'
