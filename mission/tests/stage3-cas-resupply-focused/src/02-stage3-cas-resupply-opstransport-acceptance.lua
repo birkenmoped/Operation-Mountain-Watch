@@ -293,7 +293,16 @@ local function startCargo()
   local recruited,assets,legions=LEGION.RecruitCohortAssets(
     {state.ch47},AUFTRAG.Type.OPSTRANSPORT,nil,1,1,state.drop:GetVec2(),
     nil,nil,nil,AMMO_TOTAL_WEIGHT_KG,AMMO_TOTAL_WEIGHT_KG,nil,nil,nil,nil,nil,nil)
-  if not recruited or type(assets)~="table" or #assets~=1 or type(legions)~="table" or #legions<1 then
+
+  local legionCount=0
+  local recruitedLegion=nil
+  if type(legions)=="table" then
+    for _,legion in pairs(legions) do
+      legionCount=legionCount+1
+      recruitedLegion=legion
+    end
+  end
+  if not recruited or type(assets)~="table" or #assets~=1 or legionCount~=1 or recruitedLegion~=state.airwing then
     cargoFail("unable to recruit exactly one Jalalabad CH-47 for OPSTRANSPORT")
     return false
   end
