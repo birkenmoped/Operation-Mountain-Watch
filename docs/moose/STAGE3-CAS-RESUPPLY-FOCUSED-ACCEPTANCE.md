@@ -9,7 +9,8 @@ authoritative_for:
   - historical focused 2026-09-05 DCS evidence
   - correction of the falsified CARGOTRANSPORT auto-unpause diagnosis
   - current MOOSE OPSTRANSPORT STORAGE transport design for Wright
-  - exact local build provenance for the pending OPSTRANSPORT DCS acceptance
+  - configurable FlightPath name/offset contract in the focused acceptance
+  - 2026-09-07 rejected Focus-1-6 fixture run
   - removal of IncidentParticipants as tactical completion evidence in this acceptance
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
@@ -89,19 +90,21 @@ SetROE(ENUMS.ROE.OpenFire)
 SetROT(ENUMS.ROT.PassiveDefense)
 ```
 
-Acceptance-Geometrie:
+Aktuelle Acceptance-Geometrie:
 
 ```text
 Jalalabad
--> OMW_FlightPath_R500 @ 500 ft AGL
+-> configured OMW_FlightPath[_Rnnn/_Lnnn] @ 500 ft AGL
 -> OMW_FlightPath_WEST @ 2500 ft AGL
 -> explicit ingress
 -> Honaker CAS
 -> explicit egress
 -> WEST reverse
--> R500 reverse
+-> configured FlightPath reverse
 -> Jalalabad
 ```
+
+Der Basename `OMW_FlightPath` ist die logische Routenidentität. `_Rnnn` beziehungsweise `_Lnnn` kodiert ausschließlich den seitlichen Offset und darf nicht als feste Routenidentität behandelt werden.
 
 Die Acceptance-Freigabe erfolgt testbedingt 90 Sekunden nach dem ersten real bestätigten AH-64-Waffeneinsatz. Das ist kein Produktionskriterium.
 
@@ -307,16 +310,16 @@ Deshalb ergänzt `OMW_OpsTransportCorridorAdapter.lua` ausschließlich die fehle
 ```text
 OnAfterTransport
 -> FLIGHTGROUP:GetWaypointCurrentUID()
--> FLIGHTGROUP:AddWaypoint(... R500 outbound ...)
+-> FLIGHTGROUP:AddWaypoint(... configured FlightPath outbound ...)
 -> FLIGHTGROUP:UpdateRoute()
 
 OnAfterDelivered
 -> FLIGHTGROUP:GetWaypointCurrentUID()
--> FLIGHTGROUP:AddWaypoint(... R500 reverse ...)
+-> FLIGHTGROUP:AddWaypoint(... configured FlightPath reverse ...)
 -> FLIGHTGROUP:UpdateRoute()
 ```
 
-Source-verifiziert ist außerdem die Insert-Semantik: `AddWaypoint(..., AfterWaypointWithID, ...)` ermittelt `GetWaypointIndexAfterID()` und `_AddWaypoint()` führt `table.insert(self.waypoints, index, waypoint)` aus. Die R500-Punkte werden damit tatsächlich hinter der angegebenen UID und vor dem bisher folgenden Waypoint in die MOOSE-Route eingefügt.
+Source-verifiziert ist außerdem die Insert-Semantik: `AddWaypoint(..., AfterWaypointWithID, ...)` ermittelt `GetWaypointIndexAfterID()` und `_AddWaypoint()` führt `table.insert(self.waypoints, index, waypoint)` aus. Die konfigurierten FlightPath-Punkte werden damit tatsächlich hinter der angegebenen UID und vor dem bisher folgenden Waypoint in die MOOSE-Route eingefügt.
 
 Der Adapter übernimmt **nicht**:
 
@@ -329,7 +332,38 @@ native DCS Controller tasking
 Pause/Unpause lifecycle
 ```
 
-## 10. Delivered -> Return-Reihenfolge
+## 10. FlightPath-Namensvertrag und MOOSE-Grenze
+
+Der gemeinsame Corridor-Code kann den Offset bereits aus `_Rnnn`/`_Lnnn` parsen. Focus-1-6 behandelte jedoch fälschlich den vollständigen Namen `OMW_FlightPath_R500` als unveränderliche Routenidentität.
+
+Verbindlicher Acceptance-Vertrag:
+
+```text
+logical route identity: OMW_FlightPath
+accepted configured names:
+  OMW_FlightPath
+  OMW_FlightPath_R<meters>
+  OMW_FlightPath_L<meters>
+```
+
+`OMW_FlightPath_WEST` ist ein separates Segment und darf nicht als konfigurierte Primärroute erkannt werden.
+
+Der gepinnte MOOSE-Source bestätigt `PATHLINE:FindByName(Name)` nur als exakte Namensauflösung. Eine öffentliche PATHLINE-Wildcard- oder Enumerationsfunktion wurde nicht gefunden. Für den **Acceptance-/Validierungsfall** liest der Fixture deshalb genau einmal `_DATABASE.PATHLINES`, um den realen owner-konfigurierten Primärnamen auszuwählen. Diese Nutzung bleibt `INTERNAL_RESTRICTED`, ist keine Produktionsarchitektur und übernimmt keine DCS- oder MOOSE-Lifecycle-Funktion.
+
+Bei null oder mehreren passenden Primärpathlines bricht die Acceptance eindeutig ab. Es gibt keine stille Priorisierung.
+
+Regressionen prüfen mindestens:
+
+```text
+OMW_FlightPath_R200 -> RIGHT 200 m
+OMW_FlightPath_R500 -> RIGHT 500 m
+OMW_FlightPath_L350 -> LEFT 350 m
+OMW_FlightPath      -> CENTER 0 m
+OMW_FlightPath_WEST -> kein Primärmatch
+multiple matches    -> explicit ambiguity failure
+```
+
+## 11. Delivered -> Return-Reihenfolge
 
 Der gepinnte MOOSE-Source zeigt:
 
@@ -342,13 +376,13 @@ OPSGROUP:onafterDelivered
 -> _CheckGroupDone scheduled after 0.2 s
 ```
 
-MOOSE-FSM ruft den lowercase Framework-Handler vor dem uppercase User-Callback auf. Der OMW-`OnAfterDelivered`-Callback kann daher unmittelbar nach dem Framework-Handler R500 reverse einfügen, bevor der verzögert geplante `_CheckGroupDone` ausgeführt wird.
+MOOSE-FSM ruft den lowercase Framework-Handler vor dem uppercase User-Callback auf. Der OMW-`OnAfterDelivered`-Callback kann daher unmittelbar nach dem Framework-Handler den konfigurierten FlightPath reverse einfügen, bevor der verzögert geplante `_CheckGroupDone` ausgeführt wird.
 
 Das ist **SOURCE_REVIEWED**, noch kein DCS-Laufzeitbeweis.
 
-## 11. Aktueller lokaler Buildstand – 07.09.2026
+## 12. Historischer lokaler Buildstand 1-6 – 07.09.2026
 
-Der Projektinhaber hat den aktuellen fokussierten OPSTRANSPORT-Build lokal aus dem vorgesehenen Worktree erzeugt und den Bundle-Hash unmittelbar danach unabhängig erneut ermittelt.
+Der Projektinhaber hatte den fokussierten OPSTRANSPORT-Build lokal aus dem vorgesehenen Worktree erzeugt und den Bundle-Hash unmittelbar danach unabhängig erneut ermittelt.
 
 ```text
 Worktree: P:\DCS-DEV\Operation-Mountain-Watch-fire-support-strategic-resupply
@@ -366,17 +400,52 @@ MizMutation: false
 
 Der erste direkte Buildversuch wurde durch die lokale PowerShell Execution Policy abgewiesen. Der dabei anschließend angezeigte ältere Dist-Hash `3410B4149FD5C4786887F019AB95080EF4AE05407DDA3DB1BBC47653AB4D45DB` ist **kein Hash dieses Builds** und darf nicht als Provenienz verwendet werden. Der erfolgreiche Build wurde danach explizit mit `powershell.exe -NoProfile -ExecutionPolicy Bypass -File ...` ausgeführt.
 
-Der Build selbst ist damit reproduzierbar und hashverifiziert. Er ist **noch nicht in DCS gelaufen**. Es entsteht daraus kein `VALIDATED`- oder `PASS`-Status.
+## 13. Rejected Focus-1-6 Runtime – 07.09.2026
 
-## 12. Aktuelle Dateien
+Der reale DCS-Lauf des 1-6-Fixtures ist `REJECTED_TEST_FIXTURE` und **kein** OPSTRANSPORT-Runtime-Fail.
+
+```text
+DCS: 2.9.29.27468 MT
+Mission: OMW_Template_v22_GroundWorks.miz
+Mission SHA256: A06B69A459ADF69AC7047EA7F446DCB1EE5B88F80EE04A45DAB01EA26107088C
+DCS log SHA256: 8F933330C9515069C84B846D7DFFD4EA2412D8D38C7F952982765EA64259C25E
+Debrief SHA256: 2CBC07B92CB466E7A73171F2A344ABEF92FEF60B98A4A121B5B12E390069C3E5
+BuilderVersion under test: STAGE3-CAS-RESUPPLY-FOCUSED-ACCEPTANCE-1-6
+Bundle SHA256: 193801A95EEFD58C0C978C5FEF83097F582D51EF53D93AD8925BAD003E202F40
+```
+
+MOOSE registrierte real:
+
+```text
+OMW_FlightPath_R200
+OMW_FlightPath_WEST
+```
+
+Der Fixture verlangte dagegen den hart codierten Namen `OMW_FlightPath_R500` und meldete:
+
+```text
+[STAGE3 FOCUSED][FATAL] missing OMW_FlightPath_R500
+```
+
+Root Cause:
+
+```text
+Acceptance treated configurable PATHLINE suffix as fixed route identity.
+```
+
+Damit wurden weder der aktuelle CH-47-OPSTRANSPORT-Pfad noch das aktuelle CAS-Terrainverhalten erreicht. Aus diesem Lauf darf keine Aussage über Wright-Delivery, `Delivered`, Return oder AIRWING-Recovery abgeleitet werden.
+
+## 14. Aktuelle Dateien
 
 ```text
 mission/tests/stage3-cas-resupply-focused/src/02-stage3-cas-resupply-opstransport-acceptance.lua
 mission/tests/stage3-cas-resupply-focused/README.md
+scripts/air-operations/OMW_FlightPathNameContract.lua
 scripts/air-operations/OMW_HelicopterFlightPathCorridor.lua
 scripts/air-operations/OMW_OpsTransportCorridorAdapter.lua
 scripts/air-operations/OMW_AirOps_Jalalabad_Bootstrap.lua
 tools/build-stage3-cas-resupply-focused-acceptance-1.ps1
+tests/mission-demand/test_flightpath_name_contract.lua
 tests/mission-demand/test_focused_cas_resupply_fixture_contract.lua
 ```
 
@@ -386,18 +455,27 @@ Generiertes Bundle:
 mission/tests/stage3-cas-resupply-focused/dist/OMW_Stage3_CAS_Resupply_Focused_Acceptance_1.lua
 ```
 
-## 13. Nächster DCS-Nachweis
+## 15. Nächster Build und DCS-Nachweis
+
+Der korrigierte Builder ist:
+
+```text
+STAGE3-CAS-RESUPPLY-FOCUSED-ACCEPTANCE-1-7
+```
+
+Ein realer lokaler 1-7-Build und dessen SHA-256 existieren noch nicht. Nach Pull muss der Projektinhaber den Builder im vorgesehenen Worktree ausführen und die echte Konsolenausgabe einschließlich Hash zurückmelden.
 
 Der nächste reale Lauf muss für RESUPPLY beobachten:
 
 ```text
+configured FlightPath name/offset logged
 exactly one Jalalabad CH-47 recruited
 OPSTRANSPORT executing
-R500 outbound inserted and physically flown
+configured FlightPath outbound inserted and physically flown
 source STORAGE 4 -> 0
 destination STORAGE 0 -> 4
 OPSTRANSPORT Delivered
-R500 reverse inserted and physically flown
+configured FlightPath reverse inserted and physically flown
 physical Jalalabad landing
 AIRWING LegionAssetReturned after landing
 ```
@@ -405,16 +483,17 @@ AIRWING LegionAssetReturned after landing
 CAS bleibt parallel und unabhängig zu beobachten:
 
 ```text
-Jalalabad -> R500 -> WEST -> ingress -> CAS -> egress -> WEST reverse -> R500 reverse -> Jalalabad
+Jalalabad -> configured FlightPath -> WEST -> ingress -> CAS -> egress -> WEST reverse -> configured FlightPath reverse -> Jalalabad
 ```
 
 Bis zu einem dokumentierten DCS-Lauf gilt:
 
 ```text
 OPSTRANSPORT STORAGE design: SOURCE_REVIEWED
-focused bundle build/hash: VERIFIED_LOCAL_BUILD
+Focus-1-6 runtime: REJECTED_TEST_FIXTURE
+Focus-1-7 source fix: STAGED / DCS PENDING
 Wright storage delivery: NOT VALIDATED
-R500 reverse after Delivered: NOT VALIDATED
+configured FlightPath reverse after Delivered: NOT VALIDATED
 current CAS terrain behavior: NOT VALIDATED
 full Stage 3: NOT VALIDATED
 ```
