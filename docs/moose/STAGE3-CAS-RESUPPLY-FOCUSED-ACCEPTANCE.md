@@ -9,6 +9,7 @@ authoritative_for:
   - historical focused 2026-09-05 DCS evidence
   - correction of the falsified CARGOTRANSPORT auto-unpause diagnosis
   - current MOOSE OPSTRANSPORT STORAGE transport design for Wright
+  - exact local build provenance for the pending OPSTRANSPORT DCS acceptance
   - removal of IncidentParticipants as tactical completion evidence in this acceptance
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
@@ -345,7 +346,29 @@ MOOSE-FSM ruft den lowercase Framework-Handler vor dem uppercase User-Callback a
 
 Das ist **SOURCE_REVIEWED**, noch kein DCS-Laufzeitbeweis.
 
-## 11. Aktuelle Dateien
+## 11. Aktueller lokaler Buildstand – 07.09.2026
+
+Der Projektinhaber hat den aktuellen fokussierten OPSTRANSPORT-Build lokal aus dem vorgesehenen Worktree erzeugt und den Bundle-Hash unmittelbar danach unabhängig erneut ermittelt.
+
+```text
+Worktree: P:\DCS-DEV\Operation-Mountain-Watch-fire-support-strategic-resupply
+Branch: agent/fire-support-strategic-resupply-alarm-evidence
+GitCommit: 071587a507bfd34e394dad0ee4b1c41c455d3770
+BuilderVersion: STAGE3-CAS-RESUPPLY-FOCUSED-ACCEPTANCE-1-6
+TestId: STAGE3-CAS-RESUPPLY-FOCUSED-ACCEPTANCE-1
+GeneratedUtc: 2026-09-07T18:38:10Z
+MOOSECommit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+MooseLuaSHA256: E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915
+Builder SHA256: 193801A95EEFD58C0C978C5FEF83097F582D51EF53D93AD8925BAD003E202F40
+Independent Get-FileHash SHA256: 193801A95EEFD58C0C978C5FEF83097F582D51EF53D93AD8925BAD003E202F40
+MizMutation: false
+```
+
+Der erste direkte Buildversuch wurde durch die lokale PowerShell Execution Policy abgewiesen. Der dabei anschließend angezeigte ältere Dist-Hash `3410B4149FD5C4786887F019AB95080EF4AE05407DDA3DB1BBC47653AB4D45DB` ist **kein Hash dieses Builds** und darf nicht als Provenienz verwendet werden. Der erfolgreiche Build wurde danach explizit mit `powershell.exe -NoProfile -ExecutionPolicy Bypass -File ...` ausgeführt.
+
+Der Build selbst ist damit reproduzierbar und hashverifiziert. Er ist **noch nicht in DCS gelaufen**. Es entsteht daraus kein `VALIDATED`- oder `PASS`-Status.
+
+## 12. Aktuelle Dateien
 
 ```text
 mission/tests/stage3-cas-resupply-focused/src/02-stage3-cas-resupply-opstransport-acceptance.lua
@@ -363,7 +386,7 @@ Generiertes Bundle:
 mission/tests/stage3-cas-resupply-focused/dist/OMW_Stage3_CAS_Resupply_Focused_Acceptance_1.lua
 ```
 
-## 12. Nächster DCS-Nachweis
+## 13. Nächster DCS-Nachweis
 
 Der nächste reale Lauf muss für RESUPPLY beobachten:
 
@@ -389,6 +412,7 @@ Bis zu einem dokumentierten DCS-Lauf gilt:
 
 ```text
 OPSTRANSPORT STORAGE design: SOURCE_REVIEWED
+focused bundle build/hash: VERIFIED_LOCAL_BUILD
 Wright storage delivery: NOT VALIDATED
 R500 reverse after Delivered: NOT VALIDATED
 current CAS terrain behavior: NOT VALIDATED
