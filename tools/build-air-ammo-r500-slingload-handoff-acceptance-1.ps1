@@ -5,27 +5,37 @@ $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 
 $repoRoot = Split-Path -Parent $PSScriptRoot
+$nameContractFile = Join-Path $repoRoot 'scripts\air-operations\OMW_FlightPathNameContract.lua'
 $corridorFile = Join-Path $repoRoot 'scripts\air-operations\OMW_HelicopterFlightPathCorridor.lua'
 $handoffFile = Join-Path $repoRoot 'scripts\air-operations\OMW_SlingloadCorridorHandoff.lua'
 $acceptanceFile = Join-Path $repoRoot 'mission\tests\air-ammo-resupply\src\02-air-ammo-r500-slingload-handoff-acceptance.lua'
 $distDir = Join-Path $repoRoot 'mission\tests\air-ammo-resupply\dist'
 $outputFile = Join-Path $distDir 'OMW_Air_AMMO_R500_Slingload_Handoff_Acceptance_1.lua'
 
-$builderVersion = 'AIR-AMMO-R500-SLINGLOAD-HANDOFF-ACCEPTANCE-1-2'
+$builderVersion = 'AIR-AMMO-R500-SLINGLOAD-HANDOFF-ACCEPTANCE-1-3'
 $testId = 'AIR-AMMO-R500-SLINGLOAD-HANDOFF-ACCEPTANCE-1'
 $mooseCommit = '73d3ed119cd9e7e3f2cfcabbaa34513d30529b54'
 $mooseSha256 = 'e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915'
 
-foreach ($file in @($corridorFile,$handoffFile,$acceptanceFile)) {
-  if (-not (Test-Path -LiteralPath $file -PathType Leaf)) { throw "Required isolated R500 acceptance source not found: $file" }
+foreach ($file in @($nameContractFile,$corridorFile,$handoffFile,$acceptanceFile)) {
+  if (-not (Test-Path -LiteralPath $file -PathType Leaf)) { throw "Required isolated slingload acceptance source not found: $file" }
 }
 
+$nameContractSource = Get-Content -LiteralPath $nameContractFile -Raw -Encoding UTF8
 $corridorSource = Get-Content -LiteralPath $corridorFile -Raw -Encoding UTF8
 $handoffSource = Get-Content -LiteralPath $handoffFile -Raw -Encoding UTF8
 $acceptanceSource = Get-Content -LiteralPath $acceptanceFile -Raw -Encoding UTF8
-$combined = $corridorSource + $handoffSource + $acceptanceSource
+$combined = $nameContractSource + $corridorSource + $handoffSource + $acceptanceSource
+
+if ($acceptanceSource -match 'OMW_FlightPath_[RL][0-9]+') {
+  throw 'Isolated slingload acceptance must not hard-code a concrete OMW_FlightPath offset variant.'
+}
 
 foreach ($marker in @(
+  'OMW-FLIGHTPATH-NAME-CONTRACT-1',
+  'SelectFromRegistry',
+  'LOGICAL_PATHLINE_NAME = "OMW_FlightPath"',
+  'ROUTE_SELECTED',
   'OMW-HELICOPTER-FLIGHTPATH-CORRIDOR-8',
   'OMW-SLINGLOAD-CORRIDOR-HANDOFF-6',
   'MOOSE_FSM_ONBEFORE_UNPAUSEMISSION',
@@ -33,7 +43,6 @@ foreach ($marker in @(
   'AIR-AMMO-R500-SLINGLOAD-HANDOFF-ACCEPTANCE-1',
   'ZON_BLUE_LOG_SLG_JALALABAD_01',
   'OMW_BLUE_LZ_WRIGHT_01',
-  'OMW_FlightPath_R500',
   'AUFTRAG:NewCARGOTRANSPORT',
   'GetTaskCurrent',
   'GetMissionCurrent',
@@ -49,11 +58,11 @@ foreach ($marker in @(
   'InitValidateAndRepositionStatic(false)',
   'MAX_HANDOFF_ATTEMPTS = 12'
 )) {
-  if (-not $combined.Contains($marker)) { throw "Isolated R500 acceptance missing required marker: $marker" }
+  if (-not $combined.Contains($marker)) { throw "Isolated slingload acceptance missing required marker: $marker" }
 }
 
 foreach ($marker in @('Controller:setTask','coalition.addGroup','coalition.addStaticObject',':Teleport(','world.addEventHandler','timer.scheduleFunction','MissionScripting.lua','mist.','MIST')) {
-  if ($combined.Contains($marker)) { throw "Isolated R500 acceptance exceeds approved boundary: $marker" }
+  if ($combined.Contains($marker)) { throw "Isolated slingload acceptance exceeds approved boundary: $marker" }
 }
 
 function Embed-Module([string]$Name,[string]$Source) {
@@ -73,13 +82,15 @@ $header = @"
 -- TestId: $testId
 -- MOOSECommit: $mooseCommit
 -- MooseLuaSHA256: $mooseSha256
--- Scope: isolated Jalalabad CH-47 physical slingload pickup -> public MOOSE task release/FSM unpause guard -> R500 outbound -> Wright physical delivery -> R500 reverse -> Jalalabad landing/AIRWING recovery.
+-- Scope: isolated Jalalabad CH-47 physical slingload pickup -> public MOOSE task release/FSM unpause guard -> configured logical OMW_FlightPath variant outbound -> Wright physical delivery -> same configured variant reverse -> Jalalabad landing/AIRWING recovery.
+-- RouteSelection: OMW_FlightPathNameContract.SelectFromRegistry; exactly one configured variant required.
 -- StrategicAuthority: none in this isolated physical-route probe.
 -- MizMutation: false.
 
 "@
 
 $bundle = $header
+$bundle += Embed-Module 'OMW_STAGE3_FLIGHTPATH_NAME_CONTRACT' $nameContractSource
 $bundle += Embed-Module 'OMW_STAGE3_HELICOPTER_FLIGHTPATH_CORRIDOR' $corridorSource
 $bundle += Embed-Module 'OMW_STAGE3_SLINGLOAD_CORRIDOR_HANDOFF' $handoffSource
 $bundle += $acceptanceSource
@@ -95,9 +106,11 @@ Write-Host "GeneratedUtc: $generatedUtc"
 Write-Host "GitCommit: $commit"
 Write-Host "MOOSECommit: $mooseCommit"
 Write-Host "MooseLuaSHA256: $($mooseSha256.ToUpperInvariant())"
-Write-Host 'Scope: isolated CH-47 R500 physical external slingload handoff only'
+Write-Host 'Scope: isolated CH-47 physical external slingload handoff only'
 Write-Host 'PickupZone: ZON_BLUE_LOG_SLG_JALALABAD_01'
-Write-Host 'Route: pickup -> MOOSE PauseMission/FSM guard -> R500 outbound -> Wright physical delivery -> R500 reverse -> Jalalabad'
+Write-Host 'LogicalRoute: OMW_FlightPath'
+Write-Host 'RouteSelection: EXACTLY_ONE_CONFIGURED_VARIANT'
+Write-Host 'Route: pickup -> MOOSE PauseMission/FSM guard -> configured FlightPath outbound -> Wright physical delivery -> same configured FlightPath reverse -> Jalalabad'
 Write-Host 'DropZone: OMW_BLUE_LZ_WRIGHT_01'
 Write-Host 'FullStage3Required: false'
 Write-Host 'MizMutation: false'
