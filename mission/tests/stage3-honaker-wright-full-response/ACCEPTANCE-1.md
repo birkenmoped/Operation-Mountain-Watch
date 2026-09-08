@@ -20,27 +20,31 @@ validated_in_dcs: false
 
 Dieser Acceptance-Test bleibt **PLANNED / nicht DCS-validiert**.
 
-Historische Fehltests bis einschließlich der externen Slingload-/CARGOTRANSPORT-Versuche bleiben als Evidenz in den vorhandenen `FAIL-*`- und MOOSE-Analyse-Dokumenten erhalten. Sie validieren den aktuellen Pfad nicht.
+Historische Fehltests bis einschließlich der externen Slingload-/CARGOTRANSPORT-Versuche bleiben als Evidenz erhalten. Der reale Build-1-19-Lauf bestätigte getrennt Guard, QRF, ARTY und den internen CH-47-OPSTRANSPORT-Pfad, war aber wegen der veralteten CAS-Closure nicht als Gesamt-PASS gültig.
 
 Aktueller Builderstand:
 
 ```text
-STAGE3-HONAKER-WRIGHT-FULL-RESPONSE-ACCEPTANCE-1-19
+STAGE3-HONAKER-WRIGHT-FULL-RESPONSE-ACCEPTANCE-1-20
 ```
 
-Aktuelle Owner-Entscheidung vom 08.09.2026:
+Owner-Entscheidungen vom 08.09.2026:
 
 ```text
 external slingload development: SUSPENDED
 current Air-AMMO transport: MOOSE OPSTRANSPORT + internal STORAGE
 outbound: configured logical OMW_FlightPath
 return: same configured route in reverse
+CH-47 full-response transit profile: 125 kt
+CH-47 lead-turn acceptance profile: 250 m bounded fly-by approximation
+CAS termination: supported-element/control release, not OPSZONE/attackIncident/raw RED count
 ```
 
-Maßgebliches Entscheidungsdokument:
+Maßgebliche Entscheidungsdokumente:
 
 ```text
 docs/moose/STAGE3-OPSTRANSPORT-SLINGLOAD-ARCHITECTURE-DECISION.md
+docs/moose/STAGE3-CAS-SUPPORT-REQUIREMENT-AND-ENGAGEMENT-DECISION.md
 ```
 
 ## 2. Gepinnter MOOSE-Stand
@@ -61,29 +65,34 @@ AUFTRAG:SetEngageDetected(...)
 AUFTRAG:AssignCohort(...)
 AUFTRAG:NewPATROLZONE(...)
 AUFTRAG:AssignSquadrons(...)
+FLIGHTGROUP:GetDetectedGroups()
+FLIGHTGROUP:GetWaypointCurrentUID()
+FLIGHTGROUP:AddWaypoint(...)
+FLIGHTGROUP:UpdateRoute()
+COORDINATE:GetIntermediateCoordinate(...)
+COORDINATE:HeadingTo(...)
 OPSTRANSPORT:New(...)
 OPSTRANSPORT:AddCargoStorage(...)
 OPSTRANSPORT OnAfterExecuting / OnAfterDelivered
 LEGION.RecruitCohortAssets(...)
 AIRWING:TransportAssign(...)
-FLIGHTGROUP:GetWaypointCurrentUID()
-FLIGHTGROUP:AddWaypoint(...)
-FLIGHTGROUP:UpdateRoute()
 ARTY:New / AssignTargetCoord / GetAmmo / Rearm lifecycle
 EVENTHANDLER / EVENTS.Shot
 PATHLINE / COORDINATE routing
 ```
 
-Nicht Bestandteil des aktuellen Air-AMMO-Pfads:
+Nicht Bestandteil des aktuellen Pfads:
 
 ```text
 AUFTRAG:NewCARGOTRANSPORT
 PauseMission / TaskDone slingload handoff
 CargoTransportation waypoint task
 OMW_SlingloadCorridorHandoff
+KnowTarget() injection for CAS
+raw tactical RED count as CAS release gate
 ```
 
-## 3. Alarm und Attack Incident
+## 3. Alarm und lokales Attack Incident
 
 Die 1000-m-OPSZONE ist Alarm-/Evidence-Grenze:
 
@@ -94,16 +103,17 @@ RED enters 1000-m alarm perimeter
 -> one Honaker attack incident
 ```
 
-Weitere `OPSZONE Evaluated`-Zyklen ergänzen neu erkannte RED-Gruppen als Incident-Teilnehmer. `OPSZONE Defeated` setzt `perimeterClear=true`; die taktische Completion basiert weiterhin auf den bekannten Incident-Teilnehmern:
+Weitere `OPSZONE Evaluated`-Zyklen ergänzen neu erkannte RED-Gruppen als Incident-Teilnehmer. Sind keine bekannten Incident-Teilnehmer mehr am Leben, darf Honaker den lokalen Status setzen:
 
 ```text
-no living known attack participant remains
--> Close("KNOWN_ATTACKERS_NEUTRALIZED")
+HONAKER_NO_KNOWN_ATTACKERS
 ```
+
+Das beendet Guard-/QRF-bezogene lokale Reaktionsketten, **aber nicht automatisch CAS**. `OPSZONE Defeated`, `attackIncidentClosed` und ein raw RED-group count besitzen keine CAS-Termination-Authority.
 
 ## 4. Guard und QRF
 
-Aktueller Guard-Vertrag:
+Guard-Vertrag:
 
 ```text
 Template: TPL_BLUE_GND_INF_RIFLE_SQUAD_9
@@ -114,20 +124,20 @@ Routing: PATHLINE:GetCoordinates -> COORDINATE:WaypointGround
 Behavior: repeated circuit
 ```
 
-Aktueller QRF-Vertrag:
+QRF-Vertrag:
 
 ```text
 Template: TPL_BLUE_GND_QRF_MIXED_6
 Composition: 5 infantry + 1 CHAP_MATV
 Representation: one GROUP
 Mission: AUFTRAG:NewONGUARD + SetEngageDetected
-Return: SetReturnToLegion(true), mission Cancel after tactical completion
+Return: SetReturnToLegion(true), mission Cancel after local incident completion
 Settlement: PersonnelLedger only after ARMYGROUP:Returned
 ```
 
-## 5. CAS
+## 5. CAS – korrigierter Gesamtintegrationsvertrag
 
-Der aktuelle CAS-Pfad verwendet:
+Der CAS-Pfad verwendet:
 
 ```text
 AUFTRAG:NewPATROLZONE
@@ -149,13 +159,52 @@ OMW_FlightPath_Rnnn
 OMW_FlightPath_Lnnn
 ```
 
-`OMW_FlightPath_WEST` ist ein separater CAS-Segmentpfad und kein Kandidat für die primäre Variante.
+`OMW_FlightPath_WEST` ist ein separater CAS-Segmentpfad.
 
-Reale `EVENTS.Shot`-Telemetrie bleibt Acceptance-Evidence. Sie blockiert aber nicht mehr die operative CAS-Closure nach taktischer Completion.
+### 5.1 Informations- und Release-Grenze
+
+Die AH-64-FLIGHTGROUP verwendet ihr eigenes MOOSE/DCS-Detektionsbild:
+
+```text
+FLIGHTGROUP:GetDetectedGroups()
+-> alive RED Ground Units
+-> inside Honaker CAS tactical zone
+-> within configured CAS engagement range
+```
+
+Die Acceptance injiziert **keine** F10-map-RED-Liste mit `KnowTarget()`.
+
+CAS bleibt aktiv, wenn das eigene AH-64-Bild noch einen relevanten Kontakt enthält, auch wenn Honaker bereits `HONAKER_NO_KNOWN_ATTACKERS` gemeldet hat.
+
+Normale Acceptance-Release:
+
+```text
+Honaker: HONAKER_NO_KNOWN_ATTACKERS
+AND
+CAS: physically ON STATION
+AND
+CAS own detectedgroups: NO eligible contact
+-> SUPPORTED_ELEMENT_RELEASE_NO_KNOWN_ATTACKERS_CAS_NO_CONTACT
+-> CasPatrolClosure.Complete(... releaseSource=BLUE_GROUND_COP_HONAKER ...)
+```
+
+Damit kann der Gesamtintegrationstest erstmals beantworten, ob die Apaches nach Wirkung von Guard/QRF/ARTY noch selbst erkannte verbleibende Gruppen weiter angreifen.
+
+### 5.2 Reale fokussierte CAS-Evidenz vom 08.09.2026
+
+Der unmittelbar vorhergehende fokussierte CAS-Test bestätigte praktisch:
+
+```text
+AH-64 two-ship dispatched: YES
+PATROLZONE + SetEngageDetected: YES
+both AH-64 attacked: YES (owner observation / DCS log evidence)
+both AH-64 lost during engagement: YES
+full-response interaction with Guard/QRF/ARTY: NOT TESTED by focused acceptance
+```
+
+Der fokussierte Lauf ist daher ein positiver Engagement-Nachweis, aber kein Gesamtintegrations-PASS und keine Aussage über CAS-Survivability.
 
 ## 6. Wright ARTY und lokaler M1083-Rearm
-
-Der Acceptance-Vertrag bleibt:
 
 ```text
 Wright L118 real fire
@@ -181,7 +230,7 @@ created == false
 reason == active_duplicate
 ```
 
-CampaignState reserviert den strategischen Transfer:
+CampaignState reserviert:
 
 ```text
 15 x GROUND_AMMO_PACKAGE
@@ -195,11 +244,9 @@ Wright:     30
 Jalalabad:  85
 ```
 
-CampaignState bleibt die strategische Ressourcenautorität.
+CampaignState bleibt strategische Ressourcenautorität.
 
-## 8. CH-47 Air-AMMO – aktueller interner OPSTRANSPORT-Pfad
-
-Der physische Ausführungspfad verwendet jetzt denselben MOOSE-Mechanismus wie der fokussierte erfolgreiche interne Transporttest:
+## 8. CH-47 Air-AMMO – interner OPSTRANSPORT-Pfad
 
 ```text
 OPSTRANSPORT:New(nil, pickup, drop)
@@ -215,7 +262,7 @@ OPSTRANSPORT:New(nil, pickup, drop)
 -> OPSTRANSPORT Delivered
 ```
 
-Die MOOSE-STORAGE-Fixture dient ausschließlich als reproduzierbarer physischer Runtime-Nachweis. Sie ist keine zweite strategische Munitionsbuchhaltung und ersetzt `GROUND_AMMO_PACKAGE` in CampaignState nicht.
+Die MOOSE-STORAGE-Fixture ist nur reproduzierbare physische Runtime-Evidence; sie ist keine zweite strategische Ressourcenautorität.
 
 Acceptance-Fixture:
 
@@ -230,27 +277,73 @@ Pickup zone: ZON_BLUE_LOG_SLG_JALALABAD_01
 Deploy zone: OMW_BLUE_LZ_WRIGHT_01
 ```
 
-Die Zone behält ihren historischen Namen; daraus folgt keine Slingload-Semantik für den aktuellen Pfad.
+## 9. Air-AMMO FlightPath, Geschwindigkeit und Lead-Turn-Profil
 
-## 9. Air-AMMO FlightPath-Routing
+Die primäre Route wird mit `OMW_FlightPathNameContract.lua` aus der tatsächlich konfigurierten logischen `OMW_FlightPath`-Variante bestimmt.
 
-Die primäre Route wird mit `OMW_FlightPathNameContract.lua` als logische Route `OMW_FlightPath` aus der tatsächlich konfigurierten Mission-Editor-Variante bestimmt.
-
-Für Wright als Feld-LZ verwendet der aktuelle Test:
+Für Wright als Feld-LZ verwendet der Test:
 
 ```text
 scripts/air-operations/OMW_OpsTransportCorridorAdapter.lua
+Schema: OMW-OPSTRANSPORT-CORRIDOR-ADAPTER-2
 ```
 
-Der Adapter besitzt keine Cargo-/Delivery-Autorität und erzeugt keinen eigenen Transport-FSM. Er verwendet ausschließlich öffentliche MOOSE-FLIGTHGROUP-Waypointmethoden.
+Der Adapter besitzt keine Cargo-/Delivery-Autorität und keinen eigenen Transport-FSM.
+
+### 9.1 Geschwindigkeit
+
+MOOSE `FLIGHTGROUP:AddWaypoint(Coordinate, Speed, ...)` verwendet bei `Speed=nil` den generischen `GetSpeedCruise()`-Wert. Für den nächsten Full-Response-Test wird deshalb explizit gesetzt:
+
+```text
+CH47_TRANSIT_SPEED_KTS = 125
+```
+
+Die 125 kt sind eine Owner-gewählte Acceptance-/Verbandstransit-Baseline für den Jalalabad-Wright-Pfad. Sie ist keine globale Änderung des MOOSE-Hubschrauberdefaults.
+
+### 9.2 Fly-by-/Lead-Turn-Approximation
+
+`FLIGHTGROUP:AddWaypoint()` erzeugt im gepinnten MOOSE-Stand Air-`TurningPoint`-Waypoints. Eine öffentliche `SetLeadTurnDistance`-/`FlyByDistance`-API wurde im gepinnten MOOSE-Stand nicht gefunden.
+
+Die bounded MOOSE-first Approximation verwendet daher ausschließlich öffentliche MOOSE-Geometrie:
+
+```text
+configured PATHLINE coordinates
+-> for each relevant interior corner:
+   point 250 m before corner, bounded to <=25% inbound leg
+   point 250 m after corner, bounded to <=25% outbound leg
+-> omit exact corner vertex for that turn
+-> FLIGHTGROUP:AddWaypoint(..., 125 kt, ..., TurningPoint)
+-> UpdateRoute()
+```
+
+Implementiert mit:
+
+```text
+COORDINATE:Get2DDistance(...)
+COORDINATE:HeadingTo(...)
+COORDINATE:GetIntermediateCoordinate(...)
+FLIGHTGROUP:AddWaypoint(...)
+FLIGHTGROUP:UpdateRoute()
+```
+
+Grenzen:
+
+```text
+requested lead turn: 250 m
+minimum applied trim: 50 m
+maximum per leg: 25%
+minimum heading change: 5 deg
+first and last route coordinate remain exact
+```
+
+Das ist **STAGED / noch nicht DCS-validiert**. Der nächste Lauf muss zeigen, ob die Flugbahn tatsächlich weniger eckig wirkt und ob die Route weiterhin zuverlässig abgeflogen wird.
 
 Outbound:
 
 ```text
-OPSTRANSPORT carrier enters Transport lifecycle
--> OnAfterTransport
--> GetWaypointCurrentUID
--> configured FlightPath outbound via AddWaypoint
+OPSTRANSPORT OnAfterTransport
+-> configured FlightPath outbound
+-> 125-kt smoothed TurningPoint sequence
 -> UpdateRoute
 ```
 
@@ -258,21 +351,10 @@ Return:
 
 ```text
 OPSTRANSPORT Delivered
--> FLIGHTGROUP OnAfterDelivered
--> GetWaypointCurrentUID
--> configured FlightPath reverse via AddWaypoint
+-> configured FlightPath reverse
+-> 125-kt smoothed TurningPoint sequence
 -> UpdateRoute
 -> Jalalabad
-```
-
-Acceptance verlangt ausdrücklich:
-
-```text
-configured outbound route installed
-Wright STORAGE delivery confirmed
-configured reverse route installed after Delivered
-Jalalabad landing observed
-AIRWING/LEGION asset returned observed
 ```
 
 ## 10. Externe Slingload-Entwicklung
@@ -286,8 +368,6 @@ NO PauseMission/TaskDone slingload handoff
 NO CargoTransportation lifecycle bridge
 ```
 
-Historische Slingload-Dateien und FAIL-Berichte bleiben Evidenz, aber nicht aktuelle Architektur.
-
 ## 11. Offline-/Build-Gate vor DCS
 
 Vor einem neuen DCS-Lauf müssen mindestens erfüllt sein:
@@ -295,22 +375,23 @@ Vor einem neuen DCS-Lauf müssen mindestens erfüllt sein:
 ```text
 MissionDemand CI: PASS
 Documentation validation: PASS
+full-response Lua syntax: PASS
+full-response source contains corrected CAS support-state contract
 full-response source contains OPSTRANSPORT/STORAGE path
+full-response source contains no old direct incident->CAS closure
+full-response source contains no tactical RED-count CAS gate
 full-response source contains no NewCARGOTRANSPORT/PauseMission/CargoTransportation handoff
 configured FlightPath is logical-name based
-builder embeds OMW_FlightPathNameContract and OMW_OpsTransportCorridorAdapter
-builder static checks reject reintroduction of legacy slingload path
+CH-47 explicit speed = 125 kt
+lead-turn profile = 250 m via public MOOSE COORDINATE/FLIGHTGROUP APIs
+builder static checks reject obsolete paths
 local builder succeeds
 local GitCommit equals remote target commit
 builder SHA256 equals independent Get-FileHash SHA256
 MizMutation: false
 ```
 
-Erst danach ist ein DCS-Lauf sinnvoll.
-
 ## 12. DCS-Acceptance-Gate
-
-Der nächste reale Lauf muss mindestens bestätigen:
 
 ### Guard / QRF
 
@@ -323,10 +404,12 @@ mixed QRF materializes, engages as applicable, returns, PersonnelLedger settles
 
 ```text
 Jalalabad -> configured FlightPath -> WEST -> AO
-real weapon employment
-known incident participants neutralized -> immediate CAS closure
-WEST reverse -> configured FlightPath reverse -> Jalalabad
-safe landing / AIRWING recovery
+CAS_ON_STATION observed
+CAS_SENSOR_REPORT observed
+real CAS_ENGAGE_EVENT and/or EVENTS.Shot as applicable
+Honaker local incident may close without directly closing CAS
+if AH-64 still detects eligible contacts after Honaker local closure: CAS stays active and may continue engagement
+only Honaker no-known-attackers + CAS on-station no-contact permits normal supported-element release
 ```
 
 ### Fire support / local rearm
@@ -344,9 +427,10 @@ strategic reorder trigger at 15/30
 ```text
 one strategic RESUPPLY demand
 CH-47 executes MOOSE OPSTRANSPORT with internal STORAGE
-configured FlightPath outbound physically flown
+CH-47 configured outbound route physically flown near 125-kt command profile
+lead-turn geometry appears smoother without route-cutting failure
 Wright OPSTRANSPORT/STORAGE delivery succeeds
-configured FlightPath reverse physically flown
+configured reverse route physically flown with same profile
 Jalalabad landing
 AIRWING/LEGION recovery
 Wright final strategic AMMO = 30
