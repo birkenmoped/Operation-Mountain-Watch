@@ -7,6 +7,7 @@ authoritative_for:
   - branch-local Stage 3 CH-47 Air-AMMO transport architecture
   - suspension of external slingload development
   - required MOOSE-first internal OPSTRANSPORT transport path
+  - branch-local CH-47 full-response transit speed and lead-turn acceptance profile
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 source_branch: agent/fire-support-strategic-resupply-alarm-evidence
@@ -23,15 +24,13 @@ superseded_by:
 
 ## 1. Zweck
 
-Dieses Dokument hält die ausdrückliche Entscheidung des Projektinhabers vom 08.09.2026 für den aktuellen Stage-3-CH-47-Air-AMMO-Pfad fest.
+Dieses Dokument hält die ausdrücklichen Entscheidungen des Projektinhabers vom 08.09.2026 für den aktuellen Stage-3-CH-47-Air-AMMO-Pfad fest.
 
-Die weitere Entwicklung einer sichtbaren externen Slingload-Repräsentation wird **bis auf Weiteres gestoppt**. Für den aktuellen Stage-3-Air-AMMO-Transport wird der bereits funktionierende interne MOOSE-Transport mit CH-47 verwendet.
+Die weitere Entwicklung einer sichtbaren externen Slingload-Repräsentation wird **bis auf Weiteres gestoppt**. Für den aktuellen Stage-3-Air-AMMO-Transport wird der funktionierende interne MOOSE-Transport mit CH-47 verwendet.
 
-Diese Entscheidung ist auf dem Arbeitsbranch unmittelbar anzuwenden. Repository-weite normative Wirkung entsteht gemäß `docs/00-project-governance.md` erst durch Merge nach `main` oder eine entsprechende Entscheidung auf `main`.
+Zusätzlich wird für den nächsten Full-Response-Acceptance-Lauf ein explizites CH-47-Transitprofil mit 125 kt und eine bounded Lead-Turn-/Fly-by-Approximation von 250 m getestet.
 
 ## 2. Verbindliche aktuelle Entscheidung
-
-Für den aktuellen Stage-3-Air-AMMO-Transport gilt:
 
 ```text
 Transport lifecycle: MOOSE OPSTRANSPORT
@@ -41,6 +40,8 @@ Pickup: Jalalabad
 Delivery: Wright
 Outbound route: configured logical OMW_FlightPath route
 Return route: same configured route in reverse
+Full-response CH-47 transit speed: 125 kt
+Full-response lead-turn test distance: 250 m, bounded by route geometry
 Strategic authority: CampaignState
 Physical runtime/lifecycle authority: MOOSE
 ```
@@ -50,19 +51,17 @@ Zielablauf:
 ```text
 Jalalabad
 -> CH-47 MOOSE OPSTRANSPORT pickup/load
--> configured FlightPath outbound
+-> configured FlightPath outbound at 125 kt with bounded lead-turn geometry
 -> Wright delivery/unload
 -> OPSTRANSPORT Delivered
--> configured FlightPath reverse
+-> configured FlightPath reverse at same profile
 -> Jalalabad landing
 -> AIRWING/LEGION recovery
 ```
 
-Eine sichtbare externe Slingload-Darstellung ist **kein aktuelles Entwicklungsziel**.
+Eine sichtbare externe Slingload-Darstellung ist kein aktuelles Entwicklungsziel.
 
 ## 3. Gestoppter Slingload-Pfad
-
-Bis zu einer neuen ausdrücklichen Eigentümerentscheidung gilt:
 
 ```text
 NO further external slingload development
@@ -73,11 +72,9 @@ NO re-injected DCS CargoTransportation task as lifecycle bridge
 NO OMW_SlingloadCorridorHandoff as current Stage 3 target architecture
 ```
 
-Historische Slingload-Dateien, Tests, Logs und Entscheidungen bleiben als Entwicklungs- und Fehlernachweis erhalten. Sie dürfen nicht als aktueller Zielpfad interpretiert werden.
+Historische Slingload-Dateien, Tests, Logs und Entscheidungen bleiben Evidenz, aber nicht aktueller Zielpfad.
 
 ## 4. Aktuelle MOOSE-first Architektur
-
-Der aktive Zielpfad verwendet den bereits source-geprüften MOOSE-Mechanismus:
 
 ```text
 OPSTRANSPORT:New(nil, PickupZone, DeployZone)
@@ -90,47 +87,15 @@ OPSTRANSPORT:New(nil, PickupZone, DeployZone)
 -> OPSTRANSPORT Delivered
 ```
 
-Für den Feld-LZ-Zielpunkt Wright bleibt die kleine MOOSE-nahe Routenintegration zuständig:
+Für Wright als Feld-LZ bleibt die kleine MOOSE-nahe Routenintegration zuständig:
 
 ```text
 scripts/air-operations/OMW_OpsTransportCorridorAdapter.lua
 ```
 
-Sie besitzt keine Cargo- oder Delivery-Autorität. Sie nutzt öffentliche `FLIGHTGROUP`-Methoden, um den owner-konfigurierten FlightPath vor beziehungsweise nach dem OPSTRANSPORT-Lifecycle einzufügen.
+Sie besitzt keine Cargo- oder Delivery-Autorität und nutzt ausschließlich öffentliche MOOSE-`COORDINATE`-/`FLIGHTGROUP`-Methoden.
 
-Aktueller Routing-Vertrag:
-
-```text
-OnAfterTransport
--> configured FlightPath outbound
--> FLIGHTGROUP:AddWaypoint(...)
--> FLIGHTGROUP:UpdateRoute()
-
-OnAfterDelivered
--> configured FlightPath reverse
--> FLIGHTGROUP:AddWaypoint(...)
--> FLIGHTGROUP:UpdateRoute()
-```
-
-## 5. Relevante offizielle MOOSE-Richtung
-
-Die offizielle MOOSE-Demo
-
-```text
-Ops/Transport/Transport - 051 - COMBINED By All Means/
-Transport - 051 - COMBINED By All Means.lua
-```
-
-bestätigt die grundlegende Richtung:
-
-```text
-OPSTRANSPORT
-FLIGHTGROUP helicopter carrier
-AddOpsTransport()
-AddPathTransport()
-```
-
-Sie wird nicht mehr als Nachweis für eine externe Slingload-Darstellung interpretiert.
+## 5. Relevante MOOSE-Quellenlage
 
 Gepinnter MOOSE-Stand:
 
@@ -140,54 +105,165 @@ MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
 Moose.lua SHA-256: E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915
 ```
 
-## 6. Bereits vorhandener fokussierter interner OPSTRANSPORT-Pfad
-
-Die aktuelle fokussierte Acceptance implementiert diesen Zielpfad bereits in:
+Source-verifiziert:
 
 ```text
-mission/tests/stage3-cas-resupply-focused/src/02-stage3-cas-resupply-opstransport-acceptance.lua
+FLIGHTGROUP:AddWaypoint(Coordinate, Speed, AfterWaypointWithID, Altitude, Updateroute)
+Speed parameter: knots
+Speed=nil: FLIGHTGROUP:GetSpeedCruise()
+added air waypoint type/action: TurningPoint / TurningPoint
+COORDINATE:GetIntermediateCoordinate(...)
+COORDINATE:Get2DDistance(...)
+COORDINATE:HeadingTo(...)
 ```
 
-Sie verwendet:
+Der generische MOOSE-Rotary-Wing-Cruise-Default erklärt den bisherigen Transit nahe 100–110 kt. Der kommende Acceptance-Lauf setzt deshalb den Speed ausdrücklich am Waypoint, ohne den globalen MOOSE-Default zu verändern.
+
+Für eine öffentliche FLIGHTGROUP-API im Sinn von
 
 ```text
-OPSTRANSPORT
-STORAGE cargo transfer
-Jalalabad CH-47 recruitment
-OMW_OpsTransportCorridorAdapter
-configured logical OMW_FlightPath selection
-outbound route installation
-Wright Delivered verification
-reverse route installation
-Jalalabad landing/AIRWING recovery verification
+SetLeadTurnDistance(...)
+SetFlyByDistance(...)
+SetTurnAnticipation(...)
 ```
 
-Damit ist für die nächste Arbeit **keine neue Slingload-Architektur** zu entwickeln. Die bestehende interne OPSTRANSPORT-Lösung ist zu härten und anschließend exakt zu testen.
+wurde im gepinnten MOOSE-Stand kein belegter öffentlicher Pfad gefunden.
 
-## 7. Acceptance-Grenze
+MOOSE verwendet an anderer Stelle selbst zusätzliche Zwischenkoordinaten zur Glättung einer Kurvengeometrie. Der OMW-Adapter folgt deshalb der MOOSE-first-Richtung, indem er die Geometrie mit öffentlichen `COORDINATE`-Methoden vorbereitet und anschließend normale MOOSE-TurningPoint-Waypoints verwendet.
 
-Vor einem neuen DCS-Lauf sind statisch/offline mindestens zu prüfen:
+## 6. CH-47 Transitgeschwindigkeit
+
+Für den nächsten Full-Response-Lauf gilt:
+
+```text
+CH47_TRANSIT_SPEED_KTS = 125
+```
+
+Begründung der Projektentscheidung:
+
+- der bisherige `nil`-Speed ließ MOOSE den generischen Hubschrauber-Cruise-Default wählen;
+- 125 kt ist die Owner-gewählte Baseline für einen gemeinsamen taktischen CH-47/AH-64-Verband;
+- der Wert wird nur für diesen OMW-Transportkorridor explizit gesetzt;
+- keine globale MOOSE-Speed-Konfiguration wird verändert.
+
+Diese Geschwindigkeit ist bis zum realen DCS-Test **STAGED**, nicht `VALIDATED`.
+
+## 7. Lead-Turn-/Fly-by-Approximation
+
+Der Projektinhaber wünscht ein weniger eckiges Abfliegen der owner-authored FlightPath-Punkte. Da `FLIGHTGROUP:AddWaypoint()` bereits Turning Points erzeugt, aber keine öffentliche Lead-Turn-Distance-Option nachgewiesen ist, verwendet `OMW_OpsTransportCorridorAdapter.lua` Schema 2 eine bounded Geometrie-Approximation.
+
+Für einen Innenpunkt `B` zwischen `A` und `C`:
+
+```text
+A ---- B ---- C
+```
+
+wird bei relevantem Richtungswechsel erzeugt:
+
+```text
+A ---- B_before
+          \
+           
+            B_after ---- C
+```
+
+mit öffentlichen MOOSE-Aufrufen:
+
+```text
+B:GetIntermediateCoordinate(A, trimM)
+B:GetIntermediateCoordinate(C, trimM)
+```
+
+Der exakte Eckpunkt `B` wird für diese Kurve nicht als zusätzlicher Waypoint ausgegeben. DCS erhält dadurch einen chord-basierten TurningPoint-Verlauf, der den Kurswechsel vor dem alten Vertex beginnen kann.
+
+Acceptance-Parameter:
+
+```text
+requested lead-turn distance: 250 m
+minimum applied trim: 50 m
+maximum trim: 25% of each adjacent leg
+minimum heading change: 5 deg
+first route point: exact
+last route point: exact
+speed: 125 kt
+```
+
+Diese Logik verändert **nur die Waypoint-Geometrie**. OPSTRANSPORT-Lifecycle, Cargo, Delivered, CampaignState und AIRWING-Recovery bleiben unverändert.
+
+## 8. Routing-Vertrag
+
+Outbound:
+
+```text
+OnAfterTransport
+-> configured FlightPath outbound
+-> bounded lead-turn geometry
+-> FLIGHTGROUP:AddWaypoint(..., 125 kt, ...)
+-> FLIGHTGROUP:UpdateRoute()
+```
+
+Return:
+
+```text
+OnAfterDelivered
+-> configured FlightPath reverse
+-> bounded lead-turn geometry
+-> FLIGHTGROUP:AddWaypoint(..., 125 kt, ...)
+-> FLIGHTGROUP:UpdateRoute()
+```
+
+Der Adapter protokolliert pro Richtung:
+
+```text
+sourcePoints
+routePoints
+smoothedCorners
+speedKts
+leadTurnM
+```
+
+Damit ist der nächste DCS-Lauf auswertbar, ohne die Route visuell erraten zu müssen.
+
+## 9. Bereits vorhandener interner OPSTRANSPORT-Nachweis
+
+Der fokussierte interne OPSTRANSPORT-Test hat bereits bestätigt:
+
+```text
+OPSTRANSPORT Delivered
+configured FlightPath outbound
+configured FlightPath reverse after Delivered
+MOOSE STORAGE transfer
+Jalalabad CH-47 lifecycle
+```
+
+Dieser Nachweis gilt nur für den exakt dokumentierten früheren Stand. Die neue 125-kt-/Lead-Turn-Geometrie ist eine neue Acceptance-Variable und muss separat im Full-Response-Lauf geprüft werden.
+
+## 10. Acceptance-Grenze
+
+Vor DCS:
 
 ```text
 active Stage 3 target uses OPSTRANSPORT/STORAGE only
-no active Stage 3 target depends on AUFTRAG:NewCARGOTRANSPORT slingload handoff
-configured FlightPath selection is logical-name based, not hard-coded to a concrete R/L offset
-outbound route is installed for the CH-47 after OPSTRANSPORT transport begins
-Wright delivery is confirmed by OPSTRANSPORT/STORAGE state
-reverse route is installed on OPSTRANSPORT Delivered
-Jalalabad landing and AIRWING/LEGION recovery remain observable acceptance gates
+no NewCARGOTRANSPORT/PauseMission/CargoTransportation handoff
+configured FlightPath is logical-name based
+adapter schema = OMW-OPSTRANSPORT-CORRIDOR-ADAPTER-2
+explicit speed = 125 kt
+lead-turn distance = 250 m
+only public MOOSE COORDINATE/FLIGHTGROUP route APIs used
+Lua syntax/build/static gates PASS
 ```
 
-Der DCS-Acceptance-Vertrag lautet:
+DCS-Acceptance:
 
 ```text
 CH-47 departs Jalalabad
--> flies configured FlightPath outbound
+-> flies configured FlightPath outbound with materially faster transit near commanded 125-kt profile
+-> route corners appear smoother without invalid shortcut/path loss
 -> carries Air-AMMO internally through MOOSE OPSTRANSPORT
 -> delivers/unloads at Wright
--> flies the configured FlightPath in reverse
+-> flies configured FlightPath in reverse with same profile
 -> lands at Jalalabad
 -> is recovered by AIRWING/LEGION
 ```
 
-Erst ein realer Lauf mit vollständiger Provenienz darf als `VALIDATED` dokumentiert werden.
+Erst ein realer Lauf mit vollständiger Provenienz darf die neue Route-/Speed-Konfiguration als `VALIDATED` dokumentieren.
