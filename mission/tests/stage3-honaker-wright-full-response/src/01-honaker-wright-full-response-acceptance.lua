@@ -4,7 +4,7 @@
 -- RED attack -> MOOSE OPSZONE threat qualification -> Honaker attack incident
 -- -> owner-authored Guard PATHLINE patrol + one-group mixed QRF + Jalalabad rotary CAS
 -- -> Wright Functional ARTY live coordinate fire -> local M1083 rearm -> CampaignState
--- AMMO reorder -> exactly one strategic RESUPPLY -> Jalalabad CH-47 CARGOTRANSPORT.
+-- AMMO reorder -> exactly one strategic RESUPPLY -> Jalalabad CH-47 MOOSE OPSTRANSPORT.
 
 local TEST_ID = "STAGE3-HONAKER-WRIGHT-FULL-RESPONSE-ACCEPTANCE-1"
 local TAG = "[OMW][" .. TEST_ID .. "]"
@@ -26,10 +26,8 @@ local M1083_TEMPLATE = "TPL_BLUE_GND_SUP_M1083"
 local WRIGHT_RESUPPLY_ZONE = "ZON_BLUE_GND_WRIGHT_RESUPPLY"
 local PICKUP_ZONE = "ZON_BLUE_LOG_SLG_JALALABAD_01"
 local DROP_ZONE = "OMW_BLUE_LZ_WRIGHT_01"
-local PRIMARY_PATHLINE = "OMW_FlightPath_R500"
+local FLIGHTPATH_BASE = "OMW_FlightPath"
 local WEST_PATHLINE = "OMW_FlightPath_WEST"
-local CAS_PATHLINES = { PRIMARY_PATHLINE, WEST_PATHLINE }
-local AIR_AMMO_PATHLINES = { PRIMARY_PATHLINE }
 local JUNCTION_MAX_DISTANCE_M = 1000
 local SECURITY_RADIUS_M = 1000
 local GUARD_PATROL_SPEED_KMH = 5
@@ -52,6 +50,17 @@ local RESUPPLY_DEMAND_ID = "RESUPPLY-STAGE3-E2E-WRIGHT-AMMO-AIR-001"
 local TRANSFER_ID = "TRANSFER-STAGE3-E2E-JALALABAD-WRIGHT-AMMO-AIR-001"
 local CARGO_ID = "CARGO-STAGE3-E2E-JALALABAD-WRIGHT-AMMO-AIR-001"
 local CARRIER_ID = "AIR-RESUPPLY-STAGE3-E2E-JALALABAD-WRIGHT-CH47-001"
+local SOURCE_STORAGE_NAME = "OMW_STAGE3_E2E_OPSTRANSPORT_SOURCE_STORAGE_001"
+local DEST_STORAGE_NAME = "OMW_STAGE3_E2E_OPSTRANSPORT_WRIGHT_STORAGE_001"
+local CARRIER_RECRUIT_RETRY_SEC = 5
+local CARRIER_RECRUIT_MAX_ATTEMPTS = 6
+
+-- This MOOSE STORAGE fixture is physical execution evidence only. CampaignState remains
+-- authoritative for the strategic 15 x GROUND_AMMO_PACKAGE transfer.
+local PHYSICAL_CARGO_TYPE = ENUMS.Storage.weapons.bombs.Mk_82
+local PHYSICAL_CARGO_AMOUNT = 4
+local PHYSICAL_CARGO_ITEM_WEIGHT_KG = 230
+local PHYSICAL_CARGO_TOTAL_WEIGHT_KG = PHYSICAL_CARGO_AMOUNT * PHYSICAL_CARGO_ITEM_WEIGHT_KG
 
 local MissionDemand = OMW_STAGE3_MISSION_DEMAND
 local CasPolicy = OMW_STAGE3_FOB_ATTACK_DEMAND_POLICY
@@ -70,10 +79,13 @@ local FixedFireSupportAmmoRearmService = OMW_STAGE3_FIXED_FIRE_SUPPORT_AMMO_REAR
 local GroundSupportMaterializer = OMW_STAGE3_GROUND_SUPPORT_MATERIALIZER
 local HelicopterCorridor = OMW_STAGE3_HELICOPTER_FLIGHTPATH_CORRIDOR
 local MissionOwnedCorridor = OMW_STAGE3_HELICOPTER_MISSION_OWNED_CORRIDOR
+local FlightPathNameContract = OMW_STAGE3_FLIGHTPATH_NAME_CONTRACT
+local TransportCorridor = OMW_STAGE3_OPSTRANSPORT_CORRIDOR_ADAPTER
 
 local registry = MissionDemand.New()
 local state = {
-  failed=false, passed=false, ctx=nil, airwing=nil, ah64d=nil, ch47=nil,
+  failed=false, passed=false, ctx=nil, airwing=nil, ah64d=nil, ch47=nil, carrierUnitType=nil,
+  flightPathName=nil, flightPath=nil, flightPathOffset=nil,
   brigade=nil, guardCoord=nil, guardPathline=nil, guardPlatoon=nil, guardMission=nil, guardArmy=nil, guardGroup=nil, guardPatrolStarted=false,
   qrfPlatoon=nil, qrfEntries={}, qrfDeployed=false, qrfEngaged=false, qrfTacticalZone=nil,
   qrfRecoveryRequested=false, qrfReturned=false,
@@ -86,9 +98,12 @@ local state = {
   fireTargetCount=0, fireTargetCompleteCount=0, fireLastSourceGroupName=nil,
   physicalAmmoBefore=nil, physicalAmmoAfter=nil, physicalAmmoBeforeByTarget={}, physicalAmmoAfterByTarget={},
   rearmService=nil, rearmComplete=false, supportReturned=false,
-  resupply=nil, cargo=nil, airMission=nil, airFlight=nil, airAsset=nil,
-  loading=false, inTransit=false, delivered=false, airCorridor=false, airCorridorRequested=false, homeLanded=false, assetReturned=false,
-  transitScheduler=nil, finishScheduler=nil,
+  resupply=nil, pickup=nil, drop=nil,
+  sourceStatic=nil, destStatic=nil, sourceStorage=nil, destStorage=nil,
+  cargoTransport=nil, cargoAsset=nil, cargoFlight=nil, cargoResolved=nil, cargoBinding=nil,
+  cargoRecruitAttempts=0, cargoRecruitPending=false,
+  loading=false, inTransit=false, delivered=false, airCorridor=false, cargoReturnInstalled=false, homeLanded=false, assetReturned=false,
+  finishScheduler=nil,
 }
 
 local function log(text) env.info(TAG .. " " .. tostring(text), false) end
@@ -152,6 +167,8 @@ local function incidentGroups()
   end)
   return result
 end
+local function primaryPathlineName() return state.flightPathName or FLIGHTPATH_BASE end
+local function casPathlineNames() return { primaryPathlineName(), WEST_PATHLINE } end
 local function routeLabel(pathlineNames) return table.concat(pathlineNames, " -> ") end
 
 local function countRedGroundGroupsInTacticalZone()
@@ -221,7 +238,7 @@ local function closeCasIfReady()
   })
   if closed ~= true then failCas("CAS patrol closure failed: " .. tostring(reason)); return false end
   state.casClosed = true
-  msg("CAS", "Known Honaker attack participants neutralized; PATROLZONE CAS closed immediately and one-shot WEST/R500 recovery chain released; shotEvidence=" .. tostring(state.casFired), 12)
+  msg("CAS", "Known Honaker attack participants neutralized; PATROLZONE CAS closed immediately and one-shot WEST/" .. primaryPathlineName() .. " recovery chain released; shotEvidence=" .. tostring(state.casFired), 12)
   return true
 end
 
@@ -270,38 +287,22 @@ local function logCorridorProfiles(kind, installed)
   end
 end
 
--- Legacy corridor installation is retained only for the already accepted CH-47 cargo path.
--- Stage-3 opts into the owner-approved suffix contract so _R500 is exactly +500 m.
--- The caller must invoke this only AFTER physical slingload pickup has been confirmed.
-local function installCargoCorridor(flight, mission, destination, pathlineNames, cargoReferences)
-  local attempts = 0
-  local function attempt()
-    attempts = attempts + 1
-    local resolved
-    if #pathlineNames == 1 then
-      resolved = HelicopterCorridor.Resolve({
-        pathlineName=pathlineNames[1], originCoordinate=flight:GetCoordinate(), destinationCoordinate=destination,
-        offsetMode=HelicopterCorridor.OffsetMode.PATHLINE_SUFFIX,
-      })
-    else
-      resolved = HelicopterCorridor.ResolveSequence({
-        pathlineNames=pathlineNames,
-        originCoordinate=flight:GetCoordinate(), destinationCoordinate=destination,
-        maxJunctionDistanceM=JUNCTION_MAX_DISTANCE_M,
-        offsetMode=HelicopterCorridor.OffsetMode.PATHLINE_SUFFIX,
-      })
-    end
-    local installed, ok, reason = HelicopterCorridor.Install(flight, mission, resolved, PRIMARY_ALTITUDE_FT_AGL, cargoReferences)
-    if ok then
-      state.airCorridor = true
-      logCorridorProfiles("AIR-AMMO", installed)
-      msg("LOGISTICS", "Slingload attached; AIR-AMMO outbound + return route installed via " .. routeLabel(pathlineNames) .. " with explicit cargo/drop references", 12)
-      return
-    end
-    if reason == "MISSION_ROUTE_UIDS_NOT_READY" and attempts < 8 then SCHEDULER:New(nil, attempt, {}, 2); return end
-    if reason ~= "MISSION_ROUTE_UIDS_NOT_READY" then fail("AIR-AMMO corridor failed: " .. tostring(reason)) end
+local function resolveConfiguredFlightPath()
+  -- Validation-only registry read. Pinned MOOSE 2.9.18 exposes PATHLINE:FindByName()
+  -- only for exact names and provides no public wildcard/enumeration API. The registry
+  -- is read once to select exactly one owner-configured OMW_FlightPath[_Rnnn/_Lnnn].
+  if type(_DATABASE)~="table" or type(_DATABASE.PATHLINES)~="table" then
+    fail("MOOSE DATABASE.PATHLINES registry unavailable for configured FlightPath discovery")
+    return false
   end
-  attempt()
+  local selected,reason=FlightPathNameContract.SelectFromRegistry(FLIGHTPATH_BASE,_DATABASE.PATHLINES)
+  if not selected then fail(reason); return false end
+  if type(selected.pathline)~="table" then fail("configured FlightPath registry entry is not a PATHLINE: "..tostring(selected.name)); return false end
+  state.flightPathName=selected.name
+  state.flightPath=selected.pathline
+  state.flightPathOffset=selected.offset
+  msg("ROUTE",string.format("configured FlightPath selected: %s offset=%s %dm",selected.name,selected.offset.side,selected.offset.meters),12)
+  return true
 end
 
 local function prepareAirwing()
@@ -317,9 +318,11 @@ local function prepareAirwing()
   state.airwing = air.Airwing
   state.ah64d = air.Squadrons.AH64D
   state.ch47 = air.Squadrons.CH47
-  if not GROUP:FindByName("TPL_AIR_US_JBAD_CH47_HEAVYLIFT_1SHIP") then log("AIRWING_PRECHECK Jalalabad CH47 template missing") return false end
-  if not PATHLINE:FindByName(PRIMARY_PATHLINE) or not PATHLINE:FindByName(WEST_PATHLINE) then
-    log("AIRWING_PRECHECK required helicopter PATHLINE missing; primary must use owner-approved _R500 suffix")
+  local ch47Template=GROUP:FindByName("TPL_AIR_US_JBAD_CH47_HEAVYLIFT_1SHIP")
+  if not ch47Template then log("AIRWING_PRECHECK Jalalabad CH47 template missing") return false end
+  state.carrierUnitType=ch47Template:GetTypeName()
+  if not state.flightPath or not PATHLINE:FindByName(WEST_PATHLINE) then
+    log("AIRWING_PRECHECK required configured FlightPath/WEST PATHLINE missing")
     return false
   end
   return true
@@ -334,8 +337,10 @@ local function ensureCasContext()
   state.casTacticalZone = ZONE_RADIUS:New("OMW_TACTICAL_BLUE_GROUND_COP_HONAKER_STAGE3_CAS", centerVec2, UTILS.NMToMeters(CAS_TACTICAL_RADIUS_NM))
   if not state.casTacticalZone then failCas("MOOSE ZONE_RADIUS creation failed for Honaker CAS tactical area") return false end
 
+  local pathlineNames=casPathlineNames()
   state.casResolved = HelicopterCorridor.ResolveSequence({
-    pathlineNames=CAS_PATHLINES,
+    pathlineNames=pathlineNames,
+    pathlines={state.flightPath},
     originCoordinate=state.airwing:GetCoordinate(),
     destinationCoordinate=state.casTacticalZone:GetCoordinate(),
     maxJunctionDistanceM=JUNCTION_MAX_DISTANCE_M,
@@ -349,7 +354,7 @@ local function ensureCasContext()
   local primaryOffset = state.casResolved.segmentOffsets and state.casResolved.segmentOffsets[1] or nil
   local westOffset = state.casResolved.segmentOffsets and state.casResolved.segmentOffsets[2] or nil
   log(string.format("CAS_ROUTE_POLICY path=%s primaryOffsetM=%s westOffsetM=%s altitudeSource=WAYPOINT_RADIO_ONLY",
-    routeLabel(CAS_PATHLINES), tostring(primaryOffset and primaryOffset.signedRightM), tostring(westOffset and westOffset.signedRightM)))
+    routeLabel(pathlineNames), tostring(primaryOffset and primaryOffset.signedRightM), tostring(westOffset and westOffset.signedRightM)))
 
   state.casAdapter = CasAdapter.New({
     missionDemand=MissionDemand,
@@ -396,7 +401,7 @@ local function bindCasMissionOwnedCorridor(flight, mission)
     onInstalled=function(result)
       state.casCorridor = true
       logCorridorProfiles("CAS", result)
-      msg("CAS", "One-shot MOOSE waypoint/task chain installed: common-route entry -> R500 -> WEST -> CAS -> WEST reverse -> R500 reverse -> Jalalabad egress", 12)
+      msg("CAS", "One-shot MOOSE waypoint/task chain installed: common-route entry -> " .. primaryPathlineName() .. " -> WEST -> CAS -> WEST reverse -> " .. primaryPathlineName() .. " reverse -> Jalalabad egress", 12)
     end,
     onFailed=function(why) failCas("CAS mission-owned corridor failed: " .. tostring(why)) end,
   })
@@ -404,63 +409,74 @@ local function bindCasMissionOwnedCorridor(flight, mission)
   if not ok and reason ~= "MISSION_ROUTE_UIDS_NOT_READY" then failCas("CAS mission-owned corridor failed: " .. tostring(reason)) end
 end
 
+local function markAirAmmoInTransit()
+  if state.inTransit then return true end
+  if not state.loading then return false end
+  context().store:MarkInTransit(TRANSFER_ID)
+  registry:SetReservationState(RESUPPLY_DEMAND_ID, "IN_TRANSIT")
+  local demand=registry:Get(RESUPPLY_DEMAND_ID)
+  if demand and demand.status==MissionDemand.Status.AI_ASSIGNED then registry:Activate(RESUPPLY_DEMAND_ID) end
+  state.inTransit=true
+  msg("LOGISTICS", "MOOSE OPSTRANSPORT loading complete; Jalalabad -> Wright IN TRANSIT via " .. primaryPathlineName(), 10)
+  return true
+end
+
 local function installAirObserver()
   if not state.airwing or state.airwing.__omwStage3E2EObserver then return end
   state.airwing.__omwStage3E2EObserver = true
-  local previous = state.airwing.OnAfterFlightOnMission
+
+  local previousFlight = state.airwing.OnAfterFlightOnMission
   function state.airwing:OnAfterFlightOnMission(From, Event, To, FlightGroup, Mission)
-    if previous then previous(self, From, Event, To, FlightGroup, Mission) end
-    if Mission == state.casMission then
-      state.casFlight = FlightGroup
-      installCasShotObserver()
-      msg("CAS", "Jalalabad AH-64D assigned to PATROLZONE + SetEngageDetected; route entry is now the native MOOSE ingress anchor before the CAS objective", 12)
-      bindCasMissionOwnedCorridor(FlightGroup, Mission)
-      return
-    end
-    if Mission ~= state.airMission then return end
-    state.airFlight = FlightGroup
-    state.airAsset = Mission:GetAssetByName(FlightGroup:GetName())
-    if not state.airAsset then fail("CH47 mission asset not found") return end
-    local tx = context().store:MarkLoading(TRANSFER_ID)
-    registry:SetReservationState(RESUPPLY_DEMAND_ID, "LOADING")
-    state.loading = tx and tx.status == context().campaignState.TransactionStatus.LOADING
-    msg("LOGISTICS", "CH-47 assigned; Air-AMMO manifest loading at Jalalabad; corridor injection waits for physical slingload pickup", 10)
-    local oldLanded = FlightGroup.OnAfterLanded
-    function FlightGroup:OnAfterLanded(F,E,T,Airbase)
+    if previousFlight then previousFlight(self, From, Event, To, FlightGroup, Mission) end
+    if Mission ~= state.casMission then return end
+    state.casFlight = FlightGroup
+    installCasShotObserver()
+    msg("CAS", "Jalalabad AH-64D assigned to PATROLZONE + SetEngageDetected; route entry is now the native MOOSE ingress anchor before the CAS objective", 12)
+    bindCasMissionOwnedCorridor(FlightGroup, Mission)
+  end
+
+  local previousSpawned=state.airwing.OnAfterAssetSpawned
+  function state.airwing:OnAfterAssetSpawned(From, Event, To, Group, Asset, Request)
+    if previousSpawned then previousSpawned(self, From, Event, To, Group, Asset, Request) end
+    if not state.cargoAsset or Asset~=state.cargoAsset then return end
+    local flight=Asset.flightgroup
+    if not flight then fail("CH-47 OPSTRANSPORT FLIGHTGROUP unavailable after AIRWING spawn") return end
+    state.cargoFlight=flight
+
+    local binding,ok,reason=TransportCorridor.Bind(flight,state.cargoTransport,state.cargoResolved,PRIMARY_ALTITUDE_FT_AGL,{
+      onOutboundInstalled=function(installed)
+        state.airCorridor=true
+        markAirAmmoInTransit()
+        msg("LOGISTICS",string.format("CH-47 %s outbound installed by OPSTRANSPORT corridor adapter: %d waypoints",primaryPathlineName(),installed.outboundWaypointCount),12)
+      end,
+      onReturnInstalled=function(installed)
+        state.cargoReturnInstalled=true
+        msg("LOGISTICS",string.format("CH-47 %s reverse installed after OPSTRANSPORT Delivered: %d waypoints",primaryPathlineName(),installed.returnWaypointCount),12)
+      end,
+      onError=function(adapterReason)
+        fail("CH-47 OPSTRANSPORT "..primaryPathlineName().." adapter failed: "..tostring(adapterReason))
+      end,
+    })
+    if not ok then fail("CH-47 OPSTRANSPORT corridor bind failed: "..tostring(reason)) return end
+    state.cargoBinding=binding
+
+    local oldLanded = flight.OnAfterLanded
+    function flight:OnAfterLanded(F,E,T,Airbase)
       if oldLanded then oldLanded(self,F,E,T,Airbase) end
       if state.delivered and Airbase and Airbase:GetName() == state.airwing:GetAirbaseName() then
         state.homeLanded = true
-        msg("LOGISTICS", "CH-47 landed back at Jalalabad via " .. PRIMARY_PATHLINE, 9)
+        msg("LOGISTICS", "CH-47 landed back at Jalalabad via " .. primaryPathlineName(), 9)
       end
     end
-    state.transitScheduler = SCHEDULER:New(nil, function()
-      if state.failed or state.inTransit or not state.loading then return end
-      if not state.cargo or state.cargo:IsAlive() ~= true then fail("Air-AMMO cargo lost before transit") return end
-      if state.cargo:IsInZone(ZONE:FindByName(PICKUP_ZONE)) then return end
-      context().store:MarkInTransit(TRANSFER_ID)
-      registry:SetReservationState(RESUPPLY_DEMAND_ID, "IN_TRANSIT")
-      local demand = registry:Get(RESUPPLY_DEMAND_ID)
-      if demand and demand.status == MissionDemand.Status.AI_ASSIGNED then registry:Activate(RESUPPLY_DEMAND_ID) end
-      state.inTransit = true
-      if state.transitScheduler and type(state.transitScheduler.Stop)=="function" then state.transitScheduler:Stop() end
-      msg("LOGISTICS", "Air-AMMO cargo physically picked up; Jalalabad -> Wright IN TRANSIT; corridor routing starts now", 10)
-      if not state.airCorridorRequested then
-        state.airCorridorRequested=true
-        local dropZone = ZONE:FindByName(DROP_ZONE)
-        installCargoCorridor(FlightGroup, Mission, dropZone:GetCoordinate(), AIR_AMMO_PATHLINES, {
-          cargo=state.cargo,
-          dropZone=dropZone,
-        })
-      end
-    end, {}, 2, 2)
   end
+
   local oldReturn = state.airwing.OnAfterLegionAssetReturned
   function state.airwing:OnAfterLegionAssetReturned(From, Event, To, Cohort, Asset)
     if oldReturn then oldReturn(self, From, Event, To, Cohort, Asset) end
-    if state.airAsset and Asset == state.airAsset then
+    if state.cargoAsset and Asset == state.cargoAsset then
       if not state.homeLanded then fail("CH47 returned to AIRWING before home landing") return end
       state.assetReturned = true
-      msg("LOGISTICS", "CH-47 recovered by Jalalabad AIRWING", 8)
+      msg("LOGISTICS", "CH-47 recovered by Jalalabad AIRWING after OPSTRANSPORT", 8)
     end
   end
 end
@@ -480,6 +496,91 @@ local function preconditionWright()
   if ctx.store:GetResource(WRIGHT_NODE, AMMO_RESOURCE).quantity ~= 16 then fail("Wright precondition did not reach 16") return false end
   msg("CAMPAIGN", "Acceptance precondition: Wright strategic AMMO 30 -> 16; one real rearm will cross reorder threshold", 12)
   return true
+end
+
+local function createAirAmmoStorageFixtures()
+  state.sourceStatic=SPAWNSTATIC:NewFromType("ammo_cargo","Cargos",country.id.USA)
+    :AddCargoResource(STORAGE.Type.WEAPONS,PHYSICAL_CARGO_TYPE,PHYSICAL_CARGO_AMOUNT,PHYSICAL_CARGO_TOTAL_WEIGHT_KG)
+    :InitCoordinate(state.pickup:GetCoordinate())
+    :InitValidateAndRepositionStatic(false)
+    :Spawn(0,SOURCE_STORAGE_NAME)
+  state.destStatic=SPAWNSTATIC:NewFromType("ammo_cargo","Cargos",country.id.USA)
+    :ResetCargoResources()
+    :InitCoordinate(state.drop:GetCoordinate())
+    :InitValidateAndRepositionStatic(false)
+    :Spawn(0,DEST_STORAGE_NAME)
+  if not state.sourceStatic or not state.destStatic then return false,"storage static spawn failed" end
+  state.sourceStorage=state.sourceStatic:GetStaticStorage()
+  state.destStorage=state.destStatic:GetStaticStorage()
+  if not state.sourceStorage or not state.destStorage then return false,"MOOSE STORAGE wrapper unavailable" end
+  local sourceAmount=state.sourceStorage:GetAmount(PHYSICAL_CARGO_TYPE)
+  local destAmount=state.destStorage:GetAmount(PHYSICAL_CARGO_TYPE)
+  if sourceAmount~=PHYSICAL_CARGO_AMOUNT or destAmount~=0 then
+    return false,string.format("storage fixture mismatch source=%s destination=%s",tostring(sourceAmount),tostring(destAmount))
+  end
+  return true,nil
+end
+
+local function carrierRecruitSnapshot()
+  return {
+    cohortState=state.ch47:GetState(),
+    onDuty=state.ch47:IsOnDuty(),
+    capability=state.ch47:GetMissionCapability(AUFTRAG.Type.OPSTRANSPORT)~=nil,
+    stock=state.ch47:CountAssets(true,{AUFTRAG.Type.OPSTRANSPORT}),
+    payloads=state.airwing:CountPayloadsInStock({AUFTRAG.Type.OPSTRANSPORT},state.carrierUnitType),
+  }
+end
+
+local armCargoCarrier
+local function scheduleCargoRecruitment()
+  if state.failed or state.cargoAsset or state.cargoRecruitPending then return end
+  state.cargoRecruitPending=true
+  SCHEDULER:New(nil,function()
+    state.cargoRecruitPending=false
+    armCargoCarrier()
+  end,{},CARRIER_RECRUIT_RETRY_SEC)
+end
+
+armCargoCarrier=function()
+  if state.failed or state.cargoAsset then return end
+  state.cargoRecruitAttempts=state.cargoRecruitAttempts+1
+  local snapshot=carrierRecruitSnapshot()
+  log(string.format("AIR_AMMO_OPSTRANSPORT_RECRUIT attempt=%d/%d cohortState=%s onDuty=%s capability=%s stock=%s payloads=%s unitType=%s",
+    state.cargoRecruitAttempts,CARRIER_RECRUIT_MAX_ATTEMPTS,tostring(snapshot.cohortState),tostring(snapshot.onDuty),
+    tostring(snapshot.capability),tostring(snapshot.stock),tostring(snapshot.payloads),tostring(state.carrierUnitType)))
+
+  if not snapshot.onDuty or not snapshot.capability or snapshot.stock<1 or snapshot.payloads<1 then
+    if state.cargoRecruitAttempts<CARRIER_RECRUIT_MAX_ATTEMPTS then scheduleCargoRecruitment(); return end
+    fail(string.format("CH-47 recruitment readiness timeout after %d attempts: cohortState=%s onDuty=%s capability=%s stock=%s payloads=%s",
+      state.cargoRecruitAttempts,tostring(snapshot.cohortState),tostring(snapshot.onDuty),tostring(snapshot.capability),tostring(snapshot.stock),tostring(snapshot.payloads)))
+    return
+  end
+
+  local recruited,assets,legions=LEGION.RecruitCohortAssets(
+    {state.ch47},AUFTRAG.Type.OPSTRANSPORT,nil,1,1,state.drop:GetVec2(),
+    nil,nil,nil,PHYSICAL_CARGO_TOTAL_WEIGHT_KG,PHYSICAL_CARGO_TOTAL_WEIGHT_KG,nil,nil,nil,nil,nil,nil)
+  local assetCount=type(assets)=="table" and #assets or -1
+  local legionCount=0
+  local recruitedLegion=nil
+  if type(legions)=="table" then
+    for _,legion in pairs(legions) do legionCount=legionCount+1; recruitedLegion=legion end
+  end
+  local expectedLegion=recruitedLegion==state.airwing
+  log(string.format("AIR_AMMO_OPSTRANSPORT_RECRUIT_RESULT attempt=%d recruited=%s assets=%d legions=%d expectedLegion=%s",
+    state.cargoRecruitAttempts,tostring(recruited),assetCount,legionCount,tostring(expectedLegion)))
+
+  if recruited and type(assets)=="table" and assetCount==1 and legionCount==1 and expectedLegion then
+    state.cargoAsset=assets[1]
+    state.cargoTransport:AddAsset(state.cargoAsset)
+    state.airwing:TransportAssign(state.cargoTransport,legions)
+    msg("LOGISTICS",string.format("MOOSE OPSTRANSPORT queued after carrier recruitment attempt %d: internal STORAGE fixture %d x %s, carrier=Jalalabad CH-47, route=%s",
+      state.cargoRecruitAttempts,PHYSICAL_CARGO_AMOUNT,PHYSICAL_CARGO_TYPE,primaryPathlineName()),15)
+    return
+  end
+  if recruited and type(assets)=="table" and assetCount>0 then LEGION.UnRecruitAssets(assets) end
+  if state.cargoRecruitAttempts<CARRIER_RECRUIT_MAX_ATTEMPTS then scheduleCargoRecruitment(); return end
+  fail(string.format("unable to recruit exactly one Jalalabad CH-47 for OPSTRANSPORT after %d attempts: recruited=%s assets=%d legions=%d expectedLegion=%s",
+    state.cargoRecruitAttempts,tostring(recruited),assetCount,legionCount,tostring(expectedLegion)))
 end
 
 local function startAirResupply()
@@ -519,40 +620,71 @@ local function startAirResupply()
     transactionId=TRANSFER_ID, cargoId=CARGO_ID, originNodeId=JALALABAD_NODE, destinationNodeId=WRIGHT_NODE,
     resourceId=AMMO_RESOURCE, quantity=15, carrierEntityId=CARRIER_ID,
   })
-  local pickup = need(ZONE:FindByName(PICKUP_ZONE), PICKUP_ZONE)
-  local drop = need(ZONE:FindByName(DROP_ZONE), DROP_ZONE)
+
+  state.pickup=need(ZONE:FindByName(PICKUP_ZONE),PICKUP_ZONE)
+  state.drop=need(ZONE:FindByName(DROP_ZONE),DROP_ZONE)
   if state.failed then return end
-  state.cargo = SPAWNSTATIC:NewFromType("ammo_cargo", "Cargos", country.id.USA):InitCargo(true):InitCargoMass(1000)
-    :InitCoordinate(pickup:GetCoordinate()):InitValidateAndRepositionStatic(false):Spawn(0,CARGO_ID)
-  if not state.cargo then fail("physical Air-AMMO cargo spawn failed") return end
-  msg("LOGISTICS", "Physical slingload manifest created in " .. PICKUP_ZONE, 8)
-  state.airMission = AUFTRAG:NewCARGOTRANSPORT(state.cargo, drop)
-  state.airMission:SetName("OMW_STAGE3_E2E_AIR_AMMO_JALALABAD_TO_WRIGHT")
-  state.airMission:SetRequiredAssets(1,1)
-  state.airMission:AssignSquadrons({state.ch47})
-  state.airMission:SetPriority(20,true)
-  local oldSuccess = state.airMission.OnAfterSuccess
-  function state.airMission:OnAfterSuccess(From,Event,To)
-    if oldSuccess then oldSuccess(self,From,Event,To) end
-    if not state.inTransit or not state.cargo:IsAlive() or not state.cargo:IsInZone(drop) then fail("Air-AMMO success lacks physical delivery evidence") return end
-    if state.transitScheduler and type(state.transitScheduler.Stop)=="function" then state.transitScheduler:Stop() end
+  local fixturesOk,fixturesReason=createAirAmmoStorageFixtures()
+  if not fixturesOk then fail(fixturesReason); return end
+
+  state.cargoResolved=HelicopterCorridor.Resolve({
+    pathlineName=state.flightPathName,
+    pathline=state.flightPath,
+    originCoordinate=state.pickup:GetCoordinate(),
+    destinationCoordinate=state.drop:GetCoordinate(),
+    offsetMode=HelicopterCorridor.OffsetMode.PATHLINE_SUFFIX,
+  })
+  if not state.cargoResolved or not state.cargoResolved.outbound or #state.cargoResolved.outbound<2 or
+     not state.cargoResolved.returnRoute or #state.cargoResolved.returnRoute<2 then
+    fail(primaryPathlineName().." corridor resolution failed")
+    return
+  end
+
+  state.cargoTransport=OPSTRANSPORT:New(nil,state.pickup,state.drop)
+  state.cargoTransport:SetRequiredCarriers(1,1)
+  state.cargoTransport:SetPriority(20)
+  state.cargoTransport:AddCargoStorage(state.sourceStorage,state.destStorage,PHYSICAL_CARGO_TYPE,PHYSICAL_CARGO_AMOUNT,PHYSICAL_CARGO_ITEM_WEIGHT_KG)
+
+  local oldExecuting=state.cargoTransport.OnAfterExecuting
+  function state.cargoTransport:OnAfterExecuting(F,E,T)
+    if oldExecuting then oldExecuting(self,F,E,T) end
+    local tx=ctx.store:MarkLoading(TRANSFER_ID)
+    registry:SetReservationState(RESUPPLY_DEMAND_ID,"LOADING")
+    state.loading=tx and tx.status==ctx.campaignState.TransactionStatus.LOADING
+    msg("LOGISTICS","MOOSE OPSTRANSPORT executing; CH-47 internal load/transport/unload lifecycle active",12)
+  end
+
+  local oldDelivered=state.cargoTransport.OnAfterDelivered
+  function state.cargoTransport:OnAfterDelivered(F,E,T)
+    if oldDelivered then oldDelivered(self,F,E,T) end
+    local sourceAmount=state.sourceStorage:GetAmount(PHYSICAL_CARGO_TYPE)
+    local destAmount=state.destStorage:GetAmount(PHYSICAL_CARGO_TYPE)
+    if sourceAmount~=0 or destAmount~=PHYSICAL_CARGO_AMOUNT then
+      fail(string.format("OPSTRANSPORT Delivered without expected STORAGE transfer source=%s destination=%s",tostring(sourceAmount),tostring(destAmount)))
+      return
+    end
+    if not state.inTransit then markAirAmmoInTransit() end
     ctx.store:MarkDelivered(TRANSFER_ID)
     registry:SetReservationState(RESUPPLY_DEMAND_ID,"DELIVERED")
     registry:Succeed(RESUPPLY_DEMAND_ID,{
       transactionId=TRANSFER_ID, cargoId=CARGO_ID, carrierEntityId=CARRIER_ID,
-      physicalMission="AUFTRAG:CARGOTRANSPORT", corridor=PRIMARY_PATHLINE,
+      physicalMission="OPSTRANSPORT:STORAGE", corridor=primaryPathlineName(),
     })
-    state.delivered = true
-    msg("LOGISTICS", "Air-AMMO delivered at Wright; strategic stock restored to 30 / 30", 12)
+    state.delivered=true
+    msg("LOGISTICS", "MOOSE STORAGE delivery confirmed at Wright; strategic stock restored to 30 / 30; awaiting configured reverse route", 12)
   end
-  local oldFailed = state.airMission.OnAfterFailed
-  function state.airMission:OnAfterFailed(From,Event,To)
-    if oldFailed then oldFailed(self,From,Event,To) end
-    fail("MOOSE CARGOTRANSPORT failed")
+
+  local oldCancel=state.cargoTransport.OnAfterCancel
+  function state.cargoTransport:OnAfterCancel(F,E,T)
+    if oldCancel then oldCancel(self,F,E,T) end
+    if not state.delivered then fail("MOOSE OPSTRANSPORT cancelled before Wright delivery") end
   end
+
   registry:AssignAI(RESUPPLY_DEMAND_ID,"AI:SQUADRON:SQ_US_JBAD_CH47_HEAVYLIFT")
-  state.airwing:AddMission(state.airMission)
-  msg("LOGISTICS", "Jalalabad CH-47 Air-AMMO mission queued; pickup must precede corridor ingress", 12)
+  armCargoCarrier()
+  if not state.cargoAsset and not state.failed then
+    msg("LOGISTICS","OPSTRANSPORT STORAGE setup active; bounded Jalalabad CH-47 recruitment retry is pending",12)
+  end
 end
 
 local function fireTargetTelemetry(target)
@@ -874,6 +1006,7 @@ local function start()
   need(GROUP:FindByName(QRF_TEMPLATE),QRF_TEMPLATE)
   need(PATHLINE:FindByName(GUARD_PATHLINE),GUARD_PATHLINE)
   if not context() then return end
+  if not resolveConfiguredFlightPath() then return end
   prepareAirwing()
   installAirObserver()
   if not preconditionWright() then return end
@@ -888,7 +1021,7 @@ local function finish()
   local casTerminal = state.casFailed or (state.casExecuting and state.casCorridor and state.casFired and state.casClosed)
   if not (state.guardPatrolStarted and state.threatStarted and state.threatStopped and state.attackIncidentClosed and state.qrfDeployed and state.qrfReturned and casTerminal
       and state.fireStarted and state.fireComplete and state.rearmComplete and state.supportReturned and state.resupply
-      and state.inTransit and state.delivered and state.airCorridor and state.homeLanded and state.assetReturned) then return end
+      and state.inTransit and state.delivered and state.airCorridor and state.cargoReturnInstalled and state.homeLanded and state.assetReturned) then return end
   if state.casFailed then fail("CAS subsystem failed while other Stage-3 chains remained observable: " .. tostring(state.casFailureReason)) return end
 
   local ctx=context()
@@ -907,14 +1040,14 @@ local function finish()
 
   state.passed=true
   stopFinishScheduler()
-  msg("PASS",string.format("Honaker full response complete: access-zone Guard/QRF materialization + incident-participant closure + immediate PATROLZONE CAS release onto WEST/R500 recovery + mixed QRF recovery + %d live Wright fire missions + M1083 rearm + semantic dedupe + CH-47 SLG-zone pickup-first R500 Air-AMMO + Wright 30/30",state.fireTargetCount),30)
+  msg("PASS",string.format("Honaker full response complete: access-zone Guard/QRF materialization + incident-participant closure + immediate PATROLZONE CAS recovery + mixed QRF recovery + %d live Wright fire missions + M1083 rearm + semantic dedupe + CH-47 OPSTRANSPORT internal Air-AMMO via %s outbound/return + Wright 30/30",state.fireTargetCount,primaryPathlineName()),30)
   log("PASS WrightAmmo=30 JalalabadAmmo=85 fireDemand="..fd.id.." casDemand="..cd.id.." resupplyDemand="..rd.id
     .." perimeterClear="..tostring(state.perimeterClear).." threatStopped="..tostring(state.threatStopped)
     .." tacticalRedCount="..tostring(state.tacticalRedCount).." qrfEngaged="..tostring(state.qrfEngaged).." qrfReturned="..tostring(state.qrfReturned)
     .." guardPathline="..GUARD_PATHLINE.." qrfTemplate="..QRF_TEMPLATE
     .." casMode=PATROLZONE_ENGAGE casRadiusNm="..tostring(CAS_TACTICAL_RADIUS_NM)
-    .." casAltitudeFtAsl="..tostring(state.casAltitudeFtAsl).." casCorridor="..routeLabel(CAS_PATHLINES)
-    .." airAmmoCorridor="..routeLabel(AIR_AMMO_PATHLINES))
+    .." casAltitudeFtAsl="..tostring(state.casAltitudeFtAsl).." casCorridor="..routeLabel(casPathlineNames())
+    .." airAmmoCorridor="..primaryPathlineName())
 end
 
 SCHEDULER:New(nil,start,{},5)
