@@ -49,9 +49,6 @@ assertContains(source, "SetROE(ENUMS.ROE.OpenFire)", "MOOSE CAS ROE")
 assertContains(source, "SetROT(ENUMS.ROT.PassiveDefense)", "MOOSE CAS ROT")
 
 -- The focused Air-AMMO path uses MOOSE OPSTRANSPORT STORAGE transport end to end.
--- Carrier recruitment remains a direct public MOOSE RecruitCohortAssets +
--- TransportAssign path because pinned MOOSE 2.9.18 automatic transport-queue
--- recruitment derives cargo weight only from CargoOpsGroups, not STORAGE cargo.
 assertContains(source, "OPSTRANSPORT:New(nil,state.pickup,state.drop)", "MOOSE OPSTRANSPORT storage constructor")
 assertContains(source, "AddCargoStorage", "MOOSE storage cargo")
 assertContains(source, "GetStaticStorage", "MOOSE STORAGE fixture")
@@ -68,9 +65,7 @@ assertNotContains(source, "PauseMission(", "superseded mission pause handoff")
 assertNotContains(source, "CargoTransportation", "superseded native cargo task")
 assertNotContains(source, "OnBeforeUnpauseMission", "falsified auto-unpause guard")
 
--- Carrier startup/recruitment is a bounded readiness window, not another blind
--- one-shot gate. Diagnostics use public MOOSE cohort/airwing APIs so the next DCS
--- run distinguishes duty/capability/stock/payload readiness from recruitment shape.
+-- Carrier startup/recruitment is a bounded readiness window.
 assertContains(source, "local CARRIER_RECRUIT_RETRY_SEC = 5", "carrier retry interval")
 assertContains(source, "local CARRIER_RECRUIT_MAX_ATTEMPTS = 6", "carrier retry bound")
 assertContains(source, "GetMissionCapability(AUFTRAG.Type.OPSTRANSPORT)", "carrier mission capability diagnostic")
@@ -82,16 +77,20 @@ assertContains(source, "LEGION.UnRecruitAssets(assets)", "malformed successful r
 assertContains(source, "scheduleCargoRecruitment()", "bounded carrier retry scheduling")
 assertContains(source, "state.cargoRecruitAttempts<CARRIER_RECRUIT_MAX_ATTEMPTS", "carrier retry stop condition")
 
--- Wright is a field LZ zone. Pinned MOOSE 2.9.18 does not apply OPSTRANSPORT's
--- transport path to a FLIGHTGROUP for this target type, so the approved boundary is
--- a small adapter using public FLIGHTGROUP waypoint APIs only.
-assertContains(adapterSource, "OMW-OPSTRANSPORT-CORRIDOR-ADAPTER-1", "OPSTRANSPORT corridor adapter schema")
+-- Wright is a field LZ zone. Adapter schema 2 preserves the public MOOSE-only
+-- waypoint boundary and adds optional speed/lead-turn geometry without changing the
+-- OPSTRANSPORT lifecycle. Focused legacy callers may omit those optional settings.
+assertContains(adapterSource, "OMW-OPSTRANSPORT-CORRIDOR-ADAPTER-2", "OPSTRANSPORT corridor adapter schema")
 assertContains(adapterSource, "OnAfterTransport", "transport lifecycle route hook")
 assertContains(adapterSource, "OnAfterDelivered", "delivery lifecycle return hook")
 assertContains(adapterSource, "GetWaypointCurrentUID", "public current waypoint API")
 assertContains(adapterSource, "AddWaypoint", "public FLIGHTGROUP waypoint API")
 assertContains(adapterSource, "UpdateRoute", "public FLIGHTGROUP route update API")
 assertContains(adapterSource, "transport:IsCarrier(self)", "public carrier identity API")
+assertContains(adapterSource, "GetIntermediateCoordinate", "public MOOSE lead-turn geometry API")
+assertContains(adapterSource, "HeadingTo", "public MOOSE turn-angle geometry API")
+assertContains(adapterSource, "speedKts", "optional explicit waypoint speed")
+assertContains(adapterSource, "leadTurnDistanceM", "optional lead-turn distance")
 assertNotContains(adapterSource, "Controller:setTask", "native controller route replacement")
 assertNotContains(adapterSource, "PauseMission", "mission lifecycle interception")
 assertNotContains(adapterSource, "CargoTransportation", "native cargo task")
