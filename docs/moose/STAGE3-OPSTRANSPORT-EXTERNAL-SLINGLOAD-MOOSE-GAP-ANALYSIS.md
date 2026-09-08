@@ -1,11 +1,11 @@
 ---
 document_id: OMW-MOOSE-STAGE3-OPSTRANSPORT-EXTERNAL-SLINGLOAD-GAP
-status: PLANNED
+status: SUPERSEDED
 document_class: MOOSE_GAP_ANALYSIS
+owning_policy: OMW-GOV-001
 authoritative_for:
-  - branch-local technical gap analysis for Stage 3 OPSTRANSPORT external slingload
+  - historical branch-local technical gap analysis for Stage 3 OPSTRANSPORT external slingload
   - verified pinned-MOOSE behavior of OPSTRANSPORT AddOpsTransport and AddPathTransport
-  - owner approval gate before any non-MOOSE/native-DCS fallback
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 source_branch: agent/fire-support-strategic-resupply-alarm-evidence
@@ -13,29 +13,18 @@ source_commit: GIT_HISTORY
 validated_in_dcs: false
 supersedes:
 superseded_by:
+  - OMW-MOOSE-STAGE3-OPSTRANSPORT-SLINGLOAD-ARCHITECTURE-DECISION
 ---
 
-# Stage 3 – OPSTRANSPORT External Slingload: MOOSE Gap Analysis
+# Stage 3 – OPSTRANSPORT External Slingload: historische MOOSE Gap Analysis
 
-## 1. Anlass und verbindlicher Rahmen
+> **SUPERSEDED:** Der Projektinhaber hat am 08.09.2026 die weitere Entwicklung externer Slingload-Fracht bis auf Weiteres gestoppt. Aktueller Stage-3-Air-AMMO-Pfad ist CH-47 + MOOSE OPSTRANSPORT + interne STORAGE-Fracht + konfigurierte `OMW_FlightPath`-Hin-/Rückroute. Diese Datei bleibt ausschließlich als technischer Recherche- und Fehlernachweis erhalten.
 
-Der aktuelle Stage-3-Zielpfad ist branch-lokal festgelegt in:
+## 1. Anlass und damaliger Rahmen
 
-```text
-docs/moose/STAGE3-OPSTRANSPORT-SLINGLOAD-ARCHITECTURE-DECISION.md
-```
+Diese Analyse entstand während der inzwischen gestoppten Untersuchung, ob eine sichtbare externe Slingload-Repräsentation in den OPSTRANSPORT-Lifecycle eingebunden werden kann.
 
-Verbindliche Richtung:
-
-```text
-MOOSE OPSTRANSPORT
-+ FLIGHTGROUP helicopter carrier
-+ FLIGHTGROUP:AddOpsTransport()
-+ OPSTRANSPORT:AddPathTransport()
-+ gewünschte physische Repräsentation: externer Slingload
-```
-
-Der frühere Pfad
+Der bereits damals verworfene Pfad
 
 ```text
 AUFTRAG:NewCARGOTRANSPORT()
@@ -44,9 +33,7 @@ TaskDone()
 re-issued CargoTransportation
 ```
 
-ist verworfen und darf nicht weiter repariert werden.
-
-Diese Analyse folgt `docs/26-moose-first-development-policy.md` und prüft Dokumentation, gepinnten Source und offizielle Demo vor jeder neuen Adapter-/Fallback-Entscheidung.
+bleibt verworfen und darf nicht weiter repariert werden.
 
 ## 2. Gepinnter MOOSE-Stand
 
@@ -64,9 +51,7 @@ Der gepinnte Source bestätigt den öffentlichen Carrier-Pfad:
 myopsgroup:AddOpsTransport(opstransport)
 ```
 
-`OPSTRANSPORT` kann von einem `FLIGHTGROUP` als Carrier ausgeführt werden. Der Source verwendet diesen Mechanismus selbst, unter anderem für HELICOPTER-Transportpfade im Warehouse-/LEGION-Lifecycle.
-
-Damit ist bestätigt:
+`OPSTRANSPORT` kann von einem `FLIGHTGROUP` als Carrier ausgeführt werden.
 
 ```text
 OPSTRANSPORT lifecycle: AVAILABLE
@@ -82,7 +67,7 @@ Der gepinnte Source enthält:
 function OPSTRANSPORT:AddPathTransport(PathGroup, Reversed, Radius, TransportZoneCombo)
 ```
 
-Die Implementierung macht daraus ausdrücklich:
+Die Implementierung verwendet:
 
 ```lua
 if type(PathGroup)=="string" then
@@ -96,17 +81,17 @@ path.waypoints=PathGroup:GetTaskRoute()
 table.insert(TransportZoneCombo.TransportPaths, path)
 ```
 
-Wesentliche Konsequenzen:
+Daraus folgt:
 
 ```text
 1. AddPathTransport erwartet eine GROUP beziehungsweise einen Gruppennamen.
 2. Die Route stammt aus GROUP:GetTaskRoute().
-3. Die GROUP-Kategorie bestimmt, für welche Carrier-Kategorie der Pfad verwendbar ist.
+3. Die GROUP-Kategorie bestimmt die Carrier-Kategorie des Pfads.
 4. Eine MOOSE PATHLINE ist kein dokumentierter oder implementierter Parameter von AddPathTransport.
 5. Der Parameter Reversed ist in der gepinnten Implementierung vorhanden, wird dort aber nicht ausgewertet.
 ```
 
-Damit kann die bestehende Mission-Editor-Linienzeichnung
+Die OMW-Mission verwendet dagegen den logischen Routevertrag:
 
 ```text
 logical: OMW_FlightPath
@@ -114,7 +99,7 @@ configured variant: OMW_FlightPath / OMW_FlightPath_Rnnn / OMW_FlightPath_Lnnn
 MOOSE representation: PATHLINE
 ```
 
-nicht direkt an `OPSTRANSPORT:AddPathTransport()` übergeben werden.
+Für Wright als Feld-LZ wird diese Repräsentationslücke im aktuellen internen OPSTRANSPORT-Pfad durch `scripts/air-operations/OMW_OpsTransportCorridorAdapter.lua` geschlossen. Der Adapter ergänzt ausschließlich öffentliche FLIGHTGROUP-Waypoints und übernimmt keine Transport-FSM- oder Cargo-Autorität.
 
 ## 5. Offizielle Demo `Transport - 051 - COMBINED By All Means`
 
@@ -140,20 +125,18 @@ Mi26:Activate()
 Mi26:AddOpsTransport(transport)
 ```
 
-Die Demo bestätigt damit den vorgesehenen MOOSE-Grundmechanismus `OPSTRANSPORT + FLIGHTGROUP + AddOpsTransport + AddPathTransport`.
+Damit ist der MOOSE-Grundmechanismus `OPSTRANSPORT + FLIGHTGROUP + AddOpsTransport + AddPathTransport` bestätigt. Die Demo beweist weder eine direkte PATHLINE-Übergabe an `AddPathTransport()` noch eine externe Slingload-Darstellung innerhalb von OPSTRANSPORT.
 
-Sie bestätigt jedoch **nicht**, dass eine `PATHLINE` direkt als Transportpfad verwendet werden kann. Ebenso enthält die Demo keinen expliziten Helicopter-`AddPathTransport`-Pfad; die gezeigten Pfadgruppen sind Ground, Naval und Airplane.
+## 6. Verifizierte OPSTRANSPORT-Cargo-Typen
 
-## 6. Verifizierter OPSTRANSPORT-Cargo-Typ
-
-Der gepinnte Source dokumentiert für OPSTRANSPORT zwei Cargo-Repräsentationen:
+Der gepinnte Source dokumentiert für OPSTRANSPORT:
 
 ```text
 OPSGROUP
 STORAGE
 ```
 
-Für Storage-Transport lautet der öffentliche Pfad:
+Für STORAGE lautet der öffentliche Pfad:
 
 ```lua
 local transport=OPSTRANSPORT:New(nil, PickupZone, DeployZone)
@@ -161,51 +144,25 @@ transport:AddCargoStorage(StorageFrom, StorageTo, CargoType, CargoAmount, CargoW
 carrier:AddOpsTransport(transport)
 ```
 
-Die Storage-Daten werden im Carrier-Cargobay geführt. Der gepinnte OPSTRANSPORT-/OPSGROUP-Code verwaltet hierfür Cargo-Bay-Gewicht, reservierten/geladenen Storage-Anteil und interne Loading-/Unloading-Zustände.
+Die STORAGE-Daten werden im Carrier-Cargobay und über den OPSTRANSPORT Loading-/Transporting-/Unloading-/Delivered-Lifecycle geführt.
 
-In der geprüften `OPSTRANSPORT`-Implementierung wurde **kein öffentlicher Mechanismus gefunden**, der einen `STATIC`-Cargo als sichtbaren externen Slingload an einen AI-Helicopter anhängt und diesen physischen Slingload zugleich im OPSTRANSPORT-FSM als Cargo führt.
+Während der damaligen Slingload-Untersuchung wurde in der geprüften OPSTRANSPORT-Implementierung kein öffentlicher Mechanismus nachgewiesen, der einen STATIC-Cargo als sichtbaren externen Slingload an einen AI-Helikopter bindet und zugleich im OPSTRANSPORT-FSM als Cargo führt. Diese offene Untersuchung wird aufgrund der späteren Owner-Entscheidung nicht fortgesetzt.
 
-Insbesondere wurde für OPSTRANSPORT kein Gegenstück gefunden zu:
-
-```text
-DCS CargoTransportation task
-AUFTRAG:NewCARGOTRANSPORT(STATIC, DropZone)
-```
-
-Das ist relevant, weil genau `AUFTRAG:NewCARGOTRANSPORT()` gemäß aktueller Owner-Entscheidung nicht mehr als Transport-Lifecycle verwendet werden darf.
-
-## 7. Verifizierte technische Lücke
-
-Aktueller Nachweisstand:
+## 7. Historischer Nachweisstand
 
 ```text
-Requirement:
-  OPSTRANSPORT remains the transport lifecycle
-  FLIGHTGROUP helicopter remains the carrier
-  configured OMW_FlightPath remains the route contract
-  cargo must be physically visible as external slingload
-
 MOOSE direct support verified:
   OPSTRANSPORT lifecycle: YES
   FLIGHTGROUP:AddOpsTransport(): YES
   OPSTRANSPORT:AddPathTransport(GROUP): YES
-  OPSTRANSPORT storage transfer: YES
+  OPSTRANSPORT STORAGE transfer: YES
 
-MOOSE direct support not verified / absent in pinned implementation:
+Verified route limitation:
   OPSTRANSPORT:AddPathTransport(PATHLINE): NO
   public PATHLINE -> AddPathTransport conversion API: NOT FOUND
-  OPSTRANSPORT physical STATIC external slingload binding: NOT FOUND
-```
 
-Damit bestehen zwei getrennte Integrationslücken:
-
-```text
-A. Route representation gap:
-   OMW route is a PATHLINE, AddPathTransport consumes GROUP:GetTaskRoute().
-
-B. Physical cargo representation gap:
-   OPSTRANSPORT STORAGE is internal cargo-bay accounting;
-   no verified public OPSTRANSPORT API attaches a STATIC as external slingload.
+External slingload question:
+  further investigation: SUSPENDED BY OWNER DECISION
 ```
 
 ## 8. Nicht zulässige Schlussfolgerungen
@@ -215,45 +172,37 @@ Aus der offiziellen Demo darf nicht abgeleitet werden:
 ```text
 AddPathTransport accepts PATHLINE: FALSE
 Transport - 051 demonstrates helicopter path template: FALSE
-OPSTRANSPORT natively creates physical external slingload STATIC cargo: NOT PROVEN
+Transport - 051 proves external slingload inside OPSTRANSPORT: FALSE
 ```
 
-Ebenso darf die frühere `NewCARGOTRANSPORT`-Ausnahme nicht stillschweigend reaktiviert werden.
+Ebenso darf die frühere `NewCARGOTRANSPORT`-Ausnahme nicht reaktiviert werden.
 
-## 9. MOOSE-First Konsequenz
+## 9. Aktuelle Konsequenz
 
-Die nächste Implementierung darf nur eine der folgenden Richtungen nehmen:
+Die frühere Ausnahme-/Fallback-Untersuchung ist beendet. Eine Owner-Freigabe für eine neue Slingload-Lösung wird aktuell weder benötigt noch beantragt.
+
+Der aktive Zielpfad lautet:
 
 ```text
-1. Noch vorhandenen öffentlichen MOOSE-Weg finden, der die beiden Lücken schließt.
-
-oder, falls die Lücken nach vollständiger Prüfung bestehen bleiben:
-
-2. kleinsten Adapter/Fallback entwerfen,
-   der OPSTRANSPORT als Lifecycle-Autorität erhält,
-   keine parallele Ressourcenhoheit erzeugt,
-   keine eigene Transport-FSM baut,
-   und nur Route-/Slingload-Repräsentation ergänzt.
+Jalalabad
+-> CH-47
+-> MOOSE OPSTRANSPORT internal STORAGE
+-> configured OMW_FlightPath outbound
+-> Wright delivery / OPSTRANSPORT Delivered
+-> configured OMW_FlightPath reverse
+-> Jalalabad landing
+-> AIRWING/LEGION recovery
 ```
 
-Für einen nativen DCS-Teil oder Zugriff auf MOOSE-Interna gilt ausdrücklich:
-
-```text
-OWNER APPROVAL REQUIRED BEFORE IMPLEMENTATION
-```
-
-## 10. Aktueller Entwicklungsstatus
+## 10. Status
 
 ```text
 NewCARGOTRANSPORT legacy handoff: REJECTED
+external slingload development: SUSPENDED BY OWNER
 OPSTRANSPORT core lifecycle: VERIFIED IN PINNED SOURCE
 AddOpsTransport carrier binding: VERIFIED IN PINNED SOURCE
 AddPathTransport GROUP route semantics: VERIFIED IN PINNED SOURCE
 Transport 051 demo: VERIFIED
-PATHLINE direct AddPathTransport support: NOT AVAILABLE IN VERIFIED SIGNATURE
-OPSTRANSPORT external STATIC slingload support: NOT FOUND
-new fallback approval: NOT YET GRANTED
-next DCS test: BLOCKED
+current Stage 3 Air-AMMO target: INTERNAL OPSTRANSPORT/STORAGE
+DCS validation of reconciled full-response path: PENDING
 ```
-
-Vor einem weiteren DCS-Lauf muss die Route-/Slingload-Lücke entweder mit einem nachgewiesenen MOOSE-Weg geschlossen oder eine ausdrücklich genehmigte Minimal-Ausnahme implementiert und offline abgesichert werden.
