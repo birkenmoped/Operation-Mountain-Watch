@@ -4,14 +4,15 @@ status: PLANNED
 document_class: OWNER_DECISION_RECORD
 authoritative_for:
   - branch-local Stage 3 CH-47 Air-AMMO transport architecture
-  - rejection of the legacy AUFTRAG NewCARGOTRANSPORT handoff path
-  - required MOOSE-first transport lifecycle for external slingload work
+  - suspension of external slingload development
+  - required MOOSE-first internal OPSTRANSPORT transport path
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 source_branch: agent/fire-support-strategic-resupply-alarm-evidence
 source_commit: GIT_HISTORY
 validated_in_dcs: false
 supersedes:
+  - branch-local external slingload target for Stage 3 Air-AMMO
   - branch-local use of AUFTRAG:NewCARGOTRANSPORT for the current Stage 3 Air-AMMO target path
   - branch-local PauseMission/TaskDone/CargoTransportation route handoff architecture
 superseded_by:
@@ -21,7 +22,9 @@ superseded_by:
 
 ## 1. Zweck
 
-Dieses Dokument hält die ausdrückliche Entscheidung des Projektinhabers für den aktuellen Stage-3-CH-47-Air-AMMO-Pfad fest und verhindert, dass eine bereits verworfene Zwischenarchitektur erneut als aktueller Zielpfad verwendet wird.
+Dieses Dokument hält die ausdrückliche Entscheidung des Projektinhabers vom 08.09.2026 für den aktuellen Stage-3-CH-47-Air-AMMO-Pfad fest.
+
+Die weitere Entwicklung einer sichtbaren externen Slingload-Repräsentation wird **bis auf Weiteres gestoppt**. Für den aktuellen Stage-3-Air-AMMO-Transport wird der bereits funktionierende interne MOOSE-Transport mit CH-47 verwendet.
 
 Diese Entscheidung ist auf dem Arbeitsbranch unmittelbar anzuwenden. Repository-weite normative Wirkung entsteht gemäß `docs/00-project-governance.md` erst durch Merge nach `main` oder eine entsprechende Entscheidung auf `main`.
 
@@ -31,61 +34,93 @@ Für den aktuellen Stage-3-Air-AMMO-Transport gilt:
 
 ```text
 Transport lifecycle: MOOSE OPSTRANSPORT
-Carrier: MOOSE FLIGHTGROUP helicopter carrier
-Carrier binding: FLIGHTGROUP:AddOpsTransport()
-Transport path: OPSTRANSPORT:AddPathTransport()
-Physical representation target: external slingload
+Carrier: Jalalabad CH-47 via MOOSE AIRWING/SQUADRON/FLIGHTGROUP
+Cargo representation: internal MOOSE OPSTRANSPORT/STORAGE transport
+Pickup: Jalalabad
+Delivery: Wright
+Outbound route: configured logical OMW_FlightPath route
+Return route: same configured route in reverse
 Strategic authority: CampaignState
 Physical runtime/lifecycle authority: MOOSE
 ```
 
-Die Art der physischen Frachtrepresentation darf den Transport-Lifecycle nicht erneut auf einen anderen MOOSE-Missionstyp umstellen.
-
-Insbesondere gilt:
+Zielablauf:
 
 ```text
-physical representation changes
-!=
-transport lifecycle changes
+Jalalabad
+-> CH-47 MOOSE OPSTRANSPORT pickup/load
+-> configured FlightPath outbound
+-> Wright delivery/unload
+-> OPSTRANSPORT Delivered
+-> configured FlightPath reverse
+-> Jalalabad landing
+-> AIRWING/LEGION recovery
 ```
 
-Der bereits funktionierende OPSTRANSPORT-Lifecycle bleibt deshalb die Grundlage. Die noch zu lösende Aufgabe besteht darin, die gewünschte sichtbare externe Slingload-Repräsentation in diesen MOOSE-Transportpfad einzubinden, nicht darin, OPSTRANSPORT durch einen anderen Missionsmechanismus zu ersetzen.
+Eine sichtbare externe Slingload-Darstellung ist **kein aktuelles Entwicklungsziel**.
 
-## 3. Explizit verworfener Altpfad
+## 3. Gestoppter Slingload-Pfad
 
-Der folgende Pfad ist **nicht mehr die aktuelle Architektur** und darf nicht weiter repariert, erweitert oder als Ziel-Implementation verwendet werden:
+Bis zu einer neuen ausdrücklichen Eigentümerentscheidung gilt:
 
 ```text
-AUFTRAG:NewCARGOTRANSPORT()
--> physical pickup
--> PauseMission()
--> TaskDone()
--> manual/public FLIGHTGROUP route handoff
--> re-issued DCS CargoTransportation waypoint task
--> AUFTRAG:Success()
+NO further external slingload development
+NO new external slingload acceptance mission
+NO further patching of AUFTRAG:NewCARGOTRANSPORT slingload handoff
+NO PauseMission()/TaskDone() slingload route handoff
+NO re-injected DCS CargoTransportation task as lifecycle bridge
+NO OMW_SlingloadCorridorHandoff as current Stage 3 target architecture
 ```
 
-Daraus folgen konkrete Verbote für den aktuellen Stage-3-Zielpfad:
+Historische Slingload-Dateien, Tests, Logs und Entscheidungen bleiben als Entwicklungs- und Fehlernachweis erhalten. Sie dürfen nicht als aktueller Zielpfad interpretiert werden.
+
+## 4. Aktuelle MOOSE-first Architektur
+
+Der aktive Zielpfad verwendet den bereits source-geprüften MOOSE-Mechanismus:
 
 ```text
-NO AUFTRAG:NewCARGOTRANSPORT()
-NO PauseMission()/TaskDone() handoff
-NO re-injected CargoTransportation waypoint task as route/lifecycle bridge
-NO continuation of OMW_SlingloadCorridorHandoff as the active target architecture
+OPSTRANSPORT:New(nil, PickupZone, DeployZone)
+-> AddCargoStorage(StorageFrom, StorageTo, CargoType, Amount, ItemWeight)
+-> SetRequiredCarriers(1,1)
+-> CH-47 carrier recruitment from Jalalabad AIRWING/SQUADRON
+-> OPSTRANSPORT loading
+-> OPSTRANSPORT transport
+-> OPSTRANSPORT unloading
+-> OPSTRANSPORT Delivered
 ```
 
-Historische Tests und Dateien dürfen als Fehler-/Entwicklungsnachweis erhalten bleiben, dürfen aber nicht als aktuelle Architektur interpretiert werden.
+Für den Feld-LZ-Zielpunkt Wright bleibt die kleine MOOSE-nahe Routenintegration zuständig:
 
-## 4. Maßgebliche MOOSE-Richtung
+```text
+scripts/air-operations/OMW_OpsTransportCorridorAdapter.lua
+```
 
-Die relevante offizielle MOOSE-Demo ist:
+Sie besitzt keine Cargo- oder Delivery-Autorität. Sie nutzt öffentliche `FLIGHTGROUP`-Methoden, um den owner-konfigurierten FlightPath vor beziehungsweise nach dem OPSTRANSPORT-Lifecycle einzufügen.
+
+Aktueller Routing-Vertrag:
+
+```text
+OnAfterTransport
+-> configured FlightPath outbound
+-> FLIGHTGROUP:AddWaypoint(...)
+-> FLIGHTGROUP:UpdateRoute()
+
+OnAfterDelivered
+-> configured FlightPath reverse
+-> FLIGHTGROUP:AddWaypoint(...)
+-> FLIGHTGROUP:UpdateRoute()
+```
+
+## 5. Relevante offizielle MOOSE-Richtung
+
+Die offizielle MOOSE-Demo
 
 ```text
 Ops/Transport/Transport - 051 - COMBINED By All Means/
 Transport - 051 - COMBINED By All Means.lua
 ```
 
-Sie ist für die weitere Umsetzung ausdrücklich als Referenz zu prüfen und bestätigt die Richtung:
+bestätigt die grundlegende Richtung:
 
 ```text
 OPSTRANSPORT
@@ -94,9 +129,9 @@ AddOpsTransport()
 AddPathTransport()
 ```
 
-Gemäß `docs/26-moose-first-development-policy.md` ist vor weiterer eigener Lua-Logik zusätzlich der tatsächlich gepinnte MOOSE-Source zu prüfen. Dokumentation oder Demo allein beweisen keine Verfügbarkeit oder identische Signatur im verwendeten Stand.
+Sie wird nicht mehr als Nachweis für eine externe Slingload-Darstellung interpretiert.
 
-Gepinnter Stand:
+Gepinnter MOOSE-Stand:
 
 ```text
 MOOSE release: 2.9.18
@@ -104,118 +139,54 @@ MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
 Moose.lua SHA-256: E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915
 ```
 
-## 5. Warum der interne OPSTRANSPORT-Test relevant bleibt
+## 6. Bereits vorhandener fokussierter interner OPSTRANSPORT-Pfad
 
-Der zuvor erfolgreiche interne Transporttest war nicht deshalb erfolgreich, weil interne Fracht grundsätzlich andere Routing-Eigenschaften besitzen muss, sondern weil dort der korrekte MOOSE-Transport-Lifecycle erhalten blieb:
-
-```text
-OPSTRANSPORT owns transport lifecycle
--> carrier remains attached to OPSTRANSPORT
--> MOOSE loading/transport/unloading/delivery lifecycle remains intact
--> Delivered is reached by the transport FSM
-```
-
-Die gewünschte externe Slingload-Darstellung darf diesen funktionierenden Lifecycle nicht erneut durch `AUFTRAG:NewCARGOTRANSPORT()` ersetzen.
-
-## 6. DCS-Lauf 07.09.2026 – Fehltest des verworfenen Altpfads
-
-Der DCS-Lauf vom 07.09.2026 mit dem erneut eingeführten `AUFTRAG:NewCARGOTRANSPORT()`-/PauseMission-Handoff ist **kein Test der aktuellen Zielarchitektur**.
-
-Beobachtet wurde:
+Die aktuelle fokussierte Acceptance implementiert diesen Zielpfad bereits in:
 
 ```text
-CH-47 external slingload pickup: observed
-configured outbound FlightPath: observed
-physical Wright delivery: not completed
-mission lifecycle ended/cancelled before confirmed delivery
-return route contract: not completed
-AIRWING return took over
+mission/tests/stage3-cas-resupply-focused/src/02-stage3-cas-resupply-opstransport-acceptance.lua
 ```
 
-Dieser Lauf dokumentiert das Scheitern der erneut verwendeten Altarchitektur. Er ist nicht als Argument zu verwenden, diesen Handoff weiter zu patchen.
-
-Status:
+Sie verwendet:
 
 ```text
-legacy NewCARGOTRANSPORT handoff: REJECTED_CURRENT_ARCHITECTURE
-current OPSTRANSPORT external-slingload target: NOT_YET_DCS_VALIDATED
+OPSTRANSPORT
+STORAGE cargo transfer
+Jalalabad CH-47 recruitment
+OMW_OpsTransportCorridorAdapter
+configured logical OMW_FlightPath selection
+outbound route installation
+Wright Delivered verification
+reverse route installation
+Jalalabad landing/AIRWING recovery verification
 ```
 
-## 7. Dokumentierter Regelverstoß des Assistenten
+Damit ist für die nächste Arbeit **keine neue Slingload-Architektur** zu entwickeln. Die bestehende interne OPSTRANSPORT-Lösung ist zu härten und anschließend exakt zu testen.
 
-Der Assistent hat entgegen der bereits vorhandenen Übergabeentscheidung den verworfenen Altpfad erneut verwendet und weiterentwickelt.
+## 7. Acceptance-Grenze
 
-Konkret wurden folgende bereits ausgeschlossene Elemente erneut eingeführt beziehungsweise als aktiver Zielpfad behandelt:
+Vor einem neuen DCS-Lauf sind statisch/offline mindestens zu prüfen:
 
 ```text
-AUFTRAG:NewCARGOTRANSPORT()
-PauseMission()
-TaskDone()
-re-issued CargoTransportation task
-OMW_SlingloadCorridorHandoff as current target path
+active Stage 3 target uses OPSTRANSPORT/STORAGE only
+no active Stage 3 target depends on AUFTRAG:NewCARGOTRANSPORT slingload handoff
+configured FlightPath selection is logical-name based, not hard-coded to a concrete R/L offset
+outbound route is installed for the CH-47 after OPSTRANSPORT transport begins
+Wright delivery is confirmed by OPSTRANSPORT/STORAGE state
+reverse route is installed on OPSTRANSPORT Delivered
+Jalalabad landing and AIRWING/LEGION recovery remain observable acceptance gates
 ```
 
-Das war kein Owner-Entscheid und kein neuer Architekturentscheid, sondern ein Implementierungs- und Übergabeverstoß des Assistenten.
-
-Dieser Fehler darf nicht als Projektentscheidung, genehmigte Ausnahme oder MOOSE-first-Abweichung fortgeschrieben werden.
-
-## 8. Pflicht für die nächste Implementierung
-
-Vor neuer Implementierung ist in dieser Reihenfolge zu arbeiten:
+Der DCS-Acceptance-Vertrag lautet:
 
 ```text
-1. Current governance and this decision record
-2. Pinned MOOSE documentation
-3. Pinned Moose.lua source
-4. Official Transport 051 demo
-5. OPSTRANSPORT lifecycle and FLIGHTGROUP carrier binding
-6. AddOpsTransport() behavior/signature
-7. AddPathTransport() behavior/signature
-8. Determine supported physical external-slingload representation within this lifecycle
-9. Only if a verified gap remains: document smallest adapter
-10. Obtain owner approval before any new non-MOOSE/native-DCS exception
+CH-47 departs Jalalabad
+-> flies configured FlightPath outbound
+-> carries Air-AMMO internally through MOOSE OPSTRANSPORT
+-> delivers/unloads at Wright
+-> flies the configured FlightPath in reverse
+-> lands at Jalalabad
+-> is recovered by AIRWING/LEGION
 ```
 
-Es darf **kein weiterer DCS-Test** auf Basis des verworfenen `NewCARGOTRANSPORT`-/PauseMission-Handoffs angefordert werden.
-
-## 9. Zielbild
-
-Aktuelles Zielbild:
-
-```text
-CampaignState Air-AMMO demand/reservation
--> Jalalabad CH-47 physical asset
--> MOOSE OPSTRANSPORT
--> FLIGHTGROUP:AddOpsTransport()
--> OPSTRANSPORT:AddPathTransport(configured FlightPath)
--> external physical slingload representation
--> Wright physical delivery
--> OPSTRANSPORT Delivered
--> configured reverse/recovery path as supported by the verified MOOSE design
--> Jalalabad landing
--> AIRWING/LEGION recovery
--> idempotent CampaignState settlement
-```
-
-Noch nicht behauptet werden darf:
-
-```text
-external slingload under OPSTRANSPORT is already implemented: NO
-external slingload under OPSTRANSPORT is DCS validated: NO
-exact AddPathTransport integration for the current pinned MOOSE stand is proven: PENDING_SOURCE_AND_DEMO_REVIEW
-```
-
-## 10. Acceptance-Grenze
-
-Vor dem nächsten DCS-Lauf müssen mindestens statisch/offline nachgewiesen sein:
-
-```text
-no active Stage 3 target code calls AUFTRAG:NewCARGOTRANSPORT()
-no active Stage 3 target code uses PauseMission/TaskDone as slingload route handoff
-no active Stage 3 target code re-injects CargoTransportation as lifecycle bridge
-OPSTRANSPORT carrier binding uses verified public MOOSE API
-AddPathTransport use matches pinned MOOSE source and official demo semantics
-configured FlightPath selection remains logical-name based, not hard-coded to R500
-```
-
-Erst danach darf ein neuer DCS-Lauf geplant werden.
+Erst ein realer Lauf mit vollständiger Provenienz darf als `VALIDATED` dokumentiert werden.
