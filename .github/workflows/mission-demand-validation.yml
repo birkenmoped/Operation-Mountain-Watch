@@ -12,6 +12,7 @@ on:
       - "scripts/ground/OMW_FobAttackFunctionalArtyDispatchAdapter.lua"
       - "scripts/air-operations/OMW_FobAttackCasDispatchAdapter.lua"
       - "scripts/air-operations/OMW_HelicopterFlightPathCorridor.lua"
+      - "scripts/air-operations/OMW_OpsTransportCorridorAdapter.lua"
       - "scripts/air-operations/OMW_SlingloadCorridorHandoff.lua"
       - "scripts/logistics/OMW_GroundInitialStock.lua"
       - "mission/tests/fob-attack-support-demand/src/*.lua"
@@ -65,6 +66,7 @@ jobs:
         shell: bash
         run: |
           luac5.4 -p scripts/ground/OMW_FobAttackFunctionalArtyDispatchAdapter.lua
+          luac5.4 -p scripts/air-operations/OMW_OpsTransportCorridorAdapter.lua
           luac5.4 -p mission/tests/stage3-honaker-wright-full-response/src/01-honaker-wright-full-response-acceptance.lua
 
       - name: Check focused Stage 3 CAS resupply acceptance syntax
