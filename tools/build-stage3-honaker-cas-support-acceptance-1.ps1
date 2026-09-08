@@ -86,7 +86,6 @@ $combined += $acceptanceSource
 $required = @(
   'AUFTRAG:NewPATROLZONE',
   'SetEngageDetected',
-  'SetDetection(true)',
   'GetDetectedGroups',
   'IsCoordinateInZone',
   'Get3DDistance',
