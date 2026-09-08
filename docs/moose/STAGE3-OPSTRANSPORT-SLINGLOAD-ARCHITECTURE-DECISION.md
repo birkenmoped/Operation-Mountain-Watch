@@ -2,6 +2,7 @@
 document_id: OMW-MOOSE-STAGE3-OPSTRANSPORT-SLINGLOAD-ARCHITECTURE-DECISION
 status: PLANNED
 document_class: OWNER_DECISION_RECORD
+owning_policy: OMW-GOV-001
 authoritative_for:
   - branch-local Stage 3 CH-47 Air-AMMO transport architecture
   - suspension of external slingload development
