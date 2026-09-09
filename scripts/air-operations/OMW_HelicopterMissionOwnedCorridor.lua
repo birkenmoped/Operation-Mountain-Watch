@@ -14,7 +14,7 @@
 local Adapter = {}
 
 local TAG = "[OMW][HelicopterMissionOwnedCorridor]"
-Adapter.SchemaVersion = "OMW-HELICOPTER-MISSION-OWNED-CORRIDOR-5"
+Adapter.SchemaVersion = "OMW-HELICOPTER-MISSION-OWNED-CORRIDOR-6"
 
 local function fail(message)
   error(TAG .. " " .. tostring(message), 2)
@@ -119,13 +119,14 @@ local function installOnce(flightGroup, binding)
   local outboundProfiles, returnProfiles = {}, {}
   local outboundUids, returnUids = {}, {}
   local defaultAltitudeFtAgl = binding.defaultAltitudeFtAgl
+  local speedKts = binding.speedKts
 
   local afterUid = ingressUid
   for index = 2, #resolved.outbound do
     local coordinate = resolved.outbound[index]
     local segmentIndex = resolved.outboundSegmentIndexes and resolved.outboundSegmentIndexes[index] or 1
     local profile = profileFor(resolved, segmentIndex, defaultAltitudeFtAgl)
-    local waypoint = flightGroup:AddWaypoint(coordinate, nil, afterUid, profile.altitudeFtAgl, false)
+    local waypoint = flightGroup:AddWaypoint(coordinate, speedKts, afterUid, profile.altitudeFtAgl, false)
     waypoint.missionUID = mission.auftragsnummer
     outboundUids[#outboundUids + 1] = waypoint.uid
     outboundProfiles[#outboundProfiles + 1] = {
@@ -134,6 +135,7 @@ local function installOnce(flightGroup, binding)
       segmentIndex = segmentIndex,
       pathlineName = pathlineFor(resolved, segmentIndex),
       altitudeFtAgl = profile.altitudeFtAgl,
+      speedKts = speedKts,
       altType = "RADIO",
     }
     afterUid = waypoint.uid
@@ -144,7 +146,7 @@ local function installOnce(flightGroup, binding)
     local coordinate = resolved.returnRoute[index]
     local segmentIndex = resolved.returnSegmentIndexes and resolved.returnSegmentIndexes[index] or 1
     local profile = profileFor(resolved, segmentIndex, defaultAltitudeFtAgl)
-    local waypoint = flightGroup:AddWaypoint(coordinate, nil, afterUid, profile.altitudeFtAgl, false)
+    local waypoint = flightGroup:AddWaypoint(coordinate, speedKts, afterUid, profile.altitudeFtAgl, false)
     returnUids[#returnUids + 1] = waypoint.uid
     returnProfiles[#returnProfiles + 1] = {
       uid = waypoint.uid,
@@ -152,6 +154,7 @@ local function installOnce(flightGroup, binding)
       segmentIndex = segmentIndex,
       pathlineName = pathlineFor(resolved, segmentIndex),
       altitudeFtAgl = profile.altitudeFtAgl,
+      speedKts = speedKts,
       altType = "RADIO",
     }
     afterUid = waypoint.uid
@@ -217,11 +220,13 @@ function Adapter.Bind(flightGroup, mission, resolved, spec)
   requireFunction(flightGroup, "GetWaypointUIDFromIndex", "FLIGHTGROUP")
   requireFunction(flightGroup, "AddWaypoint", "FLIGHTGROUP")
   requireFunction(flightGroup, "UpdateRoute", "FLIGHTGROUP")
+  if type(spec.speedKts) ~= "number" or spec.speedKts <= 0 then fail("spec.speedKts must be a positive number") end
 
   local binding = {
     mission = mission,
     resolved = resolved,
     defaultAltitudeFtAgl = spec.defaultAltitudeFtAgl or 500,
+    speedKts = spec.speedKts,
     onInstalled = spec.onInstalled,
     onFailed = spec.onFailed,
     attempts = 1,
