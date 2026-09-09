@@ -35,13 +35,15 @@ local QRF_PERSONNEL = 5
 local PERSONNEL_FLOOR = 80
 local QRF_TACTICAL_RADIUS_NM = 5
 local QRF_ENGAGE_RANGE_NM = 5
+local C2_FIRE_OBSERVATION_RADIUS_NM = 5
 local FIRE_SHELLS = 4
 local FIRE_TARGET_ACQUIRE_DELAY_SEC = 15
 local ARTY_WAIT_FOR_SHOT_SEC = 300
 local CAS_TACTICAL_RADIUS_NM = 5
 local CAS_ENGAGE_RANGE_NM = 5
 local CAS_COMBAT_HEIGHT_FT_AGL = 2500
-local CAS_SPEED_KTS = 120
+local CAS_SPEED_KTS = 125
+local CAS_NO_CONTACT_STABLE_SEC = 30
 local CH47_TRANSIT_SPEED_KTS = 125
 local CH47_LEAD_TURN_DISTANCE_M = 250
 local PRIMARY_ALTITUDE_FT_AGL = 500
@@ -91,12 +93,14 @@ local state = {
   brigade=nil, guardCoord=nil, guardPathline=nil, guardPlatoon=nil, guardMission=nil, guardArmy=nil, guardGroup=nil, guardPatrolStarted=false,
   qrfPlatoon=nil, qrfEntries={}, qrfDeployed=false, qrfEngaged=false, qrfTacticalZone=nil,
   qrfRecoveryRequested=false, qrfReturned=false,
+  c2FireObservationZone=nil, c2FireObservationOpsZone=nil, c2FireObservationStarted=false,
   threat=nil, threatStarted=false, threatStopped=false, perimeterClear=false, incident=nil, attackIncident=nil, attackIncidentClosed=false,
   honakerNoKnownAttackers=false,
   casAdapter=nil, casDemand=nil, casMission=nil, casFlight=nil, casExecuting=false, casCorridor=false, casFired=false, casEngaged=false,
   casShotObserver=nil, casTacticalZone=nil, casAltitudeFtAsl=nil, casResolved=nil, casLifecycle=nil, casClosed=false,
-  casSupportRequirementActive=false, casOnStation=false, casDetectedEligibleCount=nil, casDetectedEligibleNames={},
-  casContactReported=false, casNoContactReported=false, casReleaseRequested=false, casReleaseReason=nil,
+  casSupportRequirementActive=false, casOnStation=false, casOnStationAt=nil, casDetectedEligibleCount=nil, casDetectedEligibleNames={},
+  casContactReported=false, casNoContactReported=false, casNoContactSince=nil, casLastContactAt=nil,
+  casReleaseRequested=false, casReleaseReason=nil, casRecoveryRequested=false, casHomeLanded=false, casAssetReturned=false,
   casFailed=false, casFailureReason=nil,
   battery=nil, arty=nil, fireAdapter=nil, fireDemand=nil, fireStarted=false, fireComplete=false,
   fireTargetCount=0, fireTargetCompleteCount=0, fireLastSourceGroupName=nil,
@@ -160,6 +164,11 @@ local function redGroups(opsZone)
   end)
   return result
 end
+local function c2FireObservationGroups()
+  if not state.c2FireObservationOpsZone then return {} end
+  return redGroups(state.c2FireObservationOpsZone)
+end
+
 local function incidentGroups()
   local result = {}
   if not state.attackIncident then return result end
@@ -244,7 +253,9 @@ local function releaseCasBySupportedElement(reason)
   if not state.casSupportRequirementActive then return false end
   if not state.honakerNoKnownAttackers then return false end
   if not state.casOnStation or not state.casNoContactReported then return false end
+  if not state.casNoContactSince or timer.getAbsTime() - state.casNoContactSince < CAS_NO_CONTACT_STABLE_SEC then return false end
 
+  state.casRecoveryRequested=true
   local _,closed,why=CasPatrolClosure.Complete({
     adapter=state.casAdapter,
     registry=registry,
@@ -262,7 +273,8 @@ local function releaseCasBySupportedElement(reason)
   state.casReleaseRequested=true
   state.casReleaseReason=reason
   state.casClosed=true
-  msg("CAS","Honaker/control explicitly released CAS after HONAKER_NO_KNOWN_ATTACKERS + CAS_NO_CONTACT; recovery route remains MOOSE/OMW-owned",15)
+  requestQrfRecovery()
+  msg("CAS","Honaker/control explicitly released CAS after stable own no-contact; MOOSE PATROLZONE cancellation proceeds on the installed reverse corridor",15)
   return true
 end
 
@@ -270,9 +282,11 @@ local function updateCasSupportState()
   if state.failed or state.casFailed or state.casClosed or not state.casExecuting or not state.casFlight or not state.casTacticalZone then return end
   local flightCoord=state.casFlight:GetCoordinate()
   if not flightCoord then return end
+  local now=timer.getAbsTime()
   local physicallyInside=state.casTacticalZone:IsCoordinateInZone(flightCoord)
   if physicallyInside and not state.casOnStation then
     state.casOnStation=true
+    state.casOnStationAt=now
     msg("CAS","AH-64D reports ON STATION; CAS own MOOSE/DCS detection picture now participates in support-status reconciliation",12)
   end
   if not state.casOnStation then return end
@@ -287,23 +301,29 @@ local function updateCasSupportState()
     if count>0 then
       state.casContactReported=true
       state.casNoContactReported=false
+      state.casNoContactSince=nil
+      state.casLastContactAt=now
       log(string.format("CAS_SENSOR_REPORT onStation=true detectedTotal=%d eligible=%d names=%s source=FLIGHTGROUP_GetDetectedGroups",detectedTotal,count,table.concat(names,",")))
       msg("CAS",string.format("AH-64D reports %d relevant detected RED ground group(s) in current task envelope; CAS requirement remains ACTIVE",count),10)
     else
-      state.casNoContactReported=true
-      log(string.format("CAS_SENSOR_REPORT onStation=true detectedTotal=%d eligible=0 names= source=FLIGHTGROUP_GetDetectedGroups",detectedTotal))
-      msg("CAS","AH-64D reports NO CONTACT in current task envelope; this report alone does not end CAS",10)
+      state.casNoContactSince=now
+      log(string.format("CAS_SENSOR_REPORT onStation=true detectedTotal=%d eligible=0 names= source=FLIGHTGROUP_GetDetectedGroups qualification=PENDING_%ds",detectedTotal,CAS_NO_CONTACT_STABLE_SEC))
+      msg("CAS","AH-64D reports NO CONTACT in current task envelope; qualifying this own sensor picture before any release",10)
     end
+  end
+
+  if count==0 and state.casNoContactSince and not state.casNoContactReported and now-state.casNoContactSince>=CAS_NO_CONTACT_STABLE_SEC then
+    state.casNoContactReported=true
+    log(string.format("CAS_NO_CONTACT_REPORTED onStation=true stableSeconds=%d source=FLIGHTGROUP_GetDetectedGroups",CAS_NO_CONTACT_STABLE_SEC))
+    msg("CAS","AH-64D own no-contact report is stable; supported element may now release CAS if its local requirement is also clear",10)
   end
 
   if state.honakerNoKnownAttackers and count==0 and state.casNoContactReported then
     releaseCasBySupportedElement("SUPPORTED_ELEMENT_RELEASE_NO_KNOWN_ATTACKERS_CAS_NO_CONTACT")
   end
 end
-
 local function closeAttackIncidentIfClear()
   if state.attackIncidentClosed then
-    requestQrfRecovery()
     updateCasSupportState()
     return true
   end
@@ -320,7 +340,6 @@ local function closeAttackIncidentIfClear()
     state.threatStopped=true
     msg("HONAKER","Local 1000-m OPSZONE alarm scan stopped after local incident closure; CAS lifecycle remains independent",10)
   end
-  requestQrfRecovery()
   updateCasSupportState()
   return true
 end
@@ -329,8 +348,8 @@ local function logCorridorProfiles(kind, installed)
   if not installed or not installed.waypointProfiles then return end
   for direction, profiles in pairs(installed.waypointProfiles) do
     for index, profile in ipairs(profiles) do
-      log(string.format("%s_ROUTE_PROFILE direction=%s index=%d uid=%s pathline=%s altitudeFtAgl=%s altType=%s",
-        tostring(kind), tostring(direction), index, tostring(profile.uid), tostring(profile.pathlineName), tostring(profile.altitudeFtAgl), tostring(profile.altType)))
+      log(string.format("%s_ROUTE_PROFILE direction=%s index=%d uid=%s pathline=%s altitudeFtAgl=%s speedKts=%s altType=%s",
+        tostring(kind), tostring(direction), index, tostring(profile.uid), tostring(profile.pathlineName), tostring(profile.altitudeFtAgl), tostring(profile.speedKts), tostring(profile.altType)))
     end
   end
   for uid, transition in pairs(installed.profileTransitions or {}) do
@@ -439,6 +458,7 @@ end
 local function bindCasMissionOwnedCorridor(flight, mission)
   local installed, ok, reason = MissionOwnedCorridor.Bind(flight, mission, state.casResolved, {
     defaultAltitudeFtAgl=PRIMARY_ALTITUDE_FT_AGL,
+    speedKts=CAS_SPEED_KTS,
     onInstalled=function(result)
       state.casCorridor = true
       logCorridorProfiles("CAS", result)
@@ -471,18 +491,31 @@ local function installAirObserver()
     if previousFlight then previousFlight(self, From, Event, To, FlightGroup, Mission) end
     if Mission ~= state.casMission then return end
     state.casFlight = FlightGroup
+    if type(FlightGroup.SetDefaultSpeed)=="function" then FlightGroup:SetDefaultSpeed(CAS_SPEED_KTS) end
     installCasShotObserver()
 
     local previousEngage=FlightGroup.OnAfterEngageTarget
     function FlightGroup:OnAfterEngageTarget(F,E,T,Target,Speed,Formation)
       if previousEngage then previousEngage(self,F,E,T,Target,Speed,Formation) end
       state.casEngaged=true
+      state.casNoContactReported=false
+      state.casNoContactSince=nil
+      state.casLastContactAt=timer.getAbsTime()
       local targetName=Target and type(Target.GetName)=="function" and Target:GetName() or "unknown"
       log("CAS_ENGAGE_EVENT target="..tostring(targetName).." source=MOOSE_FLIGHTGROUP_OnAfterEngageTarget")
       msg("CAS","MOOSE FLIGHTGROUP engaging detected target "..tostring(targetName),10)
     end
 
-    msg("CAS", "Jalalabad AH-64D assigned to PATROLZONE + SetEngageDetected; CAS own detection telemetry armed", 12)
+    local previousLanded=FlightGroup.OnAfterLanded
+    function FlightGroup:OnAfterLanded(F,E,T,Airbase)
+      if previousLanded then previousLanded(self,F,E,T,Airbase) end
+      if state.casRecoveryRequested and Airbase and Airbase:GetName()==state.airwing:GetAirbaseName() then
+        state.casHomeLanded=true
+        msg("CAS","AH-64D landed at Jalalabad after controlled PATROLZONE recovery corridor",10)
+      end
+    end
+
+    msg("CAS", string.format("Jalalabad AH-64D assigned to PATROLZONE + SetEngageDetected; explicit transit speed=%d kt; CAS own detection telemetry armed",CAS_SPEED_KTS), 12)
     bindCasMissionOwnedCorridor(FlightGroup, Mission)
   end
 
@@ -526,6 +559,10 @@ local function installAirObserver()
   local oldReturn = state.airwing.OnAfterLegionAssetReturned
   function state.airwing:OnAfterLegionAssetReturned(From, Event, To, Cohort, Asset)
     if oldReturn then oldReturn(self, From, Event, To, Cohort, Asset) end
+    if state.casRecoveryRequested and Asset and Asset.flightgroup==state.casFlight then
+      state.casAssetReturned=true
+      msg("CAS","AH-64D asset returned to Jalalabad AIRWING/LEGION stock after landing",10)
+    end
     if state.cargoAsset and Asset == state.cargoAsset then
       if not state.homeLanded then fail("CH47 returned to AIRWING before home landing") return end
       state.assetReturned = true
@@ -724,8 +761,10 @@ local function fireTargetTelemetry(target)
 end
 
 local function selectNextFireTarget()
-  local targets = incidentGroups()
-  if #targets == 0 then return nil end
+  if state.casOnStation then return nil,"CAS_ON_STATION_ARTY_DECONFLICTION" end
+  local targets = c2FireObservationGroups()
+  if #targets == 0 then targets = incidentGroups() end
+  if #targets == 0 then return nil,"NO_C2_OBSERVED_RED_GROUND_GROUP" end
   if not state.fireLastSourceGroupName then return targets[1] end
   for index, target in ipairs(targets) do
     if target:GetName() == state.fireLastSourceGroupName then return targets[(index % #targets) + 1] end
@@ -749,10 +788,13 @@ local function queueNextFireMission(demandId)
     msg("FIRE SUPPORT",string.format("Wright physical ammo %d below next %d-round mission; ending fire cycle for rearm",ammo,FIRE_SHELLS),12)
     return false
   end
-  local target = selectNextFireTarget()
+  local target,targetReason = selectNextFireTarget()
   if not target then
-    closeAttackIncidentIfClear()
-    msg("FIRE SUPPORT","No living known RED attack participant remains; ending current fire cycle. QRF recovery follows local incident; CAS remains support-status owned.",10)
+    if targetReason=="CAS_ON_STATION_ARTY_DECONFLICTION" then
+      msg("FIRE SUPPORT","C2 fire hold: CAS is ON STATION. No new ARTY round is queued while rotary CAS occupies the tactical area.",10)
+    else
+      msg("FIRE SUPPORT","No C2-observed RED ground group remains for this fire cycle; local rearm/reorder path may proceed.",10)
+    end
     return false
   end
   local nextNumber = state.fireTargetCount + 1
@@ -820,7 +862,7 @@ local function setupFireSupport()
       local targetName = target and target.name or "unknown"
       local metadata = state.fireAdapter:GetTargetMetadata(targetName)
       local sourceName = metadata and metadata.sourceGroupName or targetName
-      msg("FIRE SUPPORT",string.format("Fire mission %d complete: %s ammo %s -> %s; reacquiring living attack-incident participants",
+      msg("FIRE SUPPORT",string.format("Fire mission %d complete: %s ammo %s -> %s; reacquiring C2-observed RED ground groups",
         state.fireTargetCompleteCount,sourceName,tostring(state.physicalAmmoBeforeByTarget[targetName]),tostring(state.physicalAmmoAfterByTarget[targetName])),12)
       queueNextFireMission(demandId)
     end,
@@ -876,7 +918,7 @@ end
 
 local function dispatchFire(incident)
   local target = selectNextFireTarget()
-  if not target then fail("no living known RED attack participant for Wright fire support") return end
+  if not target then fail("no C2-observed RED ground group available for Wright fire support") return end
   if not reportFireMission(target,1) then return end
   local p = target:GetCoordinate():GetVec3()
   local demand,created,reason = FirePolicy.CreateDemand(MissionDemand,registry,incident,{
@@ -886,7 +928,7 @@ local function dispatchFire(incident)
   state.fireDemand=demand
   state.fireTargetCount=1
   state.fireLastSourceGroupName=target:GetName()
-  msg("FIRE SUPPORT","Honaker requests immediate fire support; local mortar unavailable; incident-participant retarget cycle armed",12)
+  msg("FIRE SUPPORT","Honaker requests immediate fire support; local mortar unavailable; C2-observed retarget cycle armed",12)
   msg("FIRE SUPPORT","Wright L118 selected; one current MOOSE coordinate Fire At Point mission queued",10)
   local targetName,dispatched,dispatchReason=state.fireAdapter:Dispatch(demand,target)
   if dispatched~=true then fail("Wright ARTY dispatch failed: "..tostring(dispatchReason)) return end
@@ -947,7 +989,6 @@ local function setupDefenceAndThreat()
           msg("QRF",string.format("Honaker mixed QRF returned to camp/Warehouse; personnel survivors=%d casualties=%d reservationSettled=%s",
             survivors,settlement and settlement.casualties or -1,tostring(settled==true)),12)
         end
-        if state.attackIncidentClosed and not entry.recoveryRequested then requestQrfRecovery() end
       end
     end
   end
@@ -960,6 +1001,25 @@ local function setupDefenceAndThreat()
       state.guardMission:SetName("OMW_STAGE3_HONAKER_GUARD")
       state.guardMission:AssignCohort(state.guardPlatoon)
       state.brigade:AddMission(state.guardMission)
+
+      state.c2FireObservationZone=ZONE_RADIUS:New("OMW_C2_FIRE_OBSERVATION_BLUE_GROUND_COP_HONAKER_STAGE3",state.guardCoord:GetVec2(),UTILS.NMToMeters(C2_FIRE_OBSERVATION_RADIUS_NM))
+      state.c2FireObservationOpsZone=OPSZONE:New(state.c2FireObservationZone,coalition.side.BLUE)
+      state.c2FireObservationOpsZone:SetObjectCategories({Object.Category.UNIT})
+      state.c2FireObservationOpsZone:SetUnitCategories({Unit.Category.GROUND_UNIT})
+      state.c2FireObservationOpsZone:SetCaptureThreatlevel(0)
+      state.c2FireObservationOpsZone:SetCaptureNunits(1)
+      state.c2FireObservationOpsZone:SetDrawZone(false)
+      state.c2FireObservationOpsZone:SetMarkZone(false)
+      state.c2FireObservationOpsZone.UpdateSeconds=5
+      function state.c2FireObservationOpsZone:OnAfterEvaluated(From,Event,To)
+        local groups=c2FireObservationGroups()
+        local names={}
+        for _,group in ipairs(groups) do names[#names+1]=group:GetName() end
+        log(string.format("C2_FIRE_OBSERVATION source=OPSZONE radiusNm=%d observedRedGround=%d names=%s authority=QRF_ARTY_ONLY",C2_FIRE_OBSERVATION_RADIUS_NM,#groups,table.concat(names,",")))
+      end
+      state.c2FireObservationOpsZone:Start()
+      state.c2FireObservationStarted=true
+      msg("C2",string.format("MOOSE 5-NM C2 fire observation started for QRF/ARTY only; it has no CAS release or termination authority",C2_FIRE_OBSERVATION_RADIUS_NM),12)
 
       state.threat=ThreatAdapter.New({
         missionDemand=MissionDemand,
@@ -1044,7 +1104,8 @@ local function finish()
   closeAttackIncidentIfClear()
   updateCasSupportState()
   local validCasExecution=state.casFired or state.casNoContactReported
-  local casTerminal = state.casFailed or (state.casExecuting and state.casCorridor and state.casClosed and validCasExecution)
+  local casTerminal = state.casFailed or (state.casExecuting and state.casCorridor and state.casClosed and validCasExecution
+    and state.casRecoveryRequested and state.casHomeLanded and state.casAssetReturned)
   if not (state.guardPatrolStarted and state.threatStarted and state.threatStopped and state.attackIncidentClosed and state.qrfDeployed and state.qrfReturned and casTerminal
       and state.fireStarted and state.fireComplete and state.rearmComplete and state.supportReturned and state.resupply
       and state.inTransit and state.delivered and state.airCorridor and state.cargoReturnInstalled and state.homeLanded and state.assetReturned) then return end
