@@ -25,7 +25,7 @@ Historische Fehltests bis einschließlich der externen Slingload-/CARGOTRANSPORT
 Aktueller Builderstand:
 
 ```text
-STAGE3-HONAKER-WRIGHT-FULL-RESPONSE-ACCEPTANCE-1-21
+STAGE3-HONAKER-WRIGHT-FULL-RESPONSE-ACCEPTANCE-1-22
 ```
 
 Owner-Entscheidungen vom 08.09.2026:
@@ -455,3 +455,52 @@ Jalalabad final strategic AMMO = 85
 ```
 
 Nur ein realer Lauf mit vollständiger Branch-/Commit-/Bundle-/Mission-/DCS-/MOOSE-Provenienz darf den Status ändern.
+
+
+## 14. Build 1-22 – regressionskorrektur nach realem 1-21-Lauf
+
+Der reale Lauf mit Build 1-21 ist **kein PASS**. Seine beobachtete Fehlerevidenz ist verbindlich für die Korrektur:
+
+```text
+CAS: nach vollständiger Bekämpfung kreiste die AH-64 weiter bis Bingo/FuelLow;
+anschließend erfolgte ein direkter statt kontrollierter Rückflug.
+Route: Waypoint UID=3 erschien erneut als eigener, ungeeigneter Gebirgspunkt.
+ARTY: drei 4-Schuss-Missionen wurden physisch ausgelöst (300 -> 296 -> 292 -> 288);
+eine wiederholte Zielzuordnung und der schwankende Momentwert 288 -> 291 lösten
+fälschlich PHYSICAL_AMMO_UNCHANGED aus. Der daraus entstandene globale FAIL
+unterband die weitere CAS-Lifecycle-Auswertung und damit den Restock-Pfad.
+```
+
+Build 1-22 stellt den bereits DCS-abgenommenen Stage-2B-Vertrag wieder her:
+
+```text
+kein SetMissionIngressCoord()/SetMissionEgressCoord() für diesen CAS-Auftrag
+bestehender Pre-Mission-Waypoint
+-> owner-authored OMW_FlightPath/WEST outbound Waypoints
+-> PATROLZONE mission waypoint
+-> owner-authored reverse waypoints
+-> normaler MOOSE RTB/Landing
+route readiness ausschließlich über FLIGHTGROUP:OnAfterUpdateRoute
+```
+
+Die ARTY-Abnahme zählt nicht mehr eine Momentaufnahme aus `ARTY:GetAmmo()` als
+einzigen Schussbeweis. Der gepinnte MOOSE-ARTY-Handler verarbeitet `EVENTS.Shot`
+für die Batterie; mindestens ein zielkorrelierter `WRIGHT_ARTY_EVENTS_SHOT`
+ist die physische Fire-Evidence. Ammo-Snapshots bleiben Telemetrie. Bereits
+eingeplante C2-Zielgruppen werden nicht erneut eingeplant; neue Feueraufträge
+bleiben ab physischem CAS On Station gesperrt.
+
+Ein Acceptance-FAIL stoppt zudem keine unabhängige physische CAS-Recovery-
+Beobachtung mehr. Er bleibt sichtbar und verhindert PASS, aber die
+supported-element-gesteuerte CAS-Freigabe kann ihre Reverse-Route und
+Jalalabad-Rückkehr weiterhin ausführen.
+
+Vor dem nächsten DCS-Lauf zusätzlich prüfen:
+
+```text
+BuilderVersion = STAGE3-HONAKER-WRIGHT-FULL-RESPONSE-ACCEPTANCE-1-22
+kein MISSION_OWNED_CORRIDOR-6 Marker im Bundle
+CAS_CORRIDOR_PENDING_MOOSE_ROUTE_CALLBACK oder Stage-2B-Korridorinstallation sichtbar
+WRIGHT_ARTY_EVENTS_SHOT sichtbar, sofern Wright feuert
+kein wiederholter C2-Quellgruppenname innerhalb einer ARTY-Fire-Cycle
+```
