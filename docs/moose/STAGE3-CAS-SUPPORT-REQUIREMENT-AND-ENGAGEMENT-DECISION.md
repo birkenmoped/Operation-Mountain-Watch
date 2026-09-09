@@ -253,7 +253,7 @@ later remaining-group behavior after local incident changes: NOT IN SCOPE
 
 Dieser Lauf bestätigt damit **Engagement-Funktion**, aber weder Survivability noch das Zusammenspiel mit der vollständigen Stage-3-Reaktionskette.
 
-Der nächste notwendige Test ist deshalb der korrigierte Full-Response-Build 1-21.
+Der nächste notwendige Test war deshalb der korrigierte Full-Response-Build 1-21.
 
 ## 12. Full-Response Build 1-21
 
@@ -302,3 +302,34 @@ builder hash == independent local hash
 ```
 
 `VALIDATED` bleibt bis zu einem neuen realen Full-Response-DCS-Lauf false.
+
+
+## 14. Regressionskorrektur Build 1-22
+
+Der reale Full-Response-Lauf Build 1-21 hat den in Stage 2B abgenommenen
+Routenvertrag erneut verletzt: Ein selbst gesetzter
+`SetMissionIngressCoord(resolved.outbound[1])` erzeugte einen zusätzlichen
+nativen Waypoint (im beobachteten Lauf UID=3) außerhalb der abgenommenen
+Talroute. Ein Timer-Retry ersetzte zudem den verbindlichen
+`FLIGHTGROUP:OnAfterUpdateRoute`-Readiness-Pfad.
+
+Für Stage 3 gilt daher wieder unmittelbar der bindende Stage-2B-Vertrag
+`FOB-ATTACK-CAS-OUTBOUND-RETURN-ROUTE-STAGE-2B.md` und
+`FOB-ATTACK-CAS-ROUTE-READY-STAGE-2B.md`:
+
+```text
+keine künstliche AUFTRAG ingress/egress-Koordinate
+mission waypoint UID required; egress UID optional
+bestehender Pre-Mission-Waypoint -> FlightPath/WEST -> PATROLZONE
+PATROLZONE -> reverse FlightPath/WEST -> normal MOOSE RTB
+route readiness = FLIGHTGROUP:OnAfterUpdateRoute, kein timer-only guess
+```
+
+Dies ändert weder die CAS-Entscheidungsautorität noch den Sensorvertrag:
+Nur die stabile eigene `FLIGHTGROUP:GetDetectedGroups()`-Lage zusammen mit
+`HONAKER_NO_KNOWN_ATTACKERS` erlaubt die normale supported-element-Freigabe.
+Ein globaler Test-FAIL darf diese physische Reconciliation und Rückkehr nicht
+mehr abbrechen, darf aber niemals zu PASS führen.
+
+Build 1-22 ist bis zu einem neuen vollständigen realen DCS-Lauf **nicht
+validiert**.
