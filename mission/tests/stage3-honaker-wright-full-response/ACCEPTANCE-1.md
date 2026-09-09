@@ -14,6 +14,8 @@ source_commit: GIT_HISTORY
 validated_in_dcs: false
 ---
 
+Verbindlicher CAS-Geometrie-/MOOSE-Semantikvertrag: [`OMW-MOOSE-STAGE3-CAS-TACTICAL-CORRIDOR`](../../../docs/moose/STAGE3-CAS-TACTICAL-CORRIDOR-DECISION.md). Ein Build oder DCS-Lauf darf dessen Regression-Gates nicht umgehen.
+
 # Stage 3 Acceptance 1 – Honaker -> Wright -> Jalalabad Air-AMMO
 
 ## 1. Status
