@@ -684,3 +684,44 @@ Governance
 ```
 
 Kein CODEX. Keine erfundenen Commits, Hashes oder DCS-Ergebnisse. Kein weiterer External-Slingload-Versuch ohne neue ausdrückliche Owner-Entscheidung.
+
+
+## 2026-09-09 – reale Build-1-21-Regression und Build-1-22-Korrektur
+
+Der reale DCS-Lauf mit Build 1-21 ist kein PASS und ersetzt keine frühere
+Stage-2B-Routenabnahme. Beobachtet wurden:
+
+```text
+AH-64 nach Feindbekämpfung weiterhin im PATROLZONE-Kreis bis Bingo/FuelLow
+-> nativer direkter Rückflug statt kontrollierter Reverse-Corridor-Rückkehr
+zusätzlicher/ungeeigneter UID=3 Wegpunkt im Gebirge
+Wright: drei bestätigte Vier-Schuss-Missionen (300 -> 296 -> 292 -> 288)
+-> wiederholtes Ziel + ARTY:GetAmmo()-Momentwert 288 -> 291
+-> falsches PHYSICAL_AMMO_UNCHANGED / globaler FAIL
+-> kein M1083/Reorder/CH-47-Resupply-Abschluss
+```
+
+Korrektur wird als Build 1-22 geführt:
+
+```text
+CAS:
+- verbindlichen Stage-2B-Korridor wiederverwenden:
+  existing pre-mission waypoint -> inserted FlightPath/WEST -> mission -> reverse -> normal MOOSE RTB
+- keine SetMissionIngressCoord/SetMissionEgressCoord für diesen CAS-Auftrag
+- readiness ausschließlich mit FLIGHTGROUP:OnAfterUpdateRoute, kein timer-only retry
+- globale Assertion-Fails beenden nicht mehr die unabhängige CAS-Reconciliation/recovery;
+  sie verhindern weiterhin PASS.
+
+ARTY:
+- nur frische, noch nicht eingeplante C2-Quellgruppen als Folgeziel
+- physischer Nachweis über den im gepinnten ARTY vorhandenen EVENTS.Shot-Handler,
+  zielkorreliert als WRIGHT_ARTY_EVENTS_SHOT
+- ARTY:GetAmmo()-Momentwerte nur Telemetrie, kein alleiniger Negativbeweis
+- CAS on station sperrt weiterhin ausschließlich neue ARTY-Fire-Missionen.
+```
+
+Noch nicht DCS-validiert:
+- sichtbare Stage-2B-Hin-/Rückroute ohne UID-3-Gebirgseinstieg
+- supported-element release nach stabilem eigenen No-Contact
+- normales Rückkehrverhalten vor FuelLow
+- ARTY -> M1083 -> strategischer Reorder -> CH-47 OPSTRANSPORT-Abschluss.
