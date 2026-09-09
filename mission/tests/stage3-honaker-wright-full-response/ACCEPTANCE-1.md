@@ -504,3 +504,32 @@ CAS_CORRIDOR_PENDING_MOOSE_ROUTE_CALLBACK oder Stage-2B-Korridorinstallation sic
 WRIGHT_ARTY_EVENTS_SHOT sichtbar, sofern Wright feuert
 kein wiederholter C2-Quellgruppenname innerhalb einer ARTY-Fire-Cycle
 ```
+
+
+## 15. Build 1-22 gesperrt – fehlende verbindliche taktische CAS-Geometrie
+
+**Status: NICHT ZU BAUEN ODER IN DCS ZU TESTEN.**
+
+Die im Build-1-22-Source vorgenommene Rückkehr zum allgemeinen Stage-2B-
+Korridor erfüllt nicht die für Honaker vereinbarte owner-authored taktische
+Geometrie. Sie wird deshalb nicht als Korrektur akzeptiert.
+
+Der verbindliche Zielvertrag lautet:
+
+```text
+Jalalabad -> R500 -> WEST
+-> expliziter CAS_INGRESS (Abzweig von WEST, ca. 3–4 NM vor Honaker)
+-> expliziter CAS_MISSION_POINT / BP
+-> expliziter CAS_EGRESS
+-> WEST reverse -> R500 reverse -> Jalalabad
+```
+
+Alle drei Punkte müssen als Mission-Owner-Entscheidung mit Position, Höhe,
+Achse sowie Bezug zu Honaker und WEST vorliegen. Sie werden nicht aus
+`resolved.outbound[1]`, aus einer PATHLINE-Nähe oder durch MOOSE abgeleitet.
+Ohne diese Geometrie darf kein Adapter, kein Builder und kein DCS-Test einen
+impliziten Ersatzpunkt erzeugen.
+
+Die nächste Implementierung hat MOOSE ausschließlich für AUFTRAG, FLIGHTGROUP,
+Tasking, EngageDetected und AIRWING-Lifecycle zu verwenden. Die Geometrie
+bleibt OMW-owned.
