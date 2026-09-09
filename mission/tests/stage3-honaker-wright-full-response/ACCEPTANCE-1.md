@@ -25,7 +25,7 @@ Historische Fehltests bis einschließlich der externen Slingload-/CARGOTRANSPORT
 Aktueller Builderstand:
 
 ```text
-STAGE3-HONAKER-WRIGHT-FULL-RESPONSE-ACCEPTANCE-1-20
+STAGE3-HONAKER-WRIGHT-FULL-RESPONSE-ACCEPTANCE-1-21
 ```
 
 Owner-Entscheidungen vom 08.09.2026:
@@ -109,7 +109,7 @@ Weitere `OPSZONE Evaluated`-Zyklen ergänzen neu erkannte RED-Gruppen als Incide
 HONAKER_NO_KNOWN_ATTACKERS
 ```
 
-Das beendet Guard-/QRF-bezogene lokale Reaktionsketten, **aber nicht automatisch CAS**. `OPSZONE Defeated`, `attackIncidentClosed` und ein raw RED-group count besitzen keine CAS-Termination-Authority.
+Das beendet die lokale Incident, **aber weder automatisch CAS noch QRF**. QRF bleibt im bestehenden MOOSE-ONGUARD-Auftrag, bis die unterstützte Einheit CAS ausdrücklich freigibt. `OPSZONE Defeated`, `attackIncidentClosed` und ein raw RED-group count besitzen keine CAS-Termination-Authority.
 
 ## 4. Guard und QRF
 
@@ -131,7 +131,7 @@ Template: TPL_BLUE_GND_QRF_MIXED_6
 Composition: 5 infantry + 1 CHAP_MATV
 Representation: one GROUP
 Mission: AUFTRAG:NewONGUARD + SetEngageDetected
-Return: SetReturnToLegion(true), mission Cancel after local incident completion
+Return: SetReturnToLegion(true), mission Cancel erst nach expliziter supported-element/C2-Freigabe; nie allein nach lokaler Incident-Completion
 Settlement: PersonnelLedger only after ARMYGROUP:Returned
 ```
 
@@ -183,12 +183,12 @@ Honaker: HONAKER_NO_KNOWN_ATTACKERS
 AND
 CAS: physically ON STATION
 AND
-CAS own detectedgroups: NO eligible contact
+CAS own detectedgroups: NO eligible contact, stabil über 30 Sekunden
 -> SUPPORTED_ELEMENT_RELEASE_NO_KNOWN_ATTACKERS_CAS_NO_CONTACT
 -> CasPatrolClosure.Complete(... releaseSource=BLUE_GROUND_COP_HONAKER ...)
 ```
 
-Damit kann der Gesamtintegrationstest erstmals beantworten, ob die Apaches nach Wirkung von Guard/QRF/ARTY noch selbst erkannte verbleibende Gruppen weiter angreifen.
+Der erste leere Sensor-Snapshot nach On Station ist ausdrücklich keine Freigabe. Ein Engage-Event setzt eine laufende No-Contact-Qualifikation zurück. Damit prüft der Gesamtintegrationstest, ob die Apaches nach Wirkung von Guard/QRF/ARTY noch selbst erkannte verbleibende Gruppen weiter angreifen und anschließend kontrolliert zurückkehren.
 
 ### 5.2 Reale fokussierte CAS-Evidenz vom 08.09.2026
 
@@ -204,7 +204,20 @@ full-response interaction with Guard/QRF/ARTY: NOT TESTED by focused acceptance
 
 Der fokussierte Lauf ist daher ein positiver Engagement-Nachweis, aber kein Gesamtintegrations-PASS und keine Aussage über CAS-Survivability.
 
-## 6. Wright ARTY und lokaler M1083-Rearm
+## 6. C2-Beobachtung für QRF / ARTY
+
+Der Full-Response-Test erzeugt zusätzlich zur 1000-m-Alarm-OPSZONE eine eigene MOOSE-OPSZONE mit 5 NM Radius um Honaker:
+
+```text
+C2_FIRE_OBSERVATION
+-> MOOSE OPSZONE:GetScannedGroupSet()
+-> bekannte lebende RED Ground Groups
+-> QRF-/ARTY-Zielbild
+```
+
+Sie besitzt keine CAS-Release- oder CAS-Termination-Authority. Sie bleibt nach Abschluss der ersten lokalen Honaker-Incident aktiv, damit QRF und ARTY nicht allein deshalb heimkehren beziehungsweise das Feuer einstellen. Sobald CAS physisch ON STATION ist, erzeugt C2 keine neue ARTY-Fire-Mission; laufende Fire-Missionen werden nicht künstlich abgebrochen.
+
+## 7. Wright ARTY und lokaler M1083-Rearm
 
 ```text
 Wright L118 real fire
@@ -219,7 +232,7 @@ Wright L118 real fire
 
 Mindestens eine reale Fire-At-Point-Mission muss physische Munitionsabnahme zeigen.
 
-## 7. Strategischer Air-AMMO-Resupply
+## 8. Strategischer Air-AMMO-Resupply
 
 Nach Erreichen des Reorder-Schwellwerts wird genau ein strategischer RESUPPLY-Demand erzeugt. Dedupe wird semantisch geprüft:
 
@@ -246,7 +259,7 @@ Jalalabad:  85
 
 CampaignState bleibt strategische Ressourcenautorität.
 
-## 8. CH-47 Air-AMMO – interner OPSTRANSPORT-Pfad
+## 9. CH-47 Air-AMMO – interner OPSTRANSPORT-Pfad
 
 ```text
 OPSTRANSPORT:New(nil, pickup, drop)
@@ -277,7 +290,7 @@ Pickup zone: ZON_BLUE_LOG_SLG_JALALABAD_01
 Deploy zone: OMW_BLUE_LZ_WRIGHT_01
 ```
 
-## 9. Air-AMMO FlightPath, Geschwindigkeit und Lead-Turn-Profil
+## 10. Air-AMMO FlightPath, Geschwindigkeit und Lead-Turn-Profil
 
 Die primäre Route wird mit `OMW_FlightPathNameContract.lua` aus der tatsächlich konfigurierten logischen `OMW_FlightPath`-Variante bestimmt.
 
@@ -357,7 +370,7 @@ OPSTRANSPORT Delivered
 -> Jalalabad
 ```
 
-## 10. Externe Slingload-Entwicklung
+## 11. Externe Slingload-Entwicklung
 
 Bis zu einer neuen ausdrücklichen Owner-Entscheidung:
 
@@ -368,7 +381,7 @@ NO PauseMission/TaskDone slingload handoff
 NO CargoTransportation lifecycle bridge
 ```
 
-## 11. Offline-/Build-Gate vor DCS
+## 12. Offline-/Build-Gate vor DCS
 
 Vor einem neuen DCS-Lauf müssen mindestens erfüllt sein:
 
@@ -391,7 +404,7 @@ builder SHA256 equals independent Get-FileHash SHA256
 MizMutation: false
 ```
 
-## 12. DCS-Acceptance-Gate
+## 13. DCS-Acceptance-Gate
 
 ### Guard / QRF
 
@@ -403,13 +416,17 @@ mixed QRF materializes, engages as applicable, returns, PersonnelLedger settles
 ### CAS
 
 ```text
-Jalalabad -> configured FlightPath -> WEST -> AO
+Jalalabad -> configured FlightPath -> WEST -> AO at explicit 125 kt
 CAS_ON_STATION observed
 CAS_SENSOR_REPORT observed
+CAS_NO_CONTACT_REPORTED only after 30-second stable own sensor picture
 real CAS_ENGAGE_EVENT and/or EVENTS.Shot as applicable
 Honaker local incident may close without directly closing CAS
 if AH-64 still detects eligible contacts after Honaker local closure: CAS stays active and may continue engagement
-only Honaker no-known-attackers + CAS on-station no-contact permits normal supported-element release
+only Honaker no-known-attackers + CAS on-station stable own no-contact permits normal supported-element release
+configured reverse corridor observed
+Jalalabad landing observed
+AIRWING/LEGION asset return observed
 ```
 
 ### Fire support / local rearm
