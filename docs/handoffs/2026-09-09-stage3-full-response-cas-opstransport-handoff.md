@@ -725,3 +725,27 @@ Noch nicht DCS-validiert:
 - supported-element release nach stabilem eigenen No-Contact
 - normales Rückkehrverhalten vor FuelLow
 - ARTY -> M1083 -> strategischer Reorder -> CH-47 OPSTRANSPORT-Abschluss.
+
+
+## 2026-09-09 – verbindlicher Nachtrag: dynamischer CAS-Taktikkorridor
+
+Der wiederholte Fehler `SetMissionIngressCoord(resolved.outbound[1])` und der
+sichtbare UID-3-Gebirgseinstieg werden durch
+[`OMW-MOOSE-STAGE3-CAS-TACTICAL-CORRIDOR`](../moose/STAGE3-CAS-TACTICAL-CORRIDOR-DECISION.md)
+verbindlich ausgeschlossen.
+
+Vor jeder künftigen Stage-3-CAS-Änderung ist dieser Vertrag mit der
+CAS-Support-Entscheidung und der Full-Response-Acceptance zu lesen. Er legt
+fest:
+
+```text
+WEST -> dynamischer CAS_INGRESS -> taktischer Ingress
+-> dynamischer CAS_MISSION_POINT/BP + PATROLZONE working area
+-> taktischer Egress -> dynamischer CAS_EGRESS -> WEST reverse
+```
+
+Die drei MOOSE-`AUFTRAG`-Setter bilden nur die einzelnen Knoten ab. Die
+vollständigen Owner-Segmente werden über öffentliche
+`FLIGHTGROUP:AddWaypoint`-/`OnAfterUpdateRoute`-Integration belegt.
+Kein Build und kein DCS-Lauf darf beginnen, bevor die statischen
+Regression-Gates des neuen Dokuments erfüllt sind.
