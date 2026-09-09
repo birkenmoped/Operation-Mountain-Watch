@@ -19,6 +19,8 @@ superseded_by:
 
 # Stage 3 – CAS Support Requirement, Zielbild und Missionsbeendigung
 
+Verbindlicher Geometrie-/MOOSE-Semantikvertrag: [`OMW-MOOSE-STAGE3-CAS-TACTICAL-CORRIDOR`](STAGE3-CAS-TACTICAL-CORRIDOR-DECISION.md). Dieser Vertrag ist maßgeblich für Ingress, BP/Mission Point, Egress, vollständige Korridorsegmente und Regression-Gates.
+
 ## 1. Owner-Entscheidung
 
 Für den Stage-3-Honaker-CAS-Pfad gelten drei getrennte Rollen und Informationsräume:
