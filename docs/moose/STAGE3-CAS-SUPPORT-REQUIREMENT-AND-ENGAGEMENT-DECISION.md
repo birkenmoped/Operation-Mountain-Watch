@@ -304,26 +304,53 @@ builder hash == independent local hash
 `VALIDATED` bleibt bis zu einem neuen realen Full-Response-DCS-Lauf false.
 
 
-## 14. Regressionskorrektur Build 1-22
+## 14. Korrekturvertrag nach realem Build-1-21-Lauf
 
-Der reale Full-Response-Lauf Build 1-21 hat den in Stage 2B abgenommenen
-Routenvertrag erneut verletzt: Ein selbst gesetzter
-`SetMissionIngressCoord(resolved.outbound[1])` erzeugte einen zusätzlichen
-nativen Waypoint (im beobachteten Lauf UID=3) außerhalb der abgenommenen
-Talroute. Ein Timer-Retry ersetzte zudem den verbindlichen
-`FLIGHTGROUP:OnAfterUpdateRoute`-Readiness-Pfad.
+Der reale Full-Response-Lauf Build 1-21 verletzte die CAS-Geometrie:
+`SetMissionIngressCoord(resolved.outbound[1])` setzte UID=3 an einen
+ungeeigneten Gebirgspunkt. Das war nicht der vereinbarte taktische Ingress,
+sondern nur der erste Resolver-Punkt.
 
-Für Stage 3 gilt daher wieder unmittelbar der bindende Stage-2B-Vertrag
-`FOB-ATTACK-CAS-OUTBOUND-RETURN-ROUTE-STAGE-2B.md` und
-`FOB-ATTACK-CAS-ROUTE-READY-STAGE-2B.md`:
+Für Stage 3 gilt der folgende verbindliche, **pro Allocation dynamisch
+abgeleitete** Vertrag:
 
 ```text
-keine künstliche AUFTRAG ingress/egress-Koordinate
-mission waypoint UID required; egress UID optional
-bestehender Pre-Mission-Waypoint -> FlightPath/WEST -> PATROLZONE
-PATROLZONE -> reverse FlightPath/WEST -> normal MOOSE RTB
-route readiness = FLIGHTGROUP:OnAfterUpdateRoute, kein timer-only guess
+Jalalabad -> R500 -> WEST
+-> CAS_INGRESS: WEST-Abzweig etwa 3–4 NM vor Honaker
+-> owner-authored tactical ingress / terrain-masking corridor
+-> CAS_MISSION_POINT / BP und PATROLZONE working area
+-> owner-authored tactical egress corridor
+-> CAS_EGRESS: bewusster Wiedereintritt in den sicheren WEST-Rückkorridor
+-> WEST reverse -> R500 reverse -> Jalalabad
 ```
+
+`CAS_INGRESS`, `CAS_MISSION_POINT/BP` und `CAS_EGRESS` sind keine
+statischen Missionseditor-Marker und keine aus einer PATHLINE entnommenen
+Zufallspunkte. OMW berechnet sie je Auftrag aus der ausgewählten
+WEST-Transitroute, Honaker/AO und der taktischen Achse. Zu jedem Wert gehören
+Position, Höhe, Richtung/Achse sowie sein Bezug zu Honaker und WEST.
+
+MOOSE erhält diese Owner-Entscheidung ausschließlich über seine öffentlichen
+Methoden:
+
+```lua
+mission:SetMissionIngressCoord(casIngress, ingressAltitudeFt, casSpeedKts)
+mission:SetMissionWaypointCoord(casMissionPoint)
+mission:SetMissionEgressCoord(casEgress, egressAltitudeFt, casSpeedKts)
+```
+
+Die Semantik ist absichtlich eng: Im gepinnten MOOSE fügt Ingress einen
+normalen Flug-Waypoint vor dem Missions-Waypoint ein, MissionWaypoint den
+Missions-Waypoint selbst und Egress einen danach. `NewPATROLZONE(zone)`
+behält die CAS-Arbeitszone; die drei Setter erzeugen weder Terrain-Masking,
+noch bestimmen sie die PATROLZONE, noch bauen sie einen vollständigen Korridor.
+
+Daher installiert der bereits projektseitig verwendete öffentliche
+`FLIGHTGROUP:AddWaypoint(...)`/`OnAfterUpdateRoute`-Pfad die vollständigen
+dynamischen OMW-Segmente zwischen WEST und Ingress, Ingress und BP, sowie
+Egress und WEST. Die MOOSE-Mission-FSM, `PATROLZONE`, `SetEngageDetected`
+und AIRWING/LEGION-Recovery bleiben unverändert MOOSE-owned. Timer-only
+Readiness-Retries bleiben unzulässig.
 
 Dies ändert weder die CAS-Entscheidungsautorität noch den Sensorvertrag:
 Nur die stabile eigene `FLIGHTGROUP:GetDetectedGroups()`-Lage zusammen mit
@@ -331,5 +358,5 @@ Nur die stabile eigene `FLIGHTGROUP:GetDetectedGroups()`-Lage zusammen mit
 Ein globaler Test-FAIL darf diese physische Reconciliation und Rückkehr nicht
 mehr abbrechen, darf aber niemals zu PASS führen.
 
-Build 1-22 ist bis zu einem neuen vollständigen realen DCS-Lauf **nicht
-validiert**.
+Bis zur Implementierung und einem vollständigen realen DCS-Lauf ist dieser
+Vertrag **nicht validiert**.
