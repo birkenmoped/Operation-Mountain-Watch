@@ -506,33 +506,47 @@ kein wiederholter C2-Quellgruppenname innerhalb einer ARTY-Fire-Cycle
 ```
 
 
-## 15. Build 1-22 gesperrt – dynamische OMW-CAS-Geometrie wiederherstellen
+## 15. Build 1-22 gesperrt – dynamischen CAS-Korridor herstellen
 
 **Status: NICHT ZU BAUEN ODER IN DCS ZU TESTEN.**
 
-Die im Build-1-22-Source vorgenommene Rückkehr zum allgemeinen Stage-2B-
-Korridor erfüllt nicht die für Honaker vereinbarte OMW-owned taktische
-Geometrie. Sie wird deshalb nicht als Korrektur akzeptiert.
+Build 1-22 darf nicht die allgemeine Stage-2B-Route statt der vereinbarten
+Honaker-CAS-Geometrie verwenden. Ebenso unzulässig ist jede Ableitung aus
+`resolved.outbound[1]`, PATHLINE-Nähe, zufälligen MOOSE-Werten oder festen
+Missionseditor-Markern.
 
-Der verbindliche Zielvertrag lautet:
+Der nächste Build muss pro CAS-Allocation diese vollständige Owner-Route
+nachweisen:
 
 ```text
 Jalalabad -> R500 -> WEST
--> pro CAS-Mission dynamisch abgeleiteter CAS_INGRESS
-   (Abzweig von WEST, ca. 3–4 NM vor Honaker)
--> pro CAS-Mission dynamisch abgeleiteter CAS_MISSION_POINT / BP
--> pro CAS-Mission dynamisch abgeleiteter CAS_EGRESS
+-> CAS_INGRESS: WEST-Abzweig rund 3–4 NM vor Honaker
+-> taktischer OMW-Ingress / Terrain Masking
+-> CAS_MISSION_POINT / BP plus PATROLZONE working area
+-> taktischer OMW-Egress
+-> CAS_EGRESS: Rückkehr in WEST
 -> WEST reverse -> R500 reverse -> Jalalabad
 ```
 
-CAS_INGRESS, CAS_MISSION_POINT/BP und CAS_EGRESS sind **keine statischen
-Mission-Editor-Marker**. OMW leitet sie je Allocation deterministisch aus der
-festgelegten Transitroute, Honaker/AO und der taktischen Achse ab und übergibt
-sie als Owner-Entscheidung über die öffentlichen MOOSE-Missionsparameter.
-MOOSE darf diese Geometrie weder aus `resolved.outbound[1]`, einer
-PATHLINE-Nähe noch selbständig erzeugen. Der gegebene Wert muss später mit
-Route, Höhe und Achse als Evidenz geloggt werden.
+Die drei benannten Werte werden dynamisch aus Transitroute, Honaker/AO und
+taktischer Achse bestimmt. Ihr Evidenzlog enthält Position, Höhe, Achse,
+Honaker-Bezug und WEST-Bezug.
 
-Die nächste Implementierung hat MOOSE ausschließlich für AUFTRAG, FLIGHTGROUP,
-Tasking, EngageDetected und AIRWING-Lifecycle zu verwenden. Die Geometrie
-bleibt OMW-owned.
+MOOSE erhält die Knoten über die öffentlichen AUFTRAG-Methoden
+`SetMissionIngressCoord`, `SetMissionWaypointCoord` und
+`SetMissionEgressCoord`. Diese Methoden sind keine taktische
+Routenplanung: Sie setzen nur den Waypoint vor, am und nach dem
+Missions-Waypoint. Die vollständigen OMW-Korridorsegmente werden mit den
+bereits verwendeten öffentlichen MOOSE-`FLIGHTGROUP:AddWaypoint`- und
+`OnAfterUpdateRoute`-Schnittstellen eingebracht.
+
+Der vorhandene MOOSE-Anteil bleibt:
+
+```text
+AUFTRAG:NewPATROLZONE + SetEngageDetected
+MOOSE mission FSM / detection / engagement
+AIRWING/LEGION lifecycle and recovery
+```
+
+Bis zur Implementierung, statischer Prüfung und einem vollständigen realen
+DCS-Lauf ist Build 1-22 blockiert.
