@@ -36,6 +36,12 @@ $testId = 'STAGE3-HONAKER-WRIGHT-FULL-RESPONSE-ACCEPTANCE-1'
 $mooseCommit = '73d3ed119cd9e7e3f2cfcabbaa34513d30529b54'
 $mooseSha256 = 'e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915'
 
+# BLOCKED: the full-response CAS route must use owner-authored CAS_INGRESS,
+# CAS_MISSION_POINT/BP and CAS_EGRESS coordinates. The current MIZ/branch does
+# not contain that accepted geometry. Do not generate a test bundle that could
+# substitute a resolver-derived or MOOSE-derived point.
+throw 'Build blocked: define and document explicit owner-authored CAS_INGRESS, CAS_MISSION_POINT/BP and CAS_EGRESS geometry before rebuilding Stage 3.'
+
 $resolved = [ordered]@{}
 foreach ($name in $sources.Keys) {
   $path = Join-Path $repoRoot $sources[$name]
