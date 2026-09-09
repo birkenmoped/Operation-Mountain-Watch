@@ -52,6 +52,7 @@ attackIncidentClosed
 number of living GroundInstallationAttackIncident participants
 TACTICAL_RED_GROUND_GROUPS_DIAGNOSTIC
 raw RED-group count in the 5-NM tactical area
+C2_FIRE_OBSERVATION target count
 state.casFired
 ```
 
@@ -114,7 +115,7 @@ Das ist ein lokaler Statusreport, nicht automatisch `CAS_COMPLETE`.
 CAS_NO_CONTACT_REPORTED
 ```
 
-Auch das beendet den Auftrag nicht allein. Erst in Verbindung mit Honakers lokalem Status kann das unterstützte Element im Acceptance-Modell ausdrücklich freigeben.
+Auch das beendet den Auftrag nicht allein. Der Report muss nach On Station mindestens 30 Sekunden stabil bleiben; ein MOOSE-OnAfterEngageTarget setzt diese Qualifikation zurück. Erst in Verbindung mit Honakers lokalem Status kann das unterstützte Element im Acceptance-Modell ausdrücklich freigeben.
 
 ### 5.3 CAS meldet relevanten verbleibenden Kontakt
 
@@ -124,9 +125,30 @@ Ein neuer/unabhängiger Kontakt darf nicht allein deshalb automatisch bekämpft 
 
 ### 5.4 CAS kann nicht weiterarbeiten
 
-Bingo, Winchester, Battle Damage, Emergency oder vergleichbare `unable to continue`-Zustände sind ein eigener Abbruchpfad.
+Bingo, Winchester, Battle Damage, Emergency oder vergleichbare unable-to-continue-Zustände sind ein eigener Abbruchpfad. Sie dürfen keine erfundene Recovery-Evidence erzeugen; bis ein separater C2-Sicherheitsabbruch mit dem kontrollierten Rückweg umgesetzt und getestet ist, bleibt ein nativer Fuel-RTB als Fehl-/Abbruch-Evidenz sichtbar.
 
-## 6. Gepinnter MOOSE-Nachweis für PATROLZONE + SetEngageDetected
+## 6. Separate C2-Feuerbeobachtung für QRF / ARTY
+
+Owner-Freigabe vom 09.09.2026:
+
+```text
+5-NM MOOSE OPSZONE around Honaker
+-> C2_FIRE_OBSERVATION
+-> observed RED Ground Groups
+-> QRF / ARTY target picture
+```
+
+Diese OPSZONE ist ein separates C2-Beobachtungsbild. Sie ersetzt weder Honakers lokale 1000-m-Incident noch das eigene Detektionsbild des AH-64. Insbesondere gilt:
+
+```text
+C2_FIRE_OBSERVATION
+!= CAS release gate
+!= CAS termination gate
+```
+
+C2 sperrt neue ARTY-Fire-Missions, sobald CAS physisch ON STATION ist. Laufende Feueraufträge werden nicht künstlich abgebrochen.
+
+## 7. Gepinnter MOOSE-Nachweis für PATROLZONE + SetEngageDetected
 
 ```text
 MOOSE release: 2.9.18
@@ -155,15 +177,18 @@ F10-map RED visibility
 AH-64D MOOSE/DCS detectedgroups
 ```
 
-## 7. Korrigierter Acceptance-Vertrag
+## 8. Korrigierter Acceptance-Vertrag
 
 ```text
 CAS_REQUIRED
 -> CAS_ACTIVE
 -> CAS_ON_STATION
--> CAS_CONTACT_REPORTED | CAS_NO_CONTACT_REPORTED
+-> CAS_CONTACT_REPORTED | CAS_NO_CONTACT_PENDING
+-> CAS_NO_CONTACT_REPORTED (stable >= 30 seconds)
 -> CAS_RELEASED_BY_SUPPORTED_ELEMENT
--> CAS_RECOVERING
+-> CAS_RECOVERING on configured reverse corridor
+-> Jalalabad landed
+-> AIRWING/LEGION asset returned
 -> CAS_COMPLETE
 ```
 
@@ -174,7 +199,8 @@ Der AH-64D gilt erst als on-station, wenn seine FLIGHTGROUP-Koordinate in der CA
 Sobald Honaker `HONAKER_NO_KNOWN_ATTACKERS` meldet:
 
 ```text
-if CAS is on station AND CAS reports no engagement-eligible detected ground group:
+if CAS is on station AND CAS reports no engagement-eligible detected ground group
+   for at least 30 seconds:
     supported element explicitly releases CAS
 
 if CAS is on station AND CAS reports an engagement-eligible detected ground group:
@@ -183,7 +209,7 @@ if CAS is on station AND CAS reports an engagement-eligible detected ground grou
 
 Die zweite Information stammt ausschließlich aus dem eigenen MOOSE/DCS-Detektionsbild des CAS-Flights.
 
-## 8. Ziel-/Informationsgrenze
+## 9. Ziel-/Informationsgrenze
 
 Die PATROLZONE-Mission darf nur die konfigurierte MOOSE-Zielpolicy ausführen:
 
@@ -195,7 +221,7 @@ engage zone = Honaker CAS tactical zone
 
 Der Acceptance-Code injiziert keine allwissende RED-Liste und verwendet kein `KnowTarget()` zur Zielzuführung.
 
-## 9. Reale Build-1-19-Evidenz vom 08.09.2026
+## 10. Reale Build-1-19-Evidenz vom 08.09.2026
 
 Der Full-Response-Lauf zeigte:
 
@@ -211,7 +237,7 @@ old code closed CAS immediately from attackIncidentClosed: YES
 
 Damit ist Build 1-19 für den CAS-Lifecycle nicht validiert. Guard, QRF, ARTY und CH-47 bleiben getrennte positive Evidenz.
 
-## 10. Reale fokussierte CAS-Evidenz vom 08.09.2026
+## 11. Reale fokussierte CAS-Evidenz vom 08.09.2026
 
 Nach der Lifecycle-Korrektur wurde der fokussierte Test `STAGE3-HONAKER-CAS-SUPPORT-ACCEPTANCE-1-1` mit dem gepinnten MOOSE-Stand ausgeführt.
 
@@ -227,15 +253,15 @@ later remaining-group behavior after local incident changes: NOT IN SCOPE
 
 Dieser Lauf bestätigt damit **Engagement-Funktion**, aber weder Survivability noch das Zusammenspiel mit der vollständigen Stage-3-Reaktionskette.
 
-Der nächste notwendige Test ist deshalb der korrigierte Full-Response-Build 1-20.
+Der nächste notwendige Test ist deshalb der korrigierte Full-Response-Build 1-21.
 
-## 11. Full-Response Build 1-20
+## 12. Full-Response Build 1-21
 
 Build 1-20 übernimmt die im fokussierten Test bewährte CAS-Supportzustandslogik in den Gesamtintegrationslauf:
 
 ```text
 Honaker local incident completion
--> QRF recovery may proceed
+-> QRF remains on MOOSE ONGUARD pending explicit supported-element release
 -> CAS does NOT automatically close
 -> AH-64 own GetDetectedGroups picture remains active
 -> eligible CAS contact present: CAS stays active
@@ -247,22 +273,27 @@ Zusätzliche Runtime-Marker:
 ```text
 HONAKER_LOCAL_PICTURE
 CAS_SENSOR_REPORT
+CAS_NO_CONTACT_REPORTED
 CAS_ENGAGE_EVENT
 EVENTS.Shot
 SUPPORTED_ELEMENT_RELEASE_NO_KNOWN_ATTACKERS_CAS_NO_CONTACT
+CAS reverse corridor
+CAS Jalalabad landed
+CAS AIRWING/LEGION returned
 ```
 
 Damit ist der nächste Lauf ausdrücklich dafür ausgelegt zu beantworten, ob die AH-64 nach Wirkung von Guard/QRF/ARTY noch vorhandene, selbst erkannte relevante Gruppen weiter angreifen.
 
-## 12. Static Gate vor dem nächsten DCS-Lauf
+## 13. Static Gate vor dem nächsten DCS-Lauf
 
 ```text
 closeAttackIncidentIfClear() does not directly close CAS
 no closeCasIfReady() legacy function
 no tactical RED count controls CAS closure
 CAS closure requires explicit supported-element release state
-CAS no-contact evaluated only after CAS on station
+CAS no-contact evaluated only after CAS on station and a 30-second stable own picture
 CAS contact report uses FLIGHTGROUP:GetDetectedGroups()
+CAS terminal acceptance requires Jalalabad landing plus AIRWING/LEGION recovery
 PATROLZONE + SetEngageDetected remains MOOSE-owned
 configured recovery corridor remains intact
 Lua syntax PASS
