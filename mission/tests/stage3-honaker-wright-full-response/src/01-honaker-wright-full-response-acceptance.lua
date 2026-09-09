@@ -82,7 +82,6 @@ local FixedFireSupportAmmoSupport = OMW_STAGE3_FIXED_FIRE_SUPPORT_AMMO_SUPPORT
 local FixedFireSupportAmmoRearmService = OMW_STAGE3_FIXED_FIRE_SUPPORT_AMMO_REARM_SERVICE
 local GroundSupportMaterializer = OMW_STAGE3_GROUND_SUPPORT_MATERIALIZER
 local HelicopterCorridor = OMW_STAGE3_HELICOPTER_FLIGHTPATH_CORRIDOR
-local MissionOwnedCorridor = OMW_STAGE3_HELICOPTER_MISSION_OWNED_CORRIDOR
 local FlightPathNameContract = OMW_STAGE3_FLIGHTPATH_NAME_CONTRACT
 local TransportCorridor = OMW_STAGE3_OPSTRANSPORT_CORRIDOR_ADAPTER
 
@@ -103,7 +102,8 @@ local state = {
   casReleaseRequested=false, casReleaseReason=nil, casRecoveryRequested=false, casHomeLanded=false, casAssetReturned=false,
   casFailed=false, casFailureReason=nil,
   battery=nil, arty=nil, fireAdapter=nil, fireDemand=nil, fireStarted=false, fireComplete=false,
-  fireTargetCount=0, fireTargetCompleteCount=0, fireLastSourceGroupName=nil,
+  fireTargetCount=0, fireTargetCompleteCount=0, fireLastSourceGroupName=nil, fireScheduledSourceGroups={},
+  fireActiveTargetName=nil, firePhysicalShotsByTarget={}, firePhysicalShotsTotal=0,
   physicalAmmoBefore=nil, physicalAmmoAfter=nil, physicalAmmoBeforeByTarget={}, physicalAmmoAfterByTarget={},
   rearmService=nil, rearmComplete=false, supportReturned=false,
   resupply=nil, pickup=nil, drop=nil,
@@ -129,8 +129,9 @@ end
 local function fail(reason)
   if state.failed or state.passed then return end
   state.failed = true
-  stopFinishScheduler()
-  msg("FAIL", tostring(reason), 20)
+  -- A failed acceptance assertion must not cancel independent MOOSE physical lifecycles.
+  -- In particular, CAS may still need to reach its supported-element release and controlled return.
+  msg("FAIL", tostring(reason) .. "; physical lifecycle observation continues", 20)
 end
 local function failCas(reason)
   if state.casFailed or state.passed then return end
@@ -279,7 +280,7 @@ local function releaseCasBySupportedElement(reason)
 end
 
 local function updateCasSupportState()
-  if state.failed or state.casFailed or state.casClosed or not state.casExecuting or not state.casFlight or not state.casTacticalZone then return end
+  if state.casFailed or state.casClosed or not state.casExecuting or not state.casFlight or not state.casTacticalZone then return end
   local flightCoord=state.casFlight:GetCoordinate()
   if not flightCoord then return end
   local now=timer.getAbsTime()
@@ -432,9 +433,6 @@ local function ensureCasContext()
     requireExecutionEvidence=false,
     missionConfigurator=function(mission)
       mission:SetName("OMW_STAGE3_HONAKER_CAS_PATROLZONE_ENGAGE")
-      state.casLifecycle = MissionOwnedCorridor.ConfigureMission(mission, state.casResolved, {
-        speedKts=CAS_SPEED_KTS, defaultAltitudeFtAgl=CAS_COMBAT_HEIGHT_FT_AGL,
-      })
     end,
   })
   return state.casAdapter ~= nil
@@ -445,7 +443,7 @@ local function installCasShotObserver()
   state.casShotObserver = EVENTHANDLER:New()
   state.casShotObserver:HandleEvent(EVENTS.Shot)
   function state.casShotObserver:OnEventShot(EventData)
-    if state.failed or state.casFailed or state.casFired or not state.casFlight or not state.casDemand then return end
+    if state.casFailed or state.casFired or not state.casFlight or not state.casDemand then return end
     if not EventData or EventData.IniGroupName ~= state.casFlight:GetName() then return end
     state.casFired = true
     local weaponType = EventData.WeaponTypeName or (EventData.Weapon and EventData.Weapon.getTypeName and EventData.Weapon:getTypeName()) or "unknown"
@@ -455,19 +453,43 @@ local function installCasShotObserver()
   end
 end
 
-local function bindCasMissionOwnedCorridor(flight, mission)
-  local installed, ok, reason = MissionOwnedCorridor.Bind(flight, mission, state.casResolved, {
-    defaultAltitudeFtAgl=PRIMARY_ALTITUDE_FT_AGL,
-    speedKts=CAS_SPEED_KTS,
-    onInstalled=function(result)
-      state.casCorridor = true
-      logCorridorProfiles("CAS", result)
-      msg("CAS", "One-shot MOOSE waypoint/task chain installed: common-route entry -> " .. primaryPathlineName() .. " -> WEST -> CAS -> WEST reverse -> " .. primaryPathlineName() .. " reverse -> Jalalabad egress", 12)
-    end,
-    onFailed=function(why) failCas("CAS mission-owned corridor failed: " .. tostring(why)) end,
-  })
-  if ok then state.casCorridor = true; logCorridorProfiles("CAS", installed) end
-  if not ok and reason ~= "MISSION_ROUTE_UIDS_NOT_READY" then failCas("CAS mission-owned corridor failed: " .. tostring(reason)) end
+local function bindCasFlightPathCorridor(flight, mission)
+  local function installed(result)
+    if state.casCorridor then return end
+    state.casCorridor = true
+    logCorridorProfiles("CAS", result)
+    msg("CAS", "Stage-2B MOOSE corridor installed: existing pre-mission route -> " .. primaryPathlineName() .. " -> WEST -> CAS -> WEST reverse -> " .. primaryPathlineName() .. " reverse -> Jalalabad", 12)
+  end
+
+  -- BINDING Stage-2B contract: do not manufacture AUFTRAG ingress/egress. The accepted
+  -- MOOSE adapter inserts owner-authored corridor waypoints between the existing
+  -- pre-mission waypoint and the mission waypoint, and waits through OnAfterUpdateRoute.
+  local result, ok, reason = HelicopterCorridor.Install(flight, mission, state.casResolved, PRIMARY_ALTITUDE_FT_AGL)
+  if ok then
+    installed(result)
+    return
+  end
+  if reason ~= "MISSION_ROUTE_UIDS_NOT_READY" then
+    failCas("CAS Stage-2B FlightPath corridor failed: " .. tostring(reason))
+    return
+  end
+
+  -- Install() has just armed its public MOOSE OnAfterUpdateRoute callback. This wrapper
+  -- only records that callback's result; it does not guess readiness with a timer.
+  local previousUpdateRoute = flight.OnAfterUpdateRoute
+  function flight:OnAfterUpdateRoute(From, Event, To, n, N)
+    if previousUpdateRoute then previousUpdateRoute(self, From, Event, To, n, N) end
+    local cached = self.__omwFlightPathCorridorInstalled
+    if cached and cached.mission == mission and cached.result then
+      installed(cached.result)
+      return
+    end
+    local lastReason = self.__omwFlightPathCorridorLastReason
+    if lastReason and not state.casCorridor then
+      failCas("CAS Stage-2B FlightPath corridor failed after UpdateRoute: " .. tostring(lastReason))
+    end
+  end
+  log("CAS_CORRIDOR_PENDING_MOOSE_ROUTE_CALLBACK reason=MISSION_ROUTE_UIDS_NOT_READY")
 end
 
 local function markAirAmmoInTransit()
@@ -516,7 +538,7 @@ local function installAirObserver()
     end
 
     msg("CAS", string.format("Jalalabad AH-64D assigned to PATROLZONE + SetEngageDetected; explicit transit speed=%d kt; CAS own detection telemetry armed",CAS_SPEED_KTS), 12)
-    bindCasMissionOwnedCorridor(FlightGroup, Mission)
+    bindCasFlightPathCorridor(FlightGroup, Mission)
   end
 
   local previousSpawned=state.airwing.OnAfterAssetSpawned
@@ -765,11 +787,10 @@ local function selectNextFireTarget()
   local targets = c2FireObservationGroups()
   if #targets == 0 then targets = incidentGroups() end
   if #targets == 0 then return nil,"NO_C2_OBSERVED_RED_GROUND_GROUP" end
-  if not state.fireLastSourceGroupName then return targets[1] end
-  for index, target in ipairs(targets) do
-    if target:GetName() == state.fireLastSourceGroupName then return targets[(index % #targets) + 1] end
+  for _, target in ipairs(targets) do
+    if not state.fireScheduledSourceGroups[target:GetName()] then return target end
   end
-  return targets[1]
+  return nil,"NO_FRESH_C2_OBSERVED_RED_GROUND_GROUP"
 end
 
 local function reportFireMission(target, missionNumber)
@@ -782,7 +803,7 @@ local function reportFireMission(target, missionNumber)
 end
 
 local function queueNextFireMission(demandId)
-  if state.failed or state.fireComplete then return false end
+  if state.fireComplete then return false end
   local ammo = state.arty:GetAmmo(false)
   if type(ammo)=="number" and ammo < FIRE_SHELLS then
     msg("FIRE SUPPORT",string.format("Wright physical ammo %d below next %d-round mission; ending fire cycle for rearm",ammo,FIRE_SHELLS),12)
@@ -803,6 +824,7 @@ local function queueNextFireMission(demandId)
   if queued ~= true then fail("Wright ARTY live retarget failed: "..tostring(reason)) return false end
   state.fireTargetCount = nextNumber
   state.fireLastSourceGroupName=target:GetName()
+  state.fireScheduledSourceGroups[target:GetName()]=true
   log(string.format("LIVE_FIRE_RETARGET demandId=%s mission=%d sourceGroup=%s artyTarget=%s",tostring(demandId),nextNumber,tostring(target:GetName()),tostring(targetName)))
   return true
 end
@@ -845,16 +867,19 @@ local function setupFireSupport()
       local ammo = state.arty:GetAmmo(false)
       if state.physicalAmmoBefore == nil then state.physicalAmmoBefore = ammo end
       state.physicalAmmoBeforeByTarget[targetName] = ammo
-      msg("FIRE SUPPORT",string.format("Wright L118 firing at %s; physical ammo before=%s",sourceName,tostring(ammo)),12)
+      state.firePhysicalShotsByTarget[targetName]=0
+      state.fireActiveTargetName=targetName
+      msg("FIRE SUPPORT",string.format("Wright L118 firing at %s; physical ammo before=%s; MOOSE EVENTS.Shot evidence armed",sourceName,tostring(ammo)),12)
     end,
     verifyFireComplete=function(_,target)
       local targetName = target and target.name or "unknown"
       local before = state.physicalAmmoBeforeByTarget[targetName]
       local after = state.arty:GetAmmo(false)
+      local shots = state.firePhysicalShotsByTarget[targetName] or 0
       state.physicalAmmoAfterByTarget[targetName] = after
       state.physicalAmmoAfter = after
-      if type(before)~="number" or type(after)~="number" then return false,"PHYSICAL_AMMO_UNAVAILABLE" end
-      if after>=before then return false,"PHYSICAL_AMMO_UNCHANGED" end
+      state.fireActiveTargetName=nil
+      if shots < 1 then return false,"NO_MOOSE_ARTY_EVENTS_SHOT" end
       return true
     end,
     onTargetComplete=function(demandId,target)
@@ -886,6 +911,16 @@ local function setupFireSupport()
       })
     end,
   })
+  local previousShot = state.arty.OnEventShot
+  function state.arty:OnEventShot(EventData)
+    if previousShot then previousShot(self, EventData) end
+    if not EventData or EventData.IniGroupName ~= state.battery:GetName() then return end
+    local targetName = state.fireActiveTargetName
+    if not targetName then return end
+    state.firePhysicalShotsByTarget[targetName]=(state.firePhysicalShotsByTarget[targetName] or 0)+1
+    state.firePhysicalShotsTotal=state.firePhysicalShotsTotal+1
+    log(string.format("WRIGHT_ARTY_EVENTS_SHOT target=%s targetShots=%d totalShots=%d",targetName,state.firePhysicalShotsByTarget[targetName],state.firePhysicalShotsTotal))
+  end
   return true
 end
 
@@ -928,6 +963,7 @@ local function dispatchFire(incident)
   state.fireDemand=demand
   state.fireTargetCount=1
   state.fireLastSourceGroupName=target:GetName()
+  state.fireScheduledSourceGroups[target:GetName()]=true
   msg("FIRE SUPPORT","Honaker requests immediate fire support; local mortar unavailable; C2-observed retarget cycle armed",12)
   msg("FIRE SUPPORT","Wright L118 selected; one current MOOSE coordinate Fire At Point mission queued",10)
   local targetName,dispatched,dispatchReason=state.fireAdapter:Dispatch(demand,target)
@@ -1100,9 +1136,10 @@ local function start()
 end
 
 local function finish()
-  if state.failed or state.passed then return end
+  if state.passed then return end
   closeAttackIncidentIfClear()
   updateCasSupportState()
+  if state.failed then return end
   local validCasExecution=state.casFired or state.casNoContactReported
   local casTerminal = state.casFailed or (state.casExecuting and state.casCorridor and state.casClosed and validCasExecution
     and state.casRecoveryRequested and state.casHomeLanded and state.casAssetReturned)
@@ -1123,7 +1160,7 @@ local function finish()
   if not cd or cd.status~=MissionDemand.Status.SUCCESS then fail("CAS demand lacks supported-element PATROLZONE closure") return end
   if not rd or rd.status~=MissionDemand.Status.SUCCESS then fail("RESUPPLY demand not SUCCESS") return end
   if state.fireTargetCompleteCount ~= state.fireTargetCount or state.fireTargetCount < 1 then fail("not all Wright coordinate fire missions completed") return end
-  if type(state.physicalAmmoBefore)~="number" or type(state.physicalAmmoAfter)~="number" or state.physicalAmmoAfter>=state.physicalAmmoBefore then fail("Wright L118 did not consume physical ammo") return end
+  if state.firePhysicalShotsTotal < 1 then fail("Wright L118 lacks MOOSE EVENTS.Shot physical-fire evidence") return end
 
   state.passed=true
   stopFinishScheduler()
