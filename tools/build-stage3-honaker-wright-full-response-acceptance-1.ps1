@@ -32,7 +32,7 @@ $acceptanceFile = Join-Path $repoRoot $acceptanceRelative
 $jalalabadFoundationFile = Join-Path $repoRoot 'scripts\air-operations\OMW_AirOps_Jalalabad_Bootstrap.lua'
 $distDir = Join-Path $repoRoot 'mission\tests\stage3-honaker-wright-full-response\dist'
 $outputFile = Join-Path $distDir 'OMW_Stage3_Honaker_Wright_Full_Response_Acceptance_1.lua'
-$builderVersion = 'STAGE3-HONAKER-WRIGHT-FULL-RESPONSE-ACCEPTANCE-1-20'
+$builderVersion = 'STAGE3-HONAKER-WRIGHT-FULL-RESPONSE-ACCEPTANCE-1-21'
 $testId = 'STAGE3-HONAKER-WRIGHT-FULL-RESPONSE-ACCEPTANCE-1'
 $mooseCommit = '73d3ed119cd9e7e3f2cfcabbaa34513d30529b54'
 $mooseSha256 = 'e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915'
@@ -105,8 +105,9 @@ $requiredMarkers = @(
   'AUFTRAG:NewONGUARD','SetEngageDetected','AssignCohort','SetReturnToLegion(true)','OnAfterReturned','SettleReturned','qrfReturned',
   'AUFTRAG:NewPATROLZONE','PATROLZONE_ENGAGE','CAS_TACTICAL_RADIUS_NM','CAS_COMBAT_HEIGHT_FT_AGL','GetLandHeight','NMToMeters',
   'GetDetectedGroups','IsCoordinateInZone','Get3DDistance','CAS_SENSOR_REPORT','CAS_ENGAGE_EVENT','SUPPORTED_ELEMENT_RELEASE_NO_KNOWN_ATTACKERS_CAS_NO_CONTACT',
-  'casSupportRequirementActive','casOnStation','casNoContactReported','ConfirmExecutionEvidence','EVENTS.Shot',
-  'OMW-HELICOPTER-MISSION-OWNED-CORRIDOR-5','MOOSE_ONE_SHOT_ROUTE_TASK_CHAIN','persistentUpdateRouteHook = false',
+  'casSupportRequirementActive','casOnStation','casNoContactReported','CAS_NO_CONTACT_STABLE_SEC','casHomeLanded','casAssetReturned','ConfirmExecutionEvidence','EVENTS.Shot',
+  'C2_FIRE_OBSERVATION','C2_FIRE_OBSERVATION_RADIUS_NM','authority=QRF_ARTY_ONLY','CAS_ON_STATION_ARTY_DECONFLICTION',
+  'OMW-HELICOPTER-MISSION-OWNED-CORRIDOR-6','MOOSE_ONE_SHOT_ROUTE_TASK_CHAIN','persistentUpdateRouteHook = false',
   'OMW-FOB-ATTACK-CAS-PATROL-CLOSURE-2','requireExecutionEvidence=false','executionEvidenceConfirmed=state.casFired','AssignSquadrons','squadrons={state.ah64d}',
   'PATHLINE_SUFFIX','ParsePathlineOffset','OMW_FlightPath','OMW_FlightPath_WEST','WEST_ALTITUDE_FT_AGL','ResolveSequence',
   'OMW-FLIGHTPATH-NAME-CONTRACT-1','OMW-OPSTRANSPORT-CORRIDOR-ADAPTER-2','GetWaypointCurrentUID','AddWaypoint','UpdateRoute','GetIntermediateCoordinate','HeadingTo',
@@ -127,6 +128,8 @@ foreach ($marker in @(
   'local GUARD_PATHLINE = "OMW_RTE_BLUE_GUARD_HONAKER_01"',
   'local HONAKER_ACCESS_ZONE = "ZON_BLUE_GND_HONAKER_ACCESS"',
   'local FLIGHTPATH_BASE = "OMW_FlightPath"',
+  'local CAS_SPEED_KTS = 125',
+  'local CAS_NO_CONTACT_STABLE_SEC = 30',
   'local CH47_TRANSIT_SPEED_KTS = 125',
   'local CH47_LEAD_TURN_DISTANCE_M = 250',
   'FlightPathNameContract.SelectFromRegistry',
@@ -141,6 +144,7 @@ foreach ($marker in @(
   'local detected=state.casFlight:GetDetectedGroups()',
   'if not state.honakerNoKnownAttackers then return false end',
   'if not state.casOnStation or not state.casNoContactReported then return false end',
+  'timer.getAbsTime() - state.casNoContactSince < CAS_NO_CONTACT_STABLE_SEC',
   'state.attackIncident:Close("HONAKER_NO_KNOWN_ATTACKERS")',
   'releaseSource=INSTALLATION_ID',
   'state.threat:Stop()',
@@ -149,6 +153,7 @@ foreach ($marker in @(
   'LEGION.RecruitCohortAssets(',
   'state.airwing:TransportAssign(state.cargoTransport,legions)',
   'TransportCorridor.Bind(flight,state.cargoTransport,state.cargoResolved',
+  'speedKts=CAS_SPEED_KTS',
   'speedKts=CH47_TRANSIT_SPEED_KTS',
   'leadTurnDistanceM=CH47_LEAD_TURN_DISTANCE_M',
   'physicalMission="OPSTRANSPORT:STORAGE"',
@@ -173,7 +178,7 @@ foreach ($obsolete in @(
   'QRF_VEHICLE_TEMPLATE','TPL_BLUE_GND_QRF_MIXED_4','qrfVehiclePlatoon','qrfInfDeployed','qrfVehicleDeployed',
   'GROUP:FindByName(GUARD_ROUTE_GROUP)','state.guardGroup:PatrolRoute()','state.finishScheduler=SCHEDULER:New(nil,finish,{},10,2)',
   'local PICKUP_ZONE = "OMW_LOG_NODE_JALALABAD"','InitValidateAndRepositionStatic(true,120)','state.brigade:SetSpawnZone(accessZone,100)',
-  'requireExecutionEvidence=true','OMW-FOB-ATTACK-CAS-PATROL-CLOSURE-1','OMW-HELICOPTER-MISSION-OWNED-CORRIDOR-4',
+  'requireExecutionEvidence=true','OMW-FOB-ATTACK-CAS-PATROL-CLOSURE-1','OMW-HELICOPTER-MISSION-OWNED-CORRIDOR-4','OMW-HELICOPTER-MISSION-OWNED-CORRIDOR-5',
   'OMW_STAGE3_SLINGLOAD_CORRIDOR_HANDOFF','AUFTRAG:NewCARGOTRANSPORT','PauseMission(','TaskDone(','CargoTransportation','OnBeforeUnpauseMission',
   'APPROVED_EXTERNAL_SLINGLOAD_CORRIDOR_HANDOFF','local PRIMARY_PATHLINE = "OMW_FlightPath_R500"','SLG-zone pickup-first R500 Air-AMMO',
   'local function closeCasIfReady','TACTICAL_RED_GROUND_GROUPS_DIAGNOSTIC','countRedGroundGroupsInTacticalZone','immediate PATROLZONE CAS recovery'
@@ -213,14 +218,14 @@ Write-Host "GitCommit: $commit"
 Write-Host "MOOSECommit: $mooseCommit"
 Write-Host "MooseLuaSHA256: $($mooseSha256.ToUpperInvariant())"
 Write-Host 'AttackSite: BLUE_GROUND_COP_HONAKER'
-Write-Host 'Guard/QRF: unchanged Stage-3 local response contracts; local incident controls QRF recovery, not CAS release'
+Write-Host 'Guard/QRF: QRF remains in MOOSE ONGUARD until explicit supported-element CAS release; local incident closure alone does not recover QRF'
 Write-Host 'CASMission: MOOSE AUFTRAG NewPATROLZONE + SetEngageDetected'
-Write-Host 'CASContactSource: AH-64 FLIGHTGROUP:GetDetectedGroups only'
-Write-Host 'CASRelease: Honaker no-known-attackers + CAS on-station no-contact -> explicit supported-element release'
+Write-Host 'CASContactSource: AH-64 FLIGHTGROUP:GetDetectedGroups only; no-contact requires a 30-second stable own sensor picture'
+Write-Host 'CASRelease: Honaker no-known-attackers + CAS on-station stable own no-contact -> explicit supported-element release -> controlled reverse corridor'
 Write-Host 'CASGroundTriggerAuthority: OPSZONE/attackIncident/raw RED counts have no direct CAS termination authority'
-Write-Host 'CASAcceptanceEvidence: real EVENTS.Shot OR on-station no-contact is required before CAS terminal acceptance'
-Write-Host 'CASRouteOrder: one-shot native ingress -> configured OMW_FlightPath variant -> WEST -> PATROLZONE -> WEST reverse -> configured OMW_FlightPath reverse -> Jalalabad'
-Write-Host 'FireSupport: Wright L118 live coordinate fire -> local M1083 rearm -> strategic reorder'
+Write-Host 'CASAcceptanceEvidence: real EVENTS.Shot OR stable on-station no-contact, plus Jalalabad landing and AIRWING/LEGION recovery, is required before CAS terminal acceptance'
+Write-Host 'CASRouteOrder: 125-kt explicit MOOSE ingress -> configured OMW_FlightPath variant -> WEST -> PATROLZONE -> WEST reverse -> configured OMW_FlightPath reverse -> Jalalabad'
+Write-Host 'FireSupport: 5-NM MOOSE C2 observation -> ARTY/QRF target picture; ARTY holds new fires while CAS is on station -> local M1083 rearm -> strategic reorder'
 Write-Host 'StrategicResupply: exactly one RESUPPLY, Jalalabad -> Wright, quantity 15; CampaignState authoritative'
 Write-Host 'AirPhysicalMission: MOOSE OPSTRANSPORT with internal STORAGE fixture'
 Write-Host 'CH47TransitSpeedKts: 125'
