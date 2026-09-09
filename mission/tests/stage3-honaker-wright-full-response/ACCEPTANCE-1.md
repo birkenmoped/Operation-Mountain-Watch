@@ -506,29 +506,32 @@ kein wiederholter C2-Quellgruppenname innerhalb einer ARTY-Fire-Cycle
 ```
 
 
-## 15. Build 1-22 gesperrt – fehlende verbindliche taktische CAS-Geometrie
+## 15. Build 1-22 gesperrt – dynamische OMW-CAS-Geometrie wiederherstellen
 
 **Status: NICHT ZU BAUEN ODER IN DCS ZU TESTEN.**
 
 Die im Build-1-22-Source vorgenommene Rückkehr zum allgemeinen Stage-2B-
-Korridor erfüllt nicht die für Honaker vereinbarte owner-authored taktische
+Korridor erfüllt nicht die für Honaker vereinbarte OMW-owned taktische
 Geometrie. Sie wird deshalb nicht als Korrektur akzeptiert.
 
 Der verbindliche Zielvertrag lautet:
 
 ```text
 Jalalabad -> R500 -> WEST
--> expliziter CAS_INGRESS (Abzweig von WEST, ca. 3–4 NM vor Honaker)
--> expliziter CAS_MISSION_POINT / BP
--> expliziter CAS_EGRESS
+-> pro CAS-Mission dynamisch abgeleiteter CAS_INGRESS
+   (Abzweig von WEST, ca. 3–4 NM vor Honaker)
+-> pro CAS-Mission dynamisch abgeleiteter CAS_MISSION_POINT / BP
+-> pro CAS-Mission dynamisch abgeleiteter CAS_EGRESS
 -> WEST reverse -> R500 reverse -> Jalalabad
 ```
 
-Alle drei Punkte müssen als Mission-Owner-Entscheidung mit Position, Höhe,
-Achse sowie Bezug zu Honaker und WEST vorliegen. Sie werden nicht aus
-`resolved.outbound[1]`, aus einer PATHLINE-Nähe oder durch MOOSE abgeleitet.
-Ohne diese Geometrie darf kein Adapter, kein Builder und kein DCS-Test einen
-impliziten Ersatzpunkt erzeugen.
+CAS_INGRESS, CAS_MISSION_POINT/BP und CAS_EGRESS sind **keine statischen
+Mission-Editor-Marker**. OMW leitet sie je Allocation deterministisch aus der
+festgelegten Transitroute, Honaker/AO und der taktischen Achse ab und übergibt
+sie als Owner-Entscheidung über die öffentlichen MOOSE-Missionsparameter.
+MOOSE darf diese Geometrie weder aus `resolved.outbound[1]`, einer
+PATHLINE-Nähe noch selbständig erzeugen. Der gegebene Wert muss später mit
+Route, Höhe und Achse als Evidenz geloggt werden.
 
 Die nächste Implementierung hat MOOSE ausschließlich für AUFTRAG, FLIGHTGROUP,
 Tasking, EngageDetected und AIRWING-Lifecycle zu verwenden. Die Geometrie
