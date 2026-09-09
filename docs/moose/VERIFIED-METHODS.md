@@ -804,3 +804,29 @@ foreign FARP/AIRBASE as intermediate Fortress landing
 ```
 
 Die Validierung ist strikt auf die oben dokumentierte MIZ-, Bundle-, DCS- und MOOSE-Provenienz begrenzt. Vollständige Evidenz: [`Stage 1D-P Air PERSONNEL Acceptance-4`](GROUND-AIR-PERSONNEL-RESUPPLY-STAGE-1D-P-ACCEPTANCE-4-FINAL.md).
+
+
+## Addendum 2026-09-09 – Stage 3 Honaker CAS Tactical Corridor source review
+
+Verweis: [`OMW-MOOSE-STAGE3-CAS-TACTICAL-CORRIDOR`](STAGE3-CAS-TACTICAL-CORRIDOR-DECISION.md).
+
+| Methode / Pfad | Status | Exakt belegte Wirkung und Grenze |
+|---|---|---|
+| `AUFTRAG:NewPATROLZONE(zone, speed, altitude)` | `SOURCE_REVIEWED` | erzeugt die PATROLZONE-Mission mit Zone als Objective sowie Task-Parametern. Die Methode bestimmt keine taktische Ingress-, BP- oder Egress-Geometrie. |
+| `AUFTRAG:SetMissionIngressCoord(c, alt, speed)` | `SOURCE_REVIEWED` | speichert einen einzelnen Knoten. Im FLIGHTGROUP-Missionsaufbau wird er vor dem Missions-Waypoint eingefügt. Kein vollständiger Anflugkorridor und kein Terrain-Masking. |
+| `AUFTRAG:SetMissionWaypointCoord(c)` | `SOURCE_REVIEWED` | legt den owner-authored Missions-Waypoint fest; der gepinnte Source verwendet ihn auch im FLIGHTGROUP-Pfad. Die PATROLZONE-Arbeitszone bleibt davon getrennt. |
+| `AUFTRAG:SetMissionEgressCoord(c, alt, speed)` | `SOURCE_REVIEWED` | fügt nach dem Missions-Waypoint einen einzelnen Knoten ein. Es entstehen weder WEST/R500-Rückroute noch automatische Recovery. |
+| `FLIGHTGROUP:AddWaypoint(...)` / `OnAfterUpdateRoute` | `SOURCE_REVIEWED` für den neuen CAS-Scope | öffentliche MOOSE-Schnittstellen für zusätzliche owner-authored dynamische Korridorsegmente und Route-Readiness. Der konkrete Honaker-CAS-Pfad ist noch nicht in DCS validiert. |
+
+Unzulässige Schlussfolgerungen:
+
+```text
+Setter vorhanden
+!= MOOSE plant taktische COIN-Geometrie
+PATROLZONE vorhanden
+!= MOOSE bestimmt BP oder geschützten An-/Ausflug
+Source review
+!= DCS-Route, Terrain-Masking, CAS-Release oder Landing validiert
+```
+
+Der praktische DCS-Nachweis ist ausdrücklich in der verlinkten Entscheidung definiert und vor Abschluss des Stage-3-Korridorpfads erforderlich.
