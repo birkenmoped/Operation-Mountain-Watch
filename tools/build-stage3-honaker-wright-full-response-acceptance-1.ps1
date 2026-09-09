@@ -25,14 +25,13 @@ $sources = [ordered]@{
   OMW_STAGE3_HELICOPTER_FLIGHTPATH_CORRIDOR = 'scripts\air-operations\OMW_HelicopterFlightPathCorridor.lua'
   OMW_STAGE3_FLIGHTPATH_NAME_CONTRACT = 'scripts\air-operations\OMW_FlightPathNameContract.lua'
   OMW_STAGE3_OPSTRANSPORT_CORRIDOR_ADAPTER = 'scripts\air-operations\OMW_OpsTransportCorridorAdapter.lua'
-  OMW_STAGE3_HELICOPTER_MISSION_OWNED_CORRIDOR = 'scripts\air-operations\OMW_HelicopterMissionOwnedCorridor.lua'
 }
 $acceptanceRelative = 'mission\tests\stage3-honaker-wright-full-response\src\01-honaker-wright-full-response-acceptance.lua'
 $acceptanceFile = Join-Path $repoRoot $acceptanceRelative
 $jalalabadFoundationFile = Join-Path $repoRoot 'scripts\air-operations\OMW_AirOps_Jalalabad_Bootstrap.lua'
 $distDir = Join-Path $repoRoot 'mission\tests\stage3-honaker-wright-full-response\dist'
 $outputFile = Join-Path $distDir 'OMW_Stage3_Honaker_Wright_Full_Response_Acceptance_1.lua'
-$builderVersion = 'STAGE3-HONAKER-WRIGHT-FULL-RESPONSE-ACCEPTANCE-1-21'
+$builderVersion = 'STAGE3-HONAKER-WRIGHT-FULL-RESPONSE-ACCEPTANCE-1-22'
 $testId = 'STAGE3-HONAKER-WRIGHT-FULL-RESPONSE-ACCEPTANCE-1'
 $mooseCommit = '73d3ed119cd9e7e3f2cfcabbaa34513d30529b54'
 $mooseSha256 = 'e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915'
@@ -92,14 +91,13 @@ foreach ($name in $resolved.Keys) {
   $combinedForValidation += $source
 }
 $acceptanceSource = Get-Content -LiteralPath $acceptanceFile -Raw -Encoding UTF8
-$missionOwnedCorridorSource = Get-Content -LiteralPath $resolved['OMW_STAGE3_HELICOPTER_MISSION_OWNED_CORRIDOR'] -Raw -Encoding UTF8
 $opsTransportCorridorSource = Get-Content -LiteralPath $resolved['OMW_STAGE3_OPSTRANSPORT_CORRIDOR_ADAPTER'] -Raw -Encoding UTF8
 $bundle += $acceptanceSource
 $combinedForValidation += $acceptanceSource
 
 $requiredMarkers = @(
   'FIRE_SUPPORT_IMMEDIATE','OPSZONE','OnAfterEvaluated','GetScannedGroupSet','PROXIMITY_INTRUSION','HONAKER_NO_KNOWN_ATTACKERS',
-  'ARTY:New','AssignTargetCoord','QueueTarget','LIVE_FIRE_RETARGET','SetWaitForShotTime','verifyFireComplete','PHYSICAL_AMMO_UNCHANGED',
+  'ARTY:New','AssignTargetCoord','QueueTarget','LIVE_FIRE_RETARGET','SetWaitForShotTime','verifyFireComplete','WRIGHT_ARTY_EVENTS_SHOT','NO_MOOSE_ARTY_EVENTS_SHOT',
   'TPL_BLUE_GND_INF_RIFLE_SQUAD_9','TPL_BLUE_GND_QRF_MIXED_6','OMW_RTE_BLUE_GUARD_HONAKER_01','ZON_BLUE_GND_HONAKER_ACCESS',
   'PATHLINE:FindByName','GetCoordinates','WaypointGround','TaskFunction("CONTROLLABLE.Route"','SetTaskWaypoint','state.guardGroup:Route','SetSpawnZone(accessZone)',
   'AUFTRAG:NewONGUARD','SetEngageDetected','AssignCohort','SetReturnToLegion(true)','OnAfterReturned','SettleReturned','qrfReturned',
@@ -107,7 +105,7 @@ $requiredMarkers = @(
   'GetDetectedGroups','IsCoordinateInZone','Get3DDistance','CAS_SENSOR_REPORT','CAS_ENGAGE_EVENT','SUPPORTED_ELEMENT_RELEASE_NO_KNOWN_ATTACKERS_CAS_NO_CONTACT',
   'casSupportRequirementActive','casOnStation','casNoContactReported','CAS_NO_CONTACT_STABLE_SEC','casHomeLanded','casAssetReturned','ConfirmExecutionEvidence','EVENTS.Shot',
   'C2_FIRE_OBSERVATION','C2_FIRE_OBSERVATION_RADIUS_NM','authority=QRF_ARTY_ONLY','CAS_ON_STATION_ARTY_DECONFLICTION',
-  'OMW-HELICOPTER-MISSION-OWNED-CORRIDOR-6','MOOSE_ONE_SHOT_ROUTE_TASK_CHAIN','persistentUpdateRouteHook = false',
+  'OnAfterUpdateRoute','MISSION_ROUTE_UIDS_NOT_READY','__omwFlightPathCorridorInstalled','CAS_CORRIDOR_PENDING_MOOSE_ROUTE_CALLBACK',
   'OMW-FOB-ATTACK-CAS-PATROL-CLOSURE-2','requireExecutionEvidence=false','executionEvidenceConfirmed=state.casFired','AssignSquadrons','squadrons={state.ah64d}',
   'PATHLINE_SUFFIX','ParsePathlineOffset','OMW_FlightPath','OMW_FlightPath_WEST','WEST_ALTITUDE_FT_AGL','ResolveSequence',
   'OMW-FLIGHTPATH-NAME-CONTRACT-1','OMW-OPSTRANSPORT-CORRIDOR-ADAPTER-2','GetWaypointCurrentUID','AddWaypoint','UpdateRoute','GetIntermediateCoordinate','HeadingTo',
@@ -185,8 +183,6 @@ foreach ($obsolete in @(
 )) {
   if ($acceptanceSource.Contains($obsolete)) { throw "Stage 3 acceptance still contains obsolete lifecycle marker: $obsolete" }
 }
-if ($missionOwnedCorridorSource -match 'function\s+flightGroup:OnAfterUpdateRoute\s*\(') { throw 'Stage 3 one-shot CAS corridor must not install an OnAfterUpdateRoute handler.' }
-if ($missionOwnedCorridorSource.Contains('__omwMissionOwnedCorridorHook')) { throw 'Stage 3 one-shot CAS corridor must not retain the legacy persistent route-hook binding.' }
 if ($acceptanceSource.Contains('CasAdapter.MissionMode.CASENHANCED')) { throw 'Stage 3 acceptance must not use CASENHANCED after PATROLZONE reconciliation.' }
 if ($acceptanceSource -match 'SetAltitude\s*\(') { throw 'Stage 3 acceptance must not issue a FLIGHTGROUP/OPSGROUP SetAltitude override for CAS.' }
 if ($acceptanceSource.Contains('duplicate ~= demand')) { throw 'Stage 3 acceptance must not compare RESUPPLY duplicate Lua table identity.' }
@@ -224,8 +220,8 @@ Write-Host 'CASContactSource: AH-64 FLIGHTGROUP:GetDetectedGroups only; no-conta
 Write-Host 'CASRelease: Honaker no-known-attackers + CAS on-station stable own no-contact -> explicit supported-element release -> controlled reverse corridor'
 Write-Host 'CASGroundTriggerAuthority: OPSZONE/attackIncident/raw RED counts have no direct CAS termination authority'
 Write-Host 'CASAcceptanceEvidence: real EVENTS.Shot OR stable on-station no-contact, plus Jalalabad landing and AIRWING/LEGION recovery, is required before CAS terminal acceptance'
-Write-Host 'CASRouteOrder: 125-kt explicit MOOSE ingress -> configured OMW_FlightPath variant -> WEST -> PATROLZONE -> WEST reverse -> configured OMW_FlightPath reverse -> Jalalabad'
-Write-Host 'FireSupport: 5-NM MOOSE C2 observation -> ARTY/QRF target picture; ARTY holds new fires while CAS is on station -> local M1083 rearm -> strategic reorder'
+Write-Host 'CASRouteOrder: Stage-2B MOOSE existing pre-mission waypoint -> configured OMW_FlightPath variant -> WEST -> PATROLZONE -> WEST reverse -> configured OMW_FlightPath reverse -> Jalalabad'
+Write-Host 'FireSupport: 5-NM MOOSE C2 observation -> unique fresh ARTY/QRF target picture; ARTY physical fire uses MOOSE EVENTS.Shot; CAS on station holds new fires -> local M1083 rearm -> strategic reorder'
 Write-Host 'StrategicResupply: exactly one RESUPPLY, Jalalabad -> Wright, quantity 15; CampaignState authoritative'
 Write-Host 'AirPhysicalMission: MOOSE OPSTRANSPORT with internal STORAGE fixture'
 Write-Host 'CH47TransitSpeedKts: 125'
@@ -233,6 +229,6 @@ Write-Host 'CH47LeadTurnDistanceM: 250'
 Write-Host 'CH47LeadTurnImplementation: public MOOSE COORDINATE:GetIntermediateCoordinate + FLIGHTGROUP:AddWaypoint TurningPoint route geometry'
 Write-Host 'AirAmmoRouteOrder: Jalalabad -> configured OMW_FlightPath variant -> Wright -> same configured route reverse -> Jalalabad'
 Write-Host 'ExternalSlingload: suspended; no NewCARGOTRANSPORT/PauseMission/CargoTransportation handoff'
-Write-Host 'AcceptanceScheduler: 10-second completion check; stops on PASS/FAIL'
+Write-Host 'AcceptanceScheduler: 10-second completion check; failed assertions remain visible while independent physical recovery observation continues'
 Write-Host "SHA256: $hash"
 Write-Host 'MizMutation: false'
