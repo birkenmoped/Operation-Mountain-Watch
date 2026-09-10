@@ -830,3 +830,15 @@ Source review
 ```
 
 Der praktische DCS-Nachweis ist ausdrücklich in der verlinkten Entscheidung definiert und vor Abschluss des Stage-3-Korridorpfads erforderlich.
+
+## Addendum 2026-09-10 – Stage 3 Honaker Build 1-26 Runtime-Evidenz
+
+Gültig ausschließlich für die Honaker/Wright/Jalalabad-Acceptance-Fixture auf Commit `b092f8cc0f6505f43a868a35741d03d95f30cfd9`; kein allgemeiner CAS- oder ARTY-Produktionsnachweis.
+
+| API / Pfad | Status | Nachweisgrenze |
+| --- | --- | --- |
+| `AUFTRAG:SetMissionIngressCoord`, `SetMissionWaypointCoord`, `SetMissionEgressCoord` plus `FLIGHTGROUP:AddWaypoint` / `UpdateRoute` | `DCS_PARTIALLY_VALIDATED` | Routegebundene R200/WEST-Gates wurden dynamisch abgeleitet und nach UID-Readiness installiert; in einer engen Talroute dürfen Ingress- und Egress-Koordinate gleich sein, die Routenphasen bleiben getrennt. |
+| `AUFTRAG:NewPATROLZONE` / `SetEngageDetected` | `DCS_PARTIALLY_VALIDATED` | AH-64 wurde queued, executing und on-station beobachtet; der Lauf belegt keinen Waffenabschuss. |
+| `FLIGHTGROUP:GetDetectedGroups()` | `DCS_PARTIALLY_VALIDATED` | On station wurden 0 zulässige eigene Kontakte gemeldet; 30-s-No-Contact führte zur expliziten Release. Keine Zielinjektion. |
+| `AIRWING:OnAfterLegionAssetReturned` | `DCS_PARTIALLY_VALIDATED` | Kontrollierter Reverse-Korridor, Jalalabad-Landung und AIRWING-/LEGION-Rückgabe wurden beobachtet. |
+
