@@ -10,7 +10,7 @@ project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
 superseded_by:
 source_branch: agent/fire-support-strategic-resupply-alarm-evidence
-source_commit: GIT_HISTORY
+source_commit: b092f8cc0f6505f43a868a35741d03d95f30cfd9
 validated_in_dcs: false
 ---
 
@@ -22,12 +22,43 @@ Verbindliche CAS-Verträge: [`OMW-MOOSE-STAGE3-CAS-LIFECYCLE-RECOVERY-LAW`](../.
 
 Dieser Acceptance-Test bleibt **PLANNED / nicht DCS-validiert**.
 
+## 1.1 DCS-Lauf 2026-09-10 – Build 1-26 (teilvalidierte Runtime-Evidenz)
+
+**Keine Gesamtfreigabe:** Der Teststatus bleibt `PLANNED`, weil weder ein terminaler Acceptance-PASS noch ein AH-64-`EVENTS.Shot`/Engage-Nachweis in diesem Full-Response-Lauf vorliegt.
+
+Exakte Artefaktkette des gestarteten Laufs:
+
+```text
+Source commit:       b092f8cc0f6505f43a868a35741d03d95f30cfd9
+BuilderVersion:      STAGE3-HONAKER-WRIGHT-FULL-RESPONSE-ACCEPTANCE-1-26
+MOOSE commit:        73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+Moose.lua SHA-256:   E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915
+embedded bundle SHA: 33CEB7AA6BC7FA833CCF456C41B689245B0CB70BD587AF533D0071A92B346661
+MIZ mutation:        false
+```
+
+Im DCS-Log positiv belegt:
+
+```text
+CAS_ROUTE_GATES_DERIVED: OMW_FlightPath_R200 -> OMW_FlightPath_WEST,
+  routegebundene dynamische Gates, 3.50 NM, ingress index 27, egress index 10
+CAS queued -> Mission executing -> MOOSE route callback -> corridor installed
+AH-64 physically ON STATION
+FLIGHTGROUP:GetDetectedGroups(): 0 eligible contacts
+30 s stable own no-contact -> explizite supported-element release
+controlled reverse recovery -> Jalalabad landing -> AIRWING/LEGION asset return
+```
+
+Kein Waffenpfad ist daraus abzuleiten: C2 hatte beim Alarm noch 13 RED-Gruppen; ARTY hatte das beobachtete Zielbild vor CAS-On-Station auf null reduziert. Deshalb fand die AH-64 eigene Detektion keine zulässigen Ziele. Es gab **keine** Zielinjektion und kein `KnowTarget()`; dies ist ein korrekter No-Contact-Zweig, aber kein CAS-Engagement-Nachweis.
+
+Offene, separat zu behandelnde Beobachtung: Die ARTY-Rearm-Follow-up-Logik erzeugte mehrere `FIRE_SUPPORT_REARMED_CONTINUATION`-Zyklen auf dasselbe C2-Zielbild. Dieses Verhalten ist weder als allgemeine ARTY-Policy abgenommen noch Bestandteil eines Gesamt-PASS. Der nächste gezielte Lauf muss (a) bei Ankunft des CAS noch ein eigenes detektierbares Zielbild vorhalten und (b) die ARTY-Continuation über Kontaktfrische/Cooldown oder eine explizite Policy begrenzen.
+
 Historische Fehltests bis einschließlich der externen Slingload-/CARGOTRANSPORT-Versuche bleiben als Evidenz erhalten. Der reale Build-1-19-Lauf bestätigte getrennt Guard, QRF, ARTY und den internen CH-47-OPSTRANSPORT-Pfad, war aber wegen der veralteten CAS-Closure nicht als Gesamt-PASS gültig.
 
 Aktueller Builderstand:
 
 ```text
-STAGE3-HONAKER-WRIGHT-FULL-RESPONSE-ACCEPTANCE-1-23
+STAGE3-HONAKER-WRIGHT-FULL-RESPONSE-ACCEPTANCE-1-26
 ```
 
 Owner-Entscheidungen vom 08.09.2026:
@@ -465,7 +496,7 @@ Nur ein realer Lauf mit vollständiger Branch-/Commit-/Bundle-/Mission-/DCS-/MOO
 ### 14.1 Exakter Testgegenstand
 
 ```text
-BuilderVersion: STAGE3-HONAKER-WRIGHT-FULL-RESPONSE-ACCEPTANCE-1-23
+BuilderVersion: STAGE3-HONAKER-WRIGHT-FULL-RESPONSE-ACCEPTANCE-1-26
 TestId:         STAGE3-HONAKER-WRIGHT-FULL-RESPONSE-ACCEPTANCE-1
 MOOSE commit:   73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
 Moose.lua SHA:  E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915
