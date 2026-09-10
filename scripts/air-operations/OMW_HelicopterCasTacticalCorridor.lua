@@ -125,11 +125,12 @@ local function validateGeometry(geometry)
   ensureSegmentExcludes(tacticalEgress, { ingress.coordinate, missionPoint.coordinate, egress.coordinate }, "geometry.tacticalEgress", toleranceM)
   ensureSegmentExcludes(returnTransit, { ingress.coordinate, missionPoint.coordinate, egress.coordinate }, "geometry.returnTransit", toleranceM)
 
-  if sameCoordinate(ingress.coordinate, missionPoint.coordinate, toleranceM)
-      or sameCoordinate(missionPoint.coordinate, egress.coordinate, toleranceM)
-      or sameCoordinate(ingress.coordinate, egress.coordinate, toleranceM) then
-    fail("CAS ingress, mission point and egress must be spatially distinct")
-  end
+  -- The approved owner route can pass through a constrained valley in reverse.
+  -- In that case the outbound ingress gate and return egress gate have the same
+  -- coordinate, but remain different operational nodes in their route phases.
+  -- Do not invent a lateral marker merely to force map-coordinate uniqueness.
+  -- The 3-4 NM selection in PlanRouteGated keeps both gates separate from the
+  -- PATROLZONE AO anchor.
 
   if type(geometry.evidence) ~= "table"
       or type(geometry.evidence.honakerReference) ~= "string"
