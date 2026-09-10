@@ -171,3 +171,190 @@ AIRWING/LEGION asset returned
 ```
 
 Der reale DCS-Nachweis muss die vollständige Hashkette sowie die sichtbare Route und die physische Rückgabe belegen. Bis zu diesem Nachweis ist der Vertrag geplant/source-geprüft, nicht DCS-validiert.
+
+
+## 10. Konkreter Implementierungsvertrag
+
+Die folgende Tabelle beschreibt den tatsächlichen Source-Pfad des aktuellen
+Stage-3-Full-Response-Tests. Sie ist kein DCS-Laufzeitnachweis.
+
+| Phase | OMW-/Adapterteil | MOOSE-Schnittstelle | Ergebnis |
+|---|---|---|---|
+| Bedarf | CAS-Demand-Policy und `MissionDemand`-Registry | keine physische MOOSE-Aktion | eindeutiger CAS-Demand mit Herkunfts-/Assignee-Kontext |
+| Allokation | CAS-Dispatch-Adapter, explizit gebundene AH-64D-SQUADRON | `AIRWING`, `SQUADRON`, `AUFTRAG` | AIRWING soll nur die vorgewählte Jalalabad-Ressource ausführen |
+| Arbeitsraum | Full-Response-Integration | `ZONE_RADIUS` | 5-NM-PATROLZONE um die konkrete AO |
+| Missionsauftrag | CAS-Dispatch-Adapter | `AUFTRAG:NewPATROLZONE`, `SetEngageDetected` | MOOSE owns tasking, detection activation and engagement FSM |
+| Routenableitung | vorhandener `HelicopterCorridor.ResolveSequence` plus `FlightPathNameContract` | `PATHLINE`-Koordinaten | logische `OMW_FlightPath`-Variante und `WEST` werden aufgelöst; keine feste R500-/Lnnn-Produktionsidentität |
+| Route gates | `OMW_HelicopterCasTacticalCorridor.PlanRouteGated` | `COORDINATE:Get2DDistance`, `HeadingTo` | dynamischer Ingress und Egress aus den Owner-Routen |
+| MOOSE-Missionsknoten | `ConfigureMission` | `SetMissionIngressCoord`, `SetMissionWaypointCoord`, `SetMissionEgressCoord` | genau drei dynamische Einzelknoten; AO-Anker ist keine BP |
+| volle Route | `Bind` | `GetGroupWaypointIndex`, `GetGroupEgressWaypointUID`, `AddWaypoint`, `UpdateRoute` | Owner-Transitsegmente werden in die MOOSE-Flugroute eingesetzt |
+| Readiness | `Bind` | `FLIGHTGROUP:OnAfterUpdateRoute` | kein Einfügen, bevor MOOSE die Missions-UIDs erzeugt hat |
+| Einsatzlage | Full-Response-Integration | `FLIGHTGROUP:GetDetectedGroups`, `OnAfterEngageTarget`, `EVENTS.Shot` | eigene Detektion, Engagement- und Waffenevidenz bleiben getrennt |
+| Recovery | CAS-Patrol-Closure-Adapter | Mission closure, `OnAfterLanded`, `AIRWING:OnAfterLegionAssetReturned` | kontrollierter Rückflug, Landung und erst danach Asset-Rückgabe |
+
+## 11. Exakter Routenadaptervertrag
+
+Der einzige neue CAS-spezifische Adapter ist:
+
+```text
+scripts/air-operations/OMW_HelicopterCasTacticalCorridor.lua
+schema: OMW-HELICOPTER-CAS-TACTICAL-CORRIDOR-1
+```
+
+Er hat genau drei öffentliche Aufgaben.
+
+### 11.1 `PlanRouteGated(spec)`
+
+Eingabe:
+
+```text
+outboundRoute
+returnRoute
+destinationCoordinate
+routeGateDistanceNm: 3–4 NM
+transitAltitudeFtAgl
+missionAltitudeFtAgl
+speedKts
+allocationId
+Honaker-/WEST-Evidenzreferenzen
+```
+
+Der Adapter wählt aus jeder bereits aufgelösten Owner-Route den Routenpunkt,
+dessen radialer 2D-Abstand zur AO dem gewünschten Gate-Abstand am nächsten
+liegt. Der beste Punkt muss innerhalb einer zusätzlichen NM Toleranz liegen.
+Andernfalls wird kein Ersatzpunkt erfunden; der Adapter schlägt fehl.
+
+Er erzeugt:
+
+```text
+ingress         = ausgewählter outbound-Routenpunkt
+missionPoint    = destinationCoordinate als PATROLZONE_DYNAMIC_AO_ANCHOR_NOT_BP
+egress          = ausgewählter return-Routenpunkt
+outboundTransit = Owner-Routenpunkte vor ingress
+returnTransit   = Owner-Routenpunkte nach egress
+tacticalIngress = {}
+tacticalEgress  = {}
+```
+
+Leere taktische Segmente sind Absicht: Die bestehende Owner-Route ist der
+taktische Korridor. Dieser Adapter fügt weder eine heuristisch erfundene
+Terrain-Masking-Strecke noch eine Battle Position ein.
+
+### 11.2 `ConfigureMission(mission, geometry)`
+
+Diese Funktion validiert zuerst die Geometrie: Allocation-ID, 3–4-NM-Band,
+räumlich verschiedene Knoten, Höhe, Geschwindigkeit, Achse und
+Evidenzreferenzen. Danach setzt sie ausschließlich:
+
+```lua
+mission:SetMissionIngressCoord(...)
+mission:SetMissionWaypointCoord(...)
+mission:SetMissionEgressCoord(...)
+```
+
+Die Methoden sind MOOSE-Missionshaken, keine Terrain- oder
+PATROLZONE-Planungsfunktion.
+
+### 11.3 `Bind(flightGroup, mission, geometry)`
+
+`Bind` wartet, bis MOOSE die Mission- und Egress-UID der konkreten
+`FLIGHTGROUP` bereitgestellt hat. Erst dann fügt er Transitpunkte mit
+`FLIGHTGROUP:AddWaypoint` vor dem MOOSE-Ingress beziehungsweise nach dem
+MOOSE-Egress ein und ruft `UpdateRoute()` auf.
+
+Ist die Route noch nicht bereit, wird nur der öffentliche Callback
+`OnAfterUpdateRoute` verwendet. Ein zeitgesteuertes wiederholtes
+`UpdateRoute`, ein eigener Scheduler oder ein nativer DCS-Controller-Task
+sind ausdrücklich ausgeschlossen.
+
+## 12. Exakter Sensor- und Releasevertrag
+
+`CAS_ON_STATION` entsteht erst, wenn die physische
+`FLIGHTGROUP:GetCoordinate()` innerhalb der CAS-`ZONE_RADIUS` liegt.
+
+Danach filtert die Full-Response-Integration das Ergebnis von:
+
+```lua
+state.casFlight:GetDetectedGroups()
+```
+
+auf lebende rote Bodengruppen innerhalb der PATROLZONE und des konfigurierten
+Engagement-Umfangs. Jeder relevante Kontakt setzt die No-Contact-Qualifikation
+zurück. `OnAfterEngageTarget` tut dies ebenfalls. `EVENTS.Shot` bestätigt
+Waffeneinsatz, beendet aber keinen Auftrag.
+
+Der No-Contact-Zeitstempel wird nur nach physischem On-Station gesetzt. Nach
+30 Sekunden ohne relevanten eigenen Kontakt entsteht
+`CAS_NO_CONTACT_REPORTED`. Die Full-Response-Integration ruft erst
+zusammen mit `HONAKER_NO_KNOWN_ATTACKERS` die
+`CasPatrolClosure.Complete(...)`-Schließung auf.
+
+Die Schließung setzt `casRecoveryRequested`. Nur dann werden die folgenden
+MOOSE-Ereignisse als reguläre Recovery-Evidenz gewertet:
+
+```text
+FLIGHTGROUP:OnAfterLanded am AIRWING-Heimatflugplatz
+AIRWING:OnAfterLegionAssetReturned für exakt state.casFlight
+```
+
+## 13. Verbindliche Nichtsubstitutionen
+
+Folgende Vereinfachungen sind unabhängig von ihrem beobachteten Erfolg
+verboten:
+
+```text
+PATHLINE-Anfang/Ende als Ingress oder Egress
+statischer Mission-Editor-Marker
+zufälliger oder von MOOSE berechneter Ersatzpunkt
+direkter Heimflug nach Zerstörung der ursprünglichen Incident-Gruppe
+direkter Heimflug wegen leerem C2-/OPSZONE-Scan
+allwissende Zielzuführung mit KnowTarget()
+nativer DCS-Controller-Task für CAS-Routing
+Timer-only Route-Readiness
+AUFTRAG-Cancel = Warehouse-Rückgabe
+FuelLow/Bingo-RTB = reguläre CAS-Completion
+```
+
+## 14. Offene Source-Befunde vor dem nächsten DCS-Lauf
+
+Die folgenden Befunde sind statisch im aktuellen Source festgestellt. Sie sind
+nicht als DCS-Laufzeitfehler behauptet, aber vor dem nächsten langen
+Full-Response-Lauf zu korrigieren oder gezielt nachzuweisen.
+
+1. `logCorridorProfiles()` erwartet die historische, nach Richtung
+   geschachtelte Profilstruktur. Der neue CAS-Adapter liefert eine flache
+   Liste. Damit sind die gewünschten detaillierten `CAS_ROUTE_PROFILE`-Logs
+   voraussichtlich nicht vollständig. Die Routeninstallation selbst wird davon
+   nicht geändert; die Regressions-Evidenz ist jedoch unzureichend.
+
+2. Beim letzten `returnTransit`-Routenpunkt wird die Achse aktuell gegen
+   denselben Punkt berechnet. Das ändert nicht die eingesetzte Koordinate,
+   kann aber eine ungültige `axisDeg`-Telemetrie erzeugen. Der Adapter muss
+   für den letzten Punkt eine gültige vorherige oder definierte Folgeachse
+   verwenden.
+
+3. Der Lua-Kopfkommentar des Adapters nennt noch taktische
+   Ingress-/Egress-Segmente und eine BP. Das widerspricht diesem Gesetz und
+   muss beim nächsten Adapter-Commit auf den tatsächlichen
+   Owner-Route-Gate-/AO-Anker-Vertrag bereinigt werden.
+
+Keiner dieser Befunde berechtigt zu einer Rückkehr zu statischen Markern,
+einer BP-Heuristik oder einem nicht-MOOSE-Routingpfad.
+
+## 15. Abnahmegrenze
+
+Statischer Build, Syntax oder Builder-Hash bestätigen nur Source-Identität und
+Guard-Erfüllung. Sie beweisen nicht:
+
+```text
+physisch geflogene Route
+korrekte Transitgeschwindigkeit
+kein UID-Gebirgseinstieg
+tatsächliche eigene Detektion
+kontrollierten Egress vor FuelLow
+Landung
+AIRWING-/LEGION-Rückgabe
+```
+
+Diese Punkte bleiben bis zu einem vollständigen MIZ-/Bundle-Preflight und
+einem dokumentierten DCS-Lauf `NOT_RUN`.
