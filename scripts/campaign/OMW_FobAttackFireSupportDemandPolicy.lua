@@ -56,6 +56,7 @@ local function validateTarget(target)
   if not isFinite(target.position.x) or not isFinite(target.position.z) then
     fail("target.position requires finite x and z")
   end
+  if target.cycleKey ~= nil then requireNonEmptyString(target.cycleKey, "target.cycleKey") end
 end
 
 function Policy.BuildDemandSpec(MissionDemand, incident, target)
@@ -68,8 +69,13 @@ function Policy.BuildDemandSpec(MissionDemand, incident, target)
   validateIncident(incident)
   validateTarget(target)
 
+  -- A continuation cycle is explicitly distinguished from the initial demand.
+  -- The default remains exactly one deduplicated demand per incident; callers
+  -- must opt in with a stable cycleKey after the prior demand is terminal.
+  local cycleSuffix = target.cycleKey and ("|CYCLE|" .. target.cycleKey) or ""
+
   return {
-    id = "MD-FIRE-SUPPORT-FOB-ATTACK|" .. incident.incidentId,
+    id = "MD-FIRE-SUPPORT-FOB-ATTACK|" .. incident.incidentId .. cycleSuffix,
     missionType = MissionDemand.Type.FIRE_SUPPORT_IMMEDIATE,
     origin = incident.installationId,
     objective = "Provide immediate indirect fire support to attacked BLUE Ground installation",
@@ -90,7 +96,7 @@ function Policy.BuildDemandSpec(MissionDemand, incident, target)
     },
     resourceReservation = nil,
     createdReason = Policy.CreatedReason,
-    dedupeKey = "FIRE_SUPPORT_IMMEDIATE|FOB_ATTACK|" .. incident.installationId,
+    dedupeKey = "FIRE_SUPPORT_IMMEDIATE|FOB_ATTACK|" .. incident.installationId .. cycleSuffix,
   }
 end
 
