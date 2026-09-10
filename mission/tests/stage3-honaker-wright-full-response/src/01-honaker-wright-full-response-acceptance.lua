@@ -102,8 +102,8 @@ local state = {
   casContactReported=false, casNoContactReported=false, casNoContactSince=nil, casLastContactAt=nil,
   casReleaseRequested=false, casReleaseReason=nil, casRecoveryRequested=false, casHomeLanded=false, casAssetReturned=false,
   casFailed=false, casFailureReason=nil,
-  battery=nil, arty=nil, fireAdapter=nil, fireDemand=nil, fireStarted=false, fireComplete=false,
-  fireTargetCount=0, fireTargetCompleteCount=0, fireLastSourceGroupName=nil, fireScheduledSourceGroups={},
+  battery=nil, arty=nil, fireAdapter=nil, fireDemand=nil, fireDemands={}, fireStarted=false, fireComplete=false,
+  fireCycleNumber=0, fireCycleActive=false, fireTargetCount=0, fireTargetCompleteCount=0, fireLastSourceGroupName=nil, fireScheduledSourceGroups={},
   fireActiveTargetName=nil, firePhysicalShotsByTarget={}, firePhysicalShotsTotal=0,
   physicalAmmoBefore=nil, physicalAmmoAfter=nil, physicalAmmoBeforeByTarget={}, physicalAmmoAfterByTarget={},
   rearmService=nil, rearmComplete=false, supportReturned=false,
@@ -893,15 +893,20 @@ local function setupFireSupport()
       fail("Wright L118 physical fire not confirmed: "..tostring(reason))
     end,
     onFireComplete=function(demandId)
-      if state.fireComplete then return end
+      state.fireCycleActive=false
       state.fireComplete=true
-      msg("FIRE SUPPORT",string.format("Wright live fire cycle ended after %d coordinate missions; total physical ammo %s -> %s; local M1083 rearm requested",
-        state.fireTargetCount,tostring(state.physicalAmmoBefore),tostring(state.physicalAmmoAfter)),14)
-      state.rearmService:Request({
-        transactionId=REARM_TX, missionDemandId=demandId, nodeId=WRIGHT_NODE, resourceId=AMMO_RESOURCE, quantity=1,
-        artilleryGroup=state.battery, alias="Wright L118 Stage3 E2E", onRoad=false, rearmingDistance=100,
-        supportReturnRadiusM=100, startArty=false,
-      })
+      if not state.rearmComplete then
+        msg("FIRE SUPPORT",string.format("Wright initial live fire cycle ended after %d coordinate missions; total physical ammo %s -> %s; local M1083 rearm requested",
+          state.fireTargetCount,tostring(state.physicalAmmoBefore),tostring(state.physicalAmmoAfter)),14)
+        state.rearmService:Request({
+          transactionId=REARM_TX, missionDemandId=demandId, nodeId=WRIGHT_NODE, resourceId=AMMO_RESOURCE, quantity=1,
+          artilleryGroup=state.battery, alias="Wright L118 Stage3 E2E", onRoad=false, rearmingDistance=100,
+          supportReturnRadiusM=100, startArty=false,
+        })
+      else
+        msg("FIRE SUPPORT",string.format("Wright follow-on fire cycle %d ended; battery remains C2-ready for a later fresh contact",
+          state.fireCycleNumber),12)
+      end
     end,
   })
   local previousShot = state.arty.OnEventShot
@@ -954,6 +959,9 @@ local function dispatchFire(incident)
   })
   if created~=true then fail("fire-support demand failed: "..tostring(reason)) return end
   state.fireDemand=demand
+  state.fireDemands[1]=demand.id
+  state.fireCycleNumber=1
+  state.fireCycleActive=true
   state.fireTargetCount=1
   state.fireLastSourceGroupName=target:GetName()
   state.fireScheduledSourceGroups[target:GetName()]=true
@@ -962,6 +970,42 @@ local function dispatchFire(incident)
   local targetName,dispatched,dispatchReason=state.fireAdapter:Dispatch(demand,target)
   if dispatched~=true then fail("Wright ARTY dispatch failed: "..tostring(dispatchReason)) return end
   log(string.format("LIVE_FIRE_RETARGET demandId=%s mission=1 sourceGroup=%s artyTarget=%s",tostring(demand.id),tostring(target:GetName()),tostring(targetName)))
+end
+
+-- A completed demand is terminal by design. When MOOSE C2 later reports a
+-- fresh hostile ground picture after the physical battery is rearmed, start a
+-- distinct continuation demand instead of attempting to reopen the old one.
+local function dispatchFollowOnFire(incident)
+  if state.fireCycleActive or not state.rearmComplete or state.casOnStation then return false end
+  state.fireScheduledSourceGroups={}
+  local target,targetReason=selectNextFireTarget()
+  if not target then return false,targetReason end
+  local nextCycle=state.fireCycleNumber+1
+  if not reportFireMission(target,state.fireTargetCount+1) then return false,"TARGET_REJECTED" end
+  local p=target:GetCoordinate():GetVec3()
+  local demand,created,reason=FirePolicy.CreateDemand(MissionDemand,registry,incident,{
+    targetKind="DETECTED_RED_GROUND_GROUP", targetName=target:GetName(), position={x=p.x,y=p.y,z=p.z},
+    cycleKey="REARMED-"..tostring(nextCycle),
+  })
+  if created~=true then
+    fail("follow-on fire-support demand failed: "..tostring(reason))
+    return false,reason
+  end
+  local targetName,dispatched,dispatchReason=state.fireAdapter:Dispatch(demand,target)
+  if dispatched~=true then
+    fail("Wright follow-on ARTY dispatch failed: "..tostring(dispatchReason))
+    return false,dispatchReason
+  end
+  state.fireDemands[#state.fireDemands+1]=demand.id
+  state.fireCycleNumber=nextCycle
+  state.fireCycleActive=true
+  state.fireTargetCount=state.fireTargetCount+1
+  state.fireLastSourceGroupName=target:GetName()
+  state.fireScheduledSourceGroups[target:GetName()]=true
+  msg("FIRE SUPPORT",string.format("Fresh C2 contact after local rearm: Wright follow-on fire cycle %d -> %s",nextCycle,target:GetName()),12)
+  log(string.format("FIRE_SUPPORT_REARMED_CONTINUATION demandId=%s cycle=%d sourceGroup=%s artyTarget=%s",
+    tostring(demand.id),nextCycle,tostring(target:GetName()),tostring(targetName)))
+  return true,nil
 end
 
 local function setupDefenceAndThreat()
@@ -1045,6 +1089,9 @@ local function setupDefenceAndThreat()
         local names={}
         for _,group in ipairs(groups) do names[#names+1]=group:GetName() end
         log(string.format("C2_FIRE_OBSERVATION source=OPSZONE radiusNm=%d observedRedGround=%d names=%s authority=QRF_ARTY_ONLY",C2_FIRE_OBSERVATION_RADIUS_NM,#groups,table.concat(names,",")))
+        if #groups>0 and state.fireComplete and state.rearmComplete and not state.fireCycleActive and state.incident then
+          dispatchFollowOnFire(state.incident)
+        end
       end
       state.c2FireObservationOpsZone:Start()
       state.c2FireObservationStarted=true
