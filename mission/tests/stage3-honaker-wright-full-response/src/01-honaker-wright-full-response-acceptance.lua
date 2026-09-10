@@ -1057,10 +1057,29 @@ local function setupDefenceAndThreat()
           if state.casDemand then return state.casDemand,false,"ACTIVE_CAS_SUPPORT_REQUIREMENT" end
           local demand,created,reason=CasPolicy.CreateDemand(md,reg,incident)
           if created then
+            -- CAS preparation is a subordinate response. An adapter/runtime failure
+            -- must be recorded as CAS failure, never escape the OPSZONE Attacked FSM
+            -- and suppress the independently required QRF/ARTY response.
             state.casDemand=demand
-            if not ensureCasContext() then return demand,created,"CAS_CONTEXT_FAILED" end
-            local mission,ok,why=state.casAdapter:Dispatch(demand,state.casTacticalZone)
-            if ok then
+            local contextCallOk, contextReadyOrTrace=xpcall(function()
+              return ensureCasContext()
+            end, function(errorMessage) return tostring(errorMessage) end)
+            if not contextCallOk then
+              failCas("CAS_CONTEXT_EXCEPTION_ISOLATED: "..tostring(contextReadyOrTrace))
+              return demand,created,"CAS_CONTEXT_EXCEPTION_ISOLATED"
+            end
+            if contextReadyOrTrace~=true then return demand,created,"CAS_CONTEXT_FAILED" end
+
+            local dispatchCallOk, missionOrTrace, dispatched, why=xpcall(function()
+              local mission,ok,dispatchWhy=state.casAdapter:Dispatch(demand,state.casTacticalZone)
+              return mission,ok,dispatchWhy
+            end, function(errorMessage) return tostring(errorMessage) end)
+            if not dispatchCallOk then
+              failCas("CAS_DISPATCH_EXCEPTION_ISOLATED: "..tostring(missionOrTrace))
+              return demand,created,"CAS_DISPATCH_EXCEPTION_ISOLATED"
+            end
+            if dispatched then
+              local mission=missionOrTrace
               state.casMission=mission
               state.casSupportRequirementActive=true
               local prev=mission.OnAfterExecuting
