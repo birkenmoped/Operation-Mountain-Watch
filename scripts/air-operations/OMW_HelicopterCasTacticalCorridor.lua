@@ -169,6 +169,71 @@ function Adapter.ConfigureMission(mission, geometry)
   return planned
 end
 
+
+-- Derive the MOOSE single-node hooks from the selected owner route on every
+-- allocation. No mission-editor marker, resolver endpoint, or random point is used.
+-- The PATROLZONE remains the working area; missionPoint is its dynamic AO anchor,
+-- not a separately invented battle position.
+function Adapter.PlanRouteGated(spec)
+  requireTable(spec, "spec")
+  local outbound = requireTable(spec.outboundRoute, "spec.outboundRoute")
+  local returnRoute = requireTable(spec.returnRoute, "spec.returnRoute")
+  local destination = requireCoordinate(spec.destinationCoordinate, "spec.destinationCoordinate")
+  local distanceNm = spec.routeGateDistanceNm
+  if type(distanceNm) ~= "number" or distanceNm < 3 or distanceNm > 4 then
+    fail("spec.routeGateDistanceNm must be within the approved 3-4 NM range")
+  end
+  local distanceM = distanceNm * 1852
+
+  local function gate(route, phase)
+    if #route < 2 then fail(phase .. " route requires at least two coordinates") end
+    local best, bestDelta
+    for index, coordinate in ipairs(route) do
+      requireCoordinate(coordinate, phase .. " route coordinate")
+      local delta = math.abs(coordinate:Get2DDistance(destination) - distanceM)
+      if not bestDelta or delta < bestDelta then best, bestDelta = index, delta end
+    end
+    if not best or bestDelta > 1852 then
+      fail(phase .. " route has no owner-authored coordinate within 1 NM of the requested 3-4 NM AO gate")
+    end
+    return best
+  end
+
+  local ingressIndex = gate(outbound, "INGRESS")
+  local egressIndex = gate(returnRoute, "EGRESS")
+  local function copyRange(route, first, last)
+    local result = {}
+    for index=first,last do result[#result+1] = { coordinate=route[index], altitudeFtAgl=spec.transitAltitudeFtAgl, speedKts=spec.speedKts, axisDeg=route[index]:HeadingTo(route[math.min(index+1,#route)]) } end
+    return result
+  end
+  local function node(coordinate, nextCoordinate)
+    return { coordinate=coordinate, altitudeFtAgl=spec.transitAltitudeFtAgl, speedKts=spec.speedKts, axisDeg=coordinate:HeadingTo(nextCoordinate or destination) }
+  end
+  local ingress = node(outbound[ingressIndex], outbound[math.min(ingressIndex+1,#outbound)])
+  local egress = node(returnRoute[egressIndex], returnRoute[math.min(egressIndex+1,#returnRoute)])
+  local geometry = {
+    allocationId = spec.allocationId,
+    westExitDistanceNm = distanceNm,
+    ingress = ingress,
+    missionPoint = { coordinate=destination, altitudeFtAgl=spec.missionAltitudeFtAgl, speedKts=spec.speedKts, axisDeg=ingress.axisDeg },
+    egress = egress,
+    outboundTransit = copyRange(outbound, 1, math.max(1, ingressIndex-1)),
+    tacticalIngress = {},
+    tacticalEgress = {},
+    returnTransit = copyRange(returnRoute, math.min(#returnRoute, egressIndex+1), #returnRoute),
+    evidence = {
+      honakerReference = spec.honakerReference,
+      westReference = spec.westReference,
+      ingressRouteIndex = ingressIndex,
+      egressRouteIndex = egressIndex,
+      missionPointRole = "PATROLZONE_DYNAMIC_AO_ANCHOR_NOT_BP",
+    },
+  }
+  validateGeometry(geometry)
+  log(string.format("CAS_ROUTE_GATES_DERIVED allocationId=%s distanceNm=%.2f ingressRouteIndex=%d egressRouteIndex=%d", geometry.allocationId, distanceNm, ingressIndex, egressIndex))
+  return geometry
+end
+
 local function install(flightGroup, binding)
   if binding.installed then return binding.result, true, "ALREADY_INSTALLED" end
   if binding.installing then return nil, false, "INSTALL_IN_PROGRESS" end
