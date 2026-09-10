@@ -27,7 +27,7 @@ Historische Fehltests bis einschließlich der externen Slingload-/CARGOTRANSPORT
 Aktueller Builderstand:
 
 ```text
-STAGE3-HONAKER-WRIGHT-FULL-RESPONSE-ACCEPTANCE-1-22
+STAGE3-HONAKER-WRIGHT-FULL-RESPONSE-ACCEPTANCE-1-23
 ```
 
 Owner-Entscheidungen vom 08.09.2026:
@@ -458,97 +458,84 @@ Jalalabad final strategic AMMO = 85
 
 Nur ein realer Lauf mit vollständiger Branch-/Commit-/Bundle-/Mission-/DCS-/MOOSE-Provenienz darf den Status ändern.
 
+## 14. Final-DCS-Gate – Build 1-23
 
-## 14. Build 1-22 – regressionskorrektur nach realem 1-21-Lauf
+**Status: PLANNED / NOT_RUN.** Dieser Abschnitt ersetzt die aufgehobenen Build-1-22-Anweisungen vollständig. Er ist der einzige zulässige Abschlusstest für den aktuellen Branch-Stand, bis ein Ergebnisbericht mit vollständiger Artefaktkette vorliegt.
 
-Der reale Lauf mit Build 1-21 ist **kein PASS**. Seine beobachtete Fehlerevidenz ist verbindlich für die Korrektur:
-
-```text
-CAS: nach vollständiger Bekämpfung kreiste die AH-64 weiter bis Bingo/FuelLow;
-anschließend erfolgte ein direkter statt kontrollierter Rückflug.
-Route: Waypoint UID=3 erschien erneut als eigener, ungeeigneter Gebirgspunkt.
-ARTY: drei 4-Schuss-Missionen wurden physisch ausgelöst (300 -> 296 -> 292 -> 288);
-eine wiederholte Zielzuordnung und der schwankende Momentwert 288 -> 291 lösten
-fälschlich PHYSICAL_AMMO_UNCHANGED aus. Der daraus entstandene globale FAIL
-unterband die weitere CAS-Lifecycle-Auswertung und damit den Restock-Pfad.
-```
-
-Build 1-22 stellt den bereits DCS-abgenommenen Stage-2B-Vertrag wieder her:
+### 14.1 Exakter Testgegenstand
 
 ```text
-kein SetMissionIngressCoord()/SetMissionEgressCoord() für diesen CAS-Auftrag
-bestehender Pre-Mission-Waypoint
--> owner-authored OMW_FlightPath/WEST outbound Waypoints
--> PATROLZONE mission waypoint
--> owner-authored reverse waypoints
--> normaler MOOSE RTB/Landing
-route readiness ausschließlich über FLIGHTGROUP:OnAfterUpdateRoute
+BuilderVersion: STAGE3-HONAKER-WRIGHT-FULL-RESPONSE-ACCEPTANCE-1-23
+TestId:         STAGE3-HONAKER-WRIGHT-FULL-RESPONSE-ACCEPTANCE-1
+MOOSE commit:   73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+Moose.lua SHA:  E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915
+MIZ mutation by builder: false
 ```
 
-Die ARTY-Abnahme zählt nicht mehr eine Momentaufnahme aus `ARTY:GetAmmo()` als
-einzigen Schussbeweis. Der gepinnte MOOSE-ARTY-Handler verarbeitet `EVENTS.Shot`
-für die Batterie; mindestens ein zielkorrelierter `WRIGHT_ARTY_EVENTS_SHOT`
-ist die physische Fire-Evidence. Ammo-Snapshots bleiben Telemetrie. Bereits
-eingeplante C2-Zielgruppen werden nicht erneut eingeplant; neue Feueraufträge
-bleiben ab physischem CAS On Station gesperrt.
+Der Test ist eine **Honaker/Wright/Jalalabad-Testfixture**. Seine konkrete AH-64-Bindung, 125 kt, 2.500 ft AGL, 5-NM-Zone, 30-Sekunden-No-Contact und 3,5-NM-Routengates sind keine allgemeine CAS-Policy. Die allgemeingültigen Grenzen stehen im CAS-Lifecycle-/Recovery-Gesetz.
 
-Ein Acceptance-FAIL stoppt zudem keine unabhängige physische CAS-Recovery-
-Beobachtung mehr. Er bleibt sichtbar und verhindert PASS, aber die
-supported-element-gesteuerte CAS-Freigabe kann ihre Reverse-Route und
-Jalalabad-Rückkehr weiterhin ausführen.
+### 14.2 Unbedingte statische Freigabe
 
-Vor dem nächsten DCS-Lauf zusätzlich prüfen:
+Vor dem DCS-Start muss der lokale Builder ohne Ausnahme belegen:
 
 ```text
-BuilderVersion = STAGE3-HONAKER-WRIGHT-FULL-RESPONSE-ACCEPTANCE-1-22
-kein MISSION_OWNED_CORRIDOR-6 Marker im Bundle
-CAS_CORRIDOR_PENDING_MOOSE_ROUTE_CALLBACK oder Stage-2B-Korridorinstallation sichtbar
-WRIGHT_ARTY_EVENTS_SHOT sichtbar, sofern Wright feuert
-kein wiederholter C2-Quellgruppenname innerhalb einer ARTY-Fire-Cycle
+Git HEAD = im Bundle-Header genannter GitCommit
+BuilderVersion = 1-23
+MOOSE commit und Moose.lua SHA entsprechen Abschnitt 2
+Builder SHA256 = unabhängiger Get-FileHash SHA256
+MizMutation: false
 ```
 
+Zusätzlich müssen die bestehenden Builder-Guards PASS ergeben. Der Lauf wird nicht gestartet, wenn der Builder einen alten Slingload-Pfad, KnowTarget-Injection, CASENHANCED, direkte Incident-/RED-Count-CAS-Closure oder einen der im Builder gesperrten Native-DCS-Pfade meldet.
 
-## 15. Build 1-22 gesperrt – dynamischen CAS-Korridor herstellen
+### 14.3 MIZ-Transfer- und Objektvertragsgate
 
-**Status: NICHT ZU BAUEN ODER IN DCS ZU TESTEN.**
-
-Build 1-22 darf nicht die allgemeine Stage-2B-Route statt der vereinbarten
-Honaker-CAS-Geometrie verwenden. Ebenso unzulässig ist jede Ableitung aus
-`resolved.outbound[1]`, PATHLINE-Nähe, zufälligen MOOSE-Werten oder festen
-Missionseditor-Markern.
-
-Der nächste Build muss pro CAS-Allocation diese vollständige Owner-Route
-nachweisen:
+Der Builder verändert keine MIZ. Vor der Testausführung muss deshalb die tatsächlich gestartete MIZ erneut und unabhängig nachgewiesen werden:
 
 ```text
-Jalalabad -> R500 -> WEST
--> CAS_INGRESS: WEST-Abzweig rund 3–4 NM vor Honaker
--> taktischer OMW-Ingress / Terrain Masking
--> CAS_MISSION_POINT / BP plus PATROLZONE working area
--> taktischer OMW-Egress
--> CAS_EGRESS: Rückkehr in WEST
--> WEST reverse -> R500 reverse -> Jalalabad
+MIZ SHA-256
+interner mission-SHA-256
+eingebetteter Acceptance-Bundle-SHA-256 = lokaler Bundle-SHA-256
+eingebetteter Moose.lua-SHA-256 = gepinnter Moose.lua-SHA-256
+Moose.lua lädt vor dem Acceptance-Bundle
+keine ältere parallele Stage-3-Test-Lua aktiv
+Objektvertragssmoke nach dem letzten MIZ-Speichern
 ```
 
-Die drei benannten Werte werden dynamisch aus Transitroute, Honaker/AO und
-taktischer Achse bestimmt. Ihr Evidenzlog enthält Position, Höhe, Achse,
-Honaker-Bezug und WEST-Bezug.
+Der Objektvertragssmoke umfasst mindestens Jalalabad AIRBASE/Warehouse, Jalalabad AH-64- und CH-47-Templates, Honaker-Alarm-/CAS-/Access-Zonen, Wright L118/M1083 und die verwendeten FlightPath-/WEST-PATHLINEs. Fehlt einer dieser Nachweise, ist das Ergebnis INVALID, nicht FAIL und nicht PASS.
 
-MOOSE erhält die Knoten über die öffentlichen AUFTRAG-Methoden
-`SetMissionIngressCoord`, `SetMissionWaypointCoord` und
-`SetMissionEgressCoord`. Diese Methoden sind keine taktische
-Routenplanung: Sie setzen nur den Waypoint vor, am und nach dem
-Missions-Waypoint. Die vollständigen OMW-Korridorsegmente werden mit den
-bereits verwendeten öffentlichen MOOSE-`FLIGHTGROUP:AddWaypoint`- und
-`OnAfterUpdateRoute`-Schnittstellen eingebracht.
+### 14.4 Ein gebündelter DCS-Lauf
 
-Der vorhandene MOOSE-Anteil bleibt:
+Der Lauf verwendet genau das in Abschnitt 14.3 nachgewiesene Bundle und prüft die folgenden unabhängigen Evidenzketten:
+
+| Kette | erforderliche positive Evidenz |
+|---|---|
+| Alarm/Guard/QRF | Honaker-Alarm; Guard-Route; QRF-ONGUARD; QRF bleibt bis zur expliziten CAS-Freigabe aktiv |
+| CAS Dispatch/Ingress | MOOSE PATROLZONE + SetEngageDetected; konkrete FlightGroup; 125-kt-Default; dynamische, route-gebundene Ingress-/AO-/Egress-Knoten; kein freier Gebirgswegpunkt |
+| CAS Engagement/Release | eigene GetDetectedGroups()-Evidenz; CAS_ON_STATION; bei vorhandenem Kontakt Fortsetzung; No-Contact erst nach 30 s stabil; erst dann explizite Supported-Element-Freigabe |
+| CAS Recovery | Egress, WEST reverse, FlightPath reverse, Landung Jalalabad und AIRWING:OnAfterLegionAssetReturned |
+| ARTY/C2 | mindestens ein zielkorrelierter physischer Wright-ARTY-Schuss; keine neue ARTY-Mission ab CAS On Station; laufende Feueraufträge nicht künstlich abgebrochen |
+| Rearm/Resupply | M1083-Rearm und Rückkehr; genau ein Demand; genau ein CH-47-OPSTRANSPORT; STORAGE delivery; Rückflug; CH-47-Landung und AIRWING-/LEGION-Rückgabe |
+| Bestand | nach bestätigter Delivery Wright = 30 und Jalalabad = 85 strategische AMMO-Packages |
+
+Ein beobachteter CAS-FuelLow-/Bingo-Direktrückflug, ein Kreisflug nach gültiger Release, eine fehlende AIRWING-/LEGION-Rückgabe oder ein nicht-routegebundener künstlicher Wegpunkt ist ein **FAIL**. Ein fehlender Startnachweis, fehlende Artefaktkette oder eine unklare parallele Lua ist **INVALID**.
+
+### 14.5 Erforderliche Testunterlagen
+
+Nach dem Lauf wird ein Ergebnisbericht angelegt. Er enthält mindestens:
 
 ```text
-AUFTRAG:NewPATROLZONE + SetEngageDetected
-MOOSE mission FSM / detection / engagement
-AIRWING/LEGION lifecycle and recovery
+Klassifikation: PASS | PASS_WITH_LIMITATION | PARTIAL | FAIL | INVALID
+Branch und GitCommit
+BuilderVersion, Bundlepfad und Bundle-SHA-256
+MIZ-Dateiname und MIZ-SHA-256
+interner mission-SHA-256
+DCS-Version
+MOOSE-Commit und Moose.lua-SHA-256
+DCS-Log- und Debrief-SHA-256
+Zeitfenster des Laufs
+eindeutige Log-/Telemetriebelege für jede Kette aus 14.4
+Abweichungen und offene Grenzen
 ```
 
-Bis zur Implementierung, statischer Prüfung und einem vollständigen realen
-DCS-Lauf ist Build 1-22 blockiert.
+Erst ein solcher Ergebnisbericht darf diesen Acceptance-Status von PLANNED verändern. Ein fehlerfreier Build beweist ausschließlich die statische Vorbedingung; er ist kein DCS-PASS.
