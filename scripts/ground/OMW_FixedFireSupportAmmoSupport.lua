@@ -6,9 +6,11 @@
 -- dedicated local Warehouse spawn zone that must be placed on free ground in
 -- the Mission Editor. The pinned MOOSE SetValidateAndRepositionGroundUnits path
 -- is intentionally not enabled because its UTILS helper chain is broken in the
--- pinned source/runtime. This module does not own CampaignState ammunition,
--- create ARTY tasking, route the support group after materialization, or spawn
--- outside the existing MOOSE WAREHOUSE lifecycle.
+-- pinned source/runtime. This module owns starting its dedicated support BRIGADE
+-- after all PLATOON/materializer registrations are complete so later self-
+-- requests can actually materialize through the MOOSE WAREHOUSE lifecycle.
+-- It does not own CampaignState ammunition, create ARTY tasking, route the
+-- support group after materialization, or spawn outside MOOSE WAREHOUSE.
 
 local FixedFireSupportAmmoSupport = {}
 
@@ -17,7 +19,7 @@ Service.__index = Service
 
 local TAG = "[OMW][Ground.FixedFireSupportAmmoSupport]"
 
-FixedFireSupportAmmoSupport.SchemaVersion = "OMW-FIXED-FIRE-SUPPORT-AMMO-SUPPORT-3"
+FixedFireSupportAmmoSupport.SchemaVersion = "OMW-FIXED-FIRE-SUPPORT-AMMO-SUPPORT-4"
 
 local function fail(message)
   error(TAG .. " " .. tostring(message), 2)
@@ -65,6 +67,9 @@ function FixedFireSupportAmmoSupport.New(spec)
   if type(brigade.AddAsset) ~= "function" then
     fail("spec.brigade.AddAsset() is required")
   end
+  if type(brigade.Start) ~= "function" then
+    fail("spec.brigade.Start() is required")
+  end
   if type(materializerModule.New) ~= "function" then
     fail("spec.materializerModule.New() is required")
   end
@@ -94,6 +99,14 @@ function FixedFireSupportAmmoSupport.New(spec)
     onMaterialized = spec.onMaterialized,
     log = spec.log,
   })
+
+  -- The dedicated support warehouse must be started only after all materializer
+  -- assets/callbacks are registered. Otherwise MOOSE accepts the later self-
+  -- request but has no running BRIGADE lifecycle that can materialize it.
+  brigade:Start()
+  if spec.log then
+    spec.log("INFO", TAG .. " dedicated support BRIGADE started after materializer registration")
+  end
 
   return setmetatable({
     brigade = brigade,

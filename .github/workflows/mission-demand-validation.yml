@@ -9,13 +9,24 @@ on:
       - "scripts/campaign/OMW_FobAttackDemandPolicy.lua"
       - "scripts/ground/OMW_FobThreatOpsZoneAdapter.lua"
       - "scripts/ground/OMW_GroundPersonnelDeploymentLedger.lua"
+      - "scripts/ground/OMW_FobAttackFunctionalArtyDispatchAdapter.lua"
       - "scripts/air-operations/OMW_FobAttackCasDispatchAdapter.lua"
       - "scripts/air-operations/OMW_HelicopterFlightPathCorridor.lua"
+      - "scripts/air-operations/OMW_OpsTransportCorridorAdapter.lua"
+      - "scripts/air-operations/OMW_SlingloadCorridorHandoff.lua"
       - "scripts/logistics/OMW_GroundInitialStock.lua"
       - "mission/tests/fob-attack-support-demand/src/*.lua"
       - "tools/build-fob-attack-cas-dispatch-acceptance-2.ps1"
       - "mission/tests/ground-native-homezone-return/src/*.lua"
       - "tools/build-ground-native-homezone-return-acceptance-1.ps1"
+      - "mission/tests/air-ammo-resupply/src/*.lua"
+      - "tools/build-air-ammo-cargotransport-acceptance-1.ps1"
+      - "mission/tests/stage3-honaker-wright-full-response/src/*.lua"
+      - "tools/build-stage3-honaker-wright-full-response-acceptance-1.ps1"
+      - "mission/tests/stage3-cas-resupply-focused/src/*.lua"
+      - "tools/build-stage3-cas-resupply-focused-acceptance-1.ps1"
+      - "mission/tests/stage3-honaker-cas-support/src/*.lua"
+      - "tools/build-stage3-honaker-cas-support-acceptance-1.ps1"
       - "tests/mission-demand/**"
       - ".github/workflows/mission-demand-validation.yml"
 
@@ -45,6 +56,29 @@ jobs:
         shell: bash
         run: |
           luac5.4 -p mission/tests/ground-native-homezone-return/src/01-ground-native-homezone-return-acceptance.lua
+
+      - name: Check Air AMMO CARGOTRANSPORT acceptance syntax
+        shell: bash
+        run: |
+          luac5.4 -p mission/tests/air-ammo-resupply/src/01-air-ammo-resupply-cargotransport-acceptance.lua
+
+      - name: Check Stage 3 Honaker Wright full-response syntax
+        shell: bash
+        run: |
+          luac5.4 -p scripts/ground/OMW_FobAttackFunctionalArtyDispatchAdapter.lua
+          luac5.4 -p scripts/air-operations/OMW_OpsTransportCorridorAdapter.lua
+          luac5.4 -p mission/tests/stage3-honaker-wright-full-response/src/01-honaker-wright-full-response-acceptance.lua
+
+      - name: Check focused Stage 3 CAS resupply acceptance syntax
+        shell: bash
+        run: |
+          luac5.4 -p scripts/air-operations/OMW_SlingloadCorridorHandoff.lua
+          luac5.4 -p mission/tests/stage3-cas-resupply-focused/src/01-stage3-cas-resupply-focused-acceptance.lua
+
+      - name: Check focused Honaker CAS support acceptance syntax
+        shell: bash
+        run: |
+          luac5.4 -p mission/tests/stage3-honaker-cas-support/src/01-honaker-cas-support-acceptance.lua
 
       - name: Run MissionDemand contract tests
         shell: bash

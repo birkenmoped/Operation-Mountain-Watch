@@ -804,3 +804,41 @@ foreign FARP/AIRBASE as intermediate Fortress landing
 ```
 
 Die Validierung ist strikt auf die oben dokumentierte MIZ-, Bundle-, DCS- und MOOSE-Provenienz begrenzt. Vollständige Evidenz: [`Stage 1D-P Air PERSONNEL Acceptance-4`](GROUND-AIR-PERSONNEL-RESUPPLY-STAGE-1D-P-ACCEPTANCE-4-FINAL.md).
+
+
+## Addendum 2026-09-09 – Stage 3 Honaker CAS Tactical Corridor source review
+
+Verweis: [`OMW-MOOSE-STAGE3-CAS-TACTICAL-CORRIDOR`](STAGE3-CAS-TACTICAL-CORRIDOR-DECISION.md).
+
+| Methode / Pfad | Status | Exakt belegte Wirkung und Grenze |
+|---|---|---|
+| `AUFTRAG:NewPATROLZONE(zone, speed, altitude)` | `SOURCE_REVIEWED` | erzeugt die PATROLZONE-Mission mit Zone als Objective sowie Task-Parametern. Die Methode bestimmt keine taktische Ingress-, BP- oder Egress-Geometrie. |
+| `AUFTRAG:SetMissionIngressCoord(c, alt, speed)` | `SOURCE_REVIEWED` | speichert einen einzelnen Knoten. Im FLIGHTGROUP-Missionsaufbau wird er vor dem Missions-Waypoint eingefügt. Kein vollständiger Anflugkorridor und kein Terrain-Masking. |
+| `AUFTRAG:SetMissionWaypointCoord(c)` | `SOURCE_REVIEWED` | legt den owner-authored Missions-Waypoint fest; der gepinnte Source verwendet ihn auch im FLIGHTGROUP-Pfad. Die PATROLZONE-Arbeitszone bleibt davon getrennt. |
+| `AUFTRAG:SetMissionEgressCoord(c, alt, speed)` | `SOURCE_REVIEWED` | fügt nach dem Missions-Waypoint einen einzelnen Knoten ein. Es entstehen weder WEST/R500-Rückroute noch automatische Recovery. |
+| `FLIGHTGROUP:AddWaypoint(...)` / `OnAfterUpdateRoute` | `SOURCE_REVIEWED` für den neuen CAS-Scope | öffentliche MOOSE-Schnittstellen für zusätzliche owner-authored dynamische Korridorsegmente und Route-Readiness. Der konkrete Honaker-CAS-Pfad ist noch nicht in DCS validiert. |
+
+Unzulässige Schlussfolgerungen:
+
+```text
+Setter vorhanden
+!= MOOSE plant taktische COIN-Geometrie
+PATROLZONE vorhanden
+!= MOOSE bestimmt BP oder geschützten An-/Ausflug
+Source review
+!= DCS-Route, Terrain-Masking, CAS-Release oder Landing validiert
+```
+
+Der praktische DCS-Nachweis ist ausdrücklich in der verlinkten Entscheidung definiert und vor Abschluss des Stage-3-Korridorpfads erforderlich.
+
+## Addendum 2026-09-10 – Stage 3 Honaker Build 1-26 Runtime-Evidenz
+
+Gültig ausschließlich für die Honaker/Wright/Jalalabad-Acceptance-Fixture auf Commit `b092f8cc0f6505f43a868a35741d03d95f30cfd9`; kein allgemeiner CAS- oder ARTY-Produktionsnachweis.
+
+| API / Pfad | Status | Nachweisgrenze |
+| --- | --- | --- |
+| `AUFTRAG:SetMissionIngressCoord`, `SetMissionWaypointCoord`, `SetMissionEgressCoord` plus `FLIGHTGROUP:AddWaypoint` / `UpdateRoute` | `DCS_PARTIALLY_VALIDATED` | Routegebundene R200/WEST-Gates wurden dynamisch abgeleitet und nach UID-Readiness installiert; in einer engen Talroute dürfen Ingress- und Egress-Koordinate gleich sein, die Routenphasen bleiben getrennt. |
+| `AUFTRAG:NewPATROLZONE` / `SetEngageDetected` | `DCS_PARTIALLY_VALIDATED` | AH-64 wurde queued, executing und on-station beobachtet; der Lauf belegt keinen Waffenabschuss. |
+| `FLIGHTGROUP:GetDetectedGroups()` | `DCS_PARTIALLY_VALIDATED` | On station wurden 0 zulässige eigene Kontakte gemeldet; 30-s-No-Contact führte zur expliziten Release. Keine Zielinjektion. |
+| `AIRWING:OnAfterLegionAssetReturned` | `DCS_PARTIALLY_VALIDATED` | Kontrollierter Reverse-Korridor, Jalalabad-Landung und AIRWING-/LEGION-Rückgabe wurden beobachtet. |
+

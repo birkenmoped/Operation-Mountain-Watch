@@ -151,6 +151,9 @@ Eine Nummer und eine stabile `document_id` dürfen im aktuellen Bestand jeweils 
 | `OMW-PLAN-ARMY-GROUND-RETURN-SETTLEMENT` | `docs/ground/ARMY-GROUND-RETURN-SETTLEMENT-DECISION-PREPARATION.md` | `PLANNED`; owner-decision inputs for Ground strategic return settlement |
 | `OMW-AIR-TASKING-PLAN-MAIN-RECONCILIATION` | `docs/air-tasking-plan-main-reconciliation.md` | `DRAFT`; selective current-main reconciliation for Air Tasking AAR integration |
 | `OMW-MOOSE-AIR-TASKING-C2-LIFECYCLE` | `docs/moose/AIR-TASKING-C2-LIFECYCLE.md` | `DRAFT`; MOOSE C2/lifecycle source-review reference for Air Tasking |
+| `OMW-MOOSE-STAGE3-CAS-TACTICAL-CORRIDOR` | `docs/moose/STAGE3-CAS-TACTICAL-CORRIDOR-DECISION.md` | `BINDING`; Stage-3-Honaker dynamische CAS-Transit-/Ingress-/BP-/Egress-Geometrie, MOOSE-Semantik und Regression-Gates |
+| `OMW-MOOSE-STAGE3-CAS-LIFECYCLE-RECOVERY-LAW` | `docs/moose/STAGE3-CAS-LIFECYCLE-RECOVERY-LAW.md` | `BINDING`; branch-lokales Gesetz für Stage-3-CAS-Bedarf, Allokation, eigene Detektion, Freigabe, Reverse-Recovery und AIRWING-/LEGION-Rückgabe |
+| `OMW-TEST-STAGE3-HONAKER-WRIGHT-FULL-RESPONSE-ACCEPTANCE-1` | `mission/tests/stage3-honaker-wright-full-response/ACCEPTANCE-1.md` | `PLANNED`; Acceptance-Vertrag mit Build-1-26-Teilruntime-Evidenz, ohne Full-Response-CAS-Waffen- oder terminalen Gesamt-PASS |
 | `OMW-TEST-AIR-TASKING-AAR-VERTICAL` | `mission/tests/air-tasking-aar-vertical/README.md` | `HISTORICAL_TEST_FIXTURE`; VERTICAL-2 exact-provenance DCS evidence plus VERTICAL-3 build fixture |
 
 ## Ground RESUPPLY technical package - merge addition

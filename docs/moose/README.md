@@ -49,6 +49,8 @@ Der vollständige frühere Index bleibt unverändert erhalten:
 - [`LOGISTICS-AND-TRANSPORT.md`](LOGISTICS-AND-TRANSPORT.md) – Warehouse, OPSTRANSPORT, CTLD und Carrier/Cargo;
 - [`EVENTS-AND-FSM.md`](EVENTS-AND-FSM.md) – Events, FSM, Scheduler und Callback-Regeln;
 - [`ISR-FAC-CAS-AAR.md`](ISR-FAC-CAS-AAR.md) – geplante ISR-, FAC-/JTAC-, CAS- und AAR-Kette;
+- [`STAGE3-CAS-TACTICAL-CORRIDOR-DECISION.md`](STAGE3-CAS-TACTICAL-CORRIDOR-DECISION.md) – verbindlicher dynamischer Honaker-CAS-Korridor, MOOSE-Waypoint-Semantik, verbotene Substitutionen und DCS-Regression-Gates;
+- [`STAGE3-CAS-LIFECYCLE-RECOVERY-LAW.md`](STAGE3-CAS-LIFECYCLE-RECOVERY-LAW.md) – verbindliches branch-lokales Gesetz für CAS-Bedarf, MOOSE-Ausführung, eigene Detektion, Freigabe, Reverse-Recovery und Warehouse-/AIRWING-Rückgabe;
 - [`FOG-OF-WAR-RECCE.md`](FOG-OF-WAR-RECCE.md) – MOOSE-Develop-Fähigkeiten und Grenzen von INTEL, INTEL_DLINK, PLAYERRECCE, TARS, RECON, DETECTION, DESIGNATE und CHIEF.
 
 ## 4. Statusregel
