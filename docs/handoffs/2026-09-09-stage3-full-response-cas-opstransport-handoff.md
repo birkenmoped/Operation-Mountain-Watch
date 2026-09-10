@@ -749,3 +749,33 @@ vollständigen Owner-Segmente werden über öffentliche
 `FLIGHTGROUP:AddWaypoint`-/`OnAfterUpdateRoute`-Integration belegt.
 Kein Build und kein DCS-Lauf darf beginnen, bevor die statischen
 Regression-Gates des neuen Dokuments erfüllt sind.
+
+
+## 2026-09-10 – verbindlicher CAS-Lifecycle-/Recovery-Nachtrag
+
+Der vollständige Ablauf ist als branch-lokales Gesetz dokumentiert:
+
+```text
+docs/moose/STAGE3-CAS-LIFECYCLE-RECOVERY-LAW.md
+document_id: OMW-MOOSE-STAGE3-CAS-LIFECYCLE-RECOVERY-LAW
+status: BINDING
+```
+
+Vor jeder Stage-3-CAS-Änderung sind zusätzlich zur CAS-Support- und
+Tactical-Corridor-Entscheidung die folgenden Invarianten zu lesen:
+
+```text
+CAS requirement -> C2 allocation -> AIRWING asset recruitment
+-> AUFTRAG NewPATROLZONE + SetEngageDetected
+-> owner-authored dynamic route gates
+-> own AH-64 detectedgroups picture
+-> explicit supported-element release only
+-> owner-authored reverse route
+-> home landing
+-> AIRWING/LEGION asset return
+-> CAS_COMPLETE
+```
+
+Keine Ground-Zählung, Incident-Schließung, PATROLZONE-Cancel, FuelLow-Rückflug
+oder bloße Rückkehrabsicht ist eine erfolgreiche CAS-Completion oder
+Warehouse-Rückgabe.
