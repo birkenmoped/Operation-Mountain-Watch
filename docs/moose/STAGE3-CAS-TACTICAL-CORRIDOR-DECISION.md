@@ -36,16 +36,18 @@ Jalalabad -> R500 -> WEST
 -> WEST reverse -> R500 reverse -> Jalalabad
 ```
 
-`WEST` ist ein sicherer Transitkorridor. Er führt nicht bis in das Gefecht. Der Übergang in den Gefechtsraum erfolgt rund 3–4 NM vor Honaker über den berechneten `CAS_INGRESS`. `CAS_EGRESS` ist ein räumlich getrennter, bewusst berechneter Rückkehrknoten zum WEST-Rückkorridor; er ist weder der Ingress noch der erste/letzte PATHLINE-Punkt.
+`WEST` ist ein sicherer Transitkorridor. Er führt nicht bis in das Gefecht. Der Übergang in den Gefechtsraum erfolgt rund 3–4 NM vor Honaker über den berechneten `CAS_INGRESS`. `CAS_EGRESS` wird analog aus der Rückroute im 3–4-NM-Band bestimmt. Bei gegenläufigen Route-Varianten kann er räumlich getrennt sein; er wird jedoch weder mit Ingress gleichgesetzt noch aus einem PATHLINE-Endpunkt abgeleitet.
 
-OMW berechnet pro Auftrag mindestens:
+OMW berechnet pro Auftrag aus der bereits gewählten An- und Rückroute:
 
 | Wert | Zweck | Muss in der Runtime-Evidenz stehen |
 |---|---|---|
-| `CAS_INGRESS` | Eintritt vom WEST-Transit in den taktischen Anflug | Position, Höhe, Achse, Entfernung/Bezug zu Honaker und WEST |
-| `CAS_MISSION_POINT/BP` | Owner-bestimmter Missions-Waypoint/Battle Position | Position, Höhe, Angriffsachse, Bezug zur supported-element geometry |
-| `CAS_EGRESS` | Ausflug aus der Gefechtszone zum WEST-Rückkorridor | Position, Höhe, Achse, Abstand zu Ingress und WEST-Wiedereintritt |
-| taktische Ingress-/Egress-Segmente | die dazwischenliegenden bewusst gewählten Routenpunkte | Reihenfolge, Höhe, Geschwindigkeit und Anschluss-UIDs |
+| `CAS_INGRESS` | Routenpunkt der Anflugroute im 3–4-NM-Band vor der AO | Routenindex, Position, Höhe, Achse, Entfernung zur AO und Routenname |
+| `CAS_MISSION_POINT` | dynamischer AO-Anker für den MOOSE-Missions-Waypoint | Position und Kennzeichnung `PATROLZONE_DYNAMIC_AO_ANCHOR_NOT_BP` |
+| `CAS_EGRESS` | Routenpunkt der Rückroute im 3–4-NM-Band nach Verlassen der AO | Routenindex, Position, Höhe, Achse, Entfernung zur AO und Routenname |
+| Transit-Segmente | owner-authored Routenpunkte vor Ingress sowie nach Egress | Reihenfolge, Höhe, Geschwindigkeit und Anschluss-UIDs |
+
+Ein eigener Battle Position-/Pop-up-Punkt ist **kein** allgemeiner Pflichtknoten dieses Frameworks. Er darf nur hinzukommen, wenn ein späterer Standort dafür explizite, wiederverwendbare Geometriedaten besitzt; er wird nicht aus einer AO, einem Marker oder einer Heuristik erfunden.
 
 Die ausgewählte Geometrie muss eigene Kräfte nicht überfliegen und darf keinen willkürlichen Gebirgs- oder PATHLINE-Endpunkt als taktischen Knoten ausgeben. Taktische Eignung – Terrain Masking, sichere Achse, Abstand zu eigenen Kräften und Trennung von An- und Ausflug – bleibt Owner-Planungsentscheidung; sie wird nicht als Fähigkeit von MOOSE oder DCS behauptet.
 
