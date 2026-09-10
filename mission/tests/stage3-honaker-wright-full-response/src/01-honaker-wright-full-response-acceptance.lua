@@ -82,6 +82,7 @@ local FixedFireSupportAmmoSupport = OMW_STAGE3_FIXED_FIRE_SUPPORT_AMMO_SUPPORT
 local FixedFireSupportAmmoRearmService = OMW_STAGE3_FIXED_FIRE_SUPPORT_AMMO_REARM_SERVICE
 local GroundSupportMaterializer = OMW_STAGE3_GROUND_SUPPORT_MATERIALIZER
 local HelicopterCorridor = OMW_STAGE3_HELICOPTER_FLIGHTPATH_CORRIDOR
+local CasTacticalCorridor = OMW_STAGE3_HELICOPTER_CAS_TACTICAL_CORRIDOR
 local FlightPathNameContract = OMW_STAGE3_FLIGHTPATH_NAME_CONTRACT
 local TransportCorridor = OMW_STAGE3_OPSTRANSPORT_CORRIDOR_ADAPTER
 
@@ -96,7 +97,7 @@ local state = {
   threat=nil, threatStarted=false, threatStopped=false, perimeterClear=false, incident=nil, attackIncident=nil, attackIncidentClosed=false,
   honakerNoKnownAttackers=false,
   casAdapter=nil, casDemand=nil, casMission=nil, casFlight=nil, casExecuting=false, casCorridor=false, casFired=false, casEngaged=false,
-  casShotObserver=nil, casTacticalZone=nil, casAltitudeFtAsl=nil, casResolved=nil, casLifecycle=nil, casClosed=false,
+  casShotObserver=nil, casTacticalZone=nil, casAltitudeFtAsl=nil, casResolved=nil, casGeometry=nil, casBinding=nil, casLifecycle=nil, casClosed=false,
   casSupportRequirementActive=false, casOnStation=false, casOnStationAt=nil, casDetectedEligibleCount=nil, casDetectedEligibleNames={},
   casContactReported=false, casNoContactReported=false, casNoContactSince=nil, casLastContactAt=nil,
   casReleaseRequested=false, casReleaseReason=nil, casRecoveryRequested=false, casHomeLanded=false, casAssetReturned=false,
@@ -421,7 +422,19 @@ local function ensureCasContext()
   })
   local primaryOffset = state.casResolved.segmentOffsets and state.casResolved.segmentOffsets[1] or nil
   local westOffset = state.casResolved.segmentOffsets and state.casResolved.segmentOffsets[2] or nil
-  log(string.format("CAS_ROUTE_POLICY path=%s primaryOffsetM=%s westOffsetM=%s altitudeSource=WAYPOINT_RADIO_ONLY",
+  state.casGeometry = CasTacticalCorridor.PlanRouteGated({
+    allocationId = state.casDemand and state.casDemand.id or (TEST_ID .. "-CAS"),
+    outboundRoute = state.casResolved.outbound,
+    returnRoute = state.casResolved.returnRoute,
+    destinationCoordinate = state.casTacticalZone:GetCoordinate(),
+    routeGateDistanceNm = 3.5,
+    transitAltitudeFtAgl = WEST_ALTITUDE_FT_AGL,
+    missionAltitudeFtAgl = CAS_COMBAT_HEIGHT_FT_AGL,
+    speedKts = CAS_SPEED_KTS,
+    honakerReference = INSTALLATION_ID,
+    westReference = WEST_PATHLINE,
+  })
+  log(string.format("CAS_ROUTE_POLICY path=%s primaryOffsetM=%s westOffsetM=%s dynamicRouteGates=true",
     routeLabel(pathlineNames), tostring(primaryOffset and primaryOffset.signedRightM), tostring(westOffset and westOffset.signedRightM)))
 
   state.casAdapter = CasAdapter.New({
@@ -433,6 +446,7 @@ local function ensureCasContext()
     requireExecutionEvidence=false,
     missionConfigurator=function(mission)
       mission:SetName("OMW_STAGE3_HONAKER_CAS_PATROLZONE_ENGAGE")
+      CasTacticalCorridor.ConfigureMission(mission, state.casGeometry)
     end,
   })
   return state.casAdapter ~= nil
@@ -454,41 +468,20 @@ local function installCasShotObserver()
 end
 
 local function bindCasFlightPathCorridor(flight, mission)
-  local function installed(result)
-    if state.casCorridor then return end
-    state.casCorridor = true
-    logCorridorProfiles("CAS", result)
-    msg("CAS", "Stage-2B MOOSE corridor installed: existing pre-mission route -> " .. primaryPathlineName() .. " -> WEST -> CAS -> WEST reverse -> " .. primaryPathlineName() .. " reverse -> Jalalabad", 12)
-  end
-
-  -- BINDING Stage-2B contract: do not manufacture AUFTRAG ingress/egress. The accepted
-  -- MOOSE adapter inserts owner-authored corridor waypoints between the existing
-  -- pre-mission waypoint and the mission waypoint, and waits through OnAfterUpdateRoute.
-  local result, ok, reason = HelicopterCorridor.Install(flight, mission, state.casResolved, PRIMARY_ALTITUDE_FT_AGL)
+  local binding, result, ok, reason = CasTacticalCorridor.Bind(flight, mission, state.casGeometry, {
+    onInstalled=function(installed)
+      state.casCorridor=true
+      logCorridorProfiles("CAS", installed)
+      msg("CAS","Dynamic owner route gates installed: R500/WEST -> CAS_INGRESS -> PATROLZONE AO -> CAS_EGRESS -> WEST/R500 reverse",12)
+    end,
+    onFailed=function(why) failCas("CAS tactical corridor failed: " .. tostring(why)) end,
+  })
+  state.casBinding=binding
   if ok then
-    installed(result)
+    state.casCorridor=true
     return
   end
-  if reason ~= "MISSION_ROUTE_UIDS_NOT_READY" then
-    failCas("CAS Stage-2B FlightPath corridor failed: " .. tostring(reason))
-    return
-  end
-
-  -- Install() has just armed its public MOOSE OnAfterUpdateRoute callback. This wrapper
-  -- only records that callback's result; it does not guess readiness with a timer.
-  local previousUpdateRoute = flight.OnAfterUpdateRoute
-  function flight:OnAfterUpdateRoute(From, Event, To, n, N)
-    if previousUpdateRoute then previousUpdateRoute(self, From, Event, To, n, N) end
-    local cached = self.__omwFlightPathCorridorInstalled
-    if cached and cached.mission == mission and cached.result then
-      installed(cached.result)
-      return
-    end
-    local lastReason = self.__omwFlightPathCorridorLastReason
-    if lastReason and not state.casCorridor then
-      failCas("CAS Stage-2B FlightPath corridor failed after UpdateRoute: " .. tostring(lastReason))
-    end
-  end
+  if reason ~= "MISSION_ROUTE_UIDS_NOT_READY" then failCas("CAS tactical corridor failed: " .. tostring(reason)); return end
   log("CAS_CORRIDOR_PENDING_MOOSE_ROUTE_CALLBACK reason=MISSION_ROUTE_UIDS_NOT_READY")
 end
 
