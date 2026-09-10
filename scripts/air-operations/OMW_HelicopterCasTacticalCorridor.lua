@@ -38,13 +38,23 @@ local function requirePositiveNumber(value, label)
   return value
 end
 
+-- MOOSE HeadingTo() uses 0 degrees for north. It is a valid heading, not an
+-- absent value; route-profile validation must therefore not use positive-only
+-- numeric validation for an axis.
+local function requireHeadingDegrees(value, label)
+  if type(value) ~= "number" or value ~= value or value < 0 or value > 360 then
+    fail(label .. " must be a finite heading in the range 0..360")
+  end
+  return value
+end
+
 local function requireCoordinate(node, label)
   requireTable(node, label)
   if not node.coordinate then fail(label .. ".coordinate is required") end
   requireFunction(node.coordinate, "GetLandHeight", label .. ".coordinate")
   requirePositiveNumber(node.altitudeFtAgl, label .. ".altitudeFtAgl")
   requirePositiveNumber(node.speedKts, label .. ".speedKts")
-  requirePositiveNumber(node.axisDeg, label .. ".axisDeg")
+  requireHeadingDegrees(node.axisDeg, label .. ".axisDeg")
   return node
 end
 
