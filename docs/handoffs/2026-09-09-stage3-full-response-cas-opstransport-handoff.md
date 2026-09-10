@@ -59,6 +59,17 @@ MOOSE-first bleibt verbindlich. Keine neue Native-DCS- oder Parallelimplementier
 
 ## 3. Branch / PR / aktueller Remote-Stand
 
+## 3.1 Aktualisierte Runtime-Evidenz – 2026-09-10, Build 1-26
+
+Der aktuell gestartete DCS-Lauf ist exakt auf `b092f8cc0f6505f43a868a35741d03d95f30cfd9` mit Builder `...-1-26` und eingebettetem Bundle-SHA `33CEB7AA6BC7FA833CCF456C41B689245B0CB70BD587AF533D0071A92B346661` erfolgt. Der Builder mutiert keine MIZ.
+
+Bestätigt sind die dynamische R200/WEST-Routengate-Ableitung, MOOSE-Dispatch/Executing, Corridor-Installation nach Route-UID-Readiness, AH-64 On-Station, 30-s-eigenes-No-Contact, kontrollierte Reverse-Recovery, Jalalabad-Landung und AIRWING-/LEGION-Rückgabe.
+
+Nicht bestätigt ist Waffenwirkung: ARTY reduzierte das C2-Zielbild von 13 auf 0, bevor CAS On Station war; die eigene `FLIGHTGROUP:GetDetectedGroups()`-Sicht der AH-64 blieb daher leer. Kein allwissendes Zielbild wurde injiziert. Der Full-Response-Test bleibt deshalb `PLANNED` und darf weder einen CAS-Engagement- noch einen terminalen Gesamt-PASS behaupten.
+
+Offen bleibt außerdem die mehrfach wiederholte `FIRE_SUPPORT_REARMED_CONTINUATION` auf dasselbe C2-Zielbild. Sie ist keine abgenommene allgemeine ARTY-Policy und benötigt vor Produktionsfreigabe eine eigene Frische-/Cooldown- oder explizite Retask-Regel.
+
+
 ```text
 Repository: birkenmoped/Operation-Mountain-Watch
 Branch: agent/fire-support-strategic-resupply-alarm-evidence
