@@ -48,6 +48,17 @@ local function requireCoordinate(node, label)
   return node
 end
 
+-- A route gate and the PATROLZONE anchor are MOOSE COORDINATE instances.
+-- They are deliberately not waypoint-profile nodes; profiles are created only
+-- after the owner route has selected the gate.
+local function requireRawCoordinate(coordinate, label)
+  requireTable(coordinate, label)
+  requireFunction(coordinate, "GetLandHeight", label)
+  requireFunction(coordinate, "Get2DDistance", label)
+  requireFunction(coordinate, "HeadingTo", label)
+  return coordinate
+end
+
 local function requireSegment(segment, label)
   if segment == nil then return {} end
   requireTable(segment, label)
@@ -178,7 +189,7 @@ function Adapter.PlanRouteGated(spec)
   requireTable(spec, "spec")
   local outbound = requireTable(spec.outboundRoute, "spec.outboundRoute")
   local returnRoute = requireTable(spec.returnRoute, "spec.returnRoute")
-  local destination = requireCoordinate(spec.destinationCoordinate, "spec.destinationCoordinate")
+  local destination = requireRawCoordinate(spec.destinationCoordinate, "spec.destinationCoordinate")
   local distanceNm = spec.routeGateDistanceNm
   if type(distanceNm) ~= "number" or distanceNm < 3 or distanceNm > 4 then
     fail("spec.routeGateDistanceNm must be within the approved 3-4 NM range")
@@ -189,7 +200,7 @@ function Adapter.PlanRouteGated(spec)
     if #route < 2 then fail(phase .. " route requires at least two coordinates") end
     local best, bestDelta
     for index, coordinate in ipairs(route) do
-      requireCoordinate(coordinate, phase .. " route coordinate")
+      requireRawCoordinate(coordinate, phase .. " route coordinate")
       local delta = math.abs(coordinate:Get2DDistance(destination) - distanceM)
       if not bestDelta or delta < bestDelta then best, bestDelta = index, delta end
     end
