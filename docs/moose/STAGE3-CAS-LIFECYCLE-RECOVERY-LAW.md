@@ -358,3 +358,148 @@ AIRWING-/LEGION-Rückgabe
 
 Diese Punkte bleiben bis zu einem vollständigen MIZ-/Bundle-Preflight und
 einem dokumentierten DCS-Lauf `NOT_RUN`.
+
+
+## 16. Allgemeingültiger CAS-Rahmen und Abgrenzung des Honaker-Tests
+
+Die Abschnitte 1–15 beschreiben den gültigen Lifecycle- und
+MOOSE-Autoritätsrahmen. Die dort genannten Honaker-, Jalalabad-, AH-64D-,
+5-NM-, 125-kt-, 2.500-ft-, 30-Sekunden- und 3,5-NM-Werte sind jedoch
+**keine** allgemeingültigen Produktionskonstanten. Sie sind ausschließlich
+Parameter des aktuellen Stage-3-Honaker-Wright-Full-Response-Tests.
+
+Für die Produktionsarchitektur gilt stattdessen:
+
+```text
+angegriffenes FOB/COP/OP
+oder andere unterstützungsberechtigte blaue Einheit
+-> lokaler Bedarf
+-> C2/OMW Candidate Evaluation
+-> explizit gebundener Herkunftspool
+-> MOOSE-Ausführung
+-> policy-gesteuerte Freigabe
+-> physische Rückgabe in genau diesen Herkunftspool
+```
+
+Damit ersetzt der Begriff `supported element` im allgemeinen Vertrag jeden
+konkreten Honaker-Bezug.
+
+## 17. Allgemeine Candidate-Evaluation und Herkunftsbindung
+
+C2/OMW muss für einen CAS-Bedarf alle grundsätzlich geeigneten,
+strategisch verfügbaren CAS-Kandidaten bewerten. Die Bewertung darf unter
+anderem berücksichtigen:
+
+```text
+Muster- und Missionsfähigkeit
+gültige Waffen-/ROE-/Zielpolicy
+tatsächlicher Ressourcenstatus und Wartung
+Startbereitschaft und verfügbarer Bestand
+geschätzte Zeit bis ON STATION über die gültige Route
+Entfernung, Kraftstoffreserve und Rückkehrmöglichkeit
+gültiges Routenprofil zum unterstützten Element
+ggf. Priorität konkurrierender Einsätze
+```
+
+Das Ziel ist nicht zwingend die geografisch nächste Basis, sondern die
+geeignetste Ressource mit der frühesten belastbaren Unterstützung am Ziel.
+Eine A-10 aus weiter Entfernung darf beispielsweise nicht allein wegen
+Verfügbarkeit gegenüber einer schneller verfügbaren, geeigneten
+Kampfhubschrauberressource bevorzugt werden.
+
+Die Wahl selbst bleibt jedoch bei C2/OMW/CampaignState. Nach der Wahl muss
+der konkrete Herkunftspool explizit an MOOSE gebunden werden:
+
+```text
+C2/OMW evaluates all candidates
+-> selects one resource ID + AIRWING + SQUADRON/COHORT
+-> reserves that strategic resource
+-> assigns the MOOSE AUFTRAG only to this selected pool
+-> MOOSE executes the physical lifecycle
+```
+
+Ein ungebundener MOOSE-Gesamtpool ist verboten. Er würde die verbindliche
+CampaignState-Regel verletzen, nach der strategische Herkunft und Ressource
+vor dem MOOSE-Dispatch bestimmt werden. Die verlangte breite Auswahl wird
+also vor, nicht innerhalb eines ungebundenen AIRWING-Dispatchs umgesetzt.
+
+Der aktuelle Honaker-Test bindet bewusst nur die Jalalabad-AH-64D-SQUADRON.
+Das ist ein Testfixture und **kein** allgemeiner C2-Auswahlalgorithmus.
+
+## 18. Allgemeine Profile statt Honaker-Konstanten
+
+Jeder CAS-Auftrag muss aus einem expliziten Profil stammen. Ein Profil
+definiert mindestens:
+
+| Profilfeld | Zweck |
+|---|---|
+| Plattformklasse und Muster | z. B. Rotary-Wing-CAS oder Fixed-Wing-CAS |
+| Herkunftspool | vorgewähltes AIRWING-/SQUADRON-/COHORT- und Ressourcen-ID-Binding |
+| Arbeitsraum und Zielpolicy | Zone, zulässige Zielarten, Reichweite, ROE |
+| Transit-/Arbeitsflugprofil | Höhe, Geschwindigkeit, Formation, Kraftstoff-/Rückkehrreserve |
+| Routenprofil | zulässige Owner-Routen, Ingress-/Egress-Gate-Regel, Rückroute |
+| Freigabepolicy | unterstütztes Element, erforderliche Lageberichte, Stabilitätszeit oder andere dokumentierte Kriterien |
+| Deconfliction-Policy | Verhältnis zu ARTY, anderen Luftmitteln und Bodenkräften |
+| Recovery-Policy | Heimatflugplatz, Rückgabe- und Verlustbehandlung |
+
+Die Honaker-Testwerte werden ausdrücklich so klassifiziert:
+
+| Wert | Status |
+|---|---|
+| AH-64D, Jalalabad, 5-NM-Patrolzone, Ground Units | Honaker-Testprofil |
+| 125 kt, 2.500 ft AGL | Honaker-Rotary-Wing-Testprofil; möglicher Kandidat für ein späteres allgemeines Helicopter-CAS-Profil, noch nicht allgemein abgenommen |
+| 3,5-NM-Route-Gate | Honaker-Testprofil innerhalb des damaligen 3–4-NM-Versuchsbereichs |
+| 30 Sekunden eigenes No-Contact plus Honaker-No-Known-Attackers | Honaker-Test-Freigabepolicy |
+| Sperre neuer ARTY-Missionen ab CAS ON STATION | Honaker-Test-Deconfliction-Policy |
+
+Ein Gate-Abstand darf künftig nach Plattform, Geschwindigkeit, Route,
+Gelände, Bedrohung, Reaktionszeit und ROE profiliert werden. Er darf nicht
+automatisch allein aus der Geschwindigkeit berechnet werden und nie zu einem
+beliebigen Off-Route-Punkt führen.
+
+## 19. Plattformadapter
+
+`OMW_HelicopterCasTacticalCorridor.lua` ist ausschließlich ein
+Rotary-Wing-CAS-Adapter. Seine Annahmen über Höhe, Geschwindigkeit,
+Routenführung und den Umgang mit MOOSE-Missionsknoten dürfen nicht still auf
+Fixed-Wing-CAS übertragen werden.
+
+Für Fixed-Wing-CAS ist daher vor einer Implementierung erforderlich:
+
+```text
+MOOSE-first Source-/Dokumentations-/Demo-Prüfung
+-> Festlegung eines Fixed-Wing-CAS-Profils
+-> eigener, minimaler Adapter nur für nachgewiesene MOOSE-Lücken
+-> statische Regression-Gates
+-> MIZ-/Bundle-Preflight
+-> dokumentierter DCS-Test
+```
+
+Ein möglicher künftiger `WingCAS`-Adapter muss dieselben
+Autoritätsgrenzen erfüllen: keine zweite Missions-FSM, kein nativer
+DCS-Controller-Task, keine allwissende Zielzuführung und keine
+plattformübergreifende Wiederverwendung unpassender Rotary-Wing-Geometrie.
+
+## 20. Allgemeine Release- und Recovery-Regel
+
+Die konkrete Freigabebedingung ist profilabhängig. Allgemeingültig bleibt nur:
+
+```text
+lokaler Status des unterstützten Elements
++
+eigener, qualifizierter CAS-Lagebericht
++
+explizite Freigabeautorität
+-> kontrollierte Recovery über die profilierte Owner-Rückroute
+-> physische Heimatlandung
+-> MOOSE AIRWING/LEGION asset returned
+-> strategische Rückgabe
+```
+
+Kein lokaler Incident-Abschluss, OPSZONE-Zähler, Munitionsereignis,
+FuelLow/Bingo-RTB oder Missions-Cancel darf als allgemeine
+CAS-Completion-Regel dienen.
+
+Die aktuelle Honaker-30-Sekunden-Regel bleibt für den Test verbindlich,
+darf aber erst nach eigenständiger Entscheidung und Nachweis als
+allgemeine Produktionspolicy übernommen werden.
