@@ -23,6 +23,7 @@ $sources = [ordered]@{
   OMW_STAGE3_FOB_ATTACK_CAS_DISPATCH_ADAPTER = 'scripts\air-operations\OMW_FobAttackCasDispatchAdapter.lua'
   OMW_STAGE3_FOB_ATTACK_CAS_PATROL_CLOSURE = 'scripts\air-operations\OMW_FobAttackCasPatrolClosure.lua'
   OMW_STAGE3_HELICOPTER_FLIGHTPATH_CORRIDOR = 'scripts\air-operations\OMW_HelicopterFlightPathCorridor.lua'
+  OMW_STAGE3_HELICOPTER_CAS_TACTICAL_CORRIDOR = 'scripts\air-operations\OMW_HelicopterCasTacticalCorridor.lua'
   OMW_STAGE3_FLIGHTPATH_NAME_CONTRACT = 'scripts\air-operations\OMW_FlightPathNameContract.lua'
   OMW_STAGE3_OPSTRANSPORT_CORRIDOR_ADAPTER = 'scripts\air-operations\OMW_OpsTransportCorridorAdapter.lua'
 }
@@ -116,6 +117,7 @@ $requiredMarkers = @(
   'OMW-FOB-ATTACK-CAS-PATROL-CLOSURE-2','requireExecutionEvidence=false','executionEvidenceConfirmed=state.casFired','AssignSquadrons','squadrons={state.ah64d}',
   'PATHLINE_SUFFIX','ParsePathlineOffset','OMW_FlightPath','OMW_FlightPath_WEST','WEST_ALTITUDE_FT_AGL','ResolveSequence',
   'OMW-FLIGHTPATH-NAME-CONTRACT-1','OMW-OPSTRANSPORT-CORRIDOR-ADAPTER-2','GetWaypointCurrentUID','AddWaypoint','UpdateRoute','GetIntermediateCoordinate','HeadingTo',
+  'OMW-HELICOPTER-CAS-TACTICAL-CORRIDOR-1','SetMissionIngressCoord','SetMissionWaypointCoord','SetMissionEgressCoord','CAS_GEOMETRY_CONFIGURED',
   'OPSTRANSPORT:New','AddCargoStorage','GetStaticStorage','LEGION.RecruitCohortAssets','TransportAssign','OnAfterAssetSpawned','OnAfterDelivered',
   'ZON_BLUE_LOG_SLG_JALALABAD_01','InitValidateAndRepositionStatic(false)',
   'GROUND_AMMO_PACKAGE','GROUND_NODE_WRIGHT','GROUND_NODE_JALALABAD','TPL_BLUE_GND_WRIGHT_FS_ARTY_L118_2','TPL_BLUE_GND_SUP_M1083',
