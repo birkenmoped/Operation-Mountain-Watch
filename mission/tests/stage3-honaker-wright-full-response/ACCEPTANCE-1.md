@@ -14,7 +14,7 @@ source_commit: GIT_HISTORY
 validated_in_dcs: false
 ---
 
-Verbindlicher CAS-Geometrie-/MOOSE-Semantikvertrag: [`OMW-MOOSE-STAGE3-CAS-TACTICAL-CORRIDOR`](../../../docs/moose/STAGE3-CAS-TACTICAL-CORRIDOR-DECISION.md). Ein Build oder DCS-Lauf darf dessen Regression-Gates nicht umgehen.
+Verbindliche CAS-Verträge: [`OMW-MOOSE-STAGE3-CAS-LIFECYCLE-RECOVERY-LAW`](../../../docs/moose/STAGE3-CAS-LIFECYCLE-RECOVERY-LAW.md) und [`OMW-MOOSE-STAGE3-CAS-TACTICAL-CORRIDOR`](../../../docs/moose/STAGE3-CAS-TACTICAL-CORRIDOR-DECISION.md). Ein Build oder DCS-Lauf darf weder Lifecycle- noch Geometrie-Regression-Gates umgehen.
 
 # Stage 3 Acceptance 1 – Honaker -> Wright -> Jalalabad Air-AMMO
 
