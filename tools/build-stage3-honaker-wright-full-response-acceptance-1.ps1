@@ -32,17 +32,10 @@ $acceptanceFile = Join-Path $repoRoot $acceptanceRelative
 $jalalabadFoundationFile = Join-Path $repoRoot 'scripts\air-operations\OMW_AirOps_Jalalabad_Bootstrap.lua'
 $distDir = Join-Path $repoRoot 'mission\tests\stage3-honaker-wright-full-response\dist'
 $outputFile = Join-Path $distDir 'OMW_Stage3_Honaker_Wright_Full_Response_Acceptance_1.lua'
-$builderVersion = 'STAGE3-HONAKER-WRIGHT-FULL-RESPONSE-ACCEPTANCE-1-22'
+$builderVersion = 'STAGE3-HONAKER-WRIGHT-FULL-RESPONSE-ACCEPTANCE-1-23'
 $testId = 'STAGE3-HONAKER-WRIGHT-FULL-RESPONSE-ACCEPTANCE-1'
 $mooseCommit = '73d3ed119cd9e7e3f2cfcabbaa34513d30529b54'
 $mooseSha256 = 'e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915'
-
-# BLOCKED: Build 1-22 does not implement the agreed dynamic OMW-owned tactical
-# CAS geometry. Per allocation, OMW must deterministically derive CAS_INGRESS,
-# CAS_MISSION_POINT/BP and CAS_EGRESS from the established route/AO geometry,
-# then pass those values to MOOSE. Do not generate a bundle that substitutes a
-# resolver-derived point, a static mission-editor marker, or a MOOSE-derived point.
-throw 'Build blocked: restore and document dynamic OMW-owned CAS ingress/BP/egress geometry before rebuilding Stage 3.'
 
 $resolved = [ordered]@{}
 foreach ($name in $sources.Keys) {
@@ -113,11 +106,11 @@ $requiredMarkers = @(
   'GetDetectedGroups','IsCoordinateInZone','Get3DDistance','CAS_SENSOR_REPORT','CAS_ENGAGE_EVENT','SUPPORTED_ELEMENT_RELEASE_NO_KNOWN_ATTACKERS_CAS_NO_CONTACT',
   'casSupportRequirementActive','casOnStation','casNoContactReported','CAS_NO_CONTACT_STABLE_SEC','casHomeLanded','casAssetReturned','ConfirmExecutionEvidence','EVENTS.Shot',
   'C2_FIRE_OBSERVATION','C2_FIRE_OBSERVATION_RADIUS_NM','authority=QRF_ARTY_ONLY','CAS_ON_STATION_ARTY_DECONFLICTION',
-  'OnAfterUpdateRoute','MISSION_ROUTE_UIDS_NOT_READY','__omwFlightPathCorridorInstalled','CAS_CORRIDOR_PENDING_MOOSE_ROUTE_CALLBACK',
+  'OnAfterUpdateRoute','MISSION_ROUTE_UIDS_NOT_READY','__omwFlightPathCorridorInstalled','CAS_CORRIDOR_PENDING_MOOSE_ROUTE_CALLBACK','CAS_ROUTE_GATES_DERIVED','PlanRouteGated','CasTacticalCorridor.Bind',
   'OMW-FOB-ATTACK-CAS-PATROL-CLOSURE-2','requireExecutionEvidence=false','executionEvidenceConfirmed=state.casFired','AssignSquadrons','squadrons={state.ah64d}',
   'PATHLINE_SUFFIX','ParsePathlineOffset','OMW_FlightPath','OMW_FlightPath_WEST','WEST_ALTITUDE_FT_AGL','ResolveSequence',
   'OMW-FLIGHTPATH-NAME-CONTRACT-1','OMW-OPSTRANSPORT-CORRIDOR-ADAPTER-2','GetWaypointCurrentUID','AddWaypoint','UpdateRoute','GetIntermediateCoordinate','HeadingTo',
-  'OMW-HELICOPTER-CAS-TACTICAL-CORRIDOR-1','SetMissionIngressCoord','SetMissionWaypointCoord','SetMissionEgressCoord','CAS_GEOMETRY_CONFIGURED',
+  'OMW-HELICOPTER-CAS-TACTICAL-CORRIDOR-1','PlanRouteGated','CAS_ROUTE_GATES_DERIVED','SetMissionIngressCoord','SetMissionWaypointCoord','SetMissionEgressCoord','CAS_GEOMETRY_CONFIGURED',
   'OPSTRANSPORT:New','AddCargoStorage','GetStaticStorage','LEGION.RecruitCohortAssets','TransportAssign','OnAfterAssetSpawned','OnAfterDelivered',
   'ZON_BLUE_LOG_SLG_JALALABAD_01','InitValidateAndRepositionStatic(false)',
   'GROUND_AMMO_PACKAGE','GROUND_NODE_WRIGHT','GROUND_NODE_JALALABAD','TPL_BLUE_GND_WRIGHT_FS_ARTY_L118_2','TPL_BLUE_GND_SUP_M1083',
@@ -229,7 +222,7 @@ Write-Host 'CASContactSource: AH-64 FLIGHTGROUP:GetDetectedGroups only; no-conta
 Write-Host 'CASRelease: Honaker no-known-attackers + CAS on-station stable own no-contact -> explicit supported-element release -> controlled reverse corridor'
 Write-Host 'CASGroundTriggerAuthority: OPSZONE/attackIncident/raw RED counts have no direct CAS termination authority'
 Write-Host 'CASAcceptanceEvidence: real EVENTS.Shot OR stable on-station no-contact, plus Jalalabad landing and AIRWING/LEGION recovery, is required before CAS terminal acceptance'
-Write-Host 'CASRouteOrder: Stage-2B MOOSE existing pre-mission waypoint -> configured OMW_FlightPath variant -> WEST -> PATROLZONE -> WEST reverse -> configured OMW_FlightPath reverse -> Jalalabad'
+Write-Host 'CASRouteOrder: configured OMW_FlightPath variant -> WEST route-gated dynamic CAS_INGRESS (3.5 NM) -> PATROLZONE dynamic AO anchor -> route-gated dynamic CAS_EGRESS -> WEST reverse -> configured OMW_FlightPath reverse -> Jalalabad'
 Write-Host 'FireSupport: 5-NM MOOSE C2 observation -> unique fresh ARTY/QRF target picture; ARTY physical fire uses MOOSE EVENTS.Shot; CAS on station holds new fires -> local M1083 rearm -> strategic reorder'
 Write-Host 'StrategicResupply: exactly one RESUPPLY, Jalalabad -> Wright, quantity 15; CampaignState authoritative'
 Write-Host 'AirPhysicalMission: MOOSE OPSTRANSPORT with internal STORAGE fixture'
