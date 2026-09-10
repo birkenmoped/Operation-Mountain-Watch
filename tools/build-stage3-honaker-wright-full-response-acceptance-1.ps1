@@ -32,7 +32,7 @@ $acceptanceFile = Join-Path $repoRoot $acceptanceRelative
 $jalalabadFoundationFile = Join-Path $repoRoot 'scripts\air-operations\OMW_AirOps_Jalalabad_Bootstrap.lua'
 $distDir = Join-Path $repoRoot 'mission\tests\stage3-honaker-wright-full-response\dist'
 $outputFile = Join-Path $distDir 'OMW_Stage3_Honaker_Wright_Full_Response_Acceptance_1.lua'
-$builderVersion = 'STAGE3-HONAKER-WRIGHT-FULL-RESPONSE-ACCEPTANCE-1-23'
+$builderVersion = 'STAGE3-HONAKER-WRIGHT-FULL-RESPONSE-ACCEPTANCE-1-24'
 $testId = 'STAGE3-HONAKER-WRIGHT-FULL-RESPONSE-ACCEPTANCE-1'
 $mooseCommit = '73d3ed119cd9e7e3f2cfcabbaa34513d30529b54'
 $mooseSha256 = 'e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915'
@@ -110,7 +110,7 @@ $requiredMarkers = @(
   'OMW-FOB-ATTACK-CAS-PATROL-CLOSURE-2','requireExecutionEvidence=false','executionEvidenceConfirmed=state.casFired','AssignSquadrons','squadrons={state.ah64d}',
   'PATHLINE_SUFFIX','ParsePathlineOffset','OMW_FlightPath','OMW_FlightPath_WEST','WEST_ALTITUDE_FT_AGL','ResolveSequence',
   'OMW-FLIGHTPATH-NAME-CONTRACT-1','OMW-OPSTRANSPORT-CORRIDOR-ADAPTER-2','GetWaypointCurrentUID','AddWaypoint','UpdateRoute','GetIntermediateCoordinate','HeadingTo',
-  'OMW-HELICOPTER-CAS-TACTICAL-CORRIDOR-1','PlanRouteGated','CAS_ROUTE_GATES_DERIVED','SetMissionIngressCoord','SetMissionWaypointCoord','SetMissionEgressCoord','CAS_GEOMETRY_CONFIGURED',
+  'OMW-HELICOPTER-CAS-TACTICAL-CORRIDOR-1','PlanRouteGated','CAS_ROUTE_GATES_DERIVED','SetMissionIngressCoord','SetMissionWaypointCoord','SetMissionEgressCoord','CAS_GEOMETRY_CONFIGURED','requireRawCoordinate',
   'OPSTRANSPORT:New','AddCargoStorage','GetStaticStorage','LEGION.RecruitCohortAssets','TransportAssign','OnAfterAssetSpawned','OnAfterDelivered',
   'ZON_BLUE_LOG_SLG_JALALABAD_01','InitValidateAndRepositionStatic(false)',
   'GROUND_AMMO_PACKAGE','GROUND_NODE_WRIGHT','GROUND_NODE_JALALABAD','TPL_BLUE_GND_WRIGHT_FS_ARTY_L118_2','TPL_BLUE_GND_SUP_M1083',
@@ -153,7 +153,7 @@ foreach ($marker in @(
   'LEGION.RecruitCohortAssets(',
   'state.airwing:TransportAssign(state.cargoTransport,legions)',
   'TransportCorridor.Bind(flight,state.cargoTransport,state.cargoResolved',
-  'speedKts = CAS_SPEED_KTS','routeGateDistanceNm = 3.5','CasTacticalCorridor.PlanRouteGated','CasTacticalCorridor.ConfigureMission','CasTacticalCorridor.Bind',
+  'speedKts = CAS_SPEED_KTS','routeGateDistanceNm = 3.5','CasTacticalCorridor.PlanRouteGated','CasTacticalCorridor.ConfigureMission','CasTacticalCorridor.Bind','CAS_CONTEXT_EXCEPTION_ISOLATED','CAS_DISPATCH_EXCEPTION_ISOLATED',
   'speedKts=CH47_TRANSIT_SPEED_KTS',
   'leadTurnDistanceM=CH47_LEAD_TURN_DISTANCE_M',
   'physicalMission="OPSTRANSPORT:STORAGE"',
