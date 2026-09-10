@@ -153,7 +153,7 @@ foreach ($marker in @(
   'LEGION.RecruitCohortAssets(',
   'state.airwing:TransportAssign(state.cargoTransport,legions)',
   'TransportCorridor.Bind(flight,state.cargoTransport,state.cargoResolved',
-  'speedKts=CAS_SPEED_KTS',
+  'speedKts = CAS_SPEED_KTS','routeGateDistanceNm = 3.5','CasTacticalCorridor.PlanRouteGated','CasTacticalCorridor.ConfigureMission','CasTacticalCorridor.Bind',
   'speedKts=CH47_TRANSIT_SPEED_KTS',
   'leadTurnDistanceM=CH47_LEAD_TURN_DISTANCE_M',
   'physicalMission="OPSTRANSPORT:STORAGE"',
