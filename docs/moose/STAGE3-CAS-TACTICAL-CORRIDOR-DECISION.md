@@ -4,7 +4,7 @@ status: BINDING
 document_class: TECHNICAL_DECISION
 owning_policy: OMW-GOV-001
 authoritative_for:
-  - Stage 3 Honaker AH-64 CAS ingress, battle-position and egress geometry
+  - Stage 3 Honaker AH-64 CAS dynamic route-gate and AO-anchor geometry
   - MOOSE AUFTRAG waypoint-method semantics for that CAS scope
   - OMW and MOOSE responsibility boundary
   - prohibited CAS route substitutions and regression prevention
@@ -23,17 +23,16 @@ validated_in_dcs: false
 
 ## 1. Verbindliche Entscheidung
 
+Der vollständige Request-/Allocation-/Execution-/Release-/Recovery-Vertrag ist zusätzlich und verbindlich in [`OMW-MOOSE-STAGE3-CAS-LIFECYCLE-RECOVERY-LAW`](STAGE3-CAS-LIFECYCLE-RECOVERY-LAW.md) festgeschrieben. Dieses Dokument definiert ausschließlich die Geometrie- und MOOSE-Waypoint-Grenze.
+
 Für jeden AH-64-CAS-Auftrag nach Honaker bestimmt OMW die vollständige taktische Geometrie. Die drei Begriffe sind **dynamische Knoten je Allocation**, nicht statische Mission-Editor-Marker und nicht beliebige Punkte innerhalb der AO:
 
 ```text
-Jalalabad -> R500 -> WEST
--> CAS_INGRESS
--> taktischer Ingress-/Terrain-Masking-Korridor
--> CAS_MISSION_POINT / Battle Position (BP)
--> PATROLZONE working area
--> taktischer Egress-Korridor
--> CAS_EGRESS
--> WEST reverse -> R500 reverse -> Jalalabad
+Jalalabad -> konfigurierte OMW_FlightPath-Variante -> WEST
+-> dynamischer CAS_INGRESS aus der Anflugroute
+-> CAS_MISSION_POINT als dynamischer PATROLZONE-AO-Anker
+-> dynamischer CAS_EGRESS aus der Rückroute
+-> WEST reverse -> konfigurierte OMW_FlightPath-Variante reverse -> Jalalabad
 ```
 
 `WEST` ist ein sicherer Transitkorridor. Er führt nicht bis in das Gefecht. Der Übergang in den Gefechtsraum erfolgt rund 3–4 NM vor Honaker über den berechneten `CAS_INGRESS`. `CAS_EGRESS` wird analog aus der Rückroute im 3–4-NM-Band bestimmt. Bei gegenläufigen Route-Varianten kann er räumlich getrennt sein; er wird jedoch weder mit Ingress gleichgesetzt noch aus einem PATHLINE-Endpunkt abgeleitet.
@@ -108,7 +107,7 @@ official_examples_checked: MOOSE_MISSIONS_UNPACKED master code search; kein Beis
 verified_limitation: MOOSE akzeptiert einzelne Missionsknoten und Routenwaypoints, erzeugt aber keine COIN-spezifische Terrain-Masking-, BP- oder Split-Egress-Geometrie.
 smallest_required_fallback: kleine OMW-Geometrie-/Routenadapter-Schicht, die ausschließlich die drei Owner-Knoten und ihre Zwischenpunkte bestimmt und über öffentliche MOOSE-APIs einfügt
 integration_with_moose: AUFTRAG, PATROLZONE, SetEngageDetected, FLIGHTGROUP, AIRWING/LEGION und Recovery bleiben MOOSE-owned
-owner_approval: Projektinhaber bestätigte den WEST -> dynamischer Ingress -> BP/working area -> dynamischer Egress -> WEST-Vertrag.
+owner_approval: Projektinhaber bestätigte den vollständigen Owner-Routenvertrag mit dynamischem Ingress, dynamischem PATROLZONE-AO-Anker und dynamischem Egress; keine statischen Marker und keine erfundene BP.
 approved_scope: nur dynamische OMW-Geometrie und öffentliche MOOSE-Routenintegration; keine Native-DCS-Controller-Tasks, keine parallele Missions-FSM
 conditions:
   - keine statischen ME-Marker als Ersatz
@@ -159,7 +158,7 @@ Vor einem neuen DCS-Lauf müssen Source und Bundle nachweisen:
 ```text
 drei dynamische Knoten mit vollständigen Evidenzfeldern geloggt
 MOOSE-Missionssetter erhalten genau diese drei Knoten
-vollständige Anflug-, BP- und Ausflugsegmente in korrekter Reihenfolge
+vollständige Owner-Anflug- und Owner-Rückroutensegmente in korrekter Reihenfolge
 Anschluss an WEST/R500 outbound und reverse
 OnAfterUpdateRoute-Readiness bestätigt
 kein verworfenes Fehlmuster im Source oder Bundle
