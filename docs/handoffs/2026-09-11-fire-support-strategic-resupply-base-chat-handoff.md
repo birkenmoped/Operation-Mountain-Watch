@@ -52,7 +52,7 @@ Der Folgechat muss vor jeder Änderung diese Dokumente auf dem aktuellen `main` 
 4. [Dokumentmetadaten und Provenienz – `OMW-GOV-DOCUMENT-METADATA`](../DOCUMENT-METADATA-POLICY.md)
 5. [Stage-3 CAS Tactical Corridor Decision](../moose/STAGE3-CAS-TACTICAL-CORRIDOR-DECISION.md)
 6. [Stage-3 CAS Lifecycle and Recovery Law](../moose/STAGE3-CAS-LIFECYCLE-RECOVERY-LAW.md)
-7. [MOOSE-first-Gesetz für Unterstützungsanforderungen und deren Ablauf](../moose/MOOSE-SUPPORT-REQUEST-LIFECYCLE-LAW.md), solange dessen Pull Request noch offen ist: Branch `agent/moose-support-request-lifecycle-law`, nicht fälschlich als bereits auf `main` geltende Datei behandeln.
+7. `OMW-MOOSE-SUPPORT-REQUEST-LIFECYCLE-LAW`: solange Pull Request #147 noch offen ist, die Datei `docs/moose/MOOSE-SUPPORT-REQUEST-LIFECYCLE-LAW.md` aus Branch `agent/moose-support-request-lifecycle-law` lesen; sie ist nicht fälschlich als bereits auf `main` geltende Datei zu behandeln.
 
 Zusätzlich gelten ohne Ausnahme:
 
