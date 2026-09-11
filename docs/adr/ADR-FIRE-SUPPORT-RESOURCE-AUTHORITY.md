@@ -28,3 +28,5 @@ Für Fire Support und Strategic Resupply gilt MOOSE-first:
 - Kein Bestand darf zwei unabhängige Autoritäten besitzen.
 
 Damit wird für diesen Scope die ältere Formulierung präzisiert, nach der CampaignState vor dem Dispatch den konkreten Herkunftspool und die konkrete strategische Ressource auswählt.
+
+Diese Präzisierung ändert nicht die Pflicht zur stabilen Ressourcen-ID und zur idempotenten strategischen Buchung bestätigter Lifecycle-Ereignisse.
