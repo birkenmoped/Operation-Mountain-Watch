@@ -842,3 +842,20 @@ Gültig ausschließlich für die Honaker/Wright/Jalalabad-Acceptance-Fixture auf
 | `FLIGHTGROUP:GetDetectedGroups()` | `DCS_PARTIALLY_VALIDATED` | On station wurden 0 zulässige eigene Kontakte gemeldet; 30-s-No-Contact führte zur expliziten Release. Keine Zielinjektion. |
 | `AIRWING:OnAfterLegionAssetReturned` | `DCS_PARTIALLY_VALIDATED` | Kontrollierter Reverse-Korridor, Jalalabad-Landung und AIRWING-/LEGION-Rückgabe wurden beobachtet. |
 
+
+
+## Addendum 2026-09-11 – Support-Request-Lifecycle source review
+
+Verbindliche Einordnung: [MOOSE Support Request Lifecycle Law](MOOSE-SUPPORT-REQUEST-LIFECYCLE-LAW.md). Alle folgenden Einträge sind für MOOSE Commit `73d3ed119cd9e7e3f2cfcabbaa34513d30529b54` und Moose.lua SHA-256 `E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915` ausschließlich `SOURCE_REVIEWED`.
+
+| Methode / Pfad | Status | Exakt belegte Wirkung und Grenze |
+|---|---|---|
+| `AUFTRAG:SetTime`, `AddConditionSuccess`, `AddConditionFailure`, `IsReadyToCancel`, `Cancel` | `SOURCE_REVIEWED` | Tstop oder eine wahre Success-/Failure-Condition macht den Auftrag abbrechbar. Der Cancel-FSM propagiert durch die operative MOOSE-Hierarchie. |
+| `LEGION:CheckMissionQueue` | `SOURCE_REVIEWED` | Prüft `IsReadyToCancel()` und ruft `mission:Cancel()`; zugleich wiederholt es die Rekrutierung. |
+| `COMMANDER:CheckMissionQueue` | `SOURCE_REVIEWED` | Versucht `RecruitAssetsForMission(...)`; bei fehlender Rekrutierung bleibt der Auftrag geplant. Im geprüften Pfad wird `IsReadyToCancel()` nicht aufgerufen. |
+| `COMMANDER:MissionCancel` / `CHIEF:MissionCancel` | `SOURCE_REVIEWED` | Entfernt einen noch geplanten Auftrag aus der jeweiligen MOOSE-Queue beziehungsweise propagiert den Cancel an die zugewiesene Legion. |
+| `OPSTRANSPORT:SetTime`, `AddConditionStart`, `Cancel` | `SOURCE_REVIEWED` | Öffentliche Transport-Start-, Zeit- und Cancel-Schnittstellen. Eine öffentliche Transport-Failure-Condition wurde für diesen Commit nicht bestätigt. |
+| `WAREHOUSE:_CheckRequestConsistancy`, `_CheckRequestValid`, `_CheckRequestNow` | `INTERNAL_RESTRICTED / SOURCE_REVIEWED` | Source-Befund für MOOSE-eigene Invalid-/Temporär-Wartelogik. Diese internen Methoden sind keine OMW-Aufruf-API. Insbesondere darf `_DeleteQueueItem...` nicht verwendet werden. |
+| `ARTY:RemoveTarget`, `ARTY:SetTimeToShot` | `SOURCE_REVIEWED` | Native Entfernung eines Ziels beziehungsweise Abbruch bei ausbleibendem erstem Schuss innerhalb konfigurierter Zeit. |
+
+DCS-Validierung bleibt für die im Gesetz aufgeführten generischen Fälle verpflichtend.
