@@ -40,6 +40,12 @@ The complete documentation entry point is:
 
 - [`OMW-GOV-DOCUMENTATION-INDEX – Documentation Index and Source-of-Truth Matrix`](docs/README.md)
 
+Current successor-chat handoff for selection and preparation of the next AIRWING/SQUADRON airport:
+
+- [`OMW-HANDOFF-NEXT-AIRPORT-AIRWING-SQUADRON-2026-08-02`](docs/handoffs/2026-08-02-next-airport-airwing-squadron-chat-handoff.md)
+
+The next airport remains unselected between Khost/FOB Salerno, Tarinkot and Shindand. The handoff is not a continuation assignment for Kandahar.
+
 Document numbers and stable IDs are maintained in:
 
 - [`OMW-GOV-DOCUMENT-REGISTRY – Central Document Registry`](docs/DOCUMENT-REGISTRY.md)
