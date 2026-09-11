@@ -40,6 +40,7 @@ Technische Lifecycle-Details:
 - [`OMW-MOOSE-AIR-TASKING-C2-LIFECYCLE`](AIR-TASKING-C2-LIFECYCLE.md)
 - [`OMW-MOOSE-STAGE3-CAS-TACTICAL-CORRIDOR`](STAGE3-CAS-TACTICAL-CORRIDOR-DECISION.md)
 - [`OMW-MOOSE-STAGE3-CAS-LIFECYCLE-RECOVERY-LAW`](STAGE3-CAS-LIFECYCLE-RECOVERY-LAW.md)
+- [`OMW-MOOSE-SUPPORT-REQUEST-LIFECYCLE-LAW`](MOOSE-SUPPORT-REQUEST-LIFECYCLE-LAW.md)
 - [`Stage 1D-P Air PERSONNEL Acceptance-4`](GROUND-AIR-PERSONNEL-RESUPPLY-STAGE-1D-P-ACCEPTANCE-4-FINAL.md)
 
 ## 2. Statusbedeutung
@@ -586,3 +587,19 @@ other DCS or MOOSE versions
 ```
 
 Vollständige Evidenz: [`Stage 1D-P Air PERSONNEL Acceptance-4`](GROUND-AIR-PERSONNEL-RESUPPLY-STAGE-1D-P-ACCEPTANCE-4-FINAL.md).
+
+
+## Addendum 2026-09-11 – Support-Request-Lifecycle source review
+
+Verbindlicher Architektur- und Quellenbefund: [MOOSE Support Request Lifecycle Law](MOOSE-SUPPORT-REQUEST-LIFECYCLE-LAW.md).
+
+| Klasse / Pfad | Projektstatus | Exakt belegte Grenze |
+|---|---|---|
+| `COMMANDER` / `CHIEF` | `SOURCE_REVIEWED` | Rekrutieren geeignete MOOSE-Assets für geplante Aufträge. Bei fehlender Rekrutierung bleibt der Auftrag geplant. Im gepinnten Source ruft deren Planungsqueue nicht selbst `AUFTRAG:IsReadyToCancel()` auf. Incident-Ende oder fachliche Frist benötigen deshalb den öffentlichen nativen Aufruf `AUFTRAG:Cancel()`; dieser ist keine projektspezifische Asset-Selektion. |
+| `LEGION`, `AIRWING`, `BRIGADE` | `SOURCE_REVIEWED` | `CheckMissionQueue()` wertet `AUFTRAG:IsReadyToCancel()` aus und ruft bei Tstop oder Success-/Failure-Condition `Cancel()` auf. |
+| `AUFTRAG` | `SOURCE_REVIEWED` | `SetTime`, `AddConditionStart`, `AddConditionSuccess`, `AddConditionFailure` und `Cancel` sind vorhanden. Cancel propagiert über den normalen CHIEF-/COMMANDER-/LEGION-/OPSGROUP-Lifecycle. |
+| `OPSTRANSPORT` | `SOURCE_REVIEWED` | `SetTime`, `AddConditionStart` und `Cancel` sind vorhanden; keine gleichartige öffentliche Failure-Condition wurde für den gepinnten Source verifiziert. |
+| `WAREHOUSE` | `SOURCE_REVIEWED` | Dauerhaft ungültige Requests werden entfernt; temporär nicht verarbeitbare Requests warten. Eine öffentliche Einzelrequest-Expiry/Cancel-API und eine automatische Nullbestand-Klassifikation wurden nicht verifiziert; private Queue-Methoden sind ausgeschlossen. |
+| `ARTY` | `SOURCE_REVIEWED` | Eigene Zielqueue mit `RemoveTarget` und konfigurierbarem Time-to-Shot-Abbruch. Fehlende ARTY-Fähigkeit darf andere Support-Arten nicht blockieren. |
+
+Kein Eintrag dieses Addendums ist DCS-validiert oder ersetzt die geforderten generischen Acceptance-Fälle.
