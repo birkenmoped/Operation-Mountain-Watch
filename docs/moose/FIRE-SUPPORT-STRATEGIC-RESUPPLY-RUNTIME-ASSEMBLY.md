@@ -5,12 +5,12 @@ document_class: MOOSE_TECHNICAL_NOTE
 owning_policy: OMW-GOV-001
 authoritative_for:
   - generic runtime composition contract for Fire Support / Strategic Resupply
-  - separation of local Guard/QRF, external ARTY/CAS, perimeter and resource monitoring
+  - separation of local Guard/QRF, external ARTY/CAS, perimeter and strategic resupply
   - source-reviewed no-preselection/no-second-authority assembly boundary
 not_authoritative_for:
   - DCS runtime validation of the new composition root
   - concrete six-site alarm radii, perimeter anchors or QRF response coordinates
-  - final ARTY/CAS tactical target geometry or strategic-resupply transport provider configuration
+  - final ARTY/CAS tactical target geometry or strategic-resupply physical descriptor configuration
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
@@ -36,13 +36,17 @@ SiteRegistry + SupportProfiles + IdContract
 + Guard PATHLINE/template resolvers
 + QRF response-coordinate resolver
 + optional external COMMANDER + ARTY/CAS tactical resolvers
-+ optional external transport adapters
 + optional perimeter configuration
 + optional CampaignState ResourceDemandPolicy/store/rows
++ optional Ground/Air resupply COMMANDERs
++ optional physical STORAGE transport descriptors
++ optional strategic transfer resolver
 
 -> GuardRuntime
 -> QrfRuntime
 -> optional ExternalSupportRuntime (ARTY/CAS via COMMANDER)
+-> optional TransportSettlement
+-> optional ResupplyTransportRuntime (OPSTRANSPORT via COMMANDER)
 -> LifecycleAdapter
 -> FireSupStratResupply_Base
 -> optional PerimeterBridge + PerimeterRuntime
@@ -63,7 +67,14 @@ adapters.ARTY = CommanderBridge -> AUFTRAG:NewARTY(...)
 adapters.CAS  = CommanderBridge -> AUFTRAG:NewCAS(...)
 ```
 
-Weitere `externalAdapters` bleiben insbesondere fuer die physische Ground-/Air-Resupply-Transportseite zulaessig. `GUARD`/`QRF` duerfen nie ueberschrieben werden; bei konfiguriertem `externalSupport` duerfen auch `ARTY`/`CAS` nicht parallel aus `externalAdapters` ersetzt werden.
+Wenn `resupply.transport` konfiguriert ist:
+
+```text
+adapters.GROUND_RESUPPLY = CommanderBridge -> OPSTRANSPORT -> COMMANDER:AddOpsTransport
+adapters.AIR_RESUPPLY    = CommanderBridge -> OPSTRANSPORT -> COMMANDER:AddOpsTransport
+```
+
+`GUARD`/`QRF` duerfen nie ueberschrieben werden. Bei konfiguriertem `externalSupport` duerfen auch `ARTY`/`CAS` nicht parallel aus `externalAdapters` ersetzt werden. Bei konfiguriertem `resupply.transport` duerfen `GROUND_RESUPPLY`/`AIR_RESUPPLY` ebenfalls nicht parallel aus `externalAdapters` ersetzt werden.
 
 ## MOOSE-first-Grenzen
 
@@ -126,9 +137,9 @@ alarm perimeter != ARTY target area
 alarm perimeter != CAS engagement zone
 ```
 
-### Strategic Resupply Monitor
+### Strategic Resupply
 
-Der Resource-Monitor ist ebenfalls optional und besitzt keinen eigenen Scheduler. Wenn `resupply` injiziert ist, wird dieselbe Base mit
+Der Resource-Monitor ist optional und besitzt keinen eigenen Scheduler. Wenn `resupply` injiziert ist, wird dieselbe Base mit
 
 ```text
 CampaignState store
@@ -141,14 +152,51 @@ CampaignState store
 
 verbunden. CampaignState bleibt strategische Ressourcenautoritaet. Der Monitor bewertet keine MOOSE-Warehouses als strategischen Bestand und implementiert keine Transport-Retry-Queue.
 
-Der Composition Root stellt dafuer nur bereit:
+Wenn zusaetzlich `resupply.transport` konfiguriert ist, wird die physische Seite wie folgt verdrahtet:
+
+```text
+Base GROUND_RESUPPLY / AIR_RESUPPLY demand
+-> StorageTransportFactory
+-> caller-resolved pickup/deploy/STORAGE descriptor
+-> OPSTRANSPORT:New(...)
+-> OPSTRANSPORT:AddCargoStorage(...)
+-> TransportSettlement reservation
+-> COMMANDER:AddOpsTransport(...)
+-> MOOSE carrier/provider recruitment and physical execution
+```
+
+Die strategische Settlement-Grenze ist davon getrennt:
+
+```text
+CampaignState ReserveResource
+-> MOOSE OPSTRANSPORT OnAfterExecuting => LOADING
+-> caller-confirmed physical in-transit evidence => IN_TRANSIT
+-> MOOSE STORAGE delivered/lost evidence
+-> CampaignState DELIVERED / LOST
+```
+
+Die strategische Transaktion wird **vor** der COMMANDER-Submission gebunden. Kann keine strategische Transferzuordnung erstellt werden, wird der noch nicht eingereihte OPSTRANSPORT storniert und nicht an den COMMANDER uebergeben.
+
+Die physische Quelle und der strategische CampaignState-Ursprung muessen nicht identisch benannt sein. Fuer Faelle wie `OFF_MAP` kann daher `resupply.transport.resolveTransfer(...)` explizit einen strategischen `originNodeId`/`destinationNodeId` liefern. Diese Zuordnung wird nicht aus Namen geraten.
+
+`OPSTRANSPORT`-Abschluss wird nicht blind als strategische Vollzustellung interpretiert. Der Settlement-Adapter prueft die MOOSE-STORAGE-Werte:
+
+```text
+cargoDelivered == cargoAmount && cargoLost == 0 -> DELIVERED
+cargoLost      == cargoAmount && cargoDelivered == 0 -> LOST
+mixed delivered/lost                          -> PARTIAL
+```
+
+Ein `PARTIAL`-Ergebnis wird absichtlich **nicht** stillschweigend in CampaignState verbucht. Die aktuelle CampaignState-Transfertransaktion besitzt keine allgemeine Teiltransfer-Semantik. Der Fall wird ueber `onPartial` an eine explizite Projektentscheidung/Policy weitergereicht.
+
+Der Composition Root stellt fuer den Resource-Monitor nur bereit:
 
 ```text
 EvaluateResupply()
 ReleaseResupplyDemand(demandId, reason)
 ```
 
-`ReleaseResupplyDemand` ist ein expliziter terminaler Lifecycle-Hook; er startet selbst keinen neuen Transport.
+Ein terminaler Transport (`DELIVERED`, `LOST`, `CANCELLED`) gibt den aktiven Shortage-Eintrag im Monitor frei. Dadurch kann eine spaetere Bewertung bei weiter bestehendem Mangel eine neue Demand-Generation erzeugen; der Runtime selbst startet keinen Retry.
 
 ## Keine stillschweigenden Geometrieentscheidungen
 
@@ -162,9 +210,12 @@ externalSupport.resolveArtyTarget
 externalSupport.resolveCasGeometry
 perimeters[siteId].anchorCoordinate
 perimeters[siteId].radiusM
+resupply.transport.resolveGroundTransport
+resupply.transport.resolveAirTransport
+resupply.transport.resolveTransfer        # optional strategic mapping
 ```
 
-Guard-PATHLINE und Guard-Template sind bereits Teil der dokumentierten Six-Site-Baseline. QRF-Response-Koordinaten, ARTY-/CAS-Zielgeometrien sowie konkrete Alarmanker/-radien werden nicht aus Warehouse, ACCESS-Zone, Guard-PATHLINE oder Installationsnamen geraten.
+Guard-PATHLINE und Guard-Template sind bereits Teil der dokumentierten Six-Site-Baseline. QRF-Response-Koordinaten, ARTY-/CAS-Zielgeometrien, Alarmanker/-radien sowie Ground-/Air-Resupply-Pickup-/Deploy-/STORAGE-/Route-Daten werden nicht aus Warehouse, ACCESS-Zone, Guard-PATHLINE oder Installationsnamen geraten.
 
 ## Lebenszyklus
 
@@ -189,11 +240,12 @@ Fuer die vollstaendige produktive Foundation fehlen danach noch:
 1. verbindliche sechs Site Alarmanker/-radien
 2. verbindliche QRF response coordinates/routes bzw. deren Resolver
 3. verbindliche taktische Resolverdaten fuer ARTY/CAS je Incident/C2-Pfad
-4. MOOSE ground/air resupply transport adapters + confirmed CampaignState settlement hooks
-5. combined six-site DCS regression
+4. konkrete Ground/Air resupply pickup/deploy/STORAGE/route descriptors
+5. Projektentscheidung fuer generische PARTIAL-Resupply-Semantik, falls benoetigt
+6. combined six-site DCS regression
 ```
 
-Die generischen ARTY-/CAS-Mission-/COMMANDER-Grenzen sowie die strategische Resupply-Threshold-Seite sind damit source-seitig in den Composition Root integrierbar. Offen bleiben konkrete Missionsdaten und die physische Resupply-Transport-/Settlement-Seite.
+Die generischen Guard-, QRF-, ARTY-, CAS-, Resource-Threshold-, OPSTRANSPORT- und CampaignState-Settlement-Grenzen sind damit source-seitig im Composition Root vorhanden. Offen bleiben konkrete Missionsdaten, gegebenenfalls die Teiltransfer-Policy und die kombinierte DCS-Verifikation.
 
 Diese Punkte duerfen nicht durch Default-Geometrie oder OMW-eigene Asset-Vorselektion vorweggenommen werden.
 
@@ -203,6 +255,9 @@ Diese Punkte duerfen nicht durch Default-Geometrie oder OMW-eigene Asset-Vorsele
 tests/mission-demand/test_fire_support_strategic_resupply_runtime.lua
 tests/mission-demand/test_fire_support_strategic_resupply_external_support_runtime.lua
 tests/mission-demand/test_fire_support_strategic_resupply_resupply_monitor.lua
+tests/mission-demand/test_fire_support_strategic_resupply_storage_transport_factory.lua
+tests/mission-demand/test_fire_support_strategic_resupply_transport_runtime.lua
+tests/mission-demand/test_fire_support_strategic_resupply_transport_settlement.lua
 ```
 
 Geprueft werden insbesondere:
@@ -210,7 +265,13 @@ Geprueft werden insbesondere:
 - GuardRuntime wird vor der Base vorbereitet;
 - Guard und QRF werden als lokale Base-Adapter gesetzt;
 - ARTY/CAS nutzen den COMMANDER-Aggregationspfad ohne Provider-Vorselektion;
-- externe Transportadapter bleiben getrennt;
+- Ground/Air Resupply nutzt OPSTRANSPORT und COMMANDER ohne Carrier-Vorselektion;
+- Strategic Settlement wird vor COMMANDER-Submission gebunden;
+- fehlende Settlement-Voraussetzungen verhindern die physische Einreihung;
+- CampaignState wird erst bei bestaetigtem physischem Lifecycle fortgeschrieben;
+- Vollverlust und Vollzustellung werden getrennt behandelt;
+- gemischte STORAGE-Ergebnisse werden nicht stillschweigend als Vollzustellung gebucht;
+- explizite strategische Transferauflösung kann physische/off-map Provider von CampaignState-Node-IDs entkoppeln;
 - PerimeterBridge benutzt dieselbe Base;
 - optionale Perimeterkonfiguration wird unveraendert weitergereicht;
 - Runtime ohne Perimeter bleibt gueltig und meldet deren Fehlen explizit;
