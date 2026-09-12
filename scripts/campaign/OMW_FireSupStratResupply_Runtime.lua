@@ -1,14 +1,14 @@
 -- Operation Mountain Watch - generic Fire Support / Strategic Resupply runtime.
 --
 -- Composition root for the generic Base. This module owns wiring only. It does not
--- select operational assets, invent tactical geometry, scan threats, monitor stock,
--- or implement a second retry/queue/resource authority.
+-- select operational assets, invent tactical geometry, scan threats, own strategic
+-- resources, or implement a second retry/queue authority.
 
 local Runtime = {}
 local Instance = {}
 Instance.__index = Instance
 
-Runtime.SchemaVersion = "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-RUNTIME-1"
+Runtime.SchemaVersion = "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-RUNTIME-2"
 local TAG = "[OMW][FireSupStratResupply.Runtime]"
 
 local function fail(message) error(TAG .. " " .. tostring(message), 2) end
@@ -43,6 +43,7 @@ function Runtime.New(spec)
   if type(spec.resolveQrfCoordinate) ~= "function" then fail("resolveQrfCoordinate must be a function") end
   if spec.logger ~= nil and type(spec.logger) ~= "function" then fail("logger must be a function when provided") end
   if spec.externalAdapters ~= nil and type(spec.externalAdapters) ~= "table" then fail("externalAdapters must be a table when provided") end
+
   if spec.perimeters ~= nil then
     needTable(spec.perimeters, "perimeters")
     for _, name in ipairs({"perimeterBridge", "perimeterRuntime", "threatAdapter"}) do
@@ -52,6 +53,19 @@ function Runtime.New(spec)
     if not finite(spec.blueCoalition) or not finite(spec.redCoalition) or spec.blueCoalition == spec.redCoalition then
       fail("blueCoalition and redCoalition must be distinct finite values when perimeters are configured")
     end
+  end
+
+  if spec.resupply ~= nil then
+    local resupply = needTable(spec.resupply, "resupply")
+    needTable(modules.resupplyMonitor, "modules.resupplyMonitor")
+    needFunction(modules.resupplyMonitor, "New", "modules.resupplyMonitor")
+    needTable(resupply.policy, "resupply.policy")
+    needFunction(resupply.policy, "Evaluate", "resupply.policy")
+    needTable(resupply.store, "resupply.store")
+    needFunction(resupply.store, "GetResource", "resupply.store")
+    needTable(resupply.rows, "resupply.rows")
+    if type(resupply.selectSupportType) ~= "function" then fail("resupply.selectSupportType must be a function") end
+    if resupply.priorityForCandidate ~= nil and type(resupply.priorityForCandidate) ~= "function" then fail("resupply.priorityForCandidate must be a function when provided") end
   end
 
   return setmetatable({
@@ -69,6 +83,7 @@ function Runtime.New(spec)
     perimeters = spec.perimeters,
     blueCoalition = spec.blueCoalition,
     redCoalition = spec.redCoalition,
+    resupply = spec.resupply,
     logger = spec.logger,
     prepared = false,
   }, Instance)
@@ -143,15 +158,31 @@ function Instance:Prepare()
     })
   end
 
+  local resupplyMonitor
+  if self.resupply ~= nil then
+    resupplyMonitor = m.resupplyMonitor.New({
+      base = base,
+      siteRegistry = self.siteRegistry,
+      policy = self.resupply.policy,
+      store = self.resupply.store,
+      rows = self.resupply.rows,
+      selectSupportType = self.resupply.selectSupportType,
+      priorityForCandidate = self.resupply.priorityForCandidate,
+      logger = self.logger,
+    })
+  end
+
   self.guardRuntime = guard
   self.qrfRuntime = qrf
   self.lifecycle = lifecycle
   self.base = base
   self.perimeterBridge = perimeterBridge
   self.perimeterRuntime = perimeterRuntime
+  self.resupplyMonitor = resupplyMonitor
   self.adapters = adapters
   self.prepared = true
-  self:_log("prepared generic runtime; perimeters=" .. tostring(perimeterRuntime ~= nil))
+  self:_log(string.format("prepared generic runtime; perimeters=%s resupplyMonitor=%s",
+    tostring(perimeterRuntime ~= nil), tostring(resupplyMonitor ~= nil)))
   return self, true, nil
 end
 
@@ -175,6 +206,18 @@ function Instance:StopPerimeters()
   if not self.prepared then return nil, false, "RUNTIME_NOT_PREPARED" end
   if not self.perimeterRuntime then return nil, false, "PERIMETERS_NOT_CONFIGURED" end
   return self.perimeterRuntime:StopAll()
+end
+
+function Instance:EvaluateResupply()
+  if not self.prepared then return nil, false, "RUNTIME_NOT_PREPARED" end
+  if not self.resupplyMonitor then return nil, false, "RESUPPLY_MONITOR_NOT_CONFIGURED" end
+  return self.resupplyMonitor:EvaluateAll(), true, nil
+end
+
+function Instance:ReleaseResupplyDemand(demandId, reason)
+  if not self.prepared then return nil, false, "RUNTIME_NOT_PREPARED" end
+  if not self.resupplyMonitor then return nil, false, "RESUPPLY_MONITOR_NOT_CONFIGURED" end
+  return self.resupplyMonitor:ReleaseDemand(demandId, reason)
 end
 
 function Instance:GetAdapter(supportType)
