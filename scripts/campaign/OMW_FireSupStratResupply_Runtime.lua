@@ -8,7 +8,7 @@ local Runtime = {}
 local Instance = {}
 Instance.__index = Instance
 
-Runtime.SchemaVersion = "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-RUNTIME-2"
+Runtime.SchemaVersion = "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-RUNTIME-3"
 local TAG = "[OMW][FireSupStratResupply.Runtime]"
 
 local function fail(message) error(TAG .. " " .. tostring(message), 2) end
@@ -43,6 +43,18 @@ function Runtime.New(spec)
   if type(spec.resolveQrfCoordinate) ~= "function" then fail("resolveQrfCoordinate must be a function") end
   if spec.logger ~= nil and type(spec.logger) ~= "function" then fail("logger must be a function when provided") end
   if spec.externalAdapters ~= nil and type(spec.externalAdapters) ~= "table" then fail("externalAdapters must be a table when provided") end
+
+  if spec.externalSupport ~= nil then
+    local externalSupport=needTable(spec.externalSupport,"externalSupport")
+    for _,name in ipairs({"externalSupportRuntime","commanderBridge","artyMissionFactory","casMissionFactory"}) do
+      needTable(modules[name],"modules." .. name)
+      needFunction(modules[name],"New","modules." .. name)
+    end
+    needTable(externalSupport.commander,"externalSupport.commander")
+    needFunction(externalSupport.commander,"AddMission","externalSupport.commander")
+    if type(externalSupport.resolveArtyTarget)~="function" then fail("externalSupport.resolveArtyTarget must be a function") end
+    if type(externalSupport.resolveCasGeometry)~="function" then fail("externalSupport.resolveCasGeometry must be a function") end
+  end
 
   if spec.perimeters ~= nil then
     needTable(spec.perimeters, "perimeters")
@@ -80,6 +92,7 @@ function Runtime.New(spec)
     qrfRequiredAssetsMin = spec.qrfRequiredAssetsMin or 1,
     qrfRequiredAssetsMax = spec.qrfRequiredAssetsMax or (spec.qrfRequiredAssetsMin or 1),
     externalAdapters = spec.externalAdapters or {},
+    externalSupport = spec.externalSupport,
     perimeters = spec.perimeters,
     blueCoalition = spec.blueCoalition,
     redCoalition = spec.redCoalition,
@@ -124,13 +137,34 @@ function Instance:Prepare()
     logger = self.logger,
   })
 
-  local lifecycle = m.lifecycleAdapter.New({ logger=self.logger })
   local adapters = {}
   for supportType, adapter in pairs(self.externalAdapters) do adapters[supportType] = adapter end
   if adapters.GUARD ~= nil or adapters.QRF ~= nil then fail("externalAdapters must not override GUARD or QRF") end
   adapters.GUARD = guard
   adapters.QRF = qrf
 
+  local externalSupportRuntime
+  if self.externalSupport ~= nil then
+    if adapters.ARTY ~= nil or adapters.CAS ~= nil then fail("externalAdapters must not override configured externalSupport ARTY/CAS") end
+    externalSupportRuntime=m.externalSupportRuntime.New({
+      commander=self.externalSupport.commander,
+      commanderBridge=m.commanderBridge,
+      artyMissionFactory=m.artyMissionFactory,
+      casMissionFactory=m.casMissionFactory,
+      resolveArtyTarget=self.externalSupport.resolveArtyTarget,
+      resolveCasGeometry=self.externalSupport.resolveCasGeometry,
+      artyRequiredAssetsMin=self.externalSupport.artyRequiredAssetsMin,
+      artyRequiredAssetsMax=self.externalSupport.artyRequiredAssetsMax,
+      casRequiredAssetsMin=self.externalSupport.casRequiredAssetsMin,
+      casRequiredAssetsMax=self.externalSupport.casRequiredAssetsMax,
+      logger=self.logger,
+    })
+    local external=externalSupportRuntime:GetAdapters()
+    adapters.ARTY=external.ARTY
+    adapters.CAS=external.CAS
+  end
+
+  local lifecycle = m.lifecycleAdapter.New({ logger=self.logger })
   local base = m.base.New({
     siteRegistry = self.siteRegistry,
     supportProfiles = self.supportProfiles,
@@ -174,6 +208,7 @@ function Instance:Prepare()
 
   self.guardRuntime = guard
   self.qrfRuntime = qrf
+  self.externalSupportRuntime=externalSupportRuntime
   self.lifecycle = lifecycle
   self.base = base
   self.perimeterBridge = perimeterBridge
@@ -181,8 +216,8 @@ function Instance:Prepare()
   self.resupplyMonitor = resupplyMonitor
   self.adapters = adapters
   self.prepared = true
-  self:_log(string.format("prepared generic runtime; perimeters=%s resupplyMonitor=%s",
-    tostring(perimeterRuntime ~= nil), tostring(resupplyMonitor ~= nil)))
+  self:_log(string.format("prepared generic runtime; externalSupport=%s perimeters=%s resupplyMonitor=%s",
+    tostring(externalSupportRuntime~=nil),tostring(perimeterRuntime ~= nil), tostring(resupplyMonitor ~= nil)))
   return self, true, nil
 end
 
