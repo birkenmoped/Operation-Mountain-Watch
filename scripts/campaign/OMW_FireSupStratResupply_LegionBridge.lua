@@ -60,7 +60,12 @@ function Instance:Dispatch(demand, context)
   needTable(legion, "resolved legion")
   if type(legion.AddMission) ~= "function" then fail("resolved legion.AddMission() is required") end
 
-  local mission = self.factory(demand, context, legion)
+  local mission, factoryCreated, factoryReason = self.factory(demand, context, legion)
+  if mission == nil then
+    self:_log(string.format("local mission not created demandId=%s siteId=%s supportType=%s reason=%s",
+      tostring(demand.demandId), tostring(demand.siteId), tostring(demand.supportType), tostring(factoryReason)))
+    return nil, false, factoryReason or "MISSION_NOT_CREATED"
+  end
   needTable(mission, "factory mission")
   if type(mission.Cancel) ~= "function" then fail("factory mission must expose Cancel()") end
 
@@ -83,7 +88,7 @@ function Instance:Dispatch(demand, context)
   self:_log(string.format("queued local mission demandId=%s siteId=%s supportType=%s legion=%s",
     tostring(demand.demandId), tostring(demand.siteId), tostring(demand.supportType),
     tostring(legion.alias or legion.ClassName or legion)))
-  return handle, true, nil
+  return handle, factoryCreated ~= false, factoryReason
 end
 
 return Bridge
