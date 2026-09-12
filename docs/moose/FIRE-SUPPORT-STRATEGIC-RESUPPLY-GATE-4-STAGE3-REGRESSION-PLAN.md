@@ -106,6 +106,29 @@ Der Preflight muss vor dem historischen Fixture mindestens nachweisen:
 - Resupply wird site-scoped und ressourcenspezifisch erzeugt;
 - Incident-Ende hat keine Autorität über persistenten Guard oder separat gültigen Resupply.
 
+## DCS-Lauf 2026-09-12 – technisch blockiert vor Testbeginn
+
+Der erste manuelle Gate-4-DCS-Lauf mit der vom Projektinhaber erzeugten Mission
+
+```text
+OMW_Template_v23_GroundWorks_base.miz
+MIZ SHA-256: 1E723C1C6662006608D9481F767704DE5CEE5A7655A744674F18BCB786888DC4
+Gate-4 Build-2 bundle SHA-256: 5D4EC125D4B46976EF02BA87E3185E8BC3CE6626ACEE2AF861E0D9D4243FB3B0
+DCS: 2.9.29.27468
+```
+
+ist **kein fachlicher Gate-4-Testlauf**, weil das Gate-4-Bundle bereits beim Laden syntaktisch abgewiesen wurde. `dcs.log` enthält:
+
+```text
+Mission script error: [string "l10n/DEFAULT/OMW_FireSupStratResupply_Gate4_Stage3_Regression.l..."]:1: unexpected symbol near ''
+```
+
+Damit wurde weder der Gate-4-Preflight noch das nachgelagerte historische Honaker/Wright-Fixture ausgeführt. Das erklärt, warum Guard, QRF, ARTY und CAS aus diesem Testbundle vollständig ausblieben.
+
+Die Ursache liegt im Build-Artefakt: Windows PowerShell 5.1 `Set-Content -Encoding UTF8` erzeugt ein UTF-8-BOM. Der DCS-Lua-Loader akzeptierte dieses BOM hier nicht am Dateianfang. Der Builder wurde deshalb auf explizites UTF-8 **ohne BOM** umgestellt und prüft den erzeugten Byte-Stream nun selbst auf `EF BB BF`. Diese Korrektur ändert keine MOOSE- oder fachliche Lifecycle-Logik.
+
+Wichtig für die Scope-Auswertung: Gate 4 validiert weiterhin nur das historische Honaker/Wright-Fixture plus den generischen Base-Vertrags-Preflight. Eine sichtbare Guard-Initialisierung **an allen FOBs/COPs** ist nicht Bestandteil dieses Gate-4-Fixtures und darf aus diesem Test noch nicht erwartet oder als implementiert behauptet werden.
+
 ## Späterer DCS-Minimalnachweis
 
 Gate 4 bleibt `PLANNED`, bis eine vom Projektinhaber manuell aktualisierte Kopie der v22-MIZ mindestens erneut belegt:
