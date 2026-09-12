@@ -7,8 +7,8 @@ local function no(v,label) if v~=false then error(label.." expected=false") end 
 
 local function newStore()
   return CampaignState.New({nodes={
-    {nodeId="GROUND_NODE_JALALABAD",resources={GROUND_AMMO_PACKAGE={quantity=20,unit="count"}}},
-    {nodeId="GROUND_NODE_JOYCE",resources={GROUND_AMMO_PACKAGE={quantity=2,unit="count"}}},
+    {nodeId="GROUND_NODE_JALALABAD",airbaseName="Jalalabad",resources={GROUND_AMMO_PACKAGE={quantity=20,unit="count"}}},
+    {nodeId="GROUND_NODE_JOYCE",airbaseName="FOB Joyce",resources={GROUND_AMMO_PACKAGE={quantity=2,unit="count"}}},
   }})
 end
 local function transport(total)
