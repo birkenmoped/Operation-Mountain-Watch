@@ -153,25 +153,36 @@ Moose.lua SHA-256: E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A
 
 ## Lokale Builder-Ausfuehrung auf dem Owner-Windows-Arbeitsplatz
 
-Der erste direkte Aufruf des versionierten Builders auf Head `9ae057f61b02125b86bd72e90f153c047eac2883` wurde von der lokalen Windows-PowerShell-ExecutionPolicy blockiert (`PSSecurityException` / `UnauthorizedAccess`). Der Builder selbst wurde in diesem Lauf nicht gestartet; ein fehlendes Output-Bundle ist deshalb nur ein Folgeeffekt und kein Lua-/MOOSE-/DCS-Fehler.
+Der erste direkte Aufruf des versionierten Builders auf Head `9ae057f61b02125b86bd72e90f153c047eac2883` wurde von der lokalen Windows-PowerShell-ExecutionPolicy blockiert (`PSSecurityException` / `UnauthorizedAccess`). Der Builder selbst wurde in diesem Lauf nicht gestartet; ein fehlendes Output-Bundle war deshalb nur ein Folgeeffekt und kein Lua-/MOOSE-/DCS-Fehler.
 
-Die lokale Maschinen- oder Benutzer-ExecutionPolicy wird nicht dauerhaft geaendert. Fuer diesen Test wird der Builder in einem separaten PowerShell-Prozess mit prozessbezogenem Bypass gestartet:
+Die lokale Maschinen- oder Benutzer-ExecutionPolicy wurde nicht dauerhaft geaendert. Der Builder wurde anschliessend auf Head
+
+```text
+4215e4786a6c6b316d8096e48f9026e3f9ac8f93
+```
+
+in einem separaten Windows-PowerShell-Prozess mit prozessbezogenem Bypass ausgefuehrt:
 
 ```text
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File <versionierter Builder>
 ```
 
-Danach gelten folgende Guards fuer den lokalen Buildauftrag:
+Dieser Build war erfolgreich.
+
+Reale lokale Builder-Ausgabe:
 
 ```text
-1. Exitcode des gestarteten PowerShell-Prozesses muss 0 sein.
-2. Nur bei Exitcode 0 darf die Bundle-Existenz geprueft werden.
-3. Nur bei vorhandenem Bundle werden SHA-256 und weitere Artefaktpruefungen ausgefuehrt.
-4. Kein direkter lua-/luac-Aufruf auf dem Owner-Arbeitsplatz.
-5. Keine dauerhafte Aenderung der ExecutionPolicy.
+BuilderVersion: FIRE-SUPPORT-STRATEGIC-RESUPPLY-GATE5-SIX-SITE-GUARD-RUNTIME-1
+GitCommit: 4215e4786a6c6b316d8096e48f9026e3f9ac8f93
+TestId: FIRE-SUPPORT-STRATEGIC-RESUPPLY-GATE5-SIX-SITE-GUARD-RUNTIME-ACCEPTANCE-1
+MOOSECommit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+Moose.lua SHA-256: E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915
+Encoding: UTF-8 without BOM
+Bundle SHA-256: F4C0BADF01557A38485BB3A5677EF723CA435729173CE8F23401FA90CF6F0518
+MIZ mutation: false
 ```
 
-Reale lokale Hashes des ersten, durch die ExecutionPolicy blockierten Versuchs:
+Reale lokale Datei-Hashes:
 
 ```text
 Runtime source SHA-256:
@@ -179,7 +190,22 @@ Runtime source SHA-256:
 
 Builder SHA-256:
 993FC2190A3C659AA608A0A0220D09E7198F2AF0F17F5785795A9B1D04E3CBB9
+
+Generated bundle SHA-256:
+F4C0BADF01557A38485BB3A5677EF723CA435729173CE8F23401FA90CF6F0518
 ```
+
+Lokaler Worktree nach erfolgreichem Build:
+
+```text
+?? mission/tests/fire-support-strategic-resupply-gate4-stage3-regression/dist/
+?? mission/tests/fire-support-strategic-resupply-gate5-six-site-guard-runtime/dist/
+?? mission/tests/stage3-honaker-wright-full-response/dist/
+```
+
+Das neue Gate-5-`dist/`-Verzeichnis ist der erwartete untracked Build-Output dieses erfolgreichen Builds. Keine tracked lokale Aenderung wurde gemeldet.
+
+Damit ist die Build-Provenienz fuer den naechsten DCS-Lauf vollstaendig dokumentiert. Dies ist noch keine DCS-Validierung.
 
 ## Arbeitsablauf-Korrektur
 
@@ -191,7 +217,7 @@ results/2026-09-12-gate5-lua-pasted-into-powershell-correction.md
 
 Der Projektinhaber erhaelt erst nach Remote-Verfuegbarkeit des versionierten Source und Builders einen einzigen PowerShell-Auftrag fuer Pull, Build und Hash. Danach folgt der DCS-Test mit dem erzeugten Bundle.
 
-Die ExecutionPolicy-Korrektur des ersten realen Buildversuchs ist dokumentiert unter:
+Die ExecutionPolicy-Korrektur und die reale lokale Build-Provenienz sind dokumentiert unter:
 
 ```text
 results/2026-09-12-fire-support-gate5-correction-local-verification.md
