@@ -8,7 +8,7 @@ local Runtime = {}
 local Instance = {}
 Instance.__index = Instance
 
-Runtime.SchemaVersion = "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-RUNTIME-3"
+Runtime.SchemaVersion = "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-RUNTIME-4"
 local TAG = "[OMW][FireSupStratResupply.Runtime]"
 
 local function fail(message) error(TAG .. " " .. tostring(message), 2) end
@@ -78,6 +78,31 @@ function Runtime.New(spec)
     needTable(resupply.rows, "resupply.rows")
     if type(resupply.selectSupportType) ~= "function" then fail("resupply.selectSupportType must be a function") end
     if resupply.priorityForCandidate ~= nil and type(resupply.priorityForCandidate) ~= "function" then fail("resupply.priorityForCandidate must be a function when provided") end
+
+    if resupply.transport ~= nil then
+      local transport=needTable(resupply.transport,"resupply.transport")
+      for _,name in ipairs({"resupplyTransportRuntime","storageTransportFactory","transportSettlement","commanderBridge"}) do
+        needTable(modules[name],"modules." .. name)
+        needFunction(modules[name],"New","modules." .. name)
+      end
+      needTable(transport.campaignState,"resupply.transport.campaignState")
+      local groundConfigured=transport.groundCommander~=nil or transport.resolveGroundTransport~=nil
+      local airConfigured=transport.airCommander~=nil or transport.resolveAirTransport~=nil
+      if not groundConfigured and not airConfigured then fail("resupply.transport requires ground or air transport configuration") end
+      if groundConfigured then
+        needTable(transport.groundCommander,"resupply.transport.groundCommander")
+        needFunction(transport.groundCommander,"AddOpsTransport","resupply.transport.groundCommander")
+        if type(transport.resolveGroundTransport)~="function" then fail("resupply.transport.resolveGroundTransport must be a function") end
+      end
+      if airConfigured then
+        needTable(transport.airCommander,"resupply.transport.airCommander")
+        needFunction(transport.airCommander,"AddOpsTransport","resupply.transport.airCommander")
+        if type(transport.resolveAirTransport)~="function" then fail("resupply.transport.resolveAirTransport must be a function") end
+      end
+      for _,name in ipairs({"resolveTransfer","transactionIdFactory","onTerminal","onPartial"}) do
+        if transport[name]~=nil and type(transport[name])~="function" then fail("resupply.transport."..name.." must be a function when provided") end
+      end
+    end
   end
 
   return setmetatable({
@@ -164,6 +189,40 @@ function Instance:Prepare()
     adapters.CAS=external.CAS
   end
 
+  local resupplyMonitor
+  local transportSettlement
+  local resupplyTransportRuntime
+  if self.resupply~=nil and self.resupply.transport~=nil then
+    local transport=self.resupply.transport
+    if adapters.GROUND_RESUPPLY~=nil or adapters.AIR_RESUPPLY~=nil then
+      fail("externalAdapters must not override configured resupply transport adapters")
+    end
+    transportSettlement=m.transportSettlement.New({
+      campaignState=transport.campaignState,
+      store=self.resupply.store,
+      resolveTransfer=transport.resolveTransfer,
+      transactionIdFactory=transport.transactionIdFactory,
+      onTerminal=function(demand,outcome,transaction,detail,binding)
+        if resupplyMonitor~=nil then resupplyMonitor:ReleaseDemand(demand.demandId,outcome) end
+        if transport.onTerminal~=nil then transport.onTerminal(demand,outcome,transaction,detail,binding) end
+      end,
+      onPartial=transport.onPartial,
+      logger=self.logger,
+    })
+    resupplyTransportRuntime=m.resupplyTransportRuntime.New({
+      commanderBridge=m.commanderBridge,
+      storageTransportFactory=m.storageTransportFactory,
+      settlement=transportSettlement,
+      groundCommander=transport.groundCommander,
+      resolveGroundTransport=transport.resolveGroundTransport,
+      airCommander=transport.airCommander,
+      resolveAirTransport=transport.resolveAirTransport,
+      logger=self.logger,
+    })
+    local transportAdapters=resupplyTransportRuntime:GetAdapters()
+    for supportType,adapter in pairs(transportAdapters) do adapters[supportType]=adapter end
+  end
+
   local lifecycle = m.lifecycleAdapter.New({ logger=self.logger })
   local base = m.base.New({
     siteRegistry = self.siteRegistry,
@@ -192,7 +251,6 @@ function Instance:Prepare()
     })
   end
 
-  local resupplyMonitor
   if self.resupply ~= nil then
     resupplyMonitor = m.resupplyMonitor.New({
       base = base,
@@ -214,10 +272,12 @@ function Instance:Prepare()
   self.perimeterBridge = perimeterBridge
   self.perimeterRuntime = perimeterRuntime
   self.resupplyMonitor = resupplyMonitor
+  self.transportSettlement = transportSettlement
+  self.resupplyTransportRuntime = resupplyTransportRuntime
   self.adapters = adapters
   self.prepared = true
-  self:_log(string.format("prepared generic runtime; externalSupport=%s perimeters=%s resupplyMonitor=%s",
-    tostring(externalSupportRuntime~=nil),tostring(perimeterRuntime ~= nil), tostring(resupplyMonitor ~= nil)))
+  self:_log(string.format("prepared generic runtime; externalSupport=%s perimeters=%s resupplyMonitor=%s resupplyTransport=%s",
+    tostring(externalSupportRuntime~=nil),tostring(perimeterRuntime ~= nil), tostring(resupplyMonitor ~= nil), tostring(resupplyTransportRuntime~=nil)))
   return self, true, nil
 end
 
