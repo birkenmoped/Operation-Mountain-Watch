@@ -245,4 +245,50 @@ wird die zuständige Dokumentation im selben Arbeitsschritt aktualisiert.
 
 Ziel ist ausdrücklich, vermeidbare Wiederholungen bereits gelöster Fehler in Folgechats zu verhindern.
 
+## 9. Lokale Verifikation und Tooling-Korrektur – 12.09.2026
+
+Der Projektinhaber hat den korrigierten Gate-5-Stand real lokal per Fast-Forward auf
+
+```text
+d5a7ce1cdfb9c8c5e7e94abda159aea5455a82f9
+```
+
+übernommen. Der Changeset bestand exakt aus dem Gate-5-Dokument, der SiteRegistry und dem Gate-2-Test. Die real lokal gemessenen SHA-256-Werte wurden in
+
+```text
+results/2026-09-12-fire-support-gate5-correction-local-verification.md
+```
+
+festgehalten.
+
+Dabei wurde ein weiterer vermeidbarer Arbeitsfehler sichtbar: Es wurde erneut ein direkter lokaler
+
+```text
+lua tests\mission-demand\run.lua
+```
+
+Aufruf verlangt, obwohl auf dem Owner-Windows-Arbeitsplatz kein `lua`-Interpreter verfügbar ist. PowerShell meldete entsprechend `CommandNotFoundException`.
+
+Dies ist ausdrücklich **kein Gate-5-Test-Failure**, sondern eine bekannte lokale Tooling-Grenze. Für Folgearbeit gilt daher zusätzlich:
+
+```text
+- keine direkten lokalen lua-/luac-Aufträge auf diesem Owner-Arbeitsplatz,
+  solange keine geänderte Tooling-Baseline ausdrücklich bestätigt wurde;
+- vorhandene versionierte PowerShell-Builder lokal verwenden;
+- Lua-Syntax-/Unit-Tests über die vorhandene CI ausführen, wenn lokal kein Interpreter vorhanden ist;
+- vor jeder lokalen Testanweisung zuerst die bekannte lokale Tooling-Baseline berücksichtigen.
+```
+
+Für exakt den korrigierten Head `d5a7ce1cdfb9c8c5e7e94abda159aea5455a82f9` waren die Repository-Prüfungen bereits erfolgreich:
+
+```text
+Documentation validation: PASS
+run 34701334906
+
+MissionDemand validation: PASS
+run 34701334907
+```
+
+Der lokale Worktree enthielt nach der Verifikation nur die beiden bereits bekannten generierten `dist/`-Verzeichnisse; keine tracked lokale Änderung wurde gemeldet.
+
 Gate 5 bleibt `PLANNED` und `validated_in_dcs: false`, weil die generische Six-Site-Runtime noch nicht in DCS akzeptiert ist. Die Existenz der sechs PATHLINEs in der genannten v23-MIZ ist dagegen read-only bestätigt und darf nicht erneut als offene ME-Arbeit dargestellt werden.
