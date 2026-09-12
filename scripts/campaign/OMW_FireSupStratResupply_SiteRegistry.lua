@@ -3,27 +3,18 @@
 
 local SiteRegistry = {}
 
-SiteRegistry.SchemaVersion = "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-SITE-REGISTRY-3"
+SiteRegistry.SchemaVersion = "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-SITE-REGISTRY-4"
 SiteRegistry.GuardTemplateName = "TPL_BLUE_GND_INF_RIFLE_SQUAD_9"
 
 local function guardRouteContract(pathlineName)
   return {
     pathlineName = pathlineName,
-    status = "OWNER_AUTHORED_ME_ROUTE_REQUIRED_DCS_VALIDATION",
-  }
-end
-
-local function alarmZoneContract(zoneName)
-  return {
-    zoneName = zoneName,
-    status = "OWNER_AUTHORED_ME_ZONE_REQUIRED_DCS_VALIDATION",
+    status = "PRESENT_IN_V23_MIZ_REQUIRES_SITE_RUNTIME_VALIDATION",
   }
 end
 
 local function localSupport(status)
-  return {
-    status = status,
-  }
+  return { status = status }
 end
 
 SiteRegistry.Sites = {
@@ -37,10 +28,8 @@ SiteRegistry.Sites = {
     accessZoneName = "ZON_BLUE_GND_FENTY_ACCESS",
     guardTemplateName = SiteRegistry.GuardTemplateName,
     guardRoute = guardRouteContract("OMW_RTE_BLUE_GUARD_FENTY_01"),
-    alarmZone = alarmZoneContract("ZON_BLUE_GND_FENTY_ALARM"),
     localSupport = localSupport("NOT_ESTABLISHED_BY_CURRENT_BASELINE"),
   },
-
   COP_FORTRESS = {
     siteId = "COP_FORTRESS",
     installationId = "BLUE_GROUND_COP_FORTRESS",
@@ -51,10 +40,8 @@ SiteRegistry.Sites = {
     accessZoneName = "ZON_BLUE_GND_FORTRESS_ACCESS",
     guardTemplateName = SiteRegistry.GuardTemplateName,
     guardRoute = guardRouteContract("OMW_RTE_BLUE_GUARD_FORTRESS_01"),
-    alarmZone = alarmZoneContract("ZON_BLUE_GND_FORTRESS_ALARM"),
     localSupport = localSupport("CONFIGURED_IN_GROUND_BASELINE"),
   },
-
   FOB_JOYCE = {
     siteId = "FOB_JOYCE",
     installationId = "BLUE_GROUND_FOB_JOYCE",
@@ -65,10 +52,8 @@ SiteRegistry.Sites = {
     accessZoneName = "ZON_BLUE_GND_JOYCE_ACCESS",
     guardTemplateName = SiteRegistry.GuardTemplateName,
     guardRoute = guardRouteContract("OMW_RTE_BLUE_GUARD_JOYCE_01"),
-    alarmZone = alarmZoneContract("ZON_BLUE_GND_JOYCE_ALARM"),
     localSupport = localSupport("NOT_ESTABLISHED_BY_CURRENT_BASELINE"),
   },
-
   FOB_WRIGHT = {
     siteId = "FOB_WRIGHT",
     installationId = "BLUE_GROUND_FOB_WRIGHT",
@@ -79,10 +64,8 @@ SiteRegistry.Sites = {
     accessZoneName = "ZON_BLUE_GND_WRIGHT_ACCESS",
     guardTemplateName = SiteRegistry.GuardTemplateName,
     guardRoute = guardRouteContract("OMW_RTE_BLUE_GUARD_WRIGHT_01"),
-    alarmZone = alarmZoneContract("ZON_BLUE_GND_WRIGHT_ALARM"),
     localSupport = localSupport("UNRESOLVED_CURRENT_ASSIGNMENT"),
   },
-
   COP_HONAKER = {
     siteId = "COP_HONAKER",
     installationId = "BLUE_GROUND_COP_HONAKER_MIRACLE",
@@ -93,11 +76,9 @@ SiteRegistry.Sites = {
     accessZoneName = "ZON_BLUE_GND_HONAKER_ACCESS",
     guardTemplateName = SiteRegistry.GuardTemplateName,
     guardRoute = guardRouteContract("OMW_RTE_BLUE_GUARD_HONAKER_01"),
-    alarmZone = alarmZoneContract("ZON_BLUE_GND_HONAKER_ALARM"),
     localSupport = localSupport("CONFIGURED_IN_GROUND_BASELINE"),
     historicalStage3ProviderNodeId = "GROUND_NODE_WRIGHT",
   },
-
   FOB_BOSTICK = {
     siteId = "FOB_BOSTICK",
     installationId = "BLUE_GROUND_FOB_BOSTICK",
@@ -108,7 +89,6 @@ SiteRegistry.Sites = {
     accessZoneName = "ZON_BLUE_GND_BOSTICK_ACCESS",
     guardTemplateName = SiteRegistry.GuardTemplateName,
     guardRoute = guardRouteContract("OMW_RTE_BLUE_GUARD_BOSTICK_01"),
-    alarmZone = alarmZoneContract("ZON_BLUE_GND_BOSTICK_ALARM"),
     localSupport = localSupport("CONFIGURED_IN_GROUND_BASELINE"),
   },
 }
