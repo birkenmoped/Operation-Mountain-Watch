@@ -61,6 +61,8 @@ REASON: LUA INTERPRETER NOT AVAILABLE ON OWNER WORKSTATION
 THIS IS NOT A TEST FAILURE OF THE GATE-5 CHANGE
 ```
 
+Zusätzlich zeigte die Ausgabe, dass die anschließend verwendete Prüfung von `$LASTEXITCODE` diesen Fall nicht zuverlässig erkennt: `CommandNotFoundException` entsteht in PowerShell, bevor ein nativer `lua`-Prozess gestartet wird; deshalb ist `$LASTEXITCODE` für genau diesen Fehlerpfad kein belastbarer Nachweis. Zukünftige lokale Anweisungen dürfen einen fehlenden Befehl nicht allein über `$LASTEXITCODE` absichern.
+
 Arbeitsregel für Folgeaufträge:
 
 ```text
@@ -69,6 +71,8 @@ Auf diesem Owner-Arbeitsplatz keine direkten `lua`-/`luac`-Kommandos verlangen,
 solange der Projektinhaber nicht ausdrücklich eine geänderte Tooling-Baseline bestätigt.
 Verfügbare versionierte PowerShell-Builder verwenden; Lua-Syntax-/Unit-Tests über die vorhandene CI ausführen,
 wenn lokal kein Interpreter vorhanden ist.
+Falls ein externer Befehl künftig zwingend lokal benötigt wird, vorher dessen Verfügbarkeit explizit prüfen;
+CommandNotFound darf nicht nur über `$LASTEXITCODE` bewertet werden.
 ```
 
 ## Reale lokale Hashes des korrigierten Stands
@@ -127,7 +131,8 @@ Diese Evidenz bestätigt:
 - reale lokale Hashes dieser drei Dateien;
 - unveränderten tracked Worktree;
 - CI-PASS für Dokumentation und MissionDemand auf exakt diesem Head;
-- lokale Lua-Test-Unverfügbarkeit als Tooling-Grenze, nicht als Code-Failure.
+- lokale Lua-Test-Unverfügbarkeit als Tooling-Grenze, nicht als Code-Failure;
+- `$LASTEXITCODE` allein ist kein belastbarer Guard für PowerShell CommandNotFound.
 ```
 
 Sie bestätigt noch nicht:
