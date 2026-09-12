@@ -1,9 +1,9 @@
 -- Operation Mountain Watch - Fire Support / Strategic Resupply support profiles.
--- Gate 2: pure campaign-domain data. No MOOSE/DCS calls and no asset selection.
+-- Pure campaign-domain data. No MOOSE/DCS calls and no asset selection.
 
 local SupportProfiles = {}
 
-SupportProfiles.SchemaVersion = "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-SUPPORT-PROFILES-1"
+SupportProfiles.SchemaVersion = "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-SUPPORT-PROFILES-2"
 
 SupportProfiles.SupportType = {
   GUARD = "GUARD",
@@ -12,6 +12,13 @@ SupportProfiles.SupportType = {
   CAS = "CAS",
   GROUND_RESUPPLY = "GROUND_RESUPPLY",
   AIR_RESUPPLY = "AIR_RESUPPLY",
+}
+
+SupportProfiles.Activation = {
+  SITE_PERSISTENT = "SITE_PERSISTENT",
+  INCIDENT_LOCAL_DEFENSE = "INCIDENT_LOCAL_DEFENSE",
+  C2_ESCALATION_EXTERNAL = "C2_ESCALATION_EXTERNAL",
+  RESOURCE_THRESHOLD = "RESOURCE_THRESHOLD",
 }
 
 SupportProfiles.ResourceId = {
@@ -26,12 +33,13 @@ SupportProfiles.Profiles = {
     profileId = "HONAKER_WRIGHT_STAGE3",
     contractStatus = "HISTORICAL_STAGE3_FIXTURE",
     support = {
-      guards = { enabled = true },
-      qrf = { enabled = true },
-      artillery = { enabled = true },
-      cas = { enabled = true, corridorProfile = "HONAKER_ROTARY_STAGE3" },
+      guards = { enabled = true, activation = "SITE_PERSISTENT" },
+      qrf = { enabled = true, activation = "INCIDENT_LOCAL_DEFENSE" },
+      artillery = { enabled = true, activation = "C2_ESCALATION_EXTERNAL" },
+      cas = { enabled = true, activation = "C2_ESCALATION_EXTERNAL", corridorProfile = "HONAKER_ROTARY_STAGE3" },
       resupply = {
         enabled = true,
+        activation = "RESOURCE_THRESHOLD",
         ground = true,
         air = true,
         resourceIds = {
@@ -53,12 +61,13 @@ SupportProfiles.Profiles = {
     profileId = "JOYCE_STANDARD",
     contractStatus = "PLANNED_SECOND_SITE",
     support = {
-      guards = { enabled = true },
-      qrf = { enabled = true },
-      artillery = { enabled = true },
-      cas = { enabled = true, corridorProfile = "JOYCE_HELICOPTER" },
+      guards = { enabled = true, activation = "SITE_PERSISTENT" },
+      qrf = { enabled = true, activation = "INCIDENT_LOCAL_DEFENSE" },
+      artillery = { enabled = true, activation = "C2_ESCALATION_EXTERNAL" },
+      cas = { enabled = true, activation = "C2_ESCALATION_EXTERNAL", corridorProfile = "JOYCE_HELICOPTER" },
       resupply = {
         enabled = true,
+        activation = "RESOURCE_THRESHOLD",
         ground = true,
         air = true,
         resourceIds = {
