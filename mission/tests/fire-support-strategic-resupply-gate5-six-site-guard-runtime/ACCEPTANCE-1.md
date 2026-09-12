@@ -151,6 +151,36 @@ commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
 Moose.lua SHA-256: E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915
 ```
 
+## Lokale Builder-Ausfuehrung auf dem Owner-Windows-Arbeitsplatz
+
+Der erste direkte Aufruf des versionierten Builders auf Head `9ae057f61b02125b86bd72e90f153c047eac2883` wurde von der lokalen Windows-PowerShell-ExecutionPolicy blockiert (`PSSecurityException` / `UnauthorizedAccess`). Der Builder selbst wurde in diesem Lauf nicht gestartet; ein fehlendes Output-Bundle ist deshalb nur ein Folgeeffekt und kein Lua-/MOOSE-/DCS-Fehler.
+
+Die lokale Maschinen- oder Benutzer-ExecutionPolicy wird nicht dauerhaft geaendert. Fuer diesen Test wird der Builder in einem separaten PowerShell-Prozess mit prozessbezogenem Bypass gestartet:
+
+```text
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File <versionierter Builder>
+```
+
+Danach gelten folgende Guards fuer den lokalen Buildauftrag:
+
+```text
+1. Exitcode des gestarteten PowerShell-Prozesses muss 0 sein.
+2. Nur bei Exitcode 0 darf die Bundle-Existenz geprueft werden.
+3. Nur bei vorhandenem Bundle werden SHA-256 und weitere Artefaktpruefungen ausgefuehrt.
+4. Kein direkter lua-/luac-Aufruf auf dem Owner-Arbeitsplatz.
+5. Keine dauerhafte Aenderung der ExecutionPolicy.
+```
+
+Reale lokale Hashes des ersten, durch die ExecutionPolicy blockierten Versuchs:
+
+```text
+Runtime source SHA-256:
+3699B9111ED15C0C93DE4895545CE3276632927E3DCDB1117CEACC7141B62821
+
+Builder SHA-256:
+993FC2190A3C659AA608A0A0220D09E7198F2AF0F17F5785795A9B1D04E3CBB9
+```
+
 ## Arbeitsablauf-Korrektur
 
 Der Lua-Source darf nicht direkt in PowerShell ausgefuehrt werden. Die vorherige Ausgabe des noch nicht versionierten Lua-Quelltexts fuehrte genau zu diesem vermeidbaren Fehler und ist separat dokumentiert unter:
@@ -160,3 +190,9 @@ results/2026-09-12-gate5-lua-pasted-into-powershell-correction.md
 ```
 
 Der Projektinhaber erhaelt erst nach Remote-Verfuegbarkeit des versionierten Source und Builders einen einzigen PowerShell-Auftrag fuer Pull, Build und Hash. Danach folgt der DCS-Test mit dem erzeugten Bundle.
+
+Die ExecutionPolicy-Korrektur des ersten realen Buildversuchs ist dokumentiert unter:
+
+```text
+results/2026-09-12-fire-support-gate5-correction-local-verification.md
+```
