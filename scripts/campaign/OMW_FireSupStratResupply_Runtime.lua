@@ -8,7 +8,7 @@ local Runtime = {}
 local Instance = {}
 Instance.__index = Instance
 
-Runtime.SchemaVersion = "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-RUNTIME-4"
+Runtime.SchemaVersion = "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-RUNTIME-5"
 local TAG = "[OMW][FireSupStratResupply.Runtime]"
 
 local function fail(message) error(TAG .. " " .. tostring(message), 2) end
@@ -29,7 +29,8 @@ function Runtime.New(spec)
 
   for _, name in ipairs({
     "base", "lifecycleAdapter", "guardRuntime", "qrfRuntime", "legionBridge",
-    "guardMissionFactory", "qrfMissionFactory", "guardMaterializationAdapter", "guardRouteAdapter"
+    "guardMissionFactory", "qrfMissionFactory", "guardMaterializationAdapter", "guardRouteAdapter",
+    "installationIncidentBridge", "installationIncidentRuntime", "installationAttackIncident"
   }) do
     needTable(modules[name], "modules." .. name)
     needFunction(modules[name], "New", "modules." .. name)
@@ -43,6 +44,7 @@ function Runtime.New(spec)
   if type(spec.resolveQrfCoordinate) ~= "function" then fail("resolveQrfCoordinate must be a function") end
   if spec.logger ~= nil and type(spec.logger) ~= "function" then fail("logger must be a function when provided") end
   if spec.externalAdapters ~= nil and type(spec.externalAdapters) ~= "table" then fail("externalAdapters must be a table when provided") end
+  if spec.incidentIdFactory ~= nil and type(spec.incidentIdFactory) ~= "function" then fail("incidentIdFactory must be a function when provided") end
 
   if spec.externalSupport ~= nil then
     local externalSupport=needTable(spec.externalSupport,"externalSupport")
@@ -121,6 +123,7 @@ function Runtime.New(spec)
     perimeters = spec.perimeters,
     blueCoalition = spec.blueCoalition,
     redCoalition = spec.redCoalition,
+    incidentIdFactory = spec.incidentIdFactory,
     resupply = spec.resupply,
     logger = spec.logger,
     prepared = false,
@@ -233,10 +236,27 @@ function Instance:Prepare()
     logger = self.logger,
   })
 
+  local installationIncidentBridge = m.installationIncidentBridge.New({
+    base=base,
+    siteRegistry=self.siteRegistry,
+    logger=self.logger,
+  })
+  local installationIncidentRuntime = m.installationIncidentRuntime.New({
+    siteRegistry=self.siteRegistry,
+    incidentCoordinator=m.installationAttackIncident,
+    bridge=installationIncidentBridge,
+    incidentIdFactory=self.incidentIdFactory,
+    logger=self.logger,
+  })
+  local _, incidentPrepared, incidentReason = installationIncidentRuntime:Prepare()
+  if incidentPrepared == false and incidentReason ~= "ALREADY_PREPARED" then
+    return nil, false, "INSTALLATION_INCIDENT_PREPARE_FAILED:" .. tostring(incidentReason)
+  end
+
   local perimeterBridge, perimeterRuntime
   if self.perimeters ~= nil then
     perimeterBridge = m.perimeterBridge.New({
-      base = base,
+      incidentRuntime = installationIncidentRuntime,
       siteRegistry = self.siteRegistry,
       logger = self.logger,
     })
@@ -269,6 +289,8 @@ function Instance:Prepare()
   self.externalSupportRuntime=externalSupportRuntime
   self.lifecycle = lifecycle
   self.base = base
+  self.installationIncidentBridge = installationIncidentBridge
+  self.installationIncidentRuntime = installationIncidentRuntime
   self.perimeterBridge = perimeterBridge
   self.perimeterRuntime = perimeterRuntime
   self.resupplyMonitor = resupplyMonitor
@@ -276,7 +298,7 @@ function Instance:Prepare()
   self.resupplyTransportRuntime = resupplyTransportRuntime
   self.adapters = adapters
   self.prepared = true
-  self:_log(string.format("prepared generic runtime; externalSupport=%s perimeters=%s resupplyMonitor=%s resupplyTransport=%s",
+  self:_log(string.format("prepared generic runtime; installationIncidents=true externalSupport=%s perimeters=%s resupplyMonitor=%s resupplyTransport=%s",
     tostring(externalSupportRuntime~=nil),tostring(perimeterRuntime ~= nil), tostring(resupplyMonitor ~= nil), tostring(resupplyTransportRuntime~=nil)))
   return self, true, nil
 end
@@ -289,6 +311,16 @@ end
 function Instance:StartSite(siteId, spec)
   if not self.prepared then return nil, false, "RUNTIME_NOT_PREPARED" end
   return self.base:StartSite(siteId, spec or {})
+end
+
+function Instance:ReportInstallationEvidence(evidence)
+  if not self.prepared then return nil, false, "RUNTIME_NOT_PREPARED" end
+  return self.installationIncidentRuntime:ReportEvidence(evidence)
+end
+
+function Instance:CloseInstallationIncident(installationId, reason)
+  if not self.prepared then return nil, false, "RUNTIME_NOT_PREPARED" end
+  return self.installationIncidentRuntime:CloseInstallationIncident(installationId, reason)
 end
 
 function Instance:StartPerimeters()
