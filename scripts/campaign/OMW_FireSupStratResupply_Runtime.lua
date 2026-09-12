@@ -8,7 +8,7 @@ local Runtime = {}
 local Instance = {}
 Instance.__index = Instance
 
-Runtime.SchemaVersion = "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-RUNTIME-6"
+Runtime.SchemaVersion = "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-RUNTIME-7"
 local TAG = "[OMW][FireSupStratResupply.Runtime]"
 
 local function fail(message) error(TAG .. " " .. tostring(message), 2) end
@@ -18,6 +18,9 @@ local function needFunction(container, name, label)
   return container[name]
 end
 local function finite(value) return type(value)=="number" and value==value and value>-math.huge and value<math.huge end
+local function validateRequirement(value,label)
+  if value~=nil and type(value)~="string" and type(value)~="table" then fail(label.." must be a string or table when provided") end
+end
 
 function Runtime.New(spec)
   needTable(spec, "spec")
@@ -42,8 +45,10 @@ function Runtime.New(spec)
   if type(spec.resolveGuardPathline) ~= "function" then fail("resolveGuardPathline must be a function") end
   if type(spec.resolveGuardTemplateGroup) ~= "function" then fail("resolveGuardTemplateGroup must be a function") end
   if type(spec.resolveQrfCoordinate) ~= "function" then fail("resolveQrfCoordinate must be a function") end
-  if spec.qrfRequiredAttributes ~= nil and type(spec.qrfRequiredAttributes) ~= "string" and type(spec.qrfRequiredAttributes) ~= "table" then fail("qrfRequiredAttributes must be a string or table when provided") end
-  if spec.qrfRequiredProperties ~= nil and type(spec.qrfRequiredProperties) ~= "string" and type(spec.qrfRequiredProperties) ~= "table" then fail("qrfRequiredProperties must be a string or table when provided") end
+  validateRequirement(spec.guardRequiredAttributes,"guardRequiredAttributes")
+  validateRequirement(spec.guardRequiredProperties,"guardRequiredProperties")
+  validateRequirement(spec.qrfRequiredAttributes,"qrfRequiredAttributes")
+  validateRequirement(spec.qrfRequiredProperties,"qrfRequiredProperties")
   if spec.logger ~= nil and type(spec.logger) ~= "function" then fail("logger must be a function when provided") end
   if spec.externalAdapters ~= nil and type(spec.externalAdapters) ~= "table" then fail("externalAdapters must be a table when provided") end
   if spec.incidentIdFactory ~= nil and type(spec.incidentIdFactory) ~= "function" then fail("incidentIdFactory must be a function when provided") end
@@ -117,6 +122,8 @@ function Runtime.New(spec)
     brigades = brigades,
     resolveGuardPathline = spec.resolveGuardPathline,
     resolveGuardTemplateGroup = spec.resolveGuardTemplateGroup,
+    guardRequiredAttributes = spec.guardRequiredAttributes,
+    guardRequiredProperties = spec.guardRequiredProperties,
     resolveQrfCoordinate = spec.resolveQrfCoordinate,
     qrfRequiredAssetsMin = spec.qrfRequiredAssetsMin or 1,
     qrfRequiredAssetsMax = spec.qrfRequiredAssetsMax or (spec.qrfRequiredAssetsMin or 1),
@@ -151,6 +158,8 @@ function Instance:Prepare()
     legionBridge = m.legionBridge,
     resolvePathline = self.resolveGuardPathline,
     resolveTemplateGroup = self.resolveGuardTemplateGroup,
+    requiredAttributes = self.guardRequiredAttributes,
+    requiredProperties = self.guardRequiredProperties,
     logger = self.logger,
   })
   local _, guardPrepared, guardReason = guard:Prepare()
