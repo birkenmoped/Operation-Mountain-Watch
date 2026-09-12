@@ -13,6 +13,8 @@ function AUFTRAG:NewONGUARD(coordinate)
   local mission = { coordinate=coordinate, cancelCount=0 }
   function mission:SetTeleport(value) self.teleport=value return self end
   function mission:SetRequiredAssets(minimum, maximum) self.requiredMin=minimum; self.requiredMax=maximum; return self end
+  function mission:SetRequiredAttribute(value) self.requiredAttributes=value; return self end
+  function mission:SetRequiredProperty(value) self.requiredProperties=value; return self end
   function mission:SetPriority(priority, urgent) self.priority=priority; self.urgent=urgent; return self end
   function mission:Cancel() self.cancelCount=self.cancelCount+1 end
   created[#created + 1] = mission
@@ -43,8 +45,24 @@ eq(mission.coordinate, coordinate, "ONGUARD coordinate")
 eq(mission.teleport, false, "visible teleport disabled")
 eq(mission.requiredMin, 1, "required assets min")
 eq(mission.requiredMax, 1, "required assets max")
+eq(mission.requiredAttributes, nil, "no implicit attribute filter")
+eq(mission.requiredProperties, nil, "no implicit property filter")
 eq(mission.priority, 17, "demand priority forwarded")
 eq(mission.urgent, false, "QRF does not preempt by default")
+
+local attributes={"Ground_APC"}
+local properties={"APC"}
+local constrainedFactory=Factory.New({
+  resolveCoordinate=function() return coordinate end,
+  requiredAttributes=attributes,
+  requiredProperties=properties,
+})
+local constrained, constrainedCreated = constrainedFactory:Create({
+  demandId="DEMAND|COP_HONAKER|QRF|1", siteId="COP_HONAKER", supportType="QRF"
+}, {}, legion)
+yes(constrainedCreated,"constrained QRF created")
+eq(constrained.requiredAttributes,attributes,"MOOSE attribute constraint forwarded")
+eq(constrained.requiredProperties,properties,"MOOSE property constraint forwarded")
 
 local unavailableFactory = Factory.New({
   resolveCoordinate = function() return nil, "QRF_RESPONSE_ANCHOR_NOT_CONFIGURED" end,
@@ -55,7 +73,7 @@ local unavailable, unavailableCreated, unavailableReason = unavailableFactory:Cr
 eq(unavailable, nil, "missing coordinate returns no mission")
 no(unavailableCreated, "missing coordinate not created")
 eq(unavailableReason, "QRF_RESPONSE_ANCHOR_NOT_CONFIGURED", "missing coordinate reason")
-eq(#created, 1, "no MOOSE mission built when coordinate missing")
+eq(#created, 2, "no MOOSE mission built when coordinate missing")
 
 local ok, err = pcall(function()
   factory:Create({ demandId="DEMAND|FOB_JOYCE|CAS|1", siteId="FOB_JOYCE", supportType="CAS" }, context, legion)
