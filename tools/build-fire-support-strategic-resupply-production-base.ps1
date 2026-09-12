@@ -7,7 +7,7 @@ Set-StrictMode -Version Latest
 $repoRoot = Split-Path -Parent $PSScriptRoot
 $distDir = Join-Path $repoRoot 'mission\fire-support-strategic-resupply\dist'
 $outputFile = Join-Path $distDir 'OMW_FireSupStratResupply_Base.lua'
-$builderVersion = 'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BASE-2'
+$builderVersion = 'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BASE-3'
 
 $moduleSpecs = @(
   @{ Name='SiteRegistry'; Path='scripts\campaign\OMW_FireSupStratResupply_SiteRegistry.lua' },
@@ -50,7 +50,9 @@ foreach ($spec in $moduleSpecs) {
 
 $combined = ($moduleSpecs | ForEach-Object { $sources[$_.Name] }) -join "`n"
 $requiredSourceMarkers = @(
-  'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-RUNTIME-6',
+  'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-RUNTIME-7',
+  'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-GUARD-MISSION-FACTORY-2',
+  'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-GUARD-RUNTIME-2',
   'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-QRF-MISSION-FACTORY-2',
   'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-QRF-RUNTIME-2',
   'SetRequiredAttribute',
@@ -95,7 +97,7 @@ $header = @"
 -- Operational asset selection/recruitment authority: MOOSE organisation and mission/transport lifecycle.
 -- Strategic persistence/resource authority: caller-provided CampaignState/store only.
 -- Tactical geometry: caller-provided resolvers/configuration; no alarm radii, QRF coordinates, CAS geometry or resupply routes are invented by this package.
--- QRF capability constraints: caller-provided requirements are forwarded to public MOOSE AUFTRAG recruitment filters; OMW does not select assets.
+-- Guard/QRF capability constraints: caller-provided requirements are forwarded to public MOOSE AUFTRAG recruitment filters; OMW does not select assets.
 -- Guard materialization: owner-approved narrow exact-geometry exception only; all other Guard lifecycle remains MOOSE BRIGADE/WAREHOUSE/PLATOON/ARMYGROUP/AUFTRAG.
 -- ACCESS zones: convoy/access contract only; forbidden from Guard and perimeter composition.
 -- Perimeter clear/OPSZONE Defeated: evidence state only; does not close an installation incident.
@@ -165,6 +167,7 @@ $bundleMarkers = @(
   'runtimeSpec.siteRegistry = runtimeSpec.siteRegistry or SiteRegistry',
   'installationAttackIncident = InstallationAttackIncident',
   'guardMaterializationAdapter = GuardMaterializationAdapter',
+  'guardRequiredAttributes = spec.guardRequiredAttributes',
   'qrfRequiredAttributes = spec.qrfRequiredAttributes',
   'threatAdapter = ThreatAdapter',
   'resupplyTransportRuntime = ResupplyTransportRuntime',
@@ -182,13 +185,13 @@ $builderHash = (Get-FileHash -LiteralPath $PSCommandPath -Algorithm SHA256).Hash
 Write-Host "Built: $outputFile"
 Write-Host "BuilderVersion: $builderVersion"
 Write-Host "PackageSchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BASE-1"
-Write-Host "RuntimeSchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-RUNTIME-6"
+Write-Host "RuntimeSchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-RUNTIME-7"
 Write-Host "Sites: 6"
 Write-Host "MOOSERelease: 2.9.18"
 Write-Host "MOOSECommit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54"
 Write-Host "MooseLuaSHA256: E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915"
 Write-Host "OperationalAssetSelectionAuthority: MOOSE"
-Write-Host "QRFRecruitmentConstraintAuthority: MOOSE AUFTRAG/LEGION"
+Write-Host "GuardQRFRecruitmentConstraintAuthority: MOOSE AUFTRAG/LEGION"
 Write-Host "StrategicResourceAuthority: caller-provided CampaignState/store"
 Write-Host "GuardAccessZoneDependency: none"
 Write-Host "PerimeterAccessZoneDependency: none"
