@@ -6,6 +6,7 @@ owning_policy: OMW-GOV-001
 authoritative_for:
   - source-reviewed local LEGION/BRIGADE mission handoff for Fire Support / Strategic Resupply
   - no-preselection boundary for installation-local Guard and QRF support
+  - source-reviewed public MOOSE QRF mission factory boundary
 not_authoritative_for:
   - DCS runtime validation
   - concrete six-site QRF composition, route or response anchor
@@ -48,7 +49,14 @@ Moose.lua SHA-256: E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A
 
 Im tatsaechlich verwendeten `Moose.lua` ist `LEGION:AddMission(Mission)` oeffentlich dokumentiert. Der Vertrag beschreibt ausdruecklich, dass die LEGION die besten verfuegbaren Assets fuer den Auftrag auswaehlt und den Auftrag startet, sobald er bereit ist. `BRIGADE` verwendet den geerbten LEGION-Missionsqueue-Pfad und verarbeitet diesen in seinem Statuszyklus.
 
-Fuer Ground-Response-Auftraege stehen oeffentliche `AUFTRAG`-Konstruktoren zur Verfuegung, darunter `AUFTRAG:NewONGUARD(Coordinate)`. `AUFTRAG:SetRequiredAssets(...)` und der native `Cancel()`-Lifecycle sind im gepinnten Stand ebenfalls vorhanden.
+Fuer Ground-Response-Auftraege stehen oeffentliche `AUFTRAG`-Konstruktoren zur Verfuegung, darunter `AUFTRAG:NewONGUARD(Coordinate)`. Source-verifiziert sind fuer den neuen QRF-Factory-Pfad ausserdem:
+
+```text
+AUFTRAG:SetTeleport(false)
+AUFTRAG:SetRequiredAssets(min, max)
+AUFTRAG:SetPriority(priority, urgent, importance)
+AUFTRAG:Cancel()
+```
 
 Damit bestaetigt sich der bereits in Gate 1 dokumentierte MOOSE-first-Befund:
 
@@ -67,32 +75,52 @@ Die projektweite Alarm-/QRF-Entscheidung fordert zuerst lokal verfuegbare geeign
 
 Externe Supportfaehigkeiten mit mehreren moeglichen Providern bleiben dem `COMMANDER`-Aggregationspfad vorbehalten.
 
-## Noch nicht festgelegt
+## QRF Mission Factory
 
-Der Bridge legt absichtlich nicht fest:
+`scripts/campaign/OMW_FireSupStratResupply_QrfMissionFactory.lua` bildet einen QRF-Demand auf `AUFTRAG:NewONGUARD(Coordinate)` ab. Die Response-Koordinate wird **nicht** aus ACCESS-Zone, Warehouse, Guard-PATHLINE oder Installationsradius geraten, sondern durch einen caller-supplied Resolver bereitgestellt.
+
+Der Factory setzt:
 
 ```text
-- welcher Ground-AUFTRAG die konkrete QRF-Taktik je Site beschreibt;
-- welche Response-Coordinate / owner-authored Route verwendet wird;
+SetTeleport(false)
+SetRequiredAssets(1, 1) als Default
+SetPriority(demand.priority, false), falls eine numerische Prioritaet vorliegt
+```
+
+Damit bleibt sichtbares Teleportieren ausgeschlossen und MOOSE waehlt innerhalb der lokalen LEGION das konkrete geeignete Asset. Die Factory trifft keine Aussage ueber eine spaetere optionale Fahrzeugbeistellung; das verbindliche Phase-1-QRF-Modell erlaubt Infantry plus optional separate Vehicle GROUP, verlangt dafuer aber reale lokale Verfuegbarkeit. Diese Erweiterung wird nicht stillschweigend in einen einzelnen Auftrag hineinmodelliert.
+
+## Noch nicht festgelegt
+
+Die Bridge/Factory legen absichtlich nicht fest:
+
+```text
+- welche Response-Coordinate / owner-authored Route je Site verwendet wird;
 - welche Infantry-/Vehicle-Kombination Phase 1 lokal tatsaechlich bereitstellt;
-- welche konkrete BRIGADE-Objektinstanz beim Runtime-Bootstrap zu welchem siteId gehoert.
+- welche konkrete BRIGADE-Objektinstanz beim Runtime-Bootstrap zu welchem siteId gehoert;
+- welche konkrete Alarmradius-/Anchor-Konfiguration die sechs Sites produktiv verwenden.
 ```
 
 Die Ground-Domain-Baseline dokumentiert zwar die operativen Zuordnungen `BDE_BLUE_GND_*` zu den sechs Installationen, aber die produktive Runtime muss die tatsaechlichen MOOSE-Objekte injizieren bzw. aufloesen. Es werden keine Namen in physische Asset-Selektion umgedeutet.
 
-## Contract-Test
+## Contract-Tests
 
 ```text
 tests/mission-demand/test_fire_support_strategic_resupply_legion_bridge.lua
+tests/mission-demand/test_fire_support_strategic_resupply_qrf_mission_factory.lua
 ```
 
-Der Test prueft:
+Geprueft werden insbesondere:
 
 - site-lokale LEGION-Aufloesung;
-- genau einen `AddMission`-Aufruf pro Demand;
+- genau ein `LEGION:AddMission` pro Demand;
 - keine Beruehrung einer anderen Site-LEGION;
-- idempotenten Duplicate-Dispatch;
-- nativen `Cancel()`-Forward;
-- sauberes `SITE_LEGION_NOT_CONFIGURED` ohne Ersatz-/Fallbackselektion.
+- idempotenter Duplicate-Dispatch;
+- nativer `Cancel()`-Forward;
+- sauberes `SITE_LEGION_NOT_CONFIGURED` ohne Ersatz-/Fallbackselektion;
+- QRF `NewONGUARD` mit caller-supplied Coordinate;
+- `SetTeleport(false)`;
+- ein erforderliches Asset als Default;
+- Prioritaetsweitergabe ohne automatische Urgency;
+- kein Auftrag, wenn die Response-Koordinate nicht konfiguriert ist.
 
 Das ist CI-/Contract-Evidenz und kein DCS-Runtime-PASS.
