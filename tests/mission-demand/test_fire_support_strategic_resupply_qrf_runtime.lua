@@ -13,6 +13,8 @@ function AUFTRAG:NewONGUARD(coordinate)
   local mission={coordinate=coordinate,cancelCount=0}
   function mission:SetTeleport(v) self.teleport=v return self end
   function mission:SetRequiredAssets(a,b) self.requiredMin=a;self.requiredMax=b;return self end
+  function mission:SetRequiredAttribute(v) self.requiredAttributes=v;return self end
+  function mission:SetRequiredProperty(v) self.requiredProperties=v;return self end
   function mission:SetPriority(p,u) self.priority=p;self.urgent=u;return self end
   function mission:Cancel() self.cancelCount=self.cancelCount+1 end
   return mission
@@ -26,11 +28,15 @@ for siteId in pairs(Sites.Sites) do
 end
 
 local resolved={}
+local requiredAttributes={"Ground_APC"}
+local requiredProperties={"APC"}
 local runtime=Runtime.New({
   siteRegistry=Sites,
   brigades=brigades,
   qrfMissionFactory=QrfFactory,
   legionBridge=LegionBridge,
+  requiredAttributes=requiredAttributes,
+  requiredProperties=requiredProperties,
   resolveCoordinate=function(demand,context,legion)
     resolved[#resolved+1]={demand=demand,context=context,legion=legion}
     if demand.siteId=="FOB_BOSTICK" then return nil,"QRF_RESPONSE_ANCHOR_NOT_CONFIGURED" end
@@ -47,6 +53,8 @@ eq(#brigades.FOB_JOYCE.missions,1,"Joyce local brigade receives mission")
 eq(handle.mission.coordinate.siteId,"FOB_JOYCE","response coordinate site")
 eq(handle.mission.teleport,false,"QRF teleport disabled")
 eq(handle.mission.requiredMin,1,"QRF default one asset")
+eq(handle.mission.requiredAttributes,requiredAttributes,"QRF required attributes forwarded")
+eq(handle.mission.requiredProperties,requiredProperties,"QRF required properties forwarded")
 eq(resolved[1].legion,brigades.FOB_JOYCE,"coordinate resolver sees local brigade")
 for siteId,brigade in pairs(brigades) do if siteId~="FOB_JOYCE" then eq(#brigade.missions,0,siteId.." untouched") end end
 
