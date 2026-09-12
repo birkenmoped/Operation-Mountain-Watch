@@ -10,33 +10,33 @@ $outputFile = Join-Path $distDir 'OMW_FireSupStratResupply_Base.lua'
 $builderVersion = 'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BASE-1'
 
 $moduleSpecs = @(
-  @{ Name='SiteRegistry'; Path='scripts\campaign\OMW_FireSupStratResupply_SiteRegistry.lua'; Marker='OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-SITE-REGISTRY' },
-  @{ Name='SupportProfiles'; Path='scripts\campaign\OMW_FireSupStratResupply_SupportProfiles.lua'; Marker='OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-SUPPORT-PROFILES' },
-  @{ Name='IdContract'; Path='scripts\campaign\OMW_FireSupStratResupply_IdContract.lua'; Marker='OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-ID-CONTRACT' },
-  @{ Name='Base'; Path='scripts\campaign\OMW_FireSupStratResupply_Base.lua'; Marker='OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-BASE' },
-  @{ Name='LifecycleAdapter'; Path='scripts\campaign\OMW_FireSupStratResupply_LifecycleAdapter.lua'; Marker='OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-LIFECYCLE-ADAPTER' },
-  @{ Name='LegionBridge'; Path='scripts\campaign\OMW_FireSupStratResupply_LegionBridge.lua'; Marker='OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-LEGION-BRIDGE' },
-  @{ Name='GuardMissionFactory'; Path='scripts\campaign\OMW_FireSupStratResupply_GuardMissionFactory.lua'; Marker='OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-GUARD-MISSION-FACTORY' },
-  @{ Name='GuardRuntime'; Path='scripts\campaign\OMW_FireSupStratResupply_GuardRuntime.lua'; Marker='OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-GUARD-RUNTIME' },
-  @{ Name='QrfMissionFactory'; Path='scripts\campaign\OMW_FireSupStratResupply_QrfMissionFactory.lua'; Marker='OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-QRF-MISSION-FACTORY' },
-  @{ Name='QrfRuntime'; Path='scripts\campaign\OMW_FireSupStratResupply_QrfRuntime.lua'; Marker='OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-QRF-RUNTIME' },
-  @{ Name='CommanderBridge'; Path='scripts\campaign\OMW_FireSupStratResupply_CommanderBridge.lua'; Marker='OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-COMMANDER-BRIDGE' },
-  @{ Name='ArtyMissionFactory'; Path='scripts\campaign\OMW_FireSupStratResupply_ArtyMissionFactory.lua'; Marker='OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-ARTY-MISSION-FACTORY' },
-  @{ Name='CasMissionFactory'; Path='scripts\campaign\OMW_FireSupStratResupply_CasMissionFactory.lua'; Marker='OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-CAS-MISSION-FACTORY' },
-  @{ Name='ExternalSupportRuntime'; Path='scripts\campaign\OMW_FireSupStratResupply_ExternalSupportRuntime.lua'; Marker='OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-EXTERNAL-SUPPORT-RUNTIME' },
-  @{ Name='InstallationIncidentBridge'; Path='scripts\campaign\OMW_FireSupStratResupply_InstallationIncidentBridge.lua'; Marker='OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-INSTALLATION-INCIDENT-BRIDGE' },
-  @{ Name='InstallationIncidentRuntime'; Path='scripts\campaign\OMW_FireSupStratResupply_InstallationIncidentRuntime.lua'; Marker='OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-INSTALLATION-INCIDENT-RUNTIME' },
-  @{ Name='PerimeterBridge'; Path='scripts\campaign\OMW_FireSupStratResupply_PerimeterBridge.lua'; Marker='OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PERIMETER-BRIDGE' },
-  @{ Name='PerimeterRuntime'; Path='scripts\campaign\OMW_FireSupStratResupply_PerimeterRuntime.lua'; Marker='OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PERIMETER-RUNTIME' },
-  @{ Name='ResupplyMonitor'; Path='scripts\campaign\OMW_FireSupStratResupply_ResupplyMonitor.lua'; Marker='OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-RESUPPLY-MONITOR' },
-  @{ Name='StorageTransportFactory'; Path='scripts\campaign\OMW_FireSupStratResupply_StorageTransportFactory.lua'; Marker='OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-STORAGE-TRANSPORT-FACTORY' },
-  @{ Name='TransportSettlement'; Path='scripts\campaign\OMW_FireSupStratResupply_TransportSettlement.lua'; Marker='OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-TRANSPORT-SETTLEMENT' },
-  @{ Name='ResupplyTransportRuntime'; Path='scripts\campaign\OMW_FireSupStratResupply_ResupplyTransportRuntime.lua'; Marker='OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-RESUPPLY-TRANSPORT-RUNTIME' },
-  @{ Name='InstallationAttackIncident'; Path='scripts\ground\OMW_GroundInstallationAttackIncident.lua'; Marker='OMW-GROUND-INSTALLATION-ATTACK-INCIDENT' },
-  @{ Name='ThreatAdapter'; Path='scripts\ground\OMW_FobThreatOpsZoneAdapter.lua'; Marker='OMW-FOB-THREAT-OPSZONE-ADAPTER' },
-  @{ Name='GuardMaterializationAdapter'; Path='scripts\ground\OMW_GuardPathlineMaterializationAdapter.lua'; Marker='OMW-GUARD-PATHLINE-MATERIALIZATION-ADAPTER' },
-  @{ Name='GuardRouteAdapter'; Path='scripts\ground\OMW_GuardPathlineRouteAdapter.lua'; Marker='OMW-GUARD-PATHLINE-ROUTE-ADAPTER' },
-  @{ Name='Runtime'; Path='scripts\campaign\OMW_FireSupStratResupply_Runtime.lua'; Marker='OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-RUNTIME-5' }
+  @{ Name='SiteRegistry'; Path='scripts\campaign\OMW_FireSupStratResupply_SiteRegistry.lua' },
+  @{ Name='SupportProfiles'; Path='scripts\campaign\OMW_FireSupStratResupply_SupportProfiles.lua' },
+  @{ Name='IdContract'; Path='scripts\campaign\OMW_FireSupStratResupply_IdContract.lua' },
+  @{ Name='Base'; Path='scripts\campaign\OMW_FireSupStratResupply_Base.lua' },
+  @{ Name='LifecycleAdapter'; Path='scripts\campaign\OMW_FireSupStratResupply_LifecycleAdapter.lua' },
+  @{ Name='LegionBridge'; Path='scripts\campaign\OMW_FireSupStratResupply_LegionBridge.lua' },
+  @{ Name='GuardMissionFactory'; Path='scripts\campaign\OMW_FireSupStratResupply_GuardMissionFactory.lua' },
+  @{ Name='GuardRuntime'; Path='scripts\campaign\OMW_FireSupStratResupply_GuardRuntime.lua' },
+  @{ Name='QrfMissionFactory'; Path='scripts\campaign\OMW_FireSupStratResupply_QrfMissionFactory.lua' },
+  @{ Name='QrfRuntime'; Path='scripts\campaign\OMW_FireSupStratResupply_QrfRuntime.lua' },
+  @{ Name='CommanderBridge'; Path='scripts\campaign\OMW_FireSupStratResupply_CommanderBridge.lua' },
+  @{ Name='ArtyMissionFactory'; Path='scripts\campaign\OMW_FireSupStratResupply_ArtyMissionFactory.lua' },
+  @{ Name='CasMissionFactory'; Path='scripts\campaign\OMW_FireSupStratResupply_CasMissionFactory.lua' },
+  @{ Name='ExternalSupportRuntime'; Path='scripts\campaign\OMW_FireSupStratResupply_ExternalSupportRuntime.lua' },
+  @{ Name='InstallationIncidentBridge'; Path='scripts\campaign\OMW_FireSupStratResupply_InstallationIncidentBridge.lua' },
+  @{ Name='InstallationIncidentRuntime'; Path='scripts\campaign\OMW_FireSupStratResupply_InstallationIncidentRuntime.lua' },
+  @{ Name='PerimeterBridge'; Path='scripts\campaign\OMW_FireSupStratResupply_PerimeterBridge.lua' },
+  @{ Name='PerimeterRuntime'; Path='scripts\campaign\OMW_FireSupStratResupply_PerimeterRuntime.lua' },
+  @{ Name='ResupplyMonitor'; Path='scripts\campaign\OMW_FireSupStratResupply_ResupplyMonitor.lua' },
+  @{ Name='StorageTransportFactory'; Path='scripts\campaign\OMW_FireSupStratResupply_StorageTransportFactory.lua' },
+  @{ Name='TransportSettlement'; Path='scripts\campaign\OMW_FireSupStratResupply_TransportSettlement.lua' },
+  @{ Name='ResupplyTransportRuntime'; Path='scripts\campaign\OMW_FireSupStratResupply_ResupplyTransportRuntime.lua' },
+  @{ Name='InstallationAttackIncident'; Path='scripts\ground\OMW_GroundInstallationAttackIncident.lua' },
+  @{ Name='ThreatAdapter'; Path='scripts\ground\OMW_FobThreatOpsZoneAdapter.lua' },
+  @{ Name='GuardMaterializationAdapter'; Path='scripts\ground\OMW_GuardPathlineMaterializationAdapter.lua' },
+  @{ Name='GuardRouteAdapter'; Path='scripts\ground\OMW_GuardPathlineRouteAdapter.lua' },
+  @{ Name='Runtime'; Path='scripts\campaign\OMW_FireSupStratResupply_Runtime.lua' }
 )
 
 $sources = @{}
@@ -46,13 +46,27 @@ foreach ($spec in $moduleSpecs) {
     throw "Required Fire Support / Strategic Resupply source not found: $file"
   }
   $source = Get-Content -LiteralPath $file -Raw -Encoding UTF8
-  if (-not $source.Contains($spec.Marker)) {
-    throw "Source $($spec.Path) is missing required contract marker: $($spec.Marker)"
+  if ($source -notmatch 'SchemaVersion\s*=') {
+    throw "Source $($spec.Path) does not expose a SchemaVersion contract."
   }
   $sources[$spec.Name] = $source
 }
 
 $combined = ($moduleSpecs | ForEach-Object { $sources[$_.Name] }) -join "`n"
+$requiredSourceMarkers = @(
+  'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-RUNTIME-5',
+  'OMW-GUARD-PATHLINE-MATERIALIZATION-ADAPTER-1',
+  'PATHLINE_FIRST_SEGMENT',
+  'INSTALLATION_ATTACK_INITIAL_QRF',
+  'GROUND_RESUPPLY',
+  'AIR_RESUPPLY'
+)
+foreach ($marker in $requiredSourceMarkers) {
+  if (-not $combined.Contains($marker)) {
+    throw "Fire Support / Strategic Resupply sources are missing required contract marker: $marker"
+  }
+}
+
 $forbiddenPatterns = @(
   'MissionScripting\.lua',
   'mist\.',
