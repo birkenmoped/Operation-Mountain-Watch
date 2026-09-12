@@ -163,3 +163,63 @@ Pinned MOOSE:
 commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
 Moose.lua SHA-256: E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915
 ```
+
+## Lokale Build-Evidenz 2026-09-12
+
+Der Projektinhaber hat den Acceptance-2-Builder lokal auf folgendem exakten Branch-Stand ausgefuehrt:
+
+```text
+Git HEAD:
+e5b1a79e5bdb6e9ba4479ebc9e35d76ba5dddab2
+
+BuilderVersion:
+FIRE-SUPPORT-STRATEGIC-RESUPPLY-GATE5-SIX-SITE-GUARD-RUNTIME-2
+
+TestId:
+FIRE-SUPPORT-STRATEGIC-RESUPPLY-GATE5-SIX-SITE-GUARD-RUNTIME-ACCEPTANCE-2
+
+MOOSE commit:
+73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+
+Moose.lua SHA-256:
+E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915
+
+Formation:
+Off Road
+
+FormationIntervalM:
+2
+
+SpawnAlignment:
+PATHLINE_FIRST_SEGMENT
+
+Encoding:
+UTF-8 without BOM
+
+MIZ mutation:
+false
+```
+
+Reale lokale Hashes:
+
+```text
+Bundle:
+D30E63BFFCC506EB579FAE3AF662D6EED8C2C0D06DD5F57C0F22C12BA026390C
+
+Acceptance-2 source:
+1BF6A18992355B150CF2C5507636497141A3C2A9BBDF771D8E447D61C77AE9F5
+
+Builder:
+50001FC4DCC1976F024F29CC88B5BDA6BF3B0C18528763C26345ADCB178E7846
+```
+
+Der Build war erfolgreich. Der lokale Worktree enthielt danach ausschliesslich die erwarteten untracked `dist/`-Verzeichnisse fuer vorhandene Acceptance-Bundles.
+
+GitHub-CI fuer denselben funktionalen Stand war erfolgreich:
+
+```text
+Documentation validation: PASS
+MissionDemand validation: PASS
+```
+
+Diese Evidenz belegt Build und Artefakt-Provenienz. Sie ist **kein DCS-Runtime-PASS**; `validated_in_dcs` bleibt bis zum dokumentierten Acceptance-2-Lauf `false`.
