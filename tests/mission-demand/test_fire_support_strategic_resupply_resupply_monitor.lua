@@ -85,10 +85,9 @@ local unknownMonitor=Monitor.New({
   rows={{nodeId="GROUND_NODE_UNKNOWN",resourceId="GROUND_PERSONNEL",resourceClass="PERSONNEL",target=10,reorder=5,critical=2,supplyParent="OFF_MAP"}},
   selectSupportType=function() return "GROUND_RESUPPLY" end,
 })
-local u,uCreated,uReason=unknownMonitor:EvaluateAll()[1].demand,unknownMonitor:EvaluateAll()[1].created,unknownMonitor:EvaluateAll()[1].reason
--- The repeated EvaluateAll calls above are harmless because no site demand can be created.
-eq(u,nil,"unknown node no demand")
-no(uCreated,"unknown node not created")
-eq(uReason,"SITE_NOT_REGISTERED_FOR_RESOURCE_NODE","unknown node reason")
+local unknownResult=unknownMonitor:EvaluateAll()[1]
+eq(unknownResult.demand,nil,"unknown node no demand")
+no(unknownResult.created,"unknown node not created")
+eq(unknownResult.reason,"SITE_NOT_REGISTERED_FOR_RESOURCE_NODE","unknown node reason")
 
 print("PASS test_fire_support_strategic_resupply_resupply_monitor")
