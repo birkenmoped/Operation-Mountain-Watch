@@ -121,27 +121,87 @@ PASS
 
 Damit ist die korrigierte Registry-/Gate-2-Vertragsänderung durch CI geprüft, obwohl der direkte lokale Lua-Aufruf mangels Interpreter nicht möglich war.
 
+## Gate-5 Six-Site Guard Runtime – erster lokaler Buildversuch
+
+Der Projektinhaber übernahm den funktionalen Gate-5-Runtime-Stand per Fast-Forward auf:
+
+```text
+9ae057f61b02125b86bd72e90f153c047eac2883
+```
+
+Der Pull war erfolgreich. Anschließend wurde der versionierte Builder wie angegeben direkt aus der laufenden Windows-PowerShell aufgerufen:
+
+```text
+& ".\tools\build-fire-support-strategic-resupply-gate5-six-site-guard-runtime.ps1"
+```
+
+Der Builder wurde **nicht gestartet**, weil die lokale Windows-PowerShell-ExecutionPolicy die direkte Ausführung von `.ps1`-Dateien blockierte. Die reale Fehlermeldung lautete sinngemäß:
+
+```text
+PSSecurityException / UnauthorizedAccess
+Die Ausführung von Skripts auf diesem System ist deaktiviert.
+```
+
+Folgerichtig wurde kein Gate-5-Bundle erzeugt. Die nachfolgenden Meldungen `bundle not found` und der fehlgeschlagene Bundle-Hash sind reine Folgefehler dieses nicht gestarteten Builders und **keine Lua-/DCS-/MOOSE-Fehler**.
+
+Reale lokale Hashes auf diesem Head:
+
+```text
+mission/tests/fire-support-strategic-resupply-gate5-six-site-guard-runtime/src/01-six-site-guard-runtime-acceptance.lua
+SHA256: 3699B9111ED15C0C93DE4895545CE3276632927E3DCDB1117CEACC7141B62821
+
+tools/build-fire-support-strategic-resupply-gate5-six-site-guard-runtime.ps1
+SHA256: 993FC2190A3C659AA608A0A0220D09E7198F2AF0F17F5785795A9B1D04E3CBB9
+```
+
+Der Worktree enthielt weiterhin nur die zwei bereits bekannten untracked Build-Verzeichnisse:
+
+```text
+?? mission/tests/fire-support-strategic-resupply-gate4-stage3-regression/dist/
+?? mission/tests/stage3-honaker-wright-full-response/dist/
+```
+
+### Tooling-Korrektur
+
+Die lokale ExecutionPolicy wird **nicht dauerhaft verändert**. Für diesen Arbeitsplatz wird der versionierte Builder in einem separaten PowerShell-Prozess mit prozessbezogenem `-ExecutionPolicy Bypass` gestartet. Damit bleibt die Maschinen-/Benutzer-Policy unverändert und der Build-Auftrag ist reproduzierbar.
+
+Verbindliche Arbeitsregel für diesen lokalen Kontext:
+
+```text
+- keine dauerhafte Änderung der Windows-PowerShell-ExecutionPolicy;
+- versionierte .ps1-Builder bei blockierter direkter Ausführung über
+  powershell.exe -NoProfile -ExecutionPolicy Bypass -File <builder> starten;
+- Exitcode des gestarteten PowerShell-Prozesses prüfen;
+- Bundle-Existenz und SHA-256 erst nach erfolgreichem Builder-Exit prüfen;
+- keine Folge-Hashprüfung durchführen, wenn der Builder vorher nicht gestartet bzw. fehlgeschlagen ist.
+```
+
 ## Acceptance-Grenze
 
 Diese Evidenz bestätigt:
 
 ```text
 - korrekten lokalen Fast-Forward auf den korrigierten Gate-5-Head;
-- exakten Drei-Dateien-Changeset;
+- exakten Drei-Dateien-Changeset des vorherigen Korrekturschritts;
 - reale lokale Hashes dieser drei Dateien;
 - unveränderten tracked Worktree;
-- CI-PASS für Dokumentation und MissionDemand auf exakt diesem Head;
+- CI-PASS für Dokumentation und MissionDemand auf exakt dem korrigierten Head;
 - lokale Lua-Test-Unverfügbarkeit als Tooling-Grenze, nicht als Code-Failure;
-- `$LASTEXITCODE` allein ist kein belastbarer Guard für PowerShell CommandNotFound.
+- `$LASTEXITCODE` allein ist kein belastbarer Guard für PowerShell CommandNotFound;
+- erfolgreichen lokalen Pull auf den Gate-5-Runtime-Head `9ae057f6...`;
+- Runtime-Source- und Builder-Hash auf diesem Head;
+- direkten Builder-Aufruf durch lokale ExecutionPolicy blockiert;
+- kein Gate-5-Bundle erzeugt und daher noch kein DCS-Test möglich.
 ```
 
 Sie bestätigt noch nicht:
 
 ```text
+- erfolgreichen lokalen Gate-5-Runtime-Build;
 - generische Six-Site-Guard-Runtime in DCS;
 - Patrol-/Pathfinding-Verhalten aller sechs Guard-Routen;
 - Runtime-Alarm-/Response-Verhalten aller sechs Sites;
 - generische Six-Site-DCS-Acceptance.
 ```
 
-Der nächste funktionale Schritt bleibt die generische MOOSE-first Runtime-Integration auf Basis der bereits vorhandenen Guard-PATHLINEs und der runtime-generierten `ZONE_RADIUS`/`OPSZONE`-Perimeter.
+Der nächste funktionale Schritt bleibt der erfolgreiche Build des bereits versionierten Gate-5-Runtime-Harnesses und anschließend der DCS-Test mit dem real erzeugten Bundle.
