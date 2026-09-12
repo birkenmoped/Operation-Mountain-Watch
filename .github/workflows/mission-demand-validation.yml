@@ -7,6 +7,7 @@ on:
       - "scripts/campaign/OMW_ResourceDemandPolicy.lua"
       - "scripts/campaign/OMW_ResourceDemandCoordinator.lua"
       - "scripts/campaign/OMW_FobAttackDemandPolicy.lua"
+      - "scripts/campaign/OMW_FireSupStratResupply_*.lua"
       - "scripts/ground/OMW_FobThreatOpsZoneAdapter.lua"
       - "scripts/ground/OMW_GroundPersonnelDeploymentLedger.lua"
       - "scripts/ground/OMW_FobAttackFunctionalArtyDispatchAdapter.lua"
@@ -23,6 +24,10 @@ on:
       - "tools/build-air-ammo-cargotransport-acceptance-1.ps1"
       - "mission/tests/stage3-honaker-wright-full-response/src/*.lua"
       - "tools/build-stage3-honaker-wright-full-response-acceptance-1.ps1"
+      - "mission/tests/fire-support-strategic-resupply-gate4-stage3-regression/src/*.lua"
+      - "tools/build-fire-support-strategic-resupply-gate4-stage3-regression.ps1"
+      - "mission/tests/fire-support-strategic-resupply-production-base-runtime/src/*.lua"
+      - "tools/build-fire-support-strategic-resupply-production-base*.ps1"
       - "mission/tests/stage3-cas-resupply-focused/src/*.lua"
       - "tools/build-stage3-cas-resupply-focused-acceptance-1.ps1"
       - "mission/tests/stage3-honaker-cas-support/src/*.lua"
@@ -46,6 +51,28 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y lua5.4
           lua5.4 -v
+
+      - name: Check Fire Support Gate 2 and Gate 3 syntax
+        shell: bash
+        run: |
+          luac5.4 -p scripts/campaign/OMW_FireSupStratResupply_SupportProfiles.lua
+          luac5.4 -p scripts/campaign/OMW_FireSupStratResupply_SiteRegistry.lua
+          luac5.4 -p scripts/campaign/OMW_FireSupStratResupply_IdContract.lua
+          luac5.4 -p scripts/campaign/OMW_FireSupStratResupply_Base.lua
+          luac5.4 -p scripts/campaign/OMW_FireSupStratResupply_CommanderBridge.lua
+          luac5.4 -p scripts/campaign/OMW_FireSupStratResupply_LifecycleAdapter.lua
+          luac5.4 -p tests/mission-demand/test_fire_support_strategic_resupply_gate2.lua
+          luac5.4 -p tests/mission-demand/test_fire_support_strategic_resupply_gate3.lua
+          luac5.4 -p mission/tests/fire-support-strategic-resupply-gate4-stage3-regression/src/01-gate4-stage3-regression-preflight.lua
+
+      - name: Check production Fire Support runtime syntax
+        shell: bash
+        run: |
+          luac5.4 -p scripts/campaign/OMW_FireSupStratResupply_QrfMissionFactory.lua
+          luac5.4 -p scripts/campaign/OMW_FireSupStratResupply_QrfRuntime.lua
+          luac5.4 -p scripts/campaign/OMW_FireSupStratResupply_Runtime.lua
+          luac5.4 -p mission/tests/fire-support-strategic-resupply-production-base-runtime/src/01-production-base-six-site-guard-acceptance.lua
+          luac5.4 -p mission/tests/fire-support-strategic-resupply-production-base-runtime/src/02-production-base-honaker-incident-qrf-acceptance.lua
 
       - name: Check Fortress full-response acceptance syntax
         shell: bash
