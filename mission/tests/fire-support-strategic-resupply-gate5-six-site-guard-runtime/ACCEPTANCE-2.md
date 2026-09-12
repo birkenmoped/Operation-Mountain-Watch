@@ -1,6 +1,6 @@
 ---
 document_id: OMW-FIRE-SUPPORT-GATE5-SIX-SITE-GUARD-RUNTIME-ACCEPTANCE-2
-status: VALIDATED
+status: ACCEPTED_TECHNICAL_BASELINE
 document_class: ACCEPTANCE_PLAN
 owning_policy: OMW-GOV-001
 authoritative_for:
@@ -12,6 +12,12 @@ superseded_by:
 source_branch: agent/fire-support-strategic-resupply-base-gate0
 source_commit: PENDING_MERGE
 validated_in_dcs: true
+acceptance_branch: agent/fire-support-strategic-resupply-base-gate0
+acceptance_commit: a7944a995954a962d2a3b33b7a6d4c459d845f1e
+acceptance_mission: OMW_Template_v24_GroundWorks_base.miz
+acceptance_mission_sha256: 865bcb91fd3ef8f81e71e3acef0e0e0a7bf74737117549f7e059815c94929f91
+dcs_version: 2.9.29.27468
+moose_commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
 ---
 
 # Gate 5 - Six-Site Guard Runtime Acceptance 2
