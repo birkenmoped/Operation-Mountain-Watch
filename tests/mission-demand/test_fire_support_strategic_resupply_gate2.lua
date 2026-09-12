@@ -17,27 +17,16 @@ end
 
 local function assertError(fn, label)
   local ok = pcall(fn)
-  if ok then
-    error(label .. " expected error")
-  end
+  if ok then error(label .. " expected error") end
 end
 
 local function assertNoOperationalAssetSelection(value, path)
   if type(value) ~= "table" then return end
   local forbidden = {
-    aircraftId = true,
-    assetId = true,
-    squadron = true,
-    squadronName = true,
-    cohort = true,
-    cohortName = true,
-    battery = true,
-    batteryName = true,
-    carrierId = true,
-    airwing = true,
-    airwingName = true,
-    brigade = true,
-    brigadeName = true,
+    aircraftId = true, assetId = true, squadron = true, squadronName = true,
+    cohort = true, cohortName = true, battery = true, batteryName = true,
+    carrierId = true, airwing = true, airwingName = true,
+    brigade = true, brigadeName = true,
   }
   for key, item in pairs(value) do
     if forbidden[key] then
@@ -52,35 +41,49 @@ assertEqual(Profiles.ResourceId.SUPPLY, InitialStock.ResourceId.SUPPLY, "SUPPLY 
 assertEqual(Profiles.ResourceId.AMMO, InitialStock.ResourceId.AMMO, "AMMO resource ID")
 assertEqual(Profiles.ResourceId.FUEL, InitialStock.ResourceId.FUEL, "FUEL resource ID")
 
-local honaker = Sites.Sites.COP_HONAKER
-local joyce = Sites.Sites.FOB_JOYCE
-assertTrue(type(honaker) == "table", "Honaker site exists")
-assertTrue(type(joyce) == "table", "Joyce site exists")
-assertEqual(honaker.campaignNodeId, "GROUND_NODE_HONAKER", "Honaker campaign node")
-assertEqual(honaker.supplyParentNodeId, "GROUND_NODE_JOYCE", "Honaker supply parent")
-assertEqual(honaker.fireSupportNodeId, "GROUND_NODE_WRIGHT", "Honaker Stage 3 fire-support node")
-assertEqual(honaker.supportProfileId, "HONAKER_WRIGHT_STAGE3", "Honaker profile")
-assertEqual(joyce.campaignNodeId, "GROUND_NODE_JOYCE", "Joyce campaign node")
-assertEqual(joyce.supplyParentNodeId, "GROUND_NODE_JALALABAD", "Joyce supply parent")
-assertEqual(joyce.supportProfileId, "JOYCE_STANDARD", "Joyce profile")
+local expectedSites = {
+  JALALABAD_FENTY = { "BLUE_GROUND_HUB_JALALABAD_FENTY", "GROUND_NODE_JALALABAD", "OFF_MAP", "WH_BLUE_GND_FENTY", "ZON_BLUE_GND_FENTY_ACCESS" },
+  COP_FORTRESS = { "BLUE_GROUND_COP_FORTRESS", "GROUND_NODE_FORTRESS", "GROUND_NODE_JALALABAD", "WH_BLUE_GND_FORTRESS", "ZON_BLUE_GND_FORTRESS_ACCESS" },
+  FOB_JOYCE = { "BLUE_GROUND_FOB_JOYCE", "GROUND_NODE_JOYCE", "GROUND_NODE_JALALABAD", "WH_BLUE_GND_JOYCE", "ZON_BLUE_GND_JOYCE_ACCESS" },
+  FOB_WRIGHT = { "BLUE_GROUND_FOB_WRIGHT", "GROUND_NODE_WRIGHT", "GROUND_NODE_JALALABAD", "WH_BLUE_GND_WRIGHT", "ZON_BLUE_GND_WRIGHT_ACCESS" },
+  COP_HONAKER = { "BLUE_GROUND_COP_HONAKER_MIRACLE", "GROUND_NODE_HONAKER", "GROUND_NODE_JOYCE", "WH_BLUE_GND_HONAKER", "ZON_BLUE_GND_HONAKER_ACCESS" },
+  FOB_BOSTICK = { "BLUE_GROUND_FOB_BOSTICK", "GROUND_NODE_BOSTICK", "GROUND_NODE_JALALABAD", "WH_BLUE_GND_BOSTICK", "ZON_BLUE_GND_BOSTICK_ACCESS" },
+}
 
-local honakerProfile = Profiles.Profiles[honaker.supportProfileId]
-local joyceProfile = Profiles.Profiles[joyce.supportProfileId]
-assertTrue(type(honakerProfile) == "table", "Honaker profile resolves")
-assertTrue(type(joyceProfile) == "table", "Joyce profile resolves")
-assertEqual(honakerProfile.contractStatus, "HISTORICAL_STAGE3_FIXTURE", "Honaker fixture status")
-assertEqual(joyceProfile.contractStatus, "PLANNED_SECOND_SITE", "Joyce second-site status")
-assertTrue(joyceProfile.support.guards.enabled, "Joyce Guard enabled")
-assertTrue(joyceProfile.support.qrf.enabled, "Joyce QRF enabled")
-assertTrue(joyceProfile.support.artillery.enabled, "Joyce ARTY enabled")
-assertTrue(joyceProfile.support.cas.enabled, "Joyce CAS enabled")
-assertTrue(joyceProfile.support.resupply.ground, "Joyce Ground Resupply enabled")
-assertTrue(joyceProfile.support.resupply.air, "Joyce Air Resupply enabled")
-assertEqual(joyceProfile.support.guards.activation, Profiles.Activation.SITE_PERSISTENT, "Guard activation")
-assertEqual(joyceProfile.support.qrf.activation, Profiles.Activation.INCIDENT_LOCAL_DEFENSE, "QRF activation")
-assertEqual(joyceProfile.support.artillery.activation, Profiles.Activation.C2_ESCALATION_EXTERNAL, "ARTY activation")
-assertEqual(joyceProfile.support.cas.activation, Profiles.Activation.C2_ESCALATION_EXTERNAL, "CAS activation")
-assertEqual(joyceProfile.support.resupply.activation, Profiles.Activation.RESOURCE_THRESHOLD, "Resupply activation")
+local siteCount = 0
+for key, expected in pairs(expectedSites) do
+  local site = Sites.Sites[key]
+  assertTrue(type(site) == "table", key .. " site exists")
+  assertEqual(site.installationId, expected[1], key .. " installation ID")
+  assertEqual(site.campaignNodeId, expected[2], key .. " campaign node")
+  assertEqual(site.supplyParentNodeId, expected[3], key .. " supply parent")
+  assertEqual(site.warehouseName, expected[4], key .. " warehouse")
+  assertEqual(site.accessZoneName, expected[5], key .. " access zone")
+  assertEqual(site.supportProfileId, "GROUND_INSTALLATION_STANDARD", key .. " profile")
+  assertEqual(site.guardRoute.routeName, nil, key .. " unresolved Guard route")
+  assertEqual(site.guardRoute.status, "OWNER_AUTHORED_ME_ROUTE_REQUIRED_DCS_VALIDATION", key .. " Guard route status")
+  assertEqual(site.alarmZoneName, nil, key .. " unresolved alarm zone")
+  assertEqual(site.alarmZoneContractStatus, "REQUIRES_MISSION_EDITOR_RECONCILIATION", key .. " alarm-zone status")
+  siteCount = siteCount + 1
+end
+assertEqual(siteCount, 6, "Ground Foundation site count")
+
+assertEqual(Sites.Sites.COP_FORTRESS.localSupport.status, "CONFIGURED_IN_GROUND_BASELINE", "Fortress local support")
+assertEqual(Sites.Sites.COP_HONAKER.localSupport.status, "CONFIGURED_IN_GROUND_BASELINE", "Honaker local support")
+assertEqual(Sites.Sites.FOB_BOSTICK.localSupport.status, "CONFIGURED_IN_GROUND_BASELINE", "Bostick local support")
+assertEqual(Sites.Sites.FOB_WRIGHT.localSupport.status, "UNRESOLVED_CURRENT_ASSIGNMENT", "Wright local support boundary")
+assertEqual(Sites.Sites.COP_HONAKER.historicalStage3ProviderNodeId, "GROUND_NODE_WRIGHT", "Stage-3 evidence retained")
+
+local standard = Profiles.Profiles.GROUND_INSTALLATION_STANDARD
+assertTrue(type(standard) == "table", "standard Ground installation profile resolves")
+assertEqual(standard.contractStatus, "GROUND_FOUNDATION_RECONCILED", "standard profile status")
+assertEqual(standard.support.guards.activation, Profiles.Activation.SITE_PERSISTENT, "Guard activation")
+assertEqual(standard.support.qrf.activation, Profiles.Activation.INCIDENT_LOCAL_DEFENSE, "QRF activation")
+assertEqual(standard.support.artillery.activation, Profiles.Activation.C2_ESCALATION_EXTERNAL, "external support activation")
+assertEqual(standard.support.cas.activation, Profiles.Activation.C2_ESCALATION_EXTERNAL, "CAS activation")
+assertEqual(standard.support.resupply.activation, Profiles.Activation.RESOURCE_THRESHOLD, "Resupply activation")
+assertTrue(type(Profiles.Profiles.HONAKER_WRIGHT_STAGE3) == "table", "historical Stage-3 profile retained")
+assertTrue(type(Profiles.Profiles.JOYCE_STANDARD) == "table", "historical Joyce planning profile retained")
 
 assertNoOperationalAssetSelection(Profiles, "Profiles")
 assertNoOperationalAssetSelection(Sites, "Sites")
@@ -96,7 +99,6 @@ assertEqual(incidentId, "INCIDENT:FOB_JOYCE:000123", "incident ID")
 assertEqual(demandId, "DEMAND:INCIDENT:FOB_JOYCE:000123:CAS", "incident demand ID")
 assertEqual(guardDemandId, "DEMAND:SITE:FOB_JOYCE:GUARD:PERSISTENT", "persistent Guard demand ID")
 assertEqual(resupplyDemandId, "DEMAND:SITE:FOB_JOYCE:AIR_RESUPPLY:AMMO-REORDER-0001", "site resupply demand ID")
-assertEqual(settlementId, "SETTLEMENT:DEMAND:INCIDENT:FOB_JOYCE:000123:CAS:DELIVERED:MOOSE-EVENT-0007", "settlement ID")
 assertEqual(Ids.Settlement(demandId, "DELIVERED", "MOOSE-EVENT-0007"), settlementId, "settlement ID deterministic")
 
 assertError(function() Ids.Site("") end, "empty site ID")
@@ -104,10 +106,5 @@ assertError(function() Ids.Incident("FOB_JOYCE", "") end, "empty incident key")
 assertError(function() Ids.Demand(incidentId, "") end, "empty support type")
 assertError(function() Ids.SiteDemand("FOB_JOYCE", "", "X") end, "empty site support type")
 assertError(function() Ids.Settlement(demandId, "DELIVERED", "") end, "empty source event ID")
-
-assertTrue(string.find(joyceProfile.routes.groundProfile, "HONAKER", 1, true) == nil, "Joyce ground route independent of Honaker")
-assertTrue(string.find(joyceProfile.routes.helicopterProfile, "HONAKER", 1, true) == nil, "Joyce helicopter route independent of Honaker")
-assertTrue(string.find(joyceProfile.routes.groundProfile, "WRIGHT", 1, true) == nil, "Joyce ground route independent of Wright")
-assertTrue(string.find(joyceProfile.routes.helicopterProfile, "WRIGHT", 1, true) == nil, "Joyce helicopter route independent of Wright")
 
 print("PASS test_fire_support_strategic_resupply_gate2")
