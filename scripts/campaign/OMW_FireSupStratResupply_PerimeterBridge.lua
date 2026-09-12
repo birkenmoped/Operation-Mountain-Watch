@@ -1,15 +1,15 @@
--- Operation Mountain Watch - perimeter-to-FireSupStratResupply bridge.
+-- Operation Mountain Watch - perimeter evidence bridge.
 --
--- Converts a qualified OPSZONE perimeter incident into the generic Base incident
--- contract. It requests only the local QRF at initial detection. External ARTY/CAS
--- remain explicit C2-escalation demands and are not triggered by perimeter entry.
+-- Converts a qualified MOOSE OPSZONE proximity intrusion into one evidence item
+-- for the authoritative installation attack incident layer. It does not open or
+-- close Base incidents directly and it does not request QRF/ARTY/CAS itself.
 
 local Bridge = {}
 local Instance = {}
 Instance.__index = Instance
 
 local TAG = "[OMW][FireSupStratResupply.PerimeterBridge]"
-Bridge.SchemaVersion = "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PERIMETER-BRIDGE-1"
+Bridge.SchemaVersion = "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PERIMETER-BRIDGE-2"
 
 local function fail(message) error(TAG .. " " .. tostring(message), 2) end
 local function needTable(value, label) if type(value) ~= "table" then fail(label .. " must be a table") end return value end
@@ -20,10 +20,9 @@ end
 
 function Bridge.New(spec)
   needTable(spec, "spec")
-  local base = needTable(spec.base, "base")
+  local incidentRuntime = needTable(spec.incidentRuntime, "incidentRuntime")
   local siteRegistry = needTable(spec.siteRegistry, "siteRegistry")
-  needFunction(base, "OpenIncident", "base")
-  needFunction(base, "RequestIncidentSupport", "base")
+  needFunction(incidentRuntime, "ReportEvidence", "incidentRuntime")
   if type(siteRegistry.Sites) ~= "table" then fail("siteRegistry.Sites is required") end
   if spec.logger ~= nil and type(spec.logger) ~= "function" then fail("logger must be a function when provided") end
 
@@ -31,16 +30,14 @@ function Bridge.New(spec)
   for key, site in pairs(siteRegistry.Sites) do
     if type(site) == "table" and type(site.installationId) == "string" and site.installationId ~= "" then
       if byInstallationId[site.installationId] then fail("duplicate installationId " .. site.installationId) end
-      byInstallationId[site.installationId] = site
-      if site.siteId == nil then site.siteId = key end
+      byInstallationId[site.installationId] = {site=site,siteId=site.siteId or key}
     end
   end
 
   return setmetatable({
-    base = base,
-    siteRegistry = siteRegistry,
-    byInstallationId = byInstallationId,
-    logger = spec.logger,
+    incidentRuntime=incidentRuntime,
+    byInstallationId=byInstallationId,
+    logger=spec.logger,
   }, Instance)
 end
 
@@ -50,48 +47,32 @@ end
 
 function Instance:HandleThreat(_, _, incident)
   needTable(incident, "incident")
-  local site = self.byInstallationId[incident.installationId]
-  if not site then return nil, false, "INSTALLATION_NOT_REGISTERED" end
-  if type(incident.incidentId) ~= "string" or incident.incidentId == "" then return nil, false, "INCIDENT_ID_MISSING" end
+  local entry = self.byInstallationId[incident.installationId]
+  if not entry then return nil, false, "INSTALLATION_NOT_REGISTERED" end
 
-  local opened, created, reason = self.base:OpenIncident({
-    siteId = site.siteId,
-    incidentKey = incident.incidentId,
-    priority = incident.priority,
-    context = {
-      source = "OPSZONE_SECURITY_PERIMETER",
-      installationId = incident.installationId,
-      position = incident.position,
-      reportedTarget = incident.reportedTarget,
-      sourceIncidentId = incident.incidentId,
-    },
-  })
-  if not opened then return nil, false, reason end
-
-  local qrf, qrfCreated, qrfReason = self.base:RequestIncidentSupport(opened.incidentId, "QRF", {
-    requestKey = "PERIMETER_INITIAL_QRF",
-    priority = incident.priority,
-    context = {
-      activation = "INCIDENT_LOCAL_DEFENSE",
-      source = "OPSZONE_SECURITY_PERIMETER",
-    },
-  })
-
+  local sourceIncidentId = incident.incidentId
+  local evidence = {
+    installationId=incident.installationId,
+    evidenceType="PROXIMITY_INTRUSION",
+    priority=incident.priority,
+    position=incident.position,
+    reportedTarget=incident.reportedTarget,
+    sourceEvent="OPSZONE_Attacked",
+    sourceIncidentId=sourceIncidentId,
+  }
+  local authoritativeIncident, created, reason = self.incidentRuntime:ReportEvidence(evidence)
   self:_log(string.format(
-    "perimeter incident installationId=%s siteId=%s incidentId=%s opened=%s qrfCreated=%s qrfReason=%s",
-    tostring(incident.installationId), tostring(site.siteId), tostring(opened.incidentId), tostring(created),
-    tostring(qrfCreated), tostring(qrfReason)))
-
-  -- The incident itself is the handler result. QRF dispatch state remains in Base.
-  -- No ARTY/CAS request is made here; those remain explicit C2 escalation actions.
-  return opened, created, qrfReason or reason, qrf
+    "proximity evidence installationId=%s siteId=%s sourceIncidentId=%s authoritativeIncidentId=%s created=%s reason=%s",
+    tostring(incident.installationId), tostring(entry.siteId), tostring(sourceIncidentId),
+    tostring(authoritativeIncident and authoritativeIncident.incidentId), tostring(created), tostring(reason)))
+  return authoritativeIncident, created, reason, evidence
 end
 
 function Instance:HandleClear(_, _, defeatedCoalition, incident)
-  -- Alarm-perimeter clear is observation state only. It must not end tactical
-  -- support or close the Base incident automatically.
+  -- Perimeter clear is evidence state only. The authoritative installation attack
+  -- incident layer decides tactical completion and explicit incident closure.
   self:_log(string.format(
-    "perimeter clear observed installationId=%s sourceIncidentId=%s defeatedCoalition=%s; incident remains open",
+    "perimeter clear observed installationId=%s sourceIncidentId=%s defeatedCoalition=%s; no incident close",
     tostring(incident and incident.installationId), tostring(incident and incident.incidentId), tostring(defeatedCoalition)))
   return incident, false, "PERIMETER_CLEAR_DOES_NOT_CLOSE_INCIDENT"
 end
