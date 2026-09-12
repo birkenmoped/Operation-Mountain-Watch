@@ -2,13 +2,14 @@
 --
 -- Wires the accepted Guard materializer and PATHLINE route adapter to the generic
 -- local LEGION bridge. Injected BRIGADEs remain the MOOSE organisational boundary;
--- MOOSE selects/recruits the concrete Guard cohort/asset.
+-- MOOSE selects/recruits the concrete Guard cohort/asset. Optional capability
+-- constraints are forwarded to public MOOSE AUFTRAG recruitment filters.
 
 local Runtime = {}
 local Instance = {}
 Instance.__index = Instance
 
-Runtime.SchemaVersion = "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-GUARD-RUNTIME-1"
+Runtime.SchemaVersion = "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-GUARD-RUNTIME-2"
 local TAG = "[OMW][FireSupStratResupply.GuardRuntime]"
 
 local function fail(message) error(TAG .. " " .. tostring(message), 2) end
@@ -61,6 +62,8 @@ function Runtime.New(spec)
     legionBridge = legionBridge,
     resolvePathline = resolvePathline,
     resolveTemplateGroup = resolveTemplateGroup,
+    requiredAttributes = spec.requiredAttributes,
+    requiredProperties = spec.requiredProperties,
     logger = spec.logger,
     materializers = {},
     routeAdapters = {},
@@ -114,6 +117,8 @@ function Instance:Prepare()
   local factory = self.guardMissionFactory.New({
     materializers = self.materializers,
     routeAdapters = self.routeAdapters,
+    requiredAttributes = self.requiredAttributes,
+    requiredProperties = self.requiredProperties,
     logger = self.logger,
   })
   self.dispatchBridge = self.legionBridge.New({
