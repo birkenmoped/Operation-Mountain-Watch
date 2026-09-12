@@ -2,6 +2,7 @@
 document_id: OMW-MOOSE-FSSR-QRF-RECRUITMENT
 status: PLANNED
 document_class: MOOSE_INTEGRATION
+owning_policy: OMW-GOV-001
 authoritative_for:
   - Fire Support Strategic Resupply QRF recruitment filtering
   - MOOSE-first separation between capability constraints and asset selection
