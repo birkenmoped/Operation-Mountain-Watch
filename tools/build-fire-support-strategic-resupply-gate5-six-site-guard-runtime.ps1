@@ -10,7 +10,7 @@ $sourceFile = Join-Path $repoRoot 'mission\tests\fire-support-strategic-resupply
 $distDir = Join-Path $repoRoot 'mission\tests\fire-support-strategic-resupply-gate5-six-site-guard-runtime\dist'
 $outputFile = Join-Path $distDir 'OMW_FireSupStratResupply_Gate5_Six_Site_Guard_Runtime.lua'
 
-$builderVersion = 'FIRE-SUPPORT-STRATEGIC-RESUPPLY-GATE5-SIX-SITE-GUARD-RUNTIME-3'
+$builderVersion = 'FIRE-SUPPORT-STRATEGIC-RESUPPLY-GATE5-SIX-SITE-GUARD-RUNTIME-4'
 $testId = 'FIRE-SUPPORT-STRATEGIC-RESUPPLY-GATE5-SIX-SITE-GUARD-RUNTIME-ACCEPTANCE-2'
 $mooseCommit = '73d3ed119cd9e7e3f2cfcabbaa34513d30529b54'
 $mooseSha256 = 'E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915'
@@ -45,11 +45,10 @@ foreach ($marker in @(
   'PLATOON:New(',
   'AUFTRAG:NewONGUARD(',
   'PATHLINE:FindByName(',
-  's.access:GetVec2()',
   'OptionFormationInterval(INTERVAL)',
   'COMPACT_SPAWN_PREPARED',
   'COMPACT_ALIGNED_WAREHOUSE_SPAWN',
-  'anchor=ACCESS_CENTER',
+  'anchor=PATHLINE_FIRST_SEGMENT',
   '_SpawnAssetGroundNaval',
   '_SpawnAssetPrepareTemplate',
   '_DATABASE:Spawn(t)',
@@ -60,6 +59,17 @@ foreach ($marker in @(
 )) {
   if (-not $acceptanceSource.Contains($marker)) {
     throw "Gate-5 acceptance source missing required marker: $marker"
+  }
+}
+
+foreach ($forbiddenMarker in @(
+  'ZONE:FindByName(site.accessZoneName)',
+  'SetSpawnZone(access)',
+  'ACCESS_CENTER',
+  'IsVec2InZone('
+)) {
+  if ($acceptanceSource.Contains($forbiddenMarker)) {
+    throw "Gate-5 Guard acceptance must not depend on convoy ACCESS zones: $forbiddenMarker"
   }
 }
 
@@ -92,7 +102,8 @@ $header = @"
 -- GitCommit: $commit
 -- GeneratedUtc: $generatedUtc
 -- Gate/Test-ID: $testId
--- Scope: six persistent Guards; compact PATHLINE-heading-aligned materialization from ACCESS centers; Off Road route; 2 m formation interval; five-minute movement acceptance.
+-- Scope: six persistent Guards; compact PATHLINE-first-segment materialization; Off Road route; 2 m formation interval; five-minute movement acceptance.
+-- Guard materialization deliberately does not use ZON_BLUE_GND_*_ACCESS convoy zones.
 -- Extension: test-scoped reuse of the owner-approved ARMY Ground Acceptance 3-2 WAREHOUSE spawn-adapter pattern.
 -- Exclusions: no QRF, no ARTY, no CAS, no resupply, no alarm/attack stimulus, no MIZ mutation.
 -- MOOSECommit: $mooseCommit
@@ -127,7 +138,8 @@ Write-Host "MOOSECommit: $mooseCommit"
 Write-Host "Moose.lua SHA-256: $mooseSha256"
 Write-Host "Formation: Off Road"
 Write-Host "FormationIntervalM: 2"
-Write-Host "SpawnAlignment: ACCESS_CENTER_PATHLINE_HEADING"
+Write-Host "SpawnAlignment: PATHLINE_FIRST_SEGMENT"
+Write-Host "GuardAccessZoneDependency: none"
 Write-Host "Output: $outputFile"
 Write-Host "Encoding: UTF-8 without BOM"
 Write-Host "Bundle SHA-256: $hash"
