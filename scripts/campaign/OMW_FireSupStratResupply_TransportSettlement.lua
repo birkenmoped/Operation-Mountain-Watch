@@ -8,7 +8,7 @@ local Settlement = {}
 local Instance = {}
 Instance.__index = Instance
 
-Settlement.SchemaVersion = "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-TRANSPORT-SETTLEMENT-1"
+Settlement.SchemaVersion = "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-TRANSPORT-SETTLEMENT-2"
 local TAG = "[OMW][FireSupStratResupply.TransportSettlement]"
 
 local function fail(message) error(TAG .. " " .. tostring(message), 2) end
@@ -34,14 +34,15 @@ function Settlement.New(spec)
   local store=needTable(spec.store,"store")
   if type(campaignState.TransactionKind)~="table" or campaignState.TransactionKind.TRANSFER==nil then fail("campaignState.TransactionKind.TRANSFER is required") end
   if type(campaignState.TransactionStatus)~="table" then fail("campaignState.TransactionStatus is required") end
-  for _,name in ipairs({"ReserveResource","MarkLoading","MarkInTransit","MarkDelivered","MarkLost","Cancel","GetTransaction"}) do
+  for _,name in ipairs({"GetResource","ReserveResource","MarkLoading","MarkInTransit","MarkDelivered","MarkLost","Cancel","GetTransaction"}) do
     needFunction(store,name,"store")
   end
+  if spec.resolveTransfer~=nil and type(spec.resolveTransfer)~="function" then fail("resolveTransfer must be a function when provided") end
   if spec.transactionIdFactory~=nil and type(spec.transactionIdFactory)~="function" then fail("transactionIdFactory must be a function when provided") end
   if spec.onTerminal~=nil and type(spec.onTerminal)~="function" then fail("onTerminal must be a function when provided") end
   if spec.onPartial~=nil and type(spec.onPartial)~="function" then fail("onPartial must be a function when provided") end
   if spec.logger~=nil and type(spec.logger)~="function" then fail("logger must be a function when provided") end
-  return setmetatable({campaignState=campaignState,store=store,transactionIdFactory=spec.transactionIdFactory,onTerminal=spec.onTerminal,onPartial=spec.onPartial,logger=spec.logger,bindings={}},Instance)
+  return setmetatable({campaignState=campaignState,store=store,resolveTransfer=spec.resolveTransfer,transactionIdFactory=spec.transactionIdFactory,onTerminal=spec.onTerminal,onPartial=spec.onPartial,logger=spec.logger,bindings={}},Instance)
 end
 
 function Instance:_log(message)
@@ -51,6 +52,20 @@ end
 function Instance:_transactionId(demand)
   if self.transactionIdFactory then return self.transactionIdFactory(demand) end
   return "RESUPPLY|" .. tostring(demand.demandId)
+end
+
+function Instance:_transferSpec(demand,context,descriptor)
+  if self.resolveTransfer then
+    local transfer,reason=self.resolveTransfer(demand,context,descriptor)
+    if transfer==nil then return nil,reason or "STRATEGIC_TRANSFER_UNAVAILABLE" end
+    needTable(transfer,"strategic transfer")
+    return transfer,nil
+  end
+  local tactical=needTable(demand.tacticalContext,"demand.tacticalContext")
+  return {
+    originNodeId=tactical.supplyParentNodeId,
+    destinationNodeId=tactical.campaignNodeId,
+  },nil
 end
 
 function Instance:_storageOutcome(transport,quantity)
@@ -76,13 +91,15 @@ function Instance:Attach(transport,demand,context,descriptor)
   if type(demand.demandId)~="string" or demand.demandId=="" then fail("demandId is required") end
   if type(demand.resourceId)~="string" or demand.resourceId=="" then fail("resourceId is required") end
   if not finitePositive(demand.quantity) then fail("quantity must be positive finite") end
-  local tactical=needTable(demand.tacticalContext,"demand.tacticalContext")
-  local originNodeId=tactical.supplyParentNodeId
-  local destinationNodeId=tactical.campaignNodeId
-  if type(originNodeId)~="string" or originNodeId=="" then return nil,false,"SUPPLY_PARENT_NODE_MISSING" end
-  if type(destinationNodeId)~="string" or destinationNodeId=="" then return nil,false,"DESTINATION_NODE_MISSING" end
   if type(descriptor.installInTransitObserver)~="function" then return nil,false,"IN_TRANSIT_OBSERVER_REQUIRED" end
   needFunction(transport,"GetCargoStorages","transport")
+
+  local transfer,transferReason=self:_transferSpec(demand,context,descriptor)
+  if transfer==nil then return nil,false,transferReason end
+  local originNodeId=transfer.originNodeId
+  local destinationNodeId=transfer.destinationNodeId
+  if type(originNodeId)~="string" or originNodeId=="" then return nil,false,"SUPPLY_PARENT_NODE_MISSING" end
+  if type(destinationNodeId)~="string" or destinationNodeId=="" then return nil,false,"DESTINATION_NODE_MISSING" end
 
   local transactionId=self:_transactionId(demand)
   if type(transactionId)~="string" or transactionId=="" then fail("transactionIdFactory must return non-empty string") end
@@ -96,7 +113,7 @@ function Instance:Attach(transport,demand,context,descriptor)
     kind=self.campaignState.TransactionKind.TRANSFER,
     resourceId=demand.resourceId,
     quantity=demand.quantity,
-    canonicalUnit=snapshot.canonicalUnit,
+    canonicalUnit=transfer.canonicalUnit or snapshot.canonicalUnit,
     originNodeId=originNodeId,
     destinationNodeId=destinationNodeId,
   })
@@ -119,7 +136,7 @@ function Instance:Attach(transport,demand,context,descriptor)
     if self.terminal then return adapter.store:GetTransaction(self.transactionId),false,"ALREADY_TERMINAL" end
     local S=adapter.campaignState.TransactionStatus
     local current=adapter.store:GetTransaction(self.transactionId)
-    local updated,changed,reason
+    local updated,changed
     if outcome=="DELIVERED" then
       if current.status~=S.IN_TRANSIT then return current,false,"DELIVERY_BEFORE_CONFIRMED_IN_TRANSIT" end
       updated,changed=adapter.store:MarkDelivered(self.transactionId)
