@@ -1,17 +1,24 @@
 ---
 document_id: OMW-MOOSE-GATE5-GUARD-COMPACT-ALIGNED-MATERIALIZATION
-status: PLANNED
+status: ACCEPTED_TECHNICAL_BASELINE
 document_class: MOOSE_TECHNICAL_NOTE
 owning_policy: OMW-GOV-001
 authoritative_for:
   - Gate-5 Acceptance-2 Guard compact/aligned materialization source review
+  - exact Builder-4 DCS validation evidence for compact PATHLINE-aligned Guard materialization
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
 superseded_by:
 source_branch: agent/fire-support-strategic-resupply-base-gate0
 source_commit: PENDING_MERGE
-validated_in_dcs: false
+validated_in_dcs: true
+acceptance_branch: agent/fire-support-strategic-resupply-base-gate0
+acceptance_commit: a7944a995954a962d2a3b33b7a6d4c459d845f1e
+acceptance_mission: OMW_Template_v24_GroundWorks_base.miz
+acceptance_mission_sha256: 865bcb91fd3ef8f81e71e3acef0e0e0a7bf74737117549f7e059815c94929f91
+dcs_version: 2.9.29.27468
+moose_commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
 ---
 
 # Gate 5 Guard – compact/aligned Materialisierung
@@ -113,11 +120,45 @@ ab. Das war kein Guard-/PATHLINE-/Warehouse-Runtime-Nachweis, sondern ein Testfe
 
 Der korrigierte Builder 4 enthält deshalb zusätzlich eine Anti-Regression-Prüfung, die Guard-Code mit `ZONE:FindByName(site.accessZoneName)`, `SetSpawnZone(access)`, `ACCESS_CENTER` oder `IsVec2InZone(` ablehnt.
 
+## Reale Builder-4-DCS-Validierung
+
+Owner-local Build-HEAD:
+
+```text
+a7944a995954a962d2a3b33b7a6d4c459d845f1e
+```
+
+Bundle SHA-256:
+
+```text
+E1CBF5341D608714C912380FA4806D73BFBF42BBE5F2D0E8513298C96555E9DC
+```
+
+Der korrigierte DCS-Lauf meldete nach der 300-Sekunden-Beobachtung:
+
+```text
+[GATE 5][PASS] 6/6 Guards compact/aligned and >=25 m movement observed
+```
+
+Checkpoint:
+
+```text
+JALALABAD_FENTY   movementM=176.2
+COP_FORTRESS      movementM=195.1
+FOB_JOYCE         movementM=195.6
+FOB_WRIGHT        movementM=235.0
+COP_HONAKER       movementM=165.6
+FOB_BOSTICK       movementM=137.1
+```
+
+Alle sechs Gruppen waren am Checkpoint alive, `routeStarted=true` und deutlich über dem geforderten Mindestweg. Der Projektinhaber bestätigte für denselben Lauf zusätzlich, dass visuell keine Probleme auszumachen waren. Damit ist der Acceptance-2-Scope einschließlich visueller Hindernis-/Formationskontrolle erfüllt.
+
 ## Statusgrenze
 
 ```text
-SOURCE_REVIEWED / STAGED
-DCS VALIDATION: pending
+SOURCE_REVIEWED: PASS
+OWNER-LOCAL BUILD: PASS
+DCS ACCEPTANCE-2 BUILDER 4: VALIDATED / PASS
 ```
 
-Erst ein neuer realer Acceptance-2-Lauf des korrigierten ACCESS-freien Guard-Pfads kann bestätigen, ob die kompakte PATHLINE-ausgerichtete Materialisierung die beobachteten Festsitz-Symptome behebt.
+Diese Validierung ist eng auf den Acceptance-2-Scope begrenzt. Sie ist keine produktive Generalfreigabe der privaten MOOSE-Warehouse-Materialisierungsstelle.
