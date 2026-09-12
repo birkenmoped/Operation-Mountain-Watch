@@ -27,10 +27,11 @@ local bridge = Bridge.New({
     return legion
   end,
   factory = function(demand, context, legion)
+    if demand.requestKey == "REFUSE" then return nil, false, "TACTICAL_PREREQUISITE_MISSING" end
     local mission = { demandId=demand.demandId, context=context, legion=legion, cancelCount=0 }
     function mission:Cancel() self.cancelCount = self.cancelCount + 1 end
     created[#created + 1] = mission
-    return mission
+    return mission, true, nil
   end,
 })
 
@@ -56,6 +57,14 @@ eq(#legions.FOB_JOYCE.missions, 1, "duplicate did not add mission")
 yes(handle:Cancel(), "first cancel forwarded")
 no(handle:Cancel(), "second cancel idempotent")
 eq(handle.mission.cancelCount, 1, "MOOSE Cancel called once")
+
+local refused, refusedCreated, refusedReason = bridge:Dispatch({
+  demandId="DEMAND|COP_HONAKER|QRF|REFUSE", siteId="COP_HONAKER", supportType="QRF", requestKey="REFUSE"
+}, {})
+eq(refused, nil, "factory refusal has no handle")
+no(refusedCreated, "factory refusal not dispatched")
+eq(refusedReason, "TACTICAL_PREREQUISITE_MISSING", "factory refusal reason propagated")
+eq(#legions.COP_HONAKER.missions, 0, "factory refusal does not queue mission")
 
 local unavailable, unavailableCreated, unavailableReason = bridge:Dispatch({
   demandId="DEMAND|FOB_BOSTICK|QRF|1", siteId="FOB_BOSTICK", supportType="QRF"
