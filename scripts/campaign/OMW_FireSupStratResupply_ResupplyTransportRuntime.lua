@@ -1,14 +1,14 @@
 -- Operation Mountain Watch - MOOSE-first physical resupply transport runtime.
 --
 -- Creates Base-compatible GROUND_RESUPPLY/AIR_RESUPPLY adapters using public
--- OPSTRANSPORT + COMMANDER:AddOpsTransport(). Strategic resource authority and
--- settlement remain outside this module. Carrier/provider selection remains MOOSE.
+-- OPSTRANSPORT + COMMANDER:AddOpsTransport(). Carrier/provider selection remains
+-- MOOSE. Optional strategic settlement is attached before COMMANDER submission.
 
 local Runtime = {}
 local Instance = {}
 Instance.__index = Instance
 
-Runtime.SchemaVersion = "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-TRANSPORT-RUNTIME-1"
+Runtime.SchemaVersion = "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-TRANSPORT-RUNTIME-2"
 local TAG = "[OMW][FireSupStratResupply.ResupplyTransportRuntime]"
 
 local function fail(message) error(TAG .. " " .. tostring(message), 2) end
@@ -24,10 +24,15 @@ function Runtime.New(spec)
   local storageTransportFactory=needTable(spec.storageTransportFactory,"storageTransportFactory")
   needFunction(commanderBridge,"New","commanderBridge")
   needFunction(storageTransportFactory,"New","storageTransportFactory")
+  if spec.settlement~=nil then
+    needTable(spec.settlement,"settlement")
+    needFunction(spec.settlement,"Attach","settlement")
+  end
   if spec.logger~=nil and type(spec.logger)~="function" then fail("logger must be a function when provided") end
 
   local adapters={}
   local factories={}
+  local settlement=spec.settlement
 
   local function add(supportType, commander, resolver)
     if commander==nil and resolver==nil then return end
@@ -38,7 +43,23 @@ function Runtime.New(spec)
     local bridge=commanderBridge.New({
       commander=commander,
       kind=commanderBridge.Kind and commanderBridge.Kind.TRANSPORT or "TRANSPORT",
-      factory=function(demand,context) return factory:Create(demand,context) end,
+      factory=function(demand,context)
+        local transport,created,reason,descriptor=factory:Create(demand,context)
+        if transport==nil then return nil,false,reason end
+        if created==false then return transport,false,reason end
+        if settlement~=nil then
+          local binding,attached,settlementReason=settlement:Attach(transport,demand,context,descriptor)
+          if binding==nil then
+            if type(transport.Cancel)=="function" then transport:Cancel() end
+            return nil,false,settlementReason or "STRATEGIC_SETTLEMENT_NOT_ATTACHED"
+          end
+          if attached==false and settlementReason~="ALREADY_ATTACHED" then
+            if type(transport.Cancel)=="function" then transport:Cancel() end
+            return nil,false,settlementReason or "STRATEGIC_SETTLEMENT_NOT_ATTACHED"
+          end
+        end
+        return transport,true,nil
+      end,
       logger=spec.logger,
     })
     adapters[supportType]=bridge
@@ -49,7 +70,7 @@ function Runtime.New(spec)
   add("AIR_RESUPPLY",spec.airCommander,spec.resolveAirTransport)
   if next(adapters)==nil then fail("at least one physical resupply transport mode must be configured") end
 
-  return setmetatable({adapters=adapters,factories=factories,logger=spec.logger},Instance)
+  return setmetatable({adapters=adapters,factories=factories,settlement=settlement,logger=spec.logger},Instance)
 end
 
 function Instance:GetAdapters()
