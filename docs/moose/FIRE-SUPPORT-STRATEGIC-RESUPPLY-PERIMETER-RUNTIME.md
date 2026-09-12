@@ -1,3 +1,21 @@
+---
+document_id: OMW-MOOSE-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PERIMETER-RUNTIME
+status: SOURCE_REVIEWED
+document_class: MOOSE_TECHNICAL_NOTE
+owning_policy: OMW-GOV-001
+authoritative_for:
+  - generic six-site perimeter runtime assembly source contract
+  - MOOSE OPSZONE perimeter-to-Base integration boundary
+scenario_period: 2010-08-01/2011-12-31
+project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
+supersedes:
+superseded_by:
+source_branch: agent/fire-support-strategic-resupply-base-gate0
+source_commit: PENDING_MERGE
+validated_in_dcs: false
+moose_commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+---
+
 # Fire Support / Strategic Resupply – generische Perimeter-Runtime
 
 Status: SOURCE_REVIEWED / NICHT DCS-VALIDIERT
