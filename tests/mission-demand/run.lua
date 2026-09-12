@@ -24,5 +24,6 @@ dofile("tests/mission-demand/test_fire_support_strategic_resupply_legion_bridge.
 dofile("tests/mission-demand/test_fire_support_strategic_resupply_qrf_mission_factory.lua")
 dofile("tests/mission-demand/test_guard_pathline_route_adapter.lua")
 dofile("tests/mission-demand/test_fire_support_strategic_resupply_guard_mission_factory.lua")
+dofile("tests/mission-demand/test_fire_support_strategic_resupply_guard_runtime.lua")
 
 print("PASS mission-demand test suite")
