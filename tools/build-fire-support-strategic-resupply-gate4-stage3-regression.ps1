@@ -19,7 +19,7 @@ $modules = [ordered]@{
   OMW_GATE4_FIRE_SUP_STRAT_RESUPPLY_IDS = 'scripts\campaign\OMW_FireSupStratResupply_IdContract.lua'
 }
 
-$builderVersion = 'FIRE-SUPPORT-STRATEGIC-RESUPPLY-GATE4-STAGE3-REGRESSION-1'
+$builderVersion = 'FIRE-SUPPORT-STRATEGIC-RESUPPLY-GATE4-STAGE3-REGRESSION-2'
 $mooseCommit = '73d3ed119cd9e7e3f2cfcabbaa34513d30529b54'
 $mooseSha256 = 'E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915'
 $referenceMizSha256 = '25387ABB697E9D500F243EF5D2220459EC6AA711712DB57F126DDF7C7D47E0FA'
@@ -63,7 +63,7 @@ $header = @"
 -- MooseLuaSHA256: $mooseSha256
 -- ReferenceMizSHA256: $referenceMizSha256
 -- ReferenceStage3BundleSHA256: $referenceStage3BundleSha256
--- Scope: generic Base contract preflight followed by the unchanged Stage-3 Honaker/Wright runtime fixture.
+-- Scope: site-persistent Guard + incident-scoped QRF/C2 support + threshold-driven Resupply contract preflight followed by the unchanged Stage-3 Honaker/Wright runtime fixture.
 -- MizMutation: false.
 
 "@
@@ -81,8 +81,11 @@ $bundle += $preflightSource + "`n`n"
 $bundle += $stage3Source
 
 foreach ($marker in @(
-  'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-BASE-2',
-  'function Instance:RequestSupport',
+  'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-BASE-3',
+  'function Instance:StartSite',
+  'function Instance:RequestIncidentSupport',
+  'function Instance:RequestResupply',
+  'SUPPORT_NOT_INCIDENT_SCOPED',
   'PREFLIGHT_PASS',
   'STAGE3-HONAKER-WRIGHT-FULL-RESPONSE-ACCEPTANCE-1-26'
 )) {
