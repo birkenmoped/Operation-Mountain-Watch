@@ -1,6 +1,8 @@
 ---
 document_id: OMW-FIRE-SUPPORT-GATE5-SIX-SITE-GUARD-RUNTIME-ACCEPTANCE-1
 status: PLANNED
+document_class: ACCEPTANCE_PLAN
+owning_policy: OMW-GOV-001
 authoritative_for:
   - Gate-5 six-site Guard runtime acceptance procedure
 scenario_period: 2010-08-01/2011-12-31
