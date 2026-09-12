@@ -5,7 +5,7 @@ document_class: MOOSE_TECHNICAL_NOTE
 owning_policy: OMW-GOV-001
 authoritative_for:
   - generic six-site perimeter runtime assembly source contract
-  - MOOSE OPSZONE perimeter-to-Base integration boundary
+  - MOOSE OPSZONE perimeter evidence integration boundary
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
@@ -22,7 +22,9 @@ Status: SOURCE_REVIEWED / NICHT DCS-VALIDIERT
 
 ## Zweck
 
-`OMW_FireSupStratResupply_PerimeterRuntime.lua` verdrahtet die bereits festgelegten Bausteine fuer die sechs Ground-Installationen zu einer site-unabhaengigen Runtime. Das Modul fuehrt keine eigene Feinderkennung, Missionsauswahl oder Ressourcenlogik ein.
+`OMW_FireSupStratResupply_PerimeterRuntime.lua` verdrahtet den MOOSE-`OPSZONE`-Perimeter fuer die registrierten Ground-Installationen. Das Modul fuehrt keine eigene Feinderkennung, Missionsauswahl oder Ressourcenlogik ein.
+
+Wichtig: Der Perimeter ist **nicht** die Incident-Autoritaet. Nach Abgleich mit `docs/ground/ARMY-GROUND-INSTALLATION-ALARM-MULTI-EVIDENCE-DECISION.md` wird ein `OPSZONE:Attacked` nur als `PROXIMITY_INTRUSION`-Evidence an den bestehenden Installation-Attack-Incident-Layer uebergeben.
 
 Der Laufzeitpfad lautet:
 
@@ -32,19 +34,29 @@ SiteRegistry
 -> OMW_FobThreatOpsZoneAdapter
 -> MOOSE ZONE_RADIUS / OPSZONE
 -> OMW_FireSupStratResupply_PerimeterBridge
+-> PROXIMITY_INTRUSION evidence
+-> OMW_FireSupStratResupply_InstallationIncidentRuntime
+-> OMW_GroundInstallationAttackIncident
+-> OMW_FireSupStratResupply_InstallationIncidentBridge
 -> OMW_FireSupStratResupply_Base
 -> initial nur QRF als INCIDENT_LOCAL_DEFENSE
 ```
 
-## MOOSE-first-Grenze
+Weitere MOOSE-basierte Evidenzkanaele (`Hit`, `Shot`, `ShootingStart`, gefiltertes `WEAPON`-Impact-Tracking) koennen ueber `OMW_GroundInstallationAlarmEvidenceAdapter` denselben Installation-Incident speisen. Die generische Base stellt dafuer `ReportInstallationEvidence(evidence)` bereit.
 
-Die eigentliche Perimeterbewertung bleibt bei MOOSE `OPSZONE`. Der neue Runtime-Baustein erstellt keine parallele Scan-, Scheduler- oder Threat-Logik. Er instanziiert lediglich den vorhandenen Threat-Adapter fuer jede registrierte Site und verbindet dessen Raw-Incident-Callback mit dem bestehenden Perimeter-Bridge.
+## Autoritaetsgrenzen
 
-ARTY und CAS werden durch diese Runtime nicht automatisch ausgeloest. Sie bleiben gemaess SupportProfile explizite C2-Eskalationsanforderungen.
+Die Perimeterbewertung bleibt bei MOOSE `OPSZONE`. `OMW_FireSupStratResupply_PerimeterBridge` erzeugt daraus lediglich eine Evidence-Nachricht. Es existiert dadurch keine zweite Incident- oder Response-Autoritaet.
+
+`OMW_GroundInstallationAttackIncident` bleibt der eine aktive Attack-Incident je Installation. Sein Start wird auf genau einen Base-Incident abgebildet; nur dieser Start erzeugt die initiale lokale QRF-Anforderung. Weitere Evidenz aktualisiert denselben Installation-Incident und erzeugt keine zweite QRF-Anforderung.
+
+ARTY und CAS werden durch Perimeter oder Incident-Start nicht automatisch ausgeloest. Sie bleiben explizite C2-Eskalationsanforderungen.
+
+Ein `OPSZONE:Defeated` bzw. das Verlassen des Alarmperimeters schliesst weder den Installation-Incident noch den Base-Incident. Die Incident-Schliessung muss ueber die autoritative Installation-Incident-Lifecycle-Entscheidung erfolgen; die Base exponiert dafuer `CloseInstallationIncident(installationId, reason)`.
 
 ## Konfigurationsgrenze
 
-Das Modul trifft **keine** stillschweigende Projektentscheidung ueber konkrete Alarmradien oder Installationsanker. Diese Werte muessen fuer jede Site injiziert werden:
+Das Perimeter-Modul trifft **keine** stillschweigende Projektentscheidung ueber konkrete Alarmradien oder Installationsanker. Diese Werte muessen fuer jede Site injiziert werden:
 
 - `anchorCoordinate`
 - `radiusM`
@@ -56,7 +68,7 @@ Das Modul trifft **keine** stillschweigende Projektentscheidung ueber konkrete A
 
 Coalition-IDs werden runtimeweit injiziert.
 
-Damit bleibt die fachliche Entscheidung ueber den konkreten Alarmperimeter ausserhalb des Assemblers.
+Damit bleibt die fachliche Entscheidung ueber den konkreten Alarmperimeter ausserhalb des Assemblers. Insbesondere werden keine historischen Stage-3-Testwerte als allgemeine Sechs-Site-Baseline hochgestuft.
 
 ## ACCESS-Zonen
 
@@ -68,7 +80,9 @@ Damit bleibt die fachliche Entscheidung ueber den konkreten Alarmperimeter ausse
 
 `StartAll()` startet alle Sites deterministisch nach `siteId`. Falls eine Site nicht gestartet werden kann, werden die in diesem Aufruf bereits gestarteten Perimeter in umgekehrter Reihenfolge wieder gestoppt.
 
-`StopSite()` und `StopAll()` stoppen ausschliesslich die Perimeter-Runtime. Ein `OPSZONE:Defeated` bzw. das Verlassen des Alarmperimeters schliesst den Base-Incident **nicht** automatisch.
+`StopSite()` und `StopAll()` stoppen ausschliesslich die Perimeter-Runtime. Sie haben keine semantische Incident-Close-Wirkung.
+
+Der Installation-Incident-Layer wird im generischen `OMW_FireSupStratResupply_Runtime` unabhaengig vom optionalen Perimeter vorbereitet, damit auch andere qualifizierte Evidence-Quellen denselben autoritativen Incident speisen koennen.
 
 ## Verifikation
 
@@ -77,17 +91,24 @@ Quellseitig abgedeckt durch:
 ```text
 tests/mission-demand/test_fob_threat_opszone_adapter.lua
 tests/mission-demand/test_fob_threat_opszone_raw_incident.lua
+tests/mission-demand/test_ground_installation_alarm_evidence_adapter.lua
+tests/mission-demand/test_ground_installation_attack_incident.lua
 tests/mission-demand/test_fire_support_strategic_resupply_perimeter_bridge.lua
 tests/mission-demand/test_fire_support_strategic_resupply_perimeter_runtime.lua
+tests/mission-demand/test_fire_support_strategic_resupply_installation_incident_bridge.lua
+tests/mission-demand/test_fire_support_strategic_resupply_installation_incident_runtime.lua
+tests/mission-demand/test_fire_support_strategic_resupply_runtime.lua
 ```
 
-Der neue Six-Site-Runtime-Test prueft insbesondere:
+Die Tests pruefen insbesondere:
 
-- alle sechs Registry-Sites werden assembliert;
-- Installation-ID, Zone-Name, Radius, Prioritaet und Coalitions werden korrekt an den Threat-Adapter uebergeben;
-- kein `accessZoneName` wird an den Perimeterpfad uebergeben;
-- Threat- und Clear-Callbacks gehen an den PerimeterBridge;
-- Clear schliesst den Incident nicht;
-- Start/Stop sind idempotent bzw. sauber rueckbaubar.
+- Perimeter-Einbruch wird nur `PROXIMITY_INTRUSION`-Evidence;
+- alle weiteren Evidence-Typen koennen denselben Installation-Incident aktualisieren;
+- ein Installation-Incident wird genau einmal auf einen Base-Incident abgebildet;
+- die initiale QRF-Anforderung wird nicht bei Incident-Refresh dupliziert;
+- Evidence-Prioritaet und initialer Positions-/Target-Kontext bleiben erhalten;
+- Perimeter-Clear schliesst keinen Incident;
+- explizite autoritative Incident-Schliessung wird an `Base:CloseIncident()` weitergereicht;
+- kein `accessZoneName` gelangt in diesen Alarm-/Incident-Pfad.
 
-Eine DCS-Validierung ist damit noch nicht erfolgt. Fuer einen DCS-Acceptance-Lauf fehlen weiterhin die verbindlichen konkreten Installationsanker-/Alarmradiuswerte fuer die sechs Sites sowie ein entsprechendes Bundle/Acceptance-Artefakt.
+Eine DCS-Validierung ist damit noch nicht erfolgt. Fuer einen DCS-Acceptance-Lauf fehlen weiterhin verbindliche konkrete Installationsanker-/Alarmradiuswerte und die restlichen site-spezifischen taktischen Resolver fuer den kombinierten produktiven Lauf.
