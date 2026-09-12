@@ -1,21 +1,50 @@
 -- Operation Mountain Watch - Fire Support / Strategic Resupply site registry.
--- Gate 2: pure campaign-domain data. No MOOSE/DCS calls and no asset selection.
+-- Pure campaign-domain data. No MOOSE/DCS calls and no asset selection.
 
 local SiteRegistry = {}
 
-SiteRegistry.SchemaVersion = "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-SITE-REGISTRY-1"
+SiteRegistry.SchemaVersion = "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-SITE-REGISTRY-2"
+
+local function guardRouteContract()
+  return {
+    routeName = nil,
+    status = "OWNER_AUTHORED_ME_ROUTE_REQUIRED_DCS_VALIDATION",
+  }
+end
+
+local function localSupport(status)
+  return {
+    status = status,
+  }
+end
 
 SiteRegistry.Sites = {
-  COP_HONAKER = {
-    siteId = "COP_HONAKER",
-    installationId = "BLUE_GROUND_COP_HONAKER_MIRACLE",
-    campaignNodeId = "GROUND_NODE_HONAKER",
-    supplyParentNodeId = "GROUND_NODE_JOYCE",
-    supportProfileId = "HONAKER_WRIGHT_STAGE3",
-    missionObjectContractStatus = "STAGE3_FIXTURE",
-    alarmZoneName = "BLUE_GROUND_COP_HONAKER",
-    tacticalZoneName = nil,
-    fireSupportNodeId = "GROUND_NODE_WRIGHT",
+  JALALABAD_FENTY = {
+    siteId = "JALALABAD_FENTY",
+    installationId = "BLUE_GROUND_HUB_JALALABAD_FENTY",
+    campaignNodeId = "GROUND_NODE_JALALABAD",
+    supplyParentNodeId = "OFF_MAP",
+    supportProfileId = "GROUND_INSTALLATION_STANDARD",
+    warehouseName = "WH_BLUE_GND_FENTY",
+    accessZoneName = "ZON_BLUE_GND_FENTY_ACCESS",
+    alarmZoneName = nil,
+    alarmZoneContractStatus = "REQUIRES_MISSION_EDITOR_RECONCILIATION",
+    guardRoute = guardRouteContract(),
+    localSupport = localSupport("NOT_ESTABLISHED_BY_CURRENT_BASELINE"),
+  },
+
+  COP_FORTRESS = {
+    siteId = "COP_FORTRESS",
+    installationId = "BLUE_GROUND_COP_FORTRESS",
+    campaignNodeId = "GROUND_NODE_FORTRESS",
+    supplyParentNodeId = "GROUND_NODE_JALALABAD",
+    supportProfileId = "GROUND_INSTALLATION_STANDARD",
+    warehouseName = "WH_BLUE_GND_FORTRESS",
+    accessZoneName = "ZON_BLUE_GND_FORTRESS_ACCESS",
+    alarmZoneName = nil,
+    alarmZoneContractStatus = "REQUIRES_MISSION_EDITOR_RECONCILIATION",
+    guardRoute = guardRouteContract(),
+    localSupport = localSupport("CONFIGURED_IN_GROUND_BASELINE"),
   },
 
   FOB_JOYCE = {
@@ -23,11 +52,56 @@ SiteRegistry.Sites = {
     installationId = "BLUE_GROUND_FOB_JOYCE",
     campaignNodeId = "GROUND_NODE_JOYCE",
     supplyParentNodeId = "GROUND_NODE_JALALABAD",
-    supportProfileId = "JOYCE_STANDARD",
-    missionObjectContractStatus = "PLANNED_SECOND_SITE",
-    alarmZoneName = "BLUE_GROUND_FOB_JOYCE",
-    tacticalZoneName = "OMW_FOB_JOYCE_C2",
-    fireSupportNodeId = nil,
+    supportProfileId = "GROUND_INSTALLATION_STANDARD",
+    warehouseName = "WH_BLUE_GND_JOYCE",
+    accessZoneName = "ZON_BLUE_GND_JOYCE_ACCESS",
+    alarmZoneName = nil,
+    alarmZoneContractStatus = "REQUIRES_MISSION_EDITOR_RECONCILIATION",
+    guardRoute = guardRouteContract(),
+    localSupport = localSupport("NOT_ESTABLISHED_BY_CURRENT_BASELINE"),
+  },
+
+  FOB_WRIGHT = {
+    siteId = "FOB_WRIGHT",
+    installationId = "BLUE_GROUND_FOB_WRIGHT",
+    campaignNodeId = "GROUND_NODE_WRIGHT",
+    supplyParentNodeId = "GROUND_NODE_JALALABAD",
+    supportProfileId = "GROUND_INSTALLATION_STANDARD",
+    warehouseName = "WH_BLUE_GND_WRIGHT",
+    accessZoneName = "ZON_BLUE_GND_WRIGHT_ACCESS",
+    alarmZoneName = nil,
+    alarmZoneContractStatus = "REQUIRES_MISSION_EDITOR_RECONCILIATION",
+    guardRoute = guardRouteContract(),
+    localSupport = localSupport("UNRESOLVED_CURRENT_ASSIGNMENT"),
+  },
+
+  COP_HONAKER = {
+    siteId = "COP_HONAKER",
+    installationId = "BLUE_GROUND_COP_HONAKER_MIRACLE",
+    campaignNodeId = "GROUND_NODE_HONAKER",
+    supplyParentNodeId = "GROUND_NODE_JOYCE",
+    supportProfileId = "GROUND_INSTALLATION_STANDARD",
+    warehouseName = "WH_BLUE_GND_HONAKER",
+    accessZoneName = "ZON_BLUE_GND_HONAKER_ACCESS",
+    alarmZoneName = nil,
+    alarmZoneContractStatus = "REQUIRES_MISSION_EDITOR_RECONCILIATION",
+    guardRoute = guardRouteContract(),
+    localSupport = localSupport("CONFIGURED_IN_GROUND_BASELINE"),
+    historicalStage3ProviderNodeId = "GROUND_NODE_WRIGHT",
+  },
+
+  FOB_BOSTICK = {
+    siteId = "FOB_BOSTICK",
+    installationId = "BLUE_GROUND_FOB_BOSTICK",
+    campaignNodeId = "GROUND_NODE_BOSTICK",
+    supplyParentNodeId = "GROUND_NODE_JALALABAD",
+    supportProfileId = "GROUND_INSTALLATION_STANDARD",
+    warehouseName = "WH_BLUE_GND_BOSTICK",
+    accessZoneName = "ZON_BLUE_GND_BOSTICK_ACCESS",
+    alarmZoneName = nil,
+    alarmZoneContractStatus = "REQUIRES_MISSION_EDITOR_RECONCILIATION",
+    guardRoute = guardRouteContract(),
+    localSupport = localSupport("CONFIGURED_IN_GROUND_BASELINE"),
   },
 }
 
