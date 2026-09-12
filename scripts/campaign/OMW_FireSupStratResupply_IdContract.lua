@@ -3,7 +3,7 @@
 
 local IdContract = {}
 
-IdContract.SchemaVersion = "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-ID-CONTRACT-2"
+IdContract.SchemaVersion = "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-ID-CONTRACT-3"
 
 local function requireToken(value, label)
   if type(value) ~= "string" or value == "" then
@@ -22,6 +22,14 @@ end
 
 function IdContract.Demand(incidentId, supportType, requestKey)
   local id = "DEMAND:" .. requireToken(incidentId, "incidentId") .. ":" .. requireToken(supportType, "supportType")
+  if requestKey ~= nil then
+    id = id .. ":" .. requireToken(requestKey, "requestKey")
+  end
+  return id
+end
+
+function IdContract.SiteDemand(siteId, supportType, requestKey)
+  local id = "DEMAND:" .. IdContract.Site(siteId) .. ":" .. requireToken(supportType, "supportType")
   if requestKey ~= nil then
     id = id .. ":" .. requireToken(requestKey, "requestKey")
   end
