@@ -104,6 +104,56 @@ The local worktree after this verification still contained only the same expecte
 
 No tracked local modification was reported.
 
+## Provenance-record update readback verified by owner
+
+The next documentation-only provenance update was also pulled and verified locally from real PowerShell output.
+
+```text
+Fast-forward:
+c948382869d71c8c7a52e990902c0a2634ad02a8
+->
+195e82a97f183d82c1272542f8319b69d2ba729c
+
+Verified HEAD:
+195e82a97f183d82c1272542f8319b69d2ba729c
+
+Expected HEAD:
+195e82a97f183d82c1272542f8319b69d2ba729c
+
+origin/main:
+980340c9225a81921aed8995aa8f50cad7d1c215
+
+MAIN_IS_ANCESTOR:
+YES
+```
+
+The exact delta was again documentation/provenance-only:
+
+```text
+M results/2026-09-12-fire-support-gate5-documentation-readback-provenance.md
+```
+
+The owner measured the resulting local hashes:
+
+```text
+results/2026-09-12-fire-support-gate5-documentation-readback-provenance.md
+SHA256: 78B596AA1287F9CD66342D31933C006ED40ABB60C1F956473E70D7EBD3CEBD8F
+
+docs/moose/FIRE-SUPPORT-STRATEGIC-RESUPPLY-GATE-5-SIX-SITE-ME-CONTRACT.md
+SHA256: 5D8D95600E6DE5C1EDA5CB4FEB3A07FC0F283062DFF259F2CF833E77B6CDA32B
+```
+
+The Gate-5 contract therefore remained byte-identical across this second provenance-only documentation update.
+
+The local worktree still contained only the two expected generated untracked build directories:
+
+```text
+?? mission/tests/fire-support-strategic-resupply-gate4-stage3-regression/dist/
+?? mission/tests/stage3-honaker-wright-full-response/dist/
+```
+
+No tracked local modification was reported.
+
 ## Acceptance boundary
 
 This evidence confirms only:
