@@ -53,7 +53,19 @@ function modules.perimeterRuntime.New(spec)
   function p:StopAll() calls.perimetersStopped=true;return self,true,nil end
   return p
 end
+modules.resupplyMonitor={}
+function modules.resupplyMonitor.New(spec)
+  calls.resupplySpec=spec
+  local monitor={}
+  function monitor:EvaluateAll() calls.resupplyEvaluated=true;return {{reason="NO_SHORTAGE"}} end
+  function monitor:ReleaseDemand(demandId,reason) calls.resupplyRelease={demandId=demandId,reason=reason};return marker,true,nil end
+  return monitor
+end
 
+local resourcePolicy={Evaluate=function() end}
+local campaignStore={GetResource=function() end}
+local resourceRows={{nodeId="GROUND_NODE_JOYCE",resourceId="GROUND_PERSONNEL"}}
+local selectSupportType=function() return "GROUND_RESUPPLY" end
 local arty={marker="ARTY"}
 local runtime=Runtime.New({
   modules=modules,
@@ -68,6 +80,7 @@ local runtime=Runtime.New({
   perimeters={FOB_JOYCE={anchorCoordinate={},radiusM=1000,priority=10}},
   blueCoalition=2,
   redCoalition=1,
+  resupply={policy=resourcePolicy,store=campaignStore,rows=resourceRows,selectSupportType=selectSupportType},
 })
 
 local before,beforeCreated,beforeReason=runtime:StartSite("FOB_JOYCE",{})
@@ -88,6 +101,11 @@ eq(runtime:GetBase(),calls.perimeterBridgeSpec.base,"perimeter bridge uses same 
 eq(calls.perimeterSpec.perimeters.FOB_JOYCE.radiusM,1000,"perimeter config forwarded")
 eq(calls.perimeterSpec.blueCoalition,2,"blue coalition forwarded")
 eq(calls.perimeterSpec.redCoalition,1,"red coalition forwarded")
+eq(calls.resupplySpec.base,runtime:GetBase(),"resupply monitor uses same Base")
+eq(calls.resupplySpec.policy,resourcePolicy,"resource policy forwarded")
+eq(calls.resupplySpec.store,campaignStore,"CampaignState store forwarded")
+eq(calls.resupplySpec.rows,resourceRows,"resource rows forwarded")
+eq(calls.resupplySpec.selectSupportType,selectSupportType,"resupply transport selector forwarded")
 
 local _,preparedAgain,againReason=runtime:Prepare()
 no(preparedAgain,"second prepare idempotent")
@@ -101,6 +119,16 @@ local _,perimetersStarted=runtime:StartPerimeters();yes(perimetersStarted,"perim
 yes(calls.perimetersStarted,"perimeter StartAll called")
 local _,perimetersStopped=runtime:StopPerimeters();yes(perimetersStopped,"perimeters stopped")
 yes(calls.perimetersStopped,"perimeter StopAll called")
+local resupplyResults,resupplyEvaluated,resupplyReason=runtime:EvaluateResupply()
+yes(resupplyEvaluated,"resupply evaluation available")
+eq(resupplyReason,nil,"resupply evaluation reason")
+eq(resupplyResults[1].reason,"NO_SHORTAGE","resupply monitor result forwarded")
+yes(calls.resupplyEvaluated,"resupply monitor EvaluateAll called")
+local released,releasedChanged=runtime:ReleaseResupplyDemand("D1","TRANSPORT_LOST")
+eq(released,marker,"resupply release result forwarded")
+yes(releasedChanged,"resupply release changed")
+eq(calls.resupplyRelease.demandId,"D1","release demand id")
+eq(calls.resupplyRelease.reason,"TRANSPORT_LOST","release reason")
 
 local noPerimeter=Runtime.New({
   modules=modules,
@@ -117,5 +145,9 @@ local p,pCreated,pReason=noPerimeter:StartPerimeters()
 eq(p,nil,"no perimeter runtime nil")
 no(pCreated,"no perimeter false")
 eq(pReason,"PERIMETERS_NOT_CONFIGURED","no perimeter explicit reason")
+local r,rCreated,rReason=noPerimeter:EvaluateResupply()
+eq(r,nil,"no resupply monitor nil")
+no(rCreated,"no resupply monitor false")
+eq(rReason,"RESUPPLY_MONITOR_NOT_CONFIGURED","no resupply monitor explicit reason")
 
 print("PASS test_fire_support_strategic_resupply_runtime")
