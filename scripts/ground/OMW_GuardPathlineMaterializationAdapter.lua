@@ -1,5 +1,7 @@
 -- Operation Mountain Watch - Guard PATHLINE materialization adapter.
 -- This module prepares compact PATHLINE-aligned unit geometry for Guard assets.
+-- It preserves the MOOSE BRIGADE/WAREHOUSE lifecycle and only adapts the exact
+-- unit positions/headings immediately before the configured Guard asset spawns.
 local Adapter = {}
 local Instance = {}
 Instance.__index = Instance
@@ -119,6 +121,64 @@ end
 function Instance:GetSpawnGeometry()
   if not self.positions then fail("Prepare() must be called before GetSpawnGeometry()") end
   return self.positions, self.spacingM, self.headingDeg
+end
+
+function Instance:Install(brigade)
+  needTable(brigade, "brigade")
+  if not self.positions then fail("Prepare() must be called before Install()") end
+  if self.installedBrigade then
+    if self.installedBrigade == brigade then return self, false end
+    fail("Adapter instance is already installed on another BRIGADE")
+  end
+
+  local original = needFunction(brigade, "_SpawnAssetGroundNaval", "BRIGADE/WAREHOUSE")
+  needFunction(brigade, "_SpawnAssetPrepareTemplate", "BRIGADE/WAREHOUSE")
+  if brigade.ValidateAndRepositionGroundUnits == true then
+    fail("WAREHOUSE repositioning conflicts with exact Guard PATHLINE placement")
+  end
+
+  local adapter = self
+  brigade._SpawnAssetGroundNaval = function(self, alias, asset, request, spawnzone, lateactivated)
+    if not asset or asset.templatename ~= adapter.guardTemplateName then
+      return original(self, alias, asset, request, spawnzone, lateactivated)
+    end
+    if type(Group) ~= "table" or type(Group.Category) ~= "table" or asset.category ~= Group.Category.GROUND then
+      return original(self, alias, asset, request, spawnzone, lateactivated)
+    end
+
+    local template = self:_SpawnAssetPrepareTemplate(asset, alias)
+    if type(template) ~= "table" or type(template.units) ~= "table" or #template.units ~= #adapter.positions then
+      fail("Guard WAREHOUSE spawn template mismatch")
+    end
+
+    template.route = template.route or { points = {} }
+    template.route.points = template.route.points or {}
+    template.route.points[1] = template.route.points[1] or {}
+    for index, position in ipairs(adapter.positions) do
+      local unit = template.units[index]
+      unit.x = position.x
+      unit.y = position.y
+      unit.heading = math.rad(position.heading)
+      if asset.livery then unit.livery_id = asset.livery end
+      if asset.skill then unit.skill = asset.skill end
+    end
+
+    local lead = adapter.positions[1]
+    template.route.points[1].x = lead.x
+    template.route.points[1].y = lead.y
+    template.x = lead.x
+    template.y = lead.y
+    template.lateActivation = lateactivated
+
+    adapter:_log(string.format("materializing siteId=%s template=%s units=%d spacingM=%.2f headingDeg=%.1f anchor=PATHLINE_FIRST_SEGMENT", adapter.siteId, adapter.guardTemplateName, #adapter.positions, adapter.spacingM, adapter.headingDeg))
+    if type(_DATABASE) ~= "table" or type(_DATABASE.Spawn) ~= "function" then fail("MOOSE _DATABASE:Spawn() is required") end
+    return _DATABASE:Spawn(template)
+  end
+
+  self.installedBrigade = brigade
+  self.originalSpawn = original
+  self:_log(string.format("installed siteId=%s template=%s", self.siteId, self.guardTemplateName))
+  return self, true
 end
 
 return Adapter
