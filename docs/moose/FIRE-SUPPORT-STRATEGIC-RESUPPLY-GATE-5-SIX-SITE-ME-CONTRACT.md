@@ -310,3 +310,40 @@ NOT YET VALIDATED:
 ```
 
 Damit bleibt Gate 5 `PLANNED` und `validated_in_dcs: false`. Der nächste zulässige Schritt bleibt die Owner-Mission-Editor-Arbeit und anschließend eine read-only Objektvertragsprüfung der aktualisierten Mission.
+
+## 13. Owner-lokale Dokumentations-Readback-Verifikation – 12.09.2026
+
+Der unmittelbar folgende lokale Readback des Dokumentations-Commits wurde ebenfalls durch reale Konsolenausgabe bestätigt. Damit ist nicht nur die Gate-5-Buildprovenienz aus Abschnitt 12 dokumentiert, sondern auch die erfolgreiche lokale Übernahme genau dieses Dokumentationsstands.
+
+```text
+branch: agent/fire-support-strategic-resupply-base-gate0
+remote documentation commit: 2a30be6cbab900d7dc89dbd8bf541e96ba3a5f4a
+locally verified HEAD: 2a30be6cbab900d7dc89dbd8bf541e96ba3a5f4a
+origin/main: 980340c9225a81921aed8995aa8f50cad7d1c215
+main ancestor: YES
+
+change from 9bdd89ae03fddc46ab989dfbc69500ad60e2d51b:
+M docs/moose/FIRE-SUPPORT-STRATEGIC-RESUPPLY-GATE-5-SIX-SITE-ME-CONTRACT.md
+
+locally verified Gate-5 document SHA-256:
+906DEAB57419C513A5D11A269A803EB0DE85E86AAFF35465278512E5460D27A8
+```
+
+Der Worktree enthielt danach weiterhin ausschließlich die beiden erwarteten untracked Build-Verzeichnisse:
+
+```text
+?? mission/tests/fire-support-strategic-resupply-gate4-stage3-regression/dist/
+?? mission/tests/stage3-honaker-wright-full-response/dist/
+```
+
+Für den dokumentierten Remote-Commit `2a30be6cbab900d7dc89dbd8bf541e96ba3a5f4a` wurden außerdem die automatischen Repository-Prüfungen erfolgreich abgeschlossen:
+
+```text
+Documentation validation: PASS
+run: 34698321392
+
+MissionDemand validation: PASS
+run: 34698321396
+```
+
+Auch diese Evidenz erweitert **nicht** den DCS-Acceptance-Scope. Gate 5 bleibt bis zur owner-authored Mission-Editor-Geometrie, read-only MIZ-Vertragsprüfung und anschließendem DCS-Lauf `PLANNED` / `validated_in_dcs: false`.
