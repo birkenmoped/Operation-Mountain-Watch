@@ -12,7 +12,12 @@ superseded_by:
 source_branch: agent/fire-support-strategic-resupply-base-gate0
 source_commit: 33c900bea65b53159f8ebed5690a0a5139af164f
 validated_in_dcs: true
+acceptance_branch: agent/fire-support-strategic-resupply-base-gate0
+acceptance_commit: 33c900bea65b53159f8ebed5690a0a5139af164f
+acceptance_mission: OMW_Template_v24_GroundWorks_base.miz
+acceptance_mission_sha256: 865BCB91FD3EF8F81E71E3ACEF0E0E0A7BF74737117549F7E059815C94929F91
 dcs_version: 2.9.29.27468
+moose_commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
 bundle_sha256: 1DA151FB71A631C13A151E23A0C25DBD788E282E060C480BC07DAE1B98C61E02
 materializer_sha256: 6FA28519564377ADF40175F9F1DFC1607B2ED693DF30AD6DD57AF92ED4B7D4E2
 acceptance_source_sha256: A562A4B9379F91E962C538FBD7B3825701C1C78EE0AD881F7EC7C49EAE175410
@@ -22,89 +27,19 @@ acceptance_source_sha256: A562A4B9379F91E962C538FBD7B3825701C1C78EE0AD881F7EC7C4
 
 ## Ergebnis
 
-Acceptance 3 ist fuer den festgelegten Gate-5-Scope **PASS**.
+Gate 5 Acceptance 3 ist fuer den festgelegten Foundation-Scope PASS. Der Owner-local Builder-5-Lauf wurde auf Commit `33c900bea65b53159f8ebed5690a0a5139af164f` erzeugt; `MIZ mutation: false` wurde bestaetigt.
 
-Der Owner-local Builder-5-Lauf wurde auf Commit
+Der reale DCS-Lauf auf DCS `2.9.29.27468` bestaetigte fuer alle sechs Sites: produktiven Guard-Materializer, PATHLINE-ausgerichtete Materialisierung, alive Guard, gestartete Route, 2.00 m Spawnabstand und mindestens 25 m Bewegung. Die Testtelemetrie endete mit `6/6 Guards production materializer >=25 m movement observed`.
 
-```text
-33c900bea65b53159f8ebed5690a0a5139af164f
-```
+## Ausnahmegrenze
 
-erzeugt. Die real lokal ermittelten Artefakt-Hashes sind im Frontmatter dokumentiert. `MIZ mutation: false` wurde im Build ausgegeben.
+Die Owner-Freigabe bleibt ausschliesslich auf die exakte Guard-Materialisierung am privaten MOOSE-WAREHOUSE-Spawn-Schritt begrenzt. MOOSE BRIGADE/WAREHOUSE sowie PLATOON/ARMYGROUP/AUFTRAG bleiben autoritativ. Keine eigene Asset-Selektion, Queue/Retry-Queue oder Wiederverwendung fuer Convoy/QRF/ARTY/CAS/Resupply ohne neue Owner-Freigabe. `ZON_BLUE_GND_*_ACCESS` ist kein Guard-Vertrag.
 
-Der anschliessende reale DCS-Lauf auf DCS `2.9.29.27468` bestaetigte fuer alle sechs Sites:
+## Patrol-Wiederholung
 
-```text
-- produktives OMW_GuardPathlineMaterializationAdapter.lua verwendet;
-- Guard PATHLINE-ausgerichtet materialisiert;
-- Guard alive;
-- Route gestartet;
-- Spawnabstand 2.00 m;
-- mindestens 25 m Bewegung beobachtet;
-- kein Guard-ACCESS-Zonen-Vertrag eingefuehrt.
-```
+Im Lauf wurde beobachtet, dass Wright weiterpatrouillierte, waehrend andere Sites nach der ersten Runde teilweise pausierten. Der Projektinhaber hat dieses Verhalten am 12.09.2026 fuer den aktuellen Foundation-Scope als PASS akzeptiert. Die bestehende Routing-Implementierung bleibt unveraendert.
 
-Die Testtelemetrie endete mit:
-
-```text
-[GATE 5][PASS] 6/6 Guards production materializer >=25 m movement observed
-```
-
-Am PASS-Checkpoint wurden unter anderem folgende Bewegungen protokolliert:
-
-```text
-JALALABAD_FENTY   206.8 m
-COP_FORTRESS      203.9 m
-FOB_JOYCE         215.5 m
-FOB_WRIGHT        259.5 m
-COP_HONAKER       185.1 m
-FOB_BOSTICK        36.8 m
-```
-
-## Produktive Ausnahmegrenze
-
-Die Owner-Freigabe bleibt eng begrenzt auf die exakte Guard-Materialisierung ueber den privaten MOOSE-WAREHOUSE-Spawn-Schritt:
-
-```text
-Guard asset
--> normaler MOOSE BRIGADE / WAREHOUSE Lifecycle
--> direkt vor Ground-Asset-Materialisierung exakte Unit-Positionen/Headings
-   auf erstem Guard-PATHLINE-Segment setzen
--> normaler MOOSE PLATOON / ARMYGROUP / AUFTRAG Lifecycle
-```
-
-Nicht freigegeben sind insbesondere eigene Asset-Selektion, eigene Queue/Retry-Queue, Ersatz des MOOSE-Recruitments oder die Wiederverwendung dieser privaten Materialisierungsstelle fuer Convoy/QRF/ARTY/CAS/Resupply ohne neue Owner-Freigabe.
-
-`ZON_BLUE_GND_*_ACCESS` bleibt ausschliesslich Convoy-/Zufahrtskontext und ist kein Guard-Spawn-, Guard-Routen- oder Guard-Acceptance-Vertrag.
-
-## Owner-Entscheidung zur Patrol-Wiederholung
-
-Im realen DCS-Lauf wurde zusaetzlich beobachtet:
-
-```text
-FOB_WRIGHT:
-  Guard schien die Patrouille wiederholt weiterzufahren.
-
-Andere Sites:
-  nach der ersten Runde bzw. am Routenende teilweise sichtbare Pause.
-```
-
-Der Projektinhaber hat am 12.09.2026 ausdruecklich entschieden, dieses Verhalten fuer den aktuellen Gate-5-/Foundation-Scope als **PASS** zu akzeptieren, damit die allgemeine `fire-support-strategic-resupply` Base weiter fertiggestellt werden kann.
-
-Die bestehende Routing-Implementierung bleibt deshalb unveraendert. Der zwischenzeitlich vorbereitete separate PATHLINE-Patrol-Adapter wird nicht Bestandteil dieser Baseline.
-
-## Spaeteres TODO - MOOSE-native Patrol-Verfeinerung
-
-Nach Fertigstellung der grundlegenden `fire-support-strategic-resupply` Base ist gesondert zu pruefen, ob die Guard-Patrouille auf einen noch staerker MOOSE-nativen Wiederholungsweg umgestellt werden soll, insbesondere:
-
-```text
-- CONTROLLABLE:PatrolRoute() / Template-Waypoint-Vertrag;
-- erforderliche Abbildung der owner-authored Guard-PATHLINE auf den von MOOSE erwarteten Template-Route-Vertrag;
-- Verhalten an geschlossenen Mission-Editor-Line-Drawings;
-- DCS-Ground-AI-Verhalten nach mehreren Patrol-Zyklen.
-```
-
-Dieses TODO ist **kein Gate-5-Blocker** und darf nicht stillschweigend in die aktuelle Base-Foundation zurueckgezogen werden. Eine spaetere Aenderung benoetigt erneut Source-Pruefung des gepinnten MOOSE-Stands und DCS-Regression.
+Spaeteres TODO nach Fertigstellung der allgemeinen Base: `CONTROLLABLE:PatrolRoute()` und Template-Waypoint-Vertrag sowie die Abbildung der owner-authored Guard-PATHLINE auf den MOOSE-Template-Route-Vertrag pruefen und ueber mehrere Patrol-Zyklen in DCS regressionspruefen.
 
 ## Statusgrenze
 
