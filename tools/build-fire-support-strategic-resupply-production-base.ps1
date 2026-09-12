@@ -57,13 +57,27 @@ $forbiddenPatterns = @(
   'MissionScripting\.lua',
   'mist\.',
   'MIST',
-  'os\.execute',
-  'ZON_BLUE_GND_[A-Z_]+_ACCESS'
+  'os\.execute'
 )
 foreach ($pattern in $forbiddenPatterns) {
   if ($combined -match $pattern) {
     throw "Fire Support / Strategic Resupply production sources contain forbidden pattern: $pattern"
   }
+}
+
+# ACCESS names legitimately remain in SiteRegistry for convoy/resupply consumers.
+# They are forbidden only in the Guard and perimeter implementation paths.
+$guardAndPerimeterSource = @(
+  $sources.GuardMissionFactory,
+  $sources.GuardRuntime,
+  $sources.GuardMaterializationAdapter,
+  $sources.GuardRouteAdapter,
+  $sources.PerimeterBridge,
+  $sources.PerimeterRuntime,
+  $sources.ThreatAdapter
+) -join "`n"
+if ($guardAndPerimeterSource -match 'ZON_BLUE_GND_[A-Z_]+_ACCESS') {
+  throw 'Guard/perimeter production sources must not depend on convoy ACCESS zones.'
 }
 
 New-Item -ItemType Directory -Path $distDir -Force | Out-Null
