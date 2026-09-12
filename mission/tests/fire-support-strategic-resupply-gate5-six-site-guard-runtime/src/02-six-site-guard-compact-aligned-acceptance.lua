@@ -1,0 +1,1 @@
+-- Gate 5 compact/aligned Guard acceptance source staged for implementation.
