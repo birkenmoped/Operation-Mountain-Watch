@@ -6,7 +6,7 @@ owning_policy: OMW-GOV-001
 authoritative_for:
   - source-reviewed local LEGION/BRIGADE mission handoff for Fire Support / Strategic Resupply
   - no-preselection boundary for installation-local Guard and QRF support
-  - source-reviewed public MOOSE QRF mission factory boundary
+  - source-reviewed public MOOSE QRF mission factory and six-site QRF runtime boundary
 not_authoritative_for:
   - DCS runtime validation
   - concrete six-site QRF composition, route or response anchor
@@ -89,9 +89,25 @@ SetPriority(demand.priority, false), falls eine numerische Prioritaet vorliegt
 
 Damit bleibt sichtbares Teleportieren ausgeschlossen und MOOSE waehlt innerhalb der lokalen LEGION das konkrete geeignete Asset. Die Factory trifft keine Aussage ueber eine spaetere optionale Fahrzeugbeistellung; das verbindliche Phase-1-QRF-Modell erlaubt Infantry plus optional separate Vehicle GROUP, verlangt dafuer aber reale lokale Verfuegbarkeit. Diese Erweiterung wird nicht stillschweigend in einen einzelnen Auftrag hineinmodelliert.
 
+## Six-Site QRF Runtime
+
+`scripts/campaign/OMW_FireSupStratResupply_QrfRuntime.lua` setzt Factory und LEGION-Bridge zu einem Base-kompatiblen `Dispatch(demand, context)`-Adapter zusammen. Fuer jede Site wird die injizierte lokale BRIGADE als organisatorische Grenze verwendet; eine konkrete COHORT-/Assetwahl findet im OMW-Code nicht statt.
+
+Die Response-Koordinate bleibt weiterhin injiziert. Fehlt sie fuer eine Site, liefert der Runtime einen expliziten Nicht-Dispatch-Grund zurueck; er faellt **nicht** auf Installationszentrum, ACCESS-Zone oder Guard-PATHLINE zurueck.
+
+Damit kann der generische Base-Pfad bereits korrekt unterscheiden:
+
+```text
+perimeter incident
+-> Base QRF demand
+-> local QRF runtime
+-> response coordinate configured: MOOSE mission queued
+-> response coordinate missing: demand remains not dispatched with explicit reason
+```
+
 ## Noch nicht festgelegt
 
-Die Bridge/Factory legen absichtlich nicht fest:
+Die Bridge/Factory/Runtime legen absichtlich nicht fest:
 
 ```text
 - welche Response-Coordinate / owner-authored Route je Site verwendet wird;
@@ -107,6 +123,7 @@ Die Ground-Domain-Baseline dokumentiert zwar die operativen Zuordnungen `BDE_BLU
 ```text
 tests/mission-demand/test_fire_support_strategic_resupply_legion_bridge.lua
 tests/mission-demand/test_fire_support_strategic_resupply_qrf_mission_factory.lua
+tests/mission-demand/test_fire_support_strategic_resupply_qrf_runtime.lua
 ```
 
 Geprueft werden insbesondere:
@@ -121,6 +138,7 @@ Geprueft werden insbesondere:
 - `SetTeleport(false)`;
 - ein erforderliches Asset als Default;
 - Prioritaetsweitergabe ohne automatische Urgency;
-- kein Auftrag, wenn die Response-Koordinate nicht konfiguriert ist.
+- kein Auftrag, wenn die Response-Koordinate nicht konfiguriert ist;
+- Six-Site-Registry-Grenze und lokaler BRIGADE-Handoff.
 
 Das ist CI-/Contract-Evidenz und kein DCS-Runtime-PASS.
