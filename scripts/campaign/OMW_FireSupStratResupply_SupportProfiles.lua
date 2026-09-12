@@ -3,7 +3,7 @@
 
 local SupportProfiles = {}
 
-SupportProfiles.SchemaVersion = "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-SUPPORT-PROFILES-2"
+SupportProfiles.SchemaVersion = "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-SUPPORT-PROFILES-3"
 
 SupportProfiles.SupportType = {
   GUARD = "GUARD",
@@ -28,7 +28,37 @@ SupportProfiles.ResourceId = {
   FUEL = "GROUND_FUEL_PACKAGE",
 }
 
+local STANDARD_RESUPPLY_RESOURCES = {
+  "GROUND_PERSONNEL",
+  "GROUND_SUPPLY_PACKAGE",
+  "GROUND_AMMO_PACKAGE",
+  "GROUND_FUEL_PACKAGE",
+}
+
 SupportProfiles.Profiles = {
+  GROUND_INSTALLATION_STANDARD = {
+    profileId = "GROUND_INSTALLATION_STANDARD",
+    contractStatus = "GROUND_FOUNDATION_RECONCILED",
+    support = {
+      guards = { enabled = true, activation = "SITE_PERSISTENT" },
+      qrf = { enabled = true, activation = "INCIDENT_LOCAL_DEFENSE" },
+      artillery = { enabled = true, activation = "C2_ESCALATION_EXTERNAL" },
+      cas = { enabled = true, activation = "C2_ESCALATION_EXTERNAL" },
+      resupply = {
+        enabled = true,
+        activation = "RESOURCE_THRESHOLD",
+        ground = true,
+        air = true,
+        resourceIds = STANDARD_RESUPPLY_RESOURCES,
+      },
+    },
+    routes = {
+      groundProfile = nil,
+      helicopterProfile = nil,
+      fixedWingProfile = nil,
+    },
+  },
+
   HONAKER_WRIGHT_STAGE3 = {
     profileId = "HONAKER_WRIGHT_STAGE3",
     contractStatus = "HISTORICAL_STAGE3_FIXTURE",
@@ -42,12 +72,7 @@ SupportProfiles.Profiles = {
         activation = "RESOURCE_THRESHOLD",
         ground = true,
         air = true,
-        resourceIds = {
-          "GROUND_PERSONNEL",
-          "GROUND_SUPPLY_PACKAGE",
-          "GROUND_AMMO_PACKAGE",
-          "GROUND_FUEL_PACKAGE",
-        },
+        resourceIds = STANDARD_RESUPPLY_RESOURCES,
       },
     },
     routes = {
@@ -70,12 +95,7 @@ SupportProfiles.Profiles = {
         activation = "RESOURCE_THRESHOLD",
         ground = true,
         air = true,
-        resourceIds = {
-          "GROUND_PERSONNEL",
-          "GROUND_SUPPLY_PACKAGE",
-          "GROUND_AMMO_PACKAGE",
-          "GROUND_FUEL_PACKAGE",
-        },
+        resourceIds = STANDARD_RESUPPLY_RESOURCES,
       },
     },
     routes = {
