@@ -27,5 +27,6 @@ dofile("tests/mission-demand/test_fire_support_strategic_resupply_guard_mission_
 dofile("tests/mission-demand/test_fire_support_strategic_resupply_guard_runtime.lua")
 dofile("tests/mission-demand/test_fire_support_strategic_resupply_qrf_runtime.lua")
 dofile("tests/mission-demand/test_fire_support_strategic_resupply_runtime.lua")
+dofile("tests/mission-demand/test_fire_support_strategic_resupply_resupply_monitor.lua")
 
 print("PASS mission-demand test suite")
