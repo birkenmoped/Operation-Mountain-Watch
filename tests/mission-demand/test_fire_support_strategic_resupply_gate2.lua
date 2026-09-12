@@ -40,14 +40,39 @@ assertEqual(Profiles.ResourceId.PERSONNEL, InitialStock.ResourceId.PERSONNEL, "P
 assertEqual(Profiles.ResourceId.SUPPLY, InitialStock.ResourceId.SUPPLY, "SUPPLY resource ID")
 assertEqual(Profiles.ResourceId.AMMO, InitialStock.ResourceId.AMMO, "AMMO resource ID")
 assertEqual(Profiles.ResourceId.FUEL, InitialStock.ResourceId.FUEL, "FUEL resource ID")
+assertEqual(Sites.GuardTemplateName, "TPL_BLUE_GND_INF_RIFLE_SQUAD_9", "shared Guard physical template")
 
 local expectedSites = {
-  JALALABAD_FENTY = { "BLUE_GROUND_HUB_JALALABAD_FENTY", "GROUND_NODE_JALALABAD", "OFF_MAP", "WH_BLUE_GND_FENTY", "ZON_BLUE_GND_FENTY_ACCESS" },
-  COP_FORTRESS = { "BLUE_GROUND_COP_FORTRESS", "GROUND_NODE_FORTRESS", "GROUND_NODE_JALALABAD", "WH_BLUE_GND_FORTRESS", "ZON_BLUE_GND_FORTRESS_ACCESS" },
-  FOB_JOYCE = { "BLUE_GROUND_FOB_JOYCE", "GROUND_NODE_JOYCE", "GROUND_NODE_JALALABAD", "WH_BLUE_GND_JOYCE", "ZON_BLUE_GND_JOYCE_ACCESS" },
-  FOB_WRIGHT = { "BLUE_GROUND_FOB_WRIGHT", "GROUND_NODE_WRIGHT", "GROUND_NODE_JALALABAD", "WH_BLUE_GND_WRIGHT", "ZON_BLUE_GND_WRIGHT_ACCESS" },
-  COP_HONAKER = { "BLUE_GROUND_COP_HONAKER_MIRACLE", "GROUND_NODE_HONAKER", "GROUND_NODE_JOYCE", "WH_BLUE_GND_HONAKER", "ZON_BLUE_GND_HONAKER_ACCESS" },
-  FOB_BOSTICK = { "BLUE_GROUND_FOB_BOSTICK", "GROUND_NODE_BOSTICK", "GROUND_NODE_JALALABAD", "WH_BLUE_GND_BOSTICK", "ZON_BLUE_GND_BOSTICK_ACCESS" },
+  JALALABAD_FENTY = {
+    "BLUE_GROUND_HUB_JALALABAD_FENTY", "GROUND_NODE_JALALABAD", "OFF_MAP",
+    "WH_BLUE_GND_FENTY", "ZON_BLUE_GND_FENTY_ACCESS",
+    "OMW_RTE_BLUE_GUARD_FENTY_01", "ZON_BLUE_GND_FENTY_ALARM",
+  },
+  COP_FORTRESS = {
+    "BLUE_GROUND_COP_FORTRESS", "GROUND_NODE_FORTRESS", "GROUND_NODE_JALALABAD",
+    "WH_BLUE_GND_FORTRESS", "ZON_BLUE_GND_FORTRESS_ACCESS",
+    "OMW_RTE_BLUE_GUARD_FORTRESS_01", "ZON_BLUE_GND_FORTRESS_ALARM",
+  },
+  FOB_JOYCE = {
+    "BLUE_GROUND_FOB_JOYCE", "GROUND_NODE_JOYCE", "GROUND_NODE_JALALABAD",
+    "WH_BLUE_GND_JOYCE", "ZON_BLUE_GND_JOYCE_ACCESS",
+    "OMW_RTE_BLUE_GUARD_JOYCE_01", "ZON_BLUE_GND_JOYCE_ALARM",
+  },
+  FOB_WRIGHT = {
+    "BLUE_GROUND_FOB_WRIGHT", "GROUND_NODE_WRIGHT", "GROUND_NODE_JALALABAD",
+    "WH_BLUE_GND_WRIGHT", "ZON_BLUE_GND_WRIGHT_ACCESS",
+    "OMW_RTE_BLUE_GUARD_WRIGHT_01", "ZON_BLUE_GND_WRIGHT_ALARM",
+  },
+  COP_HONAKER = {
+    "BLUE_GROUND_COP_HONAKER_MIRACLE", "GROUND_NODE_HONAKER", "GROUND_NODE_JOYCE",
+    "WH_BLUE_GND_HONAKER", "ZON_BLUE_GND_HONAKER_ACCESS",
+    "OMW_RTE_BLUE_GUARD_HONAKER_01", "ZON_BLUE_GND_HONAKER_ALARM",
+  },
+  FOB_BOSTICK = {
+    "BLUE_GROUND_FOB_BOSTICK", "GROUND_NODE_BOSTICK", "GROUND_NODE_JALALABAD",
+    "WH_BLUE_GND_BOSTICK", "ZON_BLUE_GND_BOSTICK_ACCESS",
+    "OMW_RTE_BLUE_GUARD_BOSTICK_01", "ZON_BLUE_GND_BOSTICK_ALARM",
+  },
 }
 
 local siteCount = 0
@@ -59,11 +84,12 @@ for key, expected in pairs(expectedSites) do
   assertEqual(site.supplyParentNodeId, expected[3], key .. " supply parent")
   assertEqual(site.warehouseName, expected[4], key .. " warehouse")
   assertEqual(site.accessZoneName, expected[5], key .. " access zone")
+  assertEqual(site.guardRoute.pathlineName, expected[6], key .. " Guard PATHLINE")
+  assertEqual(site.alarmZone.zoneName, expected[7], key .. " alarm zone")
+  assertEqual(site.guardTemplateName, Sites.GuardTemplateName, key .. " Guard template")
   assertEqual(site.supportProfileId, "GROUND_INSTALLATION_STANDARD", key .. " profile")
-  assertEqual(site.guardRoute.routeName, nil, key .. " unresolved Guard route")
   assertEqual(site.guardRoute.status, "OWNER_AUTHORED_ME_ROUTE_REQUIRED_DCS_VALIDATION", key .. " Guard route status")
-  assertEqual(site.alarmZoneName, nil, key .. " unresolved alarm zone")
-  assertEqual(site.alarmZoneContractStatus, "REQUIRES_MISSION_EDITOR_RECONCILIATION", key .. " alarm-zone status")
+  assertEqual(site.alarmZone.status, "OWNER_AUTHORED_ME_ZONE_REQUIRED_DCS_VALIDATION", key .. " alarm-zone status")
   siteCount = siteCount + 1
 end
 assertEqual(siteCount, 6, "Ground Foundation site count")
