@@ -34,6 +34,37 @@ embedded Stage-3 bundle SHA-256: 33CEB7AA6BC7FA833CCF456C41B689245B0CB70BD587AF5
 
 Die MIZ wird nicht automatisch verändert.
 
+## Verbindlich präzisierter Support-Lifecycle
+
+Der Projektinhaber hat den bereits angelegten Standortbetrieb für die generische Base wie folgt präzisiert:
+
+```text
+Standort aktiv
+-> Guard als dauerhafte Nahbereichssicherung / Patrouille
+
+Installation wird angegriffen
+-> QRF als lokale Selbstverteidigung
+-> lokale Mortars / lokale ARTY nur, wenn für den konkreten Standort nachgewiesen und konfiguriert
+
+qualifizierter Alarm-/Perimeterzustand
+-> C2-Anforderung für externe ARTY und/oder CAS
+
+Warehouse-/Store-Bestand unterschreitet konfigurierte Schwelle
+-> Resupply-Anforderung unabhängig von einem Angriffsincident
+```
+
+Die bestehende projektweite Ground-Alarm-Regel bleibt unverändert: Die standortbezogene MOOSE-`OPSZONE`-/Radiuszone ist Threat-Detection- und Response-Trigger, keine Engagement Area und keine Missionsendebedingung.
+
+`enabled=true` bleibt ausschließlich Capability-Freigabe. Die Aktivierungssemantik ist separat:
+
+- `GUARD`: `SITE_PERSISTENT`;
+- `QRF`: `INCIDENT_LOCAL_DEFENSE`;
+- vorhandener generischer `ARTY`-Pfad: `C2_ESCALATION_EXTERNAL`;
+- `CAS`: `C2_ESCALATION_EXTERNAL`;
+- `GROUND_RESUPPLY` / `AIR_RESUPPLY`: `RESOURCE_THRESHOLD`.
+
+Lokale Mortars oder lokale ARTY werden nicht aus dem historischen Wright-Fire-Support-Fixture verallgemeinert. Eine solche Fähigkeit wird erst dann als eigene lokale Standortfähigkeit konfiguriert, wenn die jeweilige Site-/ORBAT-Baseline sie tatsächlich belegt.
+
 ## Regressionsgrenze
 
 Der reale Stage-3-Stand zeigt folgenden fachlichen Ablauf:
@@ -42,33 +73,48 @@ Der reale Stage-3-Stand zeigt folgenden fachlichen Ablauf:
 lokale Honaker-Verteidigung bereits aktiv
 -> MOOSE Alarm-/OPSZONE-Evidenz
 -> Attack Incident
--> QRF und CAS nach konkretem Bedarf
--> ARTY erst nach vorhandener C2-Ziellage
+-> QRF nach lokalem Incident-Bedarf
+-> externe ARTY und CAS nach qualifiziertem Fire-Support-/C2-Bedarf
 -> lokale Wright-Rearm-Kette bei physischem Bedarf
 -> strategischer Resupply erst nach konkretem Ressourcenbedarf
 -> bestätigte MOOSE-Lifecycle-Ereignisse
 -> idempotente strategische Buchung
 ```
 
-`enabled=true` im SupportProfile ist daher nur eine Capability-Freigabe. Es ist kein Auftrag, beim Öffnen eines Incidents alle Supportarten sofort zu dispatchen.
+Der historische Stage-3-Test bleibt für seine konkreten Honaker-/Wright-/Jalalabad-Fixtures unverändert. Die neue Base darf diese konkrete Testverdrahtung nicht stillschweigend als Produktionsarchitektur übernehmen.
 
-## Korrektur vor DCS-Gate 4
+## Base-Vertrag vor DCS-Gate 4
 
-Der erste Gate-3-Smoke-Entwurf hatte alle aktivierten Supporttypen beim `OpenIncident()` automatisch erzeugt. Der Vergleich mit dem realen Stage-3-Stand widerlegt dieses Verhalten. Die Base wird deshalb vor dem Gate-4-Runtime-Test auf folgenden Vertrag korrigiert:
+Die generische Base trennt drei unabhängige Lifecycle-Domänen:
 
-- `OpenIncident()` erzeugt ausschließlich den Incident-Kontext.
-- `RequestSupport()` erzeugt genau einen fachlich angeforderten Supportbedarf.
-- Wiederholte Zyklen dürfen einen stabilen `requestKey` verwenden.
-- Resupply wird ressourcenspezifisch angefordert und nicht pauschal beim Angriff gestartet.
-- MOOSE bleibt für operative Rekrutierung, Queue und Ausführung zuständig.
+1. `StartSite(siteId)` startet die persistente Site-Security und den Guard-Vertrag. Ein Incident-Ende darf diesen Guard nicht abbrechen.
+2. `OpenIncident(...)` erzeugt ausschließlich Incident-Kontext. `RequestIncidentSupport(...)` ist auf QRF, externe ARTY und CAS begrenzt.
+3. `RequestResupply(...)` ist standort- und ressourcenbezogen, unabhängig von Incidents und erwartet bereits einen fachlich qualifizierten Threshold-/Reorder-Bedarf. Die Base berechnet keine Warehouse-/Store-Schwelle selbst; dafür bleibt die vorhandene `OMW_ResourceDemandPolicy.lua` zuständig.
+
+Wiederholte Incident-Support-Zyklen und Resupply-Zyklen verwenden stabile `requestKey`s. MOOSE bleibt für operative Rekrutierung, Queue, Ausführung und physische Lifecycle-Ereignisse zuständig.
+
+## Gate-4-Build
+
+Der Gate-4-Builder erzeugt weiterhin zuerst den unveränderten historischen Stage-3-Build-1-26 und hängt davor ausschließlich den neuen Base-Vertrags-Preflight. Er mutiert keine `.miz`.
+
+Der Preflight muss vor dem historischen Fixture mindestens nachweisen:
+
+- persistenter Guard wird site-scoped erzeugt;
+- `OpenIncident()` erzeugt keinen automatischen Support;
+- QRF/ARTY/CAS werden nur explizit incident-scoped angefordert;
+- Guard und Resupply werden als Incident-Support abgewiesen;
+- Resupply wird site-scoped und ressourcenspezifisch erzeugt;
+- Incident-Ende hat keine Autorität über persistenten Guard oder separat gültigen Resupply.
 
 ## Späterer DCS-Minimalnachweis
 
 Gate 4 bleibt `PLANNED`, bis eine vom Projektinhaber manuell aktualisierte Kopie der v22-MIZ mindestens erneut belegt:
 
-1. Alarm und fachliche Trigger erzeugen die Supportbedarfe zum vorgesehenen Zeitpunkt.
-2. Guard/QRF bleiben lifecycle-seitig getrennt.
-3. ARTY, CAS und Resupply blockieren sich nur an dokumentierten Deconfliction-Grenzen.
-4. CAS verwendet eigene Detektion und dynamische Owner-Routen.
-5. Rückgabe und Lieferung werden erst nach bestätigtem MOOSE-Ereignis strategisch gebucht.
-6. Keine OMW-Asset-Vorselektion, keine zweite Retry-/Dispatcher-Queue und keine festen CAS-Marker/Battle-Positionen.
+1. Guard ist als normale Standort-Nahbereichssicherung vorhanden und nicht vom Attack-Incident abhängig.
+2. Alarm und fachliche Trigger erzeugen QRF sowie C2-Supportbedarfe zum vorgesehenen Zeitpunkt.
+3. lokale Selbstverteidigung und externe ARTY/CAS bleiben getrennte Verantwortungsbereiche.
+4. ARTY, CAS und Resupply blockieren sich nur an dokumentierten Deconfliction-Grenzen.
+5. CAS verwendet eigene Detektion und dynamische Owner-Routen.
+6. Resupply entsteht nur aus dem vorgesehenen Ressourcen-/Threshold-Pfad und nicht aus einem Attack-Incident.
+7. Rückgabe und Lieferung werden erst nach bestätigtem MOOSE-Ereignis strategisch gebucht.
+8. Keine OMW-Asset-Vorselektion, keine zweite Retry-/Dispatcher-Queue und keine festen CAS-Marker/Battle-Positionen.
