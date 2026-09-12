@@ -4,7 +4,7 @@ local function eq(a,b,label) if a~=b then error(string.format("%s expected=%s ac
 local function yes(v,label) if v~=true then error(label.." expected=true") end end
 local function no(v,label) if v~=false then error(label.." expected=false") end end
 
-local sites={Sites={FOB_JOYCE={siteId="FOB_JOYCE"}}}
+local sites={Sites={FOB_JOYCE={siteId="FOB_JOYCE",installationId="BLUE_GROUND_FOB_JOYCE"}}}
 local profiles={Profiles={}}
 local ids={Incident=function() end}
 local brigades={FOB_JOYCE={alias="BDE_BLUE_GND_JOYCE"}}
@@ -17,6 +17,7 @@ modules.guardRouteAdapter={New=function() end}
 modules.guardMissionFactory={New=function() end}
 modules.qrfMissionFactory={New=function() end}
 modules.legionBridge={New=function() end}
+modules.installationAttackIncident={New=function() end}
 
 modules.guardRuntime={}
 function modules.guardRuntime.New(spec)
@@ -41,6 +42,20 @@ function modules.base.New(spec)
   local b={}
   function b:StartSite(siteId,spec2) calls.startSite={siteId=siteId,spec=spec2};return {siteId=siteId},true,nil end
   return b
+end
+modules.installationIncidentBridge={}
+function modules.installationIncidentBridge.New(spec)
+  calls.installationIncidentBridgeSpec=spec
+  return {OnIncidentStarted=function() end,OnIncidentUpdated=function() end,OnIncidentClosed=function() end}
+end
+modules.installationIncidentRuntime={}
+function modules.installationIncidentRuntime.New(spec)
+  calls.installationIncidentRuntimeSpec=spec
+  local r={}
+  function r:Prepare() calls.installationIncidentsPrepared=true;return self,true,nil end
+  function r:ReportEvidence(evidence) calls.reportEvidence=evidence;return {incidentId="SOURCE-INCIDENT"},true,nil end
+  function r:CloseInstallationIncident(installationId,reason) calls.closeInstallation={installationId=installationId,reason=reason};return {incidentId="SOURCE-INCIDENT"},true,nil end
+  return r
 end
 modules.perimeterBridge={}
 function modules.perimeterBridge.New(spec) calls.perimeterBridgeSpec=spec;return {HandleThreat=function() end,HandleClear=function() end} end
@@ -125,11 +140,16 @@ local before,beforeCreated,beforeReason=runtime:StartSite("FOB_JOYCE",{})
 eq(before,nil,"start before prepare nil")
 no(beforeCreated,"start before prepare false")
 eq(beforeReason,"RUNTIME_NOT_PREPARED","start before prepare reason")
+local beforeEvidence,beforeEvidenceCreated,beforeEvidenceReason=runtime:ReportInstallationEvidence({installationId="BLUE_GROUND_FOB_JOYCE",evidenceType="PROXIMITY_INTRUSION"})
+eq(beforeEvidence,nil,"evidence before prepare nil")
+no(beforeEvidenceCreated,"evidence before prepare false")
+eq(beforeEvidenceReason,"RUNTIME_NOT_PREPARED","evidence before prepare reason")
 
 local _,prepared,reason=runtime:Prepare()
 yes(prepared,"runtime prepared")
 eq(reason,nil,"prepare reason")
 yes(calls.guardPrepared,"Guard runtime prepared")
+yes(calls.installationIncidentsPrepared,"installation incident runtime prepared")
 eq(calls.guardSpec.brigades,brigades,"Guard receives injected brigades")
 eq(calls.qrfSpec.brigades,brigades,"QRF receives injected brigades")
 eq(calls.baseSpec.adapters.GUARD,runtime:GetAdapter("GUARD"),"Base GUARD adapter")
@@ -145,7 +165,9 @@ eq(calls.resupplyTransportSpec.settlement.Attach~=nil,true,"settlement attached 
 eq(calls.transportSettlementSpec.store,campaignStore,"settlement uses CampaignState store")
 eq(calls.transportSettlementSpec.campaignState,campaignState,"settlement campaign module")
 eq(calls.transportSettlementSpec.resolveTransfer,transferResolver,"transfer resolver forwarded")
-eq(runtime:GetBase(),calls.perimeterBridgeSpec.base,"perimeter bridge uses same Base")
+eq(calls.installationIncidentBridgeSpec.base,runtime:GetBase(),"incident bridge uses same Base")
+eq(calls.installationIncidentRuntimeSpec.incidentCoordinator,modules.installationAttackIncident,"authoritative incident coordinator injected")
+eq(calls.perimeterBridgeSpec.incidentRuntime,calls.perimeterSpec.perimeterBridge and calls.perimeterBridgeSpec.incidentRuntime or calls.perimeterBridgeSpec.incidentRuntime,"perimeter bridge receives incident runtime")
 eq(calls.perimeterSpec.perimeters.FOB_JOYCE.radiusM,1000,"perimeter config forwarded")
 eq(calls.perimeterSpec.blueCoalition,2,"blue coalition forwarded")
 eq(calls.perimeterSpec.redCoalition,1,"red coalition forwarded")
@@ -164,6 +186,15 @@ eq(terminalObserved.outcome,"LOST","owner terminal callback outcome")
 local _,preparedAgain,againReason=runtime:Prepare()
 no(preparedAgain,"second prepare idempotent")
 eq(againReason,"ALREADY_PREPARED","second prepare reason")
+
+local sourceIncident,sourceCreated=runtime:ReportInstallationEvidence({installationId="BLUE_GROUND_FOB_JOYCE",evidenceType="PROXIMITY_INTRUSION"})
+yes(sourceCreated,"installation evidence forwarded")
+eq(sourceIncident.incidentId,"SOURCE-INCIDENT","source incident result")
+eq(calls.reportEvidence.evidenceType,"PROXIMITY_INTRUSION","evidence type forwarded")
+local closedInstallation,closedInstallationChanged=runtime:CloseInstallationIncident("BLUE_GROUND_FOB_JOYCE","TACTICAL_COMPLETION")
+yes(closedInstallationChanged,"installation close forwarded")
+eq(closedInstallation.incidentId,"SOURCE-INCIDENT","installation close result")
+eq(calls.closeInstallation.reason,"TACTICAL_COMPLETION","installation close reason forwarded")
 
 local siteState,siteStarted=runtime:StartSite("FOB_JOYCE",{priority=50})
 yes(siteStarted,"site start forwarded")
