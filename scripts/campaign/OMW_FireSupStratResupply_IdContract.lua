@@ -1,9 +1,9 @@
 -- Operation Mountain Watch - Fire Support / Strategic Resupply stable ID contract.
--- Gate 2: campaign-domain only. No MOOSE/DCS dependency.
+-- Campaign-domain only. No MOOSE/DCS dependency.
 
 local IdContract = {}
 
-IdContract.SchemaVersion = "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-ID-CONTRACT-1"
+IdContract.SchemaVersion = "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-ID-CONTRACT-2"
 
 local function requireToken(value, label)
   if type(value) ~= "string" or value == "" then
@@ -20,8 +20,12 @@ function IdContract.Incident(siteId, incidentKey)
   return "INCIDENT:" .. requireToken(siteId, "siteId") .. ":" .. requireToken(incidentKey, "incidentKey")
 end
 
-function IdContract.Demand(incidentId, supportType)
-  return "DEMAND:" .. requireToken(incidentId, "incidentId") .. ":" .. requireToken(supportType, "supportType")
+function IdContract.Demand(incidentId, supportType, requestKey)
+  local id = "DEMAND:" .. requireToken(incidentId, "incidentId") .. ":" .. requireToken(supportType, "supportType")
+  if requestKey ~= nil then
+    id = id .. ":" .. requireToken(requestKey, "requestKey")
+  end
+  return id
 end
 
 function IdContract.Settlement(demandId, lifecycleEvent, sourceEventId)
