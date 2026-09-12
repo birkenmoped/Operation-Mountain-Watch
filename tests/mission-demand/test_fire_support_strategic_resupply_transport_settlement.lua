@@ -93,4 +93,35 @@ no(noAttach,"no observer attach false")
 eq(noReason,"IN_TRANSIT_OBSERVER_REQUIRED","no observer explicit reason")
 eq(noObserverStore:GetResource("GROUND_NODE_JALALABAD","GROUND_AMMO_PACKAGE").reserved,0,"no reservation before observer contract")
 
+-- Strategic transfer resolution can explicitly decouple a physical/off-map provider label
+-- from the CampaignState source node. The adapter must not infer that mapping itself.
+local resolvedStore=newStore()
+local resolverCalls=0
+local resolvedSettlement=Settlement.New({
+  campaignState=CampaignState,
+  store=resolvedStore,
+  resolveTransfer=function(resolvedDemand,context,resolvedDescriptor)
+    resolverCalls=resolverCalls+1
+    eq(context.source,"OFF_MAP_PROVIDER","resolver context")
+    yes(type(resolvedDescriptor.installInTransitObserver)=="function","resolver descriptor")
+    return {originNodeId="GROUND_NODE_JALALABAD",destinationNodeId="GROUND_NODE_JOYCE",canonicalUnit="count"}
+  end,
+})
+local resolvedDemand=demand("R|RESOLVED",2)
+resolvedDemand.tacticalContext.supplyParentNodeId="OFF_MAP"
+local resolvedBinding,resolvedAttached,resolvedReason=resolvedSettlement:Attach(transport(2),resolvedDemand,{source="OFF_MAP_PROVIDER"},descriptor())
+yes(resolvedAttached,"resolved transfer attached")
+eq(resolvedReason,nil,"resolved transfer reason")
+eq(resolverCalls,1,"transfer resolver called once")
+eq(resolvedStore:GetTransaction(resolvedBinding.transactionId).originNodeId,"GROUND_NODE_JALALABAD","explicit strategic source used")
+eq(resolvedStore:GetResource("GROUND_NODE_JALALABAD","GROUND_AMMO_PACKAGE").reserved,2,"resolved source reserved")
+
+local refusedStore=newStore()
+local refusedSettlement=Settlement.New({campaignState=CampaignState,store=refusedStore,resolveTransfer=function() return nil,"STRATEGIC_SOURCE_NOT_CONFIGURED" end})
+local refusedBinding,refusedAttached,refusedReason=refusedSettlement:Attach(transport(2),demand("R|REFUSED",2),{},descriptor())
+eq(refusedBinding,nil,"resolver refusal no binding")
+no(refusedAttached,"resolver refusal not attached")
+eq(refusedReason,"STRATEGIC_SOURCE_NOT_CONFIGURED","resolver refusal propagated")
+eq(refusedStore:GetResource("GROUND_NODE_JALALABAD","GROUND_AMMO_PACKAGE").reserved,0,"resolver refusal reserves nothing")
+
 print("PASS test_fire_support_strategic_resupply_transport_settlement")
