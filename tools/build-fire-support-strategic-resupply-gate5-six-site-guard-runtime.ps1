@@ -6,12 +6,12 @@ Set-StrictMode -Version Latest
 
 $repoRoot = Split-Path -Parent $PSScriptRoot
 $siteRegistry = Join-Path $repoRoot 'scripts\campaign\OMW_FireSupStratResupply_SiteRegistry.lua'
-$sourceFile = Join-Path $repoRoot 'mission\tests\fire-support-strategic-resupply-gate5-six-site-guard-runtime\src\01-six-site-guard-runtime-acceptance.lua'
+$sourceFile = Join-Path $repoRoot 'mission\tests\fire-support-strategic-resupply-gate5-six-site-guard-runtime\src\02-six-site-guard-compact-aligned-acceptance.lua'
 $distDir = Join-Path $repoRoot 'mission\tests\fire-support-strategic-resupply-gate5-six-site-guard-runtime\dist'
 $outputFile = Join-Path $distDir 'OMW_FireSupStratResupply_Gate5_Six_Site_Guard_Runtime.lua'
 
-$builderVersion = 'FIRE-SUPPORT-STRATEGIC-RESUPPLY-GATE5-SIX-SITE-GUARD-RUNTIME-1'
-$testId = 'FIRE-SUPPORT-STRATEGIC-RESUPPLY-GATE5-SIX-SITE-GUARD-RUNTIME-ACCEPTANCE-1'
+$builderVersion = 'FIRE-SUPPORT-STRATEGIC-RESUPPLY-GATE5-SIX-SITE-GUARD-RUNTIME-2'
+$testId = 'FIRE-SUPPORT-STRATEGIC-RESUPPLY-GATE5-SIX-SITE-GUARD-RUNTIME-ACCEPTANCE-2'
 $mooseCommit = '73d3ed119cd9e7e3f2cfcabbaa34513d30529b54'
 $mooseSha256 = 'E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915'
 
@@ -45,11 +45,16 @@ foreach ($marker in @(
   'PLATOON:New(',
   'AUFTRAG:NewONGUARD(',
   'PATHLINE:FindByName(',
+  'OptionFormationInterval(INTERVAL)',
+  'COMPACT_SPAWN_PREPARED',
+  'COMPACT_ALIGNED_WAREHOUSE_SPAWN',
+  '_SpawnAssetGroundNaval',
+  '_SpawnAssetPrepareTemplate',
+  '_DATABASE:Spawn(t)',
   'TaskFunction("CONTROLLABLE.Route"',
   'SetTaskWaypoint(',
-  'group:Route(route, 2)',
-  'TELEMETRY siteId=',
-  '6/6 Guards materialized'
+  's.group:Route(r,2)',
+  '6/6 Guards compact/aligned'
 )) {
   if (-not $acceptanceSource.Contains($marker)) {
     throw "Gate-5 acceptance source missing required marker: $marker"
@@ -85,7 +90,8 @@ $header = @"
 -- GitCommit: $commit
 -- GeneratedUtc: $generatedUtc
 -- Gate/Test-ID: $testId
--- Scope: six persistent Guard groups; existing v23 PATHLINEs; five-minute physical movement acceptance.
+-- Scope: six persistent Guards; compact PATHLINE-aligned materialization; Off Road route; 2 m formation interval; five-minute movement acceptance.
+-- Extension: test-scoped reuse of the owner-approved ARMY Ground Acceptance 3-2 WAREHOUSE spawn-adapter pattern.
 -- Exclusions: no QRF, no ARTY, no CAS, no resupply, no alarm/attack stimulus, no MIZ mutation.
 -- MOOSECommit: $mooseCommit
 -- MooseLuaSHA256: $mooseSha256
@@ -117,6 +123,9 @@ Write-Host "GitCommit: $commit"
 Write-Host "TestId: $testId"
 Write-Host "MOOSECommit: $mooseCommit"
 Write-Host "Moose.lua SHA-256: $mooseSha256"
+Write-Host "Formation: Off Road"
+Write-Host "FormationIntervalM: 2"
+Write-Host "SpawnAlignment: PATHLINE_FIRST_SEGMENT"
 Write-Host "Output: $outputFile"
 Write-Host "Encoding: UTF-8 without BOM"
 Write-Host "Bundle SHA-256: $hash"
