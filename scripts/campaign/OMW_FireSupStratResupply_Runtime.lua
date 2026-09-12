@@ -8,7 +8,7 @@ local Runtime = {}
 local Instance = {}
 Instance.__index = Instance
 
-Runtime.SchemaVersion = "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-RUNTIME-5"
+Runtime.SchemaVersion = "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-RUNTIME-6"
 local TAG = "[OMW][FireSupStratResupply.Runtime]"
 
 local function fail(message) error(TAG .. " " .. tostring(message), 2) end
@@ -42,6 +42,8 @@ function Runtime.New(spec)
   if type(spec.resolveGuardPathline) ~= "function" then fail("resolveGuardPathline must be a function") end
   if type(spec.resolveGuardTemplateGroup) ~= "function" then fail("resolveGuardTemplateGroup must be a function") end
   if type(spec.resolveQrfCoordinate) ~= "function" then fail("resolveQrfCoordinate must be a function") end
+  if spec.qrfRequiredAttributes ~= nil and type(spec.qrfRequiredAttributes) ~= "string" and type(spec.qrfRequiredAttributes) ~= "table" then fail("qrfRequiredAttributes must be a string or table when provided") end
+  if spec.qrfRequiredProperties ~= nil and type(spec.qrfRequiredProperties) ~= "string" and type(spec.qrfRequiredProperties) ~= "table" then fail("qrfRequiredProperties must be a string or table when provided") end
   if spec.logger ~= nil and type(spec.logger) ~= "function" then fail("logger must be a function when provided") end
   if spec.externalAdapters ~= nil and type(spec.externalAdapters) ~= "table" then fail("externalAdapters must be a table when provided") end
   if spec.incidentIdFactory ~= nil and type(spec.incidentIdFactory) ~= "function" then fail("incidentIdFactory must be a function when provided") end
@@ -118,6 +120,8 @@ function Runtime.New(spec)
     resolveQrfCoordinate = spec.resolveQrfCoordinate,
     qrfRequiredAssetsMin = spec.qrfRequiredAssetsMin or 1,
     qrfRequiredAssetsMax = spec.qrfRequiredAssetsMax or (spec.qrfRequiredAssetsMin or 1),
+    qrfRequiredAttributes = spec.qrfRequiredAttributes,
+    qrfRequiredProperties = spec.qrfRequiredProperties,
     externalAdapters = spec.externalAdapters or {},
     externalSupport = spec.externalSupport,
     perimeters = spec.perimeters,
@@ -162,6 +166,8 @@ function Instance:Prepare()
     resolveCoordinate = self.resolveQrfCoordinate,
     requiredAssetsMin = self.qrfRequiredAssetsMin,
     requiredAssetsMax = self.qrfRequiredAssetsMax,
+    requiredAttributes = self.qrfRequiredAttributes,
+    requiredProperties = self.qrfRequiredProperties,
     logger = self.logger,
   })
 
