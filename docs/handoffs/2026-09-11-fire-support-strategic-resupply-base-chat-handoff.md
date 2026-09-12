@@ -24,8 +24,6 @@ moose_artifact_sha256: E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E
 
 # Chat-Handoff und Implementierungsplan: standortunabhängige Fire-Support-/Strategic-Resupply-Basis
 
-> Hinweis zum aktuellen Folgebranch: Die ursprüngliche Übergabe bleibt historischer Planungsnachweis. Die auf Branch `agent/fire-support-strategic-resupply-base-gate0` dokumentierte Gate-4-Präzisierung trennt inzwischen persistenten Guard, incident-scoped Local Defense/C2-Support und threshold-driven Resupply. Maßgeblich für die laufende Gate-4-Arbeit ist `docs/moose/FIRE-SUPPORT-STRATEGIC-RESUPPLY-GATE-4-STAGE3-REGRESSION-PLAN.md` zusammen mit ADR 0008 und den weiterhin verbindlichen Governance-Dokumenten.
-
 ## 1. Zweck dieser Übergabe
 
 Dieses Dokument übergibt einem Folgechat den vollständigen fachlichen, technischen und evidenzbezogenen Arbeitsstand für ein künftig standortunabhängiges Modul mit der fachlichen Rolle:
@@ -54,7 +52,7 @@ Der Folgechat muss vor jeder Änderung diese Dokumente auf dem aktuellen `main` 
 4. [Dokumentmetadaten und Provenienz – `OMW-GOV-DOCUMENT-METADATA`](../DOCUMENT-METADATA-POLICY.md)
 5. [Stage-3 CAS Tactical Corridor Decision](../moose/STAGE3-CAS-TACTICAL-CORRIDOR-DECISION.md)
 6. [Stage-3 CAS Lifecycle and Recovery Law](../moose/STAGE3-CAS-LIFECYCLE-RECOVERY-LAW.md)
-7. [MOOSE Support Request Lifecycle Law](../moose/MOOSE-SUPPORT-REQUEST-LIFECYCLE-LAW.md)
+7. `OMW-MOOSE-SUPPORT-REQUEST-LIFECYCLE-LAW`: solange Pull Request #147 noch offen ist, die Datei `docs/moose/MOOSE-SUPPORT-REQUEST-LIFECYCLE-LAW.md` aus Branch `agent/moose-support-request-lifecycle-law` lesen; sie ist nicht fälschlich als bereits auf `main` geltende Datei zu behandeln.
 
 Zusätzlich gelten ohne Ausnahme:
 
@@ -79,7 +77,17 @@ in Pull Request #144 nach `main` integriert. Sven bestätigte lokal anschließen
 main HEAD: c10628e1fb917854f720cb5f3051ff5f0dc595af
 ```
 
-Dieser Commit ist ein historischer Übergabepunkt, nicht automatisch der künftig aktuelle `main`-HEAD.
+Dieser Commit ist ein historischer Übergabepunkt, nicht automatisch der künftig aktuelle `main`-HEAD. Vor jeder Folgearbeit gilt daher:
+
+```powershell
+git fetch origin
+git switch <Arbeitsbranch>
+git pull --ff-only origin <Arbeitsbranch>
+git merge-base --is-ancestor origin/main HEAD
+git status --short
+```
+
+Die letzte Bedingung ist nur eine Bestandsaufnahme. Bei lokalen, fremden oder unklaren Änderungen darf nichts zurückgesetzt, gelöscht oder überschrieben werden.
 
 Der verwendete MOOSE-Stand der Stage-3-Prüfung lautet:
 
@@ -113,31 +121,70 @@ Festgehaltene, konkrete Testeigenschaften:
 
 Für eine spätere generische Basis dürfen davon nur die abstrakten Invarianten übernommen werden. Die konkreten Werte, Honaker-Bedingungen, Jalalabad-Bindung und Wright-Logistik sind zu parametrisieren oder als Testfixture zu belassen.
 
+Der letzte dokumentierte Full-Response-Stand hatte Runtime-Evidenz für CAS-Dispatch, On-Station-/Reverse-Route und Recovery. Eine CAS-Waffenwirkung trat im beobachteten Lauf nicht ein, weil ARTY die relevanten Ziele bereits bekämpft hatte. Deshalb blieb die volle Terminal-Acceptance des Tests geplant; daraus darf keine allgemeine CAS-Waffen- oder Mehrstandort-Acceptance abgeleitet werden.
+
 ## 5. Fehler, Irrwege und verbindlich verworfene Ansätze
 
 ### 5.1 Feste CAS-Marker oder künstliche Battle Position
 
 Verworfen. Es existieren und werden keine dauerhaft gesetzten `CAS_INGRESS`, `CAS_EGRESS` oder Battle-Position-Marker verlangt.
 
+Richtig ist:
+
+```text
+konfigurierte tatsächliche Owner-Hinroute
+-> dynamischer Ingress-Gate auf dieser Route
+-> dynamischer AO-Anker des Auftrags
+-> dynamischer Egress-Gate auf der tatsächlichen Owner-Rückroute
+-> gleiche Route rückwärts zum Heimatflugplatz
+```
+
+Die vorhandene Route ist im Gebirgsgelände der taktische Korridor. Der Adapter darf sie in öffentliche MOOSE-Missions- und Waypoint-APIs übersetzen, aber keine Terrain-Masking-Heuristik oder neue Route erfinden.
+
 ### 5.2 Honaker/Jalalabad/Wright als Produktionsannahme
 
 Verworfen. Diese Namen dürfen nicht im Base-Modul, dessen Zustandslogik oder generischen Acceptance-Kriterien fest verdrahtet werden.
+
+Sie gehören ausschließlich in eine Standort-/Testkonfiguration.
 
 ### 5.3 Eine fehlende Unterstützung blockiert alle anderen
 
 Verworfen. Guard, QRF, ARTY, CAS und Resupply sind unabhängige Optionen.
 
+```text
+ARTY nicht möglich        != CAS/QRF/Guard/Resupply blockieren
+CAS nicht verfügbar       != ARTY/QRF/Guard/Resupply blockieren
+kein lokales Personal     != externe ARTY/CAS oder laufenden Resupply blockieren
+```
+
+Eine Deconfliction-Regel darf nur den konkreten taktischen Konflikt begrenzen, beispielsweise neue ARTY-Fire-Missions bei physisch on-station befindlichem CAS.
+
 ### 5.4 Eigene Vorselektion oder eigene Retry-/Dispatch-Queue
 
 Verworfen. OMW soll nicht vorab aus Kandidatenlisten entscheiden, welches Luft- oder Bodenasset gerade geeignet sei. MOOSE soll Rekrutierung, Verfügbarkeit und Warteschlange verwalten.
+
+Eine fachliche Ablaufzeit oder Incident-Ende ist keine Assetwahl. Sie darf nur über den öffentlichen MOOSE-Lifecycle an einen Auftrag weitergegeben werden.
 
 ### 5.5 Rohes Incident-Ende als CAS-Ende
 
 Verworfen. Alarmzone, `OPSZONE:Defeated`, Incident-Teilnehmer, rohe RED-Zähler, C2-Feuerbeobachtung oder `AUFTRAG:Cancel()` allein beweisen weder ein reguläres CAS-Ende noch die physische Recovery.
 
+Die Alarmzone bedeutet:
+
+```text
+threat-detection and response-trigger boundary
+!= weapons engagement zone
+!= CAS tactical area
+!= mission-end condition
+```
+
 ### 5.6 Unbestätigte Ressourcenbuchung
 
 Verworfen. Ein Start, ein Rückkehrbefehl, `Done`, Cancel oder ein in Transit befindlicher Konvoi verändern den strategischen Zielbestand nicht.
+
+- Rückkehrende Assets werden erst nach bestätigtem MOOSE-Rückkehrereignis wieder verfügbar.
+- Lieferungen erhöhen den Zielbestand erst nach bestätigter physischer Lieferung.
+- Ein Personaltransport im Transit stellt am Ziel noch keine Guard-/QRF-Mannschaft bereit.
 
 ### 5.7 Private MOOSE-Warehouse-Queue-Manipulation
 
@@ -150,56 +197,344 @@ Die folgenden Aussagen sind gegen die gepinnte `Moose.lua` geprüft. Sie sind so
 | MOOSE-Bereich | Bestätigtes Verhalten | Folge für die Base |
 |---|---|---|
 | `LEGION:AddMission` / `CheckMissionQueue` | Queue, Rekrutierungsversuch und `AUFTRAG:IsReadyToCancel()` | direkte Legion-/AIRWING-/BRIGADE-Aufträge können native Zeiten/Conditions nutzen |
-| `COMMANDER` / `CHIEF` | geplante Missionen werden rekrutiert versucht | bei Incident-Ende oder fachlichem Ablauf minimalen Lifecycle-Adapter über öffentliche Cancel-API verwenden |
+| `COMMANDER` / `CHIEF` | geplante Missionen werden rekrutiert versucht; der geprüfte Planungsweg ruft für weiter PLANNED-Missionen nicht selbst `IsReadyToCancel()` auf | bei Incident-Ende oder fachlichem Ablauf muss ein minimaler Lifecycle-Adapter `AUFTRAG:Cancel()` auslösen |
 | `AUFTRAG` | `SetTime`, Start-/Success-/Failure-Conditions und `Cancel()` vorhanden | native Auftragssprache verwenden; kein eigener FSM |
-| `OPSTRANSPORT` | `SetTime`, `AddConditionStart`, `Cancel()` vorhanden | Ablauf/Incident-Ende über öffentliche Lifecycle-API, soweit fachlich zuständig |
+| `OPSTRANSPORT` | `SetTime`, `AddConditionStart`, `Cancel()` vorhanden; Cancel propagiert an MOOSE-Organisationen | Ablauf/Incident-Ende über `Cancel()`, nicht über nicht verifizierte Failure-API behaupten |
 | `WAREHOUSE` | dauerhaft ungültige Requests werden intern verworfen; temporär unprozessierbare bleiben wartend | nicht durch OMW vorfiltern; Nullbestand-/Einzelrequest-Expiry bleibt offene API-Grenze |
 | `ARTY` | eigene Target-Queue, `RemoveTarget`, `SetTimeToShot` | ARTY-Target-Lifecycle nur über MOOSE-ARTY führen |
 
-## 7. Zielarchitektur der Base
-
-Die Base ist ein **Incident-/Site-/Resource-to-MOOSE-Orchestrator**, kein Combat- oder Resource-Dispatcher.
+Für einen bei `COMMANDER`/`CHIEF` wartenden, aber fachlich obsoleten Auftrag ist diese minimale projektspezifische Ergänzung zulässig und erforderlich:
 
 ```text
-Installation / lokale Lage / Ressourcenlage
--> persistente Site Security ODER Incident ODER qualifizierter Resupply-Bedarf
+Incident-Ende oder einmalige fachliche Ablaufzeit
+-> AUFTRAG:Cancel()
+-> öffentlicher MOOSE-CHIEF/COMMANDER/LEGION-Cancelpfad
+```
+
+Sie darf **nicht** auswählen, rekrutieren oder wiederholen. Sie ist ereignisgebunden, nicht hochfrequent.
+
+Die unaufgelöste WAREHOUSE-Grenze bleibt explizit offen:
+
+```text
+rohe WAREHOUSE-Anforderung mit dauerhaft leerem passenden Bestand
+-> individuelle öffentliche Expiry-/Cancel-API im geprüften Stand nicht nachgewiesen
+```
+
+Vor einer generischen Ablaufgarantie muss der Folgechat entweder eine öffentliche MOOSE-API im tatsächlich eingesetzten Stand nachweisen oder einen bereits kontrollierbaren öffentlichen Auftrags-/OPSTRANSPORT-Lifecycle nutzen. Andernfalls ist eine zusätzliche MOOSE-first-Lückenanalyse plus ausdrückliche Projektinhaberfreigabe Pflicht.
+
+## 7. Zielarchitektur der Base
+
+Die Base ist ein **Incident-to-MOOSE-Orchestrator**, kein Combat- oder Resource-Dispatcher.
+
+```text
+Installation / lokale Lage
+-> Incident und fachliche Bedarfe
 -> OMW_FireSupStratResupply_Base
 -> pro Support-Art ein kleiner MOOSE-Adapter
--> MOOSE COMMANDER/LEGION/AIRWING/BRIGADE/WAREHOUSE/ARTY
+-> MOOSE COMMANDER/CHIEF/LEGION/AIRWING/BRIGADE/WAREHOUSE/ARTY
 -> bestätigte MOOSE-Lifecycle-Ereignisse
 -> idempotente CampaignState-Buchung
 ```
 
-Die genauere aktuelle Aktivierungssemantik steht im Gate-4-Regressionsplan.
+### 7.1 Verantwortung der Base
 
-## 8. Standortkonfiguration
+Die Base darf:
 
-Standortdaten und Supportfähigkeit bleiben reine Konfiguration. `enabled = true` bedeutet nur, dass eine Fähigkeit grundsätzlich vorgesehen ist; es bedeutet nicht, dass sie beim Incident automatisch gestartet wird.
+- Incident-Eröffnung, -Änderung, -Ende und fachliche Obsoleszenz entgegennehmen;
+- pro Support-Art einen separaten, fachlich zulässigen Bedarf materialisieren;
+- standortneutrale IDs und Konfigurationen validieren;
+- die public-MOOSE-Adapter aufrufen;
+- ihre eigenen Incident-/Demand-Korrelationen und Diagnosegründe verwalten;
+- Incident-Ende und eine einmalige fachliche Ablaufzeit an `AUFTRAG:Cancel()` oder `OPSTRANSPORT:Cancel()` weiterreichen;
+- bestätigte MOOSE-Ereignisse idempotent in `CampaignState` übernehmen.
 
-## 9. Strategischer Herkunftspool
+Sie darf nicht:
 
-Der in der ursprünglichen Übergabe dokumentierte Konflikt wurde für diesen Scope durch ADR 0008 präzisiert: MOOSE verantwortet die operative Rekrutierung innerhalb der zulässigen Organisationsgrenze; OMW/CampaignState baut keine zweite operative Kandidatenwahl auf.
+- Assets selbst auswählen oder anhand eigener Kandidatenlisten ausschließen;
+- eine zusätzliche Queue, einen eigenen Recruiter oder Timer-Retries bauen;
+- MOOSE-Detection, Route-Planung, ARTY-Targeting oder Warehouse-Validierung ersetzen;
+- eine Lieferung, Rückkehr oder einen Verlust aus Absicht statt physischem MOOSE-Ereignis buchen;
+- statische CAS-Marker, künstliche BPs oder standortspezifische Namen voraussetzen.
+
+### 7.2 Empfohlene Dateien
+
+```text
+scripts/campaign/OMW_FireSupStratResupply_Base.lua
+scripts/campaign/OMW_FireSupStratResupply_SiteRegistry.lua
+scripts/campaign/OMW_FireSupStratResupply_LifecycleAdapter.lua
+scripts/campaign/OMW_FireSupStratResupply_CampaignStateAdapter.lua
+
+scripts/ground/OMW_FireSupStratResupply_GuardAdapter.lua
+scripts/ground/OMW_FireSupStratResupply_QrfAdapter.lua
+scripts/ground/OMW_FireSupStratResupply_ArtyAdapter.lua
+scripts/air-operations/OMW_FireSupStratResupply_CasAdapter.lua
+scripts/logistics/OMW_FireSupStratResupply_ResupplyAdapter.lua
+```
+
+Bestehende Adapter sind vorher zu prüfen und nach Möglichkeit weiterzuverwenden, insbesondere:
+
+```text
+scripts/campaign/OMW_FobAttackFireSupportDemandPolicy.lua
+scripts/ground/OMW_FobAttackFunctionalArtyDispatchAdapter.lua
+scripts/air-operations/OMW_FobAttackCasDispatchAdapter.lua
+scripts/air-operations/OMW_HelicopterFlightPathCorridor.lua
+scripts/air-operations/OMW_HelicopterCasTacticalCorridor.lua
+scripts/air-operations/OMW_OpsTransportCorridorAdapter.lua
+scripts/ground/OMW_FixedFireSupportAmmoSupport.lua
+```
+
+Der Folgechat darf diese Dateinamen und Schnittstellen nicht voraussetzen, ohne sie auf dem aktuellen Branch zu lesen.
+
+## 8. Konfigurationsvertrag
+
+Alle Standortunterschiede gehören in Daten, nicht in Base-Code.
+
+```lua
+local sites = {
+  FOB_JOYCE = {
+    siteId = "FOB_JOYCE",
+    alarmZoneName = "BLUE_GROUND_FOB_JOYCE",
+    tacticalZoneName = "OMW_FOB_JOYCE_C2",
+    campaignNodeId = "FOB_JOYCE",
+
+    support = {
+      guards = { enabled = true },
+      qrf = { enabled = true },
+      artillery = { enabled = true },
+      cas = { enabled = true, corridorProfile = "JOYCE_HELICOPTER" },
+      resupply = {
+        enabled = true,
+        classes = {
+          "GROUND_PERSONNEL",
+          "GROUND_AMMO_PACKAGE",
+          "GROUND_FUEL_PACKAGE",
+          "META_SUPPLY",
+        },
+      },
+    },
+
+    routes = {
+      groundProfile = "JOYCE_GROUND",
+      helicopterProfile = "JOYCE_HELICOPTER",
+      fixedWingProfile = nil,
+    },
+  },
+}
+```
+
+`enabled = true` bedeutet nur: Die Fähigkeit ist an diesem Standort fachlich vorgesehen und kann an MOOSE übergeben werden. Es bedeutet nicht, dass jetzt ein Asset vorhanden, erreichbar, bewaffnet, bemannt oder freigegeben ist.
+
+Der Support-Adapter erhält einen standardisierten Bedarf:
+
+```lua
+local demand = {
+  incidentId = "INCIDENT:FOB_JOYCE:000123",
+  demandId = "DEMAND:...:CAS",
+  siteId = "FOB_JOYCE",
+  supportType = "CAS",
+  requestedAt = timer.getTime(),
+  tacticalContext = {
+    alarmZone = "BLUE_GROUND_FOB_JOYCE",
+    tacticalZone = "OMW_FOB_JOYCE_C2",
+  },
+  validity = {
+    expiresAt = nil, -- missionsspezifisch bestimmen
+    cancelWhenIncidentClosed = true,
+  },
+  correlationId = "stable-id",
+}
+```
+
+Der Vertrag enthält absichtlich keine durch OMW vorgewählte Aircraft-, Cohort-, Battery- oder Carrier-ID.
+
+## 9. Sonderfall: Auswahl des strategischen Herkunftspools
+
+Hier besteht ein dokumentationspflichtiger Konflikt, der vor der Produktion aufgelöst werden muss.
+
+Die aktuell auf `main` geltende Governance enthält die Aussage, CampaignState wähle den konkreten Herkunftspool und der MOOSE-Auftrag werde daran gebunden. In der aktuellen fachlichen Entscheidung für die Base soll MOOSE jedoch die geeigneten aktuell verfügbaren CAS- und Ground-Assets aus dem zulässigen Pool verwalten, ohne dass OMW eine Kandidatenliste vorfiltert.
+
+Beides ist nicht zugleich uneingeschränkt wahr.
+
+Vor Implementierung muss deshalb der Projektinhaber eine verbindliche Präzisierung auf `main` oder in einem zugelassenen ADR festlegen:
+
+1. **Strategische Pool-Grenze:** CampaignState liefert nur die zulässige Organisations-/Besitzgrenze, etwa Operationsraum, Koalition, Assetklasse und Ressourcenrecht.
+2. **Operative Auswahl innerhalb dieser Grenze:** MOOSE bestimmt Rekrutierung, aktuelle Verfügbarkeit, Warteschlange und Ausführung.
+3. **Keine OMW-Kandidatenwahl:** Der Base-Adapter trifft weder Typ-, Squadron-, Cohort- noch ETA-Entscheidungen.
+4. **Keine unzulässige Vermischung strategischer Bestände:** Falls verschiedene Pools unterschiedliche strategische Eigentümer haben, muss die konfigurierte MOOSE-Organisation diese Grenze technisch erhalten oder die Governance muss ein gemeinsames Poolmodell ausdrücklich zulassen.
+
+Bis zu dieser Entscheidung bleibt eine global optimierende Auswahl nach Ankunftszeit, Verfügbarkeit und Muster über mehrere strategische Pools **PLANNED**. Der Honaker-Test bindet aktuell eine konkrete Jalalabad-AH-64-Testressource und beweist diese generische Auswahl nicht.
 
 ## 10. CAS-Routenvertrag für die Base
 
-Für Drehflügler ist der bereits entwickelte Korridoransatz wiederzuverwenden und standortunabhängig zu konfigurieren. Keine festen CAS-Marker, keine künstliche Battle Position und keine erfundene Ersatzgeometrie.
+Für Drehflügler ist der bereits entwickelte Korridoransatz wiederzuverwenden, aber zu generalisieren:
+
+```text
+Heimatflugplatz
+-> konfigurierte tatsächliche OMW_HelicopterFlightPath-Variante
+-> Hinroute zum Zielstandort
+-> dynamischer Ingress-Gate auf dieser Hinroute
+-> dynamischer AO-Anker für PATROLZONE
+-> dynamischer Egress-Gate auf der Rückroute
+-> gleiche Owner-Route rückwärts
+-> Heimatflugplatz
+```
+
+Erforderliche Korrekturen vor generischem Einsatz:
+
+- testbezogene Namen wie `honakerReference` und `westReference` durch neutrale Begriffe ersetzen;
+- Zielabstand, akzeptierte Toleranz, Höhe, Geschwindigkeit und Routeprofil aus einer Asset-/Missionsprofil-Konfiguration beziehen;
+- eine eigene Fixed-Wing-Route nicht ohne separaten MOOSE-first-Review aus dem Helikopteradapter ableiten;
+- keine Annahme treffen, dass jeder Standort eine 3–4-NM-Gate-Geometrie besitzt;
+- bei fehlender gültiger Owner-Route oder fehlendem Gate den konkreten CAS-Bedarf mit einem überprüfbaren Grund abbrechen beziehungsweise durch den normalen MOOSE-/Demand-Lifecycle beenden; keine Ersatzgeometrie erfinden.
+
+Die öffentliche MOOSE-Schnittstelle bleibt eng:
+
+```lua
+mission:SetMissionIngressCoord(...)
+mission:SetMissionWaypointCoord(...)
+mission:SetMissionEgressCoord(...)
+flightGroup:AddWaypoint(...)
+flightGroup:UpdateRoute()
+```
+
+Die Korridorlogik ergänzt Owner-Transitsegmente erst, wenn die MOOSE-Missionswaypoints vorhanden sind. Dazu ist der vorhandene öffentliche Callback-Ansatz zu verwenden, nicht ein Blind-Timer oder nativer DCS-Controller-Task.
 
 ## 11. Resupply- und Personalvertrag
 
-Resupply umfasst mindestens die bereits im Projekt geführten strategischen Ressourcenklassen. Die Base darf keine lokale Verfügbarkeit fingieren. Der aktuelle Folgebranch präzisiert zusätzlich: Resupply ist **nicht** an einen Attack-Incident gekoppelt, sondern wird ausschließlich aus einem bereits qualifizierten Ressourcen-/Threshold-Bedarf erzeugt. Die Schwellenbewertung bleibt bei der vorhandenen ResourceDemand-Logik.
+Resupply umfasst mindestens:
+
+```text
+GROUND_PERSONNEL
+GROUND_AMMO_PACKAGE
+GROUND_FUEL_PACKAGE
+META_SUPPLY
+```
+
+Die Base darf keine lokale Verfügbarkeit fingieren.
+
+Beispiel, das zwingend zu unterstützen ist:
+
+```text
+erster Angriff
+-> FOB verliert Personal
+-> MOOSE-Resupply für Personal wird gestartet
+
+zweiter Angriff während des Personaltransits
+-> lokale Guard-/QRF-Kohorte kann wegen fehlenden bestätigten Personals nicht entstehen
+-> bereits laufender Personaltransport bleibt im normalen MOOSE-Lifecycle
+-> externe ARTY und/oder CAS können unabhängig weiter angefordert werden
+-> erst bestätigte Lieferung erhöht den Zielbestand
+-> ein weiterhin gültiger MOOSE-Groundauftrag kann danach rekrutiert werden
+```
+
+Die strategische Buchung erfolgt genau einmal, mit stabiler Correlation-/Settlement-ID, nur nach bestätigtem Ereignis.
 
 ## 12. Vorgeschriebene Implementierungsreihenfolge
 
-Gate 0 bis Gate 3 wurden auf dem Folgebranch bearbeitet. Gate 4 ist die rückwärtskompatible Stage-3-Regression. Maßgeblich ist hierfür der separate Gate-4-Regressionsplan.
+### Gate 0 – Bestandsaufnahme und Behördenlage
+
+- aktuellen `main`, Arbeitsbranch und uncommitted Dateien prüfen;
+- alle in Abschnitt 2 genannten Regeln lesen;
+- für jede wiederzuverwendende Datei den tatsächlichen aktuellen Inhalt, nicht eine historische Übergabe, prüfen;
+- den Konflikt aus Abschnitt 9 verbindlich entscheiden und dokumentieren;
+- das Lifecycle-Gesetz aus PR #147 entweder nach `main` integrieren oder im Folgebranch eindeutig als offene, noch nicht main-gültige Grundlage ausweisen.
+
+**Kein Lua-Code vor Abschluss von Gate 0.**
+
+### Gate 1 – MOOSE-First-Gap-Analyse
+
+Für Guard, QRF, ARTY, CAS, Bodenresupply und Luftresupply separat dokumentieren:
+
+```yaml
+requirement:
+moose_version:
+moose_documentation_checked:
+moose_classes_and_methods_evaluated:
+moose_source_locations:
+official_examples_checked:
+verified_limitation:
+smallest_required_fallback:
+integration_with_moose:
+planned_acceptance_test:
+```
+
+Bei einer fehlenden MOOSE-Funktion ist die ausdrückliche Freigabe des Projektinhabers einzuholen. Das gilt auch für jeden neuen Lifecycle-Adapter, der über die bereits source-geprüfte Cancel-Weitergabe hinausgeht.
+
+### Gate 2 – Datenvertrag ohne DCS-Ausführung
+
+- Standortregistry und Support-Profil als reine Lua-Daten definieren;
+- stabile Standort-, Incident-, Demand-, Ressourcen- und Settlement-IDs definieren;
+- Syntax-/Unit-Test: Honaker/Wright als erste Konfiguration, Joyce als zweite Konfiguration;
+- keine MIZ ändern und keine statischen CAS-Marker einführen.
+
+### Gate 3 – Base und minimale Adapter
+
+- `OMW_FireSupStratResupply_Base.lua` ausschließlich als Koordinator implementieren;
+- jeden Supportbedarf getrennt erzeugen;
+- public MOOSE-Auftrag beziehungsweise -Transport nur an die vorhandene MOOSE-Organisation weiterreichen;
+- Incident-Ende und Einmal-Ablauf über public `Cancel()` weiterreichen;
+- lückenlose Logs mit Incident-, Demand-, Standort- und Ressourcen-ID erzeugen;
+- keine Assetscan-/Retry-Schleife.
+
+### Gate 4 – Rückwärtskompatible Stage-3-Regression
+
+Die vorhandene Honaker/Wright-Konfiguration muss funktional unverändert bleiben:
+
+- Alarm löst die vorgesehenen Bedarfe aus;
+- QRF/Guard bleiben vom lokalen Incident-Lifecycle korrekt getrennt;
+- ARTY, CAS und Resupply blockieren sich nicht außerhalb dokumentierter Deconfliction;
+- CAS verwendet eigene Detektion und dynamische Owner-Routen;
+- Rückgabe/Lieferung wird nur nach bestätigtem MOOSE-Ereignis gebucht.
+
+### Gate 5 – Zweiter, unabhängiger Standort
+
+FOB Joyce oder ein vergleichbar vorbereiteter Standort muss als **zweite** Konfiguration getestet werden. Der Test darf weder Honaker-Namen noch Jalalabad- oder Wright-spezifische Routen unbemerkt voraussetzen.
+
+### Gate 6 – DCS-Acceptance und Produktionsentscheidung
+
+Erst nach den folgenden Nachweisen darf die Base als produktiv vorgeschlagen werden.
 
 ## 13. Verbindliche Acceptance-Matrix
 
-Die ursprüngliche Acceptance-Matrix bleibt als Planungsgrundlage bestehen. Sie wird durch die präzisierte Trennung von persistentem Guard, Incident-Support und threshold-driven Resupply ergänzt.
+| Nr. | Situation | Minimaler Nachweis |
+|---:|---|---|
+| 1 | temporär kein passendes CAS- oder Ground-Asset, später Rückkehr | MOOSE wartet; Start nur bei weiter gültigem Bedarf |
+| 2 | Incident endet vor Rekrutierung | geplanter `COMMANDER`-/`CHIEF`-Auftrag wird über `AUFTRAG:Cancel()` entfernt |
+| 3 | fachliche Frist endet vor Rekrutierung | gleicher Cancel-/Queue-Entfernungsnachweis |
+| 4 | direkte `LEGION`-/`AIRWING`-/`BRIGADE`-Queue | native `SetTime`/Conditions führen zum vorgesehenen Cancel |
+| 5 | keine ARTY in Reichweite oder keine ARTY-Munition | ARTY wird nicht geleistet; CAS/QRF/Guard/Resupply bleiben unabhängig |
+| 6 | kein CAS verfügbar | ARTY/QRF/Guard/Resupply bleiben unabhängig |
+| 7 | Personalresupply unterwegs, zweiter Angriff | kein lokales Guard/QRF vor bestätigter Lieferung; externe Optionen bleiben möglich |
+| 8 | Resupply aller vier Klassen | Lieferung wird je Klasse erst nach physischem MOOSE-Ereignis idempotent gebucht |
+| 9 | CAS-Route an Standort A und B | dynamische Gates auf realen Owner-Routen; keine festen Marker, keine erfundene BP |
+| 10 | CAS-Normalende | eigene Sensorlage, missionsprofilgerechte Freigabe, Route rückwärts, Landung und AIRWING-/LEGION-Rückgabe |
+| 11 | `WAREHOUSE` dauerhaft ungültig | MOOSE entfernt die Anfrage selbst; keine private OMW-Manipulation |
+| 12 | `WAREHOUSE` temporär blockiert | MOOSE verarbeitet später, wenn es wieder möglich ist |
+| 13 | `WAREHOUSE` ohne passenden Bestand | dokumentierte offene Grenze; keine behauptete Bereinigung ohne neue öffentliche MOOSE-API oder genehmigte Ausnahme |
+| 14 | Restart/Mehrfachereignis | CampaignState bleibt idempotent, keine Doppelbuchung und keine stille Bestandskorrektur |
+
+Jeder DCS-Lauf benötigt die vollständige Build-/MIZ-/Hashkette aus Dokument 22. Tests mit geändertem Bundle oder geänderter MIZ machen frühere Runtime-Belege nicht ungültig, aber auch nicht auf den neuen Stand übertragbar.
 
 ## 14. Erwartetes Ergebnis des Folgechats
 
-Die Base darf nicht aus dem Honaker-Test ohne zweiten Standort eine generische Produktivfunktion erklären, kein unbestätigtes MOOSE-/DCS-Verhalten erfinden, die offene WAREHOUSE-Einzelrequest-Grenze verdecken oder bestehende Regeln stillschweigend überschreiben.
+Der Folgechat liefert zunächst nur:
+
+1. geprüfte Bestandsaufnahme des aktuellen Branches;
+2. MOOSE-first-Gap-Analyse je Support-Art;
+3. die dokumentierte Entscheidung zum strategischen Poolkonflikt;
+4. Datenvertrag und Acceptance-Plan;
+5. erst nach Genehmigung die schlanke Base sowie ihre Adapter;
+6. Build-Befehle für das Lua-Bundle, niemals eine bearbeitete MIZ;
+7. nach jedem DCS-Test einen Ergebnisbericht mit positiven und negativen Nachweisen.
+
+Er darf nicht:
+
+- aus dem Honaker-Test ohne zweiten Standort eine generische Produktivfunktion erklären;
+- nicht bestätigtes MOOSE- oder DCS-Verhalten erfinden;
+- die offene WAREHOUSE-Einzelrequest-Grenze verdecken;
+- die bestehenden Regeln durch eine neue Detaildokumentation stillschweigend überschreiben;
+- Fehlersymptome durch unkontrollierte zusätzliche Timer, Direkt-Controller-Tasks oder globale Scanlogik kaschieren.
 
 ## 15. Kurzfassung für den Start eines Folgechats
 
-> Wir wollen eine standortunabhängige MOOSE-first-Basis für persistente Site Security, lokale Incident-Defense, externen C2-Support und threshold-driven Resupply entwickeln. MOOSE verwaltet Rekrutierung, Queue, Ausführung und physische Lifecycle-Ereignisse; CampaignState die strategische Persistenz. Keine festen CAS-Marker, keine künstliche Battle Position, keine zweite Assetauswahl/Queue und keine MIZ-Mutation. Honaker/Wright/Jalalabad bleiben konkrete Testfixtures, keine globale Produktionsannahme.
+> Wir wollen eine standortunabhängige MOOSE-first-Basis für Guard, QRF, ARTY, CAS und mehrklassigen Resupply entwickeln. Die Base ist nur Incident-to-MOOSE-Koordinator; MOOSE verwaltet Rekrutierung, Queue, Ausführung und physische Lifecycle-Ereignisse, CampaignState die strategische Persistenz. Standortdaten, Routen und Supportprofile sind Konfiguration. Keine festen CAS-Marker, keine künstliche Battle Position, keine zweite Assetauswahl/Queue und keine MIZ-Mutation. Honaker/Wright/Jalalabad sind ein konkretes Testfixture, keine globale Produktionsannahme. Vor Lua: aktuelles `main` und die in diesem Handoff verlinkten verbindlichen Regeln lesen, MOOSE-Dokumentation + gepinnte Source + offizielle Demos prüfen, Poolkonflikt entscheiden, Lifecycle-Gesetz-Status prüfen. Danach erst Datenvertrag, Adapter und zwei unabhängige DCS-Acceptance-Standorte.
