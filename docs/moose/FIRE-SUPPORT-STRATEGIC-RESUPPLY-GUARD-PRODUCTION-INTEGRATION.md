@@ -6,6 +6,7 @@ owning_policy: OMW-GOV-001
 authoritative_for:
   - source-reviewed production integration of persistent Guard demand with local MOOSE BRIGADE recruitment
   - separation of the accepted Guard materialization exception from public MOOSE mission and route handling
+  - six-site Guard runtime assembly contract without operational asset preselection
 not_authoritative_for:
   - a new DCS acceptance beyond the exact Gate-5 Builder-5 evidence
   - repeated multi-cycle Guard patrol validation
@@ -30,6 +31,7 @@ Produktiver Sollpfad:
 ```text
 Base:StartSite(siteId)
 -> persistent GUARD demand
+-> OMW_FireSupStratResupply_GuardRuntime
 -> OMW_FireSupStratResupply_LegionBridge
 -> site-local BRIGADE organisational boundary
 -> OMW_FireSupStratResupply_GuardMissionFactory
@@ -53,6 +55,33 @@ manual asset candidate list
 manual warehouse request/retry queue
 ACCESS-zone use for Guard spawn or route
 ```
+
+## Six-Site Guard Runtime
+
+`scripts/campaign/OMW_FireSupStratResupply_GuardRuntime.lua` assembliert die produktiven Guard-Bausteine fuer alle registrierten Sites. Die tatsaechlichen MOOSE-BRIGADE-Objekte werden injiziert; der Runtime erzeugt keine zweite Ground-Organisation und startet keine konkurrierende Warehouse-Struktur.
+
+Pro Site wird ausschliesslich aus dem Guard-Vertrag gelesen:
+
+```text
+guardTemplateName
+guardRoute.pathlineName
+injected local BRIGADE object
+```
+
+`accessZoneName` ist kein Input des GuardRuntime.
+
+`Prepare()`:
+
+```text
+resolve owner-authored PATHLINE
+resolve Guard template GROUP
+-> GuardPathlineMaterializationAdapter:Prepare/Install(local BRIGADE)
+-> GuardPathlineRouteAdapter:Install(local BRIGADE)
+-> build GuardMissionFactory
+-> build local LegionBridge
+```
+
+Danach kann der Runtime selbst als `Base.adapters.GUARD` verwendet werden, weil er `Dispatch(demand, context)` anbietet.
 
 ## Materialisierungsausnahme
 
@@ -115,6 +144,7 @@ Der Produktionsadapter reproduziert deshalb bewusst den **abgenommenen** aktuell
 tests/mission-demand/test_guard_pathline_route_adapter.lua
 tests/mission-demand/test_fire_support_strategic_resupply_guard_mission_factory.lua
 tests/mission-demand/test_fire_support_strategic_resupply_legion_bridge.lua
+tests/mission-demand/test_fire_support_strategic_resupply_guard_runtime.lua
 ```
 
 Sie pruefen source-seitig insbesondere:
@@ -125,6 +155,8 @@ Sie pruefen source-seitig insbesondere:
 - genau ein erforderliches Guard-Asset;
 - Route erst fuer den getrackten Guard-AUFTRAG;
 - Route beginnt am compact/aligned materialized lead und folgt der Guard-PATHLINE;
-- bestehender `OnAfterArmyOnMission`-Callback bleibt erhalten.
+- bestehender `OnAfterArmyOnMission`-Callback bleibt erhalten;
+- alle sechs SiteRegistry-Eintraege werden ueber Guard-Template und Guard-PATHLINE assembliert;
+- kein ACCESS-Feld wird fuer Guard-Materialisierung oder Routing verwendet.
 
 Diese neue produktive Verkabelung ist noch kein neuer DCS-Runtime-PASS. Der Gate-5-DCS-PASS bleibt exakt auf den dokumentierten Builder-5-Stand begrenzt.
