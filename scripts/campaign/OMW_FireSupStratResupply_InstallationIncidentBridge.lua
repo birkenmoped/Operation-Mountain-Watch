@@ -56,16 +56,19 @@ function Instance:OnIncidentStarted(_, incident, evidence)
   local installationId = needString(incident.installationId, "incident.installationId")
   local entry = self.byInstallationId[installationId]
   if not entry then return nil, false, "INSTALLATION_NOT_REGISTERED" end
+  local priority = incident.priority or (evidence and evidence.priority)
 
   local opened, created, reason = self.base:OpenIncident({
     siteId=entry.siteId,
     incidentKey=sourceIncidentId,
-    priority=incident.priority,
+    priority=priority,
     context={
       source="INSTALLATION_ATTACK_INCIDENT",
       installationId=installationId,
       sourceIncidentId=sourceIncidentId,
       initialEvidenceType=evidence and evidence.evidenceType or nil,
+      position=evidence and evidence.position or nil,
+      reportedTarget=evidence and evidence.reportedTarget or nil,
     },
   })
   if not opened then return nil, false, reason end
@@ -73,7 +76,7 @@ function Instance:OnIncidentStarted(_, incident, evidence)
 
   local qrf, qrfCreated, qrfReason = self.base:RequestIncidentSupport(opened.incidentId, "QRF", {
     requestKey="INSTALLATION_ATTACK_INITIAL_QRF",
-    priority=incident.priority,
+    priority=priority,
     context={
       activation="INCIDENT_LOCAL_DEFENSE",
       source="INSTALLATION_ATTACK_INCIDENT",
