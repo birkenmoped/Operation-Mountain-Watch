@@ -19,7 +19,7 @@ $modules = [ordered]@{
   OMW_GATE4_FIRE_SUP_STRAT_RESUPPLY_IDS = 'scripts\campaign\OMW_FireSupStratResupply_IdContract.lua'
 }
 
-$builderVersion = 'FIRE-SUPPORT-STRATEGIC-RESUPPLY-GATE4-STAGE3-REGRESSION-2'
+$builderVersion = 'FIRE-SUPPORT-STRATEGIC-RESUPPLY-GATE4-STAGE3-REGRESSION-3'
 $mooseCommit = '73d3ed119cd9e7e3f2cfcabbaa34513d30529b54'
 $mooseSha256 = 'E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915'
 $referenceMizSha256 = '25387ABB697E9D500F243EF5D2220459EC6AA711712DB57F126DDF7C7D47E0FA'
@@ -64,6 +64,7 @@ $header = @"
 -- ReferenceMizSHA256: $referenceMizSha256
 -- ReferenceStage3BundleSHA256: $referenceStage3BundleSha256
 -- Scope: site-persistent Guard + incident-scoped QRF/C2 support + threshold-driven Resupply contract preflight followed by the unchanged Stage-3 Honaker/Wright runtime fixture.
+-- Encoding: UTF-8 without BOM (required by DCS Lua loader).
 -- MizMutation: false.
 
 "@
@@ -93,7 +94,15 @@ foreach ($marker in @(
 }
 
 New-Item -ItemType Directory -Path $distDir -Force | Out-Null
-Set-Content -LiteralPath $outputFile -Value $bundle -Encoding UTF8
+$utf8NoBom = New-Object System.Text.UTF8Encoding($false)
+[System.IO.File]::WriteAllText($outputFile, $bundle, $utf8NoBom)
+
+$bytes = [System.IO.File]::ReadAllBytes($outputFile)
+if ($bytes.Length -ge 3 -and $bytes[0] -eq 0xEF -and $bytes[1] -eq 0xBB -and $bytes[2] -eq 0xBF) {
+  throw 'Gate-4 output unexpectedly contains a UTF-8 BOM; DCS Lua loader may reject it at line 1.'
+}
+if ($bytes.Length -eq 0) { throw 'Gate-4 output is empty.' }
+
 $hash = (Get-FileHash -LiteralPath $outputFile -Algorithm SHA256).Hash
 
 Write-Host "BuilderVersion: $builderVersion"
@@ -103,5 +112,6 @@ Write-Host "Moose.lua SHA-256: $mooseSha256"
 Write-Host "Reference MIZ SHA-256: $referenceMizSha256"
 Write-Host "Reference Stage-3 bundle SHA-256: $referenceStage3BundleSha256"
 Write-Host "Output: $outputFile"
+Write-Host "Encoding: UTF-8 without BOM"
 Write-Host "Bundle SHA-256: $hash"
 Write-Host 'MIZ mutation: false'
