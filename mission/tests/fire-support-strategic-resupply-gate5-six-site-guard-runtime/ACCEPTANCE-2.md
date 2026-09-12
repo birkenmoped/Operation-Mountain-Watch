@@ -38,6 +38,8 @@ Im gepinnten MOOSE-Stand wurden fuer diesen Schritt bestaetigt:
 
 ```text
 PATHLINE:GetCoordinates()
+ZONE_BASE:GetVec2()
+ZONE_BASE:IsVec2InZone(...)
 COORDINATE:WaypointGround(speed, formation)
 CONTROLLABLE:OptionFormationInterval(meters)
 CONTROLLABLE:TaskFunction(...)
@@ -47,7 +49,7 @@ CONTROLLABLE:Route(...)
 
 `OptionFormationInterval` ist eine Ground-Option und akzeptiert im gepinnten Source 0 bis 100 Meter.
 
-Der gepinnte `WAREHOUSE:_SpawnAssetGroundNaval(...)` waehlt fuer Ground-Assets einen Zufallspunkt in der Spawn-Zone und uebertraegt die relative Geometrie des Templates auf diesen Punkt. Er bietet damit keinen oeffentlichen Parameter, um die neun Infanteristen exakt kompakt entlang des ersten Guard-PATHLINE-Segments auszurichten.
+Der gepinnte `WAREHOUSE:_SpawnAssetGroundNaval(...)` waehlt fuer Ground-Assets einen Zufallspunkt in der Spawn-Zone und uebertraegt die relative Geometrie des Templates auf diesen Punkt. Er bietet damit keinen oeffentlichen Parameter, um die neun Infanteristen exakt kompakt auszurichten.
 
 Fuer Acceptance 2 wird deshalb **nur in diesem Test-Scope** das bereits am 19.08.2026 vom Projektinhaber genehmigte und in ARMY Ground Acceptance 3-2 DCS-erprobte Adaptermuster wiederverwendet: der BRIGADE/WAREHOUSE-Lifecycle bleibt erhalten, waehrend die MOOSE-Warehouse-Materialisierung die vorbereiteten absoluten Positionen/Headings erhaelt.
 
@@ -64,16 +66,24 @@ bestehende ACCESS-Zone
 -> 1 BRIGADE / 1 PLATOON / 1 ONGUARD-Auftrag
 ```
 
-Spawn-Geometrie:
+Korrigierte Spawn-Geometrie nach dem realen Precheck-FAIL vom 12.09.2026:
 
 ```text
-- Basis: erstes Segment der vorhandenen owner-authored Guard-PATHLINE;
-- alle neun Infanteristen in einer schmalen Linie entlang dieses Segments;
-- Zielabstand: 2 m, bei kurzem erstem Segment automatisch kleiner;
-- Mindestabstand fuer diesen Test: 0,75 m;
-- alle Einheiten identisch in Fahr-/Laufrichtung PATHLINE Punkt 1 -> Punkt 2 ausgerichtet;
+- Materialisierungsanker: Zentrum der bestehenden ACCESS-Zone;
+- alle neun Infanteristen in einer schmalen, um den ACCESS-Mittelpunkt zentrierten Linie;
+- Heading weiterhin aus PATHLINE Punkt 1 -> Punkt 2;
+- Zielabstand: 2 m;
+- falls die Linie nicht vollstaendig in ACCESS passt: schrittweise Reduktion bis mindestens 0,75 m;
 - jeder vorbereitete Spawnpunkt muss innerhalb der bestehenden ACCESS-Zone liegen;
+- nach Materialisierung Route vom realen Spawnpunkt zu PATHLINE Punkt 1 und danach entlang der vollstaendigen owner-authored PATHLINE;
 - keine neue Mission-Editor-Zone und keine MIZ-Mutation.
+```
+
+Damit sind die Rollen explizit getrennt:
+
+```text
+ACCESS = zulaessige Materialisierungsflaeche
+PATHLINE = owner-authored Bewegungsroute und Ausrichtungsreferenz
 ```
 
 Nach Materialisierung:
@@ -122,7 +132,7 @@ TELEMETRY
 PASS nur wenn fuer alle sechs Sites gilt:
 
 ```text
-- kompakte PATHLINE-ausgerichtete Materialisierung wurde ausgefuehrt;
+- kompakte PATHLINE-heading-ausgerichtete Materialisierung innerhalb ACCESS wurde ausgefuehrt;
 - Guard lebt;
 - Route wurde gestartet;
 - mindestens 25 m physische Bewegung innerhalb von 300 Sekunden.
@@ -164,9 +174,32 @@ commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
 Moose.lua SHA-256: E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915
 ```
 
-## Lokale Build-Evidenz 2026-09-12
+## Reale DCS-Evidenz 2026-09-12 - erster Acceptance-2-Lauf
 
-Der Projektinhaber hat den Acceptance-2-Builder lokal auf folgendem exakten Branch-Stand ausgefuehrt:
+Der erste reale Acceptance-2-Lauf erreichte die Materialisierung nicht. DCS meldete:
+
+```text
+2026-09-12 16:32:20.418 ... [GATE 5][FAIL] JALALABAD_FENTY SPAWN_OUTSIDE_ACCESS_1
+```
+
+Die vom Projektinhaber gelieferte Mission wurde read-only geprueft:
+
+```text
+Mission: OMW_Template_v24_GroundWorks_base.miz
+Uploaded-copy SHA-256: DEB7ABEAB39DFE386D54CD606C838F50BBDBB2A147EE3BA011F269037113C85B
+```
+
+Ergebnis der Geometriepruefung: Das erste Segment von `OMW_RTE_BLUE_GUARD_FENTY_01` liegt nicht innerhalb von `ZON_BLUE_GND_FENTY_ACCESS`. Der vorherige Acceptance-Code koppelte daher zwei unvereinbare Annahmen und brach beim ersten Site-Setup ab. Deshalb wurden in diesem Lauf **keine** Guards materialisiert; ein Six-Site-Bewegungsergebnis liegt aus diesem Lauf nicht vor.
+
+Ausfuehrliche Evidenz:
+
+```text
+results/2026-09-12-gate5-acceptance2-spawn-precheck-failure.md
+```
+
+## Vorherige lokale Build-Evidenz
+
+Der vor dem realen Precheck-FAIL gebaute Stand war:
 
 ```text
 Git HEAD:
@@ -178,48 +211,17 @@ FIRE-SUPPORT-STRATEGIC-RESUPPLY-GATE5-SIX-SITE-GUARD-RUNTIME-2
 TestId:
 FIRE-SUPPORT-STRATEGIC-RESUPPLY-GATE5-SIX-SITE-GUARD-RUNTIME-ACCEPTANCE-2
 
-MOOSE commit:
-73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
-
-Moose.lua SHA-256:
-E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915
-
-Formation:
-Off Road
-
-FormationIntervalM:
-2
-
 SpawnAlignment:
 PATHLINE_FIRST_SEGMENT
 
-Encoding:
-UTF-8 without BOM
-
-MIZ mutation:
-false
-```
-
-Reale lokale Hashes:
-
-```text
-Bundle:
+Bundle SHA-256:
 D30E63BFFCC506EB579FAE3AF662D6EED8C2C0D06DD5F57C0F22C12BA026390C
-
-Acceptance-2 source:
-1BF6A18992355B150CF2C5507636497141A3C2A9BBDF771D8E447D61C77AE9F5
-
-Builder:
-50001FC4DCC1976F024F29CC88B5BDA6BF3B0C18528763C26345ADCB178E7846
 ```
 
-Der Build war erfolgreich. Der lokale Worktree enthielt danach ausschliesslich die erwarteten untracked `dist/`-Verzeichnisse fuer vorhandene Acceptance-Bundles.
-
-GitHub-CI fuer denselben funktionalen Stand war erfolgreich:
+Dieser Build ist jetzt als DCS-FAIL fuer den dokumentierten Precheck-Scope eingeordnet. Der korrigierte Builder ist Version 3 mit:
 
 ```text
-Documentation validation: PASS
-MissionDemand validation: PASS
+SpawnAlignment: ACCESS_CENTER_PATHLINE_HEADING
 ```
 
-Diese Evidenz belegt Build und Artefakt-Provenienz. Sie ist **kein DCS-Runtime-PASS**; `validated_in_dcs` bleibt bis zum dokumentierten Acceptance-2-Lauf `false`.
+Der korrigierte Stand benoetigt einen neuen realen Owner-Build mit neuen Hashes und danach einen neuen DCS-Lauf. Bis dahin bleibt `validated_in_dcs: false` fuer die korrigierte Acceptance-2-Fassung.
