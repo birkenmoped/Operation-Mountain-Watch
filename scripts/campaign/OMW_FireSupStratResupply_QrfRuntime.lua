@@ -2,12 +2,13 @@
 --
 -- Wires incident-scoped QRF demands to the site-local MOOSE BRIGADE without
 -- operational asset preselection. Tactical response coordinates remain injected.
+-- Optional recruitment constraints are forwarded to public MOOSE AUFTRAG APIs.
 
 local Runtime = {}
 local Instance = {}
 Instance.__index = Instance
 
-Runtime.SchemaVersion = "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-QRF-RUNTIME-1"
+Runtime.SchemaVersion = "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-QRF-RUNTIME-2"
 local TAG = "[OMW][FireSupStratResupply.QrfRuntime]"
 
 local function fail(message) error(TAG .. " " .. tostring(message), 2) end
@@ -38,6 +39,8 @@ function Runtime.New(spec)
     resolveCoordinate = resolveCoordinate,
     requiredAssetsMin = spec.requiredAssetsMin or 1,
     requiredAssetsMax = spec.requiredAssetsMax or (spec.requiredAssetsMin or 1),
+    requiredAttributes = spec.requiredAttributes,
+    requiredProperties = spec.requiredProperties,
     logger = spec.logger,
   })
   local bridge = legionBridge.New({
