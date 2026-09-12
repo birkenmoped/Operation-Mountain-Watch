@@ -13,6 +13,8 @@ function AUFTRAG:NewONGUARD(coordinate)
   local mission={coordinate=coordinate,cancelCount=0}
   function mission:SetTeleport(v) self.teleport=v return self end
   function mission:SetRequiredAssets(a,b) self.requiredMin=a;self.requiredMax=b;return self end
+  function mission:SetRequiredAttribute(v) self.requiredAttributes=v;return self end
+  function mission:SetRequiredProperty(v) self.requiredProperties=v;return self end
   function mission:SetPriority(p,u) self.priority=p;self.urgent=u;return self end
   function mission:Cancel() self.cancelCount=self.cancelCount+1 end
   return mission
@@ -43,6 +45,8 @@ function Router.New(spec)
 end
 
 local resolvedPathlines,resolvedTemplates={},{}
+local requiredAttributes={"Ground_Infantry"}
+local requiredProperties={"Infantry"}
 local runtime=Runtime.New({
   siteRegistry=Sites,
   brigades=brigades,
@@ -50,6 +54,8 @@ local runtime=Runtime.New({
   routeAdapter=Router,
   guardMissionFactory=GuardFactory,
   legionBridge=LegionBridge,
+  requiredAttributes=requiredAttributes,
+  requiredProperties=requiredProperties,
   resolvePathline=function(name,siteId)
     resolvedPathlines[siteId]=name
     return {name=name}
@@ -92,6 +98,8 @@ eq(reason,nil,"Guard dispatch reason")
 eq(#brigades.FOB_JOYCE.missions,1,"Guard queued only at Joyce brigade")
 eq(handle.mission.teleport,false,"Guard teleport disabled")
 eq(handle.mission.requiredMin,1,"one Guard asset requested")
+eq(handle.mission.requiredAttributes,requiredAttributes,"Guard required attributes forwarded")
+eq(handle.mission.requiredProperties,requiredProperties,"Guard required properties forwarded")
 eq(runtime:GetRouteAdapter("FOB_JOYCE").tracked,handle.mission,"Guard route tracks MOOSE-selected mission")
 for siteId,brigade in pairs(brigades) do if siteId~="FOB_JOYCE" then eq(#brigade.missions,0,siteId.." not selected for Joyce Guard") end end
 
