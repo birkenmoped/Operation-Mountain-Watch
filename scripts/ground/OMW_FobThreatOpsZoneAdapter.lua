@@ -2,15 +2,16 @@
 --
 -- The adapter creates a runtime ZONE_RADIUS around an installation anchor and lets
 -- MOOSE OPSZONE own presence scanning and the Attacked/Defeated/Evaluated FSM
--- transitions. Strategic demand creation remains delegated to
--- OMW_FobAttackDemandPolicy and MissionDemand.
+-- transitions. Strategic handling is injected: legacy MissionDemand/Policy remains
+-- supported, while new runtimes can consume the raw incident without creating a
+-- second demand authority.
 
 local Adapter = {}
 local Instance = {}
 Instance.__index = Instance
 
 local TAG = "[OMW][FobThreatOpsZoneAdapter]"
-Adapter.SchemaVersion = "OMW-FOB-THREAT-OPSZONE-ADAPTER-3"
+Adapter.SchemaVersion = "OMW-FOB-THREAT-OPSZONE-ADAPTER-4"
 
 local function fail(message)
   error(TAG .. " " .. tostring(message), 2)
@@ -44,18 +45,24 @@ end
 
 function Adapter.New(spec)
   requireTable(spec, "spec")
-  local missionDemand = requireTable(spec.missionDemand, "missionDemand")
-  local registry = requireTable(spec.registry, "registry")
-  local policy = requireTable(spec.policy, "policy")
   local anchorCoordinate = requireTable(spec.anchorCoordinate, "anchorCoordinate")
-
-  requireFunction(registry, "Create", "registry")
-  requireFunction(policy, "CreateDemand", "policy")
   requireFunction(anchorCoordinate, "GetVec2", "anchorCoordinate")
 
-  if type(missionDemand.Type) ~= "table" or missionDemand.Type.CAS_IMMEDIATE == nil then
-    fail("missionDemand.Type.CAS_IMMEDIATE is required")
+  local threatHandler = spec.threatHandler
+  if threatHandler ~= nil and type(threatHandler) ~= "function" then fail("threatHandler must be a function when provided") end
+
+  local missionDemand, registry, policy
+  if threatHandler == nil then
+    missionDemand = requireTable(spec.missionDemand, "missionDemand")
+    registry = requireTable(spec.registry, "registry")
+    policy = requireTable(spec.policy, "policy")
+    requireFunction(registry, "Create", "registry")
+    requireFunction(policy, "CreateDemand", "policy")
+    if type(missionDemand.Type) ~= "table" or missionDemand.Type.CAS_IMMEDIATE == nil then
+      fail("missionDemand.Type.CAS_IMMEDIATE is required")
+    end
   end
+
   requireNonEmptyString(spec.installationId, "installationId")
   requireNonEmptyString(spec.zoneName, "zoneName")
   if not isFinite(spec.priority) then fail("priority must be a finite number") end
@@ -76,6 +83,7 @@ function Adapter.New(spec)
     missionDemand = missionDemand,
     registry = registry,
     policy = policy,
+    threatHandler = threatHandler,
     anchorCoordinate = anchorCoordinate,
     installationId = spec.installationId,
     zoneName = spec.zoneName,
@@ -96,6 +104,8 @@ function Adapter.New(spec)
     opsZone = nil,
     started = false,
     incidentSequence = 0,
+    activeIncident = nil,
+    activeResult = nil,
   }, Instance)
 end
 
@@ -111,12 +121,10 @@ function Instance:_makeIncidentId()
   return string.format("FOB-THREAT|%s|%d", self.installationId, self.incidentSequence)
 end
 
-function Instance:ProcessThreat(attackerCoalition)
-  if attackerCoalition ~= self.redCoalition then return nil, false, "ATTACKER_NOT_RED" end
-
+function Instance:_buildIncident(attackerCoalition)
   local position = nil
   if type(self.anchorCoordinate.GetVec3) == "function" then position = copyPosition(self.anchorCoordinate:GetVec3()) end
-  local incident = {
+  return {
     incidentId = self:_makeIncidentId(),
     installationId = self.installationId,
     priority = self.priority,
@@ -129,6 +137,28 @@ function Instance:ProcessThreat(attackerCoalition)
       attackerCoalition = attackerCoalition,
     },
   }
+end
+
+function Instance:ProcessThreat(attackerCoalition)
+  if attackerCoalition ~= self.redCoalition then return nil, false, "ATTACKER_NOT_RED" end
+
+  if self.threatHandler and self.activeIncident then
+    return self.activeResult, false, "ACTIVE_INCIDENT", self.activeIncident
+  end
+
+  local incident = self:_buildIncident(attackerCoalition)
+  if self.threatHandler then
+    local result, created, reason = self.threatHandler(self, self.opsZone, incident)
+    if result ~= nil then
+      self.activeIncident = incident
+      self.activeResult = result
+    end
+    self:_log(string.format(
+      "installationId=%s zone=%s radiusM=%s incidentId=%s handled=%s created=%s reason=%s",
+      tostring(self.installationId), tostring(self.zoneName), tostring(self.radiusM), tostring(incident.incidentId),
+      tostring(result ~= nil), tostring(created), tostring(reason)))
+    return result, created, reason, incident
+  end
 
   local demand, created, reason = self.policy.CreateDemand(self.missionDemand, self.registry, incident)
   self:_log(string.format(
@@ -182,15 +212,18 @@ function Instance:Start()
     end
   end
   function opsZone:OnAfterAttacked(From, Event, To, AttackerCoalition)
-    local demand, created, reason, incident = adapter:ProcessThreat(AttackerCoalition)
-    if demand ~= nil and adapter.onThreatStarted then
-      adapter.onThreatStarted(adapter, self, demand, created, reason, incident)
+    local result, created, reason, incident = adapter:ProcessThreat(AttackerCoalition)
+    if result ~= nil and adapter.onThreatStarted then
+      adapter.onThreatStarted(adapter, self, result, created, reason, incident)
     end
   end
   function opsZone:OnAfterDefeated(From, Event, To, DefeatedCoalition)
     if DefeatedCoalition ~= adapter.redCoalition then return end
+    local clearedIncident = adapter.activeIncident
+    adapter.activeIncident = nil
+    adapter.activeResult = nil
     adapter:_log(string.format("installationId=%s alarm perimeter cleared by OPSZONE Defeated coalition=%s", tostring(adapter.installationId), tostring(DefeatedCoalition)))
-    if adapter.onThreatCleared then adapter.onThreatCleared(adapter, self, DefeatedCoalition) end
+    if adapter.onThreatCleared then adapter.onThreatCleared(adapter, self, DefeatedCoalition, clearedIncident) end
   end
 
   self.securityZone = zone
@@ -198,9 +231,9 @@ function Instance:Start()
   self.started = true
   opsZone:Start()
   self:_log(string.format(
-    "started MOOSE OPSZONE security perimeter zone=%s radiusM=%s owner=%s updateSeconds=%s threatlevel=%s captureNunits=%s",
+    "started MOOSE OPSZONE security perimeter zone=%s radiusM=%s owner=%s updateSeconds=%s threatlevel=%s captureNunits=%s handler=%s",
     tostring(self.zoneName), tostring(self.radiusM), tostring(self.blueCoalition), tostring(self.updateSeconds or opsZone.UpdateSeconds),
-    tostring(self.captureThreatlevel), tostring(self.captureNunits)))
+    tostring(self.captureThreatlevel), tostring(self.captureNunits), self.threatHandler and "RAW_INCIDENT" or "MISSION_DEMAND_POLICY"))
   return self, true
 end
 
