@@ -209,3 +209,104 @@ Dieser Vertrag allein autorisiert noch nicht:
 ```
 
 Nächster Schritt nach Owner-ME-Arbeit ist eine read-only Objektvertragsprüfung der aktualisierten Mission. Erst bei vollständigem Objektvertrag folgt die kleinste MOOSE-first Runtime-Erweiterung und ein eigener DCS-Acceptance-Lauf.
+
+## 12. Owner-lokale Vertrags- und Build-Verifikation – 12.09.2026
+
+Der Projektinhaber hat den Gate-5-Vertrag nach Remote-Publikation lokal übernommen und die Build-/Hashkette vollständig verifiziert. Diese Evidenz ist **Build- und Vertragsprovenienz**, keine DCS-Runtime-Acceptance.
+
+```text
+branch: agent/fire-support-strategic-resupply-base-gate0
+verified HEAD: 9bdd89ae03fddc46ab989dfbc69500ad60e2d51b
+origin/main: 980340c9225a81921aed8995aa8f50cad7d1c215
+main ancestor: YES
+
+changes since previous verified head 5ce01bba8a03f7822820dfb05e5cfe7d26631c25:
+A docs/moose/FIRE-SUPPORT-STRATEGIC-RESUPPLY-GATE-5-SIX-SITE-ME-CONTRACT.md
+M scripts/campaign/OMW_FireSupStratResupply_SiteRegistry.lua
+M tests/mission-demand/test_fire_support_strategic_resupply_gate2.lua
+```
+
+Die lokale Worktree-Bestandsaufnahme enthielt vor und nach dem Build ausschließlich die bereits erwarteten untracked Build-Verzeichnisse:
+
+```text
+?? mission/tests/fire-support-strategic-resupply-gate4-stage3-regression/dist/
+?? mission/tests/stage3-honaker-wright-full-response/dist/
+```
+
+Der Owner-Build wurde mit dem versionierten PowerShell-Builder und lokalem Execution-Policy-Bypass ausgeführt. Ergebnis:
+
+```text
+Historical Stage-3 BuilderVersion:
+STAGE3-HONAKER-WRIGHT-FULL-RESPONSE-ACCEPTANCE-1-26
+
+Gate-4 BuilderVersion:
+FIRE-SUPPORT-STRATEGIC-RESUPPLY-GATE4-STAGE3-REGRESSION-3
+
+GitCommit:
+9bdd89ae03fddc46ab989dfbc69500ad60e2d51b
+
+MOOSE commit:
+73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+
+Moose.lua SHA-256:
+E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915
+
+Reference MIZ SHA-256:
+25387ABB697E9D500F243EF5D2220459EC6AA711712DB57F126DDF7C7D47E0FA
+
+Reference Stage-3 bundle SHA-256:
+33CEB7AA6BC7FA833CCF456C41B689245B0CB70BD587AF533D0071A92B346661
+
+Generated historical Stage-3 bundle SHA-256:
+06ED5FC06760D923ED6C636B38E9F942358EAC406E70B06CA0FCB2A26839AF04
+
+Generated Gate-4 bundle SHA-256:
+ED90A62EBA4EF0846225F09B3D1F06FF9E14A72477AB9F443B34F82A8D2C3442
+
+Gate-4 encoding:
+UTF-8 without BOM
+
+MIZ mutation:
+false
+```
+
+Zusätzlich wurden die Gate-5-Vertragsartefakte lokal gehasht:
+
+```text
+Gate-5 ME contract SHA-256:
+7207D90D452E5C7C66AFB34E3FF6B3F30A543C5EE686884911F9D7E79328BFEE
+
+SiteRegistry SHA-256:
+A919A43BD092E17FE70E062A591E58531DC4D25E6A4ED7D5C5AFAE0A167DD4FF
+
+SupportProfiles SHA-256:
+53F6AC78B88A538D71BBC8224E290711E7FE94F801569453B0A8897A9CB2454D
+
+Gate-2 contract test SHA-256:
+EC5794606349E7388D6BC437177C6E1AB0FAD7135CF36A7874C5A37BBFF5B5EA
+```
+
+Der lokale Content-Check bestätigte für alle sechs Sites die vertraglich festgelegten Guard-PATHLINE- und Alarmzonen-Namen sowie das physische Guard-Template `TPL_BLUE_GND_INF_RIFLE_SQUAD_9` im Registry-Stand.
+
+Grenze dieser Evidenz:
+
+```text
+PASS:
+- Remote -> local fast-forward provenance
+- exact branch/main ancestry
+- versioned Builder execution
+- generated bundle existence
+- bundle hashes
+- UTF-8-without-BOM build contract
+- six-site registry naming contract
+- unchanged no-MIZ-mutation rule
+
+NOT YET VALIDATED:
+- existence/geometry of the six PATHLINEs in an owner-updated MIZ
+- existence/geometry of the six alarm zones in that MIZ
+- six-site Guard materialization and patrol runtime
+- six-site alarm/response runtime
+- generic six-site DCS acceptance
+```
+
+Damit bleibt Gate 5 `PLANNED` und `validated_in_dcs: false`. Der nächste zulässige Schritt bleibt die Owner-Mission-Editor-Arbeit und anschließend eine read-only Objektvertragsprüfung der aktualisierten Mission.
