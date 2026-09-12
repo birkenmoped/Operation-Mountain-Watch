@@ -28,5 +28,8 @@ dofile("tests/mission-demand/test_fire_support_strategic_resupply_guard_runtime.
 dofile("tests/mission-demand/test_fire_support_strategic_resupply_qrf_runtime.lua")
 dofile("tests/mission-demand/test_fire_support_strategic_resupply_runtime.lua")
 dofile("tests/mission-demand/test_fire_support_strategic_resupply_resupply_monitor.lua")
+dofile("tests/mission-demand/test_fire_support_strategic_resupply_commander_bridge.lua")
+dofile("tests/mission-demand/test_fire_support_strategic_resupply_arty_mission_factory.lua")
+dofile("tests/mission-demand/test_fire_support_strategic_resupply_cas_mission_factory.lua")
 
 print("PASS mission-demand test suite")
