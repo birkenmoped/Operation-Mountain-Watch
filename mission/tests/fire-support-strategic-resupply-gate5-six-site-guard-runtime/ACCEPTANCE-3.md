@@ -1,88 +1,69 @@
 ---
 document_id: OMW-FIRE-SUPPORT-GATE5-GUARD-PRODUCTION-MATERIALIZER-ACCEPTANCE-3
-status: PLANNED
-document_class: ACCEPTANCE_PLAN
+status: ACCEPTED_TECHNICAL_BASELINE
+document_class: ACCEPTANCE_RESULT
 owning_policy: OMW-GOV-001
 authoritative_for:
   - Gate-5 DCS regression of the productive Guard PATHLINE materialization adapter
-  - Gate-5 regression of continuous Guard patrol on owner-authored closed PATHLINE drawings
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
 superseded_by:
 source_branch: agent/fire-support-strategic-resupply-base-gate0
-source_commit: PENDING_MERGE
-validated_in_dcs: false
+source_commit: 33c900bea65b53159f8ebed5690a0a5139af164f
+validated_in_dcs: true
+dcs_version: 2.9.29.27468
+bundle_sha256: 1DA151FB71A631C13A151E23A0C25DBD788E282E060C480BC07DAE1B98C61E02
+materializer_sha256: 6FA28519564377ADF40175F9F1DFC1607B2ED693DF30AD6DD57AF92ED4B7D4E2
+acceptance_source_sha256: A562A4B9379F91E962C538FBD7B3825701C1C78EE0AD881F7EC7C49EAE175410
 ---
 
 # Gate 5 - Guard Production Materializer Acceptance 3
 
-## Ziel
+## Ergebnis
 
-Acceptance 2 hat den eng begrenzten Warehouse-Spawn-Adapter im Testscope erfolgreich in DCS validiert. Der Projektinhaber hat am 12.09.2026 die produktive Nutzung genau dieses Musters fuer Guard-Materialisierung freigegeben, sofern kein effektiver oeffentlicher MOOSE-Weg existiert.
+Acceptance 3 ist fuer den festgelegten Gate-5-Scope **PASS**.
 
-Die Source-Pruefung des gepinnten MOOSE-Stands bestaetigt diese Voraussetzung fuer die Materialisierung: der oeffentliche WAREHOUSE-Vertrag bietet keinen Parameter fuer die exakte kompakte Ausrichtung aller Units eines Ground-Assets auf einem owner-authored PATHLINE-Segment. Die private Materialisierungsstelle bleibt deshalb ausschliesslich fuer diesen Guard-Scope freigegeben.
-
-## Nachbefund aus dem Builder-5-DCS-Lauf
-
-Der Builder-5-Lauf bestaetigte die produktive Materialisierung und die initiale Bewegung aller sechs Guards. Der Projektinhaber beobachtete danach jedoch, dass nur die Wright-Guard-Gruppe offenbar dauerhaft weiterpatrouillierte, waehrend die anderen Gruppen nach ihrem ersten Umlauf bzw. am Routenende pausierten.
-
-Damit war das bisherige Acceptance-Kriterium `alive + routeStarted + >=25 m movement` fuer eine permanente Guard-Patrouille zu schwach. Dieser Lauf darf deshalb nicht als Nachweis einer dauerhaften Six-Site-Patrouille gewertet werden.
-
-## MOOSE-First-Analyse des Patrol-Pfads
-
-Der gepinnte `Moose.lua`-Stand wurde erneut gegen den konkreten Patrol-Bedarf geprueft.
-
-Public MOOSE bietet:
+Der Owner-local Builder-5-Lauf wurde auf Commit
 
 ```text
-CONTROLLABLE:PatrolRoute()
-CONTROLLABLE:TaskFunction(...)
-CONTROLLABLE:SetTaskWaypoint(...)
-CONTROLLABLE:WayPointInitialize(...)
-CONTROLLABLE:WayPointExecute(...)
-CONTROLLABLE:Route(...)
+33c900bea65b53159f8ebed5690a0a5139af164f
 ```
 
-`CONTROLLABLE:PatrolRoute()` ist fuer diesen Scope nicht direkt verwendbar, weil die Methode intern `GetTemplateRoutePoints()` verwendet. Die Guard-Routen sind jedoch Mission-Editor-Line-Drawings, die von MOOSE als `PATHLINE` importiert werden.
+erzeugt. Die real lokal ermittelten Artefakt-Hashes sind im Frontmatter dokumentiert. `MIZ mutation: false` wurde im Build ausgegeben.
 
-Der relevante Source-Befund ist entscheidend: MOOSE registriert Line-Drawings als `PATHLINE:NewFromVec2Array(...)`, uebernimmt dabei aber nur die Punktliste. Das DCS-Drawing-Merkmal `closed=true` wird im PATHLINE-Objekt nicht erhalten. Alle sechs Guard-Zeichnungen sind im getesteten Missionsstand als geschlossene Line-Drawings angelegt. Eine Route aus `PATHLINE:GetCoordinates()` enthaelt deshalb nicht automatisch das implizite Segment vom letzten Punkt zurueck zum ersten Punkt.
-
-Der bisherige Acceptance-Code routete nur
+Der anschliessende reale DCS-Lauf auf DCS `2.9.29.27468` bestaetigte fuer alle sechs Sites:
 
 ```text
-spawn lead -> PATHLINE point 2 -> ... -> PATHLINE last point
+- produktives OMW_GuardPathlineMaterializationAdapter.lua verwendet;
+- Guard PATHLINE-ausgerichtet materialisiert;
+- Guard alive;
+- Route gestartet;
+- Spawnabstand 2.00 m;
+- mindestens 25 m Bewegung beobachtet;
+- kein Guard-ACCESS-Zonen-Vertrag eingefuehrt.
 ```
 
-und startete danach die Route erneut. Dadurch musste DCS vom letzten Punkt ohne expliziten owner-authored Closing-Waypoint zurueck zum Anfang finden. Das ist fuer Ground-AI nicht belastbar.
-
-## Korrigierter MOOSE-First-Pfad
-
-Der neue Patrol-Adapter verwendet ausschliesslich oeffentliche MOOSE-Methoden und fuegt keine eigene Scheduler-/Retry-/Assetlogik hinzu:
+Die Testtelemetrie endete mit:
 
 ```text
-owner-authored Guard PATHLINE
--> lead point
--> PATHLINE points 2..N
--> PATHLINE point 1 als explizites Closing-Segment
--> CONTROLLABLE:TaskFunction("CONTROLLABLE.WayPointExecute", ...)
--> CONTROLLABLE:WayPointInitialize(route)
--> CONTROLLABLE:WayPointExecute(...)
--> gleiche geschlossene Route erneut
+[GATE 5][PASS] 6/6 Guards production materializer >=25 m movement observed
 ```
 
-Produktive Module:
+Am PASS-Checkpoint wurden unter anderem folgende Bewegungen protokolliert:
 
 ```text
-scripts/ground/OMW_GuardPathlineMaterializationAdapter.lua
-scripts/ground/OMW_GuardPathlinePatrolAdapter.lua
+JALALABAD_FENTY   206.8 m
+COP_FORTRESS      203.9 m
+FOB_JOYCE         215.5 m
+FOB_WRIGHT        259.5 m
+COP_HONAKER       185.1 m
+FOB_BOSTICK        36.8 m
 ```
-
-Die zweite Datei benutzt nur public MOOSE APIs. Dafuer ist keine neue private-MOOSE-Ausnahme erforderlich.
 
 ## Produktive Ausnahmegrenze
 
-Zugelassen ist ausschliesslich die bereits freigegebene Guard-Materialisierung:
+Die Owner-Freigabe bleibt eng begrenzt auf die exakte Guard-Materialisierung ueber den privaten MOOSE-WAREHOUSE-Spawn-Schritt:
 
 ```text
 Guard asset
@@ -92,43 +73,45 @@ Guard asset
 -> normaler MOOSE PLATOON / ARMYGROUP / AUFTRAG Lifecycle
 ```
 
-Nicht freigegeben sind:
+Nicht freigegeben sind insbesondere eigene Asset-Selektion, eigene Queue/Retry-Queue, Ersatz des MOOSE-Recruitments oder die Wiederverwendung dieser privaten Materialisierungsstelle fuer Convoy/QRF/ARTY/CAS/Resupply ohne neue Owner-Freigabe.
+
+`ZON_BLUE_GND_*_ACCESS` bleibt ausschliesslich Convoy-/Zufahrtskontext und ist kein Guard-Spawn-, Guard-Routen- oder Guard-Acceptance-Vertrag.
+
+## Owner-Entscheidung zur Patrol-Wiederholung
+
+Im realen DCS-Lauf wurde zusaetzlich beobachtet:
 
 ```text
-- allgemeine private-MOOSE-Nutzung;
-- eigene Asset-Selektion;
-- eigene Queue oder Retry-Queue;
-- Ersatz des COMMANDER-/BRIGADE-Recruitments;
-- Convoy-/QRF-/ARTY-/CAS-/Resupply-Nutzung dieser Ausnahme ohne neue Owner-Freigabe;
-- Guard-Abhaengigkeit von ZON_BLUE_GND_*_ACCESS;
-- MIZ-Mutation.
+FOB_WRIGHT:
+  Guard schien die Patrouille wiederholt weiterzufahren.
+
+Andere Sites:
+  nach der ersten Runde bzw. am Routenende teilweise sichtbare Pause.
 ```
 
-## DCS-Pruefung
+Der Projektinhaber hat am 12.09.2026 ausdruecklich entschieden, dieses Verhalten fuer den aktuellen Gate-5-/Foundation-Scope als **PASS** zu akzeptieren, damit die allgemeine `fire-support-strategic-resupply` Base weiter fertiggestellt werden kann.
 
-Die gleiche Six-Site-Geometrie wie in Acceptance 2 wird verwendet:
+Die bestehende Routing-Implementierung bleibt deshalb unveraendert. Der zwischenzeitlich vorbereitete separate PATHLINE-Patrol-Adapter wird nicht Bestandteil dieser Baseline.
+
+## Spaeteres TODO - MOOSE-native Patrol-Verfeinerung
+
+Nach Fertigstellung der grundlegenden `fire-support-strategic-resupply` Base ist gesondert zu pruefen, ob die Guard-Patrouille auf einen noch staerker MOOSE-nativen Wiederholungsweg umgestellt werden soll, insbesondere:
 
 ```text
-JALALABAD_FENTY
-COP_FORTRESS
-FOB_JOYCE
-FOB_WRIGHT
-COP_HONAKER
-FOB_BOSTICK
+- CONTROLLABLE:PatrolRoute() / Template-Waypoint-Vertrag;
+- erforderliche Abbildung der owner-authored Guard-PATHLINE auf den von MOOSE erwarteten Template-Route-Vertrag;
+- Verhalten an geschlossenen Mission-Editor-Line-Drawings;
+- DCS-Ground-AI-Verhalten nach mehreren Patrol-Zyklen.
 ```
 
-Automatischer Mindestnachweis fuer alle sechs Sites:
+Dieses TODO ist **kein Gate-5-Blocker** und darf nicht stillschweigend in die aktuelle Base-Foundation zurueckgezogen werden. Eine spaetere Aenderung benoetigt erneut Source-Pruefung des gepinnten MOOSE-Stands und DCS-Regression.
+
+## Statusgrenze
 
 ```text
-- produktives Materializer-Modul wird verwendet;
-- produktiver public-MOOSE Patrol-Adapter wird verwendet;
-- Guard materialisiert PATHLINE-ausgerichtet;
-- Guard lebt;
-- geschlossene Route wurde gestartet;
-- mindestens 25 m Bewegung innerhalb 300 Sekunden;
-- keine Convoy-ACCESS-Zone ist Teil der Guard-Materialisierung oder Route.
+OWNER-LOCAL BUILD: PASS
+DCS ACCEPTANCE-3: PASS
+PRODUCTIVE GUARD MATERIALIZER: VALIDATED fuer diesen Scope
+CONTINUOUS MULTI-CYCLE PATROL REFINEMENT: DEFERRED TODO
+GATE 5: ACCEPTED
 ```
-
-Zusaetzlich ist fuer den Abschluss dieser Acceptance eine reale visuelle Bestaetigung erforderlich, dass die Guards nach Erreichen des PATHLINE-Endes nicht dauerhaft stehenbleiben, sondern die geschlossene Patrouille fortsetzen. Der automatische 300-Sekunden-PASS allein beweist diese Langzeitbedingung ausdruecklich nicht.
-
-Acceptance 2 bleibt als exakte Builder-4-Evidenz fuer kompakte Materialisierung gueltig. Acceptance 3 bleibt bis zur realen DCS-Regressionspruefung des korrigierten geschlossenen Patrol-Pfads `validated_in_dcs: false`.
