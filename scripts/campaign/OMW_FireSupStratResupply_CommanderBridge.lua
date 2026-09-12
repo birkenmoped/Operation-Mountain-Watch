@@ -9,7 +9,7 @@ local Bridge = {}
 local Instance = {}
 Instance.__index = Instance
 
-Bridge.SchemaVersion = "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-COMMANDER-BRIDGE-1"
+Bridge.SchemaVersion = "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-COMMANDER-BRIDGE-2"
 Bridge.Kind = { MISSION = "MISSION", TRANSPORT = "TRANSPORT" }
 
 local TAG = "[OMW][FireSupStratResupply.CommanderBridge]"
@@ -40,7 +40,13 @@ function Instance:Dispatch(demand, context)
   if type(demand) ~= "table" or type(demand.demandId) ~= "string" or demand.demandId == "" then fail("demandId is required") end
   if self.items[demand.demandId] then return self.items[demand.demandId], false, "ALREADY_DISPATCHED" end
 
-  local runtime = self.factory(demand, context)
+  local runtime, factoryCreated, factoryReason = self.factory(demand, context)
+  if runtime == nil then
+    self:_log(string.format("runtime not created demandId=%s incidentId=%s siteId=%s supportType=%s kind=%s reason=%s",
+      tostring(demand.demandId), tostring(demand.incidentId), tostring(demand.siteId), tostring(demand.supportType),
+      tostring(self.kind), tostring(factoryReason)))
+    return nil, false, factoryReason or "RUNTIME_NOT_CREATED"
+  end
   if type(runtime) ~= "table" or type(runtime.Cancel) ~= "function" then fail("factory runtime must expose Cancel()") end
 
   if self.kind == Bridge.Kind.MISSION then self.commander:AddMission(runtime) else self.commander:AddOpsTransport(runtime) end
@@ -56,7 +62,7 @@ function Instance:Dispatch(demand, context)
   self.items[demand.demandId] = handle
   self:_log(string.format("queued demandId=%s incidentId=%s siteId=%s supportType=%s kind=%s",
     tostring(demand.demandId), tostring(demand.incidentId), tostring(demand.siteId), tostring(demand.supportType), tostring(self.kind)))
-  return handle, true, nil
+  return handle, factoryCreated ~= false, factoryReason
 end
 
 return Bridge
