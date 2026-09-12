@@ -32,5 +32,7 @@ dofile("tests/mission-demand/test_fire_support_strategic_resupply_commander_brid
 dofile("tests/mission-demand/test_fire_support_strategic_resupply_arty_mission_factory.lua")
 dofile("tests/mission-demand/test_fire_support_strategic_resupply_cas_mission_factory.lua")
 dofile("tests/mission-demand/test_fire_support_strategic_resupply_external_support_runtime.lua")
+dofile("tests/mission-demand/test_fire_support_strategic_resupply_storage_transport_factory.lua")
+dofile("tests/mission-demand/test_fire_support_strategic_resupply_transport_runtime.lua")
 
 print("PASS mission-demand test suite")
