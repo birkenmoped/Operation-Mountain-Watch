@@ -18,9 +18,29 @@ validated_in_dcs: false
 
 ## Zweck
 
-Diese Notiz dokumentiert den MOOSE-first-Pfad fuer Gate 5 Acceptance 2. Anlass ist die reale Acceptance-1-Evidenz, bei der alle sechs Guards materialisiert und geroutet wurden, einzelne Gruppen aber je nach Lauf trotz `routeStarted=true` praktisch keine Bewegung zeigten.
+Diese Notiz dokumentiert den MOOSE-first-Pfad für Gate 5 Acceptance 2. Anlass ist die reale Acceptance-1-Evidenz, bei der alle sechs Guards materialisiert und geroutet wurden, einzelne Gruppen aber je nach Lauf trotz `routeStarted=true` praktisch keine Bewegung zeigten.
 
-Der Projektinhaber entschied deshalb am 12.09.2026, dass Guards eng und entlang ihrer bestehenden owner-authored Guard-PATHLINE ausgerichtet materialisiert werden sollen, analog zum bereits DCS-erprobten Strassenkonvoi-Spawnprinzip.
+Der Projektinhaber entschied am 12.09.2026, dass Guards eng und entlang ihrer bestehenden owner-authored Guard-PATHLINE ausgerichtet materialisiert werden sollen.
+
+## Verbindliche Owner-Korrektur: ACCESS gehört nicht zum Guard-Vertrag
+
+Der Projektinhaber stellte am 12.09.2026 ausdrücklich klar:
+
+```text
+ZON_BLUE_GND_<SITE>_ACCESS wurde für Convoys/Zufahrt angelegt.
+Diese Zonen haben mit Guards und Guard-Routen nichts zu tun.
+Sie liegen regelmäßig nicht auf den Guard-PATHLINEs.
+```
+
+Daraus folgt für Gate 5:
+
+```text
+Guard spawn geometry = Guard PATHLINE
+Guard movement geometry = Guard PATHLINE
+ZON_BLUE_GND_<SITE>_ACCESS = für diesen Guard-Scope irrelevant
+```
+
+Die zwischenzeitliche Annahme, ACCESS als zulässige Guard-Materialisierungsfläche oder als Guard-Spawn-Anker zu behandeln, war falsch. Auch die daraus abgeleitete Zwischenkorrektur `ACCESS_CENTER_PATHLINE_HEADING` ist verworfen und darf nicht getestet oder produktiv übernommen werden.
 
 ## Gepinnter MOOSE-Stand
 
@@ -31,7 +51,7 @@ Moose.lua SHA-256: E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A
 
 ## Public-MOOSE-Pfad
 
-Source-geprueft fuer Acceptance 2:
+Source-geprüft für Acceptance 2:
 
 ```text
 PATHLINE:GetCoordinates()
@@ -43,25 +63,15 @@ CONTROLLABLE:Route(...)
 BRIGADE / PLATOON / AUFTRAG:NewONGUARD lifecycle
 ```
 
-`OptionFormationInterval(meters)` ist im gepinnten Source eine Ground-Option. Zulaessig sind 0 bis 100 Meter; ausserhalb dieses Bereichs faellt MOOSE auf 50 Meter zurueck. Acceptance 2 verwendet 2 Meter.
+Die Route bleibt `Off Road`, damit die vorhandene Guard-PATHLINE und nicht das DCS-Straßennetz die Bewegung vorgibt.
 
-Die Route bleibt `Off Road`, damit die vorhandene Guard-PATHLINE und nicht das DCS-Strassennetz die Bewegung vorgibt.
+## Verifizierte MOOSE-Lücke im Materialisierungspfad
 
-## Verifizierte MOOSE-Luecke im Materialisierungspfad
-
-Der gepinnte `WAREHOUSE:_SpawnAssetGroundNaval(...)`:
-
-1. bereitet das Asset-Template vor;
-2. waehlt einen Zufallspunkt aus der Warehouse-Spawn-Zone;
-3. verschiebt alle Template-Units relativ zu diesem Zufallspunkt;
-4. behaelt damit die relative Template-Geometrie bei;
-5. materialisiert anschliessend die Gruppe.
-
-Dieser Pfad besitzt keinen oeffentlichen Parameter, um fuer ein mehrgliedriges Ground-Asset die einzelnen Unit-Positionen und Headings exakt entlang des ersten Segments einer owner-authored PATHLINE festzulegen.
+Der gepinnte `WAREHOUSE:_SpawnAssetGroundNaval(...)` behält ohne Adapter die relative Template-Geometrie bei und bietet keinen öffentlichen Parameter, um die einzelnen Unit-Positionen und Headings eines mehrgliedrigen Ground-Assets exakt entlang des ersten Segments einer owner-authored PATHLINE festzulegen.
 
 ## Wiederverwendete genehmigte Ausnahme
 
-ARMY Ground Acceptance 3-2 hat nach ausdruecklicher Owner-Freigabe vom 19.08.2026 einen kleinen Adapter um den privaten MOOSE-WAREHOUSE-Spawn-Schritt verwendet. Dabei blieben erhalten:
+ARMY Ground Acceptance 3-2 hat nach ausdrücklicher Owner-Freigabe vom 19.08.2026 einen kleinen Adapter um den privaten MOOSE-WAREHOUSE-Spawn-Schritt verwendet. Dabei blieben erhalten:
 
 ```text
 BRIGADE
@@ -71,7 +81,7 @@ PLATOON / ARMYGROUP lifecycle
 MOOSE mission execution
 ```
 
-Nur die unmittelbar vor Materialisierung verwendeten Unit-Positionen/Headings wurden kontrolliert gesetzt. Gate 5 Acceptance 2 verwendet dieses bereits genehmigte Muster erneut, jetzt fuer Guard-Infanterie und ausschliesslich im dokumentierten Acceptance-Scope.
+Nur die unmittelbar vor Materialisierung verwendeten Unit-Positionen/Headings wurden kontrolliert gesetzt. Gate 5 Acceptance 2 verwendet dieses bereits genehmigte Muster erneut, jetzt für Guard-Infanterie und ausschließlich im dokumentierten Acceptance-Scope.
 
 Keine generelle Produktionsfreigabe privater MOOSE-Methoden wird daraus abgeleitet.
 
@@ -86,9 +96,22 @@ Movement formation: Off Road
 MOOSE formation interval: 2 m
 Observation: 300 s
 Minimum movement: 25 m per Guard
+Guard ACCESS-zone dependency: none
 ```
 
-Alle vorbereiteten Spawnpunkte muessen innerhalb der bereits bestehenden ACCESS-Zone liegen. Es werden keine neuen Mission-Editor-Objekte erzeugt und keine `ZON_BLUE_GND_<SITE>_ALARM`-Objekte eingefuehrt.
+Es werden keine neuen Mission-Editor-Objekte erzeugt und keine `.miz` verändert.
+
+## Reale DCS-Evidenz und Fehlerklassifikation
+
+Der erste Acceptance-2-Lauf brach vor der Materialisierung mit
+
+```text
+JALALABAD_FENTY SPAWN_OUTSIDE_ACCESS_1
+```
+
+ab. Das war kein Guard-/PATHLINE-/Warehouse-Runtime-Nachweis, sondern ein Testfehler: Der Code koppelte Guard-PATHLINE-Geometrie fälschlich an die Convoy-ACCESS-Zone.
+
+Der korrigierte Builder 4 enthält deshalb zusätzlich eine Anti-Regression-Prüfung, die Guard-Code mit `ZONE:FindByName(site.accessZoneName)`, `SetSpawnZone(access)`, `ACCESS_CENTER` oder `IsVec2InZone(` ablehnt.
 
 ## Statusgrenze
 
@@ -97,4 +120,4 @@ SOURCE_REVIEWED / STAGED
 DCS VALIDATION: pending
 ```
 
-Erst ein realer Acceptance-2-Lauf kann bestaetigen, ob die kompakte PATHLINE-ausgerichtete Materialisierung die beobachteten Festsitz-Symptome behebt.
+Erst ein neuer realer Acceptance-2-Lauf des korrigierten ACCESS-freien Guard-Pfads kann bestätigen, ob die kompakte PATHLINE-ausgerichtete Materialisierung die beobachteten Festsitz-Symptome behebt.
