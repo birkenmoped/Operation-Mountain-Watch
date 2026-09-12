@@ -1,6 +1,6 @@
 ---
 document_id: OMW-FIRE-SUPPORT-GATE5-SIX-SITE-GUARD-RUNTIME-ACCEPTANCE-2
-status: PLANNED
+status: VALIDATED
 document_class: ACCEPTANCE_PLAN
 owning_policy: OMW-GOV-001
 authoritative_for:
@@ -11,7 +11,7 @@ supersedes:
 superseded_by:
 source_branch: agent/fire-support-strategic-resupply-base-gate0
 source_commit: PENDING_MERGE
-validated_in_dcs: false
+validated_in_dcs: true
 ---
 
 # Gate 5 - Six-Site Guard Runtime Acceptance 2
@@ -115,7 +115,7 @@ GUARD_MISSION_ADDED
 TELEMETRY
 ```
 
-## PASS
+## PASS-Kriterien
 
 PASS nur wenn für alle sechs Sites gilt:
 
@@ -165,18 +165,29 @@ Movement: nicht bewertet
 
 Die unmittelbar danach erstellte Zwischenkorrektur `ACCESS_CENTER_PATHLINE_HEADING` war ebenfalls fachlich falsch und darf nicht getestet oder als Baseline verwendet werden.
 
-## Builder
+## Builder-4-Provenance
 
 ```text
-tools/build-fire-support-strategic-resupply-gate5-six-site-guard-runtime.ps1
-```
+Owner-local build HEAD:
+a7944a995954a962d2a3b33b7a6d4c459d845f1e
 
-Korrigierter Builder:
+BuilderVersion:
+FIRE-SUPPORT-STRATEGIC-RESUPPLY-GATE5-SIX-SITE-GUARD-RUNTIME-4
 
-```text
-BuilderVersion: FIRE-SUPPORT-STRATEGIC-RESUPPLY-GATE5-SIX-SITE-GUARD-RUNTIME-4
-SpawnAlignment: PATHLINE_FIRST_SEGMENT
-GuardAccessZoneDependency: none
+SpawnAlignment:
+PATHLINE_FIRST_SEGMENT
+
+GuardAccessZoneDependency:
+none
+
+Bundle SHA-256:
+E1CBF5341D608714C912380FA4806D73BFBF42BBE5F2D0E8513298C96555E9DC
+
+Acceptance-2 source SHA-256:
+DDADEA6531EA05A31E836EC0AC35319F83673B9AC4B16D2465A9E218E2C1AE36
+
+Builder SHA-256:
+BC6A28F1D167BB4DF768D8FB3F6FAAE60468B7111C77313BCE9715E1186D4D59
 ```
 
 Pinned MOOSE:
@@ -186,4 +197,45 @@ commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
 Moose.lua SHA-256: E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915
 ```
 
-Der korrigierte Stand benötigt einen neuen realen Owner-Build mit neuen Hashes und danach einen neuen DCS-Lauf. Bis dahin bleibt `validated_in_dcs: false`.
+## Reale DCS-Evidenz 2026-09-12 - korrigierter Builder-4-Lauf
+
+Der korrigierte ACCESS-freie Lauf erreichte den vollständigen Acceptance-Checkpoint und meldete:
+
+```text
+[GATE 5][PASS] 6/6 Guards compact/aligned and >=25 m movement observed
+```
+
+Checkpoint-Telemetrie:
+
+```text
+JALALABAD_FENTY   alive=true  routeStarted=true  movementM=176.2
+COP_FORTRESS      alive=true  routeStarted=true  movementM=195.1
+FOB_JOYCE         alive=true  routeStarted=true  movementM=195.6
+FOB_WRIGHT        alive=true  routeStarted=true  movementM=235.0
+COP_HONAKER       alive=true  routeStarted=true  movementM=165.6
+FOB_BOSTICK       alive=true  routeStarted=true  movementM=137.1
+```
+
+Damit haben alle sechs Guard-Gruppen die geforderten 25 m innerhalb der 300-Sekunden-Beobachtung deutlich überschritten, lebten am Checkpoint und hatten ihre Route gestartet.
+
+Der Projektinhaber bestätigte anschließend für denselben Lauf die visuelle Prüfung mit der Aussage, dass keine Probleme auszumachen waren. Damit ist auch das visuelle Kriterium hinsichtlich offensichtlichem Festhängen in HESCOs/Gebäuden/Statics beziehungsweise auffälliger Formation erfüllt.
+
+Vollständiges Ergebnis:
+
+```text
+6/6 compact PATHLINE-aligned materialization: PASS
+6/6 alive: PASS
+6/6 routeStarted: PASS
+6/6 >=25 m within 300 s: PASS
+Visual obstacle/formation check: PASS
+Guard ACCESS-zone dependency: none
+Acceptance 2 exact scope: VALIDATED / PASS
+```
+
+Ergebnisdokument:
+
+```text
+results/2026-09-12-gate5-acceptance2-builder4-dcs-pass.md
+```
+
+Die Validierung gilt ausschließlich für den dokumentierten Acceptance-2-Scope und ist keine produktive Generalfreigabe des test-spezifischen privaten Warehouse-Materialisierungsadapters.
