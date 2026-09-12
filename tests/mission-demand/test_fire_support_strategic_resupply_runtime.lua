@@ -52,6 +52,7 @@ modules.installationIncidentRuntime={}
 function modules.installationIncidentRuntime.New(spec)
   calls.installationIncidentRuntimeSpec=spec
   local r={}
+  calls.installationIncidentRuntime=r
   function r:Prepare() calls.installationIncidentsPrepared=true;return self,true,nil end
   function r:ReportEvidence(evidence) calls.reportEvidence=evidence;return {incidentId="SOURCE-INCIDENT"},true,nil end
   function r:CloseInstallationIncident(installationId,reason) calls.closeInstallation={installationId=installationId,reason=reason};return {incidentId="SOURCE-INCIDENT"},true,nil end
@@ -167,7 +168,7 @@ eq(calls.transportSettlementSpec.campaignState,campaignState,"settlement campaig
 eq(calls.transportSettlementSpec.resolveTransfer,transferResolver,"transfer resolver forwarded")
 eq(calls.installationIncidentBridgeSpec.base,runtime:GetBase(),"incident bridge uses same Base")
 eq(calls.installationIncidentRuntimeSpec.incidentCoordinator,modules.installationAttackIncident,"authoritative incident coordinator injected")
-eq(calls.perimeterBridgeSpec.incidentRuntime,calls.perimeterSpec.perimeterBridge and calls.perimeterBridgeSpec.incidentRuntime or calls.perimeterBridgeSpec.incidentRuntime,"perimeter bridge receives incident runtime")
+eq(calls.perimeterBridgeSpec.incidentRuntime,calls.installationIncidentRuntime,"perimeter bridge receives installation incident runtime")
 eq(calls.perimeterSpec.perimeters.FOB_JOYCE.radiusM,1000,"perimeter config forwarded")
 eq(calls.perimeterSpec.blueCoalition,2,"blue coalition forwarded")
 eq(calls.perimeterSpec.redCoalition,1,"red coalition forwarded")
