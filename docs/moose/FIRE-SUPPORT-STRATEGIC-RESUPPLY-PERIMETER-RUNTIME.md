@@ -1,6 +1,6 @@
 ---
 document_id: OMW-MOOSE-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PERIMETER-RUNTIME
-status: SOURCE_REVIEWED
+status: PLANNED
 document_class: MOOSE_TECHNICAL_NOTE
 owning_policy: OMW-GOV-001
 authoritative_for:
