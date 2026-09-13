@@ -23,8 +23,10 @@ local registry={Sites={FOB_JOYCE={siteId="FOB_JOYCE",installationId="BLUE_GROUND
 local bridge=Bridge.New({base=base,siteRegistry=registry})
 local position={x=1,y=2,z=3}
 local reportedTarget={targetKind="INSTALLATION_SECURITY_PERIMETER"}
+local initiatorGroup={name="BadGuys_A3_JOYCE"}
+function initiatorGroup:GetName() return self.name end
 local source={incidentId="INSTALLATION-ATTACK|BLUE_GROUND_FOB_JOYCE|1",installationId="BLUE_GROUND_FOB_JOYCE"}
-local evidence={evidenceType="PROXIMITY_INTRUSION",priority=80,position=position,reportedTarget=reportedTarget}
+local evidence={evidenceType="PROXIMITY_INTRUSION",priority=80,position=position,reportedTarget=reportedTarget,initiatorGroup=initiatorGroup}
 local opened,created,reason,qrf=bridge:OnIncidentStarted(nil,source,evidence)
 yes(created,"base incident created")
 eq(reason,nil,"start reason")
@@ -35,10 +37,12 @@ eq(calls.open.context.source,"INSTALLATION_ATTACK_INCIDENT","incident source")
 eq(calls.open.context.initialEvidenceType,"PROXIMITY_INTRUSION","initial evidence")
 eq(calls.open.context.position,position,"evidence position preserved")
 eq(calls.open.context.reportedTarget,reportedTarget,"reported target preserved")
+eq(calls.open.context.physicalTargetGroup,initiatorGroup,"physical hostile group preserved for MOOSE GROUNDATTACK")
 eq(calls.support.incidentId,opened.incidentId,"QRF bound to base incident")
 eq(calls.support.supportType,"QRF","only initial QRF requested")
 eq(calls.support.spec.requestKey,"INSTALLATION_ATTACK_INITIAL_QRF","stable QRF request key")
 eq(calls.support.spec.priority,80,"QRF priority preserved")
+eq(calls.support.spec.cancelWhenIncidentClosed,false,"incident close must not auto-cancel dispatched QRF")
 eq(qrf.demandId,"QRF-1","QRF result forwarded")
 eq(bridge:GetBaseIncidentId(source.incidentId),opened.incidentId,"source binding stored")
 
@@ -55,6 +59,7 @@ eq(calls.close.incidentId,opened.incidentId,"correct base incident closed")
 eq(calls.close.reason,"KNOWN_ATTACKERS_NEUTRALIZED","authoritative close reason forwarded")
 eq(closed.closed,true,"closed state forwarded")
 eq(bridge:GetBaseIncidentId(source.incidentId),nil,"binding released")
+eq(calls.support.spec.cancelWhenIncidentClosed,false,"closing incident does not mutate QRF cancellation policy")
 
 local missing,missingCreated,missingReason=bridge:OnIncidentStarted(nil,{incidentId="X",installationId="UNKNOWN"},{evidenceType="PROXIMITY_INTRUSION"})
 eq(missing,nil,"unknown installation ignored")
