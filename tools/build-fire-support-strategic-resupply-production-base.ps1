@@ -4,12 +4,12 @@ param()
 $ErrorActionPreference = 'Stop'
 Set-StrictMode -Version Latest
 
-$repoRoot = Split-Path -Parent $PSScriptRoot
-$distDir = Join-Path $repoRoot 'mission\fire-support-strategic-resupply\dist'
-$outputFile = Join-Path $distDir 'OMW_FireSupStratResupply_Base.lua'
-$builderVersion = 'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BASE-5'
+$repoRoot=Split-Path -Parent $PSScriptRoot
+$distDir=Join-Path $repoRoot 'mission\fire-support-strategic-resupply\dist'
+$outputFile=Join-Path $distDir 'OMW_FireSupStratResupply_Base.lua'
+$builderVersion='OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BASE-6'
 
-$moduleSpecs = @(
+$moduleSpecs=@(
   @{ Name='SiteRegistry'; Path='scripts\campaign\OMW_FireSupStratResupply_SiteRegistry.lua' },
   @{ Name='SupportProfiles'; Path='scripts\campaign\OMW_FireSupStratResupply_SupportProfiles.lua' },
   @{ Name='IdContract'; Path='scripts\campaign\OMW_FireSupStratResupply_IdContract.lua' },
@@ -40,55 +40,56 @@ $moduleSpecs = @(
   @{ Name='Runtime'; Path='scripts\campaign\OMW_FireSupStratResupply_Runtime.lua' }
 )
 
-$sources = @{}
-foreach ($spec in $moduleSpecs) {
-  $file = Join-Path $repoRoot $spec.Path
-  if (-not (Test-Path -LiteralPath $file -PathType Leaf)) { throw "Required Fire Support / Strategic Resupply source not found: $file" }
-  $source = Get-Content -LiteralPath $file -Raw -Encoding UTF8
-  if ($source -notmatch 'SchemaVersion\s*=') { throw "Source $($spec.Path) does not expose a SchemaVersion contract." }
-  $sources[$spec.Name] = $source
+$sources=@{}
+foreach($spec in $moduleSpecs){
+  $file=Join-Path $repoRoot $spec.Path
+  if(-not(Test-Path -LiteralPath $file -PathType Leaf)){throw "Required Fire Support / Strategic Resupply source not found: $file"}
+  $source=Get-Content -LiteralPath $file -Raw -Encoding UTF8
+  if($source -notmatch 'SchemaVersion\s*='){throw "Source $($spec.Path) does not expose a SchemaVersion contract."}
+  $sources[$spec.Name]=$source
 }
 
-$combined = ($moduleSpecs | ForEach-Object { $sources[$_.Name] }) -join "`n"
-$requiredSourceMarkers = @(
+$combined=($moduleSpecs|ForEach-Object{$sources[$_.Name]}) -join "`n"
+$requiredSourceMarkers=@(
+  'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-SITE-REGISTRY-5',
   'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-RUNTIME-8',
+  'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PERIMETER-RUNTIME-2',
+  'OMW-FOB-THREAT-OPSZONE-ADAPTER-5',
   'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-GUARD-MISSION-FACTORY-2',
   'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-GUARD-RUNTIME-2',
   'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-QRF-MISSION-FACTORY-2',
   'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-QRF-RUNTIME-2',
   'OMW-GROUND-INSTALLATION-ALARM-EVIDENCE-3',
   'StartAlarmEvidence',
+  'StartPerimeters',
   'SetRequiredAttribute',
   'OMW-GUARD-PATHLINE-MATERIALIZATION-ADAPTER-1',
   'PATHLINE_FIRST_SEGMENT',
   'INSTALLATION_ATTACK_INITIAL_QRF',
   'GROUND_RESUPPLY',
-  'AIR_RESUPPLY'
+  'AIR_RESUPPLY',
+  'OMW_BLUE_OBJECTIVE_JALALABAD_AIRPORT'
 )
-foreach ($marker in $requiredSourceMarkers) {
-  if (-not $combined.Contains($marker)) { throw "Fire Support / Strategic Resupply sources are missing required contract marker: $marker" }
-}
+foreach($marker in $requiredSourceMarkers){if(-not $combined.Contains($marker)){throw "Fire Support / Strategic Resupply sources are missing required contract marker: $marker"}}
 
-$forbiddenPatterns = @('MissionScripting\.lua','mist\.','MIST','os\.execute')
-foreach ($pattern in $forbiddenPatterns) {
-  if ($combined -match $pattern) { throw "Fire Support / Strategic Resupply production sources contain forbidden pattern: $pattern" }
-}
+$forbiddenPatterns=@('MissionScripting\.lua','mist\.','MIST','os\.execute')
+foreach($pattern in $forbiddenPatterns){if($combined -match $pattern){throw "Fire Support / Strategic Resupply production sources contain forbidden pattern: $pattern"}}
 
-$guardAndPerimeterSource = @(
+$guardAndPerimeterSource=@(
   $sources.GuardMissionFactory,$sources.GuardRuntime,$sources.GuardMaterializationAdapter,
   $sources.GuardRouteAdapter,$sources.PerimeterBridge,$sources.PerimeterRuntime,$sources.ThreatAdapter
 ) -join "`n"
-if ($guardAndPerimeterSource -match 'ZON_BLUE_GND_[A-Z_]+_ACCESS') {
+if($guardAndPerimeterSource -match 'ZON_BLUE_GND_[A-Z_]+_ACCESS'){
   throw 'Guard/perimeter production sources must not depend on convoy ACCESS zones.'
 }
 
-New-Item -ItemType Directory -Path $distDir -Force | Out-Null
-if (Test-Path -LiteralPath $outputFile -PathType Leaf) { Remove-Item -LiteralPath $outputFile -Force }
+New-Item -ItemType Directory -Path $distDir -Force|Out-Null
+if(Test-Path -LiteralPath $outputFile -PathType Leaf){Remove-Item -LiteralPath $outputFile -Force}
 
-$commit = (& git -C $repoRoot rev-parse HEAD).Trim()
-if ([string]::IsNullOrWhiteSpace($commit)) { throw 'Unable to resolve Git HEAD for Fire Support / Strategic Resupply production build.' }
+$commit=(& git -C $repoRoot rev-parse HEAD).Trim()
+if([string]::IsNullOrWhiteSpace($commit)){throw 'Unable to resolve Git HEAD for Fire Support / Strategic Resupply production build.'}
 
-$header = @"
+$header=@"
 -- AUTO-GENERATED FILE. DO NOT EDIT DIRECTLY.
 -- Builder: tools/build-fire-support-strategic-resupply-production-base.ps1
 -- BuilderVersion: $builderVersion
@@ -99,8 +100,8 @@ $header = @"
 -- Moose.lua SHA-256: E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915
 -- Operational asset selection/recruitment authority: MOOSE organisation and mission/transport lifecycle.
 -- Strategic persistence/resource authority: caller-provided CampaignState/store only.
--- Tactical geometry: caller-provided resolvers/configuration; no alarm radii, QRF coordinates, CAS geometry or resupply routes are invented by this package.
--- Physical alarm evidence: optional caller-configured MOOSE EVENTHANDLER/WEAPON adapter feeds the authoritative installation incident runtime; alarm geometry remains injected.
+-- Tactical geometry: owner-defined SiteRegistry metadata plus caller-resolved MOOSE objects; no geometry is inferred from ACCESS zones or Guard routes.
+-- Physical alarm evidence: MOOSE OPSZONE perimeter qualification and optional caller-configured MOOSE EVENTHANDLER/WEAPON evidence feed the authoritative installation incident runtime.
 -- Guard/QRF capability constraints: caller-provided requirements are forwarded to public MOOSE AUFTRAG recruitment filters; OMW does not select assets.
 -- Guard materialization: owner-approved narrow exact-geometry exception only; all other Guard lifecycle remains MOOSE BRIGADE/WAREHOUSE/PLATOON/ARMYGROUP/AUFTRAG.
 -- ACCESS zones: convoy/access contract only; forbidden from Guard and perimeter composition.
@@ -108,12 +109,12 @@ $header = @"
 
 "@
 
-function Embed-Module([string]$Name, [string]$Source) { return "local $Name = (function()`n$Source`nend)()`n`n" }
+function Embed-Module([string]$Name,[string]$Source){return "local $Name = (function()`n$Source`nend)()`n`n"}
 
-$bundle = $header
-foreach ($spec in $moduleSpecs) { $bundle += Embed-Module $spec.Name $sources[$spec.Name] }
+$bundle=$header
+foreach($spec in $moduleSpecs){$bundle+=Embed-Module $spec.Name $sources[$spec.Name]}
 
-$bundle += @"
+$bundle+=@"
 local Modules = {
   base = Base,
   lifecycleAdapter = LifecycleAdapter,
@@ -166,7 +167,7 @@ OMW.FireSupStratResupply = Package
 OMW_FIRE_SUPPORT_STRATEGIC_RESUPPLY_BASE_LOADED = 1
 "@
 
-$bundleMarkers = @(
+$bundleMarkers=@(
   'SchemaVersion = "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BASE-1"',
   'runtimeSpec.modules = Modules',
   'runtimeSpec.siteRegistry = runtimeSpec.siteRegistry or SiteRegistry',
@@ -181,25 +182,26 @@ $bundleMarkers = @(
   'OMW.FireSupStratResupply = Package',
   'OMW_FIRE_SUPPORT_STRATEGIC_RESUPPLY_BASE_LOADED = 1'
 )
-foreach ($marker in $bundleMarkers) {
-  if (-not $bundle.Contains($marker)) { throw "Fire Support / Strategic Resupply production bundle is missing contract marker: $marker" }
-}
+foreach($marker in $bundleMarkers){if(-not $bundle.Contains($marker)){throw "Fire Support / Strategic Resupply production bundle is missing contract marker: $marker"}}
 
-[System.IO.File]::WriteAllText($outputFile, $bundle, [System.Text.UTF8Encoding]::new($false))
-$bundleHash = (Get-FileHash -LiteralPath $outputFile -Algorithm SHA256).Hash.ToUpperInvariant()
-$builderHash = (Get-FileHash -LiteralPath $PSCommandPath -Algorithm SHA256).Hash.ToUpperInvariant()
+[System.IO.File]::WriteAllText($outputFile,$bundle,[System.Text.UTF8Encoding]::new($false))
+$bundleHash=(Get-FileHash -LiteralPath $outputFile -Algorithm SHA256).Hash.ToUpperInvariant()
+$builderHash=(Get-FileHash -LiteralPath $PSCommandPath -Algorithm SHA256).Hash.ToUpperInvariant()
 
 Write-Host "Built: $outputFile"
 Write-Host "BuilderVersion: $builderVersion"
 Write-Host "PackageSchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BASE-1"
 Write-Host "RuntimeSchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-RUNTIME-8"
+Write-Host "SiteRegistrySchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-SITE-REGISTRY-5"
+Write-Host "PerimeterRuntimeSchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PERIMETER-RUNTIME-2"
+Write-Host "ThreatAdapterSchema: OMW-FOB-THREAT-OPSZONE-ADAPTER-5"
 Write-Host "Sites: 6"
 Write-Host "MOOSERelease: 2.9.18"
 Write-Host "MOOSECommit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54"
 Write-Host "MooseLuaSHA256: E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915"
 Write-Host "OperationalAssetSelectionAuthority: MOOSE"
 Write-Host "GuardQRFRecruitmentConstraintAuthority: MOOSE AUFTRAG/LEGION"
-Write-Host "PhysicalAlarmEvidence: optional MOOSE EVENTHANDLER/WEAPON adapter with hostile coordinate propagation"
+Write-Host "PhysicalAlarmEvidence: MOOSE OPSZONE perimeter qualification plus optional MOOSE EVENTHANDLER/WEAPON evidence"
 Write-Host "StrategicResourceAuthority: caller-provided CampaignState/store"
 Write-Host "GuardAccessZoneDependency: none"
 Write-Host "PerimeterAccessZoneDependency: none"
