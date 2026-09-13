@@ -199,12 +199,21 @@ local function start()
   if not GROUP:FindByName(GUARD_TEMPLATE) or not GROUP:FindByName(QRF_TEMPLATE) then fail("BLUE_TEMPLATE_MISSING"); return end
   if not GROUP:FindByName(FIXTURE_NAME) then fail("FIXTURE_GROUP_MISSING"); return end
 
+  local fullSiteRegistry=package.SiteRegistry
+  local focusedSiteRegistry={
+    SchemaVersion=fullSiteRegistry.SchemaVersion,
+    GuardTemplateName=fullSiteRegistry.GuardTemplateName,
+    Sites={[SITE_ID]=fullSiteRegistry.Sites[SITE_ID]},
+  }
+  if type(focusedSiteRegistry.Sites[SITE_ID])~="table" then fail("FOCUSED_SITE_REGISTRY_MISSING"); return end
+
   buildBrigade(package)
   local perimeters,reason=buildPerimeter(package)
   if not perimeters then fail(reason); return end
 
   local ok,runtime=pcall(function()
     return package.New({
+      siteRegistry=focusedSiteRegistry,
       brigades={[SITE_ID]=state.brigade},
       resolveGuardPathline=function(name) return PATHLINE:FindByName(name) end,
       resolveGuardTemplateGroup=function(name) return GROUP:FindByName(name) end,
