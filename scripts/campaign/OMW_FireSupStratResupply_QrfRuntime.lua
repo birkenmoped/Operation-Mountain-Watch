@@ -95,7 +95,10 @@ function Runtime.New(spec)
   if type(siteRegistry.Sites) ~= "table" then fail("siteRegistry.Sites is required") end
   needFunction(qrfMissionFactory, "New", "qrfMissionFactory")
   needFunction(legionBridge, "New", "legionBridge")
-  local resolveTarget = needCallable(spec.resolveTarget, "resolveTarget")
+  -- Runtime-8 still forwards this callback under the legacy resolveCoordinate key.
+  -- Its value is now a physical MOOSE target GROUP, not a coordinate. Supporting
+  -- both keys keeps the composition root compatible while the QRF contract is fixed.
+  local resolveTarget = needCallable(spec.resolveTarget or spec.resolveCoordinate, "resolveTarget")
   if spec.logger ~= nil and type(spec.logger) ~= "function" then fail("logger must be a function when provided") end
 
   local roadSpawnAdapter = packagedRoadSpawnAdapter()
