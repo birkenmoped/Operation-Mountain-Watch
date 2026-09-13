@@ -1,5 +1,5 @@
 -- Operation Mountain Watch - Production Base Acceptance 3.
--- Acceptance-only six-site physical MOOSE OPSZONE proximity -> incident -> local QRF.
+-- Acceptance-only six-site physical MOOSE OPSZONE proximity -> incident -> local QRF attack.
 -- BadGuys_A3_* are test fixtures only; no production RED-C2 dependency.
 
 local TAG="[OMW][FSSR-PRODUCTION-BASE-A3]"
@@ -50,10 +50,12 @@ local function updateSiteState(d)
   if s.guard and s.guard:IsAlive() and s.guardStart then
     local c=s.guard:GetCoordinate(); if c then s.guardMove=s.guardStart:Get2DDistance(c) end
   end
-  if s.qrf and s.qrf:IsAlive() and s.target then
-    local c=s.qrf:GetCoordinate()
-    if c then
-      s.qrfCurrent=c:Get2DDistance(s.target)
+  local fixture=GROUP:FindByName(d.fixture)
+  if s.qrf and s.qrf:IsAlive() and fixture and fixture:IsAlive() then
+    local qrfCoordinate=s.qrf:GetCoordinate()
+    local targetCoordinate=fixture:GetCoordinate()
+    if qrfCoordinate and targetCoordinate then
+      s.qrfCurrent=qrfCoordinate:Get2DDistance(targetCoordinate)
       if not s.qrfInitial then s.qrfInitial=s.qrfCurrent end
       s.qrfProgress=s.qrfInitial-s.qrfCurrent
     end
@@ -107,8 +109,8 @@ local function telemetry()
     local f=GROUP:FindByName(d.fixture)
     if state.released and f and f:IsAlive() and s.target then s.fixtureDistance=s.target:Get2DDistance(f:GetCoordinate()) end
     updateSiteState(d)
-    log(string.format("SITE_TELEMETRY siteId=%s perimeterStarted=%s proximity=%s guardObserved=%s guardMoveM=%.1f incident=%s demandCount=%s qrfObserved=%s qrfAccess=%s qrfAttribute=%s qrfProgressM=%.1f fixtureDistanceToAnchorM=%s",
-      d.id,tostring(s.perimeterStarted),tostring(s.proximity),tostring(s.guardObserved),s.guardMove or 0,tostring(s.incident),tostring(s.demandCount),tostring(s.qrfObserved),tostring(s.qrfAccess),tostring(s.qrfAttribute),s.qrfProgress or 0,tostring(s.fixtureDistance and string.format("%.1f",s.fixtureDistance) or "n/a")))
+    log(string.format("SITE_TELEMETRY siteId=%s perimeterStarted=%s proximity=%s guardObserved=%s guardMoveM=%.1f incident=%s demandCount=%s qrfObserved=%s qrfAccess=%s qrfMissionType=%s qrfTarget=%s qrfProgressM=%.1f fixtureDistanceToAnchorM=%s",
+      d.id,tostring(s.perimeterStarted),tostring(s.proximity),tostring(s.guardObserved),s.guardMove or 0,tostring(s.incident),tostring(s.demandCount),tostring(s.qrfObserved),tostring(s.qrfAccess),tostring(s.qrfMissionType),tostring(s.qrfTargetName),s.qrfProgress or 0,tostring(s.fixtureDistance and string.format("%.1f",s.fixtureDistance) or "n/a")))
   end
 end
 
@@ -125,12 +127,14 @@ local function evaluate()
     if not s.qrfObserved then pending=true
     elseif s.qrfAccess~=true then bad[#bad+1]=d.id..":QRF_NOT_MATERIALIZED_IN_ACCESS"
     elseif s.qrfAttribute~=GROUP.Attribute.GROUND_APC then bad[#bad+1]=d.id..":QRF_ATTRIBUTE"
+    elseif s.qrfMissionType~=AUFTRAG.Type.GROUNDATTACK then bad[#bad+1]=d.id..":QRF_NOT_GROUNDATTACK"
+    elseif s.qrfTargetName~=d.fixture then bad[#bad+1]=d.id..":QRF_WRONG_TARGET_"..tostring(s.qrfTargetName)
     elseif not s.qrf or not s.qrf:IsAlive() then bad[#bad+1]=d.id..":QRF_NOT_ALIVE"
     elseif (s.qrfProgress or 0)<MIN_M then pending=true end
   end
   if #bad>0 then fail(table.concat(bad,",")); return end
   if not pending and state.released then
-    state.passed=true; announce("PASS","6/6 Guards >=25 m; 6/6 owner-defined MOOSE perimeters; 6/6 PROXIMITY_INTRUSION incidents; one initial QRF demand each; 6/6 Ground_APC QRFs materialized in site ACCESS zones and progressed >=25 m",35); return
+    state.passed=true; announce("PASS","6/6 Guards >=25 m; 6/6 owner-defined MOOSE perimeters; 6/6 PROXIMITY_INTRUSION incidents; one initial QRF demand each; 6/6 Ground_APC QRFs materialized in ACCESS and execute GROUNDATTACK against their intruding RED fixture with >=25 m closing progress",35); return
   end
   if state.startedAt and timer.getTime()-state.startedAt>TEST_TIMEOUT_SEC then fail("TIMEOUT_INCOMPLETE_SIX_SITE_PHYSICAL_CHAIN") end
 end
@@ -141,7 +145,7 @@ local function buildBrigades(package)
     local b=BRIGADE:New(site.warehouseName,"BDE_FSSR_A3_"..d.id)
     local g=PLATOON:New(site.guardTemplateName,1,"PLT_FSSR_A3_GUARD_"..d.id)
     local q=PLATOON:New(QRF_TEMPLATE,1,"PLT_FSSR_A3_QRF_"..d.id)
-    g:AddMissionCapability(AUFTRAG.Type.ONGUARD,100); q:AddMissionCapability(AUFTRAG.Type.ONGUARD,100); b:AddPlatoon(g); b:AddPlatoon(q)
+    g:AddMissionCapability(AUFTRAG.Type.ONGUARD,100); q:AddMissionCapability(AUFTRAG.Type.GROUNDATTACK,100); b:AddPlatoon(g); b:AddPlatoon(q)
     local s=state.site[d.id]; local previous=b.OnAfterArmyOnMission
     b.OnAfterArmyOnMission=function(self,From,Event,To,armyGroup,mission)
       if previous then previous(self,From,Event,To,armyGroup,mission) end
@@ -153,7 +157,11 @@ local function buildBrigades(package)
         local access=ZONE:FindByName(site.accessZoneName)
         local qrfCoordinate=grp:GetCoordinate()
         s.qrfAccess=access~=nil and qrfCoordinate~=nil and access:IsCoordinateInZone(qrfCoordinate)==true
-        log("QRF_MATERIALIZATION siteId="..d.id.." accessZone="..tostring(site.accessZoneName).." inside="..tostring(s.qrfAccess))
+        s.qrfMissionType=mission and mission:GetType() or nil
+        local targetData=mission and mission:GetTargetData() or nil
+        local targetObject=targetData and targetData:GetObject() or nil
+        s.qrfTargetName=targetObject and targetObject:GetName() or nil
+        log("QRF_MATERIALIZATION siteId="..d.id.." accessZone="..tostring(site.accessZoneName).." inside="..tostring(s.qrfAccess).." missionType="..tostring(s.qrfMissionType).." target="..tostring(s.qrfTargetName))
       end
     end
     state.brigades[d.id]=b
@@ -206,13 +214,14 @@ local function start()
     resolveGuardPathline=function(n) return PATHLINE:FindByName(n) end,
     resolveGuardTemplateGroup=function(n) return GROUP:FindByName(n) end,
     guardRequiredAttributes=GROUP.Attribute.GROUND_INFANTRY,
+    -- Runtime-8 currently forwards this callback under the legacy coordinate name;
+    -- QrfRuntime-5 interprets the return value as the transient physical target GROUP.
     resolveQrfCoordinate=function(demand,context)
       local i=context and context.incident
       local c=i and i.context
-      local position=c and c.position
-      if not position then return nil,"INCIDENT_POSITION_UNAVAILABLE" end
-      if type(COORDINATE)~="table" or type(COORDINATE.NewFromVec3)~="function" then return nil,"MOOSE_COORDINATE_NEW_FROM_VEC3_UNAVAILABLE" end
-      return COORDINATE:NewFromVec3(position),nil
+      local target=c and c.physicalTargetGroup
+      if not target then return nil,"QRF_PHYSICAL_TARGET_UNAVAILABLE" end
+      return target,nil
     end,
     qrfRequiredAttributes=GROUP.Attribute.GROUND_APC,
     blueCoalition=coalition.side.BLUE,redCoalition=coalition.side.RED,
