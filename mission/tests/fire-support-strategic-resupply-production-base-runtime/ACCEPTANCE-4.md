@@ -27,6 +27,7 @@ physical installation alarm
 -> ONGUARD + SetEngageDetected response
 -> same physical ARMYGROUP
 -> PATROLZONE + EnableHuntingPatrol clearance
+-> hostile Joyce fixture physically cleared during HuntingPatrol
 -> no intermediate RTZ
 -> no automatic release from perimeter/incident clear
 -> explicit Supported-Element/C2 release only
@@ -41,9 +42,12 @@ Primaerer DCS-Regressionsfall ist `FOB_JOYCE`, weil Acceptance 3 dort die reale 
 2. Die QRF materialisiert innerhalb `ZON_BLUE_GND_JOYCE_ACCESS`.
 3. Die erste QRF-Mission ist `AUFTRAG.Type.ONGUARD`.
 4. Dieselbe physische `ARMYGROUP` wechselt danach auf `AUFTRAG.Type.PATROLZONE`.
-5. HuntingPatrol ist fuer die site-local 5-NM-Tactical-Zone aktiv.
-6. Vor expliziter Release-Anforderung gibt es keinen RTZ-/Returned-Zustand.
-7. Acceptance 4 erzeugt keine eigene Search-Schleife, kein `GROUNDATTACK`, keinen Teleport und keine neue Mission-Editor-Zone.
-8. Nach explizitem Test-Release wird HuntingPatrol beendet und der bestehende MOOSE ReturnToLegion/RTZ/Returned/Warehouse-Lifecycle verwendet.
+5. HuntingPatrol ist fuer die site-local 5-NM-Tactical-Zone aktiv und akquiriert ein feindliches Ziel.
+6. Die physische Joyce-RED-Fixture wird waehrend dieser Clearance-Phase vollstaendig beseitigt; erst danach darf der Acceptance-Harness die explizite Test-Freigabe ausloesen.
+7. Vor expliziter Release-Anforderung gibt es keinen RTZ-/Returned-Zustand.
+8. Acceptance 4 erzeugt keine eigene Search-Schleife, kein `GROUNDATTACK`, keinen Teleport und keine neue Mission-Editor-Zone.
+9. Nach explizitem Test-Release wird HuntingPatrol beendet und der bestehende MOOSE ReturnToLegion/RTZ/Returned/Warehouse-Lifecycle verwendet.
+
+Damit prueft Acceptance 4 nicht nur, ob MOOSE ein HuntingPatrol-Ziel intern setzt, sondern den eigentlichen Joyce-Regressionsfall: Die QRF muss die verbleibende feindliche Gruppe physisch bereinigen, bevor sie freigegeben wird.
 
 `VALIDATED` darf erst nach realem DCS-Test gesetzt werden.
