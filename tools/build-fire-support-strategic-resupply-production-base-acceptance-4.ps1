@@ -8,7 +8,7 @@ $prodBuilder=Join-Path $repoRoot 'tools\build-fire-support-strategic-resupply-pr
 $prodBundle=Join-Path $repoRoot 'mission\fire-support-strategic-resupply\dist\OMW_FireSupStratResupply_Base.lua'
 $src=Join-Path $repoRoot 'mission\tests\fire-support-strategic-resupply-production-base-runtime\src\04-qrf-response-clearance-acceptance.lua'
 $out=Join-Path $repoRoot 'mission\tests\fire-support-strategic-resupply-production-base-runtime\dist\OMW_FireSupStratResupply_Production_Base_Acceptance_4.lua'
-$version='OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BASE-ACCEPTANCE-4-4'
+$version='OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BASE-ACCEPTANCE-4-5'
 
 foreach($f in @($prodBuilder,$src)){
   if(-not(Test-Path -LiteralPath $f -PathType Leaf)){throw "Required file not found: $f"}
@@ -30,6 +30,7 @@ foreach($marker in @(
   'sourceIncidentCoordinator','GetParticipants(true)','QRF_NO_LIVING_INCIDENT_TARGETS_IN_TACTICAL_ZONE',
   'FOB_JOYCE','BadGuys_A3_JOYCE','ZON_BLUE_GND_JOYCE_ACCESS',
   'AUFTRAG.Type.ONGUARD','QRF_CONCRETE_TARGET','targetCount>=2','fixtureClearedObserved','returnObserved',
+  'fixtureActivated','fixtureMove>=MIN_FIXTURE_MOVE_M','routeSource=MISSION_EDITOR','routeOverride=false',
   'focusedSiteRegistry','siteRegistry=focusedSiteRegistry','IsReturning',
   'ROAD_ALIGNED_WAREHOUSE_SPAWN','forwardCoordinate = targetCoordinate')){
   if(-not $c.Contains($marker)){throw "Acceptance 4 marker missing: $marker"}
@@ -42,9 +43,10 @@ if($t -match 'PATROL_TEST'){throw 'Acceptance 4 must not depend on historical PA
 if($t -match 'ZON_TEST_A4_'){throw 'Acceptance 4 must not introduce new Mission Editor zones.'}
 if($t -match 'ReportInstallationEvidence\s*\('){throw 'Acceptance 4 must not inject installation evidence directly.'}
 if($t -match 'Teleport\s*\('){throw 'Acceptance 4 must not teleport QRF or fixture groups.'}
+if($t -match 'RouteGroundTo\s*\(|RouteTo\s*\(|:Route\s*\(|SetTask\s*\(|PushTask\s*\('){throw 'Acceptance 4 must not replace or rewrite the existing Joyce Mission Editor attack route.'}
 
 $commit=(& git -C $repoRoot rev-parse HEAD).Trim()
-$header="-- AUTO-GENERATED FILE. DO NOT EDIT DIRECTLY.`n-- BuilderVersion: $version`n-- GitCommit: $commit`n-- MOOSE release: 2.9.18`n-- MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54`n-- Moose.lua SHA-256: E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915`n-- Joyce focused QRF: ACCESS materialization -> same ARMYGROUP direct MOOSE EngageTarget against concrete incident UNITs -> target death/reacquire -> target exhaustion -> ReturnToLegion.`n`n"
+$header="-- AUTO-GENERATED FILE. DO NOT EDIT DIRECTLY.`n-- BuilderVersion: $version`n-- GitCommit: $commit`n-- MOOSE release: 2.9.18`n-- MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54`n-- Moose.lua SHA-256: E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915`n-- Joyce focused QRF: existing Mission Editor RED attack route remains untouched; ACCESS materialization -> same ARMYGROUP direct MOOSE EngageTarget against concrete moving incident UNITs -> target death/reacquire -> target exhaustion -> ReturnToLegion.`n`n"
 
 New-Item -ItemType Directory -Path (Split-Path -Parent $out) -Force|Out-Null
 [System.IO.File]::WriteAllText($out,$header+$p+"`n`n"+$t,[System.Text.UTF8Encoding]::new($false))
@@ -60,9 +62,10 @@ Write-Host "AcceptanceBundleSHA256: $((Get-FileHash -LiteralPath $out -Algorithm
 Write-Host 'AcceptanceSite: FOB_JOYCE'
 Write-Host 'AcceptanceSiteRegistryScope: FOB_JOYCE only; production SiteRegistry remains unchanged'
 Write-Host 'AlarmEvidence: physical MOOSE OPSZONE PROXIMITY_INTRUSION only'
+Write-Host 'RedFixtureRoute: existing Mission Editor route; Acceptance activates only and must not replace/rewrite it'
 Write-Host 'QrfRecruitmentAnchor: AUFTRAG ONGUARD; no stale-coordinate clearance phase'
 Write-Host 'QrfTargetCycle: same ARMYGROUP directly EngageTarget nearest living concrete incident UNIT; Disengage triggers reacquisition'
-Write-Host 'QrfTargetEvidence: at least two unique concrete RED UNIT acquisitions plus physical Joyce hostile fixture clearance'
+Write-Host 'QrfTargetEvidence: at least two unique concrete moving RED UNIT acquisitions plus physical Joyce hostile fixture clearance'
 Write-Host 'QrfCompletionStimulus: none from Acceptance; zero living authorized incident targets is production completion condition'
 Write-Host 'QrfReturnEvidence: MOOSE ARMYGROUP Returning/Returned state observed after target exhaustion'
 Write-Host 'MissionEditorAdditionalZonesRequired: false'
