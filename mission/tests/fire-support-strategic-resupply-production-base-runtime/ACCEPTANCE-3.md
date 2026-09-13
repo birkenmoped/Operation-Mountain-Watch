@@ -48,6 +48,27 @@ Die Alarmzone ist nur Detection-/Response-Triggergrenze. Sie ist nicht taktische
 
 `ACCESS`, Warehouse-Position und Guard-PATHLINE sind keine Alarmgeometrie.
 
+## Vom Projektinhaber festgelegte Six-Site-Alarmgeometrie
+
+Für Acceptance 3 und die daraus abzuleitende Produktionskonfiguration gilt die folgende ausdrücklich festgelegte Geometrie. Es werden **keine zusätzlichen Mission-Editor-Trigger-/Alarmzonen** angelegt. Die Alarmperimeter werden zur Laufzeit über den vorhandenen MOOSE-first-Pfad `anchor coordinate -> ZONE_RADIUS -> OPSZONE` erzeugt.
+
+Für Fortress, Joyce, Wright, Honaker und Bostick ist das jeweils bereits vorhandene MOOSE-Warehouse der Standortmittelpunkt. Jalalabad ist eine ausdrückliche Ausnahme: Dort wird **nicht** das Warehouse von FOB Fenty als Mittelpunkt verwendet, sondern der bestehende Missionsanker `OMW_BLUE_OBJECTIVE_JALALABAD_AIRPORT`.
+
+| Site | Alarmanker | Radius ft | Radius m |
+|---|---|---:|---:|
+| `JALALABAD_FENTY` | `OMW_BLUE_OBJECTIVE_JALALABAD_AIRPORT` | 6000 | 1828.8 |
+| `COP_FORTRESS` | `WH_BLUE_GND_FORTRESS` | 5000 | 1524.0 |
+| `FOB_JOYCE` | `WH_BLUE_GND_JOYCE` | 9000 | 2743.2 |
+| `FOB_WRIGHT` | `WH_BLUE_GND_WRIGHT` | 4000 | 1219.2 |
+| `COP_HONAKER` | `WH_BLUE_GND_HONAKER` | 9000 | 2743.2 |
+| `FOB_BOSTICK` | `WH_BLUE_GND_BOSTICK` | 5000 | 1524.0 |
+
+Umrechnung: `1 ft = 0.3048 m` exakt.
+
+Die fünf Warehouse-Anker dienen hier ausschließlich als stabile geografische Mittelpunkte der Alarmperimeter. Daraus entsteht **keine** zusätzliche Ressourcen- oder Alarmhoheit des Warehouses. Die Jalalabad-Ausnahme bildet bewusst den gesamten Flughafen-/Installationskontext statt nur FOB Fenty ab.
+
+Vor dem nächsten Acceptance-3-Build ist technisch zu verifizieren, als welcher tatsächlich vorhandene MOOSE-/DCS-Wrapper beziehungsweise Mission-Editor-Objekttyp `OMW_BLUE_OBJECTIVE_JALALABAD_AIRPORT` im aktuellen Missionsstand aufgelöst werden muss. Diese Auflösung darf nicht geraten werden. Für die fünf Warehouse-Anker ist ebenfalls der vorhandene öffentliche MOOSE-Koordinatenpfad der bereits existierenden Warehouse-/BRIGADE-Objekte zu verwenden; keine parallele native DCS-Ankerlogik wird eingeführt.
+
 ## Diagnose aus den ersten zwei Läufen
 
 Die Guard-Regression lief an allen sechs Standorten an. Die Auswahl der Standorte, an denen ein Incident und anschließend eine QRF entstand, wechselte zwischen den Läufen. Unter anderem wurden im ersten Lauf Wright und Fortress, im zweiten Lauf unter anderem Joyce und Wright mit Incident/QRF beobachtet.
@@ -81,7 +102,7 @@ Acceptance 3 soll weiterhin möglichst alles in einem einzigen Six-Site-DCS-Lauf
 
 ```text
 6x Guard regression
-+ 6x site-specific alarm/security/threat-zone intrusion
++ 6x owner-defined runtime alarm/security/threat-zone intrusion
 + 6x MOOSE OPSZONE / proximity qualification
 + 6x PROXIMITY_INTRUSION
 + 6x authoritative installation incident
@@ -91,14 +112,16 @@ Acceptance 3 soll weiterhin möglichst alles in einem einzigen Six-Site-DCS-Lauf
 + optional direct-fire / hit evidence refresh without duplicate demand
 ```
 
-Die konkrete Alarmzonen-Geometrie darf je Installation variieren. Die alten Stage-3-Testkreise dürfen nicht stillschweigend auf alle sechs Standorte generalisiert werden. Vor dem nächsten Acceptance-3-Build ist deshalb die aktuelle Mission-Editor-/Baseline-Evidenz für die sechs standortbezogenen Alarmzonen zu prüfen. Fehlende Geometrie muss vom Projektinhaber festgelegt werden; sie darf nicht aus Warehouse, ACCESS oder Guard-PATHLINE geraten werden.
+Die oben festgelegten standortbezogenen Alarmradien und Anker sind für diesen Acceptance-Scope die maßgebliche Geometrie. `ACCESS`, Guard-PATHLINE oder andere Testgeometrien dürfen nicht ersatzweise als Alarmgrenze verwendet werden.
 
 ## MOOSE-first
 
 Der korrigierte Hauptpfad verwendet die bereits vorhandene MOOSE-first-Architektur:
 
 ```text
-MOOSE OPSZONE
+MOOSE ZONE_RADIUS
+-> MOOSE OPSZONE
+-> OMW_FobThreatOpsZoneAdapter
 -> OMW_FireSupStratResupply_PerimeterBridge
 -> PROXIMITY_INTRUSION
 -> OMW_FireSupStratResupply_InstallationIncidentRuntime
@@ -111,12 +134,13 @@ MOOSE OPSZONE
 
 Physische `EVENTHANDLER`-/`WEAPON`-Evidence bleibt als zusätzliche Multi-Evidence-Quelle zulässig, ersetzt aber nicht die Proximity-/Triggerzonen-Erkennung.
 
-## PASS-Kriterium – neu zu finalisieren
+## PASS-Kriterium
 
-Das endgültige PASS-Kriterium wird nach Prüfung beziehungsweise Festlegung der sechs autoritativen Alarmzonen-Geometrien finalisiert. Mindestens muss es nachweisen:
+Der nächste Acceptance-3-Build muss mindestens nachweisen:
 
 ```text
 6/6 Guards regression condition satisfied
+6/6 owner-defined runtime alarm perimeters started
 6/6 qualified proximity intrusions observed
 6/6 authoritative installation incidents observed
 6/6 exactly one initial QRF demand
@@ -124,7 +148,7 @@ Das endgültige PASS-Kriterium wird nach Prüfung beziehungsweise Festlegung der
 no duplicate QRF demand from evidence refresh
 ```
 
-QRF-Bewegung und weitere physische Ausführungskriterien werden nur mit belastbarer, standortbezogener Testgeometrie festgelegt.
+QRF-Bewegung und weitere physische Ausführungskriterien dürfen nur so festgelegt werden, dass die Testfixtures nicht unbeabsichtigt die MOOSE-Warehouse-Capture-Mechanik oder andere nicht zum Acceptance-Ziel gehörende Standortmechanismen provozieren.
 
 ## Noch nicht bewiesen
 
@@ -141,6 +165,8 @@ Ein späterer PASS validiert nicht automatisch:
 ```text
 old Guard-only Acceptance-3 correlation: REJECTED
 first two DCS runs: diagnostic evidence only
-six-site alarm acceptance: OPEN
-next action: recover/verify authoritative site alarm-zone geometry before rebuilding Acceptance 3
+six-site alarm center/radius geometry: OWNER-DEFINED
+additional Mission Editor alarm/trigger zones: NOT REQUIRED
+Jalalabad center: OMW_BLUE_OBJECTIVE_JALALABAD_AIRPORT, not WH_BLUE_GND_FENTY
+next action: verify Jalalabad anchor wrapper/type, wire owner-defined perimeters into the existing MOOSE OPSZONE path, rebuild Acceptance 3
 ```
