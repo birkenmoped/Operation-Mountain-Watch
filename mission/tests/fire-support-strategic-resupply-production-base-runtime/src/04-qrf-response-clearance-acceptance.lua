@@ -7,6 +7,7 @@
 --   -> ACCESS-only materialization
 --   -> ONGUARD + SetEngageDetected response
 --   -> same ARMYGROUP PATROLZONE + HuntingPatrol clearance
+--   -> hostile fixture physically cleared by that phase
 --   -> explicit Supported-Element/C2 release only
 --   -> MOOSE ReturnToLegion / RTZ lifecycle.
 --
@@ -28,7 +29,7 @@ local state={
   failed=false,passed=false,released=false,runtime=nil,brigade=nil,perimeter=nil,
   guard=nil,guardStart=nil,guardMove=0,qrf=nil,qrfArmy=nil,qrfGroupName=nil,
   qrfAccess=false,responseObserved=false,clearanceObserved=false,huntingObserved=false,
-  huntingTargetObserved=false,releaseRequested=false,returnObserved=false,
+  huntingTargetObserved=false,fixtureClearedObserved=false,releaseRequested=false,returnObserved=false,
   demandId=nil,startedAt=nil,
 }
 
@@ -149,18 +150,22 @@ local function observe()
   local demandCount=inc and #inc.demandIds or 0
   if inc and demandCount==1 then state.demandId=inc.demandIds[1] end
 
+  local fixture=GROUP:FindByName(FIXTURE_NAME)
+  local fixtureAlive=fixture~=nil and fixture:IsAlive()==true
+
   if state.qrfArmy then
     local current=state.qrfArmy:GetMissionCurrent()
     local currentType=current and current:GetType() or nil
     if currentType==AUFTRAG.Type.PATROLZONE then state.clearanceObserved=true end
     if state.qrfArmy.hp_timer~=nil and state.qrfArmy.hp_zone~=nil then state.huntingObserved=true end
     if state.qrfArmy.hp_target~=nil then state.huntingTargetObserved=true end
+    if state.huntingTargetObserved and state.released and not fixtureAlive then state.fixtureClearedObserved=true end
 
-    if not state.releaseRequested and state.clearanceObserved and state.huntingObserved and state.huntingTargetObserved and state.demandId then
+    if not state.releaseRequested and state.clearanceObserved and state.huntingObserved and state.huntingTargetObserved and state.fixtureClearedObserved and state.demandId then
       local _,changed,reason=state.runtime:GetBase():ExpireDemand(state.demandId,"ACCEPTANCE_SUPPORTED_ELEMENT_RELEASE")
       if changed~=true then fail("EXPLICIT_RELEASE_FAILED "..tostring(reason)); return end
       state.releaseRequested=true
-      announce("RELEASE","explicit Supported-Element/C2 test release requested after HuntingPatrol acquired a target",15)
+      announce("RELEASE","explicit Supported-Element/C2 test release requested after HuntingPatrol acquired and cleared the Joyce hostile fixture",15)
     end
 
     if state.releaseRequested then
@@ -169,19 +174,19 @@ local function observe()
       if returning or returned then state.returnObserved=true end
     end
 
-    log(string.format("TELEMETRY guardMoveM=%.1f proximity=%s demandCount=%d qrfAccess=%s response=%s currentMission=%s clearance=%s hpTimer=%s hpTarget=%s release=%s returnObserved=%s",
-      state.guardMove,tostring(proximityObserved()),demandCount,tostring(state.qrfAccess),tostring(state.responseObserved),tostring(currentType),tostring(state.clearanceObserved),tostring(state.qrfArmy.hp_timer~=nil),tostring(state.qrfArmy.hp_target~=nil),tostring(state.releaseRequested),tostring(state.returnObserved)))
+    log(string.format("TELEMETRY guardMoveM=%.1f proximity=%s demandCount=%d qrfAccess=%s response=%s currentMission=%s clearance=%s hpTimer=%s hpTarget=%s fixtureAlive=%s fixtureCleared=%s release=%s returnObserved=%s",
+      state.guardMove,tostring(proximityObserved()),demandCount,tostring(state.qrfAccess),tostring(state.responseObserved),tostring(currentType),tostring(state.clearanceObserved),tostring(state.qrfArmy.hp_timer~=nil),tostring(state.qrfArmy.hp_target~=nil),tostring(fixtureAlive),tostring(state.fixtureClearedObserved),tostring(state.releaseRequested),tostring(state.returnObserved)))
   else
-    log(string.format("TELEMETRY guardMoveM=%.1f proximity=%s demandCount=%d qrfArmy=nil",state.guardMove,tostring(proximityObserved()),demandCount))
+    log(string.format("TELEMETRY guardMoveM=%.1f proximity=%s demandCount=%d qrfArmy=nil fixtureAlive=%s",state.guardMove,tostring(proximityObserved()),demandCount,tostring(fixtureAlive)))
   end
 
   if inc and demandCount>1 then fail("DEMAND_COUNT_"..tostring(demandCount)); return end
   if state.qrfArmy and state.qrfAccess~=true then fail("QRF_NOT_MATERIALIZED_IN_ACCESS"); return end
   if state.qrfArmy and not state.responseObserved then fail("INITIAL_QRF_MISSION_NOT_ONGUARD"); return end
 
-  if state.guardMove>=MIN_GUARD_MOVE_M and proximityObserved() and demandCount==1 and state.qrfArmy and state.responseObserved and state.qrfAccess and state.clearanceObserved and state.huntingObserved and state.huntingTargetObserved and state.releaseRequested and state.returnObserved then
+  if state.guardMove>=MIN_GUARD_MOVE_M and proximityObserved() and demandCount==1 and state.qrfArmy and state.responseObserved and state.qrfAccess and state.clearanceObserved and state.huntingObserved and state.huntingTargetObserved and state.fixtureClearedObserved and state.releaseRequested and state.returnObserved then
     state.passed=true
-    announce("PASS","Joyce physical alarm -> one QRF demand -> ACCESS ONGUARD response -> same ARMYGROUP PATROLZONE + HuntingPatrol target acquisition -> explicit C2 release -> MOOSE return observed",40)
+    announce("PASS","Joyce physical alarm -> one QRF demand -> ACCESS ONGUARD response -> same ARMYGROUP PATROLZONE + HuntingPatrol target acquisition and hostile fixture clearance -> explicit C2 release -> MOOSE return observed",40)
     return
   end
 
