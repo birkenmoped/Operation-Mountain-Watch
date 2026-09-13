@@ -3,12 +3,14 @@ document_id: OMW-FSSR-PRODUCTION-BASE-ACCEPTANCE-4
 status: DRAFT
 document_class: ACCEPTANCE
 owning_policy: OMW-GOV-001
+authoritative_for:
+  - Joyce-focused DCS acceptance of the owner-approved QRF response-to-clearance lifecycle
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
 superseded_by:
 source_branch: agent/fire-support-strategic-resupply-base-gate0
-source_commit: PENDING_TEST
+source_commit: PENDING_MERGE
 validated_in_dcs: false
 ---
 
