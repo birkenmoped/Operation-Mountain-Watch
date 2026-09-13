@@ -2,13 +2,11 @@
 local Runtime = {}
 local Instance = {}
 Instance.__index = Instance
-Runtime.SchemaVersion = "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-QRF-RUNTIME-11"
+Runtime.SchemaVersion = "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-QRF-RUNTIME-12"
 local TAG = "[OMW][FireSupStratResupply.QrfRuntime]"
 local QRF_TACTICAL_RADIUS_NM = 5
-local QRF_ENGAGE_RANGE_NM = 5
-local QRF_CLEARANCE_SPEED_KNOTS = 20
-local QRF_CLEARANCE_SCAN_INTERVAL_SECONDS = 5
-local QRF_CLEARANCE_FORMATION = "Off Road"
+local QRF_ENGAGE_SPEED_KNOTS = 20
+local QRF_ENGAGE_FORMATION = "Vee"
 local ROAD_SPAWN_VEHICLE_SPACING_M = 18
 local HOME_SPAWN_ZONE_MAX_DIST_M = 1000
 local function fail(message) error(TAG .. " " .. tostring(message), 2) end
@@ -25,35 +23,46 @@ end
 local function mobileVehicle(asset)
   return type(asset) == "table" and type(Group) == "table" and type(Group.Category) == "table" and type(WAREHOUSE) == "table" and type(WAREHOUSE.Attribute) == "table" and asset.category == Group.Category.GROUND and type(asset.speedmax) == "number" and asset.speedmax > 0 and asset.attribute ~= WAREHOUSE.Attribute.GROUND_INFANTRY
 end
+local function incidentUnits(context)
+  local incident = context and context.incident
+  local incidentContext = incident and incident.context
+  local coordinator = incidentContext and incidentContext.sourceIncidentCoordinator
+  if type(coordinator) ~= "table" or type(coordinator.GetParticipants) ~= "function" then return nil, "QRF_INCIDENT_COORDINATOR_UNAVAILABLE" end
+  local units = {}
+  for _, group in ipairs(coordinator:GetParticipants(true) or {}) do
+    if type(group) == "table" and type(group.GetUnits) == "function" then
+      for _, unit in pairs(group:GetUnits() or {}) do
+        if type(unit) == "table" and type(unit.IsAlive) == "function" and unit:IsAlive() == true then units[#units + 1] = unit end
+      end
+    end
+  end
+  return units, nil
+end
 local function wrapQrfReleaseHandle(handle)
   if type(handle) ~= "table" or type(handle.mission) ~= "table" or handle._OMWQrfReleaseWrapped then return handle end
-  local responseMission = handle.mission
+  local mission = handle.mission
   handle._OMWQrfReleaseWrapped = true
   function handle:Cancel()
     if self.cancelRequested then return false end
     self.cancelRequested = true
-
-    local clearanceByGroup = responseMission._OMWQrfClearanceByGroup or {}
-    local clearanceCancelled = false
-    for opsGroup, clearanceMission in pairs(clearanceByGroup) do
-      if type(opsGroup) == "table" then
-        if type(opsGroup.DisableHuntingPatrol) == "function" then opsGroup:DisableHuntingPatrol() end
-        if type(opsGroup.SetPatrolAdInfinitum) == "function" then opsGroup:SetPatrolAdInfinitum(false) end
-      end
-      if type(clearanceMission) == "table" and type(clearanceMission.Cancel) == "function" then
-        local over = type(clearanceMission.IsOver) == "function" and clearanceMission:IsOver() or false
-        if not over then clearanceMission:Cancel() end
-        clearanceCancelled = true
-      end
-    end
-
-    if not clearanceCancelled then
-      local over = type(responseMission.IsOver) == "function" and responseMission:IsOver() or false
-      if not over then responseMission:Cancel() end
-    end
+    mission._OMWQrfCompleting = true
+    local over = type(mission.IsOver) == "function" and mission:IsOver() or false
+    if not over then mission:Cancel() end
     return true
   end
   return handle
+end
+local function installBrigadeBinding(brigade, logger)
+  if brigade._OMWQrfDirectTargetBindingInstalled then return end
+  brigade._OMWQrfDirectTargetBindingInstalled = true
+  local previous = brigade.OnAfterArmyOnMission
+  function brigade:OnAfterArmyOnMission(From, Event, To, armyGroup, mission)
+    if previous then previous(self, From, Event, To, armyGroup, mission) end
+    if type(mission) == "table" and type(mission._OMWQrfBindArmyGroup) == "function" then
+      mission:_OMWQrfBindArmyGroup(armyGroup)
+      if logger then logger(TAG .. " bound QRF ARMYGROUP to concrete incident-target cycle group=" .. tostring(armyGroup and (armyGroup.groupname or armyGroup.alias or armyGroup.ClassName))) end
+    end
+  end
 end
 function Runtime.New(spec)
   needTable(spec, "spec")
@@ -85,6 +94,7 @@ function Runtime.New(spec)
     if type(brigadeCoordinate) ~= "table" or type(brigadeCoordinate.GetVec2) ~= "function" then fail("BRIGADE coordinate unavailable siteId=" .. tostring(siteId)) end
     engageZones[siteId] = ZONE_RADIUS:New("OMW_QRF_TACTICAL_" .. tostring(siteId), brigadeCoordinate:GetVec2(), UTILS.NMToMeters(QRF_TACTICAL_RADIUS_NM))
     brigade:SetSpawnZone(accessZone, HOME_SPAWN_ZONE_MAX_DIST_M)
+    installBrigadeBinding(brigade, spec.logger)
     roadSpawnAdapter.Install(brigade, {
       resolveRoadSpawn = function(_, asset)
         if not mobileVehicle(asset) then return nil end
@@ -102,12 +112,10 @@ function Runtime.New(spec)
       if target ~= nil and type(target.GetCoordinate) == "function" then targetCoordinates[demand.siteId] = target:GetCoordinate() end
       return target, reason
     end,
+    resolveTargets = function(_, context) return incidentUnits(context) end,
     resolveEngageZone = function(demand) local zone=engageZones[demand.siteId]; if zone==nil then return nil,"QRF_ENGAGE_ZONE_UNAVAILABLE" end; return zone end,
-    engageRangeNm=QRF_ENGAGE_RANGE_NM,
-    targetTypes={"Ground Units"},
-    clearanceSpeedKnots=QRF_CLEARANCE_SPEED_KNOTS,
-    clearanceScanIntervalSeconds=QRF_CLEARANCE_SCAN_INTERVAL_SECONDS,
-    clearanceFormation=QRF_CLEARANCE_FORMATION,
+    engageSpeedKnots=QRF_ENGAGE_SPEED_KNOTS,
+    engageFormation=QRF_ENGAGE_FORMATION,
     requiredAssetsMin=spec.requiredAssetsMin or 1,
     requiredAssetsMax=spec.requiredAssetsMax or (spec.requiredAssetsMin or 1),
     requiredAttributes=spec.requiredAttributes,
