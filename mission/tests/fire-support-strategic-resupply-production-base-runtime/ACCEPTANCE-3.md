@@ -13,7 +13,7 @@ project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
 superseded_by:
 source_branch: agent/fire-support-strategic-resupply-base-gate0
-source_commit: PENDING_MERGE
+source_commit: b4a6505248bf3371ca6b11adcd7f02374e519b84
 validated_in_dcs: false
 ---
 
@@ -273,7 +273,9 @@ QRF return: accepted MOOSE ReturnToLegion -> ARMYGROUP RTZ -> Returned -> Wareho
 alarm/incident clear as QRF mission-end condition: FORBIDDEN
 acceptance-only tactical release: STAGED
 corrected harness/builders: STAGED
-local build/hash verification: PENDING
+local build/hash verification: VERIFIED for source commit b4a6505248bf3371ca6b11adcd7f02374e519b84
+production bundle SHA-256: EB8DC2C5DD143DD0B4B8C951496499C9909A2A8DD38B1FA1D5334F1064293176
+acceptance bundle SHA-256: 0AA3448371CA23E8ED1400229D9C3CD5F179271476EAAF727829054A22CACCB8
 real DCS Acceptance-3 rerun: PENDING
 validated_in_dcs: false
 ```
