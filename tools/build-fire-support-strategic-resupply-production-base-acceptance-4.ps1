@@ -8,7 +8,7 @@ $prodBuilder=Join-Path $repoRoot 'tools\build-fire-support-strategic-resupply-pr
 $prodBundle=Join-Path $repoRoot 'mission\fire-support-strategic-resupply\dist\OMW_FireSupStratResupply_Base.lua'
 $src=Join-Path $repoRoot 'mission\tests\fire-support-strategic-resupply-production-base-runtime\src\04-qrf-response-clearance-acceptance.lua'
 $out=Join-Path $repoRoot 'mission\tests\fire-support-strategic-resupply-production-base-runtime\dist\OMW_FireSupStratResupply_Production_Base_Acceptance_4.lua'
-$version='OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BASE-ACCEPTANCE-4-1'
+$version='OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BASE-ACCEPTANCE-4-2'
 
 foreach($f in @($prodBuilder,$src)){
   if(-not(Test-Path -LiteralPath $f -PathType Leaf)){throw "Required file not found: $f"}
@@ -28,7 +28,7 @@ foreach($marker in @(
   'AUFTRAG:NewONGUARD','SetEngageDetected','SetReturnToLegion(true)',
   'AUFTRAG:NewPATROLZONE','SetPatrolAdInfinitum(true)','EnableHuntingPatrol','DisableHuntingPatrol',
   'FOB_JOYCE','BadGuys_A3_JOYCE','ZON_BLUE_GND_JOYCE_ACCESS',
-  'AUFTRAG.Type.ONGUARD','AUFTRAG.Type.PATROLZONE','hp_timer','hp_target',
+  'AUFTRAG.Type.ONGUARD','AUFTRAG.Type.PATROLZONE','hp_timer','hp_target','fixtureClearedObserved',
   'ACCEPTANCE_SUPPORTED_ELEMENT_RELEASE','ExpireDemand','IsReturning',
   'ROAD_ALIGNED_WAREHOUSE_SPAWN','forwardCoordinate = targetCoordinate')){
   if(-not $c.Contains($marker)){throw "Acceptance 4 marker missing: $marker"}
@@ -41,7 +41,7 @@ if($t -match 'ReportInstallationEvidence\s*\('){throw 'Acceptance 4 must not inj
 if($t -match 'Teleport\s*\('){throw 'Acceptance 4 must not teleport QRF or fixture groups.'}
 
 $commit=(& git -C $repoRoot rev-parse HEAD).Trim()
-$header="-- AUTO-GENERATED FILE. DO NOT EDIT DIRECTLY.`n-- BuilderVersion: $version`n-- GitCommit: $commit`n-- MOOSE release: 2.9.18`n-- MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54`n-- Moose.lua SHA-256: E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915`n-- Joyce focused QRF response -> same-group PATROLZONE + HuntingPatrol clearance -> explicit Supported-Element/C2 release acceptance.`n`n"
+$header="-- AUTO-GENERATED FILE. DO NOT EDIT DIRECTLY.`n-- BuilderVersion: $version`n-- GitCommit: $commit`n-- MOOSE release: 2.9.18`n-- MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54`n-- Moose.lua SHA-256: E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915`n-- Joyce focused QRF response -> same-group PATROLZONE + HuntingPatrol target acquisition and hostile fixture clearance -> explicit Supported-Element/C2 release acceptance.`n`n"
 
 New-Item -ItemType Directory -Path (Split-Path -Parent $out) -Force|Out-Null
 [System.IO.File]::WriteAllText($out,$header+$p+"`n`n"+$t,[System.Text.UTF8Encoding]::new($false))
@@ -58,8 +58,8 @@ Write-Host 'AcceptanceSite: FOB_JOYCE'
 Write-Host 'AlarmEvidence: physical MOOSE OPSZONE PROXIMITY_INTRUSION only'
 Write-Host 'QrfResponsePhase: AUFTRAG ONGUARD + SetEngageDetected'
 Write-Host 'QrfClearancePhase: same ARMYGROUP AUFTRAG PATROLZONE + EnableHuntingPatrol'
-Write-Host 'QrfClearanceEvidence: PATROLZONE current mission + hp_timer + hp_target acquisition'
-Write-Host 'QrfReleaseStimulus: explicit acceptance Supported-Element/C2 release through production Base:ExpireDemand'
+Write-Host 'QrfClearanceEvidence: PATROLZONE current mission + hp_timer + hp_target acquisition + physical Joyce hostile fixture clearance'
+Write-Host 'QrfReleaseStimulus: explicit acceptance Supported-Element/C2 release only after physical hostile fixture clearance'
 Write-Host 'QrfReturnEvidence: MOOSE ARMYGROUP Returning/Returned state observed after explicit release'
 Write-Host 'MissionEditorAdditionalZonesRequired: false'
 Write-Host 'MizMutation: false'
