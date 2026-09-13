@@ -1,5 +1,5 @@
 -- Operation Mountain Watch - Production Base Acceptance 3.
--- Acceptance-only six-site physical alarm evidence -> incident -> local QRF.
+-- Acceptance-only six-site physical MOOSE OPSZONE proximity -> incident -> local QRF.
 -- BadGuys_A3_* are test fixtures only; no production RED-C2 dependency.
 
 local TAG="[OMW][FSSR-PRODUCTION-BASE-A3]"
@@ -8,6 +8,9 @@ local QRF_TEMPLATE="TPL_BLUE_GND_QRF_MIXED_6"
 local MIN_M=25
 local TELEMETRY_SEC=20
 local TEST_TIMEOUT_SEC=720
+local FIXTURE_ROUTE_SPEED_KMH=20
+local INTRUSION_DEPTH_FRACTION=0.65
+local ALARM_PRIORITY=0 -- Acceptance-neutral metadata; not a production response-priority decision.
 local sites={
   {id="JALALABAD_FENTY",fixture="BadGuys_A3_FENTY"},
   {id="COP_FORTRESS",fixture="BadGuys_A3_FORTRESS"},
@@ -16,7 +19,7 @@ local sites={
   {id="COP_HONAKER",fixture="BadGuys_A3_HONAKER"},
   {id="FOB_BOSTICK",fixture="BadGuys_A3_BOSTICK"},
 }
-local state={failed=false,passed=false,released=false,runtime=nil,brigades={},site={},startedAt=nil}
+local state={failed=false,passed=false,released=false,runtime=nil,brigades={},site={},perimeters={},startedAt=nil}
 local function log(m) env.info(TAG.." "..tostring(m),false) end
 local function announce(k,m,t) local x="[PRODUCTION BASE A3]["..k.."] "..m; log(x); MESSAGE:New(x,t or 10):ToAll() end
 local function fail(m) if not state.failed and not state.passed then state.failed=true; announce("FAIL",m,30) end end
@@ -28,14 +31,18 @@ local function baseIncident(siteId)
   return state.runtime:GetBase():GetIncident(p.IdContract.Incident(siteId,sourceId))
 end
 
-local function targetBelongsToGuard(siteId,target)
-  local s=state.site[siteId]
-  if not s or not s.guard or type(target)~="table" then return false end
-  if type(target.GetGroup)=="function" then
-    local group=target:GetGroup()
-    if group and type(group.GetName)=="function" then return group:GetName()==s.guard:GetName() end
+local function proximityEvidenceObserved(siteId)
+  local p=OMW.FireSupStratResupply
+  local site=p.SiteRegistry.Sites[siteId]
+  local incidentRuntime=state.runtime and state.runtime.installationIncidentRuntime
+  if not incidentRuntime then return false end
+  local coordinator=incidentRuntime:GetCoordinator(site.installationId)
+  local active=coordinator and coordinator:GetActive() or nil
+  if not active then return false end
+  for _,evidence in ipairs(active.evidence or {}) do
+    if evidence.evidenceType=="PROXIMITY_INTRUSION" then return true end
   end
-  return type(target.GetName)=="function" and target:GetName()==s.guard:GetName()
+  return false
 end
 
 local function updateSiteState(d)
@@ -51,6 +58,7 @@ local function updateSiteState(d)
       s.qrfProgress=s.qrfInitial-s.qrfCurrent
     end
   end
+  s.proximity=proximityEvidenceObserved(d.id)
   local incident=baseIncident(d.id); if incident then s.incident=true; s.demandCount=#incident.demandIds end
 end
 
@@ -62,14 +70,33 @@ local function allGuardsPassed()
   return true
 end
 
+local function routeFixtureIntoPerimeter(d,fixture)
+  local s=state.site[d.id]
+  local perimeter=state.perimeters[d.id]
+  local from=fixture:GetCoordinate()
+  local anchor=perimeter and perimeter.anchorCoordinate
+  if not from or not anchor then return false,"COORDINATE_UNAVAILABLE" end
+  local targetDistance=perimeter.radiusM*INTRUSION_DEPTH_FRACTION
+  local target=anchor:GetIntermediateCoordinate(from,targetDistance)
+  if not target then return false,"INTRUSION_TARGET_UNAVAILABLE" end
+  s.fixtureStart=from
+  s.intrusionTarget=target
+  fixture:RouteGroundTo(target,FIXTURE_ROUTE_SPEED_KMH,"Off Road",1)
+  log(string.format("FIXTURE_ROUTE siteId=%s group=%s startDistanceM=%.1f targetDistanceM=%.1f radiusM=%.1f speedKmh=%d",
+    d.id,d.fixture,anchor:Get2DDistance(from),targetDistance,perimeter.radiusM,FIXTURE_ROUTE_SPEED_KMH))
+  return true,nil
+end
+
 local function releaseFixtures()
   if state.released or state.failed then return end
   for _,d in ipairs(sites) do
     local f=GROUP:FindByName(d.fixture); if not f then fail("FIXTURE_GROUP_MISSING "..d.fixture); return end
     if f:IsAlive()~=true then f:Activate() end
+    local ok,reason=routeFixtureIntoPerimeter(d,f)
+    if not ok then fail("FIXTURE_ROUTE_FAILED "..d.id.." "..tostring(reason)); return end
   end
   state.released=true
-  announce("ARMED","6/6 Guards passed >=25 m; six late-activated RED acceptance fixtures released for physical MOOSE evidence",20)
+  announce("ARMED","6/6 Guards passed >=25 m; six RED fixtures physically routed toward owner-defined MOOSE alarm perimeters",20)
 end
 
 local function telemetry()
@@ -78,10 +105,10 @@ local function telemetry()
   for _,d in ipairs(sites) do
     local s=state.site[d.id]
     local f=GROUP:FindByName(d.fixture)
-    if state.released and f and f:IsAlive() and not s.target then s.target=f:GetCoordinate() end
+    if state.released and f and f:IsAlive() and s.target then s.fixtureDistance=s.target:Get2DDistance(f:GetCoordinate()) end
     updateSiteState(d)
-    log(string.format("SITE_TELEMETRY siteId=%s guardObserved=%s guardMoveM=%.1f incident=%s demandCount=%s qrfObserved=%s qrfAttribute=%s qrfProgressM=%.1f",
-      d.id,tostring(s.guardObserved),s.guardMove or 0,tostring(s.incident),tostring(s.demandCount),tostring(s.qrfObserved),tostring(s.qrfAttribute),s.qrfProgress or 0))
+    log(string.format("SITE_TELEMETRY siteId=%s perimeterStarted=%s proximity=%s guardObserved=%s guardMoveM=%.1f incident=%s demandCount=%s qrfObserved=%s qrfAttribute=%s qrfProgressM=%.1f fixtureDistanceToAnchorM=%s",
+      d.id,tostring(s.perimeterStarted),tostring(s.proximity),tostring(s.guardObserved),s.guardMove or 0,tostring(s.incident),tostring(s.demandCount),tostring(s.qrfObserved),tostring(s.qrfAttribute),s.qrfProgress or 0,tostring(s.fixtureDistance and string.format("%.1f",s.fixtureDistance) or "n/a")))
   end
 end
 
@@ -92,6 +119,8 @@ local function evaluate()
   for _,d in ipairs(sites) do
     local s=state.site[d.id]
     if not s.guardPassed then pending=true end
+    if not s.perimeterStarted then bad[#bad+1]=d.id..":PERIMETER_NOT_STARTED" end
+    if not s.proximity then pending=true end
     if not s.incident then pending=true elseif s.demandCount~=1 then bad[#bad+1]=d.id..":DEMAND_COUNT_"..tostring(s.demandCount) end
     if not s.qrfObserved then pending=true
     elseif s.qrfAttribute~=GROUP.Attribute.GROUND_APC then bad[#bad+1]=d.id..":QRF_ATTRIBUTE"
@@ -100,14 +129,14 @@ local function evaluate()
   end
   if #bad>0 then fail(table.concat(bad,",")); return end
   if not pending and state.released then
-    state.passed=true; announce("PASS","6/6 Guards >=25 m before hostile release; 6/6 physical MOOSE alarm incidents; one initial QRF demand each; 6/6 Ground_APC QRFs progressed >=25 m",35); return
+    state.passed=true; announce("PASS","6/6 Guards >=25 m; 6/6 owner-defined MOOSE perimeters; 6/6 PROXIMITY_INTRUSION incidents; one initial QRF demand each; 6/6 Ground_APC QRFs progressed >=25 m",35); return
   end
   if state.startedAt and timer.getTime()-state.startedAt>TEST_TIMEOUT_SEC then fail("TIMEOUT_INCOMPLETE_SIX_SITE_PHYSICAL_CHAIN") end
 end
 
 local function buildBrigades(package)
   for _,d in ipairs(sites) do
-    local site=package.SiteRegistry.Sites[d.id]; state.site[d.id]={guardMove=0,qrfProgress=0,guardPassed=false}
+    local site=package.SiteRegistry.Sites[d.id]; state.site[d.id]={guardMove=0,qrfProgress=0,guardPassed=false,perimeterStarted=false,proximity=false}
     local b=BRIGADE:New(site.warehouseName,"BDE_FSSR_A3_"..d.id)
     local g=PLATOON:New(site.guardTemplateName,1,"PLT_FSSR_A3_GUARD_"..d.id)
     local q=PLATOON:New(QRF_TEMPLATE,1,"PLT_FSSR_A3_QRF_"..d.id)
@@ -124,16 +153,46 @@ local function buildBrigades(package)
   end
 end
 
+local function buildPerimeters(package)
+  if type(ZONE)~="table" or type(ZONE.FindByName)~="function" then return nil,"MOOSE_ZONE_FIND_UNAVAILABLE" end
+  for _,d in ipairs(sites) do
+    local site=package.SiteRegistry.Sites[d.id]
+    local alarm=site and site.alarm
+    if type(alarm)~="table" or type(alarm.radiusM)~="number" or alarm.radiusM<=0 then return nil,"ALARM_CONFIG_INVALID:"..d.id end
+    local anchor=nil
+    local securityZone=nil
+    if alarm.anchorKind=="WAREHOUSE" then
+      local brigade=state.brigades[d.id]
+      if not brigade or type(brigade.GetCoordinate)~="function" then return nil,"WAREHOUSE_COORDINATE_UNAVAILABLE:"..d.id end
+      anchor=brigade:GetCoordinate()
+    elseif alarm.anchorKind=="MOOSE_ZONE" then
+      securityZone=ZONE:FindByName(alarm.anchorName)
+      if not securityZone or type(securityZone.GetCoordinate)~="function" then return nil,"MOOSE_ZONE_UNAVAILABLE:"..tostring(alarm.anchorName) end
+      anchor=securityZone:GetCoordinate()
+    else
+      return nil,"ALARM_ANCHOR_KIND_UNSUPPORTED:"..d.id..":"..tostring(alarm.anchorKind)
+    end
+    if not anchor or type(anchor.GetVec2)~="function" then return nil,"ALARM_ANCHOR_COORDINATE_INVALID:"..d.id end
+    state.site[d.id].target=anchor
+    state.perimeters[d.id]={
+      anchorCoordinate=anchor,
+      securityZone=securityZone,
+      zoneName=securityZone and alarm.anchorName or ("OMW_SECURITY_"..site.installationId),
+      radiusM=alarm.radiusM,
+      priority=ALARM_PRIORITY,
+    }
+    log(string.format("PERIMETER_CONFIG siteId=%s anchorKind=%s anchorName=%s radiusM=%.1f zoneSource=%s",
+      d.id,tostring(alarm.anchorKind),tostring(alarm.anchorName or site.warehouseName),alarm.radiusM,securityZone and "EXISTING_MOOSE_ZONE" or "RUNTIME_ZONE_RADIUS"))
+  end
+  return state.perimeters,nil
+end
+
 local function start()
   local p=OMW and OMW.FireSupStratResupply; if type(p)~="table" then fail("PRODUCTION_PACKAGE_UNAVAILABLE"); return end
   if not GROUP:FindByName(GUARD_TEMPLATE) or not GROUP:FindByName(QRF_TEMPLATE) then fail("BLUE_TEMPLATE_MISSING"); return end
   for _,d in ipairs(sites) do if not GROUP:FindByName(d.fixture) then fail("FIXTURE_GROUP_MISSING "..d.fixture); return end end
   buildBrigades(p)
-  local alarmSites={}
-  for _,d in ipairs(sites) do
-    local zone={}; function zone:IsCoordinateInZone(_) return false end
-    alarmSites[d.id]={alarmZone=zone,targetInAlarmZone=function(target) return targetBelongsToGuard(d.id,target) end}
-  end
+  local perimeters,perimeterReason=buildPerimeters(p); if not perimeters then fail("PERIMETER_CONFIG_FAILED "..tostring(perimeterReason)); return end
   local ok,r=pcall(function() return p.New({
     brigades=state.brigades,
     resolveGuardPathline=function(n) return PATHLINE:FindByName(n) end,
@@ -142,15 +201,16 @@ local function start()
     resolveQrfCoordinate=function(demand,context) local i=context and context.incident; local c=i and i.context; return c and c.position or nil,"INCIDENT_POSITION_UNAVAILABLE" end,
     qrfRequiredAttributes=GROUP.Attribute.GROUND_APC,
     blueCoalition=coalition.side.BLUE,redCoalition=coalition.side.RED,
-    alarmEvidence={sites=alarmSites},logger=log,
+    perimeters=perimeters,logger=log,
   }):Prepare() end)
   if not ok or not r then fail("RUNTIME_PREPARE_FAILED "..tostring(r)); return end
   state.runtime=r
-  local _,started,reason=r:StartAlarmEvidence(); if started~=true then fail("ALARM_EVIDENCE_START_FAILED "..tostring(reason)); return end
+  local perimeterStates,started,reason=r:StartPerimeters(); if started~=true then fail("PERIMETER_START_FAILED "..tostring(reason)); return end
+  for _,d in ipairs(sites) do state.site[d.id].perimeterStarted=perimeterStates[d.id]~=nil end
   for _,b in pairs(state.brigades) do b:Start() end
-  for _,d in ipairs(sites) do local _,created,reason=r:StartSite(d.id,{}); if created==false then fail(d.id.." GUARD_START_FAILED "..tostring(reason)); return end end
+  for _,d in ipairs(sites) do local _,created,siteReason=r:StartSite(d.id,{}); if created==false then fail(d.id.." GUARD_START_FAILED "..tostring(siteReason)); return end end
   state.startedAt=timer.getTime()
-  announce("READY","six Guard/QRF organisations and physical MOOSE evidence handlers active; RED fixtures remain late-activated until all Guards pass >=25 m",20)
+  announce("READY","six owner-defined MOOSE perimeters and Guard/QRF organisations active; RED fixtures remain late-activated until all Guards pass >=25 m",20)
   SCHEDULER:New(nil,function()
     for _,d in ipairs(sites) do local s=state.site[d.id]; updateSiteState(d); if s.guardObserved and s.guard and s.guard:IsAlive() and (s.guardMove or 0)>=MIN_M then s.guardPassed=true end end
     evaluate()
