@@ -4,12 +4,15 @@
 -- transient physical hostile group carried by the installation incident. This
 -- module does not select cohorts/assets. Optional attribute/property requirements
 -- are forwarded to MOOSE so LEGION remains the operational recruitment authority.
+-- The accepted MOOSE ground return lifecycle remains authoritative after explicit
+-- response release: AUFTRAG cancellation -> ReturnToLegion -> ARMYGROUP RTZ ->
+-- Returned -> LEGION/Warehouse handoff.
 
 local Factory = {}
 local Instance = {}
 Instance.__index = Instance
 
-Factory.SchemaVersion = "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-QRF-MISSION-FACTORY-3"
+Factory.SchemaVersion = "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-QRF-MISSION-FACTORY-4"
 
 local TAG = "[OMW][FireSupStratResupply.QrfMissionFactory]"
 
@@ -84,6 +87,7 @@ function Instance:Create(demand, context, legion)
   if type(mission.SetTeleport) ~= "function" then fail("QRF AUFTRAG:SetTeleport() is required") end
   if type(mission.SetRequiredAssets) ~= "function" then fail("QRF AUFTRAG:SetRequiredAssets() is required") end
   if type(mission.SetPriority) ~= "function" then fail("QRF AUFTRAG:SetPriority() is required") end
+  if type(mission.SetReturnToLegion) ~= "function" then fail("QRF AUFTRAG:SetReturnToLegion() is required") end
   if type(mission.Cancel) ~= "function" then fail("QRF AUFTRAG:Cancel() is required") end
   if self.requiredAttributes ~= nil and type(mission.SetRequiredAttribute) ~= "function" then
     fail("QRF AUFTRAG:SetRequiredAttribute() is required when requiredAttributes are configured")
@@ -93,13 +97,14 @@ function Instance:Create(demand, context, legion)
   end
 
   mission:SetTeleport(false)
+  mission:SetReturnToLegion(true)
   mission:SetRequiredAssets(self.requiredAssetsMin, self.requiredAssetsMax)
   if self.requiredAttributes ~= nil then mission:SetRequiredAttribute(self.requiredAttributes) end
   if self.requiredProperties ~= nil then mission:SetRequiredProperty(self.requiredProperties) end
   if finite(demand.priority) then mission:SetPriority(demand.priority, false) end
 
   self:_log(string.format(
-    "created local QRF GROUNDATTACK demandId=%s siteId=%s target=%s requiredAssets=%s-%s attributes=%s properties=%s priority=%s",
+    "created local QRF GROUNDATTACK demandId=%s siteId=%s target=%s returnToLegion=true requiredAssets=%s-%s attributes=%s properties=%s priority=%s",
     tostring(demand.demandId), tostring(demand.siteId), tostring(target:GetName()), tostring(self.requiredAssetsMin),
     tostring(self.requiredAssetsMax), tostring(self.requiredAttributes ~= nil), tostring(self.requiredProperties ~= nil),
     tostring(demand.priority)))
