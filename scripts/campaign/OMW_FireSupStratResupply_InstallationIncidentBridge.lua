@@ -4,12 +4,14 @@
 -- lifecycle state plus transient physical threat identity into the generic Fire
 -- Support / Strategic Resupply Base. It does not detect threats, select assets,
 -- own resources, or close an incident because an alarm/security perimeter clears.
+-- Local incident closure does not terminate an already-dispatched QRF; tactical
+-- completion/release is separate and is forwarded through the demand lifecycle.
 
 local Bridge = {}
 local Instance = {}
 Instance.__index = Instance
 
-Bridge.SchemaVersion = "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-INSTALLATION-INCIDENT-BRIDGE-2"
+Bridge.SchemaVersion = "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-INSTALLATION-INCIDENT-BRIDGE-3"
 local TAG = "[OMW][FireSupStratResupply.InstallationIncidentBridge]"
 
 local function fail(message) error(TAG .. " " .. tostring(message), 2) end
@@ -79,6 +81,7 @@ function Instance:OnIncidentStarted(_, incident, evidence)
   local qrf, qrfCreated, qrfReason = self.base:RequestIncidentSupport(opened.incidentId, "QRF", {
     requestKey="INSTALLATION_ATTACK_INITIAL_QRF",
     priority=priority,
+    cancelWhenIncidentClosed=false,
     context={
       activation="INCIDENT_LOCAL_DEFENSE",
       source="INSTALLATION_ATTACK_INCIDENT",
@@ -87,7 +90,7 @@ function Instance:OnIncidentStarted(_, incident, evidence)
   })
 
   self:_log(string.format(
-    "incident started installationId=%s siteId=%s sourceIncidentId=%s baseIncidentId=%s created=%s qrfCreated=%s qrfReason=%s physicalTarget=%s",
+    "incident started installationId=%s siteId=%s sourceIncidentId=%s baseIncidentId=%s created=%s qrfCreated=%s qrfReason=%s physicalTarget=%s qrfCancelWhenIncidentClosed=false",
     installationId, tostring(entry.siteId), sourceIncidentId, tostring(opened.incidentId), tostring(created),
     tostring(qrfCreated), tostring(qrfReason), tostring(physicalTargetGroup and physicalTargetGroup:GetName())))
   return opened, created, qrfReason or reason, qrf
@@ -112,7 +115,7 @@ function Instance:OnIncidentClosed(_, incident, reason)
   local closed, changed, closeReason = self.base:CloseIncident(baseIncidentId, reason or "INSTALLATION_INCIDENT_CLOSED")
   if changed or closeReason == "ALREADY_CLOSED" then self.sourceToBaseIncident[sourceIncidentId] = nil end
   self:_log(string.format(
-    "incident closed sourceIncidentId=%s baseIncidentId=%s changed=%s reason=%s",
+    "incident closed sourceIncidentId=%s baseIncidentId=%s changed=%s reason=%s; dispatched QRF remains governed by explicit tactical release",
     sourceIncidentId, tostring(baseIncidentId), tostring(changed), tostring(reason)))
   return closed, changed, closeReason
 end
