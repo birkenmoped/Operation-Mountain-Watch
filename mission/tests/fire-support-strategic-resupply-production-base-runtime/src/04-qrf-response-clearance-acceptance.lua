@@ -11,7 +11,8 @@
 --   -> MOOSE RTZ / Returned lifecycle.
 --
 -- The harness observes this product behavior only. It does not select QRF targets,
--- implement target search, create Mission Editor zones or issue a tactical release.
+-- implement target search, create Mission Editor zones, replace the RED fixture route
+-- or issue a tactical release.
 
 local TAG="[OMW][FSSR-PRODUCTION-BASE-A4]"
 local SITE_ID="FOB_JOYCE"
@@ -19,16 +20,16 @@ local FIXTURE_NAME="BadGuys_A3_JOYCE"
 local GUARD_TEMPLATE="TPL_BLUE_GND_INF_RIFLE_SQUAD_9"
 local QRF_TEMPLATE="TPL_BLUE_GND_QRF_MIXED_6"
 local MIN_GUARD_MOVE_M=25
-local FIXTURE_ROUTE_SPEED_KMH=20
-local INTRUSION_DEPTH_FRACTION=0.65
+local MIN_FIXTURE_MOVE_M=25
 local TEST_TIMEOUT_SEC=900
 local TELEMETRY_SEC=5
 
 local state={
-  failed=false,passed=false,fixtureRouted=false,runtime=nil,brigade=nil,perimeter=nil,
-  guard=nil,guardStart=nil,guardMove=0,qrf=nil,qrfArmy=nil,qrfGroupName=nil,
-  qrfAccess=false,responseObserved=false,targetNames={},targetCount=0,
-  fixtureClearedObserved=false,returnObserved=false,demandId=nil,startedAt=nil,
+  failed=false,passed=false,fixtureActivated=false,runtime=nil,brigade=nil,perimeter=nil,
+  guard=nil,guardStart=nil,guardMove=0,fixtureStart=nil,fixtureMove=0,
+  qrf=nil,qrfArmy=nil,qrfGroupName=nil,qrfAccess=false,responseObserved=false,
+  targetNames={},targetCount=0,fixtureClearedObserved=false,returnObserved=false,
+  demandId=nil,startedAt=nil,
 }
 
 local function log(message) env.info(TAG.." "..tostring(message),false) end
@@ -119,21 +120,19 @@ local function buildPerimeter(package)
   return {[SITE_ID]=state.perimeter},nil
 end
 
-local function routeFixture()
-  if state.fixtureRouted then return true end
+local function activateFixture()
+  if state.fixtureActivated then return true end
   local fixture=GROUP:FindByName(FIXTURE_NAME)
   if not fixture then return false,"FIXTURE_GROUP_MISSING" end
   if fixture:IsAlive()~=true then fixture:Activate() end
-  local from=fixture:GetCoordinate()
+  local startCoordinate=fixture:GetCoordinate()
+  if not startCoordinate then return false,"FIXTURE_COORDINATE_UNAVAILABLE" end
+  state.fixtureStart=startCoordinate
+  state.fixtureActivated=true
   local anchor=state.perimeter and state.perimeter.anchorCoordinate
-  if not from or not anchor then return false,"FIXTURE_COORDINATE_UNAVAILABLE" end
-  local targetDistance=state.perimeter.radiusM*INTRUSION_DEPTH_FRACTION
-  local target=anchor:GetIntermediateCoordinate(from,targetDistance)
-  if not target then return false,"INTRUSION_TARGET_UNAVAILABLE" end
-  fixture:RouteGroundTo(target,FIXTURE_ROUTE_SPEED_KMH,"Off Road",1)
-  state.fixtureRouted=true
-  log(string.format("FIXTURE_ROUTE group=%s startDistanceM=%.1f targetDistanceM=%.1f radiusM=%.1f",FIXTURE_NAME,anchor:Get2DDistance(from),targetDistance,state.perimeter.radiusM))
-  announce("ARMED","Joyce RED fixture physically routed into the runtime alarm perimeter",15)
+  local startDistance=anchor and anchor:Get2DDistance(startCoordinate) or -1
+  log(string.format("FIXTURE_ACTIVATE group=%s startDistanceM=%.1f routeSource=MISSION_EDITOR routeOverride=false",FIXTURE_NAME,startDistance))
+  announce("ARMED","Joyce RED fixture activated; existing Mission Editor attack route remains untouched",15)
   return true,nil
 end
 
@@ -143,35 +142,42 @@ local function observe()
     local c=state.guard:GetCoordinate()
     if c then state.guardMove=state.guardStart:Get2DDistance(c) end
   end
-  if not state.fixtureRouted and state.guardMove>=MIN_GUARD_MOVE_M then
-    local ok,reason=routeFixture(); if not ok then fail(reason); return end
+  if not state.fixtureActivated and state.guardMove>=MIN_GUARD_MOVE_M then
+    local ok,reason=activateFixture(); if not ok then fail(reason); return end
+  end
+
+  local fixture=GROUP:FindByName(FIXTURE_NAME)
+  local fixtureAlive=fixture~=nil and fixture:IsAlive()==true
+  if state.fixtureActivated and fixtureAlive and state.fixtureStart then
+    local current=fixture:GetCoordinate()
+    if current then state.fixtureMove=math.max(state.fixtureMove,state.fixtureStart:Get2DDistance(current)) end
   end
 
   local inc=incident()
   local demandCount=inc and #inc.demandIds or 0
   if inc and demandCount==1 then state.demandId=inc.demandIds[1] end
-  local fixture=GROUP:FindByName(FIXTURE_NAME)
-  local fixtureAlive=fixture~=nil and fixture:IsAlive()==true
-  if state.targetCount>0 and state.fixtureRouted and not fixtureAlive then state.fixtureClearedObserved=true end
+  if state.targetCount>0 and state.fixtureActivated and not fixtureAlive then state.fixtureClearedObserved=true end
 
   if state.qrfArmy then
     local returning=type(state.qrfArmy.IsReturning)=="function" and state.qrfArmy:IsReturning() or false
     local returned=type(state.qrfArmy.GetState)=="function" and state.qrfArmy:GetState()=="Returned" or false
     if returning or returned then state.returnObserved=true end
-    log(string.format("TELEMETRY guardMoveM=%.1f proximity=%s demandCount=%d qrfAccess=%s response=%s targetCount=%d fixtureAlive=%s fixtureCleared=%s returning=%s returned=%s",
-      state.guardMove,tostring(proximityObserved()),demandCount,tostring(state.qrfAccess),tostring(state.responseObserved),state.targetCount,tostring(fixtureAlive),tostring(state.fixtureClearedObserved),tostring(returning),tostring(returned)))
+    log(string.format("TELEMETRY guardMoveM=%.1f fixtureActivated=%s fixtureMoveM=%.1f proximity=%s demandCount=%d qrfAccess=%s response=%s targetCount=%d fixtureAlive=%s fixtureCleared=%s returning=%s returned=%s",
+      state.guardMove,tostring(state.fixtureActivated),state.fixtureMove,tostring(proximityObserved()),demandCount,tostring(state.qrfAccess),tostring(state.responseObserved),state.targetCount,tostring(fixtureAlive),tostring(state.fixtureClearedObserved),tostring(returning),tostring(returned)))
   else
-    log(string.format("TELEMETRY guardMoveM=%.1f proximity=%s demandCount=%d qrfArmy=nil fixtureAlive=%s",state.guardMove,tostring(proximityObserved()),demandCount,tostring(fixtureAlive)))
+    log(string.format("TELEMETRY guardMoveM=%.1f fixtureActivated=%s fixtureMoveM=%.1f proximity=%s demandCount=%d qrfArmy=nil fixtureAlive=%s",
+      state.guardMove,tostring(state.fixtureActivated),state.fixtureMove,tostring(proximityObserved()),demandCount,tostring(fixtureAlive)))
   end
 
   if inc and demandCount>1 then fail("DEMAND_COUNT_"..tostring(demandCount)); return end
   if state.qrfArmy and state.qrfAccess~=true then fail("QRF_NOT_MATERIALIZED_IN_ACCESS"); return end
   if state.qrfArmy and not state.responseObserved then fail("INITIAL_QRF_MISSION_NOT_ONGUARD"); return end
 
-  if state.guardMove>=MIN_GUARD_MOVE_M and proximityObserved() and demandCount==1 and state.qrfArmy and state.responseObserved and state.qrfAccess
-      and state.targetCount>=2 and state.fixtureClearedObserved and state.returnObserved then
+  if state.guardMove>=MIN_GUARD_MOVE_M and state.fixtureMove>=MIN_FIXTURE_MOVE_M and proximityObserved() and demandCount==1
+      and state.qrfArmy and state.responseObserved and state.qrfAccess and state.targetCount>=2
+      and state.fixtureClearedObserved and state.returnObserved then
     state.passed=true
-    announce("PASS","Joyce physical alarm -> one ACCESS QRF -> same ARMYGROUP directly engaged multiple concrete incident UNIT targets -> hostile fixture cleared -> no target remained -> MOOSE return observed",40)
+    announce("PASS","Joyce Mission Editor RED route remained untouched -> physical alarm -> one ACCESS QRF -> same ARMYGROUP directly engaged multiple moving concrete incident UNIT targets -> hostile fixture cleared -> no target remained -> MOOSE return observed",40)
     return
   end
 
@@ -218,7 +224,7 @@ local function start()
   local _,created,siteReason=runtime:StartSite(SITE_ID,{}); if created==false then fail("GUARD_START_FAILED "..tostring(siteReason)); return end
 
   state.startedAt=timer.getTime()
-  announce("READY","Joyce direct-target QRF acceptance armed; RED fixture remains late-activated until Guard moves >=25 m",20)
+  announce("READY","Joyce direct-target QRF acceptance armed; RED fixture remains late-activated until Guard moves >=25 m and then follows its existing Mission Editor route without override",20)
   SCHEDULER:New(nil,observe,{},5,TELEMETRY_SEC)
 end
 
