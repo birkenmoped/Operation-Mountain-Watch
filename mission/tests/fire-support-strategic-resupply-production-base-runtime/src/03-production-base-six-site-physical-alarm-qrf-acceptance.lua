@@ -6,11 +6,10 @@
 -- a QRF mission-end condition. In particular, movement distance, perimeter clear
 -- and incident close must never release/cancel a dispatched QRF.
 --
--- QRF road materialization reuses the exact six-site Ground Acceptance-3-2
--- geometry contract: ACCESS -> 1500 m standoff approach toward the existing
--- PATROL_TEST observation zone -> closest road. These PATROL_TEST zones are used
--- only by this acceptance as already validated road-direction fixtures; they are
--- not a production dependency of QrfRuntime.
+-- QRF vehicle materialization uses the existing site ZON_BLUE_GND_XXX_ACCESS
+-- boundary through the packaged GroundRoadSpawnAdapter. The physical incident
+-- target coordinate is only the road-forward direction input; the adapter keeps
+-- all materialized vehicle positions inside the site ACCESS zone.
 
 local TAG="[OMW][FSSR-PRODUCTION-BASE-A3]"
 local GUARD_TEMPLATE="TPL_BLUE_GND_INF_RIFLE_SQUAD_9"
@@ -21,21 +20,18 @@ local TEST_TIMEOUT_SEC=900
 local FIXTURE_ROUTE_SPEED_KMH=20
 local INTRUSION_DEPTH_FRACTION=0.65
 local ALARM_PRIORITY=0
-local ROAD_APPROACH_STANDOFF_M=1500
-local ROAD_MIN_GEOMETRY_MARGIN_M=500
 local sites={
-  {id="JALALABAD_FENTY",fixture="BadGuys_A3_FENTY",roadReferenceZone="ZON_BLUE_GND_FENTY_PATROL_TEST_01"},
-  {id="COP_FORTRESS",fixture="BadGuys_A3_FORTRESS",roadReferenceZone="ZON_BLUE_GND_FORTRESS_PATROL_TEST_01"},
-  {id="FOB_JOYCE",fixture="BadGuys_A3_JOYCE",roadReferenceZone="ZON_BLUE_GND_JOYCE_PATROL_TEST_01"},
-  {id="FOB_WRIGHT",fixture="BadGuys_A3_WRIGHT",roadReferenceZone="ZON_BLUE_GND_WRIGHT_PATROL_TEST_01"},
-  {id="COP_HONAKER",fixture="BadGuys_A3_HONAKER",roadReferenceZone="ZON_BLUE_GND_HONAKER_PATROL_TEST_01"},
-  {id="FOB_BOSTICK",fixture="BadGuys_A3_BOSTICK",roadReferenceZone="ZON_BLUE_GND_BOSTICK_PATROL_TEST_01"},
+  {id="JALALABAD_FENTY",fixture="BadGuys_A3_FENTY"},
+  {id="COP_FORTRESS",fixture="BadGuys_A3_FORTRESS"},
+  {id="FOB_JOYCE",fixture="BadGuys_A3_JOYCE"},
+  {id="FOB_WRIGHT",fixture="BadGuys_A3_WRIGHT"},
+  {id="COP_HONAKER",fixture="BadGuys_A3_HONAKER"},
+  {id="FOB_BOSTICK",fixture="BadGuys_A3_BOSTICK"},
 }
 local state={failed=false,passed=false,released=false,runtime=nil,brigades={},site={},perimeters={},startedAt=nil}
 local function log(m) env.info(TAG.." "..tostring(m),false) end
 local function announce(k,m,t) local x="[PRODUCTION BASE A3]["..k.."] "..m; log(x); MESSAGE:New(x,t or 10):ToAll() end
 local function fail(m) if not state.failed and not state.passed then state.failed=true; announce("FAIL",m,30) end end
-local function siteDef(siteId) for _,d in ipairs(sites) do if d.id==siteId then return d end end return nil end
 
 local function baseIncident(siteId)
   local p=OMW.FireSupStratResupply
@@ -56,29 +52,6 @@ local function proximityEvidenceObserved(siteId)
     if evidence.evidenceType=="PROXIMITY_INTRUSION" then return true end
   end
   return false
-end
-
-local function resolveValidatedRoadForwardCoordinate(siteId,site,accessZone)
-  local d=siteDef(siteId)
-  if not d then return nil,"SITE_NOT_CONFIGURED" end
-  local referenceZone=ZONE:FindByName(d.roadReferenceZone)
-  if not referenceZone or type(referenceZone.GetCoordinate)~="function" then
-    return nil,"GROUND_A3_ROAD_REFERENCE_ZONE_UNAVAILABLE:"..tostring(d.roadReferenceZone)
-  end
-  local accessCoord=accessZone and accessZone:GetCoordinate() or nil
-  local targetCoord=referenceZone:GetCoordinate()
-  if not accessCoord or not targetCoord then return nil,"GROUND_A3_ROAD_REFERENCE_COORDINATE_UNAVAILABLE" end
-  local totalDistance=accessCoord:Get2DDistance(targetCoord)
-  if type(totalDistance)~="number" or totalDistance<=ROAD_APPROACH_STANDOFF_M+ROAD_MIN_GEOMETRY_MARGIN_M then
-    return nil,"GROUND_A3_ROAD_GEOMETRY_TOO_SHORT"
-  end
-  local approachFraction=(totalDistance-ROAD_APPROACH_STANDOFF_M)/totalDistance
-  local rawApproachCoord=accessCoord:GetIntermediateCoordinate(targetCoord,approachFraction)
-  if not rawApproachCoord then return nil,"GROUND_A3_ROAD_APPROACH_UNAVAILABLE" end
-  local approachCoord=rawApproachCoord:GetClosestPointToRoad() or rawApproachCoord
-  log(string.format("QRF_ROAD_REFERENCE siteId=%s source=GROUND_ACCEPTANCE_3_2 zone=%s totalDistanceM=%.1f standoffM=%d",
-    siteId,d.roadReferenceZone,totalDistance,ROAD_APPROACH_STANDOFF_M))
-  return approachCoord,nil
 end
 
 local function updateSiteState(d)
@@ -250,7 +223,6 @@ local function start()
   if not GROUP:FindByName(GUARD_TEMPLATE) or not GROUP:FindByName(QRF_TEMPLATE) then fail("BLUE_TEMPLATE_MISSING"); return end
   for _,d in ipairs(sites) do
     if not GROUP:FindByName(d.fixture) then fail("FIXTURE_GROUP_MISSING "..d.fixture); return end
-    if not ZONE:FindByName(d.roadReferenceZone) then fail("GROUND_A3_ROAD_REFERENCE_ZONE_MISSING "..d.roadReferenceZone); return end
   end
   buildBrigades(p)
   local perimeters,perimeterReason=buildPerimeters(p); if not perimeters then fail("PERIMETER_CONFIG_FAILED "..tostring(perimeterReason)); return end
@@ -259,17 +231,12 @@ local function start()
     resolveGuardPathline=function(n) return PATHLINE:FindByName(n) end,
     resolveGuardTemplateGroup=function(n) return GROUP:FindByName(n) end,
     guardRequiredAttributes=GROUP.Attribute.GROUND_INFANTRY,
-    resolveQrfCoordinate=function(demand,context)
+    resolveQrfCoordinate=function(_,context)
       local i=context and context.incident
       local c=i and i.context
       local target=c and c.physicalTargetGroup
       if not target then return nil,"QRF_PHYSICAL_TARGET_UNAVAILABLE" end
-      local site=p.SiteRegistry.Sites[demand.siteId]
-      local accessZone=site and ZONE:FindByName(site.accessZoneName) or nil
-      if not accessZone then return nil,"QRF_ACCESS_ZONE_UNAVAILABLE" end
-      local roadForward,roadReason=resolveValidatedRoadForwardCoordinate(demand.siteId,site,accessZone)
-      if not roadForward then return nil,roadReason end
-      return target,nil,roadForward
+      return target,nil
     end,
     qrfRequiredAttributes=GROUP.Attribute.GROUND_APC,
     blueCoalition=coalition.side.BLUE,redCoalition=coalition.side.RED,
@@ -282,7 +249,7 @@ local function start()
   for _,b in pairs(state.brigades) do b:Start() end
   for _,d in ipairs(sites) do local _,created,siteReason=r:StartSite(d.id,{}); if created==false then fail(d.id.." GUARD_START_FAILED "..tostring(siteReason)); return end end
   state.startedAt=timer.getTime()
-  announce("READY","six owner-defined MOOSE perimeters and Guard/QRF organisations active; RED fixtures remain late-activated until all Guards pass >=25 m; QRF road geometry reuses Ground Acceptance-3-2; harness never releases/cancels QRF missions",20)
+  announce("READY","six owner-defined MOOSE perimeters and Guard/QRF organisations active; RED fixtures remain late-activated until all Guards pass >=25 m; QRF vehicles use their existing site ACCESS boundary; harness never releases/cancels QRF missions",20)
   SCHEDULER:New(nil,function()
     for _,d in ipairs(sites) do local s=state.site[d.id]; updateSiteState(d); if s.guardObserved and s.guard and s.guard:IsAlive() and (s.guardMove or 0)>=MIN_M then s.guardPassed=true end end
     evaluate()
