@@ -9,29 +9,41 @@ local function no(v,label) if v~=false then error(label.." expected=false") end 
 
 local previousAuftrag=AUFTRAG
 local previousZone=ZONE
+local previousZoneRadius=ZONE_RADIUS
+local previousUtils=UTILS
 local previousGroup=Group
 local previousWarehouse=WAREHOUSE
 local previousOmw=OMW
 
+local groundAttackCalls=0
 AUFTRAG={}
-function AUFTRAG:NewGROUNDATTACK(target)
-  local mission={target=target,cancelCount=0}
+function AUFTRAG:NewGROUNDATTACK()
+  groundAttackCalls=groundAttackCalls+1
+  error("GROUNDATTACK substitution is forbidden")
+end
+function AUFTRAG:NewONGUARD(coordinate)
+  local mission={coordinate=coordinate,cancelCount=0}
   function mission:SetTeleport(v) self.teleport=v return self end
   function mission:SetReturnToLegion(v) self.returnToLegion=v return self end
   function mission:SetRequiredAssets(a,b) self.requiredMin=a;self.requiredMax=b;return self end
   function mission:SetRequiredAttribute(v) self.requiredAttributes=v;return self end
   function mission:SetRequiredProperty(v) self.requiredProperties=v;return self end
   function mission:SetPriority(p,u) self.priority=p;self.urgent=u;return self end
+  function mission:SetEngageDetected(range,targetTypes,zone) self.engageRange=range;self.targetTypes=targetTypes;self.engageZone=zone;return self end
   function mission:Cancel() self.cancelCount=self.cancelCount+1 end
   return mission
 end
 
 Group={Category={GROUND=2}}
 WAREHOUSE={Attribute={GROUND_INFANTRY="Ground Infantry"}}
+UTILS={}
+function UTILS.NMToMeters(value) return value*1852 end
 
 local accessZones={}
 ZONE={}
 function ZONE:FindByName(name) return accessZones[name] end
+ZONE_RADIUS={}
+function ZONE_RADIUS:New(name,vec2,radius) return {name=name,vec2=vec2,radius=radius} end
 
 local roadInstalls={}
 local RoadSpawnAdapter={}
@@ -43,13 +55,18 @@ OMW={FireSupStratResupply={Modules={roadSpawnAdapter=RoadSpawnAdapter}}}
 
 local brigades={}
 for siteId,site in pairs(Sites.Sites) do
+  local accessCoordinate={marker="ACCESS_COORDINATE|"..siteId}
+  function accessCoordinate:GetClosestPointToRoad() return self end
   local zone={name=site.accessZoneName}
   function zone:GetName() return self.name end
-  function zone:GetCoordinate() return {marker="ACCESS_COORDINATE|"..siteId} end
+  function zone:GetCoordinate() return accessCoordinate end
   accessZones[site.accessZoneName]=zone
 
+  local brigadeCoordinate={marker="BRIGADE_COORDINATE|"..siteId}
+  function brigadeCoordinate:GetVec2() return {x=10,y=20} end
   local brigade={alias="BDE_TEST_"..siteId,missions={}}
   function brigade:SetSpawnZone(z,maxDist) self.spawnZone=z;self.spawnMaxDist=maxDist;return self end
+  function brigade:GetCoordinate() return brigadeCoordinate end
   function brigade:AddMission(m) self.missions[#self.missions+1]=m return self end
   brigades[siteId]=brigade
 end
@@ -82,6 +99,7 @@ for siteId,site in pairs(Sites.Sites) do
   eq(brigades[siteId].spawnZone,accessZones[site.accessZoneName],siteId.." ACCESS home/spawn zone")
   eq(brigades[siteId].spawnMaxDist,1000,siteId.." spawn max distance")
   yes(roadInstalls[brigades[siteId].alias]~=nil,siteId.." road adapter installed")
+  eq(runtime.engageZones[siteId].radius,5*1852,siteId.." accepted five NM QRF tactical radius")
 end
 
 local demand={demandId="INC|FOB_JOYCE|QRF",siteId="FOB_JOYCE",supportType="QRF",priority=12}
@@ -90,7 +108,10 @@ local handle,created,reason=runtime:Dispatch(demand,context)
 yes(created,"Joyce QRF dispatched")
 eq(reason,nil,"Joyce QRF reason")
 eq(#brigades.FOB_JOYCE.missions,1,"Joyce local brigade receives mission")
-eq(handle.mission.target,target,"GROUNDATTACK physical target")
+eq(handle.mission.coordinate,targetCoordinate,"ONGUARD starts at physical threat coordinate")
+eq(handle.mission.engageRange,5,"accepted Honaker engage range")
+eq(handle.mission.targetTypes[1],"Ground Units","accepted target class")
+eq(handle.mission.engageZone,runtime.engageZones.FOB_JOYCE,"site tactical zone forwarded")
 eq(handle.mission.teleport,false,"QRF teleport disabled")
 eq(handle.mission.returnToLegion,true,"accepted MOOSE return lifecycle enabled")
 eq(handle.mission.requiredMin,1,"QRF default one asset")
@@ -98,6 +119,7 @@ eq(handle.mission.requiredAttributes,requiredAttributes,"QRF required attributes
 eq(handle.mission.requiredProperties,requiredProperties,"QRF required properties forwarded")
 eq(resolved[1].legion,brigades.FOB_JOYCE,"target resolver sees local brigade")
 eq(runtime.targetCoordinates.FOB_JOYCE,targetCoordinate,"physical target coordinate retained only for road materialization")
+eq(groundAttackCalls,0,"GROUNDATTACK never used")
 for siteId,brigade in pairs(brigades) do if siteId~="FOB_JOYCE" then eq(#brigade.missions,0,siteId.." untouched") end end
 
 local unavailable,unavailableCreated,unavailableReason=runtime:Dispatch({demandId="INC|FOB_BOSTICK|QRF",siteId="FOB_BOSTICK",supportType="QRF"},{})
@@ -113,6 +135,8 @@ eq(missingReason,"SITE_NOT_FOUND","unknown site reason")
 
 AUFTRAG=previousAuftrag
 ZONE=previousZone
+ZONE_RADIUS=previousZoneRadius
+UTILS=previousUtils
 Group=previousGroup
 WAREHOUSE=previousWarehouse
 OMW=previousOmw
