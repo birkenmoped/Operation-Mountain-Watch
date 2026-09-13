@@ -63,6 +63,8 @@ Dieses Register bildet offene Pull Requests, ihre Abhängigkeiten, Dokumentation
 
 Der Arbeitsbranch `agent/army-ground-foundation-reconciliation` besitzt zum Stand dieser Reconciliation noch keinen Pull Request und wird daher nicht mit einer erfundenen PR-Nummer in die Tabelle aufgenommen. Sobald ein PR existiert, ist er hier mit realem PR-Status und Abhängigkeit nachzutragen.
 
+Der Arbeitsbranch `agent/isr-base-main-reconciliation` wurde direkt von `main` bei `980340c9225a81921aed8995aa8f50cad7d1c215` erstellt. Sein Anfangsscope ist ausschließlich der DRAFT-Source-/Ressourcen- und MOOSE-Queue-Vertrag unter `docs/moose/ISR-SOURCE-RESOURCE-AND-QUEUE-CONTRACT.md`. Er hat keinen Pull Request und keine Runtime-Acceptance. Er darf weder den historischen UAV-Dispatcher noch eine parallele Queue/Asset-Auswahl übernehmen. Seine künftige Runtime-Abhängigkeit ist die noch ungemergte FireSupStratResupply-Production-Base; vor produktiver ISR-Implementierung ist deren aktueller Main-Abgleich erneut zu prüfen.
+
 ## 3. Stackstruktur
 
 ```text
