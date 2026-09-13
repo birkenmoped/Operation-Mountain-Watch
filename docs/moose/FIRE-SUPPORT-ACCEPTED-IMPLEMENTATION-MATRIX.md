@@ -51,7 +51,7 @@ NO ACCEPTANCE SHORTCUT
 | QRF Target Authority | `OMW_GroundInstallationAttackIncident.lua` | Bekannte Angreifer stammen aus dem autoritativen Incident-Teilnehmerbestand `GetParticipants(true)`; keine zweite World-Scan-Autoritaet. |
 | QRF Tactical Area | Honaker Full-Response | 5 NM site-local tactical zone; nur lebende Incident-`UNIT`s innerhalb dieser Zone sind QRF-Ziele. |
 | QRF Engagement | Owner decision 2026-09-13 + pinned MOOSE source review | Dieselbe physische `ARMYGROUP` greift das naechste lebende Incident-`UNIT` mit `ARMYGROUP:EngageTarget()` an. MOOSE verfolgt dessen aktuelle Position. |
-| QRF Movement | Owner decision 2026-09-13 + pinned MOOSE source review | Motorisierte QRF verwendet auf dem Marsch `EngageTarget(..., "On Road")`. MOOSE erzeugt die Strassenfuehrung und verlaesst die Strasse fuer den finalen Off-Road-Anflug, wenn das konkrete Ziel abseits liegt. `Vee` ist keine Default-Marschformation. |
+| QRF Movement | Owner decision 2026-09-13 + pinned MOOSE source review + A4-6 negative evidence | Motorisierte QRF verwendet auf dem Marsch `EngageTarget(..., "On Road")`. Sowohl MissionFactory-Default als auch Composition/Runtime muessen `On Road` erhalten; Runtime darf dies nicht mit `Vee` ueberschreiben. MOOSE besitzt Strassenrouting und finalen Off-Road-Anflug. |
 | QRF Retarget | Pinned MOOSE `Disengage` lifecycle | Ziel tot -> MOOSE `Disengage` -> ereignisgetriebene Neuauswahl des naechsten lebenden Incident-Ziels. Kein OMW-Target-Scheduler. |
 | QRF Return | Owner decision 2026-09-13 | Wenn kein lebendes autorisiertes Incident-Ziel in der Tactical-Zone verbleibt, wird die QRF-Mission beendet und `SetReturnToLegion(true)` / RTZ / Returned verwendet. Perimeter-Clear oder Incident-Close allein reichen nicht. |
 | ACCESS | `ARMY-GROUND-RECONSTITUTION-ACCESS-CONTRACT.md` | `ZON_BLUE_GND_XXX_ACCESS` ist Materialisierungs-/Departure-/Return-/Handoff-Grenze. |
@@ -91,6 +91,7 @@ Verbindliche Grenzen:
 - kein eigener OMW-Scheduler oder Frame-Scan fuer Zielsuche;
 - kein eigener OMW-Strassenrouter parallel zu MOOSE;
 - motorisierte QRF marschiert road-preferred / On Road, nicht standardmaessig in Vee;
+- Runtime/Composition darf den On-Road-Marschvertrag nicht mit Vee ueberschreiben;
 - Vee ist eine Gefechtsformation und nicht der Default fuer den gesamten Anmarsch;
 - keine Rueckkehr nur wegen Perimeter-Clear oder Incident-Close;
 - "keine Targets" bedeutet keine lebenden autorisierten Incident-Ziele in der Tactical-Zone, nicht "nichts detektiert";
@@ -120,6 +121,24 @@ AUFTRAG:Cancel()
 ```
 
 Im gepinnten MOOSE-Quellstand akzeptiert `EngageTarget` TARGET/GROUP/UNIT, aktualisiert die Zielkoordinate bei mehr als 100 m Bewegung oder fehlender LOS und disengagiert bei totem/nicht mehr aufloesbarem Ziel. `ARMYGROUP:AddWaypoint` und die Route-Update-Logik behandeln `On Road` als Strassenpraeferenz: MOOSE fuegt Road-Waypoints ein und setzt den eigentlichen Ziel-Waypoint Off Road, wenn das Ziel selbst abseits der Strasse liegt. Damit wird weder eigene OMW-Wegpunktverfolgung noch ein eigener OMW-Strassenrouter implementiert.
+
+## A4-6 Runtime-Override-Regression
+
+Der reale A4-6-Lauf vom 13.09.2026 materialisierte die Joyce-QRF korrekt strassenausgerichtet in ACCESS und liess die RED-Fixture auf ihrer vorhandenen Mission-Editor-Route. Der QRF-Marsch nutzte die Strasse sichtbar trotzdem nicht. Die Log-Evidenz zeigte beim initialen und spaeteren Target-Acquire `formation=Vee`.
+
+Die Ursache lag nicht im gepinnten MOOSE-Road-Routing, sondern im OMW Composition/Runtime-Layer: `OMW_FireSupStratResupply_QrfRuntime.lua` setzte `QRF_ENGAGE_FORMATION = "Vee"` und ueberschrieb damit den bereits auf `On Road` korrigierten MissionFactory-Default. A4-6 hat `EngageTarget(..., "On Road")` daher nicht real getestet.
+
+Korrektur ab QRF Runtime 13:
+
+```text
+QrfMissionFactory default = On Road
+AND
+QrfRuntime explicit formation = On Road
+AND
+runtime test verifies ARMYGROUP EngageTarget receives On Road
+AND
+builder/accepted-contract tests forbid a Vee runtime override
+```
 
 ## Harte ACCESS-Regel
 
@@ -172,7 +191,7 @@ Die historische Production Base Acceptance 3 bleibt unveraendert als Evidenz des
 5. Historische `PATROL_TEST`-Fixtures als aktuelle Acceptance-Voraussetzung.
 6. `PATROLZONE + HuntingPatrol` als QRF-Clearance; realer A4-DCS-Lauf zeigte unpassende Einsatzgeometrie/Target-Bindung.
 7. Eigene Search-/Sweep-/Target-Scheduler parallel zu MOOSE.
-8. `Vee` als Default fuer den gesamten motorisierten QRF-Anmarsch trotz road-aligned ACCESS-Materialisierung.
+8. `Vee` als Default oder Runtime-Override fuer den gesamten motorisierten QRF-Anmarsch trotz road-aligned ACCESS-Materialisierung.
 
 ## Anti-Regression-Gate
 
@@ -184,8 +203,10 @@ missing SetReturnToLegion(true)
 GROUNDATTACK substitution
 PATROLZONE/HuntingPatrol reintroduction
 missing direct ARMYGROUP:EngageTarget
-missing MOOSE On Road QRF transit
+missing MOOSE On Road QRF transit in MissionFactory
+missing MOOSE On Road QRF transit in Runtime
 Vee as default motorized QRF march formation
+Vee as Runtime/Composition override
 missing Disengage-driven reacquisition
 missing authoritative incident GetParticipants(true) target source
 missing tactical-zone target filtering
