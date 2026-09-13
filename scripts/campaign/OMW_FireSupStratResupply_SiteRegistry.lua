@@ -3,7 +3,7 @@
 
 local SiteRegistry = {}
 
-SiteRegistry.SchemaVersion = "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-SITE-REGISTRY-4"
+SiteRegistry.SchemaVersion = "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-SITE-REGISTRY-5"
 SiteRegistry.GuardTemplateName = "TPL_BLUE_GND_INF_RIFLE_SQUAD_9"
 
 local function guardRouteContract(pathlineName)
@@ -17,6 +17,21 @@ local function localSupport(status)
   return { status = status }
 end
 
+local function warehouseAlarm(radiusM)
+  return {
+    anchorKind = "WAREHOUSE",
+    radiusM = radiusM,
+  }
+end
+
+local function mooseZoneAlarm(zoneName, radiusM)
+  return {
+    anchorKind = "MOOSE_ZONE",
+    anchorName = zoneName,
+    radiusM = radiusM,
+  }
+end
+
 SiteRegistry.Sites = {
   JALALABAD_FENTY = {
     siteId = "JALALABAD_FENTY",
@@ -26,6 +41,7 @@ SiteRegistry.Sites = {
     supportProfileId = "GROUND_INSTALLATION_STANDARD",
     warehouseName = "WH_BLUE_GND_FENTY",
     accessZoneName = "ZON_BLUE_GND_FENTY_ACCESS",
+    alarm = mooseZoneAlarm("OMW_BLUE_OBJECTIVE_JALALABAD_AIRPORT", 1828.8),
     guardTemplateName = SiteRegistry.GuardTemplateName,
     guardRoute = guardRouteContract("OMW_RTE_BLUE_GUARD_FENTY_01"),
     localSupport = localSupport("NOT_ESTABLISHED_BY_CURRENT_BASELINE"),
@@ -38,6 +54,7 @@ SiteRegistry.Sites = {
     supportProfileId = "GROUND_INSTALLATION_STANDARD",
     warehouseName = "WH_BLUE_GND_FORTRESS",
     accessZoneName = "ZON_BLUE_GND_FORTRESS_ACCESS",
+    alarm = warehouseAlarm(1524.0),
     guardTemplateName = SiteRegistry.GuardTemplateName,
     guardRoute = guardRouteContract("OMW_RTE_BLUE_GUARD_FORTRESS_01"),
     localSupport = localSupport("CONFIGURED_IN_GROUND_BASELINE"),
@@ -50,6 +67,7 @@ SiteRegistry.Sites = {
     supportProfileId = "GROUND_INSTALLATION_STANDARD",
     warehouseName = "WH_BLUE_GND_JOYCE",
     accessZoneName = "ZON_BLUE_GND_JOYCE_ACCESS",
+    alarm = warehouseAlarm(2743.2),
     guardTemplateName = SiteRegistry.GuardTemplateName,
     guardRoute = guardRouteContract("OMW_RTE_BLUE_GUARD_JOYCE_01"),
     localSupport = localSupport("NOT_ESTABLISHED_BY_CURRENT_BASELINE"),
@@ -62,6 +80,7 @@ SiteRegistry.Sites = {
     supportProfileId = "GROUND_INSTALLATION_STANDARD",
     warehouseName = "WH_BLUE_GND_WRIGHT",
     accessZoneName = "ZON_BLUE_GND_WRIGHT_ACCESS",
+    alarm = warehouseAlarm(1219.2),
     guardTemplateName = SiteRegistry.GuardTemplateName,
     guardRoute = guardRouteContract("OMW_RTE_BLUE_GUARD_WRIGHT_01"),
     localSupport = localSupport("UNRESOLVED_CURRENT_ASSIGNMENT"),
@@ -74,6 +93,7 @@ SiteRegistry.Sites = {
     supportProfileId = "GROUND_INSTALLATION_STANDARD",
     warehouseName = "WH_BLUE_GND_HONAKER",
     accessZoneName = "ZON_BLUE_GND_HONAKER_ACCESS",
+    alarm = warehouseAlarm(2743.2),
     guardTemplateName = SiteRegistry.GuardTemplateName,
     guardRoute = guardRouteContract("OMW_RTE_BLUE_GUARD_HONAKER_01"),
     localSupport = localSupport("CONFIGURED_IN_GROUND_BASELINE"),
@@ -87,6 +107,7 @@ SiteRegistry.Sites = {
     supportProfileId = "GROUND_INSTALLATION_STANDARD",
     warehouseName = "WH_BLUE_GND_BOSTICK",
     accessZoneName = "ZON_BLUE_GND_BOSTICK_ACCESS",
+    alarm = warehouseAlarm(1524.0),
     guardTemplateName = SiteRegistry.GuardTemplateName,
     guardRoute = guardRouteContract("OMW_RTE_BLUE_GUARD_BOSTICK_01"),
     localSupport = localSupport("CONFIGURED_IN_GROUND_BASELINE"),
