@@ -9,9 +9,10 @@ local function no(value, label) if value ~= false then error(label .. " expected
 local previousAuftrag = AUFTRAG
 local created = {}
 AUFTRAG = {}
-function AUFTRAG:NewONGUARD(coordinate)
-  local mission = { coordinate=coordinate, cancelCount=0 }
+function AUFTRAG:NewGROUNDATTACK(target)
+  local mission = { target=target, cancelCount=0 }
   function mission:SetTeleport(value) self.teleport=value return self end
+  function mission:SetReturnToLegion(value) self.returnToLegion=value return self end
   function mission:SetRequiredAssets(minimum, maximum) self.requiredMin=minimum; self.requiredMax=maximum; return self end
   function mission:SetRequiredAttribute(value) self.requiredAttributes=value; return self end
   function mission:SetRequiredProperty(value) self.requiredProperties=value; return self end
@@ -22,11 +23,15 @@ function AUFTRAG:NewONGUARD(coordinate)
 end
 
 local resolvedDemand, resolvedContext, resolvedLegion
-local coordinate = { marker="QRF_RESPONSE_COORDINATE" }
+local target = { marker="QRF_PHYSICAL_TARGET", alive=true, name="BadGuys_A3_JOYCE" }
+function target:IsInstanceOf(className) return className=="GROUP" end
+function target:IsAlive() return self.alive end
+function target:GetName() return self.name end
+
 local factory = Factory.New({
-  resolveCoordinate = function(demand, context, legion)
+  resolveTarget = function(demand, context, legion)
     resolvedDemand=demand; resolvedContext=context; resolvedLegion=legion
-    return coordinate
+    return target
   end,
   requiredAssetsMin = 1,
   requiredAssetsMax = 1,
@@ -41,8 +46,9 @@ eq(reason, nil, "QRF create reason")
 eq(resolvedDemand, demand, "resolver demand")
 eq(resolvedContext, context, "resolver context")
 eq(resolvedLegion, legion, "resolver legion")
-eq(mission.coordinate, coordinate, "ONGUARD coordinate")
+eq(mission.target, target, "GROUNDATTACK physical target")
 eq(mission.teleport, false, "visible teleport disabled")
+eq(mission.returnToLegion, true, "accepted MOOSE return lifecycle enabled")
 eq(mission.requiredMin, 1, "required assets min")
 eq(mission.requiredMax, 1, "required assets max")
 eq(mission.requiredAttributes, nil, "no implicit attribute filter")
@@ -53,7 +59,7 @@ eq(mission.urgent, false, "QRF does not preempt by default")
 local attributes={"Ground_APC"}
 local properties={"APC"}
 local constrainedFactory=Factory.New({
-  resolveCoordinate=function() return coordinate end,
+  resolveTarget=function() return target end,
   requiredAttributes=attributes,
   requiredProperties=properties,
 })
@@ -63,17 +69,28 @@ local constrained, constrainedCreated = constrainedFactory:Create({
 yes(constrainedCreated,"constrained QRF created")
 eq(constrained.requiredAttributes,attributes,"MOOSE attribute constraint forwarded")
 eq(constrained.requiredProperties,properties,"MOOSE property constraint forwarded")
+eq(constrained.returnToLegion,true,"constrained QRF returns to Legion")
 
 local unavailableFactory = Factory.New({
-  resolveCoordinate = function() return nil, "QRF_RESPONSE_ANCHOR_NOT_CONFIGURED" end,
+  resolveTarget = function() return nil, "QRF_PHYSICAL_TARGET_UNAVAILABLE" end,
 })
 local unavailable, unavailableCreated, unavailableReason = unavailableFactory:Create({
   demandId="DEMAND|FOB_BOSTICK|QRF|1", siteId="FOB_BOSTICK", supportType="QRF"
 }, {}, {})
-eq(unavailable, nil, "missing coordinate returns no mission")
-no(unavailableCreated, "missing coordinate not created")
-eq(unavailableReason, "QRF_RESPONSE_ANCHOR_NOT_CONFIGURED", "missing coordinate reason")
-eq(#created, 2, "no MOOSE mission built when coordinate missing")
+eq(unavailable, nil, "missing physical target returns no mission")
+no(unavailableCreated, "missing physical target not created")
+eq(unavailableReason, "QRF_PHYSICAL_TARGET_UNAVAILABLE", "missing target reason")
+eq(#created, 2, "no MOOSE mission built when target missing")
+
+local deadTarget={name="BadGuys_A3_BOSTICK"}
+function deadTarget:IsInstanceOf(className) return className=="GROUP" end
+function deadTarget:IsAlive() return false end
+function deadTarget:GetName() return self.name end
+local deadFactory=Factory.New({resolveTarget=function() return deadTarget end})
+local dead,deadCreated,deadReason=deadFactory:Create({demandId="DEMAND|FOB_BOSTICK|QRF|2",siteId="FOB_BOSTICK",supportType="QRF"},{},{})
+eq(dead,nil,"dead physical target returns no mission")
+no(deadCreated,"dead physical target not created")
+eq(deadReason,"QRF_PHYSICAL_TARGET_NOT_ALIVE","dead target reason")
 
 local ok, err = pcall(function()
   factory:Create({ demandId="DEMAND|FOB_JOYCE|CAS|1", siteId="FOB_JOYCE", supportType="CAS" }, context, legion)
