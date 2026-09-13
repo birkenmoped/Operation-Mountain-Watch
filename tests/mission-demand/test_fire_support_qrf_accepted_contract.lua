@@ -39,16 +39,19 @@ contains(factory, "mission:Cancel()", "QRF completion return trigger")
 excludes(factory, "SCHEDULER", "QRF factory custom target scheduler")
 excludes(factory, "timer.scheduleFunction", "QRF factory custom target scheduler")
 
--- Motorized QRF march is road-preferred. Pinned MOOSE ARMYGROUP routing owns the
--- road waypoints and the final off-road approach to a target that is not on-road.
-contains(factory, 'local DEFAULT_ENGAGE_FORMATION = "On Road"', "QRF road-preferred transit")
-excludes(factory, 'local DEFAULT_ENGAGE_FORMATION = "Vee"', "QRF march formation")
+-- Motorized QRF march is road-preferred. Both layers are locked because a runtime
+-- override wins over the MissionFactory default.
+contains(factory, 'local DEFAULT_ENGAGE_FORMATION = "On Road"', "QRF factory road-preferred transit")
+excludes(factory, 'local DEFAULT_ENGAGE_FORMATION = "Vee"', "QRF factory march formation")
+contains(runtime, "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-QRF-RUNTIME-13", "QRF runtime schema")
+contains(runtime, 'local QRF_ENGAGE_FORMATION = "On Road"', "QRF runtime road-preferred transit")
+contains(runtime, "engageFormation=QRF_ENGAGE_FORMATION", "QRF runtime formation forwarding")
+excludes(runtime, 'local QRF_ENGAGE_FORMATION = "Vee"', "QRF runtime Vee override")
 
 -- Existing installation incident participant registry is the target authority.
 contains(incidentBridge, "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-INSTALLATION-INCIDENT-BRIDGE-4", "incident bridge schema")
 contains(incidentBridge, "sourceIncidentCoordinator=sourceCoordinator", "incident coordinator handoff")
 contains(incidentBridge, "cancelWhenIncidentClosed=false", "incident close independence")
-contains(runtime, "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-QRF-RUNTIME-12", "QRF runtime schema")
 contains(runtime, "sourceIncidentCoordinator", "QRF runtime participant authority")
 contains(runtime, "GetParticipants(true)", "QRF runtime living participant query")
 contains(runtime, "group:GetUnits()", "QRF runtime concrete UNIT targets")
