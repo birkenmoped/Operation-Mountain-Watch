@@ -264,9 +264,13 @@ local function start()
       local c=i and i.context
       local target=c and c.physicalTargetGroup
       if not target then return nil,"QRF_PHYSICAL_TARGET_UNAVAILABLE" end
-      return target,nil
+      local site=p.SiteRegistry.Sites[demand.siteId]
+      local accessZone=site and ZONE:FindByName(site.accessZoneName) or nil
+      if not accessZone then return nil,"QRF_ACCESS_ZONE_UNAVAILABLE" end
+      local roadForward,roadReason=resolveValidatedRoadForwardCoordinate(demand.siteId,site,accessZone)
+      if not roadForward then return nil,roadReason end
+      return target,nil,roadForward
     end,
-    resolveQrfRoadSpawnForwardCoordinate=resolveValidatedRoadForwardCoordinate,
     qrfRequiredAttributes=GROUP.Attribute.GROUND_APC,
     blueCoalition=coalition.side.BLUE,redCoalition=coalition.side.RED,
     perimeters=perimeters,logger=log,
