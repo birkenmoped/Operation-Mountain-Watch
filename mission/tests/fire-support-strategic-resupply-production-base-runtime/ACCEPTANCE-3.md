@@ -7,6 +7,7 @@ authoritative_for:
   - corrected six-site installation-alarm acceptance contract
   - six-site proximity-evidence to incident to local-QRF acceptance scope
   - QRF ACCESS-boundary road materialization acceptance
+  - QRF physical response and accepted MOOSE home-return lifecycle acceptance
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
@@ -31,7 +32,7 @@ site-specific installation alarm/security/threat zone
 
 Direct Fire, Indirect Fire und confirmed Hit bleiben zusätzliche Evidence-Kanäle und dürfen denselben Incident erzeugen oder refreshen. Sie dürfen keinen zweiten initialen QRF-Demand erzeugen.
 
-Die Alarmzone ist ausschließlich Detection-/Response-Triggergrenze. Sie ist nicht taktischer Gefechtsraum, WEZ, Fire-Support-Zielgebiet, CAS-Zone oder Mission-End-Bedingung. `ACCESS`, Warehouse-Grenzen und Guard-PATHLINE sind keine Alarmgeometrie.
+Die Alarmzone ist ausschließlich Detection-/Response-Triggergrenze. Sie ist nicht taktischer Gefechtsraum, WEZ, Fire-Support-Zielgebiet, CAS-Zone oder Mission-End-Bedingung. `ACCESS`, Warehouse-Grenzen und Guard-PATHLINE sind keine Alarmgeometrie. Insbesondere beendet ein Verlassen oder Clearen der Alarmzone keinen bereits disponierten QRF-Auftrag.
 
 ## Six-Site-Alarmgeometrie
 
@@ -87,7 +88,55 @@ FOB_BOSTICK     -> ZON_BLUE_GND_BOSTICK_ACCESS
 
 Acceptance 3 verwendet dafür den vorhandenen `OMW_GroundRoadSpawnAdapter`. Für QRF-Fahrzeuggruppen gilt die bereits akzeptierte feste Fahrzeugstaffelung von 18 m. Die Straßenausrichtung wird nicht aus dem beliebigen Incident-Zielpunkt direkt abgeleitet, sondern aus einem per MOOSE qualifizierten Straßenpunkt in Ausrückrichtung.
 
+Dieselbe site-lokale ACCESS-Zone wird dem jeweiligen `BRIGADE` per öffentlichem `WAREHOUSE:SetSpawnZone(...)` als Spawn-/Home-Zone zugeordnet. Der gepinnte MOOSE-Source setzt diese `spawnzone` beim Erzeugen des `ARMYGROUP` als `homezone`. Damit bleibt für Hin- und Rückweg derselbe bereits im Ground-Foundation-Scope akzeptierte physische Übergabepunkt maßgeblich.
+
 Die Infantry-Guard ist davon getrennt und bleibt auf ihrem Guard-/PATHLINE-Materialisierungspfad.
+
+## Verbindlicher QRF-Einsatz- und Rückkehrvertrag
+
+Der Fire-Support-Branch führt keinen neuen Rückkehrcontroller ein. Er verwendet den bereits in der ARMY Ground Foundation und im Honaker-Kontext getesteten MOOSE-Lifecycle:
+
+```text
+QRF demand
+-> MOOSE AUFTRAG:NewGROUNDATTACK(physical hostile GROUP)
+-> MOOSE BRIGADE/PLATOON recruitment
+-> accepted ACCESS road materialization
+-> physical response / attack
+-> explicit tactical mission release
+-> AUFTRAG cancellation
+-> mission SetReturnToLegion(true)
+-> ARMYGROUP RTZ to its MOOSE homezone = site ACCESS
+-> Returned
+-> LEGION / Warehouse AddAsset
+-> controlled physical group removal
+```
+
+Die bereits dokumentierten Ground-Acceptances bleiben die technische Grundlage für den Rückweg:
+
+```text
+Acceptance 6:
+MissionDone -> ARMYGROUP:RTZ(existing site ACCESS zone, OnRoad)
+-> Returned -> Warehouse AddAsset -> physical removal
+
+Acceptance 7:
+normal return / partial loss / damaged survivor
+-> exactly-once strategic settlement around the same MOOSE physical return lifecycle
+```
+
+Der historische Honaker-Stage-3-Pfad verwendete für seine QRF ebenfalls `SetReturnToLegion(true)` und eine explizite taktische Freigabe statt eines Alarmzonen-Clear als Rückkehrtrigger. Acceptance 3 verallgemeinert daraus **keine** Honaker-spezifische 5-NM-Taktikzone.
+
+### Acceptance-only Release
+
+Für diesen Harness muss ein deterministischer Abschluss des QRF-Einsatzes ausgelöst werden, ohne eine neue produktive Tactical-Completion-Policy zu erfinden. Deshalb wird nach nachgewiesener physischer QRF-Reaktion von mindestens 25 m genau der bereits vorhandene Demand-Lifecycle benutzt:
+
+```text
+Base:ExpireDemand(demandId, "ACCEPTANCE_SUPPORTED_ELEMENT_RELEASE")
+-> LifecycleAdapter:Cancel(...)
+-> AUFTRAG:Cancel(...)
+-> MOOSE ReturnToLegion lifecycle
+```
+
+`ACCEPTANCE_SUPPORTED_ELEMENT_RELEASE` ist ausschließlich Teststeuerung. Es bedeutet nicht, dass 25 m Bewegung im Produktivbetrieb einen QRF-Auftrag beendet. Es bedeutet insbesondere nicht, dass Alarmperimeter-Clear oder Incident-Close den QRF zurückrufen dürfen.
 
 ## DCS-Diagnose 13.09.2026 – verworfene QRF-ACCESS-Fassung
 
@@ -169,10 +218,16 @@ Alarm center
 -> local QRF demand
 -> MOOSE AUFTRAG / LEGION / BRIGADE recruitment
 -> OMW_GroundRoadSpawnAdapter at site ACCESS
--> MOOSE mission execution
+-> MOOSE GROUNDATTACK against physical hostile GROUP
+-> explicit acceptance-only tactical release
+-> MOOSE AUFTRAG Cancel / ReturnToLegion
+-> ARMYGROUP RTZ to site ACCESS homezone
+-> Returned
+-> LEGION / Warehouse AddAsset
+-> controlled physical removal
 ```
 
-Für Jalalabad kommt nur die Mittelpunktauflösung der vorhandenen MOOSE-Zone hinzu. Es wird keine native DCS-Zonensuche und kein paralleler Recruitment-/Mission-Lifecycle eingeführt.
+Für Jalalabad kommt nur die Mittelpunktauflösung der vorhandenen MOOSE-Zone hinzu. Es wird keine native DCS-Zonensuche, kein paralleler Recruitment-/Mission-Lifecycle und kein eigener Rückkehr-FSM eingeführt.
 
 ## PASS-Kriterium
 
@@ -188,10 +243,18 @@ Jalalabad runtime perimeter = 8000 ft / 2438.4 m
 6/6 local Ground_APC QRF mission observed
 6/6 QRF initial materialization inside the correct site ACCESS zone
 6/6 accepted road-aligned GroundRoadSpawnAdapter path without spawn error
-6/6 local QRF physical progress >=25 m toward the incident coordinate
+6/6 MOOSE GROUNDATTACK against the correct physical RED fixture
+6/6 local QRF physical closing progress >=25 m before release
+6/6 QRF_RELEASE_REQUESTED through Base:ExpireDemand
+6/6 QRF_RTZ to the correct site ACCESS homezone
+6/6 QRF_RETURNED
+6/6 QRF_WAREHOUSE_ADD_ASSET
+6/6 QRF_RETURN_VERIFIED with physical group removed after handoff
 ```
 
-Ein QRF-Spawn im FOB/COP/Warehouse-Bereich außerhalb des vorgesehenen ACCESS-Übergabepunkts ist unabhängig vom übrigen Lauf ein harter FAIL.
+Ein QRF-Spawn im FOB/COP/Warehouse-Bereich außerhalb des vorgesehenen ACCESS-Übergabepunkts, ein falsches RTZ-Ziel oder ein nicht entfernter physischer QRF nach Warehouse-Handoff ist unabhängig vom übrigen Lauf ein harter FAIL.
+
+Der Harness erlaubt bis zu 1800 s Gesamtzeit. Das ist ausschließlich ein Acceptance-Zeitfenster: bisherige 900 s für den Hin-/Alarm-/Response-Pfad plus ein Rückkehrfenster in der Größenordnung des bereits in Ground Acceptance 6 verwendeten 900-s-Return-Timeouts. Daraus wird keine produktive Einsatzdauer abgeleitet.
 
 Ein Build allein ist kein PASS. `VALIDATED` beziehungsweise `ACCEPTED_TECHNICAL_BASELINE` darf erst nach dem dokumentierten realen DCS-Lauf und dessen exakter Provenienz vergeben werden.
 
@@ -205,6 +268,10 @@ Jalalabad alarm radius: OWNER-DEFINED 8000 ft / 2438.4 m
 Jalalabad existing ME zone: center source only; existing 6000-ft geometry insufficient
 five other centers: existing MOOSE Warehouse/BRIGADE coordinates
 QRF vehicle materialization: site ACCESS + accepted road-aligned adapter
+QRF attack: MOOSE GROUNDATTACK against physical hostile GROUP
+QRF return: accepted MOOSE ReturnToLegion -> ARMYGROUP RTZ -> Returned -> Warehouse AddAsset path
+alarm/incident clear as QRF mission-end condition: FORBIDDEN
+acceptance-only tactical release: STAGED
 corrected harness/builders: STAGED
 local build/hash verification: PENDING
 real DCS Acceptance-3 rerun: PENDING
