@@ -2,10 +2,13 @@
 local Runtime = {}
 local Instance = {}
 Instance.__index = Instance
-Runtime.SchemaVersion = "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-QRF-RUNTIME-10"
+Runtime.SchemaVersion = "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-QRF-RUNTIME-11"
 local TAG = "[OMW][FireSupStratResupply.QrfRuntime]"
 local QRF_TACTICAL_RADIUS_NM = 5
 local QRF_ENGAGE_RANGE_NM = 5
+local QRF_CLEARANCE_SPEED_KNOTS = 20
+local QRF_CLEARANCE_SCAN_INTERVAL_SECONDS = 5
+local QRF_CLEARANCE_FORMATION = "Off Road"
 local ROAD_SPAWN_VEHICLE_SPACING_M = 18
 local HOME_SPAWN_ZONE_MAX_DIST_M = 1000
 local function fail(message) error(TAG .. " " .. tostring(message), 2) end
@@ -21,6 +24,36 @@ local function packagedRoadSpawnAdapter()
 end
 local function mobileVehicle(asset)
   return type(asset) == "table" and type(Group) == "table" and type(Group.Category) == "table" and type(WAREHOUSE) == "table" and type(WAREHOUSE.Attribute) == "table" and asset.category == Group.Category.GROUND and type(asset.speedmax) == "number" and asset.speedmax > 0 and asset.attribute ~= WAREHOUSE.Attribute.GROUND_INFANTRY
+end
+local function wrapQrfReleaseHandle(handle)
+  if type(handle) ~= "table" or type(handle.mission) ~= "table" or handle._OMWQrfReleaseWrapped then return handle end
+  local responseMission = handle.mission
+  handle._OMWQrfReleaseWrapped = true
+  function handle:Cancel()
+    if self.cancelRequested then return false end
+    self.cancelRequested = true
+
+    local clearanceByGroup = responseMission._OMWQrfClearanceByGroup or {}
+    local clearanceCancelled = false
+    for opsGroup, clearanceMission in pairs(clearanceByGroup) do
+      if type(opsGroup) == "table" then
+        if type(opsGroup.DisableHuntingPatrol) == "function" then opsGroup:DisableHuntingPatrol() end
+        if type(opsGroup.SetPatrolAdInfinitum) == "function" then opsGroup:SetPatrolAdInfinitum(false) end
+      end
+      if type(clearanceMission) == "table" and type(clearanceMission.Cancel) == "function" then
+        local over = type(clearanceMission.IsOver) == "function" and clearanceMission:IsOver() or false
+        if not over then clearanceMission:Cancel() end
+        clearanceCancelled = true
+      end
+    end
+
+    if not clearanceCancelled then
+      local over = type(responseMission.IsOver) == "function" and responseMission:IsOver() or false
+      if not over then responseMission:Cancel() end
+    end
+    return true
+  end
+  return handle
 end
 function Runtime.New(spec)
   needTable(spec, "spec")
@@ -70,7 +103,16 @@ function Runtime.New(spec)
       return target, reason
     end,
     resolveEngageZone = function(demand) local zone=engageZones[demand.siteId]; if zone==nil then return nil,"QRF_ENGAGE_ZONE_UNAVAILABLE" end; return zone end,
-    engageRangeNm=QRF_ENGAGE_RANGE_NM, targetTypes={"Ground Units"}, requiredAssetsMin=spec.requiredAssetsMin or 1, requiredAssetsMax=spec.requiredAssetsMax or (spec.requiredAssetsMin or 1), requiredAttributes=spec.requiredAttributes, requiredProperties=spec.requiredProperties, logger=spec.logger,
+    engageRangeNm=QRF_ENGAGE_RANGE_NM,
+    targetTypes={"Ground Units"},
+    clearanceSpeedKnots=QRF_CLEARANCE_SPEED_KNOTS,
+    clearanceScanIntervalSeconds=QRF_CLEARANCE_SCAN_INTERVAL_SECONDS,
+    clearanceFormation=QRF_CLEARANCE_FORMATION,
+    requiredAssetsMin=spec.requiredAssetsMin or 1,
+    requiredAssetsMax=spec.requiredAssetsMax or (spec.requiredAssetsMin or 1),
+    requiredAttributes=spec.requiredAttributes,
+    requiredProperties=spec.requiredProperties,
+    logger=spec.logger,
   })
   local bridge = legionBridge.New({ resolveLegion=function(siteId) local brigade=brigades[siteId]; if not brigade then return nil,"SITE_LEGION_NOT_CONFIGURED" end; return brigade end, factory=function(demand,context,legion) return factory:Create(demand,context,legion) end, logger=spec.logger })
   return setmetatable({siteRegistry=siteRegistry,brigades=brigades,factory=factory,dispatchBridge=bridge,targetCoordinates=targetCoordinates,accessZones=accessZones,engageZones=engageZones,logger=spec.logger}, Instance)
@@ -80,6 +122,8 @@ function Instance:Dispatch(demand, context)
   if type(demand) ~= "table" then fail("demand must be a table") end
   if demand.supportType ~= "QRF" then fail("supportType QRF is required") end
   if not self.siteRegistry.Sites[demand.siteId] then return nil,false,"SITE_NOT_FOUND" end
-  return self.dispatchBridge:Dispatch(demand, context)
+  local handle, created, reason = self.dispatchBridge:Dispatch(demand, context)
+  if handle ~= nil then wrapQrfReleaseHandle(handle) end
+  return handle, created, reason
 end
 return Runtime
