@@ -1,8 +1,10 @@
 -- Operation Mountain Watch - generic Fire Support / Strategic Resupply perimeter runtime assembly.
 --
 -- This module owns only assembly/wiring. Site-specific installation anchors and
--- alarm radii remain injected configuration. Threat qualification remains MOOSE
--- OPSZONE through OMW_FobThreatOpsZoneAdapter; incident/QRF handling remains in
+-- alarm radii remain injected configuration. A perimeter may additionally carry an
+-- already-resolved MOOSE zone; otherwise the threat adapter creates ZONE_RADIUS at
+-- runtime. Threat qualification remains MOOSE OPSZONE through
+-- OMW_FobThreatOpsZoneAdapter; incident/QRF handling remains in
 -- OMW_FireSupStratResupply_PerimeterBridge and Base.
 
 local Runtime = {}
@@ -10,7 +12,7 @@ local Instance = {}
 Instance.__index = Instance
 
 local TAG = "[OMW][FireSupStratResupply.PerimeterRuntime]"
-Runtime.SchemaVersion = "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PERIMETER-RUNTIME-1"
+Runtime.SchemaVersion = "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PERIMETER-RUNTIME-2"
 
 local function fail(message) error(TAG .. " " .. tostring(message), 2) end
 local function needTable(value, label) if type(value) ~= "table" then fail(label .. " must be a table") end return value end
@@ -51,6 +53,7 @@ function Runtime.New(spec)
     local perimeter = needTable(perimeters[siteId], "perimeters[" .. tostring(siteId) .. "]")
     needTable(perimeter.anchorCoordinate, "perimeters[" .. tostring(siteId) .. "].anchorCoordinate")
     needFunction(perimeter.anchorCoordinate, "GetVec2", "perimeters[" .. tostring(siteId) .. "].anchorCoordinate")
+    if perimeter.securityZone ~= nil then needTable(perimeter.securityZone, "perimeters[" .. tostring(siteId) .. "].securityZone") end
     if not isFinite(perimeter.radiusM) or perimeter.radiusM <= 0 then fail("perimeters[" .. tostring(siteId) .. "].radiusM must be positive finite") end
     if not isFinite(perimeter.priority) then fail("perimeters[" .. tostring(siteId) .. "].priority must be finite") end
     if perimeter.updateSeconds ~= nil and (not isFinite(perimeter.updateSeconds) or perimeter.updateSeconds <= 0) then
@@ -93,6 +96,7 @@ function Instance:StartSite(siteId)
 
   local adapter = self.threatAdapter.New({
     anchorCoordinate = perimeter.anchorCoordinate,
+    securityZone = perimeter.securityZone,
     installationId = site.installationId,
     zoneName = zoneName,
     priority = perimeter.priority,
@@ -121,11 +125,12 @@ function Instance:StartSite(siteId)
     zoneName = zoneName,
     radiusM = perimeter.radiusM,
     priority = perimeter.priority,
+    securityZone = adapter.securityZone,
     threatAdapter = adapter,
   }
   self.siteRuntimes[siteId] = state
   self.startOrder[#self.startOrder + 1] = siteId
-  self:_log(string.format("started siteId=%s installationId=%s zone=%s radiusM=%s", siteId, site.installationId, zoneName, tostring(perimeter.radiusM)))
+  self:_log(string.format("started siteId=%s installationId=%s zone=%s radiusM=%s zoneSource=%s", siteId, site.installationId, zoneName, tostring(perimeter.radiusM), perimeter.securityZone and "CALLER_PROVIDED" or "RUNTIME_ZONE_RADIUS"))
   return state, true, nil
 end
 
