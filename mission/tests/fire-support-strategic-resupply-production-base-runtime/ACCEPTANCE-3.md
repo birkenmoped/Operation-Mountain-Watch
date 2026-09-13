@@ -5,24 +5,39 @@ document_class: ACCEPTANCE_PLAN
 owning_policy: OMW-GOV-001
 authoritative_for:
   - corrected six-site installation-alarm acceptance contract
-  - six-site proximity-evidence to incident to local-QRF acceptance scope
+  - six-site proximity-evidence to incident to local-QRF response acceptance scope
   - QRF ACCESS-boundary road materialization acceptance
-  - QRF physical response and accepted MOOSE home-return lifecycle acceptance
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
-supersedes:
-superseded_by:
 source_branch: agent/fire-support-strategic-resupply-base-gate0
-source_commit: b4a6505248bf3371ca6b11adcd7f02374e519b84
+source_commit: PENDING_LOCAL_BUILD
 validated_in_dcs: false
 ---
 
-# Production Base Acceptance 3 – Six-Site Installation Alarm + QRF
+# Production Base Acceptance 3 – Six-Site Installation Alarm + QRF Response
 
-## Verbindliche Alarmsemantik
+## 1. Reuse-Gate
+
+Diese Acceptance darf keine bereits abgenommene Ground-/Honaker-Semantik neu definieren. Verbindliche Reuse-Matrix:
 
 ```text
-site-specific installation alarm/security/threat zone
+docs/moose/FIRE-SUPPORT-ACCEPTED-IMPLEMENTATION-MATRIX.md
+```
+
+Insbesondere gilt für QRF:
+
+```text
+AUFTRAG:NewONGUARD(initial threat coordinate)
++ SetEngageDetected(5 NM, {"Ground Units"}, site-local 5 NM tactical zone)
++ SetReturnToLegion(true)
+```
+
+Das entspricht dem dokumentierten Honaker-Full-Response-Vertrag. `GROUNDATTACK` ist keine zulässige stille Substitution.
+
+## 2. Alarmsemantik
+
+```text
+site-specific alarm/security zone
 -> hostile proximity / penetration
 -> PROXIMITY_INTRUSION
 -> authoritative installation attack incident
@@ -30,25 +45,9 @@ site-specific installation alarm/security/threat zone
 -> MOOSE recruitment / execution
 ```
 
-Direct Fire, Indirect Fire und confirmed Hit bleiben zusätzliche Evidence-Kanäle und dürfen denselben Incident erzeugen oder refreshen. Sie dürfen keinen zweiten initialen QRF-Demand erzeugen.
+Die Alarmzone ist ausschließlich Detection-/Response-Triggergrenze. Sie ist kein Gefechtsraum, keine WEZ und keine Mission-End-Bedingung. Perimeter-Clear oder lokale Incident-Completion dürfen einen bereits disponierten QRF-Auftrag nicht beenden.
 
-Die Alarmzone ist ausschließlich Detection-/Response-Triggergrenze. Sie ist nicht taktischer Gefechtsraum, WEZ, Fire-Support-Zielgebiet, CAS-Zone oder Mission-End-Bedingung. `ACCESS`, Warehouse-Grenzen und Guard-PATHLINE sind keine Alarmgeometrie. Insbesondere beendet ein Verlassen oder Clearen der Alarmzone keinen bereits disponierten QRF-Auftrag.
-
-## Six-Site-Alarmgeometrie
-
-Die fünf Warehouse-basierten Standorte verwenden ihre vorhandene MOOSE-Warehouse-/BRIGADE-Koordinate als Mittelpunkt. Daraus wird zur Laufzeit `MOOSE ZONE_RADIUS -> MOOSE OPSZONE` erzeugt.
-
-Für Jalalabad gilt nach ausdrücklicher Entscheidung des Projektinhabers vom 13.09.2026:
-
-```text
-Mittelpunkt:
-existing MOOSE zone OMW_BLUE_OBJECTIVE_JALALABAD_AIRPORT
-
-Alarmradius:
-8000 ft = 2438.4 m
-```
-
-Die vorhandene Mission-Editor-Zone besitzt weiterhin nur 6000 ft / 1828.8 m und ist deshalb nur noch **Mittelpunktquelle**, nicht mehr die Alarmgeometrie. Acceptance 3 löst sie per `ZONE:FindByName(...)` auf, übernimmt ihren Mittelpunkt und erzeugt dort zur Laufzeit einen neuen MOOSE `ZONE_RADIUS` mit 2438.4 m. Die `.miz` wird nicht automatisch verändert.
+## 3. Six-Site-Alarmgeometrie
 
 | Site | Alarmanker | Radius ft | Radius m |
 |---|---|---:|---:|
@@ -59,19 +58,18 @@ Die vorhandene Mission-Editor-Zone besitzt weiterhin nur 6000 ft / 1828.8 m und 
 | `COP_HONAKER` | `WH_BLUE_GND_HONAKER` | 9000 | 2743.2 |
 | `FOB_BOSTICK` | `WH_BLUE_GND_BOSTICK` | 5000 | 1524.0 |
 
-Umrechnung: `1 ft = 0.3048 m` exakt.
+Jalalabad verwendet die vorhandene 6000-ft-Mission-Editor-Zone ausschließlich als Mittelpunktquelle. Die Acceptance erzeugt dort zur Laufzeit einen MOOSE `ZONE_RADIUS` mit 2438.4 m. Keine `.miz`-Mutation.
 
-## Verbindlicher QRF-Materialisierungsvertrag
+## 4. QRF Materialisierung
 
-Motorisierte QRF-Gruppen sind Ground-Fahrzeuggruppen und unterliegen demselben bereits akzeptierten Materialisierungsvertrag wie die Ground-Foundation-/Convoy-Pfade:
+Motorisierte QRF-Gruppen verwenden den bestehenden Ground-Vertrag:
 
 ```text
 MOOSE QRF demand / AUFTRAG / BRIGADE recruitment
--> site-local existing ACCESS zone
--> road-qualified outbound anchor
+-> existing site ACCESS zone
+-> approved OMW_GroundRoadSpawnAdapter
 -> road-axis materialization
--> fixed accepted vehicle spacing
--> all vehicle positions remain inside ACCESS
+-> fixed 18 m vehicle spacing
 -> MOOSE mission lifecycle
 ```
 
@@ -86,110 +84,54 @@ COP_HONAKER     -> ZON_BLUE_GND_HONAKER_ACCESS
 FOB_BOSTICK     -> ZON_BLUE_GND_BOSTICK_ACCESS
 ```
 
-Acceptance 3 verwendet dafür den vorhandenen `OMW_GroundRoadSpawnAdapter`. Für QRF-Fahrzeuggruppen gilt die bereits akzeptierte feste Fahrzeugstaffelung von 18 m. Die Straßenausrichtung wird nicht aus dem beliebigen Incident-Zielpunkt direkt abgeleitet, sondern aus einem per MOOSE qualifizierten Straßenpunkt in Ausrückrichtung.
+Die ACCESS-Zone ist zugleich der MOOSE Spawn-/Home-Handoff-Punkt. Sie definiert weder Alarmzone noch taktischen Wirkungsraum.
 
-Dieselbe site-lokale ACCESS-Zone wird dem jeweiligen `BRIGADE` per öffentlichem `WAREHOUSE:SetSpawnZone(...)` als Spawn-/Home-Zone zugeordnet. Der gepinnte MOOSE-Source setzt diese `spawnzone` beim Erzeugen des `ARMYGROUP` als `homezone`. Damit bleibt für Hin- und Rückweg derselbe bereits im Ground-Foundation-Scope akzeptierte physische Übergabepunkt maßgeblich.
+## 5. QRF Einsatz- und Rückkehrvertrag
 
-Die Infantry-Guard ist davon getrennt und bleibt auf ihrem Guard-/PATHLINE-Materialisierungspfad.
-
-## Verbindlicher QRF-Einsatz- und Rückkehrvertrag
-
-Der Fire-Support-Branch führt keinen neuen Rückkehrcontroller ein. Er verwendet den bereits in der ARMY Ground Foundation und im Honaker-Kontext getesteten MOOSE-Lifecycle:
+Der bereits vorhandene Honaker-/Ground-Vertrag bleibt unverändert:
 
 ```text
 QRF demand
--> MOOSE AUFTRAG:NewGROUNDATTACK(physical hostile GROUP)
--> MOOSE BRIGADE/PLATOON recruitment
--> accepted ACCESS road materialization
--> physical response / attack
--> explicit tactical mission release
--> AUFTRAG cancellation
--> mission SetReturnToLegion(true)
--> ARMYGROUP RTZ to its MOOSE homezone = site ACCESS
+-> ONGUARD + SetEngageDetected
+-> physical response / engagement
+-> explicit supported-element/C2 release
+-> AUFTRAG Cancel
+-> SetReturnToLegion(true)
+-> ARMYGROUP RTZ to home ACCESS
 -> Returned
--> LEGION / Warehouse AddAsset
+-> Warehouse AddAsset
 -> controlled physical group removal
 ```
 
-Die bereits dokumentierten Ground-Acceptances bleiben die technische Grundlage für den Rückweg:
+**Release Authority:** Nur ein bereits definierter expliziter Supported-Element-/C2-Release darf den QRF-Auftrag beenden. Folgende Zustände besitzen keine Release Authority:
 
 ```text
-Acceptance 6:
-MissionDone -> ARMYGROUP:RTZ(existing site ACCESS zone, OnRoad)
--> Returned -> Warehouse AddAsset -> physical removal
-
-Acceptance 7:
-normal return / partial loss / damaged survivor
--> exactly-once strategic settlement around the same MOOSE physical return lifecycle
+movement distance
+perimeter clear
+alarm-zone exit
+local incident close
+raw RED count
 ```
 
-Der historische Honaker-Stage-3-Pfad verwendete für seine QRF ebenfalls `SetReturnToLegion(true)` und eine explizite taktische Freigabe statt eines Alarmzonen-Clear als Rückkehrtrigger. Acceptance 3 verallgemeinert daraus **keine** Honaker-spezifische 5-NM-Taktikzone.
+Die konkrete Honaker-CAS-gekoppelte Release-Bedingung wird nicht stillschweigend auf alle sechs Standorte generalisiert.
 
-### Acceptance-only Release
+## 6. Acceptance-3-Scope nach Regression-Korrektur
 
-Für diesen Harness muss ein deterministischer Abschluss des QRF-Einsatzes ausgelöst werden, ohne eine neue produktive Tactical-Completion-Policy zu erfinden. Deshalb wird nach nachgewiesener physischer QRF-Reaktion von mindestens 25 m genau der bereits vorhandene Demand-Lifecycle benutzt:
+Acceptance 3 prüft deshalb ausschließlich die gemeinsame sechs-Site-Outbound-Kette. Sie erzeugt **keinen eigenen QRF-Release** und wartet nicht auf RTZ/Returned/Warehouse-Handoff.
+
+Die 25-m-Grenze bleibt nur physische Runtime-Evidenz:
 
 ```text
-Base:ExpireDemand(demandId, "ACCEPTANCE_SUPPORTED_ELEMENT_RELEASE")
--> LifecycleAdapter:Cancel(...)
--> AUFTRAG:Cancel(...)
--> MOOSE ReturnToLegion lifecycle
+QRF closing progress >= 25 m
+= physical response observed
+!= mission complete
+!= release
+!= cancel
 ```
 
-`ACCEPTANCE_SUPPORTED_ELEMENT_RELEASE` ist ausschließlich Teststeuerung. Es bedeutet nicht, dass 25 m Bewegung im Produktivbetrieb einen QRF-Auftrag beendet. Es bedeutet insbesondere nicht, dass Alarmperimeter-Clear oder Incident-Close den QRF zurückrufen dürfen.
+Der Rückweg ist bereits separat durch Ground-/Honaker-Acceptances abgedeckt und muss erst dann erneut in einer generischen Six-Site-Acceptance geprüft werden, wenn eine generische Supported-Element-/C2-Release-Policy vom Projektinhaber festgelegt ist.
 
-## DCS-Diagnose 13.09.2026 – verworfene QRF-ACCESS-Fassung
-
-Der mit Commit `f834e3b5c0416f143585541e2dd17496d1bc3f95` und Acceptance-Bundle
-
-```text
-922467FD9803E25CE5C09B8E98BC41F8D9CFAE5668960FED8D8FE53ED89E8690
-```
-
-gefahrene DCS-Lauf ist `DIAGNOSTIC_FAIL`.
-
-Jalalabad erreichte nachweislich:
-
-```text
-perimeterStarted=true
-proximity=true
-incident=true
-demandCount=1
-qrfObserved=nil
-```
-
-Der physische QRF-Spawn scheiterte anschließend mit:
-
-```text
-[OMW][Ground.RoadSpawnAdapter] outbound road path unavailable entityId=BLUE_GROUND_HUB_JALALABAD_FENTY|QRF
-```
-
-Ursache der Implementierung: `QrfRuntime` hatte den Incident-Zielpunkt direkt als `forwardCoordinate` in den RoadSpawnAdapter gegeben. Das entspricht nicht dem bereits akzeptierten Ground-Foundation-Ansatz mit road-qualifiziertem outbound/approach anchor.
-
-Im selben Lauf wurden weitere harte Spawnfehler beobachtet:
-
-```text
-COP_FORTRESS:
-  road snap exceeds limit
-  unit=1
-  distanceM=58.300426341027
-
-FOB_BOSTICK:
-  road spawn position outside access zone
-  unit=1
-```
-
-Joyce und Wright materialisierten dagegen beobachtbare `Ground_APC`-QRFs. Das beweist den MOOSE-AUFTRAG-/BRIGADE-Pfad bis zur physischen Materialisierung grundsätzlich, aber nicht die allgemeine sechs-Site-ACCESS-Geometrie.
-
-Der detaillierte Laufbericht liegt unter:
-
-```text
-results/2026-09-13-production-base-acceptance3-qrf-access-dcs-run.md
-```
-
-## RED-Testfixtures und physische Intrusion
-
-Die sechs late-activated Gruppen bleiben reine Testfixtures:
+## 7. RED-Testfixtures
 
 ```text
 BadGuys_A3_FENTY
@@ -200,82 +142,81 @@ BadGuys_A3_HONAKER
 BadGuys_A3_BOSTICK
 ```
 
-Sie sind keine produktive RED-ORBAT und kein späteres RED-C2-Modell. Nach erfolgreicher Six-Guard-Regression aktiviert der Harness die vorhandenen Fixtures und routet sie physisch mit MOOSE `CONTROLLABLE:RouteGroundTo(...)` auf einen Punkt bei 65 % des jeweiligen Alarmradius. Es gibt keinen Teleport und keine `.miz`-Mutation.
+Die Gruppen sind reine Testfixtures. Nach erfolgreicher Guard-Regression werden sie physisch per MOOSE `RouteGroundTo(...)` in die jeweiligen Alarmperimeter geführt. Kein Teleport, keine `.miz`-Mutation.
 
-## MOOSE-first-Pfad
-
-```text
-Alarm center
--> MOOSE ZONE_RADIUS
--> MOOSE OPSZONE
--> OMW_FobThreatOpsZoneAdapter
--> OMW_FireSupStratResupply_PerimeterBridge
--> PROXIMITY_INTRUSION
--> InstallationIncidentRuntime
--> OMW_GroundInstallationAttackIncident
--> InstallationIncidentBridge
--> Base
--> local QRF demand
--> MOOSE AUFTRAG / LEGION / BRIGADE recruitment
--> OMW_GroundRoadSpawnAdapter at site ACCESS
--> MOOSE GROUNDATTACK against physical hostile GROUP
--> explicit acceptance-only tactical release
--> MOOSE AUFTRAG Cancel / ReturnToLegion
--> ARMYGROUP RTZ to site ACCESS homezone
--> Returned
--> LEGION / Warehouse AddAsset
--> controlled physical removal
-```
-
-Für Jalalabad kommt nur die Mittelpunktauflösung der vorhandenen MOOSE-Zone hinzu. Es wird keine native DCS-Zonensuche, kein paralleler Recruitment-/Mission-Lifecycle und kein eigener Rückkehr-FSM eingeführt.
-
-## PASS-Kriterium
+## 8. PASS-Kriterium
 
 Der nächste Acceptance-3-Lauf muss mindestens nachweisen:
 
 ```text
-6/6 Guards regression condition satisfied
+6/6 Guards >=25 m physical movement
 6/6 owner-defined MOOSE alarm perimeters started
 Jalalabad runtime perimeter = 8000 ft / 2438.4 m
-6/6 PROXIMITY_INTRUSION evidence observed
+6/6 PROXIMITY_INTRUSION observed
 6/6 authoritative installation incidents observed
 6/6 exactly one initial QRF demand
-6/6 local Ground_APC QRF mission observed
-6/6 QRF initial materialization inside the correct site ACCESS zone
-6/6 accepted road-aligned GroundRoadSpawnAdapter path without spawn error
-6/6 MOOSE GROUNDATTACK against the correct physical RED fixture
-6/6 local QRF physical closing progress >=25 m before release
-6/6 QRF_RELEASE_REQUESTED through Base:ExpireDemand
-6/6 QRF_RTZ to the correct site ACCESS homezone
-6/6 QRF_RETURNED
-6/6 QRF_WAREHOUSE_ADD_ASSET
-6/6 QRF_RETURN_VERIFIED with physical group removed after handoff
+6/6 local Ground_APC QRF observed
+6/6 QRF initial materialization inside correct ACCESS zone
+6/6 approved road-aligned materialization without spawn exception
+6/6 QRF mission type ONGUARD
+6/6 local QRF physical closing progress >=25 m
+0 Acceptance-owned QRF release/cancel events
 ```
 
-Ein QRF-Spawn im FOB/COP/Warehouse-Bereich außerhalb des vorgesehenen ACCESS-Übergabepunkts, ein falsches RTZ-Ziel oder ein nicht entfernter physischer QRF nach Warehouse-Handoff ist unabhängig vom übrigen Lauf ein harter FAIL.
+Ein Spawn außerhalb ACCESS, ein RoadSpawnAdapter-Fehler, eine `GROUNDATTACK`-Mission oder ein QRF-Cancel/RTZ aufgrund des Acceptance-Harness sind harte FAILs.
 
-Der Harness erlaubt bis zu 1800 s Gesamtzeit. Das ist ausschließlich ein Acceptance-Zeitfenster: bisherige 900 s für den Hin-/Alarm-/Response-Pfad plus ein Rückkehrfenster in der Größenordnung des bereits in Ground Acceptance 6 verwendeten 900-s-Return-Timeouts. Daraus wird keine produktive Einsatzdauer abgeleitet.
+Timeout: 900 s. Es gibt kein künstliches Return-Fenster mehr, weil dieser Harness keinen Rückruf auslöst.
 
-Ein Build allein ist kein PASS. `VALIDATED` beziehungsweise `ACCEPTED_TECHNICAL_BASELINE` darf erst nach dem dokumentierten realen DCS-Lauf und dessen exakter Provenienz vergeben werden.
+## 9. Regressionshistorie 13.09.2026
 
-## Aktueller Stand
+### ACCESS-Fassung `f834e3b5...`
+
+`DIAGNOSTIC_FAIL`: Jalalabad/Fortress/Bostick zeigten Road-Materialisierungsfehler. Joyce/Wright bewiesen nur Teilfunktion. Details:
 
 ```text
-old Guard-only alarm correlation: REJECTED
-previous QRF warehouse/FOB materialization: REJECTED
-f834e3b5 QRF ACCESS DCS run: DIAGNOSTIC_FAIL
+results/2026-09-13-production-base-acceptance3-qrf-access-dcs-run.md
+```
+
+### Build `b4a6505248bf3371ca6b11adcd7f02374e519b84`
+
+Verifizierter lokaler Build:
+
+```text
+Production bundle:
+EB8DC2C5DD143DD0B4B8C951496499C9909A2A8DD38B1FA1D5334F1064293176
+
+Acceptance bundle:
+0AA3448371CA23E8ED1400229D9C3CD5F179271476EAAF727829054A22CACCB8
+```
+
+Der reale DCS-Lauf ist `DIAGNOSTIC_FAIL`: die zwischenzeitliche `GROUNDATTACK`-Substitution und insbesondere der Acceptance-eigene Pfad
+
+```text
+>=25 m closing progress
+-> Base:ExpireDemand(...)
+-> Cancel
+-> RTZ
+```
+
+waren Regressionen gegenüber dem bereits dokumentierten Honaker-Vertrag. Fortress/Joyce konnten dadurch nach kurzer Bewegung sofort umdrehen und in den Return-Lifecycle wechseln.
+
+Dieser Pfad ist verworfen.
+
+## 10. Aktueller Stand
+
+```text
 Jalalabad alarm radius: OWNER-DEFINED 8000 ft / 2438.4 m
-Jalalabad existing ME zone: center source only; existing 6000-ft geometry insufficient
-five other centers: existing MOOSE Warehouse/BRIGADE coordinates
-QRF vehicle materialization: site ACCESS + accepted road-aligned adapter
-QRF attack: MOOSE GROUNDATTACK against physical hostile GROUP
-QRF return: accepted MOOSE ReturnToLegion -> ARMYGROUP RTZ -> Returned -> Warehouse AddAsset path
-alarm/incident clear as QRF mission-end condition: FORBIDDEN
-acceptance-only tactical release: STAGED
-corrected harness/builders: STAGED
-local build/hash verification: VERIFIED for source commit b4a6505248bf3371ca6b11adcd7f02374e519b84
-production bundle SHA-256: EB8DC2C5DD143DD0B4B8C951496499C9909A2A8DD38B1FA1D5334F1064293176
-acceptance bundle SHA-256: 0AA3448371CA23E8ED1400229D9C3CD5F179271476EAAF727829054A22CACCB8
-real DCS Acceptance-3 rerun: PENDING
+QRF mission contract: HONAKER BASELINE -> ONGUARD + SetEngageDetected
+QRF tactical zone: 5 NM site-local
+QRF return capability: SetReturnToLegion(true)
+QRF release authority: explicit supported-element/C2 only
+movement-driven release: FORBIDDEN
+perimeter/incident-driven release: FORBIDDEN
+Acceptance-3 return orchestration: REMOVED
+Acceptance-3 outbound response harness: STAGED
+local build/hash verification of corrected revision: PENDING
+real DCS rerun: PENDING
 validated_in_dcs: false
 ```
+
+Ein Build allein ist kein PASS. `VALIDATED` beziehungsweise `ACCEPTED_TECHNICAL_BASELINE` darf nur aus realer dokumentierter DCS-Evidenz für den exakt gebauten Stand folgen.
