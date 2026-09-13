@@ -51,6 +51,7 @@ NO ACCEPTANCE SHORTCUT
 | QRF Target Authority | `OMW_GroundInstallationAttackIncident.lua` | Bekannte Angreifer stammen aus dem autoritativen Incident-Teilnehmerbestand `GetParticipants(true)`; keine zweite World-Scan-Autoritaet. |
 | QRF Tactical Area | Honaker Full-Response | 5 NM site-local tactical zone; nur lebende Incident-`UNIT`s innerhalb dieser Zone sind QRF-Ziele. |
 | QRF Engagement | Owner decision 2026-09-13 + pinned MOOSE source review | Dieselbe physische `ARMYGROUP` greift das naechste lebende Incident-`UNIT` mit `ARMYGROUP:EngageTarget()` an. MOOSE verfolgt dessen aktuelle Position. |
+| QRF Movement | Owner decision 2026-09-13 + pinned MOOSE source review | Motorisierte QRF verwendet auf dem Marsch `EngageTarget(..., "On Road")`. MOOSE erzeugt die Strassenfuehrung und verlaesst die Strasse fuer den finalen Off-Road-Anflug, wenn das konkrete Ziel abseits liegt. `Vee` ist keine Default-Marschformation. |
 | QRF Retarget | Pinned MOOSE `Disengage` lifecycle | Ziel tot -> MOOSE `Disengage` -> ereignisgetriebene Neuauswahl des naechsten lebenden Incident-Ziels. Kein OMW-Target-Scheduler. |
 | QRF Return | Owner decision 2026-09-13 | Wenn kein lebendes autorisiertes Incident-Ziel in der Tactical-Zone verbleibt, wird die QRF-Mission beendet und `SetReturnToLegion(true)` / RTZ / Returned verwendet. Perimeter-Clear oder Incident-Close allein reichen nicht. |
 | ACCESS | `ARMY-GROUND-RECONSTITUTION-ACCESS-CONTRACT.md` | `ZON_BLUE_GND_XXX_ACCESS` ist Materialisierungs-/Departure-/Return-/Handoff-Grenze. |
@@ -70,7 +71,9 @@ Incident / QRF demand
         -> ONGUARD(initial threat coordinate)       [MOOSE recruitment/materialization anchor]
         -> same physical ARMYGROUP
         -> nearest living known incident UNIT inside 5-NM tactical zone
-        -> ARMYGROUP:EngageTarget(concrete UNIT)
+        -> ARMYGROUP:EngageTarget(concrete UNIT, speed, "On Road")
+        -> road-preferred motorized transit under MOOSE routing
+        -> final off-road target approach by MOOSE when required
         -> MOOSE updates pursuit against moving target
         -> target dead -> MOOSE Disengage
         -> reacquire next living incident UNIT
@@ -86,13 +89,16 @@ Verbindliche Grenzen:
 - kein GROUNDATTACK;
 - kein PATROLZONE/HuntingPatrol fuer diesen QRF-Vertrag;
 - kein eigener OMW-Scheduler oder Frame-Scan fuer Zielsuche;
+- kein eigener OMW-Strassenrouter parallel zu MOOSE;
+- motorisierte QRF marschiert road-preferred / On Road, nicht standardmaessig in Vee;
+- Vee ist eine Gefechtsformation und nicht der Default fuer den gesamten Anmarsch;
 - keine Rueckkehr nur wegen Perimeter-Clear oder Incident-Close;
 - "keine Targets" bedeutet keine lebenden autorisierten Incident-Ziele in der Tactical-Zone, nicht "nichts detektiert";
 - vorhandener GroundInstallationAttackIncident-Teilnehmerbestand ist Zielautoritaet;
 - dieselbe bereits materialisierte ARMYGROUP wird weiterverwendet;
 - MOOSE EngageTarget/Disengage/ReturnToLegion besitzt physische Verfolgung und Lifecycle;
 - ACCESS-/RoadSpawnAdapter-Vertrag bleibt unveraendert;
-- DCS-Validierung des direkten Target-Cycles ist offen.
+- DCS-Validierung des direkten Target-Cycles inklusive Road-Preferred-Marsch ist offen.
 ```
 
 Pinned source review:
@@ -104,6 +110,8 @@ Moose.lua SHA-256: E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A
 
 BRIGADE:ArmyOnMission / OnAfterArmyOnMission
 ARMYGROUP:EngageTarget(...)
+ARMYGROUP:AddWaypoint(...)
+ARMYGROUP route update with ENUMS.Formation.Vehicle.OnRoad
 ARMYGROUP:OnAfterDisengage
 ARMYGROUP:RTZ / Returned
 AUFTRAG:NewONGUARD(...)
@@ -111,7 +119,7 @@ AUFTRAG:SetReturnToLegion(true)
 AUFTRAG:Cancel()
 ```
 
-Im gepinnten MOOSE-Quellstand akzeptiert `EngageTarget` TARGET/GROUP/UNIT, aktualisiert die Zielkoordinate bei mehr als 100 m Bewegung oder fehlender LOS und disengagiert bei totem/nicht mehr aufloesbarem Ziel. Damit wird keine eigene OMW-Wegpunktverfolgung implementiert.
+Im gepinnten MOOSE-Quellstand akzeptiert `EngageTarget` TARGET/GROUP/UNIT, aktualisiert die Zielkoordinate bei mehr als 100 m Bewegung oder fehlender LOS und disengagiert bei totem/nicht mehr aufloesbarem Ziel. `ARMYGROUP:AddWaypoint` und die Route-Update-Logik behandeln `On Road` als Strassenpraeferenz: MOOSE fuegt Road-Waypoints ein und setzt den eigentlichen Ziel-Waypoint Off Road, wenn das Ziel selbst abseits der Strasse liegt. Damit wird weder eigene OMW-Wegpunktverfolgung noch ein eigener OMW-Strassenrouter implementiert.
 
 ## Harte ACCESS-Regel
 
@@ -150,6 +158,7 @@ Acceptance-eigene Target-Auswahl fuer die QRF
 Acceptance-eigenes ExpireDemand als Ersatz fuer produktive Target-Completion
 alternative AUFTRAG type nur fuer bequemeren Test
 Acceptance-eigene Resource-/Lifecycle-Authority
+Acceptance-eigene QRF-Routensteuerung parallel zu MOOSE
 ```
 
 Die historische Production Base Acceptance 3 bleibt unveraendert als Evidenz des damaligen ONGUARD-Response-Pfads. Acceptance 4 prueft den neuen direkten Target-Cycle separat.
@@ -163,6 +172,7 @@ Die historische Production Base Acceptance 3 bleibt unveraendert als Evidenz des
 5. Historische `PATROL_TEST`-Fixtures als aktuelle Acceptance-Voraussetzung.
 6. `PATROLZONE + HuntingPatrol` als QRF-Clearance; realer A4-DCS-Lauf zeigte unpassende Einsatzgeometrie/Target-Bindung.
 7. Eigene Search-/Sweep-/Target-Scheduler parallel zu MOOSE.
+8. `Vee` als Default fuer den gesamten motorisierten QRF-Anmarsch trotz road-aligned ACCESS-Materialisierung.
 
 ## Anti-Regression-Gate
 
@@ -174,6 +184,8 @@ missing SetReturnToLegion(true)
 GROUNDATTACK substitution
 PATROLZONE/HuntingPatrol reintroduction
 missing direct ARMYGROUP:EngageTarget
+missing MOOSE On Road QRF transit
+Vee as default motorized QRF march formation
 missing Disengage-driven reacquisition
 missing authoritative incident GetParticipants(true) target source
 missing tactical-zone target filtering
@@ -184,6 +196,7 @@ movement-distance-driven release
 return on perimeter clear alone
 return on incident close alone
 custom QRF target scheduler
+custom QRF road router parallel to MOOSE
 ```
 
 ## Regression-Verfahren
