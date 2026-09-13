@@ -58,6 +58,14 @@ function modules.installationIncidentRuntime.New(spec)
   function r:CloseInstallationIncident(installationId,reason) calls.closeInstallation={installationId=installationId,reason=reason};return {incidentId="SOURCE-INCIDENT"},true,nil end
   return r
 end
+modules.alarmEvidenceAdapter={}
+function modules.alarmEvidenceAdapter.New(spec)
+  calls.alarmEvidenceSpec=spec
+  local a={}
+  function a:Start() calls.alarmEvidenceStarted=true;return self,true end
+  function a:Stop() calls.alarmEvidenceStopped=true;return self,true end
+  return a
+end
 modules.perimeterBridge={}
 function modules.perimeterBridge.New(spec) calls.perimeterBridgeSpec=spec;return {HandleThreat=function() end,HandleClear=function() end} end
 modules.threatAdapter={New=function() end}
@@ -107,6 +115,7 @@ local resolveAirTransport=function() return {} end
 local transferResolver=function() return {originNodeId="GROUND_NODE_JALALABAD",destinationNodeId="GROUND_NODE_JOYCE"} end
 local terminalObserved={}
 local arty={marker="ARTY"}
+local alarmZone={IsCoordinateInZone=function() return true end}
 local runtime=Runtime.New({
   modules=modules,
   siteRegistry=sites,
@@ -118,6 +127,7 @@ local runtime=Runtime.New({
   resolveQrfCoordinate=function() return {} end,
   externalAdapters={ARTY=arty},
   perimeters={FOB_JOYCE={anchorCoordinate={},radiusM=1000,priority=10}},
+  alarmEvidence={sites={FOB_JOYCE={alarmZone=alarmZone,weaponTrackStepSec=0.25}}},
   blueCoalition=2,
   redCoalition=1,
   resupply={
@@ -145,6 +155,10 @@ local beforeEvidence,beforeEvidenceCreated,beforeEvidenceReason=runtime:ReportIn
 eq(beforeEvidence,nil,"evidence before prepare nil")
 no(beforeEvidenceCreated,"evidence before prepare false")
 eq(beforeEvidenceReason,"RUNTIME_NOT_PREPARED","evidence before prepare reason")
+local beforeAlarm,beforeAlarmStarted,beforeAlarmReason=runtime:StartAlarmEvidence()
+eq(beforeAlarm,nil,"alarm evidence before prepare nil")
+no(beforeAlarmStarted,"alarm evidence before prepare false")
+eq(beforeAlarmReason,"RUNTIME_NOT_PREPARED","alarm evidence before prepare reason")
 
 local _,prepared,reason=runtime:Prepare()
 yes(prepared,"runtime prepared")
@@ -168,6 +182,11 @@ eq(calls.transportSettlementSpec.campaignState,campaignState,"settlement campaig
 eq(calls.transportSettlementSpec.resolveTransfer,transferResolver,"transfer resolver forwarded")
 eq(calls.installationIncidentBridgeSpec.base,runtime:GetBase(),"incident bridge uses same Base")
 eq(calls.installationIncidentRuntimeSpec.incidentCoordinator,modules.installationAttackIncident,"authoritative incident coordinator injected")
+eq(calls.alarmEvidenceSpec.installationId,"BLUE_GROUND_FOB_JOYCE","alarm evidence installation id from registry")
+eq(calls.alarmEvidenceSpec.alarmZone,alarmZone,"alarm evidence zone forwarded")
+eq(calls.alarmEvidenceSpec.blueCoalition,2,"alarm evidence blue coalition")
+eq(calls.alarmEvidenceSpec.redCoalition,1,"alarm evidence red coalition")
+eq(calls.alarmEvidenceSpec.weaponTrackStepSec,0.25,"alarm evidence track step forwarded")
 eq(calls.perimeterBridgeSpec.incidentRuntime,calls.installationIncidentRuntime,"perimeter bridge receives installation incident runtime")
 eq(calls.perimeterSpec.perimeters.FOB_JOYCE.radiusM,1000,"perimeter config forwarded")
 eq(calls.perimeterSpec.blueCoalition,2,"blue coalition forwarded")
@@ -177,6 +196,19 @@ eq(calls.resupplySpec.policy,resourcePolicy,"resource policy forwarded")
 eq(calls.resupplySpec.store,campaignStore,"CampaignState store forwarded")
 eq(calls.resupplySpec.rows,resourceRows,"resource rows forwarded")
 eq(calls.resupplySpec.selectSupportType,selectSupportType,"resupply transport selector forwarded")
+
+calls.alarmEvidenceSpec.onEvidence(nil,{installationId="BLUE_GROUND_FOB_JOYCE",evidenceType="CONFIRMED_HIT_ATTACK"})
+eq(calls.reportEvidence.evidenceType,"CONFIRMED_HIT_ATTACK","physical alarm evidence forwarded to incident runtime")
+local alarmStartResults,alarmStarted,alarmStartReason=runtime:StartAlarmEvidence()
+yes(alarmStarted,"alarm evidence start available")
+eq(alarmStartReason,nil,"alarm evidence start reason")
+yes(alarmStartResults.FOB_JOYCE,"alarm evidence site started")
+yes(calls.alarmEvidenceStarted,"alarm evidence adapter Start called")
+local alarmStopResults,alarmStopped,alarmStopReason=runtime:StopAlarmEvidence()
+yes(alarmStopped,"alarm evidence stop available")
+eq(alarmStopReason,nil,"alarm evidence stop reason")
+yes(alarmStopResults.FOB_JOYCE,"alarm evidence site stopped")
+yes(calls.alarmEvidenceStopped,"alarm evidence adapter Stop called")
 
 calls.transportSettlementSpec.onTerminal({demandId="D-TRANSPORT"},"LOST",{}, {}, {})
 eq(calls.resupplyRelease.demandId,"D-TRANSPORT","terminal transport releases active shortage")
@@ -231,6 +263,10 @@ local p,pCreated,pReason=noPerimeter:StartPerimeters()
 eq(p,nil,"no perimeter runtime nil")
 no(pCreated,"no perimeter false")
 eq(pReason,"PERIMETERS_NOT_CONFIGURED","no perimeter explicit reason")
+local ae,aeCreated,aeReason=noPerimeter:StartAlarmEvidence()
+eq(ae,nil,"no alarm evidence runtime nil")
+no(aeCreated,"no alarm evidence false")
+eq(aeReason,"ALARM_EVIDENCE_NOT_CONFIGURED","no alarm evidence explicit reason")
 local r,rCreated,rReason=noPerimeter:EvaluateResupply()
 eq(r,nil,"no resupply monitor nil")
 no(rCreated,"no resupply monitor false")
