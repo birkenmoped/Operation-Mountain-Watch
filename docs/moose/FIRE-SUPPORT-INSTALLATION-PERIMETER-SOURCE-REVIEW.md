@@ -1,6 +1,6 @@
 ---
 document_id: OMW-MOOSE-FIRE-SUPPORT-INSTALLATION-PERIMETER-SOURCE-REVIEW
-status: SOURCE_REVIEWED
+status: DRAFT
 document_class: MOOSE_SOURCE_REVIEW
 owning_policy: OMW-GOV-001
 authoritative_for:
