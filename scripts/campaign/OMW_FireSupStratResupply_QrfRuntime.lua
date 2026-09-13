@@ -57,7 +57,7 @@ function Runtime.New(spec)
         if not mobileVehicle(asset) then return nil end
         local targetCoordinate = targetCoordinates[siteId]
         if targetCoordinate == nil then return nil end
-        return { accessZone=accessZone, forwardCoordinate=targetCoordinate, entityId=tostring(site.installationId) .. "|QRF" }
+        return { accessZone = accessZone, forwardCoordinate = targetCoordinate, entityId = tostring(site.installationId) .. "|QRF" }
       end,
       vehicleSpacingM = ROAD_SPAWN_VEHICLE_SPACING_M,
       log = function(message) if spec.logger then spec.logger(message) end end,
