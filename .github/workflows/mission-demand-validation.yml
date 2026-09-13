@@ -74,6 +74,7 @@ jobs:
           luac5.4 -p mission/tests/fire-support-strategic-resupply-production-base-runtime/src/01-production-base-six-site-guard-acceptance.lua
           luac5.4 -p mission/tests/fire-support-strategic-resupply-production-base-runtime/src/02-production-base-honaker-incident-qrf-acceptance.lua
           luac5.4 -p mission/tests/fire-support-strategic-resupply-production-base-runtime/src/03-production-base-six-site-physical-alarm-qrf-acceptance.lua
+          luac5.4 -p mission/tests/fire-support-strategic-resupply-production-base-runtime/src/04-qrf-response-clearance-acceptance.lua
 
       - name: Check Fortress full-response acceptance syntax
         shell: bash
