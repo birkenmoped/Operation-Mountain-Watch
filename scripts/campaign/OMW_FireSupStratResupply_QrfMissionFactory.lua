@@ -4,19 +4,22 @@
 --   AUFTRAG:NewONGUARD(initial threat coordinate) recruits/materializes the QRF.
 --   As soon as the physical ARMYGROUP is on mission, the runtime binds it to the
 --   nearest living known incident UNIT with ARMYGROUP:EngageTarget(). MOOSE owns
---   moving-target pursuit. After Disengage (target dead), the same ARMYGROUP
---   acquires the next living incident UNIT. No remaining authorized target ends
---   the mission and lets MOOSE ReturnToLegion recover the group.
+--   moving-target pursuit. The motorized QRF uses MOOSE "On Road" formation for
+--   transit; pinned ARMYGROUP routing inserts road waypoints and leaves the road
+--   for the final approach when the target waypoint itself is off-road.
+--   After Disengage (target dead), the same ARMYGROUP acquires the next living
+--   incident UNIT. No remaining authorized target ends the mission and lets
+--   MOOSE ReturnToLegion recover the group.
 
 local Factory = {}
 local Instance = {}
 Instance.__index = Instance
 
-Factory.SchemaVersion = "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-QRF-MISSION-FACTORY-7"
+Factory.SchemaVersion = "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-QRF-MISSION-FACTORY-8"
 
 local TAG = "[OMW][FireSupStratResupply.QrfMissionFactory]"
 local DEFAULT_ENGAGE_SPEED_KNOTS = 20
-local DEFAULT_ENGAGE_FORMATION = "Vee"
+local DEFAULT_ENGAGE_FORMATION = "On Road"
 
 local function fail(message)
   error(TAG .. " " .. tostring(message), 2)
@@ -136,10 +139,11 @@ function Instance:_bindDirectTargetCycle(mission, demand, context, tacticalZone,
     mission._OMWQrfTargetAcquisitions = (mission._OMWQrfTargetAcquisitions or 0) + 1
     armyGroup:EngageTarget(target, factory.engageSpeedKnots, factory.engageFormation)
     factory:_log(string.format(
-      "local QRF concrete target acquired demandId=%s siteId=%s armyGroup=%s target=%s reason=%s acquisition=%d",
+      "local QRF concrete target acquired demandId=%s siteId=%s armyGroup=%s target=%s reason=%s acquisition=%d formation=%s",
       tostring(demand.demandId), tostring(demand.siteId),
       tostring(armyGroup.groupname or armyGroup.alias or armyGroup.ClassName or armyGroup),
-      tostring(target.GetName and target:GetName() or target), tostring(reason), mission._OMWQrfTargetAcquisitions))
+      tostring(target.GetName and target:GetName() or target), tostring(reason),
+      mission._OMWQrfTargetAcquisitions, tostring(factory.engageFormation)))
     return true
   end
 
@@ -205,10 +209,10 @@ function Instance:Create(demand, context, legion)
   end
 
   self:_log(string.format(
-    "created local QRF ONGUARD recruitment anchor demandId=%s siteId=%s roadDirectionTarget=%s directTargetCycle=MOOSE_EngageTarget requiredAssets=%s-%s attributes=%s properties=%s priority=%s",
+    "created local QRF ONGUARD recruitment anchor demandId=%s siteId=%s roadDirectionTarget=%s directTargetCycle=MOOSE_EngageTarget transitFormation=%s requiredAssets=%s-%s attributes=%s properties=%s priority=%s",
     tostring(demand.demandId), tostring(demand.siteId), tostring(target.GetName and target:GetName() or "UNKNOWN"),
-    tostring(self.requiredAssetsMin), tostring(self.requiredAssetsMax), tostring(self.requiredAttributes ~= nil),
-    tostring(self.requiredProperties ~= nil), tostring(demand.priority)))
+    tostring(self.engageFormation), tostring(self.requiredAssetsMin), tostring(self.requiredAssetsMax),
+    tostring(self.requiredAttributes ~= nil), tostring(self.requiredProperties ~= nil), tostring(demand.priority)))
   return mission, true, nil
 end
 
