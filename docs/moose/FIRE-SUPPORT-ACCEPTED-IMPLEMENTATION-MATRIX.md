@@ -59,8 +59,11 @@ NO ACCEPTANCE SHORTCUT
 | QRF Release Authority | Honaker Full-Response Acceptance | Mission-Cancel erst nach expliziter Supported-Element/C2-Freigabe. Weder Bewegungsdistanz noch Perimeter-Clear noch lokale Incident-Completion sind Release-Authority. |
 | Ground ACCESS | `docs/ground/ARMY-GROUND-RECONSTITUTION-ACCESS-CONTRACT.md` | ACCESS ist Materialisierungs-/Departure-/Return-/Handoff-Grenze, nicht Installation-/Alarmgeometrie. |
 | Road-aligned materialization | `scripts/ground/OMW_GroundRoadSpawnAdapter.lua`; Owner-Freigabe dokumentiert mit Commit `623dfd51fbf47043a2ff822f2ac489de123c1783` | Nur Spawn-Geometrie wird angepasst; BRIGADE/WAREHOUSE/PLATOON/ARMYGROUP/AUFTRAG bleiben MOOSE-owned. Road spawns liegen auf Straßenachse und sind in Fahrtrichtung ausgerichtet. |
+| Six-site road-forward geometry | `mission/tests/army-ground-foundation/ACCEPTANCE-3.md`, `mission/tests/army-ground-foundation/src/03-army-ground-acceptance-3.lua`, getesteter Source-Commit `9b4997bf024efe0fab18b4d18552117cd8eeee21` | Pro Standort: bestehende ACCESS-Zone -> bestehende `ZON_BLUE_GND_<SITE>_PATROL_TEST_01` als Richtungsreferenz -> ca. 1500 m Standoff vor Referenz -> `GetClosestPointToRoad()` -> RoadSpawnAdapter. Keine target-derived 500/1000/1500/2000-m-Sampling-Heuristik. |
 | Ground return mechanics | ARMY Ground Foundation Acceptance 6/7 | `MissionDone/Release -> ARMYGROUP:RTZ(home ACCESS, OnRoad) -> Returned -> Warehouse AddAsset -> physical removal`; strategisches Settlement separat/exactly-once. |
 | Strategic resources | `CampaignState` / Ground Foundation | CampaignState bleibt strategische Ressourcenautorität; keine zweite Bestandsautorität im QRF-/Acceptance-Code. |
+
+Die Six-Site-Road-Geometrie ist DCS-belegt ausschließlich für den dokumentierten Ground-Foundation-Acceptance-3-2-Stand. Die dort verwendeten `PATROL_TEST`-Zonen sind in der aktuellen Fire-Support-Acceptance zulässige bereits vorhandene Testreferenzen, aber **keine neue produktive QRF-Abhängigkeit**. Produktiv muss die Composition einen validierten Road-Forward-Anchor liefern; `QrfRuntime` darf ihn nicht selbst aus dem aktuellen Feindziel heuristisch erzeugen.
 
 ## 4. Acceptance-Code-Gesetz
 
@@ -88,6 +91,7 @@ missing SetEngageDetected
 missing SetReturnToLegion(true)
 GROUNDATTACK substitution
 missing ACCESS GroundRoadSpawnAdapter integration
+production target-derived road-anchor sampling heuristic
 movement-distance-driven ExpireDemand/Cancel in Acceptance 3
 Acceptance-owned supported-element release token
 return on perimeter clear
@@ -135,6 +139,30 @@ Die zwischenzeitliche Fire-Support-QRF-Umstellung auf `AUFTRAG:NewGROUNDATTACK(.
 waren Regressionen gegenüber dem bereits dokumentierten Honaker-Vertrag und sind verworfen.
 
 Acceptance 3 darf die 25 m weiterhin als physische Response-Evidenz messen, aber daraus **keinen** QRF-Release ableiten.
+
+Ebenfalls verworfen ist die zwischenzeitlich neu entworfene produktive Road-Forward-Heuristik
+
+```text
+physical target
+-> 500 / 1000 / 1500 / 2000 m samples
+-> closest road
+-> first valid GetPathOnRoad candidate
+```
+
+Sie war keine Wiederverwendung der bereits DCS-abgenommenen Six-Site-Ground-Geometrie. Der korrigierte Vertrag lautet:
+
+```text
+QrfRuntime
+-> consumes caller-supplied validated road-forward coordinate
+
+Acceptance 3
+-> reuses Ground Foundation Acceptance-3-2 road geometry
+-> existing ACCESS zone
+-> existing PATROL_TEST reference zone
+-> 1500 m standoff approach
+-> closest road
+-> approved GroundRoadSpawnAdapter
+```
 
 ## 8. Statusgrenze
 
