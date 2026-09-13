@@ -6,7 +6,7 @@ Set-StrictMode -Version Latest
 $repoRoot=Split-Path -Parent $PSScriptRoot
 $distDir=Join-Path $repoRoot 'mission\fire-support-strategic-resupply\dist'
 $outputFile=Join-Path $distDir 'OMW_FireSupStratResupply_Base.lua'
-$builderVersion='OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BASE-11'
+$builderVersion='OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BASE-12'
 
 $moduleSpecs=@(
   @{Name='SiteRegistry';Path='scripts\campaign\OMW_FireSupStratResupply_SiteRegistry.lua'},
@@ -55,7 +55,7 @@ $combined=(($moduleSpecs|ForEach-Object{$sources[$_.Name]}) -join "`n")+"`n"+$ro
 foreach($marker in @(
   'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-SITE-REGISTRY-6',
   'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-RUNTIME-8',
-  'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-QRF-RUNTIME-7',
+  'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-QRF-RUNTIME-9',
   'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-QRF-MISSION-FACTORY-5',
   'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-INSTALLATION-INCIDENT-BRIDGE-3',
   'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PERIMETER-BRIDGE-3',
@@ -68,7 +68,8 @@ foreach($marker in @(
   'physicalTargetGroup',
   'ROAD_ALIGNED_WAREHOUSE_SPAWN',
   'vehicleSpacingM',
-  'resolveOutboundRoadCoordinate',
+  'roadForwardCoordinates',
+  'QRF_VALIDATED_ROAD_FORWARD_COORDINATE_UNAVAILABLE',
   'QRF_TACTICAL_RADIUS_NM = 5',
   'QRF_ENGAGE_RANGE_NM = 5',
   'accessZoneName',
@@ -78,6 +79,7 @@ foreach($marker in @(
   if(-not $combined.Contains($marker)){throw "Required contract marker missing: $marker"}
 }
 if($sources.QrfMissionFactory.Contains('AUFTRAG:NewGROUNDATTACK')){throw 'QRF MissionFactory must not substitute GROUNDATTACK for the accepted Honaker ONGUARD contract.'}
+if($sources.QrfRuntime.Contains('ROAD_DIRECTION_SAMPLE_DISTANCES_M') -or $sources.QrfRuntime.Contains('resolveOutboundRoadCoordinate')){throw 'QRF runtime must not contain target-derived road-anchor heuristics.'}
 if($combined -match '(?i)\bMIST\b|mist\.'){throw 'MIST use is forbidden in this production bundle.'}
 
 New-Item -ItemType Directory -Path $distDir -Force|Out-Null
@@ -85,7 +87,7 @@ $commit=(& git -C $repoRoot rev-parse HEAD).Trim()
 if([string]::IsNullOrWhiteSpace($commit)){throw 'Unable to resolve Git HEAD.'}
 
 function Embed([string]$Name,[string]$Source){"local $Name = (function()`n$Source`nend)()`n`n"}
-$bundle="-- AUTO-GENERATED FILE. DO NOT EDIT DIRECTLY.`n-- BuilderVersion: $builderVersion`n-- GitCommit: $commit`n-- MOOSE release: 2.9.18`n-- MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54`n-- Moose.lua SHA-256: E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915`n-- Mobile Ground QRF: accepted Honaker ONGUARD + SetEngageDetected contract; ACCESS road materialization and MOOSE ReturnToLegion lifecycle.`n`n"
+$bundle="-- AUTO-GENERATED FILE. DO NOT EDIT DIRECTLY.`n-- BuilderVersion: $builderVersion`n-- GitCommit: $commit`n-- MOOSE release: 2.9.18`n-- MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54`n-- Moose.lua SHA-256: E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915`n-- Mobile Ground QRF: accepted Honaker ONGUARD + SetEngageDetected contract; ACCESS road materialization consumes caller-validated road geometry; MOOSE ReturnToLegion lifecycle.`n`n"
 foreach($spec in $moduleSpecs){$bundle+=Embed $spec.Name $sources[$spec.Name]}
 $bundle+=Embed 'RoadSpawnAdapter' $roadSource
 $bundle+=@"
@@ -113,19 +115,20 @@ function Package.New(spec)
 end
 OMW=OMW or {}; OMW.FireSupStratResupply=Package; OMW_FIRE_SUPPORT_STRATEGIC_RESUPPLY_BASE_LOADED=1
 "@
-foreach($marker in @('roadSpawnAdapter=RoadSpawnAdapter','OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-QRF-RUNTIME-7','OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-QRF-MISSION-FACTORY-5','AUFTRAG:NewONGUARD','SetEngageDetected','SetReturnToLegion(true)','cancelWhenIncidentClosed=false','brigade:SetSpawnZone(accessZone, HOME_SPAWN_ZONE_MAX_DIST_M)','physicalTargetGroup','ROAD_ALIGNED_WAREHOUSE_SPAWN','vehicleSpacingM','OMW.FireSupStratResupply=Package')){if(-not $bundle.Contains($marker)){throw "Bundle marker missing: $marker"}}
+foreach($marker in @('roadSpawnAdapter=RoadSpawnAdapter','OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-QRF-RUNTIME-9','OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-QRF-MISSION-FACTORY-5','AUFTRAG:NewONGUARD','SetEngageDetected','SetReturnToLegion(true)','cancelWhenIncidentClosed=false','brigade:SetSpawnZone(accessZone, HOME_SPAWN_ZONE_MAX_DIST_M)','physicalTargetGroup','ROAD_ALIGNED_WAREHOUSE_SPAWN','vehicleSpacingM','roadForwardCoordinates','OMW.FireSupStratResupply=Package')){if(-not $bundle.Contains($marker)){throw "Bundle marker missing: $marker"}}
 [System.IO.File]::WriteAllText($outputFile,$bundle,[System.Text.UTF8Encoding]::new($false))
 Write-Host "Built: $outputFile"
 Write-Host "BuilderVersion: $builderVersion"
 Write-Host 'PackageSchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BASE-1'
 Write-Host 'RuntimeSchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-RUNTIME-8'
 Write-Host 'SiteRegistrySchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-SITE-REGISTRY-6'
-Write-Host 'QrfRuntimeSchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-QRF-RUNTIME-7'
+Write-Host 'QrfRuntimeSchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-QRF-RUNTIME-9'
 Write-Host 'QrfMissionFactorySchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-QRF-MISSION-FACTORY-5'
 Write-Host 'InstallationIncidentBridgeSchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-INSTALLATION-INCIDENT-BRIDGE-3'
 Write-Host 'PerimeterBridgeSchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PERIMETER-BRIDGE-3'
 Write-Host 'QrfMissionType: accepted Honaker MOOSE AUFTRAG ONGUARD + SetEngageDetected in site-local 5 NM tactical zone'
-Write-Host 'QrfVehicleMaterialization: approved GroundRoadSpawnAdapter via site ACCESS zone, fixed 18 m spacing, MOOSE road-qualified outbound anchor'
+Write-Host 'QrfVehicleMaterialization: approved GroundRoadSpawnAdapter via site ACCESS zone; fixed 18 m spacing; road-forward geometry supplied by composition resolver'
+Write-Host 'QrfRoadAnchorPolicy: no production target-derived heuristic; resolver must supply validated site geometry'
 Write-Host 'QrfReturnLifecycle: AUFTRAG SetReturnToLegion(true) -> ARMYGROUP RTZ to BRIGADE ACCESS homezone -> Returned -> LEGION/Warehouse AddAsset'
 Write-Host 'QrfReleaseAuthority: explicit supported-element/C2 release only; movement/perimeter/incident state has no mission-end authority'
 Write-Host 'QrfIncidentClosePolicy: local incident/perimeter clear does not auto-cancel dispatched QRF'
