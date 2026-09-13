@@ -1,6 +1,6 @@
 ---
 document_id: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BASE-ACCEPTANCE-3
-status: PLANNED
+status: STAGED
 document_class: ACCEPTANCE_PLAN
 owning_policy: OMW-GOV-001
 authoritative_for:
@@ -11,7 +11,7 @@ project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
 superseded_by:
 source_branch: agent/fire-support-strategic-resupply-base-gate0
-source_commit: PENDING_MERGE
+source_commit: PENDING_LOCAL_BUILD
 validated_in_dcs: false
 ---
 
@@ -46,13 +46,13 @@ OTHER_CONFIRMED_ATTACK
 
 Die Alarmzone ist nur Detection-/Response-Triggergrenze. Sie ist nicht taktischer Gefechtsraum, WEZ, Fire-Support-Zielgebiet, CAS-Zone oder Mission-End-Bedingung. `OPSZONE:Defeated` beziehungsweise das Verlassen oder Freikämpfen der Zone beendet laufende Incidents oder Support-Aufträge nicht automatisch.
 
-`ACCESS`, Warehouse-Position und Guard-PATHLINE sind keine Alarmgeometrie.
+`ACCESS`, Warehouse-Grenzen und Guard-PATHLINE sind keine Alarmgeometrie. Die Warehouse-Koordinate wird an fünf Sites ausschließlich als stabiler Mittelpunkt verwendet.
 
 ## Vom Projektinhaber festgelegte Six-Site-Alarmgeometrie
 
-Für Acceptance 3 und die daraus abzuleitende Produktionskonfiguration gilt die folgende ausdrücklich festgelegte Geometrie. Es werden **keine zusätzlichen Mission-Editor-Trigger-/Alarmzonen** angelegt. Die Alarmperimeter werden zur Laufzeit über den vorhandenen MOOSE-first-Pfad `anchor coordinate -> ZONE_RADIUS -> OPSZONE` erzeugt.
+Für Acceptance 3 und die daraus abzuleitende Produktionskonfiguration gilt die folgende ausdrücklich festgelegte Geometrie. Es werden **keine zusätzlichen Mission-Editor-Trigger-/Alarmzonen** angelegt.
 
-Für Fortress, Joyce, Wright, Honaker und Bostick ist das jeweils bereits vorhandene MOOSE-Warehouse der Standortmittelpunkt. Jalalabad ist eine ausdrückliche Ausnahme: Dort wird **nicht** das Warehouse von FOB Fenty als Mittelpunkt verwendet, sondern der bestehende Missionsanker `OMW_BLUE_OBJECTIVE_JALALABAD_AIRPORT`.
+Für Fortress, Joyce, Wright, Honaker und Bostick ist das jeweils bereits vorhandene MOOSE-Warehouse der Standortmittelpunkt. Daraus wird zur Laufzeit `MOOSE ZONE_RADIUS -> MOOSE OPSZONE` erzeugt. Jalalabad ist eine ausdrückliche Ausnahme: Dort wird **nicht** das Warehouse von FOB Fenty als Mittelpunkt verwendet, sondern die bereits vorhandene Missionszone `OMW_BLUE_OBJECTIVE_JALALABAD_AIRPORT` direkt als MOOSE-Zone an `OPSZONE` übergeben.
 
 | Site | Alarmanker | Radius ft | Radius m |
 |---|---|---:|---:|
@@ -65,23 +65,35 @@ Für Fortress, Joyce, Wright, Honaker und Bostick ist das jeweils bereits vorhan
 
 Umrechnung: `1 ft = 0.3048 m` exakt.
 
-Die fünf Warehouse-Anker dienen hier ausschließlich als stabile geografische Mittelpunkte der Alarmperimeter. Daraus entsteht **keine** zusätzliche Ressourcen- oder Alarmhoheit des Warehouses. Die Jalalabad-Ausnahme bildet bewusst den gesamten Flughafen-/Installationskontext statt nur FOB Fenty ab.
+Die fünf Warehouse-Anker dienen ausschließlich als stabile geografische Mittelpunkte der Alarmperimeter. Daraus entsteht **keine** zusätzliche Ressourcen- oder Alarmhoheit des Warehouses. Die Jalalabad-Ausnahme bildet bewusst den gesamten Flughafen-/Installationskontext statt nur FOB Fenty ab.
 
-Vor dem nächsten Acceptance-3-Build ist technisch zu verifizieren, als welcher tatsächlich vorhandene MOOSE-/DCS-Wrapper beziehungsweise Mission-Editor-Objekttyp `OMW_BLUE_OBJECTIVE_JALALABAD_AIRPORT` im aktuellen Missionsstand aufgelöst werden muss. Diese Auflösung darf nicht geraten werden. Für die fünf Warehouse-Anker ist ebenfalls der vorhandene öffentliche MOOSE-Koordinatenpfad der bereits existierenden Warehouse-/BRIGADE-Objekte zu verwenden; keine parallele native DCS-Ankerlogik wird eingeführt.
+Diese Geometrie liegt nun zusätzlich im produktiven `OMW_FireSupStratResupply_SiteRegistry`-Vertrag. Die Laufzeitauflösung bleibt MOOSE-first und wird nicht durch native DCS-Suche dupliziert.
 
-## Diagnose aus den ersten zwei Läufen
+## Verifikation des Jalalabad-Ankers und der MOOSE-Pfade
 
-Die Guard-Regression lief an allen sechs Standorten an. Die Auswahl der Standorte, an denen ein Incident und anschließend eine QRF entstand, wechselte zwischen den Läufen. Unter anderem wurden im ersten Lauf Wright und Fortress, im zweiten Lauf unter anderem Joyce und Wright mit Incident/QRF beobachtet.
+Die vom Projektinhaber bereitgestellte Missionskopie `OMW_Template_v24_GroundWorks_base(5).miz` wurde read-only geprüft. SHA-256 der hier tatsächlich geprüften Upload-Datei:
 
-Dieses wechselnde Muster ist mit der Guard-only Event-Korrelation erklärbar: Je nachdem, welches BLUE-Ziel eine RED-Testgruppe zuerst bekämpfte, konnte der Acceptance-Filter ein reales Kampfereignis akzeptieren oder verwerfen.
+```text
+4633EF44FF662A0426A8F4ADBB7A535F22F2CEC45559271EF8692C9CB4FC0289
+```
 
-Der Harness enthält **keine globale QRF-Obergrenze**. Pro Site wird eine eigene BRIGADE mit eigenem QRF-PLATOON aufgebaut. Mehrere QRFs wurden gleichzeitig beobachtet. Eine standortübergreifende `maxQrf`- oder gemeinsame Acceptance-QRF-Pool-Regel existiert nicht.
+Dieser Hash ist **nur Artefaktprovenienz der hochgeladenen Inspektionskopie**, kein lokaler Build-/Acceptance-Hash und kein DCS-PASS.
 
-Bei Joyce wurde zusätzlich beobachtet, dass die RED-Testfixture so nahe an das lokale MOOSE-Warehouse kam, dass dessen eigene `under attack`-/Capture-Mechanik ausgelöst wurde. Diese Fixture-Positionierung testet einen unerwünschten Nebeneffekt und ist nicht Bestandteil des Alarm-Acceptance-Ziels.
+In dieser `.miz` ist `OMW_BLUE_OBJECTIVE_JALALABAD_AIRPORT` als vorhandene kreisförmige Mission-Editor-Zone mit `radius=1828.8 m` vorhanden. Damit entspricht die existierende Jalalabad-Zone exakt den festgelegten 6000 ft.
 
-Für Bostick beobachtete der Projektinhaber, dass lokale Artillerie die RED-Testbedrohung offenbar per Direct Fire neutralisierte, bevor eine QRF sichtbar wurde. Das wird als visuelle Diagnosehypothese festgehalten und noch nicht als vollständig log-korrelierter technischer Nachweis behandelt. Es zeigt zusätzlich, dass ein Test nicht davon ausgehen darf, dass jede RED-Fixture zwingend lange genug lebt oder zuerst den Guard bekämpft.
+Im tatsächlich gepinnten `Moose.lua` wurden die für den korrigierten Pfad verwendeten öffentlichen Methoden geprüft:
 
-## RED-Testfixtures
+```text
+ZONE:FindByName(name)
+ZONE_BASE:GetCoordinate()
+WAREHOUSE:GetCoordinate()
+CONTROLLABLE:RouteGroundTo(ToCoordinate, Speed, Formation, DelaySeconds, ...)
+COORDINATE:GetIntermediateCoordinate(ToCoordinate, Fraction)
+```
+
+`BRIGADE` erbt den WAREHOUSE-/LEGION-Pfad und stellt damit für die fünf Warehouse-basierten Sites die öffentliche Warehouse-Koordinate bereit. Die vorhandene Jalalabad-Zone wird per `ZONE:FindByName(...)` aufgelöst und direkt als Security-Zone an den bestehenden `OPSZONE`-Adapter weitergereicht. Es wird keine zweite Jalalabad-`ZONE_RADIUS` darüber erzeugt.
+
+## RED-Testfixtures und physische Intrusion
 
 Die sechs late-activated Gruppen bleiben reine Testfixtures:
 
@@ -96,31 +108,68 @@ BadGuys_A3_BOSTICK
 
 Sie sind keine produktive RED-ORBAT und kein späteres RED-C2-Modell. Die produktive RED-C2 soll feindliche Kräfte dynamisch auswählen, einsetzen und bewegen. Kein BLUE-Produktionsmodul darf von diesen Namen, Positionen oder ihrer Existenz abhängen.
 
+Die aktuelle `.miz` positioniert nicht alle sechs Fixtures bereits innerhalb der nun festgelegten Alarmradien. Der Acceptance-Harness teleportiert oder respawnt sie deshalb **nicht**. Nach erfolgreicher Six-Guard-Regression aktiviert er die vorhandenen Fixtures und routet sie physisch mit der öffentlichen MOOSE-`CONTROLLABLE:RouteGroundTo(...)`-Methode auf einen Punkt bei 65 % des jeweiligen Alarmradius. Der Zielpunkt wird mit `COORDINATE:GetIntermediateCoordinate(...)` auf der Linie vom Alarmmittelpunkt zur tatsächlichen Fixture-Startkoordinate gebildet.
+
+Damit bleibt die Prüfkette beobachtbar:
+
+```text
+late-activated RED fixture
+-> physical MOOSE ground route
+-> owner-defined installation perimeter penetration
+-> MOOSE OPSZONE qualification
+-> PROXIMITY_INTRUSION
+-> installation incident
+-> local QRF
+```
+
+Die Fixture-Route ist Acceptance-Logik, keine produktive RED-C2-Implementierung.
+
+## Diagnose aus den ersten zwei Läufen
+
+Die Guard-Regression lief an allen sechs Standorten an. Die Auswahl der Standorte, an denen ein Incident und anschließend eine QRF entstand, wechselte zwischen den Läufen. Unter anderem wurden im ersten Lauf Wright und Fortress, im zweiten Lauf unter anderem Joyce und Wright mit Incident/QRF beobachtet.
+
+Dieses wechselnde Muster ist mit der verworfenen Guard-only Event-Korrelation erklärbar: Je nachdem, welches BLUE-Ziel eine RED-Testgruppe zuerst bekämpfte, konnte der Acceptance-Filter ein reales Kampfereignis akzeptieren oder verwerfen.
+
+Der Harness enthält **keine globale QRF-Obergrenze**. Pro Site wird eine eigene BRIGADE mit eigenem QRF-PLATOON aufgebaut. Mehrere QRFs wurden gleichzeitig beobachtet. Eine standortübergreifende `maxQrf`- oder gemeinsame Acceptance-QRF-Pool-Regel existiert nicht.
+
+Bei Joyce wurde zusätzlich beobachtet, dass die RED-Testfixture so nahe an das lokale MOOSE-Warehouse kam, dass dessen eigene `under attack`-/Capture-Mechanik ausgelöst wurde. Die korrigierte Acceptance routet nicht zum Warehouse-Zentrum, sondern nur auf 65 % des Alarmradius auf der vorhandenen Radiallinie. Ob damit alle lokalen Ground-AI-/Warehouse-Nebeneffekte vermieden werden, ist ausschließlich im realen DCS-Lauf zu bewerten.
+
+Für Bostick beobachtete der Projektinhaber, dass lokale Artillerie die RED-Testbedrohung offenbar per Direct Fire neutralisierte, bevor eine QRF sichtbar wurde. Das bleibt eine Diagnosehypothese; der neue Lauf muss zeigen, ob das Fixture lange genug für die geforderte Proximity-/QRF-Kette lebt.
+
 ## Korrigierter Acceptance-3-Zielaufbau
 
-Acceptance 3 soll weiterhin möglichst alles in einem einzigen Six-Site-DCS-Lauf bündeln:
+Acceptance 3 bündelt weiterhin möglichst alles in einem einzigen Six-Site-DCS-Lauf:
 
 ```text
 6x Guard regression
-+ 6x owner-defined runtime alarm/security/threat-zone intrusion
++ 6x owner-defined installation alarm/security/threat perimeters started
++ 6x physical RED fixture intrusion attempts
 + 6x MOOSE OPSZONE / proximity qualification
-+ 6x PROXIMITY_INTRUSION
++ 6x PROXIMITY_INTRUSION evidence observed
 + 6x authoritative installation incident
 + 6x exactly one initial local QRF demand
 + 6x MOOSE-recruited local QRF
 + 6x physical QRF execution
-+ optional direct-fire / hit evidence refresh without duplicate demand
 ```
 
-Die oben festgelegten standortbezogenen Alarmradien und Anker sind für diesen Acceptance-Scope die maßgebliche Geometrie. `ACCESS`, Guard-PATHLINE oder andere Testgeometrien dürfen nicht ersatzweise als Alarmgrenze verwendet werden.
+Direct-Fire-/Hit-Evidence bleibt ein zusätzlicher Multi-Evidence-Kanal, ist aber nicht Voraussetzung dieses korrigierten Proximity-Hauptlaufs. Der bereits validierte Incident-Refresh-Vertrag darf dabei nicht regressieren; Acceptance 3 erzeugt jedoch keine künstliche direkte Evidence-Injektion.
 
 ## MOOSE-first
 
 Der korrigierte Hauptpfad verwendet die bereits vorhandene MOOSE-first-Architektur:
 
 ```text
-MOOSE ZONE_RADIUS
+Fortress/Joyce/Wright/Honaker/Bostick:
+MOOSE WAREHOUSE/BRIGADE:GetCoordinate()
+-> MOOSE ZONE_RADIUS
 -> MOOSE OPSZONE
+
+Jalalabad:
+MOOSE ZONE:FindByName("OMW_BLUE_OBJECTIVE_JALALABAD_AIRPORT")
+-> existing MOOSE zone
+-> MOOSE OPSZONE
+
+both:
 -> OMW_FobThreatOpsZoneAdapter
 -> OMW_FireSupStratResupply_PerimeterBridge
 -> PROXIMITY_INTRUSION
@@ -132,23 +181,23 @@ MOOSE ZONE_RADIUS
 -> MOOSE AUFTRAG / LEGION / BRIGADE recruitment
 ```
 
-Physische `EVENTHANDLER`-/`WEAPON`-Evidence bleibt als zusätzliche Multi-Evidence-Quelle zulässig, ersetzt aber nicht die Proximity-/Triggerzonen-Erkennung.
+Physische `EVENTHANDLER`-/`WEAPON`-Evidence bleibt als zusätzliche Multi-Evidence-Quelle zulässig, ersetzt aber nicht die Proximity-/Installationszonenerkennung.
 
 ## PASS-Kriterium
 
-Der nächste Acceptance-3-Build muss mindestens nachweisen:
+Der Acceptance-3-Lauf muss mindestens nachweisen:
 
 ```text
 6/6 Guards regression condition satisfied
-6/6 owner-defined runtime alarm perimeters started
-6/6 qualified proximity intrusions observed
+6/6 owner-defined MOOSE alarm perimeters started
+6/6 PROXIMITY_INTRUSION evidence observed
 6/6 authoritative installation incidents observed
 6/6 exactly one initial QRF demand
-6/6 local QRF mission observed
-no duplicate QRF demand from evidence refresh
+6/6 local Ground_APC QRF mission observed
+6/6 local QRF physical progress >=25 m toward the incident coordinate
 ```
 
-QRF-Bewegung und weitere physische Ausführungskriterien dürfen nur so festgelegt werden, dass die Testfixtures nicht unbeabsichtigt die MOOSE-Warehouse-Capture-Mechanik oder andere nicht zum Acceptance-Ziel gehörende Standortmechanismen provozieren.
+Ein Build allein ist kein PASS. `VALIDATED` beziehungsweise `ACCEPTED_TECHNICAL_BASELINE` darf erst nach dem dokumentierten realen DCS-Lauf und dessen exakter Provenienz vergeben werden.
 
 ## Noch nicht bewiesen
 
@@ -158,15 +207,19 @@ Ein späterer PASS validiert nicht automatisch:
 - Ground-/Air-Resupply;
 - CampaignState Transport Settlement;
 - produktive RED-C2;
-- generische Mission-End-/Incident-Close-Logik.
+- generische Mission-End-/Incident-Close-Logik;
+- Direct-/Indirect-Fire- oder Hit-Evidence im selben A3-Lauf.
 
-## Aktueller Entscheidungsstand
+## Aktueller Stand
 
 ```text
 old Guard-only Acceptance-3 correlation: REJECTED
 first two DCS runs: diagnostic evidence only
 six-site alarm center/radius geometry: OWNER-DEFINED
 additional Mission Editor alarm/trigger zones: NOT REQUIRED
-Jalalabad center: OMW_BLUE_OBJECTIVE_JALALABAD_AIRPORT, not WH_BLUE_GND_FENTY
-next action: verify Jalalabad anchor wrapper/type, wire owner-defined perimeters into the existing MOOSE OPSZONE path, rebuild Acceptance 3
+Jalalabad zone: existing OMW_BLUE_OBJECTIVE_JALALABAD_AIRPORT, 6000 ft
+five other centers: existing MOOSE Warehouse/BRIGADE coordinates
+corrected perimeter/QRF harness: STAGED
+local build/hash verification: PENDING
+real DCS Acceptance-3 run: PENDING
 ```
