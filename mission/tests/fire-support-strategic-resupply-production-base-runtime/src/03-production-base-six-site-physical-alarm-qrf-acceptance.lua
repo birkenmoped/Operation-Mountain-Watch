@@ -45,7 +45,11 @@ local function updateSiteState(d)
   end
   if s.qrf and s.qrf:IsAlive() and s.target then
     local c=s.qrf:GetCoordinate()
-    if c then s.qrfCurrent=c:Get2DDistance(s.target); s.qrfProgress=(s.qrfInitial or s.qrfCurrent)-s.qrfCurrent end
+    if c then
+      s.qrfCurrent=c:Get2DDistance(s.target)
+      if not s.qrfInitial then s.qrfInitial=s.qrfCurrent end
+      s.qrfProgress=s.qrfInitial-s.qrfCurrent
+    end
   end
   local incident=baseIncident(d.id); if incident then s.incident=true; s.demandCount=#incident.demandIds end
 end
@@ -72,9 +76,10 @@ local function telemetry()
   if state.failed or state.passed or not state.runtime then return end
   if not state.released and allGuardsPassed() then releaseFixtures() end
   for _,d in ipairs(sites) do
-    local s=state.site[d.id]; updateSiteState(d)
+    local s=state.site[d.id]
     local f=GROUP:FindByName(d.fixture)
     if state.released and f and f:IsAlive() and not s.target then s.target=f:GetCoordinate() end
+    updateSiteState(d)
     log(string.format("SITE_TELEMETRY siteId=%s guardObserved=%s guardMoveM=%.1f incident=%s demandCount=%s qrfObserved=%s qrfAttribute=%s qrfProgressM=%.1f",
       d.id,tostring(s.guardObserved),s.guardMove or 0,tostring(s.incident),tostring(s.demandCount),tostring(s.qrfObserved),tostring(s.qrfAttribute),s.qrfProgress or 0))
   end
@@ -113,7 +118,7 @@ local function buildBrigades(package)
       local grp=armyGroup and armyGroup:GetGroup() or nil; if not grp then return end
       local a=grp:GetAttribute(); log("ARMY_ON_MISSION siteId="..d.id.." group="..tostring(grp:GetName()).." attribute="..tostring(a))
       if a==GROUP.Attribute.GROUND_INFANTRY then s.guard=grp; s.guardStart=grp:GetCoordinate(); s.guardObserved=true
-      elseif a==GROUP.Attribute.GROUND_APC then s.qrf=grp; s.qrfObserved=true; s.qrfAttribute=a; local c=grp:GetCoordinate(); if c and s.target then s.qrfInitial=c:Get2DDistance(s.target); s.qrfCurrent=s.qrfInitial end end
+      elseif a==GROUP.Attribute.GROUND_APC then s.qrf=grp; s.qrfObserved=true; s.qrfAttribute=a end
     end
     state.brigades[d.id]=b
   end
