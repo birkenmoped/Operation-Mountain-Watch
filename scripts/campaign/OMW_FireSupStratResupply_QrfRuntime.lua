@@ -5,15 +5,16 @@
 -- Honaker pattern: ONGUARD + SetEngageDetected inside a site-local 5 NM tactical
 -- zone and SetReturnToLegion(true). Alarm/incident state is not mission-end authority.
 -- Mobile vehicle materialization remains on the approved GroundRoadSpawnAdapter
--- at the site's ACCESS zone. Road direction is supplied by the composition root
--- from validated site geometry; this runtime does not invent target-derived road
--- anchor heuristics. MOOSE retains recruitment, mission and return lifecycle.
+-- at the site's ACCESS zone. The composition-root QRF resolver must return the
+-- physical hostile GROUP plus a validated site road-forward COORDINATE; this
+-- runtime contains no target-derived road-anchor heuristic. MOOSE retains
+-- recruitment, mission and return lifecycle.
 
 local Runtime = {}
 local Instance = {}
 Instance.__index = Instance
 
-Runtime.SchemaVersion = "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-QRF-RUNTIME-8"
+Runtime.SchemaVersion = "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-QRF-RUNTIME-9"
 local TAG = "[OMW][FireSupStratResupply.QrfRuntime]"
 local QRF_TACTICAL_RADIUS_NM = 5
 local QRF_ENGAGE_RANGE_NM = 5
@@ -57,10 +58,6 @@ function Runtime.New(spec)
   needFunction(qrfMissionFactory, "New", "qrfMissionFactory")
   needFunction(legionBridge, "New", "legionBridge")
   local resolveTarget = needCallable(spec.resolveTarget or spec.resolveCoordinate, "resolveTarget")
-  local resolveRoadSpawnForwardCoordinate = needCallable(
-    spec.resolveRoadSpawnForwardCoordinate,
-    "resolveRoadSpawnForwardCoordinate"
-  )
   if spec.logger ~= nil and type(spec.logger) ~= "function" then fail("logger must be a function when provided") end
 
   if type(ZONE) ~= "table" or type(ZONE.FindByName) ~= "function" then fail("MOOSE ZONE:FindByName() is required") end
@@ -69,6 +66,7 @@ function Runtime.New(spec)
 
   local roadSpawnAdapter = packagedRoadSpawnAdapter()
   local targetCoordinates = {}
+  local roadForwardCoordinates = {}
   local accessZones = {}
   local engageZones = {}
   for siteId, site in pairs(siteRegistry.Sites) do
@@ -92,31 +90,21 @@ function Runtime.New(spec)
       UTILS.NMToMeters(QRF_TACTICAL_RADIUS_NM)
     )
 
-    -- Accepted Ground Foundation boundary: ACCESS is the visible road materialization
-    -- boundary and the MOOSE ARMYGROUP homezone. The caller supplies a validated
-    -- forward road anchor; QRF runtime deliberately contains no fallback heuristic.
     brigade:SetSpawnZone(accessZone, HOME_SPAWN_ZONE_MAX_DIST_M)
     roadSpawnAdapter.Install(brigade, {
       resolveRoadSpawn = function(_, asset)
         if not mobileVehicle(asset) then return nil end
         local targetCoordinate = targetCoordinates[siteId]
+        local forwardCoordinate = roadForwardCoordinates[siteId]
         if targetCoordinate == nil then return nil end
-        local entityId = tostring(site.installationId) .. "|QRF"
-        local forwardCoordinate, reason = resolveRoadSpawnForwardCoordinate(
-          siteId,
-          site,
-          accessZone,
-          targetCoordinate,
-          brigade
-        )
         if forwardCoordinate == nil then
           fail("validated QRF road forward coordinate unavailable entityId="
-            .. tostring(entityId) .. " reason=" .. tostring(reason))
+            .. tostring(site.installationId) .. "|QRF")
         end
         return {
           accessZone = accessZone,
           forwardCoordinate = forwardCoordinate,
-          entityId = entityId,
+          entityId = tostring(site.installationId) .. "|QRF",
         }
       end,
       vehicleSpacingM = ROAD_SPAWN_VEHICLE_SPACING_M,
@@ -126,9 +114,16 @@ function Runtime.New(spec)
 
   local factory = qrfMissionFactory.New({
     resolveTarget = function(demand, context, legion)
-      local target, reason = resolveTarget(demand, context, legion)
+      -- Resolver contract for mobile QRF:
+      --   target GROUP, reason-or-nil, validated road-forward COORDINATE.
+      -- The third return value is composition geometry, not mission target authority.
+      local target, reason, roadForwardCoordinate = resolveTarget(demand, context, legion)
       if target ~= nil and type(target.GetCoordinate) == "function" then
         targetCoordinates[demand.siteId] = target:GetCoordinate()
+        if type(roadForwardCoordinate) ~= "table" then
+          return nil, "QRF_VALIDATED_ROAD_FORWARD_COORDINATE_UNAVAILABLE"
+        end
+        roadForwardCoordinates[demand.siteId] = roadForwardCoordinate
       end
       return target, reason
     end,
@@ -161,6 +156,7 @@ function Runtime.New(spec)
     factory=factory,
     dispatchBridge=bridge,
     targetCoordinates=targetCoordinates,
+    roadForwardCoordinates=roadForwardCoordinates,
     accessZones=accessZones,
     engageZones=engageZones,
     logger=spec.logger,
