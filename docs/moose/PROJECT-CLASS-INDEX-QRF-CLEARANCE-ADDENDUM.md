@@ -4,7 +4,7 @@ status: BINDING
 document_class: MOOSE_CLASS_REGISTER_ADDENDUM
 owning_policy: OMW-GOV-001
 authoritative_for:
-  - class-level source-review status of the owner-approved QRF response-clearance extension
+  - class-level source-review status of the owner-approved QRF direct-target extension
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
@@ -14,7 +14,7 @@ source_commit: PENDING_MERGE
 validated_in_dcs: false
 ---
 
-# PROJECT-CLASS-INDEX – QRF Clearance Addendum
+# PROJECT-CLASS-INDEX – QRF Direct-Target Addendum
 
 Dieses Addendum ergänzt den bestehenden `PROJECT-CLASS-INDEX.md`, ohne dessen historische Einträge zu ersetzen.
 
@@ -28,9 +28,12 @@ Moose.lua SHA-256: E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A
 
 | Klasse | Status für diese Erweiterung | Source-reviewed Methoden/Pfade | Grenze |
 |---|---|---|---|
-| `AUFTRAG` | `SOURCE_REVIEWED` | `NewPATROLZONE`, `GetOpsGroups`, `SetReturnToLegion`, `SetTeleport`, `Cancel`, `IsOver` | QRF Clearance nach bestehender ONGUARD-Response; noch kein DCS-PASS |
-| `OPSGROUP` | `SOURCE_REVIEWED` | `AddMission`, FSM `__MissionDone` | Same-group-Übergang Response -> Clearance; noch kein DCS-PASS |
-| `ARMYGROUP` | `SOURCE_REVIEWED` | `SetPatrolAdInfinitum`, `EnableHuntingPatrol`, `DisableHuntingPatrol` | MOOSE-eigene Suche/Engagement innerhalb der site-local tactical zone; noch kein DCS-PASS |
+| `BRIGADE` | `SOURCE_REVIEWED` | FSM `ArmyOnMission` / `OnAfterArmyOnMission` | Übergibt die bereits materialisierte QRF als physische `ARMYGROUP`; Direct-Target-Einsatz noch kein DCS-PASS |
+| `AUFTRAG` | `SOURCE_REVIEWED` | `NewONGUARD`, `SetReturnToLegion`, `SetTeleport`, `Cancel`, `IsOver` | ONGUARD ist Recruitment-/Materialization-Anchor; Target-Ausführung erfolgt danach direkt auf derselben ARMYGROUP |
+| `ARMYGROUP` | `SOURCE_REVIEWED` | `EngageTarget`, `OnAfterDisengage`, `_UpdateEngageTarget`, `RTZ`, `Returned` | MOOSE verfolgt konkretes `UNIT`; Reacquire ist an `Disengage` gebunden; noch kein DCS-PASS |
+| `ZONE_BASE` | `SOURCE_REVIEWED` | `IsCoordinateInZone` | Filtert bekannte Incident-Targets auf die site-local 5-NM-Tactical-Zone |
+
+`PATROLZONE`, `SetPatrolAdInfinitum` und `EnableHuntingPatrol` wurden im gepinnten Source geprüft, sind für den aktuellen OMW-QRF-Vertrag jedoch **nicht ausgewählt**. Der reale Joyce-A4-Lauf vom 13.09.2026 hat den daraus gebauten QRF-Clearance-Ansatz als ungeeignet gezeigt; dies ist negative DCS-Evidenz.
 
 Verbindlicher Lifecycle und Grenzen: `QRF-RESPONSE-CLEARANCE-LIFECYCLE.md` sowie `FIRE-SUPPORT-ACCEPTED-IMPLEMENTATION-MATRIX.md`.
 
