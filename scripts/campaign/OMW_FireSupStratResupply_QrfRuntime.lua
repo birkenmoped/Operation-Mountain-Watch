@@ -1,15 +1,15 @@
 -- Operation Mountain Watch - local QRF runtime assembly.
 --
 -- Wires incident-scoped QRF demands to the site-local MOOSE BRIGADE without
--- operational asset preselection. Tactical response coordinates remain injected.
+-- operational asset preselection. The physical hostile target remains transient.
 -- Mobile vehicle QRF materialization reuses the accepted GroundRoadSpawnAdapter
--- at the site's ACCESS zone; MOOSE retains mission/recruitment lifecycle control.
+-- at the site's ACCESS zone; MOOSE retains mission/recruitment/attack lifecycle.
 
 local Runtime = {}
 local Instance = {}
 Instance.__index = Instance
 
-Runtime.SchemaVersion = "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-QRF-RUNTIME-4"
+Runtime.SchemaVersion = "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-QRF-RUNTIME-5"
 local TAG = "[OMW][FireSupStratResupply.QrfRuntime]"
 local ROAD_SPAWN_VEHICLE_SPACING_M = 18
 local ROAD_DIRECTION_SAMPLE_DISTANCES_M = { 500, 1000, 1500, 2000 }
@@ -47,13 +47,13 @@ local function validRoadPath(startRoad, candidate)
   return gotRoadPath == true and type(roadPath) == "table" and #roadPath >= 2
 end
 
-local function resolveOutboundRoadCoordinate(accessZone, target, entityId)
+local function resolveOutboundRoadCoordinate(accessZone, targetCoordinate, entityId)
   if type(accessZone) ~= "table" or type(accessZone.GetCoordinate) ~= "function" then
     fail("QRF road direction requires MOOSE ACCESS zone entityId=" .. tostring(entityId))
   end
-  if type(target) ~= "table" or type(target.Get2DDistance) ~= "function"
-      or type(target.GetClosestPointToRoad) ~= "function" then
-    fail("QRF road direction requires MOOSE target COORDINATE entityId=" .. tostring(entityId))
+  if type(targetCoordinate) ~= "table" or type(targetCoordinate.Get2DDistance) ~= "function"
+      or type(targetCoordinate.GetClosestPointToRoad) ~= "function" then
+    fail("QRF road direction requires physical target COORDINATE entityId=" .. tostring(entityId))
   end
 
   local accessCoordinate = accessZone:GetCoordinate()
@@ -62,7 +62,7 @@ local function resolveOutboundRoadCoordinate(accessZone, target, entityId)
     fail("QRF ACCESS road unavailable entityId=" .. tostring(entityId))
   end
 
-  local totalDistance = accessCoordinate:Get2DDistance(target)
+  local totalDistance = accessCoordinate:Get2DDistance(targetCoordinate)
   if type(totalDistance) ~= "number" or totalDistance <= 0 then
     fail("QRF target distance unavailable entityId=" .. tostring(entityId))
   end
@@ -70,7 +70,7 @@ local function resolveOutboundRoadCoordinate(accessZone, target, entityId)
   for _, sampleDistance in ipairs(ROAD_DIRECTION_SAMPLE_DISTANCES_M) do
     if sampleDistance < totalDistance then
       local fraction = sampleDistance / totalDistance
-      local rawCandidate = accessCoordinate:GetIntermediateCoordinate(target, fraction)
+      local rawCandidate = accessCoordinate:GetIntermediateCoordinate(targetCoordinate, fraction)
       local roadCandidate = rawCandidate and rawCandidate:GetClosestPointToRoad(false) or nil
       if roadCandidate and validRoadPath(startRoad, roadCandidate) then
         return roadCandidate
@@ -78,7 +78,7 @@ local function resolveOutboundRoadCoordinate(accessZone, target, entityId)
     end
   end
 
-  local targetRoad = target:GetClosestPointToRoad(false)
+  local targetRoad = targetCoordinate:GetClosestPointToRoad(false)
   if targetRoad and validRoadPath(startRoad, targetRoad) then
     return targetRoad
   end
@@ -95,11 +95,11 @@ function Runtime.New(spec)
   if type(siteRegistry.Sites) ~= "table" then fail("siteRegistry.Sites is required") end
   needFunction(qrfMissionFactory, "New", "qrfMissionFactory")
   needFunction(legionBridge, "New", "legionBridge")
-  local resolveCoordinate = needCallable(spec.resolveCoordinate, "resolveCoordinate")
+  local resolveTarget = needCallable(spec.resolveTarget, "resolveTarget")
   if spec.logger ~= nil and type(spec.logger) ~= "function" then fail("logger must be a function when provided") end
 
   local roadSpawnAdapter = packagedRoadSpawnAdapter()
-  local targets = {}
+  local targetCoordinates = {}
   for siteId, site in pairs(siteRegistry.Sites) do
     local brigade = needTable(brigades[siteId], "brigades[" .. tostring(siteId) .. "]")
     if type(site.accessZoneName) ~= "string" or site.accessZoneName == "" then
@@ -108,13 +108,13 @@ function Runtime.New(spec)
     roadSpawnAdapter.Install(brigade, {
       resolveRoadSpawn = function(_, asset)
         if not mobileVehicle(asset) then return nil end
-        local target = targets[siteId]
-        if target == nil then return nil end
+        local targetCoordinate = targetCoordinates[siteId]
+        if targetCoordinate == nil then return nil end
         if type(ZONE) ~= "table" or type(ZONE.FindByName) ~= "function" then fail("MOOSE ZONE:FindByName() is required") end
         local accessZone = ZONE:FindByName(site.accessZoneName)
         if accessZone == nil then fail("ACCESS zone unavailable siteId=" .. tostring(siteId) .. " zone=" .. tostring(site.accessZoneName)) end
         local entityId = tostring(site.installationId) .. "|QRF"
-        local forwardCoordinate = resolveOutboundRoadCoordinate(accessZone, target, entityId)
+        local forwardCoordinate = resolveOutboundRoadCoordinate(accessZone, targetCoordinate, entityId)
         return {
           accessZone = accessZone,
           forwardCoordinate = forwardCoordinate,
@@ -127,10 +127,12 @@ function Runtime.New(spec)
   end
 
   local factory = qrfMissionFactory.New({
-    resolveCoordinate = function(demand, context, legion)
-      local coordinate, reason = resolveCoordinate(demand, context, legion)
-      if coordinate ~= nil then targets[demand.siteId] = coordinate end
-      return coordinate, reason
+    resolveTarget = function(demand, context, legion)
+      local target, reason = resolveTarget(demand, context, legion)
+      if target ~= nil and type(target.GetCoordinate) == "function" then
+        targetCoordinates[demand.siteId] = target:GetCoordinate()
+      end
+      return target, reason
     end,
     requiredAssetsMin = spec.requiredAssetsMin or 1,
     requiredAssetsMax = spec.requiredAssetsMax or (spec.requiredAssetsMin or 1),
@@ -148,7 +150,7 @@ function Runtime.New(spec)
     logger = spec.logger,
   })
 
-  return setmetatable({siteRegistry=siteRegistry,brigades=brigades,factory=factory,dispatchBridge=bridge,targets=targets,logger=spec.logger}, Instance)
+  return setmetatable({siteRegistry=siteRegistry,brigades=brigades,factory=factory,dispatchBridge=bridge,targetCoordinates=targetCoordinates,logger=spec.logger}, Instance)
 end
 
 function Instance:_log(message) if self.logger then self.logger(TAG .. " " .. tostring(message)) end end
