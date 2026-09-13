@@ -136,9 +136,12 @@ kein zusätzlicher Mission-Editor-Spawn-/Alarmbereich
 scripts/campaign/OMW_FireSupStratResupply_QrfMissionFactory.lua
 scripts/campaign/OMW_FireSupStratResupply_QrfRuntime.lua
 tests/mission-demand/test_fire_support_qrf_accepted_contract.lua
+mission/tests/fire-support-strategic-resupply-production-base-runtime/src/04-qrf-response-clearance-acceptance.lua
+tools/build-fire-support-strategic-resupply-production-base-acceptance-4.ps1
+mission/tests/fire-support-strategic-resupply-production-base-runtime/ACCEPTANCE-4.md
 ```
 
-Die historische Production Base Acceptance 3 bleibt unverändert und belegt weiterhin nur den exakt damals gebauten Response-Stand. Für die neue Clearance-Phase ist eine neue gezielte DCS-Acceptance erforderlich.
+Die historische Production Base Acceptance 3 bleibt unverändert und belegt weiterhin nur den exakt damals gebauten Response-Stand. Die neue Clearance-Phase wird durch die Joyce-fokussierte Production Base Acceptance 4 geprüft; diese Acceptance ist staged und noch nicht in DCS validiert.
 
 ## Status
 
@@ -146,5 +149,6 @@ Die historische Production Base Acceptance 3 bleibt unverändert und belegt weit
 Owner decision: APPROVED
 MOOSE pinned-source review: SOURCE_REVIEWED
 Static anti-regression test: REQUIRED
+Acceptance 4: STAGED
 DCS runtime validation: OPEN
 ```
