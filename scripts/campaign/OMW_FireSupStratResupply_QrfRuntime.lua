@@ -20,6 +20,16 @@ local function needFunction(container, name, label)
 end
 local function needCallable(value, label) if type(value) ~= "function" then fail(label .. " must be a function") end return value end
 
+local function packagedRoadSpawnAdapter()
+  local p = OMW and OMW.FireSupStratResupply
+  local modules = p and p.Modules
+  local adapter = modules and modules.roadSpawnAdapter
+  if type(adapter) ~= "table" or type(adapter.Install) ~= "function" then
+    fail("packaged GroundRoadSpawnAdapter.Install() is required")
+  end
+  return adapter
+end
+
 local function mobileVehicle(asset)
   return type(asset) == "table"
     and type(Group) == "table" and type(Group.Category) == "table"
@@ -35,15 +45,13 @@ function Runtime.New(spec)
   local brigades = needTable(spec.brigades, "brigades")
   local qrfMissionFactory = needTable(spec.qrfMissionFactory, "qrfMissionFactory")
   local legionBridge = needTable(spec.legionBridge, "legionBridge")
-  local roadSpawnAdapter = needTable(spec.roadSpawnAdapter, "roadSpawnAdapter")
   if type(siteRegistry.Sites) ~= "table" then fail("siteRegistry.Sites is required") end
   needFunction(qrfMissionFactory, "New", "qrfMissionFactory")
   needFunction(legionBridge, "New", "legionBridge")
-  needFunction(roadSpawnAdapter, "Install", "roadSpawnAdapter")
   local resolveCoordinate = needCallable(spec.resolveCoordinate, "resolveCoordinate")
-  local resolveAccessZone = needCallable(spec.resolveAccessZone, "resolveAccessZone")
   if spec.logger ~= nil and type(spec.logger) ~= "function" then fail("logger must be a function when provided") end
 
+  local roadSpawnAdapter = packagedRoadSpawnAdapter()
   local targets = {}
   for siteId, site in pairs(siteRegistry.Sites) do
     local brigade = needTable(brigades[siteId], "brigades[" .. tostring(siteId) .. "]")
@@ -55,8 +63,9 @@ function Runtime.New(spec)
         if not mobileVehicle(asset) then return nil end
         local target = targets[siteId]
         if target == nil then return nil end
-        local accessZone, reason = resolveAccessZone(siteId, site, brigade)
-        if accessZone == nil then fail("ACCESS zone unavailable siteId=" .. tostring(siteId) .. " reason=" .. tostring(reason)) end
+        if type(ZONE) ~= "table" or type(ZONE.FindByName) ~= "function" then fail("MOOSE ZONE:FindByName() is required") end
+        local accessZone = ZONE:FindByName(site.accessZoneName)
+        if accessZone == nil then fail("ACCESS zone unavailable siteId=" .. tostring(siteId) .. " zone=" .. tostring(site.accessZoneName)) end
         return { accessZone=accessZone, forwardCoordinate=target, entityId=tostring(site.installationId).."|QRF" }
       end,
       log = function(message) if spec.logger then spec.logger(message) end end,
