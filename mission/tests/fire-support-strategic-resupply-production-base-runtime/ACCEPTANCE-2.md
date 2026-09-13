@@ -89,6 +89,35 @@ OMW_RTE_BLUE_GUARD_BOSTICK_01
 
 `BadGuys1` ist eine vorhandene late-activated RED-Gruppe. Der Harness aktiviert sie mit der öffentlichen MOOSE-Methode `GROUP:Activate()` und nutzt danach ihre reale `GROUP:GetCoordinate()`-Position als Incident-/QRF-Ziel. Es wird keine QRF-Zielkoordinate erfunden.
 
+### Testfixture versus produktive RED-Kräfte
+
+Die aktuell in der Foundation-`.miz` vorhandenen `BadGuys*`-Gruppen sind **ausschließlich Testfixtures** für Acceptance-, Integrations- und Regressionsläufe. Sie sind kein vorgesehenes produktives Feindkräfte-, ORBAT-, Spawn- oder Tasking-Modell und dürfen nicht als dauerhafte RED-Operationsquelle in die Production-Architektur übernommen werden.
+
+Für die spätere produktive Mission gilt stattdessen:
+
+```text
+RED C2 / RED operational command layer
+-> determines hostile operational demand / intent
+-> selects and tasks eligible RED formations through the approved MOOSE/OMW architecture
+-> dynamically deploys / moves hostile RED groups
+-> BLUE installation alarm receives only resulting physical/evidence state
+```
+
+Damit bleibt die Richtung ausdrücklich getrennt:
+
+```text
+Acceptance fixture:
+BadGuys* exists in .miz
+-> harness activates/moves/uses it for a defined test
+
+Production:
+RED C2 owns enemy employment
+-> RED groups are dynamically committed and moved by RED command logic
+-> BLUE alarm/QRF reacts to the resulting threat
+```
+
+BLUE Installation Incident, Guard, QRF, Fire Support oder Resupply dürfen deshalb keine produktive Abhängigkeit von den Namen, Positionen oder der Existenz der `BadGuys*`-Testgruppen erhalten. Die konkrete RED-C2-Architektur ist außerhalb dieses Acceptance-2-Scope und muss separat nach den dann gültigen Governance-/MOOSE-First-Regeln implementiert und validiert werden.
+
 `ZON_BLUE_GND_*_ACCESS` ist ausdrücklich kein Guard-, QRF- oder Alarmvertrag.
 
 ## Testablauf
@@ -143,6 +172,7 @@ CAS escalation
 Ground resupply
 Air resupply
 CampaignState physical transport settlement
+productive RED C2 employment / hostile force generation and movement
 ```
 
 Diese offenen Punkte werden weiterhin soweit fachlich möglich in wenigen größeren Folge-Acceptances gebündelt.
