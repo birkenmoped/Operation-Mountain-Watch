@@ -1,7 +1,7 @@
 ---
 document_id: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BASE-ACCEPTANCE-2
 status: ACCEPTED_TECHNICAL_BASELINE
-document_class: ACCEPTANCE_PLAN
+document_class: ACCEPTANCE_RESULT
 owning_policy: OMW-GOV-001
 authoritative_for:
   - Production Base six-site Guard regression
@@ -13,15 +13,38 @@ project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
 superseded_by:
 source_branch: agent/fire-support-strategic-resupply-base-gate0
-source_commit: GIT_HISTORY
+source_commit: 4d790a9caff326ba18dceb218f83338816200ea9
 validated_in_dcs: true
+acceptance_branch: agent/fire-support-strategic-resupply-base-gate0
+acceptance_commit: 4d790a9caff326ba18dceb218f83338816200ea9
+acceptance_mission: OMW_Template_v24_GroundWorks_base.miz
+acceptance_mission_sha256: d51a38bbd352ae7e5f17a4cb4a025b4bd8f875339b97a19441ebd14d8653b1d9
+dcs_version: 2.9.29.27468
+moose_release: 2.9.18
+moose_commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+moose_lua_sha256: E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915
+production_builder_sha256: F2FB946ACAB9955E38E27DBB264D2249D2A8F8492FE6339F557FEEDDAE7A00AB
+production_bundle_sha256: 8A532490E1E70F546ECE15EE3F537D41D2B2F1673E0C29296E79B1E4D763579E
+acceptance_source_sha256: F8AB365B08491DFA002387C7DFA4D866DD160FB15EE504356DD11FDAAD55D84E
+acceptance_builder_sha256: 4D0CCC4EDF0AE92E2C4BEE07C47DDF0F279E65A48CDF543C2AED2413C7838761
+acceptance_bundle_sha256: 173290E5F4123D41D79400238385729E8C1A71C77BFBFB54C6A4E7F9C1F4A2F8
 ---
 
 # Production Base Acceptance 2 – Six Guards + Honaker Incident + QRF
 
+## Ergebnis
+
+**PASS / ACCEPTED_TECHNICAL_BASELINE** fuer den exakt oben dokumentierten Branch-, Commit-, Missions-, Bundle-, DCS- und MOOSE-Stand.
+
+Der reale DCS-Lauf enthielt den geforderten Abschluss:
+
+```text
+[PRODUCTION BASE A2][PASS] 6/6 Guards >=25 m; Honaker incident opened once; MOOSE recruited Ground_APC QRF; target-distance progress 205.1 m; refresh kept one response demand
+```
+
 ## Ziel
 
-Auf Wunsch des Projektinhabers werden mehrere sinnvolle Prüfungen in **einem** DCS-Lauf gebündelt. Acceptance 2 regressiert die bereits akzeptierte Six-Site-Guard-Kette und prüft gleichzeitig erstmals die produktive Installation-Incident-/QRF-Kette:
+Auf Wunsch des Projektinhabers wurden mehrere sinnvolle Prüfungen in **einem** DCS-Lauf gebündelt. Acceptance 2 regressiert die bereits akzeptierte Six-Site-Guard-Kette und prüft gleichzeitig erstmals die produktive Installation-Incident-/QRF-Kette:
 
 ```text
 six site-local persistent Guard demands
@@ -133,91 +156,21 @@ BLUE Installation Incident, Guard, QRF, Fire Support oder Resupply dürfen desha
 9. Parallel Guard- und QRF-Telemetrie beobachten.
 10. Nach 300 Sekunden gemeinsames PASS/FAIL bewerten.
 
-## PASS-Kriterium
+## DCS-Nachweis 2026-09-13
+
+Zum PASS-Zeitpunkt waren alle sechs Guards `observed=true`, `alive=true` und über dem 25-m-Kriterium. Die QRF war `observed=true`, `alive=true`, als `Ground_APC` rekrutiert und hatte ihre Distanz zum realen `BadGuys1`-Ziel von 2686.4 m um 205.1 m reduziert. `demandCountAfterRefresh=1` bestätigte die Deduplizierung des zweiten Evidence-Updates.
+
+Die QRF wurde im MOOSE-Lifecycle separat als
 
 ```text
-[PRODUCTION BASE A2][PASS] 6/6 Guards >=25 m; Honaker incident opened once; MOOSE recruited Ground_APC QRF; target-distance progress ... m; refresh kept one response demand
+ARMY_ON_MISSION siteId=COP_HONAKER ... attribute=Ground_APC
 ```
 
-Zusatzbedingungen:
+beobachtet. Die sechs Guard-Gruppen wurden separat mit `attribute=Ground_Infantry` beobachtet.
 
-- kein `[PRODUCTION BASE A2][FAIL]`;
-- sechs Guards `missionObserved`, lebendig und jeweils mindestens 25 m Positionsänderung;
-- QRF `missionObserved`, lebendig und Attribut `Ground_APC`;
-- QRF reduziert ihre Distanz zur realen `BadGuys1`-Position um mindestens 25 m;
-- nach dem zweiten Evidence-Update bleibt `demandCountAfterRefresh=1`.
+Im weiteren Lauf erreichte die QRF bis auf ungefähr 2.2 m die Testzielkoordinate; dieser spätere Wert ist zusätzliche Beobachtung und nicht Teil des ursprünglichen PASS-Schwellenwerts.
 
-Das Guard-Kriterium bleibt wie Acceptance 1 ein initialer Bewegungsnachweis, kein dauerhafter Patrol-Loop-Test. Die vom Eigentümer abgelehnte zweite Patrol-Ausnahme wird nicht eingeführt.
-
-## Builder
-
-```text
-tools/build-fire-support-strategic-resupply-production-base-acceptance-2.ps1
-```
-
-Ausgabe:
-
-```text
-mission/tests/fire-support-strategic-resupply-production-base-runtime/dist/OMW_FireSupStratResupply_Production_Base_Acceptance_2.lua
-```
-
-Die `.miz` wird nicht verändert.
-
-## DCS-Validierung 2026-09-13
-
-Acceptance 2 wurde im realen DCS-Lauf erfolgreich erfüllt.
-
-Geprüfter Artefaktstand:
-
-```text
-Acceptance source/build commit:
-4d790a9caff326ba18dceb218f83338816200ea9
-
-ProductionBuilderSHA256:
-F2FB946ACAB9955E38E27DBB264D2249D2A8F8492FE6339F557FEEDDAE7A00AB
-
-ProductionBundleSHA256:
-8A532490E1E70F546ECE15EE3F537D41D2B2F1673E0C29296E79B1E4D763579E
-
-AcceptanceSourceSHA256:
-F8AB365B08491DFA002387C7DFA4D866DD160FB15EE504356DD11FDAAD55D84E
-
-AcceptanceBuilderSHA256:
-4D0CCC4EDF0AE92E2C4BEE07C47DDF0F279E65A48CDF543C2AED2413C7838761
-
-AcceptanceBundleSHA256:
-173290E5F4123D41D79400238385729E8C1A71C77BFBFB54C6A4E7F9C1F4A2F8
-
-MOOSE release: 2.9.18
-MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
-Moose.lua SHA-256: E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915
-
-DCS: 2.9.29.27468
-Mission: OMW_Template_v24_GroundWorks_base.miz
-```
-
-Realer Abschluss im `dcs.log`:
-
-```text
-[PRODUCTION BASE A2][PASS] 6/6 Guards >=25 m; Honaker incident opened once; MOOSE recruited Ground_APC QRF; target-distance progress 205.1 m; refresh kept one response demand
-```
-
-Zusätzlich war im Lauf belegt:
-
-```text
-6/6 Guard missions observed
-6/6 Guard groups alive
-6/6 Guard movement >= 25 m
-Guard recruited attribute = Ground_Infantry
-Honaker QRF mission observed
-Honaker QRF alive
-QRF recruited attribute = Ground_APC
-QRF initial target distance = 2686.4 m
-QRF PASS-time target-distance progress = 205.1 m
-QRF later reached approximately 2.2 m from target coordinate
-demandCountAfterRefresh = 1
-no [PRODUCTION BASE A2][FAIL]
-```
+Es wurde kein `[PRODUCTION BASE A2][FAIL]` gefunden.
 
 Die wiederkehrende MOOSE-Warnung für unbekanntes DCS-Event `ID=61` trat weiterhin auf. Ebenso sind DCS-Ground-Pathfinding-Warnungen `TRANSPORT: CREATING PATH MAKES TOO LONG!!!!!` aus den bekannten Guard/Ground-AI-Pfaden weiterhin zu beobachten. Beides hat das definierte Acceptance-2-PASS-Kriterium in diesem Lauf nicht verhindert und wird nicht als Validierung anderer, noch offener Funktionen interpretiert.
 
