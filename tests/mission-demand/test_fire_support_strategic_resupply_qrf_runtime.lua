@@ -72,6 +72,8 @@ for siteId,site in pairs(Sites.Sites) do
 end
 
 local resolved={}
+local roadResolved={}
+local roadForward={}
 local requiredAttributes={"Ground_APC"}
 local requiredProperties={"APC"}
 local targetCoordinate={marker="QRF_TARGET_COORDINATE"}
@@ -92,6 +94,12 @@ local runtime=Runtime.New({
     resolved[#resolved+1]={demand=demand,context=context,legion=legion}
     if demand.siteId=="FOB_BOSTICK" then return nil,"QRF_PHYSICAL_TARGET_UNAVAILABLE" end
     return target
+  end,
+  resolveRoadSpawnForwardCoordinate=function(siteId,site,accessZone,physicalTargetCoordinate,brigade)
+    local coordinate={marker="VALIDATED_ROAD_FORWARD|"..siteId}
+    roadResolved[siteId]={site=site,accessZone=accessZone,target=physicalTargetCoordinate,brigade=brigade,coordinate=coordinate}
+    roadForward[siteId]=coordinate
+    return coordinate
   end,
 })
 
@@ -118,8 +126,21 @@ eq(handle.mission.requiredMin,1,"QRF default one asset")
 eq(handle.mission.requiredAttributes,requiredAttributes,"QRF required attributes forwarded")
 eq(handle.mission.requiredProperties,requiredProperties,"QRF required properties forwarded")
 eq(resolved[1].legion,brigades.FOB_JOYCE,"target resolver sees local brigade")
-eq(runtime.targetCoordinates.FOB_JOYCE,targetCoordinate,"physical target coordinate retained only for road materialization")
+eq(runtime.targetCoordinates.FOB_JOYCE,targetCoordinate,"physical target coordinate retained for materialization correlation")
 eq(groundAttackCalls,0,"GROUNDATTACK never used")
+
+-- The injected road resolver is intentionally invoked only when MOOSE materializes
+-- a mobile Ground asset. Exercise the installed adapter resolver directly here.
+local roadSpec=roadInstalls[brigades.FOB_JOYCE.alias].resolveRoadSpawn(nil,{
+  category=Group.Category.GROUND,speedmax=10,attribute="Ground APC"
+})
+yes(roadSpec~=nil,"mobile QRF road spec")
+eq(roadResolved.FOB_JOYCE.target,targetCoordinate,"physical target supplied to validated road resolver")
+eq(roadResolved.FOB_JOYCE.accessZone,accessZones[Sites.Sites.FOB_JOYCE.accessZoneName],"ACCESS supplied to validated road resolver")
+eq(roadResolved.FOB_JOYCE.brigade,brigades.FOB_JOYCE,"brigade supplied to validated road resolver")
+eq(roadSpec.forwardCoordinate,roadForward.FOB_JOYCE,"validated forward coordinate used unchanged")
+eq(roadSpec.accessZone,accessZones[Sites.Sites.FOB_JOYCE.accessZoneName],"road spec keeps ACCESS zone")
+
 for siteId,brigade in pairs(brigades) do if siteId~="FOB_JOYCE" then eq(#brigade.missions,0,siteId.." untouched") end end
 
 local unavailable,unavailableCreated,unavailableReason=runtime:Dispatch({demandId="INC|FOB_BOSTICK|QRF",siteId="FOB_BOSTICK",supportType="QRF"},{})
@@ -132,6 +153,15 @@ local missing,missingCreated,missingReason=runtime:Dispatch({demandId="INC|UNKNO
 eq(missing,nil,"unknown site no mission")
 no(missingCreated,"unknown site not dispatched")
 eq(missingReason,"SITE_NOT_FOUND","unknown site reason")
+
+local ok,err=pcall(function()
+  Runtime.New({
+    siteRegistry=Sites,brigades=brigades,qrfMissionFactory=QrfFactory,legionBridge=LegionBridge,
+    resolveCoordinate=function() return target end,
+  })
+end)
+no(ok,"runtime rejects missing validated road resolver")
+yes(type(err)=="string" and err:find("resolveRoadSpawnForwardCoordinate",1,true)~=nil,"missing road resolver error")
 
 AUFTRAG=previousAuftrag
 ZONE=previousZone
