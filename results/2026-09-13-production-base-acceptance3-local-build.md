@@ -11,7 +11,7 @@ project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
 superseded_by:
 source_branch: agent/fire-support-strategic-resupply-base-gate0
-source_commit: e5773c9956fadfeb9b95684d9aafaee3e519885a
+source_commit: 1ea9ac12bd07ae11a4aa02babb4b7b074c959c84
 validated_in_dcs: false
 ---
 
@@ -22,26 +22,29 @@ validated_in_dcs: false
 Der Projektinhaber hat den Acceptance-3-Builder lokal auf folgendem exakten Git-Stand ausgeführt:
 
 ```text
-e5773c9956fadfeb9b95684d9aafaee3e519885a
+1ea9ac12bd07ae11a4aa02babb4b7b074c959c84
 ```
 
-Die HEAD-Schutzprüfung bestätigte erwarteten und tatsächlichen Stand identisch.
+`git pull` führte lokal einen Fast-Forward von `e5773c99` auf `1ea9ac12`; `git rev-parse HEAD` bestätigte anschließend exakt den oben dokumentierten Commit.
 
-## Builder-Ausgabe
+Der Build lief ohne gemeldeten Fehler durch. Die Produktions- und Acceptance-Bundle-Hashes aus der Builder-Ausgabe stimmen jeweils exakt mit den anschließend separat per `Get-FileHash -Algorithm SHA256` ermittelten Hashes überein.
 
-Production Base:
+## Builder-Ausgabe – Production Base
 
 ```text
-BuilderVersion: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BASE-5
+BuilderVersion: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BASE-6
 PackageSchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BASE-1
 RuntimeSchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-RUNTIME-8
+SiteRegistrySchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-SITE-REGISTRY-5
+PerimeterRuntimeSchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PERIMETER-RUNTIME-2
+ThreatAdapterSchema: OMW-FOB-THREAT-OPSZONE-ADAPTER-5
 Sites: 6
 MOOSERelease: 2.9.18
 MOOSECommit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
 MooseLuaSHA256: E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915
 OperationalAssetSelectionAuthority: MOOSE
 GuardQRFRecruitmentConstraintAuthority: MOOSE AUFTRAG/LEGION
-PhysicalAlarmEvidence: optional MOOSE EVENTHANDLER/WEAPON adapter with hostile coordinate propagation
+PhysicalAlarmEvidence: MOOSE OPSZONE perimeter qualification plus optional MOOSE EVENTHANDLER/WEAPON evidence
 StrategicResourceAuthority: caller-provided CampaignState/store
 GuardAccessZoneDependency: none
 PerimeterAccessZoneDependency: none
@@ -50,38 +53,69 @@ MissionSpecificGeometryInjected: true
 MOOSEOverride: Guard materialization exact-geometry exception only
 MizMutation: false
 Encoding: UTF-8 without BOM
+BuilderSHA256: 86C890A8903E969255BDB339BA08B437F63F42077BDF5810C7496A2FC58D5BE4
+BundleSHA256: CEF9C47E24E31AA951E88BFB312C2E0AF00E72653D590F0035D58A078F509E3D
+GitCommit: 1ea9ac12bd07ae11a4aa02babb4b7b074c959c84
 ```
 
-Acceptance 3:
+## Builder-Ausgabe – Acceptance 3
 
 ```text
-BuilderVersion: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BASE-ACCEPTANCE-3-2
-GitCommit: e5773c9956fadfeb9b95684d9aafaee3e519885a
-PhysicalEvidenceSource: MOOSE EVENTHANDLER/WEAPON only
-MissionEditorTestZonesRequired: false
+BuilderVersion: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BASE-ACCEPTANCE-3-3
+GitCommit: 1ea9ac12bd07ae11a4aa02babb4b7b074c959c84
+ProductionBuilderSHA256: 86C890A8903E969255BDB339BA08B437F63F42077BDF5810C7496A2FC58D5BE4
+ProductionBundleSHA256: CEF9C47E24E31AA951E88BFB312C2E0AF00E72653D590F0035D58A078F509E3D
+AcceptanceSourceSHA256: 69B201B371B7B43EA428C89D620F2CC490716285A03ADC1938CE9F2358B6A86D
+AcceptanceBuilderSHA256: 4F90CE1CC5D047C9297F48526EAA3EA55A035C1FBE23C99E737BB51DDC150764
+AcceptanceBundleSHA256: C4ED2FA514744526D6479145392A7EF41BABE2AA8108E402B3C5C69F95B3EAF9
+PrimaryAlarmEvidenceSource: MOOSE OPSZONE proximity qualification
+JalalabadAlarmZoneSource: existing MOOSE ZONE OMW_BLUE_OBJECTIVE_JALALABAD_AIRPORT
+OtherAlarmZoneSource: MOOSE WAREHOUSE coordinate + runtime ZONE_RADIUS
+MissionEditorAdditionalAlarmZonesRequired: false
 MizMutation: false
 ```
 
-## Verifizierte SHA-256-Werte
+## Separat verifizierte SHA-256-Werte
 
 ```text
-ProductionBuilderSHA256:
-BC8CB42179AFE407BC71D05C2DE3B09FA5BADD5EF29E345A49A7C97E8F4D8218
+mission/fire-support-strategic-resupply/dist/OMW_FireSupStratResupply_Base.lua
+CEF9C47E24E31AA951E88BFB312C2E0AF00E72653D590F0035D58A078F509E3D
 
-ProductionBundleSHA256:
-10345F95F1BEAA9EE170D4E188176C91F102DE0550119E990EBCDEC535BC507E
-
-AcceptanceSourceSHA256:
-F7738B3C6593E9351E857758588D464704B6F4F013238856FBA105DFE384CBAD
-
-AcceptanceBuilderSHA256:
-D4D1D35E0EC434269AC7BAED0446C726EE7987FF79035E10F05701ADEA3E0783
-
-AcceptanceBundleSHA256:
-85188B19EEB71ADFA793DDB9D69B73B55C49143FC0CA4E5373C42241FC1A902E
+mission/tests/fire-support-strategic-resupply-production-base-runtime/dist/OMW_FireSupStratResupply_Production_Base_Acceptance_3.lua
+C4ED2FA514744526D6479145392A7EF41BABE2AA8108E402B3C5C69F95B3EAF9
 ```
 
-Der separat mit `Get-FileHash` ermittelte Acceptance-Bundle-Hash stimmt exakt mit der Builder-Ausgabe überein.
+Damit sind Produktionsbundle und Acceptance-Bundle für den dokumentierten lokalen Stand eindeutig identifiziert.
+
+## Alarmgeometrie dieses Builds
+
+```text
+JALALABAD_FENTY:
+  existing MOOSE ZONE OMW_BLUE_OBJECTIVE_JALALABAD_AIRPORT
+  radius 6000 ft / 1828.8 m
+
+COP_FORTRESS:
+  WH_BLUE_GND_FORTRESS coordinate
+  runtime MOOSE ZONE_RADIUS 5000 ft / 1524.0 m
+
+FOB_JOYCE:
+  WH_BLUE_GND_JOYCE coordinate
+  runtime MOOSE ZONE_RADIUS 9000 ft / 2743.2 m
+
+FOB_WRIGHT:
+  WH_BLUE_GND_WRIGHT coordinate
+  runtime MOOSE ZONE_RADIUS 4000 ft / 1219.2 m
+
+COP_HONAKER:
+  WH_BLUE_GND_HONAKER coordinate
+  runtime MOOSE ZONE_RADIUS 9000 ft / 2743.2 m
+
+FOB_BOSTICK:
+  WH_BLUE_GND_BOSTICK coordinate
+  runtime MOOSE ZONE_RADIUS 5000 ft / 1524.0 m
+```
+
+Es werden keine zusätzlichen Mission-Editor-Alarmzonen benötigt. `ACCESS`-Zonen und Guard-PATHLINEs bleiben von der Alarmgeometrie getrennt.
 
 ## Acceptance-Testfixture
 
@@ -96,13 +130,17 @@ BadGuys_A3_HONAKER
 BadGuys_A3_BOSTICK
 ```
 
-Diese Gruppen sind reine Testfixtures. Sie sind keine produktive RED-ORBAT und keine produktive RED-C2-Quelle. Die spätere RED-C2 soll feindliche Kräfte dynamisch einsetzen und bewegen.
+Diese Gruppen sind reine Testfixtures. Sie sind keine produktive RED-ORBAT und keine produktive RED-C2-Quelle.
 
 ## Statusgrenze
 
 ```text
-Local build / hash provenance: VERIFIED
+Local pull / exact Git HEAD: VERIFIED
+Production build: VERIFIED_LOCAL_BUILD
+Acceptance 3 build: VERIFIED_LOCAL_BUILD
+Production bundle hash match: VERIFIED
+Acceptance bundle hash match: VERIFIED
 DCS runtime acceptance: OPEN
 ```
 
-Ein späterer DCS-PASS gilt ausschließlich für den exakt dokumentierten Commit-, Bundle-, Missions-, DCS- und MOOSE-Stand.
+Ein späterer DCS-PASS gilt ausschließlich für den exakt dokumentierten Commit-, Bundle-, Missions-, DCS- und MOOSE-Stand. Dieser Buildnachweis allein ist ausdrücklich kein DCS-Runtime-PASS.
