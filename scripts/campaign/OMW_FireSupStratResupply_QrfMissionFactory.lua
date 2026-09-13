@@ -1,26 +1,22 @@
 -- Operation Mountain Watch - MOOSE-first local QRF mission factory.
 --
--- Response phase: accepted Honaker contract
---   AUFTRAG:NewONGUARD(initial threat coordinate) + SetEngageDetected(...)
---   + SetReturnToLegion(true).
--- Clearance phase: owner-approved 2026-09-13 extension
---   same physical ARMYGROUP -> AUFTRAG:NewPATROLZONE(site-local tactical zone)
---   + ARMYGROUP:SetPatrolAdInfinitum(true)
---   + ARMYGROUP:EnableHuntingPatrol(...).
--- Release authority remains external Supported-Element/C2 only.
+-- Honaker-reconciled contract:
+--   AUFTRAG:NewONGUARD(initial threat coordinate) recruits/materializes the QRF.
+--   As soon as the physical ARMYGROUP is on mission, the runtime binds it to the
+--   nearest living known incident UNIT with ARMYGROUP:EngageTarget(). MOOSE owns
+--   moving-target pursuit. After Disengage (target dead), the same ARMYGROUP
+--   acquires the next living incident UNIT. No remaining authorized target ends
+--   the mission and lets MOOSE ReturnToLegion recover the group.
 
 local Factory = {}
 local Instance = {}
 Instance.__index = Instance
 
-Factory.SchemaVersion = "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-QRF-MISSION-FACTORY-6"
+Factory.SchemaVersion = "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-QRF-MISSION-FACTORY-7"
 
 local TAG = "[OMW][FireSupStratResupply.QrfMissionFactory]"
-local DEFAULT_ENGAGE_RANGE_NM = 5
-local DEFAULT_TARGET_TYPES = { "Ground Units" }
-local DEFAULT_CLEARANCE_SPEED_KNOTS = 20
-local DEFAULT_CLEARANCE_SCAN_INTERVAL_SECONDS = 5
-local DEFAULT_CLEARANCE_FORMATION = "Off Road"
+local DEFAULT_ENGAGE_SPEED_KNOTS = 20
+local DEFAULT_ENGAGE_FORMATION = "Vee"
 
 local function fail(message)
   error(TAG .. " " .. tostring(message), 2)
@@ -50,23 +46,17 @@ end
 function Factory.New(spec)
   needTable(spec, "spec")
   local resolveTarget = needFunction(spec.resolveTarget, "resolveTarget")
+  local resolveTargets = needFunction(spec.resolveTargets, "resolveTargets")
   local resolveEngageZone = needFunction(spec.resolveEngageZone, "resolveEngageZone")
   local requiredAssetsMin = spec.requiredAssetsMin or 1
   local requiredAssetsMax = spec.requiredAssetsMax or requiredAssetsMin
   if not finite(requiredAssetsMin) or requiredAssetsMin < 1 then fail("requiredAssetsMin must be at least one") end
   if not finite(requiredAssetsMax) or requiredAssetsMax < requiredAssetsMin then fail("requiredAssetsMax must be >= requiredAssetsMin") end
 
-  local engageRangeNm = spec.engageRangeNm or DEFAULT_ENGAGE_RANGE_NM
-  if not finite(engageRangeNm) or engageRangeNm <= 0 then fail("engageRangeNm must be positive") end
-  local targetTypes = spec.targetTypes or DEFAULT_TARGET_TYPES
-  if type(targetTypes) ~= "table" or #targetTypes < 1 then fail("targetTypes must be a non-empty table") end
-
-  local clearanceSpeedKnots = spec.clearanceSpeedKnots or DEFAULT_CLEARANCE_SPEED_KNOTS
-  if not finite(clearanceSpeedKnots) or clearanceSpeedKnots <= 0 then fail("clearanceSpeedKnots must be positive") end
-  local clearanceScanIntervalSeconds = spec.clearanceScanIntervalSeconds or DEFAULT_CLEARANCE_SCAN_INTERVAL_SECONDS
-  if not finite(clearanceScanIntervalSeconds) or clearanceScanIntervalSeconds <= 0 then fail("clearanceScanIntervalSeconds must be positive") end
-  local clearanceFormation = spec.clearanceFormation or DEFAULT_CLEARANCE_FORMATION
-  if type(clearanceFormation) ~= "string" or clearanceFormation == "" then fail("clearanceFormation must be a non-empty string") end
+  local engageSpeedKnots = spec.engageSpeedKnots or DEFAULT_ENGAGE_SPEED_KNOTS
+  if not finite(engageSpeedKnots) or engageSpeedKnots <= 0 then fail("engageSpeedKnots must be positive") end
+  local engageFormation = spec.engageFormation or DEFAULT_ENGAGE_FORMATION
+  if type(engageFormation) ~= "string" or engageFormation == "" then fail("engageFormation must be a non-empty string") end
 
   local requiredAttributes = validateRequirement(spec.requiredAttributes, "requiredAttributes")
   local requiredProperties = validateRequirement(spec.requiredProperties, "requiredProperties")
@@ -74,14 +64,12 @@ function Factory.New(spec)
 
   return setmetatable({
     resolveTarget = resolveTarget,
+    resolveTargets = resolveTargets,
     resolveEngageZone = resolveEngageZone,
     requiredAssetsMin = requiredAssetsMin,
     requiredAssetsMax = requiredAssetsMax,
-    engageRangeNm = engageRangeNm,
-    targetTypes = targetTypes,
-    clearanceSpeedKnots = clearanceSpeedKnots,
-    clearanceScanIntervalSeconds = clearanceScanIntervalSeconds,
-    clearanceFormation = clearanceFormation,
+    engageSpeedKnots = engageSpeedKnots,
+    engageFormation = engageFormation,
     requiredAttributes = requiredAttributes,
     requiredProperties = requiredProperties,
     logger = spec.logger,
@@ -92,65 +80,78 @@ function Instance:_log(message)
   if self.logger then self.logger(TAG .. " " .. tostring(message)) end
 end
 
-function Instance:_installClearanceTransition(responseMission, tacticalZone, demand)
-  local factory = self
-  responseMission._OMWQrfClearanceByGroup = {}
+function Instance:_selectNextTarget(demand, context, tacticalZone, armyGroup)
+  local candidates, reason = self.resolveTargets(demand, context, armyGroup)
+  if candidates == nil then return nil, reason or "QRF_INCIDENT_TARGETS_UNAVAILABLE" end
+  if type(candidates) ~= "table" then fail("resolveTargets must return a table") end
 
-  function responseMission:OnAfterExecuting(From, Event, To)
-    if type(self.GetOpsGroups) ~= "function" then fail("QRF response AUFTRAG:GetOpsGroups() is required") end
-    if type(AUFTRAG) ~= "table" or type(AUFTRAG.NewPATROLZONE) ~= "function" then fail("MOOSE AUFTRAG:NewPATROLZONE() is required") end
-
-    local opsGroups = self:GetOpsGroups()
-    for _, opsGroup in ipairs(opsGroups or {}) do
-      if self._OMWQrfClearanceByGroup[opsGroup] == nil then
-        needTable(opsGroup, "QRF response OPSGROUP")
-        if type(opsGroup.AddMission) ~= "function" then fail("QRF OPSGROUP:AddMission() is required") end
-        if type(opsGroup.__MissionDone) ~= "function" then fail("QRF OPSGROUP:__MissionDone() is required") end
-        if type(opsGroup.SetPatrolAdInfinitum) ~= "function" then fail("QRF ARMYGROUP:SetPatrolAdInfinitum() is required") end
-        if type(opsGroup.EnableHuntingPatrol) ~= "function" then fail("QRF ARMYGROUP:EnableHuntingPatrol() is required") end
-
-        local clearanceMission = AUFTRAG:NewPATROLZONE(
-          tacticalZone,
-          factory.clearanceSpeedKnots,
-          nil,
-          factory.clearanceFormation)
-        needTable(clearanceMission, "QRF PATROLZONE AUFTRAG")
-        if type(clearanceMission.SetReturnToLegion) ~= "function" then fail("QRF clearance AUFTRAG:SetReturnToLegion() is required") end
-        if type(clearanceMission.SetTeleport) ~= "function" then fail("QRF clearance AUFTRAG:SetTeleport() is required") end
-        if type(clearanceMission.Cancel) ~= "function" then fail("QRF clearance AUFTRAG:Cancel() is required") end
-
-        clearanceMission:SetReturnToLegion(true)
-        clearanceMission:SetTeleport(false)
-        clearanceMission._OMWQrfPhase = "CLEARANCE"
-        clearanceMission._OMWQrfDemandId = demand.demandId
-        clearanceMission._OMWQrfSiteId = demand.siteId
-
-        -- Queue the second MOOSE mission before completing ONGUARD. This keeps the
-        -- same physical ARMYGROUP employed instead of allowing an intermediate RTZ.
-        opsGroup:AddMission(clearanceMission)
-        opsGroup:SetPatrolAdInfinitum(true)
-        opsGroup:EnableHuntingPatrol(
-          tacticalZone,
-          factory.clearanceSpeedKnots,
-          factory.clearanceFormation,
-          factory.clearanceScanIntervalSeconds)
-
-        self._OMWQrfClearanceByGroup[opsGroup] = clearanceMission
-        self._OMWQrfActiveMission = clearanceMission
-
-        factory:_log(string.format(
-          "transitioned local QRF response->clearance demandId=%s siteId=%s opsGroup=%s speedKt=%s formation=%s scanIntervalSec=%s",
-          tostring(demand.demandId), tostring(demand.siteId),
-          tostring(opsGroup.groupname or opsGroup.alias or opsGroup.ClassName or opsGroup),
-          tostring(factory.clearanceSpeedKnots), tostring(factory.clearanceFormation),
-          tostring(factory.clearanceScanIntervalSeconds)))
-
-        -- MOOSE FSM delayed event avoids re-entering MissionDone from the
-        -- AUFTRAG Executing callback. The PATROLZONE mission is already queued.
-        opsGroup:__MissionDone(0.1, self)
-      end
+  local valid = {}
+  for _, target in pairs(candidates) do
+    if type(target) == "table" and type(target.IsAlive) == "function" and target:IsAlive() == true
+        and type(target.GetCoordinate) == "function" then
+      local coordinate = target:GetCoordinate()
+      local inZone = coordinate ~= nil and type(tacticalZone.IsCoordinateInZone) == "function"
+        and tacticalZone:IsCoordinateInZone(coordinate) == true
+      if inZone then valid[#valid + 1] = target end
     end
   end
+
+  if #valid == 0 then return nil, "QRF_NO_LIVING_INCIDENT_TARGETS_IN_TACTICAL_ZONE" end
+
+  local origin = type(armyGroup.GetCoordinate) == "function" and armyGroup:GetCoordinate() or nil
+  if origin and type(origin.Get2DDistance) == "function" then
+    table.sort(valid, function(a, b)
+      return origin:Get2DDistance(a:GetCoordinate()) < origin:Get2DDistance(b:GetCoordinate())
+    end)
+  end
+  return valid[1], nil
+end
+
+function Instance:_bindDirectTargetCycle(mission, demand, context, tacticalZone, armyGroup)
+  needTable(armyGroup, "QRF ARMYGROUP")
+  if mission._OMWQrfArmyGroups[armyGroup] then return false end
+  if type(armyGroup.EngageTarget) ~= "function" then fail("QRF ARMYGROUP:EngageTarget() is required") end
+  if type(armyGroup.GetCoordinate) ~= "function" then fail("QRF ARMYGROUP:GetCoordinate() is required") end
+
+  mission._OMWQrfArmyGroups[armyGroup] = true
+  local factory = self
+  local previousDisengage = armyGroup.OnAfterDisengage
+
+  local function acquireNext(reason)
+    if mission._OMWQrfCompleting then return false end
+    local target, targetReason = factory:_selectNextTarget(demand, context, tacticalZone, armyGroup)
+    if not target then
+      mission._OMWQrfCompleting = true
+      mission._OMWQrfCompletionReason = targetReason
+      local over = type(mission.IsOver) == "function" and mission:IsOver() or false
+      if not over then mission:Cancel() end
+      factory:_log(string.format(
+        "local QRF target cycle complete demandId=%s siteId=%s armyGroup=%s reason=%s -> MOOSE ReturnToLegion",
+        tostring(demand.demandId), tostring(demand.siteId),
+        tostring(armyGroup.groupname or armyGroup.alias or armyGroup.ClassName or armyGroup), tostring(targetReason)))
+      return false
+    end
+
+    mission._OMWQrfCurrentTargetByGroup[armyGroup] = target
+    mission._OMWQrfTargetAcquisitions = (mission._OMWQrfTargetAcquisitions or 0) + 1
+    armyGroup:EngageTarget(target, factory.engageSpeedKnots, factory.engageFormation)
+    factory:_log(string.format(
+      "local QRF concrete target acquired demandId=%s siteId=%s armyGroup=%s target=%s reason=%s acquisition=%d",
+      tostring(demand.demandId), tostring(demand.siteId),
+      tostring(armyGroup.groupname or armyGroup.alias or armyGroup.ClassName or armyGroup),
+      tostring(target.GetName and target:GetName() or target), tostring(reason), mission._OMWQrfTargetAcquisitions))
+    return true
+  end
+
+  function armyGroup:OnAfterDisengage(From, Event, To)
+    if previousDisengage then previousDisengage(self, From, Event, To) end
+    mission._OMWQrfCurrentTargetByGroup[self] = nil
+    acquireNext("MOOSE_DISENGAGE_REACQUIRE")
+  end
+
+  mission._OMWQrfAcquireNext = acquireNext
+  acquireNext("ARMY_ON_MISSION_INITIAL_ACQUIRE")
+  return true
 end
 
 function Instance:Create(demand, context, legion)
@@ -167,49 +168,47 @@ function Instance:Create(demand, context, legion)
   if type(target.IsAlive) ~= "function" or target:IsAlive() ~= true then
     return nil, false, "QRF_PHYSICAL_TARGET_NOT_ALIVE"
   end
-  if type(target.GetCoordinate) ~= "function" then
-    return nil, false, "QRF_PHYSICAL_TARGET_COORDINATE_UNAVAILABLE"
-  end
+  if type(target.GetCoordinate) ~= "function" then return nil, false, "QRF_PHYSICAL_TARGET_COORDINATE_UNAVAILABLE" end
   local targetCoordinate = target:GetCoordinate()
-  if type(targetCoordinate) ~= "table" then
-    return nil, false, "QRF_PHYSICAL_TARGET_COORDINATE_UNAVAILABLE"
-  end
+  if type(targetCoordinate) ~= "table" then return nil, false, "QRF_PHYSICAL_TARGET_COORDINATE_UNAVAILABLE" end
 
-  local engageZone, zoneReason = self.resolveEngageZone(demand, context, legion)
-  if engageZone == nil then return nil, false, zoneReason or "QRF_ENGAGE_ZONE_UNAVAILABLE" end
+  local tacticalZone, zoneReason = self.resolveEngageZone(demand, context, legion)
+  if tacticalZone == nil then return nil, false, zoneReason or "QRF_ENGAGE_ZONE_UNAVAILABLE" end
 
   if type(AUFTRAG) ~= "table" or type(AUFTRAG.NewONGUARD) ~= "function" then fail("MOOSE AUFTRAG:NewONGUARD() is required") end
   local mission = AUFTRAG:NewONGUARD(targetCoordinate)
   needTable(mission, "QRF ONGUARD AUFTRAG")
-  if type(mission.SetEngageDetected) ~= "function" then fail("QRF AUFTRAG:SetEngageDetected() is required") end
   if type(mission.SetTeleport) ~= "function" then fail("QRF AUFTRAG:SetTeleport() is required") end
   if type(mission.SetRequiredAssets) ~= "function" then fail("QRF AUFTRAG:SetRequiredAssets() is required") end
   if type(mission.SetPriority) ~= "function" then fail("QRF AUFTRAG:SetPriority() is required") end
   if type(mission.SetReturnToLegion) ~= "function" then fail("QRF AUFTRAG:SetReturnToLegion() is required") end
   if type(mission.Cancel) ~= "function" then fail("QRF AUFTRAG:Cancel() is required") end
-  if self.requiredAttributes ~= nil and type(mission.SetRequiredAttribute) ~= "function" then
-    fail("QRF AUFTRAG:SetRequiredAttribute() is required when requiredAttributes are configured")
-  end
-  if self.requiredProperties ~= nil and type(mission.SetRequiredProperty) ~= "function" then
-    fail("QRF AUFTRAG:SetRequiredProperty() is required when requiredProperties are configured")
-  end
+  if self.requiredAttributes ~= nil and type(mission.SetRequiredAttribute) ~= "function" then fail("QRF AUFTRAG:SetRequiredAttribute() is required when requiredAttributes are configured") end
+  if self.requiredProperties ~= nil and type(mission.SetRequiredProperty) ~= "function" then fail("QRF AUFTRAG:SetRequiredProperty() is required when requiredProperties are configured") end
 
   mission:SetRequiredAssets(self.requiredAssetsMin, self.requiredAssetsMax)
-  mission:SetEngageDetected(self.engageRangeNm, self.targetTypes, engageZone)
   mission:SetReturnToLegion(true)
   mission:SetTeleport(false)
-  mission._OMWQrfPhase = "RESPONSE"
+  mission._OMWQrfPhase = "DIRECT_TARGET_RESPONSE"
+  mission._OMWQrfDemandId = demand.demandId
+  mission._OMWQrfSiteId = demand.siteId
+  mission._OMWQrfArmyGroups = {}
+  mission._OMWQrfCurrentTargetByGroup = {}
+  mission._OMWQrfCompleting = false
   if self.requiredAttributes ~= nil then mission:SetRequiredAttribute(self.requiredAttributes) end
   if self.requiredProperties ~= nil then mission:SetRequiredProperty(self.requiredProperties) end
   if finite(demand.priority) then mission:SetPriority(demand.priority, false) end
 
-  self:_installClearanceTransition(mission, engageZone, demand)
+  local factory = self
+  function mission:_OMWQrfBindArmyGroup(armyGroup)
+    return factory:_bindDirectTargetCycle(self, demand, context, tacticalZone, armyGroup)
+  end
 
   self:_log(string.format(
-    "created local QRF ONGUARD response demandId=%s siteId=%s initialTarget=%s engageRangeNm=%s returnToLegion=true clearance=PATROLZONE+HuntingPatrol requiredAssets=%s-%s attributes=%s properties=%s priority=%s",
+    "created local QRF ONGUARD recruitment anchor demandId=%s siteId=%s roadDirectionTarget=%s directTargetCycle=MOOSE_EngageTarget requiredAssets=%s-%s attributes=%s properties=%s priority=%s",
     tostring(demand.demandId), tostring(demand.siteId), tostring(target.GetName and target:GetName() or "UNKNOWN"),
-    tostring(self.engageRangeNm), tostring(self.requiredAssetsMin), tostring(self.requiredAssetsMax),
-    tostring(self.requiredAttributes ~= nil), tostring(self.requiredProperties ~= nil), tostring(demand.priority)))
+    tostring(self.requiredAssetsMin), tostring(self.requiredAssetsMax), tostring(self.requiredAttributes ~= nil),
+    tostring(self.requiredProperties ~= nil), tostring(demand.priority)))
   return mission, true, nil
 end
 
