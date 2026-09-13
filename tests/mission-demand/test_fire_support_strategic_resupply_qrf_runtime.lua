@@ -80,7 +80,6 @@ function target:IsInstanceOf(className) return className=="GROUP" end
 function target:IsAlive() return true end
 function target:GetName() return self.name end
 function target:GetCoordinate() return targetCoordinate end
-local roadForwardCoordinate={marker="VALIDATED_ROAD_FORWARD"}
 
 local runtime=Runtime.New({
   siteRegistry=Sites,
@@ -92,7 +91,7 @@ local runtime=Runtime.New({
   resolveCoordinate=function(demand,context,legion)
     resolved[#resolved+1]={demand=demand,context=context,legion=legion}
     if demand.siteId=="FOB_BOSTICK" then return nil,"QRF_PHYSICAL_TARGET_UNAVAILABLE" end
-    return target,nil,roadForwardCoordinate
+    return target,nil
   end,
 })
 
@@ -119,16 +118,14 @@ eq(handle.mission.requiredMin,1,"QRF default one asset")
 eq(handle.mission.requiredAttributes,requiredAttributes,"QRF required attributes forwarded")
 eq(handle.mission.requiredProperties,requiredProperties,"QRF required properties forwarded")
 eq(resolved[1].legion,brigades.FOB_JOYCE,"target resolver sees local brigade")
-eq(runtime.targetCoordinates.FOB_JOYCE,targetCoordinate,"physical target coordinate retained for materialization correlation")
-eq(runtime.roadForwardCoordinates.FOB_JOYCE,roadForwardCoordinate,"validated road anchor retained separately")
+eq(runtime.targetCoordinates.FOB_JOYCE,targetCoordinate,"physical target coordinate retained for road direction")
+eq(runtime.roadForwardCoordinates,nil,"no separate road-forward state exists")
 eq(groundAttackCalls,0,"GROUNDATTACK never used")
 
-local roadSpec=roadInstalls[brigades.FOB_JOYCE.alias].resolveRoadSpawn(nil,{
-  category=Group.Category.GROUND,speedmax=10,attribute="Ground APC"
-})
+local roadSpec=roadInstalls[brigades.FOB_JOYCE.alias].resolveRoadSpawn(nil,{category=Group.Category.GROUND,speedmax=10,attribute="Ground APC"})
 yes(roadSpec~=nil,"mobile QRF road spec")
-eq(roadSpec.forwardCoordinate,roadForwardCoordinate,"resolver-supplied validated road anchor used unchanged")
-eq(roadSpec.accessZone,accessZones[Sites.Sites.FOB_JOYCE.accessZoneName],"road spec keeps ACCESS zone")
+eq(roadSpec.forwardCoordinate,targetCoordinate,"physical target coordinate is direction input")
+eq(roadSpec.accessZone,accessZones[Sites.Sites.FOB_JOYCE.accessZoneName],"road spec keeps ACCESS materialization boundary")
 
 for siteId,brigade in pairs(brigades) do if siteId~="FOB_JOYCE" then eq(#brigade.missions,0,siteId.." untouched") end end
 
@@ -137,17 +134,6 @@ eq(unavailable,nil,"Bostick without physical target no mission")
 no(unavailableCreated,"Bostick not dispatched")
 eq(unavailableReason,"QRF_PHYSICAL_TARGET_UNAVAILABLE","Bostick reason")
 eq(#brigades.FOB_BOSTICK.missions,0,"Bostick brigade receives no guessed mission")
-
-local missingRoadRuntime=Runtime.New({
-  siteRegistry=Sites,brigades=brigades,qrfMissionFactory=QrfFactory,legionBridge=LegionBridge,
-  resolveCoordinate=function() return target,nil,nil end,
-})
-local missingRoad,missingRoadCreated,missingRoadReason=missingRoadRuntime:Dispatch({
-  demandId="INC|COP_HONAKER|QRF",siteId="COP_HONAKER",supportType="QRF"
-},{})
-eq(missingRoad,nil,"QRF without validated road anchor no mission")
-no(missingRoadCreated,"QRF without validated road anchor rejected")
-eq(missingRoadReason,"QRF_VALIDATED_ROAD_FORWARD_COORDINATE_UNAVAILABLE","missing road anchor reason")
 
 local missing,missingCreated,missingReason=runtime:Dispatch({demandId="INC|UNKNOWN|QRF",siteId="UNKNOWN",supportType="QRF"},{})
 eq(missing,nil,"unknown site no mission")

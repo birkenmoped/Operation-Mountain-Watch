@@ -18,22 +18,25 @@ local factory = read("scripts/campaign/OMW_FireSupStratResupply_QrfMissionFactor
 local runtime = read("scripts/campaign/OMW_FireSupStratResupply_QrfRuntime.lua")
 local acceptance = read("mission/tests/fire-support-strategic-resupply-production-base-runtime/src/03-production-base-six-site-physical-alarm-qrf-acceptance.lua")
 
--- Accepted Honaker QRF mission contract.
 contains(factory, "AUFTRAG:NewONGUARD", "QRF factory")
 contains(factory, "SetEngageDetected", "QRF factory")
 contains(factory, "SetReturnToLegion(true)", "QRF factory")
 contains(factory, "SetTeleport(false)", "QRF factory")
 excludes(factory, "AUFTRAG:NewGROUNDATTACK", "QRF factory")
 
--- Accepted Ground materialization/home-boundary contract.
 contains(runtime, "roadSpawnAdapter.Install", "QRF runtime")
 contains(runtime, "brigade:SetSpawnZone(accessZone, HOME_SPAWN_ZONE_MAX_DIST_M)", "QRF runtime")
+contains(runtime, "accessZone = accessZone", "QRF runtime ACCESS boundary")
+contains(runtime, "forwardCoordinate = targetCoordinate", "QRF runtime direction input")
 contains(runtime, "QRF_TACTICAL_RADIUS_NM = 5", "QRF runtime")
 contains(runtime, "QRF_ENGAGE_RANGE_NM = 5", "QRF runtime")
+excludes(runtime, "roadForwardCoordinates", "QRF runtime")
+excludes(runtime, "QRF_VALIDATED_ROAD_FORWARD_COORDINATE_UNAVAILABLE", "QRF runtime")
+excludes(runtime, "PATROL_TEST", "QRF runtime")
 
--- Acceptance code may observe response but must not invent QRF termination semantics.
 contains(acceptance, "AUFTRAG.Type.ONGUARD", "Acceptance 3")
 contains(acceptance, "qrfProgress", "Acceptance 3 response observation")
+excludes(acceptance, "PATROL_TEST", "Acceptance 3")
 excludes(acceptance, "ExpireDemand(", "Acceptance 3")
 excludes(acceptance, "ACCEPTANCE_SUPPORTED_ELEMENT_RELEASE", "Acceptance 3")
 excludes(acceptance, "QRF_RELEASE_REQUESTED", "Acceptance 3")
