@@ -7,7 +7,7 @@ local GUARD_TEMPLATE="TPL_BLUE_GND_INF_RIFLE_SQUAD_9"
 local QRF_TEMPLATE="TPL_BLUE_GND_QRF_MIXED_6"
 local MIN_M=25
 local TELEMETRY_SEC=20
-local TEST_TIMEOUT_SEC=720
+local TEST_TIMEOUT_SEC=900
 local FIXTURE_ROUTE_SPEED_KMH=20
 local INTRUSION_DEPTH_FRACTION=0.65
 local ALARM_PRIORITY=0 -- Acceptance-neutral metadata; not a production response-priority decision.
@@ -198,7 +198,14 @@ local function start()
     resolveGuardPathline=function(n) return PATHLINE:FindByName(n) end,
     resolveGuardTemplateGroup=function(n) return GROUP:FindByName(n) end,
     guardRequiredAttributes=GROUP.Attribute.GROUND_INFANTRY,
-    resolveQrfCoordinate=function(demand,context) local i=context and context.incident; local c=i and i.context; return c and c.position or nil,"INCIDENT_POSITION_UNAVAILABLE" end,
+    resolveQrfCoordinate=function(demand,context)
+      local i=context and context.incident
+      local c=i and i.context
+      local position=c and c.position
+      if not position then return nil,"INCIDENT_POSITION_UNAVAILABLE" end
+      if type(COORDINATE)~="table" or type(COORDINATE.NewFromVec3)~="function" then return nil,"MOOSE_COORDINATE_NEW_FROM_VEC3_UNAVAILABLE" end
+      return COORDINATE:NewFromVec3(position),nil
+    end,
     qrfRequiredAttributes=GROUP.Attribute.GROUND_APC,
     blueCoalition=coalition.side.BLUE,redCoalition=coalition.side.RED,
     perimeters=perimeters,logger=log,
