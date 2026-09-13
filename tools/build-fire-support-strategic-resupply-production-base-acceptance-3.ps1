@@ -7,7 +7,7 @@ $prodBuilder=Join-Path $repoRoot 'tools\build-fire-support-strategic-resupply-pr
 $prodBundle=Join-Path $repoRoot 'mission\fire-support-strategic-resupply\dist\OMW_FireSupStratResupply_Base.lua'
 $src=Join-Path $repoRoot 'mission\tests\fire-support-strategic-resupply-production-base-runtime\src\03-production-base-six-site-physical-alarm-qrf-acceptance.lua'
 $out=Join-Path $repoRoot 'mission\tests\fire-support-strategic-resupply-production-base-runtime\dist\OMW_FireSupStratResupply_Production_Base_Acceptance_3.lua'
-$version='OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BASE-ACCEPTANCE-3-7'
+$version='OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BASE-ACCEPTANCE-3-8'
 foreach($f in @($prodBuilder,$src)){if(-not(Test-Path -LiteralPath $f -PathType Leaf)){throw "Required file not found: $f"}}
 & $prodBuilder
 if(-not(Test-Path -LiteralPath $prodBundle -PathType Leaf)){throw "Production bundle missing: $prodBundle"}
@@ -16,7 +16,7 @@ $t=Get-Content -LiteralPath $src -Raw -Encoding UTF8
 $c=$p+"`n"+$t
 foreach($m in @(
   'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-RUNTIME-8',
-  'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-QRF-RUNTIME-7',
+  'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-QRF-RUNTIME-9',
   'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-QRF-MISSION-FACTORY-5',
   'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-INSTALLATION-INCIDENT-BRIDGE-3',
   'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PERIMETER-BRIDGE-3',
@@ -28,6 +28,7 @@ foreach($m in @(
   'cancelWhenIncidentClosed=false',
   'brigade:SetSpawnZone(accessZone, HOME_SPAWN_ZONE_MAX_DIST_M)',
   'physicalTargetGroup',
+  'roadForwardCoordinates',
   'StartPerimeters',
   'PROXIMITY_INTRUSION',
   'OMW_BLUE_OBJECTIVE_JALALABAD_AIRPORT',
@@ -38,6 +39,9 @@ foreach($m in @(
   'QRF_NOT_ONGUARD',
   'ROAD_ALIGNED_WAREHOUSE_SPAWN',
   'vehicleSpacingM',
+  'GROUND_ACCEPTANCE_3_2',
+  'ROAD_APPROACH_STANDOFF_M=1500',
+  'ZON_BLUE_GND_FENTY_PATROL_TEST_01','ZON_BLUE_GND_FORTRESS_PATROL_TEST_01','ZON_BLUE_GND_JOYCE_PATROL_TEST_01','ZON_BLUE_GND_WRIGHT_PATROL_TEST_01','ZON_BLUE_GND_HONAKER_PATROL_TEST_01','ZON_BLUE_GND_BOSTICK_PATROL_TEST_01',
   'BadGuys_A3_FENTY','BadGuys_A3_FORTRESS','BadGuys_A3_JOYCE','BadGuys_A3_WRIGHT','BadGuys_A3_HONAKER','BadGuys_A3_BOSTICK',
   'RouteGroundTo','GROUP.Attribute.GROUND_INFANTRY','GROUP.Attribute.GROUND_APC','AUFTRAG.Type.ONGUARD')){
   if(-not $c.Contains($m)){throw "Acceptance 3 marker missing: $m"}
@@ -45,14 +49,15 @@ foreach($m in @(
 foreach($radius in @('2438.4','1524.0','2743.2','1219.2')){if(-not $c.Contains($radius)){throw "Acceptance 3 owner-defined radius marker missing: $radius"}}
 foreach($access in @('ZON_BLUE_GND_FENTY_ACCESS','ZON_BLUE_GND_FORTRESS_ACCESS','ZON_BLUE_GND_JOYCE_ACCESS','ZON_BLUE_GND_WRIGHT_ACCESS','ZON_BLUE_GND_HONAKER_ACCESS','ZON_BLUE_GND_BOSTICK_ACCESS')){if(-not $c.Contains($access)){throw "Acceptance 3 QRF ACCESS contract marker missing: $access"}}
 if($t -match 'securityZone\s*=\s*ZONE:FindByName\(alarm\.anchorName\)'){throw 'Acceptance 3 must not reuse the Jalalabad source-zone radius as the security perimeter.'}
-if($t -match 'ZON_TEST_A3_'){throw 'Acceptance 3 no longer requires Mission Editor test zones.'}
+if($t -match 'ZON_TEST_A3_'){throw 'Acceptance 3 must not introduce new Mission Editor test zones.'}
 if($t -match 'ReportInstallationEvidence\s*\('){throw 'Acceptance 3 must not inject evidence directly.'}
 if($t -match 'targetBelongsToGuard|targetInAlarmZone'){throw 'Acceptance 3 must not use the rejected Guard-only alarm correlation.'}
 if($t -match 'ExpireDemand\s*\('){throw 'Acceptance 3 must not invent a QRF release through ExpireDemand.'}
 if($t -match 'ACCEPTANCE_SUPPORTED_ELEMENT_RELEASE'){throw 'Acceptance 3 must not define an acceptance-only QRF mission-end condition.'}
 if($t -match 'QRF_RELEASE_REQUESTED|QRF_RETURN_VERIFIED'){throw 'Acceptance 3 must observe outbound QRF response only; return remains covered by accepted Ground/Honaker lifecycle tests.'}
+if($p -match 'ROAD_DIRECTION_SAMPLE_DISTANCES_M|resolveOutboundRoadCoordinate'){throw 'Production QRF runtime must not contain target-derived road-anchor heuristics.'}
 $commit=(& git -C $repoRoot rev-parse HEAD).Trim()
-$header="-- AUTO-GENERATED FILE. DO NOT EDIT DIRECTLY.`n-- BuilderVersion: $version`n-- GitCommit: $commit`n-- MOOSE release: 2.9.18`n-- MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54`n-- Moose.lua SHA-256: E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915`n-- Six-site alarm, OPSZONE physical threat binding, accepted ACCESS QRF materialization and Honaker-derived ONGUARD + SetEngageDetected response observation. No acceptance-owned QRF release.`n`n"
+$header="-- AUTO-GENERATED FILE. DO NOT EDIT DIRECTLY.`n-- BuilderVersion: $version`n-- GitCommit: $commit`n-- MOOSE release: 2.9.18`n-- MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54`n-- Moose.lua SHA-256: E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915`n-- Six-site alarm, OPSZONE physical threat binding, accepted ACCESS QRF materialization and Honaker-derived ONGUARD + SetEngageDetected response observation. Road direction reuses Ground Acceptance-3-2 geometry. No acceptance-owned QRF release.`n`n"
 New-Item -ItemType Directory -Path (Split-Path -Parent $out) -Force|Out-Null
 [System.IO.File]::WriteAllText($out,$header+$p+"`n`n"+$t,[System.Text.UTF8Encoding]::new($false))
 Write-Host "Built: $out"
@@ -67,6 +72,7 @@ Write-Host 'PrimaryAlarmEvidenceSource: MOOSE OPSZONE proximity qualification wi
 Write-Host 'QrfMissionType: accepted Honaker MOOSE AUFTRAG ONGUARD + SetEngageDetected in site-local 5 NM tactical zone'
 Write-Host 'QrfRelease: none in Acceptance 3; movement/perimeter/incident state has no QRF mission-end authority'
 Write-Host 'QrfReturnLifecycle: inherited accepted MOOSE SetReturnToLegion(true) lifecycle; not driven by this harness'
+Write-Host 'QrfRoadAnchorSource: exact Ground Acceptance-3-2 six-site PATROL_TEST approach geometry; 1500 m standoff; acceptance-only reference fixtures'
 Write-Host 'JalalabadAlarmZoneSource: existing MOOSE ZONE center OMW_BLUE_OBJECTIVE_JALALABAD_AIRPORT + runtime ZONE_RADIUS 8000 ft / 2438.4 m'
 Write-Host 'OtherAlarmZoneSource: MOOSE WAREHOUSE coordinate + runtime ZONE_RADIUS'
 Write-Host 'QrfVehicleMaterialization: site ACCESS zone + approved road-aligned adapter + fixed 18 m vehicle spacing'
