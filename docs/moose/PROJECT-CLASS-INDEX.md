@@ -36,6 +36,7 @@ Technische Lifecycle-Details:
 - [`OMW-MOOSE-AWACS-EXTERNAL-LIFECYCLE`](AWACS-EXTERNAL-LIFECYCLE.md)
 - [`OMW-MOOSE-AWACS-FUEL-DRIVEN-AAR`](AWACS-FUEL-DRIVEN-AAR-LIFECYCLE.md)
 - [`OMW-MOOSE-GROUND-OPERATIONS`](GROUND-OPERATIONS.md)
+- [`OMW-MOOSE-QRF-RESPONSE-CLEARANCE-LIFECYCLE`](QRF-RESPONSE-CLEARANCE-LIFECYCLE.md)
 - [`OMW-MOOSE-MISSION-DEMAND-RESUPPLY-CAS-SOURCE-REVIEW`](MISSION-DEMAND-RESUPPLY-CAS-SOURCE-REVIEW.md)
 - [`OMW-MOOSE-AIR-TASKING-C2-LIFECYCLE`](AIR-TASKING-C2-LIFECYCLE.md)
 - [`OMW-MOOSE-STAGE3-CAS-TACTICAL-CORRIDOR`](STAGE3-CAS-TACTICAL-CORRIDOR-DECISION.md)
@@ -70,7 +71,7 @@ REJECTED_FOR_PROJECT_USE
 | `COHORT` | `VALIDATED_FOR_DOCUMENTED_SCOPE` + `SOURCE_REVIEWED` | AirOps-Lifecycle praktisch bestätigt; Ground-Review bestätigt `AddMissionCapability`, `SetMissionRange`, `CanMission`, `CountAssets` und 75-NM-Ground-Default source-seitig |
 | `FLIGHTGROUP` | `VALIDATED_FOR_DOCUMENTED_SCOPE` + `SOURCE_REVIEWED` | AAR/AWACS-Lifecycles praktisch bestätigt; Stage 1D-P bestätigt `AddWaypoint(...)`, `OnAfterTaskDone`, späteres `OnAfterMissionDone` als Diagnose und physisches `OnAfterLanded` in Jalalabad im akzeptierten CH-47-Return-Scope. Stage 3 CAS Tactical Corridor: `AddWaypoint(...)`/`OnAfterUpdateRoute` ist source-reviewed für owner-authored dynamische Segmente; keine DCS-Validierung dieses neuen CAS-Pfads. |
 | `COMMANDER` | `VALIDATED_FOR_DOCUMENTED_SCOPE` + `SOURCE_REVIEWED` | dokumentierter COMMANDER-Lifecycle; Ground-Review bestätigt `AddBrigade(...)` und `AddOpsTransport(...)` source-seitig; MissionDemand bleibt OMW-Tasking-Autorität |
-| `AUFTRAG` | `VALIDATED_FOR_DOCUMENTED_SCOPE` + `SOURCE_REVIEWED` | AAR-, AWACS- und Ground-Lifecycles praktisch bestätigt; Stage 1D-P bestätigt `NewLANDATCOORDINATE(...)`, `SetMissionEgressCoord(...)`, `AssignSquadrons(...)` sowie gruppenspezifische Waypoint-/Egress-/Task-Abfragen. Stage 3 CAS Tactical Corridor source-reviewt `NewPATROLZONE`, `SetMissionIngressCoord`, `SetMissionWaypointCoord` und `SetMissionEgressCoord`: einzelne MOOSE-Knoten, keine taktische Korridorplanung; DCS-Validierung offen. Keine CampaignState-Autorität. |
+| `AUFTRAG` | `VALIDATED_FOR_DOCUMENTED_SCOPE` + `SOURCE_REVIEWED` | AAR-, AWACS- und Ground-Lifecycles praktisch bestätigt; Stage 1D-P bestätigt `NewLANDATCOORDINATE(...)`, `SetMissionEgressCoord(...)`, `AssignSquadrons(...)` sowie gruppenspezifische Waypoint-/Egress-/Task-Abfragen. Stage 3 CAS Tactical Corridor source-reviewt `NewPATROLZONE`, `SetMissionIngressCoord`, `SetMissionWaypointCoord` und `SetMissionEgressCoord`. QRF-Clearance source-reviewt `NewPATROLZONE`, `GetOpsGroups`, `SetReturnToLegion`, `SetTeleport`, `Cancel` und `IsOver`; DCS-Validierung dieses neuen QRF-Pfads offen. Keine CampaignState-Autorität. |
 | `SPAWN` | `VALIDATED_FOR_DOCUMENTED_SCOPE` + `SOURCE_REVIEWED` | area-spezifische AAR-Templates und externe Materialisierung praktisch bestätigt; AWACS bestätigt `OMW_C2_E3A_WIZARD`, LISA und MOE external materialization im dokumentierten Scope |
 | `SCHEDULER` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | allgemeine OMW-Nutzung praktisch bestätigt; AWACS verwendet einen 5-Sekunden-Monitor ausschließlich zur Lifecycle-/Fuel-Koordination, keinen Frame-Scan |
 | `USERFLAG` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Warehouse-Acceptance-Readiness-Pfade sowie Ground BASE-3 `OMW_GROUND_READY` Set/Get-Readback und Mission-Editor-Gate im dokumentierten Ground-Ammo-Rearm-Acceptance-1-Scope |
@@ -78,8 +79,8 @@ REJECTED_FOR_PROJECT_USE
 | `COORDINATE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | `Get2DDistance(...)`, `GetIntermediateCoordinate(...)`, `HeadingTo(...)` sowie Stage-1D-P-`Translate(...)` im jeweils dokumentierten AirOps-/FlightPath-Scope |
 | `BRIGADE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` + `INTERNAL_RESTRICTED` | Acceptance 1–6 bestätigen Ground-Assetpool, Materialisierung, Callback-Lifecycle und die parallelen Rückgabevarianten; die road-aligned private Warehouse-Spawn-Ausnahme bleibt auf Acceptance-3-2 und den gepinnten MOOSE-Stand begrenzt |
 | `PLATOON` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Acceptance 1–6 bestätigen dokumentierte Assetselektion, Wiederverwendung und Rückgabevarianten im Ground-Scope; keine allgemeine Produktionsfreigabe |
-| `ARMYGROUP` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Acceptance 1–6 bestätigen MissionDone-Persistenz, Same-group-Follow-up sowie mobilen RTZ/Returned-Handoff einschließlich paralleler Teilverlust-/Schadenrückgabe; immobiler Teleportpfad bleibt ausgeschlossen |
-| `OPSGROUP` | `VALIDATED_FOR_DOCUMENTED_SCOPE` + `SOURCE_REVIEWED` | AirOps-/Ground-Pfade praktisch bestätigt; Stage 1D-P bestätigt TaskDone-Lifecycle und `Get2DDistance(...)` als Zielnäheprüfung für das LANDAT-Settlement; Cargo-Pfade bleiben source-reviewed |
+| `ARMYGROUP` | `VALIDATED_FOR_DOCUMENTED_SCOPE` + `SOURCE_REVIEWED` | Acceptance 1–6 bestätigen MissionDone-Persistenz, Same-group-Follow-up sowie mobilen RTZ/Returned-Handoff einschließlich paralleler Teilverlust-/Schadenrückgabe. QRF-Clearance source-reviewt `SetPatrolAdInfinitum`, `EnableHuntingPatrol` und `DisableHuntingPatrol`; DCS-Validierung der neuen Clearance-Phase offen. Immobiler Teleportpfad bleibt ausgeschlossen. |
+| `OPSGROUP` | `VALIDATED_FOR_DOCUMENTED_SCOPE` + `SOURCE_REVIEWED` | AirOps-/Ground-Pfade praktisch bestätigt; Stage 1D-P bestätigt TaskDone-Lifecycle und `Get2DDistance(...)` als Zielnäheprüfung für das LANDAT-Settlement. QRF-Clearance source-reviewt `AddMission(...)` und den FSM-Pfad `__MissionDone(...)` für den Same-group-Phasenwechsel; DCS-Validierung offen. Cargo-Pfade bleiben source-reviewed. |
 | `LEGION` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Ground-Returned-Handoffs und Stage 1D-P Air-Asset-Return praktisch bestätigt; `LegionAssetReturned` allein ist im Air-PERSONNEL-Scope ausdrücklich kein physischer RTB-Nachweis |
 | `OPSTRANSPORT` | `SOURCE_REVIEWED` | Constructor, Cargo/Carrier-Zonen, `AddPathTransport`, Disembark- und Carrier-Verträge geprüft; taktischer OMW-Transport benötigt eigenen DCS-Test |
 | `AMMOTRUCK` | `SOURCE_REVIEWED` | gepinnter Source und offizieller Demo-Anwendungsfall für automatische Artillerie-Rearm-Versorgung geprüft; `reloads` ist Rearm-Zykluszahl, keine CampaignState-Menge; kein OMW-AMMOTRUCK-Runtime-PASS |
@@ -141,6 +142,26 @@ OPSGROUP:onafterMissionDone(...) legionReturn=false hold-in-place path
 OPSTRANSPORT constructors/path/disembark methods
 ```
 
+QRF-Clearance, owner-genehmigt 13.09.2026 und source-reviewed gegen denselben Pin:
+
+```text
+AUFTRAG:NewPATROLZONE(...)
+AUFTRAG:GetOpsGroups()
+AUFTRAG:SetReturnToLegion(true)
+AUFTRAG:SetTeleport(false)
+AUFTRAG:Cancel()
+AUFTRAG:IsOver()
+
+OPSGROUP:AddMission(...)
+OPSGROUP:__MissionDone(...)
+
+ARMYGROUP:SetPatrolAdInfinitum(true/false)
+ARMYGROUP:EnableHuntingPatrol(...)
+ARMYGROUP:DisableHuntingPatrol()
+```
+
+Dieser QRF-Pfad ist `SOURCE_REVIEWED` und noch nicht DCS-validiert. Details: [`OMW-MOOSE-QRF-RESPONSE-CLEARANCE-LIFECYCLE`](QRF-RESPONSE-CLEARANCE-LIFECYCLE.md).
+
 Acceptance-1-Harness und Builder sind auf dem Branch vorhanden:
 
 ```text
@@ -160,6 +181,7 @@ Wichtige Grenzen bleiben:
 - immobile ARMYGROUP RTZ kann teleportieren und bleibt im sichtbaren OMW-Bereich ausgeschlossen.
 - Returned -> WAREHOUSE AddAsset entfernt die physische Gruppe; Return-Handoff benötigt eigenen Test.
 - OPSTRANSPORT coordinate unload materialisiert per _Respawn und benötigt eigenen Test.
+- QRF PATROLZONE/HuntingPatrol clearance benötigt einen eigenen DCS-Acceptance-Lauf.
 ```
 
 ### 4.3 Official example review
@@ -258,348 +280,3 @@ MOE FAST
 ```
 
 Die vollständigen AAR-Verträge und Accepted-Provenienz bleiben in den zuständigen AAR-Dokumenten. Diese Ground-Aktualisierung ändert daran nichts.
-
-## 7. Architekturgrenze
-
-Die externen AAR-Pools und die Ground-OPS-Domäne bleiben getrennte Ressourcen-/Materialisierungsmodelle. Für Ground gilt insbesondere:
-
-```text
-CampaignState = strategic authority
-MOOSE BRIGADE / PLATOON / WAREHOUSE = operational mirror/selection
-DCS GROUP / UNIT / STATIC = physical representation
-```
-
-## 8. Nachweisregel
-
-Ein Klassenstatus wird nur angehoben, wenn MOOSE-Version/Commit, OMW-Source, Mission, Hashes, beobachtetes Verhalten und Einschränkungen dokumentiert sind.
-
-`SOURCE_REVIEWED` für Ground-OPS und Acceptance-1-Staging bedeutet ausdrücklich **nicht** `VALIDATED_FOR_DOCUMENTED_SCOPE`. Der Status wird erst nach dem realen DCS-Lauf mit vollständiger Hashprovenienz neu bewertet.
-
-## Addendum 2026-08-21 – Ground Ammo Rearm Source Review
-
-```text
-AMMOTRUCK = SOURCE_REVIEWED
-ARTY      = SOURCE_REVIEWED
-```
-
-`AMMOTRUCK` besitzt im gepinnten Source automatische Low-Ammo-Erkennung, Truck-Zuweisung, Anfahrt, Unloading sowie Return/Home-FSM-Pfade. Das offizielle MOOSE-Beispiel unter `Functional/AmmoTruck` bestätigt den vorgesehenen Artillerie-Rearm-Anwendungsfall. `reloads` ist eine Zahl von Rearm-Vorgängen und keine Granaten- oder CampaignState-Paketmenge.
-
-`TruckReturning` wird erst ausgelöst, nachdem die Mindest-Unloadzeit abgelaufen ist und der Munitionsstatus des Empfängers wieder oberhalb `ammothreshold` liegt. Dieser FSM-Pfad ist daher ein geeigneter späterer OMW-Delivery-Quittierungskandidat, beweist aber **keinen Vollrearm**.
-
-`ARTY` besitzt den detaillierteren Batterie-Rearm-Pfad einschließlich Shell-Type-Auswertung und Vollrearm-Prüfung. Für den ersten OMW-Ammo-Service bleibt `AMMOTRUCK` der kleinere Kandidat; `ARTY` wird nicht ausschließlich zur Logistik eingeführt, wenn es die Feuerunterstützungsgruppe nicht ohnehin operativ verwaltet.
-
-Offene Grenze vor Runtime-Code:
-
-```text
-known MOOSE/DCS supply example: M-939 (BLUE)
-current OMW generic logistics template: M1083 family
-M1083 ammo-supply capability in current OMW DCS setup: NOT VERIFIED
-```
-
-Es wird daher noch kein produktiver AMMOTRUCK-Adapter geschrieben. Zuerst muss ein tatsächlich Ammo-Supply-fähiger BLUE-Trucktyp/Template für OMW feststehen und später in DCS bestätigt werden.
-
-Details: [`OMW-MOOSE-MISSION-DEMAND-RESUPPLY-CAS-SOURCE-REVIEW`](MISSION-DEMAND-RESUPPLY-CAS-SOURCE-REVIEW.md), Abschnitt 16.
-
-## Addendum 2026-08-19 – `WAREHOUSE` / `_DATABASE` interne Acceptance-3-2-Ausnahme
-
-~~~text
-Owner approval: 2026-08-19
-Pinned MOOSE: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
-Moose.lua SHA-256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
-Internal symbols: WAREHOUSE:_SpawnAssetGroundNaval(...), WAREHOUSE:_SpawnAssetPrepareTemplate(...), _DATABASE:Spawn(template)
-Scope: sechs Acceptance-3-BRIGADE-Instanzen
-Status: INTERNAL_RESTRICTED / SOURCE_REVIEWED_EXCEPTION_APPROVED_DCS_PENDING
-~~~
-
-`WAREHOUSE:SetSpawnZone(...)` genügt nicht für exakt road-aligned Einzelaufstellung. Der freigegebene Adapter übernimmt ausschließlich TM01M-Positionen/Headings in die vom Warehouse bereitete Spawn-Templatekopie. Assetreservation, Queue, `__AssetSpawned`, `OnAfterAssetSpawned`, `OnAfterArmyOnMission` und `ARMYGROUP`-/`AUFTRAG`-Lifecycle dürfen dadurch nicht umgangen werden. Ein DCS-Regressionstest muss sowohl sichtbare Straßenaufstellung als auch alle bisherigen sechs Domain-Lifecycle-Kriterien erneut belegen.
-
-## Addendum 2026-08-19 – Acceptance 4 return-handoff scope
-
-| Klasse | Status | Verwendung/Grenze |
-|---|---|---|
-| `ARMYGROUP` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Acceptance 4-2 bestätigt den öffentlichen mobilen `RTZ(existing Fenty ACCESS zone, OnRoad)`-Pfad einschließlich `Returning` und `Returned`; kein Teleportpfad verwendet |
-| `WAREHOUSE` / `LEGION` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Acceptance 4-2 bestätigt `Returned -> __AddAsset(10) -> AddAsset -> physical group removal` für Fenty; operative Rückgabe ist keine strategische Ressourcenbuchung |
-
-## Addendum 2026-08-22 – Ground Ammo Rearm Acceptance 1
-
-Dieses Addendum hebt ausschließlich den im folgenden Provenienzsatz praktisch bestätigten Scope an. Es superseded die offenen `ARTY`-/M1083-Runtime-Aussagen des Addendums vom 21.08.2026; `AMMOTRUCK` bleibt davon unberührt `SOURCE_REVIEWED`.
-
-```text
-Branch: agent/ground-ammo-rearm-integration
-Acceptance source/build commit: 213119ca03a6aeae529d4291b4bbe174ac0995c2
-Ground BASE-3 source/build commit: 04674c29061c6a70f54b537598442857448441b6
-Warehouse BASE-3 build commit: 7da56fdfb45888e7f88d4ea5c3b0fa691f2b0423
-Builder/Test-ID: GROUND-AMMO-REARM-ACCEPTANCE-1
-DCS: 2.9.28.26385 MT
-MOOSE release: 2.9.18
-MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
-Moose.lua SHA-256: E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915
-Executed MIZ: OMW_Template_v15.miz
-MIZ SHA-256: A2AF2BD5FA9792DEF422F3B47755894E8F3220453F31F63F1594CCD61E9AF1B4
-internal mission SHA-256: 2378F38E9B07365D25ACE38E45A23D87E2CC76F185A062FB2A46CA8EE31C1A53
-Acceptance bundle SHA-256: 94C18556B80E97A30420DD551BC0CD98E978CBA2E487A6AA6B35281E1F29FDD7
-Ground BASE-3 bundle SHA-256: 6DBDE7AA75E34FA6C7A42A7C97B3E407C069806666C60E8D27F8616D647383EE
-Warehouse BASE-3 bundle SHA-256: FC0F8F20909DD57E5DEE3AF6414FB56B35D8671D726471DEDB6D6984E590801B
-dcs.log SHA-256: 8ECFD3CACC58FF0421E55280D7CE63EFA2A6C1CDA0A09095F7A69E588290DE71
-debrief.log SHA-256: B773DDB09401B7E58F4393EEEEDCE858EB98F769E1BE2DE9AB12392B10583A9E
-Result: PASS
-```
-
-Praktisch bestätigt wurden für genau diesen Stand:
-
-```text
-ARTY fixed-battery lifecycle at Bostick
-L118 controlled firing and observable ammo reduction
-CHAP_M1083 materialization through existing Ground/Warehouse lifecycle
-CampaignState local GROUND_AMMO_PACKAGE consumption exactly once in the observed run
-ARTY Rearm -> Rearmed/full-ammo completion
-MOOSE USERFLAG Ground readiness bridge -> Mission Editor OMW_GROUND_READY == 1
-```
-
-Die beobachteten Munitionswerte waren `300 -> 296 -> 302`; der Bostick-Bestand `GROUND_AMMO_PACKAGE` fiel `52 -> 51`. Der Harness meldete `PASS M1083_REARM_CONFIRMED=true`.
-
-Nicht aus diesem Lauf abzuleiten sind eine allgemeine CHAP_M1083-Supply-Garantie, AMMOTRUCK-Runtime-Verhalten, Full-Battery-Rejection, M1083-Verlust/Unterbrechung, Restart/Replay oder andere Batterien/MOOSE-Versionen.
-
-## Addendum 2026-08-22 – Air Tasking Main Reconciliation
-
-Die Air-Tasking-Reconciliation verwendet fuer den aktuellen AAR-Vertical-Pfad ausschließlich bereits im Projekt vorhandene MOOSE-Bausteine und den akzeptierten AAR-Controller:
-
-```text
-SCHEDULER:New(...)
-Controller.GetStation(...)
-existing AAR SPAWN / FLIGHTGROUP / AUFTRAG lifecycle
-```
-
-Branch:
-
-```text
-agent/air-tasking-plan-main-reconciliation
-```
-
-Gepinnter MOOSE-Stand:
-
-```text
-MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
-Moose.lua SHA-256: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
-```
-
-Die neue Air-Tasking-Schicht implementiert keinen parallelen MOOSE-Dispatcher, kein eigenes Tanker-Routing und keinen zweiten strategischen Assetbestand. Der 5-Sekunden-`SCHEDULER` beobachtet nur den ueber `Controller.GetStation(...)` exponierten Runtime-Zustand fuer ASR/ATM/EXE-Korrelation.
-
-`AIR-TASKING-AAR-VERTICAL-2` bleibt ein realer DCS-PASS fuer seine exakt dokumentierte historische Provenienz. Die MissionDemand-reconcilierten Source-Artefakte wurden danach neu gebaut und gehasht, aber auf ausdrueckliche Owner-Entscheidung nicht erneut als `VERTICAL-3` in DCS ausgefuehrt. Deshalb wird der reconcilierten Implementierung **kein neuer `VALIDATED_FOR_DOCUMENTED_SCOPE`-Status** aus diesem Schritt zugeschrieben.
-
-Details: [`OMW-MOOSE-AIR-TASKING-C2-LIFECYCLE`](AIR-TASKING-C2-LIFECYCLE.md) und [`OMW-AIR-TASKING-PLAN-MAIN-RECONCILIATION`](../air-tasking-plan-main-reconciliation.md).
-
-## Addendum 2026-08-23 – External E-3 AWACS Acceptance 1
-
-Der AWACS-Pfad verwendet keine neue Framework-Autorität, sondern kombiniert die bereits OMW-erprobten externen SPAWN-/FLIGHTGROUP-Lifecycle-Bausteine mit `AUFTRAG:NewAWACS(...)`.
-
-```text
-SPAWN / FLIGHTGROUP transit
--> ROSIE
--> 30-NM late approach
--> AUFTRAG:NewAWACS(APOC, FL320, 300 kt, 017T, 30 NM)
--> AUFTRAG:SetMissionAltitude(FL320)
--> AUFTRAG:SetMissionEgressCoord(ROSIE, FL340, 300 kt)
--> External Handoff
-```
-
-Acceptance 1 hat diesen Routing-Lifecycle in DCS praktisch bestätigt:
-
-```text
-Branch:                   agent/awacs-external-lifecycle-foundation
-Tested source commit:     bde8a6e8d006b7c8d744b739510b08aa9812d48b
-Mission:                  OMW_Template_v19(8).miz
-Mission SHA-256:          d788af36535d3acd1866d15ffb5d354b2c44b5f8ee40d4baf6fd1d97b7c0f8a5
-DCS:                      2.9.28.26385 MT
-MOOSE commit:             73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
-Moose.lua SHA-256:        e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
-Embedded Warehouse SHA:   01a9ca70988198ecbd76f4d1cab4304261f2cc56911584b44741c0d49c7b146c
-Embedded AWACS bundle SHA:639841a552343f4d0f7180f657a4a0b3141fb0b9af3ed6f1d9915ec955444fc2
-dcs.log SHA-256:          593d02d455db0cae04cfd0e7651671d3af1d76ab430ff3232da7b19dac391c2f
-debrief.log SHA-256:      32df4af4943f5ca3d2a98dde61e452054b5183fd21fa9f6b78750894ec106eb7
-Result:                    PASS for routing lifecycle scope
-```
-
-Bestätigte Reihenfolge:
-
-```text
-MATERIALIZED
--> FIR_INGRESS_PASSED ROSIE
--> LATE_APPROACH_PASSED / ADD_AWACS_MISSION
--> ON_STATION APOC
--> EGRESS_ORDERED
--> FIR_EGRESS_PASSED ROSIE
--> MOOSE AWACS mission success
--> EXTERNAL_HANDOFF / DESPAWN_AND_RECREDIT
-```
-
-Damit ist `AUFTRAG:NewAWACS(...)` für diesen OMW-Scope von `SOURCE_REVIEWED` auf `VALIDATED_FOR_DOCUMENTED_SCOPE` angehoben. Ebenso ist der E-3-spezifische externe `SPAWN`-/`FLIGHTGROUP`-Routingpfad praktisch bestätigt.
-
-Die folgenden Aussagen sind historischer Acceptance-1-Stand und werden durch das Addendum vom 24.08.2026 für den aktuellen Produktionsscope superseded:
-
-```text
-AWACS complete foundation: PARTIAL / OPEN ACCEPTANCE BLOCKS
-AWACS automatic AAR:      BLOCKED_PENDING_DCS_ACCEPTANCE
-```
-
-Details: [`OMW-MOOSE-AWACS-EXTERNAL-LIFECYCLE`](AWACS-EXTERNAL-LIFECYCLE.md) und [`AWACS Acceptance 1`](../../mission/tests/awacs-external-lifecycle/ACCEPTANCE.md).
-
-## Addendum 2026-08-24 – AWACS Full Lifecycle und Base-Packaging
-
-Der aktuelle Produktionsscope verwendet den DCS-bestätigten V3-Lifecycle mit minimaler MOE-Erweiterung:
-
-```text
-OMW_AWACS_Controller_FullLifecycle_V3.lua
-+ OMW_AWACS_MOE_Relief.lua
--> tools/build-awacs-base.ps1
--> OMW_AWACS_Base.lua
-```
-
-Praktisch bestätigter Source-Lifecycle:
-
-```text
-WIZARD external materialization
--> ROSIE ingress
--> FL350 / 270 KIAS transit
--> APOC FL320 / 250 KIAS persistent orbit
--> LISA planned AAR
--> FLIGHTGROUP:Refuel(...)
--> Refueled
--> APOC rejoin / sensor restore
--> MOE planned AAR
--> FLIGHTGROUP:Refuel(...)
--> Refueled
--> APOC rejoin / sensor restore
--> ROSIE outbound
--> external handoff / despawn / strategic recredit
-```
-
-Source-Evidenz:
-
-```text
-Branch:        agent/awacs-external-lifecycle-foundation
-Source commit: 2bda2f066ce1ad11aeed5eb7b98b294d2e399e2d
-DCS:           2.9.28.26385 MT
-MOOSE commit:  73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
-Moose.lua SHA: e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915
-```
-
-Die exakten MIZ-/internal-`mission`-Hashes dieses vollständigen Source-Lifecycle-Laufs wurden nicht nachträglich rekonstruiert. Daher wird aus diesem Lauf kein neuer `ACCEPTED_TECHNICAL_BASELINE`-Metadatensatz erfunden. Die konkret beobachteten MOOSE-Pfade dürfen aber als DCS-bestätigte Laufzeitevidenz für den dokumentierten Source-Stand geführt werden.
-
-Das ohne Lifecycle-Änderung daraus gebaute Produktionsartefakt wurde anschließend separat smoke-validiert:
-
-```text
-Base source commit:       c738052037c741f4b52cc6d2f0c818a6b24babc5
-OMW_AWACS_Base.lua SHA:   c4e2ab13c2a3be9165993bb4f92bb1b81e34cddfd9dee0e0e7139a12a97ca213
-Mission:                  OMW_Template_v20.miz
-MIZ SHA-256:              22220f7c7686228897ac6e7fc0f7bb34ce068cc929a6b7fcf08213f8f5b2be0c
-internal mission SHA-256: ed02eab1ffc4c353ee16f929d44f3c55fe28093b78ea80508f2fa71fd692775f
-Result:                   PASS for Base load / bootstrap / materialization / APOC smoke scope
-```
-
-Aktueller Klassenstatus für den AWACS-Produktionsscope:
-
-```text
-SPAWN external WIZARD/LISA/MOE materialization: VALIDATED_FOR_DOCUMENTED_SCOPE
-FLIGHTGROUP transit / waypoint / mission paths: VALIDATED_FOR_DOCUMENTED_SCOPE
-FLIGHTGROUP:Refuel(...) with WIZARD/LISA:        VALIDATED_FOR_DOCUMENTED_SCOPE
-FLIGHTGROUP:Refuel(...) with WIZARD/MOE:         VALIDATED_FOR_DOCUMENTED_SCOPE
-AUFTRAG racetrack/tanker lifecycle:              VALIDATED_FOR_DOCUMENTED_SCOPE
-COORDINATE route geometry helpers:               VALIDATED_FOR_DOCUMENTED_SCOPE
-SCHEDULER 5-second coordination:                 VALIDATED_FOR_DOCUMENTED_SCOPE
-MOOSE AWACS controller class:                    NOT_USED
-```
-
-Der verworfene V4-/`ClearWaypoints()`-Live-Retask-Pfad ist nicht Bestandteil dieser Statusanhebung.
-
-Details: [`OMW-MOOSE-AWACS-FUEL-DRIVEN-AAR`](AWACS-FUEL-DRIVEN-AAR-LIFECYCLE.md) und [`AWACS Acceptance 4`](../../mission/tests/awacs-external-lifecycle/ACCEPTANCE-4.md).
-
-## Ground RESUPPLY accepted execution addendum - 29.08.2026
-
-Fuer den exakt dokumentierten Ground-RESUPPLY-Scope gelten mit MOOSE 2.9.18 / Commit
-`73d3ed119cd9e7e3f2cfcabbaa34513d30529b54` / `Moose.lua`
-SHA-256 `e3b750921ee22cfb37dd1cec7549831a9165ffe64cd26be154b49e63e001a915`
-zusaetzlich folgende Klassenstaende:
-
-| Klasse | Projektstatus | Geltungsgrenze |
-|---|---|---|
-| `AUFTRAG` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Stage 1A bestaetigt `NewAMMOSUPPLY(...)`; Stage 1C bestaetigt den neutralen physischen Meta-RESUPPLY-Pfad ueber `NewNOTHING(...)`; Stage 1B2 bestaetigt `NewFUELSUPPLY(...)` als One-Shot-Fuel-Executor. Die Nachweise gelten nur fuer die jeweiligen Acceptance-Provenienzen. |
-| `BRIGADE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` + `SOURCE_REVIEWED` | `AddMission(...)` ist im dokumentierten Ground-RESUPPLY-Lifecycle praktisch bestaetigt. `AddRefuellingZone(...)` ist source-seitig als persistente Refuelling-Service-Registrierung eingeordnet und wird nicht als One-Shot-CampaignState-Transferdispatcher verwendet. |
-| `ARMYGROUP` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Die akzeptierten RESUPPLY-Laeufe bestaetigen physischen Hinweg, Return-to-Legion/RTZ, `Returned` und den anschliessenden Warehouse-Handoff im jeweils dokumentierten Scope. |
-| `WAREHOUSE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` + `INTERNAL_RESTRICTED` | Materialisierung und `Returned -> AddAsset` sind in den Ground-RESUPPLY-Acceptances beobachtet; die bereits genehmigte road-aligned Ground-Spawn-Ausnahme bleibt auf ihren dokumentierten Scope begrenzt. |
-
-Technische Details und Grenzen:
-
-- [`Ground RESUPPLY Execution Source Review`](GROUND-RESUPPLY-EXECUTION-SOURCE-REVIEW.md)
-- [`Ground FUELSUPPLY Source Review`](GROUND-FUEL-REFUELLING-ZONE-SOURCE-REVIEW.md)
-- [`Ground AMMO RESUPPLY Acceptance 1`](../../mission/tests/ground-resupply-execution/ACCEPTANCE-1.md)
-- [`Ground Meta RESUPPLY NOTHING Acceptance`](../../mission/tests/ground-resupply-execution/ACCEPTANCE-3.md)
-- [`Ground FUELSUPPLY Acceptance 2`](../../mission/tests/ground-resupply-execution/ACCEPTANCE-4.md)
-
-Dieser Addendum-Eintrag validiert keinen generischen Produktions-Executor fuer weitere Ressourcentypen und keine CAS-/CSAR-Ausfuehrung.
-
-## Stage 1D-P Air PERSONNEL Acceptance-4 class reconciliation - 29.08.2026
-
-Der folgende Klassenstatus ist auf den exakten Acceptance-4-Provenienzsatz begrenzt:
-
-```text
-Branch: agent/automatic-response-orchestration-continuation
-Acceptance commit: be8adc3ad1e2cfa6de7a25252cd8b217caeccde3
-Builder: AIR-PERSONNEL-FLIGHTPATH-RETURN-ACCEPTANCE-4-1
-Bundle SHA-256: C2BD325AF48BF6EA08936BCA666E4460293B60CC36FB8FE0181BC5140DF9ABD3
-Mission: OMW_Template_v20_GroundWorks.miz
-Mission SHA-256: 3B93F9817379BA6C66C8C02DD2142D1EDA3D88090CB8FC88973D4DAC45EE6B11
-DCS: 2.9.29.27278 MT
-MOOSE release: 2.9.18
-MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
-Moose.lua SHA-256: E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915
-Result: PASS
-```
-
-Praktisch bestätigt:
-
-```text
-PATHLINE
--> OMW_FlightPath resolves through MOOSE
--> 84 owner-authored points present
--> 14-point Jalalabad-Fortress subset used in the accepted flight
-
-AUFTRAG / FLIGHTGROUP / OPSGROUP
--> LANDATCOORDINATE physical intermediate landing at Fortress
--> matching TaskDone near LZ is the delivery-settlement signal
--> MissionDone with egress occurs later and is diagnostic
--> physical Jalalabad OnAfterLanded precedes LegionAssetReturned
-
-AIRWING / SQUADRON / LEGION
--> exact Jalalabad CH-47 squadron dispatch
--> physical return proof remains separate from Legion asset-return accounting
-```
-
-Nicht aus diesem Nachweis abzuleiten:
-
-```text
-other PATHLINE geometries
-other LZs or aircraft types
-MissionDone as generic delivery instant
-LegionAssetReturned as sole physical RTB proof
-tactical Infantry GROUP transport
-other DCS or MOOSE versions
-```
-
-Vollständige Evidenz: [`Stage 1D-P Air PERSONNEL Acceptance-4`](GROUND-AIR-PERSONNEL-RESUPPLY-STAGE-1D-P-ACCEPTANCE-4-FINAL.md).
-
-
-## Addendum 2026-09-11 – Support-Request-Lifecycle source review
-
-Verbindlicher Architektur- und Quellenbefund: [MOOSE Support Request Lifecycle Law](MOOSE-SUPPORT-REQUEST-LIFECYCLE-LAW.md).
-
-| Klasse / Pfad | Projektstatus | Exakt belegte Grenze |
-|---|---|---|
-| `COMMANDER` / `CHIEF` | `SOURCE_REVIEWED` | Rekrutieren geeignete MOOSE-Assets für geplante Aufträge. Bei fehlender Rekrutierung bleibt der Auftrag geplant. Im gepinnten Source ruft deren Planungsqueue nicht selbst `AUFTRAG:IsReadyToCancel()` auf. Incident-Ende oder fachliche Frist benötigen deshalb den öffentlichen nativen Aufruf `AUFTRAG:Cancel()`; dieser ist keine projektspezifische Asset-Selektion. |
-| `LEGION`, `AIRWING`, `BRIGADE` | `SOURCE_REVIEWED` | `CheckMissionQueue()` wertet `AUFTRAG:IsReadyToCancel()` aus und ruft bei Tstop oder Success-/Failure-Condition `Cancel()` auf. |
-| `AUFTRAG` | `SOURCE_REVIEWED` | `SetTime`, `AddConditionStart`, `AddConditionSuccess`, `AddConditionFailure` und `Cancel` sind vorhanden. Cancel propagiert über den normalen CHIEF-/COMMANDER-/LEGION-/OPSGROUP-Lifecycle. |
-| `OPSTRANSPORT` | `SOURCE_REVIEWED` | `SetTime`, `AddConditionStart` und `Cancel` sind vorhanden; keine gleichartige öffentliche Failure-Condition wurde für den gepinnten Source verifiziert. |
-| `WAREHOUSE` | `SOURCE_REVIEWED` | Dauerhaft ungültige Requests werden entfernt; temporär nicht verarbeitbare Requests warten. Eine öffentliche Einzelrequest-Expiry/Cancel-API und eine automatische Nullbestand-Klassifikation wurden nicht verifiziert; private Queue-Methoden sind ausgeschlossen. |
-| `ARTY` | `SOURCE_REVIEWED` | Eigene Zielqueue mit `RemoveTarget` und konfigurierbarem Time-to-Shot-Abbruch. Fehlende ARTY-Fähigkeit darf andere Support-Arten nicht blockieren. |
-
-Kein Eintrag dieses Addendums ist DCS-validiert oder ersetzt die geforderten generischen Acceptance-Fälle.
