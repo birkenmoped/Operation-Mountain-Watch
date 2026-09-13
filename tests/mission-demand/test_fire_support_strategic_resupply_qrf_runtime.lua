@@ -7,6 +7,8 @@ local function eq(a,b,label) if a~=b then error(string.format("%s expected=%s ac
 local function yes(v,label) if v~=true then error(label.." expected=true") end end
 local function no(v,label) if v~=false then error(label.." expected=false") end end
 
+eq(Runtime.SchemaVersion,"OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-QRF-RUNTIME-13","QRF runtime schema")
+
 local previousAuftrag=AUFTRAG
 local previousZone=ZONE
 local previousZoneRadius=ZONE_RADIUS
@@ -135,6 +137,7 @@ function army:EngageTarget(unit,speed,formation) self.engaged[#self.engaged+1]={
 brigades.FOB_JOYCE:OnAfterArmyOnMission("Ready","ArmyOnMission","Engaging",army,handle.mission)
 eq(#army.engaged,1,"ArmyOnMission binds direct target")
 eq(army.engaged[1].unit,incidentUnit,"concrete incident UNIT engaged")
+eq(army.engaged[1].formation,"On Road","runtime forwards road march formation")
 
 local roadSpec=roadInstalls[brigades.FOB_JOYCE.alias].resolveRoadSpawn(nil,{category=Group.Category.GROUND,speedmax=10,attribute="Ground APC"})
 yes(roadSpec~=nil,"mobile QRF road spec")
