@@ -52,4 +52,27 @@ Zielautoritaet ist der vorhandene `OMW_GroundInstallationAttackIncident`-Teilneh
 9. Danach wird MOOSE `ReturnToLegion` / `RTZ` / `Returned` beobachtet.
 10. Kein `GROUNDATTACK`, kein `PATROLZONE`, kein `HuntingPatrol`, kein produktiver OMW-Target-Scheduler, kein Teleport und keine neue Mission-Editor-Zone.
 
+## Verifizierter lokaler Buildstand
+
+Vom Projektinhaber am 13.09.2026 lokal gebaut und mit separatem `Get-FileHash` gegen die Builder-Ausgabe gegengeprueft:
+
+```text
+Source commit: ed43e14f9f0fde6d6dd9e46671600519a1de415a
+Production Builder: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BASE-15
+QRF Runtime: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-QRF-RUNTIME-12
+QRF Mission Factory: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-QRF-MISSION-FACTORY-7
+Installation Incident Bridge: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-INSTALLATION-INCIDENT-BRIDGE-4
+Acceptance Builder: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BASE-ACCEPTANCE-4-4
+
+Production builder SHA-256: B9A1EAFA5E95C7F9CE4DBA19D460328A1D4FB783AAD95AEFAEFA712EBE44B79D
+Production bundle SHA-256: B1A1D1A2D6840C687299E10135269E5A6923ED63532F80EDC75433D31E2AB47A
+Acceptance source SHA-256: 002BE49152BF45D66CE3AE4E670AE6D84A7AB86D3F32E65CBB562CEE9359BCB2
+Acceptance builder SHA-256: F7FE556F9ADCAF74E1AAA7BA6E338DD3C57C5199F5A4866CAC77831289069C47
+Acceptance bundle SHA-256: 96B147C4C3E47AFB7EA3AE50E602DB87DF1CB186DF425844A6EB47D348718C0D
+```
+
+Die Builder-Ausgabe und die separate Hash-Pruefung stimmen fuer alle fuenf geprueften Dateien ueberein. GitHub Documentation validation Run `34779514471` und MissionDemand validation Run `34779514480` sind fuer den Source-Commit erfolgreich.
+
+Status: `VERIFIED_LOCAL_BUILD`, noch **nicht DCS-validiert**.
+
 `VALIDATED` darf erst nach realem DCS-Test des exakt gebauten Commits/Bundles gesetzt werden.
