@@ -11,7 +11,7 @@ project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
 superseded_by:
 source_branch: agent/fire-support-strategic-resupply-base-gate0
-source_commit: 1ea9ac12bd07ae11a4aa02babb4b7b074c959c84
+source_commit: c1ab6ed049de8181961a4526f10b6818edbf741c
 validated_in_dcs: false
 ---
 
@@ -22,10 +22,10 @@ validated_in_dcs: false
 Der Projektinhaber hat den Acceptance-3-Builder lokal auf folgendem exakten Git-Stand ausgeführt:
 
 ```text
-1ea9ac12bd07ae11a4aa02babb4b7b074c959c84
+c1ab6ed049de8181961a4526f10b6818edbf741c
 ```
 
-`git pull` führte lokal einen Fast-Forward von `e5773c99` auf `1ea9ac12`; `git rev-parse HEAD` bestätigte anschließend exakt den oben dokumentierten Commit.
+`git pull` führte lokal einen Fast-Forward von `1ea9ac12` auf `c1ab6ed0`; `git rev-parse HEAD` bestätigte anschließend exakt den oben dokumentierten Commit.
 
 Der Build lief ohne gemeldeten Fehler durch. Die Produktions- und Acceptance-Bundle-Hashes aus der Builder-Ausgabe stimmen jeweils exakt mit den anschließend separat per `Get-FileHash -Algorithm SHA256` ermittelten Hashes überein.
 
@@ -54,20 +54,20 @@ MOOSEOverride: Guard materialization exact-geometry exception only
 MizMutation: false
 Encoding: UTF-8 without BOM
 BuilderSHA256: 86C890A8903E969255BDB339BA08B437F63F42077BDF5810C7496A2FC58D5BE4
-BundleSHA256: CEF9C47E24E31AA951E88BFB312C2E0AF00E72653D590F0035D58A078F509E3D
-GitCommit: 1ea9ac12bd07ae11a4aa02babb4b7b074c959c84
+BundleSHA256: 0E108A3B86F5ACA0D84C5AC4CABA46598E50762B726F14C8AA22150986CB76DC
+GitCommit: c1ab6ed049de8181961a4526f10b6818edbf741c
 ```
 
 ## Builder-Ausgabe – Acceptance 3
 
 ```text
 BuilderVersion: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BASE-ACCEPTANCE-3-3
-GitCommit: 1ea9ac12bd07ae11a4aa02babb4b7b074c959c84
+GitCommit: c1ab6ed049de8181961a4526f10b6818edbf741c
 ProductionBuilderSHA256: 86C890A8903E969255BDB339BA08B437F63F42077BDF5810C7496A2FC58D5BE4
-ProductionBundleSHA256: CEF9C47E24E31AA951E88BFB312C2E0AF00E72653D590F0035D58A078F509E3D
-AcceptanceSourceSHA256: 69B201B371B7B43EA428C89D620F2CC490716285A03ADC1938CE9F2358B6A86D
+ProductionBundleSHA256: 0E108A3B86F5ACA0D84C5AC4CABA46598E50762B726F14C8AA22150986CB76DC
+AcceptanceSourceSHA256: FE68DC7D8D8190210C9D0E2980C9AF62BB39BC58E536863739B75EF19B060F4D
 AcceptanceBuilderSHA256: 4F90CE1CC5D047C9297F48526EAA3EA55A035C1FBE23C99E737BB51DDC150764
-AcceptanceBundleSHA256: C4ED2FA514744526D6479145392A7EF41BABE2AA8108E402B3C5C69F95B3EAF9
+AcceptanceBundleSHA256: CFF8FBB3B2205396FD6849A95C4936723A695B9D5029FD39AA85E6107EB9CFF2
 PrimaryAlarmEvidenceSource: MOOSE OPSZONE proximity qualification
 JalalabadAlarmZoneSource: existing MOOSE ZONE OMW_BLUE_OBJECTIVE_JALALABAD_AIRPORT
 OtherAlarmZoneSource: MOOSE WAREHOUSE coordinate + runtime ZONE_RADIUS
@@ -79,10 +79,10 @@ MizMutation: false
 
 ```text
 mission/fire-support-strategic-resupply/dist/OMW_FireSupStratResupply_Base.lua
-CEF9C47E24E31AA951E88BFB312C2E0AF00E72653D590F0035D58A078F509E3D
+0E108A3B86F5ACA0D84C5AC4CABA46598E50762B726F14C8AA22150986CB76DC
 
 mission/tests/fire-support-strategic-resupply-production-base-runtime/dist/OMW_FireSupStratResupply_Production_Base_Acceptance_3.lua
-C4ED2FA514744526D6479145392A7EF41BABE2AA8108E402B3C5C69F95B3EAF9
+CFF8FBB3B2205396FD6849A95C4936723A695B9D5029FD39AA85E6107EB9CFF2
 ```
 
 Damit sind Produktionsbundle und Acceptance-Bundle für den dokumentierten lokalen Stand eindeutig identifiziert.
