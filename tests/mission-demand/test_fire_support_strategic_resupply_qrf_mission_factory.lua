@@ -88,12 +88,13 @@ mission:_OMWQrfBindArmyGroup(army)
 eq(#army.engaged,1,"first concrete target acquired")
 eq(army.engaged[1].target,unit1,"nearest live target selected")
 eq(army.engaged[1].speed,20,"engagement speed")
-eq(army.engaged[1].formation,"Vee","engagement formation")
+eq(army.engaged[1].formation,"On Road","road-preferred engagement transit formation")
 
 unit1.alive=false
 army:OnAfterDisengage("Engaging","Disengage","Cruising")
 eq(#army.engaged,2,"next target acquired after Disengage")
 eq(army.engaged[2].target,unit2,"second live target selected")
+eq(army.engaged[2].formation,"On Road","road-preferred formation retained after reacquisition")
 
 unit2.alive=false
 army:OnAfterDisengage("Engaging","Disengage","Cruising")
