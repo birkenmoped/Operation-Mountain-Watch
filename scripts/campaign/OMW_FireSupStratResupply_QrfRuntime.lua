@@ -2,11 +2,11 @@
 local Runtime = {}
 local Instance = {}
 Instance.__index = Instance
-Runtime.SchemaVersion = "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-QRF-RUNTIME-12"
+Runtime.SchemaVersion = "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-QRF-RUNTIME-13"
 local TAG = "[OMW][FireSupStratResupply.QrfRuntime]"
 local QRF_TACTICAL_RADIUS_NM = 5
 local QRF_ENGAGE_SPEED_KNOTS = 20
-local QRF_ENGAGE_FORMATION = "Vee"
+local QRF_ENGAGE_FORMATION = "On Road"
 local ROAD_SPAWN_VEHICLE_SPACING_M = 18
 local HOME_SPAWN_ZONE_MAX_DIST_M = 1000
 local function fail(message) error(TAG .. " " .. tostring(message), 2) end
