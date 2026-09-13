@@ -1,28 +1,22 @@
 ---
 document_id: OMW-MOOSE-FIRE-SUPPORT-INSTALLATION-PERIMETER-SOURCE-REVIEW
-status: DRAFT
+status: SOURCE_REVIEWED
 document_class: MOOSE_SOURCE_REVIEW
 owning_policy: OMW-GOV-001
 authoritative_for:
   - MOOSE source evidence for six-site installation alarm perimeter resolution
   - public method signatures used by Production Base Acceptance 3 perimeter wiring
-  - MOOSE source evidence for the reused QRF ACCESS-home return lifecycle
+  - MOOSE source evidence reused by the Honaker-derived QRF mission and Ground return lifecycle
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
-supersedes:
-superseded_by:
 source_branch: agent/fire-support-strategic-resupply-base-gate0
 source_commit: PENDING_MERGE
 validated_in_dcs: false
 ---
 
-# MOOSE Source Review – Installation Alarm Perimeters and QRF Return
+# MOOSE Source Review – Installation Alarm Perimeters and QRF Lifecycle
 
-## Zweck
-
-Dieses Dokument belegt ausschließlich die im korrigierten Production-Base-Acceptance-3-Pfad verwendeten MOOSE-Methoden und ihre Signaturen im tatsächlich für OMW gepinnten MOOSE-Stand. Es trennt dabei Source-Evidence von bereits auf anderen Ground-Acceptances vorhandener DCS-Evidence. Der aktuelle sechs-Site-Acceptance-3-Pfad selbst ist noch nicht DCS-validiert.
-
-## Gepinnter Stand
+## 1. Gepinnter Stand
 
 ```text
 MOOSE release: 2.9.18
@@ -30,176 +24,166 @@ MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
 Moose.lua SHA-256: E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915
 ```
 
-## Geprüfte Perimeter-Methoden
+`SOURCE_REVIEWED` ist kein DCS-PASS.
 
-### `ZONE:FindByName(ZoneName)`
+## 2. Perimeter-Pfad
 
-Im gepinnten `Moose.lua` vorhanden. Die Methode löst eine bereits in der MOOSE-Datenbank registrierte Mission-Editor-Zone über `_DATABASE:FindZone(ZoneName)` auf.
+Im gepinnten Source geprüft und im aktuellen Acceptance-Pfad verwendet:
 
-OMW-Nutzung im Acceptance-3-Scope für Jalalabad:
+```text
+ZONE:FindByName(...)
+ZONE_RADIUS:New(...)
+ZONE_BASE:GetCoordinate(...)
+WAREHOUSE / BRIGADE GetCoordinate()
+COORDINATE:GetIntermediateCoordinate(...)
+CONTROLLABLE:RouteGroundTo(...)
+OPSZONE physical UNIT / GROUND_UNIT qualification
+```
+
+Jalalabad:
 
 ```text
 OMW_BLUE_OBJECTIVE_JALALABAD_AIRPORT
 -> ZONE:FindByName(...)
--> existing MOOSE zone
 -> GetCoordinate()
--> Mittelpunktquelle
--> ZONE_RADIUS:New(..., 2438.4 m)
+-> midpoint only
+-> runtime ZONE_RADIUS 2438.4 m / 8000 ft
 -> OPSZONE
 ```
 
-Die vorhandene ME-Zone besitzt 6000 ft Radius. Seit der Owner-Entscheidung vom 13.09.2026 ist sie deshalb **nur Mittelpunktquelle**; der Acceptance-Pfad erzeugt am selben Mittelpunkt eine runtime-only `ZONE_RADIUS` mit 8000 ft / 2438.4 m. Die `.miz` wird dadurch nicht verändert.
+Die vorhandene 6000-ft-ME-Zone wird nicht als Alarmradius wiederverwendet. Keine `.miz`-Mutation.
 
-### `ZONE_RADIUS:New(ZoneName, Vec2, Radius, DoNotRegisterZone)`
+Die anderen fünf Standorte verwenden die vorhandene Warehouse-/BRIGADE-Koordinate als Mittelpunkt ihrer runtime-only `ZONE_RADIUS`.
 
-Im gepinnten `Moose.lua` vorhanden. Acceptance 3 verwendet die Klasse für alle sechs owner-defined Alarmperimeter. Bei Jalalabad stammt die Mittelpunktkoordinate aus der vorhandenen MOOSE-Zone; bei den übrigen fünf Sites aus der Warehouse-/BRIGADE-Koordinate.
+## 3. Accepted QRF Mission Contract
 
-### `ZONE_BASE:GetCoordinate(Height)`
+Die aktuelle Fire-Support-QRF-Integration darf den bereits dokumentierten Honaker-Vertrag nicht durch einen alternativen MOOSE-Auftrag ersetzen.
 
-Im gepinnten `Moose.lua` vorhanden. Acceptance 3 verwendet die Koordinate der vorhandenen Jalalabad-Zone als geometrischen Mittelpunktanker und für die physische Fixture-Route.
-
-### `WAREHOUSE:GetCoordinate()`
-
-Im gepinnten `Moose.lua` vorhanden und liefert die Koordinate des dem Warehouse zugrunde liegenden MOOSE-Wrappers. `BRIGADE` verwendet den LEGION-/WAREHOUSE-Vererbungsweg; damit kann der vorhandene BRIGADE-/Warehouse-Anker ohne native DCS-Parallelauflösung verwendet werden.
-
-OMW-Nutzung im Acceptance-3-Scope:
+Source-/Projektvertrag:
 
 ```text
-COP Fortress
-FOB Joyce
-FOB Wright
-COP Honaker-Miracle
-FOB Bostick
-
-existing BRIGADE / MOOSE Warehouse
--> GetCoordinate()
--> ZONE_RADIUS:New(... owner-defined radius ...)
--> OPSZONE
+AUFTRAG:NewONGUARD(TargetCoordinate)
+AUFTRAG:SetEngageDetected(Range, TargetTypes, EngageZone)
+AUFTRAG:SetReturnToLegion(true)
+AUFTRAG:SetTeleport(false)
 ```
 
-### `COORDINATE:GetIntermediateCoordinate(ToCoordinate, Fraction)`
+OMW-Konfiguration:
 
-Im gepinnten `Moose.lua` vorhanden. Wenn der zweite Parameter größer als `1` ist, interpretiert die Implementierung ihn als Distanz entlang des Vektors und normiert ihn auf die tatsächliche Vektorlänge.
-
-Acceptance 3 nutzt dies ausschließlich zur Berechnung eines physischen RED-Fixture-Zielpunkts bei 65 % des owner-defined Alarmradius sowie für die QRF-Road-Anchor-Suche in Ausrückrichtung. Es entsteht keine produktive RED-C2-Logik.
-
-### `CONTROLLABLE:RouteGroundTo(ToCoordinate, Speed, Formation, DelaySeconds, ...)`
-
-Im gepinnten `Moose.lua` mit dieser öffentlichen Signatur vorhanden. Acceptance 3 verwendet die Methode für die beobachtbare physische Bewegung der bereits vorhandenen late-activated RED-Testfixtures in die Alarmperimeter. Es gibt keinen Teleport, Respawn oder native-DCS-Ersatzpfad.
-
-## Geprüfter QRF-Auftrag
-
-### `AUFTRAG:NewGROUNDATTACK(Target, Speed, Formation)`
-
-Im gepinnten Source vorhanden. Der aktuelle QRF-Pfad übergibt das durch den Incident gebundene physische hostile `GROUP` als Target. Damit muss kein künstlicher Incident-Koordinaten-Targettyp erzeugt werden und MOOSE bleibt für Auftrag, Recruitment und physische Ausführung zuständig.
-
-### `AUFTRAG:SetReturnToLegion(Switch)`
-
-Im gepinnten Source vorhanden. Für Ground-/Naval-Missionen setzt die Methode das Mission-Flag `legionReturn`. Der QRF-Factory-Pfad setzt ausdrücklich:
-
-```lua
-mission:SetReturnToLegion(true)
+```text
+initial coordinate: physical hostile GROUP coordinate from incident evidence
+engage range: 5 NM
+target types: {"Ground Units"}
+engage zone: site-local 5 NM tactical ZONE_RADIUS around BRIGADE coordinate
+return: SetReturnToLegion(true)
 ```
 
-Dies ist keine neue OMW-Rückkehr-FSM, sondern aktiviert den MOOSE-eigenen Rückkehrpfad nach Mission-Ende beziehungsweise Mission-Cancel.
+Referenzimplementierung:
 
-## Geprüfter BRIGADE-/ARMYGROUP-Home-Pfad
-
-### `WAREHOUSE:SetSpawnZone(...)` / `LEGION:_CreateFlightGroup(asset)`
-
-Die site-lokale vorhandene ACCESS-Zone wird im QRF-Runtime dem `BRIGADE` als Spawn-Zone gesetzt. Im gepinnten `LEGION:_CreateFlightGroup(asset)` wird für BRIGADE-Assets ein `ARMYGROUP` erzeugt und anschließend:
-
-```lua
-opsgroup.homezone=self.spawnzone
+```text
+mission/tests/stage3-honaker-wright-full-response/
+  src/01-honaker-wright-full-response-acceptance.lua
 ```
 
-gesetzt.
+Die zwischenzeitliche Fire-Support-Substitution durch `AUFTRAG:NewGROUNDATTACK(...)` ist verworfen. Sie ist **nicht** die akzeptierte QRF-Baseline.
 
-Damit ist die ACCESS-Zone nicht nur der akzeptierte physische Ausrück-/Materialisierungspunkt, sondern zugleich die MOOSE-Homezone des daraus entstandenen QRF-ARMYGROUP.
+## 4. QRF Release Authority
 
-### `ARMYGROUP:onafterRTZ(...)`
+Der Honaker-Vertrag trennt lokale Incident-Completion und QRF-Missionsende.
 
-Der gepinnte Source verwendet bei fehlendem explizitem Zone-Argument:
+Verbindlich:
 
-```lua
-local zone=Zone or self.homezone
+```text
+perimeter clear != QRF release
+incident close   != QRF release
+movement distance != QRF release
 ```
 
-und routet mobile Ground-Gruppen physisch in diese Zone. Befindet sich die Gruppe bereits in der Zone, folgt unmittelbar `Returned()`; andernfalls wird ein Waypoint in der Homezone ergänzt. Für mobile QRF-Gruppen wird damit kein Teleportpfad benötigt.
+Der QRF-Auftrag darf erst nach expliziter Supported-Element-/C2-Freigabe gecancelt werden. Die konkrete CAS-gekoppelte Honaker-Freigabe wird nicht automatisch zur generischen Six-Site-Policy erklärt.
 
-### `ARMYGROUP:onafterReturned(...)`
+Acceptance 3 besitzt daher **keine** eigene QRF-Release-Logik.
 
-Der gepinnte Source führt bei vorhandener Legion aus:
+## 5. ACCESS / Homezone / Return
 
-```lua
-self.legion:__AddAsset(10, self.group, 1)
-```
+Die site-lokale ACCESS-Zone wird dem `BRIGADE` als Spawnzone zugeordnet. Der gepinnte MOOSE-Pfad setzt sie für daraus erzeugte `ARMYGROUP`-Instanzen als Homezone.
 
-Damit bleibt auch der Warehouse-Handoff MOOSE-eigen. Acceptance 3 implementiert keine parallele AddAsset-/Despawn-Logik; der Harness beobachtet nur `RTZ`, `Returned`, `BRIGADE OnAfterAddAsset` und die anschließende Entfernung der physischen Gruppe.
-
-## Bereits vorhandene DCS-Evidence außerhalb des aktuellen A3-Laufs
-
-Der Rückkehrpfad ist nicht neu. Die Ground-Acceptances haben ihn bereits für ihren exakt dokumentierten Stand praktisch bestätigt:
+Bereits vorhandene Ground-Evidence:
 
 ```text
 ARMY Ground Acceptance 6:
-MissionDone -> ARMYGROUP:RTZ(existing site ACCESS zone, OnRoad)
--> Returned -> Warehouse AddAsset -> physical group removal
+MissionDone / explicit return
+-> ARMYGROUP:RTZ(existing site ACCESS zone, OnRoad)
+-> Returned
+-> Warehouse AddAsset
+-> physical group removal
 
 ARMY Ground Acceptance 7:
-Normal Return / Teilverlust / beschädigter Rückkehrer
--> derselbe physische MOOSE-Rückkehrpfad
--> exactly-once CampaignState settlement
+normal return / partial loss / damaged survivor
+-> same MOOSE physical return lifecycle
+-> exactly-once strategic settlement
 ```
 
-Zusätzlich nutzte der historische Honaker-Stage-3-QRF-Pfad `SetReturnToLegion(true)` und eine explizite taktische Missionfreigabe. Aus dessen Honaker-spezifischer Gefechtsgeometrie wird hier keine allgemeine sechs-Site-Geometrie abgeleitet.
+Fire Support implementiert dafür keinen eigenen Return-FSM.
 
-Diese historische/branchgebundene Evidence erlaubt die **Wiederverwendung** des Lifecycles, ersetzt aber nicht den noch ausstehenden DCS-Nachweis der aktuellen sechs-Site-Integration.
+## 6. Road-aligned Materialization
 
-## Bereits verwendeter OPSZONE-Pfad
-
-Die korrigierte Acceptance baut keine zweite Threat-Engine. Der vorhandene OMW-Adapter bleibt zuständig:
+Owner-approved project exception:
 
 ```text
-MOOSE ZONE_RADIUS
--> OPSZONE:New(...)
--> SetObjectCategories({ Object.Category.UNIT })
--> SetUnitCategories({ Unit.Category.GROUND_UNIT })
--> MOOSE OPSZONE FSM / OnAfterAttacked
--> OMW_FobThreatOpsZoneAdapter
--> OMW_FireSupStratResupply_PerimeterBridge
+scripts/ground/OMW_GroundRoadSpawnAdapter.lua
+```
+
+Einführungscommit:
+
+```text
+623dfd51fbf47043a2ff822f2ac489de123c1783
+Add approved Ground road spawn adapter
+```
+
+Der Adapter verändert nur die vorbereitete Ground-WAREHOUSE-Spawn-Geometrie. BRIGADE, WAREHOUSE, PLATOON, ARMYGROUP und AUFTRAG bleiben MOOSE-owned.
+
+Der Adapter verlangt vom Aufrufer eine bereits qualifizierte Road-Geometrie. Das bedeutet ausdrücklich: Die Existenz des Adapters legitimiert **keine neue dynamische Routing-/Anchor-Policy**. Jede caller-seitige Road-Geometrie muss gegen bereits akzeptierte Ground-Geometrie reconciliert werden.
+
+## 7. Acceptance-3-Grenze
+
+Acceptance 3 prüft aktuell ausschließlich:
+
+```text
+6 site perimeters
 -> PROXIMITY_INTRUSION
+-> authoritative incidents
+-> exactly one initial QRF demand each
+-> ACCESS materialization
+-> ONGUARD mission type
+-> physical QRF response >=25 m
 ```
 
-`OPSZONE` bleibt Framework-Autorität für die physische Presence-/Threat-Qualifikation.
+Die 25 m sind ausschließlich Beobachtung physischer Bewegung. Acceptance 3 ruft weder `ExpireDemand(...)` noch `Cancel()` auf und prüft in diesem Scope keinen künstlich ausgelösten Rückweg.
 
-## Mission-End-Abgrenzung
+## 8. Anti-Regression
 
-Verbindlich bleibt:
+Verbindlicher Guardrail:
 
 ```text
-alarm/security perimeter
-= threat-detection / response-trigger boundary
-!= tactical mission-end condition
+docs/moose/FIRE-SUPPORT-ACCEPTED-IMPLEMENTATION-MATRIX.md
+tests/mission-demand/test_fire_support_qrf_accepted_contract.lua
 ```
 
-Daher setzt der InstallationIncidentBridge für den initialen QRF-Demand `cancelWhenIncidentClosed=false`. Der Acceptance-Harness erzeugt seine deterministische Testfreigabe erst nach beobachteter physischer QRF-Reaktion über `Base:ExpireDemand(...)`. Das ist eine Acceptance-only Steuerung und keine produktive Tactical-Completion-Policy.
-
-## Abgrenzung
+Der automatisierte Vertrag blockiert insbesondere:
 
 ```text
-SOURCE_REVIEWED current six-site integration
-!= DCS VALIDATED current six-site integration
+GROUNDATTACK substitution
+missing SetEngageDetected
+missing SetReturnToLegion(true)
+movement-driven Acceptance release
+Acceptance-owned supported-element release token
 ```
 
-Der nächste reale DCS-Lauf muss noch belegen:
+## 9. Statusgrenze
 
-- dass alle sechs Perimeter mit der festgelegten Geometrie starten;
-- dass die sechs Fixtures unter realem Ground-AI-/Terrain-Verhalten die jeweiligen Perimeter erreichen;
-- dass MOOSE `OPSZONE` an allen sechs Sites die RED-Präsenz qualifiziert;
-- dass daraus sechs `PROXIMITY_INTRUSION`-Evidence-Items und sechs authoritative Incidents entstehen;
-- dass exakt ein initialer QRF-Demand pro Incident erzeugt und durch MOOSE physisch ausgeführt wird;
-- dass alle sechs QRFs im jeweiligen ACCESS materialisieren und mindestens 25 m physisch auf ihr Ziel reagieren;
-- dass die Acceptance-only Missionfreigabe den MOOSE-ReturnToLegion-Pfad auslöst;
-- dass alle sechs QRFs per `RTZ` in die jeweilige ACCESS-Homezone zurückfahren;
-- dass `Returned -> Warehouse AddAsset -> physical removal` an allen sechs Sites beobachtet wird.
+```text
+MOOSE signatures / source path: SOURCE_REVIEWED
+Honaker QRF semantics: existing documented baseline
+Ground return mechanics: existing documented DCS evidence in their exact scopes
+current six-site Fire Support integration: NOT DCS VALIDATED
+```
