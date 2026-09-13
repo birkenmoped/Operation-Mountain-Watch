@@ -7,7 +7,7 @@ Set-StrictMode -Version Latest
 $repoRoot = Split-Path -Parent $PSScriptRoot
 $distDir = Join-Path $repoRoot 'mission\fire-support-strategic-resupply\dist'
 $outputFile = Join-Path $distDir 'OMW_FireSupStratResupply_Base.lua'
-$builderVersion = 'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BASE-4'
+$builderVersion = 'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BASE-5'
 
 $moduleSpecs = @(
   @{ Name='SiteRegistry'; Path='scripts\campaign\OMW_FireSupStratResupply_SiteRegistry.lua' },
@@ -56,7 +56,7 @@ $requiredSourceMarkers = @(
   'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-GUARD-RUNTIME-2',
   'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-QRF-MISSION-FACTORY-2',
   'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-QRF-RUNTIME-2',
-  'OMW-GROUND-INSTALLATION-ALARM-EVIDENCE-2',
+  'OMW-GROUND-INSTALLATION-ALARM-EVIDENCE-3',
   'StartAlarmEvidence',
   'SetRequiredAttribute',
   'OMW-GUARD-PATHLINE-MATERIALIZATION-ADAPTER-1',
@@ -199,7 +199,7 @@ Write-Host "MOOSECommit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54"
 Write-Host "MooseLuaSHA256: E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915"
 Write-Host "OperationalAssetSelectionAuthority: MOOSE"
 Write-Host "GuardQRFRecruitmentConstraintAuthority: MOOSE AUFTRAG/LEGION"
-Write-Host "PhysicalAlarmEvidence: optional MOOSE EVENTHANDLER/WEAPON adapter"
+Write-Host "PhysicalAlarmEvidence: optional MOOSE EVENTHANDLER/WEAPON adapter with hostile coordinate propagation"
 Write-Host "StrategicResourceAuthority: caller-provided CampaignState/store"
 Write-Host "GuardAccessZoneDependency: none"
 Write-Host "PerimeterAccessZoneDependency: none"
