@@ -1,1 +1,0 @@
-This file intentionally left out; see PROJECT-CLASS-INDEX-QRF-CLEARANCE-ADDENDUM.md.
