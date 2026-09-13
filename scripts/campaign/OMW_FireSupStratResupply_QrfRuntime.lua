@@ -1,18 +1,20 @@
 -- Operation Mountain Watch - local QRF runtime assembly.
 --
 -- Wires incident-scoped QRF demands to the site-local MOOSE BRIGADE without
--- operational asset preselection. The physical hostile target remains transient.
--- Mobile vehicle QRF materialization reuses the accepted GroundRoadSpawnAdapter
--- at the site's ACCESS zone; MOOSE retains mission/recruitment/attack/return
--- lifecycle. The BRIGADE spawn/home zone is the same site ACCESS zone so MOOSE
--- ReturnToLegion routes the QRF back through the accepted home handoff boundary.
+-- operational asset preselection. The local combat contract is the accepted
+-- Honaker pattern: ONGUARD + SetEngageDetected inside a site-local 5 NM tactical
+-- zone and SetReturnToLegion(true). Alarm/incident state is not mission-end authority.
+-- Mobile vehicle materialization remains on the approved GroundRoadSpawnAdapter
+-- at the site's ACCESS zone; MOOSE retains recruitment, mission and return lifecycle.
 
 local Runtime = {}
 local Instance = {}
 Instance.__index = Instance
 
-Runtime.SchemaVersion = "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-QRF-RUNTIME-6"
+Runtime.SchemaVersion = "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-QRF-RUNTIME-7"
 local TAG = "[OMW][FireSupStratResupply.QrfRuntime]"
+local QRF_TACTICAL_RADIUS_NM = 5
+local QRF_ENGAGE_RANGE_NM = 5
 local ROAD_SPAWN_VEHICLE_SPACING_M = 18
 local ROAD_DIRECTION_SAMPLE_DISTANCES_M = { 500, 1000, 1500, 2000 }
 local HOME_SPAWN_ZONE_MAX_DIST_M = 1000
@@ -98,25 +100,38 @@ function Runtime.New(spec)
   if type(siteRegistry.Sites) ~= "table" then fail("siteRegistry.Sites is required") end
   needFunction(qrfMissionFactory, "New", "qrfMissionFactory")
   needFunction(legionBridge, "New", "legionBridge")
-  -- Runtime-8 still forwards this callback under the legacy resolveCoordinate key.
-  -- Its value is now a physical MOOSE target GROUP, not a coordinate. Supporting
-  -- both keys keeps the composition root compatible while the QRF contract is fixed.
   local resolveTarget = needCallable(spec.resolveTarget or spec.resolveCoordinate, "resolveTarget")
   if spec.logger ~= nil and type(spec.logger) ~= "function" then fail("logger must be a function when provided") end
 
   if type(ZONE) ~= "table" or type(ZONE.FindByName) ~= "function" then fail("MOOSE ZONE:FindByName() is required") end
+  if type(ZONE_RADIUS) ~= "table" or type(ZONE_RADIUS.New) ~= "function" then fail("MOOSE ZONE_RADIUS:New() is required") end
+  if type(UTILS) ~= "table" or type(UTILS.NMToMeters) ~= "function" then fail("MOOSE UTILS.NMToMeters() is required") end
+
   local roadSpawnAdapter = packagedRoadSpawnAdapter()
   local targetCoordinates = {}
   local accessZones = {}
+  local engageZones = {}
   for siteId, site in pairs(siteRegistry.Sites) do
     local brigade = needTable(brigades[siteId], "brigades[" .. tostring(siteId) .. "]")
     if type(site.accessZoneName) ~= "string" or site.accessZoneName == "" then
       fail("accessZoneName is required siteId=" .. tostring(siteId))
     end
     if type(brigade.SetSpawnZone) ~= "function" then fail("BRIGADE/WAREHOUSE SetSpawnZone() is required siteId=" .. tostring(siteId)) end
+    if type(brigade.GetCoordinate) ~= "function" then fail("BRIGADE GetCoordinate() is required siteId=" .. tostring(siteId)) end
     local accessZone = ZONE:FindByName(site.accessZoneName)
     if accessZone == nil then fail("ACCESS zone unavailable siteId=" .. tostring(siteId) .. " zone=" .. tostring(site.accessZoneName)) end
     accessZones[siteId] = accessZone
+
+    local brigadeCoordinate = brigade:GetCoordinate()
+    if type(brigadeCoordinate) ~= "table" or type(brigadeCoordinate.GetVec2) ~= "function" then
+      fail("BRIGADE coordinate unavailable siteId=" .. tostring(siteId))
+    end
+    engageZones[siteId] = ZONE_RADIUS:New(
+      "OMW_QRF_TACTICAL_" .. tostring(siteId),
+      brigadeCoordinate:GetVec2(),
+      UTILS.NMToMeters(QRF_TACTICAL_RADIUS_NM)
+    )
+
     -- Reuse the accepted Ground Foundation contract: the ACCESS zone is both the
     -- visible road materialization boundary and the MOOSE ARMYGROUP homezone.
     brigade:SetSpawnZone(accessZone, HOME_SPAWN_ZONE_MAX_DIST_M)
@@ -146,6 +161,13 @@ function Runtime.New(spec)
       end
       return target, reason
     end,
+    resolveEngageZone = function(demand)
+      local zone = engageZones[demand.siteId]
+      if zone == nil then return nil, "QRF_ENGAGE_ZONE_UNAVAILABLE" end
+      return zone
+    end,
+    engageRangeNm = QRF_ENGAGE_RANGE_NM,
+    targetTypes = { "Ground Units" },
     requiredAssetsMin = spec.requiredAssetsMin or 1,
     requiredAssetsMax = spec.requiredAssetsMax or (spec.requiredAssetsMin or 1),
     requiredAttributes = spec.requiredAttributes,
@@ -162,7 +184,16 @@ function Runtime.New(spec)
     logger = spec.logger,
   })
 
-  return setmetatable({siteRegistry=siteRegistry,brigades=brigades,factory=factory,dispatchBridge=bridge,targetCoordinates=targetCoordinates,accessZones=accessZones,logger=spec.logger}, Instance)
+  return setmetatable({
+    siteRegistry=siteRegistry,
+    brigades=brigades,
+    factory=factory,
+    dispatchBridge=bridge,
+    targetCoordinates=targetCoordinates,
+    accessZones=accessZones,
+    engageZones=engageZones,
+    logger=spec.logger,
+  }, Instance)
 end
 
 function Instance:_log(message) if self.logger then self.logger(TAG .. " " .. tostring(message)) end end
