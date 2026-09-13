@@ -9,8 +9,10 @@ local Runtime = {}
 local Instance = {}
 Instance.__index = Instance
 
-Runtime.SchemaVersion = "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-QRF-RUNTIME-3"
+Runtime.SchemaVersion = "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-QRF-RUNTIME-4"
 local TAG = "[OMW][FireSupStratResupply.QrfRuntime]"
+local ROAD_SPAWN_VEHICLE_SPACING_M = 18
+local ROAD_DIRECTION_SAMPLE_DISTANCES_M = { 500, 1000, 1500, 2000 }
 
 local function fail(message) error(TAG .. " " .. tostring(message), 2) end
 local function needTable(value, label) if type(value) ~= "table" then fail(label .. " must be a table") end return value end
@@ -37,6 +39,51 @@ local function mobileVehicle(asset)
     and asset.category == Group.Category.GROUND
     and type(asset.speedmax) == "number" and asset.speedmax > 0
     and asset.attribute ~= WAREHOUSE.Attribute.GROUND_INFANTRY
+end
+
+local function validRoadPath(startRoad, candidate)
+  if not startRoad or not candidate then return false end
+  local roadPath, _, gotRoadPath = startRoad:GetPathOnRoad(candidate, true, false, false, false)
+  return gotRoadPath == true and type(roadPath) == "table" and #roadPath >= 2
+end
+
+local function resolveOutboundRoadCoordinate(accessZone, target, entityId)
+  if type(accessZone) ~= "table" or type(accessZone.GetCoordinate) ~= "function" then
+    fail("QRF road direction requires MOOSE ACCESS zone entityId=" .. tostring(entityId))
+  end
+  if type(target) ~= "table" or type(target.Get2DDistance) ~= "function"
+      or type(target.GetClosestPointToRoad) ~= "function" then
+    fail("QRF road direction requires MOOSE target COORDINATE entityId=" .. tostring(entityId))
+  end
+
+  local accessCoordinate = accessZone:GetCoordinate()
+  local startRoad = accessCoordinate and accessCoordinate:GetClosestPointToRoad(false) or nil
+  if not startRoad then
+    fail("QRF ACCESS road unavailable entityId=" .. tostring(entityId))
+  end
+
+  local totalDistance = accessCoordinate:Get2DDistance(target)
+  if type(totalDistance) ~= "number" or totalDistance <= 0 then
+    fail("QRF target distance unavailable entityId=" .. tostring(entityId))
+  end
+
+  for _, sampleDistance in ipairs(ROAD_DIRECTION_SAMPLE_DISTANCES_M) do
+    if sampleDistance < totalDistance then
+      local fraction = sampleDistance / totalDistance
+      local rawCandidate = accessCoordinate:GetIntermediateCoordinate(target, fraction)
+      local roadCandidate = rawCandidate and rawCandidate:GetClosestPointToRoad(false) or nil
+      if roadCandidate and validRoadPath(startRoad, roadCandidate) then
+        return roadCandidate
+      end
+    end
+  end
+
+  local targetRoad = target:GetClosestPointToRoad(false)
+  if targetRoad and validRoadPath(startRoad, targetRoad) then
+    return targetRoad
+  end
+
+  fail("QRF outbound road anchor unavailable entityId=" .. tostring(entityId))
 end
 
 function Runtime.New(spec)
@@ -66,8 +113,15 @@ function Runtime.New(spec)
         if type(ZONE) ~= "table" or type(ZONE.FindByName) ~= "function" then fail("MOOSE ZONE:FindByName() is required") end
         local accessZone = ZONE:FindByName(site.accessZoneName)
         if accessZone == nil then fail("ACCESS zone unavailable siteId=" .. tostring(siteId) .. " zone=" .. tostring(site.accessZoneName)) end
-        return { accessZone=accessZone, forwardCoordinate=target, entityId=tostring(site.installationId).."|QRF" }
+        local entityId = tostring(site.installationId) .. "|QRF"
+        local forwardCoordinate = resolveOutboundRoadCoordinate(accessZone, target, entityId)
+        return {
+          accessZone = accessZone,
+          forwardCoordinate = forwardCoordinate,
+          entityId = entityId,
+        }
       end,
+      vehicleSpacingM = ROAD_SPAWN_VEHICLE_SPACING_M,
       log = function(message) if spec.logger then spec.logger(message) end end,
     })
   end
