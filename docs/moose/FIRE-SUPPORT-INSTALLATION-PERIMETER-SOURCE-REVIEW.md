@@ -1,6 +1,6 @@
 ---
 document_id: OMW-MOOSE-FIRE-SUPPORT-INSTALLATION-PERIMETER-SOURCE-REVIEW
-status: SOURCE_REVIEWED
+status: DRAFT
 document_class: MOOSE_SOURCE_REVIEW
 owning_policy: OMW-GOV-001
 authoritative_for:
@@ -9,6 +9,8 @@ authoritative_for:
   - MOOSE source evidence reused by the Honaker-derived QRF mission and Ground return lifecycle
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
+supersedes:
+superseded_by:
 source_branch: agent/fire-support-strategic-resupply-base-gate0
 source_commit: PENDING_MERGE
 validated_in_dcs: false
@@ -24,7 +26,7 @@ MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
 Moose.lua SHA-256: E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915
 ```
 
-`SOURCE_REVIEWED` ist kein DCS-PASS.
+Dieser Source Review ist kein DCS-PASS.
 
 ## 2. Perimeter-Pfad
 
@@ -144,6 +146,28 @@ Der Adapter verändert nur die vorbereitete Ground-WAREHOUSE-Spawn-Geometrie. BR
 
 Der Adapter verlangt vom Aufrufer eine bereits qualifizierte Road-Geometrie. Das bedeutet ausdrücklich: Die Existenz des Adapters legitimiert **keine neue dynamische Routing-/Anchor-Policy**. Jede caller-seitige Road-Geometrie muss gegen bereits akzeptierte Ground-Geometrie reconciliert werden.
 
+Die Six-Site-Ground-Acceptance-3-2 belegt für alle sechs Standorte den akzeptierten Geometriepfad:
+
+```text
+ACCESS coordinate
+-> target/observation coordinate
+-> 1500 m standoff approach point
+-> closest road
+-> GetPathOnRoad(ACCESS road, approach road)
+-> 20 m rear clearance
+-> 18 m fixed vehicle spacing
+-> road-axis headings
+-> every spawned position remains inside ACCESS
+```
+
+Referenz:
+
+```text
+mission/tests/army-ground-foundation/src/03-army-ground-acceptance-3.lua
+```
+
+Die aktuelle Fire-Support-QRF-Fassung verwendet noch eine davon abweichende, target-derived 500/1000/1500/2000-m-Sampling-Policy. Diese Abweichung ist **nicht** als akzeptierte Ground-Baseline nachgewiesen und bleibt vor einem weiteren DCS-Lauf zu reconciliieren.
+
 ## 7. Acceptance-3-Grenze
 
 Acceptance 3 prüft aktuell ausschließlich:
@@ -182,8 +206,10 @@ Acceptance-owned supported-element release token
 ## 9. Statusgrenze
 
 ```text
-MOOSE signatures / source path: SOURCE_REVIEWED
+MOOSE signatures / source path: REVIEWED FOR CURRENT DRAFT
 Honaker QRF semantics: existing documented baseline
+Ground six-site road geometry: existing Acceptance-3-2 baseline identified
 Ground return mechanics: existing documented DCS evidence in their exact scopes
+current Fire Support QRF road-anchor caller: RECONCILIATION OPEN
 current six-site Fire Support integration: NOT DCS VALIDATED
 ```
