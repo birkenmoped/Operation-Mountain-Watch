@@ -25,11 +25,13 @@ Aktueller Vertrag:
 ```text
 physical installation alarm
 -> exactly one local QRF demand
--> existing ACCESS-only materialization
+-> existing ACCESS-only road-aligned materialization
 -> ONGUARD only as recruitment/materialization anchor
 -> same physical ARMYGROUP
 -> nearest living known incident UNIT inside site-local 5-NM tactical zone
--> MOOSE ARMYGROUP:EngageTarget(concrete UNIT)
+-> MOOSE ARMYGROUP:EngageTarget(concrete UNIT, speed, "On Road")
+-> road-preferred motorized march/transit under MOOSE routing
+-> MOOSE leaves the road for the final off-road target approach when required
 -> MOOSE tracks the moving target
 -> target dead -> MOOSE Disengage -> next living incident UNIT
 -> no living authorized incident UNIT remains
@@ -37,25 +39,32 @@ physical installation alarm
 -> MOOSE ReturnToLegion / RTZ / Returned / Warehouse lifecycle
 ```
 
-Zielautoritaet ist der vorhandene `OMW_GroundInstallationAttackIncident`-Teilnehmerbestand. Acceptance 4 implementiert keine eigene Zielsuche oder Zielwahl.
+Zielautoritaet ist der vorhandene `OMW_GroundInstallationAttackIncident`-Teilnehmerbestand. Acceptance 4 implementiert keine eigene Zielsuche oder Zielwahl. Ebenso wird kein eigener OMW-Strassenrouter eingefuehrt: die Strassenpraeferenz wird ueber die im gepinnten MOOSE vorhandene `ARMYGROUP:EngageTarget(..., "On Road")`-/`AddWaypoint`-Routenlogik umgesetzt.
+
+## Bewegungsvertrag der motorisierten QRF
+
+Die QRF wird bereits strassenausgerichtet innerhalb ACCESS materialisiert. Fuer den Marsch zum konkreten Ziel ist deshalb `On Road` die verbindliche Formation. `Vee` ist keine Marschformation und darf nicht als Default fuer den gesamten EngageTarget-Anmarsch verwendet werden.
+
+Der gepinnte MOOSE-Stand verarbeitet `On Road` in `ARMYGROUP:AddWaypoint`/Route-Update selbst: liegt ein gewuenschtes Ziel abseits der Strasse, werden Strassen-Waypoints eingefuegt und der eigentliche Endanflug auf den abseits liegenden Zielpunkt wird Off Road ausgefuehrt. OMW implementiert dafuer keine parallele Routinglogik.
 
 ## RED-Fixture-Vertrag
 
-`BadGuys_A3_JOYCE` besitzt in `OMW_Template_v24_GroundWorks_base.miz` bereits eine mehrstufige Mission-Editor-Angriffsroute. Der Harness darf die Gruppe nach dem Guard-Gate nur aktivieren und muss diese vorhandene Route unangetastet lassen. Der korrigierte A4-5-Builder sperrt eigene Fixture-Routen- oder Task-Zuweisungen. Ein PASS verlangt ausserdem mindestens 25 m reale Bewegung der Fixture nach ihrer Aktivierung.
+`BadGuys_A3_JOYCE` besitzt in `OMW_Template_v24_GroundWorks_base.miz` bereits eine mehrstufige Mission-Editor-Angriffsroute. Der Harness darf die Gruppe nach dem Guard-Gate nur aktivieren und muss diese vorhandene Route unangetastet lassen. Der korrigierte Builder sperrt eigene Fixture-Routen- oder Task-Zuweisungen. Ein PASS verlangt ausserdem mindestens 25 m reale Bewegung der Fixture nach ihrer Aktivierung.
 
 ## PASS-Kriterien
 
 1. `BadGuys_A3_JOYCE` wird aktiviert und bewegt sich mindestens 25 m auf der vorhandenen Mission-Editor-Route; der Harness ersetzt die Route nicht.
 2. Joyce erzeugt genau einen QRF-Demand aus physischer `PROXIMITY_INTRUSION`-Evidenz.
-3. Die QRF materialisiert innerhalb `ZON_BLUE_GND_JOYCE_ACCESS`.
+3. Die QRF materialisiert innerhalb `ZON_BLUE_GND_JOYCE_ACCESS` und ist dort strassenausgerichtet.
 4. Die erste QRF-Mission ist `AUFTRAG.Type.ONGUARD`; sie dient nur der MOOSE-Rekrutierung/Materialisierung.
 5. Dieselbe physische `ARMYGROUP` wird an konkrete lebende RED-`UNIT`-Objekte des aktiven Incidents gebunden.
-6. Mindestens zwei unterschiedliche konkrete RED-Units werden nacheinander durch `ARMYGROUP:EngageTarget()` akquiriert.
-7. Die physische `BadGuys_A3_JOYCE`-Fixture wird vollstaendig beseitigt.
-8. Acceptance 4 ruft keine taktische Release-Funktion auf. Die Rueckkehr muss aus der produktiven Bedingung "keine lebenden autorisierten Incident-Ziele mehr" entstehen.
-9. Perimeter-Clear oder Incident-Close allein duerfen keine vorzeitige Rueckkehr ausloesen.
-10. Danach wird MOOSE `ReturnToLegion` / `RTZ` / `Returned` beobachtet.
-11. Kein `GROUNDATTACK`, kein `PATROLZONE`, kein `HuntingPatrol`, kein Teleport und keine neue Mission-Editor-Zone.
+6. Der motorisierte Anmarsch verwendet MOOSE `EngageTarget(..., "On Road")`; sichtbar soll die QRF vorhandene Strassen bevorzugen und erst fuer den notwendigen Endanflug zum konkreten Ziel die Strasse verlassen.
+7. Mindestens zwei unterschiedliche konkrete RED-Units werden nacheinander durch `ARMYGROUP:EngageTarget()` akquiriert.
+8. Die physische `BadGuys_A3_JOYCE`-Fixture wird vollstaendig beseitigt.
+9. Acceptance 4 ruft keine taktische Release-Funktion auf. Die Rueckkehr muss aus der produktiven Bedingung "keine lebenden autorisierten Incident-Ziele mehr" entstehen.
+10. Perimeter-Clear oder Incident-Close allein duerfen keine vorzeitige Rueckkehr ausloesen.
+11. Danach wird MOOSE `ReturnToLegion` / `RTZ` / `Returned` beobachtet.
+12. Kein `GROUNDATTACK`, kein `PATROLZONE`, kein `HuntingPatrol`, kein eigener QRF-Routen-Scheduler, kein Teleport und keine neue Mission-Editor-Zone.
 
 ## A4-4 Realtest vom 13.09.2026
 
@@ -73,8 +82,8 @@ Acceptance Builder: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BASE-ACCEPTAN
 Acceptance bundle SHA-256: 96B147C4C3E47AFB7EA3AE50E602DB87DF1CB186DF425844A6EB47D348718C0D
 ```
 
-Der korrigierte naechste Builder ist `OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BASE-ACCEPTANCE-4-5`.
+Der korrigierte naechste Builder ist `OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BASE-ACCEPTANCE-4-6` mit Production Builder 16 und QRF Mission Factory 8.
 
 Status: `DRAFT`, noch **nicht DCS-validiert**.
 
-`VALIDATED` darf erst nach realem DCS-Test des exakt gebauten A4-5-Commits/Bundles mit unveraenderter Mission-Editor-Angriffsroute gesetzt werden.
+`VALIDATED` darf erst nach realem DCS-Test des exakt gebauten A4-6-Commits/Bundles mit unveraenderter Mission-Editor-Angriffsroute und dem neuen MOOSE-`On Road`-Marschvertrag gesetzt werden.
