@@ -3,16 +3,19 @@
 -- Wires incident-scoped QRF demands to the site-local MOOSE BRIGADE without
 -- operational asset preselection. The physical hostile target remains transient.
 -- Mobile vehicle QRF materialization reuses the accepted GroundRoadSpawnAdapter
--- at the site's ACCESS zone; MOOSE retains mission/recruitment/attack lifecycle.
+-- at the site's ACCESS zone; MOOSE retains mission/recruitment/attack/return
+-- lifecycle. The BRIGADE spawn/home zone is the same site ACCESS zone so MOOSE
+-- ReturnToLegion routes the QRF back through the accepted home handoff boundary.
 
 local Runtime = {}
 local Instance = {}
 Instance.__index = Instance
 
-Runtime.SchemaVersion = "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-QRF-RUNTIME-5"
+Runtime.SchemaVersion = "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-QRF-RUNTIME-6"
 local TAG = "[OMW][FireSupStratResupply.QrfRuntime]"
 local ROAD_SPAWN_VEHICLE_SPACING_M = 18
 local ROAD_DIRECTION_SAMPLE_DISTANCES_M = { 500, 1000, 1500, 2000 }
+local HOME_SPAWN_ZONE_MAX_DIST_M = 1000
 
 local function fail(message) error(TAG .. " " .. tostring(message), 2) end
 local function needTable(value, label) if type(value) ~= "table" then fail(label .. " must be a table") end return value end
@@ -101,21 +104,27 @@ function Runtime.New(spec)
   local resolveTarget = needCallable(spec.resolveTarget or spec.resolveCoordinate, "resolveTarget")
   if spec.logger ~= nil and type(spec.logger) ~= "function" then fail("logger must be a function when provided") end
 
+  if type(ZONE) ~= "table" or type(ZONE.FindByName) ~= "function" then fail("MOOSE ZONE:FindByName() is required") end
   local roadSpawnAdapter = packagedRoadSpawnAdapter()
   local targetCoordinates = {}
+  local accessZones = {}
   for siteId, site in pairs(siteRegistry.Sites) do
     local brigade = needTable(brigades[siteId], "brigades[" .. tostring(siteId) .. "]")
     if type(site.accessZoneName) ~= "string" or site.accessZoneName == "" then
       fail("accessZoneName is required siteId=" .. tostring(siteId))
     end
+    if type(brigade.SetSpawnZone) ~= "function" then fail("BRIGADE/WAREHOUSE SetSpawnZone() is required siteId=" .. tostring(siteId)) end
+    local accessZone = ZONE:FindByName(site.accessZoneName)
+    if accessZone == nil then fail("ACCESS zone unavailable siteId=" .. tostring(siteId) .. " zone=" .. tostring(site.accessZoneName)) end
+    accessZones[siteId] = accessZone
+    -- Reuse the accepted Ground Foundation contract: the ACCESS zone is both the
+    -- visible road materialization boundary and the MOOSE ARMYGROUP homezone.
+    brigade:SetSpawnZone(accessZone, HOME_SPAWN_ZONE_MAX_DIST_M)
     roadSpawnAdapter.Install(brigade, {
       resolveRoadSpawn = function(_, asset)
         if not mobileVehicle(asset) then return nil end
         local targetCoordinate = targetCoordinates[siteId]
         if targetCoordinate == nil then return nil end
-        if type(ZONE) ~= "table" or type(ZONE.FindByName) ~= "function" then fail("MOOSE ZONE:FindByName() is required") end
-        local accessZone = ZONE:FindByName(site.accessZoneName)
-        if accessZone == nil then fail("ACCESS zone unavailable siteId=" .. tostring(siteId) .. " zone=" .. tostring(site.accessZoneName)) end
         local entityId = tostring(site.installationId) .. "|QRF"
         local forwardCoordinate = resolveOutboundRoadCoordinate(accessZone, targetCoordinate, entityId)
         return {
@@ -153,7 +162,7 @@ function Runtime.New(spec)
     logger = spec.logger,
   })
 
-  return setmetatable({siteRegistry=siteRegistry,brigades=brigades,factory=factory,dispatchBridge=bridge,targetCoordinates=targetCoordinates,logger=spec.logger}, Instance)
+  return setmetatable({siteRegistry=siteRegistry,brigades=brigades,factory=factory,dispatchBridge=bridge,targetCoordinates=targetCoordinates,accessZones=accessZones,logger=spec.logger}, Instance)
 end
 
 function Instance:_log(message) if self.logger then self.logger(TAG .. " " .. tostring(message)) end end
