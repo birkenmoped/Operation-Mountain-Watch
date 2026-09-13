@@ -46,31 +46,43 @@ BadGuys_A3_HONAKER
 BadGuys_A3_BOSTICK
 ```
 
-Diese Gruppen sind `HISTORICAL_TEST_FIXTURE`-artige Testmittel, keine produktive RED-ORBAT und kein späteres RED-C2-Modell. Die produktive RED-C2 soll feindliche Kräfte dynamisch auswählen, einsetzen und bewegen. Kein BLUE-Produktionsmodul darf von diesen Namen oder ihrer Existenz abhängen.
+Diese Gruppen sind ausschließlich Testmittel. Sie sind keine produktive RED-ORBAT und kein späteres RED-C2-Modell. Die produktive RED-C2 soll feindliche Kräfte dynamisch auswählen, einsetzen und bewegen. Kein BLUE-Produktionsmodul darf von diesen Namen oder ihrer Existenz abhängen.
 
 Für einen reproduzierbaren Direct-Fire-Test sollen alle sechs Fixtures:
 
 - `Late Activation` verwenden;
-- im Mission Editor initial `Weapons Hold` erhalten;
 - als kleine bewaffnete Ground-Gruppe ausgelegt sein;
 - freie Sicht auf den jeweiligen Installations-/Guard-Bereich besitzen;
-- so platziert werden, dass nach Freigabe realistische direkte Feuerereignisse gegen BLUE entstehen können;
+- so platziert werden, dass nach Aktivierung reale direkte Feuerereignisse gegen BLUE entstehen können;
 - keine ARTY-/indirect-fire-Rolle für diesen Acceptance-Lauf übernehmen.
 
 Die genaue Position ist ausschließlich Testgeometrie. Sie ist keine produktive Alarmzonen-, QRF-, ARTY- oder CAS-Geometrie.
 
-## Acceptance-only Alarmzonen
+## Acceptance-only Testzonen
 
-Der Harness erzeugt je Fixture eine MOOSE `ZONE_RADIUS` um die reale Fixture-Koordinate. Diese Zone dient ausschließlich dazu, physische `Shot`/`ShootingStart`/`Hit`-Events einer Site reproduzierbar zuzuordnen.
+Für eine deterministische Zuordnung der realen DCS/MOOSE-Events zu genau einer Site werden zusätzlich sechs Mission-Editor-Triggerzonen angelegt:
 
 ```text
-Acceptance fixture zone != production installation alarm zone
-Acceptance fixture zone != tactical battlespace
-Acceptance fixture zone != WEZ
-Acceptance fixture zone != ARTY/CAS target geometry
+ZON_TEST_A3_FENTY_ALARM
+ZON_TEST_A3_FORTRESS_ALARM
+ZON_TEST_A3_JOYCE_ALARM
+ZON_TEST_A3_WRIGHT_ALARM
+ZON_TEST_A3_HONAKER_ALARM
+ZON_TEST_A3_BOSTICK_ALARM
 ```
 
-Insbesondere werden keine `ZON_BLUE_GND_*_ACCESS`, Warehouses oder Guard-PATHLINEs als produktive Alarmanker interpretiert.
+Jede Zone wird ausschließlich für Acceptance 3 um den Bereich gelegt, in dem die jeweilige BLUE-Installation/Guard-Einheiten vom zugehörigen `BadGuys_A3_*`-Fixture bekämpft werden können. Die Zone soll groß genug sein, um die vorgesehenen BLUE-Ziele der jeweiligen Fixture zu enthalten, aber nicht bis zu einer anderen der sechs Installationen reichen.
+
+Diese sechs `ZON_TEST_A3_*`-Objekte sind ausdrücklich **keine** produktiven Alarmzonen. Sie dienen nur der Testkorrelation.
+
+```text
+ZON_TEST_A3_* != production installation alarm zone
+ZON_TEST_A3_* != tactical battlespace
+ZON_TEST_A3_* != WEZ
+ZON_TEST_A3_* != ARTY/CAS target geometry
+```
+
+Insbesondere werden keine `ZON_BLUE_GND_*_ACCESS`, Warehouses oder Guard-PATHLINEs als Alarmanker interpretiert.
 
 ## MOOSE-first
 
@@ -78,10 +90,7 @@ Der Test verwendet die im gepinnten MOOSE vorhandenen öffentlichen Pfade:
 
 ```text
 GROUP:Activate()
-CONTROLLABLE:OptionROEHoldFire()
-CONTROLLABLE:OptionROEOpenFire()
-CONTROLLABLE:OptionAlarmStateRed()
-ZONE_RADIUS:New()
+ZONE:FindByName()
 EVENTHANDLER + EVENTS.Hit / EVENTS.Shot / EVENTS.ShootingStart
 WEAPON wrapper, soweit das reale Event einen Weapon-Pfad liefert
 AUFTRAG + BRIGADE + PLATOON + MOOSE recruitment
@@ -91,16 +100,16 @@ Die tatsächliche MOOSE-`EVENTDATA` stellt `IniUnit`, `IniGroup`, `IniUnitName`,
 
 ## Ablauf
 
-1. Sechs RED-Fixtures werden aktiviert und sofort in `Weapons Hold` gehalten.
-2. Aus ihren realen Koordinaten werden ausschließlich für Acceptance 3 sechs MOOSE-Testzonen erzeugt.
-3. Die Production Base wird mit sechs Alarm-Evidence-Sites vorbereitet.
-4. `StartAlarmEvidence()` aktiviert die MOOSE-Eventhandler.
-5. Sechs lokale BRIGADEs starten mit je Guard- und QRF-Cohort.
-6. Alle sechs persistenten Guard-Demands starten.
-7. Erst wenn alle sechs Guards mindestens 25 m Bewegung gezeigt haben, werden die RED-Fixtures auf `Open Fire` gesetzt.
-8. Der Test wartet auf reale physische Evidence, je einen Installation-Incident und je einen lokalen QRF-Demand.
-9. MOOSE muss je Site eine `Ground_APC`-QRF rekrutieren.
-10. Jede QRF muss mindestens 25 m Distanz zum gemeldeten Angreifer abbauen.
+1. Die Production Base wird mit den sechs `ZON_TEST_A3_*`-Testzonen als Alarm-Evidence-Sites vorbereitet.
+2. `StartAlarmEvidence()` aktiviert die MOOSE-Eventhandler, bevor eine RED-Fixture aktiviert wird.
+3. Sechs lokale BRIGADEs starten mit je Guard- und QRF-Cohort.
+4. Alle sechs persistenten Guard-Demands starten.
+5. Danach aktiviert der Harness die sechs late-activated `BadGuys_A3_*`-Fixtures.
+6. Reale physische `Shot`/`ShootingStart`/`Hit`-Evidence muss je Site einen Installation-Incident erzeugen.
+7. Pro Incident darf genau ein initialer lokaler QRF-Demand entstehen.
+8. MOOSE muss je Site eine `Ground_APC`-QRF rekrutieren.
+9. Jede QRF muss mindestens 25 m Distanz zur real gemeldeten Angreiferposition abbauen.
+10. Parallel bleibt die bekannte Six-Site-Guard-Bewegung >=25 m Teil des gemeinsamen Regression-PASS.
 
 ## PASS-Kriterium
 
@@ -108,8 +117,8 @@ Ein PASS erfordert gleichzeitig:
 
 ```text
 6/6 Guard mission observed
-6/6 Guard alive at Guard-regression threshold
-6/6 Guard movement >= 25 m before hostile release
+6/6 Guard alive at evaluation
+6/6 Guard movement >= 25 m
 6/6 physical alarm-evidence incidents observed
 6/6 incidents contain exactly one initial response demand
 6/6 QRF mission observed
