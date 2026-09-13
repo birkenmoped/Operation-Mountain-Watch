@@ -3,7 +3,7 @@
 
 local SiteRegistry = {}
 
-SiteRegistry.SchemaVersion = "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-SITE-REGISTRY-5"
+SiteRegistry.SchemaVersion = "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-SITE-REGISTRY-6"
 SiteRegistry.GuardTemplateName = "TPL_BLUE_GND_INF_RIFLE_SQUAD_9"
 
 local function guardRouteContract(pathlineName)
@@ -41,7 +41,7 @@ SiteRegistry.Sites = {
     supportProfileId = "GROUND_INSTALLATION_STANDARD",
     warehouseName = "WH_BLUE_GND_FENTY",
     accessZoneName = "ZON_BLUE_GND_FENTY_ACCESS",
-    alarm = mooseZoneAlarm("OMW_BLUE_OBJECTIVE_JALALABAD_AIRPORT", 1828.8),
+    alarm = mooseZoneAlarm("OMW_BLUE_OBJECTIVE_JALALABAD_AIRPORT", 2438.4),
     guardTemplateName = SiteRegistry.GuardTemplateName,
     guardRoute = guardRouteContract("OMW_RTE_BLUE_GUARD_FENTY_01"),
     localSupport = localSupport("NOT_ESTABLISHED_BY_CURRENT_BASELINE"),
