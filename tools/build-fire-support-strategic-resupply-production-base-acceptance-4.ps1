@@ -8,7 +8,7 @@ $prodBuilder=Join-Path $repoRoot 'tools\build-fire-support-strategic-resupply-pr
 $prodBundle=Join-Path $repoRoot 'mission\fire-support-strategic-resupply\dist\OMW_FireSupStratResupply_Base.lua'
 $src=Join-Path $repoRoot 'mission\tests\fire-support-strategic-resupply-production-base-runtime\src\04-qrf-response-clearance-acceptance.lua'
 $out=Join-Path $repoRoot 'mission\tests\fire-support-strategic-resupply-production-base-runtime\dist\OMW_FireSupStratResupply_Production_Base_Acceptance_4.lua'
-$version='OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BASE-ACCEPTANCE-4-2'
+$version='OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BASE-ACCEPTANCE-4-3'
 
 foreach($f in @($prodBuilder,$src)){
   if(-not(Test-Path -LiteralPath $f -PathType Leaf)){throw "Required file not found: $f"}
@@ -29,6 +29,7 @@ foreach($marker in @(
   'AUFTRAG:NewPATROLZONE','SetPatrolAdInfinitum(true)','EnableHuntingPatrol','DisableHuntingPatrol',
   'FOB_JOYCE','BadGuys_A3_JOYCE','ZON_BLUE_GND_JOYCE_ACCESS',
   'AUFTRAG.Type.ONGUARD','AUFTRAG.Type.PATROLZONE','hp_timer','hp_target','fixtureClearedObserved',
+  'focusedSiteRegistry','siteRegistry=focusedSiteRegistry',
   'ACCEPTANCE_SUPPORTED_ELEMENT_RELEASE','ExpireDemand','IsReturning',
   'ROAD_ALIGNED_WAREHOUSE_SPAWN','forwardCoordinate = targetCoordinate')){
   if(-not $c.Contains($marker)){throw "Acceptance 4 marker missing: $marker"}
@@ -55,6 +56,7 @@ Write-Host "AcceptanceSourceSHA256: $((Get-FileHash -LiteralPath $src -Algorithm
 Write-Host "AcceptanceBuilderSHA256: $((Get-FileHash -LiteralPath $PSCommandPath -Algorithm SHA256).Hash.ToUpperInvariant())"
 Write-Host "AcceptanceBundleSHA256: $((Get-FileHash -LiteralPath $out -Algorithm SHA256).Hash.ToUpperInvariant())"
 Write-Host 'AcceptanceSite: FOB_JOYCE'
+Write-Host 'AcceptanceSiteRegistryScope: FOB_JOYCE only; production SiteRegistry remains unchanged'
 Write-Host 'AlarmEvidence: physical MOOSE OPSZONE PROXIMITY_INTRUSION only'
 Write-Host 'QrfResponsePhase: AUFTRAG ONGUARD + SetEngageDetected'
 Write-Host 'QrfClearancePhase: same ARMYGROUP AUFTRAG PATROLZONE + EnableHuntingPatrol'
