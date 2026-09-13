@@ -52,7 +52,7 @@ local adapter = ThreatAdapter.New({
   end,
 })
 
-assertEqual(ThreatAdapter.SchemaVersion,"OMW-FOB-THREAT-OPSZONE-ADAPTER-4","schema")
+assertEqual(ThreatAdapter.SchemaVersion,"OMW-FOB-THREAT-OPSZONE-ADAPTER-5","schema")
 local _, started = adapter:Start(); assertTrue(started,"raw adapter starts")
 
 ops:OnAfterAttacked("Guarded","Attacked","Attacked",1)
