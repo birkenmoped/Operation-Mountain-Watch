@@ -107,8 +107,8 @@ local function telemetry()
     local f=GROUP:FindByName(d.fixture)
     if state.released and f and f:IsAlive() and s.target then s.fixtureDistance=s.target:Get2DDistance(f:GetCoordinate()) end
     updateSiteState(d)
-    log(string.format("SITE_TELEMETRY siteId=%s perimeterStarted=%s proximity=%s guardObserved=%s guardMoveM=%.1f incident=%s demandCount=%s qrfObserved=%s qrfAttribute=%s qrfProgressM=%.1f fixtureDistanceToAnchorM=%s",
-      d.id,tostring(s.perimeterStarted),tostring(s.proximity),tostring(s.guardObserved),s.guardMove or 0,tostring(s.incident),tostring(s.demandCount),tostring(s.qrfObserved),tostring(s.qrfAttribute),s.qrfProgress or 0,tostring(s.fixtureDistance and string.format("%.1f",s.fixtureDistance) or "n/a")))
+    log(string.format("SITE_TELEMETRY siteId=%s perimeterStarted=%s proximity=%s guardObserved=%s guardMoveM=%.1f incident=%s demandCount=%s qrfObserved=%s qrfAccess=%s qrfAttribute=%s qrfProgressM=%.1f fixtureDistanceToAnchorM=%s",
+      d.id,tostring(s.perimeterStarted),tostring(s.proximity),tostring(s.guardObserved),s.guardMove or 0,tostring(s.incident),tostring(s.demandCount),tostring(s.qrfObserved),tostring(s.qrfAccess),tostring(s.qrfAttribute),s.qrfProgress or 0,tostring(s.fixtureDistance and string.format("%.1f",s.fixtureDistance) or "n/a")))
   end
 end
 
@@ -123,20 +123,21 @@ local function evaluate()
     if not s.proximity then pending=true end
     if not s.incident then pending=true elseif s.demandCount~=1 then bad[#bad+1]=d.id..":DEMAND_COUNT_"..tostring(s.demandCount) end
     if not s.qrfObserved then pending=true
+    elseif s.qrfAccess~=true then bad[#bad+1]=d.id..":QRF_NOT_MATERIALIZED_IN_ACCESS"
     elseif s.qrfAttribute~=GROUP.Attribute.GROUND_APC then bad[#bad+1]=d.id..":QRF_ATTRIBUTE"
     elseif not s.qrf or not s.qrf:IsAlive() then bad[#bad+1]=d.id..":QRF_NOT_ALIVE"
     elseif (s.qrfProgress or 0)<MIN_M then pending=true end
   end
   if #bad>0 then fail(table.concat(bad,",")); return end
   if not pending and state.released then
-    state.passed=true; announce("PASS","6/6 Guards >=25 m; 6/6 owner-defined MOOSE perimeters; 6/6 PROXIMITY_INTRUSION incidents; one initial QRF demand each; 6/6 Ground_APC QRFs progressed >=25 m",35); return
+    state.passed=true; announce("PASS","6/6 Guards >=25 m; 6/6 owner-defined MOOSE perimeters; 6/6 PROXIMITY_INTRUSION incidents; one initial QRF demand each; 6/6 Ground_APC QRFs materialized in site ACCESS zones and progressed >=25 m",35); return
   end
   if state.startedAt and timer.getTime()-state.startedAt>TEST_TIMEOUT_SEC then fail("TIMEOUT_INCOMPLETE_SIX_SITE_PHYSICAL_CHAIN") end
 end
 
 local function buildBrigades(package)
   for _,d in ipairs(sites) do
-    local site=package.SiteRegistry.Sites[d.id]; state.site[d.id]={guardMove=0,qrfProgress=0,guardPassed=false,perimeterStarted=false,proximity=false}
+    local site=package.SiteRegistry.Sites[d.id]; state.site[d.id]={guardMove=0,qrfProgress=0,guardPassed=false,perimeterStarted=false,proximity=false,qrfAccess=false}
     local b=BRIGADE:New(site.warehouseName,"BDE_FSSR_A3_"..d.id)
     local g=PLATOON:New(site.guardTemplateName,1,"PLT_FSSR_A3_GUARD_"..d.id)
     local q=PLATOON:New(QRF_TEMPLATE,1,"PLT_FSSR_A3_QRF_"..d.id)
@@ -147,7 +148,13 @@ local function buildBrigades(package)
       local grp=armyGroup and armyGroup:GetGroup() or nil; if not grp then return end
       local a=grp:GetAttribute(); log("ARMY_ON_MISSION siteId="..d.id.." group="..tostring(grp:GetName()).." attribute="..tostring(a))
       if a==GROUP.Attribute.GROUND_INFANTRY then s.guard=grp; s.guardStart=grp:GetCoordinate(); s.guardObserved=true
-      elseif a==GROUP.Attribute.GROUND_APC then s.qrf=grp; s.qrfObserved=true; s.qrfAttribute=a end
+      elseif a==GROUP.Attribute.GROUND_APC then
+        s.qrf=grp; s.qrfObserved=true; s.qrfAttribute=a
+        local access=ZONE:FindByName(site.accessZoneName)
+        local qrfCoordinate=grp:GetCoordinate()
+        s.qrfAccess=access~=nil and qrfCoordinate~=nil and access:IsCoordinateInZone(qrfCoordinate)==true
+        log("QRF_MATERIALIZATION siteId="..d.id.." accessZone="..tostring(site.accessZoneName).." inside="..tostring(s.qrfAccess))
+      end
     end
     state.brigades[d.id]=b
   end
@@ -160,15 +167,16 @@ local function buildPerimeters(package)
     local alarm=site and site.alarm
     if type(alarm)~="table" or type(alarm.radiusM)~="number" or alarm.radiusM<=0 then return nil,"ALARM_CONFIG_INVALID:"..d.id end
     local anchor=nil
-    local securityZone=nil
+    local anchorSource="WAREHOUSE_COORDINATE"
     if alarm.anchorKind=="WAREHOUSE" then
       local brigade=state.brigades[d.id]
       if not brigade or type(brigade.GetCoordinate)~="function" then return nil,"WAREHOUSE_COORDINATE_UNAVAILABLE:"..d.id end
       anchor=brigade:GetCoordinate()
     elseif alarm.anchorKind=="MOOSE_ZONE" then
-      securityZone=ZONE:FindByName(alarm.anchorName)
-      if not securityZone or type(securityZone.GetCoordinate)~="function" then return nil,"MOOSE_ZONE_UNAVAILABLE:"..tostring(alarm.anchorName) end
-      anchor=securityZone:GetCoordinate()
+      local sourceZone=ZONE:FindByName(alarm.anchorName)
+      if not sourceZone or type(sourceZone.GetCoordinate)~="function" then return nil,"MOOSE_ZONE_UNAVAILABLE:"..tostring(alarm.anchorName) end
+      anchor=sourceZone:GetCoordinate()
+      anchorSource="EXISTING_MOOSE_ZONE_CENTER"
     else
       return nil,"ALARM_ANCHOR_KIND_UNSUPPORTED:"..d.id..":"..tostring(alarm.anchorKind)
     end
@@ -176,13 +184,13 @@ local function buildPerimeters(package)
     state.site[d.id].target=anchor
     state.perimeters[d.id]={
       anchorCoordinate=anchor,
-      securityZone=securityZone,
-      zoneName=securityZone and alarm.anchorName or ("OMW_SECURITY_"..site.installationId),
+      securityZone=nil,
+      zoneName="OMW_SECURITY_"..site.installationId,
       radiusM=alarm.radiusM,
       priority=ALARM_PRIORITY,
     }
-    log(string.format("PERIMETER_CONFIG siteId=%s anchorKind=%s anchorName=%s radiusM=%.1f zoneSource=%s",
-      d.id,tostring(alarm.anchorKind),tostring(alarm.anchorName or site.warehouseName),alarm.radiusM,securityZone and "EXISTING_MOOSE_ZONE" or "RUNTIME_ZONE_RADIUS"))
+    log(string.format("PERIMETER_CONFIG siteId=%s anchorKind=%s anchorName=%s radiusM=%.1f anchorSource=%s zoneSource=RUNTIME_ZONE_RADIUS",
+      d.id,tostring(alarm.anchorKind),tostring(alarm.anchorName or site.warehouseName),alarm.radiusM,anchorSource))
   end
   return state.perimeters,nil
 end
