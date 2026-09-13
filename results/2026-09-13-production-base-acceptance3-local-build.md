@@ -11,7 +11,7 @@ project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
 superseded_by:
 source_branch: agent/fire-support-strategic-resupply-base-gate0
-source_commit: c1ab6ed049de8181961a4526f10b6818edbf741c
+source_commit: f834e3b5c0416f143585541e2dd17496d1bc3f95
 validated_in_dcs: false
 ---
 
@@ -22,52 +22,47 @@ validated_in_dcs: false
 Der Projektinhaber hat den Acceptance-3-Builder lokal auf folgendem exakten Git-Stand ausgeführt:
 
 ```text
-c1ab6ed049de8181961a4526f10b6818edbf741c
+f834e3b5c0416f143585541e2dd17496d1bc3f95
 ```
 
-`git pull` führte lokal einen Fast-Forward von `1ea9ac12` auf `c1ab6ed0`; `git rev-parse HEAD` bestätigte anschließend exakt den oben dokumentierten Commit.
+`git pull` führte lokal einen Fast-Forward von `c1ab6ed0` auf `f834e3b5`; `git rev-parse HEAD` bestätigte anschließend exakt den oben dokumentierten Commit. Der Remote-Branch zeigte zum Zeitpunkt der Auswertung ebenfalls exakt `f834e3b5c0416f143585541e2dd17496d1bc3f95`.
 
 Der Build lief ohne gemeldeten Fehler durch. Die Produktions- und Acceptance-Bundle-Hashes aus der Builder-Ausgabe stimmen jeweils exakt mit den anschließend separat per `Get-FileHash -Algorithm SHA256` ermittelten Hashes überein.
 
 ## Builder-Ausgabe – Production Base
 
 ```text
-BuilderVersion: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BASE-6
+BuilderVersion: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BASE-7
 PackageSchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BASE-1
 RuntimeSchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-RUNTIME-8
-SiteRegistrySchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-SITE-REGISTRY-5
-PerimeterRuntimeSchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PERIMETER-RUNTIME-2
-ThreatAdapterSchema: OMW-FOB-THREAT-OPSZONE-ADAPTER-5
+QrfRuntimeSchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-QRF-RUNTIME-3
+QrfVehicleMaterialization: accepted GroundRoadSpawnAdapter via site ACCESS zone
 Sites: 6
 MOOSERelease: 2.9.18
 MOOSECommit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
 MooseLuaSHA256: E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915
 OperationalAssetSelectionAuthority: MOOSE
-GuardQRFRecruitmentConstraintAuthority: MOOSE AUFTRAG/LEGION
-PhysicalAlarmEvidence: MOOSE OPSZONE perimeter qualification plus optional MOOSE EVENTHANDLER/WEAPON evidence
 StrategicResourceAuthority: caller-provided CampaignState/store
 GuardAccessZoneDependency: none
+QrfVehicleAccessZoneDependency: required
 PerimeterAccessZoneDependency: none
-PerimeterClearClosesIncident: false
-MissionSpecificGeometryInjected: true
-MOOSEOverride: Guard materialization exact-geometry exception only
 MizMutation: false
 Encoding: UTF-8 without BOM
-BuilderSHA256: 86C890A8903E969255BDB339BA08B437F63F42077BDF5810C7496A2FC58D5BE4
-BundleSHA256: 0E108A3B86F5ACA0D84C5AC4CABA46598E50762B726F14C8AA22150986CB76DC
-GitCommit: c1ab6ed049de8181961a4526f10b6818edbf741c
+BuilderSHA256: 29037E288C6EC2605BD5225D8261B70AB80FD06E8140437EDC31433169F4B22A
+BundleSHA256: 83FD97FA8962CE835BE464B3536C27F5F0F309D6F5BA240D6AF4A71233D61B46
+GitCommit: f834e3b5c0416f143585541e2dd17496d1bc3f95
 ```
 
 ## Builder-Ausgabe – Acceptance 3
 
 ```text
 BuilderVersion: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BASE-ACCEPTANCE-3-3
-GitCommit: c1ab6ed049de8181961a4526f10b6818edbf741c
-ProductionBuilderSHA256: 86C890A8903E969255BDB339BA08B437F63F42077BDF5810C7496A2FC58D5BE4
-ProductionBundleSHA256: 0E108A3B86F5ACA0D84C5AC4CABA46598E50762B726F14C8AA22150986CB76DC
+GitCommit: f834e3b5c0416f143585541e2dd17496d1bc3f95
+ProductionBuilderSHA256: 29037E288C6EC2605BD5225D8261B70AB80FD06E8140437EDC31433169F4B22A
+ProductionBundleSHA256: 83FD97FA8962CE835BE464B3536C27F5F0F309D6F5BA240D6AF4A71233D61B46
 AcceptanceSourceSHA256: FE68DC7D8D8190210C9D0E2980C9AF62BB39BC58E536863739B75EF19B060F4D
 AcceptanceBuilderSHA256: 4F90CE1CC5D047C9297F48526EAA3EA55A035C1FBE23C99E737BB51DDC150764
-AcceptanceBundleSHA256: CFF8FBB3B2205396FD6849A95C4936723A695B9D5029FD39AA85E6107EB9CFF2
+AcceptanceBundleSHA256: 922467FD9803E25CE5C09B8E98BC41F8D9CFAE5668960FED8D8FE53ED89E8690
 PrimaryAlarmEvidenceSource: MOOSE OPSZONE proximity qualification
 JalalabadAlarmZoneSource: existing MOOSE ZONE OMW_BLUE_OBJECTIVE_JALALABAD_AIRPORT
 OtherAlarmZoneSource: MOOSE WAREHOUSE coordinate + runtime ZONE_RADIUS
@@ -79,13 +74,39 @@ MizMutation: false
 
 ```text
 mission/fire-support-strategic-resupply/dist/OMW_FireSupStratResupply_Base.lua
-0E108A3B86F5ACA0D84C5AC4CABA46598E50762B726F14C8AA22150986CB76DC
+83FD97FA8962CE835BE464B3536C27F5F0F309D6F5BA240D6AF4A71233D61B46
 
 mission/tests/fire-support-strategic-resupply-production-base-runtime/dist/OMW_FireSupStratResupply_Production_Base_Acceptance_3.lua
-CFF8FBB3B2205396FD6849A95C4936723A695B9D5029FD39AA85E6107EB9CFF2
+922467FD9803E25CE5C09B8E98BC41F8D9CFAE5668960FED8D8FE53ED89E8690
 ```
 
 Damit sind Produktionsbundle und Acceptance-Bundle für den dokumentierten lokalen Stand eindeutig identifiziert.
+
+## QRF-Materialisierung dieses Builds
+
+Für motorisierte QRFs gilt in diesem Build wieder der bereits abgenommene Ground-ACCESS-Vertrag:
+
+```text
+MOOSE recruitment / AUFTRAG
+-> site-local BRIGADE / WAREHOUSE
+-> accepted OMW_GroundRoadSpawnAdapter
+-> ZON_BLUE_GND_XXX_ACCESS
+-> road projection and road-axis alignment
+-> outbound QRF mission
+```
+
+Die sechs verwendeten ACCESS-Zonen bleiben:
+
+```text
+ZON_BLUE_GND_FENTY_ACCESS
+ZON_BLUE_GND_FORTRESS_ACCESS
+ZON_BLUE_GND_JOYCE_ACCESS
+ZON_BLUE_GND_WRIGHT_ACCESS
+ZON_BLUE_GND_HONAKER_ACCESS
+ZON_BLUE_GND_BOSTICK_ACCESS
+```
+
+Die ACCESS-Zonen sind dabei ausschließlich Materialisierungs-/Departure-/Return-/Handoff-Grenzen für mobile Ground-Assets. Sie definieren weiterhin weder die Alarmgeometrie noch den taktischen Wirkungsraum.
 
 ## Alarmgeometrie dieses Builds
 
@@ -115,7 +136,7 @@ FOB_BOSTICK:
   runtime MOOSE ZONE_RADIUS 5000 ft / 1524.0 m
 ```
 
-Es werden keine zusätzlichen Mission-Editor-Alarmzonen benötigt. `ACCESS`-Zonen und Guard-PATHLINEs bleiben von der Alarmgeometrie getrennt.
+Es werden keine zusätzlichen Mission-Editor-Alarmzonen benötigt. Guard-PATHLINEs und Alarmgeometrie bleiben davon getrennt.
 
 ## Acceptance-Testfixture
 
@@ -140,6 +161,7 @@ Production build: VERIFIED_LOCAL_BUILD
 Acceptance 3 build: VERIFIED_LOCAL_BUILD
 Production bundle hash match: VERIFIED
 Acceptance bundle hash match: VERIFIED
+QRF ACCESS materialization implementation: BUILT, DCS verification OPEN
 DCS runtime acceptance: OPEN
 ```
 
