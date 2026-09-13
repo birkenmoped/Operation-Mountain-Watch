@@ -8,7 +8,7 @@ local Runtime = {}
 local Instance = {}
 Instance.__index = Instance
 
-Runtime.SchemaVersion = "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-RUNTIME-7"
+Runtime.SchemaVersion = "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-RUNTIME-8"
 local TAG = "[OMW][FireSupStratResupply.Runtime]"
 
 local function fail(message) error(TAG .. " " .. tostring(message), 2) end
@@ -76,6 +76,26 @@ function Runtime.New(spec)
     end
   end
 
+  if spec.alarmEvidence ~= nil then
+    local alarmEvidence=needTable(spec.alarmEvidence,"alarmEvidence")
+    needTable(modules.alarmEvidenceAdapter,"modules.alarmEvidenceAdapter")
+    needFunction(modules.alarmEvidenceAdapter,"New","modules.alarmEvidenceAdapter")
+    local evidenceSites=needTable(alarmEvidence.sites,"alarmEvidence.sites")
+    if not finite(spec.blueCoalition) or not finite(spec.redCoalition) or spec.blueCoalition == spec.redCoalition then
+      fail("blueCoalition and redCoalition must be distinct finite values when alarmEvidence is configured")
+    end
+    for siteId, evidenceSpec in pairs(evidenceSites) do
+      local site=siteRegistry.Sites[siteId]
+      if type(site)~="table" then fail("alarmEvidence.sites contains unknown siteId: "..tostring(siteId)) end
+      needTable(evidenceSpec,"alarmEvidence.sites."..tostring(siteId))
+      needTable(evidenceSpec.alarmZone,"alarmEvidence.sites."..tostring(siteId)..".alarmZone")
+      if evidenceSpec.eventHandlerFactory~=nil and type(evidenceSpec.eventHandlerFactory)~="function" then fail("alarmEvidence eventHandlerFactory must be a function when provided") end
+      if evidenceSpec.weaponFactory~=nil and type(evidenceSpec.weaponFactory)~="function" then fail("alarmEvidence weaponFactory must be a function when provided") end
+      if evidenceSpec.shouldTrackWeapon~=nil and type(evidenceSpec.shouldTrackWeapon)~="function" then fail("alarmEvidence shouldTrackWeapon must be a function when provided") end
+      if evidenceSpec.targetInAlarmZone~=nil and type(evidenceSpec.targetInAlarmZone)~="function" then fail("alarmEvidence targetInAlarmZone must be a function when provided") end
+    end
+  end
+
   if spec.resupply ~= nil then
     local resupply = needTable(spec.resupply, "resupply")
     needTable(modules.resupplyMonitor, "modules.resupplyMonitor")
@@ -132,6 +152,7 @@ function Runtime.New(spec)
     externalAdapters = spec.externalAdapters or {},
     externalSupport = spec.externalSupport,
     perimeters = spec.perimeters,
+    alarmEvidence = spec.alarmEvidence,
     blueCoalition = spec.blueCoalition,
     redCoalition = spec.redCoalition,
     incidentIdFactory = spec.incidentIdFactory,
@@ -268,6 +289,29 @@ function Instance:Prepare()
     return nil, false, "INSTALLATION_INCIDENT_PREPARE_FAILED:" .. tostring(incidentReason)
   end
 
+  local alarmEvidenceAdapters
+  if self.alarmEvidence ~= nil then
+    alarmEvidenceAdapters={}
+    for siteId,evidenceSpec in pairs(self.alarmEvidence.sites) do
+      local site=self.siteRegistry.Sites[siteId]
+      local evidenceAdapter=m.alarmEvidenceAdapter.New({
+        installationId=site.installationId,
+        alarmZone=evidenceSpec.alarmZone,
+        blueCoalition=self.blueCoalition,
+        redCoalition=self.redCoalition,
+        weaponTrackStepSec=evidenceSpec.weaponTrackStepSec,
+        eventHandlerFactory=evidenceSpec.eventHandlerFactory,
+        weaponFactory=evidenceSpec.weaponFactory,
+        shouldTrackWeapon=evidenceSpec.shouldTrackWeapon,
+        targetInAlarmZone=evidenceSpec.targetInAlarmZone,
+        onEvidence=function(_,evidence)
+          installationIncidentRuntime:ReportEvidence(evidence)
+        end,
+      })
+      alarmEvidenceAdapters[siteId]=evidenceAdapter
+    end
+  end
+
   local perimeterBridge, perimeterRuntime
   if self.perimeters ~= nil then
     perimeterBridge = m.perimeterBridge.New({
@@ -306,6 +350,7 @@ function Instance:Prepare()
   self.base = base
   self.installationIncidentBridge = installationIncidentBridge
   self.installationIncidentRuntime = installationIncidentRuntime
+  self.alarmEvidenceAdapters = alarmEvidenceAdapters
   self.perimeterBridge = perimeterBridge
   self.perimeterRuntime = perimeterRuntime
   self.resupplyMonitor = resupplyMonitor
@@ -313,8 +358,8 @@ function Instance:Prepare()
   self.resupplyTransportRuntime = resupplyTransportRuntime
   self.adapters = adapters
   self.prepared = true
-  self:_log(string.format("prepared generic runtime; installationIncidents=true externalSupport=%s perimeters=%s resupplyMonitor=%s resupplyTransport=%s",
-    tostring(externalSupportRuntime~=nil),tostring(perimeterRuntime ~= nil), tostring(resupplyMonitor ~= nil), tostring(resupplyTransportRuntime~=nil)))
+  self:_log(string.format("prepared generic runtime; installationIncidents=true alarmEvidence=%s externalSupport=%s perimeters=%s resupplyMonitor=%s resupplyTransport=%s",
+    tostring(alarmEvidenceAdapters~=nil),tostring(externalSupportRuntime~=nil),tostring(perimeterRuntime ~= nil), tostring(resupplyMonitor ~= nil), tostring(resupplyTransportRuntime~=nil)))
   return self, true, nil
 end
 
@@ -336,6 +381,28 @@ end
 function Instance:CloseInstallationIncident(installationId, reason)
   if not self.prepared then return nil, false, "RUNTIME_NOT_PREPARED" end
   return self.installationIncidentRuntime:CloseInstallationIncident(installationId, reason)
+end
+
+function Instance:StartAlarmEvidence()
+  if not self.prepared then return nil, false, "RUNTIME_NOT_PREPARED" end
+  if not self.alarmEvidenceAdapters then return nil, false, "ALARM_EVIDENCE_NOT_CONFIGURED" end
+  local results={}
+  for siteId,adapter in pairs(self.alarmEvidenceAdapters) do
+    local _,started=adapter:Start()
+    results[siteId]=started
+  end
+  return results,true,nil
+end
+
+function Instance:StopAlarmEvidence()
+  if not self.prepared then return nil, false, "RUNTIME_NOT_PREPARED" end
+  if not self.alarmEvidenceAdapters then return nil, false, "ALARM_EVIDENCE_NOT_CONFIGURED" end
+  local results={}
+  for siteId,adapter in pairs(self.alarmEvidenceAdapters) do
+    local _,stopped=adapter:Stop()
+    results[siteId]=stopped
+  end
+  return results,true,nil
 end
 
 function Instance:StartPerimeters()
