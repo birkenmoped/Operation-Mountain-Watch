@@ -88,6 +88,60 @@ FOB_BOSTICK     -> ZON_BLUE_GND_BOSTICK_ACCESS
 
 Die ACCESS-Zone ist zugleich der MOOSE Spawn-/Home-Handoff-Punkt. Sie definiert weder Alarmzone noch taktischen Wirkungsraum.
 
+### 4.1 Road-Forward-Geometrie – exakte Reuse-Baseline
+
+Die aktuelle Acceptance darf für die Road-Forward-Richtung **keine eigene Feindziel-Heuristik** verwenden. Verbindliche Testreferenz ist die bereits DCS-abgenommene ARMY Ground Foundation Acceptance 3-2:
+
+```text
+mission/tests/army-ground-foundation/ACCEPTANCE-3.md
+mission/tests/army-ground-foundation/src/03-army-ground-acceptance-3.lua
+```
+
+Belegte Provenienz dieses Ground-Tests:
+
+```text
+Branch: agent/army-ground-foundation-reconciliation
+Tested source commit: 9b4997bf024efe0fab18b4d18552117cd8eeee21
+BuilderVersion/Test-ID: ARMY-GROUND-ACCEPTANCE-3-2
+Bundle SHA-256: 1F3879C1245483BA69CB8A5CC76EA1AF4F46CDD01D7C9778440F2A2C6D08EF00
+DCS: 2.9.28.26385 MT
+MOOSE: 2.9.18 / 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+```
+
+Für die sechs Standorte wird exakt dieses Geometrieprinzip wiederverwendet:
+
+```text
+existing ACCESS zone coordinate
+-> existing ZON_BLUE_GND_<SITE>_PATROL_TEST_01 coordinate
+-> total distance
+-> approach fraction for 1500 m standoff before reference
+-> GetIntermediateCoordinate(...)
+-> GetClosestPointToRoad()
+-> forward coordinate for approved GroundRoadSpawnAdapter
+```
+
+Die sechs vorhandenen Richtungsreferenzen sind:
+
+```text
+ZON_BLUE_GND_FENTY_PATROL_TEST_01
+ZON_BLUE_GND_FORTRESS_PATROL_TEST_01
+ZON_BLUE_GND_JOYCE_PATROL_TEST_01
+ZON_BLUE_GND_WRIGHT_PATROL_TEST_01
+ZON_BLUE_GND_HONAKER_PATROL_TEST_01
+ZON_BLUE_GND_BOSTICK_PATROL_TEST_01
+```
+
+Diese `PATROL_TEST`-Zonen sind **nur Acceptance-Referenzen für bereits validierte Six-Site-Road-Geometrie**. Sie werden dadurch nicht zu einer produktiven QRF-Abhängigkeit. Im produktiven `QrfRuntime` wird ausschließlich ein vom Composition Root bereitgestellter, bereits validierter Road-Forward-Anchor konsumiert.
+
+Explizit verworfen und durch Builder-/Regression-Gates verboten ist die zwischenzeitliche Eigenentwicklung:
+
+```text
+physical hostile target
+-> 500 / 1000 / 1500 / 2000 m sample candidates
+-> closest road
+-> first candidate with valid GetPathOnRoad
+```
+
 ## 5. QRF Einsatz- und Rückkehrvertrag
 
 Der bereits vorhandene Honaker-/Ground-Vertrag bleibt unverändert:
@@ -204,6 +258,10 @@ waren Regressionen gegenüber dem bereits dokumentierten Honaker-Vertrag. Fortre
 
 Dieser Pfad ist verworfen.
 
+### Road-Forward-Regressionskorrektur
+
+Die danach eingeführte target-derived Road-Forward-Sampling-Heuristik war ebenfalls keine zulässige Reuse-Lösung. Sie ist aus dem produktiven QRF-Runtime entfernt. Acceptance 3 verwendet stattdessen die exakt dokumentierte Ground-Acceptance-3-2-Geometrie aus Abschnitt 4.1.
+
 ## 10. Aktueller Stand
 
 ```text
@@ -214,6 +272,8 @@ QRF return capability: SetReturnToLegion(true)
 QRF release authority: explicit supported-element/C2 only
 movement-driven release: FORBIDDEN
 perimeter/incident-driven release: FORBIDDEN
+production target-derived road-anchor heuristic: REMOVED
+Acceptance road-forward geometry: GROUND ACCEPTANCE 3-2 REUSE
 Acceptance-3 return orchestration: REMOVED
 Acceptance-3 outbound response harness: STAGED
 local build/hash verification of corrected revision: PENDING
