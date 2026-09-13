@@ -1,16 +1,17 @@
 -- Operation Mountain Watch - Production Base Acceptance 3.
--- Acceptance-only six-site physical MOOSE OPSZONE proximity -> incident -> local QRF attack -> home return.
+-- Six-site physical MOOSE OPSZONE proximity -> incident -> local QRF response.
 -- BadGuys_A3_* are test fixtures only; no production RED-C2 dependency.
--- The explicit acceptance release is a deterministic test completion signal only;
--- installation alarm/perimeter clear does not end QRF missions.
+--
+-- IMPORTANT: this harness observes the accepted QRF contract. It does not invent
+-- a QRF mission-end condition. In particular, movement distance, perimeter clear
+-- and incident close must never release/cancel a dispatched QRF.
 
 local TAG="[OMW][FSSR-PRODUCTION-BASE-A3]"
 local GUARD_TEMPLATE="TPL_BLUE_GND_INF_RIFLE_SQUAD_9"
 local QRF_TEMPLATE="TPL_BLUE_GND_QRF_MIXED_6"
 local MIN_M=25
 local TELEMETRY_SEC=20
-local TEST_TIMEOUT_SEC=1800
-local POST_RETURN_VERIFY_DELAY_SEC=15
+local TEST_TIMEOUT_SEC=900
 local FIXTURE_ROUTE_SPEED_KMH=20
 local INTRUSION_DEPTH_FRACTION=0.65
 local ALARM_PRIORITY=0 -- Acceptance-neutral metadata; not a production response-priority decision.
@@ -104,60 +105,6 @@ local function releaseFixtures()
   announce("ARMED","6/6 Guards passed >=25 m; six RED fixtures physically routed toward owner-defined MOOSE alarm perimeters",20)
 end
 
-local function verifyReturnedQrf(d,s)
-  if state.failed or state.passed or s.qrfReturnVerified then return end
-  if not s.qrfReturned then fail(d.id..":QRF_RETURNED_NOT_OBSERVED"); return end
-  if not s.qrfWarehouseAdd then fail(d.id..":QRF_WAREHOUSE_ADD_NOT_OBSERVED"); return end
-  if s.qrf and s.qrf:IsAlive() then fail(d.id..":QRF_PHYSICAL_GROUP_NOT_REMOVED_AFTER_WAREHOUSE_ADD"); return end
-  s.qrfReturnVerified=true
-  log("QRF_RETURN_VERIFIED siteId="..d.id.." group="..tostring(s.qrfGroupName).." returned=true warehouseAdd=true physicalGroupRemoved=true")
-end
-
-local function attachQrfCallbacks(d,s,armyGroup,accessZone)
-  if armyGroup.__omwFssrA3QrfReturnCallbacks then return end
-  armyGroup.__omwFssrA3QrfReturnCallbacks=true
-
-  local previousRTZ=armyGroup.OnAfterRTZ
-  function armyGroup:OnAfterRTZ(From,Event,To,Zone,Formation)
-    if previousRTZ then previousRTZ(self,From,Event,To,Zone,Formation) end
-    if state.failed or state.passed then return end
-    local effectiveZone=Zone or self.homezone
-    if effectiveZone~=accessZone then
-      fail(d.id..":QRF_RTZ_WRONG_HOME_ZONE actual="..tostring(effectiveZone and effectiveZone:GetName()))
-      return
-    end
-    if s.qrfRtz then fail(d.id..":QRF_DUPLICATE_RTZ"); return end
-    s.qrfRtz=true
-    log("QRF_RTZ siteId="..d.id.." group="..tostring(s.qrfGroupName).." zone="..tostring(accessZone:GetName()).." formation="..tostring(Formation))
-  end
-
-  local previousReturned=armyGroup.OnAfterReturned
-  function armyGroup:OnAfterReturned(From,Event,To)
-    if previousReturned then previousReturned(self,From,Event,To) end
-    if state.failed or state.passed then return end
-    if s.qrfReturned then fail(d.id..":QRF_DUPLICATE_RETURNED"); return end
-    s.qrfReturned=true
-    log("QRF_RETURNED siteId="..d.id.." group="..tostring(s.qrfGroupName).." homeZone="..tostring(accessZone:GetName()))
-    SCHEDULER:New(nil,function() verifyReturnedQrf(d,s) end,{},POST_RETURN_VERIFY_DELAY_SEC)
-  end
-end
-
-local function requestQrfRelease(d,s)
-  if s.qrfReleaseRequested then return true end
-  local incident=baseIncident(d.id)
-  local demandId=incident and incident.demandIds and incident.demandIds[1] or nil
-  if not demandId then return false end
-  local _,changed,reason=state.runtime:GetBase():ExpireDemand(demandId,"ACCEPTANCE_SUPPORTED_ELEMENT_RELEASE")
-  if changed~=true then
-    fail(d.id..":QRF_RELEASE_FAILED reason="..tostring(reason))
-    return false
-  end
-  s.qrfReleaseRequested=true
-  s.qrfReleaseDemandId=demandId
-  log("QRF_RELEASE_REQUESTED siteId="..d.id.." demandId="..tostring(demandId).." reason=ACCEPTANCE_SUPPORTED_ELEMENT_RELEASE")
-  return true
-end
-
 local function telemetry()
   if state.failed or state.passed or not state.runtime then return end
   if not state.released and allGuardsPassed() then releaseFixtures() end
@@ -166,8 +113,8 @@ local function telemetry()
     local f=GROUP:FindByName(d.fixture)
     if state.released and f and f:IsAlive() and s.target then s.fixtureDistance=s.target:Get2DDistance(f:GetCoordinate()) end
     updateSiteState(d)
-    log(string.format("SITE_TELEMETRY siteId=%s perimeterStarted=%s proximity=%s guardObserved=%s guardMoveM=%.1f incident=%s demandCount=%s qrfObserved=%s qrfAccess=%s qrfMissionType=%s qrfTarget=%s qrfProgressM=%.1f qrfRelease=%s qrfRtz=%s qrfReturned=%s qrfWarehouseAdd=%s qrfReturnVerified=%s fixtureDistanceToAnchorM=%s",
-      d.id,tostring(s.perimeterStarted),tostring(s.proximity),tostring(s.guardObserved),s.guardMove or 0,tostring(s.incident),tostring(s.demandCount),tostring(s.qrfObserved),tostring(s.qrfAccess),tostring(s.qrfMissionType),tostring(s.qrfTargetName),s.qrfProgress or 0,tostring(s.qrfReleaseRequested),tostring(s.qrfRtz),tostring(s.qrfReturned),tostring(s.qrfWarehouseAdd),tostring(s.qrfReturnVerified),tostring(s.fixtureDistance and string.format("%.1f",s.fixtureDistance) or "n/a")))
+    log(string.format("SITE_TELEMETRY siteId=%s perimeterStarted=%s proximity=%s guardObserved=%s guardMoveM=%.1f incident=%s demandCount=%s qrfObserved=%s qrfAccess=%s qrfMissionType=%s qrfProgressM=%.1f fixtureDistanceToAnchorM=%s",
+      d.id,tostring(s.perimeterStarted),tostring(s.proximity),tostring(s.guardObserved),s.guardMove or 0,tostring(s.incident),tostring(s.demandCount),tostring(s.qrfObserved),tostring(s.qrfAccess),tostring(s.qrfMissionType),s.qrfProgress or 0,tostring(s.fixtureDistance and string.format("%.1f",s.fixtureDistance) or "n/a")))
   end
 end
 
@@ -184,35 +131,31 @@ local function evaluate()
     if not s.qrfObserved then pending=true
     elseif s.qrfAccess~=true then bad[#bad+1]=d.id..":QRF_NOT_MATERIALIZED_IN_ACCESS"
     elseif s.qrfAttribute~=GROUP.Attribute.GROUND_APC then bad[#bad+1]=d.id..":QRF_ATTRIBUTE"
-    elseif s.qrfMissionType~=AUFTRAG.Type.GROUNDATTACK then bad[#bad+1]=d.id..":QRF_NOT_GROUNDATTACK"
-    elseif s.qrfTargetName~=d.fixture then bad[#bad+1]=d.id..":QRF_WRONG_TARGET_"..tostring(s.qrfTargetName)
-    elseif not s.qrfReleaseRequested and (not s.qrf or not s.qrf:IsAlive()) then bad[#bad+1]=d.id..":QRF_NOT_ALIVE_BEFORE_RELEASE"
-    elseif (s.qrfProgress or 0)<MIN_M and not s.qrfReleaseRequested then pending=true
+    elseif s.qrfMissionType~=AUFTRAG.Type.ONGUARD then bad[#bad+1]=d.id..":QRF_NOT_ONGUARD"
+    elseif not s.qrf or not s.qrf:IsAlive() then bad[#bad+1]=d.id..":QRF_NOT_ALIVE_DURING_RESPONSE"
+    elseif (s.qrfProgress or 0)<MIN_M then pending=true
     end
-    if s.qrfObserved and (s.qrfProgress or 0)>=MIN_M and not s.qrfReleaseRequested then
-      if not requestQrfRelease(d,s) then pending=true end
-    end
-    if not s.qrfReleaseRequested then pending=true end
-    if not s.qrfRtz then pending=true end
-    if not s.qrfReturned then pending=true end
-    if not s.qrfWarehouseAdd then pending=true end
-    if not s.qrfReturnVerified then pending=true end
   end
   if #bad>0 then fail(table.concat(bad,",")); return end
   if not pending and state.released then
-    state.passed=true; announce("PASS","6/6 Guards >=25 m; 6/6 owner-defined MOOSE perimeters; 6/6 PROXIMITY_INTRUSION incidents; one initial QRF demand each; 6/6 Ground_APC QRFs materialized in ACCESS, execute GROUNDATTACK with >=25 m closing progress, receive explicit acceptance release, RTZ to their home ACCESS, Returned, Warehouse AddAsset and controlled physical removal",40); return
+    state.passed=true
+    announce("PASS","6/6 Guards >=25 m; 6/6 owner-defined MOOSE perimeters; 6/6 PROXIMITY_INTRUSION incidents; exactly one initial QRF demand each; 6/6 Ground_APC QRFs materialized in ACCESS under ONGUARD and showed >=25 m physical closing response. Harness issued no QRF release/cancel.",40)
+    return
   end
-  if state.startedAt and timer.getTime()-state.startedAt>TEST_TIMEOUT_SEC then fail("TIMEOUT_INCOMPLETE_SIX_SITE_PHYSICAL_CHAIN") end
+  if state.startedAt and timer.getTime()-state.startedAt>TEST_TIMEOUT_SEC then fail("TIMEOUT_INCOMPLETE_SIX_SITE_PHYSICAL_RESPONSE_CHAIN") end
 end
 
 local function buildBrigades(package)
   for _,d in ipairs(sites) do
     local site=package.SiteRegistry.Sites[d.id]
-    state.site[d.id]={guardMove=0,qrfProgress=0,guardPassed=false,perimeterStarted=false,proximity=false,qrfAccess=false,qrfRtz=false,qrfReturned=false,qrfWarehouseAdd=false,qrfReturnVerified=false}
+    state.site[d.id]={guardMove=0,qrfProgress=0,guardPassed=false,perimeterStarted=false,proximity=false,qrfAccess=false}
     local b=BRIGADE:New(site.warehouseName,"BDE_FSSR_A3_"..d.id)
     local g=PLATOON:New(site.guardTemplateName,1,"PLT_FSSR_A3_GUARD_"..d.id)
     local q=PLATOON:New(QRF_TEMPLATE,1,"PLT_FSSR_A3_QRF_"..d.id)
-    g:AddMissionCapability(AUFTRAG.Type.ONGUARD,100); q:AddMissionCapability(AUFTRAG.Type.GROUNDATTACK,100); b:AddPlatoon(g); b:AddPlatoon(q)
+    g:AddMissionCapability(AUFTRAG.Type.ONGUARD,100)
+    q:AddMissionCapability(AUFTRAG.Type.ONGUARD,100)
+    b:AddPlatoon(g)
+    b:AddPlatoon(q)
     local s=state.site[d.id]
     local previous=b.OnAfterArmyOnMission
     b.OnAfterArmyOnMission=function(self,From,Event,To,armyGroup,mission)
@@ -228,22 +171,7 @@ local function buildBrigades(package)
         local qrfCoordinate=grp:GetCoordinate()
         s.qrfAccess=access~=nil and qrfCoordinate~=nil and access:IsCoordinateInZone(qrfCoordinate)==true
         s.qrfMissionType=mission and mission:GetType() or nil
-        local targetData=mission and mission:GetTargetData() or nil
-        local targetObject=targetData and targetData:GetObject() or nil
-        s.qrfTargetName=targetObject and targetObject:GetName() or nil
-        if access then attachQrfCallbacks(d,s,armyGroup,access) end
-        log("QRF_MATERIALIZATION siteId="..d.id.." group="..tostring(s.qrfGroupName).." accessZone="..tostring(site.accessZoneName).." inside="..tostring(s.qrfAccess).." missionType="..tostring(s.qrfMissionType).." target="..tostring(s.qrfTargetName))
-      end
-    end
-    local previousAddAsset=b.OnAfterAddAsset
-    b.OnAfterAddAsset=function(self,From,Event,To,Group,Groups)
-      if previousAddAsset then previousAddAsset(self,From,Event,To,Group,Groups) end
-      if state.failed or state.passed or not s.qrfGroupName then return end
-      local groupName=Group and Group:GetName() or nil
-      if groupName==s.qrfGroupName then
-        if s.qrfWarehouseAdd then fail(d.id..":QRF_DUPLICATE_WAREHOUSE_ADD"); return end
-        s.qrfWarehouseAdd=true
-        log("QRF_WAREHOUSE_ADD_ASSET siteId="..d.id.." group="..tostring(groupName))
+        log("QRF_MATERIALIZATION siteId="..d.id.." group="..tostring(s.qrfGroupName).." accessZone="..tostring(site.accessZoneName).." inside="..tostring(s.qrfAccess).." missionType="..tostring(s.qrfMissionType))
       end
     end
     state.brigades[d.id]=b
@@ -296,8 +224,6 @@ local function start()
     resolveGuardPathline=function(n) return PATHLINE:FindByName(n) end,
     resolveGuardTemplateGroup=function(n) return GROUP:FindByName(n) end,
     guardRequiredAttributes=GROUP.Attribute.GROUND_INFANTRY,
-    -- Runtime-8 currently forwards this callback under the legacy coordinate name;
-    -- QrfRuntime interprets the return value as the transient physical target GROUP.
     resolveQrfCoordinate=function(demand,context)
       local i=context and context.incident
       local c=i and i.context
@@ -316,7 +242,7 @@ local function start()
   for _,b in pairs(state.brigades) do b:Start() end
   for _,d in ipairs(sites) do local _,created,siteReason=r:StartSite(d.id,{}); if created==false then fail(d.id.." GUARD_START_FAILED "..tostring(siteReason)); return end end
   state.startedAt=timer.getTime()
-  announce("READY","six owner-defined MOOSE perimeters and Guard/QRF organisations active; RED fixtures remain late-activated until all Guards pass >=25 m; QRF return uses MOOSE ReturnToLegion via each site's ACCESS home zone",20)
+  announce("READY","six owner-defined MOOSE perimeters and Guard/QRF organisations active; RED fixtures remain late-activated until all Guards pass >=25 m; Acceptance observes QRF response only and never releases/cancels QRF missions",20)
   SCHEDULER:New(nil,function()
     for _,d in ipairs(sites) do local s=state.site[d.id]; updateSiteState(d); if s.guardObserved and s.guard and s.guard:IsAlive() and (s.guardMove or 0)>=MIN_M then s.guardPassed=true end end
     evaluate()
