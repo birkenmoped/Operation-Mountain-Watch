@@ -47,47 +47,52 @@ NO ACCEPTANCE SHORTCUT
 | Bereich | Referenz | Verbindliche Semantik |
 |---|---|---|
 | Alarm | `ARMY-GROUND-INSTALLATION-ALARM-MULTI-EVIDENCE-DECISION.md` | Alarmzone = Detection/Response-Trigger, nicht WEZ/Battlespace/Mission-Ende. |
-| QRF Response Mission | Honaker Full-Response | `AUFTRAG:NewONGUARD(...)` + `SetEngageDetected(...)`; kein `GROUNDATTACK`. |
-| QRF Tactical Area | Honaker Full-Response | 5 NM site-local tactical zone; Ground Units. |
-| QRF Clearance Mission | Owner decision 2026-09-13 + pinned MOOSE source review | Nach Beginn der ONGUARD-Ausführung wechselt dieselbe physische `ARMYGROUP` in `AUFTRAG:NewPATROLZONE(site-local tactical zone)` + `SetPatrolAdInfinitum(true)` + `EnableHuntingPatrol(...)`. Diese Erweiterung benötigt DCS-Acceptance. |
-| QRF Return Enable | Honaker Full-Response + clearance extension | Response und Clearance verwenden `SetReturnToLegion(true)`. |
-| QRF Release | Honaker Full-Response | Nur explizite Supported-Element/C2-Freigabe. Bewegung, Perimeter-Clear, Incident-Close und "keine Gegner gefunden" sind keine Release Authority. |
+| QRF Recruitment | Honaker Full-Response + Owner decision 2026-09-13 | `AUFTRAG:NewONGUARD(initial threat coordinate)` bleibt MOOSE-Rekrutierungs-/Materialisierungsanker; kein `GROUNDATTACK`. |
+| QRF Target Authority | `OMW_GroundInstallationAttackIncident.lua` | Bekannte Angreifer stammen aus dem autoritativen Incident-Teilnehmerbestand `GetParticipants(true)`; keine zweite World-Scan-Autoritaet. |
+| QRF Tactical Area | Honaker Full-Response | 5 NM site-local tactical zone; nur lebende Incident-`UNIT`s innerhalb dieser Zone sind QRF-Ziele. |
+| QRF Engagement | Owner decision 2026-09-13 + pinned MOOSE source review | Dieselbe physische `ARMYGROUP` greift das naechste lebende Incident-`UNIT` mit `ARMYGROUP:EngageTarget()` an. MOOSE verfolgt dessen aktuelle Position. |
+| QRF Retarget | Pinned MOOSE `Disengage` lifecycle | Ziel tot -> MOOSE `Disengage` -> ereignisgetriebene Neuauswahl des naechsten lebenden Incident-Ziels. Kein OMW-Target-Scheduler. |
+| QRF Return | Owner decision 2026-09-13 | Wenn kein lebendes autorisiertes Incident-Ziel in der Tactical-Zone verbleibt, wird die QRF-Mission beendet und `SetReturnToLegion(true)` / RTZ / Returned verwendet. Perimeter-Clear oder Incident-Close allein reichen nicht. |
 | ACCESS | `ARMY-GROUND-RECONSTITUTION-ACCESS-CONTRACT.md` | `ZON_BLUE_GND_XXX_ACCESS` ist Materialisierungs-/Departure-/Return-/Handoff-Grenze. |
 | Road-aligned materialization | `OMW_GroundRoadSpawnAdapter.lua` | Nur Spawngeometrie wird angepasst; MOOSE besitzt BRIGADE/WAREHOUSE/PLATOON/ARMYGROUP/AUFTRAG. |
-| Ground Return | Ground Acceptance 6/7 | Release -> aktive QRF-Mission Cancel -> HuntingPatrol aus -> RTZ(home ACCESS) -> Returned -> Warehouse AddAsset -> physical removal. |
 | Resources | CampaignState / Ground Foundation | CampaignState bleibt strategische Autorität. |
 
-## Owner-genehmigte QRF-Erweiterung 13.09.2026
+## Owner-Entscheidung und Honaker-Reconciliation 13.09.2026
 
-Der reale Production-Base-Acceptance-3-Lauf zeigte bei Joyce, dass die QRF korrekt anrückte, aber zwei überlebende Gegner hinter einer Geländekante nicht systematisch suchte. `SetEngageDetected(...)` ist im gepinnten MOOSE-Stand kein Search-and-Clear-Vertrag. `GROUNDATTACK` bleibt ausdrücklich ausgeschlossen.
+Der historische Honaker-Full-Response-Test hatte bereits den entscheidenden Incident-Vertrag: bekannte lebende Angreifer wurden als Incident-Teilnehmer geführt, nach Entfernung priorisiert und erst nach Neutralisierung der bekannten Angreifer wurde die QRF zur Rueckkehr freigegeben. Die damalige QRF verwendete `NewONGUARD(target:GetCoordinate()) + SetEngageDetected(...)`; sie war noch nicht direkt an das konkrete bewegliche Target gebunden.
 
-Der Projektinhaber hat deshalb folgende Erweiterung ausdrücklich genehmigt:
+Production Base Acceptance 3 zeigte bei Joyce die Grenze von reinem `SetEngageDetected`: Restkraefte hinter Gelaende wurden nicht verlaesslich weiter verfolgt. Ein anschliessender A4-Entwurf mit `PATROLZONE + HuntingPatrol` wurde im realen DCS-Test vom 13.09.2026 verworfen. Beobachtet wurden unnoetige Wege zur alten Einsatzgeometrie und eine im Gelaende gebundene QRF, waehrend RED weiter in Richtung FOB lief. Dieser Lauf ist negative Design-Evidenz, kein PASS.
+
+Der Projektinhaber hat daraufhin den folgenden Vertrag festgelegt:
 
 ```text
 Incident / QRF demand
-        -> ONGUARD + SetEngageDetected              [RESPONSE]
-        -> ONGUARD executing at response waypoint
+        -> ONGUARD(initial threat coordinate)       [MOOSE recruitment/materialization anchor]
         -> same physical ARMYGROUP
-        -> PATROLZONE(site-local tactical zone)     [CLEARANCE]
-        -> SetPatrolAdInfinitum(true)
-        -> EnableHuntingPatrol(...)
-        -> remain employed until explicit C2 release
-        -> DisableHuntingPatrol / patrol infinitum off
-        -> cancel active clearance mission
-        -> MOOSE ReturnToLegion / RTZ lifecycle
+        -> nearest living known incident UNIT inside 5-NM tactical zone
+        -> ARMYGROUP:EngageTarget(concrete UNIT)
+        -> MOOSE updates pursuit against moving target
+        -> target dead -> MOOSE Disengage
+        -> reacquire next living incident UNIT
+        -> repeat
+        -> no living authorized incident target remains
+        -> cancel/complete QRF mission
+        -> MOOSE ReturnToLegion / RTZ / Returned / Warehouse lifecycle
 ```
 
 Verbindliche Grenzen:
 
 ```text
-- kein GROUNDATTACK als Ersatz für ONGUARD;
-- kein eigener Search-and-Destroy-Scanner;
-- kein OMW-Scheduler/Frame-Scan für Feindsuche;
-- keine automatische Freigabe bei Perimeter-Clear, Incident-Close oder fehlenden Targets;
-- keine Änderung des ACCESS-/RoadSpawnAdapter-Vertrags;
+- kein GROUNDATTACK;
+- kein PATROLZONE/HuntingPatrol fuer diesen QRF-Vertrag;
+- kein eigener OMW-Scheduler oder Frame-Scan fuer Zielsuche;
+- keine Rueckkehr nur wegen Perimeter-Clear oder Incident-Close;
+- "keine Targets" bedeutet keine lebenden autorisierten Incident-Ziele in der Tactical-Zone, nicht "nichts detektiert";
+- vorhandener GroundInstallationAttackIncident-Teilnehmerbestand ist Zielautoritaet;
 - dieselbe bereits materialisierte ARMYGROUP wird weiterverwendet;
-- MOOSE PATROLZONE/HuntingPatrol besitzt Suche, Zielwahl und Engagement;
-- DCS-Validierung dieser neuen Clearance-Phase ist noch offen.
+- MOOSE EngageTarget/Disengage/ReturnToLegion besitzt physische Verfolgung und Lifecycle;
+- ACCESS-/RoadSpawnAdapter-Vertrag bleibt unveraendert;
+- DCS-Validierung des direkten Target-Cycles ist offen.
 ```
 
 Pinned source review:
@@ -97,14 +102,16 @@ MOOSE release: 2.9.18
 MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
 Moose.lua SHA-256: E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915
 
-AUFTRAG:NewPATROLZONE(...)
-AUFTRAG:GetOpsGroups()
-OPSGROUP:AddMission(...)
-OPSGROUP:__MissionDone(...)
-ARMYGROUP:SetPatrolAdInfinitum(...)
-ARMYGROUP:EnableHuntingPatrol(...)
-ARMYGROUP:DisableHuntingPatrol(...)
+BRIGADE:ArmyOnMission / OnAfterArmyOnMission
+ARMYGROUP:EngageTarget(...)
+ARMYGROUP:OnAfterDisengage
+ARMYGROUP:RTZ / Returned
+AUFTRAG:NewONGUARD(...)
+AUFTRAG:SetReturnToLegion(true)
+AUFTRAG:Cancel()
 ```
+
+Im gepinnten MOOSE-Quellstand akzeptiert `EngageTarget` TARGET/GROUP/UNIT, aktualisiert die Zielkoordinate bei mehr als 100 m Bewegung oder fehlender LOS und disengagiert bei totem/nicht mehr aufloesbarem Ziel. Damit wird keine eigene OMW-Wegpunktverfolgung implementiert.
 
 ## Harte ACCESS-Regel
 
@@ -117,7 +124,7 @@ COP_HONAKER     -> ZON_BLUE_GND_HONAKER_ACCESS
 FOB_BOSTICK     -> ZON_BLUE_GND_BOSTICK_ACCESS
 ```
 
-Nicht als QRF-Materialisierungsabhängigkeit zulässig:
+Nicht als QRF-Materialisierungsabhaengigkeit zulaessig:
 
 ```text
 *_PATROL_TEST_01
@@ -125,67 +132,70 @@ Alarm-/Security-Zone
 Warehouse-Center
 FOB-/COP-Mittelpunkt
 taktisches Ziel als Spawnzone
-zusätzliche Mission-Editor-Spawnzone
+zusaetzliche Mission-Editor-Spawnzone
 ```
 
-Die physische Incident-Zielkoordinate darf im aktuellen Composition Root ausschließlich als Road-Forward-Richtungsinformation an den vorhandenen RoadSpawnAdapter weitergereicht werden. Die tatsächliche Materialisierung muss vollständig innerhalb ACCESS bleiben.
+Die initiale physische Incident-Zielkoordinate darf im Composition Root als Road-Forward-Richtungsinformation an den vorhandenen RoadSpawnAdapter weitergereicht werden. Die tatsaechliche Materialisierung muss vollstaendig innerhalb ACCESS bleiben. Nach der Materialisierung wird die physische QRF nicht zu diesem Positions-Snapshot geschickt, sondern per MOOSE an das konkrete lebende Target gebunden.
 
 ## Acceptance-Code-Gesetz
 
-Acceptance darf beobachten und vorhandene Produktsemantik auslösen, aber keine neue Produktsemantik erfinden. Verboten:
+Acceptance darf beobachten und physische Teststimuli erzeugen, aber keine Produktsemantik erfinden. Verboten:
 
 ```text
-movement >= N m -> release/cancel
-perimeter clear -> release/cancel
-incident close -> release/cancel
-no targets detected -> release/cancel
-alternative AUFTRAG type nur für bequemeren Test
+movement >= N m -> QRF release/cancel
+perimeter clear -> QRF release/cancel
+incident close allein -> QRF release/cancel
+"nichts detektiert" -> QRF release/cancel
+Acceptance-eigene Target-Auswahl fuer die QRF
+Acceptance-eigenes ExpireDemand als Ersatz fuer produktive Target-Completion
+alternative AUFTRAG type nur fuer bequemeren Test
 Acceptance-eigene Resource-/Lifecycle-Authority
 ```
 
-Die historische Production Base Acceptance 3 bleibt als Evidenz des damals exakt gebauten ONGUARD-Response-Pfads unverändert. Die owner-genehmigte Clearance-Erweiterung benötigt eine nachfolgende gezielte Acceptance und darf nicht rückwirkend in das eingefrorene A3-Artefakt hineininterpretiert werden.
+Die historische Production Base Acceptance 3 bleibt unveraendert als Evidenz des damaligen ONGUARD-Response-Pfads. Acceptance 4 prueft den neuen direkten Target-Cycle separat.
 
 ## Nicht wiederholen – dokumentierte Regressionen
 
-1. QRF-Materialisierung außerhalb des ACCESS-Vertrags.
-2. `GROUNDATTACK` statt Honaker-`ONGUARD`.
-3. `>=25 m -> ExpireDemand -> Cancel -> RTZ`; führte zu zu frühem Umdrehen u.a. bei Fortress/Joyce.
+1. QRF-Materialisierung ausserhalb des ACCESS-Vertrags.
+2. `GROUNDATTACK` statt Honaker-Recruitment-/Lifecycle-Basis.
+3. `>=25 m -> ExpireDemand -> Cancel -> RTZ`; fuehrte zu zu fruehem Umdrehen u.a. bei Fortress/Joyce.
 4. Eigene 500/1000/1500/2000-m Road-Sampling-Heuristik.
-5. Historische `PATROL_TEST`-Fixtures als aktuelle Acceptance-Voraussetzung; realer Preflight-Fail wegen fehlender Zone.
-6. Eigene Search-/Sweep-Logik parallel zu MOOSE `PATROLZONE`/`HuntingPatrol`.
+5. Historische `PATROL_TEST`-Fixtures als aktuelle Acceptance-Voraussetzung.
+6. `PATROLZONE + HuntingPatrol` als QRF-Clearance; realer A4-DCS-Lauf zeigte unpassende Einsatzgeometrie/Target-Bindung.
+7. Eigene Search-/Sweep-/Target-Scheduler parallel zu MOOSE.
 
 ## Anti-Regression-Gate
 
 `tests/mission-demand/test_fire_support_qrf_accepted_contract.lua` muss mindestens verhindern:
 
 ```text
-Response mission != ONGUARD
-missing SetEngageDetected
+missing ONGUARD recruitment anchor
 missing SetReturnToLegion(true)
 GROUNDATTACK substitution
-missing PATROLZONE clearance phase
-missing SetPatrolAdInfinitum(true)
-missing EnableHuntingPatrol
-missing explicit-release cleanup of HuntingPatrol
+PATROLZONE/HuntingPatrol reintroduction
+missing direct ARMYGROUP:EngageTarget
+missing Disengage-driven reacquisition
+missing authoritative incident GetParticipants(true) target source
+missing tactical-zone target filtering
+missing target-exhaustion mission completion
 missing ACCESS GroundRoadSpawnAdapter integration
 PATROL_TEST dependency
 movement-distance-driven release
-return on perimeter clear
-return on incident close
-return when no target is found
-custom QRF search scheduler
+return on perimeter clear alone
+return on incident close alone
+custom QRF target scheduler
 ```
 
 ## Regression-Verfahren
 
 ```text
 Regression feststellen
--> frühere Acceptance identifizieren
--> akzeptierte Implementierung prüfen
+-> fruehere Acceptance identifizieren
+-> akzeptierte Implementierung pruefen
 -> aktuellen Code dagegen diffen
--> Abweichung zurücknehmen
+-> Abweichung zuruecknehmen
 ```
 
-Keine weitere Alternativlösung ohne vorherige Owner-Entscheidung.
+Keine weitere Alternativloesung ohne vorherige Owner-Entscheidung.
 
 Dieses Dokument ist ein Entwicklungs-/Review-Gate, kein DCS-Runtime-PASS.
