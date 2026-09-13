@@ -4,8 +4,8 @@ status: PLANNED
 document_class: ACCEPTANCE_PLAN
 owning_policy: OMW-GOV-001
 authoritative_for:
-  - six-site physical installation-alarm evidence acceptance fixture contract
-  - six-site physical evidence to incident to local-QRF acceptance scope
+  - corrected six-site installation-alarm acceptance contract
+  - six-site proximity-evidence to incident to local-QRF acceptance scope
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
@@ -15,27 +15,54 @@ source_commit: PENDING_MERGE
 validated_in_dcs: false
 ---
 
-# Production Base Acceptance 3 – Six-Site Physical Alarm Evidence + QRF
+# Production Base Acceptance 3 – Six-Site Installation Alarm + QRF
 
-## Ziel
+## Statuskorrektur nach den ersten zwei DCS-Diagnoseläufen
 
-Acceptance 3 bündelt in einem DCS-Lauf:
+Die zuerst gebaute Acceptance-3-Fassung korrelierte physische `Shot`/`ShootingStart`/`Hit`-Events nur dann mit einer Site, wenn das BLUE-Ziel zur tatsächlich rekrutierten lokalen Guard-Gruppe gehörte. Diese Guard-only-Korrelation ist als Zielmodell verworfen.
+
+Sie widerspricht der verbindlichen Projektentscheidung, nach der die standortbezogene Alarm-/Security-/Threat-Zone der **Installation** gehört und `PROXIMITY_INTRUSION` ein eigenständiger gültiger Alarmtrigger ist. Direct Fire, Indirect Fire und confirmed Hit bleiben zusätzliche Evidence-Kanäle und dürfen denselben Incident erzeugen oder refreshen, sind aber nicht die alleinige Installationsdetektion.
+
+Die ersten beiden DCS-Läufe werden ausschließlich als Diagnoseevidenz behalten. Sie sind kein Acceptance-PASS und keine produktive Alarmbaseline.
+
+## Verbindliche Alarmsemantik
 
 ```text
-6x bestehende Guard-Regression
-+ 6x reale DCS/MOOSE Kampfereignisse
-+ 6x GroundInstallationAlarmEvidenceAdapter
-+ 6x autoritativer Installation-Incident
-+ 6x genau ein initialer lokaler QRF-Demand
-+ 6x MOOSE-rekrutierte Ground_APC-QRF
-+ 6x physische QRF-Bewegung zum gemeldeten Angreifer
+site-specific installation alarm/security/threat zone
+-> hostile proximity / penetration
+-> PROXIMITY_INTRUSION
+-> authoritative installation attack incident
+-> exactly one initial local QRF demand
+-> MOOSE recruitment / execution
+
+parallel valid evidence:
+DIRECT_FIRE_ATTACK
+INDIRECT_FIRE_ATTACK
+CONFIRMED_HIT_ATTACK
+OTHER_CONFIRMED_ATTACK
+-> same incident / refresh
+-> no duplicate initial QRF demand
 ```
 
-ARTY, CAS, Resupply und produktive RED-C2 sind nicht Bestandteil dieses Laufs.
+Die Alarmzone ist nur Detection-/Response-Triggergrenze. Sie ist nicht taktischer Gefechtsraum, WEZ, Fire-Support-Zielgebiet, CAS-Zone oder Mission-End-Bedingung. `OPSZONE:Defeated` beziehungsweise das Verlassen oder Freikämpfen der Zone beendet laufende Incidents oder Support-Aufträge nicht automatisch.
 
-## Testfixture-Vertrag der `.miz`
+`ACCESS`, Warehouse-Position und Guard-PATHLINE sind keine Alarmgeometrie.
 
-Ausschließlich für Acceptance 3 werden sechs late-activated RED-Gruppen angelegt:
+## Diagnose aus den ersten zwei Läufen
+
+Die Guard-Regression lief an allen sechs Standorten an. Die Auswahl der Standorte, an denen ein Incident und anschließend eine QRF entstand, wechselte zwischen den Läufen. Unter anderem wurden im ersten Lauf Wright und Fortress, im zweiten Lauf unter anderem Joyce und Wright mit Incident/QRF beobachtet.
+
+Dieses wechselnde Muster ist mit der Guard-only Event-Korrelation erklärbar: Je nachdem, welches BLUE-Ziel eine RED-Testgruppe zuerst bekämpfte, konnte der Acceptance-Filter ein reales Kampfereignis akzeptieren oder verwerfen.
+
+Der Harness enthält **keine globale QRF-Obergrenze**. Pro Site wird eine eigene BRIGADE mit eigenem QRF-PLATOON aufgebaut. Mehrere QRFs wurden gleichzeitig beobachtet. Eine standortübergreifende `maxQrf`- oder gemeinsame Acceptance-QRF-Pool-Regel existiert nicht.
+
+Bei Joyce wurde zusätzlich beobachtet, dass die RED-Testfixture so nahe an das lokale MOOSE-Warehouse kam, dass dessen eigene `under attack`-/Capture-Mechanik ausgelöst wurde. Diese Fixture-Positionierung testet einen unerwünschten Nebeneffekt und ist nicht Bestandteil des Alarm-Acceptance-Ziels.
+
+Für Bostick beobachtete der Projektinhaber, dass lokale Artillerie die RED-Testbedrohung offenbar per Direct Fire neutralisierte, bevor eine QRF sichtbar wurde. Das wird als visuelle Diagnosehypothese festgehalten und noch nicht als vollständig log-korrelierter technischer Nachweis behandelt. Es zeigt zusätzlich, dass ein Test nicht davon ausgehen darf, dass jede RED-Fixture zwingend lange genug lebt oder zuerst den Guard bekämpft.
+
+## RED-Testfixtures
+
+Die sechs late-activated Gruppen bleiben reine Testfixtures:
 
 ```text
 BadGuys_A3_FENTY
@@ -46,63 +73,74 @@ BadGuys_A3_HONAKER
 BadGuys_A3_BOSTICK
 ```
 
-Diese Gruppen sind reine Testfixtures. Sie sind keine produktive RED-ORBAT und kein späteres RED-C2-Modell. Die produktive RED-C2 soll feindliche Kräfte dynamisch auswählen, einsetzen und bewegen. Kein BLUE-Produktionsmodul darf von diesen Namen oder ihrer Existenz abhängen.
+Sie sind keine produktive RED-ORBAT und kein späteres RED-C2-Modell. Die produktive RED-C2 soll feindliche Kräfte dynamisch auswählen, einsetzen und bewegen. Kein BLUE-Produktionsmodul darf von diesen Namen, Positionen oder ihrer Existenz abhängen.
 
-Für einen reproduzierbaren Direct-Fire-Test sollen alle sechs Fixtures:
+## Korrigierter Acceptance-3-Zielaufbau
 
-- `Late Activation` verwenden;
-- als kleine bewaffnete Ground-Gruppe ausgelegt sein;
-- freie Sicht auf den lokalen BLUE-Guard-Bereich besitzen;
-- nahe genug stehen, dass nach Aktivierung reale direkte Feuerereignisse gegen den lokalen Guard entstehen können;
-- keine ARTY-/indirect-fire-Rolle für diesen Acceptance-Lauf übernehmen.
+Acceptance 3 soll weiterhin möglichst alles in einem einzigen Six-Site-DCS-Lauf bündeln:
 
-Die genaue Position ist ausschließlich Testgeometrie und keine produktive Alarmzonen-, QRF-, ARTY- oder CAS-Geometrie.
+```text
+6x Guard regression
++ 6x site-specific alarm/security/threat-zone intrusion
++ 6x MOOSE OPSZONE / proximity qualification
++ 6x PROXIMITY_INTRUSION
++ 6x authoritative installation incident
++ 6x exactly one initial local QRF demand
++ 6x MOOSE-recruited local QRF
++ 6x physical QRF execution
++ optional direct-fire / hit evidence refresh without duplicate demand
+```
 
-**Zusätzliche Mission-Editor-Testzonen sind nicht erforderlich.** Die Acceptance korreliert ein physisches MOOSE-Event ausschließlich dann mit einer Site, wenn dessen BLUE-Ziel zur tatsächlich von MOOSE für diese Site rekrutierten Guard-Gruppe gehört. Damit wird weder eine produktive Alarmzone erfunden noch `ACCESS`, Warehouse oder Guard-PATHLINE als Alarmgeometrie missbraucht.
+Die konkrete Alarmzonen-Geometrie darf je Installation variieren. Die alten Stage-3-Testkreise dürfen nicht stillschweigend auf alle sechs Standorte generalisiert werden. Vor dem nächsten Acceptance-3-Build ist deshalb die aktuelle Mission-Editor-/Baseline-Evidenz für die sechs standortbezogenen Alarmzonen zu prüfen. Fehlende Geometrie muss vom Projektinhaber festgelegt werden; sie darf nicht aus Warehouse, ACCESS oder Guard-PATHLINE geraten werden.
 
 ## MOOSE-first
 
-Der Test verwendet die öffentlichen MOOSE-Pfade `GROUP:Activate()`, `EVENTHANDLER`, `EVENTS.Hit`, `EVENTS.Shot`, `EVENTS.ShootingStart`, den `WEAPON`-Wrapper sowie `AUFTRAG`, `BRIGADE`, `PLATOON` und MOOSE-Recruitment.
-
-Die tatsächliche MOOSE-`EVENTDATA` stellt `IniUnit`, `IniGroup`, `IniUnitName`, `IniGroupName` und Target-Wrapper bereit. `OMW_GroundInstallationAlarmEvidenceAdapter` Schema 3 übernimmt die reale hostile `IniUnit:GetCoordinate()`-Position als Evidence-Position. Die QRF erhält damit die reale Angreiferposition und keine erfundene Zielkoordinate.
-
-Die Acceptance-spezifische `targetInAlarmZone`-Funktion dient nur zur Zuordnung eines physischen Events zum bereits rekrutierten lokalen Guard. Sie ist kein produktiver Detection- oder Alarmzonen-Ersatz.
-
-## Ablauf
-
-1. Production Base und sechs lokale BRIGADEs werden vorbereitet; je Site existiert ein Guard- und QRF-Cohort.
-2. `StartAlarmEvidence()` aktiviert die MOOSE-Eventhandler, während alle `BadGuys_A3_*` noch late-activated sind.
-3. Alle sechs persistenten Guard-Demands starten.
-4. Der Harness wartet, bis **alle sechs Guards jeweils mindestens 25 m Bewegung** erreicht haben, und merkt diesen Guard-Regression-PASS siteweise vor.
-5. Erst danach aktiviert der Harness alle sechs `BadGuys_A3_*`-Fixtures gleichzeitig.
-6. Reale physische `Shot`/`ShootingStart`/`Hit`-Evidence gegen den jeweiligen lokalen Guard muss je Site einen Installation-Incident erzeugen.
-7. Pro Incident darf genau ein initialer lokaler QRF-Demand entstehen.
-8. MOOSE muss je Site eine `Ground_APC`-QRF rekrutieren.
-9. Jede QRF muss mindestens 25 m Distanz zur real gemeldeten Angreiferposition abbauen.
-
-Die RED-Fixtures werden bewusst erst nach dem Guard-Regressionskriterium aktiviert. So werden Guard-Regression und physische Kampfreaktion in einem einzigen DCS-Lauf geprüft, ohne dass frühes RED-Feuer den Guard-Nachweis verfälscht.
-
-## PASS-Kriterium
+Der korrigierte Hauptpfad verwendet die bereits vorhandene MOOSE-first-Architektur:
 
 ```text
-6/6 Guards hatten vor RED-Aktivierung >= 25 m Bewegung
-6/6 physical alarm-evidence incidents observed
-6/6 incidents contain exactly one initial response demand
-6/6 QRF mission observed
-6/6 QRF attribute = Ground_APC
-6/6 QRF alive at QRF evaluation
-6/6 QRF target-distance progress >= 25 m
+MOOSE OPSZONE
+-> OMW_FireSupStratResupply_PerimeterBridge
+-> PROXIMITY_INTRUSION
+-> OMW_FireSupStratResupply_InstallationIncidentRuntime
+-> OMW_GroundInstallationAttackIncident
+-> OMW_FireSupStratResupply_InstallationIncidentBridge
+-> Base
+-> local QRF demand
+-> MOOSE AUFTRAG / LEGION / BRIGADE recruitment
 ```
 
-Kein Evidence-Objekt wird durch den Harness direkt mit `ReportInstallationEvidence()` eingespeist. Das unterscheidet Acceptance 3 von Acceptance 2.
+Physische `EVENTHANDLER`-/`WEAPON`-Evidence bleibt als zusätzliche Multi-Evidence-Quelle zulässig, ersetzt aber nicht die Proximity-/Triggerzonen-Erkennung.
+
+## PASS-Kriterium – neu zu finalisieren
+
+Das endgültige PASS-Kriterium wird nach Prüfung beziehungsweise Festlegung der sechs autoritativen Alarmzonen-Geometrien finalisiert. Mindestens muss es nachweisen:
+
+```text
+6/6 Guards regression condition satisfied
+6/6 qualified proximity intrusions observed
+6/6 authoritative installation incidents observed
+6/6 exactly one initial QRF demand
+6/6 local QRF mission observed
+no duplicate QRF demand from evidence refresh
+```
+
+QRF-Bewegung und weitere physische Ausführungskriterien werden nur mit belastbarer, standortbezogener Testgeometrie festgelegt.
 
 ## Noch nicht bewiesen
 
-Ein PASS validiert nicht:
+Ein späterer PASS validiert nicht automatisch:
 
-- produktive sechs-site Alarmzonen-Geometrie;
 - ARTY- oder CAS-Eskalation;
 - Ground-/Air-Resupply;
 - CampaignState Transport Settlement;
 - produktive RED-C2;
 - generische Mission-End-/Incident-Close-Logik.
+
+## Aktueller Entscheidungsstand
+
+```text
+old Guard-only Acceptance-3 correlation: REJECTED
+first two DCS runs: diagnostic evidence only
+six-site alarm acceptance: OPEN
+next action: recover/verify authoritative site alarm-zone geometry before rebuilding Acceptance 3
+```
