@@ -1,17 +1,17 @@
 -- Operation Mountain Watch - MOOSE-first FOB/COP perimeter-threat qualification adapter.
 --
--- The adapter creates a runtime ZONE_RADIUS around an installation anchor and lets
--- MOOSE OPSZONE own presence scanning and the Attacked/Defeated/Evaluated FSM
--- transitions. Strategic handling is injected: legacy MissionDemand/Policy remains
--- supported, while new runtimes can consume the raw incident without creating a
--- second demand authority.
+-- The adapter uses either a caller-provided MOOSE zone or creates a runtime
+-- ZONE_RADIUS around an installation anchor, then lets MOOSE OPSZONE own presence
+-- scanning and the Attacked/Defeated/Evaluated FSM transitions. Strategic handling
+-- is injected: legacy MissionDemand/Policy remains supported, while new runtimes can
+-- consume the raw incident without creating a second demand authority.
 
 local Adapter = {}
 local Instance = {}
 Instance.__index = Instance
 
 local TAG = "[OMW][FobThreatOpsZoneAdapter]"
-Adapter.SchemaVersion = "OMW-FOB-THREAT-OPSZONE-ADAPTER-4"
+Adapter.SchemaVersion = "OMW-FOB-THREAT-OPSZONE-ADAPTER-5"
 
 local function fail(message)
   error(TAG .. " " .. tostring(message), 2)
@@ -47,6 +47,9 @@ function Adapter.New(spec)
   requireTable(spec, "spec")
   local anchorCoordinate = requireTable(spec.anchorCoordinate, "anchorCoordinate")
   requireFunction(anchorCoordinate, "GetVec2", "anchorCoordinate")
+
+  local securityZone = spec.securityZone
+  if securityZone ~= nil then requireTable(securityZone, "securityZone") end
 
   local threatHandler = spec.threatHandler
   if threatHandler ~= nil and type(threatHandler) ~= "function" then fail("threatHandler must be a function when provided") end
@@ -85,6 +88,7 @@ function Adapter.New(spec)
     policy = policy,
     threatHandler = threatHandler,
     anchorCoordinate = anchorCoordinate,
+    securityZone = securityZone,
     installationId = spec.installationId,
     zoneName = spec.zoneName,
     priority = spec.priority,
@@ -100,7 +104,6 @@ function Adapter.New(spec)
     onThreatStarted = spec.onThreatStarted,
     onThreatEvaluated = spec.onThreatEvaluated,
     onThreatCleared = spec.onThreatCleared,
-    securityZone = nil,
     opsZone = nil,
     started = false,
     incidentSequence = 0,
@@ -170,17 +173,21 @@ end
 
 function Instance:Start()
   if self.started then return self, false end
-  local vec2 = self.anchorCoordinate:GetVec2()
-  requireTable(vec2, "anchorCoordinate:GetVec2 result")
 
-  local zone
-  if self.zoneRadiusFactory then
-    zone = self.zoneRadiusFactory(self.zoneName, vec2, self.radiusM)
-  else
-    if type(ZONE_RADIUS) ~= "table" or type(ZONE_RADIUS.New) ~= "function" then fail("MOOSE ZONE_RADIUS:New() is required") end
-    zone = ZONE_RADIUS:New(self.zoneName, vec2, self.radiusM)
+  local zone = self.securityZone
+  local zoneSource = "CALLER_PROVIDED"
+  if zone == nil then
+    local vec2 = self.anchorCoordinate:GetVec2()
+    requireTable(vec2, "anchorCoordinate:GetVec2 result")
+    zoneSource = "RUNTIME_ZONE_RADIUS"
+    if self.zoneRadiusFactory then
+      zone = self.zoneRadiusFactory(self.zoneName, vec2, self.radiusM)
+    else
+      if type(ZONE_RADIUS) ~= "table" or type(ZONE_RADIUS.New) ~= "function" then fail("MOOSE ZONE_RADIUS:New() is required") end
+      zone = ZONE_RADIUS:New(self.zoneName, vec2, self.radiusM)
+    end
   end
-  requireTable(zone, "security ZONE_RADIUS")
+  requireTable(zone, "security zone")
 
   local opsZone
   if self.opsZoneFactory then
@@ -231,9 +238,9 @@ function Instance:Start()
   self.started = true
   opsZone:Start()
   self:_log(string.format(
-    "started MOOSE OPSZONE security perimeter zone=%s radiusM=%s owner=%s updateSeconds=%s threatlevel=%s captureNunits=%s handler=%s",
+    "started MOOSE OPSZONE security perimeter zone=%s radiusM=%s owner=%s updateSeconds=%s threatlevel=%s captureNunits=%s handler=%s zoneSource=%s",
     tostring(self.zoneName), tostring(self.radiusM), tostring(self.blueCoalition), tostring(self.updateSeconds or opsZone.UpdateSeconds),
-    tostring(self.captureThreatlevel), tostring(self.captureNunits), self.threatHandler and "RAW_INCIDENT" or "MISSION_DEMAND_POLICY"))
+    tostring(self.captureThreatlevel), tostring(self.captureNunits), self.threatHandler and "RAW_INCIDENT" or "MISSION_DEMAND_POLICY", zoneSource))
   return self, true
 end
 
