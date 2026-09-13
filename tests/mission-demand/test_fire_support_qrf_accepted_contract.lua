@@ -20,7 +20,7 @@ local incidentBridge = read("scripts/campaign/OMW_FireSupStratResupply_Installat
 local acceptance = read("mission/tests/fire-support-strategic-resupply-production-base-runtime/src/03-production-base-six-site-physical-alarm-qrf-acceptance.lua")
 
 -- Honaker-reconciled QRF recruitment/materialization anchor remains MOOSE ONGUARD.
-contains(factory, "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-QRF-MISSION-FACTORY-7", "QRF factory schema")
+contains(factory, "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-QRF-MISSION-FACTORY-8", "QRF factory schema")
 contains(factory, "AUFTRAG:NewONGUARD", "QRF factory recruitment anchor")
 contains(factory, "SetReturnToLegion(true)", "QRF factory return contract")
 contains(factory, "SetTeleport(false)", "QRF factory physical lifecycle")
@@ -38,6 +38,11 @@ contains(factory, "tacticalZone:IsCoordinateInZone", "QRF target zone authority"
 contains(factory, "mission:Cancel()", "QRF completion return trigger")
 excludes(factory, "SCHEDULER", "QRF factory custom target scheduler")
 excludes(factory, "timer.scheduleFunction", "QRF factory custom target scheduler")
+
+-- Motorized QRF march is road-preferred. Pinned MOOSE ARMYGROUP routing owns the
+-- road waypoints and the final off-road approach to a target that is not on-road.
+contains(factory, 'local DEFAULT_ENGAGE_FORMATION = "On Road"', "QRF road-preferred transit")
+excludes(factory, 'local DEFAULT_ENGAGE_FORMATION = "Vee"', "QRF march formation")
 
 -- Existing installation incident participant registry is the target authority.
 contains(incidentBridge, "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-INSTALLATION-INCIDENT-BRIDGE-4", "incident bridge schema")
