@@ -5,18 +5,19 @@
 -- Honaker pattern: ONGUARD + SetEngageDetected inside a site-local 5 NM tactical
 -- zone and SetReturnToLegion(true). Alarm/incident state is not mission-end authority.
 -- Mobile vehicle materialization remains on the approved GroundRoadSpawnAdapter
--- at the site's ACCESS zone; MOOSE retains recruitment, mission and return lifecycle.
+-- at the site's ACCESS zone. Road direction is supplied by the composition root
+-- from validated site geometry; this runtime does not invent target-derived road
+-- anchor heuristics. MOOSE retains recruitment, mission and return lifecycle.
 
 local Runtime = {}
 local Instance = {}
 Instance.__index = Instance
 
-Runtime.SchemaVersion = "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-QRF-RUNTIME-7"
+Runtime.SchemaVersion = "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-QRF-RUNTIME-8"
 local TAG = "[OMW][FireSupStratResupply.QrfRuntime]"
 local QRF_TACTICAL_RADIUS_NM = 5
 local QRF_ENGAGE_RANGE_NM = 5
 local ROAD_SPAWN_VEHICLE_SPACING_M = 18
-local ROAD_DIRECTION_SAMPLE_DISTANCES_M = { 500, 1000, 1500, 2000 }
 local HOME_SPAWN_ZONE_MAX_DIST_M = 1000
 
 local function fail(message) error(TAG .. " " .. tostring(message), 2) end
@@ -46,51 +47,6 @@ local function mobileVehicle(asset)
     and asset.attribute ~= WAREHOUSE.Attribute.GROUND_INFANTRY
 end
 
-local function validRoadPath(startRoad, candidate)
-  if not startRoad or not candidate then return false end
-  local roadPath, _, gotRoadPath = startRoad:GetPathOnRoad(candidate, true, false, false, false)
-  return gotRoadPath == true and type(roadPath) == "table" and #roadPath >= 2
-end
-
-local function resolveOutboundRoadCoordinate(accessZone, targetCoordinate, entityId)
-  if type(accessZone) ~= "table" or type(accessZone.GetCoordinate) ~= "function" then
-    fail("QRF road direction requires MOOSE ACCESS zone entityId=" .. tostring(entityId))
-  end
-  if type(targetCoordinate) ~= "table" or type(targetCoordinate.Get2DDistance) ~= "function"
-      or type(targetCoordinate.GetClosestPointToRoad) ~= "function" then
-    fail("QRF road direction requires physical target COORDINATE entityId=" .. tostring(entityId))
-  end
-
-  local accessCoordinate = accessZone:GetCoordinate()
-  local startRoad = accessCoordinate and accessCoordinate:GetClosestPointToRoad(false) or nil
-  if not startRoad then
-    fail("QRF ACCESS road unavailable entityId=" .. tostring(entityId))
-  end
-
-  local totalDistance = accessCoordinate:Get2DDistance(targetCoordinate)
-  if type(totalDistance) ~= "number" or totalDistance <= 0 then
-    fail("QRF target distance unavailable entityId=" .. tostring(entityId))
-  end
-
-  for _, sampleDistance in ipairs(ROAD_DIRECTION_SAMPLE_DISTANCES_M) do
-    if sampleDistance < totalDistance then
-      local fraction = sampleDistance / totalDistance
-      local rawCandidate = accessCoordinate:GetIntermediateCoordinate(targetCoordinate, fraction)
-      local roadCandidate = rawCandidate and rawCandidate:GetClosestPointToRoad(false) or nil
-      if roadCandidate and validRoadPath(startRoad, roadCandidate) then
-        return roadCandidate
-      end
-    end
-  end
-
-  local targetRoad = targetCoordinate:GetClosestPointToRoad(false)
-  if targetRoad and validRoadPath(startRoad, targetRoad) then
-    return targetRoad
-  end
-
-  fail("QRF outbound road anchor unavailable entityId=" .. tostring(entityId))
-end
-
 function Runtime.New(spec)
   needTable(spec, "spec")
   local siteRegistry = needTable(spec.siteRegistry, "siteRegistry")
@@ -101,6 +57,10 @@ function Runtime.New(spec)
   needFunction(qrfMissionFactory, "New", "qrfMissionFactory")
   needFunction(legionBridge, "New", "legionBridge")
   local resolveTarget = needCallable(spec.resolveTarget or spec.resolveCoordinate, "resolveTarget")
+  local resolveRoadSpawnForwardCoordinate = needCallable(
+    spec.resolveRoadSpawnForwardCoordinate,
+    "resolveRoadSpawnForwardCoordinate"
+  )
   if spec.logger ~= nil and type(spec.logger) ~= "function" then fail("logger must be a function when provided") end
 
   if type(ZONE) ~= "table" or type(ZONE.FindByName) ~= "function" then fail("MOOSE ZONE:FindByName() is required") end
@@ -132,8 +92,9 @@ function Runtime.New(spec)
       UTILS.NMToMeters(QRF_TACTICAL_RADIUS_NM)
     )
 
-    -- Reuse the accepted Ground Foundation contract: the ACCESS zone is both the
-    -- visible road materialization boundary and the MOOSE ARMYGROUP homezone.
+    -- Accepted Ground Foundation boundary: ACCESS is the visible road materialization
+    -- boundary and the MOOSE ARMYGROUP homezone. The caller supplies a validated
+    -- forward road anchor; QRF runtime deliberately contains no fallback heuristic.
     brigade:SetSpawnZone(accessZone, HOME_SPAWN_ZONE_MAX_DIST_M)
     roadSpawnAdapter.Install(brigade, {
       resolveRoadSpawn = function(_, asset)
@@ -141,7 +102,17 @@ function Runtime.New(spec)
         local targetCoordinate = targetCoordinates[siteId]
         if targetCoordinate == nil then return nil end
         local entityId = tostring(site.installationId) .. "|QRF"
-        local forwardCoordinate = resolveOutboundRoadCoordinate(accessZone, targetCoordinate, entityId)
+        local forwardCoordinate, reason = resolveRoadSpawnForwardCoordinate(
+          siteId,
+          site,
+          accessZone,
+          targetCoordinate,
+          brigade
+        )
+        if forwardCoordinate == nil then
+          fail("validated QRF road forward coordinate unavailable entityId="
+            .. tostring(entityId) .. " reason=" .. tostring(reason))
+        end
         return {
           accessZone = accessZone,
           forwardCoordinate = forwardCoordinate,
