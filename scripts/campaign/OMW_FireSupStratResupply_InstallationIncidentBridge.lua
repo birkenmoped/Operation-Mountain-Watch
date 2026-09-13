@@ -2,16 +2,15 @@
 --
 -- Consumes the authoritative installation attack incident lifecycle and forwards
 -- lifecycle state plus transient physical threat identity into the generic Fire
--- Support / Strategic Resupply Base. It does not detect threats, select assets,
--- own resources, or close an incident because an alarm/security perimeter clears.
--- Local incident closure does not terminate an already-dispatched QRF; tactical
--- completion/release is separate and is forwarded through the demand lifecycle.
+-- Support / Strategic Resupply Base. The source incident coordinator remains the
+-- authority for known attack participants so QRF execution can use its public
+-- GetParticipants(true) contract without a second world scan.
 
 local Bridge = {}
 local Instance = {}
 Instance.__index = Instance
 
-Bridge.SchemaVersion = "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-INSTALLATION-INCIDENT-BRIDGE-3"
+Bridge.SchemaVersion = "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-INSTALLATION-INCIDENT-BRIDGE-4"
 local TAG = "[OMW][FireSupStratResupply.InstallationIncidentBridge]"
 
 local function fail(message) error(TAG .. " " .. tostring(message), 2) end
@@ -52,7 +51,9 @@ function Instance:_log(message)
   if self.logger then self.logger(TAG .. " " .. tostring(message)) end
 end
 
-function Instance:OnIncidentStarted(_, incident, evidence)
+function Instance:OnIncidentStarted(sourceCoordinator, incident, evidence)
+  needTable(sourceCoordinator, "sourceCoordinator")
+  needFunction(sourceCoordinator, "GetParticipants", "sourceCoordinator")
   needTable(incident, "incident")
   local sourceIncidentId = needString(incident.incidentId, "incident.incidentId")
   local installationId = needString(incident.installationId, "incident.installationId")
@@ -69,6 +70,7 @@ function Instance:OnIncidentStarted(_, incident, evidence)
       source="INSTALLATION_ATTACK_INCIDENT",
       installationId=installationId,
       sourceIncidentId=sourceIncidentId,
+      sourceIncidentCoordinator=sourceCoordinator,
       initialEvidenceType=evidence and evidence.evidenceType or nil,
       position=evidence and evidence.position or nil,
       reportedTarget=evidence and evidence.reportedTarget or nil,
@@ -90,7 +92,7 @@ function Instance:OnIncidentStarted(_, incident, evidence)
   })
 
   self:_log(string.format(
-    "incident started installationId=%s siteId=%s sourceIncidentId=%s baseIncidentId=%s created=%s qrfCreated=%s qrfReason=%s physicalTarget=%s qrfCancelWhenIncidentClosed=false",
+    "incident started installationId=%s siteId=%s sourceIncidentId=%s baseIncidentId=%s created=%s qrfCreated=%s qrfReason=%s physicalTarget=%s participantAuthority=sourceIncidentCoordinator qrfCancelWhenIncidentClosed=false",
     installationId, tostring(entry.siteId), sourceIncidentId, tostring(opened.incidentId), tostring(created),
     tostring(qrfCreated), tostring(qrfReason), tostring(physicalTargetGroup and physicalTargetGroup:GetName())))
   return opened, created, qrfReason or reason, qrf
@@ -102,7 +104,7 @@ function Instance:OnIncidentUpdated(_, incident, evidence)
   local baseIncidentId = self.sourceToBaseIncident[sourceIncidentId]
   if not baseIncidentId then return nil, false, "BASE_INCIDENT_NOT_BOUND" end
   self:_log(string.format(
-    "incident refreshed sourceIncidentId=%s baseIncidentId=%s evidenceType=%s; no duplicate response demand",
+    "incident refreshed sourceIncidentId=%s baseIncidentId=%s evidenceType=%s; source coordinator participant registry is live; no duplicate response demand",
     sourceIncidentId, tostring(baseIncidentId), tostring(evidence and evidence.evidenceType)))
   return baseIncidentId, false, "INCIDENT_REFRESH_ONLY"
 end
@@ -115,7 +117,7 @@ function Instance:OnIncidentClosed(_, incident, reason)
   local closed, changed, closeReason = self.base:CloseIncident(baseIncidentId, reason or "INSTALLATION_INCIDENT_CLOSED")
   if changed or closeReason == "ALREADY_CLOSED" then self.sourceToBaseIncident[sourceIncidentId] = nil end
   self:_log(string.format(
-    "incident closed sourceIncidentId=%s baseIncidentId=%s changed=%s reason=%s; dispatched QRF remains governed by explicit tactical release",
+    "incident closed sourceIncidentId=%s baseIncidentId=%s changed=%s reason=%s; perimeter/incident close alone does not cancel dispatched QRF",
     sourceIncidentId, tostring(baseIncidentId), tostring(changed), tostring(reason)))
   return closed, changed, closeReason
 end
