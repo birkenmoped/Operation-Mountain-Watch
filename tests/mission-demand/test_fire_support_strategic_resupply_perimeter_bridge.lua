@@ -6,6 +6,10 @@ end
 local function assertTrue(value, label) if value ~= true then error(label .. " expected=true actual=" .. tostring(value)) end end
 local function assertFalse(value, label) if value ~= false then error(label .. " expected=false actual=" .. tostring(value)) end end
 
+local previousCoordinate=COORDINATE
+COORDINATE={}
+function COORDINATE:NewFromVec3(vec3) return {vec3=vec3} end
+
 local calls={evidence=0,close=0}
 local incidentRuntime={}
 function incidentRuntime:ReportEvidence(evidence)
@@ -18,19 +22,32 @@ function incidentRuntime:CloseInstallationIncident()
   error("perimeter clear must not close authoritative incident")
 end
 
+local threatGroup={name="BadGuys_A3_FORTRESS"}
+function threatGroup:IsAlive() return true end
+function threatGroup:GetCoalition() return 1 end
+function threatGroup:GetName() return self.name end
+local scanned={}
+function scanned:GetSetObjects() return {threatGroup} end
+function scanned:GetClosestGroup(_, coalitions)
+  assertEqual(coalitions[1],1,"closest-group coalition")
+  return threatGroup
+end
+local opsZone={}
+function opsZone:GetScannedGroupSet() return scanned end
+
 local registry={Sites={COP_FORTRESS={siteId="COP_FORTRESS",installationId="BLUE_GROUND_COP_FORTRESS"}}}
 local logs={}
 local bridge=Bridge.New({incidentRuntime=incidentRuntime,siteRegistry=registry,logger=function(line) logs[#logs+1]=line end})
-assertEqual(Bridge.SchemaVersion,"OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PERIMETER-BRIDGE-2","schema")
+assertEqual(Bridge.SchemaVersion,"OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PERIMETER-BRIDGE-3","schema")
 
 local source={
   incidentId="FOB-THREAT|BLUE_GROUND_COP_FORTRESS|1",
   installationId="BLUE_GROUND_COP_FORTRESS",
   priority=90,
   position={x=1,y=2,z=3},
-  reportedTarget={evidence="OPSZONE_ATTACKED",radiusM=1000},
+  reportedTarget={evidence="OPSZONE_ATTACKED",radiusM=1000,attackerCoalition=1},
 }
-local incident,created,reason,evidence=bridge:HandleThreat(nil,nil,source)
+local incident,created,reason,evidence=bridge:HandleThreat(nil,opsZone,source)
 assertTrue(created,"proximity evidence opens authoritative incident")
 assertEqual(reason,nil,"bridge reason")
 assertEqual(calls.evidence,1,"one evidence report")
@@ -38,6 +55,8 @@ assertEqual(calls.evidenceSpec.installationId,"BLUE_GROUND_COP_FORTRESS","instal
 assertEqual(calls.evidenceSpec.evidenceType,"PROXIMITY_INTRUSION","domain evidence type")
 assertEqual(calls.evidenceSpec.sourceEvent,"OPSZONE_Attacked","MOOSE source retained")
 assertEqual(calls.evidenceSpec.sourceIncidentId,source.incidentId,"raw perimeter correlation retained")
+assertEqual(calls.evidenceSpec.initiatorGroup,threatGroup,"physical closest hostile group bound")
+assertEqual(calls.evidenceSpec.participantGroups[1],threatGroup,"physical hostile participant retained")
 assertEqual(evidence,calls.evidenceSpec,"evidence returned")
 assertEqual(incident.installationId,"BLUE_GROUND_COP_FORTRESS","authoritative incident returned")
 assertTrue(#logs>0,"bridge logs")
@@ -48,9 +67,10 @@ assertFalse(closed,"clear does not close incident")
 assertEqual(clearReason,"PERIMETER_CLEAR_DOES_NOT_CLOSE_INCIDENT","clear semantics")
 assertEqual(calls.close,0,"authoritative close never called by perimeter")
 
-local missing,missingCreated,missingReason=bridge:HandleThreat(nil,nil,{incidentId="FOB-THREAT|UNKNOWN|1",installationId="UNKNOWN",priority=1})
+local missing,missingCreated,missingReason=bridge:HandleThreat(nil,opsZone,{incidentId="FOB-THREAT|UNKNOWN|1",installationId="UNKNOWN",priority=1})
 assertEqual(missing,nil,"unknown installation result")
 assertFalse(missingCreated,"unknown installation not reported")
 assertEqual(missingReason,"INSTALLATION_NOT_REGISTERED","unknown installation reason")
 
+COORDINATE=previousCoordinate
 print("PASS test_fire_support_strategic_resupply_perimeter_bridge")
