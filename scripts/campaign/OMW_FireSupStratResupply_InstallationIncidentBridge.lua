@@ -1,15 +1,15 @@
 -- Operation Mountain Watch - installation-incident to generic Base bridge.
 --
 -- Consumes the authoritative installation attack incident lifecycle and forwards
--- only lifecycle state into the generic Fire Support / Strategic Resupply Base.
--- It does not detect threats, select assets, own resources, or close an incident
--- because an alarm/security perimeter becomes clear.
+-- lifecycle state plus transient physical threat identity into the generic Fire
+-- Support / Strategic Resupply Base. It does not detect threats, select assets,
+-- own resources, or close an incident because an alarm/security perimeter clears.
 
 local Bridge = {}
 local Instance = {}
 Instance.__index = Instance
 
-Bridge.SchemaVersion = "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-INSTALLATION-INCIDENT-BRIDGE-1"
+Bridge.SchemaVersion = "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-INSTALLATION-INCIDENT-BRIDGE-2"
 local TAG = "[OMW][FireSupStratResupply.InstallationIncidentBridge]"
 
 local function fail(message) error(TAG .. " " .. tostring(message), 2) end
@@ -57,6 +57,7 @@ function Instance:OnIncidentStarted(_, incident, evidence)
   local entry = self.byInstallationId[installationId]
   if not entry then return nil, false, "INSTALLATION_NOT_REGISTERED" end
   local priority = incident.priority or (evidence and evidence.priority)
+  local physicalTargetGroup = evidence and evidence.initiatorGroup or nil
 
   local opened, created, reason = self.base:OpenIncident({
     siteId=entry.siteId,
@@ -69,6 +70,7 @@ function Instance:OnIncidentStarted(_, incident, evidence)
       initialEvidenceType=evidence and evidence.evidenceType or nil,
       position=evidence and evidence.position or nil,
       reportedTarget=evidence and evidence.reportedTarget or nil,
+      physicalTargetGroup=physicalTargetGroup,
     },
   })
   if not opened then return nil, false, reason end
@@ -85,8 +87,9 @@ function Instance:OnIncidentStarted(_, incident, evidence)
   })
 
   self:_log(string.format(
-    "incident started installationId=%s siteId=%s sourceIncidentId=%s baseIncidentId=%s created=%s qrfCreated=%s qrfReason=%s",
-    installationId, tostring(entry.siteId), sourceIncidentId, tostring(opened.incidentId), tostring(created), tostring(qrfCreated), tostring(qrfReason)))
+    "incident started installationId=%s siteId=%s sourceIncidentId=%s baseIncidentId=%s created=%s qrfCreated=%s qrfReason=%s physicalTarget=%s",
+    installationId, tostring(entry.siteId), sourceIncidentId, tostring(opened.incidentId), tostring(created),
+    tostring(qrfCreated), tostring(qrfReason), tostring(physicalTargetGroup and physicalTargetGroup:GetName())))
   return opened, created, qrfReason or reason, qrf
 end
 
