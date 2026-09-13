@@ -1,15 +1,15 @@
 -- Operation Mountain Watch - MOOSE-first local QRF mission factory.
 --
--- Converts one QRF demand into a public Ground AUFTRAG. The caller supplies the
--- response coordinate; this module does not infer tactical geometry and does not
--- select cohorts/assets. Optional attribute/property requirements are forwarded to
--- MOOSE so LEGION remains the operational recruitment authority.
+-- Converts one QRF demand into a public MOOSE GROUNDATTACK AUFTRAG against the
+-- transient physical hostile group carried by the installation incident. This
+-- module does not select cohorts/assets. Optional attribute/property requirements
+-- are forwarded to MOOSE so LEGION remains the operational recruitment authority.
 
 local Factory = {}
 local Instance = {}
 Instance.__index = Instance
 
-Factory.SchemaVersion = "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-QRF-MISSION-FACTORY-2"
+Factory.SchemaVersion = "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-QRF-MISSION-FACTORY-3"
 
 local TAG = "[OMW][FireSupStratResupply.QrfMissionFactory]"
 
@@ -40,7 +40,7 @@ end
 
 function Factory.New(spec)
   needTable(spec, "spec")
-  local resolveCoordinate = needFunction(spec.resolveCoordinate, "resolveCoordinate")
+  local resolveTarget = needFunction(spec.resolveTarget, "resolveTarget")
   local requiredAssetsMin = spec.requiredAssetsMin or 1
   local requiredAssetsMax = spec.requiredAssetsMax or requiredAssetsMin
   if not finite(requiredAssetsMin) or requiredAssetsMin < 1 then fail("requiredAssetsMin must be at least one") end
@@ -50,7 +50,7 @@ function Factory.New(spec)
   if spec.logger ~= nil and type(spec.logger) ~= "function" then fail("logger must be a function when provided") end
 
   return setmetatable({
-    resolveCoordinate = resolveCoordinate,
+    resolveTarget = resolveTarget,
     requiredAssetsMin = requiredAssetsMin,
     requiredAssetsMax = requiredAssetsMax,
     requiredAttributes = requiredAttributes,
@@ -68,13 +68,19 @@ function Instance:Create(demand, context, legion)
   if demand.supportType ~= "QRF" then fail("supportType QRF is required") end
   if type(demand.demandId) ~= "string" or demand.demandId == "" then fail("demandId is required") end
 
-  local coordinate, reason = self.resolveCoordinate(demand, context, legion)
-  if coordinate == nil then return nil, false, reason or "QRF_RESPONSE_COORDINATE_UNAVAILABLE" end
-  needTable(coordinate, "QRF response coordinate")
+  local target, reason = self.resolveTarget(demand, context, legion)
+  if target == nil then return nil, false, reason or "QRF_PHYSICAL_TARGET_UNAVAILABLE" end
+  needTable(target, "QRF physical target")
+  if type(target.IsInstanceOf) ~= "function" or target:IsInstanceOf("GROUP") ~= true then
+    return nil, false, "QRF_PHYSICAL_TARGET_NOT_GROUP"
+  end
+  if type(target.IsAlive) ~= "function" or target:IsAlive() ~= true then
+    return nil, false, "QRF_PHYSICAL_TARGET_NOT_ALIVE"
+  end
 
-  if type(AUFTRAG) ~= "table" or type(AUFTRAG.NewONGUARD) ~= "function" then fail("MOOSE AUFTRAG:NewONGUARD() is required") end
-  local mission = AUFTRAG:NewONGUARD(coordinate)
-  needTable(mission, "QRF AUFTRAG")
+  if type(AUFTRAG) ~= "table" or type(AUFTRAG.NewGROUNDATTACK) ~= "function" then fail("MOOSE AUFTRAG:NewGROUNDATTACK() is required") end
+  local mission = AUFTRAG:NewGROUNDATTACK(target)
+  needTable(mission, "QRF GROUNDATTACK AUFTRAG")
   if type(mission.SetTeleport) ~= "function" then fail("QRF AUFTRAG:SetTeleport() is required") end
   if type(mission.SetRequiredAssets) ~= "function" then fail("QRF AUFTRAG:SetRequiredAssets() is required") end
   if type(mission.SetPriority) ~= "function" then fail("QRF AUFTRAG:SetPriority() is required") end
@@ -93,8 +99,8 @@ function Instance:Create(demand, context, legion)
   if finite(demand.priority) then mission:SetPriority(demand.priority, false) end
 
   self:_log(string.format(
-    "created local QRF mission demandId=%s siteId=%s requiredAssets=%s-%s attributes=%s properties=%s priority=%s",
-    tostring(demand.demandId), tostring(demand.siteId), tostring(self.requiredAssetsMin),
+    "created local QRF GROUNDATTACK demandId=%s siteId=%s target=%s requiredAssets=%s-%s attributes=%s properties=%s priority=%s",
+    tostring(demand.demandId), tostring(demand.siteId), tostring(target:GetName()), tostring(self.requiredAssetsMin),
     tostring(self.requiredAssetsMax), tostring(self.requiredAttributes ~= nil), tostring(self.requiredProperties ~= nil),
     tostring(demand.priority)))
   return mission, true, nil
