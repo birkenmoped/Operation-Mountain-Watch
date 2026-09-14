@@ -11,6 +11,13 @@ supersedes:
 superseded_by:
 source_branch: agent/fire-support-strategic-resupply-base-gate0
 source_commit: a1ab98318b4f614875847d95e58bd0b15695a2d3
+acceptance_branch: agent/fire-support-strategic-resupply-base-gate0
+acceptance_commit: a1ab98318b4f614875847d95e58bd0b15695a2d3
+acceptance_mission: OMW_Template_v24_GroundWorks_base.miz
+acceptance_mission_sha256: 524DF086D0C4EC1B8B71FAF4E45C713F3E5EA13152965AE793E10B5380C50979
+dcs_version: 2.9.29.27468
+moose_commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+moose_artifact_sha256: E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915
 validated_in_dcs: true
 ---
 
