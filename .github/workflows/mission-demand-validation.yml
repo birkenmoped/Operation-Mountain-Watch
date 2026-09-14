@@ -28,6 +28,8 @@ on:
       - "tools/build-fire-support-strategic-resupply-gate4-stage3-regression.ps1"
       - "mission/tests/fire-support-strategic-resupply-production-base-runtime/src/*.lua"
       - "tools/build-fire-support-strategic-resupply-production-base*.ps1"
+      - "mission/tests/fire-support-strategic-resupply-gate5b-six-site-perimeter-runtime/src/*.lua"
+      - "tools/build-fire-support-strategic-resupply-gate5b-perimeter-runtime.ps1"
       - "mission/tests/stage3-cas-resupply-focused/src/*.lua"
       - "tools/build-stage3-cas-resupply-focused-acceptance-1.ps1"
       - "mission/tests/stage3-honaker-cas-support/src/*.lua"
@@ -75,6 +77,7 @@ jobs:
           luac5.4 -p mission/tests/fire-support-strategic-resupply-production-base-runtime/src/02-production-base-honaker-incident-qrf-acceptance.lua
           luac5.4 -p mission/tests/fire-support-strategic-resupply-production-base-runtime/src/03-production-base-six-site-physical-alarm-qrf-acceptance.lua
           luac5.4 -p mission/tests/fire-support-strategic-resupply-production-base-runtime/src/04-qrf-response-clearance-acceptance.lua
+          luac5.4 -p mission/tests/fire-support-strategic-resupply-gate5b-six-site-perimeter-runtime/src/01-six-site-perimeter-runtime-acceptance.lua
 
       - name: Check Fortress full-response acceptance syntax
         shell: bash
