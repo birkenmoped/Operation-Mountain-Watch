@@ -6,6 +6,7 @@ owning_policy: OMW-GOV-001
 authoritative_for:
   - generic six-site perimeter runtime assembly source contract
   - MOOSE OPSZONE perimeter evidence integration boundary
+  - owner-approved current six-site alarm anchor and radius contract
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
@@ -56,7 +57,7 @@ Ein `OPSZONE:Defeated` bzw. das Verlassen des Alarmperimeters schliesst weder de
 
 ## Konfigurationsgrenze
 
-Das Perimeter-Modul trifft **keine** stillschweigende Projektentscheidung ueber konkrete Alarmradien oder Installationsanker. Diese Werte muessen fuer jede Site injiziert werden:
+Das Perimeter-Modul trifft **keine** stillschweigende Projektentscheidung ueber konkrete Alarmradien oder Installationsanker. Diese Werte werden fuer jede Site injiziert:
 
 - `anchorCoordinate`
 - `radiusM`
@@ -68,7 +69,44 @@ Das Perimeter-Modul trifft **keine** stillschweigende Projektentscheidung ueber 
 
 Coalition-IDs werden runtimeweit injiziert.
 
-Damit bleibt die fachliche Entscheidung ueber den konkreten Alarmperimeter ausserhalb des Assemblers. Insbesondere werden keine historischen Stage-3-Testwerte als allgemeine Sechs-Site-Baseline hochgestuft.
+Die fachliche Auswahl von Anchor und Radius liegt damit ausserhalb des Assemblers und ist im aktuellen `OMW_FireSupStratResupply_SiteRegistry.lua`-Vertrag festgelegt.
+
+### Owner-Entscheidung 2026-09-14 – aktuelle Six-Site-Anker und Radien
+
+Der Projektinhaber hat die bereits im aktuellen SiteRegistry eingetragenen Alarmradien ausdruecklich bestaetigt. Sie bleiben unveraendert:
+
+```text
+JALALABAD_FENTY   2438.4 m   8000 ft
+COP_FORTRESS      1524.0 m   5000 ft
+FOB_JOYCE         2743.2 m   9000 ft
+FOB_WRIGHT        1219.2 m   4000 ft
+COP_HONAKER       2743.2 m   9000 ft
+FOB_BOSTICK       1524.0 m   5000 ft
+```
+
+Fuer kompakte FOB-/COP-Installationen ist der Warehouse-Anker die regulaere Regel. Fuer grosse Flugplaetze duerfen bewusst abweichende, flugplatzweite Anker verwendet werden.
+
+Jalalabad/Fenty ist eine ausdruecklich bestaetigte Ausnahme von der Warehouse-Anchor-Regel:
+
+```text
+JALALABAD_FENTY
+-> MOOSE zone anchor: OMW_BLUE_OBJECTIVE_JALALABAD_AIRPORT
+-> runtime ZONE_RADIUS: 2438.4 m / 8000 ft
+```
+
+Diese Ausnahme ist beabsichtigt, weil der Alarmperimeter den Flugplatz als Installation abbilden soll und nicht nur den Punkt des Ground-Warehouse. Sie darf nicht durch eine pauschale Vereinheitlichung auf `WH_BLUE_GND_FENTY` ersetzt werden.
+
+Fuer die anderen aktuell registrierten Sites bleibt der Warehouse-basierte Anchor-Vertrag bestehen:
+
+```text
+COP_FORTRESS -> WH_BLUE_GND_FORTRESS
+FOB_JOYCE    -> WH_BLUE_GND_JOYCE
+FOB_WRIGHT   -> WH_BLUE_GND_WRIGHT
+COP_HONAKER  -> WH_BLUE_GND_HONAKER
+FOB_BOSTICK  -> WH_BLUE_GND_BOSTICK
+```
+
+Damit sind Anchor- und Radiuswerte fuer den aktuellen Gate-5B-Scope fachlich entschieden. Dies ist noch kein DCS-PASS fuer die generische Six-Site-Perimeter-Runtime.
 
 ## ACCESS-Zonen
 
@@ -111,4 +149,4 @@ Die Tests pruefen insbesondere:
 - explizite autoritative Incident-Schliessung wird an `Base:CloseIncident()` weitergereicht;
 - kein `accessZoneName` gelangt in diesen Alarm-/Incident-Pfad.
 
-Eine DCS-Validierung ist damit noch nicht erfolgt. Fuer einen DCS-Acceptance-Lauf fehlen weiterhin verbindliche konkrete Installationsanker-/Alarmradiuswerte und die restlichen site-spezifischen taktischen Resolver fuer den kombinierten produktiven Lauf.
+Eine generische Six-Site-DCS-Validierung der Perimeter-Runtime ist damit noch nicht erfolgt. Die fuer Gate 5B erforderlichen konkreten Anchor-/Radiusentscheidungen sind nun vorhanden; offen bleibt der gezielte DCS-Acceptance-Nachweis der sechs runtime-generierten `ZONE_RADIUS`/`OPSZONE`-Perimeter und ihrer Evidence-/Incident-Anbindung.
