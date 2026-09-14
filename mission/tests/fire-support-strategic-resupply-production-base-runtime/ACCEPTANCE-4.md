@@ -1,6 +1,6 @@
 ---
 document_id: OMW-FSSR-PRODUCTION-BASE-ACCEPTANCE-4
-status: DRAFT
+status: ACCEPTED_TECHNICAL_BASELINE
 document_class: ACCEPTANCE
 owning_policy: OMW-GOV-001
 authoritative_for:
@@ -10,8 +10,8 @@ project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
 superseded_by:
 source_branch: agent/fire-support-strategic-resupply-base-gate0
-source_commit: PENDING_MERGE
-validated_in_dcs: false
+source_commit: a1ab98318b4f614875847d95e58bd0b15695a2d3
+validated_in_dcs: true
 ---
 
 # Production Base Acceptance 4 - QRF Direct Target Cycle
@@ -207,17 +207,20 @@ QrfReturnEvidence: public MOOSE ARMYGROUP OnAfterRTZ and OnAfterReturned FSM cal
 MizMutation: false
 ```
 
-## A4-8 Realtest vom 14.09.2026 - DCS PASS, Mission-Hash noch offen
+## A4-8 Realtest vom 14.09.2026 - DCS PASS / VALIDATED
 
-Realer DCS-Lauf mit:
+Realer DCS-Lauf mit vollstaendiger Provenienz:
 
 ```text
 DCS: 2.9.29.27468
 Mission: C:\Users\Sven\Saved Games\DCS.openbeta\Missions\OMW_Template_v24_GroundWorks_base.miz
-Mission SHA-256: PENDING_LOCAL_HASH
+Mission SHA-256: 524DF086D0C4EC1B8B71FAF4E45C713F3E5EA13152965AE793E10B5380C50979
 Source commit: a1ab98318b4f614875847d95e58bd0b15695a2d3
 Production bundle SHA-256: 17BBC6F7B0020BFB118B229CAD0F755CAA3B3771881546D430DF1AA6EE25D8FB
 Acceptance bundle SHA-256: 098E888470547BF6D3836DF5AB19C47B914E96CAABDB9FAECE09821667489646
+MOOSE release: 2.9.18
+MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+Moose.lua SHA-256: E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915
 Runtime log: dcs(20260914-174452).log
 Debrief: debrief(20260914-174451).log
 ```
@@ -241,6 +244,6 @@ Der A4-8-Harness meldet einen vollstaendigen PASS. Die entscheidende Runtime-Evi
 
 Die Reihenfolge der beiden Acceptance-Logzeilen `QRF_RETURNED` und `QRF_RTZ` ist eine Folge der Callback-/Logging-Reihenfolge und aendert nicht den nachgewiesenen MOOSE-FSM-Lifecycle. Fuer PASS ist `Returned` zwingend und wurde real beobachtet.
 
-Damit sind die fachlichen A4-8-PASS-Kriterien im realen DCS-Lauf erfuellt. Wegen der Governance-Provenienzanforderung bleibt `validated_in_dcs: false`, bis der SHA-256 der exakt verwendeten Missionsdatei lokal ermittelt und dokumentiert ist. Es ist keine weitere Lua- oder DCS-Verhaltensaenderung erforderlich.
+Damit sind die A4-8-PASS-Kriterien mit vollstaendiger Mission-, Bundle-, DCS- und MOOSE-Provenienz erfuellt. Acceptance 4 ist fuer exakt diesen dokumentierten Stand `VALIDATED` und bildet eine `ACCEPTED_TECHNICAL_BASELINE` auf dem Branch. Die bekannte Road-Preferred-Semantik bleibt bestehen: `On Road` ist keine starre Road-Lock-Garantie; OMW fuehrt ohne separate Owner-Freigabe keinen eigenen Gate-/Strassenrouter ein.
 
-Status: `DRAFT`, realer **DCS PASS** fuer A4-8; formales `VALIDATED` wartet nur noch auf den lokalen Missions-SHA-256.
+Status: `ACCEPTED_TECHNICAL_BASELINE`, **DCS VALIDATED** fuer A4-8.
