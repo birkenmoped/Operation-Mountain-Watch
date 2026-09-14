@@ -5,7 +5,7 @@ Set-StrictMode -Version Latest
 
 $repoRoot=Split-Path -Parent $PSScriptRoot
 $prodBuilder=Join-Path $repoRoot 'tools\build-fire-support-strategic-resupply-production-base.ps1'
-$prodBundle=Join-Path $distDir 'OMW_FireSupStratResupply_Base.lua'
+$prodBundle=Join-Path $repoRoot 'mission\fire-support-strategic-resupply\dist\OMW_FireSupStratResupply_Base.lua'
 $src=Join-Path $repoRoot 'mission\tests\fire-support-strategic-resupply-production-base-runtime\src\04-qrf-response-clearance-acceptance.lua'
 $out=Join-Path $repoRoot 'mission\tests\fire-support-strategic-resupply-production-base-runtime\dist\OMW_FireSupStratResupply_Production_Base_Acceptance_4.lua'
 $version='OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BASE-ACCEPTANCE-4-8'
