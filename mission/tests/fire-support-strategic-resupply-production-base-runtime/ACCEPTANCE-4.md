@@ -164,7 +164,15 @@ bereit. `ARMYGROUP:onafterRTZ` fuehrt die Gruppe zur Homezone; sobald sie dort i
 
 A4-8 verwendet **keine** eigene Rueckkehrsteuerung und **keine** Polling-Ersatzlogik. Fuer PASS ist `OnAfterReturned` zwingend; `OnAfterRTZ` wird zusaetzlich als Beginn der MOOSE-Rueckkehr protokolliert.
 
-Naechster Builder:
+## A4-8 lokaler Build vom 14.09.2026 - VERIFIED_LOCAL_BUILD
+
+Der Projektinhaber hat A4-8 auf folgendem Source-Commit real lokal gebaut:
+
+```text
+a1ab98318b4f614875847d95e58bd0b15695a2d3
+```
+
+Builder-/Schema-Stand:
 
 ```text
 Production Builder: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BASE-17
@@ -173,6 +181,34 @@ QRF Mission Factory: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-QRF-MISSION-FACTORY-8
 Acceptance Builder: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BASE-ACCEPTANCE-4-8
 ```
 
+Die Builder-Ausgabe und die anschliessend separat ausgefuehrte `Get-FileHash`-Pruefung stimmen fuer alle gemeinsam geprueften Dateien exakt ueberein:
+
+```text
+Production builder SHA-256:
+9D65F27B869AB2AA24FACB557213D47204ADD612F1956331605D9408EF667982
+
+Production bundle SHA-256:
+17BBC6F7B0020BFB118B229CAD0F755CAA3B3771881546D430DF1AA6EE25D8FB
+
+Acceptance source SHA-256:
+B0CD1E9EDB994411FCDF850B53F355C306E21F806A4D26C41DC4513D1AF2D14F
+
+Acceptance builder SHA-256:
+E55FAF96961824F4AC057C669ED5473DE015D65618C508ACEC1F9DC9A16CAA71
+
+Acceptance bundle SHA-256:
+098E888470547BF6D3836DF5AB19C47B914E96CAABDB9FAECE09821667489646
+```
+
+Der Build meldete explizit:
+
+```text
+QrfReturnEvidence: public MOOSE ARMYGROUP OnAfterRTZ and OnAfterReturned FSM callbacks; Returned is required for PASS
+MizMutation: false
+```
+
+Damit ist A4-8 als `VERIFIED_LOCAL_BUILD` belegt. Das ist noch **kein DCS-Runtime-PASS** und keine `VALIDATED`-Einstufung.
+
 Status: `DRAFT`, noch **nicht DCS-validiert**.
 
-`VALIDATED` darf erst nach realem DCS-Test des exakt lokal gebauten A4-8-Bundles gesetzt werden.
+`VALIDATED` darf erst nach realem DCS-Test des exakt lokal gebauten A4-8-Bundles mit SHA-256 `098E888470547BF6D3836DF5AB19C47B914E96CAABDB9FAECE09821667489646` gesetzt werden.
