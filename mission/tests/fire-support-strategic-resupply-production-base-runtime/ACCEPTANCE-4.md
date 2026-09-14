@@ -100,7 +100,15 @@ local QRF_ENGAGE_FORMATION = "On Road"
 
 und gibt diesen Wert weiterhin ueber `engageFormation=QRF_ENGAGE_FORMATION` an die MissionFactory. Runtime-Test, Acceptance-Contract-Test, Production Builder und Acceptance Builder sperren nun einen erneuten `Vee`-Override.
 
-Naechster Builder:
+## A4-7 lokaler Build vom 14.09.2026 - VERIFIED_LOCAL_BUILD
+
+Der Projektinhaber hat auf folgendem Source-Commit real lokal gebaut:
+
+```text
+ab3b53a07b8cdee024e23427cd8f47db8e7d9ced
+```
+
+Builder-/Schema-Stand:
 
 ```text
 Production Builder: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BASE-17
@@ -109,6 +117,35 @@ QRF Mission Factory: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-QRF-MISSION-FACTORY-8
 Acceptance Builder: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BASE-ACCEPTANCE-4-7
 ```
 
+Die Builder-Ausgabe und die anschliessend separat ausgefuehrte `Get-FileHash`-Pruefung stimmen fuer alle gemeinsam geprueften Dateien exakt ueberein:
+
+```text
+Production builder SHA-256:
+9D65F27B869AB2AA24FACB557213D47204ADD612F1956331605D9408EF667982
+
+Production bundle SHA-256:
+BE593C53324938B6BA02CCD2830230E313B21F84D528BC77CBC6BA85C24F8A0B
+
+Acceptance source SHA-256:
+475EA70AC3CB1B6B42634EE7BB22D4033DA2DA952F70E88DF4FEE0EBABDBFB7D
+
+Acceptance builder SHA-256:
+57BA916366FF9632AD2C618B7679982B2ED1BDF92C13B787D64CA0E8A54356B4
+
+Acceptance bundle SHA-256:
+8DD1F21EF978CF46F4396F23C87E22835F0361A3DC9254D86C8E1E767C7BAE20
+```
+
+Der lokale Build meldete ausserdem explizit:
+
+```text
+QrfMovementContract: motorized QRF runtime explicitly passes MOOSE On Road to EngageTarget; Vee is forbidden for march/transit
+RedFixtureRoute: existing Mission Editor route; Acceptance activates only and must not replace/rewrite it
+MizMutation: false
+```
+
+Damit ist A4-7 als `VERIFIED_LOCAL_BUILD` belegt. Das ist **kein DCS-Runtime-PASS** und keine `VALIDATED`-Einstufung.
+
 Status: `DRAFT`, noch **nicht DCS-validiert**.
 
-`VALIDATED` darf erst nach realem DCS-Test des exakt gebauten A4-7-Commits/Bundles mit unveraenderter RED-Mission-Editor-Route und sichtbar funktionierendem MOOSE-`On Road`-Marschvertrag gesetzt werden.
+`VALIDATED` darf erst nach realem DCS-Test exakt dieses A4-7-Bundles mit SHA-256 `8DD1F21EF978CF46F4396F23C87E22835F0361A3DC9254D86C8E1E767C7BAE20` gesetzt werden.
