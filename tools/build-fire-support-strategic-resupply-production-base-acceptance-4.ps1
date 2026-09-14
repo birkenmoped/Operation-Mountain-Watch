@@ -5,10 +5,10 @@ Set-StrictMode -Version Latest
 
 $repoRoot=Split-Path -Parent $PSScriptRoot
 $prodBuilder=Join-Path $repoRoot 'tools\build-fire-support-strategic-resupply-production-base.ps1'
-$prodBundle=Join-Path $repoRoot 'mission\fire-support-strategic-resupply\dist\OMW_FireSupStratResupply_Base.lua'
+$prodBundle=Join-Path $distDir 'OMW_FireSupStratResupply_Base.lua'
 $src=Join-Path $repoRoot 'mission\tests\fire-support-strategic-resupply-production-base-runtime\src\04-qrf-response-clearance-acceptance.lua'
 $out=Join-Path $repoRoot 'mission\tests\fire-support-strategic-resupply-production-base-runtime\dist\OMW_FireSupStratResupply_Production_Base_Acceptance_4.lua'
-$version='OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BASE-ACCEPTANCE-4-7'
+$version='OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BASE-ACCEPTANCE-4-8'
 
 foreach($f in @($prodBuilder,$src)){
   if(-not(Test-Path -LiteralPath $f -PathType Leaf)){throw "Required file not found: $f"}
@@ -30,9 +30,9 @@ foreach($marker in @(
   'DEFAULT_ENGAGE_FORMATION = "On Road"','QRF_ENGAGE_FORMATION = "On Road"','engageFormation=QRF_ENGAGE_FORMATION',
   'sourceIncidentCoordinator','GetParticipants(true)','QRF_NO_LIVING_INCIDENT_TARGETS_IN_TACTICAL_ZONE',
   'FOB_JOYCE','BadGuys_A3_JOYCE','ZON_BLUE_GND_JOYCE_ACCESS',
-  'AUFTRAG.Type.ONGUARD','QRF_CONCRETE_TARGET','targetCount>=2','fixtureClearedObserved','returnObserved',
+  'AUFTRAG.Type.ONGUARD','QRF_CONCRETE_TARGET','targetCount>=2','fixtureClearedObserved','returnedObserved',
   'fixtureActivated','fixtureMove>=MIN_FIXTURE_MOVE_M','routeSource=MISSION_EDITOR','routeOverride=false',
-  'focusedSiteRegistry','siteRegistry=focusedSiteRegistry','IsReturning',
+  'focusedSiteRegistry','siteRegistry=focusedSiteRegistry','OnAfterRTZ','OnAfterReturned','QRF_RTZ','QRF_RETURNED',
   'ROAD_ALIGNED_WAREHOUSE_SPAWN','forwardCoordinate = targetCoordinate')){
   if(-not $c.Contains($marker)){throw "Acceptance 4 marker missing: $marker"}
 }
@@ -47,9 +47,10 @@ if($t -match 'ZON_TEST_A4_'){throw 'Acceptance 4 must not introduce new Mission 
 if($t -match 'ReportInstallationEvidence\s*\('){throw 'Acceptance 4 must not inject installation evidence directly.'}
 if($t -match 'Teleport\s*\('){throw 'Acceptance 4 must not teleport QRF or fixture groups.'}
 if($t -match 'RouteGroundTo\s*\(|RouteTo\s*\(|:Route\s*\(|SetTask\s*\(|PushTask\s*\('){throw 'Acceptance 4 must not replace or rewrite the existing Joyce Mission Editor attack route.'}
+if($t -match 'IsReturning\s*\(|GetState\s*\(\)\s*==\s*"Returned"'){throw 'Acceptance 4 must observe the public ARMYGROUP RTZ/Returned FSM callbacks instead of polling transient states.'}
 
 $commit=(& git -C $repoRoot rev-parse HEAD).Trim()
-$header="-- AUTO-GENERATED FILE. DO NOT EDIT DIRECTLY.`n-- BuilderVersion: $version`n-- GitCommit: $commit`n-- MOOSE release: 2.9.18`n-- MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54`n-- Moose.lua SHA-256: E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915`n-- Joyce focused QRF: existing Mission Editor RED attack route remains untouched; road-aligned ACCESS materialization -> runtime-enforced MOOSE On Road EngageTarget transit -> concrete moving incident UNIT pursuit -> target death/reacquire -> target exhaustion -> ReturnToLegion.`n`n"
+$header="-- AUTO-GENERATED FILE. DO NOT EDIT DIRECTLY.`n-- BuilderVersion: $version`n-- GitCommit: $commit`n-- MOOSE release: 2.9.18`n-- MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54`n-- Moose.lua SHA-256: E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915`n-- Joyce focused QRF: existing Mission Editor RED attack route remains untouched; road-aligned ACCESS materialization -> runtime-enforced MOOSE On Road EngageTarget transit -> concrete moving incident UNIT pursuit -> target death/reacquire -> target exhaustion -> event-driven MOOSE RTZ/Returned observation.`n`n"
 
 New-Item -ItemType Directory -Path (Split-Path -Parent $out) -Force|Out-Null
 [System.IO.File]::WriteAllText($out,$header+$p+"`n`n"+$t,[System.Text.UTF8Encoding]::new($false))
@@ -71,6 +72,6 @@ Write-Host 'QrfMovementContract: motorized QRF runtime explicitly passes MOOSE O
 Write-Host 'QrfTargetCycle: same ARMYGROUP directly EngageTarget nearest living concrete incident UNIT; Disengage triggers reacquisition'
 Write-Host 'QrfTargetEvidence: at least two unique concrete moving RED UNIT acquisitions plus physical Joyce hostile fixture clearance'
 Write-Host 'QrfCompletionStimulus: none from Acceptance; zero living authorized incident targets is production completion condition'
-Write-Host 'QrfReturnEvidence: MOOSE ARMYGROUP Returning/Returned state observed after target exhaustion'
+Write-Host 'QrfReturnEvidence: public MOOSE ARMYGROUP OnAfterRTZ and OnAfterReturned FSM callbacks; Returned is required for PASS'
 Write-Host 'MissionEditorAdditionalZonesRequired: false'
 Write-Host 'MizMutation: false'
