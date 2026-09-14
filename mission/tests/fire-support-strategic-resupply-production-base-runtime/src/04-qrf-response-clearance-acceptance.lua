@@ -28,8 +28,8 @@ local state={
   failed=false,passed=false,fixtureActivated=false,runtime=nil,brigade=nil,perimeter=nil,
   guard=nil,guardStart=nil,guardMove=0,fixtureStart=nil,fixtureMove=0,
   qrf=nil,qrfArmy=nil,qrfGroupName=nil,qrfAccess=false,responseObserved=false,
-  targetNames={},targetCount=0,fixtureClearedObserved=false,returnObserved=false,
-  demandId=nil,startedAt=nil,
+  targetNames={},targetCount=0,fixtureClearedObserved=false,rtzObserved=false,
+  returnedObserved=false,returnObserved=false,demandId=nil,startedAt=nil,
 }
 
 local function log(message) env.info(TAG.." "..tostring(message),false) end
@@ -99,11 +99,29 @@ local function buildBrigade(package)
       local coordinate=group:GetCoordinate()
       state.qrfAccess=access~=nil and coordinate~=nil and access:IsCoordinateInZone(coordinate)==true
       if mission and mission:GetType()==AUFTRAG.Type.ONGUARD then state.responseObserved=true end
+
       local previousEngage=armyGroup.OnAfterEngageTarget
       function armyGroup:OnAfterEngageTarget(F,E,T,Target,Speed,Formation)
         if previousEngage then previousEngage(self,F,E,T,Target,Speed,Formation) end
         observeTarget(Target)
       end
+
+      local previousRTZ=armyGroup.OnAfterRTZ
+      function armyGroup:OnAfterRTZ(F,E,T,Zone,Formation)
+        if previousRTZ then previousRTZ(self,F,E,T,Zone,Formation) end
+        state.rtzObserved=true
+        local zoneName=Zone and type(Zone.GetName)=="function" and Zone:GetName() or "HOMEZONE"
+        log("QRF_RTZ group="..tostring(state.qrfGroupName).." zone="..tostring(zoneName).." formation="..tostring(Formation))
+      end
+
+      local previousReturned=armyGroup.OnAfterReturned
+      function armyGroup:OnAfterReturned(F,E,T)
+        if previousReturned then previousReturned(self,F,E,T) end
+        state.returnedObserved=true
+        state.returnObserved=true
+        log("QRF_RETURNED group="..tostring(state.qrfGroupName).." from="..tostring(F).." to="..tostring(T))
+      end
+
       log("QRF_MATERIALIZATION group="..tostring(state.qrfGroupName).." access="..tostring(site.accessZoneName).." inside="..tostring(state.qrfAccess).." responseObserved="..tostring(state.responseObserved))
     end
   end
@@ -159,11 +177,8 @@ local function observe()
   if state.targetCount>0 and state.fixtureActivated and not fixtureAlive then state.fixtureClearedObserved=true end
 
   if state.qrfArmy then
-    local returning=type(state.qrfArmy.IsReturning)=="function" and state.qrfArmy:IsReturning() or false
-    local returned=type(state.qrfArmy.GetState)=="function" and state.qrfArmy:GetState()=="Returned" or false
-    if returning or returned then state.returnObserved=true end
-    log(string.format("TELEMETRY guardMoveM=%.1f fixtureActivated=%s fixtureMoveM=%.1f proximity=%s demandCount=%d qrfAccess=%s response=%s targetCount=%d fixtureAlive=%s fixtureCleared=%s returning=%s returned=%s",
-      state.guardMove,tostring(state.fixtureActivated),state.fixtureMove,tostring(proximityObserved()),demandCount,tostring(state.qrfAccess),tostring(state.responseObserved),state.targetCount,tostring(fixtureAlive),tostring(state.fixtureClearedObserved),tostring(returning),tostring(returned)))
+    log(string.format("TELEMETRY guardMoveM=%.1f fixtureActivated=%s fixtureMoveM=%.1f proximity=%s demandCount=%d qrfAccess=%s response=%s targetCount=%d fixtureAlive=%s fixtureCleared=%s rtzObserved=%s returnedObserved=%s",
+      state.guardMove,tostring(state.fixtureActivated),state.fixtureMove,tostring(proximityObserved()),demandCount,tostring(state.qrfAccess),tostring(state.responseObserved),state.targetCount,tostring(fixtureAlive),tostring(state.fixtureClearedObserved),tostring(state.rtzObserved),tostring(state.returnedObserved)))
   else
     log(string.format("TELEMETRY guardMoveM=%.1f fixtureActivated=%s fixtureMoveM=%.1f proximity=%s demandCount=%d qrfArmy=nil fixtureAlive=%s",
       state.guardMove,tostring(state.fixtureActivated),state.fixtureMove,tostring(proximityObserved()),demandCount,tostring(fixtureAlive)))
@@ -175,9 +190,9 @@ local function observe()
 
   if state.guardMove>=MIN_GUARD_MOVE_M and state.fixtureMove>=MIN_FIXTURE_MOVE_M and proximityObserved() and demandCount==1
       and state.qrfArmy and state.responseObserved and state.qrfAccess and state.targetCount>=2
-      and state.fixtureClearedObserved and state.returnObserved then
+      and state.fixtureClearedObserved and state.returnedObserved then
     state.passed=true
-    announce("PASS","Joyce Mission Editor RED route remained untouched -> physical alarm -> one ACCESS QRF -> same ARMYGROUP directly engaged multiple moving concrete incident UNIT targets -> hostile fixture cleared -> no target remained -> MOOSE return observed",40)
+    announce("PASS","Joyce Mission Editor RED route remained untouched -> physical alarm -> one ACCESS QRF -> same ARMYGROUP directly engaged multiple moving concrete incident UNIT targets -> hostile fixture cleared -> no target remained -> MOOSE RTZ/Returned callback observed",40)
     return
   end
 
