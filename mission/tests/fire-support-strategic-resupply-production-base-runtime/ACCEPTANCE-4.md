@@ -18,7 +18,7 @@ validated_in_dcs: false
 
 Ziel ist der Joyce-Regressionsfall gegen den mit dem historischen Honaker-Lifecycle reconcilierten QRF-Vertrag zu pruefen, ohne Acceptance 3 umzudeuten.
 
-Der fruehere A4-Entwurf `ONGUARD -> PATROLZONE + HuntingPatrol` ist nach realem DCS-Lauf verworfen. Der spaetere A4-4-Lauf lieferte nur Teilnachweis, weil der Harness die RED-Mission-Editor-Route ueberschrieb. A4-6 pruefte erstmals die unveraenderte RED-Route zusammen mit dem vorgesehenen On-Road-QRF-Vertrag, scheiterte jedoch am Runtime-Override `Vee`.
+Der fruehere A4-Entwurf `ONGUARD -> PATROLZONE + HuntingPatrol` ist nach realem DCS-Lauf verworfen. Der spaetere A4-4-Lauf lieferte nur Teilnachweis, weil der Harness die RED-Mission-Editor-Route ueberschrieb. A4-6 pruefte erstmals die unveraenderte RED-Route zusammen mit dem vorgesehenen On-Road-QRF-Vertrag, scheiterte jedoch am Runtime-Override `Vee`. A4-7 korrigierte diesen Override und lieferte reale DCS-Evidenz fuer den beabsichtigten On-Road-/Direct-Target-Lifecycle; lediglich der Acceptance-Observer fuer die physische Rueckkehr war fehlerhaft.
 
 Aktueller Vertrag:
 
@@ -31,7 +31,7 @@ physical installation alarm
 -> nearest living known incident UNIT inside site-local 5-NM tactical zone
 -> MOOSE ARMYGROUP:EngageTarget(concrete UNIT, speed, "On Road")
 -> road-preferred motorized march/transit under MOOSE routing
--> MOOSE leaves the road for the final off-road target approach when required
+-> MOOSE may recompute the route as the moving target changes position
 -> target dead -> MOOSE Disengage -> next living incident UNIT
 -> no living authorized incident UNIT remains
 -> MOOSE ReturnToLegion / RTZ / Returned / Warehouse lifecycle
@@ -43,7 +43,7 @@ Zielautoritaet ist der vorhandene `OMW_GroundInstallationAttackIncident`-Teilneh
 
 Die QRF wird strassenausgerichtet innerhalb ACCESS materialisiert. Fuer Marsch und Transit zum konkreten Ziel ist `On Road` verbindlich. `Vee` ist eine Gefechtsformation und darf den Marschvertrag weder im MissionFactory-Default noch durch einen Runtime-Override ersetzen.
 
-Der gepinnte MOOSE-Stand verarbeitet `On Road` selbst. OMW gibt nur die Formation an; MOOSE besitzt die Routen-/Strassenlogik und kann fuer den finalen Anflug zu einem abseits der Strasse liegenden Ziel Off Road verlassen.
+Der gepinnte MOOSE-Stand verarbeitet `On Road` selbst. OMW gibt nur die Formation an; MOOSE besitzt die Routen-/Strassenlogik. Der reale A4-7-Lauf bestaetigt, dass `On Road` eine Strassenpraeferenz und keine starre Road-Lock-Garantie ist: bei beweglichen Zielen wird die Route mit aktualisierter Zielposition neu bewertet; je nach aktueller Geometrie kann der resultierende Pfad einen Strassenabschnitt verwenden oder einen direkteren Off-Road-Anteil enthalten. Fuer ummauerte FOBs wie Joyce ist dies eine bekannte DCS/MOOSE-Pathfinding-Grenze. OMW fuehrt deshalb ohne separate Owner-Freigabe keinen eigenen Gate-/Strassenrouter ein.
 
 ## RED-Fixture-Vertrag
 
@@ -56,12 +56,12 @@ Der gepinnte MOOSE-Stand verarbeitet `On Road` selbst. OMW gibt nur die Formatio
 3. Die QRF materialisiert innerhalb `ZON_BLUE_GND_JOYCE_ACCESS` und ist dort strassenausgerichtet.
 4. Die erste QRF-Mission ist `AUFTRAG.Type.ONGUARD`; sie dient nur der MOOSE-Rekrutierung/Materialisierung.
 5. Dieselbe physische `ARMYGROUP` wird an konkrete lebende RED-`UNIT`-Objekte des aktiven Incidents gebunden.
-6. Der motorisierte Anmarsch verwendet nachweislich MOOSE `EngageTarget(..., "On Road")`; sichtbar soll die QRF vorhandene Strassen bevorzugen und erst fuer den notwendigen Endanflug zum konkreten Ziel die Strasse verlassen.
+6. Der motorisierte Anmarsch verwendet nachweislich MOOSE `EngageTarget(..., "On Road")`; `On Road` ist road-preferred und nicht road-locked.
 7. Mindestens zwei unterschiedliche konkrete RED-Units werden nacheinander durch `ARMYGROUP:EngageTarget()` akquiriert.
 8. `BadGuys_A3_JOYCE` wird vollstaendig beseitigt.
 9. Acceptance 4 erzeugt keine taktische Release-Aktion. Die Rueckkehr muss aus der produktiven Bedingung "keine lebenden autorisierten Incident-Ziele mehr" entstehen.
 10. Perimeter-Clear oder Incident-Close allein duerfen keine vorzeitige Rueckkehr ausloesen.
-11. Danach wird MOOSE `ReturnToLegion` / `RTZ` / `Returned` beobachtet.
+11. Danach werden die oeffentlichen MOOSE-ARMYGROUP-FSM-Callbacks `OnAfterRTZ` und `OnAfterReturned` beobachtet; `Returned` ist fuer PASS zwingend.
 12. Kein `GROUNDATTACK`, kein `PATROLZONE`, kein `HuntingPatrol`, kein eigener QRF-Routen-Scheduler, kein Teleport und keine neue Mission-Editor-Zone.
 
 ## A4-4 Realtest vom 13.09.2026
@@ -80,25 +80,7 @@ wurde real in DCS ausgefuehrt. Positiv war, dass die RED-Fixture auf ihrer vorha
 
 Die Log-Evidenz identifiziert die Ursache eindeutig: Beim ersten direkten Target-Acquire protokollierte der produktive QRF-Code `formation=Vee`; auch die spaetere Reacquisition lief mit `formation=Vee`. Damit wurde der beabsichtigte `On Road`-Default der QRF MissionFactory von `OMW_FireSupStratResupply_QrfRuntime.lua` ueberschrieben.
 
-Der defekte Runtime-Vertrag war:
-
-```lua
-local QRF_ENGAGE_FORMATION = "Vee"
-...
-engageFormation = QRF_ENGAGE_FORMATION
-```
-
 A4-6 ist deshalb **FAIL fuer den QRF-Bewegungsvertrag** und nicht `VALIDATED`. Der Lauf beweist nicht, dass MOOSE `EngageTarget(..., "On Road")` auf Joyce versagt; diese Variante wurde im realen Lauf wegen des Runtime-Overrides gar nicht ausgefuehrt.
-
-## Korrektur A4-7
-
-`OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-QRF-RUNTIME-13` setzt explizit:
-
-```lua
-local QRF_ENGAGE_FORMATION = "On Road"
-```
-
-und gibt diesen Wert weiterhin ueber `engageFormation=QRF_ENGAGE_FORMATION` an die MissionFactory. Runtime-Test, Acceptance-Contract-Test, Production Builder und Acceptance Builder sperren nun einen erneuten `Vee`-Override.
 
 ## A4-7 lokaler Build vom 14.09.2026 - VERIFIED_LOCAL_BUILD
 
@@ -117,7 +99,7 @@ QRF Mission Factory: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-QRF-MISSION-FACTORY-8
 Acceptance Builder: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BASE-ACCEPTANCE-4-7
 ```
 
-Die Builder-Ausgabe und die anschliessend separat ausgefuehrte `Get-FileHash`-Pruefung stimmen fuer alle gemeinsam geprueften Dateien exakt ueberein:
+Verifizierte lokale Hashes:
 
 ```text
 Production builder SHA-256:
@@ -136,16 +118,61 @@ Acceptance bundle SHA-256:
 8DD1F21EF978CF46F4396F23C87E22835F0361A3DC9254D86C8E1E767C7BAE20
 ```
 
-Der lokale Build meldete ausserdem explizit:
+## A4-7 Realtest vom 14.09.2026 - PRODUCT LIFECYCLE PASS / HARNESS RETURN OBSERVER FAIL
+
+Realer DCS-Lauf mit:
 
 ```text
-QrfMovementContract: motorized QRF runtime explicitly passes MOOSE On Road to EngageTarget; Vee is forbidden for march/transit
-RedFixtureRoute: existing Mission Editor route; Acceptance activates only and must not replace/rewrite it
-MizMutation: false
+DCS: 2.9.29.27468
+Mission: OMW_Template_v24_GroundWorks_base.miz
+Source commit: ab3b53a07b8cdee024e23427cd8f47db8e7d9ced
+Acceptance bundle SHA-256: 8DD1F21EF978CF46F4396F23C87E22835F0361A3DC9254D86C8E1E767C7BAE20
+Runtime log: dcs(20260914-161903).log
+Debrief: debrief(20260914-161903).log
 ```
 
-Damit ist A4-7 als `VERIFIED_LOCAL_BUILD` belegt. Das ist **kein DCS-Runtime-PASS** und keine `VALIDATED`-Einstufung.
+Beobachtete und geloggte Produkt-Evidenz:
+
+```text
+- RED fixture follows the existing Mission Editor route.
+- QRF materializes road-aligned inside ZON_BLUE_GND_JOYCE_ACCESS.
+- direct target acquisitions use formation=On Road.
+- at least three concrete RED UNIT targets are acquired in sequence.
+- the hostile fixture is cleared.
+- production logs QRF_NO_LIVING_INCIDENT_TARGETS_IN_TACTICAL_ZONE -> MOOSE ReturnToLegion.
+- project owner visually observes the QRF physically driving back to the FOB and despawning there.
+```
+
+Die Screenshots zeigen zugleich die reale Road-Preferred-Semantik: MOOSE verwendet je nach aktueller Zielposition teilweise Strassenabschnitte und teilweise direktere Abschnitte. Bei neuer Zielposition kann sich diese Routenentscheidung aendern. Das ist fuer Joyce mit vielen HESCO-Waenden nicht ideal, wird aber nicht durch einen projektspezifischen Router uebersteuert.
+
+Der A4-7-Harness meldete trotzdem am Ende `TIMEOUT_INCOMPLETE_QRF_DIRECT_TARGET_CHAIN`, weil sein Return-Observer die ARMYGROUP-Zustaende alle 5 Sekunden pollte (`IsReturning()` beziehungsweise `GetState()=="Returned"`). Diese Polling-Logik ist fuer den kurzen bzw. anschliessend durch Warehouse-Reintegration bereinigten `Returned`-Lifecycle nicht belastbar. Das ist ein **Acceptance-Harness-Defekt**, kein beobachteter Produktfehler.
+
+A4-7 wird deshalb noch nicht als vollstaendig `VALIDATED` markiert. Seine reale DCS-Evidenz bestaetigt jedoch den produktiven Direct-Target-, On-Road- und physischen Return-/Despawn-Lifecycle.
+
+## Korrektur A4-8
+
+A4-8 aendert ausschliesslich den Acceptance-Observer. Produktionscode bleibt unveraendert.
+
+Der gepinnte MOOSE-Stand stellt fuer `ARMYGROUP` die oeffentlichen FSM-Callbacks
+
+```text
+OnAfterRTZ
+OnAfterReturned
+```
+
+bereit. `ARMYGROUP:onafterRTZ` fuehrt die Gruppe zur Homezone; sobald sie dort ist, loest MOOSE `Returned()` aus. `ARMYGROUP:onafterReturned` fuegt die Gruppe anschliessend ueber die Legion wieder dem Warehouse-Bestand hinzu. A4-8 haengt sich daher ereignisgetrieben an genau diese oeffentlichen Callbacks und bewahrt eventuell vorhandene vorherige Callback-Funktionen.
+
+A4-8 verwendet **keine** eigene Rueckkehrsteuerung und **keine** Polling-Ersatzlogik. Fuer PASS ist `OnAfterReturned` zwingend; `OnAfterRTZ` wird zusaetzlich als Beginn der MOOSE-Rueckkehr protokolliert.
+
+Naechster Builder:
+
+```text
+Production Builder: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BASE-17
+QRF Runtime: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-QRF-RUNTIME-13
+QRF Mission Factory: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-QRF-MISSION-FACTORY-8
+Acceptance Builder: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BASE-ACCEPTANCE-4-8
+```
 
 Status: `DRAFT`, noch **nicht DCS-validiert**.
 
-`VALIDATED` darf erst nach realem DCS-Test exakt dieses A4-7-Bundles mit SHA-256 `8DD1F21EF978CF46F4396F23C87E22835F0361A3DC9254D86C8E1E767C7BAE20` gesetzt werden.
+`VALIDATED` darf erst nach realem DCS-Test des exakt lokal gebauten A4-8-Bundles gesetzt werden.
