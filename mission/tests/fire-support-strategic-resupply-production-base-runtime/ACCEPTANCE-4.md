@@ -18,7 +18,7 @@ validated_in_dcs: false
 
 Ziel ist der Joyce-Regressionsfall gegen den mit dem historischen Honaker-Lifecycle reconcilierten QRF-Vertrag zu pruefen, ohne Acceptance 3 umzudeuten.
 
-Der fruehere A4-Entwurf `ONGUARD -> PATROLZONE + HuntingPatrol` ist nach realem DCS-Lauf verworfen. Der spaetere A4-4-Lauf lieferte nur Teilnachweis, weil der Harness die RED-Mission-Editor-Route ueberschrieb. A4-6 pruefte erstmals die unveraenderte RED-Route zusammen mit dem vorgesehenen On-Road-QRF-Vertrag, scheiterte jedoch am Runtime-Override `Vee`. A4-7 korrigierte diesen Override und lieferte reale DCS-Evidenz fuer den beabsichtigten On-Road-/Direct-Target-Lifecycle; lediglich der Acceptance-Observer fuer die physische Rueckkehr war fehlerhaft.
+Der fruehere A4-Entwurf `ONGUARD -> PATROLZONE + HuntingPatrol` ist nach realem DCS-Lauf verworfen. Der spaetere A4-4-Lauf lieferte nur Teilnachweis, weil der Harness die RED-Mission-Editor-Route ueberschrieb. A4-6 pruefte erstmals die unveraenderte RED-Route zusammen mit dem vorgesehenen On-Road-QRF-Vertrag, scheiterte jedoch am Runtime-Override `Vee`. A4-7 korrigierte diesen Override und lieferte reale DCS-Evidenz fuer den beabsichtigten On-Road-/Direct-Target-Lifecycle; lediglich der Acceptance-Observer fuer die physische Rueckkehr war fehlerhaft. A4-8 ersetzt diesen Observer durch die oeffentlichen MOOSE-ARMYGROUP-FSM-Callbacks `OnAfterRTZ` und `OnAfterReturned`.
 
 Aktueller Vertrag:
 
@@ -43,7 +43,7 @@ Zielautoritaet ist der vorhandene `OMW_GroundInstallationAttackIncident`-Teilneh
 
 Die QRF wird strassenausgerichtet innerhalb ACCESS materialisiert. Fuer Marsch und Transit zum konkreten Ziel ist `On Road` verbindlich. `Vee` ist eine Gefechtsformation und darf den Marschvertrag weder im MissionFactory-Default noch durch einen Runtime-Override ersetzen.
 
-Der gepinnte MOOSE-Stand verarbeitet `On Road` selbst. OMW gibt nur die Formation an; MOOSE besitzt die Routen-/Strassenlogik. Der reale A4-7-Lauf bestaetigt, dass `On Road` eine Strassenpraeferenz und keine starre Road-Lock-Garantie ist: bei beweglichen Zielen wird die Route mit aktualisierter Zielposition neu bewertet; je nach aktueller Geometrie kann der resultierende Pfad einen Strassenabschnitt verwenden oder einen direkteren Off-Road-Anteil enthalten. Fuer ummauerte FOBs wie Joyce ist dies eine bekannte DCS/MOOSE-Pathfinding-Grenze. OMW fuehrt deshalb ohne separate Owner-Freigabe keinen eigenen Gate-/Strassenrouter ein.
+Der gepinnte MOOSE-Stand verarbeitet `On Road` selbst. OMW gibt nur die Formation an; MOOSE besitzt die Routen-/Strassenlogik. Der reale A4-7/A4-8-Lauf bestaetigt, dass `On Road` eine Strassenpraeferenz und keine starre Road-Lock-Garantie ist: bei beweglichen Zielen wird die Route mit aktualisierter Zielposition neu bewertet; je nach aktueller Geometrie kann der resultierende Pfad einen Strassenabschnitt verwenden oder einen direkteren Off-Road-Anteil enthalten. Fuer ummauerte FOBs wie Joyce ist dies eine bekannte DCS/MOOSE-Pathfinding-Grenze. OMW fuehrt deshalb ohne separate Owner-Freigabe keinen eigenen Gate-/Strassenrouter ein.
 
 ## RED-Fixture-Vertrag
 
@@ -207,8 +207,40 @@ QrfReturnEvidence: public MOOSE ARMYGROUP OnAfterRTZ and OnAfterReturned FSM cal
 MizMutation: false
 ```
 
-Damit ist A4-8 als `VERIFIED_LOCAL_BUILD` belegt. Das ist noch **kein DCS-Runtime-PASS** und keine `VALIDATED`-Einstufung.
+## A4-8 Realtest vom 14.09.2026 - DCS PASS, Mission-Hash noch offen
 
-Status: `DRAFT`, noch **nicht DCS-validiert**.
+Realer DCS-Lauf mit:
 
-`VALIDATED` darf erst nach realem DCS-Test des exakt lokal gebauten A4-8-Bundles mit SHA-256 `098E888470547BF6D3836DF5AB19C47B914E96CAABDB9FAECE09821667489646` gesetzt werden.
+```text
+DCS: 2.9.29.27468
+Mission: C:\Users\Sven\Saved Games\DCS.openbeta\Missions\OMW_Template_v24_GroundWorks_base.miz
+Mission SHA-256: PENDING_LOCAL_HASH
+Source commit: a1ab98318b4f614875847d95e58bd0b15695a2d3
+Production bundle SHA-256: 17BBC6F7B0020BFB118B229CAD0F755CAA3B3771881546D430DF1AA6EE25D8FB
+Acceptance bundle SHA-256: 098E888470547BF6D3836DF5AB19C47B914E96CAABDB9FAECE09821667489646
+Runtime log: dcs(20260914-174452).log
+Debrief: debrief(20260914-174451).log
+```
+
+Der A4-8-Harness meldet einen vollstaendigen PASS. Die entscheidende Runtime-Evidenz ist:
+
+```text
+- physical installation incident opened for FOB_JOYCE;
+- exactly one local QRF demand was created;
+- QRF recruitment anchor uses transitFormation=On Road;
+- RED fixture moved on the existing Mission Editor route without harness route override;
+- QRF materialized inside ZON_BLUE_GND_JOYCE_ACCESS;
+- same physical ARMYGROUP acquired at least three concrete RED UNIT targets;
+- hostile fixture was fully cleared;
+- production exhausted authorized incident targets and initiated MOOSE ReturnToLegion;
+- Acceptance observed QRF_RETURNED from=Returning to=Returned;
+- Acceptance observed QRF_RTZ for ZON_BLUE_GND_JOYCE_ACCESS;
+- telemetry then reported rtzObserved=true returnedObserved=true;
+- final result: [PRODUCTION BASE A4][PASS].
+```
+
+Die Reihenfolge der beiden Acceptance-Logzeilen `QRF_RETURNED` und `QRF_RTZ` ist eine Folge der Callback-/Logging-Reihenfolge und aendert nicht den nachgewiesenen MOOSE-FSM-Lifecycle. Fuer PASS ist `Returned` zwingend und wurde real beobachtet.
+
+Damit sind die fachlichen A4-8-PASS-Kriterien im realen DCS-Lauf erfuellt. Wegen der Governance-Provenienzanforderung bleibt `validated_in_dcs: false`, bis der SHA-256 der exakt verwendeten Missionsdatei lokal ermittelt und dokumentiert ist. Es ist keine weitere Lua- oder DCS-Verhaltensaenderung erforderlich.
+
+Status: `DRAFT`, realer **DCS PASS** fuer A4-8; formales `VALIDATED` wartet nur noch auf den lokalen Missions-SHA-256.
