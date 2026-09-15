@@ -4,14 +4,15 @@ local function eq(a,b,label) if a~=b then error(string.format("%s expected=%s ac
 local function yes(v,label) if v~=true then error(label.." expected=true") end end
 local function no(v,label) if v~=false then error(label.." expected=false") end end
 
-local calls={}
+local calls={support={}}
 local base={}
 function base:OpenIncident(spec)
   calls.open=spec
   return {incidentId="BASE|"..spec.incidentKey},true,nil
 end
 function base:RequestIncidentSupport(incidentId,supportType,spec)
-  calls.support={incidentId=incidentId,supportType=supportType,spec=spec}
+  calls.support[#calls.support+1]={incidentId=incidentId,supportType=supportType,spec=spec}
+  if supportType=="GUARD" then return {demandId="GUARD-1"},true,nil end
   return {demandId="QRF-1"},true,nil
 end
 function base:CloseIncident(incidentId,reason)
@@ -29,7 +30,7 @@ local coordinator={}
 function coordinator:GetParticipants() return {initiatorGroup} end
 local source={incidentId="INSTALLATION-ATTACK|BLUE_GROUND_FOB_JOYCE|1",installationId="BLUE_GROUND_FOB_JOYCE"}
 local evidence={evidenceType="PROXIMITY_INTRUSION",priority=80,position=position,reportedTarget=reportedTarget,initiatorGroup=initiatorGroup}
-local opened,created,reason,qrf=bridge:OnIncidentStarted(coordinator,source,evidence)
+local opened,created,reason,qrf,guard=bridge:OnIncidentStarted(coordinator,source,evidence)
 yes(created,"base incident created")
 eq(reason,nil,"start reason")
 eq(calls.open.siteId,"FOB_JOYCE","site mapped")
@@ -41,19 +42,28 @@ eq(calls.open.context.initialEvidenceType,"PROXIMITY_INTRUSION","initial evidenc
 eq(calls.open.context.position,position,"evidence position preserved")
 eq(calls.open.context.reportedTarget,reportedTarget,"reported target preserved")
 eq(calls.open.context.physicalTargetGroup,initiatorGroup,"physical hostile group preserved for QRF road-forward direction")
-eq(calls.support.incidentId,opened.incidentId,"QRF bound to base incident")
-eq(calls.support.supportType,"QRF","only initial QRF requested")
-eq(calls.support.spec.requestKey,"INSTALLATION_ATTACK_INITIAL_QRF","stable QRF request key")
-eq(calls.support.spec.priority,80,"QRF priority preserved")
-eq(calls.support.spec.cancelWhenIncidentClosed,false,"incident close must not auto-cancel dispatched QRF")
+eq(#calls.support,2,"Guard and QRF requested exactly once")
+local guardCall,qrfCall=calls.support[1],calls.support[2]
+eq(guardCall.incidentId,opened.incidentId,"Guard bound to base incident")
+eq(guardCall.supportType,"GUARD","local Guard requested")
+eq(guardCall.spec.requestKey,"INSTALLATION_ATTACK_LOCAL_GUARD","stable Guard request key")
+eq(guardCall.spec.priority,80,"Guard priority preserved")
+eq(guardCall.spec.cancelWhenIncidentClosed,true,"Guard follows incident lifecycle")
+eq(guardCall.spec.context.activation,"INCIDENT_LOCAL_SECURITY","Guard local-security activation")
+eq(qrfCall.incidentId,opened.incidentId,"QRF bound to base incident")
+eq(qrfCall.supportType,"QRF","initial QRF requested")
+eq(qrfCall.spec.requestKey,"INSTALLATION_ATTACK_INITIAL_QRF","stable QRF request key")
+eq(qrfCall.spec.priority,80,"QRF priority preserved")
+eq(qrfCall.spec.cancelWhenIncidentClosed,false,"incident close must not auto-cancel dispatched QRF")
 eq(qrf.demandId,"QRF-1","QRF result forwarded")
+eq(guard.demandId,"GUARD-1","Guard result forwarded")
 eq(bridge:GetBaseIncidentId(source.incidentId),opened.incidentId,"source binding stored")
 
 local refreshed,refreshCreated,refreshReason=bridge:OnIncidentUpdated(coordinator,source,{evidenceType="DIRECT_FIRE_ATTACK"})
 eq(refreshed,opened.incidentId,"refresh resolves base incident")
 no(refreshCreated,"refresh creates no response")
 eq(refreshReason,"INCIDENT_REFRESH_ONLY","refresh reason")
-eq(calls.support.spec.requestKey,"INSTALLATION_ATTACK_INITIAL_QRF","no duplicate QRF mutation")
+eq(#calls.support,2,"refresh creates no duplicate Guard/QRF")
 
 local closed,changed,closeReason=bridge:OnIncidentClosed(coordinator,source,"KNOWN_ATTACKERS_NEUTRALIZED")
 yes(changed,"base incident closed")
@@ -62,7 +72,8 @@ eq(calls.close.incidentId,opened.incidentId,"correct base incident closed")
 eq(calls.close.reason,"KNOWN_ATTACKERS_NEUTRALIZED","authoritative close reason forwarded")
 eq(closed.closed,true,"closed state forwarded")
 eq(bridge:GetBaseIncidentId(source.incidentId),nil,"binding released")
-eq(calls.support.spec.cancelWhenIncidentClosed,false,"closing incident does not mutate QRF cancellation policy")
+eq(guardCall.spec.cancelWhenIncidentClosed,true,"closing incident retains Guard cancellation policy")
+eq(qrfCall.spec.cancelWhenIncidentClosed,false,"closing incident does not mutate QRF cancellation policy")
 
 local missing,missingCreated,missingReason=bridge:OnIncidentStarted(coordinator,{incidentId="X",installationId="UNKNOWN"},{evidenceType="PROXIMITY_INTRUSION"})
 eq(missing,nil,"unknown installation ignored")
