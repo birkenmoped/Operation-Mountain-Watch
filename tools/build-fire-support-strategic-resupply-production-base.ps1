@@ -6,7 +6,7 @@ Set-StrictMode -Version Latest
 $repoRoot=Split-Path -Parent $PSScriptRoot
 $distDir=Join-Path $repoRoot 'mission\fire-support-strategic-resupply\dist'
 $outputFile=Join-Path $distDir 'OMW_FireSupStratResupply_Base.lua'
-$builderVersion='OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BASE-17'
+$builderVersion='OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BASE-18'
 
 $moduleSpecs=@(
   @{Name='SiteRegistry';Path='scripts\campaign\OMW_FireSupStratResupply_SiteRegistry.lua'},
@@ -54,12 +54,19 @@ $roadSource=Get-Content -LiteralPath $roadPath -Raw -Encoding UTF8
 $combined=(($moduleSpecs|ForEach-Object{$sources[$_.Name]}) -join "`n")+"`n"+$roadSource
 foreach($marker in @(
   'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-SITE-REGISTRY-6',
+  'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-SUPPORT-PROFILES-4',
+  'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-BASE-4',
   'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-RUNTIME-8',
+  'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-GUARD-RUNTIME-3',
+  'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-GUARD-MISSION-FACTORY-3',
   'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-QRF-RUNTIME-13',
   'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-QRF-MISSION-FACTORY-8',
-  'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-INSTALLATION-INCIDENT-BRIDGE-4',
-  'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PERIMETER-BRIDGE-3',
+  'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-INSTALLATION-INCIDENT-BRIDGE-5',
+  'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PERIMETER-BRIDGE-4',
   'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PERIMETER-RUNTIME-2',
+  'OMW-FOB-THREAT-OPSZONE-ADAPTER-6',
+  'INCIDENT_LOCAL_SECURITY','INSTALLATION_ATTACK_LOCAL_GUARD',
+  'MOOSE_OPSZONE_RED_PRESENCE','OnAfterEvaluated','GetScannedGroupSet',
   'AUFTRAG:NewONGUARD','SetReturnToLegion(true)','cancelWhenIncidentClosed=false',
   'armyGroup:EngageTarget','OnAfterDisengage','_OMWQrfBindArmyGroup',
   'DEFAULT_ENGAGE_FORMATION = "On Road"','QRF_ENGAGE_FORMATION = "On Road"','engageFormation=QRF_ENGAGE_FORMATION',
@@ -71,6 +78,8 @@ foreach($marker in @(
   'INSTALLATION_ATTACK_INITIAL_QRF','OMW_BLUE_OBJECTIVE_JALALABAD_AIRPORT')){
   if(-not $combined.Contains($marker)){throw "Required contract marker missing: $marker"}
 }
+if($sources.GuardMissionFactory.Contains('SetEngageDetected(')){throw 'Incident-local Guard must not use proactive SetEngageDetected.'}
+if($sources.GuardRuntime.Contains('routeAdapter:TrackMission') -or $sources.GuardRuntime.Contains('router:Install')){throw 'Incident-local Guard runtime must not install or track a patrol route.'}
 if($sources.QrfMissionFactory.Contains('local DEFAULT_ENGAGE_FORMATION = "Vee"')){throw 'QRF MissionFactory motorized march must not default to Vee.'}
 if($sources.QrfRuntime.Contains('local QRF_ENGAGE_FORMATION = "Vee"')){throw 'QRF runtime must not override motorized march with Vee.'}
 if(-not $sources.QrfRuntime.Contains('local QRF_ENGAGE_FORMATION = "On Road"')){throw 'QRF runtime must explicitly enforce MOOSE On Road march.'}
@@ -86,7 +95,7 @@ New-Item -ItemType Directory -Path $distDir -Force|Out-Null
 $commit=(& git -C $repoRoot rev-parse HEAD).Trim()
 if([string]::IsNullOrWhiteSpace($commit)){throw 'Unable to resolve Git HEAD.'}
 function Embed([string]$Name,[string]$Source){"local $Name = (function()`n$Source`nend)()`n`n"}
-$bundle="-- AUTO-GENERATED FILE. DO NOT EDIT DIRECTLY.`n-- BuilderVersion: $builderVersion`n-- GitCommit: $commit`n-- MOOSE release: 2.9.18`n-- MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54`n-- Moose.lua SHA-256: E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915`n-- Mobile Ground QRF: road-aligned ACCESS materialization -> runtime-enforced MOOSE On Road transit in EngageTarget -> MOOSE final off-road target approach when required -> direct concrete UNIT pursuit -> Disengage/reacquire -> target exhaustion -> ReturnToLegion.`n`n"
+$bundle="-- AUTO-GENERATED FILE. DO NOT EDIT DIRECTLY.`n-- BuilderVersion: $builderVersion`n-- GitCommit: $commit`n-- MOOSE release: 2.9.18`n-- MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54`n-- Moose.lua SHA-256: E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915`n-- Guard: no physical Guard before alarm; MOOSE OPSZONE scanned RED presence opens incident -> local ONGUARD Guard + mobile QRF; no permanent Guard patrol router.`n-- Mobile Ground QRF: road-aligned ACCESS materialization -> runtime-enforced MOOSE On Road transit in EngageTarget -> MOOSE final off-road target approach when required -> direct concrete UNIT pursuit -> Disengage/reacquire -> target exhaustion -> ReturnToLegion.`n`n"
 foreach($spec in $moduleSpecs){$bundle+=Embed $spec.Name $sources[$spec.Name]}
 $bundle+=Embed 'RoadSpawnAdapter' $roadSource
 $bundle+=@"
@@ -114,17 +123,43 @@ function Package.New(spec)
 end
 OMW=OMW or {}; OMW.FireSupStratResupply=Package; OMW_FIRE_SUPPORT_STRATEGIC_RESUPPLY_BASE_LOADED=1
 "@
-foreach($marker in @('roadSpawnAdapter=RoadSpawnAdapter','OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-QRF-RUNTIME-13','OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-QRF-MISSION-FACTORY-8','OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-INSTALLATION-INCIDENT-BRIDGE-4','AUFTRAG:NewONGUARD','SetReturnToLegion(true)','armyGroup:EngageTarget','DEFAULT_ENGAGE_FORMATION = "On Road"','QRF_ENGAGE_FORMATION = "On Road"','sourceIncidentCoordinator','GetParticipants(true)','cancelWhenIncidentClosed=false','brigade:SetSpawnZone(accessZone, HOME_SPAWN_ZONE_MAX_DIST_M)','physicalTargetGroup','ROAD_ALIGNED_WAREHOUSE_SPAWN','vehicleSpacingM','forwardCoordinate = targetCoordinate','OMW.FireSupStratResupply=Package')){if(-not $bundle.Contains($marker)){throw "Bundle marker missing: $marker"}}
+foreach($marker in @(
+  'roadSpawnAdapter=RoadSpawnAdapter',
+  'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-GUARD-RUNTIME-3',
+  'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-GUARD-MISSION-FACTORY-3',
+  'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-QRF-RUNTIME-13',
+  'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-QRF-MISSION-FACTORY-8',
+  'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-INSTALLATION-INCIDENT-BRIDGE-5',
+  'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PERIMETER-BRIDGE-4',
+  'OMW-FOB-THREAT-OPSZONE-ADAPTER-6',
+  'INCIDENT_LOCAL_SECURITY','INSTALLATION_ATTACK_LOCAL_GUARD','MOOSE_OPSZONE_RED_PRESENCE',
+  'AUFTRAG:NewONGUARD','SetReturnToLegion(true)','armyGroup:EngageTarget',
+  'DEFAULT_ENGAGE_FORMATION = "On Road"','QRF_ENGAGE_FORMATION = "On Road"',
+  'sourceIncidentCoordinator','GetParticipants(true)','cancelWhenIncidentClosed=false',
+  'brigade:SetSpawnZone(accessZone, HOME_SPAWN_ZONE_MAX_DIST_M)','physicalTargetGroup',
+  'ROAD_ALIGNED_WAREHOUSE_SPAWN','vehicleSpacingM','forwardCoordinate = targetCoordinate',
+  'OMW.FireSupStratResupply=Package')){
+  if(-not $bundle.Contains($marker)){throw "Bundle marker missing: $marker"}
+}
 [System.IO.File]::WriteAllText($outputFile,$bundle,[System.Text.UTF8Encoding]::new($false))
 Write-Host "Built: $outputFile"
 Write-Host "BuilderVersion: $builderVersion"
 Write-Host 'PackageSchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BASE-1'
 Write-Host 'RuntimeSchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-RUNTIME-8'
 Write-Host 'SiteRegistrySchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-SITE-REGISTRY-6'
+Write-Host 'SupportProfilesSchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-SUPPORT-PROFILES-4'
+Write-Host 'BaseSchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-BASE-4'
+Write-Host 'GuardRuntimeSchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-GUARD-RUNTIME-3'
+Write-Host 'GuardMissionFactorySchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-GUARD-MISSION-FACTORY-3'
 Write-Host 'QrfRuntimeSchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-QRF-RUNTIME-13'
 Write-Host 'QrfMissionFactorySchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-QRF-MISSION-FACTORY-8'
-Write-Host 'InstallationIncidentBridgeSchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-INSTALLATION-INCIDENT-BRIDGE-4'
-Write-Host 'PerimeterBridgeSchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PERIMETER-BRIDGE-3'
+Write-Host 'InstallationIncidentBridgeSchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-INSTALLATION-INCIDENT-BRIDGE-5'
+Write-Host 'PerimeterBridgeSchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PERIMETER-BRIDGE-4'
+Write-Host 'ThreatAdapterSchema: OMW-FOB-THREAT-OPSZONE-ADAPTER-6'
+Write-Host 'GuardActivation: no physical Guard before alarm; incident-local Guard demand on qualified RED perimeter presence'
+Write-Host 'GuardMission: MOOSE ONGUARD at validated local materialization anchor; no permanent PATHLINE patrol; no proactive SetEngageDetected'
+Write-Host 'GuardReturnLifecycle: authoritative incident close -> Guard Cancel -> MOOSE SetReturnToLegion/Legion lifecycle'
+Write-Host 'AlarmQualification: MOOSE OPSZONE scan/GetScannedGroupSet via Evaluated callback; no custom scheduler/world scan'
 Write-Host 'QrfResponsePhase: MOOSE AUFTRAG ONGUARD is recruitment/materialization anchor only'
 Write-Host 'QrfTargetCycle: same physical ARMYGROUP -> nearest living known incident UNIT -> MOOSE EngageTarget dynamic pursuit -> Disengage/reacquire'
 Write-Host 'QrfMovementContract: motorized QRF runtime explicitly passes MOOSE On Road to EngageTarget; Vee is forbidden for march/transit'
