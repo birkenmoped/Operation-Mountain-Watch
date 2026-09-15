@@ -3,7 +3,7 @@
 
 local SupportProfiles = {}
 
-SupportProfiles.SchemaVersion = "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-SUPPORT-PROFILES-3"
+SupportProfiles.SchemaVersion = "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-SUPPORT-PROFILES-4"
 
 SupportProfiles.SupportType = {
   GUARD = "GUARD",
@@ -16,6 +16,7 @@ SupportProfiles.SupportType = {
 
 SupportProfiles.Activation = {
   SITE_PERSISTENT = "SITE_PERSISTENT",
+  INCIDENT_LOCAL_SECURITY = "INCIDENT_LOCAL_SECURITY",
   INCIDENT_LOCAL_DEFENSE = "INCIDENT_LOCAL_DEFENSE",
   C2_ESCALATION_EXTERNAL = "C2_ESCALATION_EXTERNAL",
   RESOURCE_THRESHOLD = "RESOURCE_THRESHOLD",
@@ -40,7 +41,7 @@ SupportProfiles.Profiles = {
     profileId = "GROUND_INSTALLATION_STANDARD",
     contractStatus = "GROUND_FOUNDATION_RECONCILED",
     support = {
-      guards = { enabled = true, activation = "SITE_PERSISTENT" },
+      guards = { enabled = true, activation = "INCIDENT_LOCAL_SECURITY" },
       qrf = { enabled = true, activation = "INCIDENT_LOCAL_DEFENSE" },
       artillery = { enabled = true, activation = "C2_ESCALATION_EXTERNAL" },
       cas = { enabled = true, activation = "C2_ESCALATION_EXTERNAL" },
