@@ -149,6 +149,23 @@ Wenn CAS physisch ON STATION ist, darf keine neue ARTY-Fire-Mission in denselben
 
 Die historische ungebremste `FIRE_SUPPORT_REARMED_CONTINUATION`-Wiederholung ist keine akzeptierte allgemeine Policy. Acceptance 2 darf nur frische, noch nicht bereits fuer denselben Zyklus abgearbeitete C2-Kontakte fuer einen Follow-on-Fire-Demand verwenden.
 
+### 5.1 Noch offene Produktionsbruecke
+
+Die generische FSSR-Base kann ARTY bereits MOOSE-first ueber `AUFTRAG:NewARTY(...) -> COMMANDER:AddMission(...)` erzeugen. Der Stage-3-Wright-Nachweis fuer lokales M1083-Rearm basiert dagegen auf einem bereits existierenden, caller-owned MOOSE-`ARTY`-FSM.
+
+Diese beiden Pfade duerfen nicht stillschweigend als gleichwertig behandelt werden. Vor dem Acceptance-2-DCS-Lauf ist deshalb eine kleine produktive Integrationsbruecke erforderlich, die gleichzeitig sicherstellt:
+
+```text
+Base / C2 demand authority remains single
+MOOSE remains physical fire-control authority
+selected Wright fire-support asset is unambiguous
+local M1083 rearm works on the same physical artillery representation
+no second ARTY mission owner is created
+CampaignState AMMO settlement remains exactly once
+```
+
+Bis diese Bruecke implementiert und CI-geprueft ist, wird **kein** neuer Full-Response-Build ausgegeben.
+
 ## 6. CAS-Vertrag
 
 Acceptance 2 veraendert die bereits dokumentierte Stage-3-CAS-Geometrie und Recovery-Semantik nicht stillschweigend.
@@ -168,6 +185,23 @@ Jalalabad
 CAS verwendet sein eigenes MOOSE/DCS-Detektionsbild. Kein `KnowTarget()`-Inject und kein raw RED count als CAS-Release-Autoritaet.
 
 Der bestehende supported-element/no-contact CAS-Closure-Vertrag bleibt fuer CAS separat erhalten. Er darf jedoch nicht mehr als QRF-Release-Autoritaet missbraucht werden.
+
+### 6.1 Reconciled generic Base path
+
+Der generische `OMW_FireSupStratResupply_CasMissionFactory` Schema 2 besitzt jetzt einen expliziten, source-geprueften Modus:
+
+```text
+missionMode = PATROLZONE_ENGAGE
+-> AUFTRAG:NewPATROLZONE(zone, speedKts, altitudeFt)
+-> SetEngageDetected(rangeNm, targetTypes, zone, nil)
+-> optional configureMission(...) for the existing owner-authored tactical corridor
+-> CommanderBridge
+-> COMMANDER:AddMission(...)
+```
+
+Damit bleibt die Stage-3-PATROLZONE-/Detection-Semantik erhalten, waehrend Provider-/Assetauswahl nicht mehr im CAS-Factory hart codiert wird. Sie bleibt beim MOOSE-`COMMANDER`.
+
+Dieser neue Pfad ist Source-/CI-Staging und noch **nicht** DCS-validiert.
 
 ## 7. Strategic Air-AMMO / OPSTRANSPORT
 
@@ -210,8 +244,8 @@ Ein Gesamt-PASS benoetigt mindestens:
 15. strategic AMMO reorder creates exactly one active RESUPPLY demand
 16. CH-47 OPSTRANSPORT completes physical STORAGE delivery
 17. Wright / Jalalabad strategic AMMO settlement is correct and exactly once
-18. CAS follows its own accepted task / release / recovery contract
-19. no acceptance-owned replacement routing, target authority or resource authority
+18. CAS uses the reconciled generic COMMANDER + PATROLZONE_ENGAGE path and follows its own release/recovery contract
+19. no acceptance-owned replacement routing, target authority, provider selection or resource authority
 ```
 
 ## 9. Explizit verbotene Regressionen
@@ -230,6 +264,7 @@ PATROLZONE/HuntingPatrol for QRF
 GROUNDATTACK for QRF
 custom QRF target scheduler
 custom QRF road router
+CAS AIRWING/SQUADRON hardcoding inside generic FSSR factory
 Acceptance-owned ExpireDemand/Cancel as tactical completion
 Mission Editor alarm-zone proliferation
 ```
@@ -251,16 +286,24 @@ QRF recovery coupled to CAS supported-element release
 
 Diese Marker sind fuer Acceptance 2 Anti-Regression-Fails.
 
-## 11. Naechster Implementierungsschritt
+## 11. Implementierungsstand 15.09.2026
 
 ```text
-Production Base A4/A5 runtime as local Ground authority
-+ existing Stage-3 ARTY/CAS/OPSTRANSPORT pieces
--> new reconciled Acceptance-2 harness
--> builder anti-regression markers
--> local build/hash provenance
--> MIZ embedding verification
--> one real DCS full-response run
+DONE:
+- Acceptance-2 contract defined
+- A4/A5 local Ground authority fixed as inherited baseline
+- Honaker 9000-ft alarm baseline fixed
+- generic CAS factory supports source-verified PATROLZONE_ENGAGE
+- CAS provider selection remains MOOSE COMMANDER-owned
+- production builder advanced to Production Base 19
+
+OPEN:
+- reconcile generic ARTY COMMANDER dispatch with the already accepted Wright local M1083 / ARTY rearm lifecycle
+- build new Acceptance-2 harness without old local Guard/QRF implementation
+- add builder anti-regression markers
+- local build/hash provenance
+- MIZ embedding verification
+- one real DCS full-response run
 ```
 
-Bis dieser neue Harness gebaut ist, bleibt Acceptance 2 `PLANNED` und `validated_in_dcs: false`.
+Bis der neue Harness gebaut ist, bleibt Acceptance 2 `PLANNED` und `validated_in_dcs: false`.
