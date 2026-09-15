@@ -87,7 +87,9 @@ local function requestC2SupportIfReady()
     if not demand or demand.status=="NOT_DISPATCHED" then fail("FSSR ARTY C2 request failed: "..tostring(reason)); return end
     state.artyBaseDemand=demand
   end
-  if not state.casBaseDemand and state.airwing and state.ah64d then
+  -- Keep the Acceptance deterministic: exercise the Wright ARTY path first, then
+  -- allocate the fixed Jalalabad AH-64 fixture through the same generic C2 demand boundary.
+  if state.artyBaseDemand and not state.casBaseDemand and state.airwing and state.ah64d then
     local demand,created,reason=state.base:RequestIncidentSupport(state.baseIncidentId,"CAS",{requestKey="STAGE3_C2_CAS",priority=90,cancelWhenIncidentClosed=false,context={allocation="ACCEPTANCE_DETERMINISTIC_JALALABAD_AH64D"}})
     if not demand or demand.status=="NOT_DISPATCHED" then failCas("FSSR CAS C2 request failed: "..tostring(reason)); return end
     state.casBaseDemand=demand
@@ -141,8 +143,8 @@ local function observe()
     and state.casRecoveryRequested and state.casHomeLanded and state.casAssetReturned)
   if state.failed then return end
   if state.preAlarmNoGuard and state.fixtureMove>=MIN_FIXTURE_MOVE_M and state.sourceIncident and state.guardDemand and state.qrfDemand
-      and state.guardArmy and state.qrfArmy and state.incidentClosed and state.guardReturned and state.qrfReturned and state.artyBaseDemand and state.casBaseDemand
-      and state.fireStarted and state.fireComplete and state.rearmComplete and state.supportReturned and state.resupply
+      and state.guardArmy and state.qrfArmy and state.qrfEngaged and state.incidentClosed and state.guardReturned and state.qrfReturned and state.artyBaseDemand and state.casBaseDemand
+      and state.fireStarted and state.fireComplete and not state.fireCycleActive and state.rearmComplete and state.supportReturned and state.resupply
       and state.inTransit and state.delivered and state.airCorridor and state.cargoReturnInstalled and state.homeLanded and state.assetReturned and casTerminal then
     if state.casFailed then fail("CAS subsystem failed: "..tostring(state.casFailureReason)); return end
     local ctx=context(); local w=ctx.store:GetResource(WRIGHT_NODE,AMMO_RESOURCE); local j=ctx.store:GetResource(JALALABAD_NODE,AMMO_RESOURCE)
