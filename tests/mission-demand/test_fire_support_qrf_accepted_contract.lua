@@ -48,9 +48,12 @@ contains(runtime, 'local QRF_ENGAGE_FORMATION = "On Road"', "QRF runtime road-pr
 contains(runtime, "engageFormation=QRF_ENGAGE_FORMATION", "QRF runtime formation forwarding")
 excludes(runtime, 'local QRF_ENGAGE_FORMATION = "Vee"', "QRF runtime Vee override")
 
--- Existing installation incident participant registry is the target authority.
-contains(incidentBridge, "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-INSTALLATION-INCIDENT-BRIDGE-4", "incident bridge schema")
+-- Existing installation incident participant registry remains QRF target authority.
+-- Bridge v5 additionally requests the local Guard, but the QRF contract itself is
+-- unchanged and explicitly remains independent of incident-close cancellation.
+contains(incidentBridge, "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-INSTALLATION-INCIDENT-BRIDGE-5", "incident bridge schema")
 contains(incidentBridge, "sourceIncidentCoordinator=sourceCoordinator", "incident coordinator handoff")
+contains(incidentBridge, 'requestKey="INSTALLATION_ATTACK_INITIAL_QRF"', "stable QRF request key")
 contains(incidentBridge, "cancelWhenIncidentClosed=false", "incident close independence")
 contains(runtime, "sourceIncidentCoordinator", "QRF runtime participant authority")
 contains(runtime, "GetParticipants(true)", "QRF runtime living participant query")
