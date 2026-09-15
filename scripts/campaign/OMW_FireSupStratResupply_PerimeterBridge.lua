@@ -2,15 +2,15 @@
 --
 -- Converts a qualified MOOSE OPSZONE proximity intrusion into one evidence item
 -- for the authoritative installation attack incident layer. Physical hostile groups
--- qualified by the OPSZONE are carried as transient incident participants so the
--- local QRF can receive an actual MOOSE ground-attack target.
+-- qualified by the OPSZONE scanned group set are carried as transient incident
+-- participants so the local QRF can receive actual MOOSE target wrappers.
 
 local Bridge = {}
 local Instance = {}
 Instance.__index = Instance
 
 local TAG = "[OMW][FireSupStratResupply.PerimeterBridge]"
-Bridge.SchemaVersion = "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PERIMETER-BRIDGE-3"
+Bridge.SchemaVersion = "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PERIMETER-BRIDGE-4"
 
 local function fail(message) error(TAG .. " " .. tostring(message), 2) end
 local function needTable(value, label) if type(value) ~= "table" then fail(label .. " must be a table") end return value end
@@ -105,7 +105,7 @@ function Instance:HandleThreat(_, opsZone, incident)
     priority=incident.priority,
     position=incident.position,
     reportedTarget=incident.reportedTarget,
-    sourceEvent="OPSZONE_Attacked",
+    sourceEvent="MOOSE_OPSZONE_RED_PRESENCE",
     sourceIncidentId=sourceIncidentId,
     initiatorGroup=primaryThreatGroup,
     participantGroups=participantGroups,
@@ -123,7 +123,7 @@ function Instance:HandleClear(_, _, defeatedCoalition, incident)
   -- Perimeter clear is evidence state only. The authoritative installation attack
   -- incident layer decides tactical completion and explicit incident closure.
   self:_log(string.format(
-    "perimeter clear observed installationId=%s sourceIncidentId=%s defeatedCoalition=%s; no incident close",
+    "perimeter RED presence cleared installationId=%s sourceIncidentId=%s coalition=%s; no incident close",
     tostring(incident and incident.installationId), tostring(incident and incident.incidentId), tostring(defeatedCoalition)))
   return incident, false, "PERIMETER_CLEAR_DOES_NOT_CLOSE_INCIDENT"
 end
