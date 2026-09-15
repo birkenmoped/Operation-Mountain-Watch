@@ -14,6 +14,7 @@ function AUFTRAG:NewONGUARD(coordinate)
   function mission:SetRequiredAttribute(v) self.requiredAttributes=v;return self end
   function mission:SetRequiredProperty(v) self.requiredProperties=v;return self end
   function mission:SetPriority(p,u) self.priority=p;self.urgent=u;return self end
+  function mission:SetReturnToLegion(v) self.returnToLegion=v;return self end
   function mission:Cancel() self.cancelCount=self.cancelCount+1 end
   created[#created+1]=mission
   return mission
@@ -22,12 +23,9 @@ end
 local lead={marker="LEAD"}
 local materializer={}
 function materializer:GetLeadCoordinate() return lead end
-local tracked=nil
-local routeAdapter={}
-function routeAdapter:TrackMission(mission) tracked=mission return self end
 
-local factory=Factory.New({materializers={FOB_JOYCE=materializer},routeAdapters={FOB_JOYCE=routeAdapter}})
-local demand={demandId="SITE|FOB_JOYCE|GUARD|PERSISTENT",siteId="FOB_JOYCE",supportType="GUARD",priority=33}
+local factory=Factory.New({materializers={FOB_JOYCE=materializer}})
+local demand={demandId="INCIDENT|FOB_JOYCE|GUARD|INSTALLATION_ATTACK_LOCAL_GUARD",siteId="FOB_JOYCE",supportType="GUARD",priority=33}
 local mission,made,reason=factory:Create(demand,{}, {})
 yes(made,"Guard mission created")
 eq(reason,nil,"Guard create reason")
@@ -35,17 +33,16 @@ eq(mission.coordinate,lead,"ONGUARD lead coordinate")
 eq(mission.teleport,false,"visible teleport disabled")
 eq(mission.requiredMin,1,"required min")
 eq(mission.requiredMax,1,"required max")
+eq(mission.returnToLegion,true,"incident Guard returns through MOOSE Legion lifecycle")
 eq(mission.requiredAttributes,nil,"no implicit Guard attribute filter")
 eq(mission.requiredProperties,nil,"no implicit Guard property filter")
 eq(mission.priority,33,"priority forwarded")
-eq(mission.urgent,false,"persistent Guard not urgent")
-eq(tracked,mission,"route adapter tracks created mission")
+eq(mission.urgent,false,"Guard demand not urgent")
 
 local requiredAttributes={"Ground_Infantry"}
 local requiredProperties={"Infantry"}
 local constrained=Factory.New({
   materializers={FOB_JOYCE=materializer},
-  routeAdapters={FOB_JOYCE=routeAdapter},
   requiredAttributes=requiredAttributes,
   requiredProperties=requiredProperties,
 })
@@ -53,8 +50,9 @@ local constrainedMission,constrainedCreated=constrained:Create(demand,{}, {})
 yes(constrainedCreated,"constrained Guard mission created")
 eq(constrainedMission.requiredAttributes,requiredAttributes,"MOOSE Guard attribute constraint forwarded")
 eq(constrainedMission.requiredProperties,requiredProperties,"MOOSE Guard property constraint forwarded")
+eq(constrainedMission.returnToLegion,true,"constrained Guard returns to Legion")
 
-local missing,missingCreated,missingReason=factory:Create({demandId="SITE|FOB_BOSTICK|GUARD|PERSISTENT",siteId="FOB_BOSTICK",supportType="GUARD"},{},{})
+local missing,missingCreated,missingReason=factory:Create({demandId="INCIDENT|FOB_BOSTICK|GUARD",siteId="FOB_BOSTICK",supportType="GUARD"},{},{})
 eq(missing,nil,"missing materializer no mission")
 no(missingCreated,"missing materializer not created")
 eq(missingReason,"GUARD_MATERIALIZER_NOT_CONFIGURED","missing materializer reason")
