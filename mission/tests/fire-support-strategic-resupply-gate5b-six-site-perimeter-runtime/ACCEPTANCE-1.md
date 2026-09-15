@@ -214,14 +214,74 @@ mission/tests/fire-support-strategic-resupply-gate5b-six-site-perimeter-runtime/
 
 Der Builder erzeugt zuerst das aktuelle Production-Base-Bundle und haengt anschliessend nur den Acceptance-Harness an. Er prueft die aktuellen Runtime-/QRF-/Perimeter-Schemata und blockiert im Acceptance-Source insbesondere direkte Evidence-Injektion, Incident-Close, `ExpireDemand`, historische `PATROL_TEST`-Abhaengigkeiten und alte `SetEngageDetected`-Semantik.
 
-## Statusgrenze
+## Owner-local Build 2026-09-15
 
-Vor einem realen Owner-local Build und anschliessendem DCS-Lauf gilt:
+Der Projektinhaber hat den Gate-5B-Builder lokal aus exakt folgendem Source-Stand ausgefuehrt:
 
 ```text
-Source/Builder: STAGED
+Source commit: 4ad6ec9ad8e83f48f5f1b1d54dcd130d71050f43
+Production BuilderVersion: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BASE-17
+Acceptance BuilderVersion: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-GATE5B-PERIMETER-RUNTIME-1
+MOOSE release: 2.9.18
+MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+Moose.lua SHA-256: E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915
+```
+
+Die reale Builder-Ausgabe und separate `Get-FileHash`-Pruefung stimmen ueberein:
+
+```text
+Production builder SHA-256:
+9D65F27B869AB2AA24FACB557213D47204ADD612F1956331605D9408EF667982
+
+Production bundle SHA-256:
+80DD735720D5134F252E3CA5A36C692DD29F2DC1228CB088A25F5923BA760607
+
+Acceptance source SHA-256:
+A41D271D880A8A9263F72DC1DA0BDB84FBD66B4E5BA97D2338E75EF751975108
+
+Acceptance builder SHA-256:
+C0CDDBD0C9FA5E18273C883C47905D7DDC8A5F7F05EDA353F53EEEDF9B7564BD
+
+Acceptance bundle SHA-256:
+34F8B60683502418464AC937070747F7DB9F83DF9BCB66FBC01E5A46AAB580EB
+```
+
+Der Builder meldete zusaetzlich:
+
+```text
+Sites: 6
+JalalabadAlarmAnchor: OMW_BLUE_OBJECTIVE_JALALABAD_AIRPORT center (owner-approved airfield exception)
+OtherAlarmAnchors: site MOOSE Warehouse coordinates
+AlarmBoundary: runtime MOOSE ZONE_RADIUS + OPSZONE; no Mission Editor alarm zones
+AlarmEvidence: physical MOOSE OPSZONE intrusion -> PROXIMITY_INTRUSION
+ExpectedInitialResponse: exactly one QRF demand per installation incident
+QrfExecutionAcceptance: false
+AcceptanceOwnedEvidenceInjection: false
+AcceptanceOwnedIncidentClose: false
+AcceptanceOwnedQrfRelease: false
+PerimeterAccessZoneDependency: none
+MissionEditorAdditionalAlarmZonesRequired: false
+MizMutation: false
+```
+
+Der lokale `git status --short` zeigte ausschliesslich untracked generierte `dist/`-Artefakte; keine versionierten Quelldateien waren lokal veraendert. Dieser Build ist damit als `VERIFIED_LOCAL_BUILD` fuer den nachfolgenden DCS-Lauf festgehalten. Er ist **noch kein DCS-PASS**.
+
+Wichtig fuer die weitere Provenienz: Der DCS-Test muss genau das bereits erzeugte Acceptance-Bundle mit SHA-256
+
+```text
+34F8B60683502418464AC937070747F7DB9F83DF9BCB66FBC01E5A46AAB580EB
+```
+
+verwenden. Ein spaeterer reiner Dokumentations-Commit darf nicht als neuer Build-Source-Commit missverstanden und das Bundle nicht ohne fachlichen Grund neu erzeugt werden.
+
+## Statusgrenze
+
+Aktueller Stand nach realem Owner-local Build:
+
+```text
+Source/Builder: VERIFIED_LOCAL_BUILD
 DCS: NOT VALIDATED
 Acceptance: PLANNED
 ```
 
-Ein erfolgreicher Build beweist nur Bundle-/Hash-Konsistenz. `ACCEPTED_TECHNICAL_BASELINE` darf erst nach realem DCS-Lauf mit dokumentierter Mission-, Bundle-, DCS- und MOOSE-Provenienz gesetzt werden.
+`ACCEPTED_TECHNICAL_BASELINE` darf erst nach realem DCS-Lauf mit dokumentierter Mission-, Bundle-, DCS- und MOOSE-Provenienz gesetzt werden.
