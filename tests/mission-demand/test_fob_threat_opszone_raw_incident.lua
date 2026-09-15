@@ -14,11 +14,16 @@ local anchor = {}
 function anchor:GetVec2() return {x=100,y=200} end
 function anchor:GetVec3() return {x=100,y=300,z=200} end
 
+local redGroup={alive=true,coalition=1}
+function redGroup:IsAlive() return self.alive end
+function redGroup:GetCoalition() return self.coalition end
+local scanned={objects={}}
+function scanned:GetSetObjects() return self.objects end
 local ops = {UpdateSeconds=120}
 for _,name in ipairs({"SetObjectCategories","SetUnitCategories","SetCaptureThreatlevel","SetCaptureNunits","SetDrawZone","SetMarkZone"}) do
   ops[name]=function(self, value) self[name.."Value"]=value return self end
 end
-function ops:GetScannedGroupSet() return {} end
+function ops:GetScannedGroupSet() return scanned end
 function ops:Start() self.started=true return self end
 function ops:Stop() self.stopped=true return self end
 function ops:I(_) return self end
@@ -48,31 +53,44 @@ local adapter = ThreatAdapter.New({
   onThreatCleared=function(_,_,coalition,incident)
     clearedCalls=clearedCalls+1
     assertEqual(coalition,1,"raw clear coalition")
-    assertEqual(incident.incidentId,"RAW|1","raw clear incident")
+    assertEqual(incident.incidentId,"RAW|"..tostring(clearedCalls),"raw clear incident")
   end,
 })
 
-assertEqual(ThreatAdapter.SchemaVersion,"OMW-FOB-THREAT-OPSZONE-ADAPTER-5","schema")
+assertEqual(ThreatAdapter.SchemaVersion,"OMW-FOB-THREAT-OPSZONE-ADAPTER-6","schema")
 local _, started = adapter:Start(); assertTrue(started,"raw adapter starts")
 
-ops:OnAfterAttacked("Guarded","Attacked","Attacked",1)
-assertEqual(handlerCalls,1,"first attack handled once")
-assertEqual(startedCalls,1,"first attack callback once")
+-- No permanent BLUE defender is required. MOOSE OPSZONE Evaluated provides the
+-- scanned set and RED presence itself is the installation alarm stimulus.
+scanned.objects={redGroup}
+ops:OnAfterEvaluated("Empty","Evaluated","Captured")
+assertEqual(handlerCalls,1,"first RED presence handled once")
+assertEqual(startedCalls,1,"first RED presence callback once")
 local result, created, reason, incident = adapter:ProcessThreat(1)
 assertEqual(result.incidentId,"BASE|RAW|1","active result reused")
 assertFalse(created,"active incident not recreated")
 assertEqual(reason,"ACTIVE_INCIDENT","active incident reason")
 assertEqual(incident.incidentId,"RAW|1","active source incident reused")
-assertEqual(handlerCalls,1,"active attack does not call handler twice")
+assertEqual(handlerCalls,1,"active presence does not call handler twice")
+
+-- Native Attacked may also happen when a BLUE group is present; it remains an
+-- idempotent fast path and must not create a second strategic incident.
+ops:OnAfterAttacked("Guarded","Attacked","Attacked",1)
+assertEqual(handlerCalls,1,"Attacked callback does not duplicate active incident")
+assertEqual(startedCalls,1,"Attacked callback does not duplicate start callback")
+
+scanned.objects={}
+ops:OnAfterEvaluated("Captured","Evaluated","Empty")
+assertEqual(clearedCalls,1,"RED absence clears adapter-local intrusion state")
+
+scanned.objects={redGroup}
+ops:OnAfterEvaluated("Empty","Evaluated","Captured")
+assertEqual(handlerCalls,2,"new RED entry after clear can open")
+assertEqual(startedCalls,2,"new RED entry callback")
+assertEqual(adapter.activeIncident.incidentId,"RAW|2","new source incident after clear")
 
 ops:OnAfterDefeated("Attacked","Defeated","Guarded",1)
-assertEqual(clearedCalls,1,"raw clear callback")
-local nextResult, nextCreated, nextReason, nextIncident = adapter:ProcessThreat(1)
-assertTrue(nextCreated,"new attack after defeat can open")
-assertEqual(nextReason,nil,"new attack reason")
-assertEqual(nextResult.incidentId,"BASE|RAW|2","new result after defeat")
-assertEqual(nextIncident.incidentId,"RAW|2","new source incident after defeat")
-assertEqual(handlerCalls,2,"handler called for new attack")
+assertEqual(clearedCalls,2,"native Defeated also clears active RED intrusion")
 
 Object, Unit = previousObject, previousUnit
 print("PASS test_fob_threat_opszone_raw_incident")
