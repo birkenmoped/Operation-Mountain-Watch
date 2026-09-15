@@ -38,14 +38,14 @@ function opsZone:GetScannedGroupSet() return scanned end
 local registry={Sites={COP_FORTRESS={siteId="COP_FORTRESS",installationId="BLUE_GROUND_COP_FORTRESS"}}}
 local logs={}
 local bridge=Bridge.New({incidentRuntime=incidentRuntime,siteRegistry=registry,logger=function(line) logs[#logs+1]=line end})
-assertEqual(Bridge.SchemaVersion,"OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PERIMETER-BRIDGE-3","schema")
+assertEqual(Bridge.SchemaVersion,"OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PERIMETER-BRIDGE-4","schema")
 
 local source={
   incidentId="FOB-THREAT|BLUE_GROUND_COP_FORTRESS|1",
   installationId="BLUE_GROUND_COP_FORTRESS",
   priority=90,
   position={x=1,y=2,z=3},
-  reportedTarget={evidence="OPSZONE_ATTACKED",radiusM=1000,attackerCoalition=1},
+  reportedTarget={evidence="MOOSE_OPSZONE_RED_PRESENCE",radiusM=1000,attackerCoalition=1},
 }
 local incident,created,reason,evidence=bridge:HandleThreat(nil,opsZone,source)
 assertTrue(created,"proximity evidence opens authoritative incident")
@@ -53,7 +53,7 @@ assertEqual(reason,nil,"bridge reason")
 assertEqual(calls.evidence,1,"one evidence report")
 assertEqual(calls.evidenceSpec.installationId,"BLUE_GROUND_COP_FORTRESS","installation preserved")
 assertEqual(calls.evidenceSpec.evidenceType,"PROXIMITY_INTRUSION","domain evidence type")
-assertEqual(calls.evidenceSpec.sourceEvent,"OPSZONE_Attacked","MOOSE source retained")
+assertEqual(calls.evidenceSpec.sourceEvent,"MOOSE_OPSZONE_RED_PRESENCE","MOOSE presence source retained")
 assertEqual(calls.evidenceSpec.sourceIncidentId,source.incidentId,"raw perimeter correlation retained")
 assertEqual(calls.evidenceSpec.initiatorGroup,threatGroup,"physical closest hostile group bound")
 assertEqual(calls.evidenceSpec.participantGroups[1],threatGroup,"physical hostile participant retained")
