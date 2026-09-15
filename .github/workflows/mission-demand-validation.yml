@@ -23,7 +23,9 @@ on:
       - "mission/tests/air-ammo-resupply/src/*.lua"
       - "tools/build-air-ammo-cargotransport-acceptance-1.ps1"
       - "mission/tests/stage3-honaker-wright-full-response/src/*.lua"
+      - "mission/tests/stage3-honaker-wright-full-response/src/a2/*.lua"
       - "tools/build-stage3-honaker-wright-full-response-acceptance-1.ps1"
+      - "tools/build-stage3-honaker-wright-full-response-acceptance-2.ps1"
       - "mission/tests/fire-support-strategic-resupply-gate4-stage3-regression/src/*.lua"
       - "tools/build-fire-support-strategic-resupply-gate4-stage3-regression.ps1"
       - "mission/tests/fire-support-strategic-resupply-production-base-runtime/src/*.lua"
@@ -101,6 +103,11 @@ jobs:
           luac5.4 -p scripts/ground/OMW_FobAttackFunctionalArtyDispatchAdapter.lua
           luac5.4 -p scripts/air-operations/OMW_OpsTransportCorridorAdapter.lua
           luac5.4 -p mission/tests/stage3-honaker-wright-full-response/src/01-honaker-wright-full-response-acceptance.lua
+          luac5.4 -p mission/tests/stage3-honaker-wright-full-response/src/a2/01-core.lua
+          luac5.4 -p mission/tests/stage3-honaker-wright-full-response/src/a2/02-cas.lua
+          luac5.4 -p mission/tests/stage3-honaker-wright-full-response/src/a2/03-logistics.lua
+          luac5.4 -p mission/tests/stage3-honaker-wright-full-response/src/a2/04-fire-support.lua
+          luac5.4 -p mission/tests/stage3-honaker-wright-full-response/src/a2/05-runtime.lua
 
       - name: Check focused Stage 3 CAS resupply acceptance syntax
         shell: bash
