@@ -6,7 +6,7 @@ Set-StrictMode -Version Latest
 $repoRoot=Split-Path -Parent $PSScriptRoot
 $distDir=Join-Path $repoRoot 'mission\fire-support-strategic-resupply\dist'
 $outputFile=Join-Path $distDir 'OMW_FireSupStratResupply_Base.lua'
-$builderVersion='OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BASE-18'
+$builderVersion='OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BASE-19'
 
 $moduleSpecs=@(
   @{Name='SiteRegistry';Path='scripts\campaign\OMW_FireSupStratResupply_SiteRegistry.lua'},
@@ -61,6 +61,8 @@ foreach($marker in @(
   'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-GUARD-MISSION-FACTORY-3',
   'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-QRF-RUNTIME-13',
   'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-QRF-MISSION-FACTORY-8',
+  'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-CAS-MISSION-FACTORY-2',
+  'PATROLZONE_ENGAGE','AUFTRAG:NewPATROLZONE','SetEngageDetected',
   'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-INSTALLATION-INCIDENT-BRIDGE-5',
   'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PERIMETER-BRIDGE-4',
   'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PERIMETER-RUNTIME-2',
@@ -95,7 +97,7 @@ New-Item -ItemType Directory -Path $distDir -Force|Out-Null
 $commit=(& git -C $repoRoot rev-parse HEAD).Trim()
 if([string]::IsNullOrWhiteSpace($commit)){throw 'Unable to resolve Git HEAD.'}
 function Embed([string]$Name,[string]$Source){"local $Name = (function()`n$Source`nend)()`n`n"}
-$bundle="-- AUTO-GENERATED FILE. DO NOT EDIT DIRECTLY.`n-- BuilderVersion: $builderVersion`n-- GitCommit: $commit`n-- MOOSE release: 2.9.18`n-- MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54`n-- Moose.lua SHA-256: E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915`n-- Guard: no physical Guard before alarm; MOOSE OPSZONE scanned RED presence opens incident -> local ONGUARD Guard + mobile QRF; no permanent Guard patrol router.`n-- Mobile Ground QRF: road-aligned ACCESS materialization -> runtime-enforced MOOSE On Road transit in EngageTarget -> MOOSE final off-road target approach when required -> direct concrete UNIT pursuit -> Disengage/reacquire -> target exhaustion -> ReturnToLegion.`n`n"
+$bundle="-- AUTO-GENERATED FILE. DO NOT EDIT DIRECTLY.`n-- BuilderVersion: $builderVersion`n-- GitCommit: $commit`n-- MOOSE release: 2.9.18`n-- MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54`n-- Moose.lua SHA-256: E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915`n-- Guard: no physical Guard before alarm; MOOSE OPSZONE scanned RED presence opens incident -> local ONGUARD Guard + mobile QRF; no permanent Guard patrol router.`n-- Mobile Ground QRF: road-aligned ACCESS materialization -> runtime-enforced MOOSE On Road transit in EngageTarget -> MOOSE final off-road target approach when required -> direct concrete UNIT pursuit -> Disengage/reacquire -> target exhaustion -> ReturnToLegion.`n-- External CAS: COMMANDER provider selection supports both standard MOOSE CAS and source-verified PATROLZONE + SetEngageDetected geometry selected by the caller.`n`n"
 foreach($spec in $moduleSpecs){$bundle+=Embed $spec.Name $sources[$spec.Name]}
 $bundle+=Embed 'RoadSpawnAdapter' $roadSource
 $bundle+=@"
@@ -129,6 +131,8 @@ foreach($marker in @(
   'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-GUARD-MISSION-FACTORY-3',
   'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-QRF-RUNTIME-13',
   'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-QRF-MISSION-FACTORY-8',
+  'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-CAS-MISSION-FACTORY-2',
+  'PATROLZONE_ENGAGE','AUFTRAG:NewPATROLZONE','SetEngageDetected',
   'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-INSTALLATION-INCIDENT-BRIDGE-5',
   'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PERIMETER-BRIDGE-4',
   'OMW-FOB-THREAT-OPSZONE-ADAPTER-6',
@@ -153,6 +157,8 @@ Write-Host 'GuardRuntimeSchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-GUARD-RUNTIM
 Write-Host 'GuardMissionFactorySchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-GUARD-MISSION-FACTORY-3'
 Write-Host 'QrfRuntimeSchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-QRF-RUNTIME-13'
 Write-Host 'QrfMissionFactorySchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-QRF-MISSION-FACTORY-8'
+Write-Host 'CasMissionFactorySchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-CAS-MISSION-FACTORY-2'
+Write-Host 'ExternalCasModes: CAS | PATROLZONE_ENGAGE; provider selection remains MOOSE COMMANDER-owned'
 Write-Host 'InstallationIncidentBridgeSchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-INSTALLATION-INCIDENT-BRIDGE-5'
 Write-Host 'PerimeterBridgeSchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PERIMETER-BRIDGE-4'
 Write-Host 'ThreatAdapterSchema: OMW-FOB-THREAT-OPSZONE-ADAPTER-6'
