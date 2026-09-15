@@ -52,6 +52,8 @@ Im tatsaechlichen `Moose.lua` sind die benoetigten oeffentlichen Konstruktoren v
 ```text
 AUFTRAG:NewARTY(TargetCoordinate, Nshots, Radius, Altitude)
 AUFTRAG:NewCAS(ZoneCAS, Altitude, Speed, OrbitCoordinate, Heading, Leg, TargetTypes)
+AUFTRAG:NewPATROLZONE(Zone, Speed, Altitude, Formation)
+AUFTRAG:SetEngageDetected(Range, TargetTypes, EngageZone, NoEngageZoneSet)
 AUFTRAG:SetTeleport(false)
 AUFTRAG:SetRequiredAssets(min, max)
 AUFTRAG:SetPriority(...)
@@ -63,15 +65,17 @@ COMMANDER:AddMission(...)
 
 `NewCAS` erwartet eine CAS-Zone und erzeugt einen Aircraft-Auftrag. Die Alarmzone wird **nicht** automatisch als CAS-Zone interpretiert.
 
+`NewPATROLZONE` ist im gepinnten Source fuer AIR/GROUND/NAVAL vorhanden. Fuer die Stage-3-CAS-Semantik ist zusaetzlich source-verifiziert, dass `SetEngageDetected(...)` auf demselben AUFTRAG die eigene MOOSE/DCS-Detection des spaeteren OPSGROUP/FLIGHTGROUP aktiviert. Die Base injiziert dadurch weiterhin keine allwissende Zielliste.
+
 ## CommanderBridge
 
-`scripts/campaign/OMW_FireSupStratResupply_CommanderBridge.lua` ist auf Schema 2 erweitert. Ein Factory darf jetzt sauber
+`scripts/campaign/OMW_FireSupStratResupply_CommanderBridge.lua` erlaubt einem Factory sauber
 
 ```text
 nil, false, <reason>
 ```
 
-liefern, wenn die fachlich erforderliche Zielgeometrie noch nicht vorliegt. In diesem Fall wird kein MOOSE-Auftrag in die COMMANDER-Queue gestellt.
+zurueckzugeben, wenn die fachlich erforderliche Zielgeometrie noch nicht vorliegt. In diesem Fall wird kein MOOSE-Auftrag in die COMMANDER-Queue gestellt.
 
 Damit ist ein fehlendes C2-Ziel kein Anlass fuer einen geratenen Fallback.
 
@@ -88,11 +92,16 @@ optional altitudeM
 
 Der Factory setzt keine Batterie und keinen Provider fest. Standardmaessig wird genau ein MOOSE-Asset angefordert; die konkrete Auswahl bleibt bei COMMANDER/MOOSE.
 
+Die Verbindung eines durch COMMANDER gewaehlten ARTY-Auftrags mit dem bereits DCS-akzeptierten lokalen M1083-/ARTY-Rearm-Lifecycle ist fuer Stage-3-Acceptance-2 noch **offen**. Bis diese Bruecke nachgewiesen ist, darf der neue generische `NewARTY`-Pfad nicht als Ersatz fuer die bestehende Wright-Rearm-Evidenz ausgegeben werden.
+
 ## CAS Factory
 
-`scripts/campaign/OMW_FireSupStratResupply_CasMissionFactory.lua` erwartet `resolveGeometry(demand, context)` mit:
+`scripts/campaign/OMW_FireSupStratResupply_CasMissionFactory.lua` Schema 2 erwartet `resolveGeometry(demand, context)`.
+
+Standardmodus:
 
 ```text
+missionMode = CAS        # optional; default
 zone
 optional altitudeFt
 optional speedKts
@@ -100,16 +109,38 @@ optional orbitCoordinate
 optional headingDeg
 optional legNm
 optional targetTypes
+optional configureMission(mission, geometry, demand, context)
 ```
 
-Die Zone muss eine explizite taktische CAS-Geometrie sein. Insbesondere gelten weiterhin:
+Stage-3-kompatibler MOOSE-Modus:
+
+```text
+missionMode = PATROLZONE_ENGAGE
+zone
+altitudeFt
+speedKts
+engageDetectedRangeNm
+optional engageDetectedTargetTypes
+optional configureMission(mission, geometry, demand, context)
+```
+
+Im Modus `PATROLZONE_ENGAGE` baut der Factory ausschliesslich:
+
+```text
+AUFTRAG:NewPATROLZONE(zone, speedKts, altitudeFt)
+-> SetEngageDetected(engageDetectedRangeNm, targetTypes, zone, nil)
+```
+
+Damit kann der bisherige Stage-3-CAS-Vertrag in die generische Base uebernommen werden, **ohne** den Provider im OMW-Factory vorab festzulegen. Der spaetere COMMANDER-Handoff bleibt unveraendert.
+
+`configureMission(...)` ist nur ein expliziter Konfigurations-Hook fuer bereits owner-authored MOOSE-Missionsgeometrie, beispielsweise die vorhandenen Stage-3-CAS-Ingress-/Egress-/Corridor-Knoten. Der Hook darf keine Assetauswahl, eigene Zielsuche oder zweite Lifecycle-Autoritaet einfuehren.
+
+Die Zone muss in beiden Modi eine explizite taktische CAS-Geometrie sein. Insbesondere gelten weiterhin:
 
 ```text
 alarm perimeter != CAS engagement zone
 alarm perimeter != fire-support target area
 ```
-
-Der Factory waehlt kein AIRWING, keine SQUADRON und kein Luftfahrzeug.
 
 ## ExternalSupportRuntime
 
@@ -121,6 +152,26 @@ CAS  -> CommanderBridge(MISSION)
 ```
 
 Der generische Composition Root `OMW_FireSupStratResupply_Runtime.lua` kann diesen Block ueber `externalSupport` integrieren. `externalAdapters` duerfen dann ARTY/CAS nicht parallel ueberschreiben.
+
+## Stage-3-Reconciliation 15.09.2026
+
+Production Base Acceptance 4/A4-8 und Acceptance 5 ersetzen die alten lokalen Stage-3-Guard-/QRF-Annahmen. Fuer die externe Unterstuetzung gilt getrennt:
+
+```text
+GUARD/QRF
+-> Production Base A4/A5
+
+CAS
+-> generic Base / COMMANDER
+-> CasMissionFactory PATROLZONE_ENGAGE
+-> existing Stage-3 tactical corridor through configureMission
+
+ARTY
+-> generic Base / COMMANDER target handoff is source-reviewed
+-> integration with the accepted Wright functional ARTY + local M1083 rearm remains unresolved
+```
+
+Daraus folgt: Acceptance 2 darf den CAS-Pfad jetzt ohne AIRWING-/SQUADRON-Hardcoding an die Base anbinden. Fuer ARTY wird dagegen **keine** Gleichwertigkeit erfunden; die Rearm-Bruecke muss vor dem naechsten Gesamt-DCS-Lauf separat implementiert und getestet werden.
 
 ## Contract-Tests
 
@@ -139,7 +190,9 @@ Geprueft werden unter anderem:
 - Factory-Refusal ohne geratenen Auftrag;
 - `NewARTY` mit injizierter Zielkoordinate;
 - `NewCAS` mit injizierter taktischer Zone;
-- kein Provider-/Asset-Assignment im OMW-Pfad;
+- `NewPATROLZONE + SetEngageDetected` fuer explizit konfigurierten CAS-Modus;
+- optionaler Missionskonfigurations-Hook ohne Provider-Selektion;
+- kein Provider-/Asset-Assignment im OMW-Factory-Pfad;
 - `SetTeleport(false)` und explizite Required-Asset-Anzahl.
 
 Das ist Source-/CI-Evidenz und kein DCS-PASS.
