@@ -36,7 +36,7 @@ LEGACY_SOURCE_PREFIX = f"{SOURCE_RECORD_PREFIX}legacy-"
 LINK = re.compile(r"(?<!!)\[[^\]]*\]\(([^)]+)\)")
 NUM = re.compile(r"^(\d{2})-")
 HEX40 = re.compile(r"^[0-9a-f]{40}$")
-HEX64 = re.compile(r"^[0-9a-f]{64}$")
+HEX64 = re.compile(r"^[0-9a-fA-F]{64}$")
 HEAD = re.compile(r"^#{1,6}\s+(.+?)\s*$")
 CODE_SPAN = re.compile(r"`([^`]+)`")
 
