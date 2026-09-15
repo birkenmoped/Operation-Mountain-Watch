@@ -7,6 +7,7 @@ authoritative_for:
   - generic six-site perimeter runtime assembly source contract
   - MOOSE OPSZONE perimeter evidence integration boundary
   - owner-approved current six-site alarm anchor and radius contract
+  - incident-local Guard activation contract
 scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 supersedes:
@@ -23,41 +24,127 @@ Status: SOURCE_REVIEWED / NICHT DCS-VALIDIERT
 
 ## Zweck
 
-`OMW_FireSupStratResupply_PerimeterRuntime.lua` verdrahtet den MOOSE-`OPSZONE`-Perimeter fuer die registrierten Ground-Installationen. Das Modul fuehrt keine eigene Feinderkennung, Missionsauswahl oder Ressourcenlogik ein.
+`OMW_FireSupStratResupply_PerimeterRuntime.lua` verdrahtet den MOOSE-`OPSZONE`-Perimeter fuer die registrierten Ground-Installationen. Das Modul fuehrt keine eigene Missionsauswahl, Ressourcenlogik, Weltabfrage oder eigenen Scheduler ein.
 
-Wichtig: Der Perimeter ist **nicht** die Incident-Autoritaet. Nach Abgleich mit `docs/ground/ARMY-GROUND-INSTALLATION-ALARM-MULTI-EVIDENCE-DECISION.md` wird ein `OPSZONE:Attacked` nur als `PROXIMITY_INTRUSION`-Evidence an den bestehenden Installation-Attack-Incident-Layer uebergeben.
+Der Perimeter ist **nicht** die Incident-Autoritaet. Er ist die fruehe Alarm-/Response-Grenze. Ein durch den MOOSE-`OPSZONE`-Scan festgestellter lebender RED-Ground-Teilnehmer innerhalb des Perimeters wird lediglich als `PROXIMITY_INTRUSION`-Evidence an den bestehenden Installation-Attack-Incident-Layer uebergeben.
 
-Der Laufzeitpfad lautet:
+Der aktuelle Laufzeitpfad lautet:
 
 ```text
 SiteRegistry
--> site-spezifischer Installationsanker + Alarmradius (injizierte Konfiguration)
+-> site-spezifischer Installationsanker + Alarmradius
 -> OMW_FobThreatOpsZoneAdapter
 -> MOOSE ZONE_RADIUS / OPSZONE
+-> MOOSE OPSZONE scan + Evaluated callback
+-> living RED ground presence inside alarm perimeter
 -> OMW_FireSupStratResupply_PerimeterBridge
 -> PROXIMITY_INTRUSION evidence
 -> OMW_FireSupStratResupply_InstallationIncidentRuntime
 -> OMW_GroundInstallationAttackIncident
 -> OMW_FireSupStratResupply_InstallationIncidentBridge
 -> OMW_FireSupStratResupply_Base
--> initial nur QRF als INCIDENT_LOCAL_DEFENSE
+   -> GUARD as INCIDENT_LOCAL_SECURITY
+   -> QRF as INCIDENT_LOCAL_DEFENSE
 ```
 
-Weitere MOOSE-basierte Evidenzkanaele (`Hit`, `Shot`, `ShootingStart`, gefiltertes `WEAPON`-Impact-Tracking) koennen ueber `OMW_GroundInstallationAlarmEvidenceAdapter` denselben Installation-Incident speisen. Die generische Base stellt dafuer `ReportInstallationEvidence(evidence)` bereit.
+Weitere MOOSE-basierte Evidenzkanaele (`Hit`, `Shot`, `ShootingStart`, gefiltertes `WEAPON`-Impact-Tracking) koennen ueber `OMW_GroundInstallationAlarmEvidenceAdapter` denselben Installation-Incident speisen.
+
+## Owner-Entscheidung 15.09.2026 – GUARD nur bei Alarm
+
+Der Projektinhaber hat die bisherige produktive Zielsemantik der permanent materialisierten und permanent patrouillierenden Guard geaendert:
+
+```text
+NORMAL
+-> kein physischer Guard
+-> OPSZONE ueberwacht den Alarmperimeter
+
+RED im Alarmperimeter
+-> Installation Incident
+-> GUARD wird lokal materialisiert
+-> QRF wird zum Incident-Ziel entsandt
+
+GUARD
+-> lokale Installation Security
+-> AUFTRAG:NewONGUARD(local materialization anchor)
+-> keine permanente PATHLINE-Patrouille
+-> kein SetEngageDetected-Zyklus
+-> keine proaktive Zielverfolgung ausserhalb der lokalen Sicherung
+-> kein zweites QRF-System
+
+QRF
+-> mobile Incident Response
+-> bestehender A4-8 Direct-Target-Lifecycle bleibt unveraendert
+
+Incident-Schliessung
+-> Guard-Demand cancelWhenIncidentClosed=true
+-> MOOSE SetReturnToLegion(true) / Legion-Lifecycle
+-> QRF bleibt cancelWhenIncidentClosed=false und beendet nach seinem autorisierten Target-Lifecycle
+```
+
+Die vorhandenen Guard-PATHLINEs bleiben bestehen. Sie werden im aktuellen Produktionsdesign nur noch durch den akzeptierten Guard-Materializer als validierte kompakte Aufstellungsgeometrie verwendet. Ein kontinuierlicher PATHLINE-Router wird fuer die produktive Guard nicht mehr installiert.
+
+Die alte Gate-5A-Acceptance bleibt Evidenz fuer den exakt damals getesteten persistenten Patrol-Guard-Stand. Sie validiert **nicht** die neue incident-lokale Guard-Semantik.
+
+## MOOSE-First-Nachweis fuer die neue Alarmkopplung
+
+Der gepinnte MOOSE-Stand enthaelt:
+
+```text
+MOOSE release: 2.9.18
+MOOSE commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+Moose.lua SHA-256: E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915
+```
+
+Quellseitig bestaetigt:
+
+```text
+AUFTRAG:NewONGUARD(Coordinate)
+-> ground/naval mission
+-> OpenFire
+-> AlarmState Auto
+-> stand guard at coordinate
+
+OPSZONE:Status()
+-> Scan()
+-> EvaluateZone()
+-> Evaluated()
+
+OPSZONE:GetScannedGroupSet()
+-> MOOSE SET_GROUP des aktuellen OPSZONE-Scans
+```
+
+Die native `OPSZONE:Attacked`-Transition kann bei BLUE-owned Zone davon abhaengen, dass gleichzeitig BLUE-Kraefte im Gebiet vorhanden sind. Eine permanent materialisierte Guard nur als Voraussetzung fuer den Alarm waere damit zirkulaer zu der Owner-Entscheidung "Guard erst bei Alarm".
+
+Deshalb qualifiziert `OMW_FobThreatOpsZoneAdapter` die Alarmbedingung nun im MOOSE-`OnAfterEvaluated`-Callback aus dem von `OPSZONE` selbst erzeugten `GetScannedGroupSet()`. Das ist **kein eigener World-Scan und kein eigener Scheduler**. Scan, Intervall und FSM-Auswertung bleiben MOOSE-eigen. OMW filtert aus dem bereits vorhandenen MOOSE-Scan lediglich lebende RED-Ground-Gruppen als projektspezifische Alarmsemantik.
+
+`OnAfterAttacked` bleibt als kompatibler MOOSE-Fast-Path erhalten, falls bereits BLUE-Kraefte im Perimeter vorhanden sind. Die aktive Incident-Deduplizierung verhindert eine doppelte Evidence-Erzeugung.
 
 ## Autoritaetsgrenzen
 
-Die Perimeterbewertung bleibt bei MOOSE `OPSZONE`. `OMW_FireSupStratResupply_PerimeterBridge` erzeugt daraus lediglich eine Evidence-Nachricht. Es existiert dadurch keine zweite Incident- oder Response-Autoritaet.
+```text
+OPSZONE scan
+= physische Perimeterbeobachtung
 
-`OMW_GroundInstallationAttackIncident` bleibt der eine aktive Attack-Incident je Installation. Sein Start wird auf genau einen Base-Incident abgebildet; nur dieser Start erzeugt die initiale lokale QRF-Anforderung. Weitere Evidenz aktualisiert denselben Installation-Incident und erzeugt keine zweite QRF-Anforderung.
+OMW_FobThreatOpsZoneAdapter
+= kleine Semantikschicht: lebende RED Ground presence -> Alarmstimulus
+
+OMW_GroundInstallationAttackIncident
+= autoritative Installation-Incident-Autoritaet
+
+GUARD
+= lokale physische Sicherung, incident-scoped
+
+QRF
+= mobile physische Incident-Reaktion
+```
 
 ARTY und CAS werden durch Perimeter oder Incident-Start nicht automatisch ausgeloest. Sie bleiben explizite C2-Eskalationsanforderungen.
 
-Ein `OPSZONE:Defeated` bzw. das Verlassen des Alarmperimeters schliesst weder den Installation-Incident noch den Base-Incident. Die Incident-Schliessung muss ueber die autoritative Installation-Incident-Lifecycle-Entscheidung erfolgen; die Base exponiert dafuer `CloseInstallationIncident(installationId, reason)`.
+Perimeter-Clear schliesst weiterhin weder Installation-Incident noch Base-Incident. Die autoritative Incident-Schliessung erfolgt separat. Diese Trennung ist besonders wichtig fuer die QRF, deren Mission nicht allein wegen Perimeter-Clear oder Incident-Close beendet werden darf.
 
 ## Konfigurationsgrenze
 
-Das Perimeter-Modul trifft **keine** stillschweigende Projektentscheidung ueber konkrete Alarmradien oder Installationsanker. Diese Werte werden fuer jede Site injiziert:
+Pro Site werden injiziert:
 
 - `anchorCoordinate`
 - `radiusM`
@@ -69,11 +156,7 @@ Das Perimeter-Modul trifft **keine** stillschweigende Projektentscheidung ueber 
 
 Coalition-IDs werden runtimeweit injiziert.
 
-Die fachliche Auswahl von Anchor und Radius liegt damit ausserhalb des Assemblers und ist im aktuellen `OMW_FireSupStratResupply_SiteRegistry.lua`-Vertrag festgelegt.
-
-### Owner-Entscheidung 2026-09-14 – aktuelle Six-Site-Anker und Radien
-
-Der Projektinhaber hat die bereits im aktuellen SiteRegistry eingetragenen Alarmradien ausdruecklich bestaetigt. Sie bleiben unveraendert:
+### Owner-Entscheidung 14.09.2026 – Six-Site-Anker und Radien
 
 ```text
 JALALABAD_FENTY   2438.4 m   8000 ft
@@ -86,7 +169,7 @@ FOB_BOSTICK       1524.0 m   5000 ft
 
 Fuer kompakte FOB-/COP-Installationen ist der Warehouse-Anker die regulaere Regel. Fuer grosse Flugplaetze duerfen bewusst abweichende, flugplatzweite Anker verwendet werden.
 
-Jalalabad/Fenty ist eine ausdruecklich bestaetigte Ausnahme von der Warehouse-Anchor-Regel:
+Jalalabad/Fenty bleibt die bestaetigte Ausnahme:
 
 ```text
 JALALABAD_FENTY
@@ -94,9 +177,7 @@ JALALABAD_FENTY
 -> runtime ZONE_RADIUS: 2438.4 m / 8000 ft
 ```
 
-Diese Ausnahme ist beabsichtigt, weil der Alarmperimeter den Flugplatz als Installation abbilden soll und nicht nur den Punkt des Ground-Warehouse. Sie darf nicht durch eine pauschale Vereinheitlichung auf `WH_BLUE_GND_FENTY` ersetzt werden.
-
-Fuer die anderen aktuell registrierten Sites bleibt der Warehouse-basierte Anchor-Vertrag bestehen:
+Weitere aktuelle Warehouse-Anker:
 
 ```text
 COP_FORTRESS -> WH_BLUE_GND_FORTRESS
@@ -106,47 +187,39 @@ COP_HONAKER  -> WH_BLUE_GND_HONAKER
 FOB_BOSTICK  -> WH_BLUE_GND_BOSTICK
 ```
 
-Damit sind Anchor- und Radiuswerte fuer den aktuellen Gate-5B-Scope fachlich entschieden. Dies ist noch kein DCS-PASS fuer die generische Six-Site-Perimeter-Runtime.
-
 ## ACCESS-Zonen
 
-`ZON_BLUE_GND_*_ACCESS` gehoeren ausschliesslich zum Convoy-/Access-Vertrag. Die Perimeter-Runtime benutzt diese Zonen weder als Anchor noch als Radiusquelle noch zur Guard-, Threat- oder Incident-Qualifikation.
-
-## Lebenszyklus
-
-`StartSite(siteId)` startet genau einen Threat-Adapter fuer die Site. Wiederholtes Starten ist idempotent und liefert `ALREADY_STARTED`.
-
-`StartAll()` startet alle Sites deterministisch nach `siteId`. Falls eine Site nicht gestartet werden kann, werden die in diesem Aufruf bereits gestarteten Perimeter in umgekehrter Reihenfolge wieder gestoppt.
-
-`StopSite()` und `StopAll()` stoppen ausschliesslich die Perimeter-Runtime. Sie haben keine semantische Incident-Close-Wirkung.
-
-Der Installation-Incident-Layer wird im generischen `OMW_FireSupStratResupply_Runtime` unabhaengig vom optionalen Perimeter vorbereitet, damit auch andere qualifizierte Evidence-Quellen denselben autoritativen Incident speisen koennen.
+`ZON_BLUE_GND_*_ACCESS` gehoeren ausschliesslich zum Convoy-/Access-Vertrag. Sie sind weder Alarmanchor noch Alarmradiusquelle noch Guard-Nahbereich. Die bestehende QRF-Materialisierung ueber ACCESS bleibt unveraendert.
 
 ## Verifikation
 
-Quellseitig abgedeckt durch:
+Quellseitig relevant:
 
 ```text
 tests/mission-demand/test_fob_threat_opszone_adapter.lua
 tests/mission-demand/test_fob_threat_opszone_raw_incident.lua
-tests/mission-demand/test_ground_installation_alarm_evidence_adapter.lua
-tests/mission-demand/test_ground_installation_attack_incident.lua
 tests/mission-demand/test_fire_support_strategic_resupply_perimeter_bridge.lua
 tests/mission-demand/test_fire_support_strategic_resupply_perimeter_runtime.lua
 tests/mission-demand/test_fire_support_strategic_resupply_installation_incident_bridge.lua
-tests/mission-demand/test_fire_support_strategic_resupply_installation_incident_runtime.lua
-tests/mission-demand/test_fire_support_strategic_resupply_runtime.lua
+tests/mission-demand/test_fire_support_strategic_resupply_guard_mission_factory.lua
+tests/mission-demand/test_fire_support_strategic_resupply_guard_runtime.lua
+tests/mission-demand/test_fire_support_strategic_resupply_gate2.lua
+tests/mission-demand/test_fire_support_strategic_resupply_gate3.lua
 ```
 
-Die Tests pruefen insbesondere:
+Die neue Semantik ist erst dann DCS-validiert, wenn ein Lauf nachweist:
 
-- Perimeter-Einbruch wird nur `PROXIMITY_INTRUSION`-Evidence;
-- alle weiteren Evidence-Typen koennen denselben Installation-Incident aktualisieren;
-- ein Installation-Incident wird genau einmal auf einen Base-Incident abgebildet;
-- die initiale QRF-Anforderung wird nicht bei Incident-Refresh dupliziert;
-- Evidence-Prioritaet und initialer Positions-/Target-Kontext bleiben erhalten;
-- Perimeter-Clear schliesst keinen Incident;
-- explizite autoritative Incident-Schliessung wird an `Base:CloseIncident()` weitergereicht;
-- kein `accessZoneName` gelangt in diesen Alarm-/Incident-Pfad.
+```text
+vor Alarm: kein physischer Guard
+RED betritt Alarmperimeter
+-> MOOSE OPSZONE scan erkennt RED
+-> PROXIMITY_INTRUSION / Installation Incident
+-> genau ein incident-local Guard-Demand
+-> Guard materialisiert lokal mit ONGUARD
+-> genau ein initialer QRF-Demand nach bestehendem Vertrag
+-> Guard erhaelt keine permanente PATHLINE-Patrouille und keinen proaktiven EngageTarget-Zyklus
+-> autoritative Incident-Schliessung cancelt Guard
+-> QRF wird durch diese Schliessung nicht automatisch abgebrochen
+```
 
-Eine generische Six-Site-DCS-Validierung der Perimeter-Runtime ist damit noch nicht erfolgt. Die fuer Gate 5B erforderlichen konkreten Anchor-/Radiusentscheidungen sind nun vorhanden; offen bleibt der gezielte DCS-Acceptance-Nachweis der sechs runtime-generierten `ZONE_RADIUS`/`OPSZONE`-Perimeter und ihrer Evidence-/Incident-Anbindung.
+Die bisherige Gate-5B-Acceptance, die vor Perimeterstart sechs permanente Guards voraussetzte und anschliessend sechs QRF-Demands erzwang, ist fuer diese neue Owner-Semantik nicht mehr der passende Acceptance-Nachweis. Sie bleibt historische Testevidenz fuer ihren exakten Quellstand.
