@@ -22,7 +22,7 @@ base_status:
 
 ## 1. Zweck
 
-Acceptance 2 ersetzt fuer kuenftige Full-Response-Laeufe die veraltete Guard-/QRF-Semantik aus Acceptance 1. Sie fuehrt keinen neuen lokalen Ground-Response-Vertrag ein, sondern verwendet die bereits in DCS akzeptierten Production-Base-Baselines.
+Acceptance 2 ersetzt fuer kuenftige Full-Response-Laeufe die veraltete Guard-/QRF-Semantik aus Acceptance 1. Sie fuehrt keinen neuen lokalen Ground-Response-Vertrag ein, sondern konsumiert die bereits in DCS akzeptierten Production-Base-Baselines A4/A5.
 
 Die zu pruefende Gesamtfolge lautet:
 
@@ -31,6 +31,8 @@ physical RED intrusion at COP Honaker
 -> production installation alarm / incident
 -> incident-local GUARD materializes locally
 -> production QRF direct-target response
+-> generic FSSR C2 ARTY/CAS support demands
+-> deterministic Acceptance providers: Wright L118 / Jalalabad AH-64D
 -> Wright ARTY support
 -> local M1083 rearm
 -> strategic AMMO reorder
@@ -38,6 +40,8 @@ physical RED intrusion at COP Honaker
 -> existing CAS support/recovery contract
 -> all participating physical assets complete their own MOOSE lifecycle
 ```
+
+Die feste Zuordnung `Wright L118`, `Jalalabad AH-64D` und `Jalalabad CH-47` ist ausschliesslich Bestandteil dieser reproduzierbaren Acceptance-Testumgebung. Sie ist **keine** Produktionsregel der variablen `fire-support-strategic-resupply_base`.
 
 ## 2. Verbindliche geerbte Ground-Baselines
 
@@ -105,15 +109,36 @@ alarm radius: 2743.2 m / 9000 ft
 QRF tactical area: 5 NM
 ```
 
-Der Alarmperimeter ist ausschliesslich Detection-/Response-Trigger und keine WEZ, kein Battlespace und keine Mission-Endbedingung.
+Der Alarmperimeter ist ausschliesslich Detection-/Response-Trigger und keine WEZ, kein Battlespace und keine Mission-Endbedingung. Die historische Acceptance-1-Konstante `SECURITY_RADIUS_M = 1000` darf fuer den produktiven Honaker-Alarm nicht weiterverwendet werden.
 
-Die historische Acceptance-1-Konstante `SECURITY_RADIUS_M = 1000` darf fuer den produktiven Honaker-Alarm nicht weiterverwendet werden.
+## 4. Produktions-Base und C2-Grenze
 
-## 4. Keine doppelte Ground-Response-Implementierung
+Die allgemeine FSSR-Base besitzt die variable Support-Grenze bereits:
 
-Der neue Full-Response-Harness muss die Production-Base-Implementierung konsumieren beziehungsweise beobachten. Er darf GUARD oder QRF nicht parallel erneut implementieren.
+```text
+attacked installation
+-> installation incident
+-> Base:RequestIncidentSupport(..., ARTY/CAS)
+-> C2/external support boundary
+-> suitable provider / tool
+```
 
-Verbindlich zu wiederverwenden sind die aktuell akzeptierten Produktionspfade unter anderem:
+`GROUND_INSTALLATION_STANDARD` klassifiziert ARTY und CAS als `C2_ESCALATION_EXTERNAL`. Die Base selbst waehlt keine konkrete Batterie, keinen AIRWING, keine SQUADRON und kein operatives Asset.
+
+Acceptance 2 prueft **nicht erneut die allgemeine Provider-Selektion**. Fuer die reproduzierbare Honaker-Testumgebung werden hinter derselben generischen Demand-Grenze gezielt die bereits bekannten Testprovider gebunden:
+
+```text
+ARTY demand -> ACCEPTANCE_DETERMINISTIC_WRIGHT -> Wright Functional MOOSE ARTY
+CAS demand  -> ACCEPTANCE_DETERMINISTIC_JALALABAD_AH64D -> Jalalabad AH-64D
+```
+
+Diese Acceptance-Adapter duerfen nicht in die Produktions-SiteRegistry oder die allgemeine Support-Policy uebernommen werden.
+
+## 5. Keine doppelte Ground-Response-Implementierung
+
+Der neue Full-Response-Harness konsumiert beziehungsweise beobachtet die Production-Base-Implementierung. Er implementiert GUARD oder QRF nicht parallel erneut.
+
+Verbindlich wiederverwendet werden insbesondere:
 
 ```text
 OMW_FireSupStratResupply_Base
@@ -129,48 +154,32 @@ OMW_FireSupStratResupply_QrfMissionFactory
 OMW_GroundRoadSpawnAdapter
 ```
 
-Acceptance-Code darf beobachten, Teststimuli erzeugen und Ergebnisbedingungen pruefen. Er darf die Production-Base-Autoritaet nicht durch eigene Missionen oder eigene Target-Selektion ersetzen.
+Acceptance-Code darf beobachten, physische Teststimuli erzeugen und Ergebnisbedingungen pruefen. Er darf keine eigene Guard-/QRF-Mission, keine QRF-Targetauswahl und keine QRF-Rueckkehrlogik als Ersatz fuer die Produktions-Base einfuehren.
 
-## 5. ARTY-Vertrag
+## 6. ARTY-Vertrag
 
-Der bisherige Stage-3-Wright-Pfad bleibt fuer Acceptance 2 fachlich erhalten, soweit er nicht mit den akzeptierten Ground-Baselines kollidiert:
+Der Stage-3-Wright-Pfad bleibt als deterministischer Testprovider erhalten:
 
 ```text
-C2-observed eligible RED ground target
--> Wright L118 real Fire At Point
+generic FSSR ARTY support demand
+-> Acceptance binds Wright as deterministic provider
+-> C2-observed eligible RED ground target
+-> caller-owned MOOSE ARTY FSM / AssignTargetCoord
+-> real Fire At Point
 -> physical EVENTS.Shot evidence
 -> physical ammunition decreases
--> local M1083 rearm
+-> local M1083 rearm on the same ARTY FSM
 -> CampaignState AMMO consumption exactly once
 -> Wright reaches strategic reorder threshold
 ```
 
-Wenn CAS physisch ON STATION ist, darf keine neue ARTY-Fire-Mission in denselben taktischen Raum eingereiht werden. Bereits laufende MOOSE-Fire-Lifecycles werden nicht kuenstlich durch den Harness abgebrochen.
+Damit wird **keine zweite produktive ARTY-Architektur** eingefuehrt. Die allgemeine FSSR-Provider-Auswahl bleibt ausserhalb der Honaker-Testfixierung variabel; Acceptance 2 bindet Wright nur, damit die bekannte End-to-End-Kette reproduzierbar geprueft werden kann.
 
-Die historische ungebremste `FIRE_SUPPORT_REARMED_CONTINUATION`-Wiederholung ist keine akzeptierte allgemeine Policy. Acceptance 2 darf nur frische, noch nicht bereits fuer denselben Zyklus abgearbeitete C2-Kontakte fuer einen Follow-on-Fire-Demand verwenden.
+Wenn CAS physisch ON STATION ist, darf keine neue ARTY-Fire-Mission in denselben taktischen Raum eingereiht werden. Bereits laufende MOOSE-Fire-Lifecycles werden nicht kuenstlich abgebrochen. Ein Follow-on-Fire-Demand darf nur fuer einen frischen, noch nicht im aktuellen Zyklus abgearbeiteten C2-Kontakt entstehen.
 
-### 5.1 Noch offene Produktionsbruecke
+## 7. CAS-Vertrag
 
-Die generische FSSR-Base kann ARTY bereits MOOSE-first ueber `AUFTRAG:NewARTY(...) -> COMMANDER:AddMission(...)` erzeugen. Der Stage-3-Wright-Nachweis fuer lokales M1083-Rearm basiert dagegen auf einem bereits existierenden, caller-owned MOOSE-`ARTY`-FSM.
-
-Diese beiden Pfade duerfen nicht stillschweigend als gleichwertig behandelt werden. Vor dem Acceptance-2-DCS-Lauf ist deshalb eine kleine produktive Integrationsbruecke erforderlich, die gleichzeitig sicherstellt:
-
-```text
-Base / C2 demand authority remains single
-MOOSE remains physical fire-control authority
-selected Wright fire-support asset is unambiguous
-local M1083 rearm works on the same physical artillery representation
-no second ARTY mission owner is created
-CampaignState AMMO settlement remains exactly once
-```
-
-Bis diese Bruecke implementiert und CI-geprueft ist, wird **kein** neuer Full-Response-Build ausgegeben.
-
-## 6. CAS-Vertrag
-
-Acceptance 2 veraendert die bereits dokumentierte Stage-3-CAS-Geometrie und Recovery-Semantik nicht stillschweigend.
-
-Weiterhin gilt fuer den Full-Response-Test:
+Acceptance 2 behaelt die bestehende Stage-3-CAS-Geometrie und Recovery-Semantik:
 
 ```text
 Jalalabad
@@ -182,37 +191,20 @@ Jalalabad
 -> Jalalabad
 ```
 
-CAS verwendet sein eigenes MOOSE/DCS-Detektionsbild. Kein `KnowTarget()`-Inject und kein raw RED count als CAS-Release-Autoritaet.
+CAS verwendet sein eigenes MOOSE/DCS-Detektionsbild. Kein `KnowTarget()`-Inject und kein raw RED count als CAS-Release-Autoritaet. Der supported-element/no-contact CAS-Closure-Vertrag bleibt separat und besitzt keine QRF-Release-Autoritaet.
 
-Der bestehende supported-element/no-contact CAS-Closure-Vertrag bleibt fuer CAS separat erhalten. Er darf jedoch nicht mehr als QRF-Release-Autoritaet missbraucht werden.
+Der generische `OMW_FireSupStratResupply_CasMissionFactory` Schema 2 besitzt source-seitig `PATROLZONE_ENGAGE`. Acceptance 2 bindet fuer den deterministischen Stage-3-Lauf jedoch weiterhin den bereits entwickelten Jalalabad-AH-64-Testprovider hinter der generischen FSSR-C2-Demand-Grenze. Dadurch wird die Provider-Auswahl nicht in die allgemeine Factory hart codiert.
 
-### 6.1 Reconciled generic Base path
+## 8. Strategic Air-AMMO / OPSTRANSPORT
 
-Der generische `OMW_FireSupStratResupply_CasMissionFactory` Schema 2 besitzt jetzt einen expliziten, source-geprueften Modus:
-
-```text
-missionMode = PATROLZONE_ENGAGE
--> AUFTRAG:NewPATROLZONE(zone, speedKts, altitudeFt)
--> SetEngageDetected(rangeNm, targetTypes, zone, nil)
--> optional configureMission(...) for the existing owner-authored tactical corridor
--> CommanderBridge
--> COMMANDER:AddMission(...)
-```
-
-Damit bleibt die Stage-3-PATROLZONE-/Detection-Semantik erhalten, waehrend Provider-/Assetauswahl nicht mehr im CAS-Factory hart codiert wird. Sie bleibt beim MOOSE-`COMMANDER`.
-
-Dieser neue Pfad ist Source-/CI-Staging und noch **nicht** DCS-validiert.
-
-## 7. Strategic Air-AMMO / OPSTRANSPORT
-
-Der bestehende interne MOOSE-OPSTRANSPORT-Pfad bleibt unveraendert Gegenstand der Full-Response-Acceptance:
+Der bestehende MOOSE-OPSTRANSPORT-Pfad bleibt Gegenstand der Full-Response-Acceptance:
 
 ```text
 Wright AMMO reaches reorder threshold
 -> exactly one strategic RESUPPLY demand
 -> CampaignState transfer reservation
 -> MOOSE OPSTRANSPORT
--> Jalalabad CH-47 recruitment
+-> deterministic Acceptance carrier pool: Jalalabad CH-47
 -> STORAGE load / transport / unload / Delivered
 -> configured OMW_FlightPath outbound
 -> configured OMW_FlightPath reverse return
@@ -222,7 +214,7 @@ Wright AMMO reaches reorder threshold
 
 CampaignState bleibt strategische Ressourcenautoritaet. MOOSE bleibt operative Transport- und physische Lifecycle-Autoritaet.
 
-## 8. Acceptance-2 PASS-Kriterien
+## 9. Acceptance-2 PASS-Kriterien
 
 Ein Gesamt-PASS benoetigt mindestens:
 
@@ -234,27 +226,31 @@ Ein Gesamt-PASS benoetigt mindestens:
 5. Guard materializes locally on MOOSE ONGUARD without persistent PATHLINE patrol
 6. exactly one initial QRF demand
 7. QRF materializes through the accepted ACCESS / GroundRoadSpawnAdapter path
-8. QRF uses direct concrete incident UNIT targets and On Road transit
-9. QRF retargets surviving authorized incident targets as required
+8. QRF reaches MOOSE direct concrete incident UNIT engagement
+9. QRF uses its accepted On Road direct-target lifecycle
 10. Guard returns after authoritative incident close
 11. QRF is not cancelled merely by perimeter clear or incident close
 12. QRF returns after its own target-exhaustion lifecycle
-13. Wright ARTY produces real physical shot evidence and ammunition decrease
-14. local M1083 rearm completes and returns
-15. strategic AMMO reorder creates exactly one active RESUPPLY demand
-16. CH-47 OPSTRANSPORT completes physical STORAGE delivery
-17. Wright / Jalalabad strategic AMMO settlement is correct and exactly once
-18. CAS uses the reconciled generic COMMANDER + PATROLZONE_ENGAGE path and follows its own release/recovery contract
-19. no acceptance-owned replacement routing, target authority, provider selection or resource authority
+13. generic FSSR ARTY and CAS support demands are created through the Base C2 boundary
+14. deterministic Acceptance provider binding selects Wright/Jalalabad only inside the test harness
+15. Wright ARTY produces real physical shot evidence and ammunition decrease
+16. local M1083 rearm completes and returns
+17. strategic AMMO reorder creates exactly one active RESUPPLY demand
+18. CH-47 OPSTRANSPORT completes physical STORAGE delivery
+19. Wright / Jalalabad strategic AMMO settlement is correct and exactly once
+20. CAS follows its own accepted task / release / recovery contract
+21. all ARTY cycles are terminal before PASS
+22. no acceptance-owned replacement Ground routing, target authority or resource authority
 ```
 
-## 9. Explizit verbotene Regressionen
+## 10. Explizit verbotene Regressionen
 
 ```text
 persistent Guard on mission start
 Guard PATHLINE repeated circuit
 Guard SetEngageDetected
 1000-m Honaker production alarm radius
+Acceptance-owned AUFTRAG:NewONGUARD for Guard/QRF
 QRF SetEngageDetected target authority
 QRF supported-element release
 QRF incident-close release
@@ -264,46 +260,60 @@ PATROLZONE/HuntingPatrol for QRF
 GROUNDATTACK for QRF
 custom QRF target scheduler
 custom QRF road router
-CAS AIRWING/SQUADRON hardcoding inside generic FSSR factory
-Acceptance-owned ExpireDemand/Cancel as tactical completion
+CAS AIRWING/SQUADRON hardcoding inside generic FSSR production factory
+Wright hardcoding inside generic FSSR production SiteRegistry/policy
+Acceptance-owned ExpireDemand/Cancel as Ground tactical completion
 Mission Editor alarm-zone proliferation
 ```
 
-## 10. Implementierungsgrenze
+## 11. Staged Artefakte
 
-Der vorhandene Acceptance-1-Harness `src/01-honaker-wright-full-response-acceptance.lua` und Builder `tools/build-stage3-honaker-wright-full-response-acceptance-1.ps1` enthalten historische Guard-/QRF-Annahmen und duerfen nicht fuer einen neuen DCS-PASS wiederverwendet werden, bevor sie reconciliert oder durch Acceptance-2-Artefakte ersetzt wurden.
+Acceptance 2 ist source-seitig auf diesem Branch implementiert, aber noch nicht lokal gebaut und nicht in DCS validiert.
 
-Insbesondere sind dort derzeit noch nachweisbar:
+Source-Teile:
 
 ```text
-SECURITY_RADIUS_M = 1000
-persistent Guard creation from brigade OnAfterStart
-Guard SetEngageDetected
-PATHLINE repeated Guard circuit
-QRF SetEngageDetected
-QRF recovery coupled to CAS supported-element release
+mission/tests/stage3-honaker-wright-full-response/src/a2/01-core.lua
+mission/tests/stage3-honaker-wright-full-response/src/a2/02-cas.lua
+mission/tests/stage3-honaker-wright-full-response/src/a2/03-logistics.lua
+mission/tests/stage3-honaker-wright-full-response/src/a2/04-fire-support.lua
+mission/tests/stage3-honaker-wright-full-response/src/a2/05-runtime.lua
 ```
 
-Diese Marker sind fuer Acceptance 2 Anti-Regression-Fails.
+Builder:
 
-## 11. Implementierungsstand 15.09.2026
+```text
+tools/build-stage3-honaker-wright-full-response-acceptance-2.ps1
+BuilderVersion: STAGE3-HONAKER-WRIGHT-FULL-RESPONSE-ACCEPTANCE-2-1
+```
+
+Output nach lokalem Build:
+
+```text
+mission/tests/stage3-honaker-wright-full-response/dist/OMW_Stage3_Honaker_Wright_Full_Response_Acceptance_2.lua
+```
+
+Der Builder zieht zuerst die aktuelle FSSR Production Base 19 ein und besitzt Anti-Regression-Gates gegen die historischen Ground-Annahmen aus Acceptance 1.
+
+## 12. Aktueller Status
 
 ```text
 DONE:
-- Acceptance-2 contract defined
-- A4/A5 local Ground authority fixed as inherited baseline
-- Honaker 9000-ft alarm baseline fixed
-- generic CAS factory supports source-verified PATROLZONE_ENGAGE
-- CAS provider selection remains MOOSE COMMANDER-owned
-- production builder advanced to Production Base 19
+- A4/A5 local Ground authority inherited
+- Honaker 2743.2-m / 9000-ft production alarm inherited
+- no Acceptance-owned Guard/QRF mission implementation
+- generic FSSR ARTY/CAS demand boundary consumed
+- deterministic Wright/Jalalabad test-provider bindings isolated to Acceptance
+- existing Wright Functional ARTY + M1083 rearm retained
+- existing CAS own-detection / supported-element release retained
+- existing CH-47 OPSTRANSPORT / CampaignState chain retained
+- Acceptance-2 builder and anti-regression markers staged
 
 OPEN:
-- reconcile generic ARTY COMMANDER dispatch with the already accepted Wright local M1083 / ARTY rearm lifecycle
-- build new Acceptance-2 harness without old local Guard/QRF implementation
-- add builder anti-regression markers
-- local build/hash provenance
+- GitHub Lua syntax/contract validation for current head
+- owner-local build and SHA-256 provenance
 - MIZ embedding verification
 - one real DCS full-response run
 ```
 
-Bis der neue Harness gebaut ist, bleibt Acceptance 2 `PLANNED` und `validated_in_dcs: false`.
+Bis diese offenen Nachweise vorliegen, bleibt Acceptance 2 `PLANNED` und `validated_in_dcs: false`.
