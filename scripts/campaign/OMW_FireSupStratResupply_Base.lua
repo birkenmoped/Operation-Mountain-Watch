@@ -4,11 +4,11 @@
 local Base = {}
 local Instance = {}
 Instance.__index = Instance
-Base.SchemaVersion = "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-BASE-3"
+Base.SchemaVersion = "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-BASE-4"
 
 local TAG = "[OMW][FireSupStratResupply.Base]"
 
-local INCIDENT_SUPPORT = { QRF=true, ARTY=true, CAS=true }
+local INCIDENT_SUPPORT = { GUARD=true, QRF=true, ARTY=true, CAS=true }
 local RESUPPLY_SUPPORT = { GROUND_RESUPPLY=true, AIR_RESUPPLY=true }
 
 local function fail(message) error(TAG .. " " .. tostring(message), 2) end
@@ -99,18 +99,18 @@ function Instance:StartSite(siteId, spec)
   if self.sites[siteId] then return self.sites[siteId], false, "ALREADY_STARTED" end
   local guard = supportEntry(profile, "GUARD")
   if not guard or guard.enabled ~= true then return nil, false, "GUARD_NOT_ENABLED" end
-  local demandId = self.idContract.SiteDemand(siteId, "GUARD", "PERSISTENT")
-  local demand = {
-    demandId=demandId, incidentId=nil, siteId=siteId, supportType="GUARD", scope="SITE_SECURITY",
-    requestKey="PERSISTENT", requestedAt=spec.requestedAt, priority=spec.priority,
-    tacticalContext={alarmZone=site.alarmZoneName, tacticalZone=site.tacticalZoneName, campaignNodeId=site.campaignNodeId, routeProfile=route(profile, "GUARD")},
-    validity={expiresAt=nil, cancelWhenIncidentClosed=false}, resourceId=nil, quantity=nil,
-    correlationId=demandId, context=spec.context or {}, status="CREATED",
+
+  -- Site start registers the installation only. The physical Guard is incident-scoped
+  -- and is requested when the perimeter reports hostile presence.
+  local state = {
+    siteId=siteId,
+    started=true,
+    guardActivation=guard.activation,
+    guardDemandId=nil,
   }
-  local state = {siteId=siteId, guardDemandId=demandId, started=true}
   self.sites[siteId] = state
-  local _, created, dispatchReason = self:_dispatch(demand, site, profile, {site=site, profile=profile, siteState=state, context=demand.context})
-  return state, created, dispatchReason
+  self:_log(string.format("site started siteId=%s guardActivation=%s physicalGuard=DEFERRED_UNTIL_INCIDENT", siteId, tostring(guard.activation)))
+  return state, true, nil
 end
 
 function Instance:OpenIncident(spec)
