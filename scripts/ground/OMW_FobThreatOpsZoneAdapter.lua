@@ -1,17 +1,18 @@
 -- Operation Mountain Watch - MOOSE-first FOB/COP perimeter-threat qualification adapter.
 --
 -- The adapter uses either a caller-provided MOOSE zone or creates a runtime
--- ZONE_RADIUS around an installation anchor, then lets MOOSE OPSZONE own presence
--- scanning and the Attacked/Defeated/Evaluated FSM transitions. Strategic handling
--- is injected: legacy MissionDemand/Policy remains supported, while new runtimes can
--- consume the raw incident without creating a second demand authority.
+-- ZONE_RADIUS around an installation anchor. MOOSE OPSZONE owns the periodic zone
+-- scan and Evaluated FSM callback. OMW qualifies RED ground-group presence from the
+-- public OPSZONE scanned group set as the installation alarm stimulus. This avoids
+-- requiring a permanently materialized BLUE Guard merely to make OPSZONE enter its
+-- contested Attacked state. Strategic handling remains injected.
 
 local Adapter = {}
 local Instance = {}
 Instance.__index = Instance
 
 local TAG = "[OMW][FobThreatOpsZoneAdapter]"
-Adapter.SchemaVersion = "OMW-FOB-THREAT-OPSZONE-ADAPTER-5"
+Adapter.SchemaVersion = "OMW-FOB-THREAT-OPSZONE-ADAPTER-6"
 
 local function fail(message)
   error(TAG .. " " .. tostring(message), 2)
@@ -41,6 +42,22 @@ end
 local function copyPosition(position)
   if type(position) ~= "table" then return nil end
   return { x = position.x, y = position.y, z = position.z }
+end
+
+local function hasLivingCoalitionGroup(opsZone, coalitionId)
+  local scanned = opsZone:GetScannedGroupSet()
+  requireTable(scanned, "OPSZONE:GetScannedGroupSet result")
+  requireFunction(scanned, "GetSetObjects", "OPSZONE scanned group set")
+  for _, group in pairs(scanned:GetSetObjects() or {}) do
+    if type(group) == "table"
+        and type(group.IsAlive) == "function"
+        and type(group.GetCoalition) == "function"
+        and group:IsAlive() == true
+        and group:GetCoalition() == coalitionId then
+      return true
+    end
+  end
+  return false
 end
 
 function Adapter.New(spec)
@@ -136,7 +153,7 @@ function Instance:_buildIncident(attackerCoalition)
       targetKind = "INSTALLATION_SECURITY_PERIMETER",
       targetName = self.zoneName,
       radiusM = self.radiusM,
-      evidence = "OPSZONE_ATTACKED",
+      evidence = "MOOSE_OPSZONE_RED_PRESENCE",
       attackerCoalition = attackerCoalition,
     },
   }
@@ -169,6 +186,19 @@ function Instance:ProcessThreat(attackerCoalition)
     tostring(self.installationId), tostring(self.zoneName), tostring(self.radiusM), tostring(incident.incidentId),
     tostring(demand and demand.id), tostring(created), tostring(reason)))
   return demand, created, reason, incident
+end
+
+function Instance:ClearThreat(defeatedCoalition, source)
+  if defeatedCoalition ~= self.redCoalition then return nil, false, "CLEARED_COALITION_NOT_RED" end
+  if not self.activeIncident then return nil, false, "NO_ACTIVE_INCIDENT" end
+  local clearedIncident = self.activeIncident
+  self.activeIncident = nil
+  self.activeResult = nil
+  self:_log(string.format(
+    "installationId=%s alarm perimeter RED presence cleared source=%s coalition=%s",
+    tostring(self.installationId), tostring(source), tostring(defeatedCoalition)))
+  if self.onThreatCleared then self.onThreatCleared(self, self.opsZone, defeatedCoalition, clearedIncident) end
+  return clearedIncident, true, nil
 end
 
 function Instance:Start()
@@ -214,23 +244,37 @@ function Instance:Start()
 
   local adapter = self
   function opsZone:OnAfterEvaluated(From, Event, To)
+    local scanned = self:GetScannedGroupSet()
     if adapter.onThreatEvaluated then
-      adapter.onThreatEvaluated(adapter, self, self:GetScannedGroupSet(), From, Event, To)
+      adapter.onThreatEvaluated(adapter, self, scanned, From, Event, To)
+    end
+
+    -- The perimeter is an alarm boundary, not a capture objective. Hostile presence
+    -- therefore qualifies directly from MOOSE's own OPSZONE scan, independent of
+    -- whether a BLUE Guard is already materialized inside the zone.
+    local redPresent = hasLivingCoalitionGroup(self, adapter.redCoalition)
+    if redPresent then
+      local result, created, reason, incident = adapter:ProcessThreat(adapter.redCoalition)
+      if result ~= nil and created ~= false and adapter.onThreatStarted then
+        adapter.onThreatStarted(adapter, self, result, created, reason, incident)
+      end
+    elseif adapter.activeIncident then
+      adapter:ClearThreat(adapter.redCoalition, "OPSZONE_EVALUATED_NO_RED")
     end
   end
+
   function opsZone:OnAfterAttacked(From, Event, To, AttackerCoalition)
+    -- Preserve the native OPSZONE Attacked callback as a compatible fast path when
+    -- friendly ground presence already exists. Active-incident idempotency prevents
+    -- duplicate strategic evidence when Evaluated follows in the same status cycle.
     local result, created, reason, incident = adapter:ProcessThreat(AttackerCoalition)
-    if result ~= nil and adapter.onThreatStarted then
+    if result ~= nil and created ~= false and adapter.onThreatStarted then
       adapter.onThreatStarted(adapter, self, result, created, reason, incident)
     end
   end
+
   function opsZone:OnAfterDefeated(From, Event, To, DefeatedCoalition)
-    if DefeatedCoalition ~= adapter.redCoalition then return end
-    local clearedIncident = adapter.activeIncident
-    adapter.activeIncident = nil
-    adapter.activeResult = nil
-    adapter:_log(string.format("installationId=%s alarm perimeter cleared by OPSZONE Defeated coalition=%s", tostring(adapter.installationId), tostring(DefeatedCoalition)))
-    if adapter.onThreatCleared then adapter.onThreatCleared(adapter, self, DefeatedCoalition, clearedIncident) end
+    adapter:ClearThreat(DefeatedCoalition, "OPSZONE_DEFEATED")
   end
 
   self.securityZone = zone
@@ -238,7 +282,7 @@ function Instance:Start()
   self.started = true
   opsZone:Start()
   self:_log(string.format(
-    "started MOOSE OPSZONE security perimeter zone=%s radiusM=%s owner=%s updateSeconds=%s threatlevel=%s captureNunits=%s handler=%s zoneSource=%s",
+    "started MOOSE OPSZONE security perimeter zone=%s radiusM=%s owner=%s updateSeconds=%s threatlevel=%s captureNunits=%s handler=%s zoneSource=%s alarmQualification=MOOSE_SCANNED_RED_PRESENCE",
     tostring(self.zoneName), tostring(self.radiusM), tostring(self.blueCoalition), tostring(self.updateSeconds or opsZone.UpdateSeconds),
     tostring(self.captureThreatlevel), tostring(self.captureNunits), self.threatHandler and "RAW_INCIDENT" or "MISSION_DEMAND_POLICY", zoneSource))
   return self, true
