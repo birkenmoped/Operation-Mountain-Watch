@@ -1,15 +1,14 @@
--- Operation Mountain Watch - production Guard runtime assembly.
+-- Operation Mountain Watch - production incident-local Guard runtime assembly.
 --
--- Wires the accepted Guard materializer and PATHLINE route adapter to the generic
--- local LEGION bridge. Injected BRIGADEs remain the MOOSE organisational boundary;
--- MOOSE selects/recruits the concrete Guard cohort/asset. Optional capability
--- constraints are forwarded to public MOOSE AUFTRAG recruitment filters.
+-- Reuses the accepted PATHLINE materializer for compact validated local placement,
+-- but deliberately does not install or track a patrol route. The physical Guard is
+-- created only from an incident-scoped demand and remains local ONGUARD security.
 
 local Runtime = {}
 local Instance = {}
 Instance.__index = Instance
 
-Runtime.SchemaVersion = "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-GUARD-RUNTIME-2"
+Runtime.SchemaVersion = "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-GUARD-RUNTIME-3"
 local TAG = "[OMW][FireSupStratResupply.GuardRuntime]"
 
 local function fail(message) error(TAG .. " " .. tostring(message), 2) end
@@ -32,12 +31,10 @@ function Runtime.New(spec)
   local siteRegistry = needTable(spec.siteRegistry, "siteRegistry")
   local brigades = needTable(spec.brigades, "brigades")
   local materializationAdapter = needTable(spec.materializationAdapter, "materializationAdapter")
-  local routeAdapter = needTable(spec.routeAdapter, "routeAdapter")
   local guardMissionFactory = needTable(spec.guardMissionFactory, "guardMissionFactory")
   local legionBridge = needTable(spec.legionBridge, "legionBridge")
   if type(siteRegistry.Sites) ~= "table" then fail("siteRegistry.Sites is required") end
   needFunction(materializationAdapter, "New", "materializationAdapter")
-  needFunction(routeAdapter, "New", "routeAdapter")
   needFunction(guardMissionFactory, "New", "guardMissionFactory")
   needFunction(legionBridge, "New", "legionBridge")
   local resolvePathline = needCallable(spec.resolvePathline, "resolvePathline")
@@ -57,7 +54,6 @@ function Runtime.New(spec)
     siteRegistry = siteRegistry,
     brigades = brigades,
     materializationAdapter = materializationAdapter,
-    routeAdapter = routeAdapter,
     guardMissionFactory = guardMissionFactory,
     legionBridge = legionBridge,
     resolvePathline = resolvePathline,
@@ -66,7 +62,6 @@ function Runtime.New(spec)
     requiredProperties = spec.requiredProperties,
     logger = spec.logger,
     materializers = {},
-    routeAdapters = {},
     prepared = false,
     dispatchBridge = nil,
   }, Instance)
@@ -98,25 +93,12 @@ function Instance:Prepare()
     }):Prepare()
     materializer:Install(brigade)
 
-    local router = self.routeAdapter.New({
-      siteId = site.siteId or siteId,
-      pathline = pathline,
-      materializer = materializer,
-      speedKmph = 5,
-      formation = "Off Road",
-      formationIntervalM = 2,
-      logger = self.logger,
-    })
-    router:Install(brigade)
-
     self.materializers[siteId] = materializer
-    self.routeAdapters[siteId] = router
-    self:_log(string.format("prepared siteId=%s pathline=%s template=%s", siteId, site.guardRoute.pathlineName, site.guardTemplateName))
+    self:_log(string.format("prepared incident-local Guard siteId=%s pathline=%s template=%s patrolRoute=false", siteId, site.guardRoute.pathlineName, site.guardTemplateName))
   end
 
   local factory = self.guardMissionFactory.New({
     materializers = self.materializers,
-    routeAdapters = self.routeAdapters,
     requiredAttributes = self.requiredAttributes,
     requiredProperties = self.requiredProperties,
     logger = self.logger,
@@ -146,8 +128,10 @@ function Instance:GetMaterializer(siteId)
   return self.materializers[siteId]
 end
 
-function Instance:GetRouteAdapter(siteId)
-  return self.routeAdapters[siteId]
+-- Retained as a compatibility probe for older diagnostics. Production Guard routing
+-- is intentionally absent under the incident-local security contract.
+function Instance:GetRouteAdapter(_)
+  return nil
 end
 
 return Runtime
