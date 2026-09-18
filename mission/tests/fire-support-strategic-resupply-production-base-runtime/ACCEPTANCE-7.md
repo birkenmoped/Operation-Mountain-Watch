@@ -1,6 +1,6 @@
 ---
 document_id: OMW-TEST-FSSR-PRODUCTION-BASE-ACCEPTANCE-7
-status: PLANNED
+status: FAILED_DCS
 document_class: ACCEPTANCE_TEST
 owning_policy: OMW-GOV-001
 authoritative_for:
@@ -256,3 +256,33 @@ DCS runtime: NOT_VALIDATED
 ```
 
 Die naechste Evidenz darf nur aus einem realen DCS-Lauf mit exakt diesem Acceptance-7-Bundle stammen.
+
+## 10. DCS-Lauf 2026-09-18 – FAIL
+
+Reale Evidenz mit Acceptance-7-Bundle SHA-256 `B3012549B3F72BBDA04A06F4C922A85E3C09EB253642C6CEB6B7356F9E59F138`:
+
+```text
+outbound owner route: observed working
+QRF direct-target chain: observed working
+CAS mission assignment: AW_US_JBAD_TF_SHOOTER_6_6_CAV / SQ_US_JBAD_AH64D_B_1_10_AVN
+owner corridor: installed
+regular CAS release: NOT observed
+FuelLow/Bingo RTB: observed by owner
+DCS process crash during return: observed
+```
+
+Log root cause for the missing release:
+
+```text
+A7 terminal timeout fired while the CAS mission was still STARTED/outbound:
+[PRODUCTION BASE A7][FAIL] TIMEOUT ... onStation=false ... recovery=false
+
+after this FAIL, evaluate()/updateCasLifecycle() stopped because state.failed short-circuited the monitor.
+Later MOOSE changed the mission to EXECUTING, but A7 no longer evaluated own detection, supported-element clear or controlled release.
+```
+
+A7 also used a geometric `flight coordinate inside CAS zone` check as on-station authority. The pinned MOOSE source provides the correct mission-state contract: `AUFTRAG:IsExecuting()` means the first OPSGROUP reached the mission execution waypoint and is executing the mission task.
+
+The DCS crash itself is recorded as `C0000005 ACCESS_VIOLATION` in `edCore.dll` with frames including `LinkHost::ResetLinks`, `viMovingObject::~viMovingObject` and `woLABase::~woLABase`. The available log proves an engine-level crash but does not prove that the CAS script caused it.
+
+Acceptance 7 is therefore `FAILED_DCS` and must not be rerun.
