@@ -24,17 +24,18 @@ validated_in_dcs: false
 
 ## Zweck
 
-Der externe Support-Pfad der allgemeinen Base darf `COMMANDER` nicht als ungebundenen strategischen Provider-Aggregator verwenden. C2/OMW bewertet zunaechst die strategisch und operativ geeigneten Kandidaten, waehlt und reserviert genau einen Herkunftspool samt Ressourcen-ID, AIRWING und SQUADRON/COHORT sowie dessen Routen-/Recovery-Profil. Erst danach fuehrt MOOSE `COMMANDER`/`LEGION` die operative Rekrutierung und den physischen Lifecycle innerhalb dieses gebundenen Pools aus.
+Der externe Support-Pfad der allgemeinen Base folgt ADR 0008: C2/OMW erzeugt den fachlich qualifizierten Bedarf und die missionsspezifischen Faehigkeits-/Geometrieanforderungen; `COMMANDER`/`LEGION` waehlen innerhalb der konfigurierten Organisationen den operativ geeigneten Provider und das Asset. OMW baut davor keine zweite Asset- oder Provider-Selektion.
 
 ```text
 explicit C2 escalation
 -> Base:RequestIncidentSupport(..., ARTY/CAS)
 -> external support adapter
 -> public AUFTRAG
--> C2/OMW candidate evaluation
--> selected resource + AIRWING + SQUADRON/COHORT + route/recovery profile
--> COMMANDER:AddMission(...) restricted to selected pool
--> MOOSE asset recruitment and physical mission lifecycle
+-> C2/OMW support requirement + mission capability/profile constraints
+-> COMMANDER:AddMission(...)
+-> MOOSE provider/asset recruitment inside configured organisations
+-> provider-specific owner-route/lifecycle profile bound after MOOSE selection
+-> MOOSE physical mission lifecycle
 ```
 
 Perimeter-Eintritt erzeugt weiterhin **keinen** automatischen ARTY-/CAS-Auftrag.
@@ -247,23 +248,17 @@ Status vor DCS-Lauf: `SOURCE_REVIEWED / DCS_PENDING`.
 
 ## Reconciliation 18.09.2026 – Acceptance 6 rejected
 
-Der reale Acceptance-6-Lauf hat die falsche Architekturannahme sichtbar gemacht. Ein globaler COMMANDER-Pool aus allen laufenden AIRWINGs ist fuer den allgemeinen CAS-Base-Pfad **nicht** zulaessig.
+Der reale Acceptance-6-Lauf hat nicht die MOOSE-Auswahlautoritaet widerlegt; ADR 0008 bleibt verbindlich. Falsch war, dass A6 nach der MOOSE-Auswahl keinen provider-/plattformgerechten Owner-Route-, Release- und Recovery-Vertrag an die ausgewaehlte physische FLIGHTGROUP band und trotzdem bereits bei `OpsOnMission` PASS meldete.
 
 Verbindlicher Ablauf:
 
 ```text
 support requirement
--> C2/OMW evaluates all suitable candidates
-   - mission capability
-   - strategic availability / reservation
-   - route/profile validity
-   - ETA
-   - fuel and recovery reserve
-   - competing mission priority
--> select exactly one resource origin
--> bind selected AIRWING + SQUADRON/COHORT
--> bind platform-specific route/release/recovery profile
--> MOOSE executes
+-> OMW defines mission capability/profile constraints
+-> MOOSE COMMANDER/LEGION evaluates eligible configured cohorts/assets
+-> MOOSE selects provider + operational asset
+-> OMW binds the matching owner-authored execution profile to that selected provider
+-> MOOSE executes and recovers the physical asset
 ```
 
 Fuer Rotary-Wing-CAS gehoeren damit bereits vor dem physischen Dispatch zusammen:
