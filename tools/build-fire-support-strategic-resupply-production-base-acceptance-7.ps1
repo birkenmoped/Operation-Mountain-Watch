@@ -40,7 +40,7 @@ foreach($name in $sources.Keys){
 $all=$prod+[Environment]::NewLine+$embedded+[Environment]::NewLine+$test
 
 foreach($marker in @(
-  'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BASE-19',
+  'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BASE-20',
   'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-CAS-MISSION-FACTORY-3',
   'requiredAttributes',
   'SetRequiredAttribute',
