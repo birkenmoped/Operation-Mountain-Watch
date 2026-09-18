@@ -268,7 +268,7 @@ Mission Editor alarm-zone proliferation
 
 ## 11. Staged Artefakte
 
-Acceptance 2 ist source-seitig auf diesem Branch implementiert, aber noch nicht lokal gebaut und nicht in DCS validiert.
+Acceptance 2 ist source-seitig implementiert und fuer Commit `b2808d01a744b422688d8c2f85a6baa4a8c66b69` owner-lokal reproduzierbar gebaut. Die DCS-Validierung ist noch offen.
 
 Source-Teile:
 
@@ -309,11 +309,87 @@ DONE:
 - existing CH-47 OPSTRANSPORT / CampaignState chain retained
 - Acceptance-2 builder and anti-regression markers staged
 
-OPEN:
-- GitHub Lua syntax/contract validation for current head
+DONE:
+- GitHub Lua syntax/contract validation for build commit
 - owner-local build and SHA-256 provenance
+
+OPEN:
 - MIZ embedding verification
 - one real DCS full-response run
 ```
 
 Bis diese offenen Nachweise vorliegen, bleibt Acceptance 2 `PLANNED` und `validated_in_dcs: false`.
+
+
+## 13. Owner-local Build-Provenienz 18.09.2026
+
+Der Projektinhaber hat Acceptance 2 auf exakt folgendem Source-Stand gebaut:
+
+```text
+branch: agent/fire-support-strategic-resupply-base-gate0
+source commit: b2808d01a744b422688d8c2f85a6baa4a8c66b69
+build status: VERIFIED_LOCAL_BUILD
+DCS status: NOT VALIDATED
+```
+
+Builder und Bundles:
+
+```text
+Production BuilderVersion:
+OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BASE-19
+
+Production builder SHA-256:
+2463B10AC996D762D8903AE8F6C7C006E28C806DF61D290B2D74E2A3BF38D0F2
+
+Production bundle SHA-256:
+63BC68E52FC22CAA79FB53A28DEFBCBFB283BF162DDD95811C45BC2E605884C6
+
+Acceptance BuilderVersion:
+STAGE3-HONAKER-WRIGHT-FULL-RESPONSE-ACCEPTANCE-2-1
+
+Acceptance builder SHA-256:
+24922F58C127D85130A28E0ED6208DFED985F2E199CF5363CA249521FCC60B5A
+
+Acceptance bundle SHA-256:
+1D976567FC9E848194251C4FB4B9D1786F645B930B789B93291BABE1921DF1A4
+```
+
+Acceptance-2 Source-Teile:
+
+```text
+01-core.lua
+7A655DA6EFA0FAFD048E455A3B5A80E2534CF345906A10D9FF971D76498E3701
+
+02-cas.lua
+819AF0BA1E6E8FA15A8E4EB3F2A23D7889E3FEC7FF4897566AABF4940C82ABEF
+
+03-logistics.lua
+54ECB83CD140AD1E40B4120B572144E81D1AF887DB454964A41051B64F9971A1
+
+04-fire-support.lua
+7E620C78CAB20C4389B66C27C99E58F2D8AEF7871002A45629E8DC46737F5790
+
+05-runtime.lua
+6F1FB1D5FEE7C23B44F0A30CFC78FF65B0433C5203AD5644ED5D994C64137044
+```
+
+MOOSE-Provenienz des Bundles:
+
+```text
+release: 2.9.18
+commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+Moose.lua SHA-256: E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915
+```
+
+Die vom Builder ausgegebenen Hashes stimmen mit den anschliessend separat ausgefuehrten `Get-FileHash -Algorithm SHA256`-Pruefungen ueberein. Der lokale Git-Status enthielt nur untracked generierte `dist/`-Artefakte und keine versionierten lokalen Aenderungen.
+
+Nach `docs/22-test-mission-build-transfer-and-validation-workflow.md` ist damit die Source/Builder/Bundle-Kette bis zum lokalen Bundle belegt. Vor einem DCS-Lauf fehlen weiterhin die MIZ-spezifischen Nachweise:
+
+```text
+MIZ-SHA-256
+interner mission-SHA-256
+eingebetteter Acceptance-2-Bundle-SHA-256
+eingebetteter Moose.lua-SHA-256
+Objektvertragssmoke
+Load order / no stale parallel harness
+```
