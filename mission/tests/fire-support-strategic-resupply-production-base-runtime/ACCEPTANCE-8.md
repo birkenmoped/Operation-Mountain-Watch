@@ -6,6 +6,8 @@ owning_policy: OMW-GOV-001
 authoritative_for:
   - corrected CAS release authority after A7
   - non-terminal watchdog behavior
+scenario_period: 2010-08-01/2011-12-31
+project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 source_branch: agent/fire-support-strategic-resupply-base-gate0
 source_commit: PENDING_MERGE
 validated_in_dcs: false
