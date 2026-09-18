@@ -12,6 +12,8 @@ function AUFTRAG:NewCAS(zone,altitude,speed,coordinate,heading,leg,targetTypes)
   local m={cancelCount=0}
   function m:SetTeleport(v) self.teleport=v return self end
   function m:SetRequiredAssets(a,b) self.min=a;self.max=b;return self end
+  function m:SetRequiredAttribute(v) self.requiredAttributes=v;return self end
+  function m:SetRequiredProperty(v) self.requiredProperties=v;return self end
   function m:SetPriority(p,u) self.priority=p;self.urgent=u;return self end
   function m:Cancel() self.cancelCount=self.cancelCount+1 end
   return m
@@ -25,6 +27,8 @@ function AUFTRAG:NewPATROLZONE(zone,speed,altitude)
   end
   function m:SetTeleport(v) self.teleport=v return self end
   function m:SetRequiredAssets(a,b) self.min=a;self.max=b;return self end
+  function m:SetRequiredAttribute(v) self.requiredAttributes=v;return self end
+  function m:SetRequiredProperty(v) self.requiredProperties=v;return self end
   function m:SetPriority(p,u) self.priority=p;self.urgent=u;return self end
   function m:Cancel() self.cancelCount=self.cancelCount+1 end
   return m
@@ -70,6 +74,8 @@ local patrolFactory=Factory.New({
       speedKts=125,
       engageDetectedRangeNm=5,
       engageDetectedTargetTypes={"Ground Units"},
+      requiredAttributes="Air_AttackHelo",
+      requiredProperties={"OMW_CAS_ROUTE_PROFILE"},
       configureMission=function(m,g,d,c)
         configured=true
         eq(g.zone,zone,"configurator geometry")
@@ -96,6 +102,8 @@ eq(patrolMission.teleport,false,"PATROLZONE teleport disabled")
 eq(patrolMission.min,2,"PATROLZONE required min")
 eq(patrolMission.max,2,"PATROLZONE required max")
 eq(patrolMission.priority,7,"PATROLZONE priority")
+eq(patrolMission.requiredAttributes,"Air_AttackHelo","PATROLZONE required attribute")
+eq(patrolMission.requiredProperties[1],"OMW_CAS_ROUTE_PROFILE","PATROLZONE required property")
 yes(configured,"PATROLZONE mission configurator called")
 yes(patrolMission.configured,"PATROLZONE configurator changed mission")
 
