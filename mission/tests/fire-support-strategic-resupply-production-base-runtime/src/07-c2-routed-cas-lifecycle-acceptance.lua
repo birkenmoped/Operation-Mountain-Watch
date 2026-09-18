@@ -78,6 +78,8 @@ local state={
   selectedAirwing=nil,
   selectedAirwingAlias=nil,
   selectedSquadron=nil,
+  selectedAsset=nil,
+  selectedHomeAirbaseName=nil,
   routeProfile=nil,
   casGeometry=nil,
   casResolved=nil,
@@ -317,9 +319,21 @@ local function attachCommanderLifecycle(commander)
     if not isOurMission(Mission) then return end
     state.casMission=Mission
     local asset=Mission.assets and Mission.assets[1] or nil
+    state.selectedAsset=asset
     state.selectedSquadron=asset and asset.squadname or nil
+    local home=state.selectedAirwing and type(state.selectedAirwing.GetAirbase)=="function" and state.selectedAirwing:GetAirbase() or nil
+    state.selectedHomeAirbaseName=home and type(home.GetName)=="function" and home:GetName() or nil
+    if not state.selectedAsset then
+      fail("CAS_SELECTED_ASSET_EVIDENCE_MISSING")
+      return
+    end
+    if not state.selectedHomeAirbaseName then
+      fail("CAS_SELECTED_HOME_AIRBASE_MISSING")
+      return
+    end
     log("C2_CAS_MISSION_ASSIGNED provider="..tostring(state.selectedAirwingAlias)
-      .." squadron="..tostring(state.selectedSquadron))
+      .." squadron="..tostring(state.selectedSquadron)
+      .." home="..tostring(state.selectedHomeAirbaseName))
   end
 
   local previousOps=commander.OnAfterOpsOnMission
@@ -335,8 +349,15 @@ local function attachCommanderLifecycle(commander)
       return
     end
 
+    for _,method in ipairs({"GetGroup","GetCoordinate","GetDetectedGroups","GetWaypointIndex","GetWaypointUIDFromIndex","AddWaypoint","UpdateRoute","GetName"}) do
+      if type(OpsGroup[method])~="function" then
+        fail("CAS_SELECTED_OPSGROUP_NOT_FLIGHTGROUP missing="..method)
+        return
+      end
+    end
+
     state.casFlight=OpsGroup
-    state.casGroup=type(OpsGroup.GetGroup)=="function" and OpsGroup:GetGroup() or nil
+    state.casGroup=OpsGroup:GetGroup()
     state.casInitialAlive=state.casGroup and type(state.casGroup.CountAliveUnits)=="function" and state.casGroup:CountAliveUnits() or nil
 
     local binding,_,bound,bindReason=CasTacticalCorridor.Bind(OpsGroup,Mission,state.casGeometry,{
@@ -370,8 +391,13 @@ local function attachCommanderLifecycle(commander)
     local previousLanded=OpsGroup.OnAfterLanded
     function OpsGroup:OnAfterLanded(F,E,T,Airport)
       if previousLanded then previousLanded(self,F,E,T,Airport) end
-      state.homeLanded=true
       local airportName=Airport and type(Airport.GetName)=="function" and Airport:GetName() or tostring(Airport)
+      if airportName~=state.selectedHomeAirbaseName then
+        fail("CAS_LANDED_AT_WRONG_AIRBASE expected="..tostring(state.selectedHomeAirbaseName)
+          .." actual="..tostring(airportName))
+        return
+      end
+      state.homeLanded=true
       log("CAS_HOME_LANDED airport="..tostring(airportName).." provider="..tostring(state.selectedAirwingAlias))
     end
 
@@ -380,10 +406,13 @@ local function attachCommanderLifecycle(commander)
       local previousReturned=airwing.OnAfterLegionAssetReturned
       function airwing:OnAfterLegionAssetReturned(F,E,T,Cohort,Asset)
         if previousReturned then previousReturned(self,F,E,T,Cohort,Asset) end
-        local same=false
-        if Asset and Asset.flightgroup and Asset.flightgroup==state.casFlight then same=true end
-        if not same and Asset and state.casFlight and type(state.casFlight.GetName)=="function"
-            and Asset.spawngroupname==state.casFlight:GetName() then same=true end
+        local same=(Asset~=nil and Asset==state.selectedAsset)
+        if not same and Asset and state.selectedAsset and Asset.uid~=nil and state.selectedAsset.uid~=nil then
+          same=(Asset.uid==state.selectedAsset.uid)
+        end
+        if not same and Asset and state.casFlight and Asset.spawngroupname==state.casFlight:GetName() then
+          same=true
+        end
         if same then
           state.assetReturned=true
           log("CAS_LEGION_ASSET_RETURNED provider="..tostring(state.selectedAirwingAlias)
