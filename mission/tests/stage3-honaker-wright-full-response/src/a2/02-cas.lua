@@ -103,12 +103,7 @@ local function ensureCasContext()
   })
   state.casGeometry=CasTacticalCorridor.PlanRouteGated({
     allocationId=state.casDemand and state.casDemand.id or TEST_ID.."-CAS",outboundRoute=state.casResolved.outbound,
-    returnRoute=state.casResolved.returnRoute,
-    outboundSegmentIndexes=state.casResolved.outboundSegmentIndexes,
-    returnSegmentIndexes=state.casResolved.returnSegmentIndexes,
-    ingressSegmentIndex=#names,
-    egressSegmentIndex=#names,
-    destinationCoordinate=state.casTacticalZone:GetCoordinate(),routeGateDistanceNm=3.5,
+    returnRoute=state.casResolved.returnRoute,destinationCoordinate=state.casTacticalZone:GetCoordinate(),routeGateDistanceNm=3.5,
     transitAltitudeFtAgl=WEST_ALTITUDE_FT_AGL,missionAltitudeFtAgl=CAS_COMBAT_HEIGHT_FT_AGL,speedKts=CAS_SPEED_KTS,
     honakerReference=state.site.installationId,westReference=WEST_PATHLINE,
   })
