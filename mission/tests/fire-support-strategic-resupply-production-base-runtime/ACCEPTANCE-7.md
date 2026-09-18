@@ -208,3 +208,51 @@ tools/build-fire-support-strategic-resupply-production-base-acceptance-7.ps1
 ```
 
 DCS bleibt bis zum realen Lauf `NOT_VALIDATED`.
+
+## 9. Owner-lokaler Build-Nachweis 2026-09-18
+
+Der Projektinhaber hat den Branchstand und den Acceptance-7-Build lokal real ausgefuehrt und folgende Provenienz zurueckgemeldet:
+
+```text
+source commit:
+500974a22915be7b468ef6855f0aefbc4805b897
+
+production builder:
+OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BASE-20
+SHA-256 93DC3312E752DA7BAB75C476965BE0AFE693A6EEC62F781A63C600682039AE83
+
+production bundle:
+SHA-256 7DF23DD90ECA2C1450A6B657447D3392EA545A279E244CA0C6B343BC4224E0EF
+
+CasMissionFactory:
+SHA-256 FB49D3338A073A2EC0E68C14621FEF9DE7B2D105D94BEC9F448893C7005E1377
+
+OMW_FlightPathNameContract.lua:
+SHA-256 333E895D8BF65138C96359CE564BE8F9967F7ADDA3A33E2AE8A8726103D95855
+
+OMW_HelicopterFlightPathCorridor.lua:
+SHA-256 04D99722F0246AD261C47A90104E488FE9EF65721A647BE5CF6BAA602A1E279B
+
+OMW_HelicopterCasTacticalCorridor.lua:
+SHA-256 E8FF4C196433CFCF287EEED25EAA31640EB8013A1286359CA63984811DDE08DA
+
+Acceptance-7 source:
+SHA-256 B37E29638A07917D0993803BB7D35331FB1B23D1CB2B82A58D349BC2BF51EA0C
+
+Acceptance-7 builder:
+SHA-256 787BD80417BB53660F6978CF571A1B0CDF06E3C197174D648A2F54E84AA07BB1
+
+Acceptance-7 bundle:
+SHA-256 B3012549B3F72BBDA04A06F4C922A85E3C09EB253642C6CEB6B7356F9E59F138
+```
+
+Der unabhaengige `Get-FileHash`-Lauf des Projektinhabers bestaetigte dieselben Werte. `git status --short` zeigte ausschliesslich untracked Build-`dist`-Verzeichnisse und keine tracked lokalen Aenderungen.
+
+Status dieses Nachweises:
+
+```text
+source/build/hash provenance: VERIFIED_LOCAL_BUILD
+DCS runtime: NOT_VALIDATED
+```
+
+Die naechste Evidenz darf nur aus einem realen DCS-Lauf mit exakt diesem Acceptance-7-Bundle stammen.
