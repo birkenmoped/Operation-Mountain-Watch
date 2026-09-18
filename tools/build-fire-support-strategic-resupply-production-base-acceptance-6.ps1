@@ -32,7 +32,7 @@ foreach($marker in @(
   'C2_CAS_PROVIDER_SELECTED','C2_CAS_OPS_ON_MISSION',
   'QRF_DIRECT_TARGET_ENGAGE',
   'FEWER_THAN_TWO_CAS_CAPABLE_AIRWINGS',
-  'AUFTRAG.CheckMissionCapability')){
+  'AUFTRAG.CheckMissionCapability','siteRegistry=singleSiteRegistry')){
   if(-not $c.Contains($marker)){throw "Acceptance 6 marker missing: $marker"}
 }
 
