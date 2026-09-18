@@ -196,3 +196,49 @@ Geprueft werden unter anderem:
 - `SetTeleport(false)` und explizite Required-Asset-Anzahl.
 
 Das ist Source-/CI-Evidenz und kein DCS-PASS.
+
+## Production Base Acceptance 6 – variable C2 provider selection
+
+Nach Verwerfung der deterministischen Stage-3-Acceptance wird die offene Runtime-Frage der allgemeinen Base jetzt direkt getestet:
+
+```text
+physical installation attack
+-> production incident
+-> explicit CAS escalation through Base
+-> ExternalSupportRuntime
+-> CommanderBridge
+-> COMMANDER:AddMission(...)
+-> MOOSE recruitment across multiple registered AIRWING candidates
+-> COMMANDER MissionAssign
+-> OPSGROUP on mission
+```
+
+Acceptance 6 bindet keinen AIRWING, keine SQUADRON und keinen Luftfahrzeugtyp. Der Acceptance-COMMANDER registriert alle bereits laufenden `OMW.AirOps`-AIRWINGs und verlangt vor Testbeginn mindestens zwei CAS-faehige AIRWING-Kandidaten.
+
+Der gepinnte MOOSE-Source wurde fuer diesen Scope erneut geprueft. Relevante oeffentliche Pfade sind:
+
+```text
+COMMANDER:New(...)
+COMMANDER:AddAirwing(...)
+COMMANDER:Start()
+COMMANDER:AddMission(...)
+COMMANDER:CanMission(...)
+COMMANDER:OnAfterMissionAssign(...)
+COMMANDER:OnAfterOpsOnMission(...)
+AUFTRAG.CheckMissionCapability(...)
+LEGION recruitment / cohort eligibility / asset optimization
+```
+
+Die MOOSE-Rekrutierung bewertet geeignete Cohorts und Assets innerhalb der registrierten Legions. OMW Acceptance 6 beobachtet die resultierende Auswahl nur; es setzt weder `specialLegions`/`specialCohorts` noch einen direkten `AIRWING:AddMission()`-Pfad.
+
+Der erste korrigierte Lauf beschraenkt sich bewusst auf CAS-Provider-/Asset-Selektion. ARTY bleibt aus diesem Lauf heraus, weil die Verbindung zwischen generischem `AUFTRAG:NewARTY()`/COMMANDER-Recruitment und dem bereits akzeptierten Functional-ARTY-/Rearm-Lifecycle noch nicht als einheitlicher Produktionspfad belegt ist. Diese Grenze darf nicht durch einen deterministischen ARTY-Testprovider umgangen werden.
+
+Artefakte:
+
+```text
+mission/tests/fire-support-strategic-resupply-production-base-runtime/ACCEPTANCE-6.md
+mission/tests/fire-support-strategic-resupply-production-base-runtime/src/06-c2-provider-selection-acceptance.lua
+tools/build-fire-support-strategic-resupply-production-base-acceptance-6.ps1
+```
+
+Status vor DCS-Lauf: `SOURCE_REVIEWED / DCS_PENDING`.
