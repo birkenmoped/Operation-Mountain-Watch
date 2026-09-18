@@ -661,3 +661,5 @@ COMMANDER OnBeforeMissionAssign route-profile gate: SOURCE_REVIEWED / DCS_PENDIN
 FLIGHTGROUP FuelLow fail-closed acceptance guard: SOURCE_REVIEWED / DCS_PENDING
 physical owner-route / release / landing / LegionAssetReturned chain: DCS_PENDING
 ```
+
+A7 additionally source-reviews `WAREHOUSE/AIRWING:GetAirbase()` for selected-provider home-airbase identity and requires the physical `OnAfterLanded` place to match that home before recovery can pass. Status: `SOURCE_REVIEWED / DCS_PENDING`.
