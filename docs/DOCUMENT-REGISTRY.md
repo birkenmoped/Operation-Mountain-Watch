@@ -171,3 +171,5 @@ Die folgenden stabilen IDs werden mit dem Ground-RESUPPLY-Mergepaket in den Main
 | `OMW-GROUND-FUEL-RESUPPLY-ACCEPTANCE-1` | `mission/tests/ground-resupply-execution/ACCEPTANCE-2.md` | `HISTORICAL_TEST_FIXTURE` | historischer/inconclusive FUELSUPPLY-Versuch |
 | `OMW-GROUND-META-RESUPPLY-NOTHING-ACCEPTANCE-1` | `mission/tests/ground-resupply-execution/ACCEPTANCE-3.md` | `ACCEPTED_TECHNICAL_BASELINE` | Stage 1C neutraler NOTHING-Transport |
 | `OMW-GROUND-FUEL-REFUELLING-ZONE-ACCEPTANCE-2` | `mission/tests/ground-resupply-execution/ACCEPTANCE-4.md` | `ACCEPTED_TECHNICAL_BASELINE` | Stage 1B2 One-Shot FUELSUPPLY |
+
+| `OMW-TEST-FSSR-PRODUCTION-BASE-ACCEPTANCE-7` | `mission/tests/fire-support-strategic-resupply-production-base-runtime/ACCEPTANCE-7.md` | `PLANNED`; Joyce production QRF plus MOOSE-selected attack-helicopter CAS with fail-closed owner-route binding, supported-element/no-contact release and physical recovery |
