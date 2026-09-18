@@ -183,3 +183,31 @@ Der Production-Package-Pfad fuer Six-Site Guard sowie Installation-Incident/QRF 
 Die neue physische Alarm-Evidence-Verdrahtung ist dagegen zunaechst **SOURCE_REVIEWED / CI-GATED**, aber noch nicht DCS-validiert. Vor einer solchen DCS-Acceptance muss eine Testkonfiguration mit klar als Fixture gekennzeichneter Alarmzone beziehungsweise eine aktuelle autoritative Produktionsgeometrie vorliegen. Historische Stage-3-1000-m-Zonen werden nicht zur Produktionsgeometrie hochgestuft.
 
 Ebenso sind ARTY/CAS und Resupply im Production Package noch nicht als Gesamtpfad DCS-validiert; konkrete taktische beziehungsweise Transportgeometrie wird nicht erfunden.
+
+## Naechstes Base-Gate: Acceptance 6
+
+Die verworfene Honaker Stage-3-Acceptance wird nicht als Nachweis der variablen Base weiterverwendet. Der naechste Runtime-Nachweis konzentriert sich auf die Befehls- und Auswahlkette selbst:
+
+```text
+FOB Joyce physical attack
+-> production perimeter / installation incident
+-> production QRF direct-target response
+-> explicit Base CAS escalation
+-> generic ExternalSupportRuntime
+-> generic CommanderBridge
+-> MOOSE COMMANDER across multiple running AIRWINGs
+-> runtime-selected provider
+-> runtime-selected operational asset / OPSGROUP
+```
+
+Der Acceptance-Harness darf keine konkrete Basis, SQUADRON oder Aircraft-Art als CAS-Provider vorgeben. Mindestens zwei CAS-faehige AIRWINGs muessen als reale Kandidaten in demselben COMMANDER registriert sein, damit ein PASS eine tatsaechliche Auswahl und nicht nur einen Ein-Kandidaten-Dispatch belegt.
+
+Der erste Lauf stoppt nach positiver physischer `OpsOnMission`-Evidenz. CAS-Routing, Weapons Employment, RTB, ARTY, Rearm und Strategic Resupply werden bewusst nicht in denselben Lauf gepackt. Damit bleibt der Harness klein und ein Fehler kann eindeutig der Command-/Selection-Kette zugeordnet werden.
+
+Artefakte:
+
+```text
+mission/tests/fire-support-strategic-resupply-production-base-runtime/ACCEPTANCE-6.md
+mission/tests/fire-support-strategic-resupply-production-base-runtime/src/06-c2-provider-selection-acceptance.lua
+tools/build-fire-support-strategic-resupply-production-base-acceptance-6.ps1
+```
