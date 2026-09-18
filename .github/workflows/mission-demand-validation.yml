@@ -82,6 +82,7 @@ jobs:
           luac5.4 -p mission/tests/fire-support-strategic-resupply-production-base-runtime/src/05-incident-local-guard-acceptance.lua
           luac5.4 -p mission/tests/fire-support-strategic-resupply-production-base-runtime/src/06-c2-provider-selection-acceptance.lua
           luac5.4 -p mission/tests/fire-support-strategic-resupply-production-base-runtime/src/07-c2-routed-cas-lifecycle-acceptance.lua
+          luac5.4 -p mission/tests/fire-support-strategic-resupply-production-base-runtime/src/08-c2-routed-cas-release-acceptance.lua
           luac5.4 -p mission/tests/fire-support-strategic-resupply-gate5b-six-site-perimeter-runtime/src/01-six-site-perimeter-runtime-acceptance.lua
 
       - name: Check Fortress full-response acceptance syntax
