@@ -233,3 +233,19 @@ Regression feststellen
 Keine weitere Alternativloesung ohne vorherige Owner-Entscheidung.
 
 Dieses Dokument ist ein Entwicklungs-/Review-Gate, kein DCS-Runtime-PASS.
+
+## Lifecycle-Preservation Gate
+
+Dieses Matrix-Dokument ist vor jeder FSSR-Base-/Reconciliation-Aenderung zusammen mit `ACCEPTED-LIFECYCLE-PRESERVATION-LAW.md` zu pruefen.
+
+Verbindlich:
+
+```text
+accepted lifecycle implementation
+-> must be reused or shared-extracted
+-> Acceptance may only trigger/observe/assert
+-> copied lifecycle logic does not inherit acceptance evidence
+-> intentional invariant change requires owner approval + scoped DCS revalidation
+```
+
+Insbesondere duerfen neue Acceptance-Harnesses keine eigene QRF-Targeting-, CAS-Release-, CAS-RTB-/Recovery-, ARTY-Rearm- oder ReturnToLegion-State-Machine aufbauen, wenn die betreffende Funktion bereits als akzeptierter beziehungsweise bindender Produktionsvertrag existiert.
