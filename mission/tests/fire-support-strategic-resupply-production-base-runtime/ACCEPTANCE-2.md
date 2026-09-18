@@ -1,0 +1,189 @@
+---
+document_id: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BASE-ACCEPTANCE-2
+status: ACCEPTED_TECHNICAL_BASELINE
+document_class: ACCEPTANCE_RESULT
+owning_policy: OMW-GOV-001
+authoritative_for:
+  - Production Base six-site Guard regression
+  - Production Base installation-incident to local-QRF integration acceptance
+  - MOOSE-native Guard and QRF recruitment filtering
+  - active-incident refresh deduplication
+scenario_period: 2010-08-01/2011-12-31
+project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
+supersedes:
+superseded_by:
+source_branch: agent/fire-support-strategic-resupply-base-gate0
+source_commit: 4d790a9caff326ba18dceb218f83338816200ea9
+validated_in_dcs: true
+acceptance_branch: agent/fire-support-strategic-resupply-base-gate0
+acceptance_commit: 4d790a9caff326ba18dceb218f83338816200ea9
+acceptance_mission: OMW_Template_v24_GroundWorks_base.miz
+acceptance_mission_sha256: d51a38bbd352ae7e5f17a4cb4a025b4bd8f875339b97a19441ebd14d8653b1d9
+dcs_version: 2.9.29.27468
+moose_release: 2.9.18
+moose_commit: 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+moose_lua_sha256: E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915
+production_builder_sha256: F2FB946ACAB9955E38E27DBB264D2249D2A8F8492FE6339F557FEEDDAE7A00AB
+production_bundle_sha256: 8A532490E1E70F546ECE15EE3F537D41D2B2F1673E0C29296E79B1E4D763579E
+acceptance_source_sha256: F8AB365B08491DFA002387C7DFA4D866DD160FB15EE504356DD11FDAAD55D84E
+acceptance_builder_sha256: 4D0CCC4EDF0AE92E2C4BEE07C47DDF0F279E65A48CDF543C2AED2413C7838761
+acceptance_bundle_sha256: 173290E5F4123D41D79400238385729E8C1A71C77BFBFB54C6A4E7F9C1F4A2F8
+---
+
+# Production Base Acceptance 2 – Six Guards + Honaker Incident + QRF
+
+## Ergebnis
+
+**PASS / ACCEPTED_TECHNICAL_BASELINE** fuer den exakt oben dokumentierten Branch-, Commit-, Missions-, Bundle-, DCS- und MOOSE-Stand.
+
+Der reale DCS-Lauf enthielt den geforderten Abschluss:
+
+```text
+[PRODUCTION BASE A2][PASS] 6/6 Guards >=25 m; Honaker incident opened once; MOOSE recruited Ground_APC QRF; target-distance progress 205.1 m; refresh kept one response demand
+```
+
+## Ziel
+
+Auf Wunsch des Projektinhabers wurden mehrere sinnvolle Prüfungen in **einem** DCS-Lauf gebündelt. Acceptance 2 regressiert die bereits akzeptierte Six-Site-Guard-Kette und prüft gleichzeitig erstmals die produktive Installation-Incident-/QRF-Kette:
+
+```text
+six site-local persistent Guard demands
+-> MOOSE recruits Ground_Infantry Guards
+-> accepted compact materialization + owner PATHLINE routing
+
+owner-authored BadGuys1 fixture
+-> injected integration evidence at the live group coordinate
+-> OMW_GroundInstallationAttackIncident
+-> InstallationIncidentBridge
+-> FireSupStratResupply Base
+-> one initial local QRF demand
+-> Honaker BRIGADE
+-> MOOSE recruits Ground_APC QRF
+-> physical movement toward the incident coordinate
+```
+
+Ein zweites Evidence-Update für denselben aktiven Installation-Incident darf keinen zweiten QRF-Demand erzeugen.
+
+## Abgrenzung
+
+Die Evidence wird durch den Acceptance-Harness als `DIRECT_FIRE_ATTACK` eingespeist. Dieser Lauf prüft deshalb die **Incident-/QRF-Integration**, nicht die physische Detection-/Alarmqualifikation. Ein PASS validiert keine OPSZONE-, Shot-, Hit- oder Weapon-Evidence.
+
+ARTY, CAS und Resupply sind nicht Bestandteil dieses Laufs. Die allgemeine Six-Site-Baseline besitzt dafür noch nicht sämtliche produktiven Resolver-/Providerdaten; historische Stage-3-Geometrien werden nicht verallgemeinert.
+
+## MOOSE-First / gemeinsame BRIGADE
+
+Guard und QRF verwenden `AUFTRAG.Type.ONGUARD`. Beide Cohorts dürfen in derselben Site-BRIGADE existieren, ohne dass OMW ein konkretes Asset auswählt. Der fachliche Bedarf wird über öffentliche MOOSE-Rekrutierungsfilter ausgedrückt:
+
+```text
+Guard demand
+-> AUFTRAG:SetRequiredAttribute(GROUP.Attribute.GROUND_INFANTRY)
+-> LEGION/BRIGADE recruitment by MOOSE
+
+QRF demand
+-> AUFTRAG:SetRequiredAttribute(GROUP.Attribute.GROUND_APC)
+-> LEGION/BRIGADE recruitment by MOOSE
+```
+
+Die Production Base stellt dafür optionale `guardRequiredAttributes` / `guardRequiredProperties` sowie `qrfRequiredAttributes` / `qrfRequiredProperties` bereit. Ohne Konfiguration setzt sie keine impliziten Assetfilter.
+
+Die verwendeten Acceptance-Attribute sind durch gepinnten MOOSE-Source und reale OMW-DCS-Ausgabe belegt: `TPL_BLUE_GND_INF_RIFLE_SQUAD_9` wurde als `Ground_Infantry` klassifiziert; `TPL_BLUE_GND_QRF_MIXED_6` als `Ground_APC`. Die konkreten Attribute sind Acceptance-Konfiguration, keine projektweite Festlegung zukünftiger QRF-Typen.
+
+## Mission-Editor-Voraussetzungen
+
+```text
+WH_BLUE_GND_FENTY
+WH_BLUE_GND_FORTRESS
+WH_BLUE_GND_JOYCE
+WH_BLUE_GND_WRIGHT
+WH_BLUE_GND_HONAKER
+WH_BLUE_GND_BOSTICK
+
+TPL_BLUE_GND_INF_RIFLE_SQUAD_9
+TPL_BLUE_GND_QRF_MIXED_6
+BadGuys1
+
+OMW_RTE_BLUE_GUARD_FENTY_01
+OMW_RTE_BLUE_GUARD_FORTRESS_01
+OMW_RTE_BLUE_GUARD_JOYCE_01
+OMW_RTE_BLUE_GUARD_WRIGHT_01
+OMW_RTE_BLUE_GUARD_HONAKER_01
+OMW_RTE_BLUE_GUARD_BOSTICK_01
+```
+
+`BadGuys1` ist eine vorhandene late-activated RED-Gruppe. Der Harness aktiviert sie mit der öffentlichen MOOSE-Methode `GROUP:Activate()` und nutzt danach ihre reale `GROUP:GetCoordinate()`-Position als Incident-/QRF-Ziel. Es wird keine QRF-Zielkoordinate erfunden.
+
+### Testfixture versus produktive RED-Kräfte
+
+Die aktuell in der Foundation-`.miz` vorhandenen `BadGuys*`-Gruppen sind **ausschließlich Testfixtures** für Acceptance-, Integrations- und Regressionsläufe. Sie sind kein vorgesehenes produktives Feindkräfte-, ORBAT-, Spawn- oder Tasking-Modell und dürfen nicht als dauerhafte RED-Operationsquelle in die Production-Architektur übernommen werden.
+
+Für die spätere produktive Mission gilt stattdessen:
+
+```text
+RED C2 / RED operational command layer
+-> determines hostile operational demand / intent
+-> selects and tasks eligible RED formations through the approved MOOSE/OMW architecture
+-> dynamically deploys / moves hostile RED groups
+-> BLUE installation alarm receives only resulting physical/evidence state
+```
+
+Damit bleibt die Richtung ausdrücklich getrennt:
+
+```text
+Acceptance fixture:
+BadGuys* exists in .miz
+-> harness activates/moves/uses it for a defined test
+
+Production:
+RED C2 owns enemy employment
+-> RED groups are dynamically committed and moved by RED command logic
+-> BLUE alarm/QRF reacts to the resulting threat
+```
+
+BLUE Installation Incident, Guard, QRF, Fire Support oder Resupply dürfen deshalb keine produktive Abhängigkeit von den Namen, Positionen oder der Existenz der `BadGuys*`-Testgruppen erhalten. Die konkrete RED-C2-Architektur ist außerhalb dieses Acceptance-2-Scope und muss separat nach den dann gültigen Governance-/MOOSE-First-Regeln implementiert und validiert werden.
+
+`ZON_BLUE_GND_*_ACCESS` ist ausdrücklich kein Guard-, QRF- oder Alarmvertrag.
+
+## Testablauf
+
+1. Production Base nach MOOSE laden.
+2. Für alle sechs Sites lokale BRIGADEs erzeugen.
+3. Jede Site erhält einen Guard-PLATOON; Honaker zusätzlich den vorhandenen QRF-PLATOON.
+4. Runtime mit `Guard=GROUND_INFANTRY`, `QRF=GROUND_APC` als MOOSE-Rekrutierungsanforderungen vorbereiten.
+5. BRIGADEs starten und alle sechs persistenten Guard-Demands über `Runtime:StartSite()` erzeugen.
+6. `BadGuys1` über MOOSE aktivieren und reale Position lesen.
+7. Erste Integration-Evidence an Honaker melden.
+8. Zweite Evidence für denselben aktiven Incident melden und genau einen Base-Response-Demand verifizieren.
+9. Parallel Guard- und QRF-Telemetrie beobachten.
+10. Nach 300 Sekunden gemeinsames PASS/FAIL bewerten.
+
+## DCS-Nachweis 2026-09-13
+
+Zum PASS-Zeitpunkt waren alle sechs Guards `observed=true`, `alive=true` und über dem 25-m-Kriterium. Die QRF war `observed=true`, `alive=true`, als `Ground_APC` rekrutiert und hatte ihre Distanz zum realen `BadGuys1`-Ziel von 2686.4 m um 205.1 m reduziert. `demandCountAfterRefresh=1` bestätigte die Deduplizierung des zweiten Evidence-Updates.
+
+Die QRF wurde im MOOSE-Lifecycle separat als
+
+```text
+ARMY_ON_MISSION siteId=COP_HONAKER ... attribute=Ground_APC
+```
+
+beobachtet. Die sechs Guard-Gruppen wurden separat mit `attribute=Ground_Infantry` beobachtet.
+
+Im weiteren Lauf erreichte die QRF bis auf ungefähr 2.2 m die Testzielkoordinate; dieser spätere Wert ist zusätzliche Beobachtung und nicht Teil des ursprünglichen PASS-Schwellenwerts.
+
+Es wurde kein `[PRODUCTION BASE A2][FAIL]` gefunden.
+
+Die wiederkehrende MOOSE-Warnung für unbekanntes DCS-Event `ID=61` trat weiterhin auf. Ebenso sind DCS-Ground-Pathfinding-Warnungen `TRANSPORT: CREATING PATH MAKES TOO LONG!!!!!` aus den bekannten Guard/Ground-AI-Pfaden weiterhin zu beobachten. Beides hat das definierte Acceptance-2-PASS-Kriterium in diesem Lauf nicht verhindert und wird nicht als Validierung anderer, noch offener Funktionen interpretiert.
+
+## Nach PASS weiterhin offen
+
+```text
+physical multi-evidence detection / qualification
+ARTY escalation
+CAS escalation
+Ground resupply
+Air resupply
+CampaignState physical transport settlement
+productive RED C2 employment / hostile force generation and movement
+```
+
+Diese offenen Punkte werden weiterhin soweit fachlich möglich in wenigen größeren Folge-Acceptances gebündelt.
