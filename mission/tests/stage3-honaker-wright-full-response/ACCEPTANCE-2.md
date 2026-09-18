@@ -383,7 +383,7 @@ Moose.lua SHA-256: E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A
 
 Die vom Builder ausgegebenen Hashes stimmen mit den anschliessend separat ausgefuehrten `Get-FileHash -Algorithm SHA256`-Pruefungen ueberein. Der lokale Git-Status enthielt nur untracked generierte `dist/`-Artefakte und keine versionierten lokalen Aenderungen.
 
-Nach `docs/22-test-mission-build-transfer-and-validation-workflow.md` ist damit die Source/Builder/Bundle-Kette bis zum lokalen Bundle belegt. Vor einem DCS-Lauf fehlen weiterhin die MIZ-spezifischen Nachweise:
+Nach `docs/22-test-mission-build-transfer-and-validation-workflow.md` ist damit die Source/Builder/Bundle-Kette bis zum lokalen Bundle belegt. Fuer die naechste read-only MIZ-Bestandsaufnahme steht `tools/inspect-stage3-honaker-wright-full-response-acceptance-2-miz.ps1` bereit. Das Tool mutiert die Mission nicht, sondern erfasst MIZ-/internal-mission-Hashes, eingebetteten Moose-Hash, vorhandene Acceptance-1/2-Ressourcen, DO-SCRIPT-FILE-Reihenfolge und einen Namens-Smoke der fuer Acceptance 2 benoetigten Missionsobjekte. Vor einem DCS-Lauf fehlen weiterhin die MIZ-spezifischen Nachweise:
 
 ```text
 MIZ-SHA-256
