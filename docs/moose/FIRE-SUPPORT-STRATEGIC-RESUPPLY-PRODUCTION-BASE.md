@@ -79,14 +79,17 @@ Der Builder aendert die bindende Ressourcen- und Missionsautoritaet nicht:
 CampaignState/store
 = strategische Persistenz und Ressourcenhoheit
 
+C2/OMW + CampaignState policy
+= strategische Kandidatenbewertung, Herkunftsauswahl und Ressourcenreservierung
+
 MOOSE organisation / AUFTRAG / COMMANDER / BRIGADE / WAREHOUSE / OPSTRANSPORT
-= operative Auswahl, Rekrutierung und physischer Lifecycle
+= operative Rekrutierung innerhalb des ausgewaehlten Pools und physischer Lifecycle
 
 OMW FireSupStratResupply Base
 = Demand-/Incident-Koordination und Adapterverdrahtung
 ```
 
-Das Bundle nimmt **keine operative Asset-Vorauswahl** fuer MOOSE vor.
+Das Bundle darf keine strategische Herkunftsauswahl an einen ungebundenen MOOSE-Gesamtpool delegieren. Fuer externe CAS-/ARTY-Unterstuetzung muss vor dem MOOSE-Dispatch ein vom C2/OMW-Policy-Layer ausgewaehlter und reservierter Herkunftspool injiziert werden. Innerhalb dieses Pools bleibt die operative Asset-Rekrutierung bei MOOSE.
 
 ## Physische Alarm-Evidence
 
@@ -211,3 +214,28 @@ mission/tests/fire-support-strategic-resupply-production-base-runtime/ACCEPTANCE
 mission/tests/fire-support-strategic-resupply-production-base-runtime/src/06-c2-provider-selection-acceptance.lua
 tools/build-fire-support-strategic-resupply-production-base-acceptance-6.ps1
 ```
+
+## Acceptance-6-Ergebnis und korrigierter Base-Weg
+
+Acceptance 6 ist nach realem DCS-Lauf `REJECTED`. Der Harness meldete zu frueh PASS, sobald ein physisches CAS-OPSGROUP auf Mission war. Danach folgten genau die bereits verbotenen Regressionen: direkte Rotary-Wing-Luftlinie statt Owner-Route, FuelLow/Bingo statt regulärer No-Contact-/Supported-Element-Release, direkter niedriger RTB, Verlust eines Assets und keine nachgewiesene physische Recovery des ueberlebenden Assets.
+
+Der naechste Base-Schritt darf deshalb **nicht** wieder nur Dispatch testen. Der minimale gueltige externe-CAS-Vertrag lautet:
+
+```text
+installation support requirement
+-> C2/OMW candidate evaluation
+-> one selected/reserved origin pool
+-> platform-specific mission profile
+   - owner route
+   - ingress/egress
+   - target/detection policy
+   - release policy
+   - recovery route
+   - physical landing/asset return
+-> bound MOOSE dispatch
+-> execution evidence
+-> release
+-> physical recovery
+```
+
+Fuer einen Base-Test duerfen unterschiedliche Sites weiterhin unterschiedliche Subsysteme pruefen, z. B. Joyce fuer QRF und ein zweiter geeigneter Standort fuer CAS. Der CAS-Harness darf dabei aber weder Provider noch Lifecycle hardcoden; er darf nur den realen C2/OMW-Auswahlentscheid und dessen gebundenes Profil beobachten.
