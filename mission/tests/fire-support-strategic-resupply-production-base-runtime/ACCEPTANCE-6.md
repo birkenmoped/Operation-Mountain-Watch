@@ -1,6 +1,6 @@
 ---
 document_id: OMW-TEST-FSSR-PRODUCTION-BASE-ACCEPTANCE-6
-status: PLANNED
+status: REJECTED
 document_class: ACCEPTANCE_TEST
 owning_policy: OMW-GOV-001
 authoritative_for:
@@ -176,3 +176,45 @@ miz mutation: false
 The independent owner-local `Get-FileHash` for the generated Acceptance bundle matched the builder output exactly.
 
 Status after this rebuild: `VERIFIED_LOCAL_BUILD / DCS_PENDING`.
+
+## DCS run 2026-09-18 - rejected Base acceptance
+
+Der reale Lauf mit Bundle SHA-256 `9F498AF90A109494D6BFA22675B4ED8DFB76C8733840358A756A26B2846B03E8` erreichte die Joyce-Angriffs-, Incident-, QRF- und CAS-Dispatch-Kette. Der Harness meldete bereits nach `COMMANDER:OnAfterOpsOnMission` einen PASS. Dieser PASS ist fuer die Base ungueltig und wird verworfen.
+
+Beobachtete positive Teil-Evidenz:
+
+```text
+Joyce physical attack -> installation incident
+QRF materialized
+QRF direct concrete-target engagement
+CAS demand created through Base
+COMMANDER selected AW_US_JBAD_TF_SHOOTER_6_6_CAV
+MOOSE recruited SQ_US_JBAD_AH64D_B_1_10_AVN
+physical AH-64D OPSGROUP on mission
+```
+
+Die anschliessende reale Ausfuehrung verletzte jedoch bindende CAS-/Rotary-Wing-Vertraege:
+
+```text
+- outbound flight used direct line instead of approved OMW helicopter owner route
+- no controlled route-gated ingress/egress lifecycle
+- CAS did not close by supported-element release plus stable own no-contact picture
+- mission continued until FuelLow/Bingo path
+- return used direct low-altitude route instead of owner reverse route
+- one AH-64D was lost during recovery
+- surviving AH-64D circled near Jalalabad without completing physical landing/recovery
+```
+
+Zusaetzlich war bereits der Acceptance-Entwurf architektonisch falsch: Er registrierte einen ungebundenen Gesamtpool mehrerer AIRWINGs in einem COMMANDER und ueberliess MOOSE die strategische Herkunftsauswahl. Das widerspricht dem bindenden allgemeinen CAS-Vertrag in `STAGE3-CAS-LIFECYCLE-RECOVERY-LAW.md`: C2/OMW muss Kandidaten bewerten, genau eine strategische Ressource samt AIRWING/SQUADRON/COHORT und Routen-/Recovery-Profil auswaehlen und reservieren; erst danach darf MOOSE den physischen Auftrag innerhalb dieses ausgewaehlten Pools ausfuehren.
+
+Damit gilt:
+
+```text
+Acceptance 6 = REJECTED
+validated_in_dcs = false
+the early PASS marker is INVALID as Base evidence
+do not rerun A6
+do not use global unbound COMMANDER pool as Base provider selection
+```
+
+Der Lauf ist wertvolle Negativ-Evidenz: Er beweist, dass `OpsOnMission` allein keine ausreichende Base-Acceptance-Grenze ist und dass Routing, Release und physische Recovery Bestandteil jedes CAS-Base-Vertrags bleiben muessen.
