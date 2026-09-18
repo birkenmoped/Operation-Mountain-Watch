@@ -297,8 +297,18 @@ local function start()
   local perimeters,perimeterReason=buildPerimeter(p)
   if not perimeters then fail("PERIMETER_CONFIG_FAILED "..tostring(perimeterReason)); return end
 
+  -- Production Runtime validates Guard/QRF composition for every site in the
+  -- injected registry. Acceptance 6 intentionally exercises one physical site,
+  -- so pass an explicit one-site registry view instead of pretending that
+  -- brigades exist for the other five production sites.
+  local singleSiteRegistry={
+    SchemaVersion=p.SiteRegistry.SchemaVersion,
+    Sites={[SITE_ID]=p.SiteRegistry.Sites[SITE_ID]},
+  }
+
   local ok,runtimeOrError=pcall(function()
     local runtime=p.New({
+      siteRegistry=singleSiteRegistry,
       brigades={[SITE_ID]=state.brigade},
       resolveGuardPathline=function(name) return PATHLINE:FindByName(name) end,
       resolveGuardTemplateGroup=function(name) return GROUP:FindByName(name) end,
