@@ -11,9 +11,9 @@ $out=Join-Path $repoRoot 'mission\tests\fire-support-strategic-resupply-producti
 $version='OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BASE-ACCEPTANCE-8-1'
 
 $sources=[ordered]@{
-  OMW_A7_FLIGHTPATH_NAME_CONTRACT='scripts\air-operations\OMW_FlightPathNameContract.lua'
-  OMW_A7_HELICOPTER_FLIGHTPATH_CORRIDOR='scripts\air-operations\OMW_HelicopterFlightPathCorridor.lua'
-  OMW_A7_HELICOPTER_CAS_TACTICAL_CORRIDOR='scripts\air-operations\OMW_HelicopterCasTacticalCorridor.lua'
+  OMW_A8_FLIGHTPATH_NAME_CONTRACT='scripts\air-operations\OMW_FlightPathNameContract.lua'
+  OMW_A8_HELICOPTER_FLIGHTPATH_CORRIDOR='scripts\air-operations\OMW_HelicopterFlightPathCorridor.lua'
+  OMW_A8_HELICOPTER_CAS_TACTICAL_CORRIDOR='scripts\air-operations\OMW_HelicopterCasTacticalCorridor.lua'
 }
 
 foreach($f in @($prodBuilder,$src)){
@@ -21,7 +21,7 @@ foreach($f in @($prodBuilder,$src)){
 }
 foreach($name in $sources.Keys){
   $path=Join-Path $repoRoot $sources[$name]
-  if(-not(Test-Path -LiteralPath $path -PathType Leaf)){throw "Required A7 source not found: $path"}
+  if(-not(Test-Path -LiteralPath $path -PathType Leaf)){throw "Required A8 source not found: $path"}
 }
 
 & $prodBuilder
