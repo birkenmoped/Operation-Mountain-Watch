@@ -141,3 +141,18 @@ miz mutation: false
 The builder-reported hashes match the independent owner-local `Get-FileHash` output. This establishes `VERIFIED_LOCAL_BUILD` only. DCS runtime validation remains pending.
 
 Local `git status --short` showed generated `dist/` directories only; no tracked source modification was reported.
+
+## DCS run 2026-09-18 - harness composition failure
+
+The first Acceptance-6 DCS run did not reach the RED attack. The C2 preflight itself succeeded and discovered eight running AIRWINGs, seven of them CAS-capable. The run then failed while preparing the production runtime:
+
+```text
+RUNTIME_PREPARE_FAILED
+[OMW][FireSupStratResupply.GuardRuntime] brigades[COP_HONAKER] must be a table
+```
+
+Root cause: the Acceptance supplied only the Joyce BRIGADE but let `Package.New()` inject the complete six-site production `SiteRegistry`. `GuardRuntime` correctly validates that every site in the injected registry has a BRIGADE. The test harness therefore violated the Runtime composition contract before any incident/QRF/CAS path could execute.
+
+Correction: Acceptance 6 now passes an explicit one-site registry view containing only `FOB_JOYCE` together with the Joyce BRIGADE. This does not alter production source, provider selection, or C2 authority; it only makes the test composition match its declared single-site physical scope.
+
+Status of this DCS run: `FAIL_HARNESS_COMPOSITION`; no Base runtime result may be inferred from it.
