@@ -1,6 +1,6 @@
 ---
 document_id: OMW-TEST-FSSR-PRODUCTION-BASE-ACCEPTANCE-7
-status: FAILED_DCS
+status: REJECTED
 document_class: ACCEPTANCE_TEST
 owning_policy: OMW-GOV-001
 authoritative_for:
