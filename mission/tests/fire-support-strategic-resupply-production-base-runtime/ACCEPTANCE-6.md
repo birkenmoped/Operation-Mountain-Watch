@@ -120,3 +120,24 @@ Diese Begrenzung ist absichtlich. Erst die Befehls-/Auswahlkette wird positiv be
 ## Timeout
 
 Der Test wartet maximal 600 Sekunden nach Aktivierung der RED-Fixture. Damit wird ein weiterer 30-Minuten-Lauf ohne Provider-Auswahl-Evidenz ausgeschlossen.
+
+## Local build verification 2026-09-18
+
+Owner-local build completed successfully on the exact source commit:
+
+```text
+branch: agent/fire-support-strategic-resupply-base-gate0
+source commit: 4f5bb335da2ffdd69b20f6b95b8e8289fe592efc
+production builder version: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BASE-19
+acceptance builder version: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BASE-ACCEPTANCE-6-1
+production builder SHA-256: 2463B10AC996D762D8903AE8F6C7C006E28C806DF61D290B2D74E2A3BF38D0F2
+production bundle SHA-256: 1A2B5746EB58D5F487F6407792BE2AD63607D90136F6DDCC4897646F3189FD44
+acceptance source SHA-256: 866EFFB2CF128D466A572D25D04F916C71538E835117DC3010C3B6DB5DA36DDC
+acceptance builder SHA-256: D7E7017BFF919C63F71FE6C4A7DBCBBA10AB55B42BDA9974C6B41907F6E79AC1
+acceptance bundle SHA-256: F2F3CECF2EBA0444D75019B8AFD4EDFA7B83E25DB09F80FA51B3ECAA1F78E6D4
+miz mutation: false
+```
+
+The builder-reported hashes match the independent owner-local `Get-FileHash` output. This establishes `VERIFIED_LOCAL_BUILD` only. DCS runtime validation remains pending.
+
+Local `git status --short` showed generated `dist/` directories only; no tracked source modification was reported.
