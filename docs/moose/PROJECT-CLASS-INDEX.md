@@ -630,3 +630,34 @@ Status dieses neuen FSSR-Scopes:
 COMMANDER variable multi-AIRWING CAS recruitment: SOURCE_REVIEWED / DCS_PENDING
 AUFTRAG.CheckMissionCapability acceptance diagnostic: SOURCE_REVIEWED / DCS_PENDING
 ```
+
+## Addendum 2026-09-18 – FSSR routed CAS lifecycle / Acceptance 7
+
+Acceptance 7 reconciles the A6 runtime regression with ADR 0008 and the existing owner-route CAS law.
+
+Additional source-reviewed public MOOSE contracts:
+
+```text
+AUFTRAG:SetRequiredAttribute(...)
+COMMANDER:OnBeforeMissionAssign(...) via generic FSM OnBefore<Event> callback
+COMMANDER:OnAfterMissionAssign(...)
+COMMANDER:OnAfterOpsOnMission(...)
+COHORT:GetMissionCapability(...)
+GROUP.Attribute.AIR_ATTACKHELO
+FLIGHTGROUP:OnBeforeFuelLow(...) via generic FSM OnBefore<Event> callback
+FLIGHTGROUP:OnAfterLanded(...)
+LEGION/AIRWING:OnAfterLegionAssetReturned(...)
+```
+
+The pinned FSM implementation explicitly invokes `OnBefore<Event>` callbacks before the internal transition handler and allows `false` to cancel the transition. A7 uses this only as a fail-closed safety gate: if MOOSE selects a provider for which no owner-authored route profile is configured, `MissionAssign` is rejected before the LEGION request can physically dispatch the flight.
+
+`AUFTRAG:SetRequiredAttribute(GROUP.Attribute.AIR_ATTACKHELO)` is passed through the generic FSSR CAS factory. Provider/asset recruitment itself remains owned by MOOSE `COMMANDER`/`LEGION` per ADR 0008.
+
+Status:
+
+```text
+CAS required-attribute pass-through: SOURCE_REVIEWED / CI_PENDING
+COMMANDER OnBeforeMissionAssign route-profile gate: SOURCE_REVIEWED / DCS_PENDING
+FLIGHTGROUP FuelLow fail-closed acceptance guard: SOURCE_REVIEWED / DCS_PENDING
+physical owner-route / release / landing / LegionAssetReturned chain: DCS_PENDING
+```
