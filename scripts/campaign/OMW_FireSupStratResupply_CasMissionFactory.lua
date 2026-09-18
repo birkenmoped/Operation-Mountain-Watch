@@ -9,7 +9,7 @@ local Factory = {}
 local Instance = {}
 Instance.__index = Instance
 
-Factory.SchemaVersion = "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-CAS-MISSION-FACTORY-2"
+Factory.SchemaVersion = "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-CAS-MISSION-FACTORY-3"
 Factory.MissionMode = {
   CAS = "CAS",
   PATROLZONE_ENGAGE = "PATROLZONE_ENGAGE",
@@ -51,6 +51,8 @@ local function validateGeometry(geometry)
   if geometry.targetTypes~=nil and type(geometry.targetTypes)~="table" then fail("targetTypes must be a table when provided") end
   if geometry.engageDetectedTargetTypes~=nil and type(geometry.engageDetectedTargetTypes)~="table" then fail("engageDetectedTargetTypes must be a table when provided") end
   if geometry.configureMission~=nil and type(geometry.configureMission)~="function" then fail("configureMission must be a function when provided") end
+  if geometry.requiredAttributes~=nil and type(geometry.requiredAttributes)~="string" and type(geometry.requiredAttributes)~="table" then fail("requiredAttributes must be a string or table when provided") end
+  if geometry.requiredProperties~=nil and type(geometry.requiredProperties)~="string" and type(geometry.requiredProperties)~="table" then fail("requiredProperties must be a string or table when provided") end
   local mode=geometry.missionMode or Factory.MissionMode.CAS
   if mode~=Factory.MissionMode.CAS and mode~=Factory.MissionMode.PATROLZONE_ENGAGE then
     fail("missionMode must be CAS or PATROLZONE_ENGAGE")
@@ -98,18 +100,23 @@ function Instance:Create(demand,context)
   needTable(mission,"CAS AUFTRAG")
   if type(mission.SetTeleport)~="function" then fail("CAS AUFTRAG:SetTeleport() is required") end
   if type(mission.SetRequiredAssets)~="function" then fail("CAS AUFTRAG:SetRequiredAssets() is required") end
+  if geometry.requiredAttributes~=nil and type(mission.SetRequiredAttribute)~="function" then fail("CAS AUFTRAG:SetRequiredAttribute() is required") end
+  if geometry.requiredProperties~=nil and type(mission.SetRequiredProperty)~="function" then fail("CAS AUFTRAG:SetRequiredProperty() is required") end
   if type(mission.SetPriority)~="function" then fail("CAS AUFTRAG:SetPriority() is required") end
   if type(mission.Cancel)~="function" then fail("CAS AUFTRAG:Cancel() is required") end
 
   mission:SetTeleport(false)
   mission:SetRequiredAssets(self.requiredAssetsMin,self.requiredAssetsMax)
+  if geometry.requiredAttributes~=nil then mission:SetRequiredAttribute(geometry.requiredAttributes) end
+  if geometry.requiredProperties~=nil then mission:SetRequiredProperty(geometry.requiredProperties) end
   if finite(demand.priority) then mission:SetPriority(demand.priority,false) end
   if geometry.configureMission then geometry.configureMission(mission,geometry,demand,context) end
 
   self:_log(string.format("created CAS mission demandId=%s siteId=%s mode=%s requiredAssets=%s-%s altitudeFt=%s speedKts=%s engageDetectedRangeNm=%s",
     tostring(demand.demandId),tostring(demand.siteId),tostring(mode),
     tostring(self.requiredAssetsMin),tostring(self.requiredAssetsMax),
-    tostring(geometry.altitudeFt),tostring(geometry.speedKts),tostring(geometry.engageDetectedRangeNm)))
+    tostring(geometry.altitudeFt),tostring(geometry.speedKts),tostring(geometry.engageDetectedRangeNm)) ..
+    string.format(" requiredAttributes=%s requiredProperties=%s",tostring(geometry.requiredAttributes),tostring(geometry.requiredProperties)))
   return mission,true,nil
 end
 
