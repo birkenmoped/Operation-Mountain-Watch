@@ -1,6 +1,6 @@
 ---
 document_id: OMW-TEST-STAGE3-HONAKER-WRIGHT-FULL-RESPONSE-ACCEPTANCE-2
-status: PLANNED
+status: REJECTED
 document_class: ACCEPTANCE_TEST
 owning_policy: OMW-GOV-001
 authoritative_for:
@@ -18,7 +18,48 @@ base_status:
   guard: ACCEPTED_TECHNICAL_BASELINE
 ---
 
-# Stage 3 Acceptance 2 – reconciled full response
+# Stage 3 Acceptance 2 – rejected full-response fixture
+
+## 0. Verwerfungsentscheidung 18.09.2026
+
+Der Projektinhaber hat diesen Acceptance-Ansatz nach dem realen DCS-Lauf vom 18.09.2026 verworfen.
+
+Grund:
+
+```text
+Ziel des fire-support-strategic-resupply_base:
+-> Installation fordert ARTY/CAS an
+-> C2 / MOOSE waehlt zur Laufzeit den geeigneten Provider und das geeignete Asset
+-> Runtime-Evidenz beweist diese Auswahl
+
+Acceptance 2 tat stattdessen:
+-> ARTY demand
+-> Acceptance bindet Wright vorab deterministisch
+
+-> CAS demand
+-> Acceptance bindet Jalalabad AH-64D vorab deterministisch
+```
+
+Damit umging der Test genau die Provider-/Asset-Auswahl, die fuer die variable Base nachgewiesen werden sollte. Ein erfolgreicher Lauf haette deshalb **nicht** bewiesen, dass C2/MOOSE bei einer realen Anforderung den passenden ARTY- beziehungsweise CAS-Provider aus der verfuegbaren Missionsumgebung auswaehlt.
+
+Zusaetzlich ist Honaker als primaerer kontrollierter Base-Teststandort ungeeignet, solange lokale autonome Feuerunterstuetzung die RED-Testkraefte vor Abschluss der zu beobachtenden Response-Lifecycles vernichten kann.
+
+Verbindliche Konsequenz:
+
+```text
+Acceptance 2:
+REJECTED
+nicht erneut als Base-Abnahme ausfuehren
+nicht als Nachweis der variablen C2-Provider-Auswahl verwenden
+
+Naechster Test:
+Base-weite C2-/Provider-Acceptance
+ohne Acceptance-Hardcoding des erwarteten ARTY-/CAS-Providers
+mit mehreren real verfuegbaren Kandidaten
+und positiver Runtime-Evidenz, welcher Provider von C2/MOOSE ausgewaehlt wurde und warum er geeignet war
+```
+
+Die Build- und DCS-Evidenz bleibt als historische Negativ-Evidenz erhalten.
 
 ## 1. Zweck
 
@@ -125,7 +166,7 @@ attacked installation
 
 `GROUND_INSTALLATION_STANDARD` klassifiziert ARTY und CAS als `C2_ESCALATION_EXTERNAL`. Die Base selbst waehlt keine konkrete Batterie, keinen AIRWING, keine SQUADRON und kein operatives Asset.
 
-Acceptance 2 prueft **nicht erneut die allgemeine Provider-Selektion**. Fuer die reproduzierbare Honaker-Testumgebung werden hinter derselben generischen Demand-Grenze gezielt die bereits bekannten Testprovider gebunden:
+Historische Fehlannahme dieses inzwischen verworfenen Tests: Acceptance 2 pruefte **nicht** die allgemeine Provider-Selektion, sondern band hinter derselben generischen Demand-Grenze gezielt bereits bekannte Testprovider:
 
 ```text
 ARTY demand -> ACCEPTANCE_DETERMINISTIC_WRIGHT -> Wright Functional MOOSE ARTY
@@ -318,7 +359,7 @@ OPEN:
 - one real DCS full-response run
 ```
 
-Bis diese offenen Nachweise vorliegen, bleibt Acceptance 2 `PLANNED` und `validated_in_dcs: false`.
+Acceptance 2 ist `REJECTED` und `validated_in_dcs: false`. Sie darf nicht als Base-Abnahme oder als Nachweis der variablen C2-Provider-Auswahl verwendet werden.
 
 
 ## 13. Owner-local Build-Provenienz 18.09.2026
