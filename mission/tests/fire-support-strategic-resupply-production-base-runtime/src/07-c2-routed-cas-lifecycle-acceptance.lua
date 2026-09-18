@@ -356,11 +356,15 @@ local function attachCommanderLifecycle(commander)
       return
     end
 
-    local previousFuelLow=OpsGroup.OnAfterFuelLow
-    function OpsGroup:OnAfterFuelLow(F,E,T)
-      if previousFuelLow then previousFuelLow(self,F,E,T) end
+    -- Fail closed before MOOSE can execute its normal FuelLow RTB fallback.
+    -- A7 must prove an earlier supported-element/no-contact release and owner-route
+    -- recovery; FuelLow is therefore a regression, not an alternate completion path.
+    local previousBeforeFuelLow=OpsGroup.OnBeforeFuelLow
+    function OpsGroup:OnBeforeFuelLow(F,E,T)
+      if previousBeforeFuelLow and previousBeforeFuelLow(self,F,E,T)==false then return false end
       state.fuelLowObserved=true
       fail("CAS_FUEL_LOW_BEFORE_PHYSICAL_RETURN")
+      return false
     end
 
     local previousLanded=OpsGroup.OnAfterLanded
