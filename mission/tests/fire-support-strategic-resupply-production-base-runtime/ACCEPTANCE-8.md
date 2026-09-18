@@ -72,3 +72,24 @@ mission/tests/fire-support-strategic-resupply-production-base-runtime/ACCEPTANCE
 mission/tests/fire-support-strategic-resupply-production-base-runtime/src/08-c2-routed-cas-release-acceptance.lua
 tools/build-fire-support-strategic-resupply-production-base-acceptance-8.ps1
 ```
+
+## BLOCKED – Lifecycle inheritance reconciliation required
+
+Owner decision / governance correction: A8 darf in seiner aktuellen Form **nicht** in DCS ausgefuehrt werden.
+
+Grund:
+
+```text
+A8 still contains Acceptance-owned CAS release/recovery state logic
+-> violates ACCEPTED-LIFECYCLE-PRESERVATION-LAW
+```
+
+Vor einem weiteren DCS-Lauf muss der bestehende CAS Route/Release/Recovery-Lifecycle in eine gemeinsame produktive Komponente reconciliert beziehungsweise extrahiert werden. Danach darf der Acceptance-Harness nur noch Angriff ausloesen, Runtime-Evidenz beobachten und PASS/FAIL bewerten.
+
+Bis dahin:
+
+```text
+A8 source = diagnostic development artifact
+DCS execution = BLOCKED
+build/hash handoff = BLOCKED
+```
