@@ -69,7 +69,7 @@ REJECTED_FOR_PROJECT_USE
 | `STORAGE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | CampaignState->DCS-Warehouse Mirror/Telemetry; keine strategische Rückautorität |
 | `COHORT` | `VALIDATED_FOR_DOCUMENTED_SCOPE` + `SOURCE_REVIEWED` | AirOps-Lifecycle praktisch bestätigt; Ground-Review bestätigt `AddMissionCapability`, `SetMissionRange`, `CanMission`, `CountAssets` und 75-NM-Ground-Default source-seitig |
 | `FLIGHTGROUP` | `VALIDATED_FOR_DOCUMENTED_SCOPE` + `SOURCE_REVIEWED` | AAR/AWACS-Lifecycles praktisch bestätigt; Stage 1D-P bestätigt `AddWaypoint(...)`, `OnAfterTaskDone`, späteres `OnAfterMissionDone` als Diagnose und physisches `OnAfterLanded` in Jalalabad im akzeptierten CH-47-Return-Scope. Stage 3 CAS Tactical Corridor: `AddWaypoint(...)`/`OnAfterUpdateRoute` ist source-reviewed für owner-authored dynamische Segmente; keine DCS-Validierung dieses neuen CAS-Pfads. |
-| `COMMANDER` | `VALIDATED_FOR_DOCUMENTED_SCOPE` + `SOURCE_REVIEWED` | dokumentierter COMMANDER-Lifecycle; Ground-Review bestätigt `AddBrigade(...)` und `AddOpsTransport(...)` source-seitig; MissionDemand bleibt OMW-Tasking-Autorität |
+| `COMMANDER` | `VALIDATED_FOR_DOCUMENTED_SCOPE` + `SOURCE_REVIEWED` | dokumentierter COMMANDER-Lifecycle; Ground-Review bestaetigt `AddBrigade(...)` und `AddOpsTransport(...)`; FSSR Acceptance 6 source-reviewt `New(...)`, `AddAirwing(...)`, `Start()`, `AddMission(...)`, `CanMission(...)`, `OnAfterMissionAssign(...)` und `OnAfterOpsOnMission(...)` fuer variable CAS-Provider-/Asset-Rekrutierung. Der neue FSSR-Scope ist DCS_PENDING. |
 | `AUFTRAG` | `VALIDATED_FOR_DOCUMENTED_SCOPE` + `SOURCE_REVIEWED` | AAR-, AWACS- und Ground-Lifecycles praktisch bestätigt; Stage 1D-P bestätigt `NewLANDATCOORDINATE(...)`, `SetMissionEgressCoord(...)`, `AssignSquadrons(...)` sowie gruppenspezifische Waypoint-/Egress-/Task-Abfragen. Stage 3 CAS Tactical Corridor source-reviewt `NewPATROLZONE`, `SetMissionIngressCoord`, `SetMissionWaypointCoord` und `SetMissionEgressCoord`: einzelne MOOSE-Knoten, keine taktische Korridorplanung; DCS-Validierung offen. Keine CampaignState-Autorität. |
 | `SPAWN` | `VALIDATED_FOR_DOCUMENTED_SCOPE` + `SOURCE_REVIEWED` | area-spezifische AAR-Templates und externe Materialisierung praktisch bestätigt; AWACS bestätigt `OMW_C2_E3A_WIZARD`, LISA und MOE external materialization im dokumentierten Scope |
 | `SCHEDULER` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | allgemeine OMW-Nutzung praktisch bestätigt; AWACS verwendet einen 5-Sekunden-Monitor ausschließlich zur Lifecycle-/Fuel-Koordination, keinen Frame-Scan |
@@ -603,3 +603,30 @@ Verbindlicher Architektur- und Quellenbefund: [MOOSE Support Request Lifecycle L
 | `ARTY` | `SOURCE_REVIEWED` | Eigene Zielqueue mit `RemoveTarget` und konfigurierbarem Time-to-Shot-Abbruch. Fehlende ARTY-Fähigkeit darf andere Support-Arten nicht blockieren. |
 
 Kein Eintrag dieses Addendums ist DCS-validiert oder ersetzt die geforderten generischen Acceptance-Fälle.
+
+## Addendum 2026-09-18 – FSSR variable C2 provider selection
+
+Fuer Production Base Acceptance 6 wurde der gepinnte MOOSE-Source fuer die operative Provider-/Asset-Selektion erneut geprueft:
+
+```text
+COMMANDER:New(...)
+COMMANDER:AddAirwing(...)
+COMMANDER:Start()
+COMMANDER:AddMission(...)
+COMMANDER:CanMission(...)
+COMMANDER:OnAfterMissionAssign(...)
+COMMANDER:OnAfterOpsOnMission(...)
+AUFTRAG.CheckMissionCapability(...)
+LEGION recruitment / cohort eligibility / asset optimization
+```
+
+`AUFTRAG.CheckMissionCapability(...)` wird im Acceptance-Preflight ausschliesslich benutzt, um nachzuweisen, dass mehrere registrierte AIRWING-Kandidaten die CAS-Missionsart anbieten. Die eigentliche Provider- und Asset-Auswahl bleibt bei MOOSE `COMMANDER`/`LEGION`.
+
+Die Acceptance verwendet keine `specialLegions`, keine `specialCohorts`, keine SQUADRON-Bindung und keinen direkten `AIRWING:AddMission()`-Dispatch.
+
+Status dieses neuen FSSR-Scopes:
+
+```text
+COMMANDER variable multi-AIRWING CAS recruitment: SOURCE_REVIEWED / DCS_PENDING
+AUFTRAG.CheckMissionCapability acceptance diagnostic: SOURCE_REVIEWED / DCS_PENDING
+```
