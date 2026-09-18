@@ -99,7 +99,7 @@ Die Verbindung eines durch COMMANDER gewaehlten ARTY-Auftrags mit dem bereits DC
 
 ## CAS Factory
 
-`scripts/campaign/OMW_FireSupStratResupply_CasMissionFactory.lua` Schema 2 erwartet `resolveGeometry(demand, context)`.
+`scripts/campaign/OMW_FireSupStratResupply_CasMissionFactory.lua` Schema 3 erwartet `resolveGeometry(demand, context)`.
 
 Standardmodus:
 
@@ -126,6 +126,16 @@ engageDetectedRangeNm
 optional engageDetectedTargetTypes
 optional configureMission(mission, geometry, demand, context)
 ```
+
+
+Schema 3 kann zusaetzlich MOOSE-eigene Rekrutierungsanforderungen aus der injizierten Geometrie weiterreichen:
+
+```text
+requiredAttributes -> AUFTRAG:SetRequiredAttribute(...)
+requiredProperties -> AUFTRAG:SetRequiredProperty(...)
+```
+
+Diese Felder sind **keine OMW-Providerwahl**. Sie beschreiben die fachlich erforderliche MOOSE-Faehigkeit des Auftrags; `COMMANDER`/`LEGION` waehlen weiterhin selbst aus den konfigurierten Cohorts/Assets.
 
 Im Modus `PATROLZONE_ENGAGE` baut der Factory ausschliesslich:
 
@@ -274,3 +284,24 @@ selected rotary-wing pool
 ```
 
 `OpsOnMission` allein ist keine Acceptance-Grenze. `FuelLow`/Bingo, direkter RTB oder bloße Missionsbeendigung sind keine regulaere CAS-Completion.
+
+## Acceptance 7 – selected-provider execution profile
+
+Der nach A6 korrigierte Runtime-Pfad nutzt die MOOSE-Auswahl weiter, bindet aber vor physischer Ausfuehrung den passenden Owner-Route-/Lifecycle-Vertrag:
+
+```text
+Base CAS demand
+-> PATROLZONE_ENGAGE + required AIR_ATTACKHELO attribute
+-> COMMANDER/LEGION recruits eligible provider/asset
+-> COMMANDER OnBeforeMissionAssign
+-> validate selected provider has owner-authored route profile
+-> configure owner ingress/egress before LEGION MissionRequest
+-> OpsOnMission
+-> bind full owner corridor
+-> own detection / stable no-contact release
+-> reverse owner route
+-> physical landing
+-> LegionAssetReturned
+```
+
+Kann fuer den von MOOSE ausgewaehlten Provider kein owner-authored Profil aufgeloest werden, wird die MissionAssign-Transition fail-closed abgewiesen. Ein Direct-Line-Fallback ist nicht zulaessig.
