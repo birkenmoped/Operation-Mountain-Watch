@@ -663,3 +663,24 @@ physical owner-route / release / landing / LegionAssetReturned chain: DCS_PENDIN
 ```
 
 A7 additionally source-reviews `WAREHOUSE/AIRWING:GetAirbase()` for selected-provider home-airbase identity and requires the physical `OnAfterLanded` place to match that home before recovery can pass. Status: `SOURCE_REVIEWED / DCS_PENDING`.
+
+## Addendum 2026-09-18 – A8 CAS release correction
+
+Runtime evidence from A7 confirmed the owner-route dispatch but exposed a test-lifecycle defect: a terminal Acceptance timeout stopped the release monitor before the AUFTRAG reached `EXECUTING`.
+
+New source-reviewed pinned-MOOSE contract:
+
+```text
+AUFTRAG:IsExecuting()
+```
+
+Meaning in the pinned source: the first OPSGROUP reached the mission execution waypoint and is executing the mission task. A8 therefore uses `AUFTRAG:IsExecuting()` instead of a separate geometric `flight inside zone` test as the CAS execution/on-station authority.
+
+`FLIGHTGROUP:GetDetectedGroups()` remains the own-sensor source. A8 now requires a valid returned set before zero contacts can begin the 30-second no-contact qualification; `nil` is not treated as clear.
+
+Status:
+
+```text
+AUFTRAG:IsExecuting CAS execution authority: SOURCE_REVIEWED / DCS_PENDING
+A8 corrected release lifecycle: DCS_PENDING
+```
