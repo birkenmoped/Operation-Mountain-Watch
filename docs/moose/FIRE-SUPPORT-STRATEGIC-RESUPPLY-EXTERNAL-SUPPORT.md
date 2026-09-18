@@ -24,15 +24,17 @@ validated_in_dcs: false
 
 ## Zweck
 
-Der externe Support-Pfad der allgemeinen Base nutzt den bereits in Gate 1 festgelegten MOOSE-`COMMANDER` als Provider-Aggregator. OMW erzeugt den fachlich qualifizierten Auftrag und dessen taktische Zielgeometrie; `COMMANDER`/MOOSE waehlen die operativ geeigneten Provider und Assets.
+Der externe Support-Pfad der allgemeinen Base darf `COMMANDER` nicht als ungebundenen strategischen Provider-Aggregator verwenden. C2/OMW bewertet zunaechst die strategisch und operativ geeigneten Kandidaten, waehlt und reserviert genau einen Herkunftspool samt Ressourcen-ID, AIRWING und SQUADRON/COHORT sowie dessen Routen-/Recovery-Profil. Erst danach fuehrt MOOSE `COMMANDER`/`LEGION` die operative Rekrutierung und den physischen Lifecycle innerhalb dieses gebundenen Pools aus.
 
 ```text
 explicit C2 escalation
 -> Base:RequestIncidentSupport(..., ARTY/CAS)
 -> external support adapter
 -> public AUFTRAG
--> COMMANDER:AddMission(...)
--> MOOSE provider/asset recruitment and mission lifecycle
+-> C2/OMW candidate evaluation
+-> selected resource + AIRWING + SQUADRON/COHORT + route/recovery profile
+-> COMMANDER:AddMission(...) restricted to selected pool
+-> MOOSE asset recruitment and physical mission lifecycle
 ```
 
 Perimeter-Eintritt erzeugt weiterhin **keinen** automatischen ARTY-/CAS-Auftrag.
@@ -242,3 +244,38 @@ tools/build-fire-support-strategic-resupply-production-base-acceptance-6.ps1
 ```
 
 Status vor DCS-Lauf: `SOURCE_REVIEWED / DCS_PENDING`.
+
+## Reconciliation 18.09.2026 – Acceptance 6 rejected
+
+Der reale Acceptance-6-Lauf hat die falsche Architekturannahme sichtbar gemacht. Ein globaler COMMANDER-Pool aus allen laufenden AIRWINGs ist fuer den allgemeinen CAS-Base-Pfad **nicht** zulaessig.
+
+Verbindlicher Ablauf:
+
+```text
+support requirement
+-> C2/OMW evaluates all suitable candidates
+   - mission capability
+   - strategic availability / reservation
+   - route/profile validity
+   - ETA
+   - fuel and recovery reserve
+   - competing mission priority
+-> select exactly one resource origin
+-> bind selected AIRWING + SQUADRON/COHORT
+-> bind platform-specific route/release/recovery profile
+-> MOOSE executes
+```
+
+Fuer Rotary-Wing-CAS gehoeren damit bereits vor dem physischen Dispatch zusammen:
+
+```text
+selected rotary-wing pool
++ approved OMW helicopter owner route
++ tactical ingress/egress gate contract
++ supported-element release plus own detection/no-contact policy
++ owner reverse route
++ physical home landing
++ LEGION/AIRWING asset return
+```
+
+`OpsOnMission` allein ist keine Acceptance-Grenze. `FuelLow`/Bingo, direkter RTB oder bloße Missionsbeendigung sind keine regulaere CAS-Completion.
