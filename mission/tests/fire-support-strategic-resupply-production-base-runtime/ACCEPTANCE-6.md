@@ -156,3 +156,23 @@ Root cause: the Acceptance supplied only the Joyce BRIGADE but let `Package.New(
 Correction: Acceptance 6 now passes an explicit one-site registry view containing only `FOB_JOYCE` together with the Joyce BRIGADE. This does not alter production source, provider selection, or C2 authority; it only makes the test composition match its declared single-site physical scope.
 
 Status of this DCS run: `FAIL_HARNESS_COMPOSITION`; no Base runtime result may be inferred from it.
+
+## Local rebuild verification after harness composition fix
+
+Owner-local rebuild completed successfully on:
+
+```text
+source commit: da83ed66d37cf4574256a2ddda3a897e049558a8
+production builder version: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BASE-19
+acceptance builder version: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BASE-ACCEPTANCE-6-1
+production builder SHA-256: 2463B10AC996D762D8903AE8F6C7C006E28C806DF61D290B2D74E2A3BF38D0F2
+production bundle SHA-256: 84B438D240895CA03990DA5AE736CFBD6D6355FD3044DE3290F0DF73498CE982
+acceptance source SHA-256: DA94FE4B38126A3B13C1E8B3902436D1E6478ED09EF1A3D557F52A9BE8B696A5
+acceptance builder SHA-256: 675213DA81D414FB204DEA036AE40680F8C0C06AC40723575F7E9CF076C88107
+acceptance bundle SHA-256: 9F498AF90A109494D6BFA22675B4ED8DFB76C8733840358A756A26B2846B03E8
+miz mutation: false
+```
+
+The independent owner-local `Get-FileHash` for the generated Acceptance bundle matched the builder output exactly.
+
+Status after this rebuild: `VERIFIED_LOCAL_BUILD / DCS_PENDING`.
