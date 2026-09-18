@@ -79,17 +79,17 @@ Der Builder aendert die bindende Ressourcen- und Missionsautoritaet nicht:
 CampaignState/store
 = strategische Persistenz und Ressourcenhoheit
 
-C2/OMW + CampaignState policy
-= strategische Kandidatenbewertung, Herkunftsauswahl und Ressourcenreservierung
+CampaignState/store
+= strategische Persistenz und Ressourcenhoheit ohne parallele operative Assetwahl
 
 MOOSE organisation / AUFTRAG / COMMANDER / BRIGADE / WAREHOUSE / OPSTRANSPORT
-= operative Rekrutierung innerhalb des ausgewaehlten Pools und physischer Lifecycle
+= operative Provider-/Asset-Selektion, Rekrutierung und physischer Lifecycle
 
 OMW FireSupStratResupply Base
 = Demand-/Incident-Koordination und Adapterverdrahtung
 ```
 
-Das Bundle darf keine strategische Herkunftsauswahl an einen ungebundenen MOOSE-Gesamtpool delegieren. Fuer externe CAS-/ARTY-Unterstuetzung muss vor dem MOOSE-Dispatch ein vom C2/OMW-Policy-Layer ausgewaehlter und reservierter Herkunftspool injiziert werden. Innerhalb dieses Pools bleibt die operative Asset-Rekrutierung bei MOOSE.
+Das Bundle folgt ADR 0008 und nimmt keine eigene operative Provider-/Asset-Vorauswahl vor. C2/OMW definiert Bedarf sowie fachliche Missionsanforderungen; MOOSE `COMMANDER`/`LEGION` selektiert innerhalb der konfigurierten Organisationen. Nach der Auswahl muss jedoch das passende owner-authored Ausfuehrungsprofil (Route, Release, Recovery) fuer den tatsaechlich ausgewaehlten Provider gebunden werden.
 
 ## Physische Alarm-Evidence
 
@@ -223,16 +223,15 @@ Der naechste Base-Schritt darf deshalb **nicht** wieder nur Dispatch testen. Der
 
 ```text
 installation support requirement
--> C2/OMW candidate evaluation
--> one selected/reserved origin pool
--> platform-specific mission profile
+-> C2/OMW mission capability/profile constraints
+-> MOOSE COMMANDER/LEGION provider + asset selection
+-> bind matching provider/platform execution profile
    - owner route
    - ingress/egress
    - target/detection policy
    - release policy
    - recovery route
    - physical landing/asset return
--> bound MOOSE dispatch
 -> execution evidence
 -> release
 -> physical recovery
