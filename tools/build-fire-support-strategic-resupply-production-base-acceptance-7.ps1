@@ -55,6 +55,8 @@ foreach($marker in @(
   'CAS_NO_CONTACT_REPORTED',
   'CAS_CONTROLLED_RELEASE',
   'CAS_HOME_LANDED',
+  'CAS_LANDED_AT_WRONG_AIRBASE',
+  'CAS_SELECTED_ASSET_EVIDENCE_MISSING',
   'CAS_LEGION_ASSET_RETURNED',
   'QRF_DIRECT_TARGET_ENGAGE')){
   if(-not $all.Contains($marker)){throw "Acceptance 7 marker missing: $marker"}
