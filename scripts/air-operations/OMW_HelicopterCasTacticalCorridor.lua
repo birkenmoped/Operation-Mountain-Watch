@@ -207,71 +207,22 @@ function Adapter.PlanRouteGated(spec)
   end
   local distanceM = distanceNm * 1852
 
-  local minGateDistanceM = 3 * 1852
-  local maxGateDistanceM = 4 * 1852
-
-  local function gate(route, phase, segmentIndexes, requiredSegmentIndex, preferLast)
+  local function gate(route, phase)
     if #route < 2 then fail(phase .. " route requires at least two coordinates") end
-    if segmentIndexes ~= nil and #segmentIndexes ~= #route then
-      fail(phase .. " segment index count must match route coordinate count")
-    end
-
-    local candidates = {}
+    local best, bestDelta
     for index, coordinate in ipairs(route) do
       requireRawCoordinate(coordinate, phase .. " route coordinate")
-      local segmentOk = requiredSegmentIndex == nil
-        or (segmentIndexes and segmentIndexes[index] == requiredSegmentIndex)
-      local distance = coordinate:Get2DDistance(destination)
-      if segmentOk and distance >= minGateDistanceM and distance <= maxGateDistanceM then
-        candidates[#candidates + 1] = {
-          index = index,
-          delta = math.abs(distance - distanceM),
-          distanceM = distance,
-        }
-      end
+      local delta = math.abs(coordinate:Get2DDistance(destination) - distanceM)
+      if not bestDelta or delta < bestDelta then best, bestDelta = index, delta end
     end
-
-    if #candidates == 0 then
-      fail(phase .. " route has no owner-authored coordinate in the approved 3-4 NM AO gate band on the required approach segment")
+    if not best or bestDelta > 1852 then
+      fail(phase .. " route has no owner-authored coordinate within 1 NM of the requested 3-4 NM AO gate")
     end
-
-    table.sort(candidates, function(left, right)
-      if left.delta ~= right.delta then return left.delta < right.delta end
-      if preferLast then return left.index > right.index end
-      return left.index < right.index
-    end)
-
-    -- The radial-distance match is not sufficient by itself. When a route
-    -- crosses the same 3-4 NM ring more than once, ingress must be the last
-    -- matching point on the outbound approach segment; egress must be the
-    -- first matching point on the return segment. This prevents a valid
-    -- radius match elsewhere in the mountains from becoming MOOSE UID=3.
-    local bestDelta = candidates[1].delta
-    local sameDelta = {}
-    for _, candidate in ipairs(candidates) do
-      if math.abs(candidate.delta - bestDelta) < 0.001 then
-        sameDelta[#sameDelta + 1] = candidate
-      end
-    end
-    table.sort(sameDelta, function(left, right)
-      if preferLast then return left.index > right.index end
-      return left.index < right.index
-    end)
-    return sameDelta[1].index
+    return best
   end
 
-  local ingressIndex = gate(
-    outbound,
-    "INGRESS",
-    spec.outboundSegmentIndexes,
-    spec.ingressSegmentIndex,
-    true)
-  local egressIndex = gate(
-    returnRoute,
-    "EGRESS",
-    spec.returnSegmentIndexes,
-    spec.egressSegmentIndex,
-    false)
+  local ingressIndex = gate(outbound, "INGRESS")
+  local egressIndex = gate(returnRoute, "EGRESS")
   local function copyRange(route, first, last)
     local result = {}
     for index=first,last do result[#result+1] = { coordinate=route[index], altitudeFtAgl=spec.transitAltitudeFtAgl, speedKts=spec.speedKts, axisDeg=route[index]:HeadingTo(route[math.min(index+1,#route)]) } end
