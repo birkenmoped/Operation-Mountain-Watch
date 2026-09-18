@@ -314,7 +314,7 @@ DONE:
 - owner-local build and SHA-256 provenance
 
 OPEN:
-- MIZ embedding verification
+- owner-local Mission Editor embedding
 - one real DCS full-response run
 ```
 
@@ -383,13 +383,4 @@ Moose.lua SHA-256: E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A
 
 Die vom Builder ausgegebenen Hashes stimmen mit den anschliessend separat ausgefuehrten `Get-FileHash -Algorithm SHA256`-Pruefungen ueberein. Der lokale Git-Status enthielt nur untracked generierte `dist/`-Artefakte und keine versionierten lokalen Aenderungen.
 
-Nach `docs/22-test-mission-build-transfer-and-validation-workflow.md` ist damit die Source/Builder/Bundle-Kette bis zum lokalen Bundle belegt. Fuer die naechste read-only MIZ-Bestandsaufnahme steht `tools/inspect-stage3-honaker-wright-full-response-acceptance-2-miz.ps1` bereit. Das Tool mutiert die Mission nicht, sondern erfasst MIZ-/internal-mission-Hashes, eingebetteten Moose-Hash, vorhandene Acceptance-1/2-Ressourcen, DO-SCRIPT-FILE-Reihenfolge und einen Namens-Smoke der fuer Acceptance 2 benoetigten Missionsobjekte. Vor einem DCS-Lauf fehlen weiterhin die MIZ-spezifischen Nachweise:
-
-```text
-MIZ-SHA-256
-interner mission-SHA-256
-eingebetteter Acceptance-2-Bundle-SHA-256
-eingebetteter Moose.lua-SHA-256
-Objektvertragssmoke
-Load order / no stale parallel harness
-```
+Damit ist die Source/Builder/Bundle-Kette bis zum lokal erzeugten Acceptance-2-Bundle belegt. Die Mission-Editor-/`.miz`-Handhabung liegt beim Projektinhaber und wird von ChatGPT weder automatisiert noch inspiziert oder veraendert. Nach der owner-lokalen Einbindung folgt der reale DCS-Full-Response-Lauf; erst dessen reale Runtime-Evidenz kann `validated_in_dcs: true` begruenden.
