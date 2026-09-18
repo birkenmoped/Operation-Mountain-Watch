@@ -238,3 +238,32 @@ installation support requirement
 ```
 
 Fuer einen Base-Test duerfen unterschiedliche Sites weiterhin unterschiedliche Subsysteme pruefen, z. B. Joyce fuer QRF und ein zweiter geeigneter Standort fuer CAS. Der CAS-Harness darf dabei aber weder Provider noch Lifecycle hardcoden; er darf nur den realen C2/OMW-Auswahlentscheid und dessen gebundenes Profil beobachten.
+
+## Acceptance 7 – naechster Runtime-Gate
+
+Nach dem verworfenen A6-Lauf prueft A7 nicht mehr nur Dispatch. Die Acceptance verbindet die bereits akzeptierte Ground-Base mit dem kompletten Rotary-Wing-CAS-Ausfuehrungsvertrag:
+
+```text
+Joyce attack
+-> production incident
+-> production QRF direct-target response
+-> Base CAS demand
+-> PATROLZONE_ENGAGE + AIR_ATTACKHELO requirement
+-> MOOSE COMMANDER/LEGION provider + asset selection
+-> selected-provider owner-route profile bound before MissionAssign completes
+-> owner corridor
+-> own detection / stable no-contact release
+-> reverse owner route
+-> physical landing
+-> LegionAssetReturned
+```
+
+Der generische CAS Factory-Pfad ist dafuer auf Schema 3 angehoben. Neu ist ausschliesslich die Weitergabe vorhandener MOOSE-AUFTRAG-Filter (`SetRequiredAttribute` / `SetRequiredProperty`); es wird keine eigene Asset-Selektion gebaut.
+
+Fail-closed gilt zwingend: waehlt MOOSE einen Provider ohne bekanntes owner-authored Ausfuehrungsprofil, wird `MissionAssign` vor dem LEGION-Request abgewiesen. Ein direkter Flug ist kein Fallback.
+
+Production builder fuer diesen Source-Stand:
+
+```text
+OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BASE-20
+```
