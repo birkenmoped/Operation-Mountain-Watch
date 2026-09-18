@@ -205,7 +205,7 @@ Die anschliessende reale Ausfuehrung verletzte jedoch bindende CAS-/Rotary-Wing-
 - surviving AH-64D circled near Jalalabad without completing physical landing/recovery
 ```
 
-Zusaetzlich war bereits der Acceptance-Entwurf architektonisch falsch: Er registrierte einen ungebundenen Gesamtpool mehrerer AIRWINGs in einem COMMANDER und ueberliess MOOSE die strategische Herkunftsauswahl. Das widerspricht dem bindenden allgemeinen CAS-Vertrag in `STAGE3-CAS-LIFECYCLE-RECOVERY-LAW.md`: C2/OMW muss Kandidaten bewerten, genau eine strategische Ressource samt AIRWING/SQUADRON/COHORT und Routen-/Recovery-Profil auswaehlen und reservieren; erst danach darf MOOSE den physischen Auftrag innerhalb dieses ausgewaehlten Pools ausfuehren.
+ADR 0008 bleibt fuer die allgemeine Base massgeblich: die operative Provider-/Asset-Selektion durch MOOSE `COMMANDER`/`LEGION` war nicht der Fehler dieses Laufs. Der Fehler lag darin, dass A6 nach dieser Auswahl kein provider-/plattformgerechtes owner-authored Route-, Release- und Recovery-Profil an die ausgewaehlte physische FLIGHTGROUP band und trotzdem bereits bei `OpsOnMission` PASS meldete.
 
 Damit gilt:
 
@@ -214,7 +214,7 @@ Acceptance 6 = REJECTED
 validated_in_dcs = false
 the early PASS marker is INVALID as Base evidence
 do not rerun A6
-do not use global unbound COMMANDER pool as Base provider selection
+do not treat COMMANDER selection or OpsOnMission as sufficient Base evidence without a matching execution-profile/lifecycle binding
 ```
 
 Der Lauf ist wertvolle Negativ-Evidenz: Er beweist, dass `OpsOnMission` allein keine ausreichende Base-Acceptance-Grenze ist und dass Routing, Release und physische Recovery Bestandteil jedes CAS-Base-Vertrags bleiben muessen.
