@@ -75,6 +75,7 @@ jobs:
           luac5.4 -p scripts/campaign/OMW_FireSupStratResupply_QrfMissionFactory.lua
           luac5.4 -p scripts/campaign/OMW_FireSupStratResupply_QrfRuntime.lua
           luac5.4 -p scripts/campaign/OMW_FireSupStratResupply_CasLifecycleRuntime.lua
+          luac5.4 -p scripts/campaign/OMW_FireSupStratResupply_CasReleasePolicy.lua
           luac5.4 -p scripts/campaign/OMW_FireSupStratResupply_Runtime.lua
           luac5.4 -p mission/tests/fire-support-strategic-resupply-production-base-runtime/src/01-production-base-six-site-guard-acceptance.lua
           luac5.4 -p mission/tests/fire-support-strategic-resupply-production-base-runtime/src/02-production-base-honaker-incident-qrf-acceptance.lua
