@@ -6,7 +6,7 @@ Set-StrictMode -Version Latest
 $repoRoot=Split-Path -Parent $PSScriptRoot
 $distDir=Join-Path $repoRoot 'mission\fire-support-strategic-resupply\dist'
 $outputFile=Join-Path $distDir 'OMW_FireSupStratResupply_Base.lua'
-$builderVersion='OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BASE-21'
+$builderVersion='OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BASE-22'
 
 $moduleSpecs=@(
   @{Name='SiteRegistry';Path='scripts\campaign\OMW_FireSupStratResupply_SiteRegistry.lua'},
@@ -173,6 +173,7 @@ Write-Host 'QrfRuntimeSchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-QRF-RUNTIME-13
 Write-Host 'QrfMissionFactorySchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-QRF-MISSION-FACTORY-8'
 Write-Host 'CasMissionFactorySchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-CAS-MISSION-FACTORY-3'
 Write-Host 'CasLifecycleRuntimeSchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-CAS-LIFECYCLE-RUNTIME-1'
+Write-Host 'CasPatrolClosureSchema: OMW-FOB-ATTACK-CAS-PATROL-CLOSURE-3'
 Write-Host 'ExternalCasModes: CAS | PATROLZONE_ENGAGE; provider selection remains MOOSE COMMANDER-owned'
 Write-Host 'CasLifecycle: shared production route/release/recovery owner; Acceptance harness must observe only'
 Write-Host 'InstallationIncidentBridgeSchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-INSTALLATION-INCIDENT-BRIDGE-5'
