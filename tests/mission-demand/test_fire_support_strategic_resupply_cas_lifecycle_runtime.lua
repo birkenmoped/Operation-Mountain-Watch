@@ -64,6 +64,12 @@ function helicopterCorridor.ResolveSequence(spec)
   }
 end
 
+local casPatrolClosure={}
+function casPatrolClosure.Request(spec)
+  if spec.tacticalComplete~=true then return nil,false,"TACTICAL_COMPLETION_REQUIRED" end
+  return spec.requestClosure(spec.demandId,spec.reason)
+end
+
 local tacticalCorridor={}
 function tacticalCorridor.PlanRouteGated(spec)
   return {
@@ -153,6 +159,7 @@ local runtime=Runtime.New({
   flightPathNameContract=flightPathNameContract,
   helicopterCorridor=helicopterCorridor,
   casTacticalCorridor=tacticalCorridor,
+  casPatrolClosure=casPatrolClosure,
   executionProfiles={
     AW_US_JBAD_TF_SHOOTER_6_6_CAV={
       pathlineBase="OMW_FlightPath",
