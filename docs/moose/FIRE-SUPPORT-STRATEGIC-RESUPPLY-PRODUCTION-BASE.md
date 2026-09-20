@@ -308,3 +308,33 @@ OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BASE-25
 A9 ist absichtlich observer-only. Sein Builder und ein eigener statischer Contract-Test verbieten CAS-Detection-, Route-, Cancel-, FuelLow-, Landing- und Legion-return-Ownership im Harness.
 
 Die konkrete CAS-Release-Policy bleibt profilabhaengig. Die Base hat keinen globalen 30-Sekunden-No-Contact-Default. Ein Composition Root muss den freigegebenen Release-Policy-Modus und dessen Parameter injizieren; A9 verwendet `SUPPORTED_ELEMENT_STABLE_NO_CONTACT` mit 30 Sekunden ausschliesslich als Testprofil.
+
+## Acceptance 9 – finaler DCS-Status
+
+Der gemeinsame produktive Rotary-Wing-CAS-Pfad ist fuer den exakt dokumentierten A9-Scope DCS-validiert.
+
+```text
+source commit: c956b7b03b82c4ab04e529d09b1ff9bf4e480bf2
+Acceptance bundle SHA-256: D2172B83EDC527A2280754A0CC0A8F575C741082B4271A77F2D6E60688D1B3B0
+DCS: 2.9.29.27468
+MOOSE: 2.9.18 / 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+result: PASS
+```
+
+Damit sind im A9-Scope real bestaetigt:
+
+```text
+MOOSE provider/asset selection
+owner-authored rotary route
+tactical corridor
+own FLIGHTGROUP detection
+profile-specific release
+controlled mission closure
+reverse recovery route
+physical home landing
+exact LegionAssetReturned
+no FuelLow before release
+no false post-return asset loss
+```
+
+Nicht durch A9 validiert sind ARTY, ARTY rearm, strategic resupply, fixed-wing CAS oder andere Site-/Provider-Ausfuehrungsprofile.
