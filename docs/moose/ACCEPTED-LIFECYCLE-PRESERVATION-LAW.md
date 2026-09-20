@@ -322,3 +322,101 @@ existing CAS route/release/recovery implementation
 -> owner-local build/hash
 -> DCS regression acceptance
 ```
+
+
+## 11. A9 validated CAS lifecycle baseline and terminal-return law
+
+Production Base Acceptance 9 has now validated the shared production rotary-wing CAS lifecycle for its exact documented Joyce/Jalalabad scope.
+
+Validated provenance:
+
+```text
+source commit:
+c956b7b03b82c4ab04e529d09b1ff9bf4e480bf2
+
+Acceptance bundle SHA-256:
+D2172B83EDC527A2280754A0CC0A8F575C741082B4271A77F2D6E60688D1B3B0
+
+DCS:
+2.9.29.27468
+
+MOOSE:
+2.9.18
+73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+```
+
+For this exact scope the preserved production lifecycle is:
+
+```text
+subject-matter CAS demand
+-> MOOSE COMMANDER / LEGION provider + asset selection
+-> selected-provider owner execution profile
+-> owner-authored outbound helicopter route
+-> tactical ingress / mission area / separate egress
+-> AUFTRAG executing
+-> own FLIGHTGROUP detection
+-> profile-specific supported-element / no-contact release qualification
+-> controlled mission closure
+-> owner reverse route
+-> physical landing at selected provider home
+-> exact LEGION/AIRWING asset return
+-> lifecycle complete
+```
+
+The following invariants are now mandatory preservation rules for every later FSSR Base reconciliation that reuses this lifecycle:
+
+```text
+MOOSE owns operational provider/asset selection.
+OMW does not preselect a concrete operational CAS asset.
+A selected provider without a known owner execution profile fails closed.
+Direct-line routing is not a fallback.
+OpsOnMission is not lifecycle completion.
+MissionDone is not physical recovery.
+FuelLow/Bingo is not normal mission completion.
+Release policy is explicit and profile-specific.
+nil detection is not equivalent to no contact.
+Physical home landing is required before return completion.
+Exact Legion/AIRWING asset return is required before lifecycle completion.
+Acceptance watchdogs are diagnostic only.
+Acceptance harnesses do not own CAS routing, detection, release, RTB or recovery.
+```
+
+### 11.1 Post-return physical-representation rule
+
+The A9 first-run false-fail established an additional lifecycle rule:
+
+```text
+physical group alive count > 0
+-> may be useful loss evidence before authoritative return
+
+LEGION/AIRWING asset returned
+-> authoritative physical-return confirmation for this lifecycle
+-> later removal/despawn of the temporary DCS group representation
+   is cleanup, not asset-loss evidence
+```
+
+Therefore:
+
+- loss monitoring based on the temporary physical group must stop once the exact asset-return event has been confirmed;
+- a post-return `CountAliveUnits()==0` must not reclassify a returned asset as lost;
+- landing alone still does not replace exact asset-return evidence;
+- an asset-return event must not be inferred from a despawn;
+- CampaignState settlement, when connected later, must use the confirmed lifecycle event idempotently and must not derive a strategic loss from post-return DCS cleanup.
+
+A later implementation may change these invariants only through the existing `INTENTIONAL_CHANGE` path: explicit owner approval, documented reason, bounded revalidation scope and a new real DCS acceptance.
+
+### 11.2 Evidence scope
+
+A9 validates only the documented rotary-wing CAS composition used in that run. It does not automatically validate:
+
+```text
+fixed-wing CAS
+other provider execution profiles
+other site-specific route profiles
+ARTY
+ARTY rearm
+strategic resupply
+combined full-response orchestration
+```
+
+Those paths must reuse this accepted CAS lifecycle where applicable and test only their genuinely new boundary.
