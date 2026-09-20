@@ -1,6 +1,6 @@
 ---
 document_id: OMW-TEST-FSSR-PRODUCTION-BASE-ACCEPTANCE-9
-status: PLANNED
+status: VALIDATED
 document_class: ACCEPTANCE_TEST
 owning_policy: OMW-GOV-001
 authoritative_for:
@@ -10,7 +10,7 @@ scenario_period: 2010-08-01/2011-12-31
 project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 source_branch: agent/fire-support-strategic-resupply-base-gate0
 source_commit: PENDING_MERGE
-validated_in_dcs: false
+validated_in_dcs: true
 supersedes:
   - OMW-TEST-FSSR-PRODUCTION-BASE-ACCEPTANCE-8
 superseded_by:
@@ -438,3 +438,59 @@ DCS runtime: DCS_PENDING
 ```
 
 Die fuer den naechsten DCS-Lauf massgebliche Acceptance-LUA ist damit exakt das Bundle mit SHA-256 `D2172B83EDC527A2280754A0CC0A8F575C741082B4271A77F2D6E60688D1B3B0`.
+
+## 16. Finaler DCS-PASS auf korrigiertem Source
+
+Finale Testprovenienz:
+
+```text
+source commit:
+c956b7b03b82c4ab04e529d09b1ff9bf4e480bf2
+
+Acceptance 9 bundle SHA-256:
+D2172B83EDC527A2280754A0CC0A8F575C741082B4271A77F2D6E60688D1B3B0
+
+DCS:
+2.9.29.27468
+
+MOOSE:
+2.9.18 / 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+```
+
+Der reale DCS-Lauf vom 20.09.2026 auf dem korrigierten Source bestaetigt den vollstaendigen A9-Vertrag:
+
+```text
+FOB Joyce incident / QRF response
+-> CAS_PROVIDER_PROFILE_BOUND
+   provider=AW_US_JBAD_TF_SHOOTER_6_6_CAV
+   home=Jalalabad
+   primaryPathline=OMW_FlightPath_R200
+   routePoints=24
+-> CAS_MISSION_ASSIGNED
+   asset=SQ_US_JBAD_AH64D_B_1_10_AVN_AID-158
+-> owner tactical corridor configured
+-> CAS mission executing
+-> CAS_SUPPORTED_ELEMENT_CLEAR
+-> CAS_NO_CONTACT_REPORTED stableSec=30
+-> CAS_CONTROLLED_RELEASE reason=SUPPORTED_ELEMENT_RELEASE_NO_CONTACT reverseOwnerRoute=true
+-> CAS_HOME_LANDED airport=Jalalabad
+-> CAS_LEGION_ASSET_RETURNED
+-> CAS_LIFECYCLE_COMPLETE fuelLowBeforeRelease=false
+-> [PRODUCTION BASE A9][PASS]
+```
+
+Der zuvor beobachtete falsche post-return `CAS_ASSET_LOSS initialAlive=2 alive=0` tritt im finalen Lauf nicht mehr auf.
+
+Der Acceptance-Watchdog lief vor der spaeten physischen Recovery ab, meldete aber wie vorgesehen nur `WARN`; er aenderte keinen Lifecycle-State. Der physische Production-Lifecycle lief weiter bis Landing, Legion asset return und PASS.
+
+Nach dem PASS wurde DCS regulaer beendet (`Dispatcher Stop`). Der anschliessende `bhHook.lua`-Fehler (`tcp` nil) trat erst beim Shutdown auf und ist kein FSSR-/A9-Lifecycle-Fehler.
+
+Finaler Status:
+
+```text
+source/build/hash provenance: VERIFIED_LOCAL_BUILD
+DCS runtime: VALIDATED
+Acceptance 9: PASS
+```
+
+Scope der Validation bleibt exakt A9: Joyce Production Base QRF + Rotary-Wing-CAS selection/owner-route/release/recovery. ARTY, ARTY rearm, strategic resupply, fixed-wing CAS und andere Site-/Provider-Profile sind dadurch nicht automatisch validiert.
