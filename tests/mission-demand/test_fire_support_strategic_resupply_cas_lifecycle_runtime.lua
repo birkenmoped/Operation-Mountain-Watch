@@ -308,3 +308,52 @@ do
   runtime:_updateAll()
   eq(runtime:GetState("D-CAS-3").completed,true,"failed flight lifecycle still reaches physical recovery")
 end
+
+
+-- Regression from real A9 DCS run 2026-09-20:
+-- after home landing + LegionAssetReturned, MOOSE removes the physical group.
+-- CountAliveUnits()==0 at that point is not an operational loss and must not
+-- convert a completed lifecycle into FAIL.
+do
+  local g={alive=2,CountAliveUnits=function(self) return self.alive end}
+  local asset={uid=1234,squadname="SQ_US_JBAD_AH64D_B_1_10_AVN",spawngroupname="CAS-FLIGHT-RETURN"}
+  local mission={
+    name="OMW_TEST_CAS_RETURN_DESPAWN",
+    executing=true,
+    assets={asset},
+    _omwFssrCasGeometry={zone=zone,engageDetectedRangeNm=5},
+    GetName=function(self) return self.name end,
+    IsExecuting=function(self) return self.executing end,
+  }
+  local handle={runtime=mission,cancelRequested=true,Cancel=function() return false end}
+  innerAdapter.Dispatch=function() return handle,true,nil end
+
+  local flightReturn={
+    name="CAS-FLIGHT-RETURN",
+    GetName=function(self) return self.name end,
+    GetGroup=function() return g end,
+    GetCoordinate=function() return flightCoord end,
+    GetDetectedGroups=function() return detected end,
+    GetWaypointIndex=function() return 1 end,
+    GetWaypointUIDFromIndex=function() return 10 end,
+    AddWaypoint=function() end,
+    UpdateRoute=function() end,
+  }
+
+  runtime:Dispatch({demandId="D-CAS-RETURN-DESPAWN",siteId="FOB_JOYCE"},context)
+  eq(commander:OnBeforeMissionAssign("*","MissionAssign","*",mission,{legion}),true,"return despawn assign allowed")
+  commander:OnAfterMissionAssign("*","MissionAssign","*",mission,{legion})
+  commander:OnAfterOpsOnMission("*","OpsOnMission","*",flightReturn,mission)
+
+  local entry=runtime:GetState("D-CAS-RETURN-DESPAWN")
+  entry.releaseRequested=true
+  flightReturn:OnAfterLanded("*","Landed","*",homeAirbase)
+  legion:OnAfterLegionAssetReturned("*","LegionAssetReturned","*",{name="AH64"},asset)
+
+  g.alive=0
+  runtime:_updateAll()
+
+  eq(entry.completed,true,"post-return despawn lifecycle completed")
+  eq(entry.failed,false,"post-return despawn is not asset loss")
+  eq(entry.assetLossReported,false,"post-return despawn does not emit asset loss")
+end
