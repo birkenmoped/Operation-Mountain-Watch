@@ -384,3 +384,57 @@ asset-loss CountAliveUnits monitoring
 Ein dedizierter Regressionstest setzt nach `LegionAssetReturned` den physischen Gruppenbestand auf 0 und verlangt weiterhin `completed=true`, `failed=false`, `assetLossReported=false`.
 
 Der bestehende DCS-Lauf ist daher starke reale Evidenz fuer die produktive Route/Release/Recovery-Kette, kann aber wegen des fehlerhaften terminalen Acceptance-Ergebnisses nicht als finaler A9-PASS auf dem korrigierten Source hochgestuft werden. Korrigierter Source bleibt bis zum erneuten realen Lauf `DCS_PENDING`.
+
+## 15. Owner-local Buildnachweis auf `c956b7b0`
+
+Der Projektinhaber hat den korrigierten Production Base 25 / Acceptance 9-3 Stand lokal erfolgreich gebaut und die Builder-Ausgaben unabhaengig mit `Get-FileHash` bestaetigt.
+
+```text
+source commit:
+c956b7b03b82c4ab04e529d09b1ff9bf4e480bf2
+
+production builder:
+OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BASE-25
+SHA-256 28B88BDFFC8499C9FC94C18732E8A0F45847E1D9DAEB7B93314A20853CF31D88
+
+production bundle:
+SHA-256 55D5B20DA29E8D646BAD5E23EBA72EF2422362868F5C22CF58956527631AFB47
+
+CasLifecycleRuntime:
+SHA-256 0C14D183F6692ADC6B5C4C18347364FED492695D48D919F9AE92995916286E05
+
+CasReleasePolicy:
+SHA-256 A61D71C6C4851B38E46DD9BC839825E0A34F25C81D79932E412C6016AF42D827
+
+CasPatrolClosure:
+SHA-256 C503500FB69FEFB4A429BF8AF403770FAA72C59A91B5CC0276D9EE27A41898F4
+
+FlightPathNameContract:
+SHA-256 333E895D8BF65138C96359CE564BE8F9967F7ADDA3A33E2AE8A8726103D95855
+
+HelicopterFlightPathCorridor:
+SHA-256 04D99722F0246AD261C47A90104E488FE9EF65721A647BE5CF6BAA602A1E279B
+
+HelicopterCasTacticalCorridor:
+SHA-256 E8FF4C196433CFCF287EEED25EAA31640EB8013A1286359CA63984811DDE08DA
+
+Acceptance 9 source:
+SHA-256 B5AD27452D7610B6C6B813780D0B3812F8E3EE6F000AC5FE17068E8BF3A2701E
+
+Acceptance 9 builder:
+SHA-256 A708F134DBC95B55D9C528E0A1DFE0E0E07B18EC5F5323FF611F0652CE3A1801
+
+Acceptance 9 bundle:
+SHA-256 D2172B83EDC527A2280754A0CC0A8F575C741082B4271A77F2D6E60688D1B3B0
+```
+
+`git status --short` zeigte ausschliesslich untracked Build-`dist`-Verzeichnisse und keine getrackten lokalen Aenderungen.
+
+Status:
+
+```text
+source/build/hash provenance: VERIFIED_LOCAL_BUILD
+DCS runtime: DCS_PENDING
+```
+
+Die fuer den naechsten DCS-Lauf massgebliche Acceptance-LUA ist damit exakt das Bundle mit SHA-256 `D2172B83EDC527A2280754A0CC0A8F575C741082B4271A77F2D6E60688D1B3B0`.
