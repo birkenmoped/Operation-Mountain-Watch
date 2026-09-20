@@ -740,3 +740,33 @@ stableNoContactSec = 30
 This parameter is A9/Honaker-derived test-profile configuration only. `STAGE3-CAS-LIFECYCLE-RECOVERY-LAW.md` section 20 remains authoritative that general CAS release is profile-dependent.
 
 Status: `SOURCE_REVIEWED / UNIT_CI_PENDING / DCS_PENDING`.
+
+
+## Addendum 2026-09-20 – A9 final CAS lifecycle validation
+
+The shared FSSR rotary-wing CAS composition is now DCS-validated for the exact A9 provenance:
+
+```text
+source commit: c956b7b03b82c4ab04e529d09b1ff9bf4e480bf2
+bundle SHA-256: D2172B83EDC527A2280754A0CC0A8F575C741082B4271A77F2D6E60688D1B3B0
+DCS: 2.9.29.27468
+MOOSE: 2.9.18 / 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+result: PASS
+```
+
+Validated project composition:
+
+```text
+OMW_FireSupStratResupply_CasMissionFactory
+-> OMW_FireSupStratResupply_CommanderBridge
+-> MOOSE COMMANDER / LEGION
+-> OMW_FireSupStratResupply_CasLifecycleRuntime
+-> OMW_FlightPathNameContract
+-> OMW_HelicopterFlightPathCorridor
+-> OMW_HelicopterCasTacticalCorridor
+-> OMW_FireSupStratResupply_CasReleasePolicy
+-> OMW_FobAttackCasPatrolClosure
+-> MOOSE FLIGHTGROUP / LEGION physical recovery
+```
+
+The production CAS lifecycle is a reuse boundary. Future Acceptance code may stimulate and observe it but must not duplicate routing, detection, release, RTB/recovery, landing or asset-return ownership.
