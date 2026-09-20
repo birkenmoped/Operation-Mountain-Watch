@@ -535,7 +535,7 @@ end
 function Instance:_updateEntry(entry)
   if entry.completed or entry.blocked then return end
 
-  if entry.group and entry.initialAlive and type(entry.group.CountAliveUnits) == "function" then
+  if not entry.assetReturned and entry.group and entry.initialAlive and type(entry.group.CountAliveUnits) == "function" then
     local alive = entry.group:CountAliveUnits()
     if alive < entry.initialAlive and not entry.assetLossReported then
       entry.assetLossReported = true
