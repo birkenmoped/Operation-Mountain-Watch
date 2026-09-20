@@ -1,6 +1,6 @@
 ---
 document_id: OMW-TEST-FSSR-PRODUCTION-BASE-ACCEPTANCE-9
-status: VALIDATED
+status: PLANNED
 document_class: ACCEPTANCE_TEST
 owning_policy: OMW-GOV-001
 authoritative_for:
@@ -11,6 +11,7 @@ project_phase: COMPLETE_FOUNDATION_BUILD_PHASE
 source_branch: agent/fire-support-strategic-resupply-base-gate0
 source_commit: PENDING_MERGE
 validated_in_dcs: true
+validation_status: DCS_VALIDATED_FOR_DOCUMENTED_SCOPE
 supersedes:
   - OMW-TEST-FSSR-PRODUCTION-BASE-ACCEPTANCE-8
 superseded_by:
