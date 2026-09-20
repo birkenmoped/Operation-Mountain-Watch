@@ -6,7 +6,7 @@ Set-StrictMode -Version Latest
 $repoRoot=Split-Path -Parent $PSScriptRoot
 $distDir=Join-Path $repoRoot 'mission\fire-support-strategic-resupply\dist'
 $outputFile=Join-Path $distDir 'OMW_FireSupStratResupply_Base.lua'
-$builderVersion='OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BASE-23'
+$builderVersion='OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BASE-24'
 
 $moduleSpecs=@(
   @{Name='SiteRegistry';Path='scripts\campaign\OMW_FireSupStratResupply_SiteRegistry.lua'},
@@ -26,7 +26,7 @@ $moduleSpecs=@(
   @{Name='CasReleasePolicy';Path='scripts\campaign\OMW_FireSupStratResupply_CasReleasePolicy.lua'},
   @{Name='FlightPathNameContract';Path='scripts\air-operations\OMW_FlightPathNameContract.lua'},
   @{Name='HelicopterCorridor';Path='scripts\air-operations\OMW_HelicopterFlightPathCorridor.lua'},
-  @{Name='CasTacticalCorridor';Path='scripts\air-operations\OMW_HelicopterCasTacticalCorridor.lua'},
+  @{Name='CasTacticalCorridor';Path='scripts\air-operations\OMW_HelicopterCasTacticalCorridor.lua';SchemaPattern='Schema\s*='},
   @{Name='CasPatrolClosure';Path='scripts\air-operations\OMW_FobAttackCasPatrolClosure.lua'},
   @{Name='ExternalSupportRuntime';Path='scripts\campaign\OMW_FireSupStratResupply_ExternalSupportRuntime.lua'},
   @{Name='InstallationIncidentBridge';Path='scripts\campaign\OMW_FireSupStratResupply_InstallationIncidentBridge.lua'},
@@ -50,7 +50,9 @@ foreach($spec in $moduleSpecs){
   $file=Join-Path $repoRoot $spec.Path
   if(-not(Test-Path -LiteralPath $file -PathType Leaf)){throw "Required source not found: $file"}
   $source=Get-Content -LiteralPath $file -Raw -Encoding UTF8
-  if($source -notmatch 'SchemaVersion\s*='){throw "Source lacks SchemaVersion: $($spec.Path)"}
+  $schemaPattern='SchemaVersion\s*='
+  if($spec.ContainsKey('SchemaPattern')){$schemaPattern=[string]$spec.SchemaPattern}
+  if($source -notmatch $schemaPattern){throw "Source lacks declared schema contract ($schemaPattern): $($spec.Path)"}
   $sources[$spec.Name]=$source
 }
 $roadPath=Join-Path $repoRoot 'scripts\ground\OMW_GroundRoadSpawnAdapter.lua'
