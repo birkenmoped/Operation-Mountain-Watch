@@ -199,6 +199,46 @@ mission/tests/fire-support-strategic-resupply-production-base-runtime/src/09-pro
 tools/build-fire-support-strategic-resupply-production-base-acceptance-9.ps1
 ```
 
-Status vor realem DCS-Lauf: `SOURCE_REVIEWED / CI_PENDING / DCS_PENDING`.
+Status vor realem DCS-Lauf: `SOURCE_REVIEWED / CI_GATED / DCS_PENDING`.
 
 Shared closure request is reused from `scripts/air-operations/OMW_FobAttackCasPatrolClosure.lua` schema `OMW-FOB-ATTACK-CAS-PATROL-CLOSURE-3`; the Base lifecycle does not reimplement mission-cancel semantics.
+
+## 11. Vier-Gates-Abschluss
+
+### Gate 1 – Lifecycle inheritance
+
+`PASS`. Die Lifecycle-Inheritance-Tabelle in Abschnitt 1 bindet die akzeptierte Stage-2B-Route und die verbindlichen CAS-Release-/Recovery-Invarianten. Keine alte Acceptance-Evidenz wird auf neu geschriebenen Source hochgestuft.
+
+### Gate 2 – produktive Extraktion
+
+`PASS / DCS_PENDING`. Routing, eigene Detection, profilierte Release-Qualifikation, Closure und Recovery liegen nicht mehr im Acceptance-Harness, sondern in gemeinsamem Production-Code:
+
+```text
+OMW_FireSupStratResupply_CasLifecycleRuntime.lua
+OMW_FireSupStratResupply_CasReleasePolicy.lua
+OMW_FobAttackCasPatrolClosure.lua
+OMW_HelicopterFlightPathCorridor.lua
+OMW_HelicopterCasTacticalCorridor.lua
+```
+
+ADR 0008 bleibt unveraendert: COMMANDER/LEGION waehlt Provider und Asset.
+
+### Gate 3 – statische Regression-Gates
+
+`PASS`. Der MissionDemand-Testlauf enthaelt eigene Contract-Tests fuer Release-Policy, Production-Lifecycle und die observer-only Harness-Grenze. Der A9-Builder bricht bei Detection-, Route-, Cancel-, FuelLow-, Landing-, Legion-return- oder eigener No-Contact-State-Machine im Harness ab.
+
+### Gate 4 – CI und Source Review
+
+`PASS` fuer den Source-Stand vor diesem reinen Dokumentationsabschluss. MissionDemand validation Run 1032 und Documentation validation Run 2260 waren erfolgreich. Im MissionDemand-Log sind insbesondere belegt:
+
+```text
+PASS fire support CAS release policy
+PASS fire support CAS lifecycle runtime
+PASS fire support CAS harness boundary
+PASS test_fire_support_strategic_resupply_external_support_runtime
+PASS mission-demand test suite
+```
+
+Der gepinnte `Moose.lua`-Source wurde fuer `AUFTRAG:IsExecuting`, `COMMANDER:onafterMissionAssign`, `OPSGROUP:GetDetectedGroups`, `FLIGHTGROUP:onafterFuelLow`, `FLIGHTGROUP:onafterLanded` und `LEGION:onafterLegionAssetReturned` erneut direkt geprueft.
+
+Die vier Gates erlauben den lokalen A9-Build. Sie sind **keine DCS-Acceptance**; der neue gemeinsame Production-CAS-Lifecycle bleibt bis zum realen Lauf `DCS_PENDING`.
