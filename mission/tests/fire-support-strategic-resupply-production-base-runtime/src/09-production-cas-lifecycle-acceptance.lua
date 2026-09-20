@@ -192,6 +192,9 @@ local function observe()
   if lifecycle and lifecycle.failed and not state.failed then
     fail("PRODUCTION_CAS_LIFECYCLE_FAILED "..tostring(lifecycle.failureReason))
   end
+  if lifecycle and lifecycle.fuelLowBeforeRelease and not state.failed then
+    fail("FUEL_LOW_PRECEDED_CONTROLLED_RELEASE")
+  end
 
   if not state.failed and state.qrfEngage and lifecycle and lifecycle.completed then
     local required={
@@ -208,10 +211,6 @@ local function observe()
     }
     for _,eventName in ipairs(required) do
       if not state.evidence[eventName] then return end
-    end
-    if lifecycle.fuelLowObserved and not lifecycle.releaseRequested then
-      fail("FUEL_LOW_PRECEDED_CONTROLLED_RELEASE")
-      return
     end
     state.passed=true
     msg("PASS","Production Base CAS lifecycle complete: MOOSE selection -> owner route -> supported-element/no-contact release -> reverse recovery -> home landing -> Legion asset return.",45)
