@@ -242,3 +242,31 @@ PASS mission-demand test suite
 Der gepinnte `Moose.lua`-Source wurde fuer `AUFTRAG:IsExecuting`, `COMMANDER:onafterMissionAssign`, `OPSGROUP:GetDetectedGroups`, `FLIGHTGROUP:onafterFuelLow`, `FLIGHTGROUP:onafterLanded` und `LEGION:onafterLegionAssetReturned` erneut direkt geprueft.
 
 Die vier Gates erlauben den lokalen A9-Build. Sie sind **keine DCS-Acceptance**; der neue gemeinsame Production-CAS-Lifecycle bleibt bis zum realen Lauf `DCS_PENDING`.
+
+## 12. Owner-local Buildversuch auf `c9636462`
+
+Der erste owner-lokale Buildversuch auf
+
+```text
+c963646219a3092a746ca1a7b398260a37ba5c27
+```
+
+ist **vor der Bundle-Erzeugung abgebrochen**:
+
+```text
+Source lacks SchemaVersion: scripts\air-operations\OMW_HelicopterCasTacticalCorridor.lua
+```
+
+Ursache war ein zu enger Production-Builder-Preflight: `OMW_HelicopterCasTacticalCorridor.lua` verwendet seinen bestehenden Vertrag
+
+```lua
+local Adapter = {
+  Schema = "OMW-HELICOPTER-CAS-TACTICAL-CORRIDOR-1",
+}
+```
+
+und nicht `SchemaVersion`. Der akzeptierte/reused Tactical-Corridor-Source wurde deshalb **nicht** geaendert. Stattdessen akzeptiert Production Base Builder 24 fuer genau dieses Modul explizit dessen vorhandenes `Schema`-Feld; alle anderen Module bleiben auf dem bisherigen `SchemaVersion`-Preflight.
+
+Aus diesem fehlgeschlagenen Lauf existiert **kein gueltiges A9-Bundle und kein A9-Bundle-Hash**. Die bereits vorhandene Production-Base-Datei im lokalen `dist` darf nicht als Ergebnis dieses Builds interpretiert werden.
+
+Revalidation nach der Builderkorrektur: owner-lokaler Build + unabhaengige Hashkette erforderlich.
