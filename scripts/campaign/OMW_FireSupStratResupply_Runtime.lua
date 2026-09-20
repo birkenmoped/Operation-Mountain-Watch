@@ -69,6 +69,7 @@ function Runtime.New(spec)
       end
       needFunction(modules.casLifecycleRuntime,"New","modules.casLifecycleRuntime")
       needTable(externalSupport.casLifecycle,"externalSupport.casLifecycle")
+      needTable(externalSupport.casLifecycle.releasePolicy,"externalSupport.casLifecycle.releasePolicy")
       needTable(externalSupport.casLifecycle.executionProfiles,"externalSupport.casLifecycle.executionProfiles")
       needTable(externalSupport.casLifecycle.pathlineRegistry,"externalSupport.casLifecycle.pathlineRegistry")
       if externalSupport.casLifecycle.onEvidence~=nil and type(externalSupport.casLifecycle.onEvidence)~="function" then
