@@ -177,3 +177,5 @@ Die folgenden stabilen IDs werden mit dem Ground-RESUPPLY-Mergepaket in den Main
 | `OMW-MOOSE-ACCEPTED-LIFECYCLE-PRESERVATION-LAW` | `docs/moose/ACCEPTED-LIFECYCLE-PRESERVATION-LAW.md` | `BINDING`; mandatory anti-regression law for inherited accepted/binding runtime lifecycles and Acceptance harness boundaries |
 
 | `OMW-TEST-FSSR-PRODUCTION-BASE-ACCEPTANCE-9` | `mission/tests/fire-support-strategic-resupply-production-base-runtime/ACCEPTANCE-9.md` | `PLANNED`; observer-only validation of shared production CAS lifecycle after lifecycle-preservation reconciliation |
+
+| `OMW-HANDOFF-FSSR-FINAL-BASE-PREPARATION-20260920` | `docs/handoffs/2026-09-20-fssr-final-base-preparation-handoff.md` | `PLANNED`; vollständige Übergabe nach A9-PASS, Lifecycle-Gesetze und Vorbereitung der finalen FSSR-`_base` |
