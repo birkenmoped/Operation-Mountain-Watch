@@ -305,3 +305,59 @@ Base CAS demand
 ```
 
 Kann fuer den von MOOSE ausgewaehlten Provider kein owner-authored Profil aufgeloest werden, wird die MissionAssign-Transition fail-closed abgewiesen. Ein Direct-Line-Fallback ist nicht zulaessig.
+
+
+## Acceptance 9 – validated shared rotary-wing CAS lifecycle
+
+The generic external-support CAS path is now DCS-validated for the exact A9 Joyce/Jalalabad scope.
+
+```text
+source commit:
+c956b7b03b82c4ab04e529d09b1ff9bf4e480bf2
+
+Acceptance bundle SHA-256:
+D2172B83EDC527A2280754A0CC0A8F575C741082B4271A77F2D6E60688D1B3B0
+
+DCS:
+2.9.29.27468
+
+MOOSE:
+2.9.18 / 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+
+result:
+PASS
+```
+
+Validated chain:
+
+```text
+Base CAS demand
+-> CasMissionFactory
+-> CommanderBridge
+-> MOOSE COMMANDER/LEGION provider + asset selection
+-> selected-provider owner execution profile
+-> owner route / tactical corridor
+-> AUFTRAG executing
+-> own FLIGHTGROUP detection
+-> configured release policy
+-> shared CasPatrolClosure
+-> reverse owner route
+-> physical home landing
+-> exact LegionAssetReturned
+-> lifecycle complete
+```
+
+The previous false post-return loss classification was corrected and revalidated. After exact `LegionAssetReturned`, removal of the temporary physical DCS group representation is cleanup and must not be reinterpreted as asset loss.
+
+This CAS lifecycle is now a reuse boundary for subsequent Base work. It must not be reconstructed inside a later Acceptance harness.
+
+### Remaining external-support boundary
+
+ARTY remains deliberately separate:
+
+```text
+generic NewARTY / COMMANDER recruitment
+!= automatically validated Functional ARTY rearm ownership
+```
+
+The next ARTY step must reconcile the generic external-support handoff with the already accepted Functional ARTY/M1083 rearm lifecycle without placing the same battery under two independent mission/FSM owners.
