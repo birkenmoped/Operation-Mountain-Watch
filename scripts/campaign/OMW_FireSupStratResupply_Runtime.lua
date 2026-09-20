@@ -8,7 +8,7 @@ local Runtime = {}
 local Instance = {}
 Instance.__index = Instance
 
-Runtime.SchemaVersion = "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-RUNTIME-8"
+Runtime.SchemaVersion = "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-RUNTIME-9"
 local TAG = "[OMW][FireSupStratResupply.Runtime]"
 
 local function fail(message) error(TAG .. " " .. tostring(message), 2) end
@@ -63,6 +63,21 @@ function Runtime.New(spec)
     needFunction(externalSupport.commander,"AddMission","externalSupport.commander")
     if type(externalSupport.resolveArtyTarget)~="function" then fail("externalSupport.resolveArtyTarget must be a function") end
     if type(externalSupport.resolveCasGeometry)~="function" then fail("externalSupport.resolveCasGeometry must be a function") end
+    if externalSupport.casLifecycle~=nil then
+      for _,name in ipairs({"casLifecycleRuntime","flightPathNameContract","helicopterCorridor","casTacticalCorridor"}) do
+        needTable(modules[name],"modules." .. name)
+      end
+      needFunction(modules.casLifecycleRuntime,"New","modules.casLifecycleRuntime")
+      needTable(externalSupport.casLifecycle,"externalSupport.casLifecycle")
+      needTable(externalSupport.casLifecycle.executionProfiles,"externalSupport.casLifecycle.executionProfiles")
+      needTable(externalSupport.casLifecycle.pathlineRegistry,"externalSupport.casLifecycle.pathlineRegistry")
+      if externalSupport.casLifecycle.onEvidence~=nil and type(externalSupport.casLifecycle.onEvidence)~="function" then
+        fail("externalSupport.casLifecycle.onEvidence must be a function when provided")
+      end
+      if externalSupport.casLifecycle.isSupportedElementClear~=nil and type(externalSupport.casLifecycle.isSupportedElementClear)~="function" then
+        fail("externalSupport.casLifecycle.isSupportedElementClear must be a function when provided")
+      end
+    end
   end
 
   if spec.perimeters ~= nil then
@@ -221,6 +236,11 @@ function Instance:Prepare()
       artyRequiredAssetsMax=self.externalSupport.artyRequiredAssetsMax,
       casRequiredAssetsMin=self.externalSupport.casRequiredAssetsMin,
       casRequiredAssetsMax=self.externalSupport.casRequiredAssetsMax,
+      casLifecycleRuntime=m.casLifecycleRuntime,
+      flightPathNameContract=m.flightPathNameContract,
+      helicopterCorridor=m.helicopterCorridor,
+      casTacticalCorridor=m.casTacticalCorridor,
+      casLifecycle=self.externalSupport.casLifecycle,
       logger=self.logger,
     })
     local external=externalSupportRuntime:GetAdapters()
