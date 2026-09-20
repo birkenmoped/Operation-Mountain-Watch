@@ -859,3 +859,51 @@ Verbindliche Einordnung: [MOOSE Support Request Lifecycle Law](MOOSE-SUPPORT-REQ
 | `ARTY:RemoveTarget`, `ARTY:SetTimeToShot` | `SOURCE_REVIEWED` | Native Entfernung eines Ziels beziehungsweise Abbruch bei ausbleibendem erstem Schuss innerhalb konfigurierter Zeit. |
 
 DCS-Validierung bleibt für die im Gesetz aufgeführten generischen Fälle verpflichtend.
+
+
+## 12. Production Base A9 – CAS mission, detection and recovery methods
+
+Praktische DCS-Evidenz:
+
+```text
+source commit:
+c956b7b03b82c4ab04e529d09b1ff9bf4e480bf2
+
+Acceptance bundle SHA-256:
+D2172B83EDC527A2280754A0CC0A8F575C741082B4271A77F2D6E60688D1B3B0
+
+DCS:
+2.9.29.27468
+
+MOOSE:
+2.9.18
+73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+
+result:
+PASS
+```
+
+| Methode / Callback | Status | Belegter Umfang |
+|---|---|---|
+| `AUFTRAG:IsExecuting()` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | A9 nutzt den MOOSE-Missionsstatus als Execution-Gate; der CAS-Lifecycle erreichte danach Sensor-/Release- und Recovery-Phasen. |
+| `COMMANDER:OnBeforeMissionAssign(...)` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | A9 band nach MOOSE-Providerselektion das owner-authored Ausfuehrungsprofil und liess die Mission nur bei vorhandenem Profil weiterlaufen. |
+| `COMMANDER:OnAfterMissionAssign(...)` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Selektiertes Asset/Squadron/Home wurde fuer den real ausgefuehrten CAS-Auftrag korreliert. |
+| `COMMANDER:OnAfterOpsOnMission(...)` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Physische FLIGHTGROUP wurde an den produktiven Tactical-Corridor gebunden. |
+| `FLIGHTGROUP:GetDetectedGroups()` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Eigene CAS-Detection lieferte einen gueltigen MOOSE-Set-Vertrag; A9 qualifizierte daraus das profilierte No-Contact-Kriterium. `nil` bleibt explizit nicht gleichbedeutend mit no contact. |
+| `FLIGHTGROUP:OnAfterLanded(...)` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Physische Home-Landung in Jalalabad wurde vor dem Asset-Return bestaetigt. |
+| `LEGION:OnAfterLegionAssetReturned(...)` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Exact asset return wurde nach Home-Landung bestaetigt und ist terminale Return-Evidenz fuer den A9-Lifecycle. |
+| `AUFTRAG:Cancel()` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Kontrollierter Mission-Closure-Pfad nach profilierter Release-Qualifikation fuehrte in die MOOSE-Recovery, nicht in einen OMW-eigenen RTB. |
+| `FLIGHTGROUP:OnAfterFuelLow(...)` | `SOURCE_REVIEWED_WITH_RUNTIME_NEGATIVE_CONFIRMATION` | Callback war produktiv verdrahtet; im finalen A9-PASS trat kein FuelLow vor dem kontrollierten Release auf. Dies validiert nicht FuelLow als Completion-Pfad. |
+
+A9 belegt **nicht** die allgemeine Gleichwertigkeit fuer Fixed-Wing-CAS, andere Providerprofile, andere Basen oder andere MOOSE-Versionen.
+
+Zusatzregel aus dem realen A9-Lauf:
+
+```text
+LegionAssetReturned
+-> exact return confirmed
+-> later physical group despawn / CountAliveUnits()==0
+   is cleanup, not loss evidence
+```
+
+Dieser Befund gilt fuer den dokumentierten A9-Lifecycle und ist in `ACCEPTED-LIFECYCLE-PRESERVATION-LAW.md` als Anti-Regression-Regel festgehalten.
