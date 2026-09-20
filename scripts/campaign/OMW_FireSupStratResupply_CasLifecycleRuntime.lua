@@ -82,6 +82,7 @@ function Runtime.New(spec)
   local flightPathNameContract = needTable(spec.flightPathNameContract, "flightPathNameContract")
   local helicopterCorridor = needTable(spec.helicopterCorridor, "helicopterCorridor")
   local casTacticalCorridor = needTable(spec.casTacticalCorridor, "casTacticalCorridor")
+  local casPatrolClosure = needTable(spec.casPatrolClosure, "casPatrolClosure")
   local executionProfiles = needTable(spec.executionProfiles, "executionProfiles")
   local pathlineRegistry = needTable(spec.pathlineRegistry, "pathlineRegistry")
 
@@ -91,6 +92,7 @@ function Runtime.New(spec)
   needFunction(casTacticalCorridor, "PlanRouteGated", "casTacticalCorridor")
   needFunction(casTacticalCorridor, "ConfigureMission", "casTacticalCorridor")
   needFunction(casTacticalCorridor, "Bind", "casTacticalCorridor")
+  needFunction(casPatrolClosure, "Request", "casPatrolClosure")
 
   if type(spec.logger) ~= "function" then fail("logger must be a function") end
   if spec.onEvidence ~= nil and type(spec.onEvidence) ~= "function" then
@@ -109,6 +111,7 @@ function Runtime.New(spec)
     flightPathNameContract = flightPathNameContract,
     helicopterCorridor = helicopterCorridor,
     casTacticalCorridor = casTacticalCorridor,
+    casPatrolClosure = casPatrolClosure,
     executionProfiles = executionProfiles,
     pathlineRegistry = pathlineRegistry,
     redCoalition = spec.redCoalition or (coalition and coalition.side and coalition.side.RED),
@@ -585,10 +588,19 @@ function Instance:_updateEntry(entry)
     end
 
     if entry.supportedElementClear and entry.noContactReported then
-      local changed = entry.handle:Cancel("SUPPORTED_ELEMENT_RELEASE_NO_CONTACT")
+      local _, changed, closureReason = self.casPatrolClosure.Request({
+        demandId = entry.demand.demandId,
+        tacticalComplete = true,
+        executionEvidenceConfirmed = true,
+        reason = "SUPPORTED_ELEMENT_RELEASE_NO_CONTACT",
+        requestClosure = function(_, reason)
+          local requested = entry.handle:Cancel(reason)
+          return entry.mission, requested, requested and nil or "CLOSURE_ALREADY_REQUESTED"
+        end,
+      })
       if changed ~= true then
         entry.failed = true
-        entry.failureReason = "CAS_CONTROLLED_RELEASE_FAILED"
+        entry.failureReason = "CAS_CONTROLLED_RELEASE_FAILED " .. tostring(closureReason)
         self:_evidence(entry, "CAS_LIFECYCLE_FAILED", { reason = entry.failureReason })
         return
       end
