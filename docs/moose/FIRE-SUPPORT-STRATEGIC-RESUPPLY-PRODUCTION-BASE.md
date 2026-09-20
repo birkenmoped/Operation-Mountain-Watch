@@ -294,12 +294,17 @@ Production source:
 ```text
 scripts/campaign/OMW_FireSupStratResupply_CasLifecycleRuntime.lua
 schema OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-CAS-LIFECYCLE-RUNTIME-1
+
+scripts/campaign/OMW_FireSupStratResupply_CasReleasePolicy.lua
+schema OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-CAS-RELEASE-POLICY-1
 ```
 
 Production builder:
 
 ```text
-OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BASE-22
+OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BASE-23
 ```
 
 A9 ist absichtlich observer-only. Sein Builder und ein eigener statischer Contract-Test verbieten CAS-Detection-, Route-, Cancel-, FuelLow-, Landing- und Legion-return-Ownership im Harness.
+
+Die konkrete CAS-Release-Policy bleibt profilabhaengig. Die Base hat keinen globalen 30-Sekunden-No-Contact-Default. Ein Composition Root muss den freigegebenen Release-Policy-Modus und dessen Parameter injizieren; A9 verwendet `SUPPORTED_ELEMENT_STABLE_NO_CONTACT` mit 30 Sekunden ausschliesslich als Testprofil.
