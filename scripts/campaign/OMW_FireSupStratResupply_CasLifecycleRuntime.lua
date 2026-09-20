@@ -368,8 +368,9 @@ function Instance:_bindFlight(entry, opsGroup)
   function opsGroup:OnAfterFuelLow(From, Event, To)
     if previousFuelLow then previousFuelLow(self, From, Event, To) end
     entry.fuelLowObserved = true
+    entry.fuelLowBeforeRelease = entry.releaseRequested ~= true
     runtime:_evidence(entry, "CAS_FUEL_LOW", {
-      beforeRelease = entry.releaseRequested ~= true,
+      beforeRelease = entry.fuelLowBeforeRelease,
       provider = entry.selectedProviderAlias,
     })
   end
@@ -516,16 +517,18 @@ function Instance:_supportedElementClear(entry)
 end
 
 function Instance:_updateEntry(entry)
-  if entry.completed or entry.failed then return end
+  if entry.completed or entry.blocked then return end
 
   if entry.group and entry.initialAlive and type(entry.group.CountAliveUnits) == "function" then
     local alive = entry.group:CountAliveUnits()
-    if alive < entry.initialAlive then
+    if alive < entry.initialAlive and not entry.assetLossReported then
+      entry.assetLossReported = true
       entry.failed = true
       entry.failureReason = "CAS_ASSET_LOSS initialAlive=" .. tostring(entry.initialAlive)
         .. " alive=" .. tostring(alive)
       self:_evidence(entry, "CAS_LIFECYCLE_FAILED", { reason = entry.failureReason })
-      return
+      -- Do not stop the operational release/recovery monitor. A surviving flight
+      -- must still be released and recovered even though the acceptance result is FAIL.
     end
   end
 
@@ -619,7 +622,7 @@ function Instance:_updateEntry(entry)
     self:_evidence(entry, "CAS_LIFECYCLE_COMPLETE", {
       provider = entry.selectedProviderAlias,
       squadron = entry.selectedSquadron,
-      fuelLowBeforeRelease = entry.fuelLowObserved == true,
+      fuelLowBeforeRelease = entry.fuelLowBeforeRelease == true,
     })
   end
 end
@@ -661,6 +664,9 @@ function Instance:Dispatch(demand, context)
     noContactReported = false,
     supportedElementClear = false,
     fuelLowObserved = false,
+    fuelLowBeforeRelease = false,
+    assetLossReported = false,
+    blocked = false,
   }
 
   self.entries[demand.demandId] = entry
