@@ -66,7 +66,10 @@ function Runtime.New(spec)
     local helicopterCorridor=needTable(spec.helicopterCorridor,"helicopterCorridor")
     local casTacticalCorridor=needTable(spec.casTacticalCorridor,"casTacticalCorridor")
     local casPatrolClosure=needTable(spec.casPatrolClosure,"casPatrolClosure")
+    local casReleasePolicy=needTable(spec.casReleasePolicy,"casReleasePolicy")
     needFunction(casLifecycleRuntime,"New","casLifecycleRuntime")
+    needFunction(casReleasePolicy,"New","casReleasePolicy")
+    local releasePolicy=casReleasePolicy.New(needTable(lifecycleSpec.releasePolicy,"casLifecycle.releasePolicy"))
     casLifecycle=casLifecycleRuntime.New({
       innerAdapter=casBridge,
       commander=commander,
@@ -74,9 +77,9 @@ function Runtime.New(spec)
       helicopterCorridor=helicopterCorridor,
       casTacticalCorridor=casTacticalCorridor,
       casPatrolClosure=casPatrolClosure,
+      releasePolicy=releasePolicy,
       executionProfiles=needTable(lifecycleSpec.executionProfiles,"casLifecycle.executionProfiles"),
       pathlineRegistry=needTable(lifecycleSpec.pathlineRegistry,"casLifecycle.pathlineRegistry"),
-      noContactStableSec=lifecycleSpec.noContactStableSec,
       updateSeconds=lifecycleSpec.updateSeconds,
       redCoalition=lifecycleSpec.redCoalition,
       isSupportedElementClear=lifecycleSpec.isSupportedElementClear,
