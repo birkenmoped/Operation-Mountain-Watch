@@ -8,7 +8,7 @@ local Runtime = {}
 local Instance = {}
 Instance.__index = Instance
 
-Runtime.SchemaVersion = "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-EXTERNAL-SUPPORT-RUNTIME-1"
+Runtime.SchemaVersion = "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-EXTERNAL-SUPPORT-RUNTIME-2"
 local TAG = "[OMW][FireSupStratResupply.ExternalSupportRuntime]"
 
 local function fail(message) error(TAG .. " " .. tostring(message),2) end
@@ -50,17 +50,46 @@ function Runtime.New(spec)
     factory=function(demand,context) return artyFactory:Create(demand,context) end,
     logger=spec.logger,
   })
-  local cas=commanderBridge.New({
+  local casBridge=commanderBridge.New({
     commander=commander,
     kind=commanderBridge.Kind and commanderBridge.Kind.MISSION or "MISSION",
     factory=function(demand,context) return casFactory:Create(demand,context) end,
     logger=spec.logger,
   })
 
+  local cas=casBridge
+  local casLifecycle=nil
+  if spec.casLifecycle~=nil then
+    local lifecycleSpec=needTable(spec.casLifecycle,"casLifecycle")
+    local casLifecycleRuntime=needTable(spec.casLifecycleRuntime,"casLifecycleRuntime")
+    local flightPathNameContract=needTable(spec.flightPathNameContract,"flightPathNameContract")
+    local helicopterCorridor=needTable(spec.helicopterCorridor,"helicopterCorridor")
+    local casTacticalCorridor=needTable(spec.casTacticalCorridor,"casTacticalCorridor")
+    needFunction(casLifecycleRuntime,"New","casLifecycleRuntime")
+    casLifecycle=casLifecycleRuntime.New({
+      innerAdapter=casBridge,
+      commander=commander,
+      flightPathNameContract=flightPathNameContract,
+      helicopterCorridor=helicopterCorridor,
+      casTacticalCorridor=casTacticalCorridor,
+      executionProfiles=needTable(lifecycleSpec.executionProfiles,"casLifecycle.executionProfiles"),
+      pathlineRegistry=needTable(lifecycleSpec.pathlineRegistry,"casLifecycle.pathlineRegistry"),
+      noContactStableSec=lifecycleSpec.noContactStableSec,
+      updateSeconds=lifecycleSpec.updateSeconds,
+      redCoalition=lifecycleSpec.redCoalition,
+      isSupportedElementClear=lifecycleSpec.isSupportedElementClear,
+      onEvidence=lifecycleSpec.onEvidence,
+      logger=spec.logger,
+    })
+    cas=casLifecycle
+  end
+
   return setmetatable({
     commander=commander,
     arty=arty,
     cas=cas,
+    casBridge=casBridge,
+    casLifecycle=casLifecycle,
     artyFactory=artyFactory,
     casFactory=casFactory,
     logger=spec.logger,
