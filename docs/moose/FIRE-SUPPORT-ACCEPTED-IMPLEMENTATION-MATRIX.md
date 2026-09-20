@@ -265,3 +265,15 @@ Insbesondere duerfen neue Acceptance-Harnesses keine eigene QRF-Targeting-, CAS-
 | Acceptance role | preservation law | A9 stimulus/observation/assertion only | static gate + CI pending |
 
 A9 must not be built or handed to DCS until the unit/static gates and both repository CI workflows pass on the exact remote HEAD.
+
+### CAS release policy profile boundary
+
+| Boundary | Contract | Status |
+|---|---|---|
+| General release rule | supported-element status + own qualified CAS report + explicit release authority; concrete policy is profile-dependent | `BINDING` via Stage3 CAS lifecycle law §20 |
+| A9 release profile | `SUPPORTED_ELEMENT_STABLE_NO_CONTACT`, `stableNoContactSec=30` | test-profile config; `DCS_PENDING` |
+| Qualification owner | `OMW_FireSupStratResupply_CasReleasePolicy.lua` | `SOURCE_REVIEWED / UNIT_CI_PENDING` |
+| Detection owner | MOOSE `FLIGHTGROUP:GetDetectedGroups()` via shared CasLifecycleRuntime | source-reviewed; DCS_PENDING |
+| Mission closure | shared `OMW_FobAttackCasPatrolClosure.Request` -> existing CommanderBridge handle -> `AUFTRAG:Cancel()` | source-reviewed; DCS_PENDING |
+
+The 30-second value must not be promoted to a global production invariant by future Base work without a separate owner decision and documented evidence.
