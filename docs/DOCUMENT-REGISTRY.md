@@ -175,3 +175,5 @@ Die folgenden stabilen IDs werden mit dem Ground-RESUPPLY-Mergepaket in den Main
 | `OMW-TEST-FSSR-PRODUCTION-BASE-ACCEPTANCE-7` | `mission/tests/fire-support-strategic-resupply-production-base-runtime/ACCEPTANCE-7.md` | `PLANNED`; Joyce production QRF plus MOOSE-selected attack-helicopter CAS with fail-closed owner-route binding, supported-element/no-contact release and physical recovery |
 
 | `OMW-MOOSE-ACCEPTED-LIFECYCLE-PRESERVATION-LAW` | `docs/moose/ACCEPTED-LIFECYCLE-PRESERVATION-LAW.md` | `BINDING`; mandatory anti-regression law for inherited accepted/binding runtime lifecycles and Acceptance harness boundaries |
+
+| `OMW-TEST-FSSR-PRODUCTION-BASE-ACCEPTANCE-9` | `mission/tests/fire-support-strategic-resupply-production-base-runtime/ACCEPTANCE-9.md` | `PLANNED`; observer-only validation of shared production CAS lifecycle after lifecycle-preservation reconciliation |
