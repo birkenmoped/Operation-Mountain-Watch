@@ -254,15 +254,15 @@ Insbesondere duerfen neue Acceptance-Harnesses keine eigene QRF-Targeting-, CAS-
 
 | Boundary | Inherited implementation / law | Current implementation | Evidence status |
 |---|---|---|---|
-| outbound/reverse owner route | Stage-2B accepted `OMW_HelicopterFlightPathCorridor` path and current tactical corridor contract | shared `OMW_FireSupStratResupply_CasLifecycleRuntime` directly calls the route modules | old exact-provenance route PASS; new composition DCS_PENDING |
-| provider/asset selection | ADR 0008 / MOOSE COMMANDER+LEGION | unchanged MOOSE authority | source-reviewed; A9 DCS_PENDING |
-| mission execution gate | MOOSE `AUFTRAG:IsExecuting()` | shared runtime | source-reviewed; A9 DCS_PENDING |
-| CAS own picture | Stage-3 binding `FLIGHTGROUP:GetDetectedGroups()` contract | shared runtime | source-reviewed; A9 DCS_PENDING |
-| supported-element release | Stage-3 CAS lifecycle law | shared runtime reads authoritative source incident coordinator participants | source-reviewed; A9 DCS_PENDING |
-| stable no-contact | Stage-3 30-s rule | shared production runtime scheduler; `nil` detection is not clear | unit/CI pending; DCS_PENDING |
-| mission closure | public MOOSE `AUFTRAG:Cancel()` via existing CommanderBridge handle | shared runtime | source-reviewed; DCS_PENDING |
-| landing / asset return | MOOSE FLIGHTGROUP/LEGION lifecycle | shared runtime observes home landing + exact `LegionAssetReturned` | source-reviewed; DCS_PENDING |
-| Acceptance role | preservation law | A9 stimulus/observation/assertion only | static gate + CI pending |
+| outbound/reverse owner route | Stage-2B accepted `OMW_HelicopterFlightPathCorridor` path and current tactical corridor contract | shared `OMW_FireSupStratResupply_CasLifecycleRuntime` directly calls the route modules | old exact-provenance route PASS; A9 composition VALIDATED |
+| provider/asset selection | ADR 0008 / MOOSE COMMANDER+LEGION | unchanged MOOSE authority | A9 VALIDATED |
+| mission execution gate | MOOSE `AUFTRAG:IsExecuting()` | shared runtime | A9 VALIDATED |
+| CAS own picture | Stage-3 binding `FLIGHTGROUP:GetDetectedGroups()` contract | shared runtime | A9 VALIDATED |
+| supported-element release | Stage-3 CAS lifecycle law | shared runtime reads authoritative source incident coordinator participants | A9 VALIDATED |
+| stable no-contact | Stage-3 30-s rule | shared production runtime scheduler; `nil` detection is not clear | A9 VALIDATED |
+| mission closure | public MOOSE `AUFTRAG:Cancel()` via existing CommanderBridge handle | shared runtime | A9 VALIDATED |
+| landing / asset return | MOOSE FLIGHTGROUP/LEGION lifecycle | shared runtime observes home landing + exact `LegionAssetReturned` | A9 VALIDATED |
+| Acceptance role | preservation law | A9 stimulus/observation/assertion only | static/CI gate PASS; A9 VALIDATED |
 
 A9 must not be built or handed to DCS until the unit/static gates and both repository CI workflows pass on the exact remote HEAD.
 
@@ -271,9 +271,41 @@ A9 must not be built or handed to DCS until the unit/static gates and both repos
 | Boundary | Contract | Status |
 |---|---|---|
 | General release rule | supported-element status + own qualified CAS report + explicit release authority; concrete policy is profile-dependent | `BINDING` via Stage3 CAS lifecycle law §20 |
-| A9 release profile | `SUPPORTED_ELEMENT_STABLE_NO_CONTACT`, `stableNoContactSec=30` | test-profile config; `DCS_PENDING` |
-| Qualification owner | `OMW_FireSupStratResupply_CasReleasePolicy.lua` | `SOURCE_REVIEWED / UNIT_CI_PENDING` |
-| Detection owner | MOOSE `FLIGHTGROUP:GetDetectedGroups()` via shared CasLifecycleRuntime | source-reviewed; DCS_PENDING |
-| Mission closure | shared `OMW_FobAttackCasPatrolClosure.Request` -> existing CommanderBridge handle -> `AUFTRAG:Cancel()` | source-reviewed; DCS_PENDING |
+| A9 release profile | `SUPPORTED_ELEMENT_STABLE_NO_CONTACT`, `stableNoContactSec=30` | test-profile config; `VALIDATED_IN_A9` |
+| Qualification owner | `OMW_FireSupStratResupply_CasReleasePolicy.lua` | `SOURCE_REVIEWED / UNIT_CI_PASS / A9_VALIDATED` |
+| Detection owner | MOOSE `FLIGHTGROUP:GetDetectedGroups()` via shared CasLifecycleRuntime | A9 VALIDATED |
+| Mission closure | shared `OMW_FobAttackCasPatrolClosure.Request` -> existing CommanderBridge handle -> `AUFTRAG:Cancel()` | A9 VALIDATED |
 
 The 30-second value must not be promoted to a global production invariant by future Base work without a separate owner decision and documented evidence.
+
+### A9 final DCS evidence
+
+Exact validated provenance:
+
+```text
+source commit: c956b7b03b82c4ab04e529d09b1ff9bf4e480bf2
+Acceptance bundle SHA-256: D2172B83EDC527A2280754A0CC0A8F575C741082B4271A77F2D6E60688D1B3B0
+DCS: 2.9.29.27468
+MOOSE: 2.9.18 / 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+result: PASS
+```
+
+Validated A9 chain:
+
+```text
+MOOSE provider/asset selection
+-> selected provider owner profile
+-> owner route / tactical corridor
+-> mission executing
+-> own FLIGHTGROUP detection
+-> supported-element clear
+-> 30 s A9-profile stable no-contact
+-> controlled release
+-> reverse owner route
+-> home landing Jalalabad
+-> exact LegionAssetReturned
+-> CAS_LIFECYCLE_COMPLETE
+-> PASS
+```
+
+Negative regression confirmation: no terminal post-return `CAS_ASSET_LOSS` occurred on corrected source. This validation applies only to the documented A9 Joyce rotary-wing CAS scope.
