@@ -684,3 +684,44 @@ Status:
 AUFTRAG:IsExecuting CAS execution authority: SOURCE_REVIEWED / DCS_PENDING
 A8 corrected release lifecycle: DCS_PENDING
 ```
+
+## Addendum 2026-09-20 – shared FSSR CAS lifecycle extraction
+
+Following the binding `ACCEPTED-LIFECYCLE-PRESERVATION-LAW`, the CAS route/release/recovery state previously embedded in specialized Stage-3/A7 acceptance logic has been moved into shared production code:
+
+```text
+scripts/campaign/OMW_FireSupStratResupply_CasLifecycleRuntime.lua
+schema OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-CAS-LIFECYCLE-RUNTIME-1
+```
+
+Inherited / source-reviewed MOOSE contracts used by the shared runtime:
+
+```text
+COMMANDER:OnBeforeMissionAssign(...)
+COMMANDER:OnAfterMissionAssign(...)
+COMMANDER:OnAfterOpsOnMission(...)
+AUFTRAG:IsExecuting()
+AUFTRAG:Cancel()
+FLIGHTGROUP:GetDetectedGroups()
+FLIGHTGROUP:OnAfterFuelLow(...)
+FLIGHTGROUP:OnAfterLanded(...)
+LEGION:OnAfterLegionAssetReturned(...)
+```
+
+Directly reused OMW route modules:
+
+```text
+OMW_FlightPathNameContract
+OMW_HelicopterFlightPathCorridor
+OMW_HelicopterCasTacticalCorridor
+```
+
+The production runtime does not select AIRWING/SQUADRON/assets. MOOSE COMMANDER/LEGION remains selection authority under ADR 0008. The runtime only binds the owner-authored execution profile of the provider selected by MOOSE and then owns release/recovery observation.
+
+Evidence state:
+
+```text
+Stage-2B OMW_FlightPath outbound/reverse route lifecycle: VALIDATED_FOR_EXACT_PROVENANCE
+shared FSSR CasLifecycleRuntime composition: SOURCE_REVIEWED / UNIT_CI_PENDING / DCS_PENDING
+A9 observer-only acceptance: SOURCE_REVIEWED / CI_PENDING / DCS_PENDING
+```
