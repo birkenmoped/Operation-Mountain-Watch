@@ -298,7 +298,10 @@ local function start()
             },
           },
           pathlineRegistry=_DATABASE.PATHLINES,
-          noContactStableSec=30,
+          releasePolicy={
+            mode="SUPPORTED_ELEMENT_STABLE_NO_CONTACT",
+            stableNoContactSec=30,
+          },
           updateSeconds=5,
           redCoalition=coalition.side.RED,
           onEvidence=onCasEvidence,
