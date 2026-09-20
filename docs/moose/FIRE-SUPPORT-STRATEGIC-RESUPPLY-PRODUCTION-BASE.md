@@ -302,7 +302,7 @@ schema OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-CAS-RELEASE-POLICY-1
 Production builder:
 
 ```text
-OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BASE-24
+OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BASE-25
 ```
 
 A9 ist absichtlich observer-only. Sein Builder und ein eigener statischer Contract-Test verbieten CAS-Detection-, Route-, Cancel-, FuelLow-, Landing- und Legion-return-Ownership im Harness.
