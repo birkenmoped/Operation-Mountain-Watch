@@ -64,7 +64,7 @@ function Runtime.New(spec)
     if type(externalSupport.resolveArtyTarget)~="function" then fail("externalSupport.resolveArtyTarget must be a function") end
     if type(externalSupport.resolveCasGeometry)~="function" then fail("externalSupport.resolveCasGeometry must be a function") end
     if externalSupport.casLifecycle~=nil then
-      for _,name in ipairs({"casLifecycleRuntime","flightPathNameContract","helicopterCorridor","casTacticalCorridor","casPatrolClosure"}) do
+      for _,name in ipairs({"casLifecycleRuntime","casReleasePolicy","flightPathNameContract","helicopterCorridor","casTacticalCorridor","casPatrolClosure"}) do
         needTable(modules[name],"modules." .. name)
       end
       needFunction(modules.casLifecycleRuntime,"New","modules.casLifecycleRuntime")
@@ -237,6 +237,7 @@ function Instance:Prepare()
       casRequiredAssetsMin=self.externalSupport.casRequiredAssetsMin,
       casRequiredAssetsMax=self.externalSupport.casRequiredAssetsMax,
       casLifecycleRuntime=m.casLifecycleRuntime,
+      casReleasePolicy=m.casReleasePolicy,
       flightPathNameContract=m.flightPathNameContract,
       helicopterCorridor=m.helicopterCorridor,
       casTacticalCorridor=m.casTacticalCorridor,
