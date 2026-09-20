@@ -378,6 +378,14 @@ function Instance:_bindFlight(entry, opsGroup)
       beforeRelease = entry.fuelLowBeforeRelease,
       provider = entry.selectedProviderAlias,
     })
+    if entry.fuelLowBeforeRelease and not entry.fuelLowFailureReported then
+      entry.fuelLowFailureReported = true
+      entry.failed = true
+      entry.failureReason = "CAS_FUEL_LOW_BEFORE_CONTROLLED_RELEASE"
+      runtime:_evidence(entry, "CAS_LIFECYCLE_FAILED", { reason = entry.failureReason })
+      -- Continue monitoring. MOOSE owns the safety RTB and a surviving flight must
+      -- still be observed through landing and asset return.
+    end
   end
 
   local previousLanded = opsGroup.OnAfterLanded
@@ -682,6 +690,7 @@ function Instance:Dispatch(demand, context)
     supportedElementClear = false,
     fuelLowObserved = false,
     fuelLowBeforeRelease = false,
+    fuelLowFailureReported = false,
     assetLossReported = false,
     blocked = false,
     releaseFailureReported = false,
