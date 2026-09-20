@@ -186,3 +186,5 @@ tools/build-fire-support-strategic-resupply-production-base-acceptance-9.ps1
 ```
 
 Status vor realem DCS-Lauf: `SOURCE_REVIEW_PENDING / DCS_PENDING`.
+
+Shared closure request is reused from `scripts/air-operations/OMW_FobAttackCasPatrolClosure.lua` schema `OMW-FOB-ATTACK-CAS-PATROL-CLOSURE-3`; the Base lifecycle does not reimplement mission-cancel semantics.
