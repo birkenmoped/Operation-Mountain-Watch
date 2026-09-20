@@ -8,7 +8,7 @@ $prodBuilder=Join-Path $repoRoot 'tools\build-fire-support-strategic-resupply-pr
 $prodBundle=Join-Path $repoRoot 'mission\fire-support-strategic-resupply\dist\OMW_FireSupStratResupply_Base.lua'
 $src=Join-Path $repoRoot 'mission\tests\fire-support-strategic-resupply-production-base-runtime\src\09-production-cas-lifecycle-acceptance.lua'
 $out=Join-Path $repoRoot 'mission\tests\fire-support-strategic-resupply-production-base-runtime\dist\OMW_FireSupStratResupply_Production_Base_Acceptance_9.lua'
-$version='OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BASE-ACCEPTANCE-9-1'
+$version='OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BASE-ACCEPTANCE-9-2'
 
 foreach($f in @($prodBuilder,$src)){
   if(-not(Test-Path -LiteralPath $f -PathType Leaf)){throw "Required file not found: $f"}
@@ -95,6 +95,8 @@ Write-Host "GitCommit: $commit"
 Write-Host "ProductionBuilderSHA256: $((Get-FileHash -LiteralPath $prodBuilder -Algorithm SHA256).Hash.ToUpperInvariant())"
 Write-Host "ProductionBundleSHA256: $((Get-FileHash -LiteralPath $prodBundle -Algorithm SHA256).Hash.ToUpperInvariant())"
 Write-Host "CasLifecycleSourceSHA256: $((Get-FileHash -LiteralPath (Join-Path $repoRoot 'scripts\campaign\OMW_FireSupStratResupply_CasLifecycleRuntime.lua') -Algorithm SHA256).Hash.ToUpperInvariant())"
+Write-Host "CasReleasePolicySourceSHA256: $((Get-FileHash -LiteralPath (Join-Path $repoRoot 'scripts\campaign\OMW_FireSupStratResupply_CasReleasePolicy.lua') -Algorithm SHA256).Hash.ToUpperInvariant())"
+Write-Host "CasPatrolClosureSourceSHA256: $((Get-FileHash -LiteralPath (Join-Path $repoRoot 'scripts\air-operations\OMW_FobAttackCasPatrolClosure.lua') -Algorithm SHA256).Hash.ToUpperInvariant())"
 Write-Host "AcceptanceSourceSHA256: $((Get-FileHash -LiteralPath $src -Algorithm SHA256).Hash.ToUpperInvariant())"
 Write-Host "AcceptanceBuilderSHA256: $((Get-FileHash -LiteralPath $PSCommandPath -Algorithm SHA256).Hash.ToUpperInvariant())"
 Write-Host "AcceptanceBundleSHA256: $((Get-FileHash -LiteralPath $out -Algorithm SHA256).Hash.ToUpperInvariant())"
