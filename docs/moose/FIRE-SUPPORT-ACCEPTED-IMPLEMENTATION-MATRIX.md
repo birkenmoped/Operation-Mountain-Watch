@@ -249,3 +249,19 @@ accepted lifecycle implementation
 ```
 
 Insbesondere duerfen neue Acceptance-Harnesses keine eigene QRF-Targeting-, CAS-Release-, CAS-RTB-/Recovery-, ARTY-Rearm- oder ReturnToLegion-State-Machine aufbauen, wenn die betreffende Funktion bereits als akzeptierter beziehungsweise bindender Produktionsvertrag existiert.
+
+## CAS lifecycle inheritance record – A9
+
+| Boundary | Inherited implementation / law | Current implementation | Evidence status |
+|---|---|---|---|
+| outbound/reverse owner route | Stage-2B accepted `OMW_HelicopterFlightPathCorridor` path and current tactical corridor contract | shared `OMW_FireSupStratResupply_CasLifecycleRuntime` directly calls the route modules | old exact-provenance route PASS; new composition DCS_PENDING |
+| provider/asset selection | ADR 0008 / MOOSE COMMANDER+LEGION | unchanged MOOSE authority | source-reviewed; A9 DCS_PENDING |
+| mission execution gate | MOOSE `AUFTRAG:IsExecuting()` | shared runtime | source-reviewed; A9 DCS_PENDING |
+| CAS own picture | Stage-3 binding `FLIGHTGROUP:GetDetectedGroups()` contract | shared runtime | source-reviewed; A9 DCS_PENDING |
+| supported-element release | Stage-3 CAS lifecycle law | shared runtime reads authoritative source incident coordinator participants | source-reviewed; A9 DCS_PENDING |
+| stable no-contact | Stage-3 30-s rule | shared production runtime scheduler; `nil` detection is not clear | unit/CI pending; DCS_PENDING |
+| mission closure | public MOOSE `AUFTRAG:Cancel()` via existing CommanderBridge handle | shared runtime | source-reviewed; DCS_PENDING |
+| landing / asset return | MOOSE FLIGHTGROUP/LEGION lifecycle | shared runtime observes home landing + exact `LegionAssetReturned` | source-reviewed; DCS_PENDING |
+| Acceptance role | preservation law | A9 stimulus/observation/assertion only | static gate + CI pending |
+
+A9 must not be built or handed to DCS until the unit/static gates and both repository CI workflows pass on the exact remote HEAD.
