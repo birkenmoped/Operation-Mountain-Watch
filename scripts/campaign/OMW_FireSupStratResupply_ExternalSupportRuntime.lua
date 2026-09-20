@@ -65,6 +65,7 @@ function Runtime.New(spec)
     local flightPathNameContract=needTable(spec.flightPathNameContract,"flightPathNameContract")
     local helicopterCorridor=needTable(spec.helicopterCorridor,"helicopterCorridor")
     local casTacticalCorridor=needTable(spec.casTacticalCorridor,"casTacticalCorridor")
+    local casPatrolClosure=needTable(spec.casPatrolClosure,"casPatrolClosure")
     needFunction(casLifecycleRuntime,"New","casLifecycleRuntime")
     casLifecycle=casLifecycleRuntime.New({
       innerAdapter=casBridge,
@@ -72,6 +73,7 @@ function Runtime.New(spec)
       flightPathNameContract=flightPathNameContract,
       helicopterCorridor=helicopterCorridor,
       casTacticalCorridor=casTacticalCorridor,
+      casPatrolClosure=casPatrolClosure,
       executionProfiles=needTable(lifecycleSpec.executionProfiles,"casLifecycle.executionProfiles"),
       pathlineRegistry=needTable(lifecycleSpec.pathlineRegistry,"casLifecycle.pathlineRegistry"),
       noContactStableSec=lifecycleSpec.noContactStableSec,
