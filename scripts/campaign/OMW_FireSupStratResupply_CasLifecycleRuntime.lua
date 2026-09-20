@@ -310,6 +310,7 @@ function Instance:_bindFlight(entry, opsGroup)
   end
   if not entry.tacticalGeometry then
     entry.failed = true
+    entry.blocked = true
     entry.failureReason = "CAS_OPSGROUP_WITHOUT_OWNER_ROUTE_PROFILE"
     self:_evidence(entry, "CAS_LIFECYCLE_FAILED", { reason = entry.failureReason })
     return
@@ -321,6 +322,7 @@ function Instance:_bindFlight(entry, opsGroup)
   }) do
     if type(opsGroup[method]) ~= "function" then
       entry.failed = true
+      entry.blocked = true
       entry.failureReason = "CAS_SELECTED_OPSGROUP_NOT_FLIGHTGROUP missing=" .. method
       self:_evidence(entry, "CAS_LIFECYCLE_FAILED", { reason = entry.failureReason })
       return
@@ -414,6 +416,7 @@ function Instance:_installCommanderCallbacks()
     local legion, reason = selectedLegion(Legions)
     if not legion then
       entry.failed = true
+      entry.blocked = true
       entry.failureReason = "C2_PROVIDER_SELECTION_INVALID " .. tostring(reason)
       runtime:_evidence(entry, "CAS_LIFECYCLE_FAILED", { reason = entry.failureReason })
       return false
@@ -422,6 +425,7 @@ function Instance:_installCommanderCallbacks()
     local _, profileReason = runtime:_prepareSelectedProvider(entry, Mission, legion)
     if profileReason then
       entry.failed = true
+      entry.blocked = true
       entry.failureReason = profileReason
       runtime:_evidence(entry, "CAS_PROVIDER_PROFILE_REJECTED", {
         reason = profileReason,
@@ -446,6 +450,7 @@ function Instance:_installCommanderCallbacks()
     entry.selectedSquadron = asset and asset.squadname or nil
     if not asset then
       entry.failed = true
+      entry.blocked = true
       entry.failureReason = "CAS_SELECTED_ASSET_EVIDENCE_MISSING"
       runtime:_evidence(entry, "CAS_LIFECYCLE_FAILED", { reason = entry.failureReason })
       return
@@ -602,9 +607,21 @@ function Instance:_updateEntry(entry)
         end,
       })
       if changed ~= true then
-        entry.failed = true
-        entry.failureReason = "CAS_CONTROLLED_RELEASE_FAILED " .. tostring(closureReason)
-        self:_evidence(entry, "CAS_LIFECYCLE_FAILED", { reason = entry.failureReason })
+        if entry.handle.cancelRequested == true then
+          entry.releaseRequested = true
+          entry.releaseAt = timer.getAbsTime()
+          self:_evidence(entry, "CAS_CONTROLLED_RELEASE", {
+            reason = "SUPPORTED_ELEMENT_RELEASE_NO_CONTACT_ALREADY_REQUESTED",
+            reverseOwnerRoute = true,
+          })
+          return
+        end
+        if not entry.releaseFailureReported then
+          entry.releaseFailureReported = true
+          entry.failed = true
+          entry.failureReason = "CAS_CONTROLLED_RELEASE_FAILED " .. tostring(closureReason)
+          self:_evidence(entry, "CAS_LIFECYCLE_FAILED", { reason = entry.failureReason })
+        end
         return
       end
       entry.releaseRequested = true
@@ -667,6 +684,7 @@ function Instance:Dispatch(demand, context)
     fuelLowBeforeRelease = false,
     assetLossReported = false,
     blocked = false,
+    releaseFailureReported = false,
   }
 
   self.entries[demand.demandId] = entry
