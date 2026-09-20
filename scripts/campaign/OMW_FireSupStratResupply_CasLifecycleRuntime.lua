@@ -83,6 +83,7 @@ function Runtime.New(spec)
   local helicopterCorridor = needTable(spec.helicopterCorridor, "helicopterCorridor")
   local casTacticalCorridor = needTable(spec.casTacticalCorridor, "casTacticalCorridor")
   local casPatrolClosure = needTable(spec.casPatrolClosure, "casPatrolClosure")
+  local releasePolicy = needTable(spec.releasePolicy, "releasePolicy")
   local executionProfiles = needTable(spec.executionProfiles, "executionProfiles")
   local pathlineRegistry = needTable(spec.pathlineRegistry, "pathlineRegistry")
 
@@ -93,6 +94,8 @@ function Runtime.New(spec)
   needFunction(casTacticalCorridor, "ConfigureMission", "casTacticalCorridor")
   needFunction(casTacticalCorridor, "Bind", "casTacticalCorridor")
   needFunction(casPatrolClosure, "Request", "casPatrolClosure")
+  needFunction(releasePolicy, "Observe", "releasePolicy")
+  needFunction(releasePolicy, "GetState", "releasePolicy")
 
   if type(spec.logger) ~= "function" then fail("logger must be a function") end
   if spec.onEvidence ~= nil and type(spec.onEvidence) ~= "function" then
@@ -112,10 +115,10 @@ function Runtime.New(spec)
     helicopterCorridor = helicopterCorridor,
     casTacticalCorridor = casTacticalCorridor,
     casPatrolClosure = casPatrolClosure,
+    releasePolicy = releasePolicy,
     executionProfiles = executionProfiles,
     pathlineRegistry = pathlineRegistry,
     redCoalition = spec.redCoalition or (coalition and coalition.side and coalition.side.RED),
-    noContactStableSec = needPositive(spec.noContactStableSec or 30, "noContactStableSec"),
     updateSeconds = needPositive(spec.updateSeconds or 5, "updateSeconds"),
     logger = spec.logger,
     onEvidence = spec.onEvidence,
@@ -549,34 +552,14 @@ function Instance:_updateEntry(entry)
 
   if entry.executing and not entry.releaseRequested then
     local eligible, total, sensorReady = self:_detectedEligible(entry)
+    local count = #eligible
+
     if sensorReady then
-      local count = #eligible
       if count ~= entry.detectedEligibleCount then
         entry.detectedEligibleCount = count
-        if count > 0 then
-          entry.noContactSince = nil
-          entry.noContactReported = false
-        elseif not entry.noContactSince then
-          entry.noContactSince = timer.getAbsTime()
-        end
         self:_evidence(entry, "CAS_SENSOR_REPORT", {
           detectedTotal = total,
           eligible = count,
-        })
-      elseif count == 0 and not entry.noContactSince then
-        entry.noContactSince = timer.getAbsTime()
-        self:_evidence(entry, "CAS_SENSOR_REPORT", {
-          detectedTotal = total,
-          eligible = 0,
-        })
-      end
-
-      if count == 0 and entry.noContactSince and not entry.noContactReported
-          and timer.getAbsTime() - entry.noContactSince >= self.noContactStableSec then
-        entry.noContactReported = true
-        self:_evidence(entry, "CAS_NO_CONTACT_REPORTED", {
-          stableSec = self.noContactStableSec,
-          source = "FLIGHTGROUP_GetDetectedGroups",
         })
       end
     elseif not entry.sensorWaitReported then
@@ -595,44 +578,62 @@ function Instance:_updateEntry(entry)
       self:_evidence(entry, "CAS_SUPPORTED_ELEMENT_WAIT", { reason = clearReason })
     end
 
-    if entry.supportedElementClear and entry.noContactReported then
-      local _, changed, closureReason = self.casPatrolClosure.Request({
-        demandId = entry.demand.demandId,
-        tacticalComplete = true,
-        executionEvidenceConfirmed = true,
-        reason = "SUPPORTED_ELEMENT_RELEASE_NO_CONTACT",
-        requestClosure = function(_, reason)
-          local requested = entry.handle:Cancel(reason)
-          return entry.mission, requested, requested and nil or "CLOSURE_ALREADY_REQUESTED"
-        end,
+    if sensorReady and supportedClear ~= nil then
+      local policyState = self.releasePolicy:Observe(entry.demand.demandId, {
+        now = timer.getAbsTime(),
+        sensorReady = true,
+        supportedElementClear = supportedClear == true,
+        eligibleCount = count,
       })
-      if changed ~= true then
-        if entry.handle.cancelRequested == true then
-          entry.releaseRequested = true
-          entry.releaseAt = timer.getAbsTime()
-          self:_evidence(entry, "CAS_CONTROLLED_RELEASE", {
-            reason = "SUPPORTED_ELEMENT_RELEASE_NO_CONTACT_ALREADY_REQUESTED",
-            reverseOwnerRoute = true,
-          })
+
+      if policyState.noContactReported and not entry.noContactReported then
+        entry.noContactReported = true
+        self:_evidence(entry, "CAS_NO_CONTACT_REPORTED", {
+          stableSec = self.releasePolicy.stableNoContactSec,
+          source = "FLIGHTGROUP_GetDetectedGroups",
+        })
+      elseif not policyState.noContactReported then
+        entry.noContactReported = false
+      end
+
+      if policyState.release then
+        local _, changed, closureReason = self.casPatrolClosure.Request({
+          demandId = entry.demand.demandId,
+          tacticalComplete = true,
+          executionEvidenceConfirmed = true,
+          reason = policyState.releaseReason or "SUPPORTED_ELEMENT_RELEASE_NO_CONTACT",
+          requestClosure = function(_, reason)
+            local requested = entry.handle:Cancel(reason)
+            return entry.mission, requested, requested and nil or "CLOSURE_ALREADY_REQUESTED"
+          end,
+        })
+        if changed ~= true then
+          if entry.handle.cancelRequested == true then
+            entry.releaseRequested = true
+            entry.releaseAt = timer.getAbsTime()
+            self:_evidence(entry, "CAS_CONTROLLED_RELEASE", {
+              reason = tostring(policyState.releaseReason or "SUPPORTED_ELEMENT_RELEASE_NO_CONTACT") .. "_ALREADY_REQUESTED",
+              reverseOwnerRoute = true,
+            })
+            return
+          end
+          if not entry.releaseFailureReported then
+            entry.releaseFailureReported = true
+            entry.failed = true
+            entry.failureReason = "CAS_CONTROLLED_RELEASE_FAILED " .. tostring(closureReason)
+            self:_evidence(entry, "CAS_LIFECYCLE_FAILED", { reason = entry.failureReason })
+          end
           return
         end
-        if not entry.releaseFailureReported then
-          entry.releaseFailureReported = true
-          entry.failed = true
-          entry.failureReason = "CAS_CONTROLLED_RELEASE_FAILED " .. tostring(closureReason)
-          self:_evidence(entry, "CAS_LIFECYCLE_FAILED", { reason = entry.failureReason })
-        end
-        return
+        entry.releaseRequested = true
+        entry.releaseAt = timer.getAbsTime()
+        self:_evidence(entry, "CAS_CONTROLLED_RELEASE", {
+          reason = policyState.releaseReason or "SUPPORTED_ELEMENT_RELEASE_NO_CONTACT",
+          reverseOwnerRoute = true,
+        })
       end
-      entry.releaseRequested = true
-      entry.releaseAt = timer.getAbsTime()
-      self:_evidence(entry, "CAS_CONTROLLED_RELEASE", {
-        reason = "SUPPORTED_ELEMENT_RELEASE_NO_CONTACT",
-        reverseOwnerRoute = true,
-      })
     end
   end
-
   if entry.releaseRequested and entry.homeLanded and entry.assetReturned then
     entry.completed = true
     entry.completedAt = timer.getAbsTime()
@@ -677,7 +678,6 @@ function Instance:Dispatch(demand, context)
     completed = false,
     failed = false,
     detectedEligibleCount = nil,
-    noContactSince = nil,
     noContactReported = false,
     supportedElementClear = false,
     fuelLowObserved = false,
