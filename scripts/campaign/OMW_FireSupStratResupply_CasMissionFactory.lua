@@ -107,6 +107,7 @@ function Instance:Create(demand,context)
 
   mission:SetTeleport(false)
   mission:SetRequiredAssets(self.requiredAssetsMin,self.requiredAssetsMax)
+  mission._omwFssrCasGeometry = geometry
   if geometry.requiredAttributes~=nil then mission:SetRequiredAttribute(geometry.requiredAttributes) end
   if geometry.requiredProperties~=nil then mission:SetRequiredProperty(geometry.requiredProperties) end
   if finite(demand.priority) then mission:SetPriority(demand.priority,false) end
