@@ -270,3 +270,57 @@ und nicht `SchemaVersion`. Der akzeptierte/reused Tactical-Corridor-Source wurde
 Aus diesem fehlgeschlagenen Lauf existiert **kein gueltiges A9-Bundle und kein A9-Bundle-Hash**. Die bereits vorhandene Production-Base-Datei im lokalen `dist` darf nicht als Ergebnis dieses Builds interpretiert werden.
 
 Revalidation nach der Builderkorrektur: owner-lokaler Build + unabhaengige Hashkette erforderlich.
+
+## 13. Owner-local Buildnachweis auf `eb9788fe`
+
+Der Projektinhaber hat Production Base 24 und Acceptance 9 lokal erfolgreich gebaut.
+
+```text
+source commit:
+eb9788fe6c70c77aeedf9bfe2dae585e6dca4fc6
+
+production builder:
+OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BASE-24
+SHA-256 4B9C7F5DBFB05B7E6809553F4A25847D085809C407E1B36255FB32BAE4546D6F
+
+production bundle:
+SHA-256 D6C0D2089D046C65477E197F645EA5C9CA540B1274037ED588059F1EE8C0F3E8
+
+CasLifecycleRuntime:
+SHA-256 2CC98A2DE51E574E0C62C1DCF81BC86D49E5A3561A6C10EC3249E06BF74DF147
+
+CasReleasePolicy:
+SHA-256 A61D71C6C4851B38E46DD9BC839825E0A34F25C81D79932E412C6016AF42D827
+
+CasPatrolClosure:
+SHA-256 C503500FB69FEFB4A429BF8AF403770FAA72C59A91B5CC0276D9EE27A41898F4
+
+FlightPathNameContract:
+SHA-256 333E895D8BF65138C96359CE564BE8F9967F7ADDA3A33E2AE8A8726103D95855
+
+HelicopterFlightPathCorridor:
+SHA-256 04D99722F0246AD261C47A90104E488FE9EF65721A647BE5CF6BAA602A1E279B
+
+HelicopterCasTacticalCorridor:
+SHA-256 E8FF4C196433CFCF287EEED25EAA31640EB8013A1286359CA63984811DDE08DA
+
+Acceptance 9 source:
+SHA-256 B5AD27452D7610B6C6B813780D0B3812F8E3EE6F000AC5FE17068E8BF3A2701E
+
+Acceptance 9 builder:
+SHA-256 305F59C020BDE7A729E45F0383F2FCF9F0DF1A0773B1BC83ABF017BBF798DB75
+
+Acceptance 9 bundle:
+SHA-256 E624F624746C0A419E81871345C4EB446B31E4521DBE347D9FB40B0854775BBF
+```
+
+Der unabhaengige `Get-FileHash`-Lauf bestaetigte dieselben Werte. `git status --short` zeigt ausschliesslich untracked Build-`dist`-Verzeichnisse und keine getrackten lokalen Aenderungen.
+
+Status:
+
+```text
+source/build/hash provenance: VERIFIED_LOCAL_BUILD
+DCS runtime: DCS_PENDING
+```
+
+Die fuer den naechsten DCS-Lauf maßgebliche Acceptance-LUA ist damit exakt das Bundle mit SHA-256 `E624F624746C0A419E81871345C4EB446B31E4521DBE347D9FB40B0854775BBF`.
