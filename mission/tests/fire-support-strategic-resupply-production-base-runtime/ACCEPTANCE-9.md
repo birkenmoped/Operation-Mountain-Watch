@@ -55,8 +55,8 @@ MOOSE COMMANDER/LEGION selects provider + asset
 -> AUFTRAG executing
 -> own FLIGHTGROUP detection
 -> supported element clear
--> stable no-contact >= 30 sec
--> controlled Cancel via existing CommanderBridge handle
+-> configured release policy
+-> controlled Cancel via shared CasPatrolClosure / existing CommanderBridge handle
 -> reverse owner route
 -> physical home landing
 -> exact LegionAssetReturned
@@ -90,11 +90,23 @@ FLIGHTGROUP:GetDetectedGroups() returns a valid set
 AND
 zero engagement-eligible RED Ground Units in CAS zone / engage range
 AND
-stable >= 30 sec
--> production lifecycle calls existing CommanderBridge handle Cancel()
+A9 release profile `SUPPORTED_ELEMENT_STABLE_NO_CONTACT` is satisfied
+-> production lifecycle calls shared CasPatrolClosure request
+-> existing CommanderBridge handle Cancel()
 ```
 
 `nil` Detection ist nicht `no contact`.
+
+### A9-spezifische Release-Policy
+
+Die 30-Sekunden-Regel ist **keine allgemeine Base-Regel**. `STAGE3-CAS-LIFECYCLE-RECOVERY-LAW.md` §20 legt fest, dass die konkrete Freigabebedingung profilabhaengig bleibt. A9 injiziert fuer diesen Joyce-Test explizit:
+
+```text
+mode = SUPPORTED_ELEMENT_STABLE_NO_CONTACT
+stableNoContactSec = 30
+```
+
+Die Qualifikation wird vom produktiven `OMW_FireSupStratResupply_CasReleasePolicy.lua` ausgefuehrt. Der Acceptance-Harness fuehrt keinen eigenen No-Contact-Timer.
 
 ## 5. Recovery
 
@@ -181,10 +193,12 @@ Kein `OpsOnMission`- oder Watchdog-Ereignis kann PASS erzeugen.
 
 ```text
 scripts/campaign/OMW_FireSupStratResupply_CasLifecycleRuntime.lua
+scripts/campaign/OMW_FireSupStratResupply_CasReleasePolicy.lua
+scripts/air-operations/OMW_FobAttackCasPatrolClosure.lua
 mission/tests/fire-support-strategic-resupply-production-base-runtime/src/09-production-cas-lifecycle-acceptance.lua
 tools/build-fire-support-strategic-resupply-production-base-acceptance-9.ps1
 ```
 
-Status vor realem DCS-Lauf: `SOURCE_REVIEW_PENDING / DCS_PENDING`.
+Status vor realem DCS-Lauf: `SOURCE_REVIEWED / CI_PENDING / DCS_PENDING`.
 
 Shared closure request is reused from `scripts/air-operations/OMW_FobAttackCasPatrolClosure.lua` schema `OMW-FOB-ATTACK-CAS-PATROL-CLOSURE-3`; the Base lifecycle does not reimplement mission-cancel semantics.
