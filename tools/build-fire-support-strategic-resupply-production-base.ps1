@@ -6,7 +6,7 @@ Set-StrictMode -Version Latest
 $repoRoot=Split-Path -Parent $PSScriptRoot
 $distDir=Join-Path $repoRoot 'mission\fire-support-strategic-resupply\dist'
 $outputFile=Join-Path $distDir 'OMW_FireSupStratResupply_Base.lua'
-$builderVersion='OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BASE-20'
+$builderVersion='OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BASE-21'
 
 $moduleSpecs=@(
   @{Name='SiteRegistry';Path='scripts\campaign\OMW_FireSupStratResupply_SiteRegistry.lua'},
@@ -22,6 +22,10 @@ $moduleSpecs=@(
   @{Name='CommanderBridge';Path='scripts\campaign\OMW_FireSupStratResupply_CommanderBridge.lua'},
   @{Name='ArtyMissionFactory';Path='scripts\campaign\OMW_FireSupStratResupply_ArtyMissionFactory.lua'},
   @{Name='CasMissionFactory';Path='scripts\campaign\OMW_FireSupStratResupply_CasMissionFactory.lua'},
+  @{Name='CasLifecycleRuntime';Path='scripts\campaign\OMW_FireSupStratResupply_CasLifecycleRuntime.lua'},
+  @{Name='FlightPathNameContract';Path='scripts\air-operations\OMW_FlightPathNameContract.lua'},
+  @{Name='HelicopterCorridor';Path='scripts\air-operations\OMW_HelicopterFlightPathCorridor.lua'},
+  @{Name='CasTacticalCorridor';Path='scripts\air-operations\OMW_HelicopterCasTacticalCorridor.lua'},
   @{Name='ExternalSupportRuntime';Path='scripts\campaign\OMW_FireSupStratResupply_ExternalSupportRuntime.lua'},
   @{Name='InstallationIncidentBridge';Path='scripts\campaign\OMW_FireSupStratResupply_InstallationIncidentBridge.lua'},
   @{Name='InstallationIncidentRuntime';Path='scripts\campaign\OMW_FireSupStratResupply_InstallationIncidentRuntime.lua'},
@@ -62,6 +66,9 @@ foreach($marker in @(
   'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-QRF-RUNTIME-13',
   'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-QRF-MISSION-FACTORY-8',
   'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-CAS-MISSION-FACTORY-3',
+  'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-CAS-LIFECYCLE-RUNTIME-1',
+  'OMW-FLIGHTPATH-NAME-CONTRACT-1','OMW-HELICOPTER-FLIGHTPATH-CORRIDOR-8','OMW-HELICOPTER-CAS-TACTICAL-CORRIDOR-1',
+  'CAS_CONTROLLED_RELEASE','CAS_HOME_LANDED','CAS_LEGION_ASSET_RETURNED',
   'PATROLZONE_ENGAGE','AUFTRAG:NewPATROLZONE','SetEngageDetected',
   'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-INSTALLATION-INCIDENT-BRIDGE-5',
   'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PERIMETER-BRIDGE-4',
@@ -106,7 +113,9 @@ local Modules={
  legionBridge=LegionBridge,guardMissionFactory=GuardMissionFactory,qrfMissionFactory=QrfMissionFactory,
  roadSpawnAdapter=RoadSpawnAdapter,guardMaterializationAdapter=GuardMaterializationAdapter,
  guardRouteAdapter=GuardRouteAdapter,commanderBridge=CommanderBridge,artyMissionFactory=ArtyMissionFactory,
- casMissionFactory=CasMissionFactory,externalSupportRuntime=ExternalSupportRuntime,
+ casMissionFactory=CasMissionFactory,casLifecycleRuntime=CasLifecycleRuntime,
+ flightPathNameContract=FlightPathNameContract,helicopterCorridor=HelicopterCorridor,casTacticalCorridor=CasTacticalCorridor,
+ externalSupportRuntime=ExternalSupportRuntime,
  installationIncidentBridge=InstallationIncidentBridge,installationIncidentRuntime=InstallationIncidentRuntime,
  installationAttackIncident=InstallationAttackIncident,alarmEvidenceAdapter=AlarmEvidenceAdapter,
  perimeterBridge=PerimeterBridge,perimeterRuntime=PerimeterRuntime,threatAdapter=ThreatAdapter,
@@ -132,6 +141,9 @@ foreach($marker in @(
   'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-QRF-RUNTIME-13',
   'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-QRF-MISSION-FACTORY-8',
   'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-CAS-MISSION-FACTORY-3',
+  'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-CAS-LIFECYCLE-RUNTIME-1',
+  'OMW-FLIGHTPATH-NAME-CONTRACT-1','OMW-HELICOPTER-FLIGHTPATH-CORRIDOR-8','OMW-HELICOPTER-CAS-TACTICAL-CORRIDOR-1',
+  'CAS_CONTROLLED_RELEASE','CAS_HOME_LANDED','CAS_LEGION_ASSET_RETURNED',
   'PATROLZONE_ENGAGE','AUFTRAG:NewPATROLZONE','SetEngageDetected',
   'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-INSTALLATION-INCIDENT-BRIDGE-5',
   'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PERIMETER-BRIDGE-4',
@@ -149,7 +161,7 @@ foreach($marker in @(
 Write-Host "Built: $outputFile"
 Write-Host "BuilderVersion: $builderVersion"
 Write-Host 'PackageSchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BASE-1'
-Write-Host 'RuntimeSchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-RUNTIME-8'
+Write-Host 'RuntimeSchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-RUNTIME-9'
 Write-Host 'SiteRegistrySchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-SITE-REGISTRY-6'
 Write-Host 'SupportProfilesSchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-SUPPORT-PROFILES-4'
 Write-Host 'BaseSchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-BASE-4'
@@ -158,7 +170,9 @@ Write-Host 'GuardMissionFactorySchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-GUARD
 Write-Host 'QrfRuntimeSchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-QRF-RUNTIME-13'
 Write-Host 'QrfMissionFactorySchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-QRF-MISSION-FACTORY-8'
 Write-Host 'CasMissionFactorySchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-CAS-MISSION-FACTORY-3'
+Write-Host 'CasLifecycleRuntimeSchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-CAS-LIFECYCLE-RUNTIME-1'
 Write-Host 'ExternalCasModes: CAS | PATROLZONE_ENGAGE; provider selection remains MOOSE COMMANDER-owned'
+Write-Host 'CasLifecycle: shared production route/release/recovery owner; Acceptance harness must observe only'
 Write-Host 'InstallationIncidentBridgeSchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-INSTALLATION-INCIDENT-BRIDGE-5'
 Write-Host 'PerimeterBridgeSchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PERIMETER-BRIDGE-4'
 Write-Host 'ThreatAdapterSchema: OMW-FOB-THREAT-OPSZONE-ADAPTER-6'
