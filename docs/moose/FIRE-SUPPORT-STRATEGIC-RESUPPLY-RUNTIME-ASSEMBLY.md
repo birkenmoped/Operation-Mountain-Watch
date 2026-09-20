@@ -26,7 +26,7 @@ validated_in_dcs: partial
 
 `scripts/campaign/OMW_FireSupStratResupply_Runtime.lua` ist der Composition Root der allgemeinen Fire-Support-/Strategic-Resupply-Basis. Das Modul besitzt keine eigene strategische Ressourcenhoheit und keine zweite operative Queue. Es verdrahtet die getrennten Verantwortungsbereiche und laesst operative Auswahl soweit vorgesehen bei MOOSE.
 
-Die lokale Ground-Reaktion ist inzwischen durch die separaten Production-Base-Acceptances A4/A5 technisch belegt. ARTY/CAS-External-Support und die kombinierte Full-Response-Kette bleiben getrennt nachzuweisen.
+Die lokale Ground-Reaktion ist durch die separaten Production-Base-Acceptances A4/A5 technisch belegt. Der gemeinsame Rotary-Wing-CAS-Pfad ist durch Acceptance 9 fuer dessen exakt dokumentierten Joyce/Jalalabad-Scope DCS-validiert. ARTY, ARTY-Rearm, Strategic Resupply und die kombinierte Full-Response-Kette bleiben getrennt nachzuweisen.
 
 ## Assembly
 
@@ -151,6 +151,36 @@ Das erweitert die taktische Missionsform, nicht die Provider-Selektion.
 
 Deterministische Acceptance-Zuordnungen wie `Honaker -> Wright L118` oder `Honaker -> Jalalabad AH-64D` sind Testfixtures und duerfen nicht als allgemeine Produktionsauswahl in SiteRegistry/SupportProfiles uebernommen werden.
 
+#### CAS-Status nach Acceptance 9
+
+Der Rotary-Wing-CAS-Pfad ist fuer den exakt dokumentierten A9-Scope DCS-validiert:
+
+```text
+source commit: c956b7b03b82c4ab04e529d09b1ff9bf4e480bf2
+bundle SHA-256: D2172B83EDC527A2280754A0CC0A8F575C741082B4271A77F2D6E60688D1B3B0
+DCS: 2.9.29.27468
+MOOSE: 2.9.18 / 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+result: PASS
+```
+
+Damit ist fuer diesen Scope die gesamte Kette belegt:
+
+```text
+MOOSE provider/asset selection
+-> selected-provider owner route
+-> tactical corridor
+-> AUFTRAG executing
+-> own FLIGHTGROUP detection
+-> profile-specific release
+-> controlled mission closure
+-> reverse owner route
+-> home landing
+-> exact LegionAssetReturned
+-> lifecycle complete
+```
+
+Dieser Lifecycle ist eingefrorene Reuse-Baseline. Neue Base-, Full-Response- oder Site-Integrationen duerfen ihn nicht im Harness nachbauen. Sie muessen die produktiven Module direkt wiederverwenden.
+
 ### Perimeter
 
 Mit Perimeterkonfiguration gilt:
@@ -253,14 +283,32 @@ Die fachlichen Base-Methoden fuer Incidents, Support und Resupply bleiben am Bas
 ## Aktuell offen
 
 ```text
-1. kombinierte Full-Response-Acceptance mit A4/A5 als Ground authority
-2. konkrete C2-/Missionsdaten je Szenario fuer ARTY/CAS-Geometrie
-3. konkrete Ground/Air-resupply pickup/deploy/STORAGE/route descriptors je Szenario
-4. Projektentscheidung fuer generische PARTIAL-Resupply-Semantik, falls benoetigt
-5. combined six-site regression, soweit spaeter gefordert
+1. ARTY-Reconciliation:
+   generic COMMANDER/AUFTRAG handoff
+   <-> accepted Functional ARTY + M1083 rearm lifecycle
+   ohne zweiten ARTY-FSM-Owner
+
+2. Strategic Resupply:
+   konkrete Ground/Air pickup/deploy/STORAGE/route descriptors
+   + physischer OPSTRANSPORT-Lifecycle
+   + idempotentes Settlement
+
+3. PARTIAL-Resupply-Semantik nur falls tatsaechlich benoetigt:
+   keine stillschweigende Vollzustellung
+
+4. kombinierte Full-Response-Acceptance:
+   eingefrorene Ground-/Guard-/QRF-/CAS-Lifecycles wiederverwenden
+   und nur ARTY/Resupply/Orchestration-Neugrenzen testen
+
+5. finale _base-Reconciliation:
+   Source/Docs/Builder/Acceptance-Matrix konsolidieren
+   keine alten Acceptance-Harness-Lifecycles in Production zurueckkopieren
+
+6. optional spaetere Expansion:
+   fixed-wing CAS, weitere Provider-/Site-Profile, combined six-site regression
 ```
 
-Nicht mehr offen sind die grundsaetzliche incident-local Guard-Semantik, der direkte QRF-Target-Cycle und die sechs produktiven Alarmradien dieses Branches; dafuer existieren separate akzeptierte beziehungsweise festgelegte Baselines.
+Nicht mehr offen sind die grundsaetzliche incident-local Guard-Semantik, der direkte QRF-Target-Cycle und der A9-validierte Rotary-Wing-CAS-Lifecycle fuer dessen dokumentierten Scope.
 
 ## Contract-Tests
 
