@@ -8,7 +8,7 @@ $prodBuilder=Join-Path $repoRoot 'tools\build-fire-support-strategic-resupply-pr
 $prodBundle=Join-Path $repoRoot 'mission\fire-support-strategic-resupply\dist\OMW_FireSupStratResupply_Base.lua'
 $src=Join-Path $repoRoot 'mission\tests\fire-support-strategic-resupply-production-base-runtime\src\09-production-cas-lifecycle-acceptance.lua'
 $out=Join-Path $repoRoot 'mission\tests\fire-support-strategic-resupply-production-base-runtime\dist\OMW_FireSupStratResupply_Production_Base_Acceptance_9.lua'
-$version='OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BASE-ACCEPTANCE-9-2'
+$version='OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BASE-ACCEPTANCE-9-3'
 
 foreach($f in @($prodBuilder,$src)){
   if(-not(Test-Path -LiteralPath $f -PathType Leaf)){throw "Required file not found: $f"}
@@ -22,7 +22,7 @@ $t=Get-Content -LiteralPath $src -Raw -Encoding UTF8
 $all=$p+[Environment]::NewLine+$t
 
 foreach($marker in @(
-  'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BASE-24',
+  'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BASE-25',
   'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-CAS-LIFECYCLE-RUNTIME-1',
   'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-CAS-RELEASE-POLICY-1',
   'OMW-HELICOPTER-FLIGHTPATH-CORRIDOR-8',
