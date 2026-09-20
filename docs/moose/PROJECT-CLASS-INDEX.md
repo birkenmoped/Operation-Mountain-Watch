@@ -725,3 +725,18 @@ Stage-2B OMW_FlightPath outbound/reverse route lifecycle: VALIDATED_FOR_EXACT_PR
 shared FSSR CasLifecycleRuntime composition: SOURCE_REVIEWED / UNIT_CI_PENDING / DCS_PENDING
 A9 observer-only acceptance: SOURCE_REVIEWED / CI_PENDING / DCS_PENDING
 ```
+
+### FSSR CAS release policy extraction
+
+`OMW_FireSupStratResupply_CasReleasePolicy.lua` is production contract code, not a MOOSE replacement. It qualifies a configured release profile from already-qualified supported-element status and own CAS contact count; it does not inspect MOOSE objects, select providers/assets, cancel AUFTRAGs, route FLIGHTGROUPs, or own recovery.
+
+For A9 the injected profile is:
+
+```text
+SUPPORTED_ELEMENT_STABLE_NO_CONTACT
+stableNoContactSec = 30
+```
+
+This parameter is A9/Honaker-derived test-profile configuration only. `STAGE3-CAS-LIFECYCLE-RECOVERY-LAW.md` section 20 remains authoritative that general CAS release is profile-dependent.
+
+Status: `SOURCE_REVIEWED / UNIT_CI_PENDING / DCS_PENDING`.
