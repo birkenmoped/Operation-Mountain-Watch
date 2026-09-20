@@ -22,8 +22,9 @@ $t=Get-Content -LiteralPath $src -Raw -Encoding UTF8
 $all=$p+[Environment]::NewLine+$t
 
 foreach($marker in @(
-  'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BASE-22',
+  'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BASE-23',
   'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-CAS-LIFECYCLE-RUNTIME-1',
+  'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-CAS-RELEASE-POLICY-1',
   'OMW-HELICOPTER-FLIGHTPATH-CORRIDOR-8',
   'OMW-HELICOPTER-CAS-TACTICAL-CORRIDOR-1',
   'CAS_PROVIDER_PROFILE_BOUND',
@@ -35,6 +36,8 @@ foreach($marker in @(
   'CAS_HOME_LANDED',
   'CAS_LEGION_ASSET_RETURNED',
   'CAS_LIFECYCLE_COMPLETE',
+  'SUPPORTED_ELEMENT_STABLE_NO_CONTACT',
+  'stableNoContactSec=30',
   'FOB_JOYCE',
   'BadGuys_A3_JOYCE',
   'QRF_DIRECT_TARGET_ENGAGE')){
@@ -53,7 +56,9 @@ foreach($forbidden in @(
   'Mission:Cancel(',
   'UpdateRoute(',
   'AddWaypoint(',
-  'CAS_NO_CONTACT_STABLE_SEC')){
+  'CAS_NO_CONTACT_STABLE_SEC',
+  'noContactSince',
+  'noContactReported=false')){
   if($t.Contains($forbidden)){throw "Acceptance 9 illegally owns CAS lifecycle marker: $forbidden"}
 }
 
