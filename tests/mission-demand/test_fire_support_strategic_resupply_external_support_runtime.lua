@@ -69,3 +69,58 @@ eq(#commander.missions,2,"no guessed ARTY mission")
 
 AUFTRAG=previousAuftrag
 print("PASS test_fire_support_strategic_resupply_external_support_runtime")
+
+
+-- CAS lifecycle wrapper composition: generic COMMANDER bridge remains the inner
+-- dispatch path while production lifecycle/release-policy dependencies are injected.
+do
+  local lifecycleCalls={}
+  local fakeLifecycleRuntime={}
+  function fakeLifecycleRuntime.New(spec)
+    lifecycleCalls.spec=spec
+    return {
+      Dispatch=function(_,demand,context)
+        lifecycleCalls.dispatch={demand=demand,context=context}
+        return {runtime={Cancel=function() end},Cancel=function() return true end},true,nil
+      end,
+      GetState=function() return {} end,
+    }
+  end
+  local fakeReleasePolicy={}
+  function fakeReleasePolicy.New(spec)
+    lifecycleCalls.releasePolicySpec=spec
+    return {Observe=function() end,GetState=function() end}
+  end
+  local fakeNameContract={SelectFromRegistry=function() end}
+  local fakeHelicopterCorridor={ResolveSequence=function() end}
+  local fakeTacticalCorridor={PlanRouteGated=function() end,ConfigureMission=function() end,Bind=function() end}
+  local fakeClosure={Request=function() end}
+  local wrapped=Runtime.New({
+    commander=commander,
+    commanderBridge=CommanderBridge,
+    artyMissionFactory=ArtyFactory,
+    casMissionFactory=CasFactory,
+    resolveArtyTarget=function() return {coordinate=artyCoord} end,
+    resolveCasGeometry=function() return {zone=casZone,altitudeFt=10000,speedKts=250} end,
+    casLifecycleRuntime=fakeLifecycleRuntime,
+    casReleasePolicy=fakeReleasePolicy,
+    flightPathNameContract=fakeNameContract,
+    helicopterCorridor=fakeHelicopterCorridor,
+    casTacticalCorridor=fakeTacticalCorridor,
+    casPatrolClosure=fakeClosure,
+    casLifecycle={
+      executionProfiles={TEST={}},
+      pathlineRegistry={TEST={}},
+      releasePolicy={mode="SUPPORTED_ELEMENT_STABLE_NO_CONTACT",stableNoContactSec=30},
+      updateSeconds=5,
+      redCoalition=1,
+    },
+  })
+  yes(wrapped.casLifecycle~=nil,"CAS lifecycle wrapper created")
+  eq(wrapped:GetAdapter("CAS"),wrapped.casLifecycle,"CAS adapter is lifecycle wrapper")
+  eq(lifecycleCalls.spec.innerAdapter,wrapped.casBridge,"lifecycle wraps commander bridge")
+  eq(lifecycleCalls.spec.releasePolicy~=nil,true,"release policy instance injected")
+  eq(lifecycleCalls.releasePolicySpec.stableNoContactSec,30,"release policy config forwarded")
+  eq(lifecycleCalls.spec.flightPathNameContract,fakeNameContract,"route name contract injected")
+  eq(lifecycleCalls.spec.casPatrolClosure,fakeClosure,"shared closure injected")
+end
