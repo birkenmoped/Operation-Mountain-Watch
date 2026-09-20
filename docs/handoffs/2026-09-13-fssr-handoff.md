@@ -15,6 +15,7 @@ validated_in_dcs: false
 supersedes:
   - OMW-HANDOFF-FIRE-SUPPORT-STRATEGIC-RESUPPLY-BASE-20260911
 superseded_by:
+  - OMW-HANDOFF-FSSR-FINAL-BASE-PREPARATION-20260920
 ---
 
 # Fire Support / Strategic Resupply – Übergabe 13.09.2026
