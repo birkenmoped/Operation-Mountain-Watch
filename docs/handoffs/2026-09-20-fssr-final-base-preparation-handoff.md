@@ -61,6 +61,7 @@ docs/moose/FIRE-SUPPORT-STRATEGIC-RESUPPLY-PERIMETER-RUNTIME.md
 docs/moose/VERIFIED-METHODS.md
 docs/moose/PROJECT-CLASS-INDEX.md
 mission/tests/fire-support-strategic-resupply-production-base-runtime/ACCEPTANCE-9.md
+results/2026-09-20-production-base-acceptance9-dcs-pass.md
 ```
 
 Für ARTY/Rearm vor jeder Implementierung zusätzlich die vorhandenen Stage-3-/Functional-ARTY-/Ground-Ammo-Rearm-Entscheidungen und Acceptance-Dokumente lesen. Für Strategic Resupply zusätzlich die aktuellen OPSTRANSPORT-/STORAGE-/Settlement-Dokumente.
