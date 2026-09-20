@@ -14,6 +14,7 @@ source_commit: PENDING_MERGE
 validated_in_dcs: false
 supersedes:
 superseded_by:
+  - OMW-HANDOFF-FSSR-FINAL-BASE-PREPARATION-20260920
 ---
 
 # Fire Support / Strategic Resupply – Statusanhang zur Übergabe
