@@ -244,3 +244,66 @@ eq(runtime:GetState("D-CAS-2").failed,true,"unsupported provider state failed")
 eq(hasEvent("CAS_PROVIDER_PROFILE_REJECTED")~=nil,true,"unsupported provider evidence")
 
 print("PASS fire support CAS lifecycle runtime")
+
+
+-- Contract regression guard: a CAS contract failure must not disable operational
+-- release/recovery monitoring. FuelLow before controlled release is remembered as
+-- failure evidence, while a surviving flight is still released and recovered.
+do
+  local group3={alive=2,CountAliveUnits=function(self) return self.alive end}
+  local flight3={
+    name="CAS-FLIGHT-3",
+    GetName=function(self) return self.name end,
+    GetGroup=function() return group3 end,
+    GetCoordinate=function() return flightCoord end,
+    GetDetectedGroups=function() return detected end,
+    GetWaypointIndex=function() return 1 end,
+    GetWaypointUIDFromIndex=function() return 10 end,
+    AddWaypoint=function() end,
+    UpdateRoute=function() end,
+  }
+  local asset3={uid=99,squadname="SQ_US_JBAD_AH64D_B_1_10_AVN",spawngroupname="CAS-FLIGHT-3"}
+  local mission3={
+    name="OMW_TEST_CAS_3",
+    executing=false,
+    assets={asset3},
+    _omwFssrCasGeometry={zone=zone,engageDetectedRangeNm=5},
+    GetName=function(self) return self.name end,
+    IsExecuting=function(self) return self.executing end,
+  }
+  local cancel3=0
+  local handle3={runtime=mission3,cancelRequested=false}
+  function handle3:Cancel(reason)
+    if self.cancelRequested then return false end
+    self.cancelRequested=true
+    self.reason=reason
+    cancel3=cancel3+1
+    return true
+  end
+  innerAdapter.Dispatch=function() return handle3,true,nil end
+
+  runtime:Dispatch({demandId="D-CAS-3",siteId="FOB_JOYCE"},context)
+  eq(commander:OnBeforeMissionAssign("*","MissionAssign","*",mission3,{legion}),true,"mission3 assign allowed")
+  commander:OnAfterMissionAssign("*","MissionAssign","*",mission3,{legion})
+  commander:OnAfterOpsOnMission("*","OpsOnMission","*",flight3,mission3)
+
+  flight3:OnAfterFuelLow("*","FuelLow","*")
+  eq(runtime:GetState("D-CAS-3").fuelLowBeforeRelease,true,"fuel low before release remembered")
+
+  group3.alive=1
+  mission3.executing=true
+  now=200
+  runtime:_updateAll()
+  eq(runtime:GetState("D-CAS-3").failed,true,"asset loss recorded as contract failure")
+  eq(runtime:GetState("D-CAS-3").blocked,false,"asset loss does not block lifecycle monitor")
+
+  now=231
+  runtime:_updateAll()
+  eq(cancel3,1,"failed flight still receives controlled release")
+  eq(runtime:GetState("D-CAS-3").releaseRequested,true,"release recorded after failure")
+
+  flight3:OnAfterLanded("*","Landed","*",homeAirbase)
+  legion:OnAfterLegionAssetReturned("*","LegionAssetReturned","*",{name="AH64"},asset3)
+  runtime:_updateAll()
+  eq(runtime:GetState("D-CAS-3").completed,true,"failed flight lifecycle still reaches physical recovery")
+end
