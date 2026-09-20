@@ -267,3 +267,39 @@ Production builder fuer diesen Source-Stand:
 ```text
 OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BASE-20
 ```
+
+## A9 – shared production CAS lifecycle
+
+Nach der Lifecycle-Preservation-Korrektur darf der Acceptance-Harness den CAS-Lifecycle nicht mehr selbst besitzen. Der gemeinsame produktive Pfad ist jetzt:
+
+```text
+Base CAS demand
+-> CasMissionFactory
+-> CommanderBridge
+-> MOOSE COMMANDER / LEGION selects provider + asset
+-> CasLifecycleRuntime
+   -> selected-provider owner profile
+   -> owner route / tactical ingress-egress
+   -> AUFTRAG executing
+   -> own FLIGHTGROUP detection
+   -> supported-element + stable no-contact release
+   -> CommanderBridge Cancel
+   -> reverse route
+   -> physical home landing
+   -> exact LegionAssetReturned
+```
+
+Production source:
+
+```text
+scripts/campaign/OMW_FireSupStratResupply_CasLifecycleRuntime.lua
+schema OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-CAS-LIFECYCLE-RUNTIME-1
+```
+
+Production builder:
+
+```text
+OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BASE-21
+```
+
+A9 ist absichtlich observer-only. Sein Builder und ein eigener statischer Contract-Test verbieten CAS-Detection-, Route-, Cancel-, FuelLow-, Landing- und Legion-return-Ownership im Harness.
