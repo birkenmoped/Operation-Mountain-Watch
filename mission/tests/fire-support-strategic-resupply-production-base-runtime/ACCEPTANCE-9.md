@@ -324,3 +324,63 @@ DCS runtime: DCS_PENDING
 ```
 
 Die fuer den naechsten DCS-Lauf maßgebliche Acceptance-LUA ist damit exakt das Bundle mit SHA-256 `E624F624746C0A419E81871345C4EB446B31E4521DBE347D9FB40B0854775BBF`.
+
+## 14. DCS-Lauf 2026-09-20 – Runtime-Kette erfolgreich, Acceptance-False-Fail am post-return despawn
+
+Testprovenienz:
+
+```text
+source commit: eb9788fe6c70c77aeedf9bfe2dae585e6dca4fc6
+Acceptance bundle SHA-256: E624F624746C0A419E81871345C4EB446B31E4521DBE347D9FB40B0854775BBF
+DCS: 2.9.29.27468
+MOOSE: 2.9.18 / 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+```
+
+Reale Runtime-Evidenz bestaetigt die beabsichtigte produktive Kette:
+
+```text
+QRF_DIRECT_TARGET_ENGAGE
+-> CAS mission executing
+-> CAS_SENSOR_REPORT detectedTotal=0 eligible=0
+-> CAS_SUPPORTED_ELEMENT_CLEAR
+-> CAS_NO_CONTACT_REPORTED stableSec=30
+-> CAS_CONTROLLED_RELEASE reason=SUPPORTED_ELEMENT_RELEASE_NO_CONTACT
+-> MOOSE mission status done
+-> CAS_HOME_LANDED airport=Jalalabad
+-> CAS_LEGION_ASSET_RETURNED
+-> CAS_LIFECYCLE_COMPLETE fuelLowBeforeRelease=false
+```
+
+Das DCS-Debrief bestaetigt beide AH-64D desselben Einsatzes als in Jalalabad gestartet und spaeter wieder in Jalalabad gelandet.
+
+Unmittelbar **nach** `CAS_LEGION_ASSET_RETURNED` setzte MOOSE den physischen Gruppenbestand auf 0/despawnte die zurueckgegebene Representation. Der bisherige Diagnosecheck interpretierte dieses post-return `CountAliveUnits()==0` faelschlich als:
+
+```text
+CAS_ASSET_LOSS initialAlive=2 alive=0
+```
+
+und A9 meldete deshalb trotz bereits vollstaendig erfolgreichem Lifecycle:
+
+```text
+[PRODUCTION BASE A9][FAIL] PRODUCTION_CAS_LIFECYCLE_FAILED CAS_ASSET_LOSS initialAlive=2 alive=0
+```
+
+Das ist **kein physischer Assetverlust**: `CAS_HOME_LANDED`, `CAS_LEGION_ASSET_RETURNED`, `CAS_LIFECYCLE_COMPLETE` sowie zwei reale `land`-Events in Jalalabad liegen vor.
+
+Fehlerklasse:
+
+```text
+ACCEPTANCE_OBSERVER_FALSE_FAIL
+```
+
+Produktive Korrektur:
+
+```text
+asset-loss CountAliveUnits monitoring
+-> only while assetReturned ~= true
+-> post-LegionAssetReturned physical despawn is not loss evidence
+```
+
+Ein dedizierter Regressionstest setzt nach `LegionAssetReturned` den physischen Gruppenbestand auf 0 und verlangt weiterhin `completed=true`, `failed=false`, `assetLossReported=false`.
+
+Der bestehende DCS-Lauf ist daher starke reale Evidenz fuer die produktive Route/Release/Recovery-Kette, kann aber wegen des fehlerhaften terminalen Acceptance-Ergebnisses nicht als finaler A9-PASS auf dem korrigierten Source hochgestuft werden. Korrigierter Source bleibt bis zum erneuten realen Lauf `DCS_PENDING`.
