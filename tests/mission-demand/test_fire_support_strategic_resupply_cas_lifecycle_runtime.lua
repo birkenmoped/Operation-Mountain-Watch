@@ -33,6 +33,7 @@ function PATHLINE:FindByName(name)
 end
 
 local Runtime=loadModule("scripts/campaign/OMW_FireSupStratResupply_CasLifecycleRuntime.lua")
+local CasReleasePolicy=loadModule("scripts/campaign/OMW_FireSupStratResupply_CasReleasePolicy.lua")
 
 local evidence={}
 local function record(fields)
@@ -160,6 +161,7 @@ local runtime=Runtime.New({
   helicopterCorridor=helicopterCorridor,
   casTacticalCorridor=tacticalCorridor,
   casPatrolClosure=casPatrolClosure,
+  releasePolicy=CasReleasePolicy.New({stableNoContactSec=30}),
   executionProfiles={
     AW_US_JBAD_TF_SHOOTER_6_6_CAV={
       pathlineBase="OMW_FlightPath",
@@ -172,7 +174,6 @@ local runtime=Runtime.New({
     },
   },
   pathlineRegistry={primary=primaryPathline},
-  noContactStableSec=30,
   updateSeconds=5,
   redCoalition=coalition.side.RED,
   isSupportedElementClear=function() return true,nil end,
