@@ -58,6 +58,37 @@ NO ACCEPTANCE SHORTCUT
 | Road-aligned materialization | `OMW_GroundRoadSpawnAdapter.lua` | Nur Spawngeometrie wird angepasst; MOOSE besitzt BRIGADE/WAREHOUSE/PLATOON/ARMYGROUP/AUFTRAG. |
 | Resources | CampaignState / Ground Foundation | CampaignState bleibt strategische Autorität. |
 
+## ARTY-Reuse-Gate – Reconciliation 22.09.2026
+
+| Bereich | Referenz | Verbindliche Semantik |
+|---|---|---|
+| Functional ARTY fire owner | `OMW_FobAttackFunctionalArtyDispatchAdapter.lua` | Eine bereits laufende MOOSE-`ARTY`-Instanz besitzt die Batterie; Ziele werden ueber `AssignTargetCoord` an genau diese Instanz uebergeben. |
+| Local M1083 rearm | `OMW_FixedFireSupportAmmoRearmService.lua` + `OMW_GroundAmmoRearmAdapter.lua` | Dieselbe ARTY-Instanz wird mit `startArty=false` weiterverwendet; `OnBeforeRearm` committed CampaignState consumption, `OnAfterRearmed` completed sie; MOOSE ARTY fuehrt die physische Rueckbewegung des M1083 aus. |
+| Accepted evidence | Fixed Fire Support Rearm Acceptance 2-11 | Exakte Provenienz: source/build `d52a47a418fe3a1a996a5b68198b8dc033ff86c4`, bundle `CBA3ACF5D835E6EF6AD11C3FDD295E178B2B8E6B9330749C15419A1638CF379B`, mission `388F02C932BE83823543F97887B4EDBB9E6764D4CEBE543BD8423D43A6ED8620`, DCS `2.9.28.26385 MT`. |
+| Generic `AUFTRAG:NewARTY` | pinned MOOSE source + `OMW_FireSupStratResupply_ArtyMissionFactory.lua` | Separater OPS mission owner; erzeugt `FireAtPoint` fuer den durch COMMANDER/LEGION rekrutierten OPSGROUP. Keine automatische Gleichwertigkeit mit Functional ARTY/Rearm. |
+| COMMANDER handoff gap | pinned MOOSE 2.9.18 / `73d3ed119cd9e7e3f2cfcabbaa34513d30529b54` | Kein oeffentlicher Vertrag nachgewiesen fuer `COMMANDER selects -> existing long-lived ARTY instance takes ownership` ohne parallelen AUFTRAG-Fire-Owner. |
+| OPSGROUP rearm alternative | `OPSGROUP:SetRearmOnOutOfAmmo()` | Andere MOOSE-Rearm-Semantik; nicht als Ersatz fuer die akzeptierte M1083/CampaignState-Kette freigegeben. |
+
+Harte ARTY-Regel:
+
+```text
+same battery
+-> exactly one operational fire-control owner
+
+accepted production candidate:
+Functional ARTY owner
+-> fire
+-> same Functional ARTY owner
+-> M1083 rearm
+
+forbidden without explicit owner decision:
+Functional ARTY owner
+AND
+AUFTRAG:NewARTY / OPSGROUP fire mission owner
+```
+
+Die aktuelle Reconciliation ist damit source-seitig abgeschlossen, aber die neue Selection/Handoff-Grenze ist **nicht** implementiert. Ein projektspezifischer Adapter, eine feste Produktionsprovider-Zuordnung oder ein Wechsel auf OPSGROUP-Rearm benoetigt zuerst die ausdrueckliche Owner-Entscheidung und danach eine gezielte DCS-Revalidation der geaenderten Grenze.
+
 ## Owner-Entscheidung und Honaker-Reconciliation 13.09.2026
 
 Der historische Honaker-Full-Response-Test hatte bereits den entscheidenden Incident-Vertrag: bekannte lebende Angreifer wurden als Incident-Teilnehmer geführt, nach Entfernung priorisiert und erst nach Neutralisierung der bekannten Angreifer wurde die QRF zur Rueckkehr freigegeben. Die damalige QRF verwendete `NewONGUARD(target:GetCoordinate()) + SetEngageDetected(...)`; sie war noch nicht direkt an das konkrete bewegliche Target gebunden.

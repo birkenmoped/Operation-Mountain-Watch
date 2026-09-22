@@ -651,6 +651,35 @@ Vor neuem Code:
 
 Erst wenn ARTY einen eindeutigen Single-Owner-Lifecycle besitzt, den Strategic-Resupply-Block separat weiterführen.
 
+## 11.1 ARTY-Reconciliation-Ergebnis 22.09.2026
+
+Die im vorigen Abschnitt geforderte Source-/FSM-Reconciliation ist abgeschlossen.
+
+Befund:
+
+```text
+accepted Functional ARTY + M1083 lifecycle
+= one long-lived MOOSE ARTY owner
+
+current generic Base ARTY path
+= AUFTRAG:NewARTY -> COMMANDER/LEGION -> OPSGROUP FireAtPoint owner
+
+public pinned-MOOSE bridge
+COMMANDER selected asset -> existing Functional ARTY owner
+without second AUFTRAG fire owner
+= NOT ESTABLISHED
+```
+
+Zusaetzlich vorhandenes `OPSGROUP:SetRearmOnOutOfAmmo()` ist ein anderer MOOSE-Rearm-Lifecycle und erbt die akzeptierte M1083-/CampaignState-Evidenz nicht.
+
+Deshalb wurde **kein** ARTY-Produktionscode geaendert. Der ARTY-Block steht jetzt bewusst auf:
+
+```text
+STOPPED_FOR_OWNER_DECISION
+```
+
+Eine Owner-Entscheidung ist erforderlich, bevor eine projektspezifische Selection/Handoff-Bruecke, eine feste Produktionsprovider-Ausnahme oder ein Wechsel des ARTY-/Rearm-Owner-Modells implementiert wird. Bis dahin bleiben Functional ARTY und M1083-Rearm unveraendert eingefrorene Reuse-Baseline. Strategic Resupply wird gemaess Arbeitsreihenfolge erst nach Abschluss dieser ARTY-Entscheidungsgrenze fortgesetzt.
+
 ## 12. Final-`_base` Acceptance-Grundsatz
 
 Die finale `_base` darf nicht wieder zu einem monolithischen Acceptance-Harness werden.

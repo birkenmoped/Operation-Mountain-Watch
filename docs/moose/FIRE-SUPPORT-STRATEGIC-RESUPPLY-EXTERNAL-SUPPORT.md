@@ -360,4 +360,98 @@ generic NewARTY / COMMANDER recruitment
 != automatically validated Functional ARTY rearm ownership
 ```
 
-The next ARTY step must reconcile the generic external-support handoff with the already accepted Functional ARTY/M1083 rearm lifecycle without placing the same battery under two independent mission/FSM owners.
+## ARTY-Reconciliation 22.09.2026 – Source-Verdict
+
+Die angeforderte Reconciliation wurde gegen den akzeptierten Functional-ARTY-/M1083-Pfad und den tatsaechlich gepinnten MOOSE-Stand durchgefuehrt. Es wurde **kein** neuer ARTY-Code implementiert.
+
+### Geerbter, zu erhaltender Lifecycle
+
+```text
+one physical battery
+-> one long-lived MOOSE ARTY instance
+-> AssignTargetCoord(...)
+-> OpenFire / CeaseFire
+-> Winchester / Rearm / Rearming / Rearmed
+-> same ARTY instance remains owner
+-> physical M1083 support materialization
+-> ARTY:SetRearmingGroup(...)
+-> ARTY:Rearm()
+-> CampaignState consumption at OnBeforeRearm
+-> CampaignState completion at OnAfterRearmed
+-> ARTY-owned M1083 return movement
+-> bounded return confirmation
+-> Warehouse stock return
+```
+
+Akzeptierte Production-Quellen fuer diese Grenze sind insbesondere:
+
+```text
+scripts/ground/OMW_FobAttackFunctionalArtyDispatchAdapter.lua
+scripts/ground/OMW_FixedFireSupportAmmoRearmService.lua
+scripts/ground/OMW_FixedFireSupportAmmoSupport.lua
+scripts/ground/OMW_GroundAmmoRearmAdapter.lua
+```
+
+Der Functional-ARTY-Adapter bindet Fire-Support-Demands an **dieselbe** bereits laufende MOOSE-`ARTY`-Instanz. Der Rearm-Adapter darf diese Instanz nach dem Feuern nicht neu starten; der gespeicherte Full-Ammo-Baselinewert der MOOSE-`ARTY`-FSM muss erhalten bleiben.
+
+### Gepinnter MOOSE-Source-Befund
+
+Im gepinnten `Moose.lua` sind zwei verschiedene operative Modelle vorhanden:
+
+```text
+Functional ARTY:
+ARTY:New(group)
+-> FSM_CONTROLLABLE owner
+-> AssignTargetCoord(...)
+-> ARTY own firing/rearm state machine
+
+OPS mission ARTY:
+AUFTRAG:NewARTY(...)
+-> AUFTRAG.Type.ARTY
+-> GetDCSMissionTask()
+-> CONTROLLABLE.TaskFireAtPoint(...)
+-> COMMANDER / LEGION recruitment
+-> selected OPSGROUP executes the AUFTRAG mission
+```
+
+Fuer Functional `ARTY` bestaetigt der Source die relevanten FSM-Uebergaenge `Winchester -> OutOfAmmo`, `Rearm -> Rearming`, `Rearmed` sowie `SetRearmingGroup`, `SetRearmingDistance`, `onbeforeRearm` und `onafterRearmed`. `onafterRearm` merkt sich die Ausgangskoordinaten; `onafterRearmed` fuehrt die Rueckbewegung des Rearm-Trucks aus.
+
+Fuer `AUFTRAG:NewARTY` erzeugt der Source dagegen einen eigenstaendigen `ARTY`-Missionstyp und rendert ihn als DCS-`FireAtPoint`-Task. `COMMANDER:AddMission` stellt genau diesen AUFTRAG in die Mission Queue; nach Rekrutierung meldet die BRIGADE `ArmyOnMission`, wenn die ausgewaehlte `ARMYGROUP` bereits auf diesem AUFTRAG ist.
+
+Damit ist `AUFTRAG:NewARTY` **kein** dokumentierter Handoff in eine bereits laufende Functional-`ARTY`-Instanz. Im geprueften gepinnten Source wurde keine oeffentliche MOOSE-Methode gefunden, die
+
+```text
+COMMANDER selects battery
+-> no AUFTRAG fire owner remains
+-> existing long-lived ARTY instance of that exact battery receives the target
+```
+
+als einen zusammenhaengenden oeffentlichen Lifecycle bereitstellt.
+
+MOOSE besitzt zwar zusaetzlich `OPSGROUP:SetRearmOnOutOfAmmo()`. Dieser Pfad sucht selbst eine nahe Ammo-Supply und verwendet den OPSGROUP-/ARMYGROUP-Rearm-Lifecycle. Er ist deshalb **nicht** gleichbedeutend mit dem bereits akzeptierten Functional-ARTY-/M1083-/CampaignState-Vertrag und wird nicht als Ersatz uebernommen.
+
+### Offizielle MOOSE-Beispiele
+
+Die geprueften offiziellen MOOSE-Beispiel-Repositories liefern Functional-ARTY-Beispiele mit `ARTY:New(...)`, `AssignTargetCoord(...)` und Rearming sowie unabhaengige OPS-/AUFTRAG-Verwendung. Ein offizielles Beispiel fuer einen COMMANDER-Auswahl-Handoff in eine bereits laufende Functional-`ARTY`-Instanz wurde bei der Reconciliation nicht gefunden. Das ist **kein** Beweis, dass eine solche Loesung prinzipiell unmoeglich ist; fuer den gepinnten OMW-Stand liegt dafuer aber kein belastbarer oeffentlicher Vertrag vor.
+
+### Konsequenz fuer die Production Base
+
+Der derzeitige generische Pfad
+
+```text
+Base ARTY demand
+-> ArtyMissionFactory
+-> AUFTRAG:NewARTY
+-> CommanderBridge
+-> COMMANDER:AddMission
+```
+
+bleibt source-reviewed, darf aber **nicht** an dieselbe Batterie gebunden werden, die den akzeptierten Functional-ARTY-/M1083-Lifecycle besitzt. Eine solche Kombination haette zwei operative Fire-Control-Owner.
+
+Der ARTY-Block ist deshalb an dieser Grenze absichtlich **STOPPED_FOR_OWNER_DECISION**. Ohne Owner-Freigabe wird weder
+
+- ein projektspezifischer COMMANDER-to-Functional-ARTY-Handoff gebaut,
+- der akzeptierte Rearm-Lifecycle auf OPSGROUP-Rearm umgestellt,
+- noch eine feste Batterieauswahl als Produktionsregel eingefuehrt.
+
+Die naechste Implementierung darf erst erfolgen, wenn eine dieser Architekturgrenzen ausdruecklich entschieden ist. Danach ist nur die kleinste genehmigte Bruecke zu implementieren und der geaenderte Selection/Handoff-Bereich separat in DCS zu revalidieren; der akzeptierte Functional-ARTY-/M1083-Lifecycle selbst wird nicht neu gebaut.

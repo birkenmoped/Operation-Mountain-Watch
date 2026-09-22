@@ -129,6 +129,33 @@ Keine zweite World-Scan-Autoritaet, kein eigener Target-Scheduler und kein eigen
 
 ### ARTY / CAS
 
+#### ARTY lifecycle inheritance record – Reconciliation 22.09.2026
+
+| Feld | Reconciliation |
+|---|---|
+| inherited_contract | Accepted Functional ARTY + physical M1083 local rearm |
+| accepted_source_paths | `OMW_FobAttackFunctionalArtyDispatchAdapter.lua`, `OMW_FixedFireSupportAmmoRearmService.lua`, `OMW_FixedFireSupportAmmoSupport.lua`, `OMW_GroundAmmoRearmAdapter.lua` |
+| evidence | Fixed Fire Support Rearm Acceptance 2-11; source/build commit `d52a47a418fe3a1a996a5b68198b8dc033ff86c4`; bundle `CBA3ACF5D835E6EF6AD11C3FDD295E178B2B8E6B9330749C15419A1638CF379B`; mission hash `388F02C932BE83823543F97887B4EDBB9E6764D4CEBE543BD8423D43A6ED8620`; DCS `2.9.28.26385 MT` |
+| invariants | one Functional `ARTY` owner per battery; same long-lived instance fires and rearms; no restart after firing; M1083 physical rearm; CampaignState exactly-once consumption/completion; ARTY-owned support return |
+| reuse_mode | direct reuse / shared production modules; no copied FSM in Acceptance |
+| harness_role | stimulus + observation + assertion only |
+| changed_boundary | generic C2/MOOSE provider selection -> exact selected battery -> existing Functional ARTY owner |
+| owner_approval | required before any project-specific selection/handoff adapter, fixed-provider production exception, or switch to another ARTY/rearm owner model |
+| revalidation_scope | only the approved selection/handoff boundary plus proof that the inherited fire/rearm/return invariants remain intact |
+
+Pinned-MOOSE review establishes that `AUFTRAG:NewARTY` and Functional `ARTY` are different owners: `AUFTRAG:NewARTY` becomes a DCS `FireAtPoint` mission executed by the recruited OPSGROUP, while Functional `ARTY` is its own `FSM_CONTROLLABLE` with the accepted rearm chain. No public pinned-MOOSE handoff was found that lets COMMANDER select a battery and then transfers the same demand into an already running Functional-`ARTY` instance without retaining a second AUFTRAG fire owner.
+
+Accordingly, the current generic `CommanderBridge -> NewARTY` path must not be combined with the accepted Functional-ARTY/M1083 owner on the same battery. `OPSGROUP:SetRearmOnOutOfAmmo()` is not treated as equivalent because it is a different MOOSE rearm lifecycle and does not inherit the accepted M1083/CampaignState evidence.
+
+Status:
+
+```text
+ARTY selection/handoff = STOPPED_FOR_OWNER_DECISION
+accepted Functional ARTY/M1083 lifecycle = REUSE / DO NOT REIMPLEMENT
+generic NewARTY path = SOURCE_REVIEWED ONLY / NOT A REARM EQUIVALENCE
+non-MOOSE or project-specific bridge = NOT APPROVED
+```
+
 External Support wird erst nach expliziter C2-Eskalation als Base-Demand erzeugt. Der generische ExternalSupportRuntime nutzt einen injizierten MOOSE-`COMMANDER` als Aggregator:
 
 ```text
@@ -284,9 +311,10 @@ Die fachlichen Base-Methoden fuer Incidents, Support und Resupply bleiben am Bas
 
 ```text
 1. ARTY-Reconciliation:
-   generic COMMANDER/AUFTRAG handoff
-   <-> accepted Functional ARTY + M1083 rearm lifecycle
-   ohne zweiten ARTY-FSM-Owner
+   source/FSM reconciliation complete
+   public pinned-MOOSE selection -> existing Functional ARTY handoff not established
+   STOPPED_FOR_OWNER_DECISION before implementation
+   accepted Functional ARTY + M1083 lifecycle remains unchanged
 
 2. Strategic Resupply:
    konkrete Ground/Air pickup/deploy/STORAGE/route descriptors
