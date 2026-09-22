@@ -115,4 +115,34 @@ no(asset.isReserved,"queued cancel releases selection")
 eq(releases,3,"queued cancel release")
 no(cancelHandle:Cancel("DUP"),"cancel idempotent")
 
+
+local malformedRuntime=Runtime.New({
+  commander=commander,
+  artyMissionFactory=factory,
+  resolveFunctionalArty=function() return {arty={}} end,
+  releaseAssets=releaseAssets,
+})
+local malformedOk=pcall(function()
+  malformedRuntime:Dispatch({demandId="D|ARTY|6",supportType="ARTY"},{marker="CTX"})
+end)
+no(malformedOk,"malformed owner validation fails")
+no(asset.isReserved,"malformed owner validation releases selection")
+eq(releases,4,"malformed owner release")
+
+local throwingArty={}
+function throwingArty:AssignTargetCoord() error("ASSIGN_FAILED") end
+function throwingArty:RemoveTarget() end
+local assignRuntime=Runtime.New({
+  commander=commander,
+  artyMissionFactory=factory,
+  resolveFunctionalArty=function() return {arty=throwingArty} end,
+  releaseAssets=releaseAssets,
+})
+local assignOk=pcall(function()
+  assignRuntime:Dispatch({demandId="D|ARTY|7",supportType="ARTY"},{marker="CTX"})
+end)
+no(assignOk,"target assignment error propagated")
+no(asset.isReserved,"target assignment error releases selection")
+eq(releases,5,"target assignment error release")
+
 print("PASS test_fire_support_strategic_resupply_arty_selection_runtime")
