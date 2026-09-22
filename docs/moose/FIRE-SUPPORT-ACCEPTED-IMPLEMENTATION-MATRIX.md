@@ -87,7 +87,23 @@ AND
 AUFTRAG:NewARTY / OPSGROUP fire mission owner
 ```
 
-Die aktuelle Reconciliation ist damit source-seitig abgeschlossen, aber die neue Selection/Handoff-Grenze ist **nicht** implementiert. Ein projektspezifischer Adapter, eine feste Produktionsprovider-Zuordnung oder ein Wechsel auf OPSGROUP-Rearm benoetigt zuerst die ausdrueckliche Owner-Entscheidung und danach eine gezielte DCS-Revalidation der geaenderten Grenze.
+Owner-Entscheidung 22.09.2026: Functional `ARTY` bleibt der einzige Fire-Control-/Rearm-Owner. Die neue Selection/Handoff-Grenze ist als `OMW_FireSupStratResupply_ArtySelectionRuntime.lua` implementiert und bleibt bis zur gezielten DCS-Acceptance `SOURCE_IMPLEMENTED / DCS_PENDING`.
+
+Verbindlicher neuer Vertrag:
+
+```text
+C2 qualified ARTY demand
+-> AUFTRAG:NewARTY selection descriptor only
+-> COMMANDER:CanMission
+-> COMMANDER:RecruitAssetsForMission
+-> exact MOOSE-selected asset/Legion
+-> identity-only mapping to existing Functional ARTY instance
+-> ARTY:AssignTargetCoord
+-> Functional ARTY fire/rearm lifecycle
+-> LEGION.UnRecruitAssets after terminal fire-selection state
+```
+
+In diesem Functional-ARTY-Modus ist `COMMANDER:AddMission(selectionMission)` verboten, weil der Selection-`AUFTRAG` sonst zum zweiten Fire-Control-Owner wuerde. Der Identity-Resolver darf keine Batterie vor MOOSE waehlen und kein Ersatz-Recruitment implementieren.
 
 ## Owner-Entscheidung und Honaker-Reconciliation 13.09.2026
 
