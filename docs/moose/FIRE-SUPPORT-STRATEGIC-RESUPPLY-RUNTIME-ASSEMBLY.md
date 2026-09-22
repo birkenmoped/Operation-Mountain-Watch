@@ -147,14 +147,19 @@ Pinned-MOOSE review establishes that `AUFTRAG:NewARTY` and Functional `ARTY` are
 
 Accordingly, the current generic `CommanderBridge -> NewARTY` path must not be combined with the accepted Functional-ARTY/M1083 owner on the same battery. `OPSGROUP:SetRearmOnOutOfAmmo()` is not treated as equivalent because it is a different MOOSE rearm lifecycle and does not inherit the accepted M1083/CampaignState evidence.
 
-Status:
+Owner decision / implementation status 22.09.2026:
 
 ```text
-ARTY selection/handoff = STOPPED_FOR_OWNER_DECISION
+ARTY selection/handoff = SOURCE_IMPLEMENTED / CI_PENDING / DCS_PENDING
 accepted Functional ARTY/M1083 lifecycle = REUSE / DO NOT REIMPLEMENT
-generic NewARTY path = SOURCE_REVIEWED ONLY / NOT A REARM EQUIVALENCE
-non-MOOSE or project-specific bridge = NOT APPROVED
+selection authority = MOOSE COMMANDER/LEGION
+fire-control owner = existing Functional ARTY instance
+queued NewARTY fire owner on the same battery = FORBIDDEN
 ```
+
+Der neue `OMW_FireSupStratResupply_ArtySelectionRuntime.lua` verwendet `AUFTRAG:NewARTY(...)` ausschliesslich als MOOSE-Missions-/Capability-Descriptor fuer `COMMANDER:CanMission(...)` und `COMMANDER:RecruitAssetsForMission(...)`. Der Descriptor wird in diesem Modus nicht mit `COMMANDER:AddMission(...)` gequeued. Die von MOOSE ausgewaehlte und reservierte Asset-Identitaet wird danach ueber einen injizierten reinen Identity-Resolver auf die bereits laufende Functional-`ARTY`-Instanz derselben Batterie abgebildet; erst diese Instanz erhaelt `AssignTargetCoord(...)`.
+
+Die MOOSE-Reservierung bleibt waehrend des Fire-Mission-Lifecycles bestehen und wird bei `CeaseFire`, Tod der Functional-`ARTY`-Instanz oder erfolgreichem Cancel vor Feuerbeginn ueber `LEGION.UnRecruitAssets(...)` freigegeben. Ein fehlendes/eindeutig nicht aufloesbares Owner-Mapping fuehrt fail-closed zur Freigabe der Reservierung und zu keinem Feuerauftrag.
 
 External Support wird erst nach expliziter C2-Eskalation als Base-Demand erzeugt. Der generische ExternalSupportRuntime nutzt einen injizierten MOOSE-`COMMANDER` als Aggregator:
 
@@ -311,10 +316,11 @@ Die fachlichen Base-Methoden fuer Incidents, Support und Resupply bleiben am Bas
 
 ```text
 1. ARTY-Reconciliation:
-   source/FSM reconciliation complete
-   public pinned-MOOSE selection -> existing Functional ARTY handoff not established
-   STOPPED_FOR_OWNER_DECISION before implementation
+   owner decision recorded
+   MOOSE CanMission/RecruitAssetsForMission selection-only bridge implemented
+   selected asset -> exact existing Functional ARTY identity handoff
    accepted Functional ARTY + M1083 lifecycle remains unchanged
+   CI and focused DCS acceptance still required
 
 2. Strategic Resupply:
    konkrete Ground/Air pickup/deploy/STORAGE/route descriptors
