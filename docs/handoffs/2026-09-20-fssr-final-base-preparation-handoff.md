@@ -672,13 +672,30 @@ without second AUFTRAG fire owner
 
 Zusaetzlich vorhandenes `OPSGROUP:SetRearmOnOutOfAmmo()` ist ein anderer MOOSE-Rearm-Lifecycle und erbt die akzeptierte M1083-/CampaignState-Evidenz nicht.
 
-Deshalb wurde **kein** ARTY-Produktionscode geaendert. Der ARTY-Block steht jetzt bewusst auf:
+Die Owner-Entscheidung wurde anschliessend konkretisiert:
 
 ```text
-STOPPED_FOR_OWNER_DECISION
+C2 / MOOSE
+-> selects and reserves the operational ARTY provider/asset
+
+selected battery
+-> existing long-lived Functional ARTY instance remains sole fire-control owner
+-> accepted M1083/CampaignState rearm lifecycle remains unchanged
 ```
 
-Eine Owner-Entscheidung ist erforderlich, bevor eine projektspezifische Selection/Handoff-Bruecke, eine feste Produktionsprovider-Ausnahme oder ein Wechsel des ARTY-/Rearm-Owner-Modells implementiert wird. Bis dahin bleiben Functional ARTY und M1083-Rearm unveraendert eingefrorene Reuse-Baseline. Strategic Resupply wird gemaess Arbeitsreihenfolge erst nach Abschluss dieser ARTY-Entscheidungsgrenze fortgesetzt.
+Daraufhin wurde die kleinste Selection-only-Bruecke implementiert. Sie benutzt `AUFTRAG:NewARTY(...)` nur als MOOSE-Capability-/Target-Descriptor, ruft `COMMANDER:CanMission(...)` und `COMMANDER:RecruitAssetsForMission(...)` auf und stellt diesen Selection-`AUFTRAG` **nicht** mit `COMMANDER:AddMission(...)` in die Queue. Das von MOOSE selektierte Asset wird ausschliesslich per Identitaets-Handoff auf die bereits bestehende Functional-`ARTY`-Instanz abgebildet; diese erhaelt `AssignTargetCoord(...)`.
+
+Aktueller Status:
+
+```text
+ARTY selection/handoff source = IMPLEMENTED
+unit/CI validation           = PENDING at documentation time
+focused DCS acceptance       = PENDING
+Functional ARTY/M1083        = unchanged accepted reuse baseline
+Strategic Resupply           = remains next block after ARTY acceptance
+```
+
+Die direkte Selection-only-Nutzung von `COMMANDER:RecruitAssetsForMission(...)` ist gegen die gepinnte `Moose.lua` source-verifiziert. Sie darf erst nach realer DCS-Acceptance als validierter Production-Pfad bezeichnet werden.
 
 ## 12. Final-`_base` Acceptance-Grundsatz
 
