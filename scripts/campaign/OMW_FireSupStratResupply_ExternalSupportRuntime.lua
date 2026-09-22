@@ -8,7 +8,7 @@ local Runtime = {}
 local Instance = {}
 Instance.__index = Instance
 
-Runtime.SchemaVersion = "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-EXTERNAL-SUPPORT-RUNTIME-2"
+Runtime.SchemaVersion = "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-EXTERNAL-SUPPORT-RUNTIME-3"
 local TAG = "[OMW][FireSupStratResupply.ExternalSupportRuntime]"
 
 local function fail(message) error(TAG .. " " .. tostring(message),2) end
@@ -24,10 +24,18 @@ function Runtime.New(spec)
   local commanderBridge=needTable(spec.commanderBridge,"commanderBridge")
   local artyMissionFactory=needTable(spec.artyMissionFactory,"artyMissionFactory")
   local casMissionFactory=needTable(spec.casMissionFactory,"casMissionFactory")
+  local artySelectionRuntime=spec.artySelectionRuntime
   needFunction(commander,"AddMission","commander")
   needFunction(commanderBridge,"New","commanderBridge")
   needFunction(artyMissionFactory,"New","artyMissionFactory")
   needFunction(casMissionFactory,"New","casMissionFactory")
+  if spec.artyFunctionalSelection~=nil then
+    artySelectionRuntime=needTable(artySelectionRuntime,"artySelectionRuntime")
+    needFunction(artySelectionRuntime,"New","artySelectionRuntime")
+    local selection=needTable(spec.artyFunctionalSelection,"artyFunctionalSelection")
+    if type(selection.resolveFunctionalArty)~="function" then fail("artyFunctionalSelection.resolveFunctionalArty must be a function") end
+    if selection.releaseAssets~=nil and type(selection.releaseAssets)~="function" then fail("artyFunctionalSelection.releaseAssets must be a function when provided") end
+  end
   if type(spec.resolveArtyTarget)~="function" then fail("resolveArtyTarget must be a function") end
   if type(spec.resolveCasGeometry)~="function" then fail("resolveCasGeometry must be a function") end
   if spec.logger~=nil and type(spec.logger)~="function" then fail("logger must be a function when provided") end
@@ -44,12 +52,27 @@ function Runtime.New(spec)
     requiredAssetsMax=spec.casRequiredAssetsMax or (spec.casRequiredAssetsMin or 1),
     logger=spec.logger,
   })
-  local arty=commanderBridge.New({
+  local artyBridge=commanderBridge.New({
     commander=commander,
     kind=commanderBridge.Kind and commanderBridge.Kind.MISSION or "MISSION",
     factory=function(demand,context) return artyFactory:Create(demand,context) end,
     logger=spec.logger,
   })
+  local arty=artyBridge
+  local artySelection=nil
+  if spec.artyFunctionalSelection~=nil then
+    local selection=spec.artyFunctionalSelection
+    artySelection=artySelectionRuntime.New({
+      commander=commander,
+      artyMissionFactory=artyFactory,
+      resolveFunctionalArty=selection.resolveFunctionalArty,
+      releaseAssets=selection.releaseAssets,
+      defaultPriority=selection.defaultPriority,
+      defaultMaxEngagements=selection.defaultMaxEngagements,
+      logger=spec.logger,
+    })
+    arty=artySelection
+  end
   local casBridge=commanderBridge.New({
     commander=commander,
     kind=commanderBridge.Kind and commanderBridge.Kind.MISSION or "MISSION",
@@ -92,6 +115,8 @@ function Runtime.New(spec)
   return setmetatable({
     commander=commander,
     arty=arty,
+    artyBridge=artyBridge,
+    artySelection=artySelection,
     cas=cas,
     casBridge=casBridge,
     casLifecycle=casLifecycle,
