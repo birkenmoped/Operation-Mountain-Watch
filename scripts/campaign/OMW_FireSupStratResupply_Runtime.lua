@@ -8,7 +8,7 @@ local Runtime = {}
 local Instance = {}
 Instance.__index = Instance
 
-Runtime.SchemaVersion = "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-RUNTIME-9"
+Runtime.SchemaVersion = "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-RUNTIME-10"
 local TAG = "[OMW][FireSupStratResupply.Runtime]"
 
 local function fail(message) error(TAG .. " " .. tostring(message), 2) end
@@ -55,7 +55,7 @@ function Runtime.New(spec)
 
   if spec.externalSupport ~= nil then
     local externalSupport=needTable(spec.externalSupport,"externalSupport")
-    for _,name in ipairs({"externalSupportRuntime","commanderBridge","artyMissionFactory","casMissionFactory"}) do
+    for _,name in ipairs({"externalSupportRuntime","commanderBridge","artyMissionFactory","casMissionFactory","artySelectionRuntime"}) do
       needTable(modules[name],"modules." .. name)
       needFunction(modules[name],"New","modules." .. name)
     end
@@ -63,6 +63,11 @@ function Runtime.New(spec)
     needFunction(externalSupport.commander,"AddMission","externalSupport.commander")
     if type(externalSupport.resolveArtyTarget)~="function" then fail("externalSupport.resolveArtyTarget must be a function") end
     if type(externalSupport.resolveCasGeometry)~="function" then fail("externalSupport.resolveCasGeometry must be a function") end
+    if externalSupport.artyFunctionalSelection~=nil then
+      local artySelection=needTable(externalSupport.artyFunctionalSelection,"externalSupport.artyFunctionalSelection")
+      if type(artySelection.resolveFunctionalArty)~="function" then fail("externalSupport.artyFunctionalSelection.resolveFunctionalArty must be a function") end
+      if artySelection.releaseAssets~=nil and type(artySelection.releaseAssets)~="function" then fail("externalSupport.artyFunctionalSelection.releaseAssets must be a function when provided") end
+    end
     if externalSupport.casLifecycle~=nil then
       for _,name in ipairs({"casLifecycleRuntime","casReleasePolicy","flightPathNameContract","helicopterCorridor","casTacticalCorridor","casPatrolClosure"}) do
         needTable(modules[name],"modules." .. name)
@@ -230,11 +235,13 @@ function Instance:Prepare()
       commander=self.externalSupport.commander,
       commanderBridge=m.commanderBridge,
       artyMissionFactory=m.artyMissionFactory,
+      artySelectionRuntime=m.artySelectionRuntime,
       casMissionFactory=m.casMissionFactory,
       resolveArtyTarget=self.externalSupport.resolveArtyTarget,
       resolveCasGeometry=self.externalSupport.resolveCasGeometry,
       artyRequiredAssetsMin=self.externalSupport.artyRequiredAssetsMin,
       artyRequiredAssetsMax=self.externalSupport.artyRequiredAssetsMax,
+      artyFunctionalSelection=self.externalSupport.artyFunctionalSelection,
       casRequiredAssetsMin=self.externalSupport.casRequiredAssetsMin,
       casRequiredAssetsMax=self.externalSupport.casRequiredAssetsMax,
       casLifecycleRuntime=m.casLifecycleRuntime,
