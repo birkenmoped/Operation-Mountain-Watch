@@ -290,6 +290,7 @@ function Instance:Dispatch(demand, context)
     cancelRequested = false,
   }
 
+  local runtime = self
   local handle = { entry = entry }
   function handle:Cancel(reason)
     if entry.completed or entry.released then return false end
@@ -305,8 +306,6 @@ function Instance:Dispatch(demand, context)
     return true
   end
 
-  -- Lua closure target for handle:Cancel().
-  local runtime = self
   entry.handle = handle
   self.entries[demand.demandId] = entry
   self.entriesByTargetName[targetName] = entry
