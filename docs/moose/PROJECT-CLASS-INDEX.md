@@ -628,6 +628,36 @@ Status dieses neuen FSSR-Scopes:
 
 ```text
 COMMANDER variable multi-AIRWING CAS recruitment: SOURCE_REVIEWED / DCS_PENDING
+
+### FSSR Functional ARTY selection-only handoff – 22.09.2026
+
+Pinned-source-verifiziert fuer MOOSE 2.9.18 / `73d3ed119cd9e7e3f2cfcabbaa34513d30529b54`:
+
+```text
+COMMANDER:CanMission(...)
+COMMANDER:RecruitAssetsForMission(...)
+LEGION.RecruitCohortAssets(...)
+LEGION.UnRecruitAssets(...)
+ARTY:AssignTargetCoord(...)
+ARTY:RemoveTarget(...)
+```
+
+`RecruitAssetsForMission(...)` delegiert im gepinnten Source an `LEGION.RecruitCohortAssets(...)` und liefert `recruited, assets, legions`. Die Rekrutierung setzt die ausgewaehlten Assetitems auf `isReserved=true`; `LEGION.UnRecruitAssets(...)` hebt diese Reservierung wieder auf. `CanMission(...)` prueft die MOOSE-Cohort-Faehigkeit einschliesslich der mission-/cohortbasierten Reichweitengrenze gegen das Target.
+
+OMW verwendet diese Methoden im neuen Functional-ARTY-Modus ausschliesslich zur MOOSE-eigenen Provider-/Asset-Selektion. Der erzeugte `AUFTRAG:NewARTY(...)` wird nicht gequeued und besitzt keinen FireAtPoint-Lifecycle. Die ausgewaehlte Asset-Identitaet wird danach auf die bereits laufende Functional-`ARTY`-Instanz abgebildet.
+
+Status:
+
+```text
+COMMANDER CanMission + RecruitAssetsForMission as FSSR ARTY selection-only boundary
+= SOURCE_REVIEWED / DCS_PENDING
+
+LEGION.UnRecruitAssets for FSSR ARTY reservation release
+= SOURCE_REVIEWED / DCS_PENDING
+
+Functional ARTY fire/rearm owner
+= reuse of separately VALIDATED_FOR_DOCUMENTED_SCOPE lifecycle
+```
 AUFTRAG.CheckMissionCapability acceptance diagnostic: SOURCE_REVIEWED / DCS_PENDING
 ```
 
