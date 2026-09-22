@@ -6,7 +6,7 @@ Set-StrictMode -Version Latest
 $repoRoot=Split-Path -Parent $PSScriptRoot
 $distDir=Join-Path $repoRoot 'mission\fire-support-strategic-resupply\dist'
 $outputFile=Join-Path $distDir 'OMW_FireSupStratResupply_Base.lua'
-$builderVersion='OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BASE-25'
+$builderVersion='OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BASE-26'
 
 $moduleSpecs=@(
   @{Name='SiteRegistry';Path='scripts\campaign\OMW_FireSupStratResupply_SiteRegistry.lua'},
@@ -21,6 +21,7 @@ $moduleSpecs=@(
   @{Name='QrfRuntime';Path='scripts\campaign\OMW_FireSupStratResupply_QrfRuntime.lua'},
   @{Name='CommanderBridge';Path='scripts\campaign\OMW_FireSupStratResupply_CommanderBridge.lua'},
   @{Name='ArtyMissionFactory';Path='scripts\campaign\OMW_FireSupStratResupply_ArtyMissionFactory.lua'},
+  @{Name='ArtySelectionRuntime';Path='scripts\campaign\OMW_FireSupStratResupply_ArtySelectionRuntime.lua'},
   @{Name='CasMissionFactory';Path='scripts\campaign\OMW_FireSupStratResupply_CasMissionFactory.lua'},
   @{Name='CasLifecycleRuntime';Path='scripts\campaign\OMW_FireSupStratResupply_CasLifecycleRuntime.lua'},
   @{Name='CasReleasePolicy';Path='scripts\campaign\OMW_FireSupStratResupply_CasReleasePolicy.lua'},
@@ -69,6 +70,10 @@ foreach($marker in @(
   'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-GUARD-MISSION-FACTORY-3',
   'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-QRF-RUNTIME-13',
   'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-QRF-MISSION-FACTORY-8',
+  'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-ARTY-MISSION-FACTORY-2',
+  'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-ARTY-SELECTION-RUNTIME-1',
+  'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-ARTY-MISSION-FACTORY-2',
+  'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-ARTY-SELECTION-RUNTIME-1',
   'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-CAS-MISSION-FACTORY-3',
   'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-CAS-LIFECYCLE-RUNTIME-1',
   'OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-CAS-RELEASE-POLICY-1',
@@ -118,7 +123,7 @@ local Modules={
  base=Base,lifecycleAdapter=LifecycleAdapter,guardRuntime=GuardRuntime,qrfRuntime=QrfRuntime,
  legionBridge=LegionBridge,guardMissionFactory=GuardMissionFactory,qrfMissionFactory=QrfMissionFactory,
  roadSpawnAdapter=RoadSpawnAdapter,guardMaterializationAdapter=GuardMaterializationAdapter,
- guardRouteAdapter=GuardRouteAdapter,commanderBridge=CommanderBridge,artyMissionFactory=ArtyMissionFactory,
+ guardRouteAdapter=GuardRouteAdapter,commanderBridge=CommanderBridge,artyMissionFactory=ArtyMissionFactory,artySelectionRuntime=ArtySelectionRuntime,
  casMissionFactory=CasMissionFactory,casLifecycleRuntime=CasLifecycleRuntime,casReleasePolicy=CasReleasePolicy,
  flightPathNameContract=FlightPathNameContract,helicopterCorridor=HelicopterCorridor,casTacticalCorridor=CasTacticalCorridor,casPatrolClosure=CasPatrolClosure,
  externalSupportRuntime=ExternalSupportRuntime,
@@ -167,7 +172,7 @@ foreach($marker in @(
 Write-Host "Built: $outputFile"
 Write-Host "BuilderVersion: $builderVersion"
 Write-Host 'PackageSchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BASE-1'
-Write-Host 'RuntimeSchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-RUNTIME-9'
+Write-Host 'RuntimeSchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-RUNTIME-10'
 Write-Host 'SiteRegistrySchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-SITE-REGISTRY-6'
 Write-Host 'SupportProfilesSchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-SUPPORT-PROFILES-4'
 Write-Host 'BaseSchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-BASE-4'
@@ -175,10 +180,13 @@ Write-Host 'GuardRuntimeSchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-GUARD-RUNTIM
 Write-Host 'GuardMissionFactorySchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-GUARD-MISSION-FACTORY-3'
 Write-Host 'QrfRuntimeSchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-QRF-RUNTIME-13'
 Write-Host 'QrfMissionFactorySchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-QRF-MISSION-FACTORY-8'
+Write-Host 'ArtyMissionFactorySchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-ARTY-MISSION-FACTORY-2'
+Write-Host 'ArtySelectionRuntimeSchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-ARTY-SELECTION-RUNTIME-1'
 Write-Host 'CasMissionFactorySchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-CAS-MISSION-FACTORY-3'
 Write-Host 'CasLifecycleRuntimeSchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-CAS-LIFECYCLE-RUNTIME-1'
 Write-Host 'CasReleasePolicySchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-CAS-RELEASE-POLICY-1'
 Write-Host 'CasPatrolClosureSchema: OMW-FOB-ATTACK-CAS-PATROL-CLOSURE-3'
+Write-Host 'ExternalArtyMode: MOOSE COMMANDER CanMission/RecruitAssetsForMission selection -> existing Functional ARTY owner; no AUFTRAG FireAtPoint owner'
 Write-Host 'ExternalCasModes: CAS | PATROLZONE_ENGAGE; provider selection remains MOOSE COMMANDER-owned'
 Write-Host 'CasLifecycle: shared production route/release/recovery owner; Acceptance harness must observe only'
 Write-Host 'InstallationIncidentBridgeSchema: OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-INSTALLATION-INCIDENT-BRIDGE-5'
