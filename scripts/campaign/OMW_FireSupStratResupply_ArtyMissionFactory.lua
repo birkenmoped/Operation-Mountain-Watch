@@ -8,7 +8,7 @@ local Factory = {}
 local Instance = {}
 Instance.__index = Instance
 
-Factory.SchemaVersion = "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-ARTY-MISSION-FACTORY-1"
+Factory.SchemaVersion = "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-ARTY-MISSION-FACTORY-2"
 local TAG = "[OMW][FireSupStratResupply.ArtyMissionFactory]"
 
 local function fail(message) error(TAG .. " " .. tostring(message), 2) end
@@ -59,6 +59,7 @@ function Instance:Create(demand, context)
 
   mission:SetTeleport(false)
   mission:SetRequiredAssets(self.requiredAssetsMin,self.requiredAssetsMax)
+  mission._omwFssrArtyTarget = target
   if finite(demand.priority) then mission:SetPriority(demand.priority,false) end
   self:_log(string.format("created ARTY mission demandId=%s siteId=%s requiredAssets=%s-%s shots=%s radiusM=%s",
     tostring(demand.demandId),tostring(demand.siteId),tostring(self.requiredAssetsMin),tostring(self.requiredAssetsMax),
