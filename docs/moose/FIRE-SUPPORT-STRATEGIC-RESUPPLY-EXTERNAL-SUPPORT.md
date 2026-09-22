@@ -448,10 +448,47 @@ Base ARTY demand
 
 bleibt source-reviewed, darf aber **nicht** an dieselbe Batterie gebunden werden, die den akzeptierten Functional-ARTY-/M1083-Lifecycle besitzt. Eine solche Kombination haette zwei operative Fire-Control-Owner.
 
-Der ARTY-Block ist deshalb an dieser Grenze absichtlich **STOPPED_FOR_OWNER_DECISION**. Ohne Owner-Freigabe wird weder
+Die Owner-Entscheidung vom 22.09.2026 konkretisiert diese Grenze: C2/MOOSE waehlt den operativen Provider, die bereits laufende Functional-`ARTY`-Instanz der ausgewaehlten Batterie bleibt jedoch der einzige Fire-Control-Owner. Der akzeptierte Functional-ARTY-/M1083-Lifecycle wird nicht ersetzt.
 
-- ein projektspezifischer COMMANDER-to-Functional-ARTY-Handoff gebaut,
-- der akzeptierte Rearm-Lifecycle auf OPSGROUP-Rearm umgestellt,
-- noch eine feste Batterieauswahl als Produktionsregel eingefuehrt.
+Die kleinste implementierte Bruecke verwendet deshalb den oeffentlichen gepinnten MOOSE-Pfad als **Selection-only**-Vertrag:
 
-Die naechste Implementierung darf erst erfolgen, wenn eine dieser Architekturgrenzen ausdruecklich entschieden ist. Danach ist nur die kleinste genehmigte Bruecke zu implementieren und der geaenderte Selection/Handoff-Bereich separat in DCS zu revalidieren; der akzeptierte Functional-ARTY-/M1083-Lifecycle selbst wird nicht neu gebaut.
+```text
+qualified ARTY demand + target
+-> AUFTRAG:NewARTY(...) only as capability/target descriptor
+-> COMMANDER:CanMission(...)
+-> COMMANDER:RecruitAssetsForMission(...)
+-> MOOSE selects/reserves one operational asset + Legion
+-> OMW identity handoff maps that exact selected asset
+   to its already-running Functional ARTY instance
+-> ARTY:AssignTargetCoord(...)
+-> Functional ARTY remains sole fire-control owner
+-> CeaseFire / Dead / pre-fire Cancel
+-> LEGION.UnRecruitAssets(...)
+```
+
+Der Selection-`AUFTRAG` wird in diesem Modus **nicht** ueber `COMMANDER:AddMission(...)` in die Missionsqueue gestellt und wird daher nicht selbst zum `FireAtPoint`-Owner. Das Mapping `resolveFunctionalArty(selectedAsset, selectedLegion, ...)` darf keine Kandidatenwahl treffen; es darf ausschliesslich die von MOOSE bereits ausgewaehlte Asset-Identitaet auf die bestehende Functional-`ARTY`-Instanz abbilden. Kann dieses Mapping nicht eindeutig hergestellt werden, wird fail-closed abgelehnt und die MOOSE-Reservierung wieder freigegeben.
+
+Source-Status:
+
+```text
+ARTY selection/handoff = SOURCE_IMPLEMENTED / CI_PENDING / DCS_PENDING
+accepted Functional ARTY/M1083 lifecycle = REUSE / DO NOT REIMPLEMENT
+selection authority = MOOSE COMMANDER/LEGION
+fire-control owner = existing Functional ARTY instance
+generic queued AUFTRAG:NewARTY path = not used for a battery under Functional ARTY ownership
+```
+
+Die Ablehnungssemantik der neuen Grenze ist absichtlich knapp:
+
+```text
+NO_CAPABLE_ARTY_PROVIDER
+  -> COMMANDER:CanMission(...) found no capable/in-range cohort
+
+NO_AVAILABLE_ARTY_PROVIDER
+  -> capability exists, but RecruitAssetsForMission(...) cannot currently recruit
+
+SELECTED_ARTY_OWNER_UNAVAILABLE / resolver-specific reason
+  -> MOOSE selected an asset, but no exact existing Functional ARTY owner mapping exists
+```
+
+Diese direkte Selection-only-Nutzung von `RecruitAssetsForMission(...)` ist im gepinnten Source nachgewiesen, aber noch nicht als eigener OMW-DCS-Pfad validiert. Vor Freigabe als Production-Lifecycle ist deshalb eine gezielte DCS-Acceptance erforderlich.
