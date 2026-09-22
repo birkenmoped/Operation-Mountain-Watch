@@ -269,7 +269,9 @@ function Instance:Dispatch(demand, context)
   self:_installArtyHooks(arty)
 
   local targetAlias = "OMW|FSSR|ARTY|" .. demand.demandId
-  local targetName = arty:AssignTargetCoord(
+  local assigned, targetName = pcall(
+    arty.AssignTargetCoord,
+    arty,
     target.coordinate,
     owner.priority or self.defaultPriority,
     owner.acceptedRadiusM or target.radiusM,
@@ -280,6 +282,10 @@ function Instance:Dispatch(demand, context)
     targetAlias,
     true
   )
+  if not assigned then
+    self.releaseAssets(assets)
+    fail("Functional ARTY target assignment failed after MOOSE selection: " .. tostring(targetName))
+  end
   if not targetName then
     self.releaseAssets(assets)
     return nil, false, "FUNCTIONAL_ARTY_TARGET_REJECTED"
