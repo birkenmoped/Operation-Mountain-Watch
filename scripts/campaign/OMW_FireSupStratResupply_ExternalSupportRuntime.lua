@@ -1,8 +1,10 @@
 -- Operation Mountain Watch - external Fire Support runtime assembly.
 --
--- Builds ARTY/CAS Base adapters on the public MOOSE COMMANDER mission queue.
+-- Builds ARTY/CAS Base adapters around public MOOSE COMMANDER recruitment.
 -- Tactical target geometry is injected. COMMANDER remains the provider aggregator
--- and MOOSE selects/recruits operational assets from its legions.
+-- and MOOSE selects/recruits operational assets from its legions. Functional ARTY
+-- mode uses COMMANDER selection only and hands the selected identity to the existing
+-- Functional ARTY owner without queueing a second FireAtPoint mission.
 
 local Runtime = {}
 local Instance = {}
