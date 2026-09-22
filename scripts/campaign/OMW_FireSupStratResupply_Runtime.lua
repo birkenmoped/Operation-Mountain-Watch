@@ -55,7 +55,7 @@ function Runtime.New(spec)
 
   if spec.externalSupport ~= nil then
     local externalSupport=needTable(spec.externalSupport,"externalSupport")
-    for _,name in ipairs({"externalSupportRuntime","commanderBridge","artyMissionFactory","casMissionFactory","artySelectionRuntime"}) do
+    for _,name in ipairs({"externalSupportRuntime","commanderBridge","artyMissionFactory","casMissionFactory"}) do
       needTable(modules[name],"modules." .. name)
       needFunction(modules[name],"New","modules." .. name)
     end
@@ -64,6 +64,8 @@ function Runtime.New(spec)
     if type(externalSupport.resolveArtyTarget)~="function" then fail("externalSupport.resolveArtyTarget must be a function") end
     if type(externalSupport.resolveCasGeometry)~="function" then fail("externalSupport.resolveCasGeometry must be a function") end
     if externalSupport.artyFunctionalSelection~=nil then
+      needTable(modules.artySelectionRuntime,"modules.artySelectionRuntime")
+      needFunction(modules.artySelectionRuntime,"New","modules.artySelectionRuntime")
       local artySelection=needTable(externalSupport.artyFunctionalSelection,"externalSupport.artyFunctionalSelection")
       if type(artySelection.resolveFunctionalArty)~="function" then fail("externalSupport.artyFunctionalSelection.resolveFunctionalArty must be a function") end
       if artySelection.releaseAssets~=nil and type(artySelection.releaseAssets)~="function" then fail("externalSupport.artyFunctionalSelection.releaseAssets must be a function when provided") end
