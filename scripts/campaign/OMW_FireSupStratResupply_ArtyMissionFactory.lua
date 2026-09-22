@@ -1,8 +1,10 @@
 -- Operation Mountain Watch - MOOSE-first external ARTY mission factory.
 --
 -- Builds one public AUFTRAG:NewARTY() from caller-resolved tactical target geometry.
--- It does not select a provider, battery, cohort or asset. COMMANDER owns provider
--- aggregation/recruitment through OMW_FireSupStratResupply_CommanderBridge.
+-- It does not select a provider, battery, cohort or asset. The AUFTRAG may be queued
+-- through CommanderBridge for the generic OPS fire-owner model or used only as a
+-- capability/target descriptor by ArtySelectionRuntime for the single-owner
+-- Functional ARTY model.
 
 local Factory = {}
 local Instance = {}
