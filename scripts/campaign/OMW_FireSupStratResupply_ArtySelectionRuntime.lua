@@ -247,7 +247,19 @@ function Instance:Dispatch(demand, context)
   end
 
   local asset = assets[1]
-  local owner, ownerReason = self:_resolveOwner(asset, legion, demand, context, selectionMission)
+  local ownerOk, owner, ownerReason = pcall(
+    self._resolveOwner,
+    self,
+    asset,
+    legion,
+    demand,
+    context,
+    selectionMission
+  )
+  if not ownerOk then
+    self.releaseAssets(assets)
+    fail("functional ARTY owner validation failed after MOOSE selection: " .. tostring(owner))
+  end
   if not owner then
     self.releaseAssets(assets)
     return nil, false, ownerReason
