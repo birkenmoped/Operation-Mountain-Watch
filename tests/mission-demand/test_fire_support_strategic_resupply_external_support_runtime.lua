@@ -124,3 +124,43 @@ do
   eq(lifecycleCalls.spec.flightPathNameContract,fakeNameContract,"route name contract injected")
   eq(lifecycleCalls.spec.casPatrolClosure,fakeClosure,"shared closure injected")
 end
+
+
+-- Functional ARTY selection composition: MOOSE selection remains separate from the
+-- generic CommanderBridge fire-owner path.
+do
+  local calls={}
+  local fakeSelectionRuntime={}
+  function fakeSelectionRuntime.New(spec)
+    calls.spec=spec
+    return {
+      Dispatch=function(_,demand,context)
+        calls.dispatch={demand=demand,context=context}
+        return {Cancel=function() return true end},true,nil
+      end,
+      GetState=function() return {} end,
+    }
+  end
+  local resolver=function() return {arty={AssignTargetCoord=function() end,RemoveTarget=function() end}} end
+  local selected=Runtime.New({
+    commander=commander,
+    commanderBridge=CommanderBridge,
+    artyMissionFactory=ArtyFactory,
+    artySelectionRuntime=fakeSelectionRuntime,
+    casMissionFactory=CasFactory,
+    resolveArtyTarget=function() return {coordinate=artyCoord,shots=4,radiusM=75} end,
+    resolveCasGeometry=function() return {zone=casZone,altitudeFt=10000,speedKts=250} end,
+    artyFunctionalSelection={
+      resolveFunctionalArty=resolver,
+      defaultPriority=11,
+      defaultMaxEngagements=2,
+    },
+  })
+  yes(selected.artySelection~=nil,"Functional ARTY selection runtime created")
+  eq(selected:GetAdapter("ARTY"),selected.artySelection,"ARTY adapter is selection runtime")
+  eq(calls.spec.commander,commander,"ARTY selection commander forwarded")
+  eq(calls.spec.artyMissionFactory,selected.artyFactory,"ARTY selection factory forwarded")
+  eq(calls.spec.resolveFunctionalArty,resolver,"Functional ARTY resolver forwarded")
+  eq(calls.spec.defaultPriority,11,"Functional ARTY priority forwarded")
+  eq(calls.spec.defaultMaxEngagements,2,"Functional ARTY max engagements forwarded")
+end
