@@ -305,6 +305,26 @@ Production builder:
 OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BASE-25
 ```
 
+Der Builder `...-25` bleibt die exakte A9-CAS-Provenienz. Der aktuelle Source-Head nach der ARTY-Reconciliation verwendet fuer neue Builds:
+
+```text
+OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BASE-26
+```
+
+Neu in Builder 26 ist ausschliesslich die Functional-ARTY Selection/Handoff-Verdrahtung:
+
+```text
+ARTY demand
+-> AUFTRAG:NewARTY selection descriptor
+-> COMMANDER:CanMission
+-> COMMANDER:RecruitAssetsForMission
+-> selected MOOSE asset/Legion
+-> identity mapping to existing Functional ARTY
+-> ARTY:AssignTargetCoord
+```
+
+Der Selection-`AUFTRAG` wird in diesem Modus nicht mit `COMMANDER:AddMission` ausgefuehrt. Damit bleibt die bestehende Functional-`ARTY`-Instanz der einzige Fire-Control-Owner und der akzeptierte M1083-/CampaignState-Rearm-Pfad unveraendert. Dieser neue ARTY-Handoff ist `SOURCE_IMPLEMENTED / DCS_PENDING`; er veraendert den DCS-validierten A9-CAS-Scope nicht.
+
 A9 ist absichtlich observer-only. Sein Builder und ein eigener statischer Contract-Test verbieten CAS-Detection-, Route-, Cancel-, FuelLow-, Landing- und Legion-return-Ownership im Harness.
 
 Die konkrete CAS-Release-Policy bleibt profilabhaengig. Die Base hat keinen globalen 30-Sekunden-No-Contact-Default. Ein Composition Root muss den freigegebenen Release-Policy-Modus und dessen Parameter injizieren; A9 verwendet `SUPPORTED_ELEMENT_STABLE_NO_CONTACT` mit 30 Sekunden ausschliesslich als Testprofil.
