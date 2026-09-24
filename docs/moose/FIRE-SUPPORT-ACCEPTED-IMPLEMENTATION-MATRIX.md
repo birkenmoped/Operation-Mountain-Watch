@@ -105,6 +105,62 @@ C2 qualified ARTY demand
 
 In diesem Functional-ARTY-Modus ist `COMMANDER:AddMission(selectionMission)` verboten, weil der Selection-`AUFTRAG` sonst zum zweiten Fire-Control-Owner wuerde. Der Identity-Resolver darf keine Batterie vor MOOSE waehlen und kein Ersatz-Recruitment implementieren.
 
+### A10-DCS-Preflight 24.09.2026 – zusaetzliche MOOSE-Warehouse-Grenze
+
+Die Vorbereitung der fokussierten DCS-Acceptance gegen die owner-provided Mission
+
+```text
+OMW_Template_v25_GroundWorks_base(1).miz
+SHA-256:
+8C989DC531D1CCE30EF183F59874A6809B5C11D11932D893CD55ADAC3191D247
+```
+
+hat eine weitere, fuer den Selection-only-Vertrag entscheidende MOOSE-Grenze sichtbar gemacht.
+
+Im gepinnten `Moose.lua` gilt fuer `WAREHOUSE:onafterAddAsset(...)` ausdruecklich:
+
+```text
+Add a group to the warehouse stock.
+If the group is alive, it is destroyed.
+```
+
+`BRIGADE:AddPlatoon(...)` ruft fuer das Platoon-Template `BRIGADE:AddAssetToPlatoon(...)` auf; dieser Pfad fuehrt wiederum ueber `WAREHOUSE:AddAsset(...)`. Damit kann eine bereits physisch aktive, von Functional `ARTY` besessene Batterie nicht unveraendert zugleich als neuer BRIGADE/WAREHOUSE-Recruitment-Asset registriert werden. Das wuerde ihre bestehende DCS-Repräsentation zerstoeren und den akzeptierten Functional-ARTY-Lifecycle verletzen.
+
+Die bereitgestellte Mission enthaelt die aktiven Fixed-Fire-Support-Gruppen
+
+```text
+TPL_BLUE_GND_BOSTICK_FS_ARTY_L118_2
+TPL_BLUE_GND_WRIGHT_FS_ARTY_L118_2
+TPL_BLUE_GND_FORTRESS_FS_ARTY_L118_1
+TPL_BLUE_GND_HONAKER_FS_MORTAR_2B11_2
+```
+
+sowie deren Warehouses und M1083-Resupply-Vertrag, aber keine separate, eindeutig als selection-only ARTY-Descriptor-Asset vorgesehene zweite Template-Ebene.
+
+Daraus folgt fuer A10:
+
+```text
+SOURCE_IMPLEMENTED selection bridge
+!= DCS-ready composition yet
+
+blocked boundary:
+existing physical Functional ARTY battery
+<-> MOOSE COMMANDER/LEGION recruitable asset identity
+```
+
+Nicht zulaessig ohne neue Owner-Entscheidung:
+
+```text
+- aktive Batterie via WAREHOUSE:AddAsset registrieren und dadurch zerstoeren;
+- Batterie nach AddAsset heimlich neu spawnen/teleportieren;
+- fremdes Dummy-Asset als angeblich identische operative Batterie ausgeben;
+- MOOSE-Recruitment durch einen OMW-eigenen Selector ersetzen;
+- den akzeptierten Functional-ARTY-/M1083-Lifecycle auf OPSGROUP-Rearm umstellen.
+```
+
+Der fokussierte A10-DCS-Lauf bleibt deshalb `BLOCKED_PRE_COMPOSITION`, bis die Owner-Entscheidung fuer die physische/rekrutierbare Provider-Repräsentation getroffen ist. Die Selection-only Source bleibt unveraendert `DCS_PENDING`; aus dem Preflight entsteht kein Runtime-PASS.
+
+
 ## Owner-Entscheidung und Honaker-Reconciliation 13.09.2026
 
 Der historische Honaker-Full-Response-Test hatte bereits den entscheidenden Incident-Vertrag: bekannte lebende Angreifer wurden als Incident-Teilnehmer geführt, nach Entfernung priorisiert und erst nach Neutralisierung der bekannten Angreifer wurde die QRF zur Rueckkehr freigegeben. Die damalige QRF verwendete `NewONGUARD(target:GetCoordinate()) + SetEngageDetected(...)`; sie war noch nicht direkt an das konkrete bewegliche Target gebunden.
