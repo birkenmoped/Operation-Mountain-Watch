@@ -70,3 +70,13 @@ Before completing a change:
 3. State which behavior still requires an in-game DCS test.
 4. Record test results for pathfinding, multiplayer synchronization, dynamic cargo, or AI behavior when relevant.
 5. Run the documentation validator when documentation, governance, registries, test Markdown, or documentation workflows change.
+
+## Accepted lifecycle preservation
+
+- Before changing, generalizing, packaging, or testing a subsystem with prior acceptance/runtime evidence, read the applicable accepted implementation matrix and lifecycle-law document first.
+- Record a lifecycle-inheritance map before implementation: inherited contract, accepted source path, provenance, invariants, reused module, changed boundary, and required revalidation.
+- Do not reimplement an accepted lifecycle inside an Acceptance harness. Harness code may trigger, observe, correlate, and assert; production routing, targeting, release, RTB, landing, ReturnToLegion, asset return/recredit, and settlement remain production responsibilities.
+- Reuse the accepted production module directly where possible. If reuse is not possible, extract the accepted logic into a shared production module or add the smallest adapter. Copying selected logic into a new harness does not inherit acceptance evidence.
+- Acceptance watchdogs are diagnostic unless timeout is itself a binding production rule. A watchdog must not disable lifecycle monitoring for a still-running physical mission.
+- Any intentional change to an accepted lifecycle invariant requires explicit owner approval and a documented regression acceptance for the changed boundary.
+- Treat `docs/moose/ACCEPTED-LIFECYCLE-PRESERVATION-LAW.md` as mandatory for Base/reconciliation work.

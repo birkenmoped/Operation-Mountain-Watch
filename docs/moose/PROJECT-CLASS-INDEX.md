@@ -67,9 +67,9 @@ REJECTED_FOR_PROJECT_USE
 | `SQUADRON` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | Foundation-Bestände und post-start Assetbindung; Stage 1D-P bindet `SQ_US_JBAD_CH47_HEAVYLIFT` explizit an den akzeptierten Auftrag |
 | `WAREHOUSE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` + `INTERNAL_RESTRICTED` | AirOps-Stock-/Asset-Lifecycle und Acceptance 3-2 Ground-Materialisierung praktisch bestätigt; die private road-aligned Ausnahme ist auf den dokumentierten Branch-/MOOSE-/MIZ-Scope begrenzt |
 | `STORAGE` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | CampaignState->DCS-Warehouse Mirror/Telemetry; keine strategische Rückautorität |
-| `COHORT` | `VALIDATED_FOR_DOCUMENTED_SCOPE` + `SOURCE_REVIEWED` | AirOps-Lifecycle praktisch bestätigt; Ground-Review bestätigt `AddMissionCapability`, `SetMissionRange`, `CanMission`, `CountAssets` und 75-NM-Ground-Default source-seitig |
+| `COHORT` | `VALIDATED_FOR_DOCUMENTED_SCOPE` + `SOURCE_REVIEWED` | AirOps-Lifecycle praktisch bestätigt; Ground-Review bestätigt `AddMissionCapability`, `SetMissionRange`, `AddWeaponRange`, `CanMission`, `CountAssets`. FSSR ARTY Option A nutzt `SetMissionRange(0)` + explizites `AddWeaponRange` fuer unspawned selection-only descriptor cohorts; dieser neue Scope ist DCS_PENDING. |
 | `FLIGHTGROUP` | `VALIDATED_FOR_DOCUMENTED_SCOPE` + `SOURCE_REVIEWED` | AAR/AWACS-Lifecycles praktisch bestätigt; Stage 1D-P bestätigt `AddWaypoint(...)`, `OnAfterTaskDone`, späteres `OnAfterMissionDone` als Diagnose und physisches `OnAfterLanded` in Jalalabad im akzeptierten CH-47-Return-Scope. Stage 3 CAS Tactical Corridor: `AddWaypoint(...)`/`OnAfterUpdateRoute` ist source-reviewed für owner-authored dynamische Segmente; keine DCS-Validierung dieses neuen CAS-Pfads. |
-| `COMMANDER` | `VALIDATED_FOR_DOCUMENTED_SCOPE` + `SOURCE_REVIEWED` | dokumentierter COMMANDER-Lifecycle; Ground-Review bestätigt `AddBrigade(...)` und `AddOpsTransport(...)` source-seitig; MissionDemand bleibt OMW-Tasking-Autorität |
+| `COMMANDER` | `VALIDATED_FOR_DOCUMENTED_SCOPE` + `SOURCE_REVIEWED` | dokumentierter COMMANDER-Lifecycle; Ground-Review bestaetigt `AddBrigade(...)` und `AddOpsTransport(...)`; FSSR ARTY Option A nutzt den bestehenden external-support COMMANDER fuer `AddBrigade`, `CanMission` und `RecruitAssetsForMission` ohne `AddMission`; dieser ARTY-Scope ist DCS_PENDING. |
 | `AUFTRAG` | `VALIDATED_FOR_DOCUMENTED_SCOPE` + `SOURCE_REVIEWED` | AAR-, AWACS- und Ground-Lifecycles praktisch bestätigt; Stage 1D-P bestätigt `NewLANDATCOORDINATE(...)`, `SetMissionEgressCoord(...)`, `AssignSquadrons(...)` sowie gruppenspezifische Waypoint-/Egress-/Task-Abfragen. Stage 3 CAS Tactical Corridor source-reviewt `NewPATROLZONE`, `SetMissionIngressCoord`, `SetMissionWaypointCoord` und `SetMissionEgressCoord`: einzelne MOOSE-Knoten, keine taktische Korridorplanung; DCS-Validierung offen. Keine CampaignState-Autorität. |
 | `SPAWN` | `VALIDATED_FOR_DOCUMENTED_SCOPE` + `SOURCE_REVIEWED` | area-spezifische AAR-Templates und externe Materialisierung praktisch bestätigt; AWACS bestätigt `OMW_C2_E3A_WIZARD`, LISA und MOE external materialization im dokumentierten Scope |
 | `SCHEDULER` | `VALIDATED_FOR_DOCUMENTED_SCOPE` | allgemeine OMW-Nutzung praktisch bestätigt; AWACS verwendet einen 5-Sekunden-Monitor ausschließlich zur Lifecycle-/Fuel-Koordination, keinen Frame-Scan |
@@ -603,3 +603,200 @@ Verbindlicher Architektur- und Quellenbefund: [MOOSE Support Request Lifecycle L
 | `ARTY` | `SOURCE_REVIEWED` | Eigene Zielqueue mit `RemoveTarget` und konfigurierbarem Time-to-Shot-Abbruch. Fehlende ARTY-Fähigkeit darf andere Support-Arten nicht blockieren. |
 
 Kein Eintrag dieses Addendums ist DCS-validiert oder ersetzt die geforderten generischen Acceptance-Fälle.
+
+## Addendum 2026-09-18 – FSSR variable C2 provider selection
+
+Fuer Production Base Acceptance 6 wurde der gepinnte MOOSE-Source fuer die operative Provider-/Asset-Selektion erneut geprueft:
+
+```text
+COMMANDER:New(...)
+COMMANDER:AddAirwing(...)
+COMMANDER:Start()
+COMMANDER:AddMission(...)
+COMMANDER:CanMission(...)
+COMMANDER:OnAfterMissionAssign(...)
+COMMANDER:OnAfterOpsOnMission(...)
+AUFTRAG.CheckMissionCapability(...)
+LEGION recruitment / cohort eligibility / asset optimization
+```
+
+`AUFTRAG.CheckMissionCapability(...)` wird im Acceptance-Preflight ausschliesslich benutzt, um nachzuweisen, dass mehrere registrierte AIRWING-Kandidaten die CAS-Missionsart anbieten. Die eigentliche Provider- und Asset-Auswahl bleibt bei MOOSE `COMMANDER`/`LEGION`.
+
+Die Acceptance verwendet keine `specialLegions`, keine `specialCohorts`, keine SQUADRON-Bindung und keinen direkten `AIRWING:AddMission()`-Dispatch.
+
+Status dieses neuen FSSR-Scopes:
+
+```text
+COMMANDER variable multi-AIRWING CAS recruitment: SOURCE_REVIEWED / DCS_PENDING
+
+### FSSR Functional ARTY selection-only handoff – 22.09.2026
+
+Pinned-source-verifiziert fuer MOOSE 2.9.18 / `73d3ed119cd9e7e3f2cfcabbaa34513d30529b54`:
+
+```text
+COMMANDER:CanMission(...)
+COMMANDER:RecruitAssetsForMission(...)
+LEGION.RecruitCohortAssets(...)
+LEGION.UnRecruitAssets(...)
+ARTY:AssignTargetCoord(...)
+ARTY:RemoveTarget(...)
+```
+
+`RecruitAssetsForMission(...)` delegiert im gepinnten Source an `LEGION.RecruitCohortAssets(...)` und liefert `recruited, assets, legions`. Die Rekrutierung setzt die ausgewaehlten Assetitems auf `isReserved=true`; `LEGION.UnRecruitAssets(...)` hebt diese Reservierung wieder auf. `CanMission(...)` prueft die MOOSE-Cohort-Faehigkeit einschliesslich der mission-/cohortbasierten Reichweitengrenze gegen das Target.
+
+OMW verwendet diese Methoden im neuen Functional-ARTY-Modus ausschliesslich zur MOOSE-eigenen Provider-/Asset-Selektion. Der erzeugte `AUFTRAG:NewARTY(...)` wird nicht gequeued und besitzt keinen FireAtPoint-Lifecycle. Die ausgewaehlte Asset-Identitaet wird danach auf die bereits laufende Functional-`ARTY`-Instanz abgebildet.
+
+Status:
+
+```text
+COMMANDER CanMission + RecruitAssetsForMission as FSSR ARTY selection-only boundary
+= SOURCE_REVIEWED / DCS_PENDING
+
+LEGION.UnRecruitAssets for FSSR ARTY reservation release
+= SOURCE_REVIEWED / DCS_PENDING
+
+Functional ARTY fire/rearm owner
+= reuse of separately VALIDATED_FOR_DOCUMENTED_SCOPE lifecycle
+```
+AUFTRAG.CheckMissionCapability acceptance diagnostic: SOURCE_REVIEWED / DCS_PENDING
+```
+
+## Addendum 2026-09-18 – FSSR routed CAS lifecycle / Acceptance 7
+
+Acceptance 7 reconciles the A6 runtime regression with ADR 0008 and the existing owner-route CAS law.
+
+Additional source-reviewed public MOOSE contracts:
+
+```text
+AUFTRAG:SetRequiredAttribute(...)
+COMMANDER:OnBeforeMissionAssign(...) via generic FSM OnBefore<Event> callback
+COMMANDER:OnAfterMissionAssign(...)
+COMMANDER:OnAfterOpsOnMission(...)
+COHORT:GetMissionCapability(...)
+GROUP.Attribute.AIR_ATTACKHELO
+FLIGHTGROUP:OnBeforeFuelLow(...) via generic FSM OnBefore<Event> callback
+FLIGHTGROUP:OnAfterLanded(...)
+LEGION/AIRWING:OnAfterLegionAssetReturned(...)
+```
+
+The pinned FSM implementation explicitly invokes `OnBefore<Event>` callbacks before the internal transition handler and allows `false` to cancel the transition. A7 uses this only as a fail-closed safety gate: if MOOSE selects a provider for which no owner-authored route profile is configured, `MissionAssign` is rejected before the LEGION request can physically dispatch the flight.
+
+`AUFTRAG:SetRequiredAttribute(GROUP.Attribute.AIR_ATTACKHELO)` is passed through the generic FSSR CAS factory. Provider/asset recruitment itself remains owned by MOOSE `COMMANDER`/`LEGION` per ADR 0008.
+
+Status:
+
+```text
+CAS required-attribute pass-through: SOURCE_REVIEWED / CI_PENDING
+COMMANDER OnBeforeMissionAssign route-profile gate: SOURCE_REVIEWED / DCS_PENDING
+FLIGHTGROUP FuelLow fail-closed acceptance guard: SOURCE_REVIEWED / DCS_PENDING
+physical owner-route / release / landing / LegionAssetReturned chain: DCS_PENDING
+```
+
+A7 additionally source-reviews `WAREHOUSE/AIRWING:GetAirbase()` for selected-provider home-airbase identity and requires the physical `OnAfterLanded` place to match that home before recovery can pass. Status: `SOURCE_REVIEWED / DCS_PENDING`.
+
+## Addendum 2026-09-18 – A8 CAS release correction
+
+Runtime evidence from A7 confirmed the owner-route dispatch but exposed a test-lifecycle defect: a terminal Acceptance timeout stopped the release monitor before the AUFTRAG reached `EXECUTING`.
+
+New source-reviewed pinned-MOOSE contract:
+
+```text
+AUFTRAG:IsExecuting()
+```
+
+Meaning in the pinned source: the first OPSGROUP reached the mission execution waypoint and is executing the mission task. A8 therefore uses `AUFTRAG:IsExecuting()` instead of a separate geometric `flight inside zone` test as the CAS execution/on-station authority.
+
+`FLIGHTGROUP:GetDetectedGroups()` remains the own-sensor source. A8 now requires a valid returned set before zero contacts can begin the 30-second no-contact qualification; `nil` is not treated as clear.
+
+Status:
+
+```text
+AUFTRAG:IsExecuting CAS execution authority: SOURCE_REVIEWED / DCS_PENDING
+A8 corrected release lifecycle: DCS_PENDING
+```
+
+## Addendum 2026-09-20 – shared FSSR CAS lifecycle extraction
+
+Following the binding `ACCEPTED-LIFECYCLE-PRESERVATION-LAW`, the CAS route/release/recovery state previously embedded in specialized Stage-3/A7 acceptance logic has been moved into shared production code:
+
+```text
+scripts/campaign/OMW_FireSupStratResupply_CasLifecycleRuntime.lua
+schema OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-CAS-LIFECYCLE-RUNTIME-1
+```
+
+Inherited / source-reviewed MOOSE contracts used by the shared runtime:
+
+```text
+COMMANDER:OnBeforeMissionAssign(...)
+COMMANDER:OnAfterMissionAssign(...)
+COMMANDER:OnAfterOpsOnMission(...)
+AUFTRAG:IsExecuting()
+AUFTRAG:Cancel()
+FLIGHTGROUP:GetDetectedGroups()
+FLIGHTGROUP:OnAfterFuelLow(...)
+FLIGHTGROUP:OnAfterLanded(...)
+LEGION:OnAfterLegionAssetReturned(...)
+```
+
+Directly reused OMW route modules:
+
+```text
+OMW_FlightPathNameContract
+OMW_HelicopterFlightPathCorridor
+OMW_HelicopterCasTacticalCorridor
+```
+
+The production runtime does not select AIRWING/SQUADRON/assets. MOOSE COMMANDER/LEGION remains selection authority under ADR 0008. The runtime only binds the owner-authored execution profile of the provider selected by MOOSE and then owns release/recovery observation.
+
+Evidence state:
+
+```text
+Stage-2B OMW_FlightPath outbound/reverse route lifecycle: VALIDATED_FOR_EXACT_PROVENANCE
+shared FSSR CasLifecycleRuntime composition: SOURCE_REVIEWED / UNIT_CI_PENDING / DCS_PENDING
+A9 observer-only acceptance: SOURCE_REVIEWED / CI_PENDING / DCS_PENDING
+```
+
+### FSSR CAS release policy extraction
+
+`OMW_FireSupStratResupply_CasReleasePolicy.lua` is production contract code, not a MOOSE replacement. It qualifies a configured release profile from already-qualified supported-element status and own CAS contact count; it does not inspect MOOSE objects, select providers/assets, cancel AUFTRAGs, route FLIGHTGROUPs, or own recovery.
+
+For A9 the injected profile is:
+
+```text
+SUPPORTED_ELEMENT_STABLE_NO_CONTACT
+stableNoContactSec = 30
+```
+
+This parameter is A9/Honaker-derived test-profile configuration only. `STAGE3-CAS-LIFECYCLE-RECOVERY-LAW.md` section 20 remains authoritative that general CAS release is profile-dependent.
+
+Status: `SOURCE_REVIEWED / UNIT_CI_PENDING / DCS_PENDING`.
+
+
+## Addendum 2026-09-20 – A9 final CAS lifecycle validation
+
+The shared FSSR rotary-wing CAS composition is now DCS-validated for the exact A9 provenance:
+
+```text
+source commit: c956b7b03b82c4ab04e529d09b1ff9bf4e480bf2
+bundle SHA-256: D2172B83EDC527A2280754A0CC0A8F575C741082B4271A77F2D6E60688D1B3B0
+DCS: 2.9.29.27468
+MOOSE: 2.9.18 / 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+result: PASS
+```
+
+Validated project composition:
+
+```text
+OMW_FireSupStratResupply_CasMissionFactory
+-> OMW_FireSupStratResupply_CommanderBridge
+-> MOOSE COMMANDER / LEGION
+-> OMW_FireSupStratResupply_CasLifecycleRuntime
+-> OMW_FlightPathNameContract
+-> OMW_HelicopterFlightPathCorridor
+-> OMW_HelicopterCasTacticalCorridor
+-> OMW_FireSupStratResupply_CasReleasePolicy
+-> OMW_FobAttackCasPatrolClosure
+-> MOOSE FLIGHTGROUP / LEGION physical recovery
+```
+
+The production CAS lifecycle is a reuse boundary. Future Acceptance code may stimulate and observe it but must not duplicate routing, detection, release, RTB/recovery, landing or asset-return ownership.
