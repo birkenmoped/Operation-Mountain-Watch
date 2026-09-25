@@ -8,7 +8,7 @@ local Runtime = {}
 local Instance = {}
 Instance.__index = Instance
 
-Runtime.SchemaVersion = "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-RUNTIME-10"
+Runtime.SchemaVersion = "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-RUNTIME-11"
 local TAG = "[OMW][FireSupStratResupply.Runtime]"
 
 local function fail(message) error(TAG .. " " .. tostring(message), 2) end
@@ -69,6 +69,11 @@ function Runtime.New(spec)
       local artySelection=needTable(externalSupport.artyFunctionalSelection,"externalSupport.artyFunctionalSelection")
       if type(artySelection.resolveFunctionalArty)~="function" then fail("externalSupport.artyFunctionalSelection.resolveFunctionalArty must be a function") end
       if artySelection.releaseAssets~=nil and type(artySelection.releaseAssets)~="function" then fail("externalSupport.artyFunctionalSelection.releaseAssets must be a function when provided") end
+      if artySelection.commander~=nil then
+        needTable(artySelection.commander,"externalSupport.artyFunctionalSelection.commander")
+        needFunction(artySelection.commander,"CanMission","externalSupport.artyFunctionalSelection.commander")
+        needFunction(artySelection.commander,"RecruitAssetsForMission","externalSupport.artyFunctionalSelection.commander")
+      end
     end
     if externalSupport.casLifecycle~=nil then
       for _,name in ipairs({"casLifecycleRuntime","casReleasePolicy","flightPathNameContract","helicopterCorridor","casTacticalCorridor","casPatrolClosure"}) do

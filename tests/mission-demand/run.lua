@@ -34,6 +34,7 @@ dofile("tests/mission-demand/test_fire_support_strategic_resupply_resupply_monit
 dofile("tests/mission-demand/test_fire_support_strategic_resupply_commander_bridge.lua")
 dofile("tests/mission-demand/test_fire_support_strategic_resupply_arty_mission_factory.lua")
 dofile("tests/mission-demand/test_fire_support_strategic_resupply_arty_selection_runtime.lua")
+dofile("tests/mission-demand/test_fire_support_strategic_resupply_arty_selection_descriptor_registry.lua")
 dofile("tests/mission-demand/test_fire_support_strategic_resupply_cas_mission_factory.lua")
 dofile("tests/mission-demand/test_fire_support_strategic_resupply_cas_release_policy.lua")
 dofile("tests/mission-demand/test_fire_support_strategic_resupply_cas_lifecycle_runtime.lua")

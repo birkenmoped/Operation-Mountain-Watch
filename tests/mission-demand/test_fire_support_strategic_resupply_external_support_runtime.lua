@@ -142,6 +142,7 @@ do
     }
   end
   local resolver=function() return {arty={AssignTargetCoord=function() end,RemoveTarget=function() end}} end
+  local selectionCommander={CanMission=function() return true end,RecruitAssetsForMission=function() return true,{},{} end}
   local selected=Runtime.New({
     commander=commander,
     commanderBridge=CommanderBridge,
@@ -151,6 +152,7 @@ do
     resolveArtyTarget=function() return {coordinate=artyCoord,shots=4,radiusM=75} end,
     resolveCasGeometry=function() return {zone=casZone,altitudeFt=10000,speedKts=250} end,
     artyFunctionalSelection={
+      commander=selectionCommander,
       resolveFunctionalArty=resolver,
       defaultPriority=11,
       defaultMaxEngagements=2,
@@ -158,7 +160,7 @@ do
   })
   yes(selected.artySelection~=nil,"Functional ARTY selection runtime created")
   eq(selected:GetAdapter("ARTY"),selected.artySelection,"ARTY adapter is selection runtime")
-  eq(calls.spec.commander,commander,"ARTY selection commander forwarded")
+  eq(calls.spec.commander,selectionCommander,"dedicated ARTY selection commander forwarded")
   eq(calls.spec.artyMissionFactory,selected.artyFactory,"ARTY selection factory forwarded")
   eq(calls.spec.resolveFunctionalArty,resolver,"Functional ARTY resolver forwarded")
   eq(calls.spec.defaultPriority,11,"Functional ARTY priority forwarded")
