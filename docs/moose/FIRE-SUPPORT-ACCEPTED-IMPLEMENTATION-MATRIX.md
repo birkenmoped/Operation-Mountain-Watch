@@ -412,3 +412,56 @@ MOOSE provider/asset selection
 ```
 
 Negative regression confirmation: no terminal post-return `CAS_ASSET_LOSS` occurred on corrected source. This validation applies only to the documented A9 Joyce rotary-wing CAS scope.
+
+
+## ARTY Option A – Owner decision 25.09.2026
+
+Der Projektinhaber hat fuer die in A10 dokumentierte Repräsentationsfrage **Option A** freigegeben:
+
+```text
+separate one-to-one MOOSE selection descriptors
+-> selection/reservation representation only
+-> no second physical battery
+-> no second strategic stock
+-> exact mapping to one already-existing Functional ARTY owner
+```
+
+Implementierter Source-Vertrag:
+
+```text
+dedicated selection-only COMMANDER
+-> existing site BRIGADE(s)
+-> dedicated descriptor PLATOON per fixed battery
+-> non-alive Mission-Editor descriptor template
+-> COHORT mission capability ARTY
+-> COHORT:SetMissionRange(0)
+-> COHORT:AddWeaponRange(explicit min/max)
+-> COMMANDER:CanMission
+-> COMMANDER:RecruitAssetsForMission
+-> descriptor asset remains unspawned
+-> identity-only resolver verifies exact physical Functional ARTY group
+-> Functional ARTY remains sole fire/rearm owner
+```
+
+Der separate Selection-COMMANDER ist absichtlich nicht der normale queued external-support COMMANDER. Er dient ausschliesslich `CanMission/RecruitAssetsForMission`; der Selection-AUFTRAG wird weiterhin nicht mit `AddMission` gequeued.
+
+Harte Descriptor-Regeln:
+
+```text
+descriptor template must not be alive at registration
+descriptor asset.spawned must remain false
+descriptor PLATOON may only advertise ARTY for this contract
+descriptor range has no default; explicit min/max is mandatory
+physical-group identity must match the mapped ARTY.Controllable:GetName()
+no descriptor may be treated as CampaignState stock
+no descriptor may be materialized as the firing battery
+```
+
+Production-Komponente:
+
+```text
+scripts/campaign/OMW_FireSupStratResupply_ArtySelectionDescriptorRegistry.lua
+schema OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-ARTY-SELECTION-DESCRIPTOR-REGISTRY-1
+```
+
+Der Source ist erst nach realem A10-Lauf fuer die konkrete Mission/Range-Konfiguration DCS-validiert.

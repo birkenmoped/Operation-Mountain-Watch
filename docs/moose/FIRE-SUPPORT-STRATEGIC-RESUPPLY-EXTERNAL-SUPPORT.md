@@ -492,3 +492,23 @@ SELECTED_ARTY_OWNER_UNAVAILABLE / resolver-specific reason
 ```
 
 Diese direkte Selection-only-Nutzung von `RecruitAssetsForMission(...)` ist im gepinnten Source nachgewiesen, aber noch nicht als eigener OMW-DCS-Pfad validiert. Vor Freigabe als Production-Lifecycle ist deshalb eine gezielte DCS-Acceptance erforderlich.
+
+
+## Option-A Descriptor-Repräsentation 25.09.2026
+
+Owner-approved ist eine separate, one-to-one MOOSE-Auswahlrepräsentation pro Fixed-ARTY-Batterie. Sie wird durch `OMW_FireSupStratResupply_ArtySelectionDescriptorRegistry.lua` aufgebaut.
+
+Die Descriptor-Assets sind keine zweite Batterie und kein CampaignState-Bestand. Sie sind ausschliesslich reservierbare MOOSE-Selection-Token. Deshalb gilt fail-closed:
+
+```text
+template group alive -> reject before BRIGADE:AddPlatoon
+selected descriptor spawned -> reject
+unknown assignment -> reject
+selected Legion mismatch -> reject
+template mismatch -> reject
+mapped ARTY physical group mismatch -> reject
+```
+
+Der Descriptor-Cohort setzt den breiten COHORT-Default mit `SetMissionRange(0)` ausser Kraft und verwendet `AddWeaponRange(min,max,Auto)`. Min/Max muessen explizit aus der zustaendigen Fach-/DCS-Konfiguration kommen; die Base erfindet keine L118-/2B11-Reichweite.
+
+Fuer ARTY darf ein dedizierter Selection-COMMANDER injiziert werden. Dieser wird nur fuer `CanMission` und `RecruitAssetsForMission` verwendet. Der normale CAS-/queued-support COMMANDER bleibt davon getrennt.

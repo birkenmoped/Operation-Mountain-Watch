@@ -910,3 +910,27 @@ LegionAssetReturned
 ```
 
 Dieser Befund gilt fuer den dokumentierten A9-Lifecycle und ist in `ACCEPTED-LIFECYCLE-PRESERVATION-LAW.md` als Anti-Regression-Regel festgehalten.
+
+
+## FSSR ARTY Option-A descriptor source review – 25.09.2026
+
+Pinned MOOSE:
+
+```text
+release 2.9.18
+commit 73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+Moose.lua SHA-256 E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915
+```
+
+| Method | Status | OMW use / limitation |
+|---|---|---|
+| `COMMANDER:AddBrigade(...)` | `SOURCE_REVIEWED` | Registers only the existing site BRIGADE with the dedicated ARTY selection commander. |
+| `COMMANDER:CanMission(...)` | `SOURCE_REVIEWED` | Capability/range preflight for selection descriptor cohorts. |
+| `COMMANDER:RecruitAssetsForMission(...)` | `SOURCE_REVIEWED` | Reserves exactly the MOOSE-selected descriptor asset; no queued AUFTRAG. |
+| `BRIGADE:AddPlatoon(...)` | `SOURCE_REVIEWED` | Registers one descriptor PLATOON; template must be non-alive because WAREHOUSE:AddAsset destroys a live group. |
+| `COHORT:AddMissionCapability(AUFTRAG.Type.ARTY,...)` | `SOURCE_REVIEWED` | Descriptor capability only. |
+| `COHORT:SetMissionRange(0)` | `SOURCE_REVIEWED` | Removes broad default cohort mission radius for descriptor selection. |
+| `COHORT:AddWeaponRange(min,max,Auto)` | `SOURCE_REVIEWED` | Explicit ARTY selection envelope. No project default is invented. |
+| `LEGION.UnRecruitAssets(...)` | `SOURCE_REVIEWED` | Releases descriptor reservation after Functional ARTY terminal state. |
+
+No method in this section is upgraded to DCS validation by the source review alone.

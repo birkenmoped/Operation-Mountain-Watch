@@ -173,26 +173,35 @@ OPSGROUP:SetRearmOnOutOfAmmo
   # different rearm lifecycle; accepted M1083/CampaignState evidence does not transfer
 ```
 
-## 7. Owner-Entscheidung vor A10-Implementierung
+## 7. Owner-Entscheidung und implementierte Option A
 
-Es ist eine explizite Entscheidung fuer die Provider-Repräsentation erforderlich. Technisch verbleiben insbesondere diese Architekturklassen:
+Owner decision 25.09.2026: **A**.
 
 ```text
-A. separate one-to-one MOOSE selection descriptors for fixed batteries
-   -> requires explicit definition that they are reservation/selection descriptors,
-      not second physical or strategic stock
-   -> requires mission/composition contract and DCS proof
-
-B. migrate fixed batteries to MOOSE BRIGADE/WAREHOUSE materialized assets
-   -> changes the accepted physical lifecycle substantially
-   -> requires broader regression and is not assumed
-
-C. approve a different MOOSE-first selector for already-existing physical ARTY objects
-   -> requires documented MOOSE gap analysis and explicit owner approval
-   -> current COMMANDER/LEGION contract would change
+one fixed physical battery
+<-> one unspawned MOOSE selection descriptor asset
+<-> one descriptor PLATOON
+<-> one exact Functional ARTY owner
 ```
 
-A10 will not choose among A/B/C itself.
+Implemented production source:
+
+```text
+scripts/campaign/OMW_FireSupStratResupply_ArtySelectionDescriptorRegistry.lua
+OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-ARTY-SELECTION-DESCRIPTOR-REGISTRY-1
+```
+
+The registry uses an ARTY-only dedicated selection COMMANDER. It never queues the descriptor AUFTRAG and rejects any descriptor that is already physically spawned.
+
+Mission Editor contract still required before the A10 runtime harness can be released:
+
+```text
+four separate late-activation/non-alive descriptor template groups
+one per Bostick/Wright/Fortress/Honaker fixed battery
+not the live battery groups themselves
+```
+
+The exact ARTY min/max selection ranges are also still configuration data and must be explicitly established; no L118/2B11 range is guessed by the Base.
 
 ## 8. Geplanter PASS nach Aufloesung des Blockers
 
@@ -223,7 +232,8 @@ Production Base 26 local build: VERIFIED by owner output
 ARTY selection-only source: SOURCE_IMPLEMENTED
 unit/CI: PASS at d2d7c69491d175721b1c18ad3f419730fa7b31ba
 A10 mission preflight: COMPLETE
-A10 runtime harness: NOT IMPLEMENTED
-A10 DCS status: BLOCKED_PRE_COMPOSITION
+A10 Option-A descriptor source: IMPLEMENTED / DCS_PENDING
+A10 runtime harness: NOT RELEASED until ME descriptor templates + explicit range configuration exist
+A10 DCS status: BLOCKED_ON_DESCRIPTOR_FIXTURE_AND_RANGE_CONFIG
 Strategic Resupply: NOT STARTED; waits for ARTY closure
 ```
