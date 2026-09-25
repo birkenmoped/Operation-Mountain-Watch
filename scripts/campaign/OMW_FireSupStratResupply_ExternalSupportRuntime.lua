@@ -10,7 +10,7 @@ local Runtime = {}
 local Instance = {}
 Instance.__index = Instance
 
-Runtime.SchemaVersion = "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-EXTERNAL-SUPPORT-RUNTIME-4"
+Runtime.SchemaVersion = "OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-EXTERNAL-SUPPORT-RUNTIME-3"
 local TAG = "[OMW][FireSupStratResupply.ExternalSupportRuntime]"
 
 local function fail(message) error(TAG .. " " .. tostring(message),2) end
@@ -64,9 +64,8 @@ function Runtime.New(spec)
   local artySelection=nil
   if spec.artyFunctionalSelection~=nil then
     local selection=spec.artyFunctionalSelection
-    local selectionCommander=selection.commander or commander
     artySelection=artySelectionRuntime.New({
-      commander=selectionCommander,
+      commander=commander,
       artyMissionFactory=artyFactory,
       resolveFunctionalArty=selection.resolveFunctionalArty,
       releaseAssets=selection.releaseAssets,

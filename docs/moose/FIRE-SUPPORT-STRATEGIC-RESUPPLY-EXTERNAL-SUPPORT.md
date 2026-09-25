@@ -511,4 +511,4 @@ mapped ARTY physical group mismatch -> reject
 
 Der Descriptor-Cohort setzt den breiten COHORT-Default mit `SetMissionRange(0)` ausser Kraft und verwendet `AddWeaponRange(min,max,Auto)`. Min/Max muessen explizit aus der zustaendigen Fach-/DCS-Konfiguration kommen; die Base erfindet keine L118-/2B11-Reichweite.
 
-Fuer ARTY darf ein dedizierter Selection-COMMANDER injiziert werden. Dieser wird nur fuer `CanMission` und `RecruitAssetsForMission` verwendet. Der normale CAS-/queued-support COMMANDER bleibt davon getrennt.
+Der vorhandene external-support COMMANDER bleibt auch fuer Option A die Auswahl-/Reservierungsautoritaet. Die Trennung liegt nicht in einem zweiten C2-Owner, sondern darin, dass der ARTY-Selection-AUFTRAG niemals gequeued wird; nur `CanMission` und `RecruitAssetsForMission` werden fuer den Descriptor-Pfad verwendet.

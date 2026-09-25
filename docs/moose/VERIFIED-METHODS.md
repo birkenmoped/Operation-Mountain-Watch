@@ -924,7 +924,7 @@ Moose.lua SHA-256 E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A9
 
 | Method | Status | OMW use / limitation |
 |---|---|---|
-| `COMMANDER:AddBrigade(...)` | `SOURCE_REVIEWED` | Registers only the existing site BRIGADE with the dedicated ARTY selection commander. |
+| `COMMANDER:AddBrigade(...)` | `SOURCE_REVIEWED` | Registers the existing site BRIGADE with the external-support COMMANDER for ARTY descriptor selection. |
 | `COMMANDER:CanMission(...)` | `SOURCE_REVIEWED` | Capability/range preflight for selection descriptor cohorts. |
 | `COMMANDER:RecruitAssetsForMission(...)` | `SOURCE_REVIEWED` | Reserves exactly the MOOSE-selected descriptor asset; no queued AUFTRAG. |
 | `BRIGADE:AddPlatoon(...)` | `SOURCE_REVIEWED` | Registers one descriptor PLATOON; template must be non-alive because WAREHOUSE:AddAsset destroys a live group. |

@@ -429,7 +429,7 @@ separate one-to-one MOOSE selection descriptors
 Implementierter Source-Vertrag:
 
 ```text
-dedicated selection-only COMMANDER
+existing external-support COMMANDER
 -> existing site BRIGADE(s)
 -> dedicated descriptor PLATOON per fixed battery
 -> non-alive Mission-Editor descriptor template
@@ -443,7 +443,7 @@ dedicated selection-only COMMANDER
 -> Functional ARTY remains sole fire/rearm owner
 ```
 
-Der separate Selection-COMMANDER ist absichtlich nicht der normale queued external-support COMMANDER. Er dient ausschliesslich `CanMission/RecruitAssetsForMission`; der Selection-AUFTRAG wird weiterhin nicht mit `AddMission` gequeued.
+Der vorhandene external-support COMMANDER bleibt die MOOSE-Auswahlautoritaet. Fuer diesen Functional-ARTY-Pfad wird der Selection-AUFTRAG ausschliesslich ueber `CanMission/RecruitAssetsForMission` verwendet und weiterhin nicht mit `AddMission` gequeued.
 
 Harte Descriptor-Regeln:
 

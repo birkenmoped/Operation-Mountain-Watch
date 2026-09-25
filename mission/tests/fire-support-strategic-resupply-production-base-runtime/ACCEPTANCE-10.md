@@ -191,7 +191,7 @@ scripts/campaign/OMW_FireSupStratResupply_ArtySelectionDescriptorRegistry.lua
 OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-ARTY-SELECTION-DESCRIPTOR-REGISTRY-1
 ```
 
-The registry uses an ARTY-only dedicated selection COMMANDER. It never queues the descriptor AUFTRAG and rejects any descriptor that is already physically spawned.
+The registry uses the existing external-support COMMANDER as the MOOSE selection authority. It never queues the descriptor AUFTRAG and rejects any descriptor that is already physically spawned.
 
 Mission Editor contract still required before the A10 runtime harness can be released:
 
