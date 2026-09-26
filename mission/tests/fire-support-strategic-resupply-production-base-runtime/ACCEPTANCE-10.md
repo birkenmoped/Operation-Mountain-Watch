@@ -228,12 +228,77 @@ PASS darf erst nach realer DCS-Evidenz fuer mindestens folgende Punkte entstehen
 ## 9. Status
 
 ```text
-Production Base 26 local build: VERIFIED by owner output
+Production Base 27 local build: VERIFIED_LOCAL_BUILD
+source commit: ee431db16c2fb3f3bf4fa2c33a0da4ff0363ded6
+production builder SHA-256: 8CA05C37D9D51B5AF44A052B91B620D91CB77B997632E0073FC140052BF462A3
+production bundle SHA-256: 5FEDBA2486CC048D2805615945D0A016EA7939B4920796BCEAF870DAC7FBE4F4
+independent direct Get-FileHash readback: MATCH for builder and bundle
 ARTY selection-only source: SOURCE_IMPLEMENTED
-unit/CI: PASS at d2d7c69491d175721b1c18ad3f419730fa7b31ba
+ARTY Option-A descriptor source: SOURCE_IMPLEMENTED
+unit/CI: PASS at ee431db16c2fb3f3bf4fa2c33a0da4ff0363ded6
 A10 mission preflight: COMPLETE
 A10 Option-A descriptor source: IMPLEMENTED / DCS_PENDING
 A10 runtime harness: NOT RELEASED until ME descriptor templates + explicit range configuration exist
 A10 DCS status: BLOCKED_ON_DESCRIPTOR_FIXTURE_AND_RANGE_CONFIG
 Strategic Resupply: NOT STARTED; waits for ARTY closure
 ```
+
+## 10. Owner-local Build-/Hash-Verifikation 26.09.2026
+
+Der Projektinhaber hat den Branch lokal auf den exakten Source-Stand aktualisiert und den Production-Builder ausgefuehrt.
+
+```text
+branch:
+agent/fire-support-strategic-resupply-base-gate0
+
+git HEAD:
+ee431db16c2fb3f3bf4fa2c33a0da4ff0363ded6
+
+BuilderVersion:
+OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BASE-27
+
+RuntimeSchema:
+OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-RUNTIME-10
+
+ArtySelectionRuntimeSchema:
+OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-ARTY-SELECTION-RUNTIME-1
+
+ArtySelectionDescriptorRegistrySchema:
+OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-ARTY-SELECTION-DESCRIPTOR-REGISTRY-1
+
+MOOSE release:
+2.9.18
+
+MOOSE commit:
+73d3ed119cd9e7e3f2cfcabbaa34513d30529b54
+
+Moose.lua SHA-256:
+E3B750921EE22CFB37DD1CEC7549831A9165FFE64CD26BE154B49E63E001A915
+
+MizMutation:
+false
+```
+
+Builder-reported hashes:
+
+```text
+BuilderSHA256:
+8CA05C37D9D51B5AF44A052B91B620D91CB77B997632E0073FC140052BF462A3
+
+BundleSHA256:
+5FEDBA2486CC048D2805615945D0A016EA7939B4920796BCEAF870DAC7FBE4F4
+```
+
+Separate direkte Owner-Readbacks mit `Get-FileHash -Algorithm SHA256` ergaben exakt dieselben Werte:
+
+```text
+tools/build-fire-support-strategic-resupply-production-base.ps1
+8CA05C37D9D51B5AF44A052B91B620D91CB77B997632E0073FC140052BF462A3
+
+mission/fire-support-strategic-resupply/dist/OMW_FireSupStratResupply_Base.lua
+5FEDBA2486CC048D2805615945D0A016EA7939B4920796BCEAF870DAC7FBE4F4
+```
+
+Damit ist die Production-Base-27-Provenienz fuer diesen Source-Stand als `VERIFIED_LOCAL_BUILD` geschlossen.
+
+Dies ist **keine DCS-Acceptance**. A10 bleibt bis zur Bereitstellung der Option-A Descriptor-Fixtures und der expliziten ARTY-Range-Konfiguration `DCS_PENDING`.

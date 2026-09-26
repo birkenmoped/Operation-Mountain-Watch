@@ -465,3 +465,36 @@ schema OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-ARTY-SELECTION-DESCRIPTOR-REGISTRY-1
 ```
 
 Der Source ist erst nach realem A10-Lauf fuer die konkrete Mission/Range-Konfiguration DCS-validiert.
+
+### Option-A Production Base 27 build evidence – 26.09.2026
+
+Owner-local build/hash verification for the exact Option-A source:
+
+```text
+source commit:
+ee431db16c2fb3f3bf4fa2c33a0da4ff0363ded6
+
+BuilderVersion:
+OMW-FIRE-SUPPORT-STRATEGIC-RESUPPLY-PRODUCTION-BASE-27
+
+builder SHA-256:
+8CA05C37D9D51B5AF44A052B91B620D91CB77B997632E0073FC140052BF462A3
+
+bundle SHA-256:
+5FEDBA2486CC048D2805615945D0A016EA7939B4920796BCEAF870DAC7FBE4F4
+
+independent owner Get-FileHash:
+MATCH / MATCH
+
+CI:
+Documentation validation #2315 PASS
+MissionDemand validation #1087 PASS
+```
+
+Status:
+
+```text
+Option-A source/contract/unit/CI/local-build provenance = CLOSED
+DCS runtime acceptance = PENDING
+remaining pre-DCS inputs = descriptor ME fixtures + explicit artillery range configuration
+```
